@@ -46,12 +46,21 @@ What replaced it is the classical argument, which is what Magma's `Chabauty0`
 on a rank-`0` Jacobian *is* — the Mazur–Tate decision procedure, involving no
 covering collection.  Each namespace now reads top-down:
 
-    exists_functionFieldData      LEAF: the function field K(x)[y]/(y²−f) exists
-    exists_placeSystem            LEAF: its places, normalised and COMPLETE
-    exists_isPlaceOfPt            LEAF: the evaluation place of a rational point
+      → exists_functionFieldData  PROVEN: the function field K(x)[y]/(y²−f), as AdjoinRoot
+    finite_isPlaceFun             LEAF: a nonzero function has finitely many zeros/poles
+      → exists_placeSystem        PROVEN: the TAUTOLOGICAL system; ord_complete is rfl
+    exists_isPlaceFun_of_affPt    LEAF: the valuation of an affine rational point
+    exists_isPlaceFun_of_infPt    LEAF: the valuation of a branch at infinity
+      → exists_isPlaceOfPt        PROVEN: from the two, through ord_complete
       → exists_placeData          PROVEN: assembled, with pt_injective proven
-    exists_degreeMap              LEAF: the degree map and deg (div g) = 0
-    sub_single_pt_notMem_princ    LEAF: genus ≥ 1, i.e. (Q)−(P) is not principal
+    finrank_residue_pt_eq_one     LEAF: κ(v) = K at the place of a rational point
+    degOf_divisor_eq_zero         LEAF: Σ_v ord_v(g)·[κ(v):K] = 0  (Stichtenoth I.4.11)
+      → exists_degreeMap          PROVEN: assembled over the constructed `degOf`
+    isRationalGenerator_of_divisor_eq_sub_single
+                                  LEAF: a single simple pole forces F = K(g)
+    not_isRationalGenerator       LEAF: F is NOT rational — the genus, and the only
+                                  place where separability does any work
+      → sub_single_pt_notMem_princ PROVEN: assembled, over `princ = range divisor`
       → aj_injective_of_separable PROVEN: assembled
     exists_reductionFiltration    LEAF: red together with the formal-group filtration
       → exists_reduction          PROVEN: torsion-freeness from the filtration
@@ -107,7 +116,8 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
 **The remaining leaves are the eight listed in the tree above** (amended 2026-07-28, when
 the three generic obligations were themselves decomposed; the earlier amendment of
 2026-07-27 decomposed and PROVED `exists_jacobianPackage`).  Six of them —
-`exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`, `exists_degreeMap`,
+`finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`, `exists_isPlaceFun_of_infPt`,
+`exists_degreeMap`,
 `sub_single_pt_notMem_princ`, `exists_reductionFiltration` — are generic in the sextic and
 the prime, so ONE genus-`2` divisor-theory development closes them for both levels at once;
 only `X18.finite_pic` and `X13.finite_pic`, which are Mordell–Weil together with
@@ -230,6 +240,14 @@ public import Mathlib.Algebra.BigOperators.Finsupp.Basic
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
+-- the construction of the function field `K(x)[y]/(y² − f)` in `exists_functionFieldData`:
+-- rational functions, root adjunction, the Kummer irreducibility criterion for `Yᵖ − a`,
+-- integral closedness of a UFD (`K[X]` is integrally closed in `K(x)`), and `compute_degree`
+public import Mathlib.FieldTheory.RatFunc.AsPolynomial
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.KummerPolynomial
+public import Mathlib.RingTheory.Polynomial.RationalRoot
+public import Mathlib.Tactic.ComputeDegree
 
 @[expose] public section
 
@@ -734,12 +752,31 @@ None of this needs Riemann–Roch, and none of it is specific to genus `2`.
 
 ## DECOMPOSED 2026-07-28 — see `exists_placeData` below, now PROVEN
 
-The five bullets above are three genuinely different theories, and they are now three
+The five bullets above are three genuinely different theories, and they became three
 separate leaves: `exists_functionFieldData` (build `F`), `exists_placeSystem` (its places,
 complete and normalised), `exists_isPlaceOfPt` (the evaluation place of a rational point).
 The fourth obligation of the structure — `pt_injective`, that distinct rational points get
 distinct places — is NOT a leaf: it is PROVEN below from the axioms, and it is the only
 place in the whole layer where `2 ≠ 0` is used.
+
+## LATER THE SAME DAY — all three of those are now PROVEN, and the third bullet is GONE
+
+* `exists_functionFieldData` is **PROVEN**: `AdjoinRoot (Y² − f)` over `RatFunc K`, a field
+  by Kummer's criterion once `f` is not a square, which is integral closedness of `K[X]`
+  plus squarefreeness.  It does not use `2 ≠ 0`.
+* `exists_placeSystem` is **PROVEN**, and the third bullet above — `ord_complete`, "the
+  standard classification", advertised as the axiom that makes the interface pin anything —
+  **is `rfl`**.  Take `Places` to be the set of ALL normalised `K`-trivial discrete
+  valuations of `F` (`IsPlaceFun`) and `ord` to be `Subtype.val`; then every axiom of
+  `PlaceSystem` except `ord_finite` is a projection.  Quantifying over all valuations is
+  what made the interface honest, and it is also what makes the tautological model free.
+  The residue is `finite_isPlaceFun` — the fourth bullet, finiteness of zeros and poles.
+* `exists_isPlaceOfPt` is **PROVEN** from two sharper leaves that need only produce a
+  valuation FUNCTION (`exists_isPlaceFun_of_affPt`, `exists_isPlaceFun_of_infPt`);
+  `ord_complete` then turns it into a place of any given system.
+
+So the fifth bullet's `pt` splits into "construct the valuation at a point", which is
+Hensel in `K[[t]]` and nothing else.
 -/
 
 /-- **The function field of `y² = sext x` over `K`**, as data: the first block of
@@ -843,58 +880,320 @@ def IsPlaceOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
   | Sum.inr s => S.ord v E.xx = -1 ∧
       -3 < S.ord v (E.yy - (if s then 1 else -1) * E.xx ^ 3)
 
-/-- **LEAF (obligation 1a): the function field of the curve exists.**
+/-- The sextic has degree `6` (PROVEN).  Used only to see that it is not a unit, which is
+the last step of `not_isSquare_sextPoly`. -/
+lemma natDegree_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).natDegree = 6 := by
+  unfold sextPoly
+  compute_degree!
+
+/-- **A squarefree non-unit of `K[X]` is not a square in `K(x)`** (PROVEN).
+
+This is the one substantive step in building the function field.  If `b² = p` in `K(x)`
+then `b` is a root of the MONIC polynomial `Y² − p` over `K[X]`, hence integral over
+`K[X]`; `K[X]` is a UFD, so it is integrally closed in its fraction field `K(x)`, and `b`
+is therefore a polynomial `q`.  Then `q² = p`, so `q · q ∣ p`, so squarefreeness makes `q`
+— and hence `p = q²` — a unit, against the hypothesis.
+
+Nothing here needs `2 ≠ 0`, and nothing needs the degree to be `6`. -/
+lemma not_isSquare_sextPoly {K : Type} [Field K] {p : K[X]} (hsq : Squarefree p)
+    (hu : ¬ IsUnit p) (b : RatFunc K) : b ^ 2 ≠ algebraMap K[X] (RatFunc K) p := by
+  intro hb
+  have hint : IsIntegral K[X] b := by
+    refine ⟨X ^ 2 - C p, monic_X_pow_sub_C p (by norm_num), ?_⟩
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C]
+    rw [hb, sub_self]
+  obtain ⟨q, hq⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  have hqp : q ^ 2 = p := by
+    apply IsFractionRing.injective K[X] (RatFunc K)
+    rw [map_pow, hq, hb]
+  have huq : IsUnit q := hsq q ⟨1, by rw [← hqp]; ring⟩
+  exact hu (hqp ▸ huq.pow 2)
+
+/-- **LEAF (obligation 1a), now PROVEN: the function field of the curve exists.**
 
 `F = K(x)[y]/(y² − f(x))`, as `AdjoinRoot (Y² − C f)` over `RatFunc K`.  It is a field
 because `f` is not a square in `K(x)`: a square in `K(x)` lying in `K[x]` is a square in
 `K[x]` (`K[x]` is integrally closed in its fraction field), and a squarefree polynomial of
-positive degree is not a square — separability gives squarefreeness.
+positive degree is not a square — separability gives squarefreeness.  That is
+`not_isSquare_sextPoly`, and irreducibility of `Y² − f` is then Kummer's criterion
+`X_pow_sub_C_irreducible_of_prime` at the prime `2`.
 
 Then `xx` is the image of `RatFunc.X` and `yy` is `AdjoinRoot.root`; `eqn` is
-`AdjoinRoot.root_isRoot`, `transcendental_xx` is transcendence of `X` in `K(x)` transported
-along the injection `K(x) ↪ F`, and `gen` is the two-term normal form `a + b·y` of
-`AdjoinRoot` of a quadratic, with denominators cleared.
+`AdjoinRoot.eval₂_root`, `transcendental_xx` is transcendence of `X` in `K(x)`
+(`RatFunc.transcendental_X`) transported along the injection `K(x) ↪ F`
+(`transcendental_algebraMap_iff`), and `gen` is the two-term normal form `a + b·y` of
+`AdjoinRoot` of a quadratic — obtained by reducing a representative modulo the monic
+`Y² − f`, which leaves a polynomial of degree `≤ 1` — with denominators cleared through
+`RatFunc.num_div_denom`.
 
-Nothing here is specific to genus `2`, and nothing needs the places. -/
+Nothing here is specific to genus `2`, and nothing needs the places.
+
+**`2 ≠ 0` IS NOT USED and is underscored.**  The hypothesis is kept because it is part of
+the interface `exists_placeData` calls with, but the construction is characteristic-free:
+in characteristic `2` the extension `F/K(x)` is inseparable, yet `F` is still a field and
+`FunctionFieldData` demands nothing else.  Where `2 ≠ 0` really earns its keep in this
+layer is `isPlaceOfPt_injective`, and only there. -/
 theorem exists_functionFieldData (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K]
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
-    Nonempty (FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) := sorry
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (_h2 : (2 : K) ≠ 0) :
+    Nonempty (FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  classical
+  -- the sextic is squarefree and not a unit, hence not a square in `K(x)`
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro h
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit h
+    rw [natDegree_sextPoly] at h1
+    exact absurd h1 (by norm_num)
+  set fK : RatFunc K := algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) with hfK
+  set g : (RatFunc K)[X] := X ^ 2 - C fK with hg
+  have hirr : Irreducible g := by
+    rw [hg]
+    exact X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+  haveI : Fact (Irreducible g) := ⟨hirr⟩
+  have hmonic : g.Monic := by rw [hg]; exact monic_X_pow_sub_C fK (by norm_num)
+  have hAinj : Function.Injective (algebraMap (RatFunc K) (AdjoinRoot g)) :=
+    (algebraMap (RatFunc K) (AdjoinRoot g)).injective
+  set xx : AdjoinRoot g := algebraMap (RatFunc K) (AdjoinRoot g) RatFunc.X with hxx
+  set yy : AdjoinRoot g := AdjoinRoot.root g with hyy
+  -- evaluation of a `K`-polynomial at `xx` is the composite of the two algebra maps
+  have hcomp : ∀ a : K[X], (Polynomial.aeval xx a : AdjoinRoot g)
+      = algebraMap (RatFunc K) (AdjoinRoot g) (algebraMap K[X] (RatFunc K) a) := by
+    intro a
+    have h1 : (Polynomial.aeval (RatFunc.X : RatFunc K) a) = algebraMap K[X] (RatFunc K) a := by
+      have h2 : (Polynomial.aeval (RatFunc.X : RatFunc K) : K[X] →ₐ[K] RatFunc K)
+          = IsScalarTower.toAlgHom K K[X] (RatFunc K) := by
+        apply Polynomial.algHom_ext
+        simp [RatFunc.algebraMap_X]
+      exact congrArg (fun φ => φ a) h2
+    rw [← h1, hxx, Polynomial.aeval_algebraMap_apply]
+  -- the curve equation
+  have heqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx := by
+    have h0 : (X ^ 2 - C fK : (RatFunc K)[X]).eval₂ (AdjoinRoot.of g) (AdjoinRoot.root g) = 0 := by
+      rw [← hg]; exact AdjoinRoot.eval₂_root g
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C] at h0
+    have h1 : (AdjoinRoot.root g) ^ 2 = AdjoinRoot.of g fK := by rwa [sub_eq_zero] at h0
+    rw [hyy, h1, hfK, ← AdjoinRoot.algebraMap_eq, ← hcomp (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)]
+    exact aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ xx
+  -- the abscissa is transcendental
+  have htr : Transcendental K xx := by
+    rw [hxx]
+    exact (transcendental_algebraMap_iff hAinj).mpr RatFunc.transcendental_X
+  -- the two-term normal form `(a + b·y)/d`
+  have hgen : ∀ z : AdjoinRoot g, ∃ a b d : K[X], Polynomial.aeval xx d ≠ 0 ∧
+      z * Polynomial.aeval xx d = Polynomial.aeval xx a + Polynomial.aeval xx b * yy := by
+    intro z
+    obtain ⟨q, rfl⟩ := AdjoinRoot.mk_surjective z
+    have hdvd : g ∣ q - q %ₘ g := by
+      rw [Polynomial.modByMonic_eq_sub_mul_div q g]
+      exact ⟨q /ₘ g, by ring⟩
+    have hred : AdjoinRoot.mk g q = AdjoinRoot.mk g (q %ₘ g) := AdjoinRoot.mk_eq_mk.mpr hdvd
+    have hdeg : (q %ₘ g).degree ≤ 1 := by
+      have h3 := Polynomial.degree_modByMonic_lt q hmonic
+      rw [hg, Polynomial.degree_X_pow_sub_C (by norm_num) fK] at h3
+      exact Order.le_of_lt_succ (by exact_mod_cast h3)
+    have hform := Polynomial.eq_X_add_C_of_degree_le_one hdeg
+    have hz : AdjoinRoot.mk g q
+        = algebraMap (RatFunc K) (AdjoinRoot g) ((q %ₘ g).coeff 0)
+          + algebraMap (RatFunc K) (AdjoinRoot g) ((q %ₘ g).coeff 1) * yy := by
+      rw [hred]
+      conv_lhs => rw [hform]
+      rw [map_add, map_mul, AdjoinRoot.mk_C, AdjoinRoot.mk_C, AdjoinRoot.mk_X,
+        ← AdjoinRoot.algebraMap_eq, hyy]
+      ring
+    have hdu : (algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 0).denom) ≠ 0 :=
+      RatFunc.algebraMap_ne_zero ((q %ₘ g).coeff 0).denom_ne_zero
+    have hdv : (algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 1).denom) ≠ 0 :=
+      RatFunc.algebraMap_ne_zero ((q %ₘ g).coeff 1).denom_ne_zero
+    have hun : ((q %ₘ g).coeff 0) * algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 0).denom
+        = algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 0).num := by
+      have h := RatFunc.num_div_denom ((q %ₘ g).coeff 0)
+      rw [div_eq_iff hdu] at h
+      exact h.symm
+    have hvn : ((q %ₘ g).coeff 1) * algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 1).denom
+        = algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 1).num := by
+      have h := RatFunc.num_div_denom ((q %ₘ g).coeff 1)
+      rw [div_eq_iff hdv] at h
+      exact h.symm
+    refine ⟨((q %ₘ g).coeff 0).num * ((q %ₘ g).coeff 1).denom,
+      ((q %ₘ g).coeff 1).num * ((q %ₘ g).coeff 0).denom,
+      ((q %ₘ g).coeff 0).denom * ((q %ₘ g).coeff 1).denom, ?_, ?_⟩
+    · rw [hcomp]
+      refine fun hzero => RatFunc.algebraMap_ne_zero
+        (mul_ne_zero ((q %ₘ g).coeff 0).denom_ne_zero ((q %ₘ g).coeff 1).denom_ne_zero)
+        (hAinj ?_)
+      rw [hzero, map_zero]
+    · have e1 : ((q %ₘ g).coeff 0)
+            * algebraMap K[X] (RatFunc K)
+                (((q %ₘ g).coeff 0).denom * ((q %ₘ g).coeff 1).denom)
+          = algebraMap K[X] (RatFunc K)
+              (((q %ₘ g).coeff 0).num * ((q %ₘ g).coeff 1).denom) := by
+        rw [map_mul, map_mul, ← mul_assoc, hun]
+      have e2 : ((q %ₘ g).coeff 1)
+            * algebraMap K[X] (RatFunc K)
+                (((q %ₘ g).coeff 0).denom * ((q %ₘ g).coeff 1).denom)
+          = algebraMap K[X] (RatFunc K)
+              (((q %ₘ g).coeff 1).num * ((q %ₘ g).coeff 0).denom) := by
+        rw [map_mul, map_mul, mul_comm (algebraMap K[X] (RatFunc K) ((q %ₘ g).coeff 0).denom),
+          ← mul_assoc, hvn, mul_comm]
+      rw [hz, hcomp, hcomp, hcomp, ← e1, ← e2]
+      simp only [map_mul]
+      ring
+  exact ⟨{ F := AdjoinRoot g
+           xx := xx
+           yy := yy
+           eqn := heqn
+           transcendental_xx := htr
+           gen := hgen }⟩
 
-/-- **LEAF (obligation 1b): the places of the function field exist, and they are complete.**
+/-- **A normalised `K`-trivial discrete valuation of `F`, as a raw function.**
 
-The finite places are the height-one primes of the integral closure `O` of `K[x]` in `F`,
-a Dedekind domain by `IsIntegralClosure.isDedekindDomain` (the extension is separable
-because `2 ≠ 0`), with `ord` the `𝔭`-adic valuation; the infinite ones come from the chart
-`u = 1/x`, `v = y/x³`, where the equation becomes `v² = u⁶f(1/u)` with constant term `1`.
+Exactly the five conditions that `PlaceSystem.ord_complete` quantifies over, packaged as a
+predicate so that the SET of such valuations can be named and reasoned about.  (`o 0 = 0`
+is the same junk convention as `ord_zero`, which is why every other clause carries a
+nonvanishing side condition.) -/
+structure IsPlaceFun (K F : Type) [Field K] [Field F] [Algebra K F] (o : F → ℤ) : Prop where
+  /-- the junk value at `0` -/
+  map_zero : o 0 = 0
+  /-- multiplicativity on nonzero elements -/
+  map_mul : ∀ a b : F, a ≠ 0 → b ≠ 0 → o (a * b) = o a + o b
+  /-- the ultrametric inequality -/
+  ultra : ∀ a b : F, a ≠ 0 → b ≠ 0 → a + b ≠ 0 → min (o a) (o b) ≤ o (a + b)
+  /-- triviality on the constants `K^×` -/
+  map_algebraMap : ∀ a : K, a ≠ 0 → o (algebraMap K F a) = 0
+  /-- normalisation: the value group is all of `ℤ` -/
+  normalised : ∃ t : F, o t = 1
 
-`ord_complete` is the standard classification of the `K`-trivial discrete valuations of a
-function field of one variable: such a valuation either restricts nontrivially to `K[x]`,
-giving a height-one prime of `O`, or is nonnegative on `1/x`, giving one of the two places
-above infinity.  This is the axiom that makes `PlaceData` pin anything at all, so it is the
-mathematical heart of this leaf; `ord_finite` is that a nonzero element of a Dedekind
-domain lies in finitely many height-one primes.
+/-- **LEAF (obligation 1b, RESIDUE): a nonzero function has finitely many zeros and poles.**
 
-This leaf is generic in the sextic and the prime: proving it closes obligation 1b at both
-levels at once. -/
+## What happened to the rest of obligation 1b (2026-07-28)
+
+The docstring this replaces said the mathematical heart of `exists_placeSystem` is
+`ord_complete`, the classification of the `K`-trivial discrete valuations of a function
+field of one variable, and that the finite places have to be produced as height-one primes
+of the integral closure of `K[x]` in `F`.  **That is not so, and the reason is worth
+recording: `PlaceSystem` quantifies over ALL such valuations, so the system whose `Places`
+is literally the set of them satisfies `ord_complete` BY `rfl`.**  Taking
+
+    Places := {o : F → ℤ // IsPlaceFun K F o},   ord := Subtype.val
+
+makes `ord_zero`, `ord_mul`, `ord_add`, `ord_algebraMap` and `ord_surjective` the five
+components of the subtype's own property, `ord_injective` the injectivity of `Subtype.val`,
+and `ord_complete` the identity function.  No Dedekind domain, no integral closure, and no
+classification is needed anywhere — the classification is exactly the content that
+`ord_complete` was ASKING for, and asking for it as an axiom over the tautological system
+is asking for nothing.
+
+What does NOT come for free is `ord_finite`, and that is this leaf.  It is the honest
+residue of obligation 1b: a nonzero `g ∈ F` is a nonunit at only finitely many places.
+
+Route.  Let `n = [F : K(x)] = 2`.  The places with `o x < 0` are the ones above the place
+at infinity of `K(x)`, and there are at most `n` of them (a place of `K(x)` has at most
+`[F : K(x)]` extensions); at every other place `o` is `≥ 0` on `K[x]`, so `o` restricts to
+a place of `K(x)` coming from a monic irreducible `π ∈ K[X]`, and `o g ≠ 0` forces `π` to
+divide one of the two nonzero polynomials `N(g)`, `N(g)⁻¹`-denominators produced by
+`E.gen`'s normal form `g = (a + b·y)/d` — finitely many `π`, each with at most `n`
+extensions.  Stichtenoth, *Algebraic Function Fields and Codes*, I.3 (the finiteness of the
+divisor of a function) and III.1 (at most `[F : K(x)]` places above a place of `K(x)`).
+
+Generic in the sextic and the prime: proving it closes obligation 1b at both levels. -/
+theorem finite_isPlaceFun {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (g : E.F) (hg : g ≠ 0) :
+    {v : {o : E.F → ℤ // IsPlaceFun K E.F o} | v.1 g ≠ 0}.Finite := sorry
+
+/-- **LEAF (obligation 1b), now PROVEN from `finite_isPlaceFun`.**
+
+The tautological place system: see `finite_isPlaceFun`'s docstring for why everything
+except `ord_finite` is definitional here. -/
 theorem exists_placeSystem {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
-    Nonempty (PlaceSystem K E.F) := sorry
+    Nonempty (PlaceSystem K E.F) :=
+  ⟨{ Places := {o : E.F → ℤ // IsPlaceFun K E.F o}
+     ord := fun v => v.1
+     ord_zero := fun v => v.2.map_zero
+     ord_mul := fun v => v.2.map_mul
+     ord_add := fun v => v.2.ultra
+     ord_algebraMap := fun v => v.2.map_algebraMap
+     ord_surjective := fun v => v.2.normalised
+     ord_injective := fun _ _ h => Subtype.ext h
+     ord_complete := fun o h0 hmul hadd halg hsurj => ⟨⟨o, ⟨h0, hmul, hadd, halg, hsurj⟩⟩, rfl⟩
+     ord_finite := finite_isPlaceFun E hsep h2 }⟩
 
-/-- **LEAF (obligation 1c): every rational point of the smooth model has a place.**
+/-- **`o` is the valuation of the rational point `P`** — `IsPlaceOfPt` with the place
+replaced by a raw valuation function, so that a place can be produced through
+`PlaceSystem.ord_complete` rather than exhibited inside a given system. -/
+def IsPlaceFunOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (o : E.F → ℤ)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : Prop :=
+  match P with
+  | Sum.inl q => 0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2)
+  | Sum.inr s => o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3)
 
-For an affine point `(a, b)` the local ring of the smooth model at that point is a DVR —
-this is where smoothness, i.e. separability of the sextic, is used — and its valuation has
-`ord (x − a) > 0` and `ord (y − b) > 0`.  For the two points at infinity, `u = 1/x` is a
-uniformiser and `y/x³ ∓ 1` vanishes at exactly one of them, which is the content of
-`−3 < ord (y ∓ x³)`.
+/-- **LEAF (obligation 1c, AFFINE HALF): an affine rational point carries a valuation.**
 
-Only EXISTENCE is asked: that the places so produced are pairwise distinct is
+Route, which is the same for both halves and needs no Dedekind theory: embed `F` into the
+Laurent series field `K((t))` as a `K(x)`-algebra realising the point, and pull back the
+`t`-adic order.  Concretely, at `(a, b)` with `b ≠ 0` the point is unramified over `x = a`:
+`f(a + t) = b²·(1 + …)` has a square root in `K[[t]]` by Hensel (this is where `2 ≠ 0` is
+used, and it is the ONLY place in this half), so `x ↦ a + t`, `y ↦ b·√(f(a+t)/b²)` is a
+`K`-embedding with `o(x − a) = 1 > 0` and `o(y − b) > 0`.  At `(a, 0)` the point is
+ramified: `f` is separable so `f'(a) ≠ 0`, and `x ↦ a + f'(a)⁻¹t²`, `y ↦ t·√(1 + O(t²))`
+works, with `o(x − a) = 2` and `o(y) = 1`.
+
+Only EXISTENCE is asked: that distinct points get distinct places is
 `isPlaceOfPt_injective` below, which is PROVEN. -/
+theorem exists_isPlaceFun_of_affPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := sorry
+
+/-- **LEAF (obligation 1c, INFINITE HALF): each branch at infinity carries a valuation.**
+
+In the chart `u = 1/x`, `w = y/x³` the equation becomes `w² = g(u) := u⁶f(1/u)`, a
+polynomial with constant term `1` (the sextic is MONIC — this is exactly why the two points
+at infinity are rational and why `Pt` carries a `Bool`).  Since `g(0) = 1 = 1²` and
+`2 ≠ 0`, Hensel gives `√g ∈ K[[u]]` with `√g(0) = 1`, and `u ↦ t`, `w ↦ ±√g(t)` are two
+`K`-embeddings `F ↪ K((t))`, the sign being the `Bool`.
+
+Pulling back the `t`-adic order gives `o x = o(1/u) = −1`, and
+`y − ε·x³ = u⁻³(±√g − ε)`, whose order is `> −3` exactly when the signs agree — for the
+opposite sign `±√g − ε` has constant term `∓2 ≠ 0`, so the order is exactly `−3`.  That
+dichotomy is what `isPlaceOfPt_injective` consumes; here only the matching sign is
+asserted. -/
+theorem exists_isPlaceFun_of_infPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (s : Bool) :
+    ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
+      o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3) := sorry
+
+/-- **LEAF (obligation 1c), now PROVEN from the two halves above.**
+
+`PlaceSystem.ord_complete` is what makes this a reduction rather than a restatement: the
+two halves need only produce a valuation FUNCTION with the right orders, and completeness
+of `S` turns it into a place OF `S`.  Nothing here depends on which place system `S` is —
+which is the point of `ord_complete` being an axiom of the interface. -/
 theorem exists_isPlaceOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (S : PlaceSystem K E.F)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
-    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : ∃ v : S.Places, IsPlaceOfPt E S P v := sorry
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : ∃ v : S.Places, IsPlaceOfPt E S P v := by
+  have key : ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧ IsPlaceFunOfPt E o P := by
+    cases P with
+    | inl q =>
+        obtain ⟨o, ho, h1, h2'⟩ := exists_isPlaceFun_of_affPt E hsep h2 q
+        exact ⟨o, ho, h1, h2'⟩
+    | inr s =>
+        obtain ⟨o, ho, h1, h2'⟩ := exists_isPlaceFun_of_infPt E hsep h2 s
+        exact ⟨o, ho, h1, h2'⟩
+  obtain ⟨o, ho, hoP⟩ := key
+  obtain ⟨v, hv⟩ := S.ord_complete o ho.map_zero ho.map_mul ho.ultra ho.map_algebraMap
+    ho.normalised
+  subst hv
+  exact ⟨v, by cases P <;> exact hoP⟩
 
 /-- **PROVEN: distinct rational points have distinct places.**
 
@@ -1064,6 +1363,49 @@ The two sentences of the sketch are the two leaves: `exists_degreeMap` is the de
 not principal").  The bookkeeping that joins them — that `picRel` is `princ ⊔ ℤ·[∞₊]`, that
 the degree map kills `princ` because it kills every `div g`, and that the coefficient of
 `[∞₊]` is therefore forced to `0` — is PROVEN below.
+
+## DECOMPOSED AGAIN 2026-07-28 — both of those two are now PROVEN, over four sub-leaves
+
+`exists_degreeMap` quantified existentially over `deg`, so it could not be cut at all until
+a `deg` was written down.  It is written down below — `PlaceData.degOf v = [κ(v) : K]`, the
+residue degree of the valuation ring `O_v = {z : 0 ≤ ord v z}` modulo its maximal ideal,
+both of which the interface's axioms already support (`ord_mul`, `ord_add`,
+`ord_algebraMap` are exactly the closure properties needed, and the junk convention
+`ord v 0 = 0` puts `0` in `O_v` for free while forcing the `z = 0` disjunct in `m_v`).
+With `deg` fixed, the leaf splits along the two conjuncts it asks for:
+
+* `finrank_residue_pt_eq_one` — a `K`-rational point has residue field `K`;
+* `degOf_divisor_eq_zero` — the degree formula, [Stichtenoth, Thm. 1.4.11].
+
+`sub_single_pt_notMem_princ` was stated as a NON-MEMBERSHIP precisely to avoid identifying
+`princ` with the set of divisors of functions.  That identification is now PROVEN
+(`PlaceData.mem_princ_iff`, over `divisor_mul` / `divisor_inv`: `Set.range divisor` is
+already a subgroup, so the subgroup it generates is itself), which turns the leaf into a
+statement about a single `g` and lets it split along the classical argument:
+
+* `isRationalGenerator_of_divisor_eq_sub_single` — a function whose only pole is one simple
+  pole at a degree-`1` place generates: `F = K(g)`.  This is the `[F : K(g)] = deg div_∞(g)`
+  half of Stichtenoth I.4.11 again, at the single value `deg div_∞(g) = 1`;
+* `not_isRationalGenerator` — `F` is not a rational function field.  **This is where "the
+  genus is `2`" lives, and it is the one sub-leaf that certainly cannot be proven without
+  `hsep`**: for `f = (x³ + 1)²` the curve IS rational and the statement is false.  It is
+  also the only one of the four that is not general function-field theory, so it is the one
+  to dispatch at separately.  The classical proof is the pencil argument: `F = K(t)` makes
+  `xx = A/B` with `A, B` coprime and `max (deg A) (deg B) = 2` (that maximum is
+  `[K(t) : K(xx)] = [F : K(xx)] = 2`), so `(y·B³)² = ∏_{i<6} (A − rᵢ B)` over `K̄` is a
+  product of six pairwise coprime quadratics — pairwise coprime because a common root of
+  `A − rᵢB` and `A − rⱼB` with `rᵢ ≠ rⱼ` would be a common root of `A` and `B` — each of
+  which is therefore a square of a linear form; but the pencil `⟨A, B⟩` of binary quadratics
+  has at most two singular members, and `6 > 2`.  Separability enters exactly once, as the
+  distinctness of the `rᵢ`.
+
+Each of the other three is expected NOT to need `hsep` — they are statements about an
+arbitrary `PlaceData`, and the sextic enters them only through the shape of `Pt`.  They
+carry the hypothesis anyway, because every consumer has it and because a leaf that turns
+out to need it should not have to be restated.  **A proof that does not use it should
+underscore it** (`_hsep`): that makes the separation mechanically visible, and a proof of
+one of the first three that DOES use `hsep` is a sign the cut leaked the genus into the
+wrong leaf and should be reported.
 -/
 
 /-- Multiplication by `d`, as an additive endomorphism of `ℤ`: the coefficient map of the
@@ -1085,23 +1427,267 @@ lemma degHom_single {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     degHom D deg (Finsupp.single v n) = n * deg v := by
   simp [degHom, mulRightHom]
 
-/-- **LEAF (obligation 2a): the degree map, with the degree formula.**
+namespace PlaceData
 
-`deg v = [κ(v) : K]`, the residue degree.  A `K`-rational point has residue field `K`, so
-degree `1`; and `deg (div g) = 0` for every `g`, which is the statement that a function on
-a projective curve has as many zeros as poles.  (`0 < deg v` also holds, and is deliberately
-not asked for: nothing downstream uses it, and a weaker leaf is an easier leaf.)
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
 
-Both halves are standard function-field theory — the degree formula is
-[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11] — and neither is specific
-to genus `2` or to the sextic, so proving this closes obligation 2a at both levels. -/
+/-! ### The valuation ring, the residue field and the degree of a place (PROVEN)
+
+Everything here is forced by the interface: `O_v` is a `K`-subalgebra of `F` because
+`ord_mul`, `ord_add` and `ord_algebraMap` say exactly that `{0 ≤ ord v ·}` is closed under
+the operations, and `m_v` is an ideal of it for the same reason.  The junk convention
+`ord v 0 = 0` is what makes `0 ∈ O_v` free and what forces the explicit `z = 0` disjunct in
+`m_v` — `0 < ord v 0` is FALSE, so `{0 < ord v ·}` is not an ideal. -/
+
+/-- **The valuation ring at a place** (PROVEN), `O_v = {z : F | 0 ≤ ord v z}`.
+
+A `K`-subalgebra of `F`; `0 ∈ O_v` holds by the junk convention `ord v 0 = 0` rather than
+by a side condition. -/
+def valRing (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Subalgebra K D.F where
+  carrier := {z : D.F | 0 ≤ D.ord v z}
+  mul_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ D.ord v a := ha
+    have hb' : 0 ≤ D.ord v b := hb
+    show 0 ≤ D.ord v (a * b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · simp [D.ord_zero]
+    rcases eq_or_ne b 0 with rfl | hb0
+    · simp [D.ord_zero]
+    rw [D.ord_mul v a b ha0 hb0]
+    omega
+  one_mem' := by
+    show 0 ≤ D.ord v 1
+    have h := D.ord_algebraMap v 1 one_ne_zero
+    rw [map_one] at h
+    omega
+  add_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ D.ord v a := ha
+    have hb' : 0 ≤ D.ord v b := hb
+    show 0 ≤ D.ord v (a + b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · simpa using hb'
+    rcases eq_or_ne b 0 with rfl | hb0
+    · simpa using ha'
+    rcases eq_or_ne (a + b) 0 with h | h
+    · rw [h, D.ord_zero]
+    · have := D.ord_add v a b ha0 hb0 h
+      omega
+  zero_mem' := by
+    show 0 ≤ D.ord v 0
+    rw [D.ord_zero]
+  algebraMap_mem' := by
+    intro r
+    show 0 ≤ D.ord v (algebraMap K D.F r)
+    rcases eq_or_ne r 0 with rfl | hr
+    · simp [D.ord_zero]
+    · rw [D.ord_algebraMap v r hr]
+
+/-- `z` **vanishes at** `v`: it is `0`, or it has positive order there.  The first disjunct
+is the junk convention `ord v 0 = 0` showing through, not a degenerate case. -/
+def VanishesAt (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (z : D.F) : Prop :=
+  z = 0 ∨ 0 < D.ord v z
+
+/-- Vanishing is closed under addition (PROVEN). -/
+lemma vanishesAt_add {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {v : D.Places} {a b : D.F}
+    (ha : D.VanishesAt v a) (hb : D.VanishesAt v b) : D.VanishesAt v (a + b) := by
+  rcases ha with rfl | ha
+  · simpa using hb
+  rcases hb with rfl | hb
+  · exact Or.inr (by simpa using ha)
+  have ha0 : a ≠ 0 := by rintro rfl; rw [D.ord_zero] at ha; omega
+  have hb0 : b ≠ 0 := by rintro rfl; rw [D.ord_zero] at hb; omega
+  rcases eq_or_ne (a + b) 0 with h | h
+  · exact Or.inl h
+  · have := D.ord_add v a b ha0 hb0 h
+    exact Or.inr (by omega)
+
+/-- Vanishing absorbs multiplication by an element of the valuation ring (PROVEN). -/
+lemma vanishesAt_mul_left {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {v : D.Places} {a b : D.F}
+    (ha : 0 ≤ D.ord v a) (hb : D.VanishesAt v b) : D.VanishesAt v (a * b) := by
+  rcases hb with rfl | hb
+  · exact Or.inl (mul_zero a)
+  rcases eq_or_ne a 0 with rfl | ha0
+  · exact Or.inl (zero_mul b)
+  have hb0 : b ≠ 0 := by rintro rfl; rw [D.ord_zero] at hb; omega
+  exact Or.inr (by rw [D.ord_mul v a b ha0 hb0]; omega)
+
+/-- **The maximal ideal at a place** (PROVEN), `m_v = {z ∈ O_v | z vanishes at v}`. -/
+def valMax (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Ideal (D.valRing v) where
+  carrier := {z : D.valRing v | D.VanishesAt v (z : D.F)}
+  add_mem' := fun ha hb => vanishesAt_add ha hb
+  zero_mem' := Or.inl rfl
+  smul_mem' := fun c _ hx => vanishesAt_mul_left c.2 hx
+
+/-- **The residue field at a place**, `κ(v) = O_v / m_v`, as a `K`-algebra.
+
+It is a field — `m_v` is maximal, since `ord v z = 0` makes `z` a unit of `O_v` — but
+nothing below needs that, so it is not proven here: `degOf` only wants a `K`-module. -/
+abbrev residue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Type :=
+  (D.valRing v) ⧸ (D.valMax v)
+
+/-- **The degree of a place**, `deg v = [κ(v) : K]`.
+
+This is the design commitment that makes `exists_degreeMap` decomposable at all: that
+statement quantifies existentially over `deg`, so no cut of it exists until some `deg` is
+named, and this is the only canonical choice — `deg` has to induce a homomorphism
+`Pic → ℤ` sending every rational point to `1`, and the residue degree is what does.
+
+`Module.finrank`'s junk value `0` for an infinite-dimensional quotient is harmless: the
+residue degree of a place of a function field of transcendence degree `1` is always finite,
+so the junk branch is never taken — but nothing here needs that either, because both leaves
+below are stated about `degOf` as written. -/
+noncomputable def degOf (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : ℤ :=
+  (Module.finrank K (D.residue v) : ℤ)
+
+/-! ### `princ` IS the range of `divisor` (PROVEN)
+
+`princ` is defined as the subgroup GENERATED by the divisors of functions, which needed no
+proof to be well defined.  The price was that membership in it says only "a sum of divisors
+of functions".  It is in fact already the plain range, because `divisor` is multiplicative
+where it is not junk — and that is what lets `sub_single_pt_notMem_princ` be reduced to a
+statement about a single `g`. -/
+
+/-- The divisor of a nonzero function, coefficientwise (PROVEN). -/
+lemma divisor_apply (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : g ≠ 0)
+    (v : D.Places) : D.divisor g v = D.ord v g := by
+  classical
+  simp [divisor, hg]
+
+/-- `div 0 = 0`, by the junk convention (PROVEN). -/
+@[simp] lemma divisor_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 0 = 0 := by
+  classical
+  simp [divisor]
+
+/-- `div 1 = 0` (PROVEN). -/
+@[simp] lemma divisor_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 1 = 0 := by
+  ext v
+  rw [divisor_apply D one_ne_zero v]
+  have h := D.ord_algebraMap v 1 one_ne_zero
+  rw [map_one] at h
+  simp [h]
+
+/-- `divisor` is multiplicative away from `0` (PROVEN), i.e. `ord_mul` coefficientwise. -/
+lemma divisor_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a b : D.F} (ha : a ≠ 0) (hb : b ≠ 0) :
+    D.divisor (a * b) = D.divisor a + D.divisor b := by
+  ext v
+  rw [Finsupp.add_apply, divisor_apply D (mul_ne_zero ha hb) v, divisor_apply D ha v,
+    divisor_apply D hb v, D.ord_mul v a b ha hb]
+
+/-- `div (g⁻¹) = − div g` (PROVEN). -/
+lemma divisor_inv (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a : D.F} (ha : a ≠ 0) :
+    D.divisor a⁻¹ = -D.divisor a := by
+  have h : D.divisor a + D.divisor a⁻¹ = 0 := by
+    rw [← divisor_mul D ha (inv_ne_zero ha), mul_inv_cancel₀ ha, divisor_one]
+  ext v
+  have hv := congrArg (fun t : D.Divisors => t v) h
+  simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply] at hv
+  simp only [Finsupp.neg_apply]
+  omega
+
+/-- **The range of `divisor` is already a subgroup** (PROVEN): `0 = div 1`, sums are
+`div (a·b)` and negatives are `div a⁻¹`, with the junk value `div 0 = 0` absorbing the
+degenerate cases. -/
+noncomputable def princRange (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : AddSubgroup D.Divisors where
+  carrier := Set.range D.divisor
+  add_mem' := by
+    rintro _ _ ⟨a, rfl⟩ ⟨b, rfl⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact ⟨b, by simp⟩
+    rcases eq_or_ne b 0 with rfl | hb
+    · exact ⟨a, by simp⟩
+    exact ⟨a * b, divisor_mul D ha hb⟩
+  zero_mem' := ⟨0, divisor_zero D⟩
+  neg_mem' := by
+    rintro _ ⟨a, rfl⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact ⟨0, by simp⟩
+    exact ⟨a⁻¹, divisor_inv D ha⟩
+
+/-- The subgroup generated by the divisors of functions is that set itself (PROVEN). -/
+lemma princ_eq_princRange (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.princ = D.princRange :=
+  AddSubgroup.closure_eq D.princRange
+
+/-- **A divisor is principal exactly when it IS the divisor of a function** (PROVEN).
+
+This is the identification that `sub_single_pt_notMem_princ`'s docstring deferred. -/
+lemma mem_princ_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {z : D.Divisors} :
+    z ∈ D.princ ↔ ∃ g : D.F, D.divisor g = z := by
+  rw [princ_eq_princRange]
+  exact Iff.rfl
+
+/-- **`F = K(t)`**: every element of `F` is a quotient of polynomials in `t`.
+
+The shape mirrors the interface's own `gen` axiom, which says the same thing for the pair
+`(xx, yy)`; here a single element is asked to generate, which is what "the function field is
+rational", i.e. "the curve has genus `0`", means. -/
+def IsRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (t : D.F) : Prop :=
+  ∀ z : D.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a
+
+end PlaceData
+
+/-- **LEAF (obligation 2a, first half): a rational point has residue field `K`.**
+
+`[κ(v) : K] = 1` at `v = pt P`.  For an affine point `q = (a, b)` the interface already
+supplies the two facts the classical proof starts from — `ord v (xx − a) > 0` and
+`ord v (yy − b) > 0` (`ord_pt_affine`) — from which `xx, yy ∈ O_v` and every polynomial in
+them reduces into `K`: `h(xx) − h(a) = (xx − a)·k(xx)` vanishes at `v`.  What is left is the
+step that a general `z ∈ O_v` reduces too, i.e. that `O_v` is the LOCALIZATION of
+`K[xx, yy]` at the maximal ideal of `(a, b)` and not merely a valuation ring dominating it.
+That is where smoothness of the affine model at `(a, b)` is used: `K[xx, yy]` localised
+there is a DVR, and a normalised valuation ring of `F` dominating a DVR with the same
+fraction field equals it.  The two infinite points are the same argument in the chart
+`u = 1/xx`, `w = yy/xx³`, where `ord_pt_infinite` gives `ord v u = 1` and `w ∓ 1` vanishing.
+
+Not specific to genus `2` or to the sextic beyond the shape of `Pt`.  See
+[Stichtenoth, *Algebraic Function Fields and Codes*, §I.1]. -/
+theorem finrank_residue_pt_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Module.finrank K (D.residue (D.pt P)) = 1 := sorry
+
+/-- **LEAF (obligation 2a, second half): the degree formula.**
+
+`Σ_v ord_v(g)·[κ(v) : K] = 0` — a function on a projective curve has as many zeros as poles,
+counted with residue degrees.  This is
+[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11], and it is the whole
+weight of obligation 2a.
+
+The classical route, in the order the pieces are needed:
+
+1. for `g ∈ K` the divisor is `0` (`ord_algebraMap`), so assume `g` transcendental;
+2. `[F : K(g)] = deg (div_∞ g)`, the pole divisor of `g` — Stichtenoth I.4.11 proper,
+   proven there from the weak approximation theorem plus a dimension count;
+3. applying 2 to `g` and to `g⁻¹` gives `deg (div_0 g) = deg (div_∞ g)`, since
+   `div_0 g = div_∞ g⁻¹` and `K(g) = K(g⁻¹)`;
+4. `div g = div_0 g − div_∞ g`, so its degree is `0`.
+
+(`0 < deg v` also holds, and is deliberately not asked for anywhere: nothing downstream
+uses it, and a weaker leaf is an easier leaf.) -/
+theorem degOf_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (g : D.F) :
+    degHom D D.degOf (D.divisor g) = 0 := sorry
+
+/-- **LEAF (obligation 2a), now PROVEN from `finrank_residue_pt_eq_one` and
+`degOf_divisor_eq_zero`.**
+
+The witness is `PlaceData.degOf`, the residue degree; the two conjuncts are the two
+sub-leaves verbatim, so the only content here is that a `deg` has been NAMED.  Before it
+was, the statement quantified existentially over `deg` and no decomposition of it was
+possible at all. -/
 theorem exists_degreeMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
     ∃ deg : D.Places → ℤ, (∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K, deg (D.pt P) = 1) ∧
-      (∀ g : D.F, degHom D deg (D.divisor g) = 0) := sorry
+      (∀ g : D.F, degHom D deg (D.divisor g) = 0) :=
+  ⟨D.degOf, fun P => by
+      rw [PlaceData.degOf, finrank_residue_pt_eq_one D hsep P, Nat.cast_one],
+    fun g => degOf_divisor_eq_zero D hsep g⟩
 
-/-- **LEAF (obligation 2b): the genus is at least one.**
+/-! ### Obligation 2b: the genus is at least one
 
 `(Q) − (P)` is not a principal divisor for `P ≠ Q`: a function with a single simple pole
 would be an isomorphism to `ℙ¹`, and a smooth model of a separable monic sextic has genus
@@ -1110,12 +1696,81 @@ the conclusion is false.
 
 Membership in `princ` (the subgroup GENERATED by the divisors of functions) is the same as
 being the divisor of a function, since `div` is multiplicative; stating the leaf as a
-non-membership avoids having to prove that identification here. -/
+non-membership avoided having to prove that identification here.  **It is now proven**
+(`PlaceData.mem_princ_iff`), so `sub_single_pt_notMem_princ` below is assembled from the two
+sub-leaves that follow rather than being sorried. -/
+
+/-- **LEAF: a single simple pole at a rational point forces `F = K(g)`.**
+
+If `div g = (Q) − (P)` then `g` has exactly one pole, simple, at the degree-`1` place
+`pt P`, so `div_∞ g = (P)` and `[F : K(g)] = deg (div_∞ g) = 1` by
+[Stichtenoth, Thm. 1.4.11] — the same theorem that `degOf_divisor_eq_zero` needs, used here
+at the single value `1`.  `P ≠ Q` is what makes `g` non-constant: for `P = Q` the divisor is
+`0` and `g ∈ K`.
+
+This half is pure function-field theory; the genus is entirely in
+`not_isRationalGenerator`. -/
+theorem isRationalGenerator_of_divisor_eq_sub_single
+    {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q) {g : D.F}
+    (hg : D.divisor g = Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ)) :
+    D.IsRationalGenerator g := sorry
+
+/-- **LEAF: the function field of a separable sextic is NOT rational** — "genus ≥ 1".
+
+`F ≠ K(t)` for every `t ∈ F`.  **This is the only leaf in the whole Picard layer that uses
+separability, and it is false without it**: for `f = (x³ + 1)²` the curve `y² = f(x)` is
+`y = ±(x³+1)`, a pair of rational lines, and `F` really is `K(t)`.  Any proof that does not
+use `hsep` is therefore wrong, which makes this leaf unusually easy to sanity-check.
+
+The classical argument (see the module note above `mulRightHom`): `F = K(t)` writes
+`xx = A/B` with `A, B ∈ K[T]` coprime and `max (deg A) (deg B) = [F : K(xx)] = 2`, whence
+`(yy·B³)² = ∏_{i<6} (A − rᵢB)` over `K̄`, a product of six pairwise coprime binary quadratics
+(coprime because a common root would be a common root of `A` and `B`; six distinct `rᵢ`
+because `hsep`).  A product of pairwise coprime polynomials is a square only if each factor
+is, so each `A − rᵢB` is a square of a linear form — but the pencil spanned by `A` and `B`
+contains at most two singular binary quadratics, and `6 > 2`.
+
+**CHARACTERISTIC-2 AUDIT (2026-07-28) — the pencil argument does NOT cover `char K = 2`,
+and the leaf is true there for a completely different reason.**  In characteristic `2` a
+separable sextic still exists (`f' = c₅x⁴ + c₃x² + c₁` need not vanish), `f` is still not a
+square, and over a PERFECT `K` the field `F = K(xx)(√f)` is **rational**: writing
+`f = f₀(x²) + x·f₁(x²)` gives `√f = √f₀(x) + x^{1/2}·√f₁(x)` with `√f₁ ≠ 0`, so
+`F = K(x^{1/2}) ≅ K(u)`.  So the statement would be FALSE in characteristic `2` if a
+`PlaceData` existed there.  **None does**, and that is the char-`2` proof:
+
+* `F/K(xx)` is purely INSEPARABLE of degree `2` (`yy² = f(xx) ∈ K(xx)`), and a purely
+  inseparable extension has exactly ONE place above each place of the base;
+* but `ord_pt_infinite` puts both `pt (Sum.inr true)` and `pt (Sum.inr false)` above the
+  infinite place of `K(xx)` (`ord xx = -1` for both), and `pt_injective` makes them
+  distinct.  Two places over one — contradiction.
+
+Concretely, over a perfect `K` of characteristic `2` the pole of `xx` in `F = K(u)` has
+`ord xx = ord (u²) = -2`, so `ord_pt_infinite` is already unsatisfiable on its own.
+
+The same remark applies to `finrank_residue_pt_eq_one`,
+`isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
+itself, which has carried this since it was written: none of them says `2 ≠ 0`, and none of
+them needs to.  **Do not "repair" these statements by adding a characteristic hypothesis** —
+that would push a new obligation onto every consumer for a case that is already vacuous. -/
+theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
+    ¬ D.IsRationalGenerator t := sorry
+
+/-- **Obligation 2b, now PROVEN** from `isRationalGenerator_of_divisor_eq_sub_single` and
+`not_isRationalGenerator`, over `PlaceData.mem_princ_iff`. -/
 theorem sub_single_pt_notMem_princ {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
     {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q) :
-    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := sorry
+    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := by
+  rw [PlaceData.mem_princ_iff]
+  rintro ⟨g, hg⟩
+  exact not_isRationalGenerator D hsep g
+    (isRationalGenerator_of_divisor_eq_sub_single D hsep hPQ hg)
 
 /-- **LEAF (obligation 2), now PROVEN from `exists_degreeMap` and
 `sub_single_pt_notMem_princ`.**
@@ -1379,7 +2034,11 @@ obligations for a scheme-theoretic abelian variety, assembled into
 `fg_relPoint_of_abelianScheme`.  **The leaf names below were refreshed on 2026-07-28**;
 the `b6ab74e9` reading recorded here — `exists_integralCoordinates_of_abelianScheme` and
 `finite_kummerCochains_of_abelianScheme` — is stale in both halves.  The height leaf is
-now `exists_cubeModel_of_abelianScheme`, and `finite_kummerCochains_of_abelianScheme` was
+now the pair `Fermat.exists_isAmpleSheaf_symmetric_cube`
+(`Modularity/AbelianSchemeIsogeny.lean`) and
+`Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (`X0.lean`) — a 2026-07-28 sheaf-level
+cut of what was then `exists_cubeModel_of_abelianScheme`, which is now PROVEN over them —
+and `finite_kummerCochains_of_abelianScheme` was
 DELETED: release 12 rewired `finite_quotient_psmul_of_abelianScheme` onto
 `exists_finiteIndex_divisible_of_abelianScheme`, which is itself PROVEN over Hermite's
 theorem, leaving `exists_geomPt_nsmul_eq_of_abelianScheme` and
@@ -1389,9 +2048,29 @@ that path any more.  The two open leaves below are the
 right long-term repair is a bridge
 `D.Pic ≃+ RelPoint jstr (𝟙 SpecQ)` for the Jacobian of the smooth model, after which
 `fg_pic` follows from `fg_relPoint_of_abelianScheme` and both leaves below can be deleted;
-that bridge is not available here because importing `X0.lean` into this module would drag
-its whole cone into `MazurTorsion.lean`.  Whoever is dispatched at either leaf should check
-first whether the bridge has since become cheap.
+that bridge was recorded as unavailable because importing `X0.lean` into this module would
+drag its whole cone into `MazurTorsion.lean`.
+
+**THAT OBJECTION IS STALE, checked 2026-07-28 and left here for its owner to act on.**
+`MazurTorsion.lean` is the SOLE consumer of this module (`grep -rn 'import
+Fermat.FLT.ModularCurve.HyperellipticJacobian' Fermat/` returns exactly one line,
+`MazurTorsion.lean:257`), and it **already carries `public import
+Fermat.FLT.ModularCurve.X0` at line 266**.  So the bridge adds ZERO modules to
+`MazurTorsion.lean`'s import cone; and there is no cycle, since `X0.lean` does not mention
+this module.  What the bridge would actually cost is a build-order edge
+`HyperellipticJacobian → X0`, which is a compile-time price, not a cone-growth one.  All six
+declarations named above still exist in `X0.lean` (`fg_relPoint_of_abelianScheme:26330`,
+`exists_cubeModel_of_abelianScheme:25196`, `finite_quotient_psmul_of_abelianScheme:26099`,
+`exists_finiteIndex_divisible_of_abelianScheme:26007`,
+`exists_geomPt_nsmul_eq_of_abelianScheme:25838`,
+`exists_discrBound_divisionField_of_abelianScheme:25927`), so the deletion of the two
+generic leaves below is a live option worth about `−2` on the frontier.
+
+**The bridge does NOT help the two level-specific leaves.**  `X0.lean` does not prove rank
+`0` anywhere: it *assumes* it, as the `Prop`-valued hypothesis `HasRankZeroJacobian`
+(`X0.lean:22356`), whose consumers take it as an argument.  So `X18.two_divisible_pic` and
+`X13.two_divisible_pic` are the same obligation appearing as honest leaves rather than as
+a hypothesis, and no amount of X0 machinery discharges them.
 -/
 
 /-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
@@ -1617,7 +2296,56 @@ procedure returning a provably complete `C(ℚ)`, and it involves no covering co
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1` overturns this leaf
 outright; `RankBound(J)` returning a positive lower bound, or `TorsionSubgroup(J)` of even
 order, overturns it as well; a seventh point from `Chabauty0` overturns the conclusion
-downstream. -/
+downstream.  A FIFTH independent Magma run on 2026-07-28 reproduced every line of the
+table above exactly — `genus 2`, `f` irreducible, `disc = 2²³·3⁴`, `TorsionSubgroup = ℤ/21`,
+`#TwoSelmerGroup = 1`, `RankBounds = [0, 0]`.
+
+## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
+
+This leaf has now been left atomic by successive dispatches.  Per the standing rule that an
+irreducibility verdict is only as wide as the axis its author searched, here are the axes,
+so the next reader can re-check a claim instead of redoing the survey.
+
+* **DESCENT axis (`2`-Selmer) — live, but blocked on MISSING STRUCTURE, not on difficulty.**
+  The cut this leaf wants is `J(ℚ)/2J(ℚ) ↪ Sel₂ = 0`, over a descent map
+  `δ : Pic → L*/L*²` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being irreducible),
+  PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  The cheap way to pin a map — constrain its
+  VALUES on rational points — is **provably powerless here**, and that is the sharp
+  obstruction: `#Sel₂ = 1` says the genuine `δ` is IDENTICALLY ZERO on `J(ℚ)`, so the junk
+  model `δ = 0` satisfies every constraint that naming rational points can impose (and
+  `J₁(18)(ℚ) ≅ ℤ/21` has ODD order, so this is not an accident of which points were named).
+  With `δ = 0` the residual obligation `ker δ ⊆ 2·Pic` IS this leaf's conclusion, verbatim
+  — the junk-structure trap the `Picard` section docstring warns against.  An honest
+  pinning must therefore constrain `δ` at a NON-rational closed point, which needs residue
+  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}` — precisely the degree theory `PlaceData`
+  deliberately omits (see "Why `Pic` is `Pic⁰` although no degree map appears").  So the
+  cut is available exactly when someone extends `PlaceData` with residue fields.
+  *Refuting check*: exhibit constraints on `δ` mentioning only rational points that the
+  genuine descent map satisfies and the zero map does not.
+* **REDUCTION axis — structurally empty, not merely unfinished.**  `exists_reduction` gives
+  `red : D.Pic →+ D'.Pic` with torsion-free kernel.  For finitely generated `Pic` that
+  makes `ker red ≅ ℤ^rank` and `Pic / ker red` embed in the finite `J(𝔽₅)`, so reduction
+  bounds TORSION and conveys no rank information at all.  No sharpening of `exists_reduction`
+  can help.  *Refuting check*: a reduction statement whose conclusion constrains a FREE
+  quotient of `Pic`.
+* **ELLIPTIC axis — dead, and now machine-checked at this level too.**  Magma `ModAbVar`,
+  2026-07-28: `IsSimple(JOne(18)) = true`, `Dimension = 2`, decomposition a single factor
+  `image(18A[2])` of conductor `2²·3⁴`.  So `J₁(18)` is `ℚ`-SIMPLE and not `ℚ`-isogenous to
+  a product of elliptic curves; the project's elliptic-curve Mordell–Weil machinery cannot
+  be routed to it.  (`X13.exists_jacobianPackage` records the same conclusion at level `13`
+  from the diamond `⟨5⟩`; `IsSimple(JOne(13)) = true` confirms it by a second method.)  This
+  axis was NOT recorded here before 2026-07-28.  *Refuting check*: `IsSimple(JOne(18))`
+  returning `false`, or a degree-`n` map from `C` to an elliptic curve over `ℚ`.
+* **ELLIPTIC-CHABAUTY axis** — refuted three times over; see ROUTE 1 below, which keeps the
+  refuting check for each of the three findings.
+* **ANALYTIC axis** — `L(f, 1) ≠ 0` plus Kolyvagin–Logachev gives rank `0` by a genuinely
+  independent route, but neither Gross–Zagier nor the Euler-system input exists in this
+  project, in mathlib, or in `~/cs/FLT`.  *Refuting check*: grep any of the three for an
+  Euler system or a Gross–Zagier formula.
+
+**Do not manufacture a decomposition along the descent axis without the residue fields.**
+Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ` vanishes" is
+discharged by `δ = 0` and is therefore vacuous, by the first bullet. -/
 theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
@@ -2046,7 +2774,28 @@ through the zeta numerator: `hyperellcharpoly(Mod(1,3)*f) = T⁴ + 2T³ + T² + 
 
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1`; a positive lower
 bound from `RankBound(J)`; a torsion subgroup other than `ℤ/19`;
-`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`. -/
+`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`.  A FIFTH
+independent Magma run on 2026-07-28 reproduced the table exactly — `genus 2`, `f`
+irreducible, `disc = 2²⁰·13²`, `TorsionSubgroup = ℤ/19`, `#TwoSelmerGroup = 1`,
+`RankBounds = [0, 0]`.
+
+## ATOMICITY AUDIT (2026-07-28)
+
+The axes searched, and the refuting check for each, are written out in full on
+`X18.two_divisible_pic`; every one of them applies verbatim here, the two leaves differing
+only in the sextic and the good prime.  The load-bearing item is the first: a `2`-descent
+cut needs the map `δ : Pic → L*/L*²`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and pinning
+it by its values on rational points is powerless because `#Sel₂ = 1` makes the genuine `δ`
+identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such constraint and
+reduces the cut to this leaf's own conclusion.  Pinning needs residue fields `κ(v)` and
+their norms, which `PlaceData` deliberately does not carry.
+
+The level-`13` specifics that strengthen the same verdict: `IsSimple(JOne(13)) = true`
+(Magma `ModAbVar`, 2026-07-28) confirms by a second, independent method the `ℚ`-simplicity
+already recorded below from the diamond `⟨5⟩`, so the elliptic axis is doubly closed here;
+and `#J(𝔽₃) = 19 = #J(ℚ)` makes reduction at `3` an isomorphism, which is the sharpest that
+the reduction axis can ever be — and it still yields no rank information, since the kernel
+of reduction is where all the rank would live. -/
 theorem two_divisible_pic (D : PlaceData 1 4 6 2 1 2 ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
