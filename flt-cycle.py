@@ -1112,10 +1112,44 @@ def cmd_release(args):
             print("[dry-run] would stage to home and seed the above")
             return 0
 
+        # Stage into a SIBLING, verify, then swap. The old form rsynced
+        # `--delete` straight into HOME_SEED from the merger's LIVE build dir --
+        # and the merger is a running agent that nothing quiesces. `lake`
+        # deletes an output before rebuilding it, so an rsync landing in that
+        # window copies a module's `.trace` WITHOUT its `.olean`, and `--delete`
+        # then propagates the absence: a torn snapshot DESTROYS the previous
+        # good seed instead of being rejected.
+        #
+        # That is not hypothetical. On 2026-07-28 the seed carried
+        # `Modularity/Interface.trace` plus all five `.hash` files and no
+        # `Interface.olean` -- the single most expensive module in the tree
+        # (~15k lines), so every worktree seeded from it paid a full Interface
+        # elaboration on first build. No donor copy existed anywhere on any
+        # host, because the good one had been deleted from the seed rather than
+        # misplaced.
+        #
+        # A `.trace` with no `.olean` is the exact signature of the race, and it
+        # is cheap to test for, so it is the completeness check: any module that
+        # fails it means the snapshot was taken mid-build. Keep the old seed and
+        # fail -- a stale complete seed costs one rebuild of what changed; a
+        # torn one costs a full elaboration in every worktree it reaches.
+        stage = HOME_SEED + ".staging"
         print(f"  staging {MERGER_HOST}:{MERGER_LAKE} -> {HOME_SEED}")
         res = sh(MERGER_HOST,
-                 f"mkdir -p {HOME_SEED} && "
-                 f"rsync -a --delete {MERGER_LAKE}/ {HOME_SEED}/ && "
+                 f"mkdir -p {stage} && "
+                 f"rsync -a --delete {MERGER_LAKE}/ {stage}/ && "
+                 f"torn=$(find {stage} -name '*.trace' | while read t; do "
+                 f"  [ -f \"${{t%.trace}}.olean\" ] || echo \"${{t%.trace}}\"; "
+                 f"done); "
+                 f"if [ -n \"$torn\" ]; then "
+                 f"  echo \"TORN SNAPSHOT -- trace without olean:\" >&2; "
+                 f"  echo \"$torn\" | sed 's|.*/lean/||' >&2; "
+                 f"  rm -rf {stage}; exit 1; "
+                 f"fi; "
+                 f"rm -rf {HOME_SEED}.old && "
+                 f"if [ -d {HOME_SEED} ]; then mv {HOME_SEED} {HOME_SEED}.old; fi && "
+                 f"mv {stage} {HOME_SEED} && "
+                 f"rm -rf {HOME_SEED}.old && "
                  f"du -sh {HOME_SEED}")
         if res.returncode != 0:
             # Roll back to `free`: unseeded is not `ready`, and dispatching into
