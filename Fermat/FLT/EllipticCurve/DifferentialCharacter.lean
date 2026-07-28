@@ -69,9 +69,15 @@ uniqueness needs no `φ ≠ 0` hypothesis.
   and `isDiffChar_comp`, so it is transitively sorried with nothing left to prove.
 * `isDiffChar_galConj` — `λ(φ^σ) = σ(λ φ)` for `σ ∈ Gal(ℚ̄/ℚ)`. **PROVEN.**
 
-Still open, and these three are the whole remaining mathematics of the file:
+Still open:
 
-* `exists_isDiffChar` — every rational map acts on `ω` by some scalar;
+* `exists_diffCharScalar` — the leaf that `exists_isDiffChar` was DECOMPOSED into
+  on 2026-07-28. `exists_isDiffChar` itself ("every rational map acts on `ω` by
+  some scalar") is now **PROVEN** from it, over two further new proven lemmas,
+  `diffChar_psi2_comp` and `diffChar_yWitness_ne_zero`. What survives is the
+  single identity of one-variable polynomials `(A'B − AB')·G = c·B²·C` — no
+  points, no group law, no differentials. See the block "The existence half,
+  DECOMPOSED" below.
 * `isDiffChar_add` — `λ` is additive;
 * `isDiffChar_comp` — `λ` is multiplicative on composites.
 
@@ -490,14 +496,26 @@ theorem eq_zero_of_isDiffChar_zero [IsAlgClosed F] [CharZero F] [W.IsElliptic]
 
 /-! ### The open geometry
 
-The three statements still sorried below are the remaining leaves of this cut. Each
+The statements still sorried below are the remaining leaves of this cut. Each
 is a standard fact about the invariant differential (Silverman, *AEC* III.5); none of
 them is in the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` — the pin has the
-invariant differential nowhere, and this project has only the universal
-Hamiltonian derivation `PsiSumCompanion.DK` of
-`Fermat/FLT/EllipticCurve/InvariantDerivation.lean`, which is the derivation
-`ψ₂ · d/dx` on the function field of the UNIVERSAL curve and carries no
-statement about isogenies.
+invariant differential nowhere.
+
+**CORRECTION 2026-07-28** (this paragraph previously said the project has "only" the
+universal Hamiltonian derivation `PsiSumCompanion.DK` of
+`Fermat/FLT/EllipticCurve/InvariantDerivation.lean`, which "carries no statement about
+isogenies"). `DK` is indeed only the derivation `ψ₂ · d/dx` on the function field
+`Kuniv` of the UNIVERSAL curve (`DK_tautX : DK x = 2y + a₁x + a₃`, `DK_tautY`), and it
+indeed says nothing about isogenies. But the survey stopped one import too early:
+`Fermat/FLT/EllipticCurve/WronskianStep.lean` — the only consumer of that file —
+PROVES the **differentiated addition law**, `DK_addition_step` and `DK_doubling_step`.
+Those are precisely the translation-invariance of `ω` (*AEC* III.5.1) in certificate
+form: given `DK x₁ = ψ₂(P₁)` and `DK xₙ = m·ψ₂(Pₙ)`, the chord-sum satisfies
+`DK x₃ = (m+1)·ψ₂(P₃)`. So the invariance of `ω` is NOT missing from this project; it
+is proven, in the universal function field, over abstract coordinates. What is missing
+is the transport from `Kuniv` to a concrete `F` and its point group. Anyone attacking
+the remaining leaves should read `WronskianStep.lean` before writing invariance from
+scratch.
 
 **How to attack any of them** (2026-07-28, and this is what the block above exists
 for). Build witnesses, then verify the certificate through
@@ -510,27 +528,218 @@ at the points `P` whose `x`-coordinate avoids one finite set of your choosing �
 hypotheses. Do NOT try to verify the raw nine-term `IsDiffCharCert` at every point;
 that is what made these leaves look atomic. -/
 
-/-- **LEAF: every rational map acts on the invariant differential by some
-scalar.**
+/-! ### The existence half, DECOMPOSED (2026-07-28)
+
+`exists_isDiffChar` is now an ASSEMBLY. Everything below except
+`exists_diffCharScalar` is PROVEN, and that single leaf is a statement about
+polynomials in ONE variable — no points, no group law, no differentials.
+
+The reduction runs as follows. Write `ψ₂(Q) = 2y(Q) + a₁x(Q) + a₃` for the
+denominator of `ω`. Given witnesses `A, B, C, D, G` of `IsRationalMap φ`:
+
+* `diffChar_psi2_comp` (PROVEN) — the `ω`-denominator transports through the
+  witnesses: `ψ₂(φP)·G(x P) = C(x P)·ψ₂(P)`. This is *not* an extra hypothesis;
+  it falls out of the two rational-map relations at `P` and at `−P`, because
+  `φ(−P) = −φ(P)`.
+* Substituting that into the reduced certificate of `isDiffCharCert_reduced`
+  makes `ψ₂(P)` a common factor on both sides, and the certificate at every
+  point off the (finite) kernel collapses to the single POLYNOMIAL identity
+
+      `(A'B − AB')·G = c·B²·C`   in `F[X]`.
+
+* `exists_diffCharScalar` (LEAF) asserts that identity holds for some `c`.
+* `exists_isDiffChar` (PROVEN from the leaf) feeds it back through
+  `isDiffCharCert_of_reduced` and `isDiffCharCert_of_cofinite`.
+
+`diffChar_yWitness_ne_zero` (PROVEN) supplies `C ≠ 0` for `φ ≠ 0`, which is what
+PINS the leaf: with `B ≠ 0` and `C ≠ 0` the `c` of `exists_diffCharScalar` is
+unique, so the leaf cannot be satisfied by a junk scalar. -/
+
+/-- **PROVEN: the `ω`-denominator transports through the witnesses**, i.e.
+
+  `ψ₂(φP)·G(x P) = C(x P)·ψ₂(P)`,  `ψ₂(Q) = 2y(Q) + a₁x(Q) + a₃`.
+
+This is the one place where `φ` being a HOMOMORPHISM (rather than merely a map
+given by rational functions) enters the existence argument, and it enters through
+a single instance: `φ(−P) = −φ(P)`.
+
+The proof is two lines of bookkeeping. The `y`-relation at `P` reads
+`y(φP)·G = C·y(P) + D`; at `−P` it reads, after `x(−P) = x(P)` and
+`y(−P) = −y(P) − a₁x(P) − a₃`,
+
+  `(−y(φP) − a₁'x(φP) − a₃')·G = C·(−y(P) − a₁x(P) − a₃) + D`.
+
+Subtracting cancels `D` and doubles `y` on both sides, which is exactly the
+claim. Note that both `D` and the `x`-relation drop out entirely.
+
+Useful to `isDiffChar_add` and `isDiffChar_comp` as well as here: it is the
+identity that turns a certificate about `φP` into one about `P`. -/
+theorem diffChar_psi2_comp {A B Cw D G : F[X]} {φ : W.Point →+ W'.Point}
+    {P : W.Point} (hP0 : P ≠ 0) (hφP : φ P ≠ 0)
+    (hrel : ∀ Q : W.Point, φ Q ≠ 0 →
+      veluPointX (φ Q) * B.eval (veluPointX Q) = A.eval (veluPointX Q) ∧
+      veluPointY (φ Q) * G.eval (veluPointX Q)
+        = Cw.eval (veluPointX Q) * veluPointY Q + D.eval (veluPointX Q)) :
+    (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃) * G.eval (veluPointX P)
+      = Cw.eval (veluPointX P)
+        * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) := by
+  have hmap : φ (-P) = -(φ P) := map_neg φ P
+  have hφneg : φ (-P) ≠ 0 := by rw [hmap]; exact neg_ne_zero.mpr hφP
+  obtain ⟨-, hy⟩ := hrel P hφP
+  obtain ⟨-, hy'⟩ := hrel (-P) hφneg
+  rw [hmap, velu_pointY_neg (φ P) hφP, velu_pointY_neg P hP0] at hy'
+  simp only [velu_pointX_neg] at hy'
+  linear_combination hy - hy'
+
+/-- **PROVEN: the `y`-witness of a nonzero rational map is nonzero.**
+
+If `C = 0` then `y(φP)` is a function of `x(P)` alone, so `φP` and `φ(−P) = −φP`
+have the same `y`-coordinate as well as the same `x`-coordinate — i.e. `2·φP = 0`
+— at every `P` off the zeros of `G` and off `ker φ`, a finite set of exceptions.
+Then `φ ∘ [2]` vanishes outside a finite set, hence identically
+(`eq_or_add_eq_zero_of_finite_compl`), and `[2]` is surjective over an
+algebraically closed field (`nsmul_surjective`), so `φ = 0`.
+
+Mechanically the argument runs through `diffChar_psi2_comp` with `C = 0`: it
+gives `ψ₂(φP)·G(x P) = 0`, and `ψ₂(φP) = 0` at a nonzero point is exactly
+`2`-torsion by `add_self_eq_zero_of_denom_eq_zero`.
+
+This is what makes `exists_diffCharScalar` a PINNED existential: `B ≠ 0` and
+`C ≠ 0` force the `c` there to be unique. -/
+theorem diffChar_yWitness_ne_zero [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ0 : φ ≠ 0) {A B Cw D G : F[X]}
+    (hB : B ≠ 0) (hG : G ≠ 0)
+    (hrel : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * G.eval (veluPointX P)
+        = Cw.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    Cw ≠ 0 := by
+  classical
+  intro hC0
+  set χ : W.Point →+ W'.Point := φ.comp (mulByHom W 2) with hχdef
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cw, D, G, hB, hG, hrel⟩ hφ0
+  have hbad : (insert (0 : W.Point) ((AddMonoidHom.ker φ : Set W.Point)
+      ∪ {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ {t : F | G.eval t = 0}})).Finite :=
+    (hker.union (finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot hG))).insert 0
+  have hfin : {P : W.Point | χ P ≠ 0 ∧ χ P ≠ -(0 : W'.Point)}.Finite := by
+    refine hbad.subset ?_
+    intro P hP
+    by_contra hmem
+    simp only [Set.mem_insert_iff, Set.mem_union, Set.mem_setOf_eq, not_or] at hmem
+    obtain ⟨hP0, hnk, hnG⟩ := hmem
+    have hφP : φ P ≠ 0 := fun h => hnk (by simpa using h)
+    have hGx : G.eval (veluPointX P) ≠ 0 := fun h => hnG ⟨hP0, h⟩
+    have hψ := diffChar_psi2_comp hP0 hφP hrel
+    rw [hC0] at hψ
+    simp only [Polynomial.eval_zero, zero_mul] at hψ
+    have hz : 2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃ = 0 := by
+      rcases mul_eq_zero.mp hψ with h | h
+      · exact h
+      · exact absurd h hGx
+    refine hP.1 ?_
+    show φ (2 • P) = 0
+    rw [two_nsmul, map_add]
+    exact add_self_eq_zero_of_denom_eq_zero hφP hz
+  have hχ : χ = 0 := by
+    rcases eq_or_add_eq_zero_of_finite_compl (φ := χ) (ψ := 0) hfin with h | h
+    · exact h
+    · simpa using h
+  refine hφ0 (AddMonoidHom.ext fun Q => ?_)
+  obtain ⟨P, hP⟩ := nsmul_surjective (W := W) (n := 2) two_ne_zero Q
+  have hzero : φ (2 • P) = 0 := DFunLike.congr_fun hχ P
+  simp only at hP
+  rw [← hP]
+  simpa using hzero
+
+/-- **LEAF: the Wronskian ratio of the witnesses is a CONSTANT.**
+
+This is the entire remaining content of `exists_isDiffChar`, reduced to one
+identity of polynomials in one variable. With `f = A/B = x ∘ φ`, so that
+`f' = (A'B − AB')/B²`, and with `C/G = ψ₂(φP)/ψ₂(P)` (that ratio is
+`diffChar_psi2_comp`, PROVEN), the claim reads
+
+  `f' = c · C/G`,   i.e.   `f'·ψ₂(P)/ψ₂(φP) = c`,
+
+which is Silverman *AEC* III.5's `φ*ω' = λ(φ)·ω` with denominators cleared.
+
+**WHY IT IS A LEAF.** The mathematical content is that this ratio of rational
+functions is a CONSTANT, which is the one-dimensionality of the space of
+invariant differentials — equivalently, the translation-invariance of `ω`
+(*AEC* III.5.1). Nothing weaker suffices: every step on either side of it is
+proven above, and the ratio being constant is what all of them are missing.
+
+**ROUTE, and it is closer to hand than the previous survey said.**
+`Fermat/FLT/EllipticCurve/WronskianStep.lean` already PROVES the differentiated
+addition law — `DK_addition_step`, `DK_doubling_step` — for the invariant
+derivation `DK = ψ₂ · d/dx` on the universal function field `Kuniv`. That IS the
+invariance of `ω`, certified. What is missing is the transport: `DK` lives on
+`Kuniv` over `MvPolynomial (Fin 5) ℤ`, while this file works with a concrete `F`
+and `veluPointX / veluPointY`. Whoever takes this leaf should specialise
+`WronskianStep` rather than redevelop invariance.
+
+**HYPOTHESES, all load-bearing.**
+* `hφ0 : φ ≠ 0` cannot be dropped. `IsRationalMap`'s certificate is vacuous for
+  `φ = 0`, so `A = X, B = 1, C = 0, D = 0, G = 1` is then a legal witness tuple,
+  and the conclusion becomes `1 = c·1·0`, i.e. `1 = 0`. This is the same
+  degenerate-witness trap that forces the `φ = 0 → c = 0` clause of `IsDiffChar`.
+* `hrel` is what ties the tuple to `φ`; without it `A, …, G` are arbitrary.
+* `hB`, `hG` are the nondegeneracy of the tuple, and `hG` is used to know the
+  `y`-relation is not vacuous.
+
+**PINNED.** By `diffChar_yWitness_ne_zero` the hypotheses force `C ≠ 0`, and with
+`B ≠ 0` the polynomial `B²·C` is nonzero, so at most one `c` satisfies the
+conclusion. An adversary cannot substitute a different scalar.
+
+**NOT VACUOUS — two worked instances, both checked by hand.**
+* `W : y² = x³ + 1`, `φ = [2]`: `A = X⁴ − 8X`, `B = 4(X³+1)`,
+  `C = X⁶ + 20X³ − 8`, `D = 0`, `G = 8(X³+1)²`. Then `A'B − AB' = 4C` and
+  `B² = 2G`, so `(A'B − AB')·G = 4C·G` and `c·B²·C = 2c·G·C`, giving `c = 2`
+  — i.e. `λ([2]) = 2`, as `isDiffChar_mulByHom` requires.
+* A `2`-isogeny between DISTINCT curves, `W : y² = x³ + x² + x` to
+  `W' : y² = x³ − 2x² − 3x`, via `x ↦ (x²+x+1)/x`, `y ↦ y(x²−1)/x²`:
+  `A = X²+X+1`, `B = X`, `C = X²−1`, `D = 0`, `G = X²`. Then
+  `A'B − AB' = X² − 1 = C`, so `(A'B−AB')·G = C·X²` and `c·B²·C = c·X²·C`,
+  giving `c = 1`. This instance also confirms the statement is right when
+  `W ≠ W'`, where the primed and unprimed coefficients genuinely differ.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a nonzero rational map of Weierstrass
+curves over an algebraically closed field, with witnesses satisfying `hrel`, for
+which `(A'B − AB')·G` is not a scalar multiple of `B²·C`. Equivalently a `φ`
+whose pullback of `ω'` is not a constant multiple of `ω`. (In characteristic `p`
+the constant may be `0` — Frobenius has `A = X^p`, `A' = 0`, `c = 0` — which is
+why only `eq_of_isDiffChar` carries `CharZero`, and why this leaf must NOT be
+strengthened to `c ≠ 0`.) -/
+theorem exists_diffCharScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ0 : φ ≠ 0) {A B Cw D G : F[X]}
+    (hB : B ≠ 0) (hG : G ≠ 0)
+    (hrel : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * G.eval (veluPointX P)
+        = Cw.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * G
+      = Polynomial.C c * B ^ 2 * Cw :=
+  sorry
+
+/-- **PROVEN 2026-07-28 from `exists_diffCharScalar`: every rational map acts on
+the invariant differential by some scalar.**
 
 `φ*ω'` is an invariant (translation-invariant) differential on `W`, and the space
 of invariant differentials is one-dimensional, spanned by `ω`; so `φ*ω' = c·ω`
-for a unique `c`. Equivalently, in the coordinates: the rational function
-`f'·(2y + a₁x + a₃)/(2g + a₁'f + a₃')` on `W` is regular and invariant under
-translation by every point, hence constant.
+for a unique `c` (uniqueness is `isDiffChar_unique`).
 
-**THE ARGUMENT** in the form the certificate wants. Take any witness tuple
-`A, …, E` for `IsRationalMap φ`; for `φ = 0` take `A = 0, B = 1, C = D = 0,
-E = 1` and `c = 0`, which is the certificate `0 = 0`. For `φ ≠ 0`, differentiate
-the two certificate identities of `IsRationalMap` along the Hamiltonian
-derivation `D = ψ₂ · d/dx` of `InvariantDerivation.lean`: `D` kills the curve
-polynomial, so it acts on the coordinate ring of `W`, and `Dx = ψ₂`,
-`Dy = (3x² + 2a₂x + a₄ − a₁y)`. Applying `D` to `x∘φ = A/B` and using the chain
-rule gives `D(x∘φ) = f'(x)·ψ₂(x,y)`, while `x∘φ` is the `x`-coordinate of a point
-of `W'` so `D(x∘φ) = c·ψ₂(φP)` for the scalar `c` defined by
-`c = D(x∘φ)/ψ₂(φP)`. That this last quotient is a CONSTANT — not merely a
-rational function — is the one-dimensionality of the space of invariant
-differentials, and is what makes the statement a leaf rather than a computation.
+**THE ASSEMBLY.** For `φ = 0` the answer is `c = 0` and the certificate is
+`isDiffChar_zero`. For `φ ≠ 0`, take any witness tuple `A, B, C, D, G` of
+`IsRationalMap φ` and let `c` be the scalar of `exists_diffCharScalar`. The SAME
+tuple witnesses `IsDiffChar φ c`: by `isDiffCharCert_of_cofinite` it is enough to
+verify the certificate at points off the `x`-image of `ker φ` (finite by
+`IsRationalMap.finite_ker`), and there `isDiffCharCert_of_reduced` reduces it to
+
+  `c·B(x)²·G(x)·ψ₂(φP) = (A'B − AB')(x)·G(x)·ψ₂(P)`,
+
+which is `diffChar_psi2_comp` (rewriting `G(x)·ψ₂(φP)` as `C(x)·ψ₂(P)`) followed
+by the leaf identity evaluated at `x`. Note `ψ₂(P) ≠ 0` is NOT needed — `ψ₂(P)`
+is a common factor, not a divisor.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a rational map of Weierstrass curves
 over a field, in any characteristic, whose pullback of `ω'` is not a constant
@@ -538,8 +747,26 @@ multiple of `ω`. (In characteristic `p` the constant may be `0` — the Frobeni
 — which is why only `eq_of_isDiffChar` below carries `CharZero`.) -/
 theorem exists_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} (hφ : IsRationalMap φ) :
-    ∃ c : F, IsDiffChar φ c :=
-  sorry
+    ∃ c : F, IsDiffChar φ c := by
+  classical
+  by_cases hφ0 : φ = 0
+  · exact ⟨0, hφ0 ▸ isDiffChar_zero⟩
+  obtain ⟨A, B, Cw, D, G, hB, hG, hrel⟩ := hφ
+  obtain ⟨c, hpoly⟩ := exists_diffCharScalar (W' := W') hφ0 hB hG hrel
+  refine ⟨c, fun hc => absurd hc hφ0, A, B, Cw, D, G, hB, hG, hrel, fun P _ => ?_⟩
+  refine isDiffCharCert_of_cofinite
+    (S := veluPointX '' (AddMonoidHom.ker φ : Set W.Point))
+    ((IsRationalMap.finite_ker ⟨A, B, Cw, D, G, hB, hG, hrel⟩ hφ0).image _)
+    (fun Q hQ0 hQS => ?_) P
+  have hφQ : φ Q ≠ 0 := fun hc => hQS ⟨Q, hc, rfl⟩
+  obtain ⟨hx, hy⟩ := hrel Q hφQ
+  refine isDiffCharCert_of_reduced hx hy ?_
+  have hψ := diffChar_psi2_comp hQ0 hφQ hrel
+  have hev := congrArg (Polynomial.eval (veluPointX Q)) hpoly
+  simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_pow,
+    Polynomial.eval_C] at hev
+  linear_combination (c * B.eval (veluPointX Q) ^ 2) * hψ
+    - (2 * veluPointY Q + W.a₁ * veluPointX Q + W.a₃) * hev
 
 /-- **PROVEN 2026-07-28: the scalar is unique.**
 
