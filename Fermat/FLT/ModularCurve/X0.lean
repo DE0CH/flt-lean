@@ -44800,8 +44800,8 @@ statements are interchangeable at this call site — both are
 A third route to the same fact exists and is worth knowing about if
 `Algebra.Smooth.isReduced_of_isField` ever proves awkward:
 `Fermat/FLT/Modularity/MoretBailly.lean` carries `isReduced_of_smooth_field`,
-PROVEN over the single sub-leaf `exists_isDomain_etale_of_isStandardSmooth`
-by the route "smooth ⟹ locally standard smooth ⟹ étale over a polynomial
+PROVEN outright (its former sub-leaf `exists_isDomain_etale_of_isStandardSmooth`
+was closed 2026-07-28) by the route "smooth ⟹ locally standard smooth ⟹ étale over a polynomial
 subring ⟹ reduced by a generic-fibre argument", which avoids regularity
 theory entirely, plus the ℚ-specialised scheme-level glue
 `isReduced_of_smooth_over_rat`.
