@@ -17728,9 +17728,10 @@ into the two leaves consumed below:
   `X0GenusOne.nonempty_relPoint_equiv_modelPoint` (all that survives of
   `card_relPoint_finiteField`) together with the four successors of
   `X0GenusOne.isTorsion_jacobian` — `exists_abelianSchemeStruct_of_x0Genus_eq_one`,
-  `exists_x0Model`, `finite_curve11a1`, `finite_curve17a1`,
+  `exists_x0Model`, `finite_curve17a1`,
   `finite_curve19a1` (2026-07-27, fourth correction; none is vacuous or
-  refutable).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
+  refutable — and `finite_curve11a1`, which that correction also named, is
+  PROVEN as of 2026-07-28 along the `5`-isogeny onto `11a3`).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
   `finite_relPoint_x0`, which this paragraph named at earlier corrections,
   are all now PROVEN — the last of them along the MODEL/ARITHMETIC seam,
   see the subsection note above `X0GenusOne.curve11a1`.
@@ -21628,9 +21629,11 @@ is the shape `Fermat/FLT/EllipticCurve/MordellWeil.lean` has already
 closed twice (`11a3`, `14a4`).
 
 **So the open leaves of this section are `exists_x0Model`,
-`finite_curve11a1`, `finite_curve17a1`, `finite_curve19a1`,
+`finite_curve17a1`, `finite_curve19a1`,
 `exists_abelianSchemeStruct_of_x0Genus_eq_one` and
-`nonempty_relPoint_equiv_modelPoint`.**  (`finite_jacobian` still consumes
+`nonempty_relPoint_equiv_modelPoint`.**  (`finite_curve11a1` was on that
+list until 2026-07-28; it is now PROVEN, along the `5`-isogeny onto
+`11a3` — see its docstring.)  (`finite_jacobian` still consumes
 the shared Mordell–Weil obligation `Fermat.fg_relPoint_of_abelianScheme`
 in `X0.lean`, but `isTorsion_jacobian` no longer needs it — see the
 bookkeeping note on `finite_jacobian`.)
@@ -22428,33 +22431,206 @@ theorem exists_x0Model (N : ℕ) (_hN : N ∈ levels)
     ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point, Function.Injective f :=
   sorry
 
-/-- **`11a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
-level-`11` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
-`0` for `y² + y = x³ − x² − 10x − 20` with every trace of the modular
-interpretation removed.
+/-- **`11a1(ℚ)` is finite** (PROVEN 2026-07-28, by transporting
+`WeierstrassCurve.curve11a3_rational_points` along the `5`-isogeny
+`11a1 → 11a3`) — the level-`11` row of the arithmetic half of
+`finite_relPoint_x0`, i.e. rank `0` for `y² + y = x³ − x² − 10x − 20`
+with every trace of the modular interpretation removed.
 
 TRUE, and `#11a1(ℚ) = 5`: the affine points are `(5, 5)`, `(5, −6)`,
 `(16, 60)`, `(16, −61)` (PARI/GP `ellratpoints`, and `ellrank` returns
 the interval `[0, 0]`, so the rank is proven rather than bounded).  The
-group is cyclic of order `5`.
+group is cyclic of order `5`.  Only FINITENESS is claimed here; the
+proof below does not enumerate the five points.
 
-**This is the shape this development already closes.**
-`WeierstrassCurve.curve11a3_finite` in
-`Fermat/FLT/EllipticCurve/MordellWeil.lean` is the identical statement
-for `X_1(11) = 11a3`, proven from the unconditional enumeration
-`curve11a3_rational_points`, which is itself an explicit descent in the
-cubic ring `ZS = ℤ[s]` together with the height argument
-`MazurLevel11.height_drop_or_small`.  A successor should follow that file
-rather than looking for a general Mordell–Weil theorem, which exists
-nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+**CORRECTION to the note this docstring used to carry.**  The old text
+said "`11a3` does NOT discharge this … transporting finiteness along the
+isogeny needs the isogeny itself as a map of `Affine.Point` groups, which
+does not exist here."  The second half is false, and it is the reason the
+leaf looked as expensive as `curve11a3_rational_points` itself.  **No
+group structure is needed**: finiteness only needs a map with finite
+fibres, and the `x`-coordinate half of an odd-degree isogeny is already
+one, as a rational function of `x` alone.  So the whole `MazurLevel11`
+descent apparatus (the cubic ring `ZS = ℤ[s]`, the height bound
+`MazurLevel11.height_drop_or_small`, the `smallPoints` sieve) is
+consumed once, at level `11` of `X_1`, and is NOT rebuilt here.
 
-**`11a3` does NOT discharge this.**  `11a1` and `11a3` are `5`-isogenous
-but distinct curves; transporting finiteness along the isogeny needs the
-isogeny itself as a map of `Affine.Point` groups, which does not exist
-here.  Refuting check: `grep -n 'curve11a1' Fermat/` finds this
-declaration and nothing else. -/
-theorem finite_curve11a1 : Finite curve11a1.toAffine.Point :=
-  sorry
+THE ISOGENY, and it is the one PARI/GP calls
+`ellisogeny(E, x^2 + x − 29/5)`.  `11a1` admits two rational
+`5`-isogenies; the `5`-division polynomial factors as
+`5·(x − 5)(x − 16)(x² + x − 29/5)(x⁴ + 15x³ + 120x² + 200x + 155)·`
+`(x⁴ + x³ + 11x² + 41x + 101)`, so the two kernels are `(x − 5)(x − 16)`
+— the rational `5`-torsion, whose quotient is `11a2` and therefore
+useless here — and `x² + x − 29/5`, whose quotient IS `11a3` up to the
+variable change `(u, r, s, t) = (5, −8, 0, 62)`.  Composing gives, with
+
+    H = 5x² + 5x − 29
+    A = x⁵ + 10x⁴ + 45x³ − 400x² − 845x − 775
+    B = (y − 62)x⁶ + (3y − 186)x⁵ + (−54y + 873)x⁴ + (613y + 2419)x³
+          + (1752y − 4344)x² + (8585y − 2015)x + (6451y + 15420)
+
+the map `(x, y) ↦ (A/H², B/H³)` from `11a1` to `11a3 : Y² + Y = X³ − X²`.
+The single polynomial identity behind it, verified by `ring` through
+`linear_combination` below, is
+
+    B² + B·H³ − A³ + A²·H² = (x⁶ + 3x⁵ − 54x⁴ + 613x³ + 1752x² + 8585x
+                              + 6451)² · (y² + y − x³ + x² + 10x + 20),
+
+i.e. it holds modulo the `11a1` equation.  Sanity checks: `A(5) = 0` and
+`B(5, 5) = 0`, so `(5, 5) ↦ (0, 0)`; and `A(16) = 11⁶ = H(16)²`, so
+`(16, 60) ↦` a point with `X = 1`.  Both are affine points of `11a3`, as
+`curve11a3_rational_points` requires.
+
+THE ARGUMENT.  `curve11a3_rational_points` pins `X ∈ {0, 1}` for every
+affine rational point of `11a3`, so every affine rational `x` of `11a1`
+satisfies `H(x) = 0` or `A(x) = 0` or `A(x) = H(x)²` — that is, it is a
+root of the fixed degree-`12` polynomial `H·A·(A − H²)`, which is nonzero
+(its constant term is `(−29)(−775)(−1616) = −36319600`).  Finitely many
+`x`, at most two `y` over each (the affine equation is quadratic in `y`),
+hence a finite affine locus; `Affine.nonsingularPointEquiv` then adds the
+point at infinity, exactly as in `WeierstrassCurve.curve11a3_finite` and
+in `finite_curve32a1` below.
+
+Note the fibre bound is never needed quantitatively: the two quartic
+factors `x⁴ + 15x³ + 120x² + 200x + 155` (dividing `A`) and
+`x⁴ + x³ + 11x² + 41x + 101` (dividing `A − H²`) are the `x`-coordinates
+of the irrational `5`-torsion and have no rational roots, but proving
+that would only sharpen the count from "finite" to "five", which the
+statement does not ask for.  Likewise `H` has no rational root
+(`(10x + 5)² = 605 = 5·11²` would make `√5` rational), and the proof
+below simply keeps `H = 0` as one more factor rather than excluding it. -/
+theorem finite_curve11a1 : Finite curve11a1.toAffine.Point := by
+  classical
+  -- Every affine rational point has `x` a root of the fixed degree-`12` polynomial
+  -- `H · A · (A − H²)`, because its image under the `5`-isogeny onto `11a3` has
+  -- `X`-coordinate `A/H² ∈ {0, 1}`.
+  have hxroot : ∀ x y : ℚ, curve11a1.toAffine.Nonsingular x y →
+      (5 * x ^ 2 + 5 * x - 29) *
+        ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0 := by
+    intro x y hxy
+    have he : y ^ 2 + y = x ^ 3 - x ^ 2 - 10 * x - 20 := by
+      have h := hxy.left
+      rw [WeierstrassCurve.Affine.equation_iff] at h
+      simp only [curve11a1, WeierstrassCurve.toAffine] at h
+      linear_combination h
+    by_cases hH : (5 * x ^ 2 + 5 * x - 29 : ℚ) = 0
+    · rw [hH]; ring
+    · -- `B² + B·H³ = A³ − A²·H²` modulo the curve equation: this IS the isogeny.
+      have key : ((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) ^ 2 +
+          ((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) ^ 3 -
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) ^ 2 *
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+        linear_combination (x ^ 6 + 3 * x ^ 5 - 54 * x ^ 4 + 613 * x ^ 3 + 1752 * x ^ 2 +
+          8585 * x + 6451) ^ 2 * he
+      obtain ⟨X, hX⟩ : ∃ X : ℚ, X * (5 * x ^ 2 + 5 * x - 29) ^ 2 =
+          x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 :=
+        ⟨(x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) /
+          (5 * x ^ 2 + 5 * x - 29) ^ 2, div_mul_cancel₀ _ (pow_ne_zero _ hH)⟩
+      obtain ⟨Y, hY⟩ : ∃ Y : ℚ, Y * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420) :=
+        ⟨((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) / (5 * x ^ 2 + 5 * x - 29) ^ 3,
+          div_mul_cancel₀ _ (pow_ne_zero _ hH)⟩
+      have key' : (Y * (5 * x ^ 2 + 5 * x - 29) ^ 3) ^ 2 +
+          (Y * (5 * x ^ 2 + 5 * x - 29) ^ 3) * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (X * (5 * x ^ 2 + 5 * x - 29) ^ 2) ^ 3 -
+          (X * (5 * x ^ 2 + 5 * x - 29) ^ 2) ^ 2 * (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+        rw [hX, hY]; exact key
+      have hXY : Y ^ 2 + Y = X ^ 3 - X ^ 2 := by
+        refine mul_left_cancel₀ (pow_ne_zero 6 hH) ?_
+        linear_combination key'
+      have heq : WeierstrassCurve.curve11a3.toAffine.Equation X Y := by
+        rw [WeierstrassCurve.Affine.equation_iff]
+        simp only [WeierstrassCurve.curve11a3, WeierstrassCurve.toAffine]
+        linear_combination hXY
+      have hns : WeierstrassCurve.curve11a3.toAffine.Nonsingular X Y :=
+        _root_.WeierstrassCurve.Affine.equation_iff_nonsingular.mp heq
+      rcases WeierstrassCurve.curve11a3_rational_points X Y hns with h | h | h | h <;>
+        simp only [Prod.mk.injEq] at h
+      · have hA0 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) = 0 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) * hA0
+      · have hA0 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) = 0 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) * hA0
+      · have hA1 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) =
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775)) * hA1
+      · have hA1 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) =
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775)) * hA1
+  -- `H · A · (A − H²)` is a nonzero polynomial: its value at `0` is `-36319600`.
+  have hPne : ((5 * Polynomial.X ^ 2 + 5 * Polynomial.X - 29) *
+      ((Polynomial.X ^ 5 + 10 * Polynomial.X ^ 4 + 45 * Polynomial.X ^ 3
+          - 400 * Polynomial.X ^ 2 - 845 * Polynomial.X - 775) *
+        (Polynomial.X ^ 5 + 10 * Polynomial.X ^ 4 + 45 * Polynomial.X ^ 3
+          - 400 * Polynomial.X ^ 2 - 845 * Polynomial.X - 775
+          - (5 * Polynomial.X ^ 2 + 5 * Polynomial.X - 29) ^ 2)) : Polynomial ℚ) ≠ 0 := by
+    intro hzero
+    have h0 := congrArg (Polynomial.eval (0 : ℚ)) hzero
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_ofNat, Polynomial.eval_zero] at h0
+    norm_num at h0
+  have hxfin : {x : ℚ | (5 * x ^ 2 + 5 * x - 29) *
+      ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+        (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+          - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0}.Finite := by
+    refine (Polynomial.finite_setOf_isRoot hPne).subset ?_
+    intro x hx
+    simp only [Set.mem_setOf_eq] at hx
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_mul, Polynomial.eval_add,
+      Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_ofNat]
+    linear_combination hx
+  -- Over each `x`, the affine equation is a monic quadratic in `y`, so at most two points.
+  have hyfin : ∀ c : ℚ, {y : ℚ | y ^ 2 + y - c = 0}.Finite := by
+    intro c
+    have hq : (Polynomial.X ^ 2 + Polynomial.X - Polynomial.C c : Polynomial ℚ) ≠ 0 := by
+      intro hzero
+      have h2 := congrArg (fun p : Polynomial ℚ => p.coeff 2) hzero
+      simp [Polynomial.coeff_X] at h2
+    refine (Polynomial.finite_setOf_isRoot hq).subset ?_
+    intro y hy
+    simp only [Set.mem_setOf_eq] at hy
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
+    linear_combination hy
+  have hsub : {xy : ℚ × ℚ | curve11a1.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ⋃ x ∈ {x : ℚ | (5 * x ^ 2 + 5 * x - 29) *
+          ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+            (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+              - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0},
+        ({x} : Set ℚ) ×ˢ {y : ℚ | y ^ 2 + y - (x ^ 3 - x ^ 2 - 10 * x - 20) = 0} := by
+    rintro ⟨x, y⟩ hxy
+    refine Set.mem_biUnion (hxroot x y hxy) ⟨rfl, ?_⟩
+    have h := hxy.left
+    rw [WeierstrassCurve.Affine.equation_iff] at h
+    simp only [curve11a1, WeierstrassCurve.toAffine] at h
+    simp only [Set.mem_setOf_eq]
+    linear_combination h
+  have hfin : {xy : ℚ × ℚ | curve11a1.toAffine.Nonsingular xy.1 xy.2}.Finite :=
+    Set.Finite.subset (hxfin.biUnion fun x _ => (Set.finite_singleton x).prod (hyfin _)) hsub
+  haveI : Finite {xy : ℚ × ℚ // curve11a1.toAffine.Nonsingular xy.fst xy.snd} := hfin.to_subtype
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve11a1.toAffine.Nonsingular xy.fst xy.snd}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve11a1.toAffine.nonsingularPointEquiv.symm
 
 /-- **`17a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
 level-`17` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
@@ -22604,15 +22780,21 @@ refuting check:
   `hasRankZeroJacobian_x0ThirtyTwo`.
 * *the isogeny axis* — `11a1` is `5`-isogenous to `11a3 = X_1(11)`, whose
   rational points ARE determined in this tree
-  (`WeierstrassCurve.curve11a3_points`), and torsion transports along an
-  isogeny (`φ̂ ∘ φ = [deg φ]`, so a torsion source forces a torsion
-  target).  Still blocked, but the obstruction has MOVED and shrunk: it
-  used to be the missing `Scheme` ↔ `WeierstrassCurve` bridge, and after
-  this cut both curves are `WeierstrassCurve ℚ`s, so what is missing is
-  only the `5`-isogeny `11a3 → 11a1` as a map of `Affine.Point` groups.
-  Refuting check for its absence: `grep -n 'curve11a1'
-  Fermat/FLT/EllipticCurve/` returns nothing.  A successor at
-  `finite_curve11a1` should weigh that against a direct descent.
+  (`WeierstrassCurve.curve11a3_rational_points`).  **NOT blocked, and this
+  axis CLOSED `finite_curve11a1` on 2026-07-28**; the note that used to
+  stand here — "what is missing is only the `5`-isogeny as a map of
+  `Affine.Point` groups" — was wrong, and expensively so.  Finiteness needs
+  no group structure at all, only a map with finite fibres, and the
+  `x`-coordinate half of an odd-degree isogeny is one already, as a
+  rational function of `x` alone: `x ↦ A(x)/H(x)²` with
+  `H = 5x² + 5x − 29` the kernel polynomial of the SECOND rational
+  `5`-isogeny out of `11a1` (the first, with kernel `(x − 5)(x − 16)`, is
+  the useless one — its quotient is `11a2`, whose points are unknown
+  here).  See `finite_curve11a1` for the identity and the constants.
+  **`finite_curve17a1` and `finite_curve19a1` do NOT inherit this**: their
+  curves have no rational isogeny onto a curve whose points this tree
+  knows, so the direct-descent template of `MordellWeil.lean` is still the
+  route there.
 * *the descent axis* — Selmer groups of an abelian scheme over `ℚ`, hence
   Galois cohomology with local conditions.  `grep -rn "Selmer" Fermat/`
   returns only Galois-representation modules and `MordellWeil.lean`'s
