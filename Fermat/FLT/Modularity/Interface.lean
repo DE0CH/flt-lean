@@ -47218,9 +47218,348 @@ theorem one_le_totalDegree_of_irreducible_map
       (IsUnit.map (MvPolynomial.C (σ := Fin 2) (R := AlgebraicClosure K))
         (isUnit_iff_ne_zero.mpr hc))
 
-/-- **STEPANOV'S AUXILIARY PAIR OVER AN ARBITRARY FINITE FIELD** (sorry node,
-SEVENTEENTH decomposition 2026-07-27 — the ONLY open leaf of
-`exists_const_natCard_zeroLocus_sub_le` below).
+/-! ### Stepanov's auxiliary pair, NINETEENTH decomposition (2026-07-28)
+
+`exists_stepanovAuxiliaryPair` below is now **PROVEN** over four sub-leaves, cut
+along Schmidt III itself and stated over an ARBITRARY finite field `K`. They are
+the field-general counterparts of the `ZMod p` chain that
+`Fermat/FLT/Modularity/MoretBailly.lean` already carries PROVEN:
+
+| this file (arbitrary `𝔽_q`)                   | `MoretBailly.lean` (`𝔽_p`)          | Schmidt III |
+|-----------------------------------------------|--------------------------------------|-------------|
+| `exists_stepanovNormalisationField`            | `exists_stepanovNormalisation`       | §1, (4.1)–(4.2) |
+| `exists_stepanovGoodLocusField`                | `exists_stepanovDiscriminant` + (4.5)| (4.1), (4.3), (4.5) |
+| `exists_stepanovNormPolynomialRationalField`   | — (`λ = 1` is new)                   | Lemmas 4A + 5A, `λ = 1` |
+| `exists_stepanovNormPolynomialIrrationalField` | `exists_stepanovNormPolynomial`      | Lemmas 4A + 5A, `λ = 2` |
+
+**The two gaps recorded on the parent are now localised.** The prime-power gap
+(§§7–9) lives ENTIRELY in the last two leaves — the first two are proven in the
+prime case by arguments that are already char-free apart from one step each,
+identified in their docstrings. The missing `λ = 1` auxiliary function is a
+single named leaf, `exists_stepanovNormPolynomialRationalField`, which is
+Schmidt's EASIER case (his Case 1: `x, y ∈ 𝔽_q`, so no norm-form manipulation).
+
+**Why the working degree does not drop, which is what lets every bound below be
+stated in `d = G.totalDegree` rather than in a smaller reduced degree.** Over a
+prime field `MoretBailly.lean` argues that Schmidt's "replace `f` by `g` when
+`f(X,Y) = g(X, Y^p)`" step never fires, because `p ∣ deg_Y f ≤ d < p`. **That
+argument is FALSE over `𝔽_q` with `q = p^f` and `p ≤ d`** — `X + Y^p` is
+absolutely irreducible and inseparable in `Y` — so it must be replaced, and the
+replacement is what fixes the shape of `exists_stepanovNormalisationField`:
+
+* if `G_X = G_Y = 0` then `G ∈ K[X^p, Y^p]`, so over the PERFECT field `K̄`
+  `G = h^p` with `deg h = d/p ≥ 1`, contradicting absolute irreducibility;
+* hence `G_X ≠ 0` or `G_Y ≠ 0`, and SWAPPING `X` and `Y` — a bijection of `K²`
+  that preserves total degree and absolute irreducibility — arranges `G_Y ≠ 0`;
+* the shear `G(X + cY, Y)` then preserves `G_Y ≠ 0` for all but at most ONE `c`
+  (if `G_X ≠ 0`, then `c·G_X + G_Y = 0` pins `c`), and gives `deg_Y = d` with
+  constant leading coefficient for all but at most `d` values of `c`.
+
+So `d + 1` values of `c` are excluded out of `q > 250 d⁵`, and the normalised `F`
+may be taken monic of `Y`-degree EXACTLY `d` and separable in `Y`. That is why
+`exists_stepanovNormalisationField` asserts `F.natDegree = G.totalDegree` and
+carries `Polynomial.derivative F ≠ 0` as an extra conclusion, where the
+prime-field version derives the latter downstream from `d < p` through
+`stepanov_derivative_ne_zero_of_monic` (a route that is unavailable here).
+
+LAYERING. Nothing in this block mentions a modular form, a level, a Hecke
+operator or a Galois representation; it is polynomials over a finite field, and
+it depends on `Modularity/MoretBailly.lean` only through
+`sum_le_natDegree_of_hasseDeriv_vanishing`. It is placed here rather than there
+solely to keep the edit local to this file; if
+`exists_const_natCard_zeroLocus_sub_le` is ever hoisted to `MoretBailly.lean`
+(see the note on that leaf), this whole block should travel with it, next to its
+`ZMod p` siblings. -/
+
+/-- **RATIONAL ROOTS ARE AT MOST THE DEGREE, IN `Nat.card` FORM** (PROVEN).
+
+`stepanov_card_rationalRoots_le` of `Modularity/MoretBailly.lean` says the same
+thing with a `Finset.filter` and `[Fintype F] [DecidableEq F]`. The fibre counts
+in this block are `Nat.card` of a subtype instead, so that no decidability
+instance appears in any STATEMENT — which is what keeps the sub-leaves below
+free of `Fintype`/`DecidableEq` hypotheses that their `ZMod p` siblings carry. -/
+theorem stepanov_natCard_rationalRoots_le {F : Type*} [Field F]
+    (p : Polynomial F) (hp : p ≠ 0) :
+    Nat.card {y : F // p.eval y = 0} ≤ p.natDegree := by
+  classical
+  have hset : {y : F | p.eval y = 0} ⊆ ((p.roots.toFinset : Finset F) : Set F) := by
+    intro y hy
+    simpa using Polynomial.mem_roots'.mpr ⟨hp, hy⟩
+  calc Nat.card {y : F // p.eval y = 0} = {y : F | p.eval y = 0}.ncard :=
+        Nat.card_coe_set_eq _
+    _ ≤ ((p.roots.toFinset : Finset F) : Set F).ncard :=
+        Set.ncard_le_ncard hset (Set.toFinite _)
+    _ = p.roots.toFinset.card := Set.ncard_coe_finset _
+    _ ≤ Multiset.card p.roots := Multiset.toFinset_card_le _
+    _ ≤ p.natDegree := Polynomial.card_roots' p
+
+/-- **SCHMIDT III §1: THE NORMALISATION, OVER AN ARBITRARY FINITE FIELD** (sorry
+leaf, NINETEENTH decomposition 2026-07-28).
+
+A linear change of coordinates puts the plane curve `G` into the normal form
+`F = Y^d + g₁(X) Y^{d−1} + ⋯ + g_d(X)` with `deg gᵢ ≤ i` — Schmidt's (4.1) and
+(4.2) — separable in `Y`, still absolutely irreducible, and with the SAME number
+of `K`-rational points.
+
+DICTIONARY. `d` is `G.totalDegree`, `q` is `Nat.card K`, `F` is Schmidt's
+normalised `f`, and `Nat.card {y // (F.map (evalRingHom x)).eval y = 0}` is
+`|𝔐₁(x)|`, the number of `K`-rational points of the fibre over `x`.
+
+* `F.Monic`, `F.natDegree = d` are (4.1).
+* `∀ i, (F.coeff i).natDegree ≤ d - i` is (4.2), `deg gᵢ ≤ i` (indexed from the
+  top, so the coefficient of `Y^{d−i}` has `X`-degree at most `i`).
+* `Polynomial.derivative F ≠ 0` is separability of `F` in `Y`, the OUTPUT of
+  Schmidt's first reduction step. See the section note above: over a prime field
+  this is free from `d < p`, and over `𝔽_{p^f}` it is not — it has to be
+  arranged here, by swapping `X` and `Y` if necessary.
+* The last two clauses say the shear is a BIJECTION of `K²`: summed over all of
+  `K`, the fibre counts are exactly the affine point count `N`. They are stated
+  as two inequalities over an arbitrary `S : Finset K` rather than as one
+  equality over `Finset.univ` so that the statement needs no `Fintype K`
+  instance; together they are equivalent to `N = ∑_{x ∈ K} |𝔐₁(x)|`, because the
+  fibres of the monic degree-`d` polynomial `F` have at most `d` points.
+
+PROOF SKETCH (Schmidt III §1, pp. 92–96, with the char-`p` step rewritten — the
+section note above gives the details). Absolute irreducibility forbids
+`G_X = G_Y = 0`; swap `X, Y` so that `G_Y ≠ 0`; then choose the shear parameter
+`c` avoiding the `≤ d` values killing the top form and the `≤ 1` value killing
+`c·G_X + G_Y`, which is possible since `q > 250 d⁵ > d + 1`; divide by the
+resulting constant leading coefficient.
+
+WHAT TO REUSE. `MoretBailly.lean`'s `exists_stepanovNormalisation` is the same
+statement over `ZMod p` and is PROVEN; the whole shear infrastructure it rests on
+(`section StepanovShear`: `stepanovNest`, `stepanovNest_natDegree_coeff_le`,
+`stepanovGenericLine`, `stepanov_totalDegree_aeval_le`,
+`Polynomial.exists_eval_ne_zero_of_natDegree_lt_card`) is stated over a general
+`CommRing`/`Field` and should be reused verbatim. The two NEW things here are the
+`G_X = G_Y = 0 ⟹ G = h^p` argument and the two-sided count link; the ZMod-`p`
+version delivers only the one-sided `∀ S, ∑ ≤ N`.
+
+FAITHFULNESS. TRUE. Both link clauses hold with equality at `S = univ`, and the
+upper clause is weakest exactly where it must be (the missing fibres number at
+most `d` each). Not vacuous: without `F.natDegree = d` one could take `F = 1`,
+and without the lower link `F` need have nothing to do with `G`.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovNormalisationField {K : Type*} [Field K] [Finite K]
+    (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G))
+    (hd : 1 ≤ G.totalDegree)
+    (hcard : 250 * G.totalDegree ^ 5 < Nat.card K) :
+    ∃ F : Polynomial (Polynomial K),
+      F.Monic ∧
+      F.natDegree = G.totalDegree ∧
+      (∀ i, (F.coeff i).natDegree ≤ G.totalDegree - i) ∧
+      Polynomial.derivative F ≠ 0 ∧
+      Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))) ∧
+      (∀ S : Finset K,
+        (∑ x ∈ S, Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+          ≤ Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}) ∧
+      (∀ S : Finset K,
+        Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
+          ≤ (∑ x ∈ S, Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+            + (Nat.card K - S.card) * G.totalDegree) :=
+  sorry
+
+/-- **SCHMIDT III (4.1), (4.3), (4.5): THE GOOD LOCUS `𝔄`, OVER AN ARBITRARY
+FINITE FIELD** (sorry leaf, NINETEENTH decomposition 2026-07-28).
+
+The set `𝔄` of `x ∈ K` over which the fibre `F(x, Y)` has `d` DISTINCT roots
+misses at most `d(d−1)` points of `K`.
+
+DICTIONARY. `A` is Schmidt's `𝔄`; `Nat.card K ≤ A.card + d(d−1)` is his (4.5),
+`q − d(d−1) ≤ |𝔄|`; the second clause is the defining property of `𝔄`.
+
+PROOF SKETCH. Take `Δ := Res_Y(F, ∂F/∂Y)`, the discriminant of the normalised
+curve — `Polynomial.resultant F (Polynomial.derivative F) d n` for a suitable
+Sylvester size `n` — and `A := {x | Δ(x) ≠ 0}`. Then
+
+* `Δ ≠ 0` because `F` is monic and irreducible over `K̄(X)` (Gauss,
+  `Monic.irreducible_iff_irreducible_map_fraction_map`) with nonzero derivative,
+  hence separable there (`Polynomial.separable_iff_derivative_ne_zero`), hence
+  coprime to its derivative (`Polynomial.isUnit_resultant_iff_isCoprime`);
+* `deg Δ ≤ d(d−1)` is the weighted Sylvester determinant bound, which is
+  `MoretBailly.lean`'s `stepanov_natDegree_resultant_le` and is char-free;
+* `q ≤ |A| + deg Δ` is `MoretBailly.lean`'s `stepanov_card_nonvanishing_ge`,
+  already stated for an arbitrary finite field;
+* at `x` with `Δ(x) ≠ 0` the specialised resultant is a nonzero element of `K`,
+  so `F(x, Y)` is coprime to its derivative, i.e. separable, and it is monic of
+  degree `d` because `F` is.
+
+THE ONE PLACE THE PRIME FIELD IS USED, and the whole content of this leaf.
+`MoretBailly.lean`'s `exists_stepanovDiscriminant` is this statement over
+`ZMod p` and is PROVEN, but its proof twice invokes
+`stepanov_natDegree_derivative_of_monic` to conclude
+`(∂F/∂Y).natDegree = d − 1`, which needs `(d : K) ≠ 0` — TRUE over `𝔽_p` because
+`d < p`, FALSE over `𝔽_{p^f}` whenever `p ∣ d`. So the Sylvester size `n = d − 1`
+is an OVER-estimate in general and the resultant has to be taken with the actual
+`(∂F/∂Y).natDegree`, the mismatch being absorbed by
+`Polynomial.resultant_add_right_deg` (which applies because `F.coeff d = 1`) —
+the same device `exists_stepanovNormPolynomial` already uses for `c`. Nothing
+else in the prime-field proof is char-sensitive.
+
+Note there is NO cardinality hypothesis: the argument is uniform in `q`, and
+imposing `250 d⁵ < q` here would only make the leaf harder to reuse.
+
+FAITHFULNESS. TRUE, and this is the shape §6 consumes. Not vacuous: `A = ∅`
+would violate the first clause as soon as `q > d(d−1)`, which the parent's
+`250 d⁵ < q` guarantees.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovGoodLocusField {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hsep : Polynomial.derivative F ≠ 0)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K))))) :
+    ∃ A : Finset K,
+      Nat.card K ≤ A.card + d * (d - 1) ∧
+      (∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
+        (F.map (Polynomial.evalRingHom x)).natDegree = d) :=
+  sorry
+
+/-- **SCHMIDT III LEMMAS 4A + 5A AT `λ = 1`, OVER AN ARBITRARY FINITE FIELD**
+(sorry leaf, NINETEENTH decomposition 2026-07-28). **Schmidt's EASIER case, and
+the half that the whole `MoretBailly.lean` chain does not build at all.**
+
+There is a nonzero `r₁ ∈ K[X]` of degree at most `ε₁ q M + q d(d−1)` with
+`ε₁ = 1` which vanishes at each `x ∈ 𝔄` to order at least `M·|𝔐₁(x)|`, where
+`𝔐₁(x)` is the set of `K`-RATIONAL points of the fibre over `x`.
+
+DICTIONARY. `M` is Schmidt's Stepanov modulus and `hMd`, `hMsq`, `hMq` are his
+standing conditions on it verbatim (`d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ q`,
+strengthened here to `2d(M+8)² ≤ q`). The vanishing clause is Lemma 5A(i),
+`D_ν r₁(x) = 0` for `0 ≤ ν < M|𝔐₁(x)|`, with `D_ν = Polynomial.hasseDeriv ν`;
+the degree clause is Lemma 5A(ii) at `ε₁ = 1`.
+
+WHY THIS IS THE EASIER CASE, and why it is nevertheless missing. Schmidt's
+Case 1 is the one where both coordinates are rational, so `x^q = x` and `y^q = y`
+and the auxiliary function may be written directly in `X^q` and `Y^q` without any
+norm-form manipulation; the `λ = 2` function has to be pushed through the
+extension `K(X, η)/K(X)`. But `MoretBailly.lean`'s chain was built for a
+NONEMPTINESS statement (`exists_count_of_absolutelyIrreducible_plane`, `q ≤ 2N`),
+which needs only the UPPER bound on `∑ |𝔐₂(x)|`; the `λ = 1` function is what
+bounds `∑ |𝔐₁(x)|` above, i.e. what supplies the UPPER half `N ≤ q + …` of the
+Weil bound. So there is no `ZMod p` sibling to generalise — this one is written
+from Schmidt directly.
+
+PROOF SKETCH (Schmidt III §§4–5 at `λ = 1`, with §§7–9 for `q = p^f`). Lemma 4A
+is a DIMENSION COUNT: write `a(X,Y) = ∑_{j+k ≤ K} b_{jk}(X,Y) X^{qj} Y^{qk}` with
+`b_{jk} = ∑_{i<d} a_{ijk}(X) Y^i` and `K = M/d + d − 2` (`ε₁ = 1`), all
+`a_{ijk}` undetermined. `X^q` and `Y^q` have zero derivative — `p ∣ q`, so this
+is as true over `𝔽_{p^f}` as over `𝔽_p` — so `D^ν a = ∑ b_{jk}^{(ν)} X^{qj}Y^{qk}`,
+and imposing `D^ν a = 0` on `𝔄 × 𝔐₁` for `0 ≤ ν < M`, after reduction modulo `F`
+and modulo `Y^q = Y`, is a homogeneous linear system with strictly fewer
+equations than unknowns exactly when `hMd`, `hMsq`, `hMq` hold. Lemma 5A then
+takes `r₁ := Res_Y(F, a)`, which is the norm `∏_j a(X, η_j)` by
+`Polynomial.resultant_eq_prod_eval` since `F` is monic.
+
+WHAT TO REUSE from `MoretBailly.lean`, all PROVEN and all char-free:
+`stepanov_natDegree_norm_le` and `stepanov_natDegree_resultant_le` (the degree
+clause; note the `ε` enters only as the total-degree bound on `a`),
+`stepanov_pow_sub_dvd_resultant` and `schmidt_leibniz_core` (Lemma 5A(i)'s
+Leibniz expansion (5.1)), `pow_X_sub_C_dvd_iff_hasseDeriv` (the Taylor
+translation between "zero of multiplicity `k`" and "the first `k`
+hyperderivatives vanish" — this is what makes Schmidt's `dM < q` restriction, and
+therefore his Theorem I 1G, unnecessary in this formalisation), and
+`stepanovAnsatz` with `stepanovAnsatz_coeff_natDegree_add_le`. The genuinely new
+work is the `λ = 1` incidence relation (`Y^q = Y` in place of the `𝔐₂`
+characterisation `e₂(x, y, y^q) = 0`) and the corresponding dimension count.
+
+FAITHFULNESS. TRUE — a numbered statement of Schmidt III, with the hypotheses on
+`M` strengthened rather than weakened. NOT vacuous: dropping `r ≠ 0` makes it
+satisfiable by `r := 0` and dropping the degree bound by
+`r := (X^q − X)^{Md}`, so the conjunction is exactly the tension Stepanov's
+method resolves.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovNormPolynomialRationalField {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (hcard : 250 * d ^ 5 < Nat.card K)
+    (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hsep : Polynomial.derivative F ≠ 0)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))))
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * d * (M + 8) ^ 2 ≤ Nat.card K)
+    (A : Finset K)
+    (hAsep : ∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
+      (F.map (Polynomial.evalRingHom x)).natDegree = d) :
+    ∃ r : Polynomial K, r ≠ 0 ∧
+      r.natDegree ≤ Nat.card K * M + Nat.card K * (d * (d - 1)) ∧
+      (∀ x ∈ A, ∀ j < M * Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0},
+        (Polynomial.hasseDeriv j r).eval x = 0) :=
+  sorry
+
+/-- **SCHMIDT III LEMMAS 4A + 5A AT `λ = 2`, OVER AN ARBITRARY FINITE FIELD**
+(sorry leaf, NINETEENTH decomposition 2026-07-28). **This is the field-general
+counterpart of `exists_stepanovNormPolynomial`, which is PROVEN over `ZMod p` in
+`Modularity/MoretBailly.lean`; the prime-power gap is the whole content.**
+
+There is a nonzero `r₂ ∈ K[X]` of degree at most `ε₂ q M + q d(d−1)` with
+`ε₂ = d − 1` which vanishes at each `x ∈ 𝔄` to order at least `M·|𝔐₂(x)|`, where
+`𝔐₂(x) = 𝔐(x) ∖ 𝔐₁(x)` is the set of IRRATIONAL points of the fibre — written
+here as `d − |𝔐₁(x)|`, which is correct on `𝔄` precisely because `hAsep` gives
+`F(x, Y)` degree `d` with `d` distinct roots there.
+
+WHAT IS ALREADY PROVEN AND MUST BE REUSED, all in `Modularity/MoretBailly.lean`:
+`exists_stepanovNormPolynomial` is this statement over `ZMod p`, itself PROVEN
+over `exists_stepanovAuxiliaryFunction` (Lemma 4A's dimension count, in turn
+proven over `exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`) and `stepanov_pow_sub_dvd_resultant`
+(Lemma 5A(i)). **Read that chain before writing anything**: the intended route
+here is to REPLAY it with `p` replaced by `q = Nat.card K` throughout, not to
+redevelop it.
+
+WHAT ACTUALLY CHANGES, and it is less than the literature suggests. Schmidt's
+§§7–9 remove the restriction to prime `q` by introducing valuations and
+hyperderivatives in function fields, and `MoretBailly.lean` deliberately skips
+them. In THIS formalisation two of the three reasons for that are already gone:
+
+1. `pow_X_sub_C_dvd_iff_hasseDeriv` proves "the first `k` hyperderivatives vanish
+   ⟺ a zero of multiplicity `k`" by a Taylor argument valid in every
+   characteristic, so Schmidt's `M|𝔐_λ(x)| ≤ dM < q` and his Chapter I Theorem 1G
+   are not needed;
+2. the CONSUMING step `sum_le_natDegree_of_hasseDeriv_vanishing` is stated for an
+   arbitrary field, so nothing downstream of this leaf has to be redone;
+3. what remains is the ansatz itself: `stepanovAnsatz` is built out of `X^{pj}`
+   and `Y^{pk}`, and the correct field-general ansatz uses `X^{qj}`, `Y^{qk}`.
+   That substitution keeps the two properties the argument turns on — `D(X^q) = 0`
+   because `p ∣ q`, and `𝔽_q = {y | y^q = y}` — so the dimension count goes
+   through with `p ↦ q`. The bookkeeping in `exists_stepanovJetSolution` and
+   `stepanov_not_dvd_stepanovAnsatz` is where that substitution has to be made
+   good; `[Fact p.Prime]` is used there for `ZMod p` being a field and for
+   `Frobenius`, and both survive as `Finite K` plus `ExpChar K p`.
+
+Hypotheses and dictionary are as for the `λ = 1` sibling above, with `ε₂ = d − 1`
+in the degree clause and `𝔐₂` in the vanishing clause.
+
+FAITHFULNESS. TRUE, same audit as the sibling: `M`'s conditions are Schmidt's
+strengthened (`2d` for his `2(d−1)`), and the conjunction of nonvanishing,
+prescribed vanishing and bounded degree is non-vacuous.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovNormPolynomialIrrationalField {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (hcard : 250 * d ^ 5 < Nat.card K)
+    (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hsep : Polynomial.derivative F ≠ 0)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))))
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * d * (M + 8) ^ 2 ≤ Nat.card K)
+    (A : Finset K)
+    (hAsep : ∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
+      (F.map (Polynomial.evalRingHom x)).natDegree = d) :
+    ∃ r : Polynomial K, r ≠ 0 ∧
+      r.natDegree ≤ (d - 1) * Nat.card K * M + Nat.card K * (d * (d - 1)) ∧
+      (∀ x ∈ A, ∀ j < M * (d -
+          Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0}),
+        (Polynomial.hasseDeriv j r).eval x = 0) :=
+  sorry
+
+/-- **STEPANOV'S AUXILIARY PAIR OVER AN ARBITRARY FINITE FIELD** (PROVEN
+2026-07-28, NINETEENTH decomposition, over the four sub-leaves immediately above;
+it was the ONLY open leaf of `exists_const_natCard_zeroLocus_sub_le` below from
+the SEVENTEENTH decomposition of 2026-07-27 until then).
 
 This is W. M. Schmidt, *Equations over Finite Fields: An Elementary Approach*,
 LNM 536, **Chapter III §§1–5** (his Lemmas 4A and 5A, at BOTH values
@@ -47253,31 +47592,41 @@ is `mu2 x`, and `r₁, r₂` are his `r(X)` at `λ = 1, 2`.
   of coordinates, hence a bijection of `K²`, and the zeros lying over the
   complement of `𝔄` number at most `d·deg Δ ≤ d²(d−1) ≤ d³`.
 
-WHAT IS ALREADY PROVEN AND SHOULD BE REUSED, all in
-`Fermat/FLT/Modularity/MoretBailly.lean` as of 2026-07-27:
-`exists_stepanovNormalisation` (§1), `exists_stepanovDiscriminant` ((4.1),
-(4.3), including `Δ.natDegree ≤ d*(d−1)`), `exists_stepanovAuxiliaryFunction`
-(Lemma 4A), `exists_stepanovNormPolynomial` (Lemma 5A) and
-`exists_stepanovAuxiliary`, which bundles exactly this data — but only at
-`λ = 2`, only over the PRIME field `ZMod p`, and only with the one-sided link.
+HOW THE ASSEMBLY GOES, now that it is written (and it is pure bookkeeping — the
+mathematics is entirely in the four sub-leaves above). `F` comes from
+`exists_stepanovNormalisationField`, `A` from `exists_stepanovGoodLocusField`
+applied to it, and `r₁, r₂` from the two `NormPolynomial` leaves applied to both.
+Then `mu1 x := |𝔐₁(x)|` and `mu2 x := d − mu1 x` by definition, so:
 
-THE TWO GAPS, therefore, and they are the whole content of this leaf:
+* the fibrewise identity `mu1 + mu2 = d` needs only `mu1 x ≤ d`, which is
+  `stepanov_natCard_rationalRoots_le` at the fibre, monic of degree `d` on `𝔄`;
+* the lower link `∑_{x ∈ 𝔄} mu1 x ≤ N` is the normalisation's lower clause at
+  `S = A`;
+* the upper link is its upper clause at `S = A`, whose error term
+  `(q − |𝔄|)·d` is at most `d(d−1)·d ≤ d³` by (4.5).
 
-1. *Prime powers.* Everything cited above is over `ZMod p`. Here `K` is an
-   arbitrary finite field, because the parent's Lefschetz clause runs over all
-   `𝔽_{q^s}`. Schmidt's §6 needs `M|𝔐_λ(x)| ≤ dM < q` to invoke Theorem 1G of
-   his Chapter I; §§7–9 replace that with valuations and hyperderivatives in
-   function fields. `MoretBailly.lean` records in as many words that it
-   deliberately skips them. NOTE that the CONSUMING step is already
-   field-general: `sum_le_natDegree_of_hasseDeriv_vanishing` is stated for an
-   arbitrary field `K` and is Hasse-derivative based, so nothing downstream of
+THE TWO GAPS RECORDED HERE ON 2026-07-27 are now CONFINED to named leaves rather
+than open on this one, and the confinement is the point:
+
+1. *Prime powers.* The `ZMod p` chain of `MoretBailly.lean`
+   (`exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
+   `exists_stepanovAuxiliaryFunction`, `exists_stepanovNormPolynomial`,
+   `exists_stepanovAuxiliary`) is all PROVEN and all over a PRIME field. The
+   char-`p` obstructions are now localised one per leaf and named in each
+   docstring: the inseparability reduction in `exists_stepanovNormalisationField`
+   (`X + Y^p` is a genuine counterexample to the prime-field shortcut), the
+   degree of `∂F/∂Y` in `exists_stepanovGoodLocusField`, and the `X^{qj} Y^{qk}`
+   ansatz in the two `NormPolynomial` leaves. NOTE that the CONSUMING step is
+   already field-general: `sum_le_natDegree_of_hasseDeriv_vanishing` is stated for
+   an arbitrary field `K` and is Hasse-derivative based, so nothing downstream of
    this leaf has to be redone for `q = p^f`.
 2. *The `λ = 1` auxiliary function.* `exists_stepanovAuxiliary` produces `r₂`
    only, which bounds `∑ mu2` above and hence `∑ mu1` below — the one-sided
    `p ≤ 2N` of `exists_count_of_absolutelyIrreducible_plane`. The UPPER half of
    the Weil bound needs `r₁`, i.e. Lemma 4A at `λ = 1`, which is Schmidt's
    *easier* case (his Case 1 is the one where `x, y ∈ 𝔽_q`, so `x^q = x` and
-   `y^q = y` and no norm-form manipulation is required).
+   `y^q = y` and no norm-form manipulation is required). It is now the single
+   leaf `exists_stepanovNormPolynomialRationalField`.
 
 FAITHFULNESS. TRUE — every clause is a numbered statement of Schmidt III, and
 the `M`-hypotheses have been strengthened (`2d` for his `2(d−1)`) rather than
@@ -47310,8 +47659,50 @@ theorem exists_stepanovAuxiliaryPair {K : Type*} [Field K] [Finite K]
         + Nat.card K * (G.totalDegree * (G.totalDegree - 1)) ∧
       (∑ x ∈ A, mu1 x) ≤ Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} ∧
       Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
-        ≤ (∑ x ∈ A, mu1 x) + G.totalDegree ^ 3 :=
-  sorry
+        ≤ (∑ x ∈ A, mu1 x) + G.totalDegree ^ 3 := by
+  classical
+  -- Schmidt III §1: move the curve into the normal form `Y^d + g₁(X)Y^{d−1} + ⋯`.
+  obtain ⟨F, hmon, hdegY, hcoeff, hsep, hirrF, hlow, hhigh⟩ :=
+    exists_stepanovNormalisationField G hirr hd hcard
+  -- Schmidt III (4.3), (4.5): the locus `𝔄` where the fibre is separable of degree `d`.
+  obtain ⟨A, hAcard, hAsep⟩ :=
+    exists_stepanovGoodLocusField G.totalDegree hd F hmon hdegY hcoeff hsep hirrF
+  -- Schmidt III Lemmas 4A + 5A, at `λ = 1` and at `λ = 2`.
+  obtain ⟨r1, hr10, hr1deg, hr1van⟩ :=
+    exists_stepanovNormPolynomialRationalField G.totalDegree hd hcard F hmon hdegY hcoeff
+      hsep hirrF M hMdvd hMsq hMcard A hAsep
+  obtain ⟨r2, hr20, hr2deg, hr2van⟩ :=
+    exists_stepanovNormPolynomialIrrationalField G.totalDegree hd hcard F hmon hdegY hcoeff
+      hsep hirrF M hMdvd hMsq hMcard A hAsep
+  refine ⟨A,
+    (fun x => Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0}),
+    (fun x => G.totalDegree -
+      Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0}),
+    r1, r2, hAcard, ?_, hr10, hr20, hr1van, hr2van, hr1deg, hr2deg, hlow A, ?_⟩
+  · -- `|𝔐₁(x)| + |𝔐₂(x)| = d`: on `𝔄` the fibre is monic of degree `d`, so it has
+    -- at most `d` rational roots and the truncated subtraction is exact.
+    intro x hx
+    obtain ⟨_, hdegx⟩ := hAsep x hx
+    have hne : (F.map (Polynomial.evalRingHom x)) ≠ 0 := by
+      intro h0
+      rw [h0, Polynomial.natDegree_zero] at hdegx
+      omega
+    have hle := stepanov_natCard_rationalRoots_le _ hne
+    rw [hdegx] at hle
+    dsimp only
+    omega
+  · -- The zeros lying over the complement of `𝔄` number at most `d·(q − |𝔄|)`,
+    -- and `q − |𝔄| ≤ d(d−1)` by (4.5), so the defect is at most `d³`.
+    have hhi := hhigh A
+    have hsub : Nat.card K - A.card ≤ G.totalDegree * (G.totalDegree - 1) := by omega
+    have hle : (Nat.card K - A.card) * G.totalDegree ≤ G.totalDegree ^ 3 := by
+      calc (Nat.card K - A.card) * G.totalDegree
+          ≤ (G.totalDegree * (G.totalDegree - 1)) * G.totalDegree :=
+            Nat.mul_le_mul_right _ hsub
+        _ ≤ (G.totalDegree * G.totalDegree) * G.totalDegree :=
+            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (by omega))
+        _ = G.totalDegree ^ 3 := by ring
+    exact hhi.trans (Nat.add_le_add_left hle _)
 
 /-- **SCHMIDT III (6.1)** (PROVEN 2026-07-27 over `exists_stepanovAuxiliaryPair`):
 for every admissible Stepanov modulus `M`,
