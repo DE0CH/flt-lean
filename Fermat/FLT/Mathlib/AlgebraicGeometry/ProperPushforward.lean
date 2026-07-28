@@ -90,8 +90,13 @@ run is for `pushoutSection`, not for `directImage`.
   the fibrewise hypothesis.  Proven over the two leaves below plus a fully proven
   commutative-algebra assembly (Nakayama on the cokernel; the equational criterion for
   flatness on the kernel):
-  * `module_finite_appTop_of_isProper` — **LEAF**: `Γ(X, ⊤)` is a finite `Γ(S, ⊤)`-module.
-    Grothendieck's finiteness theorem for a proper morphism, in degree `0`.
+  * `module_finite_appTop_of_isProper` — **PROVEN** (2026-07-28): `Γ(X, ⊤)` is a finite
+    `Γ(S, ⊤)`-module — Grothendieck's finiteness theorem for a proper morphism, in degree
+    `0` — over the single leaf `finiteType_appTop_of_isProper`, since
+    `finite = integral + finite type` and the integral half is already in the pin
+    (`isIntegral_appTop_of_universallyClosed`).
+  * `finiteType_appTop_of_isProper` — **LEAF** (2026-07-28): `Γ(X, ⊤)` is a finite-TYPE
+    `Γ(S, ⊤)`-algebra.  All that is left of Grothendieck finiteness in degree `0`.
   * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-28):
     `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal, equivalently the degree-zero
     comparison map `A ⊗_R κ(s) ⟶ H⁰(X_s, 𝒪)` is INJECTIVE.  This is Hartshorne
@@ -1026,31 +1031,76 @@ Corollary 2) is *not* needed on this route: III.12.11 has no such hypothesis, wh
 here because the bases this development feeds in are arbitrary.  Nothing below has been
 "simplified to Grauert". -/
 
-/-- **LEAF 1 — `Γ(X, ⊤)` IS A FINITE `Γ(S, ⊤)`-MODULE** (Grothendieck's finiteness theorem
-for a proper morphism; EGA III 3.2.1, Stacks 02O5 / 0B91).
+/-- **LEAF 1a — `Γ(X, ⊤)` IS A FINITE-TYPE `Γ(S, ⊤)`-ALGEBRA** (LEAF, 2026-07-28), the whole
+remaining content of Grothendieck's finiteness theorem in degree `0` (EGA III 3.2.1,
+Stacks 02O5 / 0B91) once the integral half is discharged.
 
-Over an affine base, `Γ(X, ⊤) = (f_*𝒪_X)(S)`, so this is coherence of the direct image of
-`𝒪_X` along a proper morphism, in degree `0`.
+**Where it comes from.**  `module_finite_appTop_of_isProper` below asks that `Γ(X, ⊤)` be a
+*finite* `Γ(S, ⊤)`-module.  `RingHom.finite_iff_isIntegral_and_finiteType` splits that into
+integrality and finite-type-ness, and integrality is already in the pin:
+`AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` applies verbatim (properness gives
+`UniversallyClosed f`, and `S` is affine).  So this leaf is exactly what is left.
 
-**What mathlib already gives, and what it does not.**
-`AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` applies verbatim here (properness
-gives `UniversallyClosed`, and `S` is affine) and yields that `φ = f.appTop` is **integral**.
-Integral plus *finite type* is finite, so what is missing is precisely that `Γ(X, ⊤)` is an
-`R`-algebra of finite type — which for non-affine `X` is not formal and is the actual content
-of the finiteness theorem.  Mathlib's `finite_appTop_of_universallyClosed` is not usable: it
-is stated over a *field* and under `[IsIntegral X]`.
+**Why it is not formal.**  For non-affine `X`, `Γ(X, ⊤)` is the equalizer of a finite Čech
+diagram of finite-type `R`-algebras — the sheaf axiom for a finite affine cover — and an
+`R`-subalgebra of a finite-type `R`-algebra need not be of finite type, *even when it is
+integral over `R`*: Nagata's examples of a noetherian domain whose integral closure in a
+finite field extension is not module-finite already rule out any argument that uses only
+integrality plus an ambient finite-type algebra.  Properness must therefore be used again
+here; the classical proofs go through dévissage and Chow's lemma (Stacks 02O5), or through
+the projective case plus cohomology.
+
+Mathlib's `finite_appTop_of_universallyClosed` is not usable as a shortcut: it is stated over
+a *field* and under `[IsIntegral X]`, and its Artin–Tate step
+(`RingHom.finite_of_algHom_finiteType_of_isJacobsonRing` applied to `Γ(X, ⊤) ⟶ Γ(X, U)`)
+needs `Γ(X, ⊤)` to be a field, which is what irreducibility over a field buys and what an
+arbitrary affine base does not.
 
 `[Flat f]` is listed because over a base that is not noetherian the finiteness theorem is
 stated for a proper morphism *of finite presentation* with the sheaf flat over the base; it
 is not otherwise used, and a prover working over a noetherian base may ignore it.
 
-**FAITHFULNESS.** Properness is essential: `𝔸¹_S ⟶ S` is flat and of finite presentation
-with `Γ = R[x]`, not a finite `R`-module. -/
+**FAITHFULNESS.** Properness is essential: `𝔸¹_S ⟶ S` is flat and of finite presentation and
+has `Γ = R[x]`, which *is* of finite type — so the counterexample to the finite-*module*
+statement is not one to this one.  The right witness that properness is doing work here is
+the non-quasi-compact / non-separated side: `Γ` of an infinite disjoint union of copies of
+`S` is `R^ℕ`, not a finite-type `R`-algebra, and quasi-compactness (a consequence of
+universal closedness) is what excludes it. -/
+theorem finiteType_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
+    f.appTop.hom.FiniteType :=
+  sorry
+
+/-- **LEAF 1 — `Γ(X, ⊤)` IS A FINITE `Γ(S, ⊤)`-MODULE** — **PROVEN** (2026-07-28) over the
+single leaf `finiteType_appTop_of_isProper` above, by
+`finite = integral + finite type` (`RingHom.IsIntegral.to_finite`).
+
+Over an affine base, `Γ(X, ⊤) = (f_*𝒪_X)(S)`, so this is coherence of the direct image of
+`𝒪_X` along a proper morphism, in degree `0` (Grothendieck's finiteness theorem; EGA III
+3.2.1, Stacks 02O5 / 0B91).
+
+**What the pin already gives, and what it does not.**
+`AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` applies verbatim here — properness
+gives `UniversallyClosed f`, and `S` is affine — and yields that `φ = f.appTop` is
+**integral**.  Since `RingHom.Finite` is exactly `RingHom.IsIntegral` together with
+`RingHom.FiniteType` (`RingHom.finite_iff_isIntegral_and_finiteType`), the *entire* remaining
+content of this leaf is finite-type-ness of `Γ(X, ⊤)` over `R`, which is what
+`finiteType_appTop_of_isProper` isolates.  Mathlib's `finite_appTop_of_universallyClosed` is
+not usable as a shortcut: it is stated over a *field* and under `[IsIntegral X]`.
+
+**Why the residual leaf is not formal, and is not weaker than the theorem it came from.**
+For non-affine `X`, `Γ(X, ⊤)` is the equalizer of a finite Čech diagram of finite-type
+`R`-algebras, and an `R`-subalgebra of a finite-type `R`-algebra need not be of finite type
+even when it is integral over `R` — Nagata's examples of a noetherian domain whose integral
+closure in a finite field extension is not module-finite already show that integrality plus
+an ambient finite-type algebra cannot suffice.  So properness has to be used again here, and
+the cut merely *records* that the integral half is discharged; it does not make the geometry
+disappear. -/
 theorem module_finite_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
     letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
     Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) :=
-  sorry
+  (isIntegral_appTop_of_universallyClosed f).to_finite (finiteType_appTop_of_isProper f)
 
 /-! #### Surjectivity of `f`, and the two consequences of it that replace III.12.11(b)
 
