@@ -542,6 +542,11 @@ public import Mathlib.LinearAlgebra.Matrix.ToLin
 public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 public import Mathlib.LinearAlgebra.Trace
 public import Mathlib.LinearAlgebra.Determinant
+-- `Module.End.trace_eq_sum_roots_charpoly_of_splits`: the trace of an
+-- endomorphism is the sum of the roots of its characteristic polynomial.
+-- This is the one mathlib lemma behind `exists_isCharRootMultiset`, the
+-- linear-algebra half split off from the Eichler–Shimura leaf.
+public import Mathlib.LinearAlgebra.Eigenspace.Charpoly
 public import Mathlib.Data.List.GetD
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
@@ -35381,10 +35386,230 @@ theorem card_jacobian_of_isWeilEigenvalues {ℓ : ℕ} (_hℓ : ℓ.Prime) {X : 
       = (α.map (fun a => 1 - a)).prod :=
   sorry
 
+/-! #### Splitting the linear algebra off the Eichler–Shimura leaf
+
+`isWeilEigenvalues_x0_eichlerShimura` below is the only
+modular-curve-specific leaf of the cut, but as first stated it still
+carried two pieces of pure linear algebra with no modular content at
+all:
+
+* that the characteristic polynomial of `T_ℓ` on `S_2(Γ_0(N))` SPLITS
+  over `ℂ`, i.e. that there is an eigenvalue multiset `a` at all, with
+  `Σ aᵢ = Tr T_ℓ` and `∏ (c − aᵢ) = det(c·1 − T_ℓ)`; and
+* the elementary identity `(1 − α)(1 − β) = ℓ + 1 − (α + β)` whenever
+  `α β = ℓ`, which is exactly what turns a statement about the pairing
+  of Frobenius eigenvalues into the two values `IsX0EichlerShimura`
+  reads off.
+
+Both are **PROVEN** here — `exists_isCharRootMultiset` and
+`IsEichlerShimuraTransform.sum_eq` / `.prod_one_sub` — so the remaining
+leaf `isEichlerShimuraTransform_x0` is the Eichler–Shimura pairing
+itself and nothing else.
+
+**The weak `(sum, product)` shape of `isWeilEigenvalues_x0_eichlerShimura`
+is UNCHANGED**, and deliberately so: that is exactly what the two count
+fields of `IsX0EichlerShimura` need, and it is what its consumers see.
+What changed is only that it is now a five-line assembly rather than a
+`sorry`.  The strengthening lives one level down, in the new leaf, where
+it is the honest mathematical statement of Eichler–Shimura: the *pairing*
+is what the congruence relation gives, and the two values are read off it.
+
+**Why the new leaf tolerates zeros in `α`.**  `IsWeilEigenvalues` pins
+`α` only up to entries equal to `0` (see the section docstring: power
+sums of all orders determine a finite multiset of complex numbers up to
+zeros).  So a leaf demanding `α` be *exactly* a union of pairs
+`{αᵢ, βᵢ}` with `αᵢ βᵢ = ℓ ≠ 0` would be **FALSE**, since every entry of
+such a union is nonzero while `hα` permits `α` to carry any number of
+zeros.  `IsEichlerShimuraTransform` therefore allows a
+`Multiset.replicate k 0` summand.  Both consumers are zero-insensitive
+(`0` contributes `0` to a sum and `1 − 0 = 1` to the product), so nothing
+is lost. -/
+
+/-- **`a` is the multiset of roots of the characteristic polynomial of
+`T`**, characterised — not constructed — by the two values every consumer
+here reads off it.
+
+`prod_eq` alone pins `a` exactly: `∏ (c − aᵢ)` is a monic polynomial in
+`c`, `ℂ` is infinite, and two monic polynomials agreeing at every point
+are equal, so `a` is the root multiset of `charpoly T`.  In particular
+this is *not* a datum that a junk witness can satisfy, and `sum_eq` is
+mathematically redundant — it is carried as a field only because deriving
+it from `prod_eq` costs a polynomial-coefficient argument that every
+consumer would otherwise repeat.
+
+Stated for an arbitrary `ℂ`-module rather than a finite-dimensional one
+on purpose: `LinearMap.trace` and `LinearMap.det` are TOTAL, and
+`exists_isCharRootMultiset` below is unconditional, so no consumer needs
+`FiniteDimensional ℂ (CuspForm …)` — which is true
+(`cuspForm_finiteDimensional`) but lives downstream in
+`Modularity/Interface.lean` and is not available in this file's import
+cone. -/
+structure IsCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : Module.End ℂ V) (a : Multiset ℂ) : Prop where
+  /-- The sum of the roots is the trace. -/
+  sum_eq : a.sum = LinearMap.trace ℂ V T
+  /-- `∏ (c − aᵢ) = det(c·1 − T)` at every `c`, i.e. `∏ (X − aᵢ)` is the
+  characteristic polynomial of `T`. -/
+  prod_eq : ∀ c : ℂ, (a.map (fun x => c - x)).prod
+    = LinearMap.det ((c • (1 : Module.End ℂ V)) - T)
+
+/-- **The junk value of `LinearMap.trace`** (PROVEN 2026-07-28): with no
+finite basis the trace is `0`, by definition.  The determinant's
+counterpart is `LinearMap.det_eq_one_of_not_module_finite` in `Mathlib`;
+`Mathlib` has no trace analogue at our pin (`RingTheory/Trace` has
+`Algebra.trace_eq_zero_of_not_exists_basis`, which is the *algebra* trace,
+not `LinearMap.trace`), which is the only reason this is stated here.
+
+It is what makes `exists_isCharRootMultiset` unconditional, and so what
+keeps `FiniteDimensional ℂ (CuspForm …)` — downstream, hence unavailable
+here — out of every statement in this cluster. -/
+theorem trace_eq_zero_of_not_module_finite {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (h : ¬ Module.Finite ℂ V) (T : Module.End ℂ V) :
+    LinearMap.trace ℂ V T = 0 := by
+  rw [LinearMap.trace, dif_neg (fun ⟨_, ⟨b⟩⟩ => h (Module.Finite.of_basis b))]
+  rfl
+
+open _root_.Polynomial in
+/-- **Every `ℂ`-endomorphism has a characteristic root multiset** (PROVEN
+2026-07-28) — the linear-algebra half split off from the Eichler–Shimura
+leaf, and completely free of modular content.
+
+Finite-dimensional case: `ℂ` is algebraically closed, so `charpoly T`
+splits; take its root multiset.  `sum_eq` is
+`Module.End.trace_eq_sum_roots_charpoly_of_splits`, and `prod_eq` is
+`LinearMap.eval_charpoly` read through the monic factorisation
+`charpoly T = ∏ (X − rᵢ)`.
+
+Otherwise the empty multiset works, because both sides are then the junk
+values: `det = 1` by `LinearMap.det_eq_one_of_not_module_finite` and
+`trace = 0` by `trace_eq_zero_of_not_module_finite`.  Handling that case
+rather than assuming `Module.Finite` is what makes the statement
+unconditional; see `IsCharRootMultiset` for why that matters here. -/
+theorem exists_isCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : Module.End ℂ V) : ∃ a : Multiset ℂ, IsCharRootMultiset T a := by
+  by_cases hfin : Module.Finite ℂ V
+  · haveI := hfin
+    have hsplit : T.charpoly.Splits := IsAlgClosed.splits _
+    refine ⟨T.charpoly.roots, ?_, ?_⟩
+    · exact (Module.End.trace_eq_sum_roots_charpoly_of_splits hsplit).symm
+    · intro c
+      have hp : T.charpoly = (T.charpoly.roots.map fun r => X - C r).prod :=
+        hsplit.eq_prod_roots_of_monic T.charpoly_monic
+      have hev := LinearMap.eval_charpoly T c
+      rw [hp, Algebra.algebraMap_eq_smul_one] at hev
+      rw [← hev, Polynomial.eval_multiset_prod, Multiset.map_map]
+      simp
+  · refine ⟨0, ?_, ?_⟩
+    · simp [trace_eq_zero_of_not_module_finite hfin]
+    · intro c
+      simp [LinearMap.det_eq_one_of_not_module_finite hfin]
+
+/-- **`α` is the `ℓ`-Weil transform of `a`, up to zeros**: the entries of
+`α` pair up as `(αᵢ, βᵢ)` with `αᵢ + βᵢ` running through `a` and
+`αᵢ βᵢ = ℓ`, possibly together with some entries equal to `0`.
+
+This is the shape of the Eichler–Shimura conclusion: the `2g` Frobenius
+eigenvalues on `H¹(X_0(N)_{𝔽̄_ℓ})` pair up over the `g` eigenvalues of
+`T_ℓ` on `S_2(Γ_0(N))`, each pair with product `ℓ`.  See the section
+docstring above for why the `Multiset.replicate k 0` summand is REQUIRED
+rather than sloppy — without it the leaf below would be false, because
+`IsWeilEigenvalues` pins `α` only up to zeros while every entry of a
+union of pairs with product `ℓ ≠ 0` is nonzero. -/
+def IsEichlerShimuraTransform (ℓ : ℕ) (a α : Multiset ℂ) : Prop :=
+  ∃ (p : Multiset (ℂ × ℂ)) (k : ℕ),
+    p.map (fun q => q.1 + q.2) = a ∧
+    (∀ q ∈ p, q.1 * q.2 = (ℓ : ℂ)) ∧
+    α = Multiset.replicate k 0 + (p.map Prod.fst + p.map Prod.snd)
+
+/-- **`Σ αᵢ = Σ aᵢ`** (PROVEN 2026-07-28): summing the pairs, the zeros
+contribute nothing.  This is the trace half of the Eichler–Shimura
+consequence `Tr(Frob ∣ H¹) = Tr(T_ℓ ∣ S_2(Γ_0(N)))`, with all of the
+modular content removed. -/
+theorem IsEichlerShimuraTransform.sum_eq {ℓ : ℕ} {a α : Multiset ℂ}
+    (h : IsEichlerShimuraTransform ℓ a α) : α.sum = a.sum := by
+  obtain ⟨p, k, hpa, -, hα⟩ := h
+  subst hpa
+  subst hα
+  simp [Multiset.sum_map_add]
+
+/-- **`∏ (1 − αᵢ) = ∏ (ℓ + 1 − aᵢ)`** (PROVEN 2026-07-28) — the identity
+`(1 − α)(1 − β) = 1 − (α + β) + αβ = ℓ + 1 − (α + β)`, applied pairwise.
+The zeros contribute `1 − 0 = 1` and so drop out.  This is the
+determinant half of the Eichler–Shimura consequence
+`det(1 − Frob ∣ H¹) = det((ℓ + 1)·1 − T_ℓ ∣ S_2(Γ_0(N)))`, again with all
+of the modular content removed. -/
+theorem IsEichlerShimuraTransform.prod_one_sub {ℓ : ℕ} {a α : Multiset ℂ}
+    (h : IsEichlerShimuraTransform ℓ a α) :
+    (α.map (fun x => 1 - x)).prod = (a.map (fun x => (ℓ : ℂ) + 1 - x)).prod := by
+  obtain ⟨p, k, hpa, hmul, hα⟩ := h
+  subst hpa
+  subst hα
+  have hkey : (p.map fun q => (ℓ : ℂ) + 1 - (q.1 + q.2))
+      = p.map fun q => (1 - q.1) * (1 - q.2) := by
+    refine Multiset.map_congr rfl ?_
+    intro q hq
+    have hq' := hmul q hq
+    linear_combination -hq'
+  rw [Multiset.map_map]
+  simp only [Function.comp_def, hkey, Multiset.map_add, Multiset.prod_add,
+    Multiset.map_replicate, Multiset.prod_replicate, Multiset.map_map]
+  rw [Multiset.prod_map_mul]
+  simp
+
+/-- **Eichler–Shimura for `X_0(N)` over `𝔽_ℓ`: the Frobenius eigenvalue
+multiset is the `ℓ`-Weil transform of the `T_ℓ`-eigenvalue multiset**
+(sorry leaf — the ONLY modular-curve-specific half of the cut, and the
+one that genuinely needs Deligne–Rapoport).
+
+TRUE.  Deligne–Rapoport gives `X_0(N)` a smooth proper model over
+`ℤ[1/N]`, so at `ℓ ∤ N` the special fibre is a smooth proper
+geometrically connected curve over `𝔽_ℓ`; the Eichler–Shimura congruence
+relation `Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}` says the
+characteristic polynomial of Frobenius on `H¹` is `∏ᵢ (X² − aᵢ X + ℓ)`
+with `aᵢ` running through the eigenvalues of `T_ℓ` on `S_2(Γ_0(N))`.  The
+roots of `X² − aᵢ X + ℓ` are a pair `(αᵢ, βᵢ)` with `αᵢ + βᵢ = aᵢ` and
+`αᵢ βᵢ = ℓ`, and `dim H¹ = 2g = 2 dim S_2(Γ_0(N))`, which is exactly
+`IsEichlerShimuraTransform ℓ a α`.  Diamond–Shurman ch. 8 (8.7.2 for the
+congruence relation, 8.8 for the consequences); Deligne–Rapoport for the
+model.
+
+**NOT VACUOUS, in either of the two ways a leaf of this shape can be.**
+Both multisets are pinned, so nothing here can be discharged by choosing
+a witness: `a` is pinned EXACTLY by `ha` (see `IsCharRootMultiset` — the
+`prod_eq` field determines `a` as the root multiset of `charpoly`), and
+`α` is pinned UP TO ZEROS by `hα` (see the section docstring on
+`IsWeilEigenvalues`).  And the hypothesis `ha` is satisfiable —
+`exists_isCharRootMultiset` produces such an `a` unconditionally — so the
+leaf is not true for the degenerate reason that nothing satisfies it.
+
+**Why zeros are tolerated**: `α` is pinned only up to zeros, so a leaf
+demanding an exact pairing would be FALSE; see the section docstring.
+
+**WHAT IS MISSING** (item 3 of the audit on `exists_isX0EichlerShimura`,
+unchanged by either cut): the congruence relation
+`Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, which needs the moduli
+interpretation of Frobenius on the special fibre — that the two
+degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and its
+transpose.  That is downstream of the same Deligne–Rapoport integral
+model as `exists_isCoarseModuliY0_isSmoothCurve_field`.  Note what is NO
+LONGER missing here: the splitting of `charpoly(T_ℓ)` over `ℂ`
+(`exists_isCharRootMultiset`) and the pairwise identity
+`(1 − α)(1 − β) = ℓ + 1 − (α + β)`
+(`IsEichlerShimuraTransform.prod_one_sub`) are both proven above. -/
+theorem isEichlerShimuraTransform_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α)
+    {a : Multiset ℂ}
+    (_ha : IsCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) a) :
+    IsEichlerShimuraTransform ℓ a α :=
+  sorry
+
 /-- **Eichler–Shimura: the Frobenius eigenvalues of `X_0(N)_{𝔽_ℓ}` are
-the `ℓ`-Weil transform of the `T_ℓ`-eigenvalues** (sorry leaf — the ONLY
-modular-curve-specific half of the cut, and the one that genuinely needs
-Deligne–Rapoport).
+the `ℓ`-Weil transform of the `T_ℓ`-eigenvalues** (**PROVEN 2026-07-28**
+by decomposition — the modular content is now
+`isEichlerShimuraTransform_x0` above, and everything else in this
+statement is the linear algebra proven with it).
 
 TRUE.  Eichler–Shimura pairs the `2g` Frobenius eigenvalues as
 `αᵢ, βᵢ` with `αᵢ + βᵢ = aᵢ` and `αᵢ βᵢ = ℓ`, the `aᵢ` being the
@@ -35404,32 +35629,47 @@ column reproduces every `#J_0(N)(𝔽_ℓ)` banked in this file
 `4096, 6561, 135168, 409600` at the four sieve levels).
 
 **Stated as a consequence of the pinning rather than as the congruence
-relation itself.**  What a full Eichler–Shimura statement asserts is an
-equality of characteristic polynomials; the two identities above are
-strictly weaker and are all that `IsX0EichlerShimura` needs, so the leaf
-is stated in the weaker form.  It is *not* thereby vacuous: `α` is
-universally quantified and pinned by `hα`, so nothing here can be
-discharged by choosing a witness.
+relation itself, and KEPT that way.**  What a full Eichler–Shimura
+statement asserts is an equality of characteristic polynomials; the two
+identities above are strictly weaker and are all that
+`IsX0EichlerShimura` needs, so this theorem is stated in the weaker
+form.  It is *not* thereby vacuous: `α` is universally quantified and
+pinned by `hα`, so nothing here can be discharged by choosing a witness.
+The stronger pairing statement now exists one level down as
+`isEichlerShimuraTransform_x0`, which is where the modular content sits;
+this statement's shape is unchanged, because it is the shape its
+consumers read.
 
-**WHAT IS MISSING** (this is item 3 of the audit on
-`exists_isX0EichlerShimura` and is unchanged by the cut): the congruence
-relation `Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, which needs the
-moduli interpretation of Frobenius on the special fibre — that the two
-degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and its
-transpose.  That is downstream of the same Deligne–Rapoport integral
-model as `exists_isCoarseModuliY0_isSmoothCurve_field`. -/
-theorem isWeilEigenvalues_x0_eichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
-    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
-    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α) :
+**THE PROOF** is three steps, two of them proven in this file:
+
+* `exists_isCharRootMultiset` produces the eigenvalue multiset `a` of
+  `T_ℓ` on `S_2(Γ_0(N))` — `charpoly` splits over `ℂ` — with
+  `Σ aᵢ = Tr T_ℓ` and `∏ (c − aᵢ) = det(c·1 − T_ℓ)`;
+* `isEichlerShimuraTransform_x0` (the remaining sorry leaf) pairs `α`
+  over `a` with each pair's product equal to `ℓ`;
+* `IsEichlerShimuraTransform.sum_eq` and `.prod_one_sub` read the two
+  values off that pairing, the second via
+  `(1 − α)(1 − β) = ℓ + 1 − (α + β)`.
+
+**WHAT IS MISSING** has moved to `isEichlerShimuraTransform_x0`: it is
+still item 3 of the audit on `exists_isX0EichlerShimura`, the congruence
+relation `Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, downstream of the
+Deligne–Rapoport integral model.  Nothing else is. -/
+theorem isWeilEigenvalues_x0_eichlerShimura (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (hα : IsWeilEigenvalues ℓ strX α) :
     α.sum = LinearMap.trace ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) ∧
       (α.map (fun a => 1 - a)).prod =
         LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
             (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
-          - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) :=
-  sorry
+          - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) := by
+  obtain ⟨a, ha⟩ :=
+    exists_isCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+  have htr := isEichlerShimuraTransform_x0 N ℓ hN hℓ hℓN h hα ha
+  exact ⟨htr.sum_eq.trans ha.sum_eq, htr.prod_one_sub.trans (ha.prod_eq ((ℓ : ℂ) + 1))⟩
 
 /-- **The Eichler–Shimura input exists at every good prime** (**PROVEN
 2026-07-28** from the three leaves above — it was THE cohomological input
@@ -35508,6 +35748,14 @@ zero-insensitive), so no junk witness exists.  That is
   in the weak `(sum, product)` form the two count fields need.  This is
   the only leaf that mentions `X_0(N)` at all, and it is the only one
   that is genuinely downstream of Deligne–Rapoport (item 3).
+  **PROVEN 2026-07-28** by a further cut, so of the three only the two
+  modular-curve-free leaves are still open at this level; the modular
+  content moved down to `isEichlerShimuraTransform_x0`, which pairs the
+  Frobenius eigenvalue multiset over the `T_ℓ`-eigenvalue multiset.  The
+  linear algebra that was bundled with it — that `charpoly(T_ℓ)` splits
+  over `ℂ` (`exists_isCharRootMultiset`) and the pairwise identity
+  `(1 − α)(1 − β) = ℓ + 1 − (α + β)`
+  (`IsEichlerShimuraTransform.prod_one_sub`) — is proven.
 
 So items 1–3 of `WHAT IS MISSING` are unchanged as mathematics, but they
 are now distributed over three named leaves, two of which are reusable
