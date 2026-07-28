@@ -696,23 +696,16 @@ public import Fermat.FLT.Mathlib.GroupTheory.Descent
 -- `exists_cubeEmbedding_of_abelianScheme` below, whose predecessor's "MISSING
 -- MACHINERY" claim was wrong.
 public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
--- `Fermat.intHeight`, `Fermat.IntegralCoordinates` and `Fermat.WeilHeight`: a
--- SECOND, independently developed packaging of the same height theory over `ℚ`,
--- in primitive integral coordinates rather than in `ℙⁿ(ℚ)`.  Kept imported so
--- the module stays compiled and its declarations visible; no longer consumed —
--- see the DUPLICATE-CUT note on `exists_integralCoordinates_of_abelianScheme`.
-public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
--- `Fermat.SegreCoordinates` and
--- `Fermat.nonempty_integralCoordinates_of_segreCoordinates`: the interface between
--- the geometry of an abelian variety over `ℚ` (a symmetric very ample bundle and
--- the theorem of the cube, read through the Segre embedding as one family of
--- degree-2 forms) and the elementary theory of heights.  It reduces
--- `exists_integralCoordinates_of_abelianScheme` below to the purely geometric
--- `exists_segreCoordinates_of_abelianScheme`.  Its module docstring also records
--- that `Mathlib/NumberTheory/Height/` exists at this pin and carries the whole
--- height machine, upper and lower bound — correcting a stale "absent from the
--- pin" note that this file used to carry.
-public import Fermat.FLT.Mathlib.NumberTheory.SegreHeight
+-- RETIRED 2026-07-28: `Fermat.FLT.Mathlib.NumberTheory.IntegralHeight` and
+-- `Fermat.FLT.Mathlib.NumberTheory.SegreHeight` were imported here for a
+-- SECOND, independently developed packaging of the same height theory over `ℚ`
+-- (`intHeight`, `IntegralCoordinates`, `SegreCoordinates`, `WeilHeight`), in
+-- primitive integral coordinates rather than in `ℙⁿ(ℚ)`.  Mordell–Weil is
+-- assembled entirely through the `ProjectiveHeight` route above, so that
+-- packaging had no consumer at all; both modules were DELETED together with
+-- `exists_integralCoordinates_of_abelianScheme` and
+-- `exists_segreCoordinates_of_abelianScheme`.  Recover from git history if
+-- ever wanted.
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -28284,107 +28277,28 @@ theorem exists_relPicZeroOf {X : Scheme.{0}} {strX : X ⟶ SpecQ}
 -- reverted and both are PROVEN again.  No consumer needs them this early.)
 
 
-/-- **A Segre coordinate system exists on `A(ℚ)`, for every abelian
-scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
-heights, and PURELY GEOMETRIC: after the cut of 2026-07-27 there is no
-height, no finiteness and no real number anywhere in it.
-
-TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
-case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
-varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
-variety over `ℚ`, so it is projective and carries a **symmetric** ample
-line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
-which after replacing `L` by a power is very ample.  Let
-`φ_L : A ↪ ℙ^{n-1}_ℚ` be the resulting closed immersion.  A point of
-`ℙ^{n-1}(ℚ)` has a primitive integral representative, unique up to sign,
-and the sign is pinned by asking that the first nonzero coordinate be
-positive; sending `P ∈ A(ℚ)` to that vector is `coords`, and `injective`
-is injectivity of `φ_L` on `ℚ`-points, a closed immersion being a
-monomorphism.
-
-The remaining fields are the **theorem of the cube**,
-`m^* L ⊗ d^* L ≅ p₁^* L² ⊗ p₂^* L²` on `A × A`, read through the Segre
-embedding: it says exactly that `Segre(P,Q) ↦ Segre(P+Q, P−Q)` is given
-by forms of degree `2` in the Segre coordinates (`form`,
-`form_homogeneous`, `form_eval`), and `cert`/`cert_eval` is the
-Nullstellensatz certificate for that morphism on the Segre image — see
-`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` for why the
-certificate rather than "no common zero" is the right hypothesis, and
-for the proof that this yields `IntegralCoordinates`.
-
-**FAITHFULNESS AUDIT.**  *Not vacuous.*  `form_eval` demands ONE family
-of quadratic forms working uniformly in `P` and `Q`; that is the cube
-theorem and nothing weaker.  An arbitrary injection `A(ℚ) ↪ ℤ^d` does not
-supply it — for `A(ℚ) ≅ ℤ` a linear parametrisation is refuted outright,
-since the height defect `log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is
-unbounded, and by the leaf below an unbounded defect is incompatible with
-degree-2 forms.  *The conclusion is `Nonempty`* because nothing
-downstream depends on WHICH system is used.
-
-**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist because
-`ℤ` is a PID with unit group `{±1}`; over a general number field the
-normalisation involves the class group and the unit group.  Mordell–Weil
-is only ever needed over `ℚ` in this development.
-
-**MISSING MACHINERY**, and it is the honest remaining cost: projectivity
-of an abelian variety, symmetric very ample line bundles, and the theorem
-of the cube.  The check that would refute this is
-`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/` — it was run on 2026-07-27 and
-returns nothing in mathlib, so this part of the old note stands.  **The
-rest of that note did NOT**: it also claimed the theory of heights was
-absent from the pin, and `Mathlib/NumberTheory/Height/` is exactly it,
-lower bound included.  That correction is what made this cut cheap; it is
-recorded in full in `SegreHeight.lean`. -/
-theorem exists_segreCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) :
-    letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (SegreCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
-
-/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
-scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the geometric leaf above
-and the elementary leaf `nonempty_integralCoordinates_of_segreCoordinates`).
-
-**THE CUT, and what it corrects.**  This node used to be the single
-remaining leaf of the theory of heights, carrying the projective
-embedding, the theorem of the cube AND the passage from the projective
-height to `intHeight`, on the strength of a MISSING MACHINERY note
-saying the theory of heights was absent from `Mathlib`, `~/cs/FLT` and
-this project.  That note was stale: `Mathlib/NumberTheory/Height/` exists
-at this pin and carries `mulHeight`/`logHeight` on tuples, the
-`AdmissibleAbsValues` instance for number fields, Northcott, the
-comparison `Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer
-tuples, and — the expensive half — the height machine for a family of
-homogeneous forms in BOTH directions, `Height.logHeight_eval_le'` and
-`Height.logHeight_eval_ge'`, the latter from a Nullstellensatz
-certificate supplied as a polynomial identity.
-
-So the cut is along geometry versus arithmetic-of-heights, and the second
-half is now a derivation from named mathlib lemmas rather than a theory
-to be built:
-
-* `exists_segreCoordinates_of_abelianScheme` above is the geometry;
-* `nonempty_integralCoordinates_of_segreCoordinates` is the height
-  machine, whose docstring lists the five steps and the lemma for each.
-
-The old audit's *check* is kept in the geometric leaf, because the part
-of it about ampleness and the cube is still correct.
-
-TRUE and classical (Silverman, *AEC* VIII.5–VIII.6; Hindry–Silverman,
-*Diophantine Geometry* Part B).
-
-**What this node NO LONGER carries.**  Northcott's theorem is proven
-(`Fermat.instNorthcottIntHeight`), the passage to `DescentHeight` is
-proven (`Fermat.WeilHeight.toDescentHeight`), and now the height machine
-has been separated from the geometry as well. -/
-theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) :
-    letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
-  letI := ab.addCommGroup (𝟙 SpecQ)
-  obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
-  exact nonempty_integralCoordinates_of_segreCoordinates sc
+-- RETIRED 2026-07-28 — the INTEGRAL-HEIGHT ROUTE, deleted in full.
+--
+-- `exists_segreCoordinates_of_abelianScheme` (a sorry node: a symmetric very
+-- ample bundle and the theorem of the cube, read through the Segre embedding
+-- as one family of degree-2 forms) and `exists_integralCoordinates_of_
+-- abelianScheme` (PROVEN over it and over `nonempty_integralCoordinates_of_
+-- segreCoordinates`) stood here.  They were a SECOND, independently developed
+-- packaging of the theory of heights over `ℚ`, in primitive integral
+-- coordinates rather than in `ℙⁿ(ℚ)`.
+--
+-- Mordell–Weil (`fg_relPoint_of_abelianScheme` below) is assembled entirely
+-- through the `ProjectiveHeight` route — `exists_cubeModel_of_abelianScheme`
+-- → `CubeModel.nonempty_cubeEmbedding` → `CubeEmbedding.toProjectiveHeight
+-- Source` → `ProjectiveHeightSource.toParallelogramHeight` →
+-- `ParallelogramHeight.toDescentHeight` → `fg_of_descentHeight` — so nothing
+-- consumed either declaration.  Both, together with
+-- `Fermat/FLT/Mathlib/NumberTheory/{IntegralHeight,SegreHeight}.lean` and
+-- `Fermat.WeilHeight` / `WeilHeight.toDescentHeight` / `exists_lowerBound_of_
+-- northcott` in `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`, were deleted.
+-- Recover from git history if the integral-coordinate packaging is ever
+-- wanted; the geometry it asked for is the same geometry
+-- `exists_cubeEmbedding_of_abelianScheme` below asks for.
 
 /-- **THE COORDINATE DICTIONARY: a symmetric normalized ample invertible sheaf
 with the theorem of the cube gives a `CubeModel` on the group of rational
@@ -28752,9 +28666,9 @@ functoriality under homogeneous forms in both directions
 (`instance : Northcott (mulHeight₁ (K := K))`,
 `Height/NumberField.lean:393`).  The note read as true because
 `WeilHeight` and `NeronTate` appear nowhere in those files, so a grep for
-either returns nothing.  Northcott is proven here anyway, in the
-`intHeight` form, because that is the shape the descent consumes; that
-is a convenience, not a necessity.  See the CORRECTION section of
+either returns nothing.  Northcott is taken from `Mathlib`'s instance and
+carried through `Fermat.ProjectiveHeightSource`, which is the shape the
+descent consumes.  See the CORRECTION section of
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 
 * `Fermat.WeilHeight.toDescentHeight`
@@ -29695,8 +29609,8 @@ The statement is kept at "every `n ≥ 2`" rather than narrowed to `n = 2`
 on purpose: the descent theorem consumes whichever `m` the sibling leaf
 `exists_descentHeight_of_abelianScheme` supplies, and that node is free
 to change its `m` (it currently supplies `2`, through
-`Fermat.WeilHeight.toDescentHeight`).  Narrowing here would couple the
-two leaves.
+`Fermat.ParallelogramHeight.toDescentHeight`).  Narrowing here would
+couple the two leaves.
 
 **FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the range of
 `nsmulAddMonoidHom 0` is the trivial subgroup, the quotient is `A(ℚ)`
@@ -29791,15 +29705,19 @@ field `ℚ(p^{-1} A(ℚ))`
 those carries arithmetic; no group cohomology appears anywhere on the
 path.
 
-**FOURTH SPLIT, same day**: `exists_integralCoordinates_of_abelianScheme`
-is PROVEN in turn, over `exists_segreCoordinates_of_abelianScheme` (the
-geometry: a symmetric very ample bundle and the theorem of the cube, read
-through the Segre embedding as one family of degree-2 forms) and
-`nonempty_integralCoordinates_of_segreCoordinates` (the height machine,
-which mathlib supplies in both directions — see `SegreHeight.lean`).
+**FOURTH SPLIT, same day**, RETIRED 2026-07-28: a second, independently
+developed packaging of the height theory in primitive integral
+coordinates (`exists_integralCoordinates_of_abelianScheme` over
+`exists_segreCoordinates_of_abelianScheme` and
+`nonempty_integralCoordinates_of_segreCoordinates`) ran in parallel with
+the `ProjectiveHeight` route for a day.  Nothing ever consumed it — this
+assembly goes through `exists_descentHeight_of_abelianScheme` — so the
+whole route, both modules included, has been DELETED.  See the
+RETIRED note above `exists_cubeEmbedding_of_abelianScheme`.
 
 So the OPEN leaves under Mordell–Weil are now those four, together with
-those two.  Everything else between here and them is compiler-checked.
+`exists_cubeModel_of_abelianScheme`.  Everything else between here and
+them is compiler-checked.
 
 The retired verdict, kept for the record — **but its CHECK is the wrong
 one, and rerunning it is how this development produced a false
@@ -29822,7 +29740,7 @@ directions) and `Mathlib/GroupTheory/Descent.lean` (the descent lemma, as
 `AddCommGroup.fg_of_descent'`).  So of the verdict's three items exactly
 **one** — weak Mordell–Weil — is still absent, plus, on the geometric
 side, ampleness and the theorem of the cube, which is what
-`exists_segreCoordinates_of_abelianScheme` carries.  The right check is
+`exists_cubeModel_of_abelianScheme` carries.  The right check is
 `grep -rn "Height.mulHeight\|logHeight\|AdmissibleAbsValues\|fg_of_descent"`.
 Full inventory: the CORRECTION section of
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`. -/
@@ -36044,8 +35962,6 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
 | `integral_Ioi_one_axisRestrict_ne_zero` | `L`-value numerics | **yes** |
-| `exists_segreCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
-| `nonempty_integralCoordinates_of_segreCoordinates` (in `SegreHeight.lean`) | the height machine over mathlib's `Height` | no |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
