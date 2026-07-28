@@ -26,6 +26,15 @@ absent from `Mathlib` at this pin, from `~/cs/FLT`, and from this project — ch
 cohomology-and-base-change API: there are **zero hits**, and `Mathlib` has no higher
 direct images of quasi-coherent sheaves at all.
 
+**That absence claim is about POSITIVE degree only, and a 2026-07-28 re-check narrowed it.**
+In degree zero `Mathlib` *does* have flat base change, as `pushoutSection` and
+`isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` in
+`Mathlib/AlgebraicGeometry/Morphisms/Flat.lean`, which give
+`Γ(X, ⊤) ⊗_{Γ(S, ⊤)} Γ(T, ⊤) ≅ Γ(X ×_S T, ⊤)` for `X` qcqs over an affine base and `T ⟶ S` flat.
+That is what closed the whole fibrewise half of this file.  Anyone reading the paragraph above
+as "no base change of any kind exists" will rebuild machinery that is already here — the grep to
+run is for `pushoutSection`, not for `directImage`.
+
 ## What is here
 
 * `AlgebraicGeometry.HasTrivialPushforward f` — the statement `𝒪_S ≅ f_*𝒪_X`, written as
@@ -41,13 +50,12 @@ direct images of quasi-coherent sheaves at all.
   as `f.app U` is for every *affine* open `U ⊆ S`.  Pure sheaf theory (`f.app U` is the
   component at `U` of `𝒪_S ⟶ f_*𝒪_X`, and the affine opens are a basis), and it is what
   lets the remaining leaf be stated over an affine base.
-* `isIso_appTop_of_isProper_over_field` — **PROVEN** (2026-07-28) over the single leaf
-  `isIso_appTop_of_isIso_appTop_baseChange`: `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically
-  connected and geometrically reduced over a field `K`.  **Its hypothesis was `[Field K]`, which
-  made the statement FALSE** — for `K : CommRingCat` that binder is a field structure on the
-  carrier *type*, unrelated to `K`'s ring structure; see the falsity audit on the declaration for
-  the `ZMod 4` counterexample.  It now carries `hK : IsField K`.  Proven en route, and useful on
-  their own:
+* `isIso_appTop_of_isProper_over_field` — **PROVEN, no leaf under it** (2026-07-28):
+  `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically connected and geometrically reduced over a field
+  `K`.  **Its hypothesis was `[Field K]`, which made the statement FALSE** — for
+  `K : CommRingCat` that binder is a field structure on the carrier *type*, unrelated to `K`'s
+  ring structure; see the falsity audit on the declaration for the `ZMod 4` counterexample.  It
+  now carries `hK : IsField K`.  Proven en route, and useful on their own:
   * `exists_eq_sq_mul_of_isIntegral` — a reduced ring is von Neumann regular at every element
     integral over a field;
   * `isField_of_isIntegral_of_forall_isIdempotentElem` — hence such a ring with no nontrivial
@@ -58,11 +66,17 @@ direct images of quasi-coherent sheaves at all.
   * `isField_appTop_of_universallyClosed` and
     `isIso_appTop_of_universallyClosed_of_isAlgClosed` — `Γ(Z, ⊤)` is a field, and equals `K`
     when `K` is algebraically closed.
-* `isIso_appTop_of_isIso_appTop_baseChange` — **LEAF** (2026-07-28): flat base change for `H⁰`
-  along a field extension, in transfer form.  **`Mathlib` has the machinery**
-  (`isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` in
-  `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean`); see the declaration's docstring for the exact
-  instantiation.
+* `isIso_appTop_of_isIso_appTop_baseChange` — **PROVEN** (2026-07-28): flat base change for `H⁰`
+  along a field extension, in transfer form.  **Contrary to what this docstring used to say,
+  `Mathlib` HAS the base-change machinery for global sections** —
+  `isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` in
+  `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean` gives
+  `Γ(Z, ⊤) ⊗_K L ≅ Γ(Z ×_K Spec L, ⊤)` directly.  What `Mathlib` lacks is *higher* direct
+  images, which is a different statement; the note below about "zero hits" is about those.
+  Supporting lemmas, both PROVEN: `isIso_of_isPushout_of_isField` (faithfully flat descent of
+  isomorphisms along a field extension, in pushout form) and
+  `bijective_algebraMap_of_bijective_includeLeft` (a `K`-algebra whose base change to `L` is `L`
+  is `K`).
 * `isIso_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-27): degree-zero cohomology and
   base change.  For `f` proper, flat and of finite presentation over an **affine** base,
   `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism as soon as `κ(s) ⟶ Γ(X_s, ⊤)` is one for every
@@ -295,19 +309,21 @@ theorem isIso_appTop_of_isIso_app_affineOpens (f : X ⟶ S)
     fun x => (ConcreteCategory.isIso_iff_bijective _).mpr (hbij x)
   exact TopCat.Presheaf.app_isIso_of_stalkFunctor_map_iso α ⊤
 
-/-! ### The two leaves: the fibrewise computation, and cohomology and base change
+/-! ### The two halves: the fibrewise computation, and cohomology and base change
 
 The classical proof of `f_*𝒪_X = 𝒪_S` has exactly two moving parts, and they are independent
 of one another:
 
 * **over a field** — `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically connected and
-  geometrically reduced over `K` (`isIso_appTop_of_isProper_over_field`).  No flatness, no
-  base change, no cohomology in positive degree: this is a statement about *one* scheme over
-  *one* field, and it is by far the more tractable half;
+  geometrically reduced over `K` (`isIso_appTop_of_isProper_over_field`).  No flatness and no
+  cohomology in positive degree; this half is **DONE** (2026-07-28), and its only base change
+  is the harmless one to `K̄`, which `Mathlib`'s flat-base-change API for `Γ` supplies;
 * **cohomology and base change** — for `f` proper, flat and of finite presentation over an
   affine base, `𝒪_S ⟶ f_*𝒪_X` is an isomorphism as soon as it is one on every fibre
   (`isIso_appTop_of_isIso_appTop_fiber`).  This half never sees geometric connectedness or
-  reducedness: they enter *only* through the fibrewise hypothesis.
+  reducedness: they enter *only* through the fibrewise hypothesis.  It is the **one remaining
+  leaf** of the pushforward theorem, and it is a genuine theory build: unlike degree zero, it
+  needs `Rⁱf_*` and semicontinuity, which `Mathlib` does not have.
 
 `isIso_appTop_of_isProper_of_flat_of_isAffine` is PROVEN by feeding the first into the second,
 which is why the two are cut apart here rather than proved together. -/
@@ -349,7 +365,8 @@ theorem exists_eq_sq_mul_of_pow_mul_add_eq_zero {K A : Type*} [Field K] [CommRin
   set b : A := a * d + algebraMap K A c with hb
   have hnil : IsNilpotent (a * b) := by
     refine ⟨k + 1, ?_⟩
-    have hpow : (a * b) ^ (k + 1) = a ^ k * b * (a * b ^ k) := by ring
+    have hpow : (a * b) ^ (k + 1) = a ^ k * b * (a * b ^ k) := by
+      rw [mul_pow, pow_succ, pow_succ]; ring
     rw [h, zero_mul] at hpow
     exact hpow
   have hab : a * b = 0 := hnil.eq_zero
@@ -517,52 +534,150 @@ theorem isIso_appTop_of_universallyClosed_of_isAlgClosed {K : Type u} [Field K] 
   rw [← hcomp]
   infer_instance
 
-/-- **`Γ` COMMUTES WITH BASE FIELD EXTENSION, IN THE FORM THE DESCENT NEEDS** (LEAF, 2026-07-28):
-if `Γ(Spec L, ⊤) ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is an isomorphism, so is
-`Γ(Spec K, ⊤) ⟶ Γ(Z, ⊤)`.
+/-! #### Descent from `K̄` to `K`: flat base change for `H⁰`
 
-**What it really is.**  For `Z` quasi-compact and quasi-separated over a field `K` and any field
-extension `L/K`, the canonical map
-`Γ(Z, ⊤) ⊗_K L ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is bijective — flat base change for `H⁰`, which is
-the *equalizer* of a finite Čech diagram of affines together with the exactness of `- ⊗_K L`,
-not the full cohomology-and-base-change theorem.  Granting that, the hypothesis says
-`Γ(Z, ⊤) ⊗_K L ≅ L` as `L`-algebras, hence `dim_K Γ(Z, ⊤) = dim_L (Γ(Z, ⊤) ⊗_K L) = 1`, and a
-unital `K`-algebra of dimension one *is* `K`.
-
-**THE ROUTE IS AVAILABLE IN `Mathlib` AT THIS PIN** — checked 2026-07-28, and this is the single
-most important thing recorded here, because an earlier version of this file's docstring asserted
-that no base-change API existed.  `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean` carries a
-`pushoutSection` API for exactly the square
+Contrary to what an earlier version of this file's docstring asserted, `Mathlib` **does** carry
+the base-change machinery for global sections, in
+`Mathlib/AlgebraicGeometry/Morphisms/Flat.lean`: for a cartesian square
 
 ```
-Y --g--→ X          Γ(X, Uₓ) ⊗_{Γ(S, Uₛ)} Γ(T, Uₜ) ⟶ Γ(Y, Uy)
+Y --g--→ X
 |        |
 iY       iX
 ↓        ↓
 T --f--→ S
 ```
 
-and proves it an isomorphism under five different hypotheses.  The one that applies here is
-`AlgebraicGeometry.isIso_pushoutSection_of_isQuasiSeparated_of_flat_right`: `Uₛ`, `Uₜ` affine,
-`Uₓ` quasi-compact and quasi-separated, `f` flat.  Take `S = Spec K`, `T = Spec L`, `X = Z`,
-all opens `⊤`; `Spec.map φ` is flat because `K` is a field.  Then
-`isIso_pushoutSection_iff` turns it into an `IsPushout` square of rings, which with
-`CommRingCat.isPushout_tensorProduct` is the tensor product above, and `Module.rank_baseChange`
-finishes the dimension count.
+`AlgebraicGeometry.pushoutSection` is the canonical map
+`Γ(X, Uₓ) ⊗_{Γ(S, Uₛ)} Γ(T, Uₜ) ⟶ Γ(Y, Uy)`, and
+`isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` makes it an isomorphism when `Uₛ`, `Uₜ`
+are affine, `Uₓ` is quasi-compact and quasi-separated, and `f` is flat.  Instantiated at
+`S = Spec K`, `T = Spec L`, `X = Z` with all opens `⊤`, that is exactly `Γ(Z_L, ⊤) =
+Γ(Z, ⊤) ⊗_K L`, and the descent is then a one-line dimension count.  What was absent from
+`Mathlib` is higher direct images, not this.
+-/
 
-**FAITHFULNESS.**  Both fields are load-bearing: `hK` is what makes `L` flat over `K` (so that
-the base change computes `Γ` at all), and `hL` is what makes "rank one over `L`" meaningful.  The
+open TensorProduct in
+/-- **A `K`-ALGEBRA WHOSE BASE CHANGE TO `L` IS `L` IS `K`** (PROVEN) — the dimension count that
+turns flat base change for `H⁰` into the descent.
+
+If `L ⟶ L ⊗_K A` is bijective then `L ⊗_K A` has `L`-rank one, so `A` has `K`-rank one by
+`Module.rank_baseChange`, and a unital `K`-algebra of rank one is `K`.  Note `A` is not assumed
+nontrivial: that follows, because rank one is not rank zero. -/
+theorem bijective_algebraMap_of_bijective_includeLeft {R A L : Type u} [Field R] [CommRing A]
+    [Field L] [Algebra R A] [Algebra R L]
+    (hbij : Function.Bijective (algebraMap L (L ⊗[R] A))) :
+    Function.Bijective (algebraMap R A) := by
+  have h1 : Module.rank L (L ⊗[R] A) = 1 := by
+    have e : L ≃ₗ[L] (L ⊗[R] A) :=
+      (AlgEquiv.ofBijective (Algebra.ofId L (L ⊗[R] A)) hbij).toLinearEquiv
+    rw [← e.rank_eq, CommSemiring.rank_self]
+  have h2 : Module.rank R A = 1 := by
+    have hbc := Module.rank_baseChange (R := L) (S := R) (M' := A)
+    rw [h1] at hbc
+    simpa using hbc.symm
+  haveI : Nontrivial A := by
+    rw [← not_subsingleton_iff_nontrivial]
+    intro hs
+    rw [rank_subsingleton'] at h2
+    exact zero_ne_one h2
+  refine ⟨(algebraMap R A).injective, ?_⟩
+  intro w
+  have hfr : Module.finrank R A = 1 := Module.rank_eq_one_iff_finrank_eq_one.mp h2
+  obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' (1 : A) one_ne_zero).mp hfr w
+  exact ⟨c, by simpa [Algebra.smul_def] using hc⟩
+
+open TensorProduct in
+/-- **FAITHFULLY FLAT DESCENT OF ISOMORPHISMS ALONG A FIELD EXTENSION, IN PUSHOUT FORM** (PROVEN).
+
+In a pushout square of commutative rings whose top-left corner `R` and lower-left corner `L` are
+fields, the right-hand leg `δ : L ⟶ Y` being an isomorphism forces the left-hand leg
+`α : R ⟶ A` to be one.
+
+The proof does not invoke faithful flatness abstractly: the pushout is identified with
+`L ⊗_R A` by `CommRingCat.isPushout_tensorProduct` (two pushouts over the same span are uniquely
+isomorphic, and `IsPushout.inl_isoPushout_hom` says the identification carries `δ` to
+`includeLeft`), and then `bijective_algebraMap_of_bijective_includeLeft` counts dimensions. -/
+theorem isIso_of_isPushout_of_isField {R A L Y : CommRingCat.{u}} (hR : IsField R) (hL : IsField L)
+    {α : R ⟶ A} {β : R ⟶ L} {γ : A ⟶ Y} {δ : L ⟶ Y}
+    (hpo : IsPushout α β γ δ) [IsIso δ] : IsIso α := by
+  letI : Field ↥R := hR.toField
+  letI : Field ↥L := hL.toField
+  algebraize [α.hom, β.hom]
+  have hT : IsPushout β α
+      (CommRingCat.ofHom (Algebra.TensorProduct.includeLeftRingHom (R := ↥R) (A := ↥L) (B := ↥A)))
+      (CommRingCat.ofHom
+        (Algebra.TensorProduct.includeRight (R := ↥R) (A := ↥L) (B := ↥A)).toRingHom) :=
+    CommRingCat.isPushout_tensorProduct ↥R ↥L ↥A
+  let e : CommRingCat.of (↥L ⊗[↥R] ↥A) ≅ Y := hT.isoPushout ≪≫ hpo.flip.isoPushout.symm
+  have hinl : CommRingCat.ofHom
+      (Algebra.TensorProduct.includeLeftRingHom (R := ↥R) (A := ↥L) (B := ↥A)) = δ ≫ e.inv := by
+    have h1 := hT.inl_isoPushout_hom
+    have h2 := hpo.flip.inl_isoPushout_hom
+    simp only [e, Iso.trans_inv, Iso.symm_inv]
+    rw [← Category.assoc, h2, ← h1, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+  haveI hiso : IsIso (CommRingCat.ofHom
+      (Algebra.TensorProduct.includeLeftRingHom (R := ↥R) (A := ↥L) (B := ↥A))) := by
+    rw [hinl]; infer_instance
+  exact (ConcreteCategory.isIso_iff_bijective α).mpr
+    (bijective_algebraMap_of_bijective_includeLeft
+      ((ConcreteCategory.isIso_iff_bijective _).mp hiso))
+
+/-- `f.appLE ⊤ ⊤` differs from `f.appTop` only by the restriction along `⊤ = f ⁻¹ᵁ ⊤`, which is
+an isomorphism because `Opens` is a poset. -/
+theorem isIso_appLE_top_iff {X Y : Scheme.{u}} (f : X ⟶ Y) (e : (⊤ : X.Opens) ≤ f ⁻¹ᵁ ⊤) :
+    IsIso (f.appLE ⊤ ⊤ e) ↔ IsIso f.appTop := by
+  haveI : IsIso (homOfLE e) := ⟨homOfLE le_top, Subsingleton.elim _ _, Subsingleton.elim _ _⟩
+  rw [Scheme.Hom.appLE]
+  exact isIso_comp_right_iff _ _
+
+/-- **`Γ` COMMUTES WITH BASE FIELD EXTENSION, IN THE FORM THE DESCENT NEEDS** (PROVEN,
+2026-07-28): if `Γ(Spec L, ⊤) ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is an isomorphism, so is
+`Γ(Spec K, ⊤) ⟶ Γ(Z, ⊤)`.
+
+**The content.**  For `Z` quasi-compact and quasi-separated over a field `K` and any field
+extension `L/K`, the canonical map `Γ(Z, ⊤) ⊗_K L ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is bijective —
+flat base change for `H⁰`, which is the *equalizer* of a finite Čech diagram of affines together
+with the exactness of `- ⊗_K L`, not the full cohomology-and-base-change theorem.  That is
+supplied by `isIso_pushoutSection_of_isQuasiSeparated_of_flat_right`; `Spec.map φ` is flat
+because `K` is a field, and `Z` is quasi-compact and quasi-separated because `g` is and the base
+is affine.  `isIso_pushoutSection_iff` turns it into an `IsPushout` square of rings, and
+`isIso_of_isPushout_of_isField` descends the isomorphism.
+
+**FAITHFULNESS.**  Both fields are load-bearing: `hK` is what makes `L` flat over `K` (so the
+base change computes `Γ` at all), and `hL` is what makes "rank one over `L`" meaningful.  The
 empty scheme is not a counterexample — there `Γ(Z, ⊤) = 0 = Γ(Z_L, ⊤)` and the hypothesis fails,
 since a field never maps isomorphically to the zero ring. -/
 theorem isIso_appTop_of_isIso_appTop_baseChange {K L : CommRingCat.{u}}
     (hK : IsField K) (hL : IsField L) (φ : K ⟶ L) {Z : Scheme.{u}} (g : Z ⟶ Spec K)
     [QuasiCompact g] [QuasiSeparated g]
-    (h : IsIso (pullback.snd g (Spec.map φ)).appTop) : IsIso g.appTop :=
-  sorry
+    (h : IsIso (pullback.snd g (Spec.map φ)).appTop) : IsIso g.appTop := by
+  letI : Field ↥K := hK.toField
+  letI : Field ↥L := hL.toField
+  haveI : Flat (Spec.map φ) := by
+    rw [Flat.SpecMap_iff]
+    letI := φ.hom.toAlgebra
+    exact (inferInstance : Module.Flat ↥K ↥L)
+  haveI : CompactSpace Z := (quasiCompact_iff_compactSpace g).mp inferInstance
+  haveI : QuasiSeparatedSpace Z := (quasiSeparated_iff_quasiSeparatedSpace g).mp inferInstance
+  have H : IsPullback (pullback.fst g (Spec.map φ)) (pullback.snd g (Spec.map φ)) g
+      (Spec.map φ) := IsPullback.of_hasPullback _ _
+  have hpo := isIso_pushoutSection_of_isQuasiSeparated_of_flat_right (H := H)
+    (hUST := (le_top : (⊤ : (Spec L).Opens) ≤ _)) (hUSX := (le_top : (⊤ : Z.Opens) ≤ _))
+    (hUY := (by simp : (⊤ : (pullback g (Spec.map φ)).Opens) = _))
+    (isAffineOpen_top _) (isAffineOpen_top _) (by simpa using isCompact_univ (X := Z))
+    (by simpa using isQuasiSeparated_univ (α := Z))
+  rw [isIso_pushoutSection_iff] at hpo
+  haveI : IsIso ((pullback.snd g (Spec.map φ)).appLE ⊤ ⊤ (by simp)) :=
+    (isIso_appLE_top_iff _ _).mpr h
+  refine (isIso_appLE_top_iff g (by simp)).mp ?_
+  exact isIso_of_isPushout_of_isField
+    ((Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField hK)
+    ((Scheme.ΓSpecIso L).commRingCatIsoToRingEquiv.toMulEquiv.isField hL) hpo
 
 /-- **`H⁰(Z, 𝒪_Z) = K` FOR A PROPER, GEOMETRICALLY CONNECTED, GEOMETRICALLY REDUCED SCHEME
-OVER A FIELD** — the fibrewise half of the pushforward theorem, PROVEN over the single leaf
-`isIso_appTop_of_isIso_appTop_baseChange` above.
+OVER A FIELD** — the fibrewise half of the pushforward theorem, **PROVEN** (2026-07-28), with no
+leaf left under it.
 
 **FALSITY AUDIT AND REPAIR (2026-07-28) — the hypothesis used to be `[Field K]` and that made
 the statement FALSE.**  With `K : CommRingCat`, the binder `[Field K]` elaborates as
@@ -587,8 +702,8 @@ semiring structure and therefore cannot be satisfied spuriously.  The consumer s
 
 **The proof.**  Base-change to `K̄`: the pullback is proper, reduced and connected (this is
 exactly what `GeometricallyReduced` and `GeometricallyConnected` say), so
-`isIso_appTop_of_universallyClosed_of_isAlgClosed` computes its global sections, and the leaf
-descends that to `K`.
+`isIso_appTop_of_universallyClosed_of_isAlgClosed` computes its global sections, and
+`isIso_appTop_of_isIso_appTop_baseChange` descends that to `K`.
 
 **FAITHFULNESS.**  All three hypotheses are load-bearing.  Without geometric connectedness the
 statement fails for `Z = Spec (K × K)`; without geometric reducedness it fails for
