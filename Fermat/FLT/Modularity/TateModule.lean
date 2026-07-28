@@ -7720,11 +7720,11 @@ along the LIMIT axis.  `exists_tateWeilSystem_of_mult` (DECOMPOSED
 2026-07-27 into five leaves) is the levelwise system of `𝒪_D/I^k`-valued
 Weil pairings on the finite torsion `A[I^k]` — dual, polarization, trace
 duality — and `exists_tateWeilPairing_of_tateWeilSystem` (PROVEN) passes
-it to the limit.  The section's remaining sorries are the five leaves of
-the levelwise-system cut: `exists_qAdicWeilSystem_of_mult`,
-`exists_preimage_act_of_mult`, `exists_traceDualFunctional_of_adicPin`,
-`exists_cyclotomicLog` and
-`exists_tateWeilSystem_of_qAdicWeilSystem`. -/
+it to the limit.  Of the five leaves of the levelwise-system cut,
+`exists_cyclotomicLog` and `exists_preimage_act_of_mult` are PROVEN
+(2026-07-28), so the section's remaining sorries are
+`exists_qAdicWeilSystem_of_mult`, `exists_traceDualFunctional_of_adicPin`
+and `exists_tateWeilSystem_of_qAdicWeilSystem`. -/
 
 /-- **A free module carrying the module topology over a `T2Space` ring is
 a `T2Space`** (PROVEN; vendored in argument from the reference project
@@ -8256,10 +8256,10 @@ theorem exists_qAdicWeilSystem_of_mult
   sorry
 
 /-- **A nonzero element of `𝒪_D` acts surjectively on the geometric points
-of a fibre** (SORRY LEAF — an abelian variety over an algebraically closed
-field is a divisible group; equivalently a nonzero endomorphism of an
-abelian variety is an isogeny, hence surjective on geometric points;
-Mumford *Abelian Varieties* §6, Silverman *AEC* III.4.2).
+of a fibre** (PROVEN 2026-07-28, over the divisibility leaf
+`exists_nsmul_eq_geomFibrePt`; the classical statement is that an abelian
+variety over an algebraically closed field is a divisible group, Mumford
+*Abelian Varieties* §6, Silverman *AEC* III.4.2).
 
 Small, classical, and independent of everything else in this section.  It is
 needed exactly once, and there for an unavoidable reason: the perfectness
@@ -8270,17 +8270,49 @@ is `π`-divisible inside `A[I^{k+1}]`.  That is why the docstring of
 `IsTateWeilSystem` records that its last clause "also encodes surjectivity of
 the transition maps".
 
-`hdim` is what makes the geometric fibre an abelian variety at all. -/
+THE PROOF IS STEPS 1–2 OF `exists_mem_torsion_act_uniformizer_eq`, without
+its torsion refinement, and needs NO new geometry: the absolute norm
+`N = |𝒪_D/(a)|` of the principal ideal `(a)` is a nonzero natural number
+lying in `(a)` (`Ideal.absNorm_mem`), say `N = a·b`; `[N]` is surjective on
+`A_x(F̄)` by `exists_nsmul_eq_geomFibrePt` — the single geometric leaf of
+this module — so `z := b·w` for any `w` with `N·w = y` satisfies
+`a·z = (a b)·w = N·w = y`.
+
+`hdim` IS THEREFORE NOT USED, and is underscored to make that mechanically
+visible.  The earlier note here ("`hdim` is what makes the geometric fibre
+an abelian variety at all") was a correct sentence attached to the wrong
+declaration: what makes the fibre an abelian variety, for the purposes of
+divisibility, is `ab`'s own `proper`/`smooth`/`connected` fields, which is
+why `exists_nsmul_eq_geomFibrePt` is stated without any dimension
+hypothesis.  The binder is retained so that the call site in
+`exists_tateWeilSystem_of_mult` does not have to change. -/
 theorem exists_preimage_act_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
     (m : Mult ab (NumberField.RingOfIntegers D))
     {F : Type u} [Field F]
     (x : Spec (CommRingCat.of F) ⟶ S)
-    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (_hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (a : NumberField.RingOfIntegers D) (ha : a ≠ 0) (y : GeomFibrePt f x) :
-    ∃ z : GeomFibrePt f x, m.act a z = y :=
-  sorry
+    ∃ z : GeomFibrePt f x, m.act a z = y := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  have hspan0 : Ideal.span {a} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using ha
+  have hNne : Ideal.absNorm (Ideal.span {a}) ≠ 0 := fun h =>
+    hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+  obtain ⟨b, hb⟩ : a ∣ ((Ideal.absNorm (Ideal.span {a}) : ℕ) : NumberField.RingOfIntegers D) :=
+    Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {a}))
+  obtain ⟨w, hw⟩ := exists_nsmul_eq_geomFibrePt ab x _ hNne y
+  have hw' : ((Ideal.absNorm (Ideal.span {a}) : ℕ) :
+      NumberField.RingOfIntegers D) • w = y := by
+    rw [Nat.cast_smul_eq_nsmul]; exact hw
+  refine ⟨b • w, ?_⟩
+  show a • (b • w) = y
+  rw [smul_smul, ← hb]
+  exact hw'
 
 /-- **The pin `(O, j, π)` admits a trace-duality functional** (SORRY LEAF —
 step 3 of the classical route, in its pure-algebra half; the inverse
@@ -8315,10 +8347,180 @@ theorem exists_traceDualFunctional_of_adicPin
     ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ :=
   sorry
 
+/-- **Membership in `(q)^k ⊆ ℤ_q` is vanishing of the level-`k` reduction**
+(PROVEN — `Ideal.span_singleton_pow` turns `span {q} ^ k` into
+`span {q ^ k}`, which is `PadicInt.ker_toZModPow k`).
+
+This is the working vocabulary for every congruence in `exists_cyclotomicLog`
+and its helpers below: all five clauses of that leaf are congruences modulo
+`(q)^k` in `ℤ_q`, and all of them are proven by pushing to `ZMod (q ^ k)`,
+where `ZMod.natCast_eq_natCast_iff` converts them into `Nat.ModEq`
+statements about discrete logarithms. -/
+theorem mem_span_natCast_pow_iff (q : ℕ) [Fact q.Prime] (k : ℕ) (x : ℤ_[q]) :
+    x ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ PadicInt.toZModPow k x = 0 := by
+  rw [Ideal.span_singleton_pow, ← PadicInt.ker_toZModPow, RingHom.mem_ker]
+
+/-- **A `Nat.ModEq` modulo `q ^ k` is a congruence modulo `(q)^k` in `ℤ_q`**
+(PROVEN, over `mem_span_natCast_pow_iff` and `ZMod.natCast_eq_natCast_iff`). -/
+theorem sub_natCast_mem_span_of_modEq (q : ℕ) [Fact q.Prime] (k a b : ℕ)
+    (h : a ≡ b [MOD q ^ k]) :
+    ((a : ℤ_[q]) - (b : ℤ_[q])) ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+  rw [mem_span_natCast_pow_iff, map_sub, map_natCast, map_natCast, sub_eq_zero]
+  exact (ZMod.natCast_eq_natCast_iff _ _ _).mpr h
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The root-of-unity bridge at level `q ^ k`** (PROVEN): the `q`-adic
+cyclotomic character, read over `ℚ̄` and transported along
+`Field.absoluteGaloisGroup.map (algebraMap ℚ F)`, computes the action of
+`Γ_F` on the `q^k`-th roots of unity of `F̄` — for every `σ ∈ Γ_F`, every
+`ζ ∈ F̄` with `ζ^{q^k} = 1` and every natural `n` congruent to `χ_cyc(σ̃)`
+modulo `q^k`, one has `σ ζ = ζ^n`.
+
+This is the LEVEL-`k` generalization of
+`GroupScheme/ConnectedEtale.lean`'s
+`galois_apply_pow_eq_pow_of_cyclotomicCharacter`, which is the same
+statement at level one and over the local base `ℚᵥ`; the proof is the same
+and is repeated here so that this module imports no consumer.
+
+It is the ONLY non-formal ingredient of `exists_cyclotomicLog`: it is what
+transports `cyclotomicCharacter.spec`, a statement about `ℚ̄`, to the roots
+of unity of `F̄`.  The transport is legitimate because the `q^k`-th roots of
+unity of `F̄` all DESCEND: a primitive `q^k`-th root `μ` of `ℚ̄` maps to a
+primitive one under the injective `AlgebraicClosure.map`, so `ζ` is one of
+its powers, and `Field.absoluteGaloisGroup.lift_map` intertwines `σ` with
+its restriction.
+
+The `set_option`s mirror the ones the level-one analogue in
+`ConnectedEtale.lean` needs: `Field.absoluteGaloisGroup` is `reducible` by
+an `allowUnsafeReducibility` in `AbsoluteGaloisGroup.lean`, which makes the
+`AlgHom.restrictNormal_commutes` defeq checks expensive. -/
+theorem galois_apply_pow_eq_pow_of_cyclotomicCharacter_pow
+    {F : Type u} [Field F] [NumberField F] (q : ℕ) [Fact q.Prime] (k : ℕ)
+    (σ : Field.absoluteGaloisGroup F) (n : ℕ)
+    (hn : ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        - (n : ℤ_[q]) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (ζ : AlgebraicClosure F) (hζ : ζ ^ q ^ k = 1) :
+    σ ζ = ζ ^ n := by
+  classical
+  have hq := (Fact.out : q.Prime)
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI : NeZero (q ^ k) := ⟨pow_ne_zero _ hq.ne_zero⟩
+  haveI : NeZero ((q : ℕ) : ℚ) := ⟨by exact_mod_cast hq.ne_zero⟩
+  obtain ⟨μ, hμ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) (q ^ k)
+  have hFinj : Function.Injective (AlgebraicClosure.map (algebraMap ℚ F)) :=
+    (AlgebraicClosure.map (algebraMap ℚ F)).injective
+  have hFμ : IsPrimitiveRoot (AlgebraicClosure.map (algebraMap ℚ F) μ) (q ^ k) :=
+    hμ.map_of_injective hFinj
+  obtain ⟨i, -, hi⟩ := hFμ.eq_pow_of_pow_eq_one hζ
+  have hzp : (μ ^ i) ^ q ^ k = 1 := by
+    rw [← pow_mul, mul_comm, pow_mul, hμ.pow_eq_one, one_pow]
+  have hFz : AlgebraicClosure.map (algebraMap ℚ F) (μ ^ i) = ζ := by
+    rw [map_pow]; exact hi
+  have hspec := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) q (n := k)
+    ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) (μ ^ i) hzp
+  have hcast : PadicInt.toZModPow k
+      (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]))
+      = ((n : ℕ) : ZMod (q ^ k)) := by
+    have h0 := (mem_span_natCast_pow_iff q k _).mp hn
+    rw [map_sub, map_natCast, sub_eq_zero] at h0
+    exact h0
+  have hmod : (PadicInt.toZModPow k
+      (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) :
+          ℤ_[q]))).val ≡ n [MOD q ^ k] := by
+    refine (ZMod.natCast_eq_natCast_iff _ _ _).mp ?_
+    rw [ZMod.natCast_val, ZMod.cast_id, hcast]
+  have hord : orderOf (μ ^ i) ∣ q ^ k := orderOf_dvd_of_pow_eq_one hzp
+  have hfin : IsOfFinOrder (μ ^ i) :=
+    isOfFinOrder_iff_pow_eq_one.mpr ⟨q ^ k, pow_pos hq.pos k, hzp⟩
+  have hpp : (μ ^ i) ^ (PadicInt.toZModPow k
+      (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) :
+          ℤ_[q]))).val = (μ ^ i) ^ n :=
+    hfin.pow_eq_pow_iff_modEq.mpr (Nat.ModEq.of_dvd hord hmod)
+  calc σ ζ
+      = AlgebraicClosure.map (algebraMap ℚ F)
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) (μ ^ i)) := by
+        rw [Field.absoluteGaloisGroup.lift_map, hFz]
+    _ = AlgebraicClosure.map (algebraMap ℚ F) ((μ ^ i) ^ n) := by
+        rw [show (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) (μ ^ i) =
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) (μ ^ i) from rfl,
+          hspec, hpp]
+    _ = ζ ^ n := by rw [map_pow, hFz]
+
+/-- **A compatible system of primitive `q^k`-th roots of unity** (PROVEN):
+in an algebraically closed field of characteristic zero there is a sequence
+`ζ k` with `ζ k` primitive of order `q^k` and `ζ (k+1) ^ q = ζ k` — i.e. a
+`ℤ_q`-BASIS of the Tate module `T_q μ`.
+
+This is the choice that makes `exists_cyclotomicLog` an EXISTENCE statement:
+`L k` is `log` to the base `ζ k`, and the tower clause of that leaf is
+exactly the compatibility `ζ (k+1) ^ q = ζ k`.
+
+The step is the only content.  Given `μ` primitive of order `q^k`, take any
+`w` with `w ^ q = μ` (algebraic closedness) — then `w` is automatically
+primitive of order `q^{k+1}` WHEN `k ≥ 1`, because `orderOf w` is a power
+`q^j` dividing `q^{k+2}` and `j ≤ k+1` would force `μ^{q^{k-1}} = 1`.  At
+`k = 0` the argument genuinely fails (`μ = 1`, and `w = 1` is a legal `q`-th
+root of it), which is why the step splits on `k` and picks a primitive
+`q`-th root outright there.  Overlooking that case is the one way to get
+this construction wrong.
+
+The sequence itself is assembled by `Nat.rec` valued in the SUBTYPE
+`{z // IsPrimitiveRoot z (q ^ k)}`, so that the step always receives the
+primitivity of its predecessor. -/
+theorem exists_compatible_primitiveRootSystem (K : Type u) [Field K] [IsAlgClosed K]
+    [CharZero K] (q : ℕ) [Fact q.Prime] :
+    ∃ ζ : ℕ → K, (∀ k, IsPrimitiveRoot (ζ k) (q ^ k)) ∧ ∀ k, ζ (k + 1) ^ q = ζ k := by
+  classical
+  have hq := (Fact.out : q.Prime)
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI : NeZero ((q : ℕ) : K) := ⟨by exact_mod_cast hq.ne_zero⟩
+  have step : ∀ (k : ℕ) (μ : K), IsPrimitiveRoot μ (q ^ k) →
+      ∃ z : K, z ^ q = μ ∧ IsPrimitiveRoot z (q ^ (k + 1)) := by
+    intro k μ hμ
+    rcases k with _ | k
+    · have hμ1 : μ = 1 := by simpa using hμ.pow_eq_one
+      obtain ⟨ν, hν⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot K (q ^ 1)
+      exact ⟨ν, by rw [hμ1, ← pow_one q]; exact hν.pow_eq_one, hν⟩
+    · obtain ⟨w, hw⟩ := IsAlgClosed.exists_pow_nat_eq μ hq.pos
+      have hw1 : w ^ q ^ (k + 2) = 1 := by
+        have hsplit : w ^ q ^ (k + 2) = (w ^ q) ^ q ^ (k + 1) := by
+          rw [← pow_mul, ← pow_succ']
+        rw [hsplit, hw, hμ.pow_eq_one]
+      have hd : orderOf w ∣ q ^ (k + 2) := orderOf_dvd_of_pow_eq_one hw1
+      have hnd : ¬ orderOf w ∣ q ^ (k + 1) := by
+        intro hcon
+        have h1 : w ^ q ^ (k + 1) = 1 := orderOf_dvd_iff_pow_eq_one.mp hcon
+        have h2 : μ ^ q ^ k = 1 := by
+          rw [← hw, ← pow_mul, ← pow_succ']
+          exact h1
+        have h3 : q ^ (k + 1) ∣ q ^ k := (hμ.pow_eq_one_iff_dvd _).mp h2
+        have := (Nat.pow_dvd_pow_iff_le_right hq.one_lt).mp h3
+        omega
+      obtain ⟨j, hj, hje⟩ := (Nat.dvd_prime_pow hq).mp hd
+      have hjeq : j = k + 2 := by
+        by_contra hcon
+        apply hnd
+        rw [hje]
+        exact pow_dvd_pow q (by omega)
+      have hord : orderOf w = q ^ (k + 2) := by rw [hje, hjeq]
+      exact ⟨w, hw, by rw [← hord]; exact IsPrimitiveRoot.orderOf w⟩
+  choose g hg1 hg2 using step
+  have h0 : IsPrimitiveRoot (1 : K) (q ^ 0) := by simp
+  let f : (k : ℕ) → {z : K // IsPrimitiveRoot z (q ^ k)} := fun k =>
+    Nat.rec (motive := fun k => {z : K // IsPrimitiveRoot z (q ^ k)})
+      ⟨1, h0⟩ (fun n ih => ⟨g n ih.1 ih.2, hg2 n ih.1 ih.2⟩) k
+  exact ⟨fun k => (f k).1, fun k => (f k).2, fun k => hg1 k (f k).1 (f k).2⟩
+
 /-- **A compatible system of discrete logarithms on the `q`-power roots of
 unity of `F̄`, intertwining the Galois action with the cyclotomic
-character** (SORRY LEAF — the trivialization `T_q μ ≅ ℤ_q` and the DEFINING
-property of `cyclotomicCharacter`).
+character** (PROVEN 2026-07-28 — the trivialization `T_q μ ≅ ℤ_q` and the
+DEFINING property of `cyclotomicCharacter`).
 
 `L k` is "`log_{ζ_k}`" for a chosen compatible system `ζ_{k+1}^q = ζ_k` of
 primitive `q^k`-th roots of unity in `F̄`, which exists because `F̄` is
@@ -8345,10 +8547,28 @@ true because the `q^k`-th roots of unity of `F̄` all lie in the image of
 `ℚ̄`, so `σ` acts on them through its restriction.  That transport is the
 only non-formal part of this leaf.
 
+HOW IT IS PROVEN.  The basis is
+`exists_compatible_primitiveRootSystem (AlgebraicClosure F) q`; `L k u` is
+the unique `i < q^k` with `ζ k ^ i = u`, taken from
+`IsPrimitiveRoot.eq_pow_of_pow_eq_one` and cast into `ℤ_q` (the value off
+the `q^k`-torsion is junk `0` and no clause mentions it).  The single
+bridging step is
+
+  `ζ k ^ a = ζ k ^ b → a ≡ b [MOD q^k]`,
+
+which is `IsOfFinOrder.pow_eq_pow_iff_modEq` together with
+`IsPrimitiveRoot.eq_orderOf`; every clause is then a `Nat.ModEq` between
+discrete logarithms pushed into `ℤ_q` by `sub_natCast_mem_span_of_modEq`.
+The equivariance clause is the only one with arithmetic in it, and it is
+`galois_apply_pow_eq_pow_of_cyclotomicCharacter_pow` applied at
+`n = (χ_cyc(σ) mod q^k).val`, giving `σ ζ = ζ^n` and hence
+`L k (σ ζ) ≡ n · L k ζ`.
+
 MATHLIB INGREDIENTS: `cyclotomicCharacter.spec`
 (`g t = t ^ (χ(g) mod q^n).val` for `t ^ q^n = 1`),
-`cyclotomicCharacter.toZModPow`, `IsPrimitiveRoot`, and the cyclicity of
-`rootsOfUnity` in a field. -/
+`PadicInt.ker_toZModPow`, `IsPrimitiveRoot`, and the existence of primitive
+roots in an algebraically closed field of characteristic zero
+(`HasEnoughRootsOfUnity`). -/
 theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
     (q : ℕ) [Fact q.Prime] :
     ∃ L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q],
@@ -8365,8 +8585,132 @@ theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
       (∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
         (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1)) ∧
       (∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
-        ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) :=
-  sorry
+        ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) := by
+  classical
+  have hq := (Fact.out : q.Prime)
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have hqpos : ∀ k : ℕ, 0 < q ^ k := fun k => pow_pos hq.pos k
+  haveI hnz : ∀ k : ℕ, NeZero (q ^ k) := fun k => ⟨(hqpos k).ne'⟩
+  obtain ⟨ζ, hprim, hcomp⟩ :=
+    exists_compatible_primitiveRootSystem (AlgebraicClosure F) q
+  -- the level-`k` discrete logarithm to the base `ζ k`
+  have hdl : ∀ (k : ℕ) (u : (AlgebraicClosure F)ˣ), ∃ i : ℕ, i < q ^ k ∧
+      ((u : AlgebraicClosure F) ^ q ^ k = 1 → ζ k ^ i = (u : AlgebraicClosure F)) := by
+    intro k u
+    by_cases h : (u : AlgebraicClosure F) ^ q ^ k = 1
+    · obtain ⟨i, hi, hie⟩ := (hprim k).eq_pow_of_pow_eq_one h
+      exact ⟨i, hi, fun _ => hie⟩
+    · exact ⟨0, hqpos k, fun hc => absurd hc h⟩
+  choose dl hdl_lt hdl_eq using hdl
+  have hval : ∀ (k : ℕ) (u : (AlgebraicClosure F)ˣ), u ^ q ^ k = 1 →
+      (u : AlgebraicClosure F) ^ q ^ k = 1 := by
+    intro k u hu
+    rw [← Units.val_pow_eq_pow_val, hu, Units.val_one]
+  -- the bridge: the discrete logarithm is pinned modulo `q ^ k`
+  have hkey : ∀ (k m : ℕ) (u : (AlgebraicClosure F)ˣ),
+      (u : AlgebraicClosure F) ^ q ^ k = 1 → ζ k ^ m = (u : AlgebraicClosure F) →
+      dl k u ≡ m [MOD q ^ k] := by
+    intro k m u hu hm
+    have h1 : ζ k ^ dl k u = ζ k ^ m := by rw [hdl_eq k u hu, hm]
+    have h2 := (hprim k).eq_orderOf
+    have hfin : IsOfFinOrder (ζ k) :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨q ^ k, hqpos k, (hprim k).pow_eq_one⟩
+    rw [hfin.pow_eq_pow_iff_modEq] at h1
+    rwa [← h2] at h1
+  refine ⟨fun k u => ((dl k u : ℕ) : ℤ_[q]), ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity
+    intro k a b ha hb
+    have ha' := hval k a ha
+    have hb' := hval k b hb
+    have hab' : ((a * b : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ q ^ k = 1 := by
+      rw [Units.val_mul, mul_pow, ha', hb', one_mul]
+    have h1 : ζ k ^ (dl k a + dl k b) = ((a * b : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) := by
+      rw [pow_add, hdl_eq k a ha', hdl_eq k b hb', Units.val_mul]
+    have hmod := hkey k (dl k a + dl k b) (a * b) hab' h1
+    have hres := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    simpa using hres
+  · -- `Γ_F`-equivariance
+    intro k σ u hu
+    have hu' := hval k u hu
+    set χ : ℤ_[q] := ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+      with hχdef
+    set n : ℕ := (PadicInt.toZModPow k χ).val with hndef
+    have hn : χ - (n : ℤ_[q]) ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+      rw [mem_span_natCast_pow_iff, map_sub, map_natCast, sub_eq_zero, hndef,
+        ZMod.natCast_val, ZMod.cast_id]
+    have hact : σ (u : AlgebraicClosure F) = (u : AlgebraicClosure F) ^ n :=
+      galois_apply_pow_eq_pow_of_cyclotomicCharacter_pow q k σ n hn _ hu'
+    set v : (AlgebraicClosure F)ˣ := Units.map
+      ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) u
+      with hvdef
+    have hvval : (v : AlgebraicClosure F) = (u : AlgebraicClosure F) ^ n := by
+      rw [hvdef]; exact hact
+    have hv' : (v : AlgebraicClosure F) ^ q ^ k = 1 := by
+      rw [hvval, ← pow_mul, mul_comm, pow_mul, hu', one_pow]
+    have h1 : ζ k ^ (dl k u * n) = (v : AlgebraicClosure F) := by
+      rw [pow_mul, hdl_eq k u hu', hvval]
+    have hmod := hkey k (dl k u * n) v hv' h1
+    have e1 : ((dl k v : ℕ) : ℤ_[q]) - ((dl k u * n : ℕ) : ℤ_[q]) ∈
+        Ideal.span {(q : ℤ_[q])} ^ k := sub_natCast_mem_span_of_modEq q k _ _ hmod
+    have e2 : ((dl k u : ℕ) : ℤ_[q]) * ((n : ℤ_[q]) - χ) ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+      refine Ideal.mul_mem_left _ _ ?_
+      have hneg := neg_mem hn
+      simpa using hneg
+    have hsum := Ideal.add_mem (Ideal.span {(q : ℤ_[q])} ^ k) e1 e2
+    convert hsum using 1
+    push_cast
+    ring
+  · -- tower compatibility
+    intro k u hu
+    have hu' := hval (k + 1) u hu
+    have h1 : ζ k ^ dl (k + 1) u = ((u ^ q : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) := by
+      rw [Units.val_pow_eq_pow_val, ← hdl_eq (k + 1) u hu', ← hcomp k, ← pow_mul, ← pow_mul,
+        mul_comm]
+    have huq : ((u ^ q : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ q ^ k = 1 := by
+      rw [Units.val_pow_eq_pow_val, ← pow_mul, mul_comm q (q ^ k), ← pow_succ]
+      exact hu'
+    have hmod := hkey k (dl (k + 1) u) (u ^ q) huq h1
+    exact sub_natCast_mem_span_of_modEq q k _ _ hmod.symm
+  · -- injectivity modulo `q ^ k`
+    intro k u hu
+    have hu' := hval k u hu
+    constructor
+    · intro h
+      rw [mem_span_natCast_pow_iff, map_natCast] at h
+      have hdvd : q ^ k ∣ dl k u := by
+        have hz : ((dl k u : ℕ) : ZMod (q ^ k)) = ((0 : ℕ) : ZMod (q ^ k)) := by simpa using h
+        exact (Nat.modEq_zero_iff_dvd).mp ((ZMod.natCast_eq_natCast_iff _ _ _).mp hz)
+      have h0 : dl k u = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k u)
+      have hone := hdl_eq k u hu'
+      rw [h0, pow_zero] at hone
+      exact Units.ext hone.symm
+    · rintro rfl
+      have hone : ζ k ^ dl k 1 = 1 := by
+        rw [hdl_eq k 1 hu']; rfl
+      have hdvd := ((hprim k).pow_eq_one_iff_dvd _).mp hone
+      have h0 : dl k 1 = 0 := Nat.eq_zero_of_dvd_of_lt hdvd (hdl_lt k 1)
+      show ((dl k 1 : ℕ) : ℤ_[q]) ∈ Ideal.span {(q : ℤ_[q])} ^ k
+      rw [h0]
+      simp
+  · -- surjectivity modulo `q ^ k`
+    intro k r
+    set n : ℕ := (PadicInt.toZModPow k r).val with hndef
+    obtain ⟨uz, huz⟩ := (hprim k).isUnit (hqpos k).ne'
+    refine ⟨uz ^ n, ?_, ?_⟩
+    · refine Units.ext ?_
+      rw [Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+        (hprim k).pow_eq_one, one_pow, Units.val_one]
+    · have hval' : ((uz ^ n : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ q ^ k = 1 := by
+        rw [Units.val_pow_eq_pow_val, huz, ← pow_mul, mul_comm, pow_mul,
+          (hprim k).pow_eq_one, one_pow]
+      have h1 : ζ k ^ n = ((uz ^ n : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) := by
+        rw [Units.val_pow_eq_pow_val, huz]
+      have hmod := hkey k n (uz ^ n) hval' h1
+      rw [mem_span_natCast_pow_iff, map_sub, map_natCast, sub_eq_zero]
+      have h2 : ((dl k (uz ^ n) : ℕ) : ZMod (q ^ k)) = ((n : ℕ) : ZMod (q ^ k)) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [h2, hndef, ZMod.natCast_val, ZMod.cast_id]
 
 /-- **Trace duality refines the `q`-adic Weil system to the `I`-adic one**
 (SORRY LEAF — step 3 of the classical route, in its geometric half: the
