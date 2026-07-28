@@ -25091,15 +25091,28 @@ here.  **`integrableOn_qSeriesAt` and `stabilizationRoot_ne_natCast` are
 now PROVEN too** (2026-07-28), the first over the analytic trio of
 `ModularCurve/WeightTwoEigenform.lean` and the second over a pair of
 purely archimedean bounds; both acquired `M ≠ 0`, which is LOAD-BEARING
-(see the FALSITY AUDITs on them).  What is left open is exactly three
-statements, none of which is analysis-on-the-period any more:
+(see the FALSITY AUDITs on them).  **`cuspPeriod_ne_zero_of_isNewEigenformAt`
+is PROVEN too** (2026-07-28), by the Fricke cut in the last subsection —
+the cut its own old docstring named as "safe only here, AFTER the
+reduction".  What is left open is exactly five statements, none of which
+is analysis-on-the-period any more:
 
 * `norm_coeff_le_two_mul_sqrt_of_not_dvd` — `|a_p| ≤ 2√p` for `p ∤ M`
   (Deligne: Eichler–Shimura plus Weil);
 * `norm_coeff_le_sqrt_of_dvd` — `|a_p| ≤ √p` for `p ∣ M`
   (Atkin–Lehner's `U_p`, plus Deligne);
-* `cuspPeriod_ne_zero_of_isNewEigenformAt` — the arithmetic gate, now
-  quantified over NEWFORMS only.
+* `isFrickeEigenform_of_isNewEigenformAt` — a newform is a
+  `W_M`-eigenvector (old/new theory and multiplicity one);
+* `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
+  divisor of a Kenku level (the analytic-rank-`0` statement, and the one
+  that PARI's `mfatkineigenvalues` checks directly);
+* `integral_Ioi_one_axisRestrict_ne_zero` — the `L`-value numerics, now a
+  lower bound on an ABSOLUTELY convergent tail integral rather than on a
+  conditionally convergent one.
+
+The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
+is the whole reason the Fricke hypothesis is worth having — is PROVEN
+(`cuspPeriod_eq_one_sub_mul_integral_Ioi_one`).
 
 The newform predicate is `IsNewEigenformAt`, and it is only *stated*.
 It is deliberately NOT `Modularity/Interface.lean`'s `IsWeightTwoNewform`
@@ -25566,39 +25579,441 @@ theorem stabilizationRoot_ne_natCast {M M' : ℕ} (hM0 : M ≠ 0) {g : CuspForm 
       rwa [Real.sqrt_one] at h
     nlinarith [hs, hs1, hnorm]
 
-/-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
-nonzero period** (sorry leaf).  This is what remains of
-`cuspPeriod_ne_zero_of_kenkuLevel` after the reduction, and it is the
-only declaration in this cluster that still mentions `kenkuLevels`.
+/-! #### The Fricke cut, below the reduction to newforms
+
+The reduction above ends at newforms, and *that* is where the Fricke
+functional equation becomes usable — a `p`-stabilization is a Hecke
+eigenform but not a `W_M`-eigenvector, so it has no Fricke sign at all,
+whereas a newform of level `M` does.  The previous docstring on
+`cuspPeriod_ne_zero_of_isNewEigenformAt` said exactly this and named the
+cut as available; this subsection takes it (2026-07-28).
+
+What the Fricke hypothesis BUYS is `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`
+below, which is PROVEN: the defining integral of `cuspPeriod` runs over
+`(0, ∞)` and is only conditionally convergent near `0`, and the
+substitution `y ↦ 1/y` folds `(0, 1)` onto `(1, ∞)`, leaving
+
+> `√M · cuspPeriod b = (1 - ε) · ∫₁^∞ axisRestrict M g`.
+
+Two things become visible that were invisible before, and they are the
+two leaves this subsection leaves open.  First the identity *contains*
+the assertion `ε = -1`: at `ε = 1` the period is literally `0`, which is
+the analytic-rank-`0` statement and is exactly why `37` is absent from
+`kenkuLevels`.  Second, what is left after that is a lower bound on a
+tail integral over `[1, ∞)`, where the `q`-series
+`∑ bₙ e^{-2πny/√M}` converges absolutely and geometrically, so that
+`∫₁^∞ axisRestrict M g = (√M/2π) ∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M}` — which
+is the quantity PARI evaluates.  The termwise integration is NOT
+performed here; the leaf is stated on the integral, which is the honest
+boundary. -/
+
+/-- **`b` is the `q`-expansion of a weight-two eigenform of level `M`
+that is moreover an eigenvector of the FRICKE involution `W_M`**
+(PROVEN — it is a definition; interface introduced 2026-07-28).
+
+It is written on the rescaled imaginary axis, in exactly the shape
+`exists_frickeInvolution` produces, with `g` in place of the Fricke
+partner: `g ∣[2] W_M = ε g`.  That is deliberate, and it is what lets the
+cut happen at this pin — the alternative phrasing needs `W_M` as a matrix
+in `GL(2, ℝ)`, and `exists_frickeInvolution` is itself stated on the axis
+for the same reason.
+
+**Why this and not a `newform` predicate.**  What the `L`-value argument
+actually USES of newness is only that the completed transform satisfies a
+functional equation, i.e. that `g` is a `W_M`-eigenvector.  Stating the
+weaker property keeps the analytic content free of the old/new
+decomposition; the *link* to newness is the separate leaf
+`isFrickeEigenform_of_isNewEigenformAt` below.
+
+### VACUITY AUDIT (2026-07-28): `M ≠ 0` is NOT decoration
+
+`axisRestrict M g` is defined by `if h : 0 < y ∧ M ≠ 0 then … else 0`, so
+at `M = 0` it is **identically zero** and the eigen-condition degenerates
+to `0 = 0`.  Without the first conjunct the predicate would therefore be
+satisfied by *every* level-`0` eigenform with *either* sign, and
+`cuspPeriod_ne_zero_of_isFrickeEigenform` below would be false at `M = 0`
+for the junk witness of the `FALSITY AUDIT` on
+`exists_isLFunctionOf_of_isWeightTwoEigenform` (`b n = 1` for `n ≥ 1`).
+Every consumer supplies `M ≠ 0` from `M ∣ N` and `N ∈ kenkuLevels` in one
+step, so nothing is lost.
+
+The predicate is **not empty**: at each of the fourteen Kenku levels it is
+inhabited by between one and four coefficient sequences — the newforms of
+the divisors, all of which have `ε = -1`; see the table on
+`frickeSign_eq_neg_one_of_isNewEigenformAt`. -/
+def IsFrickeEigenform (M : ℕ) (b : ℕ → ℂ) : Prop :=
+  M ≠ 0 ∧ ∃ g : CuspForm (Gamma0GL M) 2, IsWeightTwoEigenform M g b ∧
+    ∃ ε : ℂ, (ε = 1 ∨ ε = -1) ∧ ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -ε * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y
+
+/-- **The period is the `axisRestrict` integral, rescaled by `√M`**
+(PROVEN): `cuspPeriod b = (√M)⁻¹ ∫₀^∞ axisRestrict M g`.
+
+`qSeriesAt_eq_axisRestrict` says `qSeriesAt b y = axisRestrict M g (√M y)`;
+this is that identity integrated, with `integral_comp_mul_left_Ioi`
+supplying the Jacobian.  It is the bridge that lets the Fricke relation —
+which is stated about `axisRestrict`, because that is the function
+`exists_frickeInvolution` and `cuspFEPair` are about — act on
+`cuspPeriod`, which is stated about the coefficient sequence. -/
+theorem cuspPeriod_eq_inv_sqrt_smul {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
+    {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) :
+    cuspPeriod b = ((Real.sqrt M)⁻¹ : ℝ) • ∫ y in Set.Ioi (0 : ℝ), axisRestrict M g y := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  rw [cuspPeriod_eq_integral_qSeriesAt hb]
+  rw [setIntegral_congr_fun measurableSet_Ioi
+    (fun y hy => qSeriesAt_eq_axisRestrict hM hb (Set.mem_Ioi.mp hy))]
+  rw [integral_comp_mul_left_Ioi (axisRestrict M g) 0 hsq, mul_zero]
+
+/-- **THE FRICKE FOLD** (PROVEN): a function on `(0, ∞)` satisfying
+`F(1/y) = -ε y² F(y)` with `ε² = 1` has
+
+> `∫₀^∞ F = (1 - ε) ∫₁^∞ F`.
+
+This is the substitution `y ↦ 1/y` on `(0, 1)`, and it is the entire
+mathematical content of the Fricke hypothesis.  It is stated for a bare
+`F : ℝ → ℂ` rather than for `axisRestrict` because nothing modular is
+used: only integrability on `(0, ∞)` and the relation.
+
+The Lean route is `integral_comp_rpow_Ioi` at `p = -1` applied to the
+indicator of `(1, ∞)`, which turns the global substitution into the
+half-line one: for `x > 0` one has `x⁻¹ > 1 ↔ x < 1`, so the transported
+indicator is the indicator of `(0, 1)` and the Jacobian `x^{-2}` cancels
+the `y²` of the relation exactly.  `ε² = 1` — not merely `ε ≠ 0` — is
+what lets `-ε` be moved from one side to the other without an inverse.
+
+Note the **sign convention**, which is pinned by `exists_frickeInvolution`
+(`f(1/y) = -y² (f ∣ W)(y)`, i.e. root number `-1` for the *pair*): here
+`ε` is the eigenvalue of `W_M` on `g` itself, so `ε = 1` gives
+`∫₀^∞ F = 0` and `ε = -1` gives `∫₀^∞ F = 2 ∫₁^∞ F`.  That matches the
+classical statement that a weight-two newform with `f ∣ W_M = +f` has
+`L(f, 1) = 0`. -/
+theorem integral_Ioi_zero_eq_of_fricke {F : ℝ → ℂ} {ε : ℂ} (hε : ε * ε = 1)
+    (hint : IntegrableOn F (Set.Ioi (0 : ℝ)))
+    (hFE : ∀ y : ℝ, 0 < y → F (1 / y) = -ε * ((y ^ (2 : ℝ) : ℝ) : ℂ) * F y) :
+    ∫ y in Set.Ioi (0 : ℝ), F y = (1 - ε) * ∫ y in Set.Ioi (1 : ℝ), F y := by
+  have hsub' : Set.Ioo (0 : ℝ) 1 ⊆ Set.Ioi (0 : ℝ) := fun x hx => hx.1
+  have h := integral_comp_rpow_Ioi (E := ℂ) (Set.indicator (Set.Ioi 1) F)
+    (p := (-1 : ℝ)) (by norm_num)
+  have hR : ∫ y in Set.Ioi (0 : ℝ), Set.indicator (Set.Ioi 1) F y
+      = ∫ y in Set.Ioi (1 : ℝ), F y := by
+    rw [setIntegral_indicator measurableSet_Ioi, Set.Ioi_inter_Ioi,
+      max_eq_right (by norm_num : (0 : ℝ) ≤ 1)]
+  have hL : ∀ x ∈ Set.Ioi (0 : ℝ),
+      (|(-1 : ℝ)| * x ^ ((-1 : ℝ) - 1)) • Set.indicator (Set.Ioi 1) F (x ^ (-1 : ℝ))
+        = Set.indicator (Set.Ioo (0 : ℝ) 1) (fun x => -ε * F x) x := by
+    intro x hx
+    have hx0 : (0 : ℝ) < x := Set.mem_Ioi.mp hx
+    have hxinv : x ^ (-1 : ℝ) = x⁻¹ := by rw [Real.rpow_neg_one]
+    by_cases hlt : x < 1
+    · have hmem : x⁻¹ ∈ Set.Ioi (1 : ℝ) := by
+        rw [Set.mem_Ioi, lt_inv_comm₀ one_pos hx0]
+        simpa using hlt
+      rw [hxinv, Set.indicator_of_mem hmem,
+        Set.indicator_of_mem (Set.mem_Ioo.mpr ⟨hx0, hlt⟩)]
+      have hval : F x⁻¹ = -ε * ((x ^ (2 : ℝ) : ℝ) : ℂ) * F x := by
+        have := hFE x hx0
+        rwa [one_div] at this
+      have hxp : x ^ ((-1 : ℝ) - 1) = (x ^ (2 : ℝ))⁻¹ := by
+        rw [show ((-1 : ℝ) - 1) = -(2 : ℝ) by ring, Real.rpow_neg hx0.le]
+      have hx2 : (0 : ℝ) < x ^ (2 : ℝ) := Real.rpow_pos_of_pos hx0 2
+      have hx2C : ((x ^ (2 : ℝ) : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hx2.ne'
+      rw [hval, hxp, abs_neg, abs_one, one_mul, Complex.real_smul]
+      push_cast
+      field_simp
+    · have hmem : x⁻¹ ∉ Set.Ioi (1 : ℝ) := by
+        simp only [Set.mem_Ioi, not_lt]
+        rw [inv_le_one_iff₀]
+        right; exact not_lt.mp hlt
+      rw [hxinv, Set.indicator_of_notMem hmem,
+        Set.indicator_of_notMem (by simp [Set.mem_Ioo, not_lt.mp hlt])]
+      simp
+  rw [setIntegral_congr_fun measurableSet_Ioi hL, hR] at h
+  have hLL : ∫ y in Set.Ioi (0 : ℝ), Set.indicator (Set.Ioo (0 : ℝ) 1) (fun x => -ε * F x) y
+      = -ε * ∫ y in Set.Ioo (0 : ℝ) 1, F y := by
+    rw [setIntegral_indicator measurableSet_Ioo, Set.inter_eq_self_of_subset_right hsub',
+      integral_const_mul]
+  rw [hLL] at h
+  have key : ∫ y in Set.Ioo (0 : ℝ) 1, F y = -ε * ∫ y in Set.Ioi (1 : ℝ), F y := by
+    rw [← h, ← mul_assoc, show -ε * -ε = 1 by rw [neg_mul_neg]; exact hε, one_mul]
+  have hunion : Set.Ioi (0 : ℝ) = Set.Ioo (0 : ℝ) 1 ∪ Set.Ici (1 : ℝ) := by
+    ext x
+    simp only [Set.mem_Ioi, Set.mem_union, Set.mem_Ioo, Set.mem_Ici]
+    constructor
+    · intro hx
+      rcases lt_or_ge x 1 with h1 | h1
+      · exact Or.inl ⟨hx, h1⟩
+      · exact Or.inr h1
+    · rintro (⟨h1, _⟩ | h1)
+      · exact h1
+      · exact lt_of_lt_of_le one_pos h1
+  have hdisj : Disjoint (Set.Ioo (0 : ℝ) 1) (Set.Ici (1 : ℝ)) := by
+    rw [Set.disjoint_left]
+    intro x hx hx'
+    exact absurd hx' (by simp only [Set.mem_Ici, not_le]; exact hx.2)
+  have hint1 : IntegrableOn F (Set.Ioo (0 : ℝ) 1) := hint.mono_set hsub'
+  have hint2 : IntegrableOn F (Set.Ici (1 : ℝ)) :=
+    hint.mono_set fun x hx => lt_of_lt_of_le one_pos (Set.mem_Ici.mp hx)
+  rw [hunion, setIntegral_union hdisj measurableSet_Ici hint1 hint2,
+    integral_Ici_eq_integral_Ioi, key]
+  ring
+
+/-- **THE EXPONENTIALLY CONVERGENT PERIOD** (PROVEN): for a Fricke
+eigenform with sign `ε`,
+
+> `cuspPeriod b = (√M)⁻¹ · (1 - ε) · ∫₁^∞ axisRestrict M g`.
+
+`cuspPeriod_eq_inv_sqrt_smul` moves the period onto `axisRestrict`,
+`integral_Ioi_zero_eq_of_fricke` folds `(0, 1)` onto `(1, ∞)`, and
+`integrableOn_axisRestrict` supplies the one analytic hypothesis (which is
+in turn `exists_frickeInvolution` + `isBigO_atTop_axisRestrict` +
+`locallyIntegrableOn_axisRestrict` through mathlib's
+`IsStrongFEPair.hasMellin`).
+
+This is the identity the whole cut exists for.  On `[1, ∞)` the
+`q`-series `∑_{n ≥ 1} bₙ e^{-2πny/√M}` (`hasSum_axisRestrict`) converges
+absolutely and geometrically, so the right-hand side is `(2π)⁻¹ (1 - ε)
+∑ (bₙ/n) e^{-2πn/√M}` — the quantity PARI evaluates — whereas the
+defining integral of `cuspPeriod` over `(0, ∞)` is not absolutely
+convergent term by term at all.  The termwise integration is deliberately
+NOT done here: it is a separate (and purely analytic) step, and the leaf
+below is stated on the integral, which needs no summability side
+condition. -/
+theorem cuspPeriod_eq_one_sub_mul_integral_Ioi_one {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b)
+    {ε : ℂ} (hε : ε * ε = 1)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -ε * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    cuspPeriod b =
+      ((Real.sqrt M)⁻¹ : ℝ) • ((1 - ε) * ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y) := by
+  rw [cuspPeriod_eq_inv_sqrt_smul hM hb,
+    integral_Ioi_zero_eq_of_fricke hε (integrableOn_axisRestrict M hM g) hFE]
+
+/-- **THE ROOT NUMBER IS `-1` AT EVERY DIVISOR OF A KENKU LEVEL** (sorry
+leaf) — the *arithmetic* half of what used to be
+`cuspPeriod_ne_zero_of_isNewEigenformAt`, and by
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` it is EXACTLY the
+analytic-rank-`0` assertion: at `ε = 1` the period is literally `0`.
+
+**VERIFIED DIRECTLY 2026-07-28 (PARI/GP, `mfatkineigenvalues`), and this
+is a strictly sharper check than the `L`-value table it replaces**, since
+it computes the Atkin–Lehner eigenvalue itself rather than inferring it
+from a numerical non-vanishing.  For every one of the fourteen Kenku
+levels `N`, every divisor `M ∣ N` with `S₂(Γ₀(M))^{new} ≠ 0`, and every
+newform there, `mfatkineigenvalues(mfinit([M,2],0), M)` returned `-1` at
+every complex embedding — `21` (level, divisor) pairs, `0` exceptions:
+
+| `N` | divisors `M` with newforms | `W_M` eigenvalues |
+|---|---|---|
+| 20 | 20 | `-1` |
+| 24 | 24 | `-1` |
+| 26 | 26 | `-1`, `-1` |
+| 28 | 14 | `-1` |
+| 30 | 15, 30 | `-1`; `-1` |
+| 35 | 35 | `-1`; `-1, -1` |
+| 36 | 36 | `-1` |
+| 39 | 39 | `-1`; `-1, -1` |
+| 42 | 14, 21, 42 | `-1`; `-1`; `-1` |
+| 45 | 15, 45 | `-1`; `-1` |
+| 50 | 50 | `-1`, `-1` |
+| 54 | 27, 54 | `-1`; `-1`, `-1` |
+| 63 | 21, 63 | `-1`; `-1`, `-1` |
+| 75 | 15, 75 | `-1`; `-1`, `-1`, `-1` |
+
+**The controls are what make this convincing**, because they exhibit the
+`+1` this leaf forbids, and they line up row for row with the vanishing
+`L`-values recorded on `cuspPeriod_ne_zero_of_kenkuLevel`: `37` has
+eigenvalues `[-1], [1]` (one vanishing embedding of two), `65` has
+`[1], [-1,-1], [-1,-1]` (one of five), `91` has `[1], [1], [-1,-1],
+[-1,-1,-1]` (two of seven).  So the `+1` eigenvalue is not a theoretical
+possibility here but an observed one at the nearby levels, and it is
+exactly why `37`, `65`, `91` are NOT in `kenkuLevels`.  PARI/GP is an
+untrusted searcher: this establishes that the statement is not false, and
+is not a proof.
+
+**Why `hnew` is load-bearing and NOT removable** (this is a faithfulness
+point, and the version of this leaf on the superseded branch
+`flt-lean-182` did not have it).  For a *newform* the sign is an
+invariant of the form and is what the table above computes.  For a
+`p`-stabilization the only argument that `ε = -1` runs through
+`cuspPeriod ≠ 0` and the reduction — i.e. through
+`cuspPeriod_ne_zero_of_isNewEigenformAt` itself — so dropping `hnew`
+here would make this leaf's only known proof CIRCULAR.  It costs the
+consumer nothing: `cuspPeriod_ne_zero_of_isNewEigenformAt` holds `hnew`
+already.
+
+**What this leaf needs**: the Atkin–Lehner pseudo-eigenvalue at the level
+of the *newform*, i.e. `W_M` acting on `S₂(Γ₀(M))^{new}` with a certified
+basis, which is the same missing theory as the leaf below — but note the
+two are genuinely different questions.  This one is a sign, computable
+from the Hecke algebra by an *algebraic* computation; the one below is a
+numerical lower bound.  Separating them is the point of the cut. -/
+theorem frickeSign_eq_neg_one_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (ε : ℂ) (hε : ε = 1 ∨ ε = -1)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -ε * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    ε = -1 :=
+  sorry
+
+/-- **THE `L`-VALUE NUMERICS: the tail integral does not vanish** (sorry
+leaf) — all that is left of the arithmetic gate once the root number is
+split off, and the ONLY remaining statement in this cluster that is a
+numerical inequality.
 
 TRUE, by the PARI/GP reconnaissance recorded on
-`cuspPeriod_ne_zero_of_kenkuLevel` below: for each of the thirteen
-levels, EVERY newform of EVERY divisor `M ∣ N` was enumerated
-(`mfinit([M,2],0)`) and `|L(f, 1)|` computed at every complex
-embedding — `vanishing = 0` in all thirteen cases, smallest `0.3302`.
-Controls `37`, `65`, `91` vanish as they must, which is why they are not
-in `kenkuLevels`.
+`cuspPeriod_ne_zero_of_kenkuLevel` below: for each of the fourteen levels,
+EVERY newform of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`,
+newspace) and `|L(f, 1)|` computed at every complex embedding —
+`vanishing = 0` in all fourteen cases, smallest `0.3302`.  Given the sign
+leaf above, `L(f, 1) ≠ 0` and this integral being nonzero are the same
+statement, by `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.
 
-**What this leaf still needs, and the check that would refute it.**  An
-explicit certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus
-certified `q`-expansions — which is what would make the PARI computation
-replayable inside Lean.  That is a large missing theory: refute with
+**What the cut BOUGHT, and it is why this leaf is strictly better off
+than the node it replaced.**  The integral runs over `[1, ∞)`, not
+`(0, ∞)`.  There `hasSum_axisRestrict` gives
+`axisRestrict M g y = ∑_{n ≥ 1} bₙ e^{-2πny/√M}` with terms decaying
+geometrically, so termwise integration (not performed here — it is a
+free-standing analytic step, and stating the leaf on the integral avoids
+carrying its summability side conditions) turns the goal into
+
+> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`,
+
+an ABSOLUTELY convergent explicit sum whose tail is effectively bounded by
+`|bₙ| ≤ d(n)√n` (Deligne) — i.e. a finite numerical check with an explicit
+truncation error.  The defining integral of `cuspPeriod` admits no such
+truncation, because it is only conditionally convergent at `0`.
+
+**What this leaf still needs**: an explicit certified basis of
+`S₂(Γ₀(M))^{new}` — dimension formulas plus certified `q`-expansions —
+which is what would make the PARI computation replayable inside Lean.
+That is a large missing theory: refute with
 `grep -rn "newform\|Newform\|dimension.*cusp\|CuspFormBasis" Fermat/
 .lake/packages/mathlib/ ~/cs/FLT/`.  It is the real gate on the whole
-cluster, and after this cut it is the ONLY one — the analysis and the
-Atkin–Lehner bookkeeping are gone.
+cluster.
 
-The *axis not searched*: `fin_cases hN`, which is mechanically available
-and is not a decomposition (it multiplies the frontier by thirteen and
-moves no theory); and the Fricke functional equation, which is safe only
-here, AFTER the reduction — a `p`-stabilization is a Hecke eigenform but
-not a `W_N`-eigenform, so it has no Fricke sign, whereas a newform of
-level `M` does. -/
+The *axis not searched*: `fin_cases hN`, mechanically available and not a
+decomposition (it multiplies the frontier by fourteen and moves no
+theory); and the termwise integration above, which IS a decomposition and
+is the natural next cut — it would remove `CuspForm` from the statement
+entirely, leaving a leaf about the coefficient sequence alone.
+
+`hFE` is stated with the sign already resolved to `-1` (`F(1/y) = y² F(y)`)
+because that is what the consumer has after the sign leaf; carrying `ε`
+would only mean re-deriving it. -/
+theorem integral_Ioi_one_axisRestrict_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y ≠ 0 :=
+  sorry
+
+/-- **The period of a FRICKE eigenform is nonzero at every divisor of a
+Kenku level** (PROVEN 2026-07-28, from the two leaves above).
+
+The assembly: the root number is `-1`
+(`frickeSign_eq_neg_one_of_isNewEigenformAt`), so
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` reads
+`cuspPeriod b = (√M)⁻¹ · 2 · ∫₁^∞ axisRestrict M g`, and the tail
+integral is nonzero (`integral_Ioi_one_axisRestrict_ne_zero`); a product
+of three nonzero factors.
+
+**FAITHFULNESS (2026-07-28).**  This leaf's hypotheses are those of
+`cuspPeriod_ne_zero_of_isNewEigenformAt` *plus* the Fricke condition,
+and `M ∣ N` ranges over divisors of a Kenku level rather than over the
+level itself; both directions are safe, and the newforms of every divisor
+are what the reconnaissance tables enumerate.
+
+**`hnew` is carried deliberately**, against the version of this statement
+on the superseded branch `flt-lean-182`, which omitted it.  See the
+CIRCULARITY note on `frickeSign_eq_neg_one_of_isNewEigenformAt`: without
+`hnew` the sign of a `p`-stabilization can only be pinned through the
+Atkin–Lehner reduction, which is itself a consumer of this leaf.  The
+`IsFrickeEigenform` *interface* stays free of newness — weakness belongs
+in the statement that uses it, not in the definition. -/
+theorem cuspPeriod_ne_zero_of_isFrickeEigenform (N : ℕ) (hN : N ∈ kenkuLevels)
+    (M : ℕ) (hMN : M ∣ N) (b : ℕ → ℂ) (hb : IsFrickeEigenform M b)
+    (hnew : IsNewEigenformAt M b) :
+    cuspPeriod b ≠ 0 := by
+  obtain ⟨hM, g, hg, ε, hε, hFE⟩ := hb
+  have hεε : ε * ε = 1 := by rcases hε with rfl | rfl <;> norm_num
+  have hsign : ε = -1 :=
+    frickeSign_eq_neg_one_of_isNewEigenformAt N hN M hMN hM g b hg hnew ε hε hFE
+  subst hsign
+  have hFE' : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y := by
+    intro y hy
+    rw [hFE y hy]; ring
+  have htail := integral_Ioi_one_axisRestrict_ne_zero N hN M hMN hM g b hg hnew hFE'
+  rw [cuspPeriod_eq_one_sub_mul_integral_Ioi_one hM hg hεε hFE, Complex.real_smul]
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  refine mul_ne_zero (Complex.ofReal_ne_zero.mpr (inv_ne_zero hsq.ne')) ?_
+  exact mul_ne_zero (by norm_num) htail
+
+/-- **A NEWFORM IS A FRICKE EIGENVECTOR** (sorry leaf) — the modular
+half of the cut, and the only place old/new theory is still needed.
+
+TRUE, and classical (Atkin–Lehner 1970; Diamond–Shurman §5.6–5.8).
+`W_M` is an involution of `S₂(Γ₀(M))` commuting with `T_n` for
+`(n, M) = 1`, so it preserves each newform eigenspace; multiplicity one
+says that eigenspace is a line; hence `g ∣ W_M = ε g` with `ε² = 1`, i.e.
+`ε = ±1`.
+
+LEVEL-FREE: `kenkuLevels` does not appear, and the statement says nothing
+about the value of `ε` — that is
+`frickeSign_eq_neg_one_of_isNewEigenformAt`, which is where the
+arithmetic lives.
+
+**What this leaf needs**: `W_M` as an operator on `S₂(Γ₀(M))` (which
+`frickeSlash` already supplies — see `exists_frickeInvolution`), the
+commutation with the Hecke operators, and multiplicity one for the
+newspace.  Only the last is genuinely missing; the first is proven in
+`ModularCurve/WeightTwoEigenform.lean` and the second is a computation
+with double cosets.
+
+`hM : M ≠ 0` is load-bearing for the same reason as everywhere else in
+this cluster: at `M = 0` there is no Atkin–Lehner theory, `Γ₀(0)` has
+infinite index in `SL(2, ℤ)`, and `axisRestrict 0 g` is identically zero
+(see the VACUITY AUDIT on `IsFrickeEigenform`). -/
+theorem isFrickeEigenform_of_isNewEigenformAt (M : ℕ) (hM : M ≠ 0)
+    (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) (hb : IsWeightTwoEigenform M g b)
+    (hnew : IsNewEigenformAt M b) :
+    IsFrickeEigenform M b :=
+  sorry
+
+/-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
+nonzero period** (PROVEN 2026-07-28, from the Fricke cut above).  This is
+what remains of `cuspPeriod_ne_zero_of_kenkuLevel` after the reduction to
+newforms.
+
+The assembly is two lines: `M ≠ 0` from `M ∣ N` and `N ∈ kenkuLevels`;
+`isFrickeEigenform_of_isNewEigenformAt` turns the newform into a Fricke
+eigenvector; `cuspPeriod_ne_zero_of_isFrickeEigenform` finishes.
+
+**DECOMPOSED 2026-07-28, along the Fricke involution** — the cut this
+declaration's own previous docstring named as "safe only here, AFTER the
+reduction".  It was carrying three unrelated theories at once and they
+now sit on three named leaves: old/new theory and multiplicity one
+(`isFrickeEigenform_of_isNewEigenformAt`), the root number
+(`frickeSign_eq_neg_one_of_isNewEigenformAt`), and the numerics
+(`integral_Ioi_one_axisRestrict_ne_zero`).  What used to sit between them
+— the passage from a conditionally convergent integral over `(0, ∞)` to
+an absolutely convergent one over `[1, ∞)` — is now PROVEN
+(`cuspPeriod_eq_one_sub_mul_integral_Ioi_one`). -/
 theorem cuspPeriod_ne_zero_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hM : M ∣ N) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b) :
-    cuspPeriod b ≠ 0 :=
-  sorry
+    cuspPeriod b ≠ 0 := by
+  have hN0 : N ≠ 0 := by
+    simp only [kenkuLevels, List.mem_cons, List.not_mem_nil, or_false] at hN
+    rcases hN with h | h | h | h | h | h | h | h | h | h | h | h | h <;> omega
+  have hM0 : M ≠ 0 := fun h => hN0 (Nat.eq_zero_of_zero_dvd (h ▸ hM))
+  exact cuspPeriod_ne_zero_of_isFrickeEigenform N hN M hM b
+    (isFrickeEigenform_of_isNewEigenformAt M hM0 g b hb hnew) hnew
 
 end CuspPeriodReduction
 
@@ -28904,6 +29319,25 @@ analytic, and (since 2026-07-28) nothing from commutative algebra either, the
 Nullstellensatz certificate having been shed into
 `Fermat.exists_homogeneousCertificate`.
 
+**Ninth round (2026-07-28).**  `cuspPeriod_ne_zero_of_isNewEigenformAt` — the
+arithmetic gate the eighth round's Atkin–Lehner descent left standing — is now
+a PROVEN assembly too, cut ALONG THE FRICKE INVOLUTION, which is the cut its
+own docstring had recorded as "safe only here, AFTER the reduction".  The
+proven glue is `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`: substituting
+`y ↦ 1/y` on `(0, 1)` folds the period onto `√M · cuspPeriod b =
+(1 - ε) ∫₁^∞ axisRestrict M g`, an ABSOLUTELY convergent tail integral where
+the defining one is only conditionally convergent.  Three leaves replace it,
+and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
+(a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
+(its sign is `-1`, which the identity shows IS the analytic-rank-`0`
+statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
+Kenku level), and `integral_Ioi_one_axisRestrict_ne_zero` (the numerics).
+The sign leaf was verified independently and DIRECTLY with PARI/GP's
+`mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
+fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
+forbidden `+1` exactly as often as their `L`-values vanish; that is a sharper
+check than the `L`-value table, and it is tabulated on the leaf.
+
 The open leaves under this node, and the single theory each one needs, are
 TABULATED below — **without a count, deliberately**: the table and the count
 were maintained separately and disagreed by four rows at the 2026-07-27 merge
@@ -28937,7 +29371,9 @@ docstring).
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_cubeModel_of_abelianScheme` | symmetric very ample bundle + theorem of the cube | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
+| `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
+| `integral_Ioi_one_axisRestrict_ne_zero` | `L`-value numerics | **yes** |
 | `exists_segreCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
 | `nonempty_integralCoordinates_of_segreCoordinates` (in `SegreHeight.lean`) | the height machine over mathlib's `Height` | no |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
