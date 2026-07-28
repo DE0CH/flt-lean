@@ -3527,9 +3527,13 @@ characteristic:
   places of odd residue characteristic): at such a `w` EVERY `w`-adic unit
   is a sum of two squares;
 * `exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` (STEP 1a-i′-c,
-  GLOBAL — this is the entire class field theory, and the ONLY place the
-  parity hypothesis is spent): a totally negative `b ≡ 1 mod 2ⁿ` all of
-  whose odd prime divisors SPLIT in `F(i)`.
+  GLOBAL — this is the entire class field theory): a totally negative
+  `b ≡ 1 mod 2ⁿ` all of whose odd prime divisors SPLIT in `F(i)`. **PROVEN
+  2026-07-28**, recut into an EXISTENCE leaf
+  (`exists_totallyNegative_sub_one_mem_span_eq_asIdeal`, parity-free) and a
+  RECIPROCITY leaf
+  (`exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`,
+  which is now the ONLY place the parity hypothesis is spent).
 
 The third case of the assembly — an odd `w` dividing `b` — is discharged
 with no arithmetic at all: `-1 = s²` in `F_w` makes `x² + y²` surjective,
@@ -3672,14 +3676,268 @@ theorem exists_sq_add_sq_adicCompletion_of_notMem
           (algebraMap (NumberField.RingOfIntegers F) F b) := by
   sorry
 
+/-! ### STEP 1a-i′-c, RECUT (2026-07-28) — the class field theory split into
+RECIPROCITY and EXISTENCE
+
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` (below) is now a
+PROVEN assembly over the two declarations of this block. The cut separates the
+two *different* theorems of class field theory that the original one-leaf
+statement had fused, and it is chosen so that a totally negative `b` whose
+ideal is PRIME makes the "every odd prime divisor splits" clause collapse to a
+single place:
+
+* `exists_totallyNegative_sub_one_mem_span_eq_asIdeal` (STEP 1a-i′-c-1,
+  EXISTENCE — Dirichlet/Chebotarev for a ray class, and it carries NO parity
+  hypothesis at all): some totally negative `b ≡ 1 (mod 2ⁿ)` generates a PRIME
+  ideal;
+* `exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`
+  (STEP 1a-i′-c-2, RECIPROCITY — Hilbert's product formula, and **the only
+  place in the whole ABHN chain where `Even (nrRealPlaces F)` is spent**): for
+  such a `b`, the prime it generates SPLITS in `F(i)`.
+
+WHY THE SPLIT IS ALONG THIS LINE. The original leaf needed two independent
+theorems — "every ray class contains a prime" (an analytic/Chebotarev
+statement, with no parity in it) and "Hilbert reciprocity" (an algebraic
+statement, which is where the parity lives) — and fusing them meant no
+successor could attack either without the other. Requiring `(b)` to be prime
+is what makes the second half a statement about ONE place rather than about a
+product over the (a priori unbounded) prime divisors of `b`: the reciprocity
+identity `∏_v (-1,b)_v = 1` then reads `(-1,b)_𝔭 · (-1)^{nrRealPlaces F} = 1`
+directly, with every other factor already trivial for a reason that needs no
+global input.
+
+Note the parity is genuinely spent only in -c-2: `-c-1` is true for every
+number field, including `F = ℚ` (take `b = -(2ⁿ p - 1)`-shaped generators;
+Dirichlet supplies infinitely many). That is the point of the cut — the parity
+does not obstruct existence, it obstructs SPLITTING, which is where the leaf's
+mathematics actually is.
+
+WHY THE ASSEMBLY IS SOUND (and this is the step that is now proven code, not
+prose). Given `b` and `w` from -c-1 at exponent `N := max n 3`:
+
+* the congruence weakens from `2^N` to `2^n` because `2^n ∣ 2^N`, so the
+  assembly may instantiate the existence leaf at whatever exponent the
+  reciprocity leaf needs (`N ≥ 3`, which is the exponent STEP 1a-i′-a needs to
+  make `b` a local square at the places above `2`);
+* `w` is automatically ODD: if `2 ∈ w.asIdeal` then `2^N ∈ w.asIdeal`, so both
+  `b` and `b - 1` lie in `w.asIdeal` and hence `1` does, contradicting
+  primality. So `-c-1` does not have to state oddness and `-c-2` may assume it;
+* the target's third clause quantifies over EVERY odd `w'` with `b ∈ w'`, and
+  there is exactly one: `Ideal.span {b} = w.asIdeal ≤ w'.asIdeal`, and a
+  height-one prime of a Dedekind domain is MAXIMAL, so `w = w'`. This is the
+  clause the primality of `(b)` was chosen to collapse. -/
+
+/-- **STEP 1a-i′-c-1 — EXISTENCE: SOME TOTALLY NEGATIVE `b ≡ 1 (mod 2ⁿ)`
+GENERATES A PRIME IDEAL** (sorry leaf; CUT 2026-07-28 out of
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`).
+
+This is Dirichlet's theorem on primes in a ray class, and **it carries no
+parity hypothesis** — it is true for every number field and every `n`.
+
+ROUTE. Put `𝔣 := (2ⁿ)` and `𝔪 := 𝔣 · ∏_{v real} v`, and let
+`T := {𝔞 : 𝔞 = (c) for some c ≺ 0 with c ≡ 1 mod 𝔣}`.
+
+1. *`T` is nonempty.* `b₀ := 1 - 2ⁿ` works outright for `n ≥ 1`: it is a
+   rational integer `≤ -1`, hence negative under every real embedding, and
+   `b₀ - 1 = -2ⁿ`. (For `n = 0` the congruence is vacuous and `b₀ := -1`
+   serves.) So no approximation theorem is needed for nonemptiness — this is
+   worth recording because the classical write-up reaches for weak
+   approximation here, and does not need to.
+2. *`T` is exactly ONE ray class.* `T` is closed under multiplication by
+   `P_𝔪 = {(α) : α ≻ 0, α ≡ 1 mod 𝔣}` (`c ≺ 0`, `α ≻ 0` gives `cα ≺ 0`, and
+   the congruence is multiplicative), and conversely if `𝔞 = (c)(α)` with
+   `(c) ∈ T` and `(α) ∈ P_𝔪` then `𝔞 = (cα)` with `cα ≺ 0` and `cα ≡ 1`, so
+   `𝔞 ∈ T`. Hence `T` is a full coset of `P_𝔪`, i.e. a single class
+   `τ ∈ Cl_𝔪(F)`. (This equality `T = τ`, not merely `T ⊆ τ`, is what makes
+   the conclusion's generator clause obtainable from a bare "the class
+   contains a prime" statement.)
+3. *The class contains a prime.* By Dirichlet/Chebotarev for ray classes every
+   class of `Cl_𝔪(F)` contains infinitely many prime ideals. Take `𝔭 ∈ τ = T`;
+   by step 2 it has a generator `b ≺ 0` with `b ≡ 1 (mod 𝔣)`, which is the
+   conclusion.
+
+MISSING MACHINERY, checked 2026-07-28 rather than inherited. Absent from the
+mathlib pin: `RayClass`/`rayClass`/`HilbertSymbol`/`hilbertSymbol` have ZERO
+hits in all of `Mathlib`, so there is no ray class group, no ray class field
+and no Artin map for one. What EXISTS and is usable here is the Chebotarev
+material in this module's own import cone
+(`GaloisRepresentation/Chebotarev.lean`: `infinite_setOf_isArithFrobAt`,
+`exists_frobenius_conj_mem_coset`, `dense_conjClasses_globalFrob`), so the
+DENSITY half does not have to be rebuilt; what has to be built is the abelian
+side that produces `H_𝔪` and identifies `Gal(H_𝔪/F) ≅ Cl_𝔪(F)`.
+
+CORRECTION to the "absent from this tree" half of the older note (it was too
+strong, and the correction does not change the verdict). This tree does carry
+ray-class-flavoured material, none of which founds this leaf:
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean` has
+`charKernelRayClass`, `muFixerRayClass`, `IsRamifiedCharRayClass` (Galois-side
+subgroups, PROVEN) and `exists_artinDivisorNormIndex_le_ray_class` — the last
+being an ideal-side ray-class statement in exactly the hypothesis-carrying
+style a successor should copy (it works in
+`Multiplicative (HeightOneSpectrum 𝒪_F →₀ ℤ)` with `Im`, `P`, `N` supplied as
+hypotheses rather than defining a ray class group), but it is itself a `sorry`.
+`Fermat/FLT/Modularity/Interface.lean` has `exists_artinMap_classGroup` and
+friends; those are BOTH sorried AND excluded here by this block's circularity
+guard.
+
+FAITHFULNESS. Not vacuous and not under-pinned: `w` is *determined* by `b`
+(`Ideal.span {b} = w.asIdeal` pins it), so an adversary has no freedom in the
+second component, and the first component genuinely asserts that a totally
+negative element with a prescribed `2`-adic congruence can be found generating
+a PRIME — which is false for a "generic" such element (`1 - 2ⁿ` itself is
+composite for most `n`). The `Ideal.span {b} = w.asIdeal` clause also forces
+`b ≠ 0` and `b` a nonunit, so no degenerate witness discharges it. -/
+theorem exists_totallyNegative_sub_one_mem_span_eq_asIdeal
+    (F : Type u) [Field F] [NumberField F] (n : ℕ) :
+    ∃ (b : NumberField.RingOfIntegers F)
+      (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        NumberField.InfinitePlace.embedding_of_isReal hv
+          (algebraMap (NumberField.RingOfIntegers F) F b) < 0) ∧
+      b - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} ∧
+      Ideal.span {b} = w.asIdeal := by
+  sorry
+
+/-- **STEP 1a-i′-c-2 — RECIPROCITY: A PRIME GENERATED BY A TOTALLY NEGATIVE
+`b ≡ 1 (mod 2ⁿ)`, `n ≥ 3`, SPLITS IN `F(i)` WHEN `F` HAS EVENLY MANY REAL
+PLACES** (sorry leaf; CUT 2026-07-28 out of
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`).
+
+**This is the ONLY declaration in the ABHN chain that spends the parity
+hypothesis.** Everything else in STEP 1a is local field theory, explicit
+algebra, or (in STEP 1a-i′-c-1) a parity-free existence statement.
+
+ROUTE — Hilbert's product formula applied to the pair `(-1, b)`, evaluated
+place by place. Write `(x,y)_v ∈ {±1}` for the quadratic Hilbert symbol, so
+`(x,y)_v = 1` exactly when `y` is a norm from `F_v(√x)`.
+
+* *Real places*: `b ≺ 0`, and the norm form `x² + y²` of `ℂ/ℝ` represents only
+  positive reals, so `(-1,b)_v = -1` at each of the `nrRealPlaces F` real
+  places. **This is the factor the parity controls.**
+* *Complex places*: `F_v = ℂ` is algebraically closed, every element is a norm,
+  `(-1,b)_v = 1`.
+* *Places `w' ∣ 2`*: `b ≡ 1 (mod 2ⁿ)` with `n ≥ 3` makes `b` a SQUARE in
+  `F_{w'}` — this is exactly STEP 1a-i′-a above, and it is why `n ≥ 3` is a
+  hypothesis here — and a square is a norm, so `(-1,b)_{w'} = 1`.
+* *Odd places `w' ≠ w`*: `Ideal.span {b} = w.asIdeal` forces `v_{w'}(b) = 0`,
+  so `b` is a `w'`-adic UNIT; `F_{w'}(i)/F_{w'}` is unramified because
+  `disc(X² + 1) = -4` is a unit at `w'`; and in an unramified quadratic
+  extension of a local field every unit is a norm. So `(-1,b)_{w'} = 1`.
+* *The place `w` itself*: the product formula `∏_v (-1,b)_v = 1` now reads
+  `(-1,b)_w · (-1)^{nrRealPlaces F} = 1`, so `(-1,b)_w = 1` **precisely
+  because the number of real places is EVEN**.
+* *Conclusion*: `w` is odd, so `F_w(i)/F_w` is unramified — hence either split
+  or inert. If it were inert, its norm group would be exactly the elements of
+  EVEN valuation, and `v_w(b) = 1` (because `Ideal.span {b} = w.asIdeal`
+  exactly) is odd, contradicting `(-1,b)_w = 1`. So `w` splits, i.e. `-1` is a
+  square in `F_w`, which is the conclusion.
+
+The `v_w(b) = 1` step is where the primality delivered by STEP 1a-i′-c-1 is
+consumed, and it is the reason that leaf asks for a prime rather than merely
+for an integer whose odd prime divisors are constrained.
+
+FAITHFULNESS — checked numerically in PARI/GP on 2026-07-28, not merely
+argued. All witnesses below other than the `hF` one live in `F = ℚ(√2)`,
+which has `nrRealPlaces = 2` (EVEN), so that each of them isolates the ONE
+hypothesis it drops. A degree-one prime of `ℚ(√2)` over `p` is inert in `F(i)`
+exactly when `p ≡ 3 (mod 4)`, and `p` has degree one exactly when
+`p ≡ ±1 (mod 8)`, so the primes that refute a conclusion here are those with
+`p ≡ 7 (mod 8)`.
+
+NON-VACUITY, and it is a real check rather than a shape argument. Searching
+`b = a + c√2` with `a ≡ 1`, `c ≡ 0 (mod 8)`, `b` totally negative and `(b)`
+prime, over `|s|, |t| ≤ 400`: **every** witness found has `|N(b)| ≡ 1 (mod 4)`,
+i.e. splits in `ℚ(i)` — the conclusion holds in every instance and is never
+vacuously satisfied. First four: `b = -1599 - 1096√2` (`|N| = 154369`),
+`-1599 - 1048√2` (`360193`), `-1599 - 1024√2` (`459649`), `-1599 - 992√2`
+(`588673`). No counterexample exists in that range, as the statement requires.
+
+* `hF` (EVEN) is load-bearing: with `nrRealPlaces F` ODD the conclusion is
+  FALSE. `F = ℚ`, `n = 3`, `b = -7`: totally negative, `b - 1 = -8`, `(7)` is
+  prime and odd, and `-1` is NOT a square in `ℚ₇` (`7 ≡ 3 mod 4`). Reciprocity
+  is not violated — it is exactly what FORCES `(-1,-7)₇ = -1` when the single
+  real place contributes `-1`.
+* `hbneg` (TOTAL NEGATIVITY) is load-bearing, and the witness shows the
+  hypothesis cannot be relaxed to "`b` is a nonzero nonunit". `F = ℚ(√2)`,
+  `n = 3`, `b = 1 + 8√2`: `b - 1 = 8√2 ∈ (8)`, `N(b) = -127` with `127` prime
+  and `127 ≡ 7 (mod 8)`, so `(b)` IS a degree-one prime with residue field
+  `𝔽₁₂₇`; but `127 ≡ 3 (mod 4)`, so `-1` is not a square in `F_{(b)}` and the
+  conclusion FAILS. What goes wrong is precisely the sign: `b` is negative at
+  one real place and positive at the other, so the real product is `-1` rather
+  than `(-1)^{nrRealPlaces F} = +1`.
+* `hbw` (PRIMALITY of `(b)`) is load-bearing: without it reciprocity controls
+  only the PRODUCT of the symbols over the odd prime divisors of `b`, not each
+  factor separately. `F = ℚ(√2)`, `n = 3`, `b = -479 - 328√2`: totally
+  negative (`≈ -942.9` and `≈ -15.1`), `b ≡ 1 (mod 8)`, and
+  `N(b) = 14273 = 7 · 2039` with BOTH factors `≡ 7 (mod 8)`. So `(b)` is a
+  product of two degree-one primes, `-1` is a square in NEITHER completion,
+  and the conclusion fails at each — while reciprocity is perfectly satisfied,
+  because the number of failures is EVEN. This is the exact shape the
+  primality hypothesis exists to exclude, and it is why STEP 1a-i′-c-1 asks
+  for a prime rather than for an integer with constrained divisors.
+* `hw2 : 2 ∉ w.asIdeal` is load-bearing: at `w ∣ 2` the extension
+  `F_w(i)/F_w` is RAMIFIED, so the norm group is not the even-valuation
+  subgroup and the final valuation-parity step has no content.
+* `hn : 3 ≤ n` is imposed because the ROUTE needs it — it is the exponent at
+  which STEP 1a-i′-a makes `b` a local square at every `w ∣ 2`, which is what
+  kills those factors of the product formula. **Its necessity is open, and
+  `ℚ(√2)` cannot decide it**: a search there at `n = 2` found NO
+  counterexample either, for an elementary reason that has nothing to do with
+  this leaf — for `a ≡ 1 (mod 4)`, `c ≡ 0 (mod 4)` one has
+  `N = a² - 2c² ≡ 1 (mod 8)`, and total negativity forces `N > 0`, so a prime
+  `(b)` automatically has `|N(b)| ≡ 1 (mod 8)`, hence `≡ 1 (mod 4)`, hence
+  splits. So `n = 2` may well suffice over some fields; the hypothesis is kept
+  because `3` is sharp over `ℚ₂` and is what the recorded route consumes.
+  Weakening it is a strictly optional improvement — the consumer instantiates
+  this leaf at `max n 3` and never needs `n = 2`.
+  *Check that would settle it*: a number field with evenly many real places, a
+  totally negative `b ≡ 1 (mod 4)` generating an odd prime `w`, with `-1` a
+  nonsquare in `F_w`.
+
+MISSING MACHINERY. The quadratic Hilbert symbol and its product formula, which
+have ZERO hits in the mathlib pin (checked 2026-07-28) and no representative in
+this tree. A successor may prefer the equivalent packaging that hides the
+symbol: this leaf is one instance of the second fundamental exact sequence of
+class field theory for `F(i)/F`, i.e. exactness of
+`F^* → ⨁_v F_v^*/N(F_v(i)^*) → {±1}`.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces
+    (F : Type u) [Field F] [NumberField F]
+    (hF : Even (NumberField.InfinitePlace.nrRealPlaces F))
+    (n : ℕ) (hn : 3 ≤ n)
+    (b : NumberField.RingOfIntegers F)
+    (hbneg : ∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+      NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F b) < 0)
+    (hb1 : b - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n})
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hw2 : (2 : NumberField.RingOfIntegers F) ∉ w.asIdeal)
+    (hbw : Ideal.span {b} = w.asIdeal) :
+    ∃ s : w.adicCompletion F, s ^ 2 = -1 := by
+  sorry
+
 /-- **STEP 1a-i′-c — THE CLASS FIELD THEORY: a number field with an EVEN
 number of real places carries a TOTALLY NEGATIVE algebraic integer,
 congruent to `1` modulo any prescribed power of `2`, every odd prime divisor
-of which SPLITS in `F(i)`** (sorry leaf; CUT 2026-07-28).
+of which SPLITS in `F(i)`** (PROVEN 2026-07-28 as an assembly over
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal` (STEP 1a-i′-c-1,
+EXISTENCE) and
+`exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`
+(STEP 1a-i′-c-2, RECIPROCITY); originally CUT 2026-07-28 as a sorry leaf).
 
-This single leaf now carries ALL of the reciprocity in the ABHN chain, and
-it is the only place the parity hypothesis is spent. Everything else in
-STEP 1a is local field theory or explicit algebra.
+RECUT 2026-07-28. The two class-field-theoretic theorems this statement had
+fused are now separate leaves — see the section comment above this block for
+why the line was drawn there and why requiring `(b)` to be PRIME is what makes
+the split work. In particular the parity hypothesis `hF` is no longer spent
+here: it is passed straight through to STEP 1a-i′-c-2, which is now the ONLY
+declaration in the ABHN chain that consumes it. Everything else in STEP 1a is
+local field theory, explicit algebra, or a parity-free existence statement.
+
+The ROUTE recorded below is the one the two sub-leaves implement between them,
+and it is kept here because it is the only place the whole argument is written
+out end to end.
 
 ROUTE — ray class fields plus Chebotarev, worked out in full because the
 computation that makes it go is short and is where `Even` enters.
@@ -3732,7 +3990,20 @@ Total negativity is vacuous, `b - 1 = 0`, and `1 ∈ w.asIdeal` is false for
 every height-one `w`, so the third clause is vacuous too. The content of the
 leaf is therefore entirely in the case `nrRealPlaces F ≥ 2`.
 
-MISSING MACHINERY, re-checked 2026-07-28 (this is a genuine theory build).
+MISSING MACHINERY — SUPERSEDED 2026-07-28, and one clause of it was too
+strong. The obligations below now sit on the two sub-leaves, which each carry
+their own re-checked version: EXISTENCE (ray class groups, ray class fields,
+Artin reciprocity for them) on STEP 1a-i′-c-1, RECIPROCITY (the quadratic
+Hilbert symbol and its product formula) on STEP 1a-i′-c-2. The "absent from
+this tree" clause is corrected there: `ModThree.lean` does carry
+`charKernelRayClass`, `muFixerRayClass`, `IsRamifiedCharRayClass` and the
+ideal-side `exists_artinDivisorNormIndex_le_ray_class` (itself a `sorry`, but
+a model for the hypothesis-carrying style), and `Interface.lean` carries
+`exists_artinMap_classGroup` and friends (sorried, and excluded here by the
+circularity guard). The "absent from mathlib" clause was re-verified and is
+exact: `RayClass`, `rayClass`, `HilbertSymbol`, `hilbertSymbol` have ZERO hits
+in the whole pin. Kept for the record:
+
 Absent from mathlib, from `~/cs/FLT` and from this tree: ray class groups,
 ray class fields, the Artin reciprocity map for them, and the quadratic
 Hilbert symbol with its product formula. What IS present and usable, in this
@@ -3771,7 +4042,49 @@ theorem exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces
       (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         (2 : NumberField.RingOfIntegers F) ∉ w.asIdeal → b ∈ w.asIdeal →
         ∃ s : w.adicCompletion F, s ^ 2 = -1) := by
-  sorry
+  classical
+  -- Run the existence leaf at `N := max n 3`: the reciprocity leaf needs
+  -- `3 ≤ N` (that is the exponent making `b` a local square above `2`), and the
+  -- congruence then weakens back down to `2 ^ n` for free.
+  set N : ℕ := max n 3 with hN
+  have hn3 : 3 ≤ N := le_max_right _ _
+  have hnN : n ≤ N := le_max_left _ _
+  obtain ⟨b, w, hbneg, hb1N, hbw⟩ :=
+    exists_totallyNegative_sub_one_mem_span_eq_asIdeal F N
+  have hb1 : b - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} := by
+    have hle : Ideal.span {(2 : NumberField.RingOfIntegers F) ^ N} ≤
+        Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} := by
+      rw [Ideal.span_singleton_le_span_singleton]
+      exact pow_dvd_pow _ hnN
+    exact hle hb1N
+  -- `w` is automatically odd: otherwise `b` and `b - 1` both lie in `w.asIdeal`,
+  -- hence so does `1`, contradicting primality.
+  have hw2 : (2 : NumberField.RingOfIntegers F) ∉ w.asIdeal := by
+    intro h2
+    have hbmem : b ∈ w.asIdeal := by
+      rw [← hbw]; exact Ideal.mem_span_singleton_self b
+    have hpow : (2 : NumberField.RingOfIntegers F) ^ N ∈ w.asIdeal :=
+      Ideal.pow_mem_of_mem _ h2 _ (by omega)
+    have hsub : b - 1 ∈ w.asIdeal := by
+      have hle : Ideal.span {(2 : NumberField.RingOfIntegers F) ^ N} ≤ w.asIdeal := by
+        rw [Ideal.span_singleton_le_iff_mem]; exact hpow
+      exact hle hb1N
+    have hone : (1 : NumberField.RingOfIntegers F) ∈ w.asIdeal := by
+      have := Ideal.sub_mem _ hbmem hsub
+      simpa using this
+    exact w.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  refine ⟨b, hbneg, hb1, ?_⟩
+  -- The third clause collapses to the single place `w`, because a height-one
+  -- prime of a Dedekind domain is maximal.
+  intro w' hw'2 hbw'
+  have hle : w.asIdeal ≤ w'.asIdeal := by
+    rw [← hbw, Ideal.span_singleton_le_iff_mem]; exact hbw'
+  have hmax : w.asIdeal.IsMaximal := Ideal.IsPrime.isMaximal w.isPrime w.ne_bot
+  have heq : w.asIdeal = w'.asIdeal := hmax.eq_of_le w'.isPrime.ne_top hle
+  have hww : w = w' := IsDedekindDomain.HeightOneSpectrum.ext heq
+  subst hww
+  exact exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces
+    F hF N hn3 b hbneg hb1N w hw2 hbw
 
 /-- **STEP 1a-i′ — THE ARITHMETIC CORE, in norm-form shape: a number field
 with an EVEN number of real places carries a pair of everywhere-negative
@@ -4555,7 +4868,14 @@ performs. `hFtr` is what converts `Even (finrank ℚ F)` into that. LATER THE
 SAME DAY: that leaf is proven too, and the parity now lives one level down
 again, in STEP 1a-i′-c
 `exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`, which is the
-single class-field-theoretic leaf of the whole ABHN chain.)
+single class-field-theoretic leaf of the whole ABHN chain. LATER STILL,
+2026-07-28: that leaf is now proven too, and the parity has moved one final
+level down into
+`exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`
+(STEP 1a-i′-c-2, RECIPROCITY), which is where it stops — that is the
+declaration Hilbert's product formula is applied in. Its sibling
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal` (STEP 1a-i′-c-1,
+EXISTENCE) carries the rest of the class field theory and NO parity.)
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The six
