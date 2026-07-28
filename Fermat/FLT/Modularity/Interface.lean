@@ -31571,32 +31571,94 @@ theorem index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le
   rw [← hrank]
   exact finrank_le_card_classGroup_of_unramified_abelian (p := p) CF L habel hunr
 
+/-- **THE COMPOSITUM OF TWO EXTENSIONS UNRAMIFIED AT EVERY FINITE PLACE IS
+UNRAMIFIED AT EVERY FINITE PLACE** (SORRY LEAF, cut 2026-07-28 out of
+`exists_unramifiedAbelian_lcm_dvd_finrank` below, of which it is now the
+ONLY remaining open piece).
+
+Pure ramification theory, stated over an **arbitrary number field**: no `p`,
+no `IsCyclotomicExtension`, no class group, no class field theory. It is
+mathlib-shaped on purpose — if it ends up proven in the general form it
+belongs upstream, not here.
+
+**Route (two available, both standard).**
+
+1. *Base change*, which is the pin's own language. `Algebra.FormallyUnramified`
+   is stable under base change and under composition, and `H₁H₂` is a
+   quotient of `H₁ ⊗_K H₂`. So `H₁H₂/H₁` is unramified because `H₂/K` is,
+   and then `H₁H₂/K` is unramified because `H₁/K` is, by
+   `Algebra.IsUnramifiedAt.comp` (`Mathlib/RingTheory/Unramified/Locus.lean`).
+2. *Ramification indices*. `Ideal.ramificationIdx'_eq_one_iff` (the pin's
+   `Mathlib/NumberTheory/RamificationInertia/Unramified.lean`) turns
+   `Algebra.IsUnramifiedAt` into `e = 1` for these Dedekind rings, and `e`
+   is multiplicative in a tower. Note the multiplicativity ALONE is not
+   enough — it gives `e(Q|𝓞 K) = e(Q|𝓞 H₁) · e(Q ∩ H₁|𝓞 K)` and the
+   hypotheses only kill the second factor; killing `e(Q|𝓞 H₁)` is exactly
+   the base-change step of route 1. Do not mistake this leaf for a
+   bookkeeping consequence of the tower formula.
+
+**Why `IsGalois` is present.** It is FREE at the only call site, so it is
+supplied rather than withheld — a leaf should never be made harder than it
+must be. It is **not needed**: the statement is true for arbitrary finite
+extensions, and a prover may ignore both `IsGalois` hypotheses.
+
+**Faithfulness.** The `Q ≠ ⊥` guard is inherited verbatim from the
+hypotheses and the consumer, so the leaf neither gains nor loses content at
+the zero ideal (where mathlib's `Algebra.isUnramifiedAt_bot` applies anyway
+in characteristic zero). Nothing is asserted at the infinite places, in
+keeping with the hypotheses, which assert nothing there — this is the one
+clause that must NOT be strengthened, since the whole cluster's `≤` leaf is
+false when archimedean ramification is ignored over a general base.
+
+**The check that would refute it**: two finite extensions of a number field,
+each unramified at every finite place, whose compositum is ramified at some
+finite place. -/
+theorem isUnramifiedAt_sup_of_isUnramifiedAt
+    (CF : Type) [Field CF] [NumberField CF]
+    (H₁ H₂ : IntermediateField CF (AlgebraicClosure CF))
+    [FiniteDimensional CF H₁] [IsGalois CF H₁]
+    [FiniteDimensional CF H₂] [IsGalois CF H₂]
+    (hunr₁ : ∀ (Q : Ideal (𝓞 H₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q)
+    (hunr₂ : ∀ (Q : Ideal (𝓞 H₂)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q) :
+    ∀ (Q : Ideal (𝓞 ↥(H₁ ⊔ H₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q :=
+  sorry
+
+omit hp in
 /-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS OF
 `ℚ(μ_p)` IS ONE AGAIN, AND ITS DEGREE IS DIVISIBLE BY BOTH DEGREES**
-(SORRY LEAF, cut 2026-07-28 out of
-`exists_unramifiedAbelian_finrank_eq_card_classGroup` below).
+(cut 2026-07-28 out of
+`exists_unramifiedAbelian_finrank_eq_card_classGroup` below;
+**DECOMPOSED AND ALL-BUT-ONE PROVEN 2026-07-28** — the proof below is
+complete except for `isUnramifiedAt_sup_of_isUnramifiedAt` above).
 
 The **BOOKKEEPING** half of that leaf's decomposition into `ℓ`-primary
 layers. It contains **no class field theory at all** — only Galois theory
 and ramification theory in a tower — and it is the shallower of the two
-leaves cut here, so it can be owned separately from
+leaves cut there, so it is owned separately from
 `exists_unramifiedAbelian_primePow_dvd_finrank` below.
 
-**Route.** Take `H := H₁ ⊔ H₂` inside `AlgebraicClosure CF`.
+**What the proof below does, with `H := H₁ ⊔ H₂` inside
+`AlgebraicClosure CF`.**
 
-* *Finite and Galois*: a compositum of two finite Galois subextensions of a
-  fixed algebraic closure is finite Galois.
-* *Abelian*: restriction is an injective group homomorphism
-  `Gal(H₁H₂/K) →* Gal(H₁/K) × Gal(H₂/K)` — an automorphism fixing `H₁` and
-  `H₂` pointwise fixes the field they generate — and a subgroup of a product
-  of two abelian groups is abelian.
-* *Unramified at every finite place*: the inertia group of a prime of
-  `𝓞 (H₁H₂)` injects into the product of the inertia groups of the primes
-  below it in `𝓞 H₁` and `𝓞 H₂`, both trivial by hypothesis. Equivalently,
-  in the pin's own language: `Algebra.FormallyUnramified` is stable under
-  base change and composition, and `H₁H₂` is a quotient of `H₁ ⊗_K H₂`.
-* *Degree*: `K ⊆ H₁ ⊆ H₁H₂` and the tower law give
-  `[H₁ : K] ∣ [H₁H₂ : K]`, likewise for `H₂`, and then `Nat.lcm_dvd`.
+* *Finite and Galois*: `inferInstance` twice. The pin already has
+  `IntermediateField.finiteDimensional_sup`, and normality, separability
+  and `IsGalois` of the compositum are all found by instance search.
+* *Abelian*: PROVEN here. `AlgEquiv.restrictNormalHom_surjective` lifts the
+  two automorphisms of `H` to `Gal(K̄/K)`, and their commutator lies in
+  `H₁.fixingSubgroup ⊓ H₂.fixingSubgroup = (H₁ ⊔ H₂).fixingSubgroup`
+  (`IntermediateField.fixingSubgroup_sup`), which is the kernel of
+  restriction (`IntermediateField.restrictNormalHom_ker`). Note mathlib has
+  `IsAbelianGalois` with `tower_bot`/`tower_top` instances but **no `sup`
+  instance**, which is why this is done by hand.
+* *Unramified at every finite place*: the single remaining leaf,
+  `isUnramifiedAt_sup_of_isUnramifiedAt` above.
+* *Degree*: PROVEN here. The tower `K ⊆ H₁ ⊆ H₁H₂` — with the algebra
+  instance built from `IntermediateField.inclusion le_sup_left` — gives
+  `[H₁ : K] ∣ [H₁H₂ : K]` by `Module.finrank_mul_finrank`, likewise on the
+  right, and then `Nat.lcm_dvd`.
 
 **Faithfulness.** The conclusion asks only for DIVISIBILITY by the `lcm`,
 never for the exact degree of the compositum — deliberately, so that no
@@ -31604,9 +31666,10 @@ linear-disjointness input is smuggled into a leaf that is not supposed to
 carry any. Nothing is asserted at the infinite places, matching the
 hypotheses, which assert nothing there either. The
 `IsCyclotomicExtension {p} ℚ CF` hypothesis is inherited from the cluster
-for symmetry and is **not needed**: unlike its upper-bound counterpart
+for symmetry and is **not needed** — the proof below never uses it, and
+`hp` is explicitly `omit`ted. Unlike its upper-bound counterpart
 `finrank_le_card_classGroup_of_unramified_abelian` above, this statement is
-true over an arbitrary number field, and a prover may ignore it.
+true over an arbitrary number field.
 
 **The check that would refute it**: two finite abelian extensions of
 `ℚ(μ_p)`, each unramified at every finite place, whose compositum is
@@ -31629,8 +31692,44 @@ theorem exists_unramifiedAbelian_lcm_dvd_finrank
       (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
       Nat.lcm (Module.finrank CF H₁) (Module.finrank CF H₂) ∣
-        Module.finrank CF H :=
-  sorry
+        Module.finrank CF H := by
+  refine ⟨H₁ ⊔ H₂, inferInstance, inferInstance, ?_, ?_, ?_⟩
+  · -- ABELIAN: the commutator of two lifts fixes `H₁` and `H₂`, hence their
+    -- compositum, by `IntermediateField.fixingSubgroup_sup`.
+    intro a b
+    obtain ⟨a₀, rfl⟩ :=
+      AlgEquiv.restrictNormalHom_surjective (F := CF) (AlgebraicClosure CF) a
+    obtain ⟨b₀, rfl⟩ :=
+      AlgEquiv.restrictNormalHom_surjective (F := CF) (AlgebraicClosure CF) b
+    have hmem : (a₀ * b₀) * (b₀ * a₀)⁻¹ ∈
+        (AlgEquiv.restrictNormalHom (F := CF) ↥(H₁ ⊔ H₂)).ker := by
+      rw [IntermediateField.restrictNormalHom_ker, IntermediateField.fixingSubgroup_sup]
+      refine Subgroup.mem_inf.mpr ⟨?_, ?_⟩
+      · rw [← IntermediateField.restrictNormalHom_ker H₁]
+        have h : AlgEquiv.restrictNormalHom (F := CF) ↥H₁ (a₀ * b₀) =
+            AlgEquiv.restrictNormalHom (F := CF) ↥H₁ (b₀ * a₀) := by
+          rw [map_mul, map_mul, habel₁]
+        rw [MonoidHom.mem_ker, map_mul, map_inv, h, mul_inv_cancel]
+      · rw [← IntermediateField.restrictNormalHom_ker H₂]
+        have h : AlgEquiv.restrictNormalHom (F := CF) ↥H₂ (a₀ * b₀) =
+            AlgEquiv.restrictNormalHom (F := CF) ↥H₂ (b₀ * a₀) := by
+          rw [map_mul, map_mul, habel₂]
+        rw [MonoidHom.mem_ker, map_mul, map_inv, h, mul_inv_cancel]
+    rw [MonoidHom.mem_ker, map_mul, map_inv] at hmem
+    rw [← map_mul, ← map_mul]
+    exact mul_inv_eq_one.mp hmem
+  · -- UNRAMIFIED: the one remaining leaf.
+    exact isUnramifiedAt_sup_of_isUnramifiedAt CF H₁ H₂ hunr₁ hunr₂
+  · -- DEGREE: the tower law on each side, then `Nat.lcm_dvd`.
+    refine Nat.lcm_dvd ?_ ?_
+    · letI : Algebra H₁ ↥(H₁ ⊔ H₂) :=
+        (IntermediateField.inclusion (le_sup_left : H₁ ≤ H₁ ⊔ H₂)).toRingHom.toAlgebra
+      haveI : IsScalarTower CF H₁ ↥(H₁ ⊔ H₂) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      exact Dvd.intro _ (Module.finrank_mul_finrank CF H₁ ↥(H₁ ⊔ H₂))
+    · letI : Algebra H₂ ↥(H₁ ⊔ H₂) :=
+        (IntermediateField.inclusion (le_sup_right : H₂ ≤ H₁ ⊔ H₂)).toRingHom.toAlgebra
+      haveI : IsScalarTower CF H₂ ↥(H₁ ⊔ H₂) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      exact Dvd.intro _ (Module.finrank_mul_finrank CF H₂ ↥(H₁ ⊔ H₂))
 
 /-- **THE `ℓ`-PRIMARY HILBERT CLASS FIELD: for every prime `ℓ`, `ℚ(μ_p)`
 has a finite ABELIAN extension, unramified at every finite place, whose
@@ -31821,7 +31920,9 @@ is `le_antisymm` and nothing more. The two inequalities it needs are:
   `exists_unramifiedAbelian_primePow_dvd_finrank` (the `ℓ`-primary
   existence theorem — **this is where the class field theory now lives**)
   and `exists_unramifiedAbelian_lcm_dvd_finrank` (the compositum, pure
-  Galois and ramification theory, no class field theory at all).
+  Galois and ramification theory, no class field theory at all — itself
+  now PROVEN except for `isUnramifiedAt_sup_of_isUnramifiedAt`, so the
+  open leaves under this theorem are exactly those two).
 
 The `ℓ`-primary axis is the axis the classical existence proof itself uses:
 it reduces to a congruence subgroup of prime exponent, adjoins `ζ_ℓ`, runs
@@ -32077,10 +32178,13 @@ that is class field theory and the piece that is infinite Galois theory:
   `ℓ`-PRIMARY axis (2026-07-28): this one is now itself PROVEN**, over
   `exists_unramifiedAbelian_primePow_dvd_finrank` (the `ℓ`-primary
   existence theorem, where the class field theory now lives) and
-  `exists_unramifiedAbelian_lcm_dvd_finrank` (the compositum — Galois and
-  ramification theory only), plus the sibling upper bound listed just
-  above. So the leaves OPEN in this cluster are those two, the upper bound,
-  and the two dictionary leaves below — five, not four.
+  `isUnramifiedAt_sup_of_isUnramifiedAt` (the compositum of two extensions
+  unramified at every finite place is one again — pure ramification theory,
+  stated over an arbitrary number field; the surrounding compositum theorem
+  `exists_unramifiedAbelian_lcm_dvd_finrank` is otherwise PROVEN), plus the
+  sibling upper bound listed just above. So the leaves OPEN in this cluster
+  are those two, the upper bound, and the two dictionary leaves below —
+  five, not four.
 * `exists_unramifiedAbelian_finrank_eq_index` and
   `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank` — the Galois
   dictionary in its two directions, containing NO class field theory. They
