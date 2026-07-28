@@ -619,6 +619,29 @@ public import Mathlib.AlgebraicGeometry.AffineSpace
 -- imported publicly here for use in `ajMor_eq_const_of_not_injective`, whose
 -- appeal to `ext_of_isDominant_of_isSeparated` needs `IsReduced X`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
+-- `NumberField.discr` and **Hermite's theorem** `NumberField.finite_of_discr_bdd`:
+-- there are only finitely many finite subextensions of a fixed extension of `ℚ`
+-- whose discriminant is bounded.  This is the whole arithmetic input to
+-- `exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le` below, the Hermite
+-- step of the weak Mordell–Weil cut.
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+-- `IntermediateField.fixingSubgroup_antitone`: a bigger field has a smaller
+-- fixing subgroup.  This is what turns the compositum of the finitely many
+-- candidate division fields into ONE subgroup below all of them.
+public import Mathlib.FieldTheory.Galois.Basic
+-- `IntermediateField.finiteDimensional_iSup_of_finset'`: the compositum of a
+-- FINITE family of finite subextensions is finite.
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+-- `Fermat.finiteIndex_fixingSubgroup`: `Gal(L̄/E)` has finite index in `Gal(L̄/K)`
+-- for `E/K` finite, proven there by the injection
+-- `(L ≃ₐ[K] L) ⧸ E.fixingSubgroup ↪ (E →ₐ[K] L)`.  Reached only transitively
+-- otherwise; imported publicly because it is used as an INSTANCE below.
+public import Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite
+-- `attribute [reducible] Field.absoluteGaloisGroup` lives there, and without it
+-- instance search does not see `Subgroup (Field.absoluteGaloisGroup ℚ)` and
+-- `Subgroup (ℚᵃˡᵍ ≃ₐ[ℚ] ℚᵃˡᵍ)` as the same type — which is exactly what the
+-- Hermite step below needs.
+public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 
 @[expose] public section
 
@@ -19443,8 +19466,14 @@ classical theorem:
 * finiteness of the **`n`-torsion** of `A(ℚ̄)`
   (`finite_torsion_geomPt_of_abelianScheme`);
 * finiteness of the **Kummer field** `ℚ(p^{-1} A(ℚ))`
-  (`exists_finiteIndex_divisible_of_abelianScheme`) — the one deep
-  arithmetic input, carrying the class group and the unit theorem.
+  (`exists_finiteIndex_divisible_of_abelianScheme`) — the deep arithmetic
+  input.  Since 2026-07-28 it is PROVEN in turn, over Hermite's theorem
+  (`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le`, proven from
+  mathlib) and two further leaves: surjectivity of `[p]` on geometric
+  points (`exists_geomPt_nsmul_eq_of_abelianScheme`) and a uniform
+  discriminant bound on the division fields
+  (`exists_discrBound_divisionField_of_abelianScheme`).  Class groups and
+  the unit theorem are NOT on that path — see the cut note there.
 
 **What the assembly is, and why it needs no group cohomology.**  Choose
 for each `P ∈ A(ℚ)` a `p`-division point `Q_P ∈ A(ℚ̄)` fixed by the
@@ -19628,8 +19657,210 @@ theorem finite_torsion_geomPt_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Sp
     Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // n • y = 0} :=
   sorry
 
-/-- **The Kummer field `ℚ(p^{-1} A(ℚ))` is finite over `ℚ`** (sorry node)
-— THE deep arithmetic input to weak Mordell–Weil, and the only one.
+/-- **The discriminant of a finite subextension of `ℚᵃˡᵍ / ℚ`**, as a plain
+integer: mathlib's `NumberField.discr`, read at the number-field instance
+that `FiniteDimensional ℚ K` supplies.
+
+Named because the Kummer leaf below and the Hermite step that consumes it
+both have to SPEAK of the discriminant without carrying that instance in
+their statements.  Definitionally this is `NumberField.discr` and nothing
+else. -/
+noncomputable def subfieldDiscr (K : IntermediateField ℚ (AlgebraicClosure ℚ))
+    (hK : FiniteDimensional ℚ K) : ℤ :=
+  haveI : NumberField K := @NumberField.mk _ _ inferInstance hK
+  NumberField.discr K
+
+/-- **Hermite's theorem, in the form weak Mordell–Weil consumes it**
+(PROVEN, 2026-07-28): for every bound `D` there is ONE finite-index
+subgroup `H ≤ Γ_ℚ` contained in `Gal(ℚᵃˡᵍ/K)` for EVERY number field
+`K ⊆ ℚᵃˡᵍ` of discriminant at most `D` in absolute value.
+
+Proof, three named steps and no new mathematics: there are finitely many
+such `K` (Hermite, `NumberField.finite_of_discr_bdd`); their compositum
+`L` is therefore still finite over `ℚ`
+(`IntermediateField.finiteDimensional_iSup_of_finset'`); and
+`H = Gal(ℚᵃˡᵍ/L)` has finite index
+(`Fermat.finiteIndex_fixingSubgroup`, proven in
+`Fermat/FLT/Mathlib/FieldTheory/Galois/Infinite.lean` by the injection
+`(L ≃ₐ[K] L) ⧸ E.fixingSubgroup ↪ (E →ₐ[K] L)`).  That `H` sits below
+each `Gal(ℚᵃˡᵍ/K)` is antitonicity of `fixingSubgroup`.
+
+**THE QUANTIFIER ORDER IS THE WHOLE CONTENT.**  "For each `K` there is a
+finite-index subgroup contained in `Gal(ℚᵃˡᵍ/K)`" is trivial and useless —
+`Gal(ℚᵃˡᵍ/K)` itself is one.  What is stated here is ONE `H` working for
+all of them simultaneously, and only a finiteness theorem about number
+fields can supply that.  It is also exactly the shape the Kummer assembly
+below needs, since that assembly must fix a `p`-division point of EVERY
+rational point with a SINGLE finite-index subgroup.
+
+*Not vacuous*: the hypothesis `|discr K| ≤ D` is satisfied by `K = ℚ`
+(discriminant `1`) for every `D ≥ 1`, and by infinitely many quadratic
+fields once `D` is large, so the conclusion is a genuine constraint on
+`H`; and `H` cannot be taken to be `⊤`, because `⊤ ≤ K.fixingSubgroup`
+fails as soon as one such `K` is nontrivial. -/
+theorem exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le (D : ℕ) :
+    ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ),
+      Finite (Field.absoluteGaloisGroup ℚ ⧸ H) ∧
+      ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK : FiniteDimensional ℚ K),
+        |subfieldDiscr K hK| ≤ (D : ℤ) → H ≤ K.fixingSubgroup := by
+  classical
+  have hfin := NumberField.finite_of_discr_bdd (AlgebraicClosure ℚ) D
+  set s : Finset {F : IntermediateField ℚ (AlgebraicClosure ℚ) // FiniteDimensional ℚ F} :=
+    hfin.toFinset with hs
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    ⨆ K ∈ s, (K : IntermediateField ℚ (AlgebraicClosure ℚ)) with hL
+  haveI hLfd : FiniteDimensional ℚ L :=
+    IntermediateField.finiteDimensional_iSup_of_finset' (fun i _ => i.prop)
+  haveI hFI : L.fixingSubgroup.FiniteIndex := finiteIndex_fixingSubgroup L
+  have hq : Finite ((AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) ⧸ L.fixingSubgroup) :=
+    Subgroup.finite_quotient_of_finiteIndex
+  refine ⟨L.fixingSubgroup, hq, ?_⟩
+  intro K hK hD
+  have hmem : (⟨K, hK⟩ :
+      {F : IntermediateField ℚ (AlgebraicClosure ℚ) // FiniteDimensional ℚ F}) ∈ s := by
+    haveI : NumberField K := @NumberField.mk _ _ inferInstance hK
+    rw [hs, Set.Finite.mem_toFinset]
+    show |NumberField.discr K| ≤ (D : ℤ)
+    exact hD
+  have hle : K ≤ L := by
+    rw [hL]
+    exact le_iSup₂ (f := fun (i : {F : IntermediateField ℚ (AlgebraicClosure ℚ) //
+      FiniteDimensional ℚ F}) (_ : i ∈ s) => (i : IntermediateField ℚ (AlgebraicClosure ℚ)))
+      ⟨K, hK⟩ hmem
+  exact IntermediateField.fixingSubgroup_antitone hle
+
+/-- **`[n]` is surjective on the geometric points of an abelian scheme
+over `ℚ`, for every `n ≠ 0`** (sorry node) — the leaf that makes division
+points exist at all.
+
+TRUE and classical: over an algebraically closed field of characteristic
+`0`, multiplication by `n ≠ 0` on an abelian variety is a finite flat
+SURJECTIVE isogeny (Mumford, *Abelian Varieties* §6; Silverman *AEC*
+III.4.2 in the elliptic case), and a surjective morphism of schemes of
+finite type over an algebraically closed field is surjective on rational
+points.
+
+**FAITHFULNESS AUDIT.**  `hn` is load-bearing: `[0]` kills every point, so
+at `n = 0` the statement asserts that every geometric point is `0`, which
+is FALSE for every `A` of positive dimension.  At `n = 1` it is trivial.
+*Not vacuous*: the conclusion produces a genuinely new point — it is what
+gives the Kummer cocycle below anything to be a cocycle of — and it is
+false over `ℚ` rather than `ℚᵃˡᵍ` for any curve of positive rank, so the
+passage to the algebraic closure is doing real work.
+
+Stated for a general `n ≠ 0` rather than at the prime `p` of the consumer
+because the classical proof is uniform in `n`, exactly as for the sibling
+leaf `finite_torsion_geomPt_of_abelianScheme`; the two are the surjectivity
+and the finite-kernel halves of the same isogeny statement.
+
+**MISSING MACHINERY**: the multiplication-by-`n` isogeny of an abelian
+scheme and its surjectivity on geometric points.
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone
+and is where such a statement belongs; the check that would refute this
+note is `grep -rn "nsmul\|surj" ` over that file and over
+`Fermat/FLT/Modularity/AbelianScheme.lean`. -/
+theorem exists_geomPt_nsmul_eq_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0)
+    (w : GeomFibrePt jstr (𝟙 SpecQ)) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ∃ y : GeomFibrePt jstr (𝟙 SpecQ), n • y = w :=
+  sorry
+
+/-- **The `p`-division fields of `A(ℚ)` have BOUNDED DISCRIMINANT** (sorry
+node) — THE deep arithmetic input to weak Mordell–Weil, and the only one
+left after the Hermite step above is discharged.
+
+Stated as: one bound `D`, working for every rational point `P` and every
+`p`-division point `y` of it at once, such that `y` is defined over a
+number field of discriminant at most `D`.
+
+TRUE and classical (Silverman, *AEC* VIII.1.5 and VIII.1.6, verbatim for
+abelian varieties).  Write `K₀ = ℚ(A[p])` and, for a `p`-division point
+`y` of a rational `P`, `K = K₀(y)`.  Four steps, and the bound they give
+depends only on `A` and `p`:
+
+* `K₀/ℚ` is FINITE — `A[p]` is finite (the sibling leaf
+  `finite_torsion_geomPt_of_abelianScheme`) and each of its points is
+  defined over a finite extension;
+* `[K : K₀] ≤ #A[p]` — the Kummer map `σ ↦ σ y − y` is an injection of
+  `Gal(K/K₀)` into `A[p]`, because `p(σ y − y) = σ P − P = 0` and because
+  `K₀` contains `A[p]`, which is what makes that map a homomorphism.  In
+  particular `[K : ℚ]` is bounded independently of `P` and of `y`;
+* `K/ℚ` is UNRAMIFIED outside the finite set `S` of places dividing `p`
+  together with the places of bad reduction of `A` — Néron–Ogg–Shafarevich
+  for `K₀`, and Silverman VIII.1.5(b) for `K/K₀`;
+* a number field of degree at most `d` unramified outside `S` has
+  `|discr| ≤ ∏_{q ∈ S} q^{c(q,d)}`, the exponent `c(q,d)` depending only
+  on `q` and `d`.
+
+**WHY THIS IS NOT CIRCULAR.**  Nothing here assumes `A(ℚ)` finitely
+generated.  The Kummer injection is used only to bound `[K : K₀]`; the
+uniformity across the infinitely many `P` comes from Hermite's theorem
+above, i.e. from the arithmetic of number fields, not from the size of
+`A(ℚ)`.  That is Silverman's order of argument and it is why the descent
+can be run afterwards.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous, and the quantifier order is the
+content.*  `D` is chosen BEFORE `P`; letting `D` depend on `P` would be
+true and useless, since Hermite would then produce a different `H` for
+each `P` and the assembly would have no single finite-index subgroup.
+`hp` is not needed for truth — the statement holds for every `n ≥ 1`, with
+the same proof — but it is retained because the consumer has it and
+because the Kummer step is written at a prime, where `A[p]` is an
+`𝔽_p`-vector space.  The conclusion is stated for EVERY division point `y`
+of `P`, not merely for one: that is no stronger, since two division points
+of the same `P` differ by a point of `A[p] ⊆ K₀`, so they generate the
+same field over `K₀` — and it is what lets the consumer choose `y` by the
+surjectivity leaf above rather than have it handed to it.
+
+**THE CUT, and what it corrects.**  This node used to carry, as one
+indivisible block, "the class group and the unit theorem for `ℚ(A[p])`,
+through the `p`-Selmer group `K₀(S, p)`".  That is the classical route and
+it is not the cheapest one available here: the extensions `K/K₀` have
+BOUNDED DEGREE, so **Hermite–Minkowski suffices and Kummer theory over
+`K₀` is not needed at all**.  Finiteness of the class group and Dirichlet's
+unit theorem are what one needs to bound the maximal abelian exponent-`p`
+extension unramified outside `S`, an extension of unbounded degree; but no
+single `K₀(y)` has unbounded degree, and there are only finitely many
+number fields of bounded degree and bounded discriminant.  So the whole
+arithmetic-of-`K₀` half of the old note is discharged by
+`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le` above, which is
+PROVEN.
+
+**MISSING MACHINERY**, and it is the honest remaining cost: the first
+three bullets — finiteness of `ℚ(A[p])`, the Kummer degree bound, and
+Néron–Ogg–Shafarevich for `A` and for the division points.  The fourth is
+NOT missing: it is
+`Fermat.exists_discr_factorization_le_of_finrank_le` in
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean`,
+PROVEN there — but that module is strictly DOWNSTREAM of this one (it
+imports `MazurTorsion`, which imports this file), so it cannot be used
+here as things stand.  The repair, when this leaf is attacked, is to hoist
+the different-ideal/discriminant-exponent development of that file above
+`X0.lean`; the check that would refute this note is to compute the import
+closure of `HermiteMinkowski.lean` and see whether it still contains
+`Fermat.FLT.ModularCurve.X0`.
+
+The FIRST bullet is also nearer than it looks:
+`Fermat.exists_fixingSubgroup_le_stabilizer_geomFibrePt` in
+`Fermat/FLT/Modularity/TateModule.lean` is PROVEN — every geometric point
+of a fibre is fixed by `Gal(ℚᵃˡᵍ/E)` for some finite `E/ℚ` — and
+`TateModule.lean` is NOT downstream of this file (its project import
+closure is 34 modules and contains neither `X0` nor `MazurTorsion`), so
+importing it here costs six modules and closes that bullet outright. -/
+theorem exists_discrBound_divisionField_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ∃ D : ℕ, ∀ (P : RelPoint jstr (𝟙 SpecQ)) (y : GeomFibrePt jstr (𝟙 SpecQ)),
+      p • y = ratToGeom jstr P →
+      ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK : FiniteDimensional ℚ K),
+        |subfieldDiscr K hK| ≤ (D : ℤ) ∧
+        ∀ σ ∈ K.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ y = y :=
+  sorry
+
+/-- **The Kummer field `ℚ(p^{-1} A(ℚ))` is finite over `ℚ`** (PROVEN,
+2026-07-28, over the two leaves above and the Hermite step) — THE deep
+arithmetic input to weak Mordell–Weil.
 
 Stated as: there is a finite-index subgroup `H ≤ Γ_ℚ` — take
 `H = Γ_L` for `L` the field below — such that every rational point of
@@ -19675,14 +19906,28 @@ proof — but it is retained because the consumer has it and because the
 Kummer-theoretic proof is written at a prime, where `A[p]` is an
 `𝔽_p`-vector space and `L/K₀` is an elementary abelian `p`-extension.
 
-**MISSING MACHINERY**, and it is the honest remaining cost of weak
-Mordell–Weil: surjectivity of `[p]` on geometric points; the Kummer
-pairing; ramification of `L/K₀` outside `S`; and the finiteness theorem
-for `S`-ramified abelian extensions of exponent `p`, i.e. the class
-group and unit theorem for `K₀`.  Mathlib has the last two ingredients
-in the form of `NumberField.classNumber` and the Dirichlet unit theorem;
-what is absent is the abelian-scheme side and the passage from a number
-field to `Γ_ℚ`. -/
+**THE CUT, 2026-07-28, and what it corrects.**  The MISSING MACHINERY note
+this docstring used to carry read: "surjectivity of `[p]` on geometric
+points; the Kummer pairing; ramification of `L/K₀` outside `S`; and the
+finiteness theorem for `S`-ramified abelian extensions of exponent `p`,
+i.e. the class group and unit theorem for `K₀`".  Its first item is now a
+named leaf; the last is **not needed at all**, and was the expensive part.
+
+The reason is the axis the old note never searched.  Kummer theory over
+`K₀` — hence the `p`-Selmer group `K₀(S, p)`, hence the class group and
+the unit theorem — is what one needs to bound the maximal abelian
+exponent-`p` extension of `K₀` unramified outside `S`, an extension of
+UNBOUNDED degree.  But the assembly never meets that extension: it meets
+one `K₀(y)` at a time, each of degree at most `#A[p]` over `K₀`, and there
+are only finitely many number fields of bounded degree and bounded
+discriminant.  So **Hermite–Minkowski replaces class groups and units
+here**, and the Hermite half is now PROVEN
+(`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le`).
+
+What is left is two leaves: `exists_geomPt_nsmul_eq_of_abelianScheme` (the
+division points exist) and `exists_discrBound_divisionField_of_abelianScheme`
+(they are defined over fields of bounded discriminant).  The proof below is
+their composition and nothing else. -/
 theorem exists_finiteIndex_divisible_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -19690,8 +19935,14 @@ theorem exists_finiteIndex_divisible_of_abelianScheme {J : Scheme.{0}} {jstr : J
       Finite (Field.absoluteGaloisGroup ℚ ⧸ H) ∧
       ∀ P : RelPoint jstr (𝟙 SpecQ), ∃ y : GeomFibrePt jstr (𝟙 SpecQ),
         p • y = ratToGeom jstr P ∧
-        ∀ σ ∈ H, ab.galSMul (𝟙 SpecQ) σ y = y :=
-  sorry
+        ∀ σ ∈ H, ab.galSMul (𝟙 SpecQ) σ y = y := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨D, hD⟩ := exists_discrBound_divisionField_of_abelianScheme ab p hp
+  obtain ⟨H, hHfin, hH⟩ := exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le D
+  refine ⟨H, hHfin, fun P => ?_⟩
+  obtain ⟨y, hy⟩ := exists_geomPt_nsmul_eq_of_abelianScheme ab p hp.ne_zero (ratToGeom jstr P)
+  obtain ⟨K, hKfd, hKd, hKfix⟩ := hD P y hy
+  exact ⟨y, hy, fun σ hσ => hKfix σ (hH K hKfd hKd hσ)⟩
 
 /-- **Weak Mordell–Weil at a PRIME: `A(ℚ) / p A(ℚ)` is finite, for every
 abelian scheme `A` over `ℚ` and every prime `p`** (PROVEN, 2026-07-27,
@@ -19740,10 +19991,13 @@ Two of those three are now *not* on the frontier of this node at all:
   at this pin, is not on the path.  The assembly below is compiler-checked
   and mentions no cohomology.
 * **the finiteness theorems of algebraic number theory are not used
-  HERE.**  They sit inside one named leaf,
-  `exists_finiteIndex_divisible_of_abelianScheme`, which is the single
-  deep arithmetic statement left; the other three leaves are Galois
-  descent (twice) and finiteness of `A[p](ℚ̄)`.
+  HERE.**  They sat inside one named leaf,
+  `exists_finiteIndex_divisible_of_abelianScheme`; the other three leaves
+  are Galois descent (twice) and finiteness of `A[p](ℚ̄)`.  That leaf is
+  itself PROVEN since 2026-07-28, and its cut note records a second
+  correction: the finiteness theorem it needs is **Hermite–Minkowski**,
+  not the class group and the unit theorem, because the division fields
+  have BOUNDED DEGREE over `ℚ(A[p])`.
 
 `Fermat/FLT/EllipticCurve/MordellWeil.lean` is still NOT a
 counterexample: despite its name it is an explicit `2`-descent for the
@@ -21882,7 +22136,8 @@ docstring).
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
-| `exists_finiteIndex_divisible_of_abelianScheme` | Kummer field / class group + units | no |
+| `exists_geomPt_nsmul_eq_of_abelianScheme` | `[n]` is a surjective isogeny | no |
+| `exists_discrBound_divisionField_of_abelianScheme` | Kummer degree bound + Néron–Ogg–Shafarevich | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_heckeIsotypicDecomposition` | Eichler-Shimura | no |
