@@ -11194,9 +11194,21 @@ leaves:
 
 The `≃+` half is *proven* there, in
 `exists_geomFibreAddEquiv_of_weierstrassModel`, by transporting
-`exists_projGeomFibreAddEquiv` along an isomorphism of proper models; its
-own open inputs are `exists_isIso_of_affineChart` and `relPointPost_add`
-(rigidity).  Nothing above is restated in this module.
+`exists_projGeomFibreAddEquiv` along an isomorphism of proper models.
+
+**Its two named inputs are NO LONGER OPEN** (corrected 2026-07-28): this
+paragraph used to say that `exists_isIso_of_affineChart` and
+`relPointPost_add` (rigidity) were where that half's residue lived, and
+both carry full proof bodies and no `sorry` at `b93d3b9f`.  What is still
+open under it is the projective group law rather than the transport:
+`exists_projMulOfCoords`, `exists_projMul_geomFibreEquivVal`,
+`exists_coordinateRingEquiv_projChartRing`, `compl_basicOpen_projCoord_two`
+and `smoothOfRelativeDimension_one_of_affineChart`.  (The check that
+refutes that list — it is a citation trace WITHIN `EllipticScheme.lean` and
+claims nothing about cross-module inputs: run a comment-stripped sorry scan
+of that module and trace citations down from
+`exists_geomFibreAddEquiv_of_weierstrassModel`.)  Nothing above is restated
+in this module.
 
 **And the hoist is impossible, not merely unnecessary.**
 `AbelianScheme.lean` is UPSTREAM of every Weierstrass module in the tree —
@@ -11390,6 +11402,39 @@ under this node, and no two of them share subject matter:
 * `exists_weierstrassCurve_of_abelianSchemeStruct` — the Weierstrass
   dictionary, no modular curve in it.  (`exists_stableCyclic_of_gamma0Datum`
   above is PROVEN over it.)
+
+**DISPOSITION OF THE `flt-lean-95` HANDBACK — nothing was salvaged, and this
+paragraph exists so that nobody diagnoses it a fourth time** (2026-07-28).
+The tag `handback/flt-lean-95` (`832e3f11`, on origin) proves a theorem
+called `false_of_gamma0Datum_specQ`: the `False`-valued packaging of the
+converse of `nonempty_gamma0Datum_of_stable`.  It was cut against a tree
+that predates release 5, could not merge, and was handed back for re-cutting.
+It has been re-cut, and the answer is that **there is nothing to re-cut**:
+every step of it is already on `main`, in the surviving cut, in a strictly
+better form.  Step by step, so the claim is checkable rather than asserted:
+
+* its step 1 — Weierstrass model plus the Galois-equivariant identification
+  of the geometric fibre — cites exactly
+  `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which is
+  what `exists_weierstrassCurve_of_abelianSchemeStruct` above cites;
+* its steps 2–4 — `geom_cyclic`'s generator, `LiesIn`-stability, transport
+  along `e` — are `exists_stableCyclic_of_gamma0Datum` above, which is
+  PROVEN.  That version is BETTER, not merely equivalent: it routes
+  stability through the named `liesIn_galSMul` instead of inlining the
+  `specGal σ ≫ w` precomposition, and so needs no additivity of `galSMul`;
+* its `False`-valued packaging is `y0HasNoRationalPoint_of_not_stableCyclic`
+  below, whose hypothesis `h` is character-for-character the handback's;
+* its discovery that `hN : N ≠ 0` is unused is already recorded, and `_hN`
+  is already underscore-prefixed, on `exists_stableCyclic_of_gamma0Datum`.
+
+**And its residue is stale, which is the one thing a merge would have
+silently imported.**  The handback names
+`exists_weierstrassModel_of_ellipticScheme` and
+`exists_geomFibreAddEquiv_of_weierstrassModel` as where the geometry then
+lived; **both are PROVEN at `b93d3b9f`**, and the live residue is the finer
+set named in `exists_weierstrassCurve_of_abelianSchemeStruct`'s docstring
+above.  So the tag is history, not work: it should be neither merged nor
+re-dispatched, and no leaf anywhere is waiting on it.
 
 The degenerate level is PROVEN here: at `N = 0` no descent happens at all,
 `y0HasNoRationalPoint_zero` empties an arbitrary coarse space, and a section of
