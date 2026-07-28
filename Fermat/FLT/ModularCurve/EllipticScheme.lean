@@ -208,12 +208,19 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
 * the Weierstrass-comparison cluster further down, which belongs to a different
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
-  `exists_weierstrassRingEquiv_of_affineComplement`,
-  `not_smooth_specMap_coordinateRing_of_singular` (which on 2026-07-28
-  replaced `isElliptic_of_isOpenImmersion_coordinateRing`, now PROVEN: the
-  char-`0` rationality of the singular point split off as the PROVEN
-  `exists_singular_of_Δ_eq_zero`, leaving only the Jacobian criterion) and
-  `smoothOfRelativeDimension_one_of_affineChart` (that last one replaced
+  `exists_weierstrassRingEquiv_of_affineComplement` and
+  `smoothOfRelativeDimension_one_of_affineChart`.
+  **`isElliptic_of_isOpenImmersion_coordinateRing` was a third leaf of this
+  cluster until 2026-07-28 and is now PROVEN**, in two halves that are both
+  proven here: `exists_singular_of_Δ_eq_zero` (the char-`0` rationality of the
+  singular point, with an explicit witness in `c₄`, `c₆`, `b₂`) and
+  `not_smooth_specMap_coordinateRing_of_singular` (the Jacobian criterion, over
+  the elliptic-curve-free
+  `not_formallySmooth_quotient_span_singleton_of_mem_sq`).  The two leaves that
+  REMAIN are genuine theory builds — ampleness of divisors and Riemann–Roch,
+  neither of which exists in mathlib, in `~/cs/FLT` or here — so the speed of
+  the third is no evidence about them.
+  (`smoothOfRelativeDimension_one_of_affineChart` replaced
   `exists_isIso_of_affineChart` on 2026-07-27, in two steps: first a cut into
   two extension leaves, then release 6's `CurveExtension.lean`, which closed
   both of those and left only the statement that `A` is a CURVE;
