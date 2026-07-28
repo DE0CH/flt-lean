@@ -3676,8 +3676,8 @@ theorem exists_totallyNegative_split_quaternionSymbol_of_even
   · exact fun h => hb (hinj (by simpa using h))
 
 /-- **STEP 1a-ii — a symbol algebra with invertible parameters is a
-quaternion algebra: central, simple, of dimension `4`** (sorry leaf; CUT
-2026-07-27, ordinary algebra with no arithmetic in it).
+quaternion algebra: central, simple, of dimension `4`** (PROVEN 2026-07-28;
+CUT 2026-07-27, ordinary algebra with no arithmetic in it).
 
 `IsQuaternionAlgebra F D` bundles `IsSimpleRing D`, `Algebra.IsCentral F D`
 and `Module.rank F D = 4`. For `D = ℍ[F,a,0,b]` the rank is
@@ -3707,14 +3707,114 @@ converse direction is already usable once this is in place.
 
 Stated over an arbitrary field with `2 ≠ 0` rather than over a number field
 on purpose: the consumer needs it only over `F`, but the general statement is
-what would go to mathlib. -/
+what would go to mathlib.
+
+PROVEN 2026-07-28, exactly along the route above and with no extra hypotheses.
+
+* RANK is `QuaternionAlgebra.rank_eq_four` from the pin.
+* CENTRE: an element of `Subalgebra.center F ℍ[F,a,0,b]` commutes with
+  `i = ⟨0,1,0,0⟩` and with `j = ⟨0,0,1,0⟩`; reading off the four coordinates of
+  those two identities gives exactly `x₂ = -x₂`, `a x₃ = -(a x₃)` (from `i`)
+  and `x₁ = -x₁` (from `j`), so `2 ≠ 0` and `a ≠ 0` force
+  `x₁ = x₂ = x₃ = 0`, i.e. `x = algebraMap F _ x.re ∈ ⊥`.
+* SIMPLICITY: the conjugation average. For every `x`,
+
+      x + a⁻¹ • (i x i) + b⁻¹ • (j x j) − (ab)⁻¹ • (k x k) = ⟨4 x₀, 0, 0, 0⟩,
+
+  an identity of the four coordinates that `field_simp; ring` discharges
+  (`i⁻¹ = a⁻¹ i`, `j⁻¹ = b⁻¹ j`, `k⁻¹ = −(ab)⁻¹ k`, so the left side really is
+  `x + c_i x + c_j x + c_k x`). Each summand lies in a two-sided ideal `I`
+  containing `x`, so `⟨4 y.re, 0,0,0⟩ ∈ I` for every `y ∈ I`; applying that to
+  `y ∈ {x, i x, j x, k x}`, whose real parts are `x₀`, `a x₁`, `b x₂`,
+  `-(a b x₃)`, and using `x ≠ 0`, produces a nonzero scalar in `I`, which is a
+  unit. Hence `I = ⊤`, and `IsSimpleRing.of_eq_bot_or_eq_top` applies. `2 ≠ 0`
+  enters as `4 ≠ 0`. -/
 theorem isQuaternionAlgebra_quaternionAlgebra_of_ne_zero {F : Type*} [Field F]
     (h2 : (2 : F) ≠ 0) {a b : F} (ha : a ≠ 0) (hb : b ≠ 0) :
     _root_.IsQuaternionAlgebra F (_root_.QuaternionAlgebra F a 0 b) := by
-  sorry
+  have h4 : (4 : F) ≠ 0 := by
+    have h : (4 : F) = 2 * 2 := by norm_num
+    rw [h]; exact mul_ne_zero h2 h2
+  -- CENTRE
+  have hcentral : Algebra.IsCentral F (_root_.QuaternionAlgebra F a 0 b) := by
+    constructor
+    rintro ⟨x0, x1, x2, x3⟩ hx
+    rw [Subalgebra.mem_center_iff] at hx
+    have hi := hx (⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b)
+    have hj := hx (⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b)
+    simp [_root_.QuaternionAlgebra.ext_iff] at hi hj
+    obtain ⟨hi1, hi2⟩ := hi
+    obtain ⟨_, hj2⟩ := hj
+    have e2 : x2 = 0 := by
+      have h : (2 : F) * x2 = 0 := by linear_combination hi2
+      exact (mul_eq_zero.mp h).resolve_left h2
+    have e1 : x1 = 0 := by
+      have h : (2 : F) * x1 = 0 := by linear_combination -hj2
+      exact (mul_eq_zero.mp h).resolve_left h2
+    have e3 : x3 = 0 := by
+      have h : (2 : F) * (a * x3) = 0 := by linear_combination hi1
+      have h' := (mul_eq_zero.mp h).resolve_left h2
+      exact (mul_eq_zero.mp h').resolve_left ha
+    refine Algebra.mem_bot.mpr ⟨x0, ?_⟩
+    ext <;> simp [e1, e2, e3]
+  -- SIMPLICITY
+  have hsimple : IsSimpleRing (_root_.QuaternionAlgebra F a 0 b) := by
+    -- the conjugation average `x + c_i x + c_j x + c_k x = 4 x₀`
+    have key : ∀ x : _root_.QuaternionAlgebra F a 0 b,
+        x + a⁻¹ • ((⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * x * ⟨0, 1, 0, 0⟩)
+          + b⁻¹ • ((⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * x * ⟨0, 0, 1, 0⟩)
+          - (a * b)⁻¹ • ((⟨0, 0, 0, 1⟩ : _root_.QuaternionAlgebra F a 0 b) * x * ⟨0, 0, 0, 1⟩)
+          = (⟨4 * x.re, 0, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) := by
+      rintro ⟨x0, x1, x2, x3⟩
+      ext <;> simp <;> field_simp <;> ring
+    refine IsSimpleRing.of_eq_bot_or_eq_top fun I => ?_
+    rw [or_iff_not_imp_left]
+    intro H
+    obtain ⟨x, hx1, hx2⟩ := SetLike.exists_of_lt (bot_lt_iff_ne_bot.mpr H : ⊥ < I)
+    rw [TwoSidedIdeal.mem_bot] at hx2
+    have hsmul : ∀ (c : F) (y : _root_.QuaternionAlgebra F a 0 b), y ∈ I → c • y ∈ I := by
+      intro c y hy
+      rw [Algebra.smul_def]
+      exact I.mul_mem_left _ _ hy
+    have havg : ∀ y ∈ I, (⟨4 * y.re, 0, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) ∈ I := by
+      intro y hy
+      rw [← key y]
+      refine I.sub_mem (I.add_mem (I.add_mem hy ?_) ?_) ?_ <;>
+        exact hsmul _ _ (I.mul_mem_right _ _ (I.mul_mem_left _ _ hy))
+    have hone : ∀ c : F, c ≠ 0 → (⟨c, 0, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) ∈ I →
+        (1 : _root_.QuaternionAlgebra F a 0 b) ∈ I := by
+      intro c hc hmem
+      have hcc : (algebraMap F (_root_.QuaternionAlgebra F a 0 b) c⁻¹) *
+          (⟨c, 0, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) = 1 := by
+        ext <;> simp <;> field_simp
+      rw [← hcc]
+      exact I.mul_mem_left _ _ hmem
+    have step : ∀ y ∈ I, y.re ≠ 0 → I = ⊤ := fun y hy hre =>
+      I.eq_top (hone _ (mul_ne_zero h4 hre) (havg y hy))
+    obtain ⟨x0, x1, x2, x3⟩ := x
+    by_cases e0 : x0 = 0
+    · by_cases e1 : x1 = 0
+      · by_cases e2 : x2 = 0
+        · have e3 : x3 ≠ 0 := by
+            rintro rfl
+            exact hx2 (by ext <;> simp [e0, e1, e2])
+          have hre : ((⟨0, 0, 0, 1⟩ : _root_.QuaternionAlgebra F a 0 b) *
+              ⟨x0, x1, x2, x3⟩).re = -(a * b * x3) := by simp
+          exact step _ (I.mul_mem_left _ _ hx1)
+            (by rw [hre]; exact neg_ne_zero.mpr (mul_ne_zero (mul_ne_zero ha hb) e3))
+        · have hre : ((⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b) *
+              ⟨x0, x1, x2, x3⟩).re = b * x2 := by simp
+          exact step _ (I.mul_mem_left _ _ hx1) (by rw [hre]; exact mul_ne_zero hb e2)
+      · have hre : ((⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) *
+            ⟨x0, x1, x2, x3⟩).re = a * x1 := by simp
+        exact step _ (I.mul_mem_left _ _ hx1) (by rw [hre]; exact mul_ne_zero ha e1)
+    · exact step _ hx1 e0
+  exact { isSimpleRing := hsimple
+          isCentral := hcentral
+          dim_four := _root_.QuaternionAlgebra.rank_eq_four _ _ _ }
 
 /-- **STEP 1a-iii — BASE CHANGE of a symbol algebra:
-`K ⊗_F ℍ[F,a,0,b] ≃ ℍ[K,a,0,b]`** (sorry leaf; CUT 2026-07-27, ordinary
+`K ⊗_F ℍ[F,a,0,b] ≃ ℍ[K,a,0,b]`** (PROVEN 2026-07-28; CUT 2026-07-27, ordinary
 algebra with no arithmetic in it).
 
 This is the brick that turns the local conditions of STEP 1a-i into
@@ -3736,12 +3836,101 @@ returns nothing. It is a one-page construction from the universal property
 
 Only `CommRing` is asked of `K`, because that is all the construction uses;
 the consumer instantiates it at the field `ℝ` (through
-`(embedding_of_isReal hv).toAlgebra`) and at the completions `F_w`. -/
+`(embedding_of_isReal hv).toAlgebra`) and at the completions `F_w`.
+
+PROVEN 2026-07-28, exactly as described. `Bf` is the `F`-quaternion basis
+`⟨i, j, k⟩` of `ℍ[K,a',0,b']` with parameters `(a, 0, b)` — its defining
+relations hold because `algebraMap F K` carries `a` to `a'` — and `g := Bf.liftHom`
+is the resulting `F`-algebra map `ℍ[F,a,0,b] →ₐ[F] ℍ[K,a',0,b']`; the forward
+map is `Algebra.TensorProduct.lift (Algebra.ofId K _) g`, the commutation
+hypothesis being `Algebra.commute_algebraMap_left`. Backwards, `Bg` is the
+`K`-quaternion basis `⟨1 ⊗ i, 1 ⊗ j, 1 ⊗ k⟩` of `K ⊗_F ℍ[F,a,0,b]` with
+parameters `(a', 0, b')`; the scalar identity that makes `i_mul_i` work is
+`1 ⊗ algebraMap F _ a = algebraMap F (K ⊗ _) a = algebraMap K (K ⊗ _) a'`,
+i.e. `Algebra.TensorProduct.algebraMap_apply'` followed by
+`IsScalarTower.algebraMap_apply`. The composite `f ∘ h` is the identity by
+`QuaternionAlgebra.hom_ext` (agreement on `i` and `j`), and `h ∘ f` by
+`Algebra.TensorProduct.ext'` once `h (g d) = 1 ⊗ d` is known — itself an
+instance of `QuaternionAlgebra.hom_ext` against
+`Algebra.TensorProduct.includeRight`. -/
 theorem nonempty_algEquiv_quaternionAlgebra_baseChange
     (F : Type*) [CommRing F] (K : Type*) [CommRing K] [Algebra F K] (a b : F) :
     Nonempty (_root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b) ≃ₐ[K]
       _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b)) := by
-  sorry
+  have hAM : ∀ r : F,
+      (algebraMap F (_root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b)) r)
+        = (⟨algebraMap F K r, 0, 0, 0⟩ :
+            _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b)) := fun _ => rfl
+  let Bf : _root_.QuaternionAlgebra.Basis
+      (_root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b)) a 0 b :=
+    { i := ⟨0, 1, 0, 0⟩
+      j := ⟨0, 0, 1, 0⟩
+      k := ⟨0, 0, 0, 1⟩
+      i_mul_i := by ext <;> simp [Algebra.smul_def, hAM]
+      j_mul_j := by ext <;> simp [Algebra.smul_def, hAM]
+      i_mul_j := by ext <;> simp
+      j_mul_i := by ext <;> simp }
+  let g : _root_.QuaternionAlgebra F a 0 b →ₐ[F]
+      _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b) := Bf.liftHom
+  let f : _root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b) →ₐ[K]
+      _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b) :=
+    Algebra.TensorProduct.lift (Algebra.ofId K _) g
+      (fun _ _ => Algebra.commute_algebraMap_left _ _)
+  have hii : (⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * ⟨0, 1, 0, 0⟩
+      = a • (1 : _root_.QuaternionAlgebra F a 0 b) := by ext <;> simp
+  have hjj : (⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * ⟨0, 0, 1, 0⟩
+      = b • (1 : _root_.QuaternionAlgebra F a 0 b) := by ext <;> simp
+  have hij : (⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * ⟨0, 0, 1, 0⟩
+      = ⟨0, 0, 0, 1⟩ := by ext <;> simp
+  have hji : (⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b) * ⟨0, 1, 0, 0⟩
+      = -⟨0, 0, 0, 1⟩ := by ext <;> simp
+  let Bg : _root_.QuaternionAlgebra.Basis
+      (_root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b))
+      (algebraMap F K a) 0 (algebraMap F K b) :=
+    { i := 1 ⊗ₜ (⟨0, 1, 0, 0⟩ : _root_.QuaternionAlgebra F a 0 b)
+      j := 1 ⊗ₜ (⟨0, 0, 1, 0⟩ : _root_.QuaternionAlgebra F a 0 b)
+      k := 1 ⊗ₜ (⟨0, 0, 0, 1⟩ : _root_.QuaternionAlgebra F a 0 b)
+      i_mul_i := by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, hii, zero_smul, add_zero]
+        simp only [Algebra.smul_def, mul_one]
+        rw [← Algebra.TensorProduct.algebraMap_apply',
+          IsScalarTower.algebraMap_apply F K
+            (_root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b))]
+      j_mul_j := by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, hjj]
+        simp only [Algebra.smul_def, mul_one]
+        rw [← Algebra.TensorProduct.algebraMap_apply',
+          IsScalarTower.algebraMap_apply F K
+            (_root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b))]
+      i_mul_j := by rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, hij]
+      j_mul_i := by
+        rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, hji, zero_smul, zero_sub,
+          TensorProduct.tmul_neg] }
+  let h : _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b) →ₐ[K]
+      _root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b) := Bg.liftHom
+  have hg : ∀ d : _root_.QuaternionAlgebra F a 0 b, h (g d) = 1 ⊗ₜ[F] d := by
+    have key : (h.restrictScalars F).comp g
+        = (Algebra.TensorProduct.includeRight : _root_.QuaternionAlgebra F a 0 b →ₐ[F]
+            _root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b)) := by
+      apply _root_.QuaternionAlgebra.hom_ext
+      · simp [h, g, Bf, Bg, _root_.QuaternionAlgebra.Basis.lift]
+      · simp [h, g, Bf, Bg, _root_.QuaternionAlgebra.Basis.lift]
+    intro d
+    exact congrArg (fun φ : _root_.QuaternionAlgebra F a 0 b →ₐ[F] _ => φ d) key
+  refine ⟨AlgEquiv.ofAlgHom f h ?_ ?_⟩
+  · apply _root_.QuaternionAlgebra.hom_ext
+    · show f (h ⟨0, 1, 0, 0⟩) = _
+      simp [h, f, g, Bf, Bg, _root_.QuaternionAlgebra.Basis.lift]
+    · show f (h ⟨0, 0, 1, 0⟩) = _
+      simp [h, f, g, Bf, Bg, _root_.QuaternionAlgebra.Basis.lift]
+  · apply Algebra.TensorProduct.ext'
+    intro k d
+    show h (f (k ⊗ₜ d)) = k ⊗ₜ d
+    rw [show f (k ⊗ₜ d) = (Algebra.ofId K _) k * g d from rfl, map_mul, hg,
+      show (Algebra.ofId K
+          (_root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b))) k
+        = algebraMap K _ k from rfl, AlgHom.commutes]
+    simp [Algebra.TensorProduct.algebraMap_apply, Algebra.TensorProduct.tmul_mul_tmul]
 
 open scoped Quaternion in
 /-- **STEP 1a-iv — CLASSIFICATION OVER `ℝ`: a symbol algebra with both
@@ -3921,7 +4110,76 @@ places".
 Stated for an arbitrary quaternion algebra `D` over an arbitrary number
 field, with no reference to `F` being totally real and none to the
 archimedean behaviour of `D` — this leaf is about the finite adeles only, and
-keeping it that way is what makes it independent of STEP 1a-i. -/
+keeping it that way is what makes it independent of STEP 1a-i.
+
+## ROUTE AUDIT 2026-07-28 — the restricted-product half is ALREADY BUILT; only the
+## a.e.-integrality of the local splittings is missing
+
+The docstring above says a maximal order is needed. **It is not**, and most of the
+machinery this leaf was thought to require already exists in this tree. Each claim
+below is stated with the check that refutes it.
+
+*Nobody has ever built a `WithRigidification`.* `grep -rn WithRigidification Fermat/
+~/cs/FLT/FLT` finds it only as an assumed instance
+(`AutomorphicForm/QuaternionAlgebra/{Basic,FiniteDimensional,HeckeOperators/Concrete}.lean`)
+and never as a construction, in either project. So this leaf is the sole producer and
+there is no alternative source to vendor from.
+
+*The restricted-product decomposition of a base change EXISTS, and is module-level.*
+`RestrictedProduct.lTensorEquiv`
+(`Fermat/FLT/DedekindDomain/FiniteAdeleRing/TensorRestrictedProduct.lean:234`) is
+
+    M ⊗[R] Πʳ i, [N i, L i]_[ℱ]  ≃ₗ[R]  Πʳ i, [M ⊗[R] N i, rangeLTensor R M N L i]_[ℱ]
+
+for `M` merely an `R`-module that is `Module.Flat` and `Module.FinitePresentation` —
+**`M` is NOT required to be commutative, nor even a ring.** Instantiated at
+`R = 𝓞_F`, `N = adicCompletion F`, `L = integerSubmodule F` (so the restricted
+product is `𝔸ᶠ[F]`) and `M = Λ` any finitely generated `𝓞_F`-lattice in `D`, it gives
+
+    Λ ⊗_{𝓞_F} 𝔸ᶠ[F]  ≃  Πʳ w, [Λ ⊗_{𝓞_F} F_w, Λ ⊗ 𝒪_w].
+
+Beware the neighbouring `RestrictedProduct.lTensorEquivLeft` (`:239`), which is the
+`M`-linear refinement and **does** carry `[CommRing M]`; it is the one that does not
+apply to `D`. Reading only that one is how "the machinery is missing" gets recorded.
+
+*A maximal order is not needed — a LATTICE is.* Nothing in mathlib, in this project,
+or in `~/cs/FLT` defines `IsMaximalOrder` (checked by grep over all three), and the
+route above shows why that is not a blocker: `lTensorEquiv` asks only for a finitely
+presented flat `𝓞_F`-module, i.e. the `𝓞_F`-span of an `F`-basis of `D`, which is
+free of rank `4`. Multiplicative closure is needed only to transport the algebra
+structure, and is arranged by rescaling a basis so that the structure constants are
+integral — not by a Zorn argument on orders.
+
+*The worked precedent for the whole four-step chain* is
+`FiniteAdeleRing.baseChangeLinearEquiv`
+(`Fermat/FLT/DedekindDomain/FiniteAdeleRing/BaseChange.lean:199`), which factors
+`L ⊗[K] 𝔸ᶠ[A,K] ≃ 𝔸ᶠ[B,L]` as `tensorEquivTensor ≫ tensorEquivRestrictedProduct ≫
+restrictedProductTensorProductEquivRestrictedProductProd ≫ restrictedProductProdEquiv`
+(`:129`, `:139`, `:160`, `:177`). Steps 1 and 2 of that chain are exactly the two
+steps this leaf needs — step 1 being
+`linearEquivTensorProductModuleLeft` (`Fermat/FLT/DedekindDomain/IntegralClosure.lean:254`),
+`L ⊗[K] M ≃ₗ[B] B ⊗[A] M`, which is what descends `D ⊗_F 𝔸ᶠ` to `Λ ⊗_{𝓞_F} 𝔸ᶠ`.
+Steps 3 and 4 are about the fibres `w ∣ v` of an extension and have no analogue here.
+
+*What is genuinely missing is ONE arithmetic fact*, and it is the only place the
+hypothesis `hsplit` is not enough on its own: `hsplit` supplies an isomorphism
+`F_w ⊗ D ≃ M₂(F_w)` for each `w` **with no control at all**, whereas the restricted
+product needs a family that carries `Λ ⊗ 𝒪_w` INTO `M₂(𝒪_w)` for ALMOST ALL `w`.
+That is the standard "a maximal order is split at almost every place" statement, and
+it is where the finiteness of the discriminant is spent.
+
+RECOMMENDED CUT for a successor (two sub-leaves, the second of which is the only
+open mathematics):
+
+* `nonempty_withRigidification_of_forall_split_of_ae_integral` — this statement with
+  `hsplit` STRENGTHENED to "there is a finite set `S` of finite places and a family of
+  splittings which, for `w ∉ S`, restricts to a bijection `Λ ⊗ 𝒪_w ≃ M₂(𝒪_w)`".
+  Pure assembly over the four declarations named above; no arithmetic.
+* `exists_finset_ae_integral_split_of_forall_split` — the arithmetic: from bare local
+  splittings, produce such a finite `S` and family.
+
+Do NOT dispatch a prover at the present statement as an atom; it is two leaves, and
+one of them is bookkeeping. -/
 theorem nonempty_withRigidification_of_forall_split
     (F : Type*) [Field F] [NumberField F] (D : Type*) [Ring D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
