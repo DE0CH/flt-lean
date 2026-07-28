@@ -23,7 +23,6 @@ public import Mathlib.RingTheory.RingHom.Locally
 public import Mathlib.RingTheory.Ideal.Height
 public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.NoetherNormalization
-public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.MvPolynomial.Basic
@@ -38,6 +37,8 @@ public import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
 public import Mathlib.RingTheory.Localization.Integral
 public import Mathlib.FieldTheory.SeparableClosure
 public import Mathlib.FieldTheory.PurelyInseparable.Basic
+public import Mathlib.FieldTheory.PurelyInseparable.Exponent
+public import Mathlib.RingTheory.Localization.Integer
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 -- The shared "smooth curve over a field ⟺ DVR local rings" node, and the extension theorem
 -- built on it.  `smoothOfRelativeDimension_one_fromNormalization` below consumes the
@@ -83,48 +84,74 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    (`locallyOfFiniteType_fromNormalization`, PROVEN over the affine-local ring statement
    `finiteType_integralClosure_sections`, itself PROVEN 2026-07-27 over E. Noether's finiteness
    theorem `module_finite_integralClosure_of_isFractionRing`, which is in turn PROVEN the same
-   day over the single classical leaf
-   `module_finite_integralClosure_of_isPurelyInseparable` — the inseparable residue);
+   day over the inseparable residue `module_finite_integralClosure_of_isPurelyInseparable`,
+   itself PROVEN 2026-07-28 over the single arithmetic leaf
+   `exists_finset_span_powSubalgebra_of_mem_span`);
    finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
-   (`smoothOfRelativeDimension_one_fromNormalization`, PROVEN over
-   `isDiscreteValuationRing_stalk_normalization` — itself PROVEN 2026-07-28 over the single
-   normality leaf `isIntegrallyClosed_stalk_normalization` — and the shared DVR node in
+   (`smoothOfRelativeDimension_one_fromNormalization`, PROVEN over the normality statement
+   `isDiscreteValuationRing_stalk_normalization`, LEAF, and the shared DVR node in
    `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`);
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
    PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is itself
-   now PROVEN over `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`,
-   PROVEN 2026-07-28 over the single ring-theoretic leaf
-   `trdeg_le_of_isStandardSmoothOfRelativeDimension`, and over
+   now PROVEN over the single ring-theoretic leaf
+   `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`, and over
    `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, PROVEN outright 2026-07-27).
 
 Step 2, the assembly, and the whole of steps 3 and 5 apart from their two named inputs are
 PROVEN here.
 
-## The leaves — COMPILER-VERIFIED LIST, 2026-07-28
+## The leaves, after the 2026-07-27 decompositions
 
-**This table has repeatedly been a source of phantom dispatches**: earlier versions listed as
-leaves declarations that were already PROVEN — `topologicalKrullDim_normalization_le_one`,
-`finiteType_integralClosure_sections`,
-`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`,
-`smoothOfRelativeDimension_one_fromNormalization`,
-`topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, `nonempty_projChart_mvPolynomial`,
-`smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` were all
-in it while closed.  **Regenerate it from the build's `declaration uses 'sorry'` warnings before
-acting on it; do not trust the prose.**  As of a green `lake build` on 2026-07-28 this file's
-sorries are exactly these four:
+Every one of the original five leaves has now been cut down; the remaining leaves are
+(`nonempty_projChart_mvPolynomial` and `smoothOfRelativeDimension_of_isDominant` left this
+list on 2026-07-27, both PROVEN):
 
 | leaf | content |
 | --- | --- |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
-| `module_finite_integralClosure_of_isPurelyInseparable` | the INSEPARABLE residue of E. Noether's finiteness theorem (Stacks `0335`); all that is left of `module_finite_integralClosure_of_isFractionRing`, which is PROVEN over it |
-| `trdeg_le_of_isStandardSmoothOfRelativeDimension` | **Matsumura 25.3** — a standard smooth algebra of relative dimension `n` over a field has transcendence degree `≤ n`.  All that is left of "a smooth curve over a field is one-dimensional" after the 2026-07-28 cut |
-| `isIntegrallyClosed_stalk_normalization` | **the relative normalization is NORMAL** — its stalks are integrally closed.  All that is left of `isDiscreteValuationRing_stalk_normalization`, which is PROVEN over it after the 2026-07-28 cut |
+| `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
+| `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
+| `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
+| `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` | a locally standard smooth `K`-algebra of relative dimension one has Krull dimension `≤ 1` (all that is left of "a smooth curve over a field is one-dimensional", 2026-07-27) |
+| `exists_finset_span_powSubalgebra_of_mem_span` | the FINITE-MODEL DESCENT, all that is left of E. Noether's finiteness theorem after 2026-07-28: over `A = k[x₁,…,x_d]` with `Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional `Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  `module_finite_integralClosure_of_isPurelyInseparable` (the inseparable residue, and with it all of `module_finite_integralClosure_of_isFractionRing`) is PROVEN over it, through the Frobenius transport and `exists_fg_of_mem_span_powSubalgebra`; the content is that only finitely many elements of `k` occur, so the model field `k₁ = kᵍ(coefficients)` is finite over `kᵍ` |
+| `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
+| `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
+| `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
+| ~~`infinite_of_smoothOfRelativeDimension_one`~~ (in `CurveExtension.lean`) | a nonempty smooth curve over a field has infinitely many points — the only input to the density subsection at the end of this file. **NO LONGER A LEAF: PROVEN 2026-07-27** in `CurveExtension.lean`, over Krull's height theorem and the Nullstellensatz; do not dispatch at it |
+| `isDiscreteValuationRing_stalk_normalization` | the relative normalization is NORMAL, hence its local rings in dimension one are DVRs |
 
-(Five rows, four of which are `sorry`s of this file plus the two owned elsewhere in it —
-`exists_isOpenImmersion_isProper` is NOT a leaf: it is discharged from the affine case.)
+(`exists_isOpenImmersion_isProper` in that table is STALE as a leaf: it is PROVEN, over
+`exists_isOpenImmersion_isProper_of_affineCase`.  The row is left as written by its author.)
+
+## The Nagata gluing induction is BYPASSED by every consumer (2026-07-28)
+
+`exists_isOpenImmersion_isProper_of_affineCase` — the row above calls it "all that is left of
+Nagata", and it is the hardest leaf in this file — **blocks nothing**.  The only consumer of
+`exists_isOpenImmersion_isProper` is `exists_isSmoothCompactification`, and the only consumers
+of *that* are four sites in `Fermat/FLT/ModularCurve/{X0,X1}.lean`, every one of which takes
+its `Y` from a Katz–Mazur coarse moduli existential whose exhibited model is `Spec (A^G)` —
+**affine**.  The affineness was simply not being exported.
+
+So this file now carries three statements instead of one:
+
+* `exists_isSmoothCompactification_of_properModel` — the non-Nagata half: normalize a given
+  proper model.  No `QuasiCompact`/`IsSeparated` hypotheses; they belong to Nagata alone.
+* `exists_isSmoothCompactification` — the general theorem, unchanged in statement, still
+  routed through the gluing induction.
+* `exists_isSmoothCompactification_of_isAffine` — the same conclusion with `[IsAffine Y]`,
+  routed through `exists_isOpenImmersion_isProper_of_isAffine`, which is PROVEN.  **This is
+  what the four modular-curve sites now call**, so the `X_0(N)` / `X_1(N)` cone no longer
+  depends on Nagata's gluing induction at all.
+
+Consequence to act on, recorded here rather than acted on unilaterally: with the four sites
+rewired, `exists_isSmoothCompactification`, `exists_isOpenImmersion_isProper` and
+`exists_isOpenImmersion_isProper_of_affineCase` have no consumer in the root cone and are
+therefore FREE-FLOATING.  They are kept because the general statement is the honest one for a
+curve not presented affinely; if the free-floating sweep wants them gone, deleting all three
+together also removes the gluing-induction sorry leaf outright.
 
 ## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
 
@@ -136,12 +163,9 @@ verdict on it had missed: `Mathlib` *does* have `IsRegularLocalRing`
 `IsDiscreteValuationRing` in dimension one.  So what is missing is not "a notion of
 regularity" but two separate things, and only one of them lives here:
 
-* *normality of the relative normalization* — now isolated as
-  `isIntegrallyClosed_stalk_normalization`, genuinely absent from `Mathlib`, which records
-  `IsIntegralHom f.fromNormalization` but nothing about the stalks being integrally closed;
-  `isDiscreteValuationRing_stalk_normalization` is PROVEN over it (2026-07-28) once the
-  dimension bound is taken from `topologicalKrullDim_normalization_le_one`, which is why that
-  theorem now sits BELOW the dimension block rather than above it;
+* *normality of the relative normalization* — `isDiscreteValuationRing_stalk_normalization`
+  above, genuinely absent from `Mathlib`, which records `IsIntegralHom f.fromNormalization`
+  but nothing about the stalks being integrally closed;
 * *regular ⟹ smooth over a perfect field* — `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`
   in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which is **shared** with
   `Fermat/FLT/ModularCurve/X0.lean`: that file needs the same equivalence in the *forward*
@@ -204,7 +228,10 @@ would be free-floating.
 
 `PerfectField K` is load-bearing in step 4 and only there.  Over an imperfect field the
 normalization of a curve can be regular without being smooth, so the theorem as stated is
-false without it; `ℚ` is perfect, which is all the modular application needs.
+false without it; `ℚ` is perfect, which is all the modular application needs.  The witness
+is the quasi-elliptic curve `y² = x³ + t` over `𝔽₃(t)`, worked out in full on
+`smoothOfRelativeDimension_one_fromNormalization` below — note in particular that its
+function field IS separably generated, so smoothness of `Y` does **not** suffice.
 
 ## Relation to `Modularity/KhareWintenberger.lean` — READ BEFORE PROVING ANY LEAF HERE
 
@@ -918,9 +945,374 @@ theorem module_finite_of_algebraMap_range_le {R S X : Type*} [CommRing R] [CommR
   have h2 : (Subalgebra.toSubmodule M).FG := fg_of_algebraMap_range_le hle (by simpa using hcar) h1
   exact Module.Finite.iff_fg.mpr h2
 
-/-- **LEAF — the purely inseparable residue of E. Noether's finiteness theorem**
-(cut 2026-07-27; it is ALL that is left of
-`module_finite_integralClosure_of_isFractionRing` below, which is now PROVEN over it).
+/-! #### The Frobenius transport behind the purely inseparable residue
+
+The three little lemmas and the one arithmetic leaf below are what
+`module_finite_integralClosure_of_isPurelyInseparable` is proven over.  The route is the
+"REFORMULATION" recorded in its docstring, carried out: in exponential characteristic `p`
+the map `x ↦ x ^ q`, `q = p ^ n`, is an injective ring homomorphism `L →+* S`
+(`IsPurelyInseparable.iterateFrobenius`), it carries the integral closure into `B` because
+`B` is integrally closed, and it is semilinear over the `q`-th powers of the base.  So the
+whole statement moves inside `S`, where no `q`-th root is ever constructed. -/
+
+/-- The `ℤ`-subalgebra of `p ^ n`-th powers of `R`.  It is a `Subalgebra` rather than a
+`Subring` only so that `R` — and every `R`-algebra — is a module over it, through
+`Subalgebra.toAlgebra`. -/
+def powSubalgebra (R : Type*) [CommRing R] (p n : ℕ) [ExpChar R p] : Subalgebra ℤ R :=
+  subalgebraOfSubring (iterateFrobenius R p n).range
+
+theorem pow_mem_powSubalgebra {R : Type*} [CommRing R] {p n : ℕ} [ExpChar R p] (y : R) :
+    y ^ p ^ n ∈ powSubalgebra R p n := ⟨y, rfl⟩
+
+theorem mem_powSubalgebra_iff {R : Type*} [CommRing R] {p n : ℕ} [ExpChar R p] {x : R} :
+    x ∈ powSubalgebra R p n ↔ ∃ y : R, y ^ p ^ n = x := Iff.rfl
+
+/-- A ring homomorphism out of a field into a nontrivial ring is injective.  Spelled out
+because the `Mathlib` lemma of this shape is stated for `IsSimpleRing` sources and does not
+fire on `algebraMap k B` here. -/
+theorem algebraMap_injective_of_field (k A : Type*) [Field k] [Ring A] [Nontrivial A]
+    [Algebra k A] : Function.Injective (algebraMap k A) := by
+  intro x y hxy
+  by_contra hne
+  have h1 : algebraMap k A (x - y) = 0 := by rw [map_sub, hxy, sub_self]
+  have h2 : x - y ≠ 0 := sub_ne_zero.mpr hne
+  have h3 : (1 : A) = 0 := by
+    rw [← map_one (algebraMap k A), ← inv_mul_cancel₀ h2, map_mul, h1, mul_zero]
+  exact one_ne_zero h3
+
+/-- A submodule of a finitely generated module over a Noetherian ring is finitely
+generated. -/
+theorem fg_of_le_of_fg {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+    [IsNoetherianRing R] {P Q : Submodule R M} (hQ : Q.FG) (hPQ : P ≤ Q) : P.FG := by
+  haveI : _root_.IsNoetherian R ↥Q := isNoetherian_of_fg_of_noetherian Q hQ
+  have h1 : (P.comap Q.subtype).FG := _root_.IsNoetherian.noetherian _
+  have h2 : Submodule.map Q.subtype (P.comap Q.subtype) = P :=
+    Submodule.map_comap_eq_self (by simpa using hPQ)
+  exact h2 ▸ h1.map _
+
+/-- The `p ^ n`-th powers of a Noetherian domain form a Noetherian ring: the iterated
+Frobenius is injective on a domain, so the subalgebra of powers is ring-isomorphic to the
+whole ring. -/
+theorem isNoetherianRing_powSubalgebra (R : Type*) [CommRing R] [IsDomain R] [IsNoetherianRing R]
+    (p n : ℕ) [ExpChar R p] : IsNoetherianRing ↥(powSubalgebra R p n) := by
+  have hinj : Function.Injective (fun x : R => x ^ p ^ n) := by
+    intro x y hxy
+    have h0 : (x - y) ^ p ^ n = 0 := by
+      rw [sub_pow_expChar_pow]
+      simpa using sub_eq_zero_of_eq hxy
+    have h1 : x - y = 0 := (pow_eq_zero_iff (expChar_pow_pos R p n).ne').mp h0
+    exact sub_eq_zero.mp h1
+  let ψ : R →+* ↥(powSubalgebra R p n) :=
+    (iterateFrobenius R p n).codRestrict (powSubalgebra R p n) fun x => ⟨x, rfl⟩
+  have hψinj : Function.Injective ψ := fun x y h => hinj (congrArg Subtype.val h)
+  have hψsurj : Function.Surjective ψ := by
+    rintro ⟨y, a, rfl⟩
+    exact ⟨a, rfl⟩
+  exact isNoetherianRing_of_ringEquiv R (RingEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩)
+
+/-- **LEAF — the finite-model descent: the whole arithmetic content of E. Noether's
+finiteness theorem in characteristic `p`** (cut 2026-07-28; the entire cluster above is
+PROVEN over it).
+
+`A = k[x₁,…,x_d]` is a polynomial ring over a field `k` of exponential characteristic `p`,
+`Kf = Frac A`, `q = p ^ n`, and `Aq`, `Kfq` denote the subrings of `q`-th powers.  Then for
+every finite `Θ ⊆ Kf` there is a finite `G ⊆ A` with
+
+  `a ∈ A` and `a ∈ Kfq-span Θ`  ⟹  `a ∈ Aq-span G`.
+
+Equivalently: the intersection of `A` with a finite-dimensional `Kfq`-subspace of `Kf` is a
+finite `Aq`-module.  This is the one step of the classical proof that spends something, and
+it is true because only FINITELY MANY elements of `k` are involved:
+
+* write each `θ ∈ Θ` as `u_θ / v_θ` with `u_θ, v_θ ∈ A`, and let `k₁ ⊆ k` be the subfield
+  generated by `k ^ q` together with the finitely many coefficients of the `u_θ` and `v_θ`.
+  Every such coefficient `c` has `c ^ q ∈ k ^ q`, hence is integral over `k ^ q` of degree
+  dividing `q`, so `k₁ / k ^ q` is FINITE;
+* `Kfq = Frac Aq ⊆ k₁(x)` because `Aq = k^q[x^q]`, so `Kfq-span Θ ⊆ k₁(x)`;
+* `k₁(x) ∩ k[x] = k₁[x]`: choose a `k₁`-linear retraction `ρ : k → k₁` — possible because
+  `k₁` is a FIELD and `k` a `k₁`-vector space — and apply it coefficientwise to get a
+  `k₁[x]`-linear retraction `π : k[x] → k₁[x]`.  If `z · v = u` in `k[x]` with `u, v ∈ k₁[x]`
+  and `v ≠ 0`, then `v · π z = π (z · v) = u = v · z`, so `z = π z ∈ k₁[x]`;
+* `k₁[x]` is spanned over `Aq = k^q[x^q]` by the finite set
+  `G = {eᵢ · x^α : eᵢ a k^q-basis of k₁, αⱼ < q}`: write `β = qγ + α` with `αⱼ < q` and
+  `c = ∑ᵢ tᵢ^q eᵢ`, so `c · x^β = ∑ᵢ (tᵢ x^γ)^q · (eᵢ x^α)`.
+
+Three remarks a prover should not have to rediscover.  (i) The finiteness of `k₁` is CHEAP
+and is not the gap.  (ii) A `PerfectField k` hypothesis would NOT remove the construction —
+it only makes `k₁ = k`; the example usually quoted, `k = 𝔽_p`, `A = k[x,y]/(yᵖ - x)` finite
+over `k[x]` with a purely inseparable fraction-field extension, shows the inseparable case
+is live over a perfect field too.  (iii) In characteristic zero `p = 1`, `q = 1`, `Aq = A`
+and `G = {1}` works, which is why no case split on the characteristic occurs anywhere in
+this cluster. -/
+theorem exists_finset_span_powSubalgebra_of_mem_span
+    (k : Type*) [Field k] (d p n : ℕ) [ExpChar k p]
+    (Kf : Type*) [Field Kf] [Algebra (MvPolynomial (Fin d) k) Kf]
+    [IsFractionRing (MvPolynomial (Fin d) k) Kf] [ExpChar Kf p]
+    (Θ : Finset Kf) :
+    ∃ G : Finset (MvPolynomial (Fin d) k), ∀ a : MvPolynomial (Fin d) k,
+      algebraMap (MvPolynomial (Fin d) k) Kf a ∈
+          Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf) →
+        a ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+          (G : Set (MvPolynomial (Fin d) k)) :=
+  sorry
+
+/-- **The arithmetic core of E. Noether's finiteness theorem in characteristic `p`**
+(PROVEN 2026-07-28 over `exists_finset_span_powSubalgebra_of_mem_span` above).
+
+`A = k[x₁,…,x_d]` is a polynomial ring over a field `k` of exponential characteristic `p`,
+`Kf = Frac A`, and `S / Kf` is a finite extension.  Write `q = p ^ n`, and write `Aq`, `Kfq`,
+`Sq` for the subrings of `q`-th powers.  Then for every finite `T ⊆ S` and every finitely
+generated `A`-submodule `M` of `S`, the intersection
+
+  `M ∩ (the Sq-span of T)`
+
+is contained in a finitely generated `Aq`-submodule of `S`.
+
+**Why this is exactly the residue.**  Transported through the Frobenius `φ : L →+* S`,
+`x ↦ x ^ q`, the integral closure of `B` in `L` becomes `φ L ∩ B`; the `Sq`-span of
+`T = φ '' (an S-basis of L)` contains `φ L`, and `M` is a finitely generated `A`-module
+containing `B` (Noether normalization).  So this statement — which mentions no field
+extension of `S` at all, and builds no `q`-th root — is equivalent to the leaf below.
+
+**The classical proof** (Bourbaki *Commutative Algebra* V; Stacks `0335` ⟸ `032L`), in the
+coordinates this statement provides.  Fix a `Kf`-basis `u` of `S` and `δ ∈ A ∖ 0` clearing
+the denominators of the `u`-coordinates of a generating set of `M`, so every `z ∈ M` has
+`δ · uᵢ(z) ∈ A`.  Since `Sq` is the `Kfq`-span of `{u_j ^ q}`, the `Sq`-span of `T` is the
+`Kfq`-span of the finite set `T' = {u_j ^ q · t}`, hence its `u`-coordinates lie in the
+`Kfq`-span of the finite set `Θ = {uᵢ(t')}`.  So the content is the **descent step**
+
+  `a ∈ A` and `a ∈ Kfq-span Θ`  ⟹  `a ∈ Aq-span G` for one finite `G ⊆ A`,
+
+and that is where the classical "finitely many coefficients" argument goes: let `k₁ ⊆ k` be
+the subfield generated by `k ^ q` together with the coefficients of numerators and
+denominators of the finitely many members of `Θ`.  Each such coefficient `c` satisfies
+`c ^ q ∈ k ^ q`, so `k₁ / k ^ q` is FINITE; `Kfq-span Θ ⊆ k₁(x)`; and `k₁(x) ∩ k[x] = k₁[x]`
+because `k` is free over `k₁` with `1` in a basis, so coefficient-wise application of a
+`k₁`-linear retraction `k → k₁` is a `k₁[x]`-linear retraction `k[x] → k₁[x]`.  Finally
+`k₁[x]` is spanned over `Aq = k^q[x^q]` by `{eᵢ · x^α : αᵢ < q}` with `eᵢ` a `k^q`-basis of
+`k₁`, which is the finite `G`.
+
+**Not the gap**: the finiteness of `k₁` is cheap, and a `PerfectField k` hypothesis would not
+remove the construction — it only makes `k₁ = k`.  See the leaf below for both remarks. -/
+theorem exists_fg_of_mem_span_powSubalgebra
+    (k : Type*) [Field k] (d p n : ℕ) [ExpChar k p]
+    (Kf S : Type*) [Field Kf] [Field S]
+    [Algebra (MvPolynomial (Fin d) k) Kf] [IsFractionRing (MvPolynomial (Fin d) k) Kf]
+    [Algebra Kf S] [Algebra (MvPolynomial (Fin d) k) S]
+    [IsScalarTower (MvPolynomial (Fin d) k) Kf S] [FiniteDimensional Kf S]
+    [ExpChar S p]
+    (T : Finset S) (M : Submodule (MvPolynomial (Fin d) k) S) (hM : M.FG) :
+    ∃ N : Submodule ↥(powSubalgebra (MvPolynomial (Fin d) k) p n) S, N.FG ∧
+      ∀ z ∈ M, z ∈ Submodule.span ↥(powSubalgebra S p n) (T : Set S) → z ∈ N := by
+  classical
+  haveI : ExpChar (MvPolynomial (Fin d) k) p :=
+    expChar_of_injective_ringHom (MvPolynomial.C_injective (Fin d) k) p
+  haveI : ExpChar Kf p :=
+    expChar_of_injective_ringHom (IsFractionRing.injective (MvPolynomial (Fin d) k) Kf) p
+  set ι := Fin (Module.finrank Kf S) with hιdef
+  set u : Module.Basis ι Kf S := Module.finBasis Kf S with hudef
+  -- a common denominator for the coordinates of a generating set of `M`
+  obtain ⟨s, hs⟩ := hM
+  obtain ⟨δ, hδ⟩ := IsLocalization.exist_integer_multiples
+    (nonZeroDivisors (MvPolynomial (Fin d) k))
+    (s ×ˢ (Finset.univ : Finset ι))
+    (fun z : S × ι => u.repr z.1 z.2)
+  set dK : Kf := algebraMap (MvPolynomial (Fin d) k) Kf (δ : MvPolynomial (Fin d) k) with hdKdef
+  set dS : S := algebraMap (MvPolynomial (Fin d) k) S (δ : MvPolynomial (Fin d) k) with hdSdef
+  have hδ0 : (δ : MvPolynomial (Fin d) k) ≠ 0 := nonZeroDivisors.coe_ne_zero δ
+  have hdK0 : dK ≠ 0 := by
+    intro h
+    apply hδ0
+    apply IsFractionRing.injective (MvPolynomial (Fin d) k) Kf
+    rw [map_zero, ← hdKdef]
+    exact h
+  -- the intermediate finite sets
+  set T' : Finset S := (Finset.univ ×ˢ T).image (fun x : ι × S => (u x.1) ^ p ^ n * x.2)
+    with hT'def
+  set Θ : Finset Kf := (Finset.univ ×ˢ T').image (fun x : ι × S => dK * u.repr x.2 x.1)
+    with hΘdef
+  -- Frobenius in coordinates
+  have hfrob : ∀ σ : S, σ ^ p ^ n
+      = ∑ l : ι, algebraMap Kf S ((u.repr σ l) ^ p ^ n) * (u l) ^ p ^ n := by
+    intro σ
+    calc σ ^ p ^ n = (∑ l : ι, u.repr σ l • u l) ^ p ^ n := by rw [u.sum_repr]
+      _ = ∑ l : ι, (u.repr σ l • u l) ^ p ^ n := by
+          simpa [iterateFrobenius_def] using
+            map_sum (iterateFrobenius S p n) (fun l : ι => u.repr σ l • u l) Finset.univ
+      _ = ∑ l : ι, algebraMap Kf S ((u.repr σ l) ^ p ^ n) * (u l) ^ p ^ n :=
+          Finset.sum_congr rfl fun l _ => by rw [Algebra.smul_def, mul_pow, map_pow]
+  -- every `σ ^ q * t` lies in the `Kf`-power span of `T'`
+  have hgen : ∀ (σ t : S), t ∈ T →
+      σ ^ p ^ n * t ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) := by
+    intro σ t ht
+    rw [hfrob σ, Finset.sum_mul]
+    refine Submodule.sum_mem _ fun l _ => ?_
+    have hmem : (u l) ^ p ^ n * t ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) :=
+      Submodule.subset_span (by
+        simp only [hT'def, Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_product]
+        exact ⟨(l, t), ⟨Finset.mem_univ _, ht⟩, rfl⟩)
+    have h2 := Submodule.smul_mem (Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S))
+      (⟨(u.repr σ l) ^ p ^ n, pow_mem_powSubalgebra _⟩ : ↥(powSubalgebra Kf p n)) hmem
+    simpa [Algebra.smul_def, mul_assoc] using h2
+  -- that span is stable under multiplication by `q`-th powers of `S`
+  have hclosed : ∀ (σ z : S), z ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) →
+      σ ^ p ^ n * z ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) := by
+    intro σ z hz
+    induction hz using Submodule.span_induction with
+    | mem x hx =>
+        simp only [hT'def, Finset.coe_image, Set.mem_image, Finset.mem_coe,
+          Finset.mem_product] at hx
+        obtain ⟨⟨l, t⟩, ⟨-, ht⟩, rfl⟩ := hx
+        have hrw : σ ^ p ^ n * ((u l) ^ p ^ n * t) = (σ * u l) ^ p ^ n * t := by
+          rw [mul_pow]; ring
+        rw [hrw]
+        exact hgen (σ * u l) t ht
+    | zero => simp
+    | add x y _ _ hx hy => rw [mul_add]; exact add_mem hx hy
+    | smul r x _ hx =>
+        have hrw : σ ^ p ^ n * (r • x) = r • (σ ^ p ^ n * x) := by
+          rw [Algebra.smul_def, Algebra.smul_def]; ring
+        rw [hrw]
+        exact Submodule.smul_mem _ _ hx
+  -- so the `S`-power span of `T` sits inside the `Kf`-power span of `T'`
+  have hTsub : ∀ z : S, z ∈ Submodule.span ↥(powSubalgebra S p n) (T : Set S) →
+      z ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) := by
+    intro z hz
+    induction hz using Submodule.span_induction with
+    | mem x hx => simpa using hgen 1 x (by simpa using hx)
+    | zero => exact zero_mem _
+    | add x y _ _ hx hy => exact add_mem hx hy
+    | smul r x _ hx =>
+        obtain ⟨σ, hσ⟩ := r.2
+        have hrw : r • x = σ ^ p ^ n * x := by
+          rw [Algebra.smul_def]
+          exact congrArg (· * x) (by simpa [iterateFrobenius_def] using hσ.symm)
+        rw [hrw]
+        exact hclosed σ x hx
+  -- and the coordinates of such an element, scaled by `δ`, lie in the span of `Θ`
+  have hrepr : ∀ z : S, z ∈ Submodule.span ↥(powSubalgebra Kf p n) (T' : Set S) → ∀ l : ι,
+      dK * u.repr z l ∈ Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf) := by
+    intro z hz
+    induction hz using Submodule.span_induction with
+    | mem x hx =>
+        intro l
+        exact Submodule.subset_span (by
+          simp only [hΘdef, Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_product]
+          exact ⟨(l, x), ⟨Finset.mem_univ _, by simpa using hx⟩, rfl⟩)
+    | zero => intro l; simp
+    | add x y _ _ hx hy =>
+        intro l
+        rw [map_add, Finsupp.add_apply, mul_add]
+        exact add_mem (hx l) (hy l)
+    | smul r x _ hx =>
+        intro l
+        have hsm : (r • x : S) = (r : Kf) • x := by
+          rw [Algebra.smul_def, Algebra.smul_def]; rfl
+        have hrw : dK * u.repr (r • x) l = (r : Kf) * (dK * u.repr x l) := by
+          rw [hsm, map_smul, Finsupp.smul_apply, smul_eq_mul]; ring
+        rw [hrw]
+        have h2 := Submodule.smul_mem
+          (Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf)) r (hx l)
+        simpa [Algebra.smul_def] using h2
+  -- the denominator really clears the coordinates of `M`
+  have hcoord : ∀ z ∈ M, ∀ l : ι,
+      dK * u.repr z l ∈ (algebraMap (MvPolynomial (Fin d) k) Kf).range := by
+    intro z hz
+    rw [← hs] at hz
+    induction hz using Submodule.span_induction with
+    | mem x hx =>
+        intro l
+        obtain ⟨y, hy⟩ := hδ (x, l) (Finset.mem_product.mpr ⟨hx, Finset.mem_univ _⟩)
+        exact ⟨y, by rw [hy]; simp [Algebra.smul_def, hdKdef]⟩
+    | zero => intro l; simp
+    | add x y _ _ hx hy =>
+        intro l
+        rw [map_add, Finsupp.add_apply, mul_add]
+        exact add_mem (hx l) (hy l)
+    | smul c x _ hx =>
+        intro l
+        have hsm : (c • x : S) = (algebraMap (MvPolynomial (Fin d) k) Kf c) • x := by
+          rw [Algebra.smul_def, Algebra.smul_def, ← IsScalarTower.algebraMap_apply]
+        have hrw : dK * u.repr (c • x) l
+            = (algebraMap (MvPolynomial (Fin d) k) Kf c) * (dK * u.repr x l) := by
+          rw [hsm, map_smul, Finsupp.smul_apply, smul_eq_mul]; ring
+        rw [hrw]
+        exact Subring.mul_mem _ ⟨c, rfl⟩ (hx l)
+  -- the descent leaf
+  obtain ⟨G, hG⟩ := exists_finset_span_powSubalgebra_of_mem_span k d p n Kf Θ
+  refine ⟨Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+    ((((Finset.univ ×ˢ G).image (fun x : ι × MvPolynomial (Fin d) k =>
+      dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S x.2 * u x.1)) : Finset S) : Set S),
+    Submodule.fg_span (Finset.finite_toSet _), ?_⟩
+  intro z hzM hzT
+  -- pull the coordinates back to the polynomial ring
+  have hex : ∀ l : ι, ∃ a : MvPolynomial (Fin d) k,
+      algebraMap (MvPolynomial (Fin d) k) Kf a = dK * u.repr z l := fun l => hcoord z hzM l
+  choose a ha using hex
+  have haG : ∀ l : ι, a l ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+      (G : Set (MvPolynomial (Fin d) k)) := by
+    intro l
+    exact hG (a l) (by rw [ha l]; exact hrepr z (hTsub z hzT) l)
+  -- push each coordinate into the module
+  have hpush : ∀ (l : ι) (b : MvPolynomial (Fin d) k),
+      b ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+        (G : Set (MvPolynomial (Fin d) k)) →
+      dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S b * u l ∈
+        Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+          ((((Finset.univ ×ˢ G).image (fun x : ι × MvPolynomial (Fin d) k =>
+            dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S x.2 * u x.1)) : Finset S) : Set S) := by
+    intro l b hb
+    induction hb using Submodule.span_induction with
+    | mem x hx =>
+        exact Submodule.subset_span (by
+          simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_product]
+          exact ⟨(l, x), ⟨Finset.mem_univ _, hx⟩, rfl⟩)
+    | zero => simp
+    | add x y _ _ hx hy => rw [map_add, mul_add, add_mul]; exact add_mem hx hy
+    | smul r x _ hx =>
+        have hrw : dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S (r • x) * u l
+            = r • (dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S x * u l) := by
+          have h1 : (r • x : MvPolynomial (Fin d) k)
+              = (r : MvPolynomial (Fin d) k) * x := Algebra.smul_def r x
+          have h2 : (r • (dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S x * u l) : S)
+              = algebraMap (MvPolynomial (Fin d) k) S (r : MvPolynomial (Fin d) k) *
+                (dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S x * u l) := Algebra.smul_def r _
+          rw [h1, h2, map_mul]
+          ring
+        rw [hrw]
+        exact Submodule.smul_mem _ _ hx
+  -- and assemble
+  have hzeq : z = ∑ l : ι, dS⁻¹ * algebraMap (MvPolynomial (Fin d) k) S (a l) * u l := by
+    conv_lhs => rw [← u.sum_repr z]
+    refine Finset.sum_congr rfl fun l _ => ?_
+    have hcl : u.repr z l = dK⁻¹ * algebraMap (MvPolynomial (Fin d) k) Kf (a l) := by
+      rw [ha l, ← mul_assoc, inv_mul_cancel₀ hdK0, one_mul]
+    rw [Algebra.smul_def, hcl, hdKdef, map_mul, map_inv₀,
+      ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply, ← hdSdef]
+  rw [hzeq]
+  exact Submodule.sum_mem _ fun l _ => hpush l (a l) (haG l)
+
+/-- **The purely inseparable residue of E. Noether's finiteness theorem**
+(PROVEN 2026-07-28 over `exists_fg_of_mem_span_powSubalgebra` above; it used to be the leaf
+itself, cut 2026-07-27 out of `module_finite_integralClosure_of_isFractionRing` below).
+
+**How it is proven, and what the residue now is.**  The "REFORMULATION" recorded below was
+carried out.  Let `p` be the exponential characteristic, `n` the exponent of `L / S` and
+`q = p ^ n`.  `φ = IsPurelyInseparable.iterateFrobenius : L →+* S` is the injective ring
+homomorphism `x ↦ x ^ q`; for `c` in the integral closure, `c ^ q` is integral over `B` and
+lies in `S`, so `φ c ∈ B` because `B` is integrally closed.  Noether normalization gives a
+polynomial ring `A = k[x₁,…,x_d] ⊆ B` with `B` a finite `A`-module, so `φ` carries the
+integral closure into the finite `A`-submodule `M ⊆ S` generated by `B`, and into the
+`Sq`-span of `φ '' (an S-basis of L)`, `Sq` the `q`-th powers of `S`.
+`exists_fg_of_mem_span_powSubalgebra` above puts that intersection inside a finitely
+generated module over `Aq`, the `q`-th powers of `A`; intersecting with `φ.range` — legitimate
+because `Aq ⊆ Sq ⊆ φ.range` and `Aq` is Noetherian — produces generators `φ h₁, …, φ h_m`, and
+`φ c = ∑ φ aᵢ · φ hᵢ = φ (∑ aᵢ hᵢ)` with `aᵢ ∈ A` gives `c = ∑ aᵢ hᵢ` by injectivity.  So the
+integral closure sits in a finite `A`-module, hence is `A`-finite (`A` is Noetherian), hence
+`B`-finite by `module_finite_of_algebraMap_range_le`.
+
+**No case split on the characteristic is needed**: in characteristic zero `p = 1`, `q = 1`,
+`φ` is the inverse of `algebraMap S L`, `Aq = A`, and every step above degenerates correctly.
 
 `B` is an integrally closed domain of finite type over a field `k`, `S = Frac B`, and `L / S`
 is a finite PURELY INSEPARABLE extension.  Then the integral closure of `B` in `L` is a finite
@@ -961,8 +1353,9 @@ NOT let you skip the construction** — it only makes `k' = k`; the counterexamp
 for it, `k = 𝔽_p`, `A = k[x,y]/(yᵖ - x)` finite over `A₀ = k[x]` with `Frac A / Frac A₀`
 purely inseparable, shows the inseparable case is live over a perfect field too.
 
-**A REFORMULATION THAT LOOKS LIKE THE CHEAPER ROUTE** (worked out 2026-07-27 while cutting
-this leaf, not carried out).  In characteristic `p > 0` the map `φ : L → S`, `x ↦ x ^ q`, is
+**THE REFORMULATION THAT WAS THE CHEAPER ROUTE** (worked out 2026-07-27 while cutting this
+leaf; CARRIED OUT 2026-07-28, and it is how the proof above goes).  In characteristic `p > 0`
+the map `φ : L → S`, `x ↦ x ^ q`, is
 an INJECTIVE RING HOMOMORPHISM — Frobenius is additive — semilinear over its own restriction
 `B → Bᵍ`.  So `Module.Finite B C` is equivalent to `φ C` being a finitely generated
 `Bᵍ`-module, and `φ C ⊆ φ L ∩ B`, where `φ L` is a subfield of `S` with `Sᵍ ⊆ φ L ⊆ S` and
@@ -977,17 +1370,26 @@ generated over `Sᵍ` by finitely many rational functions; the subfield `k₁ �
 `k₁(x) ∩ k[x] = k₁[x]` is free over `kᵍ[xᵍ]` on `{x^α : αᵢ < q}` times a `kᵍ`-basis of `k₁`.
 That `k₁` is the classical `k'`, transported through Frobenius.
 
-**If that route is taken, RESTATE the leaf over a polynomial base**, since the elementary
-argument is available only there while `B` here is a general normal finite-type `k`-algebra.
-The restatement is legitimate and costs only one change upstream: in
-`module_finite_integralClosure_of_isSeparable_of_isPurelyInseparable` below, replace the split
-at `separableClosure K L` by a passage to a NORMAL closure `N / K` of `L / K`
-(`integralClosure A₀ L` sits inside `integralClosure A₀ N` and `A₀` is Noetherian, so
-finiteness for `N` suffices).  Inside a normal extension the purely inseparable part comes
-FIRST — `K ⊆ K_i :=` the fixed field of `Aut (N / K)`, with `N / K_i` separable — so the
-inseparable step is taken over `A₀ = MvPolynomial (Fin d) k` itself and the separable step
-over the integral closure of `A₀` in `K_i`.  The price is `normalClosure` plus the fixed-field
-decomposition; the gain is that the residue becomes the concrete statement displayed above.
+**CORRECTION, 2026-07-28: the leaf did NOT have to be restated over a polynomial base, and
+the normal-closure restructure the 2026-07-27 note prescribed is NOT needed.**  That note
+said the elementary argument is available only over `B = k[x]`, hence that
+`module_finite_integralClosure_of_isSeparable_of_isPurelyInseparable` below would have to
+split at a NORMAL closure (so that the purely inseparable part comes first, over `A₀`)
+instead of at `separableClosure K L`.  That would have cost `normalClosure` plus the
+fixed-field decomposition — and `Mathlib` at this pin has **no** "`E / F` normal ⟹
+`E` separable over `perfectClosure F E`", so the price was higher than the note assumed.
+
+It is unnecessary, because the polynomial ring is needed only as a **coordinate system**,
+not as the base of the statement.  Noether-normalize `B` to `A = k[x₁,…,x_d]`; then
+`integralClosure A L` and `integralClosure B L` have the SAME CARRIER (`B` is integral over
+`A`), so it suffices to be `A`-finite, and the general `B` survives untouched in the
+hypotheses.  Fix a `Frac A`-basis `u` of `S`.  Since `Sᵍ` is the `Frac(Aᵍ)`-span of
+`{u_j ᵍ}`, the `Sᵍ`-span of `φ '' (an S-basis of L)` is the `Frac(Aᵍ)`-span of a FINITE set,
+so its `u`-coordinates run over a finite-dimensional `Frac(Aᵍ)`-subspace of `Frac A` — and
+intersecting that with `A` (after clearing one denominator `δ ∈ A`) is exactly
+`exists_finset_span_powSubalgebra_of_mem_span`.  No `q`-th root, no normal closure, no
+restatement, and no case split on the characteristic: at `p = 1` every step degenerates
+correctly.  See `exists_fg_of_mem_span_powSubalgebra` above for the packaged form.
 
 **A PROVEN CHARACTERISTIC-ZERO TWIN EXISTS IN THIS TREE — do not redevelop it.**
 `Fermat/FLT/Modularity/MoretBailly.lean` carries `module_finite_integralClosure_of_finiteType`
@@ -1005,8 +1407,178 @@ theorem module_finite_integralClosure_of_isPurelyInseparable
     [Field S] [Algebra B S] [IsFractionRing B S]
     [Field L] [Algebra B L] [Algebra S L] [IsScalarTower B S L]
     [FiniteDimensional S L] [IsPurelyInseparable S L] :
-    Module.Finite B (integralClosure B L) :=
-  sorry
+    Module.Finite B (integralClosure B L) := by
+  classical
+  obtain ⟨p, hp⟩ := ExpChar.exists k
+  haveI : ExpChar B p :=
+    expChar_of_injective_ringHom (algebraMap_injective_of_field k B) p
+  haveI : ExpChar S p := expChar_of_injective_ringHom (IsFractionRing.injective B S) p
+  haveI : ExpChar L p :=
+    expChar_of_injective_ringHom (algebraMap_injective_of_field S L) p
+  set n := IsPurelyInseparable.exponent S L with hndef
+  set φ : L →+* S := IsPurelyInseparable.iterateFrobenius S L p (le_refl n) with hφdef
+  have hφapp : ∀ x : L, algebraMap S L (φ x) = x ^ p ^ n := fun x =>
+    IsPurelyInseparable.algebraMap_iterateFrobenius S p (le_refl n) x
+  have hφbase : ∀ x : S, φ (algebraMap S L x) = x ^ p ^ n := fun x =>
+    IsPurelyInseparable.iterateFrobenius_algebraMap L p (le_refl n) x
+  have hφinj : Function.Injective φ := φ.injective
+  -- Noether normalization
+  obtain ⟨d, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg k B
+  letI : Algebra (MvPolynomial (Fin d) k) B := g.toRingHom.toAlgebra
+  haveI : IsScalarTower k (MvPolynomial (Fin d) k) B :=
+    IsScalarTower.of_algebraMap_eq fun x => (g.commutes x).symm
+  haveI hfinB : Module.Finite (MvPolynomial (Fin d) k) B := hgfin
+  letI : Algebra (MvPolynomial (Fin d) k) S := ((algebraMap B S).comp g.toRingHom).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin d) k) B S :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  letI : Algebra (MvPolynomial (Fin d) k) L := ((algebraMap B L).comp g.toRingHom).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin d) k) B L :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (MvPolynomial (Fin d) k) S L :=
+    IsScalarTower.of_algebraMap_eq fun x => IsScalarTower.algebraMap_apply B S L (g x)
+  haveI : ExpChar (MvPolynomial (Fin d) k) p :=
+    expChar_of_injective_ringHom (MvPolynomial.C_injective (Fin d) k) p
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin d) k) B :=
+    Algebra.IsIntegral.of_finite (MvPolynomial (Fin d) k) B
+  have hinjAS : Function.Injective (algebraMap (MvPolynomial (Fin d) k) S) :=
+    (IsFractionRing.injective B S).comp hginj
+  -- the fraction field of the polynomial ring, embedded in `S`
+  letI : Algebra (FractionRing (MvPolynomial (Fin d) k)) S :=
+    (IsFractionRing.lift hinjAS).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin d) k) (FractionRing (MvPolynomial (Fin d) k)) S :=
+    IsScalarTower.of_algebraMap_eq fun x => (IsFractionRing.lift_algebraMap hinjAS x).symm
+  haveI : FaithfulSMul (MvPolynomial (Fin d) k) S :=
+    (faithfulSMul_iff_algebraMap_injective _ _).2 hinjAS
+  haveI halgB : Algebra.IsAlgebraic (MvPolynomial (Fin d) k) B := inferInstance
+  haveI halgS : Algebra.IsAlgebraic (MvPolynomial (Fin d) k) S :=
+    (IsFractionRing.isAlgebraic_iff' (MvPolynomial (Fin d) k) B S).mp halgB
+  haveI : Algebra.IsAlgebraic (FractionRing (MvPolynomial (Fin d) k)) S :=
+    (IsFractionRing.comap_isAlgebraic_iff
+      (A := MvPolynomial (Fin d) k) (K := FractionRing (MvPolynomial (Fin d) k))
+      (C := S)).mp halgS
+  haveI : Algebra.EssFiniteType B S := Algebra.EssFiniteType.of_isLocalization _ (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType (MvPolynomial (Fin d) k) S :=
+    Algebra.EssFiniteType.comp (MvPolynomial (Fin d) k) B S
+  haveI : Algebra.EssFiniteType (FractionRing (MvPolynomial (Fin d) k)) S :=
+    Algebra.EssFiniteType.of_comp (MvPolynomial (Fin d) k) _ S
+  haveI : FiniteDimensional (FractionRing (MvPolynomial (Fin d) k)) S :=
+    Algebra.finite_of_essFiniteType_of_isAlgebraic
+  -- the `q`-th power subalgebra of the polynomial ring
+  set Aq := powSubalgebra (MvPolynomial (Fin d) k) p n with hAqdef
+  haveI : IsNoetherianRing ↥Aq := isNoetherianRing_powSubalgebra _ p n
+  -- `φ` sends the integral closure into `B`
+  have hCB : ∀ c : L, c ∈ integralClosure B L →
+      φ c ∈ Set.range (algebraMap B S) := by
+    intro c hc
+    have hc' : _root_.IsIntegral B c := hc
+    have h1 : _root_.IsIntegral B (c ^ p ^ n) := hc'.pow _
+    rw [← hφapp c] at h1
+    have h2 : _root_.IsIntegral B (φ c) := h1.tower_bot (algebraMap_injective_of_field S L)
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp h2
+    exact ⟨y, hy⟩
+  -- the finite `A`-module containing the image of `B`
+  set M : Submodule (MvPolynomial (Fin d) k) S :=
+    Submodule.map ((Algebra.linearMap B S).restrictScalars (MvPolynomial (Fin d) k)) ⊤ with hMdef
+  have hMfg : M.FG :=
+    (Module.finite_def.mp hfinB : (⊤ : Submodule (MvPolynomial (Fin d) k) B).FG).map _
+  -- the finite set of `φ`-images of an `S`-basis of `L`
+  set w := Module.finBasis S L with hwdef
+  set T : Finset S := Finset.univ.image (fun i => φ (w i)) with hTdef
+  have hspanT : ∀ c : L, φ c ∈ Submodule.span ↥(powSubalgebra S p n) (T : Set S) := by
+    intro c
+    have hexp : φ c = ∑ i, (w.repr c i) ^ p ^ n * φ (w i) := by
+      conv_lhs => rw [← w.sum_repr c]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [Algebra.smul_def, map_mul, hφbase]
+    rw [hexp]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    have hmem : φ (w i) ∈ Submodule.span ↥(powSubalgebra S p n) (T : Set S) :=
+      Submodule.subset_span (by simp [hTdef])
+    have h2 := Submodule.smul_mem (Submodule.span ↥(powSubalgebra S p n) (T : Set S))
+      (⟨(w.repr c i) ^ p ^ n, pow_mem_powSubalgebra _⟩ : ↥(powSubalgebra S p n)) hmem
+    simpa [Algebra.smul_def] using h2
+  -- the arithmetic core
+  obtain ⟨N, hNfg, hNmem⟩ := exists_fg_of_mem_span_powSubalgebra k d p n
+    (FractionRing (MvPolynomial (Fin d) k)) S T M hMfg
+  -- `φ` intertwines the `q`-th powers of the polynomial ring with the polynomial ring itself
+  have hkey : ∀ a : MvPolynomial (Fin d) k,
+      φ (algebraMap (MvPolynomial (Fin d) k) L a) =
+        algebraMap (MvPolynomial (Fin d) k) S (a ^ p ^ n) := by
+    intro a
+    apply algebraMap_injective_of_field S L
+    rw [hφapp, ← IsScalarTower.algebraMap_apply, map_pow]
+  -- the range of `φ`, as a module over the `q`-th powers of the polynomial ring
+  let Rng : Submodule ↥(powSubalgebra (MvPolynomial (Fin d) k) p n) S :=
+    { carrier := Set.range φ
+      add_mem' := by rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩; exact ⟨x + y, map_add _ _ _⟩
+      zero_mem' := ⟨0, map_zero _⟩
+      smul_mem' := by
+        rintro r _ ⟨x, rfl⟩
+        obtain ⟨a, ha⟩ := r.2
+        have hr : (algebraMap ↥(powSubalgebra (MvPolynomial (Fin d) k) p n) S) r
+            = φ (algebraMap (MvPolynomial (Fin d) k) L a) := by
+          rw [hkey]
+          exact congrArg (algebraMap (MvPolynomial (Fin d) k) S) ha.symm
+        refine ⟨algebraMap (MvPolynomial (Fin d) k) L a * x, ?_⟩
+        rw [map_mul, ← hr, ← Algebra.smul_def] }
+  have hPfg : (N ⊓ Rng).FG := fg_of_le_of_fg hNfg inf_le_left
+  obtain ⟨G, hG⟩ := hPfg
+  have hGrange : ∀ x ∈ G, ∃ y : L, φ y = x := by
+    intro x hx
+    have hxP : x ∈ N ⊓ Rng := hG ▸ Submodule.subset_span hx
+    exact hxP.2
+  choose hy hyspec using fun (x : {x // x ∈ G}) => hGrange x.1 x.2
+  -- the finite generating set in `L`
+  have hsub : ∀ c : L, c ∈ integralClosure B L →
+      c ∈ Submodule.span (MvPolynomial (Fin d) k) ((Finset.univ.image hy : Finset L) : Set L) := by
+    intro c hc
+    obtain ⟨b, hb⟩ := hCB c hc
+    have h1 : φ c ∈ M := ⟨b, trivial, hb⟩
+    have h2 : φ c ∈ N := hNmem _ h1 (hspanT c)
+    have h3 : φ c ∈ N ⊓ Rng := ⟨h2, ⟨c, rfl⟩⟩
+    rw [← hG, Submodule.mem_span_finset] at h3
+    obtain ⟨f, -, hf⟩ := h3
+    choose a ha using fun x : S => (f x).2
+    have hterm : ∀ x : {x // x ∈ G},
+        φ (algebraMap (MvPolynomial (Fin d) k) L (a x.1) * hy x) = f x.1 • (x.1 : S) := by
+      intro x
+      rw [map_mul, hkey, hyspec x, Algebra.smul_def]
+      exact congrArg (fun z => z * (x.1 : S))
+        (congrArg (algebraMap (MvPolynomial (Fin d) k) S) (ha x.1))
+    have hcomb : φ c
+        = φ (∑ x ∈ G.attach, algebraMap (MvPolynomial (Fin d) k) L (a x.1) * hy x) := by
+      rw [map_sum, ← hf, ← Finset.sum_attach G (fun i => f i • i)]
+      exact Finset.sum_congr rfl fun x _ => (hterm x).symm
+    have hceq : c = ∑ x ∈ G.attach, algebraMap (MvPolynomial (Fin d) k) L (a x.1) * hy x :=
+      hφinj hcomb
+    rw [hceq]
+    refine Submodule.sum_mem _ fun x _ => ?_
+    have hmem : hy x ∈ Submodule.span (MvPolynomial (Fin d) k)
+        ((Finset.univ.image hy : Finset L) : Set L) :=
+      Submodule.subset_span (by simp)
+    have := Submodule.smul_mem (Submodule.span (MvPolynomial (Fin d) k)
+      ((Finset.univ.image hy : Finset L) : Set L)) (a x.1) hmem
+    simpa [Algebra.smul_def] using this
+  -- conclude
+  have hcar : ((integralClosure (MvPolynomial (Fin d) k) L : Subalgebra _ L) : Set L)
+      = ((integralClosure B L : Subalgebra B L) : Set L) := by
+    ext x
+    constructor
+    · intro hx; exact (hx : _root_.IsIntegral (MvPolynomial (Fin d) k) x).tower_top
+    · intro hx; exact isIntegral_trans _ (hx : _root_.IsIntegral B x)
+  have hle : Subalgebra.toSubmodule (integralClosure (MvPolynomial (Fin d) k) L)
+      ≤ Submodule.span (MvPolynomial (Fin d) k)
+        ((Finset.univ.image hy : Finset L) : Set L) := by
+    intro x hx
+    refine hsub x ?_
+    have : x ∈ ((integralClosure (MvPolynomial (Fin d) k) L : Subalgebra _ L) : Set L) := hx
+    rw [hcar] at this
+    exact this
+  have hfgA : (Subalgebra.toSubmodule (integralClosure (MvPolynomial (Fin d) k) L)).FG :=
+    fg_of_le_of_fg (Submodule.fg_span (Finset.finite_toSet _)) hle
+  exact module_finite_of_algebraMap_range_le
+    (R := B) (S := MvPolynomial (Fin d) k) (X := L)
+    (by rintro _ ⟨c, rfl⟩; exact ⟨g c, rfl⟩) _ _ hcar (Module.Finite.iff_fg.mpr hfgA)
 
 /-- **Noether's finiteness theorem over an integrally closed base, split at an intermediate
 field** (PROVEN 2026-07-27 over the leaf above).
@@ -1425,6 +1997,137 @@ theorem isFinite_fromNormalization {Y P : Scheme.{u}}
     IsFinite i.fromNormalization :=
   haveI := locallyOfFiniteType_fromNormalization strP i
   (IsFinite.iff_isIntegralHom_and_locallyOfFiniteType _).mpr ⟨inferInstance, inferInstance⟩
+
+/-- **The local rings of the normalized model are discrete valuation rings** (sorry leaf —
+the normality half of the old `smoothOfRelativeDimension_one_fromNormalization`).
+
+TRUE and classical: the relative normalization `X` of `P` in the integral scheme `Y` is
+NORMAL — that is what "normalization" means, and it is the one thing `Mathlib`'s
+`Scheme.Hom.normalization` does not record — and it has the same function field as `Y`, hence
+dimension one.  A noetherian normal local domain of dimension one is a discrete valuation
+ring (Serre's criterion in dimension one; equivalently
+`IsDiscreteValuationRing.TFAE` item 3, `IsIntegrallyClosed` together with a unique nonzero
+prime, which is what dimension one supplies).
+
+`¬ IsField` is exactly the exclusion of the generic point, where the stalk is the function
+field: see the discussion on
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`.
+
+**What is genuinely missing at this pin, and what is not.**  `IsDiscreteValuationRing.TFAE`
+and `IsRegularLocalRing` are both present (`Mathlib/RingTheory/DiscreteValuationRing/TFAE.lean`,
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), so the local ring theory is available; what
+`Mathlib` does not have is (a) any statement that the stalks of `f.normalization` are
+integrally closed, and (b) any notion of a normal scheme to phrase it with.  So a prover's
+first move is to compute a stalk of `i.normalization` through
+`Scheme.Hom.normalizationOpenCover` / `normalizationDiagramMap` — over an affine `U ∋` the
+image, `Γ(X, ·)` is `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`, whose localizations are
+integrally closed by `IsIntegralClosure.isIntegrallyClosed_of_isLocalization`-style transport
+— and only then apply the TFAE.
+
+`hY` is what pins the dimension to one; without it the same construction applies in every
+dimension and no local ring need be a DVR. -/
+theorem isDiscreteValuationRing_stalk_normalization {Y P : Scheme.{u}}
+    {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
+    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
+    (_hY : SmoothOfRelativeDimension 1 (i ≫ strP)) (x : i.normalization)
+    (_hx : ¬ IsField (i.normalization.presheaf.stalk x)) :
+    IsDiscreteValuationRing (i.normalization.presheaf.stalk x) :=
+  sorry
+
+/-- **The normalization of a curve over a perfect field is a smooth curve** (PROVEN
+2026-07-27 over `isDiscreteValuationRing_stalk_normalization` and the shared DVR node
+`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`).
+
+TRUE and classical, in three steps: the relative normalization `X` of `P` in the integral
+scheme `Y` is normal and integral, and has the same function field as `Y`, hence the same
+dimension `1`; a noetherian normal local domain of dimension one is a discrete valuation
+ring, so `X` is regular; and over a **perfect** field regular is equivalent to smooth
+(Stacks `056S`), the relative dimension being `1` because `X` is a curve.
+
+**The old "IRREDUCIBLE at this pin" verdict is RETIRED, and it was wrong on a checkable
+point.**  It read: "`Mathlib` has no notion of a normal scheme, no dimension theory for
+schemes beyond `coheight`, and no regular-implies-smooth-over-a-perfect-field statement."
+The first and third clauses are right; the implicit claim that regularity itself is
+unavailable is not — `IsRegularLocalRing` is at this pin, with
+`IsLocalRing.finrank_CotangentSpace_eq_one_iff` linking it to `IsDiscreteValuationRing` in
+dimension one.  That is what makes the cut below possible: the statement splits cleanly into
+*normality of the normalization* (leaf above, and genuinely absent) and *regular ⟹ smooth
+over a perfect field* (the shared node), rather than being one indivisible citation.
+
+`PerfectField K` is load-bearing and the statement is FALSE without it.
+
+**COUNTEREXAMPLE CORRECTED (2026-07-28) — the witness this docstring used to cite was
+INVALID and justified nothing.**  It read: "over an imperfect field `k` of characteristic
+`p` the curve `y^p = t x^p + t` (`t ∈ k ∖ k^p`) is regular but not smooth, and it is its
+own normalization".  Both halves of that fail:
+
+* it is **not regular**, so it is not its own normalization either.  In characteristic `p`,
+  `t x^p + t = t (x + 1)^p`, so after the change of coordinate `u = x + 1` the equation is
+  `y^p = t u^p`; at the `k`-rational point `u = y = 0` the defining polynomial lies in
+  `𝔪²` (checked in `Singular`), so the local ring has `dim_k 𝔪/𝔪² = 2` in dimension one.
+  The integral closure of `k[u,y]/(y^p - t u^p) = k[u, t^{1/p} u]` is `k(t^{1/p})[u]`, a
+  strictly larger ring;
+* it is **not geometrically reduced** — over `k̄` it is `(y - t^{1/p}(x+1))^p = 0` — so it
+  has no smooth open subscheme and can never satisfy `hY` in the first place.
+
+The correct witness is the classical **quasi-elliptic** curve (it exists only in
+characteristics `2` and `3`).  Over `k = 𝔽₃(t)`, which is imperfect, take
+`C : y² = x³ + t ⊆ 𝔸²_k`.
+
+* `C` is integral (`x³ + t` has odd degree, hence is not a square in `k[x]`) and
+  **regular**: in characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`,
+  so the only candidate singular point is `P : y = 0`, `x³ = −t` — a single closed point
+  with residue field `k(t^{1/3})` — and there `𝔪 = (y, x³ + t) = (y)`, because
+  `x³ + t = y²`.  A one-dimensional local ring with principal maximal ideal is a DVR, so
+  `C` is regular, hence normal, hence its own normalization.
+* `C` is **not smooth** at `P`: over `k̄`, `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the
+  cuspidal cubic `y² = (x + t^{1/3})³` — reduced, but singular at the cusp.
+* `Y := C ∖ {P}` **is** a smooth affine curve over `k`, integral, quasi-compact and
+  separated: unlike the old witness it satisfies every hypothesis here.
+* `Y` has **no** smooth proper compactification over `k`: any smooth proper model is an
+  integral normal proper curve with function field `k(C)`, and that model is unique up to
+  isomorphism, so it is the regular proper model of `C` — which is not smooth, already at
+  `P`.
+
+Machine-checked in `Magma` (2026-07-28): `k(C)` has genus `1` over `𝔽₃(t)` with exact
+constant field `k`, and genus `0` after the purely inseparable base change `t = s³` — a
+drop of `1 = (p−1)/2`, exactly what Tate's genus-change theorem permits at `p = 3`.  A
+smooth (= geometrically regular) proper model would preserve the genus under base change,
+so none exists.
+
+**The tempting repair is wrong too**, which is why `hY` does not let one drop the
+hypothesis: `k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`),
+so "smooth `Y` ⟹ separably generated function field ⟹ smooth normalization" is FALSE.
+Separable generation is strictly weaker than conservativity, and conservativity is what
+smooth compactification needs.  The downstream perfectness-free leaf
+`exists_isSmoothCompactification_field` was DELETED as refuted on exactly this example;
+see the FALSITY AUDIT on `Fermat.exists_x0Compactification_field` in
+`Fermat/FLT/ModularCurve/X0.lean`.
+
+`ℚ` is perfect, so the modular application is unaffected.
+
+`hY` — that `Y` itself is a smooth curve — is what pins the dimension to `1`; it enters the
+proof twice, once through the DVR leaf and once as the dense smooth open
+`i.toNormalization` that fixes the relative dimension at `1` rather than `0`.  Zariski's Main
+Theorem is what makes `i.toNormalization` an open immersion, and dominance is free by
+construction — so the "dense open which is already a smooth curve" that the shared node asks
+for is exactly `Y` itself. -/
+theorem smoothOfRelativeDimension_one_fromNormalization [PerfectField K] {Y P : Scheme.{u}}
+    {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
+    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
+    (hY : SmoothOfRelativeDimension 1 (i ≫ strP)) :
+    SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) := by
+  haveI : IsFinite i.fromNormalization := isFinite_fromNormalization strP i
+  haveI : IsIntegral i.normalization := inferInstance
+  haveI : LocallyOfFiniteType (i.fromNormalization ≫ strP) := inferInstance
+  have hsm : SmoothOfRelativeDimension 1 (i.toNormalization ≫ i.fromNormalization ≫ strP) := by
+    rw [← Category.assoc, Scheme.Hom.toNormalization_fromNormalization]
+    exact hY
+  exact smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk
+    (i.fromNormalization ≫ strP) i.toNormalization hsm
+    (fun x hx => isDiscreteValuationRing_stalk_normalization i hY x hx)
 
 /-! ### Dimension theory over a general base field
 
@@ -1962,183 +2665,76 @@ theorem exists_coheight_le_of_isOpenImmersion_of_irreducible {C X : Scheme.{u}}
     ← idealHeight_eq_coheight R x₀, ← idealHeight_eq_coheight R ⟨q, hqp⟩]
   exact hqht
 
-/-! ### Dimension of a smooth algebra over a field, via transcendence degree
-
-The 2026-07-27 cut of `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
-reduced it to pure ring theory; this block cuts it once more, and after it **exactly one
-statement is open**: `trdeg_le_of_isStandardSmoothOfRelativeDimension`.  The route is
-
-    Ω free of rank n  ⟹  trdeg ≤ n  ⟹  dim ≤ n  ⟹  dim ≤ 1 locally,
-
-of which the middle implication is `ringKrullDim_le_of_trdeg_le` (PROVEN here, four lines over
-Noether normalization) and the last two steps are pure localisation bookkeeping (also proven
-here).  Only the FIRST implication — Matsumura, *Commutative Ring Theory*, Thm. 25.3 — is owed.
--/
-
-/-- **Krull dimension is bounded by transcendence degree over a field** (PROVEN 2026-07-27).
-
-For a finite-type algebra `A` over a field `k`, `dim A ≤ trdeg_k A`.  (Equality holds when `A`
-is a domain, but only this direction is ever needed, and the bound direction is the cheap one.)
-
-THE PROOF, three lines of mathematics:
-
-1. Noether-normalize: `exists_integral_inj_algHom_of_fg` gives an INJECTIVE `k`-algebra map
-   `g : k[X₀,…,X_{s-1}] ↪ A` with `A` integral over the image.
-2. `ringKrullDim_le_of_isIntegral` (proven above in this file) bounds `dim A` by
-   `dim k[X₀,…,X_{s-1}] = s` (`MvPolynomial.ringKrullDim_of_isNoetherianRing`).
-3. `g` being injective, `trdeg_le_of_injective` gives
-   `s = trdeg_k k[X₀,…,X_{s-1}] ≤ trdeg_k A` (`MvPolynomial.trdeg_of_isDomain`).
-
-So `s` is squeezed between the two, and the hypothesis `trdeg_k A ≤ n` yields `s ≤ n`.  The
-trivial ring is handled first, where `ringKrullDim = ⊥`.
-
-NOTE this is the statement whose absence a previous audit on the leaf below recorded as "there
-is no `dim = trdeg` at this pin".  That is still true of `Mathlib` — but the half that is
-actually needed costs a dozen lines over material already in this file, and it is the half that
-turns a smoothness hypothesis into a dimension bound. -/
-theorem ringKrullDim_le_of_trdeg_le {k A : Type u} [Field k] [CommRing A] [Algebra k A]
-    [Algebra.FiniteType k A] {n : ℕ} (h : Algebra.trdeg k A ≤ (n : Cardinal)) :
-    ringKrullDim A ≤ (n : WithBot ℕ∞) := by
-  rcases subsingleton_or_nontrivial A with hsub | hnt
-  · simp [ringKrullDim_eq_bot_of_subsingleton]
-  · obtain ⟨s, g, hginj, hgint⟩ := _root_.exists_integral_inj_algHom_of_fg k A
-    letI : Algebra (MvPolynomial (Fin s) k) A := g.toRingHom.toAlgebra
-    haveI : Algebra.IsIntegral (MvPolynomial (Fin s) k) A := ⟨fun x => hgint x⟩
-    have hdimB : ringKrullDim (MvPolynomial (Fin s) k) = (s : WithBot ℕ∞) := by
-      rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field k]
-      simp
-    have hstr : (s : Cardinal) ≤ Algebra.trdeg k A := by
-      have h1 := _root_.trdeg_le_of_injective g hginj
-      rwa [MvPolynomial.trdeg_of_isDomain, Cardinal.mk_fin, Cardinal.lift_natCast] at h1
-    have hsn : s ≤ n := by exact_mod_cast hstr.trans h
-    calc ringKrullDim A ≤ ringKrullDim (MvPolynomial (Fin s) k) := ringKrullDim_le_of_isIntegral
-      _ = (s : WithBot ℕ∞) := hdimB
-      _ ≤ (n : WithBot ℕ∞) := by exact_mod_cast hsn
-
-/-- **A standard smooth algebra of relative dimension `n` over a field has transcendence degree
-at most `n`** (sorry leaf — 2026-07-27; after this cut it is the ONLY thing owed by
-`ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` and hence by
-`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`).
-
-TRUE and classical.  `Algebra.IsStandardSmoothOfRelativeDimension n k A` gives a presentation
-`A ≅ k[x₁,…,x_m]/(g₁,…,g_{m-n})` with an invertible Jacobian minor, and
-`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential` (PRESENT at this pin,
-`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean:313`) already says `Ω[A⁄k]` is FREE of
-rank `n` — over the whole of `A`, not merely at a point.  What is owed is the passage from that
-to transcendence degree.
-
-**THE ROUTE.** It is *Matsumura, Commutative Ring Theory*, Thm. 25.3 (equivalently Stacks
-`0CD7` / `07P2`) plus a minimal-primes reduction:
-
-1. Let `S ⊆ A` be algebraically independent over `k`.  `k[S]` is reduced, so `S` stays
-   algebraically independent in `A_red`; `A` is Noetherian, so `A_red ↪ ∏ A/𝔭ᵢ` over the
-   finitely many minimal primes, and `k[S]` being a domain it embeds in a single `A/𝔭`, hence
-   in `L := κ(𝔭) = Frac (A/𝔭)`.  So `trdeg_k A = max_𝔭 trdeg_k κ(𝔭)`.
-2. `Ω[L⁄k]` is a quotient of `L ⊗_A Ω[A⁄k] ≅ L^n`, so `dim_L Ω[L⁄k] ≤ n`.
-3. **Matsumura 25.3**: for a finitely generated field extension `L/k`,
-   `trdeg_k L ≤ dim_L Ω[L⁄k]`, with equality exactly when `L/k` is separably generated.  This
-   is the one genuinely missing input; `grep -rn "trdeg" Mathlib/RingTheory/Kaehler/
-   Mathlib/FieldTheory/` is EMPTY at this pin, so nothing links the two invariants.
-
-**A WARNING FOR WHOEVER STRENGTHENS THIS.**  The naive generalisation
-`trdeg_k A ≤ Module.rank A Ω[A⁄k]` for every finite-type `A` is **FALSE**, and the
-counterexample is small: `A = k[x] × k`.  There `trdeg_k A = 1` (the element `(x, 0)` is
-algebraically independent), while `Ω[A⁄k] ≅ k[x]dx × 0` has `Module.rank A = 0`, because
-`(0,1) ∈ A` annihilates every element of it.  Freeness — which standard smoothness supplies and
-`Module.rank` alone does not — is what makes step 2 above work, so do not restate the leaf in
-terms of `Module.rank` of a possibly non-free `Ω`.
-
-**WHAT IS *NOT* NEEDED, contrary to two earlier audits on the consumer below.**  No local
-constancy of fibre dimension, no smooth-implies-regular, no dimension theorem for local rings:
-`~/cs/FLT/FLT/Slop/DimensionTheorem/` was priced as the route to vendor and it is not on the
-critical path any more, because `ringKrullDim_le_of_trdeg_le` above supplies the
-dimension-theoretic half outright.  Likewise "invariance of `ringKrullDim` under an injective
-integral extension" is NOT missing — the half that is needed is `ringKrullDim_le_of_isIntegral`,
-proven above in this file. -/
-theorem trdeg_le_of_isStandardSmoothOfRelativeDimension {k A : Type u} [Field k] [CommRing A]
-    [Algebra k A] (n : ℕ) [Algebra.IsStandardSmoothOfRelativeDimension n k A] :
-    Algebra.trdeg k A ≤ (n : Cardinal) :=
-  sorry
-
-/-- **A standard smooth algebra of relative dimension `n` over a field has Krull dimension at
-most `n`** (PROVEN 2026-07-27 over the two statements above).
-
-Standard smoothness entails `Algebra.FinitePresentation`, hence `Algebra.FiniteType`, which is
-what `ringKrullDim_le_of_trdeg_le` needs; the transcendence-degree bound is the leaf. -/
-theorem ringKrullDim_le_of_isStandardSmoothOfRelativeDimension {k A : Type u} [Field k]
-    [CommRing A] [Algebra k A] (n : ℕ) [Algebra.IsStandardSmoothOfRelativeDimension n k A] :
-    ringKrullDim A ≤ (n : WithBot ℕ∞) := by
-  haveI : Algebra.IsStandardSmooth k A :=
-    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth n
-  haveI : Algebra.FinitePresentation k A := inferInstance
-  haveI : Algebra.FiniteType k A := inferInstance
-  exact ringKrullDim_le_of_trdeg_le (trdeg_le_of_isStandardSmoothOfRelativeDimension (k := k) n)
-
 /-- **A locally standard smooth `K`-algebra of relative dimension one has Krull dimension at
-most one** (**PROVEN 2026-07-27** over `trdeg_le_of_isStandardSmoothOfRelativeDimension`, the
-single remaining leaf of this cluster — was itself a sorry leaf, and before that the dimension
-half of `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`).
+most one** (sorry leaf — 2026-07-27, and it is ALL that is left of the old dimension leaf
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is now a THEOREM over it).
 
 TRUE and classical.  `RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
 (algebraMap K R)` says there are `f₁,…,f_m` generating the unit ideal of `R` with each
-`R_{f_i} ≅ K[x₁,…,x_n]/(g₁,…,g_{n-1})` carrying an invertible Jacobian minor.  `R` is allowed to
-be trivial, in which case `ringKrullDim R = ⊥ ≤ 1`; only the UPPER bound is asked, so the easy
-direction of the dimension theorem is not enough.
+`R_{f_i} ≅ K[x₁,…,x_n]/(g₁,…,g_{n-1})` carrying an invertible Jacobian minor.  Such a ring has
+Krull dimension `1` (Stacks `02JS` for the relative dimension of a smooth morphism, `0A21` for
+dimension = transcendence degree over a field).  `R` is allowed to be trivial, in which case
+`ringKrullDim R = ⊥ ≤ 1`; only the UPPER bound is asked, so the easy direction of the dimension
+theorem is not enough.
 
-**WHAT THE PROOF BELOW DOES.**  Purely localisation bookkeeping, no mathematics:
+**WHY THIS IS THE LEAF AND NOT THE SCHEME STATEMENT.** Everything scheme-theoretic in the old
+leaf is now proven immediately below: the reduction of `topologicalKrullDim Y ≤ 1` to a bound on
+each affine chart is `topologicalKrullDim_eq_iSup_coheight` plus `coheight_eq_of_isOpenImmersion`
+plus `idealHeight_eq_coheight` plus `Ideal.height_le_ringKrullDim_of_isPrime`, and the transport
+of the smoothness hypothesis onto the chart is `HasRingHomProperty.appTop` for
+`SmoothOfRelativeDimension 1` (whose ring-hom property is literally `Locally
+(IsStandardSmoothOfRelativeDimension 1)`) conjugated by the two `Scheme.ΓSpecIso`s, which
+`RingHom.locally_respectsIso` lets through.  So what remains has NO scheme theory in it at all.
 
-* `ringKrullDim_le_iff_height_le` turns the bound into "every prime `𝔭` has height `≤ 1`";
-* the `fᵢ` generate the unit ideal, so some `f := fᵢ ∉ 𝔭`, whence `Disjoint (powers f) 𝔭`
-  (`Ideal.disjoint_powers_iff_notMem_of_isPrime`) and `𝔭 R_f` is prime;
-* `IsLocalization.height_map_of_disjoint` says `height (𝔭 R_f) = height 𝔭`, and
-  `Ideal.height_le_ringKrullDim_of_isPrime` bounds that by `dim R_f`;
-* `dim R_f ≤ 1` is `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`, the `K`-algebra
-  structure on `R_f` being the one `RingHom.IsStandardSmoothOfRelativeDimension` carries by
-  definition (`(algebraMap R R_f).comp (algebraMap K R)).toAlgebra`).
+**PIN AUDIT — RE-RUN THESE, TWO OF THEM HAVE ALREADY GONE STALE ONCE.**
 
-**WHY THIS IS NOT THE SCHEME STATEMENT.** Everything scheme-theoretic is proven immediately
-below: the reduction of `topologicalKrullDim Y ≤ 1` to a bound on each affine chart is
-`topologicalKrullDim_eq_iSup_coheight` plus `coheight_eq_of_isOpenImmersion` plus
-`idealHeight_eq_coheight` plus `Ideal.height_le_ringKrullDim_of_isPrime`, and the transport of
-the smoothness hypothesis onto the chart is `HasRingHomProperty.appTop` for
-`SmoothOfRelativeDimension 1` conjugated by the two `Scheme.ΓSpecIso`s, which
-`RingHom.locally_respectsIso` lets through.
+* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives `ringKrullDim K[x₁…xₛ] = s` —
+  note this makes the `proof_wanted` `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`
+  at `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**;
+* **present**: Noether normalization, `exists_integral_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean:276`, ROOT namespace, not `Algebra.`);
+* **present**: `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) — `Ω` is free of rank `n`;
+* **NO LONGER MISSING**: what the previous version of this audit called "MISSING (1):
+  invariance of `ringKrullDim` under an injective integral ring extension".  The half that is
+  actually needed is `ringKrullDim_le_of_isIntegral`, **proven above in this file** (four lines,
+  from `Ideal.IsIntegral.comap_lt_comap`), and going-up in the other direction is
+  `exists_isPrime_under_eq_and_le_height_of_isIntegral`, also proven above.  Do not go looking
+  for it in `Mathlib`;
+* **MISSING**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the Noether
+  normalization — i.e. relative dimension equals transcendence degree.  There is still **no
+  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
+  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing at
+  this pin connects a smooth presentation to any dimension, and mathlib has no
+  smooth-implies-regular statement either (`grep -rn "IsRegularLocalRing"
+  Mathlib/RingTheory/Smooth/ Mathlib/AlgebraicGeometry/` is empty).
+
+So the leaf is ONE named ring-theoretic statement away, not a whole dimension theory.  Finding
+that link in the pin refutes this verdict.
+
+**THE ROUTE A NEXT OWNER SHOULD PRICE FIRST**, since it is the one that does not need `dim =
+trdeg`: `~/cs/FLT/FLT/Slop/DimensionTheorem/` proves the LOCAL dimension theorem
+`ringKrullDim R = minGenPrimary R` for Noetherian local rings, sorry-free and with clean axioms
+(see its `README.md`; `Main.lean`'s `dimension_theorem`).  Vendoring it (five files, pin-drift
+audit required — its mathlib pin is `81a5d2` against our `a3364fa`) would reduce the leaf to
+exhibiting a length-`1` system of parameters in each `R_𝔭`, which the Jacobian criterion
+supplies.  That is a costing, not a proof; it has NOT been attempted here.
 
 RELATION TO `Modularity/MoretBailly.lean`: that file does NOT own this statement; it takes
 `hdim : topologicalKrullDim ↥C ≤ 1` as a HYPOTHESIS on every declaration in the cluster and
-pushes the obligation out to `X0.lean`.  So closing the leaf above discharges that hypothesis
-for both files. -/
+pushes the obligation out to `X0.lean`.  So this leaf is genuinely unowned there, and whoever
+proves it here discharges that hypothesis for both files. -/
 theorem ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one
     {R : Type u} [CommRing R] [Algebra K R]
     (h : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1) (algebraMap K R)) :
-    ringKrullDim R ≤ 1 := by
-  have h1 : (1 : WithBot ℕ∞) = ((1 : ℕ) : WithBot ℕ∞) := by norm_num
-  rw [h1, ringKrullDim_le_iff_height_le]
-  intro p hp
-  obtain ⟨s, hspan, hs⟩ := h
-  obtain ⟨t, hts, htp⟩ : ∃ t ∈ s, t ∉ p := by
-    by_contra hc
-    refine hp.ne_top (top_le_iff.mp (hspan ▸ Ideal.span_le.mpr fun x hx => ?_))
-    by_contra hxp
-    exact hc ⟨x, hx, hxp⟩
-  have hdisj : Disjoint ((Submonoid.powers t : Submonoid R) : Set R) (p : Set R) :=
-    (Ideal.disjoint_powers_iff_notMem_of_isPrime t).mpr htp
-  letI : Algebra K (Localization.Away t) :=
-    ((algebraMap R (Localization.Away t)).comp (algebraMap K R)).toAlgebra
-  haveI : Algebra.IsStandardSmoothOfRelativeDimension 1 K (Localization.Away t) := hs t hts
-  haveI : (p.map (algebraMap R (Localization.Away t))).IsPrime :=
-    IsLocalization.isPrime_of_isPrime_disjoint (Submonoid.powers t) (Localization.Away t) p hp
-      hdisj
-  rw [← IsLocalization.height_map_of_disjoint (S := Localization.Away t) (Submonoid.powers t) p
-    hdisj]
-  exact le_trans Ideal.height_le_ringKrullDim_of_isPrime
-    (ringKrullDim_le_of_isStandardSmoothOfRelativeDimension (k := K) 1)
+    ringKrullDim R ≤ 1 :=
+  sorry
 
-/-- **A smooth curve over a field is one-dimensional** (**PROVEN 2026-07-27** over
-`ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` immediately above,
-which is now itself PROVEN over the single remaining ring-theoretic leaf
-`trdeg_le_of_isStandardSmoothOfRelativeDimension` — this whole cluster was the dimension half of
-the old `topologicalKrullDim_normalization_le_one`).
+/-- **A smooth curve over a field is one-dimensional** (**PROVEN 2026-07-27** over the single
+ring-theoretic leaf `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
+stated immediately above — was itself a sorry leaf, the dimension half of the
+old `topologicalKrullDim_normalization_le_one`).
 
 TRUE and classical: `SmoothOfRelativeDimension 1 strY` says that every point of `Y` has an
 affine neighbourhood on which `strY` is *standard* smooth of relative dimension `1`, i.e.
@@ -2310,177 +2906,6 @@ theorem topologicalKrullDim_normalization_le_one {Y P : Scheme.{u}}
     (i.fromNormalization ≫ strP) i.toNormalization) ?_
   exact topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one (i ≫ strP)
 
-/-- **Serre's criterion in dimension one, at a point of a scheme** (PROVEN 2026-07-27).
-
-An integrally closed local ring of an integral, locally noetherian scheme, at a point of
-coheight `≤ 1` and where the stalk is not a field, is a discrete valuation ring.
-
-Everything here is `Mathlib`, once the pieces are named:
-
-* `IsIntegral X` gives `IsDomain (X.presheaf.stalk x)`
-  (`Mathlib/AlgebraicGeometry/FunctionField.lean:178`);
-* `IsLocallyNoetherian X` gives `IsNoetherianRing (X.presheaf.stalk x)`
-  (`Mathlib/AlgebraicGeometry/Noetherian.lean:346`);
-* `krullDimLE_of_coheight_le` (`Mathlib/AlgebraicGeometry/Properties.lean:391`) turns
-  `coheight x ≤ 1` into `Ring.KrullDimLE 1`, which in a domain is `Ring.DimensionLEOne` by
-  `Ideal.IsPrime.isMaximal_of_ne_bot`;
-* Noetherian + `DimensionLEOne` + `IsIntegrallyClosed` is literally `IsDedekindRing`, and with
-  `IsDomain` it is `IsDedekindDomain`, which is item 2 of `IsDiscreteValuationRing.TFAE`.
-
-`coheight` rather than `height` is the right index because
-`ringKrullDim_stalk_eq_coheight` (`Mathlib/AlgebraicGeometry/Properties.lean:372`) is stated
-that way — and it is the same convention `topologicalKrullDim_eq_iSup_coheight` above uses, so
-a global dimension bound feeds straight in.
-
-`¬ IsField` is exactly the exclusion of the generic point, where the stalk is the function
-field: see the discussion on
-`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`. -/
-theorem isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one
-    {X : Scheme.{u}} [IsIntegral X] [IsLocallyNoetherian X] {x : X}
-    (hdim : Order.coheight x ≤ 1)
-    (hic : IsIntegrallyClosed (X.presheaf.stalk x))
-    (hx : ¬ IsField (X.presheaf.stalk x)) :
-    IsDiscreteValuationRing (X.presheaf.stalk x) := by
-  haveI : IsDomain (X.presheaf.stalk x) := inferInstance
-  haveI : _root_.IsNoetherianRing (X.presheaf.stalk x) := inferInstance
-  haveI : Ring.KrullDimLE 1 (X.presheaf.stalk x) := krullDimLE_of_coheight_le hdim
-  haveI : Ring.DimensionLEOne (X.presheaf.stalk x) :=
-    ⟨fun {p} hp hpp => hpp.isMaximal_of_ne_bot hp⟩
-  haveI : IsDedekindRing (X.presheaf.stalk x) := ⟨⟩
-  haveI : IsDedekindDomain (X.presheaf.stalk x) := ⟨⟩
-  exact ((IsDiscreteValuationRing.TFAE (X.presheaf.stalk x) hx).out 2 0).mp ‹_›
-
-/-- **THE RELATIVE NORMALIZATION IS NORMAL** (sorry leaf — 2026-07-27, and after this cut it is
-ALL that is left of `isDiscreteValuationRing_stalk_normalization`, which is now a THEOREM over
-it).
-
-Every local ring of `i.normalization` is integrally closed in its fraction field.  That is what
-"normalization" means, and it is the one thing `Mathlib`'s `Scheme.Hom.normalization` does not
-record: the construction is `Spec` of `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)` over affine
-`U ⊆ P`, and nothing in `Mathlib/AlgebraicGeometry/Normalization.lean` says that ring — let
-alone its localizations — is integrally closed.  There is also no `IsNormal` for schemes at
-this pin to phrase it with, which is why the statement is made stalkwise.
-
-**NOTE WHAT THIS LEAF DOES *NOT* NEED, because two audits over-scoped it.**  It needs neither
-the dimension of `i.normalization` nor `hY`: the hypotheses `IsProper strP`,
-`SmoothOfRelativeDimension 1` and `¬ IsField` have all been peeled off into the consumer below,
-where they are discharged from `topologicalKrullDim_normalization_le_one` (PROVEN above) and
-`isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one` (PROVEN above).  Normality
-is a property of the normalization in EVERY dimension, and the leaf now says exactly that.
-
-**THE ROUTE.**  Compute the stalk through `Scheme.Hom.normalizationOpenCover` /
-`normalizationDiagramMap`: over an affine `U ∋ i.fromNormalization x`,
-`Γ(i.normalization, ·)` is `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`
-(`AlgebraicGeometry.Scheme.Hom.normalizationObjIso`, the same isomorphism
-`locallyOfFiniteType_fromNormalization` above is proved through), and the stalk is a
-localization of it at a prime.  Then:
-
-* an integral closure is integrally closed in the ambient ring —
-  `IsIntegralClosure.isIntegrallyClosed` / `integralClosure.isIntegrallyClosed_of_finite_extension`
-  in `Mathlib/RingTheory/IntegralClosure/`, and `Y` integral makes the ambient ring embed in the
-  function field;
-* localizations of an integrally closed domain are integrally closed —
-  `IsIntegrallyClosed.of_isLocalization` (`Mathlib/RingTheory/IntegrallyClosed.lean`), which is
-  present and is the step that carries the property from the affine chart to the stalk.
-
-So both halves have named `Mathlib` support; what is missing is only the identification of the
-chart's ring, and that identification is already used twice in this file. -/
-theorem isIntegrallyClosed_stalk_normalization {Y P : Scheme.{u}}
-    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y] (x : i.normalization) :
-    IsIntegrallyClosed (i.normalization.presheaf.stalk x) :=
-  sorry
-
-/-- **The local rings of the normalized model are discrete valuation rings** (**PROVEN
-2026-07-27** over `isIntegrallyClosed_stalk_normalization` — the normality half of the old
-`smoothOfRelativeDimension_one_fromNormalization`, and itself a sorry leaf until this cut).
-
-TRUE and classical: the relative normalization `X` of `P` in the integral scheme `Y` is
-NORMAL, and it has the same function field as `Y`, hence dimension one.  A noetherian normal
-local domain of dimension one is a discrete valuation ring (Serre's criterion in dimension
-one).
-
-**WHAT THE PROOF BELOW DOES**, and why this declaration had to MOVE (2026-07-27): it consumes
-`topologicalKrullDim_normalization_le_one`, which is stated in the dimension block *above* and
-was previously stated *below* this one.  The two pieces existed and could not see each other;
-relocating this theorem past the dimension block is what let the dimension half be discharged
-instead of being carried inside the leaf.  Concretely:
-
-* `isFinite_fromNormalization` makes `i.fromNormalization ≫ strP` locally of finite type, so
-  `LocallyOfFiniteType.isLocallyNoetherian` gives `IsLocallyNoetherian i.normalization`;
-* `topologicalKrullDim_normalization_le_one` bounds the whole space, and
-  `topologicalKrullDim_eq_iSup_coheight` specialises that to `coheight x ≤ 1`;
-* `isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one` then needs only
-  `IsIntegrallyClosed`, which is the leaf.
-
-`hY` is what pins the dimension to one; without it the same construction applies in every
-dimension and no local ring need be a DVR — it enters here through
-`topologicalKrullDim_normalization_le_one` and nowhere else. -/
-theorem isDiscreteValuationRing_stalk_normalization {Y P : Scheme.{u}}
-    {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
-    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
-    (hY : SmoothOfRelativeDimension 1 (i ≫ strP)) (x : i.normalization)
-    (hx : ¬ IsField (i.normalization.presheaf.stalk x)) :
-    IsDiscreteValuationRing (i.normalization.presheaf.stalk x) := by
-  haveI : IsFinite i.fromNormalization := isFinite_fromNormalization strP i
-  haveI : IsIntegral i.normalization := inferInstance
-  haveI : LocallyOfFiniteType (i.fromNormalization ≫ strP) := inferInstance
-  haveI : IsLocallyNoetherian i.normalization :=
-    LocallyOfFiniteType.isLocallyNoetherian (i.fromNormalization ≫ strP)
-  have hdim : (Order.coheight x : WithBot ℕ∞) ≤ 1 := by
-    refine le_trans ?_ (topologicalKrullDim_normalization_le_one i hY)
-    rw [topologicalKrullDim_eq_iSup_coheight]
-    exact le_iSup (fun y : i.normalization => (Order.coheight y : WithBot ℕ∞)) x
-  exact isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one
-    (by exact_mod_cast hdim) (isIntegrallyClosed_stalk_normalization i x) hx
-
-/-- **The normalization of a curve over a perfect field is a smooth curve** (PROVEN
-2026-07-27 over `isDiscreteValuationRing_stalk_normalization` and the shared DVR node
-`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`).
-
-TRUE and classical, in three steps: the relative normalization `X` of `P` in the integral
-scheme `Y` is normal and integral, and has the same function field as `Y`, hence the same
-dimension `1`; a noetherian normal local domain of dimension one is a discrete valuation
-ring, so `X` is regular; and over a **perfect** field regular is equivalent to smooth
-(Stacks `056S`), the relative dimension being `1` because `X` is a curve.
-
-**The old "IRREDUCIBLE at this pin" verdict is RETIRED, and it was wrong on a checkable
-point.**  It read: "`Mathlib` has no notion of a normal scheme, no dimension theory for
-schemes beyond `coheight`, and no regular-implies-smooth-over-a-perfect-field statement."
-The first and third clauses are right; the implicit claim that regularity itself is
-unavailable is not — `IsRegularLocalRing` is at this pin, with
-`IsLocalRing.finrank_CotangentSpace_eq_one_iff` linking it to `IsDiscreteValuationRing` in
-dimension one.  That is what makes the cut below possible: the statement splits cleanly into
-*normality of the normalization* (leaf above, and genuinely absent) and *regular ⟹ smooth
-over a perfect field* (the shared node), rather than being one indivisible citation.
-
-`PerfectField K` is load-bearing and the statement is FALSE without it: over an imperfect
-field `k` of characteristic `p` the curve `y^p = t x^p + t` (`t ∈ k ∖ k^p`) is regular but
-not smooth, and it is its own normalization.  `ℚ` is perfect, so the modular application
-is unaffected.
-
-`hY` — that `Y` itself is a smooth curve — is what pins the dimension to `1`; it enters the
-proof twice, once through the DVR leaf and once as the dense smooth open
-`i.toNormalization` that fixes the relative dimension at `1` rather than `0`.  Zariski's Main
-Theorem is what makes `i.toNormalization` an open immersion, and dominance is free by
-construction — so the "dense open which is already a smooth curve" that the shared node asks
-for is exactly `Y` itself. -/
-theorem smoothOfRelativeDimension_one_fromNormalization [PerfectField K] {Y P : Scheme.{u}}
-    {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
-    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
-    (hY : SmoothOfRelativeDimension 1 (i ≫ strP)) :
-    SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) := by
-  haveI : IsFinite i.fromNormalization := isFinite_fromNormalization strP i
-  haveI : IsIntegral i.normalization := inferInstance
-  haveI : LocallyOfFiniteType (i.fromNormalization ≫ strP) := inferInstance
-  have hsm : SmoothOfRelativeDimension 1 (i.toNormalization ≫ i.fromNormalization ≫ strP) := by
-    rw [← Category.assoc, Scheme.Hom.toNormalization_fromNormalization]
-    exact hY
-  exact smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk
-    (i.fromNormalization ≫ strP) i.toNormalization hsm
-    (fun x hx => isDiscreteValuationRing_stalk_normalization i hY x hx)
-
 /-- **The complement of a curve in its compactification is finite** (PROVEN over
 `topologicalKrullDim_normalization_le_one`).
 
@@ -2526,8 +2951,17 @@ theorem finite_compl_range_toNormalization {Y P : Scheme.{u}}
 
 /-! ### The theorem -/
 
-/-- **Every smooth curve over a perfect field has a smooth compactification** (PROVEN over
-the four leaves above).
+/-- **Normalizing an arbitrary proper model turns it into a SMOOTH compactification**
+(PROVEN over the leaves above) — the half of `exists_isSmoothCompactification` that is
+*not* Nagata.
+
+Everything Nagata contributes is packaged in the hypothesis `H`, which is exactly the
+conclusion of `exists_isOpenImmersion_isProper`.  Isolating it is what lets a consumer that
+can produce a proper model CHEAPLY — an AFFINE `Y`, where
+`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN — reach a smooth compactification
+without touching the gluing induction `exists_isOpenImmersion_isProper_of_affineCase`.  See
+`exists_isSmoothCompactification_of_isAffine` below, which is the form every consumer in
+this development actually uses.
 
 The construction is the one in the module docstring: compactify as a scheme (Nagata),
 then normalize.  What `Mathlib` supplies for free, and what makes this assembly short, is
@@ -2537,18 +2971,16 @@ the image — are already theorems about the relative normalization:
 `IsDominant i.toNormalization` holds by construction.  Everything else is the properness
 and smoothness of `X`, which are the leaves.
 
-`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
-irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
-fails, and the finiteness of the complement is false for a disconnected `Y` with an
-infinite component structure.  A geometrically connected smooth curve over a field is
-integral, so the hypothesis is met in the intended application. -/
-theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
-    [IsSeparated strY] [hsm : SmoothOfRelativeDimension 1 strY] :
+Note that `QuasiCompact strY` and `IsSeparated strY` do NOT appear: they are hypotheses of
+Nagata's theorem alone, so once the proper model is given they are not needed again. -/
+theorem exists_isSmoothCompactification_of_properModel [PerfectField K] {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y]
+    [hsm : SmoothOfRelativeDimension 1 strY]
+    (H : ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
+      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY) :
     ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
       IsSmoothCompactification strY strX j := by
-  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
-  obtain ⟨P, strP, i, hi, hqc, hP, hcomm⟩ := exists_isOpenImmersion_isProper strY
+  obtain ⟨P, strP, i, hi, hqc, hP, hcomm⟩ := H
   -- `i` inherits from `strY` everything Zariski's Main Theorem needs.
   have _ : IsOpenImmersion i := hi
   have _ : QuasiCompact i := hqc
@@ -2570,6 +3002,59 @@ theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
       isProper := inferInstance
       smooth := hsX
       finite_compl := hfin }
+
+/-- **Every smooth curve over a perfect field has a smooth compactification** (PROVEN over
+the four leaves above).
+
+⚠ **This is the form that still depends on the Nagata gluing induction**
+(`exists_isOpenImmersion_isProper_of_affineCase`, the one open leaf of the Nagata
+decomposition).  Every consumer in this development has an AFFINE `Y` and should use
+`exists_isSmoothCompactification_of_isAffine` below instead, which is free of that leaf.
+The general statement is kept because it is the honest one for a curve that is not
+presented affinely, and because nothing here is weakened by having both.
+
+`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
+irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
+fails, and the finiteness of the complement is false for a disconnected `Y` with an
+infinite component structure.  A geometrically connected smooth curve over a field is
+integral, so the hypothesis is met in the intended application. -/
+theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
+    [IsSeparated strY] [SmoothOfRelativeDimension 1 strY] :
+    ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      IsSmoothCompactification strY strX j := by
+  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
+  exact exists_isSmoothCompactification_of_properModel strY
+    (exists_isOpenImmersion_isProper strY)
+
+/-- **Every smooth AFFINE curve over a perfect field has a smooth compactification**
+(PROVEN, and — unlike `exists_isSmoothCompactification` — *without* Nagata's gluing
+induction).
+
+This is the same theorem with `[IsAffine Y]` added, and the point of the added hypothesis
+is which Nagata statement it lets the proof call: the affine case
+`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN here (via `Proj` of a graded chart),
+whereas the general case routes through the open leaf
+`exists_isOpenImmersion_isProper_of_affineCase`.  So this variant's proof term contains no
+`sorryAx` from the Nagata direction at all.
+
+`QuasiCompact strY` and `IsSeparated strY` are not hypotheses here, and dropping them is not
+a weakening of the input: an affine scheme over the affine `Spec K` has an affine structure
+morphism, which is automatically quasi-compact and separated.  They were only ever needed by
+Nagata's general theorem.
+
+**Every consumer of the compactification theorem in this development is of this shape** —
+`Y_0(N)` and `Y_1(N)` are Katz–Mazur coarse spaces `Spec (A^G)`, affine by construction; see
+`Fermat.isAffine_of_isCoarseModuliY0` in `Fermat/FLT/ModularCurve/X0.lean` and the `IsAffine`
+clause of `Fermat.exists_isCoarseModuliY1_isSmoothCurve` in `X1.lean`. -/
+theorem exists_isSmoothCompactification_of_isAffine [PerfectField K] {Y : Scheme.{u}}
+    [IsAffine Y] (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y]
+    [SmoothOfRelativeDimension 1 strY] :
+    ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      IsSmoothCompactification strY strX j := by
+  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
+  exact exists_isSmoothCompactification_of_properModel strY
+    (exists_isOpenImmersion_isProper_of_isAffine strY)
 
 /-- **The range of a projection of an arbitrary pullback square of schemes.**
 
