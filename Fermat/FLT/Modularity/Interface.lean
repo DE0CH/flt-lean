@@ -47725,8 +47725,223 @@ content the sixteenth cut moves out of the geometry and into
 abbrev modularTateCarrier (M : ℕ) : Type :=
   Fin (2 * Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) → AlgebraicClosure ℚ_[p]
 
-/-- **EICHLER–SHIMURA ON AN UNFRAMED CARRIER** (sorry leaf, the SIXTEENTH
-decomposition, 2026-07-27): items **4** and **6** of the list in
+/-!
+### Transporting a Hecke-module datum along a linear equivalence
+
+The four lemmas below are what makes it legitimate for the GEOMETRIC leaf
+`nonempty_modularTateCarrierData` to be stated on the object the geometry
+actually produces — an abstract finite-dimensional `F`-vector space
+carrying an action of `F ⊗ₖ T`, with the module clauses demanded only at
+a GENERATING SET of `T` — while its consumer
+`exists_galoisRep_modularTateCarrier` works with a coordinatized carrier
+and needs the clauses for every element of `F ⊗ₖ T`. Two of them widen a
+clause from generators to the whole algebra (`commute_act_of_adjoin`,
+`selfAdjoint_act_of_adjoin`); two of them move a clause across a linear
+equivalence (`symm_conjAlgEquiv_apply`, `nondegenerate_compl₁₂`).
+
+Nothing here is specific to modular curves: `T` is any `k`-algebra and
+the "generating set" is any `Sg` with `Algebra.adjoin k Sg = ⊤`. They are
+the general-`act` analogues of `commute_frameMul_of_adjoin` in
+`Modularity/HeckeFrameForm.lean`, which is the same induction for the
+special case where the module is `(F ⊗ₖ T)²` and the action is
+multiplication.
+-/
+
+section CarrierTransport
+
+variable {k : Type*} [Field k] {F : Type*} [Field F] [Algebra k F]
+variable {T : Type*} [Ring T] [Algebra k T]
+variable {V : Type*} [AddCommGroup V] [Module F V]
+variable {W : Type*} [AddCommGroup W] [Module F W]
+
+/-- **Commutation with an action propagates from a generating set**
+(PROVEN): if `Sg` generates `T` as a `k`-algebra and an endomorphism `g`
+of `V` commutes with `act (1 ⊗ s)` for every `s ∈ Sg`, then it commutes
+with `act r` for every `r : F ⊗ₖ T`.
+
+`adjoin_includeRight_eq_top` transports the generation statement across
+the base change; the `algebraMap` case is centrality of scalars. -/
+theorem commute_act_of_adjoin (act : (F ⊗[k] T) →ₐ[F] Module.End F V)
+    (g : Module.End F V) (Sg : Set T) (hS : Algebra.adjoin k Sg = ⊤)
+    (hgen : ∀ s ∈ Sg, act ((1 : F) ⊗ₜ[k] s) * g = g * act ((1 : F) ⊗ₜ[k] s)) :
+    ∀ r : F ⊗[k] T, act r * g = g * act r := by
+  intro r
+  have hr : r ∈ Algebra.adjoin F
+      ((Algebra.TensorProduct.includeRight : T →ₐ[k] F ⊗[k] T) '' Sg) := by
+    rw [adjoin_includeRight_eq_top Sg hS]; trivial
+  induction hr using Algebra.adjoin_induction with
+  | mem u hu =>
+      obtain ⟨s, hs, rfl⟩ := hu
+      exact hgen s hs
+  | algebraMap c =>
+      rw [AlgHom.commutes]
+      exact Algebra.commutes c g
+  | add u v _ _ ihu ihv => rw [map_add, add_mul, mul_add, ihu, ihv]
+  | mul u v _ _ ihu ihv => rw [map_mul, mul_assoc, ihv, ← mul_assoc, ihu, mul_assoc]
+
+/-- **Self-adjointness for a bilinear form propagates from a generating
+set** (PROVEN): if `Sg` generates `T` and every `act (1 ⊗ s)`, `s ∈ Sg`,
+is self-adjoint for `P`, then so is `act r` for every `r : F ⊗ₖ T`.
+
+The `mul` case is where the COMMUTATIVITY hypothesis is used and it
+cannot be dropped: composing two self-adjoint operators gives an operator
+adjoint to the composite in the OPPOSITE order, so the argument needs
+`u * v = v * u` to land back on `act (u * v)`. -/
+theorem selfAdjoint_act_of_adjoin (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (act : (F ⊗[k] T) →ₐ[F] Module.End F V)
+    (P : V →ₗ[F] V →ₗ[F] F) (Sg : Set T) (hS : Algebra.adjoin k Sg = ⊤)
+    (hgen : ∀ s ∈ Sg, ∀ x y : V,
+      P (act ((1 : F) ⊗ₜ[k] s) x) y = P x (act ((1 : F) ⊗ₜ[k] s) y)) :
+    ∀ (r : F ⊗[k] T) (x y : V), P (act r x) y = P x (act r y) := by
+  intro r
+  have hr : r ∈ Algebra.adjoin F
+      ((Algebra.TensorProduct.includeRight : T →ₐ[k] F ⊗[k] T) '' Sg) := by
+    rw [adjoin_includeRight_eq_top Sg hS]; trivial
+  induction hr using Algebra.adjoin_induction with
+  | mem u hu =>
+      obtain ⟨s, hs, rfl⟩ := hu
+      exact hgen s hs
+  | algebraMap c =>
+      intro x y
+      have hc : act (algebraMap F (F ⊗[k] T) c) = algebraMap F (Module.End F V) c :=
+        AlgHom.commutes _ c
+      rw [hc]
+      show P (c • x) y = P x (c • y)
+      rw [map_smul, LinearMap.smul_apply, LinearMap.map_smul]
+  | add u v _ _ ihu ihv =>
+      intro x y
+      have h1 : act (u + v) x = act u x + act v x := by rw [map_add]; rfl
+      have h2 : act (u + v) y = act u y + act v y := by rw [map_add]; rfl
+      rw [h1, h2, map_add, LinearMap.add_apply, map_add, ihu, ihv]
+  | mul u v _ _ ihu ihv =>
+      intro x y
+      have h1 : act (u * v) x = act u (act v x) := by rw [map_mul]; rfl
+      have h2 : act (u * v) y = act v (act u y) := by
+        rw [hcomm u v, map_mul]; rfl
+      rw [h1, h2, ihu, ihv]
+
+/-- **Conjugation, read backwards** (PROVEN): `e.symm` intertwines the
+conjugated endomorphism with the original one. This is the identity every
+transport step of the seventeenth cut runs on, and it is `rfl` after
+`e.symm_apply_apply`. -/
+theorem symm_conjAlgEquiv_apply (e : V ≃ₗ[F] W) (g : Module.End F V) (z : W) :
+    e.symm (LinearEquiv.conjAlgEquiv F e g z) = g (e.symm z) := by
+  show e.symm (e (g (e.symm z))) = g (e.symm z)
+  rw [e.symm_apply_apply]
+
+/-- **Nondegeneracy transports along a linear equivalence** (PROVEN): the
+form `(x, y) ↦ P (e⁻¹x) (e⁻¹y)` on `W` is nondegenerate as soon as `P` is
+nondegenerate on `V`. -/
+theorem nondegenerate_compl₁₂ (e : V ≃ₗ[F] W) (P : V →ₗ[F] V →ₗ[F] F)
+    (h : ∀ x : V, (∀ y : V, P x y = 0) → x = 0) :
+    ∀ x : W, (∀ y : W,
+      (P.compl₁₂ (e.symm : W →ₗ[F] V) (e.symm : W →ₗ[F] V)) x y = 0) → x = 0 := by
+  intro x hx
+  have h0 : e.symm x = 0 := by
+    refine h _ fun z => ?_
+    have := hx (e z)
+    rwa [LinearMap.compl₁₂_apply, LinearEquiv.coe_coe, e.symm_apply_apply] at this
+  have := congrArg e h0
+  rwa [e.apply_symm_apply, map_zero] at this
+
+end CarrierTransport
+
+/-- **THE GEOMETRIC DATUM OF THE SEVENTEENTH CUT** (2026-07-28): the
+Eichler–Shimura package of level `M`, stated on the object the geometry
+actually produces rather than on a coordinatized copy of it.
+
+Relative to `exists_galoisRep_modularTateCarrier` below — which is now
+PROVEN glue over `nonempty_modularTateCarrierData` — this carrier differs
+in exactly three ways, and all three make the GEOMETRIC obligation
+smaller, never larger:
+
+* the carrier `Vp` is an ARBITRARY finite-dimensional `ℚ̄_p`-vector space
+  of dimension `2·dim_ℚ 𝕋_ℚ` (intended: `V_p(J₀(M)) ⊗ ℚ̄_p`), not the
+  coordinate space `Fin (2·dim 𝕋_ℚ) → ℚ̄_p`. A geometer produces the Tate
+  module, not a basis of it; picking the basis is
+  `LinearEquiv.ofFinrankEq` and is done once, in the glue;
+* `hecke_comm` and `pair_hecke` are demanded only at the PRIME
+  GENERATORS `T_q` — which is what the correspondences and the Rosati
+  involution give — instead of at every element of `ℚ̄_p ⊗ 𝕋_ℚ`. Widening
+  them is `commute_act_of_adjoin` and `selfAdjoint_act_of_adjoin` just
+  above, an `Algebra.adjoin` induction over
+  `adjoin_modularTateGen_eq_top`;
+* the shape now matches `ModularJacobianPackage` above field for field,
+  which is the form every other package in this file is written in.
+
+WHAT IT STILL CARRIES, unchanged by the cut: items **4** and **6** of the
+list in `ModularTateGaloisData` — Hecke correspondences with `ℚ`-models
+(Diamond–Shurman §7.9, §8.5) and the Eichler–Shimura congruence relation
+(Igusa; D–S 8.6.1, 8.7.2) — together with the Atkin–Lehner-twisted Weil
+pairing on `J₀(M)[p^∞]` and its cyclotomic Frobenius multiplier. **Item 7
+is NOT here** (the sixteenth cut removed it; it is
+`exists_frobeniusForm_modularHeckeAlgebraQ` plus
+`exists_freeElement_of_frobenius`), and neither is any statement about a
+basis.
+
+NON-VACUITY, inherited verbatim from the leaf below and re-checked here.
+`act_injective` forbids `act = 0`; `τJ = 1` fails `congruence`
+(`1 − T_q + q = 0` at every good `q` would force `𝕋_ℚ` to be spanned by
+`(1 + q)`, and it fails already at `M = 11`, where `𝕋_ℚ = ℚ` and `a_q` is
+unbounded); `pair` is required alternating AND nondegenerate, so `Vp`
+really is symplectic; and `finrank_eq` pins the dimension, so the datum
+cannot be discharged by a small carrier. -/
+structure ModularTateCarrierData (M : ℕ) where
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [finiteDimensional : FiniteDimensional (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The dimension count: `dim V_p(J₀(M)) = 2·dim J₀(M) = 2·dim_ℚ 𝕋_ℚ`. -/
+  finrank_eq : Module.finrank (AlgebraicClosure ℚ_[p]) Vp
+    = 2 * Module.finrank ℚ ↥(modularHeckeAlgebraQ M)
+  /-- The Hecke action, base-changed to `ℚ̄_p`. -/
+  act : ((AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M)) →ₐ[AlgebraicClosure ℚ_[p]]
+    Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The Hecke action is FAITHFUL — which is what the geometry gives,
+  and is strictly weaker than freeness of rank two. -/
+  act_injective : Function.Injective act
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`, so `T_q` commutes with
+  the whole Galois action. -/
+  hecke_comm : ∀ (q : ℕ), q.Prime → ∀ γ : Field.absoluteGaloisGroup ℚ,
+    act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) * τJ γ =
+      τJ γ * act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q)
+  /-- The Eichler–Shimura congruence relation at good primes. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- The Atkin–Lehner-twisted Weil pairing. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]] Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) x) y =
+      pair x (act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) y)
+  /-- Galois Frobenii off `S` scale the pairing by `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+
+attribute [instance] ModularTateCarrierData.addCommGroup
+  ModularTateCarrierData.module ModularTateCarrierData.finiteDimensional
+
+/-- **EICHLER–SHIMURA ON THE TATE MODULE OF `J₀(M)`** (sorry leaf, opened
+by the SIXTEENTH decomposition 2026-07-27 as
+`exists_galoisRep_modularTateCarrier` and RESTATED on the intrinsic
+carrier by the SEVENTEENTH, 2026-07-28): items **4** and **6** of the list in
 `ModularTateGaloisData` — Hecke correspondences with `ℚ`-models
 (Diamond–Shurman §7.9, §8.5) and the Eichler–Shimura congruence relation
 (Igusa; D–S 8.6.1, 8.7.2) — together with the Weil pairing and its
@@ -47740,12 +47955,13 @@ action on the FRAME `(𝕋_ℚ ⊗ ℚ̄_p)²`, which silently asserted
   `V_p(J₀(M)) ⊗ ℚ̄_p ≅ (𝕋_ℚ ⊗ ℚ̄_p)²` as `𝕋_ℚ ⊗ ℚ̄_p`-modules,
 
 i.e. **item 7** — a theorem of Mazur and Ribet, not a formality. Here the
-carrier is `Fin (2·dim 𝕋_ℚ) → ℚ̄_p`, the Hecke action is an arbitrary
-INJECTIVE `ℚ̄_p`-algebra map `act` (faithfulness, which is what the
-geometry actually gives), and freeness is not mentioned. It is recovered
-in the assembly below from `exists_frobeniusForm_modularTateFrame` and
-the pairing, through the algebra theorem
-`exists_frameEquiv_of_symplectic` in `Modularity/HeckeFrameForm.lean`.
+carrier is an arbitrary `ℚ̄_p`-vector space of dimension `2·dim 𝕋_ℚ`, the
+Hecke action is an arbitrary INJECTIVE `ℚ̄_p`-algebra map `act`
+(faithfulness, which is what the geometry actually gives), and freeness
+is not mentioned. It is recovered two steps up from
+`exists_frobeniusForm_modularTateFrame` and the pairing, through the
+algebra theorem `exists_frameEquiv_of_symplectic` in
+`Modularity/HeckeFrameForm.lean`.
 
 So the missing theories under this leaf are items 4 and 6 plus the Weil
 pairing on `J₀(M)[p^∞]` with multiplier the cyclotomic character; the
@@ -47755,22 +47971,94 @@ and its Hecke correspondences. **Items 7 and the Frobenius property of
 `exists_frobeniusForm_modularHeckeAlgebraQ` and
 `exists_freeElement_of_frobenius`.
 
-NON-VACUITY. `act` injective forbids the junk `act = 0`; `τJ = 1` fails
+WHAT THE SEVENTEENTH CUT CHANGED, AND WHY IT IS NOT A RENAME. The
+sixteenth cut left this leaf asking for the data on the COORDINATE space
+`Fin (2·dim 𝕋_ℚ) → ℚ̄_p`, with the Hecke commutation and the Hecke
+self-adjointness quantified over EVERY element of `ℚ̄_p ⊗ 𝕋_ℚ`. Neither
+is what a construction of `J₀(M)` produces: it produces a Tate module
+(no basis) and it produces the two clauses for the CORRESPONDENCES `T_q`
+(no adjoin closure). Both gaps are formal, and the seventeenth cut
+discharges them once and for all in
+`exists_galoisRep_modularTateCarrier` below, over the four lemmas
+`commute_act_of_adjoin`, `selfAdjoint_act_of_adjoin`,
+`symm_conjAlgEquiv_apply` and `nondegenerate_compl₁₂` just above. The
+mathematics beneath this leaf is
+byte for byte what it was; what changed is that a successor building
+`J₀(M)` no longer has to choose a basis or run an `Algebra.adjoin`
+induction before its work can be used.
+
+NON-VACUITY. `act_injective` forbids the junk `act = 0`; `τJ = 1` fails
 the congruence (`1 − T_q + q = 0` at every good `q` would force `𝕋_ℚ` to
 be spanned by `(1+q)` at once, and it fails already at `M = 11`, where
 `𝕋_ℚ = ℚ` and `a_q` is unbounded); and `pair` is required nondegenerate
 and alternating, so the carrier really is symplectic. The Frobenius
-multiplier clause pins `q` and not merely "some scalar".
+multiplier clause pins `q` and not merely "some scalar". `finrank_eq`
+pins the dimension, so no small carrier discharges it.
 
 WORKED PRECEDENT for the multiplier clause: `det_galoisRep_eq_cyclotomic`
 for elliptic curves in `Fermat/FLT/EllipticCurve/WeilPairing.lean`, and
 `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` in
 `Modularity/TateModule.lean`.
 
+THE ROUTE FROM HERE, for whoever gets a full budget — and note that
+`Modularity/TateModule.lean` IS in this file's import cone (through
+`KhareWintenberger`), so the abelian-scheme vocabulary is available
+without enlarging it; only the `import` line would have to be made
+`public` to use those names in a STATEMENT. The scheme-level shape is
+the one the cut-obstruction audit of
+`exists_galoisRep_modularTateFrame_traceDet` below sketched, MINUS the
+frame, which the sixteenth cut removed:
+
+* `J₀(M) = Jac X₀(M)` as an `AbelianSchemeStruct` over `Spec ℚ` of
+  relative dimension `finrank ℚ 𝕋_ℚ`;
+* an action of an integral Hecke order — `Mult ab (𝓞 D)` as it stands
+  requires `D` a totally real number FIELD, and `𝕋_ℚ` is only a product
+  of such, so this is the one place the existing vocabulary has to be
+  widened;
+* a `PolarizationStruct`, giving the Weil pairing and its cyclotomic
+  multiplier (`det_eq_cyclotomicCharacter_of_tateWeilPairing`, PROVEN
+  there);
+* the Eichler–Shimura congruence relation on geometric torsion points
+  (Igusa; D–S 8.6.1, 8.7.2);
+* the Tate module itself, via `exists_levelwiseTateFrame` (PROVEN there),
+  as the source of `Vp` and of `finrank_eq`.
+
 NOTHING TO VENDOR (checked 2026-07-27): `~/cs/FLT` mentions a Jacobian
 only in `FLT/Assumptions/Mazur.lean` and has no Eichler–Shimura; mathlib
 `Mathlib/NumberTheory` has no modular curve, no `J₀`, and no
 Eichler–Shimura. -/
+theorem nonempty_modularTateCarrierData {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularTateCarrierData (p := p) M) := sorry
+
+/-- **EICHLER–SHIMURA ON AN UNFRAMED COORDINATE CARRIER** (opened as a
+sorry leaf by the SIXTEENTH decomposition 2026-07-27; PROVEN 2026-07-28
+by the SEVENTEENTH as glue over `nonempty_modularTateCarrierData` above):
+the same nine clauses, on the coordinate space
+`Fin (2·dim_ℚ 𝕋_ℚ) → ℚ̄_p`, with the Hecke clauses quantified over the
+whole algebra `ℚ̄_p ⊗ 𝕋_ℚ`.
+
+This is the shape its consumer
+`exists_galoisRep_modularTateFrame_traceDet` needs, and it is exactly
+two formal steps away from the geometric datum above:
+
+1. **Coordinatize.** `Vp` and `Fin (2·dim 𝕋_ℚ) → ℚ̄_p` are
+   finite-dimensional `ℚ̄_p`-vector spaces of the same dimension, so
+   `LinearEquiv.ofFinrankEq` gives `e : Vp ≃ₗ Fin (2·dim 𝕋_ℚ) → ℚ̄_p`.
+   Everything travels along `e`: the Hecke action by
+   `LinearEquiv.conjAlgEquiv`, the Galois action by `GaloisRep.conj`, and
+   the pairing by `LinearMap.compl₁₂ e⁻¹ e⁻¹`. The three transport
+   identities are `symm_conjAlgEquiv_apply` (which is what makes every
+   clause a one-liner: `e⁻¹` intertwines the conjugated operator with the
+   original) and `nondegenerate_compl₁₂`.
+2. **Widen the two Hecke clauses from the generators `T_q` to all of
+   `ℚ̄_p ⊗ 𝕋_ℚ`**, by `commute_act_of_adjoin` and
+   `selfAdjoint_act_of_adjoin` over `adjoin_modularTateGen_eq_top`. The
+   self-adjointness widening is the only step that uses COMMUTATIVITY of
+   `ℚ̄_p ⊗ 𝕋_ℚ` (`mul_comm_tensor` over `modularHeckeAlgebraQ_mul_comm`),
+   because composing two self-adjoint operators is adjoint to the
+   composite in the opposite order.
+
+No arithmetic happens here; that is the point of the cut. -/
 theorem exists_galoisRep_modularTateCarrier {M : ℕ} (hM : 0 < M) :
     ∃ (act : ((AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M)) →ₐ[AlgebraicClosure ℚ_[p]]
           Module.End (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M))
@@ -47797,7 +48085,69 @@ theorem exists_galoisRep_modularTateCarrier {M : ℕ} (hM : 0 < M) :
         ∀ x y : modularTateCarrier (p := p) M,
           pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
               (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
-            (q : AlgebraicClosure ℚ_[p]) * pair x y) := sorry
+            (q : AlgebraicClosure ℚ_[p]) * pair x y) := by
+  classical
+  haveI hfd : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  obtain ⟨D⟩ := nonempty_modularTateCarrierData (p := p) hM
+  have hcomm : ∀ x y : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+      x * y = y * x :=
+    mul_comm_tensor fun a b =>
+      Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)
+  have hSgtop : Algebra.adjoin ℚ
+      {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = modularTateGen M q} = ⊤ :=
+    adjoin_modularTateGen_eq_top M
+  -- step 2: widen the two Hecke clauses from the prime generators to all of `ℚ̄_p ⊗ 𝕋_ℚ`
+  have hcommA : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (γ : Field.absoluteGaloisGroup ℚ), D.act r * D.τJ γ = D.τJ γ * D.act r := by
+    intro r γ
+    refine commute_act_of_adjoin D.act (D.τJ γ) _ hSgtop ?_ r
+    rintro s ⟨q, hq, rfl⟩
+    exact D.hecke_comm q hq γ
+  have hadjA : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (x y : D.Vp), D.pair (D.act r x) y = D.pair x (D.act r y) := by
+    refine selfAdjoint_act_of_adjoin hcomm D.act D.pair _ hSgtop ?_
+    rintro s ⟨q, hq, rfl⟩
+    exact D.pair_hecke q hq
+  -- step 1: coordinatize
+  have hdimC : Module.finrank (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M)
+      = 2 * Module.finrank ℚ ↥(modularHeckeAlgebraQ M) := by
+    simp [modularTateCarrier]
+  set e : D.Vp ≃ₗ[AlgebraicClosure ℚ_[p]] modularTateCarrier (p := p) M :=
+    LinearEquiv.ofFinrankEq _ _ (D.finrank_eq.trans hdimC.symm)
+  set C : Module.End (AlgebraicClosure ℚ_[p]) D.Vp ≃ₐ[AlgebraicClosure ℚ_[p]]
+      Module.End (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M) :=
+    LinearEquiv.conjAlgEquiv (AlgebraicClosure ℚ_[p]) e
+  have hact : ∀ r, (C.toAlgHom.comp D.act) r = C (D.act r) := fun _ => rfl
+  have hτ : ∀ γ, (D.τJ.conj e) γ = C (D.τJ γ) := fun _ => rfl
+  refine ⟨C.toAlgHom.comp D.act, D.τJ.conj e, D.S,
+    D.pair.compl₁₂ (e.symm : modularTateCarrier (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] D.Vp)
+      (e.symm : modularTateCarrier (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] D.Vp),
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro a b hab
+    rw [hact, hact] at hab
+    exact D.act_injective (C.injective hab)
+  · intro r γ
+    rw [hact, hτ, ← map_mul, ← map_mul, hcommA r γ]
+  · intro q hq hqS
+    have h := congrArg C (D.congruence q hq hqS)
+    rw [map_add, map_sub, map_pow, map_mul, map_smul, map_one, map_zero] at h
+    rw [hact, hτ]
+    exact h
+  · intro x
+    show D.pair (e.symm x) (e.symm x) = 0
+    exact D.pair_self _
+  · exact nondegenerate_compl₁₂ e D.pair D.pair_nondeg
+  · intro r x y
+    show D.pair (e.symm ((C.toAlgHom.comp D.act) r x)) (e.symm y)
+      = D.pair (e.symm x) (e.symm ((C.toAlgHom.comp D.act) r y))
+    rw [hact, symm_conjAlgEquiv_apply, symm_conjAlgEquiv_apply, hadjA]
+  · intro q hq hqS x y
+    show D.pair (e.symm ((D.τJ.conj e) (globalFrob _) x))
+        (e.symm ((D.τJ.conj e) (globalFrob _) y))
+      = (q : AlgebraicClosure ℚ_[p]) * D.pair (e.symm x) (e.symm y)
+    rw [hτ, symm_conjAlgEquiv_apply, symm_conjAlgEquiv_apply]
+    exact D.pair_frob q hq hqS _ _
 
 set_option maxHeartbeats 800000 in
 /-- **EICHLER–SHIMURA, IN TRACE-AND-DETERMINANT FORM** (opened as a sorry
@@ -47960,7 +48310,11 @@ and this declaration is now GLUE.** The two leaves under it are
 
 * `exists_galoisRep_modularTateCarrier` (above) — items 4 and 6 plus the
   Weil pairing, on a carrier that is only a `ℚ̄_p`-vector space of
-  dimension `2·dim 𝕋_ℚ`. **Item 7 has left it.**
+  dimension `2·dim 𝕋_ℚ`. **Item 7 has left it.** (Since the SEVENTEENTH
+  cut, 2026-07-28, that declaration is itself PROVEN glue; the geometry
+  now lives one step further down in `nonempty_modularTateCarrierData`,
+  stated on an intrinsic carrier with the Hecke clauses demanded only at
+  the prime generators. Nothing mathematical moved.)
 * `exists_freeElement_of_frobenius` (`Modularity/HeckeFrameForm.lean`) —
   "a faithful module over a commutative Frobenius algebra contains a free
   rank-one submodule", the single deep input of the algebra theorem. Pure
