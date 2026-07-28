@@ -390,11 +390,11 @@ open in them has been split along the theories it needed:
 | `isReduced_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1: `Spec A` is smooth over `K`, hence reduced | any `K`, `char K ∤ N` |
 | `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
 | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
-| `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
+| `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
 | `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
-| `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
-| `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
+| `exists_weierstrassEquiv_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves.  Restated 2026-07-28 to ask ONLY for `E(𝔽_ℓ) ≃+ W(𝔽_ℓ)`: the order transport it used to bundle is now `addOrderOf_relPointOfSection_gamma1Datum`, PROVEN, and `exists_weierstrassPointOfOrder_of_gamma1Datum` is PROVEN over the two. | `𝔽_ℓ` |
+| `card_cuspLocusPoints_x1_finiteField_le` | the cusp count on the special fibre, UPPER bound only (2026-07-28) — the hard direction of Ogg's description, that no cusp outside the distinguished orbit is `𝔽_ℓ`-rational.  The lower bound is the row above; `card_cuspLocusPoints_x1_finiteField` is PROVEN over the two. | `𝔽_ℓ` |
 | `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` on `Γ₁(N)`, with the Hecke action it acts through — the "build the factors" half of Eichler-Shimura.  (`exists_heckeIsotypicDecomposition_gamma1` is PROVEN over this and the next row, 2026-07-28.  `IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
@@ -426,6 +426,17 @@ branches rewrote it in the same release and each was correct on its own base.
 `nonempty_gamma1Datum_of_ratPoint` and `hasRankZeroJacobian_x1TwentyFive` all
 stood in one version of it or another and are all PROVEN in the merged tree.
 
+**Reorganised a third time 2026-07-28, along the BASE-FIELD axis.**  The two
+residue-degree leaves the 2026-07-27 reorganisation left — one over `ℚ`, one
+over `𝔽_3` — were the SAME sentence of Deligne-Rapoport VI.5 at two bases, and
+each had its own owner.  `residueDegreeOver` writes the residue degree once
+over an arbitrary field (`residueQDegree` and `residueFDegree` are `rfl`-equal
+to it), `exists_rationalCuspPointsX1_field` states the cusp sentence once, and
+`exists_rationalCuspPointsX1` is now PROVEN over it.  Only the direction that
+genuinely differs between the bases survives as a separate leaf:
+`card_cuspLocusPoints_x1_finiteField_le`, the `≤` half, which needs the count
+EXACTLY and so cannot be shared with a `ℚ` side that is a lower bound.
+
 **Updated again 2026-07-27** for the reduction/descent cluster.
 `exists_inverse_of_smoothCompactification` is now PROVEN outright, over
 `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` — its own
@@ -438,8 +449,8 @@ node it replaced.
 
 **Reorganised again 2026-07-27, along the RESIDUE-FIELD axis at both bases.**
 `nonempty_cuspLocusX1` and `card_cusp_x1_finiteField` are now THEOREMS; what
-was open in them is `exists_rationalCuspPointsX1` and
-`card_cuspLocusPoints_x1_finiteField`, which speak about the finite set of
+was open in them is `exists_rationalCuspPointsX1_field` and
+`card_cuspLocusPoints_x1_finiteField_le`, which speak about the finite set of
 POINTS `X ∖ Y` and their residue degrees rather than about `Spec`-valued cusp
 data or about sections of `strX`.  The two dictionaries that do it —
 `nonempty_cuspLocusX1_of_rationalCuspPoints` over `ℚ` and
@@ -3474,8 +3485,9 @@ the two, and it is the exact `Γ₁` mirror of `X0.lean`'s
 residue-field API (`Scheme.residueField`, `Scheme.fromSpecResidueField`,
 `Scheme.range_fromSpecResidueField`, `Spec.map_preimage`) and `X0.lean`'s
 `residueQAlgebra` / `residueQDegree`.  What is left open,
-`exists_rationalCuspPointsX1`, is then exactly the Deligne–Rapoport sentence
-and nothing else. -/
+`exists_rationalCuspPointsX1_field` (2026-07-28; `exists_rationalCuspPointsX1`
+is PROVEN over it), is then exactly the Deligne–Rapoport sentence and nothing
+else. -/
 
 /-- **The cusp locus, assembled from `φ(N)/2` rational points of the
 complement** (PROVEN 2026-07-27; axiom-audited
@@ -3540,9 +3552,139 @@ theorem nonempty_cuspLocusX1_of_rationalCuspPoints {N : ℕ} {X Y : Scheme.{0}}
     rw [hr c, hr c']
     exact Set.disjoint_singleton.mpr fun hc => hne (Subtype.ext hc)
 
+/-! ### Residue degree over an ARBITRARY base field
+
+`X0.lean`'s `residueQDegree` and `residueFDegree` (further below) are the
+same definition at two different base fields, and — this is the point — the
+cusp statements they carry are the same STATEMENT at two different base
+fields.  `residueDegreeOver` is that definition written once, over any
+field `K`; both named versions are `rfl`-equal to it
+(`residueDegreeOver_eq_residueQDegree` here,
+`residueDegreeOver_eq_residueFDegree` below), so nothing downstream moves.
+
+It exists for exactly one reason.  `exists_rationalCuspPointsX1_field`
+below is "`X_1(N)` has `φ(N)/2` cusps rational over `K`", for any `K` in
+which `N` is invertible, and it is consumed twice: at `K = ℚ` by
+`exists_rationalCuspPointsX1`, and at `K = 𝔽_ℓ` by the `≥` half of
+`card_cuspLocusPoints_x1_finiteField`.  Before this cut (2026-07-28) those
+were two independent Deligne–Rapoport leaves asserting the same theorem of
+Deligne–Rapoport VI.5, one over `ℚ` and one over `𝔽_3`, each with its own
+owner.  They are now one leaf. -/
+
+/-- **The `K`-algebra structure on the residue field of a point of a
+`K`-scheme**, for an arbitrary field `K`.
+
+Verbatim `X0.lean`'s `residueQAlgebra` and this file's `residueFAlgebra`
+with the base field left free, and defined the same way — through
+`Spec.preimage`, so that `Spec.map_preimage` discharges the compatibility
+square by construction.  `@[reducible]` for the same reason: consumers
+state `Module.finrank K (X.residueField x)` under it and instance search
+must see through it. -/
+@[reducible] noncomputable def residueAlgebraOver (K : Type) [Field K] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (x : X) : Algebra K (X.residueField x) :=
+  (Spec.preimage (X.fromSpecResidueField x ≫ strX)).hom.toAlgebra
+
+/-- **The residue degree of a point of a `K`-scheme over `K`**, for an
+arbitrary field `K`.  `residueDegreeOver K strX x = 1` says `κ(x) = K`,
+i.e. that `x` is a `K`-rational point. -/
+noncomputable def residueDegreeOver (K : Type) [Field K] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (x : X) : ℕ :=
+  letI := residueAlgebraOver K strX x
+  Module.finrank K (X.residueField x)
+
+/-- **`residueDegreeOver ℚ` IS `residueQDegree`** (PROVEN, definitionally).
+
+`SpecQ` is an `abbrev` for `Spec (CommRingCat.of ℚ)` and `residueQAlgebra`
+is `residueAlgebraOver ℚ` spelled out, so the two sides are the same term.
+Recorded as a lemma rather than left implicit because the `CommRing ℚ`
+instance reaches the two spellings by different paths (`Rat.instCommRing`
+against `Field.toCommRing`), which is precisely the diamond
+`nonempty_gamma1Datum_of_ratPoint`'s elaboration note warns about; the
+`rfl` here is the compiler's confirmation that it closes at this base. -/
+theorem residueDegreeOver_eq_residueQDegree {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) :
+    residueDegreeOver ℚ strX x = residueQDegree strX x := rfl
+
+/-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N`
+is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL that is left
+of the cusp route on BOTH sides).
+
+TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, Construction 5.3;
+Diamond–Shurman §3.8 for the cusp count and §9.3 for the rationality): the
+cusps of `X_1(N)` over `K̄` are `Γ_1(N)\ℙ¹(ℚ)`, of which there are
+`½ Σ_{d ∣ N} φ(d)φ(N/d)` for `N ≥ 5` (`28` at `N = 25`); they fall into
+Galois orbits under Deligne–Rapoport's `σ_t : a ↦ t⁻¹ a`, and the `φ(N)/2`
+cusps of one distinguished orbit are individually rational — i.e. their
+residue field is `K`, which is what `residueDegreeOver K strX (ε i) = 1`
+says.  Over `ℤ[1/N]` those `φ(N)/2` cusps are SECTIONS of the smooth model
+(Deligne–Rapoport VI.5), which is why the statement is uniform in `K` and
+not two statements: `ℚ` and `𝔽_ℓ` with `ℓ ∤ N` are two fibres of one
+cuspidal subscheme.
+
+**WHY THE BASE FIELD IS FREE, and what it bought** (2026-07-28).  This
+leaf replaces two: the former `exists_rationalCuspPointsX1` over `ℚ` and
+the `≥` half of `card_cuspLocusPoints_x1_finiteField` over `𝔽_3`.  Both
+were the same sentence of Deligne–Rapoport and both were open, so a prover
+of either was proving the other without being credited with it.  Note the
+axis is available here and is NOT available for the `≤` half — see
+`card_cuspLocusPoints_x1_finiteField_le`, which needs the count EXACTLY
+and therefore the HARD direction of Ogg's description.
+
+WHAT REMAINS, precisely: the identification of `X ∖ Y` with the cuspidal
+part of the Deligne–Rapoport model — the uniformisation
+`X_1(N)(ℂ) ≅ Γ_1(N)∖ℍ*` together with its `ℤ[1/N]`-structure.
+`IsX1Compactification` supplies only that the complement is finite, so
+nothing weaker than that identification can produce a single cusp: the
+structure's fields do not by themselves forbid `jY` from being an
+isomorphism with no cusps at all, and that is excluded only because
+`coarse` pins `Y` as the affine curve `Y_1(N)`, which is moduli input
+rather than scheme-theoretic bookkeeping.
+
+**`hNK : IsUnit ((N : ℕ) : K)` is the ONLY hypothesis on the base**, and
+it is load-bearing rather than decorative: at `char K ∣ N` the `Γ₁(N)`
+problem is not the étale one, its cuspidal locus is not `Γ_1(N)\ℙ¹(ℚ)`,
+and the count `φ(N)/2` is not claimed by any reference.  Both consumers
+discharge it for free — over `ℚ` because `numRationalCuspsX1 N ≠ 0` forces
+`N ≥ 3`, over `𝔽_ℓ` because `x1WitnessTable_spec` carries `¬ ℓ ∣ N`.
+
+**This leaf is the `Γ₁` sibling of `X0.lean`'s
+`exists_cuspResidueIndexing`, and it is strictly weaker.**  The `Γ₀` leaf
+asks for a BIJECTION `N.divisors ≃ X ∖ Y` with each residue field
+identified as `ℚ(ζ_{gcd(d, N/d)})`; this one asks only for `φ(N)/2` points
+of `X ∖ Y` with residue field `K`, and says nothing whatever about the
+other `18` cusps at `N = 25` or about how many cusps there are in total.
+That is deliberate and is the economy `numRationalCuspsX1` records.
+
+Stated with `residueDegreeOver = 1` rather than with `IsResidueCyclotomic
+… 1`: at the distinguished orbit the residue field is `K` itself, so the
+cyclotomic phrasing would add the obligation
+`IsCyclotomicExtension {1} K K` for zero information.  Do NOT restate it as
+`Nonempty (κ(x) ≃ₐ[K] K)` either — that is the algebra diamond
+`IsResidueCyclotomic`'s docstring warns about.
+
+The axes searched for a further cut are recorded on
+`exists_rationalCuspPointsX1` immediately below, which is now a corollary
+of this leaf and keeps them; they are unchanged by the base-field
+generalisation, since every one of them was about the CUSP description and
+none about `ℚ`. -/
+theorem exists_rationalCuspPointsX1_field (N : ℕ) (K : Type) [Field K]
+    (_hNK : IsUnit ((N : ℕ) : K))
+    {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (_h : IsX1Compactification N strX strY jY) :
+    ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
+      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 :=
+  sorry
+
 /-- **`X_1(N)` has `φ(N)/2` distinct `ℚ`-rational points in the cusp locus
-`X ∖ Y`** (sorry leaf — Deligne–Rapoport VI.5, and ALL that is left of the
-`ℚ`-side cusp route).
+`X ∖ Y`** (PROVEN 2026-07-28 over `exists_rationalCuspPointsX1_field`; a
+sorry leaf until then — Deligne–Rapoport VI.5).
+
+**What is left here is the DEGENERATE-LEVEL split and nothing else.**  The
+leaf above needs `N` invertible in the base; `ℚ` supplies that as soon as
+`N ≠ 0`, and at `N = 0` — the only case it does not cover — the conclusion
+is vacuous, because `numRationalCuspsX1 0 = φ(0)/2 = 0` and `Fin 0` is
+empty.  So the case split is on `numRationalCuspsX1 N = 0`: below it the
+statement carries nothing, above it `N.totient ≥ 2` forces `N ≥ 3`.
 
 TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, Construction 5.3;
 Diamond–Shurman §3.8 for the cusp count and §9.3 for the rationality): the
@@ -3609,10 +3751,17 @@ AXES SEARCHED, each with the check that would refute it.
    point by pure algebra.  This is the cut `X0.lean` made at
    `nonempty_cuspLocus` on the same day. -/
 theorem exists_rationalCuspPointsX1 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_h : IsX1Compactification N strX strY jY) :
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY) :
     ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
-      Function.Injective ε ∧ ∀ i, residueQDegree strX (ε i).1 = 1 :=
-  sorry
+      Function.Injective ε ∧ ∀ i, residueQDegree strX (ε i).1 = 1 := by
+  rcases Nat.eq_zero_or_pos (numRationalCuspsX1 N) with h0 | hpos
+  · haveI : IsEmpty (Fin (numRationalCuspsX1 N)) := by rw [h0]; infer_instance
+    exact ⟨isEmptyElim, fun a => isEmptyElim a, fun i => isEmptyElim i⟩
+  · have hN0 : N ≠ 0 := by
+      rintro rfl
+      simp [numRationalCuspsX1] at hpos
+    exact exists_rationalCuspPointsX1_field N ℚ
+      (isUnit_iff_ne_zero.mpr (Nat.cast_ne_zero.mpr hN0)) h
 
 /-- **The cusp locus of `X_1(N)` exists** (PROVEN 2026-07-27 over
 `exists_rationalCuspPointsX1`; formerly a sorry leaf).
@@ -3627,9 +3776,11 @@ individually `ℚ`-rational, the Galois action on them being trivial.
 **The whole scheme-theoretic content is now discharged**, and this node
 carries none of it: `nonempty_cuspLocusX1_of_rationalCuspPoints` builds every
 field of `CuspLocus` from `φ(N)/2` residue-degree-`1` points of `X ∖ Y`, and
-`exists_rationalCuspPointsX1` is the one remaining Deligne–Rapoport input.
-See that leaf for the axes searched and for why Galois descent is OFF the
-route; a successor should attack it and not this node.
+`exists_rationalCuspPointsX1_field` is the one remaining Deligne–Rapoport
+input (2026-07-28: `exists_rationalCuspPointsX1` between them is itself now a
+theorem, carrying only the `N = 0` degenerate split).  See that leaf for the
+axes searched and for why Galois descent is OFF the route; a successor should
+attack it and not this node.
 
 `hN` is NOT carried, unlike on the `Γ₀` side.  `numRationalCuspsX1 N =
 φ(N)/2` is already `0` at `N ∈ {0, 1, 2}`, so `infty` is vacuous there
@@ -4319,16 +4470,24 @@ a rational point of exact order `N`** (sorry leaf — the ONE piece of
 geometry the `𝔽_ℓ` point count needs, and the converse direction of
 `exists_ellipticScheme_of_weierstrass`).
 
+**Restated 2026-07-28: the ORDER is no longer part of this leaf.**  It
+used to conclude `∃ P : W.toAffine.Point, addOrderOf P = N`, bundling
+Riemann–Roch together with the transport of `d.pt.geom_order` from the
+geometric fibre down to `𝔽_ℓ`.  That transport is ARITHMETIC, not
+geometry, and it is now proven outright in
+`addOrderOf_relPointOfSection_gamma1Datum` below — over `epi_specAlgClos`
+and `relPoint_pre_injective_of_epi` (`X0.lean`, both PROVEN), which say
+that `Spec 𝔽̄_ℓ ⟶ Spec 𝔽_ℓ` is an epimorphism and hence that
+`RelPoint d.f (𝟙 _) → RelPoint d.f (specAlgClos 𝔽_ℓ)` is injective; being
+additive by `pre_add`/`pre_zero` it then preserves `addOrderOf`.  What is
+asked for here is the additive equivalence and nothing else, so a
+successor faces geometry ONLY — which the paragraph below already claimed
+and which, before this split, was not quite true.
+
 TRUE.  An abelian scheme of relative dimension one over `Spec 𝔽_ℓ` with a
 zero section IS an elliptic curve over `𝔽_ℓ`, hence has a Weierstrass
-model `W` with `W(𝔽_ℓ) ≃+ RelPoint d.f (𝟙 (SpecF ℓ))`; the level
-structure `d.pt` is a section of `d.f`, i.e. an `𝔽_ℓ`-rational point, and
-its order is `N` by `d.pt.geom_order` — which is stated on GEOMETRIC
-fibres, so the passage also uses that
-`RelPoint d.f (𝟙 _) → RelPoint d.f t` is an injective group homomorphism
-for `t : Spec 𝔽̄_ℓ ⟶ Spec 𝔽_ℓ` (a faithfully flat base change is an
-epimorphism of schemes, so composition with `t` is injective on
-sections).
+model `W` with `W(𝔽_ℓ) ≃+ RelPoint d.f (𝟙 (SpecF ℓ))`, which is literally
+the conclusion.
 
 **WHY THIS IS THE WHOLE REMAINING CONTENT.**  `X0.lean` builds
 `exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
@@ -4407,26 +4566,105 @@ geometry.  `[Fact ℓ.Prime]` rather than `ℓ.Prime` because the statement
 mentions `WeierstrassCurve (ZMod ℓ)`, whose `Field` instance — and hence
 the group law on `Point` — is only available under the `Fact`.
 
-**`_d`'s UNDERSCORE IS AN ARTIFACT OF THE SORRIED BODY, NOT A VACUITY
-MARKER — do not "simplify" the statement by dropping it** (guard added
-2026-07-28).  The fleet convention is that an underscore-prefixed
-hypothesis is one the PROOF does not use, so that emptiness is
-mechanically visible; here the underscore is only silencing the
-unused-variable linter while the body is `sorry`, and any real proof MUST
-consume `d`.  Without it the statement reads "for every `N` and every
-prime `ℓ` there is an elliptic curve over `𝔽_ℓ` with a point of exact
-order `N`", which is **FALSE**, and refuted by this module's own
+Note the equivalence is asked for at the base point `𝟙 (SpecF ℓ)`, i.e.
+between `W(𝔽_ℓ)` and the SECTIONS of `d.f`, and NOT on geometric fibres.
+That is the difference from `X0.lean`'s ℚ-side
+`exists_weierstrassCurve_of_abelianSchemeStruct`, which produces a
+`Γ_ℚ`-equivariant `≃+` on `ℚ̄`-points because the `Γ₀` route descends a
+SUBGROUP; here the level structure is already a section, so the `𝔽_ℓ`-points
+are what the consumer counts and a geometric-fibre equivalence would have
+to be pushed back down again.
+
+**`_d` IS LOAD-BEARING — do not "simplify" the statement by dropping it**
+(guard inherited at merge from the note that stood on
+`exists_weierstrassPointOfOrder_of_gamma1Datum` before this restatement).
+Without the datum the statement would read "for every `N` and every prime
+`ℓ` there is an elliptic curve over `𝔽_ℓ` with a point of exact order
+`N`", which is **FALSE**, and refuted by this module's own
 `natCard_weierstrassPoint_le`: at `(N, ℓ) = (25, 3)` any Weierstrass
 curve over `𝔽_3` has at most `2·3 + 1 = 7` points, so it has no point of
-order `25`.  That is the same inequality
-`isEmpty_gamma1Datum_finiteField` below turns into its conclusion — so a
-successor who dropped `_d` would be deriving `False` from the very bound
-the cluster exists to exploit. -/
-theorem exists_weierstrassPointOfOrder_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
+order `25`.  That is the same inequality `isEmpty_gamma1Datum_finiteField`
+below turns into its conclusion — so a successor who dropped `_d` would be
+deriving `False` from the very bound the cluster exists to exploit.  (The
+underscore only silences the unused-variable linter while the body is
+`sorry`; any real proof must consume it, as
+`exists_weierstrassPointOfOrder_of_gamma1Datum` above already does.) -/
+theorem exists_weierstrassEquiv_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
     (_d : Gamma1Datum N (SpecF ℓ)) :
+    letI := _d.ab.addCommGroup (𝟙 (SpecF ℓ))
     ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
-      ∃ P : W.toAffine.Point, addOrderOf P = N :=
+      Nonempty (RelPoint _d.f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) :=
   sorry
+
+/-- **The `Γ₁(N)`-level section has additive order exactly `N` already as
+an `𝔽_ℓ`-SECTION**, not merely on the geometric fibre (PROVEN 2026-07-28;
+formerly the arithmetic half of
+`exists_weierstrassPointOfOrder_of_gamma1Datum`'s leaf).
+
+`PointOfExactOrder.geom_order` states the order at every algebraically
+closed `K` and every `K`-point of the base, which is what makes the
+condition insensitive to the base; the consumer here needs it at the base
+`𝔽_ℓ` itself.  The passage down is three facts, all already in the tree:
+
+* `RelPoint.pre (specAlgClos 𝔽_ℓ) _` carries a section to its value on the
+  geometric fibre, and is ADDITIVE by `AbelianSchemeStruct.pre_add` and
+  `pre_zero`;
+* it is INJECTIVE, because `Spec 𝔽̄_ℓ ⟶ Spec 𝔽_ℓ` is faithfully flat hence
+  an epimorphism of schemes (`epi_specAlgClos`, `X0.lean`) and
+  `relPoint_pre_injective_of_epi` cancels it;
+* an injective additive map preserves `addOrderOf`
+  (`addOrderOf_injective`).
+
+Note that BOTH directions are needed and neither is free: additivity alone
+gives only `N ∣ addOrderOf (sec)`, since the image of the section has order
+`N`; it is injectivity that supplies `N • sec = 0` and hence the reverse
+divisibility.  This is the `Γ₁`, `𝔽_ℓ` mirror of the step
+`exists_pointOfExactOrder_of_geomPt` performs over `ℚ` — there through
+`exists_injective_pre_geomBase`, which is available only because `ℚ` is
+initial among rings; here the single base `𝔽̄_ℓ` is fixed, so the plain
+epimorphism suffices and no initiality is needed. -/
+theorem addOrderOf_relPointOfSection_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
+    (d : Gamma1Datum N (SpecF ℓ)) :
+    letI := d.ab.addCommGroup (𝟙 (SpecF ℓ))
+    addOrderOf (RelPoint.ofSection d.pt.sec d.pt.sec_comp (𝟙 (SpecF ℓ))) = N := by
+  letI := d.ab.addCommGroup (𝟙 (SpecF ℓ))
+  have hg : specAlgClos (ZMod ℓ) ≫ 𝟙 (SpecF ℓ) = specAlgClos (ZMod ℓ) := Category.comp_id _
+  letI := d.ab.addCommGroup (specAlgClos (ZMod ℓ))
+  let Φ : RelPoint d.f (𝟙 (SpecF ℓ)) →+ RelPoint d.f (specAlgClos (ZMod ℓ)) :=
+    { toFun := fun w => RelPoint.pre (specAlgClos (ZMod ℓ)) hg w
+      map_zero' := d.ab.pre_zero _ hg
+      map_add' := fun a b => d.ab.pre_add _ hg a b }
+  have hinj : Function.Injective Φ := relPoint_pre_injective_of_epi _ hg
+  have hΦ : Φ (RelPoint.ofSection d.pt.sec d.pt.sec_comp (𝟙 (SpecF ℓ)))
+      = RelPoint.ofSection d.pt.sec d.pt.sec_comp (specAlgClos (ZMod ℓ)) := by
+    apply Subtype.ext
+    show specAlgClos (ZMod ℓ) ≫ 𝟙 (SpecF ℓ) ≫ d.pt.sec = specAlgClos (ZMod ℓ) ≫ d.pt.sec
+    rw [Category.id_comp]
+  rw [← addOrderOf_injective Φ hinj, hΦ]
+  exact d.pt.geom_order (AlgebraicClosure (ZMod ℓ)) (specAlgClos (ZMod ℓ))
+
+/-- **A `Γ₁(N)`-datum over `𝔽_ℓ` gives a plane cubic over `𝔽_ℓ` carrying
+a rational point of exact order `N`** (PROVEN 2026-07-28 over
+`exists_weierstrassEquiv_of_gamma1Datum` and
+`addOrderOf_relPointOfSection_gamma1Datum`; a single sorry leaf until
+then).
+
+The assembly is two lines and carries no content of its own, which is the
+point of the split: the level section is a relative point of order `N`
+(the second citation), and the Weierstrass equivalence carries it to a
+point of `W(𝔽_ℓ)` of the same order (`AddEquiv.addOrderOf_eq`).  The
+statement is unchanged, so `isEmpty_gamma1Datum_finiteField` below is
+untouched; the hypothesis binder is now `d` rather than `_d` because the
+proof uses it. -/
+theorem exists_weierstrassPointOfOrder_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
+    (d : Gamma1Datum N (SpecF ℓ)) :
+    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
+      ∃ P : W.toAffine.Point, addOrderOf P = N := by
+  letI := d.ab.addCommGroup (𝟙 (SpecF ℓ))
+  obtain ⟨W, hW, ⟨e⟩⟩ := exists_weierstrassEquiv_of_gamma1Datum N ℓ d
+  refine ⟨W, hW, e (RelPoint.ofSection d.pt.sec d.pt.sec_comp (𝟙 (SpecF ℓ))), ?_⟩
+  rw [AddEquiv.addOrderOf_eq]
+  exact addOrderOf_relPointOfSection_gamma1Datum N ℓ d
 
 /-- **There is no `Γ₁(N)`-datum over `𝔽_ℓ` once `N` exceeds the crude
 point bound `2ℓ + 1`** (PROVEN 2026-07-27 over
@@ -4702,10 +4940,30 @@ noncomputable def cuspEquivResidueDegreeOne {N ℓ : ℕ} [Fact (Nat.Prime ℓ)]
       left_inv := fun _ => rfl
       right_inv := fun _ => rfl }
 
-/-- **The cusp locus of `X_1(N)_{𝔽_ℓ}` has exactly `m` points of residue
+/-- **`residueDegreeOver (ZMod ℓ)` IS `residueFDegree`** (PROVEN,
+definitionally).
+
+The `𝔽_ℓ` half of the bridge whose `ℚ` half is
+`residueDegreeOver_eq_residueQDegree`; see the subsection there for why the
+base field of the cusp leaf is free, and for the instance diamond this
+`rfl` is the compiler's confirmation about. -/
+theorem residueDegreeOver_eq_residueFDegree {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {X : Scheme.{0}}
+    (strX : X ⟶ SpecF ℓ) (x : X) :
+    residueDegreeOver (ZMod ℓ) strX x = residueFDegree strX x := rfl
+
+/-- **AT MOST `m` points of the cusp locus of `X_1(N)_{𝔽_ℓ}` have residue
 degree one, at the witness rows** (sorry leaf — the ONE genuinely modular
 half of the `(25, 3, 10)` row, and all that is left of
 `card_cusp_x1_finiteField`).
+
+**Restated 2026-07-28 from `=` to `≤`, and the `≥` half is now CLOSED.**
+That half is `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ`: the `ℚ`-side
+cusp leaf with its base field freed, applicable here because
+`x1WitnessTable_spec` carries `¬ ℓ ∣ N`, and sufficient because
+`numRationalCuspsX1 25 = 10 = m` at the single row.  So what remains is
+exactly the HARD direction of Ogg's description — no cusp OUTSIDE the
+distinguished `φ(N)/2`-orbit is `𝔽_ℓ`-rational — and the easy direction is
+now shared with the `ℚ` side rather than proved twice on two open leaves.
 
 TRUE.  At `(25, 3, 10)`: `ord_25(3) = 20`, so `𝔽_3(ζ₂₅) = 𝔽_{3^20}`; the
 `10` cusps of the rational orbit stay rational on the special fibre,
@@ -4739,8 +4997,9 @@ type, and a prover will want it, but the statement is meaningful without it
 and the leaf is quantified over every model regardless.
 
 **Where the level-`25` weight really sits.**  This leaf and
-`exists_rationalCuspPointsX1` are both Deligne–Rapoport cusp theory (VI.5), at
-the two bases; neither is Eichler–Shimura.  `X_1(25)` has genus `12`, so the
+`exists_rationalCuspPointsX1_field` are both Deligne–Rapoport cusp theory
+(VI.5) — since 2026-07-28 the latter covers BOTH bases and this one only the
+upper bound; neither is Eichler–Shimura.  `X_1(25)` has genus `12`, so the
 Eichler–Shimura count `ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_1(25)))` looks forbidding,
 but the answer `10` is exactly `φ(25)/2 = numRationalCuspsX1 25`, so no
 Hecke operator is needed anywhere on this route.  Contrast
@@ -4749,18 +5008,70 @@ Eichler–Shimura and which is blocked on a module cycle through
 `Modularity/Interface.lean`; this leaf inherits none of that.
 
 AXES SEARCHED.  The SECTION-vs-POINT axis is TAKEN (above).  The
-BASE-FIELD axis is NOT available: unlike `exists_rationalCuspPointsX1` this
-leaf needs the count EXACTLY, so it cannot be merged with the `ℚ`-side leaf,
-which is a lower bound.  The WITNESS-TABLE axis is refuted by
-`x1WitnessTable` having one row: generalising to all `(N, ℓ)` would demand the
-full `Γ₁` cusp classification and its reduction behaviour, which is strictly
-more than the route needs. -/
-theorem card_cuspLocusPoints_x1_finiteField (N ℓ m : ℕ)
+INEQUALITY axis is TAKEN (2026-07-28): splitting `=` into `≥` and `≤` is what
+freed the base field on the `≥` half.  **The BASE-FIELD axis is available on
+`≥` and NOT on `≤`**, and the previous version of this paragraph — "the
+BASE-FIELD axis is NOT available: this leaf needs the count EXACTLY, so it
+cannot be merged with the `ℚ`-side leaf, which is a lower bound" — was
+correct about the leaf as it then stood and wrong as a verdict about the
+NODE, which is the mis-pricing this file's doctrine warns about: a lower
+bound and an exact count differ by an upper bound, so the merge was blocked
+only on the half that is still here.  The WITNESS-TABLE axis is refuted by
+`x1WitnessTable` having one row: generalising to all `(N, ℓ)` would demand
+the full `Γ₁` cusp classification and its reduction behaviour, which is
+strictly more than the route needs. -/
+theorem card_cuspLocusPoints_x1_finiteField_le (N ℓ m : ℕ)
     (_htable : (N, ℓ, m) ∈ x1WitnessTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
     (_h : IsX1Compactification N strX strY jY) :
-    Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} = m :=
+    Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} ≤ m :=
   sorry
+
+/-- **The cusp locus of `X_1(N)_{𝔽_ℓ}` has exactly `m` points of residue
+degree one, at the witness rows** (PROVEN 2026-07-28 over
+`card_cuspLocusPoints_x1_finiteField_le` and
+`exists_rationalCuspPointsX1_field`; a single sorry leaf until then).
+
+`le_antisymm` of the two halves.  The `≥` half is the whole content of the
+change and is worth spelling out, because it is where the `ℚ` and `𝔽_ℓ`
+sides of this cluster stopped being two theorems:
+
+* `x1WitnessTable_spec` gives `ℓ.Prime` and `¬ ℓ ∣ N`, so `(N : ZMod ℓ)` is a
+  unit (`ZMod.natCast_eq_zero_iff` in a field) and
+  `exists_rationalCuspPointsX1_field` applies at `K = ZMod ℓ`, supplying an
+  injection `Fin (numRationalCuspsX1 N) ↪ {c ∈ X ∖ Y | residueFDegree = 1}`;
+* `numRationalCuspsX1 N = m` at every row of the table — at the one row this
+  is `numRationalCuspsX1 25 = 10`, i.e. `φ(25)/2 = 10`, which is exactly the
+  numerical coincidence `exists_x1Compactification_mod_prime`'s docstring
+  identifies as the whole reason the `(25, 3, 10)` row is not an
+  Eichler–Shimura computation;
+* `h.finite_compl` makes the target finite, so `Nat.card_le_card_of_injective`
+  turns the injection into `m ≤ Nat.card`.
+
+`_htable` is consumed twice — once for the side conditions and once for
+`numRationalCuspsX1 N = m` — so the row is doing arithmetic here rather than
+being carried for shape. -/
+theorem card_cuspLocusPoints_x1_finiteField (N ℓ m : ℕ)
+    (htable : (N, ℓ, m) ∈ x1WitnessTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} = m := by
+  obtain ⟨-, hℓ, hℓN, -⟩ := x1WitnessTable_spec htable
+  haveI : Fact (Nat.Prime ℓ) := ⟨hℓ⟩
+  have hm : numRationalCuspsX1 N = m := by
+    fin_cases htable
+    exact numRationalCuspsX1_twentyFive
+  have hunit : IsUnit ((N : ℕ) : ZMod ℓ) :=
+    isUnit_iff_ne_zero.mpr fun hz => hℓN ((ZMod.natCast_eq_zero_iff N ℓ).mp hz)
+  obtain ⟨ε, hinj, hdeg⟩ := exists_rationalCuspPointsX1_field N (ZMod ℓ) hunit h
+  haveI : Finite ((Set.range jY.base)ᶜ : Set X) := h.finite_compl.to_subtype
+  have hge : m ≤ Nat.card {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1} := by
+    have hcard := Nat.card_le_card_of_injective
+      (fun i : Fin (numRationalCuspsX1 N) =>
+        (⟨ε i, hdeg i⟩ : {c : ((Set.range jY.base)ᶜ : Set X) // residueFDegree strX c.1 = 1}))
+      (fun a b hab => hinj (congrArg Subtype.val hab))
+    simpa [hm] using hcard
+  exact le_antisymm (card_cuspLocusPoints_x1_finiteField_le N ℓ m htable h) hge
 
 /-- **The cusps of `X_1(N)` over `𝔽_ℓ` number exactly `m`, at the witness
 rows** (PROVEN 2026-07-27 over `card_cuspLocusPoints_x1_finiteField`; formerly
@@ -4865,14 +5176,18 @@ one still carries modular content:
   Its arithmetic half `natCard_weierstrassPoint_le` is proved outright,
   and what is left under it is `exists_gamma1Datum_of_relPoint` together
   with the single geometric leaf
-  `exists_weierstrassPointOfOrder_of_gamma1Datum` (a Weierstrass
-  presentation of an abelian scheme of relative dimension one);
-* `card_cuspLocusPoints_x1_finiteField` — half 2, the cusp count on the
-  special fibre.  STILL OPEN, and the only one of the four that is
-  Deligne-Rapoport.  (`card_cusp_x1_finiteField` itself is PROVEN over it
-  since 2026-07-27, through `cuspEquivResidueDegreeOne`; the open statement
-  is now about the POINTS of `X ∖ Y` and their residue degrees, not about
-  sections of `strX`.)
+  `exists_weierstrassEquiv_of_gamma1Datum` (a Weierstrass presentation of
+  an abelian scheme of relative dimension one; 2026-07-28 —
+  `exists_weierstrassPointOfOrder_of_gamma1Datum` is PROVEN over it and
+  `addOrderOf_relPointOfSection_gamma1Datum`);
+* `card_cuspLocusPoints_x1_finiteField_le` — half 2, the cusp count on the
+  special fibre, and since 2026-07-28 only its UPPER bound.  STILL OPEN, and
+  the only one of the four that is Deligne-Rapoport at this base.
+  (`card_cusp_x1_finiteField` is PROVEN through `cuspEquivResidueDegreeOne`
+  and `card_cuspLocusPoints_x1_finiteField`, which is itself PROVEN over this
+  leaf together with `exists_rationalCuspPointsX1_field` at `K = 𝔽_ℓ`; the
+  open statement is about the POINTS of `X ∖ Y` and their residue degrees,
+  not about sections of `strX`.)
 
 Note that no integral model appears in any of them: the special fibre is
 obtained as the coarse space of the problem over `𝔽_ℓ` directly, so the
