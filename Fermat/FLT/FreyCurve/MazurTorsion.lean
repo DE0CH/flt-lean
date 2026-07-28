@@ -1955,6 +1955,217 @@ theorem card_isCusp_eq_two (hN : N.Prime) (C : IsX0RationalCuspLocus N h) :
 
 end IsX0RationalCuspLocus
 
+/-! #### From a divisor-indexing of the cusps BY POINTS to the cusp-locus datum
+
+`IsX0RationalCuspLocus` presents the cusps as `Spec` of a residue ALGEBRA
+over the base field.  Deligne–Rapoport, on the other hand, describe the
+cusp locus as what it is: the finite set of CLOSED POINTS `X ∖ Y`, one
+for each divisor `d ∣ N`, with a prescribed residue field.  The four
+declarations below are the dictionary between the two, over an arbitrary
+base FIELD `k`, and they are the exact base-field analogue of the
+`residueQAlgebra` / `nonempty_cuspLocus_of_residueIndexing` block in
+`X0.lean`.
+
+**WHAT IS BOUGHT OVER THE `ℚ`-SIDE VERSION.**  There, `ratPoint` — the
+`ℚ`-point half of the identification — is a HYPOTHESIS of
+`nonempty_cuspLocus_of_residueIndexing`, carried into the classical leaf
+`exists_cuspResidueIndexing` alongside the indexing itself.  Here it is a
+THEOREM: `mem_compl_range_of_isCusp` plus `algHom_of_relPoint_factor`
+derive it from the indexing alone, so the DR leaf below asks only for the
+bijection and the residue degrees.  The two ingredients are mathlib's
+`SpecToEquivOfField` factorisation of a morphism out of the spectrum of a
+field (every `k`-point of `X` IS `Spec` of a map out of the residue field
+of its image point, so nothing has to be assumed about how it meets the
+cusps) and the fullness of `Spec` (which upgrades that map to a `k`-ALGEBRA
+map).  The same simplification applies verbatim to `X0.lean`'s `ℚ`-side
+leaf; it is not made here because that leaf belongs to another region. -/
+
+/-- **The `k`-algebra structure on the residue field of a point of a
+scheme over a base field `k`** (new 2026-07-27).
+
+The base-field analogue of `residueQAlgebra` in `X0.lean`, which is
+hardwired to `Spec ℚ`; this one is needed over `Spec 𝔽_q`.
+
+`X.fromSpecResidueField x ≫ strX : Spec κ(x) ⟶ Spec k` is a morphism of
+AFFINE schemes and `Spec` is fully faithful, so it is `Spec.map` of a
+unique ring map `k →+* κ(x)`.  That map is the structure morphism's
+action on residue fields, and it is the `k`-algebra structure every
+statement about "the residue degree of `x` over `k`" means.
+
+Defining it through `Spec.preimage` rather than through
+`Scheme.Hom.residueFieldMap` is what makes `IsX0RationalCuspLocus.comm`
+hold *by construction* — that field asks for
+`κ ≫ strX = Spec.map (algebraMap k (K d))`, which is literally
+`Spec.map_preimage`.
+
+Marked `@[reducible]` because it is a definition of class type: consumers
+state `Module.finrank k (X.residueField x)` under it, and instance search
+must see through it. -/
+@[reducible] noncomputable def residueBaseAlgebra {k : Type} [Field k] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of k)) (x : X) : Algebra k (X.residueField x) :=
+  (Spec.preimage (X.fromSpecResidueField x ≫ strX)).hom.toAlgebra
+
+/-- **A cusp's image point lies outside the open part** (PROVEN
+2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+`IsX0Compactification.IsCusp` is a statement about FACTORISATIONS — `x`
+is not `sectionAlong j` of any `k`-point of `Y` — while `cover` is a
+statement about the underlying SETS.  This is the bridge, and it is the
+easy direction of the equivalence recorded in the `ratPoint` note on
+`IsX0Compactification.CuspLocus`: if the image point of `x` were in
+`Set.range j.base` then, `Spec k` being a ONE-POINT space, the whole of
+`Set.range x.1.base` would be, and `IsOpenImmersion.lift` would factor
+`x` through `Y` — the compatibility `l ≫ strY = 𝟙` being forced rather
+than assumed, exactly as `IsCompactificationY0.IsCusp`'s docstring
+records.
+
+`Subsingleton (PrimeSpectrum k)` — the spectrum of a FIELD is a single
+point — is where the base being a field is used, and it is the only
+place.  Over a base with more than one point the statement is false as
+phrased: a section could meet the open part at one point and a cusp at
+another. -/
+theorem mem_compl_range_of_isCusp {N : ℕ} {k : Type} [Field k] {X Y : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of k)} {strY : Y ⟶ Spec (CommRingCat.of k)} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j)
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k)))) (hx : h.IsCusp x)
+    (P : (Spec (CommRingCat.of k) : Scheme.{0})) :
+    x.1.base P ∈ (Set.range j.base)ᶜ := by
+  haveI : IsOpenImmersion j := h.isOpen
+  intro hmem
+  refine hx ⟨⟨IsOpenImmersion.lift j x.1 ?_, ?_⟩, ?_⟩
+  · rintro p ⟨P', rfl⟩
+    have hPP : P' = P := Subsingleton.elim _ _
+    rw [hPP]; exact hmem
+  · rw [← h.comm, ← Category.assoc, IsOpenImmersion.lift_fac]; exact x.2
+  · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+
+/-- **A `k`-point of `X` factoring through `Spec κ(p)` factors through it
+by a `k`-ALGEBRA map** (PROVEN 2026-07-27; axiom-audited
+`[propext, Classical.choice, Quot.sound]`).
+
+The arithmetic half of `IsX0RationalCuspLocus.ratPoint`.  Mathlib's
+`SpecToEquivOfField` already factors any morphism `Spec k ⟶ X` as
+`Spec.map g ≫ X.fromSpecResidueField p` for a bare RING map
+`g : κ(p) → k`; what `ratPoint` needs is that `g` is a map of
+`k`-ALGEBRAS for the structure `residueBaseAlgebra`, i.e. that
+`g ∘ algebraMap = id`.
+
+That is forced by `x` being a SECTION of `strX`.  Write
+`a := Spec.preimage (fromSpecResidueField p ≫ strX)`, which is
+`algebraMap k κ(p)` by definition.  Then
+`Spec.map (a ≫ g) = Spec.map g ≫ Spec.map a = x.1 ≫ strX = 𝟙`, and
+`Spec` is FAITHFUL (`Spec.map_inj`), so `a ≫ g = 𝟙`.  No geometry beyond
+that: this is the step at which "`x` lies over the base" becomes
+"the residue field of `x`'s image collapses to `k` along `x`". -/
+theorem algHom_of_relPoint_factor {k : Type} [Field k] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of k))
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k)))) (p : X)
+    (g : X.residueField p ⟶ CommRingCat.of k)
+    (hg : Spec.map g ≫ X.fromSpecResidueField p = x.1) :
+    letI := residueBaseAlgebra strX p
+    ∃ f : X.residueField p →ₐ[k] k,
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField p = x.1 := by
+  letI := residueBaseAlgebra strX p
+  have hkey : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g
+      = 𝟙 (CommRingCat.of k) := by
+    rw [← Spec.map_inj, Spec.map_comp, Spec.map_preimage, Spec.map_id, ← Category.assoc, hg]
+    exact x.2
+  refine ⟨AlgHom.mk g.hom ?_, ?_⟩
+  · intro r
+    simpa [RingHom.algebraMap_toAlgebra] using
+      congrArg (fun (t : CommRingCat.of k ⟶ CommRingCat.of k) => t.hom r) hkey
+  · exact hg
+
+/-- **The cusp-locus datum, assembled from a divisor-indexing of the
+cusps by POINTS** (PROVEN 2026-07-27; axiom-audited
+`[propext, Classical.choice, Quot.sound]`).
+
+The sorry-free half of
+`nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum`, in the same
+relation to it that `nonempty_cuspLocus_of_residueIndexing` bears to
+`nonempty_cuspLocus` on the `ℚ` side: EVERY field of
+`IsX0RationalCuspLocus` is discharged here, so the classical leaf below
+carries only Deligne–Rapoport.  Given a bijection
+`e : N.divisors ≃ X ∖ Y` whose values have residue degree `1` over `k`:
+
+* `K d` — the residue field `κ(e d)` itself, `isField` mathlib's instance
+  and `isAlgebra` the `residueBaseAlgebra` of the structure morphism.
+* `κ d` — `X.fromSpecResidueField (e d)`, mathlib's canonical
+  `Spec κ(x) ⟶ X`.
+* `comm` — `Spec.map_preimage`, definitionally; see `residueBaseAlgebra`.
+* `degree_one` — the hypothesis, verbatim.
+* `cover` — `Scheme.range_fromSpecResidueField` makes the image of `κ d`
+  the single point `e d`, so the union over `d` is the image of `e`,
+  which is all of `(Set.range j.base)ᶜ` because `e` is a bijection ONTO
+  it.  This is the only place SURJECTIVITY of `e` is used; an injection
+  would give every other field.
+* `disj` — distinct singletons, from injectivity of `e`.
+* `ratPoint` — `mem_compl_range_of_isCusp` puts the image point of a cusp
+  in `(Set.range j.base)ᶜ`, hence in the image of `e`;
+  `Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField`
+  factors the point through the residue field there; and
+  `algHom_of_relPoint_factor` makes that factorisation a `k`-algebra map.
+  It is NOT a hypothesis here, unlike on the `ℚ` side — see the
+  subsection docstring. -/
+theorem nonempty_isX0RationalCuspLocus_of_residueIndexing {N : ℕ} {k : Type} [Field k]
+    {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of k)}
+    {strY : Y ⟶ Spec (CommRingCat.of k)} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j)
+    (e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X))
+    (hdeg : ∀ d : N.divisors,
+      letI := residueBaseAlgebra strX (e d).1
+      Module.finrank k (X.residueField (e d).1) = 1) :
+    Nonempty (IsX0RationalCuspLocus N h) := by
+  have hr : ∀ d : N.divisors,
+      Set.range (X.fromSpecResidueField (e d).1).base = {((e d).1 : X)} := fun d =>
+    Scheme.range_fromSpecResidueField _
+  refine ⟨{ K := fun d => (X.residueField (e d).1 : Type)
+            isField := fun d => inferInstance
+            isAlgebra := fun d => residueBaseAlgebra strX (e d).1
+            degree_one := hdeg
+            κ := fun d => X.fromSpecResidueField (e d).1
+            comm := fun d => (Spec.map_preimage _).symm
+            cover := ?_
+            disj := ?_
+            ratPoint := ?_ }⟩
+  · simp only [hr]
+    ext pt
+    simp only [Set.mem_iUnion, Set.mem_singleton_iff]
+    exact ⟨by rintro ⟨d, rfl⟩; exact (e d).2, fun hp => ⟨e.symm ⟨pt, hp⟩, by simp⟩⟩
+  · intro d d' hne
+    rw [hr d, hr d']
+    exact Set.disjoint_singleton.mpr fun hc => hne (e.injective (Subtype.ext hc))
+  · intro x hx
+    obtain ⟨p, hgg, hp⟩ : ∃ p : X,
+        (∃ g : X.residueField p ⟶ CommRingCat.of k,
+          Spec.map g ≫ X.fromSpecResidueField p = x.1) ∧ p ∈ (Set.range j.base)ᶜ :=
+      ⟨x.1.base (IsLocalRing.closedPoint k),
+        ⟨_, Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1⟩,
+        mem_compl_range_of_isCusp h x hx _⟩
+    obtain ⟨d, hd⟩ : ∃ d : N.divisors, ((e d : ((Set.range j.base)ᶜ : Set X)) : X) = p :=
+      ⟨e.symm ⟨p, hp⟩, congrArg Subtype.val (e.apply_symm_apply _)⟩
+    subst hd
+    obtain ⟨g, hg⟩ := hgg
+    exact ⟨d, algHom_of_relPoint_factor strX x _ g hg⟩
+
+/-- **At PRIME level every divisor `d ∣ N` has `gcd(d, N/d) = 1`**
+(PROVEN 2026-07-27).
+
+Small, and it is the whole of where `N.Prime` enters the cusp-locus
+half of the Atkin–Lehner cut: the residue field of the cusp above `d` is
+`k(ζ_{gcd(d, N/d)})` over ANY base `k`, so `gcd = 1` is exactly
+`degree_one`.  At `N = 4` the divisor `d = 2` has `gcd(2, 2) = 2` and the
+cusp `1/2` is not rational over every base — which is why
+`IsX0RationalCuspLocus` cannot be instantiated at composite level.
+
+`N.divisors` is empty at `N = 0`, so no `N ≠ 0` side condition is
+needed. -/
+theorem gcd_div_eq_one_of_prime_of_mem_divisors {N : ℕ} (hN : N.Prime) (d : N.divisors) :
+    Nat.gcd d.1 (N / d.1) = 1 := by
+  rcases hN.eq_one_or_self_of_dvd d.1 (Nat.dvd_of_mem_divisors d.2) with h1 | hNN
+  · rw [h1, Nat.gcd_one_left]
+  · rw [hNN, Nat.div_self hN.pos, Nat.gcd_one_right]
+
 /-- **Precomposition and postcomposition on relative points commute**
 (PROVEN 2026-07-27) — associativity of composition, and the whole of the
 content of `red_al` below. -/
@@ -2167,9 +2378,94 @@ theorem exists_atkinLehnerModel_of_jNeronDatum (N q : ℕ)
       ∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → neronSpAut d w hw x' ≠ x' :=
   sorry
 
+/-- **The cusps of `X_0(N)` mod `q` are indexed by the divisors of `N`,
+the cusp above `d` having residue field `𝔽_q(ζ_{gcd(d, N/d)})** (sorry
+node, new 2026-07-28) — the sole remaining Deligne–Rapoport input of the
+special-fibre cusp route, and the base-field twin of
+`exists_cuspResidueIndexing` in `X0.lean`.
+
+**WHAT THE STATEMENT SAYS.**  `X' ∖ Y'` — a finite set of closed points
+of the curve `X'`, by `IsX0Compactification.finite_compl` — is in
+BIJECTION with `N.divisors`, and the point corresponding to `d` is
+`𝔽_q`-rational whenever `gcd(d, N/d) = 1`.  That is DR's cuspidal
+statement over the special fibre, as a statement about POINTS of the
+`𝔽_q`-scheme `X'` and their residue fields: no Galois set, no descent, no
+`∐` to construct.  The passage from here to the `IsX0RationalCuspLocus`
+datum is `nonempty_isX0RationalCuspLocus_of_residueIndexing`, sorry-free.
+
+**WHY THE DEGREE IS CONDITIONED ON `gcd(d, N/d) = 1` RATHER THAN ASSERTED
+FOR ALL `d`.**  Over `ℚ` the cusp above `d` has residue degree
+`φ(gcd(d, N/d))`; over `𝔽_q` it has degree `ord_{gcd(d, N/d)}(q)`, a
+DIFFERENT number (see `IsX0RationalCuspLocus`'s docstring).  The two
+agree only where the gcd is `1`, and there both are `1`, since
+`k(ζ_1) = k` over every base.  So the clause below is the part of DR's
+description that is base-INDEPENDENT, and it is true at composite level
+as well — the leaf is not silently specialised to `N.Prime`.  `N.Prime`
+enters only at the call site, through
+`gcd_div_eq_one_of_prime_of_mem_divisors`, which is exactly where the
+parent docstring says it belongs.
+
+**WHY NO `ratPoint` CLAUSE.**  The `ℚ`-side leaf carries one, because
+`nonempty_cuspLocus_of_residueIndexing` takes it as a hypothesis.  Here it
+is derived — see `nonempty_isX0RationalCuspLocus_of_residueIndexing` and
+the subsection docstring above it — from `SpecToEquivOfField` and the
+fullness of `Spec`.  So this leaf asks the literature for strictly less
+than its `ℚ`-side twin does.
+
+**WHICH HALF OF THE BIJECTION DOES WHAT.**  Injectivity gives `disj`,
+SURJECTIVITY gives `cover`.  So the leaf is not weakenable to an
+injection `N.divisors ↪ X' ∖ Y'` without losing exactly the field that
+forbids junk witnesses — a curve with too few cusps.
+
+**WHERE THE HYPOTHESES ENTER.**  `q.Prime` (as `Fact`) is what makes
+`ZMod q` a field, without which `X'` is not a curve over a field and
+`residueBaseAlgebra` cannot be formed.  `q ≠ N` together with `N.Prime`
+is `q ∤ N`, i.e. good reduction, without which the model is not smooth at
+`q` and the cuspidal fibre can degenerate (cusps can collide, breaking
+injectivity of `e`).  `d` records that the assertion is about the SPECIAL
+FIBRE OF THE GOOD MODEL at `q ∤ N`, which is where DR proves it.  `q ≠ 2`
+is not needed.
+
+**NON-VACUITY.**  For `N = 37`, `q = 3` the set `X' ∖ Y'` has two points,
+both `𝔽_3`-rational, so `e` exists and the degrees are `1`; the statement
+is not satisfiable by the empty bijection, since `N.divisors` is
+nonempty for `N ≠ 0`.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), IV–VI for the cuspidal subscheme of the
+smooth model of `X_0(N)` over `ℤ[1/N]` and its fibres; Ogg, *Rational
+points on certain elliptic modular curves* (1973) for the cusp count at
+prime level. -/
+theorem exists_cuspResidueIndexing_specialFibre (N q : ℕ)
+    (_hN : N.Prime) [_hq : Fact q.Prime] (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ e : N.divisors ≃ ((Set.range jY'.base)ᶜ : Set X'),
+      ∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1 →
+        letI := residueBaseAlgebra strX' (e dd).1
+        Module.finrank (ZMod q) (X'.residueField (e dd).1) = 1 :=
+  sorry
+
 /-- **The cuspidal subscheme of the special fibre is two `𝔽_q`-rational
-points** (sorry node, new 2026-07-27) — the Deligne–Rapoport half of the
+points** (PROVEN 2026-07-28 over `exists_cuspResidueIndexing_specialFibre`;
+opened as a sorry node 2026-07-27) — the Deligne–Rapoport half of the
 second cut, in the shape DR proves rather than as a cardinality.
+
+**HOW IT IS PROVEN.**  `exists_cuspResidueIndexing_specialFibre` supplies
+the bijection `N.divisors ≃ X' ∖ Y'` and the rationality of the cusps
+above divisors with `gcd(d, N/d) = 1`;
+`gcd_div_eq_one_of_prime_of_mem_divisors` says `N.Prime` makes that
+condition hold for EVERY divisor; and
+`nonempty_isX0RationalCuspLocus_of_residueIndexing` assembles the datum,
+including its `ratPoint` field, which is a theorem here rather than an
+assumption.  Nothing classical is used after the indexing leaf.
 
 At PRIME level the cusps of `X_0(N)` are `0` and `∞`, indexed by the two
 divisors `1` and `N`, and `gcd(d, N/d) = 1` for both — so both cusps are
@@ -2225,8 +2521,10 @@ theorem nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum (N q : ℕ)
     {hj : IsJMapOn N hc}
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
-    Nonempty (IsX0RationalCuspLocus N hX') :=
-  sorry
+    Nonempty (IsX0RationalCuspLocus N hX') := by
+  obtain ⟨e, hdeg⟩ := exists_cuspResidueIndexing_specialFibre N q _hN _hqN _d
+  exact nonempty_isX0RationalCuspLocus_of_residueIndexing hX' e
+    (fun dd => hdeg dd (gcd_div_eq_one_of_prime_of_mem_divisors _hN dd))
 
 /-- **The Atkin–Lehner involution `w_N` with its reduction mod `q`**
 (PROVEN 2026-07-27 over `exists_atkinLehnerModel_of_jNeronDatum`; opened
