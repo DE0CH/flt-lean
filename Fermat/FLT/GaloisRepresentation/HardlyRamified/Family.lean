@@ -3845,42 +3845,367 @@ theorem exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType
       Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ :=
   sorry
 
+/-! ### Base-change of the corner group-likes: the machinery of `(D2)`
+
+The three blocks below are the whole of `(D2)`
+(`exists_unramified_grouplike_family_of_diagonalizable_corner`, PROVEN 2026-07-28), factored
+out because none of it is about `G`, about `ρ`, or about `p`.
+
+The one step that is not formally free is the change of BASE RING. A group-like of the
+`𝒪ᵘⁿʳ`-coalgebra `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` is an identity in `(𝒪ᵘⁿʳ ⊗ 𝒪(G°)) ⊗[𝒪ᵘⁿʳ] (𝒪ᵘⁿʳ ⊗ 𝒪(G°))`,
+and there is no `TensorProduct.map` from that into a tensor square over `ℚᵖᵥᵃˡᵍ` — the two
+squares are taken over different rings. `baseChangeSqEquiv` is what repairs this: the tensor
+square of a base-changed algebra is CANONICALLY `U ⊗[B] (H ⊗[B] H)`, a tensor product over the
+*fixed* base `B`, and in that presentation the transport is an ordinary `TensorProduct.map`.
+`Coalgebra.baseChangeTensorSquare` (in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean`) is its restriction to `1 ⊗ₜ ·`, and
+`baseChangeSqEquiv_one_tmul` records that. -/
+
+section BaseChangeSquare
+
+variable (B U H : Type*) [CommRing B] [CommRing U] [Algebra B U] [CommRing H] [Bialgebra B H]
+
+/-- `U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H)`. -/
+noncomputable def baseChangeSqEquiv :
+    U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H) :=
+  (Algebra.TensorProduct.congr (Algebra.TensorProduct.lid U U).symm
+      (AlgEquiv.refl (R := B) (A₁ := H ⊗[B] H))).trans
+    (Algebra.TensorProduct.tensorTensorTensorComm B U B U U U H H)
+
+variable {B U H}
+
+/-- The base-change square equivalence on a pure tensor. -/
+theorem baseChangeSqEquiv_tmul (u : U) (a b : H) :
+    baseChangeSqEquiv B U H (u ⊗ₜ[B] (a ⊗ₜ[B] b)) =
+      ((1 : U) ⊗ₜ[B] a) ⊗ₜ[U] (u ⊗ₜ[B] b) := by
+  simp [baseChangeSqEquiv]
+
+/-- `baseChangeSqEquiv` restricted to `1 ⊗ₜ ·` is `Coalgebra.baseChangeTensorSquare`, which is
+where its compatibility with comultiplication comes from. -/
+theorem baseChangeSqEquiv_one_tmul (t : H ⊗[B] H) :
+    baseChangeSqEquiv B U H ((1 : U) ⊗ₜ[B] t) = Coalgebra.baseChangeTensorSquare B U H t := by
+  show Algebra.TensorProduct.tensorTensorTensorComm B U B U U U H H
+      (((Algebra.TensorProduct.lid U U).symm 1) ⊗ₜ[B] t) = _
+  rw [Coalgebra.baseChangeTensorSquare]
+  congr 1
+
+/-- **The comultiplication of a base-changed bialgebra on a general pure tensor** (PROVEN
+2026-07-28): `u ⊗ₜ h = u • (1 ⊗ₜ h)` and `comul` is `U`-linear, so this is
+`Coalgebra.comul_one_tmul` with a scalar carried through `baseChangeSqEquiv`. -/
+theorem comul_baseChange_tmul (u : U) (h : H) :
+    Coalgebra.comul (R := U) (u ⊗ₜ[B] h) =
+      baseChangeSqEquiv B U H (u ⊗ₜ[B] Coalgebra.comul (R := B) h) := by
+  have h1 : (u ⊗ₜ[B] h : U ⊗[B] H) = u • ((1 : U) ⊗ₜ[B] h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have h2 : (u ⊗ₜ[B] Coalgebra.comul (R := B) h : U ⊗[B] (H ⊗[B] H)) =
+      u • ((1 : U) ⊗ₜ[B] Coalgebra.comul (R := B) h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  rw [h1, h2, map_smul, map_smul, baseChangeSqEquiv_one_tmul,
+    Coalgebra.baseChangeTensorSquare_comul (R := B) (S := U) (H := H)]
+
+/-- **The counit of a base-changed bialgebra on a general pure tensor** (PROVEN 2026-07-28):
+`counit_one_tmul` with a scalar carried through. -/
+theorem counit_baseChange_tmul (u : U) (h : H) :
+    Coalgebra.counit (R := U) (u ⊗ₜ[B] h) = u * algebraMap B U (Coalgebra.counit (R := B) h) := by
+  have h1 : (u ⊗ₜ[B] h : U ⊗[B] H) = u • ((1 : U) ⊗ₜ[B] h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  rw [h1, map_smul, GaloisRepresentation.IsHardlyRamified.counit_one_tmul, smul_eq_mul]
+
+end BaseChangeSquare
+
+/-! ### The corner section
+
+The corner quotient `C ⧸ (1 − e)` has a canonical `B`-linear SECTION `mk a ↦ e a`, whose image
+is the direct summand `e C`. It is not an algebra map — it sends `1` to `e` — which is exactly
+why the group-like condition it transports is the `e`-RELATIVE one
+`comul y · (e ⊗ e) = y ⊗ y` rather than `comul y = y ⊗ y`. -/
+
+section CornerSection
+
+variable {B C : Type*} [CommRing B] [CommRing C] [Bialgebra B C] {e : C}
+
+/-- The section `C ⧸ (1 - e) → C`, `mk a ↦ e * a`, of the corner quotient. -/
+noncomputable def cornerSection (he : IsIdempotentElem e) :
+    (C ⧸ HopfAlgebra.cornerIdeal e) →ₗ[B] C :=
+  LinearMap.restrictScalars B
+    (Submodule.liftQ (HopfAlgebra.cornerIdeal e) (LinearMap.mulLeft C e)
+      (fun x hx => by
+        simp only [LinearMap.mem_ker, LinearMap.mulLeft_apply]
+        exact (HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero he).mp hx))
+
+/-- The defining equation of the corner section. -/
+@[simp] theorem cornerSection_mk (he : IsIdempotentElem e) (a : C) :
+    cornerSection (B := B) he (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a) = e * a := rfl
+
+/-- **The section, tensored with itself, is multiplication by `e ⊗ e` after the quotient**
+(PROVEN 2026-07-28): on a pure tensor both sides are `(e a) ⊗ (e b)`. This is the identity
+that turns a group-like of the corner into an `e`-relative group-like upstairs. -/
+theorem map_cornerSection_map_mk (he : IsIdempotentElem e) (t : C ⊗[B] C) :
+    TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)
+        (TensorProduct.map
+          (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap
+          (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap t) =
+      (e ⊗ₜ[B] e) * t := by
+  induction t with
+  | zero => simp
+  | tmul a b =>
+      rw [TensorProduct.map_tmul, TensorProduct.map_tmul, Algebra.TensorProduct.tmul_mul_tmul]
+      rfl
+  | add u v hu hv => rw [map_add, map_add, hu, hv, mul_add]
+
+variable [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal]
+
+/-- **THE MATHEMATICAL CONTENT OF `(D2)`** (PROVEN 2026-07-28):
+`comul (e a) · (e ⊗ e) = (comul e · (e ⊗ e)) · comul a = (e ⊗ e) · comul a`, using `hcomul`
+— which says the group law restricts to the corner — and then
+`map_cornerSection_map_mk` identifies `(e ⊗ e) · comul a` with the section applied to the
+corner's own comultiplication of `mk a`. -/
+theorem comul_mul_cornerSection (he : IsIdempotentElem e)
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e) (a : C) :
+    Coalgebra.comul (R := B) (e * a) * (e ⊗ₜ[B] e) =
+      TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)
+        (Coalgebra.comul (R := B) (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a)) := by
+  rw [Bialgebra.Quotient.comul_mk, map_cornerSection_map_mk he, Bialgebra.comul_mul,
+    mul_right_comm, hcomul]
+
+/-- The counit does not see the section: `counit (e a) = counit e · counit a = counit a`, and
+the corner's counit of `mk a` is `counit a` definitionally. -/
+theorem counit_mul_cornerSection (hε : Coalgebra.counit (R := B) e = (1 : B)) (a : C) :
+    Coalgebra.counit (R := B) (e * a) =
+      Coalgebra.counit (R := B) (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a) := by
+  rw [Bialgebra.Quotient.counit_mk, Bialgebra.counit_mul, hε, one_mul]
+
+end CornerSection
+
+/-! ### Transport of a corner group-like along a change of base ring
+
+Given an algebra map `κ : S →ₐ[B] T`, `cornerTransport` is the single map
+`S ⊗[B] (C ⧸ (1 − e)) → T ⊗[B] C`, `s ⊗ mk a ↦ κ s ⊗ e a`, and `cornerTransportSq` is the
+corresponding map of tensor squares — the one that has to cross from `⊗[S]` to `⊗[T]`, and can
+only be written because `baseChangeSqEquiv` presents both squares over the fixed base `B`.
+`grouplike_cornerTransport` is the conclusion: a group-like of `S ⊗[B] (C ⧸ (1 − e))` is
+carried to an `(1 ⊗ e)`-relative group-like of `T ⊗[B] C`. -/
+
+section Transport
+
+variable {B S T C : Type*} [CommRing B] [CommRing S] [CommRing T]
+  [Algebra B S] [Algebra B T] [CommRing C] [Bialgebra B C] {e : C}
+  [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal]
+
+variable (κ : S →ₐ[B] T) (he : IsIdempotentElem e)
+
+/-- Transport of the corner along `κ`: `s ⊗ mk a ↦ κ s ⊗ (e * a)`. -/
+noncomputable def cornerTransport :
+    S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e) →ₗ[B] T ⊗[B] C :=
+  TensorProduct.map κ.toLinearMap (cornerSection (B := B) he)
+
+omit [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal] in
+/-- The defining equation of the transport. -/
+@[simp] theorem cornerTransport_tmul (s : S) (a : C ⧸ HopfAlgebra.cornerIdeal e) :
+    cornerTransport κ he (s ⊗ₜ[B] a) = κ s ⊗ₜ[B] cornerSection (B := B) he a := rfl
+
+/-- The same transport on tensor squares. -/
+noncomputable def cornerTransportSq :
+    (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗[S]
+        (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) → (T ⊗[B] C) ⊗[T] (T ⊗[B] C) := fun ξ =>
+  baseChangeSqEquiv B T C
+    (TensorProduct.map κ.toLinearMap
+      (TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he))
+      ((baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e)).symm ξ))
+
+/-- `cornerTransportSq` is additive: it is a composite of linear maps. -/
+theorem cornerTransportSq_zero : cornerTransportSq κ he (0 : _) = 0 := by
+  simp [cornerTransportSq]
+
+/-- `cornerTransportSq` is additive: it is a composite of linear maps. -/
+theorem cornerTransportSq_add (ξ η : (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗[S]
+    (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e))) :
+    cornerTransportSq κ he (ξ + η) = cornerTransportSq κ he ξ + cornerTransportSq κ he η := by
+  simp [cornerTransportSq, map_add]
+
+/-- On the `baseChangeSqEquiv` presentation of the tensor square, the transport IS an ordinary
+`TensorProduct.map` over the fixed base `B`. This is the defining property. -/
+theorem cornerTransportSq_sq (ξ : S ⊗[B] ((C ⧸ HopfAlgebra.cornerIdeal e) ⊗[B]
+    (C ⧸ HopfAlgebra.cornerIdeal e))) :
+    cornerTransportSq κ he (baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e) ξ) =
+      baseChangeSqEquiv B T C
+        (TensorProduct.map κ.toLinearMap
+          (TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)) ξ) := by
+  simp [cornerTransportSq]
+
+/-- **`cornerTransportSq` really is the tensor square of `cornerTransport`** (PROVEN
+2026-07-28), which is the step that crosses from `⊗[S]` to `⊗[T]`. On pure tensors,
+`(s ⊗ a) ⊗[S] (t ⊗ b) = ((s t) ⊗ a) ⊗[S] (1 ⊗ b)` moves the `S`-scalar across the middle bar,
+and the image `(κ (s t) ⊗ e a) ⊗[T] (1 ⊗ e b)` moves `κ t` back across the `T`-bar. -/
+theorem cornerTransportSq_tmul (u v : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    cornerTransportSq κ he (u ⊗ₜ[S] v) =
+      cornerTransport κ he u ⊗ₜ[T] cornerTransport κ he v := by
+  induction u with
+  | zero =>
+      rw [TensorProduct.zero_tmul, cornerTransportSq_zero, map_zero, TensorProduct.zero_tmul]
+  | tmul s a =>
+      induction v with
+      | zero =>
+          rw [TensorProduct.tmul_zero, cornerTransportSq_zero, map_zero, TensorProduct.tmul_zero]
+      | tmul t b =>
+          have h1 : (s ⊗ₜ[B] a : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              s • ((1 : S) ⊗ₜ[B] a) := by rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          have h2 : ((s * t) ⊗ₜ[B] b : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              s • (t ⊗ₜ[B] b) := by rw [TensorProduct.smul_tmul', smul_eq_mul]
+          have hkey : (s ⊗ₜ[B] a : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗ₜ[S]
+              (t ⊗ₜ[B] b : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e)
+                ((s * t) ⊗ₜ[B] (a ⊗ₜ[B] b)) := by
+            rw [baseChangeSqEquiv_tmul, h1, h2, TensorProduct.smul_tmul]
+          rw [hkey, cornerTransportSq_sq, TensorProduct.map_tmul, TensorProduct.map_tmul,
+            baseChangeSqEquiv_tmul, cornerTransport_tmul, cornerTransport_tmul]
+          have h3 : (κ s ⊗ₜ[B] cornerSection (B := B) he a : T ⊗[B] C) =
+              κ s • ((1 : T) ⊗ₜ[B] cornerSection (B := B) he a) := by
+            rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          have h4 : (κ (s * t) ⊗ₜ[B] cornerSection (B := B) he b : T ⊗[B] C) =
+              κ s • (κ t ⊗ₜ[B] cornerSection (B := B) he b) := by
+            rw [TensorProduct.smul_tmul', smul_eq_mul, map_mul]
+          simp only [AlgHom.toLinearMap_apply]
+          rw [h3, h4, TensorProduct.smul_tmul]
+      | add v₁ v₂ hv₁ hv₂ =>
+          rw [TensorProduct.tmul_add, cornerTransportSq_add, hv₁, hv₂, map_add,
+            TensorProduct.tmul_add]
+  | add u₁ u₂ hu₁ hu₂ =>
+      rw [TensorProduct.add_tmul, cornerTransportSq_add, hu₁, hu₂, map_add,
+        TensorProduct.add_tmul]
+
+/-- **The transport intertwines comultiplication, up to the corner unit** (PROVEN
+2026-07-28): `comul (transport w) · (ē ⊗ ē) = transportSq (comul w)`. Checked on pure tensors
+via `comul_baseChange_tmul` and `comul_mul_cornerSection`, with the multiplicativity of
+`baseChangeSqEquiv` doing the rest. -/
+theorem comul_cornerTransport
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e)
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    Coalgebra.comul (R := T) (cornerTransport κ he w) *
+        (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+      cornerTransportSq κ he (Coalgebra.comul (R := S) w) := by
+  induction w with
+  | zero => rw [map_zero, map_zero, map_zero, zero_mul, cornerTransportSq_zero]
+  | tmul s ā =>
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective ā
+      have he₂ : (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+          baseChangeSqEquiv B T C ((1 : T) ⊗ₜ[B] (e ⊗ₜ[B] e)) :=
+        (baseChangeSqEquiv_tmul _ _ _).symm
+      rw [cornerTransport_tmul, comul_baseChange_tmul, he₂, ← map_mul,
+        Algebra.TensorProduct.tmul_mul_tmul, mul_one, cornerSection_mk,
+        comul_mul_cornerSection (B := B) he hcomul a, comul_baseChange_tmul, cornerTransportSq_sq,
+        TensorProduct.map_tmul]
+      rfl
+  | add u v hu hv =>
+      rw [map_add, map_add, map_add, add_mul, hu, hv, cornerTransportSq_add]
+
+/-- **The transport intertwines the counits along `κ`** (PROVEN 2026-07-28). -/
+theorem counit_cornerTransport (hε : Coalgebra.counit (R := B) e = (1 : B))
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    Coalgebra.counit (R := T) (cornerTransport κ he w) = κ (Coalgebra.counit (R := S) w) := by
+  induction w with
+  | zero => rw [map_zero, map_zero, map_zero, map_zero]
+  | tmul s ā =>
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective ā
+      rw [cornerTransport_tmul, counit_baseChange_tmul, counit_baseChange_tmul, cornerSection_mk,
+        counit_mul_cornerSection hε a, map_mul, AlgHom.commutes]
+  | add u v hu hv => rw [map_add, map_add, map_add, hu, hv, map_add]
+
+/-- **The transport of a group-like of the corner is a corner group-like.** -/
+theorem grouplike_cornerTransport
+    (hε : Coalgebra.counit (R := B) e = (1 : B))
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e)
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e))
+    (hwε : Coalgebra.counit (R := S) w = (1 : S))
+    (hwΔ : Coalgebra.comul (R := S) w = w ⊗ₜ[S] w) :
+    Coalgebra.counit (R := T) (cornerTransport κ he w) = (1 : T) ∧
+      Coalgebra.comul (R := T) (cornerTransport κ he w) *
+          (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+        cornerTransport κ he w ⊗ₜ[T] cornerTransport κ he w := by
+  refine ⟨?_, ?_⟩
+  · rw [counit_cornerTransport κ he hε w, hwε, map_one]
+  · rw [comul_cornerTransport κ he hcomul w, hwΔ, cornerTransportSq_tmul]
+
+end Transport
+
+variable (p) in
+/-- The embedding of the strict henselisation into the algebraic closure. -/
+noncomputable def unramifiedToBig : unramifiedIntegers p →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ :=
+  (IsScalarTower.toAlgHom 𝒪ᵖᵥ ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ).comp
+    (IsScalarTower.toAlgHom 𝒪ᵖᵥ (unramifiedIntegers p) ↥(unramifiedSubfield p))
+
+/-- **The values of `unramifiedToBig` lie in the inertia fixed field** — which is exactly the
+generating set of `unramifiedTensorSubmodule G`, and is the only place inertia enters `(D2)`.
+This is the `unramifiedIntegers`-avatar of `toBig_val`. -/
+theorem unramifiedToBig_mem (a : unramifiedIntegers p) :
+    unramifiedToBig p a ∈ unramifiedSubfield p := by
+  have h : unramifiedToBig p a =
+      ((algebraMap (unramifiedIntegers p) ↥(unramifiedSubfield p) a :
+        ↥(unramifiedSubfield p)) : ℚᵖᵥᵃˡᵍ) := rfl
+  rw [h]
+  exact (algebraMap (unramifiedIntegers p) ↥(unramifiedSubfield p) a).2
+
+
+
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
 /-- **(D2) TRANSPORT of a diagonalizing family from the corner Hopf algebra to the corner
-SUBMODULE of the geometric fibre** (SORRY LEAF, FORMAL — cut out of
-`exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28; no arithmetic
-input, no Raynaud, no henselian base).
+SUBMODULE of the geometric fibre** (**PROVEN 2026-07-28**; cut out of
+`exists_unramified_grouplike_family_of_isMultiplicativeType` the same day. No arithmetic
+input, no Raynaud, no henselian base — it is formal transport, and that is exactly what the
+proof turned out to be).
 
-`hdiag` supplies group-likes `x i` of `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` spanning it over `𝒪ᵘⁿʳ`. What has to be
-done is bookkeeping along two maps, and all of it is available:
+`hdiag` supplies group-likes `x i` of `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` spanning it over `𝒪ᵘⁿʳ`, and the whole
+statement is bookkeeping along two maps:
 
-* the SECTION of the corner quotient, `G ⧸ (1 − e₀) → G`, `mk a ↦ e₀ a`, which is injective
-  with image the direct summand `e₀ G` (`HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero` in
-  `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` is the whole of that); base-changed
-  it carries `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` isomorphically onto the corner `(ℚᵖᵥᵃˡᵍ ⊗ G) · ē₀`;
-* the scalar extension `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`, which is `toBig` followed by the inclusion of
-  `unramifiedSubfield p` — and `toBig_val` says its values lie in that fixed field, which is
-  EXACTLY the generating set of `unramifiedTensorSubmodule G`. That is where clause (3) of
-  the conclusion comes from, and it is the only clause that mentions inertia.
+* the SECTION of the corner quotient, `cornerSection : G ⧸ (1 − e₀) → G`, `mk a ↦ e₀ a`
+  (well defined by `HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero`, and a `𝒪ᵖᵥ`-linear map by
+  `Submodule.liftQ` for the `G`-module structure followed by `LinearMap.restrictScalars`);
+* the scalar extension `unramifiedToBig : 𝒪ᵘⁿʳ →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ`, whose values lie in the
+  inertia fixed field `unramifiedSubfield p` by `unramifiedToBig_mem` — which is EXACTLY the
+  generating set of `unramifiedTensorSubmodule G`. That is where clause (3) comes from, and
+  it is the only clause that mentions inertia.
 
-Under the section, a genuine group-like `comul (x i) = x i ⊗ x i` of the corner Hopf algebra
-becomes an `ē₀`-RELATIVE group-like `comul (y i) · (ē₀ ⊗ ē₀) = y i ⊗ y i` of `ℚᵖᵥᵃˡᵍ ⊗ G`,
-because the quotient's comultiplication is `(mk ⊗ mk) ∘ comul` and `mk` is the section's
-retraction; and `counit (e₀ a) = counit e₀ · counit a = counit a` by `hε₀`. Spanning over
-`𝒪ᵘⁿʳ` becomes spanning over `ℚᵖᵥᵃˡᵍ` after the field extension, which is stronger than the
-`Algebra.adjoin` clause asked for.
+The family is `y i = cornerTransport (unramifiedToBig p) he₀ (x i)`, i.e. the single map
+`TensorProduct.map unramifiedToBig cornerSection`, `s ⊗ mk a ↦ (s : ℚᵖᵥᵃˡᵍ) ⊗ e₀ a`.
 
-`habel`, `he₀`, `hprim₀` and `hcomul₀` are carried because the intended proof runs through the
-corner-quotient identification, which is stated in their presence; a prover who finds any of
-them unused should underscore it and say so. -/
+THE FOUR CLAUSES, and where each is proven.
+
+1. *Counit* (`counit_cornerTransport`): `counit (e₀ a) = counit e₀ · counit a = counit a` by
+   `hε₀`, and `counit_A (mk a) = counit_G a` definitionally, so `counit_T ∘ transport =
+   κ ∘ counit_S`, whence `counit (y i) = κ 1 = 1`.
+2. *Relative group-likeness* (`comul_cornerTransport` + `cornerTransportSq_tmul`). Over the
+   base ring, `comul (e₀ a) · (e₀ ⊗ e₀) = (comul e₀ · (e₀ ⊗ e₀)) · comul a = (e₀ ⊗ e₀) · comul a`
+   by `hcomul₀`, and `(e₀ ⊗ e₀) · t` is precisely `(cornerSection ⊗ cornerSection)` applied to
+   `(mk ⊗ mk) t` — that is `comul_mul_cornerSection`, and it is the whole mathematical content.
+   Base-changing it needs the comultiplication of `U ⊗[𝒪ᵖᵥ] H` on a general pure tensor, which
+   is `comul_baseChange_tmul` over the algebra equivalence
+   `baseChangeSqEquiv : U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H)`. That equivalence
+   is what lets a *single* map `cornerTransportSq` do the transport on tensor SQUARES across
+   the change of base ring `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`, which is the one step that is not formally free
+   (there is no `TensorProduct.map` between `⊗[𝒪ᵘⁿʳ]` and `⊗[ℚᵖᵥᵃˡᵍ]`).
+3. *Unramifiedness*: `TensorProduct.induction_on`, with the pure tensor `κ s ⊗ e₀ a` a
+   generator of `unramifiedTensorSubmodule G` by `unramifiedToBig_mem`.
+4. *Generation*: `z · ē₀ = secT (πT z)` where `πT`, `secT` are the base changes to `ℚᵖᵥᵃˡᵍ` of
+   the corner projection and of `cornerSection`; the scalar extension of the `x i` spans
+   `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` over `ℚᵖᵥᵃˡᵍ` (`hxspan` plus semilinearity of the extension), and `secT`
+   carries that span into `Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)`. So the conclusion is obtained
+   in the stronger `Submodule.span` form and then weakened.
+
+`_habel` and `_hprim₀` are UNUSED and underscored, as the leaf's own instruction asked: they
+were carried in case the proof had to run through the corner-quotient identification, and it
+does not — the section plus `hcomul₀` suffice. They are kept in the signature because the
+consumer `exists_unramified_grouplike_family_of_isMultiplicativeType` supplies them
+positionally, and because dropping them would make this statement diverge from `(D1)`'s
+sibling shape for no gain. -/
 theorem exists_unramified_grouplike_family_of_diagonalizable_corner
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
-    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (_habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
-    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (_hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
     (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
       e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
@@ -3901,8 +4226,123 @@ theorem exists_unramified_grouplike_family_of_diagonalizable_corner
         y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
       (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
       (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
-        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
-  sorry
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) := by
+  classical
+  obtain ⟨ι, x, hxε, hxΔ, hxspan⟩ := hdiag
+  -- (a) the base-changed section is a retraction of the corner projection, and
+  -- `secT ∘ πT` is multiplication by `ē₀`.
+  have hsecπ : ∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G,
+      LinearMap.baseChange ℚᵖᵥᵃˡᵍ (cornerSection (B := 𝒪ᵖᵥ) he₀)
+        (LinearMap.baseChange ℚᵖᵥᵃˡᵍ
+          (Ideal.Quotient.mkₐ 𝒪ᵖᵥ (HopfAlgebra.cornerIdeal e₀)).toLinearMap z) =
+      z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) := by
+    intro z
+    induction z with
+    | zero => rw [map_zero, map_zero, zero_mul]
+    | tmul c g =>
+        rw [LinearMap.baseChange_tmul, LinearMap.baseChange_tmul,
+          Algebra.TensorProduct.tmul_mul_tmul, mul_one]
+        show (c ⊗ₜ[𝒪ᵖᵥ] (cornerSection (B := 𝒪ᵖᵥ) he₀
+          (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) g)) : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) = _
+        rw [cornerSection_mk, mul_comm]
+    | add u v hu hv => rw [map_add, map_add, hu, hv, add_mul]
+  -- (b) the transport factors through the scalar extension `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`
+  have hfac : ∀ w : unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀),
+      cornerTransport (unramifiedToBig p) he₀ w =
+        LinearMap.baseChange ℚᵖᵥᵃˡᵍ (cornerSection (B := 𝒪ᵖᵥ) he₀)
+          (TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id w) := by
+    intro w
+    induction w with
+    | zero => rw [map_zero, map_zero, map_zero]
+    | tmul s a =>
+        rw [cornerTransport_tmul, TensorProduct.map_tmul, LinearMap.baseChange_tmul]
+        rfl
+    | add u v hu hv => rw [map_add, map_add, map_add, hu, hv]
+  -- (c) the scalar extension is semilinear over `unramifiedToBig`
+  have hextsmul : ∀ (s : unramifiedIntegers p)
+      (w : unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀)),
+      TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id (s • w) =
+        unramifiedToBig p s •
+          TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id w := by
+    intro s w
+    induction w with
+    | zero => rw [smul_zero, map_zero, smul_zero]
+    | tmul t a =>
+        rw [TensorProduct.smul_tmul', TensorProduct.map_tmul, TensorProduct.map_tmul,
+          TensorProduct.smul_tmul', smul_eq_mul, smul_eq_mul]
+        show ((unramifiedToBig p) (s * t)) ⊗ₜ[𝒪ᵖᵥ] _ = _
+        rw [map_mul]
+        rfl
+    | add u v hu hv => rw [smul_add, map_add, map_add, hu, hv, smul_add]
+  -- (d) the scalar-extended family spans `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` over `ℚᵖᵥᵃˡᵍ`
+  have hspanT : ∀ v : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀),
+      v ∈ Submodule.span ℚᵖᵥᵃˡᵍ (Set.range (fun i =>
+        TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id (x i))) := by
+    have hstep : ∀ w : unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀),
+        TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id w ∈
+          Submodule.span ℚᵖᵥᵃˡᵍ (Set.range (fun i =>
+            TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id (x i))) := by
+      intro w
+      have hw : w ∈ Submodule.span (unramifiedIntegers p) (Set.range x) := by
+        rw [hxspan]; exact Submodule.mem_top
+      induction hw using Submodule.span_induction with
+      | mem u hu => obtain ⟨i, rfl⟩ := hu; exact Submodule.subset_span ⟨i, rfl⟩
+      | zero => rw [map_zero]; exact Submodule.zero_mem _
+      | add u v _ _ hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+      | smul s u _ hu => rw [hextsmul]; exact Submodule.smul_mem _ _ hu
+    intro v
+    induction v with
+    | zero => exact Submodule.zero_mem _
+    | tmul c a =>
+        have h1 : (c ⊗ₜ[𝒪ᵖᵥ] a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀)) =
+            c • ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] a) := by rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        have h2 : ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀)) =
+            TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id
+              ((1 : unramifiedIntegers p) ⊗ₜ[𝒪ᵖᵥ] a) := by
+          rw [TensorProduct.map_tmul]
+          show _ = ((unramifiedToBig p) 1) ⊗ₜ[𝒪ᵖᵥ] a
+          rw [map_one]
+        rw [h1, h2]
+        exact Submodule.smul_mem _ _ (hstep _)
+    | add u v hu hv => exact Submodule.add_mem _ hu hv
+  refine ⟨ι, fun i => cornerTransport (unramifiedToBig p) he₀ (x i), fun i => ?_, fun i => ?_,
+    fun i => ?_, fun z => ?_⟩
+  · exact (grouplike_cornerTransport (unramifiedToBig p) he₀ hε₀ hcomul₀ (x i)
+      (hxε i) (hxΔ i)).1
+  · exact (grouplike_cornerTransport (unramifiedToBig p) he₀ hε₀ hcomul₀ (x i)
+      (hxε i) (hxΔ i)).2
+  · -- the transported family is unramified
+    have hmem : ∀ w : unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀),
+        cornerTransport (unramifiedToBig p) he₀ w ∈ unramifiedTensorSubmodule G := by
+      intro w
+      induction w with
+      | zero => rw [map_zero]; exact Submodule.zero_mem _
+      | tmul s a =>
+          rw [cornerTransport_tmul]
+          exact Submodule.subset_span
+            ⟨unramifiedToBig p s, unramifiedToBig_mem s, cornerSection (B := 𝒪ᵖᵥ) he₀ a, rfl⟩
+      | add u v hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+    exact hmem (x i)
+  · -- generation of the corner
+    have hgoal : ∀ v ∈ Submodule.span ℚᵖᵥᵃˡᵍ (Set.range (fun i =>
+          TensorProduct.map (unramifiedToBig p).toLinearMap LinearMap.id (x i))),
+        LinearMap.baseChange ℚᵖᵥᵃˡᵍ (cornerSection (B := 𝒪ᵖᵥ) he₀) v ∈
+          Subalgebra.toSubmodule (Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range (fun i =>
+            cornerTransport (unramifiedToBig p) he₀ (x i)))) := by
+      intro v hv
+      induction hv using Submodule.span_induction with
+      | mem u hu =>
+          obtain ⟨i, rfl⟩ := hu
+          rw [← hfac]
+          exact Algebra.subset_adjoin ⟨i, rfl⟩
+      | zero => rw [map_zero]; exact Submodule.zero_mem _
+      | add u v _ _ hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+      | smul c u _ hu => rw [map_smul]; exact Submodule.smul_mem _ _ hu
+    have hz := hgoal _ (hspanT (LinearMap.baseChange ℚᵖᵥᵃˡᵍ
+      (Ideal.Quotient.mkₐ 𝒪ᵖᵥ (HopfAlgebra.cornerIdeal e₀)).toLinearMap z))
+    rw [hsecπ] at hz
+    exact hz
+
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **Multiplicative type over the STRICTLY HENSELIAN base is DIAGONALIZABLE: the corner
@@ -3915,6 +4355,12 @@ machinery it is gated on) and
 `exists_unramified_grouplike_family_of_diagonalizable_corner` (`(D2)`, the formal transport).**
 The cut separates an arithmetic-geometric leaf from a bookkeeping one; the frontier count goes
 up by one, which is disclosure rather than regression.
+
+**UPDATE, later on 2026-07-28: `(D2)` IS NOW PROVEN**, so the ONLY open leaf under this node
+is `(D1)`, and the cut paid for itself — the bookkeeping half turned out to be a genuine
+(if long) formal transport, and it is now discharged. `(D1)`'s three missing pieces (Cartier
+biduality, base change of the Cartier dual, and "finite étale over a strictly henselian local
+ring is split") are what the whole subtree is gated on.
 
 Everything below is the audit history of the node while it was a leaf, and it is still the
 mathematics of `(D1)` + `(D2)`.
