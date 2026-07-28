@@ -15416,10 +15416,453 @@ theorem exists_three_distinct_roots_of_isShortNF {F : Type*} [Field F]
   refine ⟨e₁, e₂, e₃, h12, h13, h23, hmem _ ?_, hmem _ ?_, hmem _ ?_⟩ <;>
     rw [hset] <;> simp
 
-/-- **THE ONE REMAINING LEAF of the uniqueness-of-the-quotient cluster: the
-`x`-map of a BIJECTIVE rational map between short normal forms is
-AFFINE-LINEAR** (SORRY LEAF, cut 2026-07-27 out of
-`j_eq_of_bijective_isRationalMap_isShortNF`, which is PROVEN over it).
+/-- **The `x`-map of a bijective rational map, packaged as a BIJECTION of `F`**
+(PROVEN 2026-07-28).
+
+A rational map `θ` carries its `x`-certificate `x(θ P)·B(x P) = A(x P)` at the level
+of POINTS, and every argument about it wants instead a map on the `x`-line.  Over an
+algebraically closed field the `x`-line *is* the point set modulo `±`
+(`exists_point_veluPointX_eq` gives a point over every `t`, and
+`eq_or_eq_neg_of_veluPointX_eq` says the fibres are exactly the `±`-pairs), so
+`f t := x(θ P_t)` is well defined and inherits everything:
+
+* **well defined**: `x P = x Q` forces `Q = ±P`, and `x(θ(-P)) = x(-θP) = x(θP)`;
+* **injective**: `x(θP) = x(θQ)` forces `θQ = ±θP`, hence `Q = ±P` by injectivity of
+  `θ`, hence `x P = x Q`;
+* **surjective**: `θ` is onto, and every `u` is `x R` for some `R ≠ 0`;
+* the certificate becomes the flat statement `∀ t, f t · B(t) = A(t)`, with **no
+  side condition** — at a common zero of `A` and `B` it degenerates to `0 = 0`,
+  which is exactly the blindness that the counterexample on
+  `exists_affine_xMap_of_bijective_isRationalMap_isShortNF` exploits. -/
+theorem exists_xMap_of_bijective_isRationalMap {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
+    {θ : V₁.Point →+ V₂.Point} (hθ : WeierstrassCurve.IsRationalMap θ)
+    (hbij : Function.Bijective θ) :
+    ∃ (f : F → F) (A B : Polynomial F), Function.Bijective f ∧ B ≠ 0 ∧
+      (∀ P : V₁.Point, P ≠ 0 → f (veluPointX P) = veluPointX (θ P)) ∧
+      (∀ t : F, f t * B.eval t = A.eval t) := by
+  classical
+  obtain ⟨A, B, C, D, E, hB, hE, hcert⟩ := hθ
+  choose pt hpt0 hptx using fun t : F => exists_point_veluPointX_eq (W := V₁) t
+  obtain ⟨f, hfdef⟩ : ∃ f : F → F, ∀ t, f t = veluPointX (θ (pt t)) := ⟨_, fun _ => rfl⟩
+  have hθne : ∀ P : V₁.Point, P ≠ 0 → θ P ≠ 0 := fun P hP hc =>
+    hP (hbij.1 (by rw [hc, map_zero]))
+  have hf : ∀ P : V₁.Point, P ≠ 0 → f (veluPointX P) = veluPointX (θ P) := by
+    intro P hP
+    rw [hfdef]
+    rcases eq_or_eq_neg_of_veluPointX_eq (hpt0 (veluPointX P)) hP (hptx (veluPointX P)) with h | h
+    · rw [h]
+    · rw [h, map_neg, velu_pointX_neg]
+  have hinj : Function.Injective f := by
+    intro s t hst
+    rw [hfdef, hfdef] at hst
+    rcases eq_or_eq_neg_of_veluPointX_eq (hθne _ (hpt0 s)) (hθne _ (hpt0 t)) hst with h | h
+    · have hp : pt s = pt t := hbij.1 h
+      rw [← hptx s, ← hptx t, hp]
+    · have hp : pt s = -pt t := hbij.1 (by rw [h, map_neg])
+      rw [← hptx s, ← hptx t, hp, velu_pointX_neg]
+  have hsurj : Function.Surjective f := by
+    intro u
+    obtain ⟨R, hR0, hRx⟩ := exists_point_veluPointX_eq (W := V₂) u
+    obtain ⟨P, hP⟩ := hbij.2 R
+    have hP0 : P ≠ 0 := by
+      rintro rfl
+      rw [map_zero] at hP
+      exact hR0 hP.symm
+    exact ⟨veluPointX P, by rw [hf P hP0, hP, hRx]⟩
+  refine ⟨f, A, B, ⟨hinj, hsurj⟩, hB, hf, fun t => ?_⟩
+  have hc := (hcert (pt t) (hθne _ (hpt0 t))).1
+  rw [hptx t] at hc
+  rw [hfdef]
+  exact hc
+
+open Polynomial in
+/-- **PROVEN 2026-07-28.** Reduce a cleared-denominator certificate `f t · B(t) = A(t)`
+to one carried by a COPRIME pair, at the cost of a FINITE exceptional set.
+
+Induction on `deg B`: if `A, B` are not coprime they have a common root `r`
+(`Polynomial.isCoprime_iff_aeval_ne_zero_of_isAlgClosed`), so `X − r` divides both and
+cancelling it costs only the single extra exceptional point `r`. The exceptional set is
+unavoidable — cancelling a common factor is exactly the step at which the certificate
+stops saying anything at the cancelled root. -/
+theorem exists_coprime_of_injective_cert {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] (f : F → F) :
+    ∀ (n : ℕ) (A B : Polynomial F) (S : Finset F), B.natDegree ≤ n → B ≠ 0 →
+      (∀ t ∉ S, f t * B.eval t = A.eval t) →
+      ∃ (A₀ B₀ : Polynomial F) (S' : Finset F), B₀ ≠ 0 ∧ IsCoprime A₀ B₀ ∧
+        (∀ t ∉ S', f t * B₀.eval t = A₀.eval t) := by
+  intro n
+  induction n with
+  | zero =>
+    intro A B S _ hB hS
+    refine ⟨A, B, S, hB, ?_, hS⟩
+    have hdeg : B.degree = 0 := by
+      rw [Polynomial.degree_eq_natDegree hB]
+      exact_mod_cast Nat.le_zero.1 ‹B.natDegree ≤ 0›
+    have hu : IsUnit B := Polynomial.isUnit_iff_degree_eq_zero.2 hdeg
+    obtain ⟨v, hv⟩ := hu.exists_left_inv
+    exact ⟨0, v, by simpa using hv⟩
+  | succ n ih =>
+    intro A B S hdeg hB hS
+    by_cases hcop : IsCoprime A B
+    · exact ⟨A, B, S, hB, hcop, hS⟩
+    · -- a common root
+      obtain ⟨r, hr⟩ : ∃ r : F, A.eval r = 0 ∧ B.eval r = 0 := by
+        by_contra hc
+        push Not at hc
+        refine hcop ((Polynomial.isCoprime_iff_aeval_ne_zero_of_isAlgClosed (k := F) F A B).2 ?_)
+        intro a
+        by_cases h : Polynomial.aeval a A = 0
+        · right
+          have : A.eval a = 0 := by simpa using h
+          have := hc a this
+          simpa using this
+        · exact Or.inl h
+      obtain ⟨A', hA'⟩ := (Polynomial.dvd_iff_isRoot).2 hr.1
+      obtain ⟨B', hB'⟩ := (Polynomial.dvd_iff_isRoot).2 hr.2
+      have hB'0 : B' ≠ 0 := by
+        rintro rfl
+        exact hB (by rw [hB', mul_zero])
+      have hXne : (X - C r : Polynomial F) ≠ 0 := X_sub_C_ne_zero r
+      have hdeg' : B'.natDegree ≤ n := by
+        have : B.natDegree = 1 + B'.natDegree := by
+          rw [hB', Polynomial.natDegree_mul hXne hB'0, Polynomial.natDegree_X_sub_C]
+        omega
+      refine ih A' B' (insert r S) hdeg' hB'0 ?_
+      intro t ht
+      simp only [Finset.mem_insert, not_or] at ht
+      have hne : t - r ≠ 0 := sub_ne_zero.2 ht.1
+      have h := hS t ht.2
+      rw [hA', hB'] at h
+      simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+        Polynomial.eval_C] at h
+      apply mul_left_cancel₀ hne
+      linear_combination h
+
+open Polynomial in
+/-- **PROVEN 2026-07-28: a COPRIME pair whose quotient is INJECTIVE off a finite set has
+both degrees `≤ 1`** — i.e. an injective rational function is Möbius.
+
+Suppose `n := max (deg A) (deg B) ≥ 2` and consider the fibre polynomial
+`P_u := A − u·B`. For all but finitely many `u` it has `n ≥ 2` DISTINCT roots, none of
+them in the exceptional set `S`, and every such root `t` has `B(t) ≠ 0` (coprimality)
+hence `f t = u` — contradicting injectivity. The three finite families of `u` to avoid
+are: `0` and `A.coeff n / B.coeff n` (so that `deg P_u = n`), the values `A(t)/B(t)` at
+the roots of the WRONSKIAN `A′B − AB′` (so that `P_u` is separable — a repeated root of
+`P_u` is a common root of `P_u` and `P_u′`, and forces the Wronskian to vanish), and the
+values `A(s)/B(s)` for `s ∈ S` (so that no root lands in `S`).
+
+The Wronskian is nonzero because `A′B = AB′` with `A, B` coprime forces `B ∣ B′`, hence
+`B′ = 0` by degree, hence `deg B = 0` in characteristic zero, and then `A′ = 0` too.
+
+Separability plus `IsAlgClosed` gives `n` distinct roots by exactly the route of
+`exists_three_distinct_roots_of_isShortNF`: `Polynomial.nodup_roots` for distinctness and
+`(IsAlgClosed.splits _).natDegree_eq_card_roots` for the count. -/
+theorem natDegree_le_one_of_injective_cert {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F]
+    (f : F → F) (hinj : Function.Injective f)
+    (A B : Polynomial F) (hB : B ≠ 0) (hcop : IsCoprime A B) (S : Finset F)
+    (hS : ∀ t ∉ S, f t * B.eval t = A.eval t) :
+    A.natDegree ≤ 1 ∧ B.natDegree ≤ 1 := by
+  classical
+  have hnoroot : ∀ a : F, A.eval a = 0 → B.eval a ≠ 0 := by
+    intro a ha hb
+    obtain ⟨p, q, hpq⟩ := hcop
+    have h := congrArg (Polynomial.eval a) hpq
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, ha, hb,
+      mul_zero, add_zero] at h
+    exact zero_ne_one h
+  by_contra hcon
+  obtain ⟨n, hn⟩ : ∃ n : ℕ, n = max A.natDegree B.natDegree := ⟨_, rfl⟩
+  have hAn : A.natDegree ≤ n := hn ▸ le_max_left _ _
+  have hBn : B.natDegree ≤ n := hn ▸ le_max_right _ _
+  have hmax : n = A.natDegree ∨ n = B.natDegree := hn ▸ max_choice _ _
+  have hn2 : 2 ≤ n := by
+    by_contra hlt
+    exact hcon ⟨by omega, by omega⟩
+  -- the Wronskian is nonzero
+  obtain ⟨W, hWdef⟩ : ∃ W : Polynomial F, W = derivative A * B - A * derivative B := ⟨_, rfl⟩
+  have hW : W ≠ 0 := by
+    intro h0
+    have hkey : derivative A * B = A * derivative B := by
+      have h : derivative A * B - A * derivative B = 0 := by rw [← hWdef]; exact h0
+      linear_combination h
+    have hdvd : B ∣ derivative B := by
+      have h1 : B ∣ A * derivative B := ⟨derivative A, by rw [← hkey]; ring⟩
+      exact (hcop.symm).dvd_of_dvd_mul_left h1
+    have hBdeg : B.natDegree = 0 := by
+      rcases eq_or_ne (derivative B) 0 with h | h
+      · exact Polynomial.derivative_eq_zero.1 h
+      · by_contra hne
+        have hlt := Polynomial.natDegree_derivative_lt hne
+        have hle := Polynomial.natDegree_le_of_dvd hdvd h
+        omega
+    have hBc : B = Polynomial.C (B.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero hBdeg
+    have hdB : derivative B = 0 := by rw [hBc]; simp
+    have hprod : derivative A * B = 0 := by rw [hkey, hdB, mul_zero]
+    have hAd : derivative A = 0 := by
+      rcases mul_eq_zero.mp hprod with h | h
+      · exact h
+      · exact absurd h hB
+    have hAdeg : A.natDegree = 0 := Polynomial.derivative_eq_zero.1 hAd
+    omega
+  -- pick a good value `u`
+  obtain ⟨u, hu⟩ := Infinite.exists_notMem_finset
+    (insert (0 : F) (insert (A.coeff n / B.coeff n)
+      ((W.roots.toFinset ∪ S).image (fun t => A.eval t / B.eval t))))
+  have hu0 : u ≠ 0 := fun h => hu (by simp [h])
+  have hulead : u ≠ A.coeff n / B.coeff n := fun h => hu (by simp [h])
+  have huim : ∀ t : F, t ∈ W.roots.toFinset ∪ S → A.eval t / B.eval t ≠ u := by
+    intro t ht hcontra
+    exact hu (by
+      refine Finset.mem_insert_of_mem (Finset.mem_insert_of_mem ?_)
+      exact Finset.mem_image.2 ⟨t, ht, hcontra⟩)
+  -- the fibre polynomial
+  obtain ⟨P, hPdef⟩ : ∃ P : Polynomial F, P = A - Polynomial.C u * B := ⟨_, rfl⟩
+  have hPc : P.coeff n = A.coeff n - u * B.coeff n := by
+    rw [hPdef]; simp
+  have hPcoeff : P.coeff n ≠ 0 := by
+    rw [hPc]
+    by_cases hbn : B.coeff n = 0
+    · have hBlt : B.natDegree < n := by
+        rcases lt_or_eq_of_le hBn with h | h
+        · exact h
+        · exfalso
+          refine (?_ : B.coeff n ≠ 0) hbn
+          rw [← h, Polynomial.coeff_natDegree]
+          exact Polynomial.leadingCoeff_ne_zero.2 hB
+      have hAeq : A.natDegree = n := by
+        rcases hmax with h | h
+        · omega
+        · omega
+      have hA0 : A ≠ 0 := by
+        intro h
+        rw [h] at hAeq
+        simp only [Polynomial.natDegree_zero] at hAeq
+        omega
+      have hAc : A.coeff n ≠ 0 := by
+        rw [← hAeq, Polynomial.coeff_natDegree]
+        exact Polynomial.leadingCoeff_ne_zero.2 hA0
+      simp [hbn, hAc]
+    · intro hz
+      exact hulead (by field_simp; linear_combination -hz)
+  have hP0 : P ≠ 0 := fun h => hPcoeff (by rw [h]; simp)
+  have hPle : P.natDegree ≤ n := by
+    rw [hPdef]
+    refine le_trans (Polynomial.natDegree_sub_le _ _) ?_
+    refine max_le hAn (le_trans (Polynomial.natDegree_mul_le) ?_)
+    simpa using hBn
+  have hPdeg : P.natDegree = n :=
+    le_antisymm hPle (Polynomial.le_natDegree_of_ne_zero hPcoeff)
+  -- separability of the fibre polynomial
+  have hsep : P.Separable := by
+    rw [Polynomial.separable_def]
+    refine (Polynomial.isCoprime_iff_aeval_ne_zero_of_isAlgClosed (k := F) F P
+      (derivative P)).2 ?_
+    intro a
+    by_contra hcc
+    simp only [not_or, ne_eq, not_not] at hcc
+    obtain ⟨h1, h2⟩ := hcc
+    have hPa : A.eval a = u * B.eval a := by
+      have : P.eval a = 0 := by simpa using h1
+      rw [hPdef] at this
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C] at this
+      linear_combination this
+    have hP'a : (derivative A).eval a = u * (derivative B).eval a := by
+      have h : (derivative P).eval a = 0 := by simpa using h2
+      rw [hPdef] at h
+      simp only [Polynomial.derivative_sub, Polynomial.derivative_C_mul, Polynomial.eval_sub,
+        Polynomial.eval_mul, Polynomial.eval_C] at h
+      linear_combination h
+    have hWa : W.eval a = 0 := by
+      rw [hWdef]
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul]
+      rw [hPa, hP'a]; ring
+    have hBa : B.eval a ≠ 0 := by
+      intro hb
+      exact hnoroot a (by rw [hPa, hb, mul_zero]) hb
+    refine huim a ?_ (by field_simp; linear_combination hPa)
+    refine Finset.mem_union_left _ ?_
+    exact Multiset.mem_toFinset.2 ((Polynomial.mem_roots hW).2 hWa)
+  -- `n ≥ 2` distinct roots, all of them good, all sent to `u`
+  have hnodup : P.roots.Nodup := Polynomial.nodup_roots hsep
+  have hcard : Multiset.card P.roots = n := by
+    rw [← hPdeg]
+    exact ((IsAlgClosed.splits P).natDegree_eq_card_roots).symm
+  have hfin : P.roots.toFinset.card = n := by
+    rw [Multiset.toFinset_card_of_nodup hnodup, hcard]
+  obtain ⟨t₁, ht₁, t₂, ht₂, hne⟩ :=
+    Finset.one_lt_card.mp (show 1 < P.roots.toFinset.card by omega)
+  have hval : ∀ t ∈ P.roots.toFinset, f t = u := by
+    intro t ht
+    have hroot : P.eval t = 0 :=
+      (Polynomial.mem_roots hP0).1 (Multiset.mem_toFinset.1 ht)
+    have hPa : A.eval t = u * B.eval t := by
+      rw [hPdef] at hroot
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C] at hroot
+      linear_combination hroot
+    have hBa : B.eval t ≠ 0 := by
+      intro hb
+      exact hnoroot t (by rw [hPa, hb, mul_zero]) hb
+    have htS : t ∉ S := by
+      intro hmem
+      exact huim t (Finset.mem_union_right _ hmem) (by field_simp; linear_combination hPa)
+    have := hS t htS
+    rw [hPa] at this
+    exact mul_right_cancel₀ hBa this
+  exact hne (hinj ((hval t₁ ht₁).trans (hval t₂ ht₂).symm))
+
+open Polynomial in
+/-- **PURE ALGEBRA (PROVEN 2026-07-28, cut the same day): an INJECTIVE map of `F` carrying a
+cleared-denominator polynomial certificate agrees, off a FINITE set, with a
+nondegenerate MÖBIUS function.**
+
+Hypotheses: `f : F → F` injective, `B ≠ 0`, and `f t · B(t) = A(t)` for **every**
+`t` (this is the flat form produced by `exists_xMap_of_bijective_isRationalMap`).
+Conclusion: coefficients `a₁, a₀, b₁, b₀` with `a₁b₀ − a₀b₁ ≠ 0` such that the set
+of `t` at which `b₁t + b₀ = 0` or `f t · (b₁t + b₀) ≠ a₁t + a₀` is finite.
+
+Note that the conclusion is deliberately NOT "for all `t`" — it cannot be. The
+certificate says nothing at a common zero of `A` and `B`, and `f` may genuinely be
+redefined there; killing that finite exceptional set is the separate job of
+`xMap_moebius_of_finite_bad`, and it needs the GROUP LAW, not algebra.
+
+**THE PROOF**, in two pieces proven just above.
+
+1. *Reduce to a coprime pair* — `exists_coprime_of_injective_cert`, by induction on
+   `deg B`, cancelling one common root at a time. (A `gcd` reduction would do the same
+   job; the induction avoids having to match `EuclideanDomain.gcd` against
+   `GCDMonoid.gcd` at this pin.) The cancelled roots are the finite exceptional set.
+2. *`A₀/B₀` is injective off the finite set `S := Z(g) ∪ Z(B₀)`.* Immediate from
+   injectivity of `f`.
+3. *Hence both degrees are `≤ 1`* — `natDegree_le_one_of_injective_cert`, the fibre
+   polynomial `A₀ − u·B₀` for a generic `u`; see its own docstring.
+4. *Read off the coefficients.* `A₀ = C a₀ + C a₁ * X`, `B₀ = C b₀ + C b₁ * X` with
+   `a₁b₀ − a₀b₁ ≠ 0`: a vanishing determinant either makes `b₁ = 0`, whence `a₁ = 0`
+   and `f` is constant off a finite set — impossible for an injective map of an
+   infinite field — or supplies the common root `−b₀/b₁` of `A₀` and `B₀`,
+   contradicting coprimality.
+5. The exceptional set is contained in `S ∪ Z(B₀)`, which is finite. -/
+theorem exists_moebius_of_injective_cert {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (f : F → F) (hinj : Function.Injective f)
+    (A B : Polynomial F) (hB : B ≠ 0) (hcert : ∀ t : F, f t * B.eval t = A.eval t) :
+    ∃ a₁ a₀ b₁ b₀ : F, a₁ * b₀ - a₀ * b₁ ≠ 0 ∧
+      {t : F | ¬ (b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀)}.Finite := by
+  classical
+  obtain ⟨A₀, B₀, S, hB₀, hcop, hS⟩ :=
+    exists_coprime_of_injective_cert f B.natDegree A B ∅ le_rfl hB (fun t _ => hcert t)
+  obtain ⟨hA1, hB1⟩ := natDegree_le_one_of_injective_cert f hinj A₀ B₀ hB₀ hcop S hS
+  have heval : ∀ (p : Polynomial F), p.natDegree ≤ 1 → ∀ t : F,
+      p.eval t = p.coeff 1 * t + p.coeff 0 := by
+    intro p hp t
+    conv_lhs => rw [Polynomial.eq_X_add_C_of_degree_le_one
+      (Polynomial.natDegree_le_iff_degree_le.1 hp)]
+    simp
+  refine ⟨A₀.coeff 1, A₀.coeff 0, B₀.coeff 1, B₀.coeff 0, ?_, ?_⟩
+  · intro hz
+    by_cases hb1 : B₀.coeff 1 = 0
+    · have hb0 : B₀.coeff 0 ≠ 0 := by
+        intro h
+        refine hB₀ ?_
+        rw [Polynomial.eq_X_add_C_of_degree_le_one
+          (Polynomial.natDegree_le_iff_degree_le.1 hB1), hb1, h]
+        simp
+      have ha1 : A₀.coeff 1 = 0 := by
+        rw [hb1, mul_zero, sub_zero] at hz
+        exact (mul_eq_zero.mp hz).resolve_right hb0
+      have key : ∀ t ∉ S, f t * B₀.coeff 0 = A₀.coeff 0 := by
+        intro t ht
+        have e := hS t ht
+        rw [heval B₀ hB1, heval A₀ hA1, hb1, ha1] at e
+        linear_combination e
+      obtain ⟨t₁, ht₁⟩ := Infinite.exists_notMem_finset S
+      obtain ⟨t₂, ht₂⟩ := Infinite.exists_notMem_finset (insert t₁ S)
+      simp only [Finset.mem_insert, not_or] at ht₂
+      exact ht₂.1 (hinj (mul_right_cancel₀ hb0 ((key t₁ ht₁).trans (key t₂ ht₂.2).symm))).symm
+    · have hBr : B₀.eval (-B₀.coeff 0 / B₀.coeff 1) = 0 := by
+        rw [heval B₀ hB1]; field_simp; ring
+      have hAr : A₀.eval (-B₀.coeff 0 / B₀.coeff 1) = 0 := by
+        rw [heval A₀ hA1]; field_simp; linear_combination -hz
+      obtain ⟨p, q, hpq⟩ := hcop
+      have h := congrArg (Polynomial.eval (-B₀.coeff 0 / B₀.coeff 1)) hpq
+      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, hAr, hBr,
+        mul_zero, add_zero] at h
+      exact zero_ne_one h
+  · have hsub : {t : F | ¬ (B₀.coeff 1 * t + B₀.coeff 0 ≠ 0 ∧
+        f t * (B₀.coeff 1 * t + B₀.coeff 0) = A₀.coeff 1 * t + A₀.coeff 0)}
+        ⊆ (↑S : Set F) ∪ (↑B₀.roots.toFinset : Set F) := by
+      intro t ht
+      by_contra hnot
+      simp only [Set.mem_union, not_or, Finset.mem_coe] at hnot
+      refine ht ⟨?_, ?_⟩
+      · rw [← heval B₀ hB1]
+        intro hc
+        exact hnot.2 (Multiset.mem_toFinset.2 ((Polynomial.mem_roots hB₀).2 hc))
+      · rw [← heval B₀ hB1, ← heval A₀ hA1]
+        exact hS t hnot.1
+    exact Set.Finite.subset (Set.Finite.union S.finite_toSet B₀.roots.toFinset.finite_toSet) hsub
+
+/-- **SORRY LEAF (cut 2026-07-28): the finite exceptional set of the Möbius form is
+EMPTY — and this is where ADDITIVITY of `θ` enters.**
+
+Given that the `x`-map `f` of a bijective homomorphism `θ` agrees with a
+nondegenerate Möbius function `(a₁t + a₀)/(b₁t + b₀)` off a FINITE set, it agrees
+with it EVERYWHERE. Since `b₁ ≠ 0` would put `t = −b₀/b₁` in the exceptional set,
+this simultaneously proves the Möbius function has **no pole**, i.e. `b₁ = 0`,
+which is the whole geometric content of the parent leaf.
+
+**WHY A SEPARATE LEAF, and why it is not algebra.** The two counterexamples recorded
+on `exists_affine_xMap_of_bijective_isRationalMap_isShortNF` show that the
+certificate alone permits both a pole and an arbitrary redefinition of `f` on a
+finite set. Only the group law rules them out, and this statement is exactly the
+group-law step: it quantifies over `θ` as an `AddMonoidHom`, and its proof uses
+`θ (2 • P) = 2 • θ P`.
+
+**ROUTE** (worked out 2026-07-28).
+
+Write `X := {t | t is exceptional}`, finite by hypothesis, and let `R` denote the
+Möbius function. Duplication on the `x`-line is `D = Φ₂/Ψ₂²` in cleared form —
+`veluPointX_nsmul` gives `x(2P) · Ψ₂²(x P) = Φ₂(x P)` whenever `2P ≠ 0`, in any
+characteristic and with no normal-form hypothesis.
+
+1. *`X` is BACKWARD INVARIANT under `D`.* Let `s ∉ X` with `2 • P ≠ 0` for `x P = s`.
+   Then `x(θP) = f s = R s`, and `f (D s) = x(θ(2 • P)) = x(2 • θP) = D'(R s)` by
+   additivity. The two rational maps `R ∘ D` and `D' ∘ R` agree on the cofinite set
+   `{s ∉ X ∪ D⁻¹(X) : 2 • P_s ≠ 0}` (a fibre of `D` has at most four elements, so
+   `D⁻¹(X)` is finite), hence agree as rational maps; cleared of denominators that
+   is the single polynomial identity
+   `(a₁Φ₁ + a₀Ψ₁²) · (b₁X + b₀) · M̃ = Ñ · (b₁Φ₁ + b₀Ψ₁²)`,
+   where `Ñ, M̃` are the degree-`4` and degree-`3` homogenisations of `Φ₂, Ψ₂²`
+   along `(a₁X + a₀, b₁X + b₀)` — i.e. `homogSubst`, which is already in
+   `Fermat/FLT/EllipticCurve/Isogeny.lean`. Evaluating at `s` and cancelling the
+   nonzero factors `Ψ₁²(s)` (that is `2 • P ≠ 0`), `(b₁s + b₀)⁴` (that is `s ∉ X`)
+   and `Ψ₂²(R s)` (that is `2 • θP ≠ 0`) gives `b₁·(D s) + b₀ ≠ 0` — a zero there
+   would force `a₁·(D s) + a₀ = 0` too, contradicting `a₁b₀ − a₀b₁ ≠ 0` — and
+   `f (D s) · (b₁ (D s) + b₀) = a₁ (D s) + a₀`. So `D s ∉ X`.
+2. *Every fibre of `D` has at least TWO elements.* `V₁.Point` is divisible
+   (`nsmul_surjective`, `IsAlgClosed`), so any `t = x R₀` with `R₀ ≠ 0` has a halving
+   `2 • P = R₀`; `x P ≠ x (P + T)` for a nonzero `2`-torsion `T` unless `R₀ = T`, and
+   there are three distinct `T`, so two of the four halvings always have distinct
+   `x`-coordinates.
+3. *Counting.* Fibres over distinct points are disjoint, all fibres over `X` lie
+   inside `X` by (1), and each has `≥ 2` elements by (2); hence `2·|X| ≤ |X|` and
+   `X = ∅`. (Formally: two injections `X → X` with disjoint ranges.)
+
+Note the `{e₁,e₂,e₃}` of `2`-torsion `x`-coordinates causes no trouble: `D` is
+undefined there, so those points are never IN a fibre. -/
+theorem xMap_moebius_of_finite_bad {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
+    {θ : V₁.Point →+ V₂.Point} (hbij : Function.Bijective θ)
+    (f : F → F) (hf : ∀ P : V₁.Point, P ≠ 0 → f (veluPointX P) = veluPointX (θ P))
+    (a₁ a₀ b₁ b₀ : F) (hdet : a₁ * b₀ - a₀ * b₁ ≠ 0)
+    (hbad : {t : F | ¬ (b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀)}.Finite) :
+    ∀ t : F, b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀ :=
+  sorry
+
+/-- **THE `x`-map of a BIJECTIVE rational map between short normal forms is
+AFFINE-LINEAR** (PROVEN 2026-07-28 over `exists_xMap_of_bijective_isRationalMap`,
+`exists_moebius_of_injective_cert` and `xMap_moebius_of_finite_bad`; cut 2026-07-27
+out of `j_eq_of_bijective_isRationalMap_isShortNF`, which is PROVEN over it).
 
 Everything else in the chain
 `jRelation_veluCurve_of_isogeny_ker_eq` → `j_eq_of_bijective_isRationalMap`
@@ -15458,20 +15901,42 @@ translation is not: two morphisms of curves agreeing off a finite set are equal,
 and `τ_T(Q₁ + Q₂) = Q₁ + Q₂ + T` while `τ_T(Q₁) + τ_T(Q₂) = Q₁ + Q₂ + 2T`, so
 additivity forces `T = 0`.
 
-**AXIS SEARCHED**: certificates and degree bookkeeping on the `x`-line, plus the
-Weierstrass identity above. NOT searched, and this is where the proof should go:
-an argument that USES ADDITIVITY of `θ` at the bad locus, e.g. comparing
-`x(θ(Q₁ + Q₂))` with the group-law expression in `x(θQ₁), x(θQ₂)` at three points
-chosen off the finite bad set. `α ≠ 0` is free once the map is affine-linear,
-since a constant `x`-map contradicts injectivity on an infinite point group.
+**THE CUT, 2026-07-28 — the axis the earlier audit had not searched is now taken.**
+That audit said "an argument that USES ADDITIVITY at the bad locus" was needed and
+had not been tried, and named the group law as the missing ingredient. It is exactly
+right, and the shape it takes is DOUBLING rather than translation by `2`-torsion:
 
-**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION**: exhibit anywhere under `Fermat/`
+* **translation is not enough, and this is worth recording.** Conjugating by a
+  `2`-torsion translation, `f ∘ τ_T = τ_{θT} ∘ f`, DOES refute the translation
+  counterexample above (for a translation `θ = τ_{T₁}` one has `θ(P + T₂) = P + T₃`
+  while `θP + θT₂ = P + T₂`, so the conjugation fails). But it does **not** by
+  itself kill a pole: writing `R` for the Möbius form of `f`, the relation
+  `R ∘ τ = τ' ∘ R` gives `R(τ r) = e′` at the pole `r`, and turning that into a
+  contradiction needs `f = R` at the single point `τ r` — which is precisely what
+  the finite exceptional set of the certificate withholds. Worse, `R(e) = e′` holds
+  **iff** `R` has no pole, so the argument is circular at exactly one step. The
+  three `τ_i` generate a Klein four-group whose centraliser in `PGL₂` is itself, so
+  no amount of `2`-torsion conjugation closes the gap.
+* **doubling does.** `D` is `4`-to-`1` on the `x`-line, `f ∘ D = D′ ∘ f` by
+  additivity, every fibre of `D` has at least two elements, and the exceptional set
+  is backward invariant — so it satisfies `2|X| ≤ |X|` and is EMPTY. A pole would
+  put `−b₀/b₁` into it, so pole-freeness and the exceptional set die together.
+
+The three pieces are `exists_xMap_of_bijective_isRationalMap` (PROVEN),
+`exists_moebius_of_injective_cert` (PROVEN: injective + certificate ⟹ Möbius off a
+finite set) and `xMap_moebius_of_finite_bad` (the group-law step, the ONE remaining
+sorried leaf of the cluster). `α ≠ 0` is
+free at the end: `α = a₁/b₀` and `a₁ = 0` would collapse the determinant
+`a₁b₀ − a₀b₁`.
+
+**THE CHECK THAT WOULD REFUTE THIS ROUTE**: exhibit anywhere under `Fermat/`
 or in the pin a statement taking a bijective (equivalently trivial-kernel)
 `IsRationalMap`/`IsIsogeny` to an `∃ C : VariableChange F`, or a
 `degree_eq_one_iff` companion for `WeierstrassCurve.Isogeny.degree`. As of
-2026-07-27 `grep -rn 'exists_variableChange' Fermat/` returns only the other
+2026-07-28 `grep -rn 'exists_variableChange' Fermat/` returns only the other
 direction (`exists_variableChange_of_j_eq`, `..._isShortNF`, `..._tateCurve`,
-`..._lang`). If one turns up, this leaf is a corollary. -/
+`..._lang`). If one turns up, this leaf is a corollary and the two sub-leaves can
+be dropped. -/
 theorem exists_affine_xMap_of_bijective_isRationalMap_isShortNF
     {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
@@ -15479,8 +15944,35 @@ theorem exists_affine_xMap_of_bijective_isRationalMap_isShortNF
     {θ : V₁.Point →+ V₂.Point} (hθ : WeierstrassCurve.IsRationalMap θ)
     (hbij : Function.Bijective θ) :
     ∃ α β : F, α ≠ 0 ∧ ∀ Q : V₁.Point, Q ≠ 0 →
-      veluPointX (θ Q) = α * veluPointX Q + β :=
-  sorry
+      veluPointX (θ Q) = α * veluPointX Q + β := by
+  obtain ⟨f, A, B, hfbij, hB, hf, hcert⟩ :=
+    exists_xMap_of_bijective_isRationalMap V₁ V₂ hθ hbij
+  obtain ⟨a₁, a₀, b₁, b₀, hdet, hfin⟩ :=
+    exists_moebius_of_injective_cert f hfbij.1 A B hB hcert
+  have hall := xMap_moebius_of_finite_bad V₁ V₂ hbij f hf a₁ a₀ b₁ b₀ hdet hfin
+  -- a pole would sit in the (now empty) exceptional set, so `b₁ = 0`
+  have hb₁ : b₁ = 0 := by
+    by_contra hne
+    refine (hall (-b₀ / b₁)).1 ?_
+    field_simp
+    ring
+  have hb₀ : b₀ ≠ 0 := by
+    intro h
+    exact (hall 0).1 (by rw [hb₁, h]; ring)
+  have hval : ∀ t : F, f t * b₀ = a₁ * t + a₀ := by
+    intro t
+    have h := (hall t).2
+    rw [hb₁] at h
+    linear_combination h
+  have ha₁ : a₁ ≠ 0 := by
+    intro h
+    apply hdet
+    rw [hb₁, h]; ring
+  refine ⟨a₁ / b₀, a₀ / b₀, div_ne_zero ha₁ hb₀, fun Q hQ => ?_⟩
+  rw [← hf Q hQ]
+  have h := hval (veluPointX Q)
+  field_simp
+  linear_combination h
 
 /-- **A bijective rational map between SHORT NORMAL FORMS preserves `j`** (PROVEN
 2026-07-27 over `exists_affine_xMap_of_bijective_isRationalMap_isShortNF`).
