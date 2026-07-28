@@ -7832,7 +7832,9 @@ the OTHER two together with `0 ≤ v₃(j)`, they are THEOREMS.
 `WeierstrassCurve.translationDatum_of_pre` puts them back, and
 `WeierstrassCurve.preTranslationDatum_of_translationDatum` proves the converse — so the
 two structures are EQUIVALENT and the cut narrows nothing. Both directions are PROVEN
-(2026-07-28); what remains open is `nonempty_preTranslationDatum_three`.
+(2026-07-28); what remains open is `nonempty_preTranslationDatum_three_of_intCoeff_pos`,
+the wild leaf that survives after the free rational scaling and the `d = 0` branch have
+been peeled off (both PROVEN 2026-07-28, below).
 
 The only bridge any of this needs between `padicValRat q` on `ℚ` and the valuation of the
 big field `L` is the first lemma below: a rational whose denominator is prime to `q` is
@@ -8171,9 +8173,188 @@ theorem WeierstrassCurve.preTranslationDatum_of_translationDatum (W : Weierstras
     rw [Valuation.map_mul, Valuation.map_pow, hinv, inv_pow] at h
     rwa [mul_comm] at h
 
+/-- **THE LEAF IS INVARIANT UNDER RATIONAL SCALING** (PROVEN 2026-07-28). For `c ∈ ℚˣ`
+let `W'` be the short curve with `a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ`, and `j` is
+unchanged). A `PreTranslationDatum` for `W'` with data `(u', r')` produces one for `W`
+over the SAME base, with `(u, r) = (u'/c, r'/c²)`: each of `hu`, `ha₄`, `ha₆` is
+homogeneous of the matching weight, so the three transform by the single factors
+`v(c)¹²`, `v(c)⁴`, `v(c)⁶` respectively and the two inequalities are untouched.
+
+`hΔ : W'.Δ = c¹²Δ` is taken as a HYPOTHESIS rather than derived, which makes the lemma
+instance-free; the caller discharges it from `Δ_of_isShortNF` with one `ring`.
+
+This is what reduces the wild leaf to `a₄, a₆ ∈ ℤ` — take `c = a₄.den · a₆.den`. See
+`nonempty_preTranslationDatum_three` below. -/
+theorem WeierstrassCurve.preTranslationDatum_of_scale {q : ℕ} [Fact q.Prime]
+    (W W' : WeierstrassCurve ℚ) {c : ℚ} (hc : c ≠ 0)
+    (h4 : W'.a₄ = c ^ 4 * W.a₄) (h6 : W'.a₆ = c ^ 6 * W.a₆) (hΔ : W'.Δ = c ^ 12 * W.Δ)
+    (D : W'.PreTranslationDatum q) : Nonempty (W.PreTranslationDatum q) := by
+  classical
+  have hγ0 : algebraMap ℚ D.L c ≠ 0 :=
+    (map_ne_zero_iff _ (algebraMap ℚ D.L).injective).mpr hc
+  set γ : D.L := algebraMap ℚ D.L c with hγdef
+  set v := D.A.valuation with hvdef
+  set g := v γ with hgdef
+  set w := v ((D.u : D.L)) with hwdef
+  have hg0 : g ≠ 0 := by rw [hgdef]; exact (Valuation.ne_zero_iff v).mpr hγ0
+  have hinvg : v (γ⁻¹) = g⁻¹ := by
+    refine (inv_eq_of_mul_eq_one_left ?_).symm
+    rw [hgdef, ← Valuation.map_mul, inv_mul_cancel₀ hγ0, Valuation.map_one]
+  have h4L : algebraMap ℚ D.L W'.a₄ = γ ^ 4 * algebraMap ℚ D.L W.a₄ := by
+    rw [h4, map_mul, map_pow, hγdef]
+  have h6L : algebraMap ℚ D.L W'.a₆ = γ ^ 6 * algebraMap ℚ D.L W.a₆ := by
+    rw [h6, map_mul, map_pow, hγdef]
+  have hΔL : algebraMap ℚ D.L W'.Δ = γ ^ 12 * algebraMap ℚ D.L W.Δ := by
+    rw [hΔ, map_mul, map_pow, hγdef]
+  have hcoe : ((D.u * (Units.mk0 γ hγ0)⁻¹ : D.Lˣ) : D.L) = (D.u : D.L) * γ⁻¹ := by
+    simp
+  refine ⟨{
+    L := D.L
+    instField := D.instField
+    instDec := D.instDec
+    instAlgebra := D.instAlgebra
+    instFin := D.instFin
+    A := D.A
+    instDVR := D.instDVR
+    resEquiv := D.resEquiv
+    u := D.u * (Units.mk0 γ hγ0)⁻¹
+    r := D.r / γ ^ 2
+    hu := ?_
+    ha₄ := ?_
+    ha₆ := ?_ }⟩
+  · rw [hcoe, Valuation.map_mul, hinvg, ← hwdef, mul_pow, inv_pow]
+    calc w ^ 12 * (g ^ 12)⁻¹ = v (algebraMap ℚ D.L W'.Δ) * (g ^ 12)⁻¹ := by rw [D.hu]
+      _ = g ^ 12 * v (algebraMap ℚ D.L W.Δ) * (g ^ 12)⁻¹ := by
+          rw [hΔL, Valuation.map_mul, Valuation.map_pow, ← hgdef]
+      _ = v (algebraMap ℚ D.L W.Δ) := by
+          rw [mul_comm (g ^ 12) _, mul_assoc, mul_inv_cancel₀ (pow_ne_zero 12 hg0), mul_one]
+  · have hid : algebraMap ℚ D.L W.a₄ + 3 * (D.r / γ ^ 2) ^ 2
+        = (γ ^ 4)⁻¹ * (algebraMap ℚ D.L W'.a₄ + 3 * D.r ^ 2) := by
+      rw [h4L]; field_simp
+    rw [hid, hcoe, Valuation.map_mul, Valuation.map_mul, hinvg, ← hwdef, mul_pow, inv_pow]
+    have hvinv : v ((γ ^ 4)⁻¹) = (g ^ 4)⁻¹ := by
+      rw [← inv_pow, Valuation.map_pow, hinvg, inv_pow]
+    rw [hvinv]
+    calc (g ^ 4)⁻¹ * v (algebraMap ℚ D.L W'.a₄ + 3 * D.r ^ 2)
+        ≤ (g ^ 4)⁻¹ * w ^ 4 := by gcongr; exact D.ha₄
+      _ = w ^ 4 * (g ^ 4)⁻¹ := mul_comm _ _
+  · have hid : algebraMap ℚ D.L W.a₆ + (D.r / γ ^ 2) * algebraMap ℚ D.L W.a₄
+          + (D.r / γ ^ 2) ^ 3
+        = (γ ^ 6)⁻¹ * (algebraMap ℚ D.L W'.a₆ + D.r * algebraMap ℚ D.L W'.a₄ + D.r ^ 3) := by
+      rw [h4L, h6L]; field_simp
+    rw [hid, hcoe, Valuation.map_mul, Valuation.map_mul, hinvg, ← hwdef, mul_pow, inv_pow]
+    have hvinv : v ((γ ^ 6)⁻¹) = (g ^ 6)⁻¹ := by
+      rw [← inv_pow, Valuation.map_pow, hinvg, inv_pow]
+    rw [hvinv]
+    calc (g ^ 6)⁻¹ * v (algebraMap ℚ D.L W'.a₆ + D.r * algebraMap ℚ D.L W'.a₄ + D.r ^ 3)
+        ≤ (g ^ 6)⁻¹ * w ^ 6 := by gcongr; exact D.ha₆
+      _ = w ^ 6 * (g ^ 6)⁻¹ := mul_comm _ _
+
+/-- **The tame base produces the datum whenever `r = 0` already works** (PROVEN
+2026-07-28), and it is the exact analogue of `exists_potentiallyGoodModel_of_tameBase`
+one level down. Over a base of ramification index `12` at `q`, take `u = π^{v_q(Δ)}` and
+`r = 0`; the four MEMBERSHIP conditions of `TranslationDatum` then read
+
+    a₂' = u⁻²·(3·0) = 0                    (always, since `r = 0`)
+    v(a₄') = −4d + 12a ≥ 0  ⟺  3a ≥ d      (hypothesis `h4`)
+    v(a₆') = −6d + 12b ≥ 0  ⟺  2b ≥ d      (hypothesis `h6`)
+    v(Δ')  = −12d + 12d = 0                (always, by the CHOICE of `d`)
+
+and `preTranslationDatum_of_translationDatum` — PROVEN above, hypothesis-free and uniform
+in `q` — converts the result. So this route needs no valuation-group equality anywhere:
+every obligation is `∈ A`, which is exactly what `TameBaseAux.tame_mem_iff` decides.
+
+Nothing here is specific to `q = 3`. At `5 ≤ q` the two hypotheses are FREE from
+`0 ≤ v_q(j)` (that is `padicValRat_Δ_le_of_jIntegral`); at `q = 3` they are not, and the
+case where they FAIL is the whole of what is left open. -/
+theorem WeierstrassCurve.preTranslationDatum_of_tameBase {q : ℕ} [Fact q.Prime]
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (L : Type) [Field L] [DecidableEq L] [Algebra ℚ L] [FiniteDimensional ℚ L]
+    (A : ValuationSubring L) [IsDiscreteValuationRing A]
+    (resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q)
+    (π : L) (hπ0 : π ≠ 0)
+    (hmem : ∀ (m : ℤ) {x : ℚ}, x ≠ 0 →
+      (π ^ m * algebraMap ℚ L x ∈ A ↔ 0 ≤ m + 12 * padicValRat q x))
+    (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
+    (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
+    Nonempty (W.PreTranslationDatum q) := by
+  classical
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  set d : ℤ := padicValRat q W.Δ with hd
+  have hπd : (π ^ d) ≠ 0 := zpow_ne_zero _ hπ0
+  set u : Lˣ := Units.mk0 (π ^ d) hπd with hu
+  have hui : ∀ k : ℕ, ((u⁻¹ : Lˣ) : L) ^ k = π ^ (-(k : ℤ) * d) := by
+    intro k
+    rw [hu]
+    simp only [Units.val_inv_eq_inv_val, Units.val_mk0]
+    rw [← zpow_natCast (π ^ d)⁻¹ k, ← zpow_neg, ← zpow_mul]
+    ring_nf
+  have huk : ∀ k : ℕ, ((u : Lˣ) : L) ^ k = π ^ ((k : ℤ) * d) := by
+    intro k
+    rw [hu]
+    simp only [Units.val_mk0]
+    rw [← zpow_natCast (π ^ d) k, ← zpow_mul]
+    ring_nf
+  refine WeierstrassCurve.preTranslationDatum_of_translationDatum W
+    { L := L
+      A := A
+      resEquiv := resEquiv
+      u := u
+      r := 0
+      ha₂ := ?_
+      ha₄ := ?_
+      ha₆ := ?_
+      hΔ := ?_ }
+  · simp
+  · rcases eq_or_ne W.a₄ 0 with h0 | h0
+    · simp [h0]
+    · have e : ((u⁻¹ : Lˣ) : L) ^ 4 * (algebraMap ℚ L W.a₄ + 3 * (0 : L) ^ 2)
+          = π ^ (-4 * d) * algebraMap ℚ L W.a₄ := by
+        rw [hui 4]; push_cast; ring
+      rw [e, hmem _ h0]
+      have := h4 h0
+      omega
+  · rcases eq_or_ne W.a₆ 0 with h0 | h0
+    · simp [h0]
+    · have e : ((u⁻¹ : Lˣ) : L) ^ 6
+            * (algebraMap ℚ L W.a₆ + (0 : L) * algebraMap ℚ L W.a₄ + (0 : L) ^ 3)
+          = π ^ (-6 * d) * algebraMap ℚ L W.a₆ := by
+        rw [hui 6]; push_cast; ring
+      rw [e, hmem _ h0]
+      have := h6 h0
+      omega
+  · have e : ((u : Lˣ) : L) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹
+        = π ^ (12 * d) * algebraMap ℚ L (W.Δ)⁻¹ := by
+      rw [huk 12, map_inv₀]; push_cast; ring
+    rw [e, hmem _ (inv_ne_zero hΔ0), padicValRat.inv]
+    omega
+
+/-- **The concrete tame instantiation, at the level of `PreTranslationDatum`** (PROVEN
+2026-07-28). The base is `ℚ(q^{1/12})`, exactly as in
+`exists_potentiallyGoodModel_of_isShortNF`, and the three non-arithmetic obligations —
+`FiniteDimensional ℚ L`, the DVR structure, and residue degree one AS A RING EQUIVALENCE —
+are discharged by the same three `TameBaseAux` facts that theorem uses. -/
+theorem WeierstrassCurve.nonempty_preTranslationDatum_of_padicValRat_le
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
+    (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
+    Nonempty (W.PreTranslationDatum q) := by
+  classical
+  obtain ⟨res, hres⟩ := TameBaseAux.exists_tameResidueHom q
+  letI : DecidableEq (AdjoinRoot (TameBaseAux.qpoly q)) := Classical.decEq _
+  haveI := hres
+  refine WeierstrassCurve.preTranslationDatum_of_tameBase W
+    (AdjoinRoot (TameBaseAux.qpoly q)) (TameBaseAux.tameSubring q)
+    (WeierstrassCurve.residueFieldEquivZModOfLocalHom res) (TameBaseAux.unif q)
+    (TameBaseAux.unif_ne_zero q) ?_ h4 h6
+  intro m x hx
+  rw [TameBaseAux.algebraMap_eq_ofQ]
+  exact TameBaseAux.tame_mem_iff q m hx
+
 /-- **THE ARITHMETIC OF THE WILD CASE `q = 3`** (sorry leaf; opened 2026-07-27 by
 decomposing `exists_potentiallyGoodModel_of_jIntegral_three`, RESTATED 2026-07-28 over
-`PreTranslationDatum` once the two forced conditions were discharged). What is owed is a
+`PreTranslationDatum` once the two forced conditions were discharged, and RESTATED AGAIN
+2026-07-28 with the two free reductions below taken). What is owed is a
 base `L` with a residue-degree-`1` DVR at `3`, plus **two elements** `u, r` of `L`
 satisfying just TWO valuation inequalities. Write `A = W.a₄`, `B = W.a₆`,
 `f(X) = X³ + AX + B`, `d = v₃(Δ)`. Since `hu` pins `v(u) = d/12`, they are
@@ -8256,33 +8437,126 @@ containing them has residue degree divisible by `3`. Yet that curve DOES have a 
 must keep `r` a NEAR-root (the two inequalities) rather than an exact one. An argument
 that always finds such an `r` over a totally ramified base would close this leaf outright.
 
-**A REDUCTION THAT IS STILL AVAILABLE AND COSTS NOTHING** (not yet formalised, 2026-07-28).
-The statement is invariant under rational scaling: for `c ∈ ℚˣ` let `W_c` be the short
-curve with `a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ`, `j` unchanged). Given a
-`PreTranslationDatum` for `W_c` with data `(u', r')`, the pair `(u'/c, r'/c²)` is one for
-`W`: each of `hu`, `ha₄`, `ha₆` is homogeneous of the matching weight, so all three
-transform by the same factor `v(c)^{12,4,6}`. Taking `c = a₄.den · a₆.den` therefore
-reduces to `a₄, a₆ ∈ ℤ`, where Newton-polygon arguments are available. Note also that
-`d > 0` forces `3 ∣ a₄` for an integral model (else `4a₄³ + 27a₆² ≢ 0 mod 3`), so
-`f ≡ (X + a₆)³ mod 3` and every root of `f` is congruent to `-a₆`: the interesting case
-always has a triple root mod `3`.
+**TWO FREE REDUCTIONS, NOW FORMALISED AND ALREADY APPLIED TO THIS STATEMENT**
+(2026-07-28; the previous version of this paragraph recorded them as available but not
+taken). They are the reason the hypotheses `h4`, `h6` and `hd` appear below, and neither
+of them narrows the leaf.
+
+1. *Rational scaling.* `preTranslationDatum_of_scale` (PROVEN above): for `c ∈ ℚˣ` let
+   `W_c` be the short curve with `a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ`, `j`
+   unchanged). A datum for `W_c` with data `(u', r')` gives `(u'/c, r'/c²)` for `W`, all
+   three conditions being homogeneous of matching weight. Taking `c = a₄.den · a₆.den`
+   reduces to `a₄, a₆ ∈ ℤ`, which is `h4`/`h6`.
+2. *The `d = 0` branch is TAME.* With `a₄, a₆ ∈ ℤ` their `3`-adic valuations are `≥ 0`,
+   so `v₃(Δ) ≤ 0` makes both hypotheses of
+   `nonempty_preTranslationDatum_of_padicValRat_le` vacuous and `r = 0` over `ℚ(3^{1/12})`
+   already works. Since integrality also forces `v₃(Δ) ≥ 0`, that branch is exactly
+   `d = 0` — good reduction with no translation at all. Hence `hd : 0 < v₃(Δ)`.
+
+What `hd` buys, and it is exactly the setting a Newton-polygon argument wants: `d > 0`
+forces `3 ∣ a₄` for an integral model (else `4a₄³ + 27a₆² ≢ 0 mod 3`), so
+`f ≡ (X + a₆)³ mod 3`, every root of `f` is congruent to `-a₆`, and `d ≥ 3` (writing
+`a₄ = 3a₁`, `Δ = -16·27(4a₁³ + a₆²)`). **The interesting case always has a triple root
+mod `3`.**
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v₃(j(E))` acquiring
 good reduction over NO finite extension of `ℚ₃` of residue degree `1`. Silverman *AEC*
 VII.5.5 gives good reduction over some finite `L/ℚ₃`, and the group-theoretic argument
 just quoted removes the unramified layer, so such a witness would have to break that
 step. -/
-theorem WeierstrassCurve.nonempty_preTranslationDatum_three
+theorem WeierstrassCurve.nonempty_preTranslationDatum_three_of_intCoeff_pos
     (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
-    {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j) :
+    {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j)
+    (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ))
+    (hd : 0 < padicValRat q W.Δ) :
     Nonempty (W.PreTranslationDatum q) :=
   sorry
 
+/-- **The `d = 0` case of the wild leaf is not wild at all** (PROVEN 2026-07-28). With
+`a₄, a₆ ∈ ℤ` both `v₃(a₄)` and `v₃(a₆)` are `≥ 0`, so `v₃(Δ) ≤ 0` makes the two
+hypotheses of `nonempty_preTranslationDatum_of_padicValRat_le` vacuously true and the
+tame base `ℚ(3^{1/12})` with `r = 0` produces the datum. (Integrality also forces
+`v₃(Δ) ≥ 0`, so this branch is exactly `d = 0`, i.e. good reduction already.)
+
+Note `hj` and `hq3` are not used in this branch — they are passed straight through to
+`nonempty_preTranslationDatum_three_of_intCoeff_pos`, where the arithmetic lives. -/
+theorem WeierstrassCurve.nonempty_preTranslationDatum_three_of_intCoeff
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j)
+    (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ)) :
+    Nonempty (W.PreTranslationDatum q) := by
+  rcases lt_or_ge 0 (padicValRat q W.Δ) with hd | hd
+  · exact WeierstrassCurve.nonempty_preTranslationDatum_three_of_intCoeff_pos
+      W hq3 hj h4 h6 hd
+  · refine WeierstrassCurve.nonempty_preTranslationDatum_of_padicValRat_le
+      W (fun _ => ?_) (fun _ => ?_)
+    · obtain ⟨m, hm⟩ := h4
+      have hnn : (0 : ℤ) ≤ padicValRat q W.a₄ := by
+        rw [hm, padicValRat.of_int]; exact Int.natCast_nonneg _
+      omega
+    · obtain ⟨n, hn⟩ := h6
+      have hnn : (0 : ℤ) ≤ padicValRat q W.a₆ := by
+        rw [hn, padicValRat.of_int]; exact Int.natCast_nonneg _
+      omega
+
+/-- **The wild case, reduced to INTEGRAL coefficients** (PROVEN 2026-07-28 modulo
+`nonempty_preTranslationDatum_three_of_intCoeff_pos`). Scale by `c = a₄.den · a₆.den`:
+`W' = (0, 0, 0, c⁴a₄, c⁶a₆)` has integral coefficients, `Δ' = c¹²Δ`, `c₄' = c⁴c₄` and
+hence `j' = j`, so the hypothesis `0 ≤ v₃(j)` transports verbatim; and
+`preTranslationDatum_of_scale` carries the resulting datum back to `W`. -/
+theorem WeierstrassCurve.nonempty_preTranslationDatum_three
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j) :
+    Nonempty (W.PreTranslationDatum q) := by
+  classical
+  have hd4 : ((W.a₄.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr W.a₄.den_nz
+  have hd6 : ((W.a₆.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr W.a₆.den_nz
+  set c : ℚ := (W.a₄.den : ℚ) * (W.a₆.den : ℚ) with hcdef
+  have hc0 : c ≠ 0 := mul_ne_zero hd4 hd6
+  set W' : WeierstrassCurve ℚ := ⟨0, 0, 0, c ^ 4 * W.a₄, c ^ 6 * W.a₆⟩ with hW'def
+  have h4' : W'.a₄ = c ^ 4 * W.a₄ := rfl
+  have h6' : W'.a₆ = c ^ 6 * W.a₆ := rfl
+  haveI hshort : W'.IsShortNF := ⟨rfl, rfl, rfl⟩
+  have hΔ' : W'.Δ = c ^ 12 * W.Δ := by
+    rw [WeierstrassCurve.Δ_of_isShortNF, WeierstrassCurve.Δ_of_isShortNF, h4', h6']
+    ring
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  haveI hell : W'.IsElliptic := by
+    refine ⟨?_⟩
+    rw [hΔ']
+    exact isUnit_iff_ne_zero.mpr (mul_ne_zero (pow_ne_zero _ hc0) hΔ0)
+  have hc4' : W'.c₄ = c ^ 4 * W.c₄ := by
+    rw [WeierstrassCurve.c₄_of_isShortNF, WeierstrassCurve.c₄_of_isShortNF, h4']; ring
+  have hjW : W.j = W.Δ⁻¹ * W.c₄ ^ 3 := by
+    simp only [WeierstrassCurve.j, Units.val_inv_eq_inv_val, WeierstrassCurve.coe_Δ']
+  have hjW' : W'.j = W'.Δ⁻¹ * W'.c₄ ^ 3 := by
+    simp only [WeierstrassCurve.j, Units.val_inv_eq_inv_val, WeierstrassCurve.coe_Δ']
+  have hjeq : W'.j = W.j := by
+    rw [hjW', hjW, hΔ', hc4']
+    field_simp
+  have hint4 : ∃ m : ℤ, W'.a₄ = (m : ℚ) := by
+    refine ⟨W.a₄.num * (W.a₄.den : ℤ) ^ 3 * (W.a₆.den : ℤ) ^ 4, ?_⟩
+    have hnum : W.a₄ * (W.a₄.den : ℚ) = (W.a₄.num : ℚ) := Rat.mul_den_eq_num _
+    rw [h4', hcdef]
+    push_cast
+    rw [← hnum]
+    ring
+  have hint6 : ∃ n : ℤ, W'.a₆ = (n : ℚ) := by
+    refine ⟨W.a₆.num * (W.a₄.den : ℤ) ^ 6 * (W.a₆.den : ℤ) ^ 5, ?_⟩
+    have hnum : W.a₆ * (W.a₆.den : ℚ) = (W.a₆.num : ℚ) := Rat.mul_den_eq_num _
+    rw [h6', hcdef]
+    push_cast
+    rw [← hnum]
+    ring
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_preTranslationDatum_three_of_intCoeff W' hq3
+    (by rw [hjeq]; exact hj) hint4 hint6
+  exact WeierstrassCurve.preTranslationDatum_of_scale W W' hc0 h4' h6' hΔ' D
+
 /-- **The wild-case datum, assembled** (PROVEN 2026-07-28, modulo
-`nonempty_preTranslationDatum_three`). All the arithmetic now sits in that leaf; this
-step is `translationDatum_of_pre`, i.e. the derivation of `ha₂` and `hΔ` from `ha₄` and
-`0 ≤ v₃(j)`. See the leaf's docstring for the refutation of the tame base, the root
-recipe, and the residue-degree-`1` gap. -/
+`nonempty_preTranslationDatum_three_of_intCoeff_pos`). All the arithmetic now sits in that
+leaf; this step is `translationDatum_of_pre`, i.e. the derivation of `ha₂` and `hΔ` from
+`ha₄` and `0 ≤ v₃(j)`. See the leaf's docstring for the refutation of the tame base, the
+root recipe, and the residue-degree-`1` gap. -/
 theorem WeierstrassCurve.nonempty_translationDatum_three
     (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j) :
