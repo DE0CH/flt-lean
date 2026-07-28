@@ -5,6 +5,12 @@ vendored from the FLT project).
 module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` (the fixed field of
+-- `I_v` is unramified at every FINITE level) and the DVR structure of the
+-- finite-level integral closures. These are the two inputs of
+-- `eq_one_of_smul_eq_self_of_pow_eq_uniformizer` (the totally-ramified leaf)
+-- and of `exists_pow_eq_pow_mul_isUnit_of_isIntegral` (the value-group leaf).
+public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 public import Mathlib.GroupTheory.Index
 -- `IsConjRoot` / `IsConjRoot.exists_algEquiv`: two roots of the same irreducible
 -- polynomial in an algebraic closure are related by a `Kᵥ`-automorphism. Used by
@@ -991,11 +997,18 @@ theory over `Kᵥⁿʳ`, and neither follows from the other:
   the leaf is FALSE at every finite level: with `θ_M(I_v) = μ_d` a proper
   subgroup, `ker θ_n` is strictly larger than the `n`-th powers (take
   `M = 4`, `n = 2`, `d = 2`: `θ_4(σ) = −1` lies in `ker θ_2` but the
-  squares of `μ_2` are trivial). **PROVEN 2026-07-28 over the single leaf
-  `exists_mem_localInertiaGroup_smul_eq_smul`** below: `X^M − π` is
-  Eisenstein, hence irreducible over `Kᵥ`, so SOME element of `Γᵥ` realises
-  every `ζ ∈ μ_M`; all that is left open is that one may be chosen INSIDE
-  the inertia.
+  squares of `μ_2` are trivial). **PROVEN 2026-07-28, with NO leaves
+  left**: `exists_mem_localInertiaGroup_smul_eq_smul` below is now a
+  theorem, over `eq_one_of_smul_eq_self_of_pow_eq_uniformizer` and the
+  already-proven `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+  of `LocalInertiaFixedField.lean`.
+
+**As of 2026-07-28 this whole cluster is sorry-free**, and so is the wild
+leaf `exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self` far below. In
+every case the audit's "missing valuation on `Kᵥᵃˡᵍ`" turned out to be
+avoidable, and the replacement was the same each time: the FINITE levels
+`Kᵥ⟮x⟯` are discrete valuation rings, and every statement these leaves
+needed is a statement about ONE element, hence visible there.
 
 Note the SURJECTIVITY that is *not* needed is the one the section
 docstring already disclaims: the consumer
@@ -1027,10 +1040,22 @@ does act through the full `μ_M` on `π^{1/M}`.
 
 The check that refuted the audit is one anybody can rerun: unfold
 `localInertiaGroup` and ask whether the conclusion is about a UNIT. If it
-is, no residue field is needed. Of the three leaves the audit covered,
-only the value-group half of the wild leaf far below
-(`exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self`) genuinely wants the
-valuation as an OBJECT.
+is, no residue field is needed.
+
+**AUDIT CORRECTION, LATER THE SAME DAY.** The paragraph that stood here
+said "only the value-group half of the wild leaf far below
+(`exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self`) genuinely wants
+the valuation as an OBJECT". **That was wrong too**, and in the same way:
+what the wild leaf needs is `Γ_{Kᵥᵃˡᵍ} ⊗ ℚ = Γ_{Kᵥ} ⊗ ℚ` AT ONE ELEMENT,
+which is `exists_pow_eq_zpow_mul_isUnit` below and is proved from the DVR
+structure of the finite level `IntegralClosure 𝒪ᵥ Kᵥ⟮a⟯`. NO valuation
+on `Kᵥᵃˡᵍ` is constructed anywhere in this file.
+
+The general lesson, now confirmed on all three leaves: **"this needs the
+value group" is almost always "this needs one value", and one value is a
+finite-level fact.** Before recording a leaf as blocked on the valuation
+theory of an infinite extension, ask which single element the conclusion
+is about and pass to the field it generates.
 -/
 
 /-- **A ROOT OF UNITY OF ORDER PRIME TO THE RESIDUE CHARACTERISTIC THAT IS
@@ -1120,6 +1145,27 @@ theorem smul_eq_self_of_pow_eq_of_isUnit
     exact Ideal.mul_mem_right _ _ h3
   have hone := eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal v hn hξn hξ1
   rw [← hξw, hone, one_mul]
+
+/-- `algebraMap 𝒪ᵥ Kᵥᵃˡᵍ` is injective — it factors as the inclusion of a
+valuation subring followed by an algebraic closure. -/
+theorem algebraMap_adicCompletionIntegers_algebraicClosure_injective :
+    Function.Injective (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ) := by
+  rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+  exact (algebraMap Kᵥ Kᵥᵃˡᵍ).injective.comp (FaithfulSMul.algebraMap_injective 𝒪ᵥ Kᵥ)
+
+/-- An `M`-th root of a uniformizer is nonzero.
+
+(HOISTED 2026-07-28, together with
+`algebraMap_adicCompletionIntegers_algebraicClosure_injective` just above,
+from below `exists_localInertia_smul_eq_mul_of_pow_eq_one`: both are now
+consumed by `exists_mem_localInertiaGroup_smul_eq_smul`, which sits
+earlier in the file. Statements unchanged.) -/
+theorem root_ne_zero_of_irreducible {M : ℕ} (hM0 : M ≠ 0) {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {z : Kᵥᵃˡᵍ} (hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) : z ≠ 0 := by
+  intro h
+  rw [h, zero_pow hM0] at hz
+  exact hπ.ne_zero
+    (algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using hz.symm))
 
 /-- An `n`-th root in `Kᵥᵃˡᵍ` of an element of `𝒪ᵥ` is integral over `𝒪ᵥ`:
 it is a root of the monic `Xⁿ − a`. -/
@@ -1281,7 +1327,97 @@ theorem exists_smul_root_eq_mul_of_pow_eq_one {M : ℕ} (hM0 : M ≠ 0) {π : �
   obtain ⟨s, hs⟩ := hconj.symm.exists_algEquiv
   exact ⟨s, hs⟩
 
-/-- **LEAF (arithmetic): `Kᵥ(π^{1/M})/Kᵥ` IS TOTALLY RAMIFIED** — every
+/-- **A ROOT OF A UNIFORMIZER FIXED BY THE WHOLE INERTIA GROUP IS THE
+UNIFORMIZER ITSELF** (PROVEN 2026-07-28) — i.e. `π^{1/m} ∈ Kᵥⁿʳ` forces
+`m = 1`. This is the arithmetic core of the totally-ramified leaf below,
+and it needs NO valuation on `Kᵥᵃˡᵍ`: it is the finite-level statement
+`e(Kᵥⁿʳ ∩ Kᵥ(y) / Kᵥ) = 1` played against `y ^ m = π`.
+
+THE PROOF, in four steps.
+
+1. `y` is integral over `𝒪ᵥ` (root of the monic `X ^ m − π`) and
+   algebraic over `Kᵥ`, so `M' := Kᵥ⟮y⟯` is a FINITE subextension of
+   `Kᵥᵃˡᵍ`.
+2. `M' ≤ fixedField (localInertiaGroup v)`, because a fixed field is an
+   intermediate field and `hfix` puts the single generator `y` in it.
+3. `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+   (`LocalInertiaFixedField.lean`, PROVEN) then gives
+   `𝔪ᵥ · 𝒪_{M'} = 𝔪_{M'}`, i.e. `e(M'/Kᵥ) = 1`. Since `𝔪ᵥ = (π)` this
+   says the image `π_A` of `π` GENERATES the maximal ideal of the DVR
+   `𝒪_{M'} = IntegralClosure 𝒪ᵥ M'`.
+4. But `y` lies in that maximal ideal (its `m`-th power is `π_A`, which
+   does), so `y = π_A · c` and `π_A = π_A ^ m · c ^ m`. As `π_A ≠ 0`
+   (the maximal ideal of a DVR is nonzero) and the ring is a domain,
+   `π_A ^ (m−1) · c ^ m = 1`, making `π_A` a unit — impossible for
+   `m ≥ 2`.
+
+WHY THIS IS THE WHOLE CONTENT: the previous audit for the leaf below
+recorded it as blocked on `e(Kᵥ(μ_M)/Kᵥ) = 1` and
+`e(Kᵥ(μ_M)(z)/Kᵥ(μ_M)) = M`, "neither in the pin". Both are avoidable —
+one never needs the splitting field `Kᵥ(μ_M, z)`, only the field
+generated by the SINGLE element `y = z ^ e` cut out by the image of the
+tame character. -/
+theorem eq_one_of_smul_eq_self_of_pow_eq_uniformizer
+    {m : ℕ} (hm0 : m ≠ 0) {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {y : Kᵥᵃˡᵍ} (hy : y ^ m = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π)
+    (hfix : ∀ τ : Γᵥ, τ ∈ localInertiaGroup v → τ • y = y) : m = 1 := by
+  classical
+  have hyint : IsIntegral 𝒪ᵥ y :=
+    ⟨Polynomial.X ^ m - Polynomial.C π, Polynomial.monic_X_pow_sub_C π hm0, by simp [hy]⟩
+  have hyalg : IsIntegral Kᵥ y := Algebra.IsIntegral.isIntegral (R := Kᵥ) y
+  set M' : IntermediateField Kᵥ Kᵥᵃˡᵍ := IntermediateField.adjoin Kᵥ {y} with hM'
+  haveI : FiniteDimensional Kᵥ M' := IntermediateField.adjoin.finiteDimensional hyalg
+  have hymem : y ∈ M' := IntermediateField.mem_adjoin_simple_self Kᵥ y
+  have hle : M' ≤ IntermediateField.fixedField (localInertiaGroup v) := by
+    rw [hM']
+    apply IntermediateField.adjoin_le_iff.mpr
+    rintro x (rfl : x = y)
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    intro τ hτ
+    exact hfix τ hτ
+  have hmap := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup v M' hle
+  have hyint' : IsIntegral 𝒪ᵥ (⟨y, hymem⟩ : M') := by
+    rw [← isIntegral_algebraMap_iff (algebraMap M' Kᵥᵃˡᵍ).injective]
+    exact hyint
+  set ŷ : IntegralClosure 𝒪ᵥ (M' : Type _) := ⟨⟨y, hymem⟩, hyint'⟩ with hŷ
+  set πA : IntegralClosure 𝒪ᵥ (M' : Type _) :=
+    algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ (M' : Type _)) π with hπA
+  have hyA : ŷ ^ m = πA := by
+    apply Subtype.ext
+    apply Subtype.ext
+    show y ^ m = _
+    rw [hy, IsScalarTower.algebraMap_apply 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+    rfl
+  have hmA : IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵥ (M' : Type _)) =
+      Ideal.span {πA} := by
+    rw [← hmap, hπ.maximalIdeal_eq, Ideal.map_span, Set.image_singleton]
+  have hπAne : πA ≠ 0 := by
+    intro h
+    refine IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪ᵥ (M' : Type _)) ?_
+    rw [hmA, h]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  have hπAmem : πA ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵥ (M' : Type _)) := by
+    rw [hmA]; exact Ideal.mem_span_singleton_self _
+  have hŷmem : ŷ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵥ (M' : Type _)) :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_of_pow_mem m (by rw [hyA]; exact hπAmem)
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp (hmA ▸ hŷmem)
+  by_contra hm1
+  have hm2 : 2 ≤ m := by omega
+  have hkey : πA * (1 - πA ^ (m - 1) * c ^ m) = 0 := by
+    have h1 : πA = πA ^ m * c ^ m := by
+      rw [← mul_pow, ← hc, hyA]
+    have h2 : πA ^ m = πA * πA ^ (m - 1) := by
+      rw [← pow_succ']
+      congr 1
+      omega
+    rw [mul_sub, mul_one, ← mul_assoc, ← h2, ← h1, sub_self]
+  have hunit : IsUnit (πA ^ (m - 1)) := by
+    have h := (mul_eq_zero.mp hkey).resolve_left hπAne
+    exact IsUnit.of_mul_eq_one (c ^ m) (by linear_combination -h)
+  have hu : IsUnit πA := (isUnit_pow_iff (by omega)).mp hunit
+  exact (IsLocalRing.mem_maximalIdeal πA).mp hπAmem hu
+
+/-- **`Kᵥ(π^{1/M})/Kᵥ` IS TOTALLY RAMIFIED** (PROVEN 2026-07-28) — every
 `Γᵥ`-conjugate of an `M`-th root of a uniformizer is already an
 `I_v`-conjugate. Equivalently `Kᵥ(z) ∩ Kᵥⁿʳ = Kᵥ`, equivalently
 `I_v · Gal(Kᵥᵃˡᵍ/Kᵥ(z)) = Γᵥ`.
@@ -1315,41 +1451,84 @@ Serre, *Corps Locaux* IV §2 Prop. 8; Neukirch, *ANT* II.7.7.
   the full `μ_M · z` — so at `M > 1` it asserts the existence of `M − 1`
   genuinely nontrivial inertia elements.
 
-### THE ROUTE THAT SHOULD CLOSE THIS — mapped 2026-07-28, NOT attempted
+### PROVEN 2026-07-28 — and the route that closed it is NOT the one the
+### previous audit mapped
 
-`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
-already carries the finite-level machinery this needs, and it is the place
-to start rather than the valuation on `Kᵥᵃˡᵍ`:
+The previous docstring recorded a route through the SPLITTING field
+`N = Kᵥ(μ_M, z)` and `card_inertia_finite_level` /
+`restrictNormalHom_inertia_surjective`, blocked on two ramification
+computations `e(Kᵥ(μ_M)/Kᵥ) = 1` and `e(Kᵥ(μ_M)(z)/Kᵥ(μ_M)) = M`,
+"neither in the pin". **Both computations are avoidable**, and the
+splitting field is never needed.
 
-* `card_inertia_finite_level` : for a finite Galois `N/Kᵥ` inside `Kᵥᵃˡᵍ`,
-  `Nat.card (inertia in Gal(N/Kᵥ)) = Ideal.ramificationIdx' 𝔪ᵥ 𝔪_N`;
-* `restrictNormalHom_inertia_surjective` : `I_v` surjects onto that
-  finite-level inertia, so an element found at finite level lifts.
+THE PROOF ACTUALLY USED. Let `θ : I_v →* μ_M`, `τ ↦ τ(z)/z`, be the tame
+character (`tameCharacter` above; it is a homomorphism because inertia
+fixes `μ_M`). Put `e := |θ(I_v)|`. Two elementary facts do everything:
 
-Take `N` the splitting field of `X^M − π` (Galois: `Kᵥ` has
-characteristic zero), i.e. `N = Kᵥ(μ_M, z)`. Then
-`e(N/Kᵥ) = e(N/Kᵥ(μ_M)) = M`, because `Kᵥ(μ_M)/Kᵥ` is unramified while
-`X^M − π` stays Eisenstein over it; so the inertia of `Gal(N/Kᵥ)` has
-order exactly `M`. The map `τ ↦ τ(z)/z` from that inertia to `μ_M` is a
-homomorphism (inertia fixes `μ_M`,
-`smul_eq_self_of_pow_eq_one_algebraicClosure`) and is INJECTIVE — an
-inertia element fixing `z` fixes `μ_M` too, hence fixes `N` — so it is a
-bijection onto `μ_M` by cardinality. That is the leaf.
+* `e ∣ M`, because `θ(I_v) ≤ μ_M` and `|μ_M| ∣ M`
+  (`natCard_rootsOfUnity_dvd`);
+* `z ^ e` is fixed by ALL of `I_v`, because `θ(τ) ^ e = 1` for every `τ`
+  (Lagrange in the finite group `θ(I_v)`).
 
-WHAT IS STILL MISSING for that route, checked 2026-07-28: the two
-ramification computations `e(Kᵥ(μ_M)/Kᵥ) = 1` and `e(Kᵥ(μ_M)(z)/Kᵥ(μ_M))
-= M`. Neither is in the pin, and the second wants the Eisenstein criterion
-over the integral closure of `𝒪ᵥ` in `Kᵥ(μ_M)` — a DVR, so
-`irreducible_X_pow_sub_C_uniformizer` above generalises verbatim once `π`
-is known to remain a uniformizer there.
+So `y := z ^ e` satisfies `y ^ (M/e) = π` and is inertia-fixed, and
+`eq_one_of_smul_eq_self_of_pow_eq_uniformizer` above forces `M/e = 1`,
+i.e. `e = M`. Then `θ(I_v)` and `μ_M` are subgroups of the same finite
+group with the same cardinality, so `θ(I_v) = μ_M` and every `ζ` — in
+particular `σ(z)/z` — is realised inside the inertia.
 
-All hypotheses except `σ` are underscore-prefixed because the body is
-`sorry`. -/
+The single input from ramification theory is
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`, which was
+ALREADY PROVEN in `LocalInertiaFixedField.lean` and applied here to the
+one-generator field `Kᵥ⟮z ^ e⟯`. -/
 theorem exists_mem_localInertiaGroup_smul_eq_smul
-    {M : ℕ} (_hM : (M : 𝓞 K) ∉ v.asIdeal) {π : 𝒪ᵥ} (_hπ : Irreducible π)
-    {z : Kᵥᵃˡᵍ} (_hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) (σ : Γᵥ) :
-    ∃ τ : localInertiaGroup v, (τ : Γᵥ) • z = σ • z :=
-  sorry
+    {M : ℕ} (hM : (M : 𝓞 K) ∉ v.asIdeal) {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {z : Kᵥᵃˡᵍ} (hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) (σ : Γᵥ) :
+    ∃ τ : localInertiaGroup v, (τ : Γᵥ) • z = σ • z := by
+  have hM0 : M ≠ 0 := ne_zero_of_natCast_notMem v hM
+  haveI : NeZero M := ⟨hM0⟩
+  have hz0 : z ≠ 0 := root_ne_zero_of_irreducible v hM0 hπ hz
+  have hzM : ∀ ρ : Γᵥ, ρ • (z ^ M) = z ^ M := fun ρ => by
+    rw [hz]; exact smul_algebraMap_algebraicClosure_eq v ρ π
+  set θ := tameCharacter v hM hz0 hzM with hθ
+  set e := Nat.card θ.range with he
+  have hdvd1 : e ∣ Nat.card (rootsOfUnity M Kᵥᵃˡᵍ) := Subgroup.card_subgroup_dvd_card _
+  have hdvd2 : Nat.card (rootsOfUnity M Kᵥᵃˡᵍ) ∣ M := natCard_rootsOfUnity_dvd M
+  have hedvd : e ∣ M := hdvd1.trans hdvd2
+  -- `z ^ e` is fixed by the whole inertia group
+  have hfix : ∀ τ : Γᵥ, τ ∈ localInertiaGroup v → τ • (z ^ e) = z ^ e := by
+    intro τ hτ
+    have hone : (θ ⟨τ, hτ⟩) ^ e = 1 := by
+      have h := pow_card_eq_one' (x := (⟨θ ⟨τ, hτ⟩, ⟨⟨τ, hτ⟩, rfl⟩⟩ : θ.range))
+      exact congrArg Subtype.val h
+    have h3 : (τ • z) ^ e = z ^ e := by
+      have h := congrArg (fun u : rootsOfUnity M Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ)) hone
+      push_cast at h
+      rw [tameCharacter_apply_val, div_pow, div_eq_one_iff_eq (pow_ne_zero e hz0)] at h
+      exact h
+    rw [smul_pow_algebraicClosure, h3]
+  -- hence `M / e = 1`, i.e. the tame character is surjective
+  have hem : e * (M / e) = M := Nat.mul_div_cancel' hedvd
+  have hy : (z ^ e) ^ (M / e) = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π := by
+    rw [← pow_mul, hem, hz]
+  have hm1 : M / e = 1 :=
+    eq_one_of_smul_eq_self_of_pow_eq_uniformizer v
+      (by intro h; rw [h, mul_zero] at hem; exact hM0 hem.symm) hπ hy hfix
+  have heM : e = M := by rw [← hem, hm1, mul_one]
+  have hcardeq : Nat.card θ.range = Nat.card (rootsOfUnity M Kᵥᵃˡᵍ) :=
+    Nat.dvd_antisymm hdvd1 (by rw [← he, heM]; exact hdvd2)
+  have htop : θ.range = ⊤ := Subgroup.eq_top_of_card_eq _ hcardeq
+  -- so `σ(z)/z` is realised by an inertia element
+  have hζ0 : (σ • z) / z ≠ 0 := tameChar_ne_zero v hz0 hzM hM0 σ
+  have hζM : ((σ • z) / z) ^ M = 1 := tameChar_pow_eq_one v hz0 hzM σ
+  obtain ⟨t, ht⟩ : (⟨Units.mk0 ((σ • z) / z) hζ0,
+      (mem_rootsOfUnity' M _).mpr (by simpa using hζM)⟩ : rootsOfUnity M Kᵥᵃˡᵍ) ∈ θ.range := by
+    rw [htop]; trivial
+  refine ⟨t, ?_⟩
+  have h := congrArg (fun u : rootsOfUnity M Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ)) ht
+  rw [tameCharacter_apply_val] at h
+  simp only [Units.val_mk0] at h
+  rw [div_eq_div_iff hz0 hz0] at h
+  exact mul_right_cancel₀ hz0 h
 
 /-- **LEAF (arithmetic): THE TAME CHARACTER AT A UNIFORMIZER IS
 SURJECTIVE** — for `M` prime to the residue characteristic, `π` a
@@ -1414,21 +1593,6 @@ theorem exists_localInertia_smul_eq_mul_of_pow_eq_one
   obtain ⟨σ, hσ⟩ := exists_smul_root_eq_mul_of_pow_eq_one v hM0 hπ hz hζ
   obtain ⟨τ, hτ⟩ := exists_mem_localInertiaGroup_smul_eq_smul v hM hπ hz σ
   exact ⟨τ, by rw [hτ, hσ]⟩
-
-/-- `algebraMap 𝒪ᵥ Kᵥᵃˡᵍ` is injective — it factors as the inclusion of a
-valuation subring followed by an algebraic closure. -/
-theorem algebraMap_adicCompletionIntegers_algebraicClosure_injective :
-    Function.Injective (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ) := by
-  rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
-  exact (algebraMap Kᵥ Kᵥᵃˡᵍ).injective.comp (FaithfulSMul.algebraMap_injective 𝒪ᵥ Kᵥ)
-
-/-- An `M`-th root of a uniformizer is nonzero. -/
-theorem root_ne_zero_of_irreducible {M : ℕ} (hM0 : M ≠ 0) {π : 𝒪ᵥ} (hπ : Irreducible π)
-    {z : Kᵥᵃˡᵍ} (hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) : z ≠ 0 := by
-  intro h
-  rw [h, zero_pow hM0] at hz
-  exact hπ.ne_zero
-    (algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using hz.symm))
 
 /-- **THE ROOTS OF A UNIFORMIZER ARE COFINAL AMONG THE TAME GENERATORS**
 (PROVEN 2026-07-27 over the units leaf above): an inertia element fixing
@@ -1955,7 +2119,248 @@ theorem forall_exists_localInertia_generator_mod_pow_wildInertiaGroup :
       exact ⟨k, r', by rw [hr, hr', ← pow_mul, ← hm]⟩
     · exact exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem v hv
 
+/-!
+### THE VALUE GROUP OF `Kᵥᵃˡᵍ` — the object the wild leaf's audit called missing
+
+The wild leaf `exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self` far
+below recorded, as late as 2026-07-28, that it "genuinely wants the
+missing object: a valuation on `AlgebraicClosure (v.adicCompletion K)`
+with a computed value group", and that
+`grep -rn "DivisibleBy\|divisible" Mathlib/RingTheory/Valuation/` is
+empty. **The second half is true and the first half is a misdiagnosis**,
+in exactly the shape this file has now met three times: what the leaf
+needs is not the value group as an OBJECT, it is the single consequence
+`Γ_{Kᵥᵃˡᵍ} ⊗ ℚ = Γ_{Kᵥ} ⊗ ℚ`, and that is a statement about individual
+elements which the FINITE levels already prove.
+
+Concretely `exists_pow_eq_pow_mul_isUnit_of_isIntegral` below says: a
+nonzero integral `a` satisfies `a ^ d = π ^ n · u` with `u` a unit of
+`Oᵥ`. Its proof is three lines of DVR structure at the finite level
+`Kᵥ⟮a⟯` — `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` applied
+to `a` and to `π` against a common uniformizer of `𝒪_{Kᵥ⟮a⟯}` — and no
+valuation, no divisibility API and no henselianity appear anywhere.
+-/
+
+/-- An integer power of a unit of `Oᵥ` is again (the value of) a unit of
+`Oᵥ`: transport `U ^ m` along `Units.map (algebraMap Oᵥ Kᵥᵃˡᵍ)`. -/
+theorem exists_isUnit_zpow_integralClosure {u : Oᵥ} (hu : IsUnit u) (m : ℤ) :
+    ∃ w : Oᵥ, IsUnit w ∧ algebraMap Oᵥ Kᵥᵃˡᵍ w = (algebraMap Oᵥ Kᵥᵃˡᵍ u) ^ m := by
+  obtain ⟨U, rfl⟩ := hu
+  refine ⟨((U ^ m : Oᵥˣ) : Oᵥ), Units.isUnit _, ?_⟩
+  have h1 := map_zpow (Units.map (algebraMap Oᵥ Kᵥᵃˡᵍ : Oᵥ →* Kᵥᵃˡᵍ)) U m
+  have h2 := congrArg (fun x : Kᵥᵃˡᵍˣ => (x : Kᵥᵃˡᵍ)) h1
+  push_cast at h2
+  exact h2
+
+/-- **AN `n`-TH ROOT IN `Kᵥᵃˡᵍ` OF A UNIT OF `Oᵥ` IS A UNIT OF `Oᵥ`** —
+integrality by `IsIntegral.of_pow`, unitness by `isUnit_pow_iff`. (This
+is the "no henselianity needed" observation, in the form the wild leaf
+consumes it.) -/
+theorem exists_isUnit_of_pow_eq_isUnit_integralClosure {n : ℕ} (hn : n ≠ 0)
+    {x : Kᵥᵃˡᵍ} {u : Oᵥ} (hu : IsUnit u) (hx : x ^ n = algebraMap Oᵥ Kᵥᵃˡᵍ u) :
+    ∃ w : Oᵥ, IsUnit w ∧ algebraMap Oᵥ Kᵥᵃˡᵍ w = x := by
+  have hxint : IsIntegral 𝒪ᵥ x := by
+    refine IsIntegral.of_pow (Nat.pos_of_ne_zero hn) ?_
+    rw [hx]
+    exact u.2
+  refine ⟨⟨x, hxint⟩, ?_, rfl⟩
+  have hxu : (⟨x, hxint⟩ : Oᵥ) ^ n = u := by
+    apply Subtype.ext
+    show x ^ n = _
+    exact hx
+  exact (isUnit_pow_iff hn).mp (hxu ▸ hu)
+
+omit [NumberField K] in
+/-- **`v`-ADIC SPLITTING OF A NATURAL NUMBER**: every `n ≠ 0` factors as
+`E · F` with `E` prime to the residue characteristic and every prime
+factor of `F` lying under `v`. Strong induction through
+`exists_prime_factor_mem_asIdeal`, so the residue characteristic is never
+named.
+
+This is what lets the wild leaf below choose the exponent `E` of the TAME
+root `π^{1/E}` it corrects by: `F` collects exactly the part of `q · d`
+that a tame generator cannot see, and `q` is automatically coprime to `F`
+because `q` is prime to the residue characteristic. -/
+theorem exists_mul_eq_of_natCast_notMem_asIdeal : ∀ n : ℕ, n ≠ 0 →
+    ∃ E F : ℕ, n = E * F ∧ (E : 𝓞 K) ∉ v.asIdeal ∧
+      ∀ p : ℕ, p.Prime → p ∣ F → (p : 𝓞 K) ∈ v.asIdeal := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn
+    by_cases h : (n : 𝓞 K) ∈ v.asIdeal
+    · obtain ⟨p, hp, ⟨m, hm⟩, hpv⟩ := exists_prime_factor_mem_asIdeal v n hn h
+      have hm0 : m ≠ 0 := by rintro rfl; rw [mul_zero] at hm; exact hn hm
+      have hmlt : m < n := by
+        rw [hm]
+        exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hp.one_lt
+      obtain ⟨E, F, hEF, hE, hF⟩ := ih m hmlt hm0
+      refine ⟨E, p * F, by rw [hm, hEF]; ring, hE, ?_⟩
+      intro r hr hrd
+      rcases (Nat.Prime.dvd_mul hr).mp hrd with h1 | h1
+      · rw [Nat.prime_dvd_prime_iff_eq hr hp] at h1
+        subst h1
+        exact hpv
+      · exact hF r hr h1
+    · exact ⟨n, 1, (mul_one n).symm, h, fun p hp hpd =>
+        absurd (Nat.eq_one_of_dvd_one hpd) hp.ne_one⟩
+
+/-- **THE VALUE GROUP OF `Kᵥᵃˡᵍ` IS RATIONAL OVER THAT OF `Kᵥ`, integral
+case** (PROVEN 2026-07-28): a nonzero `a` integral over `𝒪ᵥ` satisfies
+`a ^ d = π ^ n · u` for some `d ≠ 0`, `n : ℕ` and a UNIT `u` of `Oᵥ`.
+
+THE PROOF is entirely at the finite level `M' := Kᵥ⟮a⟯`, whose integral
+closure `A := IntegralClosure 𝒪ᵥ M'` is a DVR
+(`isDiscreteValuationRing_integralClosure`). Pick a uniformizer `ϖ` of
+`A`. Then `π_A = u₁ · ϖ ^ E` with `E ≠ 0` (`π_A` is a nonzero nonunit,
+because `𝔪_A` lies over `𝔪ᵥ`) and `a_A = u₂ · ϖ ^ N`, so
+
+  `a_A ^ E = u₂ ^ E · ϖ ^ (N E) = π_A ^ N · (u₂ ^ E · u₁⁻¹ ^ N)`,
+
+and `integralClosureInclusion` carries the identity into `Kᵥᵃˡᵍ`. No
+valuation on `Kᵥᵃˡᵍ` is constructed at any point. -/
+theorem exists_pow_eq_pow_mul_isUnit_of_isIntegral {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {a : Kᵥᵃˡᵍ} (ha : a ≠ 0) (haint : IsIntegral 𝒪ᵥ a) :
+    ∃ (d n : ℕ) (u : Oᵥ), d ≠ 0 ∧ IsUnit u ∧
+      a ^ d = (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) ^ n * algebraMap Oᵥ Kᵥᵃˡᵍ u := by
+  classical
+  have haalg : IsIntegral Kᵥ a := Algebra.IsIntegral.isIntegral (R := Kᵥ) a
+  set M' : IntermediateField Kᵥ Kᵥᵃˡᵍ := IntermediateField.adjoin Kᵥ {a} with hM'
+  haveI : FiniteDimensional Kᵥ M' := IntermediateField.adjoin.finiteDimensional haalg
+  have hamem : a ∈ M' := IntermediateField.mem_adjoin_simple_self Kᵥ a
+  have haint' : IsIntegral 𝒪ᵥ (⟨a, hamem⟩ : M') := by
+    rw [← isIntegral_algebraMap_iff (algebraMap M' Kᵥᵃˡᵍ).injective]
+    exact haint
+  set â : IntegralClosure 𝒪ᵥ (M' : Type _) := ⟨⟨a, hamem⟩, haint'⟩ with hâ
+  set πA : IntegralClosure 𝒪ᵥ (M' : Type _) :=
+    algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ (M' : Type _)) π with hπA
+  have hφa : algebraMap Oᵥ Kᵥᵃˡᵍ (integralClosureInclusion v M' â) = a := rfl
+  have hφπ : integralClosureInclusion v M' πA = algebraMap 𝒪ᵥ Oᵥ π := by
+    apply Subtype.ext
+    show algebraMap M' Kᵥᵃˡᵍ (algebraMap 𝒪ᵥ (M' : Type _) π) = _
+    rw [← IsScalarTower.algebraMap_apply]
+    show algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π = _
+    rw [IsScalarTower.algebraMap_apply 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+    rfl
+  have hπAne : πA ≠ 0 := by
+    intro h
+    have h1 : algebraMap 𝒪ᵥ Oᵥ π = 0 := by rw [← hφπ, h, map_zero]
+    have h2 : algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π = 0 := by
+      rw [IsScalarTower.algebraMap_apply 𝒪ᵥ Oᵥ Kᵥᵃˡᵍ, h1, map_zero]
+    exact hπ.ne_zero (algebraMap_adicCompletionIntegers_algebraicClosure_injective v
+      (by simpa using h2))
+  have hπAnu : ¬ IsUnit πA := by
+    have hlies : IsLocalRing.maximalIdeal 𝒪ᵥ =
+        Ideal.comap (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ (M' : Type _)))
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵥ (M' : Type _))) :=
+      Ideal.LiesOver.over
+    have hmem : π ∈ IsLocalRing.maximalIdeal 𝒪ᵥ := by
+      rw [hπ.maximalIdeal_eq]; exact Ideal.mem_span_singleton_self π
+    rw [hlies, Ideal.mem_comap] at hmem
+    exact (IsLocalRing.mem_maximalIdeal _).mp hmem
+  have hâne : â ≠ 0 := by
+    intro h
+    apply ha
+    rw [← hφa, h, map_zero, map_zero]
+  obtain ⟨ϖ, hϖ⟩ :=
+    IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪ᵥ (M' : Type _))
+  obtain ⟨E, u₁, hE⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hπAne hϖ
+  obtain ⟨N, u₂, hN⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hâne hϖ
+  have hE0 : E ≠ 0 := by
+    rintro rfl
+    rw [pow_zero, mul_one] at hE
+    exact hπAnu (hE ▸ u₁.isUnit)
+  have hkey : ∃ V : IntegralClosure 𝒪ᵥ (M' : Type _), IsUnit V ∧ â ^ E = πA ^ N * V := by
+    refine ⟨((u₂ ^ E * u₁⁻¹ ^ N : (IntegralClosure 𝒪ᵥ (M' : Type _))ˣ) :
+      IntegralClosure 𝒪ᵥ (M' : Type _)), Units.isUnit _, ?_⟩
+    have hu1 : (u₁ : IntegralClosure 𝒪ᵥ (M' : Type _)) *
+        ((u₁⁻¹ : (IntegralClosure 𝒪ᵥ (M' : Type _))ˣ) :
+          IntegralClosure 𝒪ᵥ (M' : Type _)) = 1 := u₁.mul_inv
+    push_cast
+    rw [hE, hN, mul_pow, mul_pow, ← pow_mul, ← pow_mul, mul_comm N E]
+    have hrw : ((u₁ : IntegralClosure 𝒪ᵥ (M' : Type _)) ^ N * ϖ ^ (E * N)) *
+        ((u₂ : IntegralClosure 𝒪ᵥ (M' : Type _)) ^ E *
+          ((u₁⁻¹ : (IntegralClosure 𝒪ᵥ (M' : Type _))ˣ) :
+            IntegralClosure 𝒪ᵥ (M' : Type _)) ^ N)
+        = ((u₁ : IntegralClosure 𝒪ᵥ (M' : Type _)) *
+            ((u₁⁻¹ : (IntegralClosure 𝒪ᵥ (M' : Type _))ˣ) :
+              IntegralClosure 𝒪ᵥ (M' : Type _))) ^ N *
+          (ϖ ^ (E * N) * (u₂ : IntegralClosure 𝒪ᵥ (M' : Type _)) ^ E) := by
+      rw [mul_pow]; ring
+    rw [hrw, hu1, one_pow, one_mul, mul_comm]
+  obtain ⟨V, hVunit, hV⟩ := hkey
+  refine ⟨E, N, integralClosureInclusion v M' V, hE0, hVunit.map _, ?_⟩
+  have h : algebraMap Oᵥ Kᵥᵃˡᵍ (integralClosureInclusion v M' (â ^ E))
+      = algebraMap Oᵥ Kᵥᵃˡᵍ (integralClosureInclusion v M' (πA ^ N * V)) := by rw [hV]
+  rw [map_pow, map_pow, map_mul, map_mul, map_pow, map_pow, hφa, hφπ,
+    ← IsScalarTower.algebraMap_apply] at h
+  exact h
+
+/-- `Oᵥ` is a valuation ring: every element of `Kᵥᵃˡᵍ`, or else its
+inverse, is integral over `𝒪ᵥ`. This is `localValuationSubring`
+(`AbsoluteGaloisGroup.lean`) read through the definitional identity of
+its carrier with the integral closure. -/
+theorem isIntegral_or_isIntegral_inv_algebraicClosure (a : Kᵥᵃˡᵍ) :
+    IsIntegral 𝒪ᵥ a ∨ IsIntegral 𝒪ᵥ a⁻¹ :=
+  (localValuationSubring v).mem_or_inv_mem a
+
+/-- **THE VALUE GROUP OF `Kᵥᵃˡᵍ` IS RATIONAL OVER THAT OF `Kᵥ`** — the
+statement of `exists_pow_eq_pow_mul_isUnit_of_isIntegral` for an
+arbitrary nonzero `a`, with `k : ℤ`. The non-integral case is the
+integral one applied to `a⁻¹`. -/
+theorem exists_pow_eq_zpow_mul_isUnit {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {a : Kᵥᵃˡᵍ} (ha : a ≠ 0) :
+    ∃ (d : ℕ) (k : ℤ) (u : Oᵥ), d ≠ 0 ∧ IsUnit u ∧
+      a ^ (d : ℤ) = (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) ^ k * algebraMap Oᵥ Kᵥᵃˡᵍ u := by
+  rcases isIntegral_or_isIntegral_inv_algebraicClosure v a with h | h
+  · obtain ⟨d, n, u, hd, hu, heq⟩ := exists_pow_eq_pow_mul_isUnit_of_isIntegral v hπ ha h
+    exact ⟨d, (n : ℤ), u, hd, hu, by rw [zpow_natCast, heq, zpow_natCast]⟩
+  · have ha' : a⁻¹ ≠ 0 := inv_ne_zero ha
+    obtain ⟨d, n, u, hd, hu, heq⟩ := exists_pow_eq_pow_mul_isUnit_of_isIntegral v hπ ha' h
+    obtain ⟨u', hu', hu'val⟩ := exists_isUnit_zpow_integralClosure v hu (-1)
+    refine ⟨d, -(n : ℤ), u', hd, hu', ?_⟩
+    have h1 : a ^ (d : ℤ) = ((a⁻¹) ^ d)⁻¹ := by rw [inv_pow, inv_inv, zpow_natCast]
+    rw [hu'val, h1, heq, mul_inv, zpow_neg, zpow_natCast, zpow_neg_one]
+
 end TameProcyclic
+
+/-- The exponent bookkeeping of the `q`-divisibility construction of
+`exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self` below, isolated as a
+pure identity in a field so that no arithmetic hides inside that proof.
+
+With `A ^ d = P ^ k · U`, `W ^ E = P`, Bézout `1 = q α + F β` and
+`q d = E F`, the correction `c := A ^ α · W ^ (k β)` satisfies
+`(A · c ^ (−q)) ^ (d E) = U ^ (E F β)` — the exponents of `P` cancel
+EXACTLY, which is the whole reason `A / c ^ q` is a unit. -/
+theorem zpow_bezout_correction_eq {G : Type*} [Field G] {A W P U : G}
+    (hA : A ≠ 0) (hP : P ≠ 0)
+    {d E F q : ℕ} {k α β : ℤ}
+    (hd : A ^ (d : ℤ) = P ^ k * U) (hw : W ^ (E : ℤ) = P)
+    (hbez : (1 : ℤ) = q * α + F * β) (hEF : (q : ℤ) * d = (E : ℤ) * F) :
+    (A * (A ^ α * W ^ (k * β)) ^ (-(q : ℤ))) ^ ((d * E : ℕ) : ℤ)
+      = U ^ ((E : ℤ) * F * β) := by
+  have h1 : A * (A ^ α * W ^ (k * β)) ^ (-(q : ℤ))
+      = A ^ ((F : ℤ) * β) * W ^ (-((q : ℤ) * k * β)) := by
+    rw [mul_zpow, ← zpow_mul, ← zpow_mul, ← mul_assoc, ← zpow_one_add₀ hA]
+    congr 1
+    · congr 1; linarith
+    · congr 1; ring
+  have h2 : (A ^ ((F : ℤ) * β) * W ^ (-((q : ℤ) * k * β))) ^ ((d * E : ℕ) : ℤ)
+      = (A ^ (d : ℤ)) ^ ((E : ℤ) * F * β) * (W ^ (E : ℤ)) ^ (-((q : ℤ) * d * k * β)) := by
+    rw [mul_zpow, ← zpow_mul, ← zpow_mul, ← zpow_mul, ← zpow_mul]
+    push_cast
+    congr 1
+    · congr 1; ring
+    · congr 1; ring
+  have h3 : -((q : ℤ) * d * k * β) = -(k * ((E : ℤ) * F * β)) := by
+    have h : (q : ℤ) * d * k * β = ((q : ℤ) * d) * (k * β) := by ring
+    rw [h, hEF]
+    ring
+  have hcancel : ∀ (x y : G) (n : ℤ), x ≠ 0 → (x ^ n * y) * x ^ (-n) = y := by
+    intro x y n hx
+    rw [mul_comm (x ^ n) y, mul_assoc, ← zpow_add₀ hx, add_neg_cancel, zpow_zero, mul_one]
+  rw [h1, h2, hd, hw, h3, mul_zpow, ← zpow_mul]
+  exact hcancel P (U ^ ((E : ℤ) * F * β)) (k * ((E : ℤ) * F * β)) hP
 
 /-- **THE TAME QUOTIENT IS PROCYCLIC, in the form an abstract finite
 quotient needs it: modulo `n`-th powers and wild inertia, local inertia
@@ -2347,8 +2752,8 @@ theorem smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup
   rw [IntegralClosure.coe_smul] at h2
   exact h2
 
-/-- **LEAF (arithmetic): THE VALUE GROUP OF THE FIXED FIELD OF `σ` IS
-`q`-DIVISIBLE** — CUT 2026-07-28 out of
+/-- **THE VALUE GROUP OF THE FIXED FIELD OF `σ` IS `q`-DIVISIBLE**
+(PROVEN 2026-07-28) — CUT 2026-07-28 out of
 `exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup` below, which is
 now PROVEN from it. It is the FIRST of the two bullets that leaf's route
 records ("THE VALUE GROUP"); the second ("THE UNITS") is discharged by
@@ -2383,33 +2788,119 @@ of value `γ`. Then `u := a / c^q` has value `1`, i.e. is a unit of `Oᵥ`.
 * It is NOT vacuous: `c := 1` discharges it only when `a` is itself a
   unit, and the conclusion pins `a` on the nose as `c^q` times a unit.
 
-### WHAT IS MISSING FROM THE PIN — checked 2026-07-28
+### PROVEN 2026-07-28 — the "missing valuation on `Kᵥᵃˡᵍ`" was a MISDIAGNOSIS
 
-This is the ONE leaf of this file's tame-inertia cluster that genuinely
-wants the missing object: a valuation on
-`AlgebraicClosure (v.adicCompletion K)` with a computed value group. The
-project's `localValuationSubring`
-(`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`)
-is the natural carrier — it is already a `ValuationSubring (Kᵥᵃˡᵍ)`, built
-from the spectral norm — and what is absent is its value group, together
-with a divisible-value-group API (`grep -rn "DivisibleBy\|divisible"
-Mathlib/RingTheory/Valuation/` is EMPTY).
+The previous docstring recorded this as "the ONE leaf of this file's
+tame-inertia cluster that genuinely wants the missing object: a valuation
+on `AlgebraicClosure (v.adicCompletion K)` with a computed value group",
+adding that `grep -rn "DivisibleBy\|divisible"
+Mathlib/RingTheory/Valuation/` is EMPTY. The grep is still empty and
+**no valuation and no divisibility API were needed**, because the leaf
+does not ask for the value group as an OBJECT — it asks for one
+consequence, at ONE element, and that is a finite-level fact.
 
-Every hypothesis is underscore-prefixed because the body is `sorry`. -/
+THE PROOF, in four moves.
+
+1. `exists_pow_eq_zpow_mul_isUnit` (above, PROVEN from the DVR structure
+   of `IntegralClosure 𝒪ᵥ Kᵥ⟮a⟯`) writes `a ^ d = π ^ k · u₀` with `u₀` a
+   unit of `Oᵥ` — this is `Γ_{Kᵥᵃˡᵍ} ⊗ ℚ = Γ_{Kᵥ} ⊗ ℚ` at the single
+   element `a`.
+2. `exists_mul_eq_of_natCast_notMem_asIdeal` splits `q · d = E · F` with
+   `E` prime to the residue characteristic; `q` is then automatically
+   coprime to `F`, so Bézout gives `1 = q α + F β`.
+3. `w := π ^ {1/E}` exists in `Kᵥᵃˡᵍ` and is FIXED by `σ` — this is
+   precisely the defining condition of `tameFixingSubgroup`, and it is
+   the only place wildness is used.
+4. Put `c := a ^ α · w ^ (k β)`. Then `σ • c = c`, and
+   `zpow_bezout_correction_eq` shows `(a · c ^ (−q)) ^ (d E) = u₀ ^ (E F β)`
+   — the exponents of `π` cancel exactly — so `a / c ^ q` is an `(dE)`-th
+   root of a unit, hence itself a unit of `Oᵥ`
+   (`exists_isUnit_of_pow_eq_isUnit_integralClosure`).
+
+The classical argument really does go through the value group of the
+fixed field of `σ` and its `q`-divisibility; what this proof shows is
+that the value group never has to be CONSTRUCTED, only its one
+consequence exhibited by an explicit witness. -/
 theorem exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
-    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∉ v.asIdeal)
+    {q : ℕ} (hq : q.Prime) (hqv : (q : 𝓞 K) ∉ v.asIdeal)
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
-    (_hσ : σ ∈ wildInertiaGroup v)
-    {a : AlgebraicClosure (v.adicCompletion K)} (_ha : a ≠ 0) (_hfix : σ a = a) :
+    (hσ : σ ∈ wildInertiaGroup v)
+    {a : AlgebraicClosure (v.adicCompletion K)} (ha : a ≠ 0) (hfix : σ a = a) :
     ∃ (c : AlgebraicClosure (v.adicCompletion K))
       (u : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
         (AlgebraicClosure (v.adicCompletion K))),
-      σ • c = c ∧ IsUnit u ∧ a = c ^ q * u.1 :=
-  sorry
+      σ • c = c ∧ IsUnit u ∧ a = c ^ q * u.1 := by
+  classical
+  have hq0 : q ≠ 0 := hq.ne_zero
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  have hP0 : algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) π ≠ 0 := fun h =>
+    hπ.ne_zero (algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using h))
+  obtain ⟨d, k, u₀, hd0, hu₀, hkey⟩ := exists_pow_eq_zpow_mul_isUnit v hπ ha
+  obtain ⟨E, F, hEF, hE, hFp⟩ :=
+    exists_mul_eq_of_natCast_notMem_asIdeal v (q * d) (Nat.mul_ne_zero hq0 hd0)
+  have hE0 : E ≠ 0 := ne_zero_of_natCast_notMem v hE
+  have hcop : Nat.Coprime q F :=
+    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqv (hFp q hq hdvd)
+  have hbez : (1 : ℤ) = (q : ℤ) * Nat.gcdA q F + (F : ℤ) * Nat.gcdB q F := by
+    have h := Nat.gcd_eq_gcd_ab q F
+    rw [hcop] at h
+    exact_mod_cast h
+  -- an `E`-th root of the uniformizer; `σ` fixes it because `σ` is WILD
+  obtain ⟨w, hw⟩ := IsAlgClosed.exists_pow_nat_eq
+    (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) π) (Nat.pos_of_ne_zero hE0)
+  have hw0 : w ≠ 0 := by
+    intro h
+    rw [h, zero_pow hE0] at hw
+    exact hP0 hw.symm
+  have hwint : w ∈ integralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) :=
+    mem_integralClosure_of_pow_eq_algebraMap v hE0 hw
+  have hwfix : σ • w = w := by
+    have hWq : (⟨w, hwint⟩ : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) ^ E =
+        algebraMap _ _ π := by
+      apply Subtype.ext
+      show w ^ E = _
+      rw [hw]
+      rfl
+    have h1 := hσ.2 E hE ⟨w, hwint⟩ ⟨π, hWq⟩
+    have h2 := congrArg Subtype.val h1
+    rwa [IntegralClosure.coe_smul] at h2
+  refine ⟨a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F), ?_⟩
+  have hc0 : a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F) ≠ 0 :=
+    mul_ne_zero (zpow_ne_zero _ ha) (zpow_ne_zero _ hw0)
+  have hUz := zpow_bezout_correction_eq (A := a) (W := w)
+    (P := algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) π)
+    (U := algebraMap _ (AlgebraicClosure (v.adicCompletion K)) u₀) ha hP0
+    (d := d) (E := E) (F := F) (q := q) (k := k)
+    (α := Nat.gcdA q F) (β := Nat.gcdB q F) hkey (by rw [zpow_natCast]; exact hw)
+    hbez (by exact_mod_cast congrArg (Nat.cast : ℕ → ℤ) hEF)
+  obtain ⟨u₁, hu₁, hu₁val⟩ :=
+    exists_isUnit_zpow_integralClosure v hu₀ ((E : ℤ) * F * Nat.gcdB q F)
+  have hUpow : (a * (a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F)) ^ (-(q : ℤ))) ^ (d * E)
+      = algebraMap _ (AlgebraicClosure (v.adicCompletion K)) u₁ := by
+    rw [hu₁val, ← hUz, zpow_natCast]
+  obtain ⟨u, hu, huval⟩ := exists_isUnit_of_pow_eq_isUnit_integralClosure v
+    (Nat.mul_ne_zero hd0 hE0) hu₁ hUpow
+  refine ⟨u, ?_, hu, ?_⟩
+  · show σ (a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F)) = _
+    rw [map_mul, map_zpow₀, map_zpow₀, hfix]
+    congr 1
+    exact congrArg (fun x => x ^ (k * Nat.gcdB q F)) hwfix
+  · have h1 : u.1 = a * (a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F)) ^ (-(q : ℤ)) := huval
+    rw [h1, ← zpow_natCast (a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F)) q,
+      ← mul_assoc, mul_comm ((a ^ (Nat.gcdA q F) * w ^ (k * Nat.gcdB q F)) ^ (q : ℤ)) a,
+      mul_assoc, ← zpow_add₀ hc0, add_neg_cancel, zpow_zero, mul_one]
 
 /-- **`q`-DIVISIBILITY OF THE FIXED FIELD OF AN ELEMENT OF THE WILD
-INERTIA** (SORRY LEAF; CUT 2026-07-27 out of
+INERTIA** (PROVEN; CUT 2026-07-27 out of
 `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` below, which is now
 PROVEN from it). This is step 2 — and ONLY step 2 — of the Kummer route
 that leaf's previous docstring recorded. Steps 1 and 3 are discharged
@@ -2473,27 +2964,30 @@ group of the fixed field of `σ` is `q`-divisible — isolated as
 `exists_smul_eq_self_mul_pow_isUnit_of_smul_eq_self` immediately below,
 from which this theorem is PROVEN.
 
-### WHAT IS MISSING FROM THE PIN — checked 2026-07-28, still accurate
+### 2026-07-28, LATER: THE VALUE-GROUP LEAF IS ALSO CLOSED
 
-Only for the value-group leaf, and it is genuinely the valuation theory of
-`Kᵥᵃˡᵍ`:
+The previous version of this section recorded the value-group leaf as
+blocked on genuine missing theory: "nothing in the pin puts a valuation
+on `AlgebraicClosure (v.adicCompletion K)` … and nothing computes its
+value group", plus the empty
+`grep -rn "DivisibleBy\|divisible" Mathlib/RingTheory/Valuation/`. It
+even named the check that would refute it — "find a computation of the
+value group of `localValuationSubring`, or of `spectralNorm Kᵥ Kᵥᵃˡᵍ`'s
+image".
 
-* nothing in the pin puts a valuation on
-  `AlgebraicClosure (v.adicCompletion K)` beyond
-  `Mathlib/Analysis/Normed/Unbundled/SpectralNorm.lean` (already in this
-  file's import cone), and nothing computes its value group;
-* `grep -rn "DivisibleBy\|divisible" Mathlib/RingTheory/Valuation/` is
-  EMPTY — there is no divisible-value-group API at all.
+**Neither computation was needed, and the leaf is now PROVEN.** The
+refutation was not a computation of the value group but the observation
+that the leaf never quantifies over it: it is a statement about the ONE
+element `a`, and at one element the assertion `d · val a ∈ Γ_{Kᵥ}` is
+just the DVR structure of `IntegralClosure 𝒪ᵥ Kᵥ⟮a⟯`
+(`exists_pow_eq_pow_mul_isUnit_of_isIntegral`, in the `TameProcyclic`
+section above). Both grep-based bullets above remain literally true of
+the pin; they were simply not obstructions.
 
-The third bullet the previous version listed — "`Henselian.lean` has
+The third bullet an earlier version listed — "`Henselian.lean` has
 henselian LOCAL RINGS but not: an algebraic extension of a henselian
-valued field is henselian" — is **withdrawn**: it was needed only for the
-units half, which no longer goes through henselianity.
-
-THE CHECK THAT WOULD REFUTE THE REMAINDER: find a computation of the value
-group of `localValuationSubring`
-(`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`),
-or of `spectralNorm Kᵥ Kᵥᵃˡᵍ`'s image. -/
+valued field is henselian" — was already withdrawn for the units half,
+and is not needed for the value-group half either. -/
 theorem exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
     {q : ℕ} (hq : q.Prime) (hqv : (q : 𝓞 K) ∉ v.asIdeal)
