@@ -21995,6 +21995,31 @@ fails for `J = Spec ℚ` over `Spec ℚ`, which is smooth of relative
 dimension `0` — so the conclusion really constrains the Jacobian, and this
 leaf really consumes `hg`.
 
+**`N = 0` LEAKS THROUGH `hg`, AND THIS LEAF IS STILL SOUND — but NOT by
+the argument above** (sweep of 2026-07-28; see the VALIDITY RANGE note on
+`Fermat.x0Genus`).  `Fermat.x0Genus 0 = 1` by `decide`, so `hg` is
+SATISFIED at `N = 0`.  The "load-bearing in both directions" paragraph
+above ranges over `x0Genus N = 0` and `x0Genus N ≥ 2` and never mentions
+this, and the sentence "`hmodel` makes every fibre of `strX` the
+`X_0(N)` of its residue field" is FALSE there.  Being base-general, this
+statement cannot invoke `Fermat.pos_of_isX0Compactification`, which is
+`SpecQ`-only on purpose (it is false over an empty base).
+
+It survives by the same degeneracy that closes its analogue
+`Fermat.hasNoFibreAffineLine_of_one_le_x0Genus`, whose docstring records
+the two compiler-verified steps: `IsCoarseModuliY0 0` forces `Y = ∅`
+over any base, so `hmodel.finite_compl` makes the whole SPACE of `X`
+finite.  A nonempty finite `X` then contradicts `hmodel.smooth` plus
+`hmodel.isProper` over a nonempty base (the fibre would be a nonempty
+smooth proper curve over a field, hence infinite); and an empty `X`
+forces `S = ∅` through `o : RelPoint strX (𝟙 S)`, whence `J = ∅` too and
+the conclusion is `hmodel.smooth` transported along `X ≅ J ≅ ∅`.
+
+**Do NOT repair this by adding `0 < N`** — the statement is true as
+stated and the hypothesis would have to propagate through
+`isIso_ajHom_of_x0Genus_eq_one`, which is base-general as well.  Only the
+recorded ARGUMENT needed the extra branch.
+
 IRREDUCIBLE at this pin along the axis searched (the identification of
 `x0Genus N` with an invariant of the scheme `X`): that needs a genus,
 `h¹(𝒪_X)`, or Riemann–Roch, none of which exists in `Mathlib`, in
