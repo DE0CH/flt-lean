@@ -20,12 +20,16 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- the tame-plus-wild assembly turning a uniform per-prime different-exponent
 -- bound into a bound on the discriminant exponent. This is the ONE project
 -- dependency of the different-ideal development below.
--- CIRCULARITY GUARD (verified by import-closure computation, not inspection,
--- 2026-07-26): `ModThree.lean`'s 54-module project closure contains neither
--- `HardlyRamified/Deformation.lean` — which imports THIS module — nor
--- `Lift.lean`, `Family.lean`, nor anything under `Modularity/`. So this
--- import cannot close the forbidden Khare–Wintenberger cycle.
-public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
+-- REPOINTED 2026-07-28 (release-15 integration): this was
+-- `public import …HardlyRamified.ModThree`, for exactly two names —
+-- `discr_factorization_le_of_forall_differentIdeal_pow_dvd` and
+-- `not_pow_ramificationIdx_dvd_differentIdeal`.  Both now live in the
+-- Mathlib-only shim below, so the 66 000-line `ModThree` (~680 s of
+-- single-threaded elaboration, the most expensive module in the tree) is no
+-- longer on this module's critical path.  The old CIRCULARITY GUARD note is
+-- moot and stronger than it needs to be: this shim's import cone is `Mathlib`
+-- only, so no project cycle is expressible through it.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.DifferentIdeal
 -- Hermite's theorem `NumberField.finite_of_discr_bdd`.
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- `NumberField.not_dvd_discr_iff_forall_mem`.
