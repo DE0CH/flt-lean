@@ -150,6 +150,14 @@ public import Mathlib.RingTheory.Polynomial.GaussLemma
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.RingTheory.Valuation.LocalSubring
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+-- The two below are what the DVR / finite-dimensionality upgrade of `TameBase`
+-- consumes: `IsDiscreteValuationRing.ofHasUnitMulPowIrreducibleFactorization` and
+-- `Module.Finite`/`FiniteDimensional`. Both were already in this file's cone
+-- transitively, but they are named explicitly because `TameBase` now RECORDS
+-- `IsDiscreteValuationRing A` and `FiniteDimensional ℚ L` in its signature, and a
+-- signature-position use may not survive a merely transitive (non-`public`) route.
+public import Mathlib.RingTheory.DiscreteValuationRing.Basic
+public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 
 @[expose] public section
 
@@ -526,8 +534,16 @@ structure TameGoodModel (E : WeierstrassCurve ℚ) (ℓ : ℕ) [Fact ℓ.Prime] 
   [instField : Field L]
   [instDec : DecidableEq L]
   [instAlgebra : Algebra ℚ L]
+  /-- **`L` is a number field.** Threaded through from `TameBase.instFinDim` (2026-07-28).
+  Its absence is what previously stopped a `TameGoodModel` from being transported into
+  `PotentiallyGoodModel` — see that structure's docstring in
+  `FreyCurve/MazurTorsion.lean`. -/
+  [instFinDim : FiniteDimensional ℚ L]
   /-- The valuation subring of `L` above `ℓ`. -/
   A : ValuationSubring L
+  /-- **`A` is a discrete valuation ring.** Threaded through from `TameBase.instDVR`
+  (2026-07-28); mathlib's `HasGoodReduction` cannot even state `IsMinimal` without it. -/
+  [instDVR : IsDiscreteValuationRing A]
   /-- Its residue map. Landing in `ZMod ℓ` rather than an extension of it is
   where TOTAL RAMIFICATION is encoded. -/
   res : A →+* ZMod ℓ
@@ -550,7 +566,8 @@ structure TameGoodModel (E : WeierstrassCurve ℚ) (ℓ : ℕ) [Fact ℓ.Prime] 
   emb_injective : Function.Injective emb
 
 attribute [instance] TameGoodModel.instField TameGoodModel.instDec
-  TameGoodModel.instAlgebra TameGoodModel.instLocal
+  TameGoodModel.instAlgebra TameGoodModel.instFinDim TameGoodModel.instDVR
+  TameGoodModel.instLocal
 
 /-- **A tamely totally ramified base for `ℓ`** (interface opened 2026-07-27 while
 decomposing `exists_tameGoodModel_of_jIntegral`): a field `L ⊇ ℚ` carrying a
@@ -582,8 +599,19 @@ structure TameBase (ℓ : ℕ) [Fact ℓ.Prime] where
   [instField : Field L]
   [instDec : DecidableEq L]
   [instAlgebra : Algebra ℚ L]
+  /-- **`L` is a number field.** Recorded here since 2026-07-28: `PotentiallyGoodModel`
+  (`FreyCurve/MazurTorsion.lean`) needs it, it costs its only producer nothing
+  (`TameBaseAux.instFiniteDimensional`), and without it no consumer can recover it from
+  a bare `Field L`. -/
+  [instFinDim : FiniteDimensional ℚ L]
   /-- The valuation subring above `ℓ`. -/
   A : ValuationSubring L
+  /-- **`A` is a discrete valuation ring.** Recorded here since 2026-07-28, for the same
+  reason as `instFinDim`: mathlib's `HasGoodReduction` and
+  `torsion_unramified_of_good_reduction` are stated over a DVR, Chevalley extension gives
+  only a `ValuationSubring`, and the upgrade
+  (`TameBaseAux.instIsDiscreteValuationRingTameSubring`) is free at the only producer. -/
+  [instDVR : IsDiscreteValuationRing A]
   /-- Its residue map. Landing in `ZMod ℓ` is where residue degree `1` is encoded. -/
   res : A →+* ZMod ℓ
   [instLocal : IsLocalHom res]
@@ -599,7 +627,7 @@ structure TameBase (ℓ : ℕ) [Fact ℓ.Prime] where
     (π ^ m * algebraMap ℚ L q ∈ A ↔ 0 ≤ m + 12 * padicValRat ℓ q)
 
 attribute [instance] TameBase.instField TameBase.instDec TameBase.instAlgebra
-  TameBase.instLocal
+  TameBase.instFinDim TameBase.instDVR TameBase.instLocal
 
 /-! ### Constructing `ℚ(ℓ^{1/12})` — the number-theoretic half
 
@@ -1193,6 +1221,204 @@ theorem exists_tameResidueHom : ∃ res : tameSubring ℓ →+* ZMod ℓ, IsLoca
   rw [RingHom.comp_apply, h0, map_zero] at ha
   exact not_isUnit_zero ha
 
+/-! ### The tame valuation subring is a DVR, and `L` is a finite extension of `ℚ`
+
+RELOCATED HERE 2026-07-28 from `Fermat/FLT/FreyCurve/MazurTorsion.lean`, where it
+was proven on 2026-07-27. Nothing about the mathematics changed; what changed is
+that `TameBase` now RECORDS both facts as fields, and a field of a structure
+declared in this module has to be dischargeable in this module. The declarations
+below were the only obstacle: they were `TameBaseAux` lemmas living downstream of
+the namespace they belong to, purely because that is where their author happened
+to be working.
+
+`PotentiallyGoodModel` (`MazurTorsion.lean`) asks for a DISCRETE valuation ring,
+because that is what mathlib's `HasGoodReduction` — and the already-proven
+`torsion_unramified_of_good_reduction` that the Galois half consumes — is stated
+over. `tameSubring ℓ` is built by Chevalley extension above, and Chevalley says
+nothing about discreteness. The five declarations below upgrade it, using the SAME
+power-basis input that `exists_tameResidueHom` uses: `exists_repr` writes every
+`x : L` as `∑_{i<12} c i · π^i`, and the twelve exponents `12·v_ℓ(c i) + i` are
+pairwise distinct mod `12`, so `Valuation.map_sum_eq_of_lt` computes `v x` exactly
+and the value group is generated by `v(π)`. -/
+
+/-- **Every nonzero element of `L = ℚ(ℓ^{1/12})` has valuation an integer power of
+`v(π)`** (PROVEN 2026-07-27). This is `padicValRat_coeff_nonneg`'s unique-minimum
+computation, kept rather than discarded: that lemma only needed the minimum to be
+`≥ 0`, this one needs its VALUE, which is what makes the value group `ℤ` and hence
+the subring discrete. -/
+theorem exists_valuation_eq_zpow {x : AdjoinRoot (qpoly ℓ)} (hx : x ≠ 0) :
+    ∃ n : ℤ, (tameSubring ℓ).valuation x
+      = (tameSubring ℓ).valuation (unif ℓ) ^ n := by
+  classical
+  obtain ⟨c, hc⟩ := exists_repr ℓ x
+  set e : ℕ → ℤ := fun k => 12 * padicValRat ℓ (c k) + (k : ℤ) with he
+  set S : Finset ℕ := (Finset.range 12).filter (fun k => c k ≠ 0) with hS
+  have hmemS : ∀ k, k ∈ S ↔ (k < 12 ∧ c k ≠ 0) := by
+    intro k; simp [hS, Finset.mem_filter, Finset.mem_range]
+  have hSne : S.Nonempty := by
+    rw [Finset.nonempty_iff_ne_empty]
+    intro h
+    refine hx ?_
+    rw [hc]
+    refine Finset.sum_eq_zero fun k hk => ?_
+    have hck : c k = 0 := by
+      by_contra hc0
+      have hkS : k ∈ S := (hmemS k).mpr ⟨Finset.mem_range.mp hk, hc0⟩
+      rw [h] at hkS
+      exact absurd hkS (Finset.notMem_empty k)
+    simp [hck]
+  obtain ⟨j, hjS, hj⟩ := S.exists_min_image e hSne
+  obtain ⟨hj12, hcj⟩ := (hmemS j).mp hjS
+  have hsum : ∑ k ∈ S, ofQ ℓ (c k) * unif ℓ ^ k
+      = ∑ k ∈ Finset.range 12, ofQ ℓ (c k) * unif ℓ ^ k := by
+    refine Finset.sum_subset (Finset.filter_subset _ _) ?_
+    intro k hk hkn
+    have hck : c k = 0 := by
+      by_contra h
+      exact hkn ((hmemS k).mpr ⟨Finset.mem_range.mp hk, h⟩)
+    simp [hck]
+  have hlt : ∀ k ∈ S \ {j},
+      (tameSubring ℓ).valuation (ofQ ℓ (c k) * unif ℓ ^ k)
+        < (tameSubring ℓ).valuation (ofQ ℓ (c j) * unif ℓ ^ j) := by
+    intro k hk
+    obtain ⟨hkS, hkj⟩ := Finset.mem_sdiff.mp hk
+    obtain ⟨hk12, hck⟩ := (hmemS k).mp hkS
+    have hejk : e j < e k := by
+      rcases lt_or_eq_of_le (hj k hkS) with h | h
+      · exact h
+      · exfalso
+        have hkj' : k ≠ j := by simpa using hkj
+        simp only [he] at h
+        omega
+    rw [valuation_term ℓ hck k, valuation_term ℓ hcj j]
+    exact (zpow_lt_zpow_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+      (valuation_unif_lt_one ℓ) _ _).mpr hejk
+  refine ⟨e j, ?_⟩
+  rw [hc, ← hsum, Valuation.map_sum_eq_of_lt _ hjS hlt, valuation_term ℓ hcj j]
+
+/-- The uniformizer lies in the tame valuation subring. -/
+theorem unif_mem : unif ℓ ∈ tameSubring ℓ :=
+  ValuationSubring.mem_of_valuation_le_one _ _ (valuation_unif_lt_one ℓ).le
+
+/-- `n ↦ v(π)^n` is injective, because `v(π) < 1`. -/
+theorem valuation_zpow_inj {m n : ℤ}
+    (h : (tameSubring ℓ).valuation (unif ℓ) ^ m
+      = (tameSubring ℓ).valuation (unif ℓ) ^ n) : m = n := by
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with hlt | hlt
+  · have h2 := (zpow_lt_zpow_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+      (valuation_unif_lt_one ℓ) m n).mpr hlt
+    rw [h] at h2; exact lt_irrefl _ h2
+  · have h2 := (zpow_lt_zpow_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+      (valuation_unif_lt_one ℓ) n m).mpr hlt
+    rw [h] at h2; exact lt_irrefl _ h2
+
+/-- Every nonzero element of `A` has valuation `v(π)^n` for a NATURAL `n`. -/
+theorem exists_valuation_eq_pow {x : tameSubring ℓ} (hx : x ≠ 0) :
+    ∃ n : ℕ, (tameSubring ℓ).valuation (x : AdjoinRoot (qpoly ℓ))
+      = (tameSubring ℓ).valuation (unif ℓ) ^ (n : ℤ) := by
+  obtain ⟨n, hn⟩ := exists_valuation_eq_zpow ℓ
+    (x := (x : AdjoinRoot (qpoly ℓ))) (by simpa using hx)
+  have hle : (tameSubring ℓ).valuation (unif ℓ) ^ n ≤ 1 := by
+    rw [← hn]; exact ValuationSubring.valuation_le_one _ x
+  have hn0 : 0 ≤ n := (zpow_le_one_iff_of_lt_one
+    (valuation_unif_ne_zero ℓ) (valuation_unif_lt_one ℓ) _).mp hle
+  exact ⟨n.toNat, by rwa [Int.toNat_of_nonneg hn0]⟩
+
+/-- **Every nonzero element of `A` is a unit times a power of `π`** — the hypothesis of
+`IsDiscreteValuationRing.ofHasUnitMulPowIrreducibleFactorization`. -/
+theorem tameSubring_hasUnitMulPow :
+    IsDiscreteValuationRing.HasUnitMulPowIrreducibleFactorization (tameSubring ℓ) := by
+  classical
+  refine ⟨⟨unif ℓ, unif_mem ℓ⟩, ⟨?_, ?_⟩, ?_⟩
+  · -- `π` is not a unit, because `v(π) < 1`
+    intro hu
+    rw [ValuationSubring.valuation_eq_one_iff] at hu
+    exact absurd hu (valuation_unif_lt_one ℓ).ne
+  · -- irreducibility: `v(π) = v(a)·v(b)` with both factors of valuation `≤ v(π)`
+    rintro a b hab
+    by_contra hcon
+    simp only [not_or] at hcon
+    obtain ⟨ha, hb⟩ := hcon
+    have ha0 : a ≠ 0 := by
+      rintro rfl
+      exact (unif_ne_zero ℓ) (by simpa [Subtype.ext_iff] using hab)
+    have hb0 : b ≠ 0 := by
+      rintro rfl
+      exact (unif_ne_zero ℓ) (by simpa [Subtype.ext_iff] using hab)
+    obtain ⟨m, hm⟩ := exists_valuation_eq_pow ℓ ha0
+    obtain ⟨k, hk⟩ := exists_valuation_eq_pow ℓ hb0
+    have hm1 : 1 ≤ m := by
+      rcases Nat.eq_zero_or_pos m with h | h
+      · exact absurd (by rw [ValuationSubring.valuation_eq_one_iff, hm, h]; simp) ha
+      · exact h
+    have hk1 : 1 ≤ k := by
+      rcases Nat.eq_zero_or_pos k with h | h
+      · exact absurd (by rw [ValuationSubring.valuation_eq_one_iff, hk, h]; simp) hb
+      · exact h
+    have hval : (tameSubring ℓ).valuation (unif ℓ)
+        = (tameSubring ℓ).valuation (unif ℓ) ^ ((m : ℤ) + k) := by
+      have hcoe : unif ℓ = (a : AdjoinRoot (qpoly ℓ)) * (b : AdjoinRoot (qpoly ℓ)) := by
+        have := congrArg (fun z : tameSubring ℓ => (z : AdjoinRoot (qpoly ℓ))) hab
+        simpa using this
+      rw [zpow_add₀ (valuation_unif_ne_zero ℓ), ← hm, ← hk, ← map_mul, ← hcoe]
+    have := valuation_zpow_inj ℓ (m := 1) (n := (m : ℤ) + k) (by rw [zpow_one]; exact hval)
+    omega
+  · -- and every nonzero element is an associate of a power of `π`
+    intro x hx
+    obtain ⟨n, hn⟩ := exists_valuation_eq_pow ℓ hx
+    refine ⟨n, ?_⟩
+    have hv : (tameSubring ℓ).valuation
+        (((⟨unif ℓ, unif_mem ℓ⟩ : tameSubring ℓ) ^ n : tameSubring ℓ) :
+            AdjoinRoot (qpoly ℓ))
+        = (tameSubring ℓ).valuation (x : AdjoinRoot (qpoly ℓ)) := by
+      rw [hn]
+      push_cast
+      rw [map_pow, zpow_natCast]
+    obtain ⟨u, hu⟩ := (ValuationSubring.valuation_eq_iff _ _ _).mp hv.symm
+    exact ⟨u, Subtype.ext (by simpa [mul_comm] using hu)⟩
+
+/-- **`A = ℤ_(ℓ)[ℓ^{1/12}]` is a discrete valuation ring** (PROVEN 2026-07-27). This is
+what lets `PotentiallyGoodModel` be phrased with a DVR — which is not a stylistic
+choice: `torsion_unramified_of_good_reduction`, which the Galois half consumes, is
+stated over a DVR, and mathlib's `HasGoodReduction` needs one to define `IsMinimal`
+at all. Recorded as a field of `TameBase` since 2026-07-28. -/
+instance instIsDiscreteValuationRingTameSubring :
+    IsDiscreteValuationRing (tameSubring ℓ) :=
+  IsDiscreteValuationRing.ofHasUnitMulPowIrreducibleFactorization
+    (tameSubring_hasUnitMulPow ℓ)
+
+/-- **`ℚ` has a unique ring hom into a field**, so whichever `Algebra ℚ`-instance
+elaboration happens to pick on `L = ℚ(ℓ^{1/12})`, its structure map is `ofQ`. This is the
+clean way around the instance clash that `ofQ`'s docstring records: rather than pinning
+one instance with a `letI` (which loses to the `Module ℚ` found through `Submodule`),
+note that the two can only differ by a `Subsingleton.elim`. -/
+theorem algebraMap_eq_ofQ : (algebraMap ℚ (AdjoinRoot (qpoly ℓ))) = ofQ ℓ :=
+  Subsingleton.elim _ _
+
+/-- **`L = ℚ(ℓ^{1/12})` is finite-dimensional over `ℚ`** (PROVEN 2026-07-27). It comes
+from `exists_repr`: the twelve powers `1, π, …, π¹¹` span, so `⊤` is finitely generated.
+(No `PowerBasis` is used, for the same reason `exists_tameResidueHom` avoids one — the
+`Algebra ℚ` instance clash.) Recorded as a field of `TameBase` since 2026-07-28, because
+`PotentiallyGoodModel` needs it and cannot recover it from a bare `Field L`. -/
+instance instFiniteDimensional : FiniteDimensional ℚ (AdjoinRoot (qpoly ℓ)) := by
+  constructor
+  have htop : (⊤ : Submodule ℚ (AdjoinRoot (qpoly ℓ)))
+      = Submodule.span ℚ (Set.range fun i : Fin 12 => unif ℓ ^ (i : ℕ)) := by
+    refine le_antisymm ?_ le_top
+    intro x _
+    obtain ⟨c, hc⟩ := exists_repr ℓ x
+    rw [hc]
+    refine Submodule.sum_mem _ fun i hi => ?_
+    have hsm : ofQ ℓ (c i) * unif ℓ ^ i = (c i) • (unif ℓ ^ i) := by
+      rw [Algebra.smul_def]
+      congr 1
+    rw [hsm]
+    exact Submodule.smul_mem _ _
+      (Submodule.subset_span ⟨⟨i, Finset.mem_range.mp hi⟩, rfl⟩)
+  rw [htop]
+  exact Submodule.fg_span (Set.finite_range _)
+
 end TameBaseAux
 
 /-- **`ℚ(ℓ^{1/12})` exists, with `ℓ` totally ramified and residue field `𝔽_ℓ`**
@@ -1273,14 +1499,18 @@ theorem nonempty_tameBase (ℓ : ℕ) [Fact ℓ.Prime] : Nonempty (TameBase ℓ)
   exact ⟨{
     L := AdjoinRoot (TameBaseAux.qpoly ℓ)
     instDec := Classical.decEq _
-    instAlgebra := (TameBaseAux.ofQ ℓ).toAlgebra
+    instFinDim := TameBaseAux.instFiniteDimensional ℓ
     A := TameBaseAux.tameSubring ℓ
+    instDVR := TameBaseAux.instIsDiscreteValuationRingTameSubring ℓ
     res := res
     instLocal := hres
     π := TameBaseAux.unif ℓ
     π_ne_zero := TameBaseAux.unif_ne_zero ℓ
-    π_pow := TameBaseAux.unif_pow ℓ
-    mem_iff := fun m _ hq => TameBaseAux.tame_mem_iff ℓ m hq }⟩
+    π_pow := by rw [TameBaseAux.algebraMap_eq_ofQ]; exact TameBaseAux.unif_pow ℓ
+    mem_iff := by
+      intro m q hq
+      rw [TameBaseAux.algebraMap_eq_ofQ]
+      exact TameBaseAux.tame_mem_iff ℓ m hq }⟩
 
 /-- **`v_ℓ(j) ≥ 0` bounds the coefficient valuations against the discriminant's**
 (PROVEN 2026-07-27, the same day it was opened by decomposing
