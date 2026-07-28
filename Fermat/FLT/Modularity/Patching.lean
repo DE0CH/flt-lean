@@ -4125,9 +4125,328 @@ theorem finite_h1TwistUnramified.{uK, uW} (p : ℕ) [Fact p.Prime]
     [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
     Module.Finite k ↥(h1TwistUnramified p ρbar) := sorry
 
+/-! ### The Taylor–Wiles locus, and the Chebotarev extraction factored out of it
+
+Added 2026-07-28 as the decomposition of
+`exists_taylorWilesPrime_locResDecomp_ne_zero` (DDT Lemma 2.48) below.
+
+`exists_taylorWilesPrime` above proves its existence statement by putting
+the two LOCAL Taylor–Wiles conditions into one open set and hitting it
+with Chebotarev density.  The strengthened statement needs a THIRD,
+cohomological condition, and the argument is the same one: the third
+condition also cuts out an open, conjugation-stable locus, and Chebotarev
+produces a Frobenius in the intersection.
+
+So the two halves are separated here: the conditions on the Galois
+element are packaged as the `Set` `taylorWilesLocus`, whose three
+relevant properties (open, conjugation-stable, nonempty) are PROVEN
+below, and the extraction of a prime from an open conjugation-stable
+locus is the proof of `exists_taylorWilesPrime_locResDecomp_ne_zero`
+itself, also proven.  What remains open is one leaf,
+`exists_separatingOpen_locResDecomp`: the existence of the cohomological
+locus.  That is exactly the arithmetic content of DDT 2.48 and nothing
+else.
+
+Nothing here changes `exists_taylorWilesPrime` above; it keeps its own
+inline copies of the openness arguments so that the two declarations stay
+independently owned. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Fixing the `m`-th roots of unity is an open condition** (PROVEN):
+the set of absolute Galois elements of `ℚ` acting trivially on every
+`m`-th root of unity is open, being the fixing subgroup of the FINITE
+extension `ℚ(μ_m)/ℚ`.
+
+This is the second of the two open loci of `exists_taylorWilesPrime`'s
+proof, hoisted so that `isOpen_taylorWilesLocus` below can reuse it.
+The `set_option` is not decoration: without it the
+`IntermediateField.adjoin ℚ {ζ | ζ ^ m = 1}` in the statement of the
+auxiliary `FiniteDimensional` instance elaborates against
+`DivisionRing.toRatAlgebra` rather than `AlgebraicClosure.instAlgebra ℚ`,
+and the two are not defeq at `instances` transparency. -/
+lemma isOpen_setOf_fixes_rootsOfUnity (m : ℕ) (hm : 0 < m) :
+    IsOpen {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} := by
+  classical
+  -- the `m`-th roots of unity are finite …
+  have hSfin : {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}.Finite := by
+    refine Set.Finite.subset
+      (Polynomial.nthRoots m (1 : AlgebraicClosure ℚ)).toFinset.finite_toSet fun ζ hζ => ?_
+    rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_nthRoots hm]
+    exact hζ
+  haveI := hSfin.to_subtype
+  haveI : FiniteDimensional ℚ
+      (IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}) :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
+  -- … so fixing them pointwise is exactly the fixing subgroup of `ℚ(μ_m)`
+  have hfixset : {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} =
+      ((IntermediateField.adjoin ℚ
+        {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}).fixingSubgroup :
+        Set (Field.absoluteGaloisGroup ℚ)) := by
+    ext x
+    constructor
+    · intro hx
+      have hle : IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1} ≤
+          IntermediateField.fixedField (Subgroup.zpowers x) := by
+        rw [IntermediateField.adjoin_le_iff]
+        intro ζ hζ
+        rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+        intro f hf
+        have hst : Subgroup.zpowers x ≤
+            MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) ζ :=
+          Subgroup.zpowers_le.mpr (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
+        exact hst hf
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
+      exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x (Subgroup.mem_zpowers x)
+    · intro hx ζ hζ
+      exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
+        (IntermediateField.subset_adjoin ℚ _ hζ)
+  rw [hfixset]
+  exact (IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen
+
+/-- **The Taylor–Wiles locus at level `n`** (ADDED 2026-07-28): the set of
+absolute Galois elements of `ℚ` satisfying the two LOCAL Taylor–Wiles
+conditions — acting trivially on the `p^n`-th roots of unity, and having
+characteristic polynomial split with two DISTINCT roots over `k`.
+
+This is precisely the set that `exists_taylorWilesPrime` above intersects
+with the dense union of Frobenius conjugacy classes, written down as a
+`Set` so that the cohomological condition of DDT 2.48 can be intersected
+with it.  Its three relevant properties are proven immediately below:
+`isOpen_taylorWilesLocus`, `taylorWilesLocus_conj` (conjugation
+stability, which is what lets a Frobenius CONJUGATE in the locus be
+traded for the Frobenius itself) and `nonempty_taylorWilesLocus` (which
+is `exists_fixing_rootsOfUnity_charpoly_split`, restated).
+
+A prime `q ≠ p` whose `globalFrob` lies here is a Taylor–Wiles prime of
+level `n`: the roots-of-unity clause forces `q ≡ 1 (mod p^n)` through
+`cyclotomicCharacter_globalFrob`, and the charpoly clause IS the split
+condition through `charFrob_eq_charpoly_globalFrob`.  Both derivations
+are carried out in `exists_taylorWilesPrime_locResDecomp_ne_zero`'s
+proof below. -/
+def taylorWilesLocus.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (n : ℕ) :
+    Set (Field.absoluteGaloisGroup ℚ) :=
+  {x | (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → x ζ = ζ) ∧
+    ∃ α β : k, α ≠ β ∧
+      (ρbar x).charpoly =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)}
+
+/-- **Membership in `taylorWilesLocus` unfolded** (PROVEN, definitional). -/
+lemma mem_taylorWilesLocus.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (n : ℕ)
+    {x : Field.absoluteGaloisGroup ℚ} :
+    x ∈ taylorWilesLocus p ρbar n ↔
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → x ζ = ζ) ∧
+      ∃ α β : k, α ≠ β ∧
+        (ρbar x).charpoly =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
+  Iff.rfl
+
+/-- **The Taylor–Wiles locus is OPEN** (PROVEN): the charpoly clause is
+the `ρbar`-preimage of a set in the DISCRETE endomorphism space (`k` is
+finite discrete, so `Module.End k W` carries the discrete module
+topology), and the roots-of-unity clause is
+`isOpen_setOf_fixes_rootsOfUnity`. -/
+lemma isOpen_taylorWilesLocus.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (n : ℕ) :
+    IsOpen (taylorWilesLocus p ρbar n) := by
+  classical
+  letI := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) := discreteTopology_moduleTopology _ _
+  have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hsplit : IsOpen ((fun x : Field.absoluteGaloisGroup ℚ => ρbar x) ⁻¹'
+      {φ : Module.End k W | ∃ α β : k, α ≠ β ∧ φ.charpoly =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)}) :=
+    (isOpen_discrete _).preimage hρcont
+  have hfix := isOpen_setOf_fixes_rootsOfUnity (p ^ n)
+    (pow_pos (Fact.out : p.Prime).pos n)
+  exact hfix.inter hsplit
+
+/-- **The Taylor–Wiles locus is stable under conjugation** (PROVEN): the
+set of `p^n`-th roots of unity is Galois-stable, so fixing it pointwise
+is a conjugation-invariant condition; and the characteristic polynomial
+is a conjugation invariant (`LinearEquiv.charpoly_conj`).
+
+This is what lets the Chebotarev extraction below trade the conjugate
+`g · Frob_q · g⁻¹` that density supplies for `Frob_q` itself. -/
+lemma taylorWilesLocus_conj.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (n : ℕ)
+    (g : Field.absoluteGaloisGroup ℚ) {x : Field.absoluteGaloisGroup ℚ}
+    (hx : x ∈ taylorWilesLocus p ρbar n) :
+    g * x * g⁻¹ ∈ taylorWilesLocus p ρbar n := by
+  obtain ⟨hfix, α, β, hαβ, hpoly⟩ := hx
+  refine ⟨?_, α, β, hαβ, ?_⟩
+  · intro ζ hζ
+    rw [AlgEquiv.mul_apply, AlgEquiv.mul_apply, AlgEquiv.aut_inv,
+      hfix (g.symm ζ) (by rw [← map_pow, hζ, map_one]), AlgEquiv.apply_symm_apply]
+  · have hgu : (ρbar g).comp (ρbar g⁻¹) = LinearMap.id := by
+      have h1 : ρbar g * ρbar g⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+      exact h1
+    have hgu' : (ρbar g⁻¹).comp (ρbar g) = LinearMap.id := by
+      have h1 : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+      exact h1
+    have heq : ρbar (g * x * g⁻¹) =
+        (LinearEquiv.ofLinear (ρbar g) (ρbar g⁻¹) hgu hgu').conj (ρbar x) := by
+      ext w
+      simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
+    rw [heq, LinearEquiv.charpoly_conj, hpoly]
+
+/-- **The Taylor–Wiles locus is NONEMPTY** (PROVEN): this is
+`exists_fixing_rootsOfUnity_charpoly_split` above, restated as
+membership. -/
+lemma nonempty_taylorWilesLocus.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ) :
+    (taylorWilesLocus p ρbar n).Nonempty := by
+  obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
+    exists_fixing_rootsOfUnity_charpoly_split hpodd hW hρbar hirr n
+  exact ⟨σ, hσfix, α, β, hαβ, hσpoly⟩
+
+/-- **The separating locus of a nonzero dual-Selmer class — the
+arithmetic core of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28 by
+the decomposition of `exists_taylorWilesPrime_locResDecomp_ne_zero`
+below): a nonzero class `c ∈ H¹(ℚ, ad⁰ρbar(1))` unramified outside
+`{2, p}` has an OPEN, CONJUGATION-STABLE locus `V ⊆ Γ ℚ` which
+(a) meets the Taylor–Wiles locus at level `n`, and (b) is such that
+`c` survives locally at every prime `q ∉ {2, p}` whose Frobenius lies in
+it.
+
+Everything else in DDT 2.48 — Chebotarev density, the congruence
+`q ≡ 1 (mod p^n)`, and the identification of `charFrob` with the
+characteristic polynomial at `globalFrob` — is discharged in
+`exists_taylorWilesPrime_locResDecomp_ne_zero` below, which is PROVEN
+over this leaf.  So this statement is the whole arithmetic content and
+nothing else.
+
+# THE CLASSICAL `V`, AND WHY IT HAS EACH OF THESE PROPERTIES
+
+Write `M = ad⁰ρbar(1)`, let `z` be a continuous 1-cocycle representing
+`c`, and take
+
+    V = {x ∈ Γ ℚ | z x ∉ (ρ x - 1) • M} .
+
+* **Well defined.**  Changing `z` by a coboundary `x ↦ (ρ x - 1) b`
+  changes `z x` inside `(ρ x - 1) • M`, so `V` depends only on `c`.
+* **Open.**  `M` is finite discrete and `z`, `ρ` are continuous, so
+  `x ↦ (z x, ρ x)` is a continuous map into a discrete space and `V` is
+  the preimage of a subset of it.
+* **Conjugation-stable.**  The crossed-homomorphism identity gives
+  `z (g x g⁻¹) = ρ g (z x) + (1 - ρ (g x g⁻¹)) (z g)`, while
+  `(ρ (g x g⁻¹) - 1) • M = ρ g ((ρ x - 1) • M)` because `ρ g` is
+  bijective on `M`; the correction term
+  `(1 - ρ (g x g⁻¹)) (z g) = -ρ g ((ρ x - 1) (ρ g⁻¹ (z g)))` already lies
+  in `ρ g ((ρ x - 1) • M)`, so membership is unchanged.
+* **(b), the local computation.**  For `q ∉ {2, p}` the class `c` is
+  unramified at `q` (that is `hcunr`), so its restriction to the
+  decomposition group at `q` is inflated from the procyclic
+  `G_q / I_q = ⟨Frob_q⟩^`, whose `H¹` with coefficients in `M` is
+  `M / (ρ Frob_q - 1) M` under evaluation at `Frob_q`.  Hence
+  `loc_q c = 0` iff `z (Frob_q) ∈ (ρ Frob_q - 1) • M`, i.e. iff
+  `Frob_q ∉ V`.
+* **(a), the nonemptiness — this is the only deep step.**  Let
+  `L = ℚ(M, μ_{p^n})`, a finite Galois extension of `ℚ`, and let
+  `σ ∈ Γ ℚ` be a Taylor–Wiles element (`nonempty_taylorWilesLocus`).
+  Since `Γ L` acts trivially on `M`, `z|_{Γ L}` is a HOMOMORPHISM
+  `Γ L → M`, and `Γ L` is normal, so `taylorWilesLocus` contains the
+  whole coset `σ · Γ L`.  Restriction
+  `H¹(Γ ℚ, M) → H¹(Γ L, M) = Hom(Γ L, M)` is injective on classes
+  unramified outside `{2, p}` because `H¹(Gal(L/ℚ), M) = 0`, which is
+  where `ρbar|_{ℚ(ζ_p)}` absolutely irreducible is used (DDT §2, and for
+  `p` odd it follows from `hρbar` together with `hirr`).  So
+  `z|_{Γ L} ≠ 0`; picking `τ ∈ Γ L` with `z τ ∉ (ρ σ - 1) • M` when
+  `z σ ∈ (ρ σ - 1) • M` — possible because `ρ σ` has distinct
+  eigenvalues, so `(ρ σ - 1) • M` is a PROPER subspace of `M` and
+  `z (σ τ) = z σ + ρ σ (z τ)` moves out of it — gives an element of
+  `V ∩ taylorWilesLocus`.
+
+# WHAT THIS TREE STILL LACKS, CONCRETELY (measured 2026-07-28)
+
+The obstruction is NOT the arithmetic above; it is that
+`continuousCohomology 1` has no INHOMOGENEOUS cocycle description here,
+so `z x` cannot yet be written.  What exists is
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+(vendored 2026-07-27): `ContinuousCohomology.cocycleClass`, turning a
+cocycle in the KERNEL MODEL into a class, and `cocycleClass_eq_zero_iff`,
+turning vanishing into being a coboundary.  Mathlib's own
+`ContCohomology/LowDegree.lean` stops at degree `0` (`zeroIso`).
+
+The missing piece is small and was scoped concretely:
+
+* a degree-`1` homogeneous cochain is an element `f` of
+  `↥((homogeneousCochains X).X 1)`, and `f.1 g h : ↥X` TYPECHECKS — the
+  carrier really is the `G`-invariants of `C(G, C(G, M))`;
+* the differentials are `(d X 1 F) g h = F h - F g` and
+  `(d X 2 f) g h l = f h l - f g l + f g h`, from `d_zero`/`d_succ` and
+  the inductive `coind₁ι = const` convention documented in mathlib's
+  `ContCohomology/Basic.lean`;
+* so `z x := f.1 1 x` and the cocycle relation at `g₀ = 1` gives
+  `f.1 h l = z l - z h`, whence, with `G`-invariance
+  `f (σ g) (σ h) = σ • f g h` at `σ = g`, the crossed-homomorphism
+  identity `z (g h) = z g + ρ g (z h)`.
+
+Writing that translation (and surjectivity of `cocycleClass`, which
+follows from `TopModuleCat.cokerπ_surjective` upstream) is what unblocks
+this leaf, and it is reusable: `Sha1Twist`'s docstring in
+`HardlyRamified/Deformation.lean` records the same gap.
+
+Both-ways audit, inherited verbatim from
+`exists_taylorWilesPrime_locResDecomp_ne_zero`: at the intended
+instantiation this is the cited Taylor–Wiles separation lemma;
+abstractly the hypothesis set contains the classically unsatisfiable
+irreducible hardly ramified `ρbar`, so the statement is classically true
+outright and CANNOT be false as stated.  CIRCULARITY GUARD: for that very
+reason it must not be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` is the
+circular discharge and is BANNED. -/
+theorem exists_separatingOpen_locResDecomp.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ)
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0) :
+    ∃ V : Set (Field.absoluteGaloisGroup ℚ),
+      IsOpen V ∧
+      (∀ g x : Field.absoluteGaloisGroup ℚ, x ∈ V → g * x * g⁻¹ ∈ V) ∧
+      (V ∩ taylorWilesLocus p ρbar n).Nonempty ∧
+      ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ p →
+        globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈ V →
+        c ∉ LinearMap.ker (locResDecompTwist1 p ρbar
+          hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Chebotarev separation of a single dual-Selmer class by a
-Taylor–Wiles prime — DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-27 as
-the second of the two inputs of DDT Thm. 2.49): given a NONZERO class
+Taylor–Wiles prime — DDT Lemma 2.48** (cut out 2026-07-27 as the second
+of the two inputs of DDT Thm. 2.49; **PROVEN 2026-07-28** over the single
+leaf `exists_separatingOpen_locResDecomp` above): given a NONZERO class
 `c ∈ H¹(ℚ, ad⁰ρbar(1))` unramified outside `{2, p}` and a level `n`,
 there is a Taylor–Wiles prime `q` at that level — `q ≡ 1 (mod p^n)` with
 `ρbar(Frob_q)` having two distinct eigenvalues — at which `c` does NOT
@@ -4137,6 +4456,34 @@ This is the exact strengthening of `exists_taylorWilesPrime` above by the
 one cohomological clause it lacks, and it is the only genuinely arithmetic
 input of the descent: everything else in
 `exists_taylorWilesPrimeSet_core` below is a dimension count.
+
+# WHAT IS PROVEN HERE, AND WHAT MOVED TO THE LEAF (2026-07-28)
+
+The proof below is the CHEBOTAREV EXTRACTION and nothing else, in the
+shape `exists_taylorWilesPrime` above already uses:
+
+* the leaf supplies an open, conjugation-stable `V` meeting
+  `taylorWilesLocus p ρbar n`, at whose Frobenii `c` survives;
+* `isOpen_taylorWilesLocus` makes `V ∩ taylorWilesLocus` open and the
+  leaf makes it nonempty, so `dense_conjClasses_globalFrob` — applied
+  away from the two places `2` and `p` — puts a Frobenius CONJUGATE
+  `g · Frob_q · g⁻¹` inside it;
+* conjugating back by `g⁻¹` (both `V` and `taylorWilesLocus` are
+  conjugation-stable, the latter by `taylorWilesLocus_conj`) puts
+  `Frob_q` itself inside it — which is what makes this proof shorter
+  than `exists_taylorWilesPrime`'s, where the two conditions had to be
+  transported one at a time;
+* membership in `taylorWilesLocus` then reads off as the two arithmetic
+  conditions exactly as there: `cyclotomicCharacter_globalFrob` plus
+  `hζ.pow_inj` turn "fixes `μ_{p^n}`" into `q ≡ 1 (mod p^n)`, and
+  `charFrob_eq_charpoly_globalFrob` turns the charpoly clause into the
+  `charFrob` one.
+
+The two excluded places are `2` and `p`: `p` because Chebotarev's
+Frobenius must be unramified for the cyclotomic character, and `2`
+because the leaf's local computation needs `q ∉ hardlyRamifiedPlaces p`,
+i.e. needs `c` to be unramified at `q`.  Excluding them costs nothing —
+they are two places out of a dense family.
 
 # ROUTE (Wiles, Ann. of Math. 141 (1995) ch. 3; DDT §2, Lemma 2.48)
 
@@ -4162,7 +4509,9 @@ file: `exists_fixing_rootsOfUnity_charpoly_split` supplies (i) + (ii) at
 a single Galois element, `dense_conjClasses_globalFrob` is the Chebotarev
 density input, and `exists_taylorWilesPrime` above is the assembly of
 exactly those two.  What is new here is the third, cohomological
-condition and the local computation at `q`.
+condition and the local computation at `q` — and those two, and ONLY
+those two, are what `exists_separatingOpen_locResDecomp` above now
+carries.
 
 Both-ways audit, verbatim from `exists_taylorWilesPrimeSet` below: at the
 intended instantiation this is the cited Taylor–Wiles separation lemma;
@@ -4191,7 +4540,65 @@ theorem exists_taylorWilesPrime_locResDecomp_ne_zero.{uK, uW}
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) ∧
       c ∉ LinearMap.ker (locResDecompTwist1 p ρbar
-        hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := sorry
+        hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := by
+  classical
+  -- the separating locus, and the Taylor–Wiles locus it meets
+  obtain ⟨V, hVopen, hVconj, ⟨σ, hσV, hσT⟩, hVsep⟩ :=
+    exists_separatingOpen_locResDecomp hpodd hW hρbar hirr n hcunr hc0
+  have hUopen : IsOpen (V ∩ taylorWilesLocus p ρbar n) :=
+    hVopen.inter (isOpen_taylorWilesLocus p ρbar n)
+  -- Chebotarev density away from the two bad places `2` and `p`
+  have hdense := dense_conjClasses_globalFrob (K := ℚ)
+    (insert Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+      (insert (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat (∅ : Finset _)))
+  obtain ⟨x, hxU, hxfrob⟩ := hdense.inter_open_nonempty _ hUopen ⟨σ, hσV, hσT⟩
+  obtain ⟨v, hvS, g, rfl⟩ := hxfrob
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact hvS (Finset.mem_insert_self _ _)
+  have hqp : q ≠ p := by
+    rintro rfl
+    exact hvS (Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))
+  obtain ⟨hxV, hxT⟩ := hxU
+  -- conjugating back by `g⁻¹` moves the CONJUGATE that density supplies
+  -- to `Frob_q` itself, in both loci at once
+  have hconjinv : g⁻¹ * (g * globalFrob hq.toHeightOneSpectrumRingOfIntegersRat * g⁻¹)
+      * g⁻¹⁻¹ = globalFrob hq.toHeightOneSpectrumRingOfIntegersRat := by group
+  have hFV : globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈ V := by
+    have h := hVconj g⁻¹ _ hxV
+    rwa [hconjinv] at h
+  have hFT : globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈
+      taylorWilesLocus p ρbar n := by
+    have h := taylorWilesLocus_conj p ρbar n g⁻¹ hxT
+    rwa [hconjinv] at h
+  obtain ⟨hfrobfix, α, β, hαβ, hpoly⟩ := hFT
+  -- `q ≡ 1 (mod p^n)`: the `p`-adic cyclotomic character takes the value
+  -- `q` at `Frob_q`, and `Frob_q` fixes a primitive `p^n`-th root of unity
+  have hmod : q ≡ 1 [MOD p ^ n] := by
+    rcases Nat.eq_zero_or_pos n with hn | hn
+    · subst hn
+      rw [pow_zero]
+      exact Nat.modEq_one
+    · haveI : NeZero (p ^ n) := ⟨pow_ne_zero n (Fact.out : p.Prime).ne_zero⟩
+      obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+        (AlgebraicClosure ℚ) (p ^ n)
+      have hχ := cyclotomicCharacter_globalFrob (ℓ := p) hq hqp
+      have hspec := cyclotomicCharacter.spec p
+        (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat).toRingEquiv
+        ζ hζ.pow_eq_one
+      rw [hχ, map_natCast] at hspec
+      have hz : ζ ^ ((q : ZMod (p ^ n))).val = ζ ^ 1 := by
+        rw [pow_one, ← hspec]
+        exact hfrobfix ζ hζ.pow_eq_one
+      have h1lt : 1 < p ^ n := Nat.one_lt_pow hn.ne' (Fact.out : p.Prime).one_lt
+      have hval : ((q : ZMod (p ^ n))).val = 1 := hζ.pow_inj (ZMod.val_lt _) h1lt hz
+      show q % p ^ n = 1 % p ^ n
+      rw [Nat.mod_eq_of_lt h1lt, ← ZMod.val_natCast]
+      exact hval
+  refine ⟨q, hq, hmod, ⟨α, β, hαβ, ?_⟩, hVsep q hq hq2 hqp hFV⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+  exact hpoly
 
 /-- **The dual-Selmer-killing core — DDT Thm. 2.49** (PROVEN 2026-07-27
 over the two leaves above, replacing the internal sorried `have hcore` of
