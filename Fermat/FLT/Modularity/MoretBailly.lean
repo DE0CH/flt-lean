@@ -398,6 +398,10 @@ public import Fermat.FLT.Modularity.TateModule
 -- relied on transitively through `TateModule`) so that a later change to
 -- that chain's publicity cannot silently remove them from proof bodies here.
 public import Fermat.FLT.Modularity.RegularStalks
+-- (The three irreducibility lemmas that used to live here were HOISTED into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds` on 2026-07-28 — see the
+-- deletion notes at their old sites below, and the `public import` of that shim
+-- further down this header.)
 -- coefficient-ring locality (2026-07-25): the henselian-pair /
 -- idempotent-lifting bricks used by `isLocalRing_of_finite_padicInt`
 -- below, which removes `IsLocalRing A` from the `3`-adic Brauer-sum

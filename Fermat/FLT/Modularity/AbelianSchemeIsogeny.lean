@@ -224,6 +224,15 @@ public import Fermat.FLT.Mathlib.RingTheory.Flat.LocalCriterion
 public import Mathlib.RingTheory.Adjoin.FG
 public import Mathlib.RingTheory.Localization.Submodule
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
+-- `irreducibleSpace_of_connected_of_isDomain_stalk` below is a two-line
+-- composition of `irreducibleSpace_of_isOpen_isIrreducible_nhds` and
+-- `exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`, which live in the shim tree
+-- because the SAME argument had been written three times in this development —
+-- here, in `Modularity/MoretBailly.lean` (strictly downstream of this file, so
+-- unusable from it) and in `Mathlib/AlgebraicGeometry/CurveExtension.lean`
+-- (whose whole `Fermat` cone is two modules, so `MoretBailly` was unusable from
+-- it).  A `Mathlib`-only shim is reachable from all three.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
 
 @[expose] public section
 
@@ -6014,7 +6023,17 @@ frontier of this block is THREE NEW LEAVES, none of them geometric:**
 Everything else in this block is proven, including the topological core
 `irreducibleSpace_of_connected_of_isDomain_stalk` (a connected locally
 noetherian scheme with domain stalks is irreducible), which is general scheme
-theory and mathlib-shaped. -/
+theory and mathlib-shaped.
+
+**2026-07-28: that core no longer carries its own proof.**  The same theorem had
+been written THREE times in this development — here, in
+`Modularity/MoretBailly.lean` and in
+`Mathlib/AlgebraicGeometry/CurveExtension.lean` — each time because the existing
+copy was unreachable from the new site.  The two ingredients now live once, in
+the `Mathlib`-only shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`, which every one
+of the three sites can import, and this file's four-lemma minimum-generalization
+chain was deleted in favour of a two-line composition. -/
 
 /-- **THE RESTRICTION MAP BETWEEN TWO AFFINE OPENS IS FLAT** (**PROVEN
 2026-07-27** — general scheme theory, three lines over mathlib).
@@ -6223,178 +6242,53 @@ theorem generalizingMap_of_isFinite_of_isIntegral {X Y : Scheme.{u}} (f : X ⟶ 
     intro p _ Q hQ _
     exact absurd (Subsingleton.elim Q ⊤) hQ.ne_top
 
-/-- **A POINT WITH A MINIMUM GENERALIZATION HAS AN OPEN NEIGHBOURHOOD IT
-GENERALIZES** (**PROVEN 2026-07-27** — pure topology, no schemes: a noetherian
-sober space is all that is used).
-
-If `ζ` is a *minimum* generalization of `z` — i.e. `ζ ⤳ y` for EVERY
-generalization `y` of `z` — then `z` has an open neighbourhood `W` with
-`ζ ⤳ w` for every `w ∈ W`.
-
-**THE PROOF, and why noetherianness is the only non-formal input.**
-`C := closure {ζ}` is irreducible, and it is the UNIQUE irreducible component
-containing `z`: any component `D ∋ z` is irreducible and closed, so soberness
-gives it a generic point `ξ` with `closure {ξ} = D`; `z ∈ D` says `ξ ⤳ z`, so
-the minimality hypothesis gives `ζ ⤳ ξ`, whence `D = closure {ξ} ⊆ C`, and
-maximality of `D` forces `D = C`.  Noetherianness then makes
-`irreducibleComponents` FINITE, so `W := (⋃₀ (irreducibleComponents \ {C}))ᶜ`
-is open; `z ∈ W` by the uniqueness just proved, and every `w ∈ W` lies in
-`irreducibleComponent w`, which cannot be one of the removed components, hence
-equals `C`, i.e. `ζ ⤳ w`.
-
-*Refute with:* a noetherian sober space and a point with a minimum
-generalization but no such neighbourhood — by this proof there is none. -/
-theorem exists_isOpen_specializes_of_min_generalization
-    {Z : Type*} [TopologicalSpace Z] [TopologicalSpace.NoetherianSpace Z] [QuasiSober Z]
-    (z ζ : Z) (h2 : ∀ y, y ⤳ z → ζ ⤳ y) :
-    ∃ W : Set Z, IsOpen W ∧ z ∈ W ∧ ∀ w ∈ W, ζ ⤳ w := by
-  classical
-  set C : Set Z := closure ({ζ} : Set Z) with hCdef
-  have hCirr : IsIrreducible C := isIrreducible_singleton.closure
-  have key : ∀ D ∈ irreducibleComponents Z, z ∈ D → D = C := by
-    intro D hD hzD
-    have hDcl : IsClosed D := isClosed_of_mem_irreducibleComponents D hD
-    have hDirr : IsIrreducible D := hD.1
-    have hgen : closure ({hDirr.genericPoint} : Set Z) = D := hDirr.closure_genericPoint hDcl
-    have hspec : hDirr.genericPoint ⤳ z := by
-      rw [specializes_iff_mem_closure, hgen]; exact hzD
-    have hζg : ζ ⤳ hDirr.genericPoint := h2 _ hspec
-    have hDC : D ⊆ C := by
-      rw [← hgen]
-      exact closure_minimal (Set.singleton_subset_iff.mpr
-        (specializes_iff_mem_closure.mp hζg)) isClosed_closure
-    exact Set.Subset.antisymm hDC (hD.2 hCirr hDC)
-  refine ⟨(⋃₀ (irreducibleComponents Z \ {C}))ᶜ, ?_, ?_, ?_⟩
-  · rw [Set.sUnion_eq_biUnion, isOpen_compl_iff]
-    exact TopologicalSpace.NoetherianSpace.finite_irreducibleComponents.sdiff.isClosed_biUnion
-      fun W hW ↦ isClosed_of_mem_irreducibleComponents W hW.1
-  · rintro ⟨D, hD, hzD⟩
-    exact hD.2 (key D hD.1 hzD)
-  · intro w hw
-    have hcw : irreducibleComponent w = C := by
-      by_contra hne
-      exact hw ⟨irreducibleComponent w,
-        ⟨irreducibleComponent_mem_irreducibleComponents w, hne⟩, mem_irreducibleComponent⟩
-    have hwC : w ∈ C := hcw ▸ mem_irreducibleComponent
-    rw [hCdef] at hwC
-    exact specializes_iff_mem_closure.mpr hwC
-
-/-- **A POINT OF A SCHEME WHOSE STALK IS A DOMAIN HAS A MINIMUM GENERALIZATION**
-(**PROVEN 2026-07-27** — general scheme theory, three lines over mathlib).
-
-`Spec 𝒪_{X,x} ⟶ X` has range exactly the set of generalizations of `x`
-(`Scheme.range_fromSpecStalk`, `@[stacks 01J7]`), and when the stalk is a DOMAIN
-the source is an irreducible space
-(`AlgebraicGeometry.instIrreducibleSpaceSpecOfIsDomain`), whose generic point
-maps to a generalization of `x` that generalizes every other one.
-
-This is the ONLY use of the domain hypothesis on the stalks: everything after it
-is topology. -/
-theorem exists_min_generalization_of_isDomain_stalk {X : Scheme.{u}} (x : X)
-    [IsDomain (X.presheaf.stalk x)] :
-    ∃ ζ : X, ζ ⤳ x ∧ ∀ y, y ⤳ x → ζ ⤳ y := by
-  refine ⟨(X.fromSpecStalk x).base (genericPoint (Spec (X.presheaf.stalk x))), ?_, ?_⟩
-  · have : (X.fromSpecStalk x).base (genericPoint (Spec (X.presheaf.stalk x)))
-        ∈ Set.range (X.fromSpecStalk x).base := Set.mem_range_self _
-    rwa [Scheme.range_fromSpecStalk] at this
-  · intro y hy
-    have hy' : y ∈ Set.range (X.fromSpecStalk x).base := by
-      rw [Scheme.range_fromSpecStalk]; exact hy
-    obtain ⟨p, rfl⟩ := hy'
-    exact (genericPoint_specializes p).map (X.fromSpecStalk x).base.hom.continuous
-
-/-- **THE MINIMUM GENERALIZATION OF A POINT GENERALIZES A WHOLE OPEN
-NEIGHBOURHOOD OF IT** (**PROVEN 2026-07-27** — general scheme theory).
-
-The scheme-level form of `exists_isOpen_specializes_of_min_generalization`
-above.  `X` is only LOCALLY noetherian, so the topological lemma cannot be
-applied to `X` itself; it is applied on an affine open `U ∋ x`, whose
-underlying subspace IS noetherian (`noetherianSpace_of_isAffineOpen`, given
-`IsLocallyNoetherian.component_noetherian`) and is sober because an open
-subspace of a sober space is sober (`Topology.IsOpenEmbedding.quasiSober`).
-Transport in and out along `Subtype.val` is free: specialization is an
-inducing-map invariant (`subtype_specializes_iff`), a generalization of a point
-of an open set lies in that open set (`Specializes.mem_open`), and the image of
-an open set under the inclusion of an open subspace is open. -/
-theorem exists_isOpen_specializes_of_isDomain_stalk {X : Scheme.{u}} [IsLocallyNoetherian X]
-    (x : X) (ζ : X) (h2 : ∀ y, y ⤳ x → ζ ⤳ y) :
-    ∃ W : Set X, IsOpen W ∧ x ∈ W ∧ ∀ w ∈ W, ζ ⤳ w := by
-  obtain ⟨_, ⟨U, hU, rfl⟩, hxU, -⟩ :=
-    X.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ x) isOpen_univ
-  haveI : IsNoetherianRing Γ(X, U) := IsLocallyNoetherian.component_noetherian ⟨U, hU⟩
-  haveI : TopologicalSpace.NoetherianSpace ↥U := noetherianSpace_of_isAffineOpen U hU
-  haveI : QuasiSober ↥U := U.2.isOpenEmbedding_subtypeVal.quasiSober
-  have hζU : ζ ∈ U := (h2 x (specializes_refl x)).mem_open U.2 hxU
-  obtain ⟨W', hW'open, hxW', hW'⟩ :=
-    exists_isOpen_specializes_of_min_generalization (Z := ↥U) ⟨x, hxU⟩ ⟨ζ, hζU⟩ (by
-      rintro ⟨y, hyU⟩ hy
-      rw [subtype_specializes_iff] at hy ⊢
-      exact h2 y hy)
-  refine ⟨Subtype.val '' W', U.2.isOpenMap_subtype_val _ hW'open, ⟨⟨x, hxU⟩, hxW', rfl⟩, ?_⟩
-  rintro _ ⟨w', hw', rfl⟩
-  exact (subtype_specializes_iff _ _).mp (hW' w' hw')
+-- `exists_isOpen_specializes_of_min_generalization` (a noetherian sober space in
+-- which `z` has a MINIMUM generalization `ζ` has an open `W ∋ z` generalized by
+-- `ζ`) was DELETED on 2026-07-28, together with its two scheme-level corollaries
+-- `exists_min_generalization_of_isDomain_stalk` and
+-- `exists_isOpen_specializes_of_isDomain_stalk`.  They were the private cone of
+-- `irreducibleSpace_of_connected_of_isDomain_stalk` below and had no other
+-- consumer; that theorem is now the two-line composition of the shim lemmas
+-- `irreducibleSpace_of_isOpen_isIrreducible_nhds` and
+-- `exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+-- (`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), which prove
+-- the same theorem by the irreducible-neighbourhood route.  Recover the
+-- minimum-generalization proof from git history if it is ever wanted: it is
+-- genuinely different — it uses no `T0`/antisymmetry, only specialization
+-- chasing — but a second proof of a theorem this development already had three
+-- copies of is exactly what the shim exists to stop.
 
 /-- **A CONNECTED LOCALLY NOETHERIAN SCHEME WITH DOMAIN STALKS IS IRREDUCIBLE**
-(**PROVEN 2026-07-27** — general scheme theory, no field and no smoothness; this
-is the statement the pin does not have, and it is what
+(**PROVEN 2026-07-27**; **REPROVED 2026-07-28** as a two-line composition of the
+shim module `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` —
+general scheme theory, no field and no smoothness; this is the statement the pin
+does not have, and it is what
 `irreducibleSpace_of_smooth_geometricallyConnected` below is a corollary of).
 
-**THE PROOF, and why it is NOT the disjoint-components argument the route note
-predicted.**  Writing `ζ x` for the minimum generalization of `x`
-(`exists_min_generalization_of_isDomain_stalk`), fix `x₀` and set
+**THE PROOF.**  `exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` gives every
+point an irreducible OPEN neighbourhood (on an affine chart the domain stalk
+pins a unique minimal prime below the point, and removing the finitely many
+other minimal primes leaves an open subset of the irreducible `V(q)`), and
+`irreducibleSpace_of_isOpen_isIrreducible_nhds` upgrades that to
+global irreducibility by a clopen argument on `irreducibleComponent x₀`.  Both
+live in the shim because this development had written the same theorem THREE
+times; see that module's header.
 
-    S := {y | ∃ ξ, ξ ⤳ x₀ ∧ ξ ⤳ y}   -- "`y` has a common generalization with `x₀`"
-
-`S` is OPEN: for `y ∈ S` with witness `ξ`, the open `W ∋ y` supplied by
-`exists_isOpen_specializes_of_isDomain_stalk` at `y` lies in `S`, because
-`ζ y ⤳ ξ ⤳ x₀` (minimality at `y`, since `ξ ⤳ y`) while `ζ y ⤳ w` for `w ∈ W`.
-Its COMPLEMENT is open by the same neighbourhood: if some `w ∈ W` had a common
-generalization `ξ` with `x₀` then `ζ w` is one for `y` as well, since
-`ζ w ⤳ ξ ⤳ x₀` and `ζ w ⤳ ζ y ⤳ y`.  So `S` is clopen and nonempty, hence
-everything by connectedness — and then `ζ x₀ ⤳ y` for every `y`, i.e.
-`X = closure {ζ x₀}`, which is irreducible.
-
-**NO `T0` / ANTISYMMETRY IS USED.**  The obvious variant `S := closure {ζ x₀}`
-needs `ζ y = ζ x₀` on `S`, which costs a `T0` antisymmetry argument; phrasing
-`S` by COMMON GENERALIZATION removes it, and with it the only step that was not
-pure specialization-chasing. -/
+**A SECOND, GENUINELY DIFFERENT PROOF LIVED HERE UNTIL 2026-07-28** and is
+recoverable from git history: writing `ζ x` for the *minimum* generalization of
+`x` (which a domain stalk supplies through `Scheme.range_fromSpecStalk`), the
+set `S := {y | ∃ ξ, ξ ⤳ x₀ ∧ ξ ⤳ y}` of points sharing a generalization with
+`x₀` is clopen, so `X = closure {ζ x₀}`.  It uses NO `T0`/antisymmetry — only
+specialization chasing — which is why it is worth naming even though it is
+deleted.  It was written because `MoretBailly.lean`, which already held the
+argument below, is strictly DOWNSTREAM of this file; hoisting removed that
+reason. -/
 theorem irreducibleSpace_of_connected_of_isDomain_stalk (X : Scheme.{u}) [IsLocallyNoetherian X]
     [ConnectedSpace X] (hdom : ∀ x : X, IsDomain (X.presheaf.stalk x)) :
-    IrreducibleSpace X := by
-  classical
-  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
-  have hmin : ∀ x : X, ∃ ζ : X, ζ ⤳ x ∧ ∀ y, y ⤳ x → ζ ⤳ y := by
-    intro x
-    haveI := hdom x
-    exact exists_min_generalization_of_isDomain_stalk x
-  choose ζ hζ1 hζ2 using hmin
-  set S : Set X := {y | ∃ ξ : X, ξ ⤳ x₀ ∧ ξ ⤳ y} with hSdef
-  have hSopen : IsOpen S := by
-    rw [isOpen_iff_forall_mem_open]
-    rintro y ⟨ξ, hξ0, hξy⟩
-    obtain ⟨W, hWopen, hyW, hW⟩ := exists_isOpen_specializes_of_isDomain_stalk y (ζ y) (hζ2 y)
-    exact ⟨W, fun w hw => ⟨ζ y, (hζ2 y ξ hξy).trans hξ0, hW w hw⟩, hWopen, hyW⟩
-  have hScopen : IsOpen Sᶜ := by
-    rw [isOpen_iff_forall_mem_open]
-    intro y hy
-    obtain ⟨W, hWopen, hyW, hW⟩ := exists_isOpen_specializes_of_isDomain_stalk y (ζ y) (hζ2 y)
-    refine ⟨W, fun w hw hwS => ?_, hWopen, hyW⟩
-    obtain ⟨ξ, hξ0, hξw⟩ := hwS
-    exact hy ⟨ζ w, (hζ2 w ξ hξw).trans hξ0, (hζ2 w (ζ y) (hW w hw)).trans (hζ1 y)⟩
-  have hSuniv : S = Set.univ :=
-    (IsClopen.eq_univ ⟨isOpen_compl_iff.mp hScopen, hSopen⟩ ⟨x₀, x₀, specializes_refl _,
-      specializes_refl _⟩)
-  have hall : ∀ y : X, ζ x₀ ⤳ y := by
-    intro y
-    have : y ∈ S := hSuniv ▸ Set.mem_univ y
-    obtain ⟨ξ, hξ0, hξy⟩ := this
-    exact (hζ2 x₀ ξ hξ0).trans hξy
-  have huniv : (Set.univ : Set X) = closure ({ζ x₀} : Set X) :=
-    Set.eq_univ_of_forall (fun y => specializes_iff_mem_closure.mp (hall y)) ▸ rfl
-  rw [irreducibleSpace_def]
-  have htop : ((⊤ : Set X)) = closure ({ζ x₀} : Set X) := by rw [← huniv]; rfl
-  rw [htop]
-  exact isIrreducible_singleton.closure
+    IrreducibleSpace X :=
+  _root_.irreducibleSpace_of_isOpen_isIrreducible_nhds
+    (fun x => _root_.AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk
+      x (hdom x))
 
 /-- **A SMOOTH GEOMETRICALLY CONNECTED SCHEME OVER A FIELD IS IRREDUCIBLE**
 (**PROVEN 2026-07-27** over the general scheme-theoretic
