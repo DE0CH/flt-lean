@@ -118,16 +118,22 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
 `exists_isOpenImmersion_isProper` have all been in it while closed.  **Regenerate it from the
 build's `declaration uses 'sorry'` warnings before acting on it; do not trust the prose.**  As
-of the release-14 integration (2026-07-28) this file's sorries are exactly these THREE — **the
-whole normality half is now CLOSED**:
+of 2026-07-28 this file's sorries are exactly these TWO — **the whole normality half is
+CLOSED, and so is the whole of E. Noether's finiteness theorem**:
 
 | leaf | content |
 | --- | --- |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction — but see the next section: every consumer now bypasses it |
-| `exists_finset_span_powSubalgebra_of_mem_span` | the FINITE-MODEL DESCENT, all that is left of E. Noether's finiteness theorem after 2026-07-28: over `A = k[x₁,…,x_d]` with `Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional `Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  `module_finite_integralClosure_of_isPurelyInseparable` (the inseparable residue, and with it all of `module_finite_integralClosure_of_isFractionRing`) is PROVEN over it |
 
 **Proven and no longer leaves** (do NOT dispatch at these):
+`exists_finset_span_powSubalgebra_of_mem_span` — the FINITE-MODEL DESCENT, the last leaf of
+E. Noether's finiteness theorem, **PROVEN 2026-07-28**: over `A = k[x₁,…,x_d]` with
+`Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional
+`Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  With it,
+`module_finite_integralClosure_of_isPurelyInseparable`,
+`module_finite_integralClosure_of_isFractionRing`, `finiteType_integralClosure_sections` and
+`locallyOfFiniteType_fromNormalization` are all sorry-free.
 `isIntegrallyClosed_stalk_normalization` (REFUTED, RESTATED with an explicit normality
 hypothesis `hYn`, and PROVEN 2026-07-28 over `isIntegrallyClosed_sections_of_forall_stalk`,
 itself PROVEN and hoisted here from `Modularity/MoretBailly.lean`),
@@ -1051,9 +1057,116 @@ theorem isNoetherianRing_powSubalgebra (R : Type*) [CommRing R] [IsDomain R] [Is
     exact ⟨a, rfl⟩
   exact isNoetherianRing_of_ringEquiv R (RingEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩)
 
-/-- **LEAF — the finite-model descent: the whole arithmetic content of E. Noether's
+/-! #### Coefficientwise operations on multivariate polynomials
+
+The four lemmas below are the polynomial-side machinery of the finite-model descent
+(`exists_finset_span_powSubalgebra_of_mem_span`).  Nothing here is specific to that
+statement: they say when a polynomial has all its coefficients in a subring, and they carry
+out the classical "`k₁(x) ∩ k[x] = k₁[x]`" retraction argument. -/
+
+section NoetherFiniteModel
+
+/-- Coefficientwise image of a multivariate polynomial under an arbitrary function. -/
+noncomputable def mvCoeffMap {σ F L : Type*} [CommSemiring F] [CommSemiring L]
+    (ρ : F → L) (f : MvPolynomial σ F) : MvPolynomial σ L :=
+  ∑ m ∈ f.support, MvPolynomial.monomial m (ρ (MvPolynomial.coeff m f))
+
+theorem coeff_mvCoeffMap {σ F L : Type*} [CommSemiring F] [CommSemiring L]
+    {ρ : F → L} (h0 : ρ 0 = 0) (f : MvPolynomial σ F) (m : σ →₀ ℕ) :
+    MvPolynomial.coeff m (mvCoeffMap ρ f) = ρ (MvPolynomial.coeff m f) := by
+  classical
+  rw [mvCoeffMap, MvPolynomial.coeff_sum]
+  simp only [MvPolynomial.coeff_monomial]
+  rw [Finset.sum_ite_eq' f.support m (fun b => ρ (MvPolynomial.coeff b f))]
+  split_ifs with hm
+  · rfl
+  · rw [MvPolynomial.notMem_support_iff.mp hm, h0]
+
+/-- A polynomial all of whose coefficients lie in the range of `φ` is in the range of
+`MvPolynomial.map φ`. -/
+theorem mvPolynomial_mem_range_map_of_forall_coeff {σ F L : Type*} [CommRing F] [CommRing L]
+    (φ : F →+* L) (f : MvPolynomial σ L)
+    (h : ∀ m, MvPolynomial.coeff m f ∈ φ.range) :
+    f ∈ (MvPolynomial.map (σ := σ) φ).range := by
+  classical
+  choose g hg using h
+  refine ⟨∑ m ∈ f.support, MvPolynomial.monomial m (g m), ?_⟩
+  rw [map_sum]
+  simp only [MvPolynomial.map_monomial, hg]
+  exact MvPolynomial.support_sum_monomial_coeff f
+
+/-- If `φ`'s range contains every `p ^ n`-th power, then the range of `MvPolynomial.map φ`
+contains every `p ^ n`-th power.  This is the statement `A ^ q = k ^ q[x ^ q]` in the form the
+descent uses it: the `q`-th power of an arbitrary polynomial has all its coefficients among
+the `q`-th powers of the base. -/
+theorem mvPolynomial_pow_expChar_pow_mem_range_map {σ F L : Type*} [CommRing F] [CommRing L]
+    (p n : ℕ) [ExpChar L p] (φ : F →+* L) (h : ∀ c : L, c ^ p ^ n ∈ φ.range)
+    (f : MvPolynomial σ L) :
+    f ^ p ^ n ∈ (MvPolynomial.map (σ := σ) φ).range := by
+  haveI : ExpChar (MvPolynomial σ L) p :=
+    expChar_of_injective_ringHom (MvPolynomial.C_injective σ L) p
+  induction f using MvPolynomial.induction_on with
+  | C a =>
+      obtain ⟨b, hb⟩ := h a
+      refine ⟨MvPolynomial.C b, ?_⟩
+      rw [MvPolynomial.map_C, hb, MvPolynomial.C_pow]
+  | add f g hf hg =>
+      rw [add_pow_expChar_pow]
+      exact add_mem hf hg
+  | mul_X f i hf =>
+      rw [mul_pow]
+      refine mul_mem hf ⟨MvPolynomial.X i ^ p ^ n, ?_⟩
+      rw [map_pow, MvPolynomial.map_X]
+
+/-- **The coefficient retraction — `F(x) ∩ L[x] = F[x]`.**  Let `F ⊆ L` be a subfield.  If
+`a * v = u` in `L[x]` with `u`, `v` having coefficients in `F` and `v ≠ 0`, then `a` has
+coefficients in `F`.
+
+The proof is the classical one: `F` is a field, so `L` is a free `F`-module and the inclusion
+`F → L` admits an `F`-linear retraction `ρ : L → F`.  Applying `ρ` coefficientwise gives an
+`F[x]`-linear retraction `π : L[x] → F[x]`, and then
+`v · π a = π (v · a) = π u = u = v · a`, so `π a = a` by cancellation. -/
+theorem mvPolynomial_mem_range_map_of_mul_eq {σ F L : Type*} [Field F] [Field L] [Algebra F L]
+    {a v u : MvPolynomial σ L}
+    (hv : v ∈ (MvPolynomial.map (σ := σ) (algebraMap F L)).range)
+    (hu : u ∈ (MvPolynomial.map (σ := σ) (algebraMap F L)).range)
+    (hv0 : v ≠ 0) (h : a * v = u) :
+    a ∈ (MvPolynomial.map (σ := σ) (algebraMap F L)).range := by
+  classical
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap F L).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap F L).injective)
+  have hρc : ∀ c : F, ρ (algebraMap F L c) = c := fun c => LinearMap.congr_fun hρ c
+  have hρ0 : (ρ : L → F) 0 = 0 := map_zero ρ
+  -- the retraction is `F[x]`-linear
+  have hmul : ∀ (w : MvPolynomial σ F) (z : MvPolynomial σ L),
+      mvCoeffMap (ρ : L → F) (MvPolynomial.map (algebraMap F L) w * z)
+        = w * mvCoeffMap (ρ : L → F) z := by
+    intro w z
+    ext m
+    rw [coeff_mvCoeffMap hρ0, MvPolynomial.coeff_mul, MvPolynomial.coeff_mul, map_sum]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [MvPolynomial.coeff_map, coeff_mvCoeffMap hρ0, ← Algebra.smul_def, map_smul, smul_eq_mul]
+  -- it is the identity on polynomials with coefficients in `F`
+  have hid : ∀ w : MvPolynomial σ F,
+      mvCoeffMap (ρ : L → F) (MvPolynomial.map (algebraMap F L) w) = w := by
+    intro w
+    ext m
+    rw [coeff_mvCoeffMap hρ0, MvPolynomial.coeff_map, hρc]
+  obtain ⟨wv, rfl⟩ := hv
+  obtain ⟨wu, rfl⟩ := hu
+  have key : wv * mvCoeffMap (ρ : L → F) a = wu := by
+    rw [← hmul wv a, mul_comm (MvPolynomial.map (algebraMap F L) wv) a, h, hid]
+  have key2 : MvPolynomial.map (algebraMap F L) wv *
+      MvPolynomial.map (algebraMap F L) (mvCoeffMap (ρ : L → F) a)
+      = MvPolynomial.map (algebraMap F L) wv * a := by
+    rw [← map_mul, key, ← h, mul_comm]
+  exact ⟨mvCoeffMap (ρ : L → F) a, mul_left_cancel₀ hv0 key2⟩
+
+end NoetherFiniteModel
+
+/-- **The finite-model descent: the whole arithmetic content of E. Noether's
 finiteness theorem in characteristic `p`** (cut 2026-07-28; the entire cluster above is
-PROVEN over it).
+PROVEN over it.  **PROVEN 2026-07-28**, so this cluster is now closed outright).
 
 `A = k[x₁,…,x_d]` is a polynomial ring over a field `k` of exponential characteristic `p`,
 `Kf = Frac A`, `q = p ^ n`, and `Aq`, `Kfq` denote the subrings of `q`-th powers.  Then for
@@ -1084,7 +1197,19 @@ it only makes `k₁ = k`; the example usually quoted, `k = 𝔽_p`, `A = k[x,y]/
 over `k[x]` with a purely inseparable fraction-field extension, shows the inseparable case
 is live over a perfect field too.  (iii) In characteristic zero `p = 1`, `q = 1`, `Aq = A`
 and `G = {1}` works, which is why no case split on the characteristic occurs anywhere in
-this cluster. -/
+this cluster.
+
+**Implementation notes** (2026-07-28, from carrying the argument out).  `k₁(x)` is realised
+not as an `IntermediateField` of `Kf` but as `Subfield.closure (χ.range)` for the ring
+homomorphism `χ : k₁[x] →+* Kf`; `Subfield.mem_closure_iff` then hands back the `u / v`
+decomposition directly, which is the only thing the retraction step needs, and
+`Subring.closure_eq` disposes of the inner closure since `χ.range` is already a subring.  The
+`k₁`-rationality of a polynomial is expressed throughout as membership in the range of
+`MvPolynomial.map (algebraMap k₁ k)` rather than as a condition on coefficients — that turns
+"closed under products and sums" into `RingHom.range` lemmas and makes the retraction step a
+cancellation in a domain.  The `q`-th-power step is
+`mvPolynomial_pow_expChar_pow_mem_range_map`, proven by `MvPolynomial.induction_on` over
+`add_pow_expChar_pow`, so `Aq ⊆ k₁[x]` never needs an explicit description of `Aq`. -/
 theorem exists_finset_span_powSubalgebra_of_mem_span
     (k : Type*) [Field k] (d p n : ℕ) [ExpChar k p]
     (Kf : Type*) [Field Kf] [Algebra (MvPolynomial (Fin d) k) Kf]
@@ -1094,8 +1219,191 @@ theorem exists_finset_span_powSubalgebra_of_mem_span
       algebraMap (MvPolynomial (Fin d) k) Kf a ∈
           Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf) →
         a ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
-          (G : Set (MvPolynomial (Fin d) k)) :=
-  sorry
+          (G : Set (MvPolynomial (Fin d) k)) := by
+  classical
+  have hq0 : 0 < p ^ n := expChar_pow_pos k p n
+  -- numerators and denominators of the members of `Θ`
+  choose U V _ hUV using fun θ : Kf =>
+    IsFractionRing.div_surjective (A := MvPolynomial (Fin d) k) θ
+  -- the subfield of `p ^ n`-th powers of `k`, and the finite set of coefficients involved
+  set kq : Subfield k := (iterateFrobenius k p n).fieldRange
+  set C : Finset k := Θ.biUnion (fun θ =>
+      ((U θ).support.image (fun m => MvPolynomial.coeff m (U θ))) ∪
+      ((V θ).support.image (fun m => MvPolynomial.coeff m (V θ))))
+  set k₁ : IntermediateField ↥kq k := IntermediateField.adjoin ↥kq (C : Set k) with hk₁def
+  have hkq_mem : ∀ x : k, x ∈ kq → x ∈ k₁ := by
+    intro x hx
+    exact k₁.algebraMap_mem (⟨x, hx⟩ : ↥kq)
+  have hpow_mem : ∀ x : k, x ^ p ^ n ∈ k₁ :=
+    fun x => hkq_mem _ (RingHom.mem_fieldRange.mpr ⟨x, by simp [iterateFrobenius_def]⟩)
+  have hrange : ∀ x : k, x ∈ k₁ → x ∈ (algebraMap ↥k₁ k).range := fun x hx => ⟨⟨x, hx⟩, rfl⟩
+  -- `k₁ / kq` is finite: each generator is a root of the monic `X ^ q - C (c ^ q)`
+  haveI : FiniteDimensional ↥kq ↥k₁ := by
+    rw [hk₁def]
+    refine IntermediateField.finiteDimensional_adjoin ?_
+    intro x _
+    refine ⟨Polynomial.X ^ p ^ n -
+      Polynomial.C (⟨x ^ p ^ n, RingHom.mem_fieldRange.mpr ⟨x, by simp [iterateFrobenius_def]⟩⟩ :
+        ↥kq), Polynomial.monic_X_pow_sub_C _ hq0.ne', ?_⟩
+    simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C]
+    exact sub_self _
+  -- a finite `kq`-spanning set of `k₁`, moved into `k`
+  obtain ⟨E, hE⟩ := (Module.finite_def.mp (inferInstance : Module.Finite ↥kq ↥k₁))
+  set E' : Finset k := E.image (fun e : ↥k₁ => (e : k))
+  have hE' : ∀ c : ↥k₁, (c : k) ∈ Submodule.span ↥kq (E' : Set k) := by
+    intro c
+    have h1 : (c : k) ∈ Submodule.map (k₁.val.toLinearMap)
+        (Submodule.span ↥kq (E : Set ↥k₁)) := by
+      rw [hE]; exact ⟨c, Submodule.mem_top, rfl⟩
+    rw [Submodule.map_span] at h1
+    refine Submodule.span_mono ?_ h1
+    rintro y ⟨e, he, rfl⟩
+    exact Finset.mem_coe.mpr (Finset.mem_image.mpr ⟨e, Finset.mem_coe.mp he, rfl⟩)
+  -- the exponent box `{α : αⱼ < q}` and the finite generating set `G = {eᵢ · x^α}`
+  set box : Finset (Fin d →₀ ℕ) :=
+    (Fintype.piFinset (fun _ : Fin d => Finset.range (p ^ n))).image
+      (fun g => Finsupp.equivFunOnFinite.symm g) with hboxdef
+  set G : Finset (MvPolynomial (Fin d) k) :=
+    (E' ×ˢ box).image (fun x => MvPolynomial.monomial x.2 x.1) with hGdef
+  -- every monomial with coefficient in `k₁` is in the `Aq`-span of `G`
+  have hmono : ∀ (c : ↥k₁) (β : Fin d →₀ ℕ),
+      MvPolynomial.monomial β (c : k) ∈
+        Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+          (G : Set (MvPolynomial (Fin d) k)) := by
+    intro c β
+    set γ : Fin d →₀ ℕ := Finsupp.mapRange (fun x => x / p ^ n) (by simp) β with hγdef
+    set α : Fin d →₀ ℕ := Finsupp.mapRange (fun x => x % p ^ n) (by simp) β with hαdef
+    have hβ : p ^ n • γ + α = β := by
+      ext j
+      simp only [Finsupp.add_apply, Finsupp.smul_apply, hγdef, hαdef, Finsupp.mapRange_apply,
+        smul_eq_mul]
+      exact Nat.div_add_mod (β j) (p ^ n)
+    have hαbox : α ∈ box := by
+      rw [hboxdef]
+      refine Finset.mem_image.mpr ⟨⇑α, ?_, Finsupp.equivFunOnFinite.symm_apply_apply α⟩
+      refine Fintype.mem_piFinset.mpr fun j => Finset.mem_range.mpr ?_
+      simp only [hαdef, Finsupp.mapRange_apply]
+      exact Nat.mod_lt _ hq0
+    obtain ⟨g, -, hg⟩ := Submodule.mem_span_finset.mp (hE' c)
+    have hc : (c : k) = ∑ e ∈ E', (g e : k) * e := by
+      rw [← hg]; exact Finset.sum_congr rfl fun e _ => Algebra.smul_def _ _
+    rw [hc, map_sum]
+    refine Submodule.sum_mem _ fun e he => ?_
+    obtain ⟨t, ht⟩ := RingHom.mem_fieldRange.mp (g e).2
+    have ht' : (g e : k) = t ^ p ^ n := by rw [← ht]; simp [iterateFrobenius_def]
+    have hsq : (MvPolynomial.monomial γ t : MvPolynomial (Fin d) k) ^ p ^ n ∈
+        powSubalgebra (MvPolynomial (Fin d) k) p n := pow_mem_powSubalgebra _
+    have hGmem : (MvPolynomial.monomial α e : MvPolynomial (Fin d) k) ∈ G := by
+      rw [hGdef]
+      exact Finset.mem_image.mpr ⟨(e, α), Finset.mem_product.mpr ⟨he, hαbox⟩, rfl⟩
+    have hrw : (MvPolynomial.monomial β ((g e : k) * e) : MvPolynomial (Fin d) k)
+        = (⟨(MvPolynomial.monomial γ t : MvPolynomial (Fin d) k) ^ p ^ n, hsq⟩ :
+            ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)) •
+          (MvPolynomial.monomial α e : MvPolynomial (Fin d) k) := by
+      rw [Algebra.smul_def]
+      show _ = (MvPolynomial.monomial γ t : MvPolynomial (Fin d) k) ^ p ^ n *
+        MvPolynomial.monomial α e
+      rw [MvPolynomial.monomial_pow, MvPolynomial.monomial_mul, hβ, ht']
+    rw [hrw]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hGmem)
+  -- hence every polynomial with coefficients in `k₁` is in the `Aq`-span of `G`
+  have hpsi : ∀ f : MvPolynomial (Fin d) k,
+      f ∈ (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k)).range →
+      f ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+        (G : Set (MvPolynomial (Fin d) k)) := by
+    rintro f ⟨w, rfl⟩
+    rw [← MvPolynomial.support_sum_monomial_coeff w, map_sum]
+    refine Submodule.sum_mem _ fun m _ => ?_
+    rw [MvPolynomial.map_monomial]
+    exact hmono _ m
+  -- `k₁(x)`, as the subfield of `Kf` generated by the polynomials with coefficients in `k₁`
+  set χ : MvPolynomial (Fin d) ↥k₁ →+* Kf :=
+    (algebraMap (MvPolynomial (Fin d) k) Kf).comp
+      (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k)) with hχdef
+  set K₁ : Subfield Kf := Subfield.closure (χ.range : Set Kf) with hK₁def
+  have hmemK₁ : ∀ y ∈ χ.range, ∀ z ∈ χ.range, y / z ∈ K₁ := by
+    intro y hy z hz
+    rw [hK₁def, Subfield.mem_closure_iff]
+    exact ⟨y, by rwa [Subring.closure_eq], z, by rwa [Subring.closure_eq], rfl⟩
+  have hχmem : ∀ f : MvPolynomial (Fin d) k,
+      f ∈ (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k)).range →
+      algebraMap (MvPolynomial (Fin d) k) Kf f ∈ χ.range := by
+    rintro f ⟨w, rfl⟩
+    exact ⟨w, rfl⟩
+  -- `Θ ⊆ k₁(x)`, by the very choice of `k₁`
+  have hΘK₁ : ∀ θ ∈ Θ, θ ∈ K₁ := by
+    intro θ hθ
+    have hUmem : U θ ∈ (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k)).range := by
+      refine mvPolynomial_mem_range_map_of_forall_coeff _ _ fun m => ?_
+      by_cases hm : m ∈ (U θ).support
+      · refine hrange _ (IntermediateField.subset_adjoin _ _ ?_)
+        exact Finset.mem_biUnion.mpr ⟨θ, hθ, Finset.mem_union_left _
+          (Finset.mem_image.mpr ⟨m, hm, rfl⟩)⟩
+      · rw [MvPolynomial.notMem_support_iff.mp hm]; exact zero_mem _
+    have hVmem : V θ ∈ (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k)).range := by
+      refine mvPolynomial_mem_range_map_of_forall_coeff _ _ fun m => ?_
+      by_cases hm : m ∈ (V θ).support
+      · refine hrange _ (IntermediateField.subset_adjoin _ _ ?_)
+        exact Finset.mem_biUnion.mpr ⟨θ, hθ, Finset.mem_union_right _
+          (Finset.mem_image.mpr ⟨m, hm, rfl⟩)⟩
+      · rw [MvPolynomial.notMem_support_iff.mp hm]; exact zero_mem _
+    rw [← hUV θ]
+    exact hmemK₁ _ (hχmem _ hUmem) _ (hχmem _ hVmem)
+  -- and `Kfq ⊆ k₁(x)`, because a `q`-th power has all its coefficients in `k^q ⊆ k₁`
+  have hpowK₁ : ∀ z : Kf, z ^ p ^ n ∈ K₁ := by
+    intro z
+    obtain ⟨f, g, -, hfg⟩ :=
+      IsFractionRing.div_surjective (A := MvPolynomial (Fin d) k) z
+    have hcoef : ∀ c : k, c ^ p ^ n ∈ (algebraMap ↥k₁ k).range :=
+      fun c => hrange _ (hpow_mem c)
+    have hf := mvPolynomial_pow_expChar_pow_mem_range_map (σ := Fin d) p n
+      (algebraMap ↥k₁ k) hcoef f
+    have hg := mvPolynomial_pow_expChar_pow_mem_range_map (σ := Fin d) p n
+      (algebraMap ↥k₁ k) hcoef g
+    have := hmemK₁ _ (hχmem _ hf) _ (hχmem _ hg)
+    rwa [map_pow, map_pow, ← div_pow, hfg] at this
+  -- so the whole `Kfq`-span of `Θ` sits inside `k₁(x)`
+  have hsub : ∀ z : Kf, z ∈ Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf) → z ∈ K₁ := by
+    intro z hz
+    induction hz using Submodule.span_induction with
+    | mem x hx => exact hΘK₁ x hx
+    | zero => exact zero_mem _
+    | add x y _ _ hx hy => exact add_mem hx hy
+    | smul r x _ hx =>
+        obtain ⟨σ, hσ⟩ := r.2
+        have hr : (r : Kf) = σ ^ p ^ n := by simpa [iterateFrobenius_def] using hσ.symm
+        show (r : Kf) * x ∈ K₁
+        rw [hr]
+        exact mul_mem (hpowK₁ σ) hx
+  -- assembly: `a ∈ k₁(x) ∩ k[x] = k₁[x] ⊆ Aq-span G`
+  refine ⟨G, fun a ha => ?_⟩
+  have haK₁ := hsub _ ha
+  rw [hK₁def, Subfield.mem_closure_iff] at haK₁
+  obtain ⟨y, hy, z, hz, hyz⟩ := haK₁
+  rw [Subring.closure_eq] at hy hz
+  obtain ⟨wu, hwu⟩ := hy
+  obtain ⟨wv, hwv⟩ := hz
+  by_cases hz0 : z = 0
+  · rw [hz0, div_zero] at hyz
+    have : a = 0 := by
+      apply IsFractionRing.injective (MvPolynomial (Fin d) k) Kf
+      rw [map_zero]; exact hyz.symm
+    rw [this]; exact Submodule.zero_mem _
+  · have hvne : MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k) wv ≠ 0 := by
+      intro h
+      apply hz0
+      rw [← hwv, hχdef]
+      simp [h]
+    have heq : a * MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k) wv
+        = MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k) wu := by
+      apply IsFractionRing.injective (MvPolynomial (Fin d) k) Kf
+      rw [map_mul]
+      have h1 : algebraMap (MvPolynomial (Fin d) k) Kf
+          (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k) wv) = z := hwv
+      have h2 : algebraMap (MvPolynomial (Fin d) k) Kf
+          (MvPolynomial.map (σ := Fin d) (algebraMap ↥k₁ k) wu) = y := hwu
+      rw [h1, h2, ← hyz, div_mul_cancel₀ _ hz0]
+    exact hpsi a (mvPolynomial_mem_range_map_of_mul_eq ⟨wv, rfl⟩ ⟨wu, rfl⟩ hvne heq)
 
 /-- **The arithmetic core of E. Noether's finiteness theorem in characteristic `p`**
 (PROVEN 2026-07-28 over `exists_finset_span_powSubalgebra_of_mem_span` above).
