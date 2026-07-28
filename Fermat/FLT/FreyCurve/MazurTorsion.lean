@@ -1825,7 +1825,7 @@ geometric connectedness are stable under base change) and `spA` is
 classical input is asked for a special fibre at all, and the residual
 mathematics is exactly the two facts named above.
 
-**WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hsm` is the
+**WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hcurve` is the
 smoothness of `𝒳` without which the Néron mapping property says nothing
 about morphisms out of it; `abZ` and `genJ` are "`J` has good reduction",
 the whole input to Néron–Ogg–Šafarevič; `hsurj` is what makes `V_ℓ A` a
@@ -1833,8 +1833,18 @@ QUOTIENT rather than an arbitrary Galois module — drop it and the
 statement is **FALSE**, since any abelian variety at all admits the zero
 homomorphism from `J`, including ones with bad reduction at `q`; `hadd`
 is what makes `u` act on Tate modules at all; `hq`, `hbase` and `toF` pin
-the base as `ℤ_(q)` and supply the special fibre.  Every one of them is
-now consumed by the proof, so the old underscore prefixes are gone.
+the base as `ℤ_(q)` and supply the special fibre.
+
+`hcurve` was `hsm : Smooth xstr` until 2026-07-28 and is now
+`IsSmoothProperCurve xstr`, because that is what the upstream Néron leaf
+`exists_neronExtension_of_abelianScheme` (`X0.lean`) asks for.  Its own
+docstring records that only smoothness is used, so the widening is one
+edit once that leaf closes; the sole caller here is a Deligne–Rapoport
+curve model and hands over `⟨d.model.isProper, d.model.smooth,
+d.model.connected⟩` without doing any work.  `genJ_nat` was added the
+same day for the same reason — the upstream good-reduction theorem
+`exists_goodAbelianReduction_of_abelianQuotient` takes `genJ` as an
+`IsFibreIdent` — and the caller already held it as `jm.genJ_nat`.
 
 **NON-VACUITY.**  `A := J`, `u := 𝟙`, `fQ := ` Abel–Jacobi satisfies every
 hypothesis, so no proof can discharge this by contradicting them.
@@ -1881,7 +1891,7 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
     {X XZ J JZ A : Scheme.{0}}
     {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
     {jstr : J ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R} {astr : A ⟶ SpecQ}
-    (hsm : Smooth xstr)
+    (hcurve : IsSmoothProperCurve xstr)
     (ab : AbelianSchemeStruct jstr) (abZ : AbelianSchemeStruct jstrZ)
     (abA : AbelianSchemeStruct astr)
     (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
@@ -1894,15 +1904,21 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
         = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genX g g₀ h₀ x))
     (genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀)
+    (genJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+      (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+      (x : RelPoint jstr g),
+      genJ g' g₀' h₀' (RelPoint.pre h hg x)
+        = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genJ g g₀ h₀ x))
     (u : J ⟶ A) (hu : u ≫ astr = jstr)
     (hadd : IsAdditiveOn ab abA u hu) (hsurj : AlgebraicGeometry.Surjective u)
     (fQ : X ⟶ A) (hfQ : fQ ≫ astr = strX) :
     Nonempty (IsAbelianGoodReductionModel q R toF genX fQ hfQ) := by
   -- Serre–Tate: the quotient inherits good reduction at `q`
   obtain ⟨G⟩ := exists_goodReductionModel_of_surjective q hq R toF hbase ab abZ abA
-    genJ u hu hadd hsurj
+    genJ genJ_nat u hu hadd hsurj
   -- BLR: `fQ` spreads out to a morphism of integral models
-  obtain ⟨E⟩ := exists_neronExtension q R toF hbase hsm G.abZ genX genX_nat
+  obtain ⟨E⟩ := exists_neronExtension q R toF hbase hcurve G.abZ genX genX_nat
     G.genA G.genA_nat fQ hfQ
   -- the special fibre is `𝒜 ×_{ℤ_(q)} 𝔽_q`, and every field of it is a theorem
   exact ⟨{ AZ := G.AZ
@@ -2402,12 +2418,11 @@ theorem exists_eisensteinQuotientModel_of_jNeronDatum (N q : ℕ)
   have hfQ : (jac.ajHom ≫ u) ≫ astr = strX := by
     rw [Category.assoc, hu]
     exact (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
-  have hsmX : Smooth xstr := by
-    haveI := d.model.smooth
-    exact SmoothOfRelativeDimension.smooth (n := 1) xstr
+  have hcurveX : IsSmoothProperCurve xstr :=
+    ⟨d.model.isProper, d.model.smooth, d.model.connected⟩
   -- good reduction of the quotient, and the spread-out of `π ∘ aj_∞`
-  obtain ⟨G⟩ := exists_abelianGoodReductionModel q hq R toF d.base hsmX
-    ab abZ abA d.genX d.genX_nat jm.genJ u hu hadd hsurj (jac.ajHom ≫ u) hfQ
+  obtain ⟨G⟩ := exists_abelianGoodReductionModel q hq R toF d.base hcurveX
+    ab abZ abA d.genX d.genX_nat jm.genJ jm.genJ_nat u hu hadd hsurj (jac.ajHom ≫ u) hfQ
   -- Yoneda for Abel–Jacobi: postcomposing with `ajHom ≫ u` is `u` applied to `aj`
   have hcomp : ∀ z : RelPoint strX (𝟙 SpecQ),
       RelPoint.post (jac.ajHom ≫ u) hfQ z = RelPoint.post u hu (jac.aj (𝟙 SpecQ) z) := by

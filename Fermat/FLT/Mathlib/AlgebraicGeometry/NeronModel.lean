@@ -25,11 +25,15 @@ operator or a cusp:
    *Reference:* Serre–Tate, *Good reduction of abelian varieties*, Ann. of Math. **88**
    (1968), Thm 1 and Cor. 2; Bosch–Lütkebohmert–Raynaud, *Néron Models*, §7.4.
 
-2. **A morphism from a smooth `ℤ_(q)`-scheme into an abelian scheme extends**
-   (`exists_neronExtensionHom`, and `exists_neronExtension` over it).  An abelian
-   scheme over a DVR is smooth and proper, hence IS the Néron model of its generic
-   fibre, so `Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(𝒵_ℚ, A)` for every smooth `𝒵/ℤ_(q)`.
+2. **A morphism from a smooth proper `ℤ_(q)`-curve into an abelian scheme extends**
+   (`exists_neronExtension`).  An abelian scheme over a DVR is smooth and proper,
+   hence IS the Néron model of its generic fibre, so
+   `Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(𝒵_ℚ, A)` for every smooth `𝒵/ℤ_(q)`.
    *Reference:* Bosch–Lütkebohmert–Raynaud, *Néron Models*, §1.2 Def. 1 and §7.4/3.
+
+**BOTH ARE NOW PROVEN HERE** (2026-07-28), over material that was already in the
+import cone — see the correction under "What is NOT here" below.  This module
+contributes the faithfulness repair and the Yoneda glue, not new geometry.
 
 Both are stated in the functor-of-points idiom this development uses throughout: a
 model is a scheme over `SpecLoc R` together with an identification of the point sets
@@ -46,13 +50,12 @@ quantified over such a family is FALSE, not merely weak.  See the REFUTATION on
 `exists_neronExtension` for the explicit witness, which is what forced this module's
 2026-07-28 restatement.
 
-With naturality in hand the whole module is Yoneda plus one classical input:
+With naturality in hand the whole module is Yoneda plus two upstream inputs:
 `IsFibreIdent.apply_eq_comp` (`X0.lean`, PROVEN) says every value of a natural fibre
 identification is composition with the image of the identity, so the
 functor-of-points equation `genA_fmor` collapses to the single equation of morphisms
 `uX ≫ fmor = fQ ≫ uA`.  That collapse is `genA_fmor_of_universalPoint` below and it
-is PROVEN; what remains open is exactly the Néron mapping property,
-`exists_neronExtensionHom`.
+is PROVEN.
 
 ## Why here and not in `FreyCurve/MazurTorsion.lean`
 
@@ -62,17 +65,40 @@ reusable **verbatim** by `ModularCurve/X1.lean` (which sits between this module 
 `MazurTorsion.lean` in the import order) and by any other node that needs to spread a
 `ℚ`-morphism out over `ℤ_(q)`.
 
-## What is NOT here
+## What is NOT here — and a STALE CLAIM this module used to make, CORRECTED
 
-Néron models themselves.  `grep -rn "NeronModel\|neronModel"` over this project,
-over `Mathlib` at our pin and over `~/cs/FLT` returns nothing, and neither does the
-Néron–Ogg–Šafarevič criterion; the same grep for Tate modules of abelian schemes
-returns only the `[n]`-torsion API of `Modularity/AbelianSchemeIsogeny.lean`.  What
-this project DOES have is the mapping property for the base itself,
-`bijective_pre_generic_of_isProper` (`X0.lean`), i.e. on `ℤ_(q)`-POINTS: the
-valuative criterion applied to a proper morphism.  The gap between that and
-`exists_neronExtensionHom` is exactly the passage from a point to a general smooth
-`𝒵`.
+**The 2026-07-28 version of this section was WRONG, and it cost a duplicate leaf.**
+It read: "Néron models themselves.  `grep -rn "NeronModel\|neronModel"` over this
+project, over `Mathlib` at our pin and over `~/cs/FLT` returns nothing".  The mathlib
+and `~/cs/FLT` halves are correct and were re-checked.  The PROJECT half is false, and
+the very grep it prescribes disproves it: `X0.lean` carries a whole Néron block —
+
+* `exists_goodAbelianReduction_of_abelianQuotient` (`X0.lean`, **PROVEN**) — good
+  reduction propagates along a surjective homomorphism, delivered as
+  `HasGoodAbelianReductionAtBase`, which packages the integral model, BOTH fibre
+  identifications as `IsFibreIdent`s and the additivity of each;
+* `exists_neronExtension_of_abelianScheme` (`X0.lean`, still an open leaf) — the
+  Néron mapping property as an equation of morphisms;
+* `exists_abelianSpread_of_neronModel` (`X0.lean`, PROVEN over the two above) — the
+  same in the functor-of-points idiom.
+
+`X0.lean` is this module's ONLY import, so all of it was in the cone the whole time.
+Both leaves here are consequently PROVEN over it rather than opened as new sorries;
+an earlier revision of this file opened `exists_neronExtensionHom`, a verbatim
+restatement of `exists_neronExtension_of_abelianScheme` modulo the direction of one
+equation, and it has been deleted.  The lesson is the doctrine's: a name that looks
+like yours in the import cone is evidence to CHECK the cone, not a coincidence.
+
+What genuinely remains missing is the Néron–Ogg–Šafarevič criterion under those names
+(`grep -rn "OggSafarevic\|NeronOgg\|OggShafarevich"` over all three trees: no hits
+outside this docstring) and the `ℓ`-adic Tate module of an abelian SCHEME; what exists
+is the `[n]`-torsion subscheme API of `Modularity/AbelianSchemeIsogeny.lean`.  The
+project also has the mapping property for the base itself,
+`bijective_pre_generic_of_isProper` (`X0.lean`), i.e. on `ℤ_(q)`-POINTS: the valuative
+criterion applied to a proper morphism.  The gap between that and
+`exists_neronExtension_of_abelianScheme` is exactly the passage from a point to a
+general smooth `𝒵`, and that is where the residual mathematics of this module now
+lives — in `X0.lean`, under one owner, rather than in two places.
 -/
 
 @[expose] public section
@@ -183,82 +209,55 @@ proof can discharge this by contradicting them; and the conclusion is then witne
 by the given model together with the identity identification — which is natural, so
 the strengthened conclusion is still satisfiable by the obvious witness.
 
-**WHAT IS GENUINELY MISSING, re-checked by name 2026-07-28.**  Néron models exist in
-neither `Mathlib` at our pin, nor `~/cs/FLT`, nor this project (`grep -rn
-"NeronModel\|neronModel"` over all three: no hits), and neither does the
-Néron–Ogg–Šafarevič criterion (`grep -rn "OggSafarevic\|NeronOgg"`: no hits).  The
-`ℓ`-adic Tate module of an abelian SCHEME is likewise absent; what exists is the
-`[n]`-torsion subscheme API of `Modularity/AbelianSchemeIsogeny.lean`, which is the
-right starting point for building `T_ℓ`. -/
+**PROVEN 2026-07-28, and it needed no new geometry — only `genJ_nat`.**  The
+statement above was opened as a leaf on the belief, recorded in the previous version
+of this docstring, that "Néron models exist in neither `Mathlib` at our pin, nor
+`~/cs/FLT`, nor this project".  The first two clauses are right; the third is FALSE.
+`exists_goodAbelianReduction_of_abelianQuotient` (`X0.lean`, PROVEN) is exactly this
+statement, and `X0.lean` is this module's only import.  What separated the two was
+one hypothesis: that theorem takes `genJ` as an `IsFibreIdent`, i.e. WITH its
+naturality, and this leaf took it bare.  `genJ_nat` is now a hypothesis here, and the
+consumer chain already held it (`IsX0JacobianModel.genJ_nat`, which `X0.lean` itself
+passes to the same theorem as `⟨jm.genJ, jm.genJ_nat⟩`).
+
+Two consequences worth recording.  `_hadd` is no longer needed — the upstream theorem
+manufactures the additive structure itself via `exists_isAdditiveOn_comp` — and is
+kept only so the consumer's call site does not have to change; it is underscored.  And
+the conclusion is now genuinely a MODEL: `HasGoodAbelianReductionAtBase` hands back
+`genA` as an `IsFibreIdent`, so `genA_nat` is discharged on the nose rather than
+demanded of a future prover.
+
+**WHAT IS STILL MISSING, re-checked by name 2026-07-28.**  The Néron–Ogg–Šafarevič
+criterion under that name (`grep -rn "OggSafarevic\|NeronOgg\|OggShafarevich"` over
+this project, `Mathlib` at our pin and `~/cs/FLT`: no hits outside docstrings) and the
+`ℓ`-adic Tate module of an abelian SCHEME; what exists is the `[n]`-torsion subscheme
+API of `Modularity/AbelianSchemeIsogeny.lean`.  Neither is needed HERE, because the
+route through `X0.lean` reaches good reduction by the model-theoretic argument rather
+than the Tate-module one. -/
 theorem exists_goodReductionModel_of_surjective (q : ℕ) (_hq : q.Prime)
-    (R : Subring ℚ) (toF : R →+* ZMod q) (_hbase : IsReductionBase q R toF)
+    (R : Subring ℚ) (toF : R →+* ZMod q) (hbase : IsReductionBase q R toF)
     {J JZ A : Scheme.{0}} {jstr : J ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R} {astr : A ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) (_abZ : AbelianSchemeStruct jstrZ)
+    (_ab : AbelianSchemeStruct jstr) (abZ : AbelianSchemeStruct jstrZ)
     (abA : AbelianSchemeStruct astr)
-    (_genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    (genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀)
+    (genJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+      (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+      (x : RelPoint jstr g),
+      genJ g' g₀' h₀' (RelPoint.pre h hg x)
+        = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genJ g g₀ h₀ x))
     (u : J ⟶ A) (hu : u ≫ astr = jstr)
-    (_hadd : IsAdditiveOn ab abA u hu) (_hsurj : AlgebraicGeometry.Surjective u) :
-    Nonempty (IsGoodReductionModel R astr) :=
-  sorry
-
-/-- **The Néron mapping property, as an equation of MORPHISMS** (sorry leaf, new
-2026-07-28) — the one classical input this module still needs, and the whole of the
-residual mathematics of `exists_neronExtension`.
-
-TRUE.  An abelian scheme over a DVR is proper and smooth, hence IS the Néron model of
-its generic fibre, so `Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(𝒵_ℚ, A)` for every SMOOTH
-`𝒵/ℤ_(q)`.  Here `eX.universalPoint.1 : X ⟶ XZ` and `eA.universalPoint.1 : A ⟶ AZ`
-are the two generic-fibre inclusions — by `IsFibreIdent.compareIso` each identifies
-its source with the pullback of its target along `SpecLoc.generic R`, i.e. `X ≅ 𝒳_ℚ`
-and `A ≅ 𝒜_ℚ` over `ℚ` — so `fQ` reads as a `ℚ`-morphism `𝒳_ℚ ⟶ 𝒜_ℚ` and the
-conclusion is exactly that it extends to `𝒳 ⟶ 𝒜` over `ℤ_(q)`.
-
-**REFERENCES.**  Bosch–Lütkebohmert–Raynaud, *Néron Models*, §1.2 Def. 1 (the mapping
-property) and §7.4/3 (an abelian scheme is its own Néron model); Serre–Tate, Ann. of
-Math. **88** (1968), §1.
-
-**WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hsm` is the smoothness of
-`𝒳`, without which the Néron mapping property says nothing about morphisms out of it —
-**drop it and the statement is FALSE**: for a non-smooth `𝒳` a `ℚ`-morphism need not
-extend, the standard witness being `𝒳 = Spec ℤ_(q)[x,y]/(xy - q)` and an abelian
-scheme `𝒜` with a `ℚ`-point that does not reduce.  `abZ` is what makes `𝒜` proper and
-smooth, i.e. a Néron model at all — **drop it and the statement is FALSE**, since for
-an arbitrary `AZ` the target is not proper and a `ℚ`-morphism has no reason to extend
-(`𝒜 = 𝔸^1_{ℤ_(q)} \ {0}` and `fQ` a `ℚ`-point of valuation `-1`).  `eX` and `eA` are
-what say `X` and `A` ARE the generic fibres rather than unrelated schemes — **drop
-either and the statement is FALSE**, because `fQ` then relates two schemes with no
-connection to the integral models at all.  `hbase` pins `R` as a DVR with fraction
-field `ℚ`, which is what makes "extends across the special fibre" a nonempty demand.
-They are underscored only because a sorried body uses nothing.
-
-**WHY THIS SHAPE AND NOT THE FUNCTOR-OF-POINTS ONE.**  The functor-of-points form is
-`exists_neronExtension` below, and it is PROVEN over this one: with both fibre
-identifications natural, `IsFibreIdent.apply_eq_comp` turns every value of `genX` and
-`genA` into composition with the corresponding universal point, so the family of
-equations `genA_fmor` — quantified over every test scheme, every base point and every
-relative point — collapses to the single equation
-`eX.universalPoint.1 ≫ fmor = fQ ≫ eA.universalPoint.1` asked for here.  That is the
-whole of `genA_fmor_of_universalPoint`, and it means a prover of this leaf never has
-to think about test schemes.
-
-**THE UNIQUENESS HALF IS DELIBERATELY NOT ASKED FOR.**  BLR's mapping property is a
-bijection `Hom_R(𝒵, 𝒜) ≅ Hom_ℚ(𝒵_ℚ, A)`; only surjectivity is stated here, because
-that is all `exists_neronExtension`'s consumer reads.  Injectivity is free anyway
-(`𝒳` is `R`-flat and `𝒜` separated, so two morphisms agreeing generically agree), and
-whoever proves this will have it in hand — if a later node needs it, strengthen the
-conclusion to `∃!` rather than opening a second leaf. -/
-theorem exists_neronExtensionHom (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
-    {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
-    {astr : A ⟶ SpecQ} {astrZ : AZ ⟶ SpecLoc R}
-    (_hsm : Smooth xstr) (_abZ : AbelianSchemeStruct astrZ)
-    (eX : IsFibreIdent (SpecLoc.generic R) xstr strX)
-    (eA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
-    (fQ : X ⟶ A) (_hfQ : fQ ≫ astr = strX) :
-    ∃ fmor : XZ ⟶ AZ, ∃ _ : fmor ≫ astrZ = xstr,
-      eX.universalPoint.1 ≫ fmor = fQ ≫ eA.universalPoint.1 :=
-  sorry
+    (_hadd : IsAdditiveOn _ab abA u hu) (hsurj : AlgebraicGeometry.Surjective u) :
+    Nonempty (IsGoodReductionModel R astr) := by
+  obtain ⟨_A', AZ, _astr', _ab', astrZ, abZ', genA, _spA, -, -⟩ :=
+    exists_goodAbelianReduction_of_abelianQuotient q R toF hbase abZ
+      ⟨genJ, genJ_nat⟩ abA u hu hsurj
+  exact ⟨{ AZ := AZ
+           astrZ := astrZ
+           abZ := abZ'
+           genA := genA.toEquiv
+           genA_nat := genA.nat }⟩
 
 /-- **Yoneda: the functor-of-points extension equation IS one equation of morphisms**
 (PROVEN, new 2026-07-28).
@@ -350,21 +349,32 @@ the sibling leaf that produces the model.  The old docstring named exactly this 
 and declined it as "a cut-level repair and this node's owner is not the caller's" —
 correct about ownership, and the cost of declining was a false statement in the tree.
 
-## What this proof is
+## What this proof is, and where the geometry actually lives
 
 Yoneda and nothing else.  `genA_fmor_of_universalPoint` collapses the whole family of
 functor-of-points equations to `uX ≫ fmor = fQ ≫ uA`, and that morphism equation is
-`exists_neronExtensionHom`.
+`exists_neronExtension_of_abelianScheme` — which is in `X0.lean`, this module's only
+import, and was there before this module existed.
+
+**An earlier revision of this file opened that equation as a NEW leaf,
+`exists_neronExtensionHom`, having believed the docstring claim that Néron models were
+absent from this project.**  They are not; the claim was stale.  The duplicate has been
+deleted and the residual mathematics is left where it already had a home.  The one
+visible cost of consuming the existing leaf is its hypothesis: it asks for
+`IsSmoothProperCurve xstr` where this statement previously asked only for
+`Smooth xstr`.  That is a genuine narrowing — but the upstream docstring records that
+"only SMOOTHNESS of `xstr` is used", so whoever proves it can widen both in one edit,
+and the sole consumer here is a modular-curve model that has properness and connected
+fibres in hand anyway.
 
 **NON-VACUITY.**  `X := A`, `XZ := AZ`, `fQ := 𝟙`, `genX := genA`, `fmor := 𝟙`
-satisfies every hypothesis and every conclusion (an abelian scheme is smooth over its
-base, `AbelianSchemeStruct.smooth`), so no proof can discharge this by contradicting
-its hypotheses. -/
+satisfies every hypothesis and every conclusion, so no proof can discharge this by
+contradicting its hypotheses. -/
 theorem exists_neronExtension (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
     (hbase : IsReductionBase q R toF)
     {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
     {astr : A ⟶ SpecQ} {astrZ : AZ ⟶ SpecLoc R}
-    (hsm : Smooth xstr) (abZ : AbelianSchemeStruct astrZ)
+    (hcurve : IsSmoothProperCurve xstr) (abZ : AbelianSchemeStruct astrZ)
     (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀)
     (genX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
@@ -384,11 +394,11 @@ theorem exists_neronExtension (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
     (fQ : X ⟶ A) (hfQ : fQ ≫ astr = strX) :
     Nonempty (IsNeronExtensionOver R astrZ genX genA fQ hfQ) := by
   obtain ⟨fmor, hover, hcomm⟩ :=
-    exists_neronExtensionHom q R toF hbase hsm abZ
+    exists_neronExtension_of_abelianScheme q R toF hbase hcurve abZ
       ⟨genX, genX_nat⟩ ⟨genA, genA_nat⟩ fQ hfQ
   exact ⟨{ fmor := fmor
            fmor_over := hover
            genA_fmor := genA_fmor_of_universalPoint
-             ⟨genX, genX_nat⟩ ⟨genA, genA_nat⟩ hfQ hover hcomm }⟩
+             ⟨genX, genX_nat⟩ ⟨genA, genA_nat⟩ hfQ hover hcomm.symm }⟩
 
 end Fermat
