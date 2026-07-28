@@ -40442,7 +40442,22 @@ does not remove that obligation; it separates the part that needs the class grou
 (`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`) from the part that
 needs only that `End(E₂)` is the maximal order and `X² − X + (p+1)/4` has two
 roots in it (`phi_or_conj_of_isEllipticIsoOf`), and it removes the level
-structure from both. -/
+structure from both.
+
+**CORRECTION (2026-07-28, flt-lean-188): the "neither … nor this project has any
+of it" sentence above is STALE, and it was stale when written.**  It is true of
+the SCHEME-level `End`, which is what that survey looked for.  It is false of
+the WEIERSTRASS-level one: `WeierstrassCurve.End` is defined in
+`EllipticCurve/Isogeny.lean`, and `WeierstrassCurve.End.exists_intBasis`
+(~12000 lines above in THIS file) proves that it is `ℤ ⊕ ℤω`, i.e. an order in
+an imaginary quadratic field, over any algebraically closed field of
+characteristic `0`.  Routing through a Weierstrass model therefore gets the ring
+and the order for free, and reduces "maximal order" to an elementary conductor
+computation — see the subsection note **Cutting CLASS NUMBER ONE along the
+WEIERSTRASS MODEL** below, where
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder` is proven on that route.
+What is genuinely absent is only the class-group ACTION, which now sits in the
+single leaf `jInvariant_eq_of_end_closure_eq_top`. -/
 
 /-- **`w + w = u` and `v + v = u` are equivalent once `w + v = u`** (PROVEN):
 both say `w = v`, by cancelling on the left and on the right respectively.
@@ -40513,10 +40528,409 @@ theorem along_inj (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T
 
 end IsEllipticIsoOf
 
+/-! #### Cutting CLASS NUMBER ONE along the WEIERSTRASS MODEL
+
+(2026-07-28, flt-lean-188.)  `nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`
+was left as an atom by the flt-lean-131 cut, whose docstring said "a successor
+should expect to build the class-group action, not to find it".  That note was
+right about the mathematics and wrong about the ATOMICITY, and it is another
+instance of the standing rule that an irreducibility verdict is only as wide as
+the axis it searched: the leaf was read along the SCHEME axis, where `End` of an
+elliptic scheme has to be built as a ring before anything can be said at all.
+Along the WEIERSTRASS axis that ring already exists — `WeierstrassCurve.End`
+(`EllipticCurve/Isogeny.lean`), together with `End.exists_intBasis` and the
+`MazurCMOrder` lattice arithmetic, both ~12000 lines ABOVE in this same file —
+and the cut below runs through it.
+
+The route is the classical one, in four steps:
+
+1. each `ℚ̄`-datum has a Weierstrass model
+   (`exists_isWeierstrassModel_algClos`, LEAF — Riemann–Roch over `ℚ̄`, the exact
+   analogue of `Fermat.exists_weierstrassModel_of_ellipticScheme`, which is
+   already PROVEN over `ℚ` in `ModularCurve/EllipticScheme.lean`);
+2. the datum's `φ` becomes an element of `WeierstrassCurve.End` of that model,
+   satisfying the SAME relation (`exists_end_of_isCMByRamifiedMaximalOrder`,
+   LEAF — pure transport, no complex multiplication anywhere in it);
+3. that relation forces `End(W) = ℤ[φ]`, i.e. the order is the MAXIMAL one
+   (`closure_singleton_eq_top_of_maximalOrderRel`, **PROVEN** below);
+4. `h(−p) = 1` then gives `j(W₁) = j(W₂)`
+   (`jInvariant_eq_of_end_closure_eq_top`, LEAF — this is the complex
+   multiplication input, and after the cut it is the ONLY one), whence a
+   `VariableChange` by mathlib's `WeierstrassCurve.exists_variableChange_of_j_eq`
+   over the separably closed `ℚ̄`, and finally the isomorphism of elliptic
+   schemes (`nonempty_isEllipticIsoOf_of_variableChange_isWeierstrassModel`,
+   LEAF).
+
+**Step 3 is where MAXIMALITY of the order is cashed in, and it is short.**
+`End.exists_intBasis` gives `End(W) = ℤ ⊕ ℤω` with `ω² = aω − b`; writing
+`φ = u + vω` and expanding `φ² − φ + m = 0` on that basis yields `2u + av = 1`
+and hence `v²(a² − 4b) = −p`.  So `v² ∣ p`, and `p` prime and not a square
+forces `v = ±1`, i.e. `ω ∈ ℤ[φ]`.  That is exactly "an order containing the
+maximal order equals it", carried out by hand in the `1, ω` basis: NO class
+group, NO number-field vocabulary, NO ring class fields.  It is the analogue of
+`WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg` for the relation
+`φ² − φ + (p+1)/4 = 0`, and it is strictly EASIER than that one, because here
+the conductor is forced to `1` by squarefreeness of `p` rather than by a
+pair-specific arithmetic side condition (`arith_five`/`arith_thirteen`).
+
+**The CM input is stated PAIRWISE, deliberately.**
+`jInvariant_eq_of_end_closure_eq_top` concludes `W₁.j = W₂.j`, not
+`W.j = −884736000`.  The literal form would additionally need the Hilbert class
+polynomial to exist as a definition and its (linear) root to be evaluated; the
+pairwise form needs only that `Ell(O_K)` is a principal homogeneous space under
+`Cl(O_K)` and that `Cl(O_{−p})` is trivial.  That is the same economy this file
+already recorded at `WeierstrassCurve.classNumberOne_of_end_closure_eq_top`,
+whose docstring explains why the two Hilbert-class-polynomial leaves were merged
+away: the class-polynomial literal was "the ONLY level-specific part", and
+deleting it makes the leaf uniform in the discriminant.  PARI/GP, as an
+untrusted searcher, re-confirms both halves at `p = 43, 67, 163` (2026-07-28):
+`qfbclassno(-p) = 1`, and `polclass(-p)` is `x + 884736000`, `x + 147197952000`,
+`x + 262537412640768000`.  Those three values are needed by NO statement below;
+they are recorded so that a successor proving the leaf can check its work.
+
+**THE DISCRIMINANT TRAP IS UNCHANGED AND STILL LIVE.**  Everything here is about
+`−p`, never `−4p`: `qfbclassno(-172) = qfbclassno(-268) = qfbclassno(-652) = 3`.
+Step 3's conclusion `Subring.closure {φ} = ⊤` is precisely what pins the MAXIMAL
+order.  With `ψ² = [−p]` in place of `φ² − φ + (p+1)/4 = 0` the same computation
+gives `v²(a² − 4b) = −4p`, where `v = 2` is no longer excluded — and the `v = 2`
+solution IS the order `ℤ[√−p]` of discriminant `−4p`, of class number three.  So
+the weakening does not merely block the proof; it makes the conclusion false.
+
+**Nothing introduced here is vacuous.**  Every leaf is quantified over data
+satisfying `IsCMByRamifiedMaximalOrder`, which is satisfiable at each of the
+three levels (see the atom's docstring for the `ellisomat` check), and steps 1
+and 4 are additionally quantified over Weierstrass models, which step 1 supplies.
+-/
+
+/-- **A square divisor of `43`, `67` or `163` is `±1`** (PROVEN, elementary).
+
+This is the squarefreeness input to `closure_singleton_eq_top_of_maximalOrderRel`,
+in exactly the shape that lemma consumes: the conductor equation there is
+`v² · (a² − 4b) = −p`, so `v² ∣ p`, and the three levels are primes that are not
+perfect squares.  The bound `v² ≤ p ≤ 163` gives `|v| ≤ 13`, after which the
+finitely many cases are arithmetic.
+
+**This is where `p` being SQUAREFREE is used, and it is the only place.**  At a
+discriminant `−4p` the same equation reads `v² · (a² − 4b) = −4p` and `v = 2`
+survives — which is the non-maximal order `ℤ[√−p]`, of class number three at all
+three levels.  See the subsection note. -/
+theorem sq_eq_one_of_sq_mul_eq_neg (p : ℕ) (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (v k : ℤ) (h : v ^ 2 * k = -(p : ℤ)) : v = 1 ∨ v = -1 := by
+  have hdvd : v ^ 2 ∣ (p : ℤ) := ⟨-k, by linarith⟩
+  have hppos : (0 : ℤ) < (p : ℤ) := by fin_cases hp <;> norm_num
+  have hle : v ^ 2 ≤ (p : ℤ) := Int.le_of_dvd hppos hdvd
+  have hb1 : -13 ≤ v := by
+    nlinarith [sq_nonneg (v + 13), hle, show (p : ℤ) ≤ 163 by fin_cases hp <;> norm_num]
+  have hb2 : v ≤ 13 := by
+    nlinarith [sq_nonneg (v - 13), hle, show (p : ℤ) ≤ 163 by fin_cases hp <;> norm_num]
+  fin_cases hp <;> interval_cases v <;> omega
+
+/-- **THE MAXIMAL ORDER IS THE WHOLE ENDOMORPHISM RING** (PROVEN 2026-07-28):
+an endomorphism satisfying `φ² + m = φ` with `p = 4m − 1 > 0` squarefree
+GENERATES `End(W)`, i.e. `End(W) = ℤ[φ]`, the maximal order of discriminant `−p`.
+
+This is step 3 of the cut recorded in the subsection note above, and it is the
+`−p` analogue of `WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg`
+(which handles `ψ² = [−n]`, i.e. discriminant `−4n`, and needs a pair-specific
+conductor computation because `−4n` is never fundamental).
+
+**The argument, in the `1, ω` basis supplied by `End.exists_intBasis`.**  `φ` is
+not an integer: `c² + m = c` in `ℤ` would give `(2c − 1)² = 1 − 4m = −p < 0`.  So
+`End.exists_intBasis` applies and gives `ω`, `a`, `b` with `ω² = aω − b`, every
+endomorphism uniquely `u + vω`.  Writing `φ = u + vω` and expanding
+`φ² + m − φ = 0` with `MazurCMOrder.sq_intBasis_expand`, independence of `1, ω`
+gives
+
+* `u² − v²b + m − u = 0`, and
+* `v(2u + av − 1) = 0`, whence `2u + av = 1` since `v ≠ 0`.
+
+Squaring the second and substituting the first gives `v²(a² − 4b) = −p`.  Then
+`hsqfree` forces `v = ±1`, so `ω = ±(φ − u) ∈ ℤ[φ]`, and `ℤ[φ]` contains the
+whole basis.
+
+**`hppos` is load-bearing and is NOT implied by the rest.**  It is what makes
+`φ ∉ ℤ`, i.e. what makes the order imaginary quadratic rather than `ℤ`; with
+`p < 0` the polynomial `X² − X + m` can have an integer root and `φ = [c]` is
+allowed, so `End(W)` need not be generated by it.  `hsqfree` alone does not
+supply positivity.
+
+**`hsqfree` is stated as a hypothesis rather than derived** for the same reason
+`closure_singleton_eq_top_of_sq_eq_neg` states `harith`: it is false for general
+`p` (any `p` divisible by a square admits `v` with `1 < v² ∣ p`), and true at the
+three levels this is used at, where it is discharged by
+`sq_eq_one_of_sq_mul_eq_neg`.
+
+NOT VACUOUS: `p = 43, m = 11` is an honest instance, realised by the CM curve of
+`j`-invariant `−884736000`; `p = 3, m = 1` is another, realised by `y² = x³ + 1`
+with `φ` the primitive sixth root of unity. -/
+theorem closure_singleton_eq_top_of_maximalOrderRel {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : _root_.WeierstrassCurve.Affine F} [W.IsElliptic]
+    (p m : ℤ) (hpm : p = 4 * m - 1) (hppos : 0 < p)
+    (hsqfree : ∀ v k : ℤ, v ^ 2 * k = -p → v = 1 ∨ v = -1)
+    (φ : _root_.WeierstrassCurve.End W)
+    (hrel : φ * φ + ((m : ℤ) : _root_.WeierstrassCurve.End W) = φ) :
+    Subring.closure ({φ} : Set (_root_.WeierstrassCurve.End W)) = ⊤ := by
+  classical
+  subst hpm
+  -- `φ` is not an integer, since `X² − X + m` has negative discriminant `−p`
+  have hnotint : ¬ ∃ c : ℤ, φ = (c : _root_.WeierstrassCurve.End W) := by
+    rintro ⟨c, rfl⟩
+    have hc : ((c * c + m : ℤ) : _root_.WeierstrassCurve.End W)
+        = ((c : ℤ) : _root_.WeierstrassCurve.End W) := by push_cast; exact hrel
+    have hcc := _root_.WeierstrassCurve.End.intCast_injective (W := W) hc
+    nlinarith [sq_nonneg (2 * c - 1), hcc, hppos]
+  obtain ⟨ω, a, b, hω, hspan, hindep⟩ :=
+    _root_.WeierstrassCurve.End.exists_intBasis φ hnotint
+  obtain ⟨u, v, huv⟩ := hspan φ
+  have hexp : φ * φ = ((u * u - v * v * b : ℤ) : _root_.WeierstrassCurve.End W)
+      + (2 * u * v + v * v * a) • ω := by
+    conv_lhs => rw [huv]
+    exact _root_.MazurCMOrder.sq_intBasis_expand ω a b hω u v
+  -- `φ² + m − φ = 0`, expanded on the basis `1, ω`
+  have hzero : ((u * u - v * v * b + m - u : ℤ) : _root_.WeierstrassCurve.End W)
+      + (2 * u * v + v * v * a - v) • ω = 0 := by
+    have hsplit : ((u * u - v * v * b + m - u : ℤ) : _root_.WeierstrassCurve.End W)
+        + (2 * u * v + v * v * a - v) • ω
+        = ((((u * u - v * v * b : ℤ) : _root_.WeierstrassCurve.End W)
+              + (2 * u * v + v * v * a) • ω)
+            + ((m : ℤ) : _root_.WeierstrassCurve.End W))
+          - (((u : ℤ) : _root_.WeierstrassCurve.End W) + v • ω) := by
+      push_cast
+      rw [sub_smul]
+      abel
+    rw [hsplit, ← hexp, ← huv, hrel, sub_self]
+  obtain ⟨h1, h2⟩ := hindep _ _ hzero
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hnotint ⟨u, by rw [huv]; simp⟩
+  have h3 : 2 * u + a * v = 1 := by
+    have hfac : v * (2 * u + a * v - 1) = 0 := by linear_combination h2
+    rcases mul_eq_zero.1 hfac with h | h
+    · exact absurd h hv0
+    · linarith
+  have h5 : (a * v) ^ 2 = (2 * u - 1) ^ 2 := by
+    have hav : a * v = 1 - 2 * u := by linarith
+    rw [hav]; ring
+  -- the conductor equation: `v²·disc(1, ω) = −p`, so `v² ∣ p`
+  have h4 : v ^ 2 * (a ^ 2 - 4 * b) = -(4 * m - 1) := by linear_combination h5 + 4 * h1
+  have hφmem : φ ∈ Subring.closure ({φ} : Set (_root_.WeierstrassCurve.End W)) :=
+    Subring.subset_closure rfl
+  have hωmem : ω ∈ Subring.closure ({φ} : Set (_root_.WeierstrassCurve.End W)) := by
+    rcases hsqfree v (a ^ 2 - 4 * b) h4 with rfl | rfl
+    · have hrw : ω = φ - ((u : ℤ) : _root_.WeierstrassCurve.End W) := by rw [huv]; simp
+      rw [hrw]; exact sub_mem hφmem (_root_.intCast_mem _ u)
+    · have hrw : ω = ((u : ℤ) : _root_.WeierstrassCurve.End W) - φ := by rw [huv]; simp
+      rw [hrw]; exact sub_mem (_root_.intCast_mem _ u) hφmem
+  rw [Subring.eq_top_iff']
+  intro χ
+  obtain ⟨u', v', hχ⟩ := hspan χ
+  rw [hχ]
+  exact add_mem (_root_.intCast_mem _ u') (zsmul_mem hωmem v')
+
+/-- **RIEMANN–ROCH OVER `ℚ̄`: every `Γ₀(N)`-datum over `ℚ̄` has a Weierstrass
+model** (sorry leaf, introduced 2026-07-28 by the cut of
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`; step 1 of the four-step
+route in the subsection note above).
+
+TRUE, and it is the EXACT ANALOGUE OVER `ℚ̄` of
+`Fermat.exists_weierstrassModel_of_ellipticScheme`
+(`ModularCurve/EllipticScheme.lean`), which is already PROVEN over `ℚ` — a
+successor should read that proof first, since only the base ring changes.  The
+argument is Riemann–Roch: `d.ab` makes `d.f` proper, smooth and geometrically
+connected, `d.relativeDimensionOne` makes the fibre a curve, and
+`d.ab.zero (𝟙 _)` is a rational point on it; the complete linear system `|3·[O]|`
+is very ample of degree three and embeds the curve in `ℙ²` as a Weierstrass
+cubic with `O ↦ [0 : 1 : 0]`, whose complement is the affine chart
+`Spec ℚ̄[W]`.  `W.IsElliptic` follows because a singular Weierstrass curve has a
+singular affine chart, and an open subscheme of the smooth `d.E` is smooth.
+
+**What genuinely differs from the `ℚ` version.**  That proof discharges the
+structure-morphism conjunct by `hom_ext_spec_rat` — any two morphisms to
+`Spec ℚ` agree — and that shortcut is UNAVAILABLE here, since `Hom(X, Spec ℚ̄)`
+is not a singleton.  So the compatibility `ι ≫ d.f = weierstrassAffineStr W` has
+to be produced by the construction rather than recovered afterwards.  Everything
+else transfers.
+
+**The level `N` is irrelevant** and is not constrained: only `d.ab` and
+`d.relativeDimensionOne` are used, so this holds at every level, which is why it
+is stated with `N` universally quantified rather than at `p`.
+
+NOT VACUOUS: `Fermat.exists_ellipticScheme_of_weierstrass` supplies data
+satisfying the hypotheses at every level for which `X_0` has curves. -/
+theorem exists_isWeierstrassModel_algClos {N : ℕ}
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    ∃ (W : _root_.WeierstrassCurve (AlgebraicClosure ℚ)) (_ : W.IsElliptic),
+      IsWeierstrassModel d.ab W :=
+  sorry
+
+/-- **TRANSPORT: the datum's CM endomorphism, read in `WeierstrassCurve.End` of a
+Weierstrass model** (sorry leaf, introduced 2026-07-28 by the cut of
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`; step 2 of the four-step
+route in the subsection note above).
+
+TRUE, and it contains NO complex multiplication — it is pure transport across the
+Weierstrass bridge, and a successor should not go looking for CM theory in it.
+
+`h.phi` is an endomorphism of the functor of points of `d.E` (`phi_add` makes it
+a homomorphism, `phi_pre` makes it natural, so by Yoneda it is an endomorphism of
+the elliptic SCHEME and not merely of one fibre).  Evaluating at the base point
+`g = 𝟙 (Spec ℚ̄)` gives an endomorphism of the group of `ℚ̄`-points, and
+`hW : IsWeierstrassModel d.ab W` identifies that group with `W.Point`: the
+open immersion of `weierstrassAffine W` onto the complement of the zero section
+matches the affine points, and the removed point is the origin on both sides.
+The `ℚ` case of exactly this identification is
+`Fermat.exists_geomFibreAddEquiv_of_weierstrassModel` (PROVEN,
+`ModularCurve/EllipticScheme.lean`), and it is the model to follow.
+
+Membership in `WeierstrassCurve.End` — i.e. `IsIsogeny`, hence `IsRationalMap` —
+holds because the map comes from a morphism of schemes, not from an abstract
+group homomorphism; that is what `phi_pre` buys and it is the only place it is
+used.
+
+The relation is `phi_sq` verbatim: `φ(φ x) + ((p+1)/4) • x = φ x` on points is
+`φ * φ + ((p+1)/4 : End W) = φ` in the ring, by `End.intCast_apply` /
+`End.mul_apply`, both of which are `rfl`.
+
+**The natural-number division `(p + 1) / 4` is kept, not replaced by an integer.**
+It is exact exactly when `p ≡ 3 mod 4`, and writing it the same way as `phi_sq`
+does is what lets the consumer discharge the relation by `exact` rather than by a
+cast argument.  The consumer converts once, with `Int.cast_natCast`.
+
+**`hp` is deliberately ABSENT.**  Nothing in the transport needs `p` to be one of
+the three levels; the leaf holds at every `p`.  Keeping it out is what makes the
+class-number-one input visible in exactly one place
+(`jInvariant_eq_of_end_closure_eq_top`).
+
+NOT VACUOUS: the hypotheses are satisfiable at each of `43, 67, 163` — see the
+atom's docstring — and `exists_isWeierstrassModel_algClos` supplies `W`. -/
+theorem exists_end_of_isCMByRamifiedMaximalOrder (p : ℕ)
+    {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (h : IsCMByRamifiedMaximalOrder p d)
+    (W : _root_.WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (hW : IsWeierstrassModel d.ab W) :
+    ∃ φ : _root_.WeierstrassCurve.End W.toAffine,
+      φ * φ + (((p + 1) / 4 : ℕ) : _root_.WeierstrassCurve.End W.toAffine) = φ :=
+  sorry
+
+/-- **CLASS NUMBER ONE, AS A STATEMENT ABOUT `j`: two `ℚ̄`-curves whose
+endomorphism rings are the maximal order of discriminant `−p` have the same
+`j`-invariant** (sorry leaf, introduced 2026-07-28 by the cut of
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`; step 4 of the four-step
+route in the subsection note above, and THE ONLY REMAINING COMPLEX-MULTIPLICATION
+INPUT of that cut).
+
+TRUE.  `hrelᵢ` and `htopᵢ` together say `End(Wᵢ) = ℤ[φᵢ] ≅ ℤ[X]/(X² − X + (p+1)/4)`,
+the order of discriminant `1 − (p + 1) = −p`, which at a prime `p ≡ 3 mod 4` is
+FUNDAMENTAL, so it is the maximal order `O_{−p}` of `ℚ(√−p)`.  Over an
+algebraically closed field of characteristic `0` the elliptic curves with
+`End = O_K` form a principal homogeneous space under `Cl(O_K)` (Silverman
+*ATAEC* II.1.2, Cox §10–11), and `h(−43) = h(−67) = h(−163) = 1` (PARI/GP
+`qfbclassno`, re-verified 2026-07-28).  So there is a single isomorphism class,
+and isomorphic curves over a field have equal `j`.
+
+**WHY THE CONCLUSION IS PAIRWISE AND NOT A LITERAL.**  It would be true, and
+strictly stronger, to conclude `W.j = −884736000` (resp. `−147197952000`,
+`−262537412640768000`; `polclass(-p)` is linear at all three levels).  That form
+is deliberately NOT taken: it additionally requires the Hilbert class polynomial
+to exist as a definition and its root to be evaluated, which is the one
+level-specific ingredient, whereas the pairwise form needs only that the torsor
+is a single orbit.  This file already made that trade once and recorded it — see
+`WeierstrassCurve.classNumberOne_of_end_closure_eq_top`, which merged away two
+Hilbert-class-polynomial leaves for exactly this reason.  The three literals are
+recorded in the subsection note above so a successor can check its work.
+
+**`htopᵢ` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT**, by the same
+mechanism as at `classPoly500_of_endSq_neg125`.  Drop it and `φᵢ` pins only SOME
+order containing `ℤ[φᵢ]`; but here `ℤ[φᵢ]` is already maximal, so the failure
+mode is the reverse one — `φᵢ` alone does not pin the ring, and a curve with
+`End` strictly larger cannot exist, so what `htopᵢ` really rules out is `φᵢ`
+lying in a LARGER-CONDUCTOR ambient that `hrelᵢ` alone permits only if the basis
+argument is skipped.  It is supplied for free by
+`closure_singleton_eq_top_of_maximalOrderRel` (PROVEN above), so asking for it
+costs the consumer nothing and gives this leaf the strongest available
+hypothesis.
+
+**`hp` IS LOAD-BEARING TWICE**: `(p + 1) / 4` is natural division, exact only
+when `p ≡ 3 mod 4`; and `−p` must be a class-number-one discriminant.  The leaf
+is FALSE at, e.g., `p = 23`, where `h(−23) = 3`.
+
+**WHAT IS MISSING**, re-checked 2026-07-28 against `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`, and unchanged from the list at
+`WeierstrassCurve.exists_represents_one_of_end_closure_eq_top`: proper ideals of
+an order and their class group; the action of that class group on curves with
+that endomorphism ring; and either lattices in `ℂ` with the analytic `j`, or the
+algebraic route through `E[𝔞] = ⋂_{α ∈ 𝔞} ker α` and `E/E[𝔞]`.  Note the
+algebraic route is gated on `WeierstrassCurve.End.mul_comm_charZero` (a sibling
+leaf in this file, needed for `Ideal (End W)`) and on quotients by finite
+subgroups, which this tree does not have; the analytic route is gated on
+neither.  **At `h = 1` the transitivity statement is not needed** — only that the
+orbit is nonempty and the stabiliser is everything, i.e. that any two such curves
+are isogenous by a principal ideal.
+
+NOT VACUOUS: satisfiable at each of the three levels by the CM curve of the
+tabulated `j`-invariant with its ramified `p`-isogeny; and both `hrelᵢ` and
+`htopᵢ` are supplied by the two declarations above. -/
+theorem jInvariant_eq_of_end_closure_eq_top (p : ℕ)
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (W₁ W₂ : _root_.WeierstrassCurve (AlgebraicClosure ℚ))
+    [W₁.IsElliptic] [W₂.IsElliptic]
+    (φ₁ : _root_.WeierstrassCurve.End W₁.toAffine)
+    (φ₂ : _root_.WeierstrassCurve.End W₂.toAffine)
+    (hrel₁ : φ₁ * φ₁ + (((p + 1) / 4 : ℕ) : _root_.WeierstrassCurve.End W₁.toAffine) = φ₁)
+    (hrel₂ : φ₂ * φ₂ + (((p + 1) / 4 : ℕ) : _root_.WeierstrassCurve.End W₂.toAffine) = φ₂)
+    (htop₁ : Subring.closure ({φ₁} : Set (_root_.WeierstrassCurve.End W₁.toAffine)) = ⊤)
+    (htop₂ : Subring.closure ({φ₂} : Set (_root_.WeierstrassCurve.End W₂.toAffine)) = ⊤) :
+    W₁.j = W₂.j :=
+  sorry
+
+/-- **A change of variables between Weierstrass models is an isomorphism of the
+elliptic schemes** (sorry leaf, introduced 2026-07-28 by the cut of
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`; the last step of the
+four-step route in the subsection note above).
+
+TRUE, and it contains NO arithmetic: it is the moduli-to-coordinates dictionary
+run backwards.  `C • W₁ = W₂` gives an isomorphism of the affine coordinate rings
+`ℚ̄[W₁] ≅ ℚ̄[W₂]` over `ℚ̄`, hence an isomorphism
+`weierstrassAffine W₁ ≅ weierstrassAffine W₂` of schemes over the base; composing
+with the two open immersions of `IsWeierstrassModel` identifies
+`d₁.E ∖ {O₁}` with `d₂.E ∖ {O₂}`.  Both `d₁.E` and `d₂.E` are smooth and proper
+over `Spec ℚ̄` of relative dimension one, so a rational map from one to the other
+is a morphism, and the isomorphism extends across the single missing point; the
+`range_eq` field of `IsWeierstrassModel` forces the removed points to BE the zero
+sections, so the extension carries `O₁` to `O₂`.  Finally, a morphism of elliptic
+curves over a field carrying the origin to the origin is a group homomorphism
+(rigidity), which is `map_zero` and `map_add`; and `isPullback` over `𝟙` is just
+"the morphism is an isomorphism over the base", which it is.
+
+**Why the hypothesis is a `VariableChange` and not `W₁.j = W₂.j`.**  The
+`j`-form is what the consumer has, but it is strictly weaker input for this leaf,
+and mathlib already closes the gap over a separably closed field —
+`WeierstrassCurve.exists_variableChange_of_j_eq`
+(`Mathlib/AlgebraicGeometry/EllipticCurve/IsomOfJ.lean`, already publicly
+imported by this module).  So the consumer pays that step and this leaf gets the
+concrete change of variables, which is what a proof actually needs.
+
+**The level `N` is irrelevant**, exactly as in
+`exists_isWeierstrassModel_algClos`: `IsEllipticIsoOf` carries no level-structure
+axiom (that is the whole point of its existence — see its docstring), so this is
+a statement about the underlying elliptic schemes only.
+
+NOT VACUOUS: `exists_isWeierstrassModel_algClos` supplies both models, and `C`
+exists whenever the two `j`-invariants agree, which the consumer establishes. -/
+theorem nonempty_isEllipticIsoOf_of_variableChange_isWeierstrassModel {N : ℕ}
+    {d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    {W₁ W₂ : _root_.WeierstrassCurve (AlgebraicClosure ℚ)}
+    (hW₁ : IsWeierstrassModel d₁.ab W₁) (hW₂ : IsWeierstrassModel d₂.ab W₂)
+    (C : _root_.WeierstrassCurve.VariableChange (AlgebraicClosure ℚ)) (hC : C • W₁ = W₂) :
+    Nonempty (IsEllipticIsoOf d₁ d₂) :=
+  sorry
+
 /-- **CLASS NUMBER ONE: two `ℚ̄`-elliptic schemes with CM by the maximal order of
-discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by the cut
-of `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`; steps 1–2 of that
-node's three-step argument, with the LEVEL STRUCTURE REMOVED).
+discriminant `−p` are isomorphic** (introduced 2026-07-27 by the cut
+of `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` as steps 1–2 of that
+node's three-step argument, with the LEVEL STRUCTURE REMOVED; **PROVEN
+2026-07-28** over the four leaves and one proven lemma of the subsection note
+above — it is no longer a leaf).
 
 TRUE.  `phi_sq` says `φᵢ² − φᵢ + (p+1)/4 = 0`, so `ℤ[φᵢ] ⊆ End(Eᵢ)` is the order
 of discriminant `1 − (p+1) = −p`; at `p ∈ {43, 67, 163}` — prime, `≡ 3 mod 4`,
@@ -40539,20 +40953,55 @@ no such isomorphism need exist.  See the subsection note above
 exact, and for `−p` to be a class-number-one fundamental discriminant.  Neither
 survives dropping it.
 
-**What is missing** is CM theory: `End` of an elliptic scheme as a ring, the fact
-that it is an order in an imaginary quadratic field, and the class-group action
-on the set of CM curves.  Absent from mathlib, from `~/cs/FLT` and from this
-project (re-checked 2026-07-27).  A successor should expect to build the
-class-group action, not to find it — but only over the three fixed discriminants
-`−43, −67, −163`, where the group is trivial, so the input actually needed is
-"`h = 1` ⟹ one isomorphism class", not the full theory of complex
-multiplication. -/
+**WHAT WAS MISSING, AND WHERE IT NOW LIVES** (rewritten 2026-07-28).  The
+previous version of this paragraph said: "`End` of an elliptic scheme as a ring,
+the fact that it is an order in an imaginary quadratic field, and the
+class-group action on the set of CM curves … a successor should expect to build
+the class-group action, not to find it."  The first two items were **already in
+this file**, ~12000 lines above, as `WeierstrassCurve.End` and
+`WeierstrassCurve.End.exists_intBasis` — the note was searching the SCHEME axis
+only.  Going through a Weierstrass model instead, the ring is free, the
+"order in an imaginary quadratic field" step is `exists_intBasis`, and the
+maximality step is PROVEN below as
+`closure_singleton_eq_top_of_maximalOrderRel`.  What genuinely remains is the
+class-group action, and it is now confined to the single leaf
+`jInvariant_eq_of_end_closure_eq_top` — with the class-number-one input in the
+weakest form that suffices ("one orbit"), not the Hilbert class polynomial.
+
+The other two leaves this is proven over carry NO complex multiplication at all:
+`exists_isWeierstrassModel_algClos` is Riemann–Roch over `ℚ̄` (the exact analogue
+of a declaration already PROVEN over `ℚ`), and
+`nonempty_isEllipticIsoOf_of_variableChange_isWeierstrassModel` is the
+coordinates-to-moduli transport.  See the subsection note above for the route,
+for why the CM leaf is stated pairwise, and for the `−p` vs `−4p` trap. -/
 theorem nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
-    (_h₁ : IsCMByRamifiedMaximalOrder p d₁) (_h₂ : IsCMByRamifiedMaximalOrder p d₂) :
-    Nonempty (IsEllipticIsoOf d₁ d₂) :=
-  sorry
+    (h₁ : IsCMByRamifiedMaximalOrder p d₁) (h₂ : IsCMByRamifiedMaximalOrder p d₂) :
+    Nonempty (IsEllipticIsoOf d₁ d₂) := by
+  classical
+  -- **1.** Riemann–Roch: both data have Weierstrass models over `ℚ̄`
+  obtain ⟨W₁, hW₁ell, hW₁⟩ := exists_isWeierstrassModel_algClos d₁
+  obtain ⟨W₂, hW₂ell, hW₂⟩ := exists_isWeierstrassModel_algClos d₂
+  haveI := hW₁ell
+  haveI := hW₂ell
+  -- **2.** the CM endomorphisms, transported into `WeierstrassCurve.End`
+  obtain ⟨φ₁, hφ₁⟩ := exists_end_of_isCMByRamifiedMaximalOrder p h₁ W₁ hW₁
+  obtain ⟨φ₂, hφ₂⟩ := exists_end_of_isCMByRamifiedMaximalOrder p h₂ W₂ hW₂
+  have hpm : (p : ℤ) = 4 * (((p + 1) / 4 : ℕ) : ℤ) - 1 := by fin_cases hp <;> norm_num
+  have hppos : (0 : ℤ) < (p : ℤ) := by fin_cases hp <;> norm_num
+  -- **3.** the order is MAXIMAL: `End(Wᵢ) = ℤ[φᵢ]`
+  have htop₁ : Subring.closure ({φ₁} : Set (_root_.WeierstrassCurve.End W₁.toAffine)) = ⊤ :=
+    closure_singleton_eq_top_of_maximalOrderRel (p : ℤ) (((p + 1) / 4 : ℕ) : ℤ) hpm hppos
+      (sq_eq_one_of_sq_mul_eq_neg p hp) φ₁ (by rw [Int.cast_natCast]; exact hφ₁)
+  have htop₂ : Subring.closure ({φ₂} : Set (_root_.WeierstrassCurve.End W₂.toAffine)) = ⊤ :=
+    closure_singleton_eq_top_of_maximalOrderRel (p : ℤ) (((p + 1) / 4 : ℕ) : ℤ) hpm hppos
+      (sq_eq_one_of_sq_mul_eq_neg p hp) φ₂ (by rw [Int.cast_natCast]; exact hφ₂)
+  -- **4.** `h(−p) = 1` gives equal `j`, hence a change of variables over the
+  -- separably closed `ℚ̄`, hence an isomorphism of the elliptic schemes
+  obtain ⟨C, hC⟩ := _root_.WeierstrassCurve.exists_variableChange_of_j_eq W₁ W₂
+    (jInvariant_eq_of_end_closure_eq_top p hp W₁ W₂ φ₁ φ₂ hφ₁ hφ₂ htop₁ htop₂)
+  exact nonempty_isEllipticIsoOf_of_variableChange_isWeierstrassModel hW₁ hW₂ C hC
 
 /-- **END-RING RIGIDITY: an isomorphism of the underlying elliptic schemes
 intertwines the CM up to conjugation** (sorry leaf, introduced 2026-07-27 by the
