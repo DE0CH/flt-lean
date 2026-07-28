@@ -145,6 +145,7 @@ public import Mathlib.NumberTheory.NumberField.Basic
 -- the parallel-weight-`2` Hecke polynomials in the STATEMENTS of the two
 -- joints of the automorphic cut, so this import must be public
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+public import Mathlib.Algebra.Module.Lattice
 public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.Ideal.Height
 public import Mathlib.RingTheory.NoetherNormalization
@@ -5403,12 +5404,11 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
   obtain ⟨τ, hτ⟩ := exists_galoisRep_charFrob_of_carayolPackage C
   exact ⟨τ, ψ₃, ι, fun w hw => by rw [hτ w hw, hPmatch w hw]⟩
 
-/-! ### The Serre stable-lattice development (2026-07-27)
+/-! ### The Serre stable-lattice development (2026-07-27, COMPLETED 2026-07-28)
 
-The five declarations below carry out STEPS 1–4 of the six-step plan
-recorded on `exists_stableLattice_galoisRep_of_finiteDimensional_padic`
-below, and cut the remaining STEPS 5–6 out as the single named leaf
-`exists_framed_of_finiteIndex_stabilizer`.  Reading order:
+The declarations below carry out ALL SIX STEPS of the plan recorded on
+`exists_stableLattice_galoisRep_of_finiteDimensional_padic` below.  **There is
+no sorry left in this development.**  Reading order:
 
 * `isTorsionFree_padicInt_of_algebra` — the one instance that search does
   not produce (STEP 2's recorded friction);
@@ -5421,9 +5421,17 @@ below, and cut the remaining STEPS 5–6 out as the single named leaf
   `Module.Basis.localizationLocalization`, which is exactly the
   "`ℚ_p`-basis of `L` drawn from a `ℤ_p`-basis of `𝒪_L`" the plan asked
   for (it is also what mathlib's own `IsIntegralClosure.rank` uses);
-* `exists_framed_of_finiteIndex_stabilizer` — THE REMAINING LEAF: STEPS
-  5–6, the coset-sum lattice and the continuity of the framed
-  representation;
+* `isInducing_algebraMap_integralClosure_padic` — the STRONGER form of the
+  same coordinate computation that STEP 6 actually needs: `𝒪_L` carries the
+  SUBSPACE topology from `L`, so a map into `𝒪_L` is continuous as soon as
+  it is continuous into `L`.  Openness is not what gets used;
+* `exists_framed_of_finiteIndex_stabilizer_aux` — STEPS 5–6 over an
+  ABSTRACT topological group: the coset-sum lattice, its freeness of rank
+  two over the PID `𝒪_L` through mathlib's `Submodule.IsLattice`, and the
+  continuity of the framing by coordinates;
+* `exists_framed_of_finiteIndex_stabilizer` — the Galois instantiation of
+  that, which is where `isLocalRing_of_finite_padicInt_domain` supplies the
+  locality of `𝒪_L`;
 * `exists_framed_stableLattice_of_finiteDimensional_padic` — PROVEN
   assembly of STEPS 1–4 over those, cutting `charFrob` out of the picture
   entirely (it produces a MATRIX identity instead, which is what makes the
@@ -5552,36 +5560,385 @@ theorem isOpen_integralClosure_padic (p : ℕ) [Fact p.Prime]
   rw [hset]
   exact isOpen_span_range_basis_padic p b
 
+set_option maxHeartbeats 400000 in
+/-- **The ring of integers `𝒪_L` is TOPOLOGICALLY EMBEDDED in `L`** (PROVEN
+2026-07-28): with its `ℤ_p`-module topology, `𝒪_L = integralClosure ℤ_p L`
+carries exactly the subspace topology from `L` with its `ℚ_p`-module topology.
+
+This is the one genuinely topological input of STEP 6 below, and the direction
+that costs something is NOT the obvious one.  `moduleTopology` is the FINEST
+topology making a module topological, so `moduleTopology ℤ_p 𝒪_L ≤ (subspace
+topology)` is free (`moduleTopology_le`); what has to be proved is the reverse,
+and that needs coordinates.
+
+Read both sides through their coordinate homeomorphisms (`Module.Basis.equivFun`
+together with `IsModuleTopology.continuous_of_linearMap` in each direction): a
+`ℤ_p`-basis of `𝒪_L` becomes a `ℚ_p`-basis of `L` under
+`Module.Basis.localizationLocalization`, its `..._repr_algebraMap` lemma says the
+square commutes on the nose, and `ℤ_p ↪ ℚ_p` is a topological embedding
+(`PadicInt.isOpenEmbedding_coe`); `Topology.IsInducing.piMap` finishes.
+
+OPENNESS is available as well (`isOpen_integralClosure_padic` above) but is not
+what STEP 6 consumes.  What it consumes is `Topology.IsInducing.continuous_iff`:
+a map INTO `𝒪_L` is continuous as soon as it is continuous into `L`.  That is
+exactly how the matrix entries of the integral representation below are shown
+continuous, from the continuity of `τ` alone. -/
+
+theorem isInducing_algebraMap_integralClosure_padic (p : ℕ) [Fact p.Prime]
+    {L : Type*} [Field L] [Algebra ℚ_[p] L] [Module.Finite ℚ_[p] L]
+    [TopologicalSpace L] [IsModuleTopology ℚ_[p] L]
+    [Algebra ℤ_[p] L] [IsScalarTower ℤ_[p] ℚ_[p] L]
+    [TopologicalSpace ↥(integralClosure ℤ_[p] L)]
+    [IsModuleTopology ℤ_[p] ↥(integralClosure ℤ_[p] L)] :
+    Topology.IsInducing (algebraMap ↥(integralClosure ℤ_[p] L) L) := by
+  classical
+  haveI : Module.IsTorsionFree ℤ_[p] L := isTorsionFree_padicInt_of_algebra p
+  haveI hfin : Module.Finite ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.finite ℤ_[p] ℚ_[p] L _
+  haveI hfree : Module.Free ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.module_free ℤ_[p] ℚ_[p] L _
+  haveI hloc := IsIntegralClosure.isLocalization ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+  haveI : Fintype (Module.Free.ChooseBasisIndex ℤ_[p] ↥(integralClosure ℤ_[p] L)) :=
+    Module.Free.ChooseBasisIndex.fintype ℤ_[p] _
+  haveI : ContinuousAdd ↥(integralClosure ℤ_[p] L) :=
+    IsModuleTopology.toContinuousAdd ℤ_[p] _
+  haveI : ContinuousAdd L := IsModuleTopology.toContinuousAdd ℚ_[p] L
+  set bC := Module.Free.chooseBasis ℤ_[p] ↥(integralClosure ℤ_[p] L) with hbC
+  set bL := Module.Basis.localizationLocalization ℚ_[p] (nonZeroDivisors ℤ_[p]) L bC with hbL
+  -- the two coordinate homeomorphisms
+  let homC : ↥(integralClosure ℤ_[p] L) ≃ₜ
+      (Module.Free.ChooseBasisIndex ℤ_[p] ↥(integralClosure ℤ_[p] L) → ℤ_[p]) :=
+    { toEquiv := bC.equivFun.toEquiv
+      continuous_toFun :=
+        IsModuleTopology.continuous_of_linearMap (R := ℤ_[p]) bC.equivFun.toLinearMap
+      continuous_invFun :=
+        IsModuleTopology.continuous_of_linearMap (R := ℤ_[p]) bC.equivFun.symm.toLinearMap }
+  let homL : L ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] ↥(integralClosure ℤ_[p] L) → ℚ_[p]) :=
+    { toEquiv := bL.equivFun.toEquiv
+      continuous_toFun :=
+        IsModuleTopology.continuous_of_linearMap (R := ℚ_[p]) bL.equivFun.toLinearMap
+      continuous_invFun :=
+        IsModuleTopology.continuous_of_linearMap (R := ℚ_[p]) bL.equivFun.symm.toLinearMap }
+  have hZQ : Topology.IsInducing ⇑(algebraMap ℤ_[p] ℚ_[p]) :=
+    PadicInt.isOpenEmbedding_coe.isEmbedding.isInducing
+  have hkey : (algebraMap ↥(integralClosure ℤ_[p] L) L) =
+      homL.symm ∘ (Pi.map fun _ => (algebraMap ℤ_[p] ℚ_[p])) ∘ homC := by
+    funext x
+    apply homL.injective
+    simp only [Function.comp_apply, Homeomorph.apply_symm_apply]
+    funext i
+    show bL.equivFun (algebraMap _ L x) i = algebraMap ℤ_[p] ℚ_[p] (bC.equivFun x i)
+    simp only [Module.Basis.equivFun_apply, hbL]
+    exact Module.Basis.localizationLocalization_repr_algebraMap ℚ_[p]
+      (nonZeroDivisors ℤ_[p]) L bC x i
+  rw [hkey]
+  exact homL.symm.isInducing.comp ((Topology.IsInducing.piMap fun _ => hZQ).comp homC.isInducing)
+
+set_option maxHeartbeats 400000 in
+/-- **STEPS 5–6 of the Serre stable-lattice plan: the COSET-SUM LATTICE and the
+CONTINUITY of its framing** (PROVEN 2026-07-28), stated over an ABSTRACT
+topological group `G`.
+
+Nothing in the argument uses anything about `Γ_F` beyond the FINITENESS of
+`G ⧸ U`, so it is stated that way; `exists_framed_of_finiteIndex_stabilizer`
+below is the one-line Galois instantiation.  Likewise the coefficient ring is
+kept abstract exactly to the extent the proof allows: the topologies on `𝒪_L`
+and on the two endomorphism algebras enter as instance ARGUMENTS satisfying
+`IsModuleTopology`, so the caller supplies `moduleTopology` by `⟨rfl⟩` and this
+proof never has to unfold one.
+
+STEP 5.  `Λ := span_{𝒪_L} {τ(q.out) eᵢ : q ∈ G ⧸ U, i}` — the coset sum written
+as a span of a FINITE family, which is what makes finite generation
+(`Submodule.fg_span` over `Set.finite_range`) a one-liner rather than the
+`Finset` bookkeeping the plan feared.  Stability: for `g` and a class `q`, put
+`q' := ⟦g * q.out⟧` and `u := q'.out⁻¹ * (g * q.out) ∈ U`, so
+`τ(g * q.out) eᵢ = τ(q'.out) (τ(u) eᵢ)`; `hU` puts `τ(u) eᵢ` in the standard
+lattice, which is the `𝒪_L`-span of the `eₖ`, and `Submodule.map_span` carries
+that into `Λ`.  Spanning: `τ(g₀)` is invertible for any `g₀` (it is a monoid-hom
+image), so already ONE coset's worth of generators spans `L²` over `L`.
+
+`Λ` is then a `Submodule.IsLattice L Λ` in mathlib's sense, and that class
+supplies the rest of STEP 5 wholesale: `IsLattice.free` (over the PID `𝒪_L`),
+`IsLattice.finrank_of_pi` for the rank, and `Module.Basis.extendOfIsLattice` to
+turn the `𝒪_L`-basis `e` of `Λ` into the `L`-basis `b` of `L²` with
+`b i = ↑(e i)`.  `𝒪_L` is a PID because it is a NOETHERIAN LOCAL DEDEKIND
+DOMAIN: `IsIntegralClosure.isDedekindDomain` (char zero makes `L/ℚ_p`
+separable), locality by hypothesis — the caller gets it from
+`isLocalRing_of_finite_padicInt_domain` — and then
+`tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain` `.out 2 0`.
+
+STEP 6.  `ρ g := (e.equivFun).conj (τ g |_Λ)`, and CONTINUITY is proved by
+COORDINATES, in the direction the module topology makes easy.  Continuity INTO
+`moduleTopology 𝒪_L (End_{𝒪_L}(𝒪_L²))` is obtained by factoring through
+`Module.Basis.constr` on `Pi.basisFun`: an endomorphism is its values on a
+basis, so it suffices that each of the four entries `g ↦ (ρ g eᵢ)ₖ` is
+continuous into `𝒪_L`.  By `isInducing_algebraMap_integralClosure_padic` that is
+continuity of `g ↦ b.repr (τ g (b i)) k` into `L`, which is `τ` composed with an
+`L`-linear functional on `End_L(L²)` — continuous by
+`IsModuleTopology.continuous_of_linearMap`.  So the whole of STEP 6 rests on the
+matrix identity proved for STEP 5 and on the inducing lemma; no transitivity of
+module topologies is needed after all.
+
+The conclusion is the MATRIX identity, not a `charFrob` statement: `b` is an
+`L`-basis of `L²` and the matrix of `τ g` in it is the `algebraMap 𝒪_L L`-image
+of the matrix of `ρ g` in the standard basis. -/
+
+theorem exists_framed_of_finiteIndex_stabilizer_aux (p : ℕ) [Fact p.Prime]
+    {G : Type*} [Group G] [TopologicalSpace G]
+    {L : Type*} [Field L] [Algebra ℚ_[p] L] [Module.Finite ℚ_[p] L]
+    [TopologicalSpace L] [IsTopologicalRing L] [IsModuleTopology ℚ_[p] L]
+    [Algebra ℤ_[p] L] [IsScalarTower ℤ_[p] ℚ_[p] L]
+    [IsLocalRing ↥(integralClosure ℤ_[p] L)]
+    [TopologicalSpace ↥(integralClosure ℤ_[p] L)]
+    [IsModuleTopology ℤ_[p] ↥(integralClosure ℤ_[p] L)]
+    [TopologicalSpace (Module.End L (Fin 2 → L))]
+    [IsModuleTopology L (Module.End L (Fin 2 → L))]
+    [TopologicalSpace (Module.End ↥(integralClosure ℤ_[p] L)
+      (Fin 2 → ↥(integralClosure ℤ_[p] L)))]
+    [IsModuleTopology ↥(integralClosure ℤ_[p] L)
+      (Module.End ↥(integralClosure ℤ_[p] L) (Fin 2 → ↥(integralClosure ℤ_[p] L)))]
+    (τ : G →ₜ* Module.End L (Fin 2 → L))
+    (U : Subgroup G) [Finite (G ⧸ U)]
+    (hU : ∀ g ∈ U, ∀ x : Fin 2 → L,
+        (∀ k, x k ∈ integralClosure ℤ_[p] L) →
+        ∀ k, τ g x k ∈ integralClosure ℤ_[p] L) :
+    ∃ (ρ : G →ₜ* Module.End ↥(integralClosure ℤ_[p] L)
+          (Fin 2 → ↥(integralClosure ℤ_[p] L)))
+      (b : Module.Basis (Fin 2) L (Fin 2 → L)),
+      ∀ (g : G) (i : Fin 2),
+        τ g (b i) = ∑ k, algebraMap ↥(integralClosure ℤ_[p] L) L
+          (ρ g (Pi.single i 1) k) • b k := by
+  classical
+  haveI : Module.IsTorsionFree ℤ_[p] L := isTorsionFree_padicInt_of_algebra p
+  haveI hCfin : Module.Finite ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.finite ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+  haveI hNoeth : IsNoetherianRing ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.isNoetherianRing ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+  haveI hFR : IsFractionRing ↥(integralClosure ℤ_[p] L) L :=
+    IsIntegralClosure.isFractionRing_of_finite_extension ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+  haveI hDed : IsDedekindDomain ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.isDedekindDomain ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+  haveI hPID : IsPrincipalIdealRing ↥(integralClosure ℤ_[p] L) :=
+    ((tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain
+      ↥(integralClosure ℤ_[p] L)).out 2 0).mp hDed
+  haveI hTRC : IsTopologicalRing ↥(integralClosure ℤ_[p] L) :=
+    IsModuleTopology.isTopologicalRing ℤ_[p] ↥(integralClosure ℤ_[p] L)
+  haveI : ContinuousAdd (Module.End ↥(integralClosure ℤ_[p] L)
+      (Fin 2 → ↥(integralClosure ℤ_[p] L))) :=
+    IsModuleTopology.toContinuousAdd ↥(integralClosure ℤ_[p] L) _
+  -- the standard lattice, described by coordinates
+  have hcoord : ∀ x : Fin 2 → L, (∀ k, x k ∈ integralClosure ℤ_[p] L) →
+      x ∈ Submodule.span ↥(integralClosure ℤ_[p] L)
+        (Set.range fun k : Fin 2 => (Pi.single k 1 : Fin 2 → L)) := by
+    intro x hx
+    have hxs : x = ∑ k, (⟨x k, hx k⟩ : ↥(integralClosure ℤ_[p] L)) •
+        (Pi.single k 1 : Fin 2 → L) := by
+      funext j
+      rw [Finset.sum_apply, Finset.sum_eq_single j]
+      · rw [Pi.smul_apply, Pi.single_eq_same, Algebra.smul_def, mul_one]
+        rfl
+      · intro k _ hk
+        rw [Pi.smul_apply, Pi.single_eq_of_ne (Ne.symm hk), smul_zero]
+      · intro h; exact absurd (Finset.mem_univ j) h
+    rw [hxs]
+    exact Submodule.sum_mem _ fun k _ =>
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩)
+  have hmul : ∀ (a c : G) (x : Fin 2 → L), τ a (τ c x) = τ (a * c) x := by
+    intro a c x; rw [map_mul]; rfl
+  -- the coset-sum lattice
+  set gen : (G ⧸ U) × Fin 2 → (Fin 2 → L) :=
+    fun qi => τ (Quotient.out qi.1) (Pi.single qi.2 (1 : L)) with hgen
+  set Λ : Submodule ↥(integralClosure ℤ_[p] L) (Fin 2 → L) :=
+    Submodule.span ↥(integralClosure ℤ_[p] L) (Set.range gen) with hΛdef
+  -- STEP 5a: `Λ` is `G`-stable
+  have hstab : ∀ (g : G) (x : Fin 2 → L), x ∈ Λ → τ g x ∈ Λ := by
+    intro g x hx
+    induction hx using Submodule.span_induction with
+    | mem y hy =>
+      obtain ⟨⟨q, i⟩, rfl⟩ := hy
+      set q' : G ⧸ U := ((g * Quotient.out q : G) : G ⧸ U) with hq'
+      set u : G := (Quotient.out q')⁻¹ * (g * Quotient.out q) with hu
+      have huU : u ∈ U := by
+        rw [hu]
+        refine QuotientGroup.eq.mp ?_
+        rw [hq']
+        exact Quotient.out_eq' _
+      have heq : g * Quotient.out q = Quotient.out q' * u := by rw [hu]; group
+      have hstep : τ g (gen (q, i)) = τ (Quotient.out q') (τ u (Pi.single i (1 : L))) := by
+        show τ g (τ (Quotient.out q) (Pi.single i (1 : L)))
+          = τ (Quotient.out q') (τ u (Pi.single i (1 : L)))
+        rw [hmul, hmul, heq]
+      rw [hstep]
+      have hint : ∀ k, τ u (Pi.single i (1 : L)) k ∈ integralClosure ℤ_[p] L := by
+        refine hU u huU _ (fun k => ?_)
+        rcases eq_or_ne k i with rfl | h
+        · rw [Pi.single_eq_same]; exact Subalgebra.one_mem _
+        · rw [Pi.single_eq_of_ne h]; exact Subalgebra.zero_mem _
+      have hin0 := hcoord _ hint
+      have hmaple : Submodule.map
+          ((τ (Quotient.out q')).restrictScalars ↥(integralClosure ℤ_[p] L))
+          (Submodule.span ↥(integralClosure ℤ_[p] L)
+            (Set.range fun k : Fin 2 => (Pi.single k 1 : Fin 2 → L))) ≤ Λ := by
+        rw [Submodule.map_span]
+        refine Submodule.span_le.2 ?_
+        rintro _ ⟨_, ⟨k, rfl⟩, rfl⟩
+        exact Submodule.subset_span ⟨(q', k), rfl⟩
+      exact hmaple ⟨_, hin0, rfl⟩
+    | zero => rw [map_zero]; exact Submodule.zero_mem Λ
+    | add y z _ _ hy hz => rw [map_add]; exact Submodule.add_mem _ hy hz
+    | smul c y _ hy =>
+      have hsm : τ g (c • y) = c • τ g y := by
+        rw [← algebraMap_smul (R := ↥(integralClosure ℤ_[p] L)) L c y, map_smul,
+          algebraMap_smul]
+      rw [hsm]; exact Submodule.smul_mem _ _ hy
+  -- STEP 5b: `Λ` spans `L²` over `L`
+  have hspanL : Submodule.span L (Λ : Set (Fin 2 → L)) = ⊤ := by
+    set g₀ : G := Quotient.out ((1 : G) : G ⧸ U) with hg₀
+    rw [eq_top_iff]
+    rintro x -
+    have hsurj : τ g₀ (τ g₀⁻¹ x) = x := by
+      rw [hmul, mul_inv_cancel, map_one]; rfl
+    rw [← hsurj]
+    have hys : (τ g₀⁻¹ x) = ∑ k, (τ g₀⁻¹ x) k • Pi.single (M := fun _ : Fin 2 => L) k 1 := by
+      funext j
+      simp [Finset.sum_apply, Pi.single_apply, Finset.sum_ite_eq]
+    rw [hys, map_sum]
+    refine Submodule.sum_mem _ fun k _ => ?_
+    rw [map_smul]
+    refine Submodule.smul_mem _ _ (Submodule.subset_span ?_)
+    show τ g₀ (Pi.single k (1 : L)) ∈ Λ
+    exact Submodule.subset_span ⟨(((1 : G) : G ⧸ U), k), rfl⟩
+  haveI hlat : Submodule.IsLattice L Λ :=
+    { fg := Submodule.fg_span (Set.finite_range gen)
+      span_eq_top := hspanL }
+  -- STEP 5c: `Λ` is free of rank two over the DVR `𝒪_L`
+  haveI hfreeΛ : Module.Free ↥(integralClosure ℤ_[p] L) ↥Λ :=
+    Submodule.IsLattice.free (K := L) Λ
+  have hrank : Module.finrank ↥(integralClosure ℤ_[p] L) ↥Λ = 2 := by
+    have h := Submodule.IsLattice.finrank_of_pi
+      (R := ↥(integralClosure ℤ_[p] L)) L (ι := Fin 2) Λ
+    simpa using h
+  set e : Module.Basis (Fin 2) ↥(integralClosure ℤ_[p] L) ↥Λ :=
+    Module.finBasisOfFinrankEq ↥(integralClosure ℤ_[p] L) ↥Λ hrank with he
+  set b : Module.Basis (Fin 2) L (Fin 2 → L) := e.extendOfIsLattice L with hbdef
+  have hbi : ∀ i, b i = ((e i : ↥Λ) : Fin 2 → L) :=
+    fun i => Module.Basis.extendOfIsLattice_apply L e i
+  -- the restricted representation
+  have hstab' : ∀ g : G, ∀ x ∈ Λ,
+      ((τ g).restrictScalars ↥(integralClosure ℤ_[p] L)) x ∈ Λ := fun g x hx => hstab g x hx
+  set T : G → Module.End ↥(integralClosure ℤ_[p] L) ↥Λ :=
+    fun g => LinearMap.restrict ((τ g).restrictScalars ↥(integralClosure ℤ_[p] L))
+      (hstab' g) with hT
+  have hTval : ∀ (g : G) (x : ↥Λ), ((T g x : ↥Λ) : Fin 2 → L) = τ g (x : Fin 2 → L) := by
+    intro g x; rfl
+  set E := LinearEquiv.conjAlgEquiv ↥(integralClosure ℤ_[p] L) e.equivFun with hE
+  set R : G → Module.End ↥(integralClosure ℤ_[p] L)
+      (Fin 2 → ↥(integralClosure ℤ_[p] L)) := fun g => E (T g) with hR
+  have hT1 : T 1 = 1 := by
+    refine LinearMap.ext fun x => Subtype.ext ?_
+    rw [hTval, map_one]; rfl
+  have hTmul : ∀ g h, T (g * h) = T g * T h := by
+    intro g h
+    refine LinearMap.ext fun x => Subtype.ext ?_
+    rw [hTval]
+    show τ (g * h) (x : Fin 2 → L) = ((T g) (T h x) : Fin 2 → L)
+    rw [hTval, hTval, hmul]
+  -- STEP 6a: the matrix identity
+  have hei : ∀ i, e.equivFun.symm
+      (Pi.single (M := fun _ : Fin 2 => ↥(integralClosure ℤ_[p] L)) i 1) = e i := by
+    intro i
+    apply e.equivFun.injective
+    rw [LinearEquiv.apply_symm_apply]
+    funext j
+    rw [Module.Basis.equivFun_apply, e.repr_self]
+    simp [Pi.single_apply, Finsupp.single_apply, eq_comm]
+  have hRapp : ∀ (g : G) (i : Fin 2), R g (Pi.single i 1) = e.equivFun (T g (e i)) := by
+    intro g i
+    show e.equivFun (T g (e.equivFun.symm (Pi.single i 1))) = _
+    rw [hei]
+  have hmain : ∀ (g : G) (i : Fin 2),
+      τ g (b i) = ∑ k, algebraMap ↥(integralClosure ℤ_[p] L) L
+        (R g (Pi.single i 1) k) • b k := by
+    intro g i
+    have h1 : τ g (b i) = ((T g (e i) : ↥Λ) : Fin 2 → L) := by
+      rw [hTval, hbi]
+    rw [h1, hRapp]
+    conv_lhs => rw [← e.sum_equivFun (T g (e i))]
+    rw [Submodule.coe_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [hbi, Submodule.coe_smul, algebraMap_smul]
+  -- STEP 6b: continuity
+  have hind : Topology.IsInducing (algebraMap ↥(integralClosure ℤ_[p] L) L) :=
+    isInducing_algebraMap_integralClosure_padic p
+  have hentry : ∀ (i k : Fin 2), Continuous fun g : G => R g (Pi.single i 1) k := by
+    intro i k
+    rw [hind.continuous_iff]
+    have hfun : ((algebraMap ↥(integralClosure ℤ_[p] L) L) ∘ fun g : G => R g (Pi.single i 1) k)
+        = fun g : G => b.repr (τ g (b i)) k := by
+      funext g
+      show algebraMap ↥(integralClosure ℤ_[p] L) L (R g (Pi.single i 1) k)
+        = b.repr (τ g (b i)) k
+      rw [hmain g i, Module.Basis.repr_sum_self]
+    rw [hfun]
+    exact (IsModuleTopology.continuous_of_linearMap
+      ({ toFun := fun f : Module.End L (Fin 2 → L) => b.repr (f (b i)) k
+         map_add' := fun f₁ f₂ => by simp
+         map_smul' := fun c f => by simp } : Module.End L (Fin 2 → L) →ₗ[L] L)).comp
+      (ContinuousMonoidHom.continuous_toFun τ)
+  have hcont : Continuous R := by
+    have hRc : R = fun g => (Module.Basis.constr
+        (Pi.basisFun ↥(integralClosure ℤ_[p] L) (Fin 2)) ↥(integralClosure ℤ_[p] L))
+        (fun i => R g (Pi.single i 1)) := by
+      funext g
+      refine (Module.Basis.constr_self (Pi.basisFun ↥(integralClosure ℤ_[p] L) (Fin 2))
+        ↥(integralClosure ℤ_[p] L) (R g)).symm.trans ?_
+      congr 1
+      funext i
+      rw [Pi.basisFun_apply]
+    rw [hRc]
+    exact (IsModuleTopology.continuous_of_linearMap
+      (Module.Basis.constr (Pi.basisFun ↥(integralClosure ℤ_[p] L) (Fin 2))
+        ↥(integralClosure ℤ_[p] L)).toLinearMap).comp
+      (continuous_pi fun i => continuous_pi fun k => hentry i k)
+  refine ⟨{ toFun := R
+            map_one' := by show E (T 1) = 1; rw [hT1, map_one]
+            map_mul' := fun g h => by show E (T (g * h)) = E (T g) * E (T h);
+                                      rw [hTmul, map_mul]
+            continuous_toFun := hcont }, b, hmain⟩
+
 /-- **STEPS 5–6 of the Serre stable-lattice plan: the COSET-SUM LATTICE and
-the CONTINUITY of its framing** (sorry leaf, CUT 2026-07-27).
+the CONTINUITY of its framing** (CUT 2026-07-27, PROVEN 2026-07-28).
 
 Given a finite-index subgroup `U ≤ Γ_F` preserving the STANDARD lattice
 `𝒪_L² ⊆ L²` — which `exists_framed_stableLattice_of_finiteDimensional_padic`
 below constructs and proves open, hence of finite index, by compactness —
 produce a `Γ_F`-stable lattice and a framing of it.
 
-WHAT REMAINS, and it is exactly the two steps the handover plan called the
-`Finset` bookkeeping and "the expensive half":
+The mathematics is `exists_framed_of_finiteIndex_stabilizer_aux` above, stated
+over an abstract topological group; ALL this declaration adds is the Galois
+instantiation, and the only work in it is producing the two hypotheses that the
+abstract form takes as instances:
 
-* STEP 5.  `Λ := ⨆ q : Γ_F ⧸ U, τ(q.out) '' 𝒪_L²` is `Γ_F`-stable: for `g`
-  and a class `q`, `g * q.out` lies in the class `⟦g * q.out⟧`, so
-  `g * q.out = ⟦g * q.out⟧.out * u` with `u ∈ U` and
-  `τ(g * q.out) '' 𝒪_L² = τ(⟦g * q.out⟧.out) '' (τ(u) '' 𝒪_L²) ⊆ Λ`.  It is
-  a finite sup of f.g. `𝒪_L`-modules, hence f.g.; it contains an
-  automorphic image of `𝒪_L²`, hence spans `L²` over `L`.  Being f.g. and
-  torsion-free over the DVR `𝒪_L` it is FREE, and spanning `L²` pins its
-  rank at `2` — that is `b` together with `e : Λ ≃ₗ[𝒪_L] (Fin 2 → 𝒪_L)`.
-* STEP 6.  CONTINUITY of `g ↦ e.conj (τ g |_Λ)` into
-  `moduleTopology 𝒪_L (End_{𝒪_L}(Fin 2 → 𝒪_L))`.  Go through `ℤ_p` rather
-  than `𝒪_L`: the two module topologies agree because `𝒪_L` is
-  module-finite over `ℤ_p` (`IsModuleTopology.trans` /
-  `moduleTopology.trans`, in this tree at
-  `Fermat/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean:169,194`),
-  `End_{𝒪_L}(𝒪_L²)` is then finite free over `ℤ_p`, and continuity into a
-  finite free `ℤ_p`-module is continuity of coordinates, each of which
-  factors through the already-continuous `τ` and the topological embedding
-  `ℤ_p ↪ ℚ_p`.  Keep the intermediate lemmas stated over an ABSTRACT
-  module.
+* `IsLocalRing 𝒪_L`, from `isLocalRing_of_finite_padicInt_domain` — `𝒪_L` is a
+  domain module-finite over `ℤ_p`, and `algebraMap ℤ_p 𝒪_L` is injective
+  because `ℤ_p → ℚ_p → L` is;
+* `Finite (Γ_F ⧸ U)`, from `hUfi` by `Subgroup.finite_quotient_of_finiteIndex`.
+
+The topologies on `𝒪_L`, on `End_L(L²)` and on `End_{𝒪_L}(𝒪_L²)` are then all
+supplied by `letI ... := moduleTopology _ _` plus `⟨rfl⟩`, which is exactly the
+shape the abstract form was written to accept.
+
+TWO ROUTE NOTES RECORDED HERE IN 2026-07-27 WERE WRONG, and correcting them is
+most of why this closed cheaply.  Neither `IsLocalRing.isOpen_maximalIdeal_pow`
+nor `isOpen_span_natCast_pow`'s STATEMENT is needed (`ℤ_p` is open in `ℚ_p`
+outright, `PadicInt.isOpenEmbedding_coe`); and STEP 6 does NOT need
+`IsModuleTopology.trans` to move between the `ℤ_p`- and `𝒪_L`-module topologies.
+Continuity into `moduleTopology 𝒪_L (End_{𝒪_L}(𝒪_L²))` is reached directly,
+through `Module.Basis.constr` on `Pi.basisFun` (an endomorphism is its values on
+a basis) plus `isInducing_algebraMap_integralClosure_padic` on each entry.  What
+STEP 5 needed and the plan did not name is mathlib's `Submodule.IsLattice`,
+which supplies freeness, rank and the extension of an `𝒪_L`-basis of `Λ` to an
+`L`-basis of `L²` (`Module.Basis.extendOfIsLattice`) in three lemmas.
 
 The conclusion is a MATRIX identity rather than anything about `charFrob`:
 `b` is an `L`-basis of `L²` and the matrix of `τ g` in it is the
@@ -5608,7 +5965,29 @@ theorem exists_framed_of_finiteIndex_stabilizer (p : ℕ) [Fact p.Prime]
       ∀ (g : Field.absoluteGaloisGroup F) (i : Fin 2),
         τ g (b i) = ∑ k, algebraMap ↥(integralClosure ℤ_[p] L) L
           (ρ g (Pi.single i 1) k) • b k := by
-  sorry
+  classical
+  haveI := hUfi
+  haveI : Module.IsTorsionFree ℤ_[p] L := isTorsionFree_padicInt_of_algebra p
+  haveI hCfin : Module.Finite ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+    IsIntegralClosure.finite ℤ_[p] ℚ_[p] L _
+  have hZL : Function.Injective (algebraMap ℤ_[p] L) := by
+    rw [IsScalarTower.algebraMap_eq ℤ_[p] ℚ_[p] L]
+    exact (algebraMap ℚ_[p] L).injective.comp (IsFractionRing.injective ℤ_[p] ℚ_[p])
+  haveI : IsLocalRing ↥(integralClosure ℤ_[p] L) :=
+    isLocalRing_of_finite_padicInt_domain (p := p)
+      (fun a b hab => hZL (congrArg Subtype.val hab))
+  letI : TopologicalSpace ↥(integralClosure ℤ_[p] L) :=
+    moduleTopology ℤ_[p] ↥(integralClosure ℤ_[p] L)
+  haveI : IsModuleTopology ℤ_[p] ↥(integralClosure ℤ_[p] L) := ⟨rfl⟩
+  letI : TopologicalSpace (Module.End L (Fin 2 → L)) :=
+    moduleTopology L (Module.End L (Fin 2 → L))
+  haveI : IsModuleTopology L (Module.End L (Fin 2 → L)) := ⟨rfl⟩
+  letI : TopologicalSpace (Module.End ↥(integralClosure ℤ_[p] L)
+      (Fin 2 → ↥(integralClosure ℤ_[p] L))) :=
+    moduleTopology ↥(integralClosure ℤ_[p] L) _
+  haveI : IsModuleTopology ↥(integralClosure ℤ_[p] L)
+      (Module.End ↥(integralClosure ℤ_[p] L) (Fin 2 → ↥(integralClosure ℤ_[p] L))) := ⟨rfl⟩
+  exact exists_framed_of_finiteIndex_stabilizer_aux p τ U hU
 
 /-- **STEPS 1–4 of the Serre stable-lattice plan, in MATRIX form** (PROVEN
 2026-07-27 over `isOpen_integralClosure_padic` and the single leaf
@@ -5803,10 +6182,14 @@ cost is in step 6.
    applies in full, so keep the intermediate lemmas stated over an ABSTRACT
    module.
 
-**STATUS 2026-07-27 — THIS LEAF IS NOW PROVEN, AND STEPS 1–4 WITH IT.** The
-six-step plan below is history except for STEPS 5–6, which are cut out as the
-single named leaf `exists_framed_of_finiteIndex_stabilizer` above. What was
-built, in dependency order:
+**STATUS 2026-07-28 — THE WHOLE SIX-STEP PLAN IS PROVEN. No sorry remains in
+this development.** The plan below is history in its entirety; steps 5–6 closed
+one day after they were cut out as `exists_framed_of_finiteIndex_stabilizer`.
+Two of the route notes in step 6 below turned out to be WRONG and are corrected
+on that declaration's own docstring: neither `IsModuleTopology.trans` nor a
+`ℤ_p`-basis of `End_{𝒪_L}(𝒪_L²)` is needed, and mathlib's `Submodule.IsLattice`
+— which the plan never names — supplies the whole of step 5's freeness/rank
+argument. What was built, in dependency order:
 
 * `isTorsionFree_padicInt_of_algebra` — the recorded friction of step 2;
 * `isOpen_span_range_basis_padic` — the "first genuinely NEW lemma" predicted
@@ -5819,6 +6202,11 @@ built, in dependency order:
   supplies exactly the "`ℚ_p`-basis of `L` drawn from a `ℤ_p`-basis of `𝒪_L`"
   the paragraph below asks for. That is also what mathlib's own
   `IsIntegralClosure.rank` uses, so the construction was already in the pin;
+* `isInducing_algebraMap_integralClosure_padic` — the same coordinate
+  computation in the form step 6 really wants: `𝒪_L` carries the SUBSPACE
+  topology from `L`, not merely an open image;
+* `exists_framed_of_finiteIndex_stabilizer_aux` and
+  `exists_framed_of_finiteIndex_stabilizer` — steps 5–6;
 * `exists_framed_stableLattice_of_finiteDimensional_padic` — steps 1–4, in
   MATRIX form (no `charFrob`);
 * this theorem — three rewrites converting that matrix identity into the
