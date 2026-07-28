@@ -16947,16 +16947,70 @@ will therefore FAIL to give a `ℤ`-rational family valid in every characteristi
 The scheme-theoretic argument above delivers integrality directly and is the
 reason it is the recommended route.
 
-WHAT IS MISSING FROM THE PIN (checked 2026-07-28 against `Fermat/`,
-`.lake/packages/mathlib` and `~/cs/FLT`): the fundamental theorem of elimination
-theory in usable form — that the image of a projective scheme under a morphism is
-closed — and with it any statement that the image of `Proj`-valued morphisms is
-cut out by explicit forms. Mathlib has `AlgebraicGeometry.Proj` and the properness
-API (`AlgebraicGeometry.Morphisms.Proper`, imported by this file) but no bridge
-from a closed subset of `Proj` to a finite family of defining forms in the
-coefficient ring. Building that bridge is the substance of this leaf; it would
-also be reusable, since "the image of a base-point-free bilinear map with no zero
-divisors is closed" is a statement of independent value.
+A CONCRETE ATTACK: THE SEGRE ENCODING reduces this leaf to the MAIN THEOREM OF
+ELIMINATION THEORY, with no geometry of its own. Verified by hand 2026-07-28; it
+is written out because "needs elimination theory" is not an actionable note.
+
+Let `A_e` be the (finite) set of monomials `sᵃtᵇ` with `a + b ≤ e`, and `d = d₁ + d₂`.
+Take PARAMETERS `(g_m)_{m ∈ A_d}` and UNKNOWNS `(z_{m₁m₂})_{m₁ ∈ A_{d₁}, m₂ ∈ A_{d₂}}`
+together with one extra unknown `u`. Impose
+
+* (S) `z_{m₁m₂} z_{n₁n₂} − z_{m₁n₂} z_{n₁m₂} = 0` — the Segre relations, degree 2 in
+  the unknowns, with no parameters;
+* (P) `∑_{m₁+m₂=m} z_{m₁m₂} − u · g_m = 0` for each `m ∈ A_d` — degree 1 in the
+  unknowns, linear in the parameters.
+
+Both families are HOMOGENEOUS in `(z, u)`, so the system is a legitimate input to
+projective elimination. The claim is that over any field,
+
+  `g` is a product `g₁ · g₂` with `totalDegree gᵢ ≤ dᵢ`  ↔  (S) ∧ (P) has a solution `(z, u) ≠ 0`.
+
+`←`: if `z = 0` then `u ≠ 0` and (P) forces `g = 0 = 0 · 0`, which IS in the locus.
+If `z ≠ 0` then (S) says every `2 × 2` minor vanishes, so `z` is a rank-one outer
+product `z_{m₁m₂} = x_{m₁} y_{m₂}` with `x, y ≠ 0`; the polynomials `g₁ = ∑ x_{m₁} m₁`
+and `g₂ = ∑ y_{m₂} m₂` have the right degrees, `(g₁g₂)_m = ∑_{m₁+m₂=m} z_{m₁m₂}`, so
+(P) reads `g₁g₂ = u · g`; and `g₁g₂ ≠ 0` in a domain forces `u ≠ 0`, giving
+`g = (u⁻¹g₁) · g₂`. `→`: take `z` the outer product of the coefficient vectors and
+`u = 1`.
+
+NOTE WHAT THIS BUYS. The equivalence above uses only that `K` is a DOMAIN — no
+algebraic closure, no geometry. Every geometric hypothesis of this leaf is
+therefore concentrated in the elimination step, which is the standard statement
+"the set of parameters admitting a nonzero common solution of finitely many forms
+is Zariski closed, cut out by polynomials in the parameters with the same
+coefficient ring". And the unknown count `|A_{d₁}| · |A_{d₂}| + 1` depends on `d`
+alone, so any Macaulay-style effective bound coming out of that theorem is
+automatically a function of `d` alone — which is exactly the `p`-independence this
+leaf exists to supply.
+
+WHAT IS AND IS NOT IN THE PIN (re-checked 2026-07-28 against `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT` — this CORRECTS a shorter audit written
+earlier the same day, which said only that mathlib "has the properness API"):
+
+* **PRESENT, and stronger than the earlier note suggested**: mathlib proves
+  `Proj 𝒜` is PROPER over `Spec 𝒜₀` —
+  `AlgebraicGeometry.Proj.instIsProper : IsProper (Proj.toSpecZero 𝒜)` and its
+  `UniversallyClosed` component, in
+  `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean`, under
+  `[Algebra.FiniteType (𝒜 0) A]`, proven through the valuative criterion. Universal
+  closedness of `Proj → Spec 𝒜₀` IS the main theorem of elimination theory in
+  scheme form. So the hard geometric input is NOT missing.
+* **PRESENT and worth reading before starting**:
+  `Mathlib/RingTheory/Polynomial/UniversalFactorizationRing.lean` — the UNIVARIATE
+  analogue of exactly this leaf, done universally over an arbitrary base: the
+  functor "factorisations of a monic degree-`n` polynomial into monic of degree `m`
+  times monic of degree `k`" is represented by an algebra that is finitely
+  presented AS A MODULE (`Polynomial.UniversalFactorizationRing.homEquiv`), with
+  `MvPolynomial.mapEquivMonic` representing the universal monic by `R[X₁ … Xₙ]`.
+  Finite ⟹ closed image is precisely the shape needed here. Also
+  `Mathlib/RingTheory/Polynomial/Resultant/Basic.lean` (already used in this file
+  by `stepanov_natDegree_resultant_le`).
+* **GENUINELY MISSING**: the BRIDGE — from universal closedness of a `Proj`-map (or
+  from a finite morphism) to a FINITE FAMILY OF EXPLICIT FORMS in the parameter
+  ring cutting out the image. That translation, in the elementary coefficient
+  language the statement above is phrased in, is the whole substance of this leaf.
+  It is reusable well beyond here, which is the argument for building it properly
+  rather than hand-rolling a bespoke argument for the multiplication map.
 
 CIRCULARITY GUARD: inherited from the parent. Stated over `ℤ` and over an
 arbitrary algebraically closed field, so it is independent of everything in the
