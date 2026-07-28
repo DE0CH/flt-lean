@@ -7,6 +7,16 @@ module
 public import Mathlib.RingTheory.HopfAlgebra.Quotient
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Mathlib.RingTheory.Bialgebra.Quotient
+-- `Module.free_of_finite_type_torsion_free'`: a module-finite torsion-free module over a
+-- principal ideal domain is free.  This is the engine of `free_quotient_cornerIdeal`.
+public import Mathlib.LinearAlgebra.FreeModule.PID
+-- `Module.Flat.rTensor_preserves_injective_linearMap`: the flatness input to
+-- `isCocomm_of_baseChange`, which descends cocommutativity from `S ⊗[R] A` to `A` along an
+-- injective `R → S`.
+public import Mathlib.RingTheory.Flat.Basic
+-- `Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap`: the comultiplication of a
+-- base-changed bialgebra, the compatibility that makes that descent possible.
+public import Mathlib.RingTheory.Bialgebra.TensorProduct
 
 /-!
 # The corner Hopf algebra at a connected counit idempotent
@@ -50,6 +60,12 @@ citation.
 * `HopfAlgebra.antipode_mul_self_eq_of_connected` — `S(e) * e = e`.
 * `HopfAlgebra.isHopfIdeal_cornerIdeal` — `(1 - e)` is a Hopf ideal, hence `A ⧸ (1 - e)` is a
   Hopf algebra by mathlib's `HopfAlgebra.Quotient` instance.
+* `HopfAlgebra.free_quotient_cornerIdeal` — over a principal ideal domain the corner of a
+  module-finite torsion-free algebra is **free**.
+* `Coalgebra.isCocomm_quotient` — a coideal quotient of a cocommutative coalgebra is
+  cocommutative.
+* `Coalgebra.isCocomm_of_baseChange` — cocommutativity **descends** from `S ⊗[R] A` to `A`
+  along an injective `R → S`, when `A ⊗[R] A` is `R`-flat.
 -/
 
 @[expose] public section
@@ -188,4 +204,209 @@ theorem isHopfIdeal_cornerIdeal [Nontrivial R]
 
 end CornerIdeal
 
+section Freeness
+
+variable {R A : Type*} [CommRing R] [CommRing A] [Algebra R A] {e : A}
+
+/-- **Membership in the corner ideal is annihilation by the idempotent**: for an idempotent
+`e : A`, `x ∈ (1 - e)` if and only if `e * x = 0`.
+
+Both directions are one line of `ring`: `e * (c * (1 - e)) = c * (e - e²) = 0`, and conversely
+`x * (1 - e) = x - e * x = x`. -/
+lemma mem_cornerIdeal_iff_mul_eq_zero (he : IsIdempotentElem e) {x : A} :
+    x ∈ cornerIdeal e ↔ e * x = 0 := by
+  refine ⟨fun hx => ?_, fun hx => ?_⟩
+  · obtain ⟨c, rfl⟩ := mem_cornerIdeal_iff.mp hx
+    have h : e * (c * (1 - e)) = c * (e - e * e) := by ring
+    rw [h, he, sub_self, mul_zero]
+  · refine mem_cornerIdeal_iff.mpr ⟨x, ?_⟩
+    have h : x * (1 - e) = x - e * x := by ring
+    rw [h, hx, sub_zero]
+
+/-- **The corner quotient of a torsion-free algebra is torsion-free.**
+
+`A ⧸ (1 - e)` is isomorphic as an `R`-module to the direct summand `e A ⊆ A`, and a submodule of
+a torsion-free module is torsion-free.  The proof below runs that argument without naming the
+isomorphism: an `r`-torsion relation `r • a ≡ r • b` in the quotient says
+`e * (r • (a - b)) = 0`, i.e. `r • (e * (a - b)) = 0`, and regularity of `r` on `A` kills the
+factor `r`, leaving `e * (a - b) = 0`, which is `a ≡ b`. -/
+theorem isTorsionFree_quotient_cornerIdeal [Module.IsTorsionFree R A]
+    (he : IsIdempotentElem e) : Module.IsTorsionFree R (A ⧸ cornerIdeal e) where
+  isSMulRegular r hr := by
+    intro x y hxy
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+    have hx : r • (Ideal.Quotient.mk (cornerIdeal e) a) =
+        Ideal.Quotient.mk (cornerIdeal e) (r • a) :=
+      (map_smul (Ideal.Quotient.mkₐ R (cornerIdeal e)) r a).symm
+    have hy : r • (Ideal.Quotient.mk (cornerIdeal e) b) =
+        Ideal.Quotient.mk (cornerIdeal e) (r • b) :=
+      (map_smul (Ideal.Quotient.mkₐ R (cornerIdeal e)) r b).symm
+    replace hxy : r • (Ideal.Quotient.mk (cornerIdeal e) a) =
+        r • (Ideal.Quotient.mk (cornerIdeal e) b) := hxy
+    rw [hx, hy, Ideal.Quotient.eq, mem_cornerIdeal_iff_mul_eq_zero he, ← smul_sub,
+      mul_smul_comm] at hxy
+    have h3 : e * (a - b) = (0 : A) := hr.isSMulRegular (M := A) (by simpa using hxy)
+    exact Ideal.Quotient.eq.mpr ((mem_cornerIdeal_iff_mul_eq_zero he).mpr h3)
+
+/-- **The corner of a module-finite torsion-free algebra over a PID is FREE.**
+
+`A ⧸ (1 - e)` is module-finite (quotient of a module-finite algebra) and torsion-free
+(`isTorsionFree_quotient_cornerIdeal`), so `Module.free_of_finite_type_torsion_free'` applies.
+
+At the intended call site `R` is the discrete valuation ring `𝒪ᵥ` and `A` a finite flat Hopf
+order; `Module.Flat.isTorsionFree` supplies the torsion-freeness. -/
+theorem free_quotient_cornerIdeal [IsDomain R] [IsPrincipalIdealRing R]
+    [Module.Finite R A] [Module.IsTorsionFree R A] (he : IsIdempotentElem e) :
+    Module.Free R (A ⧸ cornerIdeal e) := by
+  haveI : Module.Finite R (A ⧸ cornerIdeal e) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ R (cornerIdeal e)).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI := isTorsionFree_quotient_cornerIdeal (R := R) he
+  infer_instance
+
+end Freeness
+
 end HopfAlgebra
+
+namespace Coalgebra
+
+section QuotientCocomm
+
+variable {R A : Type*} [CommRing R] [Ring A] [Bialgebra R A]
+
+/-- Swapping the two factors of a tensor square commutes with the functorial image of a single
+linear map in both slots. -/
+lemma comm_map_apply {M N : Type*} [AddCommGroup M] [Module R M] [AddCommGroup N] [Module R N]
+    (f : M →ₗ[R] N) (t : M ⊗[R] M) :
+    _root_.TensorProduct.comm R N N (_root_.TensorProduct.map f f t) =
+      _root_.TensorProduct.map f f (_root_.TensorProduct.comm R M M t) := by
+  induction t with
+  | zero => simp
+  | tmul x y => simp
+  | add u v hu hv => simp [hu, hv]
+
+/-- **A coideal quotient of a cocommutative coalgebra is cocommutative.**
+
+`comul` on `A ⧸ I` is `(mk ⊗ mk) ∘ comul` (`Bialgebra.Quotient.comul_mk`, definitional), and
+`mk ⊗ mk` commutes with the swap, so cocommutativity passes through the surjection. -/
+theorem isCocomm_quotient (I : Ideal A) [I.IsTwoSided] [(I.restrictScalars R).IsCoideal]
+    [IsCocomm R A] : IsCocomm R (A ⧸ I) := by
+  constructor
+  refine LinearMap.ext fun x => ?_
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+  show _root_.TensorProduct.comm R (A ⧸ I) (A ⧸ I)
+      (comul (R := R) (Ideal.Quotient.mk I a)) = comul (R := R) (Ideal.Quotient.mk I a)
+  rw [Bialgebra.Quotient.comul_mk, comm_map_apply, comm_comul]
+
+end QuotientCocomm
+
+section CocommDescent
+
+variable {R S H : Type*} [CommRing R] [CommRing S] [Algebra R S] [CommRing H] [Bialgebra R H]
+
+/-- **The comultiplication of a base-changed bialgebra on a pure tensor `1 ⊗ h`.**
+
+This is `Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap` evaluated at `1 ⊗ₜ h`: the
+comultiplication of `S ⊗[R] H` is the comultiplication of `H`, base-changed and reshuffled by
+`tensorTensorTensorComm`. -/
+theorem comul_one_tmul (h : H) :
+    comul (R := S) ((1 : S) ⊗ₜ[R] h) =
+      (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+        ((1 : S ⊗[S] S) ⊗ₜ[R] (comul (R := R) h)) := by
+  rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R S S H) ((1 : S) ⊗ₜ[R] h))]
+  simp [Algebra.TensorProduct.one_def]
+
+variable (R S H) in
+/-- The `R`-linear comparison map `H ⊗[R] H → (S ⊗[R] H) ⊗[S] (S ⊗[R] H)`, `a ⊗ b ↦
+(1 ⊗ a) ⊗ (1 ⊗ b)`, written as `tensorTensorTensorComm` applied to `1 ⊗ t` so that
+`comul_one_tmul` matches it on the nose. -/
+noncomputable def baseChangeTensorSquare : H ⊗[R] H → (S ⊗[R] H) ⊗[S] (S ⊗[R] H) := fun t =>
+  (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+    ((1 : S ⊗[S] S) ⊗ₜ[R] t)
+
+lemma baseChangeTensorSquare_tmul (a b : H) :
+    baseChangeTensorSquare R S H (a ⊗ₜ[R] b) =
+      ((1 : S) ⊗ₜ[R] a) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] b) := by
+  show (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H)
+      (((1 : S) ⊗ₜ[S] (1 : S)) ⊗ₜ[R] (a ⊗ₜ[R] b)) = _
+  rw [Algebra.TensorProduct.tensorTensorTensorComm_tmul]
+
+lemma baseChangeTensorSquare_zero :
+    baseChangeTensorSquare R S H 0 = 0 := by
+  show (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H)
+      ((1 : S ⊗[S] S) ⊗ₜ[R] (0 : H ⊗[R] H)) = 0
+  rw [_root_.TensorProduct.tmul_zero, map_zero]
+
+lemma baseChangeTensorSquare_add (t t' : H ⊗[R] H) :
+    baseChangeTensorSquare R S H (t + t') =
+      baseChangeTensorSquare R S H t + baseChangeTensorSquare R S H t' := by
+  show (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H)
+      ((1 : S ⊗[S] S) ⊗ₜ[R] (t + t')) = _
+  rw [_root_.TensorProduct.tmul_add, map_add]
+  rfl
+
+lemma baseChangeTensorSquare_comul (h : H) :
+    baseChangeTensorSquare R S H (comul (R := R) h) = comul (R := S) ((1 : S) ⊗ₜ[R] h) :=
+  (comul_one_tmul h).symm
+
+/-- The comparison map intertwines the two swaps. -/
+lemma baseChangeTensorSquare_comm (t : H ⊗[R] H) :
+    baseChangeTensorSquare R S H (_root_.TensorProduct.comm R H H t) =
+      _root_.TensorProduct.comm S (S ⊗[R] H) (S ⊗[R] H)
+        (baseChangeTensorSquare R S H t) := by
+  induction t with
+  | zero => rw [map_zero, baseChangeTensorSquare_zero, map_zero]
+  | tmul x y =>
+      rw [_root_.TensorProduct.comm_tmul, baseChangeTensorSquare_tmul,
+        baseChangeTensorSquare_tmul, _root_.TensorProduct.comm_tmul]
+  | add u v hu hv =>
+      rw [map_add, baseChangeTensorSquare_add, baseChangeTensorSquare_add, hu, hv, map_add]
+
+/-- The comparison map is injective when `H ⊗[R] H` is `R`-flat and `R → S` is injective:
+it is `t ↦ 1 ⊗ₜ t` followed by an isomorphism, and `M → S ⊗[R] M` is injective for flat `M`
+(`Module.Flat.tensorProduct_mk_injective`). -/
+lemma baseChangeTensorSquare_injective [Module.Flat R (H ⊗[R] H)]
+    (hinj : Function.Injective (algebraMap R S)) :
+    Function.Injective (baseChangeTensorSquare R S H) := by
+  haveI : FaithfulSMul R S := (faithfulSMul_iff_algebraMap_injective R S).mpr hinj
+  have hmk := Module.Flat.tensorProduct_mk_injective (R := R) (S := S) (M := H ⊗[R] H)
+  intro t t' htt
+  have h0 : ((1 : S ⊗[S] S) ⊗ₜ[R] t : (S ⊗[S] S) ⊗[R] (H ⊗[R] H)) =
+      (1 : S ⊗[S] S) ⊗ₜ[R] t' :=
+    (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).injective htt
+  have hF : ∀ z : H ⊗[R] H,
+      (_root_.TensorProduct.map
+          ((_root_.TensorProduct.lid S S).toLinearMap.restrictScalars R)
+          (LinearMap.id (R := R) (M := H ⊗[R] H)))
+        ((1 : S ⊗[S] S) ⊗ₜ[R] z) = (1 : S) ⊗ₜ[R] z := by
+    intro z
+    show (_root_.TensorProduct.map _ _) (((1 : S) ⊗ₜ[S] (1 : S)) ⊗ₜ[R] z) = _
+    rw [_root_.TensorProduct.map_tmul]
+    congr 1
+    show (_root_.TensorProduct.lid S S) ((1 : S) ⊗ₜ[S] (1 : S)) = (1 : S)
+    simp
+  have h1 : ((1 : S) ⊗ₜ[R] t : S ⊗[R] (H ⊗[R] H)) = (1 : S) ⊗ₜ[R] t' := by
+    rw [← hF t, ← hF t', h0]
+  exact hmk h1
+
+/-- **Cocommutativity descends along a faithfully-acting base change.**
+
+If `S ⊗[R] H` is cocommutative over `S`, `H ⊗[R] H` is `R`-flat and `R → S` is injective, then
+`H` is cocommutative over `R`.  The comparison map `H ⊗[R] H → (S ⊗[R] H) ⊗[S] (S ⊗[R] H)` is
+injective and intertwines both the comultiplications and the swaps, so the identity
+`τ ∘ Δ = Δ` may be checked after base change.
+
+This is the formal content of "the generic fibre is a commutative group scheme, and flatness
+descends the identity to the integral model". -/
+theorem isCocomm_of_baseChange [Module.Flat R (H ⊗[R] H)] [IsCocomm S (S ⊗[R] H)]
+    (hinj : Function.Injective (algebraMap R S)) : IsCocomm R H := by
+  constructor
+  refine LinearMap.ext fun h => ?_
+  show _root_.TensorProduct.comm R H H (comul (R := R) h) = comul (R := R) h
+  refine baseChangeTensorSquare_injective (S := S) hinj ?_
+  rw [baseChangeTensorSquare_comm, baseChangeTensorSquare_comul, comm_comul]
+
+end CocommDescent
+
+end Coalgebra
