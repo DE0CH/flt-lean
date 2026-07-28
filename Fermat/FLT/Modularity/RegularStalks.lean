@@ -469,9 +469,24 @@ THE LIST is `Finset.univ.toList` over `σ`; its `Nodup` is exactly what supplies
 `LinearIndependent.notMem_span_image`. No enumeration by `Fin c` and no list
 surgery is needed.
 
-NO DIMENSION THEORY IS USED, and none is available: this is why the route goes
-through independence in `𝔪_B/𝔪_B²` rather than through `dim A_p = dim B - c`. -/
-theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
+NO DIMENSION THEORY IS USED HERE, and none is needed: the route goes through
+independence in `𝔪_B/𝔪_B²` rather than through `dim A_p = dim B - c`.
+
+**THE TWO NUMERICAL CONCLUSIONS** (`ringKrullDim B ≤ #ι` and `l.length = #σ`)
+were added 2026-07-28 for
+`AlgebraicGeometry.ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`,
+which needs `dim A_p ≤ #ι − #σ` and therefore needs both numbers that the
+plain existential above forgets. They are read off the objects the proof
+already builds: `B` is `K[x_ι]` localized at `q`, so
+`dim B = ht q ≤ dim K[x_ι] = dim K + #ι = #ι`
+(`IsLocalization.AtPrime.ringKrullDim_eq_height`,
+`Ideal.height_le_ringKrullDim_of_isPrime`,
+`MvPolynomial.ringKrullDim_of_isNoetherianRing`,
+`ringKrullDim_eq_zero_of_field`), and `l` is indexed by `Finset.univ.toList`
+over `σ`. Neither costs a new import. The weaker statement is kept below,
+under its original name, as a one-line corollary, so every existing consumer
+is unaffected. -/
+theorem exists_isRegularLocalRing_quotient_indepList_card_of_submersivePresentation
     {K : Type u} [Field K] {A : Type u} [CommRing A] [Algebra K A]
     {ι σ : Type} [Finite ι] [Finite σ]
     (P : Algebra.SubmersivePresentation K A ι σ) (p : Ideal A) [hp : p.IsPrime] :
@@ -479,6 +494,8 @@ theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
       (∀ (n : ℕ) (hn : n < l.length),
         l[n] ∈ IsLocalRing.maximalIdeal B ∧
           l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      ringKrullDim B ≤ (Nat.card ι : WithBot ℕ∞) ∧
+      l.length = Nat.card σ ∧
       Nonempty ((Localization.AtPrime p) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
   classical
   haveI : Fintype σ := Fintype.ofFinite σ
@@ -566,7 +583,16 @@ theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
   have hlget : ∀ (n : ℕ) (hnL : n < L.length),
       l[n]'(by rw [hllen]; exact hnL) = fB (P.relation (L[n]'hnL)) := by
     intro n hnL; simp only [hldef, List.getElem_map]
-  refine ⟨B, inferInstance, inferInstance, l, ?_, ?_⟩
+  -- `dim B = ht q ≤ dim K[x_ι] = #ι`
+  have hBdim : ringKrullDim B ≤ (Nat.card ι : WithBot ℕ∞) := by
+    rw [IsLocalization.AtPrime.ringKrullDim_eq_height q B]
+    refine le_trans Ideal.height_le_ringKrullDim_of_isPrime ?_
+    show ringKrullDim (MvPolynomial ι K) ≤ _
+    rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field K, zero_add]
+  -- `l` is indexed by an enumeration of `σ`
+  have hlcard : l.length = Nat.card σ := by
+    rw [hllen, hLdef, Finset.length_toList, Finset.card_univ, Nat.card_eq_fintype_card]
+  refine ⟨B, inferInstance, inferInstance, l, ?_, hBdim, hlcard, ?_⟩
   · -- the independence conditions
     intro n hn
     have hnL : n < L.length := by rw [← hllen]; exact hn
@@ -630,6 +656,28 @@ theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
     rw [hspanl, hkerP]
     exact nonempty_ringEquiv_localizationAtPrime_quotient_map_ker
       (algebraMap P.Ring A) hsurjA B
+
+/-- **THE JACOBIAN CRITERION, WITHOUT THE TWO NUMERICAL CONCLUSIONS**
+(**PROVEN 2026-07-26**; restated 2026-07-28 as a corollary of
+`exists_isRegularLocalRing_quotient_indepList_card_of_submersivePresentation`,
+which carries the same proof plus `ringKrullDim B ≤ #ι` and `l.length = #σ`).
+
+This is the form the three existing consumers destructure, and it is kept
+verbatim so that adding the numerical data to the strengthened version costs
+them nothing. See the strengthened statement immediately above for the whole
+mathematical content. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
+    {K : Type u} [Field K] {A : Type u} [CommRing A] [Algebra K A]
+    {ι σ : Type} [Finite ι] [Finite σ]
+    (P : Algebra.SubmersivePresentation K A ι σ) (p : Ideal A) [hp : p.IsPrime] :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty ((Localization.AtPrime p) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
+  obtain ⟨B, hBc, hBr, l, hindep, _, _, heq⟩ :=
+    exists_isRegularLocalRing_quotient_indepList_card_of_submersivePresentation P p
+  exact ⟨B, hBc, hBr, l, hindep, heq⟩
 
 /-- **THE SAME, FROM THE `IsStandardSmooth` CLASS** (**PROVEN 2026-07-26**):
 unpacks the existential of `Algebra.IsStandardSmooth.out` into a concrete

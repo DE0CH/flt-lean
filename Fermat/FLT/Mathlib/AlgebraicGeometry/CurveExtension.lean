@@ -12,6 +12,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.FunctionField
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.RingTheory.DiscreteValuationRing.TFAE
+public import Mathlib.RingTheory.KrullDimension.Regular
 public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.AlgebraicGeometry.Noetherian
@@ -91,7 +92,7 @@ Against those, the state of this file's leaves is now:
 | leaf | status |
 | --- | --- |
 | `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` | **PROVEN 2026-07-27**, no sorry |
-| `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` | **PROVEN** over ONE dimension-theory leaf, `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension` |
+| `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` | **PROVEN 2026-07-28**, no sorry — its last leaf `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension` closed |
 | `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` | **PROVEN** over TWO leaves, `formallySmooth_of_isDiscreteValuationRing_of_perfectField` and `smoothOfRelativeDimension_of_isDominant_of_smooth` |
 | `infinite_of_smoothOfRelativeDimension_one` | open, untouched (separate owner) |
 
@@ -324,8 +325,137 @@ theorem exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
 
 /-! ### The curve inputs -/
 
+/-- **QUOTIENTING A REGULAR LOCAL RING BY A LIST INDEPENDENT MOD `𝔪²` DROPS THE DIMENSION BY THE
+LENGTH OF THE LIST** (PROVEN 2026-07-28 — pure commutative algebra, the dimension-theoretic twin
+of `GaloisRepresentation.Modularity.isRegularLocalRing_quotient_span_list_aux`, which proves the
+same induction keeps the quotient REGULAR LOCAL).
+
+Stated in the "budget" form `dim R ≤ c + D ⟹ dim (R ⧸ (l)) ≤ D` rather than as the equality
+`dim (R ⧸ (l)) + l.length = dim R`, for one reason: the consumer only ever has an UPPER bound on
+`dim R` (namely `#ι`, the number of polynomial variables), and the budget form threads that bound
+through the induction with no subtraction in `WithBot ℕ∞` anywhere — the only cancellation needed
+is `ENat.WithBot.add_le_add_one_right_iff`, one step at a time.
+
+THE PROOF mirrors `isRegularLocalRing_quotient_span_list_aux` step for step — same induction on
+the length, quantified over the RING because the step passes to `R ⧸ (f₀)`, same transport of the
+independence hypothesis to the mapped tail, same `DoubleQuot.quotQuotEquivQuotSup` reassembly.
+The one new ingredient is the actual dimension drop at each step:
+
+* `f₀ ∈ 𝔪 ∖ 𝔪²` is NONZERO, because `0 ∈ 𝔪²`;
+* a regular local ring is a DOMAIN
+  (`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`), so `f₀` is a nonzerodivisor;
+* `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim_of_mem_nonZeroDivisors`
+  (`@[stacks 00KW]`) therefore gives `dim (R ⧸ (f₀)) + 1 = dim R` exactly;
+* `isRegularLocalRing_quotient_span_singleton` keeps `R ⧸ (f₀)` regular local, so the induction
+  hypothesis applies to it. -/
+theorem ringKrullDim_quotient_span_list_le_of_indep_aux (c : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R] (l : List R),
+      l.length = c →
+      (∀ (m : ℕ) (hm : m < l.length),
+        l[m] ∈ IsLocalRing.maximalIdeal R ∧
+          l[m] ∉ (IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ l.take m}) →
+      ∀ D : ℕ, ringKrullDim R ≤ ((c + D : ℕ) : WithBot ℕ∞) →
+        ringKrullDim (R ⧸ Ideal.span {y | y ∈ l}) ≤ (D : WithBot ℕ∞) := by
+  classical
+  induction c with
+  | zero =>
+    intro R _ _ l hlen _ D hD
+    have hl : l = [] := List.eq_nil_of_length_eq_zero hlen
+    subst hl
+    have hbot : Ideal.span {y : R | y ∈ ([] : List R)} = ⊥ := by simp
+    rw [hbot, ringKrullDim_eq_of_ringEquiv (RingEquiv.quotientBot R)]
+    simpa using hD
+  | succ m ih =>
+    intro R _ _ l hlen hind D hD
+    obtain ⟨x, t, rfl⟩ : ∃ x t, l = x :: t := by
+      cases l with
+      | nil => simp at hlen
+      | cons a s => exact ⟨a, s, rfl⟩
+    have htlen : t.length = m := by simpa using hlen
+    -- the head lies in `𝔪 ∖ 𝔪²`
+    obtain ⟨hxm, hx2'⟩ := hind 0 (by simp)
+    simp only [List.getElem_cons_zero, List.take_zero] at hxm hx2'
+    have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h => hx2' (Ideal.mem_sup_left h)
+    set I : Ideal R := Ideal.span {x} with hI
+    set f := Ideal.Quotient.mk I with hf
+    haveI : IsRegularLocalRing (R ⧸ I) :=
+      GaloisRepresentation.Modularity.isRegularLocalRing_quotient_span_singleton hxm hx2
+    -- the dimension drops by exactly one, because `x` is a nonzerodivisor
+    haveI : IsDomain R := GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing R
+    have hx0 : x ≠ 0 := fun h => hx2 (h ▸ Ideal.zero_mem _)
+    have hdrop : ringKrullDim (R ⧸ Ideal.span {x}) + 1 = ringKrullDim R :=
+      ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim_of_mem_nonZeroDivisors
+        (mem_nonZeroDivisors_of_ne_zero hx0) hxm
+    have hcast : ((m + 1 + D : ℕ) : WithBot ℕ∞) = ((m + D : ℕ) : WithBot ℕ∞) + 1 := by
+      rw [show m + 1 + D = (m + D) + 1 from by omega, Nat.cast_add, Nat.cast_one]
+    have hD' : ringKrullDim (R ⧸ I) ≤ ((m + D : ℕ) : WithBot ℕ∞) := by
+      refine ENat.WithBot.add_le_add_one_right_iff.mp ?_
+      rw [hI, hdrop, ← hcast]
+      exact hD
+    have hfx : f x = 0 := by
+      rw [hf, Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+    have hker : Ideal.comap f (⊥ : Ideal (R ⧸ I)) = I := Ideal.mk_ker
+    -- membership in the image of an ideal CONTAINING `ker f = (x)` loses nothing
+    have hmem : ∀ (J : Ideal R), I ≤ J → ∀ y : R, f y ∈ J.map f ↔ y ∈ J := by
+      intro J hJ y
+      rw [← Ideal.mem_comap, Ideal.comap_map_of_surjective f Ideal.Quotient.mk_surjective,
+        hker, sup_eq_left.mpr hJ]
+    have hmaxq : IsLocalRing.maximalIdeal (R ⧸ I) = (IsLocalRing.maximalIdeal R).map f :=
+      (IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective).symm
+    -- transport the independence hypothesis to the quotient
+    have hind' : ∀ (k : ℕ) (hk : k < (t.map f).length),
+        (t.map f)[k] ∈ IsLocalRing.maximalIdeal (R ⧸ I) ∧
+          (t.map f)[k] ∉ (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+            Ideal.span {y | y ∈ (t.map f).take k} := by
+      intro k hk
+      have hk' : k < t.length := by simpa using hk
+      obtain ⟨h1, h2⟩ := hind (k + 1) (by simp [hk'])
+      simp only [List.getElem_cons_succ, List.take_succ_cons] at h1 h2
+      have hget : (t.map f)[k] = f t[k] := by simp
+      constructor
+      · rw [hget, hmaxq]; exact Ideal.mem_map_of_mem _ h1
+      · rw [hget]
+        intro hcon
+        refine h2 ?_
+        have hspanmap : (Ideal.span {y : R | y ∈ x :: t.take k}).map f
+            = Ideal.span {y | y ∈ (t.map f).take k} := by
+          have e1 : {y : R | y ∈ x :: t.take k} = insert x {y : R | y ∈ t.take k} := by
+            ext y; simp
+          have e2 : {y | y ∈ (t.map f).take k} = f '' {y : R | y ∈ t.take k} := by
+            ext y; simp [← List.map_take, List.mem_map]
+          rw [Ideal.map_span, e1, Set.image_insert_eq, hfx, e2, Ideal.span_insert_zero]
+        have hJ : ((IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ x :: t.take k}).map f
+            = (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+              Ideal.span {y | y ∈ (t.map f).take k} := by
+          rw [Ideal.map_sup, hmaxq, ← Ideal.map_pow, hspanmap]
+        rw [← hmem _ ?_ t[k], hJ]
+        · exact hcon
+        · rw [hI, Ideal.span_le]
+          intro z hz
+          rw [Set.mem_singleton_iff] at hz
+          subst hz
+          exact Ideal.mem_sup_right (Ideal.subset_span (by simp))
+    have hfinal := ih (R ⧸ I) (t.map f) (by simpa using htlen) hind' D hD'
+    -- reassemble `(R ⧸ (x)) ⧸ (t) ≃+* R ⧸ (x :: t)`
+    have hspan : Ideal.span {y | y ∈ (t.map f)} = (Ideal.span {y | y ∈ t}).map f := by
+      rw [Ideal.map_span]
+      congr 1
+      ext y
+      simp [List.mem_map]
+    rw [hspan] at hfinal
+    have hsup : I ⊔ Ideal.span {y | y ∈ t} = Ideal.span {y : R | y ∈ x :: t} := by
+      rw [hI, ← Ideal.span_union]
+      congr 1
+      ext y
+      simp
+    rw [← ringKrullDim_eq_of_ringEquiv
+      ((DoubleQuot.quotQuotEquivQuotSup I (Ideal.span {y | y ∈ t})).trans
+        (Ideal.quotEquivOfEq hsup))]
+    exact hfinal
+
+open _root_.GaloisRepresentation.Modularity in
 /-- **A STANDARD SMOOTH ALGEBRA OF RELATIVE DIMENSION `n` OVER A FIELD HAS KRULL DIMENSION AT
-MOST `n`** (sorry leaf, cut 2026-07-27 — the ENTIRE residue of
+MOST `n`** (cut 2026-07-27, PROVEN 2026-07-28 — the ENTIRE residue of
 `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, and pure commutative
 algebra: no schemes, no curves, no properness).
 
@@ -379,12 +509,48 @@ presentation, since `Ω[A_p⁄K]` is free of rank `n`
 what the independence of `l` says.
 
 *Refute this leaf with:* a standard smooth `K`-algebra of relative dimension `n` carrying a
-chain of `n + 1` strict prime inclusions.  There is none; the bound is Stacks `00SB`. -/
+chain of `n + 1` strict prime inclusions.  There is none; the bound is Stacks `00SB`.
+
+**PROVEN 2026-07-28, along exactly the route above.**  Both pieces of bookkeeping the docstring
+called for now exist:
+
+* step 2's strengthening is
+  `GaloisRepresentation.Modularity.exists_isRegularLocalRing_quotient_indepList_card_of_submersivePresentation`
+  (`Modularity/RegularStalks.lean`), which is the old statement plus `ringKrullDim B ≤ #ι` and
+  `l.length = #σ`, both read off objects its proof already builds; the old statement survives
+  under its old name as a one-line corollary, so its three consumers are untouched;
+* step 3 is `ringKrullDim_quotient_span_list_le_of_indep_aux` immediately above.
+
+Step 4 is `ringKrullDim_le_iff_height_le` together with
+`IsLocalization.AtPrime.ringKrullDim_eq_height`: it suffices to bound the height of every prime,
+and the height of `p` is `dim A_p`.  The arithmetic `#ι = n + #σ` uses
+`PreSubmersivePresentation.card_relations_le_card_vars_of_isFinite` (the map `σ ↪ ι` of a
+submersive presentation is injective) to turn `Presentation.dimension`'s TRUNCATED subtraction
+`#ι − #σ = n` into a genuine equation. -/
 theorem ringKrullDim_le_of_isStandardSmoothOfRelativeDimension {n : ℕ}
     {A : Type u} [CommRing A] [Algebra K A]
     [Algebra.IsStandardSmoothOfRelativeDimension n K A] :
-    ringKrullDim A ≤ (n : WithBot ℕ∞) :=
-  sorry
+    ringKrullDim A ≤ (n : WithBot ℕ∞) := by
+  obtain ⟨ι, σ, hσ, hι, P, hPdim⟩ := ‹Algebra.IsStandardSmoothOfRelativeDimension n K A›.out
+  haveI := hσ
+  haveI := hι
+  -- `#ι = n + #σ`, the truncated subtraction untruncated
+  have hcard : Nat.card σ ≤ Nat.card ι :=
+    P.toPreSubmersivePresentation.card_relations_le_card_vars_of_isFinite
+  have hιn : Nat.card ι = Nat.card σ + n := by
+    simp only [Algebra.Presentation.dimension] at hPdim
+    omega
+  rw [ringKrullDim_le_iff_height_le]
+  intro p hp
+  haveI := hp
+  obtain ⟨B, hBc, hBr, l, hindep, hBdim, hlcard, ⟨e⟩⟩ :=
+    exists_isRegularLocalRing_quotient_indepList_card_of_submersivePresentation P p
+  have hkey : ringKrullDim (Localization.AtPrime p) ≤ (n : WithBot ℕ∞) := by
+    rw [ringKrullDim_eq_of_ringEquiv e]
+    refine ringKrullDim_quotient_span_list_le_of_indep_aux l.length B l rfl hindep n ?_
+    rw [hlcard, ← hιn]
+    exact hBdim
+  rwa [IsLocalization.AtPrime.ringKrullDim_eq_height p (Localization.AtPrime p)] at hkey
 
 /-- **THE SAME BOUND FOR A LOCALIZATION AT A PRIME** (PROVEN over the leaf above).
 
@@ -449,7 +615,8 @@ theorem ringKrullDim_stalk_le_of_smoothOfRelativeDimension {n : ℕ}
 
 /-- **A smooth curve over a field has discrete valuation rings as its local rings away from
 the generic point** (**PROVEN 2026-07-27** over the single dimension leaf
-`ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`; formerly a sorry leaf).
+`ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`, which was itself closed
+**2026-07-28** — so nothing under this node is sorried any more).
 
 /-- **Principality of the maximal ideal transfers along a ring isomorphism of local rings.** -/
 lemma isPrincipal_maximalIdeal_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
@@ -607,7 +774,8 @@ cotangent computation is free, and only the dimension survives.
    the claim that the smoothness ⟹ regularity link is missing was true of `Mathlib` and is
    false of this project.
 2. `ringKrullDim 𝒪_{X,x} ≤ 1` is `ringKrullDim_stalk_le_of_smoothOfRelativeDimension` above,
-   which is the ONE remaining sorry underneath this node.
+   which was the ONE remaining sorry underneath this node and is now PROVEN (2026-07-28),
+   through `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`.
 3. `ringKrullDim 𝒪_{X,x} ≥ 1` is `hx`: a noetherian local DOMAIN with `KrullDimLE 0` is a
    field (`Ring.KrullDimLE.isField_of_isDomain`), so `¬ IsField` excludes dimension `0`, and
    `ENat.WithBot.lt_add_one_iff` turns `< 1` into `≤ 0`.  Hence `ringKrullDim = 1`.
