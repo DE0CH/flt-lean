@@ -27035,25 +27035,266 @@ theorem decompFilter_mem_iff_mem_zpowers (CF : Type) [Field CF] [NumberField CF]
       (IsCyclotomicExtension.Rat.galEquivZMod p CF).symm_apply_apply]
     exact hσ
 
+/-- **`ofDigits` OF A MAPPED `List.range` IS THE OBVIOUS WEIGHTED SUM**
+(PROVEN 2026-07-28; two-line induction, no arithmetic content).
+
+Bridges the `List`-shaped `Nat.ofDigits` / `Nat.digits` API to the
+`Finset.range` sums in which the Stickelberger exponent is written. Used
+only by `digitsSum_mul_div_eq` below. -/
+theorem ofDigits_map_range (b : ℕ) (g : ℕ → ℕ) (m : ℕ) :
+    Nat.ofDigits b ((List.range m).map g) = ∑ i ∈ Finset.range m, g i * b ^ i := by
+  induction m with
+  | zero => simp
+  | succ n ih =>
+      rw [List.range_succ, List.map_append, Nat.ofDigits_append, ih,
+        Finset.sum_range_succ]
+      simp [Nat.ofDigits_singleton, mul_comm]
+
+/-- **`List.sum` OF A MAPPED `List.range` IS THE `Finset.range` SUM**
+(PROVEN 2026-07-28; the companion of `ofDigits_map_range` above). -/
+theorem sum_list_range_map (g : ℕ → ℕ) (m : ℕ) :
+    ((List.range m).map g).sum = ∑ i ∈ Finset.range m, g i := by
+  induction m with
+  | zero => simp
+  | succ n ih =>
+      rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
+      simp
+
+/-- **THE BASE-`ℓ` DIGIT IDENTITY BEHIND STICKELBERGER'S CONGRUENCE**
+(**PROVEN** 2026-07-28; elementary `ℕ`-arithmetic, no number theory at
+all — not even a prime ideal appears).
+
+With `f` any exponent with `ℓ^f ≡ 1 (mod p)` and `d := (ℓ^f − 1)/p`,
+
+  `p · s_ℓ(⟨x⟩·d) = (ℓ − 1) · ∑_{i<f} ⟨x·ℓⁱ⟩`,   `⟨·⟩ := (· : ZMod p).val`,
+
+`s_ℓ(n) := (Nat.digits ℓ n).sum` the base-`ℓ` digit sum. This is the step
+that converts the digit sum PRODUCED by Stickelberger's congruence into
+the Frobenius-orbit sum in which `gaussSumPow_mem_pow_sumRange` below —
+and hence the whole Jacobi-sum route — states its exponent.
+
+**THE PROOF** (worked out 2026-07-27 by this leaf's cutter, formalised
+2026-07-28). Put `r_j := ⟨x·ℓʲ⟩` and `c_j := ⌊ℓ·r_j / p⌋`. Then
+
+* `ℓ·r_j = p·c_j + r_{j+1}` is exactly `Nat.div_add_mod`, because
+  `r_{j+1} = (ℓ·r_j) mod p`;
+* `c_j < ℓ`, because `r_j < p`;
+* `r_f = r_0`, because `ℓ^f = 1` in `ZMod p` — so `j ↦ j+1` merely
+  ROTATES both of the sums below;
+* summing the first bullet over `j < f` and rotating gives
+  `ℓ·R = p·C + R`, i.e. `(ℓ−1)·R = p·C` with `R := ∑ r_j`, `C := ∑ c_j`;
+* multiplying the first bullet by `ℓ^{f−1−j}` and summing TELESCOPES to
+  `p·∑_j c_j·ℓ^{f−1−j} + r_f = r_0·ℓ^f`, whence
+  `∑_j c_j·ℓ^{f−1−j} = r_0·(ℓ^f−1)/p = ⟨x⟩·d`. (This is the only place a
+  rotation-style induction would have been needed; the weighted sum
+  telescopes instead, which is why the whole proof is a page.)
+* the `c_j`, read in reverse, are therefore the base-`ℓ` digits of
+  `⟨x⟩·d` — `Nat.sum_digits_ofDigits_eq_sum` needs only `c_j < ℓ`, not
+  a nonzero leading digit — so `C = s_ℓ(⟨x⟩·d)`.
+
+No hypothesis on `x` is needed: at `x = 0` every `r_j` and `c_j` is `0`
+and both sides vanish. -/
+theorem digitsSum_mul_div_eq (ℓ f : ℕ) (hℓ : 1 < ℓ) (hf : 0 < f)
+    (hpow : ((ℓ : ZMod p)) ^ f = 1) (x : ZMod p) :
+    p * (Nat.digits ℓ (x.val * ((ℓ ^ f - 1) / p))).sum
+      = (ℓ - 1) * ∑ i ∈ Finset.range f, (x * (ℓ : ZMod p) ^ i).val := by
+  have hp0 : 0 < p := hp.out.pos
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  obtain ⟨n, rfl⟩ : ∃ n, f = n + 1 := ⟨f - 1, by omega⟩
+  set r : ℕ → ℕ := fun j => (x * (ℓ : ZMod p) ^ j).val with hrdef
+  set c : ℕ → ℕ := fun j => ℓ * r j / p with hcdef
+  have hrlt : ∀ j, r j < p := fun j => ZMod.val_lt _
+  have hkey : ∀ j, ℓ * r j = p * c j + r (j + 1) := by
+    intro j
+    have h1 : r (j + 1) = (ℓ * r j) % p := by
+      have h2 : x * (ℓ : ZMod p) ^ (j + 1) = ((ℓ * r j : ℕ) : ZMod p) := by
+        simp only [hrdef]
+        push_cast
+        rw [ZMod.natCast_val, ZMod.cast_id]
+        ring
+      simp only [hrdef]
+      rw [h2, ZMod.val_natCast]
+    rw [h1]
+    simp only [hcdef]
+    exact (Nat.div_add_mod (ℓ * r j) p).symm
+  have hclt : ∀ j, c j < ℓ := by
+    intro j
+    have h := hrlt j
+    simp only [hcdef]
+    rw [Nat.div_lt_iff_lt_mul hp0]
+    exact mul_lt_mul_of_pos_left h (by omega)
+  have hrf : r (n + 1) = r 0 := by
+    simp only [hrdef, hpow, pow_zero, mul_one]
+  have htel : ∑ j ∈ Finset.range (n + 1), r (j + 1)
+      = ∑ j ∈ Finset.range (n + 1), r j := by
+    rw [Finset.sum_range_succ, Finset.sum_range_succ' r n, hrf]
+  have hsum1 : (ℓ - 1) * ∑ j ∈ Finset.range (n + 1), r j
+      = p * ∑ j ∈ Finset.range (n + 1), c j := by
+    have hL : ℓ * ∑ j ∈ Finset.range (n + 1), r j
+        = p * (∑ j ∈ Finset.range (n + 1), c j) + ∑ j ∈ Finset.range (n + 1), r j := by
+      rw [Finset.mul_sum, Finset.mul_sum, ← htel, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun j _ => hkey j
+    rw [Nat.sub_mul, one_mul, hL, Nat.add_sub_cancel]
+  -- the WEIGHTED telescoping: `p·∑ c_j ℓ^{f−1−j} + r_f = r_0·ℓ^f`
+  have hwt : p * (∑ j ∈ Finset.range (n + 1), c j * ℓ ^ (n - j)) + r (n + 1)
+      = r 0 * ℓ ^ (n + 1) := by
+    have hA : p * (∑ j ∈ Finset.range (n + 1), c j * ℓ ^ (n - j))
+        + ∑ j ∈ Finset.range (n + 1), r (j + 1) * ℓ ^ (n - j)
+        = ∑ j ∈ Finset.range (n + 1), r j * ℓ ^ (n + 1 - j) := by
+      rw [Finset.mul_sum, ← Finset.sum_add_distrib]
+      refine Finset.sum_congr rfl fun j hj => ?_
+      have hjn : j ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
+      have hpow' : ℓ ^ (n + 1 - j) = ℓ ^ (n - j) * ℓ := by
+        rw [← pow_succ]; congr 1; omega
+      calc p * (c j * ℓ ^ (n - j)) + r (j + 1) * ℓ ^ (n - j)
+          = (p * c j + r (j + 1)) * ℓ ^ (n - j) := by ring
+        _ = (ℓ * r j) * ℓ ^ (n - j) := by rw [hkey j]
+        _ = r j * ℓ ^ (n + 1 - j) := by rw [hpow']; ring
+    rw [Finset.sum_range_succ (fun j => r (j + 1) * ℓ ^ (n - j)),
+      Finset.sum_range_succ' (fun j => r j * ℓ ^ (n + 1 - j)) n] at hA
+    simp only [Nat.sub_self, pow_zero, mul_one, Nat.sub_zero] at hA
+    have hshift : ∀ j ∈ Finset.range n,
+        r (j + 1) * ℓ ^ (n - j) = r (j + 1) * ℓ ^ (n + 1 - (j + 1)) := by
+      intro j _; congr 2; omega
+    rw [Finset.sum_congr rfl hshift] at hA
+    omega
+  have hone : (1 : ℕ) ≤ ℓ ^ (n + 1) := Nat.one_le_pow _ _ (by omega)
+  have hdvd : p ∣ ℓ ^ (n + 1) - 1 := by
+    have hmod : (1 : ℕ) ≡ ℓ ^ (n + 1) [MOD p] := by
+      rw [← ZMod.natCast_eq_natCast_iff]
+      push_cast
+      rw [hpow]
+    exact (Nat.modEq_iff_dvd' hone).mp hmod
+  have hr0 : r 0 = x.val := by simp [hrdef]
+  have hMeq : x.val * ((ℓ ^ (n + 1) - 1) / p)
+      = ∑ j ∈ Finset.range (n + 1), c j * ℓ ^ (n - j) := by
+    refine Nat.eq_of_mul_eq_mul_left hp0 ?_
+    have hpM : p * (x.val * ((ℓ ^ (n + 1) - 1) / p)) = x.val * (ℓ ^ (n + 1) - 1) := by
+      rw [← mul_assoc, mul_comm p x.val, mul_assoc, Nat.mul_div_cancel' hdvd]
+    have hxm : x.val * (ℓ ^ (n + 1) - 1) + x.val = x.val * ℓ ^ (n + 1) := by
+      rw [Nat.mul_sub, mul_one]
+      exact Nat.sub_add_cancel (Nat.le_mul_of_pos_right _ (by positivity))
+    rw [hr0] at hwt
+    omega
+  set L : List ℕ := (List.range (n + 1)).map (fun i => c (n - i)) with hLdef
+  have hLlen : L.length = n + 1 := by simp [hLdef]
+  have hLlt : ∀ y ∈ L, y < ℓ := by
+    intro y hy
+    simp only [hLdef, List.mem_map, List.mem_range] at hy
+    obtain ⟨i, _, rfl⟩ := hy
+    exact hclt _
+  have hofd : Nat.ofDigits ℓ L = ∑ j ∈ Finset.range (n + 1), c j * ℓ ^ (n - j) := by
+    rw [hLdef, ofDigits_map_range,
+      ← Finset.sum_range_reflect (fun j => c j * ℓ ^ (n - j)) (n + 1)]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have hin : i ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+    simp only [Nat.add_sub_cancel]
+    congr 2
+    omega
+  have hdigits : (Nat.digits ℓ (x.val * ((ℓ ^ (n + 1) - 1) / p))).sum
+      = ∑ j ∈ Finset.range (n + 1), c j := by
+    rw [hMeq, ← hofd, Nat.sum_digits_ofDigits_eq_sum hℓ (l := n + 1) ⟨hLlen, hLlt⟩,
+      hLdef, sum_list_range_map]
+    simpa using Finset.sum_range_reflect (fun j => c j) (n + 1)
+  rw [hdigits]
+  exact hsum1.symm
+
+/-- **`v_q(yᵏ) ≥ k·n` FORCES `v_q(y) ≥ n`** (PROVEN 2026-07-28; Dedekind
+bookkeeping, the "lower half" companion of
+`pow_not_mem_pow_succ_of_exact_val` above and proved the same way).
+
+`(y)ᵏ = (yᵏ)` is divisible by `(qⁿ)ᵏ`, and
+`UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd` cancels the `k`-th
+powers in the ideal monoid. This is what lets a valuation statement
+proved on a RAMIFIED extension — where the natural exponent is
+`e·v_q(y)` — be transported back to `q` without ever dividing in `ℕ`. -/
+theorem mem_pow_of_pow_mem_pow_mul {A : Type*} [CommRing A] [IsDedekindDomain A]
+    {q : Ideal A} {y : A} {k n : ℕ} (hk : k ≠ 0)
+    (h : y ^ k ∈ q ^ (k * n)) : y ∈ q ^ n := by
+  have hd : (q ^ n) ^ k ∣ (Ideal.span {y}) ^ k := by
+    rw [Ideal.span_singleton_pow, ← pow_mul, mul_comm n k]
+    exact Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr h)
+  have := (UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd hk).mp hd
+  exact (Ideal.span_singleton_le_iff_mem _).mp (Ideal.dvd_iff_le.mp this)
+
+/-- **THE RESIDUE FIELD OF `q` HAS `ℓ^f` ELEMENTS, WITH `f = ord [ℓ]`**
+(PROVEN 2026-07-28; pure mathlib on this pin).
+
+`#(𝓞 CF ⧸ q) = ℓ^{ord([ℓ] ∈ ZMod p)}` for `q` a prime of the `p`-th
+cyclotomic field lying over the rational prime `ℓ ∤ p`. The chain is
+`Ideal.absNorm_eq_pow_inertiaDeg'` (the norm of a prime over `ℓ` is
+`ℓ^{f}`), `Ideal.inertiaDeg'_eq_inertiaDeg` (the two mathlib inertia
+degrees agree at maximal ideals) and
+`IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd` (`f = ord [ℓ]` in a
+cyclotomic field, the same input `card_decompFilter_eq_inertiaDeg` above
+uses).
+
+Recorded separately because it is the bridge between the two ways this
+development names the residue cardinality: `Nat.card (𝓞 CF ⧸ q)`, which
+is what `hχcong` pins the character's reduction against, and `ℓ^f`,
+which is what the base-`ℓ` digit arithmetic of `digitsSum_mul_div_eq`
+above needs. -/
+theorem natCard_quot_eq_pow_orderOf (CF : Type) [Field CF]
+    [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [hl : Fact (Nat.Prime ℓ)]
+    (q : Ideal (𝓞 CF)) [q.IsPrime] [q.LiesOver (Ideal.span {(ℓ : ℤ)})] (hnd : ¬ ℓ ∣ p) :
+    Nat.card (𝓞 CF ⧸ q) = ℓ ^ orderOf ((ℓ : ZMod p)) := by
+  haveI : (Ideal.span {(ℓ : ℤ)}).IsMaximal := Int.ideal_span_isMaximal_of_prime ℓ
+  haveI : q.IsMaximal := Ideal.IsMaximal.of_liesOver_isMaximal q (Ideal.span {(ℓ : ℤ)})
+  have h0 : Nat.card (𝓞 CF ⧸ q) = Ideal.absNorm q := by
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have h1 : Ideal.absNorm q = ℓ ^ ((Ideal.span {(ℓ : ℤ)}).inertiaDeg' q) :=
+    Ideal.absNorm_eq_pow_inertiaDeg' q hl.out
+  rw [h0, h1, Ideal.inertiaDeg'_eq_inertiaDeg,
+    IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd ℓ CF q hnd]
+
 /-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND, IN
-FROBENIUS-POWER FORM** (SORRY LEAF; FOURTEENTH decomposition 2026-07-27,
-cut out of `gaussSumPow_mem_pow_decompVal` below, which is now PROVEN
-over it together with `sum_decompVal_eq_sum_range_pow` and
-`decompFilter_mem_iff_mem_zpowers` above. **This is the one genuinely
-deep node of the whole Gauss-sum route.**)
+THE LITERATURE'S OWN DIGIT-SUM FORM** (SORRY LEAF; FIFTEENTH
+decomposition 2026-07-28, cut out of `gaussSumPow_mem_pow_sumRange`
+below — which is now PROVEN over it together with
+`digitsSum_mul_div_eq`, `natCard_quot_eq_pow_orderOf` and
+`mem_pow_of_pow_mem_pow_mul` above. **This is the one genuinely deep
+node of the whole Gauss-sum route**, and it is now the ONLY thing left
+on it: every piece of bookkeeping around it has been discharged.)
 
-Given `y ∈ 𝓞 CF` with `y = g(χᵃ)^p`,
+Given `y ∈ 𝓞 CF` with `y = g(χᵃ)^p`, and with `d := (#F − 1)/p`,
 
-  `v_q(y) ≥ ∑_{i < f} ⟨−a·ℓⁱ⟩_p`,   `⟨x⟩ := (x : ZMod p).val`,
+  `y^{ℓ−1} ∈ q^{p·s_ℓ(⟨−a⟩·d)}`,   `⟨x⟩ := (x : ZMod p).val`,
 
-with `ℓ` the rational prime under `q` and `f = ord([ℓ] ∈ (ZMod p)ˣ)` the
-residue degree. **This is the literature's own indexing** — the sum is
-over the base-`ℓ` Frobenius orbit of `−a`, which is what Stickelberger's
-congruence produces directly; the decomposition-group form
-`∑_{u ∈ D} ⟨−a·u⁻¹⟩` of the parent is the same number, reindexed by the
-two group bijections of `sum_decompVal_eq_sum_range_pow`. Nothing about
-the Galois action of `Gal(CF/ℚ)` on ideals survives into this statement,
-which is the point of the cut: a prover here never has to look at `D`.
+`s_ℓ(n) := (Nat.digits ℓ n).sum` the base-`ℓ` digit sum and `ℓ` the
+rational prime under `q`.
+
+**WHY THE `(ℓ−1)`-th POWER, AND WHY THAT IS THE RIGHT PACKAGING.** The
+congruence lives on `L = CF(ζ_ℓ)`, at a prime `𝒬 ∣ q` with
+`e(𝒬/q) = ℓ − 1`, and what it produces is `v_𝒬(y) = p·s_ℓ(⟨−a⟩·d)`.
+Since `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`, that is `(ℓ−1)·v_q(y) = p·s_ℓ(…)` —
+which is EXACTLY the displayed membership, with no division in `ℕ` and
+no `𝒬` in the statement. `mem_pow_of_pow_mem_pow_mul` above then divides
+by `ℓ − 1` on the ideal side, and `digitsSum_mul_div_eq` above converts
+`p·s_ℓ(⟨−a⟩·d)` into `(ℓ−1)·∑_{i<f}⟨−a·ℓⁱ⟩`. So this leaf is EQUIVALENT
+to the Frobenius-power bound `v_q(y) ≥ ∑_{i<f}⟨−a·ℓⁱ⟩` below — neither
+stronger nor weaker — and it is the form in which a formalisation of the
+congruence naturally arrives.
+
+**THE THREE NUMERICAL VERIFICATIONS at the foot of this docstring are
+stated for the Frobenius-power sum**; they transfer here through
+`digitsSum_mul_div_eq`, which is PROVEN, so they check this statement
+too. Worked at `p = 3, ℓ = 2, f = 2, a = 1`: `d = 1`, `⟨−1⟩₃ = 2`,
+`s₂(2) = 1`, so this leaf asserts `y^1 ∈ q^3` — and `y = g(χ)³ = 8`,
+`v_q(8) = 3`. ✓ At `p = 3, ℓ = 7, f = 1, a = 1`: `d = 2`, `⟨−1⟩₃ = 2`,
+`s₇(4) = 4`, so `y^6 ∈ q^{12}`, i.e. `v_q(y) ≥ 2`. ✓
+
+**WHAT THIS CUT REMOVED, AND WHY IT IS WORTH KNOWING.** Two indexings of
+the same number are in play. `f = ord([ℓ] ∈ (ZMod p)ˣ)` is the residue
+degree; the FROBENIUS-POWER sum `∑_{i<f} ⟨−a·ℓⁱ⟩` of
+`gaussSumPow_mem_pow_sumRange` below is the base-`ℓ` Frobenius orbit of
+`−a`, and the DECOMPOSITION-GROUP sum `∑_{u ∈ D} ⟨−a·u⁻¹⟩` two leaves
+below that is the same number reindexed by the two group bijections of
+`sum_decompVal_eq_sum_range_pow`. Neither survives into THIS statement:
+what the literature's congruence produces is a base-`ℓ` DIGIT SUM, and
+that is all that is asked for here. So a prover here never has to look at
+`D`, never has to look at the Frobenius orbit, and never has to redo the
+elementary digit arithmetic — `digitsSum_mul_div_eq` above is PROVEN and
+does that passage once and for all.
 
 **THE MATHEMATICS.** With `d := (ℓ^f − 1)/p`, `ω` the Teichmüller
 character of `F = 𝓞 CF ⧸ q` and `π := ζ_ℓ − 1` (a uniformiser at a prime
@@ -27064,23 +27305,19 @@ classical digit identity `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨m�
 and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF` give, after multiplying by `p`, exactly
 the sum above.
 
-**THE DIGIT IDENTITY IS ELEMENTARY AND ITS PROOF IS SHORT — do not
-budget a research effort for it** (worked out 2026-07-27 by this leaf's
-cutter; recorded here so the next prover does not rediscover it). Put
-`c_j := ⌊ℓ·⟨mℓʲ⟩_p / p⌋` for `j < f`. Then
+**THE DIGIT IDENTITY IS NOW PROVEN AND IS NOT YOUR PROBLEM**
+(`digitsSum_mul_div_eq` above, 2026-07-28). It was recorded here on
+2026-07-27 as "elementary, do not budget a research effort"; that was
+correct, and it has since been formalised in full, including the step
+the 2026-07-27 note left vaguest ("the `c_j` are the repeating block of
+the base-`ℓ` expansion of `m/p`, read in reverse"), which turns out to
+need no rotation induction at all — the WEIGHTED sum `∑_j c_j ℓ^{f−1−j}`
+telescopes directly to `⟨m⟩·d`.
 
-* `ℓ·⟨mℓʲ⟩_p = p·c_j + ⟨mℓ^{j+1}⟩_p` — this is just `Nat.div_add_mod`,
-  because `⟨mℓ^{j+1}⟩ = (ℓ·⟨mℓʲ⟩) mod p`;
-* summing over `j < f` and using `ℓ^f ≡ 1 (mod p)` (which is what
-  `f = ord [ℓ]` says) to see that `j ↦ j+1` merely rotates the sum,
-  `ℓ·Σ = p·Σc + Σ`, i.e. `(ℓ−1)·∑_{i<f}⟨mℓⁱ⟩ = p·∑_j c_j`;
-* and `∑_j c_j` IS the base-`ℓ` digit sum of `m·d`, because the `c_j`
-  are the repeating block of the base-`ℓ` expansion of the rational
-  `m/p` (period `f`), read in reverse.
-
-So the ONLY genuinely deep input is the congruence itself, i.e. the
-valuation `v_𝒬(g(ω^{−k})) = s_ℓ(k)`; everything between it and this
-statement is bookkeeping of the kind above.
+So the ONLY genuinely deep input left is the congruence itself, i.e. the
+valuation `v_𝒬(g(ω^{−k})) = s_ℓ(k)`; everything between it and the
+Frobenius-power statement below is bookkeeping, and all of that
+bookkeeping is now discharged.
 
 **ONLY THE LOWER BOUND IS ASKED FOR, AND THAT IS THE POINT.** The
 matching `∉ q^{N+1}` is derived for free downstream, in
@@ -27147,6 +27384,57 @@ hard; re-checked 2026-07-27 against THIS indexing, `∑_{i<f}⟨−aℓⁱ⟩`):
   that pins the `e = ℓ − 1` factor.
 * `p = 5`, `ℓ = 11`, `f = 1`, `d = 2`: the sum is `⟨−a⟩_5 = 5 − a`, and
   `v_q(G a) = 5·s_11(2⟨−a⟩)/10 = 5 − a`. ✓ -/
+theorem gaussSumPow_pow_sub_one_mem_pow_digitsSum (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    [q.LiesOver (Ideal.span {(ℓ : ℤ)})] (hnd : ¬ ℓ ∣ p)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive)
+    (a : ℕ) (ha : ¬ (p ∣ a)) (y : 𝓞 CF)
+    (hy : ringOfIntegersToAlgebraicClosure CF y
+      = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p) :
+    y ^ (ℓ - 1) ∈ q ^ (p * (Nat.digits ℓ
+      ((-(a : ZMod p)).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p))).sum) :=
+  sorry
+
+/-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND, IN
+FROBENIUS-POWER FORM** (**PROVEN** 2026-07-28 over
+`gaussSumPow_pow_sub_one_mem_pow_digitsSum` above — the FIFTEENTH
+decomposition; cut 2026-07-27 out of `gaussSumPow_mem_pow_decompVal`
+below, which is in turn PROVEN over it).
+
+Given `y ∈ 𝓞 CF` with `y = g(χᵃ)^p`,
+
+  `v_q(y) ≥ ∑_{i < f} ⟨−a·ℓⁱ⟩_p`,   `⟨x⟩ := (x : ZMod p).val`,
+
+with `ℓ` the rational prime under `q` and `f = ord([ℓ] ∈ (ZMod p)ˣ)` the
+residue degree.
+
+**WHAT IS PROVEN HERE, AND WHERE THE DEPTH WENT.** All of the arithmetic
+content is the leaf above, in the base-`ℓ` DIGIT-SUM indexing that
+Stickelberger's congruence actually produces. What is discharged here is
+exactly the passage from that indexing to the Frobenius-orbit indexing
+this development's Jacobi-sum consumers want, and it is three PROVEN
+inputs and nothing else:
+
+* `natCard_quot_eq_pow_orderOf` above rewrites `#(𝓞 CF ⧸ q)` as `ℓ^f`,
+  so the `d := (#F − 1)/p` of the congruence becomes `(ℓ^f − 1)/p`;
+* `digitsSum_mul_div_eq` above — the classical base-`ℓ` digit identity —
+  turns `p·s_ℓ(⟨−a⟩·d)` into `(ℓ − 1)·∑_{i<f} ⟨−a·ℓⁱ⟩`;
+* `mem_pow_of_pow_mem_pow_mul` above cancels the `(ℓ − 1)`-th power, the
+  ramification index `e(𝒬/q)` that the congruence's own extension
+  `CF(ζ_ℓ)` contributes.
+
+Note that `hnd : ¬ ℓ ∣ p` is load-bearing twice over: it is what makes
+`[ℓ]` a UNIT of `ZMod p` (hence `0 < f`, hence `ℓ^f ≡ 1`), and it is
+what `natCard_quot_eq_pow_orderOf` needs. The full roadmap for the
+remaining leaf — the Teichmüller character, the reflection/subadditivity
+route, the three numerical verifications of the normalisation, and the
+literature references — lives on its docstring above. -/
 theorem gaussSumPow_mem_pow_sumRange (CF : Type) [Field CF] [NumberField CF]
     [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
@@ -27161,8 +27449,25 @@ theorem gaussSumPow_mem_pow_sumRange (CF : Type) [Field CF] [NumberField CF]
     (hy : ringOfIntegersToAlgebraicClosure CF y
       = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p) :
     y ∈ q ^ (∑ i ∈ Finset.range (orderOf ((ℓ : ZMod p))),
-        ((-(a : ZMod p)) * ((ℓ : ZMod p) ^ i)).val) :=
-  sorry
+        ((-(a : ZMod p)) * ((ℓ : ZMod p) ^ i)).val) := by
+  haveI := hq
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hℓ1 : 1 < ℓ := (Fact.out : Nat.Prime ℓ).one_lt
+  have hcop : Nat.Coprime ℓ p := (Nat.Prime.coprime_iff_not_dvd Fact.out).mpr hnd
+  have hford : orderOf (ZMod.unitOfCoprime ℓ hcop) = orderOf ((ℓ : ZMod p)) := by
+    have h := orderOf_injective (Units.coeHom (ZMod p)) Units.coeHom_injective
+      (ZMod.unitOfCoprime ℓ hcop)
+    simpa [ZMod.coe_unitOfCoprime] using h.symm
+  have hfpos : 0 < orderOf ((ℓ : ZMod p)) := by
+    rw [← hford]; exact orderOf_pos _
+  have hpow : ((ℓ : ZMod p)) ^ orderOf ((ℓ : ZMod p)) = 1 := pow_orderOf_eq_one _
+  have hcard : Nat.card (𝓞 CF ⧸ q) = ℓ ^ orderOf ((ℓ : ZMod p)) :=
+    natCard_quot_eq_pow_orderOf CF ℓ q hnd
+  have hdig := digitsSum_mul_div_eq ℓ (orderOf ((ℓ : ZMod p))) hℓ1 hfpos hpow (-(a : ZMod p))
+  refine mem_pow_of_pow_mem_pow_mul (k := ℓ - 1) (by omega) ?_
+  have h2 := gaussSumPow_pow_sub_one_mem_pow_digitsSum CF ℓ hq hq0 hnd hpq χ hχ1 hχp hχcong
+    ψ hψ a ha y hy
+  rwa [hcard, hdig] at h2
 
 /-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND**
 (**PROVEN** 2026-07-27 over `gaussSumPow_mem_pow_sumRange`,
