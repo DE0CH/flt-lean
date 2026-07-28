@@ -369,6 +369,14 @@ public import Mathlib.Topology.Connected.TotallyDisconnected
 -- is unavailable and `TotallyDisconnectedSpace ℤ_[p]` fails to synthesize
 -- with no hint of the cause
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
+-- ADDED 2026-07-28 by the decomposition of
+-- `exists_taylorWilesPrime_locResDecomp_ne_zero` (DDT Lemma 2.48): the
+-- INHOMOGENEOUS description of degree-one continuous cohomology, without
+-- which a cohomology class cannot be evaluated at a Galois element and the
+-- separating locus of DDT 2.48 cannot be written down at all.  `public`
+-- because `survivingLocus` below mentions `ContinuousCohomology.eval₁` in
+-- SIGNATURE position.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.LowDegreeOne
 -- PROMOTED TO `public import` 2026-07-27 by the `IsTaylorWilesPrimeSet`
 -- dual-Selmer repair: that predicate's global clause is stated in the
 -- Galois-cohomology vocabulary of this module (`adZeroTwist`,
@@ -4324,10 +4332,179 @@ lemma nonempty_taylorWilesLocus.{uK, uW}
     exists_fixing_rootsOfUnity_charpoly_split hpodd hW hρbar hirr n
   exact ⟨σ, hσfix, α, β, hαβ, hσpoly⟩
 
+/-- **The surviving locus of a continuous `1`-cocycle** (ADDED 2026-07-28):
+the set of Galois elements `x` at which the cocycle `z` is NOT a local
+coboundary, i.e. `z x ∉ (ρ x - 1) · ad⁰ρbar(1)`.
+
+This is the classical `V` of DDT Lemma 2.48, written down.  Writing it
+down at all is what the new module
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`
+supplies: our pin computes `continuousCohomology` from HOMOGENEOUS
+cochains and gives no way to evaluate a class at a group element, so
+before that module the phrase "`c(σ) ∉ (σ - 1)·M`" was not expressible in
+this tree at all.
+
+Three facts make it the right object:
+
+* it depends only on the COHOMOLOGY CLASS of `z`, since changing `z` by a
+  coboundary moves `z x` inside `(ρ x - 1) · M`;
+* it is CONJUGATION-STABLE (`survivingLocus_conj` below, proven from the
+  crossed-homomorphism identity), which is what makes it usable with
+  Chebotarev density — only Frobenius CONJUGACY CLASSES are available
+  there;
+* at a prime `q` where the class is unramified, `Frob_q ∈ survivingLocus`
+  is exactly the statement that the class survives the local restriction
+  at `q`, because the unramified local `H¹` is `M / (Frob_q - 1) M` under
+  evaluation at `Frob_q`.  That last one is the content of
+  `notMem_ker_locResDecompTwist1_of_mem_survivingLocus` below. -/
+def survivingLocus.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar)) :
+    Set (Field.absoluteGaloisGroup ℚ) :=
+  {x | ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 x ∉
+    Set.range fun m : ↥(adZeroTwist p ρbar) => (adZeroTwist p ρbar).ρ x m - m}
+
+/-- **The surviving locus is stable under conjugation** (PROVEN): immediate
+from `ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj`, which is in
+turn the crossed-homomorphism identity
+`z (g x g⁻¹) = ρ g (z x) + z g - ρ (g x g⁻¹) (z g)` together with the fact
+that `ρ g` carries `(ρ x - 1) · M` bijectively onto
+`(ρ (g x g⁻¹) - 1) · M`. -/
+lemma survivingLocus_conj.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    (g x : Field.absoluteGaloisGroup ℚ) (hx : x ∈ survivingLocus p ρbar z) :
+    g * x * g⁻¹ ∈ survivingLocus p ρbar z :=
+  fun hmem => hx (ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj z g x hmem)
+
+/-- **The GLOBAL half of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28):
+for a cocycle `z` representing a nonzero class `c` unramified outside
+`{2, p}`, the surviving locus of `z` is OPEN and MEETS the Taylor–Wiles
+locus at level `n`.  (The representative itself is supplied by
+`ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+
+This is the deep half — the "nonemptiness step" of DDT §2 — and it is
+where `ρbar|_{ℚ(ζ_p)}` absolutely irreducible is used classically.
+
+# ROUTE
+
+Let `M = ad⁰ρbar(1)` and `L = ℚ(M, μ_{p^n})`, a finite Galois extension of
+`ℚ`.
+
+*Openness.*  `M` is a finite discrete `k`-module and `z` is continuous
+(`ContinuousCohomology.continuous_eval₁`), so `x ↦ z x` is continuous into
+a discrete space; `x ↦ ρ x` is likewise continuous into the discrete
+`End_k M`, because `ρbar` is.  So `x ↦ (z x, ρ x)` is continuous into a
+discrete space and the surviving locus is the preimage of a subset of it.
+Concretely the locus is a union of cosets of the open normal subgroup
+`Γ_{L_z}`, where `L_z/L` is the extension cut out by `z|_{Γ L}`.
+
+*Nonemptiness.*  `Γ L` acts trivially on `M`, so `z|_{Γ L}` is a
+HOMOMORPHISM `Γ L → M`, and `Γ L` is normal, so `taylorWilesLocus`
+contains the whole coset `σ · Γ L` of any `σ` in it
+(`nonempty_taylorWilesLocus` supplies one).  Restriction
+`H¹(Γ ℚ, M) → Hom(Γ L, M)` is injective on classes unramified outside
+`{2, p}` because `H¹(Gal(L/ℚ), M) = 0` — this is the step needing absolute
+irreducibility of `ρbar|_{ℚ(ζ_p)}`, which for odd `p` follows from `hρbar`
+together with `hirr` — so `z|_{Γ L} ≠ 0`.  Now `ρ σ` has two DISTINCT
+eigenvalues, so `(ρ σ - 1) · M` is a PROPER subspace of `M`; if
+`z σ ∈ (ρ σ - 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
+`z (σ τ) = z σ + ρ σ (z τ)` (`ContinuousCohomology.cocycles₁_eval₁_mul`)
+to move out.  Either `σ` or `σ τ` then lies in the intersection.
+
+Both-ways audit: at the intended instantiation this is the cited
+Taylor–Wiles separation step; abstractly the hypothesis set contains the
+classically unsatisfiable irreducible hardly ramified `ρbar`, so the
+statement is classically true outright and CANNOT be false as stated.
+CIRCULARITY GUARD: for that very reason it must not be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` is the circular
+discharge and is BANNED. -/
+theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
+    (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0) :
+    IsOpen (survivingLocus p ρbar z) ∧
+      (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := sorry
+
+/-- **The LOCAL half of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28):
+at a prime `q ∉ {2, p}` where the class `c` is unramified, membership of
+`Frob_q` in the surviving locus of a cocycle representative implies that
+`c` does not die under the full local restriction at `q`.
+
+# ROUTE
+
+`hcunr` says `c` dies under restriction to the inertia group at every place
+off `hardlyRamifiedPlaces p = {2, p}`, and `q` is such a place (this is
+what `hq2` and `hqp` are for; the identification of "`q ∉ {2, p}` as a
+number" with "the place of `q` is not in `hardlyRamifiedPlaces p`" goes
+through the injectivity of `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`
+proven in `Chebotarev.lean`).
+
+So the restriction of `c` to the decomposition group `G_q` is INFLATED from
+the procyclic quotient `G_q / I_q`, topologically generated by `Frob_q`.
+For a procyclic group `⟨F⟩^` acting on a finite module `M`, evaluation at
+`F` is an isomorphism `H¹(⟨F⟩^, M) ≅ M / (ρ F - 1) M`: a cocycle is
+determined by its value at `F` by the crossed-homomorphism identity
+(`ContinuousCohomology.cocycles₁_eval₁_mul`), and it is a coboundary
+exactly when that value lies in `(ρ F - 1) M`.  Hence
+
+    loc_q c = 0  ↔  z (Frob_q) ∈ (ρ Frob_q - 1) · M  ↔  Frob_q ∉ survivingLocus ,
+
+and `hmem` is the right-hand negation.
+
+The `↔` in the last display is stronger than needed: only the direction
+"`Frob_q ∈ survivingLocus ⟹ loc_q c ≠ 0`" is asserted here, and it needs
+only the EASY half — that a class dying locally has a representative whose
+value at `Frob_q` is a `(ρ Frob_q - 1)`-boundary, obtained by inflating a
+coboundary witness back along `G_q ↠ ⟨Frob_q⟩^`.  `cocycleClass_eq_zero_iff`
+in the vendored `ContCohomology/Basic.lean` is the handle that turns the
+vanishing of a class into the cocycle being a coboundary.
+
+Note that no local Tate duality is needed, in keeping with the deviation
+note on `IsTaylorWilesPrimeSet`.
+
+Both-ways audit and CIRCULARITY GUARD: as for the global half above. -/
+theorem notMem_ker_locResDecompTwist1_of_mem_survivingLocus.{uK, uW}
+    (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
+    (hcunr : c ∈ h1TwistUnramified p ρbar)
+    (q : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hqp : q ≠ p)
+    (hmem : globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈
+      survivingLocus p ρbar z) :
+    c ∉ LinearMap.ker (locResDecompTwist1 p ρbar
+      hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := sorry
+
 /-- **The separating locus of a nonzero dual-Selmer class — the
-arithmetic core of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28 by
+arithmetic core of DDT Lemma 2.48** (cut out 2026-07-28 by
 the decomposition of `exists_taylorWilesPrime_locResDecomp_ne_zero`
-below): a nonzero class `c ∈ H¹(ℚ, ad⁰ρbar(1))` unramified outside
+below, and **PROVEN the same day** over the two halves
+`isOpen_survivingLocus_and_meets_taylorWilesLocus` (global) and
+`notMem_ker_locResDecompTwist1_of_mem_survivingLocus` (local), with the
+conjugation stability supplied by `survivingLocus_conj`): a nonzero class
+`c ∈ H¹(ℚ, ad⁰ρbar(1))` unramified outside
 `{2, p}` has an OPEN, CONJUGATION-STABLE locus `V ⊆ Γ ℚ` which
 (a) meets the Taylor–Wiles locus at level `n`, and (b) is such that
 `c` survives locally at every prime `q ∉ {2, p}` whose Frobenius lies in
@@ -4381,35 +4558,44 @@ Write `M = ad⁰ρbar(1)`, let `z` be a continuous 1-cocycle representing
   `z (σ τ) = z σ + ρ σ (z τ)` moves out of it — gives an element of
   `V ∩ taylorWilesLocus`.
 
-# WHAT THIS TREE STILL LACKS, CONCRETELY (measured 2026-07-28)
+# HOW IT IS PROVEN, AND WHAT HAD TO BE BUILT (2026-07-28)
 
-The obstruction is NOT the arithmetic above; it is that
-`continuousCohomology 1` has no INHOMOGENEOUS cocycle description here,
-so `z x` cannot yet be written.  What exists is
+The obstruction was NOT the arithmetic above; it was that
+`continuousCohomology 1` had no INHOMOGENEOUS cocycle description in this
+tree, so `z x` could not be written at all.  What existed was
 `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
 (vendored 2026-07-27): `ContinuousCohomology.cocycleClass`, turning a
 cocycle in the KERNEL MODEL into a class, and `cocycleClass_eq_zero_iff`,
 turning vanishing into being a coboundary.  Mathlib's own
 `ContCohomology/LowDegree.lean` stops at degree `0` (`zeroIso`).
 
-The missing piece is small and was scoped concretely:
+That gap is now closed by the new module
+`.../ContCohomology/LowDegreeOne.lean`, which is sorry-free:
 
 * a degree-`1` homogeneous cochain is an element `f` of
-  `↥((homogeneousCochains X).X 1)`, and `f.1 g h : ↥X` TYPECHECKS — the
-  carrier really is the `G`-invariants of `C(G, C(G, M))`;
-* the differentials are `(d X 1 F) g h = F h - F g` and
-  `(d X 2 f) g h l = f h l - f g l + f g h`, from `d_zero`/`d_succ` and
-  the inductive `coind₁ι = const` convention documented in mathlib's
-  `ContCohomology/Basic.lean`;
-* so `z x := f.1 1 x` and the cocycle relation at `g₀ = 1` gives
-  `f.1 h l = z l - z h`, whence, with `G`-invariance
-  `f (σ g) (σ h) = σ • f g h` at `σ = g`, the crossed-homomorphism
-  identity `z (g h) = z g + ρ g (z h)`.
+  `↥((homogeneousCochains X).X 1)` — the `G`-invariants of
+  `C(G, C(G, M))` — and `eval₁ X f x := f 1 x` is the inhomogeneous
+  cochain, continuous by `continuous_eval₁`;
+* the differentials unfold to `(d X 1 F) g h = F h - F g` and
+  `(d X 2 f) g h l = f h l - f g l + f g h`
+  (`homogeneousCochains_d_one_two_apply`), so the cocycle relation at
+  `g₀ = 1` gives `f h l = eval₁ f l - eval₁ f h` (`cocycle_apply`);
+* `G`-invariance reads `f (σ x) (σ y) = ρ σ (f x y)`
+  (`homogeneousCochains_apply_smul`), and the two together give the
+  CROSSED-HOMOMORPHISM IDENTITY
+  `eval₁ f (g h) = eval₁ f g + ρ g (eval₁ f h)` (`eval₁_mul`), with
+  `eval₁_one`, `eval₁_inv`, `eval₁_conj` as consequences;
+* `eval₁_mem_range_sub_conj` is the conjugation stability of the
+  surviving locus, and `exists_cocycleClass_eq` is surjectivity of
+  `cocycleClass` (from `TopModuleCat.cokerπ_surjective` upstream).
 
-Writing that translation (and surjectivity of `cocycleClass`, which
-follows from `TopModuleCat.cokerπ_surjective` upstream) is what unblocks
-this leaf, and it is reusable: `Sha1Twist`'s docstring in
+That module is reusable beyond this leaf: `Sha1Twist`'s docstring in
 `HardlyRamified/Deformation.lean` records the same gap.
+
+With it, `survivingLocus` above is definable, its conjugation stability is
+PROVEN (`survivingLocus_conj`), and what remains open is exactly the two
+halves of DDT 2.48 — the global nonemptiness step and the local
+computation at `q` — as the two named leaves above.
 
 Both-ways audit, inherited verbatim from
 `exists_taylorWilesPrime_locResDecomp_ne_zero`: at the intended
@@ -4440,7 +4626,15 @@ theorem exists_separatingOpen_locResDecomp.{uK, uW}
       ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ p →
         globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈ V →
         c ∉ LinearMap.ker (locResDecompTwist1 p ρbar
-          hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := sorry
+          hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := by
+  obtain ⟨z, hzc⟩ :=
+    ContinuousCohomology.exists_cocycleClass_eq (X := adZeroTwist p ρbar) 1 c
+  obtain ⟨hzopen, hzmeet⟩ :=
+    isOpen_survivingLocus_and_meets_taylorWilesLocus hpodd hW hρbar hirr n z hzc hcunr hc0
+  exact ⟨survivingLocus p ρbar z, hzopen,
+    fun g x hx => survivingLocus_conj p ρbar z g x hx, hzmeet,
+    fun q hq hq2 hqp hmem =>
+      notMem_ker_locResDecompTwist1_of_mem_survivingLocus p ρbar z hzc hcunr q hq hq2 hqp hmem⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Chebotarev separation of a single dual-Selmer class by a
