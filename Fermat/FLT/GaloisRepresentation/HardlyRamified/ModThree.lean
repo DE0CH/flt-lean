@@ -18478,8 +18478,11 @@ theorem exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf (k : Type) [Field
 
 /-! ### The Demazure–Gabriel normal form, split on the characteristic
 
-Block added 2026-07-28 by the owner of `exists_monomial_quotient_algEquiv_of_local_finite_hopf`.
-Its three declarations are self-contained and touch nothing above or below them. -/
+Block added 2026-07-28 by the owner of `exists_monomial_quotient_algEquiv_of_local_finite_hopf`
+and extended the same day by the owner of its characteristic-`p` half.  Its five declarations are
+self-contained and touch nothing above or below them; exactly ONE of them,
+`exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP`, is still open, and it carries
+the whole of Demazure–Gabriel. -/
 
 /-- **THE `r = 0` MONOMIAL QUOTIENT IS THE GROUND FIELD** (PROVEN 2026-07-28; pure bookkeeping,
 extracted so the characteristic-zero case below reads as mathematics rather than as quotient
@@ -18511,13 +18514,193 @@ theorem algEquiv_monomialQuotient_fin_zero (k : Type) [Field k] (d : Fin 0 → �
     (Ideal.quotientKerAlgEquivOfSurjective (f := (e : MvPolynomial (Fin 0) k →ₐ[k] k))
       e.surjective)⟩
 
-/-- **THE DEMAZURE–GABRIEL NORMAL FORM, CHARACTERISTIC `p`** (SORRY LEAF, cut 2026-07-28 out of
-`exists_monomial_quotient_algEquiv_of_local_finite_hopf`, which is now GLUE over this leaf and
-the PROVEN characteristic-zero case below).  **This carries the ENTIRE mathematical content of
-its parent** — the characteristic-zero case is discharged outright by Cartier's theorem — so the
-parent's docstring, with the `μ₃` witness, the `𝔽₃[e,f]/(e², f², ef)` non-Hopf counterexample,
-the `dim_k A ≥ 2^{embdim A}` refutation check, the Frobenius-kernel route and Raynaud's route,
-is the specification for THIS declaration and should be read as such.
+/-- **A SURJECTION ONTO AN ALGEBRA OF THE RIGHT DIMENSION FROM A MONOMIAL COMPLETE INTERSECTION
+IS AN ISOMORPHISM** (PROVEN 2026-07-28).  Pure commutative algebra: there is no Hopf structure,
+no locality, no perfectness and no characteristic anywhere in it, and `d` is arbitrary.  It is
+the ENTIRE assembly half of the characteristic-`p` Demazure–Gabriel normal form below, which is
+now glue over it and over the single leaf
+`exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP`.
+
+If `y₁,…,y_r ∈ A` satisfy `yᵢ ^ dᵢ = 0`, generate `A` as a `k`-algebra, and `dim_k A = ∏ᵢ dᵢ`,
+then
+
+    A  ≃ₐ[k]  k[Y₁,…,Y_r] / (Y₁^{d₁},…,Y_r^{d_r}).
+
+**WHY IT IS TRUE, AND WHERE EACH HYPOTHESIS IS SPENT.**  `yᵢ ^ dᵢ = 0` puts the monomial ideal
+`I = (Y₁^{d₁},…,Y_r^{d_r})` inside `ker (aeval y)`, so `aeval y` factors through a `k`-algebra
+map `φ : k[Y] ⧸ I → A`, surjective because `aeval y` is.  The monomials `Y^a` with `aᵢ < dᵢ`
+SPAN `k[Y] ⧸ I` — any other monomial is divisible by some `Yᵢ^{dᵢ}` and dies — and there are
+`∏ᵢ dᵢ` of them, so `dim_k (k[Y] ⧸ I) ≤ ∏ᵢ dᵢ = dim_k A`; a surjection cannot raise dimension,
+so the two are equal and `φ` is injective.
+
+**ONLY THE SPANNING HALF OF THE MONOMIAL-BASIS STATEMENT IS NEEDED, AND THAT IS THE POINT.**
+Linear independence of the surviving monomials — the other half of "the standard monomials are a
+basis" — is precisely what the dimension hypothesis BUYS; proving it directly would be strictly
+more work and is exactly the work this formulation avoids.  That is why the leaf below is asked
+for a dimension count rather than for a basis.
+
+**THE DIMENSION HYPOTHESIS CANNOT BE DROPPED, and both witnesses are checked.**  (i) With
+`A = 𝔽₃[e,f]/(e², f², ef)`, `y = (e,f)` and `d = (2,2)`: the relations hold, the `yᵢ` generate,
+`aeval y` is surjective — and `dim_k A = 3 ≠ 4 = ∏ᵢ dᵢ`, `A` being no monomial complete
+intersection at all.  (ii) With `A = k[x,z]/(x^p, z^{p²})` in characteristic `p`, which IS a
+monomial complete intersection, the generators `y₁ = x + z`, `y₂ = z` satisfy
+`y₁^{p²} = x^{p²} + z^{p²} = 0` and `y₂^{p²} = 0` and generate, yet `∏ᵢ dᵢ = p⁴ ≠ p³ = dim_k A`
+— a BAD choice of generators of a good algebra.  Witness (ii) is the reason the leaf below must
+PRODUCE the generators and may not accept arbitrary ones: in those coordinates the kernel is
+`(Y₁^p - Y₂^p, Y₂^{p²})`, which is not monomial. -/
+theorem algEquiv_monomialQuotient_of_surjective_aeval (k : Type) [Field k] (A : Type)
+    [CommRing A] [Algebra k A] [Module.Finite k A] (r : ℕ) (d : Fin r → ℕ) (y : Fin r → A)
+    (hy : ∀ i, y i ^ d i = 0)
+    (hsurj : Function.Surjective (MvPolynomial.aeval y : MvPolynomial (Fin r) k →ₐ[k] A))
+    (hdim : Module.finrank k A = ∏ i, d i) :
+    Nonempty (A ≃ₐ[k] MvPolynomial (Fin r) k ⧸
+      Ideal.span (Set.range fun i : Fin r =>
+        (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) := by
+  classical
+  set I : Ideal (MvPolynomial (Fin r) k) :=
+    Ideal.span (Set.range fun i : Fin r => (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)
+  set v : (∀ i : Fin r, Fin (d i)) → (MvPolynomial (Fin r) k ⧸ I) := fun a =>
+    Ideal.Quotient.mk I
+      (MvPolynomial.monomial (Finsupp.equivFunOnFinite.symm fun i => ((a i : ℕ))) 1)
+  have hsmul : ∀ (c : k) (x : MvPolynomial (Fin r) k),
+      Ideal.Quotient.mk I (c • x) = c • Ideal.Quotient.mk I x := fun c x =>
+    map_smul (Ideal.Quotient.mkₐ k I) c x
+  -- The `∏ᵢ dᵢ` standard monomials span the quotient: every other monomial lies in `I`.
+  have hspan : Submodule.span k (Set.range v) = ⊤ := by
+    rw [eq_top_iff]
+    rintro x -
+    obtain ⟨f, rfl⟩ := Ideal.Quotient.mk_surjective x
+    induction f using MvPolynomial.induction_on' with
+    | monomial s c =>
+      by_cases h : ∀ i, s i < d i
+      · have hs : (Finsupp.equivFunOnFinite.symm fun i =>
+            ((⟨s i, h i⟩ : Fin (d i)) : ℕ)) = s := by
+          ext j; simp
+        have hmon : (MvPolynomial.monomial s c : MvPolynomial (Fin r) k)
+            = c • MvPolynomial.monomial
+                (Finsupp.equivFunOnFinite.symm fun i => ((⟨s i, h i⟩ : Fin (d i)) : ℕ)) 1 := by
+          rw [MvPolynomial.smul_monomial, smul_eq_mul, mul_one, hs]
+        have hrw : Ideal.Quotient.mk I (MvPolynomial.monomial s c)
+            = c • v (fun i => ⟨s i, h i⟩) := by
+          rw [hmon, hsmul]
+        rw [hrw]
+        exact Submodule.smul_mem _ c (Submodule.subset_span ⟨fun i => ⟨s i, h i⟩, rfl⟩)
+      · simp only [not_forall, not_lt] at h
+        obtain ⟨i, hi⟩ := h
+        have hle : Finsupp.single i (d i) ≤ s := Finsupp.single_le_iff.mpr hi
+        have hfac : MvPolynomial.monomial s c
+            = (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i
+              * MvPolynomial.monomial (s - Finsupp.single i (d i)) c := by
+          rw [← MvPolynomial.monomial_single_add, add_tsub_cancel_of_le hle]
+        have hmem : MvPolynomial.monomial s c ∈ I := by
+          rw [hfac]
+          exact Ideal.mul_mem_right _ _ (Ideal.subset_span ⟨i, rfl⟩)
+        rw [Ideal.Quotient.eq_zero_iff_mem.mpr hmem]
+        exact Submodule.zero_mem _
+    | add f g hf hg =>
+      rw [map_add]
+      exact Submodule.add_mem _ hf hg
+  haveI hfinQ : Module.Finite k (MvPolynomial (Fin r) k ⧸ I) :=
+    ⟨by rw [← hspan]; exact Submodule.fg_span (Set.finite_range v)⟩
+  have hle : Module.finrank k (MvPolynomial (Fin r) k ⧸ I) ≤ ∏ i, d i := by
+    calc Module.finrank k (MvPolynomial (Fin r) k ⧸ I)
+        ≤ Fintype.card (∀ i : Fin r, Fin (d i)) := finrank_le_of_span_eq_top hspan
+      _ = ∏ i, d i := by simp
+  -- `I ≤ ker (aeval y)`, so `aeval y` factors through the quotient.
+  let φ : MvPolynomial (Fin r) k ⧸ I →ₐ[k] A :=
+    Ideal.Quotient.liftₐ I (MvPolynomial.aeval y) (by
+      intro a ha
+      induction ha using Submodule.span_induction with
+      | mem x hx => obtain ⟨i, rfl⟩ := hx; simp [hy i]
+      | zero => simp
+      | add x z _ _ hx hz => simp [hx, hz]
+      | smul a x _ hx => simp [hx])
+  have hφsurj : Function.Surjective φ := by
+    intro a
+    obtain ⟨f, rfl⟩ := hsurj a
+    exact ⟨Ideal.Quotient.mk I f, rfl⟩
+  have hdimeq : Module.finrank k (MvPolynomial (Fin r) k ⧸ I) = Module.finrank k A := by
+    refine le_antisymm ?_ ?_
+    · rw [hdim]; exact hle
+    · exact LinearMap.finrank_le_finrank_of_surjective (f := φ.toLinearMap) hφsurj
+  have hinj : Function.Injective φ :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdimeq
+      (f := φ.toLinearMap)).mpr hφsurj
+  exact ⟨(AlgEquiv.ofBijective φ ⟨hinj, hφsurj⟩).symm⟩
+
+/-- **THE DEMAZURE–GABRIEL NORMAL FORM, CHARACTERISTIC `p`, IN COORDINATES** (SORRY LEAF, cut
+2026-07-28 out of `exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charP`, which is now
+GLUE over this leaf and the PROVEN `algEquiv_monomialQuotient_of_surjective_aeval` above).
+**This carries the ENTIRE mathematical content of the whole Demazure–Gabriel chain**: the
+characteristic-zero case is discharged by Cartier's theorem, and the passage from these
+coordinates to the `AlgEquiv` is the proven lemma above.  The docstring of the parent
+immediately below — the `μ₃` witness, the `𝔽₃[e,f]/(e², f², ef)` non-Hopf counterexample, the
+`dim_k A ≥ 2^{embdim A}` refutation check, the Frobenius-kernel route, Raynaud's route, and the
+axis search — is the specification for THIS declaration and must be read as such.
+
+**WHAT IS ASKED FOR.**  Generators `y₁,…,y_r` of `A` as a `k`-algebra, exponents `dᵢ` killing
+them, and the dimension identity `dim_k A = ∏ᵢ dᵢ`.  In the true theorem `dᵢ = p^{eᵢ}` and `r`
+is the embedding dimension, but neither is asked for here for the same reason the parent asks for
+arbitrary exponents: the consumer does not use them.  **Do not read that as a claim that the
+`p`-power structure is avoidable in the PROOF** — it is not.
+
+**WHERE THE CONTENT IS, AND IT IS ALL IN THE THIRD CLAUSE.**  The first two clauses are
+individually CHEAP and a successor should not spend time on them: `A` is artinian local with
+residue field `k` (locality plus the counit, see the sibling leaf
+`exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf`), so `𝔪` is nilpotent and Nakayama lifts
+any basis of `𝔪 ⧸ 𝔪²` to a generating set, while nilpotence of `𝔪` supplies each `dᵢ`.  Neither
+step uses the Hopf structure, perfectness or the characteristic.  **The entire theorem is
+`dim_k A = ∏ᵢ dᵢ`** — the assertion that the chosen generators satisfy NO relations beyond
+`yᵢ^{dᵢ} = 0`.
+
+**AND THE THREE CLAUSES MAY NOT BE SPLIT APART.**  A tempting finer cut — first "generators with
+`yᵢ^{p^{eᵢ}} = 0`", then "the dimension is the product" — is FALSE as a second step, because the
+dimension identity holds only for a GOOD choice.  Witness, char `p`:
+`A = k[x,z]/(x^p, z^{p²})`, `y₁ = x + z`, `y₂ = z`, `d = (p², p²)`.  Then `y₁^{p²} = 0`,
+`y₂^{p²} = 0`, the `yᵢ` generate — and `∏ᵢ dᵢ = p⁴` while `dim_k A = p³`.  So the choice of
+generators is itself part of what must be proven, and the Frobenius-kernel filtration is what
+makes it; `hp : p.Prime` is used through `p ≠ 0` to make Frobenius an endomorphism and through
+primality to make `PerfectField k` say the `p`-th power map is BIJECTIVE, which is the step that
+chooses the `yᵢ` out of `𝔪 ⧸ 𝔪²`.
+
+**`hp : p.Prime` IS NOT DECORATION.**  `CharP k p` alone permits `p = 0`, which is the other
+branch of the parent's case split; a successor that weakens `hp` is being handed the
+characteristic-zero case a second time in the shape where the Frobenius route is unavailable, and
+the two proofs share nothing.
+
+**NOT VACUOUS, AND NOT WEAKER THAN ITS PARENT.**  Witnesses on the nose: `A = k` gives `r = 0`
+with the empty product `1 = dim_k k`; `μ₃` over `𝔽₃` gives `A = 𝔽₃[x]/(x³)`, `r = 1`, `d = (3)`,
+`y = (x)`, `3 = dim_k A`.  Conversely the non-Hopf `𝔽₃[e,f]/(e², f², ef)` satisfies NO instance
+of this statement — its embedding dimension is `2`, so `r ≥ 2` and at least two `dᵢ ≥ 2`, forcing
+`∏ᵢ dᵢ ≥ 4 > 3 = dim_k A` — which is the same discrimination the parent's counterexample
+performs, transported to these coordinates. -/
+theorem exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP
+    (p : ℕ) (hp : p.Prime) (k : Type) [Field k] [CharP k p] [PerfectField k]
+    (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] [IsLocalRing A] :
+    ∃ (r : ℕ) (d : Fin r → ℕ) (y : Fin r → A),
+      (∀ i, y i ^ d i = 0) ∧
+      Function.Surjective (MvPolynomial.aeval y : MvPolynomial (Fin r) k →ₐ[k] A) ∧
+      Module.finrank k A = ∏ i, d i :=
+  sorry
+
+/-- **THE DEMAZURE–GABRIEL NORMAL FORM, CHARACTERISTIC `p`** (cut 2026-07-28 out of
+`exists_monomial_quotient_algEquiv_of_local_finite_hopf`, which is glue over this declaration and
+the PROVEN characteristic-zero case below.  **PROVEN AS GLUE, in turn, 2026-07-28** over the
+PROVEN `algEquiv_monomialQuotient_of_surjective_aeval` and the single remaining leaf
+`exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP`, both stated just above).
+
+**WHERE THE CONTENT NOW LIVES, and it is one clause of one leaf.**  The leaf above hands back
+generators `yᵢ` of `A`, exponents `dᵢ` with `yᵢ^{dᵢ} = 0`, and the dimension identity
+`dim_k A = ∏ᵢ dᵢ`; the proven lemma above turns that data into the `AlgEquiv` by a spanning
+argument plus a rank count, with no Hopf structure in sight.  Its first two clauses are cheap
+(Nakayama on `𝔪 ⧸ 𝔪²`, plus nilpotence of `𝔪`); **the whole theorem is the dimension identity**,
+i.e. that the chosen generators satisfy no relations beyond `yᵢ^{dᵢ} = 0`, and the choice of
+generators is itself part of what has to be proven.  A successor should be dispatched at that
+leaf, not here; the body below is two lines with no mathematics in it.
+
+The rest of this docstring is retained as the SPECIFICATION for that leaf: the `μ₃` witness, the
+`𝔽₃[e,f]/(e², f², ef)` non-Hopf counterexample, the `dim_k A ≥ 2^{embdim A}` refutation check,
+the Frobenius-kernel route, Raynaud's route and the axis search all apply verbatim to it.
 
 `[CharP k p]` with `p` prime is the only thing added to the parent's hypotheses, and it is what
 makes the Frobenius-kernel filtration `G ⊇ ker F ⊇ ker F² ⊇ …` available: it is the induction
@@ -18544,8 +18727,10 @@ theorem exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charP
     ∃ (r : ℕ) (d : Fin r → ℕ),
       Nonempty (A ≃ₐ[k] MvPolynomial (Fin r) k ⧸
         Ideal.span (Set.range fun i : Fin r =>
-          (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) :=
-  sorry
+          (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) := by
+  obtain ⟨r, d, y, hy, hsurj, hdim⟩ :=
+    exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP p hp k A
+  exact ⟨r, d, algEquiv_monomialQuotient_of_surjective_aeval k A r d y hy hsurj hdim⟩
 
 /-- **THE DEMAZURE–GABRIEL NORMAL FORM, CHARACTERISTIC ZERO: `A ≅ k`, so `r = 0`** (PROVEN
 2026-07-28, cut out of `exists_monomial_quotient_algEquiv_of_local_finite_hopf` together with the
@@ -18614,16 +18799,18 @@ theorem exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charZero
 `exists_etale_tensor_algEquiv_of_finite_hopf`; step 2 of the two-step cut its docstring
 recommended, and THE DEEP ONE of the two.  **PROVEN AS GLUE 2026-07-28** by a case split on
 `char k`, over the PROVEN `exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charZero`
-and the single remaining leaf
-`exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charP`, both stated just above).
-Base-generic: no `𝒪₃ᵥ` anywhere in it.
+and `exists_monomial_quotient_algEquiv_of_local_finite_hopf_of_charP`, both stated just above and
+both now PROVEN in turn).  Base-generic: no `𝒪₃ᵥ` anywhere in it.
 
 **WHERE THE CONTENT NOW LIVES.**  The characteristic-zero case is CLOSED — Cartier's theorem
 makes `A` reduced, a reduced local Artinian ring is a field, and the counit identifies that
-field with `k`, so `r = 0`.  Everything else — the Frobenius-kernel filtration, freeness over a
-Hopf subalgebra, the choice of generators out of `𝔪 ⧸ 𝔪²` — is characteristic `p` and is the
-leaf above.  **The rest of this docstring is the specification for THAT leaf**, and a successor
-should be dispatched at it rather than here; the body below is four lines of `CharP`
+field with `k`, so `r = 0`.  The characteristic-`p` case is glue in turn, over the PROVEN
+`algEquiv_monomialQuotient_of_surjective_aeval` and the **single open leaf of this whole
+chain**, `exists_pow_eq_zero_surjective_aeval_of_local_finite_hopf_of_charP`, which asks for
+generators `yᵢ` of `A` with `yᵢ^{dᵢ} = 0` and `dim_k A = ∏ᵢ dᵢ`.  Everything remaining — the
+Frobenius-kernel filtration, freeness over a Hopf subalgebra, the choice of generators out of
+`𝔪 ⧸ 𝔪²` — lives there.  **The rest of this docstring is the specification for THAT leaf**, and
+a successor should be dispatched at it rather than here; the body below is four lines of `CharP`
 bookkeeping with no mathematics in it.
 
 A LOCAL finite commutative Hopf algebra `A` over a perfect field `k` is a MONOMIAL complete
