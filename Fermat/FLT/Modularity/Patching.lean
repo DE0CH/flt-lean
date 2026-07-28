@@ -7473,6 +7473,273 @@ theorem isAuxFiniteFramesClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     (Q : Finset ℕ) : IsAuxFiniteFramesClause.{a} hpodd Q :=
   sorry
 
+/-! #### `isAuxProLimitClause`, decomposed field by field
+
+Added 2026-07-28.  `IsRaisedLevelHardlyRamified` is a five-field structure, and the
+limit passage is proven field by field: the first four are the four fields of
+`IsHardlyRamified`, whose limit passage `isHardlyRamified_of_forall_isOpen_quotient`
+is already PROVEN in `HardlyRamified/Deformation.lean`, and only the fifth — the split
+torus at `q in Q` — is new.  The five leaves below are those five fields; the clause
+itself is their assembly and carries no `sorry` of its own.
+
+**Why this decomposition is safe where the fibre-product one is not.**  The
+`isAuxFibreProductClause` ROUTE AUDIT records that the base-level fibre-product gluing
+carries `5 <= l` and spends it on the tame clause, whose `l = 3` case was refuted.  The
+base-level LIMIT passage carries no such hypothesis — checked against the two
+signatures on 2026-07-28 — so `Odd p` suffices here and the obstruction does not
+transfer.  See `raisedLevelIsTameAtTwo_of_forall_isOpen_quotient` below. -/
+
+set_option linter.checkUnivs false in
+/-- **The cyclotomic determinant passes to the adic limit** (PROVEN 2026-07-28;
+LEAF A2'-2c-i of the decomposition of `isAuxProLimitClause` below).
+
+`R` is `𝔪`-adically complete, hence `𝔪`-adically separated, so two elements agreeing
+in every `R ⧸ 𝔪^(n+1)` are equal.  At each level the determinant condition is handed
+over by the level datum, and `LinearMap.det_baseChange` says the base-changed
+determinant is the image of `ρ.det g` — the exact bridge
+`isRaisedLevelHardlyRamified_baseChange_quotient` above uses in the other direction.
+
+This is the `det` half of `isHardlyRamified_of_forall_isOpen_quotient`
+(`HardlyRamified/Deformation.lean`, PROVEN), transcribed from the framed
+`pushforwardFrame` setting into the `baseChange` setting this clause is stated in.
+It uses NO hypothesis on `Q`, on `ρbar` or on the pinning: the determinant clause is
+verbatim the base-level one, and level raising does not touch it. -/
+theorem raisedLevelDet_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) :
+    ∀ g, ρ.det g = algebraMap ℤ_[p] R
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+  classical
+  have hsep : ∀ x y : R,
+      (∀ n : ℕ, x - y ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → x = y := by
+    intro x y hxy
+    have h0 : x - y = 0 := by
+      refine IsHausdorff.haus (hcomplete.toIsHausdorff) _ fun n => ?_
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      cases n with
+      | zero => simp
+      | succ m => exact hxy m
+    exact sub_eq_zero.mp h0
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hnetop : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro n htop
+    have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (Nat.succ_ne_zero n)
+    rw [htop, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  have hlocal : ∀ J : Ideal R, J ≠ ⊤ → IsLocalRing (R ⧸ J) := by
+    intro J hJt
+    haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJt
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+  have hrk : ∀ (J : Ideal R) [IsLocalRing (R ⧸ J)],
+      Module.rank (R ⧸ J) ((R ⧸ J) ⊗[R] (Fin 2 → R)) = 2 := by
+    intro J _
+    simp
+  intro g
+  refine hsep _ _ fun n => ?_
+  haveI := hlocal _ (hnetop n)
+  have hd := (hlev (IsLocalRing.maximalIdeal R ^ (n + 1)) (hpow (n + 1)) (hrk _)).det g
+  have hdet : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))).det g =
+      algebraMap R (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) (ρ.det g) := by
+    show LinearMap.det
+      ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))) g) = _
+    rw [show ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))) g :
+        Module.End _ _) = LinearMap.baseChange _ (ρ g) from rfl,
+      LinearMap.det_baseChange]
+    rfl
+  rw [hdet, IsScalarTower.algebraMap_apply ℤ_[p] R
+    (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))] at hd
+  exact Ideal.Quotient.eq.mp hd
+
+set_option linter.checkUnivs false in
+/-- **Unramifiedness outside `Q ∪ {2, p}` passes to the adic limit** (SORRY LEAF, cut
+out 2026-07-28; LEAF A2'-2c-ii of the decomposition of `isAuxProLimitClause` below).
+
+# ROUTE
+
+The `isUnramified` half of `isHardlyRamified_of_forall_isOpen_quotient`
+(`HardlyRamified/Deformation.lean`, PROVEN) with `intro q hq hqQ` in place of
+`intro q hq`, the extra `q ∉ Q` being passed straight to the level datum.  The
+argument is the separation argument already written out in
+`raisedLevelDet_of_forall_isOpen_quotient` above: for `σ` in the inertia group, the
+entries of `ρ.toLocal v σ x - x` lie in `𝔪^(n+1)` for every `n`, because they vanish
+in the level quotient; adic separatedness makes them zero.
+
+# WHAT IT COSTS BEYOND THE TRANSCRIPTION
+
+The base-level proof is written in the FRAMED setting and reads the level-`J` value
+off `pushforwardFrame (Ideal.Quotient.mk J) hmk ρ`, where the level representation
+acts on `Fin 2 → (R ⧸ J)` and the comparison is the pointwise `fun i => mk (x i)`.
+This clause is stated with `ρ.baseChange (R ⧸ J)`, acting on `(R ⧸ J) ⊗[R] (Fin 2 → R)`.
+The bridge is the one named in this leaf's parent audit:
+`pushforwardFrame ψ hψ ρ = (ρ.baseChange A).conj (TensorProduct.piScalarRight R A A (Fin 2))`,
+together with `isRaisedLevelHardlyRamified_conj` (PROVEN above) to move the predicate
+across it.  Converting `hlev` into the framed form ONCE, at the top of the proof, is
+expected to discharge this leaf and the two below together.
+
+Both-ways audit: `hadic` and `hcomplete` are both load-bearing — they are exactly what
+makes `⋂_n 𝔪^n = 0`, and without separatedness a representation trivial at every finite
+level need not be trivial.  No hypothesis on `ρbar`, `Q` or the pinning is used or
+needed; in particular this leaf cannot be discharged circularly against `hirr`. -/
+theorem raisedLevelIsUnramified_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) :
+    ∀ q (hq : q.Prime), q ∉ Q → q ≠ 2 → q ≠ p →
+      ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := sorry
+
+set_option linter.checkUnivs false in
+/-- **Flatness at `p` passes to the adic limit** (SORRY LEAF, cut out 2026-07-28;
+LEAF A2'-2c-iii of the decomposition of `isAuxProLimitClause` below).
+
+# ROUTE
+
+The `isFlat` half of `isHardlyRamified_of_forall_isOpen_quotient`
+(`HardlyRamified/Deformation.lean`, PROVEN), which is the easiest of the four at the
+base level because `IsFlatAt` is *already* a condition on the open quotients — the
+proof is a re-indexing, plus the separate treatment of `I = ⊤` (the unit ideal carries
+no level datum, and both sides are subsingletons there).
+
+The same framed-vs-`baseChange` bridge noted on
+`raisedLevelIsUnramified_of_forall_isOpen_quotient` above applies, and
+`isFlatAt_baseChange_quotient` (PROVEN, used in
+`isRaisedLevelHardlyRamified_baseChange_quotient` above) is the level-wise half.
+
+Both-ways audit: as for the previous leaf.  Verbatim the base-level clause — level
+raising does not touch flatness at `p`, since `Q` is disjoint from `{2, p}`. -/
+theorem raisedLevelIsFlat_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) :
+    ρ.IsFlatAt (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)) := sorry
+
+set_option linter.checkUnivs false in
+/-- **The tame quotient character at `2` passes to the adic limit** (SORRY LEAF, cut
+out 2026-07-28; LEAF A2'-2c-iv of the decomposition of `isAuxProLimitClause` below).
+
+# ROUTE
+
+The `isTameAtTwo` half of `isHardlyRamified_of_forall_isOpen_quotient`
+(`HardlyRamified/Deformation.lean`, PROVEN), whose base-level ingredient is
+`isTameAtTwo_of_forall_isOpen_quotient` in the same file.
+
+**This is the leaf on which the `p = 3` obstruction recorded on
+`isAuxFibreProductClause` does NOT bite, and that is worth stating explicitly because
+the two leaves look symmetric and are not.**  The base-level *fibre-product* gluing
+`isHardlyRamified_of_fibreProduct` carries `(hℓ5 : 5 ≤ ℓ)` and spends it entirely on
+`isTameAtTwo_of_fibreProduct`, whose `ℓ = 3` case was REFUTED on 2026-07-26.  The
+base-level *limit* passage `isHardlyRamified_of_forall_isOpen_quotient` carries **no**
+such hypothesis, and neither does `isTameAtTwo_of_forall_isOpen_quotient`: both are
+proven for every odd `ℓ`.  Verified against the source on 2026-07-28 by reading the
+two signatures.  So `Odd p` genuinely suffices here.
+
+Both-ways audit: as for the two leaves above; the same framed-vs-`baseChange` bridge
+is the only work beyond transcription. -/
+theorem raisedLevelIsTameAtTwo_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) :
+    ∃ (π : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective π)
+        (δ : GaloisRep ℚ_[2] R R),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → R,
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+          AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) := sorry
+
+set_option linter.checkUnivs false in
+/-- **The split torus at the raised primes passes to the adic limit** (SORRY LEAF, cut
+out 2026-07-28; LEAF A2'-2c-v of the decomposition of `isAuxProLimitClause` below, and
+the ONLY one of the five that is not a transcription of an already-proven base-level
+clause).
+
+This is the genuinely new content of the pro-limit clause, and it is where `hQ` and the
+residual pinning `(πR, S, hπR)` are spent.
+
+# ROUTE
+
+At each open `I`, the level datum gives a decomposition of `ρ ⊗ (R ⧸ I)` at `q ∈ Q`.
+`hQ` gives `α ≠ β` in the residual charpoly at `Frob_q`, and the pinning transports that
+to `ρ`: by `exists_conj_of_charFrob_eq_away` (PROVEN above) the residual representation
+of `ρ` is a conjugate of `ρbar`, so its charpoly at `Frob_q` agrees with `ρbar`'s at
+every prime — the finite exceptional set `S` costs nothing.  Residual distinctness makes
+the idempotent cutting out the `χ`-line UNIQUE at each level once the residual
+eigenvalue attached to `χ` is fixed (idempotents lift uniquely along a nilpotent ideal),
+so the levels form a compatible system; `hcomplete` assembles it into a decomposition
+over `R`.  The `ℚ`-side twin of `isHilbertSplitTorusAt_of_forall_isOpen_quotient`, which
+is the model to copy.
+
+# BOTH-WAYS AUDIT
+
+`hQ`, `hirr` and the pinning `(πR, S, hπR)` are ALL load-bearing, and this is the only
+one of the five sub-leaves for which that is true — the other four use none of them.
+Without residual distinctness the level-wise decompositions need not be compatible
+(the two residual characters could coincide, and then the idempotent is not determined
+by its residue), so the system need not have a limit.  `hirr` is used only through
+`exists_conj_of_charFrob_eq_away`, to turn trace agreement away from `S` into an
+honest conjugacy.
+
+CIRCULARITY GUARD (inherited from `exists_auxDeformationDatum`): a proof ending in
+`exfalso` against `hirr` is the circular discharge and must be rejected. -/
+theorem raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient.{a, uK, uW} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)} (πR : R →+* k)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hπR : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) :
+    ∀ q ∈ Q, ∀ hq : q.Prime,
+      ∃ (e : (Fin 2 → R) ≃ₗ[R] R × R)
+        (χ δ : GaloisRep
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) R R),
+        (∀ (g : Field.absoluteGaloisGroup
+            ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+            (v : Fin 2 → R),
+          e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+            (χ g (e v).1, δ g (e v).2)) ∧
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := sorry
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL pro-limit clause** (sorry node, LEAF A2′-2c of the
 2026-07-28 clause cut).
@@ -7494,8 +7761,18 @@ theorem isAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
     (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    IsAuxProLimitClause.{a, uK, uW} hpodd Q ρbar :=
-  sorry
+    IsAuxProLimitClause.{a, uK, uW} hpodd Q ρbar := by
+  intro R _ _ _ _ _ _ hadic hcomplete ρ πR S hπR hlev
+  exact
+    { det := raisedLevelDet_of_forall_isOpen_quotient hpodd Q hadic hcomplete hlev
+      isUnramified :=
+        raisedLevelIsUnramified_of_forall_isOpen_quotient hpodd Q hadic hcomplete hlev
+      isFlat := raisedLevelIsFlat_of_forall_isOpen_quotient hpodd Q hadic hcomplete hlev
+      isTameAtTwo :=
+        raisedLevelIsTameAtTwo_of_forall_isOpen_quotient hpodd Q hadic hcomplete hlev
+      isSplitTorusAt :=
+        raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient hpodd hW hirr n Q hQ
+          hadic hcomplete πR S hπR hlev }
 
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL Schlessinger machine** (sorry node, LEAF A2′-2d of the
