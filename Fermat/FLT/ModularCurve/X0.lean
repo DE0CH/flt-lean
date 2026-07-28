@@ -624,6 +624,12 @@ public import Mathlib.AlgebraicGeometry.AffineSpace
 -- imported publicly here for use in `ajMor_eq_const_of_not_injective`, whose
 -- appeal to `ext_of_isDominant_of_isSeparated` needs `IsReduced X`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
+-- `Fermat.exists_hopfAlgebra_of_ptsFunctor` and `Fermat.SchemePts` — the purely formal
+-- half of the affine group-scheme / Hopf-algebra dictionary (Yoneda plus `Γ ⊣ Spec`),
+-- used by `CyclicSubgroupOfOrder.exists_hopfAlgebra_geomFibre` below.  It also brings in
+-- mathlib's `CommHopfAlgCat` bridge `GrpObj ⟹ HopfAlgebra`, which is what makes the Hopf
+-- axioms derived rather than checked by hand.
+public import Fermat.FLT.GroupScheme.AffineGroupHopf
 
 @[expose] public section
 
@@ -8650,10 +8656,199 @@ theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
   rw [Category.assoc]
   exact (AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified.mp inferInstance).1
 
+/-! #### The functor of points of the geometric fibre
+
+The material up to `CyclicSubgroupOfOrder.ptsFunctor` is the input to
+`Fermat.exists_hopfAlgebra_of_ptsFunctor`
+(`Fermat/FLT/GroupScheme/AffineGroupHopf.lean`): it packages the three subgroup
+fields of `CyclicSubgroupOfOrder` as a functorial group structure on the
+`R`-points of `C ×_T Spec K` over `Spec K`.  Nothing here uses `N`, the
+characteristic, or algebraic closedness. -/
+
+/-- **A relative point lying in a subscheme factors through it.**  `RelPoint.LiesIn`
+is a `def`, so this restatement is what lets `Exists.choose` be applied to it. -/
+theorem RelPoint.exists_of_liesIn {E T C : Scheme.{0}} {f : E ⟶ T} {ι : C ⟶ E}
+    {T' : Scheme.{0}} {b : T' ⟶ T} {x : RelPoint f b} (hx : RelPoint.LiesIn ι x) :
+    ∃ y : T' ⟶ C, y ≫ ι = x.1 := hx
+
+namespace CyclicSubgroupOfOrder
+
+noncomputable section
+
+variable {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+  (c : CyclicSubgroupOfOrder ab N) {K : Type} [Field K]
+  (g : Spec (CommRingCat.of K) ⟶ T)
+
+/-- The geometric fibre is finite over `Spec K`, by base change from `c.isFinite`. -/
+theorem isFinite_fibreSnd : IsFinite (Limits.pullback.snd (c.ι ≫ f) g) := by
+  haveI := c.isFinite
+  exact inferInstanceAs (IsFinite (Limits.pullback.snd (c.ι ≫ f) g))
+
+/-- **The relative point of `E` underlying an `R`-point of the geometric fibre.**  This is
+the Yoneda direction that `AbelianSchemeStruct.ofMorphisms` does not provide: it reads a
+morphism into the fibre as a point of the functor of points of `E`. -/
+def fibrePt (R : CommAlgCat.{0} K)
+    (v : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    RelPoint f (Spec.map (CommRingCat.ofHom (algebraMap K R)) ≫ g) :=
+  ⟨v.1 ≫ Limits.pullback.fst (c.ι ≫ f) g ≫ c.ι, by
+    have h1 : (v.1 ≫ Limits.pullback.fst (c.ι ≫ f) g ≫ c.ι) ≫ f
+        = v.1 ≫ Limits.pullback.fst (c.ι ≫ f) g ≫ (c.ι ≫ f) := by
+      simp only [Category.assoc]
+    rw [h1, Limits.pullback.condition, ← Category.assoc, v.2]⟩
+
+theorem fibrePt_liesIn (R : CommAlgCat.{0} K)
+    (v : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    RelPoint.LiesIn c.ι (fibrePt c g R v) :=
+  ⟨v.1 ≫ Limits.pullback.fst (c.ι ≫ f) g, Category.assoc _ _ _⟩
+
+/-- `fibrePt` is injective: `c.ι` is a monomorphism and the fibre is a pullback. -/
+theorem fibrePt_injective (R : CommAlgCat.{0} K) :
+    Function.Injective (fibrePt c g R) := by
+  haveI := c.isClosedImmersion
+  intro a b hab
+  have h : a.1 ≫ Limits.pullback.fst (c.ι ≫ f) g ≫ c.ι
+      = b.1 ≫ Limits.pullback.fst (c.ι ≫ f) g ≫ c.ι := congrArg Subtype.val hab
+  apply Subtype.ext
+  apply Limits.pullback.hom_ext
+  · rw [← cancel_mono c.ι, Category.assoc, Category.assoc]
+    exact h
+  · exact a.2.trans b.2.symm
+
+/-- **Conversely, a relative point lying in `C` is an `R`-point of the geometric fibre.**
+This is the universal property of the pullback. -/
+def fibreLift (R : CommAlgCat.{0} K)
+    (x : RelPoint f (Spec.map (CommRingCat.ofHom (algebraMap K R)) ≫ g))
+    (hx : RelPoint.LiesIn c.ι x) :
+    SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R :=
+  ⟨Limits.pullback.lift (RelPoint.exists_of_liesIn hx).choose
+      (Spec.map (CommRingCat.ofHom (algebraMap K R)))
+      (by rw [← Category.assoc, (RelPoint.exists_of_liesIn hx).choose_spec]; exact x.2),
+    Limits.pullback.lift_snd _ _ _⟩
+
+theorem fibrePt_fibreLift (R : CommAlgCat.{0} K)
+    (x : RelPoint f (Spec.map (CommRingCat.ofHom (algebraMap K R)) ≫ g))
+    (hx : RelPoint.LiesIn c.ι x) : fibrePt c g R (fibreLift c g R x hx) = x := by
+  apply Subtype.ext
+  show Limits.pullback.lift (RelPoint.exists_of_liesIn hx).choose _ _ ≫
+    Limits.pullback.fst (c.ι ≫ f) g ≫ c.ι = x.1
+  rw [← Category.assoc, Limits.pullback.lift_fst]
+  exact (RelPoint.exists_of_liesIn hx).choose_spec
+
+/-- The group law on the `R`-points of the geometric fibre, from `c.add_liesIn`. -/
+def ptsMul (R : CommAlgCat.{0} K)
+    (a b : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R :=
+  fibreLift c g R (ab.add (fibrePt c g R a) (fibrePt c g R b))
+    (c.add_liesIn (fibrePt_liesIn c g R a) (fibrePt_liesIn c g R b))
+
+/-- The neutral `R`-point of the geometric fibre, from `c.zero_liesIn`. -/
+def ptsOne (R : CommAlgCat.{0} K) : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R :=
+  fibreLift c g R (ab.zero _) (c.zero_liesIn _)
+
+/-- Inversion on the `R`-points of the geometric fibre, from `c.neg_liesIn`. -/
+def ptsInv (R : CommAlgCat.{0} K)
+    (a : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R :=
+  fibreLift c g R (ab.neg (fibrePt c g R a)) (c.neg_liesIn (fibrePt_liesIn c g R a))
+
+theorem fibrePt_ptsMul (R : CommAlgCat.{0} K)
+    (a b : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    fibrePt c g R (ptsMul c g R a b) = ab.add (fibrePt c g R a) (fibrePt c g R b) :=
+  fibrePt_fibreLift _ _ _ _ _
+
+theorem fibrePt_ptsOne (R : CommAlgCat.{0} K) :
+    fibrePt c g R (ptsOne c g R) = ab.zero _ :=
+  fibrePt_fibreLift _ _ _ _ _
+
+theorem fibrePt_ptsInv (R : CommAlgCat.{0} K)
+    (a : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    fibrePt c g R (ptsInv c g R a) = ab.neg (fibrePt c g R a) :=
+  fibrePt_fibreLift _ _ _ _ _
+
+/-- **The group of `R`-points of the geometric fibre.**  The axioms are those of `ab`,
+transported along the injection `fibrePt`.  Written multiplicatively because `GrpCat` is. -/
+instance ptsGroup (R : CommAlgCat.{0} K) :
+    Group (SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :=
+  letI : Mul (SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) := ⟨ptsMul c g R⟩
+  letI : One (SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) := ⟨ptsOne c g R⟩
+  letI : Inv (SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) := ⟨ptsInv c g R⟩
+  Group.ofLeftAxioms
+    (fun a b d => fibrePt_injective c g R (by
+      show fibrePt c g R (ptsMul c g R (ptsMul c g R a b) d)
+        = fibrePt c g R (ptsMul c g R a (ptsMul c g R b d))
+      rw [fibrePt_ptsMul, fibrePt_ptsMul, fibrePt_ptsMul, fibrePt_ptsMul, ab.add_assoc]))
+    (fun a => fibrePt_injective c g R (by
+      show fibrePt c g R (ptsMul c g R (ptsOne c g R) a) = fibrePt c g R a
+      rw [fibrePt_ptsMul, fibrePt_ptsOne, ab.zero_add]))
+    (fun a => fibrePt_injective c g R (by
+      show fibrePt c g R (ptsMul c g R (ptsInv c g R a) a) = fibrePt c g R (ptsOne c g R)
+      rw [fibrePt_ptsMul, fibrePt_ptsInv, fibrePt_ptsOne, ab.neg_add]))
+
+theorem specAlg_comp {R S : CommAlgCat.{0} K} (ψ : R ⟶ S) :
+    Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap K R))
+      = Spec.map (CommRingCat.ofHom (algebraMap K S)) := by
+  rw [← Spec.map_comp]
+  congr 1
+  exact CommRingCat.hom_ext (RingHom.ext fun x => ψ.hom.commutes x)
+
+theorem specBase_comp {R S : CommAlgCat.{0} K} (ψ : R ⟶ S) :
+    Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫
+        (Spec.map (CommRingCat.ofHom (algebraMap K R)) ≫ g)
+      = Spec.map (CommRingCat.ofHom (algebraMap K S)) ≫ g := by
+  rw [← Category.assoc, specAlg_comp]
+
+/-- Base change of `R`-points of the geometric fibre along a `K`-algebra map. -/
+def ptsPre {R S : CommAlgCat.{0} K} (ψ : R ⟶ S)
+    (a : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    SchemePts (Limits.pullback.snd (c.ι ≫ f) g) S :=
+  ⟨Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫ a.1, by
+    rw [Category.assoc, a.2, specAlg_comp]⟩
+
+theorem fibrePt_ptsPre {R S : CommAlgCat.{0} K} (ψ : R ⟶ S)
+    (a : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    fibrePt c g S (ptsPre c g ψ a)
+      = RelPoint.pre (Spec.map (CommRingCat.ofHom ψ.hom.toRingHom))
+          (specBase_comp g ψ) (fibrePt c g R a) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- Base change is a group homomorphism — this is `ab.pre_add`, i.e. the naturality of the
+group law of `ab` in the test object. -/
+theorem ptsPre_ptsMul {R S : CommAlgCat.{0} K} (ψ : R ⟶ S)
+    (a b : SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R) :
+    ptsPre c g ψ (ptsMul c g R a b) = ptsMul c g S (ptsPre c g ψ a) (ptsPre c g ψ b) :=
+  fibrePt_injective c g S (by
+    rw [fibrePt_ptsPre, fibrePt_ptsMul, fibrePt_ptsMul, fibrePt_ptsPre, fibrePt_ptsPre,
+      ab.pre_add])
+
+/-- **The functor of points of the geometric fibre**, valued in groups. -/
+def ptsFunctor : CommAlgCat.{0} K ⥤ GrpCat.{0} where
+  obj R := GrpCat.of (SchemePts (Limits.pullback.snd (c.ι ≫ f) g) R)
+  map {R S} ψ := GrpCat.ofHom (MonoidHom.mk' (ptsPre c g ψ) (ptsPre_ptsMul c g ψ))
+  map_id R := by
+    apply GrpCat.hom_ext
+    refine MonoidHom.ext fun a => Subtype.ext ?_
+    show Spec.map (CommRingCat.ofHom (CommAlgCat.Hom.hom (𝟙 R)).toRingHom) ≫ a.1 = a.1
+    rw [show CommRingCat.ofHom (CommAlgCat.Hom.hom (𝟙 R)).toRingHom
+        = 𝟙 (CommRingCat.of (R : Type)) from rfl,
+      Spec.map_id, Category.id_comp]
+  map_comp {R S U} ψ φ := by
+    apply GrpCat.hom_ext
+    refine MonoidHom.ext fun a => Subtype.ext ?_
+    show Spec.map (CommRingCat.ofHom (CommAlgCat.Hom.hom (ψ ≫ φ)).toRingHom) ≫ a.1
+      = Spec.map (CommRingCat.ofHom φ.hom.toRingHom) ≫
+        Spec.map (CommRingCat.ofHom ψ.hom.toRingHom) ≫ a.1
+    rw [← Category.assoc, ← Spec.map_comp]
+    rfl
+
+end
+
+end CyclicSubgroupOfOrder
+
 /-- **The geometric fibre of `C` is `Spec` of a finite commutative HOPF
-ALGEBRA over `K`** (sorry leaf, cut out of Cartier's theorem 2026-07-27;
-it is the whole remaining content of `isReduced_geomFibre_of_specQBase`
-below).
+ALGEBRA over `K`** (**PROVEN 2026-07-28**; cut out of Cartier's theorem
+2026-07-27, and it was the whole remaining content of
+`isReduced_geomFibre_of_specQBase` below).
 
 `Limits.pullback (c.ι ≫ f) g` is `C ×_T Spec K`, the fibre of `C` at the
 geometric point `g`.  Three things are asserted at once, and every one of
@@ -8693,21 +8888,41 @@ know before starting).  `Mathlib/Algebra/Category/CommHopfAlgCat.lean` has
 coassociativity, counitality and the antipode identities are *derived* from
 the group-object diagrams; nothing about `comul`/`counit`/`antipode` needs to
 be written in tensor-product form.  What must be produced is a `GrpObj`
-structure on the fibre viewed in `(CommAlgCat K)ᵒᵖ`, and the transport is
-assembled from equivalences that all exist:
-`AlgebraicGeometry.AffineScheme.equivCommRingCat : AffineScheme ≌ CommRingCatᵒᵖ`
-and `CommAlgCat.commAlgCatEquivUnder (R) : CommAlgCat R ≌ Under R`, over the
-base `Spec K`.  Mathlib's own group schemes are already phrased this way —
-`Mathlib/AlgebraicGeometry/Group/Smooth.lean` works with
-`GrpObj (Over.mk f)` in the cartesian-monoidal `Over` category.
+structure on the fibre viewed in `(CommAlgCat K)ᵒᵖ`.
 
-The one genuinely new step is the YONEDA direction, which
-`AbelianSchemeStruct` does not provide: `ofMorphisms`
+**HOW THE `GrpObj` IS ACTUALLY PRODUCED (2026-07-28), and it is NOT by
+transporting one along an equivalence of categories.**  The route this
+docstring previously proposed — assemble
+`AffineScheme.equivCommRingCat : AffineScheme ≌ CommRingCatᵒᵖ` with
+`CommAlgCat.commAlgCatEquivUnder` over the base `Spec K`, and carry a `GrpObj`
+across — needs every step of that chain to be made MONOIDAL, which is a large
+amount of work that mathlib does not do for us.  It is unnecessary: mathlib's
+
+    CategoryTheory.GrpObj.ofRepresentableBy
+    (`Mathlib/CategoryTheory/Monoidal/Cartesian/Grp.lean`)
+
+builds a group object in ANY cartesian monoidal category out of a
+REPRESENTABLE PRESHEAF OF GROUPS, and `(CommAlgCat K)ᵒᵖ` is cartesian
+monoidal on the nose (`Mathlib/Algebra/Category/CommAlgCat/Monoidal.lean`).
+So it is enough to give a functorial group structure on `A →ₐ[K] R`, with no
+monoidal functor anywhere.  That is `Fermat.nonempty_grpObj_of_yoneda`, and
+the `Γ ⊣ Spec` half — `Spec` fully faithful, so `Hom_{Spec K}(Spec R, X)` is
+`Γ(X, ⊤) →ₐ[K] R` — is `Fermat.exists_hopfAlgebra_of_ptsFunctor`
+(`Fermat/FLT/GroupScheme/AffineGroupHopf.lean`).
+
+The one genuinely new step on this side of the dictionary is the YONEDA
+direction, which `AbelianSchemeStruct` does not provide: `ofMorphisms`
 (`Fermat/FLT/Modularity/AbelianScheme.lean`) goes from morphisms TO the
-functor of points, and here one needs the converse — evaluate `ab.add` at the
-tautological point of `C_K ×_K C_K` to get `m`, and use the naturality fields
-`ab.pre_add` / `ab.pre_zero` (plus `c.add_liesIn` / `c.zero_liesIn` /
-`c.neg_liesIn` to see that the result lands in `C`) to check the diagrams.
+functor of points, and here one needs the converse.  It is `fibrePt` /
+`fibreLift` above: an `R`-point of the fibre gives a relative point of `E`
+lying in `C` (compose with the two projections), and conversely a relative
+point lying in `C` gives an `R`-point of the fibre (the universal property of
+the pullback, applied to the factorisation through `c.ι`).  Those two are
+mutually inverse because `c.ι` is a monomorphism, which is `fibrePt_injective`;
+`c.zero_liesIn` / `c.add_liesIn` / `c.neg_liesIn` then make the `R`-points a
+group (`ptsGroup`) and `ab.pre_add` makes base change a homomorphism
+(`ptsPre_ptsMul`), i.e. makes it a FUNCTOR (`ptsFunctor`).  No `m`, `e`, `inv`
+as morphisms are ever written down: `ofRepresentableBy` produces them.
 
 `N` plays no role, and neither does algebraic closedness of `K`; both are
 deliberately absent from the statement.  The statement is discharged
@@ -8719,8 +8934,11 @@ theorem CyclicSubgroupOfOrder.exists_hopfAlgebra_geomFibre
     (K : Type) [Field K] (g : Spec (CommRingCat.of K) ⟶ T) :
     ∃ (A : Type) (_ : CommRing A) (_ : _root_.HopfAlgebra K A)
       (_ : Module.Finite K A),
-      Nonempty (Limits.pullback (c.ι ≫ f) g ≅ Spec (CommRingCat.of A)) :=
-  sorry
+      Nonempty (Limits.pullback (c.ι ≫ f) g ≅ Spec (CommRingCat.of A)) := by
+  haveI := CyclicSubgroupOfOrder.isFinite_fibreSnd c g
+  refine exists_hopfAlgebra_of_ptsFunctor (Limits.pullback.snd (c.ι ≫ f) g)
+    (CyclicSubgroupOfOrder.ptsFunctor c g) (fun R => Equiv.refl _) (fun R S ψ a b hb => ?_)
+  exact Subtype.ext hb
 
 /-- **CARTIER'S THEOREM, in the one form the rest of this section needs:
 over a `ℚ`-base every GEOMETRIC FIBRE of `C` is reduced** (**PROVEN
