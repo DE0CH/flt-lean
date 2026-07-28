@@ -45,9 +45,11 @@ field extension `K/ℚ`.  The pieces live here:
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — the field-theoretic
   statement that a field extension `L/k` in characteristic zero with `k`
   algebraically closed in `L` is a *regular* extension, i.e. `L ⊗[k] K` is a
-  domain for every `K/k`.  PROVEN for `K/k` **algebraic**; the transcendental
-  case is the one LEAF of this module
-  (`isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
+  domain for every `K/k`.  PROVEN for every `K/k` as of 2026-07-28: the
+  algebraic case directly, the transcendental case by reduction along a
+  transcendence basis.  The single remaining LEAF of this module is
+  `algebraicClosure_fractionRing_tensorProduct_adjoin_eq_bot` — "regularity is
+  stable under purely transcendental base change".
 * `isDomain_tensorProduct_of_injective` — the transfer from the fraction field
   down to the ring, which is just flatness of a field over a field (PROVEN).
 
@@ -70,11 +72,13 @@ field extension `K/ℚ`.  The pieces live here:
 * `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
   algebraic half of regularity (PROVEN)
 * `isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot` — the
-  transcendental half (PROVEN 2026-07-28 over the two leaves below)
+  transcendental half (PROVEN 2026-07-28 over the single leaf below)
 * `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_fractionRing_eq_bot`
   — the transcendence-basis reduction, all of the plumbing (PROVEN)
+* `isDomain_tensorProduct_fractionRing` — base change of a fraction field
+  along a field extension (PROVEN)
 * `isDomain_tensorProduct_adjoin_of_algebraicIndependent` — purely
-  transcendental base change of a field is a domain (LEAF)
+  transcendental base change of a field is a domain (PROVEN)
 * `algebraicClosure_fractionRing_tensorProduct_adjoin_eq_bot` — regularity is
   stable under purely transcendental base change (LEAF; the one genuinely
   missing piece of mathematics)
@@ -103,7 +107,10 @@ public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
 public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+public import Mathlib.RingTheory.AlgebraicIndependent.Adjoin
 public import Mathlib.RingTheory.TensorProduct.Maps
+public import Mathlib.RingTheory.TensorProduct.MvPolynomial
+public import Mathlib.RingTheory.Localization.BaseChange
 
 @[expose] public section
 
@@ -501,7 +508,44 @@ is pure plumbing — the transcendence basis, the tensor associativities, the
 flatness embeddings — is discharged here, so that the two remaining leaves carry
 only mathematics. -/
 
-/-- **Purely transcendental base change of a field is a domain** (sorry leaf).
+/-- **Base change of a fraction field along a field extension** (PROVEN).
+
+If `R` is a domain with fraction field `A`, both `k`-algebras, and `R ⊗[k] L` is
+a domain, then so is `A ⊗[k] L`: writing `A ⊗[k] L ≃ₐ A ⊗[R] (R ⊗[k] L)`
+(`Algebra.TensorProduct.cancelBaseChange`) exhibits it as the localization of
+`R ⊗[k] L` at the image of `nonZeroDivisors R` (mathlib's `IsLocalization.tensor`),
+and that image consists of nonzero elements because `R → R ⊗[k] L` is injective
+(`L` is free, hence flat, over the field `k`).
+
+**Why this is stated for an ABSTRACT `R` and `A` rather than inlined at its one
+call site.**  With `R = MvPolynomial ι k` and `A = FractionRing R` substituted,
+the `IsDomain` produced by `IsLocalization.isDomain_of_le_nonZeroDivisors` carries
+the `Semiring` instance `CommSemiring.toSemiring`, while the goal carries
+`Algebra.TensorProduct.instSemiring`.  Those are defeq, but checking it requires
+unfolding `OreLocalization.instAdd` and `AddMonoidAlgebra.mul'`, which the module
+system does not expose — so the `exact` fails with a bare type mismatch between
+two spellings of the same instance.  Keeping `R` and `A` opaque type variables
+collapses the diamond (their `Semiring`s are hypotheses, not definitions), and
+the instantiated conclusion then matches the call site syntactically.  This is
+worth remembering: an instance-path mismatch under `module` is not always a real
+error, and abstracting the carrier is the cheap fix. -/
+theorem isDomain_tensorProduct_fractionRing (k : Type*) [Field k] (L : Type*) [Field L]
+    [Algebra k L] (R : Type*) [CommRing R] [IsDomain R] [Algebra k R]
+    (A : Type*) [CommRing A] [Algebra R A] [Algebra k A] [IsScalarTower k R A]
+    [IsFractionRing R A] [IsDomain (R ⊗[k] L)] :
+    IsDomain (A ⊗[k] L) := by
+  have hinj : Function.Injective (algebraMap R (R ⊗[k] L)) :=
+    Algebra.TensorProduct.includeLeft_injective (S := k) (RingHom.injective _)
+  have hle : Algebra.algebraMapSubmonoid (R ⊗[k] L) (nonZeroDivisors R)
+      ≤ nonZeroDivisors (R ⊗[k] L) :=
+    map_le_nonZeroDivisors_of_injective _ hinj le_rfl
+  haveI : IsDomain ((R ⊗[k] L) ⊗[R] A) :=
+    IsLocalization.isDomain_of_le_nonZeroDivisors _ hle
+  haveI : IsDomain (A ⊗[R] (R ⊗[k] L)) :=
+    (Algebra.TensorProduct.comm R A (R ⊗[k] L)).toMulEquiv.isDomain
+  exact (Algebra.TensorProduct.cancelBaseChange k R R A L).symm.toMulEquiv.isDomain
+
+/-- **Purely transcendental base change of a field is a domain** (PROVEN).
 
 Let `x : ι → K` be algebraically independent over `k` and let
 `F = k(xᵢ) = IntermediateField.adjoin k (range x)`.  Then `F ⊗[k] L` is a domain
@@ -509,32 +553,34 @@ for every field extension `L/k`.  No hypothesis relating `k` and `L` is needed:
 this is the statement that a *purely transcendental* extension is regular, which
 holds over any base.
 
-**The route, for whoever closes it.**  Put `R₀ = Algebra.adjoin k (range x)`.
+**The proof.**  Algebraic independence of `x` says exactly that
+`k(xᵢ) ≃ₐ[k] FractionRing (MvPolynomial ι k)` — mathlib's
+`AlgebraicIndependent.aevalEquivField`, which lands directly on
+`IntermediateField.adjoin k (range x)`, so no separate identification of
+`Algebra.adjoin` with its fraction ring is needed.  Then
 
-* `R₀ ≃ₐ[k] MvPolynomial ι k` — this is mathlib's
-  `AlgebraicIndependent.aevalEquiv`, and it is exactly what algebraic
-  independence of `x` says.
-* Hence `R₀ ⊗[k] L ≃ₐ MvPolynomial ι k ⊗[k] L ≃ₐ MvPolynomial ι L`, a polynomial
-  ring over a field and therefore a domain.
-* `F` is the *fraction ring* of `R₀`: mathlib has this as the scoped instance
-  `IsFractionRing (Algebra.adjoin F S) (IntermediateField.adjoin F S)` in
-  `Mathlib/FieldTheory/IntermediateField/Adjoin/Algebra.lean`.
-* Therefore `F ⊗[k] L ≃ₐ F ⊗[R₀] (R₀ ⊗[k] L)` (`Algebra.TensorProduct.cancelBaseChange`)
-  is a **localization** of `R₀ ⊗[k] L` — mathlib's `IsLocalization.tensor` in
-  `Mathlib/RingTheory/Localization/BaseChange.lean` — at the image of
-  `nonZeroDivisors R₀`.  That image consists of nonzero elements because
-  `R₀ → R₀ ⊗[k] L` is injective (`L` is free, hence flat, over the field `k`),
-  and a localization of a domain at a submonoid of nonzero elements is a domain.
+* `MvPolynomial ι k ⊗[k] L ≃ₐ L ⊗[k] MvPolynomial ι k ≃ₐ MvPolynomial ι L`
+  (`MvPolynomial.scalarRTensorAlgEquiv`), a polynomial ring over a field and
+  therefore a domain;
+* `isDomain_tensorProduct_fractionRing` promotes that to
+  `FractionRing (MvPolynomial ι k) ⊗[k] L`;
+* transporting along `aevalEquivField` gives the statement.
 
-*The check that would refute this note*: `AlgebraicIndependent.aevalEquiv`,
-the scoped `IsFractionRing` instance, or `IsLocalization.tensor` failing to
-exist under our pin.  All three were confirmed present on 2026-07-28. -/
+Note the hypothesis is bare `AlgebraicIndependent k x`, not
+`IsTranscendenceBasis` — nothing here needs `x` to be a *maximal* independent
+family, only that `k(x)` is purely transcendental. -/
 theorem isDomain_tensorProduct_adjoin_of_algebraicIndependent
     (k : Type*) [Field k] (L : Type*) [Field L] [Algebra k L]
     {K : Type*} [Field K] [Algebra k K] {ι : Type*} {x : ι → K}
     (hx : AlgebraicIndependent k x) :
-    IsDomain ((IntermediateField.adjoin k (Set.range x)) ⊗[k] L) :=
-  sorry
+    IsDomain ((IntermediateField.adjoin k (Set.range x)) ⊗[k] L) := by
+  haveI : IsDomain (L ⊗[k] MvPolynomial ι k) :=
+    (MvPolynomial.scalarRTensorAlgEquiv (R := k) (N := L) (σ := ι)).toMulEquiv.isDomain
+  haveI : IsDomain (MvPolynomial ι k ⊗[k] L) :=
+    (Algebra.TensorProduct.comm k (MvPolynomial ι k) L).toMulEquiv.isDomain
+  haveI : IsDomain (FractionRing (MvPolynomial ι k) ⊗[k] L) :=
+    isDomain_tensorProduct_fractionRing k L (MvPolynomial ι k) (FractionRing (MvPolynomial ι k))
+  exact (Algebra.TensorProduct.congr hx.aevalEquivField.symm AlgEquiv.refl).toMulEquiv.isDomain
 
 /-- **Regularity is stable under purely transcendental base change** (sorry leaf).
 
