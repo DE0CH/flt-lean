@@ -41,9 +41,28 @@ direct images of quasi-coherent sheaves at all.
   as `f.app U` is for every *affine* open `U ⊆ S`.  Pure sheaf theory (`f.app U` is the
   component at `U` of `𝒪_S ⟶ f_*𝒪_X`, and the affine opens are a basis), and it is what
   lets the remaining leaf be stated over an affine base.
-* `isIso_appTop_of_isProper_over_field` — **LEAF** (2026-07-27): `H⁰(Z, 𝒪_Z) = K` for `Z`
-  proper, geometrically connected and geometrically reduced over a field `K`.  One scheme,
-  one field, no flatness and no base change — the tractable half, and the one to take first.
+* `isIso_appTop_of_isProper_over_field` — **PROVEN** (2026-07-28) over the single leaf
+  `isIso_appTop_of_isIso_appTop_baseChange`: `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically
+  connected and geometrically reduced over a field `K`.  **Its hypothesis was `[Field K]`, which
+  made the statement FALSE** — for `K : CommRingCat` that binder is a field structure on the
+  carrier *type*, unrelated to `K`'s ring structure; see the falsity audit on the declaration for
+  the `ZMod 4` counterexample.  It now carries `hK : IsField K`.  Proven en route, and useful on
+  their own:
+  * `exists_eq_sq_mul_of_isIntegral` — a reduced ring is von Neumann regular at every element
+    integral over a field;
+  * `isField_of_isIntegral_of_forall_isIdempotentElem` — hence such a ring with no nontrivial
+    idempotents is a field, with **no finiteness and no irreducibility**, which is what
+    `Mathlib`'s `isField_of_universallyClosed` needs `[IsIntegral X]` for;
+  * `isIdempotentElem_appTop_eq_zero_or_one` — `Γ` of a connected reduced scheme has no
+    nontrivial idempotents;
+  * `isField_appTop_of_universallyClosed` and
+    `isIso_appTop_of_universallyClosed_of_isAlgClosed` — `Γ(Z, ⊤)` is a field, and equals `K`
+    when `K` is algebraically closed.
+* `isIso_appTop_of_isIso_appTop_baseChange` — **LEAF** (2026-07-28): flat base change for `H⁰`
+  along a field extension, in transfer form.  **`Mathlib` has the machinery**
+  (`isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` in
+  `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean`); see the declaration's docstring for the exact
+  instantiation.
 * `isIso_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-27): degree-zero cohomology and
   base change.  For `f` proper, flat and of finite presentation over an **affine** base,
   `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism as soon as `κ(s) ⟶ Γ(X_s, ⊤)` is one for every
@@ -293,48 +312,306 @@ of one another:
 `isIso_appTop_of_isProper_of_flat_of_isAffine` is PROVEN by feeding the first into the second,
 which is why the two are cut apart here rather than proved together. -/
 
+/-! #### The fibrewise half: `H⁰(Z, 𝒪_Z) = K`
+
+The route actually taken here is **shorter than the classical five-step one** recorded in earlier
+versions of this docstring, and in particular it never needs `Γ(Z, ⊤)` to be *finite* over `K`,
+nor `Z` to be irreducible.  It is:
+
+1. `K ⟶ A := Γ(Z, ⊤)` is **integral** — `isIntegral_appTop_of_universallyClosed`, free from
+   `Mathlib`, and the only place properness is used.
+2. `A` is **reduced** (`Z` is), and has **no nontrivial idempotents** (`Z` is connected):
+   an idempotent `e` splits `Z` into the two disjoint opens `Z.basicOpen e` and
+   `Z.basicOpen (1 - e)`, which cover because an idempotent of a *local* ring is `0` or `1`
+   (`IsLocalRing.isUnit_or_isUnit_one_sub_self`).
+3. Hence `A` is a **field**: a reduced ring is *von Neumann regular* at every element integral
+   over a field (`exists_eq_sq_mul_of_isIntegral`), so `a = a²t`, `at` is idempotent, and
+   `at = 1` is the inverse.  This replaces the classical "`K[a]` is a finite reduced algebra,
+   hence a product of fields" and needs no finiteness.
+4. Over an **algebraically closed** field this already finishes: a field integral over an
+   algebraically closed field *is* that field
+   (`IsAlgClosed.ringHom_bijective_of_isIntegral`).  That is
+   `isIso_appTop_of_universallyClosed_of_isAlgClosed`.
+5. The general case is reduced to (4) by base-changing to `K̄`, which is where the geometric
+   hypotheses are consumed and where the one remaining leaf sits.
+-/
+
+open Polynomial in
+/-- The inductive step of `exists_eq_sq_mul_of_isIntegral`: if `a^k * (a * d + c) = 0` with `c`
+a nonzero scalar, then `a = a² t`.
+
+Reducedness turns `a ^ k * b = 0` into `a * b = 0` — because `(a * b) ^ (k + 1)
+= a * (a ^ k * b) * b ^ k = 0` — and `a * (a * d + c) = 0` is `a² d + a c = 0`, which is
+`a = a² * (-(d / c))` after dividing by the unit `c`. -/
+theorem exists_eq_sq_mul_of_pow_mul_add_eq_zero {K A : Type*} [Field K] [CommRing A]
+    [_root_.IsReduced A] [Algebra K A] {a d : A} {c : K} (hc : c ≠ 0) {k : ℕ}
+    (h : a ^ k * (a * d + algebraMap K A c) = 0) : ∃ t : A, a = a ^ 2 * t := by
+  set b : A := a * d + algebraMap K A c with hb
+  have hnil : IsNilpotent (a * b) := by
+    refine ⟨k + 1, ?_⟩
+    have hpow : (a * b) ^ (k + 1) = a ^ k * b * (a * b ^ k) := by ring
+    rw [h, zero_mul] at hpow
+    exact hpow
+  have hab : a * b = 0 := hnil.eq_zero
+  refine ⟨-(d * algebraMap K A c⁻¹), ?_⟩
+  have hcinv : algebraMap K A c * algebraMap K A c⁻¹ = 1 := by
+    rw [← map_mul, mul_inv_cancel₀ hc, map_one]
+  have hexp : a ^ 2 * d + a * algebraMap K A c = 0 := by rw [← hab, hb]; ring
+  have h2 : a * (algebraMap K A c * algebraMap K A c⁻¹) = a ^ 2 * -(d * algebraMap K A c⁻¹) := by
+    have hmul := congrArg (· * algebraMap K A c⁻¹) hexp
+    simp only [zero_mul, add_mul] at hmul
+    linear_combination hmul
+  rwa [hcinv, mul_one] at h2
+
+open Polynomial in
+/-- **A REDUCED RING IS VON NEUMANN REGULAR AT EVERY ELEMENT INTEGRAL OVER A FIELD** (PROVEN):
+if `A` is reduced and `a : A` is integral over a field `K`, then `a = a² t` for some `t : A`.
+
+This is the elementary substitute for "a finite reduced algebra over a field is a product of
+fields", and it is what makes `isField_of_isIntegral_of_forall_isIdempotentElem` need no
+finiteness hypothesis at all.
+
+**Proof.**  Induct on `p.natDegree` for a monic `p` killing `a`, in the strengthened form
+"`a ^ k * p(a) = 0` for some `k`".  If `p.coeff 0 ≠ 0`, write `p = X * p.divX + C (p.coeff 0)`
+and apply `exists_eq_sq_mul_of_pow_mul_add_eq_zero`.  If `p.coeff 0 = 0`, then `p = X * p.divX`,
+so `a ^ (k + 1) * p.divX(a) = 0` and `p.divX` has smaller degree.  The two cases are exhaustive
+because a nonzero polynomial of degree `0` is a nonzero constant. -/
+theorem exists_eq_sq_mul_of_isIntegral {K A : Type*} [Field K] [CommRing A] [_root_.IsReduced A]
+    [Algebra K A] {a : A} (ha : _root_.IsIntegral K a) : ∃ t : A, a = a ^ 2 * t := by
+  suffices H : ∀ n : ℕ, ∀ p : K[X], p.natDegree ≤ n → p ≠ 0 → ∀ k : ℕ,
+      a ^ k * aeval a p = 0 → ∃ t : A, a = a ^ 2 * t by
+    obtain ⟨p, hmonic, hp⟩ := ha
+    refine H p.natDegree p le_rfl hmonic.ne_zero 0 ?_
+    simpa [aeval_def] using hp
+  intro n
+  induction n with
+  | zero =>
+    intro p hpn hp k hk
+    have hpc : p = C (p.coeff 0) := Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.mp hpn)
+    have hc : p.coeff 0 ≠ 0 := fun h => hp (by rw [hpc, h, map_zero])
+    refine exists_eq_sq_mul_of_pow_mul_add_eq_zero (a := a) (d := 0) hc (k := k) ?_
+    rw [mul_zero, zero_add]
+    rw [hpc] at hk
+    simpa using hk
+  | succ n ih =>
+    intro p hpn hp k hk
+    by_cases hc : p.coeff 0 = 0
+    · have hX : X * p.divX = p := by
+        have hd := Polynomial.X_mul_divX_add p
+        rwa [hc, map_zero, add_zero] at hd
+      have hdiv : p.divX ≠ 0 := fun h => hp (by rw [← hX, h, mul_zero])
+      have hdeg : p.divX.natDegree ≤ n := by
+        have hnd : p.divX.natDegree = p.natDegree - 1 :=
+          Polynomial.natDegree_divX_eq_natDegree_tsub_one
+        omega
+      refine ih p.divX hdeg hdiv (k + 1) ?_
+      have key : a ^ (k + 1) * aeval a p.divX = a ^ k * aeval a p := by
+        conv_rhs => rw [← hX]
+        rw [map_mul, aeval_X]; ring
+      rw [key]; exact hk
+    · refine exists_eq_sq_mul_of_pow_mul_add_eq_zero (a := a) (d := aeval a p.divX) hc (k := k) ?_
+      have hsplit : aeval a p = a * aeval a p.divX + algebraMap K A (p.coeff 0) := by
+        conv_lhs => rw [← Polynomial.X_mul_divX_add p]
+        rw [map_add, map_mul, aeval_X, aeval_C]
+      rwa [← hsplit]
+
+/-- **A REDUCED RING INTEGRAL OVER A FIELD WITH NO NONTRIVIAL IDEMPOTENTS IS A FIELD** (PROVEN).
+
+Note what is *absent*: no finiteness, no irreducibility, no Noetherian hypothesis.  Von Neumann
+regularity (`exists_eq_sq_mul_of_isIntegral`) gives `a = a² t`; then `a * t` is idempotent, so it
+is `0` or `1`; it cannot be `0` (that forces `a = a * (a * t) = 0`), so `t` inverts `a`. -/
+theorem isField_of_isIntegral_of_forall_isIdempotentElem {K A : Type*} [Field K] [CommRing A]
+    [Nontrivial A] [_root_.IsReduced A] [Algebra K A] [Algebra.IsIntegral K A]
+    (hidem : ∀ e : A, IsIdempotentElem e → e = 0 ∨ e = 1) : IsField A := by
+  refine ⟨exists_pair_ne A, mul_comm, ?_⟩
+  intro a ha
+  obtain ⟨t, ht⟩ := exists_eq_sq_mul_of_isIntegral (K := K) (Algebra.IsIntegral.isIntegral a)
+  have he : IsIdempotentElem (a * t) := by
+    unfold IsIdempotentElem
+    calc a * t * (a * t) = a ^ 2 * t * t := by ring
+      _ = a * t := by rw [← ht]
+  rcases hidem _ he with h | h
+  · exact absurd (by rw [ht, show a ^ 2 * t = a * (a * t) by ring, h, mul_zero]) ha
+  · exact ⟨t, h⟩
+
+/-- **`Γ(Z, ⊤)` HAS NO NONTRIVIAL IDEMPOTENTS FOR A CONNECTED REDUCED SCHEME** (PROVEN).
+
+An idempotent `e` gives two opens `Z.basicOpen e` and `Z.basicOpen (1 - e)` which are *disjoint*
+(`e * (1 - e) = 0`, and `Z.basicOpen 0 = ⊥`) and *cover* `Z` (in the local ring at any point,
+`IsLocalRing.isUnit_or_isUnit_one_sub_self` makes `e` or `1 - e` a unit).  So `Z.basicOpen e` is
+clopen; connectedness makes it `⊥` or `⊤`, and reducedness turns that into `e = 0` or `e = 1`
+via `basicOpen_eq_bot_iff`.
+
+Reducedness is genuinely needed: on `Z = Spec (K[ε]/ε²)` the element `ε` has `basicOpen ε = ⊥`
+without being zero — though of course `ε` is not idempotent, the *implication*
+`basicOpen s = ⊥ → s = 0` is what fails. -/
+theorem isIdempotentElem_appTop_eq_zero_or_one {Z : Scheme.{u}} [IsReduced Z]
+    [ConnectedSpace Z] {e : Γ(Z, ⊤)} (he : IsIdempotentElem e) : e = 0 ∨ e = 1 := by
+  have hmul : e * (1 - e) = 0 := by rw [mul_sub, mul_one, he.eq, sub_self]
+  have hdisj : Z.basicOpen e ⊓ Z.basicOpen (1 - e) = ⊥ := by
+    rw [← Scheme.basicOpen_mul, hmul, Scheme.basicOpen_zero]
+  have hcover : Z.basicOpen e ⊔ Z.basicOpen (1 - e) = ⊤ := by
+    refine eq_top_iff.mpr fun x _ => ?_
+    rcases IsLocalRing.isUnit_or_isUnit_one_sub_self
+        ((Z.presheaf.germ ⊤ x trivial) e) with h | h
+    · exact Or.inl ((Z.mem_basicOpen_top e x).mpr h)
+    · exact Or.inr ((Z.mem_basicOpen_top (1 - e) x).mpr (by simpa using h))
+  have hclopen : IsClopen (Z.basicOpen e : Set Z) := by
+    refine ⟨?_, (Z.basicOpen e).isOpen⟩
+    have hcompl : (Z.basicOpen e : Set Z)ᶜ = (Z.basicOpen (1 - e) : Set Z) := by
+      refine Set.eq_of_subset_of_subset (fun x hx => ?_) (fun x hx hx' => ?_)
+      · have hx' : x ∈ (⊤ : Z.Opens) := trivial
+        rw [← hcover] at hx'
+        exact hx'.resolve_left hx
+      · have hmem : x ∈ Z.basicOpen e ⊓ Z.basicOpen (1 - e) := ⟨hx', hx⟩
+        rw [hdisj] at hmem
+        exact hmem
+    rw [← isOpen_compl_iff, hcompl]
+    exact (Z.basicOpen (1 - e)).isOpen
+  rcases _root_.isClopen_iff.mp hclopen with h | h
+  · exact Or.inl ((basicOpen_eq_bot_iff e).mp (by ext x; simp [h]))
+  · refine Or.inr ?_
+    have h1 : Z.basicOpen (1 - e) = ⊥ := by
+      have htop : Z.basicOpen e = ⊤ := by ext x; simp [h]
+      rw [htop, top_inf_eq] at hdisj
+      exact hdisj
+    exact (sub_eq_zero.mp ((basicOpen_eq_bot_iff (1 - e)).mp h1)).symm
+
+/-- **`Γ(Z, ⊤)` IS A FIELD FOR A CONNECTED REDUCED SCHEME UNIVERSALLY CLOSED OVER A FIELD**
+(PROVEN) — steps 1–3 of the route above, and the sharpening of `Mathlib`'s
+`isField_of_universallyClosed`, which assumes `[IsIntegral Z]`.
+
+Irreducibility really is dropped, not hidden: two lines meeting in a point are connected and
+reduced but not irreducible, and they do have `H⁰ = k`. -/
+theorem isField_appTop_of_universallyClosed {K : Type u} [Field K] {Z : Scheme.{u}}
+    (g : Z ⟶ Spec (CommRingCat.of K)) [UniversallyClosed g] [IsReduced Z] [ConnectedSpace Z] :
+    IsField Γ(Z, ⊤) := by
+  let F : CommRingCat.of K ⟶ Γ(Z, ⊤) := (Scheme.ΓSpecIso _).inv ≫ g.appTop
+  have hF : F.hom.IsIntegral := by
+    apply RingHom.isIntegral_respectsIso.2 (e := (Scheme.ΓSpecIso _).symm.commRingCatIsoToRingEquiv)
+    exact isIntegral_appTop_of_universallyClosed g
+  algebraize [F.hom]
+  haveI : Nonempty ↥(⊤ : Z.Opens) := ⟨⟨Nonempty.some inferInstance, trivial⟩⟩
+  haveI : Nontrivial Γ(Z, ⊤) := LocallyRingedSpace.component_nontrivial Z.toLocallyRingedSpace ⊤
+  exact isField_of_isIntegral_of_forall_isIdempotentElem (K := K)
+    (fun e he => isIdempotentElem_appTop_eq_zero_or_one he)
+
+/-- **`H⁰(Z, 𝒪_Z) = K` OVER AN ALGEBRAICALLY CLOSED FIELD** (PROVEN) — step 4.
+
+`Γ(Z, ⊤)` is a field by `isField_appTop_of_universallyClosed`, hence a domain, and it is integral
+over `K`; `IsAlgClosed.ringHom_bijective_of_isIntegral` then says the structure map is bijective.
+
+No geometric connectedness or geometric reducedness appears, because over an algebraically closed
+field ordinary connectedness and ordinary reducedness *are* the geometric notions. -/
+theorem isIso_appTop_of_universallyClosed_of_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
+    {Z : Scheme.{u}} (g : Z ⟶ Spec (CommRingCat.of K)) [UniversallyClosed g] [IsReduced Z]
+    [ConnectedSpace Z] : IsIso g.appTop := by
+  let F : CommRingCat.of K ⟶ Γ(Z, ⊤) := (Scheme.ΓSpecIso _).inv ≫ g.appTop
+  have hF : F.hom.IsIntegral := by
+    apply RingHom.isIntegral_respectsIso.2 (e := (Scheme.ΓSpecIso _).symm.commRingCatIsoToRingEquiv)
+    exact isIntegral_appTop_of_universallyClosed g
+  letI : Field ↥Γ(Z, ⊤) := (isField_appTop_of_universallyClosed g).toField
+  haveI : IsIso F := (ConcreteCategory.isIso_iff_bijective F).mpr
+    (IsAlgClosed.ringHom_bijective_of_isIntegral F.hom hF)
+  have hcomp : (Scheme.ΓSpecIso (CommRingCat.of K)).hom ≫ F = g.appTop := by simp [F]
+  rw [← hcomp]
+  infer_instance
+
+/-- **`Γ` COMMUTES WITH BASE FIELD EXTENSION, IN THE FORM THE DESCENT NEEDS** (LEAF, 2026-07-28):
+if `Γ(Spec L, ⊤) ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is an isomorphism, so is
+`Γ(Spec K, ⊤) ⟶ Γ(Z, ⊤)`.
+
+**What it really is.**  For `Z` quasi-compact and quasi-separated over a field `K` and any field
+extension `L/K`, the canonical map
+`Γ(Z, ⊤) ⊗_K L ⟶ Γ(Z ×_{Spec K} Spec L, ⊤)` is bijective — flat base change for `H⁰`, which is
+the *equalizer* of a finite Čech diagram of affines together with the exactness of `- ⊗_K L`,
+not the full cohomology-and-base-change theorem.  Granting that, the hypothesis says
+`Γ(Z, ⊤) ⊗_K L ≅ L` as `L`-algebras, hence `dim_K Γ(Z, ⊤) = dim_L (Γ(Z, ⊤) ⊗_K L) = 1`, and a
+unital `K`-algebra of dimension one *is* `K`.
+
+**THE ROUTE IS AVAILABLE IN `Mathlib` AT THIS PIN** — checked 2026-07-28, and this is the single
+most important thing recorded here, because an earlier version of this file's docstring asserted
+that no base-change API existed.  `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean` carries a
+`pushoutSection` API for exactly the square
+
+```
+Y --g--→ X          Γ(X, Uₓ) ⊗_{Γ(S, Uₛ)} Γ(T, Uₜ) ⟶ Γ(Y, Uy)
+|        |
+iY       iX
+↓        ↓
+T --f--→ S
+```
+
+and proves it an isomorphism under five different hypotheses.  The one that applies here is
+`AlgebraicGeometry.isIso_pushoutSection_of_isQuasiSeparated_of_flat_right`: `Uₛ`, `Uₜ` affine,
+`Uₓ` quasi-compact and quasi-separated, `f` flat.  Take `S = Spec K`, `T = Spec L`, `X = Z`,
+all opens `⊤`; `Spec.map φ` is flat because `K` is a field.  Then
+`isIso_pushoutSection_iff` turns it into an `IsPushout` square of rings, which with
+`CommRingCat.isPushout_tensorProduct` is the tensor product above, and `Module.rank_baseChange`
+finishes the dimension count.
+
+**FAITHFULNESS.**  Both fields are load-bearing: `hK` is what makes `L` flat over `K` (so that
+the base change computes `Γ` at all), and `hL` is what makes "rank one over `L`" meaningful.  The
+empty scheme is not a counterexample — there `Γ(Z, ⊤) = 0 = Γ(Z_L, ⊤)` and the hypothesis fails,
+since a field never maps isomorphically to the zero ring. -/
+theorem isIso_appTop_of_isIso_appTop_baseChange {K L : CommRingCat.{u}}
+    (hK : IsField K) (hL : IsField L) (φ : K ⟶ L) {Z : Scheme.{u}} (g : Z ⟶ Spec K)
+    [QuasiCompact g] [QuasiSeparated g]
+    (h : IsIso (pullback.snd g (Spec.map φ)).appTop) : IsIso g.appTop :=
+  sorry
+
 /-- **`H⁰(Z, 𝒪_Z) = K` FOR A PROPER, GEOMETRICALLY CONNECTED, GEOMETRICALLY REDUCED SCHEME
-OVER A FIELD** (LEAF, 2026-07-27) — the fibrewise half of the pushforward theorem, and the
-tractable one.
+OVER A FIELD** — the fibrewise half of the pushforward theorem, PROVEN over the single leaf
+`isIso_appTop_of_isIso_appTop_baseChange` above.
 
-**The classical argument.**  Write `A := Γ(Z, ⊤)`.
+**FALSITY AUDIT AND REPAIR (2026-07-28) — the hypothesis used to be `[Field K]` and that made
+the statement FALSE.**  With `K : CommRingCat`, the binder `[Field K]` elaborates as
+`Field ↥K`: a field structure on the *carrier type* of `K`, whose ring operations are a fresh
+structure field and are **provably unrelated** to `K`'s own ring structure — the compiler reports
+the two `CommSemiring ↥K` instance paths (`CommRing.toCommSemiring` from `CommRingCat` versus
+`Field.toSemifield.toCommSemiring`) as not even definitionally equal.  So `[Field K]` did not say
+"`K` is a field"; it said "the carrier of `K` happens to be in bijection with some field", which
+is a condition on a *type*, not on a ring.
 
-1. `K ⟶ A` is *integral*: this is already in `Mathlib`, as
-   `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` (properness is not even needed,
-   universal closedness over an affine base suffices).
-2. `A` is *reduced*, because `Z` is (geometric reducedness over `K` in particular gives
-   `IsReduced Z`, `AlgebraicGeometry.GeometricallyReduced` instances).
-3. Hence `A` is a *field*.  Every `a ∈ A` is algebraic over `K`, so `K[a]` is a finite reduced
-   `K`-algebra, i.e. a finite product of fields; an idempotent of `K[a]` is an idempotent of
-   `A`, and `Z` is connected, so `A` has no idempotents other than `0` and `1` (a nontrivial
-   idempotent of `Γ(Z, ⊤)` is exactly a decomposition of `Z` into two nonempty opens).  So
-   `K[a]` is a field and `a` is invertible when nonzero.
-4. `A` is *finite* over `K`, by `AlgebraicGeometry.finite_appTop_of_universallyClosed` once
-   `A` is known to be a field — note that mathlib's version is stated under `[IsIntegral Z]`,
-   which is *stronger* than what is available here (connected + reduced does not give
-   irreducible: two lines meeting in a point are a standing counterexample, and they do have
-   `H⁰ = k`).  So this step needs the mathlib proof re-run without irreducibility; its actual
-   content is `RingHom.finite_of_algHom_finiteType_of_isJacobsonRing` applied to
-   `Γ(Z, ⊤) ⟶ Γ(Z, U)` for an affine open `U`, and irreducibility is used there only to know
-   `Z` is nonempty — which geometric connectedness also gives.
-5. Finally `[A : K] = 1`.  `A/K` is a finite field extension; geometric reducedness makes it
-   *separable*, so `A ⊗_K K̄ ≅ K̄^{[A:K]}` has `[A : K]` idempotents, while geometric
-   connectedness makes `Z_{K̄}` connected, hence `Γ(Z_{K̄}, 𝒪)` idempotent-free.  The one
-   nontrivial input is that `Γ` of a quasi-compact quasi-separated scheme over a field
-   commutes with the (flat) base change `K ⟶ K̄` — which for `H⁰` alone is the equalizer of a
-   finite Čech diagram of affines and the exactness of `- ⊗_K K̄`, *not* the full
-   cohomology-and-base-change theorem.
+Explicit counterexample to the old statement: `K = CommRingCat.of (ZMod 4)`, `Z = Spec (ZMod 2)`,
+`g` the closed immersion induced by `ZMod 4 ↠ ZMod 2`.  Then `g` is finite, hence proper; every
+field-valued point of `Spec (ZMod 4)` kills the nilpotent `2`, so every base change of `g` to a
+field is an isomorphism, making `g` geometrically connected and geometrically reduced; and
+`g.appTop : ZMod 4 ⟶ ZMod 2` is not an isomorphism.  The old hypothesis `[Field ↥K]` is
+satisfied because `↥K` is a four-element type, and a four-element type carries a field structure
+(`𝔽₄`).
+
+The repair is the honest hypothesis `hK : IsField K`, which is stated with respect to `K`'s own
+semiring structure and therefore cannot be satisfied spuriously.  The consumer supplies it with
+`Field.toIsField`, so nothing downstream got harder.
+
+**The proof.**  Base-change to `K̄`: the pullback is proper, reduced and connected (this is
+exactly what `GeometricallyReduced` and `GeometricallyConnected` say), so
+`isIso_appTop_of_universallyClosed_of_isAlgClosed` computes its global sections, and the leaf
+descends that to `K`.
 
 **FAITHFULNESS.**  All three hypotheses are load-bearing.  Without geometric connectedness the
 statement fails for `Z = Spec (K × K)`; without geometric reducedness it fails for
 `Z = Spec (K[ε]/ε²)`; and *geometric* connectedness cannot be weakened to connectedness — for
 `K = ℝ` and `Z = Spec ℂ`, `Z` is connected, reduced and proper over `ℝ`, and
 `H⁰(Z, 𝒪) = ℂ ≠ ℝ`.  Likewise geometric reducedness cannot be weakened to reducedness, by the
-usual inseparable example `Z = Spec 𝔽_p(t^{1/p})` over `K = 𝔽_p(t)`. -/
-theorem isIso_appTop_of_isProper_over_field {K : CommRingCat.{u}} [Field K] {Z : Scheme.{u}}
-    (g : Z ⟶ Spec K) [IsProper g] [GeometricallyConnected g] [GeometricallyReduced g] :
-    IsIso g.appTop :=
-  sorry
+usual inseparable example `Z = Spec 𝔽_p(t^{1/p})` over `K = 𝔽_p(t)`.  Note that the first two
+are already invisible to steps 1–4: `Γ` of `Spec (K × K)` is a nontrivial idempotent, and `Γ` of
+`Spec (K[ε]/ε²)` is not reduced. -/
+theorem isIso_appTop_of_isProper_over_field {K : CommRingCat.{u}} (hK : IsField K)
+    {Z : Scheme.{u}} (g : Z ⟶ Spec K) [IsProper g] [GeometricallyConnected g]
+    [GeometricallyReduced g] : IsIso g.appTop := by
+  letI : Field ↥K := hK.toField
+  let φ : K ⟶ CommRingCat.of (AlgebraicClosure ↥K) :=
+    CommRingCat.ofHom (algebraMap ↥K (AlgebraicClosure ↥K))
+  refine isIso_appTop_of_isIso_appTop_baseChange hK (Field.toIsField _) φ g ?_
+  haveI : UniversallyClosed (pullback.snd g (Spec.map φ)) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  haveI : IsReduced (pullback g (Spec.map φ)) :=
+    GeometricallyReduced.geometrically_isReduced _ _ _ (.of_hasPullback _ _)
+  haveI : ConnectedSpace ↥(pullback g (Spec.map φ)) :=
+    GeometricallyConnected.geometrically_connectedSpace _ _ _ (.of_hasPullback _ _)
+  exact isIso_appTop_of_universallyClosed_of_isAlgClosed (K := AlgebraicClosure ↥K) _
 
 /-- **COHOMOLOGY AND BASE CHANGE IN DEGREE ZERO: `𝒪_S ⟶ f_*𝒪_X` IS AN ISOMORPHISM AS SOON AS
 IT IS ONE ON EVERY FIBRE** (LEAF, 2026-07-27; Hartshorne III.12.11, Grauert, Stacks 0E0L /
@@ -417,7 +694,7 @@ theorem isIso_appTop_of_isProper_of_flat_of_isAffine (f : X ⟶ S) [IsAffine S]
   refine isIso_appTop_of_isIso_appTop_fiber f fun s => ?_
   haveI : IsProper (f.fiberToSpecResidueField s) :=
     MorphismProperty.pullback_snd _ _ inferInstance
-  exact isIso_appTop_of_isProper_over_field _
+  exact isIso_appTop_of_isProper_over_field (Field.toIsField _) _
 
 /-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
 CONNECTED AND REDUCED FIBRES**, over an arbitrary base — **PROVEN** over the affine-base leaf
