@@ -7746,6 +7746,202 @@ noncomputable def GaloisRepresentation.globalValuationSubring
     (AlgebraicClosure.map (algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
 
+/-! ### Transport along the fixed embedding `ℚ̄ ↪ ℚ̄_q`
+
+`globalValuationSubring v` is BY DEFINITION the comap of `localValuationSubring v`
+along `AlgebraicClosure.map (algebraMap ℚ ℚ_v)`, and `Field.absoluteGaloisGroup.map`
+transports `Γ ℚ_v → Γ ℚ` along the SAME embedding (`Field.absoluteGaloisGroup.lift_map`).
+The five declarations below are that observation made usable: the image of `Γ ℚ_v`
+lands in the decomposition group of `𝒪`, the image of `localInertiaGroup v` lands in
+its inertia subgroup, and residues of `𝒪` are read off residues of `𝒪_loc`.
+
+These were listed as "THE FIRST STEP A PROVER SHOULD TAKE" on
+`exists_frobeniusLift` below; they are proven here once so that leaf never has to
+mention `𝒪_loc` twice. The friction the note warned about is real and is why the
+memberships below are supplied as explicit `⟨_, _⟩` ascriptions rather than by
+`rw [MulAction.mem_stabilizer_iff]`: `Field.absoluteGaloisGroup ℚ` and
+`AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are reducibly but not syntactically
+equal, so `rw` fails on the membership with an instance mismatch while `show` and
+`exact` go through. -/
+
+/-- **Membership in `𝒪` is membership of the image in `𝒪_loc`** (PROVEN
+2026-07-28) — definitional, since `globalValuationSubring` is a `comap`. -/
+theorem GaloisRepresentation.mem_globalValuationSubring_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (x : AlgebraicClosure ℚ) :
+    x ∈ GaloisRepresentation.globalValuationSubring v ↔
+      AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) x
+        ∈ localValuationSubring v :=
+  Iff.rfl
+
+/-- **The structural ring map `𝒪 →+* 𝒪_loc`** (PROVEN 2026-07-28): the fixed
+embedding `ℚ̄ ↪ ℚ̄_q` restricts to the two valuation subrings, because the source
+one is the comap of the target one. -/
+noncomputable def GaloisRepresentation.globalValuationSubringToLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    GaloisRepresentation.globalValuationSubring v →+* localValuationSubring v where
+  toFun a := ⟨AlgebraicClosure.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) a, a.2⟩
+  map_one' := Subtype.ext (map_one _)
+  map_mul' _ _ := Subtype.ext (map_mul _ _ _)
+  map_zero' := Subtype.ext (map_zero _)
+  map_add' _ _ := Subtype.ext (map_add _ _ _)
+
+@[simp]
+theorem GaloisRepresentation.globalValuationSubringToLocal_coe
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    ((GaloisRepresentation.globalValuationSubringToLocal v a : localValuationSubring v) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      = AlgebraicClosure.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) a :=
+  rfl
+
+/-- **The maximal ideal of `𝒪` is the contraction of the maximal ideal of `𝒪_loc`**
+(PROVEN 2026-07-28). For a valuation subring, non-invertibility of `x` is
+`x = 0 ∨ x⁻¹ ∉ A` (`ValuationSubring.mem_nonunits_iff_or`), and both disjuncts are
+preserved and reflected by an injective field embedding. -/
+theorem GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    a ∈ IsLocalRing.maximalIdeal (GaloisRepresentation.globalValuationSubring v) ↔
+      GaloisRepresentation.globalValuationSubringToLocal v a
+        ∈ IsLocalRing.maximalIdeal (localValuationSubring v) := by
+  rw [ValuationSubring.valuation_lt_one_iff, ← ValuationSubring.mem_nonunits_iff,
+    ValuationSubring.mem_nonunits_iff_or, ValuationSubring.valuation_lt_one_iff,
+    ← ValuationSubring.mem_nonunits_iff, ValuationSubring.mem_nonunits_iff_or,
+    GaloisRepresentation.globalValuationSubringToLocal_coe]
+  constructor
+  · rintro (h | h)
+    · exact Or.inl (by rw [h, map_zero])
+    · exact Or.inr (by rwa [← map_inv₀])
+  · rintro (h | h)
+    · exact Or.inl ((AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))).injective
+          (by rw [h, map_zero]))
+    · exact Or.inr (by rwa [← map_inv₀] at h)
+
+instance GaloisRepresentation.isLocalHom_globalValuationSubringToLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    IsLocalHom (GaloisRepresentation.globalValuationSubringToLocal v) := by
+  constructor
+  intro a hu
+  by_contra hnu
+  exact ((IsLocalRing.mem_maximalIdeal _).mp
+    ((GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff v a).mp
+      ((IsLocalRing.mem_maximalIdeal a).mpr hnu))) hu
+
+/-- **Residues in `κ(𝒪)` are detected in `κ(𝒪_loc)`** (PROVEN 2026-07-28): the
+induced map on residue fields is injective, because the maximal ideal of `𝒪` is the
+contraction of that of `𝒪_loc`. -/
+theorem GaloisRepresentation.residue_globalValuationSubring_eq_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a b : GaloisRepresentation.globalValuationSubring v) :
+    IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) a
+        = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) b ↔
+      IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v a)
+        = IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v b) := by
+  have key1 : IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) a
+        = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) b
+      ↔ a - b ∈ IsLocalRing.maximalIdeal
+        (GaloisRepresentation.globalValuationSubring v) := Ideal.Quotient.eq
+  have key2 : IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v a)
+        = IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v b)
+      ↔ GaloisRepresentation.globalValuationSubringToLocal v a
+          - GaloisRepresentation.globalValuationSubringToLocal v b
+        ∈ IsLocalRing.maximalIdeal (localValuationSubring v) := Ideal.Quotient.eq
+  rw [key1, key2, ← map_sub]
+  exact GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff v _
+
+open scoped Pointwise in
+/-- **The image of `Γ ℚ_q` lies in the decomposition group of `𝒪`** (PROVEN
+2026-07-28): `mem_decompositionSubgroup_localValuationSubring` says `Γ ℚ_q`
+stabilises `𝒪_loc`, and `Field.absoluteGaloisGroup.lift_map` says the transported
+automorphism is the same automorphism read through the embedding, so it stabilises
+the comap. -/
+theorem GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :
+    Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι ∈
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ := by
+  have key : ∀ (κ : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (x : AlgebraicClosure ℚ), x ∈ GaloisRepresentation.globalValuationSubring v →
+      Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) κ x
+        ∈ GaloisRepresentation.globalValuationSubring v := by
+    intro κ x hx
+    have hstab : κ • localValuationSubring v = localValuationSubring v :=
+      mem_decompositionSubgroup_localValuationSubring v κ
+    rw [GaloisRepresentation.mem_globalValuationSubring_iff,
+      Field.absoluteGaloisGroup.lift_map, ← hstab]
+    exact ⟨_, hx, rfl⟩
+  show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι) •
+    GaloisRepresentation.globalValuationSubring v
+      = GaloisRepresentation.globalValuationSubring v
+  apply le_antisymm
+  · rintro y ⟨x, hx, rfl⟩
+    exact key ι x hx
+  · intro x hx
+    refine ⟨_, key ι⁻¹ x hx, ?_⟩
+    show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι)
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι⁻¹) x) = x
+    rw [← AlgEquiv.mul_apply, ← map_mul, mul_inv_cancel, map_one, AlgEquiv.one_apply]
+
+/-- **The transported action on `𝒪` is the local action read through the
+embedding** (PROVEN 2026-07-28) — `Field.absoluteGaloisGroup.lift_map` again,
+packaged for the two decomposition-group actions. -/
+theorem GaloisRepresentation.globalValuationSubringToLocal_smul
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    GaloisRepresentation.globalValuationSubringToLocal v
+        ((⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+          (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) • a)
+      = (⟨ι, mem_decompositionSubgroup_localValuationSubring v ι⟩ :
+          (localValuationSubring v).decompositionSubgroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) •
+        GaloisRepresentation.globalValuationSubringToLocal v a :=
+  Subtype.ext (Field.absoluteGaloisGroup.lift_map _ _ _)
+
+/-- **The image of `localInertiaGroup q` lies in the inertia subgroup of `𝒪`**
+(PROVEN 2026-07-28): the two residue fields are compared by
+`residue_globalValuationSubring_eq_iff`, and the local statement is the
+already-proven `mem_inertiaSubgroup_localValuationSubring`. -/
+theorem GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    (hι : ι ∈ localInertiaGroup v) :
+    (⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring v).inertiaSubgroup ℚ := by
+  have hker := mem_inertiaSubgroup_localValuationSubring v ι hι
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker] at hker ⊢
+  apply RingEquiv.ext
+  intro z
+  obtain ⟨a, rfl⟩ :=
+    IsLocalRing.residue_surjective (R := GaloisRepresentation.globalValuationSubring v) z
+  show IsLocalRing.residue _ ((⟨_,
+    GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) • a)
+    = IsLocalRing.residue _ a
+  rw [GaloisRepresentation.residue_globalValuationSubring_eq_iff,
+    GaloisRepresentation.globalValuationSubringToLocal_smul]
+  exact DFunLike.congr_fun hker
+    (IsLocalRing.residue _ (GaloisRepresentation.globalValuationSubringToLocal v a))
+
 /-- **A local frame for a potentially-good model: an embedding of `K` into `ℚ̄`
 placing the prime of `R` at the pinned valuation subring, with an identification
 of its residue field with `𝔽̄_q`** (interface, opened 2026-07-27 while cutting
@@ -7809,9 +8005,84 @@ structure WeierstrassCurve.PotentiallyGoodModel.LocalFrame
         = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
             (D.resEquiv (IsLocalRing.residue D.R r))
 
-/-- **Every potentially-good model admits a local frame** (sorry leaf, opened
-2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel` below into
-three).
+/-- **The placement of `K` inside `ℚ̄` that puts the prime of `R` at the pinned
+subring** (sorry leaf, opened 2026-07-28 by cutting `nonempty_localFrame` below
+into its VALUATION-THEORETIC and its RESIDUE-FIELD halves).
+
+This is item 1 of `nonempty_localFrame`'s docstring and it is pure valuation
+theory: `R` is a discrete valuation ring with fraction field `K` whose residue
+field has characteristic `q` (`D.resEquiv`), so `R ∩ ℚ = ℤ_(q)`. Choose ANY
+`ℚ`-embedding `emb₀ : K ↪ ℚ̄` (`K/ℚ` is finite and `ℚ̄` is algebraically closed);
+extend the valuation of `R` along `emb₀` to a valuation subring `𝒪'` of `ℚ̄`
+(Chevalley), so that `emb₀⁻¹ 𝒪' = R`. Both `𝒪'` and
+`globalValuationSubring q` lie over `ℤ_(q)`, and `Γ ℚ` acts TRANSITIVELY on the
+valuation subrings of `ℚ̄` above a fixed prime of `ℚ`; pick `γ` carrying `𝒪'` to
+`globalValuationSubring q` and set `emb := γ ∘ emb₀`. Then
+`emb⁻¹ (globalValuationSubring q) = emb₀⁻¹ 𝒪' = R`.
+
+NO ELLIPTIC CURVE APPEARS: `D` is used only through `D.K`, `D.R` and
+`D.resEquiv`, and `E` only as an index.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF is the one recorded on
+`nonempty_localFrame`: a prime of `K` above `q` outside the single `Γ ℚ`-orbit.
+Equivalently, a failure of Chevalley extension or of conjugacy of the extensions
+of `v_q` to `ℚ̄`. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_emb_comap_eq
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) :
+    ∃ emb : D.K →+* AlgebraicClosure ℚ,
+      (∀ x : ℚ, emb (algebraMap ℚ D.K x) = algebraMap ℚ (AlgebraicClosure ℚ) x) ∧
+      ((GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
+        = (algebraMap D.R D.K).range :=
+  sorry
+
+/-- **The residue field of the pinned subring is an algebraic closure of `𝔽_q`,
+compatibly with `D.resEquiv`** (sorry leaf, opened 2026-07-28 by cutting
+`nonempty_localFrame` below into its VALUATION-THEORETIC and its RESIDUE-FIELD
+halves).
+
+This is item 2 of `nonempty_localFrame`'s docstring. `ℚ̄` is algebraically
+closed, so the residue field `κ(𝒪)` of any valuation subring of it is
+algebraically closed; `ℚ̄/ℚ` is algebraic, so `κ(𝒪)` is algebraic over the
+residue field of `𝒪 ∩ ℚ = ℤ_(q)`, i.e. over `𝔽_q`. Hence `κ(𝒪)` IS an algebraic
+closure of `𝔽_q` and `resIso` exists by uniqueness of algebraic closures.
+
+WHY `hcomap` IS THE ONLY HYPOTHESIS NEEDED FOR THE COMPATIBILITY, and why the
+compatibility is not an extra constraint on the choice of `resIso`: `hcomap`
+makes `r ↦ ⟨emb (algebraMap D.R D.K r), _⟩` a ring map `D.R → 𝒪` (this is
+`WeierstrassCurve.RtoO`'s construction verbatim) which is LOCAL
+(`WeierstrassCurve.isLocalHom_RtoO`), hence induces a ring map
+`κ(D.R) → κ(𝒪)`. Both sides of the required identity are therefore ring
+homomorphisms out of `κ(D.R) ≃+* ZMod q` — and **any two ring homomorphisms out
+of `ZMod q` agree** (`RingHom.ext_zmod`). So the compatibility holds for EVERY
+`resIso`; it is recorded in the conclusion only because `LocalFrame` bundles it.
+
+NO ELLIPTIC CURVE APPEARS here either.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a valuation subring of an algebraically
+closed field whose residue field is not algebraically closed, or a `D` whose
+`D.R` has residue characteristic different from `q` — the latter is excluded by
+`D.resEquiv`, which lands in `ZMod q`. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_resIso
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) (emb : D.K →+* AlgebraicClosure ℚ)
+    (hcomap : ((GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
+      = (algebraMap D.R D.K).range) :
+    ∃ resIso : IsLocalRing.ResidueField (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat) ≃+* AlgebraicClosure (ZMod q),
+      ∀ (r : D.R) (h : emb (algebraMap D.R D.K r) ∈
+        GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat),
+        resIso (IsLocalRing.residue _ ⟨emb (algebraMap D.R D.K r), h⟩)
+          = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
+              (D.resEquiv (IsLocalRing.residue D.R r)) :=
+  sorry
+
+/-- **Every potentially-good model admits a local frame** (PROVEN 2026-07-28 by
+assembly; opened 2026-07-27 by cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three).
 
 Pure algebraic number theory; no elliptic curve appears, and `E` enters only as
 an index. What has to be proven:
@@ -7828,15 +8099,71 @@ an index. What has to be proven:
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` whose `R` is
 induced by no embedding `K ↪ ℚ̄` — which would need a prime of `K` above `q`
-outside the single `Γ ℚ`-orbit, i.e. a failure of going-up plus conjugacy. -/
+outside the single `Γ ℚ`-orbit, i.e. a failure of going-up plus conjugacy.
+
+CUT 2026-07-28. The two numbered items above share no technique — the first is
+conjugacy of extensions of a valuation, the second is uniqueness of algebraic
+closures — so they are now the two separately-ownable leaves
+`exists_emb_comap_eq` and `exists_resIso` below, and this declaration is their
+assembly. Nothing else is left here: `LocalFrame` has exactly four fields and
+the two leaves supply two each. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.nonempty_localFrame
     {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
-    (D : E.PotentiallyGoodModel q) : Nonempty (D.LocalFrame hq) :=
+    (D : E.PotentiallyGoodModel q) : Nonempty (D.LocalFrame hq) := by
+  obtain ⟨emb, hcomm, hcomap⟩ := D.exists_emb_comap_eq hq
+  obtain ⟨resIso, hres⟩ := D.exists_resIso hq emb hcomap
+  exact ⟨⟨emb, hcomm, hcomap, resIso, hres⟩⟩
+
+/-- **RESIDUE DEGREE ONE, AND NOTHING ELSE: an inertia element `ι` at `q` with
+`ι⁻¹ · Frob_q` fixing `emb K` pointwise** (sorry leaf, opened 2026-07-28 by
+cutting `exists_frobeniusLift` below).
+
+THIS IS THE WHOLE ARITHMETIC CONTENT OF `exists_frobeniusLift`, and it is the
+ONLY place in that cut where `D.resEquiv` is consumed. Everything else in
+`exists_frobeniusLift` is transport along the fixed embedding `ℚ̄ ↪ ℚ̄_q`
+(`map_mem_decompositionSubgroup_globalValuationSubring`,
+`map_mem_inertiaSubgroup_globalValuationSubring`) or the defining property of
+`Field.AbsoluteGaloisGroup.adicArithFrob`, and all of that is proven above.
+
+WHY IT IS TRUE. Write `K_𝔮 ⊆ ℚ̄_q` for the closure of the image of `Fr.emb`
+under the fixed embedding — this is the completion of `K` at the prime that
+`Fr.comap_eq` identifies with the prime of `D.R`. `D.resEquiv` says the residue
+field of `D.R` is the PRIME field `𝔽_q`, so `K_𝔮/ℚ_q` has residue degree one and
+`Gal(ℚ̄_q/K_𝔮) ↠ Gal(𝔽̄_q/𝔽_q)`. Pick `g ∈ Gal(ℚ̄_q/K_𝔮)` inducing `x ↦ x^q` on
+residues and set `ι := Frob_q · g⁻¹`; then `ι` induces the identity on residues,
+hence lies in `localInertiaGroup q`, and `ι⁻¹ · Frob_q = g` fixes the image of
+`Fr.emb` pointwise by construction. Transport to `Γ ℚ` is
+`Field.absoluteGaloisGroup.lift_map` plus injectivity of `ℚ̄ ↪ ℚ̄_q`: a
+transported automorphism fixes `Fr.emb x` exactly when the original fixes its
+image.
+
+Equivalently and more structurally: `I · Gal(ℚ̄_q/K_𝔮) = Γ ℚ_q`, because
+`Γ ℚ_q / I ≅ Gal(𝔽̄_q/𝔽_q)` and the image of `Gal(ℚ̄_q/K_𝔮)` there is the whole
+group precisely when the residue degree is `1`. `Frob_q ∈ I · Gal(ℚ̄_q/K_𝔮)` is
+the statement above.
+
+NOTHING ABOUT ELLIPTIC CURVES APPEARS: `D` enters through `D.K` and
+`D.resEquiv`, and `Fr` through `Fr.emb` and `Fr.comap_eq`.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` and frame at
+which the image of `Gal(ℚ̄_q/K_𝔮)` in `Gal(𝔽̄_q/𝔽_q)` is PROPER — i.e. residue
+degree `> 1`, which is exactly what `D.resEquiv` excludes by landing in `ZMod q`
+rather than in a proper extension of it. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_inertia_frobLift_fixes_emb
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) (Fr : D.LocalFrame hq) :
+    ∃ ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ x : D.K, ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+          GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) (Fr.emb x) = Fr.emb x :=
   sorry
 
 /-- **Residue degree one produces a Frobenius lift inside the decomposition
-group of `K`** (sorry leaf, opened 2026-07-27 by cutting
-`exists_reductionFrame_of_potentiallyGoodModel` below into three).
+group of `K`** (PROVEN 2026-07-28 over `exists_inertia_frobLift_fixes_emb`;
+opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
+below into three).
 
 WHAT IT SAYS, writing `𝒪 := globalValuationSubring q` and `t` for the image of
 `ι` in `Γ ℚ`: there is an inertia element `ι` of `Γ ℚ_q` such that
@@ -7858,19 +8185,25 @@ the identity survives transport into `Γ ℚ`.
 NOTHING ABOUT ELLIPTIC CURVES APPEARS: `D` enters only through `D.K` and
 `D.resEquiv`, and `Fr` only through `Fr.emb`.
 
-THE FIRST STEP A PROVER SHOULD TAKE is the transport of the two subgroups along
-`Field.absoluteGaloisGroup.map`: the image of `Γ ℚ_q` lands in
-`𝒪.decompositionSubgroup ℚ`, which follows from
-`mem_decompositionSubgroup_localValuationSubring` and
-`Field.absoluteGaloisGroup.lift_map` because `𝒪` is a comap; and the image of
-`localInertiaGroup q` lands in `𝒪.inertiaSubgroup ℚ` by the same route through
-`mem_inertiaSubgroup_localValuationSubring`, plus the fact that the maximal
-ideal of a comap valuation subring is the comap of the maximal ideal. Both were
-attempted while this leaf was opened and both are routine; the only friction is
-that `Γ ℚ` and `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are reducibly but
-not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]` fails on the
-membership with an instance-mismatch error and the ascription has to be written
-out by hand.
+THE TRANSPORT OF THE TWO SUBGROUPS along `Field.absoluteGaloisGroup.map` — which
+the 2026-07-27 version of this docstring named as "the first step a prover should
+take" — IS NOW DONE, above: `map_mem_decompositionSubgroup_globalValuationSubring`
+and `map_mem_inertiaSubgroup_globalValuationSubring`, with the maximal ideal of a
+comap valuation subring handled by
+`mem_maximalIdeal_globalValuationSubring_iff`. The friction that note warned
+about is real — `Γ ℚ` and `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are
+reducibly but not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]`
+fails with an instance mismatch — and it is dealt with there by `show` plus
+explicit `⟨_, _⟩` ascriptions.
+
+WHAT REMAINS, and it is the whole of `exists_inertia_frobLift_fixes_emb` above:
+the existence of `ι`. Conclusion (ii) is then AUTOMATIC and costs no arithmetic
+— `ι` acts trivially on residues because it is in inertia, and `Frob_q` acts as
+`x ↦ x^q` by `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` together
+with `natCard_residue_quotient_toHeightOneSpectrum` (which is what pins the
+exponent of `IsArithFrobAt` to `q`), so `ι⁻¹ · Frob_q` acts as `x ↦ x^q`
+whatever `ι` is. That is why the cut below puts ALL of the residue-degree-one
+content in the existence statement and none of it here.
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` at which every
 `ι ∈ localInertiaGroup q` leaves `t⁻¹ Frob_q` moving `K` — which needs the
@@ -7908,8 +8241,104 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_frobeniusLift
           hq.toHeightOneSpectrumRingOfIntegersRat,
         (⟨_, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
             hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
-          IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :=
-  sorry
+          IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) := by
+  obtain ⟨ι, hι, hfix⟩ := D.exists_inertia_frobLift_fixes_emb hq Fr
+  have hdecT := GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat ι
+  have hdecFrob := GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat
+    (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+  -- `globalFrob` is the transported local Frobenius; the ring map `ℚ →+* ℚ_q` inside it need
+  -- not be SYNTACTICALLY the one this file writes, but ring maps out of `ℚ` are unique.
+  have hglob : GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+      = Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    have hf : ∀ f₁ f₂ : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat,
+        Field.absoluteGaloisGroup.map f₁ (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          = Field.absoluteGaloisGroup.map f₂ (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      intro f₁ f₂
+      rw [Subsingleton.elim f₁ f₂]
+    exact hf _ _
+  have hdecS : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+      GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ := by
+    rw [hglob]
+    exact mul_mem (inv_mem hdecT) hdecFrob
+  refine ⟨ι, hι, hdecT, hdecS,
+    GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring _ ι hι, hfix, ?_⟩
+  intro z
+  -- Rewrite the ambient decomposition-group element as a single transported one.
+  have heq : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+        GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+      = Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [hglob, map_mul, map_inv]
+  have hsub : (⟨_, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+      = ⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat
+          (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)⟩ := Subtype.ext heq
+  rw [hsub, show (IsLocalRing.residue _ z) ^ q
+      = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) (z ^ q) from (map_pow _ _ _).symm]
+  show IsLocalRing.residue _ ((⟨_,
+      GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat
+        (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)⟩ :
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) • z)
+    = IsLocalRing.residue _ (z ^ q)
+  rw [GaloisRepresentation.residue_globalValuationSubring_eq_iff,
+    GaloisRepresentation.globalValuationSubringToLocal_smul, map_pow]
+  -- Split the local element into its inertia part and its Frobenius part.
+  set y := GaloisRepresentation.globalValuationSubringToLocal
+    hq.toHeightOneSpectrumRingOfIntegersRat z
+  have hsplit : (⟨ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      mem_decompositionSubgroup_localValuationSubring _ _⟩ :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+      = (⟨ι⁻¹, mem_decompositionSubgroup_localValuationSubring _ _⟩ : _) *
+        ⟨Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat,
+          mem_decompositionSubgroup_localValuationSubring _ _⟩ := Subtype.ext rfl
+  rw [hsplit, mul_smul]
+  -- Inertia acts trivially on the residue field.
+  have hker := mem_inertiaSubgroup_localValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat ι⁻¹ (inv_mem hι)
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker] at hker
+  have hinv : ∀ w : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat,
+      IsLocalRing.residue _ ((⟨ι⁻¹, mem_decompositionSubgroup_localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat ι⁻¹⟩ :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) • w)
+      = IsLocalRing.residue _ w :=
+    fun w => DFunLike.congr_fun hker (IsLocalRing.residue _ w)
+  rw [hinv]
+  -- and the arithmetic Frobenius raises residues to the `q`-th power.
+  have hyq := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob
+    (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+    ⟨(y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)), y.2⟩
+  rw [GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq] at hyq
+  exact Ideal.Quotient.eq.mpr hyq
 
 /-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
 (sorry leaf, opened 2026-07-27 by cutting
