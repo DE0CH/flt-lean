@@ -97,7 +97,38 @@ derived from the four leaves below — all six original statements
 `isQuasiAffine_of_isAmpleSheaf_modUnit`, `nonempty_modPullback_modTensorPow`,
 `nonempty_modPullback_modUnit`).
 
-OPEN — four leaves, each strictly smaller than what it replaced:
+**Update 2026-07-28 (third pass).**  Two of those four are now PROVEN, over a
+TRIVIALIZATION CALCULUS (`§ Restriction of a trivialization` and
+`§ Well-definedness` below) and four smaller named leaves.  The headline is a
+FAITHFULNESS VERDICT that had been recorded as an open risk:
+
+> **`nonvanishingLocus_modPullback_of_isAmpleSheaf` and `exists_tensorPowSection`
+> are BOTH FAITHFUL AS STATED.  The numerical-semigroup worry is real, and it
+> does not make either statement false; it is bridged by the classical theorem
+> that an INVERTIBLE sheaf of modules is LOCALLY FREE OF RANK ONE (Stacks 01CV,
+> Hartshorne II.6.12), isolated here as the single leaf
+> `exists_trivialization_of_modTensorPow`.**
+
+The reasoning is written out at `isInvertibleSheaf_of_isAmpleSheaf`.  Two
+consequences of the verdict are worth pulling forward, because they change what
+a prover should do:
+
+* `exists_tensorPowSection`'s `V` and `hloc` turn out to be **inert** — the
+  statement `nonvanishingLocus (A^{⊗k}) (s^{⊗k}) = nonvanishingLocus A s` is
+  true with no hypothesis on `A` at all (`nonvanishingLocus_tensorPowSection`),
+  and `exists_tensorPowSection` is a one-line corollary.  The FAITHFULNESS note
+  that used to stand on it — "a version stated without `V` and `hloc` should be
+  treated as unproven-and-suspect" — was right that `hloc` is not what saves the
+  `⊆` direction, and wrong that anything is lost by dropping it: Stacks 01CV is
+  what saves it, and it needs no `V`.
+* `nonvanishingLocus_modPullback_of_isAmpleSheaf` needs **neither**
+  `[IsClosedImmersion f]` **nor** `hn` **nor** `hV`.  Basic opens pull back along
+  ANY morphism of schemes (`Scheme.preimage_basicOpen`), so the residue-field
+  argument the closed immersion was there to supply is not needed.  The three
+  hypotheses are kept (they cost the consumer nothing and removing them would
+  churn the call site) but the unused ones are underscore-prefixed.
+
+OPEN — six leaves.  Two are the original ones:
 
 * `modLocW_whiskerLeft` — SHEAFIFICATION IS MONOIDAL, in the one instance
   needed, and now stated at the level where the mathematics actually lives
@@ -108,12 +139,20 @@ OPEN — four leaves, each strictly smaller than what it replaced:
   anywhere.
 * `nonempty_modPullback_modTensor` — monoidality of `f^*` on objects.  With
   `modPullbackUnitIso` proven, this is all that
-  `nonempty_modPullback_modTensorPow` needs.
-* `exists_tensorPowSection` — the `k`-th tensor power `s^{⊗k}` of a global
-  section, with the same non-vanishing locus.
-* `nonvanishingLocus_modPullback_of_isAmpleSheaf` — EGA II 5.1.12's geometric
-  step.  **Read its FAITHFULNESS note**: the hypothesis-free version of this
-  lemma is FALSE, with an explicit counterexample.
+  `nonempty_modPullback_modTensorPow` needs, and — through
+  `nonempty_restrict_modTensor`, which is derived from it in three lines — it is
+  also the only input the whole trivialization calculus has left.
+
+Four are new, and each is strictly smaller than the leaf it came out of:
+
+* `exists_trivialization_of_modTensorPow` — **the mathematical one**: Stacks
+  01CV, the semigroup bridge.  It is the only one of the six that is not
+  bookkeeping.
+* `trivializedSection_trivializationOfLE` — pure plumbing: restricting a
+  trivialization to a smaller open restricts the trivialized section.
+* `exists_trivialization_tensorPow` — `s^{⊗k}` read through the `k`-th power of
+  a trivialization is the `k`-th power of the trivialized section.
+* `exists_trivialization_modPullback` — the same for `f^*`.
 
 ## A note on the definition of ampleness
 
@@ -560,13 +599,17 @@ noncomputable def modTensorLocIso {Z : Scheme.{u}} (L M : Z.Modules) :
   (Localization.Monoidal.μ _ (modLocW Z) (modLocEps Z) L.val M.val).symm ≪≫
     MonoidalCategory.tensorIso (modSheafifyValIsoLM L) (modSheafifyValIsoLM M)
 
-/-! ### The remaining leaves
+/-! ### The two CATEGORICAL leaves
 
 Each is strictly smaller than one of the six statements it replaced, and each
 names in its docstring what it needs.  Between them they are the residue of the
 ampleness theory that `Mathlib/AlgebraicGeometry/` does not have
 (`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY at this pin — re-run it
-before believing this sentence). -/
+before believing this sentence).
+
+The other four open leaves are further down, in the trivialization calculus that
+begins after `nonvanishingLocus_modUnit`; only one of them
+(`exists_trivialization_of_modTensorPow`) is mathematics. -/
 
 /-- **THE ASSOCIATOR** — PROVEN (2026-07-28): `(L ⊗ M) ⊗ N ≅ L ⊗ (M ⊗ N)` for
 `𝒪_Z`-modules.
@@ -603,27 +646,46 @@ presheaf-level statement (base change of modules is monoidal:
 sheafification-is-monoidal input as `nonempty_modTensor_assoc`.
 
 With `modPullbackUnitIso` PROVEN, this is the only obligation of
-`nonempty_modPullback_modTensorPow`. -/
+`nonempty_modPullback_modTensorPow` — and, since 2026-07-28, the only input of
+the trivialization calculus below as well (`nonempty_restrict_modTensor` is
+three lines over it, via `Scheme.Modules.restrictFunctorIsoPullback`).  So this
+is now the ONLY leaf in the module that anything except
+`exists_trivialization_of_modTensorPow` waits on.
+
+ROUTE AUDIT (2026-07-28; each claim below was checked against the pin, and each
+names the check that would refute it).
+
+* `Scheme.Modules.pullback f` is DEFINED as an abstract left adjoint
+  (`PresheafOfModules.pullback φ := (pushforward φ).leftAdjoint`, and the sheaf
+  version through `SheafOfModules.pullbackPushforwardAdjunction`).  So there is
+  no formula to compute with, and a hands-on construction of the comparison map
+  is not available: `grep -n "def pullback" Mathlib/Algebra/Category/ModuleCat/
+  {Sheaf,Presheaf}/*.lean`.
+* The pushforward with NO change of rings IS strong monoidal at this pin —
+  `PresheafOfModules.pushforward₀OfCommRingCat F R` carries a `.Monoidal`
+  instance with `μIso _ _ := Iso.refl _`
+  (`Presheaf/PushforwardZeroMonoidal.lean`, one declaration, added 2026).  The
+  ring-CHANGING pushforward is only lax, and the left adjoint of a lax monoidal
+  functor is oplax, which is what supplies the canonical comparison
+  `f^*(L ⊗ M) ⟶ f^*L ⊗ f^*M`.  The content of this leaf is that it is an ISO.
+* The natural route to that is: `f^*` preserves colimits (it is a left adjoint),
+  `- ⊗ -` preserves colimits in each variable, and the FREE case is already in
+  the pin — `SheafOfModules.pullbackObjFreeIso (I : Type u) : (pullback φ).obj
+  (free I) ≅ free I` and `pullbackObjUnitToUnit` (`Sheaf/PullbackFree.lean`,
+  which this module already imports).  Every sheaf of modules is locally a
+  quotient of frees (`Sheaf/Generators.lean`, `LocalGeneratorsData`).
+* A prover who wants a smaller first target: the OPEN IMMERSION case is strictly
+  easier and is what everything below actually consumes.  For an open immersion
+  `Scheme.Modules.restrictFunctor` is a `SheafOfModules.pushforward` along
+  `f.opensFunctor` with an ISOMORPHISM of ring presheaves, hence objectwise on
+  presheaves, where the tensor product is also objectwise
+  (`PresheafOfModules.Monoidal.tensorObj` sends `X` to `M₁.obj X ⊗ M₂.obj X`);
+  the only real step left is that sheafification commutes with restriction to an
+  open subsite.  It is NOT stated as a separate leaf here only because it is a
+  three-line corollary of this one, and a redundant leaf is worse than a hint. -/
 theorem nonempty_modPullback_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
     Nonempty (modPullback f (modTensor L M) ≅
       modTensor (modPullback f L) (modPullback f M)) := sorry
-
-/-- **Tensor powers of a global section** (sorry leaf): `s^{⊗k}`, with the same
-non-vanishing locus as `s`.
-
-FAITHFULNESS: the hypothesis `hloc` is carried deliberately and is not
-decoration.  The `⊇` half is formal — where `A` is trivialized and `s` is a
-unit, `A^{⊗k}` is trivialized and `s^{⊗k}` is a unit.  The `⊆` half is the
-substantive one: it must rule out a point at which `A^{⊗k}` happens to be
-invertible with `s^{⊗k}` a generator while `A` itself is not invertible.  It is
-`hloc` — which says `A` IS trivialized, with `s` a generator, at every point of
-`V` and at no other point — that has to supply this.  A version of this leaf
-stated without `V` and `hloc` should be treated as unproven-and-suspect, not as
-an obvious generalization. -/
-theorem exists_tensorPowSection {Z : Scheme.{u}} (A : Z.Modules) (s : Γ(A, ⊤)) {k : ℕ}
-    (hk : 0 < k) (V : Z.Opens) (hloc : nonvanishingLocus A s = (V : Set Z)) :
-    ∃ t : Γ(modTensorPow A k, ⊤),
-      nonvanishingLocus (modTensorPow A k) t = (V : Set Z) := sorry
 
 /-! ### The non-vanishing locus of a section of the structure sheaf
 
@@ -714,9 +776,362 @@ theorem nonvanishingLocus_modUnit (Z : Scheme.{u}) (r : Γ(Z, ⊤)) :
     exact (congrArg ((⊤ : Z.Opens) : Scheme.{u}).basicOpen
       (trivializedSection_restrictUnitIso (⊤ : Z.Opens) r)).ge h4
 
-/-- **The geometric step of EGA II 5.1.12** (sorry leaf): for a closed immersion
-`f`, the non-vanishing locus of a pulled-back section is the preimage of the
-non-vanishing locus.
+/-! ### Restriction of a trivialization to a smaller open
+
+A trivialization is a datum over an OPEN, and every comparison of two
+trivializations has to happen over their intersection.  This section builds that
+move.  Note it is stated through `modPullback` rather than directly through
+`Scheme.Modules.restrictFunctorComp`: `restrictFunctor` carries an
+`[IsOpenImmersion f]` instance argument, so transporting it along
+`Scheme.homOfLE_ι` needs a congruence over that instance, whereas
+`modPullbackCongrIso` (already proven above, off `Scheme.Modules.pullbackCongr`)
+does exactly that job with no instance juggling. -/
+
+/-- **Restriction along an open immersion IS the pullback** —
+`Scheme.Modules.restrictFunctorIsoPullback`, read on an object.  This is what
+makes the whole calculus below depend on `nonempty_modPullback_modTensor` and on
+nothing else. -/
+noncomputable def modRestrictPullbackIso {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (A : Y.Modules) : A.restrict f ≅ modPullback f A :=
+  (Scheme.Modules.restrictFunctorIsoPullback f).app A
+
+/-- **Restriction commutes with `modTensor`** (PROVEN 2026-07-28 over
+`nonempty_modPullback_modTensor`, in three lines).
+
+This — not the general pullback statement — is what the ampleness theory below
+actually consumes, and it is strictly weaker; see the ROUTE AUDIT on
+`nonempty_modPullback_modTensor`. -/
+theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) :
+    Nonempty ((modTensor L M).restrict f ≅ modTensor (L.restrict f) (M.restrict f)) := by
+  obtain ⟨e⟩ := nonempty_modPullback_modTensor f L M
+  exact ⟨modRestrictPullbackIso f _ ≪≫ e ≪≫
+    modTensorMapIso (modRestrictPullbackIso f L).symm (modRestrictPullbackIso f M).symm⟩
+
+/-- **`A|_W ≅ (A|_U)|_W` for `W ≤ U`** (PROVEN — pseudo-functoriality of
+`modPullback`, plus `Scheme.homOfLE_ι`). -/
+noncomputable def modRestrictLEIso {Z : Scheme.{u}} (A : Z.Modules) {W U : Z.Opens} (h : W ≤ U) :
+    A.restrict W.ι ≅ (A.restrict U.ι).restrict (Z.homOfLE h) :=
+  modRestrictPullbackIso W.ι A ≪≫
+    modPullbackCongrIso (Z.homOfLE_ι h).symm A ≪≫
+    (modPullbackCompIso (Z.homOfLE h) U.ι A).symm ≪≫
+    modPullbackMapIso (Z.homOfLE h) (modRestrictPullbackIso U.ι A).symm ≪≫
+    (modRestrictPullbackIso (Z.homOfLE h) (A.restrict U.ι)).symm
+
+/-- **A trivialization over `U` restricts to one over any `W ≤ U`** (PROVEN). -/
+noncomputable def trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens} (h : W ≤ U)
+    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    A.restrict W.ι ≅ modUnit (W : Scheme.{u}) :=
+  modRestrictLEIso A h ≪≫ (Scheme.Modules.restrictFunctor (Z.homOfLE h)).mapIso φ ≪≫
+    Scheme.Modules.restrictUnitIso (Z.homOfLE h)
+
+/-- **Restricting a trivialization restricts the trivialized section** (sorry
+leaf).  Pure plumbing — no mathematics — and the only reason it is not proven
+here is that `modRestrictLEIso` is routed through `modPullback`, whose component
+isomorphisms come from `Adjunction.leftAdjointUniq` and are therefore not
+definitional.
+
+ROUTE, with the parts that were actually tried on 2026-07-28 marked as such.
+The honest fix is to redefine `modRestrictLEIso` directly off
+`Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι` — restriction is a
+`SheafOfModules.pushforward` along `opensFunctor` with `restrictAppIso = Iso.refl`,
+so on sections it is literally `Γ(A, W.ι ''ᵁ ⊤) ⟶ Γ(A, U.ι ''ᵁ ⊤)` re-indexed.
+
+* **CHECKED: that definition typechecks**, and the congruence over the
+  `[IsOpenImmersion]` instance argument — which is what a bare
+  `rw [← Z.homOfLE_ι h]` fails on, with "motive is not type correct" — is
+  discharged by `congr 1` ALONE, leaving only the morphism goal:
+
+      eqToIso (show A.restrict W.ι = A.restrict (Z.homOfLE h ≫ U.ι) by
+        congr 1; exact (Z.homOfLE_ι h).symm) ≪≫
+      (Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι).app A
+
+  No `proof_irrel_heq` is needed; supplying one gives "no goals to be solved".
+* **CHECKED: the identity is still NOT `rfl`** with that definition, so the
+  remaining work is a genuine computation and not a defeq unfolding.  Do not
+  `unfold` and `simp` your way in — doing so on `restrictUnitIso` and
+  `restrictFunctorComp` together panicked the elaborator (`PANIC at
+  Lean.MetavarContext.getDecl`, an unknown-metavariable crash) rather than
+  producing a goal.
+* What is left is the naturality of `φ.hom.val` between `op ⊤` and
+  `op ((Z.homOfLE h).opensFunctor.obj ⊤)`, together with `Scheme.homOfLE_app`
+  (which rewrites `(X.homOfLE e).app W` into an honest `X.presheaf.map`).  That
+  is the same shape as `trivializedSection_of_iso` above, which is proven in
+  about twenty lines and is the model to copy. -/
+theorem trivializedSection_trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens}
+    (h : W ≤ U) (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    trivializedSection (trivializationOfLE h φ) s
+      = (Z.homOfLE h).appTop (trivializedSection φ s) := sorry
+
+/-- The membership form of `trivializedSection_trivializationOfLE`, which is how
+every consumer below uses it. -/
+lemma mem_basicOpen_trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens}
+    (h : W ≤ U) (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) {z : Z}
+    (hzW : z ∈ W) :
+    ((⟨z, hzW⟩ : (W : Scheme.{u})) ∈
+        (W : Scheme.{u}).basicOpen (trivializedSection (trivializationOfLE h φ) s)) ↔
+      ((⟨z, h hzW⟩ : (U : Scheme.{u})) ∈
+        (U : Scheme.{u}).basicOpen (trivializedSection φ s)) := by
+  rw [trivializedSection_trivializationOfLE, ← Scheme.preimage_basicOpen_top]
+  show (Z.homOfLE h).base ⟨z, hzW⟩ ∈ (U : Scheme.{u}).basicOpen (trivializedSection φ s) ↔
+    (⟨z, h hzW⟩ : (U : Scheme.{u})) ∈ (U : Scheme.{u}).basicOpen (trivializedSection φ s)
+  rw [show (Z.homOfLE h).base ⟨z, hzW⟩ = (⟨z, h hzW⟩ : (U : Scheme.{u})) from
+    Scheme.homOfLE_apply' h z hzW]
+  exact Iff.rfl
+
+/-! ### Well-definedness of the non-vanishing locus
+
+`NonvanishingAt A s z` is an `∃` over trivializations near `z`.  This is the
+lemma that says the `∃` is a `∀` once ONE trivialization is in hand — the
+general form of the `key` computation inside `nonvanishingLocus_modUnit`, and it
+needs exactly as little as that one did: two trivializations over a common open
+differ by an endomorphism of `𝒪`, which is multiplication by `β(1)`, and
+`basicOpen (a * c) ≤ basicOpen a` does the rest.  INVERTIBILITY of `β(1)` is
+never used. -/
+
+/-- **The non-vanishing locus, read through any one trivialization** (PROVEN
+2026-07-28). -/
+theorem nonvanishingAt_iff_trivializedSection {Z : Scheme.{u}} {A : Z.Modules} (s : Γ(A, ⊤))
+    {U : Z.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) {z : Z} (hz : z ∈ U) :
+    NonvanishingAt A s z ↔
+      (⟨z, hz⟩ : (U : Scheme.{u})) ∈ (U : Scheme.{u}).basicOpen (trivializedSection φ s) := by
+  constructor
+  · rintro ⟨V, hzV, ψ, hmem⟩
+    have hzW : z ∈ U ⊓ V := ⟨hz, hzV⟩
+    set φW := trivializationOfLE (inf_le_left : U ⊓ V ≤ U) φ with hφW
+    set ψW := trivializationOfLE (inf_le_right : U ⊓ V ≤ V) ψ with hψW
+    have hmemW : (⟨z, hzW⟩ : ((U ⊓ V : Z.Opens) : Scheme.{u})) ∈
+        ((U ⊓ V : Z.Opens) : Scheme.{u}).basicOpen (trivializedSection ψW s) :=
+      (mem_basicOpen_trivializationOfLE inf_le_right ψ s hzW).2 hmem
+    have hsplit : ψW = φW ≪≫ (φW.symm ≪≫ ψW) := Eq.symm (Iso.self_symm_id_assoc _ _)
+    have hval : trivializedSection ψW s
+        = trivializedSection φW s * unitEndoApply (φW.symm ≪≫ ψW) 1 := by
+      conv_lhs => rw [hsplit]
+      exact (trivializedSection_trans _ _ _).trans (unitEndoApply_eq _ _)
+    rw [hval, Scheme.basicOpen_mul] at hmemW
+    exact (mem_basicOpen_trivializationOfLE inf_le_left φ s hzW).1 hmemW.1
+  · exact fun hmem => ⟨U, hz, φ, hmem⟩
+
+/-! ### Invertibility, and the NUMERICAL-SEMIGROUP bridge
+
+This section is the FAITHFULNESS AUDIT that
+`nonvanishingLocus_modPullback_of_isAmpleSheaf` was flagged as needing.  See
+`isInvertibleSheaf_of_isAmpleSheaf` for the verdict and its proof sketch. -/
+
+/-- `𝒪_Z` is invertible.  (Recorded as a one-liner in `RelativePicard.lean`'s
+docstring for `IsInvertibleSheaf`; it has a consumer now, so it is a
+declaration.) -/
+theorem isInvertibleSheaf_modUnit (Z : Scheme.{u}) : IsInvertibleSheaf (modUnit Z) :=
+  fun _ => ⟨⊤, trivial, ⟨Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι⟩⟩
+
+/-- **A tensor product of invertible sheaves is invertible** (PROVEN over
+`nonempty_restrict_modTensor`): trivialize both over `U ⊓ V`. -/
+theorem isInvertibleSheaf_modTensor {Z : Scheme.{u}} {L M : Z.Modules}
+    (hL : IsInvertibleSheaf L) (hM : IsInvertibleSheaf M) : IsInvertibleSheaf (modTensor L M) := by
+  intro z
+  obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+  obtain ⟨V, hzV, ⟨ψ⟩⟩ := hM z
+  obtain ⟨e⟩ := nonempty_restrict_modTensor (U ⊓ V : Z.Opens).ι L M
+  exact ⟨U ⊓ V, ⟨hzU, hzV⟩, ⟨e ≪≫ modTensorMapIso (trivializationOfLE inf_le_left φ)
+    (trivializationOfLE inf_le_right ψ) ≪≫ modTensorUnitLeftIso _⟩⟩
+
+/-- **Every tensor power of an invertible sheaf is invertible** (PROVEN). -/
+theorem isInvertibleSheaf_modTensorPow {Z : Scheme.{u}} {L : Z.Modules}
+    (hL : IsInvertibleSheaf L) : ∀ n : ℕ, IsInvertibleSheaf (modTensorPow L n)
+  | 0 => isInvertibleSheaf_modUnit Z
+  | (n + 1) => isInvertibleSheaf_modTensor hL (isInvertibleSheaf_modTensorPow hL n)
+
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf) —
+Stacks 01CV, Hartshorne II.6.12.  Stated in the form the audit needs: if SOME
+positive tensor power of `A` is trivial on `U`, then `A` itself is trivial on a
+smaller neighbourhood of each point of `U`.
+
+**This is the single mathematical leaf of the module** (`nonempty_modTensor_assoc`
+and `nonempty_modPullback_modTensor` aside), and it is the whole content of the
+numerical-semigroup worry recorded against
+`nonvanishingLocus_modPullback_of_isAmpleSheaf`.
+
+WHY IT IS TRUE, and why it is not formal.  Stalks first: sheafification preserves
+stalks and `(P ⊗ Q)_y = P_y ⊗_{𝒪_y} Q_y` (filtered colimits commute with `⊗`), so
+`(A^{⊗k})|_U ≅ 𝒪_U` gives `A_y^{⊗k} ≅ 𝒪_y` for every `y ∈ U`, hence `A_y` is an
+invertible module over the LOCAL ring `𝒪_y`, hence free of rank one.  Stalkwise
+freeness is NOT enough — that is the step that fails for a general sheaf of
+modules, which is why `Z.Modules` being non-quasi-coherent makes this a theorem
+rather than an observation.  What supplies the missing finiteness is the tensor
+inverse itself: `A|_U ⊗ (A^{⊗(k-1)})|_U ≅ 𝒪_U` means that near each point
+`1 = Σ_{i≤m} s_i ⊗ t_i` for FINITELY many sections, and the standard
+`m = Σ_i ⟨t_i, m⟩ s_i` computation then shows `A` is generated by `s_1, …, s_m`
+there.  Finite type plus a free stalk gives local triviality.
+
+Do NOT weaken this to a hypothesis on the consumers instead: `IsAmpleSheaf` is
+what the consumer `exists_isAmpleSheaf_cube_of_isAlgClosed` produces, and it
+produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
+`IsInvertibleSheaf L` through `nonvanishingLocus_modPullback_of_isAmpleSheaf` and
+`isAmpleSheaf_modPullback`, and stop discarding it at the call site in
+`AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
+costs nothing mathematically.  It is not taken here because the statement as
+given is TRUE, and weakening a true statement to dodge a proof is exactly what
+the faithfulness rule forbids. -/
+theorem exists_trivialization_of_modTensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
+    {k : ℕ} (hk : 0 < k) (ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    {z : Z} (hz : z ∈ U) :
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (A.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+
+/-- **AMPLE IMPLIES INVERTIBLE** (PROVEN 2026-07-28 over
+`exists_trivialization_of_modTensorPow`) — **and this is the FAITHFULNESS VERDICT
+that `nonvanishingLocus_modPullback_of_isAmpleSheaf` was flagged as needing.**
+
+The recorded worry was: `IsAmpleSheaf L` guarantees only that at each `z` SOME
+power `L^{⊗m}` has a trivializing section, and the set of such `m` is a numerical
+SEMIGROUP, not all of `ℕ`; so it is not obvious that it says anything about the
+particular power `n` appearing in that leaf.  **The worry is real and the
+conclusion is that the leaf is nevertheless TRUE**, by the following two steps:
+
+1.  `IsAmpleSheaf L` gives, at each `z`, an `m > 0` and a trivialization of
+    `L^{⊗m}` on some `U ∋ z` (that trivialization is inside `NonvanishingAt`
+    itself — this is the step that makes ampleness, as defined here, carry local
+    triviality at all).
+2.  `exists_trivialization_of_modTensorPow` turns a trivialization of `L^{⊗m}`
+    into one of `L`.  **This is where the semigroup collapses**: once `L` itself
+    is locally trivial, every power is, and `n` is no longer special.
+
+So no hypothesis needs adding anywhere.  The counterexample recorded on
+`nonvanishingLocus_modPullback_of_isAmpleSheaf` (the skyscraper `k` at the origin
+of `Spec k[u]`) is still exactly right about why the hypothesis-free statement is
+FALSE, and it is ruled out here at step 1: no power of that skyscraper is
+locally trivial at the origin. -/
+theorem isInvertibleSheaf_of_isAmpleSheaf {Z : Scheme.{u}} {L : Z.Modules}
+    (h : IsAmpleSheaf L) : IsInvertibleSheaf L := by
+  intro z
+  obtain ⟨m, hm, s, V, hzV, -, hloc⟩ := h z
+  have hz : z ∈ nonvanishingLocus (modTensorPow L m) s := by rw [hloc]; exact hzV
+  obtain ⟨U, hzU, φ, -⟩ := hz
+  obtain ⟨W, -, hzW, hW⟩ := exists_trivialization_of_modTensorPow hm φ hzU
+  exact ⟨W, hzW, hW⟩
+
+/-! ### Tensor powers of a global section -/
+
+/-- The unit of the sheafification adjunction at the presheaf tensor product:
+this is what turns a tensor of sections into a section of `modTensor`. -/
+noncomputable def modTensorMk {Z : Scheme.{u}} (L M : Z.Modules) :
+    PresheafOfModules.Monoidal.tensorObj (R := Z.presheaf) L.val M.val ⟶ (modTensor L M).val :=
+  (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.app _
+
+/-- **`a ⊗ b` as a global section of `L ⊗ M`.**  The presheaf tensor product is
+OBJECTWISE (`PresheafOfModules.Monoidal.tensorObj` sends `X` to
+`M₁.obj X ⊗ M₂.obj X`), so `a ⊗ₜ b` is literally an element of it; the only step
+is pushing it through the sheafification unit. -/
+noncomputable def tensorSection {Z : Scheme.{u}} {L M : Z.Modules} (a : Γ(L, ⊤)) (b : Γ(M, ⊤)) :
+    Γ(modTensor L M, ⊤) :=
+  (modTensorMk L M).app (op ⊤) (a ⊗ₜ b)
+
+/-- **`s^{⊗k}`**, right-nested onto `1 ∈ Γ(𝒪_Z, ⊤)` exactly as `modTensorPow` is
+right-nested onto `modUnit`. -/
+noncomputable def tensorPowSection {Z : Scheme.{u}} {A : Z.Modules} (s : Γ(A, ⊤)) :
+    ∀ k : ℕ, Γ(modTensorPow A k, ⊤)
+  | 0 => unitOne Z
+  | (k + 1) => tensorSection s (tensorPowSection s k)
+
+/-- **`s^{⊗k}` read through the `k`-th power of a trivialization is the `k`-th
+power of the trivialized section** (sorry leaf).
+
+This is the computational half of `nonvanishingLocus_tensorPowSection`; it is
+bookkeeping, not mathematics.  ROUTE: induct on `k`, building `ψ` out of
+`nonempty_restrict_modTensor` and `modTensorUnitLeftIso` exactly as
+`isInvertibleSheaf_modTensor` does, and check the section identity against
+`tensorSection`'s definition — the presheaf tensor is objectwise, so the
+identity to verify is that the trivialization of a tensor sends `a ⊗ₜ b` to
+`a * b`, which is the definition of the left unitor composed with
+`modTensorMapIso`. -/
+theorem exists_trivialization_tensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
+    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) (k : ℕ) :
+    ∃ ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}),
+      trivializedSection ψ (tensorPowSection s k) = trivializedSection φ s ^ k := sorry
+
+/-- **Tensor powers of a section do not change the non-vanishing locus** (PROVEN
+2026-07-28).
+
+**No hypothesis on `A`** — in particular no `V`, no `hloc`, no invertibility.
+The `⊇` direction is formal; the `⊆` direction is where
+`exists_trivialization_of_modTensorPow` (Stacks 01CV) does its work, converting a
+trivialization of `A^{⊗k}` near a point into one of `A`, after which
+`Scheme.basicOpen_pow` finishes.  This is the statement that shows
+`exists_tensorPowSection`'s `hloc` was inert. -/
+theorem nonvanishingLocus_tensorPowSection {Z : Scheme.{u}} (A : Z.Modules) (s : Γ(A, ⊤))
+    {k : ℕ} (hk : 0 < k) :
+    nonvanishingLocus (modTensorPow A k) (tensorPowSection s k) = nonvanishingLocus A s := by
+  ext z
+  constructor
+  · rintro ⟨U, hzU, ψ, hmem⟩
+    obtain ⟨W, -, hzW, ⟨φ⟩⟩ := exists_trivialization_of_modTensorPow hk ψ hzU
+    obtain ⟨ψ', hψ'⟩ := exists_trivialization_tensorPow φ s k
+    have h1 : NonvanishingAt (modTensorPow A k) (tensorPowSection s k) z := ⟨U, hzU, ψ, hmem⟩
+    rw [nonvanishingAt_iff_trivializedSection _ ψ' hzW, hψ', Scheme.basicOpen_pow _ _ hk] at h1
+    exact (nonvanishingAt_iff_trivializedSection s φ hzW).2 h1
+  · rintro ⟨U, hzU, φ, hmem⟩
+    obtain ⟨ψ, hψ⟩ := exists_trivialization_tensorPow φ s k
+    refine (nonvanishingAt_iff_trivializedSection _ ψ hzU).2 ?_
+    rw [hψ, Scheme.basicOpen_pow _ _ hk]
+    exact hmem
+
+/-- **Tensor powers of a global section** (PROVEN 2026-07-28 over
+`nonvanishingLocus_tensorPowSection`): `s^{⊗k}`, with the same non-vanishing
+locus as `s`.
+
+**FAITHFULNESS — CORRECTED 2026-07-28.**  The note that used to stand here said
+that `hloc` "is carried deliberately and is not decoration", because the `⊆` half
+"must rule out a point at which `A^{⊗k}` happens to be invertible with `s^{⊗k}` a
+generator while `A` itself is not invertible", and concluded that a version
+without `V` and `hloc` "should be treated as unproven-and-suspect".
+
+The diagnosis of the hard half is exactly right; the conclusion is wrong on both
+counts.  `hloc` does **not** rule that point out — it says nothing whatever about
+points outside `V`, which is precisely where the danger is.  What rules it out is
+`exists_trivialization_of_modTensorPow` (Stacks 01CV), which needs no `V` and no
+`hloc`.  So the general statement `nonvanishingLocus (A^{⊗k}) (s^{⊗k}) =
+nonvanishingLocus A s` is TRUE with no hypothesis on `A`, and is proven above;
+this leaf is a one-line corollary of it, kept in this shape only because
+`isAmpleSheaf_modTensorPow` calls it this way.
+
+`V` and `hloc` are therefore inert, and `hloc` is consumed only as the final
+rewrite. -/
+theorem exists_tensorPowSection {Z : Scheme.{u}} (A : Z.Modules) (s : Γ(A, ⊤)) {k : ℕ}
+    (hk : 0 < k) (V : Z.Opens) (hloc : nonvanishingLocus A s = (V : Set Z)) :
+    ∃ t : Γ(modTensorPow A k, ⊤),
+      nonvanishingLocus (modTensorPow A k) t = (V : Set Z) :=
+  ⟨tensorPowSection s k, by rw [nonvanishingLocus_tensorPowSection A s hk]; exact hloc⟩
+
+/-! ### The geometric step of EGA II 5.1.12 -/
+
+/-- **The pullback of a trivialization trivializes the pullback, and the
+pulled-back section has the preimage basic open** (sorry leaf).
+
+Bookkeeping, in the membership form its one consumer uses.  ROUTE: the
+trivialization is `f^*` applied to `φ` — `modPullbackMapIso`, composed with base
+change of restriction (`(f^*A)|_{f⁻¹U} ≅ (f∣_U)^*(A|_U)`, which is
+`modPullbackCompIso` twice over `morphismRestrict_ι`) and `modPullbackUnitIso`,
+all of which are PROVEN above.  The section identity is
+`trivializedSection ψ (f^*s) = (f ∣_ U).appTop (trivializedSection φ s)` — the
+compatibility of `modPullbackSection` with the adjunction unit — and the
+membership statement then follows from `Scheme.preimage_basicOpen_top (f ∣_ U)`
+together with `morphismRestrict_base_coe`.
+
+Note the statement is for an ARBITRARY morphism `f`.  That is not an oversight:
+basic opens pull back along any morphism of schemes, so the closed-immersion
+hypothesis of the consumer plays no role here. -/
+theorem exists_trivialization_modPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
+    {U : Y.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    ∃ ψ : (modPullback f A).restrict (f ⁻¹ᵁ U).ι ≅ modUnit ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u}),
+      ∀ (x : X) (hx : x ∈ f ⁻¹ᵁ U),
+        ((⟨x, hx⟩ : ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u})) ∈
+            ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u}).basicOpen
+              (trivializedSection ψ (modPullbackSection f A s))) ↔
+          ((⟨f.base x, hx⟩ : (U : Scheme.{u})) ∈
+            (U : Scheme.{u}).basicOpen (trivializedSection φ s)) := sorry
+
+/-- **The geometric step of EGA II 5.1.12** (PROVEN 2026-07-28): for a closed
+immersion `f`, the non-vanishing locus of a pulled-back section is the preimage
+of the non-vanishing locus.
 
 **FAITHFULNESS — the version of this lemma WITHOUT `hL` is FALSE.**  Take
 `Y = Spec k[u]`, `A` the skyscraper `k` at the origin `y₀`, `X = Spec k` and
@@ -727,25 +1142,42 @@ of `y₀` (its sections form a `k`-line while `𝒪(U)` is infinite-dimensional)
 `NonvanishingAt A s y₀` is false and `nonvanishingLocus A s = ∅`.  The
 conclusion would read `{pt} = f⁻¹ ∅ = ∅`.
 
-So the `⊆` direction is not formal: it needs `modTensorPow L n` to be locally
-trivial near the points of `f.base ⁻¹' Vᶜ` at which the pullback happens to be
-trivial, and `hL : IsAmpleSheaf L` is what must supply it.  (`hL` does rule the
-counterexample out: `IsAmpleSheaf A` fails for the skyscraper, since `A^{⊗m}` is
-never invertible near `y₀`.)  Whether `IsAmpleSheaf L` supplies enough local
-triviality *at the particular power `n`* is the open point of this leaf and
-deserves an audit before a long proof effort; note `IsAmpleSheaf` only
-guarantees, at each `z`, SOME power with a trivializing section, and the set of
-such powers is a numerical semigroup, not all of `ℕ`.
+**THE NUMERICAL-SEMIGROUP RISK IS RESOLVED — VERDICT: FAITHFUL AS STATED.**  The
+open point recorded here was whether `IsAmpleSheaf L`, which guarantees only that
+SOME power of `L` is locally trivial at each point, says anything at the
+particular power `n`.  It does, and the bridge is
+`isInvertibleSheaf_of_isAmpleSheaf` above (read its docstring for the two-step
+argument): a trivialization of `L^{⊗m}` yields one of `L` by Stacks 01CV, after
+which every power is locally trivial and `n` is not special.  **No hypothesis
+needed adding, and none was added.**
 
-The `⊇` direction is formal (pull back a trivialization along `f`), and the
-mathlib half of what the consumer needs is present:
-`IsAffineOpen.preimage` gives `IsAffineOpen (f ⁻¹ᵁ V)` for an affine morphism. -/
+**THREE HYPOTHESES ARE UNUSED, and this is a finding, not an accident.**
+`[IsClosedImmersion f]`, `_hn : 0 < n` and `_hV : IsAffineOpen V` play no role.
+The closed immersion was believed to be needed for the `⊆` direction, on the
+grounds that it induces an isomorphism on residue fields; in fact basic opens
+pull back along ANY morphism of schemes (`Scheme.preimage_basicOpen`), so the
+whole argument is `Scheme.preimage_basicOpen_top` applied to `f ∣_ U`.  They are
+kept because removing them would churn the call site in
+`AbelianSchemeIsogeny.lean` for no gain, and because `isAmpleSheaf_modPullback`
+wants the instance anyway for `IsAffineOpen.preimage`. -/
 theorem nonvanishingLocus_modPullback_of_isAmpleSheaf {X Y : Scheme.{u}} (f : X ⟶ Y)
-    [IsClosedImmersion f] {L : Y.Modules} (hL : IsAmpleSheaf L) {n : ℕ} (hn : 0 < n)
-    (s : Γ(modTensorPow L n, ⊤)) (V : Y.Opens) (hV : IsAffineOpen V)
+    [IsClosedImmersion f] {L : Y.Modules} (hL : IsAmpleSheaf L) {n : ℕ} (_hn : 0 < n)
+    (s : Γ(modTensorPow L n, ⊤)) (V : Y.Opens) (_hV : IsAffineOpen V)
     (hloc : nonvanishingLocus (modTensorPow L n) s = (V : Set Y)) :
     nonvanishingLocus (modPullback f (modTensorPow L n))
-        (modPullbackSection f (modTensorPow L n) s) = f.base ⁻¹' (V : Set Y) := sorry
+        (modPullbackSection f (modTensorPow L n) s) = f.base ⁻¹' (V : Set Y) := by
+  have hinv : IsInvertibleSheaf (modTensorPow L n) :=
+    isInvertibleSheaf_modTensorPow (isInvertibleSheaf_of_isAmpleSheaf hL) n
+  rw [← hloc]
+  ext x
+  obtain ⟨U, hU, ⟨φ⟩⟩ := hinv (f.base x)
+  obtain ⟨ψ, hψ⟩ := exists_trivialization_modPullback f φ s
+  have hxU : x ∈ f ⁻¹ᵁ U := hU
+  rw [Set.mem_preimage]
+  show NonvanishingAt _ _ x ↔ NonvanishingAt _ _ (f.base x)
+  rw [nonvanishingAt_iff_trivializedSection _ ψ hxU,
+    nonvanishingAt_iff_trivializedSection s φ hU]
+  exact hψ x hxU
 
 /-! ### The six original statements, now all PROVEN -/
 
