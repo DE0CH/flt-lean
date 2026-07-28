@@ -4087,6 +4087,320 @@ theorem isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding
   · ext <;> simp [hn] <;> first | ring1 | linear_combination hmul
   · ext <;> simp [hn] <;> first | ring1 | linear_combination hmul
 
+section AdelicRigidification
+
+open scoped _root_.NumberField _root_.TensorProduct _root_.FLT _root_.Adele
+
+section Coordinates
+
+variable {F : Type*} [Field F] {D : Type*} [Ring D] [Algebra F D] {ι : Type*} [Fintype ι]
+
+/-- Every element of `A ⊗[F] D` is the sum of its coordinates against an `F`-basis of `D`.
+Used to move between an element of a base change and its coordinate vector. -/
+theorem sum_repr_tmul (A : Type*) [CommRing A] [Algebra F A] (b : Module.Basis ι F D)
+    (x : A ⊗[F] D) :
+    ∑ i, ((Algebra.TensorProduct.basis A b).repr x i) ⊗ₜ[F] b i = x := by
+  conv_rhs => rw [← (Algebra.TensorProduct.basis A b).sum_repr x]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [Algebra.TensorProduct.basis_repr_symm_apply' b _ i]
+
+/-- Reading a coordinate off a sum of pure tensors along an `F`-basis of `D`; the converse
+direction of `sum_repr_tmul`. -/
+theorem repr_sum_tmul (A : Type*) [CommRing A] [Algebra F A] (b : Module.Basis ι F D)
+    (c : ι → A) (j : ι) :
+    (Algebra.TensorProduct.basis A b).repr (∑ i, c i ⊗ₜ[F] b i) j = c j := by
+  have h : ∀ i, c i ⊗ₜ[F] b i = c i • (Algebra.TensorProduct.basis A b) i := fun i ↦ by
+    rw [Algebra.TensorProduct.basis_repr_symm_apply' b _ i]
+  classical
+  simp only [h, map_sum, map_smul, Module.Basis.repr_self, Finsupp.smul_single, smul_eq_mul,
+    mul_one, Finsupp.coe_finsetSum, Finset.sum_apply]
+  simp [Finsupp.single_apply, Finset.sum_ite_eq']
+
+end Coordinates
+
+section Adeles
+
+variable (F : Type*) [Field F] [NumberField F]
+
+@[simp] lemma adele_zero_apply (w : HeightOneSpectrum (𝓞 F)) : (0 : 𝔸ᶠ[F]) w = 0 := rfl
+
+/-- A global scalar is integral at all but finitely many finite places: this is exactly the
+defining property of the image of `F` in the finite adeles. -/
+theorem eventually_algebraMap_mem_adicCompletionIntegers (x : F) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+      (algebraMap F (w.adicCompletion F) x) ∈ w.adicCompletionIntegers F :=
+  (algebraMap F 𝔸ᶠ[F] x).2
+
+end Adeles
+
+variable (F : Type*) [Field F] [NumberField F] (D : Type*) [Ring D] [Algebra F D]
+
+/-- From an `𝔸ᶠ[F]`-algebra isomorphism `𝔸ᶠ[F] ⊗[F] D ≃ M₂(𝔸ᶠ[F])` we get a rigidification:
+the inclusion is the isomorphism precomposed with `d ↦ 1 ⊗ d`, and the bijectivity condition
+is the bijectivity of the isomorphism itself, because `Algebra.TensorProduct.lift` of
+`(algebraMap, incl)` recovers it. -/
+theorem nonempty_withRigidification_of_nonempty_algEquiv
+    (h : Nonempty (𝔸ᶠ[F] ⊗[F] D ≃ₐ[𝔸ᶠ[F]] M₂(𝔸ᶠ[F]))) :
+    Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
+  obtain ⟨e⟩ := h
+  refine ⟨{ incl := (e.toAlgHom.restrictScalars F).comp Algebra.TensorProduct.includeRight
+            cond := ?_ }⟩
+  have hlift : (Algebra.TensorProduct.lift (Algebra.ofId 𝔸ᶠ[F] M₂(𝔸ᶠ[F]))
+      ((e.toAlgHom.restrictScalars F).comp (Algebra.TensorProduct.includeRight))
+      fun _ _ ↦ Algebra.commute_algebraMap_left ..) = e.toAlgHom := by
+    apply Algebra.TensorProduct.ext
+    · ext
+    · ext d
+      simp
+  rw [hlift]
+  exact e.bijective
+
+/-- Localisation at `w` of the adelic base change `𝔸ᶠ[F] ⊗[F] D`, as an `F`-linear map. -/
+noncomputable def adelicLoc (w : HeightOneSpectrum (𝓞 F)) :
+    𝔸ᶠ[F] ⊗[F] D →ₗ[F] (w.adicCompletion F) ⊗[F] D :=
+  LinearMap.rTensor D
+    (IsDedekindDomain.FiniteAdeleRing.evalAlgebraMap (𝓞 F) F w).toLinearMap
+
+@[simp] lemma adelicLoc_tmul (w : HeightOneSpectrum (𝓞 F)) (a : 𝔸ᶠ[F]) (d : D) :
+    adelicLoc F D w (a ⊗ₜ[F] d) = (a w) ⊗ₜ[F] d := rfl
+
+variable {ι : Type*} [Fintype ι]
+
+/-- A family `e` of local splittings is **almost-everywhere integral** relative to the
+`F`-basis `b` of `D` when, for all but finitely many finite places `w`, `e w` carries the
+`𝒪_w`-lattice spanned by the `1 ⊗ b i` inside `F_w ⊗[F] D` ONTO `M₂(𝒪_w)`.
+
+The `↔` is exactly a `Set.BijOn` statement: `e w` is already a bijection and `x` is uniquely
+`∑ c i ⊗ b i`, so the two directions say that the lattice maps INTO `M₂(𝒪_w)` and that it maps
+ONTO it. This is the property that `hsplit` alone does NOT supply — an arbitrary local
+splitting is uncontrolled at the integral level — and supplying it is the whole content of
+`exists_finset_ae_integral_split_of_forall_split`. -/
+def IsAEIntegralSplitting (b : Module.Basis ι F D)
+    (e : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+      M₂(w.adicCompletion F)) : Prop :=
+  ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite, ∀ c : ι → w.adicCompletion F,
+    ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+      ∀ p q, (e w (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F)
+
+variable (b : Module.Basis ι F D)
+  (e : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+    M₂(w.adicCompletion F))
+
+/-- For a FIXED `d : D`, the local images `e w (1 ⊗ d)` are integral matrices for all but
+finitely many `w`. The coordinates of `d` are global scalars, hence integral almost
+everywhere; there are finitely many of them; so `1 ⊗ d` lies in the lattice almost
+everywhere, and a.e.-integrality of the splitting carries it into `M₂(𝒪_w)`. -/
+theorem eventually_entries_mem (hae : IsAEIntegralSplitting F D b e) (d : D) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+      ∀ p q, (e w ((1 : w.adicCompletion F) ⊗ₜ[F] d)) p q ∈ w.adicCompletionIntegers F := by
+  have hc : ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+      ∀ i, (algebraMap F (w.adicCompletion F) (b.repr d i)) ∈ w.adicCompletionIntegers F :=
+    Filter.eventually_all.2 fun i ↦
+      eventually_algebraMap_mem_adicCompletionIntegers F (b.repr d i)
+  filter_upwards [hae, hc] with w hw hcw
+  have hsum : (∑ i, (algebraMap F (w.adicCompletion F) (b.repr d i)) ⊗ₜ[F] b i)
+      = (1 : w.adicCompletion F) ⊗ₜ[F] d := by
+    conv_rhs => rw [← sum_repr_tmul (w.adicCompletion F) b ((1 : w.adicCompletion F) ⊗ₜ[F] d)]
+    exact Finset.sum_congr rfl fun i _ ↦ by simp
+  rw [← hsum]
+  exact (hw _).1 hcw
+
+/-- The `F`-algebra map `D → M₂(𝔸ᶠ[F])` assembled from an a.e.-integral family of local
+splittings: the `(p,q)` entry of `incl d` is the adele `w ↦ (e w (1 ⊗ d)) p q`, which IS an
+adele by `eventually_entries_mem`. -/
+noncomputable def adelicIncl (hae : IsAEIntegralSplitting F D b e) : D →ₐ[F] M₂(𝔸ᶠ[F]) where
+  toFun d := Matrix.of fun p q ↦ IsDedekindDomain.FiniteAdeleRing.mk
+    (fun w ↦ (e w ((1 : w.adicCompletion F) ⊗ₜ[F] d)) p q)
+    (by filter_upwards [eventually_entries_mem F D b e hae d] with w hw using hw p q)
+  map_one' := by
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    show (e w ((1 : w.adicCompletion F) ⊗ₜ[F] (1 : D))) p q = _
+    rw [← Algebra.TensorProduct.one_def, map_one]
+    by_cases h : p = q
+    · subst h; simp
+    · simp [Matrix.one_apply_ne h]
+  map_mul' d d' := by
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    show (e w ((1 : w.adicCompletion F) ⊗ₜ[F] (d * d'))) p q = _
+    rw [show ((1 : w.adicCompletion F) ⊗ₜ[F] (d * d'))
+        = ((1 : w.adicCompletion F) ⊗ₜ[F] d) * ((1 : w.adicCompletion F) ⊗ₜ[F] d') from by
+      rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul], map_mul]
+    simp [Matrix.mul_apply]
+  map_zero' := by
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    show (e w ((1 : w.adicCompletion F) ⊗ₜ[F] (0 : D))) p q = _
+    simp
+  map_add' d d' := by
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    show (e w ((1 : w.adicCompletion F) ⊗ₜ[F] (d + d'))) p q = _
+    rw [TensorProduct.tmul_add, map_add]
+    simp
+  commutes' x := by
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    show (e w ((1 : w.adicCompletion F) ⊗ₜ[F] (algebraMap F D x))) p q = _
+    have h1 : ((1 : w.adicCompletion F) ⊗ₜ[F] (algebraMap F D x))
+        = algebraMap F ((w.adicCompletion F) ⊗[F] D) x :=
+      (Algebra.TensorProduct.includeRight (R := F) (A := w.adicCompletion F) (B := D)).commutes x
+    have h2 : (e w) (algebraMap F ((w.adicCompletion F) ⊗[F] D) x)
+        = algebraMap F M₂(w.adicCompletion F) x :=
+      ((e w).toAlgHom.restrictScalars F).commutes x
+    rw [h1, h2]
+    by_cases h : p = q
+    · subst h
+      simp [Matrix.algebraMap_matrix_apply]
+      rfl
+    · simp [Matrix.algebraMap_matrix_apply, h]
+
+@[simp] lemma adelicIncl_apply (hae : IsAEIntegralSplitting F D b e) (d : D)
+    (p q : Fin 2) (w : HeightOneSpectrum (𝓞 F)) :
+    (adelicIncl F D b e hae d p q) w = (e w ((1 : w.adicCompletion F) ⊗ₜ[F] d)) p q := rfl
+
+/-- The `𝔸ᶠ[F]`-algebra map `𝔸ᶠ[F] ⊗[F] D → M₂(𝔸ᶠ[F])` determined by `adelicIncl`; this is
+the map whose bijectivity a rigidification asserts. -/
+noncomputable def adelicPsi (hae : IsAEIntegralSplitting F D b e) :
+    𝔸ᶠ[F] ⊗[F] D →ₐ[𝔸ᶠ[F]] M₂(𝔸ᶠ[F]) :=
+  Algebra.TensorProduct.lift (Algebra.ofId 𝔸ᶠ[F] M₂(𝔸ᶠ[F])) (adelicIncl F D b e hae)
+    fun _ _ ↦ Algebra.commute_algebraMap_left ..
+
+/-- The local description of `adelicPsi`: at the place `w` its `(p,q)` entry is the `(p,q)`
+entry of the local splitting applied to the localisation. This is the identity that turns
+every global question about `adelicPsi` into a place-by-place question. -/
+theorem adelicPsi_apply (hae : IsAEIntegralSplitting F D b e) (x : 𝔸ᶠ[F] ⊗[F] D)
+    (p q : Fin 2) (w : HeightOneSpectrum (𝓞 F)) :
+    (adelicPsi F D b e hae x p q) w = (e w (adelicLoc F D w x)) p q := by
+  induction x with
+  | zero => simp [adelicPsi]
+  | tmul a d =>
+      show (((Algebra.ofId 𝔸ᶠ[F] M₂(𝔸ᶠ[F])) a * adelicIncl F D b e hae d) p q) w = _
+      rw [adelicLoc_tmul, show ((a w) ⊗ₜ[F] d) = (a w) • ((1 : w.adicCompletion F) ⊗ₜ[F] d) from by
+        rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one], map_smul]
+      simp [Algebra.ofId_apply, Algebra.algebraMap_eq_smul_one, Matrix.smul_apply,
+        Matrix.mul_apply, Matrix.one_apply, apply_ite, adelicIncl]
+  | add x y hx hy => simp [map_add, Matrix.add_apply, hx, hy]
+
+/-- `adelicPsi` is BIJECTIVE.
+
+Injectivity: if `adelicPsi x = 0` then every local component `e w (adelicLoc w x)` vanishes,
+hence so does `adelicLoc w x`, hence every adelic coordinate of `x` vanishes at every place.
+This uses no integrality at all.
+
+Surjectivity is where the a.e.-integrality is spent. Given a matrix `m` over `𝔸ᶠ[F]`, the
+local preimages `y w := (e w).symm (m at w)` are defined for every `w`; their coordinate
+vectors `c w` are integral for almost every `w` — because `m`'s four entries are adeles, so
+`m at w` is an integral matrix almost everywhere, and a.e.-integrality of the splitting then
+puts `y w` in the lattice. Hence each coordinate assembles into an adele, and the resulting
+element of `𝔸ᶠ[F] ⊗[F] D` is a preimage. -/
+theorem adelicPsi_bijective (hae : IsAEIntegralSplitting F D b e) :
+    Function.Bijective (adelicPsi F D b e hae) := by
+  classical
+  constructor
+  · rw [injective_iff_map_eq_zero]
+    intro x hx
+    set a : ι → 𝔸ᶠ[F] := fun i ↦ (Algebra.TensorProduct.basis 𝔸ᶠ[F] b).repr x i with ha
+    have hloc : ∀ w : HeightOneSpectrum (𝓞 F),
+        adelicLoc F D w x = ∑ i, (a i w) ⊗ₜ[F] b i := by
+      intro w
+      conv_lhs => rw [← sum_repr_tmul 𝔸ᶠ[F] b x]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun i _ ↦ rfl
+    have hz : ∀ w : HeightOneSpectrum (𝓞 F), adelicLoc F D w x = 0 := by
+      intro w
+      refine (e w).injective ?_
+      rw [map_zero]
+      refine Matrix.ext fun p q ↦ ?_
+      have h := adelicPsi_apply F D b e hae x p q w
+      rw [hx] at h
+      simpa using h.symm
+    have hai : ∀ i, a i = 0 := by
+      intro i
+      refine IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+      have h0 : (∑ j, (a j w) ⊗ₜ[F] b j : (w.adicCompletion F) ⊗[F] D) = 0 := by
+        rw [← hloc w]; exact hz w
+      have h := repr_sum_tmul (w.adicCompletion F) b (fun j ↦ a j w) i
+      rw [h0] at h
+      simpa using h.symm
+    rw [← sum_repr_tmul 𝔸ᶠ[F] b x]
+    simp [← ha, hai]
+  · intro m
+    set y : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D :=
+      fun w ↦ (e w).symm (Matrix.of fun p q ↦ (m p q) w) with hy
+    set c : ∀ w : HeightOneSpectrum (𝓞 F), ι → w.adicCompletion F :=
+      fun w i ↦ (Algebra.TensorProduct.basis (w.adicCompletion F) b).repr (y w) i with hc
+    have hsum : ∀ w : HeightOneSpectrum (𝓞 F), ∑ i, (c w i) ⊗ₜ[F] b i = y w := fun w ↦
+      sum_repr_tmul (w.adicCompletion F) b (y w)
+    have hey : ∀ w : HeightOneSpectrum (𝓞 F), e w (y w) = Matrix.of fun p q ↦ (m p q) w :=
+      fun w ↦ (e w).apply_symm_apply _
+    have hm : ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+        ∀ p q, (m p q) w ∈ w.adicCompletionIntegers F :=
+      Filter.eventually_all.2 fun p ↦ Filter.eventually_all.2 fun q ↦ (m p q).2
+    have hcint : ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+        ∀ i, c w i ∈ w.adicCompletionIntegers F := by
+      filter_upwards [hae, hm] with w hw hmw
+      refine (hw (c w)).2 fun p q ↦ ?_
+      rw [hsum w, hey w]
+      exact hmw p q
+    have hcint' : ∀ i, ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+        c w i ∈ w.adicCompletionIntegers F := fun i ↦ hcint.mono fun w hw ↦ hw i
+    refine ⟨∑ i, (IsDedekindDomain.FiniteAdeleRing.mk (fun w ↦ c w i) (hcint' i)) ⊗ₜ[F] b i, ?_⟩
+    refine Matrix.ext fun p q ↦ IsDedekindDomain.FiniteAdeleRing.ext (K := F) fun w ↦ ?_
+    rw [adelicPsi_apply]
+    have hlocw : adelicLoc F D w
+        (∑ i, (IsDedekindDomain.FiniteAdeleRing.mk (fun w ↦ c w i) (hcint' i)) ⊗ₜ[F] b i)
+        = y w := by
+      rw [map_sum, ← hsum w]
+      exact Finset.sum_congr rfl fun i _ ↦ rfl
+    rw [hlocw, hey w]
+    rfl
+
+/-- **STEP 1a-vi(a) — THE ASSEMBLY HALF of the rigidification leaf** (PROVEN 2026-07-28).
+
+Given an `F`-basis `b` of `D` and a family of local splittings that is a.e. integral relative
+to `b`, the algebra `D` admits a rigidification. There is NO arithmetic here: it is the
+construction of `incl` place by place plus the two coordinate computations of
+`adelicPsi_bijective`. Notably it needs neither a maximal order nor the restricted-product
+decomposition of a base change — the `∀ᶠ` bookkeeping is done directly in coordinates. -/
+theorem nonempty_withRigidification_of_forall_split_of_ae_integral
+    (hae : IsAEIntegralSplitting F D b e) :
+    Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) :=
+  nonempty_withRigidification_of_nonempty_algEquiv F D
+    ⟨AlgEquiv.ofBijective (adelicPsi F D b e hae) (adelicPsi_bijective F D b e hae)⟩
+
+/-- **STEP 1a-vi(b) — THE ARITHMETIC HALF of the rigidification leaf** (sorry leaf; CUT
+2026-07-28). From bare local splittings, produce a family that is a.e. integral relative to a
+GIVEN `F`-basis `b` of `D`.
+
+This is the only genuinely open mathematics in the rigidification leaf, and it is where the
+finiteness of the discriminant is spent. `hsplit` supplies, for each `w`, SOME isomorphism
+`F_w ⊗ D ≃ M₂(F_w)` with no control whatsoever at the integral level; what is needed is a
+family carrying the `𝒪_w`-lattice `Λ_w` spanned by `1 ⊗ b i` ONTO `M₂(𝒪_w)` for almost all
+`w`. The classical argument: `Λ`, the `𝓞_F`-span of `b`, is a full lattice in `D`, and its
+multiplication has structure constants in `F`, hence integral at almost every `w`; so `Λ_w`
+is an `𝒪_w`-ORDER for almost every `w`, and it is MAXIMAL at almost every `w` because its
+reduced discriminant is a nonzero element of `F`, hence a unit at almost every `w`. All
+maximal orders of `M₂(F_w)` are conjugate to `M₂(𝒪_w)`, so composing the given `e w` with
+that conjugation gives the required family; at the finitely many remaining `w` take the
+splitting handed over by `hsplit` unchanged.
+
+CHOICE OF BASIS IS NOT A CONSTRAINT. The statement quantifies over an arbitrary basis `b`,
+which is legitimate because two lattices `Λ, Λ'` spanned by two bases of `D` satisfy
+`Λ_w = Λ'_w` for almost every `w` — the change-of-basis matrix and its inverse have entries
+in `F`, hence lie in `GL_n(𝒪_w)` almost everywhere. So a.e.-integrality is a property of the
+family alone, not of the basis.
+
+MISSING MACHINERY (each item checked absent from mathlib, from this project, and from
+`~/cs/FLT` on 2026-07-28): reduced discriminant of an order in a quaternion algebra;
+maximality of an order at a place where the discriminant is a unit; conjugacy of maximal
+orders in `M₂(F_w)`. `IsMaximalOrder` exists nowhere, so this needs a definition first. -/
+theorem exists_finset_ae_integral_split_of_forall_split (b : Module.Basis ι F D)
+    (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
+      Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+        M₂(w.adicCompletion F))) :
+    ∃ e : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+      M₂(w.adicCompletion F), IsAEIntegralSplitting F D b e :=
+  sorry
+
+end AdelicRigidification
+
 /-- **STEP 1a-vi — ADELIC PATCHING: local splittings at every finite place
 assemble into a RIGIDIFICATION** (sorry leaf; CUT 2026-07-27; the one leaf of
 the six besides STEP 1a-i that is not elementary).
@@ -4180,18 +4494,38 @@ product needs a family that carries `Λ ⊗ 𝒪_w` INTO `M₂(𝒪_w)` for ALMO
 That is the standard "a maximal order is split at almost every place" statement, and
 it is where the finiteness of the discriminant is spent.
 
-RECOMMENDED CUT for a successor (two sub-leaves, the second of which is the only
-open mathematics):
+## CUT TAKEN 2026-07-28 — THIS LEAF IS NOW A PROVEN ASSEMBLY over ONE open leaf
 
-* `nonempty_withRigidification_of_forall_split_of_ae_integral` — this statement with
-  `hsplit` STRENGTHENED to "there is a finite set `S` of finite places and a family of
-  splittings which, for `w ∉ S`, restricts to a bijection `Λ ⊗ 𝒪_w ≃ M₂(𝒪_w)`".
-  Pure assembly over the four declarations named above; no arithmetic.
-* `exists_finset_ae_integral_split_of_forall_split` — the arithmetic: from bare local
-  splittings, produce such a finite `S` and family.
+The recommended cut above was taken, and the assembly half is PROVEN, in the section
+`AdelicRigidification` immediately above:
 
-Do NOT dispatch a prover at the present statement as an atom; it is two leaves, and
-one of them is bookkeeping. -/
+* `nonempty_withRigidification_of_forall_split_of_ae_integral` — **PROVEN**. The
+  a.e.-integrality hypothesis is packaged as `IsAEIntegralSplitting F D b e`, a `∀ᶠ w`
+  statement in the COORDINATES against a chosen `F`-basis `b` of `D`.
+* `exists_finset_ae_integral_split_of_forall_split` — **the single remaining sorry**, and
+  it is exactly the arithmetic fact identified above.
+
+TWO CORRECTIONS to the route audit above, both found while taking the cut, and both
+SIMPLIFICATIONS. Neither `RestrictedProduct.lTensorEquiv` nor
+`FiniteAdeleRing.baseChangeLinearEquiv` is needed at all:
+
+1. *The restricted-product decomposition of the base change is not needed.* Fixing an
+   `F`-basis `b` of `D` makes `𝔸ᶠ ⊗_F D` free of rank `dim D` over `𝔸ᶠ` with basis
+   `1 ⊗ b i` (`Algebra.TensorProduct.basis`), and `M₂(𝔸ᶠ)` is four adeles. Both sides are
+   then handled by their coordinates and the a.e. conditions are ordinary `Filter.cofinite`
+   bookkeeping — `Filter.eventually_all` over a `Fintype` is the only tool used. So the
+   restricted-product type never appears, and neither does the flatness/finite-presentation
+   hypothesis that `lTensorEquiv` asks for.
+2. *An ORDER is not needed either, only a LATTICE — and only inside the arithmetic half.*
+   Multiplicative closure of the `𝓞_F`-span of `b` is used nowhere in the assembly; the
+   assembly never multiplies two lattice elements. It reappears only inside
+   `exists_finset_ae_integral_split_of_forall_split`, where "the lattice is an order at
+   almost every place" is one step of the classical maximal-order argument.
+
+What the assembly actually consists of: `adelicIncl` (build `incl` place by place; well
+defined because a fixed `d` has finitely many global coordinates, each integral almost
+everywhere) and `adelicPsi_bijective` (injectivity is coordinate-wise and uses NO
+integrality; surjectivity is where a.e.-integrality is spent). -/
 theorem nonempty_withRigidification_of_forall_split
     (F : Type*) [Field F] [NumberField F] (D : Type*) [Ring D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
@@ -4199,7 +4533,9 @@ theorem nonempty_withRigidification_of_forall_split
       Nonempty (_root_.TensorProduct F (w.adicCompletion F) D ≃ₐ[w.adicCompletion F]
         Matrix (Fin 2) (Fin 2) (w.adicCompletion F))) :
     Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
-  sorry
+  obtain ⟨e, hae⟩ :=
+    exists_finset_ae_integral_split_of_forall_split F D (Module.finBasis F D) hsplit
+  exact nonempty_withRigidification_of_forall_split_of_ae_integral F D _ e hae
 
 /-- **STEP 1a of the Carayol node — ALBERT–BRAUER–HASSE–NOETHER: a totally
 real field of EVEN degree carries a totally definite quaternion algebra that
