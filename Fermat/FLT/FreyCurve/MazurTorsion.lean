@@ -38583,9 +38583,248 @@ theorem card_y0Le_of_exists_coarseModuli {N k : ℕ}
   calc t.card = (t.image e).card := (Finset.card_image_of_injective t e.injective).symm
     _ ≤ k := hb _
 
+/-! #### Cutting `#X_0(37)(ℚ) ≤ 4` into the MODEL and the ARITHMETIC
+
+(2026-07-28, flt-lean-42.)  `exists_x0Compactification_thirtySeven_cardLe`
+was an atom whose own docstring prescribed the cut, in the paragraph
+headed "What proving this needs": *"(i) an injection of `X_0(37)(ℚ)` into
+the points of `S`, (ii) the degree-`2` map to `C` with the fibre analysis,
+(iii) `#C(ℚ) = 3` from `rank 37b(ℚ) = 0`.  Only (iii) is deep."*  That is
+exactly what the four declarations below do, and the atom is now PROVEN
+over (i) and (iii); **(ii) is PROVEN here**, and it turns out to be three
+lines of `linear_combination` once the quotient map is written in lowest
+terms.
+
+**The quotient map simplifies, and that is what makes (ii) mechanical.**
+The reconnaissance records `V = y((x−1)³ − 1)/((x−1)³(u − 1))` with
+`u = x²/(x−1)`.  Since `(x−1)³ − 1 = (x−2)(x² − x + 1)` and
+`(x−1)³(u−1) = (x−1)²(x² − x + 1)`, the cubic factor cancels and
+
+    V = y(x − 2)/(x − 1)² ,
+
+so the whole of (ii) is the polynomial identity
+
+    f(x)·(x − 2)² = x⁸ + 4x⁶(x−1) − 44x⁴(x−1)² + 52x²(x−1)³ − 16(x−1)⁴ ,
+
+`f` the sextic — re-verified in PARI/GP 2.17.4 on 2026-07-28 as the ZERO
+polynomial, and proved here by `linear_combination (x − 2)^2 * h`.  Note
+the cancellation also removes the side condition `u ≠ 1` that the original
+form needs (`u = 1` is `x² − x + 1 = 0`, which has no rational root — true,
+but now unnecessary).
+
+**Why the split is not a relabelling.**  The atom is recovered from the two
+leaves and nothing else, so each of them is implied by it; what the split
+buys is that the two are of completely different KINDS and can be dispatched
+at different skills:
+
+* `exists_planeModel_x0ThirtySeven` is MODULI geometry — an explicit model
+  of `X_0(37)` tied to the coarse space, with no arithmetic in it at all.
+  It is the exact analogue of `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo`
+  one level down, and note that level `32`'s copy was discharged from a
+  cardinality bound obtained elsewhere; **that route is NOT available here**,
+  because here the cardinality bound is what is being proved.
+* `rational_point_quartic_thirtySevenB` is a self-contained DIOPHANTINE
+  statement about `ℚ`, mentioning no scheme, no moduli and no modular curve:
+  the only affine rational point of `V² = u⁴ + 4u³ − 44u² + 52u − 16` is
+  `(4, 0)`.  It is `rank 37b(ℚ) = 0` in elementary clothing, and it is the
+  single deep input the audit above names.
+
+**RECONNAISSANCE for the arithmetic leaf** (PARI/GP 2.17.4, 2026-07-28,
+untrusted searcher — statement check only):
+`ellfromeqn(V² − (u⁴+4u³−44u²+52u−16))` is `[0, −44, 0, 272, −368]`, whose
+minimal model is `[0, 1, 1, −23, −50]` — conductor `37`, i.e. `37b` —
+with `ellrank = [0, 0, 0, []]` and `elltors = ℤ/3`.  So `#C(ℚ) = 3`
+exactly, and the three points are the two at `u = ∞` (leading coefficient
+`1` is a square) together with `(4, 0)`; the affine part is the single
+point `(4, 0)`.  An exhaustive search of `u = a/b` with `|a|, b ≤ 60`
+returns only `u = 4`, and the matching search on the sextic returns only
+`x = 1` — consistent with the four points `A, B, C, D` of the
+reconnaissance above.
+
+**The checks that would refute each leaf.**  For the arithmetic one: any
+`ellrank` call returning a positive rank for `[0, 1, 1, −23, −50]`, or a
+rational `u ≠ 4` with `u⁴ + 4u³ − 44u² + 52u − 16` a square.  For the
+model one: a fifth rational point on `S`, or a proof that `X_0(37)` is not
+the smooth model of `S`. -/
+
+/-- **`148` is not a perfect square** (PROVEN).
+
+Level `37`'s one numerical obstruction: the third fibre of `X_0(37) → C`
+sits over `x = 2`, where `y² = f(2) = 148 = 4·37`, and it is irrational
+precisely because `37` is not a square.  Stated over `ℕ` so that
+`Rat.isSquare_natCast_iff` carries it to `ℚ` in the lemma below.
+
+A local copy is needed rather than the file's own
+`not_isSquare_three` / `not_isSquare_twentyone` / `sq_ne_of_not_isSquare`
+block, which is declared some `12500` lines BELOW this point and is
+therefore invisible here — the recurring declaration-order constraint of
+this file. -/
+theorem not_isSquare_oneFortyEight : ¬ IsSquare (148 : ℕ) := by
+  rintro ⟨k, hk⟩
+  have h1 : k ≤ 148 := by nlinarith
+  interval_cases k <;> omega
+
+/-- **No rational number squares to `148`** (PROVEN over
+`not_isSquare_oneFortyEight`, through `Rat.isSquare_natCast_iff`, so the
+argument stays inside `ℚ` and never mentions `ℝ`). -/
+theorem sq_ne_oneFortyEight (r : ℚ) : r ^ 2 ≠ 148 := fun h =>
+  not_isSquare_oneFortyEight
+    (Rat.isSquare_natCast_iff.mp
+      ⟨r, by rw [show ((148 : ℕ) : ℚ) = (148 : ℚ) by norm_num, ← h]; ring⟩)
+
+/-- **The affine rational points of `C : V² = u⁴ + 4u³ − 44u² + 52u − 16`
+number exactly one, namely `(4, 0)`** (SORRY LEAF, introduced 2026-07-28
+by flt-lean-42 as the ARITHMETIC half of
+`exists_x0Compactification_thirtySeven_cardLe`).
+
+**This is `rank 37b(ℚ) = 0` in elementary clothing**, and it is the single
+deep input of the whole of level `37` — the "only (iii) is deep" of the
+prescription quoted in the section docstring above.  Nothing here mentions
+a scheme, a moduli problem or a modular curve: it is a Diophantine
+statement about `ℚ`, of exactly the shape
+`QuarticDescent.rational_point_x0ThirtyTwo` has at level `32`, and it can
+be attacked with descent machinery rather than with moduli machinery.
+
+TRUE, and sharp.  `C` is the quotient of the genus-`2` model `S` of
+`X_0(37)` by `σ = ι ∘ w₃₇` (see the reconnaissance on
+`card_y0Le_thirtySeven`), and it is the elliptic curve `37b`:
+`ellfromeqn` gives `[0, −44, 0, 272, −368]`, minimal model
+`[0, 1, 1, −23, −50]`, conductor `37`, `ellrank = 0`, torsion `ℤ/3`.  So
+`#C(ℚ) = 3`, and two of those three points are the points at infinity of
+the quartic model — the leading coefficient `1` being a square — leaving
+exactly one affine point.  It is `(4, 0)`: `4⁴ + 4·4³ − 44·4² + 52·4 − 16
+= 256 + 256 − 704 + 208 − 16 = 0`.
+
+**Why the conclusion is `u = 4 ∧ V = 0` and not merely `u = 4`.**  Both
+halves are used: the consumer needs `u = 4` to pin `x = 2`, and stating
+`V = 0` costs nothing (it is forced, since the quartic vanishes at `4`)
+while making the statement say what it means — that the affine locus is a
+single POINT rather than a single fibre.
+
+**The shape of a proof.**  `u⁴ + 4u³ − 44u² + 52u − 16 = (u − 4)(u³ + 8u²
+− 12u + 4)`, and the cubic factor has no rational root (`±1, ±2, ±4` give
+`1, 23, 20, 52, 148, 116`), hence is irreducible over `ℚ`; so a descent
+here runs over the cubic field `ℚ[u]/(u³ + 8u² − 12u + 4)`.  The
+alternative, and probably the cheaper one in this development, is to
+transport to the Weierstrass model `[0, 1, 1, −23, −50]` and prove
+`rank 37b(ℚ) = 0` by a `2`-descent there — `37b` has trivial `2`-torsion
+over `ℚ`, so the descent is over `ℚ(θ)` with `θ` a root of the
+`2`-division cubic.
+
+**The check that would refute this**: any `ellrank` call returning a
+positive rank for `[0, 1, 1, −23, −50]`, or an explicit rational `u ≠ 4`
+with `u⁴ + 4u³ − 44u² + 52u − 16` a square.  An exhaustive search over
+`u = a/b` with `|a|, b ≤ 60` found none. -/
+theorem rational_point_quartic_thirtySevenB (u V : ℚ)
+    (_h : V ^ 2 = u ^ 4 + 4 * u ^ 3 - 44 * u ^ 2 + 52 * u - 16) :
+    u = 4 ∧ V = 0 :=
+  sorry
+
+/-- **The only rational points of the genus-`2` model
+`S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` are `(1, ±1)`**
+(PROVEN 2026-07-28, flt-lean-42, over the single leaf
+`rational_point_quartic_thirtySevenB`).
+
+This is step (ii) of the prescription — the degree-`2` map `S → C` and the
+fibre analysis — and it is fully discharged here.  The map is
+`u = x²/(x−1)`, `V = y(x−2)/(x−1)²` (the reconnaissance's
+`V = y((x−1)³ − 1)/((x−1)³(u − 1))` in lowest terms; see the section
+docstring for the cancellation), and the identity it rests on is
+
+    f(x)·(x − 2)² = x⁸ + 4x⁶(x−1) − 44x⁴(x−1)² + 52x²(x−1)³ − 16(x−1)⁴ ,
+
+a `linear_combination` away from the hypothesis.
+
+The argument.  If `x ≠ 1` then `(u, V)` is an affine rational point of `C`,
+so `u = 4` by the leaf; `u = 4` reads `x² = 4(x − 1)`, i.e. `(x − 2)² = 0`,
+so `x = 2`; and then `y² = f(2) = 148`, which
+`sq_ne_oneFortyEight` forbids.  So `x = 1`, where `f(1) = 1` and `y = ±1`.
+
+Note the fibre over `u = ∞` is NOT analysed here and does not need to be:
+`x = 1` is one of its two points and `x = ∞` is not an affine point at all,
+so the affine statement sees only `x = 1`.  The two points at infinity of
+`S` are carried separately, by the `Bool` summand of
+`exists_planeModel_x0ThirtySeven`. -/
+theorem rational_point_sextic_thirtySeven (x y : ℚ)
+    (h : y ^ 2 = x ^ 6 + 8 * x ^ 5 - 20 * x ^ 4 + 28 * x ^ 3 - 24 * x ^ 2 + 12 * x - 4) :
+    x = 1 ∧ (y = 1 ∨ y = -1) := by
+  have hx : x = 1 := by
+    by_contra hx
+    have hne : x - 1 ≠ 0 := sub_ne_zero.mpr hx
+    have hV : (y * (x - 2) / (x - 1) ^ 2) ^ 2
+        = (x ^ 2 / (x - 1)) ^ 4 + 4 * (x ^ 2 / (x - 1)) ^ 3 - 44 * (x ^ 2 / (x - 1)) ^ 2
+          + 52 * (x ^ 2 / (x - 1)) - 16 := by
+      field_simp
+      linear_combination (x - 2) ^ 2 * h
+    obtain ⟨hu, -⟩ := rational_point_quartic_thirtySevenB _ _ hV
+    have hx2 : x = 2 := by
+      have h4 : x ^ 2 = 4 * (x - 1) := by field_simp at hu; linarith
+      have hsq : (x - 2) ^ 2 = 0 := by linarith [h4]
+      have := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hsq
+      linarith [sub_eq_zero.mp this]
+    subst hx2
+    exact sq_ne_oneFortyEight y (by rw [h]; norm_num)
+  subst hx
+  refine ⟨rfl, ?_⟩
+  have h1 : (y - 1) * (y + 1) = 0 := by nlinarith [h]
+  rcases mul_eq_zero.mp h1 with h2 | h2
+  · exact Or.inl (by linarith)
+  · exact Or.inr (by linarith)
+
+/-- **`X_0(37)(ℚ)` injects into the points of the genus-`2` model
+`S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`** (SORRY LEAF,
+introduced 2026-07-28 by flt-lean-42 as the MODULI half of
+`exists_x0Compactification_thirtySeven_cardLe`).
+
+Step (i) of the prescription, and it carries NO arithmetic: it is the
+comparison between the abstract coarse space and the explicit plane model,
+the exact analogue of `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo`
+one level down.  `Sum.inl` records an affine point in the coordinates
+`(x, y)`, `Sum.inr` one of the two points at infinity — of which there are
+two, and only two, because the leading coefficient `1` of the sextic is a
+square, so the smooth model of `S` has two rational points over `x = ∞`.
+
+**Level `32`'s route to its analogue is NOT available here**, and this is
+worth stating because the analogy otherwise invites it.  There,
+`exists_weierstrassModel_x0ThirtyTwo` was discharged from the cardinality
+bound `card_le_four_x0ThirtyTwo` — a finite type of size `≤ 4` injects into
+any four named points.  Here the cardinality bound is the very thing being
+proved from this leaf, so that argument would be circular.  A successor
+must build the model.
+
+**What it needs.** An integral/Weierstrass model of `X_0(37)` over `ℚ` in
+the weighted-projective coordinates `(x : y : z)` of weights `(1, 3, 1)`,
+and the identification of `X_0(37)(ℚ)` with its rational points.  The model
+is Magma's `SmallModularCurve(37)`, simplified; the four rational points
+and the action of the three involutions on them are recorded in the
+reconnaissance on `card_y0Le_thirtySeven`.
+
+**Faithfulness.**  The hypothesis is discharged, not assumed: the
+compactification is produced existentially, and `exists_x0Compactification
+37` supplies one, so the leaf is satisfiable.  It is not vacuous either —
+`f`'s `Sum.inl` values are constrained to lie on `S`, and with
+`rational_point_sextic_thirtySeven` that pins them to `(1, ±1)`, which is
+exactly the content the assembly consumes.  Stating it existentially (in
+the compactification) rather than universally matches the consumer, which
+is itself existential; the universal form is also true and strictly
+stronger, and is deliberately not asked for. -/
+theorem exists_planeModel_x0ThirtySeven :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X)
+      (_hX : IsX0Compactification 37 strX strY jY)
+      (f : RelPoint strX (𝟙 SpecQ) → (ℚ × ℚ) ⊕ Bool),
+      Function.Injective f ∧
+        ∀ (P : RelPoint strX (𝟙 SpecQ)) (p : ℚ × ℚ), f P = Sum.inl p →
+          p.2 ^ 2 = p.1 ^ 6 + 8 * p.1 ^ 5 - 20 * p.1 ^ 4 + 28 * p.1 ^ 3
+            - 24 * p.1 ^ 2 + 12 * p.1 - 4 :=
+  sorry
+
 /-- **SOME compactification of `Y_0(37)` has at most `4` rational points**
-(sorry leaf, introduced 2026-07-27 by flt-lean-55; the COMPACT form, and
-the leaf that now carries all of level `37`'s arithmetic).
+(PROVEN 2026-07-28, flt-lean-42, over the two leaves
+`exists_planeModel_x0ThirtySeven` (the model) and
+`rational_point_quartic_thirtySevenB` (the arithmetic), through the
+fully-proven fibre analysis `rational_point_sextic_thirtySeven`; a sorry
+leaf from 2026-07-27, when flt-lean-55 introduced it, until then.  The
+COMPACT form, and the leaf that carries all of level `37`'s arithmetic).
 
 TRUE and sharp: `#X_0(37)(ℚ) = 4` exactly — the two rational cusps `0` and
 `∞` together with the two Mazur–Swinnerton-Dyer points of `j`-invariants
@@ -38658,6 +38897,15 @@ degree-`2` map to `C` with the fibre analysis above, (iii)
 `#C(ℚ) = 3` from `rank 37b(ℚ) = 0`.  Only (iii) is deep, and it is the
 single arithmetic input of the whole level.
 
+*ACTED ON 2026-07-28 (flt-lean-42): this paragraph is now the CUT, and the
+declaration is PROVEN over it.*  (i) is `exists_planeModel_x0ThirtySeven`,
+(iii) is `rational_point_quartic_thirtySevenB`, and (ii) — which the
+paragraph priced as a piece needing work — turned out to be a single
+`linear_combination` and is PROVEN, as `rational_point_sextic_thirtySeven`.
+See the section docstring above those declarations for the cancellation
+that makes (ii) cheap, and for why level `32`'s route to its analogue of
+(i) is unavailable here.
+
 **The check that would refute this**: a fifth rational point on `S`; or an
 `ellrank` call returning a positive rank for `[0, 1, 1, −23, −50]`; or a
 rational `u` with `u ≠ 4`, `u ≠ ∞` and `u⁴ + 4u³ − 44u² + 52u − 16` a
@@ -38665,8 +38913,26 @@ square. -/
 theorem exists_x0Compactification_thirtySeven_cardLe :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X)
       (_hX : IsX0Compactification 37 strX strY jY),
-      ∀ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card ≤ 4 :=
-  sorry
+      ∀ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card ≤ 4 := by
+  classical
+  obtain ⟨X, Y, strX, strY, jY, hX, f, hinj, hf⟩ := exists_planeModel_x0ThirtySeven
+  refine ⟨X, Y, strX, strY, jY, hX, fun s => ?_⟩
+  have hmaps : ∀ a ∈ s, f a ∈ ({Sum.inl (1, 1), Sum.inl (1, -1), Sum.inr true,
+      Sum.inr false} : Finset ((ℚ × ℚ) ⊕ Bool)) := by
+    intro a _
+    rcases hfa : f a with p | b
+    · obtain ⟨x, y⟩ := p
+      have hp := hf a (x, y) hfa
+      simp only at hp
+      obtain ⟨hx, hy⟩ := rational_point_sextic_thirtySeven x y hp
+      subst hx
+      rcases hy with hy | hy <;> subst hy <;> simp
+    · cases b <;> simp
+  refine le_trans (Finset.card_le_card_of_injOn f hmaps hinj.injOn) ?_
+  refine le_trans (Finset.card_insert_le _ _) ?_
+  refine Nat.add_le_add_right (le_trans (Finset.card_insert_le _ _) ?_) 1
+  refine Nat.add_le_add_right (le_trans (Finset.card_insert_le _ _) ?_) 1
+  simp
 
 /-- **SOME coarse moduli space of `Γ_0(37)` has at most `2` rational
 points** (PROVEN 2026-07-27, flt-lean-55, over the COMPACT leaf
