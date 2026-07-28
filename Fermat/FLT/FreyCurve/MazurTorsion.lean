@@ -32738,8 +32738,330 @@ So the Eisenstein-ideal/`j`-invariant argument and the scheme-theoretic bridge �
 which have entirely different owners in the literature and entirely different
 failure modes — no longer sit behind one `sorry`. -/
 
+/-!
+### The signature-`6` node, cut into modular geometry and the maximal order
+
+(2026-07-28, and it makes `exists_endMinpoly_of_isogenySignature_six` PROVEN
+over ONE new leaf rather than a bare `sorry`.)
+
+The node asks for `φ` with `φ² + (N+1)/4 = φ` and `ker (2φ − 1) = ⟨g⟩`.  Put
+`ψ := 2φ − 1`; then `ψ² = 4(φ² − φ) + 1 = −(N+1) + 1 = [−N]`, and conversely a
+`ψ` with `ψ² = [−N]` gives back `φ = (1 + ψ)/2` PROVIDED `2 ∣ 1 + ψ` in
+`End(E_ℚ̄)` — which is exactly the difference between `ℤ[√−N]` (discriminant
+`−4N`) and the MAXIMAL order `O_{−N}` (discriminant `−N`).  So the node splits
+along that "provided", into two halves with completely different mathematics:
+
+* **the modular half** — produce `ψ` at all, i.e. show `(E, ⟨g⟩)` is a fixed
+  point of the Atkin–Lehner involution `w_N`.  That is the new leaf
+  `exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` below, stated in exactly
+  the shape of the already-proven level-`125` analogue
+  `exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125` so that the same
+  Vélu-quotient template applies verbatim;
+* **the maximal-order half** — `exists_two_mul_sub_one_eq_of_endSq_eq_neg`
+  below, which is PROVEN, over the pre-existing complex-multiplication leaf
+  `classNumberOne_of_end_closure_eq_top` and the pre-existing lattice theorem
+  `End.exists_intBasis`.  No new deep input.
+
+**Why the maximal-order half needs no new leaf, in one paragraph.**
+`End.exists_intBasis` writes `End(E_ℚ̄) = ℤ ⊕ ℤω` with `ω² = aω − b`.  Writing
+`ψ = u + vω` and matching coefficients against `ψ² = [−N]` gives `2u + va = 0`
+and `u² − v²b = −N`.  If `a = 2a'` is EVEN then `ψ = v(ω − a')` and `v²` divides
+the prime `N`, so `v = ±1`, so `ω = vψ + a'` and `End(E_ℚ̄) = ℤ[ψ]` — the order
+of discriminant `−4N`.  That is refuted by
+`classNumberOne_of_end_closure_eq_top` against the reduced primitive form
+`(4, 2, (N+1)/4)` of discriminant `−4N`, whose leading coefficient is `4 ≠ 1`
+(PARI/GP: `qfbclassno(-4·43) = qfbclassno(-4·67) = qfbclassno(-4·163) = 3`, and
+`qfbred(Qfb(4,2,c))` returns the form unchanged at `c = 11, 17, 41`).  So `a` is
+ODD, `v = 2v'` with `v' = ±1`, and `φ := v'ω + (1 − v'a)/2` — an honest integer
+combination of `1` and `ω`, because `a` is odd — satisfies `2φ − 1 = ψ`.
+
+**`23 ≤ N` IS LOAD-BEARING IN THAT HALF, AND THE STATEMENT IS FALSE WITHOUT IT.**
+At `N = 7` both `h(−28) = 1` and `h(−7) = 1` (`qfbclassno`, verified), so the
+curve of `j`-invariant `16581375` has `End = ℤ[√−7]`, discriminant `−28`, and
+`(1 + √−7)/2` is NOT an endomorphism of it although `ψ = √−7` satisfies
+`ψ² = [−7]`.  What `23 ≤ N` buys is that `−4N ≤ −92` escapes the
+class-number-one discriminant list `−3, −4, −7, −8, −11, −12, −16, −19, −27,
+−28, −43, −67, −163`.
+
+**`N % 8 = 3` is a hypothesis of the PROOF, not of the theorem.**  The statement
+is true for every prime `N ≥ 23` with `N % 4 = 3`, by the list just quoted; what
+`N % 8 = 3` supplies is a UNIFORM witness form, since `(N+1)/4` is then odd and
+`(4, 2, (N+1)/4)` is primitive.  At `N ≡ 7 (mod 8)` that same triple has
+`gcd = 2` and a different form must be produced (`(3, 2, 8)` at `N = 23`, say).
+All three Mazur levels satisfy `43 ≡ 67 ≡ 163 ≡ 3 (mod 8)`, so nothing is lost;
+a successor generalising this should replace the hypothesis by a form-existence
+hypothesis rather than by a class-number function. -/
+
+/-- **`End W` is torsion free** (PROVEN 2026-07-28): if `[n] ∘ X = 0` for some
+`n ≠ 0` then `X = 0`.
+
+A nonzero isogeny is SURJECTIVE (`IsIsogeny.surjective`), so `[n] ∘ X = 0` with
+`X ≠ 0` would make every point of `W` be `n`-torsion, and the `n`-torsion is
+finite (`finite_nsmulKer`) while `W.Point` is infinite (`infinite_point`).
+
+This is the cancellation that lets an identity proven after multiplying by `4`
+— which is how `φ² + (N+1)/4 = φ` is obtained from `(2φ − 1)² = [−N]` — be
+divided back down. -/
+theorem eq_zero_of_natCast_mul_eq_zero {F : Type*} [Field F]
+    [DecidableEq F] [IsAlgClosed F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    {n : ℕ} (hn : n ≠ 0) {X : WeierstrassCurve.End W}
+    (h : (n : WeierstrassCurve.End W) * X = 0) : X = 0 := by
+  have hcoe := congrArg (fun f : WeierstrassCurve.End W => (f : AddMonoid.End W.Point)) h
+  have hpt : ∀ P : W.Point, n • ((X : AddMonoid.End W.Point) P) = 0 := by
+    intro P
+    have h2 := congrArg (fun f : AddMonoid.End W.Point => f P) hcoe
+    simpa using h2
+  by_cases hne : ((X : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+  · exact Subtype.ext hne
+  · exfalso
+    have hsurj := X.2.surjective hne
+    have hall : ∀ Q : W.Point, n • Q = 0 := by
+      intro Q
+      obtain ⟨P, hP⟩ := hsurj Q
+      rw [← hP]
+      exact hpt P
+    have hfin : (Set.univ : Set W.Point).Finite :=
+      (WeierstrassCurve.finite_nsmulKer (W := W) hn).subset (fun P _ => hall P)
+    haveI := WeierstrassCurve.infinite_point W
+    exact (Set.infinite_univ (α := W.Point)) hfin
+
+/-- **THE MAXIMAL-ORDER STEP: `ψ² = [−N]` over `ℚ` forces `(1 + ψ)/2` to be an
+endomorphism** (PROVEN 2026-07-28, over `End.exists_intBasis` and
+`classNumberOne_of_end_closure_eq_top`; no new leaf).
+
+`E` is defined over `ℚ`, so `j(E) ∈ ℚ`, so the CM order has class number one;
+`ℤ[ψ] = ℤ[√−N]` has discriminant `−4N` and class number `> 1` for every prime
+`N ≥ 23`.  Hence `ℤ[ψ]` is a PROPER suborder of `End(E_ℚ̄)`, and the only order
+strictly between `ℤ[√−N]` and its fraction field that can occur is `O_{−N}`,
+which contains `(1 + √−N)/2`.  See the section note above for the argument in
+coordinates, for why `23 ≤ N` is load-bearing (`N = 7` is a counterexample
+without it), and for the role of `N % 8 = 3`.
+
+**Faithfulness of the CONCLUSION.** `2 * φ − 1 = ψ` is the honest form: it says
+`φ` is a genuine element of `WeierstrassCurve.End`, which carries an
+`IsRationalMap` certificate, so this is a statement about complex multiplication
+and not about `M₂(Ẑ)`.  Do NOT weaken it to `ψ² = [−N]` alone — that pins only
+`ℤ[√−N]`, of discriminant `−4N`, where `h = 3` at all three Mazur levels. -/
+theorem exists_two_mul_sub_one_eq_of_endSq_eq_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N) (hN8 : N % 8 = 3)
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ
+      = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) :
+    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine, 2 * φ - 1 = ψ := by
+  classical
+  have hNpos : (0 : ℤ) < (N : ℤ) := by exact_mod_cast hN.pos
+  -- `ψ` is not an integer, since its square is negative.
+  have hnotint : ¬ ∃ c : ℤ,
+      ψ = ((c : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+    rintro ⟨c, rfl⟩
+    have hc : ((c * c : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+        = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+      push_cast; push_cast at hsq; exact hsq
+    have hcc := WeierstrassCurve.End.intCast_injective
+      (W := (E⁄(AlgebraicClosure ℚ)).toAffine) hc
+    nlinarith [mul_self_nonneg c]
+  obtain ⟨ω, a, b, hω, hspan, hindep⟩ := WeierstrassCurve.End.exists_intBasis ψ hnotint
+  obtain ⟨u, v, huv⟩ := hspan ψ
+  have hexp : ψ * ψ
+      = ((u * u - v * v * b : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+      + (2 * u * v + v * v * a) • ω := by
+    conv_lhs => rw [huv]
+    exact MazurCMOrder.sq_intBasis_expand ω a b hω u v
+  have hzero : ((u * u - v * v * b + (N : ℤ) : ℤ) :
+        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+      + (2 * u * v + v * v * a) • ω = 0 := by
+    have hsplit : ((u * u - v * v * b + (N : ℤ) : ℤ) :
+          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+          + (2 * u * v + v * v * a) • ω
+        = (((u * u - v * v * b : ℤ) :
+              WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+            + (2 * u * v + v * v * a) • ω)
+          + ((N : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+      push_cast; abel
+    rw [hsplit, ← hexp, hsq]
+    push_cast
+    abel
+  obtain ⟨h1, h2⟩ := hindep _ _ hzero
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hnotint ⟨u, by simpa using huv⟩
+  have hkey : 2 * u + v * a = 0 := by
+    have hfac : v * (2 * u + v * a) = 0 := by linear_combination h2
+    rcases mul_eq_zero.1 hfac with h | h
+    · exact absurd h hv0
+    · exact h
+  rcases Int.even_or_odd a with ⟨a', ha'⟩ | ⟨a', ha'⟩
+  · -- `a` even: `End(E_ℚ̄) = ℤ[ψ]` has discriminant `−4N`, contradicting `h(−4N) = 1`.
+    exfalso
+    have hu : u = -(v * a') := by rw [ha'] at hkey; linarith
+    have hvsq : v * v * (b - a' * a') = (N : ℤ) := by
+      rw [hu] at h1; linear_combination -h1
+    have hvnat : v.natAbs * v.natAbs ∣ N := by
+      have hdvd : (v * v) ∣ (N : ℤ) := ⟨b - a' * a', hvsq.symm⟩
+      have hd2 := Int.natAbs_dvd_natAbs.2 hdvd
+      simpa [Int.natAbs_mul] using hd2
+    have hvone : v * v = 1 := by
+      have hv1 : v.natAbs ∣ N := dvd_trans (dvd_mul_right _ _) hvnat
+      rcases (Nat.Prime.eq_one_or_self_of_dvd hN _ hv1) with hh | hh
+      · rcases Int.natAbs_eq_iff.1 hh with h' | h' <;> simp [h']
+      · exfalso
+        rw [hh] at hvnat
+        have hle := Nat.le_of_dvd hN.pos hvnat
+        nlinarith [hN.two_le]
+    have hψ : ψ = v • (ω - ((a' : ℤ) :
+        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) := by
+      have hva : v • ((a' : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+          = ((v * a' : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+        rw [zsmul_eq_mul, ← Int.cast_mul]
+      rw [huv, hu, smul_sub, hva]
+      push_cast
+      abel
+    have hωmem : ω ∈ Subring.closure ({ψ} :
+        Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) := by
+      have hωeq : ω = v • ψ + ((a' : ℤ) :
+          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+        rw [hψ, smul_smul, hvone, one_smul]; abel
+      rw [hωeq]
+      exact add_mem (zsmul_mem (Subring.subset_closure (Set.mem_singleton _)) v)
+        (_root_.intCast_mem _ _)
+    have htop : Subring.closure ({ψ} :
+        Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤ := by
+      refine top_unique (fun χ _ => ?_)
+      obtain ⟨u₂, v₂, hχ⟩ := hspan χ
+      rw [hχ]
+      exact add_mem (_root_.intCast_mem _ _) (zsmul_mem hωmem v₂)
+    obtain ⟨m, hm⟩ : ∃ m : ℤ, (N : ℤ) = 8 * m + 3 := by
+      refine ⟨((N : ℤ) - 3) / 8, ?_⟩
+      have hN8' : (N : ℤ) % 8 = 3 := by omega
+      omega
+    have hm3 : 3 ≤ m := by
+      have hN23' : (23 : ℤ) ≤ (N : ℤ) := by exact_mod_cast hN23
+      omega
+    have hgcd : Int.gcd (4 : ℤ) ((Int.gcd (2 : ℤ) (2 * m + 1) : ℕ) : ℤ) = 1 := by
+      have h2c : Int.gcd (2 : ℤ) (2 * m + 1) = 1 :=
+        Int.isCoprime_iff_gcd_eq_one.1 ⟨-m, 1, by ring⟩
+      rw [h2c]
+      norm_num
+    have hres := E.classNumberOne_of_end_closure_eq_top (N : ℤ) ψ hsq htop
+      4 2 (2 * m + 1) (by rw [hm]; ring) hgcd (by norm_num) (by norm_num) (by norm_num)
+      (by omega)
+    norm_num at hres
+  · -- `a` odd: `(1 + ψ)/2` is an integer combination of `1` and `ω`.
+    have hev : Even (v * a) := ⟨-u, by linarith⟩
+    have hveven : ∃ v' : ℤ, v = v' + v' := by
+      rcases Int.even_mul.1 hev with hv2 | ha2
+      · exact hv2
+      · exfalso
+        obtain ⟨r, hr⟩ := ha2
+        rw [ha'] at hr
+        omega
+    obtain ⟨v', hv'⟩ := hveven
+    rw [hv'] at hkey
+    have hu : u = -(v' * a) := by linarith
+    have hv'sq : v' * v' * (4 * b - a * a) = (N : ℤ) := by
+      rw [hv', hu] at h1; linear_combination -h1
+    have hv'nat : v'.natAbs * v'.natAbs ∣ N := by
+      have hdvd : (v' * v') ∣ (N : ℤ) := ⟨4 * b - a * a, hv'sq.symm⟩
+      have hd2 := Int.natAbs_dvd_natAbs.2 hdvd
+      simpa [Int.natAbs_mul] using hd2
+    have hv'one : v' = 1 ∨ v' = -1 := by
+      have hv1 : v'.natAbs ∣ N := dvd_trans (dvd_mul_right _ _) hv'nat
+      rcases (Nat.Prime.eq_one_or_self_of_dvd hN _ hv1) with hh | hh
+      · rcases Int.natAbs_eq_iff.1 hh with h' | h' <;> simp [h']
+      · exfalso
+        rw [hh] at hv'nat
+        have hle := Nat.le_of_dvd hN.pos hv'nat
+        nlinarith [hN.two_le]
+    rcases hv'one with rfl | rfl
+    · refine ⟨ω - ((a' : ℤ) :
+        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine), ?_⟩
+      rw [huv, hu, hv', zsmul_eq_mul, ha']
+      push_cast
+      noncomm_ring
+    · refine ⟨-ω + ((a' + 1 : ℤ) :
+        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine), ?_⟩
+      rw [huv, hu, hv', zsmul_eq_mul, ha']
+      push_cast
+      noncomm_ring
+
+/-- **THE MODULAR HALF: at `N ∈ {43, 67, 163}` a Galois-stable cyclic subgroup of
+order `N` is a fixed point of the Atkin–Lehner involution `w_N`** (sorry leaf,
+opened 2026-07-28 by the cut of `exists_endMinpoly_of_isogenySignature_six`).
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Thm 1 and §5: at these three levels `X_0(N)(ℚ)` consists of the two cusps and a
+single non-cuspidal point, which is the CM point of discriminant `−N`.  For that
+curve `ψ := √−N` is an endomorphism with `ker ψ = ⟨g⟩` and
+`ψ (E[N]) = ker ψ̄ = ker (−ψ) = ⟨g⟩`, since `N` RAMIFIES in `ℚ(√−N)` — so both
+conjuncts hold, which is exactly what "`(E, ⟨g⟩)` is fixed by `w_N`" means.
+
+**THIS IS THE SAME STATEMENT AS THE LEVEL-`125` NODE, AND THE TEMPLATE FOR ITS
+PROOF IS ALREADY IN THIS FILE.**  Compare
+`WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`,
+which is PROVEN over the single modular leaf
+`exists_atkinLehnerIsom_of_veluQuotient_order_125`: the Vélu quotient is
+constructed by `exists_velu_quotient_isogeny_model` (available because `N` is
+odd), its `IsIsogeny` certificate by `isIsogeny_of_veluQuotient`, and `ψ := ι ∘ φ`
+lands in `endSubring` by `IsIsogeny.comp`.  Everything in that proof transposes
+verbatim; what has to be supplied at these levels is the isomorphism `ι` of PAIRS,
+i.e. the analogue of `exists_atkinLehnerIsom_of_veluQuotient_order_125`.
+
+**NOT VACUOUS — and this is where it differs from every prime-power sibling in
+this file.**  The level-`125`, `169` and `25` nodes are vacuously true (no
+elliptic curve over `ℚ` has a rational cyclic isogeny of those degrees), so
+nothing can ever be tested against them.  Here the hypotheses ARE satisfiable:
+at each of `43, 67, 163` the curve of `j`-invariant `−884736000`,
+`−147197952000`, `−262537412640768000` has CM by the maximal order of
+discriminant `−N` (class number one — PARI/GP `qfbclassno(-43) =
+qfbclassno(-67) = qfbclassno(-163) = 1`) and carries its ramified `N`-isogeny
+over `ℚ` (`ellisomat (ellfromj j)` returns `[1, N; N, 1]`).  So a prover here is
+proving something with content, and a REFUTATION is not available: the leaf is
+true and the witness is explicit.
+
+**THE SECOND CONJUNCT IS NOT DECORATION**, exactly as at level `125`: the
+consumer is `End.sq_eq_neg_natCast_of_atkinLehner`, whose FALSITY AUDIT exhibits
+`j = 1728`, `α = 11 + 2i` of norm `125` — a cyclic kernel with `E/C ≅ E` and
+`α² ≠ [−125]` — as the counterexample to keeping only `hker`.  At a RAMIFIED
+prime that particular failure cannot occur (`(ψ) = (ψ̄)`), but the conjunct is
+still what the consumer consumes, and it must be produced rather than assumed
+away.
+
+**AXIS SEARCHED, so the next owner knows the width of this leaf.**  The routes
+refuted for the parent node all concerned the RATIONAL POINTS of `X_0(N)`: the
+rank-`0` Jacobian (analytic ranks `1, 2, 6` at the three levels), effective
+Chabauty–Coleman (`15, 19, 64` against `3`), the rank-`0` quotient (`#A(ℚ)` is
+`0, 7, 11, 27`, never `1`), and `classPoly` (linear at `h(−N) = 1`, hence a
+restatement of the conclusion).  NOT searched: the Eisenstein-ideal descent on
+`J_0(N)^-` itself — which is Mazur's own route and needs `rank J_0(N)^-(ℚ) = 0`,
+the same missing minus-part rank predicate that level `125` records — and the
+possibility of getting `w_N`-fixedness from the isogeny character directly, which
+at these levels is not obviously dead the way it is at `125` (the demonstration
+recorded under `exists_atkinLehnerIsom_of_veluQuotient_order_125` turns on
+`p = 5` being small, and `43, 67, 163` are not). -/
+theorem exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N ∈ ({43, 67, 163} : Finset ℕ))
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      AddMonoidHom.ker
+          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+        = AddSubgroup.zmultiples g ∧
+      (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | N • P = 0}
+        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) :=
+  sorry
+
 /-- **FROM ISOGENY SIGNATURE `6` TO COMPLEX MULTIPLICATION BY THE MAXIMAL ORDER
-OF DISCRIMINANT `−N`** (sorry leaf, opened 2026-07-28; the DEEP half of
+OF DISCRIMINANT `−N`** (opened 2026-07-28 as a bare `sorry`; PROVEN the same day
+over the single new leaf `exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` —
+see the section note above for the anatomy of the cut; the DEEP half of
 `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`).
 
 TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978), §5;
@@ -32769,13 +33091,19 @@ form.  The relation `φ² + (N+1)/4 = φ` has discriminant `1 − (N+1) = −N`,
 the maximal order exactly.  `(N + 1) / 4` is NATURAL division, exact because
 `hmod : N % 4 = 3`; at `43, 67, 163` it is `11, 17, 41`.
 
-**AND THE PRIME-POWER ROUTE IS NOT A TEMPLATE FOR THE PROOF.**
-`WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125` is the
-template for the STATEMENT only: there the endomorphism is forced by
-Atkin–Lehner fixedness, available because `k ≥ 2` collapses the rank of
-`J_0(p^k)^-`, and that argument does not transfer to prime level (the doctrine
-records this trap in the other direction).  Here the endomorphism comes from the
-CM theory of the isogeny character, not from a modular-curve involution.
+**THE PRIME-POWER ROUTE IS A TEMPLATE FOR THE SHAPE, NOT FOR THE ARGUMENT** (this
+paragraph CORRECTS its predecessor, which said the route was "a template for the
+STATEMENT only"; the cut taken below reuses more of it than that allowed, and
+less than a naive reading would).  What transfers is the `End`-level packaging:
+`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125` produces exactly the
+pair of conjuncts `ker ψ = ⟨g⟩` and `ψ (E[N]) = ⟨g⟩`, and
+`End.sq_eq_neg_natCast_of_atkinLehner` turns them into `ψ² = [−N]` uniformly in
+`N > 4`; the new leaf below is stated in that same shape and the Vélu plumbing
+is identical.  What does NOT transfer is the reason `(E, C)` is `w_N`-fixed: at
+`k ≥ 2` it is the collapse of `rank J_0(p^k)^-`, whereas at PRIME level it is
+Mazur's Thm 1 determination of `X_0(N)(ℚ)` at `N = 43, 67, 163`.  Confusing those
+two is the trap the doctrine records; keeping the packaging while replacing the
+argument is not.
 
 **NOT VACUOUS.**  The hypotheses are satisfiable: at each of `43, 67, 163` the
 curve of `j`-invariant `−884736000`, `−147197952000`, `−262537412640768000`
@@ -32798,23 +33126,46 @@ rewritten).
 survey behind those refutations ranged over MODULAR-CURVE-shaped routes to the
 rational points.  It did not range over routes that take the class-number-one
 input as given and reconstruct the endomorphism analytically (Deuring lifting,
-or the CM theory of `ℚ(√−N)` acting on `ℂ/O_{−N}`), which is where a prover
-should probably start, since `mazurIsogeny_classNumberOne_of_inert` has already
-done the arithmetic half in this file. -/
+or the CM theory of `ℚ(√−N)` acting on `ℂ/O_{−N}`).
+
+**CUT TAKEN 2026-07-28, AND THIS DECLARATION IS NOW PROVEN.**  The paragraph just
+above told a prover to start from the class-number-one input and reconstruct the
+endomorphism.  That is what happened, and it turned out to need NO new deep
+input: `End.exists_intBasis` (PROVEN) plus the pre-existing CM leaf
+`classNumberOne_of_end_closure_eq_top` already force the endomorphism ring to be
+the MAXIMAL order once an endomorphism with `ψ² = [−N]` exists, so the entire
+`ℤ[√−N]`-versus-`O_{−N}` question is discharged here by
+`exists_two_mul_sub_one_eq_of_endSq_eq_neg`.  The only thing that had to become
+a leaf is the EXISTENCE of `ψ`, i.e. `w_N`-fixedness, which is
+`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`.
+
+So the frontier is unchanged in size — one leaf replaced by one leaf — and the
+surviving leaf is purely modular, with no complex multiplication, no class
+number and no endomorphism-ring plumbing left in it.  See the section note above
+for the coordinates.
+
+The assembly is five steps: `hstable` from `hlam`
+(`stable_zmultiples_of_isogenyCharacter`); `N ∈ {43, 67, 163}` from
+`mem_classNumberOnePrimes_of_isogenySignature_six`; the new leaf for `ψ`;
+`End.sq_eq_neg_natCast_of_atkinLehner` for `ψ² = [−N]` (applicable since
+`4 < 23 ≤ N`); and `exists_two_mul_sub_one_eq_of_endSq_eq_neg` for `φ`, whose
+`N % 8 = 3` side condition is read off the three levels.  The minimal polynomial
+`φ² + (N+1)/4 = φ` then follows from `(2φ − 1)² = [−N]` by multiplying out and
+cancelling the `4` with `eq_zero_of_natCast_mul_eq_zero`. -/
 theorem exists_endMinpoly_of_isogenySignature_six
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (_hN : N.Prime) (_hN23 : 23 ≤ N)
-    (_hg : addOrderOf g = N)
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hg : addOrderOf g = N)
     (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (_hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
         ((lam σ : ZMod N).val) • g)
-    (_hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
-    (_hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨_hN⟩ σ) ^ 6)
-    (_hmod : N % 4 = 3) :
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ 6)
+    (hmod : N % 4 = 3) :
     ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
       φ * φ + (((N + 1) / 4 : ℕ) :
           WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
@@ -32822,8 +33173,48 @@ theorem exists_endMinpoly_of_isogenySignature_six
             (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
                 AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
               (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-          = AddSubgroup.zmultiples g :=
-  sorry
+          = AddSubgroup.zmultiples g := by
+  -- Step 1: the stable subgroup, from the isogeny character.
+  have hstable := E.stable_zmultiples_of_isogenyCharacter g lam hlam
+  -- Step 2: the hypotheses already force `N ∈ {43, 67, 163}`.
+  have hmem := E.mem_classNumberOnePrimes_of_isogenySignature_six g hN hN23 hg lam hlam hpg
+    hsig hmod
+  -- Step 3: Atkin–Lehner fixedness at those three levels — the one new leaf.
+  obtain ⟨ψ, hker, himg⟩ :=
+    exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel E hmem g hg hstable
+  -- Step 4: the two conjuncts give `ψ² = [−N]`, uniformly in `N > 4`.
+  have hsq : ψ * ψ
+      = -((N : ℕ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :=
+    WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner ψ N (by omega) g hg hker himg
+  have hsq' : ψ * ψ
+      = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+    rw [hsq]; push_cast; abel
+  -- Step 5: `h(−4N) ≠ 1` forces the MAXIMAL order, so `(1 + ψ)/2` is an endomorphism.
+  have hN8 : N % 8 = 3 := by fin_cases hmem <;> norm_num
+  obtain ⟨φ, hφ⟩ :=
+    exists_two_mul_sub_one_eq_of_endSq_eq_neg E hN hN23 hN8 ψ hsq'
+  refine ⟨φ, ?_, ?_⟩
+  · -- `4 (φ² + (N+1)/4 − φ) = (2φ − 1)² − 1 + (N + 1) = ψ² + N = 0`, then cancel the `4`.
+    have h4 : 4 * ((N + 1) / 4) = N + 1 := by omega
+    have h4c := congrArg
+      (fun k : ℕ => (k : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) h4
+    push_cast at h4c
+    have hX : ((4 : ℕ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+        * (φ * φ + (((N + 1) / 4 : ℕ) :
+            WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) - φ) = 0 := by
+      push_cast
+      have hexp : (4 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+          * (φ * φ + (((N + 1) / 4 : ℕ) :
+              WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) - φ)
+          = (2 * φ - 1) * (2 * φ - 1) - 1
+            + 4 * (((N + 1) / 4 : ℕ) :
+                WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+        noncomm_ring
+      rw [hexp, hφ, hsq, h4c]
+      abel
+    exact sub_eq_zero.1
+      (eq_zero_of_natCast_mul_eq_zero (n := 4) (by norm_num) hX)
+  · rw [hφ]; exact hker
 
 /-- **MAZUR AT `43, 67, 163`, IN `WeierstrassCurve` VOCABULARY: a Galois-stable
 cyclic subgroup of order `p` is the kernel of `√−p`** (PROVEN 2026-07-28 over
