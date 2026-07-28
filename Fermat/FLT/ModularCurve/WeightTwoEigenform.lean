@@ -229,10 +229,11 @@ form: `WeakFEPair` (a pair of functions on `(0, ∞)` with rapid decay at
 Mellin transform of such an `F` is ENTIRE) and `hasSum_mellin` (the
 Mellin transform of `∑ aₙ e^{-pₙ x}` is `Γ(s) ∑ aₙ pₙ^{-s}`).
 
-So everything below is bookkeeping except four statements, three of
-which are exactly the modular input mathlib does not have:
+So everything below is bookkeeping except the modular input mathlib does
+not have:
 
-* `exists_frickeInvolution` — the Fricke involution `W_N`;
+* `exists_frickeInvolution` — the Fricke involution `W_N`.  **PROVEN
+  2026-07-28**, from `frickeMatrix`/`frickeSlash` below;
 * `isBigO_atTop_axisRestrict` — a cusp form decays rapidly at `i∞`;
 * `isBigO_atTop_coeff` — Hecke's bound `|aₙ| = O(n)`;
 
@@ -265,7 +266,154 @@ def axisRestrict (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (y : ℝ) : ℂ :=
 lemma axisRestrict_of_pos {N : ℕ} (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) {y : ℝ}
     (hy : 0 < y) : axisRestrict N f y = f (axisPoint N y ⟨hy, hN⟩) := dif_pos ⟨hy, hN⟩
 
-/-- **The Fricke involution `W_N`** (sorry leaf) — the ONE piece of
+/-!
+#### The Fricke involution `W_N`
+
+The one piece of modular input that carries the continuation.  Everything
+in this subsection is PROVEN (2026-07-28).
+
+An earlier version of this file recorded, as the work required, "`W_N` as
+an element of `GL(2, ℝ)`, the conjugation `W_N⁻¹ Γ₀(N) W_N = Γ₀(N)`, and
+the fact that slashing by a normalising element preserves `CuspForm` —
+for the last one the cusp condition is the only real work, since `W_N γ`
+must be put in Hermite normal form to see that zero-at-`∞` is preserved".
+
+**The Hermite-normal-form step is NOT needed at this pin, and that is
+what made this leaf cheap.**  Mathlib's `CuspForm Γ k` no longer asks for
+vanishing at `∞` alone: its field is
+`zero_at_cusps' : ∀ {c}, IsCusp c Γ → c.IsZeroAt toFun k`, quantified over
+*every* cusp, and `OnePoint.IsZeroAt.smul_iff` says
+`IsZeroAt (g • c) f k ↔ IsZeroAt c (f ∣[k] g) k` for **every**
+`g : GL(2, ℝ)`.  So "`f ∣[2] W_N` vanishes at every cusp of `Γ₀(N)`" is
+exactly "`f` vanishes at every `W_N`-translate of a cusp", and the whole
+cusp obligation reduces to `isCusp_frickeMatrix_smul` — that `W_N`
+permutes the cusps — which follows from the conjugation alone.  Nothing
+has to be expanded at a cusp.
+
+Likewise holomorphy is mathlib's `MDifferentiable.slash`, which holds for
+the full `GL(2, ℝ)` slash action, not merely for `SL(2, ℤ)`.
+-/
+
+section Fricke
+
+open scoped ModularForm
+
+/-- **The Fricke matrix** `W_N = ![![0, -1], ![N, 0]]`, of determinant
+`N` (PROVEN — a definition).
+
+The determinant is positive, which is what makes `σ W_N` the identity and
+keeps the slash action free of complex conjugation. -/
+def frickeMatrix (N : ℕ) (hN : N ≠ 0) : GL (Fin 2) ℝ :=
+  Matrix.GeneralLinearGroup.mkOfDetNeZero !![0, -1; (N : ℝ), 0] (by
+    have h : Matrix.det !![(0 : ℝ), -1; (N : ℝ), 0] = (N : ℝ) := by
+      rw [Matrix.det_fin_two_of]; ring
+    rw [h]
+    exact_mod_cast hN)
+
+@[simp] lemma frickeMatrix_coe (N : ℕ) (hN : N ≠ 0) :
+    ((frickeMatrix N hN : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ) = !![0, -1; (N : ℝ), 0] :=
+  rfl
+
+@[simp] lemma frickeMatrix_det (N : ℕ) (hN : N ≠ 0) :
+    ((frickeMatrix N hN).det : ℝ) = (N : ℝ) := by
+  rw [Matrix.GeneralLinearGroup.val_det_apply, frickeMatrix_coe, Matrix.det_fin_two_of]; ring
+
+lemma frickeMatrix_det_pos (N : ℕ) (hN : N ≠ 0) : (0 : ℝ) < ((frickeMatrix N hN).det : ℝ) := by
+  rw [frickeMatrix_det]
+  exact_mod_cast Nat.pos_of_ne_zero hN
+
+/-- **`W_N` normalises `Γ₀(N)`** (PROVEN).
+
+If `γ = ![![a, b], ![c, d]]` lies in `Γ₀(N)`, so `N ∣ c` and `ad - bc = 1`,
+then `W_N γ W_N⁻¹ = ![![d, -c/N], ![-N b, a]]`, whose determinant is
+`da - (c/N)(N b) = ad - bc = 1` and whose lower-left entry `-N b` is
+divisible by `N`.  The proof avoids `W_N⁻¹` by verifying the equivalent
+identity `W_N γ = γ' W_N` on matrices.
+
+Only this ONE inclusion is needed downstream — never the reverse
+inclusion, and never the equality of subgroups — because both consumers
+(`frickeSlash`'s slash-invariance and `isCusp_frickeMatrix_smul`) push
+forward along `γ ↦ W_N γ W_N⁻¹`. -/
+lemma frickeMatrix_conj_mem (N : ℕ) (hN : N ≠ 0) {g : GL (Fin 2) ℝ} (hg : g ∈ Gamma0GL N) :
+    frickeMatrix N hN * g * (frickeMatrix N hN)⁻¹ ∈ Gamma0GL N := by
+  obtain ⟨γ, hγ, rfl⟩ := hg
+  obtain ⟨c', hc'⟩ : (N : ℤ) ∣ (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 :=
+    (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp (Gamma0_mem.mp hγ)
+  have hdet : (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 1 -
+      (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = 1 := by
+    have := γ.2
+    rwa [Matrix.det_fin_two] at this
+  refine ⟨⟨!![(γ : Matrix (Fin 2) (Fin 2) ℤ) 1 1, -c';
+      -((N : ℤ) * (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1), (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0], ?_⟩,
+    ?_, ?_⟩
+  · rw [Matrix.det_fin_two_of]
+    linear_combination hdet + (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * hc'
+  · exact Gamma0_mem.mpr (by simp)
+  · rw [eq_comm, mul_inv_eq_iff_eq_mul]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, hc'] <;> ring
+
+/-- **`W_N` maps cusps of `Γ₀(N)` to cusps of `Γ₀(N)`** (PROVEN).
+
+`IsCusp c 𝒢` is `∃ g ∈ 𝒢, g.IsParabolic ∧ g • c = c`; the witness for
+`W_N • c` is `W_N p W_N⁻¹`, which lies in `Γ₀(N)` by
+`frickeMatrix_conj_mem`, is parabolic because parabolicity is a
+conjugation invariant, and fixes `W_N • c` by the group action. -/
+lemma isCusp_frickeMatrix_smul (N : ℕ) (hN : N ≠ 0) {c : OnePoint ℝ}
+    (hc : IsCusp c (Gamma0GL N)) : IsCusp (frickeMatrix N hN • c) (Gamma0GL N) := by
+  obtain ⟨p, hpΓ, hpar, hpc⟩ := hc
+  refine ⟨frickeMatrix N hN * p * (frickeMatrix N hN)⁻¹, frickeMatrix_conj_mem N hN hpΓ,
+    by simpa using hpar, ?_⟩
+  rw [mul_smul, mul_smul, inv_smul_smul, hpc]
+
+/-- **The Fricke transform `f ∣[2] W_N` of a cusp form is again a cusp
+form on `Γ₀(N)`** (PROVEN).
+
+Slash-invariance: `(f ∣ W_N) ∣ γ = f ∣ (W_N γ) = f ∣ ((W_N γ W_N⁻¹) W_N)
+= (f ∣ (W_N γ W_N⁻¹)) ∣ W_N = f ∣ W_N`.
+Holomorphy: `MDifferentiable.slash`.
+Vanishing at the cusps: `OnePoint.IsZeroAt.smul_iff` plus
+`isCusp_frickeMatrix_smul`. -/
+def frickeSlash (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) : CuspForm (Gamma0GL N) 2 where
+  toFun := (f : ℍ → ℂ) ∣[(2 : ℤ)] frickeMatrix N hN
+  slash_action_eq' γ hγ := by
+    have key : frickeMatrix N hN * γ
+        = frickeMatrix N hN * γ * (frickeMatrix N hN)⁻¹ * frickeMatrix N hN := by
+      group
+    rw [← SlashAction.slash_mul, key, SlashAction.slash_mul,
+      SlashInvariantFormClass.slash_action_eq (Γ := Gamma0GL N) (k := 2) f _
+        (frickeMatrix_conj_mem N hN hγ)]
+  holo' := (CuspFormClass.holo f).slash 2 (frickeMatrix N hN)
+  zero_at_cusps' hc := by
+    rw [← OnePoint.IsZeroAt.smul_iff]
+    exact CuspFormClass.zero_at_cusps f (isCusp_frickeMatrix_smul N hN hc)
+
+@[simp] lemma coe_frickeSlash (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) :
+    (frickeSlash N hN f : ℍ → ℂ) = (f : ℍ → ℂ) ∣[(2 : ℤ)] frickeMatrix N hN := rfl
+
+/-- **`W_N` sends `i y/√N` to `i (1/y)/√N`** (PROVEN) — the reason for the
+`√N` rescaling in `axisPoint`.
+
+`W_N • z = -1/(N z)`, and at `z = i y/√N` one has `N z = i y √N`, so
+`-1/(N z) = i/(y √N)`. -/
+lemma frickeMatrix_smul_axisPoint (N : ℕ) (hN : N ≠ 0) {y : ℝ} (hy : 0 < y) :
+    frickeMatrix N hN • axisPoint N y ⟨hy, hN⟩ = axisPoint N (1 / y) ⟨by positivity, hN⟩ := by
+  apply UpperHalfPlane.ext
+  rw [UpperHalfPlane.coe_smul_of_det_pos (frickeMatrix_det_pos N hN), coe_axisPoint]
+  simp only [UpperHalfPlane.num, UpperHalfPlane.denom, frickeMatrix_coe, coe_axisPoint]
+  norm_num
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  exact Complex.I_sq.symm
+
+/-- **The Fricke involution `W_N`** (PROVEN 2026-07-28) — the ONE piece of
 modular input that carries the continuation.
 
 `W_N = ![![0, -1], ![N, 0]]` normalises `Γ₀(N)`, so `f ∣[2] W_N` is
@@ -273,20 +421,34 @@ again a cusp form on `Γ₀(N)`; writing `g` for it, the slash identity
 `f (-1/(Nz)) = N z² g z` at `z = i y/√N` — where `-1/(Nz) = i/(√N y)`
 and `N z² = -y²` — is exactly the displayed statement.
 
-TRUE and classical (Atkin–Lehner; Diamond–Shurman §5.2).  What has to be
-built for it, none of which exists at this pin: `W_N` as an element of
-`GL(2, ℝ)`, the conjugation `W_N⁻¹ Γ₀(N) W_N = Γ₀(N)`, and the fact
-that slashing by a normalising element preserves `CuspForm` — for the
-last one the cusp condition is the only real work, since `W_N γ` for
-`γ ∈ SL(2, ℤ)` is an integral matrix of determinant `N` and must be put
-in Hermite normal form `γ' ![![α, β], ![0, δ]]` to see that zero-at-`∞`
-is preserved.  The check that would refute this being missing:
-`grep -rn "Fricke\|AtkinLehner\|atkinLehner" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/` (run 2026-07-27: no hits). -/
+Classical (Atkin–Lehner; Diamond–Shurman §5.2).  The witness is
+`frickeSlash N hN f`; the sign `-1` and the weight `y²` come out of
+`|det W_N|^{k-1} · denom(W_N, z)^{-k} = N · (i y √N)^{-2} = -1/y²`.
+
+This is the root number `ε = -1` of `cuspFEPair`, and it is what makes
+`Λ` entire, hence `L(f, ·)` entire. -/
 theorem exists_frickeInvolution (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) :
     ∃ g : CuspForm (Gamma0GL N) 2, ∀ y : ℝ, 0 < y →
-      axisRestrict N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N g y :=
-  sorry
+      axisRestrict N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N g y := by
+  refine ⟨frickeSlash N hN f, fun y hy => ?_⟩
+  have hy' : (0 : ℝ) < 1 / y := by positivity
+  rw [axisRestrict_of_pos hN f hy', axisRestrict_of_pos hN _ hy]
+  simp only [coe_frickeSlash, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
+    UpperHalfPlane.σ, UpperHalfPlane.denom, frickeMatrix_coe, frickeMatrix_det, coe_axisPoint]
+  norm_num
+  rw [if_pos (Nat.pos_of_ne_zero hN), ContinuousAlgEquiv.refl_apply]
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  rw [Complex.I_sq]
+  ring
+
+end Fricke
 
 /-- **A cusp form decays faster than every power at `i∞`** (sorry leaf).
 
