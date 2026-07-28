@@ -2946,7 +2946,9 @@ theorem exists_smul_of_mem_heckeSubring {M : ℕ} {f : CuspForm (Gamma0GL M) 2}
       exact ⟨a + b, by rw [LinearMap.add_apply, ha, hb, add_smul]⟩
   | neg x hx ihx =>
       obtain ⟨a, ha⟩ := ihx
-      exact ⟨-a, by rw [LinearMap.neg_apply, ha, neg_smul]⟩
+      -- `_root_.neg_smul`: this section `open`s `UpperHalfPlane`, whose own
+      -- `neg_smul` would otherwise shadow the `Module` one.
+      exact ⟨-a, by rw [LinearMap.neg_apply, ha, _root_.neg_smul]⟩
   | mul x y hx hy ihx ihy =>
       obtain ⟨a, ha⟩ := ihx
       obtain ⟨b, hb⟩ := ihy
