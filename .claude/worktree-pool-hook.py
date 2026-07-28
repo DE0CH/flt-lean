@@ -309,6 +309,57 @@ def _worker_limit():
     return DEFAULT_LIMIT
 
 
+def capacity_note():
+    """One line telling the orchestrator how much MORE it can dispatch right now.
+
+    Exists because the orchestrator does not reliably compute this. On
+    2026-07-28 it dispatched in waves of 16 for hours -- correct while the
+    per-host quota allowed only ~16 -- and kept the same wave size after 118
+    worktrees were freed, leaving ~170 idle. The wave size was being copied
+    from the shape of its own previous dispatches, not derived from state:
+    refusals had been acting as the stop signal, and when they stopped
+    arriving nothing counted up to the ceiling.
+
+    So the fix is to put the number in front of it at the moment of dispatch,
+    where it cannot be pattern-matched away. Never let this raise -- a
+    bookkeeping nicety must not cost a worker.
+    """
+    try:
+        ready = claimed = 0
+        with open(POOL_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                if parts[1] == "ready":
+                    ready += 1
+                elif parts[1] in ("claimed", "reclaiming"):
+                    claimed += 1
+        limit = _worker_limit()
+        headroom = max(0, limit - claimed)
+        spare = min(ready, headroom)
+        if spare <= 0:
+            return (f"CAPACITY: 0 more workers dispatchable right now "
+                    f"({claimed} claimed against a ceiling of {limit}, "
+                    f"{ready} ready). Free or promote worktrees before retrying.")
+        return (f"CAPACITY: you have ~{spare} more workers you can dispatch RIGHT NOW "
+                f"({claimed}/{limit} claimed, {ready} ready). Please use them -- "
+                f"dispatch until this hook REFUSES rather than stopping at a "
+                f"round number; refusals are free and are the only reliable "
+                f"stop signal. If `ready` is the binding number, promote `free` "
+                f"entries in {POOL_FILE} within each host's quota.")
+    except Exception:
+        return None
+
+
+def _with_capacity(obj):
+    """Attach the capacity note to an allow decision, if one can be computed."""
+    note = capacity_note()
+    if note:
+        obj["hookSpecificOutput"]["permissionDecisionReason"] = note
+    return obj
+
+
 def _host_of(name):
     """Which machine serves this worktree, or None if unrouted."""
     try:
@@ -640,13 +691,13 @@ def main():
         # own kind, so it is never mistaken for a pool worktree to be freed.
         record_inflight(
             STAGING_WORKTREE, tool_input["prompt"], "staging", payload)
-        emit({
+        emit(_with_capacity({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "allow",
                 "updatedInput": tool_input,
             }
-        })
+        }))
 
     # ONE lock covering the WHOLE dispatch decision (fixed 2026-07-25 after
     # a wave handed FOUR agents the identical task). The queue used to be
@@ -750,13 +801,13 @@ def main():
                 PLACEHOLDER, worktree_path)
             record_inflight(
                 worktree_path, tool_input["prompt"], "queue-pop", payload)
-            emit({
+            emit(_with_capacity({
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "permissionDecision": "allow",
                     "updatedInput": tool_input,
                 }
-            })
+            }))
 
         if not is_direct:
             sys.exit(0)  # non-fleet agent, queue empty: pass through
@@ -768,13 +819,13 @@ def main():
             PLACEHOLDER, worktree_path)
         record_inflight(
             worktree_path, tool_input["prompt"], "direct", payload)
-        emit({
+        emit(_with_capacity({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "allow",
                 "updatedInput": tool_input,
             }
-        })
+        }))
 
 
 if __name__ == "__main__":
