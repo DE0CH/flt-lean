@@ -24972,107 +24972,12 @@ theorem exists_relPicZeroOf {X : Scheme.{0}} {strX : X ⟶ SpecQ}
 -- reverted and both are PROVEN again.  No consumer needs them this early.)
 
 
-/-- **A Segre coordinate system exists on `A(ℚ)`, for every abelian
-scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
-heights, and PURELY GEOMETRIC: after the cut of 2026-07-27 there is no
-height, no finiteness and no real number anywhere in it.
-
-TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
-case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
-varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
-variety over `ℚ`, so it is projective and carries a **symmetric** ample
-line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
-which after replacing `L` by a power is very ample.  Let
-`φ_L : A ↪ ℙ^{n-1}_ℚ` be the resulting closed immersion.  A point of
-`ℙ^{n-1}(ℚ)` has a primitive integral representative, unique up to sign,
-and the sign is pinned by asking that the first nonzero coordinate be
-positive; sending `P ∈ A(ℚ)` to that vector is `coords`, and `injective`
-is injectivity of `φ_L` on `ℚ`-points, a closed immersion being a
-monomorphism.
-
-The remaining fields are the **theorem of the cube**,
-`m^* L ⊗ d^* L ≅ p₁^* L² ⊗ p₂^* L²` on `A × A`, read through the Segre
-embedding: it says exactly that `Segre(P,Q) ↦ Segre(P+Q, P−Q)` is given
-by forms of degree `2` in the Segre coordinates (`form`,
-`form_homogeneous`, `form_eval`), and `cert`/`cert_eval` is the
-Nullstellensatz certificate for that morphism on the Segre image — see
-`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` for why the
-certificate rather than "no common zero" is the right hypothesis, and
-for the proof that this yields `IntegralCoordinates`.
-
-**FAITHFULNESS AUDIT.**  *Not vacuous.*  `form_eval` demands ONE family
-of quadratic forms working uniformly in `P` and `Q`; that is the cube
-theorem and nothing weaker.  An arbitrary injection `A(ℚ) ↪ ℤ^d` does not
-supply it — for `A(ℚ) ≅ ℤ` a linear parametrisation is refuted outright,
-since the height defect `log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is
-unbounded, and by the leaf below an unbounded defect is incompatible with
-degree-2 forms.  *The conclusion is `Nonempty`* because nothing
-downstream depends on WHICH system is used.
-
-**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist because
-`ℤ` is a PID with unit group `{±1}`; over a general number field the
-normalisation involves the class group and the unit group.  Mordell–Weil
-is only ever needed over `ℚ` in this development.
-
-**MISSING MACHINERY**, and it is the honest remaining cost: projectivity
-of an abelian variety, symmetric very ample line bundles, and the theorem
-of the cube.  The check that would refute this is
-`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/` — it was run on 2026-07-27 and
-returns nothing in mathlib, so this part of the old note stands.  **The
-rest of that note did NOT**: it also claimed the theory of heights was
-absent from the pin, and `Mathlib/NumberTheory/Height/` is exactly it,
-lower bound included.  That correction is what made this cut cheap; it is
-recorded in full in `SegreHeight.lean`. -/
-theorem exists_segreCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) :
-    letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (SegreCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
-
-/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
-scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the geometric leaf above
-and the elementary leaf `nonempty_integralCoordinates_of_segreCoordinates`).
-
-**THE CUT, and what it corrects.**  This node used to be the single
-remaining leaf of the theory of heights, carrying the projective
-embedding, the theorem of the cube AND the passage from the projective
-height to `intHeight`, on the strength of a MISSING MACHINERY note
-saying the theory of heights was absent from `Mathlib`, `~/cs/FLT` and
-this project.  That note was stale: `Mathlib/NumberTheory/Height/` exists
-at this pin and carries `mulHeight`/`logHeight` on tuples, the
-`AdmissibleAbsValues` instance for number fields, Northcott, the
-comparison `Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer
-tuples, and — the expensive half — the height machine for a family of
-homogeneous forms in BOTH directions, `Height.logHeight_eval_le'` and
-`Height.logHeight_eval_ge'`, the latter from a Nullstellensatz
-certificate supplied as a polynomial identity.
-
-So the cut is along geometry versus arithmetic-of-heights, and the second
-half is now a derivation from named mathlib lemmas rather than a theory
-to be built:
-
-* `exists_segreCoordinates_of_abelianScheme` above is the geometry;
-* `nonempty_integralCoordinates_of_segreCoordinates` is the height
-  machine, whose docstring lists the five steps and the lemma for each.
-
-The old audit's *check* is kept in the geometric leaf, because the part
-of it about ampleness and the cube is still correct.
-
-TRUE and classical (Silverman, *AEC* VIII.5–VIII.6; Hindry–Silverman,
-*Diophantine Geometry* Part B).
-
-**What this node NO LONGER carries.**  Northcott's theorem is proven
-(`Fermat.instNorthcottIntHeight`), the passage to `DescentHeight` is
-proven (`Fermat.WeilHeight.toDescentHeight`), and now the height machine
-has been separated from the geometry as well. -/
-theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) :
-    letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
-  letI := ab.addCommGroup (𝟙 SpecQ)
-  obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
-  exact nonempty_integralCoordinates_of_segreCoordinates sc
+-- (`exists_segreCoordinates_of_abelianScheme` and
+-- `exists_integralCoordinates_of_abelianScheme` USED to be declared HERE.  They were
+-- relocated BELOW, to just after `exists_projectiveHeightSource_of_abelianScheme`, on
+-- 2026-07-28 by flt-lean-199: the first of them is no longer a leaf, and its proof
+-- consumes `exists_cubeEmbedding_of_abelianScheme`, which is declared below this point.
+-- Nothing between here and there consumes either declaration.)
 
 /-- **`A` embeds in `ℙⁿ_ℚ` by a symmetric very ample line bundle, the
 theorem of the cube holds for that embedding, and `(P, Q) ↦ (P+Q, P−Q)` is
@@ -25292,6 +25197,292 @@ theorem exists_projectiveHeightSource_of_abelianScheme {J : Scheme.{0}} {jstr : 
   letI := ab.addCommGroup (𝟙 SpecQ)
   obtain ⟨ce⟩ := exists_cubeEmbedding_of_abelianScheme ab
   exact ⟨ce.toProjectiveHeightSource⟩
+
+/-! ### Segre coordinates from a cube embedding (flt-lean-199, 2026-07-28)
+
+The three declarations below are the bridge that turned
+`exists_segreCoordinates_of_abelianScheme` from a leaf into a theorem.  They are
+kept together in this block, and are the only new top-level names introduced here.
+-/
+
+/-- **Every nonzero rational vector has a primitive integral representative**
+(PROVEN): there are `w : Fin n → ℤ` and a nonzero `c : ℚ` with `w = c • v` and
+`gcd w = 1`.
+
+Clear denominators with `IsLocalization.exist_integer_multiples_of_finite` for
+`ℤ → ℚ` (which supplies a single `b` in `nonZeroDivisors ℤ` working for all
+coordinates at once), then divide by the gcd; `Finset.gcd_div_eq_one` is what
+makes the quotient primitive, and it needs exactly one coordinate to be nonzero,
+which is `hv`.
+
+This is the elementary content of "a point of `ℙ^{n-1}(ℚ)` has a primitive
+integral representative".  Note the sign is deliberately NOT pinned: the
+representative is unique only up to `±1`, and no consumer here needs uniqueness —
+`SegreCoordinates.injective` follows from `CubeEmbedding.injective_of_smul`
+whichever sign is chosen. -/
+theorem exists_primitive_integral_rep {n : ℕ} (v : Fin n → ℚ) (hv : v ≠ 0) :
+    ∃ (w : Fin n → ℤ) (c : ℚ), c ≠ 0 ∧ (fun i => ((w i : ℚ))) = c • v ∧
+      Finset.univ.gcd w = 1 := by
+  obtain ⟨b, hb⟩ := IsLocalization.exist_integer_multiples_of_finite
+    (nonZeroDivisors ℤ) (S := ℚ) v
+  have hb0 : ((b : ℤ) : ℚ) ≠ 0 := by
+    exact_mod_cast nonZeroDivisors.coe_ne_zero b
+  choose u hu using fun i => hb i
+  have huv : ∀ i, ((u i : ℚ)) = ((b : ℤ) : ℚ) * v i := by
+    intro i
+    have h := hu i
+    simpa [Algebra.smul_def] using h
+  have hex : ∃ i, v i ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hv (funext h)
+  obtain ⟨i0, hi0⟩ := hex
+  have hui0 : u i0 ≠ 0 := by
+    intro h
+    apply hi0
+    have h2 := huv i0
+    rw [h] at h2
+    push_cast at h2
+    exact (mul_eq_zero.mp h2.symm).resolve_left hb0
+  set g : ℤ := Finset.univ.gcd u with hgdef
+  have hg0 : g ≠ 0 := fun h =>
+    hui0 (Finset.gcd_eq_zero_iff.mp h i0 (Finset.mem_univ i0))
+  have hgq : ((g : ℚ)) ≠ 0 := Int.cast_ne_zero.mpr hg0
+  refine ⟨fun i => u i / g, ((b : ℤ) : ℚ) / ((g : ℤ) : ℚ), div_ne_zero hb0 hgq, ?_, ?_⟩
+  · funext i
+    obtain ⟨k, hk⟩ : g ∣ u i := Finset.gcd_dvd (Finset.mem_univ i)
+    have hdiv : u i / g = k := by rw [hk]; exact Int.mul_ediv_cancel_left _ hg0
+    simp only [hdiv, Pi.smul_apply, smul_eq_mul]
+    have h2 := huv i
+    rw [hk] at h2
+    push_cast at h2 ⊢
+    field_simp
+    linarith [h2]
+  · exact Finset.gcd_div_eq_one (Finset.mem_univ i0) hui0
+
+/-- **A homogeneous form of degree `n` scales by `t ^ n`** (PROVEN):
+`eval (t • x) φ = t ^ n * eval x φ`.
+
+Absent from the pin — `Mathlib/RingTheory/MvPolynomial/Homogeneous.lean` has no
+`eval`/`smul` lemma at all — but both ingredients are there, and the proof is the
+same two lines that `AbsoluteValue.eval_mvPolynomial_le`
+(`Mathlib/NumberTheory/Height/MvPolynomial.lean`) uses: rewrite the total degree
+of each support monomial with `IsHomogeneous.degree_eq_sum_deg_support`, then pull
+`t` out of the monomial product with `Finset.prod_pow_eq_pow_sum`.
+
+This is what makes `CubeEmbedding.toSegreCoordinates` work: rescaling each
+coordinate vector to its primitive integral representative multiplies the Segre
+point by a scalar, and homogeneity is exactly the statement that the forms and the
+certificate survive that. -/
+theorem eval_smul_of_isHomogeneous {σ : Type*} {φ : MvPolynomial σ ℚ} {n : ℕ}
+    (hφ : φ.IsHomogeneous n) (t : ℚ) (x : σ → ℚ) :
+    MvPolynomial.eval (fun i => t * x i) φ = t ^ n * MvPolynomial.eval x φ := by
+  rw [MvPolynomial.eval_eq, MvPolynomial.eval_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  rw [hφ.degree_eq_sum_deg_support hd, ← Finset.prod_pow_eq_pow_sum]
+  simp_rw [mul_pow]
+  rw [Finset.prod_mul_distrib]
+  ring
+
+/-- **A cube embedding yields a Segre coordinate system** (PROVEN, 2026-07-28) —
+the observation that `SegreCoordinates` is `CubeEmbedding` plus integrality, and
+that the passage between them is elementary rather than geometric.
+
+The two structures ask for the same forms (`form := cube`) and the same
+certificate (`cert := cert`) with the same degrees; they differ ONLY in how a
+projective point is presented — `CubeEmbedding.coords` is an arbitrary nonzero
+rational vector taken up to scaling (`injective_of_smul`), `SegreCoordinates.coords`
+is the primitive INTEGRAL representative (`primitive`, `injective`).  So the proof
+is: normalise each vector with `exists_primitive_integral_rep`, obtaining
+`coords P = c P • ce.coords P`, and check that nothing else notices.
+
+Nothing else does, and homogeneity is why.  The Segre point of `(P, Q)` in the new
+coordinates is `(c P * c Q)` times the old one, so by `eval_smul_of_isHomogeneous`
+
+* `cube j` (degree `2`) picks up `(c P * c Q) ^ 2`,
+* `cert (k, j)` (degree `certDeg`) picks up `(c P * c Q) ^ certDeg`,
+
+and the certificate identity's two sides pick up `(c P * c Q) ^ (certDeg + 2)`
+each — so it transports verbatim.  `form_eval` transports with its scalar `c`
+replaced by `(c P * c Q) ^ 2 * c / (c (P + Q) * c (P − Q))`, which is nonzero
+because every `c` is; `form_eval` asks only for SOME nonzero scalar, which is
+exactly the slack this needs.
+
+**FAITHFULNESS.**  This is a genuine derivation, not a restatement: it does not
+weaken `SegreCoordinates`, and it adds no hypothesis.  It consumes
+`CubeEmbedding.coords_ne_zero` (to normalise at all) and `injective_of_smul` (for
+`injective`), which are the two fields that would otherwise be lost in passing to
+integral coordinates. -/
+noncomputable def CubeEmbedding.toSegreCoordinates {A : Type*} [AddCommGroup A]
+    (ce : CubeEmbedding A) : SegreCoordinates A := by
+  choose w c hc hwc hprim using fun P : A =>
+    exists_primitive_integral_rep (ce.coords P) (ce.coords_ne_zero P)
+  have hpt : ∀ (P : A) (i : Fin ce.dim), ((w P i : ℚ)) = c P * ce.coords P i := by
+    intro P i
+    have := congrFun (hwc P) i
+    simpa using this
+  have hseg : ∀ P Q : A, segreVec w P Q =
+      fun m : Fin ce.dim × Fin ce.dim =>
+        (c P * c Q) * (ce.coords P m.1 * ce.coords Q m.2) := by
+    intro P Q
+    funext m
+    simp only [segreVec, hpt]
+    ring
+  refine
+    { dim := ce.dim
+      coords := w
+      injective := ?_
+      primitive := hprim
+      certDeg := ce.certDeg
+      form := ce.cube
+      form_homogeneous := ce.cube_homogeneous
+      cert := ce.cert
+      cert_homogeneous := ce.cert_homogeneous
+      cert_eval := ?_
+      form_eval := ?_ }
+  · intro P Q hPQ
+    refine ce.injective_of_smul P Q (c Q / c P) (div_ne_zero (hc Q) (hc P)) ?_
+    funext i
+    have h1 : c P * ce.coords P i = c Q * ce.coords Q i := by
+      rw [← hpt P i, ← hpt Q i, hPQ]
+    have hP := hc P
+    simp only [Pi.smul_apply, smul_eq_mul]
+    field_simp
+    linear_combination h1
+  · intro P Q k
+    have hce := ce.cert_eval P Q k
+    rw [hseg P Q]
+    simp only [eval_smul_of_isHomogeneous (ce.cert_homogeneous _),
+      eval_smul_of_isHomogeneous (ce.cube_homogeneous _)]
+    have hstep : ∀ j : Fin ce.dim × Fin ce.dim,
+        (c P * c Q) ^ ce.certDeg * MvPolynomial.eval
+            (fun m : Fin ce.dim × Fin ce.dim => ce.coords P m.1 * ce.coords Q m.2)
+            (ce.cert (k, j)) *
+          ((c P * c Q) ^ 2 * MvPolynomial.eval
+            (fun m : Fin ce.dim × Fin ce.dim => ce.coords P m.1 * ce.coords Q m.2)
+            (ce.cube j))
+        = (c P * c Q) ^ (ce.certDeg + 2) *
+            (MvPolynomial.eval
+              (fun m : Fin ce.dim × Fin ce.dim => ce.coords P m.1 * ce.coords Q m.2)
+              (ce.cert (k, j)) *
+             MvPolynomial.eval
+              (fun m : Fin ce.dim × Fin ce.dim => ce.coords P m.1 * ce.coords Q m.2)
+              (ce.cube j)) := by
+      intro j; rw [pow_add]; ring
+    rw [Finset.sum_congr rfl (fun j _ => hstep j), ← Finset.mul_sum, hce, ← mul_pow]
+  · intro P Q
+    obtain ⟨c0, hc0, hck⟩ := ce.cube_eval P Q
+    refine ⟨(c P * c Q) ^ 2 * c0 / (c (P + Q) * c (P - Q)), ?_, ?_⟩
+    · exact div_ne_zero (mul_ne_zero (pow_ne_zero _ (mul_ne_zero (hc P) (hc Q))) hc0)
+        (mul_ne_zero (hc _) (hc _))
+    · intro k
+      rw [hseg P Q, eval_smul_of_isHomogeneous (ce.cube_homogeneous k), hck k,
+        hseg (P + Q) (P - Q)]
+      have h1 := hc (P + Q)
+      have h2 := hc (P - Q)
+      field_simp
+
+/-- **A Segre coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (PROVEN 2026-07-28 by flt-lean-199, over
+`exists_cubeEmbedding_of_abelianScheme` above, hence over the leaf
+`exists_cubeModel_of_abelianScheme`) — formerly the last leaf of the theory of
+heights on its own branch.
+
+**WHAT CHANGED, AND WHY THIS IS NOT A NEW LEAF.**  This node used to carry the
+projective embedding and the theorem of the cube *in its own right*, in parallel
+with `exists_cubeModel_of_abelianScheme`, which carries the SAME geometry for the
+`CubeEmbedding` packaging.  The two were duplicate statements of one classical
+theorem, split only by how the projective point is presented — rationally and up
+to scaling, or as a primitive integral vector.  `CubeEmbedding.toSegreCoordinates`
+above shows the second is a consequence of the first, by normalising each
+coordinate vector; so the geometry is now stated ONCE, on
+`exists_cubeModel_of_abelianScheme`, and this node is a corollary.
+
+That is a real reduction of the frontier and not a relabelling: the missing
+machinery (projectivity of an abelian variety, symmetric very ample line bundles,
+the theorem of the cube) is undiminished, but it is now owed in one place instead
+of two.  A prover who closes `exists_cubeModel_of_abelianScheme` closes this too.
+
+**RELOCATED.**  This declaration and the one below it used to sit some 250 lines
+higher, immediately after `exists_relPicZeroOf`.  They were moved here because the
+proof consumes `exists_cubeEmbedding_of_abelianScheme`, and Lean requires that to
+be already in the environment.  Nothing was renamed and no statement changed.
+
+TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic case;
+Hindry–Silverman, *Diophantine Geometry* Part B, for abelian varieties in
+general).
+
+**FAITHFULNESS AUDIT** (retained from the leaf version, and still correct).
+*Not vacuous.*  `form_eval` demands ONE family of quadratic forms working
+uniformly in `P` and `Q`; that is the cube theorem and nothing weaker.  An
+arbitrary injection `A(ℚ) ↪ ℤ^d` does not supply it — for `A(ℚ) ≅ ℤ` a linear
+parametrisation is refuted outright, since the height defect
+`log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is unbounded, and an unbounded defect
+is incompatible with degree-2 forms.  *The conclusion is `Nonempty`* because
+nothing downstream depends on WHICH system is used.
+
+**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist because `ℤ` is a
+PID with unit group `{±1}`; over a general number field the normalisation involves
+the class group and the unit group.  Mordell–Weil is only ever needed over `ℚ` in
+this development.  Note this is where that specificity now enters — the cube
+leaf itself is stated over `ℚ` only because its consumers are.
+
+**CORRECTION TO THE OLD MISSING-MACHINERY NOTE.**  It said the remaining cost was
+"projectivity of an abelian variety, symmetric very ample line bundles, and the
+theorem of the cube", with the refuting check
+`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple" Fermat/ .lake/packages/mathlib/
+~/cs/FLT/`.  That check still returns nothing in mathlib and the note is still
+true of the GEOMETRY — but it is no longer owed *here*.  It is owed on
+`exists_cubeModel_of_abelianScheme`, whose docstring carries it. -/
+theorem exists_segreCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (SegreCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨ce⟩ := exists_cubeEmbedding_of_abelianScheme ab
+  exact ⟨ce.toSegreCoordinates⟩
+
+/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the geometric node above
+and the elementary leaf `nonempty_integralCoordinates_of_segreCoordinates`).
+
+**THE CUT, and what it corrects.**  This node used to be the single
+remaining leaf of the theory of heights, carrying the projective
+embedding, the theorem of the cube AND the passage from the projective
+height to `intHeight`, on the strength of a MISSING MACHINERY note
+saying the theory of heights was absent from `Mathlib`, `~/cs/FLT` and
+this project.  That note was stale: `Mathlib/NumberTheory/Height/` exists
+at this pin and carries `mulHeight`/`logHeight` on tuples, the
+`AdmissibleAbsValues` instance for number fields, Northcott, the
+comparison `Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer
+tuples, and — the expensive half — the height machine for a family of
+homogeneous forms in BOTH directions, `Height.logHeight_eval_le'` and
+`Height.logHeight_eval_ge'`, the latter from a Nullstellensatz
+certificate supplied as a polynomial identity.
+
+So the cut is along geometry versus arithmetic-of-heights, and the second
+half is now a derivation from named mathlib lemmas rather than a theory
+to be built:
+
+* `exists_segreCoordinates_of_abelianScheme` above is the geometry (and is now
+  itself PROVEN over `exists_cubeModel_of_abelianScheme`);
+* `nonempty_integralCoordinates_of_segreCoordinates` is the height
+  machine, whose docstring lists the five steps and the lemma for each.
+
+TRUE and classical (Silverman, *AEC* VIII.5–VIII.6; Hindry–Silverman,
+*Diophantine Geometry* Part B).
+
+**What this node NO LONGER carries.**  Northcott's theorem is proven
+(`Fermat.instNorthcottIntHeight`), the passage to `DescentHeight` is
+proven (`Fermat.WeilHeight.toDescentHeight`), and now the height machine
+has been separated from the geometry as well. -/
+theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
+  exact nonempty_integralCoordinates_of_segreCoordinates sc
 
 /-- **A height function with the Northcott property exists on `A(ℚ)`,
 for every abelian scheme `A` over `ℚ`** (PROVEN, over the leaves above) —
