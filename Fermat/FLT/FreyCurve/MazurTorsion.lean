@@ -23867,11 +23867,197 @@ theorem WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg {F : Type*} [
     rw [huv, hu1, hv1]
     exact (MazurCMOrder.intCast_mul_intBasis ω m u₁ v₁).symm
 
-/-- **LEAF — an elliptic curve over `ℚ` with complex multiplication has CLASS
-NUMBER ONE**, written in the reduced-binary-quadratic-form encoding (introduced
+/-!
+### Reduction theory versus complex multiplication
+
+(Added 2026-07-27, decomposing `classNumberOne_of_end_closure_eq_top`, which is
+now PROVEN from the two lemmas here plus the single leaf
+`exists_represents_one_of_end_closure_eq_top`.)
+
+The leaf bundled two independent things: Gauss's REDUCTION THEORY for binary
+quadratic forms, which is elementary integer arithmetic and is proven below, and
+the FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION, which is not. The cut
+separates them along the classical identity
+
+    the class of `(a, b, c)` is principal  ⟺  `(a, b, c)` represents `1`,
+
+which is what makes reduction theory disappear from the deep side. Both
+directions are elementary: the principal form `(1, 0, n)` represents `1` at
+`(p, r) = (1, 0)`; conversely a representation `f(p, r) = 1` has `gcd(p, r) = 1`
+automatically, so `(p, r)` is the first column of a unimodular matrix carrying
+`f` to `(1, b′, c′)`, and `b′` can then be translated to `0`.
+
+So the deep half is stated as `∃ p r, a p² + b p r + c r² = 1`, with NO
+reducedness hypothesis at all, and the elementary half —
+`eq_one_of_reduced_of_represents_one` — is proven here from the fact that a
+reduced form takes no nonzero value smaller than its leading coefficient `a`:
+
+    f(p, r) ≥ a p² − |b| |p r| + c r² ≥ a (p² − |p r| + r²) ≥ a |p r| ≥ a
+
+whenever `p r ≠ 0`, using `|b| ≤ a ≤ c`; and `f(p, 0) = a p² ≥ a`,
+`f(0, r) = c r² ≥ c ≥ a`. A value of `1` therefore forces `a ≤ 1`.
+-/
+
+namespace MazurCMForm
+
+/-- **A reduced form has positive `n`.** `hpos`, `hub` and `hac` give
+`b² − 4ac ≤ a² − 4a² = −3a² < 0`, so `hdisc` forces `n > 0` by itself. This is
+what lets `exists_represents_one_of_end_closure_eq_top` carry `0 < n` as a
+hypothesis — which it must, see the counterexample in that leaf's docstring —
+while `classNumberOne_of_end_closure_eq_top` does not. -/
+theorem pos_of_reduced_disc {a b c n : ℤ} (hpos : 0 < a) (hlb : -a < b) (hub : b ≤ a)
+    (hac : a ≤ c) (hdisc : b ^ 2 - 4 * a * c = -(4 * n)) : 0 < n := by
+  nlinarith [mul_nonneg (sub_nonneg.2 hub) (by linarith : (0:ℤ) ≤ a + b),
+    mul_nonneg hpos.le (sub_nonneg.2 hac), mul_pos hpos hpos]
+
+/-- **The minimum of a reduced positive-definite form is its leading
+coefficient** (Gauss; Cox, *Primes of the Form x² + ny²*, Lemma 2.3), in exactly
+the form needed: a reduced form that represents `1` has `a = 1`.
+
+This is the whole of the reduction theory used by
+`classNumberOne_of_end_closure_eq_top`, and it is elementary — no
+discriminant, no primitivity, no class number. The three cases are
+`r = 0` (`a p² ≥ a`), `p = 0` (`c r² ≥ c ≥ a`), and `p r ≠ 0`, where
+`|b| ≤ a ≤ c` gives `f(p, r) ≥ a (p² − |p r| + r²) ≥ a |p r| ≥ a` because
+`p² + r² ≥ 2 |p r|`. Note `hlb` is used only through `-a ≤ b`; the strictness
+in `-a < b` is not needed here. -/
+theorem eq_one_of_reduced_of_represents_one {a b c p r : ℤ} (hpos : 0 < a) (hlb : -a < b)
+    (hub : b ≤ a) (hac : a ≤ c) (h : a * p ^ 2 + b * p * r + c * r ^ 2 = 1) : a = 1 := by
+  have hle : a ≤ 1 := by
+    rcases eq_or_ne p 0 with hp | hp
+    · subst hp
+      rcases eq_or_ne r 0 with hr | hr
+      · subst hr; simp at h
+      · have hr1 : 1 ≤ r ^ 2 := by
+          have : 1 ≤ r ∨ r ≤ -1 := by omega
+          rcases this with h' | h' <;> nlinarith
+        nlinarith [mul_nonneg (sub_nonneg.2 hac) (sq_nonneg r),
+          mul_nonneg hpos.le (sub_nonneg.2 hr1)]
+    · rcases eq_or_ne r 0 with hr | hr
+      · subst hr
+        have hp1 : 1 ≤ p ^ 2 := by
+          have : 1 ≤ p ∨ p ≤ -1 := by omega
+          rcases this with h' | h' <;> nlinarith
+        nlinarith [mul_nonneg hpos.le (sub_nonneg.2 hp1)]
+      · have hp1 : 1 ≤ p ^ 2 := by
+          have : 1 ≤ p ∨ p ≤ -1 := by omega
+          rcases this with h' | h' <;> nlinarith
+        have hr1 : 1 ≤ r ^ 2 := by
+          have : 1 ≤ r ∨ r ≤ -1 := by omega
+          rcases this with h' | h' <;> nlinarith
+        have hpr0 : p * r ≠ 0 := mul_ne_zero hp hr
+        by_cases hpr : 0 ≤ p * r
+        · have hpr1 : 1 ≤ p * r :=
+            Int.lt_iff_add_one_le.mp (lt_of_le_of_ne hpr (Ne.symm hpr0))
+          nlinarith [mul_nonneg (sub_nonneg.2 hac) (sq_nonneg r),
+            mul_nonneg (by linarith : (0:ℤ) ≤ b + a) hpr,
+            mul_nonneg hpos.le (by nlinarith [sq_nonneg (p - r)] :
+              (0:ℤ) ≤ p ^ 2 - p * r + r ^ 2 - 1)]
+        · have hpr' : p * r < 0 := not_le.mp hpr
+          have hpr1 : p * r ≤ -1 := by linarith [Int.lt_iff_add_one_le.mp hpr']
+          nlinarith [mul_nonneg (sub_nonneg.2 hac) (sq_nonneg r),
+            mul_nonneg (sub_nonneg.2 hub) (by linarith : (0:ℤ) ≤ -(p * r)),
+            mul_nonneg hpos.le (by nlinarith [sq_nonneg (p + r)] :
+              (0:ℤ) ≤ p ^ 2 + p * r + r ^ 2 - 1)]
+  omega
+
+end MazurCMForm
+
+/-- **LEAF — THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION**, in the weakest
+form this tree needs: an elliptic curve over `ℚ` whose geometric endomorphism
+ring is `ℤ[ψ]` with `ψ² = [−n]` forces every primitive positive-definite binary
+quadratic form of discriminant `−4n` to REPRESENT `1` (introduced 2026-07-27 by
+the cut of `classNumberOne_of_end_closure_eq_top`, which is now PROVEN from this
+plus `MazurCMForm.eq_one_of_reduced_of_represents_one`).
+
+`hsq` and `htop` together say `End(E_ℚ̄) = ℤ[ψ] ≅ ℤ[X]/(X² + n)`, the order of
+DISCRIMINANT `−4n` in `ℚ(√−n)` (with `0 < n` it is imaginary quadratic and
+`1, ψ` is a `ℤ`-basis). `E` is defined over `ℚ`, so `j(E) ∈ ℚ`; the first main
+theorem says `K(j(E))` is the ring class field of that order, so
+`[ℚ(j(E)) : ℚ] = h(−4n)` and therefore `h(−4n) = 1`. A class number of `1` means
+every primitive positive form of discriminant `−4n` is properly equivalent to
+the principal form `(1, 0, n)`, equivalently represents `1`.
+
+**`hn : 0 < n` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT — with an
+explicit counterexample.** `hsq` and `htop` do NOT force `n > 0`: take any `E/ℚ`
+WITHOUT complex multiplication, so `End(E_ℚ̄) = ℤ`, and `ψ = [2]`. Then
+`ψ² = [4] = [−(−4)]`, so `hsq` holds with `n = −4`; and `Subring.closure {[2]}`
+contains `1`, hence all of `ℤ = End(E_ℚ̄)`, so `htop` holds too. The discriminant
+is then `−4n = 16 > 0` and the forms are indefinite of square discriminant:
+`(a, b, c) = (7, 10, 3)` has `10² − 4·7·3 = 16`, `gcd(7, 10, 3) = 1`, `0 < 7` —
+and it factors as `(7p + 3r)(p + r)`, whose value is `1` only if both factors
+are `1` (giving `4p = −2`) or both are `−1` (giving `4p = 2`), neither of which
+has an integer solution. So it does not represent `1`. The consumer
+`classNumberOne_of_end_closure_eq_top` supplies `0 < n` from reducedness
+(`MazurCMForm.pos_of_reduced_disc`), so nothing is lost.
+
+**NOT VACUOUS.** `n = 1, 2, 3, 4, 7` are honest instances (`E : y² = x³ + x`
+with `ψ = i` gives `n = 1`, discriminant `−4`); the conclusion FAILS at `n = 5`,
+where `h(−20) = 2` and the reduced primitive form `(2, 2, 3)` does not represent
+`1` — which is exactly why no elliptic curve over `ℚ` has geometric
+endomorphism ring `ℤ[√−5]`. Keep that check passing: any proof of this leaf that
+would also go through at `n = 5` is proving something false.
+
+## MISSING MACHINERY, and what is genuinely blocked
+
+Re-checked 2026-07-27 against `Fermat/`, `.lake/packages/mathlib` and
+`~/cs/FLT`: none of the following exists at this pin.
+
+1. Orders in an imaginary quadratic field, their PROPER ideals, and the ideal
+   class group of a NON-MAXIMAL order. (Mathlib has `ClassGroup` only for
+   Dedekind domains, and a non-maximal order is not one.)
+2. The form class group and its isomorphism with the ideal class group
+   (Cox, Theorem 7.7). This is the piece that turns `h(D) = 1` into the
+   "represents `1`" statement above, and it is pure algebra — no analysis.
+3. Either (a) lattices in `ℂ`, the analytic `j`, and the uniformisation
+   `{lattices}/≅ ↔ {curves}/≅` (Cox §10–11); or (b) the algebraic route of
+   Silverman *ATAEC* II: `E[𝔞] = ⋂_{α ∈ 𝔞} ker α` for a proper `O`-ideal `𝔞`,
+   the quotient curve `E/E[𝔞]`, and `End(E/E[𝔞]) = O`.
+4. The main theorem itself: `Gal(ℚ̄/K)` acts transitively on the `h(D)`
+   `j`-invariants through the Artin map of the ring class field (Cox §11,
+   *ATAEC* II.4.3 / II.6.1).
+
+**Two blockers that are checkable in one grep each, so state them rather than
+re-surveying:**
+
+* Route 3(b) needs `Ideal (End W)`, hence a `CommRing` instance on `End W`.
+  `WeierstrassCurve.End.mul_comm_charZero`, ~500 lines above in this same file,
+  is still an OPEN LEAF — so the algebraic route is gated on a sibling of this
+  one, not on anything external. Route 3(a) is not.
+* Quotients of an elliptic curve by a finite rational subgroup do not exist in
+  this tree either (see this file's header note on
+  `exists_torsion_embedding_of_not_isIrreducible`, which folds the same missing
+  construction into an existential). That is a second, independent gate on
+  route 3(b).
+
+**What the cut already bought.** The two Hilbert-class-polynomial leaves this
+replaced additionally needed integrality of `j` and the identification of
+`∏ (X − j(𝔞))` with an explicit degree-`10` (resp. degree-`6`) integer literal.
+That was the only level-specific item, and the only one requiring the Hilbert
+class polynomial to exist as a definition; it is gone, and items 1–4 above are
+uniform in `n`. Refuting check for the "uniform" claim: if a successor finds
+that `[ℚ(j) : ℚ] = h(D)` is easier at `D = −500` than in general, this merge was
+the wrong move and the two literals should come back. -/
+theorem WeierstrassCurve.exists_represents_one_of_end_closure_eq_top
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (n : ℤ) (hn : 0 < n)
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = ((-n : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (htop : Subring.closure
+      ({ψ} : Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤)
+    (a b c : ℤ) (hdisc : b ^ 2 - 4 * a * c = -(4 * n))
+    (hprim : Int.gcd a (Int.gcd b c) = 1)
+    (hpos : 0 < a) :
+    ∃ p r : ℤ, a * p ^ 2 + b * p * r + c * r ^ 2 = 1 :=
+  sorry
+
+/-- **An elliptic curve over `ℚ` with complex multiplication has CLASS NUMBER
+ONE**, written in the reduced-binary-quadratic-form encoding (introduced
 2026-07-27; it REPLACES the two level-specific Hilbert-class-polynomial leaves
 `classPoly500_of_end_closure_eq_top` and `classPoly676_of_end_closure_eq_top`,
-both of which are now PROVEN from it, so the frontier loses one node).
+both of which are now PROVEN from it. DECOMPOSED and PROVEN 2026-07-27 — it is
+no longer a leaf; the CM content lives in
+`exists_represents_one_of_end_closure_eq_top` just above).
 
 `hsq` and `htop` together say `End(E_ℚ̄) = ℤ[ψ] ≅ ℤ[X]/(X² + n)`: `ψ ∉ ℤ`
 because `ψ² = [−n]` with `n > 0`, so `1, ψ` is a `ℤ`-basis and `End(E_ℚ̄)` is
@@ -23894,7 +24080,10 @@ properly equivalent to `(a, −b, a)`, so the statement remains true, and is if
 anything marginally stronger than the classical one.
 
 `0 < n` is deliberately NOT a hypothesis: `hpos`, `hub` and `hac` give
-`b² − 4ac ≤ a² − 4a² = −3a² < 0`, so `hdisc` forces `n > 0` by itself.
+`b² − 4ac ≤ a² − 4a² = −3a² < 0`, so `hdisc` forces `n > 0` by itself
+(`MazurCMForm.pos_of_reduced_disc`). The deep leaf below DOES take `0 < n`,
+because without reducedness `hsq` and `htop` do not imply it and the statement
+is then false — see the `(7, 10, 3)` counterexample in its docstring.
 
 **NOT VACUOUS — this is the main gain of the cut.** The two leaves it replaces
 had jointly unsatisfiable hypotheses (no elliptic curve over `ℚ` has a rational
@@ -23940,11 +24129,22 @@ remain load-bearing: they are still consumed by
 `classPoly676_of_stable_cyclic_subgroup_order_169`, so nothing becomes
 free-floating.
 
-**STILL IRREDUCIBLE at this mathlib pin.** Re-checked 2026-07-27: neither
-mathlib, nor `~/cs/FLT`, nor this project has complex multiplication, ring
-class fields, the class group of a non-maximal order, or lattices in `ℂ`. What
-the cut buys is that the missing theory is now needed ONCE, uniformly in `n`,
-with no Hilbert class polynomial and no CAS-produced literal anywhere on the
+**DECOMPOSED 2026-07-27 — this is no longer a leaf, and the previous "STILL
+IRREDUCIBLE at this mathlib pin" verdict was only as wide as the axis it
+searched.** That verdict was correct about the MATHEMATICS: nothing at this pin
+has complex multiplication, ring class fields, the class group of a non-maximal
+order, or lattices in `ℂ`. It was wrong to conclude the STATEMENT was atomic,
+because it never looked along the FORM axis: reducedness and the CM input are
+independent, and separating them costs nothing and proves half the statement.
+The cut is
+
+* `MazurCMForm.eq_one_of_reduced_of_represents_one` (PROVEN, elementary): a
+  reduced form representing `1` has `a = 1`;
+* `exists_represents_one_of_end_closure_eq_top` (LEAF): the CM input, now
+  stated with NO reducedness hypothesis at all.
+
+So the missing theory is needed ONCE, uniformly in `n`, with no Hilbert class
+polynomial, no CAS-produced literal and no reduction theory anywhere on the
 critical path. Refuting check for the "uniform" claim: if a successor finds
 that `[ℚ(j) : ℚ] = h(D)` is easier to obtain at `D = −500` than in general,
 this merge was the wrong move and the two literals should come back. -/
@@ -23958,8 +24158,14 @@ theorem WeierstrassCurve.classNumberOne_of_end_closure_eq_top
     (a b c : ℤ) (hdisc : b ^ 2 - 4 * a * c = -(4 * n))
     (hprim : Int.gcd a (Int.gcd b c) = 1)
     (hpos : 0 < a) (hlb : -a < b) (hub : b ≤ a) (hac : a ≤ c) :
-    a = 1 :=
-  sorry
+    a = 1 := by
+  -- Reducedness alone forces `n > 0`, which is what the CM leaf needs;
+  -- the CM leaf then produces a representation of `1`, and a reduced form
+  -- takes no nonzero value below `a`.
+  obtain ⟨p, r, hpr⟩ :=
+    E.exists_represents_one_of_end_closure_eq_top n
+      (MazurCMForm.pos_of_reduced_disc hpos hlb hub hac hdisc) ψ hsq htop a b c hdisc hprim hpos
+  exact MazurCMForm.eq_one_of_reduced_of_represents_one hpos hlb hub hac hpr
 
 /-- **The main theorem of complex multiplication at discriminant `−500`**
 (introduced 2026-07-27 by the cut of `classPoly500_of_endSq_neg125`; PROVEN
