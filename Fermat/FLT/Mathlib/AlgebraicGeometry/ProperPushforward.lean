@@ -112,13 +112,27 @@ direct images of quasi-coherent sheaves at all.
 * `exists_isAffineOver_nbhd_of_slice_const` — **PROVEN** from the leaf below by
   `IsOpenImmersion.lift`: at each point `y : Y` there is an open `V ∋ y` over which `m`
   factors through a scheme affine over the base.
-* `exists_isAffineOpen_slice_nbhd_of_slice_const` — **THE ONE REMAINING LEAF of the
-  rigidity lemma**, and it is now a bare statement about OPENS: at each `y : Y` there are
-  an open `V ∋ y` in `Y` and an open `U ⊆ Z` with `V ×_S U` affine and
+* `exists_isAffineOpen_slice_nbhd_of_slice_const` — **PROVEN** (2026-07-28): at each
+  `y : Y` there are an open `V ∋ y` in `Y` and an open `U ⊆ Z` with `V ×_S U` affine and
   `range (X ×_S V ⟶ Z) ⊆ U`.  This is where properness of `pullback.snd`, the section `σ`
-  and `[GeometricallyConnected q]` are consumed, and it is the *whole* of what is missing
-  — every morphism, index-set, gluing and uniqueness obligation around it has been
-  discharged.
+  and `[GeometricallyConnected q]` are consumed.  Its properness half is
+  `isOpen_setOf_slice_mapsTo` (the tube lemma, PROVEN), its packaging is
+  `mem_sliceGoodLocus_of_mem_sliceContractedLocus` (PROVEN), the converse identification
+  of the two loci is `sliceContractedLocus_of_sliceGoodLocus` (PROVEN, and the place where
+  `hpush` is spent), the base point is `slice_const_of_section` (PROVEN, over
+  `isPullback_sliceIncl`: the slice cut out by a section is the base change of that
+  section), and the clopen argument is `mem_sliceGoodLocus_of_slice_const` (PROVEN).
+* `isClosed_sliceContractedLocus_fiber` — **PROVEN** (2026-07-28): the locus of `y : Y`
+  whose slice `m` contracts to a point is CLOSED IN EACH FIBRE of `q`.  This is the
+  semicontinuity half, and it closes the rigidity lemma: **the whole cone is now free of
+  `sorry` except `isIso_appTop_of_isProper_of_flat`**, which is the pushforward theorem
+  itself and has a separate owner.  The mechanism is that the projection away from
+  `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
+  flat over the field `κ(s)`; the input is `Mathlib`'s
+  `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f` — *any* morphism to the
+  spectrum of a field is universally open — packaged here as
+  `universallyOpen_of_isPullback_residueField`.  **No flatness hypothesis on `p` is needed
+  or used.**
 
 ## `geometricallyReduced_of_smooth` WAS A DUPLICATE LEAF, and has been deleted (2026-07-27)
 
@@ -181,6 +195,23 @@ morphism data entirely and asks only for two OPENS (`V ∋ y` in `Y` and `U` in 
 `IsOpenImmersion.lift`.  The remaining leaf therefore carries exactly the geometry
 (properness ⟹ closed map; the `GeometricallyConnected` clopen argument) and none of the
 bookkeeping.
+
+**UPDATE (2026-07-28): THE RIGIDITY LEMMA IS CLOSED.**  `IsProper ⟹ IsClosedMap` for the
+base-changed projection is `isOpen_setOf_slice_mapsTo`, the `GeometricallyConnected` clopen
+argument is `mem_sliceGoodLocus_of_slice_const`, and
+`exists_isAffineOpen_slice_nbhd_of_slice_const` is PROVEN from them.  The step the earlier
+notes did not identify is the OTHER half of "clopen": the contracted locus must be closed
+in each fibre of `q`.  That is not packaging but genuine geometry — semicontinuity of
+"constant along the slice" — and it is proven as
+`isClosed_sliceContractedLocus_fiber`, by restricting to the scheme-theoretic fibre, where
+the projection away from `X ×_S X` becomes an open map because everything is flat over the
+residue FIELD `κ(s)`.
+
+Note the earlier note above got the shape of half (2) wrong, and the error is worth keeping
+visible: "running (1) at every point of that locus shows it is also closed in each fibre"
+is FALSE — running (1) again gives openness a second time, never closedness.  Closedness is
+the semicontinuity statement and needs the flat-over-a-field input; there is no way to get
+it out of properness alone.
 
 The leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
 induced by an open `V ⊆ Y`.
@@ -1292,58 +1323,647 @@ instance {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
     IsOpenImmersion (sliceOverOpen p q V) :=
   MorphismProperty.of_isPullback (isPullback_sliceOverOpen p q V).flip inferInstance
 
-/-- **THE ONE REMAINING LEAF OF THE RIGIDITY LEMMA** (sorry node) — the whole topological
-content, and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
+/-! ### The covering step, cut into the properness half and the connectedness half
 
-Everything else is discharged: `exists_isAffineOver_nbhd_of_slice_const` below turns this
-into the morphism-level factorization (by `IsOpenImmersion.lift`, since the containment
-below is exactly the hypothesis that lift needs),
-`exists_isAffineOver_cover_of_slice_const` turns THAT into an open cover (by indexing on
-the points of `Y`), and `exists_comp_snd_eq_of_open_cover` glues.  So what is left here is
-a bare statement about opens and set-theoretic images — no morphism plumbing, no index
-set, no uniqueness.
+The two halves of the covering step are separated here, and both are PROVEN:
 
-**What has to be produced at `y`.**  An open `V ∋ y` in `Y` and an open `U ⊆ Z` such that
+1. *properness* — `isOpen_setOf_slice_mapsTo`: for a fixed open `U ⊆ Z`, the set of `y : Y`
+   whose whole slice is mapped into `U` is OPEN.  This is the tube lemma, and it is exactly
+   `IsProper p ⟹ IsClosedMap (pullback.snd p q)` (properness is stable under base change);
+   the complement of that set is the image of the closed `m ⁻¹(Z ∖ U)`.
+2. *connectedness* — the clopen argument, assembled here as
+   `mem_sliceGoodLocus_of_slice_const` over `isClosed_sliceContractedLocus_fiber`, the
+   semicontinuity statement proven in the section after next.
+
+The assembly runs on two loci, which the lemmas below prove to be THE SAME SET:
+
+* `sliceGoodLocus` — the set of `y` at which the leaf's conclusion holds.  It is open by
+  construction (`isOpen_sliceGoodLocus`), since its defining witness `V` is a
+  neighbourhood of every one of its points.
+* `sliceContractedLocus` — the set of `y` whose slice `m` maps to a SINGLE POINT of `Z`.
+
+`sliceContractedLocus ⊆ sliceGoodLocus` is the properness half packaged
+(`mem_sliceGoodLocus_of_mem_sliceContractedLocus`): the single image point `z` sits in an
+affine open `U` lying over an affine `S₀ ∋ q y`, the tube lemma shrinks `Y` to an open on
+which the whole slice lands in `U`, and an affine `V` inside that open and inside
+`q ⁻¹ᵁ S₀` makes `V ×_S U = V ×_{S₀} U` affine (`isAffine_pullback_ι_comp`).  The reverse
+inclusion `sliceContractedLocus_of_sliceGoodLocus` is the affine-target rigidity lemma
+already proven above: over `V` the map factors as `pullback.snd ≫ d`, so each slice over
+`V` goes to the single point `d v`.  This is where `hpush` is consumed.
+
+`σ` and `hconst` enter only through `slice_const_of_section`: the slice over `σ s` is
+exactly the image of `sliceIncl` (`isPullback_sliceIncl` — the slice cut out by a section
+is the BASE CHANGE of `σ` along `pullback.snd p q`, so `range (sliceIncl) =
+(pullback.snd p q) ⁻¹ (range σ)`), and `hconst` sends all of it to `c s`. -/
+
+/-- **THE TUBE LEMMA** (PROVEN) — the properness half of the covering step.
+
+`{y | m maps the whole slice over y into U}` is OPEN, because its complement is
+`(pullback.snd p q) '' (m ⁻¹ (Z ∖ U))`, the image of a closed set under a proper — hence
+closed — map.  `pullback.snd p q` is proper as a base change of `p`.
+
+No separatedness, no connectedness, no section: this is the entire content of
+"`IsProper ⟹ IsClosedMap` for the base-changed projection". -/
+theorem isOpen_setOf_slice_mapsTo {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S} [IsProper p]
+    (m : pullback p q ⟶ Z) (U : Z.Opens) :
+    IsOpen {y : Y | ∀ w : ↥(pullback p q), (pullback.snd p q) w = y → m w ∈ U} := by
+  have hcl : IsClosedMap (pullback.snd p q) := (pullback.snd p q).isClosedMap
+  have hset : {y : Y | ∀ w : ↥(pullback p q), (pullback.snd p q) w = y → m w ∈ U}
+      = (Set.image (pullback.snd p q) (m ⁻¹' (U : Set Z)ᶜ))ᶜ := by
+    ext y
+    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, Set.mem_image, Set.mem_preimage,
+      not_exists, not_and]
+    constructor
+    · rintro h w hw rfl
+      exact hw (h w rfl)
+    · intro h w hw
+      by_contra hc
+      exact h w hc hw
+  rw [hset]
+  exact isOpen_compl_iff.mpr (hcl _ ((U.2.isClosed_compl).preimage m.continuous))
+
+/-- **THE SLICE CUT OUT BY A SECTION IS A BASE CHANGE OF THAT SECTION** (PROVEN).
+
+`pullback.snd p q` is the base change of `p` along `q`; base-changing it once more along
+`σ` gives the base change of `p` along `σ ≫ q = 𝟙 S`, i.e. `X` itself, and the comparison
+map is `sliceIncl`.  Formally this is one pasting: the outer rectangle obtained by
+adjoining `pullback.fst p q` on the right is `IsPullback (𝟙 X) p p (𝟙 S)`.
+
+The consequence used below is `range_sliceIncl`: every point of `X ×_S Y` lying over a
+point of `σ(S)` — not merely those of the form `(x, σ (p x))` — is in the image of
+`sliceIncl`.  That is a statement about the CARRIER of a fibre product and is not formal;
+what makes it true is that `κ(σ s) = κ(s)`, so `κ(x) ⊗_{κ(s)} κ(σ s)` has a single prime. -/
+theorem isPullback_sliceIncl {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S ⟶ Y)
+    (hσ : σ ≫ q = 𝟙 S) : IsPullback (sliceIncl p q σ hσ) p (pullback.snd p q) σ := by
+  refine IsPullback.of_right (h₁₂ := pullback.fst p q) (h₂₂ := q) ?_
+    (sliceIncl_snd p q σ hσ) (IsPullback.of_hasPullback p q)
+  rw [sliceIncl_fst, hσ]
+  exact IsPullback.of_horiz_isIso ⟨by simp⟩
+
+/-- **THE IMAGE OF `sliceIncl` IS THE PART OF `X ×_S Y` OVER `σ(S)`** (PROVEN), from
+`isPullback_sliceIncl` and `Scheme.Pullback.range_fst`. -/
+theorem range_sliceIncl {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S ⟶ Y)
+    (hσ : σ ≫ q = 𝟙 S) :
+    Set.range (sliceIncl p q σ hσ) = (pullback.snd p q) ⁻¹' Set.range σ := by
+  have h := isPullback_sliceIncl p q σ hσ
+  have e : (sliceIncl p q σ hσ : ↥X → ↥(pullback p q))
+      = (pullback.fst (pullback.snd p q) σ) ∘ (h.isoPullback.hom) := by
+    funext x
+    rw [Function.comp_apply, ← Scheme.Hom.comp_apply, h.isoPullback_hom_fst]
+  have hsurj : Function.Surjective
+      (h.isoPullback.hom : ↥X → ↥(pullback (pullback.snd p q) σ)) := by
+    intro z
+    exact ⟨h.isoPullback.inv z, by rw [← Scheme.Hom.comp_apply]; simp⟩
+  rw [e, Set.range_comp, Set.range_eq_univ.mpr hsurj, Set.image_univ, Scheme.Pullback.range_fst]
+
+/-- **`X ×_S V` IS EXACTLY THE PART OF `X ×_S Y` LYING OVER `V`, ON POINTS** (PROVEN) — the
+carrier form of `isPullback_sliceOverOpen`, proven the same way as `range_sliceIncl`. -/
+theorem range_sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    Set.range (sliceOverOpen p q V) = (pullback.snd p q) ⁻¹' (V : Set Y) := by
+  have h := isPullback_sliceOverOpen p q V
+  have e : (sliceOverOpen p q V : ↥(pullback p (V.ι ≫ q)) → ↥(pullback p q))
+      = (pullback.fst (pullback.snd p q) V.ι) ∘ (h.isoPullback.hom) := by
+    funext x
+    rw [Function.comp_apply, ← Scheme.Hom.comp_apply, h.isoPullback_hom_fst]
+  have hsurj : Function.Surjective
+      (h.isoPullback.hom : ↥(pullback p (V.ι ≫ q)) → ↥(pullback (pullback.snd p q) V.ι)) := by
+    intro z
+    exact ⟨h.isoPullback.inv z, by rw [← Scheme.Hom.comp_apply]; simp⟩
+  rw [e, Set.range_comp, Set.range_eq_univ.mpr hsurj, Set.image_univ, Scheme.Pullback.range_fst,
+    Scheme.Opens.range_ι]
+
+/-- A point of an open subscheme lands in that open. -/
+theorem mem_range_ι {W : Scheme.{u}} (V : W.Opens) (v : ↥V) : V.ι v ∈ (V : Set W) := by
+  rw [← Scheme.Opens.range_ι]; exact ⟨v, rfl⟩
+
+/-- Affine opens are a basis, in the form used three times below. -/
+theorem exists_isAffine_opens_subset {W : Scheme.{u}} {T : Set W} (hT : IsOpen T) (x : W)
+    (hx : x ∈ T) : ∃ V : W.Opens, IsAffine V ∧ x ∈ V ∧ (V : Set W) ⊆ T := by
+  obtain ⟨_, ⟨V, hV, rfl⟩, hxV, hVW⟩ := W.isBasis_affineOpens.exists_subset_of_mem_open hx hT
+  exact ⟨V, hV, hxV, hVW⟩
+
+/-- **`V ×_S U` IS AFFINE WHEN `V` AND `U` ARE AFFINE OPENS OVER ONE AFFINE `S₀ ⊆ S`**
+(PROVEN).
+
+`Mathlib` has `IsAffine (pullback f g)` for `f` an affine morphism and `g` an affine
+scheme, so the only issue is that `V.ι ≫ q` and `U.ι ≫ r` go to `S`, not to `S₀`.  Both
+factor through the open immersion `S₀.ι`, which is a MONOMORPHISM, and
+`pullbackIsPullbackOfCompMono` says that postcomposing both legs with a mono does not
+change the fibre product: `V ×_S U = V ×_{S₀} U`, which is affine. -/
+theorem isAffine_pullback_ι_comp {Y Z S : Scheme.{u}} {q : Y ⟶ S} {r : Z ⟶ S} (S₀ : S.Opens)
+    (V : Y.Opens) (U : Z.Opens) [IsAffine S₀] [IsAffine V] [IsAffine U]
+    (hV : Set.range (V.ι ≫ q) ⊆ (S₀ : Set S)) (hU : Set.range (U.ι ≫ r) ⊆ (S₀ : Set S)) :
+    IsAffine (pullback (V.ι ≫ q) (U.ι ≫ r)) := by
+  have hV' : Set.range (V.ι ≫ q) ⊆ Set.range S₀.ι := by
+    rw [Scheme.Opens.range_ι]; exact hV
+  have hU' : Set.range (U.ι ≫ r) ⊆ Set.range S₀.ι := by
+    rw [Scheme.Opens.range_ι]; exact hU
+  have hv : IsOpenImmersion.lift S₀.ι (V.ι ≫ q) hV' ≫ S₀.ι = V.ι ≫ q :=
+    IsOpenImmersion.lift_fac _ _ _
+  have hu : IsOpenImmersion.lift S₀.ι (U.ι ≫ r) hU' ≫ S₀.ι = U.ι ≫ r :=
+    IsOpenImmersion.lift_fac _ _ _
+  rw [← hv, ← hu]
+  have hpb : IsPullback (pullback.fst (IsOpenImmersion.lift S₀.ι (V.ι ≫ q) hV')
+      (IsOpenImmersion.lift S₀.ι (U.ι ≫ r) hU'))
+      (pullback.snd (IsOpenImmersion.lift S₀.ι (V.ι ≫ q) hV')
+        (IsOpenImmersion.lift S₀.ι (U.ι ≫ r) hU'))
+      (IsOpenImmersion.lift S₀.ι (V.ι ≫ q) hV' ≫ S₀.ι)
+      (IsOpenImmersion.lift S₀.ι (U.ι ≫ r) hU' ≫ S₀.ι) :=
+    IsPullback.of_isLimit (pullbackIsPullbackOfCompMono _ _ S₀.ι)
+  exact IsAffine.of_isIso hpb.isoPullback.inv
+
+/-- **THE GOOD LOCUS**: the set of points of `Y` at which the conclusion of
+`exists_isAffineOpen_slice_nbhd_of_slice_const` holds.  The theorem says it is all of `Y`. -/
+def sliceGoodLocus {X Y Z S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (r : Z ⟶ S)
+    (m : pullback p q ⟶ Z) : Set Y :=
+  {y | ∃ (V : Y.Opens) (U : Z.Opens), y ∈ V ∧
+      IsAffine (pullback (V.ι ≫ q) (U.ι ≫ r)) ∧
+      Set.range (sliceOverOpen p q V ≫ m) ⊆ (U : Set Z)}
+
+/-- **THE CONTRACTED LOCUS**: the set of `y : Y` whose slice `m` maps to a single point. -/
+def sliceContractedLocus {X Y Z S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    (m : pullback p q ⟶ Z) : Set Y :=
+  {y | ∃ z : Z, ∀ w : ↥(pullback p q), (pullback.snd p q) w = y → m w = z}
+
+/-- **THE GOOD LOCUS IS OPEN** (PROVEN) — immediately, since its witness `V` at `y` is a
+neighbourhood of `y` and witnesses membership at each of its own points. -/
+theorem isOpen_sliceGoodLocus {X Y Z S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (r : Z ⟶ S)
+    (m : pullback p q ⟶ Z) : IsOpen (sliceGoodLocus p q r m) := by
+  rw [isOpen_iff_forall_mem_open]
+  rintro y ⟨V, U, hyV, haff, hrange⟩
+  exact ⟨(V : Set Y), fun y' hy' => ⟨V, U, hy', haff, hrange⟩, V.2, hyV⟩
+
+/-- **CONTRACTED ⟹ GOOD** (PROVEN) — the properness half, packaged.
+
+Given that the slice over `y` goes to the single point `z`: `r z = q y` by `hm`, so an
+affine `S₀ ∋ q y`, an affine `U ∋ z` inside `r ⁻¹ᵁ S₀`, the tube lemma, and an affine
+`V ∋ y` inside both the tube and `q ⁻¹ᵁ S₀` give the required pair, with `V ×_S U` affine
+by `isAffine_pullback_ι_comp`.
+
+`[Surjective (pullback.snd p q)]` is used only to produce ONE point of the slice, which is
+what pins `z` over `q y`; it comes from `surjective_of_hasUniversallyTrivialPushforward`. -/
+theorem mem_sliceGoodLocus_of_mem_sliceContractedLocus {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [Surjective (pullback.snd p q)]
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p) {y : Y}
+    (hy : y ∈ sliceContractedLocus p q m) : y ∈ sliceGoodLocus p q r m := by
+  obtain ⟨z, hz⟩ := hy
+  obtain ⟨w₀, hw₀⟩ := (pullback.snd p q).surjective y
+  have hzs : r z = q y := by
+    rw [← hz w₀ hw₀, ← hw₀]
+    simp only [← Scheme.Hom.comp_apply, hm, ← pullback.condition]
+  obtain ⟨S₀, hS₀, hsS₀, -⟩ := exists_isAffine_opens_subset isOpen_univ (q y) (Set.mem_univ _)
+  haveI := hS₀
+  obtain ⟨U, hU, hzU, hUS₀⟩ := exists_isAffine_opens_subset (r ⁻¹ᵁ S₀).2 z
+    (show z ∈ ((r ⁻¹ᵁ S₀ : Z.Opens) : Set Z) by simpa [hzs] using hsS₀)
+  haveI := hU
+  obtain ⟨V, hV, hyV, hVsub⟩ :=
+    exists_isAffine_opens_subset
+      ((isOpen_setOf_slice_mapsTo m U).inter (q ⁻¹ᵁ S₀).2) y
+      (show y ∈ {y' : Y | ∀ w : ↥(pullback p q), (pullback.snd p q) w = y' → m w ∈ U} ∩
+          ((q ⁻¹ᵁ S₀ : Y.Opens) : Set Y) from
+        ⟨fun w hw => by rw [hz w hw]; exact hzU, by simpa using hsS₀⟩)
+  haveI := hV
+  refine ⟨V, U, hyV, ?_, ?_⟩
+  · refine isAffine_pullback_ι_comp S₀ V U ?_ ?_
+    · rintro _ ⟨v, rfl⟩
+      simpa using (hVsub (mem_range_ι V v)).2
+    · rintro _ ⟨u, rfl⟩
+      simpa using hUS₀ (mem_range_ι U u)
+  · rintro _ ⟨w', rfl⟩
+    have hw : (pullback.snd p q) ((sliceOverOpen p q V) w')
+        = V.ι ((pullback.snd p (V.ι ≫ q)) w') := by
+      rw [← Scheme.Hom.comp_apply, (isPullback_sliceOverOpen p q V).w, Scheme.Hom.comp_apply]
+    have := (hVsub (hw ▸ mem_range_ι V ((pullback.snd p (V.ι ≫ q)) w'))).1
+    simpa using this _ rfl
+
+/-- **THE FACTORIZATION AT A POINT OF THE GOOD LOCUS** (PROVEN, over the affine-target
+rigidity lemma) — this is where `hpush` is consumed.
+
+At `y` with witnesses `V, U`: `IsOpenImmersion.lift` factors `m` over `V` through `U`, and
+`exists_comp_snd_eq_of_isAffine_pullback` (which needs exactly `IsAffine (V ×_S U)`) then
+factors it through the projection.  Both consumers of the good locus — contractedness on
+points, and the diagonal statement `apply_mem_range_diagonal_of_mem_sliceGoodLocus` — run
+off this one morphism-level identity. -/
+theorem exists_comp_snd_eq_of_mem_sliceGoodLocus {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} (hpush : HasUniversallyTrivialPushforward p)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p) {y : Y}
+    (hy : y ∈ sliceGoodLocus p q r m) :
+    ∃ (V : Y.Opens) (d : V.toScheme ⟶ Z), y ∈ V ∧
+      sliceOverOpen p q V ≫ m = pullback.snd p (V.ι ≫ q) ≫ d := by
+  obtain ⟨V, U, hyV, haff, hrange⟩ := hy
+  haveI := haff
+  have hrange' : Set.range (sliceOverOpen p q V ≫ m) ⊆ Set.range U.ι := by
+    rwa [Scheme.Opens.range_ι]
+  have hnU : IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m) hrange' ≫ U.ι
+      = sliceOverOpen p q V ≫ m := IsOpenImmersion.lift_fac _ _ _
+  have hnw : IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m) hrange' ≫ (U.ι ≫ r)
+      = pullback.fst p (V.ι ≫ q) ≫ p := by
+    rw [← Category.assoc, hnU, Category.assoc, hm, ← Category.assoc]
+    congr 1
+    simp [sliceOverOpen, pullback.map, pullback.lift_fst]
+  obtain ⟨e, he⟩ := exists_comp_snd_eq_of_isAffine_pullback (p := p) (q := V.ι ≫ q)
+    (r := U.ι ≫ r) hpush hnw
+  exact ⟨V, e ≫ U.ι, hyV, by rw [← hnU, he, Category.assoc]⟩
+
+/-- **GOOD ⟹ CONTRACTED** (PROVEN): every point of the slice over `y` is in the image of
+`sliceOverOpen` by `range_sliceOverOpen`, and `V.ι` is injective, so the factorization above
+sends all of them to the single point `d v`, where `v` is the point of `V` over `y`. -/
+theorem sliceContractedLocus_of_sliceGoodLocus {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    {r : Z ⟶ S} (hpush : HasUniversallyTrivialPushforward p) {m : pullback p q ⟶ Z}
+    (hm : m ≫ r = pullback.fst p q ≫ p) :
+    sliceGoodLocus p q r m ⊆ sliceContractedLocus p q m := by
+  intro y hy
+  obtain ⟨V, d, hyV, hd⟩ := exists_comp_snd_eq_of_mem_sliceGoodLocus hpush hm hy
+  obtain ⟨v, hv⟩ : y ∈ Set.range (V.ι) := by rw [Scheme.Opens.range_ι]; exact hyV
+  refine ⟨d v, fun w hw => ?_⟩
+  have hwmem : w ∈ Set.range (sliceOverOpen p q V) := by
+    rw [range_sliceOverOpen, Set.mem_preimage, hw]
+    exact hyV
+  obtain ⟨w₁, rfl⟩ := hwmem
+  have hvv : (pullback.snd p (V.ι ≫ q)) w₁ = v := by
+    apply V.ι.isOpenEmbedding.injective
+    rw [hv, ← hw, ← Scheme.Hom.comp_apply, ← (isPullback_sliceOverOpen p q V).w,
+      Scheme.Hom.comp_apply]
+  rw [← Scheme.Hom.comp_apply, hd, Scheme.Hom.comp_apply, hvv]
+
+/-- **THE SLICE OVER `σ s` IS CONTRACTED** (PROVEN) — this is all that `σ` and `hconst` are
+for.  Every point of that slice is in the image of `sliceIncl` (`range_sliceIncl`), and
+`hconst` sends the image of `sliceIncl` to `c ∘ p`; `σ` is injective because it is a
+section, which is what identifies the value as `c s`. -/
+theorem slice_const_of_section {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S} (σ : S ⟶ Y)
+    (hσ : σ ≫ q = 𝟙 S) {m : pullback p q ⟶ Z} (c : S ⟶ Z)
+    (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (s : S) :
+    σ s ∈ sliceContractedLocus p q m := by
+  refine ⟨c s, fun w hw => ?_⟩
+  have hmem : w ∈ Set.range (sliceIncl p q σ hσ) := by
+    rw [range_sliceIncl]
+    exact ⟨s, hw.symm⟩
+  obtain ⟨x, rfl⟩ := hmem
+  have hps : p x = s := by
+    have h1 : σ (p x) = σ s := by
+      rw [← hw]
+      simp only [← Scheme.Hom.comp_apply, sliceIncl_snd]
+    have h2 : (σ ≫ q) (p x) = (σ ≫ q) s := by
+      simp only [Scheme.Hom.comp_apply, h1]
+    rw [hσ] at h2
+    simpa using h2
+  rw [← Scheme.Hom.comp_apply, hconst, Scheme.Hom.comp_apply, hps]
+
+/-! ### Semicontinuity: the contracted locus is closed along the fibres of `q`
+
+This is the second half of "clopen", and the only part of the rigidity lemma that is not
+either formal or an application of properness.  The mechanism is semicontinuity, and it is
+NOT available globally on `Y`: "the slice over `y` is contracted" is a closed condition
+only along the fibres of `q`, because what makes it closed is that the projection away from
+the proper factor is an OPEN map, which here holds only after restricting to a fibre —
+where everything in sight is flat over the FIELD `κ(s)`.
+
+**No flatness hypothesis on `p` is needed or used.**  The flatness that supplies the
+openness is the automatic flatness of a scheme over a field, and `Mathlib` packages exactly
+that as `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`
+(`Mathlib/AlgebraicGeometry/Morphisms/UniversallyOpen.lean`): *any* morphism whose target
+is the spectrum of a field is universally open.  That instance is the whole geometric input
+of `universallyOpen_of_isPullback_residueField` below, and hence of this section.
+
+**The pair scheme.**  Write `P := (X ×_S Y) ×_Y (X ×_S Y)` with projections `pr₁, pr₂` and
+`π := pr₁ ≫ pullback.snd p q : P ⟶ Y`, and let `gP : P ⟶ Z ×_S Z` be
+`pullback.lift (pr₁ ≫ m) (pr₂ ≫ m)`.  Then `E := gP ⁻¹ (range (pullback.diagonal r))` is
+CLOSED, because `[IsSeparated r]` makes the diagonal a closed immersion, and
+
+  `sliceContractedLocus = {y | π ⁻¹ {y} ⊆ E}`,
+
+whose complement is `π '' Eᶜ` — the image of an OPEN set, hence open as soon as `π` is an
+open map.  Over a residue-field base `π` is open, because `pr₁` and `pullback.snd p q` are
+each base changes of `p` along morphisms that factor through `Spec κ(s)`.
+
+**Why the scheme-theoretic `E` rather than the set-theoretic condition.**  "All points of
+the slice have the same image" is NOT the preimage of the diagonal: for `w, w'` in one
+slice with `m w = m w'` the induced point of `Z ×_S Z` need not lie on the diagonal, since
+`κ(z) ⊗_{κ(s)} κ(z)` has many primes.  The two directions are proven separately —
+`{y | π ⁻¹ {y} ⊆ E} ⊆ sliceContractedLocus` from `Mathlib`'s `PullbackCarrier`
+(`exists_preimage_pullback`) together with `diagonal_fst`/`diagonal_snd`, and the reverse
+through the good locus, where the factorization
+`sliceOverOpen p q V ≫ m = pullback.snd p (V.ι ≫ q) ≫ d` makes the two composites
+`pr₁ ≫ m` and `pr₂ ≫ m` EQUAL AS MORPHISMS over `V`
+(`apply_mem_range_diagonal_of_mem_sliceGoodLocus`). -/
+
+/-- **ANY BASE CHANGE ALONG A MORPHISM THAT FACTORS THROUGH A RESIDUE FIELD IS UNIVERSALLY
+OPEN** (PROVEN) — the geometric input of the semicontinuity argument.
+
+If `b` is a base change of `p : X ⟶ S` along `g = g₀ ≫ S.fromSpecResidueField s`, then `b`
+is also a base change, along `g₀`, of `X ×_S Spec κ(s) ⟶ Spec κ(s)` (this is
+`IsPullback.of_right'` applied to the two squares), and that morphism is universally open
+because its TARGET is the spectrum of a field — `Mathlib`'s
+`[IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`.  `UniversallyOpen` is stable under
+base change, so `b` is universally open.
+
+**`p` is arbitrary**: not flat, not proper, not finitely presented.  All the flatness is in
+the base being a field. -/
+theorem universallyOpen_of_isPullback_residueField {X W W' S : Scheme.{u}} {p : X ⟶ S}
+    {a : W' ⟶ X} {b : W' ⟶ W} {g : W ⟶ S} (s : S) (g₀ : W ⟶ Spec (S.residueField s))
+    (hg : g = g₀ ≫ S.fromSpecResidueField s) (h : IsPullback a b p g) :
+    UniversallyOpen b := by
+  subst hg
+  exact MorphismProperty.of_isPullback
+    (IsPullback.of_right' h (IsPullback.of_hasPullback p (S.fromSpecResidueField s)))
+    inferInstance
+
+/-- **OVER THE GOOD LOCUS THE PAIR SCHEME LANDS IN THE DIAGONAL** (PROVEN).
+
+This is the direction that cannot be done on points.  Over the witness `V` of the good
+locus the two composites `pr₁ ≫ m` and `pr₂ ≫ m` become EQUAL AS MORPHISMS: both
+projections restricted to `π ⁻¹ᵁ V` factor through `sliceOverOpen p q V` (by
+`IsOpenImmersion.lift`, using `range_sliceOverOpen`), the two lifts have the same composite
+with `pullback.snd p (V.ι ≫ q)` because `V.ι` is a MONOMORPHISM and both become
+`π` after composing with it, and the factorization
+`sliceOverOpen p q V ≫ m = pullback.snd p (V.ι ≫ q) ≫ d` then makes the two composites
+literally the same morphism.  Hence `π ⁻¹ᵁ V ⟶ Z ×_S Z` factors through the diagonal, and
+in particular each of its points does. -/
+theorem apply_mem_range_diagonal_of_mem_sliceGoodLocus {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} (hpush : HasUniversallyTrivialPushforward p)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (gP : pullback (pullback.snd p q) (pullback.snd p q) ⟶ pullback r r)
+    (hg₁ : gP ≫ pullback.fst r r
+      = pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ m)
+    (hg₂ : gP ≫ pullback.snd r r
+      = pullback.snd (pullback.snd p q) (pullback.snd p q) ≫ m)
+    (ξ : ↥(pullback (pullback.snd p q) (pullback.snd p q)))
+    (hξ : (pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ξ
+      ∈ sliceGoodLocus p q r m) :
+    gP ξ ∈ Set.range (pullback.diagonal r) := by
+  obtain ⟨V, d, hyV, hd⟩ := exists_comp_snd_eq_of_mem_sliceGoodLocus hpush hm hξ
+  obtain ⟨ξ', hξ'⟩ : ξ ∈ Set.range
+      (((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι) := by
+    rw [Scheme.Opens.range_ι]; exact hyV
+  have hrange : ∀ (t : pullback (pullback.snd p q) (pullback.snd p q) ⟶ pullback p q),
+      t ≫ pullback.snd p q
+        = pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q →
+      Set.range (((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+        ≫ t) ⊆ Set.range (sliceOverOpen p q V) := by
+    intro t ht
+    rintro _ ⟨x, rfl⟩
+    rw [range_sliceOverOpen, Set.mem_preimage, Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply,
+      ht, Scheme.Hom.comp_apply]
+    exact mem_range_ι _ x
+  have h₁ := hrange (pullback.fst (pullback.snd p q) (pullback.snd p q)) rfl
+  have h₂ := hrange (pullback.snd (pullback.snd p q) (pullback.snd p q)) pullback.condition.symm
+  have key : (((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+        ≫ pullback.fst (pullback.snd p q) (pullback.snd p q)) ≫ m
+      = (((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+        ≫ pullback.snd (pullback.snd p q) (pullback.snd p q)) ≫ m := by
+    have e₁ := IsOpenImmersion.lift_fac (sliceOverOpen p q V) _ h₁
+    have e₂ := IsOpenImmersion.lift_fac (sliceOverOpen p q V) _ h₂
+    have hmono : IsOpenImmersion.lift (sliceOverOpen p q V) _ h₁ ≫ pullback.snd p (V.ι ≫ q)
+        = IsOpenImmersion.lift (sliceOverOpen p q V) _ h₂ ≫ pullback.snd p (V.ι ≫ q) := by
+      rw [← cancel_mono V.ι, Category.assoc, Category.assoc,
+        ← (isPullback_sliceOverOpen p q V).w, ← Category.assoc, ← Category.assoc, e₁, e₂,
+        Category.assoc, Category.assoc, pullback.condition]
+    rw [← e₁, ← e₂, Category.assoc, Category.assoc, hd, ← Category.assoc, ← Category.assoc,
+      hmono]
+  have hfac : ((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+      ≫ gP
+      = ((((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+        ≫ pullback.fst (pullback.snd p q) (pullback.snd p q)) ≫ m) ≫ pullback.diagonal r := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, Category.assoc, pullback.diagonal_fst, Category.comp_id, hg₁,
+        Category.assoc]
+    · rw [Category.assoc, Category.assoc, pullback.diagonal_snd, Category.comp_id, hg₂]
+      simpa using key.symm
+  refine ⟨((((pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ⁻¹ᵁ V).ι
+    ≫ pullback.fst (pullback.snd p q) (pullback.snd p q)) ≫ m) ξ', ?_⟩
+  rw [← hξ', ← Scheme.Hom.comp_apply, ← hfac, Scheme.Hom.comp_apply]
+
+/-- **THE CONTRACTED LOCUS IS CLOSED WHEN `q` FACTORS THROUGH A RESIDUE FIELD** (PROVEN) —
+the semicontinuity statement, in the only generality in which it is true.
+
+The complement of the contracted locus is `π '' Eᶜ` with `E` closed, and `π` is an open map
+here: `pullback.snd p q` is a base change of `p` along `q = q₀ ≫ fromSpecResidueField`, and
+`pr₁` is a base change of `p` along `pullback.snd p q ≫ q` (paste the pair square onto the
+fibre-product square), both of which factor through `Spec κ(s)`, so
+`universallyOpen_of_isPullback_residueField` applies to each and `UniversallyOpen` is stable
+under composition. -/
+theorem isClosed_sliceContractedLocus_of_residueField {X F Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : F ⟶ S} {r : Z ⟶ S} [IsProper p] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p) {m : pullback p q ⟶ Z}
+    (hm : m ≫ r = pullback.fst p q ≫ p) (s : S) (q₀ : F ⟶ Spec (S.residueField s))
+    (hq : q = q₀ ≫ S.fromSpecResidueField s) :
+    IsClosed (sliceContractedLocus p q m) := by
+  have hu : HasUniversallyTrivialPushforward (pullback.snd p q) :=
+    MorphismProperty.pullback_snd (P := hasTrivialPushforwardProperty.universally) p q hpush
+  haveI : Surjective (pullback.snd p q) := surjective_of_hasUniversallyTrivialPushforward hu
+  haveI : IsClosedImmersion (pullback.diagonal r) := IsSeparated.isClosedImmersion_diagonal
+  have hover : ∀ t : (pullback (pullback.snd p q) (pullback.snd p q)) ⟶ pullback p q,
+      (t ≫ m) ≫ r = (t ≫ pullback.snd p q) ≫ q := by
+    intro t
+    rw [Category.assoc, hm, pullback.condition, ← Category.assoc]
+  obtain ⟨gP, hg₁, hg₂⟩ : ∃ g : pullback (pullback.snd p q) (pullback.snd p q) ⟶ pullback r r,
+      g ≫ pullback.fst r r = pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ m ∧
+      g ≫ pullback.snd r r = pullback.snd (pullback.snd p q) (pullback.snd p q) ≫ m := by
+    refine ⟨pullback.lift _ _ ?_, pullback.lift_fst _ _ _, pullback.lift_snd _ _ _⟩
+    rw [hover, hover, pullback.condition]
+  have hEclosed : IsClosed
+      ((gP : ↥(pullback (pullback.snd p q) (pullback.snd p q)) → ↥(pullback r r))
+        ⁻¹' Set.range (pullback.diagonal r)) :=
+    (pullback.diagonal r).isClosedEmbedding.isClosed_range.preimage gP.continuous
+  have hCeq : sliceContractedLocus p q m
+      = {y : F | ∀ ξ : ↥(pullback (pullback.snd p q) (pullback.snd p q)),
+          (pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ξ = y →
+            gP ξ ∈ Set.range (pullback.diagonal r)} := by
+    refine Set.Subset.antisymm (fun y hy ξ hξ => ?_) (fun y hy => ?_)
+    · exact apply_mem_range_diagonal_of_mem_sliceGoodLocus hpush hm gP hg₁ hg₂ ξ
+        (by rw [hξ]; exact mem_sliceGoodLocus_of_mem_sliceContractedLocus hm hy)
+    · obtain ⟨w₀, hw₀⟩ := (pullback.snd p q).surjective y
+      refine ⟨m w₀, fun w hw => ?_⟩
+      obtain ⟨ξ, e₁, e₂⟩ := Scheme.Pullback.exists_preimage_pullback (f := pullback.snd p q)
+        (g := pullback.snd p q) w w₀ (by rw [hw, hw₀])
+      obtain ⟨z, hz⟩ := hy ξ (by rw [Scheme.Hom.comp_apply, e₁, hw])
+      have hzw : m w = z := by
+        rw [← e₁, ← Scheme.Hom.comp_apply, ← hg₁, Scheme.Hom.comp_apply, ← hz,
+          ← Scheme.Hom.comp_apply, pullback.diagonal_fst]
+        simp
+      have hzw₀ : m w₀ = z := by
+        rw [← e₂, ← Scheme.Hom.comp_apply, ← hg₂, Scheme.Hom.comp_apply, ← hz,
+          ← Scheme.Hom.comp_apply, pullback.diagonal_snd]
+        simp
+      rw [hzw, hzw₀]
+  have h1 : UniversallyOpen (pullback.fst (pullback.snd p q) (pullback.snd p q)) :=
+    universallyOpen_of_isPullback_residueField s (pullback.snd p q ≫ q₀)
+      (by rw [Category.assoc, ← hq])
+      (IsPullback.paste_horiz
+        ((IsPullback.of_hasPullback (pullback.snd p q) (pullback.snd p q)).flip)
+        (IsPullback.of_hasPullback p q))
+  have h2 : UniversallyOpen (pullback.snd p q) :=
+    universallyOpen_of_isPullback_residueField s q₀ hq (IsPullback.of_hasPullback p q)
+  haveI hπ : UniversallyOpen (pullback.fst (pullback.snd p q) (pullback.snd p q)
+      ≫ pullback.snd p q) := MorphismProperty.comp_mem _ _ _ h1 h2
+  rw [hCeq, ← isOpen_compl_iff]
+  have hcompl : {y : F | ∀ ξ : ↥(pullback (pullback.snd p q) (pullback.snd p q)),
+        (pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ξ = y →
+          gP ξ ∈ Set.range (pullback.diagonal r)}ᶜ
+      = (pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q) ''
+        ((gP : ↥(pullback (pullback.snd p q) (pullback.snd p q)) → ↥(pullback r r))
+          ⁻¹' Set.range (pullback.diagonal r))ᶜ := by
+    ext y
+    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_image, Set.mem_preimage,
+      not_forall]
+    constructor
+    · rintro ⟨ξ, hξ, hξ'⟩
+      exact ⟨ξ, hξ', hξ⟩
+    · rintro ⟨ξ, hξ', hξ⟩
+      exact ⟨ξ, hξ, hξ'⟩
+  rw [hcompl]
+  exact (pullback.fst (pullback.snd p q) (pullback.snd p q) ≫ pullback.snd p q).isOpenMap _
+    (isOpen_compl_iff.mpr hEclosed)
+
+/-- **CONTRACTEDNESS IS A FIBREWISE NOTION** (PROVEN): base-changing `q` along an INJECTIVE
+`t` pulls the contracted locus back to the contracted locus.
+
+Only injectivity of `t` on points is used, plus the fact that the base change `j` has range
+`(pullback.snd p q) ⁻¹ (range t)` — which for `t = q.fiberι s` is `Mathlib`'s
+`Scheme.Pullback.range_map`. -/
+theorem sliceContractedLocus_comp_eq {X Y Z T S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (t : T ⟶ Y) (ht : Function.Injective (t : ↥T → ↥Y)) {m : pullback p q ⟶ Z}
+    (j : pullback p (t ≫ q) ⟶ pullback p q)
+    (hjrange : Set.range (j : ↥(pullback p (t ≫ q)) → ↥(pullback p q))
+      = (pullback.snd p q) ⁻¹' Set.range (t : ↥T → ↥Y))
+    (hjsnd : j ≫ pullback.snd p q = pullback.snd p (t ≫ q) ≫ t) :
+    sliceContractedLocus p (t ≫ q) (j ≫ m)
+      = (t : ↥T → ↥Y) ⁻¹' sliceContractedLocus p q m := by
+  ext f
+  constructor
+  · rintro ⟨z, hz⟩
+    refine ⟨z, fun w hw => ?_⟩
+    have hwr : w ∈ Set.range (j : ↥(pullback p (t ≫ q)) → ↥(pullback p q)) := by
+      rw [hjrange, Set.mem_preimage, hw]
+      exact ⟨f, rfl⟩
+    obtain ⟨w₁, rfl⟩ := hwr
+    refine (?_ : m (j w₁) = z)
+    rw [← Scheme.Hom.comp_apply]
+    refine hz w₁ (ht ?_)
+    rw [← Scheme.Hom.comp_apply, ← hjsnd, Scheme.Hom.comp_apply, hw]
+  · rintro ⟨z, hz⟩
+    refine ⟨z, fun w₁ hw₁ => ?_⟩
+    rw [Scheme.Hom.comp_apply]
+    refine hz _ ?_
+    rw [← Scheme.Hom.comp_apply, hjsnd, Scheme.Hom.comp_apply, hw₁]
+
+/-- **THE CONTRACTED LOCUS IS CLOSED IN EACH FIBRE OF `q`** (PROVEN) — the closed half of
+the clopen argument, and the last piece of the rigidity lemma.
+
+Restrict to the scheme-theoretic fibre `q.fiber s`, whose structure morphism to `S` factors
+through `Spec κ(s)` by `Scheme.Hom.fiber_fac`.  `sliceContractedLocus_comp_eq` identifies
+the contracted locus of the base-changed situation with the preimage of this one under
+`q.fiberι s` — the fibre inclusion is injective, and `Scheme.Pullback.range_map` gives the
+range of the base change — and
+`isClosed_sliceContractedLocus_of_residueField` says the former is closed.  Finally
+`Scheme.Hom.fiberHomeo` identifies the fibre with `q ⁻¹ {s}` as a topological subspace. -/
+theorem isClosed_sliceContractedLocus_fiber {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    {r : Z ⟶ S} [IsProper p] [IsSeparated r] (hpush : HasUniversallyTrivialPushforward p)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p) (s : S) :
+    IsClosed {u : ↥((q : ↥Y → ↥S) ⁻¹' {s}) | (u : Y) ∈ sliceContractedLocus p q m} := by
+  have hjfst : (pullback.map p (q.fiberι s ≫ q) p q (𝟙 X) (q.fiberι s) (𝟙 S) (by simp) (by simp))
+      ≫ pullback.fst p q = pullback.fst p (q.fiberι s ≫ q) := by
+    simp only [pullback.map]
+    rw [pullback.lift_fst, Category.comp_id]
+  have hjsnd : (pullback.map p (q.fiberι s ≫ q) p q (𝟙 X) (q.fiberι s) (𝟙 S) (by simp) (by simp))
+      ≫ pullback.snd p q = pullback.snd p (q.fiberι s ≫ q) ≫ q.fiberι s := by
+    simp only [pullback.map]
+    rw [pullback.lift_snd]
+  have hmF : ((pullback.map p (q.fiberι s ≫ q) p q (𝟙 X) (q.fiberι s) (𝟙 S) (by simp) (by simp))
+      ≫ m) ≫ r = pullback.fst p (q.fiberι s ≫ q) ≫ p := by
+    rw [Category.assoc, hm, ← Category.assoc, hjfst]
+  have hclosed := isClosed_sliceContractedLocus_of_residueField hpush hmF s
+    (q.fiberToSpecResidueField s) (q.fiber_fac s)
+  rw [sliceContractedLocus_comp_eq (q.fiberι s) (q.fiberι s).isEmbedding.injective _
+    (by rw [Scheme.Pullback.range_map]; simp) hjsnd] at hclosed
+  rw [← (q.fiberHomeo s).isClosed_preimage]
+  exact hclosed
+
+/-- **THE CLOPEN ARGUMENT** (PROVEN): the good locus is everything.
+
+`sliceContractedLocus = sliceGoodLocus` by the two inclusions above, so that set is OPEN;
+it is closed in each fibre of `q` by `isClosed_sliceContractedLocus_fiber`; it meets each
+fibre, at `σ s`, by
+`slice_const_of_section`; and the fibres of `q` are CONNECTED — `Mathlib`'s
+`Scheme.Hom.isConnected_preimage_singleton` for `[GeometricallyConnected q]`.  A nonempty
+clopen subset of a preconnected space is everything.
+
+This is where the FAITHFULNESS NOTE bites: with `Y` two points over `S = Spec k` the fibre
+`q ⁻¹ {s}` is disconnected, the clopen subset is a single point, and the conclusion fails. -/
+theorem mem_sliceGoodLocus_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p) (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (y : Y) :
+    y ∈ sliceGoodLocus p q r m := by
+  have hu : HasUniversallyTrivialPushforward (pullback.snd p q) :=
+    MorphismProperty.pullback_snd (P := hasTrivialPushforwardProperty.universally) p q hpush
+  haveI : Surjective (pullback.snd p q) := surjective_of_hasUniversallyTrivialPushforward hu
+  have hCG : sliceContractedLocus p q m ⊆ sliceGoodLocus p q r m :=
+    fun _ hy => mem_sliceGoodLocus_of_mem_sliceContractedLocus hm hy
+  have hCeq : sliceContractedLocus p q m = sliceGoodLocus p q r m :=
+    Set.Subset.antisymm hCG (sliceContractedLocus_of_sliceGoodLocus hpush hm)
+  have hconn : _root_.IsConnected ((q : ↥Y → ↥S) ⁻¹' {q y}) :=
+    q.isConnected_preimage_singleton _
+  haveI : PreconnectedSpace ↥((q : ↥Y → ↥S) ⁻¹' {q y}) :=
+    Subtype.preconnectedSpace hconn.isPreconnected
+  have hclopen : IsClopen
+      {t : ↥((q : ↥Y → ↥S) ⁻¹' {q y}) | (t : Y) ∈ sliceContractedLocus p q m} := by
+    refine ⟨isClosed_sliceContractedLocus_fiber hpush hm _, ?_⟩
+    rw [hCeq]
+    exact (isOpen_sliceGoodLocus p q r m).preimage continuous_subtype_val
+  have hσmem : σ (q y) ∈ ((q : ↥Y → ↥S) ⁻¹' {q y}) := by
+    have h : (σ ≫ q) (q y) = q (σ (q y)) := Scheme.Hom.comp_apply _ _ _
+    rw [hσ] at h
+    simpa using h.symm
+  have hne : {t : ↥((q : ↥Y → ↥S) ⁻¹' {q y}) | (t : Y) ∈ sliceContractedLocus p q m}.Nonempty :=
+    ⟨⟨σ (q y), hσmem⟩, slice_const_of_section σ hσ c hconst (q y)⟩
+  have huniv := hclopen.eq_univ hne
+  have hy : (⟨y, rfl⟩ : ↥((q : ↥Y → ↥S) ⁻¹' {q y}))
+      ∈ {t : ↥((q : ↥Y → ↥S) ⁻¹' {q y}) | (t : Y) ∈ sliceContractedLocus p q m} := by
+    rw [huniv]; trivial
+  exact hCG hy
+
+/-- **THE COVERING STEP AT A POINT, IN OPENS ONLY** — PROVEN (2026-07-28) over the single
+leaf `isClosed_sliceContractedLocus_fiber`; it is `mem_sliceGoodLocus_of_slice_const`
+restated, since `sliceGoodLocus` is by definition the set of `y` at which this holds.
+
+**What is produced at `y`.**  An open `V ∋ y` in `Y` and an open `U ⊆ Z` such that
 
 * `m` maps the whole of `X ×_S V` into `U` — written as the containment of set-theoretic
   ranges, which is precisely `IsOpenImmersion.lift`'s hypothesis; and
 * `V ×_S U` is an AFFINE SCHEME — "`U` is affine over the base, over `V`".  In the
-  intended construction `V` and `U` are affine opens lying over one affine open
-  `S₀ ⊆ S`, so `V ×_S U = V ×_{S₀} U` is a fibre product of affines over an affine.
+  construction `V` and `U` are affine opens lying over one affine open `S₀ ⊆ S`, so
+  `V ×_S U = V ×_{S₀} U` is a fibre product of affines over an affine
+  (`isAffine_pullback_ι_comp`).
 
-**The proof** (Mumford *AV* §4; BLR 8.4), in two halves.
+**The proof** (Mumford *AV* §4; BLR 8.4), in the two halves the section above develops.
 
-1. *The properness half, which is local and needs no connectedness.*  Suppose the whole
-   slice of `X ×_S Y` over `y` is mapped by `m` into an affine open `U ⊆ Z` with
-   `r(U) ⊆ S₀` for an affine open `S₀ ∋ q y`.  Then `m ⁻¹(Z ∖ U)` is closed in `X ×_S Y`,
-   and `pullback.snd p q` is proper (base change of `p`), hence a CLOSED MAP, so its image
-   is closed in `Y` and misses `y`.  The complement is an open `V ∋ y` over which `m`
-   lands in `U`; shrink `V` to an affine open inside `q ⁻¹ᵁ S₀` and take `W = U`, so
-   `V ×_S W = V ×_{S₀} U` is a fibre product of affines over an affine, hence affine.
+1. *The properness half*, now PROVEN as `isOpen_setOf_slice_mapsTo`: if the whole slice
+   over `y` is mapped into an open `U`, then the same holds over an open neighbourhood of
+   `y`, because `m ⁻¹(Z ∖ U)` is closed and `pullback.snd p q` is proper — hence a CLOSED
+   MAP — as a base change of `p`.  Packaged with the affine choices this is
+   `mem_sliceGoodLocus_of_mem_sliceContractedLocus`.
 
-2. *The connectedness half, which is the actual content.*  The hypothesis of (1) — that
-   the slice over `y` lands in a single affine — is what has to be established at EVERY
-   `y`, and it is here that `σ`, `hconst` and `[GeometricallyConnected q]` enter.  At
-   `y = σ(s)` it is immediate from `hconst`, which puts that slice at the single point
-   `c(s)`.  Step (1) then propagates it to an open neighbourhood, so the locus where it
-   holds is OPEN; running (1) at every point of that locus shows it is also closed in each
-   fibre of `q`, and `[GeometricallyConnected q]` upgrades "clopen in each fibre and meets
-   each fibre (via `σ`)" to "everything".
+2. *The connectedness half*, now assembled as `mem_sliceGoodLocus_of_slice_const`: the
+   locus where the slice is contracted equals the locus where the conclusion holds (the
+   two inclusions above, the second of which is where `hpush` is spent), hence is OPEN; it
+   contains `σ(s)` for every `s` by `slice_const_of_section`; and
+   `[GeometricallyConnected q]` makes the fibres of `q` connected.  That the locus is also
+   CLOSED in each fibre is `isClosed_sliceContractedLocus_fiber`, the semicontinuity
+   statement, which is where flatness over the residue field enters.
 
-**WHY THE LEAF IS FALSE WITHOUT `[GeometricallyConnected q]`**: with `Y = {y₀, y₁}` two
-points over `S = Spec k` the locus produced by (1) is a single point — see the FAITHFULNESS
-NOTE in the module docstring.  So half (2) is not decoration and cannot be dropped.
+**WHY THE STATEMENT IS FALSE WITHOUT `[GeometricallyConnected q]`**: with `Y = {y₀, y₁}`
+two points over `S = Spec k` the locus produced by (1) is a single point — see the
+FAITHFULNESS NOTE in the module docstring.  So half (2) is not decoration.
 
-**AXIS SEARCHED**: the affine and affine-over-the-base cases are DONE and are not what is
-missing here (`exists_comp_snd_eq_of_isAffine`, `exists_comp_snd_eq_of_isAffine_pullback`);
-so is the `Γ ⊣ Spec` corollary, and so — as of this cut — are the epimorphism property of
-the projection (`eq_of_comp_snd_eq`), the cartesian square
-(`isPullback_sliceOverOpen`) and the whole gluing step.  What is missing is purely the
-scheme-theoretic topology: `IsProper → IsClosedMap` for the base-changed projection, and
-the `GeometricallyConnected` clopen argument.  The étale axis
-(`section_eq_of_formallyUnramified`, diagonal simultaneously open and closed) is searched
-and DEAD: `Δ_{B/S}` is an open immersion iff `Ω_{B/S} = 0`, which fails in relative
-dimension `> 0`. -/
+**AXIS SEARCHED**: the affine and affine-over-the-base cases are DONE and were never what
+was missing (`exists_comp_snd_eq_of_isAffine`, `exists_comp_snd_eq_of_isAffine_pullback`);
+so is the `Γ ⊣ Spec` corollary, the epimorphism property of the projection
+(`eq_of_comp_snd_eq`), the cartesian square (`isPullback_sliceOverOpen`) and the whole
+gluing step.  The étale axis (`section_eq_of_formallyUnramified`, diagonal simultaneously
+open and closed) is searched and DEAD: `Δ_{B/S}` is an open immersion iff `Ω_{B/S} = 0`,
+which fails in relative dimension `> 0`. -/
 theorem exists_isAffineOpen_slice_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
     {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)
@@ -1353,7 +1973,7 @@ theorem exists_isAffineOpen_slice_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p 
     ∃ (V : Y.Opens) (U : Z.Opens), y ∈ V ∧
       IsAffine (pullback (V.ι ≫ q) (U.ι ≫ r)) ∧
       Set.range (sliceOverOpen p q V ≫ m) ⊆ (U : Set Z) :=
-  sorry
+  mem_sliceGoodLocus_of_slice_const hpush σ hσ hm c hconst y
 
 /-- **THE COVERING STEP, LOCALISED AT A POINT** — PROVEN over
 `exists_isAffineOpen_slice_nbhd_of_slice_const`.
@@ -1533,13 +2153,18 @@ topology, split into `exists_isAffineOver_cover_of_slice_const` (the covering �
 epimorphism property of the projection, which is itself proven from the universal
 pushforward hypothesis via surjectivity of `p`.  The covering is PROVEN over
 `exists_isAffineOver_nbhd_of_slice_const` (its pointwise form), which is in turn PROVEN
-over `exists_isAffineOpen_slice_nbhd_of_slice_const` (its opens-only form).  So this
-theorem now rests on exactly ONE open leaf, and that leaf is purely
-`IsProper ⟹ IsClosedMap` plus the `GeometricallyConnected` clopen argument at a single
-point of `Y`.
+over `exists_isAffineOpen_slice_nbhd_of_slice_const` (its opens-only form).
+
+**STATUS (2026-07-28): PROVEN OUTRIGHT — NO OPEN LEAF REMAINS UNDER THIS THEOREM.**  The
+opens-only form is proven from `isOpen_setOf_slice_mapsTo` (properness ⟹ closed map ⟹ the
+tube lemma), `mem_sliceGoodLocus_of_slice_const` (the `GeometricallyConnected` clopen
+argument) and `isClosed_sliceContractedLocus_fiber` (semicontinuity of contractedness along
+the fibres of `q`, over a field).  The only `sorry` anywhere in this file's cone is
+`isIso_appTop_of_isProper_of_flat`, which supplies the HYPOTHESIS `hpush` and is not used
+by this proof.
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
-what that leaf has to get past: the reduction to an affine target cannot be done
+what the covering step had to get past: the reduction to an affine target cannot be done
 globally — with `S = Spec k`, `X = Spec k`, `Y = Z = ℙ¹`, `q = r` the structure maps and
 `m = 𝟙`, every hypothesis holds, `d = 𝟙` is the factorization, and `m` factors through no
 affine scheme.  So the work is genuinely local-to-global on `Y`. -/
