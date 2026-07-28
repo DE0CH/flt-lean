@@ -23611,8 +23611,9 @@ the rational cusps, because a larger supply could simply be cut down
 — that the Galois action on the cusps above `d` is *exactly* the
 cyclotomic one, hence that no cusp with `φ(gcd(d, N/d)) > 1` is rational
 — is **not** an obligation of this development.  A prover of
-`exists_cuspResidueIndexing` (the leaf this reduces to since 2026-07-27,
-through `nonempty_cuspLocus`) needs only the easy direction: for `d` with
+`exists_cuspAboveDivisor` (the leaf this reduces to since 2026-07-28, through
+`nonempty_cuspLocus` and `exists_cuspResidueIndexing`) needs only the easy
+direction: for `d` with
 `φ(gcd(d, N/d)) = 1` the unique cusp above `d` is `Γ_ℚ`-fixed, and cusps
 over distinct `d` are distinct.  That is a strictly smaller theorem than
 the cusp classification, and the previous "IRREDUCIBLE" note on
@@ -23986,8 +23987,10 @@ leaf it used to be: four of the six fields of `CuspLocus` (`K`, `κ`, `comm`,
 applied to a bijection `N.divisors ≃ X ∖ Y`, and the sixth (`degree`) falls
 out of `IsCyclotomicExtension.finrank`.
 
-What is left open, `exists_cuspResidueIndexing`, is then exactly the
-Deligne–Rapoport sentence and nothing else. -/
+What is left open — since 2026-07-28 the two leaves
+`exists_cuspAboveDivisor` and `card_compl_range_le_card_divisors`, into which
+`exists_cuspResidueIndexing` was decomposed along `≥` / `≤` — is then exactly
+the Deligne–Rapoport sentence and nothing else. -/
 
 /-- **The `ℚ`-algebra structure on the residue field of a point of a
 `ℚ`-scheme.**
@@ -24216,10 +24219,141 @@ theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
     rw [hr d, hr d']
     exact Set.disjoint_singleton.mpr fun hc => hne (e.injective (Subtype.ext hc))
 
-/-- **The cusps of `X_0(N)` are indexed by the divisors of `N`, the cusp above
-`d` having residue field `ℚ(ζ_{gcd(d, N/d)})`** (sorry node).
+/-- **The cusp of `X_0(N)` above a divisor `d ∣ N` exists, has residue field
+`ℚ(ζ_{gcd(d, N/d)})`, and distinct divisors give distinct cusps** (sorry
+leaf; Deligne–Rapoport VI.6 / Ogg — the CONSTRUCTION half of
+`exists_cuspResidueIndexing`).
 
-This is the sole remaining Deligne–Rapoport input of the whole cusp route:
+Together with `card_compl_range_le_card_divisors` — which says there are no
+OTHER cusps — this gives `exists_cuspResidueIndexing`, whose proof is now the
+cardinality argument `Function.Injective.bijective_of_nat_card_le`.
+
+**Why the cut is here.**  The parent leaf's AXIS 1 records that weakening its
+bijection to a COUNT "does not help: the difficulty is producing cusps, not
+bounding them".  That is right, and it is an argument for this cut rather than
+against it: the two halves are separated precisely so that the difficulty sits
+in ONE of them.  This leaf is the hard, constructive half — it must exhibit a
+point of `X ∖ Y` for each `d` and pin its residue field — and it discharges
+the inequality `σ₀(N) ≤ #(X ∖ Y)` for free, through its injectivity.  The
+sibling is a pure counting statement in which no point has to be constructed.
+Neither implies the other.
+
+Note this is NOT the invariant-first cut refuted as AXIS 4 on the parent.
+That axis quantified over an arbitrary divisor-invariant `dinv` of a cusp and
+so admitted the junk model `dinv ≡ 1`; here the map goes the other way,
+`d ↦ cusp`, and the residue field travels with it, so there is no unpinned
+datum to be filled in with junk.
+
+`hN : N ≠ 0` is deliberately ABSENT, unlike on the parent and on the sibling.
+At `N = 0` we have `Nat.divisors 0 = ∅`, so the index type is empty, the
+witness is the empty function and both conjuncts are vacuous.  The sibling
+does need `hN`: at `N = 0` it asserts that `X ∖ Y` is EMPTY, which is
+substantive and, as the parent's docstring records, not derivable from
+`IsX0Compactification 0`.
+
+REFERENCE, AND IT IS DOWNLOADED (2026-07-28).  Earlier notes in this file said
+Deligne–Rapoport is "in none of the downloaded sources" and that obtaining it
+"is the first concrete step for a successor"; `SOURCES.md` still does not list
+it, but the book has been on disk since 2026-07-27.  It is LNM 349, *Modular
+Functions of One Variable II*, at
+`/home/chend/flt-lean/sources/lnm349mfov2.txt` (a djvu text layer, ~19k
+lines).  Deligne–Rapoport, *Les schémas de modules de courbes elliptiques*,
+starts at line 4413, and the section this leaf needs is **§V.5, "L'action de
+Galois sur les pointes", at line 8944**.  What it proves:
+
+* (5.1) the cusps of `M(n)` over an algebraically closed field are the
+  singular `n`-gons with a level-`n` structure; the standard `n`-gon `C` has
+  `C_n = μ_n × ℤ/n` and its automorphisms act on `C_n` through `±1` and the
+  unipotent group `U = Hom(ℤ/n, μ_n)`, whence
+  `M(n)^∞(ℚ̄) = Isom(μ_n × ℤ/n, (ℤ/n)²) / ±U` — **and DR states in the same
+  breath that this bijection is compatible with the `Gal(ℚ̄/ℚ)`-action on both
+  sides**, which is the whole `ℚ`-structure input;
+* (5.2, Construction 5.3) for `H ⊆ GL(2, ℤ/n)`,
+  `M_H^∞[1/n] = H \ Isom_{ℤ[1/n]}(μ_n × ℤ/n, (ℤ/n)²) / ±U` as SCHEMES, the
+  upgrade from Galois sets being that `M_H[1/n]` is finite étale over
+  `ℤ[1/n]`.
+
+Galois acts only through the `μ_n` factor, i.e. `σ_t : ζ ↦ ζ^t`.  Taking `H`
+the Borel — which is what `Γ₀(N)` is, see DR §VI.6.1, where `M_0(n)` is the
+stack of cyclic `n`-isogenies — the double coset becomes the classical
+`(d, a)`-parametrisation, `d ∣ N` and `a ∈ (ℤ/gcd(d, N/d))ˣ`.  That
+parametrisation is independently in a downloaded source as Diamond–Shurman
+Prop. 3.8.3 (`sources/diamondshurman2005mf.txt`, the derivation around line
+5630, ending in `ε_∞(Γ₀(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`), and `σ_t` acts on it
+by `a ↦ t⁻¹ a` (Ogg).  Since that action is simply transitive on the `a` above
+a fixed `d`, each divisor contributes exactly ONE closed point of the
+`ℚ`-scheme `X`, whose residue field is the fixed field of the trivial
+stabiliser — `ℚ(ζ_{gcd(d, N/d)})`.  Both conjuncts below are that sentence.
+
+WHAT IS STILL MISSING, and it is the same for both halves: the bridge from
+`IsX0Compactification` to the DR model, i.e. that `X` really is `M_0(N)`
+compactified.  `coarse` pins `Y` up to unique isomorphism (initiality), and a
+smooth proper geometrically connected curve containing it as a dense open is
+its unique smooth compactification, so the bridge is not an extra assumption —
+but nothing in this development builds generalised elliptic curves or Néron
+polygons, which is what DR §V.5 is a statement about.  A successor should
+expect to build that layer, not to find it. -/
+theorem exists_cuspAboveDivisor (N : ℕ) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
+    ∃ c : N.divisors → ((Set.range j.base)ᶜ : Set X),
+      Function.Injective c ∧
+        ∀ d : N.divisors, IsResidueCyclotomic strX (c d).1 (Nat.gcd d.1 (N / d.1)) :=
+  sorry
+
+/-- **`X_0(N)` has at most `σ₀(N)` cusps** (sorry leaf; the COMPLETENESS half
+of `exists_cuspResidueIndexing`).
+
+`#(X ∖ Y) ≤ #{d : d ∣ N}`.  The opposite inequality is NOT a leaf: it comes
+free from the injectivity in `exists_cuspAboveDivisor`, and the two together
+force the bijection.  So this is the whole of what the sibling does not
+already give.
+
+Content, and why it is genuinely weaker than the sibling.  No point of `X` has
+to be constructed here and no residue field has to be computed; what is needed
+is only the cusp COUNT of `Γ₀(N)`, `ε_∞(Γ₀(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`,
+together with the fact that the `φ(gcd(d, N/d))` geometric cusps above a fixed
+`d` form a SINGLE Galois orbit, hence a single closed point of the `ℚ`-scheme
+`X`.  Both are in downloaded sources — the count is Diamond–Shurman §3.8
+(`sources/diamondshurman2005mf.txt` around line 5630, from Prop. 3.8.3), the
+transitivity is the `a ↦ t⁻¹ a` action of Deligne–Rapoport §V.5.1–5.3
+(`sources/lnm349mfov2.txt` line 8944) — whereas the sibling additionally needs
+the identification of the fixed field.
+
+Note the generic point of `X` is NOT in the way: `Y` is a nonempty open of the
+integral curve `X` (nonempty because `finite_compl` would otherwise ask a
+proper smooth geometrically connected curve over `ℚ` to have finitely many
+points), so the generic point lies in `Set.range j.base` and the complement
+consists of closed points only.
+
+`hN : N ≠ 0` is load-bearing here in a way it is not for
+`exists_cuspAboveDivisor`: at `N = 0` this says `X ∖ Y = ∅`, i.e. that
+`X_0(0)` has no cusps at all, which is substantive and is not derivable from
+`IsX0Compactification 0` — see the parent's docstring, which records that the
+structure looks unsatisfiable at `N = 0` but that nothing here proves it. -/
+theorem card_compl_range_le_card_divisors (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
+    Nat.card ((Set.range j.base)ᶜ : Set X) ≤ N.divisors.card :=
+  sorry
+
+/-- **The cusps of `X_0(N)` are indexed by the divisors of `N`, the cusp above
+`d` having residue field `ℚ(ζ_{gcd(d, N/d)})`** (PROVEN 2026-07-28 over
+`exists_cuspAboveDivisor` and `card_compl_range_le_card_divisors`).  No axiom
+audit is quoted, and none is possible yet: both leaves are open, so this
+declaration is TRANSITIVELY sorried even though its own body is not.  It emits
+no `declaration uses 'sorry'` warning, which is exactly the direct/transitive
+distinction — do not read the absent warning as a closed subtree.
+
+**DECOMPOSED, not closed.**  The Deligne–Rapoport input is undiminished; it now
+sits in the two leaves above, split along `≤` / `≥`.  The proof here is the
+cardinality argument that combines them: an injection out of `N.divisors` into
+the finite set `X ∖ Y` is a bijection as soon as `#(X ∖ Y) ≤ σ₀(N)`, which is
+`Function.Injective.bijective_of_nat_card_le`.  Read the two leaves' docstrings
+for the literature; everything below is retained because it is the survey of
+which cuts do NOT work, and it still applies to `exists_cuspAboveDivisor`.
+
+This was the sole remaining Deligne–Rapoport input of the whole cusp route:
 `nonempty_cuspLocus`, `nonempty_cuspIndexing_of_cuspLocus`,
 `nonempty_cuspIndexing_of_ne_zero` and `nonempty_cuspIndexing` are all proven
 over it, and `exists_rationalCusps` follows by
@@ -24461,8 +24595,13 @@ theorem exists_cuspResidueIndexing (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     ∃ e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X),
-      ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)) :=
-  sorry
+      ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)) := by
+  obtain ⟨c, hinj, hcyc⟩ := exists_cuspAboveDivisor N h
+  haveI : Finite ((Set.range j.base)ᶜ : Set X) := h.finite_compl.to_subtype
+  have hcard : Nat.card ((Set.range j.base)ᶜ : Set X) ≤ Nat.card N.divisors := by
+    rw [Nat.card_eq_finsetCard]
+    exact card_compl_range_le_card_divisors N hN h
+  exact ⟨Equiv.ofBijective c (hinj.bijective_of_nat_card_le hcard), hcyc⟩
 
 /-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
 ℚ(ζ_{gcd(d, N/d)})`** (PROVEN 2026-07-27 over `exists_cuspResidueIndexing`).
