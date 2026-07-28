@@ -32149,10 +32149,15 @@ row and is now PROVEN too, in
 
 Updated in the same integration: `exists_relPicZeroOf` is now PROVEN as the
 `SpecQ` instance of the general-base `exists_relPicZero`, which lives in
-`ModularCurve/RelativePicard.lean` and is the row below; and the autoduality
-node `isJacobianOf_of_isRelPicZeroOf` is DEAD MATHEMATICS, still sorried only
-because the proven glue it needs is declared below it in this file (see its
-docstring).
+`ModularCurve/RelativePicard.lean` and is the rows below; and the autoduality
+node `isJacobianOf_of_isRelPicZeroOf` is DEAD MATHEMATICS.
+
+Corrected 2026-07-28 against the compiler's `declaration uses 'sorry'` set:
+that last node is no longer merely dead, it is **PROVEN**.  It was sorried
+only because the glue it needs was declared below it in this file; the
+prescribed relocation has since been done (see the block comment ~4300 lines
+above, which records it), and `isJacobianOf_of_isRelPicZeroOf` is now the one
+line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at it.
 
 | leaf | theory | level-specific? |
 |---|---|---|

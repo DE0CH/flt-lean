@@ -153,13 +153,20 @@ the whole of what autoduality still owes.
 
 Amended 2026-07-27: the `Spec ℚ` node `exists_relPicZeroOf` is now
 PROVEN, as `exists_relPicZero strX hproper hsmooth hconn o` and nothing
-else.  Its sibling `isJacobianOf_of_isRelPicZeroOf` is still sorried but
-carries NO mathematics — it is
-`⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩`, and the only
-obstacle is that `IsRelPicZeroOf.isAlbaneseOf` and
-`IsAlbaneseOf.isJacobianOf` are declared BELOW it in `X0.lean`.  Its
-docstring carries the exact relocation that closes it.  Do not dispatch
-a prover at it.
+else.
+
+Amended 2026-07-28, correcting the paragraph that stood here: its sibling
+`isJacobianOf_of_isRelPicZeroOf` is **no longer sorried either**.  This
+file used to say it was still open, carrying no mathematics, blocked only
+by `IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf` being
+declared BELOW it in `X0.lean`.  That diagnosis was right and the
+relocation it prescribed has since been carried out, so the node is now
+the one line `⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩`
+and is PROVEN.  Checked against the compiler's `declaration uses 'sorry'`
+set for `X0.lean`, not against its docstrings.  The two genuinely open
+leaves left in the autoduality half are still
+`IsRelPicZeroOf.exists_albaneseFactorisation` and
+`IsRelPicZeroOf.eq_of_aj_eq`.
 -/
 module
 
