@@ -98,12 +98,29 @@ of them about abelian schemes:
 * `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
 * `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
 * `exists_isAmpleSheaf_cube_of_isAlgClosed` — the theorem of the cube's
-  ample-sheaf output.  **PROVEN 2026-07-28** over the two leaves
+  ample-sheaf output.  **PROVEN 2026-07-28** over
   `exists_isAmpleSheaf_symm_of_isAlgClosed` (projectivity of an abelian variety,
   plus symmetrization and normalization) and
   `nonempty_modPullback_mulByNat_modTensorPow_of_symm` (the theorem of the cube
-  for a SYMMETRIC invertible sheaf), separated by the new morphism
-  `AbelianSchemeStruct.negMor`.
+  for a SYMMETRIC invertible sheaf), separated by the morphism
+  `AbelianSchemeStruct.negMor`.  **Both of those were themselves PROVEN
+  2026-07-28**, over five leaves that are now the whole residue of this chain:
+  - `exists_isAmpleSheaf_of_isAlgClosed` — PROJECTIVITY of an abelian variety
+    (theta divisors; the mathlib-scale one);
+  - `isAmpleSheaf_modTensor` — ample ⊗ ample is ample, over a separated scheme;
+  - `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` — `Pic (Spec K) = 0`,
+    the one small leaf of the five;
+  - `nonempty_modTensor_modPullback_mulByNat_cube_of_symm` — the THEOREM OF THE
+    CUBE, in Mumford's recursion form (seesaw, flat base change; the other
+    mathlib-scale one);
+  - `nonempty_iso_of_nonempty_modTensor_iso` — cancellation of an invertible
+    tensor factor; the one missing ingredient is the DUAL sheaf.
+
+  Two docstring claims of the 2026-07-28 cut were checked and CORRECTED here:
+  ampleness under pullback along an ISOMORPHISM needed no new statement (the pin
+  has `IsIso f → IsClosedImmersion f`), and the invitation to generalise the cube
+  to a general BASE is an invitation to a FALSE statement — see the witness in
+  `nonempty_modPullback_mulByNat_modTensorPow_of_symm`'s docstring.
 -/
 module
 
@@ -11061,22 +11078,325 @@ inverse of the tautological relative point `RelPoint.self f`, exactly as
 By Yoneda this is the group-scheme inversion: precomposition with it computes
 `-y` on every relative point, for the same reason `nsmul_val` says precomposition
 with `mulByNat n` computes `n • y` (`RelPoint.pre h hg` preserves `+` and `0` by
-`pre_add`/`pre_zero`, hence preserves `-`).  That naturality statement is not
-proved here because nothing below needs it: `negMor` occurs only in the
-SYMMETRY hypothesis `[-1]^* L ≅ L` of the theorem of the cube, where it is used
-as a morphism and not through its action on points.
+`pre_add`/`pre_zero`, hence preserves `-`).
+
+**CORRECTION (2026-07-28).**  The previous version of this paragraph said that
+naturality "is not proved here because nothing below needs it".  It IS needed
+and it IS now proved: `neg_val` immediately below is exactly that statement, and
+it is what gives `negMor_comp_negMor` (`[-1] ∘ [-1] = id`), hence `IsIso negMor`,
+hence — through the pin's `IsIso f → IsClosedImmersion f` instance and
+`isAmpleSheaf_modPullback` — that `[-1]^* L₀` is AMPLE.  Without it the
+symmetrization step of `exists_isAmpleSheaf_symm_of_isAlgClosed` cannot be
+written at all.  It costs a dozen lines: naturality of `neg` (inlined — see
+`neg_val`'s docstring for why it must NOT be given the obvious name), then
+`neg_val` verbatim after `nsmul_val`.
 
 Written here rather than beside `mulByNat` so that the whole
 theorem-of-the-cube cut stays in one region of this file. -/
 noncomputable def negMor {V W : Scheme.{u}} {h : V ⟶ W} (abv : AbelianSchemeStruct h) : V ⟶ V :=
   (abv.neg (RelPoint.self h)).1
 
+/-- **NEGATION OF RELATIVE POINTS IS PRECOMPOSITION WITH `negMor`** (PROVEN
+2026-07-28) — the Yoneda statement that `negMor` really is `[-1]`, proved
+verbatim as `nsmul_val` is, over naturality of `neg` and `RelPoint.pre_self`.
+
+**NATURALITY OF `neg` IS INLINED RATHER THAN NAMED, AND THAT IS DELIBERATE — the
+name is already taken DOWNSTREAM.**  `Fermat.AbelianSchemeStruct.pre_neg` exists
+in `ModularCurve/X0.lean` (which `public import`s THIS module), so declaring it
+here would break `X0.lean` with "has already been declared" while this module
+still built green — the single-module-build blind spot.  A THIRD copy of the same
+statement is `Fermat.relPointPre_neg` in `ModularCurve/EllipticScheme.lean`,
+whose docstring already records the duplication and asks for a hoist.  The right
+home for all three is `Modularity/AbelianScheme.lean`, where
+`AbelianSchemeStruct` is defined and which is upstream of every consumer; that
+hoist is left to an owner of those files, and adding a FOURTH site here would
+make it worse. -/
+theorem neg_val (ab : AbelianSchemeStruct f) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
+    (ab.neg y).1 = y.1 ≫ ab.negMor := by
+  have hpre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      RelPoint.pre h hg (ab.neg x) = ab.neg (RelPoint.pre h hg x) := by
+    intro T' T h g g' hg x
+    letI := ab.addCommGroup g'
+    have h1 : ab.add (RelPoint.pre h hg (ab.neg x)) (RelPoint.pre h hg x) = ab.zero g' := by
+      rw [← ab.pre_add h hg, ab.neg_add, ab.pre_zero]
+    have h2 : ab.add (ab.neg (RelPoint.pre h hg x)) (RelPoint.pre h hg x) = ab.zero g' :=
+      ab.neg_add _
+    exact add_right_cancel (h1.trans h2.symm)
+  conv_lhs => rw [← RelPoint.pre_self y]
+  rw [← hpre y.1 y.2 (RelPoint.self f)]
+  rfl
+
+/-- **`[-1]` is a morphism over `S`.** -/
+theorem negMor_comp (ab : AbelianSchemeStruct f) : ab.negMor ≫ f = f :=
+  (ab.neg (RelPoint.self f)).2
+
+/-- **`[-1]` IS AN INVOLUTION** (PROVEN 2026-07-28): `neg_val` read at the point
+`-(RelPoint.self f)`, whose negative is `RelPoint.self f` by `neg_neg`. -/
+theorem negMor_comp_negMor (ab : AbelianSchemeStruct f) : ab.negMor ≫ ab.negMor = 𝟙 A := by
+  letI := ab.addCommGroup f
+  have h := ab.neg_val (ab.neg (RelPoint.self f))
+  have hnn : ab.neg (ab.neg (RelPoint.self f)) = RelPoint.self f := neg_neg (RelPoint.self f)
+  rw [hnn] at h
+  exact h.symm
+
+/-- **`[-1]` IS AN ISOMORPHISM** — it is its own inverse.
+
+This is what makes `isAmpleSheaf_modPullback` (stated for a CLOSED IMMERSION)
+apply to `[-1]`: the pin has `instance {X Y : Scheme} (f : X ⟶ Y) [IsIso f] :
+IsClosedImmersion f` in `Mathlib/AlgebraicGeometry/Morphisms/ClosedImmersion.lean`.
+See the CORRECTION in `exists_isAmpleSheaf_symm_of_isAlgClosed` below. -/
+theorem isIso_negMor (ab : AbelianSchemeStruct f) : IsIso ab.negMor :=
+  ⟨ab.negMor, ab.negMor_comp_negMor, ab.negMor_comp_negMor⟩
+
+/-- **`[0]` IS THE CONSTANT MAP THROUGH THE ZERO SECTION**, `[0] = f ≫ e`
+(PROVEN 2026-07-28) — `zero_smul` and `zero_val`.
+
+This is the base case `n = 0` of the theorem of the cube below, and it is also
+the reason that leaf is FALSE over a general base: `[0]^* L = f^*(e^* L)` is
+trivial only because `Pic (Spec K) = 0`. -/
+theorem mulByNat_zero (ab : AbelianSchemeStruct f) : ab.mulByNat 0 = f ≫ ab.zeroSection := by
+  letI := ab.addCommGroup f
+  show (0 • RelPoint.self f).1 = _
+  rw [zero_smul]
+  exact ab.zero_val f
+
 end AbelianSchemeStruct
 
+/-! ### Sheaf-level bookkeeping for the theorem-of-the-cube cut
+
+Three identifications that `Modularity/AmpleSheaf.lean` does not state and that
+both halves of `exists_isAmpleSheaf_cube_of_isAlgClosed` need.  All three are
+PROVEN and none of them is new mathematics; they are recorded here rather than
+in `AmpleSheaf.lean` only to keep this cut in one region of one file, and they
+would be at home there.
+-/
+
+/-- **`(𝟙_X)^* L ≅ L`** — `Scheme.Modules.pullbackId`, read on an object.  The
+missing companion of `modPullbackCompIso`/`modPullbackCongrIso`. -/
+noncomputable def modPullbackIdIso {X : Scheme.{u}} (L : X.Modules) :
+    modPullback (𝟙 X) L ≅ L :=
+  (Scheme.Modules.pullbackId X).app L
+
+open _root_.CategoryTheory.MonoidalCategory in
+/-- **THE BRAIDING, `L ⊗ M ≅ M ⊗ L`** (PROVEN 2026-07-28).
+
+`nonempty_modTensor_assoc`'s docstring already predicted this ("from which the
+localized monoidal structure, and with it this associator, both unitors and the
+braiding, are formal"), but it needs none of that machinery: presheaves of
+modules are a SYMMETRIC monoidal category at this pin
+(`PresheafOfModules.symmetricCategory`,
+`Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean`), and `modTensor` is
+by definition the sheafification of the presheaf tensor product, so the braiding
+is one application of `sheafification.mapIso` — exactly as `modTensorMapIso` is
+built from `tensorIso`. -/
+noncomputable def modTensorCommIso {Z : Scheme.{u}} (L M : Z.Modules) :
+    modTensor L M ≅ modTensor M L :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
+
+/-- **THE PULLBACK OF AN INVERTIBLE SHEAF IS INVERTIBLE** (PROVEN 2026-07-28).
+
+One line over `exists_trivialization_modPullback` (`AmpleSheaf.lean`), read at
+the junk section `0`: that leaf is stated for an ARBITRARY morphism and produces
+a trivialization of `f^*A` over `f ⁻¹ᵁ U` from one of `A` over `U`, which is
+literally the datum `IsInvertibleSheaf (modPullback f A)` asks for.  Only the
+trivialization is used; the basic-open half of its conclusion is discarded. -/
+theorem isInvertibleSheaf_modPullback {X Y : Scheme.{u}} (fXY : X ⟶ Y) {Aa : Y.Modules}
+    (hA : IsInvertibleSheaf Aa) : IsInvertibleSheaf (modPullback fXY Aa) := by
+  intro x
+  obtain ⟨U, hU, ⟨φ⟩⟩ := hA (fXY.base x)
+  obtain ⟨ψ, -⟩ := exists_trivialization_modPullback fXY φ (0 : Γ(Aa, ⊤))
+  exact ⟨fXY ⁻¹ᵁ U, hU, ⟨ψ⟩⟩
+
+/-! ### The five leaves of the theorem-of-the-cube cut (2026-07-28) -/
+
+/-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD IS PROJECTIVE**
+(sorry leaf, cut 2026-07-28 out of `exists_isAmpleSheaf_symm_of_isAlgClosed`
+below) — Mumford *Abelian Varieties* §6, Application 1 / §16; equivalently
+Weil's theorem that an abelian variety is projective.
+
+*There is an ample invertible sheaf on `A`.*
+
+**THIS IS THE MATHLIB-SCALE HALF, AND IT IS NOW ISOLATED FROM EVERYTHING ELSE.**
+Nothing here mentions `[n]`, `[-1]`, normalization or symmetry: the consumer
+manufactures all three from this sheaf by formal operations.  The classical
+proof is the theta divisor — take an effective ample divisor `D`, show `3D` is
+base-point free, and conclude — and it needs divisors, linear systems and
+coherent cohomology, none of which exist at this pin
+(`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY; re-run it before
+believing this sentence).
+
+**`IsInvertibleSheaf` is deliberately NOT asserted here.**  It is free:
+`isInvertibleSheaf_of_isAmpleSheaf` (`AmpleSheaf.lean`, PROVEN) derives local
+freeness of rank one from ampleness.  Asserting it would make this leaf strictly
+harder for no gain.
+
+**`[IsAlgClosed K]` is load-bearing and `ab` is genuinely used.**  Over a
+non-closed field the statement is still true (projectivity descends), but the
+classical proof does not run; more to the point, the hypothesis is FREE to the
+consumer, which has it.  `ab` is used because "ample sheaf exists" is false for
+a general proper `X` — it says exactly that `X` is quasi-projective, and it is
+the group structure that supplies the theta divisor. -/
+theorem exists_isAmpleSheaf_of_isAlgClosed {X : Scheme.{u}}
+    (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) :
+    ∃ L : X.Modules, IsAmpleSheaf L :=
+  sorry
+
+/-- **A TENSOR PRODUCT OF AMPLE INVERTIBLE SHEAVES IS AMPLE** (sorry leaf, cut
+2026-07-28 out of `exists_isAmpleSheaf_symm_of_isAlgClosed` below) — EGA II
+4.5.7, Hartshorne II Ex. 7.5.
+
+ROUTE.  At `z`, ampleness of `L` gives `n > 0`, `s : Γ(L^{⊗n}, ⊤)` and an affine
+`V` with `nonvanishingLocus s = V ∋ z`; ampleness of `M` gives `m > 0`,
+`t : Γ(M^{⊗m}, ⊤)` and an affine `W ∋ z`.  Read `s^{⊗m} ⊗ t^{⊗n}` as a section
+of `(L ⊗ M)^{⊗(nm)}` through `nonempty_modTensorPow_mul` and
+`nonempty_modPullback_modTensor`-free bookkeeping; its non-vanishing locus is
+`V ⊓ W`, by `nonvanishingLocus_tensorPowSection` and the fact that a tensor of
+two sections is a unit exactly where both factors are.
+
+**`[IsSeparated g]` OVER AN AFFINE BASE IS LOAD-BEARING, and it is the ONLY
+geometric input.**  `IsAmpleSheaf` demands that the non-vanishing locus EQUAL an
+affine open, and the locus produced above is `V ⊓ W`.  An intersection of two
+affine opens is affine when the scheme is separated, and need not be otherwise —
+the line with a doubled origin has two affine opens whose intersection is
+`𝔸¹ ∖ {0}` glued to itself, i.e. not affine.  So a prover who finds the
+hypothesis in the way should look for a different witness, not drop it.
+
+Both hypotheses are FREE to the consumer: `ab.proper` supplies `IsSeparated fK`
+and `Spec` is affine.
+
+This statement belongs in `Modularity/AmpleSheaf.lean` beside
+`isAmpleSheaf_modTensorPow` and `isAmpleSheaf_modPullback`; it is here only so
+that this cut lands in one file.  Move it when convenient. -/
+theorem isAmpleSheaf_modTensor {Z W : Scheme.{u}} (g : Z ⟶ W) [IsAffine W] [IsSeparated g]
+    {L M : Z.Modules} (hL : IsAmpleSheaf L) (hM : IsAmpleSheaf M) :
+    IsAmpleSheaf (modTensor L M) :=
+  sorry
+
+/-- **`Pic (Spec K) = 0` FOR A FIELD `K`** (sorry leaf, cut 2026-07-28) — every
+invertible sheaf on the spectrum of a field is trivial.
+
+ROUTE, and it is short.  `Spec K` has exactly ONE point, so the only open
+containing that point is `⊤`.  `IsInvertibleSheaf M` therefore hands back
+`U = ⊤` together with `M.restrict (⊤ : Opens).ι ≅ modUnit ((⊤ : Opens) : Scheme)`,
+and all that remains is to transport along the isomorphism `(⊤ : Opens) ≅ Spec K`
+of schemes — `Scheme.Modules.restrictUnitIso` and `Scheme.Opens.topIso` are the
+pin-side names to look at, and `isInvertibleSheaf_modUnit`'s one-line proof in
+`AmpleSheaf.lean` is the template for the `U = ⊤` direction.
+
+**This is small, and it is the ONE leaf of this cut that is not mathlib-scale.**
+It is stated separately rather than folded into its two consumers because both
+of them need it — normalization along the zero section in
+`exists_isAmpleSheaf_symm_of_isAlgClosed`, and the `n = 0` base case of
+`nonempty_modPullback_mulByNat_modTensorPow_of_symm` — and because it is exactly
+the reason those two statements are FALSE over a general base. -/
+theorem nonempty_iso_modUnit_of_isInvertibleSheaf_of_field (K : Type u) [Field K]
+    (M : (Spec (CommRingCat.of K)).Modules) (hM : IsInvertibleSheaf M) :
+    Nonempty (M ≅ modUnit (Spec (CommRingCat.of K))) :=
+  sorry
+
+/-- **THE THEOREM OF THE CUBE, IN THE RECURSION FORM MUMFORD'S INDUCTION USES**
+(sorry leaf, cut 2026-07-28 out of
+`nonempty_modPullback_mulByNat_modTensorPow_of_symm` below):
+
+  `[n+2]^* L ⊗ [n]^* L ≅ ([n+1]^* L)^{⊗2} ⊗ L^{⊗2}`.
+
+**WHERE IT COMES FROM.**  Mumford *Abelian Varieties* §6, Corollary 2 to the
+theorem of the cube: for any three `T`-points `x, y, z` of `A`,
+
+  `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L
+      ≅ (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L`
+
+(the inverse-free rearrangement of the usual alternating-sign form).  Take
+`x = [n+1]`, `y = [1] = 𝟙`, `z = [-1] = negMor`.  Then `x+y+z = [n+1]`,
+`x+y = [n+2]`, `y+z = [0]`, `x+z = [n]`, and the identity reads
+
+  `([n+1]^* L)^{⊗2} ⊗ L ⊗ [-1]^* L ≅ [n+2]^* L ⊗ [0]^* L ⊗ [n]^* L`.
+
+Two substitutions finish it: `[-1]^* L ≅ L` is `hsymm`, and `[0]^* L ≅ 𝒪_X` is
+`mulByNat_zero` plus `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` (this
+is the ONLY place the base being a FIELD enters).
+
+**THE SYMMETRY HYPOTHESIS IS LOAD-BEARING HERE TOO, and the counterexample
+transfers verbatim.**  For `L` in `Pic⁰` one has `[-1]^* L ≅ L^{-1}` and
+`[n]^* L ≅ L^{⊗n}`, so the left side of this recursion is `L^{⊗(2n+2)}` and the
+right side is `L^{⊗(2n+4)}`.  A prover who finds `hsymm` unused has proved
+something else.  `hL` is used through the `[0]^* L` step.
+
+**WHAT PROVING IT COSTS.**  The theorem of the cube proper (for `L` on
+`A × A × A`, triviality on each of the three coordinate crosses forces
+triviality), which at this pin needs the seesaw principle and flat base change
+for coherent cohomology.  Neither exists.  `Fermat.modTensor` and
+`Fermat.modPullback` make the STATEMENT writable and supply none of the proof.
+
+**A prover who wants the general Corollary 2 as a separate leaf should cut it**
+— it is the honest shape of the mathematics, and this recursion is three formal
+steps below it.  It is not stated separately here only because this project
+forbids free-floating declarations and nothing would consume it. -/
+theorem nonempty_modTensor_modPullback_mulByNat_cube_of_symm {X : Scheme.{u}}
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) (L : X.Modules) (hL : IsInvertibleSheaf L)
+    (hsymm : Nonempty (modPullback ab.negMor L ≅ L)) (n : ℕ) :
+    Nonempty (modTensor (modPullback (ab.mulByNat (n + 2)) L)
+          (modPullback (ab.mulByNat n) L)
+        ≅ modTensor (modTensorPow (modPullback (ab.mulByNat (n + 1)) L) 2)
+          (modTensorPow L 2)) :=
+  sorry
+
+/-- **CANCELLATION IN THE PICARD MONOID** (sorry leaf, cut 2026-07-28 out of
+`nonempty_modPullback_mulByNat_modTensorPow_of_symm` below): an invertible
+tensor factor may be cancelled, `A ⊗ N ≅ B ⊗ N → A ≅ B`.
+
+ROUTE: tensor both sides with the DUAL `N^∨ = Hom(N, 𝒪)` and use
+`N ⊗ N^∨ ≅ 𝒪` — which holds precisely because `N` is invertible — together with
+the associator (`nonempty_modTensor_assoc`, PROVEN) and the left unitor
+(`modTensorUnitLeftIso`, PROVEN) and the braiding (`modTensorCommIso` above,
+PROVEN).  **The single missing piece is the DUAL**: `Z.Modules` has no internal
+hom at this pin, and `AmpleSheaf.lean` does not define one.  A prover may
+equivalently define `N^∨` as the sheafified presheaf dual and prove
+`N ⊗ N^∨ ≅ 𝒪` locally, since `N` is Zariski-locally `𝒪`.
+
+**`hN` is load-bearing.**  Without invertibility the statement is FALSE: on
+`Z = Spec k[t]`, with `N` the module `k[t]/(t)`, `A = k[t]` and `B = k[t]/(t)`,
+one has `A ⊗ N ≅ N ≅ B ⊗ N` while `A ≇ B`.
+
+This statement belongs in `Modularity/AmpleSheaf.lean`; it is here only so that
+this cut lands in one file. -/
+theorem nonempty_iso_of_nonempty_modTensor_iso {Z : Scheme.{u}} {Aa B N : Z.Modules}
+    (hN : IsInvertibleSheaf N) (h : Nonempty (modTensor Aa N ≅ modTensor B N)) :
+    Nonempty (Aa ≅ B) :=
+  sorry
+
 /-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
-NORMALIZED AMPLE INVERTIBLE SHEAF** (sorry leaf, cut 2026-07-28 out of
-`exists_isAmpleSheaf_cube_of_isAlgClosed` below — this is the PROJECTIVITY half
-of Mumford *Abelian Varieties* §6, Application 2, and it contains no cube).
+NORMALIZED AMPLE INVERTIBLE SHEAF** (**PROVEN 2026-07-28** over the three leaves
+`exists_isAmpleSheaf_of_isAlgClosed`, `isAmpleSheaf_modTensor` and
+`nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` immediately above; cut
+2026-07-28 out of `exists_isAmpleSheaf_cube_of_isAlgClosed` below — this is the
+PROJECTIVITY half of Mumford *Abelian Varieties* §6, Application 2, and it
+contains no cube).
+
+**THE PROOF, in full**: take any ample `L₀` (leaf 1), put
+`L := L₀ ⊗ [-1]^* L₀`, and read off the four conjuncts.  Invertibility is
+`isInvertibleSheaf_of_isAmpleSheaf` then `isInvertibleSheaf_modPullback` then
+`isInvertibleSheaf_modTensor`; ampleness is `isAmpleSheaf_modPullback` at the
+ISOMORPHISM `[-1]` then leaf 2; symmetry is
+`[-1]^*(L₀ ⊗ [-1]^*L₀) ≅ [-1]^*L₀ ⊗ L₀ ≅ L₀ ⊗ [-1]^*L₀` over
+`nonempty_modPullback_modTensor`, `negMor_comp_negMor` and the braiding; and
+normalization is leaf 3 at `e^* L`.
+
+**CORRECTION (2026-07-28) — step 2's two "missing" sheaf facts were ONE fact,
+and the other was already in the pin.**  The version of this docstring written
+when the leaf was cut said the symmetrization step needs "`IsAmpleSheaf` stable
+under pullback along an ISOMORPHISM, and under `modTensor`", neither of which is
+"in `AmpleSheaf.lean` at the time of writing".  The second is right and is now
+the leaf `isAmpleSheaf_modTensor`.  **The first is wrong**: `AmpleSheaf.lean`'s
+`isAmpleSheaf_modPullback` is stated for a CLOSED IMMERSION, and the pin has
+`instance {X Y : Scheme} (f : X ⟶ Y) [IsIso f] : IsClosedImmersion f`
+(`Mathlib/AlgebraicGeometry/Morphisms/ClosedImmersion.lean`), so the isomorphism
+case is an instance away and needed no new statement at all.  What it DID need
+was `IsIso ab.negMor`, i.e. the Yoneda naturality of `negMor` that the same
+commit had recorded as unnecessary; see `negMor`'s corrected docstring above.
 
 *There is an invertible `L` on `A` which is ample, trivial along the zero
 section, and symmetric (`[-1]^* L ≅ L`).*
@@ -11118,12 +11438,74 @@ theorem exists_isAmpleSheaf_symm_of_isAlgClosed {X : Scheme.{u}}
     (ab : AbelianSchemeStruct fK) :
     ∃ L : X.Modules, IsInvertibleSheaf L ∧ IsAmpleSheaf L ∧
       Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K))) ∧
-      Nonempty (modPullback ab.negMor L ≅ L) :=
-  sorry
+      Nonempty (modPullback ab.negMor L ≅ L) := by
+  haveI := ab.proper
+  haveI : IsIso ab.negMor := ab.isIso_negMor
+  obtain ⟨L₀, hamp₀⟩ := exists_isAmpleSheaf_of_isAlgClosed K ab
+  have hinv₀ : IsInvertibleSheaf L₀ := isInvertibleSheaf_of_isAmpleSheaf hamp₀
+  have hinvN : IsInvertibleSheaf (modPullback ab.negMor L₀) :=
+    isInvertibleSheaf_modPullback _ hinv₀
+  have hampN : IsAmpleSheaf (modPullback ab.negMor L₀) :=
+    isAmpleSheaf_modPullback ab.negMor hamp₀
+  have hinvL : IsInvertibleSheaf (modTensor L₀ (modPullback ab.negMor L₀)) :=
+    isInvertibleSheaf_modTensor hinv₀ hinvN
+  refine ⟨modTensor L₀ (modPullback ab.negMor L₀), hinvL,
+    isAmpleSheaf_modTensor fK hamp₀ hampN, ?_, ?_⟩
+  · exact nonempty_iso_modUnit_of_isInvertibleSheaf_of_field K _
+      (isInvertibleSheaf_modPullback ab.zeroSection hinvL)
+  · obtain ⟨e1⟩ := nonempty_modPullback_modTensor ab.negMor L₀ (modPullback ab.negMor L₀)
+    have e2 : modPullback ab.negMor (modPullback ab.negMor L₀) ≅ L₀ :=
+      modPullbackCompIso ab.negMor ab.negMor L₀ ≪≫
+        modPullbackCongrIso ab.negMor_comp_negMor L₀ ≪≫ modPullbackIdIso L₀
+    exact ⟨e1 ≪≫ modTensorMapIso (Iso.refl _) e2 ≪≫
+      modTensorCommIso (modPullback ab.negMor L₀) L₀⟩
 
 /-- **THE THEOREM OF THE CUBE, IN THE FORM `[n]^* L ≅ L^{⊗ n²}` FOR SYMMETRIC
-`L`** (sorry leaf, cut 2026-07-28 out of `exists_isAmpleSheaf_cube_of_isAlgClosed`
-below — Mumford *Abelian Varieties* §6, Corollary 3 to the theorem of the cube).
+`L`** (**PROVEN 2026-07-28** over the three leaves
+`nonempty_iso_modUnit_of_isInvertibleSheaf_of_field`,
+`nonempty_modTensor_modPullback_mulByNat_cube_of_symm` and
+`nonempty_iso_of_nonempty_modTensor_iso` above; cut 2026-07-28 out of
+`exists_isAmpleSheaf_cube_of_isAlgClosed` below — Mumford *Abelian Varieties*
+§6, Corollary 3 to the theorem of the cube).
+
+**THE PROOF, in full.**  Two-step induction on `n`, carrying the pair
+`(P n, P (n+1))`.  Base cases: `[0]^* L = (f ≫ e)^* L ≅ f^*(e^* L) ≅ 𝒪_X`
+(`mulByNat_zero`, `isInvertibleSheaf_modPullback`, `Pic (Spec K) = 0`), and
+`[1] = 𝟙` (`mulByNat_one`) with `L^{⊗1} = L ⊗ 𝒪` (unitor and braiding).  Step:
+the cube recursion gives `[n+2]^* L ⊗ [n]^* L ≅ ([n+1]^* L)^{⊗2} ⊗ L^{⊗2}`;
+substituting the two induction hypotheses turns the right side into
+`L^{⊗((n+1)²·2+2)}` and the left into `L^{⊗(n+2)²} ⊗ [n]^* L`, since
+`(n+2)² + n² = 2(n+1)² + 2`; cancelling the invertible factor `[n]^* L` finishes.
+
+**FAITHFULNESS CORRECTION (2026-07-28) — DO NOT GENERALISE THE BASE.  The
+previous version of this docstring invited exactly the generalisation that makes
+this statement FALSE.**  It said: "The base is kept as `Spec K` for a field only
+because that is the shape `AbelianSchemeStruct` is used in here — a prover who
+finds the general base easier should generalise, and should say so."  Over a
+general base `S` the statement is false, and the counterexample is as small as
+they come.
+
+*Witness.*  Take `A = S` and `f = 𝟙_S`, the TRIVIAL abelian scheme (an
+isomorphism is proper and smooth, and its fibres are single points, hence
+geometrically connected, so `𝟙_S` carries an `AbelianSchemeStruct` whose group
+of relative points is trivial).  Then `[n] = 𝟙_S` for every `n`, `[-1] = 𝟙_S`,
+and every invertible `L` on `S` is symmetric.  The conclusion would assert
+`L ≅ L^{⊗ n²}` for every `n` and every invertible `L` on `S` — i.e. that
+`Pic S` is killed by `n² − 1` for all `n` at once, hence that `Pic S = 0`.  Any
+`S` with `Pic S ≠ 0` refutes it; `S = Spec ℤ[√-5]` and `L` the nontrivial ideal
+class already do, at `n = 2`.
+
+*The same argument with `A → S` arbitrary and `L = f^* M`.*  `f ≫ [n] = f`
+gives `[n]^* f^* M ≅ f^* M` and `[-1]^* f^* M ≅ f^* M`, so `f^* M` is symmetric;
+pulling the conclusion back along the ZERO SECTION and using `f ∘ e = 𝟙_S` turns
+it into `M ≅ M^{⊗ n²}`.  So the failure is not an artefact of the trivial
+example: over ANY base with nontrivial Picard group the leaf is false for the
+pullback of a nontrivial invertible sheaf.
+
+*Why `Spec K` is safe.*  `Pic (Spec K) = 0` for a field `K`, which is exactly
+the leaf `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` above and exactly
+what the `n = 0` base case consumes.  **A field base is a hypothesis of this
+statement, not a presentational accident.**
 
 *For an invertible `L` on an abelian scheme with `[-1]^* L ≅ L`, and every `n`,
 `[n]^* L ≅ L^{⊗ n²}`.*
@@ -11161,10 +11543,43 @@ exists; `Fermat.modTensor` and `Fermat.modPullback` make the STATEMENT writable
 the proof. -/
 theorem nonempty_modPullback_mulByNat_modTensorPow_of_symm {X : Scheme.{u}}
     (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
-    (ab : AbelianSchemeStruct fK) (L : X.Modules) (_hL : IsInvertibleSheaf L)
-    (_hsymm : Nonempty (modPullback ab.negMor L ≅ L)) (n : ℕ) :
-    Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) :=
-  sorry
+    (ab : AbelianSchemeStruct fK) (L : X.Modules) (hL : IsInvertibleSheaf L)
+    (hsymm : Nonempty (modPullback ab.negMor L ≅ L)) (n : ℕ) :
+    Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) := by
+  have h0 : Nonempty (modPullback (ab.mulByNat 0) L ≅ modTensorPow L (0 ^ 2)) := by
+    obtain ⟨e⟩ := nonempty_iso_modUnit_of_isInvertibleSheaf_of_field K
+      (modPullback ab.zeroSection L) (isInvertibleSheaf_modPullback _ hL)
+    exact ⟨modPullbackCongrIso ab.mulByNat_zero L ≪≫
+      (modPullbackCompIso fK ab.zeroSection L).symm ≪≫
+      modPullbackMapIso fK e ≪≫ modPullbackUnitIso fK⟩
+  have h1 : Nonempty (modPullback (ab.mulByNat 1) L ≅ modTensorPow L (1 ^ 2)) :=
+    ⟨modPullbackCongrIso ab.mulByNat_one L ≪≫ modPullbackIdIso L ≪≫
+      (modTensorUnitLeftIso L).symm ≪≫ modTensorCommIso (modUnit X) L⟩
+  have key : ∀ m : ℕ,
+      Nonempty (modPullback (ab.mulByNat m) L ≅ modTensorPow L (m ^ 2)) ∧
+        Nonempty (modPullback (ab.mulByNat (m + 1)) L ≅ modTensorPow L ((m + 1) ^ 2)) := by
+    intro m
+    induction m with
+    | zero => exact ⟨h0, h1⟩
+    | succ k ih =>
+      refine ⟨ih.2, ?_⟩
+      obtain ⟨ek⟩ := ih.1
+      obtain ⟨ek1⟩ := ih.2
+      obtain ⟨ec⟩ := nonempty_modTensor_modPullback_mulByNat_cube_of_symm K ab L hL hsymm k
+      obtain ⟨p1⟩ := nonempty_modTensorPow_mul L ((k + 1) ^ 2) 2
+      obtain ⟨p2⟩ := nonempty_modTensorPow_add L ((k + 1) ^ 2 * 2) 2
+      obtain ⟨p3⟩ := nonempty_modTensorPow_add L ((k + 2) ^ 2) (k ^ 2)
+      have eRHS :
+          modTensor (modTensorPow (modPullback (ab.mulByNat (k + 1)) L) 2) (modTensorPow L 2)
+            ≅ modTensorPow L ((k + 1) ^ 2 * 2 + 2) :=
+        modTensorMapIso (modTensorPowMapIso ek1 2 ≪≫ p1) (Iso.refl _) ≪≫ p2
+      have eLHS : modTensor (modTensorPow L ((k + 2) ^ 2)) (modPullback (ab.mulByNat k) L)
+          ≅ modTensorPow L ((k + 1) ^ 2 * 2 + 2) :=
+        modTensorMapIso (Iso.refl _) ek ≪≫ p3 ≪≫
+          eqToIso (by rw [show (k + 2) ^ 2 + k ^ 2 = (k + 1) ^ 2 * 2 + 2 by ring])
+      exact nonempty_iso_of_nonempty_modTensor_iso
+        (isInvertibleSheaf_modPullback (ab.mulByNat k) hL) ⟨ec ≪≫ eRHS ≪≫ eLHS.symm⟩
+  exact (key n).1
 
 /-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
 AMPLE INVERTIBLE SHEAF SATISFYING THE CUBE IDENTITY `[n]^* L ≅ L^{⊗ n²}`**
