@@ -200,6 +200,10 @@ public import Mathlib.Topology.Instances.TrivSqZeroExt
 public import Mathlib.LinearAlgebra.TensorProduct.Tower
 -- `LinearEquiv.baseChange`, in the statement of the conjugation
 -- transport `baseChange_conj_apply`
+public import Mathlib.LinearAlgebra.TensorProduct.Prod
+-- `TensorProduct.prodRight`, the base-change identification
+-- `B ⊗[R] (R × R) ≃ B × B` used by `isSplitTorusAt_baseChange` (the
+-- split-torus clause of the raised-level condition)
 public import Mathlib.LinearAlgebra.Dimension.Free
 -- `Module.finBasisOfFinrankEq`: the standard frame of `reframe`
 public import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -5339,10 +5343,637 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
     Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) :=
   sorry
 
+/-! #### The RAISED-LEVEL deformation-condition clauses, and the machine
+
+(New 2026-07-28, the cut of `exists_isWeaklyUniversal_auxDeformationDatum`
+below.)
+
+The cut mirrors the one already taken on the Hilbert twin
+(`exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses` in
+`HardlyRamified/HilbertModularity.lean`, 2026-07-27) rather than inventing a
+second architecture for the same node: the Schlessinger machine is separated
+from the ARITHMETIC of the local conditions, which enters it only through the
+clauses saying that `IsRaisedLevelHardlyRamified hpodd Q` is a deformation
+condition in Mazur's sense — functoriality, gluing along fibre products,
+finiteness at every finite level, and detection on the finite levels.
+
+## THREE PLACES THE MIRROR IS NOT VERBATIM, AND WHY
+
+**1. The residual pinning is TRACE-LEVEL with a finite exceptional set.**  The
+Hilbert clauses pin `((ρ g).charpoly).map π = (ρbar g).charpoly` at every
+`g ∈ G_F`.  That shape is not available on the `ℚ` side — the whole `ℚ` chain
+carries only the linear `charFrob` coefficients away from a finite set, which
+is exactly why `AuxDeformationDatum.charFrob_compat` has the shape it has (see
+its docstring).  So the pinning carried here is `(πB, S, hπB)` in the
+`charFrob_compat` shape, which every object of the raised-level category
+supplies verbatim.
+
+That is not a weakening.  The determinant clause of
+`IsRaisedLevelHardlyRamified` pins `det ρ` to the cyclotomic character for
+every object, so trace **plus** determinant is the whole rank-2 charpoly; and
+`exists_conj_of_charFrob_eq_away` above (PROVEN) upgrades "charFrob agrees away
+from a finite set, `ρbar` irreducible" to an actual conjugacy, hence to
+agreement at EVERY prime — in particular at the `q ∈ Q`, which is where the
+gluing and pro-limit clauses need residual distinctness.  A prover of those two
+leaves should reach for that lemma first; it is what makes the exceptional set
+harmless.
+
+**2. The functoriality clause is the QUOTIENT one.**  The Hilbert twin proves
+functoriality along an ARBITRARY continuous `ℤ_ℓ`-algebra map into a finite
+local ring, using `isFlatAt_baseChange_of_numberField`.  On the `ℚ` side the
+general-coefficient flat transfer `isHardlyRamified_baseChange` rests on the
+OPEN Raynaud leaf `hasFlatProlongationAt_of_pi_surjection`, while the quotient
+transfer `isHardlyRamified_baseChange_quotient` is sorry-free — and the `ℚ`
+chain only ever pushes a deformation forward along a quotient map (the
+`p`-adic tower of `exists_ringHom_quotient_padicTower_of_finiteTests`, whose
+own docstring records exactly this) followed by a conjugation (the reframing
+transport).  So `IsAuxFunctorialityClause` carries those two operations, both
+of which are PROVEN below, and no dependence on the Raynaud leaf is created.
+
+**3. The fibre-product clause asks `B` to be the fibre product ALGEBRAICALLY.**
+The Hilbert twin also asks `Topology.IsEmbedding (fun b => (p₁ b, p₂ b))`.
+Here the pairing is asked to be injective instead; the coefficient rings of the
+clause are `Finite`, and the gluing argument uses only the ring-theoretic
+universal property.  Recorded rather than silently dropped.
+
+## THE ONE FAITHFULNESS POINT, INHERITED FROM THE TWIN
+
+**The naive fibre-product clause is FALSE**, and so is the naive pro-limit
+clause; both are repaired by the residual pinning.  The counterexample is
+elementary and is worth having in front of a prover of either leaf.  Let `k` be
+a field, `A₁ = A₂ = k[ε]`, `A₀ = k`, so that `B = A₁ ×_{A₀} A₂ ≅ k[u,v]/(u,v)²`
+with `u = (ε,0)`, `v = (0,ε)`.  Let `σ` act by
+
+    ρ₁(σ) = diag(1+ε, 1)                  over `A₁`,
+    ρ₂(σ) = [[1+ε, -ε], [0, 1]]           over `A₂`,
+
+the second being `g · diag(1+ε,1) · g⁻¹` for `g = [[1,1],[0,1]]` and therefore
+also split.  Both reduce to the identity over `A₀`, so the pair glues to
+
+    ρ(σ) = [[1+u+v, -v], [0, 1]]          over `B`,
+
+which is NOT diagonalisable over `B`: an eigenvector for the eigenvalue `1`
+would need `(u+v)x₁ = v x₂`, impossible modulo `(u,v)²` for an `x` that is part
+of a basis.  So both projections satisfy the split-torus clause and `ρ` does
+not — the clause is not a deformation condition on its own.
+
+What kills the counterexample is residual DISTINCTNESS: once the two residual
+characters differ, the idempotent cutting out the `χ`-line is determined by its
+residue (idempotents lifting along a nilpotent ideal are unique once their
+residue is fixed), so the decompositions over `A₀` cannot disagree and the glue
+exists.  In the example both residual characters are trivial, the excluded
+case.  This is Wiles, Ann. of Math. 141 (1995), ch. 3, and it is the honest
+form of "the local deformation functor at a Taylor–Wiles prime is
+representable BECAUSE `ρbar(Frob_q)` has distinct eigenvalues".
+
+References: Schlessinger, *Functors of Artin rings*; Mazur, *Deforming Galois
+representations*, §§18–23; Ramakrishna, Compositio 87 (1993);
+Darmon–Diamond–Taylor §§2, 5.3; Wiles, ch. 3. -/
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The split-torus clause transfers along base change** (PROVEN
+2026-07-28): a decomposition `V ≃ₗ[R] R × R` carrying `ρ|_{G_{ℚ_q}}` to
+`(χ, δ)` base-changes to `B ⊗[R] V ≃ₗ[B] B × B` carrying `(ρ ⊗ B)|_{G_{ℚ_q}}`
+to `(χ ⊗ B, δ ⊗ B)`.
+
+The `ℚ`-side twin of `isHilbertSplitTorusAt_baseChange`, and the proof is that
+one's: the identification is `TensorProduct.prodRight` followed by
+`TensorProduct.AlgebraTensorModule.rid` on each factor, equivariance is checked
+on simple tensors, and the kernel of a character only GROWS under base change
+followed by conjugation, so `δ ⊗ B` is still trivial on
+`localInertiaGroup`. -/
+lemma isSplitTorusAt_baseChange
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {V : Type*} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra R B] [ContinuousSMul R B]
+    {q : ℕ} (hq : q.Prime) {ρ : GaloisRep ℚ R V}
+    (hs : ∃ (e : V ≃ₗ[R] R × R)
+      (χ δ : GaloisRep
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) R R),
+      (∀ (g : Field.absoluteGaloisGroup
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+          (v : V),
+        e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+          (χ g (e v).1, δ g (e v).2)) ∧
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker) :
+    ∃ (e : (B ⊗[R] V) ≃ₗ[B] B × B)
+      (χ δ : GaloisRep
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) B B),
+      (∀ (g : Field.absoluteGaloisGroup
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+          (v : B ⊗[R] V),
+        e ((ρ.baseChange B).toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+            g v) =
+          (χ g (e v).1, δ g (e v).2)) ∧
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+  obtain ⟨e, χ, δ, hint, hδker⟩ := hs
+  set rid : (B ⊗[R] R) ≃ₗ[B] B := TensorProduct.AlgebraTensorModule.rid R B B
+  set τ : (B ⊗[R] (R × R)) ≃ₗ[B] B × B :=
+    (TensorProduct.prodRight R B B R R).trans (rid.prodCongr rid) with hτ
+  refine ⟨(LinearEquiv.baseChange R B V (R × R) e).trans τ,
+    (χ.baseChange B).conj rid, (δ.baseChange B).conj rid, ?_, ?_⟩
+  · intro g y
+    induction y using TensorProduct.induction_on with
+    | zero => simp [Prod.ext_iff]
+    | add a b ha hb => simp only [map_add, ha, hb, Prod.fst_add, Prod.snd_add,
+        Prod.mk_add_mk]
+    | tmul c m =>
+      have hkey : ∀ (η : GaloisRep
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) R R)
+          (r : R),
+          ((η.baseChange B).conj rid) g (rid (c ⊗ₜ[R] r)) =
+            rid (c ⊗ₜ[R] (η g r)) := by
+        intro η r
+        rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_apply,
+          LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.coe_coe,
+          LinearEquiv.symm_apply_apply,
+          show ((η.baseChange B) g : Module.End B (B ⊗[R] R)) =
+            LinearMap.baseChange B (η g) from rfl,
+          LinearMap.baseChange_tmul]
+      have hloc : ((ρ.baseChange B).toLocal
+          hq.toHeightOneSpectrumRingOfIntegersRat) g (c ⊗ₜ[R] m) =
+          c ⊗ₜ[R] ((ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) g m) :=
+        rfl
+      simp only [LinearEquiv.trans_apply, LinearEquiv.baseChange_tmul, hloc,
+        hτ, LinearEquiv.trans_apply, TensorProduct.prodRight_tmul,
+        LinearEquiv.prodCongr_apply]
+      rw [hint g m, Prod.mk.injEq]
+      exact ⟨(hkey χ (e m).1).symm, (hkey δ (e m).2).symm⟩
+  · intro σ hσ
+    have hδσ : δ σ = 1 := hδker hσ
+    show (δ.baseChange B).conj rid σ = 1
+    rw [GaloisRep.conj_apply,
+      show (δ.baseChange B) σ = LinearMap.baseChange B (δ σ) from rfl, hδσ]
+    refine LinearMap.ext fun c => ?_
+    simp
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL condition transfers along quotient specialization of the
+coefficients** (PROVEN 2026-07-28; the raised-level twin of the imported
+`isHardlyRamified_baseChange_quotient`).
+
+Four of the five clauses are that lemma's proofs verbatim — the determinant
+maps along the structure morphism (`LinearMap.det_baseChange`), unramifiedness
+(now only away from `Q`) passes by the existing instance on
+`GaloisRep.IsUnramifiedAt`, flatness at `p` is `isFlatAt_baseChange_quotient`
+and tameness at `2` is `isTameAtTwo_baseChange` — and the fifth is
+`isSplitTorusAt_baseChange` immediately above.  The lemma is NOT deduced from
+its base-level twin: the raised predicate neither implies nor is implied by the
+base-level one.
+
+**Why the QUOTIENT and not a general coefficient map** — see the section
+preamble: the general-coefficient flat transfer on the `ℚ` side rests on the
+open Raynaud leaf `hasFlatProlongationAt_of_pi_surjection`, and the `ℚ` chain
+only ever needs the quotient case. -/
+lemma isRaisedLevelHardlyRamified_baseChange_quotient {p : ℕ} [Fact p.Prime]
+    {hpodd : Odd p} (Q : Finset ℕ)
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {V : Type*} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] {hdimV : Module.rank R V = 2}
+    (P : Ideal R) [IsLocalRing (R ⧸ P)]
+    (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] V) = 2)
+    {ρ : GaloisRep ℚ R V} (h : IsRaisedLevelHardlyRamified hpodd Q hdimV ρ) :
+    IsRaisedLevelHardlyRamified hpodd Q hdimQ (ρ.baseChange (R ⧸ P)) := by
+  constructor
+  · -- the determinant condition maps along the quotient map
+    intro g
+    have hdet : (ρ.baseChange (R ⧸ P)).det g =
+        algebraMap R (R ⧸ P) (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange (R ⧸ P)) g) = _
+      rw [show ((ρ.baseChange (R ⧸ P)) g :
+          Module.End (R ⧸ P) ((R ⧸ P) ⊗[R] V)) =
+        LinearMap.baseChange (R ⧸ P) (ρ g) from rfl,
+        LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness away from `Q` passes to the base change
+    intro q hq hqQ hq2 hqp
+    letI : ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+      h.isUnramified q hq hqQ hq2 hqp
+    infer_instance
+  · -- flatness at `p`
+    exact isFlatAt_baseChange_quotient P h.isFlat
+  · -- tameness at `2`
+    exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
+  · -- the split torus at every `q ∈ Q`
+    intro q hqQ hq
+    exact isSplitTorusAt_baseChange (R ⧸ P) hq (h.isSplitTorusAt q hqQ hq)
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The RAISED-LEVEL condition is invariant under an isomorphism of the
+representation space** (PROVEN 2026-07-28; the raised-level twin of
+`isHardlyRamified_conj` above, with the same four proofs plus the split-torus
+clause, whose decomposition is precomposed with the inverse isomorphism). -/
+lemma isRaisedLevelHardlyRamified_conj {p : ℕ} [Fact p.Prime] {hpodd : Odd p}
+    (Q : Finset ℕ)
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsRaisedLevelHardlyRamified hpodd Q hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsRaisedLevelHardlyRamified hpodd Q hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness away from `Q`: the kernel of the local rep only grows
+    intro q hq hqQ hq2 hqp
+    have hun := h.isUnramified q hq hqQ hq2 hqp
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
+    show (ρ.conj e).toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun w => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    constructor
+    intro I hI
+    refine (h.isFlat.cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)) g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)) g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at `2`: compose the quotient with the inverse isomorphism
+    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
+    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hπsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g w
+      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
+      have h1 := (hδ g (e.symm w)).1
+      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
+        δ g (π (e.symm w))
+      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.map_apply, h1]
+  · -- the split torus at `q ∈ Q`: precompose the decomposition with `e⁻¹`
+    intro q hqQ hq
+    obtain ⟨f, χ, δ, hint, hδker⟩ := h.isSplitTorusAt q hqQ hq
+    refine ⟨e.symm.trans f, χ, δ, ?_, hδker⟩
+    intro g v
+    have h1 := hint g (e.symm v)
+    show f (e.symm (((ρ.conj e).toLocal
+      hq.toHeightOneSpectrumRingOfIntegersRat) g v)) = _
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    rfl
+
 set_option linter.checkUnivs false in
-/-- **The raised-level deformation problem is weakly representable** (sorry
-node, LEAF A2′-2 of the 2026-07-27 RING/HECKE cut): Mazur representability at
-raised level.
+open scoped TensorProduct in
+/-- **RAISED-LEVEL functoriality clause** — the two coefficient operations the
+`ℚ` Schlessinger chain performs on a deformation: specialization along a
+QUOTIENT of the coefficient ring (the `p`-adic tower of
+`exists_ringHom_quotient_padicTower_of_finiteTests`) and conjugation by a
+linear isomorphism of the representation space (the reframing transport).
+
+Both conjuncts are PROVEN immediately below, so this clause costs the machine
+nothing; it is carried as a hypothesis rather than used directly so that the
+machine leaf genuinely consumes the two raised-level transfers — a sorried body
+contributes no dependency edges, so a transfer the machine merely *could* use
+would be free-floating until the machine is proven.
+
+See the section preamble for why this is the quotient clause and not the
+Hilbert twin's general-coefficient one. -/
+def IsAuxFunctorialityClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ) : Prop :=
+  (∀ {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+      [IsLocalRing R] [Algebra ℤ_[p] R]
+      {V : Type a} [AddCommGroup V] [Module R V] [Module.Finite R V]
+      [Module.Free R V] {hdimV : Module.rank R V = 2}
+      (P : Ideal R) [IsLocalRing (R ⧸ P)]
+      (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] V) = 2)
+      {ρ : GaloisRep ℚ R V},
+      IsRaisedLevelHardlyRamified hpodd Q hdimV ρ →
+      IsRaisedLevelHardlyRamified hpodd Q hdimQ (ρ.baseChange (R ⧸ P))) ∧
+  (∀ {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+      [IsLocalRing R] [Algebra ℤ_[p] R]
+      {M : Type a} [AddCommGroup M] [Module R M] [Module.Finite R M]
+      [Module.Free R M]
+      {N : Type a} [AddCommGroup N] [Module R N] [Module.Finite R N]
+      [Module.Free R N]
+      {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+      {ρ : GaloisRep ℚ R M},
+      IsRaisedLevelHardlyRamified hpodd Q hdimM ρ →
+      ∀ e : M ≃ₗ[R] N,
+        IsRaisedLevelHardlyRamified hpodd Q hdimN (ρ.conj e))
+
+set_option linter.checkUnivs false in
+/-- **Functoriality of the RAISED-LEVEL condition** (PROVEN 2026-07-28): the
+two transfers proven above, packaged as the clause the machine consumes. -/
+theorem isAuxFunctorialityClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ) : IsAuxFunctorialityClause.{a} hpodd Q := by
+  refine ⟨?_, ?_⟩
+  · intro _ _ _ _ _ _ _ _ _ _ _ _ P _ hdimQ _ h
+    exact isRaisedLevelHardlyRamified_baseChange_quotient Q P hdimQ h
+  · intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ hdimN _ h e
+    exact isRaisedLevelHardlyRamified_conj Q hdimN h e
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **RAISED-LEVEL fibre-product clause** (Schlessinger's H1 and H2), with the
+RESIDUAL PINNING that the section preamble's `k[u,v]/(u,v)²` counterexample
+forces.
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` in the category of rings: the pairing
+`b ↦ (p₁ b, p₂ b)` is injective and hits every compatible pair.  Given that the
+base changes of `ρ` to `A₁` and to `A₂` satisfy the raised-level condition, so
+does `ρ`.
+
+**The pinning is the triple `(πB, S, hπB)`** — a reduction to `k` under which
+the linear `charFrob` coefficients of `ρ` are those of `ρbar` away from a
+finite set of primes, i.e. exactly `AuxDeformationDatum.charFrob_compat`.
+**Without it the statement is FALSE**; do not "simplify" it away.  With it, and
+with `hQ`, `exists_conj_of_charFrob_eq_away` makes the residual representation
+a conjugate of `ρbar`, hence its charpoly at `Frob_q` for `q ∈ Q` is
+`(X - α)(X - β)` with `α ≠ β`; the idempotent cutting out the `χ`-line is then
+determined by its residue, so the two decompositions over `A₀` agree up to
+swapping the factors and glue.
+
+The pinning is discharged for free at every use site: the machine applies this
+clause only to objects of the raised-level deformation category, each of which
+carries `π`, `S` and `charFrob_compat` by definition. -/
+def IsAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) : Prop :=
+  ∀ {A₀ : Type a} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[p] A₀] [Finite A₀]
+    {A₁ : Type a} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[p] A₁] [Finite A₁]
+    {A₂ : Type a} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[p] A₂] [Finite A₂]
+    {B : Type a} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[p] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀), Function.Surjective f₂ →
+    ∀ (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁)
+      (hp₂ : Continuous p₂),
+    p₁.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₁ →
+    p₂.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₂ →
+    f₁.comp p₁ = f₂.comp p₂ →
+    Function.Injective (fun b : B => (p₁ b, p₂ b)) →
+    (∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂) →
+    ∀ {V : Type a} [AddCommGroup V] [Module B V] [Module.Finite B V]
+      [Module.Free B V] {hdimV : Module.rank B V = 2}
+      {ρ : GaloisRep ℚ B V} (πB : B →+* k)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+    (∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πB ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) →
+    (letI : Algebra B A₁ := p₁.toAlgebra
+     letI : ContinuousSMul B A₁ := continuousSMul_of_algebraMap B A₁
+       (by rw [RingHom.algebraMap_toAlgebra]; exact hp₁)
+     ∀ hdim₁ : Module.rank A₁ (A₁ ⊗[B] V) = 2,
+       IsRaisedLevelHardlyRamified hpodd Q hdim₁ (ρ.baseChange A₁)) →
+    (letI : Algebra B A₂ := p₂.toAlgebra
+     letI : ContinuousSMul B A₂ := continuousSMul_of_algebraMap B A₂
+       (by rw [RingHom.algebraMap_toAlgebra]; exact hp₂)
+     ∀ hdim₂ : Module.rank A₂ (A₂ ⊗[B] V) = 2,
+       IsRaisedLevelHardlyRamified hpodd Q hdim₂ (ρ.baseChange A₂)) →
+    IsRaisedLevelHardlyRamified hpodd Q hdimV ρ
+
+set_option linter.checkUnivs false in
+/-- **RAISED-LEVEL finiteness clause** (Schlessinger's H3) — the `ℚ`-side twin
+of `IsHilbertAuxFiniteFramesClause`.
+
+No residual pinning: this is Hermite–Minkowski with `Q` adjoined to the bad
+set, and it mentions `ρbar` nowhere. -/
+def IsAuxFiniteFramesClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ) : Prop :=
+  ∀ (A : Type a) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A],
+    {ρ : GaloisRep ℚ A (Fin 2 → A) |
+      IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρ}.Finite
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **RAISED-LEVEL pro-limit clause** — the `ℚ`-side twin of
+`IsHilbertAuxProLimitClause`, with the same RESIDUAL PINNING as the
+fibre-product clause and for the same reason.
+
+The four base-level clauses are detected on the finite levels
+unconditionally.  The split-torus clause is not: the decompositions supplied at
+the finite levels need not be COMPATIBLE with the transition maps, and without
+compatibility there is nothing to pass to the limit.  The pinning repairs it
+exactly as it repairs the gluing clause — residual distinctness at `q ∈ Q`
+(through `exists_conj_of_charFrob_eq_away`, see the section preamble) makes the
+decomposition at each level unique once the residual eigenvalue attached to `χ`
+is fixed, so the levels form a compatible system and adic completeness
+assembles it.
+
+(An alternative repair, recorded because it may be cheaper and needs no
+pinning: the decompositions at a level with FINITE quotient ring form a finite
+nonempty set, and an inverse system of finite nonempty sets over a cofiltered
+index has a section — `nonempty_sections_of_finite_cofiltered_system`, already
+in this module's import cone through `Mathlib.CategoryTheory.CofilteredSystem`.
+That route needs `Finite (R ⧸ I)`, which the clause as stated does not give,
+which is why the pinning is the form carried here.) -/
+def IsAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) : Prop :=
+  ∀ {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R],
+    IsAdic (IsLocalRing.maximalIdeal R) →
+    IsAdicComplete (IsLocalRing.maximalIdeal R) R →
+    ∀ {ρ : GaloisRep ℚ R (Fin 2 → R)} (πR : R →+* k)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+    (∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πR ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) →
+    (∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) →
+    IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun R) ρ
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL gluing clause** (sorry node, LEAF A2′-2a of the
+2026-07-28 clause cut of `exists_isWeaklyUniversal_auxDeformationDatum`).
+
+The four base-level clauses glue exactly as at the base level — `Q` is disjoint
+from `{2, p}` by the congruence clause of `hQ` at level `n ≥ 1` (`q ≡ 1 mod pⁿ`
+with `p` odd forces `q ≠ 2` and `q ≠ p`), so the tame-at-`2` and flat-at-`p`
+residues are untouched by the raising.
+
+**The new content is the split-torus clause, and it is where `hQ` is spent.**
+Given decompositions of `ρ ⊗ A₁` and `ρ ⊗ A₂`, their images over `A₀` are two
+decompositions of the same local representation.  `hQ` gives `α ≠ β` in the
+residual charpoly at `Frob_q`, and the pinning `(πB, S, hπB)` transports that
+to `ρ`: by `exists_conj_of_charFrob_eq_away` (PROVEN above) the residual
+representation of `ρ` is a conjugate of `ρbar`, so its charpoly at `Frob_q`
+agrees with `ρbar`'s at EVERY prime — the finite exceptional set `S` costs
+nothing — and the two residual characters of any decomposition at `q` are
+`{α, β}`, hence distinct.  An idempotent of `End(A₀²)` commuting with the local
+action is then determined by its residue (idempotents lift uniquely along a
+nilpotent ideal), so the two decompositions over `A₀` agree up to swapping the
+two factors; swap `e₂` if necessary and glue the two idempotents into one over
+`B`, which is a decomposition of `ρ` because `B` is the fibre product.
+
+**This leaf is FALSE without the pinning** — see the section preamble's
+`k[u,v]/(u,v)²` counterexample.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above; in particular a
+proof ending in `exfalso` against `hirr` is the circular discharge and must be
+rejected.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
+§5.3; Mazur, *Deforming Galois representations*, §§18–23. -/
+theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
+    IsAuxFibreProductClause.{a, uK, uW} hpodd Q ρbar :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL finiteness clause** (sorry node, LEAF A2′-2b of the
+2026-07-28 clause cut).
+
+Hermite–Minkowski with `Q` adjoined to the bad set.  The base-level finiteness
+input of this file — the dual-number tangent finiteness `_hfin` of
+`exists_framedStrictlyUniversal_hardlyRamified_finiteTests` — is cut out by
+unramifiedness away from `{2, p}` ONLY, and the raised-level set is not
+contained in it, so it does not apply verbatim.  What is needed is the same
+Hermite–Minkowski chain with the bad set `{2, p} ∪ Q` in place of `{2, p}`
+throughout; `Q` is a `Finset`, so the enlarged bad set is still finite and
+every step goes through unchanged.  This is a mirror of proven material rather
+than new mathematics, and it is stated as one leaf because the steps are
+mechanical and share one binder list.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
+theorem isAuxFiniteFramesClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    (Q : Finset ℕ) : IsAuxFiniteFramesClause.{a} hpodd Q :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL pro-limit clause** (sorry node, LEAF A2′-2c of the
+2026-07-28 clause cut).
+
+The four base-level clauses pass to the limit as at the base level.  The new
+content is the split-torus clause at `q ∈ Q`, and it is where `hQ` and the
+residual pinning are spent: residual distinctness makes the decomposition at
+each finite level unique once the residual eigenvalue attached to `χ` is fixed,
+so the levels form a compatible system, and adic completeness assembles it into
+a decomposition over `R`.  See the section preamble, and
+`IsAuxProLimitClause`'s docstring for the alternative cofiltered-system route.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
+theorem isAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
+    IsAuxProLimitClause.{a, uK, uW} hpodd Q ρbar :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL Schlessinger machine** (sorry node, LEAF A2′-2d of the
+2026-07-28 clause cut): the arithmetic-free half of
+`exists_isWeaklyUniversal_auxDeformationDatum` below.
+
+Nothing here is specific to the raised level.  The base-level `ℚ` chain of this
+file — `HardlyRamifiedFiniteDeformation`,
+`IsStrictlyUniversalOnFramedFiniteLifts`,
+`IsWeaklyUniversalOnIdentifiedFiniteTests`, the `p`-adic tower
+`exists_ringHom_quotient_padicTower_of_finiteTests`, the tangent-finiteness
+upgrade `exists_weaklyUniversalOnIdentified_framed_of_finite_tangent` and the
+limit passage `exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation` —
+consumes `IsHardlyRamified` ONLY through the operations packaged as the clauses
+above: pushforward along a quotient, conjugation, gluing along a fibre product,
+finiteness at each Artinian level, and detection on the finite levels.  So the
+intended discharge is that chain with `IsRaisedLevelHardlyRamified hpodd Q` in
+place of `IsHardlyRamified hpodd`, plus the extra bookkeeping that the raised
+gluing and pro-limit clauses also demand the residual pinning
+`(π, S, charFrob_compat)`, which every object of the category carries by
+definition.
+
+**The right way to discharge it is probably to make the base-level chain
+PREDICATE-GENERIC and instantiate it twice**, rather than to transcribe ~1300
+lines a second time.  That refactor was not attempted at the cut because it
+edits proven declarations belonging to other owners; a successor holding the
+whole chain should consider it before transcribing.  The Hilbert twin
+`exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses` records the
+same recommendation, and a single predicate-generic machine serving both sides
+is the outcome worth aiming at.
+
+**WHAT THIS LEAF MAY NOT DO.**  The base-level `ℚ` chain bottoms out in
+`exists_framedStrictlyUniversal_hardlyRamified_finiteTests`, which is
+discharged by `exfalso` from the odd-prime dichotomy
+(`IsHardlyRamified.mod_three_reducible` at `p = 3`,
+`not_isIrreducible_of_isHardlyRamified_of_five_le` at `p ≥ 5`) against an
+irreducible hardly ramified `ρbar`.  That route is BANNED here: this statement
+deliberately does not carry `IsHardlyRamified hpodd hW ρbar`, and deriving it
+from `𝒟₀` by reduction descent is banned by the circularity guard.  A proof of
+this leaf ending in `exfalso` must be rejected.  So the transcription must
+follow the chain ABOVE that bottom leaf — the part that is genuine Schlessinger
+machinery — and take the finite-level representability from `hglue`, `hfin` and
+`hfunc` instead.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
+theorem exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (Q : Finset ℕ)
+    (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
+    (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
+    (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
+    (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q)
+    (hlim : IsAuxProLimitClause.{uR, uK, uW} hpodd Q ρbar) :
+    ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟.IsWeaklyUniversal :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The raised-level deformation problem is weakly representable** (ASSEMBLY
+— cut 2026-07-28 into the four clause leaves above; was LEAF A2′-2 of the
+2026-07-27 RING/HECKE cut): Mazur representability at raised level.
 
 This is `exists_weaklyUniversal_hardlyRamifiedDeformation` above with the local
 condition raised at `Q`, and the same Schlessinger/Ramakrishna machinery is
@@ -5351,6 +5982,21 @@ relatively representable (the local condition at `q ∈ Q` is a product of two
 character-deformation problems, by the DISTINCT residual Frobenius eigenvalues
 that `hQ` supplies) and has finite-dimensional tangent space over the FINITE
 residue field `k`.
+
+**THE CUT (2026-07-28).**  This is now an ASSEMBLY over the raised-level
+Schlessinger machine `exists_isWeaklyUniversal_auxDeformationDatum_of_clauses`
+and the clauses above, mirroring the Hilbert twin
+`exists_isWeaklyUniversal_hilbertAuxDeformationDatum`'s assembly one for one.
+`isAuxFunctorialityClause` is PROVEN — over the two new raised-level transfers
+`isRaisedLevelHardlyRamified_baseChange_quotient` and
+`isRaisedLevelHardlyRamified_conj`, themselves over the new
+`isSplitTorusAt_baseChange`, all three PROVEN.  Three clause leaves and the
+machine leaf remain.  `n` and `hQ` are consumed by the gluing and pro-limit
+clauses, which is exactly where residual distinctness at `q ∈ Q` is needed —
+see the section preamble for the `k[u,v]/(u,v)²` counterexample that forces the
+residual pinning on both of them, and for why the `ℚ`-side pinning is
+trace-level with a finite exceptional set (and why that costs nothing, through
+`exists_conj_of_charFrob_eq_away`).
 
 **`𝒟₀` IS A GENUINE HYPOTHESIS AND MUST NOT BE DROPPED.**  An existential over
 a category is FALSE as soon as the category is EMPTY, and the raised-level
@@ -5379,7 +6025,12 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) :
     ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
       𝒟.IsWeaklyUniversal :=
-  sorry
+  exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
+    hpodd hW hirr Q 𝒟₀
+    (isAuxFunctorialityClause.{uR} hpodd Q)
+    (isAuxFibreProductClause.{uR, uK, uW} hpodd hW hirr n Q hQ)
+    (isAuxFiniteFramesClause.{uR} hpodd Q)
+    (isAuxProLimitClause.{uR, uK, uW} hpodd hW hirr n Q hQ)
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary deformation ring in PRESENTED form** (sorry node, LEAF
