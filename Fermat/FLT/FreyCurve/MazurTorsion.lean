@@ -1839,17 +1839,43 @@ now consumed by the proof, so the old underscore prefixes are gone.
 **NON-VACUITY.**  `A := J`, `u := 𝟙`, `fQ := ` Abel–Jacobi satisfies every
 hypothesis, so no proof can discharge this by contradicting them.
 
-**FAITHFULNESS NOTE — `genX` LOSES ITS NATURALITY HERE, and repairing that
-is a one-hypothesis change.**  `genX` is a bare family of bijections: this
-signature does not ask for `genX_nat`, although the only caller,
-`exists_eisensteinQuotientModel_of_jNeronDatum`, holds it as `d.genX_nat`
-and discards it.  The cost is paid in `exists_neronExtension`, which must
-therefore EMIT its `genA` rather than receive it — see the FAITHFULNESS
-NOTE there for why pinning `genA` in advance would make that leaf strictly
-stronger than this node.  Adding `genX_nat` (i.e. taking `genX` as an
-`IsFibreIdent`) here would let `exists_neronExtension` shed a field; it is
-left alone deliberately, because changing this signature is a cut-level
-repair and this node's owner is not the caller's. -/
+**FAITHFULNESS NOTE — `genX_nat` IS NOW A HYPOTHESIS, and it had to become
+one: without it this statement was FALSE** (refuted and repaired
+2026-07-28).  The previous version of this note read `genX` as a bare
+family of bijections and recorded the omission as a deliberate,
+cost-free choice — "adding `genX_nat` here would let
+`exists_neronExtension` shed a field; it is left alone deliberately,
+because changing this signature is a cut-level repair and this node's
+owner is not the caller's".  The ownership judgement was right and the
+faithfulness judgement was wrong.
+
+A family of bijections `RelPoint strX g ≃ RelPoint xstr g₀` with no
+naturality is point-SET data; `fmor`, by contrast, is an actual morphism
+of schemes, and `genA_fmor` ties the two together.  Feed in a `genX`
+that is bijective at every test object but natural at none, and no
+`fmor` can satisfy the equation.  The explicit witness — the curve
+`11a3` with `A(ℚ) ≅ ℤ/5`, `X := A ⊔ A`, `fQ` the codiagonal and `genX`
+twisted by a non-affine permutation of `A(ℚ)` at the single test object
+`Spec ℚ` — is written out in full in the REFUTATION section of
+`exists_neronExtension`'s docstring
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean`).  It refutes
+this statement directly, not only its input: here `AZ` is an OUTPUT, but
+`f₀, f₁` are then morphisms `𝒜 ⟶ 𝒜'` of abelian schemes and rigidity
+still forces the twisting permutation to be affine.
+
+The repair cost the caller one argument.  `exists_eisensteinQuotientModel_of_jNeronDatum`
+already held `d.genX_nat` and was discarding it — the shape CLAUDE.md
+records as usual for this development, where the missing hypothesis is
+already in the caller's hand.  With naturality carried, `genA` in
+`exists_neronExtension` goes back to being a parameter, so nothing is
+emitted that a junk `genX` could corrupt.
+
+**What is still weak here, and it is weak rather than false.**  `genA`
+remains a bare field with no `genA_nat`, so this structure does not by
+itself say `A ≅ 𝒜_ℚ`; what pins the pair is `genA_fmor` together with
+natural `genX`.  The producer below supplies `G.genA`, which IS natural
+(`IsGoodReductionModel.genA_nat`), so a consumer that later needs the
+naturality can have it by adding the field — no leaf has to be reopened. -/
 theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
     (R : Subring ℚ) (toF : R →+* ZMod q) (hbase : IsReductionBase q R toF)
     {X XZ J JZ A : Scheme.{0}}
@@ -1860,6 +1886,12 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
     (abA : AbelianSchemeStruct astr)
     (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀)
+    (genX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+      (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+      (x : RelPoint strX g),
+      genX g' g₀' h₀' (RelPoint.pre h hg x)
+        = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genX g g₀ h₀ x))
     (genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀)
     (u : J ⟶ A) (hu : u ≫ astr = jstr)
@@ -1870,7 +1902,8 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
   obtain ⟨G⟩ := exists_goodReductionModel_of_surjective q hq R toF hbase ab abZ abA
     genJ u hu hadd hsurj
   -- BLR: `fQ` spreads out to a morphism of integral models
-  obtain ⟨E⟩ := exists_neronExtension q R toF hbase hsm G.abZ genX G.genA fQ hfQ
+  obtain ⟨E⟩ := exists_neronExtension q R toF hbase hsm G.abZ genX genX_nat
+    G.genA G.genA_nat fQ hfQ
   -- the special fibre is `𝒜 ×_{ℤ_(q)} 𝔽_q`, and every field of it is a theorem
   exact ⟨{ AZ := G.AZ
            astrZ := G.astrZ
@@ -1878,7 +1911,7 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
            A' := Limits.pullback G.astrZ (SpecLoc.special toF)
            astr' := Limits.pullback.snd G.astrZ (SpecLoc.special toF)
            ab' := G.abZ.baseChange (SpecLoc.special toF)
-           genA := E.genA
+           genA := G.genA
            spA := (fibreIdentPullback (SpecLoc.special toF) G.astrZ).toEquiv
            fmor := E.fmor
            fmor_over := E.fmor_over
@@ -2374,7 +2407,7 @@ theorem exists_eisensteinQuotientModel_of_jNeronDatum (N q : ℕ)
     exact SmoothOfRelativeDimension.smooth (n := 1) xstr
   -- good reduction of the quotient, and the spread-out of `π ∘ aj_∞`
   obtain ⟨G⟩ := exists_abelianGoodReductionModel q hq R toF d.base hsmX
-    ab abZ abA d.genX jm.genJ u hu hadd hsurj (jac.ajHom ≫ u) hfQ
+    ab abZ abA d.genX d.genX_nat jm.genJ u hu hadd hsurj (jac.ajHom ≫ u) hfQ
   -- Yoneda for Abel–Jacobi: postcomposing with `ajHom ≫ u` is `u` applied to `aj`
   have hcomp : ∀ z : RelPoint strX (𝟙 SpecQ),
       RelPoint.post (jac.ajHom ≫ u) hfQ z = RelPoint.post u hu (jac.aj (𝟙 SpecQ) z) := by
