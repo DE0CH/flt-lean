@@ -9413,11 +9413,106 @@ theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0
   · exact h hXpart
   · exact h hY
 
+/-- **A HYPERSURFACE WITH A SINGULAR POINT IS NOT FORMALLY SMOOTH**
+(**PROVEN 2026-07-28**) — the Jacobian criterion, in the only direction this
+development needs and with no elliptic-curve content at all.
+
+If `F` lies in the SQUARE of a proper ideal `n` of a formally smooth domain `P`
+over a field `k` — which is exactly what "the point cut out by `n` is a singular
+point of the hypersurface `F = 0`" says — then `P ⧸ (F)` is not formally smooth
+over `k`.
+
+*Proof, and why it is this short.*  `Algebra.FormallySmooth.iff_split_injection`
+(stacks `031I`) gives a RETRACTION `l` of `I/I² → (P ⧸ (F)) ⊗[P] Ω[P⁄k]`, and
+`kerCotangentToTensor_toCotangent` evaluates the composite at the class `c` of
+`F`: `l (1 ⊗ₜ D F) = c`.  Leibniz carries `n ^ 2` into `n • Ω` — that is the
+whole use of `hFn`, and it needs no basis of `Ω[P⁄k]` — so `c ∈ n • I.Cotangent`;
+`I` is principal, so `c = m • c` with `m ∈ n`; and `Ann_P c = I` because `P` is a
+domain and `F ≠ 0`, so `1 − m ∈ I ⊆ n` and `1 ∈ n`.
+
+No Krull dimension, no rank of `Ω`, no base change to a residue field and no
+Nakayama package appears.  The two longer routes that do need them are recorded
+on the consumer below.
+
+**`hF` IS LOAD-BEARING**: for `F = 0` the conclusion is false — `P ⧸ (0) ≅ P` is
+formally smooth by hypothesis, and `0 ∈ n ^ 2` always.  **`hn` is load-bearing**
+for the trivial reason that `n = ⊤` makes `hFn` vacuous. -/
+theorem not_formallySmooth_quotient_span_singleton_of_mem_sq
+    {k : Type} [Field k] {P : Type} [CommRing P] [Algebra k P] [IsDomain P]
+    [Algebra.FormallySmooth k P]
+    {F : P} (hF : F ≠ 0) {n : Ideal P} (hn : n ≠ ⊤) (hFn : F ∈ n ^ 2) :
+    ¬ Algebra.FormallySmooth k (P ⧸ Ideal.span {F}) := by
+  intro hfs
+  set Q := P ⧸ Ideal.span {F} with hQ
+  have hsurj : Function.Surjective (algebraMap P Q) := Ideal.Quotient.mk_surjective
+  have hker : RingHom.ker (algebraMap P Q) = Ideal.span {F} := Ideal.mk_ker
+  obtain ⟨l, hl⟩ := (Algebra.FormallySmooth.iff_split_injection (R := k) (P := P) (A := Q)
+    hsurj).mp hfs
+  have hFmem : F ∈ RingHom.ker (algebraMap P Q) := by rw [hker]; exact Ideal.subset_span rfl
+  set c := Ideal.toCotangent _ (⟨F, hFmem⟩ : RingHom.ker (algebraMap P Q)) with hc
+  have h3 : l (TensorProduct.tmul P (1 : Q) (KaehlerDifferential.D k P F)) = c := by
+    have := congrArg (fun (m : _ →ₗ[P] _) => m c) hl
+    simpa [hc, KaehlerDifferential.kerCotangentToTensor_toCotangent] using this
+  have key : ∀ g ∈ n * n, TensorProduct.tmul P (1 : Q) (KaehlerDifferential.D k P g) ∈
+      n • (⊤ : Submodule P (TensorProduct P Q (KaehlerDifferential k P))) := by
+    intro g hg
+    refine Submodule.mul_induction_on hg ?_ ?_
+    · intro a ha b hb
+      rw [Derivation.leibniz, TensorProduct.tmul_add, TensorProduct.tmul_smul,
+        TensorProduct.tmul_smul]
+      exact Submodule.add_mem _ (Submodule.smul_mem_smul ha Submodule.mem_top)
+        (Submodule.smul_mem_smul hb Submodule.mem_top)
+    · intro a b ha hb
+      rw [map_add, TensorProduct.tmul_add]
+      exact Submodule.add_mem _ ha hb
+  have h5 := key F (by rwa [← pow_two])
+  have h6 : c ∈ n • (⊤ : Submodule P (RingHom.ker (algebraMap P Q)).Cotangent) := by
+    have hle : (n • (⊤ : Submodule P (TensorProduct P Q (KaehlerDifferential k P)))) ≤
+        Submodule.comap l (n • ⊤) := by
+      rw [Submodule.smul_le]
+      intro m hm z _
+      rw [Submodule.mem_comap, map_smul]
+      exact Submodule.smul_mem_smul hm Submodule.mem_top
+    rw [← h3]
+    exact hle h5
+  have hgen : ∀ z : (RingHom.ker (algebraMap P Q)).Cotangent, ∃ r : P, z = r • c := by
+    intro z
+    obtain ⟨⟨g, hg⟩, rfl⟩ := Ideal.toCotangent_surjective _ z
+    rw [hker] at hg
+    obtain ⟨r, rfl⟩ := Ideal.mem_span_singleton'.mp hg
+    refine ⟨r, ?_⟩
+    rw [hc, ← LinearMap.map_smul]
+    congr 1
+  have hsub : n • (⊤ : Submodule P (RingHom.ker (algebraMap P Q)).Cotangent) ≤
+      Submodule.map (LinearMap.toSpanSingleton P _ c) (n.restrictScalars P) := by
+    rw [Submodule.smul_le]
+    intro m hm z _
+    obtain ⟨r, rfl⟩ := hgen z
+    exact ⟨m * r, Ideal.mul_mem_right _ _ hm, by simp [LinearMap.toSpanSingleton, mul_smul]⟩
+  obtain ⟨m, hm, hmc⟩ := hsub h6
+  have hmn : m ∈ n := hm
+  have hzero :
+      Ideal.toCotangent _ ((1 - m) • (⟨F, hFmem⟩ : RingHom.ker (algebraMap P Q))) = 0 := by
+    rw [LinearMap.map_smul, ← hc, sub_smul, one_smul, show m • c = c from hmc, sub_self]
+  have hmem2 : (1 - m) * F ∈ (RingHom.ker (algebraMap P Q)) ^ 2 := by
+    have h := (Ideal.toCotangent_eq_zero _ _).mp hzero
+    simpa using h
+  rw [hker, Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at hmem2
+  obtain ⟨s, hs⟩ := hmem2
+  have h1m : 1 - m = s * F := by
+    refine mul_right_cancel₀ hF ?_
+    rw [← hs]; ring
+  refine hn (Ideal.eq_top_of_isUnit_mem _ ?_ isUnit_one)
+  have hFn1 : F ∈ n := Ideal.pow_le_self (by norm_num) hFn
+  have h1 : (1 : P) = (1 - m) + m := by ring
+  rw [h1, h1m]
+  exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hFn1) hmn
+
 /-- **A Weierstrass curve with a rational singular point has a NON-SMOOTH
-affine coordinate ring** (sorry leaf, introduced 2026-07-28 as the residue of
-leaf 3 of `exists_weierstrassModel_of_ellipticScheme`).  This is the JACOBIAN
-CRITERION and it carries all of what is left of that leaf; the arithmetic half
-is `exists_singular_of_Δ_eq_zero` above, which is PROVEN.
+affine coordinate ring** (**PROVEN 2026-07-28**; a sorry leaf, introduced the
+same day as the residue of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`,
+for a few hours).  This is the JACOBIAN CRITERION and it carried all of what was
+left of that leaf; the arithmetic half is `exists_singular_of_Δ_eq_zero` above.
 
 TRUE.  `R := E.toAffine.CoordinateRing` is `AdjoinRoot E.toAffine.polynomial`,
 i.e. `ℚ[X, Y] ⧸ (F)` with `F = Y² + a₁XY + a₃Y − X³ − a₂X² − a₄X − a₆`.  A
@@ -9425,10 +9520,12 @@ rational point `(x, y)` with `F(x, y) = 0` and `F_X(x, y) = F_Y(x, y) = 0`
 gives a maximal ideal `𝔪 ⊂ R` with `R ⧸ 𝔪 ≅ ℚ` — the kernel of evaluation at
 `(x, y)` — at which the two partial derivatives vanish.
 
-**ROUTE AUDIT, 2026-07-28 — every ingredient below was checked to EXIST at our
-pin by name, and the route needs NO Krull dimension, NO relative dimension, NO
-residue-field base change and NO Nakayama package.**  Two longer routes were
-considered first and are recorded at the end so nobody re-derives them.
+**HOW IT IS PROVEN (2026-07-28).**  The route needs NO Krull dimension, NO
+relative dimension, NO residue-field base change and NO Nakayama package.  Two
+longer routes were considered first and are recorded at the end so nobody
+re-derives them.  Steps 1–3 and 6–7 are the general
+`not_formallySmooth_quotient_span_singleton_of_mem_sq` immediately above; steps
+4–5 are the only Weierstrass-specific part and live in this proof.
 
 Write `P := ℚ[X][Y] = Polynomial (Polynomial ℚ)`, `F := E.toAffine.polynomial`,
 `I := RingHom.ker (algebraMap P R) = (F)` (so `R = AdjoinRoot F` is `P ⧸ I` by
@@ -9505,18 +9602,79 @@ the tree has the CONVERSE (`jacobianSpan_eq_top` above, and
 `RegularStalks.lean`'s Jacobian-criterion tower, both going smooth ⟹ regular),
 but nothing going non-regular ⟹ non-smooth for a named point.
 
-**THIS IS NOT A THEORY BUILD** — that is the point of the audit above, and it
-distinguishes this leaf sharply from its two siblings
+**IT WAS NEVER A THEORY BUILD** — that is what the audit established, and it
+distinguishes this node sharply from its two siblings
 (`exists_affineComplement_zeroSection` needs ampleness of divisors and
 `exists_weierstrassRingEquiv_of_affineComplement` needs Riemann–Roch, neither of
-which exists anywhere).  Every lemma the seven steps cite is present at our pin;
-what is left is Lean plumbing over `Ideal.Cotangent`, `KaehlerDifferential` and
-`AdjoinRoot`, in one file, with no new mathematics.  A prover here should NOT
-start by reading Silverman. -/
+which exists anywhere).  Every lemma the seven steps cite was already present at
+our pin; what was left was Lean plumbing over `Ideal.Cotangent`,
+`KaehlerDifferential` and `AdjoinRoot`.  A prover at the two SIBLINGS should not
+take this node's speed as evidence about theirs.
+
+**One `AdjoinRoot` note that could have cost a cycle**: `CoordinateRing` is
+`AdjoinRoot E.toAffine.polynomial`, and `AdjoinRoot F` is a `def` (not an
+`abbrev`) for `A[X] ⧸ span {F}`, so instance search does NOT find
+`Algebra A[X] (AdjoinRoot F)` and the general lemma cannot be applied directly.
+It is nevertheless DEFINITIONALLY that quotient, `AlgEquiv.refl` typechecks
+between them, and `Algebra.FormallySmooth.of_equiv` transports across in one
+line.  No `Ideal.quotientEquivAlg` is needed. -/
 theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ) {x y : ℚ}
-    (_heq : E.toAffine.Equation x y) (_hns : ¬ E.toAffine.Nonsingular x y) :
-    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) :=
-  sorry
+    (heq : E.toAffine.Equation x y) (hns : ¬ E.toAffine.Nonsingular x y) :
+    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) := by
+  intro hsm
+  -- the two partial derivatives vanish at `(x, y)`
+  rw [WeierstrassCurve.Affine.nonsingular_iff'] at hns
+  have hpart : E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄) = 0 ∧
+      2 * y + E.a₁ * x + E.a₃ = 0 := by
+    by_contra hcon
+    exact hns ⟨heq, by
+      rcases not_and_or.mp hcon with h | h
+      · exact Or.inl h
+      · exact Or.inr h⟩
+  rw [WeierstrassCurve.Affine.equation_iff'] at heq
+  -- the evaluation ideal at `(x, y)`, and the two coordinate functions `u = X - x`, `v = Y - y`
+  set ev : Polynomial (Polynomial ℚ) →+* ℚ :=
+    (Polynomial.evalRingHom x).comp (Polynomial.evalRingHom (Polynomial.C y)) with hev
+  set n : Ideal (Polynomial (Polynomial ℚ)) := RingHom.ker ev with hn
+  set u : Polynomial (Polynomial ℚ) :=
+    Polynomial.C Polynomial.X - Polynomial.C (Polynomial.C x) with hudef
+  set v : Polynomial (Polynomial ℚ) :=
+    Polynomial.X - Polynomial.C (Polynomial.C y) with hvdef
+  have hu : u ∈ n := by rw [hn, RingHom.mem_ker, hev, hudef]; simp
+  have hv : v ∈ n := by rw [hn, RingHom.mem_ker, hev, hvdef]; simp
+  have hntop : n ≠ ⊤ := by
+    rw [Ideal.ne_top_iff_one, hn, RingHom.mem_ker, hev]
+    simp
+  -- the Taylor identity of the Weierstrass cubic at `(x, y)`
+  have hid : E.toAffine.polynomial
+      = Polynomial.C (Polynomial.C
+            (y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)))
+        + Polynomial.C (Polynomial.C (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄))) * u
+        + Polynomial.C (Polynomial.C (2 * y + E.a₁ * x + E.a₃)) * v
+        + (v * v + Polynomial.C (Polynomial.C E.a₁) * u * v
+          + (-u - Polynomial.C (Polynomial.C (3 * x)) - Polynomial.C (Polynomial.C E.a₂)) * u
+              * u) := by
+    simp only [hudef, hvdef, WeierstrassCurve.Affine.polynomial, map_add, map_mul, map_sub,
+      map_pow, map_ofNat]
+    ring
+  have hFn : E.toAffine.polynomial ∈ n ^ 2 := by
+    rw [hid, heq, hpart.1, hpart.2, pow_two]
+    simp only [map_zero, zero_mul, zero_add, add_zero]
+    refine Ideal.add_mem _ (Ideal.add_mem _ (Ideal.mul_mem_mul hv hv)
+      (Ideal.mul_mem_mul (Ideal.mul_mem_left _ _ hu) hv))
+      (Ideal.mul_mem_mul (Ideal.mul_mem_left _ _ hu) hu)
+  -- smoothness of the scheme morphism gives formal smoothness of the ring
+  haveI hfs : Algebra.FormallySmooth ℚ E.toAffine.CoordinateRing :=
+    (RingHom.smooth_algebraMap.mp ((HasRingHomProperty.Spec_iff (P := @Smooth)).mp hsm)).1
+  haveI : Algebra.FormallySmooth ℚ (Polynomial (Polynomial ℚ)) :=
+    Algebra.FormallySmooth.comp (R := ℚ) (A := Polynomial ℚ) (B := Polynomial (Polynomial ℚ))
+  haveI hfs' :
+      Algebra.FormallySmooth ℚ (Polynomial (Polynomial ℚ) ⧸ Ideal.span {E.toAffine.polynomial}) :=
+    Algebra.FormallySmooth.of_equiv
+      (AlgEquiv.refl : E.toAffine.CoordinateRing ≃ₐ[ℚ]
+        (Polynomial (Polynomial ℚ) ⧸ Ideal.span {E.toAffine.polynomial}))
+  exact not_formallySmooth_quotient_span_singleton_of_mem_sq
+    (k := ℚ) WeierstrassCurve.Affine.polynomial_ne_zero hntop hFn hfs'
 
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
 smooth relative curve is elliptic** (**PROVEN 2026-07-28** from the two
