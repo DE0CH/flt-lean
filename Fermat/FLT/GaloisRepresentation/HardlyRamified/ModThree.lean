@@ -8586,7 +8586,38 @@ Hasse-derivative API for `MvPowerSeries` (the pin has one only for univariate
 itself is `MvPowerSeries.adicEvalOfMem`, already built.  The integrality of the
 iterated derivatives — `(∂^r P_i)(w) ∈ 3𝒪_E` — comes from `pderiv_eq` plus the
 Leibniz rule: for `f·Pᵢ ∈ ker α`, `∂(f·Pᵢ)/∂X_j = (∂f/∂X_j)·Pᵢ + f·3·Q_ij`
-again lies in `3·𝒪₃ᵥ[[X]] + ker α`, so induction on `|r|` goes through. -/
+again lies in `3·𝒪₃ᵥ[[X]] + ker α`, so induction on `|r|` goes through.
+
+**MACHINERY CLAIMS RE-CHECKED 2026-07-28, and both are ACCURATE.**  `hasseDeriv`
+occurs in exactly four files of the pin — `Mathlib/Algebra/Polynomial/HasseDeriv.lean`
+(the definition) and `Mathlib/Algebra/Polynomial/Taylor.lean`,
+`Mathlib/RingTheory/LaurentSeries.lean`, `Mathlib/Algebra/Vertex/VertexOperator.lean`
+(consumers) — all univariate `Polynomial`.  There is NOTHING for `MvPolynomial`,
+`PowerSeries` or `MvPowerSeries`, and nothing in `~/cs/FLT` or in this project.
+`MvPowerSeries.subst` does exist, in `Mathlib/RingTheory/MvPowerSeries/Substitution.lean`
+(`subst` :190, `substAlgHom` :210, `subst_X` :288), gated on a `HasSubst` predicate.
+
+**A ROUTE SIMPLIFICATION WORTH TRYING FIRST — build the Hasse-derivative API for
+`MvPolynomial`, NOT for `MvPowerSeries`.**  The conclusion here is a membership in
+`𝔪^(n+1)`, and `MvPowerSeries.mk_adicEval` says that MODULO `𝔪^(n+1)` the value of
+`adicEval` at any tuple is `MvPolynomial.aeval` of the degree-`< n+1` TRUNCATION.  So
+the whole statement is equivalent to one about the honest polynomial
+`truncTotal (n+1) (P i)`, where supports are finite, `MvPolynomial.pderiv` already
+exists, and no `HasSubst` side conditions arise.  That converts "write a
+Hasse-derivative theory for multivariate power series" into "write one for
+multivariate polynomials", which is strictly smaller.  `MvPowerSeries.subst` would
+then not be needed at all.
+
+BUT DO NOT READ THAT AS "HASSE DERIVATIVES ARE AVOIDABLE" — they are not, and the
+arithmetic above is why.  A plain monomial expansion gives a remainder only in
+`𝔪^(2t)`, and `𝔪^(2t) ⊆ 𝔪^(n+1) = 𝔪^(t+e+1)` would need `t > e`, which is STRICTLY
+STRONGER than the hypothesis `ht : e < 2t` actually available.  The estimate closes
+only because the `|r| ≥ 2` coefficients carry their own factor of `3` (i.e. lie in
+`𝔪^e`) when `v₃(r!) = 0`, and because `3 ∣ r!` forces `|r| ≥ 3` otherwise; both of
+those are statements about `∂^[r]P`, so the divided-power-free Hasse derivative is
+still the object that has to be built.  This note only relocates where it is built.
+(Recorded from a source-level reading of the estimate, NOT verified by the compiler —
+treat it as a route to check first, not as a fact.) -/
 theorem taylor_of_isFontainePresentation
     {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -18635,7 +18666,23 @@ WHAT EXISTS AT THIS PIN, checked 2026-07-28.  Mathlib's `HopfAlgebra` tree
 étaleness.  `~/cs/FLT` has none either.  What this project already owns and a successor should
 reuse: the counit-idempotent package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
 (`Bialgebra.exists_connected_counit_idempotent`, `exists_minimal_counit_idempotent`), which is
-the idempotent-splitting half of step 3. -/
+the idempotent-splitting half of step 3.
+
+**RE-CHECKED 2026-07-28.  The two named declarations DO exist and ARE sorry-free:**
+`exists_minimal_counit_idempotent` (`Fermat/FLT/GroupScheme/ConnectedEtale.lean:173`)
+and `Bialgebra.exists_connected_counit_idempotent` (same file, :679, and it is proved
+over the first).  So the "what this project already owns" pointer is good.
+
+**BUT ADD THE IMPORT CAUTION THIS DOCSTRING WAS MISSING**, which is the same trap the
+sibling leaf below records for `Cartier.lean`: `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
+is **NOT in this file's public import closure** (computed 2026-07-28 by following only
+`public import` edges from this module: 257 project modules, and neither
+`GroupScheme.ConnectedEtale` nor `GroupScheme.Cartier` is among them).  Whoever takes
+this leaf must add `public import Fermat.FLT.GroupScheme.ConnectedEtale` to this file's
+header — a transitively-reached or private import does not make the names available
+even in proof bodies.  `Fermat/FLT/GroupScheme/Cartier.lean` likewise exists and does
+contain a sorry-free `isReduced_of_charZero` (:456), so the sibling's claim is accurate
+too. -/
 theorem exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf (k : Type) [Field k]
     [PerfectField k] (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
     ∃ (A₀ : Type) (_ : CommRing A₀) (_ : HopfAlgebra k A₀) (_ : Module.Finite k A₀)
