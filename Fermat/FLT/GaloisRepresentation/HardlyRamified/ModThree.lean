@@ -49477,7 +49477,6 @@ delegation.  Steps 1 and 4 (Artin's Lemma at `v` and `v₀`; cyclotomic
 reciprocity upstairs) are PROVEN; steps 2 and 3 — the common norm base from
 the compositum, and the relative norm on divisors — remain as three sorried
 `have`s inside it. -/
-set_option maxHeartbeats 1000000 in
 theorem exists_artinNormSubgroups_ramified_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
