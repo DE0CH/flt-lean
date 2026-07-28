@@ -44888,18 +44888,32 @@ isomorphism of `Γ₀(N)`-data over a fixed base, see `IsBaseChangeOf`.
 **Why `dual` is an operation and not an existential**: see the subsection
 docstring.  An existential carries no compatibility with base change, and
 the coarse-space universal property is a statement about natural
-transformations. -/
+transformations.
+
+**RESTATED OVER `ℚ`-SCHEMES, 2026-07-28, and this is a FAITHFULNESS repair,
+not a convenience.**  `dual` used to be an operation on `Gamma0Datum N T`
+for EVERY scheme `T`, and in that form this structure is EMPTY for every
+`N ≥ 2`: over `T = Spec 𝔽̄_p` with `p ∣ N` there are `Γ₀(N)`-data whose
+isogeny quotient carries no `Γ₀(N)`-structure at all, so no total `dual`
+can exist.  The witness is written out in the falsity audit on
+`exists_isNIsogenyPair` below.  Every field therefore now takes the
+`ℚ`-structure `g : T ⟶ SpecQ` of its base, exactly as `IsAtkinLehner` and
+`IsCoarseModuliY0.classify` already did — so `exists_atkinLehner_x0`, the
+only consumer, is unchanged in statement and loses nothing. -/
 structure AtkinLehnerMorphism (N : ℕ) where
-  /-- the moduli action `(E, C) ↦ (E/C, E[N]/C)` -/
-  dual : ∀ {T : Scheme.{0}}, Gamma0Datum N T → Gamma0Datum N T
+  /-- the moduli action `(E, C) ↦ (E/C, E[N]/C)`, over a `ℚ`-scheme -/
+  dual : ∀ {T : Scheme.{0}}, (T ⟶ SpecQ) → Gamma0Datum N T → Gamma0Datum N T
   /-- `d` and `dual d` are exchanged by a cyclic `N`-isogeny -/
-  pair : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T), IsNIsogenyPair N d (dual d)
+  pair : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+    IsNIsogenyPair N d (dual g d)
   /-- the action commutes with base change -/
-  dual_baseChange : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {d' : Gamma0Datum N T'}
-    {d : Gamma0Datum N T}, IsBaseChangeOf h d' d → IsBaseChangeOf h (dual d') (dual d)
+  dual_baseChange : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ}
+    {g' : T' ⟶ SpecQ} (_hg : h ≫ g = g') {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T}, IsBaseChangeOf h d' d →
+    IsBaseChangeOf h (dual g' d') (dual g d)
   /-- the action is an involution up to isomorphism of data -/
-  dual_dual : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T),
-    IsBaseChangeOf (𝟙 T) (dual (dual d)) d
+  dual_dual : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+    IsBaseChangeOf (𝟙 T) (dual g (dual g d)) d
 
 /-! #### The isogeny quotient, cut into its two theory gates (2026-07-28)
 
@@ -44910,8 +44924,14 @@ the two strictly more elementary leaves below:
 
 | leaf | what it asks for |
 |---|---|
-| `existsUnique_factor_of_isNIsogenyPair` | `E ⟶ E/C` is the CATEGORICAL QUOTIENT by `C` |
-| `exists_isNIsogenyPair` | `E/C` EXISTS, over one fixed base, non-functorially |
+| `epi_of_isNIsogenyPair` | `E ⟶ E/C` is an fppf cover, hence an EPIMORPHISM |
+| `exists_factor_of_isNIsogenyPair` | a homomorphism killing `C` DESCENDS along it |
+| `exists_isNIsogenyPair` | `E/C` EXISTS over a `ℚ`-scheme, non-functorially |
+
+(`existsUnique_factor_of_isNIsogenyPair` — "`E ⟶ E/C` is the CATEGORICAL
+QUOTIENT by `C`" — was itself a leaf until 2026-07-28 and is now a THEOREM
+over the first two rows.  The third row acquired its `ℚ`-structure the same
+day, as a FALSITY repair; see its docstring.)
 
 Everything else in the old statements was formal and is now carried out
 here.  Specifically, the following are no longer assumed:
@@ -44938,9 +44958,14 @@ here.  Specifically, the following are no longer assumed:
 So the residue is exactly the Katz–Mazur quotient theorem, split into its
 existence half and its universal-property half, and nothing else. -/
 
-/-- **A cyclic `N`-isogeny is the CATEGORICAL QUOTIENT by its kernel**
-(sorry leaf, 2026-07-28) — the universal-property half of the
-quotient-by-a-finite-flat-subgroup-scheme theory.
+/-! ##### The universal property, and its two halves
+
+**A cyclic `N`-isogeny is the CATEGORICAL QUOTIENT by its kernel** — the
+universal-property half of the quotient-by-a-finite-flat-subgroup-scheme
+theory.  This was a single sorry leaf when it was cut on 2026-07-28; it is
+now the THEOREM `existsUnique_factor_of_isNIsogenyPair` below, over the two
+leaves `epi_of_isNIsogenyPair` and `exists_factor_of_isNIsogenyPair`.  The
+mathematics common to all three is recorded here once.
 
 TRUE, and this is the standard content of "finite locally free surjections
 are effective epimorphisms".  `h.map : E ⟶ E'` is surjective and
@@ -44965,27 +44990,186 @@ scheme in sight is initial and both halves hold trivially.
 
 **The check that would refute it**: a homomorphism out of `E` vanishing on
 `C` that does not factor through `h.map`, or two distinct maps out of `E'`
+agreeing after `h.map`.
+
+**Why the split is not bookkeeping.**  The two halves rest on different
+theorems: uniqueness is faithfully flat descent *of morphisms* and needs
+neither `hadd` nor `hker`, existence is the descent *of the map `u`
+itself* and needs both.  And `Epi h.map` is reusable on its own. -/
+
+/-- **A cyclic `N`-isogeny is an EPIMORPHISM of schemes** (sorry leaf,
+2026-07-28) — the uniqueness half of
+`existsUnique_factor_of_isNIsogenyPair`, split off because it is a
+different theorem from the descent half and is reusable on its own.
+
+TRUE.  `h.map` is finite locally free and surjective, i.e. an fppf
+covering, and an fppf covering is an (effective) epimorphism of schemes —
+faithfully flat descent of morphisms, Stacks 04R3 / SGA 1 VIII.5.1.
+
+**THE DESCENT HALF IS ALREADY IN THE PIN — do not build it.**  This leaf
+needs no descent theory whatsoever, only the three morphism properties:
+
+    instance {X Y : Scheme} (f : X ⟶ Y) [QuasiCompact f] [Surjective f]
+      [Flat f] : EffectiveEpi f          -- Mathlib/AlgebraicGeometry/Sites/Fpqc.lean:110
+
+together with `CategoryTheory.epi_of_effectiveEpi`.  Note it is stated for
+the fpqc topology, so FINITENESS of `h.map` is not needed for this step —
+`QuasiCompact` suffices, and that is free from properness.  The same two
+names are already consumed in this file by
+`exists_gamma0GITPresentation`'s cone, so their availability here is
+demonstrated rather than conjectured.
+
+The three ingredients, each read off the fields of `IsNIsogenyPair`:
+
+* **surjective**: `map_dual` says `h.map ∘ h.dual = [N]` on relative
+  points at every base, and `[N]` is an fppf-surjective endomorphism of an
+  abelian scheme for `N ≥ 1`, so `h.map` is surjective;
+* **finite**: `h.map` is proper (`d.E` is proper over `T` by
+  `d.ab.proper`, `d'.E` is separated over `T`) and quasi-finite, since
+  `dual_map` puts each of its fibres inside a fibre of `[N]`, whose fibres
+  are the finite scheme `E[N]`-torsors;
+* **flat**: `d.E` and `d'.E` are `T`-smooth of relative dimension one, so a
+  finite surjective `h.map` is flat on each fibre (finite surjective
+  between smooth curves over a field), hence flat by the fibrewise
+  criterion.
+
+`N = 0` is degenerate rather than excluded: `isEmpty_of_gamma0Datum_zero`
+makes `T`, hence `d.E` and `d'.E`, empty and therefore initial, and a
+morphism between initial objects is an isomorphism.
+
+**The check that would refute it**: two distinct morphisms out of `d'.E`
 agreeing after `h.map`. -/
-theorem existsUnique_factor_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
+theorem epi_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d') : Epi h.map :=
+  sorry
+
+/-- **A homomorphism killing `C` FACTORS through the isogeny** (sorry leaf,
+2026-07-28) — the existence half of
+`existsUnique_factor_of_isNIsogenyPair`, with the uniqueness clause
+removed to `epi_of_isNIsogenyPair`.
+
+TRUE, and this is where `hadd` and `hker` are consumed.  In the fppf
+topology `h.map` presents `d'.E` as the quotient sheaf `d.E / d.cyc`:
+`hadd` and `hker` together say that `u` is constant on the `d.cyc`-cosets,
+i.e. that `u` coequalizes the two projections of
+`d.E ×_{d'.E} d.E ≅ d.E ×_T d.cyc`, and an fppf covering is an EFFECTIVE
+epimorphism, so `u` descends.  Without `hadd` the statement is false — a
+non-additive `u` that happens to kill `C` need not be constant on the
+cosets, since the fibres of `h.map` are the cosets and nothing else
+identifies them.
+
+`v ≫ af = d'.f` is not an extra obligation: it follows from
+`h.map ≫ v ≫ af = u ≫ af = d.f = h.map ≫ d'.f` once `h.map` is an
+epimorphism, and is carried in the conclusion only so that this leaf can
+be stated without depending on `epi_of_isNIsogenyPair`.
+
+`N = 0`: as above, everything in sight is initial.
+
+**The check that would refute it**: an additive `u` vanishing on `d.cyc`
+that does not factor through `h.map`. -/
+theorem exists_factor_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
     {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d')
     {A : Scheme.{0}} {af : A ⟶ T} (abA : AbelianSchemeStruct af)
     {u : d.E ⟶ A} (hu : u ≫ af = d.f) (_hadd : IsAdditiveOn d.ab abA u hu)
     (_hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
       RelPoint.LiesIn d.cyc.ι x → RelPoint.post u hu x = abA.zero g) :
-    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u ∧
-      ∀ w : d'.E ⟶ A, h.map ≫ w = u → w = v :=
+    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u :=
   sorry
 
-/-- **The isogeny quotient EXISTS** (sorry leaf, 2026-07-28) — the
-existence half, over ONE fixed base and with no functoriality asked for.
+/-- **A cyclic `N`-isogeny is the CATEGORICAL QUOTIENT by its kernel**
+(PROVEN 2026-07-28 over `exists_factor_of_isNIsogenyPair` and
+`epi_of_isNIsogenyPair`, and over nothing else) — see the docstring
+immediately above for the mathematics and for why the cut is taken here. -/
+theorem existsUnique_factor_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d')
+    {A : Scheme.{0}} {af : A ⟶ T} (abA : AbelianSchemeStruct af)
+    {u : d.E ⟶ A} (hu : u ≫ af = d.f) (hadd : IsAdditiveOn d.ab abA u hu)
+    (hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+      RelPoint.LiesIn d.cyc.ι x → RelPoint.post u hu x = abA.zero g) :
+    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u ∧
+      ∀ w : d'.E ⟶ A, h.map ≫ w = u → w = v := by
+  haveI : Epi h.map := epi_of_isNIsogenyPair h
+  obtain ⟨v, hvc, hvu⟩ := exists_factor_of_isNIsogenyPair h abA hu hadd hker
+  exact ⟨v, hvc, hvu, fun w hw => (cancel_epi h.map).mp (hw.trans hvu.symm)⟩
 
-TRUE.  For `N ≥ 1` the quotient `E/C` of an elliptic scheme by a finite
+/-- **The isogeny quotient EXISTS over a `ℚ`-scheme** (sorry leaf,
+2026-07-28) — the existence half, over ONE fixed base and with no
+functoriality asked for.
+
+**FALSITY AUDIT, 2026-07-28 — THIS LEAF WAS REFUTED AND RESTATED.  The
+`ℚ`-structure `_g` is LOAD-BEARING; without it the statement is FALSE.**
+It is underscored only because a `sorry` cannot consume it, not because it
+is decoration, and it must not be dropped by a later "cleanup".
+
+The statement carried no hypothesis on the base at all, and over a base of
+residue characteristic `p ∣ N` the quotient exists but carries **no
+`Γ₀(N)`-level structure**, because `CyclicSubgroupOfOrder.geom_cyclic`
+demands `N` GEOMETRIC POINTS and the induced subgroup `E[N]/C` is not
+étale there.  Explicit witness, checked against the definitions rather
+than recalled:
+
+> Let `p` be prime, `K = 𝔽̄_p`, `T = Spec K`, `N = p`, and let `E/K` be an
+> ORDINARY elliptic curve.  Then `E[p] ≅ μ_p × ℤ/p`, and `C := (E[p])_red
+> ≅ ℤ/p` is a closed subscheme, finite and flat (indeed étale) of rank `p`
+> over `K`, closed under the group law, with `C(K') = ℤ/p` cyclic of order
+> exactly `p` at every geometrically algebraically closed point.  So
+> `d := (E, C)` really is a `Gamma0Datum p T` — every field of
+> `AbelianSchemeStruct` and of `CyclicSubgroupOfOrder` holds, and none of
+> them mentions the characteristic.
+>
+> Now suppose `h : IsNIsogenyPair p d d'` for some `d'`, and read every
+> field at `K`-points, i.e. at `t = 𝟙 T`.  `h.map` is non-constant (by
+> `ker_map` its kernel is `C(K) = ℤ/p`, while `E(K)` is infinite), hence
+> SURJECTIVE on `K`-points, both curves being smooth and proper over an
+> algebraically closed field.  Let `y ∈ E'(K)` satisfy
+> `h.dual y = 0`; choose `x ∈ E(K)` with `h.map x = y`.  Then `dual_map`
+> gives `0 = h.dual (h.map x) = p • x`, so `x ∈ E(K)[p]`.  But `E` is
+> ordinary, so `E(K)[p] = ℤ/p = C(K)` — the `μ_p` half of `E[p]` has NO
+> nonzero `K`-point — and `ker_map` then gives `y = h.map x = 0`.
+>
+> So the kernel of `h.dual` has exactly ONE `K`-point.  By `ker_dual` that
+> kernel is `d'.cyc`, and `d'.cyc.geom_cyclic` demands an element of
+> `addOrderOf` equal to `p`; the only available element is `0`, of order
+> `1`.  Contradiction for every `p ≥ 2`.
+
+Note the argument uses only `ker_map`, `dual_map`, `ker_dual` and
+`geom_cyclic` — no classification of the isogeny — so it refutes the
+statement, not merely the intended proof.  The same witness scales to any
+`N ≥ 2`: take `p ∣ N`, an ordinary `E/𝔽̄_p` with a point of order `N`, and
+`C` the cyclic subgroup it generates.
+
+**Consequence for the consumer, and it is why the repair is not local.**
+`AtkinLehnerMorphism.dual` was an operation on `Gamma0Datum N T` for EVERY
+`T`, so `nonempty_atkinLehnerMorphism` was false for every `N ≥ 2` by the
+same witness.  `AtkinLehnerMorphism` has been restated over `ℚ`-schemes
+alongside this leaf; `exists_atkinLehner_x0` — the only consumer — already
+quantified over `g : T ⟶ SpecQ`, so ITS statement is unchanged and no
+mathematical content is lost.  `IsAtkinLehner` likewise already carried
+the `ℚ`-structure, which is the sense in which the false generality was
+never used.
+
+**The sharp hypothesis is `N` invertible on `T`** (equivalently: `d.cyc`
+étale over `T`), which is what makes `E[N]` finite étale of rank `N²` and
+`E[N]/C` cyclic of order `N`.  `T ⟶ SpecQ` is stronger than necessary and
+is chosen because it is exactly what every consumer here already has;
+weakening it to invertibility is a statement change nobody currently needs.
+
+TRUE as now stated.  For `N ≥ 1` the quotient `E/C` of an elliptic scheme by a finite
 flat subgroup scheme exists (Katz–Mazur (1.8.2)/(1.8.3), or SGA 3 for the
 general quotient by a finite flat equivalence relation), is again an
 elliptic scheme, the quotient map `φ : E ⟶ E/C` is finite flat surjective
 with `ker φ = C`, its dual `φ̂` satisfies `φ̂φ = [N]` and `φφ̂ = [N]`, and
 `C' := ker φ̂ = φ(E[N])` is again cyclic of order `N`.  Those four are
 exactly the fields of `IsNIsogenyPair`.
+
+**Where the `ℚ`-structure enters, and it is exactly one step.**  Over a
+`ℚ`-scheme a finite flat group scheme is ÉTALE (Cartier's theorem —
+Waterhouse, *Introduction to Affine Group Schemes*, Thm. 11.4), so `E[N]`
+is finite étale of rank `N²` with geometric fibres `(ℤ/N)²`, and `C` is a
+cyclic subgroup of order `N` in there, hence generated by a PRIMITIVE
+vector.  `GL₂(ℤ/N)` is transitive on primitive vectors, so
+`C' = E[N]/C ≅ ℤ/N` is cyclic of order `N` — which is precisely the
+`geom_cyclic` field that the char-`p ∣ N` witness above destroys.
 
 **Why NO naturality clause appears here**, although the coarse-space
 universal property needs one: naturality is now DERIVED.  A canonical
@@ -45008,10 +45192,13 @@ project.  **The check that refutes the absence claim**:
 `grep -rn "isogenyQuotient\|IsQuotientByFinite\|quotient.*subgroup scheme"
 Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
 
-**The check that would refute the STATEMENT**: a `Γ₀(N)`-datum admitting no
-cyclic `N`-isogeny, i.e. a curve with a cyclic subgroup of order `N` whose
-quotient carries no cyclic subgroup of order `N`. -/
-theorem exists_isNIsogenyPair (N : ℕ) {T : Scheme.{0}} (d : Gamma0Datum N T) :
+**The check that would refute the STATEMENT**: a `Γ₀(N)`-datum over a
+`ℚ`-scheme admitting no cyclic `N`-isogeny, i.e. a curve with a cyclic
+subgroup of order `N` whose quotient carries no cyclic subgroup of order
+`N`.  (Off `ℚ`-schemes that check SUCCEEDS — see the falsity audit at the
+head of this docstring, which is exactly such a datum.) -/
+theorem exists_isNIsogenyPair (N : ℕ) {T : Scheme.{0}} (_g : T ⟶ SpecQ)
+    (d : Gamma0Datum N T) :
     ∃ d' : Gamma0Datum N T, Nonempty (IsNIsogenyPair N d d') :=
   sorry
 
@@ -45141,23 +45328,29 @@ The two fields that made this look like a geometric statement are theorems:
   `dual d`, and so is `dual (dual d)`; uniqueness identifies them.
 
 `N = 0` needs no special treatment here — it is absorbed by
-`exists_isNIsogenyPair`, whose docstring records the degenerate witness. -/
+`exists_isNIsogenyPair`, whose docstring records the degenerate witness.
+
+**Every field now carries the `ℚ`-structure `g : T ⟶ SpecQ` of its base**
+(2026-07-28).  That is not decoration: without it this theorem is FALSE for
+every `N ≥ 2`, since the moduli action has no total extension to bases of
+characteristic dividing `N`.  See the falsity audit on
+`exists_isNIsogenyPair`. -/
 theorem nonempty_atkinLehnerMorphism (N : ℕ) : Nonempty (AtkinLehnerMorphism N) := by
   classical
-  refine ⟨{ dual := fun {T} d => (exists_isNIsogenyPair N d).choose
-            pair := fun {T} d => (exists_isNIsogenyPair N d).choose_spec.some
+  refine ⟨{ dual := fun {T} g d => (exists_isNIsogenyPair N g d).choose
+            pair := fun {T} g d => (exists_isNIsogenyPair N g d).choose_spec.some
             dual_baseChange := ?_
             dual_dual := ?_ }⟩
-  · intro T'' T p d' d bcd
+  · intro T'' T p g g' _hg d' d bcd
     have bcR :=
-      (exists_gamma0Datum_baseChange p (exists_isNIsogenyPair N d).choose).choose_spec.some
+      (exists_gamma0Datum_baseChange p (exists_isNIsogenyPair N g d).choose).choose_spec.some
     exact IsBaseChangeOf.compId
-      (nonempty_isBaseChangeOf_of_isNIsogenyPair (exists_isNIsogenyPair N d').choose_spec.some
-        (((exists_isNIsogenyPair N d).choose_spec.some).baseChange bcd bcR)).some bcR
-  · intro T d
+      (nonempty_isBaseChangeOf_of_isNIsogenyPair (exists_isNIsogenyPair N g' d').choose_spec.some
+        (((exists_isNIsogenyPair N g d).choose_spec.some).baseChange bcd bcR)).some bcR
+  · intro T g d
     exact (nonempty_isBaseChangeOf_of_isNIsogenyPair
-      (exists_isNIsogenyPair N (exists_isNIsogenyPair N d).choose).choose_spec.some
-      ((exists_isNIsogenyPair N d).choose_spec.some).symm).some
+      (exists_isNIsogenyPair N g (exists_isNIsogenyPair N g d).choose).choose_spec.some
+      ((exists_isNIsogenyPair N g d).choose_spec.some).symm).some
 
 /-- **A morphism of `Y_0(N)` extends across the cusps** (sorry leaf,
 2026-07-27) — the properness step of the construction of `w_N`, with no
@@ -45272,15 +45465,15 @@ theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   obtain ⟨al⟩ := nonempty_atkinLehnerMorphism N
   -- the moduli action descends to a unique endomorphism of the coarse space
   obtain ⟨wY, ⟨hwY, hwYfac⟩, -⟩ :=
-    hX.coarse.universal strY (fun {_} g d => hX.coarse.classify g (al.dual d))
+    hX.coarse.universal strY (fun {_} g d => hX.coarse.classify g (al.dual g d))
       (by
         intro T' T h g g' hg d' d hbc
-        exact hX.coarse.classify_natural h hg (al.dual_baseChange h hbc))
+        exact hX.coarse.classify_natural h hg (al.dual_baseChange h hg hbc))
   -- `(E/C)/(E[N]/C) ≅ E`, read on moduli points
   have hdd : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
-      hX.coarse.classify g (al.dual (al.dual d)) = hX.coarse.classify g d := by
+      hX.coarse.classify g (al.dual g (al.dual g d)) = hX.coarse.classify g d := by
     intro T g d
-    rw [hX.coarse.classify_natural (𝟙 T) (Category.id_comp g) (al.dual_dual d)]
+    rw [hX.coarse.classify_natural (𝟙 T) (Category.id_comp g) (al.dual_dual g d)]
     exact Subtype.ext (Category.id_comp _)
   -- so `wY ≫ wY` and `𝟙 Y` factor the SAME natural transformation, hence agree
   have hwY2 : wY ≫ wY = 𝟙 Y := by
@@ -45299,8 +45492,8 @@ theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
       Category.id_comp, Category.comp_id]
   · -- an ARBITRARY `N`-isogenous partner of `d` has the moduli point of `dual d`
     intro T g d d' hpair
-    obtain ⟨bc⟩ := nonempty_isBaseChangeOf_of_isNIsogenyPair (al.pair d) hpair
-    have hcl : hX.coarse.classify g (al.dual d) = hX.coarse.classify g d' := by
+    obtain ⟨bc⟩ := nonempty_isBaseChangeOf_of_isNIsogenyPair (al.pair g d) hpair
+    have hcl : hX.coarse.classify g (al.dual g d) = hX.coarse.classify g d' := by
       rw [hX.coarse.classify_natural (𝟙 T) (Category.id_comp g) bc]
       exact Subtype.ext (Category.id_comp _)
     refine Subtype.ext ?_
