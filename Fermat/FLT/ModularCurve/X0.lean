@@ -413,10 +413,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinitePresentationOfFinrank
 -- `AlgebraicGeometry.fibrePointEquivAlgHom` (the `RelPoint`-to-fibre-algebra
 -- translation, which needs no hypothesis at all).
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinrankGeometricPoints
--- `CartierTheorem.isReduced_of_charZero`: Cartier's theorem for a finite
--- commutative Hopf algebra over a field of characteristic zero, which is what
--- `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` below consumes
-public import Fermat.FLT.GroupScheme.Cartier
+-- `AlgebraicGeometry.etale_of_isReduced_pullback` (finite + flat + locally of finite presentation
+-- + reduced geometric fibres ⟹ étale) and `AlgebraicGeometry.isNilpotent_ker_SpecMap` (`Spec` of a
+-- ring map with nilpotent kernel is an infinitesimal thickening, which is the hypothesis
+-- `AlgebraicGeometry.FormallyUnramified.hom_ext` asks for).  Together with
+-- `isReduced_pullback_of_finrank_le_card_geometricPoints` from the module above, these are what
+-- turn `CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero_of_finrank` into a corollary of the
+-- RANK, with no characteristic hypothesis of its own.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EtaleOfGeometricFibres
 -- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
 -- torsion-subscheme section below.  It is what repairs the FALSE leaf
 -- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
@@ -8957,9 +8961,95 @@ theorem CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase
   AlgebraicGeometry.locallyOfFinitePresentation_of_finrank_const (n := N) _
     (c.finrank_eq_of_specQBase q)
 
+/-- **Every geometric fibre of `C` has exactly `N` points** (PROVEN; this is
+`geom_cyclic` and nothing else).
+
+`geom_cyclic` says the relative points of `E` over an algebraically closed
+geometric point `t` lying in `C` are `AddSubgroup.zmultiples y` for a `y` of
+order `N`; since `ι` is a MONOMORPHISM, those are the same thing as the
+`K`-points of `C` over `t`, and `Nat.card (zmultiples y) = addOrderOf y = N`.
+
+**No reducedness, no flatness and no characteristic hypothesis is used** — the
+count of geometric POINTS is free, and it is only its comparison with the RANK
+that carries arithmetic.  It is isolated here because both directions of that
+comparison need it: `finrank_eq_of_specQBase` uses it with reducedness in hand
+to compute the rank, and `etale_of_finrank` below uses it with the rank in hand
+to DERIVE reducedness. -/
+theorem CyclicSubgroupOfOrder.card_geomPoints {E T : Scheme.{0}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    (K : Type) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ T) :
+    Nat.card {s : Spec (CommRingCat.of K) ⟶ c.C // s ≫ (c.ι ≫ f) = g} = N := by
+  haveI := c.isClosedImmersion
+  letI := ab.addCommGroup g
+  obtain ⟨w, -, hword, hwall⟩ := c.geom_cyclic K g
+  have hbij : Function.Bijective
+      (fun s : {s : Spec (CommRingCat.of K) ⟶ c.C // s ≫ (c.ι ≫ f) = g} =>
+        (⟨⟨s.1 ≫ c.ι, by rw [Category.assoc]; exact s.2⟩,
+          (hwall _).mp ⟨s.1, rfl⟩⟩ : AddSubgroup.zmultiples w)) := by
+    constructor
+    · intro s₁ s₂ hs
+      exact Subtype.ext ((cancel_mono c.ι).mp
+        (congrArg Subtype.val (congrArg Subtype.val hs)))
+    · intro z
+      obtain ⟨u, hu⟩ := (hwall z.1).mpr z.2
+      refine ⟨⟨u, by rw [← Category.assoc, hu]; exact z.1.2⟩, ?_⟩
+      exact Subtype.ext (Subtype.ext hu)
+  rw [Nat.card_congr (Equiv.ofBijective _ hbij), Nat.card_zmultiples, hword]
+
+/-- **`C ⟶ T` is ÉTALE as soon as its RANK is `N`** (PROVEN 2026-07-28 over the
+general shim `AlgebraicGeometry.etale_of_isReduced_pullback`).
+
+**There is no characteristic hypothesis here and the statement is true over an
+arbitrary base.**  This is the SHARPER FORM that the docstring of
+`eq_zero_of_liesIn_of_squareZero_of_finrank` below asked a successor to
+consider, and it was taken: the leaf below is now a three-line corollary of it,
+and `etale_of_specQBase` further down could be re-based on it in one line
+(`c.etale_of_finrank (fun t => c.finrank_eq_of_specQBase q t)`) whenever its
+owner wants — that was NOT done here, because `etale_of_specQBase` is outside
+this leaf's region and is currently proven, so changing it would buy nothing
+mathematically and would cost an integration conflict.
+
+**WHY IT CANNOT SMUGGLE A FALSE STATEMENT INTO CHARACTERISTIC `p`.**  `hrank`
+is exactly what fails there: `ker F` and its subgroups are finite flat subgroup
+schemes whose rank strictly exceeds their geometric point count (the FALSITY
+AUDIT of `flat_torsionι` above exhibits them).  So at those witnesses `hrank` is
+unsatisfiable rather than false.
+
+**THE ROUTE.**  `c.isFinite` and `c.flat` are hypotheses of the structure;
+`AlgebraicGeometry.locallyOfFinitePresentation_of_finrank_const` turns `hrank`
+into `LocallyOfFinitePresentation` for free.  At a geometric point `g` the rank
+is `N` by `hrank` and the point count is `N` by `card_geomPoints` above, so
+`AlgebraicGeometry.isReduced_pullback_of_finrank_le_card_geometricPoints` makes
+the geometric fibre reduced — that shim is the CONVERSE of the one
+`finrank_eq_of_specQBase` consumes, and both are proven.  The general
+"finite + flat + LFP + reduced geometric fibres ⟹ étale" step is then
+`AlgebraicGeometry.etale_of_isReduced_pullback`, which is where the two
+remaining leaves of this branch live (`etale_of_etale_fiberToSpecResidueField`,
+the fibrewise criterion for étaleness, and
+`etale_fiberToSpecResidueField_of_isReduced_pullback`, the descent along
+`κ(t) ⊆ κ(t)‾`); both are stated in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EtaleOfGeometricFibres.lean` in full
+generality, with no reference to this development. -/
+theorem CyclicSubgroupOfOrder.etale_of_finrank {E T : Scheme.{0}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    (hrank : ∀ t : T, Scheme.Hom.finrank (c.ι ≫ f) t = N) :
+    AlgebraicGeometry.Etale (c.ι ≫ f) := by
+  haveI := c.isFinite
+  haveI := c.flat
+  haveI : LocallyOfFinitePresentation (c.ι ≫ f) :=
+    AlgebraicGeometry.locallyOfFinitePresentation_of_finrank_const (n := N) _ hrank
+  refine AlgebraicGeometry.etale_of_isReduced_pullback _ ?_
+  intro K _ _ g
+  obtain ⟨y0⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
+  refine AlgebraicGeometry.isReduced_pullback_of_finrank_le_card_geometricPoints
+    (c.ι ≫ f) g y0 ?_
+  rw [hrank, c.card_geomPoints K g]
+
 /-- **`C` has no nonzero INFINITESIMAL points once its RANK is known**
-(sorry leaf, opened 2026-07-27; this is what is left of
-`eq_zero_of_liesIn_of_squareZero` below after the `ℚ`-base is spent).
+(**PROVEN 2026-07-28** over `CyclicSubgroupOfOrder.etale_of_finrank`
+immediately above; it was a sorry leaf, opened 2026-07-27, until then.  This is
+what is left of `eq_zero_of_liesIn_of_squareZero` below after the `ℚ`-base is
+spent).
 
 For a square-zero surjection `φ : R ↠ R₀`, a relative point `d` of `E` over
 `g : Spec R ⟶ T` which lies in `C` and dies on restriction along
@@ -9021,19 +9111,24 @@ already bought.  What is left is the elementary fibrewise argument.
    back to `d = 0`.  This is the mirror image of the argument already written
    out inside `etale_of_specQBase` below, run in the opposite direction.
 
-## A SHARPER STATEMENT A SUCCESSOR MAY PREFER
+## THE SHARPER STATEMENT WAS TAKEN, AND THIS DECLARATION IS NOW PROVEN OVER IT
 
-Steps 1–2 prove strictly more than is asked here, namely
-`AlgebraicGeometry.Etale (c.ι ≫ f)` from `hrank` alone.  Stating the leaf that
-way instead — `etale_of_finrank` — would let `etale_of_specQBase` below be
-proven from `finrank_eq_of_specQBase` in one line and would make THIS
-declaration disappear rather than be proven, since step 3 is then the only
-thing it contributes and `etale_of_specQBase` already contains that argument.
-It was not done in this pass only because it edits a declaration outside this
-leaf's region.  *The check before taking that route*: confirm
-`etale_of_specQBase` is still proven over this leaf (it is a one-grep check),
-because if a successor has already re-based it on the rank, the sharper form
-is already there and this one is redundant.
+**PROVEN 2026-07-28.**  The previous version of this section offered a successor
+the option of stating steps 1–2 as `AlgebraicGeometry.Etale (c.ι ≫ f)` from
+`hrank` alone, and named the check to run first: *confirm `etale_of_specQBase`
+below is still proven over this leaf.*  That check was run — it is, through
+`eq_zero_of_liesIn_of_squareZero` — so the sharper form was ADDED rather than
+substituted, as `CyclicSubgroupOfOrder.etale_of_finrank` immediately above.
+This declaration is now step 3 and nothing else: `etale_of_finrank` gives
+`FormallyUnramified (c.ι ≫ f)`, `AlgebraicGeometry.isNilpotent_ker_SpecMap`
+turns `hker` into the infinitesimal-thickening hypothesis of
+`AlgebraicGeometry.FormallyUnramified.hom_ext`, and `c.ι` being a MONO cancels
+the two lifts back to `d = 0`.
+
+`etale_of_specQBase` was deliberately left alone: it is outside this leaf's
+region, it is already proven, and re-basing it on the rank
+(`c.etale_of_finrank (fun t => c.finrank_eq_of_specQBase q t)`) is a one-line
+simplification with no mathematical content.  Its owner may take it at leisure.
 
 ## FAITHFULNESS
 
@@ -9056,8 +9151,38 @@ theorem CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero_of_finrank
     (hres : letI := ab.addCommGroup (Spec.map φ ≫ g)
       RelPoint.pre (Spec.map φ) rfl d = 0) :
     letI := ab.addCommGroup g
-    d = 0 :=
-  sorry
+    d = 0 := by
+  haveI := c.isClosedImmersion
+  haveI : AlgebraicGeometry.Etale (c.ι ≫ f) := c.etale_of_finrank hrank
+  haveI : IsClosedImmersion (Spec.map φ) := IsClosedImmersion.spec_of_surjective φ hφ
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup (Spec.map φ ≫ g)
+  obtain ⟨s, hs⟩ := hd
+  obtain ⟨s₀, hs₀⟩ := c.zero_liesIn (T' := Spec R) g
+  -- the two lifts lie over the same base point
+  have hbase : s ≫ (c.ι ≫ f) = s₀ ≫ (c.ι ≫ f) := by
+    rw [← Category.assoc, ← Category.assoc, hs, hs₀, d.2, (ab.zero g).2]
+  -- and they agree modulo the square-zero ideal, by `hres` and naturality of the zero section
+  have hthick : Spec.map φ ≫ s = Spec.map φ ≫ s₀ := by
+    have h0 : Spec.map φ ≫ d.1 = Spec.map φ ≫ (ab.zero g).1 := by
+      have h1 : (RelPoint.pre (Spec.map φ) rfl d).1 = (ab.zero (Spec.map φ ≫ g)).1 :=
+        congrArg Subtype.val hres
+      have h2 : (RelPoint.pre (Spec.map φ) (rfl : Spec.map φ ≫ g = _) (ab.zero g)).1
+          = (ab.zero (Spec.map φ ≫ g)).1 :=
+        congrArg Subtype.val (ab.pre_zero (Spec.map φ) rfl)
+      exact h1.trans h2.symm
+    refine (cancel_mono c.ι).mp ?_
+    rw [Category.assoc, Category.assoc, hs, hs₀]
+    exact h0
+  -- étaleness makes `C ⟶ T` formally unramified, so the two lifts are equal …
+  have hkey : s = s₀ :=
+    AlgebraicGeometry.FormallyUnramified.hom_ext (Spec.map φ)
+      (AlgebraicGeometry.isNilpotent_ker_SpecMap φ hker) (c.ι ≫ f) hthick hbase
+  -- … and `ι` being a monomorphism carries that back to the relative points.
+  refine Subtype.ext ?_
+  show (d : Spec R ⟶ E) = ((0 : RelPoint f g) : Spec R ⟶ E)
+  show (d : Spec R ⟶ E) = ((ab.zero g : RelPoint f g) : Spec R ⟶ E)
+  rw [← hs, ← hs₀, hkey]
 
 /-- **Cartier's theorem in functor-of-points form: over a `ℚ`-base `C` has
 no nonzero INFINITESIMAL points** (**PROVEN 2026-07-27** over the two leaves
