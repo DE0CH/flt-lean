@@ -25138,6 +25138,28 @@ no functor-of-points description of `Hom(T, Proj 𝒜)` at this pin — and it i
 needed only to *derive* `injective_of_smul`; the evaluation half of the
 dictionary needs nothing beyond `modPullbackSection`.
 
+**THE NEXT CUT, AND THE CLAUSE WITHOUT WHICH IT IS FALSE.**  The obvious way to
+split this leaf again is to separate the EMBEDDING (produce `L`, a section
+family `s : Fin dim → Γ(L, ⊤)`, and the `coords` they induce at `ℚ`-points,
+with `coords_ne_zero` and `injective_of_smul`) from the FORMS (produce `cube`,
+`rel` and their evaluation properties from `HasCubeIso`).  Carrying `L` and `s`
+across the cut does defeat the `(1, n³, n⁶)` counterexample, so unlike the
+coordinate-level split this one is not *obviously* false — but as stated it is
+**still not provable**, and the reason is worth writing down because it is not
+the reason one expects.
+
+`cube_eval` asks for polynomials of degree `2` in the Segre variables
+`z (i,j)`, i.e. for `σ^* s_k ⊗ δ^* s_l` to lie in the image of
+`Sym²⟨s⟩ ⊗ Sym²⟨s⟩ → Γ(p₁^* L^{⊗2} ⊗ p₂^* L^{⊗2}, ⊤)`.  A family `s` can define
+a perfectly good closed immersion while spanning a proper subspace of
+`Γ(L, ⊤)`, and then that image is a proper subspace too and no such polynomials
+exist.  So the FORMS half must be given a SPANNING hypothesis — that the
+products `s_i · s_j` generate the global sections of `L^{⊗2}`, i.e. projective
+normality of the system — and the EMBEDDING half must produce it.  That is
+exactly the content the third power `L^{⊗3}` is taken for, so the spanning
+clause is not an extra assumption but the honest name of a step this leaf is
+already making silently.  **Do not make this cut without it.**
+
 **FAITHFULNESS.**  *Not vacuous*: the conclusion is the parent's, whose
 non-vacuity audit is unchanged (`coords_ne_zero` and `injective_of_smul` make
 `A(ℚ)` inject into `ℙⁿ(ℚ)`, and `Fermat.finite_setOf_logHeight_coords_le` then

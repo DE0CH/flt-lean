@@ -10808,12 +10808,18 @@ is needed, because the symmetric form of the cube already carries the symmetry
 this uses.  The proof is the classical induction, and it is worth writing out
 here because it is what makes this leaf strictly smaller than its parent:
 
-* restrict `HasCubeIso` along `(P, Q) ↦ ([n]P, P)`, i.e. along
-  `pullback.lift (mulByNat n) (𝟙 X)`.  Then `σ` becomes `[n+1]`, `δ` becomes
-  `[n−1]`, `p₁` becomes `[n]` and `p₂` becomes `𝟙`, so the cube reads
-  `[n+1]^* L ⊗ [n−1]^* L ≅ ([n]^* L)^{⊗2} ⊗ L^{⊗2}`;
-* with `[n]^* L ≅ L^{⊗n²}` and `[n−1]^* L ≅ L^{⊗(n−1)²}` inductively, the right
-  side is `L^{⊗(2n² + 2)}`, so `[n+1]^* L ≅ L^{⊗(2n²+2−(n−1)²)} = L^{⊗(n+1)²}`;
+* restrict `HasCubeIso` along `u := pullback.lift (mulByNat (n+1)) (𝟙 X)`, i.e.
+  along `P ↦ ([n+1]P, P)`.  Then `σ ∘ u = [n+2]`, `δ ∘ u = [n]`, `p₁ ∘ u =
+  [n+1]` and `p₂ ∘ u = 𝟙`, so the cube reads
+  `[n+2]^* L ⊗ [n]^* L ≅ ([n+1]^* L)^{⊗2} ⊗ L^{⊗2}`.  (Note the indexing: the
+  textbook form of this step is `[n+1]^*L ⊗ [n−1]^*L ≅ ([n]^*L)^{⊗2} ⊗ L^{⊗2}`,
+  which is the same identity written with a truncated `ℕ` subtraction.  Shifting
+  it by one is what keeps the Lean proof free of `Nat.sub`, and the four
+  identities above are then pure Yoneda — `ab.pre_add` and `nsmul_val` — with no
+  sheaf theory in them at all.)
+* with `[n]^* L ≅ L^{⊗n²}` and `[n+1]^* L ≅ L^{⊗(n+1)²}` inductively, the right
+  side is `L^{⊗(2(n+1)² + 2)}`, so
+  `[n+2]^* L ≅ L^{⊗(2(n+1)²+2−n²)} = L^{⊗(n+2)²}`;
 * base cases: `n = 0` is `hzero` (`[0] = f ≫ e`, so `[0]^* L ≅ f^* e^* L ≅ 𝒪 =
   L^{⊗0}` — this is the ONLY place `hzero` is used, and without it the leaf is
   FALSE at `n = 0`), and `n = 1` is `mulByNat_one`.
