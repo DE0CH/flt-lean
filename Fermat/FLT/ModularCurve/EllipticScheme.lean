@@ -4007,61 +4007,236 @@ noncomputable def projMulPtFun (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Ty
     (E.map f).toAffine.Point :=
   ProjCoords.specPointEquiv f (projMulPt E n ((ProjCoords.specPointEquiv f).symm u) Q)
 
-/-- **ALGEBRAICITY, in its residual form: `P ↦ n(P, Q) − n(O, Q)` is ADDITIVE** (sorry
-node, cut 2026-07-28 out of `exists_addMonoidHom_specPointEquiv_projMulPt` below, and it
-is the whole content of Silverman *AEC* III.4.7 / III.4.8).
+/-! ### The bridge to Silverman *AEC* III.4.8, and III.4.8 itself
 
-Together with `map_zero'` — which is `sub_self` and carries nothing — this is exactly
-what an `AddMonoidHom` needs, so the existential of the consumer below is discharged BY
+`projMulPtFun_add_sub_zero` used to be a single leaf carrying **two independent halves**:
+the BRIDGE from the scheme morphism `n : A ×_ℚ A ⟶ A` together with the `K`-point `Q` to
+a self-map of the curve OVER `K`, and the classical theorem III.4.8 about such a self-map.
+
+**The bridge is PROVEN 2026-07-28, in this section, and it is entirely formal.**  It costs
+two nested `pullback.lift`s: every "lies over the base" side condition that appears is an
+equation between two morphisms into `Spec (CommRingCat.of ℚ)`, hence `hom_ext_spec_rat`.
+No base change of `n` is performed, no `A_K ≅ proj (E.baseChange K)` comparison is used
+(`nonempty_projPullbackIso` is available and is *not* needed to state or prove anything
+here), and the `Isogeny.lean` route is not entered at all.
+
+What is left is III.4.8 alone, as `projFibreEndFun_add_sub_zero`, with `n` and `Q` gone
+and a single `Spec K`-endomorphism `ν` of `A_K` in their place — which is the classical
+theorem's own hypothesis. -/
+
+/-- **The `K`-fibre of the projective Weierstrass model**, `A_K = A ×_ℚ Spec K` (PROVEN,
+an abbreviation).
+
+This is where a `K`-MORPHISM can live.  `n` is only a `ℚ`-morphism, and Silverman *AEC*
+III.4.7/III.4.8 are statements about a self-map of a curve over the field its points are
+taken in, so the fibre has to be named before the classical theorem can be stated.
+
+`nonempty_projPullbackIso` (the `BaseChange` section) identifies `A_K` with
+`proj (E.baseChange K)`, which is what makes it a smooth projective geometrically integral
+genus-`1` curve over `K` with the rational point `projInfty`.  That identification is what
+a PROVER of III.4.8 will need; it is deliberately not used to state anything below. -/
+noncomputable abbrev projFibre (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K) :
+    Scheme.{0} :=
+  Limits.pullback (projToSpec E) (Spec.map (CommRingCat.ofHom f))
+
+/-- **A `K`-point of `A`, read as a section of `A_K ⟶ Spec K`** (PROVEN, a definition).
+
+The universal property of the pullback turns `Hom(Spec K, A)` into
+`Hom_{Spec K}(Spec K, A_K)`, and the pullback condition is `hom_ext_spec_rat` because both
+sides are morphisms into `Spec (CommRingCat.of ℚ)`.  `projFibreSection_fst` recovers the
+point, `projFibreSection_snd` says it really is a section. -/
+noncomputable def projFibreSection (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
+    (P : Spec (CommRingCat.of K) ⟶ proj E) : Spec (CommRingCat.of K) ⟶ projFibre E f :=
+  Limits.pullback.lift P (𝟙 _) (hom_ext_spec_rat _ _)
+
+/-- **The section of `A_K` at `P` sits over `P`** (PROVEN, `pullback.lift_fst`). -/
+theorem projFibreSection_fst (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
+    (P : Spec (CommRingCat.of K) ⟶ proj E) :
+    projFibreSection E f P ≫ Limits.pullback.fst (projToSpec E)
+      (Spec.map (CommRingCat.ofHom f)) = P :=
+  Limits.pullback.lift_fst _ _ _
+
+/-- **It is a SECTION of the structure morphism of `A_K`** (PROVEN, `pullback.lift_snd`). -/
+theorem projFibreSection_snd (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
+    (P : Spec (CommRingCat.of K) ⟶ proj E) :
+    projFibreSection E f P ≫ Limits.pullback.snd (projToSpec E)
+      (Spec.map (CommRingCat.ofHom f)) = 𝟙 _ :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- **The map on `K`-points induced by an endomorphism of the `K`-fibre** (PROVEN, a
+definition).
+
+`u ↦ ν(u)`, read through the dictionary in both directions: turn `u` into a `K`-point of
+`A`, into a section of `A_K`, push it through `ν`, and read the resulting section back as
+a `K`-point.  It is a `def`, not an `abbrev`, for the same reason
+`ProjCoords.specPointEquiv` and `projMulPtFun` are: the content is stated ABOUT it.
+
+*Non-vacuity, checked with the compiler rather than asserted*: for `ν = 𝟙` this is the
+identity (`Category.id_comp`, `projFibreSection_fst`, `Equiv.apply_symm_apply`), so the
+definition really does compute the action of `ν` on `K`-points and not some junk. -/
+noncomputable def projFibreEndFun (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type} [Field K]
+    [DecidableEq K] (f : ℚ →+* K) (ν : projFibre E f ⟶ projFibre E f)
+    (u : (E.map f).toAffine.Point) : (E.map f).toAffine.Point :=
+  ProjCoords.specPointEquiv f
+    (projFibreSection E f ((ProjCoords.specPointEquiv f).symm u) ≫ ν ≫
+      Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
+
+/-- **SILVERMAN *AEC* III.4.8: a self-map of the curve over `K` acts AFFINELY on
+`K`-points** (sorry node — cut 2026-07-28 out of `projMulPtFun_add_sub_zero` below, whose
+other half, the bridge, is proven).
+
+`ν` is an endomorphism of `A_K = proj E ×_ℚ Spec K` over `Spec K` (that is what `hν` says:
+it commutes with the structure morphism).  Under `nonempty_projPullbackIso`,
+`A_K ≅ proj (E.baseChange K)` is a smooth projective geometrically integral genus-`1`
+curve over `K` with the rational point `projInfty`, so this is exactly the classical
+hypothesis, and the conclusion is exactly the classical conclusion in the only form that
+is available here: `ψ := ν(·) − ν(O)` is additive, i.e. `ν = τ_{ν(O)} ∘ ψ`.
+
+## WHY THE CONCLUSION IS SUBTRACTED RATHER THAN STATED AS `ν = τ_c ∘ α`
+
+Because `τ_c` — translation by a `K`-point — is a MORPHISM only once the group law
+`projMul` exists, and `projMul` is what this whole cluster is constructing (`exists_projMul`
+is far below, and `projMul_assoc_pt_algClosed` rests on this leaf).  Stating the conclusion
+as a subtraction of `K`-points keeps the whole statement inside the set-level group
+`(E.map f).toAffine.Point`, which mathlib supplies independently, and that is what breaks
+the circle.  The same consideration rules out the rigidity/Milne route, which needs the
+group law on the TARGET as a morphism (`Mathlib/AlgebraicGeometry/Group/Abelian.lean`
+assumes `[GrpObj G]` throughout).
+
+## WHY IT IS TRUE, AND WHAT A PROVER HAS TO BUILD
+
+The classical proof is Pic⁰ functoriality: `κ : C(K) ≃ Pic⁰(C)`, `P ↦ [(P) − (O)]`, is a
+group isomorphism, and a finite morphism `φ` induces `φ_* : Pic⁰(C) → Pic⁰(C)` — a group
+homomorphism because `φ_*` is additive on divisors and carries principal divisors to
+principal ones — with `φ_*κ(P) = [(φP) − (φO)]`.  Subtracting `(φO)` is the translation.
+A CONSTANT `ν` is `x ↦ 0 + c`, of the same shape, so there is no non-degeneracy case and
+no hypothesis on `ν` beyond `hν`.
+
+**Availability audit, run 2026-07-28 rather than inherited** (grep `Fermat/`,
+`.lake/packages/mathlib`, `~/cs/FLT`):
+
+* `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean` has `AlgebraicCycle X R` (locally
+  finite `ℤ`-valued functions on the space) and a pushforward `AlgebraicCycle.map` for a
+  quasi-compact morphism.  That is the whole file.
+* `Mathlib/AlgebraicGeometry/OrderOfVanishing.lean` has `ord : X.functionField → X → ℤ`
+  at codimension-one points.
+* `Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point` has
+  `WeierstrassCurve.Affine.Point.toClass : W.Point →+ Additive (ClassGroup W.CoordinateRing)`
+  and its injectivity — mathlib's own proof of the group law, i.e. the `κ` above in its
+  AFFINE form, and it is a genuine head start.
+
+So what is MISSING, and it is a theory build: `div f` as a cycle, `deg` of a principal
+divisor being `0`, "the pushforward of a principal divisor is principal", and the
+compatibility of `toClass` with the codimension-one points of `proj`.  None of it is in
+this project or in `~/cs/FLT` either.
+
+**A legitimate first cut, if the whole thing is too big**: descend to `K̄`.  `E(K) ↪ E(K̄)`
+is a subgroup inclusion compatible with base change, so additivity over an algebraically
+closed field implies it here — and over an algebraically closed field
+`Fermat/FLT/EllipticCurve/Isogeny.lean`'s machinery (`IsRationalMap`, `IsIsogeny`,
+`degree`, `dual`, `endSubring`, and `IsRationalMap.surjective`/`finite_ker`) becomes
+usable.  It is deliberately NOT cut that way here, because the descent leaf is real work
+(base change of `A_K` along `K → K̄` plus compatibility of `ProjCoords.specPointEquiv`
+with the extension) and it does not reduce the mathematical content at all.
+
+*Do not try to close this from `Isogeny.lean` directly.*  `IsRationalMap` is a predicate on
+an `AddMonoidHom`, so it PRESUPPOSES the additivity that is to be proven; using it here
+would be circular.  Read as well that file's FALSITY AUDIT of `IsIsogeny.add` (`𝔽₅`
+counterexample) and of `IsRationalMap.add` (`𝔽̄₂`): the naive statements in this area are
+false, and the hypotheses that repair them are exactly the ones `hν` and the ambient
+`f : ℚ →+* K` supply here.
+
+*Refuting check for anyone tempted to close this from the point dictionary alone*: the
+statement uses `ν` only through its values on `K`-points, and a bare bijection satisfying
+every other clause of `exists_projPtAddEquiv_algClosed` violates this one (the order-`5`
+loop counterexample recorded there).  So any proof that does not USE the fact that `ν` is
+a morphism of schemes is wrong. -/
+theorem projFibreEndFun_add_sub_zero (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
+    [Field K] [DecidableEq K] (f : ℚ →+* K) (ν : projFibre E f ⟶ projFibre E f)
+    (hν : ν ≫ Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) =
+      Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
+    (u v : (E.map f).toAffine.Point) :
+    projFibreEndFun E f ν (u + v) - projFibreEndFun E f ν 0 =
+      (projFibreEndFun E f ν u - projFibreEndFun E f ν 0) +
+        (projFibreEndFun E f ν v - projFibreEndFun E f ν 0) :=
+  sorry
+
+/-- **THE BRIDGE: `n` and a `K`-point `Q` induce an endomorphism of the `K`-fibre**
+(**PROVEN 2026-07-28**, a definition).
+
+`ν := ⟨(pr₁, pr₂ ≫ Q) ≫ n, pr₂⟩ : A_K ⟶ A_K`.  Both pullback conditions are equations
+between morphisms into `Spec (CommRingCat.of ℚ)`, so both are `hom_ext_spec_rat` — this is
+the whole reason the bridge is free rather than a base-change construction.  The second
+component being `pr₂` is what makes `ν` a `Spec K`-morphism
+(`projFibreEndOfMul_snd`), which is the hypothesis `hν` of III.4.8. -/
+noncomputable def projFibreEndOfMul (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
+    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (Q : Spec (CommRingCat.of K) ⟶ proj E) : projFibre E f ⟶ projFibre E f :=
+  Limits.pullback.lift
+    (Limits.pullback.lift (Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
+      (Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) ≫ Q)
+      (hom_ext_spec_rat _ _) ≫ n)
+    (Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)))
+    (hom_ext_spec_rat _ _)
+
+/-- **The induced endomorphism is a `Spec K`-morphism** (PROVEN, `pullback.lift_snd`) —
+this is the hypothesis `hν` of `projFibreEndFun_add_sub_zero`, discharged by construction. -/
+theorem projFibreEndOfMul_snd (E : WeierstrassCurve ℚ) {K : Type} [Field K] (f : ℚ →+* K)
+    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (Q : Spec (CommRingCat.of K) ⟶ proj E) :
+    projFibreEndOfMul E f n Q ≫ Limits.pullback.snd (projToSpec E)
+        (Spec.map (CommRingCat.ofHom f)) =
+      Limits.pullback.snd (projToSpec E) (Spec.map (CommRingCat.ofHom f)) :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- **The induced endomorphism computes `P ↦ n(P, Q)` on `K`-points** (PROVEN) — the
+computation rule that makes the bridge usable.
+
+`comp_lift_proj` pushes the section inside the inner `lift`, `projFibreSection_fst` turns
+the first component into `P`, and `projFibreSection_snd` collapses the second to `Q`; what
+is left is literally `projMulPt`. -/
+theorem projFibreSection_comp_projFibreEndOfMul (E : WeierstrassCurve ℚ) {K : Type} [Field K]
+    (f : ℚ →+* K) (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (Q P : Spec (CommRingCat.of K) ⟶ proj E) :
+    projFibreSection E f P ≫ projFibreEndOfMul E f n Q ≫
+        Limits.pullback.fst (projToSpec E) (Spec.map (CommRingCat.ofHom f)) =
+      projMulPt E n P Q := by
+  rw [projFibreEndOfMul, Limits.pullback.lift_fst, ← Category.assoc,
+    comp_lift_proj E _ _ _ _ (hom_ext_spec_rat _ _), projFibreSection_fst,
+    ← Category.assoc, projFibreSection_snd, Category.id_comp, projMulPt]
+
+/-- **The two point-maps agree** (PROVEN): the action of the induced endomorphism on
+`K`-points IS `projMulPtFun`. -/
+theorem projFibreEndFun_projFibreEndOfMul (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
+    [Field K] [DecidableEq K] (f : ℚ →+* K)
+    (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (Q : Spec (CommRingCat.of K) ⟶ proj E) (u : (E.map f).toAffine.Point) :
+    projFibreEndFun E f (projFibreEndOfMul E f n Q) u = projMulPtFun E f n Q u := by
+  rw [projFibreEndFun, projFibreSection_comp_projFibreEndOfMul, projMulPtFun]
+
+/-- **ALGEBRAICITY, in its residual form: `P ↦ n(P, Q) − n(O, Q)` is ADDITIVE**
+(**PROVEN 2026-07-28** from `projFibreEndFun_add_sub_zero`, which is Silverman *AEC*
+III.4.8 with `n` and `Q` eliminated; the bridge that eliminates them is the section above
+and is entirely formal).
+
+Together with `map_zero'` — which is `sub_self` and carries nothing — this is exactly what
+an `AddMonoidHom` needs, so the existential of the consumer below is discharged BY
 CONSTRUCTION (`α := · − projMulPtFun E f n Q 0`, `c := projMulPtFun E f n Q 0`) and no
-mathematics is left in it.  **The cut is therefore free**: it does not weaken the consumer
-and it removes from a prover the obligation to invent `α` and `c`, which is the classical
-statement's own shape (`φ = τ_{φ(O)} ∘ α`).
+mathematics is left in it.
 
-## WHY IT IS TRUE
-
-`P ↦ projMulPt E n P Q` is induced by an honest `K`-morphism: base-change `n` along
-`Spec K ⟶ Spec ℚ` and precompose with `(id, Q)`, giving `A_K ⟶ A_K` where
-`A_K = proj E ×_ℚ Spec K` is a smooth projective geometrically integral genus-`1` curve
-over `K` with the rational point `projInfty`.  Silverman *AEC* III.4.8 says a morphism of
-such a curve to itself that FIXES `O` is a group homomorphism (the proof is Pic⁰
-functoriality: `φ` induces `φ^*` on divisor classes of degree `0`, and the
-`Pic⁰`-to-points identification is a group isomorphism); a general morphism is that
-composed with the translation by `φ(O)`, which is what subtracting
-`projMulPtFun E f n Q 0` does.  A CONSTANT morphism is `x ↦ 0 + c`, also of that shape, so
-there is no non-degeneracy case and no hypothesis on `n`.
-
-## WHAT AN OWNER OF THIS LEAF HAS TO BUILD, AND WHAT IS ALREADY HERE
-
-The classical argument is not available in mathlib at this pin and is not in
-`~/cs/FLT`; the honest estimate is a theory build, and the two halves are independent:
-
-* **The bridge.** Turn the scheme morphism `n` together with `Q` into an object the
-  curve-level theory can speak about — either a `K`-morphism `A_K ⟶ A_K` (the route the
-  paragraph above describes; `Fermat.nonempty_projPullbackIso` and the `BaseChange`
-  section of this file already give `A_K ≅ proj (E.baseChange K)`), or, staying inside
-  `WeierstrassCurve.Affine`, a `WeierstrassCurve.IsRationalMap`
-  (`Fermat/FLT/EllipticCurve/Isogeny.lean`, now imported by this file — it already has
-  `IsIsogeny`, `degree`, `dual`, `comp` and an endomorphism ring).
-* **III.4.8 itself**: a morphism of elliptic curves fixing `O` is additive.  In the
-  `Isogeny.lean` vocabulary this is a statement about `IsIsogeny`, and that file's
-  `IsIsogeny.add` already has a FALSITY AUDIT attached to it — read it first; the naive
-  "every rational map fixing `O` is additive" is stated there with a counterexample over
-  `𝔽₅`, so the hypotheses matter.
-
-*Refuting check for anyone tempted to close this from the dictionary alone*: the
-statement mentions `n` only through `projMulPt E n · Q`, i.e. only through its values on
-`K`-points, and a bare bijection satisfying every other clause of
-`exists_projPtAddEquiv_algClosed` violates this one (the order-`5` loop counterexample).
-So any proof that does not USE the fact that `n` is a morphism of schemes is wrong. -/
+The one thing this proof does that a set-level argument could not: it produces a genuine
+`Spec K`-ENDOMORPHISM of `A_K` out of `n` and `Q`, so the fact that `n` is a morphism of
+schemes is used, as the refuting check on `projFibreEndFun_add_sub_zero` demands. -/
 theorem projMulPtFun_add_sub_zero (E : WeierstrassCurve ℚ) [E.IsElliptic] {K : Type}
     [Field K] [DecidableEq K] (f : ℚ →+* K)
     (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
     (Q : Spec (CommRingCat.of K) ⟶ proj E) (u v : (E.map f).toAffine.Point) :
     projMulPtFun E f n Q (u + v) - projMulPtFun E f n Q 0 =
       (projMulPtFun E f n Q u - projMulPtFun E f n Q 0) +
-        (projMulPtFun E f n Q v - projMulPtFun E f n Q 0) :=
-  sorry
+        (projMulPtFun E f n Q v - projMulPtFun E f n Q 0) := by
+  simpa only [projFibreEndFun_projFibreEndOfMul] using
+    projFibreEndFun_add_sub_zero E f (projFibreEndOfMul E f n Q)
+      (projFibreEndOfMul_snd E f n Q) u v
 
 /-- **ALGEBRAICITY: every scheme morphism acts affinely on `K`-points** (**PROVEN
 2026-07-28** from `projMulPtFun_add_sub_zero`, which is the residue; it was clause 4 of
