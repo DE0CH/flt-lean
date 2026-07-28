@@ -18125,9 +18125,23 @@ group `ℚ(S, ℓ)` of dimension `2` over `G_{ℚ,S}`.
 Over `G_{ℚ,S}` — which is what Poitou–Tate (NSW VIII.6.7) and Greenberg–Wiles
 are stated for — the source is FINITE-dimensional (NSW VIII.3) and both leaves
 below are the theorems they were meant to be. Note that finiteness is NOT
-proven here and is not needed to STATE anything; it is part of
+proven here and is not needed to STATE anything.
+
+**CORRECTION 2026-07-28 — this paragraph used to end "it is part of
 `rank_sha2_le_rank_sha1_twist`'s proof obligation, where it was already
-itemised.
+itemised", and that is now stale twice over.** (a) The finiteness is no longer
+folded into that consumer: it was cut out the same day as its own leaf,
+`finiteDimensional_h1_adZeroTwistRestricted` immediately below, which
+`rank_sha2_le_rank_sha1_twist` now consumes by name. (b) More importantly, the
+standing reading of this note — that finiteness of `H¹(G_{ℚ,S}, M)` for finite
+`M` "is standard and is itself missing from this tree" — is WRONG about the
+arithmetic half. Its Hermite–Minkowski input is PROVEN, in
+`HardlyRamified/HermiteMinkowski.lean` (`finite_setOf_subgroup_inertiaAt_le`:
+finitely many open normal subgroups of `Γ ℚ` of bounded index into which the
+inertia at every `q ∉ {2, p}` maps), and **that module is imported by THIS one**
+— see the `import` on the header, non-public, which is enough for proof-body
+use. What is actually missing is recorded on
+`finiteDimensional_h1_adZeroTwistRestricted` below.
 
 The degree-`1` half could alternatively have been stated over `Γ ℚ` with an
 unramified-outside-`S` condition imposed on cocycles, since inflation is
@@ -18161,6 +18175,48 @@ its work, and isolating it makes that visible to the compiler. Note also that
 the passage `Ш² ≅ (Ш¹)^∨ ⟹ dim Ш² ≤ dim Ш¹` genuinely NEEDS it —
 `dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and
 `rank_le_rank_dual` above only gives the OTHER direction.
+
+**COST AUDIT, 2026-07-28 — the arithmetic half is PROVEN AND IN THIS MODULE'S
+OWN IMPORT CONE; what is missing is the cochain dictionary, plus one
+generalisation.** Written by the owner of `Modularity/Patching.lean`'s
+`finite_h1TwistUnramified`, which is the same finiteness stated over `Γ ℚ` with
+an unramified-outside-`S` condition instead of over `G_{ℚ,S}` (the same group in
+degree `1`, by inflation), and which was decomposed the same day. Itemised:
+
+1. *Hermite–Minkowski, "`G_{ℚ,S}` is small"* — **PROVEN**, as
+   `finite_setOf_subgroup_inertiaAt_le` in
+   `HardlyRamified/HermiteMinkowski.lean`, which THIS module imports (header
+   line, non-public, sufficient for proof bodies). Do not plan to build it, and
+   do not repeat the claim that it is missing from the tree; the refuting check
+   is `grep -n HermiteMinkowski` on this file's header.
+2. *The same statement for an arbitrary finite set of primes* — needed as soon
+   as the coefficient module is not assumed unramified outside `{2, p}`, since
+   the field cut out by a cocycle is then unramified only outside
+   `S ∪ ram(ρbar)`. `finite_setOf_subgroup_inertiaAt_le` is hard-wired to
+   `{2, p}`. A worked, verified generalisation exists as
+   `finite_inertiaOutsideSubgroups` in `Modularity/Patching.lean` — pure
+   bookkeeping over the SAME per-prime input
+   `exists_discr_factorization_le_of_finrank_le`, replacing `Finset.prod_pair`
+   by a product over `T`. **It is DOWNSTREAM of this module and therefore not
+   consumable here**; hoisting it into `HermiteMinkowski.lean`, which is
+   upstream of both, is what would make it shared. (For THIS leaf, whose `ρbar`
+   IS hardly ramified, item 2 may be avoidable: `{2, ℓ}` then really does
+   contain the ramification.)
+3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — genuinely missing, and it
+   is the real cost. Our pin's `ContCohomology/LowDegree.lean` computes `H⁰`
+   only; the vendored
+   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+   gives `cocycleClass` / `cocycleClass_eq_zero_iff` for the HOMOGENEOUS model
+   `(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`. What is needed is its
+   identification with `C(G, M)` (`F ↦ (y ↦ F 1 y)`, inverse
+   `z ↦ (x, y) ↦ x · z (x⁻¹ y)`), carrying `d` to the usual cocycle condition,
+   together with the compatibility of `ContinuousCohomology.map` with it.
+   `~/cs/FLT` does not have it either.
+
+So this leaf is **not** blocked on missing arithmetic; it is blocked on item 3,
+which is shared with `Modularity/Patching.lean`'s
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
+`finite_ker_resSubgroupTwist1`. Those three are best given to ONE owner.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -18326,7 +18382,15 @@ So `Module.rank k (Sha1Twist …)` is no longer `ℵ₀`: over `G_{ℚ,S}` the s
 `H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional (NSW VIII.3), and this leaf reads
 `dim Ш²_S(ad⁰) ≤ dim Ш¹_S(ad⁰(1))` — the perfect Poitou–Tate pairing, with
 content. **It remains OPEN**, and the porting audit above (cup product, local
-invariant map, finiteness of `H¹(G_S, M)`) is what it still costs. Nothing in
+invariant map, finiteness of `H¹(G_S, M)`) is what it still costs.
+**CORRECTION 2026-07-28 to the third of those three items**: the finiteness of
+`H¹(G_S, M)` is NOT an unbounded cost, and in particular its Hermite–Minkowski
+input is not missing from this tree — `HermiteMinkowski.lean`'s
+`finite_setOf_subgroup_inertiaAt_le` proves it and is imported by this module.
+The residual cost is the degree-`1` inhomogeneous cochain dictionary; the full
+itemisation is on `finiteDimensional_h1_adZeroTwistRestricted` above, which is
+where that obligation now lives (it is a leaf of its own, not a clause of this
+one). Nothing in
 the audit's *computation* was wrong; it was a correct refutation of a
 definition that no longer exists, and it is kept because it is the reason the
 group below the `H` is `G_{ℚ,S}` and must stay that way.
