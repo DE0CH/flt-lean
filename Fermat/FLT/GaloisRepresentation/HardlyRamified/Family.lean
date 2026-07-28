@@ -2269,6 +2269,45 @@ theorem adjoin_cornerGroupLike_of_isSepClosed
     exact Algebra.subset_adjoin (hcharS χ)
   exact hle hmem2
 
+omit [CharZero k] in
+/-- **A finite étale Hopf algebra over a separably closed field with COMMUTATIVE point monoid
+is COCOMMUTATIVE** (PROVEN 2026-07-28).
+
+This is the coordinate-free half of `isCocomm_corner_of_habel`: over `k` separably closed the
+paired evaluations `lift γ δ` separate `A ⊗[k] A`
+(`injective_lift_pair_of_isSepClosed`), and under them the two sides of the cocommutativity
+identity read off as the two convolution products:
+
+  `lift γ δ (comul a) = (γ * δ) a`,  `lift γ δ (τ (comul a)) = lift δ γ (comul a) = (δ * γ) a`,
+
+the middle step because `lift γ δ ∘ τ = lift δ γ` (both are `x ⊗ y ↦ γ x * δ y` up to
+`mul_comm` in the commutative target `k`). So `habel` is exactly cocommutativity.
+
+`IsSepClosed k` is not decorative: over a non-separably-closed field the `k`-points do not
+separate `A ⊗[k] A` and the statement is false (take `A` the function algebra of a nonsplit
+finite étale group scheme). -/
+theorem isCocomm_of_isSepClosed_of_mul_comm
+    (habel : ∀ φ ψ : A →ₐ[k] k, φ * ψ = ψ * φ) :
+    Coalgebra.IsCocomm k A := by
+  constructor
+  refine LinearMap.ext fun a => ?_
+  show TensorProduct.comm k A A (Coalgebra.comul (R := k) a) = Coalgebra.comul (R := k) a
+  refine injective_lift_pair_of_isSepClosed k A fun γ δ => ?_
+  have hswap : ∀ t : A ⊗[k] A,
+      Algebra.TensorProduct.lift γ δ (fun _ _ => Commute.all _ _)
+          (TensorProduct.comm k A A t) =
+        Algebra.TensorProduct.lift δ γ (fun _ _ => Commute.all _ _) t := by
+    intro t
+    induction t with
+    | zero => simp
+    | tmul x y =>
+        rw [TensorProduct.comm_tmul, Algebra.TensorProduct.lift_tmul,
+          Algebra.TensorProduct.lift_tmul, mul_comm]
+    | add u v hu hv => rw [map_add, map_add, map_add, hu, hv]
+  rw [hswap]
+  show (δ * γ) a = (γ * δ) a
+  rw [habel]
+
 end CornerGroupAlgebra
 
 section CornerBaseChange
@@ -3299,7 +3338,7 @@ Refuting check on this cut, and it is cheap: exhibit a proof of the conclusion o
 `exists_unramified_grouplike_family_generating_corner` that never establishes
 multiplicative type of `G°`. -/
 
-/-- **The corner Hopf algebra `𝒪(G°) = G ⧸ (1 - e₀)` is free over `𝒪ᵖᵥ`** (SORRY LEAF,
+/-- **The corner Hopf algebra `𝒪(G°) = G ⧸ (1 - e₀)` is free over `𝒪ᵖᵥ`** (PROVEN 2026-07-28;
 formal — no arithmetic input: neither `hpodd` nor `hchar` nor `fG` appears).
 
 `G ⧸ (1 - e₀)` is isomorphic as an `𝒪ᵖᵥ`-module to the corner `e₀ G`, which is a DIRECT
@@ -3311,15 +3350,21 @@ and flat, hence torsion-free and finitely generated over a PID, hence FREE
 This is needed because `HopfAlgebra.IsMultiplicativeType` — and every statement in
 `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` — carries `[Module.Free R A]`:
 Cartier duality is the `R`-linear dual, and it is only well-behaved on a finite free
-module. -/
+module.
+
+FORMALIZED as `HopfAlgebra.free_quotient_cornerIdeal` in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean`, where the direct-summand isomorphism
+is never named: an `r`-torsion relation in `G ⧸ (1 - e₀)` says `e₀ * (r • (a - b)) = 0`, i.e.
+`r • (e₀ * (a - b)) = 0`, and `Module.Flat.isTorsionFree` cancels the `r`. The DVR input is
+`𝒪ᵖᵥ`'s `IsPrincipalIdealRing` instance from `Fermat/FLT/DedekindDomain/AdicValuation.lean`. -/
 theorem free_corner_of_connected
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     (e₀ : G) (he₀ : IsIdempotentElem e₀) :
     Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+  HopfAlgebra.free_quotient_cornerIdeal (R := 𝒪ᵖᵥ) he₀
 
-/-- **The corner Hopf algebra `𝒪(G°)` is cocommutative** (SORRY LEAF, formal), i.e. the
+/-- **The corner Hopf algebra `𝒪(G°)` is cocommutative** (PROVEN 2026-07-28, formal), i.e. the
 connected component `G°` is a COMMUTATIVE group scheme.
 
 `habel` says the convolution monoid of `ℚᵖᵥ`-points of `G` valued in `ℚᵖᵥᵃˡᵍ` is
@@ -3335,16 +3380,49 @@ ideal preserves it.
 Needed because `HopfAlgebra.IsMultiplicativeType` carries `[IsCocomm R A]`: the Cartier
 dual of a coalgebra is an algebra, and it is COMMUTATIVE exactly when the coalgebra is
 cocommutative — which is what makes `CartierDual R A` a `CommRing` and hence a Hopf
-algebra again. -/
+algebra again.
+
+THE FORMAL PROOF, in three steps, all in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` except the first:
+
+1. `isCocomm_of_isSepClosed_of_mul_comm` above: over the separably closed `ℚᵖᵥᵃˡᵍ` the paired
+   evaluations separate the tensor square, and `lift γ δ ∘ τ = lift δ γ`, so `habel'` IS
+   cocommutativity of the geometric fibre.
+2. `Coalgebra.isCocomm_of_baseChange`: the comparison map
+   `G ⊗ G → (ℚᵖᵥᵃˡᵍ ⊗ G) ⊗ (ℚᵖᵥᵃˡᵍ ⊗ G)` is injective (flatness of `G ⊗ G` plus injectivity
+   of `𝒪ᵖᵥ → ℚᵖᵥᵃˡᵍ`) and intertwines both comultiplications and both swaps, so the identity
+   descends.
+3. `Coalgebra.isCocomm_quotient`: `comul` on a coideal quotient is `(mk ⊗ mk) ∘ comul`, which
+   commutes with the swap.
+
+`he₀` is underscored: idempotency of `e₀` enters only through the `IsHopfIdeal` instance,
+which this statement already receives. -/
 theorem isCocomm_corner_of_habel
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
     (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
-    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (e₀ : G) (_he₀ : IsIdempotentElem e₀)
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ] :
-    Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+    Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) := by
+  -- the geometric fibre is finite étale over the algebraically closed `ℚᵖᵥᵃˡᵍ`
+  haveI : Algebra.FormallyEtale ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) :=
+    formallyEtale_baseChange_tower (R := 𝒪ᵖᵥ) (S := ℚᵖᵥ) (T := ℚᵖᵥᵃˡᵍ) (H := G)
+  haveI : Module.Finite ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) := inferInstance
+  haveI : Algebra.EssFiniteType ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) := inferInstance
+  -- and its point monoid is still commutative
+  have habel' : ∀ φ ψ : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥᵃˡᵍ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ :=
+    mul_comm_algHom_baseChange_of_baseChange (S := ℚᵖᵥ) habel
+  haveI : Coalgebra.IsCocomm ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) :=
+    isCocomm_of_isSepClosed_of_mul_comm ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) habel'
+  -- `𝒪ᵖᵥ → ℚᵖᵥᵃˡᵍ` is injective, so the identity descends to the integral model
+  have hinj : Function.Injective (algebraMap 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) := by
+    rw [IsScalarTower.algebraMap_eq 𝒪ᵖᵥ ℚᵖᵥ ℚᵖᵥᵃˡᵍ, RingHom.coe_comp]
+    exact (algebraMap ℚᵖᵥ ℚᵖᵥᵃˡᵍ).injective.comp
+      (FaithfulSMul.algebraMap_injective 𝒪ᵖᵥ ℚᵖᵥ)
+  haveI : Coalgebra.IsCocomm 𝒪ᵖᵥ G :=
+    Coalgebra.isCocomm_of_baseChange (S := ℚᵖᵥᵃˡᵍ) (H := G) hinj
+  exact Coalgebra.isCocomm_quotient _
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
@@ -3429,8 +3507,140 @@ theorem isMultiplicativeType_corner_of_hopf_package
   sorry
 
 set_option synthInstance.maxHeartbeats 1000000 in
+/-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (SORRY
+LEAF, the ARITHMETIC/GEOMETRIC half — cut out of
+`exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28).
+
+Stated over an ABSTRACT finite free cocommutative Hopf algebra `A` over `𝒪ᵖᵥ`, because
+nothing in it is about `G`, about `e₀`, or about the corner: it is SGA 3, Exp. VIII/X, in the
+form "a group scheme of multiplicative type over a strictly henselian local base is
+diagonalizable".
+
+THE ARGUMENT, and where each hypothesis goes. `hmult` says the Cartier dual `X` of `A` is
+étale over `𝒪ᵖᵥ`, so `𝒪ᵘⁿʳ ⊗ X` is étale over `𝒪ᵘⁿʳ`. `hhens` + `hsep` make `𝒪ᵘⁿʳ` strictly
+henselian, and a finite étale algebra over a strictly henselian local ring is a finite
+PRODUCT of copies of the base — lift the idempotents of
+`Algebra.FormallyEtale.equivPiOfIsSepClosed` at the residue field through the henselian
+pair. So `𝒪ᵘⁿʳ ⊗ X ≅ GroupFunctions 𝒪ᵘⁿʳ Γ` for a finite abelian group `Γ`, and Cartier
+BIDUALITY plus `CartierDual.groupAlgebraBialgEquivDual` identify `𝒪ᵘⁿʳ ⊗ A` with the group
+algebra `𝒪ᵘⁿʳ[Γ̂]`, whose group-likes `single γ 1` are a BASIS — in particular they span.
+
+MISSING MACHINERY, as of 2026-07-28, and this is what the leaf is really gated on. All three
+are absent from the mathlib pin, from `~/cs/FLT` and from this tree; the exact refuting
+commands are `grep -rn "cartierDual" Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` and
+`grep -rn "equivPiOfIsSepClosed\|HenselianLocalRing" .lake/packages/mathlib/Mathlib/RingTheory/`.
+
+1. **Cartier BIDUALITY** `A ≃ₐc[R] CartierDual R (CartierDual R A)` for finite free `A`.
+   `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDualExamples.lean` has only the two
+   CONCRETE dictionaries `CartierDual R R[Γ] ≃ₐc GroupFunctions R Γ` and its converse; the
+   general biduality is not there.
+2. **Base change of the Cartier dual**: `S ⊗[R] CartierDual R A ≃ₐc[S] CartierDual S (S ⊗ A)`
+   for finite free `A`. `CartierDual.map` (functoriality) is proven; base change is not.
+3. **Étale over a strictly henselian local ring is SPLIT**: a finite étale `R`-algebra over a
+   henselian local `R` with separably closed residue field is `Π_{i} R`. mathlib has
+   `Algebra.FormallyEtale.equivPiOfIsSepClosed` only over a FIELD, and `HenselianLocalRing`
+   with `IsHensel`-style idempotent lifting; the assembly of the two is missing.
+
+Only (3) is genuinely hard; (1) and (2) are formal and reusable, and (1) in particular is
+worth stating as its own mathlib-shim leaf before anyone attacks this one.
+
+FAITHFULNESS. Spanning, not "is a basis": that is all the consumer `(D2)` needs, and it is
+the direction that survives without a rank count. The conclusion is about `𝒪ᵘⁿʳ ⊗ A`, never
+about `A` — over `𝒪ᵖᵥ` itself the statement would be FALSE, since the connected order-`p`
+schemes there are the `p − 1` unramified twists `μ_p ⊗ ψ` and only `ψ = 1` is diagonalizable.
+That is the same boundary whose violation killed `exists_muType_closure`.
+
+NON-VACUITY. `A = 𝒪ᵖᵥ` (the trivial group scheme) satisfies every hypothesis, and the
+conclusion holds with `ι = Unit`, `x = fun _ => 1`. `A = 𝒪ᵖᵥ[μ_p]` satisfies them with a
+`p`-element spanning family, so the conclusion is not satisfiable by the singleton family in
+general and the leaf carries content. -/
+theorem exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType
+    (hhens : HenselianLocalRing (unramifiedIntegers p))
+    (hsep : IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)))
+    (A : Type) [CommRing A] [HopfAlgebra 𝒪ᵖᵥ A]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ A] [Module.Finite 𝒪ᵖᵥ A] [Module.Free 𝒪ᵖᵥ A]
+    (hmult : HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A) :
+    ∃ (ι : Type) (x : ι → unramifiedIntegers p ⊗[𝒪ᵖᵥ] A),
+      (∀ i, Coalgebra.counit (R := unramifiedIntegers p) (x i) =
+        (1 : unramifiedIntegers p)) ∧
+      (∀ i, Coalgebra.comul (R := unramifiedIntegers p) (x i) =
+        x i ⊗ₜ[unramifiedIntegers p] x i) ∧
+      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **(D2) TRANSPORT of a diagonalizing family from the corner Hopf algebra to the corner
+SUBMODULE of the geometric fibre** (SORRY LEAF, FORMAL — cut out of
+`exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28; no arithmetic
+input, no Raynaud, no henselian base).
+
+`hdiag` supplies group-likes `x i` of `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` spanning it over `𝒪ᵘⁿʳ`. What has to be
+done is bookkeeping along two maps, and all of it is available:
+
+* the SECTION of the corner quotient, `G ⧸ (1 − e₀) → G`, `mk a ↦ e₀ a`, which is injective
+  with image the direct summand `e₀ G` (`HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero` in
+  `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` is the whole of that); base-changed
+  it carries `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` isomorphically onto the corner `(ℚᵖᵥᵃˡᵍ ⊗ G) · ē₀`;
+* the scalar extension `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`, which is `toBig` followed by the inclusion of
+  `unramifiedSubfield p` — and `toBig_val` says its values lie in that fixed field, which is
+  EXACTLY the generating set of `unramifiedTensorSubmodule G`. That is where clause (3) of
+  the conclusion comes from, and it is the only clause that mentions inertia.
+
+Under the section, a genuine group-like `comul (x i) = x i ⊗ x i` of the corner Hopf algebra
+becomes an `ē₀`-RELATIVE group-like `comul (y i) · (ē₀ ⊗ ē₀) = y i ⊗ y i` of `ℚᵖᵥᵃˡᵍ ⊗ G`,
+because the quotient's comultiplication is `(mk ⊗ mk) ∘ comul` and `mk` is the section's
+retraction; and `counit (e₀ a) = counit e₀ · counit a = counit a` by `hε₀`. Spanning over
+`𝒪ᵘⁿʳ` becomes spanning over `ℚᵖᵥᵃˡᵍ` after the field extension, which is stronger than the
+`Algebra.adjoin` clause asked for.
+
+`habel`, `he₀`, `hprim₀` and `hcomul₀` are carried because the intended proof runs through the
+corner-quotient identification, which is stated in their presence; a prover who finds any of
+them unused should underscore it and say so. -/
+theorem exists_unramified_grouplike_family_of_diagonalizable_corner
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    (hdiag : ∃ (ι : Type)
+        (x : ι → unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀)),
+      (∀ i, Coalgebra.counit (R := unramifiedIntegers p) (x i) =
+        (1 : unramifiedIntegers p)) ∧
+      (∀ i, Coalgebra.comul (R := unramifiedIntegers p) (x i) =
+        x i ⊗ₜ[unramifiedIntegers p] x i) ∧
+      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤) :
+    ∃ (ι : Type) (y : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
+      (∀ i, Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) (y i) = (1 : ℚᵖᵥᵃˡᵍ)) ∧
+      (∀ i, Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) (y i) *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
+      (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
+      (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
 /-- **Multiplicative type over the STRICTLY HENSELIAN base is DIAGONALIZABLE: the corner
-group-likes may be taken `ℚᵖᵥᵘⁿʳ`-rational** (SORRY LEAF).
+group-likes may be taken `ℚᵖᵥᵘⁿʳ`-rational**.
+
+**STATUS, 2026-07-28 — NO LONGER A SORRY NODE. It is an ASSEMBLY over the two leaves
+`exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType` (`(D1)`, the SGA 3
+content, stated over an abstract Hopf algebra and listing the three pieces of missing
+machinery it is gated on) and
+`exists_unramified_grouplike_family_of_diagonalizable_corner` (`(D2)`, the formal transport).**
+The cut separates an arithmetic-geometric leaf from a bookkeeping one; the frontier count goes
+up by one, which is disclosure rather than regression.
+
+Everything below is the audit history of the node while it was a leaf, and it is still the
+mathematics of `(D1)` + `(D2)`.
 
 This is the second half of the μ-type node's arithmetic, and it is the half that is NOT
 Raynaud. Given that `G°` is of multiplicative type over `𝒪ᵖᵥ` — its Cartier dual `X` is an
@@ -3482,7 +3692,10 @@ theorem exists_unramified_grouplike_family_of_isMultiplicativeType
       (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
       (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
         Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
-  sorry
+  exists_unramified_grouplike_family_of_diagonalizable_corner G habel e₀ he₀ hε₀ hprim₀
+    hcomul₀
+    (exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType hhens hsep
+      (G ⧸ HopfAlgebra.cornerIdeal e₀) hmult)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
