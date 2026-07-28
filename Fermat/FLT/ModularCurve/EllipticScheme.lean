@@ -9,6 +9,10 @@ public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
+-- Supplies `exists_isOpenImmersion_range_eq_compl_of_section`, which is
+-- `exists_affineComplement_zeroSection` below in mathlib-facing form, together with the
+-- section/closed-point lemmas its assembly consumes.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
 public import Fermat.FLT.EllipticCurve.Torsion
 -- For `WeierstrassCurve.nsmul_surjective` (divisibility of `E(K̄)`), which is what
 -- `exists_add_self_affinePoint_of_isAlgClosed` below is.  It is PROVEN there, from the
@@ -9219,15 +9223,45 @@ for the complement of a section of a proper curve.  Searched 2026-07-27
 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the pin has
 `Mathlib/AlgebraicGeometry/QuasiAffine.lean` and
 `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`, but no ampleness
-of divisors, no `Serre criterion`, and no genus. -/
+of divisors, no `Serre criterion`, and no genus.
+
+## PROVEN 2026-07-28, over ONE mathlib-facing leaf
+
+The absence diagnosis above was RE-CHECKED on 2026-07-28 and stands:
+`grep -rl 'Ample' Mathlib/AlgebraicGeometry/` returns only files where
+the word occurs inside `example`/`sample`.
+
+What has changed is that everything in this leaf EXCEPT ampleness is now
+discharged in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`:
+
+* the zero section is a CLOSED immersion, because `ab.proper` makes `f`
+  separated and `IsClosedImmersion` cancels on the right against a
+  separated morphism (`IsClosedImmersion.of_section`);
+* its range is a single point, because `Spec ℚ` is a one-point space
+  (`range_eq_singleton_of_spec_field`), so the complement is an honest
+  open;
+* and an `IsAffineOpen` complement is converted into the `(R, ι)`
+  existential by `IsAffineOpen.fromSpec` and `IsAffineOpen.range_fromSpec`
+  (`exists_isOpenImmersion_range_eq_compl_of_section`).
+
+The residue is exactly `isAffineOpen_compl_singleton_of_isSmoothProperCurve`
+— "the complement of a closed point of a smooth proper geometrically
+connected curve over a field is affine" — which carries the ampleness and
+nothing else, and which is stated over a general base field rather than
+over `ℚ`, so it serves any other pointed-curve chart this development
+needs.  `_hdim` is no longer underscore-prefixed: it is consumed. -/
 theorem exists_affineComplement_zeroSection {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) :
+    (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (R : Type) (_ : CommRing R) (ι : Spec (CommRingCat.of R) ⟶ A),
       IsOpenImmersion ι ∧
         Set.range ι.base =
-          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
-  sorry
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+  haveI : IsProper f := ab.proper
+  haveI : SmoothOfRelativeDimension 1 f := hdim
+  exact _root_.AlgebraicGeometry.exists_isOpenImmersion_range_eq_compl_of_section
+    f ab.connected (ab.zero (𝟙 _)).1 (ab.zero (𝟙 _)).2
 
 /-- **The affine complement of the zero section is a Weierstrass
 coordinate ring** (sorry leaf, introduced 2026-07-27 as leaf 2 of
