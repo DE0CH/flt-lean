@@ -2976,22 +2976,48 @@ attack is Cartier duality, not the Raynaud normal form:
   detour around a statement that would then imply them directly. Refuting
   check: find a proof of "`P₃` acts trivially" that does not also prove
   this leaf.
-* **COCOMMUTATIVITY IS NOT ASSUMED HERE, AND EVERY STEP OF (4) NEEDS
-  IT.** `G` is a bare `HopfAlgebra 𝒪₃ᵥ G`, i.e. an affine group scheme
-  that is not assumed COMMUTATIVE; the convolution structure on
+* **COCOMMUTATIVITY — the gap this audit named is now CLOSED at the
+  point level; see `_hcomm` below** (threaded 2026-07-28, and this
+  paragraph is the corrected version of the one that reported it open).
+  `G` is still a bare `HopfAlgebra 𝒪₃ᵥ G`, i.e. an affine group scheme
+  that is not assumed COMMUTATIVE, and the convolution structure on
   `ℚ₃ᵥ ⊗ G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ` (`Deformations/RepresentationTheory/Etale.lean`)
-  is only a `Monoid`, so the socle `S` is not known to be a GROUP, let
-  alone an `𝔽₃`-vector space. Raynaud's classification is for commutative
-  group schemes, `ShortExact.lean` carries `[IsCocomm R A]` throughout,
-  and `IsFlatPointsGroupAt` takes an `AddCommGroup`. The eventual
-  consumer has commutativity for free — in
-  `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below, `fG`
-  is a BIJECTION from `Additive (points)` onto an `AddCommGroup` — so the
-  repair is to thread `[IsCocomm 𝒪₃ᵥ G]` (or the weaker
-  `CommMonoid (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)`) through this leaf and the
-  `∃ n` parent. That is a CUT-LEVEL repair spanning three declarations
-  and was deliberately not made here; it should be made by whoever
-  attacks (4), since without it step (a) cannot even be stated.
+  is still only a `Monoid`. Without something extra the socle `S` is not
+  known to be a GROUP, let alone an `𝔽₃`-vector space, so step (a) could
+  not even be STATED. The hypothesis `_hcomm` supplies exactly that: the
+  convolution monoid of geometric points is COMMUTATIVE, hence `S` — a
+  finite commutative monoid in which every element satisfies `φ ^ 3 = 1`
+  — is an `𝔽₃`-vector space, and `Additive S` is where step (a)'s
+  `(σ - 1) ^ 3 = 0` lives. A prover should open it as
+  `letI : CommMonoid _ := { (inferInstance : Monoid _) with mul_comm := _hcomm }`
+  rather than trying to install a global instance.
+
+  **It costs the caller nothing.** The `∃ n` parent below carries it as
+  `hcomm` and passes it straight through; and
+  `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below
+  DISCHARGES it outright, because its `fG` is an additive BIJECTION from
+  `Additive (points)` onto the `AddCommGroup` `(ρ'.toLocal 𝔭₃).Space`.
+  So the whole repair is three declarations and adds no obligation at
+  any inhabitation site.
+
+  **WHAT IS STILL MISSING, and deliberately not threaded.** The
+  point-level hypothesis is enough for steps (a) and (b) —
+  `IsFlatPointsGroupAt` needs only an `AddCommGroup` carrier, not a
+  cocommutative Hopf algebra. Step (c) is different: `ShortExact.lean`
+  carries `[IsCocomm R A]` throughout, so
+  `isMultiplicativeType_of_isShortExact` and the Cartier dual want
+  COALGEBRA-level cocommutativity of the Hopf orders. That is NOT free
+  here: `[IsCocomm 𝒪₃ᵥ G]` would have to be threaded through **15**
+  declarations in this file (every `_of_hopf_package` statement with `G`
+  universally quantified, from here up to
+  `exists_connected_line_generator_of_hopf_package`), and would then
+  arrive at `exists_connectedEtale_line_of_hopf_package`, where `G` is
+  produced by unpacking `HasFlatProlongationAt` /
+  `IsFlatPointsGroupAt` — neither of which RECORDS cocommutativity. So
+  it would land as a genuine new obligation requiring
+  `FlatPointsGroup.lean` and `FlatProlongation.lean` to be strengthened,
+  not as a free pass-through. Whoever needs step (c) should do that as
+  its own cut, upstream; do not widen this one.
 
 **AXIS SEARCHED.** This audit ranged over: permutation/group-theoretic
 cuts (exhausted by the parent, and (2) shows the natural remaining one is
@@ -3016,6 +3042,7 @@ theorem smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion
     (_hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
     (_hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
     (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (_hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ)
     {σ : Γ ℚ₃ᵥ} (_hσ : σ ∈ localInertiaGroup 𝔭₃)
     (_hcube : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
       φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ (3 : ℕ)) • φ = φ) :
@@ -3073,6 +3100,20 @@ Note what this does NOT do: it produces no bound on `n` and no
 classification. `n` is simply the order of the image, which is what the
 statement asserts to be prime to `3`; all the arithmetic sits in step 4
 and is deferred whole to the leaf.
+
+`hcomm` (added 2026-07-28) IS NOT USED BY ANY OF THE FOUR MOVES — it is
+passed straight through to the element-form leaf in step 4, which needs
+it to know that the socle `S` is a GROUP (indeed an `𝔽₃`-vector space)
+rather than merely a subset of a `Monoid`; `HopfAlgebra 𝒪₃ᵥ G` alone
+does not assume the group scheme commutative, and the convolution
+structure on `ℚ₃ᵥ ⊗ G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ`
+(`Deformations/RepresentationTheory/Etale.lean`) is only a `Monoid`.
+See the leaf's ROUTE AUDIT §(5) for why the point-level form is the
+right one to thread and why `[IsCocomm 𝒪₃ᵥ G]` is not. It is FREE for
+consumers: the sole caller,
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package` below,
+proves it from `hfG` in four lines. Deliberately NOT underscored — this
+declaration really does consume it, by handing it to the leaf.
 
 WHY THIS SHAPE — WHAT THE CUT OF 2026-07-27 REMOVED, AND WHAT IT
 DELIBERATELY DID NOT. Two pieces were peeled off the previous statement
@@ -3293,7 +3334,8 @@ theorem exists_coprime_three_exponent_localInertia_connected_threeTorsion
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
     (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀) :
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ) :
     ∃ n : ℕ, ¬ (3 ∣ n) ∧
       ∀ σ ∈ localInertiaGroup 𝔭₃, ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ,
         φ ^ (3 : ℕ) = 1 → φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ n) • φ = φ := by
@@ -3347,7 +3389,7 @@ theorem exists_coprime_three_exponent_localInertia_connected_threeTorsion
       exact hx3
     -- the leaf then says `σ` itself acts trivially, i.e. `x = 1`
     have hfix := smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion
-      G e₀ he₀ hε₀ hprim₀ hcomul₀ hσI hcube
+      G e₀ he₀ hε₀ hprim₀ hcomul₀ hcomm hσI hcube
     have hx1 : x = 1 := by
       refine Subtype.ext ?_
       rw [← hσx]
@@ -3407,6 +3449,18 @@ PROOF, in two moves, neither of which touches the classification.
    are the same three moves as
    `inertiaFixed_connected_vector_eq_zero_of_hopf_package` above.
 
+COMMUTATIVITY IS DISCHARGED HERE (2026-07-28). The leaf's `hcomm` —
+"the convolution monoid of geometric points is commutative", which is
+what lets it treat the connected `3`-torsion socle as an `𝔽₃`-vector
+space — is PROVEN in this proof rather than assumed, because `fG` is an
+additive bijection onto the `AddCommGroup` `(ρ'.toLocal 𝔭₃).Space`. So
+threading it through the two declarations above costs this declaration's
+own callers nothing, and the whole repair is three declarations wide.
+It is the point-level statement, NOT `[IsCocomm 𝒪₃ᵥ G]`, which would
+have had to travel 15 declarations and would then have needed
+`IsFlatPointsGroupAt` strengthened to record it; see the leaf's ROUTE
+AUDIT §(5).
+
 `hprim₀` and `hcomul₀` are passed straight through to the leaf, where
 they are the connectedness of `e₀`; they are not used here. Note the
 inherited paragraph "`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT
@@ -3448,9 +3502,22 @@ theorem wildInertia_fixes_connected_threeTorsion_of_hopf_package
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       (ρ'.toLocal 𝔭₃) π w = w := by
   classical
+  -- COMMUTATIVITY OF THE CONVOLUTION MONOID OF POINTS, FOR FREE FROM `fG`.
+  -- The target `(ρ'.toLocal 𝔭₃).Space` is an `AddCommGroup` and `fG` is an
+  -- additive BIJECTION onto it, so the point monoid is commutative. The
+  -- Raynaud leaf needs this to treat the connected `3`-torsion socle as an
+  -- `𝔽₃`-vector space; discharging it HERE is what keeps the threading free
+  -- for every caller of this declaration.
+  have hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ := by
+    intro φ ψ
+    have h : Additive.ofMul (φ * ψ) = Additive.ofMul (ψ * φ) := by
+      refine hfG.1 ?_
+      rw [_root_.ofMul_mul, _root_.ofMul_mul, map_add fG, map_add fG]
+      exact add_comm _ _
+    exact congrArg Additive.toMul h
   obtain ⟨n, hn3, hfix⟩ :=
     exists_coprime_three_exponent_localInertia_connected_threeTorsion G e₀ he₀ hε₀
-      hprim₀ hcomul₀
+      hprim₀ hcomul₀ hcomm
   -- `n` is prime to the residue characteristic `3`
   have hnv : ((n : ℕ) : NumberField.RingOfIntegers ℚ) ∉
       (Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).asIdeal := by
