@@ -25291,35 +25291,47 @@ theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Spe
   obtain ⟨ps⟩ := exists_projectiveHeightSource_of_abelianScheme ab
   exact ⟨ps.toParallelogramHeight.toDescentHeight⟩
 
-/-! ### The Kummer map, and the two leaves weak Mordell–Weil now rests on
+/-! ### Residue of the 2026-07-27 Kummer-map cut
 
-The reduction below is Silverman *AEC* VIII.1 written in this
-development's vocabulary: `A(ℚ) = RelPoint jstr (𝟙 SpecQ)`,
-`A(ℚ̄) = GeomFibrePt jstr (𝟙 SpecQ)`, the inclusion between them is
-`RelPoint.pre (specAlgClos ℚ) rfl`, and the Galois action is
-`ab.galSMul (𝟙 SpecQ)`.  `Fermat.finite_quotient_nsmul_of_kummerCochains`
-(`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) is the pure-algebra half;
-what is supplied here is its five hypotheses.  Three of them are PROVEN
-below or upstream, and the two that remain are the leaves. -/
+**THIS SUBSECTION IS A REMNANT, and three of its declarations were
+DELETED on 2026-07-28.**  It was written as "the Kummer map, and the two
+leaves weak Mordell–Weil now rests on", supplying the five hypotheses of
+`Fermat.finite_quotient_nsmul_of_kummerCochains`
+(`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`).  Release 12
+(`d1a3ee9b`) cut weak Mordell–Weil a SECOND way and rewired the
+assembly onto it: `finite_quotient_psmul_of_abelianScheme` below now
+runs on `ratToGeom`, `exists_ratPoint_of_galoisInvariant` and
+`exists_finiteIndex_divisible_of_abelianScheme`, and nothing reaches
+back here.  Deleted, each verified to have had NO consumer anywhere
+under `Fermat/` and each an exact duplicate of a live sibling:
 
--- (`epi_specAlgClos` — "`Spec F̄ ⟶ Spec F` is an epimorphism of schemes" — used to be
--- restated HERE at `F = ℚ`.  Two branches proved it on 2026-07-27, one at a general
--- field and one at `ℚ`; the general form is declared far above, dominates every
--- consumer, and is what the `ℚ`-level uses below now read.  This is the mono half of
--- Galois descent, and it is the only half that is free: the surjective half is
--- `exists_relPoint_of_galSMul_fixed` below.)
+* `injective_pre_specAlgClos` — duplicate of `injective_ratToGeom`;
+* `galSMul_pre_specAlgClos` — duplicate of `galSMul_ratToGeom`;
+* `finite_kummerCochains_of_abelianScheme` (a `sorry` leaf) —
+  superseded by `exists_finiteIndex_divisible_of_abelianScheme`, which
+  is PROVEN and whose own two leaves are the live frontier.
 
-/-- **`A(ℚ) ↪ A(ℚ̄)`** (PROVEN): a `ℚ`-rational point of `A` is determined
-by the `ℚ̄`-point it induces.  Immediate from `epi_specAlgClos`, since
-`RelPoint.pre h hg` is precomposition with `h` on the underlying
-morphism. -/
-theorem injective_pre_specAlgClos {J : Scheme.{0}} (jstr : J ⟶ SpecQ) :
-    Function.Injective
-      (RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl) := by
-  intro P P' h
-  have h1 : specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P'.1 := congrArg Subtype.val h
-  haveI := epi_specAlgClos ℚ
-  exact Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp h1)
+Recover any of them with `git show <this commit>^:Fermat/FLT/ModularCurve/X0.lean`.
+
+**What is LEFT here, and its status.**  `galSMulHom` is ALIVE — the
+prime-case assembly uses it for `map_nsmul` and `map_sub`.  The other
+two are DEAD BY THE SAME TEST and were deliberately NOT deleted:
+
+* `galSMul_eq_galSMulHom` — no consumer, but it is one-line glue for the
+  live `galSMulHom` and plausibly wanted by whoever finishes the leaf
+  below, so it is left in place rather than deleted out from under a
+  concurrent branch;
+* `exists_relPoint_of_galSMul_fixed` — a `sorry` leaf with NO consumer,
+  superseded by `exists_ratPoint_of_galoisInvariant` (PROVEN below over
+  the hypothesis-free `exists_comp_specAlgClos_eq_of_galoisInvariant`).
+  **Proving it moves nothing.**  It has a separate owner, which is why
+  it is reported rather than removed here.
+
+Same test, same verdict, in another file:
+`Fermat.finite_quotient_nsmul_of_kummerCochains` in
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean` now has no consumer
+either — the pure-algebra half whose hypotheses this subsection existed
+to supply. -/
 
 /-- **`galSMul σ` as an additive endomorphism of `A(ℚ̄)`** (PROVEN).
 
@@ -25343,23 +25355,6 @@ theorem galSMul_eq_galSMulHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (y : GeomFibrePt jstr (𝟙 SpecQ)) :
     ab.galSMul (𝟙 SpecQ) σ y = galSMulHom ab σ y :=
   ab.galSMul_def (𝟙 SpecQ) σ y
-
-/-- **`Γ_ℚ` fixes the image of `A(ℚ)` in `A(ℚ̄)`** (PROVEN): the Galois
-action is precomposition with `Spec σ`, and `Spec σ ≫ Spec(ℚ ↪ ℚ̄)` is
-`Spec(ℚ ↪ ℚ̄)` because `σ` fixes `ℚ` pointwise
-(`specGal_comp_specAlgClos`).
-
-This is what makes a Kummer cochain take values in the `p`-torsion:
-`p • (σ • Q - Q) = σ • (p • Q) - p • Q = 0` once `p • Q` is rational. -/
-theorem galSMul_pre_specAlgClos {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) (σ : Field.absoluteGaloisGroup ℚ)
-    (P : RelPoint jstr (𝟙 SpecQ)) :
-    ab.galSMul (𝟙 SpecQ) σ (RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P)
-      = RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P := by
-  rw [ab.galSMul_def]
-  refine Subtype.ext ?_
-  show specGal σ ≫ specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P.1
-  rw [← Category.assoc, specGal_comp_specAlgClos]
 
 /-- **Galois descent for points of `A`: a `Γ_ℚ`-invariant `ℚ̄`-point comes
 from a `ℚ`-point** (sorry leaf, introduced 2026-07-27) — the surjective
@@ -25405,73 +25400,6 @@ theorem exists_relPoint_of_galSMul_fixed {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
       RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P = y :=
   sorry
 
-/-- **Only finitely many `A[p]`-valued Kummer cochains occur** (sorry
-leaf, introduced 2026-07-27) — THE ARITHMETIC INPUT of weak
-Mordell–Weil, and after the reduction below the only one left.
-
-A *Kummer cochain* is the function `σ ↦ σ • Q - Q` attached to a choice
-of `Q ∈ A(ℚ̄)` with `p • Q` rational.  Its values are `p`-torsion — that
-is `galSMul_pre_specAlgClos` above, and it is why the statement is
-phrased with values in `(nsmulAddMonoidHom p).ker` rather than in
-`A(ℚ̄)`: a prover should be handling functions into the finite group
-`A[p]`, not into the whole of `A(ℚ̄)`.
-
-TRUE and classical: Silverman, *AEC* VIII.1 (Theorem VIII.1.1 with
-Lemmas VIII.1.2, VIII.1.5, VIII.1.6); Hindry–Silverman C.  Over an
-abelian variety the argument is verbatim the same.
-
-**WHAT THIS LEAF COSTS, honestly.**  Modulo the reduction below — which
-is PROVEN — this statement is *equivalent* to weak Mordell–Weil at `p`,
-since a Kummer cochain determines its class in `A(ℚ)/pA(ℚ)` and each
-class has at most `#A[p]` cochains.  So this is not a cheap corner of the
-problem; it is the whole arithmetic, relocated onto an object the
-classical proof can attack.  The gain is exactly that relocation:
-the object is now a set of functions `Γ_ℚ → A[p]`, which is what class
-numbers and units bear on, rather than a quotient of a scheme's point
-group.
-
-**THE NEXT CUT, which is where a successor should start.**  Silverman's
-route splits this leaf into four strictly smaller pieces, none of which
-is equivalent to it:
-
-1. `A[p]` is finite (of order `p^{2g}`); in particular `L = ℚ(A[p])` is a
-   number field.  Geometry — `[p]` is a finite flat isogeny.
-2. Over `L` the action on `A[p]` is trivial, so a Kummer cochain becomes
-   a *homomorphism* `Γ_L → A[p]` (Silverman VIII.1.2), and the pairing it
-   defines has left kernel exactly `pA(L)`.
-3. The fixed field of the intersection of all those kernels is an abelian
-   extension `K/L` of exponent `p`, unramified outside the finite set `S`
-   of places above `p` and of bad reduction (Silverman VIII.1.5 — this is
-   where the *good reduction* of the abelian scheme is used, via the
-   formal group / Néron model).
-4. There are only finitely many such `K` (Silverman VIII.1.6).  This is
-   the only step that is arithmetic, and it is exactly finiteness of the
-   class group of `L` plus Dirichlet's unit theorem for the `S`-units —
-   **both of which are in the pin** (`ClassGroup` finiteness in
-   `Mathlib/NumberTheory/ClassNumber/Finite.lean`; the unit theorem in
-   `Mathlib/NumberTheory/NumberField/Units/`).
-5. Finally, descending from `L` back to `ℚ` costs a finite kernel, by the
-   same cochain argument run over the *finite* group `Gal(L/ℚ)`
-   (Silverman VIII.1.1.1).
-
-Steps 2 and 5 are instances of `finite_quotient_nsmul_of_kummerCochains`
-run over a different base, so the machinery for them already exists.
-
-**MISSING MACHINERY:** `A(L)` for a number field `L` (available as
-`RelPoint jstr g` for `g : Spec L ⟶ SpecQ`, so this is notation rather
-than theory), the field of definition of `A[p]`, and the ramification
-statement of step 3.  Steps 1 and 4 need no new theory. -/
-theorem finite_kummerCochains_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
-    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-    {c : Field.absoluteGaloisGroup ℚ →
-          (nsmulAddMonoidHom p :
-            GeomFibrePt jstr (𝟙 SpecQ) →+ GeomFibrePt jstr (𝟙 SpecQ)).ker |
-        ∃ (P : RelPoint jstr (𝟙 SpecQ)) (Q : GeomFibrePt jstr (𝟙 SpecQ)),
-          p • Q = RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P ∧
-          ∀ σ, ((c σ : GeomFibrePt jstr (𝟙 SpecQ)))
-            = ab.galSMul (𝟙 SpecQ) σ Q - Q}.Finite :=
-  sorry
 
 /-! ### Weak Mordell–Weil at a prime: the Kummer cut
 

@@ -1376,11 +1376,15 @@ returning anything but `1`, or a torsion subgroup of even order.
 
 **Relation to `Fermat/FLT/ModularCurve/X0.lean`.**  That file carries the same two
 obligations for a scheme-theoretic abelian variety, assembled into
-`fg_relPoint_of_abelianScheme`; as of `b6ab74e9` its two OPEN leaves are
-`exists_integralCoordinates_of_abelianScheme` (the projective embedding and the theorem of
-the cube) and `finite_kummerCochains_of_abelianScheme` (the class group and unit group),
-the weak-Mordell–Weil node `finite_quotient_psmul_of_abelianScheme` having become a PROVEN
-Galois-descent assembly over the latter.  The two open leaves below are the
+`fg_relPoint_of_abelianScheme`.  **The leaf names below were refreshed on 2026-07-28**;
+the `b6ab74e9` reading recorded here — `exists_integralCoordinates_of_abelianScheme` and
+`finite_kummerCochains_of_abelianScheme` — is stale in both halves.  The height leaf is
+now `exists_cubeModel_of_abelianScheme`, and `finite_kummerCochains_of_abelianScheme` was
+DELETED: release 12 rewired `finite_quotient_psmul_of_abelianScheme` onto
+`exists_finiteIndex_divisible_of_abelianScheme`, which is itself PROVEN over Hermite's
+theorem, leaving `exists_geomPt_nsmul_eq_of_abelianScheme` and
+`exists_discrBound_divisionField_of_abelianScheme`.  Class groups and units are NOT on
+that path any more.  The two open leaves below are the
 `PlaceData.Pic` instances of exactly those.  **They should not be proven twice.**  The
 right long-term repair is a bridge
 `D.Pic ≃+ RelPoint jstr (𝟙 SpecQ)` for the Jacobian of the smooth model, after which
@@ -1470,8 +1474,10 @@ statement is FALSE for any positive-rank Jacobian; at `p = 1` it is vacuously tr
 
 **Do not prove this twice** — `Fermat/FLT/ModularCurve/X0.lean` proves the corresponding
 `finite_quotient_psmul_of_abelianScheme` by Galois descent over
-`finite_kummerCochains_of_abelianScheme`, which is the same class-group-and-units
-obligation as this leaf; see the section docstring. -/
+`exists_finiteIndex_divisible_of_abelianScheme` (the name
+`finite_kummerCochains_of_abelianScheme`, recorded here until 2026-07-28, no longer
+exists), which is the same weak-Mordell–Weil obligation as this leaf; see the section
+docstring. -/
 theorem finite_quotient_psmul_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (p : ℕ) (hp : p.Prime) :
     Finite (D.Pic ⧸ (nsmulAddMonoidHom p : D.Pic →+ D.Pic).range) := sorry
