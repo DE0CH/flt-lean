@@ -3215,23 +3215,58 @@ theorem exists_mem_fibreIdealTot (sys : NoetherianApproxSystem g v) (i : sys.Λ)
     ∃ j, ∃ h : sys.le i j, sys.totT h z ∈ sys.fibreIdealTot j :=
   sorry
 
-/-- **THE LOCALIZATION PROPERTY OF THE FIBRE SYSTEM** (SORRY LEAF; the third piece of the
-fibre-system verification).
+omit [IsLocalRing R] [IsLocalRing B] [IsLocalRing A] [IsLocalHom g] [IsLocalHom v] in
+/-- **THE LOCALIZATION PROPERTY OF THE FIBRE SYSTEM** (**PROVEN 2026-07-28**; the third
+piece of the fibre-system verification).
 
 *`S'_μ/𝔭_μ S'_μ` is a localization of `(S_μ/𝔭_μ S_μ) ⊗_{S_λ/𝔭_λ S_λ} (S'_λ/𝔭_λ S'_λ)`.*
 
-**THE PROOF.**  `isLocalizationTotT` gives `S'_μ = W^{-1}(S_μ ⊗_{S_λ} S'_λ)`.  Quotient by
-`𝔭_μ`: localization commutes with quotients, so `S'_μ/𝔭_μ S'_μ` is the localization at the
-image of `W` of `(S_μ ⊗_{S_λ} S'_λ)/𝔭_μ(…)`.  That quotient is
-`(S_μ/𝔭_μ) ⊗_{S_λ} S'_λ`, and since `𝔭_λ` dies in `S_μ/𝔭_μ` (because `𝔭_λ S_μ ⊆ 𝔭_μ S_μ`,
-which is `fibreIdealMid_le_comap_midT`), the standard identification
-`M ⊗_R N ≅ M ⊗_{R/I} (N/IN)` for `IM = 0` rewrites it as
-`(S_μ/𝔭_μ) ⊗_{S_λ/𝔭_λ} (S'_λ/𝔭_λ S'_λ)`.
+**THE PROOF AS WRITTEN, and how it differs from the sketch this docstring used to carry.**
+The old sketch chained three steps — "localization commutes with quotients", then
+`(S_μ ⊗_{S_λ} S'_λ)/𝔭_μ ≅ (S_μ/𝔭_μ) ⊗_{S_λ} S'_λ`, then the base-change identification
+`M ⊗_R N ≅ M ⊗_{R/I} (N/IN)` for `IM = 0` — and so needed two ISOMORPHISMS of tensor
+products that this pin states only in special shapes.  None of that is necessary: mathlib's
+`IsLocalization.of_surjective` takes the whole thing in one step, and it asks only for a
+SURJECTION, never an isomorphism.
+
+Write `T = S_μ ⊗_{S_λ} S'_λ` and `Q = (S_μ/𝔭_μ) ⊗_{S_λ/𝔭_λ} (S'_λ/𝔭_λ S'_λ)`.
+`isLocalizationTotT` gives `W ≤ T` with `S'_μ = W^{-1}T`.  Build
+`f : T →+* Q` by `Algebra.TensorProduct.lift` of the two composites
+`S_μ ↠ S_μ/𝔭_μ ↪ Q` and `S'_λ ↠ S'_λ/𝔭_λ S'_λ ↪ Q` (the second is an `S_λ`-algebra map
+because `includeLeftRingHom ∘ algebraMap = includeRight ∘ algebraMap` into `Q`, which is
+`Algebra.TensorProduct.includeLeftRingHom_comp_algebraMap`).  Then
+`IsLocalization.of_surjective W S'_μ f hf (Ideal.Quotient.mk _) _ H H'` gives
+`IsLocalization (W.map f) (S'_μ/𝔭_μ S'_μ)`, so `W.map f` is the required submonoid.  Its
+two side conditions are:
+
+* `H`, that the square commutes — checked on pure tensors, where both sides are
+  `[x] · [y]` in `S'_μ/𝔭_μ`;
+* `H'`, that `ker(S'_μ ↠ S'_μ/𝔭_μ S'_μ) = 𝔭_μ S'_μ` lies in `(ker f) · S'_μ`.
+
+**THE ONE ARITHMETIC INPUT, and a correction to the old sketch.**  `H'` is exactly
+`𝔭_μ S'_μ = (𝔭_μ S_μ)·S'_μ`, i.e. `fibreIdealTot j = (fibreIdealMid j).map (midToTot j)`,
+which is `Ideal.map_map` applied to the two definitions — the maximal ideal of `R_μ` may be
+pushed to `S'_μ` through `S_μ` or directly.  So only the LEFT tensor factor contributes
+generators of `ker f`, and `fibreIdealMid_le_comap_midT` (`𝔭_λ S_μ ⊆ 𝔭_μ S_μ`), which the
+old sketch named as load-bearing, is NOT used here at all: it is what makes the RIGHT
+factor's quotient legitimate, and that is already discharged by `Q` being formed over
+`S_λ/𝔭_λ`.  The old sketch was not wrong, only more expensive than needed.
 
 **WHY IT IS NOT AN ISOMORPHISM.**  For the same reason `isLocalizationTotT` is not — see
 the CORRECTION block in the section note "THE CUT OF THE APPROXIMATION LEAF"; a quotient
 of a localization is a localization, not an isomorphism, and asking for more here would
-make the leaf false. -/
+make the leaf false.  Note the proof CONSUMES that weakness rather than fighting it:
+`of_surjective` transports `IsLocalization` along a surjection in exactly this generality.
+
+**WHY THE LOCALITY HYPOTHESES ARE OMITTED.**  `[IsLocalRing R] [IsLocalRing B]
+[IsLocalRing A] [IsLocalHom g] [IsLocalHom v]` are section variables that neither the
+statement nor the proof touches — the whole leaf lives at `FibreData` level, over the
+stagewise ideals `𝔭_λ` alone — so they are `omit`ted to keep the module warning-clean.
+That is a weakening of the hypotheses, not of the conclusion; the consumer
+`isNoetherianFlatDescentSystem_fibre` applies it unchanged.  (The `omit` line must precede
+the doc comment, not sit between it and the `theorem`: a doc comment binds to a
+DECLARATION, so `/-- … -/ omit … in theorem` is a parse error reported at the END of the
+docstring as `unexpected token 'omit'; expected 'lemma'`.) -/
 theorem exists_isLocalization_fibre (sys : NoetherianApproxSystem g v) {i j : sys.Λ}
     (h : sys.le i j) :
     letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i) :=
@@ -3258,8 +3293,157 @@ theorem exists_isLocalization_fibre (sys : NoetherianApproxSystem g v) {i j : sy
           (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j))
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
-      (sys.Tot i ⧸ sys.fibreIdealTot i)), IsLocalization W (sys.Tot j ⧸ sys.fibreIdealTot j) :=
-  sorry
+      (sys.Tot i ⧸ sys.fibreIdealTot i)), IsLocalization W (sys.Tot j ⧸ sys.fibreIdealTot j) := by
+  -- The fibre-level structures, exactly as the statement inlines them.
+  letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i) :=
+    (sys.fibreCD i).toAlgebra
+  letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Mid j ⧸ sys.fibreIdealMid j) :=
+    (sys.fibreCT h).toAlgebra
+  letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+    ((sys.fibreCD j).comp (sys.fibreCT h)).toAlgebra
+  letI : Algebra (sys.Mid j ⧸ sys.fibreIdealMid j) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+    (sys.fibreCD j).toAlgebra
+  letI : Algebra (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+    (sys.fibreDT h).toAlgebra
+  haveI : IsScalarTower (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Mid j ⧸ sys.fibreIdealMid j)
+      (sys.Tot j ⧸ sys.fibreIdealTot j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i)
+      (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.fibre_comm_T h) x
+  letI : Algebra ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
+      (sys.Tot i ⧸ sys.fibreIdealTot i)) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+    (Algebra.TensorProduct.lift
+      (IsScalarTower.toAlgHom (sys.Mid i ⧸ sys.fibreIdealMid i)
+        (sys.Mid j ⧸ sys.fibreIdealMid j) (sys.Tot j ⧸ sys.fibreIdealTot j))
+      (IsScalarTower.toAlgHom (sys.Mid i ⧸ sys.fibreIdealMid i)
+        (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  -- The upstairs structures, exactly as `isLocalizationTotT` states them.
+  letI : Algebra (sys.Mid i) (sys.Tot i) := (sys.midToTot i).toAlgebra
+  letI : Algebra (sys.Mid i) (sys.Mid j) := (sys.midT h).toAlgebra
+  letI : Algebra (sys.Mid i) (sys.Tot j) := ((sys.midToTot j).comp (sys.midT h)).toAlgebra
+  letI : Algebra (sys.Mid j) (sys.Tot j) := (sys.midToTot j).toAlgebra
+  letI : Algebra (sys.Tot i) (sys.Tot j) := (sys.totT h).toAlgebra
+  haveI : IsScalarTower (sys.Mid i) (sys.Mid j) (sys.Tot j) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (sys.Mid i) (sys.Tot i) (sys.Tot j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.comm_midT h) x
+  letI : Algebra (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j) :=
+    (Algebra.TensorProduct.lift
+      (IsScalarTower.toAlgHom (sys.Mid i) (sys.Mid j) (sys.Tot j))
+      (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) (sys.Tot j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := sys.isLocalizationTotT h
+  -- The `S_λ`-algebra structure on the fibre tensor product `Q`, through the left factor.
+  letI : Algebra (sys.Mid i) ((sys.Mid j ⧸ sys.fibreIdealMid j)
+      ⊗[sys.Mid i ⧸ sys.fibreIdealMid i] (sys.Tot i ⧸ sys.fibreIdealTot i)) :=
+    (Algebra.TensorProduct.includeLeftRingHom.comp
+      ((Ideal.Quotient.mk (sys.fibreIdealMid j)).comp (sys.midT h))).toAlgebra
+  have hleft : ∀ x : sys.Mid i,
+      algebraMap (sys.Mid i) ((sys.Mid j ⧸ sys.fibreIdealMid j)
+        ⊗[sys.Mid i ⧸ sys.fibreIdealMid i] (sys.Tot i ⧸ sys.fibreIdealTot i)) x
+      = Algebra.TensorProduct.includeLeftRingHom
+          (Ideal.Quotient.mk (sys.fibreIdealMid j) (sys.midT h x)) := fun _ => rfl
+  -- `S_μ → Q` and `S'_λ → Q` as `S_λ`-algebra maps.
+  let φ₁ : sys.Mid j →ₐ[sys.Mid i] ((sys.Mid j ⧸ sys.fibreIdealMid j)
+      ⊗[sys.Mid i ⧸ sys.fibreIdealMid i] (sys.Tot i ⧸ sys.fibreIdealTot i)) :=
+    { Algebra.TensorProduct.includeLeftRingHom.comp
+        (Ideal.Quotient.mk (sys.fibreIdealMid j)) with
+      commutes' := fun _ => rfl }
+  let φ₂ : sys.Tot i →ₐ[sys.Mid i] ((sys.Mid j ⧸ sys.fibreIdealMid j)
+      ⊗[sys.Mid i ⧸ sys.fibreIdealMid i] (sys.Tot i ⧸ sys.fibreIdealTot i)) :=
+    { (Algebra.TensorProduct.includeRight :
+          (sys.Tot i ⧸ sys.fibreIdealTot i) →ₐ[sys.Mid i ⧸ sys.fibreIdealMid i] _).toRingHom.comp
+        (Ideal.Quotient.mk (sys.fibreIdealTot i)) with
+      commutes' := by
+        intro x
+        show Algebra.TensorProduct.includeRight
+            (Ideal.Quotient.mk (sys.fibreIdealTot i) (sys.midToTot i x)) = _
+        have e1 : Ideal.Quotient.mk (sys.fibreIdealTot i) (sys.midToTot i x)
+            = algebraMap (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i)
+                (Ideal.Quotient.mk (sys.fibreIdealMid i) x) := by
+          rw [RingHom.algebraMap_toAlgebra]
+          exact (sys.fibreCD_mk i x).symm
+        have e2 : Ideal.Quotient.mk (sys.fibreIdealMid j) (sys.midT h x)
+            = algebraMap (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Mid j ⧸ sys.fibreIdealMid j)
+                (Ideal.Quotient.mk (sys.fibreIdealMid i) x) := by
+          rw [RingHom.algebraMap_toAlgebra]
+          exact (sys.fibreCT_mk h x).symm
+        rw [hleft x, e1, e2]
+        exact (DFunLike.congr_fun
+          (Algebra.TensorProduct.includeLeftRingHom_comp_algebraMap
+            (R := sys.Mid i ⧸ sys.fibreIdealMid i) (A := sys.Mid j ⧸ sys.fibreIdealMid j)
+            (B := sys.Tot i ⧸ sys.fibreIdealTot i))
+          (Ideal.Quotient.mk (sys.fibreIdealMid i) x)).symm }
+  -- `f : T ↠ Q`, the surjection `of_surjective` runs on.
+  let f : (sys.Mid j ⊗[sys.Mid i] sys.Tot i) →+*
+      ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
+        (sys.Tot i ⧸ sys.fibreIdealTot i)) :=
+    (Algebra.TensorProduct.lift φ₁ φ₂ fun _ _ => Commute.all _ _).toRingHom
+  have hf_tmul : ∀ (x : sys.Mid j) (y : sys.Tot i),
+      f (x ⊗ₜ[sys.Mid i] y)
+        = (Ideal.Quotient.mk (sys.fibreIdealMid j) x) ⊗ₜ
+            (Ideal.Quotient.mk (sys.fibreIdealTot i) y) := by
+    intro x y
+    show φ₁ x * φ₂ y = _
+    show (Ideal.Quotient.mk (sys.fibreIdealMid j) x ⊗ₜ (1 : sys.Tot i ⧸ sys.fibreIdealTot i)) *
+        ((1 : sys.Mid j ⧸ sys.fibreIdealMid j) ⊗ₜ Ideal.Quotient.mk (sys.fibreIdealTot i) y) = _
+    rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  have hf : Function.Surjective f := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | tmul c d =>
+        obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective c
+        obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective d
+        exact ⟨x ⊗ₜ[sys.Mid i] y, hf_tmul x y⟩
+    | add z w hz hw =>
+        obtain ⟨a, rfl⟩ := hz
+        obtain ⟨b, rfl⟩ := hw
+        exact ⟨a + b, map_add _ _ _⟩
+  have halg_tmul : ∀ (x : sys.Mid j) (y : sys.Tot i),
+      algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j) (x ⊗ₜ[sys.Mid i] y)
+        = sys.midToTot j x * sys.totT h y := fun _ _ => rfl
+  -- The square commutes.
+  have hH : (Ideal.Quotient.mk (sys.fibreIdealTot j)).comp
+      (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)) =
+      (algebraMap ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
+        (sys.Tot i ⧸ sys.fibreIdealTot i)) (sys.Tot j ⧸ sys.fibreIdealTot j)).comp f := by
+    refine RingHom.ext fun z => ?_
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul x y =>
+        simp only [RingHom.comp_apply, halg_tmul, hf_tmul, map_mul]
+        show Ideal.Quotient.mk _ (sys.midToTot j x) * Ideal.Quotient.mk _ (sys.totT h y) = _
+        rw [RingHom.algebraMap_toAlgebra]
+        show _ = (Algebra.TensorProduct.lift _ _ _)
+          (Ideal.Quotient.mk (sys.fibreIdealMid j) x ⊗ₜ Ideal.Quotient.mk (sys.fibreIdealTot i) y)
+        rw [Algebra.TensorProduct.lift_tmul]
+        show _ = algebraMap (sys.Mid j ⧸ sys.fibreIdealMid j) (sys.Tot j ⧸ sys.fibreIdealTot j)
+            (Ideal.Quotient.mk _ x) *
+          algebraMap (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j)
+            (Ideal.Quotient.mk _ y)
+        rw [RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra, sys.fibreCD_mk,
+          sys.fibreDT_mk]
+    | add z w hz hw => simp only [map_add, hz, hw]
+  -- `𝔭_μ S'_μ = (𝔭_μ S_μ)·S'_μ` lands inside `(ker f)·S'_μ`.
+  have hker : sys.fibreIdealTot j
+      ≤ (RingHom.ker f).map (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)) := by
+    letI := sys.isLocalRingBase j
+    have hmapeq : sys.fibreIdealTot j = (sys.fibreIdealMid j).map (sys.midToTot j) := by
+      rw [sys.fibreIdealMid_eq j, Ideal.map_map, sys.fibreIdealTot_eq j]
+    rw [hmapeq, Ideal.map_le_iff_le_comap]
+    intro x hx
+    have hmem : (x ⊗ₜ[sys.Mid i] (1 : sys.Tot i)) ∈ RingHom.ker f := by
+      rw [RingHom.mem_ker, hf_tmul]
+      rw [Ideal.Quotient.eq_zero_iff_mem.mpr hx, TensorProduct.zero_tmul]
+    have := Ideal.mem_map_of_mem
+      (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)) hmem
+    rw [halg_tmul, map_one, mul_one] at this
+    exact this
+  exact ⟨W.map f, IsLocalization.of_surjective W (sys.Tot j) f hf
+    (Ideal.Quotient.mk (sys.fibreIdealTot j)) Ideal.Quotient.mk_surjective hH
+    (by rw [Ideal.mk_ker]; exact hker)⟩
 
 /-- **THE FIBRE SYSTEM IS AGAIN A NOETHERIAN DESCENT SYSTEM** (PROVEN over the three leaves
 above).  This is 00R7's paragraph beginning "Note that this also implies", and it is the
@@ -3272,7 +3456,12 @@ Everything formal is discharged here: Noetherianity and locality of the quotient
 functoriality of `Ideal.quotientMap`, the commuting squares, and the surjectivity half of
 both colimit conditions.  What is left over is exactly the three leaves above — the two
 "the maximal ideal is the union of the stage ideals" statements, where the locality of
-`baseToR` is spent, and the quotient of the localization property. -/
+`baseToR` is spent, and the quotient of the localization property.
+
+**STATUS, 2026-07-28**: the third of those, `exists_isLocalization_fibre`, is now PROVEN,
+so only the two `exists_mem_fibreIdealMid` / `exists_mem_fibreIdealTot` statements remain
+open here.  Do not read "the three leaves above" as a live frontier count; regenerate it
+from the compiler's `declaration uses 'sorry'` set. -/
 theorem isNoetherianFlatDescentSystem_fibre (sys : NoetherianApproxSystem g v) :
     IsNoetherianFlatDescentSystem sys.le
       (fun i => sys.Mid i ⧸ sys.fibreIdealMid i) (fun i => sys.Tot i ⧸ sys.fibreIdealTot i)
