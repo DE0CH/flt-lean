@@ -434,8 +434,7 @@ section, the naive quotient `T ↦ Pic(X_T)/Pic(T)` is representable by an
 * BLR 8.1/4: because `strX` has the section `o` and satisfies
   `f_*𝒪_X = 𝒪_S` universally (geometric connectedness), the fppf sheaf
   is ALREADY the naive quotient, with no sheafification.  This is what
-  makes the conclusion statable with no site theory, and it is the only
-  place the section is used.
+  makes the conclusion statable with no sheafification.
 
 **THE `f_*𝒪_X = 𝒪_S` HALF IS ALREADY PROVEN IN THIS PROJECT — do not
 rebuild it** (checked 2026-07-28 against the compiler, not against a
@@ -484,7 +483,72 @@ the declaration is not in the build's `declaration uses 'sorry'` set.
 
 This is the half of `exists_relPicZero` that constructs a scheme at all.
 The other half — cutting `Pic⁰` out of `Pic` and proving it proper and
-smooth — is `exists_relPicZero_of_isRelPicOf`. -/
+smooth — is `exists_relPicZero_of_isRelPicOf`.
+
+**FAITHFULNESS RE-AUDITED INDEPENDENTLY 2026-07-28 (second reader): TRUE
+as written.**  The two clauses that could have made it false were checked
+separately, and one correction to the note above came out of it.
+
+*`surj` is faithful, and it is faithful for EVERY `T`* — not merely for
+affine or noetherian test objects.  That is BLR 8.1/4, whose hypothesis
+`𝒪_{S'} ⟶ f_{S'*}𝒪_{X_{S'}}` an isomorphism for every `S' ⟶ S` is here
+IMPLIED rather than assumed: `_hsmooth` gives flat with geometrically
+reduced fibres, `_hconn` gives geometrically connected ones, `_hproper`
+gives properness, and those together force it.  The exact sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P_{X/S}(T) ⟶ Br T ⟶ Br X_T` then has its last map
+injective *because of the section*, which is what collapses the fppf
+sheaf onto the naive quotient.  Drop `_hconn` and `surj` becomes FALSE
+rather than merely unprovable: for `X = S ⊔ S` one has
+`f_*𝒪_X = 𝒪_S × 𝒪_S`, the sequence breaks, and classes not of the form
+`𝒪(D)` for a relative `D` are unclassified.
+
+*`P` is required to be a SCHEME, not an algebraic space, and that is
+true here* — but the reason is NOT only BLR 8.1/4, which is why the
+"only place the section is used" clause that stood here has been
+removed.  `f_*ω_{X/S}` is locally free of finite rank, so the genus is
+locally constant and `S` is the disjoint union of opens `S_g`; on each,
+`𝒪(n · o)` with `n = 2g + 1` is relatively very ample, so `X_{S_g} ⟶ S_g`
+is PROJECTIVE and FGA 232 applies in the form BLR 8.2/1 states it; the
+local Picard schemes then glue because `Pic` is a Zariski sheaf on `S`.
+So the section is load-bearing TWICE — once for the naive quotient, once
+for relative projectivity — and a future prover who drops it loses
+representability by a scheme, not just the quotient presentation.
+
+**ROUTE AUDIT 2026-07-28 — the pin has MOVED, and the older notes here
+name the wrong gate.**
+
+* "a pin with no site theory" is **FALSE** at `a3364fa`.  Mathlib has
+  `AlgebraicGeometry.fppfTopology` and `fpqcTopology`
+  (`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`), both with a
+  `Subcanonical` instance, and a Zariski-gluing representability
+  criterion in `Mathlib/AlgebraicGeometry/Sites/Representability.lean`:
+  `AlgebraicGeometry.Scheme.LocalRepresentability.isRepresentable` takes a
+  `Type u`-valued sheaf `F` for `Scheme.zariskiTopology`, a family
+  `yoneda.obj (X i) ⟶ F` of relatively representable open immersions that
+  is jointly (locally) surjective, and returns `F.IsRepresentable`
+  (Stacks 01JJ).  That is exactly the gluing step the disjoint-union
+  argument above needs, already done.  So the fppf route is not blocked
+  by the absence of a site.
+* **The true gate is the missing MONOIDAL STRUCTURE on
+  `SheafOfModules`.**  `grep -rn "MonoidalCategory"
+  Mathlib/Algebra/Category/ModuleCat/Sheaf/` returns EMPTY at this pin.
+  `modTensor` supplies the object part only, so `RelPicEquiv` has no
+  unitor, no associator and no inverses, and is therefore not known to be
+  reflexive, symmetric or transitive.  Consequently the relative Picard
+  presheaf cannot be assembled as a `CategoryTheory.Functor` at all, and
+  none of the representability machinery above can be pointed at it.
+  **The check that refutes this note**: prove `RelPicEquiv` is an
+  equivalence relation — which needs `L ⊗ pr^*𝒪 ≅ L`, an inverse for an
+  invertible sheaf, and associativity — and the fppf/Zariski route opens.
+* `Mathlib/AlgebraicGeometry/Group/Abelian.lean` is **not** abelian
+  schemes: it is commutativity of a proper geometrically integral group
+  scheme over a FIELD.  There is still no abelian-scheme theory in the
+  pin, which is why `Fermat.AbelianSchemeStruct` exists.
+* Divisor theory is still entirely absent:
+  `grep -rl "EffectiveCartier\|CartierDivisor\|WeilDivisor" Mathlib/`
+  is EMPTY.  So the `Sym^d`/`Div^d` axis named on `exists_relPicZero`
+  would have to STATE relative effective Cartier divisors before it could
+  cut — see the axis inventory on `exists_relPicZero_of_isRelPicOf`. -/
 theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S)) :
@@ -514,7 +578,74 @@ The hypothesis is deliberately as WEAK as it can be while still pinning
 `Hom_S(-, P) ≅ Pic(X_{-})/Pic(-)` a natural bijection and the group law
 transports through it by Yoneda.  So this leaf is as strong as it can
 be, and `exists_relPicFull` correspondingly as weak as it can be; both
-are true. -/
+are true.
+
+**FAITHFULNESS RE-AUDITED INDEPENDENTLY 2026-07-28 (second reader): TRUE,
+and the cut is NOT a relocation.**  `IsRelPicOf` neither implies nor is
+implied by `IsRelPicZeroOf` — `surj` fails for `Pic⁰` at any curve of
+positive genus, and the group law and the Abel–Jacobi fields are absent
+from `IsRelPicOf` — so this is a genuine implication and not
+`exists_relPicZero` under another name.  The hypothesis buys exactly what
+BLR 9.4/4 assumes: representability of `Pic`, leaving smoothness of
+`Pic ⟶ S` (`H²` vanishes on a relative curve), the identity-component
+construction, and properness of `Pic⁰`.
+
+No internal inconsistency: `aj_spec` read at `x = o` says
+`sheaf (aj o) ⊗ 𝒪(−o) ∼ 𝒪(−o)`, i.e. `sheaf (aj o) ∼ 𝒪`, which is what
+`aj_base` together with `sheaf_zero` independently demands.  So the
+conclusion is satisfiable, and `IsRelPicOf` is inhabited (by the genuine
+`Pic_{X/S}`), so the leaf is not vacuously true either.
+
+**ATOMICITY RE-CHECKED, AND THE PARENT'S REJECTION TRANSFERS.**  The
+obvious further cut — "produce `J` with everything except `aj`,
+`aj_spec`, `aj_pre`, `aj_base`" — is still VACUOUS **even with `_hP` in
+hand**, and this is worth stating because `_hP` looks as though it should
+rule the junk witness out.  It does not: `_hP` constrains `P`, and says
+nothing whatever about `J`.  So `J = S`, `jstr = 𝟙 S` survives exactly as
+it did on the parent, `RelPoint (𝟙 S) g` being a singleton.  Dually,
+"produce `J` with everything except properness and smoothness" is refuted
+by `P` itself, which is the rejection already recorded on
+`exists_relPicZero`.  What pins `Pic⁰` inside `Pic` is precisely the
+conjunction *proper + open + contains the Abel–Jacobi image* — for a
+curve `NS` is `ℤ`, hence torsion-free, so `Pic⁰ = Pic^τ` and there is no
+other proper open subgroup scheme — and `IsRelPicZeroOf` already IS that
+conjunction.  Hence no proper sub-package of its fields pins the object.
+
+**AXES SEARCHED 2026-07-28 AND NOT TAKEN, each with its price**, recorded
+so the next reader need not re-run the survey (and per the standing rule
+that an irreducibility verdict is only as wide as the axis searched):
+
+* *`Sym^d` / `Div^d`*, the axis `exists_relPicZero`'s audit anticipated.
+  Still blocked, and now measured: mathlib has NO divisor theory at all
+  at `a3364fa`, so relative effective Cartier divisors must be STATED
+  first — a datum carrying a closed subscheme of `X_T` whose ideal sheaf
+  is invertible and which is finite locally free of degree `d` over `T`,
+  plus its functor-of-points naturality.  That much is statable.  What
+  makes the axis a poor trade is the *second* half: "given `Div^d`
+  representable, `Pic` is its quotient" still carries cohomology and base
+  change and the projective-bundle argument, i.e. nearly all of BLR
+  8.2/1.  The cut would isolate the Hilbert-scheme input and little else.
+* *Zariski-local-on-`S`*: "representable over each member of an open
+  cover of `S`" plus "glue".  Rejected **as it would naturally be
+  written**, and the trap is worth recording: the obvious hypothesis
+  "`S` affine" is NOT enough, because the genus is only *locally*
+  constant and an affine scheme can have non-open connected components,
+  so the local half would be FALSE as stated.  The correct hypothesis is
+  constant genus, i.e. the disjoint-union decomposition described under
+  `exists_relPicFull`; and mathlib's `Sites/Representability.lean`
+  supplies the gluing half, so this axis becomes live the moment the
+  functor can be built at all.
+* *Degree decomposition `Pic ≅ ℤ_S × Pic⁰`*, available here because the
+  section trivialises `Pic^d ≅ Pic⁰` by `L ↦ L(−d·o)`.  True, but it
+  derives `exists_relPicFull` FROM `Pic⁰`: it inverts this cut rather
+  than refining it, and would leave the composition circular.
+* *Transport of the classification data along `J ⟶ P`* — mechanical in
+  Lean, but it leaves `_hP`-plus-everything on the other side, so it is
+  the "relocation with extra steps" shape rather than a cut.
+
+Everything above is gated on the same thing as `exists_relPicFull`: the
+missing monoidal structure on `SheafOfModules`.  See that leaf's ROUTE
+AUDIT for the grep that establishes it and the check that refutes it. -/
 theorem exists_relPicZero_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
@@ -536,9 +667,18 @@ Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (existence) and 9.4/4
 (`Pic⁰` of a relative curve is an abelian scheme); Stacks 0D2C.  The
 section `o` is what makes the naive quotient `Pic(X_T)/Pic(T)` —
 `RelPicEquiv` above — already equal to the relative Picard functor (BLR
-8.1/4), which is the only reason `IsRelPicZeroOf` is statable at a pin
-with no site theory; and it is what the Abel–Jacobi fields `aj`,
-`aj_spec`, `aj_base` are based at.
+8.1/4), which is the only reason `IsRelPicZeroOf` is statable with no
+sheafification; and it is what the Abel–Jacobi fields `aj`, `aj_spec`,
+`aj_base` are based at.
+
+(Corrected 2026-07-28: this sentence read "statable at a pin with no site
+theory", and that is FALSE of the pin — `Mathlib/AlgebraicGeometry/Sites/`
+carries `fppfTopology` and `fpqcTopology`, both `Subcanonical`, plus a
+Zariski representability criterion.  The substance is unaffected — the
+section is what removes the *need* for sheafification — but the false
+half would misdirect a prover into thinking the fppf route is closed.
+The gate that IS live is the missing monoidal structure on
+`SheafOfModules`; see the ROUTE AUDIT on `exists_relPicFull`.)
 
 Each of the three geometric hypotheses is load-bearing.  Without
 properness `Pic⁰` is not proper; without smoothness it is not smooth;
