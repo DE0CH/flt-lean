@@ -8708,141 +8708,245 @@ theorem weilBound_heckeF_of_heckePackage
   -- the bound is stated for `(heckeF w).coeff 1 = −a_w`, and `‖−z‖ = ‖z‖`
   rwa [norm_neg] at hb
 
-/-- **Eichler–Shimura in point-count shape for the DESCENDED newform, at
-the inert places** (SORRIED CITATION, cut 2026-07-28 as the GEOMETRIC
-residue of `weilBound_descended_of_heckePackage` below, which is now
-PROVEN over this leaf and `norm_le_two_mul_sqrt_of_frobEigenvalues`
-above).
+/-- **The extremal Frobenius eigenvalues of a point-count package have
+modulus EXACTLY `√q`** (PROVEN 2026-07-28; the sharp form of
+`norm_le_two_mul_sqrt_of_frobEigenvalues` above, whose proof already
+establishes it internally as its step 3).
 
-STATEMENT.  Identical in shape to
-`exists_frobEigenvalues_heckeF_of_heckePackage` above, but downstairs:
-for a subgroup `C ≤ Gal(F/ℚ)`, an eigenvalue function `a` over
-`L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}` (the hypothesis
-`ha` determines `a w` uniquely at every good `w`, `ψ` being injective on a
-field), all but finitely many of the places `w` of `L` matching NO good
-place of `F` carry a Frobenius eigenvalue system `γ`, a point count `Npt`,
-a constant `Bw` and a pair `i, j` with the Lefschetz identity, the
-Hasse–Weil count estimate, `γ_i + γ_j = φ(a w)` and `γ_i·γ_j = Nw`.
+Given the same data — the Lefschetz identity, the Hasse–Weil count
+estimate, and a pair `i, j` with `γ_i·γ_j = q` — one has `‖γ_i‖ = √q`,
+not merely `‖γ_i‖ + ‖γ_j‖ ≤ 2√q`.  The proof is verbatim the first three
+steps of that theorem: the counts bound the power sums, so
+`norm_le_sqrt_of_forall_norm_frobPowerSum_le` gives `‖γ_κ‖ ≤ √q` for
+EVERY `κ`, and the product relation then forces the pair to be extremal.
 
-WHAT IT PACKAGES, CLASSICALLY, AND WHY ONLY THE INERT PLACES.  `ρ` is a
-representation of `G_ℚ`, so its Frobenius characteristic polynomial at a
-place depends only on the residue cardinality; hence at a place `w` of `L`
-matching a good place `W` of `F` the eigenvalue at `w` IS the newform's
-eigenvalue at `W`, read inside `ℚ̄_ℓ`, and the bound follows from
-`weilBoundF` with no automorphic input.  That half is proven in
-`weilBound_of_charFrob_baseChange`.  What remains, and what this leaf
-carries, is a place `w` lying under places of `F` of strictly larger
-residue degree, where the eigenvalue is that of the form DESCENDED to `L`.
-Cyclic base change (Langlands, *Base Change for GL(2)*, Ann. of Math.
-Studies 96 (1980); Arthur–Clozel, Ann. of Math. Studies 120 (1989), Ch. 3
-Thm 4.2) descends the cuspidal Hilbert newform `f` over `F` — cuspidal
-because of `hirrF` — down the solvable tower to a CUSPIDAL Hilbert newform
-over `L`, at which point the same quaternionic Shimura CURVE package as
-upstairs applies over `L`: Jacquet–Langlands, Carayol's integral model
-with good reduction at `w`, the Lefschetz trace formula for its special
-fibre, the Weil conjectures, and the Eichler–Shimura congruence relation
-`T_w = Frob_w + Nw·Frob_w^{−1}`.
+WHY THE SHARP FORM IS WORTH A NAME.  It is what makes the Weil bound
+propagate between places of DIFFERENT residue degree over one rational
+prime: from `‖α^f‖ = √(q^f)` one gets `‖α‖ = √q`, hence a bound at every
+place over `q`, while from the INEQUALITY `‖α^f + β^f‖ ≤ 2√(q^f)` alone
+one gets nothing of the kind (see the corrected audit on
+`weilBound_descended_of_heckePackage` below).  Sharpness is free from the
+point-count PACKAGE and unavailable from the bound it implies; that
+asymmetry is the whole reason the descended Weil bound needs no separate
+automorphic citation. -/
+theorem norm_eq_sqrt_of_frobEigenvalues {q : ℕ} (hq : 0 < q) {n : ℕ}
+    (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (B : ℝ) (i j : Fin n)
+    (hlef : ∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s = (q : ℂ) ^ s + 1 - (Npt s : ℂ))
+    (hweil : ∀ s : ℕ, 0 < s →
+      |(Npt s : ℝ) - (q : ℝ) ^ s - 1| ≤ B * Real.sqrt q ^ s)
+    (hprod : γ i * γ j = (q : ℂ)) :
+    ‖γ i‖ = Real.sqrt q := by
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq
+  have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
+  -- the point counts bound the Frobenius power sums
+  have hps : ∀ s : ℕ, 0 < s → ‖∑ κ, γ κ ^ s‖ ≤ B * Real.sqrt q ^ s := by
+    intro s hs
+    have hcast : ((q : ℂ) ^ s + 1 - (Npt s : ℂ))
+        = ((((q : ℝ) ^ s + 1 - (Npt s : ℝ)) : ℝ) : ℂ) := by push_cast; ring
+    rw [hlef s hs, hcast, Complex.norm_real, Real.norm_eq_abs,
+      show ((q : ℝ) ^ s + 1 - (Npt s : ℝ)) = -((Npt s : ℝ) - (q : ℝ) ^ s - 1) by ring,
+      abs_neg]
+    exact hweil s hs
+  -- hence each eigenvalue individually, and the pair with product `q` is extremal
+  have hbnd := norm_le_sqrt_of_forall_norm_frobPowerSum_le hq γ B hps
+  have hnp : ‖γ i‖ * ‖γ j‖ = Real.sqrt q * Real.sqrt q := by
+    rw [← norm_mul, hprod, Complex.norm_natCast, Real.mul_self_sqrt hqR.le]
+  refine le_antisymm (hbnd i) ?_
+  nlinarith [hbnd j, norm_nonneg (γ i), norm_nonneg (γ j), hsqpos, hnp]
 
-WHY THE INEQUALITY UPSTAIRS DOES NOT SUFFICE, recorded so the cheap route
-is not re-attempted.  From `|φ(a_W)| ≤ 2·Nw^{f/2}` and `α_W β_W = Nw^f`
-one cannot conclude `|α_w| = |β_w| = √(Nw)`: that needs the SHARP form of
-the bound, which needs `φ(a_W)` REAL — total reality of the Hecke field of
-a parallel-weight-`2` Hilbert newform with trivial nebentypus, not
-recorded anywhere in this development.  CHECK THAT WOULD REFUTE THIS:
-exhibit a proof of `|α| = |β| = √q` from `αβ = q` and
-`|α^f + β^f| ≤ 2 q^{f/2}` alone, for some `f > 1`, with `α + β` not
-assumed real.
+/-- **The Frobenius charpoly at a place of residue degree `e` over `q` is
+the charpoly of the `e`-th POWER of the rational Frobenius** (SORRIED
+LEAF, cut 2026-07-28; PURE ALGEBRAIC NUMBER THEORY — it mentions no
+automorphic datum whatsoever).
 
-AXIS SEARCHED, AXIS NOT SEARCHED.  Searched: the elementary/algebraic
-axis — deducing the bound downstairs from the bound upstairs by pure
-inequalities on Frobenius eigenvalues.  This cut takes the OTHER axis: it
-constructs the descended automorphic object and reads its own Frobenius
-eigenvalues off the reduction of its own Shimura curve, which is the
-citation itself.
+STATEMENT.  For a hardly ramified `ρ` and a rational prime `q ∉ {2, ℓ}`
+there is ONE endomorphism `M` of the rank-`2` module — namely `ρ(Frob_q)`
+— with `det M = q`, such that for EVERY number field `K` and every place
+`w` of `K` with `Nw = q^e`, the Frobenius characteristic polynomial of
+`ρ|_{G_K}` at `w` is the charpoly of `M^e`.
 
-FAITHFULNESS, AND WHY THIS IS NOT VACUOUS.  TRUE, by the classical
-package.  Weil-STRENGTH: any witness feeds
-`norm_le_two_mul_sqrt_of_frobEigenvalues` and yields the consumer's
-conclusion `‖φ(a w)‖ ≤ 2√(Nw)` outright.  `hirrF` is load-bearing for
-exactly the reason recorded on the sibling above — without it
-`ρ = 1 ⊕ χ_ℓ` with `F` real quadratic, `C = Gal(F/ℚ)` and `p` inert gives
-`a_p = 1 + p > 2√p` at `w = (p)` of `L = ℚ`, so no witness could exist and
-the leaf would be FALSE.  At `C = ⊥` the inert hypothesis is unsatisfiable
-and the leaf is vacuous, which is why the base case of the descent never
-exposed that falsity; the content is entirely at `C ≠ ⊥`.
+WHY IT IS TRUE.  `ρ` is a representation of `G_ℚ`, so the local datum at
+`w` is the image of a GLOBAL Frobenius: `Frob_w` pushes into `G_ℚ` to an
+element inducing `z ↦ z^{Nw} = z^{q^e}` on the residue field at a place of
+`ℚᵃˡᵍ` over `q`, i.e. to `Frob_q^e` up to inertia and conjugacy.  `hρ`
+makes `ρ` unramified at `q` (legitimate exactly because `q ∉ {2, ℓ}`),
+which kills the inertia ambiguity, and `charpoly` is conjugation-invariant,
+so the two charpolys are EQUAL.  The determinant clause is the cyclotomic
+determinant clause of `hρ` evaluated at `Frob_q`, i.e. the proven
+`charFrob_coeff_zero_eq_natCast_of_isHardlyRamified`.
 
-NEXT CUT: identical to the sibling's — a plane model plus a curve-level
-Weil bound over an arbitrary finite base field — and blocked by the same
-two things (the curve bound lives in `Interface.lean`, which imports this
-module; and it is stated over a prime field while `Nw` is a prime power).
-Read that leaf's NEXT CUT paragraph, including the grep that refutes it.
+ROUTE — this REFINES a PROVEN sibling rather than opening a new theory.
+`charFrob_baseChange_eq_of_absNorm_eq` further down this module proves the
+`e = e'` case of exactly this statement ("`charFrob` depends only on the
+residue CARDINALITY"), and its four helpers are what this leaf consumes:
+`exists_prime_place_rat`, `exists_conj_map_adicArithFrob_base` (which
+already produces an `X ∈ Γ_{ℚ_q}` with `X·z ≡ z^{Nw}` on the integral
+closure), the inertia-quotient step, and `charFrob_eq_of_conj_of_inertia`.
+The ONE new ingredient is the induction `X·z ≡ z^q ⟹ X^e·z ≡ z^{q^e}`,
+which is what identifies the degree-`e` Frobenius with the `e`-th POWER of
+the degree-`1` one.  Read that lemma's PERFORMANCE / INSTANCE NOTE before
+starting: keeping the base field a VARIABLE is what makes the local
+instances match, and is the difference between a proof and an `isDefEq`
+timeout.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_frobEigenvalues_descended_of_heckePackage
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+FAITHFULNESS.  `hq2`/`hqℓ` are load-bearing, by the same audit as on
+`charFrob_baseChange_eq_of_absNorm_eq`: at `q ∈ {2, ℓ}` the representation
+is ramified, inertia is not killed, and the charpoly genuinely depends on
+the choice of Frobenius lift.  NOT VACUOUS: `Nw = q^e` is satisfiable for
+every `e` occurring as a residue degree over `q`, and at `K = ℚ`, `e = 1`
+the conclusion pins `M` up to conjugacy.
+
+CHECK THAT WOULD REFUTE IT: exhibit a hardly ramified `ρ`, a `q ∉ {2, ℓ}`
+and places `w`, `w'` of number fields with `Nw = Nw'` and
+`charFrob w ≠ charFrob w'` — which `charFrob_baseChange_eq_of_absNorm_eq`
+already proves impossible. -/
+theorem exists_charpoly_pow_eq_charFrob_of_prime {ℓ : ℕ}
+    (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
     (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (E : Type u) [Field E] [NumberField E]
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      Polynomial E)
-    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (q : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ) :
+    ∃ M : Module.End O (Fin 2 → O),
+      M.charpoly.coeff 0 = (q : O) ∧
+      ∀ (K : Type u) [Field K] [NumberField K]
+        (w : HeightOneSpectrum (NumberField.RingOfIntegers K)) (e : ℕ),
+        Ideal.absNorm w.asIdeal = q ^ e →
+          (ρ.map (algebraMap ℚ K)).charFrob w = (M ^ e).charpoly :=
+  sorry
+
+/-- **Two Frobenius traces over one rational prime are power sums of ONE
+pair of complex numbers** (SORRIED LEAF, cut 2026-07-28; PURE FIELD THEORY
+AND LINEAR ALGEBRA — no automorphic datum, no `ρ`).
+
+STATEMENT.  `M` is an endomorphism of a rank-`2` free module with
+`det M = (charpoly M).coeff 0 = q`.  Its trace `t = −(charpoly M).coeff 1`
+determines the trace of every power through the Cayley–Hamilton recursion
+`tr(M^{n+1}) = t·tr(M^n) − q·tr(M^{n−1})`, `tr(M^0) = 2`, `tr(M^1) = t`.
+If two number fields realise `tr(M^g)` and `tr(M^f)` inside `ℚ̄_ℓ` — as
+`x` through `ψ₁` and `y` through `ψ₂` — then at EVERY complex embedding
+`φ` of the first there are a complex embedding `φ'` of the second and a
+pair `α, β ∈ ℂ` with `αβ = q`, `α^g + β^g = φ x` and `α^f + β^f = φ' y`.
+
+WHY IT IS TRUE.  `T_g(X, q)` — the `g`-th power-sum polynomial of that
+recursion — is MONIC of degree `g` in `X`, so `hg : 0 < g` makes `ιO t` a
+root of `T_g(X, q) − ψ₁ x` over the number field `ψ₁(E₁)`, hence ALGEBRAIC
+over `ℚ`.  Let `K ⊆ ℚ̄_ℓ` be the compositum of `ψ₁(E₁)`, `ψ₂(E₂)` and
+`ℚ(ιO t)` — a NUMBER field, all three generators being algebraic.  Extend
+`φ ∘ ψ₁⁻¹` from `ψ₁(E₁)` to `Φ : K →+* ℂ` (`ℂ` is algebraically closed and
+`K/ψ₁(E₁)` is finite), let `α, β` be the two roots of
+`X² − Φ(ιO t)·X + q` in `ℂ`, and put `φ' := Φ ∘ ψ₂`.  Then
+`α^n + β^n = T_n(Φ(ιO t), q) = Φ(ιO(tr(M^n)))` for every `n`, which is the
+conclusion at `n = g` and at `n = f`.
+
+`hg` IS LOAD-BEARING and the leaf is FALSE without it: at `g = 0` the
+hypothesis `hx` reads `ψ₁ x = 2` and constrains `t` not at all, so `ιO t`
+may be transcendental over `ℚ`, no number field contains it, and there is
+no reason for a compatible `φ'` to exist.  `f` may be `0` freely
+(`T_0 = 2`, and `α^0 + β^0 = 2`).
+
+WHAT IT IS FOR.  It is the only bridge in this development between the
+`ℓ`-adic realization of a Frobenius trace and the ARCHIMEDEAN absolute
+values of that trace, and it is what lets a bound proven at ONE place over
+`q` be read off at EVERY place over `q`: the pair `α, β` is the same for
+all of them.  Its bound-only, equal-degree shadow is
+`forall_complexEmbedding_norm_le_of_ringHom_eq` further down this module
+(PROVEN), which handles `g = f` where the two traces are literally the
+same algebraic number; relating DIFFERENT powers is exactly what that
+lemma cannot do and this leaf can.
+
+NOT VACUOUS.  `α` is pinned: `αβ = q` together with `α + β = Φ(ιO t)`
+determines the pair up to order, so the two power-sum clauses are genuine
+constraints — for arbitrary `u, v ∈ ℂ` there is in general no `α` with
+`α^g + (q/α)^g = u` and `α^f + (q/α)^f = v`. -/
+theorem exists_complexEmbedding_frobRoots_of_charpoly_pow {ℓ : ℕ} [Fact ℓ.Prime]
+    {O : Type u} [CommRing O]
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hmod : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
-    ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
-      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
-      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-        (IntermediateField.fixedField C))))
-      (a : HeightOneSpectrum (NumberField.RingOfIntegers
-        (IntermediateField.fixedField C)) → E'),
-      (∀ w ∉ S, ψ (a w) =
-        - ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
-          w).coeff 1)) →
-      ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField C))),
-        ∀ w, w ∉ S → w ∉ S' →
-          (∀ W ∉ badF,
-            Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
-              (ρ.map (algebraMap ℚ F)).charFrob W ≠
-                (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
-          ∀ φ : E' →+* ℂ,
-            ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
-              (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
-                  = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
-              (∀ s : ℕ, 0 < s →
-                  |(Npt s : ℝ) - ((Ideal.absNorm w.asIdeal : ℕ) : ℝ) ^ s - 1|
-                    ≤ Bw * Real.sqrt (Ideal.absNorm w.asIdeal) ^ s) ∧
-              γ i + γ j = φ (a w) ∧
-              γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) :=
+    (M : Module.End O (Fin 2 → O)) (q : ℕ) (hq : 0 < q)
+    (hdet : M.charpoly.coeff 0 = (q : O))
+    {E₁ : Type u} [Field E₁] [NumberField E₁]
+    (ψ₁ : E₁ →+* AlgebraicClosure ℚ_[ℓ])
+    {E₂ : Type u} [Field E₂] [NumberField E₂]
+    (ψ₂ : E₂ →+* AlgebraicClosure ℚ_[ℓ])
+    (g f : ℕ) (hg : 0 < g) (x : E₁) (y : E₂)
+    (hx : ψ₁ x = - ιO (((M ^ g).charpoly).coeff 1))
+    (hy : ψ₂ y = - ιO (((M ^ f).charpoly).coeff 1))
+    (φ : E₁ →+* ℂ) :
+    ∃ (φ' : E₂ →+* ℂ) (α β : ℂ),
+      α * β = (q : ℂ) ∧ α ^ g + β ^ g = φ x ∧ α ^ f + β ^ f = φ' y :=
+  sorry
+
+/-- **Away from finitely many places, the residue characteristic of `w` is
+good for `F` as well** (SORRIED LEAF, cut 2026-07-28; ELEMENTARY ALGEBRAIC
+NUMBER THEORY — no `ρ`, no automorphic datum).
+
+STATEMENT.  For number fields `L`, `F` and a finite set `badF` of places
+of `F`, all but finitely many places `w` of `L` have a residue
+characteristic `q ∉ {2, ℓ}` carrying a place `V` of `F` OUTSIDE `badF`,
+with `Nw = q^e` and `NV = q^f`, both exponents positive.
+
+PROOF (the intended one, in full).  Put
+`N := 2·ℓ·∏_{V₀ ∈ badF} NV₀`, nonzero because the absolute norm of a
+height-one prime is positive (`absNorm_asIdeal_pos` above) — in the
+degenerate case `ℓ = 0` use `N := 2·∏ …`, the clause `q ≠ ℓ` being then
+automatic.  Let `S'` be the finitely many places of `L` containing `N`
+(`exists_finset_forall_natCast_notMem_asIdeal`, further down this module).
+For `w ∉ S'`, `exists_prime_place_rat` gives `q` and `e > 0` with
+`Nw = q^e` and `q ∈ w`; hence `q ∤ N`, and so `q ≠ 2` and `q ≠ ℓ`.  Any
+prime of `𝓞 F` over `q` — going-up,
+`Ideal.exists_ideal_over_maximal_of_isIntegral` applied to the maximal
+ideal `(q)` of `𝓞 ℚ` — is a height-one point `V` with `NV = q^f`, `f > 0`;
+and `V ∉ badF`, because `q ∣ NV` while `q ∤ NV₀` for every `V₀ ∈ badF`.
+
+DECLARATION-ORDER NOTE, and the only reason this is a leaf rather than
+three lines inline: both helpers it wants
+(`exists_finset_forall_natCast_notMem_asIdeal`, `exists_prime_place_rat`)
+are declared BELOW this point in the file, while its consumer
+`weilBound_descended_of_heckePackage` is declared above them and is itself
+consumed above them.  Closing it therefore needs a relocation — of those
+two helpers upward, or of this block downward — which is mechanical but
+is not this owner's to make.
+
+NOT VACUOUS: the existential `V` is genuinely constrained (`V ∉ badF` and
+`NV` a power of the SAME `q`), and the conclusion fails for the finitely
+many `w` that `S'` removes. -/
+theorem exists_finset_forall_exists_place_absNorm_eq_pow (ℓ : ℕ)
+    (L : Type u) [Field L] [NumberField L]
+    (F : Type u) [Field F] [NumberField F]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))) :
+    ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers L)),
+      ∀ w ∉ S', ∃ (q e f : ℕ) (_ : q.Prime)
+          (V : HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        q ≠ 2 ∧ q ≠ ℓ ∧ 0 < e ∧ 0 < f ∧ V ∉ badF ∧
+        Ideal.absNorm w.asIdeal = q ^ e ∧ Ideal.absNorm V.asIdeal = q ^ f :=
   sorry
 
 /-- **Ramanujan–Petersson for the DESCENDED eigensystems, at the inert
-places** (**PROVEN 2026-07-28**, over
-`exists_frobEigenvalues_descended_of_heckePackage` immediately above and
-`norm_le_two_mul_sqrt_of_frobEigenvalues`; until then a SORRIED CITATION
-of cyclic base change.  It is the discharge of
+places** (**PROVEN 2026-07-28**, and — since the SECOND cut of that day —
+proven with **NO automorphic citation of its own**: it now rests on the
+UPSTAIRS package `exists_frobEigenvalues_heckeF_of_heckePackage` together
+with three purely algebraic leaves,
+`exists_charpoly_pow_eq_charFrob_of_prime`,
+`exists_complexEmbedding_frobRoots_of_charpoly_pow` and
+`exists_finset_forall_exists_place_absNorm_eq_pow`, plus the sharp form
+`norm_eq_sqrt_of_frobEigenvalues`.  It is the discharge of
 `PotentialModularityWitness.weilBoundDescent`, added 2026-07-27 with it).
+
+**THE CYCLIC-BASE-CHANGE CITATION IS GONE, AND HOW IT WENT IS THE POINT.**
+The earlier cut of 2026-07-28 put a second SORRIED CITATION here —
+`exists_frobEigenvalues_descended_of_heckePackage`, Eichler–Shimura in
+point-count shape for the newform DESCENDED to `L`, resting on Langlands /
+Arthur–Clozel cyclic base change and a quaternionic Shimura curve over
+`L`.  That leaf has been DELETED: the bound downstairs is a CONSEQUENCE of
+the package upstairs.  `ρ` is a representation of `G_ℚ`, so at a place `w`
+of `L` and a place `V` of `F` over the SAME rational prime `q` the two
+Frobenius traces are power sums `α^e + β^e` and `α^f + β^f` of ONE pair
+`α, β` with `αβ = q`; the package at `V` forces `‖α^f‖ = ‖β^f‖ = √(NV)`,
+hence `‖α‖ = ‖β‖ = √q`, hence `‖φ(a w)‖ ≤ 2(√q)^e = 2√(Nw)` at every place
+over `q`, inert or not.  Everything new is algebraic number theory; the
+only automorphic input in the whole subtree is now the single upstairs
+citation.
 
 For a subgroup `C ≤ Gal(F/ℚ)` and an eigenvalue function `a` over
 `L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}` (the hypothesis
@@ -8863,23 +8967,43 @@ residue degree, where the eigenvalue is that of the form DESCENDED to
 `L`, related to the one upstairs only by the Dickson identity
 `a_W = D_f(a_w, Nw)`.
 
-WHY THE INEQUALITY UPSTAIRS DOES NOT SUFFICE, recorded so the cheap route
-is not re-attempted.  From `|φ(a_W)| ≤ 2·Nw^{f/2}` and `α_W β_W = Nw^f`
-one cannot conclude `|α_w| = |β_w| = √(Nw)`: that needs the SHARP form of
-the bound (both Frobenius eigenvalues of absolute value exactly `√(NW)`),
-which needs `φ(a_W)` REAL — total reality of the Hecke field of a
-parallel-weight-`2` Hilbert newform with trivial nebentypus, which is not
-recorded anywhere in this development, and the eigenvalues live in `ℚ̄_ℓ`
-rather than `ℂ`.  CHECK THAT WOULD REFUTE THIS: exhibit a proof of
-`|α| = |β| = √q` from `αβ = q` and `|α^f + β^f| ≤ 2 q^{f/2}` alone, for
-some `f > 1`, with `α + β` not assumed real.
+**SUPERSEDED AUDIT, KEPT WITH ITS CORRECTION (2026-07-28).**  This
+docstring used to carry a paragraph headed "WHY THE INEQUALITY UPSTAIRS
+DOES NOT SUFFICE, recorded so the cheap route is not re-attempted": from
+`|φ(a_W)| ≤ 2·NW^{1/2}` and `α_W β_W = NW` one cannot conclude
+`|α_W| = |β_W| = √(NW)` without knowing `φ(a_W)` REAL, and total reality
+of the Hecke field is recorded nowhere here.  Its refutation challenge was
+"exhibit a proof of `|α| = |β| = √q` from `αβ = q` and
+`|α^f + β^f| ≤ 2 q^{f/2}` ALONE".
 
-AXIS SEARCHED, AXIS NOT SEARCHED.  Searched: the elementary/algebraic
-axis — deducing the bound downstairs from the bound upstairs by pure
-inequalities on Frobenius eigenvalues.  NOT searched: any route that
-first constructs the descended automorphic object, which is the citation
-itself (Langlands, *Base Change for GL(2)*, Ann. of Math. Studies 96
-(1980); Arthur–Clozel, Ann. of Math. Studies 120 (1989), Ch. 3 Thm 4.2).
+**Every word of that is correct, and it audited the wrong object.**  The
+available input upstairs is not the inequality — it is the point-count
+PACKAGE `exists_frobEigenvalues_heckeF_of_heckePackage`, cut earlier the
+same day, and sharpness is FREE from a package: the Lefschetz identity
+plus the Hasse–Weil estimate give `‖γ_κ‖ ≤ √(NV)` for every `κ`
+(`norm_le_sqrt_of_forall_norm_frobPowerSum_le`), and `γ_i·γ_j = NV` then
+forces `‖γ_i‖ = ‖γ_j‖ = √(NV)` exactly, with no reality assumption
+whatsoever (`norm_eq_sqrt_of_frobEigenvalues` above — and the proof of
+`norm_le_two_mul_sqrt_of_frobEigenvalues` had been deriving it internally
+all along).  The audit's challenge is unmet and unmeetable, and beside the
+point: nobody needs the implication it forbids.
+
+AXIS SEARCHED, AXIS NOT SEARCHED — restated for the route now taken.
+The old audit searched the axis "deduce the bound downstairs from the
+BOUND upstairs" and correctly found it closed.  The axis it did not
+search is "deduce the bound downstairs from the PACKAGE upstairs", which
+is open, and which needs only that the two places lie over a common
+rational prime — not that they be related by inclusion of fields, and not
+the inert/split distinction at all.  The `hinert` hypothesis is
+consequently NOT consumed by the proof below (it is bound as `_hinert`);
+it is retained in the statement because the consumer already supplies it
+and removing it would change `PotentialModularityWitness.weilBoundDescent`.
+
+GENERAL LESSON, worth carrying: when an audit says a route is closed,
+check WHICH upstream object it assumed.  Here the upstream object changed
+from an inequality to a package a few hours before the audit was written,
+and the audit — inherited verbatim from the leaf it replaced — was never
+re-run against the new one.
 
 **WHY THIS LEAF EXISTS: A FALSITY REPAIR (2026-07-27).**  This clause
 used to be the leaf `weilBound_of_charFrob_baseChange_of_inert`, which
@@ -8891,15 +9015,24 @@ exceeds `2√p`.  So the old statement was false; at `C = ⊥` it was merely
 vacuous, which is why the base case of the descent never exposed it.  See
 the FALSITY AUDIT on `PotentialModularityWitness.weilBoundF`.
 
-SOUNDNESS AUDIT.  (i) Direct: the classical theorem applied to the
-Hilbert newform obtained by descending the carrier's newform to `L`,
-which `hirrF` guarantees is cuspidal.  (ii) Collapse: the arithmetic
-package is carried in full and is classically unsatisfiable (the module
-headline).  Route (ii) is a soundness justification only, NOT an
-available Lean discharge: see the ROUTE AUDIT on
+SOUNDNESS AUDIT.  Now a THEOREM rather than an audit, modulo its leaves:
+route (i) is the Lean proof below, and needs no descended automorphic
+object at all — only the newform upstairs, whose cuspidality `hirrF`
+guarantees and which the upstairs citation consumes.  (ii) Collapse: the
+arithmetic package is carried in full and is classically unsatisfiable
+(the module headline); as always this is a soundness justification only,
+NOT an available Lean discharge — see the ROUTE AUDIT on
 `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`, whose chain
 shows the headline CONSUMES this subtree, so `absurd hirr …` is circular
 here.
+
+`hirrF` REMAINS LOAD-BEARING, at one remove: it is what the upstairs
+citation needs, and without it the whole chain is FALSE by the standing
+Eisenstein witness (`ρ = 1 ⊕ χ_ℓ`, `F` real quadratic, `C = ⊤`, `p` inert:
+`a_p = 1 + p > 2√p` at `w = (p)` of `L = ℚ`).  The new algebraic leaves do
+not weaken that: they carry no arithmetic, and they would happily produce
+the pair `α, β = 1, p` for the Eisenstein system — it is the package
+upstairs that cannot exist for it.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -8952,19 +9085,82 @@ theorem weilBound_descended_of_heckePackage
                 (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
           ∀ φ : E' →+* ℂ,
             ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
+  classical
   intro C E' _ _ ψ S a ha
-  -- the geometry, over `L = F^C`: the descended newform's Shimura curve, its
-  -- point counts, and its Eichler–Shimura pair at each inert place
-  obtain ⟨S', hS'⟩ :=
-    exists_frobEigenvalues_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
-      C E' ψ S a ha
-  refine ⟨S', ?_⟩
-  intro w hwS hwS' hinert φ
-  obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ := hS' w hwS hwS' hinert φ
-  -- the analysis, identical to the sibling's
-  exact norm_le_two_mul_sqrt_of_frobEigenvalues (absNorm_asIdeal_pos w) γ Npt Bw
-    i j (φ (a w)) hlef hweil hsum hprod
+  -- the bookkeeping: away from finitely many `w`, the residue characteristic
+  -- `q` of `w` is unramified for `ρ` and carries a GOOD place `V` of `F`
+  obtain ⟨S', hS'⟩ := exists_finset_forall_exists_place_absNorm_eq_pow ℓ
+    (IntermediateField.fixedField C) F badF
+  refine ⟨S', fun w hwS hwS' _hinert φ => ?_⟩
+  obtain ⟨q, e, f, hq, V, hq2, hqℓ, he, hf, hVbad, hnorm, hnormV⟩ := hS' w hwS'
+  -- ONE rational Frobenius computes both charpolys: `charFrob` at a place of
+  -- residue degree `n` over `q` is the charpoly of its `n`-th power
+  obtain ⟨Mq, hMdet, hM⟩ :=
+    exists_charpoly_pow_eq_charFrob_of_prime hℓodd hrank hρ q hq hq2 hqℓ
+  have hx : ψ (a w) = - ιO (((Mq ^ e).charpoly).coeff 1) := by
+    rw [ha w hwS, hM (IntermediateField.fixedField C) w e hnorm]
+  have hy : ψℓ (-(heckeF V).coeff 1) = - ιO (((Mq ^ f).charpoly).coeff 1) := by
+    have h := congrArg (fun P : Polynomial (AlgebraicClosure ℚ_[ℓ]) => P.coeff 1)
+      (hmod V hVbad)
+    simp only [Polynomial.coeff_map] at h
+    rw [map_neg, ← h, hM F V f hnormV]
+  -- so both traces are power sums of ONE complex pair `α, β` with `αβ = q`
+  obtain ⟨φ', α, β, hab, hαe, hαf⟩ :=
+    exists_complexEmbedding_frobRoots_of_charpoly_pow ιO hιO Mq q hq.pos hMdet
+      ψ ψℓ e f he (a w) (-(heckeF V).coeff 1) hx hy φ
+  -- the point-count package UPSTAIRS, at the good place `V` of `F`
+  obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
+    exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod V hVbad φ'
+  have hNV : (0 : ℕ) < Ideal.absNorm V.asIdeal := absNorm_asIdeal_pos V
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq.pos
+  have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
+  -- the package makes BOTH extremal eigenvalues upstairs exactly `√(NV)` long
+  have hi : ‖γ i‖ = Real.sqrt (Ideal.absNorm V.asIdeal) :=
+    norm_eq_sqrt_of_frobEigenvalues hNV γ Npt Bw i j hlef hweil hprod
+  have hj : ‖γ j‖ = Real.sqrt (Ideal.absNorm V.asIdeal) :=
+    norm_eq_sqrt_of_frobEigenvalues hNV γ Npt Bw j i hlef hweil
+      (by rw [mul_comm]; exact hprod)
+  have hsqf : Real.sqrt (Ideal.absNorm V.asIdeal) = Real.sqrt q ^ f := by
+    rw [hnormV]
+    push_cast
+    rw [show ((q : ℝ) ^ f) = (Real.sqrt q ^ f) ^ 2 by
+      rw [← pow_mul, mul_comm, pow_mul, Real.sq_sqrt hqR.le],
+      Real.sqrt_sq (by positivity)]
+  -- `α^f` and `β^f` have the same sum and product as `γ_i, γ_j`, so `α^f` is one
+  -- of them, and `‖α‖ = √q` follows — the SHARP bound at the rational prime
+  have hsum' : γ i + γ j = α ^ f + β ^ f := by rw [hsum, hαf, map_neg]
+  have hprod' : γ i * γ j = α ^ f * β ^ f := by
+    rw [hprod, hnormV, ← mul_pow, hab]
+    push_cast
+    ring
+  have hroot : (α ^ f - γ i) * (α ^ f - γ j) = 0 := by
+    linear_combination (-(α ^ f)) * hsum' + hprod'
+  have hαnorm : ‖α ^ f‖ = Real.sqrt q ^ f := by
+    rcases mul_eq_zero.mp hroot with h | h
+    · rw [sub_eq_zero.mp h, hi, hsqf]
+    · rw [sub_eq_zero.mp h, hj, hsqf]
+  have hpow : ‖α‖ ^ f = Real.sqrt q ^ f := by rw [← norm_pow]; exact hαnorm
+  have hnα : ‖α‖ = Real.sqrt q := by
+    rcases lt_trichotomy ‖α‖ (Real.sqrt q) with h | h | h
+    · exact absurd hpow (ne_of_lt (pow_lt_pow_left₀ h (norm_nonneg _) hf.ne'))
+    · exact h
+    · exact absurd hpow (ne_of_gt (pow_lt_pow_left₀ h (Real.sqrt_nonneg _) hf.ne'))
+  have hnβ : ‖β‖ = Real.sqrt q := by
+    have h : ‖α‖ * ‖β‖ = Real.sqrt q * Real.sqrt q := by
+      rw [← norm_mul, hab, Complex.norm_natCast, Real.mul_self_sqrt hqR.le]
+    rw [hnα] at h
+    exact mul_left_cancel₀ hsqpos.ne' h
+  -- and the triangle inequality DOWNSTAIRS, at the place `w` of `L`
+  have hsqe : Real.sqrt (Ideal.absNorm w.asIdeal) = Real.sqrt q ^ e := by
+    rw [hnorm]
+    push_cast
+    rw [show ((q : ℝ) ^ e) = (Real.sqrt q ^ e) ^ 2 by
+      rw [← pow_mul, mul_comm, pow_mul, Real.sq_sqrt hqR.le],
+      Real.sqrt_sq (by positivity)]
+  rw [← hαe, hsqe]
+  calc ‖α ^ e + β ^ e‖ ≤ ‖α ^ e‖ + ‖β ^ e‖ := norm_add_le _ _
+    _ = 2 * Real.sqrt q ^ e := by rw [norm_pow, norm_pow, hnα, hnβ]; ring
 
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (PROVEN — Taylor's theorem, the analytic core of pillar β): the
