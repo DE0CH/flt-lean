@@ -1389,9 +1389,29 @@ that path any more.  The two open leaves below are the
 right long-term repair is a bridge
 `D.Pic ≃+ RelPoint jstr (𝟙 SpecQ)` for the Jacobian of the smooth model, after which
 `fg_pic` follows from `fg_relPoint_of_abelianScheme` and both leaves below can be deleted;
-that bridge is not available here because importing `X0.lean` into this module would drag
-its whole cone into `MazurTorsion.lean`.  Whoever is dispatched at either leaf should check
-first whether the bridge has since become cheap.
+that bridge was recorded as unavailable because importing `X0.lean` into this module would
+drag its whole cone into `MazurTorsion.lean`.
+
+**THAT OBJECTION IS STALE, checked 2026-07-28 and left here for its owner to act on.**
+`MazurTorsion.lean` is the SOLE consumer of this module (`grep -rn 'import
+Fermat.FLT.ModularCurve.HyperellipticJacobian' Fermat/` returns exactly one line,
+`MazurTorsion.lean:257`), and it **already carries `public import
+Fermat.FLT.ModularCurve.X0` at line 266**.  So the bridge adds ZERO modules to
+`MazurTorsion.lean`'s import cone; and there is no cycle, since `X0.lean` does not mention
+this module.  What the bridge would actually cost is a build-order edge
+`HyperellipticJacobian → X0`, which is a compile-time price, not a cone-growth one.  All six
+declarations named above still exist in `X0.lean` (`fg_relPoint_of_abelianScheme:26330`,
+`exists_cubeModel_of_abelianScheme:25196`, `finite_quotient_psmul_of_abelianScheme:26099`,
+`exists_finiteIndex_divisible_of_abelianScheme:26007`,
+`exists_geomPt_nsmul_eq_of_abelianScheme:25838`,
+`exists_discrBound_divisionField_of_abelianScheme:25927`), so the deletion of the two
+generic leaves below is a live option worth about `−2` on the frontier.
+
+**The bridge does NOT help the two level-specific leaves.**  `X0.lean` does not prove rank
+`0` anywhere: it *assumes* it, as the `Prop`-valued hypothesis `HasRankZeroJacobian`
+(`X0.lean:22356`), whose consumers take it as an argument.  So `X18.two_divisible_pic` and
+`X13.two_divisible_pic` are the same obligation appearing as honest leaves rather than as
+a hypothesis, and no amount of X0 machinery discharges them.
 -/
 
 /-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
@@ -1617,7 +1637,56 @@ procedure returning a provably complete `C(ℚ)`, and it involves no covering co
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1` overturns this leaf
 outright; `RankBound(J)` returning a positive lower bound, or `TorsionSubgroup(J)` of even
 order, overturns it as well; a seventh point from `Chabauty0` overturns the conclusion
-downstream. -/
+downstream.  A FIFTH independent Magma run on 2026-07-28 reproduced every line of the
+table above exactly — `genus 2`, `f` irreducible, `disc = 2²³·3⁴`, `TorsionSubgroup = ℤ/21`,
+`#TwoSelmerGroup = 1`, `RankBounds = [0, 0]`.
+
+## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
+
+This leaf has now been left atomic by successive dispatches.  Per the standing rule that an
+irreducibility verdict is only as wide as the axis its author searched, here are the axes,
+so the next reader can re-check a claim instead of redoing the survey.
+
+* **DESCENT axis (`2`-Selmer) — live, but blocked on MISSING STRUCTURE, not on difficulty.**
+  The cut this leaf wants is `J(ℚ)/2J(ℚ) ↪ Sel₂ = 0`, over a descent map
+  `δ : Pic → L*/L*²` with `L = ℚ[x]/(f)` (a degree-`6` field, `f` being irreducible),
+  PINNED to be the genuine `∏ (x(Pᵢ) − θ)`.  The cheap way to pin a map — constrain its
+  VALUES on rational points — is **provably powerless here**, and that is the sharp
+  obstruction: `#Sel₂ = 1` says the genuine `δ` is IDENTICALLY ZERO on `J(ℚ)`, so the junk
+  model `δ = 0` satisfies every constraint that naming rational points can impose (and
+  `J₁(18)(ℚ) ≅ ℤ/21` has ODD order, so this is not an accident of which points were named).
+  With `δ = 0` the residual obligation `ker δ ⊆ 2·Pic` IS this leaf's conclusion, verbatim
+  — the junk-structure trap the `Picard` section docstring warns against.  An honest
+  pinning must therefore constrain `δ` at a NON-rational closed point, which needs residue
+  fields `κ(v)` and the norms `N_{κ(v) ⊗ L / L}` — precisely the degree theory `PlaceData`
+  deliberately omits (see "Why `Pic` is `Pic⁰` although no degree map appears").  So the
+  cut is available exactly when someone extends `PlaceData` with residue fields.
+  *Refuting check*: exhibit constraints on `δ` mentioning only rational points that the
+  genuine descent map satisfies and the zero map does not.
+* **REDUCTION axis — structurally empty, not merely unfinished.**  `exists_reduction` gives
+  `red : D.Pic →+ D'.Pic` with torsion-free kernel.  For finitely generated `Pic` that
+  makes `ker red ≅ ℤ^rank` and `Pic / ker red` embed in the finite `J(𝔽₅)`, so reduction
+  bounds TORSION and conveys no rank information at all.  No sharpening of `exists_reduction`
+  can help.  *Refuting check*: a reduction statement whose conclusion constrains a FREE
+  quotient of `Pic`.
+* **ELLIPTIC axis — dead, and now machine-checked at this level too.**  Magma `ModAbVar`,
+  2026-07-28: `IsSimple(JOne(18)) = true`, `Dimension = 2`, decomposition a single factor
+  `image(18A[2])` of conductor `2²·3⁴`.  So `J₁(18)` is `ℚ`-SIMPLE and not `ℚ`-isogenous to
+  a product of elliptic curves; the project's elliptic-curve Mordell–Weil machinery cannot
+  be routed to it.  (`X13.exists_jacobianPackage` records the same conclusion at level `13`
+  from the diamond `⟨5⟩`; `IsSimple(JOne(13)) = true` confirms it by a second method.)  This
+  axis was NOT recorded here before 2026-07-28.  *Refuting check*: `IsSimple(JOne(18))`
+  returning `false`, or a degree-`n` map from `C` to an elliptic curve over `ℚ`.
+* **ELLIPTIC-CHABAUTY axis** — refuted three times over; see ROUTE 1 below, which keeps the
+  refuting check for each of the three findings.
+* **ANALYTIC axis** — `L(f, 1) ≠ 0` plus Kolyvagin–Logachev gives rank `0` by a genuinely
+  independent route, but neither Gross–Zagier nor the Euler-system input exists in this
+  project, in mathlib, or in `~/cs/FLT`.  *Refuting check*: grep any of the three for an
+  Euler system or a Gross–Zagier formula.
+
+**Do not manufacture a decomposition along the descent axis without the residue fields.**
+Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus "that `δ` vanishes" is
+discharged by `δ = 0` and is therefore vacuous, by the first bullet. -/
 theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
@@ -2046,7 +2115,28 @@ through the zeta numerator: `hyperellcharpoly(Mod(1,3)*f) = T⁴ + 2T³ + T² + 
 
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1`; a positive lower
 bound from `RankBound(J)`; a torsion subgroup other than `ℤ/19`;
-`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`. -/
+`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`.  A FIFTH
+independent Magma run on 2026-07-28 reproduced the table exactly — `genus 2`, `f`
+irreducible, `disc = 2²⁰·13²`, `TorsionSubgroup = ℤ/19`, `#TwoSelmerGroup = 1`,
+`RankBounds = [0, 0]`.
+
+## ATOMICITY AUDIT (2026-07-28)
+
+The axes searched, and the refuting check for each, are written out in full on
+`X18.two_divisible_pic`; every one of them applies verbatim here, the two leaves differing
+only in the sextic and the good prime.  The load-bearing item is the first: a `2`-descent
+cut needs the map `δ : Pic → L*/L*²`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and pinning
+it by its values on rational points is powerless because `#Sel₂ = 1` makes the genuine `δ`
+identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such constraint and
+reduces the cut to this leaf's own conclusion.  Pinning needs residue fields `κ(v)` and
+their norms, which `PlaceData` deliberately does not carry.
+
+The level-`13` specifics that strengthen the same verdict: `IsSimple(JOne(13)) = true`
+(Magma `ModAbVar`, 2026-07-28) confirms by a second, independent method the `ℚ`-simplicity
+already recorded below from the diamond `⟨5⟩`, so the elliptic axis is doubly closed here;
+and `#J(𝔽₃) = 19 = #J(ℚ)` makes reduction at `3` an isomorphism, which is the sharpest that
+the reduction axis can ever be — and it still yields no rank information, since the kernel
+of reduction is where all the rank would live. -/
 theorem two_divisible_pic (D : PlaceData 1 4 6 2 1 2 ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
