@@ -4831,11 +4831,320 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_frobeniusLift
           IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :=
   sorry
 
+/-- **The good model of `D`, placed inside `ℚ̄` by the frame** (PROVEN 2026-07-28,
+opened while cutting `exists_torsionFrame` below along the COORDINATEWISE
+characterisation of the reduction map — the split that leaf's own atomicity audit
+names as the recommended one).
+
+`D.V_eq` says `V = C • E_K`; pushing that equation along the frame's embedding
+`Fr.emb : K ↪ ℚ̄` and using `emb_comm` to collapse `ℚ → K → ℚ̄` into `ℚ → ℚ̄`
+gives the same sentence over `ℚ̄`. Nothing here is about reduction: this is the
+"transport `E`-points to `V`-points along `D.C`" step that the audit records as
+the one prerequisite of the coordinatewise formulation. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.model_eq
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    D.V.map Fr.emb
+      = (D.C.map Fr.emb) • (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) := by
+  have hcomp : Fr.emb.comp (algebraMap ℚ D.K) = algebraMap ℚ (AlgebraicClosure ℚ) :=
+    RingHom.ext Fr.emb_comm
+  rw [D.V_eq, ← WeierstrassCurve.map_variableChange]
+  congr 1
+  show (E.map (algebraMap ℚ D.K)).map Fr.emb = _
+  rw [WeierstrassCurve.map_map, hcomp]
+
+/-- **The frame's identification of the `ℚ̄`-points of `E` with those of the good
+model** (PROVEN 2026-07-28): the point-level transport along `D.C`, carried to
+`ℚ̄` through `Fr.emb`.
+
+This is `Affine.Point.equivVariableChange` (project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`) read
+backwards through `model_eq`. It is what lets the reduction map be pinned by
+COORDINATES: a torsion point of `E` over `ℚ̄` has no integrality of its own, but
+its image on the GOOD model `V` does, because `V` is a minimal integral model
+over the DVR `D.R`. -/
+noncomputable def WeierstrassCurve.PotentiallyGoodModel.LocalFrame.modelEquiv
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Point ≃+
+      (D.V.map Fr.emb).toAffine.Point :=
+  (WeierstrassCurve.Affine.Point.equivVariableChange
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (D.C.map Fr.emb)).symm.trans
+    (WeierstrassCurve.Affine.Point.equivOfEq Fr.model_eq.symm)
+
+/-- **The COORDINATEWISE pinning of the reduction map on `N`-torsion**
+(definition, opened 2026-07-28 while cutting `exists_torsionFrame` below into
+three).
+
+`Fr.IsTorsionReduction ψ₀` says: for every `N`-torsion point `P` of `E` over
+`ℚ̄`, if the corresponding point of the GOOD model `V` (via `modelEquiv`) is
+affine with coordinates `X, Y`, then `X` and `Y` lie in the pinned valuation
+subring `𝒪 = globalValuationSubring q`, and `ψ₀ P` is the point of
+`Ẽ = D.redCurve` over `𝔽̄_q` whose coordinates are the residues of `X` and `Y`
+carried along `Fr.resIso`.
+
+WHY THIS PREDICATE IS WHAT MAKES THE CUT OF `exists_torsionFrame` SAFE. That
+leaf's ATOMICITY AUDIT (reproduced there in full, and still standing) shows every
+cut handing `ψ₀` over as FREE data is FALSE: two solutions of the Frobenius
+intertwining differ by an element of the centraliser of `F`, which at
+`q ≡ 1 mod N` is all of `GL₂(ZMod N)` and moves the image of `Aut(Ẽ)`. The
+audit's own stated refutation is "a formulation whose hypotheses pin `ψ₀` up to
+the image of `Aut(Ẽ)` — for instance a statement of the reduction map by its
+coordinatewise definition". This IS that formulation, and it is in fact stronger
+than the audit anticipated: the coordinates are pinned outright, not merely up to
+`Aut(Ẽ)`, because the transport `E → V` is along the GIVEN variable change `D.C`
+and the residue identification is the GIVEN `Fr.resIso`. So a witness `ψ₀` is
+unique, and the two conclusions of the atom cannot come apart.
+
+The integrality of `X` and `Y` is part of the CONCLUSION rather than a
+hypothesis, deliberately: it is proven once, inside `exists_isTorsionReduction`,
+out of `torsion_abscissa_mem` and `torsion_ordinate_mem`, and both consumers then
+receive it instead of each re-deriving it.
+
+NOT VACUOUS: `ψ₀` is a linear EQUIVALENCE and the pinning determines it at every
+point, so a witness has to BE the genuine reduction map — in particular its
+existence forces reduction to be injective on `E[N]`, which is where the
+arithmetic sits. -/
+def WeierstrassCurve.PotentiallyGoodModel.LocalFrame.IsTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} {q : ℕ} [Fact q.Prime]
+    {hq : q.Prime} {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)) :
+    Prop :=
+  ∀ (P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)
+    (X Y : AlgebraicClosure ℚ) (hns : (D.V.map Fr.emb).toAffine.Nonsingular X Y),
+    (Fr.modelEquiv P.val = WeierstrassCurve.Affine.Point.some X Y hns) →
+    ∃ (hX : X ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hY : Y ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hns' : (D.redCurve.map
+            (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular
+          (Fr.resIso (IsLocalRing.residue _ ⟨X, hX⟩))
+          (Fr.resIso (IsLocalRing.residue _ ⟨Y, hY⟩))),
+      (ψ₀ P).val = WeierstrassCurve.Affine.Point.some _ _ hns'
+
+/-- **THE REDUCTION MAP ON `N`-TORSION EXISTS, AND IS PINNED COORDINATEWISE**
+(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three
+along the coordinatewise characterisation of `ψ₀`).
+
+WHAT IT SAYS: there is a `ZMod N`-linear EQUIVALENCE
+`ψ₀ : E[N](ℚ̄) ≃ Ẽ[N](𝔽̄_q)`, `Ẽ := D.redCurve`, which is the honest reduction
+map — for every `N`-torsion point of `E` over `ℚ̄` the coordinates of the
+corresponding point of the good model `V` lie in `𝒪`, and `ψ₀` sends it to the
+point with the residue coordinates.
+
+NO GALOIS THEORY APPEARS. Neither `σ` nor `τ` occurs; this leaf is
+Néron–Ogg–Šafarevič's integrality and injectivity plus a counting surjectivity,
+and nothing else. That separation is the point of the cut: the two equivariances
+of the atom are proven ABOUT this map by the two leaves below, which receive it
+WITH its coordinatewise pinning and therefore cannot be satisfied by a conjugated
+junk witness.
+
+WHAT HAS TO BE PROVEN, in order:
+
+1. *Integrality.* `torsion_abscissa_mem` and `torsion_ordinate_mem`
+   (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free)
+   applied with `R := D.R`, `k := D.K`, `E := D.V`,
+   `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`,
+   `𝒪 := globalValuationSubring q`, and `h𝒪` supplied VERBATIM by
+   `Fr.comap_eq` — the frame field was written to match that hypothesis
+   syntactically. `ℚ̄` is a separable closure of `D.K` because the
+   characteristic is zero, `ℚ̄` is algebraically closed, and `ℚ̄/D.K` is
+   algebraic (`D.K/ℚ` is finite).
+2. *Well-definedness.* The residue point is nonsingular on the reduction, which
+   is `Ẽ` transported along `Fr.resIso`; `Fr.resIso_comm` is exactly the
+   compatibility that makes the reduction of `V` over `κ(𝒪)` equal to
+   `Ẽ ⊗ 𝔽̄_q`.
+3. *Additivity*, from the group-law formulae over `𝒪` (the slope of two distinct
+   torsion points is integral because their abscissae have distinct residues,
+   which is step 4).
+4. *Injectivity*: `torsion_abscissa_residue_ne` and
+   `torsion_ordinate_eq_of_residue_eq`, both PROVEN.
+5. *Surjectivity by counting*: `E[N](ℚ̄)` and `Ẽ[N](𝔽̄_q)` both have `N²`
+   elements (`q ≠ N`, and the reduction is elliptic — the instance
+   `instIsEllipticRedCurve` above), so an injective additive map between them is
+   bijective.
+
+The assembly pattern to copy is the PROVEN
+`WeilPairing.exists_frobenius_reduction_model`, a ~2800-line monolith that does
+exactly this at the good primes of a global integral model over `ℚ` — including
+the construction of `redFun`, its additivity, its injectivity on torsion and its
+surjectivity by counting. The only differences here are that the base is `K`
+rather than `ℚ`, and that the model arrives as `D.V` rather than being
+constructed.
+
+**THE `N = 2` OBLIGATION IS LIVE, AND IT LIVES HERE.** `q ≠ 2` and `q ≠ N` do
+NOT exclude `N = 2`, and the tree's Néron–Ogg–Šafarevič criterion
+`torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used only
+inside `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`,
+through the coprimality of `Ψ₂²` with `preΨ'ₙ`. The statement here is TRUE at
+`N = 2` — good reduction gives an unramified action on `E[ℓ]` for every `ℓ ≠ q`,
+and `q ≠ 2` keeps `2` invertible in the residue field — so this is a
+proving-effort obligation, not a faithfulness defect. A prover must either supply
+the `n = 2` case of those two lemmas in
+`KnownIn1980s/EllipticCurves/GoodReduction.lean` (the `2`-torsion abscissae are
+the roots of the `2`-division polynomial, separable mod `q` exactly because
+`q ≠ 2` and the reduction is elliptic), or restate this leaf with `Odd N` and
+push the restriction up the chain. NOT NARROWED AT THE CUT: the ultimate consumer
+`hasseWeil_trace_frobeniusTorsionEnd_of_jIntegral` carries `23 ≤ N`, so no
+downstream use actually reaches `N = 2`, but every statement between here and
+there is quantified over all primes `N` and narrowing them is another owner's
+edit.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: an `N`-torsion point of `E` over `ℚ̄`
+whose image on `D.V` has a coordinate outside `𝒪`, or two distinct `N`-torsion
+points with the same residue coordinates. The first contradicts
+`torsion_abscissa_mem` at the minimal integral model `D.V`; the second
+contradicts `torsion_abscissa_residue_ne`, whose hypotheses (`N` prime, `N`
+invertible in the residue field, good reduction) are all in hand. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    ∃ ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N),
+      Fr.IsTorsionReduction ψ₀ :=
+  sorry
+
+/-- **A FROBENIUS LIFT ACTS THROUGH THE REDUCTION MAP AS THE `q`-POWER FROBENIUS**
+(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three;
+this is the SMALL half of that cut).
+
+WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above, and
+`σ` fixes `emb K` pointwise, lies in the decomposition group of `𝒪` and induces
+`x ↦ x^q` on `κ(𝒪)`, then `ψ₀ ∘ ρ(σ) = F ∘ ψ₀`.
+
+WHY IT IS TRUE, AND WHY IT IS SMALL. Everything is a computation on coordinates
+once the pinning `hψ₀` is available:
+
+* `σ` fixes `emb K` pointwise, hence fixes the four coefficients of
+  `D.C.map Fr.emb`, hence COMMUTES with `modelEquiv`. This is the same
+  computation as `Affine.Point.equivVariableChangeBaseChange_galois` in the
+  project shim, which cannot be cited verbatim only because `σ` is a
+  `ℚ`-automorphism rather than a `K`-algebra map — but `hσK` says exactly that it
+  becomes one, so `Fr.emb.toAlgebra` turns `σ` into a `D.K`-algebra map and the
+  shim lemma applies;
+* so if the model point of `P` is `(X, Y)`, that of `ρ(σ) P` is `(σX, σY)`;
+* `IsLocalRing.ResidueField.residue_smul` turns `residue 𝒪 (σ • z)` into
+  `⟨σ, hdecS⟩ • residue 𝒪 z`, and `hσres` turns that into `(residue 𝒪 z) ^ q`;
+* `Fr.resIso` is a ring equivalence, so it carries `q`-th powers to `q`-th
+  powers;
+* `WeilPairing.frobeniusTorsionEnd` is by definition the restriction of
+  `Affine.Point.map (WeilPairing.frobAlgHom q)`, and `frobAlgHom q` is
+  `x ↦ x ^ q`.
+
+NO ARITHMETIC IS CONSUMED HERE beyond what `hψ₀` already carries, and that is
+what makes the leaf faithful: a cut handing `ψ₀` over constrained ONLY by
+`ψ₀ ρ(σ) ψ₀⁻¹ = F` would be false — see the atomicity audit below.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a torsion point whose model coordinates
+are integral but whose `σ`-image has a non-integral coordinate. Impossible: `σ`
+lies in the decomposition group of `𝒪`, so it preserves `𝒪` setwise. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
+    (hψ₀ : Fr.IsTorsionReduction ψ₀)
+    (σ : Field.absoluteGaloisGroup ℚ)
+    (hdecS : σ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hσK : ∀ x : D.K, σ (Fr.emb x) = Fr.emb x)
+    (hσres : ∀ z : GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      (⟨σ, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
+        IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :
+    ∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
+      WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) :=
+  sorry
+
+/-- **INERTIA ACTS THROUGH THE REDUCTION MAP AS AN AUTOMORPHISM OF THE REDUCED
+CURVE — SERRE–TATE** (sorry leaf, opened 2026-07-28 by cutting
+`exists_torsionFrame` below into three; this is where the remaining mathematics
+of that leaf sits).
+
+WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above and
+`τ` lies in the inertia subgroup at `𝒪`, then `ψ₀ ρ(τ) ψ₀⁻¹` is
+`autTorsionEnd` of an automorphism `C` of `Ẽ` over `𝔽̄_q`, presented as the
+variable change it is.
+
+WHY `τ` IS DIFFERENT FROM `σ`, and it is the whole difficulty: `τ` need NOT fix
+`K`. Inertia over `ℚ` moves `K` whenever `K/ℚ` is ramified at `q` — and it must,
+since `E` has potentially good but in general NOT good reduction, so `ρ` is
+genuinely ramified at `q`. Hence `τ` does not commute with `modelEquiv`, and the
+FAILURE to commute is precisely the automorphism.
+
+THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try first: `τ`
+carries the variable change `D.C.map Fr.emb` to its `τ`-conjugate, and
+`Dτ := (Cᵗᵃᵘ) · C⁻¹` is a variable change between two integral models of the same
+curve, both with unit discriminant, hence has unit entries in `𝒪`, hence reduces
+to a variable change over `κ(𝒪)` — and that reduction is the `C` of the
+conclusion. `τ` fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
+reduce to the SAME `Ẽ`.
+
+AVAILABLE AND NOT TO BE REBUILT: `Affine.Point.equivVariableChange`,
+`equivVariableChangeBaseChange` and `equivVariableChangeBaseChange_galois`, in
+the project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`; and
+`WeierstrassCurve.autTorsionEnd` above, which is already built on them.
+Serre–Tate itself is ABSENT from all three trees (`Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`, grepped 2026-07-27), which is why the
+elementary route is the recommended one.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: an inertia element at `𝒪` whose action on
+`E[N](ℚ̄)`, transported by `ψ₀`, is induced by no variable change of `Ẽ` over
+`𝔽̄_q`. By the route above that would need `Dτ` to have a non-unit entry, i.e.
+one of the two models to be non-minimal, which `D.V_good` excludes.
+
+THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END for this statement; the reason is
+structural rather than technical and is recorded in full on
+`exists_torsionFrame` below. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
+    (hψ₀ : Fr.IsTorsionReduction ψ₀)
+    (τ : Field.absoluteGaloisGroup ℚ)
+    (hdecT : τ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hτin : (⟨τ, hdecT⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).inertiaSubgroup ℚ) :
+    ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (hC : C • ((D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
+      ∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) :=
+  sorry
+
 /-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
-(sorry leaf, opened 2026-07-27 by cutting
-`exists_reductionFrame_of_potentiallyGoodModel` below into three; this is the
-piece that survives the cut, and the audits that used to sit on the parent live
-here now because they describe THIS statement's content).
+(opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
+below into three; **PROVEN 2026-07-28** over the three leaves immediately above,
+by the COORDINATEWISE cut that this docstring's own atomicity audit named as the
+recommended one).
+
+THE PROOF HERE is three lines and no mathematics: `exists_isTorsionReduction`
+produces `ψ₀` together with its coordinatewise pinning
+`Fr.IsTorsionReduction ψ₀`, and the two equivariances are then
+`frobenius_of_isTorsionReduction` and `exists_aut_of_isTorsionReduction` applied
+to THAT `ψ₀`. Nothing receives `ψ₀` as free data — it is produced once and both
+leaves are handed it with its pinning — which is exactly what the audit below
+demands. **A prover should read those three docstrings, not this one**: the
+`N = 2` obligation and the Néron–Ogg–Šafarevič machinery survey now live on
+`exists_isTorsionReduction`, and the Serre–Tate route on
+`exists_aut_of_isTorsionReduction`. What remains here is the audit itself and
+the Chebotarev dead-end note, both of which are about the CUT rather than about
+any one leaf.
 
 WHAT IT SAYS. Given the placement `Fr` of `K` inside `ℚ̄`, a Frobenius lift `σ`
 — in the decomposition group of the pinned subring `𝒪`, fixing `emb K`
@@ -4892,12 +5201,29 @@ becomes two independently true statements. Note that the frame makes such a
 formulation WRITABLE for the first time: with `Fr.emb`, `Fr.comap_eq` and
 `Fr.resIso` in hand one can say "`ψ₀` sends a torsion point whose coordinates
 lie in `𝒪` to the point with the residue coordinates", and that IS a pinning up
-to `Aut(Ẽ)`. Splitting this leaf along that line is the recommended next step if
-it proves too large; it was not done at the cut because writing the
-coordinatewise characterisation first requires transporting `E`-points to
-`V`-points along `D.C`.
+to `Aut(Ẽ)`. Splitting this leaf along that line was the recommended next step;
+it was not done at the 2026-07-27 cut because writing the coordinatewise
+characterisation first requires transporting `E`-points to `V`-points along
+`D.C`.
 
-**THE `N = 2` OBLIGATION IS LIVE AND MUST NOT BE LEFT SILENT.** `q ≠ 2` and
+**THAT SPLIT WAS CARRIED OUT ON 2026-07-28 AND IS WHAT PROVES THIS LEAF.** The
+transport is `LocalFrame.modelEquiv` (PROVEN, over `LocalFrame.model_eq`), the
+characterisation is `LocalFrame.IsTorsionReduction`, and the three leaves are
+`exists_isTorsionReduction`, `frobenius_of_isTorsionReduction` and
+`exists_aut_of_isTorsionReduction` above. The split passes the audit for the
+reason the audit itself predicted, and in fact more strongly than it predicted:
+`IsTorsionReduction` pins `ψ₀` OUTRIGHT rather than up to `Aut(Ẽ)`, because the
+transport is along the GIVEN `D.C` and the residue identification is the GIVEN
+`Fr.resIso`. So the two consumers receive one and the same, uniquely determined,
+`ψ₀`, and none of the three counterexamples above can be instantiated: `Wbar₀` is
+`D.redCurve`, `ψ₀` is pinned pointwise, and `σ` is still constrained
+valuation-theoretically rather than by any representation-level identity.
+
+**THE `N = 2` OBLIGATION IS LIVE. It now lives on `exists_isTorsionReduction`
+above**, which is the only one of the three leaves that consumes oddness (through
+`torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`); the full
+statement of the obligation is reproduced there. It is kept below as well, since
+it is a fact about THIS statement's quantification: `q ≠ 2` and
 `q ≠ N` do NOT exclude `N = 2`, and the tree's Néron–Ogg–Shafarevich criterion
 `torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used
 only inside `torsion_abscissa_residue_ne` and
@@ -4916,41 +5242,22 @@ between here and there is quantified over all primes `N` and narrowing them is
 another owner's edit.
 
 MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
-`.lake/packages/mathlib/`, `~/cs/FLT/`).
+`.lake/packages/mathlib/`, `~/cs/FLT/`) — **the survey has been REDISTRIBUTED to
+the leaves that consume it, and the copies there are the live ones**:
 
-* **Néron–Ogg–Shafarevich is PARTLY PRESENT and must not be rebuilt.**
-  `WeierstrassCurve.torsion_unramified_of_good_reduction`
-  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free) is
-  precisely "good reduction over a DVR `R` ⟹ inertia at a valuation subring
-  above `R` acts trivially on the `n`-torsion", for odd `n` invertible in the
-  residue field — stated over a GENERAL `R`, `k`, `ksep` and `𝒪`, with the
-  hypothesis `h𝒪` that `Fr.comap_eq` is written to match verbatim. Its
-  companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
-  `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq` are the
-  reduction-injectivity half, and `WeierstrassCurve.RtoO` /
-  `isLocalHom_RtoO` are the `R → 𝒪` plumbing built from the same `h𝒪`. Take
-  `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`; it is a separable
-  closure of `D.K` because the characteristic is zero. The assembly pattern to
-  copy is the PROVEN `WeilPairing.exists_frobenius_reduction_model`, a ~2800-line
-  monolith that does exactly this work at the good primes of a global integral
-  model over `ℚ` — including the construction of `redFun`, its additivity, its
-  injectivity on torsion and its surjectivity by counting. The only new
-  ingredients here are that the base is `K` rather than `ℚ` and that the
-  Frobenius lift arrives as a hypothesis rather than from unramifiedness.
-* **Serre–Tate is ABSENT from all three trees.** What is available and should be
-  used rather than rebuilt is the point-level transport of a `VariableChange` —
-  `Affine.Point.equivVariableChange` and its Galois-equivariant base-changed
-  form `equivVariableChangeBaseChange_galois`, in the project shim
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — and
-  the definition `WeierstrassCurve.autTorsionEnd` above, which is already built
-  on it. THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try
-  first: `τ` carries the variable change `D.C` to `D.C^τ`, and
-  `D_τ := D.C^τ (D.C)⁻¹` is a variable change between two integral models of the
-  same curve with unit discriminant, hence has unit entries in `𝒪`, hence
-  reduces to a variable change over `κ(𝒪)`, which is the automorphism `C`. Note
-  `τ` need NOT fix `K` — inertia over `ℚ` moves `K` when `K/ℚ` is ramified at
-  `q` — but it fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
-  reduce to the same `Ẽ`.
+* the **Néron–Ogg–Šafarevič** half (`torsion_unramified_of_good_reduction` and
+  its companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
+  `torsion_abscissa_residue_ne`, `torsion_ordinate_eq_of_residue_eq`, plus the
+  `R → 𝒪` plumbing `WeierstrassCurve.RtoO` / `isLocalHom_RtoO`, all PROVEN and
+  sorry-free, taking `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra` and
+  `h𝒪 := Fr.comap_eq` verbatim, with
+  `WeilPairing.exists_frobenius_reduction_model` as the assembly pattern to
+  copy) is on `exists_isTorsionReduction` above;
+* the **Serre–Tate** half (Serre–Tate itself ABSENT from all three trees; the
+  elementary `Dτ := Cᵗᵃᵘ · C⁻¹` route; the shim
+  `Affine.Point.equivVariableChange` / `equivVariableChangeBaseChange_galois`
+  and `WeierstrassCurve.autTorsionEnd`) is on
+  `exists_aut_of_isTorsionReduction` above.
 
 THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END HERE, and the reason is structural
 rather than technical — recorded so that nobody spends a cycle re-searching it
@@ -5002,8 +5309,12 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame
       (∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
         WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x)) ∧
       (∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
-        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) :=
-  sorry
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) := by
+  obtain ⟨ψ₀, hψ₀⟩ := Fr.exists_isTorsionReduction hN hq2 hqN
+  obtain ⟨C, hC, haut⟩ :=
+    Fr.exists_aut_of_isTorsionReduction hN hq2 hqN ψ₀ hψ₀ τ hdecT hτin
+  exact ⟨ψ₀, C, hC,
+    Fr.frobenius_of_isTorsionReduction hN hqN ψ₀ hψ₀ σ hdecS hσK hσres, haut⟩
 
 /-- **The reduction frame at `q`: Néron–Ogg–Shafarevich and Serre–Tate,
 packaged against the PINNED reduction curve** (PROVEN 2026-07-27 over the three
