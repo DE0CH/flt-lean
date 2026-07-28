@@ -28,6 +28,11 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+-- The two Bosma–Lenstra addition laws, ring-level.  They are SIBLING modules on
+-- purpose: neither uses the other, and each carries a multi-minute
+-- `linear_combination`/`ring1`, so keeping them apart lets the two normalisations
+-- elaborate concurrently instead of in series on one core.  Do not merge them.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveEquationAdd
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveAddition
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth

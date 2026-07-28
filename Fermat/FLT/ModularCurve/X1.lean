@@ -367,7 +367,7 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1GITPresentation` | Katz-Mazur (8.1.1)/(8.1.3): the rigidified moduli scheme and its deck group | any `K`, `char K ∤ N` |
+| `exists_gamma1Rigidification` | Katz-Mazur (8.1.1): the rigidified moduli scheme, its deck group and its level torsor.  (`exists_gamma1GITPresentation` is PROVEN over it, 2026-07-27, together with `nonempty_gamma1GITPresentation_of_rigidification`; and so are `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`, over the three ring-level rows here.) | any `K`, `char K ∤ N` |
 | `geometricComponents_of_gamma1GITPresentation` | Katz-Mazur 8.1.1 + Deligne-Rapoport IV.5.5: `Spec A` nonempty, reduced, components permuted transitively by `G` | any `K`, `char K ∤ N` |
 | `locallyStandardSmooth_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
@@ -380,6 +380,11 @@ open in them has been split along the theories it needed:
 | `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` | Eichler-Shimura + Kolyvagin-Logachev, shape-free | `ℚ` |
 | `exists_isLFunctionOf_of_isWeightTwoEigenformOn` | Hecke continuation, shape-free | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
+| `hasNonconstantAbelianMap_of_one_le_x1Genus` | a positive-genus curve admits a nonconstant map to an abelian variety | `ℚ` |
+
+(Table regenerated at the release-10 integration, 2026-07-28, from the
+compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
+it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.)
 | `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | `ℚ` |
 
 **This table was REGENERATED at integration (2026-07-27) from a
