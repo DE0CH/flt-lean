@@ -98,10 +98,11 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-The open leaves of this FILE are therefore SEVENTEEN, and this list is the
+The open leaves of this FILE are therefore SIXTEEN, and this list is the
 COMPILER's `declaration uses 'sorry'` warning set of a green
-`lake build Fermat.FLT.ModularCurve.EllipticScheme` after merging release 6,
-transcribed (2026-07-27) rather than taken from any branch's prose —
+`lake build Fermat.FLT.ModularCurve.EllipticScheme` after merging release 6 and
+closing `projAdd2X_mul_addY` (2026-07-28),
+transcribed rather than taken from any branch's prose —
 several branches each carried a list that was correct on its own branch and
 wrong once the others landed.  A rising count here is DISCLOSURE: the
 second-law cut of `exists_projMulOfCoords` closed one leaf and opened three,
@@ -180,9 +181,13 @@ is, in source order:
   certificate; see the section heading "Completeness of the two-law system" for
   why the certificate hunt this file used to prescribe was unnecessary) and
   `ProjCoords.toHom_add2_eq_toHom_add` (the two laws agree on the overlap).
-  The open residues are `projAdd2X_mul_addY` (the third cross-relation, a
-  polynomial certificate, sibling of the two in `ProjectiveAddition.lean` and
-  stated here only to avoid a concurrent edit of that file),
+  A THIRD, `projAdd2X_mul_addY` (the third cross-relation, sibling of the two in
+  `ProjectiveAddition.lean` and stated here only to avoid a concurrent edit of
+  that file), is **PROVEN as of 2026-07-28** by an explicit `Singular` cofactor
+  certificate; **it should be MOVED beside its siblings and renamed
+  `WeierstrassCurve.Projective.add2X_mul_addY`** once that worktree lands, since
+  nothing in it belongs to this file and everyone who rebuilds this file pays its
+  `ring1`.  The open residues are
   `projSpan_add2XYZ_self_eq_top` (the second law is non-degenerate on the
   DIAGONAL over a field — the ONE remaining polynomial input to completeness),
   `exists_projCoordsCover` (local coordinate data on `A ×_ℚ A`) and
@@ -1105,7 +1110,7 @@ theorem projMap_add2XYZ {R S : Type} [CommRing R] [CommRing S] (f : R →+* S)
     add2XYZ (W'.map f) (f ∘ P) (f ∘ Q) = f ∘ add2XYZ W' P Q := by
   simp only [add2XYZ, projMap_add2X, projMap_add2Y, projMap_add2Z, comp_fin3]
 
-/-- **The `X`/`Y` cross-relation of the two addition laws** (sorry node — the
+/-- **The `X`/`Y` cross-relation of the two addition laws** (PROVEN — the
 THIRD and last of the proportionality identities, a sibling of
 `WeierstrassCurve.Projective.add2X_mul_addZ` and `add2Y_mul_addZ`).
 
@@ -1129,16 +1134,154 @@ Two triples that each generate the unit ideal are proportional by a UNIT exactly
 when all NINE cross-relations hold — see `exists_units_smul_of_crossMul` — so all
 three of the nontrivial ones are load-bearing.
 
-*The identity is true* by the same `Singular`/Magma computation that produced the
-other two: multiply `add2X · addZ = add2Z · addX` by `addY` and
-`add2Y · addZ = add2Z · addY` by `addX` to get
-`(add2X · addY − add2Y · addX) · addZ ≡ 0 mod (W(P), W(Q))`, and
-`R ⧸ (W(P), W(Q))` is a domain in which `addZ ≠ 0`.  That argument does not
-survive to an arbitrary ring, which is why a certificate is still wanted. -/
+## How it is proved: an explicit ideal-membership certificate
+
+The `addZ`-cancellation argument sketched above — multiply
+`add2X · addZ = add2Z · addX` by `addY` and `add2Y · addZ = add2Z · addY` by
+`addX` to get `(add2X · addY − add2Y · addX) · addZ ≡ 0 mod (W(P), W(Q))`, then
+cancel `addZ` because `ℤ[aᵢ][P, Q] ⧸ (W(P), W(Q))` is a domain — proves the
+identity only in that quotient, and does NOT survive to an arbitrary ring.  What
+does survive is the resulting ideal membership itself, so the proof below is a
+single `linear_combination` against the two curve equations:
+
+  `add2X · addY − add2Y · addX = A · W(P) + B · W(Q)`
+
+with the cofactors computed in `Singular` exactly as for `equation_addXYZ` —
+`lift` against the Gröbner basis `{W(P), W(Q)}` of
+`ℚ(a₁, …, a₆)[Px, Py, Pz, Qx, Qy, Qz]` (the two generators have the coprime
+leading terms `-Px³` and `-Qx³`, so they already form one).  `A` and `B` come out
+with **31 and 40 monomials**, of bidegrees `(1, 4)` and `(4, 1)`, and — the part
+that makes the statement true over an arbitrary commutative ring rather than only
+over a `ℚ`-algebra — with **no denominators in the `aᵢ`**, i.e. they lie in
+`ℤ[a₁, …, a₆][P, Q]`.
+
+Both sides are bihomogeneous of bidegree `(4, 4)`, two degrees below
+`equation_addXYZ`'s `(6, 6)`, which is why this `ring1` costs seconds rather than
+`equation_addXYZ`'s four and a half minutes and needs no heartbeat bump. -/
 theorem projAdd2X_mul_addY {R : Type*} [CommRing R] (W' : WeierstrassCurve R)
     {P Q : Fin 3 → R} (hP : Equation W' P) (hQ : Equation W' Q) :
-    add2X W' P Q * addY W' P Q = add2Y W' P Q * addX W' P Q :=
-  sorry
+    add2X W' P Q * addY W' P Q = add2Y W' P Q * addX W' P Q := by
+  rw [equation_iff] at hP hQ
+  simp only [add2X, add2Y, addY, negY_eq, addX, negAddY, addZ]
+  linear_combination (norm := ring1)
+    ((-3 * W'.a₂) * P 0 * Q 0 ^ 2 * Q 1 ^ 2 + (6 * W'.a₁) * P 1 * Q 0 ^ 2 * Q 1 ^ 2 + (-3 *
+      W'.a₄) * P 2 * Q 0 ^ 2 * Q 1 ^ 2 + 3 * P 1 * Q 0 * Q 1 ^ 3 + (-W'.a₁ ^ 3 * W'.a₂ - 3 *
+      W'.a₁ ^ 2 * W'.a₃ + 2 * W'.a₁ * W'.a₂ ^ 2 - 3 * W'.a₁ * W'.a₄ - 3 * W'.a₂ * W'.a₃) * P 0 *
+      Q 0 ^ 2 * Q 1 * Q 2 + (W'.a₁ ^ 4 - 3 * W'.a₁ ^ 2 * W'.a₂ + 6 * W'.a₁ * W'.a₃ - W'.a₂ ^ 2 +
+      3 * W'.a₄) * P 1 * Q 0 ^ 2 * Q 1 * Q 2 + (-W'.a₁ ^ 3 * W'.a₄ + 2 * W'.a₁ * W'.a₂ * W'.a₄ -
+      3 * W'.a₁ * W'.a₃ ^ 2 - 9 * W'.a₁ * W'.a₆ - 3 * W'.a₃ * W'.a₄) * P 2 * Q 0 ^ 2 * Q 1 * Q 2 +
+      (-4 * W'.a₁ ^ 2 * W'.a₂ - 3 * W'.a₁ * W'.a₃ - W'.a₂ ^ 2 - 3 * W'.a₄) * P 0 * Q 0 * Q 1 ^ 2 *
+      Q 2 + (5 * W'.a₁ ^ 3 + 2 * W'.a₁ * W'.a₂ + 3 * W'.a₃) * P 1 * Q 0 * Q 1 ^ 2 * Q 2 + (-4 *
+      W'.a₁ ^ 2 * W'.a₄ - W'.a₂ * W'.a₄ - 3 * W'.a₃ ^ 2 - 9 * W'.a₆) * P 2 * Q 0 * Q 1 ^ 2 * Q 2 +
+      (-3 * W'.a₁ * W'.a₂) * P 0 * Q 1 ^ 3 * Q 2 + (4 * W'.a₁ ^ 2 + W'.a₂) * P 1 * Q 1 ^ 3 * Q 2 +
+      (-3 * W'.a₁ * W'.a₄) * P 2 * Q 1 ^ 3 * Q 2 + (W'.a₁ ^ 3 * W'.a₂ * W'.a₃ - W'.a₁ ^ 2 *
+      W'.a₂ ^ 3 + 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 3 * W'.a₁ ^ 2 * W'.a₃ ^ 2 + 4 * W'.a₁ * W'.a₂
+      ^ 2 * W'.a₃ - 6 * W'.a₁ * W'.a₃ * W'.a₄ - W'.a₂ ^ 4 + 5 * W'.a₂ ^ 2 * W'.a₄ - 3 * W'.a₂ *
+      W'.a₃ ^ 2 - 9 * W'.a₂ * W'.a₆ - 3 * W'.a₄ ^ 2) * P 0 * Q 0 ^ 2 * Q 2 ^ 2 + (W'.a₁ ^ 3 *
+      W'.a₂ ^ 2 - W'.a₁ ^ 3 * W'.a₄ - 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ + W'.a₁ * W'.a₂ ^ 3 - 4 *
+      W'.a₁ * W'.a₂ * W'.a₄ + 3 * W'.a₁ * W'.a₃ ^ 2 + 9 * W'.a₁ * W'.a₆) * P 1 * Q 0 ^ 2 * Q 2
+      ^ 2 + (-W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ + W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2 + 3 * W'.a₁ ^ 2 *
+      W'.a₂ * W'.a₆ + W'.a₁ ^ 2 * W'.a₄ ^ 2 + 3 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ - 3 * W'.a₁ *
+      W'.a₃ ^ 3 - 9 * W'.a₁ * W'.a₃ * W'.a₆ - W'.a₂ ^ 3 * W'.a₄ + W'.a₂ ^ 2 * W'.a₃ ^ 2 + 3 *
+      W'.a₂ ^ 2 * W'.a₆ + 4 * W'.a₂ * W'.a₄ ^ 2 - 6 * W'.a₃ ^ 2 * W'.a₄ - 18 * W'.a₄ * W'.a₆) *
+      P 2 * Q 0 ^ 2 * Q 2 ^ 2 + (-W'.a₁ ^ 4 * W'.a₃ + W'.a₁ ^ 3 * W'.a₂ ^ 2 - W'.a₁ ^ 3 * W'.a₄ -
+      5 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ + W'.a₁ * W'.a₂ ^ 3 - W'.a₁ * W'.a₂ * W'.a₄ - 3 * W'.a₁ *
+      W'.a₃ ^ 2 - W'.a₂ ^ 2 * W'.a₃ - 3 * W'.a₃ * W'.a₄) * P 0 * Q 0 * Q 1 * Q 2 ^ 2 + (-W'.a₁
+      ^ 4 * W'.a₂ + 4 * W'.a₁ ^ 3 * W'.a₃ - W'.a₁ ^ 2 * W'.a₂ ^ 2 - W'.a₁ ^ 2 * W'.a₄ + W'.a₁ *
+      W'.a₂ * W'.a₃ - W'.a₂ * W'.a₄ + 3 * W'.a₃ ^ 2 + 9 * W'.a₆) * P 1 * Q 0 * Q 1 * Q 2 ^ 2 +
+      (W'.a₁ ^ 3 * W'.a₂ * W'.a₄ - W'.a₁ ^ 3 * W'.a₃ ^ 2 - 3 * W'.a₁ ^ 3 * W'.a₆ - 4 * W'.a₁ ^ 2 *
+      W'.a₃ * W'.a₄ + W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 3 * W'.a₁ * W'.a₂ *
+      W'.a₆ - W'.a₂ * W'.a₃ * W'.a₄ - 3 * W'.a₃ ^ 3 - 9 * W'.a₃ * W'.a₆) * P 2 * Q 0 * Q 1 * Q 2
+      ^ 2 + (-W'.a₁ ^ 3 * W'.a₃ + W'.a₁ ^ 2 * W'.a₂ ^ 2 - W'.a₁ ^ 2 * W'.a₄ - 7 * W'.a₁ * W'.a₂ *
+      W'.a₃ + W'.a₂ ^ 3 - 4 * W'.a₂ * W'.a₄) * P 0 * Q 1 ^ 2 * Q 2 ^ 2 + (-W'.a₁ ^ 3 * W'.a₂ + 7 *
+      W'.a₁ ^ 2 * W'.a₃ - W'.a₁ * W'.a₂ ^ 2 + 3 * W'.a₁ * W'.a₄ + W'.a₂ * W'.a₃) * P 1 * Q 1 ^ 2 *
+      Q 2 ^ 2 + (W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - W'.a₁ ^ 2 * W'.a₃ ^ 2 - 3 * W'.a₁ ^ 2 * W'.a₆ - 6 *
+      W'.a₁ * W'.a₃ * W'.a₄ + W'.a₂ ^ 2 * W'.a₄ - W'.a₂ * W'.a₃ ^ 2 - 3 * W'.a₂ * W'.a₆ - 3 *
+      W'.a₄ ^ 2) * P 2 * Q 1 ^ 2 * Q 2 ^ 2 + (W'.a₁ ^ 3 * W'.a₃ * W'.a₄ - W'.a₁ ^ 2 * W'.a₂ ^ 2 *
+      W'.a₄ + W'.a₁ ^ 2 * W'.a₄ ^ 2 + 5 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ - 3 * W'.a₁ * W'.a₃ ^ 3 -
+      9 * W'.a₁ * W'.a₃ * W'.a₆ - W'.a₂ ^ 3 * W'.a₄ - W'.a₂ ^ 2 * W'.a₃ ^ 2 - 3 * W'.a₂ ^ 2 *
+      W'.a₆ + 5 * W'.a₂ * W'.a₄ ^ 2 - 3 * W'.a₃ ^ 2 * W'.a₄ - 9 * W'.a₄ * W'.a₆) * P 0 * Q 0 *
+      Q 2 ^ 3 + (W'.a₁ ^ 3 * W'.a₂ * W'.a₄ - 4 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ + W'.a₁ * W'.a₂ ^ 2 *
+      W'.a₄ + W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + 3 * W'.a₁ * W'.a₂ * W'.a₆ - 4 * W'.a₁ * W'.a₄ ^ 2) *
+      P 1 * Q 0 * Q 2 ^ 3 + (-W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 2 + W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ + 3 *
+      W'.a₁ ^ 2 * W'.a₄ * W'.a₆ + 4 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 - W'.a₂ ^ 2 * W'.a₄ ^ 2 - 3 *
+      W'.a₃ ^ 4 - 18 * W'.a₃ ^ 2 * W'.a₆ + 4 * W'.a₄ ^ 3 - 27 * W'.a₆ ^ 2) * P 2 * Q 0 * Q 2 ^ 3 +
+      (-W'.a₁ ^ 3 * W'.a₃ ^ 2 + W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ - W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - 4 *
+      W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + 3 * W'.a₁ * W'.a₂ * W'.a₆ + W'.a₂ ^ 3 * W'.a₃ - 4 * W'.a₂ *
+      W'.a₃ * W'.a₄) * P 0 * Q 1 * Q 2 ^ 3 + (-W'.a₁ ^ 3 * W'.a₂ * W'.a₃ + 3 * W'.a₁ ^ 2 * W'.a₃
+      ^ 2 - 3 * W'.a₁ ^ 2 * W'.a₆ - W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 2 * W'.a₁ * W'.a₃ * W'.a₄ +
+      W'.a₂ * W'.a₃ ^ 2 + 3 * W'.a₂ * W'.a₆ - W'.a₄ ^ 2) * P 1 * Q 1 * Q 2 ^ 3 + (W'.a₁ ^ 2 *
+      W'.a₂ * W'.a₃ * W'.a₄ - W'.a₁ ^ 2 * W'.a₃ ^ 3 - 3 * W'.a₁ ^ 2 * W'.a₃ * W'.a₆ - 3 * W'.a₁ *
+      W'.a₃ ^ 2 * W'.a₄ + 3 * W'.a₁ * W'.a₄ * W'.a₆ + W'.a₂ ^ 2 * W'.a₃ * W'.a₄ - W'.a₂ * W'.a₃
+      ^ 3 - 3 * W'.a₂ * W'.a₃ * W'.a₆ - 3 * W'.a₃ * W'.a₄ ^ 2) * P 2 * Q 1 * Q 2 ^ 3 + (-W'.a₁
+      ^ 2 * W'.a₂ ^ 2 * W'.a₆ + W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ - W'.a₁ * W'.a₂ * W'.a₃ ^ 3 + 2 *
+      W'.a₁ * W'.a₃ * W'.a₄ ^ 2 - W'.a₂ ^ 3 * W'.a₆ - W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + W'.a₄ ^ 3) *
+      P 0 * Q 2 ^ 4 + (W'.a₁ ^ 3 * W'.a₂ * W'.a₆ - 3 * W'.a₁ ^ 2 * W'.a₃ * W'.a₆ + W'.a₁ * W'.a₂
+      ^ 2 * W'.a₆ - 3 * W'.a₁ * W'.a₄ * W'.a₆) * P 1 * Q 2 ^ 4 + (-W'.a₁ ^ 2 * W'.a₂ * W'.a₄ *
+      W'.a₆ + W'.a₁ * W'.a₃ ^ 3 * W'.a₄ + 6 * W'.a₁ * W'.a₃ * W'.a₄ * W'.a₆ - W'.a₂ ^ 2 * W'.a₄ *
+      W'.a₆ - W'.a₂ * W'.a₃ ^ 4 - 6 * W'.a₂ * W'.a₃ ^ 2 * W'.a₆ - 9 * W'.a₂ * W'.a₆ ^ 2 + W'.a₃
+      ^ 2 * W'.a₄ ^ 2 + 6 * W'.a₄ ^ 2 * W'.a₆) * P 2 * Q 2 ^ 4) * hP +
+    ((3 * W'.a₁ * W'.a₂) * P 0 ^ 3 * P 1 * Q 0 + (-3 * W'.a₁ ^ 2 + 3 * W'.a₂) * P 0 ^ 2 * P 1
+      ^ 2 * Q 0 + (-3 * W'.a₁) * P 0 * P 1 ^ 3 * Q 0 + (-W'.a₁ ^ 2 * W'.a₂ ^ 2 + 3 * W'.a₁ *
+      W'.a₂ * W'.a₃ - W'.a₂ ^ 3 + 3 * W'.a₂ * W'.a₄) * P 0 ^ 3 * P 2 * Q 0 + (2 * W'.a₁ ^ 3 *
+      W'.a₂ - 3 * W'.a₁ ^ 2 * W'.a₃ + 2 * W'.a₁ * W'.a₂ ^ 2 + 3 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 *
+      P 2 * Q 0 + (-W'.a₁ ^ 4 - 3 * W'.a₁ * W'.a₃ + W'.a₂ ^ 2 + 3 * W'.a₄) * P 0 * P 1 ^ 2 * P 2 *
+      Q 0 + (-W'.a₁ ^ 3 - W'.a₁ * W'.a₂) * P 1 ^ 3 * P 2 * Q 0 + (-2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ +
+      3 * W'.a₁ * W'.a₃ * W'.a₄ - 2 * W'.a₂ ^ 2 * W'.a₄ + 3 * W'.a₂ * W'.a₃ ^ 2 + 9 * W'.a₂ *
+      W'.a₆ + 3 * W'.a₄ ^ 2) * P 0 ^ 2 * P 2 ^ 2 * Q 0 + (2 * W'.a₁ ^ 3 * W'.a₄ + W'.a₁ ^ 2 *
+      W'.a₂ * W'.a₃ + 2 * W'.a₁ * W'.a₂ * W'.a₄ - 3 * W'.a₁ * W'.a₃ ^ 2 - 9 * W'.a₁ * W'.a₆ +
+      W'.a₂ ^ 2 * W'.a₃ + 3 * W'.a₃ * W'.a₄) * P 0 * P 1 * P 2 ^ 2 * Q 0 + (-W'.a₁ ^ 3 * W'.a₃ +
+      W'.a₁ ^ 2 * W'.a₄ - W'.a₁ * W'.a₂ * W'.a₃ + W'.a₂ * W'.a₄) * P 1 ^ 2 * P 2 ^ 2 * Q 0 +
+      (-W'.a₁ ^ 2 * W'.a₄ ^ 2 - W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + W'.a₂ ^ 2 * W'.a₃ ^ 2 + 3 *
+      W'.a₂ ^ 2 * W'.a₆ - 2 * W'.a₂ * W'.a₄ ^ 2 + 3 * W'.a₃ ^ 2 * W'.a₄ + 9 * W'.a₄ * W'.a₆) *
+      P 0 * P 2 ^ 3 * Q 0 + (2 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 3 *
+      W'.a₁ * W'.a₂ * W'.a₆ + W'.a₁ * W'.a₄ ^ 2 + W'.a₂ * W'.a₃ * W'.a₄) * P 1 * P 2 ^ 3 * Q 0 +
+      (-W'.a₁ * W'.a₃ * W'.a₄ ^ 2 + W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + 3 * W'.a₂ * W'.a₄ * W'.a₆ -
+      W'.a₄ ^ 3) * P 2 ^ 4 * Q 0 + (-3 * W'.a₁ * W'.a₂) * P 0 ^ 4 * Q 1 + (3 * W'.a₁ ^ 2) * P 0
+      ^ 3 * P 1 * Q 1 + (-3 * W'.a₁) * P 0 ^ 2 * P 1 ^ 2 * Q 1 - 3 * P 0 * P 1 ^ 3 * Q 1 + (-3 *
+      W'.a₁ * W'.a₂ ^ 2 - 3 * W'.a₁ * W'.a₄) * P 0 ^ 3 * P 2 * Q 1 + (7 * W'.a₁ ^ 2 * W'.a₂ - 3 *
+      W'.a₁ * W'.a₃ + W'.a₂ ^ 2 - 3 * W'.a₄) * P 0 ^ 2 * P 1 * P 2 * Q 1 + (-4 * W'.a₁ ^ 3 + 2 *
+      W'.a₁ * W'.a₂ - 3 * W'.a₃) * P 0 * P 1 ^ 2 * P 2 * Q 1 + (-4 * W'.a₁ ^ 2 - W'.a₂) * P 1
+      ^ 3 * P 2 * Q 1 + (-6 * W'.a₁ * W'.a₂ * W'.a₄) * P 0 ^ 2 * P 2 ^ 2 * Q 1 + (7 * W'.a₁ ^ 2 *
+      W'.a₄ + 3 * W'.a₁ * W'.a₂ * W'.a₃ + W'.a₂ * W'.a₄ - 3 * W'.a₃ ^ 2 - 9 * W'.a₆) * P 0 * P 1 *
+      P 2 ^ 2 * Q 1 + (-4 * W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₄ - W'.a₂ * W'.a₃) * P 1 ^ 2 *
+      P 2 ^ 2 * Q 1 + (-3 * W'.a₁ * W'.a₂ * W'.a₆ - 3 * W'.a₁ * W'.a₄ ^ 2) * P 0 * P 2 ^ 3 * Q 1 +
+      (3 * W'.a₁ ^ 2 * W'.a₆ + 4 * W'.a₁ * W'.a₃ * W'.a₄ - W'.a₂ * W'.a₃ ^ 2 - 3 * W'.a₂ * W'.a₆ +
+      W'.a₄ ^ 2) * P 1 * P 2 ^ 3 * Q 1 + (-3 * W'.a₁ * W'.a₄ * W'.a₆) * P 2 ^ 4 * Q 1 + (W'.a₁
+      ^ 2 * W'.a₂ ^ 2 - 3 * W'.a₁ * W'.a₂ * W'.a₃ + W'.a₂ ^ 3 - 3 * W'.a₂ * W'.a₄) * P 0 ^ 4 *
+      Q 2 + (-W'.a₁ ^ 3 * W'.a₂ + 6 * W'.a₁ ^ 2 * W'.a₃ - W'.a₁ * W'.a₂ ^ 2 + 6 * W'.a₁ * W'.a₄) *
+      P 0 ^ 3 * P 1 * Q 2 + (3 * W'.a₁ * W'.a₃ + 3 * W'.a₄) * P 0 ^ 2 * P 1 ^ 2 * Q 2 + (-W'.a₁
+      ^ 3 * W'.a₂ * W'.a₃ + W'.a₁ ^ 2 * W'.a₂ ^ 3 + 3 * W'.a₁ ^ 2 * W'.a₃ ^ 2 - 4 * W'.a₁ *
+      W'.a₂ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₃ * W'.a₄ + W'.a₂ ^ 4 - 3 * W'.a₂ ^ 2 * W'.a₄) * P 0
+      ^ 3 * P 2 * Q 2 + (W'.a₁ ^ 4 * W'.a₃ - 2 * W'.a₁ ^ 3 * W'.a₂ ^ 2 + W'.a₁ ^ 3 * W'.a₄ + 7 *
+      W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 2 * W'.a₁ * W'.a₂ ^ 3 + 7 * W'.a₁ * W'.a₂ * W'.a₄ + 6 * W'.a₁ *
+      W'.a₃ ^ 2 + 9 * W'.a₁ * W'.a₆ + 3 * W'.a₃ * W'.a₄) * P 0 ^ 2 * P 1 * P 2 * Q 2 + (W'.a₁
+      ^ 4 * W'.a₂ - 2 * W'.a₁ ^ 3 * W'.a₃ - 2 * W'.a₁ ^ 2 * W'.a₄ + 4 * W'.a₁ * W'.a₂ * W'.a₃ -
+      W'.a₂ ^ 3 + 4 * W'.a₂ * W'.a₄ + 3 * W'.a₃ ^ 2 + 9 * W'.a₆) * P 0 * P 1 ^ 2 * P 2 * Q 2 +
+      (W'.a₁ ^ 3 * W'.a₂ - 3 * W'.a₁ ^ 2 * W'.a₃ + W'.a₁ * W'.a₂ ^ 2 - 3 * W'.a₁ * W'.a₄) * P 1
+      ^ 3 * P 2 * Q 2 + (-W'.a₁ ^ 3 * W'.a₃ * W'.a₄ + 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ - W'.a₁
+      ^ 2 * W'.a₂ * W'.a₃ ^ 2 - 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - W'.a₁ ^ 2 * W'.a₄ ^ 2 - 7 *
+      W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + 6 * W'.a₁ * W'.a₃ ^ 3 + 18 * W'.a₁ * W'.a₃ * W'.a₆ + 2 *
+      W'.a₂ ^ 3 * W'.a₄ - W'.a₂ ^ 2 * W'.a₃ ^ 2 - 3 * W'.a₂ ^ 2 * W'.a₆ - 7 * W'.a₂ * W'.a₄ ^ 2 +
+      6 * W'.a₃ ^ 2 * W'.a₄ + 18 * W'.a₄ * W'.a₆) * P 0 ^ 2 * P 2 ^ 2 * Q 2 + (-2 * W'.a₁ ^ 3 *
+      W'.a₂ * W'.a₄ + 2 * W'.a₁ ^ 3 * W'.a₃ ^ 2 + 3 * W'.a₁ ^ 3 * W'.a₆ - W'.a₁ ^ 2 * W'.a₂ ^ 2 *
+      W'.a₃ + 7 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ + 5 * W'.a₁ * W'.a₂ *
+      W'.a₃ ^ 2 + 3 * W'.a₁ * W'.a₂ * W'.a₆ + 6 * W'.a₁ * W'.a₄ ^ 2 - W'.a₂ ^ 3 * W'.a₃ + 4 *
+      W'.a₂ * W'.a₃ * W'.a₄ + 3 * W'.a₃ ^ 3 + 9 * W'.a₃ * W'.a₆) * P 0 * P 1 * P 2 ^ 2 * Q 2 +
+      (W'.a₁ ^ 3 * W'.a₂ * W'.a₃ - W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 + 3 *
+      W'.a₁ ^ 2 * W'.a₆ + W'.a₁ * W'.a₂ ^ 2 * W'.a₃ - W'.a₂ ^ 2 * W'.a₄ + W'.a₂ * W'.a₃ ^ 2 + 3 *
+      W'.a₂ * W'.a₆ + 3 * W'.a₄ ^ 2) * P 1 ^ 2 * P 2 ^ 2 * Q 2 + (W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ +
+      W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 2 - 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ - 3 * W'.a₁ ^ 2 * W'.a₄ *
+      W'.a₆ + W'.a₁ * W'.a₂ * W'.a₃ ^ 3 - 5 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 + W'.a₂ ^ 3 * W'.a₆ +
+      W'.a₂ ^ 2 * W'.a₄ ^ 2 - 3 * W'.a₂ * W'.a₄ * W'.a₆ + 3 * W'.a₃ ^ 4 + 18 * W'.a₃ ^ 2 * W'.a₆ -
+      4 * W'.a₄ ^ 3 + 27 * W'.a₆ ^ 2) * P 0 * P 2 ^ 3 * Q 2 + (-W'.a₁ ^ 3 * W'.a₂ * W'.a₆ -
+      W'.a₁ ^ 2 * W'.a₂ * W'.a₃ * W'.a₄ + W'.a₁ ^ 2 * W'.a₃ ^ 3 + 6 * W'.a₁ ^ 2 * W'.a₃ * W'.a₆ -
+      W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 3 * W'.a₁ * W'.a₃ ^ 2 * W'.a₄ + 3 * W'.a₁ * W'.a₄ * W'.a₆ -
+      W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + W'.a₂ * W'.a₃ ^ 3 + 3 * W'.a₂ * W'.a₃ * W'.a₆ + 3 * W'.a₃ *
+      W'.a₄ ^ 2) * P 1 * P 2 ^ 3 * Q 2 + (W'.a₁ ^ 2 * W'.a₂ * W'.a₄ * W'.a₆ - W'.a₁ * W'.a₃ ^ 3 *
+      W'.a₄ - 6 * W'.a₁ * W'.a₃ * W'.a₄ * W'.a₆ + W'.a₂ ^ 2 * W'.a₄ * W'.a₆ + W'.a₂ * W'.a₃ ^ 4 +
+      6 * W'.a₂ * W'.a₃ ^ 2 * W'.a₆ + 9 * W'.a₂ * W'.a₆ ^ 2 - W'.a₃ ^ 2 * W'.a₄ ^ 2 - 6 * W'.a₄
+      ^ 2 * W'.a₆) * P 2 ^ 4 * Q 2) * hQ
 
 /-- **The second law is non-degenerate on the DIAGONAL, over a field** (sorry
 node — the ONE remaining polynomial input to completeness, and a finite case
@@ -1462,10 +1605,11 @@ The two RING-LEVEL inputs the gluing used to carry with it —
 `ProjCoords.span_union_coords_eq_top` (the two loci cover) and
 `ProjCoords.toHom_add2_eq_toHom_add` (they agree on the overlap) — are now
 **PROVEN** and are supplied here, so what remains above is purely
-scheme-theoretic.  Their own residue is two leaves,
-`projSpan_add2XYZ_self_eq_top` (a case analysis over a field) and
-`projAdd2X_mul_addY` (a polynomial certificate), plus the pin's missing
-naturality/rigidity of `Proj.fromOfGlobalSections`.
+scheme-theoretic.  Their own residue is now ONE leaf,
+`projSpan_add2XYZ_self_eq_top` (a case analysis over a field) — the other,
+`projAdd2X_mul_addY`, was a polynomial certificate and is **PROVEN as of
+2026-07-28** — plus the pin's missing naturality/rigidity of
+`Proj.fromOfGlobalSections`.
 
 Relative to the leaf this replaced, the two axioms `hunit` and `hinv` have been
 REMOVED from the statement: they are now derived, in `exists_projMulOfCoords`
