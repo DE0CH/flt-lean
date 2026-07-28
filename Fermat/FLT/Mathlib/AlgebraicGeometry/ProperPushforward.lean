@@ -97,11 +97,19 @@ run is for `pushoutSection`, not for `directImage`.
     (`isIntegral_appTop_of_universallyClosed`).
   * `finiteType_appTop_of_isProper` — **LEAF** (2026-07-28): `Γ(X, ⊤)` is a finite-TYPE
     `Γ(S, ⊤)`-algebra.  All that is left of Grothendieck finiteness in degree `0`.
-  * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-28):
-    `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal, equivalently the degree-zero
-    comparison map `A ⊗_R κ(s) ⟶ H⁰(X_s, 𝒪)` is INJECTIVE.  This is Hartshorne
-    III.12.11(a) / EGA III 7.8.6 in degree `0`, and it is now the *whole* of cohomology and
-    base change left in this file.
+  * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **PROVEN** (2026-07-28) over the
+    leaf below: `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal.  All this adds to the
+    leaf is linear algebra over the field `R/𝔪` — a nonzero vector in a space of dimension
+    at most one spans it — with the injection `R/𝔪 ↪ A/𝔪A` coming from lying over.
+  * `rank_quotient_appTop_le_one_of_isIso_appTop_fiber` — **LEAF** (2026-07-28):
+    `dim_{R/𝔪} A/𝔪A ≤ 1` at every maximal ideal, equivalently the degree-zero comparison
+    map `A ⊗_R κ(s) ⟶ H⁰(X_s, 𝒪)` is INJECTIVE.  This is Hartshorne III.12.11(a) /
+    EGA III 7.8.6 in degree `0`, and it is now the *whole* of cohomology and base change
+    left in this file.  Its docstring carries the obstruction analysis (why no point-set,
+    localization, completion or Stein-factorization argument closes it), a 2026-07-28 pin
+    re-check run in **mathlib's** vocabulary rather than this project's, and the next cut:
+    a two-term finite-free Čech presentation of `H⁰` compatible with base change, plus one
+    purely commutative-algebra leaf about flatness of `LinearMap.range`.
 
   Two leaves that used to sit here are now **PROVEN** (2026-07-28), both from elementary
   consequences of `h` rather than from III.12.11:
@@ -1218,13 +1226,142 @@ theorem comap_map_appTop_eq_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
         Ideal.comap_mono (Ideal.map_le_iff_le_comap.mpr (hqm ▸ le_rfl))
     _ = m := hqm
 
+/-- **LEAF 3a — `A/𝔪A` IS AT MOST A LINE OVER `R/𝔪`** (LEAF, 2026-07-28).  This is
+Hartshorne III.12.11(a) in degree `0` (EGA III 7.8.6) and it is **the whole of cohomology
+and base change left in this file**: everything the surjectivity statement below adds to it
+is linear algebra over the field `R/𝔪`.
+
+**What it says.**  With `R = Γ(S, ⊤)`, `A = Γ(X, ⊤)` and `φ = f.appTop`, the ring
+`A/𝔪A = A ⊗_R κ(s)` — `s ∈ S` being the point cut out by the maximal ideal `𝔪`, so that
+`κ(s) = R/𝔪` — has dimension at most one as an `R/𝔪`-vector space.  Equivalently, and this
+is the form to attack, the degree-zero comparison map
+
+  `A ⊗_R κ(s)  =  A/𝔪A  ⟶  H⁰(X_s, 𝒪_{X_s})  =  Γ(f.fiber s, ⊤)`
+
+is **INJECTIVE**: the target is the field `κ(s)` by the hypothesis `h s`, so injectivity and
+`dim ≤ 1` are the same statement.  (That the comparison map is *surjective* is what `h s`
+gives for free: the composite `κ(s) = R/𝔪 ⟶ A/𝔪A ⟶ Γ(X_s, ⊤)` is
+`(f.fiberToSpecResidueField s).appTop` by `Scheme.Hom.fiber_fac` applied to global sections,
+and `h s` says that composite is an isomorphism.)
+
+The rank formulation is used rather than the map formulation because it keeps the *assembly*
+free of the point ↔ prime dictionary: the consumer below needs only `rank ≤ 1` together with
+the injection `R/𝔪 ↪ A/𝔪A` already proven in
+`comap_map_appTop_eq_of_isIso_appTop_fiber`.  A prover of this leaf will have to set up
+`κ(s) ≅ R/𝔪` for maximal `𝔪` (`Scheme.map_PrimeSpectrum_basicOpen_of_affine` and
+`Scheme.evaluation_eq_zero_iff_notMem_basicOpen` identify
+`RingHom.ker (S.Γevaluation s)` with `𝔪` for `s = S.isoSpec.inv ⟨𝔪, _⟩`); that bookkeeping
+belongs here, not in the assembly.
+
+**THE REAL OBSTRUCTION, and it is not point-set.**  `H⁰` is a KERNEL
+(`Γ(X, 𝒪) = ker(∏ Γ(U_i) ⇉ ∏ Γ(U_{ij}))`) and `κ(s)` is *not* a flat `R`-module, so
+`ker(M ⇉ N) ⊗ κ(s) ⟶ ker(M ⊗ κ(s) ⇉ N ⊗ κ(s))` need not be injective; the failure is
+measured by a `Tor₁`.  Killing it is exactly III.12.11(a) — flatness of `f` plus the
+constancy of `h⁰` supplied by `h`.
+
+**What is NOT enough** (checked twice, so that the next owner does not repeat it): `f`
+surjective gives `A/𝔪A ≠ 0`; `Γ(X, 𝒪) = A` makes `X ⟶ Spec A` surjective, hence
+`Spec(A/𝔪A)` connected, hence — with `Module.Finite R A` — `A/𝔪A` local artinian with
+residue field `κ(s)`.  So `A/𝔪A = κ(s) ⊕ 𝔫` with `𝔫` nilpotent and the leaf is exactly
+`𝔫 = 0`.  Nilpotents are invisible to the topology and the fibre may itself be non-reduced
+(a ribbon on `ℙ¹` has `H⁰ = k`), so `𝔫 = 0` follows from no point-set argument.  Nor does
+any of the following work, each of which was tried and is recorded so it is not tried again:
+* *Localize and complete.*  `R ⟶ R_𝔪` and `R ⟶ \hat R_𝔪` are FLAT, so
+  `isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` transports `A` along them and one
+  may assume `R` complete local noetherian.  Over such an `R` one gets, by induction on `n`
+  using flatness of `f` and a length count, `Γ(X ×_R R/𝔪ⁿ⁺¹, 𝒪) = R/𝔪ⁿ⁺¹` — i.e. base change
+  over ARTINIAN quotients is elementary.  What is missing is the comparison of `\hat A` with
+  `lim_n Γ(X_n, 𝒪)`, which is the THEOREM ON FORMAL FUNCTIONS; in degree `0` it amounts to
+  the Artin–Rees statement that `{Γ(X, 𝔪ⁿ𝒪_X)}` and `{𝔪ⁿ A}` are cofinal, and that is not
+  elementary.
+* *Reduce to the generic fibre.*  For `R` REDUCED the leaf does follow at the minimal primes
+  (`R ⟶ κ(𝔭)` is flat there, so flat base change applies), but `Supp(A/R)` can avoid every
+  minimal prime while being nonempty, so this proves nothing at a maximal ideal.  It is also
+  the Grauert route, which this file deliberately avoids: the bases fed in here are
+  arbitrary and are not assumed reduced.
+* *Stein factorization / ZMT.*  `X ⟶ Spec A` is proper and surjective with connected fibres,
+  and `Spec(A ⊗ κ(s))` is a single point either way, so it gives no new information.
+
+**PIN RE-CHECK, 2026-07-28, in MATHLIB's vocabulary rather than this project's.**  The
+absence claim above is not inherited; it was re-run against `Mathlib/` and `~/cs/FLT/`:
+* `QuasiCoherent` has **zero** occurrences anywhere under `Mathlib/AlgebraicGeometry/`.  So
+  there are no quasi-coherent sheaves, hence no coherent cohomology and no `Rⁱf_*`.
+* Sheaf cohomology exists only ABSTRACTLY and only on sites:
+  `Mathlib/CategoryTheory/Sites/SheafCohomology/Basic.lean` defines `H F n` as an `Ext` in
+  the category of `AddCommGrpCat`-valued sheaves, with `H.equiv₀ : H F 0 ≃+ F(T)`.  There is
+  no Čech comparison, no finiteness, no base change, and it is not connected to
+  `AlgebraicGeometry.Scheme.Modules`.
+* `Scheme.Modules` DOES exist now (`Mathlib/AlgebraicGeometry/Modules/Sheaf.lean`) with
+  `pushforward`, `pullback` and their adjunction — degree zero only, nothing derived.  This
+  is new since the paragraph at the head of this file was written and is the right place to
+  hang a future development.
+* `Tor` exists only as the abstract monoidal derived functor
+  (`Mathlib/CategoryTheory/Monoidal/Tor.lean`), related to flatness in
+  `Mathlib/RingTheory/Flat/CategoryTheory.lean`.
+* `~/cs/FLT` has nothing: its `FLT/Mathlib/AlgebraicGeometry/` contains only `EllipticCurve`.
+So the claim STANDS, and the route below is a theory build rather than a missing-lemma hunt.
+
+**THE CHOSEN ROUTE — Čech in degree `0`, which needs NO sheaf cohomology.**  This is the
+cheapest honest cut and it is where the next owner should start.  Two further leaves, one
+geometric and one pure commutative algebra:
+
+1. *(geometric)* **A two-term FINITE FREE presentation of `H⁰` compatible with base change.*
+   There are `n₀ n₁ : ℕ` and a matrix `d : Matrix (Fin n₁) (Fin n₀) R` with `R`-linear
+   isomorphisms `Γ(X, ⊤) ≃ₗ ker d.mulVecLin` and, for every `s : S`,
+   `Γ(f.fiber s, ⊤) ≃ₗ ker (d.map (algebraMap R κ(s))).mulVecLin`, compatibly with the
+   comparison map (the square with `Γ(X,⊤) ⊗ κ(s) ⟶ Γ(X_s,⊤)` on top commutes).
+   Classically: take a finite affine cover `𝔘` of `X` (`f` proper ⟹ `X` quasi-compact and
+   separated over affine `S`, so all `U_{i₀…i_p}` are affine), let `C^p` be the Čech complex
+   — its terms are FLAT `R`-modules because `f` is flat, and it commutes with base change
+   term by term because `Γ(U ×_S Spec R') = Γ(U) ⊗_R R'`.  The sheaf axiom gives
+   `Γ(X_{R'}, 𝒪) = ker(C⁰ ⊗ R' → C¹ ⊗ R')` in degree `0` alone, so no cohomology theory is
+   needed for the IDENTIFICATION.  Replacing `C^•` by a bounded complex of finite free
+   modules is Grothendieck's complex, and that step *does* use finiteness of `Hⁱ(X, 𝒪)` in
+   all degrees.
+2. *(commutative algebra, stateable and provable now)* with `R` noetherian, `M N` flat
+   `R`-modules, `N` finite, `d : M →ₗ[R] N`, if for every maximal `𝔪` the map
+   `(LinearMap.range d) ⊗ R/𝔪 ⟶ N ⊗ R/𝔪` is injective, then `Module.Flat R (range d)`.
+   Because: `N/range d` is finitely presented with `Tor₁(N/range d, R/𝔪) = 0` at every
+   maximal ideal, hence flat by the local criterion, hence `range d` is flat as the kernel of
+   a surjection of flat modules onto a flat module.  Then `0 ⟶ ker d ⟶ M ⟶ range d ⟶ 0` is
+   universally exact and `ker d ⊗ κ(s) ⟶ M ⊗ κ(s)` is injective — which IS the leaf.
+   The hypothesis of 2 is supplied by `h`: `h s` makes the comparison map SURJECTIVE, and
+   the cokernel of `ker d ⊗ κ ⟶ ker(d ⊗ κ)` is exactly `Tor₁(N/range d, κ)`.
+   Useful pin material for this step: `Module.Flat.ker_lTensor_eq`
+   (`Mathlib/RingTheory/Flat/Equalizer.lean` — flat base change commutes with kernels),
+   `Module.free_of_flat_of_isLocalRing`, and `Mathlib/RingTheory/Flat/LocallyFree.lean`.
+
+**FAITHFULNESS.**  `h` cannot be dropped: without it `h⁰` jumps and `A/𝔪A` is strictly
+bigger than `κ(s)` where it does — the conclusion is then literally false, not merely
+unprovable.  `[Flat f]` cannot be dropped either; it is the hypothesis of III.12.11 and it is
+what makes the Čech terms flat in step 1.  Maximality of `𝔪` is genuinely used: it is what
+makes `κ(s) = R/𝔪`, so that `dim_{R/𝔪}` is the right thing to bound; at a non-maximal prime
+the analogous statement is about `A ⊗ κ(𝔭)`, not about `A/𝔭A` over `R/𝔭`.  The conclusion is
+`≤ 1` rather than `= 1` because non-vanishing is available separately and more cheaply, from
+lying over. -/
+theorem rank_quotient_appTop_le_one_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
+    (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsMaximal) :
+    letI : Algebra (↥Γ(S, ⊤) ⧸ m) (↥Γ(X, ⊤) ⧸ Ideal.map f.appTop.hom m) :=
+      (Ideal.quotientMap (I := m) (Ideal.map f.appTop.hom m) f.appTop.hom
+        Ideal.le_comap_map).toAlgebra
+    Module.rank (↥Γ(S, ⊤) ⧸ m) (↥Γ(X, ⊤) ⧸ Ideal.map f.appTop.hom m) ≤ 1 :=
+  sorry
+
 /-- **LEAF 3 — DEGREE-ZERO BASE CHANGE AT A CLOSED POINT, SURJECTIVE HALF** (Hartshorne
 III.12.11(a) in degree `0`, EGA III 7.8.6): for every maximal ideal `𝔪` of `R = Γ(S, ⊤)` the
 map `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE, i.e. `A = R + 𝔪A`.
 
-**This is the entire remaining content of cohomology and base change in this file**, and
-everything else in the degree-zero theorem is now proven around it.  Equivalently — and this
-is the form to attack — the degree-zero comparison map
+**PROVEN** (2026-07-28) — the cohomology and base change it used to carry now lives one level
+down, in `rank_quotient_appTop_le_one_of_isIso_appTop_fiber` immediately above, whose
+docstring holds the obstruction analysis, the pin re-check and the continuation plan.  What
+is left here is linear algebra over the field `R/𝔪`: the leaf bounds `dim_{R/𝔪} A/𝔪A ≤ 1`,
+`comap_map_appTop_eq_of_isIso_appTop_fiber` gives the injection `R/𝔪 ↪ A/𝔪A`, and an
+injective map into a space of dimension at most one from a nonzero space is onto.
+
+Equivalently — and this is the form to attack, in the leaf rather than here — the degree-zero
+comparison map
 
   `A ⊗_R κ(s)  =  A/𝔪A  ⟶  H⁰(X_s, 𝒪_{X_s})  =  Γ(f.fiber s, ⊤)`
 
@@ -1233,32 +1370,44 @@ map, the composite `κ(s) = R/𝔪 ⟶ A/𝔪A ⟶ Γ(X_s, ⊤)` is `(f.fiberToS
 (by `Scheme.Hom.fiber_fac` applied to global sections), and `h s` says that composite is an
 isomorphism; so `R/𝔪 ⟶ A/𝔪A` is surjective exactly when `A/𝔪A ⟶ Γ(X_s, ⊤)` is injective.
 
-**Why this is the hard half, and the injective half is not.**  `H⁰` is a KERNEL
-(`Γ(X, 𝒪) = ker(∏ Γ(U_i) ⇉ ∏ Γ(U_{ij}))`), and `κ(s)` is not a flat `R`-module, so
-`ker(M ⇉ N) ⊗ κ(s) ⟶ ker(M ⊗ κ(s) ⇉ N ⊗ κ(s))` need not be injective; the failure is
-measured by a `Tor₁`, and killing it is precisely III.12.11(a) — flatness of `f` plus the
-constancy of `h⁰` supplied by `h`.  There is no elementary substitute: mathlib has no higher
-direct images at this pin (re-checked 2026-07-28), so this leaf is a theory build.
-
-**What is NOT enough** (checked, so that the next owner does not repeat it): `f` surjective
-gives `A/𝔪A ≠ 0`; `Γ(X, 𝒪) = A` makes `X ⟶ Spec A` have dense image, hence (properness)
-surjective, hence `Spec(A/𝔪A)` connected, hence `A/𝔪A` LOCAL artinian with residue field
-`κ(s)` once `Module.Finite R A` is known.  So `A/𝔪A = κ(s) ⊕ 𝔫` with `𝔫` nilpotent, and the
-leaf is exactly the statement `𝔫 = 0`.  Nilpotents in `Γ(X_s, 𝒪)` are invisible to the
-topology, and the fibre may itself be non-reduced (a ribbon on `ℙ¹` has `H⁰ = k`), so `𝔫 = 0`
-does not follow from any point-set argument — it is the base-change theorem.
-
 **FAITHFULNESS.**  `h` cannot be dropped: without it `h⁰` jumps and `A/𝔪A` is strictly bigger
 than `κ(s)` where it does.  `[Flat f]` cannot be dropped either — it is the hypothesis of
-III.12.11.  Maximality of `𝔪` is not used by the argument sketched above, but it is all the
-Nakayama assembly consumes, so it is left in place. -/
+III.12.11.  Maximality of `𝔪` IS used, twice: it makes `R/𝔪` a field, which is what turns
+"dimension at most one plus a nonzero vector" into surjectivity, and it makes `κ(s) = R/𝔪`,
+which is what makes the leaf's bound the right one.  It is also all the Nakayama assembly
+downstream consumes. -/
 theorem surjective_quotientMap_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
     (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsMaximal) :
     Function.Surjective (Ideal.quotientMap (I := m)
+      (Ideal.map f.appTop.hom m) f.appTop.hom Ideal.le_comap_map) := by
+  haveI : m.IsMaximal := hm
+  letI : Field (↥Γ(S, ⊤) ⧸ m) := Ideal.Quotient.field m
+  letI : Algebra (↥Γ(S, ⊤) ⧸ m) (↥Γ(X, ⊤) ⧸ Ideal.map f.appTop.hom m) :=
+    (Ideal.quotientMap (I := m) (Ideal.map f.appTop.hom m) f.appTop.hom
+      Ideal.le_comap_map).toAlgebra
+  -- The injective half of degree-zero base change: lying over, already proven above.
+  have hinj : Function.Injective (Ideal.quotientMap (I := m)
       (Ideal.map f.appTop.hom m) f.appTop.hom Ideal.le_comap_map) :=
-  sorry
+    Ideal.quotientMap_injective'
+      (comap_map_appTop_eq_of_isIso_appTop_fiber f h m hm.isPrime).le
+  haveI : Nontrivial (↥Γ(X, ⊤) ⧸ Ideal.map f.appTop.hom m) := hinj.nontrivial
+  -- The leaf: `A/𝔪A` is at most a line over `R/𝔪`.
+  obtain ⟨v₀, hv₀⟩ := rank_le_one_iff.mp
+    (rank_quotient_appTop_le_one_of_isIso_appTop_fiber f h m hm)
+  obtain ⟨c, hc⟩ := hv₀ 1
+  have hc0 : c ≠ 0 := by
+    rintro rfl
+    simp only [zero_smul] at hc
+    exact zero_ne_one hc
+  intro y
+  obtain ⟨r, hr⟩ := hv₀ y
+  refine ⟨r * c⁻¹, ?_⟩
+  have key : algebraMap (↥Γ(S, ⊤) ⧸ m) (↥Γ(X, ⊤) ⧸ Ideal.map f.appTop.hom m) (r * c⁻¹) = y := by
+    rw [Algebra.algebraMap_eq_smul_one, ← hc, smul_smul, mul_assoc, inv_mul_cancel₀ hc0,
+      mul_one, hr]
+  simpa [RingHom.algebraMap_toAlgebra] using key
 
 /-- **LEAF 3 — DEGREE-ZERO BASE CHANGE AT A CLOSED POINT** (Hartshorne III.12.11(a) in degree
 `0`, EGA III 7.8.6): for every maximal ideal `𝔪` of `R = Γ(S, ⊤)`, the induced map
@@ -1397,7 +1546,13 @@ has no higher direct images of quasi-coherent sheaves, no `Rⁱf_*`, no semicont
 cohomology-and-base-change: `grep -rn 'higherDirectImage\|directImage\|
 cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/
 Fermat/` returns zero hits.  So the leaves above are a theory build and not a missing-lemma
-hunt.  What mathlib *does* supply, and what an earlier version of this docstring did not
+hunt.  **That grep is phrased in THIS project's vocabulary and so can only ever confirm
+absence; it was re-run in MATHLIB's vocabulary on 2026-07-28** (`QuasiCoherent`,
+`SheafCohomology`, `Tor`, `Scheme.Modules`) and the conclusion stands — see the pin re-check
+in `rank_quotient_appTop_le_one_of_isIso_appTop_fiber`, which also records the two things
+that DO exist now and are the right place to build on: `AlgebraicGeometry.Scheme.Modules`
+with its `pushforward`/`pullback` adjunction (degree zero only), and abstract sheaf
+cohomology on sites (`Ext` in a sheaf category, with no Čech comparison and no finiteness).  What mathlib *does* supply, and what an earlier version of this docstring did not
 record, is `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed`,
 `AlgebraicGeometry.isField_of_universallyClosed` and
 `AlgebraicGeometry.finite_appTop_of_universallyClosed`
