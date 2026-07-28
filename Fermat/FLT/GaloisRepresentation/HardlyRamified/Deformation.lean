@@ -18880,6 +18880,64 @@ invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), of which 
 and mathlib have nothing. `grep -rniE "invariantMap|localClassField|brauer" Mathlib/`
 is the check that would refute that; re-run 2026-07-27, still nothing.
 
+**RE-RUN 2026-07-28, and this time in all three trees rather than mathlib
+alone.** `grep -rniE "localClassField|brauerGroup|invariantMap|invariantsMap"`
+over `.lake/packages/mathlib/`, `Fermat/` and `~/cs/FLT/` returns: mathlib's
+`Algebra/BrauerGroup/Defs.lean` (the Brauer group of a field as CSAs modulo
+Morita, with NO local invariant isomorphism and no valuation input), a
+docstring pointer to the out-of-tree `LocalClassFieldTheory` repository in
+`RingTheory/Valuation/Discrete/Basic.lean`, and in `~/cs/FLT` only two
+Brauer-group docstring mentions. `grep -rniE "poitou|greenberg|shafarevich"`
+and `grep -rniE "tate.?duality|cup_?[Pp]roduct"` over mathlib return NOTHING.
+So the local invariant map stands as the one object that must be BUILT from
+scratch, and it is the deepest single item in this subtree.
+
+**IRREDUCIBILITY VERDICT, 2026-07-28 — AND THE AXIS SEARCHED.** Two cut axes
+were tried and both fail; a third was NOT searched and is where a future
+attempt should look.
+
+* *Along the conclusion.* `Module.Dual k U` is by definition `U →ₗ[k] k`, so a
+  cut into "there is a pairing" + "the pairing is nondegenerate" is a pure
+  repackaging: the second clause names the object produced by the first, and an
+  `∃` does not split. It would inflate the leaf count by one and move no
+  mathematics.
+* *Along the rank.* One could instead make `rank_sha2_le_rank_sha1_twist` below
+  the leaf and DERIVE this one from it, via `rank_le_rank_dual` above
+  (`rank U ≤ rank (Dual k U)` with no finiteness hypothesis) plus "over a field,
+  `rank W ≤ rank X` gives an injection `W →ₗ X`". That direction genuinely
+  works and needs no finiteness at all — which is precisely why it must NOT be
+  taken: it would leave `finiteDimensional_h1_adZeroTwistRestricted` above with
+  no consumer in this chain, i.e. FREE-FLOATING, and it moves the same
+  Poitou–Tate content one declaration sideways. Recorded so the next owner does
+  not rediscover it and mistake it for progress.
+* *NOT searched: along the nine-term sequence itself.* Ш²(M) is the image of
+  `H¹(G_S, M*)^∨ → H²(G_S, M)` and the injection into `Ш¹(M*)^∨` is the induced
+  map on the cokernel of `⨁_v H¹(ℚ_v, M) → H¹(G_S, M*)^∨`. Cutting there means
+  stating the exact sequence, which needs the local pairing to even type-check.
+  So this axis is gated on the same object, not free of it.
+
+**WHAT ACTUALLY GATES THIS LEAF, AND IT IS SHARED WITH
+`rank_sha1Twist_le_cotangentFinrank` BELOW.** Both leaves are blocked on ONE
+object — the local Tate pairing `H^i(ℚ_v, M) × H^{2−i}(ℚ_v, M*) → k`. This leaf
+needs it for the global duality; that leaf needs it because the dual Selmer
+group `H¹_{L^⊥}` cannot be STATED without it. So they are not two independent
+costs and should go to one owner, in the order: (a) vendor the cup product from
+`~/cs/FLT` with its `linHom`/`iHom` shims, (b) build the local invariant map,
+(c) then both leaves at once.
+
+**Two hypotheses of this leaf are NOT consumed by the intended argument, and
+saying so is worth a future owner's afternoon.** Poitou–Tate global duality
+`Ш²_S(M) ≅ Ш¹_S(M*)^∨` holds for ANY finite `G_{ℚ,S}`-module `M`; nothing in it
+needs `ρbar` irreducible. What the argument needs from the hypotheses is only
+(i) `ℓ` odd — via `hℓOdd`, for the nondegeneracy of the trace form that supplies
+`ad⁰* ≅ ad⁰(1)`, and (ii) `ad⁰` finite, which comes from `[Finite k]` and
+`hdim`. `hirr` and `hℓ5` are carried for the CIRCULARITY GUARD and for
+signature-uniformity with the sibling leaves, not because the mathematics uses
+them. Do not go looking for a use of `hirr` here; there is none. (Contrast
+`rank_sha1Twist_le_cotangentFinrank` below, where `hirr` IS load-bearing twice
+over — it is what kills `h⁰(ℚ, ad⁰)` and `h⁰(ℚ, ad⁰(1))` in the Euler
+characteristic formula.)
+
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
 and for what `hℓ5` is doing.
@@ -19343,49 +19401,146 @@ What it can be built ON is real, and is more than the earlier audit credited:
 our own pin supplies `continuousCohomology n X` in EVERY degree
 (`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`)
 together with `ContinuousCohomology.map` and its functoriality lemmas, all
-proven — already consumed by `Sha2`, `locRes` and `Sha1Twist` above.
+proven — already consumed by `Sha2`, `locRes` and `Sha1Twist` above. Mathlib's
+`LowDegree.lean` is 89 lines and does stop at `H⁰`
+(`zeroIso : continuousCohomology 0 A ≅ TopModuleCat.of k A.ρ.invariants`).
 
-**STALE-CLAIM CORRECTION, 2026-07-28 — THE COCYCLE DESCRIPTION OF `H¹` EXISTS
-IN THIS TREE AND IS SORRY-FREE. Do not rebuild it.** The paragraph that stood
-here said: "`LowDegree.lean` is 89 lines and stops at `H⁰`; there is NO
-`oneCocycles`, NO `oneCoboundaries`, and no cocycle description of `H¹`
-anywhere — so the very first step of any Greenberg–Wiles argument, writing a
-class in `H¹` as a cocycle, is itself missing", with the refuting check given
-as `grep -rn "oneCocycles" Mathlib/RepresentationTheory/Homological/ContCohomology/`.
+**CORRECTED 2026-07-28. The paragraph that stood here concluded from that
+— "There is NO `oneCocycles`, NO `oneCoboundaries`, and no cocycle description
+of `H¹` anywhere — so the very first step of any Greenberg–Wiles argument,
+writing a class in `H¹` as a cocycle, is itself missing" — and it is WRONG.**
+Writing a class in `H¹` as a continuous crossed homomorphism is available
+today, sorry-free, in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`:
 
-That grep was run against **`Mathlib/` only**, and the claim it licensed —
-"anywhere" — is false of `Fermat/`, which is exactly the one-tree-grep failure
-the standing doctrine warns about. The material is
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`
-(commit `d29c9035`, **zero sorries**), and it supplies precisely the first step
-this paragraph called missing:
+* `ContinuousCohomology.exists_cocycleClass_eq j c` — every class of
+  `continuousCohomology j X` is `cocycleClass X j z` for an honest cocycle `z`;
+* `ContinuousCohomology.eval₁ X f g = f 1 g` with `continuous_eval₁`, and
+  `eval₁_mul : eval₁ f (g * h) = eval₁ f g + ρ g (eval₁ f h)` on cocycles —
+  the crossed-homomorphism identity itself, plus `eval₁_one`, `eval₁_inv`,
+  `eval₁_conj`, and `cocycle_apply` (a cocycle is DETERMINED by its
+  inhomogeneous cochain: `f h l = eval₁ f l − eval₁ f h`).
 
-* `ContinuousCohomology.eval₁ X f g = f 1 g` with `continuous_eval₁` — the
-  inhomogeneous `1`-cochain attached to a homogeneous one;
-* `eval₁_mul` — the crossed-homomorphism identity
-  `z (g * h) = z g + ρ g (z h)` for a cocycle, plus `eval₁_one`, `eval₁_inv`,
-  `eval₁_conj`;
-* `cocycles₁` — the continuous `1`-cocycles in the kernel model;
-* `exists_cocycleClass_eq` — `ContinuousCohomology.cocycleClass X j` is
-  SURJECTIVE, i.e. every class has a cocycle representative;
-* `eval₁_mem_range_sub_conj` — conjugation-stability of the surviving locus,
-  which is what makes such a locus usable with Chebotarev density.
+That file's only project import is `…/ContCohomology/Basic.lean`, which this
+module already `public import`s, so using it here costs one import line and +1
+module in the cone, with no cycle. `Modularity/Patching.lean` already imports
+it and consumes it.
 
-It is **not yet in this module's import cone**: `LowDegreeOne.lean` imports
-only `…/ContCohomology/Basic.lean`, which this file already `public import`s,
-so an owner of this leaf can reach it with a **one-line `public import` and no
-circularity risk** (the only current consumer, `Modularity/Patching.lean`, is
-strictly downstream of this module, so there is no cycle to worry about). The
-import is deliberately NOT added here, because no proof in this file consumes
-it yet; add it in the same commit as the first proof that does.
+**Why the stale claim survived, since the same shape will recur.** Its stated
+refuting check was `grep -rn "oneCocycles" Mathlib/…/ContCohomology/` — mathlib
+only, in mathlib's vocabulary. Both restrictions are fatal: the material lives
+in `Fermat/FLT/Mathlib/`, and it is not spelled `oneCocycles`. The check that
+finds it is `grep -rn "eval₁\|cocycles₁" Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+(The DISCRETE `groupCohomology` does have `oneCocycles`; mathlib's continuous
+theory does stop at `H⁰`, and that much of the old note is accurate.)
 
-What LowDegreeOne does **not** give is the full ISOMORPHISM `H¹ ≅ Z¹/B¹` — it
-supplies the map from homogeneous to inhomogeneous cochains and the identities,
-which its own module docstring describes as "the half of the identification
-that such arguments actually use". If a Greenberg–Wiles proof needs the inverse
-direction (building a class FROM a crossed homomorphism), that half is still
-open. Check before assuming either way. (The DISCRETE `groupCohomology` does
-have `oneCocycles`; it is the continuous theory that our pin stops at `H⁰`.)
+**What is still genuinely missing from the dictionary** is the INVERSE
+direction alone — promoting a continuous crossed homomorphism back to a
+homogeneous cocycle (`z ↦ (x, y) ↦ ρ x (z (x⁻¹ y))`).  *(Amended at merge,
+2026-07-28, later the same day: the paragraph here also listed
+`cocycleClass_eq_zero_iff` transported through `eval₁` as missing, and that is
+no longer true — `LowDegreeOne.lean` now carries the COBOUNDARY CRITERION
+`eval₁_bdryKer`, `exists_eval₁_eq_sub_of_cocycleClass_eq_zero`,
+`cocycleClass_eq_zero_of_eval₁_eq_sub` and the FUNCTORIALITY `cocyclesMapKer`,
+`map_cocycleClass_cocyclesMapKer`, `eval₁_cocyclesMapKer`, i.e. exactly
+`res^G_N [z] = [z|_N]` on inhomogeneous cochains, and it is sorry-free.  Only
+the inverse map is unbuilt, and no consumer has needed it.)*  The inverse is
+not needed to *state* a Greenberg–Wiles argument; it is needed to *count* with
+one in the direction that goes back from cochains to classes.
+
+**COMPOSITE FAITHFULNESS RE-AUDIT, 2026-07-28 — VERDICT: FAITHFUL.** Run
+because this statement has been changed TWICE (the `Γ ℚ → G_{ℚ,S}` restatement,
+and the same-day recut that removed `g`, `ts` and `Ideal.span` in favour of
+`cotangentFinrankModL D.R ℓ`), and a project rule says the earlier audit is then
+VOID rather than inherited: it certified a statement that no longer exists. Four
+things were checked against the statement AS IT NOW READS.
+
+* *Which universal ring is `D.R`, and does it matter?* It does not, and that is
+  worth knowing before anyone worries about it. `IsWeaklyUniversal` is phrased
+  through `charFrob` compatibility, which is conjugation-invariant, so `D.R` is
+  the UNFRAMED (pseudo-)deformation ring even though `D.ρ` is framed; and
+  `IsHardlyRamified` carries the `det` field pinning `det ρ` to the cyclotomic
+  character, so the problem is FIXED-DETERMINANT and its tangent space is
+  `H¹_L(ad⁰)` — coefficients `ad⁰` of dimension `3`, which is why this leaf's
+  left-hand side is an `ad⁰`-object and not an `ad`-object. Both plausible
+  mis-readings — reading `D.R` as the FRAMED ring, or forgetting the determinant
+  condition — enlarge the tangent space (by `dim ad⁰ − h⁰(ad⁰) = 3`, resp. by
+  the scalar summand of `ad = ad⁰ ⊕ k` for odd `ℓ`), i.e. they enlarge the
+  RIGHT-hand side. So the inequality is robust in both directions and no
+  hypothesis is missing on that account.
+* *The degenerate value `cotangentFinrankModL D.R ℓ = 0`.* It is reachable, and
+  it is the case worth checking, since a `0` on the right turns the leaf into
+  `Ш¹_S(ad⁰(1)) = 0`. Cotangent `0` means `𝔪 = 𝔪² + (ℓ)`, hence `𝔪 = (ℓ)` by
+  Nakayama, i.e. `D.R` is `ℤ_ℓ` or `ℤ/ℓⁿ` — the RIGID deformation problem, which
+  is a perfectly ordinary situation and not junk. Greenberg–Wiles then gives
+  `dim Ш¹ ≤ dim H¹_L = 0` and the leaf is TRUE there, with content. So the
+  degenerate value is neither a counterexample nor a vacuity.
+* *`hirr` is load-bearing here, unlike on
+  `exists_injective_sha2_dual_sha1Twist` above*, and doubly so: it is what kills
+  BOTH `h⁰(ℚ, ad⁰)` and `h⁰(ℚ, ad⁰(1))` in the Euler characteristic formula. See
+  the correction recorded on `rank_sha1_twist_le_of_tangent_span` below for why
+  dropping the second makes the formula point the WRONG WAY.
+* *The archimedean convention is correct and must not be "repaired".* `∞ ∉ S`
+  by construction (`S : Set (HeightOneSpectrum …)` admits only finite places),
+  yet `∞` contributes `−1` to the Greenberg–Wiles sum. That is consistent, not a
+  slip: `ramificationKernel S` kills inertia only at FINITE places, so complex
+  conjugation survives in `G_{ℚ,S}` and the formula's sum ranges over all
+  places while `Ш`'s local conditions range over `S`. Adding `∞` to `S` is not
+  expressible and would not be wanted.
+
+**IRREDUCIBILITY VERDICT, 2026-07-28 — AND THE AXIS SEARCHED.** Three cut axes
+were tried; all three end at the same object, and one of them is a trap that
+looks safe.
+
+* *Insert the ambient `H¹`.* The tempting cut
+  `rank Ш¹_S(ad⁰(1)) ≤ rank H¹(G_{ℚ,S}, ad⁰) ≤ cotangentFinrankModL D.R ℓ` is
+  UNSAFE: the first half is true, the **second half is FALSE**.
+  `H¹(G_{ℚ,S}, ad⁰)` is the tangent space of the problem with NO condition
+  imposed at `ℓ`, so it CONTAINS `H¹_L(ad⁰)` and generally strictly — the
+  inequality points the wrong way. Recorded because the cut compiles, reads
+  naturally, and would put a false leaf into the tree.
+* *Insert the deformation functor's tangent space* — deformations to
+  `DualNumber k` modulo strict equivalence — which would split this into a
+  Schlessinger-flavoured half and a Galois-cohomology half along a genuine seam.
+  This is not free: giving that set its `Module k` structure IS the cocycle
+  addition, i.e. it needs the inverse direction of the degree-`1` dictionary
+  (see the corrected machinery note above), so it does not dodge the
+  infrastructure, it renames it.
+* *Insert the Selmer group.* Rejected already, one section above
+  `adZeroTwistRep`, and for a reason that still stands: quantifying over
+  arbitrary local conditions `L` makes the middle statement FALSE (take
+  `L_v = 0`), and pinning `L = L_HR` costs the flat condition at `ℓ` in
+  cohomological form.
+
+**THE GATE, AND IT IS SHARED WITH `exists_injective_sha2_dual_sha1Twist`
+ABOVE.** Every Greenberg–Wiles route runs through the DUAL Selmer group
+`H¹_{L^⊥}`, which cannot even be STATED without the local Tate pairing — the
+same single object that gates the Poitou–Tate leaf above. So these two leaves
+are ONE cost, not two, and should go to one owner in the order: (a) vendor the
+cup product from `~/cs/FLT` (`ContCohomology/CupProduct.lean`, 582 lines,
+sorry-free) with its `linHom`/`iHom` shims; (b) build the local invariant map
+`H²(ℚ_v, μ) ≅ ℚ/ℤ`, which the 2026-07-28 three-tree grep confirms exists
+NOWHERE (mathlib has `BrauerGroup` as CSAs modulo Morita and no local invariant
+isomorphism; `~/cs/FLT` has two docstring mentions and nothing else); (c) then
+both leaves.
+
+**THERE IS A PRECEDENT FOR DODGING THAT GATE, AND IT IS WORTH READING BEFORE
+BUILDING ANYTHING.** `Modularity/Patching.lean` runs the SAME Greenberg–Wiles
+argument for the Taylor–Wiles level-raising and pays no pairing at all: it puts
+the dual-Selmer VANISHING into a hypothesis (the global conjunct of
+`IsTaylorWilesPrimeSet`) and describes the dual-Selmer source directly as an
+unramified-outside-`S` condition on `H¹(ℚ, ad⁰ρbar(1))` — `h1TwistUnramified`,
+`h1TwistLocalKer` and the `DualSelmerVocabulary` section — rather than as an
+orthogonal complement. Its own note says so explicitly: "neither needs
+Poitou–Tate or the local Tate pairing". Two things follow, and they point
+opposite ways. (i) A future owner should read that deviation note first: the
+technique of REPLACING `L^⊥` by an explicit unramified condition may transplant
+here, and it is much cheaper than the pairing. (ii) It does NOT transplant by
+simply copying the statement — this leaf's consumer holds no dual-Selmer
+hypothesis to lean on, and adding one would be restating the target to make it
+provable. The transplantable part is the DESCRIPTION of the dual Selmer group,
+not the hypothesis. Note also that `Patching.lean` is DOWNSTREAM of this module,
+so nothing there is consumable here; a shared version would have to be hoisted.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
