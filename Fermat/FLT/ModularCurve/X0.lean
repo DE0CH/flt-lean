@@ -22011,6 +22011,21 @@ this audit named are now two real leaves, stated in the honest objects
 in particular NOT the definition-free `traceHeckeT` this audit warns
 against.
 
+THE `_root_.GaloisRepresentation.Modularity.Gamma0GL` SPELLING BELOW IS
+NOT LOAD-BEARING (2026-07-28, machine-checked).  This file has TWO
+`Gamma0GL` in live code — the bare one from
+`ModularCurve/WeightTwoEigenform.lean` in the Kolyvagin–Logachev section
+above, and the qualified one here — and **they are the same term**:
+`Fermat.Gamma0GL N = GaloisRepresentation.Modularity.Gamma0GL N` is
+`rfl`, and `CuspForm` over either is the same type in both directions
+with no cast, because the mathlib coercion used by the former IS
+`Subgroup.map (mapGL ℝ)`.  So the two leaves below could equally be
+stated with the bare `Gamma0GL`, and no bridge lemma is needed to relate
+them to anything above.  Do not write one, and do not unify the two
+definitions — the survey of that question, and of the eigenform carriers
+(which ARE genuinely different and do NOT bridge definitionally), is in
+the module docstring of `ModularCurve/WeightTwoEigenform.lean`.
+
 The two leaves are `card_relPoint_x0_eichlerShimura` (the geometry: the
 Lefschetz trace formula for Frobenius on `X₀(N)_{𝔽_ℓ}` together with the
 Eichler–Shimura relation identifying `Frob_ℓ + Frob_ℓ^∨` with `T_ℓ` on

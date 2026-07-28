@@ -115,6 +115,98 @@ determined by `a`; that is checked by the (machine-verified, but
 deliberately unstated — see its docstring) uniqueness argument recorded
 on `IsLFunctionOf`, so the interface is demonstrably a *definition* of
 `L(f, 1)` rather than a choice.
+
+## RIVAL CARRIERS: WHAT IS ACTUALLY DUPLICATED, MEASURED (2026-07-28)
+
+This tree carries **three** weight-two eigenform predicates, **two**
+newform predicates and **two** `Gamma0GL`s.  A cut-level survey was run
+on 2026-07-28; its conclusions are below so that nobody re-derives them,
+and so that nobody performs the expensive half by mistake.
+
+### `Gamma0GL`: NOT a duplication in any sense that costs anything
+
+`Fermat.Gamma0GL` (here) and `GaloisRepresentation.Modularity.Gamma0GL`
+(`Modularity/HeckeOperator.lean`) are **the same term**: mathlib's
+coercion `Subgroup SL(2, ℤ) → Subgroup (GL (Fin 2) ℝ)` used here is
+`coe := map (mapGL ℝ)` (`Mathlib/NumberTheory/ModularForms/ArithmeticSubgroups.lean:83`),
+which is verbatim the other's body.  Machine-checked in a scratch
+importing both: the equation is `rfl`, `CuspForm` over either is the
+same type in both directions with no cast, and `heckeOp N n` applies
+directly to a `CuspForm (Gamma0GL N) 2` written with the abbreviation
+here.  **Do not unify them and do not write a bridge lemma** — see the
+`Modularity/HeckeOperator.lean` module docstring for the full check and
+for the one (harmless) reducibility asymmetry.
+
+### The eigenform carriers: a REAL duplication, and its price
+
+| carrier | where | shape | declarations mentioning it |
+| --- | --- | --- | --- |
+| `Fermat.IsWeightTwoEigenform N f a` | here | coefficients CARRIED, `qExpansion` + `qExpansionSummable` + general-`n` Hecke recursion | 6 here, 6 in `X0.lean` |
+| `Fermat.IsWeightTwoEigenformOn G N χ f a` | `X1.lean` | the same with the group and a nebentypus as parameters; SUBSUMES the row above | 4 |
+| `GaloisRepresentation.Modularity.IsWeightTwoEigenform N f` | `Interface.lean` | coefficients read off `qCoeff`; multiplicativity + prime-power recursions | 60 |
+| `GaloisRepresentation.Modularity.IsWeightTwoNewform M g` | `Interface.lean` | the above + minimal-level | 63 |
+
+Of the 60 `Interface.lean` declarations, **15 are PRODUCERS** (they
+conclude `∃ f, IsWeightTwoEigenform …`) and 45 are consumers; for
+`IsWeightTwoNewform` the split is 2 / 61.
+
+### Two structural facts that decide the direction
+
+1. **No hoist is needed to make the CARRIED carrier available downstream.**
+   This module has no project imports and reaches `Interface.lean` through
+   an unbroken chain of `public import`s
+   (`X0` ← `FreyCurve/MazurTorsion` ← … ← `Interface`), so
+   `Fermat.IsWeightTwoEigenform` is *already* nameable inside
+   `Interface.lean`.  The reverse is impossible: `qCoeff` and
+   `Modularity.IsWeightTwoEigenform` live in `Interface.lean`, which is
+   downstream of `X0.lean`.
+2. **Hoisting the `Interface.lean` carrier is feasible but buys nothing
+   on its own.**  Reference scan (2026-07-28): the block
+   `{qCoeff, IsWeightTwoEigenform, IsWeightTwoNewform,
+   exists_weightTwoNewform_of_weightTwoEigenform}` references only
+   `Gamma0GL`, mathlib's `UpperHalfPlane.qExpansion`, and itself — so it
+   moves verbatim into `Modularity/HeckeOperator.lean` (same namespace,
+   `public import`ed by `Interface.lean`) with **zero consumer text
+   changed**.  But `X0.lean` still could not USE the result, because its
+   leaves hold `(f, a, hf : IsWeightTwoEigenform N f a)` and the hoisted
+   predicates speak about `qCoeff N f`.  Availability was never the whole
+   blocker; the carrier mismatch is.
+
+### The reconciliation, and its cost
+
+Make the CARRIED carrier primitive — it is the stronger and safer one
+(its `qExpansionSummable` field is what kills the junk witness recorded
+in the `SOUNDNESS AUDIT` above, and its `hecke` field is the general-`n`
+recursion rather than the prime-power one) — and restate
+`Modularity.IsWeightTwoEigenform N f` as
+`Fermat.IsWeightTwoEigenform N f (qCoeff N f)`.  Everything downstream
+of `Interface.lean` that merely *consumes* a carrier is unaffected.
+
+What it costs, and why it is not a one-agent job:
+
+* one genuinely analytic new leaf — `IsWeightTwoEigenform N f a → qCoeff N f n = a n`,
+  i.e. uniqueness of Fourier coefficients, identifying the carried `a`
+  with mathlib's `UpperHalfPlane.qExpansion`;
+* one elementary but real leaf — the general-`n` Hecke recursion is
+  equivalent to multiplicativity plus the prime-power recursions;
+* **15 + 2 producer proofs in `Interface.lean` must be extended** to
+  supply the two extra fields, and 106 consumer statements retyped, in a
+  60k-line file under concurrent ownership whose full build is measured
+  in tens of minutes.
+
+Until that is scheduled as its own task, the honest state is: the
+carriers are *both* correct, they are *not* interchangeable, and any
+statement needing both must go through the two leaves above.  A fourth
+predicate (`IsNewEigenformAt`, `X0.lean`) exists precisely because of
+this and should be retired by the reconciliation, not before it.
+
+### One thing that IS cheap and is still undone
+
+`X1.lean`'s `isWeightTwoEigenformOn_gamma0_iff` —
+`IsWeightTwoEigenformOn (Gamma0GL N) N 1 f a ↔ IsWeightTwoEigenform N f a` —
+is written out and machine-checked, but only inside a docstring code
+block, so the two `Fermat`-side carriers are still formally unrelated.
+Landing it as a declaration costs nothing once it has a consumer.
 -/
 
 @[expose] public section
