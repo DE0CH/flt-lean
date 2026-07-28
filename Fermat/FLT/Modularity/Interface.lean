@@ -32461,11 +32461,210 @@ theorem chi_eq_one_of_fixes_cyclotomicField
     simpa using h.symm
   rw [hχcyc x, algebraMap_padicInt_eq_castHom, ← hwdef, hw1, map_one]
 
+/-- **THE HILBERT CLASS FIELD OF `ℚ(μ_p)` AS A FINITE NORMAL EXTENSION OF
+`ℚ`** (E3c support leaf (ii-a-1-i-B-2-a-i-α-1); SORRY LEAF, cut 2026-07-28
+out of `exists_hilbertClassField_isArithFrobAt_mk0_eq` below along the
+FIELD / RECIPROCITY axis — it is items (i) and (ii) of that leaf's own
+"what must be built" list, and **nothing else**).
+
+**No Frobenius element, no Artin symbol, no ideal and no `χ` occurs here.**
+The whole statement is: *the maximal everywhere-unramified abelian extension
+of `K := ι(CF)` exists inside `ℚ̄`, has degree `h_K` over `K`, and is normal
+over `ℚ`*. Its partner, which does all the Frobenius and ideal work with
+this field as a HYPOTHESIS, is
+`exists_artinIdealMap_of_unramifiedAbelian_normal` just below; the two
+compose into the parent with no glue beyond `obtain`, a lift along
+`AlgEquiv.restrictNormalHom_surjective`, and `ClassGroup.mk0_surjective`.
+
+**Why the four conclusions are phrased through `Gal(M/ℚ)`.** `M` must live
+in `ℚ̄` rather than in `AlgebraicClosure CF`, because the consumer needs
+`Gal(M/ℚ)` and a lift of one of its elements to `Γℚ`. So `K` is not a base
+ring here but the IMAGE `jj(CF)`, and every relative statement about `M/K`
+is written through the subtype
+`{σ : M ≃ₐ[ℚ] M // ∀ z, σ (jj z) = jj z}`, which *is* `Gal(M/K)`. That keeps
+the statement free of any induced `Algebra CF ↥M` or `Algebra (𝓞 CF) (𝓞 M)`
+instance — the plumbing that makes the `ι`-side statements in this cluster
+expensive, and the same reason the parent relates `τ` to `x₀` by an
+elementwise `algebraMap` identity.
+
+* first clause — `jj` is `ι` corestricted to `M`, so `jj(CF) = ι(CF) = K`;
+* second clause — `Gal(M/K)` is ABELIAN;
+* third clause — `M/K` is UNRAMIFIED at every finite place, written as
+  "the inertia subgroup at every nonzero prime `Q` of `𝓞 M` is trivial":
+  `∀ x, σ • x - x ∈ Q` says exactly that `σ` stabilises `Q` (take `x ∈ Q`;
+  the reverse inclusion is finiteness) and acts trivially on `𝓞 M / Q`;
+* fourth clause — `#Gal(M/K) = h_K`. With `M/ℚ` finite normal and
+  `char = 0`, `M/K` is Galois, so this says `[M : K] = h_K`.
+
+**Soundness — the intended inhabitant, and the statement PINS it.** `M = H`,
+the Hilbert class field of `K = ℚ(μ_p)`: `H/K` is abelian, unramified at
+every place, of degree `h_K`, which gives the last three clauses, and `H/ℚ`
+is normal because `K/ℚ` is Galois and `H` is canonical over `K` — any
+`σ ∈ Gal(ℚ̄/ℚ)` carries `H` to the maximal unramified abelian extension of
+`σK = K`, which is `H` again. Conversely any abelian everywhere-unramified
+`M/K` embeds in `H`, and `#Gal(M/K) = h_K = [H : K]` then forces `M = H`. So
+this leaf is the EXISTENCE THEOREM of unramified class field theory, not a
+weaker shadow of it.
+
+**⚠ `IsCyclotomicExtension {p} ℚ CF` is LOAD-BEARING here — do not
+generalise it away.** It is what makes `K/ℚ` Galois, and hence `H/ℚ` normal.
+For a number field `K` with `K/ℚ` not Galois the Hilbert class field of `K`
+is in general NOT normal over `ℚ`, and no `M` as demanded exists. (Contrast
+the sibling below, where the same hypothesis is inert.)
+
+**Not vacuous.** `h(ℚ(μ_23)) = 3` (PARI/GP, re-verified 2026-07-28), so at
+`p = 23` the fourth clause demands a genuine cubic everywhere-unramified
+abelian extension and `M = ι(CF)` does not discharge it. The leaf is trivial
+exactly when `h_K = 1`.
+
+**Degenerate case `p = 2`, which shows the leaf is inhabited.** `CF = ℚ`,
+`h_K = 1`, and `M = ⊥`, `jj = ι` work: `Gal(M/K)` is trivial, so the second
+and third clauses are vacuous and the fourth reads `1 = 1`.
+
+**Relation to the four leaves of the
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` cluster above,
+and a warning against citing them.**
+`exists_unramifiedAbelian_finrank_eq_card_classGroup` above is the same
+existence theorem in the `IntermediateField CF (AlgebraicClosure CF)` model
+and **without normality over `ℚ`**; it is therefore strictly weaker than
+this leaf and cannot discharge it. The deep analytic input is shared
+(Dirichlet density for `ζ_K` and the ray-class `L`-functions; Childress
+ch. 4–5, Lang *ANT* ch. X, Cassels–Fröhlich ch. VIII, Neukirch VI (6.9)),
+and only the packaging and the normality clause differ, so whoever closes
+one should close the other and record the transport rather than proving the
+analysis twice. Nothing in the pin, in `~/cs/FLT`, or in this project
+supplies it; `ModThree.lean`'s Childress-following development is
+RECIPROCITY only and is hardwired to `Dickson.K 3` as its value group.
+
+**The check that would refute it**: an abelian everywhere-unramified
+extension of `ℚ(μ_p)` of degree `h_K` that is not normal over `ℚ` (which
+would contradict canonicity of the Hilbert class field), or a proof that
+none of degree `h_K` exists. -/
+theorem exists_unramifiedAbelian_normal_over_rat
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ) :
+    ∃ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : FiniteDimensional ℚ M)
+      (_ : Normal ℚ M) (jj : CF →ₐ[ℚ] M),
+      (∀ z : CF, algebraMap M (AlgebraicClosure ℚ) (jj z) = ι z) ∧
+      (∀ σ ρ : M ≃ₐ[ℚ] M, (∀ z : CF, σ (jj z) = jj z) →
+        (∀ z : CF, ρ (jj z) = jj z) → σ * ρ = ρ * σ) ∧
+      (∀ Q : Ideal (𝓞 M), Q.IsPrime → Q ≠ ⊥ → ∀ σ : M ≃ₐ[ℚ] M,
+        (∀ z : CF, σ (jj z) = jj z) → (∀ x : 𝓞 M, σ • x - x ∈ Q) → σ = 1) ∧
+      Nat.card {σ : M ≃ₐ[ℚ] M // ∀ z : CF, σ (jj z) = jj z} =
+        Nat.card (ClassGroup (𝓞 CF)) :=
+  sorry
+
+/-- **ARTIN RECIPROCITY AT MODULUS `1`: the Artin map of an
+everywhere-unramified abelian `M/ℚ(μ_p)` of degree `h_K`, with its
+Frobenius characterisation and its injectivity on ideal classes** (E3c
+support leaf (ii-a-1-i-B-2-a-i-α-2); SORRY LEAF, cut 2026-07-28 out of
+`exists_hilbertClassField_isArithFrobAt_mk0_eq` below — it is item (iii) of
+that leaf's own "what must be built" list).
+
+**The FIELD is a HYPOTHESIS here, not a conclusion**; producing it is the
+sibling `exists_unramifiedAbelian_normal_over_rat` above, whose four
+conclusions are reproduced verbatim as `hab`, `hunr`, `hcard` (plus the two
+instance arguments) so that the two leaves compose with a bare `obtain`.
+What remains is exactly the reciprocity law, in the shape the literature
+states it (Neukirch VI (7.x), Childress ch. 5, Lang *ANT* ch. X): **the
+Artin map `I_K → Gal(M/K)`, `𝔭 ↦ (𝔭, M/K)`, is a surjection with kernel
+exactly the principal ideals.**
+
+**What the three conclusions are.**
+
+* `art I` lies in `Gal(M/K)` — the first clause. The Artin symbol is an
+  automorphism over the base field, not merely over `ℚ`.
+* *Injectivity on classes* — the second clause, `art I = art J →
+  [I] = [J]`. This is the RECIPROCITY half: the kernel of the Artin map is
+  contained in the principal ideals. Note it is **`hcard` that makes it
+  true**: without `#Gal(M/K) = h_K` the Artin map is still surjective with
+  kernel containing `P_K`, but `Cl(𝓞 K) ↠ Gal(M/K)` need not be injective.
+  So `hcard` is load-bearing and is not decorative counting.
+* *The Frobenius characterisation* — the third clause, which is what the
+  consumer actually applies, and which is the DEFINING property of `art`.
+
+**Why the third clause carries NO unramifiedness hypothesis on `Q`, and is
+nevertheless sound.** Suppose `IsArithFrobAt (𝓞 ℚ) σ Q` and `σ` fixes
+`K = jj(CF)` pointwise; put `𝔭 := Q ∩ 𝓞 K` above the rational prime `ℓ`.
+First `σ Q = Q`, since for `a ∈ Q` the congruence gives `σ a ≡ a^ℓ ≡ 0`.
+Next `σ` acts on `k(𝔭)` both trivially (it fixes `𝓞 K` pointwise) and by
+`z ↦ z^ℓ`, so `k(𝔭) = 𝔽_ℓ`, i.e. `f(𝔭/ℓ) = 1` — the DEGREE-ONE condition,
+obtained rather than assumed. Hence `#k(𝔭) = ℓ` and `σ` is an arithmetic
+Frobenius at `Q` over `𝓞 K` as well; `hunr` makes that Frobenius unique
+(`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt` is the pin's form of this), and
+for `M/K` abelian it is the Artin symbol `(𝔭, M/K) = art 𝔭`. The
+ramification that does occur — at `ℓ = p`, where `𝔭 = (1 − ζ)` is totally
+ramified over `ℚ` — lives entirely in `K/ℚ` and is harmless, because `hunr`
+is unramifiedness of `M/K`, not of `M/ℚ`.
+
+Note also that `I : (Ideal (𝓞 CF))⁰` forces `Q ≠ ⊥` in that clause: `⊥` is
+a zero divisor in the ideal monoid, so `⊥ ∉ (Ideal (𝓞 CF))⁰`, and the
+contraction hypothesis therefore rules `Q = ⊥` out. Nothing extra is needed
+to exclude it.
+
+**Non-vacuity of the third clause.** Chebotarev — in tree, as
+`exists_frobenius_conj_mem_coset` in `Chebotarev.lean` — makes every element
+of `Gal(M/ℚ)` an arithmetic Frobenius at infinitely many primes of `𝓞 M`,
+so the clause is never satisfied by emptiness. Nor can it be cheated by
+`M = ι(CF)`: then it would say every degree-one prime of `𝓞 CF` is
+principal, which fails whenever `h_K > 1` (and `h(ℚ(μ_23)) = 3`, PARI/GP
+2026-07-28).
+
+**`IsCyclotomicExtension {p} ℚ CF` is INERT here** and may be ignored: Artin
+reciprocity holds over an arbitrary number field, so a prover who finds it
+easier may prove the general statement and specialise. (This is the exact
+opposite of the sibling above, where the hypothesis is load-bearing for
+normality over `ℚ`; the asymmetry is deliberate and is the whole point of
+cutting along this axis.) `Normal ℚ M` and `FiniteDimensional ℚ M` are both
+load-bearing: together they make `M/K` Galois with a finite group, without
+which neither the Artin symbol nor `hcard` means anything.
+
+**Mathlib survey, re-checked 2026-07-28.** The Artin map, the Artin symbol,
+ray class groups and reciprocity are ALL absent from the pin and from
+`~/cs/FLT`. Present and usable: `IsArithFrobAt` and
+`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`
+(`Mathlib/RingTheory/Frobenius.lean`), `Ideal.ramificationIdx`,
+`Ideal.inertiaDeg`, `Mathlib/NumberTheory/RamificationInertia/Galois.lean`,
+`ClassGroup.mk0` with `mk0_surjective` and `mk0_eq_mk0_iff`. `ModThree.lean`
+carries a Childress-following reciprocity development, but hardwired to
+`Dickson.K 3` as its value group — **price generalizing that value group
+before writing a second reciprocity development.**
+
+**The check that would refute it**: an `M`, `jj` satisfying `hab`, `hunr`
+and `hcard` together with a prime `Q` of `𝓞 M` and a `σ` fixing `jj(CF)`
+that is an arithmetic Frobenius at `Q` over `ℤ` for two ideals of DIFFERENT
+classes; or a proof that the kernel of the Artin map at modulus `1` is
+strictly larger than the principal ideals. -/
+theorem exists_artinIdealMap_of_unramifiedAbelian_normal
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+    [Normal ℚ M] (jj : CF →ₐ[ℚ] M)
+    (hab : ∀ σ ρ : M ≃ₐ[ℚ] M, (∀ z : CF, σ (jj z) = jj z) →
+      (∀ z : CF, ρ (jj z) = jj z) → σ * ρ = ρ * σ)
+    (hunr : ∀ Q : Ideal (𝓞 M), Q.IsPrime → Q ≠ ⊥ → ∀ σ : M ≃ₐ[ℚ] M,
+      (∀ z : CF, σ (jj z) = jj z) → (∀ x : 𝓞 M, σ • x - x ∈ Q) → σ = 1)
+    (hcard : Nat.card {σ : M ≃ₐ[ℚ] M // ∀ z : CF, σ (jj z) = jj z} =
+      Nat.card (ClassGroup (𝓞 CF))) :
+    ∃ art : (Ideal (𝓞 CF))⁰ → (M ≃ₐ[ℚ] M),
+      (∀ (I : (Ideal (𝓞 CF))⁰) (z : CF), art I (jj z) = jj z) ∧
+      (∀ I J : (Ideal (𝓞 CF))⁰, art I = art J →
+        ClassGroup.mk0 I = ClassGroup.mk0 J) ∧
+      (∀ Q : Ideal (𝓞 M), Q.IsPrime → ∀ σ : M ≃ₐ[ℚ] M,
+        IsArithFrobAt (𝓞 ℚ) σ Q →
+        (∀ z : CF, σ (jj z) = jj z) →
+        ∀ I : (Ideal (𝓞 CF))⁰,
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (I : Ideal (𝓞 CF)) →
+          art I = σ) :=
+  sorry
+
 /-- **THE HILBERT CLASS FIELD OF `ℚ(μ_p)`, WITH ITS ARTIN SYMBOL, AS A
 FINITE NORMAL EXTENSION OF `ℚ`** (E3c support leaf
-(ii-a-1-i-B-2-a-i-α); SORRY LEAF, cut 2026-07-28 out of
+(ii-a-1-i-B-2-a-i-α); cut 2026-07-28 out of
 `exists_frobIdeal_mk0_eq_classGroup` below along the CLASS-FIELD-THEORY
-axis — it is the ENTIRE arithmetic content of that leaf).
+axis — it is the ENTIRE arithmetic content of that leaf; **DECOMPOSED
+2026-07-28 — the assembly below is PROVEN**, over the two leaves stated
+immediately above and nothing else).
 
 For every ideal class `c` of `𝓞 CF` there are a finite normal extension
 `M/ℚ` inside `ℚ̄`, an `ι`-compatible copy `jj : CF →ₐ[ℚ] M` of `CF`
@@ -32510,17 +32709,44 @@ ISOMORPHISM — then gives `[𝔭] = c`. Ramification of `𝔭` over `ℚ` does
 occur (at `ℓ = p`, where `𝔭 = (1 − ζ)` is totally ramified) and is
 harmless: all of it lives in `K/ℚ`, and `H/K` is unramified everywhere.
 
-**What must be built to close it.** (i) The Hilbert class field as a
-field — the EXISTENCE theorem of unramified class field theory, the
-same content as
-`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` above and
-Neukirch VI (6.9); (ii) its normality over `ℚ`; (iii) Artin
-reciprocity in the unramified case: the Artin map is a surjection with
-kernel exactly the principal ideals. Nothing in the pin, in `~/cs/FLT`,
-or in this project supplies any of the three; `ModThree.lean`'s
-Childress-following development is RECIPROCITY only and is hardwired
-to `Dickson.K 3` as its value group, so **price generalizing that
-value group before writing a second reciprocity development.**
+**What must be built to close it — and where it now lives (2026-07-28).**
+(i) The Hilbert class field as a field — the EXISTENCE theorem of
+unramified class field theory, Neukirch VI (6.9); (ii) its normality
+over `ℚ`; (iii) Artin reciprocity in the unramified case: the Artin map
+is a surjection with kernel exactly the principal ideals. Nothing in
+the pin, in `~/cs/FLT`, or in this project supplies any of the three.
+**(i) and (ii) are now the leaf `exists_unramifiedAbelian_normal_over_rat`
+above, and (iii) is
+`exists_artinIdealMap_of_unramifiedAbelian_normal` above**; this
+docstring's remaining content is preserved because it is the soundness
+argument for the assembly, not for either leaf.
+
+**THE CUT, along the FIELD / RECIPROCITY axis.** The two leaves are the
+two classical theorems, in the shapes the literature proves them, and
+each carries the `IsCyclotomicExtension` hypothesis for a DIFFERENT
+reason: it is load-bearing on the field leaf (it makes `K/ℚ` Galois,
+hence `H/ℚ` normal) and inert on the reciprocity leaf (reciprocity
+holds over any number field). Everything the parent adds on top of them
+is bookkeeping and is proven below:
+
+* `ClassGroup.mk0_surjective` picks an ideal `I₀` with `[I₀] = c`, and
+  `τ := art I₀` is its Artin symbol;
+* `AlgEquiv.restrictNormalHom_surjective` lifts `τ` to `x₀ ∈ Γℚ`, and
+  `AlgEquiv.restrictNormal_commutes` turns that into the elementwise
+  identity of the third clause. Both of the `x₀` clauses come from that
+  one lemma — `x₀` fixes `ι(CF)` because `τ` fixes `jj(CF)`;
+* the last clause is the reciprocity leaf's Frobenius characterisation
+  followed by its injectivity clause.
+
+**Do NOT re-inline the `x₀` construction.** It is written elementwise,
+through `algebraMap M ℚ̄`, precisely so that no `Normal ℚ ↥M` instance has
+to cross an application boundary; `Normal ℚ (AlgebraicClosure ℚ)` is not
+found by instance search here and is supplied by hand from
+`AlgebraicClosure.isAlgebraic` and `IsAlgClosure.normal`, as
+`Patching.lean` also does. `ModThree.lean`'s Childress-following
+development is RECIPROCITY only and is hardwired to `Dickson.K 3` as its
+value group, so **price generalizing that value group before writing a
+second reciprocity development.**
 
 **Non-vacuity.** By Chebotarev every `τ ∈ Gal(M/ℚ)` really is an
 arithmetic Frobenius at infinitely many primes of `𝓞 M`, so the last
@@ -32552,8 +32778,43 @@ theorem exists_hilbertClassField_isArithFrobAt_mk0_eq
         ∀ I : (Ideal (𝓞 CF))⁰,
           Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
             (I : Ideal (𝓞 CF)) →
-          ClassGroup.mk0 I = c) :=
-  sorry
+          ClassGroup.mk0 I = c) := by
+  classical
+  obtain ⟨M, hMfin, hMnorm, jj, hjj, hab, hunr, hcard⟩ :=
+    exists_unramifiedAbelian_normal_over_rat (p := p) CF ι
+  haveI := hMfin
+  haveI := hMnorm
+  obtain ⟨art, hfix, hinj, hfrob⟩ :=
+    exists_artinIdealMap_of_unramifiedAbelian_normal (p := p) CF M jj hab hunr hcard
+  obtain ⟨I₀, hI₀⟩ := ClassGroup.mk0_surjective c
+  refine ⟨M, hMfin, hMnorm, jj, ?_⟩
+  -- lift the Artin symbol `art I₀` of `c` to an element of `Γℚ`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  obtain ⟨x₀, hx₀⟩ :=
+    AlgEquiv.restrictNormalHom_surjective (F := ℚ) (K₁ := M)
+      (E := AlgebraicClosure ℚ) (art I₀)
+  refine ⟨x₀, art I₀, hjj, ?_, ?_, ?_⟩
+  · -- `x₀` fixes `ι(CF)` because `art I₀` fixes `jj(CF)`
+    intro z
+    have hcm := AlgEquiv.restrictNormal_commutes x₀ M (jj z)
+    rw [show AlgEquiv.restrictNormal x₀ M = AlgEquiv.restrictNormalHom M x₀ from rfl,
+      hx₀, hfix I₀ z, hjj z] at hcm
+    exact hcm.symm
+  · -- `art I₀` is the restriction of `x₀`, elementwise
+    intro w
+    have hcm := AlgEquiv.restrictNormal_commutes x₀ M w
+    rw [show AlgEquiv.restrictNormal x₀ M = AlgEquiv.restrictNormalHom M x₀ from rfl,
+      hx₀] at hcm
+    exact hcm
+  · -- a prime whose Frobenius is `art I₀` contracts into the class of `I₀`
+    intro Q hQp hQfrob I hI
+    have hQ := hfrob Q hQp (art I₀) hQfrob (hfix I₀) I hI
+    rw [← hI₀]
+    exact hinj I I₀ hQ
 
 /-- **CHEBOTAREV, IN THE CLASS GROUP: every ideal class of `𝓞 ℚ(μ_p)` is the
 class of a DEGREE-ONE Frobenius ideal** (E3c support leaf
