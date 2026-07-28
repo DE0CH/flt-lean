@@ -18510,21 +18510,51 @@ degree `1`, by inflation), and which was decomposed the same day. Itemised:
    upstream of both, is what would make it shared. (For THIS leaf, whose `ρbar`
    IS hardly ramified, item 2 may be avoidable: `{2, ℓ}` then really does
    contain the ramification.)
-3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — genuinely missing, and it
-   is the real cost. Our pin's `ContCohomology/LowDegree.lean` computes `H⁰`
-   only; the vendored
-   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
-   gives `cocycleClass` / `cocycleClass_eq_zero_iff` for the HOMOGENEOUS model
-   `(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`. What is needed is its
-   identification with `C(G, M)` (`F ↦ (y ↦ F 1 y)`, inverse
-   `z ↦ (x, y) ↦ x · z (x⁻¹ y)`), carrying `d` to the usual cocycle condition,
-   together with the compatibility of `ContinuousCohomology.map` with it.
-   `~/cs/FLT` does not have it either.
+3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — **THIS ITEM IS NOW DONE
+   (2026-07-28) AND THE PARAGRAPH THAT FOLLOWED IT IS RETIRED.** It is
+   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
+   sorry-free: `eval₁` and the crossed-homomorphism identity, the COBOUNDARY
+   CRITERION (`eval₁_bdryKer`, `exists_eval₁_eq_sub_of_cocycleClass_eq_zero`,
+   `cocycleClass_eq_zero_of_eval₁_eq_sub`) and the FUNCTORIALITY
+   (`cocyclesMapKer`, `map_cocycleClass_cocyclesMapKer`,
+   `eval₁_cocyclesMapKer`) — i.e. exactly `res^G_N [z] = [z|_N]` read on
+   inhomogeneous cochains. Only the forward map `F ↦ (y ↦ F 1 y)` was built;
+   the inverse `z ↦ (x, y) ↦ x · z (x⁻¹ y)` needs continuity of the orbit maps
+   and no consumer has needed it. That module is UPSTREAM of everything (its
+   only imports are the vendored `ContCohomology/Basic.lean` and mathlib's
+   `ContCohomology/Functoriality.lean`), so it is available here for the cost of
+   one `public import` line — **this module does not currently import it**, and
+   adding that import is the first step of any attack on this leaf.
 
-So this leaf is **not** blocked on missing arithmetic; it is blocked on item 3,
-which is shared with `Modularity/Patching.lean`'s
+**STATUS 2026-07-28, replacing the paragraph that used to stand here.** The old
+text said this leaf was blocked on item 3 and should be given to ONE owner
+together with `Modularity/Patching.lean`'s
 `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
-`finite_ker_resSubgroupTwist1`. Those three are best given to ONE owner.
+`finite_ker_resSubgroupTwist1`. That was done, and those two are now PROVEN —
+the second outright, the first over a single new arithmetic leaf
+`exists_openNormal_trivial_adZeroTwist` (an open normal subgroup of finite index
+acting trivially on `ad⁰ρbar(1)` and containing the inertia away from a finite
+`T`; what it still costs is continuity and inertia-triviality of the mod-`p`
+cyclotomic character, the `ρbar` half being immediate from
+`GaloisRep.IsUnramifiedAt`'s definition).
+
+So what blocks THIS leaf is now items 1–2 plus one transfer, and it is worth
+being precise, because the three obligations differ in kind:
+
+* the cochain dictionary is DONE and upstream (item 3), needing only an import;
+* the Hermite–Minkowski GENERALISATION (item 2) exists as
+  `finite_inertiaOutsideSubgroups` but lives DOWNSTREAM, in
+  `Modularity/Patching.lean`. Hoisting it into `HermiteMinkowski.lean` — which
+  is upstream of both — is the enabling move, and it is a pure relocation of a
+  proven declaration;
+* the remaining mathematical work is that this leaf's group is
+  `restrictedGaloisGroup S = Γ ℚ ⧸ N_S`, a QUOTIENT, whereas the two proven
+  leaves work over `Γ ℚ` itself with an unramifiedness condition on classes.
+  The bookkeeping there — open subgroups of the quotient correspond to open
+  subgroups of `Γ ℚ` containing `N_S`, and Hermite–Minkowski has to be applied
+  through that correspondence — is what a successor actually has to write. It
+  is NOT a repeat of the two proven leaves, and estimating it as one would be a
+  mistake.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause

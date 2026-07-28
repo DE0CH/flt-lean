@@ -4389,10 +4389,104 @@ theorem exists_finset_isUnramifiedAt_of_notMem.{uK, uW} (p : ℕ) [Fact p.Prime]
     ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
       ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := sorry
 
+/-- **Distinct primes miss the hardly ramified places** (PROVEN 2026-07-28): a
+prime `q` other than `2` and `p` gives a place outside
+`hardlyRamifiedPlaces p = {(2), (p)}`.
+
+The identification of "`q ≠ 2` as a number" with "the place of `q` is not the
+place of `2`" is `Chebotarev.lean`'s `natCast_mem_toHeightOneSpectrum_iff`: the
+place of `q` contains the integer `r` exactly when `r = q`, so an equality of
+its ideal with `span {2}` would force `q = 2`. -/
+lemma notMem_hardlyRamifiedPlaces_of_ne {p q : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (h2 : q ≠ 2) (hqp : q ≠ p) :
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces p := by
+  rintro (h | h)
+  · refine h2 ?_
+    have hmem : ((2 : ℕ) : NumberField.RingOfIntegers ℚ) ∈
+        (hq.toHeightOneSpectrumRingOfIntegersRat).asIdeal := by
+      rw [h]; exact_mod_cast Ideal.mem_span_singleton_self (2 : NumberField.RingOfIntegers ℚ)
+    exact ((natCast_mem_toHeightOneSpectrum_iff Nat.prime_two hq).mp hmem).symm
+  · refine hqp ?_
+    have hmem : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∈
+        (hq.toHeightOneSpectrumRingOfIntegersRat).asIdeal := by
+      rw [h]; exact Ideal.mem_span_singleton_self _
+    exact ((natCast_mem_toHeightOneSpectrum_iff hp hq).mp hmem).symm
+
+/-- **The open normal subgroup acting trivially on `ad⁰ρbar(1)`, containing the
+inertia away from `T`** (SORRY LEAF, cut out 2026-07-28 as the ONE arithmetic
+input of `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` below; that
+leaf is PROVEN over it, and everything else in it is cocycle bookkeeping).
+
+# WHAT IT SAYS
+
+`ad⁰ρbar(1)` is a FINITE discrete `Γ ℚ`-module, so the subgroup acting trivially
+on it is open of finite index; and it contains the inertia at every prime
+`q ∉ T`, because both factors of the twist are unramified there.
+
+# ROUTE — take `N₁ = ker ρbar ⊓ ker (adZeroCycloChar p k)`
+
+* *Trivial action.*  `adZeroTwistRep ρbar σ = χ(σ) • AdZero.rep ρbar σ` by
+  definition, and `AdZero.rep ρbar σ` is conjugation by `ρbar σ`.  So `ρbar σ = 1`
+  and `χ σ = 1` together give the identity on `AdZero k W`.  (The containment is
+  what is needed, not an equality of subgroups: `N₁` may be strictly smaller than
+  the full kernel of the action, which costs nothing since only an upper bound on
+  its index is used downstream.)
+* *Open, of finite index.*  `k` is `Finite` and discrete and `W` is a finite free
+  `k`-module, so `Module.End k W` is finite and its module topology is discrete;
+  `ρbar` is continuous by construction (`GaloisRep` is a `ContinuousMonoidHom`),
+  so `ker ρbar` is open, and its index is at most `#(End k W)`.  The same for
+  `χ`, valued in the finite group `kˣ`, once its continuity is available.
+  `HermiteMinkowski.lean`'s `finite_setOf_galoisRep_isUnramifiedAt` runs the
+  identical argument for `ρbar` alone and is the model to copy.
+* *Inertia away from `T`.*  `GaloisRep.IsUnramifiedAt` is BY DEFINITION
+  `localInertiaGroup v ≤ (ρ.toLocal v).ker`, and
+  `GaloisRep.toLocal_apply` says `ρ.toLocal v σ = ρ (Field.absoluteGaloisGroup.map … σ)`
+  — which is exactly `ρbar (inertiaToGlobalHom v σ)`.  So `hT` gives the `ρbar`
+  half immediately.  The `χ` half is that the mod-`p` cyclotomic character is
+  unramified at every `q ≠ p`, and `p ∈ T` is what makes that applicable; the
+  companion Frobenius statement `cyclotomicCharacter_globalFrob`
+  (`Chebotarev.lean`, PROVEN) is the same computation at the other generator of
+  the decomposition group and is the model for it.
+
+# WHAT IS ACTUALLY MISSING, ITEMISED
+
+Only two things, both about the CHARACTER rather than about `ρbar`:
+
+1. continuity of `adZeroCycloChar p k` (equivalently: openness of its kernel).
+   `grep -rn "Continuous.*cyclotomicCharacter" .lake/packages/mathlib/Mathlib/` finds
+   nothing, so this is to be had from the tree's own
+   `cyclotomicCharacterModL` material in `Chebotarev.lean`, which already produces
+   open subgroups on which it is trivial (`cyclotomicCharacterModL_eq_one` on the
+   fixing subgroup of the roots of unity);
+2. inertia-triviality of that character at `q ≠ p`.
+
+The `ρbar` half of both bullets is free, as noted above.
+
+Both-ways audit: a pure statement about the module `ad⁰ρbar(1)` with no
+cohomology in it, and non-vacuous — `N₁ = ⊤` is NOT admissible unless `ρbar` and
+`χ` are both trivial, since the trivial-action clause is quantified over all of
+`N₁`.  The conclusion is an existential over subgroups, so it cannot be
+discharged by refuting a package; no hypothesis on `ρbar` beyond its type and
+`hT` is present. -/
+theorem exists_openNormal_trivial_adZeroTwist.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (T : Finset ℕ) (hpT : p ∈ T)
+    (hT : ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ N₁ : Subgroup (Field.absoluteGaloisGroup ℚ),
+      N₁.Normal ∧ IsOpen (N₁ : Set (Field.absoluteGaloisGroup ℚ)) ∧ N₁.FiniteIndex ∧
+      (∀ g ∈ N₁, ∀ m : ↥(adZeroTwist p ρbar), (adZeroTwist p ρbar).ρ g m = m) ∧
+      (∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+        ∀ σ : ↥(localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat),
+          inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ ∈ N₁) := sorry
+
 /-- **An unramified-outside-`{2, p}` class dies on a small open subgroup**
-(SORRY LEAF, cut out 2026-07-28 as the second of the three inputs of
+(cut out 2026-07-28 as the second of the three inputs of
 `finite_h1TwistUnramified` below — this is the cocycle bookkeeping, and the only
-one of the three that touches the cochain model).
+one of the three that touches the cochain model; **PROVEN the same day over the
+single arithmetic leaf `exists_openNormal_trivial_adZeroTwist` above**).
 
 Given a finite set `T` of primes containing `2`, `p` and every prime at which
 `ρbar` ramifies, there is a bound `n` such that EVERY class `c` unramified
@@ -4419,18 +4513,36 @@ continuous `1`-cocycle representing `c`.
   cocycle, not merely a coboundary" step recorded on `h1TwistUnramified`.)
 * `res^{Γ ℚ}_N c = 0` because `z` restricts to the zero cocycle on `N`.
 
-# WHAT IT COSTS
+# WHAT IT COST, AND WHAT WAS BUILT (2026-07-28)
 
-The degree-`1` INHOMOGENEOUS cochain dictionary, which neither our pin nor
-`~/cs/FLT` has: our pin's `ContCohomology/LowDegree.lean` computes `H⁰` only,
-and the vendored
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
-supplies `cocycleClass` / `cocycleClass_eq_zero_iff` for the HOMOGENEOUS model
-`(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`.  What is needed is the
-identification of that with `C(G, M)` — `F ↦ (y ↦ F 1 y)`, inverse
-`z ↦ (x, y) ↦ x · z (x⁻¹ y)` — carrying `d` to the usual cocycle condition, plus
-the compatibility of `ContinuousCohomology.map` with it.  Everything after that
-is the four bullets above.
+The obstruction was the degree-`1` INHOMOGENEOUS cochain dictionary, which
+neither our pin nor `~/cs/FLT` had.  **That gap is now closed**, in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
+which is sorry-free.  Three additions there carry this proof, and each is
+consumed below by name:
+
+* `eval₁_bdryKer` and `exists_eval₁_eq_sub_of_cocycleClass_eq_zero` /
+  `cocycleClass_eq_zero_of_eval₁_eq_sub` — the COBOUNDARY CRITERION,
+  `[z] = 0 ↔ eval₁ z` is `g ↦ ρ g m - m`.  The converse half needs
+  `Continuous fun g ↦ ρ g m`, which is not automatic for a
+  `ContRepresentation`; it is free at `m = 0`, which is the only instance used
+  here;
+* `cocyclesMapKer` / `map_cocycleClass_cocyclesMapKer` /
+  `eval₁_cocyclesMapKer` — FUNCTORIALITY, i.e. `res^{Γ ℚ}_N [z] = [z|_N]` read
+  on inhomogeneous cochains.  This is what turns "`c` is unramified at `q`" into
+  "`eval₁ z` is a coboundary on `I_q`" and, in the other direction, turns
+  "`eval₁ z` vanishes on `N`" into "`res_N c = 0`".
+
+The classical identification is an ISOMORPHISM `(C(G, C(G,M)))^G ≅ C(G, M)` with
+inverse `z ↦ (x, y) ↦ x · z (x⁻¹ y)`; only the FORWARD map `F ↦ (y ↦ F 1 y)` was
+built, because the inverse needs continuity of the orbit maps and no consumer in
+this development needs it.  If a future consumer does, that is where to add it.
+
+What remains, and is the whole residual content of this leaf, is the ARITHMETIC
+of the third bullet above: that a single open normal subgroup of finite index
+acts trivially on `ad⁰ρbar(1)` and swallows the inertia away from `T`.  That is
+`exists_openNormal_trivial_adZeroTwist` above, and it is the only sorry this
+proof rests on.
 
 Both-ways audit: `T` and `n` are existentially/universally placed so that the
 statement is a genuine assertion about every class; it is not vacuous, since
@@ -4447,7 +4559,145 @@ theorem exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero.{uK, uW} (p : ℕ
       ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ n : ℕ, ∀ c ∈ h1TwistUnramified p ρbar,
       ∃ N ∈ inertiaOutsideSubgroups T n,
-        c ∈ LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap := sorry
+        c ∈ LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap := by
+  classical
+  haveI hfinW : Finite W := Module.finite_of_finite k
+  haveI hfinEnd : Finite (Module.End k W) :=
+    Finite.of_injective (fun f : Module.End k W => (f : W → W)) DFunLike.coe_injective
+  haveI hfinX : Finite ↥(adZeroTwist p ρbar) :=
+    Finite.of_injective (AdZero.toEnd k W) AdZero.toEnd_injective
+  haveI hdisc : DiscreteTopology ↥(adZeroTwist p ρbar) :=
+    inferInstanceAs (DiscreteTopology (AdZero k W))
+  obtain ⟨N₁, hN₁norm, hN₁open, hN₁FI, hN₁triv, hN₁inert⟩ :=
+    exists_openNormal_trivial_adZeroTwist p ρbar T hpT hT
+  haveI := hN₁norm
+  haveI := hN₁FI
+  refine ⟨N₁.index * Nat.card ↥(adZeroTwist p ρbar), ?_⟩
+  intro c hc
+  obtain ⟨z, hz⟩ := ContinuousCohomology.exists_cocycleClass_eq (X := adZeroTwist p ρbar) 1 c
+  set e : Field.absoluteGaloisGroup ℚ → ↥(adZeroTwist p ρbar) :=
+    fun g => ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g with hedef
+  have hmul : ∀ g h : Field.absoluteGaloisGroup ℚ,
+      e (g * h) = e g + (adZeroTwist p ρbar).ρ g (e h) :=
+    fun g h => ContinuousCohomology.cocycles₁_eval₁_mul z g h
+  have hone : e 1 = 0 :=
+    ContinuousCohomology.eval₁_one (ContinuousCohomology.cocycles₁_d_eq_zero z)
+  have hinvv : ∀ g : Field.absoluteGaloisGroup ℚ,
+      e g⁻¹ = - (adZeroTwist p ρbar).ρ g⁻¹ (e g) :=
+    fun g => ContinuousCohomology.eval₁_inv (ContinuousCohomology.cocycles₁_d_eq_zero z) g
+  -- vanishing of the cocycle on inertia away from `T`
+  have hinert0 : ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ : ↥(localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat),
+        e (inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ) = 0 := by
+    intro q hq hqT σ
+    have hv : hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces p :=
+      notMem_hardlyRamifiedPlaces_of_ne Fact.out hq
+        (fun h => hqT (h ▸ h2T)) (fun h => hqT (h ▸ hpT))
+    have hker : c ∈ LinearMap.ker
+        (locResInertiaTwist1 p ρbar hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap := by
+      have h1 := (Submodule.mem_iInf _).mp hc hq.toHeightOneSpectrumRingOfIntegersRat
+      exact (Submodule.mem_iInf _).mp h1 hv
+    have hzero : ContinuousCohomology.cocycleClass
+        (adZeroTwistInertia p ρbar hq.toHeightOneSpectrumRingOfIntegersRat) 1
+        (ContinuousCohomology.cocyclesMapKer
+          (inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat)
+          (CategoryTheory.CategoryStruct.id
+            (adZeroTwistInertia p ρbar hq.toHeightOneSpectrumRingOfIntegersRat)) 1 z) = 0 := by
+      rw [← ContinuousCohomology.map_cocycleClass_cocyclesMapKer, hz]
+      exact hker
+    obtain ⟨m, hm⟩ := ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hzero
+    have h1 := hm σ
+    rw [ContinuousCohomology.eval₁_cocyclesMapKer] at h1
+    have h2 : (adZeroTwist p ρbar).ρ
+        (inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ) m = m :=
+      hN₁triv _ (hN₁inert q hq hqT σ) m
+    have h3 : (adZeroTwistInertia p ρbar hq.toHeightOneSpectrumRingOfIntegersRat).ρ σ m = m := h2
+    rw [h3, sub_self] at h1
+    exact h1
+  -- the subgroup
+  set Nsub : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {g | g ∈ N₁ ∧ e g = 0}
+      one_mem' := ⟨one_mem _, hone⟩
+      mul_mem' := fun {a b} ha hb => ⟨mul_mem ha.1 hb.1, by
+        rw [hmul, ha.2, hb.2, map_zero, add_zero]⟩
+      inv_mem' := fun {a} ha => ⟨inv_mem ha.1, by
+        rw [hinvv, ha.2, map_zero, neg_zero]⟩ } with hNsubdef
+  have hmemN : ∀ g : Field.absoluteGaloisGroup ℚ, g ∈ Nsub ↔ (g ∈ N₁ ∧ e g = 0) :=
+    fun _ => Iff.rfl
+  have hle : Nsub ≤ N₁ := fun g hg => hg.1
+  have hNnorm : Nsub.Normal := by
+    refine ⟨fun x hx g => ⟨hN₁norm.conj_mem x hx.1 g, ?_⟩⟩
+    have hconj := ContinuousCohomology.eval₁_conj
+      (ContinuousCohomology.cocycles₁_d_eq_zero z) g x
+    show e (g * x * g⁻¹) = 0
+    rw [hedef]
+    show ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 (g * x * g⁻¹) = 0
+    rw [hconj, show ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 x = e x from rfl,
+      hx.2, map_zero, zero_add, hN₁triv _ (hN₁norm.conj_mem x hx.1 g), sub_self]
+  have hNopen : IsOpen (Nsub : Set (Field.absoluteGaloisGroup ℚ)) := by
+    have h1 : (Nsub : Set (Field.absoluteGaloisGroup ℚ)) =
+        (N₁ : Set (Field.absoluteGaloisGroup ℚ)) ∩ (e ⁻¹' {0}) := rfl
+    rw [h1]
+    exact hN₁open.inter
+      ((isOpen_discrete ({0} : Set ↥(adZeroTwist p ρbar))).preimage
+        (ContinuousCohomology.continuous_eval₁ (adZeroTwist p ρbar) z.1))
+  -- the index bound
+  have hwd : ∀ a b : Field.absoluteGaloisGroup ℚ, a⁻¹ * b ∈ Nsub →
+      ((QuotientGroup.mk a : Field.absoluteGaloisGroup ℚ ⧸ N₁), e a) =
+      ((QuotientGroup.mk b : Field.absoluteGaloisGroup ℚ ⧸ N₁), e b) := by
+    intro a b hab
+    refine Prod.ext ((QuotientGroup.eq (s := N₁)).mpr (hle hab)) ?_
+    have hb : b = a * (a⁻¹ * b) := by group
+    rw [hb, hmul, hab.2, map_zero, add_zero]
+  set F : Field.absoluteGaloisGroup ℚ ⧸ Nsub →
+      (Field.absoluteGaloisGroup ℚ ⧸ N₁) × ↥(adZeroTwist p ρbar) :=
+    Quotient.lift (fun g => ((QuotientGroup.mk g : Field.absoluteGaloisGroup ℚ ⧸ N₁), e g))
+      (fun a b hab => hwd a b (QuotientGroup.leftRel_apply.mp hab)) with hFdef
+  have hFinj : Function.Injective F := by
+    refine fun x y => Quotient.inductionOn₂ x y ?_
+    intro a b hEq
+    have h1 : (QuotientGroup.mk a : Field.absoluteGaloisGroup ℚ ⧸ N₁) = QuotientGroup.mk b :=
+      congrArg Prod.fst hEq
+    have h2 : e a = e b := congrArg Prod.snd hEq
+    have hab1 : a⁻¹ * b ∈ N₁ := (QuotientGroup.eq (s := N₁)).mp h1
+    have hab2 : e (a⁻¹ * b) = 0 := by
+      have hb : b = a * (a⁻¹ * b) := by group
+      have h3 : e b = e a + (adZeroTwist p ρbar).ρ a (e (a⁻¹ * b)) := by rw [← hmul, ← hb]
+      rw [h2] at h3
+      have h4 : (adZeroTwist p ρbar).ρ a (e (a⁻¹ * b)) = 0 := by
+        have := h3.symm
+        rwa [add_eq_left] at this
+      have h5 := congrArg (fun t => (adZeroTwist p ρbar).ρ a⁻¹ t) h4
+      simpa [ContinuousCohomology.rho_inv_apply] using h5
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr ⟨hab1, hab2⟩)
+  haveI hfinQ : Finite (Field.absoluteGaloisGroup ℚ ⧸ Nsub) :=
+    Finite.of_injective F hFinj
+  have hidx : Nsub.index ≤ N₁.index * Nat.card ↥(adZeroTwist p ρbar) := by
+    have h1 : Nsub.index = Nat.card (Field.absoluteGaloisGroup ℚ ⧸ Nsub) := rfl
+    have h2 : N₁.index = Nat.card (Field.absoluteGaloisGroup ℚ ⧸ N₁) := rfl
+    rw [h1, h2, ← Nat.card_prod]
+    exact Nat.card_le_card_of_injective F hFinj
+  haveI hNFI : Nsub.FiniteIndex := by
+    refine ⟨?_⟩
+    show Nat.card (Field.absoluteGaloisGroup ℚ ⧸ Nsub) ≠ 0
+    exact Nat.card_pos.ne'
+  -- the class dies on `Nsub`
+  have hkerc : c ∈ LinearMap.ker (resSubgroupTwist1 p ρbar Nsub).hom.toLinearMap := by
+    have hzero : ContinuousCohomology.cocycleClass (adZeroTwistSubgroup p ρbar Nsub) 1
+        (ContinuousCohomology.cocyclesMapKer (subgroupToGlobalHom Nsub)
+          (CategoryTheory.CategoryStruct.id (adZeroTwistSubgroup p ρbar Nsub)) 1 z) = 0 := by
+      refine ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub _ 0
+        (by simpa using continuous_const) ?_
+      intro h
+      rw [ContinuousCohomology.eval₁_cocyclesMapKer, map_zero, sub_zero]
+      exact h.2.2
+    have hmc := ContinuousCohomology.map_cocycleClass_cocyclesMapKer
+      (subgroupToGlobalHom Nsub)
+      (CategoryTheory.CategoryStruct.id (adZeroTwistSubgroup p ρbar Nsub)) 1 z
+    rw [hzero, hz] at hmc
+    exact hmc
+  exact ⟨Nsub, ⟨hNnorm, hNopen, hNFI, hidx,
+    fun q hq hqT σ => ⟨hN₁inert q hq hqT σ, hinert0 q hq hqT σ⟩⟩, hkerc⟩
 
 /-- **Inflation–restriction: the kernel of restriction to an open normal
 subgroup is finite** (SORRY LEAF, cut out 2026-07-28 as the third of the three
@@ -4465,31 +4715,103 @@ index) and `M^N ⊆ M` is finite, so that group is a subquotient of the finite s
 of functions `Γ ℚ ⧸ N → M` and hence finite.
 
 Only the INJECTIVITY half of inflation–restriction is needed, and it can be had
-directly rather than through the exact sequence: a class in the kernel is
-represented by a cocycle vanishing on `N` after adjusting by a coboundary, and
-such a cocycle is constant on the left cosets `gN` (`z (g x) = z g + g · z x =
-z g`), so the map "kernel → functions `Γ ℚ ⧸ N → M`" is well defined and
-injective modulo the finite group of coboundaries `B¹ ≅ M / M^{Γ ℚ}`.  Both
-routes need the same missing input as
-`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` above — the degree-`1`
-inhomogeneous cochain dictionary — which is why the two leaves are natural
-companions and are best given to ONE owner.
+directly rather than through the exact sequence.  **That is what is done below,
+and the exact sequence is never built.**  The proof exhibits a SURJECTION onto
+the kernel from the parameter set
 
-Both-ways audit: `hnorm`, `hopen` and `hFI` are all load-bearing.  Dropping
-`hopen` makes the statement FALSE as a matter of continuous cohomology: a
-non-closed `N` of finite index has no inflation–restriction sequence, and
-dropping `hFI` makes `Γ ℚ ⧸ N` infinite and the kernel infinite-dimensional
-(this is exactly the `dim_k H¹(Γ ℚ, ad⁰(1)) = ℵ₀` computation recorded on
-`Sha1Twist` in `HardlyRamified/Deformation.lean`, at `N = 1`). -/
+    S = { z ∈ Z¹(Γ ℚ, M) | ∃ m, ∀ x ∈ N, z x = ρ x m − m } ,
+
+and shows `S` finite.  Surjectivity is `res_N [z] = 0 ⟹ z|_N` is a coboundary,
+which is the FORWARD half of the coboundary criterion composed with
+functoriality; finiteness is because such a `z` is determined by `m` together
+with its values on coset representatives — `z (r x) = z r + ρ r (ρ x m − m)` —
+so `S` injects into `M × (Γ ℚ ⧸ N → M)`, and a cocycle is determined by its
+inhomogeneous cochain (`cocycle_apply`).
+
+**PROVEN 2026-07-28**, over the degree-`1` inhomogeneous cochain dictionary that
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` above also consumes —
+see the "WHAT IT COST" section there for what was built.  This leaf needs no
+arithmetic at all and rests on no sorry.
+
+Both-ways audit, CORRECTED 2026-07-28 by the proof: `hFI` is load-bearing —
+dropping it makes `Γ ℚ ⧸ N` infinite and the kernel infinite-dimensional (this
+is exactly the `dim_k H¹(Γ ℚ, ad⁰(1)) = ℵ₀` computation recorded on `Sha1Twist`
+in `HardlyRamified/Deformation.lean`, at `N = 1`).  **`hopen` and `hnorm` turn
+out NOT to be needed**, and the earlier claim here that dropping `hopen` makes
+the statement false was an artefact of routing through inflation–restriction: a
+non-closed `N` of finite index indeed has no such sequence, but the direct
+argument above never uses one — it only needs `Γ ℚ ⧸ N` finite as a SET.  Both
+hypotheses are kept because the consumer `finite_h1TwistUnramified` has them in
+hand from `inertiaOutsideSubgroups` and removing them would change the call
+sites for no gain; they are underscore-prefixed so the redundancy is
+mechanically visible. -/
 theorem finite_ker_resSubgroupTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W] (ρbar : GaloisRep ℚ k W)
-    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) (hnorm : N.Normal)
-    (hopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) (_hnorm : N.Normal)
+    (_hopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
     (hFI : N.FiniteIndex) :
-    Finite ↥(LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap) := sorry
+    Finite ↥(LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap) := by
+  classical
+  haveI := hFI
+  haveI hfinW : Finite W := Module.finite_of_finite k
+  haveI hfinEnd : Finite (Module.End k W) :=
+    Finite.of_injective (fun f : Module.End k W => (f : W → W)) DFunLike.coe_injective
+  haveI hfinX : Finite ↥(adZeroTwist p ρbar) :=
+    Finite.of_injective (AdZero.toEnd k W) AdZero.toEnd_injective
+  set X := adZeroTwist p ρbar with hXdef
+  set Y := adZeroTwistSubgroup p ρbar N with hYdef
+  set φ := subgroupToGlobalHom N with hφdef
+  -- the finite parameter set: a cocycle together with a coboundary witness on `N`
+  set S : Type _ := {z : ContinuousCohomology.cocycles₁ X //
+    ∃ m : ↥X, ∀ x : Field.absoluteGaloisGroup ℚ, x ∈ N →
+      ContinuousCohomology.eval₁ X z.1 x = X.ρ x m - m} with hSdef
+  -- STEP 1 : `S` is finite, because a cocycle vanishing-up-to-a-coboundary on `N`
+  -- is determined by the witness together with its values on coset representatives.
+  haveI hSfin : Finite S := by
+    refine Finite.of_injective
+      (fun z : S => (Classical.choose z.2,
+        fun q : Field.absoluteGaloisGroup ℚ ⧸ N =>
+          ContinuousCohomology.eval₁ X z.1.1 q.out)) ?_
+    rintro ⟨z₁, hz₁⟩ ⟨z₂, hz₂⟩ hEq
+    have hm : Classical.choose hz₁ = Classical.choose hz₂ := congrArg Prod.fst hEq
+    have hcos : ∀ q : Field.absoluteGaloisGroup ℚ ⧸ N,
+        ContinuousCohomology.eval₁ X z₁.1 q.out =
+        ContinuousCohomology.eval₁ X z₂.1 q.out := fun q => congrFun (congrArg Prod.snd hEq) q
+    have hspec₁ := Classical.choose_spec hz₁
+    have hspec₂ := Classical.choose_spec hz₂
+    have key : ∀ g : Field.absoluteGaloisGroup ℚ,
+        ContinuousCohomology.eval₁ X z₁.1 g = ContinuousCohomology.eval₁ X z₂.1 g := by
+      intro g
+      set r := (QuotientGroup.mk g : Field.absoluteGaloisGroup ℚ ⧸ N).out with hrdef
+      have hx : r⁻¹ * g ∈ N := (QuotientGroup.eq (s := N)).mp (Quotient.out_eq' _)
+      have hg : g = r * (r⁻¹ * g) := by group
+      rw [hg, ContinuousCohomology.cocycles₁_eval₁_mul z₁ r (r⁻¹ * g),
+        ContinuousCohomology.cocycles₁_eval₁_mul z₂ r (r⁻¹ * g),
+        hspec₁ _ hx, hspec₂ _ hx, hm, hcos (QuotientGroup.mk g)]
+    refine Subtype.ext (Subtype.ext (Subtype.ext ?_))
+    ext g l
+    rw [ContinuousCohomology.cocycle_apply (ContinuousCohomology.cocycles₁_d_eq_zero z₁),
+      ContinuousCohomology.cocycle_apply (ContinuousCohomology.cocycles₁_d_eq_zero z₂),
+      key, key]
+  -- STEP 2 : every class in the kernel is the class of a member of `S`.
+  have hcover : (LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap :
+      Set ↥(continuousCohomology 1 X)) ⊆
+      Set.range (fun z : S => ContinuousCohomology.cocycleClass X 1 z.1) := by
+    intro c hc
+    obtain ⟨z, hz⟩ := ContinuousCohomology.exists_cocycleClass_eq (X := X) 1 c
+    have hres : ContinuousCohomology.cocycleClass Y 1
+        (ContinuousCohomology.cocyclesMapKer φ (CategoryTheory.CategoryStruct.id Y) 1 z) = 0 := by
+      rw [← ContinuousCohomology.map_cocycleClass_cocyclesMapKer, hz]
+      exact hc
+    obtain ⟨m, hm⟩ :=
+      ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hres
+    refine ⟨⟨z, m, fun x hx => ?_⟩, hz⟩
+    have := hm ⟨x, hx⟩
+    rwa [ContinuousCohomology.eval₁_cocyclesMapKer] at this
+  exact ((Set.finite_range _).subset hcover).to_subtype
 
 /-- **Finiteness of the unramified-outside-`{2, p}` part of
 `H¹(ℚ, ad⁰ρbar(1))`** (cut out 2026-07-27 as the first of the two inputs of
@@ -4499,6 +4821,17 @@ DDT Thm. 2.49, see `exists_taylorWilesPrimeSet_core` below; **PROVEN
 `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
 `finite_ker_resSubgroupTwist1` — together with the newly PROVEN
 Hermite–Minkowski input `finite_inertiaOutsideSubgroups`).
+
+**STATE OF THE THREE, LATER THE SAME DAY.**  `finite_ker_resSubgroupTwist1` is
+now PROVEN outright and `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero`
+over the single arithmetic leaf `exists_openNormal_trivial_adZeroTwist`, both
+using the degree-`1` inhomogeneous cochain dictionary now completed in
+`.../ContCohomology/LowDegreeOne.lean`.  So the residual frontier under this
+node is exactly TWO leaves, both purely arithmetic and neither touching
+cohomology: `exists_finset_isUnramifiedAt_of_notMem` (a representation over a
+finite field ramifies at finitely many primes) and
+`exists_openNormal_trivial_adZeroTwist` (continuity and inertia-triviality of
+the mod-`p` cyclotomic character; the `ρbar` half of both is immediate).
 
 # THE ASSEMBLY, IN ONE LINE
 
