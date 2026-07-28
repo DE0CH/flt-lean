@@ -98,6 +98,9 @@ public import Fermat.FLT.EllipticCurve.Velu
 -- level-169 descent leaves below). `public` because `End` occurs in signature
 -- position there.
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- The differential character `λ : End(E_ℚ̄) → ℚ̄` (`IsDiffChar`), which is what
+-- `MazurLevelFortyNine.exists_sqrtNegOne_galSign` is proven over.
+public import Fermat.FLT.EllipticCurve.DifferentialCharacter
 public import Fermat.FLT.EllipticCurve.IsogenyTrace
 -- Infinite Galois theory (`InfiniteGalois.mem_range_algebraMap_iff_fixed`) and
 -- perfect fields (`Algebra.IsAlgebraic.isSeparable_of_perfectField`), used by
@@ -31315,9 +31318,12 @@ sharper in one place and RETRACTS it in another.
   mod-`7` representation as `GaloisRepresentation.cyclotomicCharacterModL 7`
   outright. The assembly below uses it directly, in the adapted basis `(v, u)`,
   through `LinearMap.det_toMatrix` and `Matrix.det_fin_two`.
-* **Item 4 — "`End(E_ℚ̄)` is defined exactly over the CM field" — is the only
-  genuinely missing mathematics**, and it is isolated here as
-  `exists_sqrtNegOne_galSign`. The transport lemma it consumes,
+* **Item 4 — "`End(E_ℚ̄)` is defined exactly over the CM field" — is isolated
+  here as `exists_sqrtNegOne_galSign`, and it is PROVEN (2026-07-28) over the
+  differential character `WeierstrassCurve.IsDiffChar` of
+  `Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`; the six open facts
+  about `λ` listed there are now where the missing mathematics sits.
+  The transport lemma it consumes,
   `isIsogeny_galConj` (item 1 of the same list — that Galois ACTS on
   `End(E_ℚ̄)`), is PROVEN below.
 * **The concluding "`ℚ(√−7) ≠ ℚ(i)`" step is isolated as
@@ -31465,8 +31471,8 @@ theorem isIsogeny_galConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
       rw [hPz, map_zero]
     exact Set.Finite.subset (((hφ.finite_ker (hφne_of hne))).image _) hsub
 
-/-- **LEAF (cut 2026-07-27): the endomorphisms of a curve with `Ψ² = [−49]` are
-defined exactly over `ℚ(i)`.**
+/-- **PROVEN 2026-07-28 (cut 2026-07-27): the endomorphisms of a curve with
+`Ψ² = [−49]` are defined exactly over `ℚ(i)`.**
 
 This is item 4 of the MISSING MACHINERY note of `not_sq_eq_negFortyNine_of_stable`
 — *ATAEC* II.2.2, the statement that for a curve with complex multiplication the
@@ -31488,19 +31494,31 @@ rational functions of the conjugate are the `σ`-conjugates of `φ`'s. Then:
 * injectivity of `λ` upgrades that to `Ψ^σ = Ψ` when `σ i₀ = i₀`, and
   `Ψ^σ = −Ψ` otherwise.
 
-`hnotint` (`Ψ ∉ ℤ`, PROVEN as `not_intMul_of_cyclic_ker`) is what makes `μ ∉ ℚ`,
-so the sign character is the QUADRATIC character of `ℚ(i)` rather than trivial;
-`hconj` is discharged by `isIsogeny_galConj` above and is what makes `Ψ^σ` an
-element of `End(E_ℚ̄)` at all.
+`hnotint` (`Ψ ∉ ℤ`, PROVEN as `not_intMul_of_cyclic_ker`) is used only to see
+that `Ψ ≠ 0`; the sign character is the QUADRATIC character of `ℚ(i)` rather than
+trivial exactly because `μ ∉ ℚ`, which the conclusion records but does not need
+as an input.
 
-**WHAT IS MISSING, PRECISELY**: the differential character `λ`. Neither the
-mathlib pin nor `~/cs/FLT` has the invariant differential of a Weierstrass curve
-as a functional on isogenies; this project has the universal invariant derivation
-`Fermat/FLT/EllipticCurve/InvariantDerivation.lean` (`Dham`, `DK`, `DK_tautX`,
-`DK_tautY`), which is the natural place to build it. Note the leaf does NOT need
-`End = ℤ` for non-CM curves and does NOT need the classification of CM orders;
-`WeierstrassCurve.End.exists_charPoly` (PROVEN) already covers what the trace
-argument needs.
+**WHERE `λ` NOW LIVES.** The differential character has been built as
+`WeierstrassCurve.IsDiffChar` in
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean` — as a RELATION
+(`IsDiffChar φ c` = "`φ*ω' = c·ω`") rather than a function, so no choice is
+needed; the certificate is a polynomial identity in the rational-map witnesses of
+`φ`, at every affine point. That file PROVES the three normalisations
+`λ(0) = 0`, `λ(1) = 1`, `λ(−1) = −1`, hence `λ(−φ) = −λ(φ)` and `λ([n]) = n`, and
+leaves SIX open geometric facts: `exists_isDiffChar`, `isDiffChar_unique`,
+`isDiffChar_add`, `isDiffChar_comp`, `eq_of_isDiffChar` (injectivity, and the one
+place `CharZero` is essential), and `isDiffChar_galConj`.
+
+The present theorem is PROVEN over exactly those six, by the three bullets above.
+`_hconj` turned out to be REDUNDANT: `hΨiso.isRationalMap` supplies everything
+the differential character needs, and `isDiffChar_galConj` transports the
+witnesses itself, so the conjugate's isogeny-ness is never used. The hypothesis is
+kept (underscored) so that the consumer's call site is unchanged.
+
+Note the leaf does NOT need `End = ℤ` for non-CM curves and does NOT need the
+classification of CM orders; `WeierstrassCurve.End.exists_charPoly` (PROVEN)
+already covers what the trace argument needs.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ`, an isogeny
 `Ψ` of `E_ℚ̄` with `Ψ² = [−49]` and `Ψ ∉ ℤ`, and a `σ ∈ Gal(ℚ̄/ℚ)` with
@@ -31509,7 +31527,7 @@ argument needs.
 theorem exists_sqrtNegOne_galSign (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
-    (hconj : ∀ σ : Field.absoluteGaloisGroup ℚ,
+    (_hconj : ∀ σ : Field.absoluteGaloisGroup ℚ,
       WeierstrassCurve.IsIsogeny
         ((Affine.Point.map (W' := E)
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom).comp
@@ -31524,8 +31542,108 @@ theorem exists_sqrtNegOne_galSign (E : WeierstrassCurve ℚ) [E.IsElliptic]
           = (if (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) i₀ = i₀
               then (1 : ℤ) else (-1 : ℤ)) •
               Ψ (Affine.Point.map (W' := E)
-                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) :=
-  sorry
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) := by
+  haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  have h7 : (7 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+  -- `Ψ ≠ 0`, from `hnotint` at `n = 0`.
+  have hΨ0 : Ψ ≠ 0 := by
+    obtain ⟨Pt, hPt⟩ := hnotint 0
+    intro hc
+    exact hPt (by rw [hc]; simp)
+  -- `μ := λ(Ψ)`, the differential character of `Ψ`
+  obtain ⟨μ, hμ⟩ := WeierstrassCurve.exists_isDiffChar hΨiso.isRationalMap
+  -- `Ψ ∘ Ψ = −[49]`
+  have hcompEq : Ψ.comp Ψ =
+      -(WeierstrassCurve.mulByHom
+        (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)) 49) := by
+    ext P
+    show Ψ (Ψ P) = -((49 : ℕ) • P)
+    rw [eq_neg_iff_add_eq_zero]
+    exact hsq P
+  -- `μ² = λ(Ψ²) = λ(−[49]) = −49`
+  have hd1 : WeierstrassCurve.IsDiffChar (Ψ.comp Ψ) (μ * μ) :=
+    WeierstrassCurve.isDiffChar_comp hμ hμ
+  have hd2 : WeierstrassCurve.IsDiffChar (Ψ.comp Ψ) (-(49 : AlgebraicClosure ℚ)) := by
+    have hcast : (((49 : ℕ)) : AlgebraicClosure ℚ) = 49 := by norm_num
+    rw [hcompEq, ← hcast]
+    exact WeierstrassCurve.isDiffChar_neg (WeierstrassCurve.isDiffChar_mulByHom _)
+  have hμsq : μ * μ = -49 := WeierstrassCurve.isDiffChar_unique hd1 hd2
+  have hμ0 : μ ≠ 0 := by
+    intro hc
+    rw [hc] at hμsq
+    norm_num at hμsq
+  have hμ2 : μ ^ 2 = -49 := by rw [pow_two]; exact hμsq
+  -- `i₀ := μ/7` is a square root of `−1`
+  refine ⟨μ / 7, ?_, ?_⟩
+  · rw [div_pow, hμ2]
+    norm_num
+  intro σ P
+  -- `σ` fixes `μ/7` exactly when it fixes `μ`
+  have hdiv : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (μ / 7)
+      = (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ / 7 := by
+    rw [map_div₀, map_ofNat]
+  have hiff : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (μ / 7) = μ / 7
+      ↔ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ = μ := by
+    rw [hdiv]
+    constructor
+    · intro hh
+      exact mul_right_cancel₀ h7 ((div_eq_div_iff h7 h7).mp hh)
+    · intro hh; rw [hh]
+  -- `σ μ` is another square root of `−49`, hence `±μ`
+  have hσμ : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ
+      * (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ = -49 := by
+    rw [← map_mul, hμsq, map_neg, map_ofNat]
+  have hcases : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ = μ
+      ∨ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ = -μ := by
+    have hfac : ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ - μ)
+        * ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ + μ) = 0 := by
+      linear_combination hσμ - hμsq
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (eq_neg_of_add_eq_zero_left h)
+  -- `λ(Ψ^σ) = σ μ`
+  have hconjd : WeierstrassCurve.IsDiffChar
+      ((Affine.Point.map (W' := E)
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom).comp
+        (Ψ.comp (Affine.Point.map (W' := E)
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).symm.toAlgHom)))
+      ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ) :=
+    WeierstrassCurve.isDiffChar_galConj E _ Ψ μ hμ
+  have hsymm : Affine.Point.map (W' := E)
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).symm.toAlgHom
+        (Affine.Point.map (W' := E)
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) = P :=
+    WeierstrassCurve.velu_point_map_symm_map E _ P
+  by_cases hfix : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (μ / 7) = μ / 7
+  · -- `σ` fixes `i₀`: `λ(Ψ^σ) = μ = λ(Ψ)`, so `Ψ^σ = Ψ` by injectivity of `λ`
+    rw [if_pos hfix, one_zsmul]
+    rw [hiff.mp hfix] at hconjd
+    have heq := WeierstrassCurve.eq_of_isDiffChar hconjd hμ
+    have happ := DFunLike.congr_fun heq
+      (Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+    simp only [AddMonoidHom.coe_comp, Function.comp_apply] at happ
+    rw [hsymm] at happ
+    exact happ
+  · -- `σ` moves `i₀`: `λ(Ψ^σ) = −μ = λ(−Ψ)`, so `Ψ^σ = −Ψ`
+    rw [if_neg hfix]
+    have hsμ : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) μ = -μ := by
+      rcases hcases with h | h
+      · exact absurd (hiff.mpr h) hfix
+      · exact h
+    rw [hsμ] at hconjd
+    have hnegd : WeierstrassCurve.IsDiffChar (-Ψ) (-μ) :=
+      WeierstrassCurve.isDiffChar_neg hμ
+    have heq := WeierstrassCurve.eq_of_isDiffChar hconjd hnegd
+    have happ := DFunLike.congr_fun heq
+      (Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+    simp only [AddMonoidHom.coe_comp, Function.comp_apply,
+      AddMonoidHom.neg_apply] at happ
+    rw [hsymm] at happ
+    rw [happ]
+    simp
 
 /-- **LEAF (cut 2026-07-27): `ℚ(i)` and `ℚ(√−7)` are different quadratic fields,
 in cyclotomic-character form.**
