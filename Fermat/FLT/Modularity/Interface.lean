@@ -60803,7 +60803,75 @@ Deligne's compatibility of local Langlands with conductors, and
 geometrically the Deligne–Rapoport model of `X₀(M₀)` at `q` with
 Néron–Ogg–Shafarevich. None is on this pin and `~/cs/FLT` has nothing
 vendorable. NOT VACUOUS: inhabited by any newform of level divisible by
-`q²`, e.g. `M₀ = 49`, `q = 7`. -/
+`q²`, e.g. `M₀ = 49`, `q = 7`.
+
+**SIXTEENTH-OWNER RE-AUDIT (2026-07-28) — TERMINALITY RE-CONFIRMED, AND
+THE BINDING OBSTRUCTION RESTATED AS A PROPERTY OF THIS TREE RATHER THAN
+A LIST OF MISSING THEORIES.** The TERMINALITY paragraph above names
+Casselman, Deligne and Deligne–Rapoport. That is accurate and it is not
+the form a dispatcher can act on, because it invites the reading "close
+the geometric carrier and this becomes attackable". It will not. The
+binding form is a one-sentence fact about the hypotheses:
+
+  **nothing here constrains `τ` AT `q`.** The only link between `τ` and
+  `g₀` is `hτ`, which is quantified over primes `r` with
+  `v_r ∉ S_τ` for an ARBITRARY finite `S_τ` — and `S_τ` may contain
+  `q`. So every route to a local statement at `q` must go through
+  (i) rigidity, identifying `τ` with an object whose behaviour at `q`
+  is known, and then (ii) that object's behaviour at `q`.
+
+Step (i) EXISTS in this file: `exists_linearEquiv_of_charFrob_eq`
+(PROVEN, Chebotarev plus Brauer–Nesbitt). **Step (ii) exists for no
+object in the tree.** The only carriers of a newform's Galois
+representation here are `ModularTateGaloisData` and the Eichler–Shimura
+package behind `exists_galoisRep_charFrob_of_weightTwoNewform`, and
+every local field either of them records is gated on `∉ S`: the
+`congruence` and `pair_frob` fields are literally hypothesised OFF the
+exceptional set. So the carrier as currently STATED cannot reach this
+leaf however completely it is proven — it would first have to GROW a
+bad-prime field.
+
+THE ONE-GREP CHECK THAT WOULD REFUTE THIS VERDICT: exhibit a
+declaration in `Fermat/` whose conclusion says anything about
+`inertiaInvariants`, `tameExponent`, `swanExponent` or
+`conductorExponent` at a prime DIVIDING the level, and which is not
+itself proven from this cluster. Every candidate today is inside the
+cluster or downstream of it
+(`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`,
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible`), so citing
+one is circular.
+
+ABSENCE RE-CHECKED IN ALL THREE PLACES, with the command quoted so the
+next owner re-runs it rather than trusting it:
+`grep -rl 'newvector\|Casselman\|DeligneRapoport\|LocalLanglands\|IsSupercuspidal\|principalSeries'
+--include=*.lean Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/FLT/`
+— mathlib and `~/cs/FLT` return NOTHING, and every hit under `Fermat/`
+is PROSE inside a docstring. `~/cs/FLT/FLT/GaloisRepresentation/
+Automorphic.lean` names Carayol in a comment and states no conductor
+theorem.
+
+FAITHFULNESS RE-CHECKED, AND THE STATEMENT IS TRUE. Rigidity makes `τ`
+the representation attached to `g₀` (`hirr` supplies the
+semisimplicity the Brauer–Nesbitt step needs, and a finite `S_τ` leaves
+a density-one set of Frobenii), and Carayol gives
+`a_q(τ) = ord_q M₀ ≥ 2`. Note the bound is carried by the TAME summand
+alone — `2 ≤ ord_q M₀` forces `dim V^{I_q} = 0`, hence
+`tameExponent = 2` — so it is insensitive to any degeneracy of
+`swanExponentAux`: this leaf stays true even if `RamificationFiltration v`
+were EMPTY. That is exactly what fails for the `3 ≤ ord_q M₀` sibling,
+which is why only that one is gated on `nonempty_ramificationFiltration`.
+
+AXIS SEARCHED: the tree-content axis (is any non-circular local datum at
+a bad prime available anywhere in `Fermat/`?) and the vendoring axis
+(all three places above). NOT SEARCHED: whether the citation is better
+placed on the CARRIER — i.e. whether adding a bad-prime conductor field
+to `ModularTateGaloisData` or to the Eichler–Shimura package would let
+this leaf and its sibling be PROVEN by rigidity transport, trading two
+citations for one larger one. That is a cut-level change to
+declarations owned elsewhere, and it additionally needs invariance of
+`conductorExponent` under a `GaloisRep` isomorphism, which nothing in
+the tree states today. It is the axis the next dispatcher should weigh
+before sending another prover here. -/
 theorem two_le_conductorExponent_of_isWeightTwoNewform_of_two_le
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -60850,7 +60918,41 @@ elliptic curve over `ℚ` with additive, potentially good reduction at a
 prime `q ≥ 5` has `ord_q N = 2`.
 
 TERMINALITY: as on the lower half. NOT VACUOUS: `M₀ = 49`, `q = 7`,
-`p ≠ 7`. -/
+`p ≠ 7`.
+
+**SIXTEENTH-OWNER RE-AUDIT (2026-07-28) — TERMINALITY RE-CONFIRMED.**
+The binding obstruction, the one-grep refuting check, the three-place
+absence check and the unsearched carrier axis are written out on the
+LOWER half above and apply verbatim here; do not re-derive them. Two
+things are specific to THIS half and are not recorded anywhere else.
+
+* **THE DEGENERACY RUNS THE OTHER WAY, so this leaf can never be
+  refuted by one.** It is an UPPER bound. Were `RamificationFiltration v`
+  empty, `GaloisRep.IsSwanExponentAt` would be vacuous,
+  `swanExponentAux = sInf Set.univ = 0`, and the statement would follow
+  outright from `GaloisRep.tameExponent_le_finrank`. That is not a route
+  — emptiness is not provable, and `nonempty_ramificationFiltration`
+  asserts the opposite — but it settles two things at once: no
+  counterexample can come from the `sInf` packaging (an `sInf` is
+  bounded above by every member of its set), and the ENTIRE real content
+  of this leaf sits in `swanExponent = 0`, i.e. in tameness at conductor
+  exactly `2`. Contrast the lower half, whose content sits entirely in
+  the tame summand.
+
+* **IT IS NOT CIRCULAR WITH ITS CONSUMER, AND THE MARGIN IS ONE STEP
+  WIDE.** `isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two`
+  below derives tameness FROM this bound, via
+  `one_le_swanExponentAux_of_not_isTamelyRamifiedAt`. So a future proof
+  of this leaf must reach `a_q ≤ 2` **without ever establishing
+  `τ.IsTamelyRamifiedAt v_q`** — any argument that discharges the `if`
+  in `GaloisRep.swanExponent` from these hypotheses has assumed its
+  consumer's conclusion. That is the check to run on any candidate proof
+  offered here, and it is cheap: grep the proof for
+  `IsTamelyRamifiedAt`.
+
+FAITHFULNESS RE-CHECKED: TRUE. Rigidity identifies `τ` with the
+representation attached to `g₀` and Carayol gives
+`a_q(τ) = ord_q M₀ = 2`. -/
 theorem conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
