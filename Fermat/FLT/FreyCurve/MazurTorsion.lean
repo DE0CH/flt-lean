@@ -4223,11 +4223,599 @@ three smaller leaves:
   the stable line.
 -/
 
-/-- **`T` — the Tate-curve half, SHARED by `A` and `B`** (sorry leaf; Tate's
-`v`-adic uniformisation — Silverman *ATAEC* V.3, V.5; Serre, Invent. Math. 15
-(1972), §5.4): at a prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e.
-`v(j) < 0`, the twelfth power of the isogeny character agrees on the inertia
-group at `v` with `χ^(12r)` for a single `r ∈ {0, 1}`.
+/-! ##### The two-way cut of `T` (CARRIED OUT 2026-07-27)
+
+`T` was one sorry carrying two quite different things: Tate's `v`-adic
+uniformisation of a curve with potentially multiplicative reduction (hard
+analysis and geometry, and the reason the leaf was called "the Tate curve"),
+and the reading-off of the isogeny character from that uniformisation (group
+theory in `Ωˣ/Qᶻ` plus the mod-`N` cyclotomic character).  They are now `T₁`
+and `T₂` below, and `T` itself is PROVEN glue over them.
+
+**STATUS UPDATE 2026-07-28: `T₂` is now PROVEN.**  The only leaf left in this
+cut is `T₁` (`exists_tateParametrisation_of_padicValRat_j_neg`), i.e. Tate's
+uniformisation itself.  `T₂` closed over one new auxiliary declaration,
+`tateQuotient_dichotomy_of_intertwined_action` immediately above it, which
+isolates the arithmetic-free group theory; the arithmetic input `T₂` supplies
+to it is exactly two facts — that `Point.map` along `ℚ̄ → Ω` is injective and
+equivariant (`Field.absoluteGaloisGroup.lift_map`), and that every `N`-th root
+of unity of `Ω` is the image of one of `ℚ̄`, so that the mod-`N` cyclotomic
+character of `Γ ℚ` computes the local action on them.
+
+**What the cut buys, and why the intermediate statement is SHARPER than `T`.**
+`T₂`'s conclusion is `λ = χ·ψ` or `λ = ψ` for the quadratic twisting character
+`ψ` — the identity Serre actually states — rather than `λ¹² = χ^{12r}`.  The
+twelfth power is then pure bookkeeping: `ψ` lands in `ℤˣ`, so `ψ² = 1` by
+`Int.units_sq` and `ψ¹² = (ψ²)⁶ = 1`, which is what collapses the two cases to
+`r = 1` and `r = 0`.  Keeping `ψ` explicit — rather than discarding it as the
+old prose did — is also what keeps `T₂` TRUE without restricting to inertia:
+see the faithfulness note on `T₂`.
+
+**The machinery for `T₁` exists in this tree and should be reused.**
+`Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure` is SORRY-FREE and
+already proves the uniformisation `Ωˣ/q(E)ᶻ ≅ E(Ω)` Galois-equivariantly
+(`WeierstrassCurve.exists_tateEquivSepClosure`) for a curve in minimal form
+with SPLIT multiplicative reduction over a nonarchimedean local field.  The
+instance package making `k = adicCompletion ℚ v` such a field is
+`Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField`
+(`IsNonarchimedeanLocalField (HeightOneSpectrum.adicCompletion ℚ v)`), and
+`Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions`'s
+`exists_tame_quotient_of_nonsplit_padic_two` is a WORKED EXAMPLE of the whole
+assembly at `ℚ_[2]`: quadratic twist to split reduction
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`), minimal model,
+`exists_tateEquivSepClosure`, and the `±1`-twisted equivariance
+(`quadraticTwistPointEquiv_galois`, `quadraticCharacter`).  So what `T₁` needs
+beyond that example is exactly the step from POTENTIALLY multiplicative
+(`v(j) < 0`) to multiplicative-after-a-quadratic-twist — Tate's criterion,
+Silverman *ATAEC* V.5.3 — plus the change of local field from `ℚ_[v]` to
+`adicCompletion ℚ v`.
+
+**AVAILABILITY NOTE, established 2026-07-27 by `#check` in a scratch module
+importing ONLY this one — not by reading the header, which is misleading
+here.**  `TateSepClosure` does not appear in this file's import list, but it
+IS in its transitive `public` cone (through `Semistable.lean`), and the
+following are all in scope HERE, with no new import needed:
+
+* `WeierstrassCurve.exists_tateEquivSepClosure`,
+  `exists_rep_pow_eq_zpow_of_torsion`,
+  `WeierstrassCurve.exists_tateTorsionQuotient`,
+  `WeierstrassCurve.tate_inertia_unipotent` (`TateSepClosure.lean`);
+* `algebraRatAlgClosureAdic`, `algClosureEmbeddingRat`, `algClosureSigmaRat`,
+  `point_map_algClosureEmbeddingRat_comm` (`Semistable.lean`) — the adic
+  analogue of the `ℚ_[q]` transport used by `FreyConditions.lean`, i.e.
+  exactly the `ℚ̄ → Ω` plumbing `T₂` needs.
+
+What is genuinely NOT in scope is
+`WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`:
+`QuadraticTwists.SplitMultiplicativeReduction` is imported by this file with a
+bare `import`, which is not re-exported, so `T₁` (not `T₂`) will need that
+line promoted to `public import`.  That is a header change to a 52k-line
+module, so budget a full rebuild of it and its eight `public import`
+consumers.
+-/
+
+/-- **The two `ℚ`-algebra structures on `Ω = Kᵥᵃˡᵍ` agree** (PROVEN
+2026-07-27, and it is a TRAP worth one lemma): `Semistable.lean` installs the
+tower structure `ℚ → Kᵥ → Ω` as the non-instance `algebraRatAlgClosureAdic`
+and states all of its adic transport lemmas under `letI` with it, while the
+ambient instance found by typeclass search — the one `T₁` and `T₂` below are
+stated with, and the one `(E⁄(AlgebraicClosure ℚ)).Point` already uses — is
+the `CharZero` `ℚ`-algebra structure.
+
+The two are NOT definitionally equal (checked: `rfl` fails), so a proof of
+`T₂` that reaches for `point_map_algClosureEmbeddingRat_comm` or
+`algClosureSigmaRat` will hit a spurious instance mismatch.  They ARE equal,
+for the reason that makes `ℚ` initial: a ring homomorphism out of `ℚ` into a
+division ring is unique, so the two `algebraMap`s coincide and
+`Algebra.algebra_ext` finishes.  Rewriting with this lemma is what lets the
+two idioms be mixed. -/
+theorem algebraRatAlgClosureAdic_eq_inst
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    algebraRatAlgClosureAdic v =
+      (inferInstance :
+        Algebra ℚ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+  refine Algebra.algebra_ext _ _ fun r => ?_
+  exact congrArg
+    (fun f : ℚ →+* AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) => f r)
+    (Subsingleton.elim _ _)
+
+/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (sorry leaf;
+Silverman *ATAEC* V.3.1, V.5.3; Serre, Invent. Math. 15 (1972), §5.4): at a
+prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the curve
+`E` over the algebraic closure `Ω` of `Kᵥ = ℚ_v` is uniformised by `Ωˣ/Qᶻ` for
+a Galois-FIXED parameter `Q` of infinite order, equivariantly up to the sign
+of a quadratic twisting character `ψ : Γ Kᵥ →* ℤˣ`.
+
+The three conjuncts are, in order: `Q` has infinite order (equivalently
+`v(Q) ≠ 0`; this is what makes the exponent of `Q` a well-defined integer and
+is used four times in `T₂`); `Q` is fixed by every `σ ∈ Γ Kᵥ` (it comes from
+`Kᵥ` itself); and the uniformisation `e` intertwines the Galois action with
+the action on `Ωˣ/Qᶻ` TWISTED BY `ψ`.
+
+Why the twist cannot be dropped from the statement.  `E` need not itself have
+multiplicative reduction over `Kᵥ` — only potentially so — and the curve with
+split multiplicative reduction it becomes isomorphic to over `Ω` differs from
+it by a quadratic twist.  If `φ : E_Q → E` is that `Ω`-isomorphism then
+`φ^σ = φ ∘ [ψ(σ)]`, so `σ(φ P) = φ(ψ(σ)·σP) = ψ(σ)·φ(σP)`, which is exactly
+the displayed equivariance.  Over INERTIA the twist is invisible when it is
+unramified, but it need not be, and it is certainly not invisible over `Γ Kᵥ`
+— so it is carried, not discarded.
+
+Proof (not formalised).  See the section note above for the route: the whole
+assembly already exists at `ℚ_[2]` in `FreyConditions.lean`, and
+`TateSepClosure.lean` is sorry-free.  What is genuinely new here is Tate's
+criterion in the form "`v(j) < 0` implies some quadratic twist has split
+multiplicative reduction". -/
+theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
+    ∃ (Q : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ)
+      (ψ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (e : Additive ((AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸ Subgroup.zpowers Q) ≃+
+        ((E⁄(AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      Function.Injective (fun n : ℤ => Q ^ n) ∧
+      (∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat),
+        Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom Q = Q) ∧
+      (∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (u : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))ˣ),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
+          ((ψ σ : ℤ)) • e (Additive.ofMul
+            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :=
+  sorry
+
+/-- **The `μ_N`-vs-étale dichotomy inside a Tate quotient** (PROVEN
+2026-07-28; pure group theory, the arithmetic-free core of `T₂` below).
+
+Setting: a commutative group `G` with a distinguished element `Q` whose
+integer powers are distinct, the quotient `G/Qᶻ` written additively and
+identified with an abelian group `A` by `e`, and a point `P ∈ A` of exact
+order a prime `N`.  An index type `Γ` acts on `G` by `S` and on `A` by `T`,
+the two actions being intertwined by `e` UP TO THE SIGN `s σ` (this is the
+quadratic twist of `T₁`), `Q` is `S`-fixed, `T σ` scales `P` by `m σ`, and
+`S σ` raises every `N`-th root of unity to the power `c σ` (this is the
+cyclotomic character).
+
+Conclusion: either `m = c·s` throughout, or `m = s` throughout — with the
+SAME alternative for every `σ`, because the alternative is decided by a
+single integer `a` attached to `P` and not by `σ`.
+
+Proof.  Pick a representative `u ∈ G` of `e⁻¹ P` with `uᴺ = Qᵃ`.  The
+intertwining gives `S σ u = u^{s σ · m σ} · Q^{d σ}`, and taking `N`-th
+powers (using `S σ Q = Q`) forces `a = a·(s σ · m σ) + d σ · N`.
+
+* If `N ∤ a`, then `a` is invertible mod `N` and the displayed relation
+  collapses to `s σ · m σ ≡ 1`, i.e. `m σ ≡ s σ` (as `s σ² = 1`).  This is
+  the étale case.
+* If `N ∣ a`, say `a = N·b`, then `z := u · Q^{-b}` satisfies `zᴺ = 1` and
+  has the same class as `u`, so `z ≠ 1` (else `P = 0`) and `z` has order
+  exactly `N`.  A second `N`-th power computation kills the `Q`-factor and
+  leaves `S σ z = z^{s σ · m σ}`; comparing with `S σ z = z^{c σ}` and using
+  `orderOf z = N` gives `s σ · m σ ≡ c σ`, i.e. `m σ ≡ c σ · s σ`.  This is
+  the `μ_N` case. -/
+theorem tateQuotient_dichotomy_of_intertwined_action
+    {G : Type*} [CommGroup G] (Q : G)
+    (hQinj : Function.Injective (fun n : ℤ => Q ^ n))
+    {A : Type*} [AddCommGroup A]
+    (e : Additive (G ⧸ Subgroup.zpowers Q) ≃+ A)
+    {N : ℕ} (hN : N.Prime)
+    (P : A) (hP : addOrderOf P = N)
+    {Γ : Type*}
+    (S : Γ → (G →* G)) (T : Γ → (A →+ A))
+    (s : Γ → ℤ) (m : Γ → ℕ) (c : Γ → ℕ)
+    (hs : ∀ σ, s σ * s σ = 1)
+    (hQfix : ∀ σ, S σ Q = Q)
+    (he : ∀ (σ : Γ) (u : G), T σ (e (Additive.ofMul (↑u : G ⧸ Subgroup.zpowers Q))) =
+      (s σ) • e (Additive.ofMul (↑(S σ u) : G ⧸ Subgroup.zpowers Q)))
+    (hT : ∀ σ, T σ P = (m σ) • P)
+    (hc : ∀ (σ : Γ) (w : G), w ^ N = 1 → S σ w = w ^ (c σ)) :
+    (∀ σ, ((m σ : ℕ) : ZMod N) = ((c σ : ℕ) : ZMod N) * ((s σ : ℤ) : ZMod N)) ∨
+    (∀ σ, ((m σ : ℕ) : ZMod N) = ((s σ : ℤ) : ZMod N)) := by
+  classical
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  haveI : Fact N.Prime := ⟨hN⟩
+  -- the class of `P` is `N`-torsion, so it has a representative `u` with `u ^ N = Q ^ a`
+  have hPtor : ((N : ℕ) : ℤ) • (e.symm P) = 0 := by
+    have h1 : ((N : ℕ) : ℤ) • P = 0 := by
+      rw [natCast_zsmul, ← hP]
+      exact addOrderOf_nsmul_eq_zero P
+    rw [← map_zsmul e.symm, h1, map_zero]
+  obtain ⟨u, a, hu, ha⟩ := exists_rep_pow_eq_zpow_of_torsion Q (e.symm P) hPtor
+  have hPu : e (Additive.ofMul (↑u : G ⧸ Subgroup.zpowers Q)) = P := by
+    rw [hu, e.apply_symm_apply]
+  -- for each `σ`, `S σ u` and `u ^ (s σ * m σ)` have the same class
+  have key : ∀ σ : Γ, ∃ d : ℤ,
+      S σ u = u ^ ((s σ) * ((m σ : ℕ) : ℤ)) * Q ^ d := by
+    intro σ
+    have h1 : (s σ) • e (Additive.ofMul (↑(S σ u) : G ⧸ Subgroup.zpowers Q)) =
+        ((m σ : ℕ) : ℤ) • P := by
+      rw [← he σ u, hPu, hT σ, natCast_zsmul]
+    have h2 : e (Additive.ofMul (↑(S σ u) : G ⧸ Subgroup.zpowers Q)) =
+        ((s σ) * ((m σ : ℕ) : ℤ)) • P := by
+      rw [mul_zsmul, ← h1, smul_smul, hs σ, one_zsmul]
+    have h3 : Additive.ofMul (↑(S σ u) : G ⧸ Subgroup.zpowers Q) =
+        Additive.ofMul ((↑u : G ⧸ Subgroup.zpowers Q) ^ ((s σ) * ((m σ : ℕ) : ℤ))) := by
+      rw [ofMul_zpow, hu, ← map_zsmul e.symm, ← h2, e.symm_apply_apply]
+    have h4 : ((u ^ ((s σ) * ((m σ : ℕ) : ℤ)) : G) : G ⧸ Subgroup.zpowers Q) =
+        ((S σ u : G) : G ⧸ Subgroup.zpowers Q) := by
+      rw [QuotientGroup.mk_zpow]
+      exact (Additive.ofMul.injective h3).symm
+    obtain ⟨d, hd⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp h4)
+    exact ⟨d, by rw [hd, mul_inv_cancel_left]⟩
+  choose d hd using key
+  -- the exponent relation, obtained by taking `N`-th powers
+  have hrel : ∀ σ : Γ, a = a * ((s σ) * ((m σ : ℕ) : ℤ)) + d σ * (N : ℤ) := by
+    intro σ
+    apply hQinj
+    have hL : Q ^ a = S σ (u ^ N) := by rw [ha, map_zpow, hQfix σ]
+    have hR : S σ (u ^ N) = Q ^ (a * ((s σ) * ((m σ : ℕ) : ℤ)) + d σ * (N : ℤ)) := by
+      calc S σ (u ^ N) = (S σ u) ^ N := map_pow _ _ _
+        _ = (u ^ ((s σ) * ((m σ : ℕ) : ℤ)) * Q ^ (d σ)) ^ N := by rw [hd σ]
+        _ = (u ^ N) ^ ((s σ) * ((m σ : ℕ) : ℤ)) * Q ^ (d σ * (N : ℤ)) := by
+              rw [mul_pow, ← zpow_natCast (u ^ ((s σ) * ((m σ : ℕ) : ℤ))) N,
+                ← zpow_natCast (Q ^ (d σ)) N, ← zpow_mul, ← zpow_mul,
+                mul_comm ((s σ) * ((m σ : ℕ) : ℤ)) (N : ℤ), zpow_mul, zpow_natCast]
+        _ = Q ^ (a * ((s σ) * ((m σ : ℕ) : ℤ)) + d σ * (N : ℤ)) := by
+              rw [ha, ← zpow_mul, ← zpow_add]
+    exact hL.trans hR
+  have hss : ∀ σ : Γ, ((s σ : ℤ) : ZMod N) * ((s σ : ℤ) : ZMod N) = 1 := by
+    intro σ
+    have := congrArg (fun z : ℤ => ((z : ZMod N))) (hs σ)
+    push_cast at this
+    exact this
+  by_cases hdvd : ((N : ℤ)) ∣ a
+  · -- `N ∣ a`: the stable line is `μ_N`
+    left
+    obtain ⟨b, hb⟩ := hdvd
+    set z : G := u * Q ^ (-b) with hzdef
+    have hzN : z ^ N = 1 := by
+      rw [hzdef, mul_pow, ha, ← zpow_natCast (Q ^ (-b)) N, ← zpow_mul, ← zpow_add, hb]
+      rw [show (N : ℤ) * b + -b * (N : ℤ) = 0 by ring, zpow_zero]
+    have hzcls : ((z : G) : G ⧸ Subgroup.zpowers Q) = ((u : G) : G ⧸ Subgroup.zpowers Q) := by
+      rw [hzdef, QuotientGroup.mk_mul,
+        (QuotientGroup.eq_one_iff _).mpr (Subgroup.zpow_mem _ (Subgroup.mem_zpowers _) _),
+        mul_one]
+    have hzne : z ≠ 1 := by
+      intro h0
+      have h1 : e.symm P = 0 := by
+        rw [← hu, ← hzcls, h0, QuotientGroup.mk_one, ofMul_one]
+      have h2 : P = 0 := by
+        have := congrArg e h1
+        rwa [e.apply_symm_apply, map_zero] at this
+      rw [h2, addOrderOf_zero] at hP
+      exact hN.one_lt.ne hP
+    have hzord : orderOf z = N := by
+      rcases hN.eq_one_or_self_of_dvd _ (orderOf_dvd_of_pow_eq_one hzN) with h | h
+      · exact absurd (orderOf_eq_one_iff.mp h) hzne
+      · exact h
+    have hzS : ∀ σ : Γ, S σ z = z ^ ((s σ) * ((m σ : ℕ) : ℤ)) := by
+      intro σ
+      have hex : S σ z = z ^ ((s σ) * ((m σ : ℕ) : ℤ)) *
+          Q ^ (d σ - b + b * ((s σ) * ((m σ : ℕ) : ℤ))) := by
+        rw [hzdef, map_mul, map_zpow, hQfix σ, hd σ, mul_zpow, ← zpow_mul,
+          mul_assoc, mul_assoc, ← zpow_add, ← zpow_add]
+        congr 1
+        rw [show d σ + -b = -b * ((s σ) * ((m σ : ℕ) : ℤ)) +
+          (d σ - b + b * ((s σ) * ((m σ : ℕ) : ℤ))) from by ring]
+      have hzero : d σ - b + b * ((s σ) * ((m σ : ℕ) : ℤ)) = 0 := by
+        have h1 : (S σ z) ^ N = 1 := by rw [← map_pow, hzN, map_one]
+        rw [hex, mul_pow, ← zpow_natCast (z ^ ((s σ) * ((m σ : ℕ) : ℤ))) N, ← zpow_mul,
+          mul_comm ((s σ) * ((m σ : ℕ) : ℤ)) (N : ℤ), zpow_mul, zpow_natCast, hzN,
+          one_zpow, one_mul, ← zpow_natCast (Q ^ _) N, ← zpow_mul] at h1
+        have h2 : (d σ - b + b * ((s σ) * ((m σ : ℕ) : ℤ))) * (N : ℤ) = 0 := by
+          apply hQinj
+          show Q ^ ((d σ - b + b * ((s σ) * ((m σ : ℕ) : ℤ))) * (N : ℤ)) = Q ^ (0 : ℤ)
+          rw [zpow_zero]
+          exact h1
+        rcases mul_eq_zero.mp h2 with h | h
+        · exact h
+        · exact absurd h (by exact_mod_cast hN.ne_zero)
+      rw [hex, hzero, zpow_zero, mul_one]
+    intro σ
+    have h1 : z ^ ((s σ) * ((m σ : ℕ) : ℤ)) = z ^ ((c σ : ℕ) : ℤ) := by
+      rw [← hzS σ, hc σ z hzN, zpow_natCast]
+    have h2 : ((s σ) * ((m σ : ℕ) : ℤ)) ≡ ((c σ : ℕ) : ℤ) [ZMOD (N : ℤ)] := by
+      rw [← hzord]
+      exact zpow_eq_zpow_iff_modEq.mp h1
+    have h3 : (((s σ : ℤ) : ZMod N)) * ((m σ : ℕ) : ZMod N) = ((c σ : ℕ) : ZMod N) := by
+      have := (ZMod.intCast_eq_intCast_iff' _ _ _).mpr h2
+      push_cast at this
+      exact this
+    calc ((m σ : ℕ) : ZMod N)
+        = (((s σ : ℤ) : ZMod N) * ((s σ : ℤ) : ZMod N)) * ((m σ : ℕ) : ZMod N) := by
+          rw [hss σ, one_mul]
+      _ = ((c σ : ℕ) : ZMod N) * ((s σ : ℤ) : ZMod N) := by rw [← h3]; ring
+  · -- `N ∤ a`: the stable line is étale
+    right
+    intro σ
+    have h2 : ((s σ : ℤ) : ZMod N) * ((m σ : ℕ) : ZMod N) = 1 := by
+      have hNp : Prime ((N : ℤ)) := Nat.prime_iff_prime_int.mp hN
+      have h4 : ((N : ℤ)) ∣ a * (1 - (s σ) * ((m σ : ℕ) : ℤ)) :=
+        ⟨d σ, by linear_combination hrel σ⟩
+      have h5 : ((N : ℤ)) ∣ (1 - (s σ) * ((m σ : ℕ) : ℤ)) :=
+        (hNp.dvd_mul.mp h4).resolve_left hdvd
+      have h6 : (((1 - (s σ) * ((m σ : ℕ) : ℤ)) : ℤ) : ZMod N) = 0 :=
+        (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr h5
+      push_cast at h6
+      exact (sub_eq_zero.mp h6).symm
+    calc ((m σ : ℕ) : ZMod N)
+        = (((s σ : ℤ) : ZMod N) * ((s σ : ℤ) : ZMod N)) * ((m σ : ℕ) : ZMod N) := by
+          rw [hss σ, one_mul]
+      _ = ((s σ : ℤ) : ZMod N) := by rw [mul_assoc, h2, mul_one]
+
+/-- **`T₂` — the isogeny character read off a Tate parametrisation** (PROVEN
+2026-07-28; Serre, Invent. Math. 15 (1972), §5.4, the dichotomy `μ_N` vs
+étale): given the twisted uniformisation of `T₁` and a Galois-stable line
+`⟨g⟩` of order `N` with character `lam`, the character is either `χ·ψ` or `ψ`.
+
+Proof, and it is elementary given `T₁`.  Push `g` forward
+along `ι = AlgebraicClosure.map (algebraMap ℚ Kᵥ)` to `gΩ ∈ E(Ω)`;
+`Affine.Point.map_injective` keeps its order `N`, and
+`Field.absoluteGaloisGroup.lift_map` turns `hlam` into
+`σ(gΩ) = (lam (map σ)).val • gΩ` for every `σ ∈ Γ Kᵥ`.  Write
+`t := e.symm gΩ` and pick, by
+`exists_rep_pow_eq_zpow_of_torsion` (`TateSepClosure.lean`), a representative
+`u ∈ Ωˣ` of `t` with `u^N = Q^a`.  The dichotomy is on `a mod N`:
+
+* `a ≡ 0 (mod N)`, say `a = N·b`.  Then `z := u·Q^{-b}` satisfies `z^N = 1`
+  and has the same class as `u`, and `z` is a PRIMITIVE `N`-th root of unity
+  because `[z]` has order exactly `N`.  The equivariance of `T₁` reads
+  `[σz]^{ψσ} = [z]^m` with `m = (lam (map σ)).val`, i.e.
+  `z^{χ(σ)ψ(σ)} = z^m·Q^c`; taking `N`-th powers gives `Q^{cN} = 1`, so `c = 0`
+  by the injectivity conjunct, and primitivity gives `m ≡ χ(σ)ψ(σ)`.  This is
+  the `μ_N` case, `r = 1` downstream.
+* `a ≢ 0 (mod N)`.  Then `(σu)^{ψσ} = u^m·Q^c`; taking `N`-th powers and using
+  `σ(Q) = Q` gives `Q^{aψσ} = Q^{am + cN}`, so `a(ψσ − m) ≡ 0 (mod N)` by
+  injectivity, and `N` prime with `a ≢ 0` gives `m ≡ ψ(σ)`.  This is the étale
+  case, `r = 0` downstream.
+
+FAITHFULNESS NOTE.  The conclusion is quantified over
+`localInertiaGroup v` only because that is what `T` needs; the argument above
+proves it for every `σ ∈ Γ Kᵥ`, and it is TRUE in that wider form **because
+`ψ` is carried explicitly**.  It is the version with `ψ` discarded that is
+false outside inertia — an unramified twist is invisible to inertia and to
+nothing else.  A prover may freely strengthen the two disjuncts to range over
+all of `Γ Kᵥ`; do NOT instead drop `ψ`.
+
+The formalised proof CONFIRMS that note mechanically: the inertia-membership
+hypothesis is introduced as `_` and never used, so what is actually proven is
+the statement with both disjuncts ranging over all of `Γ Kᵥ`.  The conclusion
+is left in the inertia-restricted shape only so that `T` below — a released,
+proven consumer — keeps typechecking unchanged; a later consumer that wants
+the wider form may widen the quantifier here without touching this proof.
+
+Two implementation notes for anyone editing this.  (a) The `ℚ`-algebra map
+`ι : ℚ̄ → Ω` is built HERE with the AMBIENT `ℚ`-algebra structure on `Ω`
+rather than reusing `Semistable.lean`'s `algClosureEmbeddingRat`, which is
+stated under the non-instance tower structure `algebraRatAlgClosureAdic`;
+building it locally (its `commutes'` is one `Subsingleton.elim` on ring homs
+out of `ℚ`) avoids having to transport along `algebraRatAlgClosureAdic_eq_inst`
+inside every `Point.map`.  (b) The step `rw [halg σ]; rfl` is not redundant:
+`rw` closes goals only up to REDUCIBLE transparency, and the two sides differ
+by instance arguments of `Point.map` that are defeq only at default
+transparency. -/
+theorem WeierstrassCurve.isogenyCharacter_eq_cyclotomic_mul_or_eq_of_tateParametrisation
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {v : ℕ} (hv : v.Prime)
+    (Q : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ)
+    (ψ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+    (e : Additive ((AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸ Subgroup.zpowers Q) ≃+
+      ((E⁄(AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)))).Point)
+    (hQinj : Function.Injective (fun n : ℤ => Q ^ n))
+    (hQfix : ∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom Q = Q)
+    (he : ∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (u : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
+        ((ψ σ : ℤ)) • e (Additive.ofMul
+          ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :
+    (∀ σ ∈ localInertiaGroup hv.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) *
+        Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ∨
+    (∀ σ ∈ localInertiaGroup hv.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) := by
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  -- notation: `Kᵥ` is the completion, `Ω` its algebraic closure, `ι : ℚ̄ → Ω`
+  -- (1) the chosen embedding `ℚ̄ → Ω`, as a `ℚ`-algebra map for the AMBIENT
+  -- `ℚ`-algebra structure on `Ω` (the one this statement is written with);
+  -- `commutes'` holds because a ring homomorphism out of `ℚ` is unique.
+  obtain ⟨i, hiapp⟩ : ∃ i : (AlgebraicClosure ℚ) →ₐ[ℚ] AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat),
+      ∀ x, i x = AlgebraicClosure.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) x :=
+    ⟨{ AlgebraicClosure.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) with
+        commutes' := fun r =>
+          congrArg (fun f : ℚ →+* AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) => f r)
+            (Subsingleton.elim ((AlgebraicClosure.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))).comp
+              (algebraMap ℚ (AlgebraicClosure ℚ))) (algebraMap ℚ (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)))) },
+      fun _ => rfl⟩
+  have hlift : ∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (x : AlgebraicClosure ℚ),
+      (σ : _ ≃ₐ[_] _) (i x) =
+        i ((Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x) := by
+    intro σ x
+    rw [hiapp, hiapp]
+    exact (Field.absoluteGaloisGroup.lift_map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ x).symm
+  have halg : ∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat),
+      ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ).comp i =
+        i.comp ((Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom :=
+    fun σ => AlgHom.ext fun x => hlift σ x
+  -- (2) the transported point keeps its order, `Point.map i` being injective
+  have hgord : addOrderOf (WeierstrassCurve.Affine.Point.map (W' := E) i g) = N := by
+    rw [addOrderOf_injective (WeierstrassCurve.Affine.Point.map (W' := E) i)
+      (WeierstrassCurve.Affine.Point.map_injective i) g, hg]
+  -- (3) the local Galois action on the transported point is by `lam ∘ map`
+  have hact : ∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat),
+      WeierstrassCurve.Affine.Point.map (W' := E) ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+          (WeierstrassCurve.Affine.Point.map (W' := E) i g) =
+        ((lam (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : ZMod N).val) •
+          WeierstrassCurve.Affine.Point.map (W' := E) i g := by
+    intro σ
+    calc WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+          (WeierstrassCurve.Affine.Point.map (W' := E) i g)
+        = WeierstrassCurve.Affine.Point.map (W' := E)
+            (((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ).comp i) g :=
+          WeierstrassCurve.Affine.Point.map_map _ _ _
+      _ = WeierstrassCurve.Affine.Point.map (W' := E)
+            (i.comp ((Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom) g := by
+          rw [halg σ]; rfl
+      _ = WeierstrassCurve.Affine.Point.map (W' := E) i
+            (WeierstrassCurve.Affine.Point.map (W' := E)
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ :
+                AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom g) :=
+          (WeierstrassCurve.Affine.Point.map_map _ _ _).symm
+      _ = WeierstrassCurve.Affine.Point.map (W' := E) i
+            (((lam (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : ZMod N).val) • g) := by
+          rw [hlam (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ)]
+      _ = ((lam (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : ZMod N).val) •
+            WeierstrassCurve.Affine.Point.map (W' := E) i g := map_nsmul _ _ _
+  -- (4) the `N`-th roots of unity of `Ω` all come from `ℚ̄`, so the mod-`N`
+  -- cyclotomic character of `Γ ℚ` describes the local action on them
+  obtain ⟨z0, hz0⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) N
+  have hz0u : IsUnit z0 := hz0.isUnit hN.ne_zero
+  have hspec : ∀ τ : Field.absoluteGaloisGroup ℚ,
+      (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) z0 =
+        z0 ^ ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ τ :
+          (ZMod N)ˣ) : ZMod N).val := by
+    intro τ
+    have hmem : hz0u.unit ∈ rootsOfUnity N (AlgebraicClosure ℚ) := by
+      rw [mem_rootsOfUnity]
+      apply Units.ext
+      rw [Units.val_pow_eq_pow_val, IsUnit.unit_spec, Units.val_one]
+      exact hz0.pow_eq_one
+    have hsp := modularCyclotomicCharacter.spec (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) N)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ) (AlgebraicClosure ℚ) τ) hmem
+    rw [IsUnit.unit_spec] at hsp
+    exact hsp
+  have hzz : IsPrimitiveRoot (i z0) N := hz0.map_of_injective i.injective
+  have hcyc : ∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (w : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))ˣ), w ^ N = 1 →
+      Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom w =
+        w ^ ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : (ZMod N)ˣ) : ZMod N).val := by
+    intro σ w hw
+    apply Units.ext
+    have hwval : ((w : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))) ^ N = 1 := by
+      rw [← Units.val_pow_eq_pow_val, hw, Units.val_one]
+    obtain ⟨j, -, hj⟩ := hzz.eq_pow_of_pow_eq_one hwval
+    rw [Units.val_pow_eq_pow_val]
+    show (σ : _ ≃ₐ[_] _) ((w : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))) =
+      ((w : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))) ^ ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : (ZMod N)ˣ) : ZMod N).val
+    rw [← hj, map_pow, hlift σ z0, hspec, map_pow, ← pow_mul, ← pow_mul, Nat.mul_comm]
+  -- (5) the dichotomy itself is pure group theory
+  have hmain := tateQuotient_dichotomy_of_intertwined_action Q hQinj e hN
+    (WeierstrassCurve.Affine.Point.map (W' := E) i g) hgord
+    (S := fun σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) =>
+      Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom)
+    (T := fun σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) =>
+      WeierstrassCurve.Affine.Point.map (W' := E) ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ))
+    (s := fun σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) => ((ψ σ : ℤ)))
+    (m := fun σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) =>
+      ((lam (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : ZMod N).val))
+    (c := fun σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) =>
+      ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) σ) : (ZMod N)ˣ) : ZMod N).val)
+    (fun σ => by
+      have h1 : (ψ σ) * (ψ σ) = 1 := by rw [← sq, Int.units_sq]
+      have h2 := congrArg (Units.val) h1
+      rw [Units.val_mul, Units.val_one] at h2
+      exact h2)
+    hQfix he hact hcyc
+  -- (6) repackage the two cases as equalities of UNITS of `ZMod N`
+  have hval : ∀ x : (ZMod N)ˣ, (((x : ZMod N).val : ℕ) : ZMod N) = (x : ZMod N) := by
+    intro x
+    simp [ZMod.natCast_val, ZMod.cast_id]
+  rcases hmain with h | h
+  · left
+    intro σ _
+    apply Units.ext
+    have h2 := h σ
+    rw [hval, hval] at h2
+    rw [Units.val_mul, h2, Units.coe_map]
+    rfl
+  · right
+    intro σ _
+    apply Units.ext
+    have h2 := h σ
+    rw [hval] at h2
+    rw [h2, Units.coe_map]
+    rfl
+
+/-- **`T` — the Tate-curve half, SHARED by `A` and `B`** (DECOMPOSED and
+PROVEN 2026-07-27 from `T₁` and `T₂` above; Tate's `v`-adic uniformisation —
+Silverman *ATAEC* V.3, V.5; Serre, Invent. Math. 15 (1972), §5.4): at a prime
+`v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the twelfth
+power of the isogeny character agrees on the inertia group at `v` with
+`χ^(12r)` for a single `r ∈ {0, 1}`.
 
 **Why this leaf exists** (cut made 2026-07-27).  The Tate-curve description
 of the isogeny character was previously duplicated: `A` needed it at `N` and
@@ -4238,24 +4826,24 @@ What is left in `A` is then exactly Serre's tame-inertia theory plus
 Raynaud's classification, and what is left in `B` is exactly
 Néron–Ogg–Shafarevich; neither leaf mentions Tate curves any more.
 
-Proof (not formalised).  Over `ℚ_v` with `v(j) < 0` the curve is a quadratic
-twist by some character `ψ` of a Tate curve `E_Q : ℚ̄_v^*/Q^ℤ`; `ψ² = 1`.
-The `N`-torsion of a Tate curve sits in an exact sequence
-`0 → μ_N → E_Q[N] → ℤ/N → 0`, and a Galois-stable subgroup of order `N` is
-either `μ_N` or maps isomorphically to the quotient `ℤ/N`.  In the first case
-the character on it is `χ·ψ`, so `λ¹² = χ¹²ψ¹² = χ¹²` and `r = 1`.  In the
-second the subgroup is generated by a point `Q^{1/N}ζ^i`, whose stability
-forces `Q^{1/N} ∈ ℚ_v^{nr}`, so the character is `ψ` times something trivial
-on inertia and `λ¹² = 1`, i.e. `r = 0`.  Both cases use `ψ¹² = (ψ²)⁶ = 1`.
+The proof is now three lines of bookkeeping over `T₂`'s dichotomy.  `T₂` gives
+`λ = χ·ψ` or `λ = ψ` with `ψ` valued in `ℤˣ`; `Int.units_sq` makes `ψ²= 1`,
+hence `ψ¹² = (ψ²)⁶ = 1`, and the two cases become `λ¹² = χ¹²` (take `r = 1`)
+and `λ¹² = 1 = χ⁰` (take `r = 0`).
+
+`hN19` is deliberately unused (hence underscored): `19 < N` is what `A₀` and
+`B₀` need, and the Tate half of the cluster never sees it.  It is kept in the
+signature because both consumers pass it positionally.
 
 Note the conclusion is quantified over `localInertiaGroup v` and NOT over
 `Γ ℚ`: an unramified twist is invisible to inertia, which is precisely why
 the quadratic character `ψ` may be discarded here and may NOT be discarded
-globally.  Widening the quantifier would make the leaf false. -/
+globally.  Widening the quantifier would make the leaf false — but see `T₂`,
+whose statement KEEPS `ψ` and is therefore true over all of `Γ Kᵥ`. -/
 theorem WeierstrassCurve.exists_isogenyTateExponent_of_padicValRat_j_neg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN19 : 19 < N)
+    (hN : N.Prime) (_hN19 : 19 < N)
     (hg : addOrderOf g = N)
     (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
     (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -4271,8 +4859,29 @@ theorem WeierstrassCurve.exists_isogenyTateExponent_of_padicValRat_j_neg
           (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
             (Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r) :=
-  sorry
+                hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r) := by
+  classical
+  obtain ⟨Q, ψ, e, hQinj, hQfix, he⟩ :=
+    E.exists_tateParametrisation_of_padicValRat_j_neg hv hj
+  -- the twisting character is quadratic, so its twelfth power is trivial
+  have hψ12 : ∀ σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      (Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ^ 12 = 1 := by
+    intro σ
+    have h1 : (Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ^ 2 = 1 := by
+      rw [← map_pow, Int.units_sq, map_one]
+    rw [show (12 : ℕ) = 2 * 6 from rfl, pow_mul, h1, one_pow]
+  rcases E.isogenyCharacter_eq_cyclotomic_mul_or_eq_of_tateParametrisation
+      g hN hg lam hlam hv Q ψ e hQinj hQfix he with hcase | hcase
+  · -- the stable line is `μ_N`: `λ = χ·ψ`, so `λ¹² = χ¹²ψ¹² = χ¹²`
+    refine ⟨1, le_refl 1, ?_⟩
+    intro σ hσ
+    rw [hcase σ hσ, mul_pow, hψ12 σ, mul_one, mul_one]
+  · -- the stable line is étale: `λ = ψ`, so `λ¹² = 1 = χ⁰`
+    refine ⟨0, Nat.zero_le 1, ?_⟩
+    intro σ hσ
+    rw [hcase σ hσ, hψ12 σ, Nat.mul_zero, pow_zero]
 
 /-! ##### The three-way cut of `A₀` (CARRIED OUT 2026-07-27)
 
