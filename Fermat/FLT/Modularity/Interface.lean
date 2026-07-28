@@ -9200,9 +9200,9 @@ open scoped Manifold
 
 
 /-- **ATKIN–LEHNER, SPANNING HALF, IN OPERATOR FORM: THE JOINT HECKE
-EIGENVECTORS SPAN MODULO THE OLD SUBSPACE** (sorry leaf, cut 2026-07-27
-out of `eigenform_span_sup_oldCuspSpace_eq_top` below, which is now a
-PROVEN assembly over it).
+EIGENVECTORS SPAN MODULO THE OLD SUBSPACE** (PROVEN 2026-07-28; cut
+2026-07-27 out of `eigenform_span_sup_oldCuspSpace_eq_top` below, which is
+a PROVEN assembly over it).
 
 Stated: the `ℂ`-span of the cusp forms `f` that are scaled by
 `heckeEndo M q` for EVERY prime `q` — the bad `U_q`, `q ∣ M`, included —
@@ -9220,61 +9220,64 @@ above derives all four carrier fields from `qCoeff_heckeEndo`), and no
 `q`-expansions at all. A successor therefore proves ONE analytic fact and
 nothing else.
 
-**THE CLASSICAL ROUTE**, which is where the Petersson product finally
-becomes load-bearing in this file (the CONSUMER side needs neither it nor
-multiplicity one, as the consumer's own docstring records — that asymmetry
-is deliberate and this leaf is where the debt sits). Diamond–Shurman
-Theorem 5.8.2 / Atkin–Lehner 1970:
+**HOW IT WAS PROVEN (2026-07-28), AND IT IS NOT THE ORTHOGONAL-COMPLEMENT
+ROUTE.** The docstring this replaces prescribed Diamond–Shurman Theorem
+5.8.2 literally: build the Petersson-orthogonal complement `S₂^{new}` of
+`oldCuspSpace M`, diagonalize the commuting self-adjoint `T_q` on it, and
+use multiplicity one to make each joint eigenspace a line so that the bad
+`U_q` act on it by scalars. That route needs `S^{new}` to be `U_q`-stable
+at `q ∣ M`, which does NOT follow from self-adjointness of the good
+operators (it is the Fricke-conjugation statement `U_q^* = W_M U_q W_M^{-1}`,
+which this development does not have).
 
-1. `oldCuspSpace M` is stable under every `T_q`, and the `T_q` at `q ∤ M`
-   are SELF-ADJOINT for the Petersson product
-   (`exists_peterssonProduct_selfAdjoint_heckeOp`, PROVEN — but note it
-   lives ~30k lines BELOW this declaration, see the ordering warning);
-2. hence the Petersson-orthogonal complement `S₂^{new}` of the old
-   subspace is Hecke-stable and `S₂^{new} ⊔ oldCuspSpace M = ⊤`;
-3. the commuting self-adjoint `T_q`, `q ∤ M`, are simultaneously
-   diagonalizable on `S₂^{new}`, and each joint eigenspace is `U_q`-stable
-   for `q ∣ M` because `U_q` commutes with them;
-4. multiplicity one (the Atkin–Lehner Main Lemma) makes each such
-   eigenspace one-dimensional, so the `U_q` act on it by scalars too, and
-   the resulting vectors are joint eigenvectors of ALL the `heckeEndo M q`.
+The route actually taken replaces the orthogonal complement by the JOINT
+GENERALIZED EIGENSPACE DECOMPOSITION, and the Petersson product then enters
+only through good-prime SEMISIMPLICITY. Over the family `T := q ↦ heckeOp M q`
+indexed by ALL primes — pairwise commuting by `heckeOp_mul_comm` — mathlib's
+simultaneous triangularization gives
+`⊤ = ⨆ ψ, ⨅ q, maxGenEigenspace (T q) (ψ q)`
+(`eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo` above, over
+`Mathlib.LinearAlgebra.Eigenspace.Pi` — which IS in this file's import cone;
+the note that it was not is retired). It therefore suffices to place ONE
+generalized eigenblock `W_ψ` inside `span{eigenvectors} ⊔ old`, and for that:
 
-Step 4 is the only place multiplicity one is needed anywhere in this
-cluster, and it is needed only to get the BAD-prime eigenvalue property
-that the carrier's `qCoeff_prime_pow_of_dvd` field demands. A route that
-avoids it would have to show directly that `U_q` acts semisimply on the
-`q`-new part — which is true (Atkin–Lehner) but is exactly the
-Coleman–Edixhoven-adjacent statement the file's axis-2 audit flags as
-hard in general; on the NEW part it is a theorem, on the whole space it
-is open.
+1. `W_ψ` is stable under every `heckeOp M q` (the `T q` commute), so if
+   `W_ψ ≠ ⊥` it contains a nonzero JOINT eigenvector `w` of all of them
+   (`exists_ne_zero_mem_forall_prime_heckeOp_eq_smul` above). Rescaling by
+   `a₁(w) ≠ 0` (`qCoeff_one_ne_zero_of_forall_heckeEndo_smul`, out of the
+   duality pairing) gives a normalized `g` with `IsWeightTwoEigenform M g`
+   (`isWeightTwoEigenform_of_forall_heckeEndo_smul`), and `g ∈ W_ψ` still.
+   This is where the BAD primes are settled — `w` is an honest eigenvector
+   at every prime by construction, so no multiplicity-one input is needed
+   for them, contrary to the plan recorded here before.
+2. At a GOOD prime the generalized eigen-equation on `W_ψ` is already an
+   honest one, by Petersson semisimplicity
+   (`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, PROVEN over
+   `exists_peterssonProduct_selfAdjoint_heckeOp`). Applied to `g` this
+   identifies `a_q(g) = ψ q` for `q ∤ M`; applied to an arbitrary
+   `f ∈ W_ψ` it gives `T_q f = a_q(g) · f` for `q ∤ M`.
+3. The Hecke recursion then pins every coefficient of `f` at an index
+   coprime to `M`: `a_n(f) = a₁(f) · a_n(g)`
+   (`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen_of_coprime`). So
+   `h := f − a₁(f)·g` has `a_n(h) = 0` for all `n` coprime to `M`, and
+   Miyake's MAIN LEMMA (`mem_oldSubspace_of_qCoeff_coprime_eq_zero`) puts
+   `h` in `⨆_{p ∣ M} range V_p ≤ oldCuspSpace M`.
 
-**⚠ DECLARATION-ORDER WARNING FOR A SUCCESSOR.** Everything named in
-steps 1–4 — the Petersson product, `atkinLehnerOp`,
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero`,
-`qCoeff_eq_zero_of_mem_oldSubspace`,
-`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`, `heckeOpN` — is
-declared THOUSANDS of lines below this point and therefore cannot be
-cited here. What IS available above: `heckeEndo`/`qCoeff_heckeEndo`,
-`heckeSubring` with `heckeSubring_mul_comm` and both nondegeneracy
-lemmas, `cuspForm_finiteDimensional`, `degeneracyOp`/`qCoeff_degeneracyOp`
-and `oldCuspSpace` itself. So closing this leaf means either HOISTING the
-Petersson block (the degeneracy block was hoisted the same way on
-2026-07-27 — `qCoeff_degeneracyOp` used to sit ~29k lines below and now
-sits above `section SturmFiniteness`), or relocating this leaf and its
-whole consumer chain down. The first is the cheaper move and is what the
-consumer chain was shaped around.
+`f = a₁(f)·g + h` finishes it. Multiplicity one is used exactly once, in
+the shape the Main Lemma states it, and never as a dimension count.
 
-Also note `Mathlib.LinearAlgebra.Eigenspace.Pi` — mathlib's simultaneous
-triangularization of a commuting family,
-`iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`
-— is NOT in this file's import cone (only `Eigenspace.Triangularizable`
-is), verified 2026-07-27. It would supply step 3's bookkeeping over `ℂ`
-for free at the cost of one `public import`, reducing this leaf to "each
-joint GENERALIZED eigenspace lies in (eigenvectors ⊔ old)", i.e. to the
-absence of Jordan blocks off the old subspace. That cut was deliberately
-NOT taken here, because a successor who builds the Petersson complement
-properly gets honest eigenvectors directly and would have to detour
-through generalized eigenspaces to use it.
+**THE DECLARATION-ORDER OBSTRUCTION WAS REAL AND WAS CLEARED BY A HOIST.**
+Every ingredient above used to sit ~30–40k lines BELOW this point. The
+commit before this one moved the whole `ComplexHeckeAlgebra` prefix — the
+complex Hecke operators, the entire Petersson development, good-prime
+semisimplicity, the second degeneracy block and the Miyake descent, through
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` — plus `heckeOp_eq_heckeEndo`,
+to just above this declaration, closing the sections around it so that the
+block keeps the scope it was written in. It is a pure relocation; see the
+`/-! ### The complex Hecke algebra … -/` header above for the safety
+argument. Note in particular that `atkinLehnerOp` and `heckeOpN`, named as
+blockers by the old warning, are NOT needed by the route above and did not
+have to move.
 
 SOUNDNESS. `0 < M` is inherited from the consumer and is genuinely
 needed: `heckeEndo M q` is defined as `0` unless `0 < M ∧ q.Prime`, so at
@@ -9287,8 +9290,92 @@ theorem heckeEigenvector_span_sup_oldCuspSpace_eq_top {M : ℕ} (hM : 0 < M) :
     Submodule.span ℂ
         {f : CuspForm (Gamma0GL M) 2 |
           ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f}
-      ⊔ oldCuspSpace M = ⊤ :=
-  sorry
+      ⊔ oldCuspSpace M = ⊤ := by
+  classical
+  haveI : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  have hsub : (⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+      ≤ oldCuspSpace M := iSup₂_mono fun p _ => le_sup_right
+  set T : {q : ℕ // q.Prime} → Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+    fun q => heckeOp M q.1 with hTdef
+  have hcomm : ∀ i j, Commute (T i) (T j) := fun i j => heckeOp_mul_comm hM i.2 j.2
+  -- Simultaneous triangularization of the commuting prime Hecke operators.
+  have hdecomp := eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo T hcomm ⊤
+    (fun i => Set.mapsTo_univ _ _)
+  refine le_antisymm le_top ?_
+  rw [hdecomp]
+  simp only [top_inf_eq]
+  refine iSup_le fun ψ => ?_
+  rcases eq_or_ne (⨅ i, (T i).maxGenEigenspace (ψ i)) ⊥ with hWb | hW
+  · rw [hWb]; exact bot_le
+  -- The joint generalized eigenblock is stable under every prime Hecke operator.
+  have hstab : ∀ q : ℕ, q.Prime → ∀ x ∈ (⨅ i, (T i).maxGenEigenspace (ψ i)),
+      heckeOp M q x ∈ (⨅ i, (T i).maxGenEigenspace (ψ i)) := by
+    intro q hq x hx
+    rw [Submodule.mem_iInf]
+    intro i
+    have hxi : x ∈ (T i).maxGenEigenspace (ψ i) := (Submodule.mem_iInf _).mp hx i
+    exact (T i).mapsTo_maxGenEigenspace_of_comm (hcomm ⟨q, hq⟩ i).eq.symm (ψ i) hxi
+  -- On that block a GOOD Hecke operator acts by the honest scalar `ψ q`:
+  -- Petersson semisimplicity turns the generalized eigen-equation into an
+  -- honest one.
+  have hgood : ∀ u ∈ (⨅ i, (T i).maxGenEigenspace (ψ i)), ∀ i : {q : ℕ // q.Prime},
+      ¬ (i.1 ∣ M) → heckeOp M i.1 u = ψ i • u := by
+    intro u hu i hi
+    obtain ⟨n, hn⟩ := (Module.End.mem_iInf_maxGenEigenspace_iff T ψ u).mp hu i
+    exact heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level hM i.2 hi (ψ i)
+      (n := n) (by simpa [hTdef] using hn)
+  -- The block carries a nonzero joint eigenvector of ALL the prime Hecke
+  -- operators, the bad ones included; this is what settles `q ∣ M`.
+  obtain ⟨w, hwW, hw0, lam, hlam⟩ :=
+    exists_ne_zero_mem_forall_prime_heckeOp_eq_smul hM hW hstab
+  have hwEndo : ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q w = c • w := by
+    intro q hq
+    exact ⟨lam q, by rw [← heckeOp_eq_heckeEndo hM hq]; exact hlam q hq⟩
+  have ha : qCoeff M w 1 ≠ 0 :=
+    qCoeff_one_ne_zero_of_forall_heckeEndo_smul hM hw0 hwEndo
+  -- Normalize it to an eigenform.
+  obtain ⟨g, hg1, hgEndo, hgW⟩ : ∃ g : CuspForm (Gamma0GL M) 2,
+      qCoeff M g 1 = 1 ∧ (∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q g = c • g) ∧
+        g ∈ (⨅ i, (T i).maxGenEigenspace (ψ i)) := by
+    refine ⟨(qCoeff M w 1)⁻¹ • w, ?_, ?_, Submodule.smul_mem _ _ hwW⟩
+    · rw [← qCoeffL_apply, map_smul, qCoeffL_apply, smul_eq_mul, inv_mul_cancel₀ ha]
+    · intro q hq
+      obtain ⟨c, hc⟩ := hwEndo q hq
+      exact ⟨c, by rw [map_smul, hc, smul_comm]⟩
+  have hg : IsWeightTwoEigenform M g :=
+    isWeightTwoEigenform_of_forall_heckeEndo_smul hM hg1 hgEndo
+  have hgmem : g ∈ Submodule.span ℂ {f : CuspForm (Gamma0GL M) 2 |
+      ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f} :=
+    Submodule.subset_span hgEndo
+  -- At a good prime the eigenform's coefficient IS the block's scalar.
+  have hgq : ∀ i : {q : ℕ // q.Prime}, ¬ (i.1 ∣ M) → qCoeff M g i.1 = ψ i := by
+    intro i hi
+    have h1 : heckeOp M i.1 g = qCoeff M g i.1 • g :=
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg i.2
+    have h2 : heckeOp M i.1 g = ψ i • g := hgood g hgW i hi
+    have h3 := congrArg (fun u => qCoeff M u 1) (h1.symm.trans h2)
+    simpa [qCoeff_smul, hg1] using h3
+  -- Every member of the block agrees with `a₁ · g` away from the level, so the
+  -- difference is old by Miyake's Main Lemma.
+  intro f hf
+  have hv : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q f = qCoeff M g q • f := by
+    intro q hq hqM
+    rw [hgq ⟨q, hq⟩ hqM]
+    exact hgood f hf ⟨q, hq⟩ hqM
+  have hcoef := qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen_of_coprime hM hg hv
+  have hh : ∀ n : ℕ, Nat.Coprime n M →
+      qCoeff M (f - qCoeff M f 1 • g) n = 0 := by
+    intro n hn
+    have h := (qCoeffL M n).map_sub f (qCoeff M f 1 • g)
+    simp only [qCoeffL_apply] at h
+    rw [h, qCoeff_smul, hcoef n hn, sub_self]
+  have hold := hsub (mem_oldSubspace_of_qCoeff_coprime_eq_zero hM hh)
+  have hfeq : f = qCoeff M f 1 • g + (f - qCoeff M f 1 • g) := by abel
+  rw [hfeq]
+  exact Submodule.add_mem _
+    (Submodule.mem_sup_left (Submodule.smul_mem _ _ hgmem))
+    (Submodule.mem_sup_right hold)
 
 /-- **LEAF A OF THE NEW-PART RATIONALITY CUT — THE EIGENFORMS SPAN
 MODULO THE OLD SUBSPACE** (DECOMPOSED 2026-07-27; formerly a sorry leaf,
@@ -9339,12 +9426,13 @@ mixed with the analysis — normalization, multiplicativity, the two
 prime-power recursions — is gone, and a successor now faces exactly one
 analytic statement.
 
-WHAT A SUCCESSOR NEEDS is therefore recorded on that leaf's docstring,
-including the DECLARATION-ORDER warning that the Petersson product,
-`atkinLehnerOp`, `mem_oldSubspace_of_qCoeff_coprime_eq_zero`,
-`qCoeff_eq_zero_of_mem_oldSubspace` and
-`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` all sit thousands
-of lines BELOW and cannot be cited at that point without a hoist.
+THAT LEAF IS NOW PROVEN TOO (2026-07-28), so this whole node is
+sorry-free. Its docstring carries the argument; the DECLARATION-ORDER
+warning that used to stand here — the Petersson product,
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` and the rest sitting
+thousands of lines BELOW and uncitable without a hoist — was correct and
+was discharged by performing the hoist. `atkinLehnerOp` and `heckeOpN`
+turned out not to be needed at all.
 
 SOUNDNESS: at `M = 1`, and at every genus-zero level, `S₂(Γ₀(M)) = 0`,
 so both sides are the zero module and the statement holds however few
