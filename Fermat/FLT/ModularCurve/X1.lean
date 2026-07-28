@@ -373,7 +373,6 @@ open in them has been split along the theories it needed:
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
 | `nonempty_relPoint_atlas_of_relPoint` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` / Lang, on the atlas map `M ⟶ Y` | `𝔽_ℓ` |
-| `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
 | `exists_x1ReductionAt` | the integral model and its reduction map | `ℚ → 𝔽_ℓ` |
@@ -2531,7 +2530,11 @@ leaf in two:
   space in the abstract.
 * `nonempty_gamma1Datum_baseChange` — a `Γ₁(N)`-datum base-changes along an
   arbitrary morphism of schemes.  Formal, moduli-free, level-free, base-free;
-  no arithmetic and no finite fields.
+  no arithmetic and no finite fields.  **PROVEN 2026-07-28, by citing
+  `exists_gamma1Datum_baseChange`, which was already in this file**: the cut
+  named a sub-leaf that a concurrent branch had independently proven, so this
+  half of the atlas cut cost nothing.  See its docstring for the duplication
+  and for two corrections to the audit it was dispatched with.
 
 The assembly is then three citations, all PROVEN: `exists_gamma1AffineModel`
 produces an atlas over `𝔽_ℓ` (this is where `hℓ` and `hℓN` are consumed, as
@@ -2548,8 +2551,9 @@ list missed it is that every one of its four axes searched the same space
 CONSTRUCTION.  Recorded here because "an irreducibility verdict is only as
 wide as the axis the auditor searched". -/
 
-/-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (sorry leaf —
-formal, and the easy half of the atlas cut).
+/-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (**PROVEN
+2026-07-28** — and it was ALREADY PROVEN in this very file; see the DUPLICATE
+note below, which is the finding that matters here).
 
 TRUE for every `h : T' ⟶ T`, with no hypothesis at all.  Form the fibre
 product `E ×_T T'`; it is proper, smooth and has geometrically connected
@@ -2561,27 +2565,57 @@ exactly those, so the condition transports with no computation.
 
 **Nothing arithmetic is here.**  No level, no base field, no finiteness: this
 is the base-change bookkeeping that `IsBaseChangeOfGamma1` was written to
-state and that nothing in this file has yet had to construct.  It is worth
-having on its own — `IsBaseChangeOfGamma1` is currently only ever *consumed*,
-by `classify_natural` and by `Gamma1Atlas.cover`, and never *produced*, so
-this is the missing constructor of that relation.
+state.
 
-**Why it is not free at this pin.**  `AbelianSchemeStruct` has no base-change
-operation anywhere in this tree (a `grep` for `baseChange` over
-`Modularity/AbelianScheme.lean` is empty), so the transport of `zero`, `add`
-and the three geometric fields has to be written.  That is the whole content,
-and it is `Γ₀`-usable verbatim once written.
+## DUPLICATE: this leaf is a `Scheme.{0}` restatement of
+## `exists_gamma1Datum_baseChange`, ~1800 lines above it in this same file
+
+The two statements are the same statement, and the `u`-polymorphic one was
+PROVEN on 2026-07-27 over the `Gamma1BaseChange` namespace (`secBC`,
+`downHom`, `ptBC`, `datumBC`, `isBaseChangeBC`) — so this leaf is discharged
+by one citation and is *not* new mathematics.
+
+How the duplication arose is worth recording, because it is a pure
+release-integration artefact and nobody made a mistake: the atlas cut of
+`exists_gamma1Datum_of_relPoint` (branch `flt-lean-36`) named this sub-leaf on
+the same day that a different branch added `Gamma1BaseChange` and
+`exists_gamma1Datum_baseChange` for `exists_descendClassifyGamma1`.  Neither
+branch could see the other, both landed in the same release, and the frontier
+then carried a `sorry` for a theorem the file already contained.
+
+**Two corrections to the ROUTE AUDIT this leaf was dispatched with**, both of
+the "stale audit" shape the doctrine warns about:
+
+* it recorded, as "the one real obstruction", that `AbelianSchemeStruct` has
+  no base change anywhere in this tree, on the strength of a `grep` over
+  `Modularity/AbelianScheme.lean` alone.  `AbelianSchemeStruct.baseChange` —
+  with `RelPoint.baseChangeDown` / `baseChangeUp`, `baseChange_add`,
+  `baseChange_zero`, `baseChangeDown_injective`, `baseChangeDown_pre` — is in
+  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, and reaches this file
+  publicly through `X0.lean`.  One file is not the tree.
+* it recorded that this statement would be "`Γ₀`-usable verbatim once
+  written".  Backwards: `X0.lean`'s `exists_gamma0Datum_baseChange` was proven
+  FIRST, over `Gamma0BaseChange`, and `Gamma1BaseChange` is its transcription.
+
+**Cleanup available, deliberately not taken here.**  This declaration can be
+deleted outright once its single consumer `exists_gamma1Datum_of_relPoint`
+below is repointed to `exists_gamma1Datum_baseChange h d` (note the argument
+ORDER differs: `(h) (d)` there, `(d) (h)` here).  That edit was not made
+because `exists_gamma1Datum_of_relPoint`'s docstring is shared with the
+concurrently-owned leaf `nonempty_relPoint_atlas_of_relPoint`, and a one-line
+alias costs less than a merge conflict in it.
 
 **Non-vacuity.**  The conclusion produces `d'` TOGETHER WITH the cartesian
 square `IsBaseChangeOfGamma1 h d' d`, so a junk datum over `T'` does not
 discharge it: `isPullback` pins `d'.E` as the fibre product and `map_sec`
-pins the level structure.  The consumer below uses only the datum, but the
-square is what makes the statement the right one and what a successor
-producing a naturality argument will need. -/
+pins the level structure.  Both are genuinely produced:
+`Gamma1BaseChange.isBaseChangeBC` supplies the square as
+`(IsPullback.of_hasPullback d.f h).flip` and `map_sec` as
+`Gamma1BaseChange.secBC_fst`. -/
 theorem nonempty_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{0}}
-    (_d : Gamma1Datum N T) (_h : T' ⟶ T) :
-    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 _h d' _d) :=
-  sorry
+    (d : Gamma1Datum N T) (h : T' ⟶ T) :
+    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
+  exists_gamma1Datum_baseChange h d
 
 /-- **The atlas map `M ⟶ Y` is surjective on `𝔽_ℓ`-points** (sorry leaf —
 this is where the whole fineness/Lang content of the `Γ₁` point count now
