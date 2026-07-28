@@ -83,15 +83,24 @@ outright and `End.exists_dual` becomes a theorem over additivity of the dual,
 `End.dualEnd_add` is PROVEN, and so — as of the second pass of 2026-07-27 — is the
 trace formula `End.self_add_dualEnd`. **As of the third pass (2026-07-27) so is the
 parallelogram law `End.degree_add_add_degree_sub` itself**, over the mod-`ℓ` torsion
-representation; this file's single remaining leaf is now
+representation. **As of the fourth pass (2026-07-27)** `deg = det` is split at the
+prime, with the divisible case discharged, so this file's single remaining leaf is
+now
 
-* `End.natCast_degree_eq_det_torsionRep` — `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)`, the
-  classical `deg = det` on the `ℓ`-torsion, *AEC* III.8.6.
+* `End.natCast_degree_eq_det_torsionRep_of_not_dvd` — `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)`
+  at the primes `ℓ ∤ deg ψ`, the classical `deg = det` on the `ℓ`-torsion,
+  *AEC* III.8.6;
 
-which is a statement about ONE endomorphism rather than about a pair, and is the
+with `End.det_torsionRep_eq_zero_of_dvd` (the case `ℓ ∣ deg ψ`, where both sides
+vanish — Cauchy's theorem in `ker ψ`) PROVEN, and the consumer-facing
+`End.natCast_degree_eq_det_torsionRep` assembling the two.
+
+That leaf is a statement about ONE endomorphism rather than about a pair, and is the
 same input the Hasse bound and the Lefschetz leaf want. See the ROUTE AUDIT on it
 for what supplies it (Weil-pairing adjointness, *AEC* III.8.2) and for the two
-already-PROVEN pieces of that route.
+already-PROVEN pieces of that route — and, added in the fourth pass, for the proof
+that this leaf is **EQUIVALENT** to the parallelogram law, so that the route search
+must include *AEC* III.6.3 and not only *AEC* III.8.2.
 
 An earlier version of this docstring recorded the trace formula as a SECOND,
 independent leaf, on the ground that the two are "jointly equivalent to additivity
@@ -262,12 +271,22 @@ theorem toIsogeny_frobEnd : End.toIsogeny frobEnd = frobIsog := rfl
 
 /-- **The `End`-free core of the refutation: no rational map inverts Frobenius.**
 
-Stated without mentioning `End` on purpose. Everything mentioning `End` reports
-`sorryAx` under `#print axioms` at carrier level — `endSubring`'s `add_mem'` field
-routes through the still-open `IsIsogeny.add`, so even a literal `rfl` such as
-`End.coe_add_apply` reports it. This statement therefore carries the mathematical
-content of the refutation in a form where `#print axioms` is informative, and it
-comes back `[propext, Classical.choice, Quot.sound]`.
+Stated without mentioning `End` on purpose, and it comes back
+`[propext, Classical.choice, Quot.sound]`.
+
+**RETIRED JUSTIFICATION (2026-07-27, fourth pass).** This paragraph used to say
+that "everything mentioning `End` reports `sorryAx` under `#print axioms` at
+carrier level", because `endSubring`'s `add_mem'` field routed through a then-open
+`IsIsogeny.add`, so even a literal `rfl` such as `End.coe_add_apply` reported it.
+**That is no longer true**: `IsIsogeny.add` is PROVEN, and all three of
+`#print axioms WeierstrassCurve.IsIsogeny.add`,
+`#print axioms WeierstrassCurve.End.coe_add_apply` and
+`#print axioms WeierstrassCurve.End.torsionRep` return
+`[propext, Classical.choice, Quot.sound]` (checked 2026-07-27). So `#print axioms`
+is now informative on `End`-mentioning statements too, and the `End`-free phrasing
+here — and in `charPoly_of_multiplicative_parallelogram` below — is preserved for
+readability rather than out of necessity. Do not cite this file as evidence that
+`End` statements cannot be axiom-audited.
 
 The argument is the one in `Isogeny.isRationalMap_dualHom_is_false`, run against
 an arbitrary rational left inverse rather than against `dualHom` specifically. -/
@@ -395,8 +414,11 @@ and the trace formula. **The second pass proved the trace formula**; **the third
 pass (2026-07-27) executed the `ρ_ℓ` route recorded below and proved the
 parallelogram law too**, so the file now stands on exactly one open leaf:
 
-* `End.natCast_degree_eq_det_torsionRep` — `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)` for every
-  prime `ℓ`, Silverman *AEC* III.8.6. OPEN.
+* `End.natCast_degree_eq_det_torsionRep_of_not_dvd` — `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)`
+  at the primes `ℓ ∤ deg ψ`, Silverman *AEC* III.8.6. OPEN. (The fourth pass, the
+  same day, discharged the complementary case `ℓ ∣ deg ψ` outright as
+  `End.det_torsionRep_eq_zero_of_dvd`, and proved the hypothesis-free
+  `End.natCast_degree_eq_det_torsionRep` over the two.)
 
 with
 
@@ -485,8 +507,10 @@ conclusion is an identity between integers rather than between endomorphisms.
 
 **The single remaining input is therefore `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)`** — the
 classical `deg = det` on the Tate module, which is now the leaf
-`End.natCast_degree_eq_det_torsionRep`. See its own ROUTE AUDIT for what supplies
-it and for the greps that would refute that audit.
+`End.natCast_degree_eq_det_torsionRep_of_not_dvd` (its `ℓ ∣ deg ψ` half being
+PROVEN as `End.det_torsionRep_eq_zero_of_dvd`). See its own ROUTE AUDIT for what
+supplies it, for the greps that would refute that audit, and for the fourth pass's
+proof that it is EQUIVALENT to the parallelogram law rather than strictly weaker.
 
 **A correction to an earlier note that is still worth keeping.** A previous
 version said `Isogeny.degree_comp` wants the same input. It does not, and it is
@@ -569,29 +593,151 @@ noncomputable def nTorsionBasis [IsAlgClosed F] [CharZero F] (V : Affine F) [V.I
   haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
   Module.finBasisOfFinrankEq (ZMod ℓ) (V.nTorsion ℓ) (finrank_nTorsion V ℓ)
 
-/-- **LEAF — `deg = det` on the `ℓ`-torsion.** Silverman *AEC* III.8.6: for every
-prime `ℓ`,
+/-- **The vanishing half of `deg = det`, PROVEN (2026-07-27, fourth pass).** If
+`ℓ ∣ deg ψ` then `det (ρ_ℓ ψ) = 0`; since `deg ψ ≡ 0 (mod ℓ)` too, the leaf below
+holds outright at every such `ℓ`, which is why that leaf carries the hypothesis
+`¬ ℓ ∣ deg ψ`.
+
+`ker (ρ_ℓ ψ) = ker ψ ∩ W[ℓ]`, so this is **Cauchy's theorem in the finite group
+`ker ψ`**: a prime `ℓ` dividing `#ker ψ = deg ψ` produces an element of order
+exactly `ℓ` (`exists_prime_addOrderOf_dvd_card`, against `IsIsogeny.finite_ker`),
+i.e. a nonzero `ℓ`-torsion point killed by `ψ`, i.e. a nonzero vector in
+`ker (ρ_ℓ ψ)`; over the field `ZMod ℓ` a nontrivial kernel is exactly a vanishing
+determinant (`LinearMap.det_eq_zero_iff_ker_ne_bot`).
+
+The zero endomorphism is separated out first, because `Isogeny.degree` is defined
+by a case split at `0` and `IsIsogeny.finite_ker` needs a nonzero map; there
+`ρ_ℓ ψ = 0` and the determinant of the zero endomorphism of a rank-`2` module is
+`0` (`LinearMap.det_zero'` against `nTorsionBasis`).
+
+This is exactly the half of the ROUTE AUDIT's "what IS cheaply available" that the
+assembly consumes. The converse — `det (ρ_ℓ ψ) = 0 → ℓ ∣ deg ψ`, by Lagrange in
+`ker ψ` applied to the order-`ℓ` point produced by a nontrivial kernel — is true by
+the same dictionary and is deliberately **not** stated, because nothing consumes
+it. -/
+theorem End.det_torsionRep_eq_zero_of_dvd [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W)
+    (hdvd : ℓ ∣ Isogeny.degree (End.toIsogeny ψ)) :
+    LinearMap.det (End.torsionRep W ℓ ψ) = 0 := by
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
+  by_cases h0 : (End.toIsogeny ψ).toHom = 0
+  · -- the zero endomorphism: `ρ_ℓ 0 = 0`, and `det 0 = 0` in rank `2`
+    have hψ : ψ = 0 := Subtype.ext h0
+    rw [hψ, map_zero]
+    exact LinearMap.det_zero' (nTorsionBasis W ℓ)
+  · -- Cauchy in the finite group `ker ψ` produces a point of order exactly `ℓ`
+    haveI hfin : Finite (AddMonoidHom.ker (End.toIsogeny ψ).toHom) :=
+      Set.Finite.to_subtype ((End.toIsogeny ψ).isIsogeny.finite_ker h0)
+    haveI : Fintype (AddMonoidHom.ker (End.toIsogeny ψ).toHom) := Fintype.ofFinite _
+    have hcard : ℓ ∣ Fintype.card (AddMonoidHom.ker (End.toIsogeny ψ).toHom) := by
+      rw [← Nat.card_eq_fintype_card, ← Isogeny.degree_of_ne_zero h0]
+      exact hdvd
+    obtain ⟨x, hx⟩ := exists_prime_addOrderOf_dvd_card ℓ hcard
+    have hxtor : ((ℓ : ℤ)) • ((x : W.Point)) = 0 := by
+      have h1 : ℓ • x = 0 := by rw [← hx]; exact addOrderOf_nsmul_eq_zero x
+      have h2 : ℓ • ((x : W.Point)) = 0 := by
+        exact_mod_cast congrArg (Subtype.val) h1
+      rw [← h2, natCast_zsmul]
+    refine (LinearMap.det_eq_zero_iff_ker_ne_bot).2 ?_
+    intro hker
+    have hmem : ((x : W.Point)) ∈ Submodule.torsionBy ℤ W.Point (ℓ : ℤ) :=
+      (Submodule.mem_torsionBy_iff _ _).2 hxtor
+    set Q : W.nTorsion ℓ := ⟨(x : W.Point), hmem⟩ with hQ
+    have hQker : End.torsionRep W ℓ ψ Q = 0 := by
+      apply Subtype.ext
+      show (ψ : AddMonoid.End W.Point) ((x : W.Point)) = 0
+      exact x.2
+    have hQ0 : Q = 0 := by
+      have h : Q ∈ LinearMap.ker (End.torsionRep W ℓ ψ) := hQker
+      rw [hker, Submodule.mem_bot] at h
+      exact h
+    have hxval : ((x : W.Point)) = 0 := congrArg Subtype.val hQ0
+    have hx0 : x = 0 := Subtype.ext hxval
+    rw [hx0, addOrderOf_zero] at hx
+    exact (Fact.out : ℓ.Prime).ne_one hx.symm
+
+/-- **LEAF — `deg = det` on the `ℓ`-torsion, at the primes that do not divide the
+degree.** Silverman *AEC* III.8.6: for every prime `ℓ`,
 
     deg ψ ≡ det (ρ_ℓ ψ)   (mod ℓ).
 
-**This is the file's ONLY open leaf**, and as of the third pass of 2026-07-27 it has
-replaced the parallelogram law in that role: `End.degree_add_add_degree_sub` is
-PROVEN below over it, and everything else in the trace layer —
+**This is the file's ONLY open leaf.** The complementary case `ℓ ∣ deg ψ` is PROVEN
+just above (`End.det_torsionRep_eq_zero_of_dvd`: both sides vanish), and
+`End.natCast_degree_eq_det_torsionRep` below assembles the two; over that,
+`End.degree_add_add_degree_sub` and then the whole trace layer —
 `End.self_add_dualEnd`, `End.dualEnd_add`, `End.exists_dual`,
-`End.exists_charPoly`, `End.sq_eq_neg_natCast_of_atkinLehner` — is proven over
-that. It is a statement about ONE endomorphism rather than about a pair, which is
-why it is a better leaf than the parallelogram law was.
+`End.exists_charPoly`, `End.sq_eq_neg_natCast_of_atkinLehner` — are proven.
+
+The hypothesis `¬ ℓ ∣ deg ψ` is *free* to a prover: none of the routes below cares
+about it, and it is here only because that case really is discharged. In
+particular it is harmless to the consumer, which tests the identity at primes
+larger than every degree in sight.
+
+### EQUIVALENCE WITH THE PARALLELOGRAM LAW (2026-07-27, fourth pass)
+
+An earlier version of this docstring said this leaf "is a statement about ONE
+endomorphism rather than about a pair, which is why it is a better leaf than the
+parallelogram law was". The first clause is true and the second is **misleading**:
+the two statements are **equivalent**, so nothing is gained or lost by moving
+between them, and a future pass should not shuffle them again.
+
+The direction `leaf ⟹ parallelogram law` is `End.degree_add_add_degree_sub` below.
+Here is the converse, which is what makes them equivalent. Assume the parallelogram
+law. Then `charPoly_of_multiplicative_parallelogram` (below, and it needs only the
+parallelogram law plus `Isogeny.degree_comp`) gives `ψ² = [t] ψ − [n]` in `End W`
+with `n := deg ψ` and `t := deg (ψ+1) − deg ψ − 1`, and polarisation gives the
+integer-shift expansion `deg (ψ − m) = n − m t + m²` for every `m : ℤ`. Fix a prime
+`ℓ`, write `M := ρ_ℓ ψ`, and apply the ring homomorphism `ρ_ℓ`:
+
+    M² − t M + n = 0,      and (Cayley–Hamilton, rank 2)  M² − (tr M) M + det M = 0,
+
+so `(tr M − t) · M = (det M − n) · 1`.
+
+* If `tr M = t`, then `(det M − n) · 1 = 0` and hence `det M = n`, which is the
+  leaf.
+* Otherwise `M = c · 1` is a scalar, with `tr M = 2c`. If `ψ = [m]` for an integer
+  `m` then `n = m²` and `det M = m²` directly. Otherwise take ANY integer lift `c̃`
+  of `c`: then `ρ_ℓ (ψ − [c̃]) = 0`, i.e. `W[ℓ] ⊆ ker (ψ − [c̃])`, and `ψ − [c̃] ≠ 0`,
+  so Lagrange against `#W[ℓ] = ℓ²` gives `ℓ² ∣ deg (ψ − c̃) = n − c̃ t + c̃²`. The
+  **same holds for the lift `c̃ + ℓ`**, and subtracting the two divisibilities
+  leaves `ℓ² ∣ ℓ (2c̃ − t) + ℓ²`, i.e. `ℓ ∣ 2c̃ − t`, i.e. `t = 2c = tr M` —
+  contradicting the case assumption. So this branch is empty.
+
+(That argument is a proof sketch, not machine-checked: formalising it inside this
+file would be a literal cycle, since `End.degree_add_add_degree_sub` is proven over
+this leaf. The two-lift step is the only non-routine move and it is the reason the
+scalar case does not need a separate geometric input.)
+
+**What the equivalence means for dispatch.** The route search must NOT be confined
+to Weil-pairing adjointness: **any independent proof of the parallelogram law
+closes this leaf**, and conversely. In particular Silverman *AEC* III.6.3 and its
+inputs (the theorem of the square / seesaw, or the classical degree count of the
+`x`-coordinate map) are live alternatives to *AEC* III.8.2, and they are not
+recorded anywhere else in this file.
 
 ### Why this shape, and not the parallelogram law itself
 
 **(a) The parallelogram law is NOT reducible to algebra, so a genuinely geometric
 input is unavoidable; this is the smallest one.** The facts available about `deg`
 without any new input are: `deg 0 = 0`, `deg 1 = 1`, multiplicativity
-(`Isogeny.degree_comp`) and definiteness (`Isogeny.degree_eq_zero_iff`). Those four
-do **not** imply the parallelogram law: take `R = ℤ` and `q n := n ^ 4`. Then
-`q 0 = 0`, `q 1 = 1`, `q (nm) = q n · q m` and `q n = 0 → n = 0` all hold, while
-`q 2 + q 0 = 16 ≠ 4 = 2 q 1 + 2 q 1`. (Contrast the trace formula, which those four
-facts *do* give once the parallelogram law is assumed — that is
+(`Isogeny.degree_comp`), definiteness (`Isogeny.degree_eq_zero_iff`) — **and a
+fifth that an earlier version of this paragraph forgot**, `deg [m] = m ^ 2`
+(`n_torsion_card`, since `ker [m] = W[m]` has `m²` elements).
+
+**The forgotten fifth fact kills the counterexample that was recorded here.** It
+was `R = ℤ` with `q n := n ^ 4`, which satisfies the four listed facts and violates
+the parallelogram law — but it also has `q m = m ^ 4 ≠ m ^ 2`, so it never was a
+model of everything available, and the paragraph's conclusion did not follow from
+its own example. A **repaired counterexample**, satisfying all *five* facts:
+
+    R = ℤ[√2],   q (a + b√2) := |a² − 2b²| = |N(a + b√2)|.
+
+`|N|` is multiplicative, vanishes only at `0` (a domain), and `q m = m²` on `ℤ`;
+yet `q (1+√2) + q (1−√2) = 1 + 1 = 2` while `2 q 1 + 2 q √2 = 2 + 4 = 6`. So the
+conclusion stands — the absolute value of an indefinite norm form is exactly what
+the five facts cannot exclude, and only positivity of `deg` as a *quadratic* form
+(the geometric input) does. (Contrast the trace formula, which the available facts
+*do* give once the parallelogram law is assumed — that is
 `charPoly_of_multiplicative_parallelogram`.)
 
 **(b) The dual does not give it either, and here is why the obvious try fails.**
@@ -646,21 +792,72 @@ stub whose single declaration `WeierstrassCurve.weilPairing` is a `def` with a
 
 **What IS cheaply available, and is not enough.** `ker (ρ_ℓ ψ) = ker ψ ∩ W[ℓ]`, so
 by Cauchy's theorem in the finite group `ker ψ`, `det (ρ_ℓ ψ) = 0 ↔ ℓ ∣ deg ψ`.
-That pins the *vanishing* of the determinant but not its value. Likewise the
-`ℓ`-adic Smith-normal-form argument pins `v_ℓ (deg ψ) = v_ℓ (det T_ℓ ψ)` — a
-valuation, again not a value — so it does not shortcut the leaf either.
+That pins the *vanishing* of the determinant but not its value — which is exactly
+why it discharges the case `ℓ ∣ deg ψ` and no more; the `→` half is now PROVEN as
+`End.det_torsionRep_eq_zero_of_dvd` above, and is the reason this leaf may assume
+`¬ ℓ ∣ deg ψ`. Likewise the `ℓ`-adic Smith-normal-form argument pins
+`v_ℓ (deg ψ) = v_ℓ (det T_ℓ ψ)` — a valuation, again not a value — so it does not
+shortcut the leaf either.
+
+### FOURTH-PASS AUDIT (2026-07-27): where the reusable machinery actually stops
+
+The greps above were re-run and still return nothing; two further checks were added,
+and both are worth recording because they narrow the missing work rather than
+merely restating that it is missing.
+
+* **mathlib has no Weil pairing at all** — `grep -rln 'weilPairing\|WeilPairing'`
+  over `.lake/packages/mathlib/Mathlib/` returns **zero** files. So this is not a
+  "look upstream" situation; the pairing exists in this repository only.
+* **This tree's divisor-theoretic Miller machinery is only PARTLY char-generic, and
+  the boundary is sharp.** `WeilPairingDescent.lean` and `WeilPairingStageB.lean`
+  are stated over `{F} [Field F] [DecidableEq F] [IsAlgClosed F]` with `(p : F) ≠ 0`
+  — no finite-field hypothesis — and `exists_millerValue_alternating` and
+  `millerRatio_eval_pow_of_pullback` really do carry none. But
+  `exists_generic_pDivision_offset` and `exists_millerRatio_eval_translationChar`
+  take `{F₁ F₂ : Subfield F}` with `(F₁ : Set F).Finite`, and a **finite** subfield
+  containing the curve's coefficients exists only in characteristic `p`
+  (`exists_finite_subfield_containing`, which is where `exists_weilValueSetup_avoiding`
+  gets it). So the honest statement of the missing work is: the *genericity /
+  avoidance* layer must be redone over a characteristic-zero base — the alternation
+  and pullback cores transfer unchanged — and isogeny-naturality must then be added
+  on top. Reporting "the Weil pairing is finite-field-only here" without that split
+  overstates the job.
 
 **Sanity check of the statement.** At `ψ = [n]`, `ρ_ℓ ψ = n · id` has determinant
 `n²` and `deg [n] = # W[n] = n²` (`n_torsion_card`). At `ψ = 0` both sides are `0`
 (`Isogeny.degree_of_eq_zero`, and the determinant of the zero endomorphism of a
-rank-`2` module is `0`). Over `ℚ̄` with `End W ⊇ ℤ[i]` and `deg` the field norm,
-`ψ = i` has `deg = 1` and `ρ_ℓ i` is a square root of `−1` in `M₂(ZMod ℓ)`, of
-determinant `1`. -/
-theorem End.natCast_degree_eq_det_torsionRep [IsAlgClosed F] [CharZero F] [W.IsElliptic]
-    (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W) :
+rank-`2` module is `0`) — and that case is now PROVEN rather than merely checked,
+inside `End.det_torsionRep_eq_zero_of_dvd`. Over `ℚ̄` with `End W ⊇ ℤ[i]` and `deg`
+the field norm, `ψ = i` has `deg = 1` and `ρ_ℓ i` is a square root of `−1` in
+`M₂(ZMod ℓ)`, of determinant `1`. -/
+theorem End.natCast_degree_eq_det_torsionRep_of_not_dvd [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W)
+    (_hnd : ¬ ℓ ∣ Isogeny.degree (End.toIsogeny ψ)) :
     ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ZMod ℓ)
       = LinearMap.det (End.torsionRep W ℓ ψ) :=
   sorry
+
+/-- **`deg = det` on the `ℓ`-torsion, for every prime `ℓ`** — Silverman *AEC*
+III.8.6, in the form the parallelogram law below consumes:
+
+    deg ψ ≡ det (ρ_ℓ ψ)   (mod ℓ).
+
+Assembly of the two cases. When `ℓ ∣ deg ψ` both sides vanish — the left by
+`ZMod.natCast_eq_zero_iff`, the right by `End.det_torsionRep_eq_zero_of_dvd`
+(PROVEN above, Cauchy in `ker ψ`). Otherwise it is the leaf
+`End.natCast_degree_eq_det_torsionRep_of_not_dvd`.
+
+The hypothesis-free form is kept as the consumer-facing name because
+`End.degree_add_add_degree_sub` and everything above it were written against it,
+and because at the primes the consumer actually uses — larger than every degree in
+sight — the divisibility case is vacuous anyway. -/
+theorem End.natCast_degree_eq_det_torsionRep [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W) :
+    ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ZMod ℓ)
+      = LinearMap.det (End.torsionRep W ℓ ψ) := by
+  by_cases hdvd : ℓ ∣ Isogeny.degree (End.toIsogeny ψ)
+  · rw [(ZMod.natCast_eq_zero_iff _ _).2 hdvd, End.det_torsionRep_eq_zero_of_dvd ℓ ψ hdvd]
+  · exact End.natCast_degree_eq_det_torsionRep_of_not_dvd ℓ ψ hdvd
 
 /-- **The parallelogram law for the degree — PROVEN (2026-07-27).** Silverman *AEC*
 III.6.3: the degree is a quadratic form on `End W`.
@@ -744,11 +941,12 @@ first pass's "the parallelogram law alone does not suffice". Writing
 Only step 5 uses definiteness, and only steps 2–3 use multiplicativity — which is
 exactly the hypothesis the first pass's independence analysis did not have in view.
 
-**Stated `End`-free on purpose.** Everything mentioning `End W` reports `sorryAx`
-under `#print axioms` at carrier level (see `not_isRationalMap_leftInverse_frob`
-above for why), so a certificate for the mathematical content has to live in a
-statement that does not mention it. This one reports
-`[propext, Classical.choice, Quot.sound]`. -/
+**Stated `End`-free on purpose** — for readability, and because the statement is
+about any ring with a multiplicative parallelogram form, not about curves. This one
+reports `[propext, Classical.choice, Quot.sound]`. (An earlier version justified the
+`End`-free phrasing by the claim that everything mentioning `End W` reports
+`sorryAx` at carrier level. That justification is RETIRED and was stale; see the
+retraction on `not_isRationalMap_leftInverse_frob` above.) -/
 theorem charPoly_of_multiplicative_parallelogram {R : Type*} [Ring R] (q : R → ℤ)
     (hq0 : q 0 = 0) (hq1 : q 1 = 1)
     (hpar : ∀ a c : R, q (a + c) + q (a - c) = 2 * q a + 2 * q c)
@@ -957,7 +1155,7 @@ theorem End.self_add_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : E
 
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN in the third pass of 2026-07-27,
-over the file's one leaf `End.natCast_degree_eq_det_torsionRep` — through the
+over the file's one leaf `End.natCast_degree_eq_det_torsionRep_of_not_dvd` — through the
 trace formula `End.self_add_dualEnd`, proven over that same parallelogram law in
 the second pass. See the CUT note above for why the first pass believed the trace
 formula was independent.
@@ -1046,7 +1244,7 @@ satisfying it is unique.
 the defining property outright and `End.dualEnd_add` the additivity, itself PROVEN
 over the parallelogram law `End.degree_add_add_degree_sub` (itself PROVEN since the
 third pass of 2026-07-27, over the file's one leaf
-`End.natCast_degree_eq_det_torsionRep`), via the trace formula
+`End.natCast_degree_eq_det_torsionRep_of_not_dvd`), via the trace formula
 `End.self_add_dualEnd`. `[CharZero F]` is REQUIRED — without
 it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
 theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
@@ -1071,7 +1269,7 @@ the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN in the third pass of 2026-07-27,
-over the file's one leaf `End.natCast_degree_eq_det_torsionRep` — reached through
+over the file's one leaf `End.natCast_degree_eq_det_torsionRep_of_not_dvd` — reached through
 `End.self_add_dualEnd`, `End.dualEnd_add` and `End.exists_dual`. Note the `hsum` step below recovers the trace formula *from*
 additivity — which is why the two are equivalent given the rest, and why the
 first pass could see no way to get either without the other. (The direct route is
