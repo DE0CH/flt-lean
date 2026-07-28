@@ -2799,11 +2799,232 @@ three smaller leaves:
   the stable line.
 -/
 
-/-- **`T` — the Tate-curve half, SHARED by `A` and `B`** (sorry leaf; Tate's
-`v`-adic uniformisation — Silverman *ATAEC* V.3, V.5; Serre, Invent. Math. 15
-(1972), §5.4): at a prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e.
-`v(j) < 0`, the twelfth power of the isogeny character agrees on the inertia
-group at `v` with `χ^(12r)` for a single `r ∈ {0, 1}`.
+/-! ##### The two-way cut of `T` (CARRIED OUT 2026-07-27)
+
+`T` was one sorry carrying two quite different things: Tate's `v`-adic
+uniformisation of a curve with potentially multiplicative reduction (hard
+analysis and geometry, and the reason the leaf was called "the Tate curve"),
+and the reading-off of the isogeny character from that uniformisation (group
+theory in `Ωˣ/Qᶻ` plus the mod-`N` cyclotomic character).  They are now `T₁`
+and `T₂` below, and `T` itself is PROVEN glue over them.
+
+**What the cut buys, and why the intermediate statement is SHARPER than `T`.**
+`T₂`'s conclusion is `λ = χ·ψ` or `λ = ψ` for the quadratic twisting character
+`ψ` — the identity Serre actually states — rather than `λ¹² = χ^{12r}`.  The
+twelfth power is then pure bookkeeping: `ψ` lands in `ℤˣ`, so `ψ² = 1` by
+`Int.units_sq` and `ψ¹² = (ψ²)⁶ = 1`, which is what collapses the two cases to
+`r = 1` and `r = 0`.  Keeping `ψ` explicit — rather than discarding it as the
+old prose did — is also what keeps `T₂` TRUE without restricting to inertia:
+see the faithfulness note on `T₂`.
+
+**The machinery for `T₁` exists in this tree and should be reused.**
+`Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure` is SORRY-FREE and
+already proves the uniformisation `Ωˣ/q(E)ᶻ ≅ E(Ω)` Galois-equivariantly
+(`WeierstrassCurve.exists_tateEquivSepClosure`) for a curve in minimal form
+with SPLIT multiplicative reduction over a nonarchimedean local field.  The
+instance package making `k = adicCompletion ℚ v` such a field is
+`Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField`
+(`IsNonarchimedeanLocalField (HeightOneSpectrum.adicCompletion ℚ v)`), and
+`Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions`'s
+`exists_tame_quotient_of_nonsplit_padic_two` is a WORKED EXAMPLE of the whole
+assembly at `ℚ_[2]`: quadratic twist to split reduction
+(`exists_quadraticTwist_hasSplitMultiplicativeReduction`), minimal model,
+`exists_tateEquivSepClosure`, and the `±1`-twisted equivariance
+(`quadraticTwistPointEquiv_galois`, `quadraticCharacter`).  So what `T₁` needs
+beyond that example is exactly the step from POTENTIALLY multiplicative
+(`v(j) < 0`) to multiplicative-after-a-quadratic-twist — Tate's criterion,
+Silverman *ATAEC* V.5.3 — plus the change of local field from `ℚ_[v]` to
+`adicCompletion ℚ v`.
+
+**AVAILABILITY NOTE, established 2026-07-27 by `#check` in a scratch module
+importing ONLY this one — not by reading the header, which is misleading
+here.**  `TateSepClosure` does not appear in this file's import list, but it
+IS in its transitive `public` cone (through `Semistable.lean`), and the
+following are all in scope HERE, with no new import needed:
+
+* `WeierstrassCurve.exists_tateEquivSepClosure`,
+  `exists_rep_pow_eq_zpow_of_torsion`,
+  `WeierstrassCurve.exists_tateTorsionQuotient`,
+  `WeierstrassCurve.tate_inertia_unipotent` (`TateSepClosure.lean`);
+* `algebraRatAlgClosureAdic`, `algClosureEmbeddingRat`, `algClosureSigmaRat`,
+  `point_map_algClosureEmbeddingRat_comm` (`Semistable.lean`) — the adic
+  analogue of the `ℚ_[q]` transport used by `FreyConditions.lean`, i.e.
+  exactly the `ℚ̄ → Ω` plumbing `T₂` needs.
+
+What is genuinely NOT in scope is
+`WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`:
+`QuadraticTwists.SplitMultiplicativeReduction` is imported by this file with a
+bare `import`, which is not re-exported, so `T₁` (not `T₂`) will need that
+line promoted to `public import`.  That is a header change to a 52k-line
+module, so budget a full rebuild of it and its eight `public import`
+consumers.
+-/
+
+/-- **The two `ℚ`-algebra structures on `Ω = Kᵥᵃˡᵍ` agree** (PROVEN
+2026-07-27, and it is a TRAP worth one lemma): `Semistable.lean` installs the
+tower structure `ℚ → Kᵥ → Ω` as the non-instance `algebraRatAlgClosureAdic`
+and states all of its adic transport lemmas under `letI` with it, while the
+ambient instance found by typeclass search — the one `T₁` and `T₂` below are
+stated with, and the one `(E⁄(AlgebraicClosure ℚ)).Point` already uses — is
+the `CharZero` `ℚ`-algebra structure.
+
+The two are NOT definitionally equal (checked: `rfl` fails), so a proof of
+`T₂` that reaches for `point_map_algClosureEmbeddingRat_comm` or
+`algClosureSigmaRat` will hit a spurious instance mismatch.  They ARE equal,
+for the reason that makes `ℚ` initial: a ring homomorphism out of `ℚ` into a
+division ring is unique, so the two `algebraMap`s coincide and
+`Algebra.algebra_ext` finishes.  Rewriting with this lemma is what lets the
+two idioms be mixed. -/
+theorem algebraRatAlgClosureAdic_eq_inst
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    algebraRatAlgClosureAdic v =
+      (inferInstance :
+        Algebra ℚ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+  refine Algebra.algebra_ext _ _ fun r => ?_
+  exact congrArg
+    (fun f : ℚ →+* AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) => f r)
+    (Subsingleton.elim _ _)
+
+/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (sorry leaf;
+Silverman *ATAEC* V.3.1, V.5.3; Serre, Invent. Math. 15 (1972), §5.4): at a
+prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the curve
+`E` over the algebraic closure `Ω` of `Kᵥ = ℚ_v` is uniformised by `Ωˣ/Qᶻ` for
+a Galois-FIXED parameter `Q` of infinite order, equivariantly up to the sign
+of a quadratic twisting character `ψ : Γ Kᵥ →* ℤˣ`.
+
+The three conjuncts are, in order: `Q` has infinite order (equivalently
+`v(Q) ≠ 0`; this is what makes the exponent of `Q` a well-defined integer and
+is used four times in `T₂`); `Q` is fixed by every `σ ∈ Γ Kᵥ` (it comes from
+`Kᵥ` itself); and the uniformisation `e` intertwines the Galois action with
+the action on `Ωˣ/Qᶻ` TWISTED BY `ψ`.
+
+Why the twist cannot be dropped from the statement.  `E` need not itself have
+multiplicative reduction over `Kᵥ` — only potentially so — and the curve with
+split multiplicative reduction it becomes isomorphic to over `Ω` differs from
+it by a quadratic twist.  If `φ : E_Q → E` is that `Ω`-isomorphism then
+`φ^σ = φ ∘ [ψ(σ)]`, so `σ(φ P) = φ(ψ(σ)·σP) = ψ(σ)·φ(σP)`, which is exactly
+the displayed equivariance.  Over INERTIA the twist is invisible when it is
+unramified, but it need not be, and it is certainly not invisible over `Γ Kᵥ`
+— so it is carried, not discarded.
+
+Proof (not formalised).  See the section note above for the route: the whole
+assembly already exists at `ℚ_[2]` in `FreyConditions.lean`, and
+`TateSepClosure.lean` is sorry-free.  What is genuinely new here is Tate's
+criterion in the form "`v(j) < 0` implies some quadratic twist has split
+multiplicative reduction". -/
+theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
+    ∃ (Q : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ)
+      (ψ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (e : Additive ((AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸ Subgroup.zpowers Q) ≃+
+        ((E⁄(AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      Function.Injective (fun n : ℤ => Q ^ n) ∧
+      (∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat),
+        Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom Q = Q) ∧
+      (∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (u : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))ˣ),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
+          ((ψ σ : ℤ)) • e (Additive.ofMul
+            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :=
+  sorry
+
+/-- **`T₂` — the isogeny character read off a Tate parametrisation** (sorry
+leaf; Serre, Invent. Math. 15 (1972), §5.4, the dichotomy `μ_N` vs étale):
+given the twisted uniformisation of `T₁` and a Galois-stable line `⟨g⟩` of
+order `N` with character `lam`, the character is either `χ·ψ` or `ψ`.
+
+Proof (not formalised), and it is elementary given `T₁`.  Push `g` forward
+along `ι = AlgebraicClosure.map (algebraMap ℚ Kᵥ)` to `gΩ ∈ E(Ω)`;
+`Affine.Point.map_injective` keeps its order `N`, and
+`Field.absoluteGaloisGroup.lift_map` turns `hlam` into
+`σ(gΩ) = (lam (map σ)).val • gΩ` for every `σ ∈ Γ Kᵥ`.  Write
+`t := e.symm gΩ` and pick, by
+`exists_rep_pow_eq_zpow_of_torsion` (`TateSepClosure.lean`), a representative
+`u ∈ Ωˣ` of `t` with `u^N = Q^a`.  The dichotomy is on `a mod N`:
+
+* `a ≡ 0 (mod N)`, say `a = N·b`.  Then `z := u·Q^{-b}` satisfies `z^N = 1`
+  and has the same class as `u`, and `z` is a PRIMITIVE `N`-th root of unity
+  because `[z]` has order exactly `N`.  The equivariance of `T₁` reads
+  `[σz]^{ψσ} = [z]^m` with `m = (lam (map σ)).val`, i.e.
+  `z^{χ(σ)ψ(σ)} = z^m·Q^c`; taking `N`-th powers gives `Q^{cN} = 1`, so `c = 0`
+  by the injectivity conjunct, and primitivity gives `m ≡ χ(σ)ψ(σ)`.  This is
+  the `μ_N` case, `r = 1` downstream.
+* `a ≢ 0 (mod N)`.  Then `(σu)^{ψσ} = u^m·Q^c`; taking `N`-th powers and using
+  `σ(Q) = Q` gives `Q^{aψσ} = Q^{am + cN}`, so `a(ψσ − m) ≡ 0 (mod N)` by
+  injectivity, and `N` prime with `a ≢ 0` gives `m ≡ ψ(σ)`.  This is the étale
+  case, `r = 0` downstream.
+
+FAITHFULNESS NOTE.  The conclusion is quantified over
+`localInertiaGroup v` only because that is what `T` needs; the argument above
+proves it for every `σ ∈ Γ Kᵥ`, and it is TRUE in that wider form **because
+`ψ` is carried explicitly**.  It is the version with `ψ` discarded that is
+false outside inertia — an unramified twist is invisible to inertia and to
+nothing else.  A prover may freely strengthen the two disjuncts to range over
+all of `Γ Kᵥ`; do NOT instead drop `ψ`. -/
+theorem WeierstrassCurve.isogenyCharacter_eq_cyclotomic_mul_or_eq_of_tateParametrisation
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {v : ℕ} (hv : v.Prime)
+    (Q : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ)
+    (ψ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+    (e : Additive ((AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ ⧸ Subgroup.zpowers Q) ≃+
+      ((E⁄(AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)))).Point)
+    (hQinj : Function.Injective (fun n : ℤ => Q ^ n))
+    (hQfix : ∀ σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom Q = Q)
+    (he : ∀ (σ : Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (u : (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))ˣ),
+      WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
+        ((ψ σ : ℤ)) • e (Additive.ofMul
+          ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :
+    (∀ σ ∈ localInertiaGroup hv.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) *
+        Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ∨
+    (∀ σ ∈ localInertiaGroup hv.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) :=
+  sorry
+
+/-- **`T` — the Tate-curve half, SHARED by `A` and `B`** (DECOMPOSED and
+PROVEN 2026-07-27 from `T₁` and `T₂` above; Tate's `v`-adic uniformisation —
+Silverman *ATAEC* V.3, V.5; Serre, Invent. Math. 15 (1972), §5.4): at a prime
+`v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the twelfth
+power of the isogeny character agrees on the inertia group at `v` with
+`χ^(12r)` for a single `r ∈ {0, 1}`.
 
 **Why this leaf exists** (cut made 2026-07-27).  The Tate-curve description
 of the isogeny character was previously duplicated: `A` needed it at `N` and
@@ -2814,24 +3035,24 @@ What is left in `A` is then exactly Serre's tame-inertia theory plus
 Raynaud's classification, and what is left in `B` is exactly
 Néron–Ogg–Shafarevich; neither leaf mentions Tate curves any more.
 
-Proof (not formalised).  Over `ℚ_v` with `v(j) < 0` the curve is a quadratic
-twist by some character `ψ` of a Tate curve `E_Q : ℚ̄_v^*/Q^ℤ`; `ψ² = 1`.
-The `N`-torsion of a Tate curve sits in an exact sequence
-`0 → μ_N → E_Q[N] → ℤ/N → 0`, and a Galois-stable subgroup of order `N` is
-either `μ_N` or maps isomorphically to the quotient `ℤ/N`.  In the first case
-the character on it is `χ·ψ`, so `λ¹² = χ¹²ψ¹² = χ¹²` and `r = 1`.  In the
-second the subgroup is generated by a point `Q^{1/N}ζ^i`, whose stability
-forces `Q^{1/N} ∈ ℚ_v^{nr}`, so the character is `ψ` times something trivial
-on inertia and `λ¹² = 1`, i.e. `r = 0`.  Both cases use `ψ¹² = (ψ²)⁶ = 1`.
+The proof is now three lines of bookkeeping over `T₂`'s dichotomy.  `T₂` gives
+`λ = χ·ψ` or `λ = ψ` with `ψ` valued in `ℤˣ`; `Int.units_sq` makes `ψ²= 1`,
+hence `ψ¹² = (ψ²)⁶ = 1`, and the two cases become `λ¹² = χ¹²` (take `r = 1`)
+and `λ¹² = 1 = χ⁰` (take `r = 0`).
+
+`hN19` is deliberately unused (hence underscored): `19 < N` is what `A₀` and
+`B₀` need, and the Tate half of the cluster never sees it.  It is kept in the
+signature because both consumers pass it positionally.
 
 Note the conclusion is quantified over `localInertiaGroup v` and NOT over
 `Γ ℚ`: an unramified twist is invisible to inertia, which is precisely why
 the quadratic character `ψ` may be discarded here and may NOT be discarded
-globally.  Widening the quantifier would make the leaf false. -/
+globally.  Widening the quantifier would make the leaf false — but see `T₂`,
+whose statement KEEPS `ψ` and is therefore true over all of `Γ Kᵥ`. -/
 theorem WeierstrassCurve.exists_isogenyTateExponent_of_padicValRat_j_neg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN19 : 19 < N)
+    (hN : N.Prime) (_hN19 : 19 < N)
     (hg : addOrderOf g = N)
     (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
     (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -2847,8 +3068,29 @@ theorem WeierstrassCurve.exists_isogenyTateExponent_of_padicValRat_j_neg
           (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
             (Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r) :=
-  sorry
+                hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r) := by
+  classical
+  obtain ⟨Q, ψ, e, hQinj, hQfix, he⟩ :=
+    E.exists_tateParametrisation_of_padicValRat_j_neg hv hj
+  -- the twisting character is quadratic, so its twelfth power is trivial
+  have hψ12 : ∀ σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      (Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ^ 12 = 1 := by
+    intro σ
+    have h1 : (Units.map (Int.castRingHom (ZMod N)).toMonoidHom (ψ σ)) ^ 2 = 1 := by
+      rw [← map_pow, Int.units_sq, map_one]
+    rw [show (12 : ℕ) = 2 * 6 from rfl, pow_mul, h1, one_pow]
+  rcases E.isogenyCharacter_eq_cyclotomic_mul_or_eq_of_tateParametrisation
+      g hN hg lam hlam hv Q ψ e hQinj hQfix he with hcase | hcase
+  · -- the stable line is `μ_N`: `λ = χ·ψ`, so `λ¹² = χ¹²ψ¹² = χ¹²`
+    refine ⟨1, le_refl 1, ?_⟩
+    intro σ hσ
+    rw [hcase σ hσ, mul_pow, hψ12 σ, mul_one, mul_one]
+  · -- the stable line is étale: `λ = ψ`, so `λ¹² = 1 = χ⁰`
+    refine ⟨0, Nat.zero_le 1, ?_⟩
+    intro σ hσ
+    rw [hcase σ hσ, hψ12 σ, Nat.mul_zero, pow_zero]
 
 /-- **`A₀` — Serre–Raynaud local data at `N`, POTENTIALLY GOOD case** (sorry
 leaf; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF
