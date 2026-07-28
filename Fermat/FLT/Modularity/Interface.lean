@@ -2965,6 +2965,319 @@ theorem eigenform_span_sup_oldCuspSpace_eq_top {M : ℕ} (hM : 0 < M) :
       ⊔ oldCuspSpace M = ⊤ :=
   sorry
 
+/-! #### The Hecke-eigensystem decomposition of leaf B (2026-07-27)
+
+Leaf B below — the `Aut(ℂ)`-conjugate of an eigenform exists at the same
+level — is DECOMPOSED here into two strictly weaker statements along an
+axis none of the audits in this file had searched: not the `ℚ`-STRUCTURE
+axis (where `rationalCuspForms_span_eq_top`'s own audit shows every
+candidate is equivalent, DEAD END 8), but the **SPECTRAL** axis, which
+factors the leaf through the Hecke algebra `𝕋 = heckeSubring M` already
+built above:
+
+1. `exists_intPoly_spectrum_heckeSubring` — ARITHMETIC. The set of
+   eigenvalues of a single Hecke operator on `S₂(Γ₀(M))` is the root set
+   of a nonzero INTEGER polynomial. Classically: `𝕋` preserves an
+   integral structure (`H₁(X₀(M), ℤ)`, or `S₂(Γ₀(M); ℤ)`), so every
+   `T ∈ 𝕋` has characteristic polynomial in `ℤ[X]`, whose root set is
+   exactly the spectrum.
+2. `exists_forall_apply_eq_smul_of_ringHom` — PURE LINEAR ALGEBRA over
+   `ℂ`, with NO arithmetic content: a ring homomorphism out of a
+   commutative subring of `End_ℂ(V)`, `V` finite dimensional, all of
+   whose values are eigenvalues of the corresponding operator, is
+   realized by a single JOINT eigenvector.
+
+The three proven bridges between them are `heckeEndo_apply_of_isWeightTwoEigenform`
+(the coefficient identities make an eigenform an actual eigenVECTOR of
+every `T_q`), `heckeSubring_apply_of_isWeightTwoEigenform` (hence of every
+`T ∈ 𝕋`, by a subring-closure argument) and
+`exists_ringHom_heckeSubring_of_isWeightTwoEigenform` (so the eigenform
+determines a ring homomorphism `λ_f : 𝕋 → ℂ` with `λ_f(T_m) = a_m(f)`,
+through `exists_mem_heckeSubring_qCoeff`). Composing `λ_f` with `σ` gives
+another ring homomorphism `𝕋 → ℂ`; leaf 1 says each of its values is
+still an eigenvalue, leaf 2 realizes the whole system at once, and the
+normalization `a₁ ≠ 0` is forced by right-nondegeneracy of the Hecke
+pairing.
+
+WHY THIS IS NOT DEAD END 8 IN DISGUISE, stated so the next owner can
+check it rather than take it on trust. Leaf 1 is an assertion about the
+spectrum of ONE operator at a time and says nothing about simultaneity;
+leaf 2 is arithmetic-free and would hold verbatim over any algebraically
+closed field. Neither implies leaf B on its own: without leaf 1 the
+conjugate system need not consist of eigenvalues at all (the standard
+`𝕋 = ℤ[√2] ⊆ ℂ = End_ℂ(S₂)`, `D = 1` counterexample of DEAD END 6 fails
+leaf 1 precisely), and without leaf 2 knowing each value separately is an
+eigenvalue gives no joint eigenvector. It is FAIR to say that leaf 1
+together with leaf 2 is, by the chain of implications this file records,
+of the same ultimate depth as the `ℚ`-form of `𝕋`; what the cut buys is
+that the arithmetic-free half is separated out and independently
+attackable, and that the arithmetic half is now the statement the
+literature actually proves (integrality of Hecke characteristic
+polynomials) rather than a `ℚ`-structure on the space of forms. -/
+
+/-- **A NORMALIZED EIGENFORM IS AN EIGENVECTOR OF `T_q`** (PROVEN,
+2026-07-27): `T_q f = a_q(f) · f` for every prime `q`.
+
+This is the operator form of `hecke_eigen_coeff_identity` above: that
+lemma collapses the coefficient formula `qCoeff_heckeEndo` for `T_q f`
+to `a_q(f)·a_m(f)` at every `m`, and the `q`-expansion principle
+`cuspForm_eq_of_forall_qCoeff_eq` turns an identity of coefficient
+systems into an identity of forms. It is the bridge between the
+COEFFICIENT carrier `IsWeightTwoEigenform` (Diamond–Shurman Proposition
+5.8.5) and the Hecke algebra `𝕋` built above, and it is what lets the
+decomposition of leaf B be phrased spectrally at all. -/
+theorem heckeEndo_apply_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL M) 2} (hf : IsWeightTwoEigenform M f)
+    {q : ℕ} (hq : q.Prime) :
+    heckeEndo M q f = qCoeff M f q • f := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  have hlin : qCoeff M (qCoeff M f q • f) m = qCoeff M f q * qCoeff M f m := by
+    have h := (qCoeffL M m).map_smul (qCoeff M f q) f
+    simp only [qCoeffL_apply, smul_eq_mul] at h
+    exact h
+  rw [qCoeff_heckeEndo hM hq f m, hecke_eigen_coeff_identity hf hq m, hlin]
+
+/-- **EVERY HECKE OPERATOR ACTS ON A NORMALIZED EIGENFORM BY A SCALAR,
+AND THAT SCALAR IS `a₁(T f)`** (PROVEN, 2026-07-27).
+
+The set `{U ∈ End_ℂ(S₂) | ∃ c, U f = c • f}` is a SUBRING — closure
+under multiplication is where `f` being a common eigenvector matters,
+`(U V) f = U (d • f) = d • (U f) = (d c) • f` — and it contains every
+generator `T_q` of `𝕋` by `heckeEndo_apply_of_isWeightTwoEigenform`
+above, so `Subring.closure_le` puts all of `𝕋` inside it. The scalar is
+then pinned by evaluating the first coefficient and using `a₁(f) = 1`.
+No commutativity of `𝕋` is used. -/
+theorem heckeSubring_apply_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL M) 2} (hf : IsWeightTwoEigenform M f)
+    {T : Module.End ℂ (CuspForm (Gamma0GL M) 2)} (hT : T ∈ heckeSubring M) :
+    T f = qCoeff M (T f) 1 • f := by
+  have hR : ∃ c : ℂ, T f = c • f := by
+    let R : Subring (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+      { carrier := {U | ∃ c : ℂ, U f = c • f}
+        zero_mem' := ⟨0, by simp⟩
+        one_mem' := ⟨1, by simp⟩
+        add_mem' := by
+          rintro a b ⟨c, hc⟩ ⟨d, hd⟩
+          exact ⟨c + d, by rw [LinearMap.add_apply, hc, hd, add_smul]⟩
+        neg_mem' := by
+          rintro a ⟨c, hc⟩
+          refine ⟨-c, ?_⟩
+          rw [LinearMap.neg_apply, hc]
+          -- `rw [neg_smul]` does NOT fire here: under this section's `open`s the
+          -- `SMul ℂ (CuspForm …)` in the goal is the direct `CuspForm` instance
+          -- rather than the `Module`-derived one, so the pattern `-?g • ?z` is
+          -- not found syntactically.  `exact` closes it up to defeq.
+          exact (neg_smul c f).symm
+        mul_mem' := by
+          rintro a b ⟨c, hc⟩ ⟨d, hd⟩
+          exact ⟨c * d, by
+            rw [Module.End.mul_apply, hd, map_smul, hc, smul_smul, mul_comm]⟩ }
+    have hle : heckeSubring M ≤ R :=
+      Subring.closure_le.mpr (by
+        rintro U ⟨q, hq, rfl⟩
+        exact ⟨qCoeff M f q, heckeEndo_apply_of_isWeightTwoEigenform hM hf hq⟩)
+    exact hle hT
+  obtain ⟨c, hc⟩ := hR
+  have h1 : qCoeff M (T f) 1 = c := by
+    have hlin : qCoeff M (c • f) 1 = c * qCoeff M f 1 := by
+      have h := (qCoeffL M 1).map_smul c f
+      simp only [qCoeffL_apply, smul_eq_mul] at h
+      exact h
+    rw [hc, hlin, hf.qCoeff_one, mul_one]
+  rw [h1]
+  exact hc
+
+/-- **THE EIGENSYSTEM OF A NORMALIZED EIGENFORM, AS A RING HOMOMORPHISM
+`𝕋 → ℂ`** (PROVEN, 2026-07-27): `T ↦ a₁(T f)` is a ring homomorphism on
+the Hecke algebra, and `T f = λ_f(T) · f` for every `T ∈ 𝕋`.
+
+Everything is read off `heckeSubring_apply_of_isWeightTwoEigenform`
+above: additivity is linearity of `a₁`, multiplicativity is
+`(S T) f = λ_f(T) λ_f(S) f` (so it needs no commutativity of `𝕋` — the
+two scalars are complex numbers and commute), `λ_f(1) = a₁(f) = 1` is the
+normalization, and `λ_f(0) = 0` is `qCoeff_zero_cuspForm`.
+
+Combined with `exists_mem_heckeSubring_qCoeff` above this says the
+`q`-EXPANSION COEFFICIENTS OF `f` ARE VALUES OF `λ_f`: for each `m` the
+operator `T_m ∈ 𝕋` with `a_m(g) = a₁(T_m g)` satisfies
+`λ_f(T_m) = a₁(T_m f) = a_m(f)`. That is the identification that turns
+leaf B into a statement about eigensystems. -/
+theorem exists_ringHom_heckeSubring_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL M) 2} (hf : IsWeightTwoEigenform M f) :
+    ∃ lam : heckeSubring M →+* ℂ,
+      ∀ T : heckeSubring M,
+        (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = lam T • f := by
+  have key : ∀ T : heckeSubring M,
+      (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f
+        = qCoeff M ((T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f) 1 • f :=
+    fun T => heckeSubring_apply_of_isWeightTwoEigenform hM hf T.2
+  have hval : ∀ (T : heckeSubring M) (c : ℂ),
+      (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = c • f →
+      qCoeff M ((T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f) 1 = c := by
+    intro T c h
+    have hlin : qCoeff M (c • f) 1 = c * qCoeff M f 1 := by
+      have h' := (qCoeffL M 1).map_smul c f
+      simp only [qCoeffL_apply, smul_eq_mul] at h'
+      exact h'
+    rw [h, hlin, hf.qCoeff_one, mul_one]
+  refine ⟨{ toFun := fun T => qCoeff M ((T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f) 1
+            map_one' := ?_
+            map_mul' := ?_
+            map_zero' := ?_
+            map_add' := ?_ }, key⟩
+  · exact hval 1 1 (by rw [OneMemClass.coe_one, Module.End.one_apply, one_smul])
+  · intro S T
+    obtain ⟨cS, hcS⟩ : ∃ c : ℂ, (S : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = c • f :=
+      ⟨_, key S⟩
+    obtain ⟨cT, hcT⟩ : ∃ c : ℂ, (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = c • f :=
+      ⟨_, key T⟩
+    show qCoeff M (((S * T : heckeSubring M) :
+      Module.End ℂ (CuspForm (Gamma0GL M) 2)) f) 1 = _
+    rw [hval S cS hcS, hval T cT hcT]
+    refine hval (S * T) (cS * cT) ?_
+    rw [MulMemClass.coe_mul, Module.End.mul_apply, hcT, map_smul, hcS, smul_smul,
+      mul_comm]
+  · exact hval 0 0 (by rw [ZeroMemClass.coe_zero, LinearMap.zero_apply, zero_smul])
+  · intro S T
+    obtain ⟨cS, hcS⟩ : ∃ c : ℂ, (S : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = c • f :=
+      ⟨_, key S⟩
+    obtain ⟨cT, hcT⟩ : ∃ c : ℂ, (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) f = c • f :=
+      ⟨_, key T⟩
+    show qCoeff M (((S + T : heckeSubring M) :
+      Module.End ℂ (CuspForm (Gamma0GL M) 2)) f) 1 = _
+    rw [hval S cS hcS, hval T cT hcT]
+    refine hval (S + T) (cS + cT) ?_
+    rw [AddMemClass.coe_add, LinearMap.add_apply, hcS, hcT, add_smul]
+
+/-- **LEAF B1 — THE SPECTRUM OF A HECKE OPERATOR IS `ℚ`-RATIONAL** (sorry
+leaf, cut 2026-07-27 out of `exists_eigenform_ringEquiv_conj` below): for
+every `T` in the Hecke algebra `𝕋 = heckeSubring M` there is a NONZERO
+integer polynomial `p` whose complex roots are EXACTLY the eigenvalues of
+`T` on `S₂(Γ₀(M))`.
+
+THE CLASSICAL STATEMENT, and it is the one the literature proves rather
+than a repackaging of the rationality theorem: `𝕋` preserves an integral
+structure on the space it acts on — `H₁(X₀(M), ℤ)` through
+Eichler–Shimura, or `S₂(Γ₀(M); ℤ)` through the integral model `X₀(M)/ℤ`
+(Diamond–Shurman §6.5 and Exercise 6.5.4; Shimura, *Introduction to the
+Arithmetic Theory of Automorphic Functions*, Ch. 3; Katz, *p-adic
+properties of modular schemes and modular forms* §1.6) — so the
+CHARACTERISTIC POLYNOMIAL of every `T ∈ 𝕋` lies in `ℤ[X]`, and over `ℂ`
+its root set is exactly the set of eigenvalues. Take `p` to be that
+characteristic polynomial; it is monic, hence nonzero. The statement is
+phrased through the ROOT SET rather than through `LinearMap.charpoly`
+because finite dimensionality of `S₂(Γ₀(M))` arrives here as a locally
+bound instance (`cuspForm_finiteDimensional`) and is not available in a
+top-level statement.
+
+WHAT IT IS USED FOR, and hence what a weaker version must still supply:
+only that the eigenvalue set is stable under every ring automorphism of
+`ℂ` (`exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring` immediately
+below). The BICONDITIONAL is what carries that: `→` says an eigenvalue is
+a root, `←` says a root is an eigenvalue, and `σ` permutes the roots of a
+polynomial it fixes coefficientwise. A one-directional version
+("every eigenvalue is a root of a fixed integer polynomial") is strictly
+weaker and USELESS here — it is already implied by `isIntegral_heckeEndo`
+far below, which is why that declaration does not close this leaf.
+
+SOUNDNESS. `0 < M` is inherited from the consumer and enters only through
+`heckeSubring` being non-junk. The statement is TRUE and NON-VACUOUS at
+every level: at genus-zero levels `S₂(Γ₀(M)) = 0`, there are no nonzero
+`g`, and `p = 1` discharges it with both sides false; at `M = 11`,
+`D = 1` and `T_2` acts by `−2`, so `p = X + 2` and the statement has
+content. Note the leaf does NOT assert that the polynomial is the
+characteristic polynomial, nor anything about multiplicities — only the
+root SET is pinned, which is all the conjugation argument consumes and is
+the weakest form that still transports along `σ`. -/
+theorem exists_intPoly_spectrum_heckeSubring {M : ℕ} (hM : 0 < M)
+    {T : Module.End ℂ (CuspForm (Gamma0GL M) 2)} (hT : T ∈ heckeSubring M) :
+    ∃ p : Polynomial ℤ, p ≠ 0 ∧ ∀ c : ℂ,
+      (∃ g : CuspForm (Gamma0GL M) 2, g ≠ 0 ∧ T g = c • g) ↔
+        Polynomial.eval₂ (Int.castRingHom ℂ) c p = 0 :=
+  sorry
+
+/-- **THE SPECTRUM OF A HECKE OPERATOR IS `Aut(ℂ)`-STABLE** (PROVEN,
+2026-07-27, over leaf B1 above): if `c` is an eigenvalue of `T ∈ 𝕋` on
+`S₂(Γ₀(M))` and `σ` is any ring automorphism of `ℂ`, then so is `σ c`.
+
+Immediate from B1: `c` is a root of an integer polynomial `p`, a ring
+homomorphism `ℂ → ℂ` fixes integer casts (`RingHom.eq_intCast'`), so
+`σ c` is a root of the same `p`, and B1's converse direction turns that
+back into an eigenvalue. This is the ONLY consequence of B1 that the
+decomposition uses. -/
+theorem exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring {M : ℕ} (hM : 0 < M)
+    {T : Module.End ℂ (CuspForm (Gamma0GL M) 2)} (hT : T ∈ heckeSubring M)
+    (σ : ℂ ≃+* ℂ) {c : ℂ}
+    (hc : ∃ g : CuspForm (Gamma0GL M) 2, g ≠ 0 ∧ T g = c • g) :
+    ∃ g : CuspForm (Gamma0GL M) 2, g ≠ 0 ∧ T g = σ c • g := by
+  obtain ⟨p, -, hp⟩ := exists_intPoly_spectrum_heckeSubring hM hT
+  refine (hp (σ c)).mpr ?_
+  have hroot : Polynomial.eval₂ (Int.castRingHom ℂ) c p = 0 := (hp c).mp hc
+  have hhom := Polynomial.hom_eval₂ p (Int.castRingHom ℂ) (σ : ℂ →+* ℂ) c
+  rw [hroot, map_zero] at hhom
+  rw [RingHom.eq_intCast' ((σ : ℂ →+* ℂ).comp (Int.castRingHom ℂ))] at hhom
+  exact hhom.symm
+
+/-- **LEAF B2 — A CHARACTER WHOSE VALUES ARE EIGENVALUES IS REALIZED BY A
+JOINT EIGENVECTOR** (sorry leaf, cut 2026-07-27 out of
+`exists_eigenform_ringEquiv_conj` below): let `R` be a COMMUTATIVE
+subring of `End_ℂ(V)` with `V` a finite-dimensional complex vector space,
+and `μ : R →+* ℂ` a ring homomorphism such that for EACH `T ∈ R`
+separately the number `μ T` is an eigenvalue of `T`. Then there is a
+SINGLE nonzero `v ∈ V` with `T v = μ(T) · v` for every `T ∈ R`.
+
+CONTAINS NO ARITHMETIC, and that is the point of cutting here: the
+statement is about a commutative algebra of operators over an
+algebraically closed field and would read identically over any such
+field. It is stated over an abstract `V` per this development's standing
+rule that helpers be generic; at the use site `V = S₂(Γ₀(M))`,
+`R = heckeSubring M` (commutative by `heckeSubring_mul_comm`), and finite
+dimensionality is `cuspForm_finiteDimensional`.
+
+PROOF PLAN, worked out and left unwritten; the pin has the hard half.
+
+1. *Simultaneous triangularization.* `Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`
+   (`Mathlib/LinearAlgebra/Eigenspace/Pi.lean`) applied to the family
+   `(T : R) ↦ (T : End ℂ V)` — pairwise commuting by hypothesis, each
+   triangularizable by `Module.End.iSup_maxGenEigenspace_eq_top` over the
+   algebraically closed `ℂ` — gives
+   `⨆ χ : R → ℂ, ⨅ T, maxGenEigenspace T (χ T) = ⊤`.
+2. *The systems that occur are characters.* On a nonzero
+   `W_χ = ⨅ T, maxGenEigenspace T (χ T)` every `T − χ(T)` is nilpotent,
+   and commuting nilpotents are closed under sums and products, so
+   `χ : R → ℂ` is itself a ring homomorphism.
+3. *Every eigenvalue is some `χ(T)`.* `V` is the direct sum of the
+   `W_χ`, each `T`-stable; an eigenvector for `c` has a nonzero component
+   in some `W_χ`, on which `(T − χ(T))` is nilpotent and acts as
+   `c − χ(T)`, forcing `c = χ(T)`. Only finitely many `χ` occur, by
+   independence of the `W_χ` in a finite-dimensional space.
+4. *Pigeonhole, and this is the step that uses `R` being a RING rather
+   than a set.* The hypothesis gives, for each `T ∈ R`, some occurring
+   `χ` with `μ(T) = χ(T)`. If `μ ≠ χ_i` for every one of the finitely
+   many occurring `χ_1, …, χ_k`, pick `T_i` with
+   `(μ − χ_i)(T_i) ≠ 0`; then `n ↦ ∏_i (μ − χ_i)(∑_j n_j T_j)` is a
+   product of nonzero linear forms in `n ∈ ℤ^k`, hence a nonzero
+   polynomial, yet it vanishes at every integer point — contradiction.
+   So `μ = χ` for some occurring `χ`.
+5. *From generalized to genuine.* On `W_χ ≠ ⊥` the operators
+   `T − μ(T)` are commuting nilpotents, so the ideal they generate acts
+   nilpotently; taking the last nonzero power applied to `W_χ` produces a
+   vector annihilated by all of them, which is the required joint
+   eigenvector.
+
+SOUNDNESS: no positivity or nondegeneracy hypothesis is needed —
+faithfulness of the action is automatic because `R` is a subring of
+`End_ℂ(V)` rather than an abstract algebra with a module structure. At
+`V = 0` the hypothesis is unsatisfiable (there is no `v ≠ 0`) and the
+statement is vacuously true, which is the correct behaviour at
+genus-zero levels. -/
+theorem exists_forall_apply_eq_smul_of_ringHom {V : Type*} [AddCommGroup V]
+    [Module ℂ V] [FiniteDimensional ℂ V] (R : Subring (Module.End ℂ V))
+    (hcomm : ∀ S ∈ R, ∀ T ∈ R, S * T = T * S) (μ : R →+* ℂ)
+    (hμ : ∀ T : R, ∃ v : V, v ≠ 0 ∧ (T : Module.End ℂ V) v = μ T • v) :
+    ∃ v : V, v ≠ 0 ∧ ∀ T : R, (T : Module.End ℂ V) v = μ T • v :=
+  sorry
+
 /-- **LEAF B OF THE NEW-PART RATIONALITY CUT — THE `Aut(ℂ)`-CONJUGATE OF
 AN EIGENFORM EXISTS AT THE SAME LEVEL** (sorry leaf, cut 2026-07-27 out
 of `rationalCuspForms_sup_oldCuspSpace_eq_top` below): for every ring
@@ -3009,11 +3322,85 @@ pin does not have. Nothing cheaper is known to the audits in this file.
 
 SOUNDNESS: `0 < M` is inherited from the consumer. The eigenform
 hypothesis is genuinely used by the consumer (it is what makes the
-conjugate land back in the spanning set) and is not decorative here. -/
+conjugate land back in the spanning set) and is not decorative here.
+
+**DECOMPOSED 2026-07-27 — this is now a PROVEN assembly** over the two
+leaves `exists_intPoly_spectrum_heckeSubring` (B1, arithmetic) and
+`exists_forall_apply_eq_smul_of_ringHom` (B2, arithmetic-free linear
+algebra) declared just above, through the three proven bridges
+`heckeEndo_apply_of_isWeightTwoEigenform`,
+`heckeSubring_apply_of_isWeightTwoEigenform` and
+`exists_ringHom_heckeSubring_of_isWeightTwoEigenform`. The "WHERE THE
+CONTENT SITS" paragraph above is kept as the record of the two CLASSICAL
+routes, but neither is the route taken: the cut goes through the Hecke
+algebra `𝕋` that this file already builds, and the modular-curve geometry
+now sits entirely inside B1, in the form the literature proves it
+(integrality of Hecke characteristic polynomials) rather than as a
+`ℚ`-structure on the space of forms.
+
+ASSEMBLY. `λ_f : 𝕋 → ℂ` is the eigensystem of `f`
+(`exists_ringHom_heckeSubring_of_isWeightTwoEigenform`), and
+`μ := σ ∘ λ_f` is again a ring homomorphism. For each `T ∈ 𝕋` the value
+`λ_f(T)` is an eigenvalue of `T` — witnessed by `f` itself, which is
+nonzero because `a₁(f) = 1` — so `μ(T) = σ(λ_f(T))` is an eigenvalue too
+by B1's corollary
+`exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring`. B2 then realizes the
+whole system at once by a single `g₀ ≠ 0`. Its first coefficient is
+nonzero: `a_m(g₀) = a₁(T_m g₀) = μ(T_m)·a₁(g₀)` for the operators `T_m`
+of `exists_mem_heckeSubring_qCoeff`, so `a₁(g₀) = 0` would kill every
+coefficient and hence `g₀` itself. Rescaling by `a₁(g₀)⁻¹` gives
+`a_m(g) = μ(T_m) = σ(λ_f(T_m)) = σ(a_m(f))`, which is the conclusion. The
+conjugate produced is automatically a normalized eigenform, by
+`isWeightTwoEigenform_of_qCoeff_ringEquiv` above — the assembly does not
+have to arrange it. -/
 theorem exists_eigenform_ringEquiv_conj {M : ℕ} (hM : 0 < M) (σ : ℂ ≃+* ℂ)
     {f : CuspForm (Gamma0GL M) 2} (hf : IsWeightTwoEigenform M f) :
-    ∃ g : CuspForm (Gamma0GL M) 2, ∀ m : ℕ, qCoeff M g m = σ (qCoeff M f m) :=
-  sorry
+    ∃ g : CuspForm (Gamma0GL M) 2, ∀ m : ℕ, qCoeff M g m = σ (qCoeff M f m) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  have hlin : ∀ (c : ℂ) (g : CuspForm (Gamma0GL M) 2) (m : ℕ),
+      qCoeff M (c • g) m = c * qCoeff M g m := by
+    intro c g m
+    have h := (qCoeffL M m).map_smul c g
+    simp only [qCoeffL_apply, smul_eq_mul] at h
+    exact h
+  obtain ⟨lam, hlam⟩ := exists_ringHom_heckeSubring_of_isWeightTwoEigenform hM hf
+  have hf0 : f ≠ 0 := by
+    intro h
+    have h1 := hf.qCoeff_one
+    rw [h, qCoeff_zero_cuspForm] at h1
+    exact zero_ne_one h1
+  set μ : heckeSubring M →+* ℂ := (σ : ℂ →+* ℂ).comp lam with hμdef
+  have hμval : ∀ T : heckeSubring M, μ T = σ (lam T) := by
+    intro T
+    rw [hμdef]
+    rfl
+  have hspec : ∀ T : heckeSubring M, ∃ v : CuspForm (Gamma0GL M) 2, v ≠ 0 ∧
+      (T : Module.End ℂ (CuspForm (Gamma0GL M) 2)) v = μ T • v := by
+    intro T
+    rw [hμval T]
+    exact exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring hM T.2 σ ⟨f, hf0, hlam T⟩
+  obtain ⟨g0, hg0ne, hg0⟩ :=
+    exists_forall_apply_eq_smul_of_ringHom (heckeSubring M)
+      (fun _ hS _ hT => heckeSubring_mul_comm hM hS hT) μ hspec
+  have hcoef : ∀ (m : ℕ) (T : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+      (hT : T ∈ heckeSubring M),
+      (∀ g : CuspForm (Gamma0GL M) 2, qCoeff M g m = qCoeff M (T g) 1) →
+      qCoeff M g0 m = μ ⟨T, hT⟩ * qCoeff M g0 1 := by
+    intro m T hT hTe
+    rw [hTe g0, show T g0 = μ ⟨T, hT⟩ • g0 from hg0 ⟨T, hT⟩, hlin]
+  have hone : qCoeff M g0 1 ≠ 0 := by
+    intro h0
+    refine hg0ne (cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_)
+    obtain ⟨T, hT, hTe⟩ := exists_mem_heckeSubring_qCoeff hM m
+    rw [qCoeff_zero_cuspForm, hcoef m T hT hTe, h0, mul_zero]
+  refine ⟨(qCoeff M g0 1)⁻¹ • g0, fun m => ?_⟩
+  obtain ⟨T, hT, hTe⟩ := exists_mem_heckeSubring_qCoeff hM m
+  have hfm : qCoeff M f m = lam ⟨T, hT⟩ := by
+    rw [hTe f, show T f = lam ⟨T, hT⟩ • f from hlam ⟨T, hT⟩, hlin, hf.qCoeff_one,
+      mul_one]
+  rw [hlin, hcoef m T hT hTe, mul_comm (μ ⟨T, hT⟩) (qCoeff M g0 1),
+    ← mul_assoc, inv_mul_cancel₀ hone, one_mul, hfm, hμval ⟨T, hT⟩]
 
 /-- **THE ARITHMETIC RESIDUE OF SHIMURA'S RATIONALITY THEOREM:
 RATIONALITY ON THE NEW PART** (DECOMPOSED 2026-07-27; formerly a sorry
