@@ -112,7 +112,47 @@ local ring with the maximal ideal-adic topology) having finite residue field of
 characteristic `ℓ > 2`, and let `ρ : Gal(Qbar/Q) → GL_2(R)` be a continuous 2-dimensional
 representation. We say that `ρ` is *hardly ramified* if it has cyclotomic determinant, is
 unramified outside `2ℓ`, flat at `ℓ` and upper-triangular at 2 with a 1-dimensional quotient which
-is unramified and whose square is trivial. -/
+is unramified and whose square is trivial.
+
+# `IsHardlyRamified` DOES **NOT** IMPLY IRREDUCIBILITY — the universal counterexample
+
+**READ THIS BEFORE STATING ANY LEAF OVER `IsHardlyRamified` ALONE.** The four
+fields below are `det`, `isUnramified`, `isFlat`, `isTameAtTwo` and **nothing
+else**; irreducibility is, everywhere in this development, a *separate*
+hypothesis `hirr : ρ.IsIrreducible`. The witness that makes this concrete:
+
+    ρ = 1 ⊕ χ_ℓ    (trivial character ⊕ `ℓ`-adic cyclotomic character,
+                    on `V = Fin 2 → ℤ_[ℓ]`, any `ℓ ≥ 5`)
+
+satisfies **every** clause. `det ρ = χ_ℓ` gives `det`; it is unramified outside
+`{ℓ}` ⊆ `{2, ℓ}`, giving `isUnramified`; its `ℓ`-torsion is `ℤ/ℓ ⊕ μ_ℓ`, the
+generic fibre of the finite flat `ℤ/ℓ × μ_ℓ`, giving `isFlat`; and the
+projection onto the trivial line is a `1`-dimensional quotient carrying the
+trivial character, which is unramified with trivial square, giving
+`isTameAtTwo` with `π` that projection and `δ = 1`.
+
+Its Frobenius eigensystem is the **EISENSTEIN** one, `a_w = 1 + Nw`, and
+`1 + Nw > 2√(Nw)` for every `Nw ≠ 1`. **Hence `IsHardlyRamified` can never
+carry a non-Eisenstein conclusion on its own**: a leaf assuming only it (or
+only a `PotentialModularityWitness`, which `1 ⊕ χ_ℓ` also inhabits — see the
+FALSITY AUDIT on `weilBound_heckeF_of_witness` in
+`Modularity/KhareWintenberger.lean`) and concluding a Weil/Ramanujan bound,
+cuspidality, or newform-ness is FALSE, or vacuous where a consumer's side
+condition happens to hide it.
+
+Two leaves in `Modularity/KhareWintenberger.lean` were refuted by exactly this
+witness on 2026-07-27 and repaired by restoring the residual package
+(`hρbar`, `hirr`, and the reduction link `hπ`). Note that `hρ`, i.e. hard
+ramification of the `ℓ`-adic `ρ` itself, does NOT repair such a leaf — `1 ⊕ χ_ℓ`
+has it. What excludes the witness is `hirr` on a residual `ρbar` **together
+with** the link `hπ` pinning `ρ`'s Frobenius characteristic polynomials to
+`ρbar`'s: irreducibility of `ρbar` plus that link forces `ρ` irreducible by
+Chebotarev and Brauer–Nesbitt, while `hirr` on an *unlinked* `ρbar` constrains
+`ρ` not at all.
+
+CHECK THAT WOULD REFUTE THIS NOTE: exhibit a field of this structure that
+`1 ⊕ χ_ℓ` fails, or a clause added to it after 2026-07-27 that implies
+irreducibility. -/
 structure IsHardlyRamified {ℓ : ℕ} [Fact ℓ.Prime] (hℓOdd : Odd ℓ)
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     [Algebra ℤ_[ℓ] R] --[IsLocalHom (algebraMap ℤ_[ℓ] R)] -- a convenient way of saying "residue

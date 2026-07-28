@@ -138,9 +138,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Artinian
 -- The connected ⟹ irreducible upgrade of the Bertini cut (2026-07-26) states
 -- `IsLocallyNoetherian` in the signature of
--- `exists_isOpen_isIrreducible_of_isDomain_stalk`, and its topological half
--- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
--- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`, and
+-- its topological half `irreducibleSpace_of_isOpen_isIrreducible_nhds` is
+-- proven with `IsClopen.eq_univ`; both must therefore be re-exported, not
+-- merely reachable.  (Those two were HOISTED on 2026-07-28 into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds`, imported below, but
+-- `IsLocallyNoetherian` still appears in this file's own signatures.)
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Topology.Connected.Clopen
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
@@ -216,11 +219,13 @@ public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
--- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
--- heart of the connected ⟹ irreducible upgrade) states `Localization.AtPrime`
--- in its signature, and its proof runs on the minimal-prime API: finiteness
--- over a noetherian ring, and the order isomorphism between the primes of
--- `A_p` and the primes of `A` below `p`.
+-- `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN 2026-07-26 as
+-- `exists_isOpen_isIrreducible_primeSpectrum`, the affine heart of the
+-- connected ⟹ irreducible upgrade; HOISTED 2026-07-28 into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds`) states
+-- `Localization.AtPrime` in its signature, and its proof runs on the
+-- minimal-prime API: finiteness over a noetherian ring, and the order
+-- isomorphism between the primes of `A_p` and the primes of `A` below `p`.
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
@@ -548,6 +553,24 @@ import Mathlib.NumberTheory.Padics.Hensel
 -- purely transitive private route does not re-export them.
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.EllipticCurve.TorsionCard
+-- The three irreducibility lemmas of the connected ⟹ irreducible upgrade
+-- (`irreducibleSpace_of_isOpen_isIrreducible_nhds`,
+-- `exists_isOpen_isIrreducible_of_isDomain_localization`,
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`),
+-- HOISTED out of this file on 2026-07-28.  The shim has ZERO `Fermat` imports
+-- and its mathlib imports are a SUBSET of this file's own, so it adds nothing
+-- to any cone.
+--
+-- **KEEP IT LAST.**  Placed at the HEAD of the import list instead, this same
+-- import turned `mem_of_ringHom_normalClosure_of_forall` red with a
+-- `synthInstance` heartbeat timeout on
+-- `Module.IsTorsionFree ↥(normalClosure ℚ F (AlgebraicClosure F)) Ω`, ~12 000
+-- lines away and with nothing to do with irreducibility.  Nothing about the
+-- ENVIRONMENT changed — every module the shim pulls in was already imported
+-- here — only the ORDER in which those modules enter it, which is enough to
+-- reorder instance search and flip a borderline synthesis.  Verified both ways
+-- by elaborating this file: head ⟹ that one error, tail ⟹ EXIT=0.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
 
 @[expose] public section
 
@@ -1680,9 +1703,11 @@ Bertini/Lefschetz connectedness, **the sole consumer of `hdim`** and the
 deepest of the geometric leaves) and
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
 2026-07-26** — no longer a leaf: cut into the point-set topology
-`irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN), the
-minimal-prime bookkeeping `exists_isOpen_isIrreducible_primeSpectrum` /
-`exists_isOpen_isIrreducible_of_isDomain_stalk` (both PROVEN), and the single
+`irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN), the
+minimal-prime bookkeeping `exists_isOpen_isIrreducible_of_isDomain_localization` /
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` (both
+PROVEN, and all three now in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), and the single
 surviving leaf `isDomain_stalk_of_smooth_over_field` (SORRY — "smooth over a
 field ⟹ the local rings are domains", a pure mathlib gap)), assembled by
 multiplying the two genericity polynomials),
@@ -1893,11 +1918,14 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `exists_ringClassConductorHom_of_inertPrime` (2026-07-27
-— the existence, at a GIVEN inert auxiliary prime `p`, of the ARTIN MAP of the
-ring class field of conductor `p` of `M = ℚ(√d)`, together with the conductor
-map `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)` of the conductor exact sequence; the parent
-`nonempty_ringClassArtinData_of_inertPrime` is PROVEN over it, the `ZMod`
+theory left in it is `exists_ringClassArtinData_conductorMap_of_inertPrime`
+(2026-07-28 — the existence, at a GIVEN inert auxiliary prime `p`, of the ARTIN
+MAP of the ring class field of conductor `p` of `M = ℚ(√d)`, together with the
+conductor map `j : 𝔽_{p²}ˣ → Cl(𝒪_p)` of the conductor exact sequence and the
+containment `ker j ⊆ 𝔽_pˣ · μ_24`; the norm-one restriction
+`exists_ringClassConductorHom_of_inertPrime` is PROVEN over it by finite-field
+arithmetic, the parent
+`nonempty_ringClassArtinData_of_inertPrime` is PROVEN over that, the `ZMod`
 encoding is PROVEN
 in `exists_ringClassZModChar_of_inertPrime` over the group-theoretic
 `exists_zmodChar_of_dvd_exponent`, the selection of `p` in
@@ -4373,62 +4401,16 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     rw [hcomp]
     exact hcn
 
-/-- **CONNECTED + LOCALLY IRREDUCIBLE ⟹ IRREDUCIBLE** (**PROVEN 2026-07-26** —
-pure point-set topology, no scheme theory and no noetherian hypothesis).
-
-If every point of a connected space has an irreducible OPEN neighbourhood then
-the whole space is irreducible.
-
-THE PROOF, and why the hypothesis has to be an OPEN neighbourhood. Fix `x₀`
-and let `Z = irreducibleComponent x₀`. For `y ∈ Z` pick an irreducible open
-`U ∋ y`. Then `U ∩ Z ≠ ∅`, and `Z` is irreducible, so no open set can separate
-`U` from `Z`: `Z ⊆ closure U`. Since `closure U` is irreducible and `Z` is a
-MAXIMAL irreducible set, `closure U = Z`, whence `U ⊆ Z`. So `Z` is a union of
-open sets, i.e. open; it is also closed (components are), and nonempty; a
-connected space has no proper nonempty clopen subset, so `Z = univ` and the
-space is irreducible.
-
-The openness is load-bearing and the statement is FALSE with "irreducible
-neighbourhood" weakened to "irreducible subset containing the point": two
-lines crossing at the origin form a connected space in which every point lies
-on an irreducible subset (one of the lines) but which is reducible. What fails
-there is exactly the step above — the origin has no irreducible *open*
-neighbourhood, since every open neighbourhood meets both lines.
-
-Cut out of `geometricallyIrreducible_of_smooth_of_geometricallyConnected` on
-2026-07-26: it is the half of "smooth + connected ⟹ irreducible" that carries
-no geometry, and separating it leaves the geometric content in exactly one
-place, `isDomain_stalk_of_smooth_over_field`. -/
-theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
-    {X : Type*} [TopologicalSpace X] [ConnectedSpace X]
-    (hloc : ∀ x : X, ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ IsIrreducible U) :
-    IrreducibleSpace X := by
-  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
-  have key : ∀ y ∈ irreducibleComponent x₀,
-      ∃ U : Set X, IsOpen U ∧ y ∈ U ∧ U ⊆ irreducibleComponent x₀ := by
-    intro y hy
-    obtain ⟨U, hUo, hyU, hUirr⟩ := hloc y
-    refine ⟨U, hUo, hyU, ?_⟩
-    have hZsub : irreducibleComponent x₀ ⊆ _root_.closure U := by
-      intro z hz
-      by_contra hzn
-      obtain ⟨w, -, hwU, hwc⟩ :=
-        (isIrreducible_irreducibleComponent (x := x₀)).2 U (_root_.closure U)ᶜ hUo
-          isClosed_closure.isOpen_compl ⟨y, hy, hyU⟩ ⟨z, hz, hzn⟩
-      exact hwc (subset_closure hwU)
-    have heq : _root_.closure U = irreducibleComponent x₀ :=
-      eq_irreducibleComponent (hUirr.isPreirreducible.closure) hZsub
-    exact heq ▸ subset_closure
-  have hZopen : IsOpen (irreducibleComponent x₀) := by
-    rw [isOpen_iff_forall_mem_open]
-    intro y hy
-    obtain ⟨U, hUo, hyU, hUZ⟩ := key y hy
-    exact ⟨U, hUZ, hUo, hyU⟩
-  have hZuniv : irreducibleComponent x₀ = Set.univ :=
-    IsClopen.eq_univ ⟨isClosed_irreducibleComponent, hZopen⟩ ⟨x₀, mem_irreducibleComponent⟩
-  rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
-  exact isIrreducible_irreducibleComponent
-
+-- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (connected +
+-- locally irreducible ⟹ irreducible, pure point-set topology) was HOISTED out
+-- of this file on 2026-07-28 into
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`, under the name
+-- `irreducibleSpace_of_isOpen_isIrreducible_nhds` (the name the second,
+-- independent copy in `Mathlib/AlgebraicGeometry/CurveExtension.lean` had
+-- given it; that copy is deleted too).  The shim has ZERO `Fermat` imports, so
+-- it is reachable from both sides of the tree and a third copy should never be
+-- necessary.  Consumed below in
+-- `geometricallyIrreducible_of_smooth_of_geometricallyConnected`.
 
 -- `isDomain_of_isRegularLocalRing_aux` and `isDomain_of_isRegularLocalRing`
 -- were HOISTED out of this file into `Modularity/RegularStalks.lean` on
@@ -4486,116 +4468,16 @@ theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
   haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
   isDomain_of_isRegularLocalRing _
 
-/-- **A PRIME WITH DOMAIN LOCALIZATION HAS AN IRREDUCIBLE OPEN NEIGHBOURHOOD
-IN `Spec R`** (**PROVEN 2026-07-26** — the affine heart of the
-connected ⟹ irreducible upgrade; pure commutative algebra, no scheme theory
-and no smoothness).
-
-If `R` is noetherian and `R_p` is a domain then `p` has an irreducible open
-neighbourhood in `Spec R`. Both hypotheses are needed: without noetherianity
-there can be infinitely many minimal primes and the neighbourhood below is
-not open; without the domain hypothesis `p` may lie on several components,
-and then no neighbourhood of it is irreducible.
-
-THE PROOF. `R_p` is a domain, so `⊥` is its least prime; the order
-isomorphism `IsLocalization.AtPrime.orderIsoOfPrime` carries the primes of
-`R_p` onto the primes of `R` below `p`, so there is a LEAST prime `q ≤ p`,
-and it is the unique minimal prime of `R` below `p`. Noetherianity makes
-`minimalPrimes R` finite, so
-`U := Spec R ∖ ⋃ {V(q') : q' ∈ minimalPrimes R, q' ≠ q}` is open; `p ∈ U` by
-that uniqueness, and every prime contains some minimal prime, so a prime in
-`U` contains `q`, i.e. `U ⊆ V(q)`. Finally `V(q)` is irreducible because `q`
-is prime, and a nonempty open subset of an irreducible set is irreducible. -/
-theorem exists_isOpen_isIrreducible_primeSpectrum {R : Type u} [CommRing R]
-    [IsNoetherianRing R] (p : PrimeSpectrum R)
-    (hp : IsDomain (Localization.AtPrime p.asIdeal)) :
-    ∃ U : Set (PrimeSpectrum R), IsOpen U ∧ p ∈ U ∧ IsIrreducible U := by
-  classical
-  haveI : p.asIdeal.IsPrime := p.isPrime
-  have hbot : (⊥ : Ideal (Localization.AtPrime p.asIdeal)).IsPrime := Ideal.isPrime_bot
-  set e := IsLocalization.AtPrime.orderIsoOfPrime (Localization.AtPrime p.asIdeal) p.asIdeal
-    with he
-  set q : Ideal R := (e ⟨⊥, hbot⟩).1 with hqdef
-  have hq : q.IsPrime := (e ⟨⊥, hbot⟩).2.1
-  have hqle : q ≤ p.asIdeal := (e ⟨⊥, hbot⟩).2.2
-  have hleast : ∀ r : Ideal R, r.IsPrime → r ≤ p.asIdeal → q ≤ r := by
-    intro r hr hrle
-    have h1 : (⟨⊥, hbot⟩ : {P : Ideal (Localization.AtPrime p.asIdeal) // P.IsPrime}) ≤
-        e.symm ⟨r, hr, hrle⟩ := Subtype.mk_le_mk.mpr bot_le
-    have h2 := e.monotone h1
-    rw [e.apply_symm_apply] at h2
-    exact h2
-  have huniq : ∀ r ∈ minimalPrimes R, r ≤ p.asIdeal → r = q := by
-    intro r hr hrle
-    have hr' := (IsMinimalPrime.iff_minimal r).mp hr
-    have h1 : q ≤ r := hleast r hr'.1 hrle
-    exact le_antisymm (hr'.2 hq h1) h1
-  set S : Set (Ideal R) := minimalPrimes R \ {q} with hSdef
-  have hSfin : S.Finite := (minimalPrimes.finite_of_isNoetherianRing R).subset Set.sdiff_subset
-  set U : Set (PrimeSpectrum R) := (⋃ r ∈ S, PrimeSpectrum.zeroLocus (r : Set R))ᶜ with hUdef
-  have hUopen : IsOpen U :=
-    (hSfin.isClosed_biUnion fun r _ => PrimeSpectrum.isClosed_zeroLocus _).isOpen_compl
-  have hpU : p ∈ U := by
-    simp only [hUdef, Set.mem_compl_iff, Set.mem_iUnion, not_exists, exists_prop, not_and]
-    intro r hrS hpz
-    exact hrS.2 (huniq r hrS.1 (PrimeSpectrum.mem_zeroLocus _ _ |>.mp hpz))
-  have hUsub : U ⊆ PrimeSpectrum.zeroLocus (q : Set R) := by
-    intro x hx
-    obtain ⟨r, hrmin, hrle⟩ :=
-      Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := x.asIdeal) bot_le
-    have hrq : r = q := by
-      by_contra hne
-      refine hx ?_
-      simp only [Set.mem_iUnion, exists_prop]
-      exact ⟨r, ⟨hrmin, hne⟩, (PrimeSpectrum.mem_zeroLocus _ _).mpr hrle⟩
-    exact (PrimeSpectrum.mem_zeroLocus _ _).mpr (hrq ▸ hrle)
-  have hqrad : q.radical.IsPrime := by rw [hq.radical]; exact hq
-  have hirr : IsIrreducible (PrimeSpectrum.zeroLocus (q : Set R)) :=
-    (PrimeSpectrum.isIrreducible_zeroLocus_iff q).mpr hqrad
-  exact ⟨U, hUopen, hpU,
-    hirr.isPreirreducible.subset_irreducible ⟨p, hpU⟩ hUopen (subset_refl U) hUsub⟩
-
-open CategoryTheory AlgebraicGeometry in
-/-- **A POINT WITH DOMAIN STALK ON A LOCALLY NOETHERIAN SCHEME HAS AN
-IRREDUCIBLE OPEN NEIGHBOURHOOD** (**PROVEN 2026-07-26** over
-`exists_isOpen_isIrreducible_primeSpectrum` — elementary, and entirely
-independent of smoothness).
-
-The transport is done on an affine CHART rather than an affine open:
-`Scheme.exists_Spec_apply_eq` produces an open immersion
-`f : Spec R ⟶ Z` hitting `z`, which is cheaper to work with than
-`IsAffineOpen.isoSpec` because it moves both the noetherian hypothesis and
-the stalk across in one step and leaves no subtype coercions behind.
-
-* `R` is noetherian: `isLocallyNoetherian_of_isOpenImmersion` transports
-  `IsLocallyNoetherian` along `f`, and `isLocallyNoetherian_Spec` reads it
-  off as `IsNoetherianRing R`.
-* `R_y` is a domain: `f.stalkMap y` is an isomorphism because `f` is an open
-  immersion, and `Spec.stalkIso` identifies the stalk of `Spec R` at `y` with
-  `Localization.AtPrime y.asIdeal`; `MulEquiv.isDomain` moves the hypothesis
-  across both.
-* The open irreducible neighbourhood is then produced in `Spec R` by the
-  affine lemma and pushed forward along `f.base`, which is an open embedding,
-  so the image is open (`IsOpenMap`) and still irreducible
-  (`IsIrreducible.image`). -/
-theorem exists_isOpen_isIrreducible_of_isDomain_stalk {Z : AlgebraicGeometry.Scheme.{u}}
-    [AlgebraicGeometry.IsLocallyNoetherian Z] (z : Z)
-    (hz : IsDomain (Z.presheaf.stalk z)) :
-    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
-  obtain ⟨R, f, hf, y, hy⟩ := AlgebraicGeometry.Scheme.exists_Spec_apply_eq (X := Z) z
-  haveI := hf
-  haveI : AlgebraicGeometry.IsLocallyNoetherian (AlgebraicGeometry.Spec R) :=
-    AlgebraicGeometry.isLocallyNoetherian_of_isOpenImmersion f
-  haveI : IsNoetherianRing R := AlgebraicGeometry.isLocallyNoetherian_Spec.mp inferInstance
-  subst hy
-  haveI : IsDomain ((AlgebraicGeometry.Spec R).presheaf.stalk y) :=
-    (asIso (f.stalkMap y)).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
-  haveI : IsDomain (Localization.AtPrime y.asIdeal) :=
-    (AlgebraicGeometry.Spec.stalkIso R y).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
-  obtain ⟨U, hUopen, hyU, hUirr⟩ := exists_isOpen_isIrreducible_primeSpectrum y inferInstance
-  refine ⟨f.base '' U, ?_, ⟨y, hyU, rfl⟩, ?_⟩
-  · exact f.isOpenEmbedding.isOpenMap _ hUopen
-  · exact hUirr.image _ f.continuous.continuousOn
+-- `exists_isOpen_isIrreducible_primeSpectrum` (a prime with domain
+-- localization has an irreducible open neighbourhood in `Spec R`) and
+-- `exists_isOpen_isIrreducible_of_isDomain_stalk` (its scheme-level form) were
+-- HOISTED out of this file on 2026-07-28 into
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`, under the names
+-- `exists_isOpen_isIrreducible_of_isDomain_localization` and
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`.  The
+-- second, independent copy of the same pair in
+-- `Mathlib/AlgebraicGeometry/CurveExtension.lean` is deleted too.  Consumed
+-- below in `exists_isOpen_isIrreducible_of_smooth_over_field`.
 
 open CategoryTheory AlgebraicGeometry in
 /-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (**PROVEN 2026-07-26** over
@@ -4607,7 +4489,8 @@ two leaves are separate: it supplies the domain stalks
 `Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
 `LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
 the local noetherianity that
-`exists_isOpen_isIrreducible_of_isDomain_stalk` needs. -/
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) needs. -/
 theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
     {Z : AlgebraicGeometry.Scheme.{u}}
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
@@ -4616,7 +4499,7 @@ theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
   have : AlgebraicGeometry.Smooth f := hf
   have : AlgebraicGeometry.IsLocallyNoetherian Z :=
     AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
-  exact exists_isOpen_isIrreducible_of_isDomain_stalk z
+  exact AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk z
     (isDomain_stalk_of_smooth_over_field f hf z)
 
 open CategoryTheory AlgebraicGeometry in
@@ -4651,12 +4534,14 @@ uses, so the call site matches syntactically.
 **PROVEN 2026-07-26** over the five names immediately above it, of which
 exactly ONE is still open:
 
-* `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN) — the
+* `irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN) — the
   point-set topology;
-* `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN) and
-  `exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN) — the
-  minimal-prime bookkeeping that turns a domain stalk into an irreducible
-  open neighbourhood;
+* `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN) and
+  `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+  (PROVEN) — the minimal-prime bookkeeping that turns a domain stalk into an
+  irreducible open neighbourhood.  These three were HOISTED on 2026-07-28 into
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` and are no longer
+  declared here;
 * **`isDomain_stalk_of_smooth_over_field` (SORRY)** — "smooth over a field ⟹
   the local rings are domains", the sole surviving leaf and the only place
   where any geometry is used;
@@ -4675,7 +4560,7 @@ theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
   refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
   have : ConnectedSpace ↥(Limits.pullback h y) :=
     AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
-  exact irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
     (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
       (Limits.pullback.snd h y) inferInstance z)
 
@@ -14587,10 +14472,338 @@ theorem exists_bertiniNoetherWitness_two (d : ℕ) :
     · rw [planeSection_map]
       exact irreducible_planeSection_of_det_ne_zero _ _ _ _ hdetK hirr
 
-/-! ### The genuine content: `N ≥ 3` -/
+/-! ### The genuine content: `N ≥ 3`
 
-/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (SORRY LEAF, cut
-2026-07-27)** -- the GEOMETRIC half of `exists_bertiniNoetherWitness_of_three_le`.
+#### Coefficient of `s^d` in a plane section, and general position
+
+The five lemmas below are PROVEN, and together they discharge the DEGREE half of
+`exists_irreducible_planeSection_of_irreducible`, leaving only irreducibility to
+the Bertini leaf. The mechanism: substituting `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t` turns each
+variable into an affine form, so a monomial `x^α` of total degree `|α|` can
+contribute to the pure monomial `s^d` only when `|α| ≥ d`, and when `|α| = d` its
+contribution is exactly `∏ᵢ u₁ᵢ^αᵢ` -- every factor must supply its `s`-term. So
+for `d = h.totalDegree` the coefficient of `s^d` in the section is
+`h_d(u₁)`, where `h_d` is the degree-`d` homogeneous component of `h`. Choosing
+the plane direction with `h_d(u₁) ≠ 0` therefore FORCES the section to have total
+degree exactly `d`, for EVERY base point `v`.
+-/
+
+/-- **PROVEN**: the coefficient of `s^(m+n)` in a product splits, provided the
+factors have total degree at most `m` and `n` respectively. In the antidiagonal
+sum defining `coeff (single 0 (m+n)) (p*q)` every exponent pair `(a, b)` is
+supported at `0` alone (the other coordinates of `a + b` vanish), so `a` and `b`
+are `single 0 (a 0)` and `single 0 (b 0)` with `a 0 + b 0 = m + n`; if
+`a 0 > m` the first coefficient vanishes by degree, and if `a 0 < m` then
+`b 0 > n` and the second does. -/
+theorem coeff_single_add_mul_of_totalDegree_le {K : Type*} [CommRing K]
+    (p q : MvPolynomial (Fin 2) K) (m n : ℕ)
+    (hp : p.totalDegree ≤ m) (hq : q.totalDegree ≤ n) :
+    (p * q).coeff (Finsupp.single 0 (m + n))
+      = p.coeff (Finsupp.single 0 m) * q.coeff (Finsupp.single 0 n) := by
+  classical
+  have hdeg : ∀ (k : ℕ), ∑ i ∈ (Finsupp.single (0 : Fin 2) k).support,
+      (Finsupp.single (0 : Fin 2) k) i = k := by
+    intro k
+    have := Finsupp.degree_single (0 : Fin 2) k
+    simpa [Finsupp.degree_apply] using this
+  rw [MvPolynomial.coeff_mul]
+  refine (Finset.sum_eq_single (Finsupp.single (0 : Fin 2) m, Finsupp.single (0 : Fin 2) n)
+    ?_ ?_).trans rfl
+  · rintro ⟨a, b⟩ hab hne
+    rw [Finset.mem_antidiagonal] at hab
+    have hzero : ∀ j : Fin 2, j ≠ 0 → a j = 0 ∧ b j = 0 := by
+      intro j hj
+      have := congrArg (fun m : Fin 2 →₀ ℕ => m j) hab
+      simp only [Finsupp.add_apply, Finsupp.single_apply] at this
+      rw [if_neg (fun hc => hj hc.symm)] at this
+      omega
+    have ha : a = Finsupp.single (0 : Fin 2) (a 0) := by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · rw [Finsupp.single_apply, if_neg (fun hc => hj hc.symm), (hzero j hj).1]
+    have hb : b = Finsupp.single (0 : Fin 2) (b 0) := by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · rw [Finsupp.single_apply, if_neg (fun hc => hj hc.symm), (hzero j hj).2]
+    have hsum : a 0 + b 0 = m + n := by
+      have := congrArg (fun m : Fin 2 →₀ ℕ => m 0) hab
+      simpa using this
+    have ham : a 0 ≠ m := by
+      intro hc
+      refine hne ?_
+      have h1 : a = Finsupp.single (0 : Fin 2) m := by rw [ha, hc]
+      have h2 : b = Finsupp.single (0 : Fin 2) n := by
+        have hbn : b 0 = n := by omega
+        rw [hb, hbn]
+      rw [h1, h2]
+    rcases lt_or_gt_of_ne ham with hlt | hgt
+    · have : q.coeff b = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [hb, hdeg]
+        omega
+      rw [this, mul_zero]
+    · have : p.coeff a = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [ha, hdeg]
+        omega
+      rw [this, zero_mul]
+  · intro hmem
+    exact absurd (Finset.mem_antidiagonal.mpr (by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · simp [Finsupp.single_apply])) hmem
+
+/-- **PROVEN**: the coefficient of `s^e` in the `e`-th power of a polynomial of
+total degree at most one is the `e`-th power of its `s`-coefficient. Induction on
+`e` over `coeff_single_add_mul_of_totalDegree_le`. -/
+theorem coeff_single_pow_of_totalDegree_le_one {K : Type*} [CommRing K]
+    (p : MvPolynomial (Fin 2) K) (hp : p.totalDegree ≤ 1) (e : ℕ) :
+    (p ^ e).coeff (Finsupp.single 0 e) = (p.coeff (Finsupp.single 0 1)) ^ e := by
+  induction e with
+  | zero => simp
+  | succ k ih =>
+      have h1 : (p ^ k).totalDegree ≤ k := by
+        refine le_trans (MvPolynomial.totalDegree_pow p k) ?_
+        calc k * p.totalDegree ≤ k * 1 := Nat.mul_le_mul_left k hp
+          _ = k := by ring
+      rw [pow_succ, coeff_single_add_mul_of_totalDegree_le _ _ k 1 h1 hp, ih, pow_succ]
+
+/-- **PROVEN**: the coefficient of `s^(∑ e)` in `∏ (f i)^(e i)`, for factors of
+total degree at most one, is `∏ (coeff of s in f i)^(e i)`. -/
+theorem coeff_single_finsetProd_of_totalDegree_le_one {K : Type*} [CommRing K] {ι : Type*}
+    (f : ι → MvPolynomial (Fin 2) K) (hf : ∀ i, (f i).totalDegree ≤ 1) (e : ι → ℕ)
+    (s : Finset ι) :
+    (∏ i ∈ s, (f i) ^ (e i)).coeff (Finsupp.single 0 (∑ i ∈ s, e i))
+      = ∏ i ∈ s, ((f i).coeff (Finsupp.single 0 1)) ^ (e i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s ha ih =>
+      have hpow : ∀ i : ι, ((f i) ^ (e i)).totalDegree ≤ e i := by
+        intro i
+        refine le_trans (MvPolynomial.totalDegree_pow (f i) (e i)) ?_
+        calc e i * (f i).totalDegree ≤ e i * 1 := Nat.mul_le_mul_left _ (hf i)
+          _ = e i := by ring
+      have hprod : (∏ i ∈ s, (f i) ^ (e i)).totalDegree ≤ ∑ i ∈ s, e i :=
+        le_trans (MvPolynomial.totalDegree_finsetProd s _) (Finset.sum_le_sum fun i _ => hpow i)
+      rw [Finset.prod_insert ha, Finset.sum_insert ha, Finset.prod_insert ha,
+        coeff_single_add_mul_of_totalDegree_le _ _ _ _ (hpow a) hprod,
+        coeff_single_pow_of_totalDegree_le_one _ (hf a), ih]
+
+/-- **PROVEN**: THE LEADING-FORM IDENTITY. For `d` at least the total degree of
+`h`, the coefficient of the pure monomial `s^d` in `planeSection h v u₁ u₂` is
+`h_d(u₁)`, the degree-`d` homogeneous component of `h` evaluated at the first
+direction vector. Note it does not depend on `v` or on `u₂` at all: the base
+point and the second direction can only contribute factors of `s`-degree `0`.
+
+This is the exact sense in which "the top form of a section is the top form
+restricted to the plane", and it is what makes the degree of a section
+computable without any Bertini input. -/
+theorem coeff_single_planeSection_eq_eval_homogeneousComponent {K : Type*} [CommRing K]
+    {N d : ℕ} (h : MvPolynomial (Fin N) K) (hd : h.totalDegree ≤ d) (v u₁ u₂ : Fin N → K) :
+    (planeSection h v u₁ u₂).coeff (Finsupp.single 0 d)
+      = MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) := by
+  classical
+  set f : Fin N → MvPolynomial (Fin 2) K := fun i =>
+    MvPolynomial.C (v i) + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+      + MvPolynomial.C (u₂ i) * MvPolynomial.X 1 with hf
+  have hfdeg : ∀ i, (f i).totalDegree ≤ 1 := fun i => totalDegree_affineForm_le_one _ _ _
+  have hfcoeff : ∀ i, (f i).coeff (Finsupp.single 0 1) = u₁ i := by
+    intro i
+    have hne : (0 : Fin 2 →₀ ℕ) ≠ Finsupp.single (0 : Fin 2) 1 := by
+      intro hc
+      have h0 := congrArg (fun m : Fin 2 →₀ ℕ => m 0) hc
+      simp at h0
+    simp [hf, MvPolynomial.coeff_C, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_X,
+      Finsupp.single_eq_single_iff, hne]
+  have hdegsingle : ∑ i ∈ (Finsupp.single (0 : Fin 2) d).support,
+      (Finsupp.single (0 : Fin 2) d) i = d := by
+    simpa [Finsupp.degree_apply] using Finsupp.degree_single (0 : Fin 2) d
+  have hps : planeSection h v u₁ u₂ = MvPolynomial.bind₁ f h := rfl
+  have hsplit : MvPolynomial.bind₁ f h
+      = ∑ α ∈ h.support, MvPolynomial.bind₁ f
+          (MvPolynomial.monomial α (MvPolynomial.coeff α h)) := by
+    rw [← map_sum, MvPolynomial.support_sum_monomial_coeff]
+  have hLHS : MvPolynomial.coeff (Finsupp.single 0 d) (planeSection h v u₁ u₂)
+      = ∑ α ∈ h.support, (if α.degree = d then
+          MvPolynomial.coeff α h * ∏ i ∈ α.support, (u₁ i) ^ (α i) else 0) := by
+    rw [hps, hsplit, MvPolynomial.coeff_sum]
+    refine Finset.sum_congr rfl (fun α hα => ?_)
+    rw [MvPolynomial.bind₁_monomial, MvPolynomial.coeff_C_mul]
+    have hαd : α.degree ≤ d := le_trans (MvPolynomial.le_totalDegree hα) hd
+    have hpow : ∀ i : Fin N, ((f i) ^ (α i)).totalDegree ≤ α i := by
+      intro i
+      refine le_trans (MvPolynomial.totalDegree_pow (f i) (α i)) ?_
+      calc α i * (f i).totalDegree ≤ α i * 1 := Nat.mul_le_mul_left _ (hfdeg i)
+        _ = α i := by ring
+    rcases eq_or_lt_of_le hαd with heq | hlt
+    · rw [if_pos heq]
+      congr 1
+      have hsum : (∑ i ∈ α.support, α i) = d := by
+        rw [← Finsupp.degree_apply]; exact heq
+      rw [← hsum, coeff_single_finsetProd_of_totalDegree_le_one f hfdeg (fun i => α i) α.support]
+      exact Finset.prod_congr rfl (fun i _ => by rw [hfcoeff])
+    · rw [if_neg (by omega)]
+      have hz : MvPolynomial.coeff (Finsupp.single 0 d) (∏ i ∈ α.support, (f i) ^ (α i)) = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [hdegsingle]
+        have hb1 : (∏ i ∈ α.support, (f i) ^ (α i)).totalDegree ≤ ∑ i ∈ α.support, α i :=
+          le_trans (MvPolynomial.totalDegree_finsetProd _ _)
+            (Finset.sum_le_sum fun i _ => hpow i)
+        have hb2 : (∑ i ∈ α.support, α i) < d := by
+          rw [← Finsupp.degree_apply]; exact hlt
+        omega
+      rw [hz, mul_zero]
+  have hRHS : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h)
+      = ∑ α ∈ h.support, (if α.degree = d then
+          MvPolynomial.coeff α h * ∏ i ∈ α.support, (u₁ i) ^ (α i) else 0) := by
+    rw [MvPolynomial.homogeneousComponent_apply, map_sum, Finset.sum_filter]
+    refine Finset.sum_congr rfl (fun α _ => ?_)
+    by_cases hc : α.degree = d
+    · rw [if_pos hc, if_pos hc]
+      simp [MvPolynomial.eval_monomial, Finsupp.prod]
+    · rw [if_neg hc, if_neg hc]
+  rw [hLHS, hRHS]
+
+/-- **PROVEN**: if the degree-`d` leading form of `h` does not vanish at `u₁`,
+then EVERY plane section in the direction `(u₁, u₂)` has total degree exactly
+`d` -- no genericity and no hypothesis on the base point `v`. The upper bound is
+`totalDegree_planeSection_le`; the lower bound is
+`coeff_single_planeSection_eq_eval_homogeneousComponent`, which exhibits `s^d` in
+the support. -/
+theorem totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero {K : Type*} [Field K]
+    {N d : ℕ} (h : MvPolynomial (Fin N) K) (hdeg : h.totalDegree = d) (v u₁ u₂ : Fin N → K)
+    (hlead : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0) :
+    (planeSection h v u₁ u₂).totalDegree = d := by
+  refine le_antisymm (hdeg ▸ totalDegree_planeSection_le h v u₁ u₂) ?_
+  by_contra hcon
+  have hlt : (planeSection h v u₁ u₂).totalDegree < d := Nat.lt_of_not_le hcon
+  refine hlead ?_
+  rw [← coeff_single_planeSection_eq_eval_homogeneousComponent h (le_of_eq hdeg) v u₁ u₂]
+  refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+  have hsingle : ∑ i ∈ (Finsupp.single (0 : Fin 2) d).support,
+      (Finsupp.single (0 : Fin 2) d) i = d := by
+    simpa [Finsupp.degree_apply] using Finsupp.degree_single (0 : Fin 2) d
+  rw [hsingle]
+  exact hlt
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM, THE IRREDUCIBILITY HALF ALONE (SORRY
+LEAF, cut 2026-07-27)** -- what is left of
+`exists_irreducible_planeSection_of_irreducible` once the degree bookkeeping is
+discharged above.
+
+WHAT IT SAYS, AND WHAT IT DOES NOT. The conclusion produces a plane together
+with the normalisation `h_d(u₁) ≠ 0` and asks for IRREDUCIBILITY ONLY: the
+DEGREE claim of the parent then follows from
+`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, which turns
+`h_d(u₁) ≠ 0` into `totalDegree = d` for free. So the whole degree half of
+Bertini is closed, and what is open is exactly irreducibility.
+
+The normalisation costs nothing. If a plane `W = span(u₁, u₂)` carries a section
+of total degree `d` at all, then the degree-`d` part of that section is the
+binary form `h_d(s·u₁ + t·u₂)`, which is therefore nonzero; `K` is infinite, so
+some `u ∈ W` has `h_d(u) ≠ 0`, and re-choosing the basis of `W` to start with
+`u` changes the section by an invertible affine substitution of `𝔸²`
+(`irreducible_planeSection_of_det_ne_zero`), preserving irreducibility.
+
+**FALSITY AUDIT (2026-07-27) -- THE OBVIOUS SHARPER CUT IS FALSE, DO NOT
+RETRY IT.** The natural-looking strengthening is to FIX the plane direction and
+quantify only the base point:
+
+    (u₁ u₂ given) (hindep : LinearIndependent K ![u₁, u₂])
+      (hlead : eval u₁ (homogeneousComponent d h) ≠ 0) :
+        ∃ v, Irreducible (planeSection h v u₁ u₂)
+
+That statement is FALSE, and the counterexample is small. Take `n = 0`,
+`K` algebraically closed, and
+
+    h = X 1 ^ 2 - X 0   ∈ MvPolynomial (Fin 3) K,   d = 2.
+
+`h` is irreducible (degree one in `X 0`, and primitive there);
+`homogeneousComponent 2 h = X 1 ^ 2`. Take `u₁ = Pi.single 1 1` and
+`u₂ = Pi.single 2 1`. Then `hindep` holds, and `hlead` holds because
+`eval u₁ (X 1 ^ 2) = 1`. But for EVERY base point `v`,
+
+    planeSection h v u₁ u₂ = (C (v 1) + X 0) ^ 2 - C (v 0),
+
+a polynomial in the single variable `X 0`, of degree `2`, over an algebraically
+closed field -- hence a product of two linear factors, hence never irreducible.
+
+The mistake the counterexample exposes is a real mathematical one, not a
+bookkeeping slip: the degree condition `h_d|_W ≠ 0` is NECESSARY for a good
+plane but is NOT the general-position condition Bertini needs. Schmidt's
+Theorem 3D (Chapter V §3) delivers a linear change of coordinates after which
+`h` has degree `d` in the last two variables **AND is absolutely irreducible
+over `K(x₁ … x_{n+1})`**, and the text there gives the companion example
+`X 1 ^ 2 - X 0 * X 2 ^ 2` precisely to show the second condition does not
+follow from the first. In the counterexample above the good planes are the ones
+containing the `X 0` direction (e.g. `u₁ = Pi.single 1 1`, `u₂ = Pi.single 0 1`
+gives the irreducible `(C (v 1) + X 0) ^ 2 - (C (v 0) + X 1)`), and no condition
+on `h_d` alone can select them.
+
+Consequence for anyone sharpening this leaf: the direction must stay inside the
+existential unless the hypothesis added is genuinely absolute irreducibility
+over the residual function field, which is the content of the leaf itself. A
+proven general-position lemma
+(`∃ u₁ u₂, LinearIndependent K ![u₁, u₂] ∧ eval u₁ (homogeneousComponent d h) ≠ 0`,
+elementary: `h_d ≠ 0`, `K` infinite, `dim ≥ 2`) was written for the false cut and
+then removed as free-floating; recover it from commit `859e326f` if the eventual
+proof wants it.
+
+THE ROUTE (Schmidt, *Equations over Finite Fields*, Chapter V, Theorem 3D and
+Lemma 4A; the same argument is Fried-Jarden, *Field Arithmetic*, around
+Proposition 10.4.2). Apply Theorem 3D to choose coordinates in which the plane
+direction is the last coordinate 2-plane and `h`, read in `K(x₁ … x_{n+1})[y, z]`,
+has degree exactly `d` and is absolutely irreducible. Three steps remain:
+
+1. **Gauss.** `h` irreducible in `K[x, y, z]` and primitive in `(y, z)` implies
+   `h` irreducible in `K(x)[y, z]`.
+2. **Geometric integrality.** `K` algebraically closed implies `K` is
+   algebraically closed inside `Frac(K[x, y, z]/(h))`, so `h` stays irreducible
+   over an algebraic closure of `K(x)` -- i.e. it is ABSOLUTELY irreducible
+   there. (This is where "over an algebraically closed field" is used, and it is
+   the step that fails over a general base.)
+3. **Specialisation.** The `x`-locus where the fibre `h(x, y, z)` fails to be
+   absolutely irreducible of degree `d` is a proper closed subset -- E. Noether's
+   forms, or equivalently Chevalley constructibility plus the fact that the
+   generic point avoids it -- and `K` is infinite, so it misses a `K`-point `t`.
+   Then `v := (t, 0, 0)` works.
+
+REPORTED FINDING (2026-07-27, from the agent that made this cut): the premise
+that this half and the arithmetic half `exists_noetherBadLocusForms` "share no
+technique" is NOT true of the standard proof -- Schmidt's Lemma 4A derives this
+statement FROM his Theorem 2A, which is exactly the sibling's content. The two
+statements are still genuinely different, and this one is genuinely weaker: it
+needs only that the bad locus be a PROPER CLOSED subset over ONE algebraically
+closed field, with NO degree bound and in particular no bound uniform in `p`,
+which is the entire difficulty of the sibling. So step 3 can be discharged by
+Chevalley constructibility alone, without Noether's forms. But an implementation
+that goes through Noether's forms is legitimate and would let the two leaves
+share step 3's machinery; a future dispatcher should treat the "no shared
+technique" note as a design preference, not a mathematical fact.
+
+WHAT IS MISSING FROM THE PIN (checked 2026-07-27 against `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`): a Gauss lemma for `MvPolynomial` over a
+polynomial ring in the remaining variables (mathlib has the univariate
+`Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map` only), any
+notion of ABSOLUTE irreducibility for multivariate polynomials, and geometric
+integrality of a hypersurface over an algebraically closed field. The
+`AbsolutelyIrreducible` names in `~/cs/FLT` are about Galois REPRESENTATIONS and
+are a name collision, not a result. -/
+theorem exists_irreducible_planeSection_leadingForm_ne_zero {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d)
+    (hirr : Irreducible h) :
+    ∃ v u₁ u₂ : Fin (n + 3) → K,
+      MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h v u₁ u₂) :=
+  sorry
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (PROVEN 2026-07-27 over
+one named sub-leaf)** -- the GEOMETRIC half of
+`exists_bertiniNoetherWitness_of_three_le`.
 
 Over an ALGEBRAICALLY CLOSED field, an irreducible hypersurface of total degree
 `d` in `N = n + 3 ≥ 3` variables admits at least ONE plane section that is again
@@ -14603,7 +14816,13 @@ independently of the characteristic -- is the separate arithmetic half,
 `exists_noetherBadLocusForms`. Splitting the two is what lets each be attacked
 with its own technique: this one is geometry over one algebraically closed
 field, that one is elimination theory with a `p`-uniform degree bound. Neither
-half alone gives the parent leaf, and neither needs the other's methods.
+half alone gives the parent leaf. (CORRECTION, 2026-07-27: the further claim that
+"neither needs the other's methods" is FALSE of the standard proof -- Schmidt
+derives this half FROM his Theorem 2A, i.e. from the sibling's content. What
+remains true, and is the point of the split, is that this half needs only a
+PROPER CLOSED bad locus over ONE algebraically closed field, with no degree bound
+and in particular none uniform in `p`. See
+`exists_irreducible_planeSection_leadingForm_ne_zero`.)
 
 WHY IT IS TRUE IN EVERY CHARACTERISTIC. This is the IRREDUCIBILITY Bertini
 (Schmidt, *Equations over Finite Fields*, Chapter V §1; Fried-Jarden, *Field
@@ -14611,19 +14830,32 @@ Arithmetic*, §10.4, around Proposition 10.4.2; Jouanolou, *Théorèmes de Berti
 et applications*). The classical characteristic-`p` failure of Bertini concerns
 SMOOTHNESS of the generic hyperplane section and is irrelevant here.
 
-THE ROUTE. Induct on `N`, cutting by one hyperplane at a time: `V(h) ⊆ 𝔸^N` is
-irreducible of dimension `N - 1 ≥ 2`, and Bertini says a general hyperplane
-section of an irreducible variety of dimension `≥ 2` is again irreducible, so
-after `N - 2` cuts one lands on an irreducible curve inside a plane, which is
-`V(planeSection h v u₁ u₂)` for the composed parametrisation. `planeSection_comp`
-is stated at a GENERAL `N` precisely so that this composition is available. What
-is missing is (a) the one-step hyperplane statement and (b) the bookkeeping that
-a composite of affine parametrisations `𝔸² → 𝔸^{N-1} → 𝔸^N` is again a plane
-parametrisation of `𝔸^N`. For (b) the natural infrastructure is a general
-`affineSection h v u` for `u : Fin M → Fin N → K` with a composition lemma
-generalising `planeSection_comp`; it is deliberately NOT built here, because an
-attack through the generic plane over `K(v, u₁, u₂)` -- the other standard route
--- would not use it, and unusable machinery is worse than none.
+THE ROUTE TAKEN (2026-07-27), AND WHY NOT THE INDUCTIVE ONE. The cut recorded in
+the previous version of this docstring -- induct on `N`, one hyperplane at a
+time, over a general `affineSection h v u` with a composition lemma generalising
+`planeSection_comp` -- was NOT taken, and the `affineSection` infrastructure was
+NOT built. The reason is that Schmidt's own proof (Chapter V, Lemma 4A) does the
+whole descent in ONE step: after a linear change of coordinates putting the plane
+direction into the last two coordinates, one specialises ALL `N - 2` remaining
+variables at once. So the induction, and with it the composition bookkeeping,
+buys nothing. Concretely the family used is the planes PARALLEL to one fixed
+direction, which is expressible directly as `planeSection h v u₁ u₂` with
+`(u₁, u₂)` fixed and `v` varying -- no new definition needed at all.
+
+The cut is therefore into PROVEN degree machinery and ONE sorry leaf:
+
+* `coeff_single_planeSection_eq_eval_homogeneousComponent` (PROVEN) -- the
+  leading-form identity: the coefficient of `s^d` in any section equals
+  `h_d(u₁)`, whatever the base point and the second direction.
+* `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` (PROVEN) -- so
+  once `h_d(u₁) ≠ 0` the section has total degree exactly `d`. THE DEGREE HALF OF
+  THIS LEAF IS THEREFORE FULLY DISCHARGED.
+* `exists_irreducible_planeSection_leadingForm_ne_zero` (SORRY) -- the
+  irreducibility half: produce a plane, normalised so that `h_d(u₁) ≠ 0`, whose
+  section is irreducible. That leaf's docstring carries the remaining three steps
+  (Gauss, geometric integrality, specialisation), an audit of what is missing
+  from the pin, and a FALSITY AUDIT refuting the sharper "fix the plane
+  direction" variant that one would naturally try next.
 
 WHY `N ≥ 3` AND NOT GENERAL `N`. At `N ≤ 2` the statement is true but carries no
 Bertini content and is already discharged elsewhere: at `N = 2` the identity
@@ -14636,18 +14868,375 @@ the missing mathematics -- see `exists_bertiniNoetherWitness_zero` / `_one` /
 FAITHFULNESS NOTE. `d` is not assumed positive, and need not be: at `d = 0` the
 hypothesis `Irreducible h` is already false over a field (a constant is a unit or
 zero), so the statement is vacuous there rather than wrong. Likewise no
-independence condition is imposed on the produced `(u₁, u₂)`; it is forced,
-since a degenerate parametrisation makes the section a univariate polynomial in
-a linear form, which for `d ≥ 2` is reducible. -/
+independence condition is imposed on the produced `(u₁, u₂)`; it is forced, since
+a degenerate parametrisation makes the section a univariate polynomial in a
+linear form, which for `d ≥ 2` is reducible. -/
 theorem exists_irreducible_planeSection_of_irreducible {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) :
     ∃ v u₁ u₂ : Fin (n + 3) → K,
-      (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) :=
+      (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) := by
+  obtain ⟨v, u₁, u₂, hlead, hv⟩ :=
+    exists_irreducible_planeSection_leadingForm_ne_zero n d h hdeg hirr
+  exact ⟨v, u₁, u₂,
+    totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero h hdeg v u₁ u₂ hlead, hv⟩
+
+/-! ### The arithmetic half: Noether's forms in coefficient space, and the pullback
+
+`exists_noetherBadLocusForms` below is PROVEN (2026-07-27) over exactly two
+inputs, which are the two genuinely different things it asserts:
+
+* `exists_absolutelyIrreducibleForms_two` — E. NOETHER'S THEOREM proper, in the
+  COEFFICIENT SPACE of plane polynomials of degree `≤ d`: the locus of those
+  that fail to be absolutely irreducible of degree exactly `d` is cut out by
+  finitely many `𝔽_p`-rational forms whose degrees are bounded by an `E`
+  depending on `d` ALONE. This is the whole `p`-uniformity content and the only
+  thing left open here.
+* `exists_planeSectionCoeffPolys` — PROVEN below: each coefficient of
+  `planeSection h v u₁ u₂`, read as a function of the plane parameters
+  `w = (v, u₁, u₂)`, is a polynomial over the BASE ring of total degree at most
+  `h.totalDegree`. This is the pullback bookkeeping, and it is what turns
+  Noether's degree bound `E(d)` into the parameter-space bound `D = d · E(d)`.
+
+The composition of the two is `MvPolynomial.bind₁`, whose degree behaviour is
+`totalDegree_bind₁_le`, also proven below. Nothing else is used. -/
+
+/-- **PROVEN**: substituting polynomials of total degree at most `n` for the
+variables multiplies the total degree by at most `n`.
+
+This is the substitution-degree lemma in the form needed to pull Noether's forms
+back along the coefficient map; `totalDegree_bind₁_le_of_le_one` above is the
+special case `n = 1`, which is all that a plane SECTION needs, whereas a
+pullback of a degree-`E` form along a degree-`d` coefficient map needs the
+general statement.
+
+The proof is the standard expansion `bind₁ f g = ∑_{d ∈ supp g} C (g_d) · ∏_i
+(f i)^{d i}`: each summand has degree at most `∑_i (d i) · n = n · |d|`, and
+`|d| ≤ g.totalDegree` for `d` in the support. -/
+theorem totalDegree_bind₁_le {σ τ R : Type*} [CommSemiring R]
+    (f : σ → MvPolynomial τ R) (n : ℕ) (hf : ∀ i, (f i).totalDegree ≤ n)
+    (g : MvPolynomial σ R) :
+    (MvPolynomial.bind₁ f g).totalDegree ≤ n * g.totalDegree := by
+  classical
+  have hexp : MvPolynomial.bind₁ f g
+      = ∑ d ∈ g.support, MvPolynomial.C (MvPolynomial.coeff d g)
+          * ∏ i ∈ d.support, f i ^ d i := by
+    rw [MvPolynomial.bind₁, MvPolynomial.aeval_def, MvPolynomial.eval₂_eq]
+    simp [MvPolynomial.algebraMap_eq]
+  rw [hexp]
+  refine MvPolynomial.totalDegree_finsetSum_le fun d hd => ?_
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  rw [MvPolynomial.totalDegree_C, zero_add]
+  refine le_trans (MvPolynomial.totalDegree_finsetProd _ _) ?_
+  have h1 : ∑ i ∈ d.support, (f i ^ d i).totalDegree ≤ ∑ i ∈ d.support, d i * n :=
+    Finset.sum_le_sum fun i _ =>
+      le_trans (MvPolynomial.totalDegree_pow _ _) (Nat.mul_le_mul_left _ (hf i))
+  refine le_trans h1 ?_
+  rw [← Finset.sum_mul]
+  have h2 : ∑ i ∈ d.support, d i ≤ g.totalDegree := by
+    have := MvPolynomial.le_totalDegree hd
+    simpa [Finsupp.sum] using this
+  calc (∑ i ∈ d.support, d i) * n ≤ g.totalDegree * n := Nat.mul_le_mul_right _ h2
+    _ = n * g.totalDegree := Nat.mul_comm _ _
+
+/-! #### Coefficientwise degree calculus
+
+A polynomial in `MvPolynomial (Fin 2) (MvPolynomial ι R)` is exactly a plane
+polynomial whose coefficients are polynomials in auxiliary variables `ι`; the
+UNIVERSAL plane section (parameters kept as variables) is such an object. The
+five lemmas below say that the bound "every coefficient has total degree at most
+`a`" behaves like a degree: it is stable under sums, adds under products, and
+multiplies under powers and finite products. That is all that is needed to see
+that the universal plane section of a degree-`d` hypersurface has coefficients of
+degree at most `d` in the parameters — the substitution `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t`
+is LINEAR in the parameters, so each of its coefficients has parameter-degree
+at most `1`, and `d` of them multiply. -/
+
+section CoeffTotalDegree
+
+variable {ι R : Type*} [CommSemiring R]
+
+/-- **PROVEN**: the coefficients of a constant are the constant and zero. -/
+theorem coeffTotalDegree_C_le (q : MvPolynomial ι R) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.C q : MvPolynomial (Fin 2) (MvPolynomial ι R))).totalDegree
+      ≤ q.totalDegree := by
+  classical
+  rw [MvPolynomial.coeff_C]
+  split
+  · exact le_rfl
+  · simp
+
+/-- **PROVEN**: the coefficients of a plane variable are `0` and `1`. -/
+theorem coeffTotalDegree_X_le (j : Fin 2) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.X j : MvPolynomial (Fin 2) (MvPolynomial ι R))).totalDegree
+      ≤ 0 := by
+  classical
+  rw [MvPolynomial.coeff_X]
+  split <;> simp
+
+/-- **PROVEN**: a coefficientwise degree bound is stable under addition. -/
+theorem coeffTotalDegree_add_le {a : ℕ} {φ ψ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a)
+    (hψ : ∀ m, (MvPolynomial.coeff m ψ).totalDegree ≤ a) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (φ + ψ)).totalDegree ≤ a := by
+  rw [MvPolynomial.coeff_add]
+  exact le_trans (MvPolynomial.totalDegree_add _ _) (max_le (hφ m) (hψ m))
+
+/-- **PROVEN**: coefficientwise degree bounds ADD under multiplication, because
+each coefficient of a product is a sum of products of coefficients. -/
+theorem coeffTotalDegree_mul_le {a b : ℕ} {φ ψ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a)
+    (hψ : ∀ m, (MvPolynomial.coeff m ψ).totalDegree ≤ b) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (φ * ψ)).totalDegree ≤ a + b := by
+  classical
+  rw [MvPolynomial.coeff_mul]
+  refine MvPolynomial.totalDegree_finsetSum_le fun x _ => ?_
+  exact le_trans (MvPolynomial.totalDegree_mul _ _) (Nat.add_le_add (hφ _) (hψ _))
+
+/-- **PROVEN**: coefficientwise degree bounds MULTIPLY under powers. -/
+theorem coeffTotalDegree_pow_le {a : ℕ} {φ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a) (n : ℕ) :
+    ∀ m, (MvPolynomial.coeff m (φ ^ n)).totalDegree ≤ n * a := by
+  induction n with
+  | zero =>
+      intro m
+      rw [pow_zero, ← MvPolynomial.C_1]
+      simpa using coeffTotalDegree_C_le (ι := ι) (R := R) 1 m
+  | succ n ih =>
+      intro m
+      rw [pow_succ]
+      simpa [Nat.succ_mul] using coeffTotalDegree_mul_le ih hφ m
+
+/-- **PROVEN**: coefficientwise degree bounds ADD over a finite product. -/
+theorem coeffTotalDegree_prod_le {α : Type*} (s : Finset α)
+    (f : α → MvPolynomial (Fin 2) (MvPolynomial ι R)) (b : α → ℕ)
+    (hf : ∀ j, ∀ m, (MvPolynomial.coeff m (f j)).totalDegree ≤ b j) :
+    ∀ m, (MvPolynomial.coeff m (∏ j ∈ s, f j)).totalDegree ≤ ∑ j ∈ s, b j := by
+  classical
+  induction s using Finset.cons_induction with
+  | empty =>
+      intro m
+      rw [Finset.prod_empty, Finset.sum_empty, ← MvPolynomial.C_1]
+      simpa using coeffTotalDegree_C_le (ι := ι) (R := R) 1 m
+  | cons j s _ ih =>
+      intro m
+      rw [Finset.prod_cons, Finset.sum_cons]
+      exact coeffTotalDegree_mul_le (hf j) ih m
+
+/-- **PROVEN**: substituting coefficientwise-linear elements into `h` leaves every
+coefficient of the result a polynomial of total degree at most `h.totalDegree` in
+the auxiliary variables.
+
+This is the degree half of `exists_planeSectionCoeffPolys`, isolated from the
+plane-section packaging: the substituted `gen i` are the affine forms
+`vᵢ + u₁ᵢ·s + u₂ᵢ·t` with the parameters kept as variables, and each of their
+`(s, t)`-coefficients is a single parameter variable, hence of degree `≤ 1`. -/
+theorem coeffTotalDegree_bind₁_map_C_le {N : ℕ}
+    (gen : Fin N → MvPolynomial (Fin 2) (MvPolynomial ι R))
+    (hgen : ∀ i, ∀ m, (MvPolynomial.coeff m (gen i)).totalDegree ≤ 1)
+    (h : MvPolynomial (Fin N) R) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.bind₁ gen
+        (MvPolynomial.map (MvPolynomial.C : R →+* MvPolynomial ι R) h))).totalDegree
+      ≤ h.totalDegree := by
+  classical
+  have hCinj : Function.Injective (MvPolynomial.C : R →+* MvPolynomial ι R) :=
+    MvPolynomial.C_injective _ _
+  set h' : MvPolynomial (Fin N) (MvPolynomial ι R) :=
+    MvPolynomial.map (MvPolynomial.C : R →+* MvPolynomial ι R) h with hh'
+  have hdeg' : h'.totalDegree = h.totalDegree := totalDegree_map_eq_of_injective h hCinj
+  have hexp : MvPolynomial.bind₁ gen h'
+      = ∑ d ∈ h'.support, MvPolynomial.C (MvPolynomial.coeff d h')
+          * ∏ i ∈ d.support, gen i ^ d i := by
+    rw [MvPolynomial.bind₁, MvPolynomial.aeval_def, MvPolynomial.eval₂_eq]
+    simp [MvPolynomial.algebraMap_eq]
+  rw [hexp, MvPolynomial.coeff_sum]
+  refine MvPolynomial.totalDegree_finsetSum_le fun d hd => ?_
+  rw [MvPolynomial.coeff_C_mul]
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  have hc : (MvPolynomial.coeff d h').totalDegree = 0 := by
+    rw [hh', MvPolynomial.coeff_map]
+    exact MvPolynomial.totalDegree_C _
+  rw [hc, zero_add]
+  refine le_trans (coeffTotalDegree_prod_le d.support (fun i => gen i ^ d i) (fun i => d i)
+    (fun i => by simpa using coeffTotalDegree_pow_le (hgen i) (d i)) m) ?_
+  rw [← hdeg']
+  simpa [Finsupp.sum] using MvPolynomial.le_totalDegree hd
+
+end CoeffTotalDegree
+
+/-- **THE PULLBACK ALONG THE COEFFICIENT MAP (PROVEN 2026-07-27)** — every
+coefficient of a plane section is a polynomial of total degree at most
+`h.totalDegree` in the plane parameters, over the BASE ring `R`.
+
+WHAT IT SAYS. Write `w = (v, u₁, u₂)` for a plane parameter, so `w` is a point of
+`𝔸^{3N}` with coordinate variables `Fin N ⊕ Fin N ⊕ Fin N`. For each monomial
+`m = sᵃtᵇ` there is a polynomial `Cf m ∈ R[v, u₁, u₂]` with
+
+* `(Cf m).totalDegree ≤ h.totalDegree`, and
+* for every `R`-algebra `S` and every `S`-point `w`, the `m`-coefficient of
+  `planeSection (h ⊗ S) w` equals `Cf m` evaluated at `w`.
+
+WHY THE BASE RING MATTERS. The consumer needs the Noether forms pulled back to be
+`𝔽_p`-RATIONAL while the bad locus is described over `𝔽̄_p`; that is exactly the
+statement that `Cf m` lives over `R` while the identity holds at `S`-points. If
+`Cf` were only produced over `S` the whole point of the leaf would be lost.
+
+WHY THE DEGREE BOUND IS `h.totalDegree` AND NOT `2 · h.totalDegree`. The
+substitution `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t` has total degree `2` as a polynomial in
+all of `(s, t, v, u₁, u₂)` jointly, but degree `1` in the PARAMETERS alone for
+each fixed power of `(s, t)`. Reading a plane section as an element of
+`R[v, u₁, u₂][s, t]` makes that precise, and the coefficientwise degree calculus
+in the previous section is exactly the bookkeeping for it.
+
+THE CONSTRUCTION. `Cf m` is the `m`-th coefficient of the UNIVERSAL plane
+section: the plane section of `h` pushed into `R[v, u₁, u₂]` and taken along the
+tautological parameters `v ↦ X (inl i)`, `u₁ ↦ X (inr (inl i))`,
+`u₂ ↦ X (inr (inr i))`. Specialisation is then `planeSection_map` applied to the
+evaluation homomorphism `R[v, u₁, u₂] → S` at `w`, and the degree bound is
+`coeffTotalDegree_bind₁_map_C_le`. -/
+theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    [Algebra R S] (h : MvPolynomial (Fin N) R) :
+    ∃ Cf : (Fin 2 →₀ ℕ) → MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R,
+      (∀ m, (Cf m).totalDegree ≤ h.totalDegree) ∧
+      ∀ (v u₁ u₂ : Fin N → S) (m : Fin 2 →₀ ℕ),
+        MvPolynomial.coeff m
+            (planeSection (MvPolynomial.map (algebraMap R S) h) v u₁ u₂)
+          = MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
+              (MvPolynomial.map (algebraMap R S) (Cf m)) := by
+  classical
+  refine ⟨fun m => MvPolynomial.coeff m
+      (planeSection (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        (fun i => MvPolynomial.X (Sum.inl i))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inl i)))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inr i)))), ?_, ?_⟩
+  · intro m
+    have hX : ∀ s : Fin N ⊕ Fin N ⊕ Fin N,
+        (MvPolynomial.X s : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R).totalDegree ≤ 1 := by
+      intro s
+      have hXm : (MvPolynomial.X s : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)
+          = MvPolynomial.monomial (Finsupp.single s 1) 1 := rfl
+      rw [hXm]
+      simpa using MvPolynomial.totalDegree_monomial_le (Finsupp.single s 1) (1 : R)
+    have hCX : ∀ s : Fin N ⊕ Fin N ⊕ Fin N, ∀ m : Fin 2 →₀ ℕ,
+        (MvPolynomial.coeff m (MvPolynomial.C (MvPolynomial.X s)
+          : MvPolynomial (Fin 2) (MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R))).totalDegree ≤ 1 :=
+      fun s m => le_trans (coeffTotalDegree_C_le _ m) (hX s)
+    simp only [planeSection]
+    refine coeffTotalDegree_bind₁_map_C_le _ (fun i => ?_) h m
+    refine coeffTotalDegree_add_le (coeffTotalDegree_add_le (hCX _) (fun m => ?_)) (fun m => ?_)
+    · simpa using coeffTotalDegree_mul_le (hCX (Sum.inr (Sum.inl i)))
+        (coeffTotalDegree_X_le (ι := Fin N ⊕ Fin N ⊕ Fin N) (R := R) 0) m
+    · simpa using coeffTotalDegree_mul_le (hCX (Sum.inr (Sum.inr i)))
+        (coeffTotalDegree_X_le (ι := Fin N ⊕ Fin N ⊕ Fin N) (R := R) 1) m
+  · intro v u₁ u₂ m
+    set ψ : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R →+* S :=
+      MvPolynomial.eval₂Hom (algebraMap R S) (Sum.elim v (Sum.elim u₁ u₂)) with hψ
+    have e0 : MvPolynomial.map ψ (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        = MvPolynomial.map (algebraMap R S) h := by
+      rw [MvPolynomial.map_map]
+      congr 1
+      exact RingHom.ext fun r => by simp [hψ]
+    have e1 : (fun i => ψ (MvPolynomial.X (Sum.inl i)
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = v := by
+      funext i; simp [hψ]
+    have e2 : (fun i => ψ (MvPolynomial.X (Sum.inr (Sum.inl i))
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = u₁ := by
+      funext i; simp [hψ]
+    have e3 : (fun i => ψ (MvPolynomial.X (Sum.inr (Sum.inr i))
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = u₂ := by
+      funext i; simp [hψ]
+    have hmap : MvPolynomial.map ψ (planeSection (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        (fun i => MvPolynomial.X (Sum.inl i))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inl i)))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inr i))))
+        = planeSection (MvPolynomial.map (algebraMap R S) h) v u₁ u₂ := by
+      rw [planeSection_map, e0, e1, e2, e3]
+    rw [← hmap, MvPolynomial.coeff_map, MvPolynomial.eval_map]
+    rfl
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (SORRY LEAF, cut
+2026-07-27)** — the whole `p`-uniformity content of `exists_noetherBadLocusForms`,
+and after this cut the ONLY thing still open in the Noether half.
+
+WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
+that, for every prime `p`, the locus of plane polynomials `g` of total degree
+`≤ d` over `𝔽̄_p` that FAIL to be absolutely irreducible of total degree exactly
+`d` is the COMMON zero set of finitely many forms `Gs i` in the coefficients of
+`g`, all defined over `𝔽_p` and all of total degree `≤ E`.
+
+`E` DOES NOT DEPEND ON `p`, and that is the whole point: it is what makes the
+pulled-back bound `D = d · E` in `exists_noetherBadLocusForms` comparable with
+`p` itself downstream (`exists_bertiniGoodPlaneCount` needs `2 * D < p`).
+
+THE VARIABLES ARE MONOMIALS. A form lives in `MvPolynomial (Fin 2 →₀ ℕ) (ZMod p)`:
+its variables are indexed by the monomials `sᵃtᵇ`, and it is evaluated at
+`fun m => g.coeff m`. The variable type is infinite, which costs nothing — a
+polynomial mentions finitely many variables — and it avoids having to choose an
+enumeration of the monomials of degree `≤ d`. The hypothesis `g.totalDegree ≤ d`
+is what makes the finitely many coefficients that a form can see determine `g`.
+
+WHY AN `↔`, AND WHY SEVERAL FORMS. The bad locus is Zariski closed but in general
+not a hypersurface, so several forms are needed; goodness at `g` is then "some
+form does not vanish". Both directions are consumed by
+`exists_bertiniNoetherWitness_of_three_le`, through
+`exists_noetherBadLocusForms`.
+
+THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
+Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). This is elimination
+theory, not scheme theory. THE CUT THAT THE NEXT OWNER SHOULD MAKE, spelled out
+because it is the part that is not obvious:
+
+1. **The algebraic characterisation.** For `d ≥ 1` and `g.totalDegree ≤ d`,
+   `¬(g.totalDegree = d ∧ Irreducible g)` is equivalent to
+   `g.totalDegree < d  ∨  ∃ d₁ d₂ ≥ 1 with d₁ + d₂ = d and g = g₁ · g₂ with
+   gᵢ.totalDegree ≤ dᵢ`. Both directions are `MvPolynomial.totalDegree_mul_of_isDomain`
+   plus "a unit of `K[s, t]` is a nonzero constant". The case `d = 0` is separate
+   and trivial: a constant is never `Irreducible` over a field, so the good set is
+   EMPTY and the empty family of forms (`k = 0`) discharges the leaf.
+2. **The degree-drop piece is linear.** Given `g.totalDegree ≤ d`,
+   `g.totalDegree < d` iff the `d + 1` coefficients at the monomials `sᵃt^{d-a}`
+   all vanish. Those are the coordinate forms `X (single 0 a + single 1 (d - a))`,
+   of degree `1`.
+3. **The product piece is the elimination content.** For each splitting
+   `d₁ + d₂ = d` with `dᵢ ≥ 1`, the set of `g` of degree `≤ d` admitting a
+   factorisation `g = g₁ · g₂` with `gᵢ.totalDegree ≤ dᵢ` is Zariski CLOSED, cut
+   out by forms of degree bounded in terms of `d` alone. Closedness is the
+   completeness of the projectivised factor spaces: multiplication is bihomogeneous
+   of bidegree `(1, 1)`, so the image of the coefficient map is the affine cone
+   over the image of `P(V_{d₁}) × P(V_{d₂}) → P(V_d)`, and the image of a
+   projective variety under a morphism is closed. This is the ONLY step needing
+   real elimination theory, and it is where the `p`-independent degree bound
+   comes from (Chow forms / resultants have degrees depending on `d₁, d₂` only).
+4. **Union to product.** A finite UNION of common-zero-sets is the common zero set
+   of the products `∏_j F_j(i_j)` over all choices of one form from each family,
+   because a field has no zero divisors; the degrees add, and the number of
+   families (`1` degree-drop family plus `d - 1` splittings) depends only on `d`.
+
+STATED OVER `ZMod p` RATHER THAN OVER `ℤ`. The classical statement gives forms
+with INTEGER coefficients valid over every field, which is strictly stronger.
+The `𝔽_p`-rational version quantified over `p` with a uniform `E` is exactly what
+the consumer needs, and it is what is stated here so that a prover is not forced
+to establish more than is used. If the ℤ-rational version is what falls out of
+the elimination argument, it implies this one immediately.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_absolutelyIrreducibleForms_two (d : ℕ) :
+    ∃ E : ℕ, ∀ (p : ℕ) [Fact p.Prime],
+      ∃ (k : ℕ) (Gs : Fin k → MvPolynomial (Fin 2 →₀ ℕ) (ZMod p)),
+        (∀ i, (Gs i).totalDegree ≤ E) ∧
+        ∀ g : MvPolynomial (Fin 2) (AlgebraicClosure (ZMod p)),
+          g.totalDegree ≤ d →
+          ((g.totalDegree = d ∧ Irreducible g) ↔
+            ∃ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+                  (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                    (Gs i)) ≠ 0) :=
   sorry
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, PULLED BACK TO THE PLANE PARAMETERS
-(SORRY LEAF, cut 2026-07-27)** -- the ARITHMETIC half of
+(PROVEN 2026-07-27 over two named sub-leaves)** -- the ARITHMETIC half of
 `exists_bertiniNoetherWitness_of_three_le`, and the half that carries the
 uniformity in `p`.
 
@@ -14696,6 +15285,25 @@ parameters, and `h` has degree `d`. So pulling a Noether form of degree `≤ E(d
 back along the coefficient map multiplies its degree by at most `d`, and
 `D := d · E(d)` works.
 
+WHAT THIS PROOF DOES, now that the two halves are cut (2026-07-27). `E` comes
+from `exists_absolutelyIrreducibleForms_two` (Noether's theorem in the
+COEFFICIENT space of plane polynomials, the only remaining open half); `Cf`
+comes from `exists_planeSectionCoeffPolys` (PROVEN: the coefficient map
+`w ↦ coefficients of planeSection h w` is given by polynomials over `𝔽_p` of
+total degree `≤ d`). The forms are the composites `Fs i := bind₁ Cf (Gs i)`,
+whose degrees are bounded by `d · E` through `totalDegree_bind₁_le` (PROVEN),
+which is `D`. The `↔` is then a pure substitution identity: `eval` of a `bind₁`
+is `eval` at the evaluated substituents (`MvPolynomial.eval₂Hom_bind₁`), and the
+evaluated substituents are exactly the coefficients of the plane section, by
+`exists_planeSectionCoeffPolys`. So both directions come for free from the
+sub-leaf's own `↔` — nothing is proven twice.
+
+WHAT IS OPEN AFTER THIS CUT: exactly `exists_absolutelyIrreducibleForms_two`.
+Its docstring carries the four-step elimination-theory route (algebraic
+characterisation, the linear degree-drop piece, the closedness of the image of
+multiplication, and union-to-product), of which only step 3 is genuine
+elimination theory.
+
 NO `D < p` HYPOTHESIS HERE. Noether's forms are characteristic-free, so this leaf
 does not need one; the `D < p` carried by the parent is pure slack for the
 consumer.
@@ -14715,8 +15323,47 @@ theorem exists_noetherBadLocusForms (N d : ℕ) :
               Irreducible (planeSection
                 (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂))
             ↔ ∃ i, MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
-                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 :=
-  sorry
+                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 := by
+  obtain ⟨E, hE⟩ := exists_absolutelyIrreducibleForms_two d
+  refine ⟨d * E, ?_⟩
+  intro p _ h hdeg
+  obtain ⟨k, Gs, hGdeg, hGiff⟩ := hE p
+  obtain ⟨Cf, hCdeg, hCeval⟩ :=
+    exists_planeSectionCoeffPolys (S := AlgebraicClosure (ZMod p)) h
+  refine ⟨k, fun i => MvPolynomial.bind₁ Cf (Gs i), ?_, ?_⟩
+  · intro i
+    refine le_trans (totalDegree_bind₁_le Cf d (fun j => hdeg ▸ hCdeg j) (Gs i)) ?_
+    exact Nat.mul_le_mul_left d (hGdeg i)
+  · intro v u₁ u₂
+    have hinj : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+    have hgdeg : (planeSection
+        (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h)
+        v u₁ u₂).totalDegree ≤ d := by
+      refine le_trans (totalDegree_planeSection_le _ _ _ _) ?_
+      rw [totalDegree_map_eq_of_injective h hinj, hdeg]
+    rw [hGiff _ hgdeg]
+    refine exists_congr fun i => ?_
+    have key : MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
+          (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (MvPolynomial.bind₁ Cf (Gs i)))
+        = MvPolynomial.eval
+            (fun m => MvPolynomial.coeff m (planeSection
+              (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂))
+            (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Gs i)) := by
+      rw [MvPolynomial.eval_map, MvPolynomial.eval_map]
+      show MvPolynomial.eval₂Hom _ _ (MvPolynomial.bind₁ Cf (Gs i))
+        = MvPolynomial.eval₂Hom _ _ (Gs i)
+      have hfun : (fun m => MvPolynomial.eval₂Hom
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+              (Sum.elim v (Sum.elim u₁ u₂)) (Cf m))
+          = fun m => MvPolynomial.coeff m (planeSection
+              (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂) := by
+        funext m
+        rw [hCeval v u₁ u₂ m, MvPolynomial.eval_map]
+        rfl
+      rw [MvPolynomial.eval₂Hom_bind₁, hfun]
+    rw [key]
 
 /-- **BERTINI-NOETHER AT `N ≥ 3` (PROVEN 2026-07-27 over two named sub-leaves) --
 THE WHOLE GEOMETRIC CONTENT OF ITEM 4.**
@@ -14773,7 +15420,13 @@ two sub-leaves.
 WHAT IS OPEN AFTER THIS CUT: exactly `exists_irreducible_planeSection_of_irreducible`
 (Bertini, geometry over one algebraically closed field) and
 `exists_noetherBadLocusForms` (Noether, elimination theory with a `p`-uniform
-degree bound). They share no technique, so they are independently dispatchable.
+degree bound). They are independently dispatchable. (UPDATED 2026-07-27: the
+Bertini leaf is now PROVEN over the single smaller leaf
+`exists_irreducible_planeSection_leadingForm_ne_zero`; the DEGREE claim is
+supplied by `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, so
+what is open on this side is irreducibility alone. The accompanying claim that the two halves
+"share no technique" is withdrawn: Schmidt derives the Bertini half from
+Noether's Theorem 2A. See that leaf's docstring.)
 
 INFRASTRUCTURE ALREADY IN PLACE, so that proofs of those two need not rebuild it:
 `planeSection_comp` (composition of parametrisations, stated for a general
@@ -14867,11 +15520,17 @@ whatever — see `exists_bertiniNoetherWitness_zero`,
 
 * `exists_irreducible_planeSection_of_irreducible` — Bertini's irreducibility
   theorem, pure geometry over ONE algebraically closed field, EXISTENCE of a good
-  plane only;
+  plane only. (Since 2026-07-27 this is itself PROVEN over the one smaller leaf
+  `exists_irreducible_planeSection_leadingForm_ne_zero`, which asks for
+  irreducibility alone; the degree half is closed. That leaf's docstring also
+  carries a FALSITY AUDIT of the sharper fixed-direction variant.)
 * `exists_noetherBadLocusForms` — E. Noether's irreducibility forms, elimination
   theory, carrying the degree bound that is UNIFORM in `p`.
 
-They share no technique and are independently dispatchable.
+They are independently dispatchable. (2026-07-27: the claim that they "share no
+technique" is withdrawn -- Schmidt's Lemma 4A derives the Bertini half from
+Noether's Theorem 2A. What is true is that the Bertini half needs no degree
+bound, uniform in `p` or otherwise.)
 
 WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
 `N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
@@ -27782,53 +28441,66 @@ theorem natCard_rootsOfUnity_succ_galoisField (p : ℕ) [Fact p.Prime] :
   exact (IsPrimitiveRoot.iff_orderOf.mpr hordz).card_rootsOfUnity'
 
 /-- **THE CLASS FIELD THEORY LEAF: THE RING CLASS FIELD OF CONDUCTOR `p` AT AN
-INERT PRIME, TOGETHER WITH ITS CONDUCTOR MAP** (sorry node; cut 2026-07-27 out
-of `nonempty_ringClassArtinData_of_inertPrime` just below, which is now PROVEN
-over it together with `natCard_rootsOfUnity_succ_galoisField` above).
+INERT PRIME, TOGETHER WITH THE CONDUCTOR MAP OF THE WHOLE RESIDUE UNIT GROUP**
+(sorry node; cut 2026-07-28 out of `exists_ringClassConductorHom_of_inertPrime`
+just below, which is now PROVEN over it).
 
 **THIS IS THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
-`exists_dihedralOddGaloisRep_of_charThree`**, and it is now stated in the shape
-of the classical CONDUCTOR EXACT SEQUENCE rather than as an abstract order
-divisibility. It asks for two things and nothing else:
-
-* `D : RingClassArtinData e 1` — the Galois side. At `K = 1` the order clause
-  `exists_orderOf_dvd` reads `∃ a, 1 ∣ orderOf a` and is discharged by `⟨1, one_dvd _⟩`,
-  so `RingClassArtinData e 1` is EXACTLY the Artin-map core: a finite abelian
-  ring class group `Cl(𝒪_p)`, the Artin map `Γ_ℚ → Cl` defined on `Γ_M = ker e`,
-  the open fixing subgroup `H ≤ Γ_M`, the homomorphism and coset clauses,
-  complex conjugation inverting, and surjectivity (Artin reciprocity);
-* `ι` — the CONDUCTOR MAP `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)`, with kernel of order
-  dividing `24`.
-
-**WHY THAT KERNEL CLAUSE IS THE CLASSICAL STATEMENT, AND WHY `w` DOES NOT
-APPEAR.** The conductor exact sequence of the order `𝒪_p = ℤ + p 𝒪_M` is
+`exists_dihedralOddGaloisRep_of_charThree`.** It is the classical CONDUCTOR
+EXACT SEQUENCE of the order `𝒪_p = ℤ + p 𝒪_M`,
 
     1 → 𝒪_M^ˣ / 𝒪_p^ˣ → (𝒪_M/p)ˣ / (ℤ/p)ˣ → Cl(𝒪_p) → Cl(𝒪_M) → 1,
 
-so the natural map `(𝒪_M/p)ˣ → Cl(𝒪_p)` has kernel `(ℤ/p)ˣ · μ_w` with
-`μ_w = 𝒪_M^ˣ`. Restricted to the norm-one subgroup this kernel is
-`μ_{p+1} ∩ ((ℤ/p)ˣ · μ_w) = μ_2 · μ_w = μ_w` (if `y = a ζ` with `a ∈ 𝔽_pˣ` and
-`ζ ∈ μ_w ⊆ μ_{p+1}` then `a = y ζ⁻¹ ∈ μ_{p+1} ∩ 𝔽_pˣ = μ_2`, and `2 ∣ w`), of
-order `w ∈ {2, 4, 6}` — every one of which divides `24`. Stating the clause as
-`Nat.card (ker ι) ∣ 24` therefore records the true content while keeping `w`,
-and its case split on `d = -1`, `d = -3`, out of the statement, exactly as the
-parent leaf's `(p+1)/24` does.
+together with Artin reciprocity for the ring class field of conductor `p`, and
+NOTHING ELSE. Concretely it asks for two things:
 
-**WHAT THE CUT MOVED OFF THIS LEAF.** The parent now discharges: the order of
-`μ_{p+1}` (`natCard_rootsOfUnity_succ_galoisField`), the first-isomorphism
-computation `#(range ι) = (p+1)/#(ker ι)`, cyclicity of `range ι`, extraction of
-an element of that exact order, and the arithmetic `k ∣ 24 ∣ p+1 ⟹
-(p+1)/24 ∣ (p+1)/k`. None of that is class field theory, and none of it is left
-here. What is left is Artin reciprocity in its EXISTENCE direction plus the
-conductor exact sequence, and nothing else.
+* `D : RingClassArtinData e 1` — the Galois side. At `K = 1` the order clause
+  `exists_orderOf_dvd` reads `∃ a, 1 ∣ orderOf a` and is discharged by
+  `⟨1, one_dvd _⟩`, so `RingClassArtinData e 1` is EXACTLY the Artin-map core:
+  a finite abelian ring class group `Cl(𝒪_p)`, the Artin map `Γ_ℚ → Cl` defined
+  on `Γ_M = ker e`, the open fixing subgroup `H ≤ Γ_M`, the homomorphism and
+  coset clauses, complex conjugation inverting, and surjectivity (Artin
+  reciprocity). Using `RingClassArtinData e 1` here is EXACT, not a weakening;
+* `j` — the CONDUCTOR MAP `(𝒪_M/p)ˣ = 𝔽_{p²}ˣ → Cl(𝒪_p)` of that sequence,
+  whose kernel is contained in `𝔽_pˣ · μ_24`.
+
+**HOW THE KERNEL CLAUSE IS WRITTEN, AND WHY IT IS THE CLASSICAL ONE.** By the
+exact sequence, `ker j = (ℤ/p)ˣ · 𝒪_M^ˣ` — the image of the prime subfield's
+units together with the image of the units of `𝒪_M`. In `𝔽_{p²}ˣ`, which is
+cyclic of order `p² − 1`, the prime subfield's unit group `𝔽_pˣ` is EXACTLY the
+`(p−1)`-torsion, and `𝒪_M^ˣ = μ_w` with `w ∈ {2, 4, 6}`, every one of which
+divides `24`, so its image is killed by `24`. Hence the clause
+
+    ∀ y, j y = 1 → ∃ u z, u ^ (p − 1) = 1 ∧ z ^ 24 = 1 ∧ y = u * z
+
+says precisely `ker j ⊆ 𝔽_pˣ · μ_24`, with `w` — and its case split on
+`d = -1`, `d = -3`, and everything else — kept out of the statement entirely,
+exactly as the parent leaf's `(p+1)/24` does. The prover may of course produce
+the sharper `ker j = 𝔽_pˣ · μ_w` and weaken.
+
+**NOTE `24 ∣ p + 1` IS DELIBERATELY ABSENT HERE.** The ring class field of
+conductor `p` exists at every inert `p`; the congruence is needed only for the
+`𝔽_{p²}ˣ` arithmetic that the parent now performs, and carrying it here would
+have been a hypothesis nobody uses.
+
+**WHAT THE CUT MOVED OFF THIS LEAF** (all of it PROVEN in
+`exists_ringClassConductorHom_of_inertPrime` just below): the restriction of `j`
+to the norm-one subgroup `μ_{p+1}`, the computation
+`μ_{p+1} ∩ 𝔽_pˣ = μ_2` in the shape `u ^ (p+1) = u ^ (p−1) = 1 ⟹ u ^ 2 = 1`,
+the consequent `ker(j|μ_{p+1}) ⊆ μ_24`, and the passage from that to
+`Nat.card (ker ι) ∣ 24` through cyclicity of a subgroup of `μ_{p+1}`. None of
+that is class field theory and none of it is left here.
 
 **HOW IT IS TO BE PROVED.** At an inert `p` the residue ring is
 `𝒪_M/p ≅ 𝔽_{p²} = GaloisField p 2` (the hypotheses `hpns`, `hpgt` are what make
-`p` inert: `m` is a non-square mod `p`, and `p > 24|m|` forces `p` odd and
-`p ∤ m`). Complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius `y ↦ y^p`, so
-it inverts the norm-one subgroup. Artin reciprocity `Γ_M ↠ Cl(𝒪_p)` — the CFT
-EXISTENCE theorem, which is the whole content — supplies `art`, and the
-conductor exact sequence above supplies `ι`.
+`p` inert: `m = d.num · d.den` is a non-square mod `p`, and `p > 24|m|` forces
+`p` odd and `p ∤ m`); the statement is therefore about `(𝒪_M/p)ˣ` after a choice
+of isomorphism, and that choice belongs to the prover. The prime subfield is
+canonical under any such choice, which is why the `u ^ (p−1) = 1` clause is
+isomorphism-independent. Complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius
+`y ↦ y^p`. Artin reciprocity `Γ_M ↠ Cl(𝒪_p)` — the CFT EXISTENCE theorem, which
+is the whole content — supplies `art`, and the conductor exact sequence supplies
+`j`.
 
 **ANTICYCLOTOMY IS FREE ONCE THE RING CLASS GROUP IS IN HAND**: complex
 conjugation inverts the whole ring class group, because `𝔞 𝔞̄ = (N𝔞)` is
@@ -27842,9 +28514,90 @@ Kummer theory cannot produce anticyclotomic extensions and CFT is genuinely
 required. The refuting check: exhibit a cyclic anticyclotomic extension of an
 imaginary quadratic `M` of degree `> 2` obtained by adjoining a radical.
 
+**THE COMPLEX-MULTIPLICATION AXIS IS SEARCHED TOO (2026-07-27), and it is NOT a
+shortcut — it costs strictly MORE.** The suggestion is that the ring class field
+of conductor `p` is `M(j(𝒪_p))`. Three findings, each with the grep that would
+refute it:
+
+* the modular `j`-FUNCTION does not exist in mathlib. `EllipticCurve.j`
+  (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`) is the
+  ALGEBRAIC invariant `c₄³/Δ` of a Weierstrass equation over a ring, not the
+  modular function on `ℍ`; `Mathlib/NumberTheory/ModularForms/` has Eisenstein
+  series, `Δ`, `η` and `q`-expansions but no `j`. So `j(𝒪_p)` cannot be WRITTEN;
+* there is no CM theory in any of the three trees:
+  `grep -rln 'ComplexMultiplication' .lake/packages/mathlib/Mathlib/` is empty
+  and `~/cs/FLT` has nothing. The only CM material in THIS tree is
+  `IsCMByRamifiedMaximalOrder` (`Fermat/FLT/FreyCurve/MazurTorsion.lean`), an
+  endomorphism interface for CM points on `Y₀(p)` at `p = 43, 67, 163` carrying
+  no `j`-invariant, no ideal-class action on lattices, no field of definition and
+  no Artin map, and whose own producer is itself a sorry leaf;
+* CM does not AVOID class field theory. The half needed here — that `M(j(𝒪))/M`
+  is abelian with group `Cl(𝒪)` via the Artin map — is Cox Thm 11.1, whose proof
+  invokes reciprocity for the order. The elementary half (simply transitive
+  action on `j`-invariants) does not give the Galois statement.
+
+Also measured 2026-07-27: CFT's cohomological prerequisites are barely started
+upstream — `Mathlib/RepresentationTheory/Homological/TateCohomology/` contains
+only `Basic.lean` (definitions; no class formations, no Tate's theorem) and
+`Mathlib/Algebra/BrauerGroup/Defs.lean` has no invariant map. **Attack the
+ideal-theoretic route, not the cohomological one and not the CM one.**
+
+MISSING MACHINERY, with the grep that would refute the claim. There is no ray
+class group, no Artin map, no idele class group and no reciprocity anywhere:
+`grep -rn 'RayClassGroup\|rayClassGroup\|ArtinMap\|artinMap\|idele\|reciprocity'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns prose only. AXIS SEARCHED:
+the EXISTENCE direction of CFT — constructions that PRODUCE a Galois character
+or an abelian extension out of ideal-theoretic data. `ModThree.lean`'s
+`_ray_class` cluster runs the OPPOSITE way (it consumes a given Galois character
+and produces ideal-theoretic data), but it IS in this module's import cone
+through `Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic`, so if the
+existence direction is ever built there this leaf can consume it directly.
+
 References: Cox, *Primes of the Form x² + ny²*, ch. 7 §9 (the conductor exact
 sequence, Prop. 7.22 and its corollaries) and ch. 8–9 (ring class fields);
 Childress, *Class Field Theory*; Neukirch ch. VI. -/
+theorem exists_ringClassArtinData_conductorMap_of_inertPrime
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (p : ℕ) [Fact p.Prime]
+    (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
+    (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
+    ∃ D : RingClassArtinData e 1,
+      ∃ j : (GaloisField p 2)ˣ →* D.Cl,
+        ∀ y : (GaloisField p 2)ˣ, j y = 1 →
+          ∃ u z : (GaloisField p 2)ˣ, u ^ (p - 1) = 1 ∧ z ^ 24 = 1 ∧ y = u * z :=
+  sorry
+
+/-- **THE NORM-ONE RESTRICTION OF THE CONDUCTOR MAP** (**PROVEN 2026-07-28** over
+`exists_ringClassArtinData_conductorMap_of_inertPrime` just above; previously
+itself the class field theory leaf, cut 2026-07-27 out of
+`nonempty_ringClassArtinData_of_inertPrime` just below, which is PROVEN over it
+together with `natCard_rootsOfUnity_succ_galoisField` above).
+
+**WHAT IS PROVEN HERE, AND WHY IT IS NOT CLASS FIELD THEORY.** The leaf above
+supplies the conductor map `j : 𝔽_{p²}ˣ → Cl(𝒪_p)` of the whole residue unit
+group, with `ker j ⊆ 𝔽_pˣ · μ_24`. This declaration restricts `j` to the
+norm-one subgroup `μ_{p+1}` and computes that the restricted kernel has order
+dividing `24`. The argument is finite-field arithmetic and nothing else:
+
+* if `y ∈ μ_{p+1}` and `j y = 1`, write `y = u z` with `u ^ (p−1) = 1` and
+  `z ^ 24 = 1`;
+* `24 ∣ p + 1` gives `z ^ (p+1) = 1`, hence `u ^ (p+1) = y ^ (p+1) / z ^ (p+1) = 1`;
+* `p + 1 = (p − 1) + 2` then gives `u ^ 2 = u ^ (p+1) / u ^ (p−1) = 1` — this is
+  the classical `μ_{p+1} ∩ 𝔽_pˣ = μ_2`, in the one form that needs no `gcd`;
+* therefore `y ^ 24 = (u ^ 2) ^ 12 · z ^ 24 = 1`, i.e. `ker ι ⊆ μ_24`;
+* `ker ι` is a subgroup of `μ_{p+1}`, which is cyclic, so `ker ι` is cyclic and
+  a generator killed by `24` forces `Nat.card (ker ι) ∣ 24`.
+
+**`24 ∣ p + 1` IS LOAD-BEARING** in exactly one place, the second bullet: it is
+what puts `μ_24` inside `μ_{p+1}` so that `u` inherits `u ^ (p+1) = 1`. It is
+load-bearing a second time in the consumer below, where it makes `(p+1)/24` an
+honest integer.
+
+Note the `w = #𝒪_M^ˣ ∈ {2, 4, 6}` of the roadmap appears NOWHERE — neither here
+nor in the statement above. It is carried entirely by the constant `24`. -/
 theorem exists_ringClassConductorHom_of_inertPrime
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -27856,20 +28609,62 @@ theorem exists_ringClassConductorHom_of_inertPrime
     (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
     ∃ D : RingClassArtinData e 1,
       ∃ ι : rootsOfUnity (p + 1) (GaloisField p 2) →* D.Cl,
-        Nat.card (MonoidHom.ker ι) ∣ 24 :=
-  sorry
+        Nat.card (MonoidHom.ker ι) ∣ 24 := by
+  classical
+  obtain ⟨D, j, hj⟩ :=
+    exists_ringClassArtinData_conductorMap_of_inertPrime d hd x hx e he p hpgt hpns
+  refine ⟨D, j.comp (rootsOfUnity (p + 1) (GaloisField p 2)).subtype, ?_⟩
+  have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+  obtain ⟨t, ht⟩ := hp24
+  set ι := j.comp (rootsOfUnity (p + 1) (GaloisField p 2)).subtype
+  -- every element of `ker ι` is killed by `24`, i.e. `ker ι ⊆ μ_24`
+  have key : ∀ w : MonoidHom.ker ι, w ^ 24 = 1 := by
+    intro w
+    have hmem : ι (w : rootsOfUnity (p + 1) (GaloisField p 2)) = 1 := w.2
+    have hjy : j ((w : rootsOfUnity (p + 1) (GaloisField p 2)) :
+        (GaloisField p 2)ˣ) = 1 := hmem
+    have hyp : ((w : rootsOfUnity (p + 1) (GaloisField p 2)) : (GaloisField p 2)ˣ) ^ (p + 1)
+        = 1 := (mem_rootsOfUnity _ _).mp (w : rootsOfUnity (p + 1) (GaloisField p 2)).2
+    obtain ⟨u, z, hu, hz, huz⟩ := hj _ hjy
+    -- `24 ∣ p + 1` puts `μ_24` inside `μ_{p+1}`
+    have hzp : z ^ (p + 1) = 1 := by rw [ht, pow_mul, hz, one_pow]
+    have hup : u ^ (p + 1) = 1 := by
+      have h1 : (u * z) ^ (p + 1) = 1 := by rw [← huz]; exact hyp
+      rw [mul_pow, hzp, mul_one] at h1
+      exact h1
+    -- `μ_{p+1} ∩ 𝔽_pˣ = μ_2`, in the form that needs no `gcd`
+    have hu2 : u ^ 2 = 1 := by
+      have hsplit : p + 1 = (p - 1) + 2 := by omega
+      rw [hsplit, pow_add, hu, one_mul] at hup
+      exact hup
+    have hy24 : ((w : rootsOfUnity (p + 1) (GaloisField p 2)) : (GaloisField p 2)ˣ) ^ 24
+        = 1 := by
+      rw [huz, mul_pow, hz, mul_one, show (24 : ℕ) = 2 * 12 from rfl, pow_mul, hu2, one_pow]
+    apply Subtype.ext
+    apply Subtype.ext
+    rw [SubmonoidClass.coe_pow, SubmonoidClass.coe_pow, OneMemClass.coe_one,
+      OneMemClass.coe_one]
+    exact hy24
+  -- a subgroup of the cyclic group `μ_{p+1}` is cyclic, so a generator decides the order
+  obtain ⟨g, hg⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := MonoidHom.ker ι)
+  rw [← hg]
+  exact orderOf_dvd_of_pow_eq_one (key g)
 
-/-- **THE CLASS FIELD THEORY LEAF: THE ARTIN MAP OF THE RING CLASS FIELD OF
-CONDUCTOR `p` AT AN INERT PRIME** (sorry node; cut 2026-07-27 out of
-`exists_ringClassZModChar_of_inertPrime` just below, which is now PROVEN over it
-together with the group-theoretic `exists_zmodChar_of_dvd_exponent` above).
+/-- **THE ORDER CLAUSE OF THE ARTIN MAP OF THE RING CLASS FIELD OF CONDUCTOR `p`
+AT AN INERT PRIME** (**PROVEN 2026-07-27**, see the DECOMPOSED note at the end;
+cut 2026-07-27 out of `exists_ringClassZModChar_of_inertPrime` just below, which
+is PROVEN over it together with the group-theoretic
+`exists_zmodChar_of_dvd_exponent` above).
 
-**THIS IS NOW THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
-`exists_dihedralOddGaloisRep_of_charThree`.** Everything that used to sit in
-front of it — the arithmetic selection of `p`, the profinite bookkeeping, the
-`n`-divisibility, the `ZMod` encoding and the character extension — is proven
-elsewhere. What is left is Artin reciprocity for the ring class field, in its
-EXISTENCE direction, and nothing else.
+**THE CLASS-FIELD-THEORETIC CONTENT HAS ALL MOVED UPWARD** and now lives in the
+single leaf `exists_ringClassArtinData_conductorMap_of_inertPrime` above — the
+conductor exact sequence plus Artin reciprocity in its EXISTENCE direction.
+Everything that used to sit in front of it — the arithmetic selection of `p`,
+the profinite bookkeeping, the `n`-divisibility, the `ZMod` encoding, the
+character extension, and now the whole `𝔽_{p²}ˣ` computation — is proven
+elsewhere. The paragraphs below describe the mathematics of the CFT input and
+are retained here because they were written against this statement; the leaf
+they now govern is `exists_ringClassArtinData_conductorMap_of_inertPrime`.
 
 WHAT IT SAYS. Let `e` cut out `M = ℚ(√d)` inside `Γ_ℚ`, so `ker e = Γ_M`. Write
 `m = d.num · d.den`, an INTEGER with `m < 0` and `ℚ(√d) = ℚ(√m)`. Given a prime
@@ -29483,16 +30278,24 @@ hypothesis).
   `IsTwistedHilbertBlumenthalModuli`. Leaf B is now PROVEN. The translation
   is where `hdih` is consumed — its ONLY use in the whole descent half.
 
-The remaining sorry nodes of this section are therefore
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` and
-`exists_twistedHilbertBlumenthalDescent_of_split`. The `PolarizationStruct`
-lemmas listed above are still not in the cone, for the same reason: they are
-consumed by the proofs of leaf A2, which is still `sorry`.
+**LEAF LIST, CORRECTED 2026-07-28** (the previous version of this paragraph
+named `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` as open;
+that declaration has been PROVEN since the third cut, and the list was never
+updated — a stale list of this kind is what manufactures phantom dispatches,
+so it is stated here in the form the compiler agrees with). The remaining
+sorry nodes of this section are exactly
 
-UPDATE 2026-07-27: `exists_standardLevelModule` (leaf A1) is PROVEN — see
-the subsection "The standard level module, constructed" below, and the
-declaration's own docstring for what its earlier route note got wrong. So
-the count above is two, not three.
+* `exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (leaf A2a,
+  the geometric core of Rapoport §1), and
+* `exists_twistedHilbertBlumenthalDescent_of_split` (leaf B1, Taylor's
+  Lemma 4.4).
+
+`exists_standardLevelModule` (leaf A1),
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (leaf A2),
+`exists_splitHilbertBlumenthalModuli` (leaf A) and the DESCENT/SEAM
+translation are all PROVEN. The `PolarizationStruct` lemmas listed above are
+still not in the cone, for the same reason as before: they are consumed by
+the proof of leaf A2a, which is still `sorry`.
 
 POSITIVITY REPAIR, 2026-07-27 (same day, and it changes the SIGNATURES in
 this section rather than only its prose). `HasSplitHilbertBlumenthalModuli`
@@ -29599,6 +30402,46 @@ def IsSplitLevelStructure
     (∀ y, y ∈ (m.torsion x I).1 ↔ ∃ w, e w = y) ∧
     (∀ v w : Fin 2 → kI, pol.pairing x I n hn (e v) (e w) = Λ F v w)
 
+open CategoryTheory in
+/-- **A standard (pairing-normalized) level module at `n`**: a rank-two
+`GaloisRep` over `kI` together with an alternating, nondegenerate,
+`Γ`-equivariant form into `μ_n`, uniformly in the base field.
+
+This is Taylor's `W_{b₀,0}` with its standard pairing. Every clause is
+forced by a `Fermat.PolarizationStruct` axiom — see the MODULE/GEOMETRY cut
+docstring below — and the last one is the cyclotomic-determinant condition
+in the only shape this vocabulary can express it: `Λ` cannot be pinned to a
+VALUE (`DualStruct.weil` is `μ_n(F̄)`-valued, so fixing `⟨e₀, e₁⟩ = ζ` is not
+a `ℚ`-rational condition), but its EQUIVARIANCE under `galRoot` can be, and
+that is exactly what cuts the split space down to one geometric component.
+
+`Λ` is indexed by the base field because its target is; the index ranges
+over `ℚ`-algebra fields because in characteristic `n` the target is
+trivial and nondegeneracy would be FALSE rather than merely vacuous.
+
+RELOCATED 2026-07-28, from the MODULE/GEOMETRY cut subsection below to
+here, ahead of `HasSplitHilbertBlumenthalModuli`. Lean's declaration order
+is the whole reason: that definition now EXPORTS this predicate (see its
+docstring, "WHAT `hsplit` HANDS ITS CONSUMER"), and could not while this
+one was declared after it. Nothing about the statement changed. -/
+def IsStandardLevelModule
+    (n : ℕ) {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F (u + v) w = Λ F u w * Λ F v w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F u (v + w) = Λ F u v * Λ F u w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI), Λ F v v = 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI),
+      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
+      Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
+        = Fermat.galRoot σ (Λ F v w))
+
 open CategoryTheory AlgebraicGeometry in
 /-- **The split Hilbert–Blumenthal moduli space of level `λ𝔭` exists**:
 Rapoport's `X₀`, packaged as the hypothesis of Taylor's descent.
@@ -29619,9 +30462,44 @@ The existential carries, besides the space and its universal family:
   structures at `λ` and at `𝔭` comes from an `F`-point of `X₀`, compatibly
   on geometric points. See the section docstring for exactly what is not
   claimed;
-* **nondegeneracy of `Λ`, `Λp`**. Without it `Λ ≡ 1` satisfies everything
-  else and the normalization is empty — the same role
-  `DualStruct.weil_nondegenerate` plays one level down.
+* **`IsStandardLevelModule ℓ ρ₀ Λ` and `IsStandardLevelModule p ρ₀p Λp`**
+  (STRENGTHENED 2026-07-28 — see "WHAT `hsplit` HANDS ITS CONSUMER" below;
+  this used to be only the NONDEGENERACY clause of each). Nondegeneracy
+  alone already rules out the empty normalization `Λ ≡ 1`, the same role
+  `DualStruct.weil_nondegenerate` plays one level down; the other four
+  clauses are bimultiplicativity, the alternating law, and — the one that
+  matters to the descent — `galRoot`-equivariance, i.e. `det ρ₀ = χ̄_ℓ`.
+
+WHAT `hsplit` HANDS ITS CONSUMER, and why it now hands over more
+(2026-07-28). The two final conjuncts used to be the nondegeneracy clause
+of `IsStandardLevelModule` and nothing else, so a consumer holding
+`hsplit` could destructure out `ρ₀`, `ρ₀p`, `Λ`, `Λp` and learn that the
+forms are nonempty — but NOT that they are `galRoot`-equivariant, hence
+NOT that `det ρ₀ = χ̄_ℓ` and `det ρ₀p = χ̄_p`.
+
+That gap is load-bearing for `exists_twistedHilbertBlumenthalDescent_of_split`.
+Its `Γ`-ACTION AUDIT states the twisting datum as the 1-cocycle
+`σ ↦ ρbar(σ) ρ₀(σ)⁻¹` for the `ρ₀`-conjugation action on `X₀ ⊗ ℚ̄`, and
+observes that the cocycle lands in the pairing-preserving subgroup exactly
+when `det ρbar = det ρ₀`. The `ρbar` half of that equation is supplied
+(`IsHardlyRamified.det`, and `hstdp` at `𝔭`); the `ρ₀` half was **not
+derivable from `hsplit`**, so the very identity the audit calls the
+condition for the construction to make sense could not even be STATED by a
+consumer of `hsplit`. That is what this strengthening fixes, and it is the
+prerequisite for cutting the descent leaf along ARITHMETIC versus GEOMETRY
+the way leaf A was cut along MODULE versus GEOMETRY.
+
+THE STRENGTHENING IS FREE ON THE PRODUCING SIDE, which is why it is the
+right repair rather than a new hypothesis somewhere. The only producer,
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule`, obtains
+`hstd' : IsStandardLevelModule ℓ ρ₀ Λ` from its own hypothesis and was
+projecting out `hstd'.2.2.2.1` and discarding the rest; it now passes
+`hstd'` whole. Nothing else changed, and
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` — the open
+geometric leaf underneath — is untouched: it never asserted the `Λ`
+clauses, which is exactly the point of the MODULE/GEOMETRY cut. This is
+the shape CLAUDE.md records as usual for such repairs: the missing
+hypothesis was already in the caller's hand and was being thrown away.
 
 `GeometricallyIrreducible fX₀` is asserted, and it is faithful precisely
 BECAUSE the level structures are `Λ`-normalized: the un-normalized split
@@ -29738,10 +30616,7 @@ def HasSplitHilbertBlumenthalModuli
           (∀ (a : NumberField.RingOfIntegers D) y, φ (mB.act a y) = m₀.act a (φ y)) ∧
           (∀ (σ : Field.absoluteGaloisGroup F) y,
             φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) ∧
-    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → k),
-      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
-    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kp),
-      v ≠ 0 → ∃ w, Λp F v w ≠ 1)
+    IsStandardLevelModule ℓ ρ₀ Λ ∧ IsStandardLevelModule p ρ₀p Λp
 
 /-! ##### The MODULE/GEOMETRY cut of leaf A (2026-07-27)
 
@@ -29753,7 +30628,9 @@ A's existential precisely because it could not be constructed at the time;
 that made the leaf STATEABLE, and it left a prover facing both halves at
 once. This cut separates them.
 
-`IsStandardLevelModule` below is exactly the constraint the geometry
+`IsStandardLevelModule` (declared just above `HasSplitHilbertBlumenthalModuli`,
+where Lean's declaration order forces it now that `HasSplitHilbertBlumenthalModuli`
+exports it; it used to sit here) is exactly the constraint the geometry
 imposes on the pair `(ρ₀, Λ)`, read off the axioms of
 `Fermat.PolarizationStruct.pairing` rather than guessed:
 
@@ -29794,40 +30671,6 @@ BOOKKEEPING NOTE: this raises the direct-sorry count of the section by one
 is a self-contained, finite-field representation-theory node that needs no
 algebraic geometry and can be owned separately, and A2 is Rapoport's
 construction with the normalization handed to it. -/
-
-open CategoryTheory in
-/-- **A standard (pairing-normalized) level module at `n`**: a rank-two
-`GaloisRep` over `kI` together with an alternating, nondegenerate,
-`Γ`-equivariant form into `μ_n`, uniformly in the base field.
-
-This is Taylor's `W_{b₀,0}` with its standard pairing. Every clause is
-forced by a `Fermat.PolarizationStruct` axiom — see the section docstring
-— and the last one is the cyclotomic-determinant condition in the only
-shape this vocabulary can express it: `Λ` cannot be pinned to a VALUE
-(`DualStruct.weil` is `μ_n(F̄)`-valued, so fixing `⟨e₀, e₁⟩ = ζ` is not a
-`ℚ`-rational condition), but its EQUIVARIANCE under `galRoot` can be, and
-that is exactly what cuts the split space down to one geometric component.
-
-`Λ` is indexed by the base field because its target is; the index ranges
-over `ℚ`-algebra fields because in characteristic `n` the target is
-trivial and nondegeneracy would be FALSE rather than merely vacuous. -/
-def IsStandardLevelModule
-    (n : ℕ) {kI : Type u} [Field kI] [TopologicalSpace kI]
-    (ρ : GaloisRep ℚ kI (Fin 2 → kI))
-    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
-      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
-      Λ F (u + v) w = Λ F u w * Λ F v w) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
-      Λ F u (v + w) = Λ F u v * Λ F u w) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI), Λ F v v = 1) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI),
-      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
-      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
-      Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
-          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
-        = Fermat.galRoot σ (Λ F v w))
 
 /-! ##### The standard level module, constructed (2026-07-27)
 
@@ -30511,20 +31354,83 @@ the `Fermat.AbelianSchemeStruct` / `Mult` / `DualStruct` / `SymHomStruct` /
 `PolarizationStruct` vocabulary along a morphism `q : S' ⟶ S`.** Every
 staged cut attempted above collapses into "the second leaf produces
 everything" for one reason only — the family cannot be moved across the
-seam. That transport is bookkeeping rather than mathematics: all five
-structures are functors of points over
-`Fermat.RelPoint f g = {x : T ⟶ A // x ≫ f = g}`
-(`Modularity/AbelianScheme.lean:107`), and for the pulled-back family
-`f' : A ×_S S' ⟶ S'` the universal property of the pullback gives
-`RelPoint f' g' ≃ RelPoint f (g' ≫ q)` for every `g' : T ⟶ S'`. That
-equivalence is what has to be written — it is NOT `Fermat.RelPoint.pre`
-(`:120`), which is precomposition in `T` and not a base change in `S` — and
-once it exists every algebraic field of all five structures transports by
-transport along it. The only fields needing real input are
-`AbelianSchemeStruct`'s `proper`, `smooth` and `connected`, each of which is
-a base-change stability statement about a mathlib morphism property. Nothing in this file consumes such transport
-today, so writing it is a separate task with its own consumer, not
-something to smuggle into this leaf.
+seam. The paragraph as first written called that transport "bookkeeping
+rather than mathematics" for all five structures. **That was true of four of
+them and FALSE of the fifth**, and the correction is what settles the axis;
+see the two dated updates below.
+
+**UPDATE 2026-07-28 (i) — THE `RelPoint` HALF HAS LANDED, AND IT IS ALREADY
+IN THIS FILE'S PUBLIC IMPORT CONE.** The equivalence this paragraph asked
+for is written and proven:
+
+* `Fermat.RelPoint.baseChangeDown` / `baseChangeUp`
+  (`Modularity/AbelianSchemeIsogeny.lean:236,244`), with
+  `baseChangeDown_baseChangeUp`, `baseChangeUp_baseChangeDown`,
+  `baseChangeDown_injective` and the naturality lemma `baseChangeDown_pre`
+  — i.e. exactly `RelPoint (pullback.snd f g) h ≃ RelPoint f (h ≫ g)`, and
+  it is NOT `Fermat.RelPoint.pre` (`Modularity/AbelianScheme.lean:120`),
+  which is precomposition in `T`;
+* `Fermat.AbelianSchemeStruct.baseChange`
+  (`Modularity/AbelianSchemeIsogeny.lean:534`), transporting the whole group
+  law with `baseChange_add` / `baseChange_zero` / `baseChange_mulByNat`.
+
+The three fields this paragraph flagged as "needing real input" — `proper`,
+`smooth`, `connected` — turned out to be one line each off mathlib's
+`IsStableUnderBaseChange` instances. Reachability: this module
+`public import`s `Modularity.TateModule`, which `public import`s
+`Modularity.AbelianSchemeIsogeny`, so both names are usable here with no
+import change (checked 2026-07-28 by import-closure walk, and the module is
+built as part of this file's `lake build`).
+
+`Mult`, `DualStruct` and `SymHomStruct` transports remain unwritten, and for
+those three the "bookkeeping" verdict does stand: every field is an identity
+between relative points, so each transports along the equivalence above the
+way `AbelianSchemeStruct`'s did.
+
+**UPDATE 2026-07-28 (ii) — `PolarizationStruct` DOES NOT BASE-CHANGE, AND
+THIS IS THE REASON THE STAGED AXIS STAYS CLOSED.** The obstruction is
+`Fermat.PolarizationStruct.lam_surjective`, which asserts that
+`lam : 𝔞 → SymHomStruct d` is onto **ALL** symmetric `R`-linear
+homomorphisms `A ⟶ A^∨` — i.e. `𝔞 ≅ Hom^sym_R(A, A^∨)`. Restriction along
+`q : S' ⟶ S` always gives a map `Hom^sym_S → Hom^sym_{S'}` (a natural
+transformation over test objects `T ⟶ S'` is one over fewer test objects
+than over `T ⟶ S`), so `hom`, `hom_add`, `pre_hom`, `hom_act`,
+`hom_torsion`, `weil_self`, `weil_hom_nondegenerate`, `lam`, `lam_add`,
+`lam_smul`, `posElt`, `posElt_pos` and `hom_eq_lam` all transport. But the
+target module can GROW, and then `lam` stops being surjective.
+
+COUNTEREXAMPLE (elementary, and it lives inside the structure's own
+generality — `PolarizationStruct` imposes no relation between the relative
+dimension of `f` and `R`). Take `R = ℤ`, `𝔞 = ⊤`, `S = Spec ℚ`,
+`S' = Spec K` for `K` a quadratic field, and `A = Res_{K/ℚ} E` the Weil
+restriction of an elliptic curve `E/K` that is not `K`-isogenous to any
+curve defined over `ℚ` and not isogenous to its conjugate `E^σ`. Then `A` is
+a simple abelian surface over `ℚ` with `End⁰_ℚ(A) = ℚ`, so
+`Hom^sym(A, A^∨)` has rank 1 and `lam_surjective` holds; but
+`A ×_ℚ K ≅ E × E^σ`, whose symmetric-hom module has rank 2. So the
+base-changed `lam` misses a symmetric hom, and no transport lemma can
+produce a `PolarizationStruct` over `S'`.
+
+WHY THIS IS NOT A DEFECT OF THE STRUCTURE. `lam_surjective` is what pins the
+wide class `[𝔞] ∈ Cl(R)` (see the structure docstring, refuted repair 2);
+dropping it makes `𝔞` carry no information and re-breaks
+`HasSplitHilbertBlumenthalModuli`. And in the intended regime the module
+really is rank one — for an abelian scheme of relative dimension `[D:ℚ]`
+with `𝒪_D`-multiplication, `Hom^sym_{𝒪_D}(A, A^∨)` is the rank-one
+polarization module, which is why the structure is inhabited at all. So the
+transport is available only in a CONDITIONAL form, carrying the hypothesis
+that the symmetric-hom module does not grow along `q` — and that hypothesis
+is a RIGIDITY statement about Hilbert–Blumenthal-type families, i.e. exactly
+the kind of moduli input the staged cut was supposed to move across the
+seam. THE CHECK THAT WOULD REFUTE THIS UPDATE: write
+`PolarizationStruct.baseChange` with no hypothesis beyond `q : S' ⟶ S`, or
+show `Hom^sym` cannot grow for a family carrying a `PolarizationStruct`.
+
+CONCLUSION FOR THE STAGED AXIS: it stays closed, and now for a MATHEMATICAL
+reason rather than a missing-work one. Writing the four available transports
+would be free-floating today — nothing in this file consumes them — so they
+remain a separate task with its own consumer, not something to smuggle into
+this leaf.
 
 THE OTHER AXIS STILL NOT SEARCHED: a cut that separates the analytic
 uniformization (which supplies connectedness) from the GIT/deformation
@@ -30533,7 +31439,31 @@ COMPLEX-ANALYTIC datum. The obstruction there is that
 `GeometricallyConnected` is the all-extensions form and this pin has no
 "test over a single algebraically closed extension" criterion — the same
 gap `geometricallyIrreducible_of_smooth_of_geometricallyConnected` above
-had to route around.
+had to route around. (RE-CHECKED 2026-07-28, since an audit is a dated claim
+about a moving tree: `Mathlib/AlgebraicGeometry/Geometrically/Basic.lean`
+and `.../Connected.lean` still offer only `geometrically_eq_universally`,
+`geometrically_iff_forall_fiberToSpecResidueField`,
+`geometrically_iff_of_commRing` and the base-change instances — every one of
+them all-extensions or all-fibres. The obstruction stands.)
+
+A FOURTH PROPERTY-SHAPED REFUTATION, recorded 2026-07-28 because it is the
+first thing one tries after reading the second bullet above and it is FALSE.
+*"Connectedness need not be produced: take a geometrically connected clopen
+subscheme of whatever the first leaf produces."* The second leaf would then
+be `[all clauses but connectedness] → [some clopen piece satisfies all
+clauses]`, and that implication is FALSE. Witness: let `M` be the true space
+and `x₁ ≠ x₂` two closed points of it whose fibres are pairwise
+non-isomorphic to every other fibre as `𝒪_D`-`Γ`-modules; put
+`U := M ∖ {x₁}`, `V := M ∖ {x₂}`, and take `X := U ⊔ V` with the restricted
+family. Openness keeps smoothness, the relative dimension, separatedness,
+finite type and the universal level structures; quasi-compactness survives
+because removing a closed point from a Noetherian scheme does; and `X` is
+FINE, because `U ∪ V = M` means every object finds a point in one summand or
+the other. But the clopen pieces of `X` are `U`, `V` and `X`, and neither
+`U` nor `V` is fine — the fibre at `x₁` has no point over `U`, the fibre at
+`x₂` none over `V`. So the uniqueness-free fineness clause blocks component
+SELECTION exactly as it blocks component derivation, and the residue really
+is atomic along the whole property-shaped axis.
 
 **FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS:
 SETTLED 2026-07-27, and the answer was NO. The previous form of this leaf
@@ -30833,7 +31763,7 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₀)
   exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, ρ₀, ρ₀p, Λ, Λp, hsm, hsep, hlft, hqc,
     geometricallyIrreducible_of_smooth_of_geometricallyConnected fX₀ hsm hconn,
-    hdimA, huniv, hfine, hstd'.2.2.2.1, hstdp'.2.2.2.1⟩
+    hdimA, huniv, hfine, hstd', hstdp'⟩
 
 open CategoryTheory in
 /-- **LEAF A — Rapoport's split moduli space** (PROVEN 2026-07-27 as an
@@ -31277,6 +32207,43 @@ would also serve the `𝔞`-side: the same interface is what would let
 construction over a field containing `μ_{ℓp}` plus a descent to `ℚ` along
 the standard level module `ρ₀`.
 
+UPDATE 2026-07-28 — SCOPING THAT SEPARATE TASK, so it is dispatched once
+rather than twice, and so its author knows how much of it already exists.
+
+*The two open leaves of this section are blocked on the SAME item.* Axis 4
+here and the "construct over `K ⊇ μ_{ℓp}`, descend along `ρ₀`" axis on
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` are one
+interface, not two. Whoever writes it should cut BOTH leaves along it in the
+same task — an interface with one consumer is half of a free-floating
+module, and this one has two.
+
+*How much infrastructure each leaf needs is very different, and this leaf
+needs much less.* The `𝔞`-side leaf has to move an
+`AbelianSchemeStruct` + `Mult` + `DualStruct` + `PolarizationStruct` package
+across its seam, and its own audit now records (UPDATE 2026-07-28 (ii)
+there) that `Fermat.PolarizationStruct` does NOT base-change: the
+symmetric-hom module of `lam_surjective` can grow, with an explicit
+Weil-restriction counterexample. **`HasTwistedHilbertBlumenthalDescent`
+carries only `ab` and `m`** — no `DualStruct`, no polarization, by
+construction (the pairing normalization was deliberately left out of
+`IsTwistedLevelStructure`; see its docstring). So the transport this leaf
+needs is exactly `AbelianSchemeStruct` and `Mult`, and
+`Fermat.AbelianSchemeStruct.baseChange`
+(`Modularity/AbelianSchemeIsogeny.lean:534`, reachable here through
+`Modularity.TateModule`'s `public import`) is already written, with `Mult`
+routine on top of `Fermat.RelPoint.baseChangeUp`/`baseChangeDown`. The
+polarization obstruction does not touch this leaf at all.
+
+*What remains genuinely missing for this leaf is therefore the descent
+interface alone*: a `Γ`-action on `X₀ ⊗ K` as data, a 1-cocycle
+`Γ_ℚ ⟶ Γ` for it, the twisted scheme, and the points formula
+`X_c(F) = {y ∈ X₀(K)-points : σ y = y · c(σ) for σ ∈ Γ_F}` — Lemma 4.4.
+Nothing about that has to be PROVEN to make the cut; per the fleet rule that
+stating a theory is not proving it, the interface can be written and the
+obligation lands on a new named leaf. What must NOT be done is to let the
+second stage hand a bare `X` to a third leaf: axis 1 above kills that with
+the even twist, and it kills it whatever the interface looks like.
+
 WHAT IS GENUINELY MISSING FROM THE PIN for the construction itself, so the
 next owner does not re-survey (checked 2026-07-27 over `Fermat/`,
 `.lake/packages/mathlib` and `~/cs/FLT`): descent data for schemes,
@@ -31698,6 +32665,11 @@ now PROVEN, so only TWO of the three names above are live:
 `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` and
 `exists_twistedHilbertBlumenthalDescent_of_split`. Both are geometry; the
 representation-theoretic half is done and needs no owner.
+**NAME CORRECTION, 2026-07-28: the first of those two is stale — it was
+PROVEN by the third cut later on 2026-07-27, and the open node is
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (…`Family`…,
+not …`Moduli`…). The count of two is right; one of the names is not. The
+live pair is stated correctly at the end of this docstring.**
 
 AUDIT UPDATE V (2026-07-27) — **RETRACTED THE SAME DAY; SEE AUDIT UPDATE VI
 IMMEDIATELY BELOW BEFORE ACTING ON IT.** It read: "ONE of those two is FALSE
