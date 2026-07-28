@@ -6715,8 +6715,10 @@ else:
   `IsJacobianOf.injective_aj_of_mono`, makes `aj g` INJECTIVE at every
   test object.  Nonconstancy then needs only two DISTINCT relative
   points.
-* `not_isIso_of_smoothOfRelativeDimension_one` (`X0.lean`, sorry leaf,
-  elementary and level-free) gives those two: the tautological point
+* `not_isIso_of_smoothOfRelativeDimension_one` (PROVEN 2026-07-28, and
+  RELOCATED to `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`,
+  above the uniqueness lemma its proof consumes; elementary and level-free)
+  gives those two: the tautological point
   `𝟙 X` and the constant point `strX ≫ o` are distinct unless `o`
   inverts `strX`, i.e. unless the curve is a single `ℚ`-point.
 
@@ -6747,7 +6749,8 @@ theorem hasNonconstantAbelianMap_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N)
     have hne : (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX)
         ≠ ⟨strX ≫ o.1, by rw [Category.assoc, o.2, Category.comp_id]⟩ := by
       intro hEq
-      refine not_isIso_of_smoothOfRelativeDimension_one h.smooth h.connected ?_
+      refine not_isIso_of_smoothOfRelativeDimension_one h.smooth
+        ⟨o.1.base (Nonempty.some inferInstance)⟩ ?_
       exact ⟨o.1, congrArg Subtype.val hEq.symm, o.2⟩
     exact ⟨X, strX, _, _, fun hc =>
       hne (jac.injective_aj_of_mono
@@ -6848,7 +6851,7 @@ disappearing:
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | genus formula, fibrewise | **yes** | here |
-| `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `X0.lean`, REUSED |
+| `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `CurveCompactification.lean`, REUSED, **PROVEN 2026-07-28** |
 
 **Only TWO of the open rows are level-specific**, and neither of them
 is Kolyvagin-Logachev.  The two `Γ₁`-half rows that used to be leaves are
@@ -6876,9 +6879,13 @@ nodes.
 **AMENDED 2026-07-28.**  The genus row was
 `hasNonconstantAbelianMap_of_one_le_x1Genus` until that node was PROVEN;
 what is open there now is its fibrewise half
-`hasNoFibreAffineLine_of_one_le_x1Genus`, and the third `X0.lean` reuse —
-`not_isIso_of_smoothOfRelativeDimension_one` — arrived with the same
-proof.
+`hasNoFibreAffineLine_of_one_le_x1Genus`.  The third reuse —
+`not_isIso_of_smoothOfRelativeDimension_one` — was REFUTED as stated
+(`GeometricallyConnected` is vacuous over an empty base, so `X = S = ∅`,
+`f = 𝟙 ∅` satisfied every hypothesis AND `IsIso f`), RESTATED over the
+strictly weaker `Nonempty X`, PROVEN, and relocated out of `X0.lean` into
+`CurveCompactification.lean`.  The call site here supplies the point from
+`o`, exactly as `X0.lean`'s does; nothing else moved.
 
 So the `Γ₀` and `Γ₁` layers between them have exactly **four** distinct
 open general theories (Albanese — split into representability and
