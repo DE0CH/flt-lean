@@ -18410,14 +18410,178 @@ theorem hasCompleteIntersectionPresentation_of_etale {k : Type*} [Field k]
 
 end CompleteIntersectionPresentation
 
+/-- **THE CONNECTED–ÉTALE SPLITTING over a PERFECT field** (SORRY LEAF, cut 2026-07-28 out of
+`exists_etale_tensor_algEquiv_of_finite_hopf`, which is now PROVEN over this leaf and
+`exists_monomial_quotient_algEquiv_of_local_finite_hopf`).  This is step 1 of the two-step cut
+that the parent docstring had recommended; base-generic, with no `𝒪₃ᵥ` anywhere in it.
+
+A finite commutative Hopf algebra `A` over a perfect field `k` splits as
+
+    A  ≅  A₀ ⊗_k E
+
+with `A₀` a LOCAL finite Hopf `k`-algebra (the coordinate ring of the identity component `G⁰`)
+and `E` ÉTALE (the coordinate ring of the component group `π₀ G`).
+
+WHY IT IS TRUE.  `G = Spec A` is a finite commutative group scheme over `k`, and the
+connected–étale sequence `1 → G⁰ → G → π₀ G → 1` (Waterhouse, *Introduction to Affine Group
+Schemes*, §6.7; Tate, *Finite flat group schemes*, §3.7 in Cornell–Silverman–Stevens) SPLITS
+over a perfect field: `G_red` is then a closed SUBGROUP scheme — this is the ONLY place
+perfectness is used, and it is used through `G_red ×_k G_red` being reduced, which is exactly
+what fails over an imperfect field — it is reduced and finite over a field hence ÉTALE, and
+`G_red → π₀ G` is an isomorphism.  So the sequence acquires a section `π₀ G ≅ G_red ↪ G`, and
+because `G` is COMMUTATIVE the multiplication `G⁰ × G_red → G` is a homomorphism, injective
+(`G⁰ ∩ G_red = e`, an infinitesimal scheme meeting a reduced one) and surjective by order
+count.  Taking coordinate rings gives the displayed isomorphism, with `E = A_red`.
+
+**THE HOPF HYPOTHESIS IS LOAD-BEARING, AND HERE IS THE INVARIANT IT SUPPLIES.**  If
+`A ≅ A₀ ⊗_k E` with `A₀` local of residue field `k` and `E ≅ ∏ᵢ Kᵢ` étale, then the local
+factors of `A` are the `A₀ ⊗_k Kᵢ`, each local with residue field `Kᵢ`, so each has length
+exactly `dim_k A₀`: **every local factor of `A` has the SAME length.**  That is precisely what
+the group structure supplies — all connected components of a group scheme are translates of the
+identity component — and what a bare finite algebra need not have.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit a finite commutative Hopf algebra over a
+perfect field two of whose local factors have different lengths.  Drop the Hopf hypothesis and
+the witness is immediate — `k[x]/(x²) × k` has local factors of length `2` and `1`, hence is
+not `A₀ ⊗_k E` for any local `A₀` and any étale `E`.  (It is indeed not a Hopf algebra: it is
+`3`-dimensional, and the order-`3` commutative group schemes over `𝔽₃` are `μ₃`, `ℤ/3` and
+`α₃`, whose rings are `𝔽₃[y]/(y³)`, `𝔽₃³` and `𝔽₃[y]/(y³)`.)
+
+WITNESSES, both `𝔽₃`-rational and both on the nose, so neither factor of the conclusion is
+decorative: `μ₃` gives `A₀ = 𝔽₃[y]/(y³)` and `E = 𝔽₃`; the constant group `ℤ/3` gives
+`A₀ = 𝔽₃` and `E = 𝔽₃³`.
+
+**WHY `IsLocalRing A₀` IS THE RIGHT WAY TO SAY "CONNECTED", AND WHY NO RESIDUE-FIELD CLAUSE IS
+OWED.**  For a finite `k`-algebra, local ⟺ `Spec` is a single point ⟺ connected.  The residue
+field is then automatically `k`, for free: the counit `ε : A₀ →ₐ[k] k` is a surjection onto a
+field, so `ker ε` is a maximal ideal, hence THE maximal ideal, hence `A₀ ⧸ 𝔪 ≅ k`.  The
+successor consuming this leaf, `exists_monomial_quotient_algEquiv_of_local_finite_hopf`,
+therefore needs no residue-field hypothesis and this leaf owes it none.
+
+**THE RECOMMENDED FINER CUT**, if this proves too large to take in one piece:
+
+1. Over a perfect `k`, `nilradical A` is a HOPF ideal — i.e. `A ⧸ nilradical A` carries a Hopf
+   structure making the projection a bialgebra map.  This is "`G_red` is a subgroup scheme",
+   and it is the only step that uses perfectness.
+2. `A ⧸ nilradical A` is ÉTALE over `k`: finite and reduced, hence a finite product of finite
+   field extensions, separable because `k` is perfect.
+3. The splitting proper.  This is the substantive remainder, and it needs the component-group
+   Hopf SUBALGEBRA `π₀(A) ⊆ A` (the maximal étale subalgebra) together with
+   `A₀ = A ⊗_{π₀(A)} k`.  None of that infrastructure exists at this pin, so step 3 is where a
+   successor should expect to WRITE INTERFACES before proving anything — which is allowed and
+   is usually what makes a safe cut possible.
+
+WHAT EXISTS AT THIS PIN, checked 2026-07-28.  Mathlib's `HopfAlgebra` tree
+(`Mathlib/RingTheory/HopfAlgebra/{Basic,Convolution,GroupLike,MonoidAlgebra,Quotient,`
+`TensorProduct}.lean`) carries NO group-scheme theory at all: no connected–étale sequence, no
+`π₀`, no Hopf subalgebras, and no interaction between `HopfAlgebra` and reducedness or
+étaleness.  `~/cs/FLT` has none either.  What this project already owns and a successor should
+reuse: the counit-idempotent package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
+(`Bialgebra.exists_connected_counit_idempotent`, `exists_minimal_counit_idempotent`), which is
+the idempotent-splitting half of step 3. -/
+theorem exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf (k : Type) [Field k]
+    [PerfectField k] (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
+    ∃ (A₀ : Type) (_ : CommRing A₀) (_ : HopfAlgebra k A₀) (_ : Module.Finite k A₀)
+      (_ : IsLocalRing A₀) (E : Type) (_ : CommRing E) (_ : Algebra k E),
+      Algebra.Etale k E ∧ Nonempty (A ≃ₐ[k] A₀ ⊗[k] E) :=
+  sorry
+
+/-- **THE DEMAZURE–GABRIEL NORMAL FORM for the CONNECTED part** (SORRY LEAF, cut 2026-07-28 out
+of `exists_etale_tensor_algEquiv_of_finite_hopf`; step 2 of the two-step cut its docstring
+recommended, and THE DEEP ONE of the two).  Base-generic: no `𝒪₃ᵥ` anywhere in it.
+
+A LOCAL finite commutative Hopf algebra `A` over a perfect field `k` is a MONOMIAL complete
+intersection,
+
+    A  ≅  k[y₁,…,y_r] / (y₁^{d₁},…,y_r^{d_r}).
+
+References: Demazure–Gabriel, *Groupes algébriques*, III §3 6.1; Waterhouse, *Introduction to
+Affine Group Schemes*, Thm 14.4; SGA3 VII_A 8.5.
+
+**CHARACTERISTIC ZERO IS A SEPARATE AND MUCH EASIER CASE, AND ITS HARD HALF IS ALREADY PROVEN
+IN THIS REPOSITORY.**  Cartier's theorem — a finite commutative Hopf algebra in characteristic
+zero is reduced — is `isReduced_of_charZero` in `Fermat/FLT/GroupScheme/Cartier.lean`, and it
+is SORRY-FREE.  **That module is NOT currently imported by this file**, so importing it is part
+of the work.  Given it: a local artinian reduced ring is a field, and a field `A` that is a
+`k`-algebra admitting a `k`-algebra map to `k` (the counit) is `k` itself.  So in
+characteristic `0` the conclusion holds with `r = 0`, and the entire content of this leaf is
+characteristic `p`.
+
+**CHARACTERISTIC `p`: WHAT THE PROOF NEEDS.**  Locality plus the counit make `A` local with
+residue field `k` and maximal ideal `𝔪 = ker ε` (see the residue-field paragraph on the sibling
+leaf), i.e. `G = Spec A` is INFINITESIMAL.  The argument runs by induction on `dim_k A` using
+(i) the Frobenius-kernel filtration `G ⊇ ker F ⊇ ker F² ⊇ …`, which terminates because `G` is
+infinitesimal, and (ii) freeness of a commutative Hopf algebra over a Hopf SUBALGEBRA
+(Waterhouse §14.1 — the commutative case does not need Nichols–Zoeller).  Perfectness enters
+when the `p`-th power map on `𝔪/𝔪²` is used to choose the generators `yᵢ`, and it is genuinely
+needed: over an imperfect field the normal form fails.
+
+**THE CONCLUSION IS DELIBERATELY WEAKER THAN THE BOOK, AND THE WEAKENING IS FREE.**  Arbitrary
+exponents `dᵢ`, no claim that `r` is the embedding dimension, no claim that `dᵢ` is a power of
+`p` — because that is all the consumer needs: `k[y]/(y^{d})` is a complete intersection on the
+nose (`#relations = #variables = r`) whatever the exponents are.  **Do not "strengthen" the
+statement to match the book.  But do not read the weakening as a claim that the `p`-power
+structure is avoidable in the PROOF** — it is not.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**, with the numerical invariant to test it against.  If
+`A ≅ k[y₁,…,y_r]/(y₁^{d₁},…,y_r^{d_r})` then `dim_k A = ∏ᵢ dᵢ` while the embedding dimension is
+the number of `i` with `dᵢ ≥ 2`; so `dim_k A ≥ 2^{embdim A}` always.  A local finite commutative
+Hopf algebra over a perfect field violating that inequality refutes this leaf.  Drop the Hopf
+hypothesis and the witness is `𝔽₃[e,f]/(e², f², ef)` — the reduction of the order
+`𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale algebra `𝒪₃ᵥ³` — which is local of embedding dimension `2` and
+length `3 < 4`, so three relations are needed on two generators.  **That counterexample is
+LOCAL**, which is exactly what makes it refute the product-shaped variants of this statement as
+well: splitting into factors cannot rescue anything, and the comultiplication is load-bearing
+at every level of the cut.
+
+**THE `μ₃` WITNESS**, on the nose over `𝔽₃`: `𝓀 ⊗ μ₃ = 𝔽₃[y]/(y³)`, `r = 1`, `d = (3)`.  `μ₃` is
+ALSO the counterexample showing why the `H¹`-vanishing half of the grandparent could never have
+been obtained from the special fibre — `H¹(L_{𝔽₃[y]/(y³) ⁄ 𝔽₃}) ≅ 𝔽₃[y]/(y³) ≠ 0`, because
+`d(y³) = 3y²dy = 0` in characteristic `3`.  That is why the cut had to separate the two: LCI
+DOES descend to the closed fibre, `H¹ = 0` does not, and the latter is discharged downstream by
+`free_cotangent_of_span_range_eq_ker` out of the ÉTALE GENERIC fibre instead.
+
+RAYNAUD'S ROUTE, for contrast — note it proves the COMPLETE-INTERSECTION conclusion directly
+rather than this normal form: a finite flat commutative group scheme over ANY base is a local
+complete intersection — embed `G` in the smooth affine `GL(G)` by the regular representation,
+the fppf quotient `GL(G)/G` is smooth of the same dimension, and `G` is the fibre of
+`GL(G) → GL(G)/G` over the identity section, whose ideal is generated by a regular sequence
+(Raynaud, *Schémas en groupes de type (p,…,p)*, Bull. SMF 102 (1974), §1; Avramov, *Complete
+intersections and symmetric algebras*, J. Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7 cites
+it as standard).  Nothing about group-scheme QUOTIENTS exists at this pin, which is why the
+closed-fibre route above is the recommended attack instead.
+
+AXIS SEARCHED, and what is missing at this pin (greps over
+`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular,HopfAlgebra}/` and over `~/cs/FLT`,
+2026-07-27 and re-checked 2026-07-28): there is no `IsCompleteIntersection` predicate, no
+group-scheme quotient, no Frobenius kernel, no Borel / Demazure–Gabriel structure theory, and
+no interaction whatsoever between `HopfAlgebra` and `Kaehler`/`Cotangent`/`Smooth`/`Etale`;
+`~/cs/FLT` has zero occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
+`CompleteIntersection`.  The Koszul absence recorded by the earlier audits is NO LONGER on the
+critical path — see `free_cotangent_of_span_range_eq_ker_of_torsion`.  The usable building
+blocks that remain relevant are the counit-idempotent package of
+`Fermat/FLT/GroupScheme/ConnectedEtale.lean`, this file's own PROVEN
+`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`), which pins `r`
+above as the rank of the cotangent space, and `Fermat/FLT/GroupScheme/Cartier.lean` for the
+characteristic-zero case. -/
+theorem exists_monomial_quotient_algEquiv_of_local_finite_hopf (k : Type) [Field k]
+    [PerfectField k] (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A]
+    [IsLocalRing A] :
+    ∃ (r : ℕ) (d : Fin r → ℕ),
+      Nonempty (A ≃ₐ[k] MvPolynomial (Fin r) k ⧸
+        Ideal.span (Set.range fun i : Fin r =>
+          (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) :=
+  sorry
+
 /-- **THE GROUP THEORY, AND NOTHING ELSE: over a PERFECT field the connected–étale sequence of
 a finite commutative Hopf algebra SPLITS, and the connected part is a MONOMIAL complete
-intersection** (SORRY LEAF, cut 2026-07-27 out of
-`exists_pi_quotient_algEquiv_residue_of_hopf_package`, which is now PROVEN over this leaf ALONE
-— the two commutative-algebra leaves it was cut against,
-`hasCompleteIntersectionPresentation_tensor` and `hasCompleteIntersectionPresentation_of_etale`,
-were both proven the same day).  **This is the ONLY remaining open node in the whole
-special-fibre chain.**
+intersection** (originally cut 2026-07-27 out of
+`exists_pi_quotient_algEquiv_residue_of_hopf_package`; **PROVEN 2026-07-28 as an ASSEMBLY** over
+the two leaves immediately above, `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf` and
+`exists_monomial_quotient_algEquiv_of_local_finite_hopf`, which are steps 1 and 2 of the cut
+this docstring itself recommended).  It now has no mathematical content of its own: the
+splitting leaf hands back `A ≅ A₀ ⊗_k E`, the normal-form leaf rewrites `A₀`, and
+`Algebra.TensorProduct.congr` transports.
 
 Over a perfect field `k` there are `r`, exponents `d₁,…,d_r`, and an ÉTALE `k`-algebra `E`,
 such that
@@ -18458,56 +18622,44 @@ That is why the cut had to separate the two: LCI DOES descend to the closed fibr
 does not, and the latter is discharged downstream by `free_cotangent_of_span_range_eq_ker`
 out of the ÉTALE GENERIC fibre instead.
 
-THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite commutative Hopf `𝔽₃`-algebra with a
-local factor whose minimal presentation needs strictly more relations than generators.  **The
-Hopf hypothesis is genuinely load-bearing and a refutation must respect it**: without it the
-statement is FALSE, and the witness is `𝔽₃[e,f]/(e², f², ef)` — the reduction of the order
-`𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale algebra `𝒪₃ᵥ³` — which is local of embedding dimension `2` and
-length `3`, whereas a complete intersection of embedding dimension `2` has length at least `4`
-(both relations lie in `𝔪²`).  So three relations are needed on two generators, and no argument
-for this leaf can avoid using the comultiplication.  **The counterexample is LOCAL**, hence it
-refutes the product-shaped parent as well as this one — splitting into factors cannot rescue
-it, and the comultiplication remains load-bearing at every level of the cut.
+**THE CUT IS NOW MADE — THE TWO SUB-STEPS THIS DOCSTRING RECOMMENDED ARE THE TWO LEAVES
+IMMEDIATELY ABOVE**, in increasing difficulty (the third step of the older three-step plan —
+"the étale part is a product of monogenic extensions" — was SPLIT OFF earlier, as
+`hasCompleteIntersectionPresentation_of_etale`, and is PROVEN):
 
-AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
-`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over `~/cs/FLT`): there is
-no `IsCompleteIntersection` predicate, no group-scheme quotient, no Borel / Demazure–Gabriel
-structure theory, and no interaction whatsoever between `HopfAlgebra` and
-`Kaehler`/`Cotangent`/`Smooth`/`Etale`; `~/cs/FLT` has zero occurrences of `H1Cotangent`,
-`Extension.Cotangent`, `IsStandardSmooth` or `CompleteIntersection`.  The Koszul absence
-recorded by the earlier audits is NO LONGER on the critical path — see
-`free_cotangent_of_span_range_eq_ker_of_torsion`.  The usable building blocks that remain
-relevant are the connected–étale package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
-(`exists_minimal_counit_idempotent`, `Bialgebra.exists_connected_counit_idempotent`), which is
-the splitting half, and this file's own PROVEN
-`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`), which pins `r`
-above as the rank of the cotangent space.
+1. `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf` — the connected–étale splitting
+   `A ≅ A₀ ⊗_k E` over the perfect field `k`, with `A₀` LOCAL Hopf and `E` étale.  The
+   counit-idempotent package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean` is the half of
+   this that already exists; that docstring carries the length-of-local-factors refutation
+   check, the `k[x]/(x²) × k` non-Hopf witness, and a three-step finer cut.
+2. `exists_monomial_quotient_algEquiv_of_local_finite_hopf` — `A₀ ≅ k[y]/(y^{p^{e}})`-shaped,
+   Demazure–Gabriel.  **This is the deep one**, and it is the only one that needs group-scheme
+   quotients.  Its docstring now carries the `μ₃` witness, the `𝔽₃[e,f]/(e², f², ef)` non-Hopf
+   counterexample, the `dim_k A ≥ 2^{embdim A}` refutation check, the pin/axis survey and
+   Raynaud's route — **and it records that the characteristic-zero case is already discharged
+   in this repository** by the sorry-free `isReduced_of_charZero` of
+   `Fermat/FLT/GroupScheme/Cartier.lean` (a module this file does not yet import), so the whole
+   content there is characteristic `p`.
 
-THE TWO SUB-STEPS A SUCCESSOR SHOULD CUT THIS INTO, in increasing difficulty (the third step of
-the older three-step plan — "the étale part is a product of monogenic extensions" — has been
-SPLIT OFF already, as `hasCompleteIntersectionPresentation_of_etale`):
-
-1. The connected–étale splitting `A ≅ A₀ ⊗_k A_et` over the perfect field `k` — the
-   counit-idempotent package above is the half of this that already exists.
-2. `A₀ ≅ k[y]/(y^{p^{e}})`-shaped — Demazure–Gabriel; this is the deep one, and it is the only
-   one that needs group-scheme quotients.
-
-RAYNAUD'S ROUTE, for contrast: a finite flat commutative group scheme over ANY base is a local
-complete intersection — embed `G` in the smooth affine `GL(G)` by the regular representation,
-the fppf quotient `GL(G)/G` is smooth of the same dimension, and `G` is the fibre of
-`GL(G) → GL(G)/G` over the identity section, whose ideal is generated by a regular sequence
-(Raynaud, *Schémas en groupes de type (p,…,p)*, Bull. SMF 102 (1974), §1; Avramov, *Complete
-intersections and symmetric algebras*, J. Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7
-cites it as standard).  Nothing about group-scheme QUOTIENTS exists at this pin, which is why
-the closed-fibre route is the recommended attack instead. -/
+**THE FAITHFULNESS NOTE THAT MUST NOT BE DROPPED, restated here because it constrains BOTH
+leaves.**  The Hopf hypothesis is load-bearing at every level of this cut, and the witness
+against dropping it — `𝔽₃[e,f]/(e², f², ef)`, local of embedding dimension `2` and length `3`
+against a complete intersection of embedding dimension `2` having length at least `4` — is
+LOCAL, so it refutes the product-shaped variants as well as this one.  Splitting into factors
+cannot rescue anything.  Any successor who weakens the Hopf hypothesis anywhere in this chain
+has made the statement false. -/
 theorem exists_etale_tensor_algEquiv_of_finite_hopf (k : Type) [Field k] [PerfectField k]
     (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
     ∃ (r : ℕ) (d : Fin r → ℕ) (E : Type) (_ : CommRing E) (_ : Algebra k E),
       Algebra.Etale k E ∧
         Nonempty (A ≃ₐ[k] (MvPolynomial (Fin r) k ⧸
           Ideal.span (Set.range fun i : Fin r =>
-            (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) ⊗[k] E) :=
-  sorry
+            (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) ⊗[k] E) := by
+  obtain ⟨A₀, _, _, _, _, E, _, _, hetale, ⟨e⟩⟩ :=
+    exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf k A
+  obtain ⟨r, d, ⟨e₀⟩⟩ := exists_monomial_quotient_algEquiv_of_local_finite_hopf k A₀
+  exact ⟨r, d, E, inferInstance, inferInstance, hetale,
+    ⟨e.trans (Algebra.TensorProduct.congr e₀ AlgEquiv.refl)⟩⟩
 
 /-- **A FINITE COMMUTATIVE HOPF ALGEBRA OVER A PERFECT FIELD IS A COMPLETE INTERSECTION**
 (PROVEN 2026-07-27 over the SINGLE remaining leaf
@@ -18547,16 +18699,19 @@ There are `s`, variable counts `m₁,…,m_s`, and for each `i` a family of `m i
 as `𝓀`-algebras.  Each factor is a complete intersection ON THE NOSE (`#relations =
 #variables`); what this leaf asserts is only the DECOMPOSITION into such factors.
 
-**WHAT REMAINS OPEN, AND WHERE** (2026-07-27).  This declaration is now an ASSEMBLY and has no
-mathematical content of its own.  It was cut against three named leaves; TWO OF THE THREE WERE
-PROVEN THE SAME DAY, so exactly ONE node is open and that is where a successor should be
-dispatched:
+**WHAT REMAINS OPEN, AND WHERE** (2026-07-27; re-checked and updated 2026-07-28).  This
+declaration is now an ASSEMBLY and has no mathematical content of its own.  It was cut against
+three named leaves, ALL THREE OF WHICH ARE NOW PROVEN — the group-theoretic one,
+`exists_etale_tensor_algEquiv_of_finite_hopf`, was itself cut on 2026-07-28 into the two
+base-generic leaves below, and those two are where a successor should be dispatched:
 
-* **OPEN — `exists_etale_tensor_algEquiv_of_finite_hopf`**, the group theory and nothing else:
-  over a perfect field the connected–étale sequence of a finite commutative Hopf algebra splits
-  and the connected part is `k[y₁,…,y_r]/(y₁^{d₁},…,y_r^{d_r})`.  The `μ₃` witness, the non-Hopf
-  counterexample, the pin/axis survey, Raynaud's route and the remaining two-step cut all live
-  on that docstring now.
+* PROVEN (as an assembly, 2026-07-28) — `exists_etale_tensor_algEquiv_of_finite_hopf`: over a
+  perfect field the connected–étale sequence of a finite commutative Hopf algebra splits and
+  the connected part is `k[y₁,…,y_r]/(y₁^{d₁},…,y_r^{d_r})`.  Its two OPEN sub-leaves are
+  **`exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf`** (the splitting) and
+  **`exists_monomial_quotient_algEquiv_of_local_finite_hopf`** (Demazure–Gabriel, the deep
+  one).  The `μ₃` witness, the non-Hopf counterexample, the refutation checks, the pin/axis
+  survey and Raynaud's route live on those two docstrings now.
 * PROVEN — `hasCompleteIntersectionPresentation_tensor`: a TENSOR PRODUCT of two complete
   intersections is a complete intersection, over an ARBITRARY commutative base ring.  Closed by
   an explicit retraction `A ⊗ B →ₐ Q ⧸ J` built with `AlgHom.liftOfSurjective`, so no
@@ -18643,16 +18798,20 @@ three named leaves reached through it — two of which have since been PROVEN �
 mentions `𝒪₃ᵥ`; they are all base-generic:
 
 * `exists_etale_tensor_algEquiv_of_finite_hopf` — the group theory: connected–étale
-  splitting plus the Demazure–Gabriel normal form for the connected part.  The `μ₃` witness,
-  the non-Hopf counterexample `𝔽₃[e,f]/(e², f², ef)`, the refutation check, the pin/axis survey
-  and Raynaud's route all live on that docstring.
+  splitting plus the Demazure–Gabriel normal form for the connected part.  **PROVEN 2026-07-28
+  as an assembly**, over two new base-generic leaves that are where the open frontier now sits:
+  `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf` (the splitting) and
+  `exists_monomial_quotient_algEquiv_of_local_finite_hopf` (Demazure–Gabriel, the deep one).
+  The `μ₃` witness, the non-Hopf counterexample `𝔽₃[e,f]/(e², f², ef)`, the refutation checks,
+  the pin/axis survey and Raynaud's route all live on those two docstrings.
 * `hasCompleteIntersectionPresentation_tensor` — **PROVEN 2026-07-27**: a tensor product of
   complete intersections is a complete intersection, over any commutative base ring.
 * `hasCompleteIntersectionPresentation_of_etale` — **PROVEN 2026-07-27**: an étale algebra over
   a field is a complete intersection; this is where "the étale part is a finite product of
   monogenic field extensions" now lives.
 
-So only the FIRST of the three is still open.
+So all three are now assemblies or proven, and the only OPEN nodes in this chain are the two
+sub-leaves of the first bullet.
 
 The residue field's own contribution is nil: `Finite (ResidueField 𝒪₃ᵥ)` is an instance at this
 pin, hence `PerfectField` is too, and that is the only property of `𝔽₃` the assembly uses. -/
