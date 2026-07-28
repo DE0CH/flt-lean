@@ -36569,8 +36569,47 @@ theorem not_exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L K : ℕ}
     mul_zero, mul_zero, sub_zero, hfp] at h
   exact hu h
 
-/-- **MIYAKE LEMMA 4.6.5 — THE `L`-SIEVE RAISES THE LEVEL BY `L²`** (sorry leaf,
-cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.5, pp. 157–158): for
+/-- **MIYAKE LEMMA 4.6.5 AT A PRIME — THE `p`-SIEVE, AT LEVEL `A p²`** (PROVEN
+2026-07-28): for `f ∈ S₂(Γ₀(A))` and a prime `p`, the series obtained by DELETING
+the coefficients at indices divisible by `p` is a cusp form of level `A p²`.
+
+PROOF AS FORMALIZED, which replaces Miyake's `f ∣ T(p)` Fourier computation by
+the `q`-expansion toolkit already proven above.  The witness is
+
+    g  =  V_1 f  −  V_p (U_p^{(pA)} (V_1 f))       in  S₂(Γ₀(A p²)).
+
+`V_1` first lifts `f` to level `pA`, which is exactly what makes the Hecke
+operator there a plain `U_p`: `qCoeff_heckeOp` carries the correction term
+`p·a_{m/p}` only at `p ∤ M`, and here `p ∣ pA`, so
+`a_m(U_p V_1 f) = a_{pm}(f)` with no correction.  Pushing that back up by `V_p`
+gives `a_n(V_p U_p V_1 f) = a_n(f)` at `p ∣ n` and `0` otherwise
+(`qCoeff_degeneracyOp`), i.e. EXACTLY the part being removed.  The level is
+forced by `V_p` out of level `pA`, which needs `p·(pA) = A p² ∣ B`. -/
+theorem exists_cuspForm_qCoeff_sieve_prime {A B p : ℕ} (hA : 0 < A) (hp : p.Prime)
+    (hB : A * p ^ 2 = B) (f : CuspForm (Gamma0GL A) 2) :
+    ∃ g : CuspForm (Gamma0GL B) 2,
+      ∀ n : ℕ, qCoeff B g n = if p ∣ n then 0 else qCoeff A f n := by
+  have hA' : 0 < p * A := Nat.mul_pos hp.pos hA
+  have hAA' : A ∣ p * A := ⟨p, mul_comm p A⟩
+  have hpA' : p ∣ p * A := ⟨A, rfl⟩
+  have hAB : A ∣ B := ⟨p ^ 2, hB.symm⟩
+  have hpA'B : p * (p * A) ∣ B := ⟨1, by rw [← hB]; ring⟩
+  have hucoeff : ∀ m : ℕ,
+      qCoeff (p * A) (heckeOp (p * A) p (degeneracyOp A (p * A) 1 f)) m
+        = qCoeff A f (p * m) := by
+    intro m
+    rw [qCoeff_heckeOp hA' hp _ m, if_pos hpA', add_zero,
+      qCoeff_degeneracyOp_one hAA' f (p * m)]
+  refine ⟨degeneracyOp A B 1 f
+    - degeneracyOp (p * A) B p (heckeOp (p * A) p (degeneracyOp A (p * A) 1 f)), fun n => ?_⟩
+  rw [qCoeff_sub, qCoeff_degeneracyOp_one hAB f n, qCoeff_degeneracyOp hp.pos hpA'B _ n]
+  by_cases hn : p ∣ n
+  · rw [if_pos hn, if_pos hn, hucoeff (n / p), Nat.mul_div_cancel' hn, sub_self]
+  · rw [if_neg hn, if_neg hn, sub_zero]
+
+/-- **MIYAKE LEMMA 4.6.5 — THE `L`-SIEVE RAISES THE LEVEL BY `L²`** (PROVEN
+2026-07-28 over `exists_cuspForm_qCoeff_sieve_prime`; Miyake, *Modular Forms*,
+Lemma 4.6.5, pp. 157–158): for
 `f ∈ S₂(Γ₀(A))` and `L ≥ 1`, the series obtained by KEEPING ONLY the coefficients
 at indices coprime to `L`,
 
@@ -36585,13 +36624,15 @@ statement free of factorization bookkeeping.  The level is passed as a VARIABLE
 it at whatever normal form their arithmetic produces, without a dependent-type
 rewrite of `CuspForm (Gamma0GL ·) 2`.
 
-PROOF (Miyake, pp. 157–158).  Reduce to `L = p` prime.  The sieve is then
-`g = f − (f ∣ T(p))(pz)`, where `f ∣ T(p)` is the Hecke double-coset operator at
-level `A'` (`A' = A` if `p ∣ A`, else `A' = pA`) — the identity
-`(f ∣ T(p))(z) = p⁻¹ Σ_{m<p} Σ_n a_n e^{2πi(n+mA'/p)z/p}` collapses the inner sum
-to `p` at `p ∣ n` and to `0` otherwise, so `(f ∣ T(p))(pz) = Σ_{p ∣ n} a_n qⁿ` is
-exactly the part being REMOVED.  Both terms are cusp forms of level `A' p ∣ A p²`,
-and the general `L` follows by iterating over its prime factors.
+PROOF AS FORMALIZED: strong induction on `L`, one prime at a time.  `L = 1` is
+`V_1`.  Otherwise pick a prime `p ∣ L`, write `L = p·L'`, apply the single-prime
+sieve `exists_cuspForm_qCoeff_sieve_prime` to reach level `A p²`, and apply the
+induction hypothesis at `L' < L` from there to level `A p² L'² = A L² = B`.  The
+coefficient bookkeeping is `Nat.coprime_mul_iff_right`: `(n, p·L') = 1` iff
+`p ∤ n` and `(n, L') = 1`, which is exactly the composition of the two sieves.
+Iterating over the prime factors WITH MULTIPLICITY is harmless — a repeated
+prime only inflates the level, and the level `A L²` is stated as an upper bound
+rather than the sharp one.
 
 WHY THE LEVEL MUST GO UP, and why the naive inclusion–exclusion sieve fails: this
 is the only step of Miyake's induction that leaves level `A`, and move 3 is what
@@ -36600,11 +36641,208 @@ mistook it for avoidable. -/
 theorem exists_cuspForm_qCoeff_sieve {A B L : ℕ} (hA : 0 < A) (hL : 0 < L)
     (hB : A * L ^ 2 = B) (f : CuspForm (Gamma0GL A) 2) :
     ∃ g : CuspForm (Gamma0GL B) 2,
-      ∀ n : ℕ, qCoeff B g n = if Nat.Coprime n L then qCoeff A f n else 0 :=
-  sorry
+      ∀ n : ℕ, qCoeff B g n = if Nat.Coprime n L then qCoeff A f n else 0 := by
+  suffices H : ∀ K : ℕ, 0 < K → ∀ A B : ℕ, 0 < A → A * K ^ 2 = B →
+      ∀ f : CuspForm (Gamma0GL A) 2, ∃ g : CuspForm (Gamma0GL B) 2,
+        ∀ n : ℕ, qCoeff B g n = if Nat.Coprime n K then qCoeff A f n else 0 by
+    exact H L hL A B hA hB f
+  intro K
+  induction K using Nat.strong_induction_on with
+  | _ K ih =>
+    intro hK A B hA hB f
+    rcases eq_or_ne K 1 with hK1 | hK1
+    · subst hK1
+      refine ⟨degeneracyOp A B 1 f, fun n => ?_⟩
+      rw [qCoeff_degeneracyOp_one ⟨1, by rw [← hB]; ring⟩ f n,
+        if_pos (Nat.coprime_one_right n)]
+    · obtain ⟨p, hp, hpK⟩ : ∃ p : ℕ, p.Prime ∧ p ∣ K :=
+        ⟨K.minFac, Nat.minFac_prime hK1, Nat.minFac_dvd K⟩
+      obtain ⟨K', hK'⟩ := hpK
+      have hK'0 : 0 < K' := Nat.pos_of_ne_zero (by
+        rintro rfl
+        rw [hK'] at hK
+        simp at hK)
+      have hK'lt : K' < K := by
+        have h2 : 2 * K' ≤ p * K' := Nat.mul_le_mul hp.two_le le_rfl
+        have h3 : K' < 2 * K' := by omega
+        rw [hK']
+        exact lt_of_lt_of_le h3 h2
+      obtain ⟨g₁, hg₁⟩ :=
+        exists_cuspForm_qCoeff_sieve_prime hA hp (rfl : A * p ^ 2 = A * p ^ 2) f
+      obtain ⟨g₂, hg₂⟩ := ih K' hK'lt hK'0 (A * p ^ 2) B (Nat.mul_pos hA (pow_pos hp.pos 2))
+        (by rw [← hB, hK']; ring) g₁
+      refine ⟨g₂, fun n => ?_⟩
+      rw [hg₂ n, hg₁ n]
+      have hiff : Nat.Coprime n p ↔ ¬ p ∣ n := by
+        rw [Nat.coprime_comm]; exact hp.coprime_iff_not_dvd
+      have hcop : Nat.Coprime n K ↔ (¬ p ∣ n ∧ Nat.Coprime n K') := by
+        rw [hK', Nat.coprime_mul_iff_right, hiff]
+      by_cases hpn : p ∣ n
+      · by_cases hc : Nat.Coprime n K'
+        · rw [if_pos hc, if_pos hpn, if_neg (fun h => (hcop.mp h).1 hpn)]
+        · rw [if_neg hc, if_neg (fun h => hc (hcop.mp h).2)]
+      · by_cases hc : Nat.Coprime n K'
+        · rw [if_pos hc, if_neg hpn, if_pos (hcop.mpr ⟨hpn, hc⟩)]
+        · rw [if_neg hc, if_neg (fun h => hc (hcop.mp h).2)]
+
+/-- **THE COPRIME SHIFT** (PROVEN 2026-07-28): for coprime `a, c` and any
+positive modulus `M`, some member `a + b·c` of the arithmetic progression is
+coprime to `M`.
+
+Witness: `b = ∏ ℓ` over the primes `ℓ ∣ M` with `ℓ ∤ a`.  At a prime `ℓ ∣ M`
+either `ℓ ∤ a`, and then `ℓ ∣ b` so `a + bc ≡ a ≢ 0`; or `ℓ ∣ a`, and then `ℓ ∤ b`
+by construction and `ℓ ∤ c` by coprimality, so `a + bc ≡ bc ≢ 0`.
+
+This is the one piece of arithmetic that `exists_gamma0_mul_dvd_lowerLeft` below
+needs and that neither mathlib nor `~/cs/FLT` carries; it is the `SL(2, ℤ)`
+stable-range statement in the only form this development uses it. -/
+theorem exists_add_mul_isCoprime {a c : ℤ} (h : IsCoprime a c) {M : ℕ} (hM : 0 < M) :
+    ∃ b : ℤ, IsCoprime (a + b * c) (M : ℤ) := by
+  classical
+  set S : Finset ℕ := M.primeFactors.filter (fun ℓ => ¬ ((ℓ : ℤ) ∣ a)) with hS
+  refine ⟨∏ ℓ ∈ S, (ℓ : ℤ), ?_⟩
+  set b : ℤ := ∏ ℓ ∈ S, (ℓ : ℤ) with hb
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  by_contra hne
+  obtain ⟨ℓ, hℓp, hℓ⟩ := Nat.exists_prime_and_dvd hne
+  have hℓz : Prime ((ℓ : ℕ) : ℤ) := Nat.prime_iff_prime_int.1 hℓp
+  have hℓ' : ((ℓ : ℕ) : ℤ) ∣ ((Int.gcd (a + b * c) (M : ℤ) : ℕ) : ℤ) :=
+    Int.natCast_dvd_natCast.mpr hℓ
+  have h1 : (ℓ : ℤ) ∣ a + b * c := hℓ'.trans (Int.gcd_dvd_left _ _)
+  have h2 : (ℓ : ℤ) ∣ (M : ℤ) := hℓ'.trans (Int.gcd_dvd_right _ _)
+  have hℓM : ℓ ∈ M.primeFactors :=
+    Nat.mem_primeFactors.mpr ⟨hℓp, Int.ofNat_dvd.mp h2, hM.ne'⟩
+  by_cases ha : ((ℓ : ℤ) ∣ a)
+  · have hnotS : ℓ ∉ S := by
+      rw [hS, Finset.mem_filter]
+      exact fun hc => hc.2 ha
+    have hnb : ¬ ((ℓ : ℤ) ∣ b) := by
+      intro hdvd
+      obtain ⟨m, hmS, hm⟩ := hℓz.exists_mem_finset_dvd hdvd
+      have hmp : m.Prime :=
+        Nat.prime_of_mem_primeFactors (Finset.mem_filter.mp (hS ▸ hmS)).1
+      have hdm : ℓ ∣ m := Int.ofNat_dvd.mp hm
+      exact hnotS (((Nat.prime_dvd_prime_iff_eq hℓp hmp).mp hdm) ▸ hmS)
+    have hbc : (ℓ : ℤ) ∣ b * c := (dvd_add_right ha).mp h1
+    rcases hℓz.2.2 _ _ hbc with hcon | hcon
+    · exact hnb hcon
+    · have hu : IsUnit ((ℓ : ℕ) : ℤ) := h.isUnit_of_dvd' ha hcon
+      rw [Int.isUnit_iff] at hu
+      rcases hu with hu | hu
+      · exact hℓp.one_lt.ne' (by exact_mod_cast hu)
+      · have h5 : (0 : ℤ) ≤ (ℓ : ℤ) := Int.natCast_nonneg ℓ
+        omega
+  · have hbS : (ℓ : ℤ) ∣ b :=
+      Finset.dvd_prod_of_mem _ (by rw [hS, Finset.mem_filter]; exact ⟨hℓM, ha⟩)
+    have h4 : (ℓ : ℤ) ∣ b * c := hbS.mul_right c
+    exact ha (by simpa using dvd_sub h1 h4)
+
+/-- **THE INJECTIVITY INPUT FOR MIYAKE 4.6.6(1)** (PROVEN 2026-07-28): at `p ∤ L`
+the two levels `Ap L²` and `p Ap` generate `p Ap L²`, i.e.
+`lcm(Ap L², p Ap) = p Ap L²`.
+
+`p ∤ L` is exactly what this needs: at `p ∣ L` the least common multiple is
+smaller (e.g. `Ap = 1, p = 2, L = 2` gives `lcm(4, 2) = 4 ≠ 8`), and the coset
+map of 4.6.6(1) is then genuinely NOT injective. -/
+theorem dvd_mul_sq_of_dvd_mul_sq_of_dvd_mul {Ap p L : ℕ} (hp : p.Prime) (hpL : ¬ p ∣ L)
+    (hAp : 0 < Ap) {c : ℤ} (h1 : ((Ap * L ^ 2 : ℕ) : ℤ) ∣ c)
+    (h2 : ((p * Ap : ℕ) : ℤ) ∣ c) : ((p * Ap * L ^ 2 : ℕ) : ℤ) ∣ c := by
+  obtain ⟨s, hs⟩ := h1
+  obtain ⟨t, ht⟩ := h2
+  have hApz : ((Ap : ℤ)) ≠ 0 := Int.natCast_ne_zero.mpr hAp.ne'
+  have hpz : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.1 hp
+  have hcancel : (Ap : ℤ) * ((L : ℤ) ^ 2 * s) = (Ap : ℤ) * ((p : ℤ) * t) := by
+    have e1 : c = (Ap : ℤ) * ((L : ℤ) ^ 2 * s) := by rw [hs]; push_cast; ring
+    have e2 : c = (Ap : ℤ) * ((p : ℤ) * t) := by rw [ht]; push_cast; ring
+    rw [← e1, ← e2]
+  have hdvd : ((p : ℤ)) ∣ (L : ℤ) ^ 2 * s := ⟨t, mul_left_cancel₀ hApz hcancel⟩
+  have hnpL : ¬ ((p : ℤ)) ∣ (L : ℤ) ^ 2 := by
+    intro hc
+    exact hpL (Int.ofNat_dvd.mp (hpz.dvd_of_dvd_pow hc))
+  have hps : ((p : ℤ)) ∣ s := (hpz.2.2 _ _ hdvd).resolve_left hnpL
+  obtain ⟨w, hw⟩ := hps
+  exact ⟨w, by rw [hs, hw]; push_cast; ring⟩
+
+/-- The lower-left entry of an `SL(2, ℤ)` product, explicitly — the companion of
+`SL2_mul_apply_zero_one`. -/
+theorem SL2_mul_apply_one_zero (x y : SL(2, ℤ)) :
+    (x * y) 1 0 = x 1 0 * y 0 0 + x 1 1 * y 1 0 := by
+  simp [Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- **THE SURJECTIVITY INPUT FOR MIYAKE 4.6.6(1)** (PROVEN 2026-07-28): for
+`ρ ∈ Γ₀(Ap)`, `p` prime and `p ∤ L`, the coset `ρ Γ₀(p·Ap)` contains a matrix
+whose lower-left entry is divisible by `Ap L²`.
+
+This is what makes the coset map of 4.6.6(1) SURJECTIVE without any index
+computation — the same device the `V_q` companion `traceOp_degeneracyOp_comm`
+below uses, transposed from the upper-right entry to the lower-left one.
+
+PROOF.  Right-multiplication by `[1 + b·A·j, b; A·j, 1] ∈ Γ₀(A)` (`A = p·Ap`)
+sends the lower-left entry `ρ₁₀ = Ap·r` to `Ap·(r + p·j·(ρ₁₁ + b·ρ₁₀))`, so it is
+enough to solve `r + p·j·X ≡ 0 (mod L²)` with `X = ρ₁₁ + b·ρ₁₀`.  `det ρ = 1`
+gives `(ρ₁₁, ρ₁₀) = 1`, so `exists_add_mul_isCoprime` supplies a `b` with
+`X` coprime to `L²`; `p ∤ L` makes `p` coprime to `L²` as well; and the two
+Bézout identities then produce `j = −r·u·u'` explicitly, with no `ZMod`
+inversion.  `p ∤ L` is consumed exactly here and in the injectivity input. -/
+theorem exists_gamma0_mul_dvd_lowerLeft {Ap p L : ℕ} (hp : p.Prime) (hpL : ¬ p ∣ L)
+    (hL : 0 < L) {ρ : SL(2, ℤ)} (hρ : ρ ∈ CongruenceSubgroup.Gamma0 Ap) :
+    ∃ γ ∈ CongruenceSubgroup.Gamma0 (p * Ap), ((Ap * L ^ 2 : ℕ) : ℤ) ∣ (ρ * γ) 1 0 := by
+  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+    have h2 := ρ.2
+    rwa [Matrix.det_fin_two] at h2
+  have hcop : IsCoprime (ρ 1 1) (ρ 1 0) := ⟨ρ 0 0, -ρ 0 1, by linear_combination hdet⟩
+  obtain ⟨r, hr⟩ : (Ap : ℤ) ∣ ρ 1 0 := by
+    rw [CongruenceSubgroup.Gamma0_mem] at hρ
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ
+  obtain ⟨b, hb⟩ := exists_add_mul_isCoprime hcop (M := L ^ 2) (by positivity)
+  set X : ℤ := ρ 1 1 + b * ρ 1 0 with hX
+  obtain ⟨u, v, huv⟩ := hb
+  have hpL2 : IsCoprime ((p : ℕ) : ℤ) ((L ^ 2 : ℕ) : ℤ) := by
+    rw [Nat.isCoprime_iff_coprime]
+    exact Nat.Coprime.pow_right 2 ((Nat.Prime.coprime_iff_not_dvd hp).mpr hpL)
+  obtain ⟨u', v', huv'⟩ := hpL2
+  have hcast : ((L ^ 2 : ℕ) : ℤ) = (L : ℤ) ^ 2 := by push_cast; ring
+  rw [hcast] at huv huv'
+  set j : ℤ := -(r * u * u') with hj
+  have hkey : r + (p : ℤ) * j * X = (L : ℤ) ^ 2 * (r * (v + v' - v * v' * (L : ℤ) ^ 2)) := by
+    rw [hj]
+    linear_combination (-(r * (u' * (p : ℤ)))) * huv + (-(r * (1 - v * (L : ℤ) ^ 2))) * huv'
+  have hdetγ : (!![(1 : ℤ) + b * ((p : ℤ) * (Ap : ℤ)) * j, b;
+      ((p : ℤ) * (Ap : ℤ)) * j, 1]).det = 1 := by
+    rw [Matrix.det_fin_two_of]; ring
+  set γ : SL(2, ℤ) := ⟨!![(1 : ℤ) + b * ((p : ℤ) * (Ap : ℤ)) * j, b;
+    ((p : ℤ) * (Ap : ℤ)) * j, 1], hdetγ⟩ with hγ
+  have h00 : γ 0 0 = 1 + b * ((p : ℤ) * (Ap : ℤ)) * j := by rw [hγ]; simp
+  have h10 : γ 1 0 = ((p : ℤ) * (Ap : ℤ)) * j := by rw [hγ]; simp
+  refine ⟨γ, ?_, ?_⟩
+  · rw [CongruenceSubgroup.Gamma0_mem, h10]
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr ⟨j, by push_cast; ring⟩
+  · rw [SL2_mul_apply_one_zero, h00, h10]
+    have hsplit : ρ 1 0 * (1 + b * ((p : ℤ) * (Ap : ℤ)) * j)
+        + ρ 1 1 * (((p : ℤ) * (Ap : ℤ)) * j)
+        = (Ap : ℤ) * (r + (p : ℤ) * j * X) := by
+      rw [hX, hr]; ring
+    rw [hsplit, hkey]
+    exact ⟨r * (v + v' - v * v' * (L : ℤ) ^ 2), by push_cast; ring⟩
+
+/-- `Γ₀` is antitone in the level: `N ∣ M` gives `Γ₀(M) ≤ Γ₀(N)`. -/
+theorem Gamma0GL_le_of_dvd {N M : ℕ} (h : N ∣ M) : Gamma0GL M ≤ Gamma0GL N := by
+  intro x hx
+  obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hx
+  refine mem_Gamma0GL_iff.mpr ⟨ρ, ?_, rfl⟩
+  rw [CongruenceSubgroup.Gamma0_mem] at hρ ⊢
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr
+    ((Int.natCast_dvd_natCast.mpr h).trans ((ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ))
+
+/-- `mapGL` reflects `Γ₀`-membership, since it is injective (`mapGL_injective`). -/
+theorem mem_Gamma0GL_mapGL_iff {N : ℕ} {ρ : SL(2, ℤ)} :
+    (mapGL ℝ ρ : GL (Fin 2) ℝ) ∈ Gamma0GL N ↔ ρ ∈ CongruenceSubgroup.Gamma0 N := by
+  refine ⟨fun h => ?_, fun h => mem_Gamma0GL_iff.mpr ⟨ρ, h, rfl⟩⟩
+  obtain ⟨σ, hσ, hEq⟩ := mem_Gamma0GL_iff.mp h
+  exact (mapGL_injective hEq) ▸ hσ
 
 /-- **MIYAKE LEMMA 4.6.6(1) — THE TRACE COMMUTES WITH LEVEL-RAISING BY `L²` WHEN
-`p ∤ L`** (sorry leaf, cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.6(1),
+`p ∤ L`** (PROVEN 2026-07-28; Miyake, *Modular Forms*, Lemma 4.6.6(1),
 p. 158, and the step (4.6.13) that uses it):
 
     Tr^{A L²}_{Ap L²} ∘ V_1  =  V_1 ∘ Tr^A_{Ap}        (`A = p · Ap`,  `p ∤ L`).
@@ -36613,23 +36851,171 @@ This is the move that lets Miyake compute the trace at the RAISED level `A L²`
 — where Theorem 4.6.4 is available — and read the answer off at level `A`, where
 the peeling step's witness must live.
 
-`p ∤ L` is exactly what makes it true, and is the only place in the peeling step
-where that hypothesis is consumed: the index is `[Γ₀(Ap) : Γ₀(A)] = p` if
-`p² ∣ A` and `p + 1` otherwise, and since `p ∤ L` the same dichotomy holds at
-level `A L²` (`p² ∣ A L² ↔ p² ∣ A`), so the two traces have the same number of
-cosets and the coset representatives match up.  Drop `p ∤ L` and the two indices
-can differ, so no diagram commutes on the nose.
+PROOF AS FORMALIZED, and NOTE IT NEEDS NO INDEX FORMULA FOR `Γ₀`.  `V_1` does not
+change the underlying function at all (`coe_degeneracyOp_one`), so BOTH sides are
+literally the same kind of sum of slashes `⇑F ∣[2] γ⁻¹` — the left one over
+`Γ₀(Bp)/Γ₀(B)`, the right one over `Γ₀(Ap)/Γ₀(A)` — and the identity is exactly
+the statement that the inclusion `Γ₀(Bp) ↪ Γ₀(Ap)` (`Gamma0GL_le_of_dvd`, from
+`Ap ∣ Bp`) induces a BIJECTION between those two coset spaces.  Along that
+bijection the summands are termwise equal, so the identity is exact and no index
+constant appears.
+
+* INJECTIVE: `γ ∈ Γ₀(Bp)` lying in `Γ₀(A)` has `Ap L² ∣ γ₁₀` and `p Ap ∣ γ₁₀`,
+  and `p ∤ L` makes `lcm(Ap L², p Ap) = p Ap L² = B`
+  (`dvd_mul_sq_of_dvd_mul_sq_of_dvd_mul`), so `γ ∈ Γ₀(B)`.
+* SURJECTIVE: `exists_gamma0_mul_dvd_lowerLeft` — for `ρ ∈ Γ₀(Ap)`,
+  right-multiplying by `[1 + bAj, b; Aj, 1] ∈ Γ₀(A)` turns `ρ₁₀ = Ap r` into
+  `Ap(r + p j (ρ₁₁ + b ρ₁₀))`, and `(ρ₁₁, ρ₁₀) = 1` plus `p ∤ L` let `b` and `j`
+  solve `r + p j X ≡ 0 (mod L²)` by two Bézout identities.
+
+Miyake instead compares the index dichotomy `[Γ₀(N) : Γ₀(Np)] = p` at `p ∣ N`,
+`p + 1` otherwise, which `p ∤ L` makes agree at the two levels
+(`p ∣ Ap ↔ p ∣ Ap L²`).  That route needs an index formula for `Γ₀` that this
+project does not have; the direct argument above avoids it, exactly as
+`traceOp_degeneracyOp_comm` below does for `V_q`.
+
+`p ∤ L` is consumed in the two places named above, and the statement is FALSE
+without it: at `Ap = 1, p = 2, L = 2` the map `Γ₀(4)/Γ₀(8) → Γ₀(1)/Γ₀(2)` is not
+injective (the indices are `2` and `3`).
 
 The four levels are passed as VARIABLES with defining equations rather than as
 `A / p`, `A * L ^ 2`, … so that instantiating this needs no rewriting inside
-`CuspForm (Gamma0GL ·) 2`. -/
+`CuspForm (Gamma0GL ·) 2`.
+
+`0 < A` is carried for the consumer's convenience only; the proof uses the
+strictly stronger `[NeZero A]` instance instead, hence the underscore. -/
 theorem traceOp_degeneracyOp_one_comm {A Ap B Bp L p : ℕ}
     [NeZero A] [NeZero Ap] [NeZero B] [NeZero Bp]
-    (hA : 0 < A) (hp : p.Prime) (hpL : ¬ p ∣ L) (hL : 0 < L)
+    (_hA : 0 < A) (hp : p.Prime) (hpL : ¬ p ∣ L) (hL : 0 < L)
     (hAp : p * Ap = A) (hB : A * L ^ 2 = B) (hBp : Ap * L ^ 2 = Bp)
     (F : CuspForm (Gamma0GL A) 2) :
-    traceOp B Bp (degeneracyOp A B 1 F) = degeneracyOp Ap Bp 1 (traceOp A Ap F) :=
-  sorry
+    traceOp B Bp (degeneracyOp A B 1 F) = degeneracyOp Ap Bp 1 (traceOp A Ap F) := by
+  classical
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL B) (Gamma0GL Bp) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL A) (Gamma0GL Ap) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  letI : Fintype (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)) := Fintype.ofFinite _
+  letI : Fintype (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) := Fintype.ofFinite _
+  have hAp0 : 0 < Ap := Nat.pos_of_ne_zero (NeZero.ne Ap)
+  have hAB : A ∣ B := ⟨L ^ 2, hB.symm⟩
+  have hApBp : Ap ∣ Bp := ⟨L ^ 2, hBp.symm⟩
+  -- the inclusion `Γ₀(Bp) → Γ₀(Ap)`
+  set φ : Gamma0GL Bp →* Gamma0GL Ap := Subgroup.inclusion (Gamma0GL_le_of_dvd hApBp) with hφ
+  have hcoeφ : ∀ r : Gamma0GL Bp,
+      ((φ r : Gamma0GL Ap) : GL (Fin 2) ℝ) = (r : GL (Fin 2) ℝ) := by
+    intro r
+    rw [hφ]
+    exact Subgroup.coe_inclusion _ r
+  have hφval : ∀ x y : Gamma0GL Bp,
+      (((φ x)⁻¹ * φ y : Gamma0GL Ap) : GL (Fin 2) ℝ)
+        = ((x⁻¹ * y : Gamma0GL Bp) : GL (Fin 2) ℝ) := by
+    intro x y
+    simp only [Subgroup.coe_mul, Subgroup.coe_inv, hcoeφ]
+  have hwd : ∀ x y : Gamma0GL Bp,
+      ((x⁻¹ * y : Gamma0GL Bp) : GL (Fin 2) ℝ) ∈ Gamma0GL B →
+      ((φ x : Gamma0GL Ap) : Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap))
+        = (φ y : Gamma0GL Ap) := by
+    intro x y hxy
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf, hφval x y]
+    exact Gamma0GL_le_of_dvd hAB hxy
+  set Φ : (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)) →
+      (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) := fun x =>
+    Quotient.liftOn x
+      (fun r => ((φ r : Gamma0GL Ap) :
+        Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)))
+      (fun a b hab => hwd a b (by
+        rw [← Quotient.eq_iff_equiv, Quotient.eq, QuotientGroup.leftRel_apply,
+          Subgroup.mem_subgroupOf] at hab
+        exact hab)) with hΦ
+  have hΦmk : ∀ r : Gamma0GL Bp,
+      Φ ((r : Gamma0GL Bp) : Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp))
+        = ((φ r : Gamma0GL Ap) :
+            Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) := fun _ => rfl
+  -- injectivity: `Ap L² ∣ c` and `p Ap ∣ c` give `p Ap L² ∣ c`
+  have hback : ∀ z : GL (Fin 2) ℝ, z ∈ Gamma0GL Bp → z ∈ Gamma0GL A → z ∈ Gamma0GL B := by
+    intro z hzBp hzA
+    obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hzBp
+    have h1 : ((Ap * L ^ 2 : ℕ) : ℤ) ∣ ρ 1 0 := by
+      rw [← hBp, CongruenceSubgroup.Gamma0_mem] at hρ
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ
+    have h2 : ((p * Ap : ℕ) : ℤ) ∣ ρ 1 0 := by
+      have hρA := mem_Gamma0GL_mapGL_iff.mp hzA
+      rw [← hAp, CongruenceSubgroup.Gamma0_mem] at hρA
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρA
+    refine mem_Gamma0GL_mapGL_iff.mpr ?_
+    rw [CongruenceSubgroup.Gamma0_mem]
+    refine (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr ?_
+    have h3 := dvd_mul_sq_of_dvd_mul_sq_of_dvd_mul hp hpL hAp0 h1 h2
+    have hBeq : B = p * Ap * L ^ 2 := by rw [← hB, ← hAp]
+    rw [hBeq]
+    exact h3
+  have hinj : ∀ a b, Φ a = Φ b → a = b := by
+    refine QuotientGroup.forall_mk.mpr fun x =>
+      QuotientGroup.forall_mk.mpr fun y hxy => ?_
+    rw [hΦmk, hΦmk] at hxy
+    have h1 := QuotientGroup.eq.mp hxy
+    rw [Subgroup.mem_subgroupOf, hφval x y] at h1
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf]
+    exact hback _ (x⁻¹ * y).2 h1
+  have hsurj : Function.Surjective Φ := by
+    refine QuotientGroup.forall_mk.mpr fun s => ?_
+    obtain ⟨ρ, hρ, hρeq⟩ := mem_Gamma0GL_iff.mp s.2
+    obtain ⟨γ, hγ, hdvd10⟩ := exists_gamma0_mul_dvd_lowerLeft hp hpL hL hρ
+    rw [hAp] at hγ
+    have hσmem : (ρ * γ) ∈ CongruenceSubgroup.Gamma0 Bp := by
+      rw [CongruenceSubgroup.Gamma0_mem]
+      refine (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr ?_
+      rw [← hBp]
+      exact hdvd10
+    have hσGL : (mapGL ℝ (ρ * γ) : GL (Fin 2) ℝ) ∈ Gamma0GL Bp :=
+      mem_Gamma0GL_mapGL_iff.mpr hσmem
+    refine ⟨((⟨mapGL ℝ (ρ * γ), hσGL⟩ : Gamma0GL Bp) :
+      Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)), ?_⟩
+    rw [hΦmk]
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf]
+    have hval : (((φ ⟨mapGL ℝ (ρ * γ), hσGL⟩)⁻¹ * s : Gamma0GL Ap) : GL (Fin 2) ℝ)
+        = (mapGL ℝ γ)⁻¹ := by
+      simp only [hφ, Subgroup.coe_mul, Subgroup.coe_inv, Subgroup.coe_inclusion,
+        ← hρeq, map_mul]
+      group
+    rw [hval]
+    exact inv_mem (mem_Gamma0GL_iff.mpr ⟨γ, hγ, rfl⟩)
+  -- assembly
+  refine DFunLike.coe_injective ?_
+  have hLHS : ⇑(traceOp B Bp (degeneracyOp A B 1 F))
+      = ∑ x : (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)),
+          SlashInvariantForm.quotientFunc (degeneracyOp A B 1 F) x := by
+    show ⇑(CuspForm.trace (Gamma0GL Bp) (degeneracyOp A B 1 F)) = _
+    rw [CuspForm.coe_trace]
+  have hTrA : ⇑(traceOp A Ap F)
+      = ∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          SlashInvariantForm.quotientFunc F y := by
+    show ⇑(CuspForm.trace (Gamma0GL Ap) F) = _
+    rw [CuspForm.coe_trace]
+  have hRHS : ⇑(degeneracyOp Ap Bp 1 (traceOp A Ap F)) = ⇑(traceOp A Ap F) :=
+    coe_degeneracyOp_one hApBp _
+  have hterm : ∀ x : (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)),
+      SlashInvariantForm.quotientFunc (degeneracyOp A B 1 F) x
+        = SlashInvariantForm.quotientFunc F (Φ x) := by
+    refine QuotientGroup.forall_mk.mpr fun r => ?_
+    rw [hΦmk]
+    show ⇑(degeneracyOp A B 1 F) ∣[(2 : ℤ)] ((r : Gamma0GL Bp) : GL (Fin 2) ℝ)⁻¹
+      = ⇑F ∣[(2 : ℤ)] ((φ r : Gamma0GL Ap) : GL (Fin 2) ℝ)⁻¹
+    rw [coe_degeneracyOp_one hAB F, hcoeφ r]
+  rw [hLHS, hRHS, hTrA]
+  calc ∑ x : (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)),
+        SlashInvariantForm.quotientFunc (degeneracyOp A B 1 F) x
+      = ∑ x : (Gamma0GL Bp ⧸ (Gamma0GL B).subgroupOf (Gamma0GL Bp)),
+          SlashInvariantForm.quotientFunc F (Φ x) :=
+        Finset.sum_congr rfl fun x _ => hterm x
+    _ = ∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          SlashInvariantForm.quotientFunc F y :=
+        Fintype.sum_equiv (Equiv.ofBijective Φ ⟨fun a b h => hinj a b h, hsurj⟩) _ _
+          fun _ => rfl
 
 /-- **`U_p` COMMUTES WITH `V_d` AT A BAD PRIME** (PROVEN 2026-07-27): for
 `d·N ∣ M`, a prime `p ∣ N` and `p ∤ d`,
@@ -37035,7 +37421,7 @@ forms at a family of DIFFERENT levels, i.e. a dependent-type family indexed by
 prime `q = L.minFac` at a time, and let the induction hypothesis at `L / q`
 handle everything else.  Concretely, at level `C = B q²`:
 
-1. `g` := the `q`-sieve of `h` (`exists_cuspForm_qCoeff_sieve`, LEAF), so
+1. `g` := the `q`-sieve of `h` (`exists_cuspForm_qCoeff_sieve`, PROVEN), so
    `a_n(g) = 1_{(n,q)=1}·a_n(h)`.  It satisfies the hypothesis at `L / q`,
    because `(n, q) = 1` and `(n, L/q) = 1` together give `(n, L) = 1`
    (`L = q·(L/q)`).  So the INDUCTION HYPOTHESIS applies to it — and `L/q < L`.
@@ -37045,7 +37431,7 @@ handle everything else.  Concretely, at level `C = B q²`:
    `p ≠ q`) and `Tr(V_q (U_p k)) = V_q (Tr (U_p k))` (Lemma 4.6.6(2),
    `traceOp_degeneracyOp_comm`), whose `m`-th coefficient vanishes because
    `q ∣ L` and `(m, L) = 1` force `q ∤ m`.
-3. Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, LEAF) at `L := q` identifies
+3. Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, PROVEN) at `L := q` identifies
    the trace computed at level `C` with the one at level `B`, and
    `heckeOp_degeneracyOp_of_dvd` at `d = 1` moves `U_p` past `V_1`.
 
@@ -37233,14 +37619,14 @@ turned out not to be needed at all (see its docstring).  Check the current
 open/closed status of the other two with the compiler, not with this note.
 
 1. `g` = the `L`-sieve of `f` at level `B = M L²`
-   (`exists_cuspForm_qCoeff_sieve`, LEAF).  Its coefficients vanish at every
+   (`exists_cuspForm_qCoeff_sieve`, PROVEN).  Its coefficients vanish at every
    `p ∤ n`: at `(n, L) = 1` by the hypothesis `hf`, and off that by construction.
 2. Theorem 4.6.4 at level `B` — `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`
    above, PROVEN — writes `g = V_p g_p` with `g_p ∈ S₂(Γ₀(Bp))`, `Bp = (M/p) L²`.
 3. `U_p g = V_1 g_p` (a two-line coefficient computation: `a_m(U_p g) = a_{pm}(g)
    = a_m(g_p)`), so `Tr^B_{Bp}(U_p g) = κ · g_p` with `κ ≠ 0` by
    `exists_smul_traceOp_degeneracyOp_one`.  This is (4.6.12), and it is where the
-   level comes back DOWN.  Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, LEAF)
+   level comes back DOWN.  Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, PROVEN)
    then identifies the trace computed at level `B` with the one at level `M`,
    which is (4.6.13) and the only place `p ∤ L` is used.
 4. `h = V_1 f − g` is the complementary part, supported off the indices coprime to
