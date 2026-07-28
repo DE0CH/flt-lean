@@ -12170,7 +12170,141 @@ theorem stepanov_dvd_of_dvd_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
   have h2 := congrArg (fun r => Polynomial.coeff r j) h1
   simpa [Polynomial.coeff_map] using h2
 
-/-- **SCHMIDT LEMMA 2D, THE NORM STEP** (SORRY LEAF, cut 2026-07-27 out of
+/-! #### The Frobenius specialisation `(Z, W) ↦ (X^p, Y^p)` (PROVEN 2026-07-28)
+
+The norm step is cleanest when the two *shape* facts it rests on are separated out
+as identities of polynomials, with no `AdjoinRoot` in sight:
+
+* `stepanovSpecZW_stepanovFZ` : `f(X^p, Y^p) = F(X, Y)^p` — Frobenius, and this is
+  exactly where `f^{[p]} = f` (coefficients of `F` in `𝔽_p`) is consumed;
+* `stepanovSpecZW_stepanovAnsatz4` : `a(X, Y, X^p, Y^p) = stepanovAnsatz d p K A`,
+  i.e. the four-variable `a` really is a lift of the ansatz.
+
+Both are proven by `Polynomial.ringHom_ext` against `frobenius`, which needs only
+`CharP (ZMod p) p` (propagated to the polynomial rings by `Polynomial.charP`) and
+`ZMod.pow_card`. -/
+
+theorem stepanovSpecZ_C {p : ℕ} (u : Polynomial (Polynomial (ZMod p))) :
+    stepanovSpecZ p (Polynomial.C u) = u := by
+  simp [stepanovSpecZ]
+
+theorem stepanovSpecZ_X {p : ℕ} :
+    stepanovSpecZ p (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p))))
+      = Polynomial.C (Polynomial.X ^ p) := by
+  simp [stepanovSpecZ]
+
+theorem stepanovSpecZ_monomial {p : ℕ} (j : ℕ) (u : Polynomial (Polynomial (ZMod p))) :
+    stepanovSpecZ p (Polynomial.monomial j u) = u * Polynomial.C (Polynomial.X ^ p) ^ j := by
+  simp [stepanovSpecZ]
+
+/-- The Frobenius specialisation `(Z, W) ↦ (X^p, Y^p)` of `𝔽_p[X][Y][Z][W]` into
+`𝔽_p[X][Y]`. -/
+noncomputable def stepanovSpecZW (p : ℕ) :
+    Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))) →+*
+      Polynomial (Polynomial (ZMod p)) :=
+  Polynomial.eval₂RingHom (stepanovSpecZ p) (Polynomial.X ^ p)
+
+/-- `Z ↦ X^p` undoes `X ↦ Z`, up to Frobenius: on `𝔽_p[X]` the composite is `c ↦ c^p`. -/
+theorem stepanov_specZ_comp_eq (p : ℕ) [Fact p.Prime] :
+    (stepanovSpecZ p).comp
+        (Polynomial.eval₂RingHom
+          (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
+                Polynomial (Polynomial (Polynomial (ZMod p)))).comp
+              (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p)))).comp
+            (Polynomial.C : ZMod p →+* Polynomial (ZMod p)))
+          (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p)))))
+      = (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p))).comp
+          (frobenius (Polynomial (ZMod p)) p) := by
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simp only [RingHom.comp_apply, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C,
+      stepanovSpecZ_C, frobenius_def, ← Polynomial.C_pow, ZMod.pow_card]
+  · simp only [RingHom.comp_apply, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_X,
+      stepanovSpecZ_X, frobenius_def]
+
+/-- **`f(X^p, Y^p) = F(X,Y)^p`** (PROVEN 2026-07-28) — Frobenius, using that the
+coefficients of `F` lie in `𝔽_p`, so `f^{[p]} = f`. -/
+theorem stepanovSpecZW_stepanovFZ (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) :
+    stepanovSpecZW p (stepanovFZ F) = F ^ p := by
+  have key : (stepanovSpecZW p).comp (Polynomial.mapRingHom
+      (Polynomial.eval₂RingHom
+        (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
+              Polynomial (Polynomial (Polynomial (ZMod p)))).comp
+            (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p)))).comp
+          (Polynomial.C : ZMod p →+* Polynomial (ZMod p)))
+        (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p))))))
+      = frobenius (Polynomial (Polynomial (ZMod p))) p := by
+    refine Polynomial.ringHom_ext (fun c => ?_) ?_
+    · have h := RingHom.congr_fun (stepanov_specZ_comp_eq p) c
+      simp only [RingHom.comp_apply, Polynomial.coe_eval₂RingHom, frobenius_def] at h
+      simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.map_C,
+        stepanovSpecZW, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C, frobenius_def,
+        ← Polynomial.C_pow]
+      exact h
+    · simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.map_X,
+        stepanovSpecZW, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_X, frobenius_def]
+  have h1 : stepanovSpecZW p (stepanovFZ F)
+      = ((stepanovSpecZW p).comp (Polynomial.mapRingHom
+          (Polynomial.eval₂RingHom
+            (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
+                  Polynomial (Polynomial (Polynomial (ZMod p)))).comp
+                (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p)))).comp
+              (Polynomial.C : ZMod p →+* Polynomial (ZMod p)))
+            (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p))))))) F := rfl
+  rw [h1, key, frobenius_def]
+
+/-- **`a(X, Y, X^p, Y^p) = stepanovAnsatz d p K A`** (PROVEN 2026-07-28) — the
+four-variable `a` really does specialise to the ansatz. -/
+theorem stepanovSpecZW_stepanovAnsatz4 (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    stepanovSpecZW p (stepanovAnsatz4 d p K A) = stepanovAnsatz d p K A := by
+  rw [stepanovAnsatz4, stepanovAnsatz, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  simp only [stepanovSpecZW, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_monomial,
+    stepanovSpecZ_monomial, ← Polynomial.C_pow, ← pow_mul]
+  rw [show (Polynomial.C (Polynomial.X ^ (p * j)) : Polynomial (Polynomial (ZMod p)))
+        = Polynomial.monomial 0 (Polynomial.X ^ (p * j)) by simp,
+    show (Polynomial.X ^ (p * k) : Polynomial (Polynomial (ZMod p)))
+        = Polynomial.monomial (p * k) 1 from Polynomial.X_pow_eq_monomial _,
+    Polynomial.monomial_mul_monomial, Polynomial.monomial_mul_monomial, mul_one,
+    show i + 0 + p * k = p * k + i by omega]
+
+/-- **A COMMON ROOT KILLS THE RESULTANT** (PROVEN 2026-07-28). If `f` is monic of
+degree `m + 1` and `f`, `g` share a root `c`, then `Res(f, g, m+1, n) = 0` for any
+`n ≥ deg g`: split off the monic factor `X - C c` with `Polynomial.dvd_iff_isRoot`,
+use `resultant_mul_left`, and the first factor is `resultant_X_sub_C_left`, i.e.
+the evaluation `g(c) = 0`. -/
+theorem stepanov_resultant_eq_zero_of_common_root {S : Type*} [CommRing S] [Nontrivial S]
+    (f g : Polynomial S) (m n : ℕ) (hf : f.Monic) (hfd : f.natDegree = m + 1)
+    (c : S) (hfc : f.eval c = 0) (hgc : g.eval c = 0) (hg : g.natDegree ≤ n) :
+    f.resultant g (m + 1) n = 0 := by
+  obtain ⟨h, hh⟩ := Polynomial.dvd_iff_isRoot.mpr hfc
+  have hXC : (Polynomial.X - Polynomial.C c).Monic := Polynomial.monic_X_sub_C c
+  have hhmon : h.Monic := by
+    refine hXC.of_mul_monic_left ?_
+    rw [← hh]; exact hf
+  have hhnd : h.natDegree = m := by
+    have h1 := hXC.natDegree_mul hhmon
+    rw [← hh, hfd, Polynomial.natDegree_X_sub_C] at h1
+    omega
+  have hd1 : (Polynomial.X - Polynomial.C c : Polynomial S).natDegree + h.natDegree = m + 1 := by
+    rw [Polynomial.natDegree_X_sub_C, hhnd]
+    omega
+  calc f.resultant g (m + 1) n
+      = ((Polynomial.X - Polynomial.C c) * h).resultant g
+          ((Polynomial.X - Polynomial.C c : Polynomial S).natDegree + h.natDegree) n := by
+        rw [hd1, hh]
+    _ = (Polynomial.X - Polynomial.C c).resultant g
+            (Polynomial.X - Polynomial.C c : Polynomial S).natDegree n
+          * h.resultant g h.natDegree n := Polynomial.resultant_mul_left _ _ _ _ hg
+    _ = 0 := by
+        rw [Polynomial.natDegree_X_sub_C, Polynomial.resultant_X_sub_C_left _ _ _ hg, hgc,
+          zero_mul]
+
+/-- **SCHMIDT LEMMA 2D, THE NORM STEP** (PROVEN 2026-07-28; cut 2026-07-27 out of
 `stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, p. 103, the two displays
 `a(X,𝔶,X^q;𝔶₁^q,…,𝔶_d^q) = 0` and `b(X,𝔶,X^q; g^{[q]}(X^q)) = 0`.
 
@@ -12199,15 +12333,67 @@ the first degree argument `d` is `natDegree`; the second, `d − 1`, dominates
 `deg_W a` by `stepanovAnsatz4_natDegree_le`, and `Polynomial.resultant_add_right_deg`
 absorbs the slack against `f`'s leading coefficient `1`.
 
+`hAsupp` is NOT needed and is underscored: `stepanovAnsatz4` and `stepanovAnsatz`
+carry the same triple sum, so the specialisation identity
+`stepanovSpecZW_stepanovAnsatz4` is unconditional. It is kept in the signature
+because the consumer passes it positionally and the sibling
+`stepanov_dvd_resultant_of_dvd_specZ` does use it.
+
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_dvd_specZ_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
     (F : Polynomial (Polynomial (ZMod p)))
     (hmon : F.Monic) (hdegY : F.natDegree = d)
     (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
-    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (_hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
     (hdvd : F ∣ stepanovAnsatz d p K A) :
-    F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1)) :=
-  sorry
+    F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1)) := by
+  classical
+  haveI : Nontrivial (AdjoinRoot F) := by
+    refine AdjoinRoot.nontrivial F ?_
+    intro h0
+    have hz := Polynomial.natDegree_eq_zero_iff_degree_le_zero.mpr (le_of_eq h0)
+    omega
+  rw [← AdjoinRoot.mk_eq_zero]
+  have hmapres : AdjoinRoot.mk F
+        (stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1)))
+      = (((stepanovFZ F).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p))).resultant
+          ((stepanovAnsatz4 d p K A).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p)))
+          d (d - 1)) := by
+    rw [Polynomial.resultant_map_map (R := Polynomial (Polynomial (Polynomial (ZMod p))))
+      (S := AdjoinRoot F) (stepanovFZ F) (stepanovAnsatz4 d p K A) d (d - 1)
+      ((AdjoinRoot.mk F).comp (stepanovSpecZ p))]
+    rfl
+  rw [hmapres]
+  have heval : ∀ u : Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))),
+      Polynomial.eval ((AdjoinRoot.root F) ^ p)
+          (u.map ((AdjoinRoot.mk F).comp (stepanovSpecZ p)))
+        = AdjoinRoot.mk F (stepanovSpecZW p u) := by
+    intro u
+    rw [Polynomial.eval_map, stepanovSpecZW, Polynomial.coe_eval₂RingHom,
+      Polynomial.hom_eval₂, map_pow, AdjoinRoot.mk_X]
+  have hfroot : Polynomial.eval ((AdjoinRoot.root F) ^ p)
+      ((stepanovFZ F).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p))) = 0 := by
+    rw [heval, stepanovSpecZW_stepanovFZ, map_pow, AdjoinRoot.mk_self,
+      zero_pow (Fact.out : p.Prime).ne_zero]
+  have haroot : Polynomial.eval ((AdjoinRoot.root F) ^ p)
+      ((stepanovAnsatz4 d p K A).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p))) = 0 := by
+    rw [heval, stepanovSpecZW_stepanovAnsatz4, AdjoinRoot.mk_eq_zero]
+    exact hdvd
+  have hf'mon : ((stepanovFZ F).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p))).Monic :=
+    (stepanovFZ_monic hmon).map _
+  have hf'nd : ((stepanovFZ F).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p))).natDegree
+      = (d - 1) + 1 := by
+    rw [(stepanovFZ_monic hmon).natDegree_map, stepanovFZ_natDegree hmon, hdegY]
+    omega
+  have ha'nd : ((stepanovAnsatz4 d p K A).map
+      ((AdjoinRoot.mk F).comp (stepanovSpecZ p))).natDegree ≤ d - 1 :=
+    le_trans Polynomial.natDegree_map_le (stepanovAnsatz4_natDegree_le d p K A)
+  have hzero := stepanov_resultant_eq_zero_of_common_root
+    ((stepanovFZ F).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p)))
+    ((stepanovAnsatz4 d p K A).map ((AdjoinRoot.mk F).comp (stepanovSpecZ p)))
+    (d - 1) (d - 1) hf'mon hf'nd ((AdjoinRoot.root F) ^ p) hfroot haroot ha'nd
+  rw [show d - 1 + 1 = d by omega] at hzero
+  exact hzero
 
 /-- **SCHMIDT LEMMA 2D, THE DE-SPECIALISATION** (SORRY LEAF, cut 2026-07-27 out
 of `stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, pp. 103–104, from
