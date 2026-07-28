@@ -607,18 +607,31 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
 -- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
--- two leaves `exists_integralCoordinates_of_abelianScheme` (heights) and
--- `finite_kummerCochains_of_abelianScheme` (weak Mordell–Weil).  Also
--- `Fermat.WeilHeight` / `WeilHeight.toDescentHeight`,
--- `Fermat.finite_quotient_nsmul_of_prime` and
--- `Fermat.finite_quotient_nsmul_of_kummerCochains`, the three reductions that
--- shrank those leaves to what they are now.
+-- two leaves `exists_cubeModel_of_abelianScheme` (heights) and
+-- `finite_quotient_psmul_of_abelianScheme` (weak Mordell–Weil).  It also
+-- carries `Fermat.ParallelogramHeight`, the interface a theory of heights
+-- actually produces, `ParallelogramHeight.toDescentHeight`, and
+-- `Fermat.finite_quotient_nsmul_of_prime`, the reduction that shrank the
+-- arithmetic leaf to its prime case.
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
--- `Fermat.intHeight` and Northcott's theorem for it, `Fermat.IntegralCoordinates`
--- and `IntegralCoordinates.toDescentHeight`: the naive height on `ℤ^d` and the
--- finiteness half of the theory of heights over `ℚ`, PROVEN there.  It reduces
--- `exists_descentHeight_of_abelianScheme` to the purely geometric leaf
--- `exists_integralCoordinates_of_abelianScheme` below.
+-- `Fermat.ProjectiveHeightSource` and `Fermat.finite_setOf_logHeight_coords_le`
+-- (Northcott's theorem in projective space over `ℚ`), together with
+-- `Fermat.CubeEmbedding` and `CubeEmbedding.toProjectiveHeightSource` — the
+-- height analysis of the theorem of the cube, PROVEN there over
+-- `Mathlib/NumberTheory/Height/MvPolynomial.lean`.  Also `Fermat.CubeModel`,
+-- `CubeModel.nonempty_cubeEmbedding` and `Fermat.exists_homogeneousCertificate`
+-- — the EFFECTIVE HOMOGENEOUS NULLSTELLENSATZ over `ℚ`, PROVEN there, which is
+-- what lets the geometry leaf ask for "the cube forms have no common zero on
+-- the Segre image" instead of for an explicit certificate.  `Mathlib`'s heights
+-- development DOES exist at this pin; see the DISCLOSURE note on
+-- `exists_cubeEmbedding_of_abelianScheme` below, whose predecessor's "MISSING
+-- MACHINERY" claim was wrong.
+public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
+-- `Fermat.intHeight`, `Fermat.IntegralCoordinates` and `Fermat.WeilHeight`: a
+-- SECOND, independently developed packaging of the same height theory over `ℚ`,
+-- in primitive integral coordinates rather than in `ℙⁿ(ℚ)`.  Kept imported so
+-- the module stays compiled and its declarations visible; no longer consumed —
+-- see the DUPLICATE-CUT note on `exists_integralCoordinates_of_abelianScheme`.
 public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
@@ -23265,9 +23278,34 @@ theorem numRationalCusps_pos_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) :
   fin_cases hN <;> decide
 
 /-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
-scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
-heights after `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`, and
-purely geometric: no finiteness statement survives in it.
+scheme `A` over `ℚ`** (sorry node) — the theory of heights transcribed
+into primitive integral coordinates, purely geometric: no finiteness
+statement survives in it.
+
+**DUPLICATE CUT, 2026-07-27 — THIS LEAF AND `exists_cubeEmbedding_of_abelianScheme`
+BELOW ARE THE SAME MATHEMATICS UNDER TWO NAMES, AND ONLY THE OTHER ONE IS
+CONSUMED.**  Two owners decomposed `exists_descentHeight_of_abelianScheme`
+independently and within hours of each other, neither seeing the other's
+branch:
+
+* this one, over `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`
+  (`Fermat.intHeight` on `ℤ^d`, Northcott by "an integer box is finite",
+  `Fermat.WeilHeight`);
+* the `ℙⁿ(ℚ)` one, over
+  `Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`
+  (`Height.logHeight`, Northcott from `Mathlib`'s own heights
+  development, `Fermat.ParallelogramHeight`).
+
+Both packagings are proven and neither is wrong; they ask their producer
+for the *same* geometry — projectivity of an abelian variety, a symmetric
+very ample line bundle, and the theorem of the cube.  The `ℙⁿ(ℚ)` route
+was kept as the consumed one because it connects to `Mathlib`'s height
+API, which is what let the theorem of the cube be split off as
+`Fermat.CubeEmbedding` and all the real analysis discharged.  **This leaf
+is deliberately left standing rather than deleted** — its module is still
+imported and compiled, and which of the two survives is a cut-level
+decision for an integrator, not for a prover.  Whoever makes it should
+delete the loser and its module together.
 
 TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
 case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
@@ -23293,14 +23331,6 @@ The two fields are then two standard theorems:
   vector — the two differ by at most `log (N + 2)`, and the statement is
   only asked to hold up to a constant.
 
-**What this leaf NO LONGER carries, and this is the point of the cut.**
-Northcott's theorem has been *proven* rather than assumed: over `ℚ` and
-in primitive integral coordinates it is the statement that an integer
-box is finite, and that is `Fermat.instNorthcottIntHeight`.  So the
-finiteness input to Mordell–Weil's geometric half is gone from the
-frontier; what remains is exactly the projective embedding and the
-theorem of the cube.
-
 **FAITHFULNESS AUDIT.**  *Not vacuous.*  An arbitrary injection
 `A(ℚ) ↪ ℤ^d` would satisfy `injective` and give a Northcott height, but
 `quasiParallelogram` forces that height to be a quadratic form up to
@@ -23319,57 +23349,271 @@ nothing downstream depends on WHICH one is used.
 because `ℤ` is a PID with unit group `{±1}`; over a general number field
 the normalisation involves the class group and the unit group, and the
 elementary Northcott argument proven upstream would not apply.
-Mordell–Weil is only ever needed over `ℚ` in this development.
-
-**MISSING MACHINERY**, and it is the honest remaining cost: projectivity
-of an abelian variety, symmetric very ample line bundles, and the
-theorem of the cube.  None of these exists in `Mathlib`, in `~/cs/FLT`,
-or in this project — the check that would refute this is
-`grep -rn "TheoremOfTheCube\|VeryAmple\|NeronTate" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`. -/
+Mordell–Weil is only ever needed over `ℚ` in this development. -/
 theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
   sorry
 
+/-- **`A` embeds in `ℙⁿ_ℚ` by a symmetric very ample line bundle, the
+theorem of the cube holds for that embedding, and `(P, Q) ↦ (P+Q, P−Q)` is
+a morphism** (sorry node, cut 2026-07-28 out of
+`exists_cubeEmbedding_of_abelianScheme` below) — the GEOMETRIC half of
+Mordell–Weil, and now the ONLY half that is not already proven.
+
+**WHAT THIS CUT SHED, AND WHY IT IS A CUT AND NOT A RESTATEMENT.**  Its
+predecessor asked in addition for `CubeEmbedding.cert` / `cert_eval`: an
+*effective Nullstellensatz certificate*, i.e. explicit polynomials
+`cert (k, j)` with `∑_j cert (k,j) · cube j = z_k^{certDeg+2}` at every
+Segre point.  That is commutative algebra, not geometry, and no producer
+coming from algebraic geometry has those polynomials in hand.  `CubeModel`
+asks instead for what the geometry actually supplies —
+
+* `rel` / `rel_eval`: homogeneous forms cutting out the Segre image of
+  `A × A` in `ℙ^{dim²−1}` (`A × A` is projective, so the image is closed
+  and its homogeneous ideal is finitely generated);
+* `cube_nonvanishing`: over an ALGEBRAIC CLOSURE, the forms `cube` have no
+  common zero on the affine cone over that image apart from the origin —
+  which is exactly the statement that `(P, Q) ↦ (P + Q, P − Q)` is a
+  morphism defined everywhere, not merely a rational map
+
+— and `Fermat.CubeModel.nonempty_cubeEmbedding` manufactures the
+certificate.  That bridge is PROVEN, over
+`Fermat.exists_homogeneousCertificate`
+(`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`), which is in turn
+proven from `Mathlib`'s `MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`
+plus one new homogeneous-component lemma.  So the cut costs no new sorry:
+the frontier keeps exactly one leaf here, and that leaf is now purely
+geometric.
+
+**Note the `ℚ`-rationality of the certificate came for free**, which is the
+one thing that could have made the bridge hard.  `Mathlib`'s Nullstellensatz
+is stated for an ideal over a base field `k` with its zero locus taken in an
+algebraically closed extension `K`, and it returns the radical **over `k`** —
+so no faithful-flatness descent from `ℚ̄` to `ℚ` had to be written.
+
+TRUE and classical (Mumford, *Abelian Varieties*, §6 and §8, for the
+theorem of the cube and projectivity; Hindry–Silverman, *Diophantine
+Geometry* Theorem B.5.1; Silverman, *AEC* VIII.6.2 for the elliptic case).
+`ab.proper` and `ab.smooth` make `A` an abelian variety over `ℚ`, so it is
+projective and carries a symmetric ample line bundle `L` — take any ample
+`L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  A sufficiently high power of `L` is
+very ample and embeds `A` in `ℙⁿ_ℚ`; that is `coords` together with
+`coords_ne_zero` and `injective_of_smul`.  The theorem of the cube then
+says
+
+  `σ* L ⊗ δ* L ≅ p₁* L² ⊗ p₂* L²`   on `A × A`,
+
+`σ (P,Q) = P + Q` and `δ (P,Q) = P − Q`; in coordinates that is a family of
+forms of bidegree `(2,2)`, i.e. of degree `2` in the Segre variables
+`z (i,j) = xᵢ y_j`, computing the Segre product of `φ(P+Q)` and `φ(P−Q)`
+from `(φ(P), φ(Q))` — and that is `cube` with `cube_eval`.
+
+**Note the cancellation the consumer depends on**: *individually* `h(P+Q)`
+and `h(P−Q)` are each only bounded by `2h(P) + 2h(Q) + O(1)`, and it is
+precisely the cube — that their SEGRE PRODUCT has bidegree `(2,2)`, not
+each factor separately — which makes the sum come out right.  A producer
+that establishes the two factors separately has not proven the
+parallelogram law.
+
+**MISSING MACHINERY**, and it really is all that is left: projectivity of
+an abelian variety, symmetric very ample line bundles, and the theorem of
+the cube.  The check that would refute this is
+`grep -rn "TheoremOfTheCube\|VeryAmple\|IsVeryAmple" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`.  What this project DOES have,
+and a producer should start from, is
+`Fermat/FLT/Modularity/AmpleSheaf.lean`: `Fermat.IsInvertibleSheaf`,
+`Fermat.IsAmpleSheaf`, `Fermat.modTensor` / `Fermat.modTensorPow`,
+`Fermat.modPullback` and the pseudo-functoriality lemmas — enough to WRITE
+`σ*L ⊗ δ*L ≅ p₁*L² ⊗ p₂*L²`.  There is also a sibling leaf
+`Fermat.exists_isAmpleSheaf_cube_of_isAlgClosed`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) asserting the same
+geometry in the `[n]^*L ≅ L^{⊗n²}` form over an algebraically closed field;
+whoever proves one should look at the other, since a symmetric ample `L`
+with the cube is the common input.  `Mathlib` also has
+`Mathlib/NumberTheory/Height/EllipticCurve.lean`, whose
+`WeierstrassCurve.abs_logHeight_addSubMap_sub_two_mul_logHeight_le` is the
+elliptic instance of `cube` — worth reading first, since it shows the exact
+shape a producer has to build.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `coords_ne_zero` and
+`injective_of_smul` force `A(ℚ)` to inject into `ℙⁿ(ℚ)`, and
+`Fermat.finite_setOf_logHeight_coords_le` then makes every bounded-height
+set finite, so no constant or bounded height can satisfy the package once
+`cube_eval` and `cube_nonvanishing` are in force.  It *is* cheap exactly
+when `A(ℚ)` is finite — `dim = 1`, `coords ≡ ![1]`, `cube = z`,
+`relDim = 0` — and that is correct rather than a defect: a finite group is
+finitely generated, so the consumer's conclusion holds for that reason
+anyway.
+
+*Not weaker than what it produces.*  `CubeModel.nonempty_cubeEmbedding` and
+`CubeEmbedding.toProjectiveHeightSource` are both proven, so this leaf
+implies the two leaves it replaced; nothing downstream lost content.
+
+**THE AXIS SEARCHED, AND THE ONE THAT WAS NOT.**  The obvious further cut —
+split the embedding (`coords`, `injective_of_smul`, `rel`) from the cube
+(`cube`, `cube_eval`, `cube_nonvanishing`), leaving "any symmetric
+projective embedding of `A(ℚ)` satisfies the theorem of the cube" — is
+**FALSE**, with a cheap counterexample recorded in `CubeModel`'s docstring:
+`E : y² + y = x³ − x` has `E(ℚ) ≅ ℤ`, and `coords n = (1, n³, n⁶)` is an
+injection into `ℙ²(ℚ)` compatible with `[−1]` (via `diag(1,−1,1)`) whose
+height `6 log|n|` violates the parallelogram law.  Nothing about the
+abstract group plus an injection into `ℙⁿ(ℚ)` constrains the height.  So
+COORDINATE-LEVEL cuts of this leaf are exhausted.  The axis NOT searched is
+the SHEAF level: state the embedding as an invertible sheaf `L` with global
+sections `s : Fin dim → Γ(L, ⊤)`, and the cube as an isomorphism of sheaves
+on `pullback jstr jstr`; then "very ample `L` with the cube" and "the
+coordinate dictionary" become two genuinely separate leaves.  What blocks
+that today is the sections-to-coordinates bridge: there is no
+`Γ(L, ⊤) → Γ(modPullback P L, ⊤)` pullback-of-sections map in
+`AmpleSheaf.lean`, and `AbelianScheme.lean`'s own docstring records that
+there is no functor-of-points description of `Hom(T, Proj 𝒜)` at this pin.
+Writing that bridge is the next cut, and it is stated machinery, not proven
+machinery.
+
+*The conclusion is `Nonempty`, not a chosen embedding*, because nothing
+downstream depends on WHICH embedding is used; only its existence is
+consumed. -/
+theorem exists_cubeModel_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (CubeModel (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **`A` embeds in `ℙⁿ_ℚ` by a symmetric very ample line bundle, and the
+theorem of the cube holds for that embedding** (PROVEN 2026-07-28 over
+`exists_cubeModel_of_abelianScheme` above) — the GEOMETRIC half of
+Mordell–Weil.
+
+TRUE and classical (Mumford, *Abelian Varieties*, §6 and §8, for the
+theorem of the cube and projectivity; Hindry–Silverman, *Diophantine
+Geometry* Theorem B.5.1; Silverman, *AEC* VIII.6.2 for the elliptic
+case).  `ab.proper` and `ab.smooth` make `A` an abelian variety over `ℚ`,
+so it is projective and carries a symmetric ample line bundle `L` — take
+any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  A sufficiently high power
+of `L` is very ample and embeds `A` in `ℙⁿ_ℚ`; that is
+`CubeEmbedding.coords` together with `coords_ne_zero` and
+`injective_of_smul`.  The theorem of the cube then says
+
+  `σ* L ⊗ δ* L ≅ p₁* L² ⊗ p₂* L²`   on `A × A`,
+
+`σ (P,Q) = P + Q` and `δ (P,Q) = P − Q`; in coordinates that is a family
+of forms of bidegree `(2,2)` computing the Segre product of `φ(P+Q)` and
+`φ(P−Q)` from `(φ(P), φ(Q))`, and that is `CubeEmbedding.cube` with
+`cube_eval`.  Finally `cert` / `cert_eval` is the effective
+Nullstellensatz certificate expressing that those forms have no common
+zero on `A × A`, i.e. that `(P,Q) ↦ (P+Q, P−Q)` is a morphism everywhere.
+
+**THIS LEAF CONTAINS NO ANALYSIS AT ALL, AND THAT IS THE POINT OF THE
+CUT (2026-07-27).**  Its predecessor `exists_projectiveHeightSource_of_abelianScheme`
+still carried the approximate parallelogram law
+`|h(P+Q) + h(P−Q) − 2h(P) − 2h(Q)| ≤ C`, an `∃ C : ℝ` statement about
+logarithms — which is *not* what algebraic geometry produces.  All of that
+is now PROVEN, in `Fermat.CubeEmbedding.parallelogram`, from `Mathlib`'s
+
+* `Height.logHeight_eval_le'` — `logHeight (F x) ≤ C + N · logHeight x`
+  for a family `F` of homogeneous forms of degree `N`;
+* `Height.logHeight_eval_ge'` — the matching lower bound, conditional on
+  exactly the certificate `cert_eval` supplies;
+* `Height.logHeight_fun_mul_eq` — the height of a Segre product is the
+  sum of the heights, which is what makes the bidegree-`(2,2)` packaging
+  reproduce `2h(P) + 2h(Q)` rather than `4h(P) + 4h(Q)`.
+
+Note the cancellation that depends on: *individually* `h(P+Q)` and
+`h(P−Q)` are each only bounded by `2h(P) + 2h(Q) + O(1)`, and it is
+precisely the theorem of the cube — that their SEGRE PRODUCT has bidegree
+`(2,2)`, not each factor separately — which makes the sum come out right.
+So the cube is not decoration here; it is the whole content.
+
+**`Mathlib` HAS A THEORY OF HEIGHTS, and the note that used to stand here
+denying it was FALSE at this pin.**  It read: "Weil heights on projective
+space, functoriality of heights along morphisms, the theory of the
+canonical (Néron–Tate) height, and Northcott's theorem.  None of these
+exists in `Mathlib`, in `~/cs/FLT`, or in this project — the check that
+refutes this is `grep -rn "Northcott\|WeilHeight\|NeronTate"`, whose only
+hit is `Mathlib/Order/Northcott.lean`."  `Mathlib/NumberTheory/Height/` is
+six modules — `Basic`, `Northcott`, `NumberField`, `Projectivization`,
+`MvPolynomial`, `EllipticCurve` — carrying `mulHeight`/`logHeight`, the
+`AdmissibleAbsValues` instance for number fields, **Northcott's theorem**
+(`NumberField.finite_setOf_mulHeight₁_le`), and the polynomial-map height
+comparisons above.  The verdict failed *because of the names it searched*:
+`WeilHeight` and `NeronTate` appear nowhere in those files.  An absence
+verdict is only as good as the names it searched.
+
+**NO LONGER A LEAF (2026-07-28).**  It is now PROVEN over
+`exists_cubeModel_of_abelianScheme` immediately above, which is the same
+statement with the Nullstellensatz certificate `cert` / `cert_eval`
+replaced by the geometry it encodes — see that docstring for the MISSING
+MACHINERY list, the faithfulness audit, and the coordinate-level cut that
+is FALSE.  What survives here is the record of the 2026-07-27 cut and of
+the heights correction above; the open obligation is the leaf above. -/
+theorem exists_cubeEmbedding_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (CubeEmbedding (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨cm⟩ := exists_cubeModel_of_abelianScheme ab
+  exact cm.nonempty_cubeEmbedding
+
+/-- **`A` embeds in projective space over `ℚ` with a naïve height obeying
+the parallelogram law** (PROVEN, 2026-07-27, over the leaf above) — the
+GEOMETRIC half of Mordell–Weil.
+
+All that happens here is `Fermat.CubeEmbedding.toProjectiveHeightSource`:
+the four combinatorial fields are carried over verbatim, and the analytic
+field — the approximate parallelogram law — is
+`Fermat.CubeEmbedding.parallelogram`, proven from the theorem of the cube
+through `Mathlib`'s height comparisons for homogeneous polynomial maps.
+See `exists_cubeEmbedding_of_abelianScheme` above for why that is a cut
+and not a restatement. -/
+theorem exists_projectiveHeightSource_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (ProjectiveHeightSource (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨ce⟩ := exists_cubeEmbedding_of_abelianScheme ab
+  exact ⟨ce.toProjectiveHeightSource⟩
+
 /-- **A height function with the Northcott property exists on `A(ℚ)`,
-for every abelian scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the
-leaf above) — the GEOMETRIC half of Mordell–Weil.
+for every abelian scheme `A` over `ℚ`** (PROVEN, over the leaves above) —
+the `DescentHeight` package that Silverman's descent theorem consumes.
 
-**SPLIT, 2026-07-27.  The IRREDUCIBILITY note this docstring used to
-carry — "Weil heights, functoriality, the Néron–Tate height and
-Northcott's theorem are all missing from the pin" — was correct about
-the pin and wrong about the CUT: it searched only the "is the theory
-available?" axis, and never asked which part of it is a *finiteness*
-statement about `ℚ` and which part is *geometry*.**
+**SPLIT, 2026-07-27.**  This used to be a `sorry` node bundling four
+genuinely different things: Northcott's theorem, the parallelogram law,
+the theorem of the cube, and the bookkeeping that converts the law into
+the asymmetric form (`translate`, `double`, a choice of `m`) that the
+*proof* of descent happens to want.  Only the third is geometry.  The
+other three are now proven:
 
-* The finiteness part is Northcott's theorem, and over `ℚ` in primitive
-  integral coordinates it is elementary — an integer box is finite.  It
-  is now PROVEN, as `Fermat.instNorthcottIntHeight` in
-  `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`.
-* The bookkeeping part is the passage from a symmetric two-sided
-  parallelogram bound to the asymmetric three-field `DescentHeight`
-  (a translation bound with a `Q`-dependent constant, a one-sided
-  quadraticity bound, and a choice of `m`).  That is pure real
-  arithmetic once one knows a Northcott height is bounded below, and it
-  is now PROVEN, as `Fermat.WeilHeight.toDescentHeight` and
-  `Fermat.exists_lowerBound_of_northcott`.
-* The geometry — a symmetric very ample line bundle and the theorem of
-  the cube — is what is left, and it is the single leaf above.
+* `Fermat.ParallelogramHeight.toDescentHeight`
+  (`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) derives `translate`,
+  `double` and `m = 2` from the single two-sided parallelogram estimate.
+  It is pure group theory over `ℝ` — in particular the lower bound on
+  the height that `translate` needs is *not* an extra hypothesis, since
+  `Northcott` already forces it (`ParallelogramHeight.exists_lowerBound`).
+* `Fermat.ProjectiveHeightSource.toParallelogramHeight`
+  (`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies
+  `Northcott` for the naïve height of a projective embedding, from
+  `Mathlib`'s Northcott property for `ℚ`.
+* `Fermat.CubeEmbedding.parallelogram` (same file) supplies the
+  approximate parallelogram law from the theorem of the cube, over
+  `Mathlib/NumberTheory/Height/MvPolynomial.lean`.
 
-`m` is taken to be `2` by `WeilHeight.toDescentHeight`; the descent
-theorem uses whichever `m` this node supplies, which is why the sibling
-leaf `finite_quotient_nsmul_of_abelianScheme` is deliberately stated for
-every `n ≥ 2` rather than for one fixed `n`.  Do not narrow it: that
-choice is what keeps this node free to change its `m`. -/
+So the geometry is isolated in `exists_cubeModel_of_abelianScheme`
+above, and `m = 2` is now what this leaf always produces.  Note that the
+sibling leaf `finite_quotient_nsmul_of_abelianScheme` is nevertheless
+still stated for every `n ≥ 2`: the assembly
+`fg_relPoint_of_abelianScheme` passes `dh.m`, which is opaque to it, so
+the general form is what keeps that assembly honest against any future
+height with a different `m`. -/
 theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) := by
   letI := ab.addCommGroup (𝟙 SpecQ)
-  obtain ⟨ic⟩ := exists_integralCoordinates_of_abelianScheme ab
-  exact ⟨ic.toDescentHeight⟩
+  obtain ⟨ps⟩ := exists_projectiveHeightSource_of_abelianScheme ab
+  exact ⟨ps.toParallelogramHeight.toDescentHeight⟩
 
 /-! ### The Kummer map, and the two leaves weak Mordell–Weil now rests on
 
@@ -23744,46 +23988,58 @@ this node is now a two-line assembly over the two nodes above —
 `finite_quotient_nsmul_of_abelianScheme` — and neither of them is the
 descent argument.
 
-**SECOND SPLIT, same day, and it cut both of those in turn.**  Each is
-now itself PROVEN, over one strictly smaller leaf:
+**SECOND AND THIRD SPLITS, same day, cut both of those in turn, and the
+first of them twice.**  Each is now itself PROVEN, over one strictly
+smaller leaf:
 
 * `exists_descentHeight_of_abelianScheme` over
-  `exists_integralCoordinates_of_abelianScheme`, having shed Northcott's
-  theorem (proven over `ℚ` in primitive integral coordinates, where it
-  is the finiteness of an integer box) and the passage from the
-  parallelogram law to the three fields of `DescentHeight` (proven as
-  real arithmetic);
+  `exists_projectiveHeightSource_of_abelianScheme`, having shed
+  Northcott's theorem (proven in `ℙⁿ(ℚ)` from `Mathlib`'s own heights
+  development) and the passage from the parallelogram law to the three
+  fields of `DescentHeight` (proven as real arithmetic); and that in turn
+  over `exists_cubeEmbedding_of_abelianScheme`, having shed the whole of
+  the *analysis* — the approximate parallelogram law is now derived from
+  the theorem of the cube stated as an algebraic identity, through
+  `Mathlib`'s height comparisons for homogeneous polynomial maps; and
+  that in turn (2026-07-28) over `exists_cubeModel_of_abelianScheme`,
+  having shed the effective NULLSTELLENSATZ CERTIFICATE, which is
+  commutative algebra rather than geometry and is now proven in
+  `Fermat.exists_homogeneousCertificate`;
 * `finite_quotient_nsmul_of_abelianScheme` over
   `finite_quotient_psmul_of_abelianScheme`, having shed the reduction
   from a general `n` to its prime factors (proven as group theory).
 
-**THIRD SPLIT, same day.**  `finite_quotient_psmul_of_abelianScheme` is
-PROVEN too, over the Kummer reduction
-`Fermat.finite_quotient_nsmul_of_kummerCochains` (pure group theory, in
-`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`).  It shed three of its
-four inputs: divisibility of `A(ℚ̄)` was already proven upstream in
-`Modularity/AbelianSchemeIsogeny.lean`, the injectivity of
-`A(ℚ) → A(ℚ̄)` is faithful flatness (`epi_specAlgClos`), and no Galois
-cohomology is needed at all.
+So the two OPEN leaves under Mordell–Weil are the prime case of weak
+Mordell–Weil and the geometry of a symmetric very ample line bundle plus
+the theorem of the cube.  Everything else between here and them is
+compiler-checked, and neither remaining leaf mentions a height, an `ℝ`
+or an `O(1)`.
 
-So the OPEN leaves under Mordell–Weil are now three: the existence of a
-projective embedding whose height obeys the theorem of the cube
-(`exists_integralCoordinates_of_abelianScheme`), Galois descent for
-points (`exists_relPoint_of_galSMul_fixed`), and finiteness of the set of
-Kummer cochains (`finite_kummerCochains_of_abelianScheme`, which is where
-the class group and the unit theorem enter).  Everything else between
-here and them is compiler-checked.
+(`exists_integralCoordinates_of_abelianScheme` is a *second, duplicate*
+cut of the height half, produced independently and left standing but not
+consumed; see its docstring.)
 
-The retired verdict, kept because its *check* is still the right one:
-"neither heights on abelian varieties, nor the weak Mordell–Weil
-theorem, nor the descent lemma exists in `Mathlib`, in `~/cs/FLT`, or in
-this project.  The check that would refute this:
-`grep -rn "MordellWeil\|NeronTateHeight"` over the three trees.
-(`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a counterexample —
-despite the name it contains no Mordell–Weil theorem and no descent
-machinery; it is an explicit `2`-descent computation for the two named
-curves `11a3` and `14a4`, done by hand over `ℤ`.)"  Two of the three are
-still absent, and they are exactly the two leaves above. -/
+**The retired verdict below is not merely retired: one of its three
+clauses was FALSE at this pin.**  It read: "neither heights on abelian
+varieties, nor the weak Mordell–Weil theorem, nor the descent lemma
+exists in `Mathlib`, in `~/cs/FLT`, or in this project.  The check that
+would refute this: `grep -rn "MordellWeil\|NeronTateHeight"` over the
+three trees.  (`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample — despite the name it contains no Mordell–Weil theorem and
+no descent machinery; it is an explicit `2`-descent computation for the
+two named curves `11a3` and `14a4`, done by hand over `ℤ`.)"
+
+Its parenthesis about `MordellWeil.lean` is still correct.  Its *check*
+is what failed: `MordellWeil` and `NeronTateHeight` are the wrong search
+terms, and grepping for them misses `Mathlib/NumberTheory/Height/`, six
+modules containing `Height.mulHeight`, `Height.logHeight`, the
+`AdmissibleAbsValues` instance for number fields, **Northcott's theorem**
+and the polynomial-map height comparisons — none of which uses either
+word.  That is the general lesson worth carrying: an absence verdict is
+only as good as the *names* it searched, and a theory can be present
+under a name nobody guessed.  So heights are NOT absent; only their
+application to abelian varieties is.  Weak Mordell–Weil genuinely is
+absent, and it is the second leaf above. -/
 theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
@@ -27900,6 +28156,27 @@ the arithmetic one, `cuspPeriod_ne_zero_of_kenkuLevel`, was still open — and
 that one was in turn decomposed by Atkin–Lehner descent on the level (below),
 so it is a PROVEN assembly now too.
 
+**Eighth round (2026-07-27).**  `exists_descentHeight_of_abelianScheme` was
+carrying FOUR things and only one of them is geometry, so it is now a PROVEN
+assembly too.  The three that are not geometry are proven in the shim tree:
+`ParallelogramHeight.toDescentHeight`
+(`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) turns the single two-sided
+parallelogram estimate into the asymmetric `translate` / `double` / `m = 2`
+form descent consumes; `ProjectiveHeightSource.toParallelogramHeight`
+(`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies Northcott
+for the naïve height of a projective embedding; and `CubeEmbedding.parallelogram`
+(same file) derives the approximate parallelogram law itself from the theorem
+of the cube stated as an ALGEBRAIC identity.  **The premise of the old audit
+here was false at this pin**: `Mathlib` HAS heights
+(`Mathlib/NumberTheory/Height/`, six modules, including Northcott's theorem
+for a number field and two-sided height comparisons for homogeneous polynomial
+maps), which its docstring asserted it did not.  The residue is
+`exists_cubeModel_of_abelianScheme`: projectivity of an abelian variety, a
+symmetric very ample line bundle, and the theorem of the cube — and nothing
+analytic, and (since 2026-07-28) nothing from commutative algebra either, the
+Nullstellensatz certificate having been shed into
+`Fermat.exists_homogeneousCertificate`.
+
 The open leaves under this node, and the single theory each one needs, are
 TABULATED below — **without a count, deliberately**: the table and the count
 were maintained separately and disagreed by four rows at the 2026-07-27 merge
@@ -27931,13 +28208,11 @@ docstring).
 | `exists_relPicZero` (in `RelativePicard.lean`) | representability of `Pic⁰` | no |
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
-| `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
+| `exists_cubeModel_of_abelianScheme` | symmetric very ample bundle + theorem of the cube | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `norm_coeff_le_two_mul_sqrt_of_not_dvd` | Deligne (`p ∤ M`) | no |
-| `norm_coeff_le_sqrt_of_dvd` | Atkin–Lehner `U_p` (`p ∣ M`) | no |
-| `cuspPeriod_ne_zero_of_isNewEigenformAt` | `L`-value numerics | **yes** |
-| `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
-| `finite_kummerCochains_of_abelianScheme` | class group + units (weak Mordell–Weil) | no |
+| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `exists_integralCoordinates_of_abelianScheme` | *duplicate* of the row above, in `ℤ`-coordinates; not consumed | no |
+| `finite_quotient_psmul_of_abelianScheme` | weak Mordell–Weil at a prime | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_modularHeckeAction` | Eichler-Shimura (the correspondence) | no |

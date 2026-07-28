@@ -46,6 +46,18 @@ this development.  The third is pure group theory over an ordered field
 and needs none of that machinery, so it is proven here once, for an
 arbitrary `AddCommGroup`, and reused.
 
+**A second, thinner interface lives here too: `ParallelogramHeight`.**
+`DescentHeight` is stated in the form the descent *proof* consumes —
+`translate`, a one-sided `double`, and a choice of `m` — which is not
+what a theory of heights produces.  What it produces is the single
+two-sided *approximate parallelogram law*
+`|h(P+Q) + h(P−Q) − 2h(P) − 2h(Q)| ≤ C` plus Northcott.
+`ParallelogramHeight.toDescentHeight` converts one into the other, with
+`m = 2`, and is likewise pure group theory: even the lower bound on the
+height that `translate` needs comes free from `Northcott`
+(`ParallelogramHeight.exists_lowerBound`).  New consumers should target
+`ParallelogramHeight`.
+
 ## The proof
 
 `Mathlib`'s statement of the descent step is by an infinite descending
@@ -151,6 +163,93 @@ structure DescentHeight (A : Type*) [AddCommGroup A] where
   double : ∃ C : ℝ, ∀ P : A, (m : ℝ) ^ 2 * height P ≤ height (m • P) + C
   /-- **(iii)** every set `{P | height P ≤ C}` is finite -/
   northcott : Northcott height
+
+/-- **A quasi-parallelogram height — what the classical "height machine"
+actually produces.**
+
+`DescentHeight` is the hypothesis of Silverman's descent theorem, and it
+is stated in the asymmetric form that the *proof* consumes: a translation
+bound, a one-sided quadraticity bound, and a choice of the integer `m`.
+No theory of heights produces those three directly.  What it produces is
+a **single** two-sided estimate, the *approximate parallelogram law*
+
+`|h(P + Q) + h(P − Q) − 2 h(P) − 2 h(Q)| ≤ C`,
+
+for one constant `C` independent of `P` and `Q` — Silverman, *AEC*
+Theorem VIII.6.2 (via the theorem of the cube), Hindry–Silverman
+*Diophantine Geometry* Theorem B.5.1 — together with Northcott's
+theorem.  So this structure is the honest interface between the two
+halves, and `toParallelogramHeight`-style constructions should target it
+rather than `DescentHeight`.
+
+Note what is **not** a field, because it does not have to be:
+
+* there is no `m`; the parallelogram law gives quadraticity at `m = 2`
+  outright, and `2` is the `m` that `toDescentHeight` supplies;
+* there is no lower bound on `height`, and requiring one would be
+  redundant: `northcott` alone forces it, since `{P | height P ≤ 0}` is
+  finite and hence has a minimum.  That is `exists_lowerBound` below.
+
+The `translate` field of `DescentHeight` is exactly where that lower
+bound is needed — the parallelogram law bounds `h(P + Q) + h(P − Q)`,
+and discarding the second summand requires it to be bounded below. -/
+structure ParallelogramHeight (A : Type*) [AddCommGroup A] where
+  /-- the height function -/
+  height : A → ℝ
+  /-- the **approximate parallelogram law**, with one constant for all
+  `P` and `Q` -/
+  parallelogram : ∃ C : ℝ, ∀ P Q : A,
+    |height (P + Q) + height (P - Q) - 2 * height P - 2 * height Q| ≤ C
+  /-- every set `{P | height P ≤ C}` is finite -/
+  northcott : Northcott height
+
+/-- **A Northcott function is bounded below** (PROVEN).
+
+`{P | height P ≤ 0}` is finite, so the height takes only finitely many
+values `≤ 0`; the minimum of those (or `0`, if there are none) is a lower
+bound. -/
+theorem ParallelogramHeight.exists_lowerBound {A : Type*} [AddCommGroup A]
+    (ph : ParallelogramHeight A) : ∃ B : ℝ, ∀ P : A, B ≤ ph.height P := by
+  haveI := ph.northcott
+  have hfin : {P : A | ph.height P ≤ 0}.Finite := Northcott.finite_le 0
+  obtain ⟨B, hB⟩ := (hfin.image ph.height).bddBelow
+  refine ⟨min B 0, fun P => ?_⟩
+  rcases le_or_gt (ph.height P) 0 with h | h
+  · exact (min_le_left _ _).trans (hB ⟨P, h, rfl⟩)
+  · exact (min_le_right _ _).trans h.le
+
+/-- **The parallelogram law supplies the descent hypotheses, with
+`m = 2`** (PROVEN) — pure group theory over `ℝ`, no arithmetic.
+
+* `translate`: the law gives
+  `h(P + Q) ≤ 2 h(P) + 2 h(Q) + C − h(P − Q)`, and `h(P − Q) ≥ B` by
+  `exists_lowerBound`, so `2 * h(Q) + C − B` works as the constant
+  attached to `Q`.
+* `double`: taking `Q = P` makes `P − Q = 0`, so the law reads
+  `|h(2P) + h(0) − 4 h(P)| ≤ C`, whose lower half is exactly
+  `2² · h(P) ≤ h(2 • P) + (h(0) + C)`.
+* `northcott` is carried across unchanged. -/
+def ParallelogramHeight.toDescentHeight {A : Type*} [AddCommGroup A]
+    (ph : ParallelogramHeight A) : DescentHeight A where
+  height := ph.height
+  m := 2
+  two_le := le_rfl
+  translate := by
+    obtain ⟨C, hC⟩ := ph.parallelogram
+    obtain ⟨B, hB⟩ := ph.exists_lowerBound
+    refine fun Q => ⟨2 * ph.height Q + C - B, fun P => ?_⟩
+    have h := (abs_le.mp (hC P Q)).2
+    have hBQ := hB (P - Q)
+    linarith
+  double := by
+    obtain ⟨C, hC⟩ := ph.parallelogram
+    refine ⟨ph.height 0 + C, fun P => ?_⟩
+    have h := (abs_le.mp (hC P P)).1
+    rw [sub_self] at h
+    rw [two_nsmul]
+    push_cast
+    linarith
+  northcott := ph.northcott
 
 /-- **Finiteness of `A / nA` produces a finite set of coset
 representatives** (PROVEN).
