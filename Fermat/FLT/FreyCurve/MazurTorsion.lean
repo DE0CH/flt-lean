@@ -257,6 +257,16 @@ public import Fermat.FLT.FreyCurve.TateNormalForm
 -- Rabinowitsch's criterion — carrying `mazurIsogeny_rabinowitsch_bound` down
 -- to the single deep input `neg_163_le_of_classNumberOne` (class number one).
 public import Fermat.FLT.Mathlib.NumberTheory.BinaryQuadraticForm
+-- `IsConjRoot.exists_algEquiv`: two elements of a normal extension with the same
+-- minimal polynomial lie in one `Gal`-orbit.  Consumed by
+-- `MazurLevelFortyNine.exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three` to
+-- produce the automorphism `ω ↦ ω¹⁷` of `ℚ̄` directly, with no intermediate
+-- cyclotomic field and no lifting step.
+public import Mathlib.FieldTheory.Minpoly.IsConjRoot
+-- `Polynomial.cyclotomic_eq_minpoly_rat`: `Φₙ` is the minimal polynomial over `ℚ`
+-- of a primitive `n`-th root of unity (this is where the irreducibility of `Φ₂₈`
+-- enters the same leaf).
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 
 @[expose] public section
 
@@ -31937,7 +31947,11 @@ sharper in one place and RETRACTS it in another.
   `End(E_ℚ̄)`), is PROVEN below.
 * **The concluding "`ℚ(√−7) ≠ ℚ(i)`" step is isolated as
   `exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three`** — a statement about
-  `ℚ(ζ₂₈)/ℚ` alone, with no elliptic curve in it.
+  `ℚ(ζ₂₈)/ℚ` alone, with no elliptic curve in it. **PROVEN 2026-07-28**, and
+  more cheaply than its own docstring predicted: the surjectivity of the mod-`N`
+  cyclotomic character it called for is NOT needed, because only one
+  automorphism is wanted and `IsConjRoot.exists_algEquiv` produces it in
+  `Gal(ℚ̄/ℚ)` directly. See that leaf's docstring.
 
 **The simplification the cut buys.** The docstring's argument derives `χ₇³ = ε`
 for EVERY `σ` and then contradicts it. The assembly below never needs the cube:
@@ -32273,23 +32287,108 @@ algebraically closed field (`AlgEquiv.restrictNormalHom_surjective`). It fixes
 `i₀`, since `17 ≡ 1 (mod 4)` gives `(ω⁷)¹⁷ = ω^119 = ω⁷`; and its mod-`7`
 cyclotomic character is `17 mod 7 = 3`, since `(ω⁴)¹⁷ = ω^68 = ω^12 = (ω⁴)³`.
 
-**WHAT IS MISSING, PRECISELY**: the surjectivity of the mod-`N` cyclotomic
-character of `Gal(ℚ̄/ℚ)`. `GaloisRepresentation.cyclotomicCharacterModL` is
-defined in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean` and its continuity is
-proven there, but nothing in the tree records that it is ONTO — nor the joint
-surjectivity onto `(ℤ/4)ˣ × (ℤ/7)ˣ` that this leaf really uses. Both follow from
-mathlib's `IsCyclotomicExtension.Rat.autEquivPow` plus the standard restriction
-argument; neither is stated here yet.
+**PROVEN 2026-07-28, and the surjectivity statement the earlier note called for
+turned out NOT to be needed.** The previous version of this docstring recorded
+"WHAT IS MISSING, PRECISELY: the surjectivity of the mod-`N` cyclotomic character
+of `Gal(ℚ̄/ℚ)` … via `IsCyclotomicExtension.Rat.autEquivPow` plus the standard
+restriction argument". That route works but is heavier than necessary: only ONE
+automorphism is wanted, so no description of the whole Galois group — and no
+intermediate cyclotomic field, and no `AlgEquiv.restrictNormalHom_surjective`
+lifting step — is required.
+
+**THE PROOF ACTUALLY USED.** Take `ω` a primitive `28`-th root of unity in `ℚ̄`
+(`HasEnoughRootsOfUnity.exists_primitiveRoot`). Since `gcd(17, 28) = 1`, `ω¹⁷` is
+another primitive `28`-th root (`IsPrimitiveRoot.pow_of_coprime`), so `ω` and `ω¹⁷`
+have the SAME minimal polynomial over `ℚ`, namely `Φ₂₈`
+(`Polynomial.cyclotomic_eq_minpoly_rat`, in both directions — the irreducibility of
+`Φ₂₈` is inside that lemma). Two elements of a NORMAL extension with equal minimal
+polynomials lie in one `Gal`-orbit, which is mathlib's
+`IsConjRoot.exists_algEquiv`, and `ℚ̄/ℚ` is normal (`IsAlgClosure.normal`). That
+produces `σ ∈ Gal(ℚ̄/ℚ)` with `σ ω = ω¹⁷` directly — an element of the ABSOLUTE
+Galois group, with no lifting.
+
+The two evaluations are then arithmetic in the exponent, using `ω²⁸ = 1`:
+
+* `σ (ω⁷) = ω^119 = (ω²⁸)⁴ · ω⁷ = ω⁷`. As `ω⁷` is a primitive `4`-th root of
+  unity, `(ω⁷)² = -1` (a primitive square root of `1` is `-1`), so
+  `(i₀ - ω⁷)(i₀ + ω⁷) = i₀² - (ω⁷)² = -1 - (-1) = 0` and `i₀ = ±ω⁷`. Both signs
+  give `σ i₀ = i₀`; this is why the statement can quantify over an ARBITRARY
+  square root of `-1` rather than a chosen one.
+* `σ (ω⁴) = ω^68 = (ω²⁸)² · ω¹² = (ω⁴)³`, and `ω⁴` is a primitive `7`-th root of
+  unity. `modularCyclotomicCharacter.spec` says
+  `σ (ω⁴) = (ω⁴) ^ (χ₇(σ)).val` (the character of `Chebotarev.lean` is that
+  mathlib character by definition), so `(ω⁴)^{χ₇(σ).val} = (ω⁴)³` and
+  `IsPrimitiveRoot.pow_inj` — both exponents are `< 7` — gives `χ₇(σ).val = 3`.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a proof that every `σ` fixing `i₀` has
 `χ₇(σ)` a square mod `7` — i.e. that `ℚ(√−7) ⊆ ℚ(i)`, which is false because the
-two fields have discriminants `−7` and `−4`. -/
+two fields have discriminants `−7` and `−4`. The construction above exhibits the
+witness: `17 ≡ 1 (mod 4)` fixes `ℚ(i)` while `17 ≡ 3 (mod 7)` is a non-square. -/
 theorem exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three [Fact (Nat.Prime 7)]
     (i₀ : AlgebraicClosure ℚ) (hi₀ : i₀ ^ 2 = -1) :
     ∃ σ : Field.absoluteGaloisGroup ℚ,
       (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) i₀ = i₀ ∧
-      ((GaloisRepresentation.cyclotomicCharacterModL 7 σ : (ZMod 7)ˣ) : ZMod 7) = 3 :=
-  sorry
+      ((GaloisRepresentation.cyclotomicCharacterModL 7 σ : (ZMod 7)ˣ) : ZMod 7) = 3 := by
+  classical
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) := IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  -- a primitive `28`-th root of unity, and the conjugate `ω ↦ ω¹⁷`
+  obtain ⟨ω, hω⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) 28
+  have hpow28 : ω ^ 28 = 1 := hω.pow_eq_one
+  have hprim17 : IsPrimitiveRoot (ω ^ 17) 28 := hω.pow_of_coprime 17 (by decide)
+  have hmin : minpoly ℚ (ω ^ 17) = minpoly ℚ ω := by
+    rw [← Polynomial.cyclotomic_eq_minpoly_rat hprim17 (by norm_num),
+      ← Polynomial.cyclotomic_eq_minpoly_rat hω (by norm_num)]
+  obtain ⟨σ, hσ⟩ :=
+    IsConjRoot.exists_algEquiv (K := ℚ) (L := AlgebraicClosure ℚ) (isConjRoot_def.mpr hmin)
+  -- `hσ : σ ω = ω ^ 17`
+  have hσ7 : σ (ω ^ 7) = ω ^ 7 := by
+    rw [map_pow, hσ, ← pow_mul]
+    calc ω ^ (17 * 7) = (ω ^ 28) ^ 4 * ω ^ 7 := by ring
+      _ = ω ^ 7 := by rw [hpow28, one_pow, one_mul]
+  have hσ4 : σ (ω ^ 4) = (ω ^ 4) ^ 3 := by
+    rw [map_pow, hσ, ← pow_mul, ← pow_mul]
+    calc ω ^ (17 * 4) = (ω ^ 28) ^ 2 * ω ^ (4 * 3) := by ring
+      _ = ω ^ (4 * 3) := by rw [hpow28, one_pow, one_mul]
+  have hprim4 : IsPrimitiveRoot (ω ^ 7) 4 :=
+    hω.pow (by norm_num) (by norm_num : (28 : ℕ) = 7 * 4)
+  have hsq : (ω ^ 7) ^ 2 = -1 :=
+    (hprim4.pow (by norm_num) (by norm_num : (4 : ℕ) = 2 * 2)).eq_neg_one_of_two_right
+  have hprim7 : IsPrimitiveRoot (ω ^ 4) 7 :=
+    hω.pow (by norm_num) (by norm_num : (28 : ℕ) = 4 * 7)
+  refine ⟨σ, ?_, ?_⟩
+  · -- `i₀ = ±ω⁷`, and `σ` fixes `ω⁷`
+    have hfac : (i₀ - ω ^ 7) * (i₀ + ω ^ 7) = 0 := by
+      have hexp : (i₀ - ω ^ 7) * (i₀ + ω ^ 7) = i₀ ^ 2 - (ω ^ 7) ^ 2 := by ring
+      rw [hexp, hi₀, hsq, sub_self]
+    rcases mul_eq_zero.mp hfac with h | h
+    · rw [sub_eq_zero] at h
+      rw [h]; exact hσ7
+    · rw [add_eq_zero_iff_eq_neg] at h
+      subst h
+      exact (map_neg _ _).trans (congrArg Neg.neg hσ7)
+  · -- `χ₇(σ) = 3`, read off the action on the primitive seventh root `ω⁴`
+    have hspec := modularCyclotomicCharacter.spec (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) 7)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ) (AlgebraicClosure ℚ) σ)
+      hprim7.toRootsOfUnity.2
+    rw [show modularCyclotomicCharacter (AlgebraicClosure ℚ)
+        (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) 7)
+        (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ) (AlgebraicClosure ℚ) σ)
+        = GaloisRepresentation.cyclotomicCharacterModL 7 σ from rfl] at hspec
+    have hcoe : ((hprim7.toRootsOfUnity : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+        = ω ^ 4 := by
+      simp [IsPrimitiveRoot.toRootsOfUnity]
+    simp only [hcoe] at hspec
+    -- `hspec : σ (ω ^ 4) = (ω ^ 4) ^ (χ₇ σ).val`
+    have hval :
+        (((GaloisRepresentation.cyclotomicCharacterModL 7 σ : (ZMod 7)ˣ) : ZMod 7)).val = 3 := by
+      refine hprim7.pow_inj (ZMod.val_lt _) (by norm_num) ?_
+      exact hspec.symm.trans hσ4
+    apply ZMod.val_injective
+    rw [hval]
+    rfl
 
 set_option maxHeartbeats 1000000 in
 /-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
