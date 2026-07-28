@@ -28147,8 +28147,15 @@ of difficulty:
 3. `IsCotangentScalar.comp` — multiplicativity, the chain rule for the
    composite rational map. Elementary but a real polynomial computation:
    `IsRationalMap.comp` already produces the composed witnesses.
-4. `isCotangentScalar_unique` — the cheapest of the four, and purely
-   elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
+4. `isCotangentScalar_unique` — **PROVEN 2026-07-28**, and not by the argument
+   below: `IsCotangentScalar` and `WeierstrassCurve.IsDiffChar` (of
+   `EllipticCurve/DifferentialCharacter.lean`, already `public import`ed here)
+   are THE SAME PREDICATE, and `isDiffChar_unique` is proven there — with no
+   `CharZero` hypothesis. See `isDiffChar_of_isCotangentScalar` below. The same
+   bridge collapses the other three leaves here onto `exists_isDiffChar`,
+   `isDiffChar_add` and `isDiffChar_comp` as soon as the converse direction of
+   the bridge is available; see the note there. The original sketch, for the
+   record: two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
    satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
    `exists_nonsingular_of_x` every element of `F` is an `x`-coordinate while
    only the finitely many points of `ker φ` are excluded), whence
@@ -28252,9 +28259,69 @@ theorem exists_isCotangentScalar [IsAlgClosed F] [CharZero F]
     ∃ c : F, IsCotangentScalar φ c :=
   sorry
 
-/-- **LEAF (cut 2026-07-28): the cotangent scalar is unique.** The cheapest of
-the four leaves in this section and entirely elementary — see item 4 of the
-section docstring for the argument in full. In outline: two witness systems for
+/-! #### The bridge to `IsDiffChar`
+
+`WeierstrassCurve.IsDiffChar` of `Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`
+(already `public import`ed by this file) is **the same predicate as
+`IsCotangentScalar`**, written with the target's `ψ₂(φP)` substituted out through
+the rational-map relations rather than left literal. Concretely the two
+differential clauses differ by exactly the factor `E(x)`, which is what
+`isDiffCharCert_reduced` / `isDiffCharCert_of_reduced` say; and they differ in
+quantifier range — `IsDiffChar` asks for the identity at every `P ≠ 0`,
+`IsCotangentScalar` only off `ker φ`.
+
+That second difference is bridged by `isDiffCharCert_of_cofinite`, which is the
+substantive content: `y` occurs linearly in the certificate, so an identity
+holding off a finite set of `x`-values holds everywhere.
+
+So `isCotangentScalar_unique` is NOT a separate piece of mathematics — it is
+`isDiffChar_unique` (PROVEN, and with **no** characteristic hypothesis) read
+through the bridge below. -/
+
+/-- **`IsCotangentScalar φ c → IsDiffChar φ c`.** Same witness tuple; the
+differential clause transfers by multiplying through by `E(x)`
+(`isDiffCharCert_of_reduced`) at the points off `ker φ`, and extends to the
+finitely many remaining points by `isDiffCharCert_of_cofinite`.
+
+`hφ` is used only for `finite_ker`, i.e. only to know that the excluded set is
+finite. At `φ = 0` the given witnesses carry no information (the rational-map
+clause is vacuous there), so that case goes through `isDiffChar_zero` and the
+`φ = 0 → c = 0` conjunct instead of through the witnesses. -/
+theorem isDiffChar_of_isCotangentScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {c : F} (hφ : IsIsogeny φ)
+    (h : IsCotangentScalar φ c) : IsDiffChar φ c := by
+  classical
+  by_cases hφ0 : φ = 0
+  · subst hφ0
+    rw [h.1 rfl]
+    exact isDiffChar_zero
+  obtain ⟨hz, A, B, C, D, G, hB, hG, hwit, hdiff⟩ := h
+  refine ⟨hz, A, B, C, D, G, hB, hG, hwit, ?_⟩
+  set S : Set F := veluPointX '' (AddMonoidHom.ker φ : Set W.Point) with hS
+  have hSfin : S.Finite := (hφ.finite_ker hφ0).image _
+  have hall : ∀ Q : W.Point, Q ≠ 0 → veluPointX Q ∉ S →
+      IsDiffCharCert W W' A B C D G c Q := by
+    intro Q hQ0 hQS
+    have hφQ : φ Q ≠ 0 := fun hcc => hQS ⟨Q, hcc, rfl⟩
+    obtain ⟨hx, hy⟩ := hwit Q hφQ
+    refine isDiffCharCert_of_reduced hx hy ?_
+    have hred := hdiff Q hQ0 hφQ
+    simp only [invariantDiffDenom, eval_sub, eval_mul] at hred
+    linear_combination (-(G.eval (veluPointX Q))) * hred
+  exact fun P _ => isDiffCharCert_of_cofinite hSfin hall P
+
+/-- **PROVEN 2026-07-28: the cotangent scalar is unique.**
+
+Closed by transport, not by redoing the argument: `isDiffChar_of_isCotangentScalar`
+followed by `isDiffChar_unique`. The proportionality-of-witness-systems argument
+that this leaf's original docstring sketched (retained below for the record) is
+the one carried out once, in `DifferentialCharacter.lean`, for `isDiffChar_unique`.
+
+Note `[CharZero F]` is **not needed** — `isDiffChar_unique` has no characteristic
+hypothesis. It is kept here only because the surrounding section and this leaf's
+consumers already carry it; a later consolidation should drop it.
+
+*Original argument.* Two witness systems for
 the same `φ` are proportional (`A B₂ = A₂ B` as polynomials, because every
 element of `F` is an `x`-coordinate by `exists_nonsingular_of_x` and only the
 finitely many points of `ker φ` are excluded), the expression
@@ -28265,13 +28332,14 @@ vanishing locus is finite while `W.Point` is infinite (`infinite_point`).
 At `φ = 0` uniqueness is immediate from the `φ = 0 → c = 0` conjunct, so no
 separate case analysis is needed at the consumer.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny with two distinct
+**THE CHECK THAT WOULD REFUTE THIS**: an isogeny with two distinct
 cotangent scalars — which, by the above, would need two witness systems that
 are NOT proportional. -/
 theorem isCotangentScalar_unique [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c d : F} (hφ : IsIsogeny φ)
     (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d :=
-  sorry
+  isDiffChar_unique (isDiffChar_of_isCotangentScalar hφ hc)
+    (isDiffChar_of_isCotangentScalar hφ hd)
 
 /-- The cotangent scalar exists and is unique — the packaging that makes
 `End.cotangent` a function. Proven over `exists_isCotangentScalar` and
