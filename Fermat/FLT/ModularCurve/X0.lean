@@ -23046,8 +23046,12 @@ The three leaves are
 * `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` — **the only place `hmem` does
   any work**, and the reason it is a hypothesis of this node: at `j ∈ {0, 1728}`
   the curve has CM by `ℤ[i]` or `ℤ[ζ₃]`, and a `Γ₀(p)`-structure with field of
-  moduli `ℚ` on such a curve forces `p` to ramify in the CM field, i.e.
-  `p ∈ {2, 3} ⊆ mazurIsogenyPrimes`;
+  moduli `ℚ` on such a curve forces `p ∈ {2, 3} ⊆ mazurIsogenyPrimes`.  **This
+  one is itself DECOMPOSED and PROVEN (2026-07-28)**, along the transport /
+  arithmetic axis, over `exists_stableCyclic_j_of_gamma0Datum_algClos` and
+  `mem_mazurIsogenyPrimes_of_stableCyclic_j_special`; the "forces `p` to ramify"
+  summary above is the `𝒪_K`-stable HALF of the argument and the case split is
+  recorded there;
 * `exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` — the Weil descent
   itself, at `j ∉ {0, 1728}`, where `Aut(E, C) = Aut(E) = {±1}` and the descent
   obstruction is empty.
@@ -23121,21 +23125,230 @@ theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
       IsWeierstrassModel d.ab W :=
   sorry
 
+/-- **The moduli-to-Weierstrass dictionary, WITH the `j`-invariant carried
+across** (sorry leaf, opened 2026-07-28 as the geometric half of the cut of
+`not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below).
+
+This is `exists_stableCyclic_of_gamma0Datum_algClos` (**PROVEN**, above) with one
+conjunct added — `E.j = j₀` — and it exists because **every dictionary in this
+bridge drops `j`**, while the CM leaf below cannot even be stated without it.
+
+## WHY THE CONJUNCT IS MISSING, AND WHY IT IS FREE
+
+RUN 2026-07-28, by name, over the whole chain that produces the `ℚ`-curve:
+
+* `exists_weierstrassQ_autStable_of_weierstrassAlgClos` (leaf) — takes `j₀` as an
+  *input* and its own docstring says it builds `E := WeierstrassCurve.ofJ j₀`,
+  yet its conclusion does not record `E.j`;
+* `exists_weierstrassQ_autStable_of_galoisInvariant` (PROVEN over it) — same;
+* `exists_stableCyclic_twist_of_autStable` and
+  `exists_stableCyclic_twist_of_autStable_of_j_special` (both PROVEN) — return a
+  TWIST `E'` of `E`, and a twist has the same `j`
+  (`WeierstrassCurve.variableChange_j`), yet neither records it;
+* `exists_stableCyclic_of_gamma0Datum_algClos` (PROVEN) — the composite, same.
+
+So `j` is preserved at every single step and recorded at none, which is why this
+is a BOOKKEEPING leaf and not a new theory: a prover proves it by re-running
+`exists_stableCyclic_of_gamma0Datum_algClos`'s three-line proof with the conjunct
+threaded through, using `WeierstrassCurve.ofJ_j` at the source, `map_j` across
+the base change and `variableChange_j` at the twist.
+
+**The honest repair is not this leaf.**  The five declarations above should each
+carry `E.j` in their conclusions; the moment they do, this one is a two-line
+consequence and should be DELETED rather than proved.  It is stated separately
+only because all five have live owners and adding a conjunct to a PROVEN theorem
+falls due at every call site simultaneously.
+
+**The check that would refute "open"**: any statement in the field-of-moduli
+bridge whose conclusion mentions the `j`-invariant of the curve it produces.
+RUN 2026-07-28 — none of the five does.
+
+**NOT VACUOUS**, and the `j`-conjunct is exactly what carries the content:
+without it the statement is literally the proven sibling.  `hW` and `hj` are the
+anchor that makes `j₀` the `j`-invariant OF THE DATUM rather than an arbitrary
+rational; the consumer supplies them from `exists_jSection_algClosModel` and
+`exists_rationalJ_of_galoisInvariant`, and that step is PROVEN in the assembly
+below rather than owed here.
+
+`hN : N ≠ 0` is load-bearing exactly as in the sibling: at `N = 0` a generator of
+order `0` has infinite order. -/
+theorem exists_stableCyclic_j_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (j₀ : ℚ) (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (hW : IsWeierstrassModel d.ab W)
+    (hj : W.j = algebraMap ℚ (AlgebraicClosure ℚ) j₀) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      E.j = j₀ ∧ addOrderOf g = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **THE CM/RAMIFICATION CORE: an elliptic curve over `ℚ` with `j ∈ {0, 1728}`
+carrying a Galois-stable cyclic subgroup of PRIME order `p` forces
+`p ∈ mazurIsogenyPrimes`** (sorry leaf, opened 2026-07-28 as the arithmetic half
+of the cut of `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` below).
+
+This is the entire arithmetic content of that node, and it is **elementary**: no
+scheme, no moduli space, no datum, no base change — an elliptic curve over `ℚ`, a
+`ℚ̄`-point of order `p`, and Galois-stability of the subgroup it generates.  That
+is the point of the cut: the transport out of the moduli language is
+`exists_stableCyclic_j_of_gamma0Datum_algClos` above, and the two share no
+vocabulary at all.
+
+TRUE, and it is classical CM theory, **not** Mazur's theorem — a prover must not
+discharge it by `cuspidal_x0_prime` or by any other form of Mazur, which is the
+conclusion this whole file is working towards.
+
+## THE ARGUMENT, WITH THE CASE SPLIT THE OLD ROUTE OMITTED
+
+In characteristic zero `j = 0` forces `End(E⁄ℚ̄) = ℤ[ζ₃]` and `j = 1728` forces
+`ℤ[i]`; write `K = ℚ(ζ₃)` resp. `ℚ(i)`, of discriminant `−3` resp. `−4`, both of
+class number one.  Put `C = ⟨g⟩`, of order `p`.
+
+**The route recorded on the consumer until 2026-07-28 said "`C` is the
+`𝔭`-torsion for a prime `𝔭 ∣ p` of `𝒪_K`", and that is only HALF true**, which is
+why it is corrected here rather than copied.  `E[p]` is free of rank one over
+`𝒪_K/p`, so its `𝒪_K`-STABLE lines are exactly the `E[𝔭]`; but `C` is only a
+`ℤ/p`-line, and nothing in the hypotheses makes it `𝒪_K`-stable —
+`Aut(E⁄ℚ̄) = 𝒪_K^×` acts `𝒪_K`-linearly and permutes the `p + 1` lines.  So there
+are two cases, and the old route describes only the first.
+
+1. ***`C` is `𝒪_K`-stable***, i.e. `C = E[𝔭]` for a prime `𝔭 ∣ p`.  Complex
+   conjugation acts nontrivially on `𝒪_K` and carries `𝔭` to `𝔭̄`, so
+   Galois-stability of `C` forces `𝔭 = 𝔭̄`, i.e. `p` RAMIFIES in `K`, i.e.
+   `p ∣ disc K ∈ {−3, −4}`, i.e. `p ∈ {2, 3}`.  (`p` inert is impossible
+   outright: `𝒪_K/p` is then a field and `E[p]` has no proper nonzero
+   `𝒪_K`-submodule.  `p` split is what the conjugation kills — that is exactly
+   the `p = 31` witness in the non-vacuity note below.)
+2. ***`C` is not `𝒪_K`-stable***.  Then `E' = E/C` has CM by the order of
+   CONDUCTOR `p`, namely `𝒪 = ℤ + p𝒪_K`, of discriminant `p²·disc K`.  The Vélu
+   quotient is defined over `ℚ` (see the machinery note), so `j(E') ∈ ℚ`, and the
+   first main theorem of complex multiplication gives `h(p²·disc K) = 1`.  The
+   conductor formula `h(f²D) = f·h(D)/[𝒪_K^× : 𝒪^×] · ∏_{q ∣ f}(1 − (D/q)/q)`
+   evaluates to `h(−3p²) = (p − (−3/p))/3` and `h(−4p²) = (p − (−4/p))/2`, both
+   `> 1` as soon as `p ≥ 5`.  So again `p ∈ {2, 3}`.
+
+`{2, 3} ⊆ mazurIsogenyPrimes`, which is the conclusion.
+
+**CHECKED against PARI/GP 2026-07-28** (`qfbclassno`), because case 2 is the half
+no docstring in this file had recorded and its numbers are the only thing
+standing between it and being wrong:
+
+    p        2  3  5  7 11 13 17 19 23 29 31
+    h(−3p²)  1  1  2  2  4  4  6  6  8 10 10
+    h(−4p²)  1  2  2  4  6  6  8 10 12 14 16
+
+so `h = 1` occurs at `p = 2, 3` only, and for `disc K = −4` only at `p = 2`.
+
+## MACHINERY, SURVEYED BY NAME 2026-07-28
+
+* **The quotient exists and is defined over `ℚ`** —
+  `WeierstrassCurve.exists_velu_quotient_isogeny_of_subgroup` in
+  `Fermat/FLT/EllipticCurve/Velu.lean` takes a finite Galois-stable subgroup of
+  `(E⁄ℚ̄).Point` and returns `E' : WeierstrassCurve ℚ` together with a
+  Galois-equivariant isogeny whose kernel is exactly that subgroup.  It is in
+  this module's `public` import cone, through
+  `Fermat.FLT.EllipticCurve.Isogeny`.  So case 2's "`j(E') ∈ ℚ`" is AVAILABLE,
+  not missing.
+* **The CM engine exists but is DOWNSTREAM** —
+  `WeierstrassCurve.classNumberOne_of_end_closure_eq_top` (PROVEN 2026-07-27 over
+  the single leaf `exists_represents_one_of_end_closure_eq_top`) says exactly
+  "an elliptic curve over `ℚ` with `End(E⁄ℚ̄) = ℤ[ψ]` and `ψ² = [−n]` has
+  `h(−4n) = 1`", in Gauss's reduced-form encoding.  It lives in
+  `Fermat/FLT/FreyCurve/MazurTorsion.lean`, which carries
+  `public import Fermat.FLT.ModularCurve.X0` — **so it cannot be cited from
+  here.**  The concrete first step for a prover is therefore a HOIST, not a new
+  theory: `MazurCMForm` and `classNumberOne_of_end_closure_eq_top` depend only on
+  `WeierstrassCurve.End` and on binary quadratic forms, both upstream of this
+  module.
+* **What that engine does NOT cover**: its `ψ² = [−n]` encoding reaches only the
+  orders `ℤ[√−n]`, of discriminant `−4n`.  Case 2 at `j = 0` needs discriminant
+  `−3p²`, whose order `ℤ + pℤ[ζ₃] = ℤ[pζ₃]` satisfies `(pζ₃)² + p·(pζ₃) + p² = 0`
+  and is NOT of that shape.  So the hoist covers `j = 1728`, and a genuine
+  generalisation of the encoding (`ψ² = [−n] + b·ψ`) is owed for `j = 0`.  Case 1
+  needs neither: it is a statement about `𝒪_K`-stable lines and conjugation.
+* **Genuinely missing everywhere**: `End(E⁄ℚ̄) = ℤ[i]` / `ℤ[ζ₃]` at
+  `j = 1728` / `0` — `Aut.lean` covers only `j ∉ {0, 1728}`, while
+  `QuarticTwist.lean`'s `WeierstrassCurve.exists_smul_eq_quarticModel` (PROVEN)
+  puts a `j = 1728` curve in the form `y² = x³ + ax`, which is the natural place
+  to read `ψ : (x, y) ↦ (−x, i·y)` off — and the identification of `End(E/C)`
+  with the conductor-`p` order.
+
+**The check that would refute this leaf**: exhibit a prime `p ∉
+mazurIsogenyPrimes` and an elliptic curve over `ℚ` with `j ∈ {0, 1728}` carrying
+a Galois-stable cyclic subgroup of order `p`; equivalently a rational point of
+`Y_0(p)` with CM by an order of discriminant `−3` or `−4`.  **RUN 2026-07-28, and
+the check is NOT vacuous by shape**: `p = 31 = 5² + 5 + 1` splits in `ℚ(ζ₃)`
+(`kronecker(−3, 31) = 1`, residue degree `1`) and `31 ∉ mazurIsogenyPrimes`, so
+nothing about the statement's form excludes the hypotheses — what kills them is
+case 1's conjugation, which swaps the two primes above `31`, together with
+`h(−3·31²) = 10 ≠ 1` for case 2.
+
+**Vacuity, honestly.**  Composed all the way down, this leaf sits under a node
+that Mazur makes vacuous; but its OWN hypotheses carry no `hmem` and are not
+known to be contradictory except by the CM argument itself, so it must be proved
+on its merits.  `hp : p.Prime` is load-bearing — at composite order the subgroup
+need not be `𝔭`-torsion for a single prime and neither case closes — and so is
+`hstab`: without it every `p` split in `K` supplies a subgroup. -/
+theorem mem_mazurIsogenyPrimes_of_stableCyclic_j_special {p : ℕ} (hp : p.Prime)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0 ∨ E.j = 1728)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
+    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    p ∈ mazurIsogenyPrimes :=
+  sorry
+
 /-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `p ∉
-mazurIsogenyPrimes` has `j ∉ {0, 1728}`** (sorry leaf, opened 2026-07-28) —
+mazurIsogenyPrimes` has `j ∉ {0, 1728}`** (a sorry leaf from 2026-07-28;
+**DECOMPOSED and PROVEN 2026-07-28** over the two leaves immediately above) —
 **THE ONE PLACE `hmem` DOES ANY WORK** in the whole descent bridge.
 
 TRUE, and it is classical CM theory, *not* Mazur's theorem.  In characteristic
 zero `j = 1728` forces `End(W⁄ℚ̄) = ℤ[i]` and `j = 0` forces `ℤ[ζ₃]`; write
-`K = ℚ(i)` resp. `ℚ(ζ₃)`, of class number one.  A cyclic subgroup `C ⊂ W(ℚ̄)` of
-PRIME order `p` on a curve with CM by `𝒪_K` is the `𝔭`-torsion for a prime `𝔭 ∣ p`
-of `𝒪_K` (the Galois module `W[p]` is free of rank one over `𝒪_K/p`, so its
-`𝒪_K`-stable lines are the `𝒪_K/𝔭`), and `hinv` — the field of moduli of the PAIR
-being `ℚ` — makes the class of `(W, C)` stable under `Gal(ℚ̄/ℚ)`.  Complex
-conjugation acts on `𝒪_K` nontrivially and carries `𝔭` to `𝔭̄`, so stability
-forces `𝔭 = 𝔭̄`, i.e. `p` RAMIFIES in `K`: `p ∣ disc K ∈ {-4, -3}`, so `p ∈ {2, 3}`.
-Both lie in `mazurIsogenyPrimes = {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`,
-contradicting `hmem`.
+`K = ℚ(i)` resp. `ℚ(ζ₃)`, of class number one.  `hinv` — the field of moduli of
+the PAIR being `ℚ` — makes the class of `(W, C)` stable under `Gal(ℚ̄/ℚ)`, and
+that forces `p ∈ {2, 3} ⊆ mazurIsogenyPrimes = {2, 3, 5, 7, 11, 13, 17, 19, 37,`
+`43, 67, 163}`, contradicting `hmem`.
+
+**THE ROUTE THAT STOOD HERE UNTIL 2026-07-28 WAS HALF OF THE ARGUMENT.**  It read
+"a cyclic subgroup `C ⊂ W(ℚ̄)` of PRIME order `p` on a curve with CM by `𝒪_K` IS
+the `𝔭`-torsion for a prime `𝔭 ∣ p` of `𝒪_K`", and that step does not follow:
+`W[p]` is free of rank one over `𝒪_K/p`, so its `𝒪_K`-STABLE lines are the
+`E[𝔭]`, but `C` is only a `ℤ/p`-line and nothing in the hypotheses makes it
+`𝒪_K`-stable — `Aut(W⁄ℚ̄) = 𝒪_K^×` acts `𝒪_K`-linearly and permutes the `p + 1`
+lines.  The argument needs a case split (`C` stable → `p` ramifies; `C` not
+stable → `W/C` has CM by the conductor-`p` order, whose class number exceeds `1`
+for `p ≥ 5`), and both halves now live on
+`mem_mazurIsogenyPrimes_of_stableCyclic_j_special` above, together with the
+PARI/GP-checked class numbers and a by-name survey of what is available.
+
+## THE CUT (2026-07-28): TRANSPORT versus ARITHMETIC
+
+The two leaves above split this node along the only axis on which its halves
+share no vocabulary:
+
+* `exists_stableCyclic_j_of_gamma0Datum_algClos` — pure transport out of the
+  moduli language: `exists_stableCyclic_of_gamma0Datum_algClos` (PROVEN) with the
+  `j`-conjunct restored, which every dictionary in this bridge silently drops.
+  No arithmetic; a bookkeeping leaf, and its docstring says how to delete rather
+  than prove it.
+* `mem_mazurIsogenyPrimes_of_stableCyclic_j_special` — the CM/ramification core,
+  stated with NO scheme, NO moduli space and NO datum: an elliptic curve over
+  `ℚ`, a `ℚ̄`-point of order `p`, Galois-stability.  This is where every hard step
+  now lives, and it is testable against examples.
+
+The assembly below additionally PROVES the `j`-rationality step —
+`W.j = algebraMap ℚ ℚ̄ j₀` — from `exists_jSection_algClosModel` and
+`exists_rationalJ_of_galoisInvariant` (the latter PROVEN), so that work is not
+owed by either leaf.
 
 **Why this is NOT circular against Mazur.**  Mazur's isogeny theorem is what
 `mazurIsogenyPrimes` is *named* for and is the conclusion the whole file is
@@ -23171,8 +23384,27 @@ theorem not_isSpecialJ_of_gamma0Datum_fieldOfModuli {p : ℕ} (hp : p.Prime)
         Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
     (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
     (hW : IsWeierstrassModel d.ab W) :
-    W.j ≠ 0 ∧ W.j ≠ 1728 :=
-  sorry
+    W.j ≠ 0 ∧ W.j ≠ 1728 := by
+  -- the `j`-invariant of the datum is rational, and `W` computes it
+  letI := d.cyc.etale_of_specQBase (specAlgClos ℚ)
+  obtain ⟨ja, hja⟩ := exists_jSection_algClosModel
+  obtain ⟨j₀, hj₀⟩ := exists_rationalJ_of_galoisInvariant hp.ne_zero ja d hinv
+  have hWj : W.j = algebraMap ℚ (AlgebraicClosure ℚ) j₀ := by
+    rw [← hj₀]
+    exact (hja W (d.ofDvd hp.ne_zero (one_dvd p)) hW).symm
+  -- transport to a curve over `ℚ` carrying the SAME `j` and a stable subgroup
+  obtain ⟨E, hE, g, hEj, hg, hstab⟩ :=
+    exists_stableCyclic_j_of_gamma0Datum_algClos hp.ne_zero d hinv j₀ W hW hWj
+  haveI := hE
+  -- and at either special value the CM core contradicts `hmem`
+  refine ⟨fun hcon => hmem (mem_mazurIsogenyPrimes_of_stableCyclic_j_special hp E
+      (Or.inl ?_) g hg hstab),
+    fun hcon => hmem (mem_mazurIsogenyPrimes_of_stableCyclic_j_special hp E
+      (Or.inr ?_) g hg hstab)⟩
+  · rw [hEj]
+    exact (algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [← hWj, hcon]; simp)
+  · rw [hEj]
+    exact (algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [← hWj, hcon]; norm_num)
 
 /-- **RIGIDITY: two `ℚ̄`-data with a COMMON Weierstrass model and the same level
 locus are isomorphic** (sorry leaf, opened 2026-07-28 as the cut of
