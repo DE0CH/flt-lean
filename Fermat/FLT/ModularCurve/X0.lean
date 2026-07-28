@@ -32867,39 +32867,238 @@ theorem exists_isWeilEigenvalues (ℓ : ℕ) (_hℓ : ℓ.Prime) {X : Scheme.{0}
     ∃ α : Multiset ℂ, IsWeilEigenvalues ℓ strX α :=
   sorry
 
-/-- **Lefschetz for the Jacobian: `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`** (sorry leaf —
-the second half of Grothendieck–Lefschetz, and again
-**modular-curve-free**; the docstring of `exists_isX0EichlerShimura`
-called this half out as "worth stating separately if it is ever built",
-and this is it).
+/-! #### Lefschetz for the Jacobian, cut into an ABELIAN-VARIETY half and
+a CURVE–JACOBIAN half
 
-TRUE.  For an abelian variety `A/𝔽_q` one has
-`#A(𝔽_q) = deg(1 − F) = det(1 − F ∣ T_ℓ A) = ∏ (1 − αᵢ)`, and for the
-Jacobian of a curve `C` the eigenvalues of `F` on `T_ℓ J` are exactly
-the eigenvalues of Frobenius on `H¹(C)` — which is what
-`IsWeilEigenvalues` supplies.  Equivalently `#J(𝔽_q) = P(1)`, `P` the
-numerator of the zeta function of `C`.
+`card_jacobian_of_isWeilEigenvalues` — `#J(𝔽_ℓ) = ∏ (1 − αᵢ)` — is
+PROVEN below, from the two leaves stated in this subsection.  The cut is
+worth recording, because the leaf it replaces mixed two classical
+theorems that share nothing:
 
-**Not vacuous, and not junk-dischargeable**: `α` is universally
-quantified and pinned by `hα` (see the section docstring), so this is an
-equation between two determined complex numbers, not a constraint that a
-witness could be chosen to satisfy.
+    (I)  #A(𝔽_{ℓⁿ}) = ∏ (1 − βᵢⁿ)  for an ABELIAN VARIETY A/𝔽_ℓ,
+         β the eigenvalues of the Frobenius endomorphism π_A;
+    (II) for A = Jac(C), the β are the Weil eigenvalues α of C.
 
-**WHAT IS MISSING**: Tate modules of abelian schemes, the degree of an
-isogeny, and the identification of `deg(1 − F)` with a point count.  The
-project has `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` but no
-Frobenius endomorphism of an abelian scheme in characteristic `p` and no
-`deg`. -/
-theorem card_jacobian_of_isWeilEigenvalues {ℓ : ℕ} (_hℓ : ℓ.Prime) {X : Scheme.{0}}
+Half (I) mentions no curve at all — no `X`, no genus, no Abel–Jacobi,
+no `X_0(N)` — and is exactly the statement a consumer wants whenever it
+needs the number of rational points of an abelian variety over a finite
+field.  Half (II) is the curve–Jacobian comparison, i.e. the
+identification of the eigenvalues of `π_J` on `T_r J` with those of
+Frobenius on `H¹(C)`.  Keeping them apart means the abelian-variety
+theorem can be cited, and proved, without ever mentioning a curve; that
+is the "state it as generally as the proof allows" half of the earlier
+audit's recommendation.
+
+**Why (I) is stated by point counts over ALL extensions**, exactly as
+`IsWeilEigenvalues` is: a single count `#A(𝔽_ℓ) = ∏ (1 − βᵢ)` constrains
+the existentially quantified `β` at ONE complex number, so it would be
+discharged by a junk witness (`β = {1 − #A(𝔽_ℓ)}`) and
+`exists_isAbelianWeilEigenvalues` would carry no content whatever, with
+all of the mathematics silently migrating into (II).  This is the same
+trap the `(H, frob)` split above was REJECTED for, and it is avoided the
+same way.  Over all `n` the data pins `β`: expanding
+
+    log ∏ᵢ (1 − βᵢⁿ) = − Σ_{m ≥ 1} p_{nm} / m,     p_k := Σᵢ βᵢᵏ,
+
+and inverting by Möbius recovers every power sum `p_k`, and the power
+sums determine a finite multiset of complex numbers up to entries equal
+to `0` — which the products `∏ (1 − βᵢⁿ)` do not see either.  So there
+is no junk witness, and (I) is Weil's theorem for abelian varieties
+rather than a repackaging of its consumers.
+
+**Where these belong eventually.**  Both `IsAbelianWeilEigenvalues` and
+`exists_isAbelianWeilEigenvalues` use only `RelPoint`,
+`AbelianSchemeStruct` and `SpecF`; of those only `SpecF` is defined in
+this file, so the natural home for them is
+`Fermat/FLT/Modularity/AbelianScheme.lean` the moment a consumer outside
+the modular-curve subtree wants them.  They are kept here for now only
+so that the assembly below stays a three-line proof in one module.
+
+**Sanity, genus `0`.**  `α = 0` (the empty multiset), so the target's
+right-hand side is the empty product `1`; correspondingly `J` is the
+trivial abelian variety, `β = 0`, and (I) reads `#J(𝔽_{ℓⁿ}) = 1`.  Both
+halves are consistent there, which is the check recorded on the section
+docstring above. -/
+
+/-- **The Frobenius eigenvalue multiset of an abelian scheme over
+`𝔽_ℓ`**, pinned by the point counts of `A` over every finite extension.
+
+Classically `β` is the multiset of eigenvalues of the `ℓ`-power
+Frobenius endomorphism `π_A` acting on the Tate module `T_r A` at any
+auxiliary prime `r ≠ ℓ`, of size `2 dim A`; here — exactly as for
+`IsWeilEigenvalues`, and for the same reason — it is CHARACTERISED by
+the counts it produces rather than constructed, so that no Tate module
+appears in the statement.
+
+**The counting shape is a PRODUCT, not `ℓⁿ + 1 −` a sum.**  For a curve
+the Lefschetz formula is an alternating sum over `H⁰, H¹, H²`; for an
+abelian variety it collapses to a determinant, because
+`A(𝔽_{ℓⁿ}) = ker(1 − π^n)` with `1 − π^n` separable, whence
+
+    #A(𝔽_{ℓⁿ}) = deg(1 − π^n) = det(1 − π^n ∣ T_r A) = ∏ᵢ (1 − βᵢⁿ).
+
+That is the only place the two structures differ, and it is why they are
+two structures rather than one.
+
+See the section docstring above for why the pinning is over ALL
+extensions (that is what makes `exists_isAbelianWeilEigenvalues`
+non-vacuous), and note that `card_base` is REDUNDANT in the same way
+`IsWeilEigenvalues.card_base` is — it is the `n = 1` instance of
+`card_ext` transported along `GaloisField ℓ 1 ≃ ZMod ℓ`, carried as a
+field only so that the transport is paid once. -/
+structure IsAbelianWeilEigenvalues (ℓ : ℕ) {A : Scheme.{0}} (astr : A ⟶ SpecF ℓ)
+    (β : Multiset ℂ) : Prop where
+  /-- **The count over the base field**: `#A(𝔽_ℓ) = ∏ (1 − βᵢ)`.  The
+  `n = 1` instance of `card_ext`, transported along
+  `GaloisField ℓ 1 ≃ ZMod ℓ`; see the section docstring. -/
+  card_base : ((Nat.card (RelPoint astr (𝟙 (SpecF ℓ))) : ℕ) : ℂ)
+    = (β.map (fun b => 1 - b)).prod
+  /-- **The count over every finite extension**:
+  `#A(𝔽_{ℓⁿ}) = ∏ (1 − βᵢⁿ)`.  This is the whole zeta function of `A`,
+  and it is what pins `β`. -/
+  card_ext : ∀ (n : ℕ), 0 < n → ∀ (K : Type) [Field K] [Finite K]
+      (φ : ZMod ℓ →+* K), Nat.card K = ℓ ^ n →
+      ((Nat.card (RelPoint astr (Spec.map (CommRingCat.ofHom φ))) : ℕ) : ℂ)
+        = (β.map (fun b => 1 - b ^ n)).prod
+
+/-- **Every abelian variety over `𝔽_ℓ` has a Frobenius eigenvalue
+multiset** (sorry leaf — half (I) of the cut above: the Weil/Lefschetz
+theorem for ABELIAN VARIETIES, and **curve-free**, hence a fortiori
+modular-curve-free.  Nothing in this statement mentions `X`, a genus, an
+Abel–Jacobi map, `X_0(N)`, or a moduli problem).
+
+TRUE, and classical (Weil; Mumford, *Abelian Varieties* §19; Milne,
+*Abelian Varieties* Thm 19.1).  Take `β` to be the eigenvalues of the
+`ℓ`-power Frobenius endomorphism `π_A` on `T_r A ⊗ ℚ_r` for any prime
+`r ≠ ℓ` — a multiset of `2 dim A` algebraic integers, independent of
+`r`.  Then for every `n ≥ 1`:
+
+* `A(𝔽_{ℓⁿ}) = ker(1 − π^n)` as a group of `𝔽̄_ℓ`-points, because the
+  `𝔽̄_ℓ`-points fixed by `π^n` are exactly those rational over `𝔽_{ℓⁿ}`;
+* `1 − π^n` is an ISOGENY and is SEPARABLE, since `d(π^n) = 0` makes
+  `d(1 − π^n) = 1` invertible on the tangent space, so
+  `#ker(1 − π^n) = deg(1 − π^n)`;
+* `deg φ = det(φ ∣ T_r A)` for every endomorphism `φ` of `A`, whence
+  `deg(1 − π^n) = det(1 − π^n ∣ T_r A) = ∏ᵢ (1 − βᵢⁿ)`.
+
+**Degenerate case, and it is not excluded**: `dim A = 0` forces
+`A = Spec 𝔽_ℓ`, `β = 0` the empty multiset, and both fields read
+`1 = 1` (the empty product).  So the leaf is not accidentally false at
+the trivial abelian variety, which is precisely the case the genus-`0`
+sanity check of the section docstring exercises.
+
+**WHAT IS MISSING**: Tate modules of an abelian scheme, the Frobenius
+endomorphism in characteristic `p`, the degree of an isogeny, and the
+identification `deg φ = det(φ ∣ T_r A)`.  The project has
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` and
+`Fermat/FLT/Modularity/TateModule.lean`, but neither carries a Frobenius
+endomorphism in characteristic `p` nor a `deg`; `Mathlib` at our pin has
+none of the four, and neither does `~/cs/FLT` (checked 2026-07-28 by
+`grep` over all three trees for `TateModule`, `isogenyDegree`,
+`Isogeny.degree`).  This is a theory build, and it is the SAME theory
+build the elliptic-curve side of this project would need for
+`WeierstrassCurve` isogeny degrees, so it should be done once and
+generally — which is the reason for stating this leaf without a curve.
+
+**Non-vacuity of the class quantified over**: abelian schemes over
+`SpecF ℓ` exist, e.g. the trivial one; and `IsJacobianOf` supplies
+nontrivial ones through
+`exists_isX0EichlerShimura`'s Jacobian field. -/
+theorem exists_isAbelianWeilEigenvalues (ℓ : ℕ) (_hℓ : ℓ.Prime) {A : Scheme.{0}}
+    {astr : A ⟶ SpecF ℓ} (_ab : AbelianSchemeStruct astr) :
+    ∃ β : Multiset ℂ, IsAbelianWeilEigenvalues ℓ astr β :=
+  sorry
+
+/-- **The Jacobian's Frobenius eigenvalues are the curve's Weil
+eigenvalues** (sorry leaf — half (II) of the cut above: the
+curve–Jacobian comparison, and **modular-curve-free**).
+
+TRUE.  For a smooth proper geometrically connected curve `C/𝔽_q` with a
+rational point and `J = Jac(C)`, the `r`-adic Tate module `T_r J` is
+canonically `H¹_ét(C_{𝔽̄_q}, ℤ_r)^∨`, and the Frobenius endomorphism
+`π_J` of `J` acts on it as the geometric Frobenius acts on `H¹`.  So the
+eigenvalue multisets agree, and in particular the two products of
+`1 − ·` do.  Equivalently: `#J(𝔽_q) = P(1)`, where `P` is the numerator
+of the zeta function of `C` — which is the classical class-number
+formula `h_C = P(1)`, provable by Riemann–Roch on `C` without any étale
+cohomology at all (F. K. Schmidt).  Either route proves this leaf; only
+the second avoids `H¹`.
+
+**Stated as an equality of the two PRODUCTS rather than of the two
+multisets**, because that is all the assembly needs and it is the form
+that is unconditionally true: neither `α` nor `β` is determined on the
+nose by its defining counts — entries equal to `0` are invisible to both
+pinnings (`p_k` misses them, and `1 − 0ⁿ = 1`) — so a multiset equation
+would be FALSE as stated, while the products are honest.  The all-`n`
+strengthening — `∏ (1 − βᵢⁿ) = ∏ (1 − αᵢⁿ)` for every `n ≥ 1`, i.e.
+equality of the two zeta functions — is equally true and is available if
+a consumer ever needs it; it is not stated because none does.
+
+**Not vacuous, and not junk-dischargeable**: BOTH `α` and `β` are
+universally quantified and pinned by `hα` and `hβ` respectively, so this
+is an equation between two determined complex numbers, not a constraint
+that a witness could be chosen to satisfy.  This is exactly the property
+the rejected `(H, frob)` split lacked.
+
+**WHAT IS MISSING**: on the étale route, the comparison
+`T_r Jac(C) ≅ H¹_ét(C, ℤ_r)^∨` compatibly with Frobenius, hence the
+whole `H¹` machinery; on the Riemann–Roch route, `Pic⁰` of a curve as a
+scheme, `Sym^d C`, and Riemann–Roch over a general field (`Mathlib` has
+`RiemannRoch` only in the function-field/`AdicValuation` setting, which
+is not connected to `Scheme` here).  **The Riemann–Roch route needs no
+étale cohomology**, which is worth recording for the same reason it is
+recorded on `exists_isWeilEigenvalues`: this leaf is NOT gated on étale
+cohomology even though the section docstring above derives it from
+Grothendieck–Lefschetz. -/
+theorem prod_one_sub_eq_of_isJacobianOf {ℓ : ℕ} (_hℓ : ℓ.Prime) {X : Scheme.{0}}
     {strX : X ⟶ SpecF ℓ} (_hproper : IsProper strX)
     (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX)
     {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α)
     {J : Scheme.{0}} {jstr : J ⟶ SpecF ℓ} {ab : AbelianSchemeStruct jstr}
-    {o : RelPoint strX (𝟙 (SpecF ℓ))} (_hjac : IsJacobianOf strX ab o) :
-    ((Nat.card (RelPoint jstr (𝟙 (SpecF ℓ))) : ℕ) : ℂ)
-      = (α.map (fun a => 1 - a)).prod :=
+    {o : RelPoint strX (𝟙 (SpecF ℓ))} (_hjac : IsJacobianOf strX ab o)
+    {β : Multiset ℂ} (_hβ : IsAbelianWeilEigenvalues ℓ jstr β) :
+    (β.map (fun b => 1 - b)).prod = (α.map (fun a => 1 - a)).prod :=
   sorry
+
+/-- **Lefschetz for the Jacobian: `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`** (**PROVEN
+2026-07-28** from `exists_isAbelianWeilEigenvalues` and
+`prod_one_sub_eq_of_isJacobianOf`; it was the second half of
+Grothendieck–Lefschetz here, and the docstring of
+`exists_isX0EichlerShimura` called it out as "worth stating separately
+if it is ever built").
+
+TRUE.  For an abelian variety `A/𝔽_q` one has
+`#A(𝔽_q) = deg(1 − F) = det(1 − F ∣ T_r A) = ∏ (1 − βᵢ)`, and for the
+Jacobian of a curve `C` the eigenvalues of `F` on `T_r J` are exactly
+the eigenvalues of Frobenius on `H¹(C)` — which is what
+`IsWeilEigenvalues` supplies.  Equivalently `#J(𝔽_q) = P(1)`, `P` the
+numerator of the zeta function of `C`.
+
+Those are two independent classical theorems, and the proof below is
+nothing but their composition: `exists_isAbelianWeilEigenvalues` gives
+the Jacobian its own eigenvalue multiset `β` together with
+`#J(𝔽_ℓ) = ∏ (1 − βᵢ)`, and `prod_one_sub_eq_of_isJacobianOf` says that
+product is the curve's `∏ (1 − αᵢ)`.  See the section docstring above
+for why the cut is along this seam and why half (I) is stated without
+mentioning a curve.
+
+**Not vacuous, and not junk-dischargeable**: `α` is universally
+quantified and pinned by `hα` (see the section docstring), so this is an
+equation between two determined complex numbers, not a constraint that a
+witness could be chosen to satisfy. -/
+theorem card_jacobian_of_isWeilEigenvalues {ℓ : ℕ} (hℓ : ℓ.Prime) {X : Scheme.{0}}
+    {strX : X ⟶ SpecF ℓ} (hproper : IsProper strX)
+    (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX)
+    {α : Multiset ℂ} (hα : IsWeilEigenvalues ℓ strX α)
+    {J : Scheme.{0}} {jstr : J ⟶ SpecF ℓ} {ab : AbelianSchemeStruct jstr}
+    {o : RelPoint strX (𝟙 (SpecF ℓ))} (hjac : IsJacobianOf strX ab o) :
+    ((Nat.card (RelPoint jstr (𝟙 (SpecF ℓ))) : ℕ) : ℂ)
+      = (α.map (fun a => 1 - a)).prod := by
+  obtain ⟨β, hβ⟩ := exists_isAbelianWeilEigenvalues ℓ hℓ ab
+  rw [hβ.card_base,
+    prod_one_sub_eq_of_isJacobianOf hℓ hproper hsmooth hconn hα hjac hβ]
 
 /-- **Eichler–Shimura: the Frobenius eigenvalues of `X_0(N)_{𝔽_ℓ}` are
 the `ℓ`-Weil transform of the `T_ℓ`-eigenvalues** (sorry leaf — the ONLY
@@ -33018,7 +33217,12 @@ zero-insensitive), so no junk witness exists.  That is
   Riemann–Roch (F. K. Schmidt) route proves it without any `H¹`.
 * `card_jacobian_of_isWeilEigenvalues` — `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`.
   **Modular-curve-free**; this is exactly the half item 2 above said was
-  "worth stating separately if it is ever built".
+  "worth stating separately if it is ever built".  It is itself now
+  PROVEN (2026-07-28) from two further leaves — see the subsection
+  "Lefschetz for the Jacobian, cut into an ABELIAN-VARIETY half and a
+  CURVE–JACOBIAN half": `exists_isAbelianWeilEigenvalues`, which is
+  **curve-free** (Weil for abelian varieties: `#A(𝔽_{ℓⁿ}) = ∏ (1 − βᵢⁿ)`),
+  and `prod_one_sub_eq_of_isJacobianOf`, the curve–Jacobian comparison.
 * `isWeilEigenvalues_x0_eichlerShimura` — the Eichler–Shimura relation,
   in the weak `(sum, product)` form the two count fields need.  This is
   the only leaf that mentions `X_0(N)` at all, and it is the only one
