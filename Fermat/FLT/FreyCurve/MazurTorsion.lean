@@ -24278,8 +24278,182 @@ theorem exists_int_model {T V : ℚ} (hT : 0 < T) (h : V ^ 2 = T ^ 3 + 30 * T ^ 
   · exact_mod_cast h1
   · linarith
 
+/-! #### The `d' = 1` covering of the `2`-isogenous curve (added 2026-07-28)
+
+`quartic_one` is NOT attacked by the concordant-forms induction its own
+docstring below suggests.  Instead it is discharged by a **descent-free
+polynomial identity** onto the `d' = 1` homogeneous space of the
+`2`-isogenous curve, exactly parallel to the identity `flt-lean-164` used
+for `quartic_seventeen`.
+
+With `a = 30`, `b = 289` the `2`-isogenous curve of `v² = u³ + 30u² + 289u`
+is `V² = U³ − 60U² − 256U`, i.e. after `U = 4U₁`, `V = 8V₁`
+
+    V₁² = U₁(U₁ + 1)(U₁ − 16) ,
+
+whose `d' = 1` covering is `T² = X⁴ − 15X²Y² − 16Y⁴`.  The isogeny
+`φ(u, v) = (v²/u², …)` sends the point `(S²/e², SQ/e³)` of a `quartic_one`
+solution to `U₁ = (Q/(2Se))²`, and the corresponding covering point is
+`(X, Y, T) = (Q, 2Se, S⁴ − 289e⁴)` divided by `g = gcd(Q, 2Se)`.  The
+identity that makes this work — verified symbolically (PARI/GP, residual
+`0`) and by `linear_combination` below — is
+
+    Q⁴ − 15Q²(2Se)² − 16(2Se)⁴ = (S⁴ − 289e⁴)²   whenever
+    Q² = S⁴ + 30S²e² + 289e⁴ .
+
+`h1_classification` then leaves only `Y = 0` (impossible, `S, e > 0`) and
+`X² = 16 ∧ Y² = 1`, which forces `T = 0`, i.e. `S⁴ = 289e⁴`, i.e. `e = 1`
+and `S² = 17` — not a square.  **So `0 < S` and `0 < e` are both consumed
+here and neither may be dropped.**
+
+The SAME identity with `Q² = 17S⁴ + 30S²e² + 17e⁴` gives
+`Q⁴ − 15Q²(2Se)² − 16(2Se)⁴ = (17(S⁴ − e⁴))²`, so `quartic_seventeen` is
+available over `h1_classification` by the same route (also checked
+symbolically); that is recorded here because it means the level-`17`
+cluster now rests on ONE classification statement rather than two
+independent descents. -/
+
+/-- **The descent `gcd` divides `17`.**  `A = X² + Y²` and `B = X² − 16Y²`
+satisfy `A − B = 17Y²` and `16A + B = 17X²`, so with `X`, `Y` coprime their
+`gcd` divides `17`.  This is what cuts the covering into exactly the two
+concordant systems `concordant_one` (`gcd = 1`) and `concordant_seventeen`
+(`gcd = 17`) — the `(1,1,1)` and `(1,17,17)` classes of the full
+`2`-descent on `V₁² = U₁(U₁+1)(U₁−16)`. -/
+theorem gcd_dvd_seventeen {X Y : ℤ} (hcop : IsCoprime X Y) :
+    Int.gcd (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2) ∣ 17 := by
+  have hgd : ((Int.gcd (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2) : ℤ)) ∣ 17 := by
+    obtain ⟨u, v, huv⟩ := hcop.pow (m := 2) (n := 2)
+    have hdA := Int.gcd_dvd_left (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2)
+    have hdB := Int.gcd_dvd_right (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2)
+    have h1 : ((Int.gcd (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2) : ℤ)) ∣ 17 * Y ^ 2 := by
+      have hr : (17 : ℤ) * Y ^ 2 = (X ^ 2 + Y ^ 2) - (X ^ 2 - 16 * Y ^ 2) := by ring
+      rw [hr]; exact dvd_sub hdA hdB
+    have h2 : ((Int.gcd (X ^ 2 + Y ^ 2) (X ^ 2 - 16 * Y ^ 2) : ℤ)) ∣ 17 * X ^ 2 := by
+      have hr : (17 : ℤ) * X ^ 2 = 16 * (X ^ 2 + Y ^ 2) + (X ^ 2 - 16 * Y ^ 2) := by ring
+      rw [hr]; exact dvd_add (hdA.mul_left 16) hdB
+    have hrw : (17 : ℤ) = u * (17 * X ^ 2) + v * (17 * Y ^ 2) := by
+      linear_combination (-17 : ℤ) * huv
+    rw [hrw]; exact dvd_add (h2.mul_left u) (h1.mul_left v)
+  exact_mod_cast hgd
+
+/-- **The trivial concordant system at level `17`** (sorry leaf, cut
+2026-07-28): for coprime `X`, `Y`, if `X² + Y²` and `X² − 16Y²` are BOTH
+squares then `Y = 0`.
+
+TRUE: exhaustive search (PARI/GP, `0 ≤ X, Y ≤ 3000`, coprime) finds the
+single solution `(X, Y) = (1, 0)`.  This is the `(1,1,1)` class of the full
+`2`-descent on `V₁² = U₁(U₁+1)(U₁−16)` (conductor `17`, `E(ℚ) ≅ ℤ/2 × ℤ/2`,
+rank `0`), and it is the exact analogue of
+`MazurLevel15.concordant_one` for the conductor-`15` curve
+`V² = X(X+1)(X+16)` — note the SIGN: `X² − 16Y²`, not `X² + 16Y²`, so
+`concordant_one` there is NOT reusable here.
+
+**Not congruence-obstructed** — it carries the rational point `(1, 0)` —
+so a genuine infinite descent is required, and it is **mutually recursive
+with `concordant_seventeen`**: neither can be proven first.  They must be
+carried by ONE strong induction on `|Y|`, in the shape of
+`MazurLevel15.concordant_both_aux`.
+
+DESCENT WORKED OUT (2026-07-28), all four branches verified algebraically:
+
+* `X` odd, `Y` even.  `X² + Y² = a²` (primitive, `Y` even) gives
+  `X = m² − n²`, `Y = 2mn`; `b² + (4Y)² = X²` gives `b = p² − q²`,
+  `pq = 4mn`, `X = p² + q²`.  So `m² − n² = p² + q²` with `pq = 4mn`.
+  Cross-factorising `p₀q = mn` (`p = 4p₀`) as `p₀ = αβ`, `n = γδ`,
+  `m = αγ`, `q = βδ` turns `m² − n² = p² + q²` into
+  `α²(γ² − 16β²) = δ²(γ² + β²)`; since `gcd(α, δ) = 1` there is an `s` with
+  `γ² + β² = α²s`, `γ² − 16β² = δ²s`, and `s ∣ 17` by the same combination
+  as `gcd_dvd_seventeen`.  So `s = 1` lands on THIS system at `(γ, β)` and
+  `s = 17` on `concordant_seventeen` at `(γ, β)`.
+* `X` even, `Y` odd.  Then `4 ∣ X` (with `X ≡ 2 mod 4` the form
+  `X₁² − 4Y²` is `≡ 5 mod 8`, not a square), `Y = m² − n² = p² − q²` and
+  `mn = 2(p² + q²)`.  Cross-factorising `(m−n)(m+n) = (p−q)(p+q)` as
+  `m − n = ef`, `m + n = gh`, `p − q = eg`, `p + q = fh` gives
+  `g²(h² − 4e²) = f²(e² + 4h²)`, hence `e² + 4h² = g²t`, `h² − 4e² = f²t`
+  with `t ∣ 17` (from `4(e²+4h²) + (h²−4e²) = 17h²` and
+  `(e²+4h²) − 4(h²−4e²) = 17e²`), landing on this system resp.
+  `concordant_seventeen` at `(2h, e)`.
+
+The measure decreases because `|m² − n²| ≥ |m|` whenever `m² ≠ n²` while
+the new second variable divides `m/4`.  `IsCoprime X Y` is load-bearing:
+without it every `(k, 0)` and every scaled solution survives. -/
+theorem concordant_one {X Y a b : ℤ} (hcop : IsCoprime X Y)
+    (h1 : X ^ 2 + Y ^ 2 = a ^ 2) (h2 : X ^ 2 - 16 * Y ^ 2 = b ^ 2) : Y = 0 :=
+  sorry
+
+/-- **The `17`-twisted concordant system at level `17`** (sorry leaf, cut
+2026-07-28): for coprime `X`, `Y`, if `X² + Y²` and `X² − 16Y²` are BOTH
+`17` times a square then `X² = 16Y²`.
+
+TRUE: exhaustive search (PARI/GP, `0 ≤ X, Y ≤ 3000`, coprime) finds the
+single solution `(X, Y) = (4, 1)`, which is the `2`-torsion point
+`U₁ = 16` of `V₁² = U₁(U₁+1)(U₁−16)` — its class in the full `2`-descent
+is `(16, 17, 16·17) ≡ (1, 17, 17)`, which is exactly this system.  It is
+the analogue of `MazurLevel15.concordant_five` (there the twist is `5`,
+coming from the order-`4` point `(4, 20)`).
+
+**Not congruence-obstructed** — it carries `(4, 1)` — and it is **mutually
+recursive with `concordant_one`**; see that docstring for the joint
+induction and for the two cross-factorisation steps.  Subtracting the two
+hypotheses gives the equivalent and more usable form `a² − b² = Y²`,
+`16a² + b² = X²`, i.e. two Pythagorean triples sharing the leg `b`; from
+there the `X` even / `Y` odd branch produces `m² + n² = p² − q²` with
+`mn = 4pq`, which is the same cross-factorisation as
+`concordant_one`'s first branch and lands on either system at `(γ, β)`.
+
+The conclusion `X² = 16Y²` is equivalent to `b = 0`, and with
+`IsCoprime X Y` it pins `(X, Y) = (±4, ±1)`. -/
+theorem concordant_seventeen {X Y a b : ℤ} (hcop : IsCoprime X Y)
+    (h1 : X ^ 2 + Y ^ 2 = 17 * a ^ 2) (h2 : X ^ 2 - 16 * Y ^ 2 = 17 * b ^ 2) :
+    X ^ 2 = 16 * Y ^ 2 :=
+  sorry
+
+/-- **The `d' = 1` covering of the `2`-isogenous curve, classified**
+(PROVEN 2026-07-28 over `concordant_one` and `concordant_seventeen`): the
+only coprime solutions of `T² = X⁴ − 15X²Y² − 16Y⁴` are `(X, Y) = (±1, 0)`
+and `(±4, ±1)`.
+
+`X⁴ − 15X²Y² − 16Y⁴ = (X² + Y²)(X² − 16Y²)`, the two factors have `gcd`
+dividing `17` (`gcd_dvd_seventeen`), and `X² − 16Y² ≥ 0` because the
+product is a square and `X² + Y² > 0`.  `split_gcd` then puts the solution
+into exactly one of the two concordant systems.
+
+Verified against PARI/GP: over `0 ≤ X, Y ≤ 4000` coprime the only
+solutions are `(1, 0)` and `(4, 1)`. -/
+theorem h1_classification {X Y T : ℤ} (hcop : IsCoprime X Y)
+    (h : T ^ 2 = X ^ 4 - 15 * X ^ 2 * Y ^ 2 - 16 * Y ^ 4) :
+    (Y = 0 ∧ X ^ 2 = 1) ∨ (X ^ 2 = 16 ∧ Y ^ 2 = 1) := by
+  rcases eq_or_ne Y 0 with rfl | hY0
+  · refine Or.inl ⟨rfl, ?_⟩
+    rcases Int.isUnit_iff.mp (hcop.isUnit_of_dvd' dvd_rfl (dvd_zero X)) with h1 | h1 <;>
+      rw [h1] <;> norm_num
+  · refine Or.inr ?_
+    have hY2 : (0 : ℤ) < Y ^ 2 := by rcases lt_or_gt_of_ne hY0 with hh | hh <;> nlinarith
+    have hApos : (0 : ℤ) < X ^ 2 + Y ^ 2 := by nlinarith [sq_nonneg X]
+    have hprod : (X ^ 2 + Y ^ 2) * (X ^ 2 - 16 * Y ^ 2) = T ^ 2 := by linear_combination -h
+    have hBnn : (0 : ℤ) ≤ X ^ 2 - 16 * Y ^ 2 := by
+      by_contra hh
+      push Not at hh
+      nlinarith [sq_nonneg T]
+    obtain ⟨p, q, hp, hq, -⟩ :=
+      WeierstrassCurve.MazurLevel14.split_gcd hprod hApos.le hBnn hApos.ne'
+    have h17 : Nat.Prime 17 := by decide
+    rcases h17.eq_one_or_self_of_dvd _ (gcd_dvd_seventeen hcop) with hg | hg
+    · rw [hg] at hp hq
+      simp only [Nat.cast_one, one_mul] at hp hq
+      exact absurd (concordant_one hcop hp hq) hY0
+    · rw [hg] at hp hq
+      norm_num at hp hq
+      have hkey : X ^ 2 = 16 * Y ^ 2 := concordant_seventeen hcop hp hq
+      have hdvd : IsCoprime (X ^ 2) (Y ^ 2) := hcop.pow (m := 2) (n := 2)
+      have hu : IsUnit (Y ^ 2) := hdvd.isUnit_of_dvd' ⟨16, by linear_combination hkey⟩ dvd_rfl
+      rcases Int.isUnit_iff.mp hu with h1 | h1
+      · exact ⟨by rw [hkey, h1]; norm_num, h1⟩
+      · exact absurd h1 (by omega)
+
 /-- **`d = 1`: the trivial `2`-isogeny homogeneous space of `17a1` is
-EMPTY** (sorry leaf, introduced 2026-07-28).
+EMPTY** (PROVEN 2026-07-28 over `h1_classification`; was a sorry leaf
+introduced the same day).
 
 TRUE: `S⁴ + 30S²e² + 289e⁴ = Q²` has NO solution with `S, e > 0` coprime
 (PARI/GP, exhaustive over `1 ≤ S, e ≤ 400`).  The reason is that the only
@@ -24293,13 +24467,83 @@ prove this and a genuine infinite descent is required.  `IsCoprime S e` is
 equally load-bearing (`(S, e) = (17k, k)` scaled solutions would otherwise
 have to be excluded by hand).
 
-See the section docstring above for the reconnaissance: this quartic
-FACTORS as `((S − e)² + 16e²)((S + e)² + 16e²)`, the `17 ∣ S` branch
-self-reduces to this same statement at `(e, S/17)`, and the residue is a
-concordant-forms system. -/
+**ROUTE ACTUALLY TAKEN — the reconnaissance route in the section docstring
+above is CORRECT but EXPENSIVE, and was not used** (2026-07-28).  That
+route factors the quartic as `((S − e)² + 16e²)((S + e)² + 16e²)`,
+self-reduces the `17 ∣ S` branch to `(e, S/17)`, and leaves a
+concordant-forms residue — i.e. it arrives at the same place as the proof
+below but only after an ad-hoc `17 ∣ S` split.  The proof below instead
+maps the solution straight onto the `d' = 1` covering of the `2`-isogenous
+curve by the polynomial identity documented above `gcd_dvd_seventeen`, and
+reads the answer off `h1_classification`.  No `17 ∣ S` case split, no
+factorisation of the quartic, and the same `h1_classification` also
+carries `quartic_seventeen`. -/
 theorem quartic_one {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
-    (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False :=
-  sorry
+    (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False := by
+  have hQ2pos : (0 : ℤ) < Q ^ 2 := by rw [← h]; positivity
+  have hQ0 : Q ≠ 0 := by rintro rfl; simp at hQ2pos
+  have hDpos : (0 : ℤ) < 2 * S * e := by positivity
+  have hD0 : (2 : ℤ) * S * e ≠ 0 := hDpos.ne'
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd Q (2 * S * e) := ⟨_, rfl⟩
+  have hgpos : 0 < g := by rw [hgdef]; exact Int.gcd_pos_iff.mpr (Or.inl hQ0)
+  have hgz : (g : ℤ) ≠ 0 := by exact_mod_cast hgpos.ne'
+  obtain ⟨X, hX⟩ : (g : ℤ) ∣ Q := by rw [hgdef]; exact Int.gcd_dvd_left Q (2 * S * e)
+  obtain ⟨Y, hY⟩ : (g : ℤ) ∣ 2 * S * e := by rw [hgdef]; exact Int.gcd_dvd_right Q (2 * S * e)
+  have hcopXY : IsCoprime X Y := by
+    have h0 := Int.gcd_div_gcd_div_gcd (i := Q) (j := 2 * S * e) (by rw [← hgdef]; exact hgpos)
+    rw [← hgdef] at h0
+    rw [hX, hY, Int.mul_ediv_cancel_left _ hgz, Int.mul_ediv_cancel_left _ hgz] at h0
+    exact Int.isCoprime_iff_gcd_eq_one.mpr h0
+  have key : Q ^ 4 - 15 * Q ^ 2 * (2 * S * e) ^ 2 - 16 * (2 * S * e) ^ 4
+      = (S ^ 4 - 289 * e ^ 4) ^ 2 := by
+    have hQ : Q ^ 2 = S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 := h.symm
+    have hQ4 : Q ^ 4 = (S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4) ^ 2 := by
+      rw [show Q ^ 4 = (Q ^ 2) ^ 2 by ring, hQ]
+    rw [hQ4, hQ]; ring
+  have hid : ((g : ℤ) ^ 4) * (X ^ 4 - 15 * X ^ 2 * Y ^ 2 - 16 * Y ^ 4)
+      = (S ^ 4 - 289 * e ^ 4) ^ 2 := by
+    rw [hX, hY] at key; linear_combination key
+  obtain ⟨T, hT⟩ : ((g : ℤ) ^ 2) ∣ S ^ 4 - 289 * e ^ 4 := by
+    refine (Int.pow_dvd_pow_iff (n := 2) two_ne_zero).mp ?_
+    exact ⟨X ^ 4 - 15 * X ^ 2 * Y ^ 2 - 16 * Y ^ 4, by rw [← hid]; ring⟩
+  have hH : T ^ 2 = X ^ 4 - 15 * X ^ 2 * Y ^ 2 - 16 * Y ^ 4 := by
+    have h4 : ((g : ℤ) ^ 4) * (X ^ 4 - 15 * X ^ 2 * Y ^ 2 - 16 * Y ^ 4)
+        = ((g : ℤ) ^ 4) * T ^ 2 := by rw [hid, hT]; ring
+    exact (mul_left_cancel₀ (pow_ne_zero 4 hgz) h4).symm
+  rcases h1_classification hcopXY hH with ⟨hY0, -⟩ | ⟨hX16, hY1⟩
+  · rw [hY0, mul_zero] at hY; exact hD0 hY
+  · have hT0 : T = 0 := by
+      have hz : T ^ 2 = 0 := by
+        rw [hH, show X ^ 4 = (X ^ 2) ^ 2 by ring, show Y ^ 4 = (Y ^ 2) ^ 2 by ring, hX16, hY1]
+        ring
+      exact pow_eq_zero_iff (n := 2) two_ne_zero |>.mp hz
+    have hSe : S ^ 4 = 289 * e ^ 4 := by rw [hT0, mul_zero] at hT; linarith
+    have hcop4 : IsCoprime (S ^ 4) (e ^ 4) := hcop.pow (m := 4) (n := 4)
+    have hunit : IsUnit (e ^ 4) := hcop4.isUnit_of_dvd' ⟨289, by linear_combination hSe⟩ dvd_rfl
+    have he1 : e = 1 := by
+      have he4 : e ^ 4 = 1 := by
+        rcases Int.isUnit_iff.mp hunit with h1 | h1
+        · exact h1
+        · exfalso
+          have hnn : (0 : ℤ) ≤ e ^ 4 := by positivity
+          omega
+      have hfac : (e ^ 2 - 1) * (e ^ 2 + 1) = 0 := by linear_combination he4
+      have he2 : e ^ 2 = 1 := by
+        rcases mul_eq_zero.mp hfac with h2 | h2
+        · linarith
+        · nlinarith [sq_nonneg e]
+      have hlin : (e - 1) * (e + 1) = 0 := by linear_combination he2
+      rcases mul_eq_zero.mp hlin with h3 | h3 <;> linarith
+    rw [he1] at hSe
+    have hS4 : S ^ 4 = 289 := by linarith
+    have hfacS : (S ^ 2 - 17) * (S ^ 2 + 17) = 0 := by linear_combination hS4
+    have hS2 : S ^ 2 = 17 := by
+      rcases mul_eq_zero.mp hfacS with h1 | h1
+      · linarith
+      · nlinarith [sq_nonneg S]
+    rcases (by omega : S ≤ 4 ∨ 5 ≤ S) with h4 | h4
+    · nlinarith
+    · nlinarith
 
 /-- **`d = 17`: the second `2`-isogeny homogeneous space of `17a1`**
 (sorry leaf, introduced 2026-07-28).
