@@ -18637,11 +18637,13 @@ into the two leaves consumed below:
   `card_relPoint_finiteField`) together with the four successors of
   `X0GenusOne.isTorsion_jacobian` — `exists_abelianSchemeStruct_of_x0Genus_eq_one`,
   `exists_x0Compactification_relPoint_inj_x0Model`,
-  `finite_curve17a1`, `finite_curve19a1` (2026-07-27, fourth correction;
-  none is vacuous or refutable; the first was `exists_x0Model` until the
-  quantifier step of 2026-07-28 made that one PROVEN, and
-  `finite_curve11a1`, which that correction also named, is PROVEN as of
-  2026-07-28 along the `5`-isogeny onto `11a3`).
+  `finite_curve19a1` (2026-07-27, fourth correction; none is vacuous or
+  refutable; the first was `exists_x0Model` until the quantifier step of
+  2026-07-28 made that one PROVEN, `finite_curve11a1`, which that correction
+  also named, is PROVEN as of 2026-07-28 along the `5`-isogeny onto `11a3`,
+  and so is `finite_curve17a1`, over the `X0GenusOne.SeventeenDescent`
+  cluster whose own residue is the two elementary integer leaves
+  `SeventeenDescent.quartic_one` and `SeventeenDescent.quartic_seventeen`).
   `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
   `finite_relPoint_x0`, which this paragraph named at earlier corrections,
   are all now PROVEN — the last of them along the MODEL/ARITHMETIC seam,
@@ -22550,12 +22552,15 @@ forms are equivalent and the step costs nothing.  This is the same move
 `exists_x0Compactification_relPoint_equiv_point` makes at `𝔽_ℓ`.
 
 **So the open leaves of this section are
-`exists_x0Compactification_relPoint_inj_x0Model`,
-`finite_curve17a1`, `finite_curve19a1`,
+`exists_x0Compactification_relPoint_inj_x0Model`, `finite_curve19a1`,
 `exists_abelianSchemeStruct_of_x0Genus_eq_one` and
-`nonempty_relPoint_equiv_modelPoint`.**  (`finite_curve11a1` was on that
-list until 2026-07-28; it is now PROVEN, along the `5`-isogeny onto
-`11a3` — see its docstring.)  (`finite_jacobian` still consumes
+`nonempty_relPoint_equiv_modelPoint`** — together with the two elementary
+integer leaves `SeventeenDescent.quartic_one` and
+`SeventeenDescent.quartic_seventeen`, which is all that is left of
+`finite_curve17a1` after its `2`-isogeny descent (PROVEN 2026-07-28).
+(`finite_curve11a1` was on that list until 2026-07-28; it is now PROVEN,
+along the `5`-isogeny onto `11a3` — see its docstring.)
+(`finite_jacobian` still consumes
 the shared Mordell–Weil obligation `Fermat.fg_relPoint_of_abelianScheme`
 in `X0.lean`, but `isTorsion_jacobian` no longer needs it — see the
 bookkeeping note on `finite_jacobian`.)
@@ -23199,7 +23204,9 @@ So the three halves are:
   same injection at ONE compactification of your choosing;
 * `finite_curve11a1` / `finite_curve17a1` / `finite_curve19a1` — the
   arithmetic, one explicit rank-`0` curve each, stated with NO scheme
-  and NO level in sight;
+  and NO level in sight (level `17` is PROVEN as of 2026-07-28 over the
+  `SeventeenDescent` `2`-isogeny descent, leaving only its two
+  elementary quartics);
 * `finite_curve32a1` — the same statement at level `32`, and **already
   PROVEN**, because `QuarticDescent.rational_point_x0ThirtyTwo`
   (Fermat's quartic theorem through the `2`-isogeny to `y² = x³ − x`)
@@ -23707,18 +23714,390 @@ theorem finite_curve11a1 : Finite curve11a1.toAffine.Point := by
     inferInstanceAs (Finite (Option _))
   exact Finite.of_equiv _ curve11a1.toAffine.nonsingularPointEquiv.symm
 
-/-- **`17a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
-level-`17` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
-`0` for `y² + xy + y = x³ − x² − x − 14`.
+/-! ### The level-`17` descent, in elementary form (2026-07-28)
+
+`SeventeenDescent` is the arithmetic engine behind `finite_curve17a1`.  It
+is modelled verbatim on `WeierstrassCurve.MazurLevel14` in
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` (conductor `14`) and on
+`MazurLevel15` below (conductor `15`): **no group law, no rank function,
+no Mordell–Weil theorem and no Selmer group** appear anywhere in it.
+
+**THE `11a1` ROUTE DOES NOT TRANSFER, and the pointer that used to stand
+on `finite_curve17a1` ("see `finite_curve11a1` for the template to
+follow") is WITHDRAWN** (2026-07-28).  `finite_curve11a1` closes by
+pulling back along a rational `5`-isogeny onto `11a3`, whose rational
+points this tree already knows (`WeierstrassCurve.curve11a3_points`).
+That works only because there is a curve to land on.  **`17a1`'s isogeny
+class — `17a1`–`17a4`, joined by `2`- and `4`-isogenies — contains no
+curve whose rational points are known anywhere in this tree**, so there
+is nothing to pull back from and the isogeny axis is genuinely empty
+here.  Refuting check, and it is cheap: isogenous curves share their
+conductor, so every target has conductor `17`; the only curves whose
+rational points this tree enumerates are `11a3`, `14a4`, `32a1` and the
+conductor-`15`, `-20` and `-24` curves of `MazurLevel15`,
+`QuarticDescent` and `MazurTwoTwelve` — none of conductor `17`.  (Note
+for anyone re-examining that axis: the
+old claim that an isogeny route would need "the isogeny as a map of
+`Affine.Point` groups" is FALSE — finiteness needs only a map with finite
+fibres, and the `x`-coordinate half of an isogeny is already one.  The
+obstruction here is the missing TARGET, not the missing group law.)  The
+direct descent below is therefore the route, and it is
+`Fermat/FLT/EllipticCurve/MordellWeil.lean`'s template, not `11a1`'s.
+
+**Why an elementary route exists here and not at `11` or `19`.**  `17a1`
+has a rational point of order `2`, namely `(11/4, −15/8)`; its
+`2`-division polynomial `4x³ − 3x² − 2x − 55` has the rational root
+`x = 11/4`.  That single rational root is what lets the cubic be split
+off as a linear factor over `ℚ`, which is the whole content of a
+`2`-isogeny descent in elementary form.  `11a1` and `19a1` have
+irreducible `2`-division polynomials, so no `2`-isogeny exists in their
+isogeny classes and this route is unavailable there.
+
+**The chain, completely explicit.**  Let `(x, y)` be a rational point of
+`curve17a1 : y² + xy + y = x³ − x² − x − 14`.
+
+* `u = 4x − 11`, `v = 8y + 4x + 4` is an isomorphism onto the integral
+  model with the `2`-torsion point at the origin:
+
+      v² = u³ + 30u² + 289u = u · (u² + 30u + 289) ,
+
+  and `u² + 30u + 289 = (u + 15)² + 64 > 0` for every real `u`, so the
+  quadratic factor never vanishes and `v² = u · (positive)` forces
+  `u ≥ 0`.  `u = 0` is the `2`-torsion point itself.
+* For `u > 0`, writing `u = p/e²` in lowest terms
+  (`WeierstrassCurve.RationalPointDescent.exists_int_model`, `A = 30`,
+  `B = 289`, `C = 0`) gives
+
+      n² = p · (p² + 30pe² + 289e⁴),   gcd(p, e) = 1,   p, e > 0.
+
+* Both factors are positive and their `gcd` `g` divides `289` (it divides
+  `p`, and `289e⁴` is an integer combination of the two, while
+  `gcd(g, e) = 1`).  `split_gcd` writes `p = g a²` and the second factor
+  as `g b²`; absorbing the square part of `g` leaves exactly the two
+  square-free classes `d ∈ {1, 17}` — `d` cannot be negative because
+  `p > 0` — and the descent equation
+  `d S⁴ + 30 S²e² + (289/d) e⁴ = Q²` (`descent_step`).
+
+That leaves the two homogeneous spaces below.
+
+    d = 1  : Q² =    S⁴ + 30S²e² + 289e⁴   (`quartic_one`; NO solution)
+    d = 17 : Q² = 17S⁴ + 30S²e² +  17e⁴    (`quartic_seventeen`; only `(S,e) = (1,1)`, `u = 17`)
+
+Verified by exhaustive search (PARI/GP, `1 ≤ S, e ≤ 400`, coprime):
+`quartic_one` has no solution at all and `(S, e) = (1, 1)` is the ONLY
+solution of `quartic_seventeen`, so both statements are true as written.
+Neither is congruence-obstructed — `quartic_one` carries the rational
+point `(S, e, Q) = (0, 1, 17)`, which is why the hypothesis `0 < S` is
+load-bearing and cannot be dropped — so each is a genuine infinite
+descent, in the style of `MazurLevel15.concordant_one` /
+`concordant_five` and `WeierstrassCurve.MazurLevel14.quartic_one` /
+`quartic_two`.
+
+RECONNAISSANCE FOR WHOEVER TAKES THE TWO QUARTICS.
+
+1. **`quartic_one` FACTORS over `ℤ`**, which the level-`14` and level-`15`
+   quartics do not:
+
+       S⁴ + 30S²e² + 289e⁴ = (S² − 2Se + 17e²)(S² + 2Se + 17e²)
+                           = ((S − e)² + 16e²) · ((S + e)² + 16e²) .
+
+   Both factors are positive.  Writing `A`, `B` for them, `A + B =
+   2(S² + 17e²)` and `B − A = 4Se`, and `gcd(A, e) = gcd(B, e) = 1`, so
+   `gcd(A, B) ∣ 4 · 17`.  Moreover `17 ∣ gcd(A, B) ↔ 17 ∣ S` (if `17`
+   divides both then it divides `A + B`, hence `S²`).
+
+   * **The `17 ∣ S` branch is a SELF-REDUCTION.**  With `S = 17S₁`,
+     `A = 17(17S₁² − 2S₁e + e²)`, `B = 17(17S₁² + 2S₁e + e²)` and
+     `(Q/17)² = 289S₁⁴ + 30S₁²e² + e⁴` — which is `quartic_one` again at
+     the pair `(e, S₁)`, strictly smaller in `S² + e²`.  That branch
+     therefore needs no new idea.
+   * **The remaining branch is a concordant-forms system**: with
+     `17 ∤ S` and `S`, `e` of opposite parity `gcd(A, B) = 1`, so both
+     factors are squares,
+
+         (S − e)² + 16e² = □   and   (S + e)² + 16e² = □ ,
+
+     two Pythagorean triples sharing the even leg `4e`.  With `S`, `e`
+     both odd, `A = 4(k² + 4e²)` and `B = 4(l² + 4e²)` with
+     `k = (S − e)/2`, `l = (S + e)/2`, `l − k = e`, `l + k = S`, and the
+     same split applies to `k² + 4e²`, `l² + 4e²`.
+
+2. **`quartic_seventeen` does NOT factor over `ℤ`** (`17x⁴ + 30x² + 17`
+   is irreducible over `ℚ`; its roots satisfy `x² = (1 + 4i)²/17`).
+   Completing the square instead: `17Q² = (17S² + 15e²)² + (8e²)²`,
+   a norm form for `ℤ[i]` twisted by `17 = (4 + i)(4 − i)`; equivalently
+   `Q² = (4S² + 4e²)² + (S² − e²)²`, so `(S² − e², 4(S² + e²), Q)` is a
+   Pythagorean triple and the goal is exactly `S² = e²`.
+
+3. **The isogenous curve, and why rank `0` is TRUE here.**  With
+   `a = 30`, `b = 289` the `2`-isogenous curve is
+   `V² = U³ − 60U² − 256U` (`a' = −2a = −60`, `b' = a² − 4b = −256`),
+   which after `U = 4U₁`, `V = 8V₁` is
+
+       V₁² = U₁(U₁ + 1)(U₁ − 16) ,   conductor 17, `E(ℚ) ≅ ℤ/2 × ℤ/2` .
+
+   Its descent classes are `d' ∈ {±1, ±2}` and **both `d' = ±2` spaces
+   die mod `8`** (`c² = 2S⁴ − 15S²e² − 8e⁴` and
+   `c² = −2S⁴ − 15S²e² + 8e⁴`; check the four parities of `(S, e)`,
+   pulling out the forced factor `4` when `S` is even).  So
+   `Im α = {1, 17}` (negatives excluded by `p > 0`) and
+   `Im α' = {1, −1}`, giving `2^rank = 2 · 2 / 4 = 1`.  The two surviving
+   `d' = ±1` spaces factor,
+
+       d' =  1 : Z² = (X² + Y²)(X² − 16Y²)
+       d' = −1 : Z² = (X² + 16Y²)(Y² − X²) ,
+
+   and the classical `2`-isogeny descent ping-pongs between these and the
+   two spaces above with strictly decreasing parameters — which is the
+   shape `MazurLevel15.concordant_both_aux` mechanises for conductor `15`
+   (one strong induction carrying all the mutually recursive systems at
+   once; they cannot be proven in sequence).
+
+4. `ellrank` returns the interval `[0, 0]` for `17a1`, so the rank is
+   PROVEN rather than bounded, and `elltors` returns `ℤ/4`.  PARI/GP is
+   an untrusted searcher; every witness above is verified in Lean. -/
+namespace SeventeenDescent
+
+/-- The divisors of `289 = 17²`. -/
+theorem dvd_289 {n : ℕ} (h : n ∣ 289) : n = 1 ∨ n = 17 ∨ n = 289 := by
+  have h17 : Nat.Prime 17 := by decide
+  have h289 : (289 : ℕ) = 17 ^ 2 := by norm_num
+  rw [h289] at h
+  obtain ⟨k, hk, rfl⟩ := (Nat.dvd_prime_pow h17).mp h
+  interval_cases k <;> norm_num
+
+/-- The `d = 1` shape of the `gcd` split: `g = c²` is a square, so `p` is
+a square and the descent equation is `quartic_one`'s. -/
+theorem case_one {p e a b c : ℤ} (hc : 0 < c) (ha0 : a ≠ 0) (hcop : IsCoprime p e)
+    (ha : p = c ^ 2 * a ^ 2)
+    (hb : p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4 = c ^ 2 * b ^ 2) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧ p = S ^ 2 ∧
+      S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2 := by
+  have hS2 : (c * |a|) ^ 2 = c ^ 2 * a ^ 2 := by rw [mul_pow, sq_abs]
+  have hSp : p = (c * |a|) ^ 2 := by rw [hS2]; exact ha
+  refine ⟨c * |a|, c * b, mul_pos hc (abs_pos.mpr ha0),
+    hcop.of_isCoprime_of_dvd_left ⟨c * |a|, by rw [hSp]; ring⟩, hSp, ?_⟩
+  rw [ha] at hb
+  linear_combination hb + ((c * |a|) ^ 2 + c ^ 2 * a ^ 2 + 30 * e ^ 2) * hS2
+
+/-- The `d = 17` shape of the `gcd` split: `g = 17c²`, so `p = 17S²` and
+the descent equation is `quartic_seventeen`'s. -/
+theorem case_seventeen {p e a b c : ℤ} (hc : 0 < c) (ha0 : a ≠ 0) (hcop : IsCoprime p e)
+    (ha : p = 17 * (c ^ 2 * a ^ 2))
+    (hb : p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4 = 17 * (c ^ 2 * b ^ 2)) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧ p = 17 * S ^ 2 ∧
+      17 * S ^ 4 + 30 * S ^ 2 * e ^ 2 + 17 * e ^ 4 = Q ^ 2 := by
+  have hS2 : (c * |a|) ^ 2 = c ^ 2 * a ^ 2 := by rw [mul_pow, sq_abs]
+  have hSp : p = 17 * (c * |a|) ^ 2 := by rw [hS2]; exact ha
+  refine ⟨c * |a|, c * b, mul_pos hc (abs_pos.mpr ha0),
+    hcop.of_isCoprime_of_dvd_left ⟨17 * (c * |a|), by rw [hSp]; ring⟩, hSp, ?_⟩
+  rw [ha] at hb
+  refine mul_left_cancel₀ (show (17 : ℤ) ≠ 0 by norm_num) ?_
+  linear_combination hb + (289 * ((c * |a|) ^ 2 + c ^ 2 * a ^ 2) + 510 * e ^ 2) * hS2
+
+/-- **The `gcd` descent at level `17`** (PROVEN 2026-07-28): an integral
+point `n² = p(p² + 30pe² + 289e⁴)` with `p, e > 0` coprime lies on one of
+the two homogeneous spaces `quartic_one` (`d = 1`) or `quartic_seventeen`
+(`d = 17`).
+
+The `gcd` of the two factors divides `289`, and `p > 0` rules out the
+negative square-free classes, which is why only `d ∈ {1, 17}` survive
+rather than `d ∈ {±1, ±17}`. -/
+theorem descent_step {p e n : ℤ} (hp : 0 < p) (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p * (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4)) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧
+      ((p = S ^ 2 ∧ S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) ∨
+        (p = 17 * S ^ 2 ∧ 17 * S ^ 4 + 30 * S ^ 2 * e ^ 2 + 17 * e ^ 4 = Q ^ 2)) := by
+  have he2 : (0 : ℤ) < e ^ 2 := by positivity
+  have he4 : (0 : ℤ) < e ^ 4 := by positivity
+  have hp2 : (0 : ℤ) < p ^ 2 := by positivity
+  have hBpos : (0 : ℤ) < p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4 := by nlinarith
+  obtain ⟨a, b, ha, hb, _hab⟩ := WeierstrassCurve.MazurLevel14.split_gcd (A := p)
+    (B := p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) (c := n) h.symm hp.le hBpos.le hp.ne'
+  have hGp : ((Int.gcd p (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) : ℤ)) ∣ p := Int.gcd_dvd_left _ _
+  have hGB : ((Int.gcd p (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) : ℤ)) ∣
+      p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4 := Int.gcd_dvd_right _ _
+  have hGe : IsCoprime ((Int.gcd p (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) : ℤ)) e :=
+    hcop.of_isCoprime_of_dvd_left hGp
+  have hG289e : ((Int.gcd p (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) : ℤ)) ∣ 289 * e ^ 4 := by
+    have hd := dvd_sub hGB (hGp.mul_right (p + 30 * e ^ 2))
+    have hrw : (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) - p * (p + 30 * e ^ 2)
+        = 289 * e ^ 4 := by ring
+    rwa [hrw] at hd
+  have hG289 : Int.gcd p (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) ∣ 289 := by
+    have := (hGe.pow_right (n := 4)).dvd_of_dvd_mul_right hG289e
+    exact_mod_cast this
+  have ha0 : a ≠ 0 := by rintro rfl; rw [ha] at hp; simp at hp
+  rcases dvd_289 hG289 with hg | hg | hg <;> rw [hg] at ha hb <;> push_cast at ha hb
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_one (c := 1) one_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inl ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_seventeen (c := 1) one_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inr ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_one (c := 17) (by norm_num) ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inl ⟨h3, h4⟩⟩
+
+/-- **The integral model at level `17`** (PROVEN 2026-07-28): a rational
+solution of `v² = u³ + 30u² + 289u` with `u > 0` comes from an integral
+one, `u = p/e²` with `gcd(p, e) = 1` and `p, e > 0`, satisfying
+`n² = p(p² + 30pe² + 289e⁴)`.
+
+The denominator work is `WeierstrassCurve.RationalPointDescent.exists_int_model`
+(`A = 30`, `B = 289`, `C = 0`); all that is added here is `0 < p`, which
+comes from `u = p/e² > 0`, and the factored form of the cubic — the factor
+`p` being present is exactly the rational `2`-torsion point, and is what
+makes the `gcd` descent of `descent_step` possible. -/
+theorem exists_int_model {T V : ℚ} (hT : 0 < T) (h : V ^ 2 = T ^ 3 + 30 * T ^ 2 + 289 * T) :
+    ∃ p e n : ℤ, 0 < p ∧ 0 < e ∧ IsCoprime p e ∧ T = (p : ℚ) / (e : ℚ) ^ 2 ∧
+      n ^ 2 = p * (p ^ 2 + 30 * p * e ^ 2 + 289 * e ^ 4) := by
+  obtain ⟨p, e, n, he, hcop, hTeq, hn⟩ :=
+    WeierstrassCurve.RationalPointDescent.exists_int_model (A := 30) (B := 289) (C := 0)
+      (T := T) (V := V) (by push_cast; linear_combination h)
+  refine ⟨p, e, n, ?_, he, hcop, hTeq, by linear_combination hn⟩
+  have hene : ((e : ℚ)) ≠ 0 := by exact_mod_cast he.ne'
+  have hepos : (0 : ℚ) < ((e : ℚ)) ^ 2 := by positivity
+  rw [hTeq] at hT
+  rcases div_pos_iff.mp hT with ⟨h1, _⟩ | ⟨_, h2⟩
+  · exact_mod_cast h1
+  · linarith
+
+/-- **`d = 1`: the trivial `2`-isogeny homogeneous space of `17a1` is
+EMPTY** (sorry leaf, introduced 2026-07-28).
+
+TRUE: `S⁴ + 30S²e² + 289e⁴ = Q²` has NO solution with `S, e > 0` coprime
+(PARI/GP, exhaustive over `1 ≤ S, e ≤ 400`).  The reason is that the only
+rational `u`-values on `v² = u(u² + 30u + 289)` are `0` and `17`, and
+neither is a nonzero rational square.
+
+**`0 < S` is LOAD-BEARING and may not be dropped**: the space is NOT
+congruence-obstructed — `(S, e, Q) = (0, 1, 17)` is a rational point of it,
+corresponding to the `2`-torsion point `u = 0` — so no local argument can
+prove this and a genuine infinite descent is required.  `IsCoprime S e` is
+equally load-bearing (`(S, e) = (17k, k)` scaled solutions would otherwise
+have to be excluded by hand).
+
+See the section docstring above for the reconnaissance: this quartic
+FACTORS as `((S − e)² + 16e²)((S + e)² + 16e²)`, the `17 ∣ S` branch
+self-reduces to this same statement at `(e, S/17)`, and the residue is a
+concordant-forms system. -/
+theorem quartic_one {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
+    (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False :=
+  sorry
+
+/-- **`d = 17`: the second `2`-isogeny homogeneous space of `17a1`**
+(sorry leaf, introduced 2026-07-28).
+
+TRUE: `17S⁴ + 30S²e² + 17e⁴ = Q²` with `S, e > 0` coprime forces
+`(S, e) = (1, 1)` — and then `Q² = 64`, giving `u = 17S²/e² = 17`, the
+`x`-coordinate of the two points of order `4` on `17a1` (which are
+`(7, 13)` and `(7, −21)` in the original model).  Verified exhaustively by
+PARI/GP over `1 ≤ S, e ≤ 400`.
+
+**Not congruence-obstructed** — it carries the rational point
+`(1, 1, 8)` — so this too needs a genuine infinite descent.  All three
+hypotheses are load-bearing: without `0 < S` the pair `(0, 1)` would be a
+counterexample to the conclusion, and without coprimality every `(k, k)`
+would be.
+
+Completing the square gives `Q² = (4S² + 4e²)² + (S² − e²)²`, so the goal
+is exactly that this Pythagorean triple is degenerate.  See the section
+docstring for the isogenous curve and the mod-`8` kills that make rank `0`
+true here. -/
+theorem quartic_seventeen {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
+    (h : 17 * S ^ 4 + 30 * S ^ 2 * e ^ 2 + 17 * e ^ 4 = Q ^ 2) : S = 1 ∧ e = 1 :=
+  sorry
+
+/-- **The two rational `u`-values of `v² = u³ + 30u² + 289u`** (PROVEN
+2026-07-28 from the two quartic leaves): `u ∈ {0, 17}`.
+
+`u = 0` is the rational `2`-torsion point; `u = 17` is the single
+`x`-fibre carrying a pair of points of order `4`.  Together with the point
+at infinity that is `17a1(ℚ) ≅ ℤ/4`. -/
+theorem u_dichotomy {u v : ℚ} (h : v ^ 2 = u ^ 3 + 30 * u ^ 2 + 289 * u) : u = 0 ∨ u = 17 := by
+  rcases eq_or_ne u 0 with rfl | hu0
+  · exact Or.inl rfl
+  have hquad : (0 : ℚ) < u ^ 2 + 30 * u + 289 := by nlinarith [sq_nonneg (u + 15)]
+  have hupos : 0 < u := by
+    rcases lt_trichotomy u 0 with hlt | heq | hgt
+    · exfalso
+      have hneg : u * (u ^ 2 + 30 * u + 289) < 0 := mul_neg_of_neg_of_pos hlt hquad
+      nlinarith [sq_nonneg v]
+    · exact absurd heq hu0
+    · exact hgt
+  obtain ⟨p, e, n, hp, he, hcop, hTeq, hint⟩ := exists_int_model hupos h
+  obtain ⟨S, Q, hS, hSe, hcase⟩ := descent_step hp he hcop hint
+  rcases hcase with ⟨hpS, hq⟩ | ⟨hpS, hq⟩
+  · exact (quartic_one hS he hSe hq).elim
+  · obtain ⟨hS1, he1⟩ := quartic_seventeen hS he hSe hq
+    right
+    rw [hTeq, hpS, hS1, he1]; norm_num
+
+end SeventeenDescent
+
+/-- **The three affine rational points of `17a1`, UNCONDITIONALLY**
+(PROVEN 2026-07-28 from `SeventeenDescent.u_dichotomy`).
+
+The only rational solutions of `y² + xy + y = x³ − x² − x − 14` are
+`(11/4, −15/8)`, `(7, 13)` and `(7, −21)`; with the point at infinity that
+is `17a1(ℚ) ≅ ℤ/4`, and `(11/4, −15/8)` is the point of order `2`.
+
+The change of variables `u = 4x − 11`, `v = 8y + 4x + 4` is a `ℚ`-isomorphism
+onto `v² = u³ + 30u² + 289u` (a `linear_combination` of the defining equation
+with coefficient `64`), so the three points are read off from the two
+`u`-values `0` and `17`: `u = 0` forces `v = 0`, and `u = 17` gives
+`v² = 18496 = 136²`. -/
+theorem curve17a1_rational_points {x y : ℚ} (h : curve17a1.toAffine.Equation x y) :
+    (x = 11 / 4 ∧ y = -15 / 8) ∨ (x = 7 ∧ y = 13) ∨ (x = 7 ∧ y = -21) := by
+  have he : y ^ 2 + x * y + y = x ^ 3 - x ^ 2 - x - 14 := by
+    rw [WeierstrassCurve.Affine.equation_iff] at h
+    simp only [curve17a1, WeierstrassCurve.toAffine] at h
+    linear_combination h
+  have hcurve : (8 * y + 4 * x + 4) ^ 2 =
+      (4 * x - 11) ^ 3 + 30 * (4 * x - 11) ^ 2 + 289 * (4 * x - 11) := by
+    linear_combination 64 * he
+  rcases SeventeenDescent.u_dichotomy hcurve with hu | hu
+  · have hx : x = 11 / 4 := by linarith
+    have hv : (8 * y + 4 * x + 4) ^ 2 = 0 := by rw [hcurve, hu]; ring
+    have hv0 : 8 * y + 4 * x + 4 = 0 := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hv
+    exact Or.inl ⟨hx, by rw [hx] at hv0; linarith⟩
+  · have hx : x = 7 := by linarith
+    have hv : (8 * y + 4 * x + 4 - 136) * (8 * y + 4 * x + 4 + 136) = 0 := by
+      have hsq : (8 * y + 4 * x + 4) ^ 2 = 18496 := by rw [hcurve, hu]; norm_num
+      linear_combination hsq
+    rcases mul_eq_zero.mp hv with h1 | h1
+    · exact Or.inr (Or.inl ⟨hx, by rw [hx] at h1; linarith⟩)
+    · exact Or.inr (Or.inr ⟨hx, by rw [hx] at h1; linarith⟩)
+
+/-- **`17a1(ℚ)` is finite** (PROVEN 2026-07-28 over
+`curve17a1_rational_points`, hence over the `SeventeenDescent` cluster;
+was a sorry leaf introduced 2026-07-27) — the level-`17` row of the
+arithmetic half of `finite_relPoint_x0`, i.e. rank `0` for
+`y² + xy + y = x³ − x² − x − 14`.
 
 TRUE, and `#17a1(ℚ) = 4`: the affine points are `(7, 13)`, `(7, −21)`,
 `(11/4, −15/8)` (PARI/GP `ellratpoints`; `ellrank` returns `[0, 0]`).
 The group is cyclic of order `4`, so unlike the other three levels there
-IS a rational `2`-torsion point — `(11/4, −15/8)` — which makes a
-descent by `2`-isogeny available here and not at `11` or `19`.  See
-`finite_curve11a1` for the template to follow. -/
-theorem finite_curve17a1 : Finite curve17a1.toAffine.Point :=
-  sorry
+IS a rational `2`-torsion point — `(11/4, −15/8)` — which is what makes
+the descent by `2`-isogeny of `SeventeenDescent` available here and not at
+`11` or `19`.
+
+The transport from the enumeration to `Finite` is mathlib's
+`Affine.nonsingularPointEquiv : W.Point ≃ WithZero {xy // W.Nonsingular xy.1 xy.2}`,
+verbatim the argument of `finite_curve32a1` and of
+`WeierstrassCurve.curve11a3_finite`. -/
+theorem finite_curve17a1 : Finite curve17a1.toAffine.Point := by
+  have hsub : {xy : ℚ × ℚ | curve17a1.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ({(11 / 4, -15 / 8), (7, 13), (7, -21)} : Set (ℚ × ℚ)) := by
+    rintro ⟨x, y⟩ hxy
+    rcases curve17a1_rational_points hxy.left with ⟨hx, hy⟩ | ⟨hx, hy⟩ | ⟨hx, hy⟩ <;>
+      subst hx <;> subst hy <;> simp
+  haveI : Finite {xy : ℚ × ℚ // curve17a1.toAffine.Nonsingular xy.fst xy.snd} :=
+    (Set.Finite.subset (((Set.finite_singleton _).insert _).insert _) hsub).to_subtype
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve17a1.toAffine.Nonsingular xy.fst xy.snd}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve17a1.toAffine.nonsingularPointEquiv.symm
 
 /-- **`19a1(ℚ)` is finite** (PROVEN 2026-07-28 from
 `MazurX0Nineteen.rational_point_x0Nineteen`, over the single integer leaf
