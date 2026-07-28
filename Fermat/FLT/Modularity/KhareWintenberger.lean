@@ -3395,7 +3395,9 @@ here, and STEP 1a-i (the symbol-algebra core,
 (`nonempty_algEquiv_matrix_quaternionAlgebra_of_normForm`, PROVEN — the
 explicit splitting of a symbol algebra whose second parameter is a value of
 the norm form `x² - a y²`) and STEP 1a-i′
-(`exists_totallyNegative_localNorm_of_even_nrRealPlaces`, OPEN — the same
+(`exists_totallyNegative_localNorm_of_even_nrRealPlaces`, itself PROVEN on
+2026-07-28 over the three-way cut STEP 1a-i′-a / -b / -c described at that
+block — the same
 arithmetic with every quaternion algebra removed from its statement, and the
 parity hypothesis restated as `Even (nrRealPlaces F)`, which is what the
 product formula actually counts). The cut replaces an
@@ -3506,12 +3508,384 @@ theorem nonempty_algEquiv_matrix_quaternionAlgebra_of_normForm {K : Type*}
   exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hrk
     (f := Bq.liftHom.toLinearMap)).mpr hsurj
 
+/-! ### STEP 1a-i′ — the class-field-theoretic core, cut into ONE global
+leaf and TWO purely local ones (2026-07-28)
+
+`exists_totallyNegative_localNorm_of_even_nrRealPlaces` (below) is now a
+PROVEN assembly over the three declarations of this block. The cut fixes the
+first witness once and for all — **`a := -1`, legal for every number field
+because `-1` is negative under every real embedding** — and then splits the
+remaining problem "produce a totally negative `b` that is a sum of two
+squares in `F_w` at every finite place `w`" along the residue
+characteristic:
+
+* `exists_pow_forall_isSquare_adicCompletion_of_sub_one_mem` (STEP 1a-i′-a,
+  PROVEN, LOCAL at the places above `2`): a uniform congruence `b ≡ 1 mod 2ⁿ`
+  forces `b` to be a SQUARE in `F_w` for every `w ∣ 2` — `n := 3` is the
+  witness — and a square `t²` is trivially `t² + 0²`. Its one input is
+  `henselianLocalRing_adicCompletionIntegers` (STEP 1a-i′-a₀), the Henselian
+  property of the local integers, which is a MISSING mathlib instance rather
+  than a piece of this development's mathematics, and which STEP 1a-i′-b
+  needs too;
+* `exists_sq_add_sq_adicCompletion_of_notMem` (STEP 1a-i′-b, LOCAL at the
+  places of odd residue characteristic): at such a `w` EVERY `w`-adic unit
+  is a sum of two squares;
+* `exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` (STEP 1a-i′-c,
+  GLOBAL — this is the entire class field theory, and the ONLY place the
+  parity hypothesis is spent): a totally negative `b ≡ 1 mod 2ⁿ` all of
+  whose odd prime divisors SPLIT in `F(i)`.
+
+The third case of the assembly — an odd `w` dividing `b` — is discharged
+with no arithmetic at all: `-1 = s²` in `F_w` makes `x² + y²` surjective,
+by the explicit witness `x = (b+1)/2`, `y = s(b-1)/2`, whose identity
+`x² + y² = ((b+1)² - (b-1)²)/4 = b` needs only `2 ≠ 0`.
+
+WHY THE SPLIT IS ALONG THIS LINE. Only STEP 1a-i′-c is global, and it is
+exactly the classical "existence" half of class field theory; the other two
+are statements about a single nonarchimedean local field, provable from
+Hensel's lemma with no reciprocity anywhere. Note also that the two local
+leaves CANNOT be strengthened away: an element of `F` that is a square in
+`F_w` at EVERY finite `w` is a global square (the diagonal
+`F*/(F*)² ↪ ∏_w F_w*/(F_w*)²` is injective) and hence totally POSITIVE, so
+a totally negative `b` must fail to be a local square somewhere, and the
+odd-place leaf STEP 1a-i′-b is what covers that failure. -/
+
+/-- **STEP 1a-i′-a₀ — THE MISSING PIN INSTANCE: the valuation ring of a
+number field completed at a finite place is HENSELIAN** (sorry leaf, LOCAL
+and entirely topological — no arithmetic, no reciprocity; CUT 2026-07-28).
+
+This is the one gap that blocks BOTH local leaves of STEP 1a-i′, and it is a
+general fact about Dedekind domains, not about number fields — a successor
+should feel free to relocate it to `Fermat/FLT/Mathlib/RingTheory/`
+and state it for `HeightOneSpectrum R` with `R` a Dedekind domain and `K`
+its fraction field. It is kept here only so that this cut touches one module.
+
+WHAT THE PIN ALREADY GIVES, verified 2026-07-28 by `inferInstance` probes on
+`w.adicCompletionIntegers F`: `IsLocalRing`, `IsDiscreteValuationRing`,
+`IsPrincipalIdealRing`, `IsNoetherianRing`, `UniformSpace` and
+`IsUniformAddGroup` all synthesise. What FAILS to synthesise is exactly
+`CompleteSpace`, `IsAdicComplete (IsLocalRing.maximalIdeal _) _`,
+`HenselianLocalRing`, and `Finite (IsLocalRing.ResidueField _)`. So the
+obstruction is not the algebra — it is that nothing in mathlib connects the
+UNIFORM completeness of `w.adicCompletion F` to the `𝔪`-ADIC completeness of
+its integers.
+
+ROUTE, three short steps and no new mathematics.
+
+1. `IsAdic.isAdicComplete_iff` (`Mathlib/RingTheory/AdicCompletion/
+   Topology.lean`) says `IsAdicComplete I R ↔ CompleteSpace R ∧ T2Space R`
+   for a `[UniformSpace R] [IsUniformAddGroup R]` whose topology `IsAdic I`.
+   Both instances are already present on `O := w.adicCompletionIntegers F`,
+   so it suffices to supply:
+   * `IsAdic (IsLocalRing.maximalIdeal O)`. Via `isAdic_iff`: with `π` a
+     uniformizer, `𝔪 ^ n = {x ∈ O : v x ≤ (v π) ^ n}`, and because the value
+     group `ℤᵐ⁰` is DISCRETE each such set is clopen (`v x ≤ exp (-n)` is the
+     same condition as `v x < exp (-n+1)`) and they form a neighbourhood
+     basis of `0`. Those are precisely the two clauses of `isAdic_iff`.
+   * `CompleteSpace O`: `O` is a closed subset of the complete
+     `w.adicCompletion F` (`instance : CompleteSpace (adicCompletion K v)` is
+     in the pin), being the closed unit ball of the valuation.
+   * `T2Space O`: a subspace of a T2 space.
+2. `IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`) then
+   gives `HenselianRing O (IsLocalRing.maximalIdeal O)`.
+3. Upgrade that to `HenselianLocalRing O`. mathlib has only the converse
+   instance, but the translation is immediate: the two `is_henselian` fields
+   differ only in asking `IsUnit (f.derivative.eval a₀)` in `O` versus in the
+   residue field, and over a LOCAL ring those agree.
+
+FAITHFULNESS. Nothing to audit — this is a true, standard fact (a complete
+discrete valuation ring is Henselian) with no hypotheses beyond the ambient
+ones, and it is CONSUMED below, so it cannot be vacuous. -/
+theorem henselianLocalRing_adicCompletionIntegers
+    (F : Type u) [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    HenselianLocalRing (w.adicCompletionIntegers F) := by
+  sorry
+
+/-- **STEP 1a-i′-a — A UNIFORM `2`-ADIC CONGRUENCE FORCES A LOCAL SQUARE AT
+EVERY PLACE ABOVE `2`** (PROVEN 2026-07-28 over STEP 1a-i′-a₀; LOCAL — no
+reciprocity, no global input; CUT 2026-07-28).
+
+There is a single exponent `n`, depending only on `F`, such that any
+algebraic integer `c ≡ 1 (mod 2ⁿ)` is a square in `F_w` for every `w ∣ 2`.
+
+ROUTE, and the witness is explicit: `n := 3` works. Write `e_w := v_w 2 ≥ 1`
+for the absolute ramification index at `w ∣ 2`. The classical statement is
+`1 + 𝔪_w^{2e_w+1} ⊆ (F_w^*)²`: for `c = 1 + u` with `v_w u ≥ 2e_w + 1`,
+Hensel's lemma applied to the monic `T² - c` at the approximate root
+`T = 1` gives an exact root, because `(T² - c)(1) = -u` has valuation
+`≥ 2e_w + 1` while `((T² - c)')(1) = 2` has valuation exactly `e_w`, so the
+Newton hypothesis `v(f(a₀)) > 2 v(f'(a₀))` holds. The hypothesis of this
+statement gives `v_w (c - 1) ≥ n · e_w`, and `n = 3` makes
+`3 e_w ≥ 2 e_w + 1` for every `e_w ≥ 1`. Uniformity in `w` therefore needs
+no finiteness argument at all — the SAME `n` works at every place above `2`
+— though `{w : w ∣ 2}` being finite would also do.
+
+THE NAIVE HENSEL FORM SUFFICES, after one substitution — and this matters,
+because mathlib carries ONLY the naive form (`HenselianLocalRing.is_henselian`
+requires `IsUnit (f.derivative.eval a₀)`) and NOT the strong Newton form
+`v(f a₀) > 2 v(f' a₀)`. Applied to `f = T² - c` at `a₀ = 1` the naive form
+fails outright, since `f'(1) = 2` is a nonunit at `w ∣ 2`. Substitute
+`T = 1 + 2S` instead: `(1 + 2S)² - (1 + u) = 4S² + 4S - u`, and since
+`v_w u ≥ 2e_w + 1 > 2e_w = v_w 4` the element `u/4` lies in `𝔪_w`. So it is
+equivalent to solve the MONIC
+
+    g(S) = S² + S - u/4,
+
+for which `g(0) = -u/4 ∈ 𝔪_w` and `g'(0) = 1` is a UNIT. Naive Hensel gives
+`S`, and `t := 1 + 2S` satisfies `t² = c`. (This is the usual
+Artin–Schreier-shaped completion of the square in residue characteristic
+`2`; it is what makes `2e_w + 1` the right exponent.)
+
+HOW THE PROOF BELOW RUNS, since it is shorter than the discussion. Take
+`n := 3` and write `c = r · 2³ + 1`. Push everything into
+`O := w.adicCompletionIntegers F` along `ι := algebraMap (𝒪_F) O`, where
+`2 ∈ 𝔪_O` because `2 ∈ w` (this is the only use of `w ∣ 2`, and it is what
+makes the Hensel step's constant term small). Apply Henselian to the monic
+
+    f = X² + X - C (2 · ι r),
+
+at the approximate root `0`: `f(0) = -(2 · ι r) ∈ 𝔪_O` and `f'(0) = 1` is a
+unit. The root `s` satisfies `s² + s = 2 · ι r`, whence
+`(1 + 2s)² = 1 + 4(s + s²) = 1 + 8 · ι r = ι c`, and the image of `1 + 2s` in
+`F_w` is the required square root. Note the completion of the square is
+carried out on `f`, not on `T² - c`: the substitution `T = 1 + 2S` of the
+paragraph above is what turns the latter into the former, and here it has
+already been applied. No division by `4` is ever performed — `u/4` is
+literally `2r`, because the hypothesis hands over `c - 1` in the ideal
+`(2³)`.
+
+MACHINERY. The single input is STEP 1a-i′-a₀,
+`henselianLocalRing_adicCompletionIntegers` — the Henselian property of `O`,
+which the pin does not have and which that leaf's docstring says how to
+build. Everything else used here is already in mathlib:
+`Valuation.mem_maximalIdeal_iff`, `valuedAdicCompletion_eq_valuation'`,
+`valuation_of_algebraMap`, `intValuation_lt_one_iff_mem`, and `monicity!`.
+
+FAITHFULNESS. The statement carries no parity and no global input; it is
+true for every number field, including `F = ℚ` (where it is the familiar
+"`c ≡ 1 mod 8` implies `c ∈ (ℚ₂^*)²`", and `n = 3` is sharp). -/
+theorem exists_pow_forall_isSquare_adicCompletion_of_sub_one_mem
+    (F : Type u) [Field F] [NumberField F] :
+    ∃ n : ℕ, ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      ∀ c : NumberField.RingOfIntegers F,
+        c - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} →
+        ∃ t : w.adicCompletion F,
+          t ^ 2 =
+            algebraMap F (w.adicCompletion F)
+              (algebraMap (NumberField.RingOfIntegers F) F c) := by
+  refine ⟨3, fun w h2 c hc => ?_⟩
+  haveI := henselianLocalRing_adicCompletionIntegers F w
+  obtain ⟨r, hr⟩ := Ideal.mem_span_singleton'.mp hc
+  -- `2` lies in the maximal ideal of the local ring `O`, because `w ∣ 2`.
+  have hmem2 : (2 : w.adicCompletionIntegers F) ∈
+      IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := by
+    refine (Valuation.mem_maximalIdeal_iff
+      (v := (Valued.v : Valuation (w.adicCompletion F) (WithZero (Multiplicative ℤ))))).mpr ?_
+    have hcast : ((2 : w.adicCompletionIntegers F) : w.adicCompletion F)
+        = ((2 : F) : w.adicCompletion F) := by
+      have h : (2 : w.adicCompletionIntegers F)
+          = algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) 2 :=
+        (map_ofNat (algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F)) 2).symm
+      rw [h]
+      simp
+      exact map_ofNat (algebraMap (NumberField.RingOfIntegers F) F) 2
+    rw [hcast, IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation']
+    rw [show (2 : F) = algebraMap (NumberField.RingOfIntegers F) F 2 from
+      (map_ofNat (algebraMap (NumberField.RingOfIntegers F) F) 2).symm,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap]
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_lt_one_iff_mem _ _).mpr h2
+  set ι := algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) with hι
+  have hc' : c = r * 2 ^ 3 + 1 := by rw [hr]; ring
+  have hιc : ι c = ι r * 8 + 1 := by
+    rw [hc', map_add, map_mul, map_pow, map_one, map_ofNat]
+    norm_num
+  -- Hensel on `X² + X - 2 ι r`, whose derivative at `0` is the unit `1`.
+  set f : Polynomial (w.adicCompletionIntegers F) :=
+    Polynomial.X ^ 2 + Polynomial.X - Polynomial.C (2 * ι r) with hf
+  have hfm : f.Monic := by rw [hf]; monicity!
+  have h1 : f.eval 0 ∈ IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := by
+    have hev : f.eval 0 = -(2 * ι r) := by rw [hf]; simp
+    rw [hev]
+    exact neg_mem (Ideal.mul_mem_right _ _ hmem2)
+  have h2' : IsUnit (f.derivative.eval 0) := by
+    have hev : f.derivative.eval 0 = 1 := by rw [hf]; simp
+    rw [hev]
+    exact isUnit_one
+  obtain ⟨s, hs, -⟩ := HenselianLocalRing.is_henselian f hfm 0 h1 h2'
+  have hs' : s ^ 2 + s - 2 * ι r = 0 := by
+    have hroot := hs
+    rw [Polynomial.IsRoot, hf] at hroot
+    simpa using hroot
+  refine ⟨algebraMap (w.adicCompletionIntegers F) (w.adicCompletion F) (1 + 2 * s), ?_⟩
+  have key : (1 + 2 * s) ^ 2 = ι c := by linear_combination 4 * hs' - hιc
+  rw [← map_pow, key]
+  rfl
+
+/-- **STEP 1a-i′-b — AT A FINITE PLACE OF ODD RESIDUE CHARACTERISTIC EVERY
+UNIT IS A SUM OF TWO SQUARES** (sorry leaf, LOCAL — no reciprocity, no
+global input; CUT 2026-07-28).
+
+ROUTE — residue field, then Hensel, and nothing else. Let `k := 𝒪_F/w` be
+the residue field, a finite field of ODD characteristic (that is exactly the
+hypothesis `2 ∉ w`), and let `b̄ ∈ k^*` be the residue of the unit `b`.
+
+1. *`b̄` is a sum of two squares in `k`.* Squares form a subset of size
+   `(q+1)/2` in a finite field of odd order `q`, so `{x²}` and `{b̄ - y²}`
+   have sizes summing to `q + 1 > q` and must meet. In the pin this is
+   `FiniteField.exists_root_sum_quadratic` (`Mathlib/FieldTheory/Finite/
+   Basic.lean`), applied to `f = X²` and `g = X² - b̄` with
+   `Fintype.card k % 2 = 1`.
+2. *Lift.* Say `b̄ = x̄² + ȳ²`. If `ȳ ≠ 0`, lift `x̄` to `x ∈ 𝒪_w` and apply
+   Hensel to the monic `T² + x² - b` at the approximate root `ȳ`: the value
+   is `≡ 0`, and the derivative `2ȳ` is a UNIT because the residue
+   characteristic is odd and `ȳ ≠ 0`. If `ȳ = 0` then `b̄ = x̄²` with
+   `x̄ ≠ 0` (as `b̄ ≠ 0`), and the same Hensel step on `T² - b` at `x̄`
+   produces `x` with `x² = b`, so `y = 0` serves.
+
+So this leaf is Hensel in its NAIVE form (unit derivative), unlike STEP
+1a-i′-a; the residue characteristic being odd is what makes `2` a unit and
+is used twice.
+
+MACHINERY. Two pieces of glue. (i) The Henselian property of
+`O := w.adicCompletionIntegers F` — that is STEP 1a-i′-a₀,
+`henselianLocalRing_adicCompletionIntegers`, already stated above and shared
+with STEP 1a-i′-a, so nothing new is needed here. (ii) The residue field of
+`O`: its identification with `𝒪_F ⧸ w.asIdeal` and in particular its
+FINITENESS. `Finite (IsLocalRing.ResidueField O)` was checked on 2026-07-28
+NOT to synthesise, so this is a second small pin gap; it is the only input of
+step 1 above, and it is what `FiniteField.exists_root_sum_quadratic` consumes.
+Unlike STEP 1a-i′-a this leaf needs no substitution trick: the naive Hensel
+form applies directly, because the residue characteristic is odd.
+
+FAITHFULNESS. `w`-adic units only: the statement is FALSE without
+`b ∉ w.asIdeal` — at a place inert in `F_w(i)` a uniformizer has odd
+valuation and is not a norm. Concretely `3` is not a sum of two squares in
+`ℚ₃`: `x² + y² = 3` forces `v(x) = v(y) = 0` after dividing by the smaller
+valuation, and then `-1 ≡ (x/y)²` in `𝔽₃`, which is false. It is also FALSE
+at `w ∣ 2` (take `F = ℚ`, `w = 2`, `b = 3`: `3` is a
+unit at `2` and `x² + y² = 3` has no solution in `ℚ₂`, the Hilbert symbol
+`(-1,3)₂` being `-1`). Both hypotheses are therefore load-bearing. -/
+theorem exists_sq_add_sq_adicCompletion_of_notMem
+    (F : Type u) [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hw2 : (2 : NumberField.RingOfIntegers F) ∉ w.asIdeal)
+    (b : NumberField.RingOfIntegers F) (hb : b ∉ w.asIdeal) :
+    ∃ x y : w.adicCompletion F,
+      x ^ 2 + y ^ 2 =
+        algebraMap F (w.adicCompletion F)
+          (algebraMap (NumberField.RingOfIntegers F) F b) := by
+  sorry
+
+/-- **STEP 1a-i′-c — THE CLASS FIELD THEORY: a number field with an EVEN
+number of real places carries a TOTALLY NEGATIVE algebraic integer,
+congruent to `1` modulo any prescribed power of `2`, every odd prime divisor
+of which SPLITS in `F(i)`** (sorry leaf; CUT 2026-07-28).
+
+This single leaf now carries ALL of the reciprocity in the ABHN chain, and
+it is the only place the parity hypothesis is spent. Everything else in
+STEP 1a is local field theory or explicit algebra.
+
+ROUTE — ray class fields plus Chebotarev, worked out in full because the
+computation that makes it go is short and is where `Even` enters.
+
+Put `K := F(i) = F(√-1)`. Fix the modulus `𝔪 := 𝔣 · ∏_{v real} v`, where
+`𝔣 := (2ⁿ)` is the given power of `2`, taken large enough that `𝔣` is
+divisible by the conductor of `K/F` (whose finite part is supported at `2`).
+Let `T` be the set of ideals of `F` admitting a TOTALLY NEGATIVE generator
+`≡ 1 (mod 𝔣)`. Since `(c) = (-c)` and `-c ≻ 0`, `-c ≡ -1 (mod 𝔣)`, `T` is
+the set of ideals with a totally positive generator `≡ -1 (mod 𝔣)`; it is
+nonempty (weak approximation across the finitely many places dividing `2`
+and the real places), and the product of two of its members lies in
+`P_𝔪 = {(α) : α ≻ 0, α ≡ 1 mod 𝔣}`. So `T` is a single coset of `P_𝔪`,
+i.e. ONE ray class `τ ∈ Cl_𝔪(F)`.
+
+*The parity computation.* `K ⊆ H_𝔪` (the ray class field of modulus `𝔪`),
+so the Artin map restricts to the quadratic character
+`χ_K : Cl_𝔪(F) → Gal(K/F) = {±1}` cutting out `K`. Evaluate it on `τ` using
+a representative `(c)` with `c ≻ 0`, `c ≡ -1 (mod 𝔣)`. Writing `(x,y)_v` for
+the quadratic Hilbert symbol, `χ_K((c)) = ∏_{w odd} (-1,c)_w`, and Hilbert's
+product formula `∏_{all v} (-1,c)_v = 1` turns this into
+
+    χ_K(τ) = ∏_{v real} (-1,c)_v · ∏_{w ∣ 2} (-1,c)_w.
+
+The first product is `1` because `c ≻ 0` and `x² + y²` represents every
+positive real. For the second, `-c ≡ 1 (mod 𝔣)` is a local SQUARE at every
+`w ∣ 2` (this is exactly STEP 1a-i′-a), so `(-1,-c)_w = 1` and
+bimultiplicativity gives `(-1,c)_w = (-1,-1)_w`. Now apply the product
+formula to the pair `(-1,-1)`: it is `-1` at each of the `nrRealPlaces F`
+real places, `1` at every complex place, and `1` at every odd finite place
+(`-1` is a unit and `F_w(i)/F_w` is unramified there, so `-1` is a norm).
+Hence `∏_{w ∣ 2} (-1,-1)_w = (-1)^{nrRealPlaces F} = 1` **precisely because
+the number of real places is EVEN**, and therefore `χ_K(τ) = 1`.
+
+*Conclusion.* `τ` lies in the kernel of `χ_K`, i.e. in the subgroup of
+`Cl_𝔪(F)` corresponding to `K`. By Chebotarev (equivalently Dirichlet for
+ray classes) the class `τ` contains a prime ideal `𝔭`, necessarily coprime
+to `2`, and every prime in `ker χ_K` SPLITS in `K`. Taking `b` to be a
+totally negative generator of `𝔭` with `b ≡ 1 (mod 𝔣)` — which exists by the
+definition of `T` — gives the leaf: the only odd prime dividing `b` is `𝔭`,
+and `𝔭` splits in `K = F(i)`, i.e. `-1` is a square in `F_𝔭`.
+
+Note the conclusion asks only that the odd primes dividing `b` split; it
+does NOT ask that `(b)` be prime. That is deliberate — a split place imposes
+no condition at all on the norm form, whatever the valuation — and it leaves
+a successor free to use any construction, not only the prime-ideal one above.
+
+DEGENERATE CASE, provable outright: if `nrRealPlaces F = 0` take `b := 1`.
+Total negativity is vacuous, `b - 1 = 0`, and `1 ∈ w.asIdeal` is false for
+every height-one `w`, so the third clause is vacuous too. The content of the
+leaf is therefore entirely in the case `nrRealPlaces F ≥ 2`.
+
+MISSING MACHINERY, re-checked 2026-07-28 (this is a genuine theory build).
+Absent from mathlib, from `~/cs/FLT` and from this tree: ray class groups,
+ray class fields, the Artin reciprocity map for them, and the quadratic
+Hilbert symbol with its product formula. What IS present and usable, in this
+module's own import cone, is CHEBOTAREV —
+`GaloisRepresentation/Chebotarev.lean` carries
+`infinite_setOf_isArithFrobAt`, `exists_frobenius_conj_mem_coset` and
+`dense_conjClasses_globalFrob` — so the density half of the route above does
+not have to be rebuilt; what has to be built is the ABELIAN class field
+theory that produces `H_𝔪` and identifies `Gal(H_𝔪/F)` with `Cl_𝔪(F)`.
+
+An equivalent packaging a successor may prefer, since it hides the Hilbert
+symbol: the leaf is the surjectivity of `F^*` onto the kernel of the product
+map `⨁_v F_v^*/N(F_v(i)^*) → {±1}`, i.e. the second fundamental exact
+sequence of class field theory for the quadratic extension `F(i)/F`. The
+ray-class route above is one proof of it; the Brauer-group route recorded on
+the consumer is another.
+
+FAITHFULNESS — the parity is NECESSARY. If `nrRealPlaces F` is ODD the
+statement is FALSE: a `b` as in the conclusion is a local norm from `F(i)` at
+EVERY finite place (odd primes dividing `b` split, so impose nothing; the
+other odd places see a unit, `STEP 1a-i′-b`; the places above `2` see a
+square), while at each real place `b < 0` is NOT a norm from `ℂ`, so
+Hilbert's product formula would give `(-1)^{nrRealPlaces F} = 1`. For
+`F = ℚ` (one real place) no such `b` exists at all.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces
+    (F : Type u) [Field F] [NumberField F]
+    (hF : Even (NumberField.InfinitePlace.nrRealPlaces F)) (n : ℕ) :
+    ∃ b : NumberField.RingOfIntegers F,
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        NumberField.InfinitePlace.embedding_of_isReal hv
+          (algebraMap (NumberField.RingOfIntegers F) F b) < 0) ∧
+      b - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        (2 : NumberField.RingOfIntegers F) ∉ w.asIdeal → b ∈ w.asIdeal →
+        ∃ s : w.adicCompletion F, s ^ 2 = -1) := by
+  sorry
+
 /-- **STEP 1a-i′ — THE ARITHMETIC CORE, in norm-form shape: a number field
 with an EVEN number of real places carries a pair of everywhere-negative
 elements whose norm form represents the second one at every finite place**
-(sorry leaf; CUT 2026-07-28 out of
-`exists_totallyNegative_split_quaternionSymbol_of_even`, which is now a
-PROVEN assembly over this leaf and STEP 1a-0).
+(PROVEN 2026-07-28 as an assembly over STEP 1a-i′-a, STEP 1a-i′-b and
+STEP 1a-i′-c above; CUT 2026-07-28 out of
+`exists_totallyNegative_split_quaternionSymbol_of_even`, which is a
+PROVEN assembly over this theorem and STEP 1a-0).
 
 This is the whole class-field-theoretic content of ABHN in this development.
 After the cut it mentions NO quaternion algebra, NO Brauer group and no
@@ -3530,7 +3904,10 @@ Content. Produce `a b : F` such that
   `(x - √a y)(x + √a y)` and represents everything, so the condition is
   automatic there — as it must be, a split place imposing nothing.)
 
-Route (ABHN). The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
+Route (ABHN) — RECORDED, NOT the route taken. This is the classical
+argument, kept because it explains where the parity comes from; the proof
+below instead goes through STEP 1a-i′-a / -b / -c, which never mentions a
+Brauer group. The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
 group of a number field,
 
     0 → Br(F) → ⨁_v Br(F_v) --Σ inv--> ℚ/ℤ → 0,
@@ -3564,25 +3941,28 @@ first conclusion is vacuous and `a := 1`, `b := 1` works (`x = 1`, `y = 0`).
 So the leaf carries no content for totally imaginary fields, which is
 correct — there is nothing for a definite algebra to be definite at.
 
-The pin does NOT have the general case — mathlib carries only
+The pin does NOT have the Brauer-group route — mathlib carries only
 `Mathlib/Algebra/BrauerGroup/Defs.lean` (definitions of the Brauer group, no
 local invariants and no exact sequence), the reference project `~/cs/FLT`
 has none of it either, and nothing in this tree computes a local invariant.
-So this leaf is a genuine theory build, but a SELF-CONTAINED one: it
-mentions no Galois representation, no Hecke algebra and no automorphic form.
+That is precisely why the cut below avoids it. The residual theory build is
+now isolated in STEP 1a-i′-c (ray class fields and the quadratic Hilbert
+symbol) and in the two local Hensel leaves; all of it is SELF-CONTAINED —
+no Galois representation, no Hecke algebra and no automorphic form appears.
 
-`a` MAY BE TAKEN TO BE `-1` when `F` is totally real, and a successor is
-free to do so (it does NOT need a statement change — it is a strengthening
-of the witness, not of the hypotheses). Reason: `F` totally real forces `-1`
-to be a non-square, `K := F(√-1)` is then a quadratic field extension, and
-`K_v = ℂ` is a field at every real place `v`, so by the embedding criterion
-(a quadratic `K/F` embeds in a quaternion algebra `B` iff `K_w` is a field
-at every place where `B` ramifies) `K` embeds in the algebra ramified
-exactly at the real places, whence `B ≃ ℍ[F,-1,0,b]`. The remaining
-statement is then the pretty one: **`∃ b : F` totally negative which is
-locally a sum of two squares at every finite place**. Recorded rather than
-adopted because the embedding criterion is itself missing from the pin, so
-adopting it now would trade one missing theory for another.
+`a := -1` IS NOW THE ADOPTED WITNESS (2026-07-28), and the proof needs NO
+embedding criterion. An earlier version of this docstring recorded `a := -1`
+as available only "by the embedding criterion (a quadratic `K/F` embeds in a
+quaternion algebra `B` iff `K_w` is a field at every place where `B`
+ramifies)", and declined it because that criterion is missing from the pin.
+That reasoning applied only to the route that starts from an ABSTRACT
+division algebra `D` and asks which quadratic fields sit inside it. The
+route actually taken below never produces a `D` at all: `a := -1` is legal
+for the sole reason that `-1 < 0` under every real embedding, and the
+problem then becomes the pretty one — **`∃ b : F` totally negative which is
+locally a sum of two squares at every finite place** — which is attacked
+directly, place by place, by STEP 1a-i′-a / -b / -c above. No embedding
+criterion, no Brauer group, no local invariants are used anywhere.
 
 A CHEAPER CONCRETE ROUTE, worth recording because it needs only the ℚ-case
 plus base change. Over `ℚ` the quaternion algebra ramified at `{∞, q}` is
@@ -3630,7 +4010,35 @@ theorem exists_totallyNegative_localNorm_of_even_nrRealPlaces
         ∃ x y : w.adicCompletion F,
           x ^ 2 - algebraMap F (w.adicCompletion F) a * y ^ 2 =
             algebraMap F (w.adicCompletion F) b) := by
-  sorry
+  obtain ⟨n, hn⟩ := exists_pow_forall_isSquare_adicCompletion_of_sub_one_mem F
+  obtain ⟨b, hbneg, hbcong, hbsplit⟩ :=
+    exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces F hF n
+  refine ⟨-1, algebraMap (NumberField.RingOfIntegers F) F b, ?_, ?_⟩
+  · exact fun v hv => ⟨by simp, hbneg v hv⟩
+  · intro w
+    have hinj : Function.Injective (algebraMap F (w.adicCompletion F)) :=
+      (algebraMap F (w.adicCompletion F)).injective
+    haveI : CharZero (w.adicCompletion F) := charZero_of_injective_algebraMap hinj
+    have hmap : algebraMap F (w.adicCompletion F) (-1 : F) = -1 := by simp
+    set B := algebraMap F (w.adicCompletion F)
+      (algebraMap (NumberField.RingOfIntegers F) F b) with hB
+    by_cases h2 : (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal
+    · -- `w ∣ 2`: STEP 1a-i′-a makes `b` a local SQUARE, and `t² = t² + 0²`.
+      obtain ⟨t, ht⟩ := hn w h2 b hbcong
+      exact ⟨t, 0, by rw [hmap]; linear_combination ht⟩
+    · by_cases hbw : b ∈ w.asIdeal
+      · -- `w` odd and dividing `b`: STEP 1a-i′-c makes `w` SPLIT in `F(i)`,
+        -- and over a field containing `s` with `s² = -1` the form `x² + y²`
+        -- is surjective by the explicit witness below.
+        obtain ⟨s, hs⟩ := hbsplit w h2 hbw
+        refine ⟨(B + 1) / 2, s * (B - 1) / 2, ?_⟩
+        have h2' : (2 : w.adicCompletion F) ≠ 0 := two_ne_zero
+        rw [hmap]
+        field_simp
+        linear_combination (B - 1) ^ 2 * hs
+      · -- `w` odd and not dividing `b`: STEP 1a-i′-b.
+        obtain ⟨x, y, hxy⟩ := exists_sq_add_sq_adicCompletion_of_notMem F w h2 b hbw
+        exact ⟨x, y, by rw [hmap]; linear_combination hxy⟩
 
 /-- **STEP 1a-i — a totally real field of EVEN degree carries a totally
 negative Hilbert symbol that is split at every finite place** (PROVEN
@@ -4585,7 +4993,11 @@ honest bookkeeping — none of the five bricks knows about parity. (UPDATE
 moved one level further down into
 `exists_totallyNegative_localNorm_of_even_nrRealPlaces`, where it is stated
 as `Even (nrRealPlaces F)` — the count the Hilbert product formula actually
-performs. `hFtr` is what converts `Even (finrank ℚ F)` into that.)
+performs. `hFtr` is what converts `Even (finrank ℚ F)` into that. LATER THE
+SAME DAY: that leaf is proven too, and the parity now lives one level down
+again, in STEP 1a-i′-c
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`, which is the
+single class-field-theoretic leaf of the whole ABHN chain.)
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The six
