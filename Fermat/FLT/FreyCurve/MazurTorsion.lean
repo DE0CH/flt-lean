@@ -25050,9 +25050,17 @@ end Groups
 
 /-! ### The level-`49` CM step, cut 2026-07-27
 
-`not_stableCyclicFortyNine_of_j_eq` below is PROVEN over the two leaves
+`not_stableCyclicFortyNine_of_j_eq` below is PROVEN over the two CM nodes
 `trace_eq_zero_of_stable_cyclic` and `not_sq_eq_negFortyNine_of_stable` at the end
 of this section; everything else here is closed outright.
+
+**Re-cut later on 2026-07-27**: the first of those two is now PROVEN in turn, over
+the single new leaf `exists_galoisConj_eq_trace_sub` — "a non-integral endomorphism
+of `E_ℚ̄` is moved by some `σ ∈ Γ_ℚ`, and the only place it can go is `[t] − Ψ`".
+So the OPEN leaves of this section are `exists_galoisConj_eq_trace_sub` and
+`not_sq_eq_negFortyNine_of_stable`, and the former's three missing items (the
+Galois action on `End(E_ℚ̄)`; `End` in characteristic `0` is `ℤ` or an imaginary
+quadratic order; `End_ℚ(E) = ℤ`) are shared by both.
 
 **Correction to the MISSING MACHINERY note that this cut was dispatched from.**
 That note said steps 2 and 4 of the argument need "`End(E_ℚ̄) = ℤ` for non-CM
@@ -25200,45 +25208,128 @@ theorem not_intMul_of_cyclic_ker (E : WeierstrassCurve ℚ) [E.IsElliptic]
   rw [hm7] at hdm
   omega
 
-/-- **LEAF (cut 2026-07-27): the trace of a `Gal`-stable cyclic `49`-endomorphism
-vanishes.**
+/-- **LEAF (cut 2026-07-27): a non-integral endomorphism of `E_ℚ̄` is moved by
+some element of `Γ_ℚ`, and the only place it can go is `[t] − Ψ`.**
+
+`E` is over `ℚ`, `Ψ` is an isogeny of `E_ℚ̄` satisfying `Ψ² − [t]Ψ + [d] = 0`
+(as `hchar`), and `hnotint` says `Ψ` is not multiplication by an integer.  The
+conclusion produces `σ ∈ Γ_ℚ` with `Ψ ∘ σ = σ ∘ ([t] − Ψ)` on points, i.e.
+`σ⁻¹ Ψ σ = [t] − Ψ`: the Galois conjugate of `Ψ` is its *algebraic* conjugate.
+
+**THE ARGUMENT** (Silverman *ATAEC* II.2; Serre, *Propriétés galoisiennes des
+points d'ordre fini des courbes elliptiques*, Invent. Math. **15** (1972), §4).
+
+1. In characteristic `0`, `End(E_ℚ̄)` is either `ℤ` or an order in an imaginary
+   quadratic field `K` — never a quaternion order.  `hnotint` rules out `ℤ`, so
+   `ℚ(Ψ) = K` and `Ψ` has degree `2` over `ℚ`; `hchar` exhibits a monic
+   quadratic killing `Ψ`, so `X² − tX + d` **is** its minimal polynomial.
+2. `Γ_ℚ` acts on `End(E_ℚ̄)` by `Ψ ↦ σ ∘ Ψ ∘ σ⁻¹` — the conjugate map is the one
+   given by the `σ`-conjugates of `Ψ`'s defining rational functions — and the
+   action is by RING automorphisms fixing `ℤ`.  So `Ψ^σ` is a root of the same
+   minimal polynomial inside `K`, i.e. `Ψ^σ = Ψ` or `Ψ^σ = [t] − Ψ`.
+3. If every `σ` fixed `Ψ`, then `Ψ` would be `Γ_ℚ`-equivariant, hence defined
+   over `ℚ` by Galois descent, i.e. `Ψ ∈ End_ℚ(E)`.  But `End_ℚ(E) = ℤ` for a
+   curve over `ℚ`: the endomorphisms of a CM curve are defined exactly over
+   `K(j) ⊇ K` (*ATAEC* II.2.2), and `K` is imaginary quadratic, so it is not
+   `ℚ`.  That contradicts `hnotint`.
+4. Hence some `σ` has `Ψ^σ = [t] − Ψ`; replacing `σ` by `σ⁻¹` (the statement
+   quantifies over the whole group, so this is free) gives the displayed form.
+
+**WHY `IsIsogeny` IS LOAD-BEARING AND MUST NOT BE WEAKENED TO A BARE
+`AddMonoidHom`.**  `E(ℚ̄)` is a divisible group, abstractly `(ℚ/ℤ)² ⊕ V` with `V`
+a `ℚ`-vector space, so the companion matrix of `X² − tX + d` acts on it for
+**every** curve over `ℚ`, CM or not — and for a non-CM curve every `Ψ^σ` is that
+same abstract endomorphism while `[t] − Ψ ≠ Ψ`, so the abstract form of this
+statement is outright FALSE, not merely unprovable.  This is the Faltings gap
+recorded in the ROUTE AUDIT of `WeierstrassCurve.not_cyclicIsogeny_fortyNine`
+in this file; `IsIsogeny` carries `isRationalMap`, `surjective` and `finite_ker`
+as fields, which is exactly what an abstract endomorphism cannot supply.  Step 1
+above is where it is consumed.
+
+**`d` never appears in the conclusion and is still load-bearing**: it is what
+pins `X² − tX + d` as the minimal polynomial in step 1, and hence what makes
+`[t] − Ψ` the *only* alternative in step 2.  Do not drop it.
+
+**MISSING MACHINERY, precisely** — three items, and this is a STRICTLY SMALLER
+ask than the CM route it replaced (see below):
+
+1. the Galois action on `End(E_ℚ̄)`: that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny, and
+   that `σ ↦ (Ψ ↦ Ψ^σ)` is by ring automorphisms fixing `ℤ`;
+2. `End(E_ℚ̄)` in characteristic `0` is `ℤ` or an order in an imaginary quadratic
+   field — enough to know `Ψ^σ ∈ ℚ(Ψ)`, which is what turns "root of the same
+   polynomial" into the two-element dichotomy;
+3. `End_ℚ(E) = ℤ` for `E/ℚ` (equivalently: a curve over `ℚ` has no `ℚ`-rational
+   complex multiplication), plus Galois descent for morphisms.
+
+**WHAT IS *NOT* NEEDED, and this is the point of stating the leaf this way.**
+No Deuring, no analytic uniformisation by lattices, no Hilbert class polynomial,
+no `h(−p) = 1`, no `E[q]` as an `O_K/q`-module, no Cartan subgroup, no
+normalizer, no inert/split/ramified trichotomy, and no lower bound on the image
+of `Γ_K`.  The sibling development in `ModularCurve/X0.lean` needed all of those
+while its CM half went through `not_stable_of_cmEndomorphism`; that route was
+withdrawn on 2026-07-27 and the two leaves deleted.  Items 1–3 here are the
+residue that survives, and they are shared with
+`not_sq_eq_negFortyNine_of_stable` below (which additionally needs
+`det ρ̄₇ = χ₇`), so a single owner closes both.
+
+**WHY IT IS `∃ σ` AND NOT `∀ σ`.**  The `∀` form is FALSE: for a CM curve the
+elements of `Γ_K` fix `Ψ`, and `Γ_K` has index `2`, so half of `Γ_ℚ` does
+nothing.  Only the nontrivial coset conjugates `Ψ` to `[t] − Ψ`, and all the
+consumer needs is one element of it.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` and an
+isogeny `Ψ` of `E_ℚ̄`, not equal to any `[n]`, satisfying a monic integral
+quadratic and fixed by every element of `Γ_ℚ` — equivalently, a curve over `ℚ`
+with `ℚ`-rational complex multiplication. -/
+theorem exists_galoisConj_eq_trace_sub (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (_hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (t : ℤ) (d : ℕ)
+    (_hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + d • P = t • Ψ P) :
+    ∃ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+        Ψ (Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) =
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (t • P - Ψ P) :=
+  sorry
+
+/-- **PROVEN 2026-07-27 (was a sorry leaf earlier the same day): the trace of a
+`Gal`-stable cyclic `49`-endomorphism vanishes.**
 
 `Ψ` is a self-isogeny of `E_ℚ̄` (`E` over `ℚ`) whose kernel is the
 `Gal(ℚ̄/ℚ)`-stable cyclic group `⟨h⟩` of order `49`; `t` is its trace, supplied
 with the Hasse bound by the PROVEN `WeierstrassCurve.End.exists_charPoly`. The
 claim is `t = 0`, i.e. `Ψ² = [−49]`.
 
-**THE ARGUMENT.** By `not_intMul_of_cyclic_ker` — which is the hypothesis
-`hnotint` — `Ψ ∉ ℤ`, so `ℤ[Ψ]` is an order in an imaginary quadratic field `K`
-(`t² − 4·49 < 0`, the Hasse bound being strict here because equality would force
-`(Ψ ∓ [7])² = 0`, impossible for a nonzero isogeny, which is surjective). The
-absolute Galois group acts on `End(E_ℚ̄)` by `Ψ ↦ σ ∘ Ψ ∘ σ⁻¹`, through ring
-automorphisms fixing `ℤ`, so each `σ` sends `Ψ` to `Ψ` or to `[t] − Ψ`.
+**THE ARGUMENT**, now written out in Lean over one leaf.  `hnotint` (supplied by
+the PROVEN `not_intMul_of_cyclic_ker`) says `Ψ ∉ ℤ`, so
+`exists_galoisConj_eq_trace_sub` above hands over a `σ ∈ Γ_ℚ` with
+`Ψ ∘ σ = σ ∘ ([t] − Ψ)`.  Read that at `P = h`:
 
-* If every `σ` fixes `Ψ`, then `Ψ ∈ End_ℚ(E)`, which is `ℤ` for a curve over `ℚ`:
-  the CM field `K` is imaginary quadratic and cannot embed in the base field.
-  That contradicts `hnotint`.
-* Otherwise some `σ` gives `σΨσ⁻¹ = [t] − Ψ`. Then
-  `ker([t] − Ψ) = σ(ker Ψ) = ker Ψ` by `hstable`, so `h` is killed by both `Ψ` and
-  `[t] − Ψ`, hence by `[t]`. As `addOrderOf h = 49` this gives `49 ∣ t`, and
-  `t² ≤ 196` forces `t = 0`.
+* `Ψ h = 0`, because `h ∈ ⟨h⟩ = ker Ψ`, so the right-hand side collapses to
+  `σ(t • h)`;
+* `σ h ∈ ⟨h⟩` by `hstable`, so the left-hand side `Ψ (σ h)` is `0` as well;
+* `Affine.Point.map` is injective, so `t • h = 0`;
+* `addOrderOf h = 49` (from `h49` and `h7`), so `49 ∣ t`, while the Hasse bound
+  `t² ≤ 4·49` confines `t` to `[−14, 14]`.  Hence `t = 0`.
 
-**MISSING MACHINERY, precisely.** Two things, and neither is in the mathlib pin,
-in `~/cs/FLT`, or elsewhere in `Fermat/` (re-checked 2026-07-27 by grepping for
-`Cartan`, for `ComplexMultiplication`/`HasCM`, and over `WeierstrassCurve.End`):
+Note what the assembly does NOT need: no set identity `ker([t] − Ψ) = ker Ψ`, and
+no strictness of the Hasse bound.  Evaluating the conjugation identity at the
+single point `h` is enough, which is why this is a dozen lines and all the
+mathematics sits in the one leaf above.
 
-1. the Galois action on `End(E_ℚ̄)` — that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny (its
-   defining rational functions are the `σ`-conjugates of `Ψ`'s), and that the
-   action is by ring automorphisms;
-2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that a curve over `ℚ` has no
-   `ℚ`-rational complex multiplication.
+**WHAT IS STILL MISSING** is exactly `exists_galoisConj_eq_trace_sub`'s three
+items — the Galois action on `End(E_ℚ̄)`, the classification of `End` in
+characteristic `0`, and `End_ℚ(E) = ℤ`.  An earlier version of this docstring
+also listed `End(E_ℚ̄) = ℤ` for non-CM curves as needed; that was WRONG and is
+not used anywhere.  `WeierstrassCurve.End.exists_charPoly`
+(`Fermat/FLT/EllipticCurve/IsogenyTrace.lean`) is PROVEN and already supplies
+`Ψ² − [t]Ψ + [deg Ψ] = 0` together with `t² ≤ 4 deg Ψ`, in the CM case too.
 
 Reference: Silverman *AEC* III.9 and *ATAEC* II.2; Serre, *Propriétés galoisiennes
-des points d'ordre fini*, Invent. Math. 15 (1972), §4.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ`, a
-`Gal`-stable cyclic `⟨h⟩` of order `49`, and an isogeny with that kernel whose
-trace is nonzero. -/
+des points d'ordre fini*, Invent. Math. 15 (1972), §4. -/
 theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
@@ -25254,8 +25345,46 @@ theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (t : ℤ)
     (hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = t • Ψ P)
     (hbound : t ^ 2 ≤ 4 * 49) :
-    t = 0 :=
-  sorry
+    t = 0 := by
+  classical
+  -- `⟨h⟩` is cyclic of order exactly `49`.
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  -- `h` itself is killed by `Ψ`.
+  have hΨh : Ψ h = 0 := (hker h).mpr (AddSubgroup.mem_zmultiples h)
+  -- Some `σ` conjugates `Ψ` to `[t] − Ψ`.
+  obtain ⟨σ, hσ⟩ := exists_galoisConj_eq_trace_sub E Ψ hΨiso hnotint t 49 hchar
+  -- `σ` preserves `⟨h⟩`, so `σ h` is killed by `Ψ` too.
+  have hmem : Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom h
+      ∈ AddSubgroup.zmultiples h := hstable σ h (AddSubgroup.mem_zmultiples h)
+  -- Reading the conjugation identity at `P = h`: `0 = Ψ (σ h) = σ (t • h − Ψ h) = σ (t • h)`.
+  have hzero : Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (t • h) = 0 := by
+    have hs := hσ h
+    rw [hΨh, sub_zero] at hs
+    rw [← hs]
+    exact (hker _).mpr hmem
+  -- `Affine.Point.map` is injective, so `t • h = 0`.
+  have hth : t • h = 0 := by
+    refine Affine.Point.map_injective
+      (f := (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) ?_
+    rw [map_zero]
+    exact hzero
+  -- Hence `49 ∣ t`, and the Hasse bound leaves only `t = 0`.
+  have hdvd : (49 : ℤ) ∣ t := by
+    have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hth
+    rwa [hord] at this
+  have hlb : -14 ≤ t := by nlinarith [sq_nonneg (t + 14)]
+  have hub : t ≤ 14 := by nlinarith [sq_nonneg (t - 14)]
+  omega
 
 /-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
 `49`-endomorphism with `Ψ² = [−49]`.**
@@ -25461,13 +25590,15 @@ The proof is the five steps above, mechanised as:
 2. `not_intMul_of_cyclic_ker` (PROVEN) — `Ψ` is not `[n]` for any integer `n`;
 3. `WeierstrassCurve.End.exists_charPoly` (PROVEN, `IsogenyTrace.lean`) — the
    trace `t` of `Ψ` with `t² ≤ 4·49`;
-4. `trace_eq_zero_of_stable_cyclic` (**OPEN LEAF**) — Galois stability of `⟨h⟩`
-   forces `t = 0`;
+4. `trace_eq_zero_of_stable_cyclic` (**PROVEN** later on 2026-07-27, over the new
+   leaf `exists_galoisConj_eq_trace_sub`) — Galois stability of `⟨h⟩` forces
+   `t = 0`;
 5. `not_sq_eq_negFortyNine_of_stable` (**OPEN LEAF**) — and `Ψ² = [−49]` with
    `⟨h⟩` stable is impossible.
 
-Steps 4 and 5 are where the CM theory lives; their docstrings state exactly which
-four pieces of it are missing, and the refuting check for each. -/
+Steps 4 and 5 are where the CM theory lives.  Step 4's content is now isolated in
+`exists_galoisConj_eq_trace_sub`, whose docstring states the three missing pieces
+and the refuting check; step 5 needs those three plus `det ρ̄₇ = χ₇`. -/
 theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
     (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
