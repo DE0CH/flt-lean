@@ -7684,9 +7684,176 @@ noncomputable def ProjGroupLaw.geomFibreAddEquivOfVal {E : WeierstrassCurve ℚ}
       rw [hadd x y]
       exact (gl.addCommGroup_add_val (eqv x) (eqv y)).symm) }
 
+/-! ### The diagonal value of the SECOND Bosma–Lenstra law (2026-07-28)
+
+The three lemmas below are the whole diagonal half of
+`specPointEquiv_symm_add_self_eq_projMulPt`, and all three are PROVEN.  They replace the
+"cut-level suggestion" recorded in that leaf's docstring, which is **superseded** — see the
+correction there.
+
+The mathematical content is one identity, and it was found by CAS reconnaissance rather
+than guessed:
+
+    add2XYZ W P P = - dblXYZ W P        for every `P` on the curve.
+
+That is, the second Bosma–Lenstra law evaluated on the diagonal is EXACTLY minus mathlib's
+own doubling triple `dblXYZ` — not merely proportional to it by some point-dependent
+scalar, which is what the bidegrees would have allowed.  A sign is invisible to
+`Projective.Point.toAffine` (`toAffine_smul` at the unit `-1`), so the diagonal value of
+the second law IS the doubling, with nothing left over.
+
+The identity is a congruence, not an identity of polynomials: it needs the Weierstrass
+equation, and it fails off the curve.  The three cofactors are DEGREE ONE in `(X, Y, Z)` —
+which is what makes it three short `linear_combination`s rather than a Gröbner-certificate
+exercise like `projSpan_add2XYZ_self_eq_top` above.  They were obtained by dividing
+`add2* (P,P) + dbl*(P)` by the homogeneous Weierstrass polynomial in
+`ℤ[X, Y, Z, a₁, …, a₆]` and checked to leave remainder zero, then re-verified
+symbolically against the transcription below. -/
+
+open _root_.WeierstrassCurve.Projective in
+/-- **On the diagonal the second law is MINUS mathlib's doubling triple** (PROVEN, three
+`linear_combination`s against the Weierstrass equation).
+
+`hP` is load-bearing: off the curve the two triples are unrelated (checked numerically —
+with `a₆` free the three coordinate ratios are three different values, so no scalar
+multiple can hold either).
+
+*Implementation note.*  The `Y` component must unfold `dblY` with `rw [dblY, negY_eq]`
+BEFORE the `simp only`; putting `negY` in the same `simp only` set as `negY_eq` lets
+`negY` fire first on the matrix literal `![dblX P, negDblY P, dblZ P]`, leaving
+unreduced `Matrix` applications that `ring` then treats as opaque atoms.  The `X` and `Z`
+components have no such literal and go through in one `simp only`. -/
+theorem add2XYZ_self_eq_neg_dblXYZ {R : Type*} [CommRing R] (W' : WeierstrassCurve R)
+    {P : Fin 3 → R} (hP : Equation W' P) :
+    add2XYZ W' P P = -dblXYZ W' P := by
+  have hEq : P 1 ^ 2 * P 2 + W'.a₁ * P 0 * P 1 * P 2 + W'.a₃ * P 1 * P 2 ^ 2
+      - (P 0 ^ 3 + W'.a₂ * P 0 ^ 2 * P 2 + W'.a₄ * P 0 * P 2 ^ 2 + W'.a₆ * P 2 ^ 3) = 0 :=
+    (equation_iff P).mp hP
+  funext i
+  fin_cases i
+  · show add2X W' P P = -dblX W' P
+    simp only [add2X, dblX]
+    linear_combination (-(P 0 * W'.a₁ ^ 3) - 4 * P 0 * W'.a₁ * W'.a₂ - 9 * P 0 * W'.a₃
+      - 2 * P 1 * W'.a₁ ^ 2 - 8 * P 1 * W'.a₂ - P 2 * W'.a₁ ^ 2 * W'.a₃
+      - 4 * P 2 * W'.a₂ * W'.a₃) * hEq
+  · show add2Y W' P P = -dblY W' P
+    rw [dblY, negY_eq]
+    simp only [add2Y, dblX, negDblY, dblZ, negY]
+    linear_combination (P 0 * W'.a₁ ^ 4 + 6 * P 0 * W'.a₁ ^ 2 * W'.a₂ + 8 * P 0 * W'.a₂ ^ 2
+      + 3 * P 0 * W'.a₄ + P 1 * W'.a₁ ^ 3 + 4 * P 1 * W'.a₁ * W'.a₂ - 12 * P 1 * W'.a₃
+      + P 2 * W'.a₁ ^ 3 * W'.a₃ + P 2 * W'.a₁ ^ 2 * W'.a₄ + 4 * P 2 * W'.a₁ * W'.a₂ * W'.a₃
+      + 4 * P 2 * W'.a₂ * W'.a₄ - 6 * P 2 * W'.a₃ ^ 2 - 9 * P 2 * W'.a₆) * hEq
+  · show add2Z W' P P = -dblZ W' P
+    simp only [add2Z, dblZ, negY]
+    linear_combination (3 * (P 0 * W'.a₁ + 2 * P 1 + P 2 * W'.a₃)) * hEq
+
+open _root_.WeierstrassCurve.Projective in
+/-- **The `K`-triple of a SECOND-LAW sum IS the second-law triple of the two `K`-triples**
+(PROVEN) — the exact analogue of `ProjCoords.coordField_add`, over `projMap_add2XYZ`
+instead of mathlib's `map_addXYZ`.
+
+It is slightly shorter than its sibling, because `projMap_add2XYZ` is stated with
+`WeierstrassCurve.map` rather than with the `abbrev` `Projective.map`, so the `show`
+dance that `coordField_add`'s implementation note records is not needed here. -/
+theorem coordField_add2 {E : WeierstrassCurve ℚ} {K : Type} [Field K] (f : ℚ →+* K)
+    (c d : ProjCoords E (Spec (CommRingCat.of K)))
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    ProjCoords.coordField (c.add2 d h) =
+      add2XYZ (E.map f) (ProjCoords.coordField c) (ProjCoords.coordField d) := by
+  have hb : f = ((ProjCoords.gammaSpecEquiv K).toRingHom.comp c.base) := Subsingleton.elim _ _
+  have hmap : (E.map c.base).map (ProjCoords.gammaSpecEquiv K).toRingHom = E.map f := by
+    rw [WeierstrassCurve.map_map, ← hb]
+  have key := projMap_add2XYZ (ProjCoords.gammaSpecEquiv K).toRingHom (E.map c.base)
+    c.coord d.coord
+  rw [hmap] at key
+  show (ProjCoords.gammaSpecEquiv K).toRingHom ∘ (c.add2 d h).coord = _
+  rw [ProjCoords.add2_coord, ← key]
+  simp only [ProjCoords.coordField_def]
+
+open _root_.WeierstrassCurve.Projective in
+/-- **A NON-DEGENERATE second-law sum of a datum WITH ITSELF is the doubling of its affine
+point** (PROVEN) — the diagonal counterpart of `ProjCoords.affinePoint_add`, and the
+statement that the docstring of `specPointEquiv_symm_add_self_eq_projMulPt` calls "the
+`dblXYZ` analogue".
+
+Four rewrites once `add2XYZ_self_eq_neg_dblXYZ` is in hand: the triple is
+`(-1) • dblXYZ`, `toAffine_smul` discards the unit `-1`, mathlib's `add_self` turns
+`dblXYZ` into its total `add P P`, and `toAffine_add` is the conclusion.  Nonsingularity
+is free on an elliptic curve (`ProjCoords.nonsingular_of_equation_of_ne_zero`). -/
+theorem affinePoint_add2_self {E : WeierstrassCurve ℚ} [E.IsElliptic] {K : Type} [Field K]
+    [DecidableEq K] (f : ℚ →+* K) (c : ProjCoords E (Spec (CommRingCat.of K)))
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord c.coord)) = ⊤) :
+    ProjCoords.affinePoint f (c.add2 c h) =
+      ProjCoords.affinePoint f c + ProjCoords.affinePoint f c := by
+  have hv : Nonsingular (E.map f) (ProjCoords.coordField c) :=
+    ProjCoords.nonsingular_of_equation_of_ne_zero f (ProjCoords.equation_coordField f c)
+      (ProjCoords.exists_coordField_ne_zero c)
+  have hid : ProjCoords.coordField (c.add2 c h)
+      = (-1 : K) • dblXYZ (E.map f) (ProjCoords.coordField c) := by
+    rw [coordField_add2 f c c h,
+      add2XYZ_self_eq_neg_dblXYZ (E.map f) (ProjCoords.equation_coordField f c)]
+    funext i
+    simp
+  show Point.toAffine (E.map f) (ProjCoords.coordField (c.add2 c h))
+      = Point.toAffine (E.map f) (ProjCoords.coordField c)
+        + Point.toAffine (E.map f) (ProjCoords.coordField c)
+  rw [hid, Point.toAffine_smul _ (IsUnit.neg isUnit_one), ← add_self,
+    Point.toAffine_add hv hv]
+
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
-/-- **THE DIAGONAL: under the dictionary, `m` DOUBLES** (sorry node, cut 2026-07-28 out of
-`specPointEquiv_symm_add_eq_projMulPt` below, and it is the whole residue of that leaf).
+/-- **`IsProjMulLaw` DETERMINES the morphism** (sorry node, cut 2026-07-28 out of
+`specPointEquiv_symm_add_self_eq_projMulPt` below, and it is the whole remaining residue
+of that leaf).
+
+## Why this is the right residue, and what it is NOT
+
+`IsProjMulLaw E m` pins `m` only where the first Bosma–Lenstra triple is non-degenerate,
+i.e. exactly OFF the diagonal (`ProjCoords.exists_units_smul_of_addXYZ_not_span` one way,
+`ProjCoords.addXYZ_eq_zero_of_equiv` the other).  So a consumer that needs the value of
+`m` ON the diagonal cannot get it from `hlaw` pointwise, and the only route is: the
+off-diagonal locus is DENSE, `proj E` is separated and reduced, hence two morphisms
+agreeing there agree everywhere.
+
+That is the entire content of this leaf, and note what has been REMOVED from it: no
+elliptic-curve geometry, no addition formulas, no `Proj`, no coordinate data in the
+conclusion.  It is a statement about two morphisms out of `proj E ×_ℚ proj E`.
+
+## THE ROUTE, and the one thing that is genuinely missing
+
+`ext_of_fromSpecResidueField_eq` — the same tool `exists_projMulOfCoords` above already
+uses twice for `hunit`/`hinv`, there over `Set.univ` with `dense_univ` — run over the
+non-degeneracy locus instead of over `Set.univ`.  At a point `t` of the fibre square with
+residue field `κ`, the two projections give two morphisms `Spec κ ⟶ proj E`; where those
+are inequivalent, `hm` and `hm'` both compute the composite and they agree.
+
+**What has to be supplied is DENSITY of that locus**, and that is a statement about the
+topology of `proj E ×_ℚ proj E`: the diagonal is a proper closed subset (closed because
+`proj E` is separated over `Spec ℚ`; proper because the square is two-dimensional), so its
+complement is dense provided the square is IRREDUCIBLE.  Irreducibility of the square is
+the piece this file does not yet have: `geometricallyConnected_projToSpec` and
+`geometricallyReduced_projToSpec` are both available and give integrality of each FACTOR,
+and what is needed is that a product of two geometrically integral `ℚ`-schemes is
+integral.  `IsReduced (proj E ×_ℚ proj E)` is already derived in `exists_projMulOfCoords`
+above and can be reused verbatim; only irreducibility is open.
+
+**Refuting check.**  Any proof of this leaf that never uses separatedness of `proj E`, or
+never uses that the off-diagonal locus is dense, is wrong: for a NON-separated target two
+morphisms can agree on a dense open and differ, and if the locus were merely nonempty the
+conclusion would fail for an `m'` altered on an isolated point.
+
+**Do NOT weaken this to "for the constructed `m`".**  The consumer
+`specPointEquiv_symm_add_eq_projMulPt` quantifies over an arbitrary `m` carrying `hlaw`,
+and that quantifier is what makes the dictionary a statement about the group law rather
+than about one particular gluing. -/
+theorem eq_of_isProjMulLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m m' : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (_hm : IsProjMulLaw E m) (_hm' : IsProjMulLaw E m') : m = m' :=
+  sorry
+
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
+/-- **THE DIAGONAL: under the dictionary, `m` DOUBLES** (**PROVEN 2026-07-28** over
+`affinePoint_add2_self` and the single new leaf `eq_of_isProjMulLaw` immediately above;
+cut 2026-07-28 out of `specPointEquiv_symm_add_eq_projMulPt` below).
 
 The docstring of the consumer already says why the diagonal is the only residue: off the
 diagonal the conclusion is `hlaw` verbatim, because `Ideal.span (Set.range (addXYZ …)) = ⊤`
@@ -7713,27 +7880,60 @@ are recorded in full (with their Magma regeneration recipe) in the docstring of
 `exists_projMul` above.  Equivalently, in mathlib's vocabulary, `Projective.add P P` is
 `dblXYZ P` (`add_self`), and `toAffine_add` applies to it verbatim.
 
-**Cut-level suggestion for the owner of `exists_projMulOfCoords`** (that leaf is not
-touched here, because changing its statement is a cut-level change on someone else's
-declaration).  Adding to it a SECOND chart clause
+## THE CUT-LEVEL SUGGESTION RECORDED HERE IS SUPERSEDED — DO NOT ACT ON IT (2026-07-28)
 
-    ∀ (X : Scheme.{0}) (c : ProjCoords E X)
-        (h : Ideal.span (Set.range (dblXYZ (E.map c.base) c.coord)) = ⊤),
-      Limits.pullback.lift c.toHom c.toHom (hom_ext_spec_rat _ _) ≫ m = (c.dbl h).toHom
+This docstring used to ask the owner of `exists_projMulOfCoords` to add a second chart
+clause to it, on the ground that "strengthening the constructor is strictly cheaper than
+proving this leaf from `hlaw` by density".  **Nothing needs to be added to anyone's
+declaration**, for two independent reasons, and the note is left here only so it is not
+re-attempted:
 
-is FREE for whoever glues `m` (the second law is exactly what makes the diagonal chart
-exist), and it discharges this leaf by the identical three-line argument the off-diagonal
-half now uses — `ProjCoords.coordField_add`'s `dblXYZ` analogue, `add_self`, and
-`toAffine_add`.  Strengthening the constructor is therefore strictly cheaper than proving
-this leaf from `hlaw` by density, and it is the recommended route. -/
+1. **The clause already exists, one level up.**  `exists_projMulOfCoordsTwo` above — which
+   is PROVEN, and of which `exists_projMulOfCoords` is a weakening — already carries the
+   second-law clause verbatim, quantified over every scheme and every pair of coordinate
+   data.  It is `hlaw2₀` in the proof below and it is consumed exactly as the suggestion
+   describes.  The suggestion was written as though only the FIRST-law clause survived the
+   cut; that is what went stale.
+2. **The suggestion would not have removed the density argument anyway.**  Strengthening
+   the constructor says something about the CONSTRUCTED `m`; this leaf quantifies over an
+   arbitrary `m` carrying `hlaw`, so a step identifying the two is needed either way.  That
+   step is now the named leaf `eq_of_isProjMulLaw` above, and it is *all* that is left.
+
+Also corrected: the suggested clause was written with mathlib's `dblXYZ` and a
+hypothetical `ProjCoords.dbl`.  The chart that actually exists is the second Bosma–Lenstra
+law `add2XYZ` with `ProjCoords.add2`, and `projSpan_add2XYZ_self_eq_top` above is exactly
+its non-degeneracy on the diagonal.  The bridge between the two spellings is the new
+`add2XYZ_self_eq_neg_dblXYZ`, and the sign in it is real: `add2XYZ W P P` is `-dblXYZ W P`,
+not `dblXYZ W P`.
+
+## WHAT THE PROOF BELOW DOES
+
+Identify `m` with the constructed `m₀` (`eq_of_isProjMulLaw`, the one open leaf), write `x`
+as the affine point of a coordinate datum `c` (`ProjCoords.exists_affinePoint_eq`), observe
+that the second law is non-degenerate at `(c, c)` (`projSpan_add2XYZ_self_eq_top`, over the
+field `Γ(Spec K, ⊤)` transported from `K`), and then `affinePoint_add2_self` identifies
+`c.add2 c` with the doubling while the second-law clause of `exists_projMulOfCoordsTwo`
+identifies it with `m₀(c, c)`. -/
 theorem specPointEquiv_symm_add_self_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsElliptic]
     {K : Type} [Field K] [DecidableEq K] (f : ℚ →+* K)
-    (_m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (_hlaw : IsProjMulLaw E _m)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) (hlaw : IsProjMulLaw E m)
     (x : (E.map f).toAffine.Point) :
     (ProjCoords.specPointEquiv f).symm (x + x) =
-      projMulPt E _m ((ProjCoords.specPointEquiv f).symm x)
-        ((ProjCoords.specPointEquiv f).symm x) :=
-  sorry
+      projMulPt E m ((ProjCoords.specPointEquiv f).symm x)
+        ((ProjCoords.specPointEquiv f).symm x) := by
+  classical
+  obtain ⟨m₀, hlaw₀, hlaw2₀⟩ := exists_projMulOfCoordsTwo E
+  obtain rfl : m = m₀ := eq_of_isProjMulLaw E m m₀ hlaw hlaw₀
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_affinePoint_eq f x
+  have hΔ : IsUnit (E.map c.base).Δ := (E.map c.base).isUnit_Δ
+  have h2 : Ideal.span (Set.range (WeierstrassCurve.Projective.add2XYZ
+      (E.map c.base) c.coord c.coord)) = ⊤ :=
+    projSpan_add2XYZ_self_eq_top
+      ((ProjCoords.gammaSpecEquiv K).toMulEquiv.isField (Field.toIsField K))
+      (E.map c.base) hΔ c.equation c.span_coord
+  rw [← affinePoint_add2_self f c h2, ProjCoords.specPointEquiv_symm_affinePoint,
+    ProjCoords.specPointEquiv_symm_affinePoint]
+  exact (hlaw2₀ _ c c h2).symm
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **ADDITIVITY: under the dictionary, `m` IS the addition of `E(K)`** (**PROVEN
