@@ -46110,8 +46110,9 @@ theorem isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J 
     IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) z) :=
   sorry
 
-/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (sorry leaf,
-2026-07-28) — every Atkin–Lehner-minus factor of `J₀(N)` has torsion
+/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (PROVEN
+2026-07-28 over the two leaves immediately above; a single `sorry` when it
+was cut earlier the same day) — every Atkin–Lehner-minus factor of `J₀(N)` has torsion
 Mordell–Weil group, given that `L(g, 1) ≠ 0` for every Atkin–Lehner-minus
 eigenform of level `N` and that nothing at level `N` is old.
 
@@ -46515,7 +46516,9 @@ theorem cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine
 end AtkinLehnerMinusPeriod
 
 /-- **THE NUMERICS AT `169`: every Atkin–Lehner-MINUS eigenform of level
-`169` has `L(f, 1) ≠ 0`** (sorry leaf, 2026-07-28) — the exact analogue of
+`169` has `L(f, 1) ≠ 0`** (PROVEN 2026-07-28 over
+`cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine` and the Fricke block
+above; a single `sorry` when it was cut earlier the same day) — the exact analogue of
 `lFunction_apply_one_ne_zero_of_kenkuLevel`, restricted to the minus
 eigenspace, and the ONLY analytic input under
 `isTorsion_minusFactor_x0OneSixtyNine`.
