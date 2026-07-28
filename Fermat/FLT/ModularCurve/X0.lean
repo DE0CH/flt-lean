@@ -37363,6 +37363,108 @@ theorem exists_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : 
   · obtain ⟨A⟩ := nonempty_gamma0AtlasOver_specLoc N R hN
     exact ⟨A.Y, A.str, ⟨A.toIsCoarseModuliY0⟩⟩
 
+/-- **A compactification transports along an isomorphism of coarse spaces**
+(PROVEN 2026-07-28 — no geometry, and the base is arbitrary).
+
+Given a compactification `(XZ, xstr, jZ₀)` of `ystr₀` and an isomorphism
+`e : YZ₀ ≅ YZ` over the base, `e.inv ≫ jZ₀` compactifies `ystr` — with the SAME
+`XZ` and the same `xstr`, so the three geometric fields are literally reused and
+only `comm` and `finite_compl` need an argument.  `finite_compl` is the
+observation that `e.inv` is an isomorphism, hence surjective on points, so
+`Set.range (e.inv ≫ jZ₀).base = Set.range jZ₀.base`.
+
+`hc` is a hypothesis rather than being transported from `h₀.coarse`: at the use
+site the caller already holds the coarse structure of the TARGET, and asking for
+it keeps this lemma free of any comparison between the two `classify` maps —
+which is exactly what makes the bare `exists_iso_of_isCoarseModuliY0` (whose iso
+carries no such comparison; see `exists_iso_classify_of_isCoarseModuliY0`)
+sufficient here, unlike in the generic-fibre transport below. -/
+noncomputable def isX0Compactification_transport {N : ℕ} {S XZ YZ YZ₀ : Scheme.{0}}
+    {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {ystr₀ : YZ₀ ⟶ S} {jZ₀ : YZ₀ ⟶ XZ}
+    (h₀ : IsX0Compactification N xstr ystr₀ jZ₀)
+    (hc : IsCoarseModuliY0 N ystr) (e : YZ₀ ≅ YZ) (he : e.hom ≫ ystr = ystr₀) :
+    IsX0Compactification N xstr ystr (e.inv ≫ jZ₀) := by
+  haveI := h₀.isOpen
+  haveI := h₀.isProper
+  haveI := h₀.smooth
+  haveI := h₀.connected
+  haveI : IsIso e.inv := inferInstance
+  refine
+    { comm := ?_
+      coarse := hc
+      isOpen := inferInstance
+      isProper := h₀.isProper
+      smooth := h₀.smooth
+      connected := h₀.connected
+      finite_compl := ?_ }
+  · rw [Category.assoc, h₀.comm, ← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  · have hsurj : Function.Surjective ⇑e.inv.base := (Scheme.homeoOfIso e.symm).surjective
+    have hr : Set.range (e.inv ≫ jZ₀).base = Set.range jZ₀.base := by
+      refine Set.Subset.antisymm ?_ ?_
+      · rintro _ ⟨x, rfl⟩
+        exact ⟨e.inv.base x, rfl⟩
+      · rintro _ ⟨y, rfl⟩
+        obtain ⟨x, hx⟩ := hsurj y
+        exact ⟨x, by rw [show (e.inv ≫ jZ₀).base x = jZ₀.base (e.inv.base x) from rfl, hx]⟩
+    rw [hr]
+    exact h₀.finite_compl
+
+/-- **ONE smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists**
+(sorry leaf — Deligne–Rapoport IV.3, Katz–Mazur 13.11, Igusa; the whole
+compactification half of the integral model).
+
+This is `exists_isX0Compactification_of_isCoarseModuliY0_loc` with the coarse
+space EXISTENTIALLY quantified instead of given, and it is strictly weaker: it
+asks for the Deligne–Rapoport model and nothing else, where the old form asked
+for a compactification of an ARBITRARY abstract coarse space, i.e. of an object
+presented only by a universal property, from which no geometry can be read off.
+The two are reconciled by `isX0Compactification_transport` over
+`exists_iso_of_isCoarseModuliY0`, which is the step the old docstring described
+in prose ("it suffices to compactify THAT one and transport") and left undone.
+
+This is the same refactor the file already performed over `ℚ` under the heading
+"The geometry is a property of the ATLAS, not of a chosen model", and for the
+same reason: initiality makes any two coarse spaces over one base canonically
+isomorphic over it, so a geometric property of one is a property of all, and a
+leaf should therefore be stated on an EXHIBITED model.
+
+**Why `_hX` and not `0 < N`.**  The degeneracy is real, not notional: at `N = 0`
+every coarse space over the base is empty (`isEmpty_of_isCoarseModuliY0_zero_base`),
+so `finite_compl` would force `XZ` finite while `isProper`, `smooth` and
+`connected` force a smooth proper geometrically connected relative curve, which
+is not.  So this leaf is FALSE at `N = 0`.  `_hX` is what rules that out, and it
+is carried rather than `0 < N` because it is what the consumer holds — deriving
+`0 < N` from `_hX` needs "a smooth proper geometrically connected curve over `ℚ`
+has infinitely many points", which is not in the tree.
+
+**Do NOT generalize by dropping the modular hypotheses.**  The general form — "a
+smooth relative curve over a Dedekind base admits a smooth proper relative
+compactification with finite complement" — is much stronger and this development
+does not know it to be true; the number of points at infinity is not obviously
+constant in such a family.  The truth of the leaf rests on Deligne–Rapoport
+constructing the COMPACTIFIED moduli problem (generalised elliptic curves with
+`Γ₀(N)`-structure) directly over `ℤ[1/N]`, where the cusps form a finite étale
+scheme over the base.  That is a modular fact, not a curve-theoretic one, which
+is why — unlike the field case, where `AlgebraicGeometry.exists_isSmoothCompactification`
+does the work — the base cannot be handed to general curve theory.
+
+**Not reachable from `nonempty_gamma0AtlasOver_specLoc`.**  That leaf supplies
+the OPEN modular curve over `ℤ_(ℓ)` and says nothing about cusps; `Gamma0AtlasOver`
+has no field asserting properness of anything.  So this leaf and that one are
+independent inputs and can be attacked by different hands.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, with the same refuting check as
+the atlas leaf and re-run on 2026-07-28: no modular curve, and no compactified
+`Γ₀(N)`-moduli problem, anywhere in mathlib, `~/cs/FLT` or this project. -/
+theorem exists_x0IntegralCompactifiedModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY j) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) :=
+  sorry
+
 /-- **The integral `Y_0(N)` has a smooth proper compactification over
 `ℤ_(ℓ)`** (sorry leaf — the COMPACTIFICATION half of the integral model;
 Deligne–Rapoport IV.3, Katz–Mazur 13.11, Igusa).
@@ -37411,16 +37513,35 @@ FALSE at `N = 0` and the hypothesis is load-bearing.
 
 IRREDUCIBLE at this pin ALONG THE MODULI AXIS, with the SAME refuting
 check as the leaf above: no modular curve, and no compactified
-`Γ₀(N)`-moduli problem, exists anywhere in the pin. -/
-theorem exists_isX0Compactification_of_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R _toF)
+`Γ₀(N)`-moduli problem, exists anywhere in the pin.  Re-run 2026-07-28
+against a seeded `.lake`: `ModularCurve`, `DeligneRapoport` and
+`GeneralizedEllipticCurve` are absent from mathlib, from `~/cs/FLT` and from
+this project outside `X0.lean` itself.  The verdict stands.
+
+**WEAKENED 2026-07-28 — this is now a THEOREM over
+`exists_x0IntegralCompactifiedModel`, and the `∀ ystr` quantifier is gone.**
+The docstring above already contained the argument: "it suffices to compactify
+THAT one and transport", where THAT one is the Deligne–Rapoport model and the
+transport is `exists_iso_of_isCoarseModuliY0` (PROVEN, and stated over an
+ARBITRARY base precisely so that it applies here).  That sentence was left as
+prose, so the leaf continued to demand a compactification of an ARBITRARY
+abstract coarse space — an object presented only by a universal property, from
+which nothing geometric can be extracted.  The transport is now carried out
+(`isX0Compactification_transport`), and what remains to cite is the existence of
+ONE integral model.  Nothing else about the leaf changed; its statement is
+unchanged, so every consumer is untouched. -/
+theorem exists_isX0Compactification_of_isCoarseModuliY0_loc (N ℓ : ℕ) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY j)
-    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (_hc : IsCoarseModuliY0 N ystr) :
+    (hX : IsX0Compactification N strX strY j)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hc : IsCoarseModuliY0 N ystr) :
     ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
-      Nonempty (IsX0Compactification N xstr ystr jZ) :=
-  sorry
+      Nonempty (IsX0Compactification N xstr ystr jZ) := by
+  obtain ⟨XZ, YZ₀, xstr, ystr₀, jZ₀, ⟨h₀⟩⟩ :=
+    exists_x0IntegralCompactifiedModel N ℓ hℓ hℓN R toF hbase hX
+  obtain ⟨e, he⟩ := exists_iso_of_isCoarseModuliY0 h₀.coarse hc
+  exact ⟨XZ, xstr, e.inv ≫ jZ₀, ⟨isX0Compactification_transport h₀ hc e he⟩⟩
 
 /-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists**
 (PROVEN 2026-07-27 over the two leaves above; formerly a single sorry
