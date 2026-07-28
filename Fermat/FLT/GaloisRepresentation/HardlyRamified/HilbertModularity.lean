@@ -12598,6 +12598,59 @@ in `Modularity/MoretBailly.lean` that thread it
 `exists_heckeEigensystem_of_hilbertBlumenthalPoint`,
 `exists_moretBailly_seed_of_five_le`). It is a cut-level repair in a 30k-line
 file with concurrent owners and it is NOT attempted from here.
+
+**SIZING CORRECTED, BY MEASUREMENT (2026-07-28). The repair is MECHANICAL, and
+one link already documents its own inertness.** "Mathematically the package is
+SUPERFLUOUS" above was an argument from the literature; it is now a checked fact
+about this tree, and the reason to record it is that the sentence immediately
+above — a cut-level repair in a 30k-line file — is what stops anyone attempting
+it, and it overstates the cost by a wide margin. What was measured, all of it
+re-checkable in minutes:
+
+* **The package never reaches a leaf.** Every sorried declaration in
+  `Modularity/MoretBailly.lean` sits at line ≤ 37860; every declaration of the
+  supply chain sits at line ≥ 39969 and is PROVEN glue. The deepest leaves the
+  chain bottoms out in — `exists_twistedHilbertBlumenthalCocycle_of_split`,
+  `exists_ellipticSchemeOverField`, `exists_conjFrame_realConjAdd`,
+  `det_nTorsion_eq_neg_one_of_conj_inv` — carry `hρbar : IsHardlyRamified hℓodd
+  hW ρbar`, the mod-`ℓ` datum, and **no package binder at all**.
+* **The bottom half of the chain is already package-free.**
+  `exists_twistedHilbertBlumenthalModuliForm_of_five_le` and all three
+  `exists_twistedHilbertBlumenthalModuliTwist_*` declarations have zero package
+  binders. The package is carried only by the links ABOVE them.
+* **One link already marks the package dead, in the project's own notation.**
+  `exists_twistedHilbertBlumenthalModuliScheme_of_five_le` binds it as
+  `_hZinj`, `_hρ`, `_hπsurj`, `_hπ` — underscore-prefixed, which is exactly this
+  development's convention for "the proof does not use this" — and its body
+  calls `exists_twistedHilbertBlumenthalModuliForm_of_five_le hℓodd hℓ5 hW
+  hρbar hirr …`, passing no package argument.
+* **The remaining links thread it and drop it.** `..._Moduli_of_five_le`,
+  `exists_hilbertBlumenthalPoint_of_five_le`,
+  `exists_residualModularity_of_hilbertBlumenthalPoint`,
+  `exists_heckeSystem_of_residualModularity`,
+  `exists_heckeEigensystem_of_hilbertBlumenthalPoint` and
+  `exists_moretBailly_seed_of_five_le` bind it without underscores, but the
+  terminal one, `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint`, has no
+  occurrence of `hZinj`, `hρ` or `hπ` anywhere in its body — only in its binder
+  list.
+
+So the repair is a BINDER DELETION across roughly eight proven glue
+declarations and their call sites, with no mathematical content whatever,
+because the mathematics beneath them never sees the package. It is still not
+attempted from here — it is another module's region and it touches every call
+site — but it should be dispatched as named work rather than deferred as a
+cut-level repair.
+
+THE CHECK THAT WOULD REFUTE THIS PARAGRAPH: find an occurrence of `hZinj`,
+`hρ` or `hπ` in the BODY (not the binder list) of any chain declaration that is
+not itself just forwarding them to another chain declaration.
+
+**WHAT IT WOULD BUY.** With the package gone,
+`exists_moretBailly_seed_of_five_le` applies directly to this leaf's
+hypotheses, and `exists_moretBaillySeed_padicEmbedding_of_five_le` collapses to
+its `Nonempty (F →+* ℚ_[2])` conjunct alone — BREAK B, the nonemptiness of
+`Ω_2` — with the `MoretBaillySeed` conjunct CLOSED. That is the whole
+`residueCardTwo`/seed cluster reduced to one local nonemptiness.
   REFUTING CHECK for the applicability claim, and it must keep FAILING while
   this leaf is open: read the binders of `exists_moretBailly_seed_of_five_le`
   and look for `ρ`/`hρ`/`π`. If they are gone, this leaf is provable from it
