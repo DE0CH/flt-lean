@@ -1440,14 +1440,14 @@ Kummer surface.
 
 The `m` is a field of `DescentHeight`, and the sibling leaf below is deliberately stated at
 every prime rather than at `2`, so that this node stays free to supply whichever `m` its
-proof produces (`Fermat.WeilHeight.toDescentHeight` supplies `2`).
+proof produces (`Fermat.ParallelogramHeight.toDescentHeight` supplies `2`).
 
 **Not vacuous, and not the conclusion in disguise.**  A `DescentHeight` on an infinite
 group is a real object — it exists on `E(ℚ)` of any rank — and it says nothing on its own
 about finite generation; the descent theorem needs the arithmetic half too.
 
 **Do not prove this twice.**  `Fermat/FLT/ModularCurve/X0.lean`'s
-`exists_integralCoordinates_of_abelianScheme` (feeding its PROVEN
+`exists_cubeModel_of_abelianScheme` (feeding its PROVEN
 `exists_descentHeight_of_abelianScheme`) is the same obligation for a scheme-theoretic
 abelian variety; see the section docstring for the bridge that would make one of the two
 redundant. -/
