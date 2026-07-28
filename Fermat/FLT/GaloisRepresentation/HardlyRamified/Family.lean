@@ -3321,7 +3321,11 @@ could not be attacked at all:
 * `isMultiplicativeType_corner_of_hopf_package` — **`(R1)` itself, now stated**: `G°` is of
   multiplicative type. This is the whole Raynaud/Oort–Tate citation, and the only one of
   the four that is not commutative algebra. It is where `hpodd`, `hchar` and `fG` are
-  spent.
+  spent. **UPDATED 2026-07-28: it is no longer a leaf either.** It splits once more, along
+  the line between the arithmetic and the group-scheme theory — see the section "`(R1)`
+  splits again" below — into `hasInertiaLevelOneFlag_of_hopf_package` (which spends
+  `hchar`/`fG` and nothing else) and `isMultiplicativeType_corner_of_inertiaLevelOneFlag`
+  (which spends `hpodd` and is the citation, coefficient-free).
 * `exists_unramified_grouplike_family_of_isMultiplicativeType` — multiplicative type over
   the STRICTLY HENSELIAN base is DIAGONALIZABLE, and the resulting group-likes are
   `ℚᵖᵥᵘⁿʳ`-rational. This is where `hhens` and `hsep` are spent; it is the only one of the
@@ -3424,11 +3428,279 @@ theorem isCocomm_corner_of_habel
     Coalgebra.isCocomm_of_baseChange (S := ℚᵖᵥᵃˡᵍ) (H := G) hinj
   exact Coalgebra.isCocomm_quotient _
 
+/-! ### `(R1)` splits again: the ARITHMETIC input is a flag, the rest is Raynaud
+
+`isMultiplicativeType_corner_of_hopf_package` below is the assembly of two statements that
+have nothing in common:
+
+* `hasInertiaLevelOneFlag_of_hopf_package` — everything the `p`-adic representation
+  contributes, distilled into ONE intrinsic condition on the group scheme
+  (`HasInertiaLevelOneFlag`). No group-scheme theory, no `hpodd`, no Raynaud: it is
+  Brauer–Nesbitt plus the Frobenius-conjugation argument, both of which are ordinary
+  representation theory over a finite residue field.
+* `isMultiplicativeType_corner_of_inertiaLevelOneFlag` — Raynaud's classification, stated
+  over that intrinsic condition. NO `ρ`, no `R`, no `I`, no `χ₁`/`χ₂`, no `fG`: only the
+  finite flat Hopf order `G`, its connected counit idempotent `e₀`, `hpodd`, and the flag.
+
+That this cut is possible at all is item (iv) of the audit history below, taken seriously:
+the Frobenius-conjugation argument does not care what coefficient field the characters live
+in, so its OUTPUT — "tame inertia acts on the geometric points through `𝔽_p^×`-valued
+characters" — is a statement in which the coefficients have disappeared. `hchar`/`fG`/`hmul`
+are spent producing it and are then never mentioned again. Before this cut the audits
+recorded the whole node as "where `hpodd`, `hchar` and `fG` are spent", which is true and
+was hiding the fact that they are spent in DISJOINT halves.
+
+What the cut does NOT do, and this is the same disclaimer the previous cut carried: it makes
+no progress on Raynaud. `isMultiplicativeType_corner_of_inertiaLevelOneFlag` is still the
+citation, verbatim. What it buys is that the citation no longer has an arithmetic
+prerequisite tangled into it, so it can be dispatched to a group-scheme prover with a
+hypothesis list a group-scheme prover can read; and that the arithmetic half is now a
+self-contained representation-theoretic leaf that this tree has the machinery to attack
+(`BrauerNesbitt.lean`, and the cyclotomic/inertia material of `ConnectedEtale.lean`).
+
+Refuting check on THIS cut, and it is cheap: exhibit a proof of
+`isMultiplicativeType_corner_of_hopf_package` that uses `hchar` or `fG` for something other
+than producing an inertia-stable flag — i.e. a use of the coefficient ring `R` that survives
+into the group-scheme argument. -/
+
+set_option synthInstance.maxHeartbeats 1000000 in
+variable (p) in
+/-- **The level-one input to Raynaud's classification, as an INTRINSIC condition on `G`.**
+
+The geometric points `G(ℚᵖᵥᵃˡᵍ) = (ℚᵖᵥ ⊗ G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)` form a finite abelian group
+under convolution, carrying the natural action of `Γ ℚᵖᵥ`. This predicate says that group
+admits a finite chain of `localInertiaGroup`-STABLE subgroups from `⊥` to `⊤` whose
+successive quotients are cyclic of order dividing `p`.
+
+Equivalently, and this is the form Raynaud consumes: **every Jordan–Hölder factor of the
+geometric points as an `𝔽_p[I_p]`-module is ONE-DIMENSIONAL** — the graded pieces of the
+dévissage are `𝔽_{p^r}`-vector-space schemes with `r = 1`, never `r > 1`.
+
+WHY A SUBMONOID CHAIN AND NOT A SUBGROUP CHAIN. The convolution `Group` structure on
+`ℚᵖᵥ ⊗ G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ` is available in this tree only on the `WithConv` synonym
+(mathlib's `HopfAlgebra.convGroup`); on the bare hom type the project supplies a `Monoid`
+instance only, so `Additive` of it is an `AddMonoid` and `AddSubgroup` cannot be written in
+a statement without a local `Group` instance. The point group is FINITE
+(`finite_points_of_hopf_order`), so submonoids and subgroups of it coincide and nothing is
+lost; a prover who wants subgroups can install the `Group` instance the way
+`exists_repr_of_points_quadratic` does and transport.
+
+WHY `localInertiaGroup` AND NOT ALL OF `Γ ℚᵖᵥ`. The dévissage runs over the STRICT
+HENSELISATION, whose Galois group is exactly inertia, and the flag it needs is an inertia
+flag. Demanding a `Γ ℚᵖᵥ`-stable flag with order-`p` quotients would be a genuinely
+STRONGER — and FALSE — condition whenever the residue field of `R` is larger than `𝔽_p`:
+there the eigenvalue characters `χ̄₁`, `χ̄₂` of the whole decomposition group need not be
+`𝔽_p`-valued, so the `𝔽_p`-lines they cut out are not `D_p`-stable. It is precisely the
+Frobenius-conjugation argument (item (iv) below) that makes them `𝔽_p`-valued ON INERTIA,
+and that is the only place the restriction can be dropped to. Widening the quantifier here
+would therefore turn a true leaf into a false one — the standing trap of this development,
+run in reverse.
+
+`p` is EXPLICIT: it is not determined by `G` (only by `G`'s instance-implicit
+`HopfAlgebra 𝒪ᵖᵥ G`, which synthesis cannot run against a metavariable), so leaving it
+implicit would make every use site fail to elaborate. -/
+def HasInertiaLevelOneFlag (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G] : Prop :=
+  ∃ (n : ℕ) (M : ℕ → AddSubmonoid (Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ))),
+    M 0 = ⊥ ∧ M n = ⊤ ∧
+    (∀ i, M i ≤ M (i + 1)) ∧
+    (∀ i, ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ x ∈ M i, σ • x ∈ M i) ∧
+    (∀ i < n, ∃ x ∈ M (i + 1), p • x ∈ M i ∧
+      M (i + 1) = M i ⊔ AddSubmonoid.closure {x})
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`: the hardly-ramified Hopf package has level one**
+(SORRY LEAF — no group-scheme theory, no Raynaud, and NO `hpodd`).
+
+This is the whole contribution of `hchar`, `fG`/`hfG`, `hmul₁`/`hmul₂`, `hZinj`/`hRinj` and
+the open ideal `I` to the Raynaud citation. After it, the coefficient ring `R`, the
+representation `ρ` and the characters `χ₁`, `χ₂` never appear again.
+
+THE ARGUMENT, in four steps; each is ordinary representation theory over a finite field.
+
+1. *The characters are integral, and reduce.* `χ₁`, `χ₂` are multiplicative on all of
+   `Γ ℚ` (`hmul₁`, `hmul₂`) and are roots of the monic `(ρ g).charpoly` over `R`
+   (`hchar`), hence integral over `ℤ_p`; so they take values in the valuation ring of
+   `ℚᵖᵥᵃˡᵍ` and reduce to multiplicative `χ̄₁, χ̄₂ : Γ ℚ → 𝔽̄_p^×`. `hRinj` is what makes
+   `hchar` a statement about `ρ` rather than about a degenerate image.
+2. *Brauer–Nesbitt.* `hchar` says the characteristic polynomial of `ρ̄ g` is
+   `(X − χ̄₁ g)(X − χ̄₂ g)` for every `g`, so the semisimplification of `ρ̄ ⊗ 𝔽̄_p` is
+   `χ̄₁ ⊕ χ̄₂`: every Jordan–Hölder factor of the residual representation is
+   ONE-DIMENSIONAL, with character one of `χ̄₁`, `χ̄₂`. (`BrauerNesbitt.lean` is the local
+   supply for this step.)
+3. *Frobenius conjugation makes the characters `𝔽_p`-valued ON INERTIA.* For `τ` in tame
+   inertia and a Frobenius lift `F` in `Γ ℚᵖᵥ`, `F τ F⁻¹ = τ^p` in the tame quotient, and
+   `χ̄` is a character of the whole decomposition group, so
+   `χ̄(τ)^p = χ̄(τ^p) = χ̄(F τ F⁻¹) = χ̄(τ)` — hence `χ̄(τ) ∈ 𝔽_p^×`. On WILD inertia a
+   character into `𝔽̄_p^×` (a group of order prime to `p`) out of a pro-`p` group is
+   trivial. So `χ̄ᵢ|_{I_p}` is `𝔽_p^×`-valued. **This step is exactly item (iv) of the
+   audit history below, and it is why the conclusion is coefficient-free: no matter how
+   large the residue field of `R`, only level one occurs.**
+4. *From `𝔽_p`-valued characters to the flag.* `fG`/`hfG` identify the geometric points
+   with `(R ⧸ I) ⊗ V` as `Γ ℚᵖᵥ`-modules. Filtering `R ⧸ I` by the powers of its maximal
+   ideal reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of `V̄|_{I_p}`
+   are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already over the
+   residue field `k`, and each `k`-line — on which inertia acts by a scalar IN `𝔽_p` — is
+   an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the `k`-flag
+   to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p` quotients.
+
+NON-VACUITY. On the witness of item (C2) below — `R = ℤ_[p]`, `I = (p)`,
+`ρ = χ_cyc ⊕ 1`, `G = 𝒪(μ_p × ℤ/p)` — the point group is `𝔽_p(1) ⊕ 𝔽_p`, and the chain
+`⊥ ≤ 𝔽_p(1) ≤ ⊤` is inertia-stable with both quotients cyclic of order `p`. The condition
+FAILS, as it must, for the supersingular witness of item (iii): there the point group is a
+simple `𝔽_p[I_p]`-module of dimension `2` (tame inertia acts through the level-`2`
+fundamental characters), so no chain with cyclic order-`p` quotients is inertia-stable.
+That contrast is the evidence that this leaf carries the content it is supposed to carry:
+it is exactly what separates the two cases the citation must distinguish.
+
+FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the geometric
+points; it asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind
+to unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action
+at all). It sits on the safe side of the rule that killed `exists_muType_closure`. -/
+theorem hasInertiaLevelOneFlag_of_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG) :
+    HasInertiaLevelOneFlag p G :=
+  sorry
+
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
-/-- **`(R1)`, THE RAYNAUD DÉVISSAGE, NOW STATED: the connected component `G°` of a
-hardly-ramified Hopf package at `p` is of MULTIPLICATIVE TYPE** (SORRY LEAF — this is the
-genuine citation, and after this cut it is the ONLY arithmetic one of the four).
+/-- **THE CITATION ITSELF, COEFFICIENT-FREE: a connected finite flat Hopf order over `𝒪ᵖᵥ`
+of LEVEL ONE is of multiplicative type** (SORRY LEAF — this is Raynaud, and after this cut
+it is the only statement in the cluster that is not either commutative algebra or
+representation theory).
+
+Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
+§1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
+chapter in Cornell–Silverman–Stevens §4.
+
+WHAT IS LEFT, and it is the whole of `(R1)`:
+
+1. *Dévissage.* `e = v(p) = 1 < p − 1` (`hpodd`, and `𝒪ᵖᵥ ≅ ℤ_p` is absolutely unramified),
+   so the finite flat prolongation of an étale generic fibre is UNIQUE (Raynaud Th. 3.3.3,
+   Cor. 3.3.6) and the prolongation functor is fully faithful. Hence the inertia-stable
+   flag on the geometric points supplied by `hflag` LIFTS to a chain of finite flat closed
+   subgroup schemes of `G°` over the strict henselisation, with graded pieces of order `p`.
+   In this tree each step of that chain is an `HopfAlgebra.IsShortExact i π` between corner
+   Hopf algebras.
+2. *The order-`p` dichotomy `(R2)`, in its GROUP-SCHEME form.* Each graded piece is
+   classified by `X^p = δ X` with `0 ≤ v(δ) ≤ e = 1`, hence is étale (`v(δ) = 0`) or of
+   `μ`-type (`v(δ) = 1`); connectedness (`hprim₀`) excludes étale. The POINT-LEVEL form of
+   this is already formalized and sorry-free in
+   `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
+   (`OortTate.inertia_character_trivial_or_cyclotomic`,
+   `not_inertia_character_trivial_of_connected`, `exists_muType_coordinate`); what is
+   missing is its group-scheme form, which is what step 1 hands it.
+3. *The extension step `(R3)`.* Iterate `HopfAlgebra.isMultiplicativeType_of_isShortExact`
+   along the chain. **PROVEN**, in
+   `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`.
+4. *Descent.* Multiplicative type over `𝒪ᵖᵥ` is "the Cartier dual is étale", and étaleness
+   may be checked after the faithfully flat base change to the strict henselisation — which
+   is where steps 1–3 run. So the conclusion is over `𝒪ᵖᵥ` even though the argument is not.
+
+WHY THE BASE IS `𝒪ᵖᵥ` ITSELF. Multiplicative type is TWIST-BLIND: the Cartier dual of
+`μ_p ⊗ ψ` is `(ℤ/p) ⊗ ψ`, étale for EVERY unramified `ψ`. It is DIAGONALIZABILITY — the
+existence of the `μ`-coordinates — that needs the strictly henselian base, and that is the
+next leaf (`exists_unramified_grouplike_family_of_isMultiplicativeType`), not this one.
+Conflating the two is what killed `exists_muType_closure`; do not move `hhens`/`hsep` here
+and do not weaken the base.
+
+FAITHFULNESS AUDIT (this cut, 2026-07-28). The three hypotheses are each load-bearing, by
+explicit counterexample:
+
+* WITHOUT `hflag` the statement is FALSE. The `p`-torsion of a SUPERSINGULAR elliptic curve
+  over `ℤ_p` is connected, killed by `p`, has étale generic fibre and satisfies every other
+  hypothesis; but tame inertia acts on its geometric points through the LEVEL-`2`
+  fundamental characters, so it is not of multiplicative type — indeed the Weil pairing
+  makes `E[p]` self-dual, so its Cartier dual carries the same ramified action and is not
+  étale. This is item (iii) of the audit history below, unchanged.
+* WITHOUT connectedness (`hε₀`, `hprim₀`) the statement is FALSE. The constant group scheme
+  `ℤ/p` over `ℤ_p` has trivial inertia action on its points, so it satisfies `hflag`
+  trivially; its Cartier dual is `μ_p`, which is NOT étale over `ℤ_p`. Connectedness is
+  what forbids the `v(δ) = 0` branch of the order-`p` dichotomy. (Note this hypothesis is
+  not vacuous in the presence of `hflag`: the witness of (C2) below has a nontrivial
+  connected part.)
+* WITHOUT `hpodd` the statement is FALSE, and this is the classical boundary: at `p = 2`,
+  `e = 1 = p − 1` and Raynaud's rigidity fails — over `ℤ_2` there are connected finite flat
+  group schemes of order `2` that are neither `μ_2` nor étale (the Oort–Tate parameter
+  `(a, b)` with `ab = 2` admits `a` a unit times `2` in more than one way up to
+  isomorphism), so the dichotomy of step 2 has no gap to exploit.
+
+NON-VACUITY. The witness of item (C2) below satisfies every hypothesis with a nontrivial
+connected part: `G = 𝒪(μ_p × ℤ/p)` over `ℤ_p`, `e₀` the primitive idempotent at the
+identity of `ℤ/p`, `G° = 𝒪(μ_p)`, whose Cartier dual is the constant group scheme `ℤ/p`,
+étale. So the conclusion holds and is not vacuous.
+
+WHAT A FURTHER CUT WOULD NEED, stated so the next owner does not have to re-derive it.
+Step 1 above is the only genuinely missing piece, and the obstruction to splitting it off
+is an ENCODING one, not a mathematical one: a composition series is a family of Hopf
+algebras indexed by `Fin (n + 1)`, i.e. a family of TYPES carrying instances, which this
+tree has no idiom for. The two shapes that avoid it are (a) a single dévissage STEP —
+"either `𝒪(G°)` has rank `1`, or there are `A''`, `A'` with `IsShortExact i π`, `A'` of
+`μ`-type and `rank A'' < rank A`" — assembled by strong induction on
+`Module.finrank 𝒪ᵖᵥ`, which needs the hypotheses of this statement restated INTRINSICALLY
+on an abstract `A` so that `A''` inherits them (`hflag` already is intrinsic; connectedness
+would have to become "`A` has no nontrivial idempotents", which is what `hprim₀` gives for
+the corner); or (b) an inductive predicate `IsIteratedMultiplicativeExtension`. Route (a)
+is the smaller of the two and is the recommended one. Refuting check on this paragraph: a
+route to multiplicative type of `G°` that never produces a composition series. -/
+theorem isMultiplicativeType_corner_of_inertiaLevelOneFlag
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (hflag : HasInertiaLevelOneFlag p G)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
+/-- **`(R1)`, THE RAYNAUD DÉVISSAGE: the connected component `G°` of a hardly-ramified
+Hopf package at `p` is of MULTIPLICATIVE TYPE**.
+
+**STATUS, 2026-07-28 — NO LONGER A SORRY LEAF. It is an ASSEMBLY over two leaves**, split
+along the line between arithmetic and group-scheme theory; see the section "`(R1)` splits
+again" above for the cut and the refuting check on it. The two are
+
+* `hasInertiaLevelOneFlag_of_hopf_package` — the arithmetic. Everything `hchar`, `fG`,
+  `hmul₁`/`hmul₂`, `hZinj`/`hRinj` and `I` contribute, distilled into the intrinsic
+  `HasInertiaLevelOneFlag G`. Needs no `hpodd` and no group-scheme theory.
+* `isMultiplicativeType_corner_of_inertiaLevelOneFlag` — Raynaud, coefficient-free. Spends
+  `hpodd` and the flag, and mentions neither `ρ` nor `R` nor `χ₁`/`χ₂`.
+
+`hcomul₀` is now written `_hcomul₀`: it was ALREADY redundant in this statement before the
+assembly was written, because the Hopf structure on `G ⧸ cornerIdeal e₀` appears in the
+CONCLUSION and must therefore be supplied as the instance argument
+`[(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]`, which is the only thing `hcomul₀` was
+ever used to produce (via `HopfAlgebra.isHopfIdeal_cornerIdeal`). It is retained so that
+call sites — which pass it positionally — are unaffected, and underscored so that the
+redundancy is mechanically visible rather than merely asserted.
+
+Everything below this paragraph is this node's earlier documentation and audit history. Its
+mathematics is unchanged and is now distributed across those two leaves — read the numbered
+"THE ARGUMENT" items below as: item 1 is the arithmetic leaf, items 2–4 are the citation.
 
 Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
 §1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
@@ -3497,14 +3769,19 @@ theorem isMultiplicativeType_corner_of_hopf_package
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
     (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
       e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
     [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+  -- the arithmetic: `hchar`/`fG` distilled into the intrinsic level-one condition
+  isMultiplicativeType_corner_of_inertiaLevelOneFlag hpodd G
+    (hasInertiaLevelOneFlag_of_hopf_package hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI G
+      fG hfG)
+    -- and Raynaud, coefficient-free
+    e₀ he₀ hε₀ hprim₀
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (SORRY
