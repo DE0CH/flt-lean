@@ -147,6 +147,12 @@ public import Fermat.FLT.Modularity.SchemeFrobenius
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
+-- `AlgebraicGeometry.Scheme.Hom.finrank`: the RANK (classically, the DEGREE) of a
+-- finite flat morphism of schemes, together with its base-change lemma
+-- `Scheme.Hom.finrank_pullback_snd`.  This is what lets
+-- `card_torsion_span_singleton_of_isAlgClosed` be cut along the classical seam
+-- `#ker[a](K) = deg[a]` / `deg[a] = N(a)²` — see `finrank_mulByElt_of_isAlgClosed`.
+public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
 -- Chebotarev density input of `det_eq_cyclotomicCharacter_of_globalFrob`.
@@ -2756,16 +2762,362 @@ theorem cardTorsion_baseChange (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S)
   · exact Subtype.ext (RelPoint.baseChangeUp_baseChangeDown g y.1)
   · exact Subtype.ext (RelPoint.baseChangeDown_baseChangeUp g z.1)
 
+/-! #### `[a]` as a MORPHISM, and the `[n]`-development reused verbatim for it
+
+Everything in this block is the `Mult` analogue of the `MulByNat` block of
+`Modularity/AbelianSchemeIsogeny.lean`, and it is what
+`card_torsion_span_singleton_of_isAlgClosed` below consumes.  The point of
+writing it is that the leaf's classical proof is about the ENDOMORPHISM
+`[a] : A ⟶ A`, not about the group of points: `deg [a] = N_{D/ℚ}(a)²`.
+
+**THE ONE OBSERVATION THAT MAKES IT ALL FREE** (2026-07-28).  A `Mult` gives
+no finiteness of `[a]` directly, and re-running the theorem of the cube for
+`[a]` would be a second copy of the hardest part of
+`Modularity/AbelianSchemeIsogeny.lean`.  It is not needed.  In `𝒪_D` every
+nonzero `a` divides a nonzero RATIONAL INTEGER — its own absolute norm,
+`a ∣ N(a)` by `Ideal.absNorm_mem` — so `a * b = N` for some `b ∈ 𝒪_D` and
+
+  `[N] = [a] ≫ [b]`   (`mulByNat_eq_mulByElt_comp`).
+
+Reading that as a map on points gives `[a] ⁻¹' {x} ⊆ [N] ⁻¹' {[b] x}`, so the
+fibres of `[a]` are finite because those of `[N]` are — with NO surjectivity
+input, hence no circularity.  From finite fibres the whole `[n]` chain runs
+unchanged: miracle flatness (`flat_of_finite_fibres_endo`) gives `Flat [a]`,
+Zariski's main theorem gives `IsFinite [a]`, universal openness plus
+connectedness gives surjectivity, and `FormallyUnramified.of_comp` applied to
+the SAME factorisation gives unramifiedness in characteristic zero.
+
+So the abelian-variety content is not duplicated: every statement here is
+proven over the `[n]` results, and the single geometric leaf of the file is
+untouched by this block.
+
+Note the composition order: `≫` is diagrammatic, so `[a·b] = [b] ≫ [a]`
+(`mulByElt_mul`), i.e. `[a]` is applied LAST.  The factorisation of `[N]`
+above uses the other order, which is available because `R` is commutative. -/
+
+/-- **Multiplication by `a : R`, as a MORPHISM of schemes `A ⟶ A`** — the
+`Mult` analogue of `AbelianSchemeStruct.mulByNat`, and constructed the same
+way: the underlying morphism of `a` acting on the tautological relative point
+`RelPoint.self f`.
+
+By `act_val` this really is `[a]`: precomposition with it computes `m.act a y`
+on every relative point, so it is the Yoneda realisation of the endomorphism
+`y ↦ a • y` of the functor of points.  No fibre products and no chosen
+pullbacks are needed to write it down. -/
+noncomputable def mulByElt (m : Mult ab R) (a : R) : A ⟶ A :=
+  (m.act a (RelPoint.self f)).1
+
+/-- **The action of `a` on relative points IS precomposition with `[a]`** —
+the Yoneda lemma for `Mult`, and the exact analogue of
+`AbelianSchemeStruct.nsmul_val`.  It is naturality (`Mult.pre_act`) read at
+the tautological point. -/
+theorem act_val (m : Mult ab R) {T : Scheme.{u}} {g : T ⟶ S} (a : R) (y : RelPoint f g) :
+    (m.act a y).1 = y.1 ≫ m.mulByElt a := by
+  conv_lhs => rw [← RelPoint.pre_self y]
+  rw [← m.pre_act y.1 y.2 a (RelPoint.self f)]
+  rfl
+
+/-- **`[a]` is a morphism over `S`** — the second component of the relative
+point defining it. -/
+theorem mulByElt_comp (m : Mult ab R) (a : R) : m.mulByElt a ≫ f = f :=
+  (m.act a (RelPoint.self f)).2
+
+/-- **`[1]` is the identity**, by `Mult.act_one`. -/
+theorem mulByElt_one (m : Mult ab R) : m.mulByElt (1 : R) = 𝟙 A := by
+  show (m.act (1 : R) (RelPoint.self f)).1 = 𝟙 A
+  rw [m.act_one]
+  rfl
+
+/-- **`[a·b] = [b] ≫ [a]`**: `a ↦ [a]` is multiplicative, with the order
+reversed because `≫` is diagrammatic composition and `[a]` is applied last.
+This is `act_val` read at the relative point `m.act b (RelPoint.self f)`, with
+`Mult.act_mul` collapsing the left-hand side. -/
+theorem mulByElt_mul (m : Mult ab R) (a b : R) :
+    m.mulByElt (a * b) = m.mulByElt b ≫ m.mulByElt a := by
+  have h := m.act_val a (m.act b (RelPoint.self f))
+  rw [← m.act_mul] at h
+  exact h
+
+/-- **`[(n : R)] = [n]`**: the multiplication by a rational integer is the
+`ℕ`-multiplication of the group scheme.  This is what connects the whole
+`mulByElt` development to the already-proven `mulByNat` one, and it is
+`Nat.cast_smul_eq_nsmul` for the module structure `Mult.module`. -/
+theorem mulByElt_natCast (m : Mult ab R) (n : ℕ) :
+    m.mulByElt ((n : ℕ) : R) = ab.mulByNat n := by
+  letI := ab.addCommGroup f
+  letI := m.module f
+  show (m.act ((n : ℕ) : R) (RelPoint.self f)).1 = (n • RelPoint.self f).1
+  congr 1
+  show ((n : R)) • (RelPoint.self f) = n • RelPoint.self f
+  exact Nat.cast_smul_eq_nsmul R n _
+
+/-- **`[a]` fixes the zero section**, `e ≫ [a] = e`: it is `a • 0 = 0` in the
+group of `S`-points, transported through `act_val`.  It is what makes the
+image of `[a]` meet every fibre of `f`, which is the nonemptiness half of the
+connectedness argument in `surjective_mulByElt_of_field`. -/
+theorem zeroSection_comp_mulByElt (m : Mult ab R) (a : R) :
+    ab.zeroSection ≫ m.mulByElt a = ab.zeroSection := by
+  letI := ab.addCommGroup (𝟙 S)
+  letI := m.module (𝟙 S)
+  have hz : m.act a (ab.zero (𝟙 S)) = ab.zero (𝟙 S) := by
+    show m.act a (0 : RelPoint f (𝟙 S)) = (0 : RelPoint f (𝟙 S))
+    exact smul_zero a
+  have h := m.act_val a (ab.zero (𝟙 S))
+  rw [hz] at h
+  exact h.symm
+
+/-- **`[a]` is PROPER**, for free — exactly as `isProper_mulByNat`: it
+commutes with the structure morphism, which is proper, and `IsProper.of_comp`
+cancels the second factor. -/
+theorem isProper_mulByElt (m : Mult ab R) (a : R) : IsProper (m.mulByElt a) := by
+  haveI := ab.proper
+  haveI : IsProper (m.mulByElt a ≫ f) := by rw [m.mulByElt_comp]; exact ab.proper
+  exact IsProper.of_comp _ f
+
+/-- **`[a]` is LOCALLY OF FINITE TYPE**, for free, as `[n]` is. -/
+theorem locallyOfFiniteType_mulByElt (m : Mult ab R) (a : R) :
+    LocallyOfFiniteType (m.mulByElt a) := by
+  haveI := ab.smooth
+  haveI : LocallyOfFiniteType (m.mulByElt a ≫ f) := by
+    rw [m.mulByElt_comp]; infer_instance
+  exact locallyOfFiniteType_of_comp (m.mulByElt a) f
+
+/-- **`[a]` is LOCALLY OF FINITE PRESENTATION**, for free, as `[n]` is.  This
+is what `UniversallyOpen.of_flat` needs beside flatness, and it is not an
+abelian-variety fact at all. -/
+theorem locallyOfFinitePresentation_mulByElt (m : Mult ab R) (a : R) :
+    LocallyOfFinitePresentation (m.mulByElt a) := by
+  haveI := ab.smooth
+  haveI : LocallyOfFinitePresentation (m.mulByElt a ≫ f) := by
+    rw [m.mulByElt_comp]; infer_instance
+  exact locallyOfFinitePresentation_of_comp this inferInstance
+
+/-- **THE FACTORISATION `[N] = [a] ≫ [b]`**, for any `a`, `b` and `N` with
+`a * b = (N : R)`.  Every geometric property of `[a]` below is read off this
+one identity together with the corresponding property of `[N]`, which
+`Modularity/AbelianSchemeIsogeny.lean` already proves. -/
+theorem mulByNat_eq_mulByElt_comp (m : Mult ab R) (a b : R) (N : ℕ) (hab : a * b = (N : R)) :
+    ab.mulByNat N = m.mulByElt a ≫ m.mulByElt b := by
+  rw [← m.mulByElt_natCast, ← hab, mul_comm a b, m.mulByElt_mul]
+
+/-- **The fibres of `[a]` are FINITE** as soon as `a` divides a nonzero
+rational integer in `R` (which, for `R = 𝒪_D` and `a ≠ 0`, is automatic — take
+`N = N_{D/ℚ}(a)`, by `Ideal.absNorm_mem`).
+
+The proof uses NO surjectivity, so there is no circularity with the flatness
+chain below: if `[a] z = x` then `[N] z = [b] ([a] z) = [b] x`, so
+`[a] ⁻¹' {x} ⊆ [N] ⁻¹' {[b] x}`, and the right-hand side is finite by
+`finite_preimage_mulByNat`. -/
+theorem finite_preimage_mulByElt (m : Mult ab R) (a b : R) (N : ℕ) (hN : N ≠ 0)
+    (hab : a * b = (N : R)) (x : A) : (⇑(m.mulByElt a) ⁻¹' {x}).Finite := by
+  have hcomp := m.mulByNat_eq_mulByElt_comp a b N hab
+  refine (finite_preimage_mulByNat ab N hN (m.mulByElt b x)).subset ?_
+  rintro z (hz : m.mulByElt a z = x)
+  show ab.mulByNat N z = m.mulByElt b x
+  rw [hcomp, Scheme.Hom.comp_apply, hz]
+
+/-- **`[a]` is a FINITE morphism**: proper (free) with finite fibres, hence
+quasi-finite, hence finite by Zariski's main theorem. -/
+theorem isFinite_mulByElt (m : Mult ab R) (a b : R) (N : ℕ) (hN : N ≠ 0)
+    (hab : a * b = (N : R)) : IsFinite (m.mulByElt a) := by
+  haveI := m.isProper_mulByElt a
+  haveI : LocallyQuasiFinite (m.mulByElt a) :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _ (m.finite_preimage_mulByElt a b N hN hab)
+  exact IsFinite.of_isProper_of_locallyQuasiFinite _
+
+/-- **`[a]` is FLAT on an abelian variety over a field**: miracle flatness
+(`flat_of_finite_fibres_endo`) applied to the proper endomorphism `[a]` with
+finite fibres, exactly as for `[n]` in `flat_mulByNat_of_field`. -/
+theorem flat_mulByElt_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    (m : Mult abK R) (a b : R) (N : ℕ) (hN : N ≠ 0) (hab : a * b = (N : R)) :
+    Flat (m.mulByElt a) :=
+  haveI := abK.smooth
+  haveI := abK.proper
+  haveI := abK.connected
+  haveI := m.isProper_mulByElt a
+  flat_of_finite_fibres_endo fK (m.mulByElt a) (m.finite_preimage_mulByElt a b N hN hab)
+
+/-- **`[a]` is FORMALLY UNRAMIFIED when `N` is invertible in the base field**
+— in particular always, in characteristic zero.  `[N] = [a] ≫ [b]` is
+formally unramified by `formallyUnramified_mulByNat`, and
+`FormallyUnramified.of_comp` passes the property to the FIRST factor. -/
+theorem formallyUnramified_mulByElt_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    (m : Mult abK R) (a b : R) (N : ℕ) (hNK : (N : K) ≠ 0) (hab : a * b = (N : R)) :
+    FormallyUnramified (m.mulByElt a) := by
+  haveI : FormallyUnramified (abK.mulByNat N) := formallyUnramified_mulByNat K abK N hNK
+  haveI : FormallyUnramified (m.mulByElt a ≫ m.mulByElt b) := by
+    rw [← m.mulByNat_eq_mulByElt_comp a b N hab]; infer_instance
+  exact FormallyUnramified.of_comp _ (m.mulByElt b)
+
+/-- **`[a]` is SURJECTIVE** on an abelian variety over a field: its image is
+open (flat and locally of finite presentation, so universally open) and closed
+(proper), and it meets every fibre of `fK` at the zero section, which is
+connected — the argument of `surjective_mulByNat`, verbatim. -/
+theorem surjective_mulByElt_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    (m : Mult abK R) (a b : R) (N : ℕ) (hN : N ≠ 0) (hab : a * b = (N : R)) :
+    Surjective (m.mulByElt a) := by
+  haveI := abK.proper
+  haveI := abK.connected
+  haveI := m.isProper_mulByElt a
+  haveI := m.flat_mulByElt_of_field K a b N hN hab
+  haveI := m.locallyOfFinitePresentation_mulByElt a
+  haveI : UniversallyOpen (m.mulByElt a) := UniversallyOpen.of_flat _
+  have hop : IsOpen (Set.range ⇑(m.mulByElt a)) :=
+    ((m.mulByElt a).isOpenMap).isOpen_range
+  have hcl : IsClosed (Set.range ⇑(m.mulByElt a)) :=
+    ((m.mulByElt a).isClosedMap).isClosed_range
+  refine ⟨fun c => ?_⟩
+  have hconn : _root_.IsConnected (⇑fK ⁻¹' {fK c}) := fK.isConnected_preimage_singleton (fK c)
+  have hz : (m.mulByElt a) (abK.zeroSection (fK c)) = abK.zeroSection (fK c) := by
+    have h := m.zeroSection_comp_mulByElt a
+    have h2 := congrArg (fun φ : Spec (CommRingCat.of K) ⟶ X => φ (fK c)) h
+    simpa using h2
+  have hfz : fK (abK.zeroSection (fK c)) = fK c := by
+    have h := abK.zeroSection_comp
+    have h2 := congrArg (fun φ : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of K) => φ (fK c)) h
+    simpa using h2
+  have hsub := hconn.isPreconnected.subset_isClopen ⟨hcl, hop⟩
+    ⟨abK.zeroSection (fK c), hfz, ⟨_, hz⟩⟩
+  exact hsub rfl
+
+/-- **Every `K`-point of `A` is `[a]` of another one**, `K` algebraically
+closed — the `Mult` analogue of `exists_comp_mulByNat_eq`, and the DIVISIBILITY
+of `A(K)` by an arbitrary nonzero `a ∈ 𝒪_D` rather than by a rational integer.
+Surjectivity plus the Nullstellensatz step `exists_comp_eq_of_surjective`. -/
+theorem exists_comp_mulByElt_eq {X : Scheme.{u}} (K : Type u) [Field K] [IsAlgClosed K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    (m : Mult abK R) (a b : R) (N : ℕ) (hN : N ≠ 0) (hab : a * b = (N : R))
+    (w : Spec (CommRingCat.of K) ⟶ X) :
+    ∃ u : Spec (CommRingCat.of K) ⟶ X, u ≫ m.mulByElt a = w := by
+  haveI := m.surjective_mulByElt_of_field K a b N hN hab
+  haveI := m.locallyOfFiniteType_mulByElt a
+  exact exists_comp_eq_of_surjective (m.mulByElt a) w
+
 end Mult
+
+/-- **THE `K`-POINTS OF A FIBRE OF A FINITE FLAT UNRAMIFIED MORPHISM ARE
+COUNTED BY ITS RANK**, over an algebraically closed field (sorry leaf, cut
+2026-07-28 as the GENERIC half of
+`card_torsion_span_singleton_of_isAlgClosed`).
+
+There is NO abelian variety, no number field and no `Mult` in this
+statement: it is general scheme theory, of a shape that would be at home in
+mathlib beside `AlgebraicGeometry.Scheme.Hom.finrank`.  It says that a
+finite flat morphism of constant rank `n` which is moreover unramified —
+i.e. finite étale — has exactly `n` fibres' worth of `K`-points above every
+`K`-point of the target.
+
+**THE PROOF, in full.**  Base-change `φ` along `w`: `P := X ×_Y Spec K` is
+finite (`IsFinite` is stable under base change) over `Spec K`, hence AFFINE,
+so `P ≅ Spec Γ(P)` and `Γ(P)` is a finite `K`-algebra; it is flat and
+formally unramified over `K` by the same stability, so `Γ(P)` is an étale
+`K`-algebra.  `Algebra.FormallyEtale.equivPiOfIsSepClosed` — `K` is
+algebraically closed, hence separably closed — then gives
+`Γ(P) ≃ₐ[K] (PrimeSpectrum Γ(P) → K)`.  Therefore
+
+* `Module.finrank K Γ(P) = #(PrimeSpectrum Γ(P))`, and by
+  `Scheme.Hom.finrank_SpecMap_algebraMap` (rank at a stalk over a FIELD is
+  the plain `finrank`) together with `Scheme.Hom.finrank_pullback_snd`, that
+  number is `φ.finrank (w pt) = n`;
+* the sections of `P ⟶ Spec K`, which are exactly the `u : Spec K ⟶ X` with
+  `u ≫ φ = w` by the universal property of the pullback, correspond to
+  `K`-algebra maps `Γ(P) → K`, and a product of `#I` copies of `K` admits
+  exactly `#I` of those (the coordinate projections).
+
+**WHY IT IS NOT VACUOUS AND WHY EACH HYPOTHESIS IS NEEDED.**  Drop
+`FormallyUnramified` and the statement is FALSE: `Spec K[x]/(x²) ⟶ Spec K`
+is finite flat of rank `2` with exactly ONE `K`-point.  Drop `IsAlgClosed`
+and it is FALSE: `Spec ℂ ⟶ Spec ℝ` is finite étale of rank `2` with no
+`ℝ`-point at all.  Drop `Flat` and `finrank` is not even locally constant.
+-/
+theorem card_fibrePt_eq_of_finrank_eq {X Y : Scheme.{u}} (φ : X ⟶ Y)
+    [Flat φ] [IsFinite φ] [LocallyOfFinitePresentation φ] [FormallyUnramified φ]
+    {K : Type u} [Field K] [IsAlgClosed K] (n : ℕ) (hdeg : ∀ y : Y, φ.finrank y = n)
+    (w : Spec (CommRingCat.of K) ⟶ Y) :
+    Nat.card {u : Spec (CommRingCat.of K) ⟶ X // u ≫ φ = w} = n := sorry
+
+open _root_.NumberField in
+/-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)²` — THE THEOREM OF THE CUBE**
+(sorry leaf, cut 2026-07-28 as the GEOMETRIC half of
+`card_torsion_span_singleton_of_isAlgClosed`; Mumford *Abelian Varieties*
+§6, §16, §18, §19 (Thm 4: `deg` is a homogeneous polynomial function of
+degree `2g` on `End⁰(A)`), Milne *Abelian Varieties* I.7, I.10, Goren
+*Lectures on Hilbert Modular Varieties* I.1, Shimura).
+
+This is the leaf in the form the LITERATURE proves it: an identity about
+the endomorphism `[a] : A ⟶ A`, not about the group of points.  `[a]` is
+finite flat by `Mult.isFinite_mulByElt` and `Mult.flat_mulByElt_of_field`
+(both PROVEN, over the `[n]` development — see the block header above), so
+`Scheme.Hom.finrank` is its classical DEGREE, and the claim is
+`deg [a] = N(a)²`, where `#(𝒪_D/(a)) = |N_{D/ℚ}(a)|`.
+
+**WHAT IS ACTUALLY LEFT.**  At `a = n ∈ ℤ` this is the familiar
+`deg [n] = n^(2g)`; the general case is the statement that `deg` restricted
+to `𝒪_D ⊆ End(A)` is the square of the norm form, which for real
+multiplication follows from `H₁(A, ℤ)` being an `𝒪_D`-module of rank `2`
+(`deg φ = det(φ | H₁)`) or, `ℓ`-adically, from `T_ℓ A` being free of rank
+`2` over `𝒪_D ⊗ ℤ_ℓ`.  It is the RATIONAL input `dim_D (H₁ ⊗ ℚ) = 2` that
+is irreducible here — see the two refuted axes recorded on
+`card_torsion_span_singleton_of_isAlgClosed` below, which show that no
+amount of integer counting can replace it.
+
+**`hdim` AND `[CharZero K]` ARE BOTH LOAD-BEARING**, for exactly the
+reasons recorded on the consumer: without `hdim` the identity `fK = 𝟙`
+satisfies every other hypothesis with `A` of dimension `0`, where
+`deg [a] = 1`; and in characteristic `p` the degree of `[a]` at `a` above
+`p` is inseparable and the point count drops, though the DEGREE identity
+itself survives — it is the consumer's étale count that fails.  `CharZero`
+is nevertheless kept here so that the two halves have the same hypotheses
+and a prover need not track which one needs what.
+
+**DO NOT PROVE THIS FROM THE CONSUMER.**  The whole six-theorem cluster
+below `card_torsion_span_singleton_of_isAlgClosed` is proven over it, so
+citing any of it here closes the loop.  The honest inputs are all OUTSIDE
+this file: the theorem of the cube, singular/étale homology, or the
+rational Tate module. -/
+theorem finrank_mulByElt_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
+    [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
+    (m : Mult abK (𝓞 D))
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) fK)
+    (a : 𝓞 D) (ha : a ≠ 0) (x : X) :
+    (m.mulByElt a).finrank x
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 := sorry
 
 open _root_.NumberField in
 /-- **`#A[a] = N_{D/ℚ}(a)²` FOR AN ABELIAN VARIETY WITH REAL
 MULTIPLICATION OVER AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC
-ZERO** — the classical `deg[a] = N(a)²` (sorry leaf, created 2026-07-28;
-it is now the ONLY geometric input of the six-theorem cluster below.
+ZERO** — the classical `deg[a] = N(a)²` (**PROVEN 2026-07-28** over the two
+leaves `card_fibrePt_eq_of_finrank_eq` (generic scheme theory: a finite
+étale morphism over an algebraically closed field has `deg` many `K`-points
+in each fibre) and `finrank_mulByElt_of_isAlgClosed` (the theorem of the
+cube: `deg [a] = N(a)²`).  It was itself a sorry leaf from 2026-07-28
+until then.
 Mumford *Abelian Varieties* §6, §19 (Thm 4, `deg` is a homogeneous
 polynomial of degree `2g` on `End⁰(A)`), Milne *Abelian Varieties*
 I.7, I.10, Goren *Lectures on Hilbert Modular Varieties* I.1, Shimura).
+
+**WHAT THE PROOF DOES, and where the mathematics now sits.**  The route
+recorded below — make `[a]` a MORPHISM by Yoneda and reuse the `[n]`
+development — is what was carried out, and it is all PROVEN: see the
+`mulByElt` block above, where `[a]` is shown proper, locally of finite
+presentation, finite, flat, unramified (char `0`) and surjective, each one
+read off the single factorisation `[N] = [a] ≫ [b]` at `N = N_{D/ℚ}(a)`
+(`Ideal.absNorm_mem` supplies `b`).  The assembly here then
+
+1. identifies the `(a)`-torsion of `A(K)` with the `K`-points of the fibre
+   of `[a]` over the zero section — Yoneda (`Mult.act_val`), plus the
+   observation that `u ≫ [a] = e` forces `u ≫ fK = 𝟙` because
+   `[a] ≫ fK = fK`, so no compatibility has to be carried;
+2. counts those by the RANK of `[a]` (`card_fibrePt_eq_of_finrank_eq`);
+3. evaluates the rank (`finrank_mulByElt_of_isAlgClosed`).
+
+So the residual geometry is exactly `deg [a] = N(a)²`, stated about the
+endomorphism rather than about a point count — which is the form Mumford
+proves.  Everything about the POINT GROUP is now discharged.
 
 `A` is an abelian variety over an algebraically closed field `K` of
 characteristic zero, of dimension `g = [D : ℚ]`, with an action of `𝒪_D`;
@@ -2860,7 +3212,68 @@ theorem card_torsion_span_singleton_of_isAlgClosed {X : Scheme.{u}} {K : Type u}
     m.cardTorsion (𝟙 (Spec (CommRingCat.of K)))
         (Ideal.span {a} : Ideal (NumberField.RingOfIntegers D))
       = Nat.card (NumberField.RingOfIntegers D ⧸
-          (Ideal.span {a} : Ideal (NumberField.RingOfIntegers D))) ^ 2 := sorry
+          (Ideal.span {a} : Ideal (NumberField.RingOfIntegers D))) ^ 2 := by
+  classical
+  letI := abK.addCommGroup (𝟙 (Spec (CommRingCat.of K)))
+  letI := m.module (𝟙 (Spec (CommRingCat.of K)))
+  -- ### `a` divides a nonzero rational integer, namely its own absolute norm
+  set N : ℕ := Ideal.absNorm (Ideal.span {a}) with hNdef
+  have hspan0 : (Ideal.span {a} : Ideal (𝓞 D)) ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using ha
+  have hN : N ≠ 0 := fun h => hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+  obtain ⟨b, hb⟩ : a ∣ ((N : ℕ) : 𝓞 D) :=
+    Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {a}))
+  have hab : a * b = ((N : ℕ) : 𝓞 D) := hb.symm
+  have hNK : ((N : ℕ) : K) ≠ 0 := Nat.cast_ne_zero.mpr hN
+  -- ### `[a]` is finite, flat, of finite presentation and unramified
+  haveI := m.isFinite_mulByElt a b N hN hab
+  haveI := m.flat_mulByElt_of_field K a b N hN hab
+  haveI := m.locallyOfFinitePresentation_mulByElt a
+  haveI := m.formallyUnramified_mulByElt_of_field K a b N hNK hab
+  /- ### 1.  The `(a)`-torsion of `A(K)` IS the `K`-point set of `ker [a]`.
+  By Yoneda (`Mult.act_val`) the condition `m.act a y = 0` on a relative
+  point over `𝟙 (Spec K)` reads `y.1 ≫ [a] = e`; and conversely such a
+  `u : Spec K ⟶ X` automatically satisfies `u ≫ fK = 𝟙`, because
+  `[a] ≫ fK = fK` and `e ≫ fK = 𝟙`.  So no compatibility with the base has
+  to be carried across, exactly as for `exists_nsmul_of_exists_comp`. -/
+  have hzero : (abK.zero (𝟙 (Spec (CommRingCat.of K)))).1 = abK.zeroSection := by
+    rw [AbelianSchemeStruct.zero_val, Category.id_comp]
+  have hmem : ∀ y : RelPoint fK (𝟙 (Spec (CommRingCat.of K))),
+      y ∈ Submodule.torsionBySet (𝓞 D) (RelPoint fK (𝟙 (Spec (CommRingCat.of K))))
+          ((Ideal.span {a} : Ideal (𝓞 D)) : Set (𝓞 D))
+        ↔ y.1 ≫ m.mulByElt a = abK.zeroSection := by
+    intro y
+    rw [Mult.mem_torsionBySet_iff]
+    constructor
+    · intro h
+      have h1 := congrArg Subtype.val (h a (Ideal.mem_span_singleton_self a))
+      rw [m.act_val] at h1
+      exact h1.trans hzero
+    · intro hu c hc
+      obtain ⟨d, rfl⟩ := Ideal.mem_span_singleton.mp hc
+      rw [mul_comm a d, m.act_mul]
+      have h2 : m.act a y = abK.zero (𝟙 (Spec (CommRingCat.of K))) :=
+        Subtype.ext (by rw [m.act_val, hu, hzero])
+      rw [h2]
+      show m.act d (0 : RelPoint fK (𝟙 (Spec (CommRingCat.of K))))
+        = (0 : RelPoint fK (𝟙 (Spec (CommRingCat.of K))))
+      exact smul_zero d
+  have hlift : ∀ u : Spec (CommRingCat.of K) ⟶ X, u ≫ m.mulByElt a = abK.zeroSection →
+      u ≫ fK = 𝟙 (Spec (CommRingCat.of K)) := by
+    intro u hu
+    have h : (u ≫ m.mulByElt a) ≫ fK = abK.zeroSection ≫ fK := by rw [hu]
+    rwa [Category.assoc, m.mulByElt_comp, abK.zeroSection_comp] at h
+  have step1 : m.cardTorsion (𝟙 (Spec (CommRingCat.of K))) (Ideal.span {a} : Ideal (𝓞 D))
+      = Nat.card {u : Spec (CommRingCat.of K) ⟶ X // u ≫ m.mulByElt a = abK.zeroSection} := by
+    refine Nat.card_congr ⟨fun y => ⟨y.1.1, (hmem y.1).mp y.2⟩,
+      fun u => ⟨⟨u.1, hlift u.1 u.2⟩, (hmem ⟨u.1, hlift u.1 u.2⟩).mpr u.2⟩,
+      fun y => ?_, fun u => ?_⟩
+    · exact Subtype.ext (Subtype.ext rfl)
+    · exact Subtype.ext rfl
+  -- ### 2 and 3.  Count them by the rank of `[a]`, and evaluate that rank.
+  rw [step1]
+  exact card_fibrePt_eq_of_finrank_eq (m.mulByElt a) _
+    (fun x => finrank_mulByElt_of_isAlgClosed m hdim a ha x) abK.zeroSection
 
 open _root_.NumberField in
 /-- **`#A[J] = #(𝒪_D/J)²` FOR AN ABELIAN VARIETY WITH REAL
