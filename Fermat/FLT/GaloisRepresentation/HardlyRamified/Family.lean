@@ -69,6 +69,17 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- because the consuming statements are the ones named above.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
+-- SGA 3, Exp. VIII/X: multiplicative type over a strictly henselian local base is
+-- DIAGONALIZABLE (`HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType`), together
+-- with base change of the Cartier dual (`CartierDual.baseChangeAlgEquiv`, proven) and of
+-- multiplicative type (`HopfAlgebra.isMultiplicativeType_baseChange`, proven). These two are
+-- the whole proof of `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType`
+-- below, whose STATEMENT mentions neither, so a non-public import would do — but the module
+-- also carries the two leaves that theorem now rests on (`(E1)`
+-- `Algebra.IsFiniteSplit.of_henselianLocalRing` and `(E2)`
+-- `HopfAlgebra.exists_bialgEquiv_groupFunctions_of_isFiniteSplit`), and those are named in
+-- docstrings here, so it is public to keep them reachable by dot notation from consumers.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.Diagonalizable
 -- the CONNECTED COMPONENT of the identity as a Hopf algebra: `HopfAlgebra.cornerIdeal e₀`
 -- is a Hopf ideal (`HopfAlgebra.isHopfIdeal_cornerIdeal`, sorry-free), so
 -- `G ⧸ HopfAlgebra.cornerIdeal e₀` is `𝒪(G°)`. This is the object that makes the Raynaud
@@ -3788,9 +3799,36 @@ theorem isMultiplicativeType_corner_of_hopf_package
     e₀ he₀ hε₀ hprim₀
 
 set_option synthInstance.maxHeartbeats 1000000 in
-/-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (SORRY
-LEAF, the ARITHMETIC/GEOMETRIC half — cut out of
+/-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (cut out of
 `exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28).
+
+**STATUS, 2026-07-28 — NO LONGER A SORRY NODE. It is a one-line ASSEMBLY** over
+`HopfAlgebra.isMultiplicativeType_baseChange` and
+`HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType`, both in the new
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean`, which also carries the two
+leaves the SGA 3 argument really rests on:
+
+* `Algebra.IsFiniteSplit.of_henselianLocalRing` — **(E1)**, a finite étale algebra over a
+  strictly henselian local ring is split. OPEN, and the only genuinely hard one; it is pure
+  commutative algebra with no Hopf structure in it, and it is a gap in the mathlib pin rather
+  than in this development.
+* `HopfAlgebra.exists_bialgEquiv_groupFunctions_of_isFiniteSplit` — **(E2)**, a split
+  cocommutative group scheme over a LOCAL base is the constant group scheme
+  `GroupFunctions S Γ`. OPEN, formal.
+
+**Two of the three "missing machinery" items recorded below were WRONG, and the corrections
+are worth more than the leaf.** Item 1 (Cartier biduality) was never missing: it is
+`CartierDual.bidualityBialgEquiv`, proven unconditionally in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` since that file was written. The
+survey's refuting `grep` was for the lowercase string `cartierDual`, which cannot match it —
+a reminder that a recorded grep is only as good as its pattern. Item 2 (base change of the
+Cartier dual) was genuinely absent and is now PROVEN, as
+`CartierDual.baseChangeAlgEquiv : S ⊗[R] A^D ≃ₐ[S] (S ⊗[R] A)^D`, over mathlib's
+`IsBaseChange.toDualBaseChange`. Only item 3 survives, as `(E1)`.
+
+Everything below this paragraph is the audit history of the node while it was a leaf. Its
+mathematics is unchanged and is now the mathematics of `(E1)` + `(E2)`; read the "MISSING
+MACHINERY" list as DATED and superseded by the paragraph above.
 
 Stated over an ABSTRACT finite free cocommutative Hopf algebra `A` over `𝒪ᵖᵥ`, because
 nothing in it is about `G`, about `e₀`, or about the corner: it is SGA 3, Exp. VIII/X, in the
@@ -3846,8 +3884,17 @@ theorem exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType
         (1 : unramifiedIntegers p)) ∧
       (∀ i, Coalgebra.comul (R := unramifiedIntegers p) (x i) =
         x i ⊗ₜ[unramifiedIntegers p] x i) ∧
-      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ :=
-  sorry
+      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ := by
+  haveI := hhens
+  haveI := hsep
+  -- NOTE the shape: the base-changed COROLLARY, not the abstract theorem composed with
+  -- `isMultiplicativeType_baseChange` here. Writing the composition out at this call site makes
+  -- Lean re-synthesize every tensor-product instance against the concrete `unramifiedIntegers p`
+  -- (a reducible `abbrev` for an `IntegralClosure` over a `fixedField`), and that took this file
+  -- from 1288 s to 3537 s — measured 2026-07-28, against a 105 s control in which this one
+  -- declaration's proof aborted at an unknown constant. See the performance note on the corollary.
+  exact HopfAlgebra.exists_spanning_groupLike_baseChange_of_isMultiplicativeType 𝒪ᵖᵥ
+    (unramifiedIntegers p) A hmult
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **(D2) TRANSPORT of a diagonalizing family from the corner Hopf algebra to the corner
