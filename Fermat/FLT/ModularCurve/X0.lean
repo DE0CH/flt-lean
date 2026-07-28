@@ -50951,8 +50951,290 @@ theorem exists_hom_of_relPointNatural {X A S : Scheme.{0}} {strX : X ⟶ S} {ast
   rw [hnat]
   rfl
 
+/-! ### BLR's two-step proof of the Néron mapping property
+
+`exists_neronExtension_of_abelianScheme` below used to be atomic, on a
+CUT-OBSTRUCTION AUDIT that named three obstructions to Bosch–Lütkebohmert–Raynaud's
+own proof of *Néron Models* 1.2/8.  This block closes the first of them
+outright and turns the third into a named leaf; see the revised audit in that
+theorem's docstring for the point-by-point reversal.  Nothing here mentions
+modular curves, the Jacobian, or the level. -/
+
+/-- **The generic point `Spec ℚ ⟶ Spec ℤ_(ℓ)` is an OPEN IMMERSION**
+(PROVEN 2026-07-28) — claim (a) of the cut-obstruction audit on
+`exists_neronExtension_of_abelianScheme` below, which recorded it as
+"the cheap, high-value step" that would make BLR's two-step split
+writable.  It is closed here.
+
+TRUE, and `hbase` is exactly what makes it true.  For a general subring
+`R ⊆ ℚ` the statement is FALSE: `Spec ℚ ⟶ Spec ℤ` is the generic point
+of a one-dimensional irreducible scheme with infinitely many closed
+points, and `{(0)}` is not open there.  What `IsReductionBase` supplies
+is that `R` is the LOCALISATION `ℤ_(ℓ)`, whose spectrum has exactly two
+points, so that `Spec ℚ` is the basic open `D(ℓ)`.
+
+The proof is the localisation statement `ℚ = R[1/ℓ]` — i.e.
+`IsLocalization.Away (ℓ : R) ℚ` — handed to mathlib's
+`AlgebraicGeometry.IsOpenImmersion.of_isLocalization`.  Three facts come
+out of `hbase`, in this order:
+
+* `ℓ ≠ 1`: otherwise `ZMod 1` is trivial, so `toF 1 = 0`, and
+  `ker_eq_nonunits` would make the unit `1` a nonunit;
+* `ℓ ≠ 0`: otherwise `ZMod 0 = ℤ`, and surjectivity produces `r` with
+  `toF r = 2 ≠ 0`, hence `r` is a unit of `R`, hence `2` is a unit of
+  `ℤ`;
+* every natural number `e` with `ℓ ∤ e` is a UNIT of `R`, because
+  `toF (e : R) = (e : ZMod ℓ)`, which is nonzero exactly when `ℓ ∤ e`.
+
+Given those, factoring a denominator `d` as `ℓ ^ k * e` with `ℓ ∤ e`
+exhibits every rational as `r / ℓ ^ k`, which is the `surj` field of
+`IsLocalization`; `map_units` is `ℓ ≠ 0` in the field `ℚ`, and
+`exists_of_eq` is injectivity of `R ↪ ℚ`.
+
+**Note that PRIMALITY of `ℓ` is never used**, although it is a
+consequence of `IsReductionBase` (see that structure's docstring).  The
+factorisation `d = ℓ ^ k * e` with `ℓ ∤ e` holds for every `ℓ ≥ 2` by an
+elementary strong induction — take `k` maximal with `ℓ ^ k ∣ d` — and
+`ZMod.natCast_eq_zero_iff` needs no primality either.  Avoiding it saves
+the whole "`R / ker toF` is a field, hence `ℓ` is prime" detour. -/
+theorem SpecLoc.isOpenImmersion_generic {ℓ : ℕ} {R : Subring ℚ} {toF : ↥R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) : IsOpenImmersion (SpecLoc.generic R) := by
+  -- `ℓ ≠ 1`, else `ZMod 1` is trivial and `1` would be a nonunit
+  have hℓ1 : ℓ ≠ 1 := by
+    rintro rfl
+    exact (hbase.ker_eq_nonunits 1).1 (Subsingleton.elim _ _) isUnit_one
+  -- `ℓ ≠ 0`, else `ZMod 0 = ℤ` and `2` would be a unit of `ℤ`
+  have hℓ0 : ℓ ≠ 0 := by
+    rintro rfl
+    obtain ⟨r, hr⟩ := hbase.surjective (2 : ZMod 0)
+    have h2 : (2 : ZMod 0) ≠ 0 := by
+      show (2 : ℤ) ≠ 0
+      norm_num
+    have hru : IsUnit r := by
+      by_contra h
+      exact h2 (hr ▸ (hbase.ker_eq_nonunits r).2 h)
+    have : IsUnit (2 : ZMod 0) := hr ▸ hru.map toF
+    have : IsUnit (2 : ℤ) := this
+    rw [Int.isUnit_iff] at this
+    omega
+  have hℓ2 : 2 ≤ ℓ := by omega
+  -- every natural number prime to `ℓ` is a unit of `R`
+  have hunit : ∀ e : ℕ, ¬ (ℓ ∣ e) → IsUnit ((e : ℕ) : ↥R) := by
+    intro e he
+    by_contra h
+    have h0 := (hbase.ker_eq_nonunits ((e : ℕ) : ↥R)).2 h
+    rw [map_natCast] at h0
+    exact he ((ZMod.natCast_eq_zero_iff e ℓ).1 h0)
+  -- every positive natural number is `ℓ ^ k` times something prime to `ℓ`
+  have hfac : ∀ d : ℕ, d ≠ 0 → ∃ k e : ℕ, d = ℓ ^ k * e ∧ ¬ ℓ ∣ e := by
+    intro d
+    induction d using Nat.strong_induction_on with
+    | _ d ih =>
+      intro hd
+      by_cases hdvd : ℓ ∣ d
+      · obtain ⟨d', rfl⟩ := hdvd
+        have hd' : d' ≠ 0 := by rintro rfl; simp at hd
+        have hlt : d' < ℓ * d' := by
+          have := Nat.pos_of_ne_zero hd'
+          nlinarith
+        obtain ⟨k, e, hke, he⟩ := ih d' hlt hd'
+        exact ⟨k + 1, e, by rw [hke]; ring, he⟩
+      · exact ⟨0, d, by simp, hdvd⟩
+  letI : Algebra ↥R ℚ := (R.subtype).toAlgebra
+  have halg : ∀ r : ↥R, algebraMap ↥R ℚ r = (r : ℚ) := fun _ => rfl
+  haveI : IsLocalization.Away ((ℓ : ℕ) : ↥R) ℚ := by
+    rw [IsLocalization.Away, isLocalization_iff]
+    refine ⟨?_, ?_, ?_⟩
+    · rintro ⟨y, n, rfl⟩
+      rw [halg]
+      refine (isUnit_iff_ne_zero).2 ?_
+      push_cast
+      exact pow_ne_zero _ (Nat.cast_ne_zero.2 hℓ0)
+    · intro q
+      obtain ⟨k, e, hke, he⟩ := hfac q.den q.den_nz
+      obtain ⟨v, hv⟩ := hunit e he
+      refine ⟨⟨(q.num : ↥R) * ↑v⁻¹, ⟨(ℓ : ↥R) ^ k, ⟨k, rfl⟩⟩⟩, ?_⟩
+      have hvq : ((v : ↥R) : ℚ) = (e : ℚ) := by rw [hv]; push_cast; ring
+      have hev : ((v : ↥R) : ℚ) * (((v⁻¹ : (↥R)ˣ) : ↥R) : ℚ) = 1 := by
+        rw [← Subring.coe_mul, ← Units.val_mul, mul_inv_cancel]
+        simp
+      have hene : (e : ℚ) ≠ 0 := by
+        rw [Nat.cast_ne_zero]
+        rintro rfl
+        exact he (dvd_zero ℓ)
+      have hinv : (((v⁻¹ : (↥R)ˣ) : ↥R) : ℚ) = (e : ℚ)⁻¹ := by
+        rw [hvq] at hev
+        exact (inv_eq_of_mul_eq_one_right hev).symm
+      have hdne : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.2 q.den_nz
+      have hqd : q * (q.den : ℚ) = (q.num : ℚ) := (eq_div_iff hdne).mp (Rat.num_div_den q).symm
+      have hcast1 : (((((ℓ : ℕ) : ↥R) ^ k : ↥R)) : ℚ) = (ℓ : ℚ) ^ k := by push_cast; ring
+      have hcast2 : (((((q.num : ↥R) * (↑v⁻¹ : ↥R)) : ↥R)) : ℚ) = (q.num : ℚ) * (e : ℚ)⁻¹ := by
+        rw [Subring.coe_mul, hinv]; push_cast; ring
+      have hden : (ℓ : ℚ) ^ k * (e : ℚ) = (q.den : ℚ) := by rw [hke]; push_cast; ring
+      show q * algebraMap ↥R ℚ _ = algebraMap ↥R ℚ _
+      rw [halg, halg, hcast1, hcast2]
+      refine mul_right_cancel₀ hene ?_
+      rw [mul_assoc, hden, hqd, mul_assoc, inv_mul_cancel₀ hene, mul_one]
+    · intro x y h
+      refine ⟨1, ?_⟩
+      have : (x : ℚ) = (y : ℚ) := h
+      simp [Subtype.ext this]
+  exact AlgebraicGeometry.IsOpenImmersion.of_isLocalization ((ℓ : ℕ) : ↥R)
+
+/-- **A fibre over an OPEN point of the base is an OPEN SUBSCHEME**
+(PROVEN 2026-07-28) — Yoneda in the slice category, plus stability of
+open immersions under base change.
+
+`e.universalPoint.1 : A' ⟶ A` factors as
+`e.compareHom ≫ Limits.pullback.fst f s` (`IsFibreIdent.compareHom_fst`),
+whose first factor is an ISOMORPHISM (`IsFibreIdent.compareIso`) and
+whose second is the base change of `s` along `f`.  So it is an open
+immersion whenever `s` is, with no hypothesis on `f` whatsoever — in
+particular no curve, no abelian scheme and nothing about the base.
+
+Together with `SpecLoc.isOpenImmersion_generic` this presents the generic
+fibre `X` as an OPEN SUBSCHEME of its integral model `XZ`, which is what
+a rational map `𝒳 ⇢ 𝒜` needs in order to have a domain at all, and hence
+what makes `exists_neronExtension_codimOne` below writable. -/
+theorem IsFibreIdent.isOpenImmersion_universalPoint {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') (hs : IsOpenImmersion s) :
+    IsOpenImmersion e.universalPoint.1 := by
+  haveI := hs
+  haveI : IsIso e.compareHom := e.compareIso.isIso_hom
+  rw [← e.compareHom_fst]
+  infer_instance
+
+/-- **BLR 1.2/8, STEP (i): the rational map `𝒳 ⇢ 𝒜` is DEFINED IN
+CODIMENSION `≤ 1`** (sorry leaf, new 2026-07-28) — LEVEL-GENERIC, and it
+mentions neither modular curves nor the Jacobian.
+
+TRUE, and this is Bosch–Lütkebohmert–Raynaud's own proof of *Néron
+Models* 1.2/8, quoted: "consider a closed point `s ∈ S` and a generic
+point `z` of the fibre over `s` in `Y`.  Then the local ring `𝒪_{Y,z}`
+is a discrete valuation ring; cf. 2.3/9.  So the valuative criterion of
+properness implies that `u_K` extends to a morphism `Spec 𝒪_{Y,z} ⟶ X`
+or, using Lemma 5, to a rational map `Y ⇢ X` which is defined in a
+neighbourhood of `z`.  Therefore `u` is defined in codimension `≤ 1`."
+
+Concretely, here: `XZ` is regular because it is smooth over the discrete
+valuation ring `R` (`hbase`, `hcurve.smooth`), so the local ring at the
+generic point `η` of the special fibre is a discrete valuation ring with
+fraction field the function field of `X`; and `AZ` is PROPER over `R`
+because it is an abelian scheme (`abZ.proper`), so the valuative
+criterion of properness extends `u` over `Spec 𝒪_{XZ,η}` and hence over
+an open neighbourhood of `η`.  Every other point of codimension `≤ 1` of
+`XZ` already lies in the open subscheme `X` — the generic point of `XZ`
+is the generic point of `X`, and the codimension-`1` points of `X` are
+its closed points — so `U` may be taken to be `X` together with that
+neighbourhood.
+
+**HOW "CODIMENSION `≥ 2`" IS SAID, AND WHY NO NEW PREDICATE IS NEEDED.**
+The codimension of the irreducible closed subset `{z}⁻` in a scheme `Z`
+is the Krull dimension of the local ring `𝒪_{Z,z}` — that is a
+definition-level identity, not a theorem about this situation — so
+`2 ≤ ringKrullDim (XZ.presheaf.stalk z)` says exactly "`z` has
+codimension `≥ 2`".  `ringKrullDim` is already used elsewhere in this
+file.  The audit that recorded "there is no codimension predicate on
+points of a scheme in use anywhere in this project" was phrasing the
+absence check in the PROJECT's vocabulary rather than mathlib's, which is
+the standard way such a check returns a false blocker.
+
+**WHY `hjX` AND `hjA` ARE HANDED IN RATHER THAN DERIVED.**  Both are
+consequences of `hbase` through `SpecLoc.isOpenImmersion_generic` and
+`IsFibreIdent.isOpenImmersion_universalPoint`, and the caller supplies
+them; they are hypotheses here because they are what makes the statement
+*attackable* — without `X ⊆ XZ` open there is no rational map to extend,
+only a fibre.  Adding them weakens the leaf, which is the safe direction.
+
+**The check that refutes it**: a smooth proper curve `𝒳` over a discrete
+valuation ring and an abelian scheme `𝒜` over it, with a morphism
+`𝒳_ℚ ⟶ 𝒜_ℚ` that does not extend over ANY open neighbourhood of the
+generic point of the special fibre — which would contradict the valuative
+criterion of properness for `𝒜`. -/
+theorem exists_neronExtension_codimOne (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
+    {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
+    (hcurve : IsSmoothProperCurve xstr)
+    {astr : A ⟶ SpecQ} {astrZ : AZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct astrZ)
+    (genX : IsFibreIdent (SpecLoc.generic R) xstr strX)
+    (genA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
+    (hjX : IsOpenImmersion genX.universalPoint.1)
+    (hjA : IsOpenImmersion genA.universalPoint.1)
+    (u : X ⟶ A) (hu : u ≫ astr = strX) :
+    ∃ (U : XZ.Opens) (w : X ⟶ (U : Scheme.{0})) (v : (U : Scheme.{0}) ⟶ AZ),
+      (∀ z : XZ, z ∉ U → 2 ≤ ringKrullDim (XZ.presheaf.stalk z)) ∧
+      w ≫ U.ι = genX.universalPoint.1 ∧
+      v ≫ astrZ = U.ι ≫ xstr ∧
+      u ≫ genA.universalPoint.1 = w ≫ v :=
+  sorry
+
+/-- **WEIL'S EXTENSION THEOREM (BLR 4.4/1), in the shape this
+development needs** (sorry leaf, new 2026-07-28) — LEVEL-GENERIC, and it
+mentions neither modular curves, nor the Jacobian, nor the generic fibre.
+
+TRUE.  Bosch–Lütkebohmert–Raynaud, *Néron Models*, 4.4/1, verbatim: "Let
+`S` be a normal noetherian base scheme, and let `u : Z ⇢ G` be an
+`S`-rational map from a smooth `S`-scheme `Z` to a smooth and separated
+`S`-group scheme `G`.  Then, if `u` is defined in codimension `≤ 1`, it
+is defined everywhere."  (BLR attribute it to Weil [2], §II n°15, Prop. 1;
+their proof reduces to the diagonal in `Z ×_S Z`, using that the
+non-definition locus of a rational map into an AFFINE scheme over a
+normal noetherian scheme is of pure codimension `1` — EGA IV₄ 20.4.12.)
+
+The instance here: `S = Spec R` is normal noetherian, being the spectrum
+of a discrete valuation ring (`hbase`); `Z = XZ` is smooth over it
+(`hcurve.smooth`); and `G = AZ` is an abelian scheme (`abZ`), hence a
+smooth `S`-group scheme, separated because it is proper.  "`u` is defined
+in codimension `≤ 1`" is the pair `(U, v)` together with `hcodim`: every
+point outside `U` has local ring of Krull dimension `≥ 2`, i.e.
+codimension `≥ 2` in `XZ`.
+
+**`hcodim` ALSO SUPPLIES BLR's `S`-DENSITY**, which is why no separate
+hypothesis for it appears.  BLR's notion of an `S`-rational map requires
+the domain to be dense in every fibre; here the complement of `U` misses
+every point of codimension `≤ 1`, so `U` contains the generic point of
+`XZ` and the generic point of the special fibre, and is therefore dense
+in both fibres.  That is exactly why the codimension condition is stated
+on `XZ` rather than fibrewise.
+
+**THE GROUP STRUCTURE `abZ` IS LOAD-BEARING, and here is the witness.**
+Extension across a codimension-`2` locus is FALSE for a general smooth
+separated proper target: `u : 𝔸² ⇢ ℙ¹`, `(x, y) ↦ x / y`, is a morphism
+on `𝔸² ∖ {0}`, whose complement is a single point of codimension `2`, and
+it does not extend to `𝔸²` — its graph closure is the blow-up.  So a
+prover may not discharge this leaf by any purely topological
+"glue across a small closed set" argument; the group law of `AZ` has to
+be used, exactly as in Weil's reduction to the diagonal.
+
+**MISSING MACHINERY, checked 2026-07-28 rather than assumed.**  There is
+no `NeronModel`, no Weil extension theorem and no "defined in
+codimension" development in `.lake/packages/mathlib`, in this project's
+`Fermat/FLT/Mathlib/` shim tree, or in `~/cs/FLT`.  What the pin DOES
+carry, and what a prover should look at first, is
+`AlgebraicGeometry.Scheme.RationalMap` / `PartialMap` with `domain`,
+`fromSpecStalkOfMem` and `ofFromSpecStalk`
+(`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`), the valuative
+criterion (`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`, already
+imported here), and `ringKrullDim`.
+
+**The check that refutes it**: a smooth `R`-scheme `Z`, an abelian scheme
+`G` over `R`, an open `U ⊆ Z` whose complement consists of points of
+codimension `≥ 2`, and a morphism `U ⟶ G` over `R` not extending to `Z`. -/
+theorem exists_weilExtension_of_abelianScheme (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
+    {XZ AZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R}
+    (hcurve : IsSmoothProperCurve xstr)
+    {astrZ : AZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct astrZ)
+    (U : XZ.Opens)
+    (hcodim : ∀ z : XZ, z ∉ U → 2 ≤ ringKrullDim (XZ.presheaf.stalk z))
+    (v : (U : Scheme.{0}) ⟶ AZ) (hv : v ≫ astrZ = U.ι ≫ xstr) :
+    ∃ uZ : XZ ⟶ AZ, uZ ≫ astrZ = xstr ∧ U.ι ≫ uZ = v :=
+  sorry
+
 /-- **THE NÉRON MAPPING PROPERTY, as an equation between two morphisms
-of schemes** (sorry leaf, 2026-07-28) — LEVEL-GENERIC, and now free of
+of schemes** (PROVEN by decomposition 2026-07-28 over
+`exists_neronExtension_codimOne` and `exists_weilExtension_of_abelianScheme`
+above; a sorry leaf earlier the same day) — LEVEL-GENERIC, and free of
 every functor-of-points family: this is the textbook statement and
 nothing else.
 
@@ -50994,31 +51276,33 @@ between two composites of morphisms rather than a statement about
 families.  That is the whole of the reduction, and
 `exists_abelianSpread_of_neronModel` below is now PROVEN from it.
 
-The axis NOT searched to a conclusion is BLR's own two-step proof, which
-would split this leaf again into (i) *the rational map `𝒳 ⇢ 𝒜` is defined
-at every point of codimension `≤ 1`* — true at the generic point of the
-special fibre because `𝒪_{𝒳,η}` is a discrete valuation ring (`𝒳` is
-regular, being smooth over a DVR) and `𝒜` is proper, so the valuative
-criterion applies — and (ii) *Weil's extension theorem* (BLR 4.4/1: an
-`S`-rational map from a smooth `S`-scheme to a smooth separated
-`S`-group scheme defined in codimension `≤ 1` is defined everywhere).
+**THE SECOND AXIS HAS NOW BEEN SEARCHED TOO, AND THE SPLIT IS CARRIED
+OUT ABOVE** (2026-07-28, later the same day).  The earlier version of
+this audit named three obstructions to BLR's own two-step proof.  All
+three have been re-run and the verdict is reversed:
 
-**The checks that would refute the verdict that (i)/(ii) are not worth
-cutting here**, in the order they should be run.  The pin *does* carry
-`AlgebraicGeometry.Scheme.RationalMap` with `PartialMap`, `domain`,
-`fromSpecStalkOfMem` and `ofFromSpecStalk`
-(`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`), so the first
-half of the objection — "rational maps cannot be phrased at this pin" —
-is FALSE and must not be repeated.  What is missing is narrower and
-concrete: (a) `SpecLoc.generic R` is not known here to be an OPEN
-immersion, which is what would present `X` as an open subscheme of `XZ`
-rather than merely as a fibre (it *is* one — the generic point of the
-spectrum of a DVR is open — but nothing in this development says so);
-(b) there is no codimension predicate on points of a scheme in use
-anywhere in this project; and (c) Weil's extension theorem is in neither
-mathlib nor `~/cs/FLT`.  Whoever closes (a) should re-run this audit:
-with `X` an open subscheme of `XZ`, `u` becomes a `PartialMap` in one
-line and the two-leaf split becomes writable.
+* (a) *`SpecLoc.generic R` is not known here to be an OPEN immersion* —
+  now **CLOSED**, and it was indeed the cheap high-value step the audit
+  said it was: `SpecLoc.isOpenImmersion_generic` above proves it from
+  `hbase` through `ℚ = R[1/ℓ]`, and `IsFibreIdent.isOpenImmersion_universalPoint`
+  propagates it to both generic fibres;
+* (b) *there is no codimension predicate on points of a scheme in use
+  anywhere in this project* — true of this project, and **irrelevant**,
+  because no new predicate is needed: the codimension of `{z}⁻` in a
+  scheme IS the Krull dimension of the local ring at `z`, and
+  `ringKrullDim (XZ.presheaf.stalk z)` is already in use in this very
+  file.  This is the standard trap of phrasing an absence check in the
+  project's own vocabulary;
+* (c) *Weil's extension theorem is in neither mathlib nor `~/cs/FLT`* —
+  still true, and it is now the NAMED leaf
+  `exists_weilExtension_of_abelianScheme` above rather than an
+  unattributed part of this one.
+
+The audit's own closing sentence — "whoever closes (a) should re-run this
+audit" — is what happened.  Note that the `PartialMap`/`RationalMap` API
+it pointed at turned out NOT to be needed: an ordinary `U : XZ.Opens`
+with a morphism out of it says everything, and avoids the `S`-density
+side conditions that `Scheme.PartialMap` would drag in.
 
 **The check that refutes the LEAF**: a smooth `R`-scheme `𝒳` and an
 abelian scheme `𝒜` over `R` with a morphism `𝒳_ℚ ⟶ 𝒜_ℚ` not extending
@@ -51032,8 +51316,18 @@ theorem exists_neronExtension_of_abelianScheme (ℓ : ℕ) (R : Subring ℚ) (to
     (genA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
     (u : X ⟶ A) (hu : u ≫ astr = strX) :
     ∃ uZ : XZ ⟶ AZ, uZ ≫ astrZ = xstr ∧
-      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ :=
-  sorry
+      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ := by
+  -- the generic fibres are OPEN subschemes of the models
+  have hgen : IsOpenImmersion (SpecLoc.generic R) := SpecLoc.isOpenImmersion_generic hbase
+  -- BLR 1.2/8, step (i): the rational map is defined in codimension `≤ 1`
+  obtain ⟨U, w, v, hcodim, hw, hv, hcomm⟩ :=
+    exists_neronExtension_codimOne ℓ R toF hbase hcurve abZ genX genA
+      (genX.isOpenImmersion_universalPoint hgen) (genA.isOpenImmersion_universalPoint hgen) u hu
+  -- BLR 4.4/1, Weil's extension theorem: it is then defined everywhere
+  obtain ⟨uZ, huZ, hUuZ⟩ :=
+    exists_weilExtension_of_abelianScheme ℓ R toF hbase hcurve abZ U hcodim v hv
+  refine ⟨uZ, huZ, ?_⟩
+  rw [hcomm, ← hw, Category.assoc, hUuZ]
 
 /-- **The Néron mapping property: a morphism from the generic fibre of a
 smooth proper model into an abelian variety with good reduction spreads
