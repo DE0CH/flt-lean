@@ -459,6 +459,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- own imports are `Mathlib.AlgebraicGeometry.EllipticCurve.{Weierstrass,
 -- VariableChange}` — both already upstream of the `Affine.Point` import above.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut
+-- The composition/conjugation law for variable changes acting on points, the
+-- normal form `y² = x³ + ax` at `j = 1728`, and the QUARTIC TWIST built from
+-- it.  This is what makes `exists_stableCyclic_twist_of_autStable_of_j_eq_1728`
+-- a theorem over one arithmetic leaf rather than a leaf itself.  Its own
+-- imports are `Aut` (already above), `Affine.Point` (already above) and
+-- `Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms`, so it adds ONE module
+-- to the cone.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.QuarticTwist
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
@@ -11283,11 +11291,16 @@ declarations are
   `autPoint_injective` plus finiteness of `⟨g⟩`) and the extraction, in the
   non-rigid case, of a moving automorphism whose `u` is a primitive `4`th root of
   unity (at `j = 1728`) resp. of order `3` or `6` (at `j = 0`);
-* `exists_stableCyclic_twist_of_autStable_of_j_eq_1728` (LEAF) — the QUARTIC twist.
+* `exists_stableCyclic_twist_of_autStable_of_j_eq_1728` (**PROVEN 2026-07-28**, over the
+  single leaf `WeierstrassCurve.exists_quarticTwistParameter`) — the QUARTIC twist.
   The obstruction lives in `μ₄/μ₂ ≅ μ₂` with trivial Galois action, so it is a
   homomorphism `Γ_ℚ → {±1}` with open kernel and the twisting parameter is the
   discriminant of the quadratic field it cuts out.  **No Kummer theory, no `H¹`.**
-  Strictly the easier of the two, and should get its own owner;
+  The whole geometric half — normal form, `Aut ↪ μ₄`, conjugation of automorphisms
+  across an isomorphism, and the twist itself — is now proven in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/QuarticTwist.lean`; the residual
+  leaf is exactly "an open index-`2` subgroup of `Γ_ℚ` is the stabiliser of a square
+  root", and it is model-free;
 * `exists_stableCyclic_twist_of_autStable_of_j_eq_zero` (LEAF) — the SEXTIC twist.
   The obstruction lives in `μ₆/μ₂ ≅ μ₃`, whose Galois action is the quadratic
   character of `ℚ(ζ₃)`, so it is a genuine `1`-cocycle and `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³`
@@ -11711,8 +11724,44 @@ theorem autPoint_injective {F : Type*} [Field F] [DecidableEq F] {W : Weierstras
   simpa using hEq
 
 /-- **THE ARITHMETIC HEART at `j = 1728`: the descent obstruction is killed by a
-QUARTIC twist** (sorry leaf, opened 2026-07-27 by decomposing
-`exists_stableCyclic_twist_of_autStable_of_j_special`).
+QUARTIC twist** (opened as a sorry leaf 2026-07-27; **PROVEN 2026-07-28** over the
+single leaf `WeierstrassCurve.exists_quarticTwistParameter`, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/QuarticTwist.lean`).
+
+#### What is now proven, and what is left
+
+Everything in the route below is proven except the production of the twisting
+parameter `d`, which is the single remaining leaf.  Proven, in `QuarticTwist.lean`:
+
+* `WeierstrassCurve.exists_smul_eq_quarticModel` — the normal form: an elliptic curve
+  with `j = 1728` over a field of characteristic `0` is isomorphic *over that field*
+  to `quarticModel a : y² = x³ + a x` with `a ≠ 0` (`c₆ = 0` gives `a₆ = 0`, `c₄ ≠ 0`
+  gives `a₄ ≠ 0`, on top of mathlib's `toShortNF`);
+* `WeierstrassCurve.Affine.Point.equivVariableChange_autMap` — the conjugation law
+  `θ ∘ [C₀DC₀⁻¹] = [D] ∘ θ` for `θ = equivVariableChange W C₀`.  This is exactly the
+  piece the earlier version of this docstring listed as MISSING under item 1 (it
+  asked for the composition law `equivVariableChange W (C·C')`; what the argument
+  actually consumes is the conjugation it implies, which is proved directly in
+  coordinates);
+* `WeierstrassCurve.exists_conj_autMap_baseChange` — the transport of `haut`, `ι` and
+  `hmove` along the normal-form isomorphism, using that
+  `equivVariableChangeBaseChange` is `Γ`-equivariant because `C₀` has coefficients
+  in the base field;
+* `WeierstrassCurve.aut_eq_diag` — every automorphism of `y² = x³ + a₄x` is
+  `⟨u,0,0,0⟩` with `u⁴ = 1` (so `Aut ↪ μ₄`, `u` injective);
+* `WeierstrassCurve.map_twist` — the coordinate identity `σ(ψP) = [σδ/δ](ψ(σP))`, and
+  `WeierstrassCurve.Affine.Point.autMap_twist_comm` — diagonal automorphisms commute
+  with `ψ`, which is what reduces the goal to `ζ_σ² = u_σ²`;
+* `WeierstrassCurve.exists_stableCyclic_quarticTwist` — the assembly.
+
+Item 2 of the old MISSING MACHINERY list (`Aut(E_a) = μ₄`, the SURJECTIVITY half) is
+not needed: `ι` itself exhibits an automorphism of order `4`, and the argument only
+ever uses the injectivity of `C ↦ C.u`.
+
+The residue, `exists_quarticTwistParameter`, is item 3 of that list and nothing else:
+the quadratic field cut out by an open index-`2` subgroup of `Γ_ℚ`.
+
+#### The original statement of the route
 
 `Aut(E⁄ℚ̄) ↪ μ₄` here (`WeierstrassCurve.u_pow_four_eq_one_of_smul_eq_of_j_eq_1728`),
 and `ι` is an automorphism which does NOT preserve `⟨g⟩`; `hu` records that its
@@ -11791,8 +11840,10 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N �
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g' :=
-  sorry
+          AddSubgroup.zmultiples g' := by
+  haveI : CharZero (AlgebraicClosure ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+  exact WeierstrassCurve.exists_stableCyclic_quarticTwist hN E hj g hg haut ι hι hmove hu
 
 /-- **THE ARITHMETIC HEART at `j = 0`: the descent obstruction is killed by a SEXTIC
 twist** (sorry leaf, opened 2026-07-27 by decomposing
