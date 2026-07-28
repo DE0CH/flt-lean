@@ -13508,6 +13508,20 @@ theorem exists_frobLevelMatrix_of_levelTateFrame
 
 /-! #### The prime-to-`p` torsion count over a finite field
 
+**⚠ SUPERSEDED LATER THE SAME DAY — READ THIS FIRST.**  The three-leaf
+cut described below (rational count + parity + nonvanishing, assembled by
+`LevelFrame.card_tors_eq_sq`) is NO LONGER the route.  Since 2026-07-28
+`card_torsion_of_isMaximal_finiteBase` goes through the PRINCIPAL-IDEAL
+count `card_torsion_span_singleton_of_field` and the class-group assembly
+`LevelFrame.card_tors_eq_sq_of_principal`, over the single degree leaf
+`finrank_mulByElt_of_field`.  All three of the leaves this note calls
+"genuinely independent", plus the two inputs of the parity leaf, are now
+OFF-CONE; see the note in `even_dim_torsion_of_isMaximal_finiteBase`.
+The text below is kept because its analysis of what is base-independent
+is still correct and still useful — but do not read it as a description
+of the live cut, and do not dispatch anyone at the leaves it names
+without checking `card_torsion_of_isMaximal_finiteBase` first.
+
 `exists_levelTateFrame_finiteBase` below is **PROVEN (2026-07-28)** by
 the same assembly that proves `exists_levelTateFrame` in characteristic
 zero, over the three geometric leaves stated in this subsection.  What
@@ -14052,12 +14066,21 @@ whatsoever.  The parity CONCLUSION of the consumer is probably true at
 `p` as well (`r = 0` is even); it is this intermediate statement that
 fails there.
 
-NOTE ON THE SIBLING SUBTREE.  `det_frobLevelMatrix_eq_natCast_finiteBase`
-wants Galois EQUIVARIANCE (`PolarizationStruct.pairing_gal`) from the
-same polarization, where this leaf wants alternation and nondegeneracy.
-They are expected to share exactly this existence statement and nothing
-else: whoever proves this leaf should state it once and let both
-consumers cite it. -/
+**⚠ OFF-CONE SINCE 2026-07-28 — DO NOT DISPATCH A PROVER AT THIS LEAF
+WITHOUT READING `even_dim_torsion_of_isMaximal_finiteBase` FIRST.**  Its
+only consumer, the parity leaf, was itself taken out of the cone when
+`card_torsion_of_isMaximal_finiteBase` was rewired through the
+principal-ideal count.  Nothing now depends on this statement, so proving
+it buys the root theorem nothing as the tree stands.
+
+NOTE ON THE SIBLING SUBTREE, AND THE REASON TO RELOCATE RATHER THAN
+DELETE.  `det_frobLevelMatrix_eq_natCast_finiteBase` wants Galois
+EQUIVARIANCE (`PolarizationStruct.pairing_gal`) from the same
+polarization, where the parity leaf wanted alternation and nondegeneracy.
+That consumer is still open and still needs a polarization to exist, so
+THIS statement is the one thing in the off-cone island that should
+survive: move it next to that consumer and cite it there, rather than
+deleting it and having it written a second time. -/
 theorem exists_polarizationStruct_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -14124,44 +14147,49 @@ The glue between them is the module theory: `A'[J]` is `torsionBySet` for
 `Submodule.instModuleQuotient…`, and `𝒪_D/J` is a finite field because
 `J` is maximal and nonzero.
 
-**IS THIS LEAF STILL NEEDED?  CHECKED 2026-07-28, AND THE ANSWER IS YES
-AS THE TREE IS WIRED — but only by one hypothesis of one assembly.**
-`card_torsion_span_singleton_of_field` above now gives the count at a
-principal ideal over an ARBITRARY field base, which raises the obvious
-question of whether `LevelFrame.card_tors_eq_sq_of_principal` reaches
-`card_torsion_of_isMaximal_finiteBase` on its own, making parity and
-nonvanishing both unnecessary.  It does NOT, as those two are stated:
-that assembly's `hprin` demands the count at EVERY nonzero principal
-ideal, and over a finite field that is **FALSE** — take `a = p = char k`
-and a supersingular fibre, where `#A'[(p)] = p^r` with `r ≤ g` while
-`#(𝒪_D/(p))² = p^(2g)`.  That is the same counterexample
-`card_torsion_span_singleton_of_field`'s own docstring gives for dropping
-its `hchar`, and it is why that hypothesis is there.
+**⚠ THIS DECLARATION IS OFF-CONE SINCE 2026-07-28 — NOTHING CONSUMES IT,
+AND THE DELETION IS PENDING A CROSS-OWNER DECISION.**  Its only consumer
+was `card_torsion_of_isMaximal_finiteBase`, which has been rewired
+through `LevelFrame.card_tors_eq_sq_of_principal` and the principal-ideal
+count `card_torsion_span_singleton_of_field`; see that theorem's
+docstring for why the class-group route needs neither parity nor
+nonvanishing.  The rewiring cost the cone nothing — its degree leaf
+`finrank_mulByElt_of_field` was already in it — and it removed the deep
+geometric leaf `exists_polarizationStruct_finiteBase` from the cone
+outright.
 
-THE REPAIR, IF SOMEONE WANTS IT, AND THE CHECK THAT WOULD REFUTE THIS
-NOTE.  `card_tors_eq_sq_of_principal` uses `hprin` **exactly once**, at
-the generator `a` of `J ^ h` produced from the class group inside its own
-proof (`have h1 := hprin a ha0`, in the step commented "the count at
-`J ^ h`").  So weakening `hprin` to
+So this leaf, `exists_polarizationStruct_finiteBase`,
+`exists_isAlt_nondegenerate_of_adjointPairing`,
+`card_torsion_span_natCast_finiteBase` and
+`card_torsion_ne_one_of_isMaximal_finiteBase` form a CLOSED OFF-CONE
+ISLAND: nothing outside the five refers to any of them.  Deleting it
+spans four owners' declarations and is not a call this leaf's owner
+should take alone, so the material is left in place and the island is
+reported instead.
 
-    ∀ (n : ℕ) (a : 𝒪_D), a ≠ 0 → Ideal.span {a} = J ^ n → …
+TWO REASONS TO THINK BEFORE DELETING, both of which argue for keeping the
+statements even if the proofs go.  First, the surviving route rests on
+the still-OPEN `finrank_mulByElt_of_field`; if that leaf turns out to be
+harder than expected, the parity/nonvanishing route is an INDEPENDENT
+second route to the same count and is worth having written down.  Second,
+`exists_polarizationStruct_finiteBase` is the shared-infrastructure
+statement that `det_frobLevelMatrix_eq_natCast_finiteBase` wants for
+Galois equivariance (`PolarizationStruct.pairing_gal`); it should be
+relocated to that consumer rather than deleted, or it will have to be
+written a second time.
 
-costs its characteristic-zero consumer
-`card_torsion_isMaximal_of_isAlgClosed` nothing (it holds the stronger
-form) and lets the finite-base consumer discharge it: `N(J ^ n)` is a
-power of `N(J)`, hence prime to `char k` whenever `J` is, which is
-`natCast_ne_zero_of_coprime_natCard` composed with
-`Ideal.absNorm_pow`.  Grep for `hprin` in this file to check the "exactly
-once" claim; it takes a second.
-
-If that repair lands, THIS LEAF AND ITS GEOMETRIC RESIDUE
-`exists_polarizationStruct_finiteBase` BECOME FREE-FLOATING and should be
-DELETED, together with `card_torsion_ne_one_of_isMaximal_finiteBase` and
-`card_torsion_span_natCast_finiteBase` — and, unless
-`det_frobLevelMatrix_eq_natCast_finiteBase` is first rewired to cite it,
-the polarization existence statement disappears with them.  That is a
-cut-level decision across four owners' declarations, not one this leaf's
-owner should take unilaterally.
+WHAT THE OLD OBSTRUCTION WAS, recorded because it is the reusable part.
+`card_tors_eq_sq_of_principal` used to demand its principal-ideal count
+at EVERY nonzero `a`, and over a finite field that is FALSE — `a = p =
+char k` with a supersingular fibre gives `#A'[(p)] = p^r`, `r ≤ g`,
+against `#(𝒪_D/(p))² = p^(2g)`, which is exactly the counterexample
+`card_torsion_span_singleton_of_field` cites for its own `hchar`.  The
+proof consumed `hprin` exactly ONCE, at the class-group generator of
+`J ^ h`, so weakening the hypothesis to that case cost its
+characteristic-zero consumer nothing and made the finite-base case
+reachable.  The general lesson: when an assembly looks inapplicable,
+check how much of its hypothesis the proof actually uses before
+concluding the route is closed.
 
 **THE PAIRING IS ONLY AVAILABLE PRIME TO `p`**, which is why `hq`/`hqN`
 are carried: over a finite field the Weil pairing on `A'[J]` is
@@ -14434,17 +14462,35 @@ theorem card_torsion_ne_one_of_isMaximal_finiteBase
 
 open _root_.NumberField in
 /-- **`#A'[I] = #(𝒪_D/I)²` AT A MAXIMAL IDEAL OF RESIDUE CHARACTERISTIC
-PRIME TO `#k`** (PROVEN 2026-07-28 over the three geometric leaves
-`card_torsion_span_natCast_finiteBase`,
-`even_dim_torsion_of_isMaximal_finiteBase` and
-`card_torsion_ne_one_of_isMaximal_finiteBase`, and the arithmetic bridge
-`LevelFrame.card_tors_eq_sq`).
+PRIME TO `#k`** (**PROVEN 2026-07-28** over the SINGLE degree leaf
+`finrank_mulByElt_of_field`, through `card_torsion_span_singleton_of_field`
+and the class-group assembly `LevelFrame.card_tors_eq_sq_of_principal`).
 
-This is the finite-base counterpart of `card_torsion_of_isMaximal`, and
-its proof is that one with a single change: the rational prime is HANDED
-IN as `q` rather than extracted from `I` by
-`Ideal.exists_prime_and_absNorm_eq_pow`, because it is `q` — not `I` —
-that the prime-to-characteristic hypothesis is attached to.
+**REWIRED 2026-07-28, AND THE OLD ROUTE IS GONE.**  This was proven over
+the THREE leaves `card_torsion_span_natCast_finiteBase`,
+`even_dim_torsion_of_isMaximal_finiteBase` and
+`card_torsion_ne_one_of_isMaximal_finiteBase` through
+`LevelFrame.card_tors_eq_sq` — the integer count at a rational prime plus
+parity and nonvanishing at each `J ∣ q`, which is what
+`card_tors_eq_sq` needs because an integer count cannot separate the
+primes above `q`.  The principal-ideal count separates them by itself:
+`J ^ h` is a power of the SINGLE prime `J`.  So all three are now
+UNCONSUMED, together with `even_dim_torsion_of_isMaximal_finiteBase`'s
+own two inputs — see the note in its docstring.
+
+WHY IT COULD NOT BE REWIRED BEFORE, AND WHAT CHANGED.
+`card_tors_eq_sq_of_principal` used to demand the principal-ideal count
+at EVERY nonzero `a`, which over a finite field is FALSE at `a = char k`;
+its `hprin` is now asked only at generators of POWERS OF `I`, the only
+place its proof ever used it.  Here that is discharged from
+`card_torsion_span_singleton_of_field` because `N(I ^ n) = N(I)^n` and
+`N(I)` is a `q`-power (the residue field at `I` has characteristic `q`),
+hence prime to `char k` by `hqN`.
+
+`hq`/`hqN` are therefore still load-bearing, but they are spent
+differently: not on a Weil pairing, but on the ÉTALENESS of `[a]`, which
+is what `card_torsion_span_singleton_of_field`'s `hchar` asks for and
+what fails at the characteristic.
 
 The residual count is the ONLY geometric input of
 `exists_levelTateFrame_finiteBase`; everything else about a single-level
