@@ -33470,15 +33470,60 @@ group quotient of an affine scheme separates orbits on geometric points — and 
 `G`-translate of a rigidified datum is the SAME `Γ₀(N)`-datum with a different
 level-`n` structure, so the two data are isomorphic.  Note this is genuinely the
 place where finiteness of `G` is used; the categorical-quotient clause alone
-does not give it. -/
-theorem exists_isCoarseModuliY0_geomInjective (N : ℕ) (_hN : 0 < N) :
+does not give it.
+
+## THAT ATTACK WAS ALREADY CARRIED OUT UPSTREAM — PROVEN 2026-07-28
+
+**The paragraph above was stale when it was written**, and the check that
+refutes it is one grep: `X0.lean` already carries the INJECTIVITY half of the
+geometric bijection, in exactly the two-step shape its surjectivity partner
+uses, and both steps landed on 2026-07-27:
+
+* `Fermat.Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — the
+  clause over a PRESENTATION, i.e. precisely the `G`-orbit statement the
+  paragraph above recommends exhibiting.  It is a sorry leaf **with its own
+  owner in `X0.lean`**;
+* `Fermat.IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` — the same
+  clause over an ARBITRARY coarse space, **PROVEN** there by initiality alone.
+
+So this statement is a strictly weaker (existential) form of a theorem that
+already exists universally quantified, and the proof below is the one line that
+says so: take any coarse space at all (`exists_coarseModuliY0_of_pos`) and cite
+the upstream theorem at it.  The only bookkeeping is the base point, which is
+written `specAlgClos ℚ ≫ 𝟙 SpecQ` here and `specAlgClos ℚ` upstream; `key`
+transports across that equality without touching the `RelPoint` type.
+
+**CONSEQUENCE FOR THIS CLUSTER, recorded for the owner rather than acted on.**
+This declaration and its consumer `nonempty_isBaseChangeOf_of_classify_eq`
+immediately below now DUPLICATE `X0.lean`'s pair one for one, and the duplicate
+carries no content the original lacks — the initiality transport is proven in
+both places.  The right repair is to delete both and have
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` cite
+`Fermat.IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` directly.  That
+is a cut-level edit in another owner's region of this cluster, so it is reported
+rather than performed. -/
+theorem exists_isCoarseModuliY0_geomInjective (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 N strY),
       ∀ d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
         hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁
             = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂ →
           Nonempty (IsBaseChangeOf
-            (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
-  sorry
+            (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0_of_pos N hN
+  -- `classify` at two propositionally equal base points has the same underlying
+  -- morphism; this is the only thing separating the statement above from the
+  -- upstream one, which is written at `specAlgClos ℚ` rather than at
+  -- `specAlgClos ℚ ≫ 𝟙 SpecQ`.
+  have key : ∀ (dd : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (g g' : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ SpecQ), g = g' →
+      (hc.classify g dd).1 = (hc.classify g' dd).1 := by
+    rintro dd g _ rfl
+    rfl
+  refine ⟨Y, strY, hc, fun d₁ d₂ h => ?_⟩
+  refine IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq hN hc d₁ d₂
+    (Subtype.ext ?_)
+  exact ((key d₁ _ _ (Category.comp_id (specAlgClos ℚ))).symm.trans
+    (congrArg Subtype.val h)).trans (key d₂ _ _ (Category.comp_id (specAlgClos ℚ)))
 
 /-- **Two `ℚ̄`-data with the same classifying `ℚ̄`-point are isomorphic, over
 ANY coarse moduli space** (PROVEN 2026-07-27 over
@@ -33503,6 +33548,103 @@ theorem nonempty_isBaseChangeOf_of_classify_eq {p : ℕ} (hp : 0 < p)
   refine hinj d₁ d₂ (Subtype.ext ?_)
   rw [huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁, huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂,
     congrArg Subtype.val h]
+
+/-- **WEIL DESCENT AT THE THREE CLASS-NUMBER-ONE LEVELS: a `Γ₀(p)`-datum over
+`ℚ̄` whose Galois conjugates are all isomorphic to it IS the base change of a
+datum over `ℚ`** (sorry leaf, opened 2026-07-28 by the cut of
+`exists_gamma0Datum_descent_mazurLevel` below).
+
+TRUE, and it mentions **no coarse moduli space at all** — that is the point of
+the cut.  Everything the parent leaf carried about `Y_0(p)` (turning the
+rationality of the moduli point into Galois-invariance of the class, and pushing
+the resulting `ℚ`-datum back onto the given rational point) is discharged in the
+parent's proof; what is left here is the classical field-of-moduli/twisting
+question and nothing else.  A prover who has never read this file can attack it.
+
+#### The argument, and why the conclusion may be RELATION-TRACKING
+
+`hinv` says the field of moduli of `d` is `ℚ`, in the only comparison of data
+this development has — verbatim the hypothesis of `Fermat`'s already-proven
+`exists_gamma0Datum_specQ_of_ratPoint` and of the leaf
+`exists_stableCyclic_of_gamma0Datum_algClos` it runs through.  Write `(E, C)`
+for the pair over `ℚ̄` underlying `d`.
+
+1. `j(E)` is Galois-invariant, hence lies in `ℚ`, so there is `E₀/ℚ` with
+   `j(E₀) = j(E)` and a `ℚ̄`-isomorphism `ψ : E ≅ E₀⁄ℚ̄`; put `C₀ := ψ(C)`.
+2. `hinv` gives, for each `σ`, an automorphism `α_σ` of `E₀⁄ℚ̄` with
+   `α_σ(σ C₀) = C₀`.
+3. **At `j ∉ {0, 1728}`, `Aut(E₀⁄ℚ̄) = {±1}` and `±1` fixes every subgroup**, so
+   step 2 already says `σ C₀ = C₀` for every `σ`: `C₀` is Galois-stable, hence
+   defined over `ℚ`, and `(E₀, C₀)` is a `Γ₀(p)`-datum over `ℚ` whose base
+   change to `ℚ̄` is `(E, C)`.  **No twist is taken**, which is exactly why the
+   isomorphism with `d` survives into the conclusion.
+
+Step 3 is the same observation that already PROVES
+`Fermat.exists_stableCyclic_twist_of_autStable` at `j ∉ {0, 1728}`
+(`autPoint_eq_self_or_neg`, plus `AddSubgroup.zmultiples` being closed under
+negation).
+
+**WHY THIS IS NOT `exists_gamma0Datum_specQ_of_ratPoint`, WHICH IS PROVEN.**
+That theorem takes the same input and returns only
+`Nonempty (Gamma0Datum N SpecQ)` — a datum over `ℚ` with **no stated relation to
+`d`** — because it factors through the Weierstrass bridge
+`exists_weierstrassQ_autStable_of_galoisInvariant`, whose own docstring says in
+terms: "It does not relate `E` to `d` — no isomorphism, no equality of `j`."
+The relation is precisely what the parent leaf needs (a bare `ℚ`-datum classifies
+to *some* rational point, not to `y`), so it has to be asked for here.  A
+successor should not "prove" this leaf by citing that one.
+
+**`hp` IS LOAD-BEARING, and it does exactly one job: it excludes
+`j = 0, 1728`.**  With extra automorphisms step 3 fails — `α_σ` need no longer
+fix `C₀`, the class `σ ↦ ᾱ_σ` is a genuinely nontrivial cocycle in
+`Z¹(G_ℚ, Aut(E₀)/Aut(E₀, C₀))`, and killing it costs a quartic or sextic twist,
+which changes the pair and so destroys the isomorphism with `d` that this
+conclusion asserts.  How `hp` earns the exclusion, and **neither bullet is
+Mazur, so neither is circular**:
+
+* `j = 0` is CM by the maximal order of `ℚ(√−3)`, and `43, 67, 163 ≡ 1 mod 3`
+  are all SPLIT there (`qfbclassno(−3) = 1`).  A split prime has exactly TWO
+  cyclic `p`-subgroups, the kernels of the two primes above `p`, and complex
+  conjugation SWAPS them — so no `Γ₀(p)`-structure on that curve has field of
+  moduli `ℚ`, and `hinv` is contradicted.
+* `j = 1728` is CM by `ℤ[i]`, and `43, 67, 163 ≡ 3 mod 4` are all INERT there,
+  so the CM action stabilises no cyclic `p`-subgroup at all and the same swap
+  argument applies to each of the `p + 1` of them.
+
+**The check that would refute the `hp` analysis**: a prime `p ≡ 1 mod 3` (or
+`≡ 3 mod 4`) at which the CM curve of `j = 0` (resp. `1728`) carries a
+`Γ₀(p)`-structure with field of moduli `ℚ`.  `43 % 3 = 67 % 3 = 163 % 3 = 1`
+and `43 % 4 = 67 % 4 = 163 % 4 = 3` are `decide`-checkable, and the splitting
+behaviour follows from them by quadratic reciprocity in `ℚ(√−3)`, `ℚ(i)`.
+
+**THE HYPOTHESIS A SUCCESSOR SHOULD PREFER.**  `hp` is a stand-in for
+`Aut(d) = {±1}`, which this development cannot yet say: an automorphism of a
+datum is `IsBaseChangeOf (𝟙 _) d d`, but "acts as `±1` on relative points"
+needs a comparison of `RelPoint.along` with `d.ab.neg` that nothing states.
+Once such a predicate exists, restating this leaf over it makes it SHARED with
+`Fermat.exists_gamma0Datum_descent` — the `hmem` sibling in `X0.lean`, which
+needs the identical descent and excludes `j = 0, 1728` the other way — and the
+two close at once instead of twice.  That is the hoist this pair is a candidate
+for.
+
+**NOT vacuous, unlike the `hmem` sibling.**  At `43, 67, 163` the curve with CM
+by the maximal order of discriminant `−p`, carrying its ramified `p`-isogeny, is
+defined over `ℚ`, so `Gamma0Datum p SpecQ` is inhabited; base-changing such a
+datum to `ℚ̄` (`Fermat.exists_gamma0Datum_baseChange`) produces a `d` satisfying
+`hinv`, and the conclusion then holds with that very datum.  So both hypothesis
+and conclusion are satisfiable, and the leaf can be tested against an example.
+
+`p` is not required to be nonzero separately: `hp` gives it. -/
+theorem exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf
+          (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
+  sorry
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ` descends
 to `ℚ`, at the three class-number-one levels** (sorry leaf, opened 2026-07-27).
@@ -33554,16 +33696,87 @@ or twisting API in `Fermat/`, in the mathlib pin, or in `~/cs/FLT`, and
 `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean` is a
 stub with zero declarations.  **The check that would refute that**: any
 declaration in the tree producing a `Gamma0Datum p SpecQ`, or a `ℚ`-model of a
-`ℚ̄`-curve, from a Galois-stability hypothesis. -/
+`ℚ̄`-curve, from a Galois-stability hypothesis.
+
+## THAT CHECK WAS RUN 2026-07-28 AND CAME BACK **POSITIVE** — SO THIS IS NOW A CUT
+
+The paragraph above is correct about the *twisting theory* and wrong about the
+node being atomic: two of the three things this leaf was carrying are pure
+moduli formalism, both are available, and neither is descent.  What is left is
+one leaf, `exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel` above, which
+mentions no coarse moduli space at all.  The three steps below are the whole
+assembly.
+
+1. **The rationality of the moduli point BECOMES the field-of-moduli
+   condition.**  For `σ ∈ Γ_ℚ` and any `dσ` that is a base change of `d` along
+   `specGal σ`, `classify_natural` writes `classify dσ` as
+   `RelPoint.pre (specGal σ) (classify d)`, and `hd` puts `classify d` at the
+   Galois-invariant point `specAlgClos ℚ ≫ y.1` (`specGal_comp_base`) — so
+   `classify` cannot separate `σ^*d` from `d`, and
+   `Fermat.IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (**PROVEN**
+   in `X0.lean`, the injectivity half of the geometric bijection) upgrades that
+   to an isomorphism `σ^*d ≅ d`.  This step is verbatim the one inside
+   `Fermat.exists_gamma0Datum_specQ_of_ratPoint`, and it is where the
+   *coarse-space* content of this leaf lived.
+2. **The descent proper**, and the ONLY thing left open: a `ℚ`-datum `d₀` with
+   `d` its base change.  See that leaf for why the conclusion has to remember
+   the isomorphism with `d` (a bare `ℚ`-datum classifies to *some* rational
+   point, not to `y`), which is exactly why the already-proven
+   `exists_gamma0Datum_specQ_of_ratPoint` cannot be cited here.
+3. **Back onto `y`.**  `classify_natural` at `h = specAlgClos ℚ` says
+   `classify d = RelPoint.pre (specAlgClos ℚ) (classify d₀)`, so `hd` gives
+   `specAlgClos ℚ ≫ (classify d₀).1 = specAlgClos ℚ ≫ y.1`; and
+   `Fermat.epi_specMap_of_fieldHom` — `Spec` of a map of FIELDS is an
+   epimorphism — cancels it.  This is `Y(ℚ) ↪ Y(ℚ̄)`, which the paragraph above
+   asserted without a name; it is the same step `card_y0Le_classNumberOne`
+   below already runs. -/
 theorem exists_gamma0Datum_descent_mazurLevel (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
     (y : RelPoint strY (𝟙 SpecQ))
     (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (_hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d
+    (hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d
       = RelPoint.pre (specAlgClos ℚ) rfl y) :
-    ∃ d₀ : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d₀ = y :=
-  sorry
+    ∃ d₀ : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d₀ = y := by
+  have hpos : 0 < p := by fin_cases hp <;> norm_num
+  haveI : Epi (specAlgClos ℚ) := by
+    show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
+    exact epi_specMap_of_fieldHom _
+  -- `classify` at two propositionally equal base points has the same underlying
+  -- morphism: the upstream injectivity clause is written at `specAlgClos ℚ`,
+  -- this statement at `specAlgClos ℚ ≫ 𝟙 SpecQ`.
+  have key : ∀ (dd : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (g g' : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ SpecQ), g = g' →
+      (hc.classify g dd).1 = (hc.classify g' dd).1 := by
+    rintro dd g _ rfl
+    rfl
+  have hdv : (hc.classify (specAlgClos ℚ) d).1 = specAlgClos ℚ ≫ y.1 :=
+    (key d _ _ (Category.comp_id (specAlgClos ℚ))).symm.trans (congrArg Subtype.val hd)
+  -- **1.** the moduli point is rational, so the field of moduli of `d` is `ℚ`
+  have hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf
+          (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d) := by
+    intro σ dσ hbc
+    refine IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq hpos hc dσ d
+      (Subtype.ext ?_)
+    calc (hc.classify (specAlgClos ℚ) dσ).1
+        = specGal σ ≫ (hc.classify (specAlgClos ℚ) d).1 :=
+          congrArg Subtype.val (hc.classify_natural (specGal σ)
+            (specGal_comp_specAlgClos σ) hbc)
+      _ = (hc.classify (specAlgClos ℚ) d).1 := by
+          rw [hdv]; exact specGal_comp_base y.1 σ
+  -- **2.** the descent proper: a `ℚ`-datum of which `d` is the base change
+  obtain ⟨d₀, ⟨bc⟩⟩ := exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel p hp d hinv
+  -- **3.** naturality puts `d₀`'s class at `y` after base change, and
+  -- `Spec ℚ̄ ⟶ Spec ℚ` is an epimorphism, so it is at `y` already
+  refine ⟨d₀, Subtype.ext ?_⟩
+  have hnat := hc.classify_natural (specAlgClos ℚ) (g := 𝟙 SpecQ)
+    (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl bc
+  have hval : specAlgClos ℚ ≫ (hc.classify (𝟙 SpecQ) d₀).1 = specAlgClos ℚ ≫ y.1 :=
+    congrArg Subtype.val (hnat.symm.trans hd)
+  exact (cancel_epi (specAlgClos ℚ)).mp hval
 
 /-! #### Cutting MAZUR PROPER into the arithmetic and the moduli↔Weierstrass bridge
 
