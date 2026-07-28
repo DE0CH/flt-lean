@@ -7,6 +7,8 @@ module
 
 public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
+public import Mathlib.NumberTheory.ModularForms.QExpansion
+public import Mathlib.NumberTheory.ModularForms.Bounds
 public import Mathlib.NumberTheory.LSeries.Basic
 public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
 public import Mathlib.NumberTheory.LSeries.MellinEqDirichlet
@@ -326,11 +328,34 @@ not have:
 
 * `exists_frickeInvolution` — the Fricke involution `W_N`.  **PROVEN
   2026-07-28**, from `frickeMatrix`/`frickeSlash` below;
-* `isBigO_atTop_axisRestrict` — a cusp form decays rapidly at `i∞`;
-* `isBigO_atTop_coeff` — Hecke's bound `|aₙ| = O(n)`;
+* `isBigO_atTop_axisRestrict` — a cusp form decays rapidly at `i∞`.
+  **PROVEN 2026-07-28**, and it needed no theory at all;
+* `isBigO_atTop_coeff` — Hecke's bound `|aₙ| = O(n)`.  **PROVEN
+  2026-07-28**, likewise;
 
-and one, `locallyIntegrableOn_axisRestrict`, which is routine
-(continuity of `f` transported through the `ℍ`-coercion).
+**Correction, 2026-07-28, and it is worth reading before starting work in
+this file.**  This section used to say that three of the four statements
+below were "exactly the modular input mathlib does not have".  **Two of
+those three were already in mathlib when that was written**, so the note
+sent work at a theory that did not need building:
+
+* the rapid decay of a cusp form at `i∞` is
+  `CuspFormClass.exp_decay_atImInfty`
+  (`Mathlib/NumberTheory/ModularForms/QExpansion.lean`), needing only
+  `1 ∈ Γ.strictPeriods`, i.e. `T ∈ Γ₀(N)`;
+* Hecke's bound is `CuspFormClass.qExpansion_isBigO`
+  (`Mathlib/NumberTheory/ModularForms/Bounds.lean`), the endpoint of a
+  chain `petersson_bounded_left → exists_bound → qExpansion_isBigO`
+  that needs `[Γ.IsArithmetic]` — which is where, and only where, the
+  hypothesis `N ≠ 0` enters.
+
+Only `exists_frickeInvolution` was genuinely absent, and it too is now
+closed.  The list that follows is retained for its statements:
+
+All three of those leaves are now PROVEN.  **The one genuinely missing
+piece of modular input is `exists_frickeInvolution`**: mathlib has no
+Atkin–Lehner / Fricke involution at all (`grep -rn "Fricke\|AtkinLehner"`
+over `Fermat/`, the pin and `~/cs/FLT`: no hits, re-checked 2026-07-28).
 -/
 
 section Hecke
@@ -505,6 +530,31 @@ lemma frickeMatrix_smul_axisPoint (N : ℕ) (hN : N ≠ 0) {y : ℝ} (hy : 0 < y
   field_simp
   exact Complex.I_sq.symm
 
+/-- At level `N = 0` the axis restriction is identically `0`, because
+`axisPoint` — and with it `axisRestrict` — is gated on `N ≠ 0`
+(`Real.sqrt 0 = 0` would put the point on the real axis).  This is what
+makes the two analytic leaves below true without a level hypothesis. -/
+@[simp] lemma axisRestrict_zero_level (f : CuspForm (Gamma0GL 0) 2) :
+    axisRestrict 0 f = fun _ : ℝ => (0 : ℂ) := by
+  funext y
+  simp [axisRestrict]
+
+/-- **`1` is a strict period of `Γ₀(N)`, for every `N`** — the translation
+`T = ![![1, 1], ![0, 1]]` lies in `Γ₀(N)` because its lower-left entry is
+`0`.  This is the hypothesis that mathlib's `q`-expansion API takes in
+place of "the width of the cusp `∞` is `1`", and it is what lets
+`CuspFormClass.exp_decay_atImInfty` and
+`ModularFormClass.qExpansion_coeff_unique` be applied at `h = 1`. -/
+lemma one_mem_strictPeriods (N : ℕ) : (1 : ℝ) ∈ (Gamma0GL N).strictPeriods := by
+  rw [show (Gamma0GL N).strictPeriods = AddSubgroup.zmultiples (1 : ℝ) from
+    CongruenceSubgroup.strictPeriods_Gamma0 N]
+  exact AddSubgroup.mem_zmultiples 1
+
+/-- The imaginary part of `i y/√N` is `y/√N`. -/
+lemma im_axisPoint (N : ℕ) (y : ℝ) (h : 0 < y ∧ N ≠ 0) :
+    (axisPoint N y h).im = y / Real.sqrt N := by
+  simp [UpperHalfPlane.im]
+
 /-- **The Fricke involution `W_N`** (PROVEN 2026-07-28) — the ONE piece of
 modular input that carries the continuation.
 
@@ -542,24 +592,81 @@ theorem exists_frickeInvolution (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL
 
 end Fricke
 
-/-- **A cusp form decays faster than every power at `i∞`** (sorry leaf).
+/-- **A cusp form decays faster than every power at `i∞`** (PROVEN
+2026-07-28).
 
-TRUE and elementary given the `q`-expansion: `f (i y/√N)` is
-`O(e^{-2πy/√N})`, which beats `y ^ r` for every real `r`.  It is stated
-for an arbitrary cusp form rather than for an eigenform because the
-Fricke partner `g` above needs it too and is not known to be an
-eigenform. -/
+`f (i y/√N)` is `O(e^{-2πy/√N})`, which beats `y ^ r` for every real
+`r`.  It is stated for an arbitrary cusp form rather than for an
+eigenform because the Fricke partner `g` above needs it too and is not
+known to be an eigenform.
+
+**The exponential decay is mathlib's**, not new modular input: the
+docstring of the `Hecke's argument, decomposed` section above used to
+list this leaf among "the modular input mathlib does not have", and that
+was already false when written.  `CuspFormClass.exp_decay_atImInfty`
+(`Mathlib/NumberTheory/ModularForms/QExpansion.lean`) gives
+`f =O[atImInfty] fun τ ↦ exp (-2π (im τ)/h)` from nothing but `0 < h`
+and `h ∈ Γ.strictPeriods`; here `h = 1` by `one_mem_strictPeriods`.  The
+rest is transport along `y ↦ i y/√N` (whose imaginary part is `y/√N`,
+so `atTop` pushes forward into `atImInfty`) followed by
+`isLittleO_exp_neg_mul_rpow_atTop`.
+
+No level hypothesis is needed: at `N = 0` the left-hand side is
+identically `0` by `axisRestrict_zero_level`. -/
 theorem isBigO_atTop_axisRestrict (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (r : ℝ) :
-    axisRestrict N f =O[atTop] fun y : ℝ => y ^ r :=
-  sorry
+    axisRestrict N f =O[atTop] fun y : ℝ => y ^ r := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · rw [axisRestrict_zero_level]
+    exact isBigO_zero _ _
+  · have hsq : (0 : ℝ) < Real.sqrt N :=
+      Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+    have hdecay : (f : ℍ → ℂ) =O[UpperHalfPlane.atImInfty]
+        fun τ : ℍ => Real.exp (-2 * Real.pi * τ.im / 1) :=
+      CuspFormClass.exp_decay_atImInfty (h := 1) f one_pos (one_mem_strictPeriods N)
+    rw [Asymptotics.isBigO_iff] at hdecay
+    obtain ⟨c, hc⟩ := hdecay
+    rw [UpperHalfPlane.atImInfty, Filter.eventually_comap, Filter.eventually_atTop] at hc
+    obtain ⟨A, hA⟩ := hc
+    have h1 : axisRestrict N f =O[atTop]
+        fun y : ℝ => Real.exp (-(2 * Real.pi / Real.sqrt N) * y) := by
+      rw [Asymptotics.isBigO_iff]
+      refine ⟨c, ?_⟩
+      filter_upwards [Filter.eventually_ge_atTop (max 1 (A * Real.sqrt N))] with y hy
+      have hy0 : (0 : ℝ) < y := lt_of_lt_of_le zero_lt_one ((le_max_left _ _).trans hy)
+      have hyA : A ≤ y / Real.sqrt N :=
+        (le_div_iff₀ hsq).mpr ((le_max_right _ _).trans hy)
+      have him : (axisPoint N y ⟨hy0, hN⟩).im = y / Real.sqrt N := im_axisPoint N y _
+      have hb := hA (y / Real.sqrt N) hyA (axisPoint N y ⟨hy0, hN⟩) him
+      rw [him] at hb
+      rw [axisRestrict_of_pos hN f hy0]
+      refine hb.trans_eq ?_
+      rw [show -2 * Real.pi * (y / Real.sqrt N) / 1
+        = -(2 * Real.pi / Real.sqrt N) * y from by ring]
+    exact h1.trans (isLittleO_exp_neg_mul_rpow_atTop (by positivity) r).isBigO
 
 /-- **`f` restricted to the imaginary axis is locally integrable on
-`(0, ∞)`** (sorry leaf) — it is continuous there, `f` being
+`(0, ∞)`** (PROVEN 2026-07-28) — it is continuous there, `f` being
 holomorphic; the only content is transporting continuity through the
-`ℍ`-coercion. -/
+`ℍ`-coercion, which is an `IsEmbedding` (`UpperHalfPlane.isEmbedding_coe`),
+so continuity into `ℍ` is continuity of the `ℂ`-valued composite.
+
+No level hypothesis is needed: at `N = 0` the function is identically
+`0` by `axisRestrict_zero_level`. -/
 theorem locallyIntegrableOn_axisRestrict (N : ℕ) (f : CuspForm (Gamma0GL N) 2) :
-    LocallyIntegrableOn (axisRestrict N f) (Set.Ioi 0) :=
-  sorry
+    LocallyIntegrableOn (axisRestrict N f) (Set.Ioi 0) := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · rw [axisRestrict_zero_level]
+    exact (locallyIntegrable_const (0 : ℂ)).locallyIntegrableOn _
+  · refine ContinuousOn.locallyIntegrableOn ?_ measurableSet_Ioi
+    rw [continuousOn_iff_continuous_restrict]
+    have heq : Set.restrict (Set.Ioi (0 : ℝ)) (axisRestrict N f)
+        = fun y : Set.Ioi (0 : ℝ) => f (axisPoint N y.1 ⟨y.2, hN⟩) :=
+      funext fun y => axisRestrict_of_pos hN f y.2
+    rw [heq]
+    refine (ModularFormClass.continuous f).comp ?_
+    rw [UpperHalfPlane.isEmbedding_coe.continuous_iff]
+    simp only [Function.comp_def, coe_axisPoint]
+    fun_prop
 
 /-- The strong FE-pair attached to `f`: the pair `(f, f ∣ W_N)` read
 along the rescaled imaginary axis, with weight `k = 2` and root number
@@ -583,24 +690,108 @@ def cuspFEPair (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) : WeakFEPa
 lemma isStrongFEPair_cuspFEPair (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) :
     IsStrongFEPair (cuspFEPair N hN f) := ⟨rfl, rfl⟩
 
-/-- **Hecke's bound `|aₙ| = O(n)`** (sorry leaf).
+/-- **`a` is the `q`-expansion coefficient sequence of `f` in mathlib's
+sense** (PROVEN) — the bridge between this file's `IsWeightTwoEigenform`
+packaging and `UpperHalfPlane.qExpansion`.
 
-TRUE for every weight-two cusp form, by the contour-integral estimate
+The two `qExpansion` fields say exactly that `∑_{n ≥ 1} aₙ qⁿ` converges
+to `f τ` at every `τ ∈ ℍ` with `q = e^{2πiτ}`; adding the vanishing
+constant term `a 0 = 0` turns that into a `HasSum` over all of `ℕ`, and
+`ModularFormClass.qExpansion_coeff_unique` (the Taylor coefficients of a
+holomorphic function on the punctured disc are unique) identifies it with
+mathlib's `qExpansion 1 f`.  `h = 1` is legitimate by
+`one_mem_strictPeriods`. -/
+theorem coeff_eq_qExpansion_coeff {N : ℕ} {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform N f a) (m : ℕ) :
+    a m = (UpperHalfPlane.qExpansion 1 (f : ℍ → ℂ)).coeff m := by
+  refine ModularFormClass.qExpansion_coeff_unique (k := 2) (h := 1) one_pos
+    (one_mem_strictPeriods N) (fun τ => ?_) m
+  have h0 : HasSum (fun n : ℕ =>
+      a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) ((f : ℍ → ℂ) τ) := by
+    rw [hf.qExpansion τ]
+    exact (hf.qExpansionSummable τ).hasSum
+  have hfun : (fun n : ℕ => a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1))
+      = fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+    funext n
+    rw [smul_eq_mul, Function.Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 2
+    push_cast
+    ring
+  refine (hasSum_nat_add_iff' (f := fun m : ℕ =>
+    a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) 1).mp ?_
+  have hzero : ∑ i ∈ Finset.range 1, a i • Function.Periodic.qParam 1 (τ : ℂ) ^ i = 0 := by
+    simp [hf.zero]
+  rw [hzero, sub_zero]
+  simpa only [hfun] using h0
+
+/-- **Hecke's bound `|aₙ| = O(n)`** (PROVEN 2026-07-28, after a FALSITY
+REPAIR — see below).
+
+TRUE for every weight-two cusp form on a genuine level, by the
+contour-integral estimate
 `aₙ = ∫₀¹ f(x + i/n) e^{-2πin(x+i/n)} dx` together with the fact that
 `y |f(x+iy)|` is bounded on `ℍ` (the Petersson function of a cusp form
-is bounded — mathlib has `petersson` but not its boundedness).
-Deligne's `|aₙ| ≤ d(n) √n` is *not* needed, which is why the half plane
-in `IsLFunctionOf` is `Re s > 2` rather than `Re s > 3/2`. -/
-theorem isBigO_atTop_coeff {N : ℕ} {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ}
-    (hf : IsWeightTwoEigenform N f a) : a =O[atTop] fun n : ℕ => (n : ℝ) ^ (2 - 1 : ℝ) :=
-  sorry
+is bounded).  Deligne's `|aₙ| ≤ d(n) √n` is *not* needed, which is why
+the half plane in `IsLFunctionOf` is `Re s > 2` rather than `Re s > 3/2`.
+
+**All of that is in mathlib** and the docstring above claiming otherwise
+("mathlib has `petersson` but not its boundedness") was already stale:
+`Mathlib/NumberTheory/ModularForms/Bounds.lean` proves
+`CuspFormClass.petersson_bounded_left`, `CuspFormClass.exists_bound` and
+finally `CuspFormClass.qExpansion_isBigO`, which IS Hecke's bound,
+`O(n^{k/2})`, for any **arithmetic** `Γ`.  All that is left here is the
+identification of `a` with mathlib's coefficients
+(`coeff_eq_qExpansion_coeff`) and `(2 : ℤ)/2 = 2 - 1`.
+
+### FALSITY AUDIT (2026-07-28): `hN : N ≠ 0` is NOT decoration here either
+
+The statement used to be quantified over every `N : ℕ`, and **at `N = 0`
+it is FALSE**, by a counterexample of exactly the shape the module's
+other `FALSITY AUDIT` uses.  Recall from there that the only cusp of
+`Gamma0GL 0 = ⟨-I, T⟩` is `∞`, so — mathlib's `CuspForm.zero_at_cusps'`
+being quantified over the cusps *of `Γ`* — a `CuspForm (Gamma0GL 0) 2`
+is precisely a holomorphic, `1`-periodic `f : ℍ → ℂ` tending to `0` at
+`i∞`.  Now take
+
+> `a n := n ^ 10` for `n ≥ 1`, `a 0 := 0`, and
+> `f τ := ∑_{n ≥ 1} n^10 e^{2πinτ}`.
+
+Then `f` is holomorphic on `ℍ` (the series converges locally uniformly,
+being dominated by a geometric series), `1`-periodic, and `→ 0` at
+`i∞`, so `f ∈ CuspForm (Gamma0GL 0) 2`; the weight-two slash by `-I` is
+trivial since `(cτ+d)^2 = 1` there.  Every field of
+`IsWeightTwoEigenform 0 f a` holds: `qExpansion` and
+`qExpansionSummable` by construction, `a 0 = 0`, `a 1 = 1`, `hecke` is
+**vacuous** (`p ∣ 0` for every `p`, so `¬ p ∣ N` is never satisfied),
+and `atkin` asks exactly that `a` be completely multiplicative, which
+`n ↦ n^10` is.  But `a p = p^10` is not `O(p)`.
+
+The defect is the same one the sibling audit records: `Γ₀(N)` has finite
+index in `SL(2, ℤ)` exactly for `N ≥ 1`, so `Gamma0GL 0` is not an
+arithmetic subgroup, its quotient has infinite volume, and every bound
+that makes coefficients polynomially controlled fails.  Mechanically,
+`CuspFormClass.qExpansion_isBigO` requires `[Γ.IsArithmetic]`, which is
+available for `Gamma0GL N` exactly through `NeZero N`.  The repair is
+therefore the hypothesis `hN`; the one consumer,
+`lSeriesSummable_of_isWeightTwoEigenform`, is used only from
+`mellin_axisRestrict`, which already carries `hN`. -/
+theorem isBigO_atTop_coeff {N : ℕ} (hN : N ≠ 0) {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform N f a) : a =O[atTop] fun n : ℕ => (n : ℝ) ^ (2 - 1 : ℝ) := by
+  haveI : NeZero N := ⟨hN⟩
+  have hbig := CuspFormClass.qExpansion_isBigO (Γ := Gamma0GL N) (k := 2) f
+  rw [show (Gamma0GL N).strictWidthInfty = 1 from CongruenceSubgroup.strictWidthInfty_Gamma0 N,
+    show ((2 : ℤ) : ℝ) / 2 = (2 - 1 : ℝ) from by norm_num] at hbig
+  rw [show a = fun m : ℕ => (UpperHalfPlane.qExpansion 1 (f : ℍ → ℂ)).coeff m from
+    funext (coeff_eq_qExpansion_coeff hf)]
+  exact hbig
 
 /-- The Dirichlet series of a weight-two cusp form converges absolutely
 on `Re s > 2` (PROVEN, from `isBigO_atTop_coeff`). -/
-theorem lSeriesSummable_of_isWeightTwoEigenform {N : ℕ} {f : CuspForm (Gamma0GL N) 2}
+theorem lSeriesSummable_of_isWeightTwoEigenform {N : ℕ} (hN : N ≠ 0)
+    {f : CuspForm (Gamma0GL N) 2}
     {a : ℕ → ℂ} (hf : IsWeightTwoEigenform N f a) {s : ℂ} (hs : 2 < s.re) :
     LSeriesSummable a s :=
-  LSeriesSummable_of_isBigO_rpow hs (isBigO_atTop_coeff hf)
+  LSeriesSummable_of_isBigO_rpow hs (isBigO_atTop_coeff hN hf)
 
 /-- Along the rescaled imaginary axis the `q`-expansion is a genuine
 convergent sum of real exponentials — the shape `hasSum_mellin` wants
@@ -640,7 +831,7 @@ theorem mellin_axisRestrict {N : ℕ} (hN : N ≠ 0) {f : CuspForm (Gamma0GL N) 
   have hcpos : (0 : ℝ) < c := by rw [hcdef]; positivity
   have hcC : ((c : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hcpos.ne'
   have hs0 : (0 : ℝ) < s.re := by linarith
-  have hsummable : LSeriesSummable a s := lSeriesSummable_of_isWeightTwoEigenform hf hs
+  have hsummable : LSeriesSummable a s := lSeriesSummable_of_isWeightTwoEigenform hN hf hs
   -- the four hypotheses of `hasSum_mellin`
   have hp : ∀ n : ℕ, a (n + 1) = 0 ∨ 0 < c * (n + 1) := fun n => Or.inr (by positivity)
   have hF : ∀ t ∈ Set.Ioi (0 : ℝ), HasSum
