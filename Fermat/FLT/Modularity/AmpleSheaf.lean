@@ -1282,4 +1282,204 @@ theorem isQuasiAffine_of_isAmpleSheaf_modUnit (Z : Scheme.{u}) [CompactSpace Z]
     rw [← nonvanishingLocus_modUnit, nonvanishingLocus_of_iso, hloc]
   exact ⟨(modTensorPowUnitIso n).hom.val.app (op ⊤) s, hb ▸ hV, hb ▸ hzV⟩
 
+/-! ### THE PICARD GROUP: inverses, cancellation, and `RelPicEquiv` as an
+equivalence relation
+
+(New block, 2026-07-28, added for `relPicEquiv_sectionIdeal_of_aj_eq` in
+`ModularCurve/X0.lean`.  Placed here rather than in `RelativePicard.lean` —
+where `modTensor`, `IsInvertibleSheaf` and `RelPicEquiv` are *defined* —
+because everything below consumes the tensor calculus of THIS module, and
+`RelativePicard.lean` is upstream of it.)
+
+**THIS BLOCK REFUTES A CLAIM THAT WAS IN TWO DOCSTRINGS.**  The docstring of
+`relPicEquiv_sectionIdeal_of_aj_eq` asserted, dated 2026-07-28, that
+"`modTensor` has no algebraic API anywhere in this development — no
+associativity, no symmetry, no unit, and in particular no cancellation of an
+invertible factor", and that `grep -rn 'modTensor' Fermat/` returns "**not one
+lemma**".  Every clause of that is false.
+
+*Not one lemma* — this module already held `modTensorMapIso` (functoriality on
+isos), `modTensorUnitLeftIso`, `nonempty_modTensor_assoc`,
+`modPullbackUnitIso`, `modPullbackMapIso`, `nonempty_modPullback_modTensor`,
+`isInvertibleSheaf_modUnit` and `isInvertibleSheaf_modTensor`, all but two of
+them PROVEN (`nonempty_modPullback_modTensor` is a leaf, and
+`nonempty_modTensor_assoc` rests on `modLocW_whiskerLeft`).  It reaches
+`X0.lean`: that file `public import`s `AbelianSchemeIsogeny`, which
+`public import`s this one.
+
+*No associativity* — `nonempty_modTensor_assoc`.
+
+*No unit* — `modTensorUnitLeftIso`, and `modTensorUnitRightIso` below.
+
+*No symmetry* — `modTensorComm` below, one line over mathlib's
+`SymmetricCategory` instance on `PresheafOfModules`.  This is the clause that
+cost the most: believing it, an earlier draft of this very block cut the
+inverse leaf in a two-sided form it does not need.
+
+*No cancellation of an invertible factor* — this was the ONE true clause, and
+it is now `nonempty_iso_of_modTensor_left` / `RelPicEquiv.cancel_left` below,
+PROVEN over the single new leaf.  The claim has been corrected in place at
+`relPicEquiv_sectionIdeal_of_aj_eq`; the same assertion also stands, as of
+2026-07-28, in the docstring of `relPicEquiv_sectionIdeal_of_aj_add_eq`
+(X0.lean, the degree-`2` sibling), which is another owner's declaration and
+has been left alone and reported instead.
+
+What is genuinely missing is exactly ONE statement — that an invertible sheaf
+has a tensor INVERSE (`exists_modTensor_inverse` below) — from which
+cancellation, and with it symmetry and transitivity of `RelPicEquiv`, are
+formal.  The corrected inventory is recorded on that leaf. -/
+
+/-- **THE BRAIDING**, `L ⊗ M ≅ M ⊗ L` (PROVEN, one line) — `modTensor` is
+SYMMETRIC.
+
+Mathlib gives `PresheafOfModules.{u} (R ⋙ forget₂ _ _)` a
+`SymmetricCategory` instance (`PresheafOfModules.Monoidal.symmetricCategory`,
+`Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean:145`) on **exactly
+the same category** as the `monoidalCategory` instance one screen above it —
+so `β_ L.val M.val` is available wherever `λ_ L.val` is, and sheafifying it is
+the whole construction.
+
+**Recorded because it was nearly missed.**  An earlier draft of this block
+asserted that `Z.Modules` has no braiding at this pin, on the strength of a
+grep of `Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` that returned
+nothing — the grep had been run on the ORCHESTRATION host, where
+`.lake/packages` does not exist (it is a symlink into machine-local
+`/scratch` on the worker host, so the path silently resolves to nothing and
+every mathlib grep returns empty).  Run mathlib greps on the host that owns
+`.lake`.  Had the claim stood, `exists_modTensor_inverse` below would have
+been cut twice as strong as it needs to be. -/
+noncomputable def modTensorComm {Z : Scheme.{u}} (L M : Z.Modules) :
+    modTensor L M ≅ modTensor M L :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
+
+/-- **THE RIGHT UNITOR**, `M ⊗ 𝒪_Z ≅ M` (PROVEN) — the mirror of
+`modTensorUnitLeftIso`, obtained from it through `modTensorComm`. -/
+noncomputable def modTensorUnitRightIso {Z : Scheme.{u}} (M : Z.Modules) :
+    modTensor M (modUnit Z) ≅ M :=
+  modTensorComm M (modUnit Z) ≪≫ modTensorUnitLeftIso M
+
+/-- **AN INVERTIBLE SHEAF HAS A TENSOR INVERSE** (sorry leaf, new 2026-07-28) —
+i.e. the invertible sheaves on `Z` form a GROUP under `⊗`, which is the whole
+content of "`Pic Z` is a group" and the single missing input of the relative
+Picard calculus below.
+
+TRUE and classical (Hartshorne II.6.12, Stacks 01CV): the inverse is the DUAL
+`L^∨ = Hom_{𝒪_Z}(L, 𝒪_Z)`, and the evaluation map `L ⊗ L^∨ ⟶ 𝒪_Z` is an
+isomorphism because it is one on the trivializing opens supplied by
+`IsInvertibleSheaf`, where both sides are `𝒪`.  `L^∨` is invertible for the
+same local reason.
+
+**`hL` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT**, with a
+counterexample needing no geometry: take `L := 0`, the zero object of the
+abelian category `Z.Modules`.  Then `modTensor 0 M` has zero stalks for every
+`M`, while `modUnit Z` has stalk `𝒪_{Z,z} ≠ 0` at every `z`, so no `M`
+works on any nonempty `Z`.  A skyscraper `k` at a closed point of
+`Spec k[u]` is a second, non-degenerate witness: it is finitely generated and
+nonzero, and `k ⊗ M` is again supported at that point, never all of `𝒪`.
+So this is not a formal fact about a monoidal category — it is exactly the
+statement that local triviality globalises to an inverse.
+
+**WHAT IT NEEDS, surveyed 2026-07-28.**  The pin has no internal `Hom` on
+`SheafOfModules` — `grep -rn 'internalHom\|ihom' Mathlib/Algebra/Category/
+ModuleCat/Sheaf/` returns nothing — so `L^∨` has to be built, either as the
+sheafification of `U ↦ Hom_{𝒪(U)}(L(U), 𝒪(U))` or, avoiding internal Hom
+entirely, by GLUING: `IsInvertibleSheaf L` hands out a cover by opens with
+`L|_U ≅ 𝒪_U`, the transition data is a Čech `1`-cocycle valued in `𝒪^×`, and
+the inverse is the sheaf glued from the inverse cocycle.  The second route
+needs only the descent already available through
+`nonempty_restrict_modTensor` and `trivializationOfLE` in this module, and is
+the recommended one.
+
+**ONE SIDE IS ENOUGH, and deliberately so.**  `modTensorComm` above makes
+`modTensor` symmetric, so `modTensor M L ≅ modUnit Z` follows from the stated
+`modTensor L M ≅ modUnit Z` by composing with the braiding — which is what
+`nonempty_iso_of_modTensor_left` does.  An earlier draft demanded both sides,
+on a since-refuted belief that no braiding exists here; a prover should NOT
+reinstate that, because the extra clause is free and therefore pure noise.
+
+**Its consumers**: `nonempty_iso_of_modTensor_left` and `RelPicEquiv.symm`
+below, hence (transitively) `relPicEquiv_sectionIdeal_of_aj_eq` and the whole
+Abel–Jacobi monomorphism cone in `ModularCurve/X0.lean`. -/
+theorem exists_modTensor_inverse {Z : Scheme.{u}} {L : Z.Modules}
+    (_hL : IsInvertibleSheaf L) :
+    ∃ M : Z.Modules, IsInvertibleSheaf M ∧ Nonempty (modTensor L M ≅ modUnit Z) :=
+  sorry
+
+/-- **CANCELLATION OF AN INVERTIBLE TENSOR FACTOR** (PROVEN over
+`exists_modTensor_inverse` and `nonempty_modTensor_assoc`): if `L` is
+invertible then `L ⊗ A ≅ L ⊗ B` forces `A ≅ B`.
+
+Tensor on the left with a left inverse `M` of `L` — obtained from the right
+inverse through `modTensorComm` — and reassociate; `A` and `B` are arbitrary
+`𝒪_Z`-modules, no invertibility of them is used or needed. -/
+theorem nonempty_iso_of_modTensor_left {Z : Scheme.{u}} {L A B : Z.Modules}
+    (hL : IsInvertibleSheaf L) (e : modTensor L A ≅ modTensor L B) : Nonempty (A ≅ B) := by
+  obtain ⟨M, -, ⟨eLM⟩⟩ := exists_modTensor_inverse hL
+  have eML : modTensor M L ≅ modUnit Z := modTensorComm M L ≪≫ eLM
+  obtain ⟨aA⟩ := nonempty_modTensor_assoc M L A
+  obtain ⟨aB⟩ := nonempty_modTensor_assoc M L B
+  exact ⟨(modTensorUnitLeftIso A).symm ≪≫ modTensorMapIso eML.symm (Iso.refl A) ≪≫ aA ≪≫
+    modTensorMapIso (Iso.refl M) e ≪≫ aB.symm ≪≫ modTensorMapIso eML (Iso.refl B) ≪≫
+    modTensorUnitLeftIso B⟩
+
+section RelPicGroupoid
+
+variable {X S T : Scheme.{u}} {strX : X ⟶ S} {g : T ⟶ S}
+
+/-- **`RelPicEquiv` is REFLEXIVE** (PROVEN): take `N := 𝒪_T` and use the right
+unitor together with `f^* 𝒪_T ≅ 𝒪_{X_T}`. -/
+theorem RelPicEquiv.refl (L : (curveBaseChange strX g).Modules) : RelPicEquiv strX g L L :=
+  ⟨modUnit T, isInvertibleSheaf_modUnit T,
+    ⟨(modTensorUnitRightIso L).symm ≪≫
+      modTensorMapIso (Iso.refl L) (modPullbackUnitIso _).symm⟩⟩
+
+/-- **`RelPicEquiv` is TRANSITIVE** (PROVEN over `nonempty_modTensor_assoc`
+and `nonempty_modPullback_modTensor`): the twisting sheaves multiply, and
+`M ⊗ N` is invertible by `isInvertibleSheaf_modTensor`. -/
+theorem RelPicEquiv.trans {L L' L'' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') (h' : RelPicEquiv strX g L' L'') : RelPicEquiv strX g L L'' := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨M, hM, ⟨e'⟩⟩ := h'
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L'' (modPullback (curveBaseChangeProj strX g) M)
+    (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨pmn⟩ := nonempty_modPullback_modTensor (curveBaseChangeProj strX g) M N
+  exact ⟨modTensor M N, isInvertibleSheaf_modTensor hM hN,
+    ⟨e ≪≫ modTensorMapIso e' (Iso.refl _) ≪≫ a ≪≫ modTensorMapIso (Iso.refl L'') pmn.symm⟩⟩
+
+/-- **`RelPicEquiv` is SYMMETRIC** (PROVEN over `exists_modTensor_inverse`):
+twist back by the inverse of the twisting sheaf.
+
+This is the step that makes `RelPicEquiv` an equivalence relation, and hence
+`Pic(X_T)/Pic(T)` a group rather than a preorder — which is what its consumers
+in `ModularCurve/X0.lean` (`aj_spec` read at two different points) silently
+assume. -/
+theorem RelPicEquiv.symm {L L' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') : RelPicEquiv strX g L' L := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨M, hM, ⟨eNM⟩⟩ := exists_modTensor_inverse hN
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L' (modPullback (curveBaseChangeProj strX g) N)
+    (modPullback (curveBaseChangeProj strX g) M)
+  obtain ⟨pnm⟩ := nonempty_modPullback_modTensor (curveBaseChangeProj strX g) N M
+  exact ⟨M, hM, ⟨(modTensorUnitRightIso L').symm ≪≫
+    modTensorMapIso (Iso.refl L') ((modPullbackUnitIso _).symm ≪≫
+      modPullbackMapIso _ eNM.symm ≪≫ pnm) ≪≫ a.symm ≪≫
+    modTensorMapIso e.symm (Iso.refl _)⟩⟩
+
+/-- **CANCELLATION IN THE RELATIVE PICARD GROUP** (PROVEN over
+`nonempty_iso_of_modTensor_left`): an invertible factor common to both sides
+of a `RelPicEquiv` may be deleted.
+
+`A` and `B` are arbitrary — only the CANCELLED factor `L` has to be
+invertible.  This is what lets `IsRelPicZeroOf.aj_spec`, which is an equation
+about `𝒪(x − o) ⊗ 𝒪(−x)`, be turned into a statement about `𝒪(−x)` alone. -/
+theorem RelPicEquiv.cancel_left {L A B : (curveBaseChange strX g).Modules}
+    (hL : IsInvertibleSheaf L)
+    (h : RelPicEquiv strX g (modTensor L A) (modTensor L B)) : RelPicEquiv strX g A B := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨a⟩ := nonempty_modTensor_assoc L B (modPullback (curveBaseChangeProj strX g) N)
+  obtain ⟨f⟩ := nonempty_iso_of_modTensor_left hL (e ≪≫ a)
+  exact ⟨N, hN, ⟨f⟩⟩
+
+end RelPicGroupoid
+
 end Fermat
