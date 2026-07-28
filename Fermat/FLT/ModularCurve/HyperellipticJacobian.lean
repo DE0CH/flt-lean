@@ -50,8 +50,14 @@ covering collection.  Each namespace now reads top-down:
     exists_placeSystem            LEAF: its places, normalised and COMPLETE
     exists_isPlaceOfPt            LEAF: the evaluation place of a rational point
       → exists_placeData          PROVEN: assembled, with pt_injective proven
-    exists_degreeMap              LEAF: the degree map and deg (div g) = 0
-    sub_single_pt_notMem_princ    LEAF: genus ≥ 1, i.e. (Q)−(P) is not principal
+    finrank_residue_pt_eq_one     LEAF: κ(v) = K at the place of a rational point
+    degOf_divisor_eq_zero         LEAF: Σ_v ord_v(g)·[κ(v):K] = 0  (Stichtenoth I.4.11)
+      → exists_degreeMap          PROVEN: assembled over the constructed `degOf`
+    isRationalGenerator_of_divisor_eq_sub_single
+                                  LEAF: a single simple pole forces F = K(g)
+    not_isRationalGenerator       LEAF: F is NOT rational — the genus, and the only
+                                  place where separability does any work
+      → sub_single_pt_notMem_princ PROVEN: assembled, over `princ = range divisor`
       → aj_injective_of_separable PROVEN: assembled
     exists_reductionFiltration    LEAF: red together with the formal-group filtration
       → exists_reduction          PROVEN: torsion-freeness from the filtration
@@ -1064,6 +1070,49 @@ The two sentences of the sketch are the two leaves: `exists_degreeMap` is the de
 not principal").  The bookkeeping that joins them — that `picRel` is `princ ⊔ ℤ·[∞₊]`, that
 the degree map kills `princ` because it kills every `div g`, and that the coefficient of
 `[∞₊]` is therefore forced to `0` — is PROVEN below.
+
+## DECOMPOSED AGAIN 2026-07-28 — both of those two are now PROVEN, over four sub-leaves
+
+`exists_degreeMap` quantified existentially over `deg`, so it could not be cut at all until
+a `deg` was written down.  It is written down below — `PlaceData.degOf v = [κ(v) : K]`, the
+residue degree of the valuation ring `O_v = {z : 0 ≤ ord v z}` modulo its maximal ideal,
+both of which the interface's axioms already support (`ord_mul`, `ord_add`,
+`ord_algebraMap` are exactly the closure properties needed, and the junk convention
+`ord v 0 = 0` puts `0` in `O_v` for free while forcing the `z = 0` disjunct in `m_v`).
+With `deg` fixed, the leaf splits along the two conjuncts it asks for:
+
+* `finrank_residue_pt_eq_one` — a `K`-rational point has residue field `K`;
+* `degOf_divisor_eq_zero` — the degree formula, [Stichtenoth, Thm. 1.4.11].
+
+`sub_single_pt_notMem_princ` was stated as a NON-MEMBERSHIP precisely to avoid identifying
+`princ` with the set of divisors of functions.  That identification is now PROVEN
+(`PlaceData.mem_princ_iff`, over `divisor_mul` / `divisor_inv`: `Set.range divisor` is
+already a subgroup, so the subgroup it generates is itself), which turns the leaf into a
+statement about a single `g` and lets it split along the classical argument:
+
+* `isRationalGenerator_of_divisor_eq_sub_single` — a function whose only pole is one simple
+  pole at a degree-`1` place generates: `F = K(g)`.  This is the `[F : K(g)] = deg div_∞(g)`
+  half of Stichtenoth I.4.11 again, at the single value `deg div_∞(g) = 1`;
+* `not_isRationalGenerator` — `F` is not a rational function field.  **This is where "the
+  genus is `2`" lives, and it is the one sub-leaf that certainly cannot be proven without
+  `hsep`**: for `f = (x³ + 1)²` the curve IS rational and the statement is false.  It is
+  also the only one of the four that is not general function-field theory, so it is the one
+  to dispatch at separately.  The classical proof is the pencil argument: `F = K(t)` makes
+  `xx = A/B` with `A, B` coprime and `max (deg A) (deg B) = 2` (that maximum is
+  `[K(t) : K(xx)] = [F : K(xx)] = 2`), so `(y·B³)² = ∏_{i<6} (A − rᵢ B)` over `K̄` is a
+  product of six pairwise coprime quadratics — pairwise coprime because a common root of
+  `A − rᵢB` and `A − rⱼB` with `rᵢ ≠ rⱼ` would be a common root of `A` and `B` — each of
+  which is therefore a square of a linear form; but the pencil `⟨A, B⟩` of binary quadratics
+  has at most two singular members, and `6 > 2`.  Separability enters exactly once, as the
+  distinctness of the `rᵢ`.
+
+Each of the other three is expected NOT to need `hsep` — they are statements about an
+arbitrary `PlaceData`, and the sextic enters them only through the shape of `Pt`.  They
+carry the hypothesis anyway, because every consumer has it and because a leaf that turns
+out to need it should not have to be restated.  **A proof that does not use it should
+underscore it** (`_hsep`): that makes the separation mechanically visible, and a proof of
+one of the first three that DOES use `hsep` is a sign the cut leaked the genus into the
+wrong leaf and should be reported.
 -/
 
 /-- Multiplication by `d`, as an additive endomorphism of `ℤ`: the coefficient map of the
@@ -1085,23 +1134,267 @@ lemma degHom_single {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     degHom D deg (Finsupp.single v n) = n * deg v := by
   simp [degHom, mulRightHom]
 
-/-- **LEAF (obligation 2a): the degree map, with the degree formula.**
+namespace PlaceData
 
-`deg v = [κ(v) : K]`, the residue degree.  A `K`-rational point has residue field `K`, so
-degree `1`; and `deg (div g) = 0` for every `g`, which is the statement that a function on
-a projective curve has as many zeros as poles.  (`0 < deg v` also holds, and is deliberately
-not asked for: nothing downstream uses it, and a weaker leaf is an easier leaf.)
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
 
-Both halves are standard function-field theory — the degree formula is
-[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11] — and neither is specific
-to genus `2` or to the sextic, so proving this closes obligation 2a at both levels. -/
+/-! ### The valuation ring, the residue field and the degree of a place (PROVEN)
+
+Everything here is forced by the interface: `O_v` is a `K`-subalgebra of `F` because
+`ord_mul`, `ord_add` and `ord_algebraMap` say exactly that `{0 ≤ ord v ·}` is closed under
+the operations, and `m_v` is an ideal of it for the same reason.  The junk convention
+`ord v 0 = 0` is what makes `0 ∈ O_v` free and what forces the explicit `z = 0` disjunct in
+`m_v` — `0 < ord v 0` is FALSE, so `{0 < ord v ·}` is not an ideal. -/
+
+/-- **The valuation ring at a place** (PROVEN), `O_v = {z : F | 0 ≤ ord v z}`.
+
+A `K`-subalgebra of `F`; `0 ∈ O_v` holds by the junk convention `ord v 0 = 0` rather than
+by a side condition. -/
+def valRing (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Subalgebra K D.F where
+  carrier := {z : D.F | 0 ≤ D.ord v z}
+  mul_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ D.ord v a := ha
+    have hb' : 0 ≤ D.ord v b := hb
+    show 0 ≤ D.ord v (a * b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · simp [D.ord_zero]
+    rcases eq_or_ne b 0 with rfl | hb0
+    · simp [D.ord_zero]
+    rw [D.ord_mul v a b ha0 hb0]
+    omega
+  one_mem' := by
+    show 0 ≤ D.ord v 1
+    have h := D.ord_algebraMap v 1 one_ne_zero
+    rw [map_one] at h
+    omega
+  add_mem' := by
+    intro a b ha hb
+    have ha' : 0 ≤ D.ord v a := ha
+    have hb' : 0 ≤ D.ord v b := hb
+    show 0 ≤ D.ord v (a + b)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · simpa using hb'
+    rcases eq_or_ne b 0 with rfl | hb0
+    · simpa using ha'
+    rcases eq_or_ne (a + b) 0 with h | h
+    · rw [h, D.ord_zero]
+    · have := D.ord_add v a b ha0 hb0 h
+      omega
+  zero_mem' := by
+    show 0 ≤ D.ord v 0
+    rw [D.ord_zero]
+  algebraMap_mem' := by
+    intro r
+    show 0 ≤ D.ord v (algebraMap K D.F r)
+    rcases eq_or_ne r 0 with rfl | hr
+    · simp [D.ord_zero]
+    · rw [D.ord_algebraMap v r hr]
+
+/-- `z` **vanishes at** `v`: it is `0`, or it has positive order there.  The first disjunct
+is the junk convention `ord v 0 = 0` showing through, not a degenerate case. -/
+def VanishesAt (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (z : D.F) : Prop :=
+  z = 0 ∨ 0 < D.ord v z
+
+/-- Vanishing is closed under addition (PROVEN). -/
+lemma vanishesAt_add {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {v : D.Places} {a b : D.F}
+    (ha : D.VanishesAt v a) (hb : D.VanishesAt v b) : D.VanishesAt v (a + b) := by
+  rcases ha with rfl | ha
+  · simpa using hb
+  rcases hb with rfl | hb
+  · exact Or.inr (by simpa using ha)
+  have ha0 : a ≠ 0 := by rintro rfl; rw [D.ord_zero] at ha; omega
+  have hb0 : b ≠ 0 := by rintro rfl; rw [D.ord_zero] at hb; omega
+  rcases eq_or_ne (a + b) 0 with h | h
+  · exact Or.inl h
+  · have := D.ord_add v a b ha0 hb0 h
+    exact Or.inr (by omega)
+
+/-- Vanishing absorbs multiplication by an element of the valuation ring (PROVEN). -/
+lemma vanishesAt_mul_left {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {v : D.Places} {a b : D.F}
+    (ha : 0 ≤ D.ord v a) (hb : D.VanishesAt v b) : D.VanishesAt v (a * b) := by
+  rcases hb with rfl | hb
+  · exact Or.inl (mul_zero a)
+  rcases eq_or_ne a 0 with rfl | ha0
+  · exact Or.inl (zero_mul b)
+  have hb0 : b ≠ 0 := by rintro rfl; rw [D.ord_zero] at hb; omega
+  exact Or.inr (by rw [D.ord_mul v a b ha0 hb0]; omega)
+
+/-- **The maximal ideal at a place** (PROVEN), `m_v = {z ∈ O_v | z vanishes at v}`. -/
+def valMax (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Ideal (D.valRing v) where
+  carrier := {z : D.valRing v | D.VanishesAt v (z : D.F)}
+  add_mem' := fun ha hb => vanishesAt_add ha hb
+  zero_mem' := Or.inl rfl
+  smul_mem' := fun c _ hx => vanishesAt_mul_left c.2 hx
+
+/-- **The residue field at a place**, `κ(v) = O_v / m_v`, as a `K`-algebra.
+
+It is a field — `m_v` is maximal, since `ord v z = 0` makes `z` a unit of `O_v` — but
+nothing below needs that, so it is not proven here: `degOf` only wants a `K`-module. -/
+abbrev residue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : Type :=
+  (D.valRing v) ⧸ (D.valMax v)
+
+/-- **The degree of a place**, `deg v = [κ(v) : K]`.
+
+This is the design commitment that makes `exists_degreeMap` decomposable at all: that
+statement quantifies existentially over `deg`, so no cut of it exists until some `deg` is
+named, and this is the only canonical choice — `deg` has to induce a homomorphism
+`Pic → ℤ` sending every rational point to `1`, and the residue degree is what does.
+
+`Module.finrank`'s junk value `0` for an infinite-dimensional quotient is harmless: the
+residue degree of a place of a function field of transcendence degree `1` is always finite,
+so the junk branch is never taken — but nothing here needs that either, because both leaves
+below are stated about `degOf` as written. -/
+noncomputable def degOf (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : ℤ :=
+  (Module.finrank K (D.residue v) : ℤ)
+
+/-! ### `princ` IS the range of `divisor` (PROVEN)
+
+`princ` is defined as the subgroup GENERATED by the divisors of functions, which needed no
+proof to be well defined.  The price was that membership in it says only "a sum of divisors
+of functions".  It is in fact already the plain range, because `divisor` is multiplicative
+where it is not junk — and that is what lets `sub_single_pt_notMem_princ` be reduced to a
+statement about a single `g`. -/
+
+/-- The divisor of a nonzero function, coefficientwise (PROVEN). -/
+lemma divisor_apply (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : g ≠ 0)
+    (v : D.Places) : D.divisor g v = D.ord v g := by
+  classical
+  simp [divisor, hg]
+
+/-- `div 0 = 0`, by the junk convention (PROVEN). -/
+@[simp] lemma divisor_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 0 = 0 := by
+  classical
+  simp [divisor]
+
+/-- `div 1 = 0` (PROVEN). -/
+@[simp] lemma divisor_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 1 = 0 := by
+  ext v
+  rw [divisor_apply D one_ne_zero v]
+  have h := D.ord_algebraMap v 1 one_ne_zero
+  rw [map_one] at h
+  simp [h]
+
+/-- `divisor` is multiplicative away from `0` (PROVEN), i.e. `ord_mul` coefficientwise. -/
+lemma divisor_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a b : D.F} (ha : a ≠ 0) (hb : b ≠ 0) :
+    D.divisor (a * b) = D.divisor a + D.divisor b := by
+  ext v
+  rw [Finsupp.add_apply, divisor_apply D (mul_ne_zero ha hb) v, divisor_apply D ha v,
+    divisor_apply D hb v, D.ord_mul v a b ha hb]
+
+/-- `div (g⁻¹) = − div g` (PROVEN). -/
+lemma divisor_inv (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {a : D.F} (ha : a ≠ 0) :
+    D.divisor a⁻¹ = -D.divisor a := by
+  have h : D.divisor a + D.divisor a⁻¹ = 0 := by
+    rw [← divisor_mul D ha (inv_ne_zero ha), mul_inv_cancel₀ ha, divisor_one]
+  ext v
+  have hv := congrArg (fun t : D.Divisors => t v) h
+  simp only [Finsupp.add_apply, Finsupp.coe_zero, Pi.zero_apply] at hv
+  simp only [Finsupp.neg_apply]
+  omega
+
+/-- **The range of `divisor` is already a subgroup** (PROVEN): `0 = div 1`, sums are
+`div (a·b)` and negatives are `div a⁻¹`, with the junk value `div 0 = 0` absorbing the
+degenerate cases. -/
+noncomputable def princRange (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : AddSubgroup D.Divisors where
+  carrier := Set.range D.divisor
+  add_mem' := by
+    rintro _ _ ⟨a, rfl⟩ ⟨b, rfl⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact ⟨b, by simp⟩
+    rcases eq_or_ne b 0 with rfl | hb
+    · exact ⟨a, by simp⟩
+    exact ⟨a * b, divisor_mul D ha hb⟩
+  zero_mem' := ⟨0, divisor_zero D⟩
+  neg_mem' := by
+    rintro _ ⟨a, rfl⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact ⟨0, by simp⟩
+    exact ⟨a⁻¹, divisor_inv D ha⟩
+
+/-- The subgroup generated by the divisors of functions is that set itself (PROVEN). -/
+lemma princ_eq_princRange (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.princ = D.princRange :=
+  AddSubgroup.closure_eq D.princRange
+
+/-- **A divisor is principal exactly when it IS the divisor of a function** (PROVEN).
+
+This is the identification that `sub_single_pt_notMem_princ`'s docstring deferred. -/
+lemma mem_princ_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {z : D.Divisors} :
+    z ∈ D.princ ↔ ∃ g : D.F, D.divisor g = z := by
+  rw [princ_eq_princRange]
+  exact Iff.rfl
+
+/-- **`F = K(t)`**: every element of `F` is a quotient of polynomials in `t`.
+
+The shape mirrors the interface's own `gen` axiom, which says the same thing for the pair
+`(xx, yy)`; here a single element is asked to generate, which is what "the function field is
+rational", i.e. "the curve has genus `0`", means. -/
+def IsRationalGenerator (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (t : D.F) : Prop :=
+  ∀ z : D.F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a
+
+end PlaceData
+
+/-- **LEAF (obligation 2a, first half): a rational point has residue field `K`.**
+
+`[κ(v) : K] = 1` at `v = pt P`.  For an affine point `q = (a, b)` the interface already
+supplies the two facts the classical proof starts from — `ord v (xx − a) > 0` and
+`ord v (yy − b) > 0` (`ord_pt_affine`) — from which `xx, yy ∈ O_v` and every polynomial in
+them reduces into `K`: `h(xx) − h(a) = (xx − a)·k(xx)` vanishes at `v`.  What is left is the
+step that a general `z ∈ O_v` reduces too, i.e. that `O_v` is the LOCALIZATION of
+`K[xx, yy]` at the maximal ideal of `(a, b)` and not merely a valuation ring dominating it.
+That is where smoothness of the affine model at `(a, b)` is used: `K[xx, yy]` localised
+there is a DVR, and a normalised valuation ring of `F` dominating a DVR with the same
+fraction field equals it.  The two infinite points are the same argument in the chart
+`u = 1/xx`, `w = yy/xx³`, where `ord_pt_infinite` gives `ord v u = 1` and `w ∓ 1` vanishing.
+
+Not specific to genus `2` or to the sextic beyond the shape of `Pt`.  See
+[Stichtenoth, *Algebraic Function Fields and Codes*, §I.1]. -/
+theorem finrank_residue_pt_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Module.finrank K (D.residue (D.pt P)) = 1 := sorry
+
+/-- **LEAF (obligation 2a, second half): the degree formula.**
+
+`Σ_v ord_v(g)·[κ(v) : K] = 0` — a function on a projective curve has as many zeros as poles,
+counted with residue degrees.  This is
+[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11], and it is the whole
+weight of obligation 2a.
+
+The classical route, in the order the pieces are needed:
+
+1. for `g ∈ K` the divisor is `0` (`ord_algebraMap`), so assume `g` transcendental;
+2. `[F : K(g)] = deg (div_∞ g)`, the pole divisor of `g` — Stichtenoth I.4.11 proper,
+   proven there from the weak approximation theorem plus a dimension count;
+3. applying 2 to `g` and to `g⁻¹` gives `deg (div_0 g) = deg (div_∞ g)`, since
+   `div_0 g = div_∞ g⁻¹` and `K(g) = K(g⁻¹)`;
+4. `div g = div_0 g − div_∞ g`, so its degree is `0`.
+
+(`0 < deg v` also holds, and is deliberately not asked for anywhere: nothing downstream
+uses it, and a weaker leaf is an easier leaf.) -/
+theorem degOf_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (g : D.F) :
+    degHom D D.degOf (D.divisor g) = 0 := sorry
+
+/-- **LEAF (obligation 2a), now PROVEN from `finrank_residue_pt_eq_one` and
+`degOf_divisor_eq_zero`.**
+
+The witness is `PlaceData.degOf`, the residue degree; the two conjuncts are the two
+sub-leaves verbatim, so the only content here is that a `deg` has been NAMED.  Before it
+was, the statement quantified existentially over `deg` and no decomposition of it was
+possible at all. -/
 theorem exists_degreeMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
     ∃ deg : D.Places → ℤ, (∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K, deg (D.pt P) = 1) ∧
-      (∀ g : D.F, degHom D deg (D.divisor g) = 0) := sorry
+      (∀ g : D.F, degHom D deg (D.divisor g) = 0) :=
+  ⟨D.degOf, fun P => by
+      rw [PlaceData.degOf, finrank_residue_pt_eq_one D hsep P, Nat.cast_one],
+    fun g => degOf_divisor_eq_zero D hsep g⟩
 
-/-- **LEAF (obligation 2b): the genus is at least one.**
+/-! ### Obligation 2b: the genus is at least one
 
 `(Q) − (P)` is not a principal divisor for `P ≠ Q`: a function with a single simple pole
 would be an isomorphism to `ℙ¹`, and a smooth model of a separable monic sextic has genus
@@ -1110,12 +1403,81 @@ the conclusion is false.
 
 Membership in `princ` (the subgroup GENERATED by the divisors of functions) is the same as
 being the divisor of a function, since `div` is multiplicative; stating the leaf as a
-non-membership avoids having to prove that identification here. -/
+non-membership avoided having to prove that identification here.  **It is now proven**
+(`PlaceData.mem_princ_iff`), so `sub_single_pt_notMem_princ` below is assembled from the two
+sub-leaves that follow rather than being sorried. -/
+
+/-- **LEAF: a single simple pole at a rational point forces `F = K(g)`.**
+
+If `div g = (Q) − (P)` then `g` has exactly one pole, simple, at the degree-`1` place
+`pt P`, so `div_∞ g = (P)` and `[F : K(g)] = deg (div_∞ g) = 1` by
+[Stichtenoth, Thm. 1.4.11] — the same theorem that `degOf_divisor_eq_zero` needs, used here
+at the single value `1`.  `P ≠ Q` is what makes `g` non-constant: for `P = Q` the divisor is
+`0` and `g ∈ K`.
+
+This half is pure function-field theory; the genus is entirely in
+`not_isRationalGenerator`. -/
+theorem isRationalGenerator_of_divisor_eq_sub_single
+    {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q) {g : D.F}
+    (hg : D.divisor g = Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ)) :
+    D.IsRationalGenerator g := sorry
+
+/-- **LEAF: the function field of a separable sextic is NOT rational** — "genus ≥ 1".
+
+`F ≠ K(t)` for every `t ∈ F`.  **This is the only leaf in the whole Picard layer that uses
+separability, and it is false without it**: for `f = (x³ + 1)²` the curve `y² = f(x)` is
+`y = ±(x³+1)`, a pair of rational lines, and `F` really is `K(t)`.  Any proof that does not
+use `hsep` is therefore wrong, which makes this leaf unusually easy to sanity-check.
+
+The classical argument (see the module note above `mulRightHom`): `F = K(t)` writes
+`xx = A/B` with `A, B ∈ K[T]` coprime and `max (deg A) (deg B) = [F : K(xx)] = 2`, whence
+`(yy·B³)² = ∏_{i<6} (A − rᵢB)` over `K̄`, a product of six pairwise coprime binary quadratics
+(coprime because a common root would be a common root of `A` and `B`; six distinct `rᵢ`
+because `hsep`).  A product of pairwise coprime polynomials is a square only if each factor
+is, so each `A − rᵢB` is a square of a linear form — but the pencil spanned by `A` and `B`
+contains at most two singular binary quadratics, and `6 > 2`.
+
+**CHARACTERISTIC-2 AUDIT (2026-07-28) — the pencil argument does NOT cover `char K = 2`,
+and the leaf is true there for a completely different reason.**  In characteristic `2` a
+separable sextic still exists (`f' = c₅x⁴ + c₃x² + c₁` need not vanish), `f` is still not a
+square, and over a PERFECT `K` the field `F = K(xx)(√f)` is **rational**: writing
+`f = f₀(x²) + x·f₁(x²)` gives `√f = √f₀(x) + x^{1/2}·√f₁(x)` with `√f₁ ≠ 0`, so
+`F = K(x^{1/2}) ≅ K(u)`.  So the statement would be FALSE in characteristic `2` if a
+`PlaceData` existed there.  **None does**, and that is the char-`2` proof:
+
+* `F/K(xx)` is purely INSEPARABLE of degree `2` (`yy² = f(xx) ∈ K(xx)`), and a purely
+  inseparable extension has exactly ONE place above each place of the base;
+* but `ord_pt_infinite` puts both `pt (Sum.inr true)` and `pt (Sum.inr false)` above the
+  infinite place of `K(xx)` (`ord xx = -1` for both), and `pt_injective` makes them
+  distinct.  Two places over one — contradiction.
+
+Concretely, over a perfect `K` of characteristic `2` the pole of `xx` in `F = K(u)` has
+`ord xx = ord (u²) = -2`, so `ord_pt_infinite` is already unsatisfiable on its own.
+
+The same remark applies to `finrank_residue_pt_eq_one`,
+`isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
+itself, which has carried this since it was written: none of them says `2 ≠ 0`, and none of
+them needs to.  **Do not "repair" these statements by adding a characteristic hypothesis** —
+that would push a new obligation onto every consumer for a case that is already vacuous. -/
+theorem not_isRationalGenerator {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (t : D.F) :
+    ¬ D.IsRationalGenerator t := sorry
+
+/-- **Obligation 2b, now PROVEN** from `isRationalGenerator_of_divisor_eq_sub_single` and
+`not_isRationalGenerator`, over `PlaceData.mem_princ_iff`. -/
 theorem sub_single_pt_notMem_princ {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
     {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q) :
-    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := sorry
+    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := by
+  rw [PlaceData.mem_princ_iff]
+  rintro ⟨g, hg⟩
+  exact not_isRationalGenerator D hsep g
+    (isRationalGenerator_of_divisor_eq_sub_single D hsep hPQ hg)
 
 /-- **LEAF (obligation 2), now PROVEN from `exists_degreeMap` and
 `sub_single_pt_notMem_princ`.**
