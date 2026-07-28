@@ -28200,8 +28200,432 @@ theorem neronKernel_torsionFree_primeToResidue (ℓ : ℕ) (R : Subring ℚ)
 
 end NeronEtaleRigidity
 
+section NeronAdicTower
+
+/-! ### The `ℓ`-adic tower on the kernel of reduction
+
+The `q = ℓ` half of `neronKernel_torsionFree` is the one place in this
+development where the formal group of the abelian scheme is genuinely
+needed.  Three successive audits of it (recorded in the docstring of
+`neronKernel_torsionFree_residue` below) retired two candidate routes —
+the étale-rigidity route that closes the `q ≠ ℓ` half, and the
+square-zero deformation cluster `exists_smul_kerPre_of_squareZero` — and
+left a sharper description of what is actually missing.  This block
+carries out the cut that description asks for.
+
+Filter the kernel of reduction by the `𝔪`-adic tower,
+`K_k := ker (𝒥(R) → 𝒥(R ⧸ 𝔪 ^ k))` with `𝔪 = ker toF`.  Three obligations
+remain, and they are of three DIFFERENT kinds:
+
+* **(a)** identify `K_1` with the kernel of reduction along the closed
+  point `SpecLoc.special toF` — pure bookkeeping;
+  `inKerRed_ker_of_pre_special`, **PROVEN** here.
+* **(b)** SEPARATEDNESS of the filtration, `⋂ k, K_k = 0`.  This splits
+  again, and the split is the point: the RING-THEORETIC half
+  (`⋂ k, 𝔪 ^ k = 0` in `R`) is `eq_zero_of_mem_pow_ker`, **PROVEN** here
+  and, as it turns out, needing neither Noetherianity nor Krull's
+  intersection theorem — `𝔪 = (ℓ)` outright, by Bézout on numerator and
+  denominator.  The SCHEME-THEORETIC half — that a section out of a local
+  scheme is determined by its images in the tower — is
+  `eq_zero_of_inKerRed_pow`, still open.
+* **(c)** the `ℓ`-SHIFT, `x ∈ K_k \ K_(k+1) → ℓ • x ∉ K_(k+2)`.  THIS is
+  where `e < ℓ − 1` enters and where the formal group law is
+  irreplaceable; `not_inKerRed_nsmul_of_not_inKerRed`, still open.
+
+The assembly `neronKernel_torsionFree_residue` is then a two-line
+minimal-counterexample argument over (a), (b) and (c), and is proven.
+-/
+
+/-- **The denominator of an element of a subring of `ℚ` is invertible in
+that subring** (PROVEN).
+
+Bézout, and it is the only arithmetic input to `ker_eq_span_natCast`
+below.  If `t = n / d` in lowest terms then `gcd (n, d) = 1`, so
+`A n + B d = 1` for integers `A, B`, and dividing by `d` gives
+`1 / d = A t + B`, whose right-hand side visibly lies in any subring
+containing `t` — every subring of `ℚ` contains `ℤ`.
+
+This is what makes the `ℓ`-adic tower on `R` elementary: no
+Noetherianity, no localization theory, no Krull intersection theorem. -/
+theorem exists_mul_den_eq_one {R : Subring ℚ} (t : ↥R) :
+    ∃ w : ↥R, w * (((t : ℚ).den : ℕ) : ↥R) = 1 := by
+  have hd0 : (((t : ℚ).den : ℚ)) ≠ 0 := by
+    exact_mod_cast (t : ℚ).den_nz
+  have hg : Int.gcd (t : ℚ).num ((t : ℚ).den : ℤ) = 1 := by
+    simpa [Int.gcd] using (t : ℚ).reduced
+  have hbez : (1 : ℤ) = (t : ℚ).num * Int.gcdA (t : ℚ).num ((t : ℚ).den : ℤ)
+      + ((t : ℚ).den : ℤ) * Int.gcdB (t : ℚ).num ((t : ℚ).den : ℤ) := by
+    have h := Int.gcd_eq_gcd_ab (t : ℚ).num ((t : ℚ).den : ℤ)
+    rw [hg] at h
+    exact_mod_cast h
+  refine ⟨(Int.gcdA (t : ℚ).num ((t : ℚ).den : ℤ) : ↥R) * t
+      + (Int.gcdB (t : ℚ).num ((t : ℚ).den : ℤ) : ↥R), ?_⟩
+  refine Subtype.ext ?_
+  push_cast
+  have hnum : (t : ℚ) * ((t : ℚ).den : ℚ) = ((t : ℚ).num : ℚ) := by
+    have h := Rat.num_div_den (t : ℚ)
+    rw [div_eq_iff hd0] at h
+    exact h.symm
+  have hbez' : (1 : ℚ) = ((t : ℚ).num : ℚ) * (Int.gcdA (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ)
+      + ((t : ℚ).den : ℚ) * (Int.gcdB (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ) := by
+    exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hbez
+  calc ((Int.gcdA (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ) * (t : ℚ)
+          + (Int.gcdB (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ)) * ((t : ℚ).den : ℚ)
+      = (Int.gcdA (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ) * ((t : ℚ) * ((t : ℚ).den : ℚ))
+        + (Int.gcdB (t : ℚ).num ((t : ℚ).den : ℤ) : ℚ) * ((t : ℚ).den : ℚ) := by ring
+    _ = 1 := by rw [hnum, hbez']; ring
+
+/-- **The numerator of an element of a subring of `ℚ`, read inside the
+subring** (PROVEN).  `n = t * d` for `t = n / d`; used to move a question
+about `t` to a question about the INTEGER `n`, where divisibility is
+ordinary. -/
+theorem coe_num_eq_self_mul_den {R : Subring ℚ} (t : ↥R) :
+    (((t : ℚ).num : ℤ) : ↥R) = t * (((t : ℚ).den : ℕ) : ↥R) := by
+  have hd0 : (((t : ℚ).den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast (t : ℚ).den_nz
+  have h := Rat.num_div_den (t : ℚ)
+  rw [div_eq_iff hd0] at h
+  refine Subtype.ext ?_
+  push_cast
+  exact h
+
+/-- **The kernel of any ring map `R → 𝔽_ℓ` out of a subring of `ℚ` is the
+PRINCIPAL ideal `(ℓ)`** (PROVEN).
+
+Worth stating in this generality, because it is stronger than what the
+setting suggests and it is what makes the whole tower elementary:
+**`IsReductionBase` is not needed**, only primality of `ℓ`.  Neither
+surjectivity of `toF` nor locality of `R` plays any part.
+
+`⊇` is `toF (ℓ) = (ℓ : 𝔽_ℓ) = 0`.  For `⊆`, let `r = n / d` in lowest
+terms lie in the kernel.  Then `n = r · d` also lies in the kernel, and
+`n` is an INTEGER, so `ℓ ∣ n` in `ℤ`.  Writing `n = ℓ c`, the element
+`c · (1 / d)` lies in `R` by `exists_mul_den_eq_one`, and `ℓ · c · (1/d)`
+has the same product with `d` as `r` does, so equals `r` because `d` is a
+nonzerodivisor.
+
+Consequence used below: `𝔪 ^ k = (ℓ ^ k)` by `Ideal.span_singleton_pow`,
+so the `𝔪`-adic filtration of `R` is the `ℓ`-adic one on the nose. -/
+theorem ker_eq_span_natCast {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (hℓ : ℓ.Prime) :
+    RingHom.ker toF = Ideal.span {((ℓ : ℕ) : ↥R)} := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hmemℓ : ((ℓ : ℕ) : ↥R) ∈ RingHom.ker toF := by
+    rw [RingHom.mem_ker, map_natCast, ZMod.natCast_self]
+  refine le_antisymm ?_ ?_
+  · intro r hr
+    rw [RingHom.mem_ker] at hr
+    obtain ⟨w, hw⟩ := exists_mul_den_eq_one r
+    have hnumR : (((r : ℚ).num : ℤ) : ↥R) = r * (((r : ℚ).den : ℕ) : ↥R) :=
+      coe_num_eq_self_mul_den r
+    have hnumker : toF (((r : ℚ).num : ℤ) : ↥R) = 0 := by
+      rw [hnumR, map_mul, hr, zero_mul]
+    have hdvd : (ℓ : ℤ) ∣ (r : ℚ).num := by
+      rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      rwa [map_intCast] at hnumker
+    obtain ⟨c, hc⟩ := hdvd
+    rw [Ideal.mem_span_singleton]
+    refine ⟨(c : ↥R) * w, ?_⟩
+    have hstep : ((ℓ : ℕ) : ↥R) * ((c : ↥R) * w) * (((r : ℚ).den : ℕ) : ↥R)
+        = r * (((r : ℚ).den : ℕ) : ↥R) := by
+      calc ((ℓ : ℕ) : ↥R) * ((c : ↥R) * w) * (((r : ℚ).den : ℕ) : ↥R)
+          = ((ℓ : ℕ) : ↥R) * (c : ↥R) * (w * (((r : ℚ).den : ℕ) : ↥R)) := by ring
+        _ = ((ℓ : ℕ) : ↥R) * (c : ↥R) := by rw [hw, mul_one]
+        _ = (((r : ℚ).num : ℤ) : ↥R) := by
+              rw [hc]; push_cast; ring
+        _ = r * (((r : ℚ).den : ℕ) : ↥R) := hnumR
+    have hden0 : (((r : ℚ).den : ℕ) : ↥R) ≠ 0 := by
+      intro h
+      have := congrArg (fun z : ↥R => (z : ℚ)) h
+      simp at this
+    exact (mul_right_cancel₀ hden0 hstep).symm
+  · rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact hmemℓ
+
+/-- **An INTEGER lying in `(ℓ) ^ k` inside a subring of `ℚ` is divisible
+by `ℓ ^ k` in `ℤ`** (PROVEN).
+
+Descent on `k`, and the step is the reason this needs no valuation
+theory.  If `j = ℓ ^ (k+1) t` in `R` then `j` lies in `ker toF`, so
+`ℓ ∣ j` in `ℤ`; write `j = ℓ j'` and cancel the single factor `ℓ` in the
+DOMAIN `R` (a subring of `ℚ`) to get `j' = ℓ ^ k t`, which is the
+induction hypothesis. -/
+theorem int_dvd_of_mem_span_pow {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ) (hℓ : ℓ.Prime) :
+    ∀ (k : ℕ) (j : ℤ), ((j : ℤ) : ↥R) ∈ (Ideal.span {((ℓ : ℕ) : ↥R)}) ^ k →
+      (ℓ : ℤ) ^ k ∣ j := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hℓ0 : ((ℓ : ℕ) : ↥R) ≠ 0 := by
+    intro h
+    have h' : ((ℓ : ℕ) : ℚ) = 0 := by
+      have := congrArg (fun z : ↥R => (z : ℚ)) h
+      simp at this
+      exact_mod_cast this
+    exact hℓ.ne_zero (by exact_mod_cast h')
+  intro k
+  induction k with
+  | zero => intro j _; simp
+  | succ k ih =>
+    intro j hj
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hj
+    obtain ⟨t, ht⟩ := hj
+    have hker : toF ((j : ℤ) : ↥R) = 0 := by
+      rw [ht, map_mul, map_pow, map_natCast, ZMod.natCast_self,
+        zero_pow (Nat.succ_ne_zero k), zero_mul]
+    have hdvd : (ℓ : ℤ) ∣ j := by
+      rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      rwa [map_intCast] at hker
+    obtain ⟨j', rfl⟩ := hdvd
+    have hcancel : ((j' : ℤ) : ↥R) = ((ℓ : ℕ) : ↥R) ^ k * t := by
+      refine mul_left_cancel₀ hℓ0 ?_
+      calc ((ℓ : ℕ) : ↥R) * ((j' : ℤ) : ↥R)
+          = (((ℓ : ℕ) * j' : ℤ) : ↥R) := by push_cast; ring
+        _ = ((ℓ : ℕ) : ↥R) ^ (k + 1) * t := ht
+        _ = ((ℓ : ℕ) : ↥R) * (((ℓ : ℕ) : ↥R) ^ k * t) := by ring
+    obtain ⟨c, hc⟩ := ih j'
+      (by rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton]; exact ⟨t, hcancel⟩)
+    exact ⟨c, by rw [hc]; ring⟩
+
+/-- **SEPARATEDNESS OF THE `𝔪`-ADIC FILTRATION of the base**,
+`⋂ k, 𝔪 ^ k = 0` for `𝔪 = ker toF` (PROVEN).
+
+This is the ring-theoretic half of obligation (b), and the audit that
+asked for the cut recorded it as "Krull's intersection theorem in the
+Noetherian local domain `R`".  That route would work, but it is not
+needed and the shortcut is worth recording: by `ker_eq_span_natCast` the
+ideal `𝔪` is PRINCIPAL, generated by `ℓ`, so `𝔪 ^ k = (ℓ ^ k)` and the
+statement reduces by `int_dvd_of_mem_span_pow` to `ℓ ^ k ∣ n` for every
+`k`, where `n` is the numerator of `s`.  A nonzero integer has only
+finitely many such `k`, since `ℓ ^ (k+1) ≥ 2 ^ (k+1) > k`.
+
+So **no Noetherianity hypothesis is required anywhere in this block** —
+which matters, because `IsReductionBase` does not supply one, and
+deriving it would have meant first proving that a subring of `ℚ` is a
+localization of `ℤ`.  Only `hℓ` is consumed; `hbase` is not. -/
+theorem eq_zero_of_mem_pow_ker {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (hℓ : ℓ.Prime) (s : ↥R) (hs : ∀ k : ℕ, s ∈ RingHom.ker toF ^ (k + 1)) : s = 0 := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hnumR : (((s : ℚ).num : ℤ) : ↥R) = s * (((s : ℚ).den : ℕ) : ↥R) :=
+    coe_num_eq_self_mul_den s
+  have hall : ∀ k : ℕ, (ℓ : ℤ) ^ (k + 1) ∣ (s : ℚ).num := by
+    intro k
+    refine int_dvd_of_mem_span_pow toF hℓ (k + 1) (s : ℚ).num ?_
+    rw [← ker_eq_span_natCast toF hℓ, hnumR]
+    exact Ideal.mul_mem_right _ _ (hs k)
+  have hnum0 : (s : ℚ).num = 0 := by
+    by_contra hne
+    have hk := hall (s : ℚ).num.natAbs
+    have hle : (ℓ : ℤ) ^ ((s : ℚ).num.natAbs + 1) ≤ |(s : ℚ).num| :=
+      Int.le_of_dvd (abs_pos.mpr hne) ((dvd_abs _ _).mpr hk)
+    have h2 : (2 : ℤ) ^ ((s : ℚ).num.natAbs + 1) ≤ (ℓ : ℤ) ^ ((s : ℚ).num.natAbs + 1) :=
+      pow_le_pow_left₀ (by norm_num) (by exact_mod_cast hℓ.two_le) _
+    have hgrow : ((s : ℚ).num.natAbs : ℤ) < (2 : ℤ) ^ ((s : ℚ).num.natAbs + 1) := by
+      have := Nat.lt_two_pow_self (n := (s : ℚ).num.natAbs)
+      calc ((s : ℚ).num.natAbs : ℤ) < ((2 ^ (s : ℚ).num.natAbs : ℕ) : ℤ) := by exact_mod_cast this
+        _ ≤ (2 : ℤ) ^ ((s : ℚ).num.natAbs + 1) := by
+            push_cast
+            exact pow_le_pow_right₀ (by norm_num) (Nat.le_succ _)
+    rw [Int.abs_eq_natAbs] at hle
+    omega
+  refine Subtype.ext ?_
+  have : (s : ℚ) = 0 := Rat.zero_iff_num_zero.mpr hnum0
+  simpa using this
+
+/-- **The `k`-th stage of the tower, as a base scheme**: `Spec (R ⧸ I)`
+mapping to `Spec R`.
+
+Written for an arbitrary ideal rather than for `𝔪 ^ k` so that the
+`k = 1` identification `inKerRed_ker_of_pre_special` can be carried out
+by rewriting the IDEAL argument (`pow_one`) rather than by transporting
+along an equality of TYPES, which `R ⧸ 𝔪 ^ 1` versus `R ⧸ 𝔪` would
+otherwise force.
+
+This is the "bookkeeping" the audit flagged as not free: `SpecLoc` is
+built only for SUBRINGS of `ℚ`, and `R ⧸ I` is not one, so the tower
+cannot be phrased with `SpecLoc` alone. -/
+noncomputable def SpecLoc.quotIdeal (R : Subring ℚ) (I : Ideal ↥R) :
+    Spec (CommRingCat.of (↥R ⧸ I)) ⟶ SpecLoc R :=
+  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk I))
+
+/-- **`x` lies in the kernel of reduction modulo `I`.**
+
+`RelPoint.pre (SpecLoc.quotIdeal R I)` is the map `𝒥(R) → 𝒥(R ⧸ I)` read
+on relative points; this says `x` dies under it.  A `Prop`-valued
+definition rather than an `AddSubgroup`, for the same reason
+`AbelianSchemeStruct.KerPre` is a subtype: the group structure on
+`RelPoint jstrZ (𝟙 _)` is `abZ.addCommGroup`, a definition depending on
+the TERM `abZ`, so it is not available to instance synthesis inside a
+statement. -/
+def AbelianSchemeStruct.InKerRed {R : Subring ℚ} {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R}
+    (abZ : AbelianSchemeStruct jstrZ) (I : Ideal ↥R)
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R))) : Prop :=
+  RelPoint.pre (SpecLoc.quotIdeal R I) (Category.comp_id (SpecLoc.quotIdeal R I)) x
+    = abZ.zero (SpecLoc.quotIdeal R I)
+
+/-- **Zero lies in every stage of the tower** (PROVEN) — naturality of
+the zero section, `abZ.pre_zero`. -/
+theorem AbelianSchemeStruct.inKerRed_zero {R : Subring ℚ} {JZ : Scheme.{0}}
+    {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ) (I : Ideal ↥R) :
+    abZ.InKerRed I (abZ.zero (𝟙 (SpecLoc R))) :=
+  abZ.pre_zero (SpecLoc.quotIdeal R I) (Category.comp_id (SpecLoc.quotIdeal R I))
+
+/-- **OBLIGATION (a): the bottom of the tower IS the kernel of reduction
+at the closed point** (PROVEN).
+
+`SpecLoc.special toF` is `Spec` of `toF`, and `SpecLoc.quotIdeal R 𝔪` is
+`Spec` of `R ↠ R ⧸ 𝔪` for `𝔪 = ker toF`.  Since `toF` is SURJECTIVE, the
+induced `e : R ⧸ 𝔪 ≃+* 𝔽_ℓ` is an isomorphism and
+`SpecLoc.special toF = Spec e ≫ SpecLoc.quotIdeal R 𝔪`.  Precomposition
+along `Spec e` is therefore injective on relative points — it is split by
+`Spec e⁻¹` — so killing `x` at the closed point is the same as killing it
+at the bottom of the tower.
+
+This is the ONLY place `hbase.surjective` is used in this block; the rest
+of the tower needs `hℓ` alone.  It is also the whole of the "bookkeeping"
+obligation the audit isolated, and it is discharged. -/
+theorem inKerRed_ker_of_pre_special {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+      = abZ.zero (SpecLoc.special toF)) :
+    abZ.InKerRed (RingHom.ker toF) x := by
+  set m : Ideal ↥R := RingHom.ker toF with hm
+  let e : (↥R ⧸ m) ≃+* ZMod ℓ := RingHom.quotientKerEquivOfSurjective hbase.surjective
+  let α : CommRingCat.of (↥R ⧸ m) ⟶ CommRingCat.of (ZMod ℓ) := CommRingCat.ofHom e.toRingHom
+  let β : CommRingCat.of (ZMod ℓ) ⟶ CommRingCat.of (↥R ⧸ m) := CommRingCat.ofHom e.symm.toRingHom
+  have hαβ : α ≫ β = 𝟙 (CommRingCat.of (↥R ⧸ m)) := by
+    ext a
+    exact e.symm_apply_apply a
+  have hmkα : CommRingCat.ofHom (Ideal.Quotient.mk m) ≫ α = CommRingCat.ofHom toF := by
+    ext a
+    exact RingHom.quotientKerEquivOfSurjective_apply_mk hbase.surjective a
+  have hfac : Spec.map α ≫ SpecLoc.quotIdeal R m = SpecLoc.special toF := by
+    rw [SpecLoc.quotIdeal, SpecLoc.special, ← Spec.map_comp, hmkα]
+  have hsplit : Spec.map β ≫ Spec.map α = 𝟙 (Spec (CommRingCat.of (↥R ⧸ m))) := by
+    rw [← Spec.map_comp, hαβ, Spec.map_id]
+  have hx : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+      = RelPoint.pre (Spec.map α) hfac
+          (RelPoint.pre (SpecLoc.quotIdeal R m) (Category.comp_id (SpecLoc.quotIdeal R m)) x) := by
+    refine Subtype.ext ?_
+    show SpecLoc.special toF ≫ x.1 = Spec.map α ≫ SpecLoc.quotIdeal R m ≫ x.1
+    rw [← Category.assoc, hfac]
+  have hz : RelPoint.pre (Spec.map α) hfac (abZ.zero (SpecLoc.quotIdeal R m))
+      = abZ.zero (SpecLoc.special toF) := abZ.pre_zero (Spec.map α) hfac
+  rw [hx, ← hz] at hker
+  have h1 : Spec.map α ≫ SpecLoc.quotIdeal R m ≫ x.1
+      = Spec.map α ≫ (abZ.zero (SpecLoc.quotIdeal R m)).1 := congrArg Subtype.val hker
+  refine Subtype.ext ?_
+  show SpecLoc.quotIdeal R m ≫ x.1 = (abZ.zero (SpecLoc.quotIdeal R m)).1
+  calc SpecLoc.quotIdeal R m ≫ x.1
+      = (Spec.map β ≫ Spec.map α) ≫ SpecLoc.quotIdeal R m ≫ x.1 := by
+        rw [hsplit, Category.id_comp]
+    _ = Spec.map β ≫ Spec.map α ≫ SpecLoc.quotIdeal R m ≫ x.1 := Category.assoc _ _ _
+    _ = Spec.map β ≫ Spec.map α ≫ (abZ.zero (SpecLoc.quotIdeal R m)).1 := by rw [h1]
+    _ = (Spec.map β ≫ Spec.map α) ≫ (abZ.zero (SpecLoc.quotIdeal R m)).1 :=
+        (Category.assoc _ _ _).symm
+    _ = (abZ.zero (SpecLoc.quotIdeal R m)).1 := by rw [hsplit, Category.id_comp]
+
+/-- **OBLIGATION (b), geometric half: a section of `𝒥` over `Spec R` is
+determined by its images in the `𝔪`-adic tower** (sorry node).
+
+TRUE, and the argument is standard, but it is genuinely
+scheme-theoretic rather than algebraic — which is why the algebraic
+input is taken here as the HYPOTHESIS `hsep` (supplied by
+`eq_zero_of_mem_pow_ker`, proven above) rather than reproved inside.
+
+The argument.  `Spec R` is the spectrum of a LOCAL ring, so its unique
+closed point lies in every nonempty open; hence for any morphism
+`s : Spec R ⟶ 𝒥` the preimage of an affine open containing the image of
+the closed point is an open containing the closed point, hence all of
+`Spec R`, and `s` FACTORS through that affine open.  Both `x` and the
+zero section have the same image at the closed point (that is the `k = 1`
+stage of the hypothesis, via `inKerRed_ker_of_pre_special`), so both
+factor through ONE affine `Spec A`, and correspond to ring maps
+`a, b : A → R`.  The `k`-th stage of the hypothesis says exactly that
+`a` and `b` agree modulo `𝔪 ^ k`, so `hsep` applied to `a f - b f` gives
+`a = b`, hence `x = 0`.
+
+MISSING MACHINERY, and this is the check that would refute the verdict:
+the pin has `AlgebraicGeometry.Scheme.affineOpens` and the `ΓSpec`
+adjunction (`AlgebraicGeometry.Scheme.homEquiv` /
+`Spec.homEquiv`, both already used in this file), so the two halves that
+are genuinely absent are (i) "the only open of `Spec` of a local ring
+containing the closed point is everything" — mathlib has
+`IsLocalRing.isLocalRing_iff...` and `PrimeSpectrum.closedPoint`, and the
+statement is `PrimeSpectrum.closedPoint_mem_iff`, which DOES exist — and
+(ii) the passage from "the two ring maps agree mod `𝔪 ^ k`" to the
+`RelPoint` statement, which is `Spec.map_comp` bookkeeping.  So a
+successor should check `PrimeSpectrum.closedPoint_mem_iff` first: if it
+is present at this pin, this leaf is assembly, not theory.
+
+`IsLocalRing R` itself is available from `hbase`: `ker_eq_nonunits` says
+the nonunits form an ideal, which is `IsLocalRing.of_isUnit_or_isUnit_one_sub_self`. -/
+theorem eq_zero_of_inKerRed_pow {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF)
+    (_hsep : ∀ t : ↥R, (∀ k : ℕ, t ∈ RingHom.ker toF ^ (k + 1)) → t = 0)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (_hall : ∀ k : ℕ, abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x) :
+    x = abZ.zero (𝟙 (SpecLoc R)) :=
+  sorry
+
+/-- **OBLIGATION (c): THE `ℓ`-SHIFT — multiplication by `ℓ` moves a point
+of the tower up by EXACTLY one step** (sorry node).
+
+**This is the whole mathematical content of the `q = ℓ` half, and the
+only place where `e < ℓ − 1` — i.e. `hℓ2` — and the formal group law are
+irreplaceable.**  Everything else in this block is proven.
+
+TRUE, and classical.  On the formal group of `𝒥` along the zero section
+over the complete local ring `R^`, a point of `K_(k+1) \ K_(k+2)` has
+coordinate of valuation exactly `k+1`, and
+
+  `[ℓ](T) = ℓ T + (higher terms) + (unit) · T ^ ℓ + ⋯`
+
+so `v([ℓ] x) = min (e + (k+1), ℓ (k+1))` with `e = 1` the absolute
+ramification index supplied by `hbase`.  The minimum is attained by the
+FIRST term precisely when `e < (ℓ − 1)(k+1)`, which for `e = 1` and
+`k ≥ 0` is exactly `ℓ > 2`, i.e. `hℓ2`.  Hence `v([ℓ] x) = k + 2`
+exactly, so `ℓ • x` lies in `K_(k+2)` but NOT in `K_(k+3)`.
+
+**`hℓ2` cannot be dropped**: at `ℓ = 2`, `e = 1 = ℓ − 1`, the two terms
+have equal valuation and may cancel — the standard witness is `𝔾ₘ` over
+`ℤ_p[ζ_p]`, where `ζ_p − 1` lies in the maximal ideal and is a
+`p`-torsion point of the formal group killed by reduction.
+
+IRREDUCIBLE at this pin ALONG THE FORMAL-GROUP AXIS, and the CHECK THAT
+WOULD REFUTE THAT: `Mathlib/RingTheory/FormalGroup/Basic.lean` was the
+only file in that directory as of 2026-07-27, and it stops at
+`AddCommMonoid` on `Point` — no `Neg`, no `AddGroup`, no formal inverse
+series — with the points-in-a-complete-local-ring construction still a
+`TODO` in its own docstring.  Absent everywhere (mathlib, `~/cs/FLT`,
+this project) are (i) the formal group OF an abelian scheme along its
+zero section, and (ii) the torsion-freeness theorem for `e < p − 1`.
+Producing either as a declaration refutes the claim.
+
+AXES ALREADY SEARCHED AND CLOSED, so that a successor does not repeat
+them: the ÉTALE-rigidity route (`section_eq_of_formallyUnramified`) fails
+because `ℓ` is not a unit on `ℤ_(ℓ)`, so `[ℓ]` is ramified in residue
+characteristic `ℓ` and the equalizer is closed but not open; and the
+square-zero deformation cluster (`exists_smul_kerPre_of_squareZero` and
+the `sqz*` lemmas) applies to each STEP of this tower — `R ⧸ 𝔪 ^ (k+1) ↠
+R ⧸ 𝔪 ^ k` is square-zero — but the module structure it produces factors
+through `R ⧸ 𝔪 ^ k` and is NOT visibly killed by `ℓ` once `k ≥ 2`, which
+is precisely the statement below.  The identification with
+`Hom(ω, 𝔪 ^ k ⧸ 𝔪 ^ (k+1))` that would supply it IS the missing
+formal-group theorem. -/
+theorem not_inKerRed_nsmul_of_not_inKerRed {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R))) (k : ℕ)
+    (_hk : abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x)
+    (_hk' : ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 2)) x) :
+    ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 3)) (abZ.nsmulPoint ℓ x) :=
+  sorry
+
+end NeronAdicTower
+
 /-- **The kernel of reduction contains no point of order `ℓ`, for `ℓ`
-odd** (sorry node — the FORMAL-GROUP fact).
+odd** (PROVEN, over the `ℓ`-adic tower cut in `NeronAdicTower` above).
 
 TRUE, and classical.  The kernel of `𝒥(ℤ_(ℓ)) → 𝒥(𝔽_ℓ)` embeds in the
 kernel over the completion `ℤ_ℓ`, which is the group of points of the
@@ -28306,20 +28730,58 @@ killed by `ℓ` is a consequence of the identification with
 `Hom(ω, (ℓ ^ k) ⧸ (ℓ ^ (k+1)))`, which is precisely the theorem the
 survey above records as absent.
 
-NET EFFECT ON THE VERDICT: unchanged, but the missing object is sharper
-than "formal groups".  It is (c) alone.  A successor should consider
-STATING (c) as an interface over the tower — which is a legitimate cut,
-since a cut needs its theory stated and not proven — rather than
-building `FormalGroup.Point` for an abelian scheme first. -/
+**THE CUT ASKED FOR ABOVE IS NOW TAKEN, AND THIS NODE IS PROVEN**
+(2026-07-27, fourth owner).  `NeronAdicTower` above carries the `𝔪`-adic
+filtration `K_k` and the three obligations, of which TWO AND A HALF are
+discharged:
+
+* (a) `inKerRed_ker_of_pre_special` — PROVEN;
+* (b) split into its ring-theoretic half `eq_zero_of_mem_pow_ker`
+  — PROVEN, and needing NEITHER Noetherianity nor Krull's intersection
+  theorem, because `ker toF = (ℓ)` is principal
+  (`ker_eq_span_natCast`) — and its scheme-theoretic half
+  `eq_zero_of_inKerRed_pow`, still open;
+* (c) `not_inKerRed_nsmul_of_not_inKerRed`, still open, and now carrying
+  the formal-group content ALONE.
+
+The assembly below is the minimal-counterexample argument: if `x ≠ 0`
+then by (b) some stage of the tower misses it; take the LEAST such stage,
+which is not the bottom one by (a); one step below it (c) applies, and
+says `ℓ • x` escapes a stage further up — but `ℓ • x = 0` by `htors`, and
+`0` lies in every stage (`inKerRed_zero`).  Contradiction.
+
+So the residual frontier under this node is exactly two named leaves, and
+they are of different kinds: one is scheme-theoretic bookkeeping over a
+local base, the other is the formal group law. -/
 theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
+    (hbase : IsReductionBase ℓ R toF) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
     (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
-    (_htors : abZ.nsmulPoint ℓ x = abZ.zero (𝟙 (SpecLoc R)))
-    (_hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+    (htors : abZ.nsmulPoint ℓ x = abZ.zero (𝟙 (SpecLoc R)))
+    (hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
       = abZ.zero (SpecLoc.special toF)) :
-    x = abZ.zero (𝟙 (SpecLoc R)) :=
-  sorry
+    x = abZ.zero (𝟙 (SpecLoc R)) := by
+  classical
+  by_contra hx
+  have hex : ∃ k : ℕ, ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x := by
+    by_contra hcon
+    exact hx (eq_zero_of_inKerRed_pow toF hbase (eq_zero_of_mem_pow_ker toF hℓ) abZ x
+      (fun k => not_not.mp (not_exists.mp hcon k)))
+  have hspec : ¬ abZ.InKerRed (RingHom.ker toF ^ (Nat.find hex + 1)) x := Nat.find_spec hex
+  rcases Nat.eq_zero_or_pos (Nat.find hex) with hz | hpos
+  · rw [hz] at hspec
+    refine hspec ?_
+    rw [zero_add, pow_one]
+    exact inKerRed_ker_of_pre_special toF hbase abZ x hker
+  · obtain ⟨i, hi⟩ : ∃ i : ℕ, Nat.find hex = i + 1 := ⟨Nat.find hex - 1, by omega⟩
+    have hprev : abZ.InKerRed (RingHom.ker toF ^ (i + 1)) x :=
+      not_not.mp (Nat.find_min hex (by omega))
+    have hnext : ¬ abZ.InKerRed (RingHom.ker toF ^ (i + 2)) x := by
+      rw [hi] at hspec
+      exact hspec
+    refine not_inKerRed_nsmul_of_not_inKerRed toF hbase hℓ hℓ2 abZ x i hprev hnext ?_
+    rw [htors]
+    exact abZ.inKerRed_zero _
 
 /-- **The kernel of reduction on an abelian scheme over `ℤ_(ℓ)` is
 TORSION-FREE, for `ℓ` odd** (PROVEN, over the two prime-order leaves
@@ -28343,8 +28805,13 @@ and share no argument:
   is now PROVEN (2026-07-27), over the single residual leaf
   `formallyUnramified_mulByNat_of_isUnit`.
 * `q = ℓ` (`neronKernel_torsionFree_residue`) — the formal group of
-  `𝒥` on the maximal ideal, torsion-free because `e = 1 < ℓ − 1`.  Still
-  a sorry node, and the formal-group axis is genuinely empty at this pin.
+  `𝒥` on the maximal ideal, torsion-free because `e = 1 < ℓ − 1`.  Now
+  **PROVEN** (2026-07-27) over the `𝔪`-adic tower cut of
+  `NeronAdicTower`, whose residual leaves are
+  `eq_zero_of_inKerRed_pow` (a section out of a LOCAL base is determined
+  by the tower — scheme theory, no formal groups) and
+  `not_inKerRed_nsmul_of_not_inKerRed` (the `ℓ`-shift — the formal group
+  law, and the sole consumer of `hℓ2`).
 
 The previous audit here recorded the node as irreducible, but it ranged
 only over the formal-group axis; along that axis it was right.  The
