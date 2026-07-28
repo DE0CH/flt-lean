@@ -13,6 +13,8 @@ public import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
 public import Mathlib.RingTheory.Artinian.Module
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.RingTheory.Ideal.Quotient.Nilpotent
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
 /-!
 # The rank of a finite flat morphism at a REDUCED geometric fibre is its number of points
@@ -122,6 +124,64 @@ theorem finrank_eq_card_algHom [IsReduced A] :
   rw [hpi]
   refine le_antisymm (Nat.card_le_card_of_injective _ (algHomOfMaximal_injective K)) ?_
   exact (card_algHom_le_finrank K A K).trans_eq hpi
+
+/-- Composition with the quotient map identifies the `K`-points of `A ⧸ nilradical A` with those
+of `A`: a `K`-point kills every nilpotent, because `K` is a field. -/
+noncomputable def algHomQuotNilradicalEquiv :
+    ((A ⧸ nilradical A) →ₐ[K] K) ≃ (A →ₐ[K] K) := by
+  refine Equiv.ofBijective (fun ψ => ψ.comp (Ideal.Quotient.mkₐ K (nilradical A))) ⟨?_, ?_⟩
+  · intro ψ₁ ψ₂ h
+    refine AlgHom.ext fun x => ?_
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    exact congrArg (fun f : A →ₐ[K] K => f y) h
+  · intro φ
+    refine ⟨Ideal.Quotient.liftₐ (nilradical A) φ ?_, rfl⟩
+    intro a ha
+    obtain ⟨n, hn⟩ := ha
+    have : (φ a) ^ n = 0 := by rw [← map_pow, hn, map_zero]
+    exact pow_eq_zero_iff' .. |>.mp this |>.1
+
+/-- **The converse of `Algebra.finrank_eq_card_algHom`: a finite algebra over an algebraically
+closed field with at least as many `K`-points as its dimension is REDUCED.**
+
+Together with `finrank_eq_card_algHom` this makes "rank = point count" and "reduced" equivalent
+for a finite algebra over an algebraically closed field, and it is the direction a consumer needs
+when the RANK is a hypothesis rather than a conclusion — i.e. when reducedness of a fibre is to be
+*derived* from a rank computation rather than assumed.
+
+The hypothesis really is unsatisfiable in the non-reduced case, which is why nothing false can be
+smuggled through: `K[x]/(x²)` has rank `2` and one `K`-point, and over `𝔽_p` the group scheme
+`ker F ⊆ 𝔾ₐ` has rank `p` and one geometric point.
+
+PROOF.  Every `K`-point kills the nilradical, so `A` and `A ⧸ nilradical A` have the same
+`K`-points (`algHomQuotNilradicalEquiv`); the quotient is reduced, so its dimension IS that common
+count, which is `≥ dim_K A` by hypothesis.  Rank–nullity applied to the surjection
+`A ↠ A ⧸ nilradical A` then forces its kernel to have dimension `0`, i.e. the nilradical to
+vanish. -/
+theorem isReduced_of_finrank_le_card_algHom
+    (h : Module.finrank K A ≤ Nat.card (A →ₐ[K] K)) : IsReduced A := by
+  classical
+  haveI : IsReduced (A ⧸ nilradical A) :=
+    (Ideal.isRadical_iff_quotient_reduced _).mp (Ideal.radical_isRadical (⊥ : Ideal A))
+  haveI : Module.Finite K (A ⧸ nilradical A) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ K (nilradical A)).toLinearMap
+      Ideal.Quotient.mk_surjective
+  set f : A →ₗ[K] (A ⧸ nilradical A) := (Ideal.Quotient.mkₐ K (nilradical A)).toLinearMap with hf
+  have hsurj : Function.Surjective f := Ideal.Quotient.mk_surjective
+  have hcard : Nat.card ((A ⧸ nilradical A) →ₐ[K] K) = Nat.card (A →ₐ[K] K) :=
+    Nat.card_congr (algHomQuotNilradicalEquiv K A)
+  have hle : Module.finrank K A ≤ Module.finrank K (A ⧸ nilradical A) := by
+    rw [Algebra.finrank_eq_card_algHom K (A ⧸ nilradical A), hcard]; exact h
+  have hrk := LinearMap.finrank_range_add_finrank_ker f
+  rw [LinearMap.range_eq_top.mpr hsurj, finrank_top] at hrk
+  have hker : Module.finrank K (LinearMap.ker f) = 0 := by omega
+  have hkb : LinearMap.ker f = ⊥ := Submodule.finrank_eq_zero.mp hker
+  refine ⟨fun x hx => ?_⟩
+  have hxm : x ∈ nilradical A := hx
+  have : f x = 0 := by
+    show Ideal.Quotient.mk (nilradical A) x = 0
+    exact (Ideal.Quotient.eq_zero_iff_mem).mpr hxm
+  exact (LinearMap.ker_eq_bot.mp hkb) (by simpa using this)
 
 end Algebra
 
@@ -272,5 +332,29 @@ theorem Scheme.Hom.finrank_eq_card_geometricPoints {X Y : Scheme.{u}} (h : X ⟶
   haveI : _root_.IsReduced A := (affine_isReduced_iff (CommRingCat.of A)).mp inferInstance
   rw [finrank_eq_finrank_of_iso h g e he y, Algebra.finrank_eq_card_algHom K A]
   exact (Nat.card_congr (fibrePointEquivAlgHom h g e he)).symm
+
+/-- **The converse: a geometric fibre with at least as many points as its rank is REDUCED.**
+
+This is `Scheme.Hom.finrank_eq_card_geometricPoints` read in the direction a consumer needs when
+the rank is a HYPOTHESIS: for a finite flat `h` and an algebraically closed geometric point `g`,
+if the number of `K`-points of `X` over `g` is at least `h.finrank (g y)`, then the geometric
+fibre `X ×_Y Spec K` is reduced (and then, by the previous theorem, the two numbers are equal).
+
+It is the entry point that turns a *counting* hypothesis into the *reducedness* input of every
+étale criterion, and it carries no characteristic hypothesis: in residue characteristic `p` the
+counting hypothesis is simply unsatisfiable, `ker F ⊆ 𝔾ₐ` having rank `p` and one geometric
+point. -/
+theorem isReduced_pullback_of_finrank_le_card_geometricPoints
+    {X Y : Scheme.{u}} (h : X ⟶ Y) [Flat h] [IsFinite h] {K : Type u} [Field K] [IsAlgClosed K]
+    (g : Spec (CommRingCat.of K) ⟶ Y) (y : Spec (CommRingCat.of K))
+    (hcard : h.finrank (g y) ≤ Nat.card {s : Spec (CommRingCat.of K) ⟶ X // s ≫ h = g}) :
+    IsReduced (pullback h g) := by
+  obtain ⟨A, _, _, _, e, he⟩ := exists_algebra_iso_of_isFinite (pullback.snd h g)
+  have hrk : Module.finrank K A ≤ Nat.card (A →ₐ[K] K) := by
+    rw [← finrank_eq_finrank_of_iso h g e he y, ← Nat.card_congr (fibrePointEquivAlgHom h g e he)]
+    exact hcard
+  haveI : _root_.IsReduced A := Algebra.isReduced_of_finrank_le_card_algHom K A hrk
+  haveI : IsReduced (Spec (CommRingCat.of A)) := (affine_isReduced_iff (CommRingCat.of A)).mpr ‹_›
+  exact isReduced_of_isOpenImmersion e.hom
 
 end AlgebraicGeometry
