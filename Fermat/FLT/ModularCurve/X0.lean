@@ -19397,10 +19397,26 @@ leaf above) — the GEOMETRIC half of Mordell–Weil.
 
 **SPLIT, 2026-07-27.  The IRREDUCIBILITY note this docstring used to
 carry — "Weil heights, functoriality, the Néron–Tate height and
-Northcott's theorem are all missing from the pin" — was correct about
-the pin and wrong about the CUT: it searched only the "is the theory
-available?" axis, and never asked which part of it is a *finiteness*
-statement about `ℚ` and which part is *geometry*.**
+Northcott's theorem are all missing from the pin" — was wrong about the
+CUT: it searched only the "is the theory available?" axis, and never
+asked which part of it is a *finiteness* statement about `ℚ` and which
+part is *geometry*.**
+
+**And it was wrong about the PIN too (correction, 2026-07-28).**  Of the
+four things it named, only the **Néron–Tate** height is genuinely absent.
+`Mathlib/NumberTheory/Height/` supplies Weil heights
+(`Height.mulHeight` / `logHeight` on tuples,
+`Projectivization.mulHeight` / `logHeight` on projective space), their
+functoriality under homogeneous forms in both directions
+(`Height.logHeight_eval_le'`, `Height.logHeight_eval_ge'`), and
+**Northcott** as an honest instance for every number field
+(`instance : Northcott (mulHeight₁ (K := K))`,
+`Height/NumberField.lean:393`).  The note read as true because
+`WeilHeight` and `NeronTate` appear nowhere in those files, so a grep for
+either returns nothing.  Northcott is proven here anyway, in the
+`intHeight` form, because that is the shape the descent consumes; that
+is a convenience, not a necessity.  See the CORRECTION section of
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 
 * The finiteness part is Northcott's theorem, and over `ℚ` in primitive
   integral coordinates it is elementary — an integer box is finite.  It
@@ -19914,10 +19930,14 @@ no level.  That is the point of splitting it out — every consumer of
 carries none of the modular content.
 
 **SPLIT, 2026-07-27, and the IRREDUCIBILITY VERDICT BELOW IS RETIRED.**
-The verdict was correct about the pin — heights, weak Mordell–Weil and
-the descent lemma were all genuinely absent — but it searched only the
-"is the theorem available?" axis and never asked which of the three
-pieces needs *arithmetic* and which is pure group theory.  The descent
+The verdict searched only the "is the theorem available?" axis and never
+asked which of the three pieces needs *arithmetic* and which is pure
+group theory.  **It was also wrong about the pin on two of its three
+counts (correction, 2026-07-28): heights are in mathlib
+(`Mathlib/NumberTheory/Height/`, six modules, Northcott instance
+included) and so is the descent lemma
+(`Mathlib/GroupTheory/Descent.lean`, `AddCommGroup.fg_of_descent'`).
+Only weak Mordell–Weil is genuinely absent.**  The descent
 lemma is pure group theory: it holds for an arbitrary `AddCommGroup`
 carrying a height function, and it is now PROVEN, in
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
@@ -19960,7 +19980,9 @@ which mathlib supplies in both directions — see `SegreHeight.lean`).
 So the OPEN leaves under Mordell–Weil are now those four, together with
 those two.  Everything else between here and them is compiler-checked.
 
-The retired verdict, kept because its *check* is still the right one:
+The retired verdict, kept for the record — **but its CHECK is the wrong
+one, and rerunning it is how this development produced a false
+absence-of-heights verdict three times (2026-07-28)**:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
 theorem, nor the descent lemma exists in `Mathlib`, in `~/cs/FLT`, or in
 this project.  The check that would refute this:
@@ -19968,8 +19990,21 @@ this project.  The check that would refute this:
 (`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a counterexample —
 despite the name it contains no Mordell–Weil theorem and no descent
 machinery; it is an explicit `2`-descent computation for the two named
-curves `11a3` and `14a4`, done by hand over `ℤ`.)"  Two of the three are
-still absent, and they are exactly the two leaves above. -/
+curves `11a3` and `14a4`, done by hand over `ℤ`.)"
+
+`MordellWeil` and `NeronTateHeight` occur nowhere in mathlib's height
+development, so that grep returns nothing whether or not the theory
+exists.  It does exist: `Mathlib/NumberTheory/Height/` (Weil heights on
+tuples and on `Projectivization`, `AdmissibleAbsValues` for every number
+field, Northcott as an instance, the homogeneous-form machine in both
+directions) and `Mathlib/GroupTheory/Descent.lean` (the descent lemma, as
+`AddCommGroup.fg_of_descent'`).  So of the verdict's three items exactly
+**one** — weak Mordell–Weil — is still absent, plus, on the geometric
+side, ampleness and the theorem of the cube, which is what
+`exists_segreCoordinates_of_abelianScheme` carries.  The right check is
+`grep -rn "Height.mulHeight\|logHeight\|AdmissibleAbsValues\|fg_of_descent"`.
+Full inventory: the CORRECTION section of
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`. -/
 theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)

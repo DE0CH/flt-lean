@@ -343,6 +343,29 @@ descent-map facts previously recorded are still correct and still useful — the
 extensions unramified outside `{5, 11}` and does need class field theory — but
 neither of them is where the difficulty lives.
 
+**"THE HEIGHT THEORY" IS NOT MISSING — CORRECTION, 2026-07-28.** The
+paragraph above is right that finite generation is on the critical path and
+right that a `2`-descent alone does not give rank `0`. It is wrong to
+package the cost as "the height theory", because mathlib has one:
+`Mathlib/NumberTheory/Height/` (six modules — `Basic`, `Northcott`,
+`NumberField`, `Projectivization`, `MvPolynomial`, `EllipticCurve`) carries
+`Height.mulHeight` / `logHeight` on tuples, `AdmissibleAbsValues` for every
+number field, Northcott as an honest instance
+(`instance : Northcott (mulHeight₁ (K := K))`), and the height machine for
+homogeneous forms in both directions. And `Mathlib/GroupTheory/Descent.lean`
+carries the descent step itself as `AddCommGroup.fg_of_descent'`
+(parallelogram law + Northcott + `G/2G` finite ⟹ `AddGroup.FG`).
+
+What remains for `E(ℚ)` specifically is the *assembly*, which
+`Height/EllipticCurve.lean` lists as its own three `TODO`s: define the
+naive height on points, and prove the approximate parallelogram law for it
+from `abs_logHeight_addSubMap_sub_two_mul_logHeight_le` (already proven
+there) plus `Height.abs_logHeight_sym2_sub_le`. That plus weak Mordell–Weil
+is the honest ask — considerably narrower than "the height theory". The
+*canonical* (Néron–Tate) height is genuinely absent and is not needed for
+finite generation. See the CORRECTION section of
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
+
 ## THE DESCENT, MADE EXPLICIT (2026-07-27): the `2`-covering IS the curve, so
 ## the descent witness is literally a HALVING
 
@@ -1387,6 +1410,21 @@ cutting the Selmer group out of `H¹`. **Refuting check**: `KroneckerWeber`,
 are absent from mathlib entirely; `MordellWeil` and `Selmer` appear in `Fermat/`
 only inside docstrings. If any of those becomes available, re-audit — the
 ingredient list above is otherwise complete.
+
+**DO NOT READ THAT CHECK AS "MATHLIB HAS NO HEIGHTS" (2026-07-28).** The
+name list is accurate — `canonicalHeight` and `NeronTate` genuinely return
+nothing — and it is also exactly the grep that has now produced a false
+absence-of-heights verdict three separate times in this development.
+Mathlib's height theory is at `Mathlib/NumberTheory/Height/` and uses
+**none** of those names: `Height.mulHeight` / `logHeight` on tuples,
+`AdmissibleAbsValues` for every number field, `Northcott` as an instance,
+`Projectivization.logHeight`, the homogeneous-form machine in both
+directions, and `Height/EllipticCurve.lean`. The abstract descent step is
+at `Mathlib/GroupTheory/Descent.lean` (`AddCommGroup.fg_of_descent'`) and
+likewise never says "MordellWeil". What the name list correctly establishes
+is the absence of the *canonical* (Néron–Tate) height and of Selmer/Galois
+cohomology, which is what this section is actually about. See the
+CORRECTION section of `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 
 ## HOW THE CUT WAS MADE (2026-07-27), against the previous owner's warning
 

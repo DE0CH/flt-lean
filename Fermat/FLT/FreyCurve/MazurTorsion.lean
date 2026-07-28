@@ -16729,6 +16729,22 @@ not a rank computation, and it is a genuinely different attack.
   counterexample: it is an explicit descent for `11a3` and `14a4` in
   `WeierstrassCurve` coordinates, with no general theory and no bridge to
   schemes.
+
+  **The VERDICT stands; the GREP does not, and it must not be reused
+  (2026-07-28).**  There is still no rank theory, so this axis is
+  correctly recorded as dead.  But those four search terms are precisely
+  the ones that have manufactured a false "mathlib has no height theory"
+  verdict three times over in this development: `MordellWeil`,
+  `NeronTateHeight`, `NeronTate` and `WeilHeight` occur **nowhere** in
+  mathlib's height development, which is at
+  `Mathlib/NumberTheory/Height/` (six modules) and is real — Northcott as
+  an instance for every number field included.  Mathlib also has the
+  abstract descent step, `AddCommGroup.fg_of_descent'` in
+  `Mathlib/GroupTheory/Descent.lean`, as the COST AUDIT further down this
+  file already notes.  Anyone re-running this axis should grep for
+  `Height.mulHeight`, `logHeight`, `AdmissibleAbsValues`, `Northcott`
+  and `fg_of_descent` instead.  Full inventory: the CORRECTION section
+  of `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 * *the cuspidality axis* — `Fermat.cuspidal_of_y0HasNoRationalPoint` plus
   `IsX0Compactification.finite_compl` bounds `X_0(N)(ℚ)` by the cusps
   whenever `Y_0(N)(ℚ) = ∅`.  Dead at all four levels for two independent
@@ -26631,7 +26647,14 @@ of `(x, y)` whose numerator and denominator have degrees `10/11`, `16/17`,
 `18/19` with coefficients up to `10^19` (Magma prints them; they were inspected
 2026-07-26). Splitting the genus-`1` leaf into "moduli relation" plus "Mordell–
 Weil of `11a1`/`17a1`/`19a1`" would therefore replace one open leaf by six, all
-six still irreducible at this pin — mathlib has no descent machinery, and unlike
+six still irreducible at this pin — mathlib has no descent machinery for
+elliptic curves [**precision, 2026-07-28**: it does have the *abstract* descent
+step, `AddCommGroup.fg_of_descent'` in `Mathlib/GroupTheory/Descent.lean`, and
+the naive-height theory it consumes, `Mathlib/NumberTheory/Height/`. What is
+absent is the curve-level assembly and weak Mordell–Weil, which is what makes
+the six leaves irreducible; the verdict is unchanged, the reason is narrower.
+See the CORRECTION section of `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`] —
+and unlike
 `X_0(27)` (which is the Fermat cubic, so its Mordell–Weil half fell to mathlib's
 `fermatLastTheoremThree`) there is no coincidence to exploit at `11a1`, `17a1`
 or `19a1`. That is relocation, not reduction, so it was deliberately NOT done.
@@ -39260,7 +39283,17 @@ So the genuine ingredient list for this leaf is: (i) weak Mordell–Weil for
 `2`-descent, since `21a1` has full rational `2`-torsion, so it needs only
 squarefree divisors of a constant and a congruence per homogeneous space;
 (ii) the canonical-height machinery on `E(ℚ)` verifying the hypotheses of
-`AddCommGroup.fg_of_descent'` — absent, and by far the larger half;
+`AddCommGroup.fg_of_descent'` — absent, and by far the larger half
+[**two precisions, 2026-07-28.** `fg_of_descent'` wants only the NAIVE
+height, not the canonical one — the Néron–Tate height is genuinely absent
+from the pin and is genuinely not needed. And the naive side is partly
+supplied: `Mathlib/NumberTheory/Height/` has `mulHeight`/`logHeight`,
+`AdmissibleAbsValues` for every number field, Northcott as an instance,
+and `Height/EllipticCurve.lean`'s
+`abs_logHeight_addSubMap_sub_two_mul_logHeight_le`. What is missing is the
+assembly — the height as a function on `E(ℚ)` and the parallelogram law
+for it, both `TODO`s in that file. See the CORRECTION section of
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`];
 (iii) the birational map from this plane model to `21a1`, best stated in the
 `exists_…_point` direction (from a solution `(t₃, t₇)` produce a rational
 point of `21a1`) so that only the easy direction is ever needed. Magma
