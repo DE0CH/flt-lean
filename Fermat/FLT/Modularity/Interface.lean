@@ -2931,8 +2931,319 @@ theorem isWeightTwoEigenform_of_qCoeff_ringEquiv {M : ℕ} (σ : ℂ ≃+* ℂ)
   qCoeff_prime_pow_of_dvd := fun q hq hqM r => by
     rw [hg, hg, hg, hf.qCoeff_prime_pow_of_dvd q hq hqM r, map_mul]
 
+/-- **A JOINT `T_q`-EIGENVECTOR IS AN EIGENVECTOR OF THE WHOLE HECKE
+ALGEBRA** (PROVEN, 2026-07-27): if `f` is scaled by `heckeEndo M q` for
+every PRIME `q`, then it is scaled by every `T ∈ heckeSubring M`.
+
+Purely formal: `{T | ∃ c, T f = c • f}` is a subring of
+`End_ℂ(S₂(Γ₀(M)))` (the eigenvalue of a product is the product of the
+eigenvalues), and `heckeSubring M` is by definition the subring closure
+of the `heckeEndo M q` at primes `q`, so `Subring.closure_induction`
+applies. Stated separately because it is what upgrades the PRIME-indexed
+eigenvector condition — the only one that can be checked against
+`qCoeff_heckeEndo` — into a statement about the operators `T_m` for
+composite `m` that `exists_mem_heckeSubring_qCoeff` produces. -/
+theorem exists_smul_of_mem_heckeSubring {M : ℕ} {f : CuspForm (Gamma0GL M) 2}
+    (h : ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f)
+    {T : Module.End ℂ (CuspForm (Gamma0GL M) 2)} (hT : T ∈ heckeSubring M) :
+    ∃ c : ℂ, T f = c • f := by
+  have hT' : T ∈ Subring.closure
+      {T : Module.End ℂ (CuspForm (Gamma0GL M) 2) | ∃ q : ℕ, q.Prime ∧ T = heckeEndo M q} := hT
+  clear hT
+  induction hT' using Subring.closure_induction with
+  | mem x hx =>
+      obtain ⟨q, hq, rfl⟩ := hx
+      exact h q hq
+  | zero => exact ⟨0, by simp⟩
+  | one => exact ⟨1, by simp⟩
+  | add x y hx hy ihx ihy =>
+      obtain ⟨a, ha⟩ := ihx
+      obtain ⟨b, hb⟩ := ihy
+      exact ⟨a + b, by rw [LinearMap.add_apply, ha, hb, add_smul]⟩
+  | neg x hx ihx =>
+      obtain ⟨a, ha⟩ := ihx
+      -- `_root_.neg_smul`: this section `open`s `UpperHalfPlane`, whose own
+      -- `neg_smul` would otherwise shadow the `Module` one.
+      exact ⟨-a, by rw [LinearMap.neg_apply, ha, _root_.neg_smul]⟩
+  | mul x y hx hy ihx ihy =>
+      obtain ⟨a, ha⟩ := ihx
+      obtain ⟨b, hb⟩ := ihy
+      exact ⟨b * a, by rw [Module.End.mul_apply, hb, map_smul, ha, smul_smul]⟩
+
+/-- **A NONZERO JOINT HECKE EIGENVECTOR IS NORMALIZABLE**: `a₁(f) ≠ 0`
+(PROVEN, 2026-07-27). This is the step that lets the *unnormalized*
+eigenvectors produced by any diagonalization argument be rescaled into
+inhabitants of the `IsWeightTwoEigenform` carrier, and it needs no
+analysis whatsoever.
+
+Proof: if `a₁(f) = 0` then `a₁(T f) = c_T · a₁(f) = 0` for every
+`T ∈ 𝕋` (by `exists_smul_of_mem_heckeSubring` above), and
+`cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring` — the RIGHT
+nondegeneracy of the Hecke duality pairing, which is exactly
+`a_m = a₁ ∘ T_m` plus the `q`-expansion principle — forces `f = 0`.
+
+Classically this is stated as "an eigenform with `a₁ = 0` is zero"; note
+that here it comes out of the duality pairing rather than out of
+multiplicity one, which this development does not have. -/
+theorem qCoeff_one_ne_zero_of_forall_heckeEndo_smul {M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL M) 2} (hf : f ≠ 0)
+    (h : ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f) :
+    qCoeff M f 1 ≠ 0 := by
+  intro h1
+  refine hf (cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring hM fun T hT => ?_)
+  obtain ⟨c, hc⟩ := exists_smul_of_mem_heckeSubring h hT
+  rw [hc, ← qCoeffL_apply, map_smul, qCoeffL_apply, h1, smul_zero]
+
+/-- **THE CONVERSE HALF OF DIAMOND–SHURMAN PROPOSITION 5.8.5 AT WEIGHT
+TWO** (PROVEN, 2026-07-27): a NORMALIZED joint eigenvector of the
+operators `heckeEndo M q` at all primes `q` inhabits the coefficient
+carrier `IsWeightTwoEigenform M`.
+
+`hecke_eigen_coeff_identity` (~1345) is the FORWARD half — carrier
+membership implies the operator identity. This is the direction the file
+had been missing, and it is the bridge that lets an OPERATOR-theoretic
+spanning statement discharge a CARRIER-theoretic one. It is pure
+elementary number theory over `ℂ`: nothing analytic, nothing about
+levels beyond the divisibility `q ∣ M`.
+
+THE ARGUMENT. `qCoeff_heckeEndo` says
+`a_m(T_q f) = a_{qm}(f) + 1_{q∤M}·1_{q∣m}·q·a_{m/q}(f)`. Feeding
+`T_q f = c_q · f` and reading it at `m = 1` (where `q ∣ 1` is false)
+identifies `c_q = a_q(f)`, so for every prime `q` and every `m`
+
+  `a_{qm} + 1_{q∤M}·1_{q∣m}·q·a_{m/q} = a_q · a_m`.   (key)
+
+The two prime-power recursions are (key) at `m = q^r` and `m = q^{r+1}`
+respectively. Full multiplicativity is two nested inductions on top of
+(key): first `a_{q^s t} = a_{q^s}·a_t` for `q ∤ t` by a TWO-STEP
+induction on `s` (the `q ∤ M` case consumes the three-term recursion, so
+`s` and `s−1` are both needed), then `a_{mn} = a_m·a_n` for coprime
+`m, n` by strong induction on `m`, splitting `m = q^s·m'` at
+`q = m.minFac` — the same `Nat.ordProj_mul_ordCompl_eq_self` split the
+forward half uses. Normalization `a₁ = 1` enters only at the base cases.
+
+NOTE the hypothesis is over PRIMES only, which is what makes it usable:
+the operators `T_m` at composite `m` are never defined in this file (only
+their existence inside `𝕋` is produced, by `exists_mem_heckeSubring_qCoeff`),
+so a carrier statement could not be extracted from them directly. -/
+theorem isWeightTwoEigenform_of_forall_heckeEndo_smul {M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL M) 2} (h1 : qCoeff M f 1 = 1)
+    (h : ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f) :
+    IsWeightTwoEigenform M f := by
+  have key : ∀ q : ℕ, q.Prime → ∀ m : ℕ,
+      qCoeff M f (q * m) +
+        (if q ∣ M then 0 else if q ∣ m then (q : ℂ) * qCoeff M f (m / q) else 0) =
+        qCoeff M f q * qCoeff M f m := by
+    intro q hq m
+    obtain ⟨c, hc⟩ := h q hq
+    have hval : ∀ n : ℕ, qCoeff M (heckeEndo M q f) n = c * qCoeff M f n := fun n => by
+      rw [hc, ← qCoeffL_apply, map_smul, qCoeffL_apply, smul_eq_mul]
+    have hq1 : ¬ q ∣ 1 := fun hd => hq.ne_one (Nat.dvd_one.mp hd)
+    have hcq : c = qCoeff M f q := by
+      have h1' := hval 1
+      rw [qCoeff_heckeEndo hM hq f 1] at h1'
+      simp only [mul_one, hq1, if_false, ite_self, add_zero, h1] at h1'
+      exact h1'.symm
+    have hm := hval m
+    rw [qCoeff_heckeEndo hM hq f m, hcq] at hm
+    exact hm
+  have hstep : ∀ q : ℕ, q.Prime → ∀ m : ℕ, ¬ q ∣ m →
+      qCoeff M f (q * m) = qCoeff M f q * qCoeff M f m := by
+    intro q hq m hqm
+    have := key q hq m
+    simpa [hqm] using this
+  have hrec_dvd : ∀ q : ℕ, q.Prime → q ∣ M → ∀ r : ℕ,
+      qCoeff M f (q ^ (r + 1)) = qCoeff M f q * qCoeff M f (q ^ r) := by
+    intro q hq hqM r
+    have := key q hq (q ^ r)
+    rw [if_pos hqM, add_zero, ← pow_succ'] at this
+    exact this
+  have hrec_ndvd : ∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ r : ℕ,
+      qCoeff M f (q ^ (r + 2)) =
+        qCoeff M f q * qCoeff M f (q ^ (r + 1)) - q * qCoeff M f (q ^ r) := by
+    intro q hq hqM r
+    have hdiv : q ^ (r + 1) / q = q ^ r := by
+      rw [pow_succ']
+      exact Nat.mul_div_cancel_left _ hq.pos
+    have hmul : q * q ^ (r + 1) = q ^ (r + 2) := (pow_succ' q (r + 1)).symm
+    have := key q hq (q ^ (r + 1))
+    rw [if_neg hqM, if_pos (dvd_pow_self q (Nat.succ_ne_zero r)), hdiv, hmul] at this
+    exact eq_sub_of_add_eq this
+  have hpow : ∀ q : ℕ, q.Prime → ∀ s t : ℕ, ¬ q ∣ t →
+      qCoeff M f (q ^ s * t) = qCoeff M f (q ^ s) * qCoeff M f t := by
+    intro q hq s
+    induction s using Nat.strong_induction_on with
+    | _ s ih =>
+      intro t ht
+      match s, ih with
+      | 0, _ => simp [h1]
+      | 1, _ => simpa using hstep q hq t ht
+      | (n + 2), ih =>
+        have hIH1 := ih (n + 1) (by omega) t ht
+        have hIH0 := ih n (by omega) t ht
+        have hqdvd : q ∣ q ^ (n + 1) * t :=
+          Dvd.dvd.mul_right (dvd_pow_self q (Nat.succ_ne_zero n)) t
+        have hdiv : q ^ (n + 1) * t / q = q ^ n * t := by
+          rw [pow_succ', mul_assoc, Nat.mul_div_cancel_left _ hq.pos]
+        have hmul : q * (q ^ (n + 1) * t) = q ^ (n + 2) * t := by
+          rw [← mul_assoc, ← pow_succ']
+        have hk := key q hq (q ^ (n + 1) * t)
+        rw [hmul] at hk
+        by_cases hqM : q ∣ M
+        · have hd : qCoeff M f (q ^ (n + 2)) =
+              qCoeff M f q * qCoeff M f (q ^ (n + 1)) := hrec_dvd q hq hqM (n + 1)
+          rw [if_pos hqM, add_zero, hIH1] at hk
+          rw [hk, hd]; ring
+        · rw [if_neg hqM, if_pos hqdvd, hdiv, hIH1, hIH0] at hk
+          rw [hrec_ndvd q hq hqM n]
+          linear_combination hk
+  have hcop : ∀ m n : ℕ, m.Coprime n →
+      qCoeff M f (m * n) = qCoeff M f m * qCoeff M f n := by
+    intro m
+    induction m using Nat.strong_induction_on with
+    | _ m ih =>
+      intro n hmn
+      rcases eq_or_ne m 0 with rfl | hm0
+      · have hn : n = 1 := (Nat.coprime_zero_left n).mp hmn
+        subst hn
+        rw [zero_mul, h1, mul_one]
+      rcases eq_or_ne m 1 with rfl | hm1
+      · rw [one_mul, h1, one_mul]
+      · set q := m.minFac with hqdef
+        have hq : q.Prime := Nat.minFac_prime hm1
+        set s := m.factorization q with hsdef
+        set m' := m / q ^ s with hm'def
+        have hsplit : q ^ s * m' = m := Nat.ordProj_mul_ordCompl_eq_self m q
+        have hqm' : ¬ q ∣ m' := Nat.not_dvd_ordCompl hq hm0
+        have hs1 : 1 ≤ s := hq.factorization_pos_of_dvd hm0 (Nat.minFac_dvd m)
+        have hm'pos : 0 < m' := Nat.ordCompl_pos q hm0
+        have hqn : ¬ q ∣ n := by
+          intro hd
+          have hg : q ∣ Nat.gcd m n := Nat.dvd_gcd (Nat.minFac_dvd m) hd
+          rw [Nat.Coprime] at hmn
+          rw [hmn] at hg
+          exact hq.ne_one (Nat.dvd_one.mp hg)
+        have hqm'n : ¬ q ∣ m' * n := by
+          intro hd
+          rcases (Nat.Prime.dvd_mul hq).mp hd with hh | hh
+          · exact hqm' hh
+          · exact hqn hh
+        have hm'lt : m' < m := by
+          have h2 : 2 ≤ q ^ s := le_trans hq.two_le (Nat.le_self_pow (by omega) q)
+          calc m' < 2 * m' := by omega
+            _ ≤ q ^ s * m' := Nat.mul_le_mul_right m' h2
+            _ = m := hsplit
+        have hm'cop : m'.Coprime n :=
+          Nat.Coprime.coprime_dvd_left (Nat.ordCompl_dvd m q) hmn
+        have hrw : m * n = q ^ s * (m' * n) := by rw [← hsplit]; ring
+        calc qCoeff M f (m * n) = qCoeff M f (q ^ s * (m' * n)) := by rw [hrw]
+          _ = qCoeff M f (q ^ s) * qCoeff M f (m' * n) := hpow q hq s (m' * n) hqm'n
+          _ = qCoeff M f (q ^ s) * (qCoeff M f m' * qCoeff M f n) := by
+              rw [ih m' hm'lt n hm'cop]
+          _ = qCoeff M f (q ^ s) * qCoeff M f m' * qCoeff M f n := by ring
+          _ = qCoeff M f m * qCoeff M f n := by
+              rw [← hpow q hq s m' hqm', hsplit]
+  exact { qCoeff_one := h1
+          qCoeff_mul_coprime := hcop
+          qCoeff_prime_pow_of_not_dvd := hrec_ndvd
+          qCoeff_prime_pow_of_dvd := hrec_dvd }
+
+/-- **ATKIN–LEHNER, SPANNING HALF, IN OPERATOR FORM: THE JOINT HECKE
+EIGENVECTORS SPAN MODULO THE OLD SUBSPACE** (sorry leaf, cut 2026-07-27
+out of `eigenform_span_sup_oldCuspSpace_eq_top` below, which is now a
+PROVEN assembly over it).
+
+Stated: the `ℂ`-span of the cusp forms `f` that are scaled by
+`heckeEndo M q` for EVERY prime `q` — the bad `U_q`, `q ∣ M`, included —
+together with `oldCuspSpace M`, is all of `S₂(Γ₀(M))`.
+
+**WHAT THIS CUT BUYS, AND IT IS THE WHOLE POINT.** The consumer's
+statement is about the COEFFICIENT CARRIER `IsWeightTwoEigenform`: `a₁ = 1`,
+multiplicativity at coprime arguments, and the two prime-power recursions.
+None of that is analysis; it is the arithmetic shadow of the operator
+identity `T_q f = a_q · f`. This leaf is the operator statement with the
+carrier bookkeeping stripped out — no normalization (a nonzero joint
+eigenvector automatically has `a₁ ≠ 0`, `qCoeff_one_ne_zero_of_forall_heckeEndo_smul`
+above), no multiplicativity (`isWeightTwoEigenform_of_forall_heckeEndo_smul`
+above derives all four carrier fields from `qCoeff_heckeEndo`), and no
+`q`-expansions at all. A successor therefore proves ONE analytic fact and
+nothing else.
+
+**THE CLASSICAL ROUTE**, which is where the Petersson product finally
+becomes load-bearing in this file (the CONSUMER side needs neither it nor
+multiplicity one, as the consumer's own docstring records — that asymmetry
+is deliberate and this leaf is where the debt sits). Diamond–Shurman
+Theorem 5.8.2 / Atkin–Lehner 1970:
+
+1. `oldCuspSpace M` is stable under every `T_q`, and the `T_q` at `q ∤ M`
+   are SELF-ADJOINT for the Petersson product
+   (`exists_peterssonProduct_selfAdjoint_heckeOp`, PROVEN — but note it
+   lives ~30k lines BELOW this declaration, see the ordering warning);
+2. hence the Petersson-orthogonal complement `S₂^{new}` of the old
+   subspace is Hecke-stable and `S₂^{new} ⊔ oldCuspSpace M = ⊤`;
+3. the commuting self-adjoint `T_q`, `q ∤ M`, are simultaneously
+   diagonalizable on `S₂^{new}`, and each joint eigenspace is `U_q`-stable
+   for `q ∣ M` because `U_q` commutes with them;
+4. multiplicity one (the Atkin–Lehner Main Lemma) makes each such
+   eigenspace one-dimensional, so the `U_q` act on it by scalars too, and
+   the resulting vectors are joint eigenvectors of ALL the `heckeEndo M q`.
+
+Step 4 is the only place multiplicity one is needed anywhere in this
+cluster, and it is needed only to get the BAD-prime eigenvalue property
+that the carrier's `qCoeff_prime_pow_of_dvd` field demands. A route that
+avoids it would have to show directly that `U_q` acts semisimply on the
+`q`-new part — which is true (Atkin–Lehner) but is exactly the
+Coleman–Edixhoven-adjacent statement the file's axis-2 audit flags as
+hard in general; on the NEW part it is a theorem, on the whole space it
+is open.
+
+**⚠ DECLARATION-ORDER WARNING FOR A SUCCESSOR.** Everything named in
+steps 1–4 — the Petersson product, `atkinLehnerOp`,
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero`,
+`qCoeff_eq_zero_of_mem_oldSubspace`,
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`, `heckeOpN` — is
+declared THOUSANDS of lines below this point and therefore cannot be
+cited here. What IS available above: `heckeEndo`/`qCoeff_heckeEndo`,
+`heckeSubring` with `heckeSubring_mul_comm` and both nondegeneracy
+lemmas, `cuspForm_finiteDimensional`, `degeneracyOp`/`qCoeff_degeneracyOp`
+and `oldCuspSpace` itself. So closing this leaf means either HOISTING the
+Petersson block (the degeneracy block was hoisted the same way on
+2026-07-27 — `qCoeff_degeneracyOp` used to sit ~29k lines below and now
+sits above `section SturmFiniteness`), or relocating this leaf and its
+whole consumer chain down. The first is the cheaper move and is what the
+consumer chain was shaped around.
+
+Also note `Mathlib.LinearAlgebra.Eigenspace.Pi` — mathlib's simultaneous
+triangularization of a commuting family,
+`iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`
+— is NOT in this file's import cone (only `Eigenspace.Triangularizable`
+is), verified 2026-07-27. It would supply step 3's bookkeeping over `ℂ`
+for free at the cost of one `public import`, reducing this leaf to "each
+joint GENERALIZED eigenspace lies in (eigenvectors ⊔ old)", i.e. to the
+absence of Jordan blocks off the old subspace. That cut was deliberately
+NOT taken here, because a successor who builds the Petersson complement
+properly gets honest eigenvectors directly and would have to detour
+through generalized eigenspaces to use it.
+
+SOUNDNESS. `0 < M` is inherited from the consumer and is genuinely
+needed: `heckeEndo M q` is defined as `0` unless `0 < M ∧ q.Prime`, so at
+`M = 0` every cusp form is a joint eigenvector, the left-hand span is
+everything, and the statement would be TRUE BUT VACUOUS rather than an
+Atkin–Lehner statement. At genus-zero levels `S₂(Γ₀(M)) = 0` and both
+sides are the zero module, which is why no eigenform need exist. The set
+contains `0` (take `c = 0`), which is harmless — a span is taken. -/
+theorem heckeEigenvector_span_sup_oldCuspSpace_eq_top {M : ℕ} (hM : 0 < M) :
+    Submodule.span ℂ
+        {f : CuspForm (Gamma0GL M) 2 |
+          ∀ q : ℕ, q.Prime → ∃ c : ℂ, heckeEndo M q f = c • f}
+      ⊔ oldCuspSpace M = ⊤ :=
+  sorry
+
 /-- **LEAF A OF THE NEW-PART RATIONALITY CUT — THE EIGENFORMS SPAN
-MODULO THE OLD SUBSPACE** (sorry leaf, cut 2026-07-27 out of
+MODULO THE OLD SUBSPACE** (DECOMPOSED 2026-07-27; formerly a sorry leaf,
+now a PROVEN assembly over the single leaf
+`heckeEigenvector_span_sup_oldCuspSpace_eq_top` immediately above. Cut
+the same day out of
 `rationalCuspForms_sup_oldCuspSpace_eq_top` below): the normalized
 weight-2 level-`M` Hecke eigenforms, TOGETHER WITH the old subspace,
 `ℂ`-span `S₂(Γ₀(M))`.
@@ -2953,21 +3264,36 @@ the rationality. Neither leaf implies the consumer and the consumer
 implies neither: leaf A says nothing about `ℚ`, and leaf B is a
 statement about individual eigenforms.
 
-WHAT A SUCCESSOR NEEDS. mathlib has no newform/oldform theory
-(`grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
-empty) and `~/cs/FLT` is quaternionic, but this FILE has a good deal:
-`degeneracyOp`/`qCoeff_degeneracyOp` above, and further down
-`heckeOp_degeneracyOp`, `degeneracyOp_injective`,
-`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`,
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero`,
-`qCoeff_eq_zero_of_mem_oldSubspace`, the Petersson product
-(`exists_peterssonProduct_selfAdjoint_heckeOp`, definiteness included)
-and `atkinLehnerOp`. The classical route to THIS statement is
-simultaneous diagonalization of the commuting self-adjoint `T_q`
-(`q ∤ M`) on the orthogonal complement of the old subspace, which is
-where the Petersson product finally becomes load-bearing — note that,
-unlike the consumer, this leaf DOES plausibly need it, so the parent
-node's "Petersson is unused" finding does not transfer here.
+**HOW IT WAS CUT (2026-07-27), and what the cut removed.** The residual
+analytic content is `heckeEigenvector_span_sup_oldCuspSpace_eq_top`
+immediately above: the same spanning statement with the coefficient
+carrier replaced by the OPERATOR condition "scaled by `heckeEndo M q` at
+every prime `q`". Everything between the two statements is now proven
+here, and it is entirely elementary:
+
+* a nonzero joint eigenvector has `a₁ ≠ 0`
+  (`qCoeff_one_ne_zero_of_forall_heckeEndo_smul`, out of the Hecke
+  duality pairing's right-nondegeneracy — NOT out of multiplicity one),
+  so it can be rescaled to a normalized one, and the rescaling is
+  invisible to the span;
+* a normalized joint eigenvector inhabits the carrier
+  (`isWeightTwoEigenform_of_forall_heckeEndo_smul`, the converse half of
+  Diamond–Shurman Proposition 5.8.5 at weight two, proven from
+  `qCoeff_heckeEndo` by two nested inductions);
+* `exists_smul_of_mem_heckeSubring` upgrades the prime-indexed condition
+  to all of `𝕋`, which is what the duality pairing consumes.
+
+So the coefficient bookkeeping that the original framing of this leaf
+mixed with the analysis — normalization, multiplicativity, the two
+prime-power recursions — is gone, and a successor now faces exactly one
+analytic statement.
+
+WHAT A SUCCESSOR NEEDS is therefore recorded on that leaf's docstring,
+including the DECLARATION-ORDER warning that the Petersson product,
+`atkinLehnerOp`, `mem_oldSubspace_of_qCoeff_coprime_eq_zero`,
+`qCoeff_eq_zero_of_mem_oldSubspace` and
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` all sit thousands
+of lines BELOW and cannot be cited at that point without a hoist.
 
 SOUNDNESS: at `M = 1`, and at every genus-zero level, `S₂(Γ₀(M)) = 0`,
 so both sides are the zero module and the statement holds however few
@@ -2978,8 +3304,30 @@ not of finite index, its "cusp forms" are not the classical space, and
 would degenerate to an unsupported spanning claim. -/
 theorem eigenform_span_sup_oldCuspSpace_eq_top {M : ℕ} (hM : 0 < M) :
     Submodule.span ℂ {g : CuspForm (Gamma0GL M) 2 | IsWeightTwoEigenform M g}
-      ⊔ oldCuspSpace M = ⊤ :=
-  sorry
+      ⊔ oldCuspSpace M = ⊤ := by
+  refine le_antisymm le_top ?_
+  rw [← heckeEigenvector_span_sup_oldCuspSpace_eq_top hM]
+  refine sup_le_sup_right ?_ _
+  rw [Submodule.span_le]
+  intro f hf
+  simp only [Set.mem_setOf_eq] at hf
+  by_cases hf0 : f = 0
+  · rw [hf0]
+    exact Submodule.zero_mem _
+  · have hne : qCoeff M f 1 ≠ 0 := qCoeff_one_ne_zero_of_forall_heckeEndo_smul hM hf0 hf
+    have hg1 : qCoeff M ((qCoeff M f 1)⁻¹ • f) 1 = 1 := by
+      rw [← qCoeffL_apply, map_smul, qCoeffL_apply, smul_eq_mul, inv_mul_cancel₀ hne]
+    have hg2 : ∀ q : ℕ, q.Prime →
+        ∃ d : ℂ, heckeEndo M q ((qCoeff M f 1)⁻¹ • f) = d • ((qCoeff M f 1)⁻¹ • f) := by
+      intro q hq
+      obtain ⟨d, hd⟩ := hf q hq
+      exact ⟨d, by rw [map_smul, hd, smul_comm]⟩
+    have hg : IsWeightTwoEigenform M ((qCoeff M f 1)⁻¹ • f) :=
+      isWeightTwoEigenform_of_forall_heckeEndo_smul hM hg1 hg2
+    have hfc : f = qCoeff M f 1 • ((qCoeff M f 1)⁻¹ • f) := by
+      rw [smul_smul, mul_inv_cancel₀ hne, one_smul]
+    rw [hfc]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hg)
 
 /-- **LEAF B OF THE NEW-PART RATIONALITY CUT — THE `Aut(ℂ)`-CONJUGATE OF
 AN EIGENFORM EXISTS AT THE SAME LEVEL** (sorry leaf, cut 2026-07-27 out
