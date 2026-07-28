@@ -11270,7 +11270,10 @@ because `y (a ^ N) = y a ^ N = σ (y a)` by `hσ`.  Note that it FORCES
 `Fr`: `A'` is smooth over `k`, hence reduced, so a morphism is
 determined by its effect on `k̄`-points.  There is therefore no junk
 witness, and the leaf below that consumes `Fr` is not weakened by
-receiving it existentially.
+receiving it existentially.  **Since 2026-07-28 that is a THEOREM and not
+an argument in a docstring**: it is `eq_of_comp_geomFibrePt_eq` below, and
+`exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase` uses it to replace
+its abstract `Fr` by the concrete `absFrobScheme A' (ringChar k) n`.
 
 NOT ASSERTED: that `Fr` is a group endomorphism or commutes with the
 real multiplication.  Both are FREE on geometric points from the
