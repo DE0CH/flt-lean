@@ -177,6 +177,11 @@ public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
 -- (That structure was hoisted to `Fermat.FLT.FreyCurve.PotentiallyGoodModel`
 -- on 2026-07-28; `PotentiallyGoodModel.redCurve` below still needs this.)
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+-- `IsOpenImmersion.of_flat_of_mono`, consumed by
+-- `X0GenusOne.isIso_of_mono_of_relCurve` below.  PUBLIC deliberately: a
+-- bare `import` is not re-exported, and this file is itself publicly
+-- imported.
+public import Mathlib.AlgebraicGeometry.Morphisms.FlatMono
 -- Minkowski's discriminant theorem (`exists_not_isUnramifiedAt_int_of_isGalois`)
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
@@ -22826,16 +22831,106 @@ along the SAME seam as `Fermat.mono_ajHom_of_one_le_x0Genus`: one
 level-free statement about relative curves, and one bridge from the
 arithmetic function `x0Genus` to the geometry.  Neither of them mentions
 `Pic⁰`, and neither of them is Riemann–Roch in the form
-`mono_ajHom_of_hasNoFibreAffineLine` needs it. -/
+`mono_ajHom_of_hasNoFibreAffineLine` needs it.
+
+(Updated 2026-07-28: the level-free half was `isIso_of_mono_of_relCurve`,
+which is now PROVEN; its residue is the strictly smaller, purely local
+`etale_of_mono_of_relCurve` — "a monomorphism between smooth relative
+curves is étale", i.e. miracle flatness — so the two leaves are now that
+one and the genus bridge.) -/
+
+/-- **A MONOMORPHISM BETWEEN TWO SMOOTH RELATIVE CURVES OVER THE SAME BASE
+IS ÉTALE** (sorry leaf, 2026-07-28) — the entire geometric content of
+`isIso_of_mono_of_relCurve` below, isolated from its point-set half, and
+the only thing that leaf still needs.
+
+**LOCAL, and free of every global hypothesis**: no properness, no
+connectedness, no condition on the base.  `u` being a monomorphism makes it
+`FormallyUnramified` — its diagonal is an isomorphism, hence an open
+immersion, which is mathlib's criterion — and an unramified `S`-morphism
+between two `S`-schemes SMOOTH OF THE SAME RELATIVE DIMENSION is étale.
+That implication is **MIRACLE FLATNESS**: `strX` and `jstr` are flat and
+locally of finite presentation, so by the fibrewise criterion for flatness
+(Stacks `039A`) `u` is flat as soon as every `u_s : X_s ⟶ J_s` is, and
+`u_s` is a quasi-finite morphism between regular — hence Cohen–Macaulay —
+`κ(s)`-schemes of the SAME dimension `1`, which is Stacks `00R4` (`R → S`
+local with `R` regular, `S` Cohen–Macaulay and
+`dim S = dim R + dim S/𝔪_R S` is flat).  Flat, formally unramified and
+locally of finite presentation is exactly `Etale`
+(`AlgebraicGeometry.Etale.of_formallyUnramified_of_flat`).
+
+**WHY THE CONCLUSION IS `Etale u` AND NOT THE SHARPER `Flat u`.**  `Flat u`
+is the whole mathematical content, but it does not suffice downstream at
+this pin: `IsOpenImmersion.of_flat_of_mono` also wants
+`LocallyOfFinitePresentation u`, which here is EGA IV 1.6.2(v) / Stacks
+`02FV` (`g ∘ f` locally of finite presentation and `g` locally of finite
+type ⟹ `f` locally of finite presentation), and that is ABSENT from the
+pin.  Checked with the compiler rather than assumed: neither
+`MorphismProperty.HasOfPostcompProperty @LocallyOfFinitePresentation
+@LocallyOfFiniteType` nor `LocallyOfFinitePresentation
+(pullback.diagonal g)` for `g` locally of finite type synthesizes — and the
+second is the diagonal reduction that would produce the first.  Stating
+this leaf as `Etale` keeps a missing bookkeeping lemma out of the frontier.
+A successor who wants the sharper cut should land `02FV` first, and then
+`Flat u` splits off cleanly.
+
+**BOTH SMOOTHNESS HYPOTHESES ARE LOAD-BEARING**, over `S = Spec ℚ`:
+
+* drop `hXsmooth`: `X = Spec ℚ`, `J` an elliptic curve, `u` a rational
+  point — a section of a separated morphism, hence a closed immersion,
+  hence a monomorphism, and not flat over `J`;
+* drop `hJsmooth`: `X` an elliptic curve, `J` an abelian surface, `u` a
+  closed immersion — again a monomorphism, unramified, and not flat.
+
+Both counterexamples are closed immersions, and that is the point: what
+fails without EQUAL relative dimension is flatness, never unramifiedness.
+`hu` is what makes the fibrewise criterion applicable at all; see the note
+on `isIso_of_mono_of_relCurve` below for why the counterexample formerly
+recorded against dropping it is wrong.
+
+**MISSING MACHINERY, and the checks that would refute this verdict.**  The
+pin has neither miracle flatness (`grep -rn "miracle" Mathlib/` is empty,
+and there is no flatness criterion mentioning a regular or Cohen–Macaulay
+local ring) nor the fibrewise criterion for flatness; `~/cs/FLT` has
+neither.  What it DOES have, and what makes this the right seam, is
+`AlgebraicGeometry.Flat.of_stalkMap : (∀ x, (f.stalkMap x).hom.Flat) →
+Flat f` — so the leaf reduces to a statement about local rings and needs no
+scheme theory beyond it.  Refute by finding: a local flatness criterion
+from regularity/Cohen–Macaulayness, a `Flat` version of
+`Smooth.of_smooth_fiberToSpecResidueField`, or `02FV`.
+
+**A SECOND ROUTE, not costed here**, and worth trying before the
+local-algebra one because it needs no dimension theory: the graph
+`Γ_u : X ⟶ X ×_S J` is a section of the smooth relative curve `pr₁`, hence
+an effective Cartier divisor, and `u = Γ_u ≫ pr₂` exhibits `X` as a divisor
+inside the smooth relative curve `pr₂` over `J`; the local criterion of
+flatness for divisors (Stacks `062Y`: if `A` is flat over `R` and `f ∈ A`
+is a nonzerodivisor in every fibre then `A/fA` is flat over `R`) then gives
+`Flat u` directly.  Its cost is the input "a section of a smooth
+relative-dimension-`1` morphism is an effective Cartier divisor", which is
+also absent from the pin. -/
+theorem etale_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    (hXsmooth : SmoothOfRelativeDimension 1 strX)
+    (hJsmooth : SmoothOfRelativeDimension 1 jstr)
+    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : Etale u :=
+  sorry
 
 /-- **A MONOMORPHISM BETWEEN TWO RELATIVE CURVES OVER THE SAME BASE IS AN
-ISOMORPHISM** (sorry leaf, 2026-07-27) — the level-free geometric half of
+ISOMORPHISM** (PROVEN 2026-07-28 by decomposition over
+`etale_of_mono_of_relCurve`; a sorry leaf when introduced 2026-07-27) —
+the level-free geometric half of
 `isIso_ajHom_of_x0Genus_eq_one`, and the exact analogue of
 `Fermat.mono_ajHom_of_hasNoFibreAffineLine` one step further along: it
 mentions neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor a
 Jacobian.
 
-TRUE and classical.  Fibrewise (monomorphisms are stable under base
+TRUE and classical.  The paragraph that follows is the ROUTE NOT TAKEN —
+kept because it is the argument the literature gives, and because it is
+where the fibrewise dimension theory would have entered; the proof actually
+carried out is the four-step one recorded below it, and all of the
+dimension theory it needs is confined to `etale_of_mono_of_relCurve`.
+
+Fibrewise (monomorphisms are stable under base
 change, so `u_s : X_s ⟶ J_s` is a monomorphism over every point `s` of
 `S`): a monomorphism of schemes is radicial, hence injective on points, so
 the image of the irreducible `1`-dimensional `X_s` cannot be a single
@@ -22860,31 +22955,81 @@ to `IsIso u`.
   monomorphism, and is not an isomorphism.
 * `hXconn` / `hJconn`: `X = ℙ¹`, `J = ℙ¹ ⊔ ℙ¹` and `u` the first
   inclusion.
-* `hu`: without it `u` is not required to be a morphism over `S` at all,
-  and over a non-perfect base field the relative Frobenius of a curve is a
-  monomorphism of schemes that is not an isomorphism.
+* `hu` is what places `u x` in the fibre of `jstr` over `strX x`, and what
+  makes `u` proper; both steps of the proof below consume it.
+
+  **CORRECTION (2026-07-28): the counterexample previously recorded here
+  for `hu` — "over a non-perfect base field the relative Frobenius of a
+  curve is a monomorphism of schemes that is not an isomorphism" — is
+  FALSE, and nothing replaces it.**  A purely inseparable extension `L/K`
+  has `L ⊗_K L ≇ L` (it is non-reduced of `K`-dimension `[L:K]²`), so
+  `Spec L ⟶ Spec K` is *not* a monomorphism; equivalently a Frobenius is
+  radicial but very far from unramified, while `Mono = radicial +
+  unramified` (`Fermat.mono_iff_formallyUnramified_and_universallyInjective`
+  in `X0.lean`).  Whether `hu` can be dropped is OPEN and not claimed
+  either way here: over `S = Spec ℚ` it is automatic (`ℚ` is initial among
+  rings, so every morphism of `ℚ`-schemes is a `ℚ`-morphism), and over a
+  general base every attempt to build a non-`S` monomorphism ran into the
+  same obstruction — a `Spec K ⟶ Spec K` covering a field embedding is a
+  monomorphism only when the embedding is onto.
 * `hmono` is the whole content.
 
-IRREDUCIBLE at this pin along the axis searched (the fibrewise route
-above): it needs the dimension of a fibre, the fact that a proper
-monomorphism is a closed immersion, and the fibrewise criterion for
-`IsIso`, and `grep`ping `Mathlib`, `~/cs/FLT` and this project for
-`IsClosedImmersion.*mono`, `isIso_of_isIso_fiber` and a relative dimension
-theory returns nothing usable.  **NOT searched, and the axis a successor
-should prefer: the DEGREE one** — a nonconstant morphism of smooth proper
-curves is finite of a well-defined degree, and a monomorphism has degree
-`1`; that route replaces dimension theory by
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`'s valuative
-machinery, which is already in this file's cone.  **The check that would
-refute this verdict**: a `Mono ⟹ IsClosedImmersion` lemma, a fibrewise
-`IsIso` criterion, or a degree of a finite morphism of curves appearing in
-any of the three trees. -/
+**PROVEN 2026-07-28 by decomposition**, over the single leaf
+`etale_of_mono_of_relCurve` above.  The proof is point-set topology once
+that leaf is in hand, and it is worth recording because it consumes SIX of
+the nine hypotheses and shows the fibrewise dimension theory the earlier
+audit demanded is confined to the leaf:
+
+1. `u` is `Etale` (the leaf), hence `Flat` and locally of finite
+   presentation, hence `IsOpenImmersion u` by
+   `AlgebraicGeometry.IsOpenImmersion.of_flat_of_mono` — so `Set.range u`
+   is OPEN.
+2. `u` is proper: `u ≫ jstr = strX` is proper by `hXproper` and `jstr` is
+   separated by `hJproper`, so `IsProper.of_comp` applies — hence
+   `Set.range u` is CLOSED.
+3. `u` is surjective: `hXconn` makes `strX` surjective (mathlib's
+   `GeometricallyConnected ⟹ Surjective`), and `hJconn` makes each fibre
+   `jstr ⁻¹' {s}` connected.  A connected set meeting a clopen set is
+   contained in it, and `u x` lies in the fibre of `jstr` over
+   `strX x = jstr y` by `hu`; so every `y : J` is in the range.
+4. `isIso_iff_isOpenImmersion_and_surjective`.
+
+The earlier "IRREDUCIBLE along the fibrewise axis" verdict was right that
+the pin has no fibrewise `IsIso` criterion and no `Mono ⟹
+IsClosedImmersion`, and wrong to conclude the node was atomic: neither is
+needed.  The DEGREE axis it recommended was not taken either — a
+monomorphism is *unramified*, which is a differential rather than a
+valuative condition, so `CurveExtension.lean`'s machinery never enters. -/
 theorem isIso_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
     (hXproper : IsProper strX) (hXsmooth : SmoothOfRelativeDimension 1 strX)
     (hXconn : GeometricallyConnected strX) (hJproper : IsProper jstr)
     (hJsmooth : SmoothOfRelativeDimension 1 jstr) (hJconn : GeometricallyConnected jstr)
-    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : IsIso u :=
-  sorry
+    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : IsIso u := by
+  haveI := hXproper
+  haveI := hXconn
+  haveI := hJproper
+  haveI := hJconn
+  haveI := hmono
+  haveI : Etale u := etale_of_mono_of_relCurve hXsmooth hJsmooth u hu hmono
+  haveI : IsOpenImmersion u := IsOpenImmersion.of_flat_of_mono u
+  haveI : IsProper u := by
+    haveI : IsProper (u ≫ jstr) := hu ▸ hXproper
+    exact IsProper.of_comp u jstr
+  have hsurj : Function.Surjective ⇑u := by
+    intro y
+    have hcl : IsClosed (Set.range ⇑u) := u.isClosedMap.isClosed_range
+    have hop : IsOpen (Set.range ⇑u) := u.isOpenEmbedding.isOpen_range
+    have hc : _root_.IsConnected (⇑jstr ⁻¹' {jstr y}) := jstr.isConnected_preimage_singleton _
+    obtain ⟨x, hx⟩ := strX.surjective (jstr y)
+    have hmem : u x ∈ ⇑jstr ⁻¹' {jstr y} := by
+      show jstr (u x) = jstr y
+      rw [← Scheme.Hom.comp_apply, hu, hx]
+    have hsub : ⇑jstr ⁻¹' {jstr y} ⊆ Set.range ⇑u :=
+      hc.isPreconnected.subset_left_of_subset_union hop hcl.isOpen_compl
+        disjoint_compl_right (by simp) ⟨u x, hmem, ⟨x, rfl⟩⟩
+    exact hsub rfl
+  haveI : Surjective u := ⟨hsurj⟩
+  exact (isIso_iff_isOpenImmersion_and_surjective u).mpr ⟨inferInstance, inferInstance⟩
 
 /-- **THE GENUS BRIDGE AT GENUS `1`: `dim J_0(N) = 1`** (sorry leaf,
 2026-07-27) — the arithmetic half of `isIso_ajHom_of_x0Genus_eq_one`, and
@@ -22981,7 +23126,8 @@ proven:
 * `smoothOfRelativeDimension_one_of_x0Genus_eq_one` — the genus bridge,
   `dim J_0(N) = 1`, the only half that mentions `N`;
 * `isIso_of_mono_of_relCurve` — a monomorphism between relative curves is
-  an isomorphism, level-free.
+  an isomorphism, level-free, and PROVEN as of 2026-07-28 over the single
+  local leaf `etale_of_mono_of_relCurve`.
 
 `hg` is used twice and differently: as `1 ≤ x0Genus N` for the
 monomorphism, and as `x0Genus N = 1` for the dimension of the target.
@@ -23089,7 +23235,8 @@ Four steps, of which only the third and fourth carry mathematics:
    ISOMORPHISM.  This is where `hg` is consumed, and it is where the two
    remaining leaves of this cluster live —
    `smoothOfRelativeDimension_one_of_x0Genus_eq_one` (the genus bridge)
-   and `isIso_of_mono_of_relCurve` (level-free geometry) — the
+   and `etale_of_mono_of_relCurve` (level-free local geometry, the residue
+   of `isIso_of_mono_of_relCurve`, which is PROVEN as of 2026-07-28) — the
    monomorphy half being already PROVEN as
    `Fermat.mono_ajHom_of_one_le_x0Genus`.
 3. `transportAlongIso` carries `ab` back along that isomorphism.  Pure
