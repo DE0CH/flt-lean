@@ -1232,13 +1232,10 @@ theorem range_sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
   rw [sliceOverMap, Scheme.Pullback.range_map]
   simp
 
-/-- **THE RANGE OF `sliceOverOpen p q V` IS `(pullback.snd p q) ⁻¹ V`** (PROVEN).
-
-This is what says that "the part of `X ×_S Y` lying over `V`", as written by
-`sliceOverOpen`, really is the part lying over `V`. -/
-theorem range_sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
-    Set.range (sliceOverOpen p q V).base = (pullback.snd p q).base ⁻¹' (V : Set Y) := by
-  rw [sliceOverOpen_eq_sliceOverMap, range_sliceOverMap, Scheme.Opens.range_ι]
+-- (`range_sliceOverOpen` is declared far BELOW, beside `isPullback_sliceOverOpen`.
+-- Two branches proved it independently — this position and that one — and the lower
+-- copy is the one every consumer in this file `rw`s with, so only it survives.
+-- The statement is the same up to the `.base`/coercion spelling.)
 
 section Slice
 
@@ -1284,12 +1281,9 @@ product of the underlying sets, and the fibre of `pullback.snd p q` over a point
 `X ×_S Spec κ(y)`, which is larger than `X_{q y}` for a general `y`.  It is the fact that `σ`
 is a SECTION — so that `κ(σ.base s) = κ(s)` — that collapses it, and that is exactly the
 content of `sliceIncl` being a base change of `σ`. -/
-theorem range_sliceIncl :
-    Set.range (sliceIncl p q σ hσ).base = (pullback.snd p q).base ⁻¹' Set.range σ.base := by
-  rw [← sliceIso_comp p q σ hσ, ← range_sliceOverMap p q σ]
-  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
-  rw [Set.range_eq_univ.mpr (fun z => ((ConcreteCategory.bijective_of_isIso
-    (sliceIso p q σ hσ).base).surjective z)), Set.image_univ]
+-- (`range_sliceIncl` is declared far BELOW, beside `isPullback_sliceIncl`, for the same
+-- reason as `range_sliceOverOpen` above: two branches proved it independently and the
+-- lower copy is the one every consumer in this file `rw`s with.)
 
 end Slice
 
