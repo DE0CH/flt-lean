@@ -29276,9 +29276,259 @@ theorem exists_frobIdeal_mk0_eq_classGroup
       ClassGroup.mk0 (frobIdeal g v) = c :=
   sorry
 
+/-- **The pullback along `ker χ ↪ G` of the kernel of a character of `ker χ`**
+(PROVEN 2026-07-28; general group theory, no arithmetic). Written out because
+the reciprocity reduction below needs it in both directions and inside a
+15 000-line file, where every extra unification against
+`Field.absoluteGaloisGroup ℚ` is paid for. -/
+theorem mem_map_ker_char_iff {G : Type*} [Group G] {M : Type*} [Monoid M]
+    {χ : G →* M} {A : Type*} [Group A] (ψ : (MonoidHom.ker χ) →* A)
+    (y : (MonoidHom.ker χ)) :
+    (y : G) ∈ Subgroup.map (MonoidHom.ker χ).subtype ψ.ker ↔ ψ y = 1 := by
+  constructor
+  · rintro ⟨z, hz, hzeq⟩
+    have hzy : z = y := Subtype.ext hzeq
+    rw [← hzy]
+    exact hz
+  · intro hy
+    exact ⟨y, hy, rfl⟩
+
+/-- **PONTRYAGIN DUALITY, in the form a reciprocity reduction needs it**
+(PROVEN 2026-07-28; general group theory, no arithmetic, and the step that
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below records as
+"Pontryagin duality over the class group, which exists nowhere in this
+tree").
+
+Let `N ≤ ker χ` (`hNker`) with `ker χ / N` abelian (`hNab`) and of finite
+order (`hNfin`). Then an `x ∈ ker χ` killed by EVERY character
+`ψ : ker χ →* Multiplicative (ZMod nn)` that kills `N` already lies in `N`.
+
+Proved through mathlib's structure theorem for finite abelian groups
+(`CommGroup.equiv_prod_multiplicative_zmod_of_finite`) rather than through
+character theory: a nontrivial class in `ker χ / N` survives the projection
+to one cyclic factor, and that projection is the separating character.
+`hNab` is used twice — once to make `N` normal INSIDE `ker χ` (which is all
+the coset arithmetic needs, so no normality in `G` is required), and once to
+make the quotient commutative. -/
+theorem mem_of_forall_char_pullback_mem {G : Type*} [Group G] {M : Type*}
+    [Monoid M] (χ : G →* M) (N : Subgroup G)
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNab : ∀ a b : G, χ a = 1 → χ b = 1 → a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNfin : N.relIndex (MonoidHom.ker χ) ≠ 0)
+    {x : G} (hx : χ x = 1)
+    (H : ∀ (nn : ℕ) (ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod nn)),
+      (∀ y : (MonoidHom.ker χ), (y : G) ∈ N → ψ y = 1) →
+      ψ ⟨x, MonoidHom.mem_ker.mpr hx⟩ = 1) :
+    x ∈ N := by
+  classical
+  -- `χ` sends inverses to inverses: `M` is only a monoid, so this is not
+  -- `map_inv`.
+  have hinv : ∀ c : G, χ c = 1 → χ c⁻¹ = 1 := by
+    intro c hc
+    have hcc : χ c * χ c⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    rwa [hc, one_mul] at hcc
+  by_contra hxN
+  -- `N`, viewed inside `ker χ`, is normal there
+  haveI hNsnorm : (N.subgroupOf (MonoidHom.ker χ)).Normal := by
+    constructor
+    intro a ha b
+    have hbk : χ (b : G) = 1 := MonoidHom.mem_ker.mp b.2
+    have haN : (a : G) ∈ N := Subgroup.mem_subgroupOf.mp ha
+    have hak : χ (a : G) = 1 := hNker _ haN
+    have hmem := N.mul_mem (hNab (b : G) (a : G) hbk hak) haN
+    rw [Subgroup.mem_subgroupOf]
+    simp only [Subgroup.coe_mul, Subgroup.coe_inv]
+    convert hmem using 1
+    group
+  -- and the quotient `ker χ / N` is commutative
+  have hQcomm : ∀ α β : ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)),
+      α * β = β * α := by
+    intro α β
+    obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective α
+    obtain ⟨b, rfl⟩ := QuotientGroup.mk_surjective β
+    have hak : χ (a : G) = 1 := MonoidHom.mem_ker.mp a.2
+    have hbk : χ (b : G) = 1 := MonoidHom.mem_ker.mp b.2
+    have h := hNab (b : G)⁻¹ (a : G)⁻¹ (hinv _ hbk) (hinv _ hak)
+    rw [← QuotientGroup.mk_mul, ← QuotientGroup.mk_mul, QuotientGroup.eq,
+      Subgroup.mem_subgroupOf]
+    simp only [Subgroup.coe_mul, Subgroup.coe_inv]
+    convert h using 1
+    group
+  haveI hQfin : Finite ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) := by
+    refine Nat.finite_of_card_ne_zero ?_
+    have h1 : Nat.card ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ))
+        = N.relIndex (MonoidHom.ker χ) := rfl
+    rw [h1]
+    exact hNfin
+  letI : CommGroup ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) :=
+    { (inferInstance :
+        Group ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ))) with
+      mul_comm := hQcomm }
+  set xk : (MonoidHom.ker χ) := ⟨x, MonoidHom.mem_ker.mpr hx⟩
+  have hq0 : (QuotientGroup.mk xk :
+      (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) ≠ 1 := by
+    intro h
+    exact hxN (Subgroup.mem_subgroupOf.mp ((QuotientGroup.eq_one_iff xk).mp h))
+  obtain ⟨ι', -, nn, -, ⟨e⟩⟩ :=
+    CommGroup.equiv_prod_multiplicative_zmod_of_finite
+      ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ))
+  have hex : ∃ i : ι', e (QuotientGroup.mk xk) i ≠ 1 := by
+    by_contra hc
+    refine hq0 ((MulEquiv.map_eq_one_iff e).mp ?_)
+    funext j
+    simpa using not_not.mp (not_exists.mp hc j)
+  obtain ⟨i, hi⟩ := hex
+  set ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod (nn i)) :=
+    ((Pi.evalMonoidHom (fun j : ι' => Multiplicative (ZMod (nn j))) i).comp
+      e.toMonoidHom).comp
+      (QuotientGroup.mk' (N.subgroupOf (MonoidHom.ker χ)))
+  have hψapp : ∀ y : (MonoidHom.ker χ), ψ y = e (QuotientGroup.mk y) i :=
+    fun _ => rfl
+  refine hi ?_
+  rw [← hψapp]
+  refine H (nn i) ψ ?_
+  intro y hy
+  rw [hψapp]
+  have h1 : (QuotientGroup.mk y :
+      (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) = 1 :=
+    (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_subgroupOf.mpr hy)
+  rw [h1, map_one]
+  rfl
+
+/-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT — the CHARACTER
+form** (E3c support leaf (ii-a-1-i-B-2-a-ii-α); SORRY LEAF, cut 2026-07-28
+out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` below along the
+PONTRYAGIN-DUALITY axis, and now the entire arithmetic content of that node).
+
+Word for word the leaf below, except that `N` is additionally presented as
+the KERNEL OF A CHARACTER: a homomorphism
+`ψ : ker χ →* Multiplicative (ZMod nn)` with `N = ker ψ`, the two inclusions
+being `hψN` and `hψker`. Equivalently: `ker χ / N` is CYCLIC and `ψ` is a
+faithful character of it.
+
+**Two hypotheses of the parent are deliberately ABSENT, and both must stay
+absent.**
+
+* `hNcard` (`N.relIndex (ker χ) = h_K`). The reduction below applies this
+  leaf to subgroups `N' ⊇ N` whose relative index is a proper divisor of
+  `h_K`, so the hypothesis is not available there — and it is not needed,
+  see the truth argument.
+* `hNnorm` (`N` normal in `Γℚ`). `Γℚ` acts on `ker χ / N = Gal(H'/K)` by
+  conjugation and that action is NOT trivial in general — it is the action
+  of `Gal(K/ℚ)` on the class group — so a co-cyclic subgroup of `Gal(H/K)`
+  need not be `Γℚ`-stable, i.e. `H'/ℚ` need not be Galois. Nothing here
+  needs it: the Artin symbol of `H'/K` exists because `H'/K` is abelian.
+  (`hNab` already gives that `N` is normal in `ker χ`, which is all the
+  coset arithmetic below uses.)
+
+**WHY IT IS TRUE — and note the pinning is WEAKER than the parent's, which
+is exactly the point of the cut.** `hNopen` makes `N` closed, and `hNinert`
+together with `hNab` puts every generator of the subgroup `D` of
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` above inside
+`N`; hence `D ≤ N ≤ ker χ`. Since `Γ_K / D = Gal(H/K)` for `H` the Hilbert
+class field of `K = ℚ(μ_p)`, the fixed field `H'` of `N` is an ABELIAN
+extension of `K` unramified at every finite place — a subextension of
+`H/K` — and `ker χ / N = Gal(H'/K)`, cyclic by `ψ`. Each `g · Frob_v · g⁻¹`
+with `χ (g Frob_v g⁻¹) = 1` restricts to the Frobenius of `H'/K` at the
+degree-one prime `frobIdeal g v` (this is `hfrob`, through the
+`IsArithFrobAt` residue-degree bridge quoted on
+`exists_artinMap_of_artinIdealMap` below). The conclusion is then Neukirch
+VI (6.7)–(6.9) for `H'/K`: the Artin symbol of a principal ideal is
+trivial. **That argument never uses the ORDER of `ker χ / N`**, which is why
+`hNcard` can be dropped; the parent's `N = D` pinning is a convenience, not
+a necessity.
+
+**WHAT THIS CUT BUYS: obstruction (2) recorded on
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below is now
+DISCHARGED.** That survey named two independent obstructions to consuming
+`ModThree.lean`'s 116-declaration `*_ray_class` reciprocity here: (1) its
+value group is hardwired to `Dickson.K 3`, with `hℓ3 : ℓ ≠ 3` load-bearing
+in some thirty signatures; and (2) that chain produces the symbol of ONE
+CYCLIC CHARACTER at a time, so recovering a `Gal(H/K)`-valued map from its
+characters is Pontryagin duality over the class group, "which exists
+nowhere in this tree". It exists now: `mem_of_forall_char_pullback_mem`
+above is that duality step, proved through mathlib's structure theorem for
+finite abelian groups (`CommGroup.equiv_prod_multiplicative_zmod_of_finite`)
+rather than through character theory, and this leaf is what the parent
+reduces to by it. **So only obstruction (1) now stands**, and it must still
+be REQUESTED FROM `ModThree.lean`'s owners rather than attempted from
+here.
+
+**If the eventual consumer wants a PRIME-POWER modulus** — `ModThree.lean`'s
+shape, `ℓ` prime with `hℓ3 : ℓ ≠ 3` threaded through the prime-power
+chain — that refinement is elementary and belongs on THIS side of the
+boundary: replace `nn` by `ℓ ^ (nn.factorization ℓ)` for a prime `ℓ` at
+which the class of the product survives, using `ZMod.equivPi`
+(`Mathlib/Data/ZMod/QuotientRing.lean`, the Chinese remainder theorem for
+`ZMod n`). It was left undone here only to keep the assembly short; it
+changes nothing about the mathematics.
+
+**Degenerate values of `nn` are harmless.** `nn = 1` makes `ZMod nn`
+trivial, so `hψker` forces `N = ker χ` and the conclusion is immediate;
+`nn = 0` makes `Multiplicative (ZMod 0)` infinite cyclic, and since `N` is
+open in the compact `Γℚ` the quotient `ker χ / N` is finite, so again
+`ψ = 1` and `N = ker χ`.
+
+**The check that would refute it**: exhibit `nn`, `ψ` and `L` with every
+`frobIdeal q.1 q.2` a degree-one prime, `∏ frobIdeal` principal, and the
+product of the `g · Frob_v · g⁻¹` outside `ker ψ`. By the argument above
+that is a failure of Artin reciprocity for a finite CYCLIC everywhere
+unramified extension of `ℚ(μ_p)`. -/
+theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (nn : ℕ) (ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod nn))
+    (hψN : ∀ y : (MonoidHom.ker χ),
+      (y : Field.absoluteGaloisGroup ℚ) ∈ N → ψ y = 1)
+    (hψker : ∀ y : (MonoidHom.ker χ),
+      ψ y = 1 → (y : Field.absoluteGaloisGroup ℚ) ∈ N)
+    (L : List (Field.absoluteGaloisGroup ℚ ×
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
+    (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
+    (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
+  sorry
+
 /-- **ARTIN RECIPROCITY, PRODUCT FORM: a product of degree-one Frobenius
 elements whose ideal product is PRINCIPAL lies in `N`** (E3c support leaf
-(ii-a-1-i-B-2-a-ii); SORRY LEAF, cut 2026-07-27 out of
+(ii-a-1-i-B-2-a-ii); PROVEN 2026-07-28 over the cyclic-character leaf
+above, cut 2026-07-27 out of
 `exists_artinIdealMap_of_unramifiedAbelianSubgroup` below along the
 RECIPROCITY axis, and **the entire arithmetic content of that leaf**).
 
@@ -29335,6 +29585,37 @@ load-bearing in ~30 signatures, and (2) CHARACTER-valued, so recovering the
 which exists nowhere in this tree. Do not edit `ModThree.lean` from here; the
 generalization must be requested from that file's owners.
 
+**THE CUT, 2026-07-28 — obstruction (2) above is now DISCHARGED, and this
+node is PROVEN over one leaf.** What is proved here is the classical
+reduction of a reciprocity law to its CYCLIC case: `ker χ / N` is a finite
+abelian group (finite by `hNcard`, since the class number is positive;
+abelian by `hNab`), so by mathlib's structure theorem
+(`CommGroup.equiv_prod_multiplicative_zmod_of_finite`) a nontrivial class is
+separated by the projection to one cyclic factor. That projection is a
+character `ψ : ker χ →* Multiplicative (ZMod nn)`, its kernel is a subgroup
+`N' ⊇ N` still satisfying `hNker`, `hNopen`, `hNinert` and `hNab`, and
+`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar` above applied
+to `N'` puts the product in `N'`, i.e. kills the separating character —
+contradiction. **This is Pontryagin duality over the class group**, the very
+step recorded above as missing; it is isolated as the general group-theoretic
+lemma `mem_of_forall_char_pullback_mem` above, which mentions no arithmetic
+and is reusable at any reciprocity law of this shape. It is what makes
+`ModThree.lean`'s CHARACTER-valued `*_ray_class` chain a complete route once
+its value group is generalized. Only obstruction (1), `Dickson.K 3`, now
+stands.
+
+Two things the reduction forces on the sub-leaf, and they are why it is not
+this statement again under another name: `N'` has relative index a proper
+divisor of `h_K`, so `hNcard` cannot be assumed there; and `N'` is a
+co-cyclic subgroup of `Gal(H/K)`, which need not be stable under the
+conjugation action of `Γℚ`, so `hNnorm` cannot be assumed there either.
+
+`hNnorm` is in fact unused by the whole chain and is spelt `_hNnorm` below
+to say so mechanically. It is KEPT in the statement because it is part of
+what pins `N` for a reader, and because removing it would change the
+statement its three call sites in
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` are written against.
+
 **The check that would refute it**: exhibit `L` all of whose ideals are
 degree-one primes, with `∏ frobIdeal` principal, and with
 `∏ (g · Frob_v · g⁻¹) ∉ N`. By the pinning argument above that is a failure of
@@ -29362,7 +29643,7 @@ theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
           Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
             (frobIdeal g v : Ideal (𝓞 CF)))
     (N : Subgroup (Field.absoluteGaloisGroup ℚ))
-    (hNnorm : N.Normal)
+    (_hNnorm : N.Normal)
     (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
     (hNker : ∀ x ∈ N, χ x = 1)
     (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
@@ -29384,8 +29665,39 @@ theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
       IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
     (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
     (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
-    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
-  sorry
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N := by
+  -- (0) the product lies in `ker χ`, every factor being there by `hL`
+  have hxker : χ ((L.map
+      (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod) = 1 := by
+    rw [map_list_prod, List.map_map]
+    refine List.prod_eq_one ?_
+    intro y hy
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hy
+    exact hL q hq
+  have hNle : N ≤ MonoidHom.ker χ := fun y hy => MonoidHom.mem_ker.mpr (hNker y hy)
+  -- (1) PONTRYAGIN DUALITY: it is enough to be killed by every character of
+  -- `ker χ / N`, i.e. to lie in every subgroup with CYCLIC quotient.
+  refine mem_of_forall_char_pullback_mem χ N hNker hNab ?_ hxker ?_
+  · -- the quotient is finite: the class number is positive. The only use of
+    -- `hNcard`, and only through positivity.
+    rw [hNcard]
+    exact Nat.card_pos.ne'
+  · -- (2) reciprocity for the CYCLIC quotient `ker χ / ker ψ`, applied to the
+    -- enlarged subgroup `N' = ker ψ ⊇ N`, which still satisfies `hNker`,
+    -- `hNopen`, `hNinert` and `hNab`.
+    intro nn ψ hψN
+    have hNN' : N ≤ Subgroup.map (MonoidHom.ker χ).subtype ψ.ker := fun y hy =>
+      (mem_map_ker_char_iff ψ ⟨y, hNle hy⟩).mpr (hψN ⟨y, hNle hy⟩ hy)
+    refine (mem_map_ker_char_iff ψ _).mp
+      (prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar
+        χ hχcyc CF ι frobIdeal hfrob _
+        (Subgroup.isOpen_mono hNN' hNopen) ?_
+        (fun ℓ hℓ n σ hn hc => hNN' (hNinert ℓ hℓ n σ hn hc))
+        (fun a b ha hb => hNN' (hNab a b ha hb))
+        nn ψ (fun y hy => (mem_map_ker_char_iff ψ y).mp hy)
+        (fun y hy => (mem_map_ker_char_iff ψ y).mpr hy) L hL hprin)
+    rintro _ ⟨w, -, rfl⟩
+    exact MonoidHom.mem_ker.mp w.2
 
 /-- **RECIPROCITY, ON IDEALS: the Artin symbol of `H/K` as a map from the
 ideals of `𝓞 CF` to `Γℚ`, well defined modulo `N`, and TRIVIAL on principal
