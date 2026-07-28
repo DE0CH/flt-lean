@@ -14,6 +14,8 @@ public import Fermat.FLT.Mathlib.GroupTheory.DoubleCoset
 public import Mathlib.GroupTheory.DoubleCoset
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
+public import Mathlib.GroupTheory.FiniteAbelian.Basic
+public import Mathlib.NumberTheory.NumberField.Units.DirichletTheorem
 
 /-!
 
@@ -75,8 +77,19 @@ carries both.**
   finite) and `relIndex_normImage_ne_zero` (Dirichlet units mod fourth powers;
   no definiteness).
 
-So the closure's ONLY unproven statements are now the two
-`finite_normOne_units_inf_comap` and `relIndex_normImage_ne_zero`.
+**Both of those were then PROVEN in turn (2026-07-28), from three smaller leaves.**
+The closure's only unproven statements are now:
+
+* `comap_le_range_units_integers_of_isCompact` — a COMPACT subgroup of `𝔸ᶠ[F]ˣ`
+  meets `Fˣ` inside `(𝓞 F)ˣ`. Pure `F`-arithmetic: no `D`, no definiteness.
+  (Dirichlet's unit theorem itself is NOT a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ`
+  supplies it, via `subgroup_fg_of_le_fg`.)
+* `isCompact_normOne_infiniteAdele` — `{x ∈ D ⊗ 𝔸^∞ : Nm(x) = 1}` is compact. This
+  is the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file.
+* `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`,
+  so `D ∩ (compact × compact)` is finite. Uses neither definiteness nor total
+  reality; it is the `[Ring D]` form of `Aux.T_finite` in
+  `Fermat/FLT/DivisionAlgebra/Finiteness.lean`.
 
 **This subtree is currently FREE-FLOATING.** Nothing in the transitive cone of
 `fermat_last_theorem` consumes it yet. It was vendored to close the "the pin has
@@ -769,8 +782,218 @@ theorem relIndex_ray_ne_zero (ℒ : LevelStruct F R) :
     (ℒ.isOpen_U.preimage hcont)
     (Nat.eq_zero_of_zero_dvd (h0 ▸ Subgroup.index_dvd_of_le hle))
 
+/-! ### General group theory and topology used by Voight 17.7.13
+
+Two lemmas with no arithmetic content, kept dot-free so that they do not create
+nested `Subgroup`/`Group` namespaces inside `TotallyDefiniteQuaternionAlgebra`. -/
+
+/-- A subgroup of a finitely generated subgroup of a COMMUTATIVE group is finitely
+generated. (`ℤ` is Noetherian, so a f.g. `ℤ`-module has f.g. submodules.) -/
+theorem subgroup_fg_of_le_fg {A : Type*} [CommGroup A] {H K : Subgroup A}
+    (hK : K.FG) (hHK : H ≤ K) : H.FG := by
+  haveI hKfg : Group.FG K := (Group.fg_iff_subgroup_fg K).mpr hK
+  haveI hfin : Module.Finite ℤ (Additive K) := Module.Finite.iff_addGroup_fg.mpr inferInstance
+  have h1 : (AddSubgroup.toIntSubmodule (Subgroup.toAddSubgroup (H.subgroupOf K))).FG :=
+    IsNoetherian.noetherian _
+  rw [Submodule.fg_iff_addSubgroup_fg, AddSubgroup.toIntSubmodule_toAddSubgroup,
+    ← Subgroup.fg_iff_add_fg] at h1
+  haveI : Group.FG (H.subgroupOf K) := (Group.fg_iff_subgroup_fg _).mpr h1
+  haveI : Group.FG H := Group.fg_of_surjective
+    (f := (Subgroup.subgroupOfEquivOfLe hHK).toMonoidHom)
+    (Subgroup.subgroupOfEquivOfLe hHK).surjective
+  exact (Group.fg_iff_subgroup_fg H).mp inferInstance
+
+/-- An OPEN subgroup meets a COMPACT subgroup in finite relative index: `U ⊓ C` is open
+in the compact group `C`, so `C/(U ⊓ C)` is discrete and compact, hence finite. -/
+theorem relIndex_ne_zero_of_isCompact_of_isOpen {G : Type*} [Group G] [TopologicalSpace G]
+    [IsTopologicalGroup G] (C U : Subgroup G) (hC : IsCompact (C : Set G))
+    (hU : IsOpen (U : Set G)) : (C ⊓ U).relIndex C ≠ 0 := by
+  haveI : CompactSpace C := isCompact_iff_compactSpace.mp hC
+  have hopen : IsOpen ((U.subgroupOf C : Subgroup C) : Set C) :=
+    hU.preimage continuous_subtype_val
+  haveI : Finite (C ⧸ U.subgroupOf C) := Subgroup.quotient_finite_of_isOpen _ hopen
+  rw [Subgroup.relIndex, Subgroup.inf_subgroupOf_left]
+  exact Subgroup.index_ne_zero_of_finite
+
+/-! ### The three homomorphisms out of `Fˣ` and `GL₂(𝔸ᶠ)` used below -/
+
+variable (F) in
+/-- `Fˣ →* 𝔸ᶠˣ`. -/
+abbrev unitsAlgebraMapAdele : Fˣ →* 𝔸ᶠ[F]ˣ :=
+  Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))
+
+variable (F) in
+/-- `Fˣ →* GL₂(𝔸ᶠ)`, the scalar matrices. -/
+abbrev unitsAlgebraMapMatrix : Fˣ →* GL₂(𝔸ᶠ[F]) :=
+  Units.map (RingHom.toMonoidHom (algebraMap F M₂(𝔸ᶠ[F])))
+
+variable (F) in
+/-- `GL₂(𝔸ᶠ) →* 𝔸ᶠˣ`, the `𝔸ᶠ`-algebra norm of `M₂(𝔸ᶠ)` restricted to units.
+On `M₂` it is `m ↦ det(m)²`, so on the image of `Dˣ` it computes `Nm_{D/F}` — see
+`unitsNormMatrix_unitsIncl`. -/
+abbrev unitsNormMatrix : GL₂(𝔸ᶠ[F]) →* 𝔸ᶠ[F]ˣ :=
+  Units.map (Algebra.norm 𝔸ᶠ[F] (S := M₂(𝔸ᶠ[F])))
+
+omit [WithRigidification F D] in
+lemma continuous_unitsNormMatrix : Continuous (unitsNormMatrix F) := by
+  refine Units.continuous_map ?_
+  have h : ⇑(Algebra.norm 𝔸ᶠ[F] (S := M₂(𝔸ᶠ[F]))) = fun m : M₂(𝔸ᶠ[F]) => m.det ^ 2 := by
+    ext m; simp
+  rw [h]
+  fun_prop
+
+omit [WithRigidification F D] in
+lemma unitsAlgebraMapMatrix_eq : unitsAlgebraMapMatrix F =
+    (Units.map (RingHom.toMonoidHom (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])))).comp
+      (unitsAlgebraMapAdele F) := by
+  ext x
+  simp [← IsScalarTower.algebraMap_apply, RingHom.toMonoidHom_eq_coe]
+
+/-- `Nm_{M₂(𝔸ᶠ)/𝔸ᶠ} ∘ ι = Nm_{D/F}` on `Dˣ`. This is `WithRigidification.det_incl_sq`
+packaged as an identity of maps into `𝔸ᶠˣ`. -/
+lemma unitsNormMatrix_unitsIncl [IsQuaternionAlgebra F D] (d : Dˣ) :
+    unitsNormMatrix F (WithRigidification.unitsIncl F D d) =
+      unitsAlgebraMapAdele F (Units.map (Algebra.norm F (S := D)) d) := by
+  ext1
+  simpa using WithRigidification.det_incl_sq F (d : D)
+
+omit [WithRigidification F D] in
+/-- `Nm(λ · 1) = λ⁴` for a scalar matrix, since `finrank 𝔸ᶠ M₂(𝔸ᶠ) = 4`. -/
+lemma unitsNormMatrix_unitsAlgebraMapMatrix (x : Fˣ) :
+    unitsNormMatrix F (unitsAlgebraMapMatrix F x) = (unitsAlgebraMapAdele F x) ^ 4 := by
+  ext1
+  have h4 : Module.finrank 𝔸ᶠ[F] M₂(𝔸ᶠ[F]) = 4 := by
+    simp [Module.finrank_matrix]
+  simp only [Units.coe_map, MonoidHom.coe_coe, RingHom.toMonoidHom_eq_coe, Units.val_pow_eq_pow_val]
+  rw [show ((algebraMap F M₂(𝔸ᶠ[F])) (x : F)) = algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])
+      (algebraMap F 𝔸ᶠ[F] (x : F)) from (IsScalarTower.algebraMap_apply _ _ _ _)]
+  rw [Algebra.norm_algebraMap, h4]
+
+omit [NumberField F] [WithRigidification F D] in
+/-- `Nm_{D/F}(λ · 1) = λ⁴`, since `finrank F D = 4`. -/
+lemma norm_units_algebraMap_eq_pow [IsQuaternionAlgebra F D] (x : Fˣ) :
+    Units.map (Algebra.norm F (S := D)) (x.map (algebraMap F D).toMonoidHom) = x ^ 4 := by
+  ext1
+  simp [IsQuaternionAlgebra.finrank_eq_four F D]
+
+omit [WithRigidification F D] in
+/--
+**(sorry leaf — "a compact subgroup of `𝔸ᶠˣ` is integral".)**
+
+If `C ≤ 𝔸ᶠ[F]ˣ` is COMPACT then `Fˣ ∩ C` consists of units of `𝓞 F`.
+
+**Why it is true.** Let `x ∈ Fˣ` with `j(x) ∈ C`. Since `C` is a subgroup, every power
+`j(x)^n = j(xⁿ)` lies in `C`. Compactness of `C` makes `Units.val '' C` compact in `𝔸ᶠ`,
+hence its image under the (continuous) evaluation `𝔸ᶠ → Fᵥ` is compact, hence bounded:
+`|xⁿ|ᵥ ≤ c` for all `n`, which forces `|x|ᵥ ≤ 1`. The same applied to `x⁻¹` gives
+`|x|ᵥ = 1` at every finite place `v`, and then
+`IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one` puts both `x` and
+`x⁻¹` in `𝓞 F`.
+
+**COMPACTNESS is load-bearing**: for `C = 𝔸ᶠˣ` the conclusion is false, since
+`Fˣ ⊄ (𝓞 F)ˣ`.
+
+Note this statement mentions neither `D` nor definiteness: it is about `F` alone. -/
+theorem comap_le_range_units_integers_of_isCompact (C : Subgroup 𝔸ᶠ[F]ˣ)
+    (hC : IsCompact (C : Set 𝔸ᶠ[F]ˣ)) :
+    C.comap (unitsAlgebraMapAdele F) ≤
+      MonoidHom.range (Units.map (algebraMap (𝓞 F) F).toMonoidHom) :=
+  sorry
+
+omit [WithRigidification F D] in
+/-- If `C ≤ 𝔸ᶠ[F]ˣ` is COMPACT then `Fˣ ∩ C` is finitely generated: by
+`comap_le_range_units_integers_of_isCompact` it is a subgroup of the image of `(𝓞 F)ˣ`,
+which is finitely generated by Dirichlet's unit theorem (`Monoid.FG (𝓞 K)ˣ`). -/
+theorem fg_comap_unitsAlgebraMapAdele_of_isCompact (C : Subgroup 𝔸ᶠ[F]ˣ)
+    (hC : IsCompact (C : Set 𝔸ᶠ[F]ˣ)) : (C.comap (unitsAlgebraMapAdele F)).FG := by
+  haveI : Group.FG (𝓞 F)ˣ := Group.fg_iff_monoid_fg.mpr inferInstance
+  refine subgroup_fg_of_le_fg ?_ (comap_le_range_units_integers_of_isCompact C hC)
+  exact (Group.fg_iff_subgroup_fg _).mp
+    (Group.fg_range (Units.map (algebraMap (𝓞 F) F).toMonoidHom))
+
+/-! ### The two halves of Voight 17.7.13 -/
+
+section Archimedean
+
+open scoped TensorProduct.RightActions
+
 /--
 **(sorry leaf — the definite archimedean input of Voight 17.7.13.)**
+
+`{x ∈ D ⊗_F 𝔸_F^∞ : Nm_{(D ⊗ 𝔸^∞)/𝔸^∞}(x) = 1}` is COMPACT.
+
+**Why it is true.** `F` is totally real, so every infinite place `v` is real and
+`𝔸_F^∞ = ∏_v ℝ`; hence `D ⊗_F 𝔸_F^∞ = ∏_v (D ⊗_{F,v} ℝ)`. Total definiteness says
+each factor is `ℍ`, where the algebra norm over `ℝ` is `Nm(x) = nrd(x)² = |x|⁴`.
+So the set is the product over `v` of the unit spheres of `ℍ`, hence compact.
+
+**BOTH hypotheses are load-bearing.** At a real place where `D` splits, or at a
+complex place, `Nm = det²` and `{det = ±1}` is `SL₂^±(ℝ)`, which is not compact;
+the statement then fails for `D = M₂(F)`.
+
+Available input: `IsQuaternionAlgebra.IsTotallyDefinite.cond` supplies
+`ℝ ⊗[F,v] D ≃ₐ[ℝ] ℍ` at every real place, and
+`NumberField.AdeleRing.DivisionAlgebra.Aux.InfiniteAdeleRing.DinfTensorPiEquivPiTensor`
+in `Fermat/FLT/DivisionAlgebra/Finiteness.lean` is the decomposition
+`D ⊗ 𝔸^∞ ≃ ∏_v (D ⊗ F_v)`. -/
+theorem isCompact_normOne_infiniteAdele [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
+    [IsQuaternionAlgebra.IsTotallyDefinite F D] :
+    IsCompact {x : D ⊗[F] (NumberField.InfiniteAdeleRing F) |
+      Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1} :=
+  sorry
+
+/--
+**(sorry leaf — `D` is discrete and closed in `D ⊗ 𝔸_F`.)**
+
+An element of `D` confined to a COMPACT set in the archimedean direction and to a
+COMPACT set in the finite direction ranges over a FINITE set.
+
+**Why it is true.** `D ⊗_F 𝔸_F = (D ⊗ 𝔸^∞) × (D ⊗ 𝔸_f)`, and the rigidification
+`WithRigidification.algEquiv` identifies `D ⊗ 𝔸_f` topologically with `M₂(𝔸ᶠ)`
+carrying `d ↦ WithRigidification.incl d`. So the set in question is the preimage in
+`D` of a compact subset of `D ⊗ 𝔸_F`; `D` is discrete and closed there, and a
+discrete subset of a compact set is finite.
+
+This is exactly the pattern of
+`NumberField.AdeleRing.DivisionAlgebra.Aux.T_finite_extracted1` and `T_finite` in
+`Fermat/FLT/DivisionAlgebra/Finiteness.lean` (`D_discrete`,
+`discrete_includeLeft_subgroup`, `inter_Discrete`), which are stated there for `D`
+a DIVISION ring; only `Module.Finite F D` is used mathematically. Reusing them
+either needs those statements relaxed to `[Ring D]`, or `DivisionRing D` derived
+from total definiteness (`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`
+plus `ℍ` having no zero divisors while `M₂(ℝ)` does).
+
+Note neither definiteness nor total reality is needed here: this is discreteness. -/
+theorem finite_setOf_tmul_mem_of_isCompact [IsQuaternionAlgebra F D]
+    (Zi : Set (D ⊗[F] (NumberField.InfiniteAdeleRing F))) (hZi : IsCompact Zi)
+    (Zf : Set M₂(𝔸ᶠ[F])) (hZf : IsCompact Zf) :
+    {d : D | (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) ∈ Zi ∧
+      WithRigidification.incl (F := F) d ∈ Zf}.Finite :=
+  sorry
+
+/-- `B ⊗[R] A ≃ₐ[A] A ⊗[R] B`: the right-action version of `Algebra.TensorProduct.comm`,
+built exactly as the first factor of `WithRigidification.algEquiv`. -/
+def tensorCommRight (R B A : Type*) [CommRing R] [CommRing A] [Ring B]
+    [Algebra R A] [Algebra R B] : B ⊗[R] A ≃ₐ[A] A ⊗[R] B :=
+  { __ := Algebra.TensorProduct.comm R B A, commutes' _ := rfl }
+
+@[simp] lemma tensorCommRight_tmul (R B A : Type*) [CommRing R] [CommRing A] [Ring B]
+    [Algebra R A] [Algebra R B] (b : B) (a : A) :
+    tensorCommRight R B A (b ⊗ₜ[R] a) = a ⊗ₜ[R] b := rfl
+
+omit [NumberField F] [WithRigidification F D] in
+/-- The `𝔸_F^∞`-algebra norm of `d ⊗ₜ 1` is the image of the `F`-algebra norm of `d`;
+this is `Algebra.norm_one_tmul` transported along `tensorCommRight`. -/
+lemma norm_tmul_one_infiniteAdele [IsQuaternionAlgebra F D] (d : D) :
+    Algebra.norm (NumberField.InfiniteAdeleRing F)
+      (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) =
+      algebraMap F (NumberField.InfiniteAdeleRing F) (Algebra.norm F d) := by
+  rw [← Algebra.norm_one_tmul F (NumberField.InfiniteAdeleRing F) (B := D) d,
+    ← Algebra.norm_eq_of_algEquiv (tensorCommRight F D (NumberField.InfiniteAdeleRing F))
+      (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)), tensorCommRight_tmul]
+
+/--
+**PROVEN** from `isCompact_normOne_infiniteAdele` and `finite_setOf_tmul_mem_of_isCompact`.
 
 For `V` a COMPACT subgroup of `GL₂(𝔸ᶠ)`, the group of `d ∈ Dˣ` with `ι(d) ∈ V` and
 `Nm_{D/F}(d) = 1` is FINITE. Here `ι = WithRigidification.unitsIncl F D`, and
@@ -790,38 +1013,74 @@ complex place, `nrd = det` and `det(d) = ±1` bounds nothing (`SL₂(ℝ)` is no
 compact); the conclusion then fails for `D = M₂(F)`, whose corresponding group is
 commensurable with `SL₂(𝒪_F)`.
 
-**Available input.** `NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_principalSubgroup`
-and `T_finite` in `Fermat/FLT/DivisionAlgebra/Finiteness.lean` are exactly the
-"discrete ∩ compact is finite" pattern, for `D_𝔸 = D ⊗ 𝔸_F`; the archimedean
-bound (compactness of `{nrd = 1}` in `D ⊗ ℝ = ∏ ℍ`) is what
-`IsQuaternionAlgebra.IsTotallyDefinite` has to supply and is the missing piece. -/
+**The assembly proven here.** The map `d ↦ (d : D)` is injective on the subgroup, and
+sends it into the set of `d : D` with `d ⊗ₜ 1` in the compact `{Nm = 1}` (by
+`norm_tmul_one_infiniteAdele`, since `Nm_{D/F}(d) = 1`) and with
+`WithRigidification.incl d ∈ Units.val '' V` (compact, since `V` is). Total
+definiteness enters ONLY through `isCompact_normOne_infiniteAdele`. -/
 theorem finite_normOne_units_inf_comap [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
     [IsQuaternionAlgebra.IsTotallyDefinite F D] (V : Subgroup GL₂(𝔸ᶠ[F]))
     (hV : IsCompact (X := GL₂(𝔸ᶠ[F])) (V : Set GL₂(𝔸ᶠ[F]))) :
     Finite ((Units.map (Algebra.norm F (S := D))).ker ⊓
-      V.comap (WithRigidification.unitsIncl F D) : Subgroup Dˣ) :=
-  sorry
+      V.comap (WithRigidification.unitsIncl F D) : Subgroup Dˣ) := by
+  set Zi : Set (D ⊗[F] (NumberField.InfiniteAdeleRing F)) :=
+    {x | Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1} with hZidef
+  set Zf : Set M₂(𝔸ᶠ[F]) := Units.val '' V with hZfdef
+  set T : Set D := {d : D | (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) ∈ Zi ∧
+      WithRigidification.incl (F := F) d ∈ Zf} with hTdef
+  have hTfin : T.Finite := finite_setOf_tmul_mem_of_isCompact (D := D) Zi
+    (isCompact_normOne_infiniteAdele (D := D)) Zf (hV.image Units.continuous_val)
+  haveI : Finite T := hTfin
+  refine Finite.of_injective (β := T) (fun x => ⟨(x.1 : D), ?_, ?_⟩) ?_
+  · have hker : Algebra.norm F ((x.1 : D)) = 1 := by
+      have h : (x.1 : Dˣ) ∈ (Units.map (Algebra.norm F (S := D))).ker := x.2.1
+      rw [MonoidHom.mem_ker] at h
+      simpa [Units.ext_iff] using h
+    simp only [hZidef, Set.mem_setOf_eq, norm_tmul_one_infiniteAdele (D := D), hker, map_one]
+  · have hVmem : WithRigidification.unitsIncl F D x.1 ∈ V := x.2.2
+    exact ⟨_, hVmem, rfl⟩
+  · intro a b hab
+    exact Subtype.ext (Units.ext (congrArg Subtype.val hab))
+
+end Archimedean
 
 /--
-**(sorry leaf — the Dirichlet-units input of Voight 17.7.13. NO definiteness.)**
+**PROVEN** from `comap_le_range_units_integers_of_isCompact` (the only remaining
+sorry beneath it). NO definiteness.
 
 Writing `A := {d ∈ Dˣ : ι(d) ∈ V}` and `P := Fˣ ⊆ Dˣ`, the norm image `Nm(A ⊓ P)`
 has finite index in `Nm(A)`, for `V` a compact OPEN subgroup of `GL₂(𝔸ᶠ)`.
 
-**Why it is true.**
-* `Nm(A) ≤ 𝒪_Fˣ`. Indeed `nrd(d)² = Nm(d)` and `det V` is a compact subgroup of
-  `𝔸ᶠˣ`; every compact subgroup of `𝔸ᶠˣ` lies in `𝒪̂ˣ` (all its powers are
-  bounded, so `|y|_v = 1` at every `v`), and `Fˣ ∩ 𝒪̂ˣ = 𝒪_Fˣ`.
-* `𝒪_Fˣ` is FINITELY GENERATED (Dirichlet's unit theorem — mathlib has
-  `NumberField.Units.dirichletUnitTheorem`).
-* `A ⊓ P = {λ ∈ Fˣ : λ·1 ∈ V}` and `Nm(λ·1) = λ⁴` (because `finrank F D = 4`), so
-  `Nm(A ⊓ P) = W⁴` where `W := Fˣ ∩ V₀` and `V₀ ≤ 𝔸ᶠˣ` is the compact OPEN
-  subgroup of scalars lying in `V`. Openness of `V₀` inside the compact `𝒪̂ˣ`
-  makes `[𝒪_Fˣ : W]` finite; and a finitely generated abelian group has finite
-  index over its subgroup of fourth powers, so `[𝒪_Fˣ : W⁴]` is finite too.
+**The proof run here**, with `j : Fˣ →* 𝔸ᶠˣ` (`unitsAlgebraMapAdele`),
+`sc : Fˣ →* GL₂(𝔸ᶠ)` the scalars (`unitsAlgebraMapMatrix`) and
+`NM : GL₂(𝔸ᶠ) →* 𝔸ᶠˣ` the `𝔸ᶠ`-algebra norm of `M₂` (`unitsNormMatrix`,
+so `NM(m) = det(m)²`). Put
 
-**`IsCompact` and `IsOpen` are BOTH load-bearing here** — compactness puts `Nm(A)`
-inside `𝒪_Fˣ`, openness makes `W` of finite index. Total definiteness is NOT used:
+* `C := NM(V) ≤ 𝔸ᶠˣ`, COMPACT (continuous image of a compact set), and `Q := j⁻¹(C)`;
+* `V₀ ≤ 𝔸ᶠˣ` the scalars lying in `V`, OPEN (preimage of `V` under a continuous map),
+  and `W := j⁻¹(V₀) = sc⁻¹(V)`;
+* `Y := Q ⊓ W = j⁻¹(C ⊓ V₀)`.
+
+Then, in order:
+
+1. `Nm(A) ≤ Q`, because `j(Nm d) = NM(ι d)` (`unitsNormMatrix_unitsIncl`, i.e.
+   `WithRigidification.det_incl_sq`) and `ι d ∈ V`;
+2. `Nm(A ⊓ P) = W⁴` exactly, because `ι(λ·1) = sc λ`
+   (`WithRigidification.unitsIncl_algebraMap`) and `Nm(λ·1) = λ⁴`
+   (`norm_units_algebraMap_eq_pow`, since `finrank F D = 4`);
+3. `W⁴ ≤ Y`, because `j(λ⁴) = NM(sc λ) ∈ C` (`unitsNormMatrix_unitsAlgebraMapMatrix`);
+4. `[Q : Y] ≠ 0` from `relIndex_ne_zero_of_isCompact_of_isOpen` at `C ⊓ V₀ ≤ C`,
+   pulled back along `j` by `Subgroup.relIndex_comap_ne_zero`;
+5. `[Y : Y⁴] ≠ 0` by mathlib's `Subgroup.isFiniteRelIndex_map_powMonoidHom_of_fg`,
+   `Y` being finitely generated by `fg_comap_unitsAlgebraMapAdele_of_isCompact` and
+   `subgroup_fg_of_le_fg`; since `Y⁴ ≤ W⁴ ≤ Y` this gives `[Y : W⁴] ≠ 0`, and with
+   (4), `[Q : W⁴] ≠ 0`;
+6. finally `Nm(A ⊓ P) = W⁴ ≤ Nm(A) ≤ Q`, so `[Nm(A) : Nm(A ⊓ P)]` divides
+   `[Q : W⁴]` by `Subgroup.relIndex_mul_relIndex`.
+
+**`IsCompact` and `IsOpen` are BOTH load-bearing here** — compactness of `V` makes
+`C` compact, which is what forces `Q ≤ 𝒪_Fˣ` (step 5's finite generation);
+openness makes `V₀` open, which is step 4. Total definiteness is NOT used:
 this half is a statement about `F` and the level, not about the archimedean places
 of `D`, which is why the hypothesis is deliberately absent. -/
 theorem relIndex_normImage_ne_zero [IsQuaternionAlgebra F D] (V : Subgroup GL₂(𝔸ᶠ[F]))
@@ -832,12 +1091,91 @@ theorem relIndex_normImage_ne_zero [IsQuaternionAlgebra F D] (V : Subgroup GL₂
         (V.comap (WithRigidification.unitsIncl F D) ⊓
           MonoidHom.range (Units.map (algebraMap F D).toMonoidHom)))
       (Subgroup.map (Units.map (Algebra.norm F (S := D)))
-        (V.comap (WithRigidification.unitsIncl F D))) ≠ 0 :=
-  sorry
+        (V.comap (WithRigidification.unitsIncl F D))) ≠ 0 := by
+  set N : Dˣ →* Fˣ := Units.map (Algebra.norm F (S := D)) with hN
+  set A : Subgroup Dˣ := V.comap (WithRigidification.unitsIncl F D) with hA
+  set P : Subgroup Dˣ := MonoidHom.range (Units.map (algebraMap F D).toMonoidHom) with hP
+  set C : Subgroup 𝔸ᶠ[F]ˣ := V.map (unitsNormMatrix F) with hC
+  set Q : Subgroup Fˣ := C.comap (unitsAlgebraMapAdele F) with hQ
+  set V₀ : Subgroup 𝔸ᶠ[F]ˣ :=
+    V.comap (Units.map (RingHom.toMonoidHom (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])))) with hV₀
+  set W : Subgroup Fˣ := V₀.comap (unitsAlgebraMapAdele F) with hW
+  set Y : Subgroup Fˣ := Q ⊓ W with hY
+  have hCcomp : IsCompact ((C : Set 𝔸ᶠ[F]ˣ)) := hVc.image continuous_unitsNormMatrix
+  -- membership in `W` is membership of the scalar matrix in `V`
+  have hmemW : ∀ x : Fˣ, x ∈ W ↔ unitsAlgebraMapMatrix F x ∈ V := by
+    intro x
+    rw [hW, Subgroup.mem_comap, hV₀, Subgroup.mem_comap, unitsAlgebraMapMatrix_eq (F := F)]
+    rfl
+  -- (1) the norm image of `A` lands in `Q`
+  have hS1 : Subgroup.map N A ≤ Q := by
+    intro y hy
+    obtain ⟨d, hd, rfl⟩ := Subgroup.mem_map.mp hy
+    exact Subgroup.mem_comap.mpr
+      (Subgroup.mem_map.mpr ⟨_, hd, unitsNormMatrix_unitsIncl (D := D) d⟩)
+  -- (2) the norm image of `A ⊓ P` is the group of fourth powers of `W`
+  have hS2 : Subgroup.map N (A ⊓ P) = W.map (powMonoidHom 4) := by
+    apply le_antisymm
+    · intro y hy
+      obtain ⟨d, hd, rfl⟩ := Subgroup.mem_map.mp hy
+      obtain ⟨hdA, hdP⟩ := Subgroup.mem_inf.mp hd
+      obtain ⟨x, rfl⟩ := hdP
+      refine Subgroup.mem_map.mpr ⟨x, ?_, ?_⟩
+      · rw [hmemW]
+        have hx : WithRigidification.unitsIncl F D (x.map (algebraMap F D).toMonoidHom) ∈ V := hdA
+        rwa [WithRigidification.unitsIncl_algebraMap] at hx
+      · simpa [powMonoidHom] using (norm_units_algebraMap_eq_pow (D := D) x).symm
+    · intro y hy
+      obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+      refine Subgroup.mem_map.mpr ⟨x.map (algebraMap F D).toMonoidHom,
+        Subgroup.mem_inf.mpr ⟨?_, ⟨x, rfl⟩⟩, ?_⟩
+      · show WithRigidification.unitsIncl F D _ ∈ V
+        rw [WithRigidification.unitsIncl_algebraMap]
+        exact (hmemW x).mp hx
+      · simpa [powMonoidHom] using norm_units_algebraMap_eq_pow (D := D) x
+  -- (3) fourth powers of `W` lie in `Y`
+  have hWQ : W.map (powMonoidHom 4) ≤ Q := by
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+    refine Subgroup.mem_comap.mpr
+      (Subgroup.mem_map.mpr ⟨unitsAlgebraMapMatrix F x, (hmemW x).mp hx, ?_⟩)
+    rw [unitsNormMatrix_unitsAlgebraMapMatrix]
+    simp [powMonoidHom]
+  have hS3 : W.map (powMonoidHom 4) ≤ Y := by
+    refine le_inf hWQ ?_
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subgroup.mem_map.mp hy
+    exact W.pow_mem hx 4
+  -- (4) `Y` has finite index in `Q`
+  have hS4 : Y.relIndex Q ≠ 0 := by
+    have hscal : Continuous (fun x : 𝔸ᶠ[F] => (algebraMap 𝔸ᶠ[F] M₂(𝔸ᶠ[F])) x) := by
+      refine continuous_matrix fun i j => ?_
+      simp only [Matrix.algebraMap_matrix_apply]
+      split <;> fun_prop
+    have hopen : IsOpen ((V₀ : Set 𝔸ᶠ[F]ˣ)) := hVo.preimage (Units.continuous_map hscal)
+    have hkey := relIndex_ne_zero_of_isCompact_of_isOpen C V₀ hCcomp hopen
+    have h2 := Subgroup.relIndex_comap_ne_zero (unitsAlgebraMapAdele F) hkey
+    rwa [Subgroup.comap_inf] at h2
+  -- (5) `Y` is finitely generated, so its fourth powers have finite index in it
+  have hYfg : Y.FG :=
+    subgroup_fg_of_le_fg (fg_comap_unitsAlgebraMapAdele_of_isCompact C hCcomp) inf_le_left
+  have hS5 : (Y.map (powMonoidHom 4)).relIndex Y ≠ 0 :=
+    Subgroup.isFiniteRelIndex_iff_relIndex_ne_zero.mp
+      (Subgroup.isFiniteRelIndex_map_powMonoidHom_of_fg hYfg (by norm_num))
+  have hS6 : (W.map (powMonoidHom 4)).relIndex Y ≠ 0 := fun h0 =>
+    hS5 (Subgroup.relIndex_eq_zero_of_le_left (Subgroup.map_mono inf_le_right) h0)
+  have hS7 : (W.map (powMonoidHom 4)).relIndex Q ≠ 0 := Subgroup.relIndex_ne_zero_trans hS6 hS4
+  -- (6) conclude
+  have hle1 : Subgroup.map N (A ⊓ P) ≤ Subgroup.map N A := Subgroup.map_mono inf_le_left
+  have hmul := Subgroup.relIndex_mul_relIndex _ _ _ hle1 hS1
+  intro h0
+  rw [h0, zero_mul] at hmul
+  rw [hS2] at hmul
+  exact hS7 hmul.symm
 
 /--
 **Voight, Lemma 17.7.13, in its textbook form**: for `V ≤ GL₂(𝔸ᶠ)` compact open,
-`Fˣ` has finite index in `{d ∈ Dˣ : ι(d) ∈ V}`. PROVEN here from the two leaves
+`Fˣ` has finite index in `{d ∈ Dˣ : ι(d) ∈ V}`. PROVEN here from the two theorems
 above; no level structure, no double-coset representative `g`.
 
 The proof is the classical two-step argument, run inside the group `A` itself.
@@ -884,8 +1222,10 @@ theorem relIndex_range_algebraMap_units_ne_zero [NumberField.IsTotallyReal F]
 /--
 **Voight, Lemma 17.7.13: the unit group of an order in a totally definite
 quaternion algebra is finite modulo the centre.** PROVEN 2026-07-27 from
-`relIndex_range_algebraMap_units_ne_zero`; two sorried leaves remain beneath it,
-`finite_normOne_units_inf_comap` and `relIndex_normImage_ne_zero`.
+`relIndex_range_algebraMap_units_ne_zero`. `finite_normOne_units_inf_comap` and
+`relIndex_normImage_ne_zero` beneath it were PROVEN 2026-07-28; the three leaves
+that remain beneath THEM are `comap_le_range_units_integers_of_isCompact`,
+`isCompact_normOne_infiniteAdele` and `finite_setOf_tmul_mem_of_isCompact`.
 
 `Fˣ` has finite index in `U ∩ g⁻¹ Dˣ g`.
 
@@ -974,15 +1314,17 @@ The group theory (`relIndex_sup_ne_zero_of_le_center`,
 `relIndex_sup_inf_ne_zero_of_le_center`, `relIndex_sup_ne_zero_of_normal`), the
 transport `relIndex_ray_ne_zero`, `index_ray_ne_zero`, and (2026-07-27, second
 pass) the whole of `relIndex_unitsOrder_ne_zero` and
-`relIndex_range_algebraMap_units_ne_zero` are proven. Exactly TWO sorried leaves
-remain, and they are the two halves of Voight 17.7.13:
+`relIndex_range_algebraMap_units_ne_zero` are proven. The two halves of Voight
+17.7.13, `finite_normOne_units_inf_comap` (the archimedean half — the only
+consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in this file) and
+`relIndex_normImage_ne_zero` (the Dirichlet-units half, no definiteness), were
+then PROVEN 2026-07-28. THREE sorried leaves remain beneath them:
 
-* `finite_normOne_units_inf_comap` — the archimedean half:
-  `{d ∈ Dˣ : ι(d) ∈ V, Nm(d) = 1}` is finite for compact `V`. This is the ONLY
-  consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in this file.
-* `relIndex_normImage_ne_zero` — the Dirichlet-units half:
-  `[Nm(A) : Nm(A ⊓ Fˣ)] < ∞`. Uses no definiteness; it is a statement about
-  `𝒪_Fˣ` and the level.
+* `comap_le_range_units_integers_of_isCompact` — a compact subgroup of `𝔸ᶠ[F]ˣ`
+  meets `Fˣ` inside `(𝓞 F)ˣ`. Statement about `F` alone.
+* `isCompact_normOne_infiniteAdele` — `{Nm = 1}` is compact in `D ⊗ 𝔸^∞`. Total
+  definiteness is consumed here and nowhere else.
+* `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
 
 `index_ray_ne_zero` — finiteness of a ray class group of `F`, which does not
 mention `D` — was the third leaf on this list and is now PROVEN from the
