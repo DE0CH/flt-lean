@@ -381,7 +381,9 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1Rigidification` | Katz-Mazur (8.1.1): the rigidified moduli scheme, its deck group and its level torsor.  (`exists_gamma1GITPresentation` is PROVEN over it, 2026-07-27, together with `nonempty_gamma1GITPresentation_of_rigidification`; and so are `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`, over the three ring-level rows here.) | any `K`, `char K ∤ N` |
+| `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_gamma1FullLevelStructure_cover` | Katz-Mazur 2.3.1 / 8.1.1: the finite etale `GL₂(ℤ/n)`-torsor of full level-`n` structures.  A statement about ONE datum; names no moduli scheme. | any `K`, `char K ∤ n` |
+| `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue except for the coequalising clause. | any base scheme `S` |
 | `geometricComponents_of_gamma1GITPresentation` | Katz-Mazur 8.1.1 + Deligne-Rapoport IV.5.5: `Spec A` nonempty, reduced, components permuted transitively by `G` | any `K`, `char K ∤ N` |
 | `locallyStandardSmooth_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
@@ -444,7 +446,13 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `Gamma0GITPresentation` | `Gamma1GITPresentation` |
 | `Gamma0GITPresentation.toGamma0Atlas` (PROVEN) | `Gamma1GITPresentation.toGamma1Atlas` (PROVEN) |
 | `exists_gamma0GITPresentation` (PROVEN) | `exists_gamma1GITPresentation` (PROVEN) |
-| `exists_rigidifiedModuli` + `exists_deckAction` (leaves) | `exists_gamma1Rigidification` (leaf) |
+| `exists_gamma0GITPresentation_of_rigidified` (PROVEN) | `nonempty_gamma1GITPresentation_of_rigidification` (PROVEN) |
+| `RigidifiedModuli` | `Gamma1RigidifiedModuli` |
+| `FullLevelStructure` | `AbelianFullLevelStructure` (a DUPLICATE — see the coordination note at the cut below) |
+| `exists_rigidifiedModuli` (leaf) | `exists_gamma1RigidifiedModuli` (leaf) |
+| `exists_fullLevelStructure_cover` (leaf) | `exists_gamma1FullLevelStructure_cover` (leaf) |
+| `exists_deckAction` (leaf) | `exists_gamma1DeckAction` (leaf) |
+| — | `nonempty_gamma1Rigidification_of_rigidifiedModuli` (PROVEN); `exists_gamma1Rigidification` (PROVEN over the three leaves) |
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
@@ -1037,7 +1045,7 @@ Katz–Mazur themselves draw and the same line `X0.lean` draws between
 
 | what | where | status |
 |---|---|---|
-| the rigidified moduli scheme, its deck group, its cover and its torsor property | `Gamma1Rigidification` / `exists_gamma1Rigidification` | **LEAF** (8.1.1) |
+| the rigidified moduli scheme, its deck group, its cover and its torsor property | `Gamma1Rigidification` / `exists_gamma1Rigidification` | **PROVEN** (2026-07-28), over the three leaves of the cut below — see the section comment "The cut of `exists_gamma1Rigidification`" |
 | the invariants `B = A^G`, the structure morphism of the coarse space, and the DESCENT of the classifying map | `exists_descendClassifyGamma1` / `nonempty_gamma1GITPresentation_of_rigidification` | **PROVEN** (8.1.3) |
 
 **`coequalises` is REQUIRED and its absence makes the descent half FALSE
@@ -1319,56 +1327,421 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
     rw [Category.id_comp, Category.id_comp] at h1
     exact h1
 
-/-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
-which `N` is invertible exists** (sorry leaf — Katz–Mazur (8.1.1), and
-after the cut of 2026-07-27 the ONLY modular EXISTENCE input below
-`X_1(N)` over either base).
+/-! #### The cut of `exists_gamma1Rigidification`, 2026-07-28
 
-TRUE and classical, and this is the construction itself rather than any
-of its properties.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid
+The node below used to be one leaf owing `A`, `G`, `strM`, `dM` and four
+Props.  It is now PROVEN, over the cut `X0.lean` takes one step further
+down: interpose a **fine** moduli scheme for the RIGIDIFIED problem
+`[Γ₁(N)], [Γ(n)]`, and derive the deck group, its equivariance and the
+torsor clause from the fine moduli property rather than assuming them.
+
+| what | where | status |
+|---|---|---|
+| the fine moduli scheme `𝔐([Γ₁(N)], [Γ(n)])`, AFFINE | `Gamma1RigidifiedModuli` / `exists_gamma1RigidifiedModuli` | **LEAF** (4.7.2 + 5.1.1 + 6.6.2, and the affineness parenthesis of 8.1.1) |
+| the level-`n` torsor: every datum acquires a full level structure fpqc-locally | `exists_gamma1FullLevelStructure_cover` | **LEAF** (2.3.1 / 8.1.1) |
+| the deck action `GL₂(ℤ/n) ↷ A`, its invariance over `S`, `dM_equivariant` and `coequalises` | `exists_gamma1DeckAction` | **LEAF** (formalisation only; no new citation — see its docstring) |
+| the assembly | `nonempty_gamma1Rigidification_of_rigidifiedModuli` | **PROVEN** |
+
+**Why this is not the junk-witness trap.**  The section comment before
+`RigidifiedModuli` in `X0.lean` rejects the "obvious" split — a structure
+holding the moduli scheme with `cover` stated as a `∀` over it — because
+an arbitrary inhabitant of such a structure need not be the genuine
+moduli scheme, and the companion leaf would then be FALSE at the junk
+witness.  `Gamma1RigidifiedModuli.universal` is a **fine** moduli
+property, so its inhabitant is pinned up to unique isomorphism, and
+quantifying over it (which is what `exists_gamma1DeckAction` does) is
+safe.  That is the whole reason the citation and the formalisation can be
+separated at all.
+
+**Two `Γ₀ → Γ₁` transcription hazards, and both bite here.**
+
+* `RigidifiedModuli.universal` has **no "over the base" clause**, because
+  `Subsingleton (T ⟶ Spec ℚ)` makes `m ≫ strM = g` automatic there.  Over
+  a general `S` — and `Spec K` is general — it is real content, so
+  `Gamma1RigidifiedModuli.universal` carries it as a conjunct.  It is
+  exactly what discharges the `p ≫ g = m ≫ strM` clause of
+  `Gamma1Rigidification.cover`, which `Gamma0GITPresentation.cover` does
+  not even have.
+* `Gamma0GITPresentation` has no `strM_invariant` field at all, for the
+  same reason.  `Gamma1Rigidification` does, so `exists_gamma1DeckAction`
+  carries it as its first clause; it comes from the uniqueness half of
+  `universal` applied at `g := strM`, so it costs the prover nothing
+  beyond what the deck action already gives.
+
+**COORDINATION NOTE — `AbelianFullLevelStructure` duplicates
+`FullLevelStructure` and should not, 2026-07-28.**  `X0.lean`'s
+`FullLevelStructure n (d : Gamma0Datum N T)` never inspects `d.cyc`: it
+mentions `d` only through `d.f` and `d.ab`.  The structure below is the
+same statement over a bare `AbelianSchemeStruct`, written here because
+`X0.lean`'s region has other concurrent owners.  **The right repair is in
+`X0.lean`**: change `FullLevelStructure`'s parameter from
+`d : Gamma0Datum N T` to `abs : AbelianSchemeStruct f`, at which point ONE
+definition serves both moduli problems, this one can be deleted, and —
+this is the part that matters — the whole twist API
+(`FullLevelStructure.twistP`/`twistQ`/`twist`/`twist_one`/`twist_mul`/
+`geomBasis_twist`, ~290 lines, all of it already PROVEN) becomes available
+to `Γ₁` unchanged.  That single edit turns `exists_gamma1DeckAction` from
+a leaf into a transcription of `exists_deckAction_of_torsion` whose only
+genuinely open step is the coequalising clause. -/
+
+/-- **A full level-`n` structure on an abelian scheme**, stated over a
+bare `AbelianSchemeStruct` rather than over a datum — Katz–Mazur's
+`[Γ(n)]`, in the fibrewise idiom this development already uses.
+
+**This is `X0.lean`'s `FullLevelStructure` with the `Gamma0Datum`
+parameter generalised away, and it is a DUPLICATE that should be
+removed** — see the COORDINATION NOTE in the section comment above for
+the one-line repair in `X0.lean` that removes it.  Every remark on
+`FullLevelStructure` applies verbatim and is not repeated here; the two
+that matter are:
+
+* `nsmul_P` and `nsmul_Q` are FIELDS and are **not** consequences of
+  `geom_basis`.  `X0.lean` carries the `Spec ℚ(ζ_n)[ε]` counterexample:
+  every geometric point kills `ε`, so `(P₀ + εv, Q₀)` satisfies
+  `geom_basis` for every `v ∈ Lie(E₀)` while `n • (P₀ + εv) = nεv ≠ 0`.
+  Without the fields `GL₂(ℤ/n)` does not act (`ZMod.val` is not
+  multiplicative) and the moduli functor is not representable.
+* At `n = 0` the condition is unsatisfiable (`Fin 0` is empty while
+  `0 • x = 0` always), which is why every consumer below carries
+  `3 ≤ n`. -/
+structure AbelianFullLevelStructure (n : ℕ) {E T : Scheme.{u}} {f : E ⟶ T}
+    (abs : AbelianSchemeStruct f) where
+  /-- the first basis section -/
+  P : RelPoint f (𝟙 T)
+  /-- the second basis section -/
+  Q : RelPoint f (𝟙 T)
+  /-- **`P` is `n`-torsion over the base** — not a consequence of
+  `geom_basis`; see the docstring -/
+  nsmul_P : letI := abs.addCommGroup (𝟙 T); n • P = 0
+  /-- **`Q` is `n`-torsion over the base** -/
+  nsmul_Q : letI := abs.addCommGroup (𝟙 T); n • Q = 0
+  /-- at every geometric point `P` and `Q` are a basis of the `n`-torsion -/
+  geom_basis : ∀ (K : Type u) [Field K] [IsAlgClosed K]
+      (t : Spec (CommRingCat.of K) ⟶ T),
+      letI := abs.addCommGroup t
+      ∀ x : RelPoint f t, n • x = 0 ↔
+        ∃! c : Fin n × Fin n,
+          x = (c.1 : ℕ) • RelPoint.pre t (Category.comp_id t) P
+              + (c.2 : ℕ) • RelPoint.pre t (Category.comp_id t) Q
+
+/-- **The rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` as an AFFINE FINE
+moduli scheme over an arbitrary base** — the `Γ₁` analogue of `X0.lean`'s
+`RigidifiedModuli`, and Katz–Mazur (8.1.1)'s `M(𝒫, 𝒮)` at
+`𝒫 = [Γ₁(N)]`, `𝒮 = [Γ(n)]`.
+
+The data is an affine `S`-scheme `Spec A`, a universal `Γ₁(N)`-datum `dM`
+on it carrying a universal full level-`n` structure `lvlM`, and the fine
+moduli property: a datum-with-level-structure over an `S`-scheme is the
+base change of `(dM, lvlM)` along a **unique** `S`-morphism.
+
+## Why `universal` carries `m ≫ strM = g` and `RigidifiedModuli` does not
+
+`X0.lean` works over `Spec ℚ`, where `Subsingleton (T ⟶ SpecQ)` makes the
+clause automatic — its docstring says so explicitly ("the structure
+morphism needs no compatibility field").  Over a general `S` it is real
+content, and it is what `Gamma1Rigidification.cover`'s
+`p ≫ g = m ≫ strM` clause is discharged from.  Dropping it would leave
+that clause unprovable and would also break `strM_invariant`, which is
+read off the uniqueness half at `g := strM`.
+
+## Level compatibility is stated on the underlying morphisms
+
+Verbatim `RigidifiedModuli`'s reason: `RelPoint.along bc.map _ L.P` lands
+over `𝟙 T ≫ m` while `RelPoint.pre m _ lvlM.P` lands over `m`, and the
+two are equal only propositionally, so the points inhabit different
+types.  Unfolding both to `.1` removes the transport with no loss.
+
+## Why quantifying over this structure is safe
+
+`universal` is a FINE moduli property, so an inhabitant is pinned up to
+unique isomorphism.  See the section comment above. -/
+structure Gamma1RigidifiedModuli (N n : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the structure morphism to the base -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the universal `Γ₁(N)`-datum -/
+  dM : Gamma1Datum N (Spec (CommRingCat.of A))
+  /-- the universal full level-`n` structure on it -/
+  lvlM : AbelianFullLevelStructure n dM.ab
+  /-- **fine moduli**: a datum-with-level-structure over an `S`-scheme is
+  the base change of `(dM, lvlM)` along a UNIQUE `S`-morphism -/
+  universal : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T)
+      (L : AbelianFullLevelStructure n d.ab),
+    ∃! m : T ⟶ Spec (CommRingCat.of A),
+      m ≫ strM = g ∧
+      ∃ bc : IsBaseChangeOfGamma1 m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-- **The rigidified moduli scheme of `[Γ₁(N)], [Γ(n)]` over a field in
+which `N` and `n` are invertible exists, and is AFFINE** (sorry leaf,
+opened 2026-07-28) — Katz–Mazur, and NOTHING else.  This is the one
+citation half of `exists_gamma1Rigidification`.
+
+## The citations, quoted so nobody has to re-derive which says what
+
+* **(4.7.1)** "Any relatively representable moduli problem `𝒫` which is
+  affine and etale over `(Ell)`, and rigid, is representable by a smooth
+  affine curve over `ℤ`."
+* **(4.7.2)** "For `N ≥ 3`, the naive level `N` moduli problem of 4.6 is
+  representable, by a smooth affine curve `Y(N)` over `ℤ[1/N]`."  Applied
+  at `n`, this represents `[Γ(n)]` by an affine `Y(n)`, and over `K` with
+  `char K ∤ n` the base change `Y(n)_K` is available.
+* **(5.1.1, First Main Theorem)** "Each of the four moduli problems
+  `[Γ(N)]`, `[Γ₁(N)]`, `[bal.Γ₁(N)]`, and `[Γ₀(N)]` is relatively
+  representable over `(Ell)`.  Each is finite and flat over `(Ell)` of
+  constant rank `≥ 1`… Each tensored with `ℤ[1/N]` is finite etale over
+  `(Ell/ℤ[1/N])`."  This is the `[Γ₁(N)]` input, and it is the ONE place
+  the `Γ₁` citation differs from the `Γ₀` one (which uses 6.6.1/6.6.2).
+* **(6.6.2)**, in the form that combines them: a representable moduli
+  problem `𝒮` étale over `(Ell)` and a relatively representable `𝒫` give
+  `M(𝒫, 𝒮)` finite and flat over `M(𝒮)`.  Take `𝒮 = [Γ(n)]`, étale over
+  `(Ell/K)` by the last sentence of 5.1.1, and `𝒫 = [Γ₁(N)]`.
+* **(8.1.1)** "…It 'exists' because `M(𝒫, 𝒮)` is itself affine."  The
+  emphasised clause is the affineness, and `M(𝒫, 𝒮) ⟶ M(𝒮) = Y(n)_K` is
+  finite over an affine scheme, hence affine.
+
+## What it does NOT owe
+
+The deck group, the invariants, the coarse space, descent, and the
+level-`n` torsor.  Those are `exists_gamma1DeckAction`,
+`exists_gamma1FullLevelStructure_cover` and the two PROVEN theorems
+above.
+
+## Faithfulness
+
+`hcharn` is load-bearing for TRUTH: at `char K ∣ n` the group scheme
+`E[n]` is not étale, `AbelianFullLevelStructure n dM.ab` is unsatisfiable
+over a nonempty base, and no inhabitant with `A ≠ 0` exists.  `hn` is
+load-bearing too: at `n ≤ 2` the rigidified problem still has the
+automorphism `-1`, so it is not representable.  `hcharN` is what makes
+`[Γ₁(N)]` étale rather than merely finite flat (5.1.1's last sentence).
+`_hN` is **not** load-bearing — the rigidity that representability needs
+is supplied by `[Γ(n)]` with `n ≥ 3`, not by `N ≥ 4` — and is carried only
+to match the consumer's signature. -/
+theorem exists_gamma1RigidifiedModuli (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
+    Nonempty (Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :=
+  sorry
+
+/-- **Every `Γ₁(N)`-datum over a `K`-scheme acquires a full level-`n`
+structure after an fpqc cover** (sorry leaf, opened 2026-07-28) — the
+`Γ₁` analogue of `X0.lean`'s `exists_fullLevelStructure_cover`, and
+Katz–Mazur's finite étale `GL₂(ℤ/n)`-torsor `[Γ(n)]`.
+
+This is a statement about ONE datum: it names no moduli scheme, no deck
+group and no rigidification, which is what lets it be dispatched
+independently of everything else in this block.
+
+## The route
+
+`E[n] ⟶ T` is finite étale of rank `n²` because `n` is invertible on `T`
+(5.1.1's last sentence, or directly: `[n] : E ⟶ E` is finite étale away
+from `char ∣ n`), and the sheaf of bases of `E[n]` is a
+`GL₂(ℤ/n)`-torsor over `T`, hence has a section after a finite étale —
+in particular flat, surjective, quasi-compact — cover.  `X0.lean` splits
+its `Γ₀` analogue further, into `exists_gamma0Datum_baseChange` (PROVEN),
+the geometric-fibre citation `exists_torsionBasis_geomPoint`, the torsor
+proper `exists_torsionBasis_cover_of_geomPoint`, and the PROVEN transport
+`nonempty_fullLevelStructure_of_geomBasis`.  **All four are stated for a
+bare abelian scheme of relative dimension one and none of them mentions
+`Gamma0Datum` except through `d.ab`** — so once `Gamma1BaseChange`
+supplies `nonempty_gamma1Datum_baseChange` (already a leaf in this file),
+this node reduces to them without new mathematics.
+
+## Faithfulness
+
+`hchar` is load-bearing for TRUTH, not merely for the intended proof: in
+characteristic `p ∣ n` the scheme `E[n]` is not étale, its geometric
+fibres are not `(ℤ/n)²`, and `geom_basis` is unsatisfiable — no cover
+helps.  `g` is therefore load-bearing too: it is what makes `T` a
+`K`-scheme, and without it the statement is false at a base of bad
+characteristic.  `hn` is load-bearing at `n = 0`, where
+`AbelianFullLevelStructure 0` is unsatisfiable. -/
+theorem exists_gamma1FullLevelStructure_cover {N : ℕ} (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K)) (d : Gamma1Datum N T) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
+      Nonempty (AbelianFullLevelStructure n d'.ab) :=
+  sorry
+
+/-- **The deck group acts on the rigidified coordinate ring, over the
+base, equivariantly, and its quotient map coequalises rigidifications**
+(sorry leaf, opened 2026-07-28) — the formalisation half of
+`exists_gamma1Rigidification`.  **It carries no citation**: everything it
+asserts is a consequence of `R.universal`, and the Katz–Mazur input is
+`R` itself.
+
+## STATUS: this is the `Γ₁` transcription of a node that is ALREADY PROVEN
+
+`X0.lean`'s `exists_deckAction_of_torsion` proves the corresponding `Γ₀`
+statement in full except for the coequalising clause, which it leaves as
+a sorried `have` inside the proof.  The argument transcribes verbatim,
+because it touches the level structure only through the twist API:
+
+* for `σ : GL₂(ℤ/n)`, `FullLevelStructure.twist` twists `lvlM` by the
+  matrix and `R.universal` classifies the twist by a UNIQUE endomorphism
+  `mm σ` of `Spec A`;
+* `mm 1 = 𝟙` and `mm (σ * τ) = mm τ ≫ mm σ` from `twist_one` /
+  `twist_mul` and the uniqueness half, so `σ ↦ mm σ` is a monoid
+  ANTIhomomorphism into endomorphisms, hence into automorphisms;
+* the ring action by full faithfulness of `Spec` on affines
+  (`Spec.preimage`, `Spec.map_preimage`, `Spec.map_injective`), as
+  `σ ↦ Spec.preimage (mm σ⁻¹)`;
+* `dM_equivariant` is then immediate with `d₁ := R.dM` and the base
+  change `R.universal` produced at `σ⁻¹`.
+
+**Two things are new on the `Γ₁` side.**  First, `strM_invariant`, which
+`Gamma0GITPresentation` does not have because morphisms to `Spec ℚ` are
+unique: here it is the `m ≫ strM = g` conjunct of `R.universal` read at
+`g := R.strM`, so `mm σ ≫ R.strM = R.strM` for every `σ`, and
+`Spec.map (ofHom (toRingHom σ)) = mm σ⁻¹`.  Second — and this is the only
+real obstruction — the twist API is stated for `FullLevelStructure`, i.e.
+for a `Gamma0Datum`.  **See the COORDINATION NOTE in the section comment
+above**: generalising `FullLevelStructure` to a bare
+`AbelianSchemeStruct` in `X0.lean` makes ~290 lines of already-proven
+twist machinery apply here unchanged, and reduces this leaf to its third
+clause.
+
+## The coequalising clause is where the content is
+
+Two rigidifications `a, b : Z ⟶ Spec A` of ONE datum `d₁` differ by a
+section of the `GL₂(ℤ/n)`-torsor of full level structures, which lies in
+`GL₂(ℤ/n)` only fppf-LOCALLY.  Because `R.universal` is a FINE moduli
+property, the comparison is **locally constant**: a finite clopen
+decomposition of `Z` on each piece of which the two classifying maps
+differ by composition with a single global `Spec σ`, and
+`Spec σ ≫ π = π` because `π` is `Spec` of the inclusion of the
+invariants.  So `a ≫ π = b ≫ π` piecewise and hence globally.  **Use the
+piecewise argument** — a search for a single global `σ` cannot succeed,
+and that is the trap this leaf exists to record.
+
+## Faithfulness: the three clauses must stay in ONE leaf
+
+Clause (b) alone does not pin the action: `σ ↦ id` satisfies it with
+`d₁ := R.dM`, and under that action `A^G = A`, `π = 𝟙`, and clause (c) is
+false.  A leaf carrying only (a) and (b), consumed by a second leaf
+quantifying over the resulting `MulSemiringAction`, would therefore be
+the junk-witness trap.  Conversely `R` itself is pinned, because
+`universal` is a fine moduli property — so quantifying over `R` is
+safe. -/
+theorem exists_gamma1DeckAction (N n : ℕ) (hn : 3 ≤ n) {S : Scheme.{0}}
+    (R : Gamma1RigidifiedModuli N n S) :
+    letI := R.commRing_A
+    ∃ act : MulSemiringAction (gamma0DeckGroup n) R.A,
+      letI := act
+      (∀ σ : gamma0DeckGroup n,
+          Spec.map (CommRingCat.ofHom
+            (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) ≫ R.strM = R.strM) ∧
+      (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of R.A)),
+          Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+          Nonempty (IsBaseChangeOfGamma1
+            (Spec.map (CommRingCat.ofHom
+              (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) ∧
+      ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma1Datum N Z),
+        IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
+        a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+          = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
+  sorry
+
+/-- **A rigidified fine moduli scheme plus the level-`n` torsor IS a
+`Gamma1Rigidification`** (PROVEN 2026-07-28) — the assembly, with no
+citation in it at all.
+
+Three of the four Props come straight from `exists_gamma1DeckAction`.
+The fourth, `cover`, is where the two halves meet: `hcov` produces a flat
+surjective quasi-compact `p : T' ⟶ T`, a datum `d'` on `T'` which is a
+base change of `d`, and a full level-`n` structure `L` on `d'`; then
+`R.universal (p ≫ g) d' L` classifies `(d', L)` by an `m : T' ⟶ Spec A`
+whose defining clauses are exactly the two remaining conjuncts of
+`Gamma1Rigidification.cover` — `m ≫ strM = p ≫ g` and
+`IsBaseChangeOfGamma1 m d' dM`.
+
+Note that `hcov` is stated with the level structure rather than with a
+classifying map, which is what keeps it independent of `R`: the
+rigidifying cover is a property of ONE datum and the fine moduli scheme
+converts it into a cover in the sense of `Gamma1Rigidification`.
+
+`hcov`'s binder `_g` is underscored because the CONCLUSION of `hcov` does
+not mention it — but it is **load-bearing for the truth of the supplier**
+`exists_gamma1FullLevelStructure_cover`, since it is what makes `T` an
+`S`-scheme and hence forces the residue characteristics of `T` to be
+those of `S`.  Weakening `hcov` by dropping it would make it false at a
+base of characteristic dividing `n`; it is used here at `p ≫ g`. -/
+theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 ≤ n)
+    {S : Scheme.{0}} (R : Gamma1RigidifiedModuli N n S)
+    (hcov : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma1Datum N T),
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
+        Nonempty (AbelianFullLevelStructure n d'.ab)) :
+    Nonempty (Gamma1Rigidification N S) := by
+  classical
+  letI := R.commRing_A
+  haveI : NeZero n := ⟨by omega⟩
+  obtain ⟨act, hstrinv, hequiv, hcoeq⟩ := exists_gamma1DeckAction N n hn R
+  letI := act
+  refine ⟨{ A := R.A
+            G := gamma0DeckGroup n
+            action_GA := act
+            strM := R.strM
+            dM := R.dM
+            cover := ?_
+            strM_invariant := hstrinv
+            dM_equivariant := hequiv
+            coequalises := fun {Z} a b d₁ ha hb => hcoeq a b d₁ ha hb }⟩
+  intro T g d
+  obtain ⟨T', p, d', hf, hs, hq, ⟨bp⟩, ⟨L⟩⟩ := hcov g d
+  obtain ⟨m, ⟨hmg, bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
+  exact ⟨T', p, d', m, hf, hs, hq, hmg.symm, ⟨bp⟩, ⟨bcm⟩⟩
+
+/-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
+which `N` is invertible exists** (PROVEN 2026-07-28 from the three leaves
+above; it was itself a leaf, Katz–Mazur (8.1.1), until then).
+
+TRUE and classical.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid
 (Katz–Mazur 4.7.0: a pair `(E, P)` with `P` of order `≥ 4` has no
 nontrivial automorphism), so over a base where `N` is invertible it is
-representable; adjoining a full level-`n` structure for some auxiliary
-`n ≥ 3` prime to `N · char K` makes `[Γ₁(N)], [Γ(n)]` representable by an
+representable; adjoining a full level-`n` structure for an auxiliary
+`n ≥ 3` prime to `char K` makes `[Γ₁(N)], [Γ(n)]` representable by an
 AFFINE scheme `Spec A` (8.1.1), with `G = GL₂(ℤ/n)` acting through the
 level-`n` structure.
 
-**What a prover has to build, and what it does NOT have to build.**
+## The auxiliary level, and why `n ∈ {3, 4}` suffices
 
-Does NOT have to build: the invariants `B = A^G`, the structure morphism
-of the coarse space, or the classifying map and its two properties.  All
-of those are PROVEN, in `exists_descendClassifyGamma1` and
-`nonempty_gamma1GITPresentation_of_rigidification` immediately above —
-which is the whole point of the cut.  Nor the four properties of the
-resulting curve: `isAffine` is a consequence of the coarse space being
-`Spec` of a ring, and the other three are the three per-presentation
-leaves below.
-
-Has to build: `A`, `G`, `strM`, `dM`, and the four Props.  Three of those
-Props are Katz–Mazur's construction read off directly; the fourth,
-`coequalises`, is the `GL₂(ℤ/n)`-torsor property of the level-`n`
-rigidification, and the section comment above records why it cannot be
-dropped.
-
-**The natural next cut, if this is still too large**, is the one
-`X0.lean` takes: interpose a FINE moduli scheme for `[Γ₁(N)], [Γ(n)]`
-(`RigidifiedModuli`'s analogue), split off the level-`n` torsor as a
-`cover`-shaped hypothesis (`exists_fullLevelStructure_cover`'s analogue),
-and derive the deck action and `coequalises` from the torsor
-(`exists_deckAction`'s analogue).  That needs a `Γ₁` analogue of
-`FullLevelStructure`, which is currently stated only for a
-`Gamma0Datum` — generalising it from `d : Gamma0Datum N T` to a bare
-`AbelianSchemeStruct` would make it serve both problems, since it never
-looks at the level structure of `d`.
+The only constraints on `n` are `3 ≤ n` (rigidity of `[Γ(n)]`; at `n ≤ 2`
+the automorphism `-1` survives) and `char K ∤ n` (étaleness of `E[n]`).
+`ringChar K` is `0` or a prime, and `ringChar K ≠ 1` because a field is
+nontrivial, so `n := 3` works unless `ringChar K = 3`, where `n := 4`
+does.  Note `n` need NOT be prime to `N`: the two level structures are
+imposed independently and nothing below compares them.
 
 `_hchar` is what makes `[Γ₁(N)]` representable at all: at
 `char K = p ∣ N` a point of exact order `N` acquires an infinitesimal
-part, `Spec A` is not smooth, and the whole tower fails.  `_hN` is
-rigidity. -/
-theorem exists_gamma1Rigidification (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
-    (_hchar : ¬ ringChar K ∣ N) :
-    Nonempty (Gamma1Rigidification N (Spec (CommRingCat.of K))) :=
-  sorry
+part, `Spec A` is not smooth, and the whole tower fails.  `hN` is
+rigidity — it is passed on to `exists_gamma1RigidifiedModuli`, whose
+docstring records that it is not load-bearing there. -/
+theorem exists_gamma1Rigidification (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ N) :
+    Nonempty (Gamma1Rigidification N (Spec (CommRingCat.of K))) := by
+  classical
+  -- an auxiliary level `n ∈ {3, 4}` with `3 ≤ n` and `n` invertible in `K`
+  obtain ⟨n, hn, hcn⟩ : ∃ n : ℕ, 3 ≤ n ∧ ¬ ringChar K ∣ n := by
+    have h1 : ringChar K ≠ 1 := by
+      haveI := ringChar.charP K
+      exact CharP.char_ne_one K (ringChar K)
+    by_cases h3 : ringChar K = 3
+    · exact ⟨4, by norm_num, by rw [h3]; decide⟩
+    · refine ⟨3, le_refl 3, fun hd => ?_⟩
+      rcases Nat.prime_three.eq_one_or_self_of_dvd _ hd with h | h
+      · exact h1 h
+      · exact h3 h
+  obtain ⟨R⟩ := exists_gamma1RigidifiedModuli N hN n hn K hchar hcn
+  exact nonempty_gamma1Rigidification_of_rigidifiedModuli N n hn R
+    (fun {_T} g d => exists_gamma1FullLevelStructure_cover n hn K hcn g d)
 
 /-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
 `N` is invertible exists** (PROVEN 2026-07-27 from the two halves it was
