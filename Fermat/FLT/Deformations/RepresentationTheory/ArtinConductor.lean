@@ -4237,6 +4237,417 @@ def HasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
     IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∧
       ∀ σ ∈ N ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x
 
+/-!
+### The break decomposition and the break SUM — support for `exists_isSwanExponentAt`
+
+Everything in this section exists to discharge the two steps `hbreak` and
+`hsum` of `GaloisRep.exists_isSwanExponentAt` below. It is written as a
+separate block on purpose: the third step `hexists` (constructing a
+filtration) is independent of all of it.
+
+**THE ARCHITECTURE, and why it is shaped this way.** `hsum` has to produce
+ONE natural number `s` that is the break sum for EVERY admissible
+filtration `F`. The FALSITY AUDIT on `RamificationFiltration` shows why
+this is the hard half: the five shape axioms are scale-invariant, so
+before `gp_herbrand` was added no such `s` existed. The chain below is
+therefore built so that `gp_herbrand` is LOAD-BEARING, and it is worth
+naming where:
+
+`hsum` → `sum_eq_of_card_filter_eq_of_dense` (pure combinatorics, PROVEN)
+      → `fixedSubmodule_gp_phi_eq` (PROVEN, and its proof is `gp_herbrand`
+        plus Dedekind's modular law)
+      → `exists_lowerRamificationData_phi_mem_Ioc` (LEAF: the arithmetic
+        input, that Herbrand values are dense).
+
+Delete `gp_herbrand` from `RamificationFiltration` and
+`fixedSubmodule_gp_phi_eq` fails immediately — which is the mechanical
+form of "the repair is being used".
+
+**WHERE THE RESIDUAL FALSITY RISK NOW SITS.** It sits in `hbreak`, i.e. in
+`exists_breaks_of_hasFiniteWildMonodromyAt`, and a future owner should know
+this before attacking it. `fixedSubmodule_gp_phi_eq` pins the codimension
+function `u ↦ dim V − dim V^{G^u}` of ANY admissible `F` at every Herbrand
+value, and `sum_eq_of_card_filter_eq_of_dense` then shows that a break list
+is determined by its counting function on a left-dense set. Consequently a
+filtration that is admissible but differs from the genuine one at some
+NON-Herbrand `u` — `gp_herbrand` constrains `gp` only at the rationals
+`D.phi m`, and only modulo `D.lvl` — could not admit a break list at all,
+and `hbreak` would be FALSE for it. The repair in that event is the one the
+FALSITY AUDIT prescribes and NOT a weakening of `hbreak`: strengthen
+`RamificationFiltration` (requiring each `gp u` to be CLOSED, or Herbrand
+compatibility at every real `u` via `ψ`, are the two candidates), so that
+the admissible class is exactly the genuine filtration. -/
+
+/-- **DEDEKIND'S MODULAR LAW**, in the one form used below: for `S ≤ P` and
+`N` NORMAL, `(S ⊔ N) ⊓ P = S ⊔ (N ⊓ P)`.
+
+Normality of `N` is what makes `S ⊔ N` the setwise product `S * N`
+(`Subgroup.mul_normal`), and then an element `s * n ∈ P` with `s ∈ S ≤ P`
+forces `n = s⁻¹ * (s * n) ∈ P`. The subgroup lattice of a general group is
+not modular, so the hypotheses are not decoration. -/
+theorem sup_inf_eq_of_le_of_normal {G : Type*} [Group G] {S N P : Subgroup G}
+    [N.Normal] (hSP : S ≤ P) : (S ⊔ N) ⊓ P = S ⊔ (N ⊓ P) := by
+  refine le_antisymm ?_
+    (sup_le (le_inf le_sup_left hSP) (le_inf (inf_le_left.trans le_sup_right) inf_le_right))
+  intro x hx
+  obtain ⟨hxSN, hxP⟩ := Subgroup.mem_inf.mp hx
+  rw [← SetLike.mem_coe, Subgroup.mul_normal] at hxSN
+  obtain ⟨s, hs, n, hn, rfl⟩ := hxSN
+  have hnP : n ∈ P := by
+    have h := P.mul_mem (P.inv_mem (hSP hs)) hxP
+    simpa [← mul_assoc] using h
+  exact Subgroup.mul_mem_sup hs (Subgroup.mem_inf.mpr ⟨hn, hnP⟩)
+
+/-- **The fixed submodule is ANTITONE in the subgroup**: a bigger group
+imposes more conditions, so `V^{H'} ≤ V^H` when `H ≤ H'`. -/
+theorem fixedSubmodule_mono (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    {H H' : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))} (h : H ≤ H') :
+    ρ.fixedSubmodule v H' ≤ ρ.fixedSubmodule v H :=
+  fun _ hx σ hσ => hx σ (h hσ)
+
+/-- **Adjoining a TRIVIALLY ACTING subgroup does not change the fixed
+submodule**: `V^{H ⊔ H'} = V^H` when every element of `H'` fixes every
+vector.
+
+The `⊇` direction is the content and is proved by `Subgroup.closure_induction`
+over `H ⊔ H' = closure (H ∪ H')`. Note the inverse step cannot go through
+`map_inv`: `ρ.toLocal v` lands in the MONOID `Module.End A M`, so `σ⁻¹` is
+handled by applying `ρ (σ⁻¹) ∘ ρ σ = ρ 1 = 1` to the fixed vector. -/
+theorem fixedSubmodule_sup_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (H H' : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hH' : ∀ σ ∈ H', ∀ x : M, ρ.toLocal v σ x = x) :
+    ρ.fixedSubmodule v (H ⊔ H') = ρ.fixedSubmodule v H := by
+  refine le_antisymm (ρ.fixedSubmodule_mono v le_sup_left) ?_
+  intro x hx σ hσ
+  rw [Subgroup.sup_eq_closure] at hσ
+  induction hσ using Subgroup.closure_induction with
+  | mem σ hσ =>
+      rcases hσ with hσ | hσ
+      · exact hx σ hσ
+      · exact hH' σ hσ x
+  | one => show ρ.toLocal v 1 x = x; rw [map_one]; rfl
+  | mul a b _ _ ha hb =>
+      show ρ.toLocal v (a * b) x = x
+      rw [map_mul]
+      show (ρ.toLocal v a) ((ρ.toLocal v b) x) = x
+      rw [hb, ha]
+  | inv a _ ha =>
+      have h1 : (ρ.toLocal v a⁻¹) ((ρ.toLocal v a) x) = x := by
+        show ((ρ.toLocal v a⁻¹) * (ρ.toLocal v a)) x = x
+        rw [← map_mul, inv_mul_cancel, map_one]; rfl
+      rwa [ha] at h1
+
+/-- **INDEPENDENCE OF THE FILTRATION AT HERBRAND VALUES** — the theorem
+`gp_herbrand` was added for, and the reason `exists_isSwanExponentAt` is no
+longer false.
+
+At `u = φ_{L/Kᵥ}(m)`, ANY admissible upper-numbering filtration `F` has
+
+  `V^{G^u} = V^{G_m(L/Kᵥ) ⊓ P_v}`,
+
+a submodule that does not mention `F` at all. So two admissible filtrations
+have the SAME codimension function at every Herbrand value, and the break
+sums they license cannot differ — which is exactly what the scale-invariance
+refutation of the pre-anchor axioms produced counterexamples to.
+
+THE PROOF, in three moves, each of which needs its own hypothesis:
+
+1. `hm : 1 ≤ D.phi m` puts `G^{φ(m)}` inside the wild inertia (it is below
+   `G^1 = P_v` by `gp_le_gp` and `gp_eq_wild`). Without it the modular law
+   below has nothing to be modular about, and indeed for `u < 1` the
+   statement is not the right one — there `gp_eq_wild` already gives
+   `G^u = P_v` outright.
+2. `hD` — the level `D.lvl` meets the wild inertia in a subgroup acting
+   TRIVIALLY — is where `HasFiniteWildMonodromyAt` enters: it lets
+   `D.lvl ⊓ P_v` be adjoined for free (`fixedSubmodule_sup_eq`). A consumer
+   gets it by choosing `D` with `D.lvl ≤ N` for the open `N` that hypothesis
+   supplies.
+3. `sup_inf_eq_of_le_of_normal` (Dedekind, using `D.lvl_normal`) converts
+   `G^u ⊔ (D.lvl ⊓ P_v)` into `(G^u ⊔ D.lvl) ⊓ P_v`, and `gp_herbrand`
+   rewrites the first factor to `D.gp m`.
+
+Note what is NOT claimed: nothing here pins `G^u` itself, at a Herbrand
+value or anywhere else. Only its FIXED SUBMODULE is pinned, and only where
+the level acts trivially — which is all the Swan conductor reads. -/
+theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (F : RamificationFiltration v) (D : LowerRamificationData v)
+    (hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x)
+    (m : ℕ) (hm : 1 ≤ D.phi m) :
+    ρ.fixedSubmodule v (F.gp (D.phi m))
+      = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by
+  haveI := D.lvl_normal
+  have hle : F.gp (D.phi m) ≤ wildInertiaGroup v := by
+    have h := F.gp_le_gp 1 (D.phi m) hm
+    rwa [F.gp_eq_wild 1 one_pos le_rfl] at h
+  calc ρ.fixedSubmodule v (F.gp (D.phi m))
+      = ρ.fixedSubmodule v (F.gp (D.phi m) ⊔ (D.lvl ⊓ wildInertiaGroup v)) :=
+        (ρ.fixedSubmodule_sup_eq v _ _ hD).symm
+    _ = ρ.fixedSubmodule v ((F.gp (D.phi m) ⊔ D.lvl) ⊓ wildInertiaGroup v) := by
+        rw [sup_inf_eq_of_le_of_normal hle]
+    _ = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by rw [F.gp_herbrand D m]
+
+/-- **EVERY BREAK IS `≥ 1`** — the upper-numbering normalisation, read off
+the counting clause at `u = 1`.
+
+`RamificationFiltration.gp_eq_wild` gives `G^1 = P_v`, so the left side of
+the counting clause at `u = 1` is `ρ.wildCodim v` by definition, i.e. the
+filter is all of `Finset.range (ρ.wildCodim v)`. This is what makes the
+break sum at least `ρ.wildCodim v` (the classical bound
+`Sw_v(V) ≥ dim V − dim V^{P_v}`) and it is what lets the two steps below
+work on `[1, ∞)` rather than on `(0, ∞)`. -/
+theorem one_le_break (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (F : RamificationFiltration v) (μ : ℕ → ℚ)
+    (hμ : ∀ u : ℚ, 0 < u →
+      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card)
+    {k : ℕ} (hk : k < ρ.wildCodim v) : 1 ≤ μ k := by
+  have h1 := hμ 1 one_pos
+  rw [F.gp_eq_wild 1 one_pos le_rfl] at h1
+  have hcard : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k).card
+      = (Finset.range (ρ.wildCodim v)).card := by
+    rw [Finset.card_range, ← h1]
+    rfl
+  have hfe : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
+      = Finset.range (ρ.wildCodim v) :=
+    Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) (le_of_eq hcard.symm)
+  have hmem : k ∈ (Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k := by
+    rw [hfe]; exact Finset.mem_range.mpr hk
+  exact (Finset.mem_filter.mp hmem).2
+
+/-- A finite multiset of rationals has a GAP above any point: some `ε > 0`
+separates `a` from every element of the multiset that exceeds it. This is
+the finiteness that converts "strictly greater than `a`" into "at least
+`a + ε`", and it is the only thing standing between the counting function
+`u ↦ #{x ≥ u}` and the multiset itself. -/
+theorem exists_pos_gap (s : Multiset ℚ) (a : ℚ) :
+    ∃ ε : ℚ, 0 < ε ∧ ∀ x ∈ s, a < x → a + ε ≤ x := by
+  induction s using Multiset.induction with
+  | empty => exact ⟨1, one_pos, by simp⟩
+  | cons y s ih =>
+      obtain ⟨ε, hε, h⟩ := ih
+      by_cases hy : a < y
+      · refine ⟨min ε (y - a), lt_min hε (sub_pos.mpr hy), ?_⟩
+        intro x hx hax
+        rcases Multiset.mem_cons.mp hx with rfl | hx
+        · have := min_le_right ε (x - a); linarith
+        · have := min_le_left ε (y - a); have := h x hx hax; linarith
+      · refine ⟨ε, hε, ?_⟩
+        intro x hx hax
+        rcases Multiset.mem_cons.mp hx with rfl | hx
+        · exact absurd hax hy
+        · exact h x hx hax
+
+/-- `#{x ≥ a} = #{x > a} + #(x = a)`, by induction over the multiset. -/
+theorem countP_le_eq_countP_lt_add_count (s : Multiset ℚ) (a : ℚ) :
+    Multiset.countP (fun x => a ≤ x) s
+      = Multiset.countP (fun x => a < x) s + Multiset.count a s := by
+  induction s using Multiset.induction with
+  | empty => simp
+  | cons y s ih =>
+      rw [Multiset.countP_cons, Multiset.countP_cons, Multiset.count_cons, ih]
+      rcases lt_trichotomy a y with h | h | h
+      · rw [if_pos h.le, if_pos h, if_neg (ne_of_lt h)]; omega
+      · rw [if_pos h.le, if_neg (by rw [h]; exact lt_irrefl y), if_pos h]; omega
+      · rw [if_neg (not_le.mpr h), if_neg (asymm h), if_neg (ne_of_gt h)]; omega
+
+/-- **A FINITE MULTISET OF RATIONALS IS DETERMINED BY ITS UPPER COUNTING
+FUNCTION** `u ↦ #{x ∈ s : u ≤ x}`.
+
+The multiplicity of `a` is `#{x ≥ a} − #{x > a}`, and `#{x > a}` is
+recovered from the counting function as `#{x ≥ a + ε}` for any `ε` below the
+gap supplied by `exists_pos_gap`. This is the layer-cake identity in the
+only form the break lists need: it turns "the codimension function is the
+same" into "the breaks are the same", hence "the break sums are equal". -/
+theorem multiset_eq_of_countP_le_eq (s t : Multiset ℚ)
+    (h : ∀ u : ℚ, Multiset.countP (fun x => u ≤ x) s
+      = Multiset.countP (fun x => u ≤ x) t) : s = t := by
+  refine Multiset.ext.mpr fun a => ?_
+  obtain ⟨ε₁, hε₁, h₁⟩ := exists_pos_gap s a
+  obtain ⟨ε₂, hε₂, h₂⟩ := exists_pos_gap t a
+  have hε : 0 < min ε₁ ε₂ := lt_min hε₁ hε₂
+  have hs : Multiset.countP (fun x => a < x) s
+      = Multiset.countP (fun x => a + min ε₁ ε₂ ≤ x) s := by
+    refine Multiset.countP_congr rfl fun x hx => ?_
+    simp only [eq_iff_iff]
+    exact ⟨fun hax => by have := h₁ x hx hax; have := min_le_left ε₁ ε₂; linarith,
+      fun hle => by linarith⟩
+  have ht : Multiset.countP (fun x => a < x) t
+      = Multiset.countP (fun x => a + min ε₁ ε₂ ≤ x) t := by
+    refine Multiset.countP_congr rfl fun x hx => ?_
+    simp only [eq_iff_iff]
+    exact ⟨fun hax => by have := h₂ x hx hax; have := min_le_right ε₁ ε₂; linarith,
+      fun hle => by linarith⟩
+  have key : Multiset.countP (fun x => a < x) s = Multiset.countP (fun x => a < x) t := by
+    rw [hs, ht, h (a + min ε₁ ε₂)]
+  have hcs := countP_le_eq_countP_lt_add_count s a
+  have hct := countP_le_eq_countP_lt_add_count t a
+  have := h a
+  omega
+
+/-- **THE BREAK SUM IS DETERMINED BY THE COUNTING FUNCTION ON A LEFT-DENSE
+SET** — the combinatorial half of `hsum`, with no Galois theory in it.
+
+Two break lists `μ, μ'` of the same length `d`, both with all entries `≥ 1`,
+have the same sum as soon as for every `1 ≤ w < u` SOME point `z ∈ (w, u]`
+has `#{k : μ k ≥ z} = #{k : μ' k ≥ z}`.
+
+Why left-density is enough. Below `1` both counting functions are constantly
+`d`. Above it, given `u`, take `w` to be the largest value of `μ` or `μ'`
+that is still `< u` (or `1` if there is none); the `z` supplied then lies in
+`(w, u]`, and no break lies in `[z, u)`, so `#{· ≥ z} = #{· ≥ u}` for both
+lists and the agreement transfers from `z` to `u`. With the counting
+functions equal everywhere, `multiset_eq_of_countP_le_eq` makes the two
+break multisets equal and the sums follow.
+
+This is what lets `hsum` get by with `gp_herbrand`, which pins the
+codimension function only at the rationals `D.phi m` and NOT at every
+`u > 0`. -/
+theorem sum_eq_of_card_filter_eq_of_dense (d : ℕ) (μ μ' : ℕ → ℚ)
+    (hμ : ∀ k < d, 1 ≤ μ k) (hμ' : ∀ k < d, 1 ≤ μ' k)
+    (hdense : ∀ w u : ℚ, 1 ≤ w → w < u → ∃ z : ℚ, w < z ∧ z ≤ u ∧
+      ((Finset.range d).filter fun k => z ≤ μ k).card
+        = ((Finset.range d).filter fun k => z ≤ μ' k).card) :
+    ∑ k ∈ Finset.range d, μ k = ∑ k ∈ Finset.range d, μ' k := by
+  have hall : ∀ u : ℚ, ((Finset.range d).filter fun k => u ≤ μ k).card
+      = ((Finset.range d).filter fun k => u ≤ μ' k).card := by
+    intro u
+    by_cases hu : u ≤ 1
+    · rw [Finset.filter_true_of_mem
+        (fun k hk => hu.trans (hμ k (Finset.mem_range.mp hk))),
+        Finset.filter_true_of_mem
+        (fun k hk => hu.trans (hμ' k (Finset.mem_range.mp hk)))]
+    · replace hu : (1 : ℚ) < u := not_le.mp hu
+      set T := ((Finset.range d).image μ ∪ (Finset.range d).image μ').filter
+        (fun t => t < u) with hT
+      obtain ⟨w, hw1, hwu, hwmax⟩ : ∃ w : ℚ, 1 ≤ w ∧ w < u ∧ ∀ t ∈ T, t ≤ w := by
+        rcases T.eq_empty_or_nonempty with he | hne
+        · exact ⟨1, le_rfl, hu, by simp [he]⟩
+        · refine ⟨max 1 (T.max' hne), le_max_left _ _, ?_,
+            fun t ht => le_trans (Finset.le_max' _ _ ht) (le_max_right _ _)⟩
+          exact max_lt hu (Finset.mem_filter.mp (T.max'_mem hne)).2
+      obtain ⟨z, hwz, hzu, hz⟩ := hdense w u hw1 hwu
+      have hfil : ∀ ν : ℕ → ℚ, (∀ k ∈ Finset.range d, ν k ∈
+            (Finset.range d).image μ ∪ (Finset.range d).image μ') →
+          (Finset.range d).filter (fun k => u ≤ ν k)
+            = (Finset.range d).filter (fun k => z ≤ ν k) := by
+        intro ν hν
+        refine Finset.filter_congr fun k hk => ?_
+        refine ⟨fun h => hzu.trans h, fun h => ?_⟩
+        by_contra hlt
+        have hmem : ν k ∈ T := Finset.mem_filter.mpr ⟨hν k hk, not_le.mp hlt⟩
+        have := hwmax _ hmem
+        linarith
+      rw [hfil μ (fun k hk => Finset.mem_union_left _ (Finset.mem_image_of_mem _ hk)),
+        hfil μ' (fun k hk => Finset.mem_union_right _ (Finset.mem_image_of_mem _ hk)), hz]
+  have hms : Multiset.map μ (Finset.range d).val = Multiset.map μ' (Finset.range d).val := by
+    refine multiset_eq_of_countP_le_eq _ _ fun u => ?_
+    rw [Multiset.countP_map, Multiset.countP_map]
+    exact hall u
+  exact congrArg Multiset.sum hms
+
+/-- **THE BREAK DECOMPOSITION** (SORRY LEAF, cut 2026-07-28 out of step
+`hbreak` of `GaloisRep.exists_isSwanExponentAt`): with finite wild
+monodromy, `V|_{I_v}` has a finite list of rational breaks whose layer cake
+is the codimension function `u ↦ dim V − dim V^{G^u}`.
+
+Serre, *Corps Locaux* VI §2; Katz, *Gauss Sums, Kloosterman Sums and
+Monodromy* 1.1.
+
+THE ROUTE, and the three facts it needs about `c(u) := dim V − dim V^{G^u}`:
+
+1. `c` is NON-INCREASING (`gp_le_gp` plus `fixedSubmodule_mono`) and equals
+   `ρ.wildCodim v` on `(0, 1]` (`gp_eq_wild`). The second is proved above as
+   `one_le_break`.
+2. `c` REACHES `0`. This is where `hfin` is indispensable: it supplies an
+   open `N` with `N ⊓ P_v` acting trivially, and one needs some `u` with
+   `G^u ≤ N`. Over `gp_herbrand` that reduces to the lower-numbering fact
+   that `G_m(L/Kᵥ) = 1` for `m` large, which is `mem_gp` plus
+   `⋂ₙ (unif)ⁿ = 0` at the finite level `L`.
+3. `c` is LEFT-CONTINUOUS and has finitely many jumps, all at rationals.
+   Left continuity is `gp_of_forall_lt` plus the fact that the fixed
+   submodule of an intersection of the `G^w` is the union of the
+   `V^{G^w}` — which again uses `hfin`, since past `u = 1` the action
+   factors through the finite group `ρ(P_v)` and a decreasing chain of
+   subgroups of a finite group stabilises.
+
+Given 1–3 the break list is `μ k := sup {u | c u > k}`, and the counting
+clause is exactly the statement that this sup is attained.
+
+FAITHFULNESS NOTE — this leaf is where the residual falsity risk of the
+whole section now lives; see the section docstring above. It is stated for
+EVERY admissible `F`, and `gp_herbrand` pins `F` only at the Herbrand
+values, so an admissible-but-not-genuine `F` would be a counterexample.
+Refuting it with such an `F` is a fully successful outcome, and the repair
+is then to strengthen `RamificationFiltration`, never to weaken this. -/
+theorem exists_breaks_of_hasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
+    (F : RamificationFiltration v) :
+    ∃ μ : ℕ → ℚ, ∀ u : ℚ, 0 < u →
+      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
+
+/-- **HASSE–ARF: THE BREAK SUM IS AN INTEGER** (SORRY LEAF, cut 2026-07-28
+out of step `hsum` of `GaloisRep.exists_isSwanExponentAt`).
+
+Serre, *Corps Locaux* V §7 (Hasse–Arf for abelian extensions) and VI §2 (the
+Swan conductor as the break sum): the breaks of a representation lie in `ℚ`,
+but their SUM — the Swan conductor — is a natural number. Equivalently, the
+jumps of the upper-numbering filtration of an abelian extension are
+integers, applied to the abelianised action on each break subspace.
+
+This is the ONLY genuinely deep input on the `hsum` side; the rest of that
+step is `fixedSubmodule_gp_phi_eq` (`gp_herbrand`) and
+`sum_eq_of_card_filter_eq_of_dense` (combinatorics), both PROVEN above.
+Nothing weaker will do: `IsSwanExponentAt` demands `s : ℕ`, deliberately, so
+that integrality is part of what is proved rather than smuggled in by the
+type.
+
+`hfin` is carried because the statement is about a break list, which exists
+only under it. -/
+theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
+    (F : RamificationFiltration v) (μ : ℕ → ℚ)
+    (hμ : ∀ u : ℚ, 0 < u →
+      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
+    ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
+
+/-- **HERBRAND VALUES ARE DENSE, ARBITRARILY DEEP** (SORRY LEAF, cut
+2026-07-28 out of step `hsum`): inside any open subgroup `N ≤ Γ Kᵥ` there is
+a finite level `D` and an `m` with `φ_D(m)` in any prescribed interval
+`(w, u]` above `1`.
+
+This is the arithmetic input that makes `fixedSubmodule_gp_phi_eq` — which
+pins the codimension function only AT Herbrand values — enough to pin the
+break sum, via `sum_eq_of_card_filter_eq_of_dense`.
+
+WHY IT IS TRUE. Transitivity of Herbrand's function,
+`φ_{L'/Kᵥ} = φ_{L/Kᵥ} ∘ φ_{L'/L}`, lets one refine any level: taking `L'/L`
+totally tamely ramified of degree `e` gives `φ_{L'/L}(m) = m/e`, so the
+integer arguments of `φ_{L'/Kᵥ}` sample the arguments of `φ_{L/Kᵥ}` on
+`(1/e)ℤ`. Since `φ_{L/Kᵥ}` is continuous, piecewise linear and increasing,
+its values on that grid become dense as `e → ∞`, and `e` may be any integer
+prime to the residue characteristic, of which there are infinitely many. The
+level may be taken inside `N` because `Γ Kᵥ` is profinite (shrink to an open
+normal subgroup first, then refine).
+
+WHAT MUST BE BUILT FIRST. `LowerRamificationData v` must be INHABITED — the
+sanity check the `RamificationFiltration` docstring calls "the cheapest
+possible check on the whole section", and the same construction (a wildly
+ramified finite Galois `L/Kᵥ` with its uniformizer and its elementwise
+`mem_gp`) is the bulk of this leaf. Whoever builds it should build it once
+and reuse it for `hexists`.
+
+`hw : 1 ≤ w` is not a restriction in use: every break is `≥ 1`
+(`one_le_break`), so the counting functions are constant below `1`. -/
+theorem exists_lowerRamificationData_phi_mem_Ioc
+    (v : HeightOneSpectrum (𝓞 K))
+    (N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hN : IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    (w u : ℚ) (hw : 1 ≤ w) (hwu : w < u) :
+    ∃ (D : LowerRamificationData v) (m : ℕ),
+      D.lvl ≤ N ∧ w < D.phi m ∧ D.phi m ≤ u := sorry
+
 /-- **THE SWAN CONDUCTOR EXISTS** (SORRY LEAF, cut 2026-07-27 when
 `swanExponentAux` stopped being `opaque`): the specification
 `IsSwanExponentAt` is SATISFIABLE.
@@ -4342,7 +4753,28 @@ independent of the first: without finite wild monodromy the break list
 does not exist at all, and the `ℓ`-adic cyclotomic character at `v ∣ ℓ`
 refutes the leaf outright. See `GaloisRep.HasFiniteWildMonodromyAt`. It
 is consumed by `hbreak` and nowhere else, which is exactly where the
-mathematics needs it. -/
+mathematics needs it.
+
+STATUS 2026-07-28 — **`hbreak` AND `hsum` ARE DISCHARGED**, over the
+supporting block immediately above this docstring.
+
+* `hbreak` is now `exists_breaks_of_hasFiniteWildMonodromyAt`, one named
+  leaf carrying the break decomposition (Serre VI §2).
+* `hsum` is PROVEN. Its proof takes the break sum of one filtration `F₀`,
+  makes it an integer by Hasse–Arf (`exists_nat_eq_sum_breaks`, leaf), and
+  transports it to every other admissible `F` through
+  `fixedSubmodule_gp_phi_eq` (PROVEN — this is `gp_herbrand` plus Dedekind's
+  modular law) and `sum_eq_of_card_filter_eq_of_dense` (PROVEN, pure
+  combinatorics), the gap between them being filled by
+  `exists_lowerRamificationData_phi_mem_Ioc` (leaf, the density of Herbrand
+  values).
+
+So `gp_herbrand` is load-bearing rather than decorative: remove it and
+`fixedSubmodule_gp_phi_eq` fails, and with it the independence half of
+`hsum` — which is precisely the half the scale-invariance refutation broke.
+The three remaining leaves are named above; the residual FALSITY risk is
+concentrated in `exists_breaks_of_hasFiniteWildMonodromyAt`, for the reason
+its own docstring gives. -/
 theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v) :
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
@@ -4484,13 +4916,42 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
   have hbreak : ρ.HasFiniteWildMonodromyAt v →
       ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ, ∀ u : ℚ, 0 < u →
       Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card :=
+    fun h F => ρ.exists_breaks_of_hasFiniteWildMonodromyAt v h F
   -- STEP 3 (`hsum`): the break sum is a natural number, the same for every `F`.
+  -- PROVEN 2026-07-28 over three named leaves and `gp_herbrand`: pick the
+  -- break sum of ONE filtration `F₀` and make it an integer by Hasse–Arf
+  -- (`exists_nat_eq_sum_breaks`); every other admissible `F` then has the
+  -- same break sum because `fixedSubmodule_gp_phi_eq` — which is exactly
+  -- `RamificationFiltration.gp_herbrand` plus Dedekind's modular law —
+  -- makes the two codimension functions agree at every Herbrand value, and
+  -- those are dense (`exists_lowerRamificationData_phi_mem_Ioc`), which is
+  -- enough by `sum_eq_of_card_filter_eq_of_dense`.
   have hsum : ∃ s : ℕ, ∀ (F : RamificationFiltration v) (μ : ℕ → ℚ),
       (∀ u : ℚ, 0 < u →
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) →
-      (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
+      (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
+    obtain ⟨N, hNopen, hNtriv⟩ := id hfin
+    obtain ⟨F₀⟩ := hexists
+    obtain ⟨μ₀, hμ₀⟩ := hbreak hfin F₀
+    obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_breaks v hfin F₀ μ₀ hμ₀
+    refine ⟨s, fun F μ hμ => ?_⟩
+    rw [hs]
+    refine sum_eq_of_card_filter_eq_of_dense _ μ₀ μ
+      (fun k hk => ρ.one_le_break v F₀ μ₀ hμ₀ hk)
+      (fun k hk => ρ.one_le_break v F μ hμ hk) (fun w u hw hwu => ?_)
+    obtain ⟨D, m, hDN, hwD, hDu⟩ :=
+      exists_lowerRamificationData_phi_mem_Ioc v N hNopen w u hw hwu
+    have h1 : (1 : ℚ) ≤ D.phi m := le_of_lt (lt_of_le_of_lt hw hwD)
+    have hpos : (0 : ℚ) < D.phi m := lt_of_lt_of_le zero_lt_one h1
+    have hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x := by
+      intro σ hσ x
+      exact hNtriv σ (Subgroup.mem_inf.mpr
+        ⟨hDN (Subgroup.mem_inf.mp hσ).1, (Subgroup.mem_inf.mp hσ).2⟩) x
+    refine ⟨D.phi m, hwD, hDu, ?_⟩
+    rw [← hμ₀ (D.phi m) hpos, ← hμ (D.phi m) hpos,
+      ρ.fixedSubmodule_gp_phi_eq v F₀ D hD m h1, ρ.fixedSubmodule_gp_phi_eq v F D hD m h1]
   obtain ⟨s, hs⟩ := hsum
   refine ⟨s, hexists, fun F => ?_⟩
   obtain ⟨μ, hμ⟩ := hbreak hfin F
