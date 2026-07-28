@@ -40554,10 +40554,142 @@ theorem nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
     Nonempty (IsEllipticIsoOf d₁ d₂) :=
   sorry
 
+/-! #### The conjugation calculus `phi_or_conj_of_isEllipticIsoOf` runs on
+
+(2026-07-28, flt-lean-126.)  Everything below is PROVEN, and it exists so that
+`phi_or_conj_of_isEllipticIsoOf` can be reduced to ONE statement about `End(E₂)`
+and nothing else.  Two annoyances have to be cleared out of the way first.
+
+* **`RelPoint.along` shifts the base point** from `g` to `g ≫ 𝟙 T`, while
+  `IsCMByRamifiedMaximalOrder.phi` and `d₂.ab.add` are indexed by whichever base
+  point they are handed.  `relPointRebase` transports a relative point along an
+  EQUALITY of base points; since `RelPoint f g` is a subtype of `T' ⟶ E` whose
+  index appears only in the propositional component, every structure map commutes
+  with it, and each such lemma is `subst` followed by `rfl`.
+* **`α` has no written inverse.**  `IsEllipticIsoOf.isPullback` says the square
+  over `𝟙 T` is cartesian, which is exactly invertibility, but `RelPoint.along`
+  is the map at the SHIFTED base point.  `fwd`/`bwd` are the same two maps at the
+  UNSHIFTED one, where they are mutually inverse group isomorphisms natural in the
+  test object — i.e. an isomorphism of the functors of points, which is what
+  conjugating an endomorphism needs. -/
+
+/-- **Rebasing a relative point along an EQUALITY of base points** (PROVEN).
+
+`RelPoint f g` is `{x : T' ⟶ A // x ≫ f = g}`, so `g` occurs only in the
+propositional component: an equality `g = g'` moves a point from one index to the
+other without touching the underlying morphism.  Used below only to absorb
+`g ≫ 𝟙 T = g`, which is where `RelPoint.along` lands. -/
+def relPointRebase {A T : Scheme.{0}} {f : A ⟶ T} {U : Scheme.{0}} {g g' : U ⟶ T}
+    (hgg : g = g') (x : RelPoint f g) : RelPoint f g' :=
+  ⟨x.1, x.2.trans hgg⟩
+
+/-- **The group law commutes with `relPointRebase`** (PROVEN): `subst`, then `rfl`
+by proof irrelevance and structure eta. -/
+theorem add_relPointRebase {N : ℕ} {T : Scheme.{0}} (d : Gamma0Datum N T) {U : Scheme.{0}}
+    {g g' : U ⟶ T} (hgg : g = g') (x y : RelPoint d.f g) :
+    d.ab.add (relPointRebase hgg x) (relPointRebase hgg y)
+      = relPointRebase hgg (d.ab.add x y) := by
+  subst hgg; rfl
+
+/-- **The CM endomorphism commutes with `relPointRebase`** (PROVEN), by the same
+two steps.  Note this is NOT `phi_pre`: no test object moves, only the index. -/
+theorem phi_relPointRebase {p : ℕ} {T : Scheme.{0}} {d : Gamma0Datum p T}
+    (h : IsCMByRamifiedMaximalOrder p d) {U : Scheme.{0}} {g g' : U ⟶ T} (hgg : g = g')
+    (x : RelPoint d.f g) :
+    h.phi (relPointRebase hgg x) = relPointRebase hgg (h.phi x) := by
+  subst hgg; rfl
+
+namespace IsEllipticIsoOf
+
+variable {N : ℕ} {T : Scheme.{0}} {d₁ d₂ : Gamma0Datum N T}
+
+/-- **`α` on relative points at the UNSHIFTED base point** (PROVEN): the same
+underlying morphism `x.1 ≫ α.map` as `RelPoint.along α.map α.isPullback.w x`, read
+as a point over `g` rather than over `g ≫ 𝟙 T`. -/
+def fwd (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (x : RelPoint d₁.f g) : RelPoint d₂.f g :=
+  ⟨x.1 ≫ α.map, by
+    rw [Category.assoc, ← α.isPullback.w, ← Category.assoc, x.2, Category.comp_id]⟩
+
+/-- **`RelPoint.along` IS `fwd`, up to the base-point shift** (PROVEN, by `rfl`:
+the two underlying morphisms are literally the same composite).  This is the
+bridge between the form the statement of the leaf is written in and the form the
+conjugation calculus runs in. -/
+theorem along_eq_rebase_fwd (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (x : RelPoint d₁.f g) :
+    RelPoint.along α.map α.isPullback.w x
+      = relPointRebase (Category.comp_id g).symm (α.fwd x) := rfl
+
+/-- **The inverse of `fwd`** (PROVEN), by the universal property of the cartesian
+square — `Fermat.IsBaseChangeOf.alongInv` at the unshifted base point, which
+cannot be reused because that one asks for the level-structure axiom
+`IsEllipticIsoOf` drops. -/
+noncomputable def bwd (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (y : RelPoint d₂.f g) : RelPoint d₁.f g :=
+  ⟨α.isPullback.lift g y.1 (by rw [Category.comp_id]; exact y.2.symm),
+   α.isPullback.lift_fst _ _ _⟩
+
+@[simp] theorem bwd_val_comp (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (y : RelPoint d₂.f g) : (α.bwd y).1 ≫ α.map = y.1 :=
+  α.isPullback.lift_snd _ _ _
+
+@[simp] theorem fwd_bwd (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (y : RelPoint d₂.f g) : α.fwd (α.bwd y) = y :=
+  Subtype.ext (α.bwd_val_comp y)
+
+@[simp] theorem bwd_fwd (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (x : RelPoint d₁.f g) : α.bwd (α.fwd x) = x :=
+  α.along_injective (by rw [α.bwd_val_comp]; rfl)
+
+theorem fwd_inj (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    {a b : RelPoint d₁.f g} (h : α.fwd a = α.fwd b) : a = b := by
+  rw [← α.bwd_fwd a, ← α.bwd_fwd b, h]
+
+/-- **`fwd` preserves the zero section** (PROVEN), from `map_zero` and
+`AbelianSchemeStruct.zero_val_congr` for the base-point shift. -/
+theorem fwd_zero (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} (g : U ⟶ T) :
+    α.fwd (d₁.ab.zero g) = d₂.ab.zero g :=
+  Subtype.ext ((congrArg Subtype.val (α.map_zero g)).trans
+    (AbelianSchemeStruct.zero_val_congr d₂.ab (Category.comp_id g)))
+
+/-- **`fwd` preserves the group law** (PROVEN), from `map_add` and
+`AbelianSchemeStruct.add_val_congr` for the base-point shift. -/
+theorem fwd_add (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (x y : RelPoint d₁.f g) :
+    α.fwd (d₁.ab.add x y) = d₂.ab.add (α.fwd x) (α.fwd y) :=
+  Subtype.ext ((congrArg Subtype.val (α.map_add x y)).trans
+    (AbelianSchemeStruct.add_val_congr d₂.ab (Category.comp_id g) _ _ _ _ rfl rfl))
+
+/-- **`bwd` preserves the group law** (PROVEN), by applying `fwd` and cancelling. -/
+theorem bwd_add (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    (x y : RelPoint d₂.f g) :
+    α.bwd (d₂.ab.add x y) = d₁.ab.add (α.bwd x) (α.bwd y) :=
+  α.fwd_inj (by rw [α.fwd_bwd, α.fwd_add, α.fwd_bwd, α.fwd_bwd])
+
+/-- **`fwd` is natural in the test object** (PROVEN): associativity of
+composition, and nothing else. -/
+theorem fwd_pre (α : IsEllipticIsoOf d₁ d₂) {U' U : Scheme.{0}} (h : U' ⟶ U) {g : U ⟶ T}
+    {g' : U' ⟶ T} (hg : h ≫ g = g') (x : RelPoint d₁.f g) :
+    α.fwd (RelPoint.pre h hg x) = RelPoint.pre h hg (α.fwd x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **`bwd` is natural in the test object** (PROVEN), by `fwd`-injectivity. -/
+theorem bwd_pre (α : IsEllipticIsoOf d₁ d₂) {U' U : Scheme.{0}} (h : U' ⟶ U) {g : U ⟶ T}
+    {g' : U' ⟶ T} (hg : h ≫ g = g') (y : RelPoint d₂.f g) :
+    α.bwd (RelPoint.pre h hg y) = RelPoint.pre h hg (α.bwd y) :=
+  α.along_injective (by
+    show (α.bwd (RelPoint.pre h hg y)).1 ≫ α.map = (h ≫ (α.bwd y).1) ≫ α.map
+    rw [α.bwd_val_comp, Category.assoc, α.bwd_val_comp]
+    rfl)
+
+end IsEllipticIsoOf
+
 /-- **END-RING RIGIDITY: an isomorphism of the underlying elliptic schemes
-intertwines the CM up to conjugation** (sorry leaf, introduced 2026-07-27 by the
-cut of `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`; step 3 of that
-node's three-step argument).
+intertwines the CM up to conjugation** (introduced 2026-07-27 by the cut of
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`, step 3 of that node's
+three-step argument; DECOMPOSED 2026-07-28 (flt-lean-126) down to a single
+sorried `have` — `hend` in the proof below — which is the `End`-ring statement
+and nothing else.  Everything around it is proven).
 
 TRUE.  Conjugation by `α` sends `φ₁` to an endomorphism of `E₂` satisfying the
 same relation `X² − X + (p+1)/4 = 0`.  By the argument recorded on
@@ -40576,13 +40708,62 @@ only that `ker ψ₁` and `ker ψ₂` correspond and `ker(−ψ) = ker ψ`.
 `map_add` is a field of `IsEllipticIsoOf`.  Conjugation by a mere isomorphism of
 schemes would say nothing about endomorphisms of the group.
 
-**What is missing** is exactly the `End`-as-a-ring half of the CM theory the
-sibling leaf also needs: that `End(E₂)` is an order in `ℚ(√−p)` and hence equals
-`ℤ[φ₂]`.  Given that, the remaining step is the elementary fact that a monic
-quadratic over `ℤ` has at most two roots in an integral domain, so a successor
-holding the `End` interface should find this leaf short. -/
+**WHAT IS STILL OPEN, AND IT IS EXACTLY ONE STATEMENT** (2026-07-28).  The
+sorried `have hend` in the proof below says:
+
+> at `p ∈ {43, 67, 163}`, an endomorphism `u` of the functor of points of `d₂.E`
+> over `Spec ℚ̄` — additive (`hu_add`), natural in the test object (`hu_pre`),
+> i.e. by Yoneda an endomorphism of the elliptic scheme — which satisfies
+> `u² + (p+1)/4 = u` is either `φ₂` or `1 − φ₂`.
+
+That is the `End`-ring input and NOTHING else: `End(E₂) ⊇ ℤ[φ₂]`, which by
+`phi_sq` is the order of discriminant `1 − (p+1) = −p`, MAXIMAL at these three
+primes; `End` of an elliptic curve in characteristic `0` is `ℤ` or an order in an
+imaginary quadratic field, and an order containing a maximal order equals it, so
+`End(E₂) = O_{−p}` — a commutative integral domain.  There `u` and `φ₂` are both
+roots of `X² − X + (p+1)/4`, so `(u − φ₂)(u + φ₂ − 1) = 0` and one factor
+vanishes.  It is the SAME `End` input the sibling
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder` needs; it is stated here
+as a `have` rather than as a rival interface so that whoever builds `End` as a
+ring discharges both from one place.
+
+**`hp` IS LOAD-BEARING and is now consumed**, as the explicit first hypothesis of
+`hend`: without `p ≡ 3 mod 4` the natural division `(p+1)/4` is not exact and the
+displayed order is not the one `phi_sq` cuts out, and without class number one at
+a FUNDAMENTAL discriminant `ℤ[φ₂]` need not be maximal, so `End(E₂)` could be
+strictly larger and carry further roots.  It lost its underscore for that reason.
+
+**WHAT THE PROOF BELOW DISCHARGES** — everything except that one statement:
+
+1. `α` is inverted.  `IsEllipticIsoOf.fwd`/`bwd` are the two directions at the
+   unshifted base point, mutually inverse (`fwd_bwd`, `bwd_fwd`), additive
+   (`fwd_add`, `bwd_add`), zero-preserving (`fwd_zero`) and natural (`fwd_pre`,
+   `bwd_pre`).  This is where the cartesianness of `isPullback` is used, and it is
+   the only place it is used.
+2. The conjugate `u := α ∘ φ₁ ∘ α⁻¹` is CONSTRUCTED and shown to be an
+   endomorphism of `d₂`: `hu_add`, `hu_pre`, and `hu_sq` — the last transporting
+   `h₁.phi_sq` across `fwd`, for which `fwd` is shown to commute with `n • ·` by
+   induction from `fwd_zero`/`fwd_add`.
+3. The disjunction returned by `hend` is converted back into the two disjuncts as
+   STATED, over `along_eq_rebase_fwd` and the two `relPointRebase` transport
+   lemmas.
+
+So a successor holding an `End`-as-a-ring interface has to prove `hend` and
+nothing else — the conjugation calculus is already here.
+
+**THE DISJUNCTION IS NOT SLACK — dropping either branch makes the leaf FALSE.**
+Nothing inside `O_{−p}` distinguishes `√−p` from `−√−p`, so composing any
+intertwining `α` with the CM by a unit, or replacing `d₂`'s structure by its
+conjugate, exchanges the branches.  The consumer does not care, because it uses
+only that `ker ψ₁` and `ker ψ₂` correspond and `ker(−ψ) = ker ψ`.
+
+**Whether this needs `α` to preserve the group law**: yes, and it has it —
+`map_add` is a field of `IsEllipticIsoOf`, and it is what makes `fwd`/`bwd` an
+isomorphism of the functors of points rather than of the bare schemes.
+Conjugation by a mere isomorphism of schemes would say nothing about
+endomorphisms of the group. -/
 theorem phi_or_conj_of_isEllipticIsoOf (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (h₁ : IsCMByRamifiedMaximalOrder p d₁) (h₂ : IsCMByRamifiedMaximalOrder p d₂)
     (α : IsEllipticIsoOf d₁ d₂) :
@@ -40594,8 +40775,86 @@ theorem phi_or_conj_of_isEllipticIsoOf (p : ℕ)
         (x : RelPoint d₁.f g),
         d₂.ab.add (RelPoint.along α.map α.isPullback.w (h₁.phi x))
             (h₂.phi (RelPoint.along α.map α.isPullback.w x))
-          = RelPoint.along α.map α.isPullback.w x) :=
-  sorry
+          = RelPoint.along α.map α.isPullback.w x) := by
+  -- **THE `End`-RING INPUT, AND THE ONLY THING LEFT OPEN IN THIS PROOF.**  An
+  -- additive, natural — hence, by Yoneda, scheme-theoretic — endomorphism `u` of
+  -- `d₂.E` satisfying `u² + (p+1)/4 = u` is `φ₂` or `1 − φ₂`, because
+  -- `End(d₂.E) = O_{−p}` is a commutative domain in which `X² − X + (p+1)/4` has
+  -- exactly the two roots `(1 ± √−p)/2`.  See this theorem's docstring for the
+  -- derivation and for why `hp` is load-bearing.
+  have hend : p ∈ ({43, 67, 163} : Finset ℕ) →
+      ∀ u : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+          RelPoint d₂.f g → RelPoint d₂.f g,
+      (∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+          (x y : RelPoint d₂.f g),
+          u U g (d₂.ab.add x y) = d₂.ab.add (u U g x) (u U g y)) →
+      (∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
+          (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+          (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
+          (x : RelPoint d₂.f g),
+          u U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (u U g x)) →
+      (∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+          (x : RelPoint d₂.f g),
+          letI := d₂.ab.addCommGroup g
+          u U g (u U g x) + ((p + 1) / 4 : ℕ) • x = u U g x) →
+      (∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+          (x : RelPoint d₂.f g), u U g x = h₂.phi x) ∨
+      (∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+          (x : RelPoint d₂.f g), d₂.ab.add (u U g x) (h₂.phi x) = x) := by
+    sorry
+  -- `u := α ∘ φ₁ ∘ α⁻¹` is an endomorphism of `d₂`: additive …
+  have hu_add : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+      (x y : RelPoint d₂.f g),
+      α.fwd (h₁.phi (α.bwd (d₂.ab.add x y)))
+        = d₂.ab.add (α.fwd (h₁.phi (α.bwd x))) (α.fwd (h₁.phi (α.bwd y))) := by
+    intro U g x y
+    rw [α.bwd_add, h₁.phi_add, α.fwd_add]
+  -- … natural in the test object …
+  have hu_pre : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
+      (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+      (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
+      (x : RelPoint d₂.f g),
+      α.fwd (h₁.phi (α.bwd (RelPoint.pre h hg x)))
+        = RelPoint.pre h hg (α.fwd (h₁.phi (α.bwd x))) := by
+    intro U' U h g g' hg x
+    rw [α.bwd_pre, h₁.phi_pre, α.fwd_pre]
+  -- … and a root of `X² − X + (p+1)/4`, by transporting `h₁.phi_sq` across `fwd`
+  have hu_sq : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+      (x : RelPoint d₂.f g),
+      letI := d₂.ab.addCommGroup g
+      α.fwd (h₁.phi (α.bwd (α.fwd (h₁.phi (α.bwd x))))) + ((p + 1) / 4 : ℕ) • x
+        = α.fwd (h₁.phi (α.bwd x)) := by
+    intro U g x
+    letI := d₁.ab.addCommGroup g
+    letI := d₂.ab.addCommGroup g
+    have hzero : α.fwd (0 : RelPoint d₁.f g) = 0 := α.fwd_zero g
+    have hadd : ∀ a b : RelPoint d₁.f g, α.fwd (a + b) = α.fwd a + α.fwd b :=
+      fun a b => α.fwd_add a b
+    have hnsmul : ∀ (n : ℕ) (z : RelPoint d₁.f g), α.fwd (n • z) = n • α.fwd z := by
+      intro n
+      induction n with
+      | zero => intro z; rw [zero_nsmul, zero_nsmul, hzero]
+      | succ k ih => intro z; rw [succ_nsmul, succ_nsmul, hadd, ih]
+    have hsq := h₁.phi_sq (α.bwd x)
+    have h3 : α.fwd (h₁.phi (h₁.phi (α.bwd x)) + ((p + 1) / 4 : ℕ) • α.bwd x)
+        = α.fwd (h₁.phi (α.bwd x)) := by rw [hsq]
+    rw [hadd, hnsmul, α.fwd_bwd] at h3
+    rw [α.bwd_fwd]
+    exact h3
+  -- so `End`-rigidity applies to it, and the two branches are the two disjuncts
+  rcases hend hp (fun _ _ y => α.fwd (h₁.phi (α.bwd y))) hu_add hu_pre hu_sq with hφ | hφ
+  · left
+    intro T' g x
+    have hx := hφ T' g (α.fwd x)
+    rw [α.bwd_fwd] at hx
+    rw [IsEllipticIsoOf.along_eq_rebase_fwd, IsEllipticIsoOf.along_eq_rebase_fwd,
+      phi_relPointRebase h₂, hx]
+  · right
+    intro T' g x
+    have hx := hφ T' g (α.fwd x)
+    rw [α.bwd_fwd] at hx
+    rw [IsEllipticIsoOf.along_eq_rebase_fwd, IsEllipticIsoOf.along_eq_rebase_fwd,
+      phi_relPointRebase h₂, add_relPointRebase, hx]
 
 /-- **CLASS NUMBER ONE: two CM `Γ₀(p)`-data over `ℚ̄` for the maximal order
 of discriminant `−p` are isomorphic** (introduced 2026-07-27 by the cut of
