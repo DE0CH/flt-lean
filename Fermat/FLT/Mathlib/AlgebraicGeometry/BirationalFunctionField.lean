@@ -54,9 +54,13 @@ over the two open leaves that carry the translation:
     `K(P) ↪ K(t)` over `K`.  Needs no `hcurve` (and is true for `P = Spec K`).
     **PROVEN 2026-07-28.**
   * `exists_iso_specRatFunc_specFunctionField_of_hom` — that such an embedding
-    of the function field of a CURVE is an isomorphism: the `hcurve`-driven
-    non-degeneracy, then Lüroth.  **This is the file's ONLY remaining leaf**
-    (2026-07-28), and it mentions neither `𝔸` nor `u`.
+    of the function field of a CURVE is an isomorphism.  Mentions neither `𝔸`
+    nor `u`.  **PROVEN 2026-07-28**, over
+    `not_surjective_specPreimage_of_smoothOfRelativeDimension_one`: "the
+    structure map `K ⟶ K(P)` of a smooth curve is not surjective".  **That is
+    the file's ONLY remaining leaf** (2026-07-28) — it is where `hcurve` is
+    consumed, it mentions no function fields of anything but `P`, and it is the
+    one statement here that is false without `hcurve`.
 
 The first two are stated in a deliberately identical shape — an isomorphism out
 of the common object `Spec (RatFunc K)`, commuting with the maps down to
@@ -676,38 +680,73 @@ theorem exists_hom_functionField_ratFunc_of_isDominant {K : Type u} [Field K]
   rw [Spec.map_comp, Spec.map_preimage, Category.assoc, ← Category.assoc _ (P.fromSpecStalk _),
     transport _ hu'.symm, Category.assoc, hu, hA]
 
+/-- **A smooth curve over `K` has strictly more rational functions than `K`** (sorry leaf,
+2026-07-28) — this is where `hcurve` is consumed, and it is the whole reason the Lüroth leaf
+below is not vacuous.
+
+The map whose surjectivity is denied is the ring map underlying `P.fromSpecStalk (genericPoint P)
+≫ strP : Spec K(P) ⟶ Spec K`, i.e. the structure map `K ⟶ K(P)`.  It is phrased through
+`Spec.preimage` rather than as `algebraMap` on purpose: `Mathlib` has no
+`Algebra K X.functionField` instance, and declaring one here would fix a particular instance in
+the STATEMENT, which is exactly the kind of choice a leaf should not make on its consumers'
+behalf.  `Spec.preimage` is canonical (`Scheme.Spec` is fully faithful), so there is nothing to
+choose.
+
+**FALSITY WITHOUT `hcurve`.**  Drop `hcurve` and take `P = Spec K`: then `K(P) = K`, the map is
+the identity, and the statement is false.  So this is the load-bearing hypothesis of the whole
+Lüroth translation, and it is used nowhere else in this file.
+
+**Route.**  Suppose `K ⟶ K(P)` is surjective, and let `U` be any nonempty affine open of `P`.
+`Γ(P, U) ⟶ K(P)` is injective (`Scheme.germToFunctionField_injective`, which needs
+`IsIntegral P`), and the composite `K ⟶ Γ(P, U) ⟶ K(P)` is the assumed surjection, so
+`Γ(P, U) ⟶ K(P)` is bijective and `Γ(P, U)` is a FIELD.  Hence `U ≅ Spec Γ(P, U)` has exactly
+one point (`instance : Unique (PrimeSpectrum R)` for a field `R`).  Affine opens form a basis,
+so every point of `P` has a singleton open neighbourhood, i.e. `P` is discrete; a discrete
+preirreducible space is a subsingleton.  But `hcurve` gives `Infinite P` by
+`infinite_of_smoothOfRelativeDimension_one` (proven in `CurveExtension.lean`) — contradiction.
+
+**Do not try to run this argument on a single affine open.**  "Some nonempty affine open is a
+single point" is NOT a contradiction: `Spec` of a DVR has a one-point open (its generic point)
+while the scheme has two points.  The argument genuinely needs *every* affine open, which is
+what turns it into a statement about the topology of `P` rather than about one ring. -/
+theorem not_surjective_specPreimage_of_smoothOfRelativeDimension_one {K : Type u} [Field K]
+    {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
+    [IsIntegral P] (hcurve : SmoothOfRelativeDimension 1 strP) :
+    ¬ Function.Surjective
+      (Spec.preimage (P.fromSpecStalk (genericPoint P) ≫ strP)).hom :=
+  sorry
+
 /-- **A `K`-embedding `K(P) ↪ K(t)` of the function field of a CURVE is an isomorphism**
-(sorry leaf, 2026-07-28) — Lüroth, and nothing else.  This is now the only open leaf of this
-file.
+(**PROVEN 2026-07-28**, over the non-degeneracy leaf immediately above) — Lüroth, and nothing
+else.
 
 Compared with `exists_iso_specRatFunc_specFunctionField_of_isDominant`, which it is used to
 prove, this drops `n`, `u` and `hdom` entirely: the affine line has done its work by producing
-`φ`, and what remains is a statement about a field extension `K ⊆ K(P) ⊆ K(t)`.  What is left
-is exactly two things.
+`φ`, and what remains is a statement about a field extension `K ⊆ K(P) ⊆ K(t)`, namely:
 
-1. *The image is not `⊥`* — **the ONLY use of `hcurve`, and the leaf is FALSE without it.**
-   `P = Spec K` satisfies every other hypothesis (with `φ = algebraMap K (RatFunc K)`) and its
-   function field is `K`, which is not `K`-isomorphic to `K(t)`.  With `hcurve`, `P` is infinite
-   (`infinite_of_smoothOfRelativeDimension_one`, proven in `CurveExtension.lean`), whereas
-   `K(P) = K` forces every affine open `Spec A ⊆ P` to satisfy `K ⊆ A ⊆ Frac A = K`, hence
-   `A = K` and `Spec A` a single point, hence `P` a one-point scheme.
+1. *The image is not `⊥`* — supplied by
+   `not_surjective_specPreimage_of_smoothOfRelativeDimension_one` above, which is where
+   `hcurve` is consumed and without which this leaf is FALSE (`P = Spec K`).  The translation
+   from "`K ⟶ K(P)` is not surjective" to "`Φ.fieldRange ≠ ⊥`" is three lines and uses only
+   injectivity of `Φ`, which is free because `K(P)` is a field.
 2. *Lüroth.*  `RatFunc.Luroth.algEquiv` — **already proven in the pin
-   (`Mathlib/FieldTheory/RatFunc/Luroth.lean`); do not reprove it** — applied to the image
-   intermediate field `E := φ.fieldRange`, gives `K⟮X⟯ ≃ₐ[K] E ≃ₐ[K] K(P)` (the second step by
-   injectivity of `φ`, which is free: `K(P)` is a field).  `Spec` of that equivalence is the
-   required `e`, and its triangle over `Spec K` is `hφ` transported through `Spec.map_comp`.
+   (`Mathlib/FieldTheory/RatFunc/Luroth.lean`); do not reprove it** — applied to
+   `E := Φ.fieldRange`, gives `K⟮X⟯ ≃ₐ[K] E`, and `AlgEquiv.ofInjectiveField Φ` gives
+   `K(P) ≃ₐ[K] E`.  `Spec` of the composite is the required `e`, and its triangle over `Spec K`
+   is one `AlgEquiv.commutes`.
 
 **The isomorphism is NOT `Spec.map φ`**, and cannot be: `φ` may have degree `> 1` — that is the
 whole content of Lüroth — so Lüroth's *different* generator is what makes `e` exist.  Hence the
 existential, and hence `hφ` is used only for the `K`-compatibility, never as the answer.
 
-**A note on how to phrase the `K`-algebra structures.**  Both `K(P)` and `K(t)` need to be seen
-as `K`-algebras before `IntermediateField` and Lüroth apply, and `Mathlib` has no
-`Algebra K X.functionField` instance.  Get them from `hφ` rather than by declaring instances:
-`Spec.preimage` turns each side of `hφ` into a ring map out of `CommRingCat.of K`, and
-`Spec.map_inj` turns `hφ` itself into the statement that `φ` commutes with them.  Declaring
-instances instead is what forces the `↥(CommRingCat.of R)` synthesis failures documented on the
-affine-space leaf above. -/
+**How the `K`-algebra structures are obtained, and why not by instances.**  Both `K(P)` and
+`K(t)` must be seen as `K`-algebras before `IntermediateField` and Lüroth apply, and `Mathlib`
+has no `Algebra K X.functionField` instance.  They come from `hφ`, not from declared instances:
+`α := Spec.preimage (P.fromSpecStalk _ ≫ strP)` is the structure map `K ⟶ K(P)` (canonical,
+since `Scheme.Spec` is fully faithful), `letI := α.hom.toAlgebra` makes it the algebra map, and
+`Spec.map_inj` turns `hφ` into `α ≫ φ = algebraMap K (RatFunc K)` — which is literally the
+`commutes'` field of the `AlgHom`.  Declaring instances instead runs into the
+`↥(CommRingCat.of R)` synthesis failures documented on the affine-space leaf above. -/
 theorem exists_iso_specRatFunc_specFunctionField_of_hom {K : Type u} [Field K]
     {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
     [IsIntegral P] (hcurve : SmoothOfRelativeDimension 1 strP)
@@ -716,8 +755,32 @@ theorem exists_iso_specRatFunc_specFunctionField_of_hom {K : Type u} [Field K]
       = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K)))) :
     ∃ e : Spec (CommRingCat.of (RatFunc K)) ≅ Spec P.functionField,
       e.hom ≫ P.fromSpecStalk (genericPoint P) ≫ strP
-        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) :=
-  sorry
+        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) := by
+  have hnotsurj := not_surjective_specPreimage_of_smoothOfRelativeDimension_one hcurve
+  set α := Spec.preimage (P.fromSpecStalk (genericPoint P) ≫ strP)
+  have hαmap : Spec.map α = P.fromSpecStalk (genericPoint P) ≫ strP := Spec.map_preimage _
+  have hαφ : α ≫ φ = CommRingCat.ofHom (algebraMap K (RatFunc K)) := by
+    rw [← Spec.map_inj, Spec.map_comp, hαmap]
+    exact hφ
+  letI : Algebra K ↥P.functionField := α.hom.toAlgebra
+  have hcomm : ∀ c : K, φ.hom (algebraMap K ↥P.functionField c) = algebraMap K (RatFunc K) c :=
+    fun c => congrArg (fun f : CommRingCat.of K ⟶ CommRingCat.of (RatFunc K) => f.hom c) hαφ
+  let Φ : ↥P.functionField →ₐ[K] RatFunc K := { φ.hom with commutes' := hcomm }
+  have hΦinj : Function.Injective Φ := Φ.toRingHom.injective
+  have hE : Φ.fieldRange ≠ ⊥ := by
+    intro h
+    refine hnotsurj fun y => ?_
+    have hy : Φ y ∈ Φ.fieldRange := ⟨y, rfl⟩
+    rw [h, IntermediateField.mem_bot] at hy
+    obtain ⟨c, hc⟩ := hy
+    exact ⟨c, hΦinj (by rw [← hc, ← hcomm c]; rfl)⟩
+  let θ : ↥P.functionField ≃ₐ[K] ↥Φ.fieldRange := AlgEquiv.ofInjectiveField Φ
+  let ρ : ↥P.functionField ≃ₐ[K] RatFunc K := θ.trans (RatFunc.Luroth.algEquiv hE).symm
+  refine ⟨asIso (Spec.map (ρ.toRingEquiv.toCommRingCatIso.hom)), ?_⟩
+  rw [asIso_hom, ← hαmap, ← Spec.map_comp]
+  congr 1
+  ext c
+  exact ρ.commutes c
 
 /-- **The function field of a curve over `K` dominated by the affine line is `K(t)`, compatibly
 with the structure morphism** (**PROVEN 2026-07-28** over the two leaves immediately above) —
