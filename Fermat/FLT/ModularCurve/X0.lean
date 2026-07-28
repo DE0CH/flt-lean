@@ -16292,11 +16292,75 @@ theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
   rw [d.formalImmersion z c hz hcz.symm hE]
   exact hcusp
 
+/-! ### Three small bridges used by the `Γ₀`-datum descent block
+
+None of them is modular; they are recorded here, immediately above their
+only consumers, rather than in the general sections above, because they
+exist to serve `exists_isCoarseModuliY0_geomSurjective` and
+`exists_gamma0Datum_descent` and nothing else. -/
+
+/-- **`Spec ℚ̄ ⟶ Spec F` is an epimorphism of schemes** (PROVEN 2026-07-27).
+
+`F ⟶ F̄` is faithfully flat — `F̄` is a nontrivial free `F`-module — so
+`flat_and_surjective_SpecMap_iff` makes `specAlgClos F` flat and surjective,
+and `Flat.epi_of_flat_of_surjective` makes it an epimorphism.
+
+This is what turns "two rational points of `Y` agree after base change to
+`ℚ̄`" into "they are equal", i.e. the injectivity of `Y(ℚ) → Y(ℚ̄)` that the
+descent leaf below needs to identify the classifying point.  Note it says
+nothing about SPLITTING: an fpqc cover of `Spec ℚ̄` need not split, which is
+why `Gamma0Atlas.cover` does not rigidify over `ℚ̄` — cancelling an
+epimorphism and choosing a section are different things. -/
+theorem epi_specAlgClos (F : Type) [Field F] : Epi (specAlgClos F) := by
+  have hff : (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom.FaithfullyFlat := by
+    unfold RingHom.FaithfullyFlat
+    infer_instance
+  obtain ⟨hflat, hsurj⟩ := AlgebraicGeometry.flat_and_surjective_SpecMap_iff _ |>.mpr hff
+  rw [specAlgClos]
+  haveI := hflat
+  haveI := hsurj
+  exact AlgebraicGeometry.Flat.epi_of_flat_of_surjective _
+
+/-- **Base change of relative points along an EPIMORPHISM is injective**
+(PROVEN 2026-07-27).
+
+`RelPoint.pre h hg` is precomposition with `h` on the underlying morphism and
+rebuilds only the `Prop`-valued component, so `cancel_epi` is the whole
+proof. -/
+theorem relPoint_pre_injective_of_epi {A S T' T : Scheme.{u}} {f : A ⟶ S} (h : T' ⟶ T) [Epi h]
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') :
+    Function.Injective (RelPoint.pre (f := f) h hg) := fun _ _ hxy =>
+  Subtype.ext ((cancel_epi h).mp (congrArg Subtype.val hxy))
+
+/-- **`classify` at the base point `specAlgClos ℚ ≫ 𝟙 SpecQ` and at
+`specAlgClos ℚ` have the same underlying morphism** (PROVEN 2026-07-27).
+
+Purely bureaucratic, and unavoidable: `IsCoarseModuliY0.classify` takes the
+structure morphism `g` as an ARGUMENT, so the two base points — equal by
+`Category.comp_id`, but not definitionally — give values in two different
+types and no `rfl` relates them.  `classify_natural` applied to
+`IsBaseChangeOf.refl` is the bridge, since `RelPoint.pre (𝟙 _)` is
+precomposition with an identity.
+
+It is stated at the level of the underlying morphism rather than as an
+equality of `RelPoint`s because the two sides genuinely inhabit different
+types; every consumer finishes with `Subtype.ext`. -/
+theorem IsCoarseModuliY0.classify_comp_id_val {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N str)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    (hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d).1 = (hc.classify (specAlgClos ℚ) d).1 := by
+  have h := hc.classify_natural (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (g := specAlgClos ℚ) (g' := specAlgClos ℚ ≫ 𝟙 SpecQ)
+    (by rw [Category.id_comp, Category.comp_id]) (IsBaseChangeOf.refl d)
+  rw [h]
+  exact Category.id_comp _
+
 /-- **SOME coarse moduli space of the `Γ₀(N)`-problem has a classifying
-map that is surjective on `ℚ̄`-points, for `N ≥ 1`** (sorry leaf, opened
-2026-07-27): the geometric-points clause that `IsCoarseModuliY0`
-deliberately omits, stated EXISTENTIALLY on one exhibited model rather
-than as a field of the structure.
+map that is surjective on `ℚ̄`-points, for `N ≥ 1`** (PROVEN 2026-07-27,
+by citation of `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`; a
+sorry leaf from 2026-07-27 until then): the geometric-points clause that
+`IsCoarseModuliY0` deliberately omits, stated EXISTENTIALLY on one
+exhibited model rather than as a field of the structure.
 
 TRUE and classical.  This is the second half of the usual definition of a
 coarse moduli space, read on Katz–Mazur (8.1.1)'s construction
@@ -16324,9 +16388,44 @@ exhibit ONE model and transport.  The transport is written out in
 the coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`) so the
 clause holds vacuously there, and the branches are deliberately not merged.
 
-## THE RECOMMENDED NEXT DECOMPOSITION — THE MODULI HALF IS ALREADY DONE
+## ⚠ THIS LEAF WAS NEVER OPEN — IT WAS ALREADY PROVEN 5000 LINES ABOVE
 
-Do not attack this against an abstract `IsCoarseModuliY0`.  Exhibit the
+**Recorded rather than deleted, because the shape of the mistake is the
+reusable part.**  When this leaf was opened (2026-07-27) its docstring
+prescribed the decomposition below and left the commutative algebra as the
+residue.  Every word of that prescription was correct, and the ENTIRE
+programme had already been carried out, the same day, in the
+`y0HasNoRationalPoint_of_not_stableCyclic` subsection above:
+
+* the commutative algebra is `exists_ringHom_of_isIntegral_isAlgClosed`
+  (**PROVEN**) — a ring map into an algebraically closed field extends
+  along an integral extension, by lying over;
+* the reduction to it over the GIT presentation is
+  `Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint` (**PROVEN**),
+  which is verbatim "`A.M = Spec A`, `A.Y = Spec (A^G)`, lift the ring map,
+  base-change `dM` along the lift";
+* and the transport to an ARBITRARY coarse space along initiality is
+  `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (**PROVEN**),
+  which is strictly stronger than this existential leaf.
+
+So the proof below is: exhibit any coarse space
+(`exists_coarseModuliY0_of_pos`) and cite the universal statement.  The
+only real work is the base-point bookkeeping
+`specAlgClos ℚ ≫ 𝟙 SpecQ` versus `specAlgClos ℚ`
+(`IsCoarseModuliY0.classify_comp_id_val` above).
+
+**The lesson, in the form that generalises**: this file is 18 000 lines
+with several concurrent owners, and a leaf can be opened in one section
+while the theorem that closes it lands in another.  Before opening a leaf
+whose statement is a general-purpose clause — surjectivity, injectivity,
+base change — grep the WHOLE file for the mathematical content, not for
+the name you are about to give it.  The name
+`exists_isCoarseModuliY0_geomSurjective` collides with nothing; the
+CONTENT collided completely.
+
+**The original prescription, kept verbatim because it is what the proof
+above does, one indirection removed.**  Do not attack this against an
+abstract `IsCoarseModuliY0`.  Exhibit the
 atlas: `exists_gamma0AffineModel` produces a `Gamma0AffineModel N`, hence
 a `Gamma0Atlas N` with its rigidified moduli scheme `A.M`, its universal
 family `A.dM`, and `A.Y` the categorical quotient.  Against that the leaf
@@ -16370,8 +16469,14 @@ theorem exists_isCoarseModuliY0_geomSurjective (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 N strY),
       ∀ y : RelPoint strY (specAlgClos ℚ ≫ 𝟙 SpecQ),
         ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
-          hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = y :=
-  sorry
+          hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = y := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0_of_pos N hN
+  refine ⟨Y, strY, hc, fun y => ?_⟩
+  -- the base point `specAlgClos ℚ ≫ 𝟙 SpecQ` is `specAlgClos ℚ`, so this IS
+  -- the universal statement proven above
+  obtain ⟨d, hd⟩ := hc.exists_gamma0Datum_of_algClosPoint hN
+    (RelPoint.transport (Category.comp_id (specAlgClos ℚ)) y)
+  exact ⟨d, Subtype.ext ((hc.classify_comp_id_val d).trans (congrArg Subtype.val hd))⟩
 
 /-- **Every `ℚ̄`-point of the coarse space is classified by a `Γ₀(p)`-datum
 over `ℚ̄`** (PROVEN 2026-07-27 over `exists_isCoarseModuliY0_geomSurjective`;
@@ -16445,8 +16550,86 @@ theorem exists_gamma0Datum_geomClassify {p : ℕ} (hp : p.Prime)
   rw [hvc (specAlgClos ℚ ≫ 𝟙 SpecQ) d, congrArg Subtype.val hd, Category.assoc, huv,
     Category.comp_id]
 
+/-- **A `Γ₀(p)`-datum over `ℚ̄` whose field of moduli is `ℚ` IS the base
+change of a datum over `ℚ`** (sorry leaf, opened 2026-07-27): the whole
+arithmetic content of the descent below, with the coarse space removed.
+
+TRUE, and this is Weil descent for the pair `(E, C)`.  The hypothesis
+`hinv` says that every Galois conjugate `σ^*d` is isomorphic to `d`, i.e.
+that the field of moduli of `d` is `ℚ`; when `Aut(E, C) = {±1}` — which
+`hmem` buys, see below — the field of moduli is a field of DEFINITION, so
+`d` descends: there is a `Gamma0Datum p SpecQ` of which `d` is the base
+change.
+
+## WHY THIS IS NOT `exists_stableCyclic_of_gamma0Datum_algClos`
+
+The two leaves have the same hypotheses and differ in exactly one place,
+and the difference is the whole reason both exist.
+
+`exists_stableCyclic_of_gamma0Datum_algClos` (above, and consumed by
+`exists_gamma0Datum_specQ_of_ratPoint`) produces a Weierstrass curve over
+`ℚ` with a Galois-stable subgroup — an ELEMENTARY output, from which
+`nonempty_gamma0Datum_of_stable` rebuilds a datum over `ℚ`.  That output
+**forgets the link to `d`**: the rebuilt datum is not known to have `d` as
+its base change, and indeed the twisting argument produces the pair only up
+to twist.  For its consumer, which only needs `Gamma0Datum p SpecQ` to be
+NONEMPTY in order to contradict Mazur, that loss is free.
+
+The descent below cannot afford it: it has to land on the GIVEN point `y`,
+so it needs the descended datum to classify to `y`, which by
+`classify_natural` is exactly the statement that `d` is its base change.
+Hence the `IsBaseChangeOf` conclusion here.
+
+So this leaf is strictly stronger than its sibling, and a prover closing it
+closes both (`exists_stableCyclic_of_gamma0Datum_algClos` follows by base
+change plus `exists_stableCyclic_of_gamma0Datum`).  **That is the
+recommended order of attack**: do not prove the two independently.
+
+## WHERE `hmem` IS CONSUMED, AND WHY IT IS HERE AND NOT ON THE SIBLING
+
+`hmem` excludes `j = 0, 1728`.  At those values `Aut(E, C)` is larger than
+`{±1}` and Weil's descent obstruction — a class in `H²(G_ℚ, Aut(E, C))`,
+i.e. in `Br(ℚ)[n]` — need not vanish, so the PAIR need not descend even
+though its field of moduli is `ℚ`.  With `p ∉ mazurIsogenyPrimes` those
+values do not arise: a curve with CM by `ℤ[ζ₃]` or `ℤ[i]` has a rational
+`p`-isogeny only for `p` in the list.  **Do not drop `hmem`**, and note
+that this is precisely the hypothesis the sibling is entitled to omit —
+its conclusion asks only for SOME curve with a stable subgroup, which a
+twist supplies whatever `Aut` is (see the "NO CASE SPLIT ON `j`" paragraph
+in its docstring; the two are consistent, and the difference is exactly the
+strength of the conclusion).
+
+## WHAT IS MISSING FOR IT
+
+Verbatim what is recorded on `exists_stableCyclic_of_gamma0Datum_algClos`:
+twist theory is absent from mathlib, from `~/cs/FLT` and from this project
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean` covers only
+`j ∉ {0, 1728}`; `.../GaloisDescent.lean` is a STUB with zero
+declarations), and conjugating a curve given only over `ℚ̄` is not
+expressible with mathlib's point API.  A prover should expect to build the
+twist first.
+
+**VACUITY, inherited.**  `Gamma0Datum p SpecQ` is empty for
+`p ∉ mazurIsogenyPrimes` — Mazur's theorem — so this leaf is vacuously
+true; it must not be "proved" by an argument that assumes the conclusion of
+`cuspidal_x0_prime`.  The non-vacuous statement it specialises is the same
+one with `p` prime, `p ≥ 5` and `j ≠ 0, 1728`, and unlike the `jm` leaf
+below that specialisation is genuinely TRUE — it is Weil descent — so it is
+where a proof should start. -/
+theorem exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli {p : ℕ} (_hp : p.Prime)
+    (_hmem : p ∉ mazurIsogenyPrimes)
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
+  sorry
+
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ`
-descends to `ℚ`** (sorry node, introduced 2026-07-27): the field-of-moduli
+descends to `ℚ`** (PROVEN 2026-07-27 over
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`; a sorry node
+from 2026-07-27 until then): the field-of-moduli
 half of `exists_gamma0Datum_classify_eq` below, and **the only place
 `hmem` does any work.**
 
@@ -16477,18 +16660,73 @@ point of the cut: the vacuity is now confined to the half that carries
 `hmem`, and the geometric half is a statement that can be tested against
 examples.
 
-IRREDUCIBLE at this pin: there is no descent or twisting API in `Fermat/`,
-in the mathlib pin, or in `~/cs/FLT` (`grep -rni 'fieldOfModuli|field of
-moduli|quadraticTwist'`, run 2026-07-27, finds only prose in this file). -/
-theorem exists_gamma0Datum_descent {p : ℕ} (_hp : p.Prime)
-    (_hmem : p ∉ mazurIsogenyPrimes)
+The IRREDUCIBILITY verdict recorded here on 2026-07-27 — "there is no
+descent or twisting API in `Fermat/`, in the mathlib pin, or in `~/cs/FLT`"
+— is CORRECT about the twisting, and was WRONG as a verdict about this
+node, for the reason the standing doctrine gives: it named the axis it had
+searched (twist theory) and concluded from its emptiness that the leaf was
+atomic.  The axis it did not search is the one this node actually splits
+along, which is **coarse space versus datum**.
+
+## THE CUT (2026-07-27): THE COARSE SPACE IS NOT PART OF THE DESCENT
+
+Three of the four steps below are already available, and only the middle
+one is the missing twist theory:
+
+1. *the field of moduli is `ℚ`* — `hd'` says the class of `d'` is the base
+   change of the rational point `y`, and `classify_natural` together with
+   `specGal_comp_base` (a rational point is Galois-invariant) plus
+   `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (**PROVEN**,
+   the injectivity of `classify` on `ℚ̄`-points) turns that into
+   `σ^*d' ≅ d'` for every `σ`.  This is `exists_gamma0Datum_specQ_of_ratPoint`'s
+   opening move, reused verbatim;
+2. *the descent itself* — `exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`
+   above, the single remaining leaf, and the only place `hmem` is consumed;
+3. *landing on `y`* — `classify_natural` applied to the base-change datum
+   says `classify (specAlgClos ℚ ≫ 𝟙) d' = RelPoint.pre (specAlgClos ℚ) _
+   (classify (𝟙 SpecQ) d)`, so with `hd'` the two rational points agree
+   after base change to `ℚ̄`;
+4. *and base change is injective on rational points* —
+   `relPoint_pre_injective_of_epi` over `epi_specAlgClos` (**PROVEN**
+   above): `Spec ℚ̄ ⟶ Spec ℚ` is faithfully flat, hence an epimorphism of
+   schemes, so it can be cancelled.  This is the `Y(ℚ) → Y(ℚ̄)` injectivity
+   that the paragraph at the top of this docstring asserted without a name.
+
+Step 4 is worth isolating because it is the one an audit is likely to
+mis-price: it needs the epimorphism, NOT a section, and there is none — an
+fpqc cover of `Spec ℚ̄` need not split (`Spec ℚ̄(t)`), which is the same
+observation that stops `Gamma0Atlas.cover` from rigidifying over `ℚ̄`. -/
+theorem exists_gamma0Datum_descent {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes)
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
     (y : RelPoint strY (𝟙 SpecQ))
     (d' : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (_hd' : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d'
+    (hd' : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d'
       = RelPoint.pre (specAlgClos ℚ) rfl y) :
-    ∃ d : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d = y :=
-  sorry
+    ∃ d : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d = y := by
+  -- step 1: restate `hd'` at the base point `specAlgClos ℚ`
+  have hplain : hc.classify (specAlgClos ℚ) d'
+      = RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y := by
+    refine Subtype.ext ?_
+    rw [← hc.classify_comp_id_val d', hd']
+    rfl
+  -- and read it as "the field of moduli of `d'` is `ℚ`"
+  have hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d' →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d') := by
+    intro σ dσ hbc
+    refine hc.nonempty_isBaseChangeOf_of_classify_eq hp.pos dσ d' ?_
+    rw [hc.classify_natural (specGal σ) (specGal_comp_specAlgClos σ) hbc, hplain]
+    exact Subtype.ext (specGal_comp_base y.1 σ)
+  -- step 2: the twisting descent
+  obtain ⟨d, ⟨hbc⟩⟩ := exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli hp hmem d' hinv
+  refine ⟨d, ?_⟩
+  -- steps 3 and 4: the descended datum classifies to a rational point with the
+  -- same base change as `y`, and base change is injective on rational points
+  have hnat := hc.classify_natural (specAlgClos ℚ) (rfl : specAlgClos ℚ ≫ 𝟙 SpecQ = _) hbc
+  haveI := epi_specAlgClos ℚ
+  exact relPoint_pre_injective_of_epi (f := strY) (specAlgClos ℚ) rfl (hnat.symm.trans hd')
 
 /-- **Every rational point of the coarse space is classified by a
 `Γ₀(p)`-datum over `ℚ` itself** (PROVEN 2026-07-27 over
@@ -16759,6 +16997,50 @@ stated in the shape the `jm_classify` field will take —
 adding the field discharges it by `exact hj.jm_classify …` with nothing else
 to change.
 
+## STEP 2 IS FOUR LINES, AND THE SAFE RELATION IS ALREADY A FIELD ONE LEVEL DOWN
+
+Surveyed 2026-07-27 by the owner of this block, who is deliberately not
+making the edit because `IsJMapOn`, `IsJLine` and `exists_jMap` are
+concurrently owned.  **The residue is not missing mathematics: it is a
+field that exists at level `1` and has not been propagated up.**  Recorded
+in full so that the owner of that block can do it without re-deriving the
+survey.
+
+`IsJSection` — the structure `exists_jLine` is built from — ALREADY carries
+the universally-quantified pinning, against exactly the relation this leaf
+needs:
+
+    jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+      IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
+
+It is `IsWeierstrassModel`-quantified, so it is NOT the unsafe field the
+paragraphs above rule out — the `N = 5` junk-`jm` witness cannot satisfy it,
+and `weierstrassModel_j_unique` (this file, itself a leaf) is the statement
+that makes it satisfiable rather than contradictory.  The propagation is:
+
+1. add `jt_model` to `IsJLine`, verbatim the field displayed above.  In
+   `exists_jLine` it is discharged by `js.jt_model`, since `IsJLine`'s first
+   two fields are already `IsJSection`'s first two verbatim;
+2. add to `IsJMapOn`
+
+       jm_classify : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (d : Gamma0Datum N SpecQ),
+         IsWeierstrassModel d.ab E → jm (hc.classify (𝟙 SpecQ) d) = E.j
+
+   In `exists_jMap` it is `jl.jt_model E (d.ofDvd hN (one_dvd N))` transported
+   across `hu2 : (jt g (d.ofDvd …)).1 = (hc.classify g d).1 ≫ u`, which is the
+   SAME transport `classify_jm` already uses there — `jm y` is by definition
+   `jLineVal (y.1 ≫ u)`.  The model hypothesis crosses `ofDvd` definitionally
+   (`ofDvd` leaves `E`, `f` and `ab` untouched), exactly as recorded on
+   `exists_jLine`;
+3. this leaf's `have hjm` then becomes `fun h => hj.jm_classify E d h`, and
+   the enclosing theorem is PROVEN.
+
+**The check that would refute this**: a construction site of `IsJLine` or
+`IsJMapOn` other than `exists_jLine` / `exists_jMap`, at which the new field
+would fall due unproven.  RUN 2026-07-27 over the whole tree — there is none;
+`IsJMapOn` appears outside this file only in `MazurTorsion.lean`, always as a
+hypothesis `{hj : IsJMapOn N hc}`, never constructed.
+
 **DO NOT HOIST `have hjm` INTO A TOP-LEVEL THEOREM: it would be FALSE.**
 This is the same refutation as the one recorded above, and it is the reason
 step 2 must be a FIELD and not a lemma.  Quantified over an arbitrary
@@ -16962,6 +17244,47 @@ module.  Moving them (and the `hstable ↔ hlam` bridge
 be discharged by citation and would delete the duplication outright.  That
 is a cross-module refactor with two owners and is deliberately not done
 here.
+
+## THE HOIST IS NOW MEASURED, AND THE CUT LINE IS EXACT (2026-07-27)
+
+The paragraph above said "nothing in them needs this module"; that was an
+assertion, and it has now been checked, because a hoist whose boundary is
+guessed is worth nothing to whoever has to perform it.
+
+* **The `hint` of THIS leaf is, symbol for symbol, the CONCLUSION of
+  `WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter`** —
+  `∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j` — which is
+  the `hpg` that `not_isogenyCharacter_of_isogenySignature_ne_six` and
+  `mem_classNumberOnePrimes_of_isogenySignature_six` already take as an
+  explicit hypothesis in `not_isogenyCharacter_of_prime_ge_twentyThree`.
+  So this leaf is not merely "like" that theorem: it is that theorem's
+  proof body with step `0` deleted and its output taken as an argument.
+  Nothing has to be restated to hoist it.
+* **The X0-dependence of `MazurTorsion.lean` is confined to the Cor. 4.4
+  half.**  Scanned 2026-07-27: over the whole span from
+  `exists_isogenySignature` to `not_isogenyCharacter_of_prime_ge_twentyThree`
+  — the steps 1–3 material — there is **not one** reference to a name from
+  this module (`Fermat.exists_coarseModuliY0`, `IsCoarseModuliY0`,
+  `Gamma0Datum`, `IsJMapOn`, `IsX0…`, `cuspidal_x0…`: zero hits).  Every
+  such reference in that file sits inside the Cor. 4.4 block —
+  `exists_noCuspidalReduction_of_isogenyPrime` and
+  `potentiallyGoodReduction_of_isogenyCharacter`.  `exists_isogenyCharacter`
+  is X0-free too.
+* **So the repair is a FILE SPLIT with a clean boundary**, not an untangling:
+  move `exists_isogenyCharacter`, the `isogenyCharacter_pow_twelve…` family,
+  `exists_isogenySignature`, `not_isogenyCharacter_of_isogenySignature_ne_six`
+  and `mem_classNumberOnePrimes_of_isogenySignature_six` (with their local
+  helpers) into a new module upstream of BOTH `X0.lean` and
+  `MazurTorsion.lean`; leave the Cor. 4.4 block, which alone needs this
+  module, where it is.  This leaf then closes by citation and the duplicated
+  statement disappears.
+
+**Do NOT instead decompose this leaf in place.**  Its natural decomposition
+is exactly steps 1–3, all three of which already exist as declarations
+elsewhere in the tree; restating them here would add three sorries that
+duplicate three existing ones, which is strictly worse than the single
+duplicated statement we have now.  The count moves the right way only
+through the hoist.
 
 Stated in the `hstable` form rather than with an isogeny character `λ`
 because that is the form this module has (`nonempty_gamma0Datum_of_stable`,
