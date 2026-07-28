@@ -14504,11 +14504,17 @@ sharper in content: a version of
 `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` whose hypotheses
 replace `f`/`hf` by `𝒟.IsWeaklyUniversal`.
 
-# ROUTE OBSTRUCTION FOUND 2026-07-27 (flt-lean-65): THIS NODE IS MISSING `[NumberField.IsTotallyReal F]`, AND ITS ROUTE NEEDS IT
+# ROUTE OBSTRUCTION FOUND 2026-07-27 (flt-lean-65) — **REPAIRED 2026-07-28 (flt-lean-326). THE BINDER IS NOW ON THIS NODE.**
 
-This is a CUT-LEVEL observation, recorded rather than acted on, because
-fixing it changes a signature that two consumers and their consumers
-share.
+`[NumberField.IsTotallyReal F]` is present in the signature above, and on
+every declaration between here and the two terminal consumers. **The route
+described below is therefore AVAILABLE, and a prover dispatched at this leaf
+now has one.** The section is kept because it is the mathematical reason the
+binder must stay: deleting it does not merely lose a route, it makes the
+route's own bottom step false.
+
+What follows is the original 2026-07-27 record, with the repair's measured
+extent appended at the end.
 
 The Carayol conjugation this leaf asks for bottoms out at ABSOLUTE
 irreducibility of `ρbar|_{G_F}`, i.e. at
@@ -14542,18 +14548,35 @@ does not obviously falsify THIS statement (in it `𝒟.R = k = 𝔽_ℓ` and
 is that the only documented route is unavailable as the leaf is currently
 scoped, so a prover dispatched here will not close it.
 
-**The repair, for whoever owns the cut**: add `[NumberField.IsTotallyReal F]`
-to this leaf, to the consumer below, and to that consumer's two consumers
-`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` and
-`exists_ringHom_retraction_hilbertTraceSubring`. It is an INSTANCE binder,
-so no positional call site changes, and the 2026-07-27 sweep records that
-the terminal consumers discharge it for free
-(`exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` carries
-`htr : NumberField.IsTotallyReal F` explicitly, and
-`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` gets it
-from `PotentialHeckeDatum.totallyReal`). The check that would refute this
-note: close the leaf, or exhibit the absolute irreducibility, over an
-arbitrary number field `F`.
+## THE REPAIR AS MADE, 2026-07-28 (flt-lean-326) — SIX declarations, not four
+
+The 2026-07-27 note above prescribed the binder on FOUR declarations: this
+leaf, the consumer below, and that consumer's two consumers. **That set is
+not closed, and the four-declaration edit does not compile.**
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` has a
+consumer of its own, and so does that one. The transitive closure is:
+
+1. `exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
+   (this leaf)
+2. `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
+3. `exists_noetherianLocal_surjective_quotient_hilbertTraceSubring`
+4. `fg_comap_maximalIdeal_hilbertTraceSubring`   ← missed by the 2026-07-27 note
+5. `exists_isLocalRing_hilbertTraceSubring`      ← missed by the 2026-07-27 note
+6. `exists_ringHom_retraction_hilbertTraceSubring`
+
+and it TERMINATES there: (5) and (6) are consumed only by
+`exists_hilbertTraceDescent`, and (6) also by
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum` — both of
+which already carried `[NumberField.IsTotallyReal F]` from the 2026-07-27
+sweep, so they discharge it for free and NO signature outside this cluster
+changed. `hilbertTraceSubring` occurs in no other module.
+
+As predicted, it is an INSTANCE binder: zero positional call sites changed,
+all five interior applications were left byte-identical.
+
+The check that would refute the mathematical need for the binder: close this
+leaf, or exhibit the absolute irreducibility, over an arbitrary number
+field `F`.
 
 References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen,
 *Pseudo-représentations*, Math. Ann. 306; Rouquier, *Caractérisation des
@@ -14561,6 +14584,7 @@ caractères et pseudo-caractères*, J. Algebra 180; Mazur, *Deforming Galois
 representations*, §1.8. -/
 theorem exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -14658,9 +14682,12 @@ single atom is
   `ρbar|_{G_F}`, whose leaf `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
   needs `[NumberField.IsTotallyReal F]` (a real place, for the complex
   conjugation), and that binder was threaded through the whole chain on
-  2026-07-27 but NOT through this node, which was created the same day. The
-  repair is a cut-level signature change, so it is reported there and not
-  made here.
+  2026-07-27 but NOT through this node, which was created the same day.
+  **That gap is CLOSED as of 2026-07-28 (flt-lean-326)**: the binder is now on
+  this node, on the leaf above, and on the four declarations between them and
+  the terminal consumers — see the repair record in that docstring for the
+  measured extent (SIX declarations, and the four the 2026-07-27 note named do
+  not form a closed set). The route is available; the leaf is attackable.
 
 (The retired `hLemme1` read: `R'` is Noetherian, adic and adically complete;
 equivalently `𝔪'` is finitely generated, everything else following from
@@ -14797,6 +14824,7 @@ caractères et pseudo-caractères*, J. Algebra 180; Mazur, *Deforming Galois
 representations*, §1.8. -/
 theorem exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15124,6 +15152,7 @@ the content, and the counterexample paragraph still explains why no purely
 formal argument can work. -/
 theorem exists_noetherianLocal_surjective_quotient_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15238,6 +15267,7 @@ caractères et pseudo-caractères*; Mazur, *Deforming Galois
 representations*, §1.6. -/
 theorem fg_comap_maximalIdeal_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15360,6 +15390,7 @@ Lemme 1; Nyssen, *Pseudo-représentations*; Rouquier, *Caractérisation des
 caractères et pseudo-caractères*; Stacks 05GH. -/
 theorem exists_isLocalRing_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -17183,6 +17214,7 @@ References: Mazur, *Deforming Galois representations*, §1.8; Carayol, op.
 cit., Théorème 1. -/
 theorem exists_ringHom_retraction_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
