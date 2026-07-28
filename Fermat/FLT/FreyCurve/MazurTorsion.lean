@@ -117,6 +117,13 @@ public import Fermat.FLT.EllipticCurve.WeilPairing
 -- infrastructure between `hasse_bound_natCard_affine_point` and
 -- `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below.
 public import Fermat.FLT.EllipticCurve.HasseBound
+-- `WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq`: the
+-- automorphism group of an elliptic curve over a field has exponent dividing
+-- `12` (Silverman *AEC* App. A.1; Kraus).  This is the geometric half of leaf
+-- `B₀²` below — the ONLY place the classification of the semistability defect
+-- is consumed, and what excludes an element of order `8` in the image of
+-- inertia at a prime of potentially good reduction.
+public import Fermat.FLT.EllipticCurve.AutomorphismExponent
 -- `FreyCurve.torsion_isUnramified` (unramifiedness outside `{2, p}`),
 -- consumed by the derivation of the semistability leaf.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
@@ -4970,6 +4977,83 @@ theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j
           hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 :=
   sorry
 
+/-- **`B₀²ᵃ` — SERRE–TATE TRANSPORT: on inertia at a prime of potentially good
+reduction, the isogeny character is a character of an AUTOMORPHISM of the
+reduction** (sorry leaf, opened 2026-07-28 while decomposing `B₀²` below;
+Serre–Tate, *Ann. of Math.* 88 (1968), Cor. 2 and 3; Silverman *AEC* VII.7 and
+*ATAEC* IV.10): at a prime `q ≠ N` with `v_q(j) ≥ 0`, for every `σ` in the
+inertia group at `q` there are an elliptic curve `W` over `𝔽̄_q` and an
+automorphism `C` of it — an admissible change of variables with `C • W = W` —
+such that every relation `Cⁿ = 1` is inherited by `λ(σ)`.
+
+WHAT THIS SAYS, and why it is written with `∀ n` rather than with `orderOf`.
+The conclusion is exactly `orderOf (λ σ) ∣ orderOf C`, i.e. `λ(σ)` lies in a
+quotient of the cyclic group `⟨C⟩`.  Writing it as an implication removes the
+`orderOf C = 0` escape hatch: a witness with an infinite-order `C` would make
+an `orderOf`-divisibility conclusion vacuously true, whereas here `n = 0` is
+the only free case and it carries nothing.  (No such witness exists anyway —
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq` shows every
+stabilising `C` satisfies `C¹² = 1` — but the statement should not depend on
+that for its content.)
+
+THE MATHEMATICS.  `v_q(j) ≥ 0` is potentially good reduction (Silverman *AEC*
+VII.5.5), so `E` acquires good reduction over a finite extension `K/ℚ_q`.
+Since `N ≠ q`, Néron–Ogg–Shafarevich makes `I_K` act trivially on `E[N]`, so
+the action of `I_q` on `E[N]` factors through the semistability defect
+`Φ = Gal(K^{nr}/ℚ_q^{nr})`, and Serre–Tate embeds `Φ` into the automorphism
+group of the good reduction `W` over `𝔽̄_q`.  Reading that action on the
+Galois-stable line `⟨g⟩` — which is what `hlam` makes `lam` be — gives `λ(σ)`
+as a value of a character of `⟨C⟩`, where `C` is the automorphism attached to
+`σ`.  So a relation `Cⁿ = 1` transports to `λ(σ)ⁿ = 1`.
+
+WHAT THIS LEAF DOES **NOT** CONTAIN, and that is the point of the cut: no
+classification of `Φ`.  Kraus's list — the only place `q = 2, 3` cost anything
+— has been moved out entirely into
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq`
+(`Fermat/FLT/EllipticCurve/AutomorphismExponent.lean`), which bounds the
+EXPONENT of the automorphism group by `12` over any field.  What is left here
+is pure reduction theory and Néron–Ogg–Shafarevich, uniform in `q`.
+
+`hlam` IS LOAD-BEARING: without it `lam` is an arbitrary character of `Γ ℚ`
+and the statement is FALSE.  `hN19` is not needed for this leaf (only `q ≠ N`
+is), and is carried so that the leaves of this cluster share one signature.
+
+WHERE THE MACHINERY ALREADY IS.  `WeierstrassCurve.PotentiallyGoodModel`, its
+producer `exists_potentiallyGoodModel_of_jIntegral`, and the frame
+`exists_reductionFrame_of_potentiallyGoodModel` — all ~800 lines BELOW in this
+file — are the intended inputs; the frame already produces exactly an
+`autTorsionEnd C hC` description of one inertia element, and what is wanted
+here is its `∀ σ ∈ I_q` form.  Lean has no forward references, so closing this
+leaf means hoisting that block into an upstream module (the precedent is the
+Minkowski block and `GaloisRepresentation.MinkowskiUnramified`), NOT reproving
+the reduction theory.  Note also that the frame carries `hq2 : q ≠ 2`, which
+this leaf may not: `q = 2` is exactly the case `B₀²` exists to handle.
+
+CLOSING THIS LEAF ALSO CLOSES `B₀¹` above: with `C¹² = 1` from the exponent
+theorem, `∀ n` at `n = 24` gives `λ(σ)²⁴ = 1` directly.  Whoever takes it
+should say so, so that the two are not proven twice. -/
+theorem WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hqN : q ≠ N)
+    (hj : 0 ≤ padicValRat q E.j) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ∃ (W : WeierstrassCurve (AlgebraicClosure (ZMod q))) (_ : W.IsElliptic)
+        (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q))),
+        C • W = W ∧
+        ∀ n : ℕ, C ^ n = 1 →
+          lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ n = 1 :=
+  sorry
+
 /-- **`B₀²` — no element of order `8` in the inertia image** (sorry leaf;
 Kraus, *Manuscripta Math.* 69 (1990), the classification of the
 semistability defect; Serre, *Invent. Math.* 15 (1972), §5.6): at a prime
@@ -5021,7 +5105,28 @@ itself rather than about a character of it, e.g. `A₀`'s
 
 The stable line is of course still present in the hypotheses either way:
 `hlam` is what makes `lam` the action on `⟨g⟩`, and without it the
-statement is false for the same reason as in `B₀¹`. -/
+statement is false for the same reason as in `B₀¹`.
+
+DECOMPOSED and PROVEN 2026-07-28, and the cut takes NEITHER of the two
+routes described above verbatim — it takes the sharper form of the first.
+The abelianization route as written still asks for the isomorphism types of
+the possible `Φ`, which is more than is needed: what a CHARACTER of `Φ` sees
+is only the EXPONENT of `Φ`, and every group on Kraus's list has element
+orders in `{1,2,3,4,6}`, hence exponent dividing `12`.  So the leaf splits
+cleanly into
+
+* `WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq` — the whole
+  geometric input, in `Fermat/FLT/EllipticCurve/AutomorphismExponent.lean`:
+  an admissible change of variables fixing an elliptic Weierstrass curve over
+  ANY field has twelfth power the identity.  This is where Kraus's list is
+  consumed and the only place `q = 2, 3` cost anything; it is proven there in
+  the tame characteristics and left as two named leaves at `2` and `3`;
+* `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg` above — the
+  Serre–Tate transport, carrying no classification at all.
+
+The glue is `8 ∤ 12`.  Note the derivation actually yields `orderOf (λ σ) ∣ 12`,
+i.e. `B₀` outright, and with it `B₀¹`; the cut into `B₀¹`/`B₀²` is kept because
+`B₀¹` is separately owned. -/
 theorem WeierstrassCurve.not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -5036,8 +5141,22 @@ theorem WeierstrassCurve.not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j
     ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
       ¬ (8 ∣ orderOf (lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat)) σ))) :=
-  sorry
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ))) := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  intro σ hσ
+  -- the Serre–Tate transport: `λ(σ)` is a character value of an automorphism
+  -- `C` of the good reduction over `𝔽̄_q`
+  obtain ⟨W, hW, C, hC, htrans⟩ :=
+    E.exists_inertiaAut_of_padicValRat_j_nonneg g hN hN19 hg lam hlam hq hqN hj σ hσ
+  haveI : W.IsElliptic := hW
+  -- the classification input: `Aut(W)` has exponent dividing `12`
+  have h12 : lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 = 1 :=
+    htrans 12 (WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq hC)
+  intro h8
+  -- `8 ∣ orderOf (λ σ) ∣ 12` is impossible
+  exact absurd (h8.trans (orderOf_dvd_of_pow_eq_one h12)) (by norm_num)
 
 /-- **`B₀` — the potentially GOOD half of leaf `B`** (DECOMPOSED and PROVEN
 2026-07-27 from `B₀¹` and `B₀²` above;
