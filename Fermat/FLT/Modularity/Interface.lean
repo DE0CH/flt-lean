@@ -31313,17 +31313,120 @@ theorem isOpen_ker_of_cyclotomicChar
   rw [hχcyc g]
   linear_combination -hy2
 
-/-- **THE SECOND INEQUALITY AT MODULUS `1`, IN THE LITERATURE'S OWN SHAPE:
-a finite ABELIAN extension of `ℚ(μ_p)` unramified at every finite place has
-degree at most `h_K`** (SORRY LEAF, cut 2026-07-28 out of
-`index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le` below).
+/-- **MINKOWSKI AT A DEGREE-ONE BASE: a finite extension of a number field
+`K` with `[K : ℚ] = 1`, unramified at every finite prime, is trivial**
+(PROVEN 2026-07-28; this is the `p = 2` half of
+`finrank_le_card_classGroup_of_unramified_abelian` below).
 
-This is the ARITHMETIC half of that leaf: no `Γℚ`, no `localInertiaGroup`,
-no `topologicalClosure`, no `ker χ`. Only number fields, `IsGalois`,
-`Algebra.IsUnramifiedAt`, `Module.finrank` and `ClassGroup` occur, so a
-prover may work entirely inside algebraic number theory. The Galois-side
-bookkeeping that connects it to the consumer is the separate sibling
-`exists_unramifiedAbelian_finrank_eq_index` below.
+`Module.finrank ℚ K = 1` says `K` is a model of `ℚ`, so `𝓞 K` is a model of
+`ℤ` and the statement is exactly Minkowski's theorem: `ℚ` has no nontrivial
+extension unramified at every finite place. Note there is **no abelian and
+no Galois hypothesis** — Minkowski needs neither, which is why this half of
+the parent does not go through the class-field-theoretic leaf below.
+
+**Chain.** `Module.finrank ℚ K = 1` makes `(⊥ : Subalgebra ℚ K) = ⊤`
+(`Submodule.eq_top_of_finrank_eq`), so `algebraMap ℚ K` is surjective; an
+element of `𝓞 K` is therefore `algebraMap ℚ K q` for a `q` integral over
+`ℤ`, and `ℤ` is integrally closed in `ℚ`, so `algebraMap ℤ (𝓞 K)` is
+surjective too. A surjective algebra map is formally unramified
+(`Algebra.FormallyUnramified.of_surjective`), so
+`Algebra.FormallyUnramified.comp` upgrades the hypothesis
+`Algebra.IsUnramifiedAt (𝓞 K) Q` to `Algebra.IsUnramifiedAt ℤ Q` at every
+nonzero prime `Q` of `𝓞 L` — the `Q ≠ ⊥` guard is discharged from
+`Ideal.bot_lt_of_maximal` because `𝓞 L` is not a field. Then mathlib's
+`NumberField.exists_not_isUnramifiedAt_int`, which IS the Minkowski
+discriminant bound, forces `Module.finrank ℚ L = 1`, and
+`Module.finrank_mul_finrank` turns that into `Module.finrank K L = 1`.
+
+**Why the archimedean side costs nothing here.** `L/ℚ` is allowed to ramify
+at the real place — ramification at infinity does not enter the
+discriminant, so Minkowski's bound is insensitive to it. That is precisely
+the reason the `p = 2` case CANNOT be routed through
+`finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
+below: supplying that leaf's archimedean hypothesis over `ℚ` would already
+require knowing `L = ℚ`. -/
+theorem finrank_eq_one_of_unramified_of_finrank_rat_eq_one
+    (K : Type) [Field K] [NumberField K] (hK : Module.finrank ℚ K = 1)
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    Module.finrank K L = 1 := by
+  classical
+  -- Step 1: `ℚ → K` is surjective.
+  have hbot : (⊥ : Subalgebra ℚ K) = ⊤ :=
+    Algebra.toSubmodule_eq_top.1 (Submodule.eq_top_of_finrank_eq
+      ((Subalgebra.finrank_toSubmodule (⊥ : Subalgebra ℚ K)).trans
+        (by rw [Subalgebra.finrank_bot, hK])))
+  have hsurjQ : Function.Surjective (algebraMap ℚ K) := by
+    intro x
+    have hx : x ∈ (⊤ : Subalgebra ℚ K) := trivial
+    rw [← hbot, Algebra.mem_bot] at hx
+    obtain ⟨q, hq⟩ := hx
+    exact ⟨q, hq⟩
+  -- Step 2: hence `ℤ → 𝓞 K` is surjective.
+  have hinjK : Function.Injective (algebraMap (𝓞 K) K) :=
+    FaithfulSMul.algebraMap_injective (𝓞 K) K
+  have hsurj : Function.Surjective (algebraMap ℤ (𝓞 K)) := by
+    intro x
+    obtain ⟨q, hq⟩ := hsurjQ (algebraMap (𝓞 K) K x)
+    have hxint : IsIntegral ℤ (algebraMap (𝓞 K) K x) :=
+      (IsIntegralClosure.isIntegral ℤ K x).map (IsScalarTower.toAlgHom ℤ (𝓞 K) K)
+    rw [← hq] at hxint
+    have hqint : IsIntegral ℤ q :=
+      (isIntegral_algebraMap_iff (R := ℤ) (algebraMap ℚ K).injective).mp hxint
+    obtain ⟨n, hn⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    refine ⟨n, hinjK ?_⟩
+    rw [← IsScalarTower.algebraMap_apply ℤ (𝓞 K) K, ← hq, ← hn,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ K]
+  -- Step 3: `𝓞 K` is formally unramified over `ℤ`, so `hunr` transports to `ℤ`.
+  haveI : Algebra.FormallyUnramified ℤ (𝓞 K) :=
+    Algebra.FormallyUnramified.of_surjective (Algebra.ofId ℤ (𝓞 K)) hsurj
+  have key : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt ℤ Q := by
+    intro Q hQ hQ0
+    haveI := hQ
+    haveI := hunr Q hQ hQ0
+    exact Algebra.FormallyUnramified.comp ℤ (𝓞 K) (Localization.AtPrime Q)
+  -- Step 4: Minkowski.
+  have hrat : Module.finrank ℚ (L : Type _) = 1 := by
+    by_contra hne
+    obtain ⟨P, hPmax, hPram⟩ :=
+      NumberField.exists_not_isUnramifiedAt_int (K := (L : Type _))
+        (𝒪 := 𝓞 (L : Type _)) hne
+    haveI := hPmax
+    exact hPram (key P hPmax.isPrime
+      (Ideal.bot_lt_of_maximal P (NumberField.RingOfIntegers.not_isField _)).ne')
+  -- Step 5: multiplicativity of degrees.
+  have hmul : Module.finrank ℚ K * Module.finrank K (L : Type _)
+      = Module.finrank ℚ (L : Type _) := Module.finrank_mul_finrank ℚ K (L : Type _)
+  rw [hK, one_mul, hrat] at hmul
+  exact hmul
+
+/-- **UNRAMIFIED CFT, THE UPPER BOUND, OVER AN ARBITRARY BASE: a finite
+ABELIAN extension of a number field `K`, unramified at every finite prime
+AND at every infinite place, has degree at most `h_K`** (SORRY LEAF, cut
+2026-07-28 out of `finrank_le_card_classGroup_of_unramified_abelian`
+below — **this is where the missing mathematics is**).
+
+Equivalently: such an `L` sits inside the Hilbert class field of `K`, whose
+Galois group is `Cl(𝓞 K)`. This is the general, base-free form of the
+second inequality at modulus `1`. The consumer's cyclotomic pin has been
+replaced here by the hypothesis that actually does the work,
+`IsUnramifiedAtInfinitePlaces K L`, so a prover needs **no cyclotomic
+theory at all**: only number fields, `IsGalois`,
+`Algebra.IsUnramifiedAt`, `Module.finrank` and `ClassGroup` occur.
+
+**⚠ THE ARCHIMEDEAN HYPOTHESIS IS NOT DECORATION — DELETING IT MAKES THE
+STATEMENT FALSE.** With the WIDE class group on the right and
+unramifiedness only at the FINITE places on the left, the inequality fails
+over a general number field. Explicit counterexample, computed with PARI/GP
+on 2026-07-28 and recorded so the next reader need not redo it: `K = ℚ(√3)`
+has `bnfinit(x^2-3,1).no = 1` but `bnrinit(K,[1,[1,1]]).no = 2`, i.e.
+`h_K = 1` while the NARROW class number is `2`. The narrow Hilbert class
+field is therefore a QUADRATIC extension of `K`, abelian and unramified at
+every finite place, of degree `2 > 1 = h_K`. It is excluded here — and only
+here — by `IsUnramifiedAtInfinitePlaces`: that extension is ramified at
+both real places of `ℚ(√3)`.
 
 **Route (and it is NOT reciprocity).** For `L/K` finite abelian,
 `[I_K : P_K · N_{L/K} I_L] ≥ [L : K]` — the classical second inequality,
@@ -31336,41 +31439,91 @@ index is the order of a QUOTIENT of `Cl(𝓞 K) = I_K/P_K`, hence at most
 `Cl(𝓞 K) ↠ Gal(L/K)` needs RECIPROCITY (principal ideals in the kernel),
 which is the sibling `exists_artinIdealMap_of_unramifiedAbelianSubgroup`'s
 business; the norm-index route is the independent one and is the reason
-this leaf exists separately.
+this leaf exists separately. Modulus `1` is admissible exactly because of
+`IsUnramifiedAtInfinitePlaces` — that is the same fact the counterexample
+above turns on.
+
+**Mathlib survey (re-checked 2026-07-28).** Ray class groups, the Hilbert
+class field, the ideal norm index `[I_K : P_K N I_L]`, the Artin map and
+Artin reciprocity are ALL absent from the pin and from `~/cs/FLT`.
+`Ideal.relNorm` and `Ideal.spanNorm` exist and are already used in this
+project; `ClassGroup`, `Ideal.ramificationIdx`, `Algebra.IsUnramifiedAt`,
+`Ideal.inertia`, `NumberField.InfinitePlace.IsUnramified` and
+`IsUnramifiedAtInfinitePlaces` exist. The Herbrand-quotient machinery does
+not: `Mathlib/RepresentationTheory/Homological/TateCohomology/` carries
+`Basic.lean` only — definitions, no class formations and no Tate theorem —
+so the cohomological route must be built, not cited.
+
+**Not vacuous.** `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), and `ℚ(μ_23)` is
+totally complex, so the consumer instantiates this leaf at a base where the
+bound is a genuine constraint and not `≤ 1`.
+
+**The check that would refute it**: a finite abelian extension of a number
+field `K`, unramified at every finite prime and at every infinite place, of
+degree `> h_K`. -/
+theorem finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces
+    (K : Type) [Field K] [NumberField K]
+    (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
+    [IsGalois K L] [IsUnramifiedAtInfinitePlaces K (L : Type _)]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    Module.finrank K L ≤ Nat.card (ClassGroup (𝓞 K)) :=
+  sorry
+
+/-- **THE SECOND INEQUALITY AT MODULUS `1`, IN THE LITERATURE'S OWN SHAPE:
+a finite ABELIAN extension of `ℚ(μ_p)` unramified at every finite place has
+degree at most `h_K`** (cut 2026-07-28 out of
+`index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le` below;
+**DECOMPOSED 2026-07-28 — the assembly is now PROVEN**, over the two
+declarations immediately above and nothing else).
+
+**THE CUT, along the `p = 2` / `p` odd axis the faithfulness note below
+already forced.** The two cases are genuinely disjoint and neither implies
+the other:
+
+* `p = 2`: `CF = ℚ(μ_2) = ℚ`, `Module.finrank ℚ CF = Nat.totient 2 = 1`,
+  and the claim degenerates to MINKOWSKI — discharged by
+  `finrank_eq_one_of_unramified_of_finrank_rat_eq_one` above, which is
+  PROVEN. The bound then reads `1 ≤ h_ℚ`, i.e. `Nat.card_pos`.
+* `p` odd: `2 < p`, so `IsCyclotomicExtension.Rat.isTotallyComplex` makes
+  `CF` totally complex; every infinite place of `L` then lies over a
+  COMPLEX place of `CF` and is therefore unramified
+  (`InfinitePlace.isUnramified_iff`), which supplies the archimedean
+  hypothesis of
+  `finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
+  above — the leaf that still carries the class field theory.
+
+The proof below is `rcases`/`rw`/`exact` and nothing more.
+
+This is the ARITHMETIC half of the parent: no `Γℚ`, no `localInertiaGroup`,
+no `topologicalClosure`, no `ker χ`. Only number fields, `IsGalois`,
+`Algebra.IsUnramifiedAt`, `Module.finrank` and `ClassGroup` occur. The
+Galois-side bookkeeping that connects it to the consumer is the separate
+sibling `exists_unramifiedAbelian_finrank_eq_index` below.
 
 **⚠ THE BASE IS PINNED TO `ℚ(μ_p)` BECAUSE THE GENERAL STATEMENT IS FALSE.
-Do not "generalize" `IsCyclotomicExtension {p} ℚ K` away.** For a number
-field with REAL places the WIDE class number does not bound finite-level
-unramified-at-the-finite-places extensions. Explicit counterexample,
-computed with PARI/GP on 2026-07-28 and stated here so the next reader does
-not have to redo it: `K = ℚ(√3)` has `bnfinit(x^2-3,1).no = 1` but
-`bnrinit(K,[1,[1,1]]).no = 2`, i.e. `h_K = 1` while the NARROW class number
-is `2`. The narrow Hilbert class field is therefore a QUADRATIC extension
-of `K`, abelian and unramified at every finite place, of degree `2 > 1 =
-h_K`. The correct statement over a general base needs unramifiedness at the
-infinite places too (equivalently the narrow class number on the right).
+Do not "generalize" `IsCyclotomicExtension {p} ℚ CF` away** — the only
+legitimate generalization is the one performed above, which REPLACES the
+cyclotomic pin by the archimedean hypothesis it was standing in for, and it
+covers the odd-`p` case only. For a number field with REAL places the WIDE
+class number does not bound finite-level unramified-at-the-finite-places
+extensions. Explicit counterexample, computed with PARI/GP on 2026-07-28
+and stated here so the next reader does not have to redo it: `K = ℚ(√3)`
+has `bnfinit(x^2-3,1).no = 1` but `bnrinit(K,[1,[1,1]]).no = 2`, i.e.
+`h_K = 1` while the NARROW class number is `2`. The narrow Hilbert class
+field is therefore a QUADRATIC extension of `K`, abelian and unramified at
+every finite place, of degree `2 > 1 = h_K`.
 
-What `IsCyclotomicExtension {p} ℚ K` supplies is exactly the missing input,
-in two disjoint cases: for ODD `p` the field `ℚ(μ_p)` is totally complex,
-so every infinite place is complex, carries no ramification, and wide and
-narrow class groups agree; at `p = 2` the field is `K = ℚ` with `h_K = 1`
-and the claim degenerates to MINKOWSKI's theorem, which this project
-already has as `open_normal_subgroup_eq_top_of_inertia_le`
-(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`). Both cases
-must be handled; neither is vacuous.
+What `IsCyclotomicExtension {p} ℚ CF` supplies is exactly the missing
+archimedean input, in the two disjoint cases discharged by the assembly
+below; and it must sit on THIS (arithmetic) leaf rather than on the
+dictionary sibling, because the group-side hypothesis `D ≤ M` constrains no
+infinite place — demanding archimedean unramifiedness there instead would
+make THAT leaf unprovable at `p = 2`.
 
 **Not vacuous.** `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), so for `p = 23`
 the bound is a genuine constraint and not `≤ 1`.
-
-**Mathlib survey (inherited from the parent, re-checked 2026-07-28).** Ray
-class groups, the Hilbert class field, the ideal norm index `[I_K : P_K N
-I_L]`, the Artin map and Artin reciprocity are ALL absent from the pin and
-from `~/cs/FLT`. `Ideal.relNorm` and `Ideal.spanNorm` exist and are already
-used in this project; `ClassGroup`, `Ideal.ramificationIdx`,
-`Algebra.IsUnramifiedAt` and `Ideal.inertia` exist. The Herbrand-quotient
-machinery does not: `Mathlib/RepresentationTheory/Homological/TateCohomology/`
-carries `Basic.lean` only — definitions, no class formations and no Tate
-theorem — so the cohomological route must be built, not cited.
 
 **The check that would refute it**: a finite abelian extension of `ℚ(μ_p)`,
 unramified at every finite place, of degree `> h_{ℚ(μ_p)}`. -/
@@ -31381,8 +31534,25 @@ theorem finrank_le_card_classGroup_of_unramified_abelian
     (habel : ∀ a b : L ≃ₐ[CF] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 CF) Q) :
-    Module.finrank CF L ≤ Nat.card (ClassGroup (𝓞 CF)) :=
-  sorry
+    Module.finrank CF L ≤ Nat.card (ClassGroup (𝓞 CF)) := by
+  rcases eq_or_ne p 2 with rfl | hp2
+  · -- `CF = ℚ(μ_2) = ℚ`: MINKOWSKI.
+    have hCF : Module.finrank ℚ CF = 1 := by
+      rw [IsCyclotomicExtension.finrank (n := 2) CF
+        (Polynomial.cyclotomic.irreducible_rat (by norm_num))]
+      decide
+    rw [finrank_eq_one_of_unramified_of_finrank_rat_eq_one CF hCF L hunr]
+    exact Nat.card_pos
+  · -- odd `p`: `ℚ(μ_p)` is totally complex, so no infinite place ramifies.
+    haveI : NeZero p := ⟨hp.out.ne_zero⟩
+    have h2p : 2 < p := lt_of_le_of_ne hp.out.two_le (Ne.symm hp2)
+    haveI : NumberField.IsTotallyComplex CF :=
+      IsCyclotomicExtension.Rat.isTotallyComplex CF h2p
+    haveI : IsUnramifiedAtInfinitePlaces CF (L : Type _) :=
+      ⟨fun w => NumberField.InfinitePlace.isUnramified_iff.mpr
+        (Or.inr (NumberField.IsTotallyComplex.isComplex _))⟩
+    exact finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces
+      CF L habel hunr
 
 /-- **THE GALOIS DICTIONARY, FORWARD DIRECTION: an open subgroup of `Γ_K`
 above `D` is `Gal(K̄/L)` for a finite ABELIAN everywhere-unramified `L/K` of
