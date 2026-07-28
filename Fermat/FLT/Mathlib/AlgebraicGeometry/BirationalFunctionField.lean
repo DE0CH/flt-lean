@@ -47,14 +47,21 @@ over the two open leaves that carry the translation:
 * `exists_iso_specRatFunc_specFunctionField_affineSpace` — the affine-space
   half, `K(𝔸(n; Spec K)) ≃ K(t)` over `K`, mentioning neither `P` nor Lüroth.
   **PROVEN 2026-07-28.**
-* `exists_iso_specRatFunc_specFunctionField_of_isDominant` — the curve half:
-  the stalk-map embedding `K(P) ↪ K(t)`, the `hcurve`-driven non-degeneracy, and
-  Lüroth itself.  **This is the file's ONLY remaining leaf** (2026-07-28).
+* `exists_iso_specRatFunc_specFunctionField_of_isDominant` — the curve half.
+  **PROVEN 2026-07-28**, in turn over a further split at the exact point where
+  `hcurve` enters:
+  * `exists_hom_functionField_ratFunc_of_isDominant` — the stalk-map embedding
+    `K(P) ↪ K(t)` over `K`.  Needs no `hcurve` (and is true for `P = Spec K`).
+    **PROVEN 2026-07-28.**
+  * `exists_iso_specRatFunc_specFunctionField_of_hom` — that such an embedding
+    of the function field of a CURVE is an isomorphism: the `hcurve`-driven
+    non-degeneracy, then Lüroth.  **This is the file's ONLY remaining leaf**
+    (2026-07-28), and it mentions neither `𝔸` nor `u`.
 
-They are stated in a deliberately identical shape — an isomorphism out of the
-common object `Spec (RatFunc K)`, commuting with the maps down to `Spec K` —
-which is what makes the assembly of the Lüroth statement out of them a single
-`Iso.trans`.
+The first two are stated in a deliberately identical shape — an isomorphism out
+of the common object `Spec (RatFunc K)`, commuting with the maps down to
+`Spec K` — which is what makes the assembly of the Lüroth statement out of them
+a single `Iso.trans`.
 
 Together these give, in three lines, "a curve over a field dominated by `𝔸¹`
 is rational over that field" — the statement that replaces `ℙ¹` and
@@ -619,34 +626,114 @@ theorem exists_iso_specRatFunc_specFunctionField_affineSpace {K : Type u} [Field
   simp only [Category.assoc]
   rw [← Category.assoc, h2, ← Spec.map_comp, ← Spec.map_comp, Category.assoc, hφ]
 
+/-- **The stalk map of a dominant `u : 𝔸(n; Spec K) ⟶ P` at the generic point is a `K`-embedding
+`K(P) ↪ K(t)`** (**PROVEN 2026-07-28**) — step 1 of the Lüroth translation, and the last piece
+of it that is about SCHEMES rather than about fields.
+
+Note what is *absent* from the hypotheses: `hcurve`.  Nothing here needs `P` to be a curve, or
+even to be positive-dimensional; the degenerate `P = Spec K` satisfies this statement with
+`φ = algebraMap K (RatFunc K)`.  That is precisely why the non-degeneracy has to be carried
+separately by `exists_iso_specRatFunc_specFunctionField_of_hom` below, and it is the honest
+place to see that `hcurve` is load-bearing exactly once.
+
+Injectivity of `φ` is not asserted because it is free downstream: `P.functionField` is a field
+(`IsIntegral P`) and `RatFunc K` is nonzero, so any ring map between them is injective.  Adding
+it to the statement would only oblige every caller to re-derive it.
+
+**Proof.**  `genericPoint_eq_of_isDominant` identifies `u (genericPoint 𝔸)` with `genericPoint P`,
+`Scheme.SpecMap_stalkMap_fromSpecStalk` is the commuting square for the stalk map, `hu` turns
+`u ≫ strP` into the structure morphism of `𝔸`, and
+`exists_iso_specRatFunc_specFunctionField_affineSpace` closes the triangle.  The one piece of
+friction is that `Scheme.Hom.stalkMap u (genericPoint 𝔸)` lands in `P.presheaf.stalk
+(u (genericPoint 𝔸))` and the conclusion needs `P.functionField`; `rw`ing the point is not
+available (the surrounding composite becomes ill-typed at `instances` transparency), so the
+point is moved by an `eqToHom` whose defining property is proven by `rintro x rfl` on a
+UNIVERSALLY QUANTIFIED point — the standard way to `subst` an equation whose sides are both
+closed terms. -/
+theorem exists_hom_functionField_ratFunc_of_isDominant {K : Type u} [Field K]
+    {n : Type u} [Unique n] {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
+    [IsIntegral P]
+    (u : 𝔸(n; Spec (CommRingCat.of K)) ⟶ P)
+    (hu : u ≫ strP = 𝔸(n; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    (hdom : IsDominant u) :
+    ∃ φ : P.functionField ⟶ CommRingCat.of (RatFunc K),
+      Spec.map φ ≫ P.fromSpecStalk (genericPoint P) ≫ strP
+        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) := by
+  obtain ⟨eA, hA⟩ := exists_iso_specRatFunc_specFunctionField_affineSpace (K := K) (n := n)
+  have hu' : u (genericPoint (𝔸(n; Spec (CommRingCat.of K)))) = genericPoint P :=
+    genericPoint_eq_of_isDominant u
+  have transport : ∀ (x : ↥P) (h : x = u (genericPoint (𝔸(n; Spec (CommRingCat.of K))))),
+      Spec.map (eqToHom (congrArg P.presheaf.stalk h) ≫
+          Scheme.Hom.stalkMap u (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) ≫
+        P.fromSpecStalk x
+      = (𝔸(n; Spec (CommRingCat.of K))).fromSpecStalk
+          (genericPoint (𝔸(n; Spec (CommRingCat.of K)))) ≫ u := by
+    rintro x rfl
+    simp
+  refine ⟨(eqToHom (congrArg P.presheaf.stalk hu'.symm) ≫
+      Scheme.Hom.stalkMap u (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) ≫
+      Spec.preimage eA.hom, ?_⟩
+  rw [Spec.map_comp, Spec.map_preimage, Category.assoc, ← Category.assoc _ (P.fromSpecStalk _),
+    transport _ hu'.symm, Category.assoc, hu, hA]
+
+/-- **A `K`-embedding `K(P) ↪ K(t)` of the function field of a CURVE is an isomorphism**
+(sorry leaf, 2026-07-28) — Lüroth, and nothing else.  This is now the only open leaf of this
+file.
+
+Compared with `exists_iso_specRatFunc_specFunctionField_of_isDominant`, which it is used to
+prove, this drops `n`, `u` and `hdom` entirely: the affine line has done its work by producing
+`φ`, and what remains is a statement about a field extension `K ⊆ K(P) ⊆ K(t)`.  What is left
+is exactly two things.
+
+1. *The image is not `⊥`* — **the ONLY use of `hcurve`, and the leaf is FALSE without it.**
+   `P = Spec K` satisfies every other hypothesis (with `φ = algebraMap K (RatFunc K)`) and its
+   function field is `K`, which is not `K`-isomorphic to `K(t)`.  With `hcurve`, `P` is infinite
+   (`infinite_of_smoothOfRelativeDimension_one`, proven in `CurveExtension.lean`), whereas
+   `K(P) = K` forces every affine open `Spec A ⊆ P` to satisfy `K ⊆ A ⊆ Frac A = K`, hence
+   `A = K` and `Spec A` a single point, hence `P` a one-point scheme.
+2. *Lüroth.*  `RatFunc.Luroth.algEquiv` — **already proven in the pin
+   (`Mathlib/FieldTheory/RatFunc/Luroth.lean`); do not reprove it** — applied to the image
+   intermediate field `E := φ.fieldRange`, gives `K⟮X⟯ ≃ₐ[K] E ≃ₐ[K] K(P)` (the second step by
+   injectivity of `φ`, which is free: `K(P)` is a field).  `Spec` of that equivalence is the
+   required `e`, and its triangle over `Spec K` is `hφ` transported through `Spec.map_comp`.
+
+**The isomorphism is NOT `Spec.map φ`**, and cannot be: `φ` may have degree `> 1` — that is the
+whole content of Lüroth — so Lüroth's *different* generator is what makes `e` exist.  Hence the
+existential, and hence `hφ` is used only for the `K`-compatibility, never as the answer.
+
+**A note on how to phrase the `K`-algebra structures.**  Both `K(P)` and `K(t)` need to be seen
+as `K`-algebras before `IntermediateField` and Lüroth apply, and `Mathlib` has no
+`Algebra K X.functionField` instance.  Get them from `hφ` rather than by declaring instances:
+`Spec.preimage` turns each side of `hφ` into a ring map out of `CommRingCat.of K`, and
+`Spec.map_inj` turns `hφ` itself into the statement that `φ` commutes with them.  Declaring
+instances instead is what forces the `↥(CommRingCat.of R)` synthesis failures documented on the
+affine-space leaf above. -/
+theorem exists_iso_specRatFunc_specFunctionField_of_hom {K : Type u} [Field K]
+    {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
+    [IsIntegral P] (hcurve : SmoothOfRelativeDimension 1 strP)
+    (φ : P.functionField ⟶ CommRingCat.of (RatFunc K))
+    (hφ : Spec.map φ ≫ P.fromSpecStalk (genericPoint P) ≫ strP
+      = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K)))) :
+    ∃ e : Spec (CommRingCat.of (RatFunc K)) ≅ Spec P.functionField,
+      e.hom ≫ P.fromSpecStalk (genericPoint P) ≫ strP
+        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) :=
+  sorry
+
 /-- **The function field of a curve over `K` dominated by the affine line is `K(t)`, compatibly
-with the structure morphism** (sorry leaf, 2026-07-28) — steps 1, 3 and 4 of the Lüroth
-translation, i.e. everything in it that is not pure affine bookkeeping.
+with the structure morphism** (**PROVEN 2026-07-28** over the two leaves immediately above) —
+steps 1, 3 and 4 of the Lüroth translation, i.e. everything in it that is not pure affine
+bookkeeping.
 
 Stated in the SAME shape as `exists_iso_specRatFunc_specFunctionField_affineSpace` above, which
 is what makes the assembly of `exists_iso_specFunctionField_affineSpace_of_isDominant` three
 rewrites: two isomorphisms with a common source `Spec (RatFunc K)` and a common triangle over
 `Spec K` compose to an isomorphism of the two targets over `Spec K`.
 
-**What is left in here, and what is NOT.**  Lüroth itself is *not* left: it is proven in the
-pin as `RatFunc.Luroth.algEquiv`.  What is left is
-
-1. *The embedding.*  `hdom` gives `u (genericPoint 𝔸) = genericPoint P`
-   (`genericPoint_eq_of_isDominant`, proven above), so `Scheme.Hom.stalkMap u` at the generic
-   point is a ring map `K(P) ⟶ K(𝔸)`; it is injective because `K(P)` is a field, and `hu`
-   together with the previous leaf makes it a map of `K`-algebras into `RatFunc K`.
-2. *The image is not `⊥`* — **the ONLY use of `hcurve`, and the leaf is FALSE without it**:
-   `P = Spec K` is dominated by `𝔸¹_K` and has function field `K`, not `K(t)`.  With `hcurve`,
-   `P` is infinite (`infinite_of_smoothOfRelativeDimension_one`, proven in
-   `CurveExtension.lean`), whereas `K(P) = K` forces every affine open `Spec A ⊆ P` to satisfy
-   `K ⊆ A ⊆ Frac A = K`, hence `A = K` and `Spec A` a point, hence `P` a one-point scheme.
-3. *Lüroth and back.*  `RatFunc.Luroth.algEquiv` applied to the image intermediate field `E`
-   gives `K⟮X⟯ ≃ₐ[K] E ≃ₐ[K] K(P)`; `Spec` of it is the required `e`, and the triangle is the
-   `K`-algebra property transported through `Spec.map_comp`.
-
-**The isomorphism is NOT the one induced by `u`**, and cannot be: `u` may have degree `> 1` and
-Lüroth produces a different generator.  That is why both this and the consumer are
-existentials. -/
+The proof is `exists_hom_functionField_ratFunc_of_isDominant` (the scheme-theoretic half:
+the stalk-map embedding `K(P) ↪ K(t)`, proven, and needing no `hcurve`) followed by
+`exists_iso_specRatFunc_specFunctionField_of_hom` (the field-theoretic half: `hcurve`-driven
+non-degeneracy plus Lüroth, still open).  The split is where `hcurve` enters, which is also
+where the statement stops being true without it. -/
 theorem exists_iso_specRatFunc_specFunctionField_of_isDominant {K : Type u} [Field K]
     {n : Type u} [Unique n] {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
     [IsIntegral P] (hcurve : SmoothOfRelativeDimension 1 strP)
@@ -655,8 +742,9 @@ theorem exists_iso_specRatFunc_specFunctionField_of_isDominant {K : Type u} [Fie
     (hdom : IsDominant u) :
     ∃ e : Spec (CommRingCat.of (RatFunc K)) ≅ Spec P.functionField,
       e.hom ≫ P.fromSpecStalk (genericPoint P) ≫ strP
-        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) :=
-  sorry
+        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) := by
+  obtain ⟨φ, hφ⟩ := exists_hom_functionField_ratFunc_of_isDominant u hu hdom
+  exact exists_iso_specRatFunc_specFunctionField_of_hom hcurve φ hφ
 
 /-- **LÜROTH, in scheme language: the function field of a curve over `K` dominated by the
 affine line is `K`-isomorphic to the function field of the affine line** (**PROVEN 2026-07-28**
