@@ -202,9 +202,11 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Artinian
 -- The connected ⟹ irreducible upgrade of the Bertini cut (2026-07-26) states
 -- `IsLocallyNoetherian` in the signature of
--- `exists_isOpen_isIrreducible_of_isDomain_stalk`, and its topological half
--- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
--- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`, and
+-- its topological half `irreducibleSpace_of_isOpen_isIrreducible_nhds` is
+-- proven with `IsClopen.eq_univ`; both must therefore be re-exported, not
+-- merely reachable.  (Both live in
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds` since 2026-07-28.)
 public import Mathlib.AlgebraicGeometry.Noetherian
 -- Residue fields of scheme points: `Scheme.residueField`,
 -- `Scheme.fromSpecResidueField`. Moret-Bailly's point entier is read off through
@@ -285,11 +287,13 @@ public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
--- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
--- heart of the connected ⟹ irreducible upgrade) states `Localization.AtPrime`
--- in its signature, and its proof runs on the minimal-prime API: finiteness
--- over a noetherian ring, and the order isomorphism between the primes of
--- `A_p` and the primes of `A` below `p`.
+-- `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN 2026-07-26 as
+-- `exists_isOpen_isIrreducible_primeSpectrum`, the affine heart of the
+-- connected ⟹ irreducible upgrade; HOISTED 2026-07-28 into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds`) states
+-- `Localization.AtPrime` in its signature, and its proof runs on the
+-- minimal-prime API: finiteness over a noetherian ring, and the order
+-- isomorphism between the primes of `A_p` and the primes of `A` below `p`.
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
