@@ -541,29 +541,37 @@ lemma charFrob_natDegree {A : Type*} [CommRing A] [Nontrivial A]
   exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The determinant pins the constant `charFrob` coefficient of a
-hardly ramified representation** (PROVEN): at every finite place `v`,
-the constant coefficient of `charFrob` — which is `(-1)² · det = det`
-of the Frobenius endomorphism on the rank-2 module — is the image
-under `algebraMap ℤ_p` of the cyclotomic-character value at the
-(fixed, coefficient-ring-independent) global Galois element underlying
-the arithmetic Frobenius at `v`.  Hence two hardly ramified
-representations linked by a ring homomorphism compatible with the
-`ℤ_p`-structures match constant `charFrob` coefficients EVERYWHERE —
-the trace-determines-`charFrob` audit point of the module docstring,
-stated directly in the transported two-representation form the
-assembly consumes. -/
-lemma coeff_zero_charFrob_eq_of_isHardlyRamified {p : ℕ} {hpodd : Odd p}
+/-- **The determinant pins the constant `charFrob` coefficient** (PROVEN;
+GENERALISED 2026-07-28 out of `coeff_zero_charFrob_eq_of_isHardlyRamified`
+below, which is now one line over it).
+
+At every finite place `v` the constant coefficient of `charFrob` — which is
+`(-1)² · det = det` of the Frobenius endomorphism on the rank-2 module — is the
+image under `algebraMap ℤ_p` of the cyclotomic-character value at the (fixed,
+coefficient-ring-independent) global Galois element underlying the arithmetic
+Frobenius at `v`.  Hence two representations whose DETERMINANTS are both the
+`p`-adic cyclotomic character, linked by a ring homomorphism compatible with the
+`ℤ_p`-structures, match constant `charFrob` coefficients EVERYWHERE.
+
+Only the two `det` clauses are used — never `isFlat`, `isTameAtTwo` or
+`isUnramified` — which is exactly why this form is worth having separately:
+`IsTaylorWilesResidual` (below) carries `det` for `ρbar` WITHOUT the two clauses
+that the tree refutes, so the raised-level leaf
+`exists_auxDeformationDatum` can pin its constant coefficients without ever
+holding `IsHardlyRamified hpodd hW ρbar` — which its CIRCULARITY GUARD bans. -/
+lemma coeff_zero_charFrob_eq_of_det_eq {p : ℕ}
     [Fact p.Prime] {R : Type*} [CommRing R] [TopologicalSpace R]
     [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[p] R]
     {V : Type*} [AddCommGroup V] [Module R V] [Module.Finite R V]
-    [Module.Free R V] {hdim : Module.rank R V = 2} {ρ : GaloisRep ℚ R V}
-    (hρ : IsHardlyRamified hpodd hdim ρ)
+    [Module.Free R V] (hdim : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρdet : ∀ g, ρ.det g = algebraMap ℤ_[p] R
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
     {k : Type*} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
     [IsLocalRing k] [Algebra ℤ_[p] k]
     {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W] {hW : Module.rank k W = 2} {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbardet : ∀ g, ρbar.det g = algebraMap ℤ_[p] k
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
     (f : R →+* k) (hf : f.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
     f ((ρ.charFrob v).coeff 0) = (ρbar.charFrob v).coeff 0 := by
@@ -594,8 +602,30 @@ lemma coeff_zero_charFrob_eq_of_isHardlyRamified {p : ℕ} {hpodd : Odd p}
     rw [hdetk]
     ring
   rw [hcR, hck, GaloisRep.toLocal_apply, GaloisRep.toLocal_apply,
-    ← GaloisRep.det_apply, ← GaloisRep.det_apply, hρ.det, hρbar.det,
+    ← GaloisRep.det_apply, ← GaloisRep.det_apply, hρdet, hρbardet,
     ← RingHom.comp_apply, hf]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The determinant pins the constant `charFrob` coefficient of a
+hardly ramified representation** (PROVEN): the `IsHardlyRamified` special case
+of `coeff_zero_charFrob_eq_of_det_eq` above, in the transported
+two-representation form the Mazur-representability assembly consumes.  This is
+the trace-determines-`charFrob` audit point of the module docstring. -/
+lemma coeff_zero_charFrob_eq_of_isHardlyRamified {p : ℕ} {hpodd : Odd p}
+    [Fact p.Prime] {R : Type*} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[p] R]
+    {V : Type*} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] {hdim : Module.rank R V = 2} {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified hpodd hdim ρ)
+    {k : Type*} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+    [IsLocalRing k] [Algebra ℤ_[p] k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {hW : Module.rank k W = 2} {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (f : R →+* k) (hf : f.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] k)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    f ((ρ.charFrob v).coeff 0) = (ρbar.charFrob v).coeff 0 :=
+  coeff_zero_charFrob_eq_of_det_eq hdim hρ.det hW hρbar.det f hf v
 
 set_option linter.checkUnivs false in
 /-- **A hardly ramified deformation of `ρbar` over a module-finite
@@ -5251,9 +5281,11 @@ def AuxDeformationDatum.IsWeaklyUniversal.{a, vK, vW} {p : ℕ} {hpodd : Odd p}
             (𝒟'.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1
 
 set_option linter.checkUnivs false in
-/-- **The raised-level deformation category at `Q` is NONEMPTY** (sorry node,
-LEAF A2′-1 of the 2026-07-27 RING/HECKE cut of
-`exists_taylorWilesAuxLevelPresentedDatum` below).
+/-- **The raised-level deformation category at `Q` is NONEMPTY** (PROVEN
+2026-07-28 — was LEAF A2′-1 of the 2026-07-27 RING/HECKE cut of
+`exists_taylorWilesAuxLevelPresentedDatum` below; closed over the Hilbert-side
+split-torus package after two interface repairs recorded below, and over the
+Chebotarev–Brauer–Nesbitt leaf `exists_conj_of_charFrob_eq_away`).
 
 `ρuniv` ITSELF is the witness.  Four of the five clauses of
 `IsRaisedLevelHardlyRamified` are handed over by `hρuniv` — `det`, `isFlat`,
@@ -5277,16 +5309,27 @@ see the note below on how that is obtained), and the local clause of `hQ` says
 3. the second diagonal character is unramified because the whole local
    representation is.
 
-**This exact route is already 2/3 PROVEN on the Hilbert side** and should be
-mined rather than rebuilt: `commute_toLocal_adicArithFrob_of_isUnramifiedAt`
-(PROVEN), `exists_splitTorus_of_frobDiagonal` (PROVEN) and
-`exists_frobEigenBasis_of_charFrob_map_eq` (the single open piece), all in
+**This exact route is FULLY PROVEN on the Hilbert side and is CONSUMED here,
+not copied** (2026-07-28 — the answer to the "can they be hoisted?" question
+this docstring used to ask).  `commute_toLocal_adicArithFrob_of_isUnramifiedAt`,
+`exists_frobEigenBasis_of_charFrob_map_eq` (which was labelled the single open
+piece and had in fact been closed over
+`exists_matrix_eigenBasis_of_charpoly_map_eq`) and
+`exists_splitTorus_of_frobDiagonal` all live in
 `HardlyRamified/HilbertModularity.lean`, assembled there as
-`exists_isSplitTorusAt_of_isUnramifiedAt`.  They are stated over a place of a
-number field `F`; `ℚ` is such a field, so the adaptation is a change of
-vocabulary, not of mathematics.  **Check first whether they can be hoisted to a
-common home instead of copied** — a second independent version of that argument
-is exactly the object this fleet should not produce.
+`exists_isSplitTorusAt_of_isUnramifiedAt`, and they are stated over an arbitrary
+place of an arbitrary number field — `ℚ` is one.
+
+**No hoisting was needed: that file is ALREADY a public transitive import of
+this one** (`Patching → …HardlyRamified.Deformation → HilbertModularity`), so
+the names were visible here all along.  What actually blocked reuse was a
+UNIVERSE clash and nothing else: the section had `R`, `F` and `k` all in one
+`Type u`, while here `F = ℚ` is `Type 0` and the coefficient ring and residual
+field are this leaf's own `uR`, `uK`.  The repair was to make the three
+universes independent in place (`Type*`), which is strictly weaker than hoisting
+and moves no declaration.  Record for the next reader: when a lemma "cannot be
+reused across files", check the universes before concluding it must be moved or
+duplicated.
 
 **WHY `hQ` IS ASKED AT LEVEL `n` AND THE ASSEMBLY SUPPLIES LEVEL `n + 1`.**
 The `ℚ`-level `IsTaylorWilesPrimeSet`, unlike its Hilbert twin, does NOT carry
@@ -5297,13 +5340,45 @@ unramifiedness to start from.  At `n ≥ 1` both exclusions follow (`q ≡ 1 mod
 with `p` odd forces `q ≠ 2` and `q ≠ p`), which is why the assembly below calls
 `hTWq q (n + 1)` rather than `hTWq q n` — a level-`(n+1)` Taylor–Wiles set is a
 level-`n` one a fortiori, so nothing is lost and the degenerate case is gone.
-A prover of this leaf may therefore assume `1 ≤ n` whenever it is needed, by
-reading the congruence off `hQ`.
+
+**INTERFACE REPAIR 1 (2026-07-28): `hn : 1 ≤ n` IS A HYPOTHESIS, NOT A THING A
+PROVER CAN READ OFF `hQ`.**  The paragraph above used to end "a prover of this
+leaf may therefore assume `1 ≤ n` whenever it is needed, by reading the
+congruence off `hQ`".  That is a non-sequitur and it made the leaf FALSE as
+stated: at `n = 0` the congruence `q ≡ 1 [MOD p^0]` is `q ≡ 1 [MOD 1]`, which
+every `q` satisfies, so it carries no information at all — least of all
+`1 ≤ n`.  A level-`0` Taylor–Wiles set may therefore contain `q = 2` or `q = p`,
+where `ρuniv` is only tame resp. flat, and the split-torus clause fails.  The
+bound is now an explicit hypothesis.  It costs the assembly nothing: it already
+supplies `n + 1`, so it discharges `hn` by `omega`.
+
+**INTERFACE REPAIR 2 (2026-07-28): `hres` — the missing hypothesis was already
+in the caller's hand.**  Step 1 needs the RESIDUAL Frobenius charpoly of
+`ρuniv` at `q ∈ Q`, i.e. `(ρuniv.charFrob q).map πuniv`, and `hunivred` supplies
+only its LINEAR coefficient, only away from `Suniv`.  Two gaps, both closed by
+`hres : IsTaylorWilesResidual hpodd hW ρbar`, which the assembly already holds
+and was discarding:
+
+* the CONSTANT coefficient is the determinant, and `hres.det` pins `ρbar`'s to
+  the same cyclotomic value `hρuniv.det` pins `ρuniv`'s to
+  (`coeff_zero_charFrob_eq_of_det_eq`); with monicity and degree `2` that
+  upgrades `hunivred` to FULL `charFrob` matching off `Suniv`;
+* which is exactly the input of the Chebotarev–Brauer–Nesbitt leaf
+  `exists_conj_of_charFrob_eq_away`, and a conjugacy makes the matching hold at
+  EVERY place — in particular at the primes of `Q` that lie IN `Suniv`, which
+  no hypothesis of this leaf reaches otherwise.
+
+`IsTaylorWilesResidual` is deliberately NOT `IsHardlyRamified` (see its own
+docstring): it drops `isFlat` and `isTameAtTwo`, the two clauses that together
+with irreducibility the tree REFUTES.  So adding it does not reopen the
+circularity the guard below closes — it is the weakened residual package this
+whole section is stated against, and every sibling leaf already carries it.
 
 `hadic`, `hπuniv`, `hunivred` are what make the datum's `π`, `S` and
-`charFrob_compat` fields; `hirr` is carried because the residual-eigenvalue
-bookkeeping of step 1 is stated against an irreducible `ρbar` everywhere else
-in this file.
+`charFrob_compat` fields; `hadic` is used a second time to prove `πuniv`
+CONTINUOUS (the maximal ideal is open in the `𝔪`-adic topology and is
+`ker πuniv`), which is what lets `ρuniv` be base-changed along `πuniv` at all.
+`hirr` is what the Chebotarev–Brauer–Nesbitt step consumes.
 
 CIRCULARITY GUARD: inherited from the assembly —
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
@@ -5319,6 +5394,7 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hres : IsTaylorWilesResidual hpodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
     {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
     [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
@@ -5335,9 +5411,131 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
       πuniv ((ρuniv.charFrob
           hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) :=
-  sorry
+    (n : ℕ) (hn : 1 ≤ n) (Q : Finset ℕ)
+    (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
+    Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv := hcomplete
+  -- `πuniv` is continuous: its kernel is the maximal ideal, which is open in
+  -- the `𝔪`-adic topology, and `k` is discrete.  This is what makes the
+  -- residual representation `ρuniv.baseChange k` exist at all.
+  have hker : RingHom.ker πuniv = IsLocalRing.maximalIdeal Runiv :=
+    IsLocalRing.ker_eq_maximalIdeal πuniv hπuniv
+  have hmopen : IsOpen ((IsLocalRing.maximalIdeal Runiv : Ideal Runiv) :
+      Set Runiv) := by
+    have h := (isAdic_iff.mp hadic).1 1
+    simpa using h
+  have hπcont : Continuous πuniv := by
+    apply continuous_of_continuousAt_zero πuniv
+    unfold ContinuousAt
+    rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
+    filter_upwards [hmopen.mem_nhds (Submodule.zero_mem _)] with x hx
+    exact RingHom.mem_ker.mp (by rw [hker]; exact hx)
+  letI : Algebra Runiv k := πuniv.toAlgebra
+  letI : ContinuousSMul Runiv k := continuousSMul_of_algebraMap Runiv k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  -- FULL `charFrob` matching away from `Suniv`: the linear coefficients by
+  -- `hunivred`, the constant ones by the two determinant conditions, degree and
+  -- monicity because both are `charFrob`s of rank-2 representations.
+  have hrankW' : Module.rank k (k ⊗[Runiv] (Fin 2 → Runiv)) = 2 := by
+    rw [Module.rank_baseChange, hranku]
+    simp
+  have hcf : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+      (ρuniv.baseChange k).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqS
+    have hmap := charFrob_baseChange (B := k)
+      hq.toHeightOneSpectrumRingOfIntegersRat ρuniv
+    rw [RingHom.algebraMap_toAlgebra] at hmap
+    refine monic_natDegree_two_ext ?_
+      (charFrob_monic hq.toHeightOneSpectrumRingOfIntegersRat ρbar) ?_
+      (charFrob_natDegree hq.toHeightOneSpectrumRingOfIntegersRat ρbar hW) ?_ ?_
+    · rw [hmap]
+      exact (charFrob_monic hq.toHeightOneSpectrumRingOfIntegersRat
+        ρuniv).map πuniv
+    · rw [hmap, (charFrob_monic hq.toHeightOneSpectrumRingOfIntegersRat
+        ρuniv).natDegree_map πuniv]
+      exact charFrob_natDegree hq.toHeightOneSpectrumRingOfIntegersRat ρuniv
+        hranku
+    · rw [hmap, Polynomial.coeff_map]
+      exact coeff_zero_charFrob_eq_of_det_eq hranku hρuniv.det hW hres.det πuniv
+        (ringHom_padicInt_eq (πuniv.comp (algebraMap ℤ_[p] Runiv))
+          (algebraMap ℤ_[p] k))
+        hq.toHeightOneSpectrumRingOfIntegersRat
+    · rw [hmap, Polynomial.coeff_map]
+      exact hunivred q hq hqS
+  -- … which Chebotarev–Brauer–Nesbitt upgrades to a residual identification …
+  obtain ⟨e0, he0⟩ := exists_conj_of_charFrob_eq_away hW hirr hrankW'
+    (ρuniv.baseChange k) Suniv hcf
+  -- … hence to `charFrob` matching at EVERY place.  This last step is what the
+  -- primes of `Q` lying INSIDE `Suniv` need: no hypothesis of this leaf
+  -- constrains `ρuniv` at those places directly.
+  have hall : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+      (ρuniv.charFrob v).map πuniv = ρbar.charFrob v := by
+    intro v
+    have h1 := charFrob_conj v (ρuniv.baseChange k) e0
+    rw [he0] at h1
+    have hmap := charFrob_baseChange (B := k) v ρuniv
+    rw [RingHom.algebraMap_toAlgebra] at hmap
+    rw [h1, hmap]
+  have hpprime : p.Prime := Fact.out
+  have hp3 : 3 ≤ p := by
+    have h2 := hpprime.two_le
+    have hne : p ≠ 2 := by
+      intro h
+      rw [h] at hpodd
+      simp [Nat.odd_iff] at hpodd
+    omega
+  -- THE CONTENT: the split-torus clause at each `q ∈ Q`.
+  have hsplit : ∀ q ∈ Q, ∀ hq : q.Prime,
+      ∃ (e : (Fin 2 → Runiv) ≃ₗ[Runiv] Runiv × Runiv)
+        (χ δ : GaloisRep
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ)
+          Runiv Runiv),
+        (∀ (g : Field.absoluteGaloisGroup
+            ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+            (v : Fin 2 → Runiv),
+          e (ρuniv.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+            (χ g (e v).1, δ g (e v).2)) ∧
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+    intro q hqQ hq
+    obtain ⟨hq', hcong, α, β, hαβ, hpoly⟩ := hQ.1 q hqQ
+    -- `q ≡ 1 mod p^n` with `1 ≤ n` and `p` odd excludes `q = 2` and `q = p`,
+    -- which is the ONLY place `hn` is used — and the reason it is a hypothesis.
+    have hdvdpow : p ^ n ∣ q - 1 :=
+      (Nat.modEq_iff_dvd' hq.one_lt.le).mp hcong.symm
+    have hpd : p ∣ q - 1 :=
+      dvd_trans (dvd_pow_self p (by omega : n ≠ 0)) hdvdpow
+    have hq2 : q ≠ 2 := by
+      intro h
+      rw [h] at hpd
+      have := Nat.le_of_dvd (by norm_num) hpd
+      omega
+    have hqp : q ≠ p := by
+      intro h
+      rw [h] at hpd
+      have := Nat.le_of_dvd (by omega) hpd
+      omega
+    exact exists_isSplitTorusAt_of_isUnramifiedAt
+      hq.toHeightOneSpectrumRingOfIntegersRat πuniv hπuniv ρuniv
+      (hρuniv.isUnramified q hq ⟨hq2, hqp⟩) α β hαβ ((hall _).trans hpoly)
+  exact ⟨{ R := Runiv
+           isAdic := hadic
+           isAdicComplete := hcomplete
+           ρ := ρuniv
+           rank_eq := hranku
+           isRaisedLevelHardlyRamified :=
+             { det := hρuniv.det
+               isUnramified := fun q hq _ h2 hp =>
+                 hρuniv.isUnramified q hq ⟨h2, hp⟩
+               isFlat := hρuniv.isFlat
+               isTameAtTwo := hρuniv.isTameAtTwo
+               isSplitTorusAt := hsplit }
+           π := πuniv
+           π_surjective := hπuniv
+           S := Suniv
+           charFrob_compat := hunivred }⟩
 
 set_option linter.checkUnivs false in
 /-- **The raised-level deformation problem is weakly representable** (sorry
@@ -6012,8 +6210,8 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   -- A level-`(n+1)` set is a level-`n` set a fortiori, so nothing is lost.
   obtain ⟨Q, hQcard, hQ⟩ := hTWq q (n + 1) hq0
   -- LEAF A2′-1: the raised-level deformation category at `Q` is nonempty …
-  obtain ⟨𝒟₀⟩ := exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hirr hadic
-    hcomplete hranku hρuniv hπuniv hunivred (n + 1) Q hQ
+  obtain ⟨𝒟₀⟩ := exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr hadic
+    hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
   -- LEAF A2′-2: … and has a weakly universal object `R_Q`
   obtain ⟨𝒟Q, h𝒟Q⟩ := exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
     hpodd hW hirr (n + 1) Q hQ 𝒟₀

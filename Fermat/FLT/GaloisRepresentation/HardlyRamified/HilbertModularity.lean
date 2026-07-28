@@ -20402,7 +20402,7 @@ Hecke representation `ρ_T` must satisfy the SPLIT-TORUS clause of
 `HilbertHeckeAlgebra`, verbatim. See the FORMAL-CONTENT AUDIT on that theorem
 for what that means and what it does NOT mean.
 
-The local statement is decomposed here into three pieces, two of them PROVEN:
+The local statement is decomposed here into three pieces, ALL THREE now PROVEN:
 
 * `commute_toLocal_adicArithFrob_of_isUnramifiedAt` (PROVEN) — an unramified
   local representation COMMUTES with the arithmetic Frobenius, because
@@ -20412,9 +20412,11 @@ The local statement is decomposed here into three pieces, two of them PROVEN:
   replaces the topological generation of `G_{F_w}/I_w` by Frobenius — which is
   NOT available in this development, and is not needed: commutation with one
   element is all the diagonalisation argument consumes.
-* `exists_frobEigenBasis_of_charFrob_map_eq` (LEAF) — Hensel's lemma over the
-  complete local coefficient ring: the Frobenius matrix has an eigenbasis
-  lifting the residual one. This is the ONE open piece.
+* `exists_frobEigenBasis_of_charFrob_map_eq` (PROVEN — this note said "LEAF …
+  the ONE open piece" until 2026-07-28; it was closed over
+  `exists_matrix_eigenBasis_of_charpoly_map_eq` and the label was left behind)
+  — Hensel's lemma over the complete local coefficient ring: the Frobenius
+  matrix has an eigenbasis lifting the residual one.
 * `exists_splitTorus_of_frobDiagonal` (PROVEN) — given that eigenbasis, the
   whole local representation is diagonal in it (commutation plus a unit
   eigenvalue gap kills the off-diagonal entries), the two diagonal entries are
@@ -20462,9 +20464,9 @@ This is the identity that replaces the usual "a nontrivial idempotent has rank
 one, so its image is a free line" argument; it needs neither projectivity nor
 Nakayama, and it is what makes the whole leaf elementary. -/
 theorem exists_matrix_eigenBasis_of_charpoly_map_eq
-    {R : Type u} [CommRing R] [IsLocalRing R]
+    {R : Type*} [CommRing R] [IsLocalRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
-    {k : Type u} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    {k : Type*} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
     (m : Matrix (Fin 2) (Fin 2) R) (α β : k) (hαβ : α ≠ β)
     (hchar : m.charpoly.map π = (X - C α) * (X - C β)) :
     ∃ (P : Matrix (Fin 2) (Fin 2) R) (a b : R),
@@ -20646,7 +20648,20 @@ section HilbertAuxSplitTorus
 
 open scoped Pointwise
 
-variable {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+/-
+UNIVERSE GENERALISATION (2026-07-28, by the owner of `Modularity/Patching.lean`'s
+`exists_auxDeformationDatum`).  `R`, `F` and `k` in this section were all
+`Type u`.  Nothing in the mathematics ties them together, and the `ℚ`-level twin
+of `exists_isSplitTorusAt_of_isUnramifiedAt` needs them SEPARATE: there `F = ℚ`
+is `Type 0` while the coefficient ring and the residual field are the leaf's own
+universe parameters `uR` and `uK`.  Making them independent is what lets that
+leaf CONSUME this section instead of duplicating ~250 lines of proof; it is the
+"check whether they can be hoisted rather than copied" answer, and the answer is
+better than hoisting — this file is already a public transitive import of
+`Patching.lean` (`Patching → …Deformation → HilbertModularity`), so the names
+are visible there as soon as the universes stop clashing.
+-/
+variable {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
 
 /-- **A continuous multiplicative `R`-valued function is a rank-one Galois
 representation on `R`** (PROVEN).
@@ -20684,7 +20699,7 @@ noncomputable def galoisRepOfScalar {K : Type*} [Field K]
 -- it definitionally rather than through a named lemma (a named `rfl`-lemma with
 -- no consumer would be free-floating).
 
-variable {F : Type u} [Field F] [NumberField F] (w : HeightOneSpectrum (𝓞 F))
+variable {F : Type*} [Field F] [NumberField F] (w : HeightOneSpectrum (𝓞 F))
 
 omit [TopologicalSpace R] [IsTopologicalRing R] in
 /-- **The maximal ideal of the integral closure is Galois-stable, AS AN IDEAL**
@@ -20788,7 +20803,7 @@ prime, e.g. Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
 §5.3. -/
 theorem exists_frobEigenBasis_of_charFrob_map_eq
     [IsLocalRing R] [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
-    {k : Type u} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    {k : Type*} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
     (ρ : FramedGaloisRep F R (Fin 2)) (α β : k) (hαβ : α ≠ β)
     (hchar : (ρ.charFrob w).map π = (X - C α) * (X - C β)) :
     ∃ (e : (Fin 2 → R) ≃ₗ[R] R × R) (a b : R), IsUnit (a - b) ∧
@@ -20978,7 +20993,7 @@ single place `w`. It is the only thing `exists_hilbertAuxHeckeAlgebra` below
 does not already have for free. -/
 theorem exists_isSplitTorusAt_of_isUnramifiedAt
     [IsLocalRing R] [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
-    {k : Type u} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    {k : Type*} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
     (ρ : FramedGaloisRep F R (Fin 2)) (hur : ρ.IsUnramifiedAt w)
     (α β : k) (hαβ : α ≠ β)
     (hchar : (ρ.charFrob w).map π = (X - C α) * (X - C β)) :
