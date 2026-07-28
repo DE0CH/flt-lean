@@ -2110,6 +2110,13 @@ and FIXES `1/2`.  So a version of the involution leaf without `N.Prime`
 would be false, and the dichotomy would fail at `x` reducing to a fixed
 cusp other than `cusp`.
 
+**SUPERSEDED 2026-07-28 by the third cut below.**  `N.Prime` no longer
+enters the Atkin–Lehner leaf.  Once that leaf's cusp clause is weakened
+to the ∃-form — "`w_N` moves SOME cusp", which is all that is needed
+once the count is available — the `N = 4` witness stops being a
+counterexample, since `w_4` still moves `0` and `∞`.  `N.Prime` is now
+spent entirely in `IsX0RationalCuspLocus.card_isCusp_eq_two`.
+
 **WHY FIXED-POINT-FREENESS CANNOT BE MOVED INTO THE COUNTING LEAF.**  It
 is a statement about `al'`, and `al'` is bound by the existential of the
 involution leaf.  A counting leaf taking `al'` as a HYPOTHESIS satisfying
@@ -2496,45 +2503,140 @@ theorem redX_neronGenAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (x : RelPoint 
 
 end NeronModelAutomorphism
 
+/-! #### THE THIRD CUT (2026-07-28): the cusp COUNT comes out of the
+Atkin–Lehner leaf
+
+The second cut above claimed the two leaves have DISJOINT LITERATURE.
+Re-read against what `exists_atkinLehnerModel_of_jNeronDatum` actually
+asserted, that claim was **false**, and this cut repairs it.
+
+Its fixed-point clause is `∀ x' cuspidal, neronSpAut d w hw x' ≠ x'`.
+Proving that needs three separate facts:
+
+1. `w_N` moves SOME cusp of the special fibre — Atkin–Lehner;
+2. the special fibre has exactly TWO rational cusps — Deligne–Rapoport,
+   i.e. the SIBLING leaf;
+3. an involution of a two-element set that moves one element moves both.
+
+So (2) — the sibling's whole content — was silently inside the
+Atkin–Lehner leaf as well, and a prover sent at it would have had to
+redo Deligne–Rapoport.  The repair is to make the dependency explicit
+rather than duplicated:
+
+* `exists_atkinLehnerModelAut_of_jNeronDatum` (below) asks for the model
+  automorphism with the ∃-form of the cusp clause — "moves some cusp".
+  This is **pure Atkin–Lehner**, and it is level-GENERIC: `N.Prime` is
+  not used by it (`w_4` moves `0` and `∞` even though it fixes `1/2`),
+  only `1 < N`.
+* `forall_ne_of_involutive_of_card_eq_two` is (3), PROVEN.
+* `exists_atkinLehnerModel_of_jNeronDatum` is now GLUE, stated
+  unchanged and proven from those two plus
+  `nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum` — which is
+  why it has been MOVED below the sibling.  Nothing else moved.
+
+**`N.Prime` MIGRATES.**  It was recorded as belonging to the involution
+leaf "and nothing else"; it is now spent entirely in the counting step,
+through `IsX0RationalCuspLocus.card_isCusp_eq_two`.  The `N = 4` witness
+of the old docstring is exactly the point: `w_4` still MOVES a cusp, so
+the ∃-form survives at composite level; what fails there is the count,
+which is `3`.
+
+**THE JUNK WITNESS IS STILL EXCLUDED.**  `w = 𝟙` gives
+`neronSpAut d 𝟙 hw = id`, which fixes every cusp, so it fails the ∃-form
+just as it failed the ∀-form.  Weakening `∀` to `∃` therefore costs no
+pinning — the two are equivalent GIVEN the sibling, and the point of the
+cut is that only one of them mentions the count. -/
+
+/-- **An involution of a TWO-ELEMENT type that moves one element moves
+every element** (PROVEN 2026-07-28).
+
+Pure combinatorics, and the whole of the gap between "`w_N` moves SOME
+cusp of the special fibre" — all that Atkin–Lehner is asked for below —
+and "`w_N` moves EVERY cusp", which is what the dichotomy consumes.
+
+`Nat.card α = 2` says, through `Nat.card_eq_two_iff'`, that there is a
+UNIQUE element other than `a₀`; both `a` and `σ a₀` are such elements
+when `a ≠ a₀`, so they coincide, and then `σ a = σ (σ a₀) = a₀ ≠ a`. -/
+theorem forall_ne_of_involutive_of_card_eq_two {α : Type*} (σ : α → α)
+    (hσ : ∀ a, σ (σ a) = a) (hcard : Nat.card α = 2) {a₀ : α} (h₀ : σ a₀ ≠ a₀) (a : α) :
+    σ a ≠ a := by
+  intro ha
+  obtain ⟨b, -, huniq⟩ := (Nat.card_eq_two_iff' a₀).1 hcard
+  by_cases haa : a = a₀
+  · subst haa
+    exact h₀ ha
+  · have h1 : a = b := huniq a haa
+    have h2 : σ a₀ = b := huniq _ h₀
+    have h4 : σ a = a₀ := by rw [h1, ← h2, hσ]
+    exact haa (ha.symm.trans h4)
+
 /-- **The Atkin–Lehner involution of the INTEGRAL MODEL** (sorry node, new
-2026-07-27) — the Atkin–Lehner half of the second cut, and what the 1970
-paper actually constructs.
+2026-07-27; RE-CUT 2026-07-28 to the ∃-form of the cusp clause) — the
+Atkin–Lehner half of the cut, and what the 1970 paper actually
+constructs.
 
 `w_N` is an automorphism of the smooth model of `X_0(N)` over `ℤ[1/N]`,
 hence over `ℤ_(q)` for `q ∤ N`, restricting to an automorphism of the
-open part `𝒴 = Y_0(N)`; it is an involution; and at PRIME level it
-interchanges the two cusps, so the involution it induces on the
-`𝔽_q`-points of the special fibre has NO FIXED CUSP.
+open part `𝒴 = Y_0(N)`; it is an involution; and it does not act
+trivially on the cusps of the special fibre.
 
 **WHAT IS ASKED, PRECISELY.**  A pair `w : 𝒳 ⟶ 𝒳`, `w_𝒴 : 𝒴 ⟶ 𝒴` over
-`Spec ℤ_(q)` with `w_𝒴 ≫ jZ = jZ ≫ w` and `w ≫ w = 𝟙`, together with
-fixed-point-freeness of the induced `neronSpAut d w hw` on the cuspidal
-locus.  Everything the dichotomy consumes — the five point-level
-properties of `exists_atkinLehnerInvolution_of_jNeronDatum` — is derived
-from this and nothing else.
+`Spec ℤ_(q)` with `w_𝒴 ≫ jZ = jZ ≫ w` and `w ≫ w = 𝟙`, together with ONE
+cuspidal `𝔽_q`-point that the induced `neronSpAut d w hw` moves.  The
+∀-form — no fixed cusp at all — is `exists_atkinLehnerModel_of_jNeronDatum`
+below, and is this leaf plus the cusp COUNT; see the subsection docstring
+above for why keeping the count out of here matters.
 
-**WHERE THE HYPOTHESES ENTER.**  `N.Prime` is the fixed-point-freeness
-clause and nothing else: at composite level `w_N` FIXES cusps, the
-smallest witness being `N = 4`, whose three cusps are `0`, `1/2`, `∞`
-with `w_4` interchanging `0` and `∞` and fixing `1/2`.  `q.Prime` with
+**WHAT PROVING IT NEEDS.**  The Deligne–Rapoport model of `X_0(N)` over
+`ℤ[1/N]` (equivalently: over `ℤ_(q)` for `q ∤ N`) together with the
+extension of `w_N` to it, and the fact that `w_N` is not the identity on
+the cuspidal subscheme.  The last is where Atkin–Lehner §2 is used: `w_N`
+exchanges the cusps above `d` and `N/d`, so it exchanges `0` and `∞`, and
+those stay distinct in the fibre at `q ∤ N` because the cuspidal
+subscheme of the smooth model is étale — two disjoint sections.
+
+**WHERE THE HYPOTHESES ENTER — AND `N.Prime` NO LONGER DOES.**  Only
+`1 < N` is used from `_hN`: at `N = 1` there is a single cusp and
+`w_1 = 𝟙`, so the conclusion is false; at every `N > 1`, prime or not,
+`w_N` exchanges the cusps `0` and `∞` and the ∃-form holds.  (`w_4`
+FIXES the cusp `1/2`, which is why the ∀-form needs `N.Prime` — but that
+is now the counting step's business, not this leaf's.)  `q.Prime` with
 `q ≠ N` is `q ∤ N`, i.e. good reduction of the model, which is what lets
 `w_N` be defined over `ℤ_(q)` at all and what keeps the two cusps
 distinct in the fibre.  `q ≠ 2` is NOT needed; it belongs to the formal
 immersion.
 
-**WHY THE FIXED-POINT CLAUSE CANNOT BE SPLIT OFF.**  Every other conjunct
-is satisfied by `w = 𝟙`, `w_𝒴 = 𝟙`.  So a leaf asking only for the
+**WHY THE CUSP CLAUSE CANNOT BE SPLIT OFF.**  Every other conjunct is
+satisfied by `w = 𝟙`, `w_𝒴 = 𝟙`.  So a leaf asking only for the
 algebraic clauses would be discharged by the identity, and a second leaf
-taking such a `w` as a hypothesis and concluding fixed-point-freeness
-would be FALSE.  The clause is stated about `neronSpAut d w hw`, a
+taking such a `w` as a hypothesis and concluding anything about its
+cusps would be FALSE.  The clause is stated about `neronSpAut d w hw`, a
 DEFINED function of `w`, precisely so that it is a condition on `w`
-rather than on a hypothesised function — this is the same forcing that
-keeps the cusp count in a leaf mentioning no involution at all.
+rather than on a hypothesised function.
 
 **WHY IT IS STATED OVER `IsX0JNeronDatum`.**  The conclusion mentions
 `neronSpAut d`, i.e. the special-fibre identification `spX` of the model;
 over an arbitrary `IsX0JReductionAt` there is no model and the statement
 cannot be made.  `d` is consumed by the STATEMENT.
+
+**WHAT IS ALREADY IN THE TREE, AND WHY IT DOES NOT DISCHARGE THIS**
+(checked by name 2026-07-28).  `Fermat/FLT/ModularCurve/X0.lean` carries
+a GENERIC Atkin–Lehner leaf, `exists_atkinLehner_x0`, pinned by the
+moduli condition `IsAtkinLehner` through `IsNIsogenyPair`.  It is over
+`Spec ℚ` and produces `w : X ⟶ X` on the generic fibre only, so it does
+not give this `w` — and the missing step is NOT formal: an automorphism
+of the GENERIC fibre of a smooth proper model need not extend to the
+model.  Counterexample, at genus `0`: on `𝒳 = P¹` over `ℤ_(q)` with the
+two cusps `0`, `∞`, the involution `z ↦ q/z` of `P¹_ℚ` preserves the
+open part and exchanges the cusps, but `(0 q; 1 0)` is not in
+`PGL₂(ℤ_(q))`, so it does not extend.  Since `X_0(N)` has genus `0` for
+`N ∈ {2, 3, 5, 7, 13}` and this leaf assumes only `N.Prime`, no
+"generic automorphisms extend" leaf can be interposed here without a
+genus hypothesis the statement does not carry.  What IS true, and is the
+only formal step available, is that an automorphism of the INTEGRAL open
+part extends uniquely to the compactification; that does not shorten the
+leaf, because the cusp clause is a statement about `𝒳` and cannot be
+stated on `𝒴`.
 
 **NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and the
 genuine `w_37` on the Deligne–Rapoport model over `ℤ_(3)` witnesses the
@@ -2546,7 +2648,7 @@ and `∞`, which are distinct because the cuspidal subscheme is étale at
 185 (1970), §2.  Deligne–Rapoport, *Les schémas de modules de courbes
 elliptiques* (Antwerp II, 1973), for the model over `ℤ[1/N]` and the
 extension of `w_N` to it. -/
-theorem exists_atkinLehnerModel_of_jNeronDatum (N q : ℕ)
+theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
     (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
@@ -2559,7 +2661,7 @@ theorem exists_atkinLehnerModel_of_jNeronDatum (N q : ℕ)
     (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     ∃ (w : XZ ⟶ XZ) (wY : YZ ⟶ YZ) (hw : w ≫ xstr = xstr) (hwY : wY ≫ ystr = ystr),
       wY ≫ jZ = jZ ≫ w ∧ w ≫ w = 𝟙 XZ ∧
-      ∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → neronSpAut d w hw x' ≠ x' :=
+      ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' :=
   sorry
 
 /-- **The cuspidal subscheme of the special fibre is two `𝔽_q`-rational
@@ -2622,6 +2724,78 @@ theorem nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum (N q : ℕ)
     (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     Nonempty (IsX0RationalCuspLocus N hX') :=
   sorry
+
+/-- **The Atkin–Lehner involution of the INTEGRAL MODEL, with NO FIXED
+CUSP** (PROVEN 2026-07-28 over `exists_atkinLehnerModelAut_of_jNeronDatum`
+and `nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum`; opened as a
+sorry node 2026-07-27).
+
+The statement is unchanged from when it was a leaf — its consumer
+`exists_atkinLehnerInvolution_of_jNeronDatum` calls it identically — but
+it is now GLUE rather than a classical input, and it has MOVED below the
+cusp-locus leaf because it consumes it.  See the subsection docstring
+above `forall_ne_of_involutive_of_card_eq_two` for why: the ∀-form of the
+fixed-point clause silently contained Deligne–Rapoport's cusp count, so
+the two "disjoint literature" leaves were not in fact disjoint.
+
+**HOW IT IS PROVEN.**  `exists_atkinLehnerModelAut_of_jNeronDatum`
+supplies `w`, `w_𝒴` and ONE moved cusp.  `neronSpAut d w hw` preserves
+the cuspidal locus — the contrapositive of `not_isCusp_neronSpAut`, folded
+back with `neronSpAut_involutive`, exactly as in the consumer below — so
+it restricts to an involution of the subtype of cuspidal `𝔽_q`-points.
+That subtype has exactly TWO elements by
+`IsX0RationalCuspLocus.card_isCusp_eq_two`, and an involution of a
+two-element type that moves one element moves both
+(`forall_ne_of_involutive_of_card_eq_two`).
+
+**WHERE `N.Prime` IS SPENT.**  Only in `card_isCusp_eq_two`: the cusps
+biject with `N.divisors`, and `Nat.Prime.divisors = {1, N}`.  At `N = 4`
+the count is `3` and `w_4` fixes the cusp `1/2`, so the conclusion is
+false — the hypothesis is load-bearing, but it is load-bearing HERE and
+not inside the Atkin–Lehner leaf.
+
+**`q.Prime` IS NOW USED, NOT MERELY CARRIED.**  It is what supplies
+`Fact q.Prime`, hence the `Field (ZMod q)` instance that
+`IsX0RationalCuspLocus N hX'` is stated over. -/
+theorem exists_atkinLehnerModel_of_jNeronDatum (N q : ℕ)
+    (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ (w : XZ ⟶ XZ) (wY : YZ ⟶ YZ) (hw : w ≫ xstr = xstr) (hwY : wY ≫ ystr = ystr),
+      wY ≫ jZ = jZ ≫ w ∧ w ≫ w = 𝟙 XZ ∧
+      ∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → neronSpAut d w hw x' ≠ x' := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  obtain ⟨w, wY, hw, hwY, hcomm, hinv, x₀, hx₀, hx₀ne⟩ :=
+    exists_atkinLehnerModelAut_of_jNeronDatum N q hN hq hqN d
+  obtain ⟨C⟩ := nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum N q hN hqN d
+  refine ⟨w, wY, hw, hwY, hcomm, hinv, ?_⟩
+  -- cusp preservation: the contrapositive of `not_isCusp_neronSpAut`,
+  -- folded back with involutivity
+  have hpres : ∀ x' : RelPoint strX' (𝟙 (SpecF q)),
+      hX'.IsCusp x' → hX'.IsCusp (neronSpAut d w hw x') := by
+    intro x' hx'
+    by_contra hcs
+    have h2 := not_isCusp_neronSpAut d w hw wY hwY hcomm _ hcs
+    rw [neronSpAut_involutive d w hw hinv x'] at h2
+    exact h2 hx'
+  -- the induced involution of the two-element type of cuspidal points
+  have hcard : Nat.card {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} = 2 :=
+    IsX0RationalCuspLocus.card_isCusp_eq_two hN C
+  intro x' hx' heq
+  exact forall_ne_of_involutive_of_card_eq_two
+    (fun a : {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} =>
+      (⟨neronSpAut d w hw a.1, hpres a.1 a.2⟩ :
+        {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'}))
+    (fun a => Subtype.ext (neronSpAut_involutive d w hw hinv a.1))
+    hcard (a₀ := ⟨x₀, hx₀⟩) (fun h => hx₀ne (congrArg Subtype.val h)) ⟨x', hx'⟩
+    (Subtype.ext heq)
 
 /-- **The Atkin–Lehner involution `w_N` with its reduction mod `q`**
 (PROVEN 2026-07-27 over `exists_atkinLehnerModel_of_jNeronDatum`; opened
