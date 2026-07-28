@@ -3155,6 +3155,233 @@ end FibreColimit
 
 end NoetherianApproxSystem
 
+/-! ### THE TWO "`𝔪_R` IS THE UNION OF THE STAGE IDEALS" LEAVES, PROVEN 2026-07-28
+
+The docstring of `exists_mem_fibreIdealTot` asked for exactly this: "a prover should
+factor the common argument out into a lemma about a single tower over the `Base` system
+rather than writing it twice".  `exists_mem_map_maximalIdeal_of_colimitTower` below is
+that lemma, and both leaves are one application of it apiece — the `Mid` tower with
+`φ = g`, and the `Tot` tower with `φ = v.comp g` and `baseToE i = midToTot i ∘ baseToMid i`,
+which is the composite `fibreIdealTot` is the `Ideal.map` along.
+-/
+
+/-- **`𝔪_R · X` IS THE UNION OF THE IMAGES OF THE STAGE IDEALS `𝔪_{Base i} · E i`**
+(PROVEN 2026-07-28) — the shared engine of `exists_mem_fibreIdealMid` and
+`exists_mem_fibreIdealTot`.
+
+*Given a filtered system of local rings `Base i` with colimit the local ring `R`, and ONE
+tower `E i` over it with colimit `X` along `φ : R →+* X`, an element of `E i` landing in
+`(𝔪_R).map φ` already lies in the stage ideal `(𝔪_{Base j}).map (baseToE j)` at some
+`j ≥ i`.*
+
+**THE PROOF, and why it is not the finite-expansion argument.**  The obvious route expands
+`eToX i z = ∑_k x_k · φ m_k`, pulls each `m_k` and each `x_k` back to a stage, and uses
+`directed` finitely many times to align the indices.  That works and costs a page of
+`Finset` bookkeeping.  Instead, note that
+
+  `J := {x : X | ∀ a (w : E a), eToX a w = x → ∃ b ≥ a, eT w ∈ (𝔪_{Base b}).map (baseToE b)}`
+
+is an IDEAL of `X` — `hzero`, `hadd`, `hsmul` below, each proven by pulling the one or two
+elements involved back with `e_surj`, aligning with `directed`, and closing the resulting
+equation in `X` with a single `e_sep`.  Then `Ideal.map_le_iff_le_comap` reduces
+`(𝔪_R).map φ ≤ J` to the GENERATORS: `φ m ∈ J` for `m ∈ 𝔪_R`, which is `hgen`.  No sum is
+ever formed, and the hypothesis is applied to `z` itself at the very end.
+
+**WHERE LOCALITY IS SPENT.**  Exactly twice, both inside `hgen`: `isLocalHomBaseToR` turns
+`baseToR p y = m ∈ 𝔪_R` into `y ∈ 𝔪_{Base p}` (a unit would map to a unit), and
+`isLocalHomBaseT` carries that along the base transitions.  `push` uses `isLocalHomBaseT`
+for the same reason.  Nothing else in the proof needs a ring to be local — in particular
+the `E` tower's rings are NOT assumed local, which is why the lemma applies verbatim to the
+`Mid` and the `Tot` towers of a `NoetherianApproxSystem`.
+
+**WHY `comp` MAY TAKE AN ARBITRARY THIRD PROOF.**  `le a c` is a `Prop`, so proof
+irrelevance is definitional and `eT h₃` is the same function as `eT (le_trans' h₁ h₂)` for
+any `h₃`.  That is what keeps the index bookkeeping to one lemma instead of a transport.
+
+**FAITHFULNESS.**  Every hypothesis is a field of `NoetherianApproxSystem` (or, for the
+`Tot` instance, a one-`rw` composite of two of them), so nothing is asked for that the two
+call sites cannot supply — which is the check a hypothesis-side datum has to pass, and it is
+discharged by the compiler at both applications rather than by argument.  Note `Noetherian`
+appears NOWHERE: this statement is pure colimit bookkeeping, and the Noetherian hypotheses of
+00R7 are spent elsewhere.
+
+**NON-DEGENERACY.**  Not vacuous and not trivial: with `Λ` a point and `E = X`, `Base = R`,
+`baseToE = φ`, every hypothesis holds and the conclusion says `z ∈ (𝔪_R).map φ`, which is the
+input — so the content is exactly the passage from the colimit `X` to a finite stage, and it
+is `e_sep`/`base_surj` that carry it. -/
+theorem exists_mem_map_maximalIdeal_of_colimitTower
+    {Λ : Type u} {le : Λ → Λ → Prop}
+    {R X : Type u} [CommRing R] [CommRing X] [IsLocalRing R] {φ : R →+* X}
+    {Base E : Λ → Type u} [∀ i, CommRing (Base i)] [∀ i, CommRing (E i)]
+    [hLocBase : ∀ i, IsLocalRing (Base i)]
+    {baseT : ∀ {i j : Λ}, le i j → (Base i →+* Base j)}
+    {eT : ∀ {i j : Λ}, le i j → (E i →+* E j)}
+    {baseToE : ∀ i, Base i →+* E i}
+    {baseToR : ∀ i, Base i →+* R} {eToX : ∀ i, E i →+* X}
+    (le_trans' : ∀ {i j k}, le i j → le j k → le i k)
+    (directed : ∀ i j, ∃ k, le i k ∧ le j k)
+    (eT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+      (eT h₂).comp (eT h₁) = eT (le_trans' h₁ h₂))
+    (comm_baseE : ∀ i, (eToX i).comp (baseToE i) = φ.comp (baseToR i))
+    (comm_baseT : ∀ {i j} (h : le i j), (baseToE j).comp (baseT h) = (eT h).comp (baseToE i))
+    (comm_baseToR : ∀ {i j} (h : le i j), (baseToR j).comp (baseT h) = baseToR i)
+    (comm_eToX : ∀ {i j} (h : le i j), (eToX j).comp (eT h) = eToX i)
+    (isLocalHomBaseT : ∀ {i j} (h : le i j), IsLocalHom (baseT h))
+    (isLocalHomBaseToR : ∀ i, IsLocalHom (baseToR i))
+    (base_surj : ∀ x : R, ∃ i, ∃ y : Base i, baseToR i y = x)
+    (e_surj : ∀ x : X, ∃ i, ∃ y : E i, eToX i y = x)
+    (e_sep : ∀ i (x y : E i), eToX i x = eToX i y → ∃ j, ∃ h : le i j, eT h x = eT h y)
+    (i : Λ) (z : E i) (hz : eToX i z ∈ (IsLocalRing.maximalIdeal R).map φ) :
+    ∃ j, ∃ h : le i j,
+      eT h z ∈ (IsLocalRing.maximalIdeal (Base j)).map (baseToE j) := by
+  -- Transitivity of the tower transitions, in applied form.  The third proof
+  -- argument may be ANY proof of `le a c`: `le a c` is a `Prop`, so proof
+  -- irrelevance makes `eT h₃` and `eT (le_trans' h₁ h₂)` definitionally equal.
+  have comp : ∀ {a b c : Λ} (h₁ : le a b) (h₂ : le b c) (_h₃ : le a c) (w : E a),
+      eT h₂ (eT h₁ w) = eT _h₃ w := fun h₁ h₂ _ w => DFunLike.congr_fun (eT_comp h₁ h₂) w
+  -- Stage-ideal membership pushes forward along the tower.
+  have push : ∀ {a b : Λ} (h : le a b) (w : E a),
+      w ∈ (IsLocalRing.maximalIdeal (Base a)).map (baseToE a) →
+      eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b) := by
+    intro a b h w hw
+    haveI := isLocalHomBaseT h
+    have hle : (IsLocalRing.maximalIdeal (Base a)).map (baseToE a) ≤
+        ((IsLocalRing.maximalIdeal (Base b)).map (baseToE b)).comap (eT h) := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro x hx
+      show eT h (baseToE a x) ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b)
+      rw [show eT h (baseToE a x) = baseToE b (baseT h x) from
+        (DFunLike.congr_fun (comm_baseT h) x).symm]
+      refine Ideal.mem_map_of_mem _ ?_
+      have hmem : x ∈ (IsLocalRing.maximalIdeal (Base b)).comap (baseT h) := by
+        rw [IsLocalRing.maximalIdeal_comap]; exact hx
+      exact hmem
+    exact hle hw
+  -- The set of elements of `X` witnessed by a stage ideal is an ideal of `X`.
+  have hzero : ∀ (a : Λ) (w : E a), eToX a w = 0 →
+      ∃ b, ∃ h : le a b, eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b) := by
+    intro a w hw
+    obtain ⟨b, h, hb⟩ := e_sep a w 0 (by rw [hw, map_zero])
+    exact ⟨b, h, by rw [hb, map_zero]; exact Ideal.zero_mem _⟩
+  have hadd : ∀ x y : X,
+      (∀ (a : Λ) (w : E a), eToX a w = x →
+        ∃ b, ∃ h : le a b, eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b)) →
+      (∀ (a : Λ) (w : E a), eToX a w = y →
+        ∃ b, ∃ h : le a b, eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b)) →
+      ∀ (a : Λ) (w : E a), eToX a w = x + y →
+        ∃ b, ∃ h : le a b,
+          eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b) := by
+    intro x y hx hy a w hw
+    obtain ⟨p, zx, hzx⟩ := e_surj x
+    obtain ⟨q, zy, hzy⟩ := e_surj y
+    obtain ⟨k₁, hak₁, hpk₁⟩ := directed a p
+    obtain ⟨k, hk₁k, hqk⟩ := directed k₁ q
+    have hak : le a k := le_trans' hak₁ hk₁k
+    have hpk : le p k := le_trans' hpk₁ hk₁k
+    have key : eToX k (eT hak w) = eToX k (eT hpk zx + eT hqk zy) := by
+      rw [map_add,
+        show eToX k (eT hak w) = eToX a w from DFunLike.congr_fun (comm_eToX hak) w,
+        show eToX k (eT hpk zx) = eToX p zx from DFunLike.congr_fun (comm_eToX hpk) zx,
+        show eToX k (eT hqk zy) = eToX q zy from DFunLike.congr_fun (comm_eToX hqk) zy,
+        hw, hzx, hzy]
+    obtain ⟨m, hkm, hm⟩ := e_sep k _ _ key
+    obtain ⟨b₁, hmb₁, hb₁⟩ := hx m (eT hkm (eT hpk zx)) (by
+      rw [show eToX m (eT hkm (eT hpk zx)) = eToX k (eT hpk zx) from
+          DFunLike.congr_fun (comm_eToX hkm) _,
+        show eToX k (eT hpk zx) = eToX p zx from DFunLike.congr_fun (comm_eToX hpk) zx, hzx])
+    obtain ⟨b₂, hmb₂, hb₂⟩ := hy m (eT hkm (eT hqk zy)) (by
+      rw [show eToX m (eT hkm (eT hqk zy)) = eToX k (eT hqk zy) from
+          DFunLike.congr_fun (comm_eToX hkm) _,
+        show eToX k (eT hqk zy) = eToX q zy from DFunLike.congr_fun (comm_eToX hqk) zy, hzy])
+    obtain ⟨b, hb₁b, hb₂b⟩ := directed b₁ b₂
+    have hmb : le m b := le_trans' hmb₁ hb₁b
+    have hakm : le a m := le_trans' hak hkm
+    have hab : le a b := le_trans' hakm hmb
+    refine ⟨b, hab, ?_⟩
+    rw [show eT hab w = eT hmb (eT hkm (eT hak w)) from by
+      rw [comp hak hkm hakm w, comp hakm hmb hab w], hm, map_add, map_add]
+    refine Ideal.add_mem _ ?_ ?_
+    · rw [show eT hmb (eT hkm (eT hpk zx)) = eT hb₁b (eT hmb₁ (eT hkm (eT hpk zx))) from
+        (comp hmb₁ hb₁b hmb _).symm]
+      exact push hb₁b _ hb₁
+    · rw [show eT hmb (eT hkm (eT hqk zy)) = eT hb₂b (eT hmb₂ (eT hkm (eT hqk zy))) from
+        (comp hmb₂ hb₂b hmb _).symm]
+      exact push hb₂b _ hb₂
+  have hsmul : ∀ (r : X) (x : X),
+      (∀ (a : Λ) (w : E a), eToX a w = x →
+        ∃ b, ∃ h : le a b, eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b)) →
+      ∀ (a : Λ) (w : E a), eToX a w = r • x →
+        ∃ b, ∃ h : le a b,
+          eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b) := by
+    intro r x hx a w hw
+    rw [smul_eq_mul] at hw
+    obtain ⟨p, zr, hzr⟩ := e_surj r
+    obtain ⟨q, zx, hzx⟩ := e_surj x
+    obtain ⟨k₁, hak₁, hpk₁⟩ := directed a p
+    obtain ⟨k, hk₁k, hqk⟩ := directed k₁ q
+    have hak : le a k := le_trans' hak₁ hk₁k
+    have hpk : le p k := le_trans' hpk₁ hk₁k
+    have key : eToX k (eT hak w) = eToX k (eT hpk zr * eT hqk zx) := by
+      rw [map_mul,
+        show eToX k (eT hak w) = eToX a w from DFunLike.congr_fun (comm_eToX hak) w,
+        show eToX k (eT hpk zr) = eToX p zr from DFunLike.congr_fun (comm_eToX hpk) zr,
+        show eToX k (eT hqk zx) = eToX q zx from DFunLike.congr_fun (comm_eToX hqk) zx,
+        hw, hzr, hzx]
+    obtain ⟨m, hkm, hm⟩ := e_sep k _ _ key
+    obtain ⟨b, hmb, hb⟩ := hx m (eT hkm (eT hqk zx)) (by
+      rw [show eToX m (eT hkm (eT hqk zx)) = eToX k (eT hqk zx) from
+          DFunLike.congr_fun (comm_eToX hkm) _,
+        show eToX k (eT hqk zx) = eToX q zx from DFunLike.congr_fun (comm_eToX hqk) zx, hzx])
+    have hakm : le a m := le_trans' hak hkm
+    have hab : le a b := le_trans' hakm hmb
+    refine ⟨b, hab, ?_⟩
+    rw [show eT hab w = eT hmb (eT hkm (eT hak w)) from by
+      rw [comp hak hkm hakm w, comp hakm hmb hab w], hm, map_mul, map_mul]
+    exact Ideal.mul_mem_left _ _ hb
+  have hgen : ∀ m ∈ IsLocalRing.maximalIdeal R, ∀ (a : Λ) (w : E a), eToX a w = φ m →
+      ∃ b, ∃ h : le a b,
+        eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b) := by
+    intro m hm a w hw
+    obtain ⟨p, y, hy⟩ := base_surj m
+    haveI := isLocalHomBaseToR p
+    have hymem : y ∈ IsLocalRing.maximalIdeal (Base p) := by
+      have hcm : y ∈ (IsLocalRing.maximalIdeal R).comap (baseToR p) := by rw [Ideal.mem_comap, hy]; exact hm
+      rwa [IsLocalRing.maximalIdeal_comap] at hcm
+    obtain ⟨k, hak, hpk⟩ := directed a p
+    haveI := isLocalHomBaseT hpk
+    have key : eToX k (eT hak w) = eToX k (baseToE k (baseT hpk y)) := by
+      rw [show eToX k (eT hak w) = eToX a w from DFunLike.congr_fun (comm_eToX hak) w, hw,
+        show eToX k (baseToE k (baseT hpk y)) = φ (baseToR k (baseT hpk y)) from
+          DFunLike.congr_fun (comm_baseE k) (baseT hpk y),
+        show baseToR k (baseT hpk y) = baseToR p y from
+          DFunLike.congr_fun (comm_baseToR hpk) y, hy]
+    obtain ⟨b, hkb, hbeq⟩ := e_sep k _ _ key
+    have hab : le a b := le_trans' hak hkb
+    refine ⟨b, hab, ?_⟩
+    haveI := isLocalHomBaseT hkb
+    rw [show eT hab w = eT hkb (eT hak w) from (comp hak hkb hab w).symm, hbeq,
+      show eT hkb (baseToE k (baseT hpk y)) = baseToE b (baseT hkb (baseT hpk y)) from
+        (DFunLike.congr_fun (comm_baseT hkb) (baseT hpk y)).symm]
+    refine Ideal.mem_map_of_mem _ ?_
+    have h2 : baseT hpk y ∈ IsLocalRing.maximalIdeal (Base k) := by
+      have h3 : y ∈ (IsLocalRing.maximalIdeal (Base k)).comap (baseT hpk) := by
+        rw [IsLocalRing.maximalIdeal_comap]; exact hymem
+      exact h3
+    have h4 : baseT hpk y ∈ (IsLocalRing.maximalIdeal (Base b)).comap (baseT hkb) := by
+      rw [IsLocalRing.maximalIdeal_comap]; exact h2
+    exact h4
+  let J : Ideal X :=
+    { carrier := {x : X | ∀ (a : Λ) (w : E a), eToX a w = x →
+        ∃ b, ∃ h : le a b, eT h w ∈ (IsLocalRing.maximalIdeal (Base b)).map (baseToE b)}
+      zero_mem' := hzero
+      add_mem' := fun {x y} hx hy => hadd x y hx hy
+      smul_mem' := fun r x hx => hsmul r x hx }
+  have hmaple : (IsLocalRing.maximalIdeal R).map φ ≤ J := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro m hm
+    exact hgen m hm
+  exact hmaple hz i z rfl
+
 /-- `S/𝔪_R S → S'/𝔪_R S'`, the colimit of the fibre system.  This is the map
 `exists_flatFibre_index_of_noetherianApproxSystem` assumes flat, written as a definition so
 that it can be handed to `exists_flat_index_of_isNoetherianFlatDescentSystem` as the `w`
@@ -3178,42 +3405,87 @@ variable {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
 
-/-- **`𝔪_R S` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S_λ`** (SORRY LEAF; one of the three
-pieces of the fibre-system verification, which is what
+omit [IsLocalRing B] [IsLocalRing A] [IsLocalHom g] [IsLocalHom v] in
+/-- **`𝔪_R S` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S_λ`** (**PROVEN 2026-07-28**; one of
+the three pieces of the fibre-system verification, which is what
 `exists_flatFibre_index_of_noetherianApproxSystem` owns beyond the shared 10.128.3 core).
 
 This is the load-bearing half of 00R7's sentence "the colimit of the fibre system is
 `S/𝔪_R S → S'/𝔪_R S'`", and it is where the LOCALITY of the cocone maps
 (`isLocalHomBaseToR`) is spent — the field exists for this leaf.
 
-**THE PROOF.**  `(𝔪_R).map g` is generated by `g m`, `m ∈ 𝔪_R`, so write
-`midToB i z = ∑_k b_k · g m_k` (finite).  Pull each `m_k` back to a stage by `base_surj`,
-say `baseToR i_k y_k = m_k`; since `baseToR i_k` is LOCAL and `m_k ∈ 𝔪_R`, locality gives
-`y_k ∈ 𝔪_{Base i_k}` — a unit would map to a unit.  Pull each `b_k` back by `mid_surj`.
-Take `j₀ ≥ i` above all the finitely many indices (`directed`).  The two sides of the
-displayed equation now both come from `Mid j₀` and agree in `B`, so `mid_sep` gives
-`j ≥ j₀` where they agree in `Mid j`; there `midT z = ∑ (…) · baseToMid j (baseT y_k)` with
-`baseT y_k ∈ 𝔪_{Base j}` by locality of `baseT`, hence `midT z ∈ 𝔭_j S_j`.
+The body is one application of `exists_mem_map_maximalIdeal_of_colimitTower` above, to the
+`Mid` tower with `φ = g`; see that lemma's docstring for the argument.
+
+**A NOTE ON THE ROUTE, since the plan recorded here was different.**  The proof sketch this
+docstring used to carry ran through an explicit finite expansion `midToB i z = ∑_k b_k·g m_k`
+and then aligned finitely many indices with `directed`.  That works, but the `Finset`
+bookkeeping is entirely avoidable: the set of elements of `B` that *are* witnessed by a stage
+ideal is itself an IDEAL of `B` (that is `hzero`/`hadd`/`hsmul` in the lemma above), so
+`Ideal.map_le_iff_le_comap` reduces the whole statement to the GENERATORS `g m`, `m ∈ 𝔪_R`,
+where the argument is the four-line one the old sketch gave for a single term.  Each closure
+step needs only `directed` twice and one `e_sep`.  No sum is ever formed.
 
 **FAITHFULNESS.**  Stated as the cofinal `∃ j ≥ i` because that is what the colimit
 argument delivers and what `c_sep` of the fibre system needs; the converse inclusion
 (`𝔭_j S_j` maps into `𝔪_R S`) is `fibreIdealMid_le_comap_midToB`, PROVEN above, so this
 leaf is exactly the half that is not formal. -/
 theorem exists_mem_fibreIdealMid (sys : NoetherianApproxSystem g v) (i : sys.Λ)
-    (z : sys.Mid i) (_hz : sys.midToB i z ∈ (IsLocalRing.maximalIdeal R).map g) :
+    (z : sys.Mid i) (hz : sys.midToB i z ∈ (IsLocalRing.maximalIdeal R).map g) :
     ∃ j, ∃ h : sys.le i j, sys.midT h z ∈ sys.fibreIdealMid j :=
-  sorry
+  exists_mem_map_maximalIdeal_of_colimitTower
+    (Base := fun i => sys.Base i) (E := fun i => sys.Mid i)
+    (hLocBase := sys.isLocalRingBase)
+    (baseT := fun {_ _} h => sys.baseT h) (eT := fun {_ _} h => sys.midT h)
+    (baseToE := sys.baseToMid) (baseToR := sys.baseToR) (eToX := sys.midToB)
+    (le_trans' := fun {_ _ _} h₁ h₂ => sys.le_trans' h₁ h₂)
+    (directed := sys.directed) (eT_comp := fun {_ _ _} h₁ h₂ => sys.midT_comp h₁ h₂)
+    (comm_baseE := sys.comm_baseMid) (comm_baseT := fun {_ _} h => sys.comm_baseT h)
+    (comm_baseToR := fun {_ _} h => sys.comm_baseToR h)
+    (comm_eToX := fun {_ _} h => sys.comm_midToB h)
+    (isLocalHomBaseT := fun {_ _} h => sys.isLocalHomBaseT h)
+    (isLocalHomBaseToR := sys.isLocalHomBaseToR)
+    (base_surj := sys.base_surj) (e_surj := sys.mid_surj) (e_sep := sys.mid_sep)
+    i z hz
 
-/-- **`𝔪_R S'` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S'_λ`** (SORRY LEAF).  The same
-argument as `exists_mem_fibreIdealMid`, run on the `Tot` tower: `base_surj` plus locality
-of `baseToR` to put the generators at a stage, `directed` to align the finitely many
-indices, `tot_sep` to close the gap.  Both are stated because the fibre system needs
-`c_sep` and `d_sep` separately; a prover should factor the common argument out into a
-lemma about a single tower over the `Base` system rather than writing it twice. -/
+omit [IsLocalRing B] [IsLocalRing A] [IsLocalHom g] [IsLocalHom v] in
+/-- **`𝔪_R S'` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S'_λ`** (**PROVEN 2026-07-28**).  The
+same argument as `exists_mem_fibreIdealMid`, run on the `Tot` tower: `base_surj` plus
+locality of `baseToR` to put the generators at a stage, `directed` to align the indices,
+`tot_sep` to close the gap.  Both are stated because the fibre system needs `c_sep` and
+`d_sep` separately; this docstring's instruction to "factor the common argument out into a
+lemma about a single tower over the `Base` system rather than writing it twice" is what
+`exists_mem_map_maximalIdeal_of_colimitTower` above is, and both leaves are now a single
+application of it apiece.
+
+The one thing the `Tot` instance has to say that the `Mid` one does not: its `baseToE` is the
+COMPOSITE `midToTot i ∘ baseToMid i`, because that is the map `fibreIdealTot` is the
+`Ideal.map` along, and its two commuting squares are therefore the `comm_baseT`/`comm_midT`
+and `comm_midTot`/`comm_baseMid` pairs pasted — the same two `rw` chains that
+`isNoetherianFlatDescentSystem_baseTot` uses for `comm_T` and `comm_cocone`. -/
 theorem exists_mem_fibreIdealTot (sys : NoetherianApproxSystem g v) (i : sys.Λ)
-    (z : sys.Tot i) (_hz : sys.totToA i z ∈ (IsLocalRing.maximalIdeal R).map (v.comp g)) :
+    (z : sys.Tot i) (hz : sys.totToA i z ∈ (IsLocalRing.maximalIdeal R).map (v.comp g)) :
     ∃ j, ∃ h : sys.le i j, sys.totT h z ∈ sys.fibreIdealTot j :=
-  sorry
+  exists_mem_map_maximalIdeal_of_colimitTower
+    (Base := fun i => sys.Base i) (E := fun i => sys.Tot i)
+    (hLocBase := sys.isLocalRingBase)
+    (baseT := fun {_ _} h => sys.baseT h) (eT := fun {_ _} h => sys.totT h)
+    (baseToE := fun i => (sys.midToTot i).comp (sys.baseToMid i))
+    (baseToR := sys.baseToR) (eToX := sys.totToA)
+    (le_trans' := fun {_ _ _} h₁ h₂ => sys.le_trans' h₁ h₂)
+    (directed := sys.directed) (eT_comp := fun {_ _ _} h₁ h₂ => sys.totT_comp h₁ h₂)
+    (comm_baseE := fun i => by
+      rw [← RingHom.comp_assoc, sys.comm_midTot i, RingHom.comp_assoc, sys.comm_baseMid i,
+        ← RingHom.comp_assoc])
+    (comm_baseT := fun {_ _} h => by
+      rw [RingHom.comp_assoc, sys.comm_baseT h, ← RingHom.comp_assoc, sys.comm_midT h,
+        RingHom.comp_assoc])
+    (comm_baseToR := fun {_ _} h => sys.comm_baseToR h)
+    (comm_eToX := fun {_ _} h => sys.comm_totToA h)
+    (isLocalHomBaseT := fun {_ _} h => sys.isLocalHomBaseT h)
+    (isLocalHomBaseToR := sys.isLocalHomBaseToR)
+    (base_surj := sys.base_surj) (e_surj := sys.tot_surj) (e_sep := sys.tot_sep)
+    i z hz
 
 /-- **THE LOCALIZATION PROPERTY OF THE FIBRE SYSTEM** (SORRY LEAF; the third piece of the
 fibre-system verification).
