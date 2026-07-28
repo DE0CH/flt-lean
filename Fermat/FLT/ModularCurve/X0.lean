@@ -676,7 +676,7 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
 -- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
--- two leaves `exists_cubeModel_of_abelianScheme` (heights) and
+-- two leaves `nonempty_cubeModel_of_isAmpleSheaf_cube` (heights) and
 -- `finite_quotient_psmul_of_abelianScheme` (weak Mordell–Weil).  It also
 -- carries `Fermat.WeilHeight`, the interface a theory of heights
 -- actually produces, `WeilHeight.toDescentHeight`, and
@@ -28376,11 +28376,117 @@ theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J �
   obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
   exact nonempty_integralCoordinates_of_segreCoordinates sc
 
+/-- **THE COORDINATE DICTIONARY: a symmetric normalized ample invertible sheaf
+with the theorem of the cube gives a `CubeModel` on the group of rational
+points** (sorry leaf, cut 2026-07-28 out of
+`exists_cubeModel_of_abelianScheme` below).
+
+This is the SHEAF-LEVEL half of that leaf which is *not* Mumford §6.  Its
+hypotheses are exactly the conclusion of
+`Fermat.exists_isAmpleSheaf_symmetric_cube`
+(`Modularity/AbelianSchemeIsogeny.lean`), so between the two the parent is
+proven, and the geometry is now asserted in one place shared with
+`Fermat.exists_isAmpleSheaf_cube_of_isAlgClosed`.
+
+**WHY THIS CUT IS FAITHFUL WHERE THE COORDINATE-LEVEL ONE IS FALSE.**  The
+coordinate-level split — "any symmetric projective embedding of `A(ℚ)`
+satisfies the theorem of the cube" — is refuted by
+`E : y² + y = x³ − x`, `E(ℚ) ≅ ℤ`, `coords n = (1, n³, n⁶)`, whose height
+`6 log|n|` breaks the parallelogram law (see `CubeModel`'s docstring, and the
+parent's).  That counterexample does **not** lift to this statement, and the
+reason is the whole point of cutting here: `coords` is no longer an arbitrary
+injection of the abstract group into `ℙⁿ(ℚ)` but is *manufactured from `L`*, so
+`n ↦ (1 : n³ : n⁶)` would have to be the restriction to `E(ℚ)` of a morphism
+`E ⟶ ℙ²` given by three global sections of an invertible sheaf.  `E(ℚ)` is
+Zariski-dense in `E`, so such a morphism is determined by that restriction, and
+a morphism of degree `d` has naïve height `≍ d · ĥ(P) ≍ d n²`, never
+`6 log|n|`.  The hypotheses here therefore constrain the height, which is
+exactly what the coordinate-level hypotheses failed to do.
+
+**WHAT THE PROOF OWES**, and none of it is new geometry:
+
+* *very ampleness*: `L^{⊗3}` is very ample (Mumford §6, Application 1) and
+  projectively normal, and the cube identity survives the third power because
+  it is multiplicative in `L`.  This is the one classical input, and it is
+  about `L` alone, not about the group;
+* *evaluation at rational points*: for `P : RelPoint jstr (𝟙 SpecQ)`, i.e.
+  `P.1 : Spec ℚ ⟶ J`, the sheaf `P.1^* L` is invertible on `Spec ℚ`, hence
+  trivial (`Pic (Spec ℚ) = 0`; the space is a single point, so the only open
+  containing it is `⊤`).  Composing `Fermat.modPullbackSection` — PROVEN in
+  `Modularity/AmpleSheaf.lean`, and the bridge whose absence the parent's
+  docstring used to record — with a trivialization gives `coords P i ∈ ℚ`,
+  well defined up to the one scalar by which the trivialization is ambiguous.
+  That ambiguity is precisely the projective ambiguity `CubeModel` allows;
+* *`coords_ne_zero`* is base-point-freeness of a very ample system,
+  *`injective_of_smul`* is that a closed immersion is a monomorphism, read on
+  `ℚ`-points;
+* *`cube` / `cube_eval`*: the section `σ^* s_k ⊗ δ^* s_l` of
+  `σ^* L ⊗ δ^* L ≅ p₁^* L^{⊗2} ⊗ p₂^* L^{⊗2}` is, by Künneth and projective
+  normality, a bidegree-`(2,2)` polynomial in the `s_i`, i.e. a form of degree
+  `2` in the Segre variables.  The single common scalar `c` in `cube_eval` is
+  the ambiguity of the trivializations at `P + Q` and `P − Q`;
+* *`rel` / `rel_eval`*: `J ×_ℚ J` is projective, so the Segre image is closed
+  and its homogeneous ideal finitely generated (Hilbert basis);
+* *`cube_nonvanishing`*: `(P, Q) ↦ (P + Q, P − Q)` is a morphism defined
+  everywhere, which is `σ` and `δ` being morphisms — an identity of schemes,
+  not a rational-map argument.
+
+**MISSING MACHINERY** (the check that refutes this list is
+`grep -rn "VeryAmple\|Kunneth\|Künneth\|projectivelyNormal" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`): very ample sheaves, the map to
+`Proj` attached to a linear system, and the Künneth formula.  Note the second
+of those is what `AbelianScheme.lean`'s docstring records as absent — there is
+no functor-of-points description of `Hom(T, Proj 𝒜)` at this pin — and it is
+needed only to *derive* `injective_of_smul`; the evaluation half of the
+dictionary needs nothing beyond `modPullbackSection`.
+
+**THE NEXT CUT, AND THE CLAUSE WITHOUT WHICH IT IS FALSE.**  The obvious way to
+split this leaf again is to separate the EMBEDDING (produce `L`, a section
+family `s : Fin dim → Γ(L, ⊤)`, and the `coords` they induce at `ℚ`-points,
+with `coords_ne_zero` and `injective_of_smul`) from the FORMS (produce `cube`,
+`rel` and their evaluation properties from `HasCubeIso`).  Carrying `L` and `s`
+across the cut does defeat the `(1, n³, n⁶)` counterexample, so unlike the
+coordinate-level split this one is not *obviously* false — but as stated it is
+**still not provable**, and the reason is worth writing down because it is not
+the reason one expects.
+
+`cube_eval` asks for polynomials of degree `2` in the Segre variables
+`z (i,j)`, i.e. for `σ^* s_k ⊗ δ^* s_l` to lie in the image of
+`Sym²⟨s⟩ ⊗ Sym²⟨s⟩ → Γ(p₁^* L^{⊗2} ⊗ p₂^* L^{⊗2}, ⊤)`.  A family `s` can define
+a perfectly good closed immersion while spanning a proper subspace of
+`Γ(L, ⊤)`, and then that image is a proper subspace too and no such polynomials
+exist.  So the FORMS half must be given a SPANNING hypothesis — that the
+products `s_i · s_j` generate the global sections of `L^{⊗2}`, i.e. projective
+normality of the system — and the EMBEDDING half must produce it.  That is
+exactly the content the third power `L^{⊗3}` is taken for, so the spanning
+clause is not an extra assumption but the honest name of a step this leaf is
+already making silently.  **Do not make this cut without it.**
+
+**FAITHFULNESS.**  *Not vacuous*: the conclusion is the parent's, whose
+non-vacuity audit is unchanged (`coords_ne_zero` and `injective_of_smul` make
+`A(ℚ)` inject into `ℙⁿ(ℚ)`, and `Fermat.finite_setOf_logHeight_coords_le` then
+makes bounded-height sets finite, so no bounded height can satisfy the package).
+*Not stronger than the geometry supplies*: every hypothesis is a conjunct of
+`exists_isAmpleSheaf_symmetric_cube`, which is Mumford §6 verbatim.  `hsym` and
+`hzero` are the two that a careless prover would drop — `hsym` is what makes
+the cube's right-hand side `p₁^* L^{⊗2} ⊗ p₂^* L^{⊗2}` rather than
+`p₁^*(L ⊗ [−1]^* L) ⊗ p₂^*(L ⊗ [−1]^* L)`, and `hzero` is what normalizes the
+scalar `c`. -/
+theorem nonempty_cubeModel_of_isAmpleSheaf_cube {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (L : J.Modules)
+    (hinv : IsInvertibleSheaf L) (hamp : IsAmpleSheaf L)
+    (hsym : Nonempty (modPullback ab.negSelfHom L ≅ L))
+    (hzero : Nonempty (modPullback ab.zeroSection L ≅ modUnit SpecQ))
+    (hcube : ab.HasCubeIso L) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (CubeModel (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
 /-- **`A` embeds in `ℙⁿ_ℚ` by a symmetric very ample line bundle, the
 theorem of the cube holds for that embedding, and `(P, Q) ↦ (P+Q, P−Q)` is
-a morphism** (sorry node, cut 2026-07-28 out of
-`exists_cubeEmbedding_of_abelianScheme` below) — the GEOMETRIC half of
-Mordell–Weil, and now the ONLY half that is not already proven.
+a morphism** (PROVEN 2026-07-28 over the sheaf-level cut described below; cut
+2026-07-28 out of `exists_cubeEmbedding_of_abelianScheme` below) — the
+GEOMETRIC half of Mordell–Weil.
 
 **WHAT THIS CUT SHED, AND WHY IT IS A CUT AND NOT A RESTATEMENT.**  Its
 predecessor asked in addition for `CubeEmbedding.cert` / `cert_eval`: an
@@ -28484,13 +28590,31 @@ COORDINATE-LEVEL cuts of this leaf are exhausted.  The axis NOT searched is
 the SHEAF level: state the embedding as an invertible sheaf `L` with global
 sections `s : Fin dim → Γ(L, ⊤)`, and the cube as an isomorphism of sheaves
 on `pullback jstr jstr`; then "very ample `L` with the cube" and "the
-coordinate dictionary" become two genuinely separate leaves.  What blocks
-that today is the sections-to-coordinates bridge: there is no
-`Γ(L, ⊤) → Γ(modPullback P L, ⊤)` pullback-of-sections map in
-`AmpleSheaf.lean`, and `AbelianScheme.lean`'s own docstring records that
-there is no functor-of-points description of `Hom(T, Proj 𝒜)` at this pin.
-Writing that bridge is the next cut, and it is stated machinery, not proven
-machinery.
+coordinate dictionary" become two genuinely separate leaves.
+
+**THAT SHEAF-LEVEL CUT WAS MADE ON 2026-07-28, and the blocker this docstring
+recorded against it was ALREADY FALSE when it was written.**  The paragraph
+that stood here said "there is no `Γ(L, ⊤) → Γ(modPullback P L, ⊤)`
+pullback-of-sections map in `AmpleSheaf.lean`".  There is:
+`Fermat.modPullbackSection` (`Modularity/AmpleSheaf.lean`), PROVEN, built from
+the unit of the pullback/pushforward adjunction.  The second half of the note —
+that `Hom(T, Proj 𝒜)` has no functor-of-points description at this pin — is
+still true and is simply not needed: the coordinate dictionary evaluates
+sections at rational points through `modPullbackSection` and a trivialization
+of `P^* L`, and never mentions `Proj`.
+
+So this declaration is **NO LONGER A LEAF**.  It is now PROVEN over
+
+* `Fermat.exists_isAmpleSheaf_symmetric_cube`
+  (`Modularity/AbelianSchemeIsogeny.lean`) — over ANY field, an abelian
+  variety carries a symmetric, normalized, ample invertible `L` satisfying the
+  theorem of the cube `σ^* L ⊗ δ^* L ≅ p₁^* L^{⊗2} ⊗ p₂^* L^{⊗2}`.  This is
+  the SHARED geometric core: the sibling leaf
+  `Fermat.exists_isAmpleSheaf_cube_of_isAlgClosed` is now proven over it too,
+  so Mumford §6 is asserted in exactly one place in the development instead of
+  two;
+* `Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` immediately above — the
+  COORDINATE DICTIONARY, which turns that sheaf into the `CubeModel` package.
 
 *The conclusion is `Nonempty`, not a chosen embedding*, because nothing
 downstream depends on WHICH embedding is used; only its existence is
@@ -28498,8 +28622,9 @@ consumed. -/
 theorem exists_cubeModel_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (CubeModel (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (CubeModel (RelPoint jstr (𝟙 SpecQ))) := by
+  obtain ⟨L, hinv, hamp, hsym, hzero, hcube⟩ := exists_isAmpleSheaf_symmetric_cube ℚ ab
+  exact nonempty_cubeModel_of_isAmpleSheaf_cube ab L hinv hamp hsym hzero hcube
 
 /-- **`A` embeds in `ℙⁿ_ℚ` by a symmetric very ample line bundle, and the
 theorem of the cube holds for that embedding** (PROVEN 2026-07-28 over
@@ -28639,8 +28764,9 @@ is a convenience, not a necessity.  See the CORRECTION section of
   approximate parallelogram law from the theorem of the cube, over
   `Mathlib/NumberTheory/Height/MvPolynomial.lean`.
 
-So the geometry is isolated in `exists_cubeModel_of_abelianScheme`
-above, and `m = 2` is now what this leaf always produces.  Note that the
+So the geometry is isolated in `nonempty_cubeModel_of_isAmpleSheaf_cube`
+and `Fermat.exists_isAmpleSheaf_symmetric_cube` above, and `m = 2` is now
+what this leaf always produces.  Note that the
 sibling leaf `finite_quotient_nsmul_of_abelianScheme` is nevertheless
 still stated for every `n ≥ 2`: the assembly
 `fg_relPoint_of_abelianScheme` passes `dh.m`, which is opaque to it, so
@@ -29636,7 +29762,11 @@ smaller leaf:
   that in turn (2026-07-28) over `exists_cubeModel_of_abelianScheme`,
   having shed the effective NULLSTELLENSATZ CERTIFICATE, which is
   commutative algebra rather than geometry and is now proven in
-  `Fermat.exists_homogeneousCertificate`;
+  `Fermat.exists_homogeneousCertificate`; and that in turn (2026-07-28,
+  later the same day) over the SHEAF-LEVEL pair
+  `Fermat.exists_isAmpleSheaf_symmetric_cube` (Mumford §6, shared with
+  `Fermat.exists_isAmpleSheaf_cube_of_isAlgClosed`) and
+  `nonempty_cubeModel_of_isAmpleSheaf_cube` (the coordinate dictionary);
 * `finite_quotient_nsmul_of_abelianScheme` over
   `finite_quotient_psmul_of_abelianScheme`, having shed the reduction
   from a general `n` to its prime factors (proven as group theory).
@@ -35818,11 +35948,15 @@ here was false at this pin**: `Mathlib` HAS heights
 (`Mathlib/NumberTheory/Height/`, six modules, including Northcott's theorem
 for a number field and two-sided height comparisons for homogeneous polynomial
 maps), which its docstring asserted it did not.  The residue is
-`exists_cubeModel_of_abelianScheme`: projectivity of an abelian variety, a
-symmetric very ample line bundle, and the theorem of the cube — and nothing
+`Fermat.exists_isAmpleSheaf_symmetric_cube` and
+`nonempty_cubeModel_of_isAmpleSheaf_cube`: projectivity of an abelian variety,
+a symmetric very ample line bundle, and the theorem of the cube — and nothing
 analytic, and (since 2026-07-28) nothing from commutative algebra either, the
 Nullstellensatz certificate having been shed into
-`Fermat.exists_homogeneousCertificate`.
+`Fermat.exists_homogeneousCertificate`.  As of later on 2026-07-28 those two
+are a SHEAF-LEVEL pair, and the first of them is shared with
+`Fermat.exists_isAmpleSheaf_cube_of_isAlgClosed`, so Mumford §6 is asserted in
+exactly one place in this development.
 
 **Eighth round (2026-07-27).**  `cuspPeriod_ne_zero_of_kenkuLevel` — the
 arithmetic half of the fifth round's cut — is now a PROVEN assembly too,
@@ -35894,7 +36028,8 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `exists_relPicZero_of_isRelPicOf` (in `RelativePicard.lean`) | `Pic ↝ Pic⁰` | no |
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
-| `exists_cubeModel_of_abelianScheme` | symmetric very ample bundle + theorem of the cube | no |
+| `exists_isAmpleSheaf_symmetric_cube` (in `AbelianSchemeIsogeny.lean`) | symmetric ample sheaf + theorem of the cube | no |
+| `nonempty_cubeModel_of_isAmpleSheaf_cube` | very ampleness + the coordinate dictionary | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |

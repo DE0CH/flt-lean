@@ -1672,7 +1672,11 @@ obligations for a scheme-theoretic abelian variety, assembled into
 `fg_relPoint_of_abelianScheme`.  **The leaf names below were refreshed on 2026-07-28**;
 the `b6ab74e9` reading recorded here — `exists_integralCoordinates_of_abelianScheme` and
 `finite_kummerCochains_of_abelianScheme` — is stale in both halves.  The height leaf is
-now `exists_cubeModel_of_abelianScheme`, and `finite_kummerCochains_of_abelianScheme` was
+now the pair `Fermat.exists_isAmpleSheaf_symmetric_cube`
+(`Modularity/AbelianSchemeIsogeny.lean`) and
+`Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (`X0.lean`) — a 2026-07-28 sheaf-level
+cut of what was then `exists_cubeModel_of_abelianScheme`, which is now PROVEN over them —
+and `finite_kummerCochains_of_abelianScheme` was
 DELETED: release 12 rewired `finite_quotient_psmul_of_abelianScheme` onto
 `exists_finiteIndex_divisible_of_abelianScheme`, which is itself PROVEN over Hermite's
 theorem, leaving `exists_geomPt_nsmul_eq_of_abelianScheme` and
