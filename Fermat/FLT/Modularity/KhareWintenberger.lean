@@ -3373,10 +3373,19 @@ theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
 plus four ordinary-algebra bricks and one adelic brick
 
 `exists_totallyDefinite_rigidified_quaternionAlgebra_of_even` (below) is now
-a PROVEN assembly over the six declarations of this section — FOUR of which
+a PROVEN assembly over the six declarations of this section — THREE of which
 are open leaves, while `nonempty_algEquiv_quaternion_of_neg` (STEP 1a-iv) and
 `isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding` (STEP 1a-v) are PROVEN
-here. The cut replaces an
+here, and STEP 1a-i (the symbol-algebra core,
+`exists_totallyNegative_split_quaternionSymbol_of_even`) became PROVEN on
+2026-07-28 by a further cut into STEP 1a-0
+(`nonempty_algEquiv_matrix_quaternionAlgebra_of_normForm`, PROVEN — the
+explicit splitting of a symbol algebra whose second parameter is a value of
+the norm form `x² - a y²`) and STEP 1a-i′
+(`exists_totallyNegative_localNorm_of_even_nrRealPlaces`, OPEN — the same
+arithmetic with every quaternion algebra removed from its statement, and the
+parity hypothesis restated as `Even (nrRealPlaces F)`, which is what the
+product formula actually counts). The cut replaces an
 abstract Brauer-group existence statement by a CONCRETE one: produce a pair
 `a b : F` of totally negative elements whose symbol algebra `(a, b)_F` splits
 at every finite place, then check by hand that `ℍ[F,a,0,b]` is a totally
@@ -3394,22 +3403,119 @@ is trivial. That is what makes the parity bit legible: totally negative
 formula then forces `[F : ℚ]` to be even once all finite symbols are
 trivial. -/
 
-/-- **STEP 1a-i — THE ARITHMETIC CORE: a totally real field of EVEN degree
-carries a totally negative Hilbert symbol that is split at every finite
-place** (sorry leaf; CUT 2026-07-27 out of
-`exists_totallyDefinite_rigidified_quaternionAlgebra_of_even`, which is now
-a PROVEN assembly over this leaf and the five below).
+/-- **STEP 1a-0 — SPLITTING CRITERION FOR A SYMBOL ALGEBRA: `ℍ[K,a,0,b]` is
+`M₂(K)` as soon as `b` is a VALUE of the norm form `x² - a y²`** (PROVEN
+2026-07-28; CUT 2026-07-28 out of STEP 1a-i, whose arithmetic no longer has
+to mention quaternion algebras at all).
 
-This is the whole class-field-theoretic content of ABHN in this development,
-and it is the ONLY leaf of the six that has any arithmetic in it.
+This is the classical criterion "`(a,b)_K = 1` iff `b ∈ N_{K(√a)/K}(K(√a)ˣ)`",
+in the only direction the ABHN core needs, and it is completely explicit:
+the splitting isomorphism is written down, not obtained from Wedderburn.
+Consequently it does NOT depend on STEP 1a-ii
+(`isQuaternionAlgebra_quaternionAlgebra_of_ne_zero`, still open) — which
+matters, because that leaf is declared BELOW this one.
+
+CONSTRUCTION. Inside `M₂(K)` put
+
+    I = ⟨0, a; 1, 0⟩,      J = ⟨x, -a y; y, -x⟩,      K' = I * J = ⟨a y, -a x; x, -a y⟩
+
+for any `x, y` with `x² - a y² = b`. Then `I² = a·1`, `J² = (x² - a y²)·1 = b·1`
+and `J I = -I J`, i.e. `⟨I, J, K'⟩` is a `QuaternionAlgebra.Basis` with
+parameters `(a, 0, b)`; `QuaternionAlgebra.Basis.liftHom` turns it into an
+`K`-algebra map `ℍ[K,a,0,b] →ₐ[K] M₂(K)`.
+
+WHY THE THREE HYPOTHESES, and why they are exactly right. In the basis
+`1, I, J, K'` the map has determinant `4 a b`, so it is bijective iff
+`2 ≠ 0`, `a ≠ 0` and `b ≠ 0` — and each hypothesis is genuinely necessary,
+not an artefact:
+
+* `2 = 0` makes `I` and `J` COMMUTE (`J I = 0 • J - K' = -K' = K' = I J`), so
+  `ℍ[K,a,0,b]` is commutative and can never be `M₂(K)`;
+* `a = 0` makes `I` nilpotent (`I² = 0`) and central-ish, so the algebra has
+  a two-sided nilpotent ideal;
+* `b = 0` makes `J` nilpotent for the same reason.
+
+Bijectivity itself is proven by SURJECTIVITY plus `finrank = 4 = finrank`
+(`QuaternionAlgebra.finrank_eq_four`, `Module.finrank_matrix`), the surjection
+being the explicit solution of the four linear equations
+
+    M₀₀ = x₀ + x·x₂ + a y·x₃,   M₀₁ = a (x₁ - y x₂ - x x₃),
+    M₁₀ = x₁ + y x₂ + x x₃,     M₁₁ = x₀ - x·x₂ - a y·x₃,
+
+whose `(x₂, x₃)`-block has determinant `x² - a y² = b ≠ 0`.
+
+Stated over an arbitrary field rather than over `F` or `F_w` on purpose: the
+consumer needs it only at the completions, but the general statement is what
+would go to mathlib, and nothing in the proof knows about number fields. -/
+theorem nonempty_algEquiv_matrix_quaternionAlgebra_of_normForm {K : Type*}
+    [Field K] (h2 : (2 : K) ≠ 0) {a b : K} (ha : a ≠ 0) (hb : b ≠ 0)
+    (hnorm : ∃ x y : K, x ^ 2 - a * y ^ 2 = b) :
+    Nonempty (_root_.QuaternionAlgebra K a 0 b ≃ₐ[K] Matrix (Fin 2) (Fin 2) K) := by
+  obtain ⟨x, y, hxy⟩ := hnorm
+  subst hxy
+  set b := x ^ 2 - a * y ^ 2 with hbdef
+  let Bq : _root_.QuaternionAlgebra.Basis (Matrix (Fin 2) (Fin 2) K) a 0 b :=
+    { i := Matrix.of ![![0, a], ![1, 0]]
+      j := Matrix.of ![![x, -(a * y)], ![y, -x]]
+      k := Matrix.of ![![a * y, -(a * x)], ![x, -(a * y)]]
+      i_mul_i := by
+        ext p q
+        fin_cases p <;> fin_cases q <;>
+          simp [Matrix.mul_apply, Fin.sum_univ_two]
+      j_mul_j := by
+        ext p q
+        fin_cases p <;> fin_cases q <;>
+          simp [Matrix.mul_apply, Fin.sum_univ_two, hbdef] <;> ring
+      i_mul_j := by
+        ext p q
+        fin_cases p <;> fin_cases q <;>
+          simp [Matrix.mul_apply, Fin.sum_univ_two]
+      j_mul_i := by
+        ext p q
+        fin_cases p <;> fin_cases q <;>
+          simp [Matrix.mul_apply, Fin.sum_univ_two] <;> ring }
+  have hsurj : Function.Surjective Bq.liftHom := by
+    intro M
+    refine ⟨⟨(M 0 0 + M 1 1) / 2, (M 0 1 / a + M 1 0) / 2,
+      (x * ((M 0 0 - M 1 1) / 2) - a * y * ((M 1 0 - M 0 1 / a) / 2)) / b,
+      (x * ((M 1 0 - M 0 1 / a) / 2) - y * ((M 0 0 - M 1 1) / 2)) / b⟩, ?_⟩
+    ext p q
+    fin_cases p <;> fin_cases q <;>
+      simp [_root_.QuaternionAlgebra.Basis.liftHom,
+        _root_.QuaternionAlgebra.Basis.lift, Bq,
+        Algebra.algebraMap_eq_smul_one] <;>
+      field_simp <;> ring
+  refine ⟨AlgEquiv.ofBijective Bq.liftHom ⟨?_, hsurj⟩⟩
+  have hrk : Module.finrank K (_root_.QuaternionAlgebra K a 0 b) =
+      Module.finrank K (Matrix (Fin 2) (Fin 2) K) := by
+    rw [_root_.QuaternionAlgebra.finrank_eq_four, Module.finrank_matrix]
+    simp
+  exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hrk
+    (f := Bq.liftHom.toLinearMap)).mpr hsurj
+
+/-- **STEP 1a-i′ — THE ARITHMETIC CORE, in norm-form shape: a number field
+with an EVEN number of real places carries a pair of everywhere-negative
+elements whose norm form represents the second one at every finite place**
+(sorry leaf; CUT 2026-07-28 out of
+`exists_totallyNegative_split_quaternionSymbol_of_even`, which is now a
+PROVEN assembly over this leaf and STEP 1a-0).
+
+This is the whole class-field-theoretic content of ABHN in this development.
+After the cut it mentions NO quaternion algebra, NO Brauer group and no
+matrix ring — only the binary quadratic form `x² - a y²` over the
+completions `F_w`, which is exactly the object global class field theory
+speaks about (`b` is a LOCAL NORM from `F(√a)` at `w`).
 
 Content. Produce `a b : F` such that
 
-* `σ a < 0` and `σ b < 0` for every real embedding `σ` of `F` — with `hFtr`
-  that is every infinite place, so `ℍ[F,a,0,b]` is nonsplit (indeed `≃ ℍ`)
-  at every archimedean place, i.e. TOTALLY DEFINITE;
-* `ℍ[F_w, a, 0, b] ≃ M₂(F_w)` for every finite place `w`, i.e. the Hilbert
-  symbol `(a,b)_w` is trivial at every finite place.
+* `σ a < 0` and `σ b < 0` for every real embedding `σ` of `F` — with total
+  reality that is every infinite place, so `ℍ[F,a,0,b]` is nonsplit (indeed
+  `≃ ℍ`) at every archimedean place, i.e. TOTALLY DEFINITE;
+* at every finite place `w`, `b` is a value of the norm form `x² - a y²`
+  over `F_w`, i.e. `b ∈ N_{F_w(√a)/F_w}`, i.e. the Hilbert symbol `(a,b)_w`
+  is trivial. (When `a` happens to be a square in `F_w` the form factors as
+  `(x - √a y)(x + √a y)` and represents everything, so the condition is
+  automatic there — as it must be, a split place imposing nothing.)
 
 Route (ABHN). The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
 group of a number field,
@@ -3418,21 +3524,52 @@ group of a number field,
 
 says a class in `Br(F)` may be prescribed by arbitrary local invariants,
 almost all zero, summing to `0` in `ℚ/ℤ`. Prescribing invariant `1/2` at
-each infinite place and `0` at each finite place is admissible exactly
-because the number of infinite places is `[F : ℚ]`, which `hFeven` says is
-EVEN. The resulting class has order `2`, hence (index = exponent over a
-number field) is represented by a quaternion division algebra `D/F`; and
-since `char F = 0 ≠ 2`, `D ≃ ℍ[F,a,0,b]` for some `a, b ∈ Fˣ`. Reading off
-the local conditions gives exactly the two bullets above: `ℍ[ℝ,x,0,y]` is
-nonsplit iff `x < 0 AND y < 0`, so definiteness at every real place is
-precisely total negativity of `a` and of `b`.
+each REAL place and `0` everywhere else is admissible exactly because
+`nrRealPlaces F` is EVEN — `Br(ℝ) = ½ℤ/ℤ` and `Br(ℂ) = 0`, so the sum is
+`nrRealPlaces F · (1/2)`. The resulting class has order `2`, hence (index =
+exponent over a number field) is represented by a quaternion division
+algebra `D/F`; and since `char F = 0 ≠ 2`, `D ≃ ℍ[F,a,0,b]` for some
+`a, b ∈ Fˣ`. Reading off the local conditions gives exactly the two bullets:
+`ℍ[ℝ,s,0,t]` is nonsplit iff `s < 0 AND t < 0`, so definiteness at every
+real place is precisely total negativity of `a` and of `b`; and splitness at
+a finite `w` is precisely the norm condition (STEP 1a-0 is the direction
+this leaf's consumer uses, and the direction used HERE — reading the
+invariant off `D` — is its converse).
 
-The pin does NOT have this — mathlib carries only
+WHY `Even (nrRealPlaces F)` AND NOT `Even (finrank ℚ F)` (changed
+2026-07-28). The product formula counts PLACES, not degrees, and complex
+places are invisible to it (`Br(ℂ) = 0`). Stating the hypothesis as
+"an even number of real places" is therefore the honest form: it is exactly
+what the arithmetic consumes, it makes the leaf true for fields that are not
+totally real, and it removes `hFtr` from the statement entirely. The
+consumer recovers it from `NumberField.IsTotallyReal.finrank`
+(`finrank ℚ F = nrRealPlaces F` for totally real `F`), which is where total
+reality is genuinely used.
+
+DEGENERATE CASE, and it is provable outright: if `nrRealPlaces F = 0` the
+first conclusion is vacuous and `a := 1`, `b := 1` works (`x = 1`, `y = 0`).
+So the leaf carries no content for totally imaginary fields, which is
+correct — there is nothing for a definite algebra to be definite at.
+
+The pin does NOT have the general case — mathlib carries only
 `Mathlib/Algebra/BrauerGroup/Defs.lean` (definitions of the Brauer group, no
 local invariants and no exact sequence), the reference project `~/cs/FLT`
 has none of it either, and nothing in this tree computes a local invariant.
 So this leaf is a genuine theory build, but a SELF-CONTAINED one: it
 mentions no Galois representation, no Hecke algebra and no automorphic form.
+
+`a` MAY BE TAKEN TO BE `-1` when `F` is totally real, and a successor is
+free to do so (it does NOT need a statement change — it is a strengthening
+of the witness, not of the hypotheses). Reason: `F` totally real forces `-1`
+to be a non-square, `K := F(√-1)` is then a quadratic field extension, and
+`K_v = ℂ` is a field at every real place `v`, so by the embedding criterion
+(a quadratic `K/F` embeds in a quaternion algebra `B` iff `K_w` is a field
+at every place where `B` ramifies) `K` embeds in the algebra ramified
+exactly at the real places, whence `B ≃ ℍ[F,-1,0,b]`. The remaining
+statement is then the pretty one: **`∃ b : F` totally negative which is
+locally a sum of two squares at every finite place**. Recorded rather than
+adopted because the embedding criterion is itself missing from the pin, so
+adopting it now would trade one missing theory for another.
 
 A CHEAPER CONCRETE ROUTE, worth recording because it needs only the ℚ-case
 plus base change. Over `ℚ` the quaternion algebra ramified at `{∞, q}` is
@@ -3444,17 +3581,65 @@ invariants multiplies by the local degree, so `a := -1`, `b := -q` (pushed
 into `F`) has invariant `2 · (1/2) = 0` at every `w ∣ q` and `1 · (1/2)`
 at every real place. NOTE this route needs `IsGalois ℚ F`, which the
 ultimate consumer HAS (`hFgal`) but which this leaf deliberately does NOT
-take — ABHN needs only even degree and total reality. A successor taking the
-concrete route must ADD `hFgal` to this statement (a cut-level change: report
-it, do not make it silently), and then also add it to the assembly below.
+take — ABHN needs only the parity. A successor taking the concrete route
+must ADD `hFgal` to this statement (a cut-level change: report it, do not
+make it silently), and then also add it to BOTH assemblies below. Note also
+that the route is Galois-SPECIFIC in an essential way: for non-Galois `F` of
+even degree the required Frobenius (an element of the Galois group of the
+closure all of whose cycles on the `n` embeddings are even) need not exist,
+so this is not merely a convenience hypothesis.
 
-FAITHFULNESS — `hFeven` is NECESSARY, not merely sufficient. Hilbert's
-product formula `∏_v (a,b)_v = 1` runs over ALL places. Totally negative
-`a, b` give `(a,b)_v = -1` at every one of the `[F : ℚ]` infinite places
-(`hFtr`), so if every finite symbol is `+1` the number of `-1`s is
-`[F : ℚ]`, which must therefore be even. For totally real `F` of ODD degree
-the statement is FALSE, not merely unproven. This is where the node's parity
-bit is spent.
+FAITHFULNESS — the parity is NECESSARY, not merely sufficient. Hilbert's
+product formula `∏_v (a,b)_v = 1` runs over ALL places. Everywhere-negative
+`a, b` give `(a,b)_v = -1` at every one of the `nrRealPlaces F` real places
+and `+1` at every complex place, so if every finite symbol is `+1` the
+number of `-1`s is `nrRealPlaces F`, which must therefore be even. For a
+field with an ODD number of real places (e.g. `F = ℚ`, or any totally real
+field of odd degree) the statement is FALSE, not merely unproven. This is
+where the node's parity bit is spent.
+
+SANITY CHECK of the statement at a nontrivial instance: `F = ℚ(√5)` has
+`nrRealPlaces = 2`, and `a = b = -1` works — `2` is inert in `ℚ(√5)`, so the
+unique place above `2` has local degree `2`, and `(-1,-1)` (ramified over
+`ℚ` exactly at `{2, ∞}`) becomes split there after base change. That is the
+icosian algebra.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyNegative_localNorm_of_even_nrRealPlaces
+    (F : Type*) [Field F] [NumberField F]
+    (hF : Even (NumberField.InfinitePlace.nrRealPlaces F)) :
+    ∃ a b : F,
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        NumberField.InfinitePlace.embedding_of_isReal hv a < 0 ∧
+        NumberField.InfinitePlace.embedding_of_isReal hv b < 0) ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        ∃ x y : w.adicCompletion F,
+          x ^ 2 - algebraMap F (w.adicCompletion F) a * y ^ 2 =
+            algebraMap F (w.adicCompletion F) b) := by
+  sorry
+
+/-- **STEP 1a-i — a totally real field of EVEN degree carries a totally
+negative Hilbert symbol that is split at every finite place** (PROVEN
+2026-07-28 as an assembly over STEP 1a-i′ and STEP 1a-0; was itself the
+arithmetic core until the 2026-07-28 cut, and remains the interface the
+rest of the section consumes).
+
+The assembly does two things and no more, which is precisely the point of
+the cut:
+
+* it converts the parity hypothesis into the form the arithmetic actually
+  uses — `Even (finrank ℚ F)` becomes `Even (nrRealPlaces F)` by
+  `NumberField.IsTotallyReal.finrank`, and this is the ONLY place `hFtr` is
+  spent (apart from producing one real place, below);
+* it converts the norm identity `x² - a y² = b` over `F_w` into the
+  splitting `ℍ[F_w,a,0,b] ≃ M₂(F_w)` by STEP 1a-0, whose three side
+  conditions `2 ≠ 0`, `a ≠ 0`, `b ≠ 0` in `F_w` all come from injectivity of
+  `algebraMap F F_w` together with `a, b ≠ 0` in `F`, themselves read off
+  from total negativity at any one real place (`hFtr` again).
+
+So after this cut NO arithmetic remains here, and none of the six bricks of
+STEP 1a below knows about parity.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -3470,7 +3655,24 @@ theorem exists_totallyNegative_split_quaternionSymbol_of_even
         Nonempty (_root_.QuaternionAlgebra (w.adicCompletion F)
             (algebraMap F (w.adicCompletion F) a) 0 (algebraMap F (w.adicCompletion F) b)
           ≃ₐ[w.adicCompletion F] Matrix (Fin 2) (Fin 2) (w.adicCompletion F))) := by
-  sorry
+  classical
+  haveI : NumberField.IsTotallyReal F := hFtr
+  have hpar : Even (NumberField.InfinitePlace.nrRealPlaces F) := by
+    rwa [NumberField.IsTotallyReal.finrank] at hFeven
+  obtain ⟨a, b, hneg, hnorm⟩ :=
+    exists_totallyNegative_localNorm_of_even_nrRealPlaces F hpar
+  obtain ⟨v₀⟩ : Nonempty (NumberField.InfinitePlace F) := inferInstance
+  have hv₀ : v₀.IsReal := hFtr.isReal v₀
+  have ha : a ≠ 0 := fun h => by simpa [h] using (hneg v₀ hv₀).1
+  have hb : b ≠ 0 := fun h => by simpa [h] using (hneg v₀ hv₀).2
+  refine ⟨a, b, hneg, fun w => ?_⟩
+  have hinj : Function.Injective (algebraMap F (w.adicCompletion F)) :=
+    (algebraMap F (w.adicCompletion F)).injective
+  refine nonempty_algEquiv_matrix_quaternionAlgebra_of_normForm ?_ ?_ ?_ (hnorm w)
+  · haveI : CharZero (w.adicCompletion F) := charZero_of_injective_algebraMap hinj
+    exact two_ne_zero
+  · exact fun h => ha (hinj (by simpa using h))
+  · exact fun h => hb (hinj (by simpa using h))
 
 /-- **STEP 1a-ii — a symbol algebra with invertible parameters is a
 quaternion algebra: central, simple, of dimension `4`** (sorry leaf; CUT
@@ -3771,7 +3973,12 @@ summing to `1/2 ≠ 0`). So `hFeven` is not merely sufficient here, it is
 necessary. After this cut the parity bit is spent entirely inside
 `exists_totallyNegative_split_quaternionSymbol_of_even`: `hFeven` is passed
 straight through by the assembly below and used nowhere else, which is the
-honest bookkeeping — none of the five bricks knows about parity.
+honest bookkeeping — none of the five bricks knows about parity. (UPDATE
+2026-07-28: that leaf is itself now a proven assembly, and the parity has
+moved one level further down into
+`exists_totallyNegative_localNorm_of_even_nrRealPlaces`, where it is stated
+as `Even (nrRealPlaces F)` — the count the Hilbert product formula actually
+performs. `hFtr` is what converts `Even (finrank ℚ F)` into that.)
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The six
