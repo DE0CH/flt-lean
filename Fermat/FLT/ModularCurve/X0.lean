@@ -588,8 +588,17 @@ public import Mathlib.AlgebraicGeometry.Sites.Fpqc
 public import Mathlib.AlgebraicGeometry.ValuativeCriterion
 -- `Algebra.IsInvariant`, the ring-theoretic half of GIT: it is the hypothesis
 -- of `specInvariants_universal`, the pure geometric-invariant-theory leaf that
--- `exists_gamma0Atlas` is split along.
+-- `exists_gamma0Atlas` is split along.  It also supplies
+-- `MulSemiringAction.charpoly` and `Algebra.IsInvariant.charpoly_mem_lifts`, the
+-- whole engine of `exists_smul_apply_eq_of_isInvariant` below.
 public import Mathlib.RingTheory.Invariant.Basic
+-- `Subspace.exists_eq_top_of_iUnion_eq_univ` — a vector space over an INFINITE
+-- field is not a finite union of proper subspaces.  This is the step that turns
+-- the pointwise orbit statement `exists_smul_apply_eq_of_isInvariant` (one `σ`
+-- per element of `A`) into the uniform `exists_smul_eq_of_isInvariant` (one `σ`
+-- for all of `A`), which is what the injectivity of `classify` on `ℚ̄`-points
+-- needs.  Nothing else in this file uses coset covers.
+public import Mathlib.GroupTheory.CosetCover
 -- The GIT quotient theorem itself, proved mathlib-facing and modular-curve-free in
 -- `Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`; it closes the
 -- `¬ IsAffine` branch of `specInvariants_universal`.
@@ -1340,10 +1349,13 @@ surjective on `ℚ̄`-points either, since `quotient` forces only that `M ⟶ Y`
 be an epimorphism, and epimorphisms of schemes (flat monomorphisms, for
 instance) need not be surjective.
 
-The injectivity half is still open, but it is no longer buried inside
-`exists_gamma0Datum_specQ_of_ratPoint`'s hypothesis `hd`: it is the separate
-leaf `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`, and a
-successor there is the reader this section is written for.
+The injectivity half was split off as
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` and is **PROVEN
+since 2026-07-28** — and this section is exactly the reason it needed a new
+leaf, `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos`, rather than a
+proof from `cover`: the rigidification of a `ℚ̄`-datum has to be an honest
+`ℚ̄`-point of `Spec A`, and no fpqc cover supplies one.  A successor there is
+the reader this section is written for.
 
 *The check that would refute THIS section*: exhibit a section of
 `Spec ℚ̄(t) ⟶ Spec ℚ̄`, or a proof that `Gamma0Atlas.cover`'s `p` is locally
@@ -11595,13 +11607,15 @@ is an explicit `Spec B` and the remaining work is commutative algebra:
 
 * `isDomain_of_gamma0GITPresentation` — `Γ_0(N)\ℍ` is irreducible, so
   `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is an integral scheme and `A^G ⊆ A` is a
-  domain.  This one becomes a ONE-LINE consequence of
-  `Function.Injective.isDomain` applied to
-  `Gamma0GITPresentation.injective_algebraMap` **as soon as the GIT
-  presentation carries `IsDomain A`**; folding that in belongs with the
-  owner of `Gamma0GITPresentation`, not here — and it must be folded in
-  as a FIELD, because the per-presentation statement `IsDomain A` is
-  FALSE (counterexample in the section comment below).
+  domain.  **PROVEN 2026-07-28**, and *not* by the route the previous version of
+  this bullet prescribed: no `IsDomain A` field was folded into
+  `Gamma0GITPresentation`.  It is the first conjunct of
+  `isRegularRing_coarseRing_of_gamma0GITPresentation`, which already gets
+  `IsDomain A` for ONE presentation out of
+  `exists_gamma0GITPresentation_dedekindModuli` and transports the resulting
+  `IsDomain B` to all of them along `coarseRing_algEquiv` — which is exactly
+  what the FALSITY AUDIT below demands, since the per-presentation statement
+  `IsDomain A` is FALSE.
 * `smoothOfRelativeDimension_of_gamma0GITPresentation` —
   Deligne–Rapoport III.1, Katz–Mazur 8.2 (and 8.2.1 for the
   `ℤ[1/N]`-smoothness that specialises to this): the coarse space of a
@@ -11778,60 +11792,12 @@ theorem geometricallyConnected_transport {Y Y' : Scheme.{0}}
   subst hu
   exact MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected) u strY' h
 
-/-- **The ring of invariants of a GIT presentation is a DOMAIN** (sorry
-leaf, relocated here 2026-07-27 from `isDomain_of_gamma0Atlas`) — the
-integrality half of Katz–Mazur (8.1.1).
-
-TRUE and pinned: `Γ_0(N)\ℍ` is irreducible, so the coarse space is an
-integral scheme, and here it is literally `Spec B`; by
-`gamma0Atlas_isIso` every presentation's `Spec B` is isomorphic to the
-Katz–Mazur one, so no junk presentation can refute this even though a
-junk presentation can and does refute `IsDomain A` (see the FALSITY AUDIT
-in the section comment above).
-
-**This is the cheapest of the three open leaves and it is barely
-modular.**  The only genuinely new input is `IsDomain A` for the
-rigidified moduli scheme.  Once `Gamma0GITPresentation` carries that as a
-field, this leaf is ONE LINE:
-
-    Function.Injective.isDomain (algebraMap P.B P.A) P.injective_algebraMap
-
-— `B` is a subring of `A` by `injective_algebraMap`, and a subring of a
-domain is a domain.  Everything downstream of this point is already
-proven: `isDomain_of_gamma0Atlas` below converts `IsDomain B` into
-`IsDomain Γ(A.Y, ⊤)` for an arbitrary atlas, through
-`Scheme.ΓSpecIso` and `isDomain_globalSections_transport`.
-
-Strengthening `Gamma0GITPresentation` belongs with that structure's
-owner, which is why the leaf is stated here rather than folded in.
-
-`hN` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be empty
-(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and the
-global sections of `∅` form the zero ring, which is not `Nontrivial`. -/
-theorem isDomain_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
-    (P : Gamma0GITPresentation N) :
-    letI := P.commRing_B; IsDomain P.B :=
-  sorry
-
-/-- **The ring of global functions of the coarse space is a DOMAIN**
-(PROVEN 2026-07-27 over `isDomain_of_gamma0GITPresentation`).
-
-Take the Katz–Mazur presentation `P`; its coarse space is
-`Spec (CommRingCat.of B)`, whose global sections are `B` by
-`Scheme.ΓSpecIso`, and `B` is a domain by the leaf.  Any atlas is
-isomorphic to `P.toGamma0Atlas` over `SpecQ` (`gamma0Atlas_isIso`), and
-`isDomain_globalSections_transport` carries the conclusion across. -/
-theorem isDomain_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
-    IsDomain Γ(A.Y, ⊤) := by
-  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
-  letI := P.commRing_B
-  haveI : IsDomain P.B := isDomain_of_gamma0GITPresentation hN P
-  obtain ⟨u, hu, -⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
-  haveI := hu
-  refine isDomain_globalSections_transport u ?_
-  show IsDomain Γ(Spec (CommRingCat.of P.B), ⊤)
-  exact MulEquiv.isDomain P.B
-    (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
+/-! (`isDomain_of_gamma0GITPresentation` and `isDomain_of_gamma0Atlas` used to be
+stated HERE.  They were MOVED DOWN (2026-07-28) to just after
+`isRegularRing_coarseRing_of_gamma0GITPresentation`, because the first of them is
+no longer a leaf: it is the first conjunct of that theorem, and Lean's
+declaration order therefore forces it below.  Nothing about either statement
+changed.) -/
 
 /-! #### The commutative algebra of `B = A^G`, and the modular input left below it
 
@@ -12083,6 +12049,67 @@ theorem isRegularRing_coarseRing_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
     Algebra.FiniteType.equiv hftB e, ?_⟩
   rw [← ringKrullDim_eq_of_ringEquiv e.toRingEquiv]
   exact hdimB
+
+/-- **The ring of invariants of a GIT presentation is a DOMAIN** (relocated here
+2026-07-27 from `isDomain_of_gamma0Atlas`; **PROVEN 2026-07-28** over
+`isRegularRing_coarseRing_of_gamma0GITPresentation`) — the integrality half of
+Katz–Mazur (8.1.1).
+
+TRUE and pinned: `Γ_0(N)\ℍ` is irreducible, so the coarse space is an integral
+scheme, and here it is literally `Spec B`; by `gamma0Atlas_isIso` every
+presentation's `Spec B` is isomorphic to the Katz–Mazur one, so no junk
+presentation can refute this even though a junk presentation can and does refute
+`IsDomain A` (see the FALSITY AUDIT in the section comment above).
+
+**The route this docstring used to prescribe is now RETIRED, and it was the more
+expensive of the two.**  It said: fold `IsDomain A` into `Gamma0GITPresentation`
+as a field, then close the leaf with
+`Function.Injective.isDomain (algebraMap P.B P.A) P.injective_algebraMap`.  That
+would have obliged every producer of a presentation to prove `IsDomain A`, and
+`IsDomain A` reaches the tree anyway — through
+`exists_gamma0GITPresentation_dedekindModuli`, which asserts it (in the sharper
+Dedekind form) for ONE presentation, exactly as the FALSITY AUDIT above requires.
+`isRegularRing_coarseRing_of_gamma0GITPresentation` already transports the
+resulting `IsDomain B` to every presentation along `coarseRing_algEquiv`, so this
+declaration is its first conjunct and nothing else.  **No field was added to
+`Gamma0GITPresentation`.**
+
+The `Algebra ℚ P.B` instance is not a choice and is not a hypothesis here: `P.str`
+is a morphism out of an affine scheme, so `Spec.map_surjective` produces the
+unique ring map `ℚ → B` it is `Spec.map` of, exactly as in
+`smoothOfRelativeDimension_of_gamma0GITPresentation` below.
+
+`hN` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be empty
+(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and the global
+sections of `∅` form the zero ring, which is not `Nontrivial`. -/
+theorem isDomain_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    letI := P.commRing_B; IsDomain P.B := by
+  letI := P.commRing_B
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective P.str
+  letI : Algebra ℚ P.B := φ.hom.toAlgebra
+  have hstr : Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str := hφ
+  exact (isRegularRing_coarseRing_of_gamma0GITPresentation hN P hstr).1
+
+/-- **The ring of global functions of the coarse space is a DOMAIN**
+(PROVEN 2026-07-27 over `isDomain_of_gamma0GITPresentation`).
+
+Take the Katz–Mazur presentation `P`; its coarse space is
+`Spec (CommRingCat.of B)`, whose global sections are `B` by
+`Scheme.ΓSpecIso`, and `B` is a domain by the leaf.  Any atlas is
+isomorphic to `P.toGamma0Atlas` over `SpecQ` (`gamma0Atlas_isIso`), and
+`isDomain_globalSections_transport` carries the conclusion across. -/
+theorem isDomain_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
+    IsDomain Γ(A.Y, ⊤) := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  letI := P.commRing_B
+  haveI : IsDomain P.B := isDomain_of_gamma0GITPresentation hN P
+  obtain ⟨u, hu, -⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  refine isDomain_globalSections_transport u ?_
+  show IsDomain Γ(Spec (CommRingCat.of P.B), ⊤)
+  exact MulEquiv.isDomain P.B
+    (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
 
 /-- **The coarse space of a GIT presentation is smooth of relative
 dimension `1` over `ℚ`** (relocated here 2026-07-27 from
@@ -12372,13 +12399,11 @@ geometric fields are the four per-atlas statements above, and since
 2026-07-27 all four are PROVEN — `isAffine_of_gamma0Atlas` outright, and
 the other three by transport from the GIT model.  Since 2026-07-27 the
 three per-presentation statements there are themselves theorems too, and
-what is left open below them is purely commutative algebra about the
-coarse ring `B = A^G`:
-`isDomain_of_gamma0GITPresentation` (`IsDomain B`, one line once
-`Gamma0GITPresentation` carries `IsDomain A` as a field).
-
-Since 2026-07-28 the other two — `isRegularRing_coarseRing_of_gamma0GITPresentation`
-and `isDomain_tensorCoarseRing_of_gamma0GITPresentation` — are PROVEN as well, and
+since 2026-07-28 so are all three of the commutative-algebra statements about
+the coarse ring `B = A^G` beneath them —
+`isDomain_of_gamma0GITPresentation`,
+`isRegularRing_coarseRing_of_gamma0GITPresentation`
+and `isDomain_tensorCoarseRing_of_gamma0GITPresentation` — so
 what survives beneath them is TWO leaves rather than two mixed
 geometry-and-algebra statements:
 `exists_gamma0GITPresentation_dedekindModuli` (Katz–Mazur representability, about
@@ -12826,8 +12851,11 @@ ingredients its own docstring listed:
   arithmetic leaf it was cut down to,
   `exists_stableCyclic_of_gamma0Datum_algClos`.  Three leaves are what remain
   of the bridge: the INJECTIVITY half of the geometric bijection, which used to
-  ride inside `exists_gamma0Datum_specQ_of_ratPoint` as the hypothesis `hd` and
-  is now `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`; the
+  ride inside `exists_gamma0Datum_specQ_of_ratPoint` as the hypothesis `hd`,
+  became `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` and is
+  since 2026-07-28 PROVEN over the single leaf
+  `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos` (the rigidification
+  splits over `ℚ̄` — Katz–Mazur, and NOT a consequence of the fpqc `cover`); the
   moduli-to-Weierstrass dictionary
   `exists_weierstrassQ_autStable_of_galoisInvariant`; and the twist itself at
   `j ∈ {0, 1728}`, `exists_stableCyclic_twist_of_autStable_of_j_special`.  See
@@ -13032,7 +13060,17 @@ The three declarations below are the result, and they mirror the surjectivity
 trio above one for one:
 
 * `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
-  over a *presentation*.  A leaf, exactly as its surjectivity partner was.
+  over a *presentation*.  **PROVEN 2026-07-28**, over the two invariant-theory
+  lemmas `exists_smul_apply_eq_of_isInvariant` /
+  `exists_smul_eq_of_isInvariant` (the geometric-quotient property of a finite
+  group action, which is what its surjectivity partner did not need) and the one
+  remaining leaf `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos` — the
+  Katz–Mazur statement that the rigidification splits over `ℚ̄`, which is
+  genuinely NOT available from the fpqc `cover` field (see
+  `exists_fpqc_no_section_specAlgClos`).  The leaf is a restatement of the old
+  one rather than a reduction of it — given the PROVEN surjectivity the two are
+  equivalent — but it is in citation shape, and the commutative algebra that
+  used to sit inside the citation is now compiled.
 * `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` — the same
   statement over an arbitrary coarse space, PROVEN by initiality alone, in the
   same `v ≫ u = 𝟙` style as
@@ -13047,8 +13085,173 @@ trio above one for one:
   Weierstrass curve over `ℚ` with a Galois-stable cyclic subgroup — which is
   the language a twist is written in. -/
 
+/-- **The `G`-orbit of a ring map, ONE ELEMENT AT A TIME** (PROVEN 2026-07-28) —
+the geometric-quotient half of the GIT quotient by a FINITE group, in the only
+form the invariant-theory API of the pin actually gives it.
+
+If `B ⊆ A` is the ring of invariants of a finite group `G` and `φ₁, φ₂ : A → K`
+agree on `B`, then for EACH `a : A` there is a `σ : G` with
+`φ₂ a = φ₁ (σ • a)`.  The `σ` depends on `a`; making it uniform is
+`exists_smul_eq_of_isInvariant` below, and that step is where the base field has
+to be infinite.
+
+The proof is the classical one and needs nothing beyond a domain `K`: the
+characteristic polynomial `∏_{g} (X - g • a)` has coefficients in `B`
+(`Algebra.IsInvariant.charpoly_mem_lifts`), so its images under `φ₁` and `φ₂`
+coincide; evaluating that common polynomial at `φ₂ a` gives
+`∏_g (φ₂ a - φ₂ (g • a)) = 0` on one side, by the `g = 1` factor, and
+`∏_g (φ₂ a - φ₁ (g • a)) = 0` on the other — so one factor of the latter
+vanishes.
+
+Note what is NOT assumed: `K` need not be algebraically closed, `A` need not be
+Noetherian or of finite type, and no prime of `A` is ever named.  In particular
+this is strictly cheaper than routing through
+`Algebra.IsInvariant.exists_smul_of_under_eq` (transitivity on primes) plus
+`Ideal.Quotient.stabilizerHom_surjective` (normality of the residue extension),
+which is the other way to reach the same conclusion. -/
+theorem exists_smul_apply_eq_of_isInvariant {B A K : Type} [CommRing B] [CommRing A]
+    [Algebra B A] [CommRing K] [IsDomain K]
+    (G : Type) [Group G] [Finite G] [MulSemiringAction G A] [SMulCommClass G B A]
+    [Algebra.IsInvariant B A G] (φ₁ φ₂ : A →+* K)
+    (h : φ₁.comp (algebraMap B A) = φ₂.comp (algebraMap B A)) (a : A) :
+    ∃ σ : G, φ₂ a = φ₁ (σ • a) := by
+  classical
+  cases nonempty_fintype G
+  obtain ⟨q, hq⟩ := Algebra.IsInvariant.charpoly_mem_lifts B A G a
+  have hq' : Polynomial.map (algebraMap B A) q = MulSemiringAction.charpoly G a := by
+    rw [← Polynomial.coe_mapRingHom]; exact hq
+  have hexp : ∀ ψ : A →+* K, Polynomial.map ψ (MulSemiringAction.charpoly G a)
+      = ∏ g : G, (Polynomial.X - Polynomial.C (ψ (g • a))) := by
+    intro ψ
+    rw [MulSemiringAction.charpoly_eq, Polynomial.map_prod]
+    simp
+  have key : Polynomial.map φ₁ (MulSemiringAction.charpoly G a)
+      = Polynomial.map φ₂ (MulSemiringAction.charpoly G a) := by
+    rw [← hq', Polynomial.map_map, Polynomial.map_map, h]
+  have h0 : (∏ g : G, (φ₂ a - φ₁ (g • a))) = 0 := by
+    have hev := congrArg (Polynomial.eval (φ₂ a)) key
+    rw [hexp, hexp] at hev
+    simp only [Polynomial.eval_prod, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C] at hev
+    rw [hev]
+    exact Finset.prod_eq_zero (Finset.mem_univ (1 : G)) (by simp)
+  obtain ⟨σ, -, hσ⟩ := Finset.prod_eq_zero_iff.mp h0
+  exact ⟨σ, sub_eq_zero.mp hσ⟩
+
+/-- **The `G`-orbit of a ring map, UNIFORMLY** (PROVEN 2026-07-28): two
+`k`-algebra maps `A → K` that agree on the invariant subring `B = A^G` of a
+finite group `G` differ by a SINGLE `σ : G`.
+
+Read through `Spec`, this is exactly "`G` acts transitively on the `K`-points of
+`Spec A` over a `K`-point of `Spec A^G`" — the geometric-quotient property of
+the GIT quotient by a finite group, and the one place in this subsection where
+`Gamma0GITPresentation.finite_G` is consumed.
+
+**Why `Infinite k` is load-bearing.**  The equaliser
+`A_σ := {a | φ₂ a = φ₁ (σ • a)}` is a `k`-subspace of `A` (it is a subring, and
+it is `k`-stable because `σ` fixes the image of `k`, via the scalar tower through
+`B`).  `exists_smul_apply_eq_of_isInvariant` says `A = ⋃_{σ ∈ G} A_σ`, a FINITE
+union, and a vector space over an infinite field is not a finite union of proper
+subspaces (`Subspace.exists_eq_top_of_iUnion_eq_univ`) — so some `A_σ` is all of
+`A`.  Over a finite `k` the argument genuinely fails; the conclusion may still be
+true there, but not for this reason.  The application is `k = ℚ`.
+
+`IsScalarTower k B A` is what makes `σ` fix `algebraMap k A c`: it rewrites it as
+`algebraMap B A (algebraMap k B c)`, which `smul_algebraMap` fixes. -/
+theorem exists_smul_eq_of_isInvariant {k B A K : Type} [Field k] [Infinite k]
+    [CommRing B] [CommRing A] [Algebra B A] [CommRing K] [IsDomain K]
+    [Algebra k B] [Algebra k A] [IsScalarTower k B A] [Algebra k K]
+    (G : Type) [Group G] [Finite G] [MulSemiringAction G A] [SMulCommClass G B A]
+    [Algebra.IsInvariant B A G] (φ₁ φ₂ : A →ₐ[k] K)
+    (h : ∀ b : B, φ₁ (algebraMap B A b) = φ₂ (algebraMap B A b)) :
+    ∃ σ : G, ∀ a : A, φ₂ a = φ₁ (σ • a) := by
+  classical
+  have hsmul : ∀ (σ : G) (c : k) (a : A), σ • (c • a) = c • (σ • a) := by
+    intro σ c a
+    rw [Algebra.smul_def, Algebra.smul_def, smul_mul', IsScalarTower.algebraMap_apply k B A,
+      smul_algebraMap]
+  let p : G → Submodule k A := fun σ =>
+    { carrier := {a : A | φ₂ a = φ₁ (σ • a)}
+      add_mem' := by
+        intro x y hx hy
+        simp only [Set.mem_setOf_eq] at *
+        rw [map_add, smul_add, map_add, hx, hy]
+      zero_mem' := by simp
+      smul_mem' := by
+        intro c x hx
+        simp only [Set.mem_setOf_eq] at *
+        rw [hsmul σ c x, map_smul φ₂ c x, map_smul φ₁ c (σ • x), hx] }
+  have hcov : (⋃ σ : G, (p σ : Set A)) = Set.univ := by
+    ext a
+    simp only [Set.mem_iUnion, Set.mem_univ, iff_true]
+    exact exists_smul_apply_eq_of_isInvariant G φ₁.toRingHom φ₂.toRingHom
+      (RingHom.ext fun b => h b) a
+  obtain ⟨σ, hσ⟩ := Subspace.exists_eq_top_of_iUnion_eq_univ hcov
+  refine ⟨σ, fun a => ?_⟩
+  have ha : a ∈ p σ := hσ ▸ Submodule.mem_top
+  exact ha
+
+/-- **The rigidification of a GIT presentation SPLITS over `ℚ̄`** (sorry leaf,
+opened 2026-07-28 as the sole modular input of
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` below) —
+Katz–Mazur (8.1.1) and (2.3.1): every `Γ₀(N)`-datum over an algebraically closed
+field of characteristic `0` is the base change of the universal family `dM`
+along an honest `ℚ̄`-point of the rigidified moduli scheme `Spec A`.
+
+Classically this is one line: over `ℚ̄` the elliptic curve underlying `d` has
+`E[n] ≅ (ℤ/n)²` (`exists_torsionBasis_geomPoint` in this file), so `d` acquires a
+full level-`n` structure over `ℚ̄` *without any base change at all*, and
+`𝔐([Γ₀(N)], [Γ(n)])` is a FINE moduli space for the rigidified problem, so the
+rigidified datum is classified by a unique `m : Spec ℚ̄ ⟶ Spec A` with
+`d ≅ m^* dM`.
+
+**Why this cannot be derived from `cover`, and why that is not an oversight.**
+`Gamma0GITPresentation.cover` rigidifies only after an **fpqc** base change
+`p : T' ⟶ Spec ℚ̄`, and such a `p` need NOT have a section — the witness is
+`Spec ℚ̄(t) ⟶ Spec ℚ̄`, formalised in this file as
+`exists_fpqc_no_section_specAlgClos`, together with the section comment there
+explaining where the Nullstellensatz argument breaks (fppf ⇒ split over an
+algebraically closed field; fpqc ⇏ split, and `cover` is the weaker one).  So the
+splitting over `ℚ̄` is genuinely extra information about the presentation, and
+this leaf is where it enters.  It is the SAME Katz–Mazur citation the docstring
+of `Gamma0Atlas.cover` names as the alternative to strengthening that field to
+carry local finite presentation; stating it here keeps `Gamma0GITPresentation`
+unchanged, so no producer of a presentation acquires a new obligation.
+
+**Faithfulness: TRUE for an ARBITRARY presentation, not only the Katz–Mazur
+one.**  Together with the PROVEN surjectivity
+`Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint` this statement is
+EQUIVALENT to the injectivity below, and injectivity is a property of the
+`Γ₀(N)`-moduli problem rather than of the presentation: any two presentations
+have canonically isomorphic coarse spaces (`gamma0Atlas_isIso`) compatibly with
+`classify`, and `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq`
+transports the conclusion across such an isomorphism in both directions.  So no
+junk presentation can refute it.  Being equivalent, it is honestly a
+RESTATEMENT of the old leaf rather than a reduction of it — what has actually
+been discharged is the commutative algebra of the quotient, which used to be
+folded inside the citation and is now the two PROVEN lemmas above.
+
+*The check that would refute this*: exhibit a `Γ₀(N)`-datum over `ℚ̄` whose class
+in `Spec A^G(ℚ̄)` is hit by no `ℚ̄`-point of `Spec A` carrying an isomorphic
+datum.  Since `A` is integral over `A^G` the class always lifts to a point of
+`Spec A` (that is the surjectivity lemma), so a refutation would have to be a
+failure of the geometric bijection over an algebraically closed field, which does
+not happen for a coarse moduli space of a separated Deligne–Mumford stack.
+
+`N = 0` needs no hypothesis: `isEmpty_of_gamma0Datum_zero` makes
+`Gamma0Datum 0 (Spec ℚ̄)` uninhabited, so the statement is vacuous there. -/
+theorem Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos {N : ℕ}
+    (P : Gamma0GITPresentation N)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    letI := P.commRing_A
+    ∃ m : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ Spec (CommRingCat.of P.A),
+      Nonempty (IsBaseChangeOf m d P.dM) :=
+  sorry
+
 /-- **`classify` is INJECTIVE on `ℚ̄`-points, over the GIT presentation**
-(sorry leaf, opened 2026-07-27): two `Γ₀(N)`-data over `ℚ̄` with the same class
+(opened 2026-07-27; **PROVEN 2026-07-28** over the single leaf
+`Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos` and the two
+invariant-theory lemmas above): two `Γ₀(N)`-data over `ℚ̄` with the same class
 in the coarse space are isomorphic, an isomorphism of data being
 `IsBaseChangeOf (𝟙 _)` (see the last paragraph of `IsBaseChangeOf`'s
 docstring).
@@ -13064,23 +13267,36 @@ whereas a presentation says which points there are.
 off the presentation, and that transport is PROVEN — so a presentation has to
 be entered exactly once.
 
-#### The route
+#### The route, as carried out
 
 `classify_dM` identifies `(P.classify P.strM P.dM).1` with the quotient map
-`Spec A ⟶ Spec B`, `B = A^G`.  Two `ℚ̄`-points of `Spec A` with the same image
-in `Spec A^G` lie in a single `G`-orbit — the geometric-quotient half of the
-GIT quotient by a FINITE group, and the one place in this subsection where
-`P.finite_G` is consumed (the surjectivity partner uses only
-`Algebra.IsInvariant.isIntegral`).  The deck group changes the auxiliary
-`[Γ(n)]`-rigidification and not the underlying `Γ₀(N)`-datum, so points of one
-orbit carry isomorphic data: `exists_gamma0Datum_baseChange` realises the data
-at the two points as base changes of `P.dM` along the two lifts, and the
-comparison across the deck transformation is the `IsBaseChangeOf (𝟙 _)` asked
-for.
+`Spec A ⟶ Spec B`, `B = A^G`.  The proof is four steps:
 
-`P.classify_natural` is what turns "same point of `Spec A`" into "isomorphic
-data", and `subsingleton_hom_specQ` disposes of the structure-morphism
-bookkeeping, as everywhere else in this file.
+1. *Rigidify both data over `ℚ̄`.*  `exists_isBaseChangeOf_dM_algClos` (the one
+   leaf) gives `mᵢ : Spec ℚ̄ ⟶ Spec A` with `dᵢ ≅ mᵢ^* dM`.  This is where the
+   Katz–Mazur input enters, and it CANNOT come from `P.cover`, which is only
+   fpqc — see that leaf's docstring and `exists_fpqc_no_section_specAlgClos`.
+2. *The two points have the same image in `Spec B`.*  `classify_natural` writes
+   `classify dᵢ` as `mᵢ` followed by `classify strM dM`, which `classify_dM`
+   identifies with the quotient map; the hypothesis `h` then says exactly that
+   the two ring maps `φᵢ : A → ℚ̄` agree on `B`.  `subsingleton_hom_specQ`
+   disposes of the structure-morphism bookkeeping, as everywhere else here.
+3. *Two `ℚ̄`-points of `Spec A` over one point of `Spec A^G` lie in one
+   `G`-orbit.*  That is `exists_smul_eq_of_isInvariant` above — the
+   geometric-quotient half of the GIT quotient by a FINITE group, and the one
+   place in this subsection where `P.finite_G` is consumed (the surjectivity
+   partner uses only `Algebra.IsInvariant.isIntegral`).  So `m₂ = m₁ ≫ Spec σ`
+   for some `σ : G`.
+4. *The deck group does not move the datum.*  `dM_equivariant σ` supplies `d₀`
+   with `d₀ ≅ dM` over `𝟙` and over `Spec σ`; `IsBaseChangeOf.cancel` and
+   `IsBaseChangeOf.comp` then move `d₁` along `m₁ ≫ Spec σ = m₂` and cancel
+   `m₂` against `d₂`, leaving the `IsBaseChangeOf (𝟙 _)` asked for.
+
+The `ℚ`-algebra structures on `A` and `B` needed in step 3 are not choices:
+`Spec.map_surjective` produces the unique ring map `ℚ → B` that `P.str` is
+`Spec.map` of, and `A` is given the composite structure so that the scalar tower
+holds by `rfl`.  Every ring map out of a `ℚ`-algebra into `ℚ̄` is automatically a
+`ℚ`-algebra map (`RingHom.ext_rat`: there is at most one ring map `ℚ →+* R`).
 
 **The check that would refute this**: exhibit `P` and two `ℚ̄`-data with equal
 class and no isomorphism.  Since a `ℚ̄`-point of `Spec A^G` determines the
@@ -13094,8 +13310,56 @@ theorem Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ}
     (P : Gamma0GITPresentation N)
     (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (h : P.classify (specAlgClos ℚ) d₁ = P.classify (specAlgClos ℚ) d₂) :
-    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
-  sorry
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  obtain ⟨m₁, ⟨b₁⟩⟩ := P.exists_isBaseChangeOf_dM_algClos d₁
+  obtain ⟨m₂, ⟨b₂⟩⟩ := P.exists_isBaseChangeOf_dM_algClos d₂
+  have hg₁ : m₁ ≫ P.strM = specAlgClos ℚ := (subsingleton_hom_specQ _).elim _ _
+  have hg₂ : m₂ ≫ P.strM = specAlgClos ℚ := (subsingleton_hom_specQ _).elim _ _
+  have hπ : m₁ ≫ Spec.map (CommRingCat.ofHom (algebraMap P.B P.A))
+      = m₂ ≫ Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) := by
+    rw [← P.classify_dM]
+    exact congrArg Subtype.val
+      ((P.classify_natural m₁ hg₁ b₁).symm.trans (h.trans (P.classify_natural m₂ hg₂ b₂)))
+  have hring : (CommRingCat.ofHom (algebraMap P.B P.A) ≫ Spec.preimage m₁)
+      = (CommRingCat.ofHom (algebraMap P.B P.A) ≫ Spec.preimage m₂) := by
+    refine Spec.map_injective ?_
+    rw [Spec.map_comp, Spec.map_comp, Spec.map_preimage, Spec.map_preimage]
+    exact hπ
+  obtain ⟨ψ, -⟩ := Spec.map_surjective P.str
+  letI : Algebra ℚ P.B := ψ.hom.toAlgebra
+  letI : Algebra ℚ P.A := ((algebraMap P.B P.A).comp (algebraMap ℚ P.B)).toAlgebra
+  haveI : IsScalarTower ℚ P.B P.A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  have hcomm : ∀ ξ : P.A →+* AlgebraicClosure ℚ, ∀ c : ℚ,
+      ξ (algebraMap ℚ P.A c) = algebraMap ℚ (AlgebraicClosure ℚ) c := fun ξ =>
+    congrFun (congrArg (fun f : ℚ →+* AlgebraicClosure ℚ => (f : ℚ → AlgebraicClosure ℚ))
+      (RingHom.ext_rat (ξ.comp (algebraMap ℚ P.A)) (algebraMap ℚ (AlgebraicClosure ℚ))))
+  obtain ⟨σ, hσ⟩ := exists_smul_eq_of_isInvariant (k := ℚ) (B := P.B) P.G
+    (AlgHom.mk (Spec.preimage m₁).hom (hcomm _))
+    (AlgHom.mk (Spec.preimage m₂).hom (hcomm _))
+    (fun b => congrFun (congrArg (fun f : CommRingCat.of P.B ⟶ CommRingCat.of (AlgebraicClosure ℚ)
+      => (f.hom : P.B → AlgebraicClosure ℚ)) hring) b)
+  have hm : m₁ ≫ Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) = m₂ := by
+    conv_lhs => rw [← Spec.map_preimage m₁]
+    conv_rhs => rw [← Spec.map_preimage m₂]
+    rw [← Spec.map_comp]
+    congr 1
+    exact CommRingCat.hom_ext (RingHom.ext fun a => (hσ a).symm)
+  obtain ⟨d₀, ⟨e₁⟩, ⟨e₂⟩⟩ := P.dM_equivariant σ
+  have b₁c : IsBaseChangeOf (m₁ ≫ 𝟙 (Spec (CommRingCat.of P.A))) d₁ P.dM := by
+    rw [Category.comp_id]; exact b₁
+  have b₁' : IsBaseChangeOf m₁ d₁ d₀ := b₁c.cancel e₁
+  have b₁'' : IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))) ≫ m₂) d₁ P.dM := by
+    rw [Category.id_comp, ← hm]
+    exact b₁'.comp e₂
+  exact ⟨b₁''.cancel b₂⟩
 
 /-- **`classify` is INJECTIVE on `ℚ̄`-points, over ANY coarse moduli space**
 (PROVEN 2026-07-27) — the previous leaf transported off the presentation by
@@ -14923,7 +15187,9 @@ over `exists_weierstrassCurve_of_abelianSchemeStruct`, which is itself PROVEN
 `exists_gamma0Datum_specQ_of_ratPoint`, and so is
 `exists_stableCyclic_of_gamma0Datum_algClos` under it.  The open frontier of
 this assembly **inside this module** is therefore the three leaves listed in the
-bridge summary above: `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`,
+bridge summary above: `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos`
+(as of 2026-07-28 — `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`
+is PROVEN over it),
 `exists_weierstrassQ_autStable_of_galoisInvariant` and
 `exists_stableCyclic_twist_of_autStable_of_j_special`.  The Weierstrass-model geometry is open
 elsewhere, on `EllipticScheme.lean`'s three named Riemann–Roch leaves; see the
@@ -14943,7 +15209,8 @@ packaged as the hypothesis `hd` — **has been split off** (2026-07-27), exactly
 as that leaf's docstring prescribed, into
 `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` plus a PROVEN
 initiality transport.  `exists_gamma0Datum_specQ_of_ratPoint` is itself now
-PROVEN.
+PROVEN, and so — since 2026-07-28 — is the injectivity leaf, over the single
+Katz–Mazur citation `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos`.
 
 **This list was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — two
@@ -14951,8 +15218,12 @@ branches rewrote it in the same release, and one of them still named
 `false_of_gamma0Datum_specQ`, a cut retired at release 5.  THREE leaves remain
 under this node, and no two of them share subject matter:
 
-* `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
-  of `classify` on `ℚ̄`-points over a presentation; GIT, no arithmetic;
+* `Gamma0GITPresentation.exists_isBaseChangeOf_dM_algClos` — the rigidification
+  of a `ℚ̄`-datum by an honest `ℚ̄`-point of `Spec A`; Katz–Mazur, no arithmetic.
+  (It replaced `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` on
+  2026-07-28, which is now PROVEN over it — the GIT half of that node, the
+  geometric-quotient property of a finite group action, is compiled as
+  `exists_smul_eq_of_isInvariant`);
 * `exists_weierstrassQ_autStable_of_galoisInvariant` — the moduli-to-Weierstrass
   dictionary at field of moduli `ℚ`, and
   `exists_stableCyclic_twist_of_autStable_of_j_special` — the twisting/Kummer
