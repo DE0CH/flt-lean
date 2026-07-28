@@ -32695,18 +32695,6 @@ is enough to check monomials `p = X ^ i`, `q = X ^ j`, where
 antisymmetry gives `i > j`. -/
 
 omit [DecidableEq F] in
-theorem homogSubst_zero (A B : F[X]) (m : ℕ) : homogSubst A B m 0 = 0 := by
-  simp [homogSubst]
-
-omit [DecidableEq F] in
-theorem homogSubst_add (A B : F[X]) (m : ℕ) (Q R : F[X]) :
-    homogSubst A B m (Q + R) = homogSubst A B m Q + homogSubst A B m R := by
-  unfold homogSubst
-  rw [← Finset.sum_add_distrib]
-  exact Finset.sum_congr rfl fun i _ => by
-    rw [Polynomial.coeff_add, map_add]; ring
-
-omit [DecidableEq F] in
 theorem homogSubst_neg (A B : F[X]) (m : ℕ) (Q : F[X]) :
     homogSubst A B m (-Q) = -homogSubst A B m Q := by
   unfold homogSubst
