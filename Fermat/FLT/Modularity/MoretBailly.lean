@@ -13311,8 +13311,362 @@ theorem exists_irreducible_planeSection_of_irreducible {K : Type*} [Field K]
       (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) :=
   sorry
 
+/-! ### The arithmetic half: Noether's forms in coefficient space, and the pullback
+
+`exists_noetherBadLocusForms` below is PROVEN (2026-07-27) over exactly two
+inputs, which are the two genuinely different things it asserts:
+
+* `exists_absolutelyIrreducibleForms_two` — E. NOETHER'S THEOREM proper, in the
+  COEFFICIENT SPACE of plane polynomials of degree `≤ d`: the locus of those
+  that fail to be absolutely irreducible of degree exactly `d` is cut out by
+  finitely many `𝔽_p`-rational forms whose degrees are bounded by an `E`
+  depending on `d` ALONE. This is the whole `p`-uniformity content and the only
+  thing left open here.
+* `exists_planeSectionCoeffPolys` — PROVEN below: each coefficient of
+  `planeSection h v u₁ u₂`, read as a function of the plane parameters
+  `w = (v, u₁, u₂)`, is a polynomial over the BASE ring of total degree at most
+  `h.totalDegree`. This is the pullback bookkeeping, and it is what turns
+  Noether's degree bound `E(d)` into the parameter-space bound `D = d · E(d)`.
+
+The composition of the two is `MvPolynomial.bind₁`, whose degree behaviour is
+`totalDegree_bind₁_le`, also proven below. Nothing else is used. -/
+
+/-- **PROVEN**: substituting polynomials of total degree at most `n` for the
+variables multiplies the total degree by at most `n`.
+
+This is the substitution-degree lemma in the form needed to pull Noether's forms
+back along the coefficient map; `totalDegree_bind₁_le_of_le_one` above is the
+special case `n = 1`, which is all that a plane SECTION needs, whereas a
+pullback of a degree-`E` form along a degree-`d` coefficient map needs the
+general statement.
+
+The proof is the standard expansion `bind₁ f g = ∑_{d ∈ supp g} C (g_d) · ∏_i
+(f i)^{d i}`: each summand has degree at most `∑_i (d i) · n = n · |d|`, and
+`|d| ≤ g.totalDegree` for `d` in the support. -/
+theorem totalDegree_bind₁_le {σ τ R : Type*} [CommSemiring R]
+    (f : σ → MvPolynomial τ R) (n : ℕ) (hf : ∀ i, (f i).totalDegree ≤ n)
+    (g : MvPolynomial σ R) :
+    (MvPolynomial.bind₁ f g).totalDegree ≤ n * g.totalDegree := by
+  classical
+  have hexp : MvPolynomial.bind₁ f g
+      = ∑ d ∈ g.support, MvPolynomial.C (MvPolynomial.coeff d g)
+          * ∏ i ∈ d.support, f i ^ d i := by
+    rw [MvPolynomial.bind₁, MvPolynomial.aeval_def, MvPolynomial.eval₂_eq]
+    simp [MvPolynomial.algebraMap_eq]
+  rw [hexp]
+  refine MvPolynomial.totalDegree_finsetSum_le fun d hd => ?_
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  rw [MvPolynomial.totalDegree_C, zero_add]
+  refine le_trans (MvPolynomial.totalDegree_finsetProd _ _) ?_
+  have h1 : ∑ i ∈ d.support, (f i ^ d i).totalDegree ≤ ∑ i ∈ d.support, d i * n :=
+    Finset.sum_le_sum fun i _ =>
+      le_trans (MvPolynomial.totalDegree_pow _ _) (Nat.mul_le_mul_left _ (hf i))
+  refine le_trans h1 ?_
+  rw [← Finset.sum_mul]
+  have h2 : ∑ i ∈ d.support, d i ≤ g.totalDegree := by
+    have := MvPolynomial.le_totalDegree hd
+    simpa [Finsupp.sum] using this
+  calc (∑ i ∈ d.support, d i) * n ≤ g.totalDegree * n := Nat.mul_le_mul_right _ h2
+    _ = n * g.totalDegree := Nat.mul_comm _ _
+
+/-! #### Coefficientwise degree calculus
+
+A polynomial in `MvPolynomial (Fin 2) (MvPolynomial ι R)` is exactly a plane
+polynomial whose coefficients are polynomials in auxiliary variables `ι`; the
+UNIVERSAL plane section (parameters kept as variables) is such an object. The
+five lemmas below say that the bound "every coefficient has total degree at most
+`a`" behaves like a degree: it is stable under sums, adds under products, and
+multiplies under powers and finite products. That is all that is needed to see
+that the universal plane section of a degree-`d` hypersurface has coefficients of
+degree at most `d` in the parameters — the substitution `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t`
+is LINEAR in the parameters, so each of its coefficients has parameter-degree
+at most `1`, and `d` of them multiply. -/
+
+section CoeffTotalDegree
+
+variable {ι R : Type*} [CommSemiring R]
+
+/-- **PROVEN**: the coefficients of a constant are the constant and zero. -/
+theorem coeffTotalDegree_C_le (q : MvPolynomial ι R) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.C q : MvPolynomial (Fin 2) (MvPolynomial ι R))).totalDegree
+      ≤ q.totalDegree := by
+  classical
+  rw [MvPolynomial.coeff_C]
+  split
+  · exact le_rfl
+  · simp
+
+/-- **PROVEN**: the coefficients of a plane variable are `0` and `1`. -/
+theorem coeffTotalDegree_X_le (j : Fin 2) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.X j : MvPolynomial (Fin 2) (MvPolynomial ι R))).totalDegree
+      ≤ 0 := by
+  classical
+  rw [MvPolynomial.coeff_X]
+  split <;> simp
+
+/-- **PROVEN**: a coefficientwise degree bound is stable under addition. -/
+theorem coeffTotalDegree_add_le {a : ℕ} {φ ψ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a)
+    (hψ : ∀ m, (MvPolynomial.coeff m ψ).totalDegree ≤ a) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (φ + ψ)).totalDegree ≤ a := by
+  rw [MvPolynomial.coeff_add]
+  exact le_trans (MvPolynomial.totalDegree_add _ _) (max_le (hφ m) (hψ m))
+
+/-- **PROVEN**: coefficientwise degree bounds ADD under multiplication, because
+each coefficient of a product is a sum of products of coefficients. -/
+theorem coeffTotalDegree_mul_le {a b : ℕ} {φ ψ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a)
+    (hψ : ∀ m, (MvPolynomial.coeff m ψ).totalDegree ≤ b) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (φ * ψ)).totalDegree ≤ a + b := by
+  classical
+  rw [MvPolynomial.coeff_mul]
+  refine MvPolynomial.totalDegree_finsetSum_le fun x _ => ?_
+  exact le_trans (MvPolynomial.totalDegree_mul _ _) (Nat.add_le_add (hφ _) (hψ _))
+
+/-- **PROVEN**: coefficientwise degree bounds MULTIPLY under powers. -/
+theorem coeffTotalDegree_pow_le {a : ℕ} {φ : MvPolynomial (Fin 2) (MvPolynomial ι R)}
+    (hφ : ∀ m, (MvPolynomial.coeff m φ).totalDegree ≤ a) (n : ℕ) :
+    ∀ m, (MvPolynomial.coeff m (φ ^ n)).totalDegree ≤ n * a := by
+  induction n with
+  | zero =>
+      intro m
+      rw [pow_zero, ← MvPolynomial.C_1]
+      simpa using coeffTotalDegree_C_le (ι := ι) (R := R) 1 m
+  | succ n ih =>
+      intro m
+      rw [pow_succ]
+      simpa [Nat.succ_mul] using coeffTotalDegree_mul_le ih hφ m
+
+/-- **PROVEN**: coefficientwise degree bounds ADD over a finite product. -/
+theorem coeffTotalDegree_prod_le {α : Type*} (s : Finset α)
+    (f : α → MvPolynomial (Fin 2) (MvPolynomial ι R)) (b : α → ℕ)
+    (hf : ∀ j, ∀ m, (MvPolynomial.coeff m (f j)).totalDegree ≤ b j) :
+    ∀ m, (MvPolynomial.coeff m (∏ j ∈ s, f j)).totalDegree ≤ ∑ j ∈ s, b j := by
+  classical
+  induction s using Finset.cons_induction with
+  | empty =>
+      intro m
+      rw [Finset.prod_empty, Finset.sum_empty, ← MvPolynomial.C_1]
+      simpa using coeffTotalDegree_C_le (ι := ι) (R := R) 1 m
+  | cons j s _ ih =>
+      intro m
+      rw [Finset.prod_cons, Finset.sum_cons]
+      exact coeffTotalDegree_mul_le (hf j) ih m
+
+/-- **PROVEN**: substituting coefficientwise-linear elements into `h` leaves every
+coefficient of the result a polynomial of total degree at most `h.totalDegree` in
+the auxiliary variables.
+
+This is the degree half of `exists_planeSectionCoeffPolys`, isolated from the
+plane-section packaging: the substituted `gen i` are the affine forms
+`vᵢ + u₁ᵢ·s + u₂ᵢ·t` with the parameters kept as variables, and each of their
+`(s, t)`-coefficients is a single parameter variable, hence of degree `≤ 1`. -/
+theorem coeffTotalDegree_bind₁_map_C_le {N : ℕ}
+    (gen : Fin N → MvPolynomial (Fin 2) (MvPolynomial ι R))
+    (hgen : ∀ i, ∀ m, (MvPolynomial.coeff m (gen i)).totalDegree ≤ 1)
+    (h : MvPolynomial (Fin N) R) (m : Fin 2 →₀ ℕ) :
+    (MvPolynomial.coeff m (MvPolynomial.bind₁ gen
+        (MvPolynomial.map (MvPolynomial.C : R →+* MvPolynomial ι R) h))).totalDegree
+      ≤ h.totalDegree := by
+  classical
+  have hCinj : Function.Injective (MvPolynomial.C : R →+* MvPolynomial ι R) :=
+    MvPolynomial.C_injective _ _
+  set h' : MvPolynomial (Fin N) (MvPolynomial ι R) :=
+    MvPolynomial.map (MvPolynomial.C : R →+* MvPolynomial ι R) h with hh'
+  have hdeg' : h'.totalDegree = h.totalDegree := totalDegree_map_eq_of_injective h hCinj
+  have hexp : MvPolynomial.bind₁ gen h'
+      = ∑ d ∈ h'.support, MvPolynomial.C (MvPolynomial.coeff d h')
+          * ∏ i ∈ d.support, gen i ^ d i := by
+    rw [MvPolynomial.bind₁, MvPolynomial.aeval_def, MvPolynomial.eval₂_eq]
+    simp [MvPolynomial.algebraMap_eq]
+  rw [hexp, MvPolynomial.coeff_sum]
+  refine MvPolynomial.totalDegree_finsetSum_le fun d hd => ?_
+  rw [MvPolynomial.coeff_C_mul]
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  have hc : (MvPolynomial.coeff d h').totalDegree = 0 := by
+    rw [hh', MvPolynomial.coeff_map]
+    exact MvPolynomial.totalDegree_C _
+  rw [hc, zero_add]
+  refine le_trans (coeffTotalDegree_prod_le d.support (fun i => gen i ^ d i) (fun i => d i)
+    (fun i => by simpa using coeffTotalDegree_pow_le (hgen i) (d i)) m) ?_
+  rw [← hdeg']
+  simpa [Finsupp.sum] using MvPolynomial.le_totalDegree hd
+
+end CoeffTotalDegree
+
+/-- **THE PULLBACK ALONG THE COEFFICIENT MAP (PROVEN 2026-07-27)** — every
+coefficient of a plane section is a polynomial of total degree at most
+`h.totalDegree` in the plane parameters, over the BASE ring `R`.
+
+WHAT IT SAYS. Write `w = (v, u₁, u₂)` for a plane parameter, so `w` is a point of
+`𝔸^{3N}` with coordinate variables `Fin N ⊕ Fin N ⊕ Fin N`. For each monomial
+`m = sᵃtᵇ` there is a polynomial `Cf m ∈ R[v, u₁, u₂]` with
+
+* `(Cf m).totalDegree ≤ h.totalDegree`, and
+* for every `R`-algebra `S` and every `S`-point `w`, the `m`-coefficient of
+  `planeSection (h ⊗ S) w` equals `Cf m` evaluated at `w`.
+
+WHY THE BASE RING MATTERS. The consumer needs the Noether forms pulled back to be
+`𝔽_p`-RATIONAL while the bad locus is described over `𝔽̄_p`; that is exactly the
+statement that `Cf m` lives over `R` while the identity holds at `S`-points. If
+`Cf` were only produced over `S` the whole point of the leaf would be lost.
+
+WHY THE DEGREE BOUND IS `h.totalDegree` AND NOT `2 · h.totalDegree`. The
+substitution `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t` has total degree `2` as a polynomial in
+all of `(s, t, v, u₁, u₂)` jointly, but degree `1` in the PARAMETERS alone for
+each fixed power of `(s, t)`. Reading a plane section as an element of
+`R[v, u₁, u₂][s, t]` makes that precise, and the coefficientwise degree calculus
+in the previous section is exactly the bookkeeping for it.
+
+THE CONSTRUCTION. `Cf m` is the `m`-th coefficient of the UNIVERSAL plane
+section: the plane section of `h` pushed into `R[v, u₁, u₂]` and taken along the
+tautological parameters `v ↦ X (inl i)`, `u₁ ↦ X (inr (inl i))`,
+`u₂ ↦ X (inr (inr i))`. Specialisation is then `planeSection_map` applied to the
+evaluation homomorphism `R[v, u₁, u₂] → S` at `w`, and the degree bound is
+`coeffTotalDegree_bind₁_map_C_le`. -/
+theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    [Algebra R S] (h : MvPolynomial (Fin N) R) :
+    ∃ Cf : (Fin 2 →₀ ℕ) → MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R,
+      (∀ m, (Cf m).totalDegree ≤ h.totalDegree) ∧
+      ∀ (v u₁ u₂ : Fin N → S) (m : Fin 2 →₀ ℕ),
+        MvPolynomial.coeff m
+            (planeSection (MvPolynomial.map (algebraMap R S) h) v u₁ u₂)
+          = MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
+              (MvPolynomial.map (algebraMap R S) (Cf m)) := by
+  classical
+  refine ⟨fun m => MvPolynomial.coeff m
+      (planeSection (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        (fun i => MvPolynomial.X (Sum.inl i))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inl i)))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inr i)))), ?_, ?_⟩
+  · intro m
+    have hX : ∀ s : Fin N ⊕ Fin N ⊕ Fin N,
+        (MvPolynomial.X s : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R).totalDegree ≤ 1 := by
+      intro s
+      have hXm : (MvPolynomial.X s : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)
+          = MvPolynomial.monomial (Finsupp.single s 1) 1 := rfl
+      rw [hXm]
+      simpa using MvPolynomial.totalDegree_monomial_le (Finsupp.single s 1) (1 : R)
+    have hCX : ∀ s : Fin N ⊕ Fin N ⊕ Fin N, ∀ m : Fin 2 →₀ ℕ,
+        (MvPolynomial.coeff m (MvPolynomial.C (MvPolynomial.X s)
+          : MvPolynomial (Fin 2) (MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R))).totalDegree ≤ 1 :=
+      fun s m => le_trans (coeffTotalDegree_C_le _ m) (hX s)
+    simp only [planeSection]
+    refine coeffTotalDegree_bind₁_map_C_le _ (fun i => ?_) h m
+    refine coeffTotalDegree_add_le (coeffTotalDegree_add_le (hCX _) (fun m => ?_)) (fun m => ?_)
+    · simpa using coeffTotalDegree_mul_le (hCX (Sum.inr (Sum.inl i)))
+        (coeffTotalDegree_X_le (ι := Fin N ⊕ Fin N ⊕ Fin N) (R := R) 0) m
+    · simpa using coeffTotalDegree_mul_le (hCX (Sum.inr (Sum.inr i)))
+        (coeffTotalDegree_X_le (ι := Fin N ⊕ Fin N ⊕ Fin N) (R := R) 1) m
+  · intro v u₁ u₂ m
+    set ψ : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R →+* S :=
+      MvPolynomial.eval₂Hom (algebraMap R S) (Sum.elim v (Sum.elim u₁ u₂)) with hψ
+    have e0 : MvPolynomial.map ψ (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        = MvPolynomial.map (algebraMap R S) h := by
+      rw [MvPolynomial.map_map]
+      congr 1
+      exact RingHom.ext fun r => by simp [hψ]
+    have e1 : (fun i => ψ (MvPolynomial.X (Sum.inl i)
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = v := by
+      funext i; simp [hψ]
+    have e2 : (fun i => ψ (MvPolynomial.X (Sum.inr (Sum.inl i))
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = u₁ := by
+      funext i; simp [hψ]
+    have e3 : (fun i => ψ (MvPolynomial.X (Sum.inr (Sum.inr i))
+        : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R)) = u₂ := by
+      funext i; simp [hψ]
+    have hmap : MvPolynomial.map ψ (planeSection (MvPolynomial.map
+          (MvPolynomial.C : R →+* MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) R) h)
+        (fun i => MvPolynomial.X (Sum.inl i))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inl i)))
+        (fun i => MvPolynomial.X (Sum.inr (Sum.inr i))))
+        = planeSection (MvPolynomial.map (algebraMap R S) h) v u₁ u₂ := by
+      rw [planeSection_map, e0, e1, e2, e3]
+    rw [← hmap, MvPolynomial.coeff_map, MvPolynomial.eval_map]
+    rfl
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (SORRY LEAF, cut
+2026-07-27)** — the whole `p`-uniformity content of `exists_noetherBadLocusForms`,
+and after this cut the ONLY thing still open in the Noether half.
+
+WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
+that, for every prime `p`, the locus of plane polynomials `g` of total degree
+`≤ d` over `𝔽̄_p` that FAIL to be absolutely irreducible of total degree exactly
+`d` is the COMMON zero set of finitely many forms `Gs i` in the coefficients of
+`g`, all defined over `𝔽_p` and all of total degree `≤ E`.
+
+`E` DOES NOT DEPEND ON `p`, and that is the whole point: it is what makes the
+pulled-back bound `D = d · E` in `exists_noetherBadLocusForms` comparable with
+`p` itself downstream (`exists_bertiniGoodPlaneCount` needs `2 * D < p`).
+
+THE VARIABLES ARE MONOMIALS. A form lives in `MvPolynomial (Fin 2 →₀ ℕ) (ZMod p)`:
+its variables are indexed by the monomials `sᵃtᵇ`, and it is evaluated at
+`fun m => g.coeff m`. The variable type is infinite, which costs nothing — a
+polynomial mentions finitely many variables — and it avoids having to choose an
+enumeration of the monomials of degree `≤ d`. The hypothesis `g.totalDegree ≤ d`
+is what makes the finitely many coefficients that a form can see determine `g`.
+
+WHY AN `↔`, AND WHY SEVERAL FORMS. The bad locus is Zariski closed but in general
+not a hypersurface, so several forms are needed; goodness at `g` is then "some
+form does not vanish". Both directions are consumed by
+`exists_bertiniNoetherWitness_of_three_le`, through
+`exists_noetherBadLocusForms`.
+
+THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
+Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). This is elimination
+theory, not scheme theory. THE CUT THAT THE NEXT OWNER SHOULD MAKE, spelled out
+because it is the part that is not obvious:
+
+1. **The algebraic characterisation.** For `d ≥ 1` and `g.totalDegree ≤ d`,
+   `¬(g.totalDegree = d ∧ Irreducible g)` is equivalent to
+   `g.totalDegree < d  ∨  ∃ d₁ d₂ ≥ 1 with d₁ + d₂ = d and g = g₁ · g₂ with
+   gᵢ.totalDegree ≤ dᵢ`. Both directions are `MvPolynomial.totalDegree_mul_of_isDomain`
+   plus "a unit of `K[s, t]` is a nonzero constant". The case `d = 0` is separate
+   and trivial: a constant is never `Irreducible` over a field, so the good set is
+   EMPTY and the empty family of forms (`k = 0`) discharges the leaf.
+2. **The degree-drop piece is linear.** Given `g.totalDegree ≤ d`,
+   `g.totalDegree < d` iff the `d + 1` coefficients at the monomials `sᵃt^{d-a}`
+   all vanish. Those are the coordinate forms `X (single 0 a + single 1 (d - a))`,
+   of degree `1`.
+3. **The product piece is the elimination content.** For each splitting
+   `d₁ + d₂ = d` with `dᵢ ≥ 1`, the set of `g` of degree `≤ d` admitting a
+   factorisation `g = g₁ · g₂` with `gᵢ.totalDegree ≤ dᵢ` is Zariski CLOSED, cut
+   out by forms of degree bounded in terms of `d` alone. Closedness is the
+   completeness of the projectivised factor spaces: multiplication is bihomogeneous
+   of bidegree `(1, 1)`, so the image of the coefficient map is the affine cone
+   over the image of `P(V_{d₁}) × P(V_{d₂}) → P(V_d)`, and the image of a
+   projective variety under a morphism is closed. This is the ONLY step needing
+   real elimination theory, and it is where the `p`-independent degree bound
+   comes from (Chow forms / resultants have degrees depending on `d₁, d₂` only).
+4. **Union to product.** A finite UNION of common-zero-sets is the common zero set
+   of the products `∏_j F_j(i_j)` over all choices of one form from each family,
+   because a field has no zero divisors; the degrees add, and the number of
+   families (`1` degree-drop family plus `d - 1` splittings) depends only on `d`.
+
+STATED OVER `ZMod p` RATHER THAN OVER `ℤ`. The classical statement gives forms
+with INTEGER coefficients valid over every field, which is strictly stronger.
+The `𝔽_p`-rational version quantified over `p` with a uniform `E` is exactly what
+the consumer needs, and it is what is stated here so that a prover is not forced
+to establish more than is used. If the ℤ-rational version is what falls out of
+the elimination argument, it implies this one immediately.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_absolutelyIrreducibleForms_two (d : ℕ) :
+    ∃ E : ℕ, ∀ (p : ℕ) [Fact p.Prime],
+      ∃ (k : ℕ) (Gs : Fin k → MvPolynomial (Fin 2 →₀ ℕ) (ZMod p)),
+        (∀ i, (Gs i).totalDegree ≤ E) ∧
+        ∀ g : MvPolynomial (Fin 2) (AlgebraicClosure (ZMod p)),
+          g.totalDegree ≤ d →
+          ((g.totalDegree = d ∧ Irreducible g) ↔
+            ∃ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+                  (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                    (Gs i)) ≠ 0) :=
+  sorry
+
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, PULLED BACK TO THE PLANE PARAMETERS
-(SORRY LEAF, cut 2026-07-27)** -- the ARITHMETIC half of
+(PROVEN 2026-07-27 over two named sub-leaves)** -- the ARITHMETIC half of
 `exists_bertiniNoetherWitness_of_three_le`, and the half that carries the
 uniformity in `p`.
 
@@ -13361,6 +13715,25 @@ parameters, and `h` has degree `d`. So pulling a Noether form of degree `≤ E(d
 back along the coefficient map multiplies its degree by at most `d`, and
 `D := d · E(d)` works.
 
+WHAT THIS PROOF DOES, now that the two halves are cut (2026-07-27). `E` comes
+from `exists_absolutelyIrreducibleForms_two` (Noether's theorem in the
+COEFFICIENT space of plane polynomials, the only remaining open half); `Cf`
+comes from `exists_planeSectionCoeffPolys` (PROVEN: the coefficient map
+`w ↦ coefficients of planeSection h w` is given by polynomials over `𝔽_p` of
+total degree `≤ d`). The forms are the composites `Fs i := bind₁ Cf (Gs i)`,
+whose degrees are bounded by `d · E` through `totalDegree_bind₁_le` (PROVEN),
+which is `D`. The `↔` is then a pure substitution identity: `eval` of a `bind₁`
+is `eval` at the evaluated substituents (`MvPolynomial.eval₂Hom_bind₁`), and the
+evaluated substituents are exactly the coefficients of the plane section, by
+`exists_planeSectionCoeffPolys`. So both directions come for free from the
+sub-leaf's own `↔` — nothing is proven twice.
+
+WHAT IS OPEN AFTER THIS CUT: exactly `exists_absolutelyIrreducibleForms_two`.
+Its docstring carries the four-step elimination-theory route (algebraic
+characterisation, the linear degree-drop piece, the closedness of the image of
+multiplication, and union-to-product), of which only step 3 is genuine
+elimination theory.
+
 NO `D < p` HYPOTHESIS HERE. Noether's forms are characteristic-free, so this leaf
 does not need one; the `D < p` carried by the parent is pure slack for the
 consumer.
@@ -13380,8 +13753,47 @@ theorem exists_noetherBadLocusForms (N d : ℕ) :
               Irreducible (planeSection
                 (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂))
             ↔ ∃ i, MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
-                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 :=
-  sorry
+                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 := by
+  obtain ⟨E, hE⟩ := exists_absolutelyIrreducibleForms_two d
+  refine ⟨d * E, ?_⟩
+  intro p _ h hdeg
+  obtain ⟨k, Gs, hGdeg, hGiff⟩ := hE p
+  obtain ⟨Cf, hCdeg, hCeval⟩ :=
+    exists_planeSectionCoeffPolys (S := AlgebraicClosure (ZMod p)) h
+  refine ⟨k, fun i => MvPolynomial.bind₁ Cf (Gs i), ?_, ?_⟩
+  · intro i
+    refine le_trans (totalDegree_bind₁_le Cf d (fun j => hdeg ▸ hCdeg j) (Gs i)) ?_
+    exact Nat.mul_le_mul_left d (hGdeg i)
+  · intro v u₁ u₂
+    have hinj : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+    have hgdeg : (planeSection
+        (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h)
+        v u₁ u₂).totalDegree ≤ d := by
+      refine le_trans (totalDegree_planeSection_le _ _ _ _) ?_
+      rw [totalDegree_map_eq_of_injective h hinj, hdeg]
+    rw [hGiff _ hgdeg]
+    refine exists_congr fun i => ?_
+    have key : MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
+          (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (MvPolynomial.bind₁ Cf (Gs i)))
+        = MvPolynomial.eval
+            (fun m => MvPolynomial.coeff m (planeSection
+              (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂))
+            (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Gs i)) := by
+      rw [MvPolynomial.eval_map, MvPolynomial.eval_map]
+      show MvPolynomial.eval₂Hom _ _ (MvPolynomial.bind₁ Cf (Gs i))
+        = MvPolynomial.eval₂Hom _ _ (Gs i)
+      have hfun : (fun m => MvPolynomial.eval₂Hom
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+              (Sum.elim v (Sum.elim u₁ u₂)) (Cf m))
+          = fun m => MvPolynomial.coeff m (planeSection
+              (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂) := by
+        funext m
+        rw [hCeval v u₁ u₂ m, MvPolynomial.eval_map]
+        rfl
+      rw [MvPolynomial.eval₂Hom_bind₁, hfun]
+    rw [key]
 
 /-- **BERTINI-NOETHER AT `N ≥ 3` (PROVEN 2026-07-27 over two named sub-leaves) --
 THE WHOLE GEOMETRIC CONTENT OF ITEM 4.**
