@@ -939,13 +939,61 @@ variables -- with
               - (add2X^3 + a2*add2X^2*add2Z + a4*add2X*add2Z^2 + a6*add2Z^3);
     matrix T = lift(I, W2);   // T[1,1]*WP + T[2,1]*WQ == W2, checked
 
-*Cost warning, and it is why this is still a leaf.*  Both sides are
-bihomogeneous of bidegree `(6, 6)`, the same shape as `equation_addXYZ`, whose
-`ring1` already takes about four and a half minutes with cofactors of 130 and
-186 monomials.  Here the coefficient polynomials in the `aᵢ` are much larger --
-the two cofactors are ~100 KB of `Singular` text each, ~550 KB once written out
-in Lean -- so budget a long `ring1`, and consider splitting the identity by
-bidegree so that no single `ring1` sees the whole thing. -/
+## COST MEASUREMENT (2026-07-28): A MONOLITHIC `linear_combination` DOES NOT WORK
+
+This section replaces an earlier "budget a long `ring1`, and consider splitting by
+bidegree" note.  That advice was a guess, and both halves of it are wrong: the
+identity is bihomogeneous of a SINGLE bidegree `(6, 6)`, so there is nothing to
+split by bidegree, and "long" understates it by more than an order of magnitude.
+
+The certificate above was written out in full and compiled, TWICE.  Both runs were
+abandoned unfinished, on a 96-core / 2 TB host, with the whole elaboration on ONE
+core (elaboration is single-threaded per declaration):
+
+| certificate | monomials `ring1` must normalise | outcome |
+|---|---|---|
+| `equation_addXYZ` (sibling module), for scale | ~5 000 | 4 min 30 s, fine |
+| `dp`, `px > py > pz` (158 + 280 monomials) | 67 577 | killed at **4 h 08 m, 294 GB** RSS |
+| `Dp`, `py > px > pz` (158 + 253 monomials) | 54 968 | killed at **3 h 52 m, 298 GB** RSS |
+
+Both were still allocating when killed, so these are lower bounds on a job that
+never converged; each was stopped because the host went into memory pressure.  Note
+what such a proof would do to this module: the release-10 split that moved
+`equation_addXYZ` into `ProjectiveEquationAdd.lean` was made because **4173 s** in
+one file was already the head of the whole build's critical path.
+
+**Where the cost sits, which is not where one would guess.**  In the 11 atoms
+`P 0 … Q 2, W'.a₁ … W'.a₆` the breakdown is `|W(add2XYZ)| = 20 254` (total degree
+24) against `|A * W(P)| + |B * W(Q)| = 34 714` for the better certificate.  **The
+CERTIFICATE is two thirds of the work, not the goal** -- so shrinking `A` and `B`
+buys more than restructuring the left-hand side.  A sweep over Singular's monomial
+orders and variable permutations found `Dp` with `py > px > pz` (and
+`qy > qx > qz`) best, **27 % under the obvious `dp`**; use that ordering in the
+`ring` declaration above.  Empirically `ring1` costs about `n^1.5` here, so
+splitting the goal into `k` independent declarations buys only `√k` -- and it would
+need `k` explicit intermediate polynomials of thousands of monomials each in their
+STATEMENTS, which are themselves expensive to elaborate before any tactic runs.
+
+**A route that looks attractive and is MEASURABLY WORSE.**  From the two
+proportionality lemmas below and `equation_addXYZ` one gets
+`addZ ^ 3 * W(add2XYZ) = add2Z ^ 3 * W(addXYZ) = 0`, leaving only the cancellation
+of `addZ ^ 3` -- which an arbitrary ring does not license, but which would be free
+wherever `addZ` is a non-zerodivisor.  That is a cut-level restatement, not this
+leaf's to make.  And the `ring` step it needs is far BIGGER, not smaller:
+`addZ ^ 3 * W(add2XYZ) - add2Z ^ 3 * W(addXYZ)` has **412 929** monomials, with
+cofactors over the two proportionality differences whose products run to another
+686 000.  Do not take this route.
+
+Nor is there room to make the law itself smaller: `add2X`, `add2Y`, `add2Z` are the
+UNIQUE bidegree-`(2, 2)` representatives up to a scalar, because `(W(P), W(Q))`
+contains no nonzero form of bidegree `(2, 2)` -- its two generators have `P`-degree
+`3` and `Q`-degree `3` respectively.  Their 56/74/43 monomials are intrinsic.
+
+**So what is left to try**, in rough order of promise: a cheaper certified
+normaliser than `ring1`; a decomposition that keeps every intermediate STATEMENT
+small (a `def` does not help -- it is unfolded again before `ring1` sees it); or a
+restatement carrying a non-zerodivisor hypothesis on `addZ`, which collapses the
+whole thing to the short argument above. -/
 theorem equation_add2XYZ (hP : Equation W' P) (hQ : Equation W' Q) :
     Equation W' (add2XYZ W' P Q) :=
   sorry
