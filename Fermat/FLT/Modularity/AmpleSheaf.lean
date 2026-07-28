@@ -480,7 +480,28 @@ TWO ROUTES, neither yet tried here.
    sum of copies of `Y` indexed by `F U`, and local bijectivity is
    componentwise.  The residue of this route is therefore
    `modLocW ((PresheafOfModules.free _).obj F ◁ g)` for `F : Cᵒᵖ ⥤ Type u`,
-   plus the cokernel comparison. -/
+   plus the cokernel comparison.
+
+3. *Stalks* — and this is probably the right one HERE, because the site is the
+   site of OPENS of a topological space, which is special.  `Mathlib/Topology/
+   Sheaves/Points.lean` proves `GrothendieckTopology.HasEnoughPoints
+   (Opens.grothendieckTopology X)`: the points of the space form a conservative
+   family of points of the site.  `Mathlib/CategoryTheory/Sites/Point/`
+   `IsMonoidalW.lean` then derives `(J.W).IsMonoidal` from exactly that, by
+   checking `IsIso` STALKWISE and using `Functor.Monoidal.map_tensor` — see
+   `ObjectProperty.IsConservativeFamilyOfPoints.isMonoidal_W`.  That instance is
+   *not* directly usable here, because it is about the tensor product of
+   `Cᵒᵖ ⥤ AddCommGrpCat` (over `ℤ`) and not the `𝒪_Z`-linear one; but the
+   argument transports verbatim once one has a MONOIDAL stalk functor
+   `PresheafOfModules Z.ringCatSheaf.obj ⥤ ModuleCat 𝒪_{Z,z}`, i.e. the single
+   fact that
+
+       colim_{U ∋ z} (X(U) ⊗_{𝒪(U)} Y(U))  ≅  X_z ⊗_{𝒪_{Z,z}} Y_z,
+
+   a filtered colimit of tensor products over a filtered system of base rings.
+   With that, `modLocW Z (X ◁ g)` is stalkwise `𝟙 ⊗ g_z`, and `g_z` is an
+   isomorphism because `g ∈ modLocW Z`.  This is the smallest genuinely new
+   input of the three routes. -/
 theorem modLocW_whiskerLeft {Z : Scheme.{u}} (X : PresheafOfModules.{u} Z.ringCatSheaf.obj)
     {Y₁ Y₂ : PresheafOfModules.{u} Z.ringCatSheaf.obj} {g : Y₁ ⟶ Y₂}
     (hg : modLocW Z g) : modLocW Z (X ◁ g) := sorry
