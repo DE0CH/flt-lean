@@ -41607,10 +41607,214 @@ structure IsAtkinLehnerDescent {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ Spec
     RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post wJ hwJ x)
       = (D.abA i).neg (RelPoint.post (D.u i) (D.u_comp i) x)
 
+/-- **THE ATKIN–LEHNER OPERATOR DESCENDS TO EACH FACTOR AS AN
+INVOLUTION, WITH NO SIGN ASSERTED** (new 2026-07-28) — the WEAK form of
+`IsAtkinLehnerDescent`, and the datum that separates Eichler–Shimura
+from Poincaré reducibility in the cut of
+`exists_heckeIsotypicDecomposition_atkinLehnerDescent` below.
+
+`w_J` descends to an endomorphism `w_{A i}` of each factor, over `ℚ`,
+additive, involutive, and commuting with the anemic Hecke action on the
+factor.  Nothing here says `w_{A i}` is `±1`.
+
+**WHY IT IS STRICTLY WEAKER THAN `IsAtkinLehnerDescent`, AND THAT IS THE
+WHOLE POINT.**  At a level with oldforms the weak datum is available for
+a decomposition for which the strong one is not.  A newform `g` of level
+`M ∣ N` contributes `σ₀(N/M)` degeneracy copies of `A_g` and `w_N`
+PERMUTES them, so no `±1` is available copy-by-copy.  But take the
+factors to be the `w_N`-ORBITS of those copies: a product of copies of
+`A_g` is still isotypic for the anemic system `a_n(g)`, the projection
+onto an orbit-block is still surjective, and `cover` and `finite_ker`
+are untouched — and `w_N` acts on each block as an involution, which is
+exactly this datum, and is NOT `±1` on it.  Passing from here to a sign
+is Poincaré reducibility and nothing else; that is
+`exists_atkinLehnerDescent_of_factorwise` below.
+
+**THE SIGN — and here the DESCENT — IS READ OFF THE GEOMETRY, NOT OFF
+THE LABEL.**  `descend` is an equation about `w_J` itself, quantified
+over every test object, so the label-permutation counterexample recorded
+on `isTorsion_factor_of_heckeIsotypic` cannot spoof it, exactly as for
+`IsAtkinLehnerDescent`.
+
+**Not vacuous, and not trivially satisfiable.**  `wA i := 𝟙` forces
+`u i ∘ w_J = u i` for every `i`, which with `D.finite_ker` forces `w_J`
+to be the identity on `J(ℚ)` up to a finite group — false for `w_169`,
+whose minus part is `5`-dimensional.
+
+**WHY `hecke_comm` IS RESTRICTED TO `n` COPRIME TO `N`.**  It is FALSE
+for `n ∣ N`: `w_N` does not commute with `U_p` for `p ∣ N` — that
+non-commutation is the whole content of the Atkin–Lehner theory of the
+old part — so `U_p` does not preserve the `±` parts and does not descend
+to them.  The anemic range is what commutes, and it is exactly the range
+in which `IsHeckeIsotypicDecomposition.isotypic` makes a demand, which is
+why the refinement below can still supply `equivariant`; see its
+docstring for how. -/
+structure IsAtkinLehnerFactorwise {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} {h : IsX0Compactification N strX strY jY}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o} (D : IsHeckeIsotypicDecomposition N h jac)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr) where
+  /-- the Atkin–Lehner operator induced on the factor `A i` -/
+  wA : ∀ i : D.idx, D.A i ⟶ D.A i
+  /-- it is a morphism over the base -/
+  wA_comp : ∀ i, wA i ≫ D.astr i = D.astr i
+  /-- it is a homomorphism -/
+  wA_add : ∀ i, IsAdditiveOn (D.abA i) (D.abA i) (wA i) (wA_comp i)
+  /-- it is an involution -/
+  wA_invol : ∀ i, wA i ≫ wA i = 𝟙 (D.A i)
+  /-- `u i ∘ w_J = w_{A i} ∘ u i`, at every test object -/
+  descend : ∀ (i : D.idx) {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint jstr g),
+    RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post wJ hwJ x)
+      = RelPoint.post (wA i) (wA_comp i) (RelPoint.post (D.u i) (D.u_comp i) x)
+  /-- it commutes with the ANEMIC Hecke action on the factor; see the
+  docstring for why `n ∣ N` must be excluded -/
+  hecke_comm : ∀ (i : D.idx) (n : ℕ), Nat.Coprime n N →
+    D.S i n ≫ wA i = wA i ≫ D.S i n
+
+/-- **EICHLER–SHIMURA, ADAPTED TO `w_N` BUT WITHOUT THE SIGN** (sorry
+leaf, new 2026-07-28) — the first half of the cut of
+`exists_heckeIsotypicDecomposition_atkinLehnerDescent` below, and the
+half that carries Eichler–Shimura.
+
+TRUE.  `w_N` normalises `Γ_0(N)` and commutes with `T_n` for
+`(n, N) = 1`, so it preserves each anemic-isotypic piece of `J_0(N)`;
+`w_N² = 1` makes it an involution there.  Taking the factors to be the
+`w_N`-ORBITS of the degeneracy copies (see `IsAtkinLehnerFactorwise`'s
+docstring) makes the descent factorwise at EVERY level, oldforms
+included — which is precisely what the SIGNED form cannot do without
+splitting the orbit blocks.
+
+**IT MUST PRODUCE `D` ITSELF**, for the same reason as the consumer: "for
+every `D` there is a factorwise descent" is FALSE, since a decomposition
+chosen with no reference to `w_N` can split a `w_N`-orbit of degeneracy
+copies across two factors, and then `w_N` carries one factor to a
+different one and descends to neither.
+
+**Strictly weaker than the consumer.**  The consumer is PROVEN from this
+leaf together with `exists_atkinLehnerDescent_of_factorwise` below, so
+this asks for no more; and it asks for strictly less at every level where
+the sign genuinely needs Poincaré reducibility, by the orbit-block
+witness above.
+
+**What proving it needs**: everything `exists_heckeIsotypicDecomposition`
+needs — see that leaf's docstring for the full absence audit, re-verified
+2026-07-27 over the mathlib pin, this project's shim tree, the rest of
+`Fermat/`, and `~/cs/FLT` — plus the action of `w_N` on `J_0(N)` through
+the moduli description, and its commutation with the anemic Hecke
+operators.  It does **NOT** need Poincaré reducibility; that is the whole
+content of the split.  A prover should close
+`exists_heckeIsotypicDecomposition` first.
+
+**REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ_0(m)`*, Math. Ann.
+185 (1970), §2 (`w_N` normalises `Γ_0(N)` and commutes with the anemic
+Hecke algebra); Diamond–Shurman §5.6 and Thm 6.6.6. -/
+theorem exists_heckeIsotypicDecomposition_atkinLehnerFactorwise (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    ∃ D : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerFactorwise D wJ hwJ) :=
+  sorry
+
+/-- **POINCARÉ REDUCIBILITY: a FACTORWISE Atkin–Lehner involution can be
+REFINED to one with a SIGN** (sorry leaf, new 2026-07-28) — the second
+half of the cut, and the only place where the `±`-splitting of an abelian
+variety is used.
+
+**Nothing modular is asked for here.**  `hX` and `jac` occur only inside
+the type of `IsHeckeIsotypicDecomposition`; `w`, `IsAtkinLehner` and the
+`hchar` pin are not hypotheses at all.  That is the point of the cut: this
+leaf is a statement about an abelian scheme with an involution, and the
+modular input sits entirely in
+`exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` above.
+
+TRUE, and here is the construction, written out so the next owner does
+not re-derive it.  Fix `i` and write `ι := F.wA i`, an involution of
+`A i`, and `B^± := ((1 ± ι)(A i))⁰`.  Then `ι(B^∓) ⊆ B^∓`
+(`ι(1 ∓ ι) = ∓(1 ∓ ι)`), so `ι` descends to `A i^± := A i / B^∓` and acts
+there as `±1`; write `p^± : A i ↠ A i^±` for the quotient maps.  Put
+
+    idx' := D.idx × Bool,  A' (i,b) := A i^b,
+    u' (i,b) := u i ≫ p^b,  Plus (i,b) := (b = true).
+
+* `descend_plus` / `descend_minus`:
+  `p^b(u i (w_J x)) = p^b(ι (u i x)) = ± p^b(u i x)`, by `F.descend` and
+  the `±` action of `ι` on `A i^b`.
+* `u_surj`: a composite of surjections.  **This field is what forces the
+  construction to be this one**; see the paragraph below.
+* `finite_ker`: the joint kernel of `(p⁺, p⁻)` on `A i` is `B⁺ ∩ B⁻`,
+  killed by `2` (`ι y = y` and `ι y = −y`), hence finite on `ℚ`-points.
+  So the new joint kernel is the preimage of a finite subset of
+  `∏_i A_i(ℚ)` under the map whose kernel is `D.finite_ker`, and the
+  preimage of a finite set under a homomorphism with finite kernel is a
+  finite union of cosets of that kernel.
+* `form`, `coeff`, `isEigen`, `integral` are copied from `i`; `cover`
+  uses `(i, true)`.
+* `isotypic`: `S' (i,b) n` is the descent of `S i n` along `p^b`, which
+  exists because `F.hecke_comm` makes `S i n` preserve `B^±`.  The
+  annihilation transfers because `p^b` is faithfully flat, hence an
+  epimorphism: `P(S' (i,b) n) ∘ p^b = p^b ∘ P(S i n) = 0` forces
+  `P(S' (i,b) n) = 0`.  **This does NOT follow from `u_surj`-style
+  surjectivity** — `AlgebraicGeometry.Surjective` is a condition on the
+  underlying topological spaces and lifts no `T`-point — so a prover must
+  produce the quotient as a faithfully flat map, not merely a surjective
+  one.
+* `equivariant`: take `T' n := T n` for `(n, N) = 1` and `T' n := 𝟙 J`
+  otherwise, with `S' (i,b) n := 𝟙` there.  That is legitimate because
+  the structure constrains `T` only through `equivariant` (which `𝟙`
+  satisfies) and through `isotypic`, which is stated only for coprime `n`
+  — one more symptom of `T` being unpinned.  It is also NECESSARY: `U_p`
+  does not commute with `w_N`, so it does not descend to the `±` parts at
+  all.
+
+**THE CHEAP CONSTRUCTION FAILS, AND ITS FAILURE IS PROTECTIVE.**  The
+tempting refinement keeps the factor and twists the quotient map:
+`A' (i,b) := A i`, `u' (i,b) := u i ≫ (1 ± ι)`.  It satisfies
+`descend_plus`/`descend_minus` (`(1 ± ι)ι = ±(1 ± ι)`), and `isotypic`,
+`equivariant` and `cover` verbatim, and its `finite_ker` is the same
+`2`-torsion argument.  It fails exactly ONE field — `u_surj` — because
+the image of `1 ± ι` is the `±` part and not all of `A i`.  That failure
+is the field doing its job: with `A' (i,false) = A i` the consumer
+`isTorsion_minusFactor_x0OneSixtyNine` would be handed a FALSE statement
+at any level where some `A i` carries both parts, since it would assert
+that the whole of `A i` — including the rank-carrying `+1` part — is
+torsion.  **So `u_surj` is what makes this leaf genuinely require
+Poincaré reducibility, and it may not be weakened.**
+
+**Not vacuous.**  It must produce a full `IsHeckeIsotypicDecomposition`,
+so no junk `D'` discharges it; and `D' := D` with `Plus := fun _ => True`
+does not, since that forces `u i ∘ w_J = u i` for every `i`, which
+`D.finite_ker` refutes for `w_169`.
+
+**What proving it needs**: Poincaré reducibility — a complement up to
+isogeny for an abelian subvariety — in characteristic `0` over `ℚ`,
+together with the quotient of an abelian scheme by an abelian subscheme
+as a faithfully flat map.  Absent at this pin: mathlib has no abelian
+varieties at all, by the absence table on
+`exists_heckeIsotypicDecomposition` above.
+
+**REFERENCES.**  Mumford, *Abelian Varieties*, §19 Thm 1 (Poincaré
+reducibility); Milne, *Abelian Varieties*, I.12.1 and I.10 (quotients by
+finite and by abelian subschemes). -/
+theorem exists_atkinLehnerDescent_of_factorwise (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (D : IsHeckeIsotypicDecomposition N hX jac)
+    (F : IsAtkinLehnerFactorwise D wJ hwJ) :
+    ∃ D' : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D' wJ hwJ) :=
+  sorry
+
 /-- **EICHLER–SHIMURA, ADAPTED TO THE ATKIN–LEHNER INVOLUTION: an
 isotypic decomposition of `J_0(N)` on which `w_N` acts factorwise by
-`±1`** (sorry leaf, 2026-07-27) — LEVEL-GENERIC, and the strengthening of
-`exists_heckeIsotypicDecomposition` that the anti-invariant argument
+`±1`** (introduced as a sorry leaf 2026-07-27; **PROVEN 2026-07-28** over
+the two leaves immediately above) — LEVEL-GENERIC, and the strengthening
+of `exists_heckeIsotypicDecomposition` that the anti-invariant argument
 needs.
 
 TRUE.  `w_N` normalises `Γ_0(N)` and commutes with `T_n` for
@@ -41636,11 +41840,35 @@ decomposition does, which is why `D` is existentially bound here.  (At
 the leaf is stated level-generically and the distinction is real one
 level up.)
 
-**What proving it needs**: everything
+#### The cut, TAKEN 2026-07-28 — and the axis it was cut along
+
+The previous docstring recorded what this node needs as "everything
 `exists_heckeIsotypicDecomposition` needs, plus the action of `w_N` on
-`J_0(N)` through the moduli description and Poincaré reducibility for the
-`±1` splitting.  Both are absent at this pin, and this leaf is strictly
-stronger than that one, so a prover should close that one first. -/
+`J_0(N)` through the moduli description **and** Poincaré reducibility for
+the `±1` splitting".  Those are two different literatures, and the `and`
+is where the cut goes:
+
+| leaf | theory | modular? |
+|---|---|---|
+| `exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` | Eichler–Shimura + `w_N` commutes with the anemic Hecke algebra | yes |
+| `exists_atkinLehnerDescent_of_factorwise` | Poincaré reducibility for an involution | **no** |
+
+The separating object is `IsAtkinLehnerFactorwise`: `w_J` descends to each
+factor as an involution, **with no sign asserted**.  That datum is
+available at every level — take the factors to be the `w_N`-ORBITS of the
+degeneracy copies — whereas the SIGNED datum is not, and the whole gap
+between them is the `±`-splitting of an abelian variety.  So the second
+leaf mentions no modular curve at all: it takes neither `w`, nor
+`IsAtkinLehner`, nor the `hchar` pin.  See the two docstrings above for
+the orbit-block witness, the explicit refinement construction, and the
+reason `u_surj` is the field that makes the second leaf genuinely require
+Poincaré reducibility.
+
+Neither half is inhabited for free: the first still contains
+`exists_heckeIsotypicDecomposition` (a prover should close that one
+first), and the second must still produce a full decomposition, with
+`D' := D` and `Plus := fun _ => True` refuted by `D.finite_ker` exactly as
+on `IsAtkinLehnerDescent`. -/
 theorem exists_heckeIsotypicDecomposition_atkinLehnerDescent (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -41650,8 +41878,10 @@ theorem exists_heckeIsotypicDecomposition_atkinLehnerDescent (N : ℕ) {X Y J : 
     (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
     (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
       RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
-    ∃ D : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D wJ hwJ) :=
-  sorry
+    ∃ D : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D wJ hwJ) := by
+  obtain ⟨D, ⟨F⟩⟩ := exists_heckeIsotypicDecomposition_atkinLehnerFactorwise N hX jac w hw
+    _hw2 _hal wJ hwJ _hchar
+  exact exists_atkinLehnerDescent_of_factorwise N hX jac wJ hwJ D F
 
 /-- **KOLYVAGIN–LOGACHEV AT `169`: every `w_169 = −1` ISOGENY FACTOR of
 `J_0(169)` has torsion Mordell–Weil group** (sorry leaf, 2026-07-27) —
@@ -41903,6 +42133,13 @@ pinned.
 |---|---|---|
 | `exists_heckeIsotypicDecomposition_atkinLehnerDescent` | Eichler–Shimura, adapted to `w_N` | generic |
 | `isTorsion_minusFactor_x0OneSixtyNine` | Kolyvagin–Logachev on the `−1` factors | `169` |
+
+**UPDATE 2026-07-28**: the first row is no longer a leaf.  It was cut
+along the Eichler–Shimura / Poincaré-reducibility axis into
+`exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` (modular) and
+`exists_atkinLehnerDescent_of_factorwise` (not modular at all), and is
+now PROVEN over them; see its docstring for the axis and the separating
+datum `IsAtkinLehnerFactorwise`.
 
 together with two PROVEN assemblies —
 `isTorsion_antiInvariant_jacobian_x0OneSixtyNine` (the `+1` factors, and
