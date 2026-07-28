@@ -9425,23 +9425,66 @@ rational point `(x, y)` with `F(x, y) = 0` and `F_X(x, y) = F_Y(x, y) = 0`
 gives a maximal ideal `𝔪 ⊂ R` with `R ⧸ 𝔪 ≅ ℚ` — the kernel of evaluation at
 `(x, y)` — at which the two partial derivatives vanish.
 
-*Route (a), through the regularity engine this tree already has.*  The stalk of
+**ROUTE AUDIT, 2026-07-28 — every ingredient below was checked to EXIST at our
+pin by name, and the route needs NO Krull dimension, NO relative dimension, NO
+residue-field base change and NO Nakayama package.**  Two longer routes were
+considered first and are recorded at the end so nobody re-derives them.
+
+Write `P := ℚ[X][Y] = Polynomial (Polynomial ℚ)`, `F := E.toAffine.polynomial`,
+`I := RingHom.ker (algebraMap P R) = (F)` (so `R = AdjoinRoot F` is `P ⧸ I` by
+definition), and `𝔫 ⊂ P` for the kernel of evaluation at `(x, y)`, so that
+`𝔫 ≠ ⊤`.  Write `c := Ideal.toCotangent I ⟨F, _⟩ ∈ I.Cotangent` for the class of
+`F` in `I/I²`.  Then:
+
+1. `Algebra.FormallySmooth ℚ P` — `Algebra.FormallySmooth.polynomial` twice plus
+   `Algebra.FormallySmooth.comp`.
+2. `Smooth (Spec.map …) → Algebra.Smooth ℚ R → Algebra.FormallySmooth ℚ R` —
+   `AlgebraicGeometry.HasRingHomProperty.Spec_iff` against the instance
+   `HasRingHomProperty @Smooth RingHom.Smooth`.
+3. `Algebra.FormallySmooth.iff_split_injection` (`Mathlib/RingTheory/Smooth/Basic.lean`,
+   stacks `031I`) then gives an honest `l` with
+   `l ∘ₗ KaehlerDifferential.kerCotangentToTensor ℚ P R = LinearMap.id`, and
+   `KaehlerDifferential.kerCotangentToTensor_toCotangent` evaluates the composite
+   at `c`: `l (1 ⊗ₜ D F) = c`.
+4. **`F ∈ 𝔫 ^ 2`.**  This is precisely what the two hypotheses say, and for a
+   Weierstrass cubic it is an EXPLICIT identity rather than a Taylor-series
+   argument: with `u := X − x` and `v := Y − y`,
+
+       F = F(x, y) + u ⬝ W_X(x, y) + v ⬝ W_Y(x, y)
+             + (v ^ 2 + a₁ u v − 3 x u ^ 2 − a₂ u ^ 2 − u ^ 3),
+
+   a `ring` identity, whose first three terms vanish by `_heq` and `_hns` and
+   whose bracket is visibly in `𝔫 ^ 2`.
+5. **`1 ⊗ₜ D F ∈ 𝔫 • (R ⊗[P] Ω[P⁄ℚ])`**, by Leibniz alone: `D` carries `𝔫 ^ 2`
+   into `𝔫 • Ω[P⁄ℚ]` because `D (g * h) = g • D h + h • D g`.  No basis of
+   `Ω[P⁄ℚ]` is needed — which is what makes `ℚ[X][Y]` as usable here as
+   `MvPolynomial (Fin 2) ℚ`.
+6. So `c ∈ 𝔫 • I.Cotangent` by 3 and 5.  Every element of `I.Cotangent` is
+   `r • c` (`I` is principal), so `c = n • c` for some `n ∈ 𝔫`, i.e.
+   `(1 − n) • c = 0`.
+7. **`Ann_P c = I`**, in one line and with no finiteness: `r * F ∈ I ^ 2 = (F ^ 2)`
+   means `r * F = s * F ^ 2`, and `P` is a domain with `F ≠ 0`, so `r = s * F ∈ I`.
+   Hence `1 − n ∈ I ⊆ 𝔫`, so `1 ∈ 𝔫`, contradicting `𝔫 ≠ ⊤`.
+
+The two longer routes, for the record — **neither is needed, and both were
+priced before step 7 was found**:
+
+*(a) through the regularity engine this tree already has.*  The stalk of
 `Spec R` at `𝔪` is `Localization.AtPrime R 𝔪`, and
 `GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
 (`Fermat/FLT/Modularity/RegularStalks.lean`, **sorry-free**, and already in this
 module's import cone) says every stalk of a scheme smooth over a field is a
-regular local ring.  What remains is that `R_𝔪` is NOT regular: it has Krull
-dimension `1` (a plane curve) and embedding dimension `2` (both partials vanish,
-so `𝔪/𝔪²` is spanned by the images of `X − x` and `Y − y`, independently).
+regular local ring.  What remains is that `R_𝔪` is NOT regular — Krull dimension
+`1` against embedding dimension `2` — and the dimension theory of a plane curve
+is not in the pin.
 
-*Route (b), through Kähler differentials.*  `Algebra.Smooth ℚ R` gives
-`Algebra.FormallySmooth ℚ R`, hence a SPLIT injection
-`I/I² → Ω[ℚ[X,Y]⁄ℚ] ⊗ R = R²` sending the class of `F` to `(F_X, F_Y)`.  A split
-injection of an `R`-line into `R²` forces `Ideal.span {F_X, F_Y} = ⊤` in `R`,
-which contradicts `F_X, F_Y ∈ 𝔪`.  This is the shorter route if
-`Mathlib/RingTheory/Smooth/Kaehler.lean` turns out to state the splitting in a
-directly usable form; route (a) needs no new mathlib API but does need the
-dimension count.
+*(b) through the rank of `Ω`.*  `IsStandardSmooth.free_kaehlerDifferential` and
+`IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+(`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) do exist, but they
+want GLOBAL standard smoothness, whereas `Smooth` is only LOCALLY standard
+smooth; recovering a rank at `𝔪` needs the projectivity of `Ω` plus a base
+change to the residue field.  Step 6 above is that argument with the base change
+removed.
 
 **Both hypotheses are LOAD-BEARING**, and are underscore-prefixed only because
 the body is `sorry`.  Without `_hns` the statement is FALSE: an elliptic `E` has
@@ -9460,7 +9503,16 @@ WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: any statement in mathlib deducing
 Searched 2026-07-28 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`:
 the tree has the CONVERSE (`jacobianSpan_eq_top` above, and
 `RegularStalks.lean`'s Jacobian-criterion tower, both going smooth ⟹ regular),
-but nothing going non-regular ⟹ non-smooth for a named point. -/
+but nothing going non-regular ⟹ non-smooth for a named point.
+
+**THIS IS NOT A THEORY BUILD** — that is the point of the audit above, and it
+distinguishes this leaf sharply from its two siblings
+(`exists_affineComplement_zeroSection` needs ampleness of divisors and
+`exists_weierstrassRingEquiv_of_affineComplement` needs Riemann–Roch, neither of
+which exists anywhere).  Every lemma the seven steps cite is present at our pin;
+what is left is Lean plumbing over `Ideal.Cotangent`, `KaehlerDifferential` and
+`AdjoinRoot`, in one file, with no new mathematics.  A prover here should NOT
+start by reading Silverman. -/
 theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ) {x y : ℚ}
     (_heq : E.toAffine.Equation x y) (_hns : ¬ E.toAffine.Nonsingular x y) :
     ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) :=
