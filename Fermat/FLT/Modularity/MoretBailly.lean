@@ -16954,9 +16954,410 @@ theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [Comm
     rw [← hmap, MvPolynomial.coeff_map, MvPolynomial.eval_map]
     rfl
 
-/-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (SORRY LEAF, cut
-2026-07-27)** — the whole `p`-uniformity content of `exists_noetherBadLocusForms`,
-and after this cut the ONLY thing still open in the Noether half.
+/-! ### Noether's forms: the elimination-theoretic cut (2026-07-28)
+
+`exists_absolutelyIrreducibleForms_two` below is now PROVEN over exactly ONE
+input — `exists_productLocusFormsInt`, the closedness of the image of
+multiplication. That is step 3 of the four-step route its docstring records, and
+the only step that is genuine elimination theory. Steps 1, 2 and 4 are the proven
+material in this block:
+
+* `not_irreducible_iff_exists_badPiece` — STEP 1, the algebraic characterisation:
+  over a field, failing to be irreducible of degree exactly `d` is the union of
+  `d` pieces indexed by `j : Fin d` (the degree drop at `j = 0`, and the
+  splitting `d = j + (d - j)` for `j ≥ 1`);
+* `totalDegree_lt_iff_forall_coeff_eq_zero` — STEP 2, the degree-drop piece is
+  LINEAR: it is the vanishing of the `d + 1` coefficients at the monomials
+  `sᵃt^{d-a}`, i.e. of `d + 1` coordinate forms;
+* `exists_unionForms` — STEP 4, union-to-product: a finite union of common zero
+  sets is the common zero set of the products of one form from each family,
+  because a field has no zero divisors;
+* `exists_reducibleLocusFormsInt` — the assembly, over `ℤ`.
+
+WHY THE `ℤ`-RATIONAL INTERMEDIATE. It is what makes the degree bound `E`
+manifestly independent of `p`, which is the entire content of the leaf: the forms
+are produced ONCE over `ℤ`, `E` is the sup of their (integer) total degrees, and
+reduction mod `p` can only LOWER a total degree (`totalDegree_map_le'`). No step
+of the argument ever looks at `p`, so no bound can secretly depend on it. This is
+also the shape the classical literature states (Schmidt, Chapter V §2, Theorem 2A:
+forms with integer coefficients valid over every field), and the target docstring
+already recorded that the `ℤ`-rational version implies the `ZMod p` one. -/
+
+/-- **PROVEN**: the exponent sum of a two-variable monomial, in the `Finset.sum`
+form in which `MvPolynomial.coeff_eq_zero_of_totalDegree_lt` states it. -/
+theorem finsuppFinTwo_sum_support (m : Fin 2 →₀ ℕ) :
+    ∑ i ∈ m.support, m i = m 0 + m 1 := by
+  classical
+  rw [Finset.sum_subset (Finset.subset_univ m.support) (fun x _ hx => by simpa using hx)]
+  simp [Fin.sum_univ_two]
+
+/-- **PROVEN**: the same, in the `Finsupp.sum` form in which `MvPolynomial.totalDegree`
+is defined. The two forms are definitionally equal; both spellings are needed
+because `rw` is syntactic. -/
+theorem finsuppFinTwo_sum_eq_add (m : Fin 2 →₀ ℕ) :
+    (m.sum fun _ e => e) = m 0 + m 1 :=
+  finsuppFinTwo_sum_support m
+
+/-- **PROVEN**: every two-variable monomial exponent is `sᵃtᵇ`. This is what makes
+the degree-drop family FINITE — `d + 1` monomials of degree `d` — without choosing
+an enumeration. -/
+theorem finsuppFinTwo_eq_single_add_single (m : Fin 2 →₀ ℕ) :
+    m = Finsupp.single 0 (m 0) + Finsupp.single 1 (m 1) := by
+  ext i
+  fin_cases i <;> simp
+
+/-- **STEP 2 OF NOETHER'S ROUTE, PROVEN**: for a plane polynomial already known to
+have total degree at most `d`, the DEGREE DROP `totalDegree < d` is a LINEAR
+condition on the coefficients — the vanishing of the `d + 1` coefficients at the
+monomials `sᵃt^{d-a}`, `a = 0, …, d`.
+
+`0 < d` IS NECESSARY, not decoration: at `d = 0` the left side is `totalDegree < 0`,
+which is false, while the right side asks only `coeff 0 g = 0`, which holds for
+`g = 0`. The parent uses this only in the branch `d ≥ 1`.
+
+The forms cutting this out are the coordinate forms
+`X (single 0 a + single 1 (d - a))`, of total degree `1`; see the `j = 0` branch of
+`exists_reducibleLocusFormsInt`. -/
+theorem totalDegree_lt_iff_forall_coeff_eq_zero {K : Type*} [CommSemiring K]
+    {d : ℕ} (hd : 0 < d) {g : MvPolynomial (Fin 2) K} (hle : g.totalDegree ≤ d) :
+    g.totalDegree < d ↔
+      ∀ a : Fin (d + 1),
+        MvPolynomial.coeff (Finsupp.single 0 (a : ℕ) + Finsupp.single 1 (d - (a : ℕ))) g = 0 := by
+  classical
+  constructor
+  · intro hlt a
+    have ha := a.isLt
+    refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+    rw [finsuppFinTwo_sum_support]
+    simp only [Finsupp.add_apply, Finsupp.single_eq_same]
+    omega
+  · intro hall
+    have hall' : ∀ a : ℕ, a ≤ d →
+        MvPolynomial.coeff (Finsupp.single 0 a + Finsupp.single 1 (d - a)) g = 0 :=
+      fun a ha => hall ⟨a, by omega⟩
+    rcases eq_or_lt_of_le hle with heq | hlt
+    · exfalso
+      have hg0 : g ≠ 0 := by
+        rintro rfl
+        rw [MvPolynomial.totalDegree_zero] at heq
+        omega
+      obtain ⟨m, hm, hmsup⟩ := Finset.exists_mem_eq_sup g.support
+        (MvPolynomial.support_nonempty.mpr hg0) (fun s => s.sum fun _ e => e)
+      have hmd : (m.sum fun _ e => e) = d := by rw [← heq]; exact hmsup.symm
+      rw [finsuppFinTwo_sum_eq_add] at hmd
+      have hz := hall' (m 0) (by omega)
+      rw [show d - m 0 = m 1 by omega, ← finsuppFinTwo_eq_single_add_single m] at hz
+      exact MvPolynomial.mem_support_iff.mp hm hz
+    · exact hlt
+
+/-- **STEP 1 OF NOETHER'S ROUTE, PROVEN**: the ALGEBRAIC CHARACTERISATION of the
+bad locus, over an arbitrary field.
+
+For `d ≥ 1` and `g` of total degree at most `d`, failing to be irreducible of total
+degree exactly `d` is the union of `d` conditions indexed by `j : Fin d`:
+
+* `j = 0`: the degree drops, `totalDegree g < d`;
+* `j ≥ 1`: `g` factors as `g₁ · g₂` with `totalDegree gᵢ` bounded by `j` and `d - j`.
+
+Both directions are `MvPolynomial.totalDegree_mul_of_isDomain` together with the
+description of the units of `K[s, t]` as the nonzero constants
+(`MvPolynomial.isUnit_iff_totalDegree_of_isReduced`, a field being reduced).
+
+WHY THE SPLITTING IS INDEXED BY `d₁ = j` ALONE, with `d₂ = d - j` forced: the
+degrees of the two factors ADD to `d` exactly (both factors are nonzero, since `g`
+is, and the base is a domain), so a splitting is determined by its first part.
+Indexing by `Fin d` rather than by a pair also makes the family count `d`, which is
+what keeps the degree bound in `exists_unionForms` a function of `d` alone.
+
+NOT VACUOUS AND NOT WEAKENED: the `≤` in the conclusion's degree constraints is
+genuine — at `totalDegree g < d` a factorisation need not have degrees summing to
+`d` — and the equivalence is nevertheless exact, because the degree-drop piece
+absorbs precisely those `g`. -/
+theorem not_irreducible_iff_exists_badPiece {K : Type*} [Field K] {d : ℕ} (hd : 0 < d)
+    {g : MvPolynomial (Fin 2) K} (hle : g.totalDegree ≤ d) :
+    ¬(g.totalDegree = d ∧ Irreducible g) ↔
+      ∃ j : Fin d,
+        (if (j : ℕ) = 0 then g.totalDegree < d
+         else ∃ g₁ g₂ : MvPolynomial (Fin 2) K,
+           g₁.totalDegree ≤ (j : ℕ) ∧ g₂.totalDegree ≤ d - (j : ℕ) ∧ g = g₁ * g₂) := by
+  classical
+  have hunit : ∀ f : MvPolynomial (Fin 2) K, f ≠ 0 → f.totalDegree = 0 → IsUnit f := by
+    intro f hf0 hdeg
+    rw [MvPolynomial.isUnit_iff_totalDegree_of_isReduced]
+    refine ⟨isUnit_iff_ne_zero.mpr ?_, hdeg⟩
+    intro hc
+    apply hf0
+    rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at hdeg
+    rw [hdeg, hc, map_zero]
+  have hdeg0 : ∀ f : MvPolynomial (Fin 2) K, IsUnit f → f.totalDegree = 0 :=
+    fun f hf => (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hf).2
+  constructor
+  · intro h
+    rcases eq_or_lt_of_le hle with heq | hlt
+    · have hnirr : ¬Irreducible g := fun hi => h ⟨heq, hi⟩
+      have hg0 : g ≠ 0 := by
+        rintro rfl
+        rw [MvPolynomial.totalDegree_zero] at heq
+        omega
+      have hnu : ¬IsUnit g := by
+        intro hu
+        have := hdeg0 g hu
+        omega
+      rw [irreducible_iff] at hnirr
+      push Not at hnirr
+      obtain ⟨a, b, hab, hua, hub⟩ := hnirr hnu
+      have ha0 : a ≠ 0 := by
+        rintro rfl
+        rw [zero_mul] at hab
+        exact hg0 hab
+      have hb0 : b ≠ 0 := by
+        rintro rfl
+        rw [mul_zero] at hab
+        exact hg0 hab
+      have hsum : a.totalDegree + b.totalDegree = d := by
+        rw [← MvPolynomial.totalDegree_mul_of_isDomain ha0 hb0, ← hab]
+        exact heq
+      have ha1 : a.totalDegree ≠ 0 := fun hz => hua (hunit a ha0 hz)
+      have hb1 : b.totalDegree ≠ 0 := fun hz => hub (hunit b hb0 hz)
+      refine ⟨⟨a.totalDegree, by omega⟩, ?_⟩
+      split
+      · rename_i hcon
+        exact absurd hcon ha1
+      · exact ⟨a, b, le_rfl, show b.totalDegree ≤ d - a.totalDegree by omega, hab⟩
+    · refine ⟨⟨0, hd⟩, ?_⟩
+      split
+      · exact hlt
+      · rename_i hcon
+        exact absurd rfl hcon
+  · rintro ⟨j, hj⟩ ⟨heq, hirr⟩
+    have hjd := j.isLt
+    by_cases hj0 : (j : ℕ) = 0
+    · rw [if_pos hj0] at hj
+      omega
+    · rw [if_neg hj0] at hj
+      obtain ⟨g₁, g₂, h1, h2, hg⟩ := hj
+      have hg0 : g ≠ 0 := by
+        rintro rfl
+        rw [MvPolynomial.totalDegree_zero] at heq
+        omega
+      have h10 : g₁ ≠ 0 := by
+        rintro rfl
+        rw [zero_mul] at hg
+        exact hg0 hg
+      have h20 : g₂ ≠ 0 := by
+        rintro rfl
+        rw [mul_zero] at hg
+        exact hg0 hg
+      have hsum : g₁.totalDegree + g₂.totalDegree = d := by
+        rw [← MvPolynomial.totalDegree_mul_of_isDomain h10 h20, ← hg]
+        exact heq
+      rcases hirr.isUnit_or_isUnit hg with hu | hu
+      · have := hdeg0 _ hu
+        omega
+      · have := hdeg0 _ hu
+        omega
+
+/-- **STEP 4 OF NOETHER'S ROUTE, PROVEN**: UNION TO PRODUCT.
+
+Given `n` finite families of integral forms, the family of all PRODUCTS taking one
+form from each cuts out exactly the UNION of the `n` common zero sets, over every
+field. The point is that a field has no zero divisors, so a product vanishes at a
+point iff one of its factors does; the reverse direction needs a choice of a
+non-vanishing form in each family, which is why the proof is classical.
+
+BOTH DEGENERATE CASES ARE COVERED and are the reason the statement is uniform.
+If some family is EMPTY its common zero set is everything, the product index type
+`(j : Fin n) → Fin (kk j)` is empty, and both sides are trivially true. If `n = 0`
+the union is empty, the product index type is a singleton, the unique product is
+the empty product `1`, and `eval x 1 = 1 ≠ 0` in a field — both sides are false.
+
+NO DEGREE BOUND IS STATED, deliberately. The bound is needed only at the very top
+(`exists_absolutelyIrreducibleForms_two`), where it is read off as the sup of the
+finitely many integer total degrees actually produced; stating it here would force
+a `Finset.sup` through every intermediate lemma for nothing. -/
+theorem exists_unionForms.{u, v} {ι : Type v} {n : ℕ} (kk : Fin n → ℕ)
+    (G : (j : Fin n) → Fin (kk j) → MvPolynomial ι ℤ) :
+    ∃ (k : ℕ) (F : Fin k → MvPolynomial ι ℤ),
+      ∀ (L : Type u) [Field L] (x : ι → L),
+        ((∀ i, MvPolynomial.eval x (MvPolynomial.map (Int.castRingHom L) (F i)) = 0) ↔
+          ∃ j, ∀ i, MvPolynomial.eval x (MvPolynomial.map (Int.castRingHom L) (G j i)) = 0) := by
+  classical
+  refine ⟨Fintype.card ((j : Fin n) → Fin (kk j)),
+    fun i => ∏ j : Fin n, G j ((Fintype.equivFin ((j : Fin n) → Fin (kk j))).symm i j), ?_⟩
+  intro L _ x
+  constructor
+  · intro hall
+    by_contra hcon
+    push Not at hcon
+    choose c hc using hcon
+    have hz := hall (Fintype.equivFin ((j : Fin n) → Fin (kk j)) c)
+    simp only [Equiv.symm_apply_apply] at hz
+    rw [map_prod, MvPolynomial.eval_prod, Finset.prod_eq_zero_iff] at hz
+    obtain ⟨j, -, hj⟩ := hz
+    exact hc j hj
+  · rintro ⟨j, hj⟩ i
+    rw [map_prod, MvPolynomial.eval_prod]
+    exact Finset.prod_eq_zero (Finset.mem_univ j) (hj _)
+
+/-- **STEP 3 OF NOETHER'S ROUTE (SORRY LEAF, cut 2026-07-28)** — CLOSEDNESS OF THE
+IMAGE OF MULTIPLICATION, and after this cut the ONLY thing still open in the whole
+Noether half of `exists_bertiniNoetherWitness_of_three_le`.
+
+WHAT IT SAYS. For each pair `(d₁, d₂)` there are finitely many forms with INTEGER
+coefficients such that, over EVERY algebraically closed field `K`, a plane
+polynomial `g` of total degree at most `d₁ + d₂` is a product `g₁ · g₂` with
+`totalDegree gᵢ ≤ dᵢ` if and only if all of them vanish at the coefficient vector
+of `g`. In other words: the image of the multiplication map on coefficient spaces
+is Zariski CLOSED, cut out over `ℤ` and hence by the SAME forms in every
+characteristic.
+
+WHY THIS IS THE WHOLE `p`-UNIFORMITY CONTENT. Once the forms are integral, the
+degree bound `E` of `exists_absolutelyIrreducibleForms_two` is the sup of their
+total degrees over `ℤ`, and reduction mod `p` can only lower a total degree. Every
+other step of Noether's route is characteristic-free bookkeeping. So a proof of
+this leaf, and nothing else, is what stands between the development and the
+`p`-independent Bertini–Noether bound that `exists_bertiniGoodPlaneCount` compares
+with `p` itself.
+
+WHY IT IS TRUE (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
+Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). Multiplication of
+polynomials is BILINEAR on coefficients, and `K[s, t]` is a domain, so the product
+of two nonzero polynomials is nonzero. Hence the induced map on projectivised
+coefficient spaces
+`ℙ(V_{d₁}) × ℙ(V_{d₂}) → ℙ(V_{d₁+d₂})` is a MORPHISM (the defining linear system
+has no base point), not merely a rational map. Its source is proper over
+`Spec ℤ`, so its set-theoretic image `Z` is closed in `ℙ(V_{d₁+d₂})_ℤ` and is cut
+out by a homogeneous ideal of `ℤ[coefficients]`, finitely generated because that
+ring is Noetherian. Set-theoretic image commutes with base change to a fibre, so
+`Z(K)` is the image over `K` for every algebraically closed `K`; and the affine
+image is the cone over `Z` together with `0 = 0 · 0`, cut out by the same
+homogeneous forms.
+
+WHY `IsAlgClosed K` IS NECESSARY AND MUST NOT BE DROPPED. Over `ℝ`, with
+`d₁ = d₂ = 1`, the polynomial `s² + t²` is a product of two linear forms over `ℂ`
+but not over `ℝ`, so it satisfies every form cutting out the image while admitting
+no `ℝ`-rational factorisation. The statement is about `K`-points of a variety, and
+those agree with the image only over an algebraically closed field.
+
+WHY THE HYPOTHESIS `g.totalDegree ≤ d₁ + d₂` IS NECESSARY. The variable type is
+ALL monomials, so a form sees only finitely many coefficients; without the degree
+bound a polynomial of huge degree whose low-degree part looks like a product would
+satisfy the forms while not being one.
+
+`d₁ = 0` OR `d₂ = 0` IS TRIVIAL and carries no content: `g = g · 1` already
+exhibits the factorisation for every `g` of degree at most `d₁ + d₂`, so the empty
+family (`k = 0`) discharges those cases. The parent calls this leaf only with
+`d₁ ≥ 1` and `d₂ ≥ 1`.
+
+CHARACTERISTIC 2 IS NOT A SPECIAL CASE, AND THAT IS A WARNING ABOUT THE ROUTE.
+The naive `d₁ = d₂ = 1` answer — the determinant of the symmetric matrix of a
+conic — is not integral, and its doubling degenerates in characteristic `2`. Any
+attack that clears denominators from a classical resultant or discriminant formula
+will therefore FAIL to give a `ℤ`-rational family valid in every characteristic.
+The scheme-theoretic argument above delivers integrality directly and is the
+reason it is the recommended route.
+
+WHAT IS MISSING FROM THE PIN (checked 2026-07-28 against `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`): the fundamental theorem of elimination
+theory in usable form — that the image of a projective scheme under a morphism is
+closed — and with it any statement that the image of `Proj`-valued morphisms is
+cut out by explicit forms. Mathlib has `AlgebraicGeometry.Proj` and the properness
+API (`AlgebraicGeometry.Morphisms.Proper`, imported by this file) but no bridge
+from a closed subset of `Proj` to a finite family of defining forms in the
+coefficient ring. Building that bridge is the substance of this leaf; it would
+also be reusable, since "the image of a base-point-free bilinear map with no zero
+divisors is closed" is a statement of independent value.
+
+CIRCULARITY GUARD: inherited from the parent. Stated over `ℤ` and over an
+arbitrary algebraically closed field, so it is independent of everything in the
+Frey-curve development. -/
+theorem exists_productLocusFormsInt.{u} (d₁ d₂ : ℕ) :
+    ∃ (k : ℕ) (Gs : Fin k → MvPolynomial (Fin 2 →₀ ℕ) ℤ),
+      ∀ (K : Type u) [Field K] [IsAlgClosed K] (g : MvPolynomial (Fin 2) K),
+        g.totalDegree ≤ d₁ + d₂ →
+        ((∃ g₁ g₂ : MvPolynomial (Fin 2) K,
+            g₁.totalDegree ≤ d₁ ∧ g₂.totalDegree ≤ d₂ ∧ g = g₁ * g₂) ↔
+          ∀ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) :=
+  sorry
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS OVER `ℤ` (PROVEN 2026-07-28 over one named
+sub-leaf)** — the classical, characteristic-free form of Noether's theorem, from
+which the `ZMod p` statement the consumer needs follows immediately.
+
+WHAT IT SAYS. For each `d` there is ONE finite family of forms with INTEGER
+coefficients such that, over EVERY algebraically closed field `K`, a plane
+polynomial `g` of total degree at most `d` FAILS to be irreducible of total degree
+exactly `d` precisely when all of them vanish at its coefficient vector.
+
+The family does not depend on `K`, and in particular not on its characteristic.
+That is exactly what makes the degree bound `E` of
+`exists_absolutelyIrreducibleForms_two` independent of `p`.
+
+THE PROOF is the four-step route recorded on `exists_absolutelyIrreducibleForms_two`,
+assembled here:
+
+* `d = 0` is separate and trivial: a constant is a unit or zero, hence never
+  `Irreducible` over a field, so the bad set is everything and the EMPTY family
+  (`k = 0`) discharges the leaf;
+* for `d ≥ 1`, `not_irreducible_iff_exists_badPiece` (STEP 1) writes the bad set as
+  a union of `d` pieces indexed by `j : Fin d`;
+* the piece `j = 0` is cut out by the `d + 1` coordinate forms
+  `X (single 0 a + single 1 (d - a))` (STEP 2,
+  `totalDegree_lt_iff_forall_coeff_eq_zero`);
+* the piece `j ≥ 1` is cut out by `exists_productLocusFormsInt` at
+  `(d₁, d₂) = (j, d - j)` (STEP 3, the sorry leaf);
+* `exists_unionForms` (STEP 4) turns the `d` families into one. -/
+theorem exists_reducibleLocusFormsInt.{u} (d : ℕ) :
+    ∃ (k : ℕ) (Gs : Fin k → MvPolynomial (Fin 2 →₀ ℕ) ℤ),
+      ∀ (K : Type u) [Field K] [IsAlgClosed K] (g : MvPolynomial (Fin 2) K),
+        g.totalDegree ≤ d →
+        (¬(g.totalDegree = d ∧ Irreducible g) ↔
+          ∀ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) := by
+  classical
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · refine ⟨0, Fin.elim0, ?_⟩
+    intro K _ _ g hg
+    simp only [IsEmpty.forall_iff, iff_true]
+    rintro ⟨h0, hirr⟩
+    rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at h0
+    rcases eq_or_ne (g.coeff 0) 0 with hc | hc
+    · rw [hc, map_zero] at h0
+      exact not_irreducible_zero (h0 ▸ hirr)
+    · exact hirr.not_isUnit (h0 ▸ IsUnit.map MvPolynomial.C (isUnit_iff_ne_zero.mpr hc))
+  · have key : ∀ j : Fin d, ∃ (k : ℕ) (G : Fin k → MvPolynomial (Fin 2 →₀ ℕ) ℤ),
+        ∀ (K : Type u) [Field K] [IsAlgClosed K] (g : MvPolynomial (Fin 2) K),
+          g.totalDegree ≤ d →
+          ((if (j : ℕ) = 0 then g.totalDegree < d
+            else ∃ g₁ g₂ : MvPolynomial (Fin 2) K,
+              g₁.totalDegree ≤ (j : ℕ) ∧ g₂.totalDegree ≤ d - (j : ℕ) ∧ g = g₁ * g₂) ↔
+            ∀ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+                  (MvPolynomial.map (Int.castRingHom K) (G i)) = 0) := by
+      intro j
+      by_cases hj : (j : ℕ) = 0
+      · refine ⟨d + 1,
+          fun a => MvPolynomial.X (Finsupp.single 0 (a : ℕ) + Finsupp.single 1 (d - (a : ℕ))),
+          ?_⟩
+        intro K _ _ g hg
+        rw [if_pos hj]
+        simpa using totalDegree_lt_iff_forall_coeff_eq_zero (K := K) hd hg
+      · obtain ⟨k, G, hG⟩ := exists_productLocusFormsInt.{u} (j : ℕ) (d - (j : ℕ))
+        refine ⟨k, G, ?_⟩
+        intro K _ _ g hg
+        rw [if_neg hj]
+        exact hG K g (by have := j.isLt; omega)
+    choose kk GG hGG using key
+    obtain ⟨k, F, hF⟩ := exists_unionForms.{u} kk GG
+    refine ⟨k, F, ?_⟩
+    intro K _ _ g hg
+    rw [not_irreducible_iff_exists_badPiece hd hg, hF K (fun m => MvPolynomial.coeff m g)]
+    exact exists_congr fun j => hGG j K g hg
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (PROVEN 2026-07-28
+over one named sub-leaf)** — the whole `p`-uniformity content of
+`exists_noetherBadLocusForms`, and after this cut the ONLY thing still open in the
+Noether half is `exists_productLocusFormsInt`.
 
 WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
 that, for every prime `p`, the locus of plane polynomials `g` of total degree
@@ -16983,21 +17384,26 @@ form does not vanish". Both directions are consumed by
 
 THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
 Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). This is elimination
-theory, not scheme theory. THE CUT THAT THE NEXT OWNER SHOULD MAKE, spelled out
-because it is the part that is not obvious:
+theory, not scheme theory. THE CUT WAS MADE ON 2026-07-28 ALONG EXACTLY THE FOUR
+STEPS BELOW; steps 1, 2 and 4 are now PROVEN and only step 3 remains open, as
+`exists_productLocusFormsInt`. The four steps, with the declarations that realise
+them:
 
-1. **The algebraic characterisation.** For `d ≥ 1` and `g.totalDegree ≤ d`,
+1. **The algebraic characterisation** (`not_irreducible_iff_exists_badPiece`,
+   PROVEN). For `d ≥ 1` and `g.totalDegree ≤ d`,
    `¬(g.totalDegree = d ∧ Irreducible g)` is equivalent to
    `g.totalDegree < d  ∨  ∃ d₁ d₂ ≥ 1 with d₁ + d₂ = d and g = g₁ · g₂ with
    gᵢ.totalDegree ≤ dᵢ`. Both directions are `MvPolynomial.totalDegree_mul_of_isDomain`
    plus "a unit of `K[s, t]` is a nonzero constant". The case `d = 0` is separate
    and trivial: a constant is never `Irreducible` over a field, so the good set is
    EMPTY and the empty family of forms (`k = 0`) discharges the leaf.
-2. **The degree-drop piece is linear.** Given `g.totalDegree ≤ d`,
+2. **The degree-drop piece is linear**
+   (`totalDegree_lt_iff_forall_coeff_eq_zero`, PROVEN). Given `g.totalDegree ≤ d`,
    `g.totalDegree < d` iff the `d + 1` coefficients at the monomials `sᵃt^{d-a}`
    all vanish. Those are the coordinate forms `X (single 0 a + single 1 (d - a))`,
    of degree `1`.
-3. **The product piece is the elimination content.** For each splitting
+3. **The product piece is the elimination content**
+   (`exists_productLocusFormsInt`, THE ONE REMAINING SORRY). For each splitting
    `d₁ + d₂ = d` with `dᵢ ≥ 1`, the set of `g` of degree `≤ d` admitting a
    factorisation `g = g₁ · g₂` with `gᵢ.totalDegree ≤ dᵢ` is Zariski CLOSED, cut
    out by forms of degree bounded in terms of `d` alone. Closedness is the
@@ -17007,7 +17413,8 @@ because it is the part that is not obvious:
    projective variety under a morphism is closed. This is the ONLY step needing
    real elimination theory, and it is where the `p`-independent degree bound
    comes from (Chow forms / resultants have degrees depending on `d₁, d₂` only).
-4. **Union to product.** A finite UNION of common-zero-sets is the common zero set
+4. **Union to product** (`exists_unionForms`, PROVEN). A finite UNION of
+   common-zero-sets is the common zero set
    of the products `∏_j F_j(i_j)` over all choices of one form from each family,
    because a field has no zero divisors; the degrees add, and the number of
    families (`1` degree-drop family plus `d - 1` splittings) depends only on `d`.
@@ -17019,6 +17426,22 @@ the consumer needs, and it is what is stated here so that a prover is not forced
 to establish more than is used. If the ℤ-rational version is what falls out of
 the elimination argument, it implies this one immediately.
 
+HOW THE PROOF BELOW USES THAT (2026-07-28). It goes through the `ℤ`-rational
+version after all — `exists_reducibleLocusFormsInt` — but NOT because more was
+proven than is used: the `ℤ` statement is where the whole assembly is *cheapest*,
+because it is the only place where "the bound does not depend on `p`" is not a
+side condition to be maintained but a triviality, there being no `p` in sight. `E`
+is then read off as the sup of the finitely many INTEGER total degrees, and
+`totalDegree_map_le'` says reduction mod `p` can only lower a degree. The
+statement of this leaf is unchanged and remains the weaker one, exactly as
+designed; only the proof route passes through `ℤ`.
+
+WHERE THE `𝔽̄_p`-vs-`𝔽_p` SPLIT LIVES. The forms are obtained over `ℤ` and reduced
+to `ZMod p`, while the locus is described over `AlgebraicClosure (ZMod p)`; the two
+are reconciled by `MvPolynomial.map_map` and the uniqueness of the ring map from
+`ℤ` (`RingHom.ext_int`), so `𝔽_p`-rationality of the forms is automatic rather than
+something the sub-leaf has to arrange.
+
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_absolutelyIrreducibleForms_two (d : ℕ) :
     ∃ E : ℕ, ∀ (p : ℕ) [Fact p.Prime],
@@ -17029,8 +17452,34 @@ theorem exists_absolutelyIrreducibleForms_two (d : ℕ) :
           ((g.totalDegree = d ∧ Irreducible g) ↔
             ∃ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
                   (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-                    (Gs i)) ≠ 0) :=
-  sorry
+                    (Gs i)) ≠ 0) := by
+  classical
+  obtain ⟨k, Gs, hGs⟩ := exists_reducibleLocusFormsInt.{0} d
+  refine ⟨Finset.univ.sup fun i => (Gs i).totalDegree, ?_⟩
+  intro p _
+  refine ⟨k, fun i => MvPolynomial.map (Int.castRingHom (ZMod p)) (Gs i), ?_, ?_⟩
+  · intro i
+    exact le_trans (totalDegree_map_le' _ _)
+      (Finset.le_sup (f := fun i => (Gs i).totalDegree) (Finset.mem_univ i))
+  · intro g hg
+    have hmap : ∀ i, MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+        (MvPolynomial.map (Int.castRingHom (ZMod p)) (Gs i))
+        = MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) (Gs i) := by
+      intro i
+      have hcomp : (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).comp
+          (Int.castRingHom (ZMod p)) = Int.castRingHom (AlgebraicClosure (ZMod p)) :=
+        RingHom.ext_int _ _
+      rw [MvPolynomial.map_map, hcomp]
+    simp only [hmap]
+    have h := hGs (AlgebraicClosure (ZMod p)) g hg
+    constructor
+    · intro hA
+      by_contra hcon
+      push Not at hcon
+      exact h.mpr hcon hA
+    · rintro ⟨i, hi⟩
+      by_contra hA
+      exact hi (h.mp hA i)
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, PULLED BACK TO THE PLANE PARAMETERS
 (PROVEN 2026-07-27 over two named sub-leaves)** -- the ARITHMETIC half of
