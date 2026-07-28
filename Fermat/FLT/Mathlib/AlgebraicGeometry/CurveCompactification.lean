@@ -195,7 +195,10 @@ would be free-floating.
 
 `PerfectField K` is load-bearing in step 4 and only there.  Over an imperfect field the
 normalization of a curve can be regular without being smooth, so the theorem as stated is
-false without it; `ℚ` is perfect, which is all the modular application needs.
+false without it; `ℚ` is perfect, which is all the modular application needs.  The witness
+is the quasi-elliptic curve `y² = x³ + t` over `𝔽₃(t)`, worked out in full on
+`smoothOfRelativeDimension_one_fromNormalization` below — note in particular that its
+function field IS separably generated, so smoothness of `Y` does **not** suffice.
 
 ## Relation to `Modularity/KhareWintenberger.lean` — READ BEFORE PROVING ANY LEAF HERE
 
@@ -1475,10 +1478,57 @@ dimension one.  That is what makes the cut below possible: the statement splits 
 *normality of the normalization* (leaf above, and genuinely absent) and *regular ⟹ smooth
 over a perfect field* (the shared node), rather than being one indivisible citation.
 
-`PerfectField K` is load-bearing and the statement is FALSE without it: over an imperfect
-field `k` of characteristic `p` the curve `y^p = t x^p + t` (`t ∈ k ∖ k^p`) is regular but
-not smooth, and it is its own normalization.  `ℚ` is perfect, so the modular application
-is unaffected.
+`PerfectField K` is load-bearing and the statement is FALSE without it.
+
+**COUNTEREXAMPLE CORRECTED (2026-07-28) — the witness this docstring used to cite was
+INVALID and justified nothing.**  It read: "over an imperfect field `k` of characteristic
+`p` the curve `y^p = t x^p + t` (`t ∈ k ∖ k^p`) is regular but not smooth, and it is its
+own normalization".  Both halves of that fail:
+
+* it is **not regular**, so it is not its own normalization either.  In characteristic `p`,
+  `t x^p + t = t (x + 1)^p`, so after the change of coordinate `u = x + 1` the equation is
+  `y^p = t u^p`; at the `k`-rational point `u = y = 0` the defining polynomial lies in
+  `𝔪²` (checked in `Singular`), so the local ring has `dim_k 𝔪/𝔪² = 2` in dimension one.
+  The integral closure of `k[u,y]/(y^p - t u^p) = k[u, t^{1/p} u]` is `k(t^{1/p})[u]`, a
+  strictly larger ring;
+* it is **not geometrically reduced** — over `k̄` it is `(y - t^{1/p}(x+1))^p = 0` — so it
+  has no smooth open subscheme and can never satisfy `hY` in the first place.
+
+The correct witness is the classical **quasi-elliptic** curve (it exists only in
+characteristics `2` and `3`).  Over `k = 𝔽₃(t)`, which is imperfect, take
+`C : y² = x³ + t ⊆ 𝔸²_k`.
+
+* `C` is integral (`x³ + t` has odd degree, hence is not a square in `k[x]`) and
+  **regular**: in characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`,
+  so the only candidate singular point is `P : y = 0`, `x³ = −t` — a single closed point
+  with residue field `k(t^{1/3})` — and there `𝔪 = (y, x³ + t) = (y)`, because
+  `x³ + t = y²`.  A one-dimensional local ring with principal maximal ideal is a DVR, so
+  `C` is regular, hence normal, hence its own normalization.
+* `C` is **not smooth** at `P`: over `k̄`, `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the
+  cuspidal cubic `y² = (x + t^{1/3})³` — reduced, but singular at the cusp.
+* `Y := C ∖ {P}` **is** a smooth affine curve over `k`, integral, quasi-compact and
+  separated: unlike the old witness it satisfies every hypothesis here.
+* `Y` has **no** smooth proper compactification over `k`: any smooth proper model is an
+  integral normal proper curve with function field `k(C)`, and that model is unique up to
+  isomorphism, so it is the regular proper model of `C` — which is not smooth, already at
+  `P`.
+
+Machine-checked in `Magma` (2026-07-28): `k(C)` has genus `1` over `𝔽₃(t)` with exact
+constant field `k`, and genus `0` after the purely inseparable base change `t = s³` — a
+drop of `1 = (p−1)/2`, exactly what Tate's genus-change theorem permits at `p = 3`.  A
+smooth (= geometrically regular) proper model would preserve the genus under base change,
+so none exists.
+
+**The tempting repair is wrong too**, which is why `hY` does not let one drop the
+hypothesis: `k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`),
+so "smooth `Y` ⟹ separably generated function field ⟹ smooth normalization" is FALSE.
+Separable generation is strictly weaker than conservativity, and conservativity is what
+smooth compactification needs.  The downstream perfectness-free leaf
+`exists_isSmoothCompactification_field` was DELETED as refuted on exactly this example;
+see the FALSITY AUDIT on `Fermat.exists_x0Compactification_field` in
+`Fermat/FLT/ModularCurve/X0.lean`.
+
+`ℚ` is perfect, so the modular application is unaffected.
 
 `hY` — that `Y` itself is a smooth curve — is what pins the dimension to `1`; it enters the
 proof twice, once through the DVR leaf and once as the dense smooth open

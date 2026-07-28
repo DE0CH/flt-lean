@@ -524,10 +524,30 @@ can have components of different dimensions (`B = K × K[x]`), `ringKrullDim B`
 records only the largest, and no single relative dimension exists — the
 statement would be false at the points of the small component.
 
-`PerfectField K` is load-bearing too, and this is not a formalisation artefact:
-over an imperfect field of characteristic `p` the curve `y ^ p = t * x ^ p + t`
-(`t ∈ k \ k ^ p`) is regular and not smooth.  `ℚ` is perfect, so the modular
-application is unaffected. -/
+`PerfectField K` is load-bearing too, and this is not a formalisation artefact.
+
+**COUNTEREXAMPLE CORRECTED (2026-07-28).**  This paragraph used to cite the curve
+`y ^ p = t * x ^ p + t` (`t ∈ k \ k ^ p`) as "regular and not smooth".  That
+witness is INVALID: in characteristic `p`, `t * x ^ p + t = t * (x + 1) ^ p`, so
+after `u = x + 1` the equation reads `y ^ p = t * u ^ p`, whose defining
+polynomial lies in `𝔪 ²` at the `k`-rational point `u = y = 0` — the local ring
+there has `dim_k 𝔪 / 𝔪 ² = 2` in dimension one, so the curve is NOT regular (its
+integral closure is the strictly larger `k (t ^ (1 / p)) [u]`).  It is also not
+geometrically reduced, being `(y - t ^ (1 / p) * (x + 1)) ^ p = 0` over `k̄`.
+
+The correct witness is the classical **quasi-elliptic** curve, which exists only
+in characteristics `2` and `3`: over `k = 𝔽₃ (t)` take `B = k [x, y] / (y ² - x ³ - t)`.
+It is a finite-type domain of Krull dimension one, and it is REGULAR — in
+characteristic `3` the partials are `∂ / ∂ y = 2 y` and `∂ / ∂ x = - 3 x ² = 0`, so
+the only candidate singular point is `y = 0`, `x ³ = - t`, a single closed point
+with residue field `k (t ^ (1 / 3))`, where the maximal ideal `(y, x ³ + t)` equals
+`(y)` because `x ³ + t = y ²`; a one-dimensional local ring with principal maximal
+ideal is a DVR.  It is NOT smooth there: over `k̄`, `x ³ + t = (x + t ^ (1 / 3)) ³`,
+so the base change is the cuspidal cubic.  Machine-checked in `Magma`: genus `1`
+over `𝔽₃ (t)`, genus `0` after the purely inseparable base change `t = s ³`, a drop
+of `(p - 1) / 2` as Tate's genus-change theorem permits at `p = 3`.
+
+`ℚ` is perfect, so the modular application is unaffected. -/
 theorem smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing
     (K B : Type u) [Field K] [PerfectField K] [CommRing B] [IsDomain B] [Algebra K B]
     [Algebra.FiniteType K B] [IsRegularRing B] (n : ℕ) (hdim : ringKrullDim B = n) :
