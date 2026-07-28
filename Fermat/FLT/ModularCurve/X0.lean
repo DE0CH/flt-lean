@@ -41836,7 +41836,8 @@ The chain, top down:
 | the quotient map coequalises ANY two rigidifications | `deckAction_coequalisesOver` | **PROVEN** (2026-07-28) |
 | two full level structures on ONE datum differ Zariski-locally by a CONSTANT matrix | `exists_openCover_twist_of_fullLevelStructureOver` | **LEAF** (the whole geometric content, and the ONLY thing still owed under `deckAction_coequalisesOver`) |
 | assembling those into a rigidification over `𝔽_ℓ` | `nonempty_gamma0Rigidification_of_rigidifiedModuli`, `exists_gamma0Rigidification_specF` | **PROVEN** |
-| the special fibre of the GIVEN coarse space IS `Spec A^G` | `exists_specialFibreInvariantsIso` | **LEAF** (good reduction) |
+| the comparison map `Spec A^G ⟶ Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is an ISO | `isIso_specialFibreInvariantsQuotient` | **LEAF** (good reduction) |
+| the special fibre of the GIVEN coarse space IS `Spec A^G` | `exists_specialFibreInvariantsIso` | **PROVEN** (2026-07-28, over the leaf above) |
 | the target | `exists_gamma0GITPresentationData_pullbackSpecial` | **PROVEN** |
 
 **Why the interposed structures are the ones they are, and where the
@@ -41874,7 +41875,9 @@ not isomorphic over `S`.
 `¬ ℓ ∣ n` are rigidity and étaleness of the auxiliary level, and are
 discharged inside `exists_gamma0Rigidification_specF` by choosing
 `n = 3`, or `n = 4` when `ℓ = 3`.  `_hbase` and `hcoarse` are consumed
-ONLY by `exists_specialFibreInvariantsIso`, which is the point of the
+ONLY by `isIso_specialFibreInvariantsQuotient` (they are merely CARRIED
+by `exists_specialFibreInvariantsIso`, whose construction uses nothing
+but `classifyPullback` and its naturality), which is the point of the
 cut: everything above it is a construction over `𝔽_ℓ` that never looks
 at `Y_0(N)_{ℤ_(ℓ)}`.  `¬ ℓ ∣ N` is carried into two leaves — the fine
 moduli scheme and the identification — and it is certainly load-bearing
@@ -43063,55 +43066,175 @@ theorem exists_gamma0Rigidification_specF (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ
   exact nonempty_gamma0Rigidification_of_rigidifiedModuli hn3 R
     (fun {T} g d => exists_fullLevelStructure_cover_specF N n ℓ hn3 hℓ hℓn g d)
 
-/-- **GOOD REDUCTION: the special fibre of the given coarse space IS
-`Spec` of the invariants** (sorry leaf, opened 2026-07-28) — the ONLY
-place where `hcoarse`, `_hbase` and the good-reduction content of
-`¬ ℓ ∣ N` are consumed, and the one leaf in this cluster with no `ℚ`-side
-analogue at all.
+/-- **GOOD REDUCTION: the canonical comparison map from the Katz–Mazur
+quotient to the special fibre is an ISOMORPHISM** (sorry leaf, opened
+2026-07-28 by splitting `exists_specialFibreInvariantsIso` below into its
+formal and its arithmetic half, exactly as that leaf's own docstring
+prescribed) — the ONLY place where `hcoarse`, `_hbase` and the
+good-reduction content of `¬ ℓ ∣ N` are consumed, and the one leaf in
+this cluster with no `ℚ`-side analogue at all.
 
-## What the prover of this node owes
+## What is ALREADY DONE and is NOT owed here
 
-Deligne–Rapoport / Katz–Mazur 8.2 in the form: for `ℓ ∤ N` the integral
-coarse moduli space `Y_0(N)_{ℤ_(ℓ)}` has good reduction, and its special
-fibre `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is the coarse moduli space of `Γ₀(N)/𝔽_ℓ`,
-identified with the Katz–Mazur quotient `Spec (A^G)` so that the
-base-changed classifying map of the universal family becomes the quotient
-map `specInvariantsQuotient`.
+The comparison morphism `u` is **constructed formally**, in
+`exists_specialFibreInvariantsIso` below, with no arithmetic input
+whatever, and the hypothesis `hu` is exactly its defining property.  The
+construction is two steps and both are proven:
 
-**Half of this is formal and the prover should do that half first.**
-`P` makes `Spec (A^G)` a coarse moduli space over `𝔽_ℓ`: package `P` as
-a `Gamma0AtlasData` — `coequalises` gives the categorical quotient
-through `specInvariants_universal`, exactly as
-`Gamma0GITPresentationData.toGamma0AtlasData` does — and apply
-`isCoarseModuliY0_of_atlasData` with `subsingleton_hom_specF`.  Its
-`universal` clause then produces a canonical morphism
-`Spec (A^G) ⟶ Y ×_{ℤ_(ℓ)} 𝔽_ℓ` compatible with the classifying maps, in
-the direction stated here, **with no arithmetic input whatever**.
+* `P.dM_equivariant` exhibits `𝟙` and `Spec σ` as two rigidifications of
+  ONE datum, so `IsCoarseModuliY0.classifyPullback_natural` applied
+  twice — with the two base points identified by
+  `subsingleton_hom_specF` — makes the classifying point
+  `φ := (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1`
+  of the universal family `G`-INVARIANT;
+* `specInvariants_universal` — base-independent pure algebra, already
+  proven for the `ℚ` side and reused verbatim — then factors `φ`
+  uniquely through `specInvariantsQuotient P.G P.A`, producing `u` with
+  `hu`.
 
-What is NOT formal, and is the whole content of the leaf, is that this
-morphism is an ISOMORPHISM — equivalently that `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is
-itself initial, which the subsection docstring above proves does NOT
-descend from `hcoarse` (a cocone defined on `𝔽_ℓ`-schemes cannot be fed
-to a universal property quantified over `ℤ_(ℓ)`-schemes).  So the honest
-shape of the remaining work is: build the formal half, then supply
-good reduction as the inverse.
+So the prover of this node owes NOTHING about the existence of a
+comparison map, about `G`-invariance, about the categorical quotient, or
+about `P.cover` and `P.coequalises`.  It owes iso-ness and nothing else.
+
+## What the prover of this node DOES owe
+
+Deligne–Rapoport / Katz–Mazur 8.1–8.2 in the form: for `ℓ ∤ N` the
+integral coarse moduli space `Y_0(N)_{ℤ_(ℓ)}` has good reduction and the
+formation of the coarse space **commutes with the base change**
+`ℤ_(ℓ) → 𝔽_ℓ` — equivalently, `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is ITSELF a coarse
+moduli space for `Γ₀(N)/𝔽_ℓ`, with `classifyPullback` as its classifying
+map.  Given that, `u` is a map between two coarse moduli spaces over
+`𝔽_ℓ` compatible with both classifying maps, hence an isomorphism by
+initiality on each side.
+
+**That base-change clause is the entire content, and it is not formal.**
+`ℤ_(ℓ) → 𝔽_ℓ` is not flat, and `ℓ` need not be invertible in the order of
+the deck group (`#GL₂(ℤ/3) = 48`, so `ℓ = 2` divides it at the auxiliary
+level `exists_gamma0Rigidification_specF` chooses), so "invariants
+commute with base change" is false for formal reasons and has to come
+from the geometry of the moduli problem.  Stated the other way, which is
+how the subsection docstring above puts it: `hcoarse` is initiality
+quantified over `ℤ_(ℓ)`-schemes, and a cocone defined on `𝔽_ℓ`-schemes
+cannot be fed to it.
 
 ## Faithfulness
 
 `_hℓN` is load-bearing for TRUTH: at `ℓ ∣ N` the special fibre of
 `Y_0(N)_{ℤ_(ℓ)}` is the Deligne–Rapoport crossing of two Igusa
-components and is not the coarse space of `Γ₀(N)/𝔽_ℓ`, so the two
-schemes are not isomorphic and the statement is FALSE.  `_hbase` is what
-makes `SpecLoc.special toF` the honest closed point.
+components and is not the coarse space of `Γ₀(N)/𝔽_ℓ`, so `u` is not an
+isomorphism and the statement is FALSE.  `_hbase` is what makes
+`SpecLoc.special toF` the honest closed point.
 
-The `∀` over `P` is legitimate and is NOT the junk-witness trap the
-subsection docstring above warns about: `Gamma0RigidificationData`
-carries `coequalises`, which by the paragraph above makes `Spec (A^G)` a
-coarse moduli space over `𝔽_ℓ`, and coarse moduli spaces are pinned up
-to unique isomorphism by their own initiality clause.  So the statement
-is invariant under change of inhabitant.  *The check that would refute
-that*: two inhabitants of `Gamma0RigidificationData N (SpecF ℓ)` whose
-invariant rings have non-isomorphic spectra over `𝔽_ℓ`. -/
+**The `∀ u` is not a junk quantifier**: `specInvariantsQuotient P.G P.A`
+is an EPIMORPHISM, so at most one `u` satisfies `hu`, and the consumer
+below supplies one — the quantifier ranges over a one-element set.  That
+is a compiler-checkable claim, not a prose one, and this is the check;
+it was run and accepted before this leaf was written:
+
+    example {A G : Type} [CommRing A] [Group G] [Finite G]
+        [MulSemiringAction G A] : Epi (specInvariantsQuotient G A) := by
+      letI : Algebra ↥(FixedPoints.subring A G) A :=
+        RingHom.toAlgebra (Subring.subtype _)
+      haveI : Algebra.IsInvariant ↥(FixedPoints.subring A G) A G :=
+        ⟨fun x hx => ⟨⟨x, hx⟩, rfl⟩⟩
+      haveI : SMulCommClass G ↥(FixedPoints.subring A G) A :=
+        ⟨fun σ b a => by
+          show σ • ((b : A) * a) = (b : A) * (σ • a)
+          rw [smul_mul', b.2 σ]⟩
+      constructor
+      intro Z ψ₁ ψ₂ h
+      obtain ⟨ψ₀, -, huniq⟩ := specInvariants_universal G
+        (Subtype.val_injective (p := fun x => x ∈ FixedPoints.subring A G))
+        (specInvariantsQuotient G A ≫ ψ₁)
+        (fun σ => by rw [← Category.assoc, specInvariantsQuotient_toRingHom_comp])
+      rw [huniq ψ₁ rfl, huniq ψ₂ h.symm]
+
+It is not stated as a lemma only because nothing in the tree consumes it.
+
+The `∀` over `P` is legitimate for the reason the subsection docstring
+above gives: `Gamma0RigidificationData` carries `coequalises`, which
+makes `Spec (A^G)` a coarse moduli space over `𝔽_ℓ`, and coarse moduli
+spaces are pinned up to unique isomorphism by their own initiality
+clause.  *The check that would refute that*: two inhabitants of
+`Gamma0RigidificationData N (SpecF ℓ)` whose invariant rings have
+non-isomorphic spectra over `𝔽_ℓ`.
+
+**One correction to that argument, found 2026-07-28 while building the
+formal half, and it matters to whoever attacks this leaf.**  The
+subsection docstring says the `Spec (A^G)`-side coarse moduli property is
+obtained by packaging `P` as a `Gamma0AtlasData` and applying
+`isCoarseModuliY0_of_atlasData`.  That is right mathematically but it is
+**not immediately writable in Lean at this pin**, because
+`Gamma0AtlasData` takes the classifying map as a PARAMETER, and the
+classifying map over `𝔽_ℓ` has to be produced by fpqc descent from
+`P.cover` and `P.coequalises`.  That descent exists in this development
+twice — `exists_descendClassify` here and `exists_descendClassifyGamma1`
+in `X1.lean` — but the `Γ₀` one is stated over `SpecQ` (its base enters
+only through `Subsingleton (T ⟶ SpecQ)`, so its proof is base-agnostic;
+its STATEMENT is not).  So a prover taking the two-sided-initiality route
+needs `exists_descendClassify` restated over `SpecF ℓ`, or its base
+generalised to any `S` with `∀ Z, Subsingleton (Z ⟶ S)`.  That is
+bookkeeping, not mathematics, but it is not zero and it is invisible from
+the statement. -/
+theorem isIso_specialFibreInvariantsQuotient {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr)
+    (P : Gamma0RigidificationData N (SpecF ℓ)) :
+    letI := P.commRing_A
+    letI := P.group_G
+    letI := P.finite_G
+    letI := P.action_GA
+    ∀ u : Spec (CommRingCat.of ↥(FixedPoints.subring P.A P.G)) ⟶
+        pullback ystr (SpecLoc.special toF),
+      specInvariantsQuotient P.G P.A ≫ u
+          = (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 →
+      IsIso u :=
+  sorry
+
+/-- **GOOD REDUCTION: the special fibre of the given coarse space IS
+`Spec` of the invariants** (**PROVEN 2026-07-28** over the single leaf
+`isIso_specialFibreInvariantsQuotient` above — it was a sorry leaf until
+that split).
+
+## What this proof does, and what it deliberately does not do
+
+Its own previous docstring said "half of this is formal and the prover
+should do that half first"; this is that half, and it turned out to be
+the larger half by line count and the smaller by content.  The formal
+part is:
+
+1. **`G`-invariance of the classifying point of the universal family.**
+   `P.dM_equivariant σ` produces one datum `d₁` that is a base change of
+   `P.dM` along BOTH `𝟙` and `Spec σ`.  Feeding each to
+   `IsCoarseModuliY0.classifyPullback_natural` computes
+   `classifyPullback (SpecLoc.special toF) P.strM d₁` in two ways, and
+   the two base points that appear are identified by
+   `subsingleton_hom_specF` — which is the only place the base `𝔽_ℓ` is
+   used, and is why this argument has no `ℚ`-side analogue to copy.
+   Note `P.coequalises` is NOT needed for this: the global-`σ` clause
+   `dM_equivariant` suffices, exactly as in
+   `Gamma0GITPresentationData.toGamma0AtlasData`.
+2. **The factorisation.**  `specInvariants_universal` (base-independent
+   pure algebra) then gives a unique `u : Spec (A^G) ⟶ Y ×_{ℤ_(ℓ)} 𝔽_ℓ`
+   with `specInvariantsQuotient P.G P.A ≫ u = φ`.  The `Algebra`
+   instance is `RingHom.toAlgebra (Subring.subtype _)`, so
+   `algebraMap (A^G) A` is definitionally the inclusion and
+   `Spec.map (algebraMap …)` is definitionally `specInvariantsQuotient`
+   — the same choice the consumer
+   `exists_gamma0GITPresentationData_pullbackSpecial` makes below, and
+   for the same reason.
+
+What is left is that `u` is an isomorphism, which is
+`isIso_specialFibreInvariantsQuotient`, and the returned `e` is
+`(asIso u).symm`.  The stated equation is then `hu` composed with
+`e.hom = inv u`.
+
+**Every arithmetic hypothesis is passed straight through** to that leaf
+and used nowhere here: `_hℓ`, `_hℓN`, `_hbase` and even `hcoarse`'s
+`universal` clause play no part in the construction — only
+`classifyPullback` and its naturality, which are "for free" (see their
+docstrings).  That is the precise sense in which the good-reduction
+content is now isolated in one place. -/
 theorem exists_specialFibreInvariantsIso {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
     {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr)
@@ -43123,8 +43246,59 @@ theorem exists_specialFibreInvariantsIso {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_h�
     ∃ e : pullback ystr (SpecLoc.special toF) ≅
         Spec (CommRingCat.of ↥(FixedPoints.subring P.A P.G)),
       (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 ≫ e.hom
-        = specInvariantsQuotient P.G P.A :=
-  sorry
+        = specInvariantsQuotient P.G P.A := by
+  classical
+  letI := P.commRing_A
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  -- the invariants as a SUBRING of `A`, so that `algebraMap B A` is the
+  -- inclusion and `specInvariants_universal` factors through
+  -- `specInvariantsQuotient` on the nose
+  letI : Algebra ↥(FixedPoints.subring P.A P.G) P.A :=
+    RingHom.toAlgebra (Subring.subtype _)
+  haveI : Algebra.IsInvariant ↥(FixedPoints.subring P.A P.G) P.A P.G :=
+    ⟨fun x hx => ⟨⟨x, hx⟩, rfl⟩⟩
+  haveI : SMulCommClass P.G ↥(FixedPoints.subring P.A P.G) P.A :=
+    ⟨fun σ b a => by
+      show σ • ((b : P.A) * a) = (b : P.A) * (σ • a)
+      rw [smul_mul', b.2 σ]⟩
+  -- FORMAL HALF, step 1: the classifying point of the universal family is
+  -- `G`-invariant, because `𝟙` and `Spec σ` are two rigidifications of ONE
+  -- datum and the two base points they induce agree over `Spec 𝔽_ℓ`.
+  have hinv : ∀ σ : P.G,
+      Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫
+          (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1
+        = (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 := by
+    intro σ
+    obtain ⟨d₁, ⟨h1⟩, ⟨h2⟩⟩ := P.dM_equivariant σ
+    have e1 : (hcoarse.classifyPullback (SpecLoc.special toF) P.strM d₁).1
+        = 𝟙 (Spec (CommRingCat.of P.A)) ≫
+            (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 :=
+      congrArg Subtype.val (hcoarse.classifyPullback_natural (SpecLoc.special toF)
+        (𝟙 _) (g := P.strM) (g' := P.strM) (Category.id_comp _) h1)
+    have e2 : (hcoarse.classifyPullback (SpecLoc.special toF) P.strM d₁).1
+        = Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫
+            (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 :=
+      congrArg Subtype.val (hcoarse.classifyPullback_natural (SpecLoc.special toF)
+        (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)))
+        (g := P.strM) (g' := P.strM) ((subsingleton_hom_specF ℓ _).elim _ _) h2)
+    rw [Category.id_comp] at e1
+    rw [← e2]
+    exact e1
+  -- FORMAL HALF, step 2: so it factors uniquely through the quotient map.
+  obtain ⟨u, hu, -⟩ := specInvariants_universal P.G
+    (Subtype.val_injective (p := fun x => x ∈ FixedPoints.subring P.A P.G))
+    (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 hinv
+  have hu' : specInvariantsQuotient P.G P.A ≫ u
+      = (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 := hu
+  -- ARITHMETIC HALF, and the only thing that is not free: `u` is invertible.
+  haveI : IsIso u :=
+    isIso_specialFibreInvariantsQuotient _hℓ _hℓN _hbase hcoarse P u hu'
+  refine ⟨(asIso u).symm, ?_⟩
+  show (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 ≫ inv u
+      = specInvariantsQuotient P.G P.A
+  rw [← hu', Category.assoc, IsIso.hom_inv_id, Category.comp_id]
 
 /-- **The special fibre carries a Katz–Mazur GIT PRESENTATION for `Γ₀(N)`
 over `𝔽_ℓ`** (**PROVEN 2026-07-28** over the four leaves of the
