@@ -934,7 +934,16 @@ family of `rk_R A''` generators, not only by a dual normal basis.
 
 It is not vacuous: over the zero ring it holds trivially, but over a field it is the assertion
 `dim D(A) = dim A'' · dim A'` together with a choice of generators realising it, which is false
-for any family of fewer than `rk_R A''` elements. -/
+for any family of fewer than `rk_R A''` elements.
+
+**This leaf now carries the whole global-versus-local-freeness risk of the cut, alone.** If
+`exists_basis_cartierDual` is ever refuted — its audit explains that the only possible shape of a
+counterexample is a non-local base on which `D(A)` is fppf-locally but not globally free — then
+the sibling `nonempty_linearEquiv_cartierDual` still survives, because local freeness of rank
+`rk_R A''` already forces the rank count; so the false statement would have to be *this* one. A
+prover who comes to doubt the strong form should therefore attack the generation statement for a
+counterexample, and the documented fallback (weaken to local freeness of rank `rk_R A''` and
+localise the two consumers' derivations, weakening neither consumer) applies here unchanged. -/
 theorem IsShortExact.exists_spanning_cartierDual (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
