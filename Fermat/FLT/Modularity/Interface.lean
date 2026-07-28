@@ -32829,10 +32829,217 @@ theorem mem_of_forall_char_pullback_mem {G : Type*} [Group G] {M : Type*}
   rw [h1, map_one]
   rfl
 
+/-- **A `ZMod nn` element killed by every PRIME-POWER reduction is zero**
+(PROVEN 2026-07-28; pure arithmetic, no group theory, no arithmetic geometry).
+Hoisted out of the reciprocity reduction below for the reason recorded on
+`mem_of_forall_char_pullback_mem` above: inside a 71 000-line file every
+unification against `Field.absoluteGaloisGroup ℚ` is paid for, and this step
+mentions no group at all.
+
+The quantifier is over ALL primes `ℓ` and ALL exponents `k` with `ℓ ^ k ∣ nn`,
+which is what makes the statement uniform in `nn` — including `nn = 0`, where
+`ZMod 0 = ℤ`, every `ℓ ^ k` divides `nn`, and the hypothesis says the integer
+is divisible by arbitrarily large powers of `2`, hence zero. That uniformity
+is deliberate: it is what lets the consumer below avoid a compactness argument
+for `Γℚ` in the degenerate case `nn = 0` (an infinite cyclic quotient of
+`ker χ / N` is impossible because `N` is open in a compact group, but proving
+that in Lean costs a normal-core detour, and the `2`-adic argument here costs
+nothing).
+
+For `nn > 0` this is the Chinese remainder theorem in its `Nat.factorization`
+form: writing `a = (b : ZMod nn)` with `b : ℤ`, the hypothesis at
+`k = nn.factorization ℓ` says `ℓ ^ k ∣ b.natAbs` for every prime `ℓ`, hence
+`nn.factorization ≤ b.natAbs.factorization`, hence `nn ∣ b`. -/
+theorem zmod_eq_zero_of_forall_primePow_cast {nn : ℕ} (a : ZMod nn)
+    (h : ∀ (ll nk : ℕ), ll.Prime → ∀ hd : ll ^ nk ∣ nn,
+      ZMod.castHom hd (ZMod (ll ^ nk)) a = 0) : a = 0 := by
+  obtain ⟨b, rfl⟩ := ZMod.intCast_surjective (n := nn) a
+  have hdvd : ∀ (ll nk : ℕ), ll.Prime → ll ^ nk ∣ nn → ((ll ^ nk : ℕ) : ℤ) ∣ b := by
+    intro ll nk hll hd
+    have hz := h ll nk hll hd
+    rw [map_intCast, ZMod.intCast_zmod_eq_zero_iff_dvd] at hz
+    exact hz
+  rw [ZMod.intCast_zmod_eq_zero_iff_dvd]
+  rcases Nat.eq_zero_or_pos nn with hnn | hnn
+  · subst hnn
+    have hb : b = 0 := by
+      by_contra hne
+      have hk := hdvd 2 b.natAbs Nat.prime_two (dvd_zero _)
+      have hlt : |b| < ((2 ^ b.natAbs : ℕ) : ℤ) := by
+        rw [Int.abs_eq_natAbs]
+        exact_mod_cast Nat.lt_two_pow_self
+      exact hne (Int.eq_zero_of_abs_lt_dvd hk hlt)
+    simp [hb]
+  · rcases eq_or_ne b 0 with rfl | hb
+    · simp
+    · rw [Int.natCast_dvd,
+        ← Nat.factorization_le_iff_dvd hnn.ne' (Int.natAbs_ne_zero.mpr hb)]
+      refine Finsupp.le_def.mpr ?_
+      intro ll
+      by_cases hll : ll.Prime
+      · have hd : ll ^ (nn.factorization ll) ∣ nn := Nat.ordProj_dvd _ _
+        have hz := hdvd ll _ hll hd
+        rw [Int.natCast_dvd] at hz
+        exact (Nat.Prime.pow_dvd_iff_le_factorization hll
+          (Int.natAbs_ne_zero.mpr hb)).mp hz
+      · simp [Nat.factorization_eq_zero_of_not_prime _ hll]
+
+/-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT OF PRIME-POWER
+ORDER** (E3c support leaf (ii-a-1-i-B-2-a-ii-α-1); SORRY LEAF, cut 2026-07-28
+out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar` below
+along the CHINESE-REMAINDER axis, and the entire arithmetic content of that
+node and hence of the two nodes above it).
+
+Word for word the leaf below, except that the modulus `nn` is a PRIME POWER
+`ll ^ nk`. The reduction is `zmod_eq_zero_of_forall_primePow_cast` just above
+applied to the value `ψ x` of the character at the product; nothing
+arithmetic happens in it.
+
+**WHY THIS SHAPE AND NOT THE GENERAL ONE — this is the whole point of the
+cut, and it CORRECTS a standing obstruction note.** Every docstring in this
+cluster (including the one below, before today) records the citation of
+`ModThree.lean`'s 116-declaration `*_ray_class` reciprocity as blocked by
+"(1) its value group is hardwired to `Dickson.K 3`". That is TRUE as a
+sentence about the source and MISLEADING as an obstruction, because
+`Dickson.K 3` is `AlgebraicClosure (ZMod 3)` — see
+`Fermat/FLT/KnownIn1980s/PGL2/Basic.lean`, `noncomputable abbrev K : Type :=
+AlgebraicClosure (ZMod p)` — i.e. `𝔽̄₃`, an ALGEBRAICALLY CLOSED field. So it
+already contains `μ_n` for every `n` prime to `3`: `X ^ n - 1` is separable
+over `𝔽₃` when `3 ∤ n` and splits there, so `μ_n (𝔽̄₃)` is cyclic of order
+exactly `n` and there is an INJECTIVE
+`Multiplicative (ZMod n) →* (Dickson.K 3)ˣ`.
+
+The `hℓ3 : ℓ ≠ 3` carried through ~30 of that cluster's signatures is
+precisely this constraint, not an artefact: in characteristic `3` the
+hypothesis `hord : ∀ a, χ a ^ (ℓ ^ k) = 1` at `ℓ = 3` forces `χ ≡ 1`. So the
+honest statement of obstruction (1) is:
+
+> `ModThree.lean`'s reciprocity is usable for the PRIME-TO-`3` part of
+> `Cl(ℚ(μ_p))` as it stands, and only the `3`-part needs its value group
+> generalized (to any field containing `μ_{3^k}`, e.g. one of characteristic
+> zero or of characteristic `≠ 3`).
+
+Putting the modulus in prime-power form here is what makes that dichotomy
+expressible at all — with a composite `nn` no instance of the ModThree chain
+applies, whatever its value group.
+
+**WHAT IS STILL GENUINELY MISSING at `ll ≠ 3`, stated so it can be checked
+rather than believed.** `ModThree.lean`'s
+`exists_conductor_artinSymbol_span_eq_one_ray_class` (which Interface reaches
+— line 363 of this file imports `…HardlyRamified.ModThree`, so it is usable
+in PROOF BODIES here even though the import is not `public`) has exactly the
+conclusion wanted: under `hunr` (`χ` trivial on every conjugate of every
+local inertia group) no place is `IsRamifiedCharRayClass`, so the modulus
+`mm` it returns has no prime divisor, i.e. `mm = ⊤`, the congruence
+`δ - 1 ∈ mm` is vacuous, and it reads "the symbol kills every totally
+positive principal ideal". For `p` odd `ℚ(μ_p)` is totally imaginary, so
+`F →+* ℝ` is EMPTY and total positivity is vacuous too — the conclusion is
+then reciprocity for the full Hilbert class field. Four things stand between
+that and this leaf, and each is a separate, nameable piece of work:
+
+1. *Transport.* That chain is stated for `Γ F` with `F` a number field;
+   `ψ` here is a character of `MonoidHom.ker χ ⊆ Γℚ`. Identifying
+   `Γ CF ≅ ker χ` along `ι` (`ker χ` is `Γ_{ℚ(μ_p)}` by `hχcyc`) is the
+   plumbing, not the mathematics.
+2. *The ideal symbol.* That chain takes `c : Ideal (𝓞 F) → Dickson.K 3` with
+   `hcmul` and `hcfrob : c v.asIdeal = χ (globalFrob v)` as HYPOTHESES. Here
+   only the DEGREE-ONE primes carry a Frobenius (`frobIdeal g v` ranges over
+   exactly those, see the note below), so `c` must first be built at every
+   prime and extended multiplicatively by unique factorization. **A cut that
+   pins `c` only on degree-one primes would be FALSE**, since a principal
+   ideal can involve higher-degree primes at which `c` would then be junk;
+   this is the trap to avoid when decomposing this leaf further.
+3. *`hunr` from `hNinert`.* The unramifiedness hypothesis there is about
+   inertia in `Γ F`; here it is `hNinert`, about inertia in `Γℚ`. Same
+   content, different group.
+4. *`mm = ⊤`.* An ideal that is nonzero and divisible by no height-one prime
+   is `⊤`; elementary, but it has to be written.
+
+**And one caveat that must be stated with the correction, or the correction
+is itself misleading.** `exists_conductor_artinSymbol_span_eq_one_ray_class`
+has a sorry-FREE body, but it is TRANSITIVELY sorried: as of 2026-07-28 its
+own cluster still has open leaves, among them
+`exists_artinDivisorNormIndex_le_ray_class`,
+`exists_artinNormSubgroups_ramified_ray_class`,
+`exists_prime_narrowRayEquiv_divisor_ray_class`,
+`exists_relNormDivisorHom_ray_class` and the two
+`exists_badPrimes_*_ray_class`. So citing it would not CLOSE this leaf; it
+would relocate the debt onto those, which is still progress but is a
+different claim. Do not record "ModThree closes this" without that sentence.
+
+**TWO HYPOTHESES OF THE GRANDPARENT ARE DELIBERATELY ABSENT and must stay
+absent**, for the reasons spelt out on the leaf below: `hNcard` (the
+reduction applies this at subgroups of strictly smaller relative index) and
+`hNnorm` (a co-cyclic subgroup of `Gal(H/K)` need not be `Γℚ`-stable). The
+truth of the statement needs only `D ≤ N ≤ ker χ`, never the order of the
+quotient.
+
+**Degenerate values are harmless.** `nk = 0` makes `ZMod 1` trivial, so
+`hψker` forces `N = ker χ` and the conclusion is immediate.
+
+**The check that would refute it**: exhibit `ll`, `nk`, `ψ` and `L` with every
+`frobIdeal q.1 q.2` a degree-one prime, `∏ frobIdeal` principal, and the
+product of the `g · Frob_v · g⁻¹` outside `ker ψ`. That is a failure of Artin
+reciprocity for a finite cyclic everywhere-unramified extension of
+`ℚ(μ_p)`. -/
+theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (ll : ℕ) (hll : ll.Prime) (nk : ℕ)
+    (ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod (ll ^ nk)))
+    (hψN : ∀ y : (MonoidHom.ker χ),
+      (y : Field.absoluteGaloisGroup ℚ) ∈ N → ψ y = 1)
+    (hψker : ∀ y : (MonoidHom.ker χ),
+      ψ y = 1 → (y : Field.absoluteGaloisGroup ℚ) ∈ N)
+    (L : List (Field.absoluteGaloisGroup ℚ ×
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
+    (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
+    (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
+  sorry
+
 /-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT — the CHARACTER
-form** (E3c support leaf (ii-a-1-i-B-2-a-ii-α); SORRY LEAF, cut 2026-07-28
+form** (E3c support leaf (ii-a-1-i-B-2-a-ii-α); cut 2026-07-28
 out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` below along the
-PONTRYAGIN-DUALITY axis, and now the entire arithmetic content of that node).
+PONTRYAGIN-DUALITY axis; **PROVEN 2026-07-28** over the prime-power leaf
+`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar` above,
+which now carries the entire arithmetic content of this node).
 
 Word for word the leaf below, except that `N` is additionally presented as
 the KERNEL OF A CHARACTER: a homomorphism
@@ -32884,24 +33091,39 @@ nowhere in this tree". It exists now: `mem_of_forall_char_pullback_mem`
 above is that duality step, proved through mathlib's structure theorem for
 finite abelian groups (`CommGroup.equiv_prod_multiplicative_zmod_of_finite`)
 rather than through character theory, and this leaf is what the parent
-reduces to by it. **So only obstruction (1) now stands**, and it must still
-be REQUESTED FROM `ModThree.lean`'s owners rather than attempted from
-here.
+reduces to by it.
 
-**If the eventual consumer wants a PRIME-POWER modulus** — `ModThree.lean`'s
-shape, `ℓ` prime with `hℓ3 : ℓ ≠ 3` threaded through the prime-power
-chain — that refinement is elementary and belongs on THIS side of the
-boundary: replace `nn` by `ℓ ^ (nn.factorization ℓ)` for a prime `ℓ` at
-which the class of the product survives, using `ZMod.equivPi`
-(`Mathlib/Data/ZMod/QuotientRing.lean`, the Chinese remainder theorem for
-`ZMod n`). It was left undone here only to keep the assembly short; it
-changes nothing about the mathematics.
+**AND OBSTRUCTION (1) IS NOW KNOWN TO BE OVERSTATED — see the corrected
+statement on the prime-power leaf above.** `Dickson.K 3` is
+`AlgebraicClosure (ZMod 3)`, hence contains `μ_n` for every `n` prime to
+`3`, so `ModThree.lean`'s value group is an obstruction ONLY for the
+`3`-part of `Cl(ℚ(μ_p))`. The `hℓ3 : ℓ ≠ 3` threaded through that cluster is
+exactly that constraint and nothing more. What genuinely remains is listed
+as four items on that leaf (transport `Γ CF ≅ ker χ`; building the ideal
+symbol `c` at ALL primes, not only degree-one ones; `hunr` from `hNinert`;
+`mm = ⊤`), none of which is an edit to `ModThree.lean`.
 
-**Degenerate values of `nn` are harmless.** `nn = 1` makes `ZMod nn`
-trivial, so `hψker` forces `N = ker χ` and the conclusion is immediate;
-`nn = 0` makes `Multiplicative (ZMod 0)` infinite cyclic, and since `N` is
-open in the compact `Γℚ` the quotient `ker χ / N` is finite, so again
-`ψ = 1` and `N = ker χ`.
+**THE PRIME-POWER REFINEMENT IS DONE (2026-07-28), and this node is PROVEN
+by it.** The reduction is `zmod_eq_zero_of_forall_primePow_cast` above
+applied to `ψ x` for `x` the product taken in `ker χ`: for each prime `ll`
+and each `nk` with `ll ^ nk ∣ nn`, post-composing `ψ` with the reduction
+`ZMod nn →+* ZMod (ll ^ nk)` gives a prime-power character `ψ'` whose kernel
+`N' := (ker ψ').map (ker χ).subtype` CONTAINS `N`, hence is open
+(`Subgroup.isOpen_mono`) and inherits `hNker`, `hNinert` and `hNab` by
+monotonicity; the prime-power leaf at `N'` puts the product in `N'`, i.e.
+kills `ψ'`. All the reductions vanishing forces `ψ x = 1`, and `hψker`
+finishes. Note this needs no factorization of `nn` into a product and no
+`ZMod.equivPi`: only that a `ZMod nn`-element killed by every prime-power
+reduction is zero.
+
+**Degenerate values of `nn` are harmless, and `nn = 0` is handled WITHOUT a
+compactness argument.** `nn = 1` makes `ZMod nn` trivial, so `hψker` forces
+`N = ker χ` and the conclusion is immediate. `nn = 0` makes
+`Multiplicative (ZMod 0)` infinite cyclic; the mathematical reason it cannot
+occur is that `N` is open in the compact `Γℚ`, so `ker χ / N` is finite —
+but the proof below never needs that, because every `ll ^ nk` divides `0`,
+so the prime-power leaf applies at every `2 ^ nk` and an integer divisible
+by arbitrarily large powers of `2` is `0`.
 
 **The check that would refute it**: exhibit `nn`, `ψ` and `L` with every
 `frobIdeal q.1 q.2` a degree-one prime, `∏ frobIdeal` principal, and the
@@ -32956,8 +33178,50 @@ theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar
       IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
     (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
     (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
-    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
-  sorry
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N := by
+  classical
+  -- the product of the Frobenius conjugates lies in `ker χ`
+  have hmem : (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod
+      ∈ MonoidHom.ker χ := by
+    refine Subgroup.list_prod_mem _ ?_
+    intro z hz
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hz
+    exact MonoidHom.mem_ker.mpr (hL q hq)
+  set x : (MonoidHom.ker χ) :=
+    ⟨(L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod, hmem⟩
+  refine hψker x ?_
+  refine _root_.toAdd_eq_zero.mp ?_
+  refine zmod_eq_zero_of_forall_primePow_cast (Multiplicative.toAdd (ψ x)) ?_
+  intro ll nk hll hd
+  -- the prime-power character obtained by reducing `ψ` modulo `ll ^ nk`
+  set cst : Multiplicative (ZMod nn) →* Multiplicative (ZMod (ll ^ nk)) :=
+    AddMonoidHom.toMultiplicative (ZMod.castHom hd (ZMod (ll ^ nk))).toAddMonoidHom
+    with hcst
+  set ψ' : (MonoidHom.ker χ) →* Multiplicative (ZMod (ll ^ nk)) :=
+    cst.comp ψ with hψ'
+  -- its kernel, pushed forward to `Γℚ`; it contains `N`
+  set N' : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    Subgroup.map (MonoidHom.ker χ).subtype ψ'.ker with hN'
+  have hNle : N ≤ N' := by
+    intro g hg
+    have hgk : g ∈ MonoidHom.ker χ := MonoidHom.mem_ker.mpr (hNker g hg)
+    refine (mem_map_ker_char_iff ψ' (⟨g, hgk⟩ : MonoidHom.ker χ)).mpr ?_
+    rw [hψ', MonoidHom.comp_apply, hψN ⟨g, hgk⟩ hg, map_one]
+  have hN'ker : ∀ z ∈ N', χ z = 1 := by
+    rintro z ⟨w, -, rfl⟩
+    exact MonoidHom.mem_ker.mp w.2
+  have hres := prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar
+    (p := p) χ hχcyc CF ι frobIdeal hfrob N'
+    (Subgroup.isOpen_mono hNle hNopen) hN'ker
+    (fun ℓ hℓ n σ hn hχn => hNle (hNinert ℓ hℓ n σ hn hχn))
+    (fun a b ha hb => hNle (hNab a b ha hb))
+    ll hll nk ψ'
+    (fun y hy => (mem_map_ker_char_iff ψ' y).mp hy)
+    (fun y hy => (mem_map_ker_char_iff ψ' y).mpr hy)
+    L hL hprin
+  have hx1 := (mem_map_ker_char_iff ψ' x).mp hres
+  rw [hψ', MonoidHom.comp_apply] at hx1
+  simpa [hcst] using congrArg Multiplicative.toAdd hx1
 
 /-- **ARTIN RECIPROCITY, PRODUCT FORM: a product of degree-one Frobenius
 elements whose ideal product is PRINCIPAL lies in `N`** (E3c support leaf
