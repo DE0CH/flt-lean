@@ -25558,8 +25558,7 @@ under `Fermat/` and each an exact duplicate of a live sibling:
 Recover any of them with `git show <this commit>^:Fermat/FLT/ModularCurve/X0.lean`.
 
 **What is LEFT here, and its status.**  `galSMulHom` is ALIVE — the
-prime-case assembly uses it for `map_nsmul` and `map_sub`.  The other
-two are DEAD BY THE SAME TEST and were deliberately NOT deleted:
+prime-case assembly uses it for `map_nsmul` and `map_sub`.
 
 * `galSMul_eq_galSMulHom` — no consumer, but it is one-line glue for the
   live `galSMulHom` and plausibly wanted by whoever finishes the leaf
@@ -25568,8 +25567,8 @@ two are DEAD BY THE SAME TEST and were deliberately NOT deleted:
 * `exists_relPoint_of_galSMul_fixed` — a `sorry` leaf with NO consumer,
   superseded by `exists_ratPoint_of_galoisInvariant` (PROVEN below over
   the hypothesis-free `exists_comp_specAlgClos_eq_of_galoisInvariant`).
-  **Proving it moves nothing.**  It has a separate owner, which is why
-  it is reported rather than removed here.
+  Its own owner reached the same verdict independently and **DELETED it
+  on 2026-07-28**; the deletion note stands where it was.
 
 Same test, same verdict, in another file:
 `Fermat.finite_quotient_nsmul_of_kummerCochains` in
@@ -25600,49 +25599,28 @@ theorem galSMul_eq_galSMulHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     ab.galSMul (𝟙 SpecQ) σ y = galSMulHom ab σ y :=
   ab.galSMul_def (𝟙 SpecQ) σ y
 
-/-- **Galois descent for points of `A`: a `Γ_ℚ`-invariant `ℚ̄`-point comes
-from a `ℚ`-point** (sorry leaf, introduced 2026-07-27) — the surjective
-half of `A(ℚ) = A(ℚ̄)^{Γ_ℚ}`.
-
-TRUE, and it is the standard Galois descent for points of a scheme over a
-field: for *any* `ℚ`-scheme `J`, `J(ℚ̄)^{Γ_ℚ} = J(ℚ)`.  No properness, no
-smoothness, no group law and no finiteness is used, which is why `ab`
-does not appear in the statement — only `jstr` does.
-
-**THE PROOF, which is elementary and does not need fpqc descent.**  Let
-`y : Spec ℚ̄ ⟶ J` be invariant and let `x ∈ J` be the image of the unique
-point of `Spec ℚ̄`.  Pick an affine open `U ∋ x`; then `y` corresponds to
-a ring map `φ : 𝒪_J(U) → ℚ̄`, and invariance says `σ ∘ φ = φ` for every
-`σ ∈ Γ_ℚ`.  So the image of `φ` lies in the fixed field
-`(ℚ̄)^{Γ_ℚ} = ℚ` — the equality is where `ℚ` being perfect enters, and at
-this pin it is `IsGalois` / `FixedPoints` for `AlgebraicClosure ℚ` — and
-`φ` therefore factors as `𝒪_J(U) → ℚ ↪ ℚ̄`.  The induced
-`P : Spec ℚ ⟶ U ⟶ J` satisfies `specAlgClos ℚ ≫ P = y`.
-
-**The relative-point side condition is FREE.**  `P` must satisfy
-`P ≫ jstr = 𝟙 SpecQ`, and that is automatic: `subsingleton_hom_specQ`
-(above in this file) says `X ⟶ SpecQ` is a subsingleton, because `ℚ` is
-an epimorphism out of `ℤ` in `CommRingCat`.  So the whole content is the
-factorisation of the underlying morphism.
-
-**Not vacuous, and the hypothesis is load-bearing.**  Dropping `hy` makes
-the statement FALSE as soon as `J` has a `ℚ̄`-point that is not defined
-over `ℚ` — e.g. `J = Spec ℚ[t]/(t² - 2)` over `ℚ`, whose two `ℚ̄`-points
-are swapped by `Γ_ℚ` and neither of which descends.  Quantifying `σ` over
-all of `Γ_ℚ` rather than over a subgroup is likewise essential: a point
-invariant only under `Gal(ℚ̄/L)` descends to `L`, not to `ℚ`.
-
-**MISSING MACHINERY:** the passage between a morphism into a scheme and
-the ring map on an affine open containing the image point
-(`Scheme.Hom.appLE` and `IsAffineOpen.fromSpec` bookkeeping), plus
-`(ℚ̄)^{Γ_ℚ} = ℚ`.  Both exist at this pin; nothing here is a theory
-build. -/
-theorem exists_relPoint_of_galSMul_fixed {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
-    (hy : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
-    ∃ P : RelPoint jstr (𝟙 SpecQ),
-      RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P = y :=
-  sorry
+-- (`exists_relPoint_of_galSMul_fixed` — "a `Γ_ℚ`-invariant `ℚ̄`-point of `A` comes from
+-- a `ℚ`-point", the surjective half of `A(ℚ) = A(ℚ̄)^{Γ_ℚ}` — used to be a sorry leaf HERE.
+-- DELETED 2026-07-28 as a DEAD DUPLICATE, not proven.  Its docstring's verdict was right —
+-- elementary, no new theory — and the release of the same day acted on it in the NEW cut
+-- below rather than here: `exists_comp_specAlgClos_eq_of_galoisInvariant` is that argument
+-- at an arbitrary scheme over an arbitrary perfect field (strictly stronger, `Type u`,
+-- and it needs no hypothesis on `X` at all), and `exists_ratPoint_of_galoisInvariant` is
+-- its `ℚ`-level specialisation.  That specialisation is the SAME PROPOSITION as this leaf,
+-- not merely an analogue: `ratToGeom jstr P` is *by definition*
+-- `RelPoint.pre (specAlgClos ℚ) rfl P`, and the binders `ab`, `y`, `hy` agree on the nose.
+--
+-- So this declaration had become a second, sorried copy of a released theorem, with ZERO
+-- consumers anywhere in the tree — the Kummer assembly below was rewired onto `ratToGeom`
+-- in the same release.  Proving it would have added a third copy of the residue-field
+-- descent argument (a fourth counting `X1.lean`'s `exists_specSection_of_specGal_invariant`)
+-- purely to keep a floating declaration alive.  Cite
+-- `exists_ratPoint_of_galoisInvariant` instead.
+--
+-- The route note it carried was also wrong in a way worth keeping: it prescribed
+-- `Scheme.Hom.appLE` / `IsAffineOpen.fromSpec` bookkeeping on an affine open containing the
+-- image point.  No affine open is needed — `Scheme.SpecToEquivOfField` hands over the
+-- factorisation through the RESIDUE FIELD directly, which is what both surviving proofs use.
 
 
 /-! ### Weak Mordell–Weil at a prime: the Kummer cut
