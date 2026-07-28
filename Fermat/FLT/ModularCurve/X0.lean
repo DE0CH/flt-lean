@@ -42912,9 +42912,132 @@ theorem exists_goodAbelianReduction_of_abelianQuotient (ℓ : ℕ) (R : Subring 
     HasGoodAbelianReductionAtBase ℓ R toF abB :=
   sorry
 
+/-- **YONEDA for a natural family of relative points: it is
+postcomposition with a single morphism** (PROVEN 2026-07-28, over an
+ARBITRARY base — no modular curves, no reduction base, no abelian
+scheme, and nothing about `S` at all).
+
+`c` assigns to every relative point of `strX` a relative point of `astr`
+over the SAME base point, naturally in the test scheme.  Evaluate at the
+universal point — `T = X`, `g = strX`, `x = 𝟙 X` — to get a morphism
+`u : X ⟶ A` over `S`; naturality along `x.1 : T ⟶ X` then recovers `c`
+from `u`, because `RelPoint.pre x.1 x.2 ⟨𝟙 X⟩` *is* `x` (up to
+`Category.comp_id`).
+
+This is the exact analogue, for a family of MAPS, of what
+`IsFibreIdent.apply_eq_comp` is for a family of EQUIVALENCES.  It is what
+takes the family `c` out of `exists_abelianSpread_of_neronModel` below,
+leaving that node's residue as pure geometry.
+
+Note the direction: nothing here needs `astr` to be an abelian scheme,
+or `strX` to be a curve.  It is Yoneda for the two representable functors
+involved, exactly as `apply_eq_comp` is. -/
+theorem exists_hom_of_relPointNatural {X A S : Scheme.{0}} {strX : X ⟶ S} {astr : A ⟶ S}
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ S), RelPoint strX g → RelPoint astr g)
+    (hcnat : ∀ (T' T : Scheme.{0}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S)
+        (hg : h ≫ g = g') (x : RelPoint strX g),
+      c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) :
+    ∃ (u : X ⟶ A) (hu : u ≫ astr = strX),
+      ∀ (T : Scheme.{0}) (g : T ⟶ S) (x : RelPoint strX g),
+        c T g x = RelPoint.post u hu x := by
+  refine ⟨(c X strX ⟨𝟙 X, Category.id_comp strX⟩).1,
+    (c X strX ⟨𝟙 X, Category.id_comp strX⟩).2, fun T g x => ?_⟩
+  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX) = x :=
+    Subtype.ext (Category.comp_id x.1)
+  have hnat := hcnat T X x.1 strX g x.2 (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX)
+  rw [hx] at hnat
+  rw [hnat]
+  rfl
+
+/-- **THE NÉRON MAPPING PROPERTY, as an equation between two morphisms
+of schemes** (sorry leaf, 2026-07-28) — LEVEL-GENERIC, and now free of
+every functor-of-points family: this is the textbook statement and
+nothing else.
+
+TRUE.  `𝒜 = AZ ⟶ Spec R` is an abelian scheme over a discrete valuation
+ring, hence the NÉRON MODEL of its generic fibre `A`
+(Bosch–Lütkebohmert–Raynaud, *Néron Models*, 1.2/8: an abelian scheme
+over a Dedekind base is the Néron model of its generic fibre — it is
+smooth, separated and of finite type, and the mapping property follows
+from the Weil extension theorem 4.4/1).  `𝒳 = XZ ⟶ Spec R` is smooth, so
+the Néron mapping property applied to the `ℚ`-morphism `u : X ⟶ A`
+produces a unique `R`-morphism `uZ : 𝒳 ⟶ 𝒜` restricting to `u` on the
+generic fibre.
+
+**How "restricting to `u`" is said here, and why it is the right
+statement.**  `genX.universalPoint.1 : X ⟶ XZ` and
+`genA.universalPoint.1 : A ⟶ AZ` are the inclusions of the generic
+fibres — the identity of the fibre read through the identification
+(`IsFibreIdent.universalPoint`, Yoneda in one line), and by
+`IsFibreIdent.compareIso` they exhibit `X ≅ XZ ×_R ℚ` and `A ≅ AZ ×_R ℚ`
+over `Spec ℚ`.  So `u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ`
+is literally the commuting square that says `uZ|_ℚ = u`.  Only
+UNIQUENESS is dropped, because the consumer does not need it.
+
+**Only SMOOTHNESS of `xstr` is used.**  `IsSmoothProperCurve` is what the
+curve model hands over (`⟨cm.model.isProper, cm.model.smooth,
+cm.model.connected⟩`), so it is taken whole; properness and connectedness
+of the fibres are inert here, and weakening the hypothesis would buy
+nothing.  `hbase` is what makes `R` a discrete valuation ring with
+fraction field `ℚ` — see the discussion under
+`bijective_pre_generic_of_isProper` — so the statement really is the
+classical one over a DVR and not one about an arbitrary subring of `ℚ`.
+
+**CUT-OBSTRUCTION AUDIT (2026-07-28), and the axis it searched.**  The
+axis that WAS searched, and successfully, is the functor-of-points axis:
+`exists_hom_of_relPointNatural` above and `IsFibreIdent.apply_eq_comp`
+between them remove `c`, `cZ`, both naturality clauses and both fibre
+identifications from the residue, which is why this leaf is an equation
+between two composites of morphisms rather than a statement about
+families.  That is the whole of the reduction, and
+`exists_abelianSpread_of_neronModel` below is now PROVEN from it.
+
+The axis NOT searched to a conclusion is BLR's own two-step proof, which
+would split this leaf again into (i) *the rational map `𝒳 ⇢ 𝒜` is defined
+at every point of codimension `≤ 1`* — true at the generic point of the
+special fibre because `𝒪_{𝒳,η}` is a discrete valuation ring (`𝒳` is
+regular, being smooth over a DVR) and `𝒜` is proper, so the valuative
+criterion applies — and (ii) *Weil's extension theorem* (BLR 4.4/1: an
+`S`-rational map from a smooth `S`-scheme to a smooth separated
+`S`-group scheme defined in codimension `≤ 1` is defined everywhere).
+
+**The checks that would refute the verdict that (i)/(ii) are not worth
+cutting here**, in the order they should be run.  The pin *does* carry
+`AlgebraicGeometry.Scheme.RationalMap` with `PartialMap`, `domain`,
+`fromSpecStalkOfMem` and `ofFromSpecStalk`
+(`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`), so the first
+half of the objection — "rational maps cannot be phrased at this pin" —
+is FALSE and must not be repeated.  What is missing is narrower and
+concrete: (a) `SpecLoc.generic R` is not known here to be an OPEN
+immersion, which is what would present `X` as an open subscheme of `XZ`
+rather than merely as a fibre (it *is* one — the generic point of the
+spectrum of a DVR is open — but nothing in this development says so);
+(b) there is no codimension predicate on points of a scheme in use
+anywhere in this project; and (c) Weil's extension theorem is in neither
+mathlib nor `~/cs/FLT`.  Whoever closes (a) should re-run this audit:
+with `X` an open subscheme of `XZ`, `u` becomes a `PartialMap` in one
+line and the two-leaf split becomes writable.
+
+**The check that refutes the LEAF**: a smooth `R`-scheme `𝒳` and an
+abelian scheme `𝒜` over `R` with a morphism `𝒳_ℚ ⟶ 𝒜_ℚ` not extending
+over `R` — which would contradict `𝒜` being a Néron model. -/
+theorem exists_neronExtension_of_abelianScheme (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
+    {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
+    (hcurve : IsSmoothProperCurve xstr)
+    {astr : A ⟶ SpecQ} {astrZ : AZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct astrZ)
+    (genX : IsFibreIdent (SpecLoc.generic R) xstr strX)
+    (genA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
+    (u : X ⟶ A) (hu : u ≫ astr = strX) :
+    ∃ uZ : XZ ⟶ AZ, uZ ≫ astrZ = xstr ∧
+      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ :=
+  sorry
+
 /-- **The Néron mapping property: a morphism from the generic fibre of a
 smooth proper model into an abelian variety with good reduction spreads
-out over the base** (sorry leaf, 2026-07-27) — LEVEL-GENERIC, no modular
+out over the base** (PROVEN by decomposition 2026-07-28, over
+`exists_hom_of_relPointNatural` and `exists_neronExtension_of_abelianScheme`
+above; a single sorry leaf from 2026-07-27) — LEVEL-GENERIC, no modular
 curves anywhere in it.
 
 TRUE.  By Yoneda a natural family `c` on relative points over `SpecQ` is
@@ -42939,6 +43062,25 @@ then `Equiv.apply_symm_apply`.  That reduction is carried out in
 `exists_x0AbelianNeronDatum_oneSixtyNine` below, which is why this leaf
 is stated for the generic fibre alone.
 
+**HOW THE ASSEMBLY RUNS**, now that the route above is two statements.
+Both halves of the paragraph "By Yoneda … restricting to `u`" are now
+declarations rather than prose:
+
+* `exists_hom_of_relPointNatural` turns `(c, hcnat)` into `u : X ⟶ A`
+  with `c T g x = RelPoint.post u hu x` — this is the *whole* of the
+  Yoneda step, and it is proven over an arbitrary base;
+* `exists_neronExtension_of_abelianScheme` is the geometry, and returns
+  `uZ` together with the single commuting square
+  `u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ`;
+* `cZ := RelPoint.post uZ` is then natural for free — `cZ_pre` is
+  `Category.assoc` and nothing else — and `genX_c` is the square
+  precomposed with `x.1`, read through `IsFibreIdent.apply_eq_comp`,
+  which says every value of a fibre identification is composition with
+  its universal point.
+
+So no naturality bookkeeping survives into the leaf: the residue is an
+equation between two composites of scheme morphisms.
+
 **The check that refutes it**: a smooth `R`-scheme `𝒳` and an abelian
 scheme `𝒜` over `R` with a morphism `𝒳_ℚ ⟶ 𝒜_ℚ` not extending over `R`
 — which would contradict `𝒜` being a Néron model. -/
@@ -42959,8 +43101,28 @@ theorem exists_abelianSpread_of_neronModel (ℓ : ℕ) (R : Subring ℚ) (toF : 
         cZ T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (cZ T g x)) ∧
       (∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
           (h : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
-        genA.toEquiv g g₀ h (c T g x) = cZ T g₀ (genX.toEquiv g g₀ h x)) :=
-  sorry
+        genA.toEquiv g g₀ h (c T g x) = cZ T g₀ (genX.toEquiv g g₀ h x)) := by
+  -- Yoneda: the natural family `c` is postcomposition with a single `u : X ⟶ A`
+  obtain ⟨u, hu, hc⟩ := exists_hom_of_relPointNatural c hcnat
+  -- the geometry: `u` spreads out to `uZ : XZ ⟶ AZ` over the base
+  obtain ⟨uZ, huZ, hcomp⟩ :=
+    exists_neronExtension_of_abelianScheme ℓ R toF hbase hcurve abZ genX genA u hu
+  refine ⟨fun T g x => RelPoint.post uZ huZ x, ?_, ?_⟩
+  · -- `cZ_pre` is associativity of composition
+    intro T' T h g g' hg x
+    exact Subtype.ext (Category.assoc _ _ _)
+  · -- `genX_c` is the commuting square precomposed with `x.1`
+    intro T g g₀ hgen x
+    refine Subtype.ext ?_
+    have e1 : (genA.toEquiv g g₀ hgen (c T g x)).1
+        = (x.1 ≫ u) ≫ genA.universalPoint.1 := by
+      rw [genA.apply_eq_comp, hc]
+      rfl
+    have e2 : (RelPoint.post uZ huZ (genX.toEquiv g g₀ hgen x)).1
+        = (x.1 ≫ genX.universalPoint.1) ≫ uZ := by
+      show (genX.toEquiv g g₀ hgen x).1 ≫ uZ = _
+      rw [genX.apply_eq_comp]
+    rw [e1, e2, Category.assoc, Category.assoc, hcomp]
 
 /-- **The rank-`0` abelian image of `X_0(169)` has GOOD REDUCTION away from
 `169`, and its Néron datum exists at every odd `ℓ ∤ 169`** (PROVEN by
