@@ -11099,10 +11099,10 @@ theorem eq_zero_of_smul_eq_zero_of_isUnit_fin_two {R M : Type*} [CommRing R]
   have h3 := congrArg (fun v => b.repr v 0) h2
   simpa using h3
 
-/-- **The Frobenius characteristic equation on points** (sorry leaf, opened
-2026-07-27 by decomposing `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed`
-below, of which it is the ENTIRE remaining content): on `Wbar(𝔽̄_q)` the
-`q`-power Frobenius satisfies
+/-- **The Frobenius characteristic equation on points** (PROVEN 2026-07-28 over
+`HasseBound.charEquation_frobeniusPointEnd`; opened 2026-07-27 by decomposing
+`det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` below, of which it is the
+ENTIRE remaining content): on `Wbar(𝔽̄_q)` the `q`-power Frobenius satisfies
 
     F² P = a • F P − q • P     for every point `P`,  with  `a = q + 1 − #Wbar(𝔽_q)`.
 
@@ -11162,7 +11162,27 @@ its whole `End` layer carries `[CharZero F]`, and its constant term is
 `Isogeny.degree`, i.e. `Nat.card (ker ·)`, which is `1` for Frobenius rather than
 `q`. THE AXIS SEARCHED was this development's isogeny, isogeny-trace and
 Weil-pairing developments by binder (`CharZero`, `Fact p.Prime`) and by name,
-plus `EllipticCurve/HasseBound.lean` as it stands on 2026-07-27. -/
+plus `EllipticCurve/HasseBound.lean` as it stands on 2026-07-27.
+
+WHERE THE CONTENT NOW LIVES (2026-07-28).  This declaration is no longer a leaf.
+A proof stated HERE is unusable by the cluster that shares the same step: this
+module `public import`s `EllipticCurve/HasseBound.lean`, so
+`HasseBound.exists_natCard_ker_degreeFormEnd` — which needs the very same
+characteristic equation as step 1 of its endomorphism-algebra route — is strictly
+UPSTREAM and cannot consume anything declared here.  The equation is therefore
+stated and pinned in `HasseBound.lean`, and this declaration is
+`HasseBound.charEquation_frobeniusPointEnd` verbatim (`HasseBound.frobeniusPointEnd`
+is `Affine.Point.map (frobAlgHom q)` by definition).
+
+The three open leaves under it are all in `HasseBound.lean`:
+`exists_sq_frobeniusPointEnd` (the ring identity `∃ c, F² = c·F − q`, the shared
+step 1), `natCard_ker_degreeFormEnd_le` and `natCard_ker_degreeFormEnd_of_dvd`
+(the two halves of the separation step, which are what NAME the coefficient).
+Read their audits before attacking this cluster.  In particular, naming the
+coefficient is NOT free given `natCard_ker_one_sub_frobeniusPointEnd`: that
+theorem is the first equality of
+`#Wbar(𝔽_q) = #ker([1] − F) = deg([1] − F) = 1 − c + q`, and the missing one is
+the separability, carried by the two degree-form leaves. -/
 theorem charEquation_point_map_frobAlgHom (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
@@ -11172,7 +11192,7 @@ theorem charEquation_point_map_frobAlgHom (q : ℕ) [Fact q.Prime]
       = HasseBound.frobeniusTrace q Wbar •
           WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
             (WeilPairing.frobAlgHom q) P - (q : ℤ) • P :=
-  sorry
+  HasseBound.charEquation_frobeniusPointEnd q Wbar P
 
 /-- **The characteristic equation on the `N`-torsion** (PROVEN 2026-07-27 over
 `charEquation_point_map_frobAlgHom` above): the same identity, read in
