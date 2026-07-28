@@ -17621,7 +17621,13 @@ all the structure below available as hypotheses.
    because `S` is finite over a local ring.)
 4. *Assembly.*  Pick `b` over `ρ⁻¹` and set `μ₀ = 1 − r·b ∈ I`.  For `u ∈ I`,
    `u = b·(r·u) + u·μ₀ ∈ (g) + (μ₀)`.  Finally `μ₀ ∈ I ≤ (g) + 𝔪R[x]` lets `μ₀` be
-   corrected by an element of `(g)` into `𝔪R[x]` without changing the sup. -/
+   corrected by an element of `(g)` into `𝔪R[x]` without changing the sup.
+
+The conclusion also carries `μ² − μ ∈ (g)`, i.e. `μ` is IDEMPOTENT modulo the `gᵢ`:
+`μ₀(μ₀ − 1) = −b·(r·μ₀)` and `r·I ≤ (g)`, and correcting `μ₀` by an element of `(g)`
+preserves it.  That clause is not decoration — it is what makes `R[x]/(g) ≅ S × B₂` a
+usable splitting downstream, and it is NOT recoverable from the other clauses, since a
+generator of an idempotent-generated ideal need not be idempotent. -/
 theorem exists_mem_ker_span_range_sup_span_singleton_eq_ker
     {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     {S : Type*} [CommRing S] [Algebra R S] [Module.Flat R S] [Module.Finite R S]
@@ -17631,6 +17637,7 @@ theorem exists_mem_ker_span_range_sup_span_singleton_eq_ker
       (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring)) :
     ∃ μ : P.Ring, μ ∈ P.ker ∧
       μ ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
+      μ * μ - μ ∈ Ideal.span (Set.range g) ∧
       Ideal.span (Set.range g) ⊔ Ideal.span {μ} = P.ker ∧
       ∃ r : P.Ring, r - 1 ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
         ∀ u ∈ P.ker, r * u ∈ Ideal.span (Set.range g) := by
@@ -17773,13 +17780,22 @@ theorem exists_mem_ker_span_range_sup_span_singleton_eq_ker
       have hsplit : u = b * (r * u) + u * μ₀ := by rw [hμ₀def]; ring
       rw [hsplit]
       exact Submodule.add_mem_sup hru hmu
+  -- `μ₀` is IDEMPOTENT modulo `J`, since `μ₀ · (μ₀ - 1) = -b · (r · μ₀)` and `r · P.ker ≤ J`
+  have hμ₀idem : μ₀ * μ₀ - μ₀ ∈ J := by
+    have hrw : μ₀ * μ₀ - μ₀ = -(b * (r * μ₀)) := by rw [hμ₀def]; ring
+    rw [hrw]
+    exact neg_mem (Ideal.mul_mem_left _ _ (hrker μ₀ hμ₀ker))
   -- STEP 6 : correct `μ₀` into `𝔪·A`
   obtain ⟨j, hj, m₁, hm₁, hjm₁⟩ := Submodule.mem_sup.mp (hgmod hμ₀ker)
   have hm₁sub : m₁ = μ₀ - j := by rw [← hjm₁]; ring
   have hm₁ker : m₁ ∈ P.ker := by
     rw [hm₁sub]
     exact Ideal.sub_mem _ hμ₀ker (hgle hj)
-  refine ⟨m₁, hm₁ker, hm₁, ?_, r, hr1, hrker⟩
+  have hm₁idem : m₁ * m₁ - m₁ ∈ J := by
+    have hrw : m₁ * m₁ - m₁ = (μ₀ * μ₀ - μ₀) + j * (j - 2 * μ₀ + 1) := by rw [hm₁sub]; ring
+    rw [hrw]
+    exact Ideal.add_mem _ hμ₀idem (Ideal.mul_mem_right _ _ hj)
+  refine ⟨m₁, hm₁ker, hm₁, hm₁idem, ?_, r, hr1, hrker⟩
   rw [← hsup₀]
   apply le_antisymm
   · refine sup_le le_sup_left (Ideal.span_le.mpr ?_)
@@ -17823,10 +17839,55 @@ zero locus acquires a fresh parasitic point `x = 8/3` outside `V((g))` entirely.
 successor taking this route must check the zero locus of `span f` in `Spec R[x]`, not in
 `Spec (R[x]/(g))`.
 
+**THE CRITERION THAT REDUCES THE WHOLE LEAF TO ONE IDEAL MEMBERSHIP** (derived 2026-07-28;
+the identity is three lines and should be checked before anything else is attempted).
+
+`μ` is IDEMPOTENT MODULO `(g)` — that is the hypothesis `hμidem`, and it is **supplied**
+rather than derivable here, which is worth knowing: `hsup` only says that `μ` GENERATES
+the ideal `M := I/(g)` of `B := R[x]/(g)`, and a generator of an idempotent-generated
+ideal need not itself be idempotent (`B = ℤ₃ × ℚ₃`, `M = 0 × ℚ₃`, `μ = (0,2)`).  What the
+lemma above actually produces is `μ = 1 − r·b` corrected by an element of `(g)`, and for
+THAT element `μ(μ − 1) = −b·(r·μ) ∈ (g)` because `r·I ≤ (g)`.
+
+With `hμidem` in hand the structure is immediate: writing `m` for the image of `μ`,
+`m² = m`, `M = m·B` (every `x ∈ M` is `x·m`, since `x = x(rb + μ)` and `r` annihilates
+`M`), so `B ≅ S × B₂` with `B₂ := m·B`; and `μ ∈ 𝔪R[x]` forces `𝔪·B₂ = B₂`, i.e. `B₂` is
+the parasitic factor living entirely off the closed fibre.
+
+Now write `μ − μ² = Σᵢ cᵢ gᵢ` (possible, that being `hμidem`).  **If `μ ∈ (c₁,…,c_n)` then the
+leaf closes.**  Choose `λ` with `Σᵢ cᵢ λᵢ = μ` and set `fᵢ := gᵢ + μ·λᵢ`.  Then
+
+    Σᵢ cᵢ fᵢ  =  Σᵢ cᵢ gᵢ  +  μ · Σᵢ cᵢ λᵢ  =  (μ − μ²) + μ·μ  =  μ,
+
+so `μ ∈ span f`; hence `gᵢ = fᵢ − μλᵢ ∈ span f`; hence `span f = (g) ⊔ (μ) = P.ker`.
+
+**AND THE MEMBERSHIP GENUINELY CAN FAIL, so this is a criterion and not yet a proof.**
+`R = S = ℤ₃`, `n = 1`, `I = (x)`, `g = x` — so `(g) = I` already.  Here `r = 1+3x`
+satisfies both `r ≡ 1 (mod 3·ℤ₃[x])` and `r·I ≤ (g)` and is a legitimate Nakayama output;
+it gives `μ = 1 − r = −3x` and `c = −3(1+3x)`, and `−3x ∉ (3(1+3x))`.  The leaf is of
+course trivial there (`f = g`), and the general framework says exactly why: what is really
+needed is a `u` and a representation
+
+    Σᵢ cᵢ gᵢ  =  μ · (1 − u)      with      u ∈ (c₁,…,c_n),
+
+after which the same computation gives `Σ cᵢ fᵢ = μ` for any `λ` with `Σ cᵢ λᵢ = u`.  The
+ONLY constraint on `u` is `m·ū = m` in `B`, i.e. `u ≡ 1` on `B₂`.  Taking `u = μ` is what
+produces the displayed criterion; `u = 0` is legitimate precisely when `B₂ = 0`, which is
+that example.  Note also that `c` is determined only modulo `Syz(g)`, which is further
+freedom — empty in the `n = 1` example above, `ℤ₃[x]` being a domain, which is why the
+membership is genuinely unavailable there rather than merely awkward.
+
+**So the sharpest statement of what is left**: exhibit `u` with `m·ū = m` together with a
+representation `Σᵢ cᵢ gᵢ = μ(1 − u)` having `u ∈ (c)`.  That is a statement about ONE ideal
+membership in `R[x]`, with `S`, `B₂` and the idempotent all under explicit control.
+
 **AXIS SEARCHED (2026-07-28)**: reduction of the leaf to a generator COUNT (done — see the
 lemma above, which shows `n+1` always suffice with no completeness hypothesis, so nothing
-in the leaf is about existence and everything is about the count), and the rank-one update
-`f = g + μ·λ` (the trap above is the obstruction found).  NOT searched: the route through
+in the leaf is about existence and everything is about the count); the rank-one update
+`f = g + μ·λ` (the trap above is the obstruction found, and the `u`-criterion is what
+survives it); and the idempotent splitting `B ≅ S × B₂` (done, and recorded above — it is
+cheap and should not be re-derived).  `IsAdicComplete` is still UNUSED by everything above.
+NOT searched: the route through
 the local factors of `S` (`R` henselian ⟹ `S = ∏ Sⱼ` with `Sⱼ` local), which is what the
 literature takes and is the reason `IsAdicComplete` is retained here.  A successor who
 closes this without completeness should delete that hypothesis rather than leave it
@@ -17839,6 +17900,7 @@ theorem exists_span_range_eq_ker_of_span_sup_span_singleton
     (hgle : Ideal.span (Set.range g) ≤ P.ker)
     (μ : P.Ring) (hμker : μ ∈ P.ker)
     (hμm : μ ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
+    (hμidem : μ * μ - μ ∈ Ideal.span (Set.range g))
     (hsup : Ideal.span (Set.range g) ⊔ Ideal.span {μ} = P.ker)
     (r : P.Ring) (hr : r - 1 ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
     (hrker : ∀ u ∈ P.ker, r * u ∈ Ideal.span (Set.range g)) :
@@ -17930,10 +17992,11 @@ theorem exists_span_range_le_ker_module_finite_of_span_range_le_ker
       P.ker ≤ Ideal.span (Set.range f) ⊔
         (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
       Module.Finite R (P.Ring ⧸ Ideal.span (Set.range f)) := by
-  obtain ⟨μ, hμker, hμm, hsup, r, hr, hrker⟩ :=
+  obtain ⟨μ, hμker, hμm, hμidem, hsup, r, hr, hrker⟩ :=
     exists_mem_ker_span_range_sup_span_singleton_eq_ker P g hgle hgmod
   obtain ⟨f, hf⟩ :=
-    exists_span_range_eq_ker_of_span_sup_span_singleton P g hgle μ hμker hμm hsup r hr hrker
+    exists_span_range_eq_ker_of_span_sup_span_singleton P g hgle μ hμker hμm hμidem hsup r hr
+      hrker
   refine ⟨f, hf.le, ?_, ?_⟩
   · rw [hf]; exact le_sup_left
   · rw [hf]
@@ -49998,7 +50061,28 @@ included — together with a `χ` and an `mm₀` divisible by every ramified pri
 which EVERY nonzero multiple `mm` of `mm₀` with `supp mm ⊆ supp mm₀` admits `φ`,
 `d`, `Im`, `P`, `N` satisfying the pinning clauses with
 `(P ⊔ N).relIndex Im < A.relIndex Im`. Both refutations above are of exactly this
-shape, and both were possible only because `mm₀` could omit a ramified prime. -/
+shape, and both were possible only because `mm₀` could omit a ramified prime.
+
+**AUDIT RE-RUN 2026-07-28 AGAINST THE CURRENT STATEMENT — the SECOND audit above IS the
+current one, not a void inherited one.** CLAUDE.md's standing rule is that a leaf restated
+a second time voids its earlier audit, so this was checked rather than assumed:
+`hmm₀ram` is present in the signature exactly as the second audit prescribes; `ee8055e4`
+is the last commit to touch either that hypothesis or the conclusion, so there has been no
+THIRD restatement; and the consumer `exists_artinDivisorPackage_ray_class` discharges it
+with literally `fun w hw => (hmm₀iff w).mpr hw`, i.e. the `mpr` of the iff it was already
+holding — exactly as the audit predicted, so the package's statement is unchanged. The
+refutation check named just above was re-run and produced nothing.
+
+**ONE THING THE REPAIR DID *NOT* DO, and a successor will guess otherwise: `hmm₀ram` does
+NOT force `mm ≠ ⊤`.** It excludes an `mm₀` that MISSES a ramified prime; when `χ` is
+unramified at every finite place the hypothesis is VACUOUS, so `mm₀ = ⊤` remains
+admissible and the support clause then forces `mm = ⊤`, `Im = ⊤`, and `P` = the narrow
+principal divisors. The leaf is still TRUE on that branch — it reads
+`#φ(Im) ≤ [Cl⁺(F) : image of N]`, the First Inequality for the χ-part of the narrow class
+group, and `Cl⁺(F)` is finite — but a proof that assumes some prime divides `mm` is wrong
+on it, and neither `ℚ(i)` counterexample above rules the branch out, both having `χ`
+ramified at `2`. Over `F = ℚ` the branch is empty (no unramified abelian extension); over
+a field with `h⁺ > 1` it is not. -/
 theorem exists_artinDivisorNormIndex_le_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
