@@ -12543,11 +12543,269 @@ theorem exists_frobLevelMatrix_of_levelTateFrame
   rw [LinearMap.toMatrix'_mulVec]
   exact (hg u).symm
 
+/-! #### The prime-to-`p` torsion count over a finite field
+
+`exists_levelTateFrame_finiteBase` below is **PROVEN (2026-07-28)** by
+the same assembly that proves `exists_levelTateFrame` in characteristic
+zero, over the three geometric leaves stated in this subsection.  What
+follows records the cut and why it is the right one.
+
+**WHAT WAS REUSED, VERBATIM.**  Everything about a single-level frame
+that is *module theory over `𝒪_D`* is base-independent, and all of it
+is already proven above:
+
+* `LevelFrame.exists_linearEquiv_tors_pow` — from a uniformizer whose
+  multiplication maps each torsion level onto the previous one, plus the
+  RESIDUAL count `#P[I] = #(𝒪_D/I)²`, it builds the `𝒪_D`-linear
+  equivalence `(𝒪_D/Iⁿ)² ≃ P[Iⁿ]` at every level `n`.  It is stated for
+  an arbitrary `𝒪_D`-module `P`; nothing in it knows about schemes.
+* `exists_mem_torsion_act_uniformizer_eq` — the surjectivity of `·π`
+  from `A[Iⁿ⁺¹]` onto `A[Iⁿ]`.  Its only geometric input is
+  `exists_nsmul_eq_geomFibrePt`, i.e. surjectivity of `[M]` on geometric
+  points, which is true in EVERY characteristic (`[M]` is an isogeny;
+  inseparability costs nothing for surjectivity on `k̄`-points).  It was
+  generalized to a bare `[Field F]` base on 2026-07-26 and therefore
+  applies here with `F = k` and `x = 𝟙` with no change at all.
+* `LevelFrame.card_tors_eq_sq` — the arithmetic bridge from the count at
+  a rational prime, plus parity and nonvanishing at each maximal ideal
+  above it, to the residual count at a single maximal ideal.
+
+**SO THE WHOLE CHARACTERISTIC-`p` CONTENT IS THE THREE INPUTS OF
+`card_tors_eq_sq`**, and that is exactly the cut made here.  In
+characteristic zero those three are
+`card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal` and
+`card_torsion_ne_one_of_isMaximal`, all three proven from the single
+Betti leaf `exists_bettiFrame`.  **That shortcut is unavailable here** —
+there is no `H₁(A_x, ℤ)` over a finite field — so the three finite-base
+analogues below are stated separately and are genuinely independent.
+
+**WHY A LATTICE-SHAPED SINGLE LEAF WAS NOT USED** (recorded because it
+is the obvious thing to try, and it is circular).  The tempting move is
+to mirror `BettiFrame`: posit a free `ℤ`-module `H` of rank `2g` with
+`#A'[I] = #(H/IH)` for `I` of residue characteristic prime to `#k`, and
+derive parity and nonvanishing from `Module.finrank 𝒪_D H = 2` exactly as
+`BettiFrame.card_torsion_isMaximal` does.  But such an `H` is a `ℤ`-form
+of `T_q A'` as an `𝒪_D ⊗ ℤ_q`-module, and producing one already requires
+knowing that `T_q A'` is free of rank two over `𝒪_D ⊗ ℤ_q` — which is
+the theorem.  In characteristic zero the analogous object is not circular
+only because `H₁(A_x, ℤ)` exists independently, as singular homology.  So
+the honest cut here is the three-input one.
+
+**WHERE THE PRIME-TO-`p` HYPOTHESIS IS AND IS NOT NEEDED.**  It is
+carried by all three leaves, but it is load-bearing in different degrees:
+`card_torsion_span_natCast_finiteBase` is FALSE at `M = p` (the count is
+`p^(rn)` with `r ≤ g` the `p`-rank, and `1` in the supersingular case);
+`card_torsion_ne_one_of_isMaximal_finiteBase` is FALSE at a maximal ideal
+over `p` for a supersingular fibre; parity is probably true at `p` as
+well (`r = 0` is even), and its hypothesis is kept only so that the three
+leaves have one common shape and one common owner. -/
+
+open _root_.NumberField in
+/-- **`#A'[M] = M^(2g)` AT A LEVEL PRIME TO THE CHARACTERISTIC** (sorry
+leaf — Mumford *Abelian Varieties* §6, Milne *Abelian Varieties* §I.7,
+Silverman *AEC* III.6 for the elliptic case).
+
+For `k` finite with `N` elements and `M` a nonzero natural number
+COPRIME TO `N`, the `M`-torsion of the geometric fibre has exactly
+`M^(2g)` points, `g = [D : ℚ]` being the relative dimension (`hdim'`).
+
+Classically: `[M]` is an isogeny of degree `M^(2g)`, and it is SEPARABLE
+— indeed étale — exactly when `M` is prime to the characteristic, so its
+kernel is a reduced group scheme of rank `M^(2g)` and has `M^(2g)`
+geometric points.  This is the finite-base counterpart of
+`card_torsion_span_natCast`, and it is the ONLY one of the three leaves
+of this subsection whose statement is about a rational integer rather
+than about a maximal ideal of `𝒪_D`.
+
+**THE COPRIMALITY IS NOT DECORATION.**  At `M = p = char k` the statement
+is false: `#A'[pⁿ](k̄) = p^(rn)` with `r ≤ g` the `p`-rank of the fibre,
+and `r = 0` — so `A'[pⁿ](k̄) = 0` — precisely in the supersingular case.
+`hfin` and `hN` are what give `Nat.Coprime M N` its meaning: `N = #k` is
+a power of `char k`, so coprimality to `N` says exactly `char k ∤ M`.
+
+WHAT ALREADY EXISTS.  `Modularity/AbelianSchemeIsogeny.lean` presents
+`[M]` as finite locally free (`flat_mulByNat`,
+`finite_preimage_mulByNat`, `surjective_mulByNat`,
+`locallyOfFinitePresentation_mulByNat`).  Missing at this pin are the
+DEGREE of a finite locally free morphism and the ÉTALENESS of `[M]` for
+`M` prime to the characteristic — the latter is the derivative
+computation `d[M] = M · id` on the tangent space at the origin, which is
+invertible exactly when `M` is a unit in `k`.  The real multiplication is
+not used: `Ideal.span {(M : 𝒪_D)}`-torsion IS `M`-torsion, and a
+successor may freely restate this over `ab'` alone. -/
+theorem card_torsion_span_natCast_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (M : ℕ) (hM : M ≠ 0) (hMN : Nat.Coprime M N) :
+    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k)))
+        (Ideal.span {(M : NumberField.RingOfIntegers D)})).1
+      = M ^ (2 * Module.finrank ℚ D) :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE RESIDUAL RANK IS EVEN AT EVERY MAXIMAL IDEAL OF RESIDUE
+CHARACTERISTIC PRIME TO `#k`** (sorry leaf — the Weil pairing attached to
+an `𝒪_D`-linear polarization; Mumford *Abelian Varieties* §16, §20, §23,
+Milne *Abelian Varieties* §I.13).
+
+`#A'[J] = #(𝒪_D/J)^(2r)` for some `r`.  This is the finite-base
+counterpart of `even_dim_torsion_of_isMaximal`, and — unlike that one —
+it CANNOT be routed through a homology lattice; see the subsection note.
+
+THE ARGUMENT.  An `𝒪_D`-linear polarization `λ : A' ⟶ A'^∨` induces,
+through the canonical Weil pairing on `A' × A'^∨`, an `𝒪_D`-bilinear
+ALTERNATING pairing on `A'[J]` — `PolarizationStruct.pairing` together
+with `pairing_add_left`, `pairing_add_right`, `pairing_self` and
+`pairing_act` in `Modularity/AbelianScheme.lean`, all PROVEN there from
+the axioms.  If it is moreover NONDEGENERATE, `A'[J]` is a symplectic
+vector space over the residue field `𝒪_D/J` and has even dimension; the
+mathlib gap that closes that last step is already filled here by
+`even_finrank_of_isAlt_nondegenerate` and
+`exists_card_eq_pow_two_mul_of_isAlt_nondegenerate` above, which
+`LevelFrame.card_tors_eq_sq` also consumes.  What is missing is the
+EXISTENCE of an `𝒪_D`-linear polarization — the same gap the
+characteristic-zero sibling records, where it was dodged via
+`exists_bettiFrame`.
+
+**THE PAIRING IS ONLY AVAILABLE PRIME TO `p`**, which is why `hq`/`hqN`
+are carried: over a finite field the Weil pairing on `A'[J]` is
+nondegenerate exactly when `J` has residue characteristic different from
+`char k` (at `p` the pairing on the — possibly trivial — `p`-torsion
+carries no such information).
+
+`hdim'` is carried for uniformity with the sibling leaf
+`card_torsion_ne_one_of_isMaximal_finiteBase`, where relative dimension
+`0` is an outright counterexample; here it is not needed for TRUTH (`r =
+0` satisfies the conclusion for the trivial fibre) but a prover will
+want it, since the honest route runs through the polarization of a fibre
+of positive dimension.
+
+NOTE ON THE SIBLING SUBTREE.  This leaf and
+`det_frobLevelMatrix_eq_natCast_finiteBase` both want a Weil pairing over
+a finite field, but they want different facts about it — ALTERNATION and
+NONDEGENERACY here, Galois EQUIVARIANCE (the cyclotomic character) there
+— and neither statement mentions the other.  They are expected to share
+infrastructure, not proofs. -/
+theorem even_dim_torsion_of_isMaximal_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
+    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
+    ∃ r, Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1
+      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ (2 * r) :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE RESIDUAL TORSION IS NONTRIVIAL AT EVERY MAXIMAL IDEAL OF
+RESIDUE CHARACTERISTIC PRIME TO `#k`** (sorry leaf — Mumford *Abelian
+Varieties* §6, Milne *Abelian Varieties* §I.7).
+
+`#A'[J] ≠ 1`.  Together with parity and the rational count this is what
+pins the residual rank to exactly `2` inside
+`LevelFrame.card_tors_eq_sq`: the counterexample that parity alone leaves
+standing is `(r_{J₁}, r_{J₂}) = (0, 4)`, and this leaf is what excludes
+the `0`.
+
+THE ARGUMENT.  `A'[q](k̄) ≅ (ℤ/q)^(2g)` for `q ≠ char k` — the same
+separability input as `card_torsion_span_natCast_finiteBase` — and
+`A'[q] = ⨁_{J ∣ q} A'[J^(e_J)]` by CRT, so no summand can vanish once one
+knows the `𝒪_D`-module `A'[q]` is faithful over `𝒪_D/q𝒪_D`.  A prover
+may prefer the direct route: `A'[J] = 0` would make `J` annihilate no
+nonzero point, contradicting the surjectivity of `·π` (the sibling
+`exists_mem_torsion_act_uniformizer_eq`) applied to a nonzero point of
+`A'[J^n]` for large `n`.
+
+**`hdim'` IS LOAD-BEARING AND WITHOUT IT THE STATEMENT IS FALSE.**  This
+is the finite-base copy of the FALSITY REPAIR recorded under
+`card_torsion_ne_one_of_isMaximal`: `AbelianSchemeStruct` asks only for
+proper, smooth and geometrically connected, and the IDENTITY
+`f' = 𝟙 (Spec k)` satisfies all three — an abelian scheme of relative
+dimension `0`.  Its geometric fibres are a single point, so
+`Nat.card (m'.torsion x J).1 = 1` for every `J`, and a `Mult ab' 𝒪_D`
+exists because the endomorphism ring of the trivial group scheme is the
+zero ring.  `hdim'` is what rules that out, and the sole consumer
+(`card_torsion_of_isMaximal_finiteBase` below) already carries it.
+
+**`hqN` IS ALSO LOAD-BEARING**, and this is the finite-base-only half: at
+a maximal ideal `J` over `p = char k` the statement is FALSE for a
+supersingular fibre, where `A'[p](k̄) = 0`. -/
+theorem card_torsion_ne_one_of_isMaximal_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
+    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
+    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1 ≠ 1 :=
+  sorry
+
+open _root_.NumberField in
+/-- **`#A'[I] = #(𝒪_D/I)²` AT A MAXIMAL IDEAL OF RESIDUE CHARACTERISTIC
+PRIME TO `#k`** (PROVEN 2026-07-28 over the three geometric leaves
+`card_torsion_span_natCast_finiteBase`,
+`even_dim_torsion_of_isMaximal_finiteBase` and
+`card_torsion_ne_one_of_isMaximal_finiteBase`, and the arithmetic bridge
+`LevelFrame.card_tors_eq_sq`).
+
+This is the finite-base counterpart of `card_torsion_of_isMaximal`, and
+its proof is that one with a single change: the rational prime is HANDED
+IN as `q` rather than extracted from `I` by
+`Ideal.exists_prime_and_absNorm_eq_pow`, because it is `q` — not `I` —
+that the prime-to-characteristic hypothesis is attached to.
+
+The residual count is the ONLY geometric input of
+`exists_levelTateFrame_finiteBase`; everything else about a single-level
+frame is the module theory of the `LevelFrame` namespace above. -/
+theorem card_torsion_of_isMaximal_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) :
+    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) I).1
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  haveI : I.IsMaximal := hI
+  exact LevelFrame.card_tors_eq_sq
+    (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I hI q hq hqI
+    (fun J hJ π hπ hπ2 j y hy =>
+      exists_mem_torsion_act_uniformizer_eq m' (𝟙 (Spec (CommRingCat.of k)))
+        J hJ π hπ hπ2 j y hy)
+    (card_torsion_span_natCast_finiteBase hfin N hN ab' m' hdim' q hq.ne_zero
+      ((Nat.Prime.coprime_iff_not_dvd hq).mpr hqN))
+    (fun J hJ hqJ =>
+      even_dim_torsion_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
+    (fun J hJ hqJ =>
+      card_torsion_ne_one_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
+
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME WITH REAL
-MULTIPLICATION OVER A FINITE FIELD IS FREE OF RANK TWO** (sorry leaf —
-Mumford *Abelian Varieties* §6, Milne *Abelian Varieties* §I.7; see the
-subsection note above for the cut).
+MULTIPLICATION OVER A FINITE FIELD IS FREE OF RANK TWO** (**PROVEN
+2026-07-28** over the single residual count
+`card_torsion_of_isMaximal_finiteBase`, hence over the three geometric
+leaves of the subsection note above; Mumford *Abelian Varieties* §6,
+Milne *Abelian Varieties* §I.7).
 
 For `k` finite with `N` elements, `I` a maximal ideal of `𝒪_D` whose
 residue characteristic `q` does not divide `N`, and any `n`, the
@@ -12575,7 +12833,26 @@ supersingular case, so no rank-two frame can exist.
 `hfin` and `hN` are used only to give the prime-to-characteristic
 condition its meaning (`N = #k = p^a`, so `¬ q ∣ N` says `q ≠ p`); `σ`
 and `hσ` do not occur, because this statement is about the torsion
-subgroup alone and not about the Frobenius. -/
+subgroup alone and not about the Frobenius.
+
+HOW IT IS PROVEN, and it is the characteristic-zero proof verbatim.  A
+uniformizer `π ∈ I ∖ I²` comes from `exists_mem_notMem_sq_of_isMaximal`;
+`·π` maps each torsion level onto the previous one by
+`exists_mem_torsion_act_uniformizer_eq` — which is stated over a bare
+field and so applies unchanged with `F = k` and `x = 𝟙`; and the residual
+count is `card_torsion_of_isMaximal_finiteBase`.
+`LevelFrame.exists_linearEquiv_tors_pow` then produces an `𝒪_D`-linear
+equivalence `(𝒪_D/Iⁿ)² ≃ A'[Iⁿ]`, whose underlying function is the
+frame: the five clauses of `IsLevelTateFrame` are, in order, membership
+in the torsion, additivity, injectivity, surjectivity onto the torsion,
+and `𝒪_D`-semilinearity, and each is a clause of the linear equivalence
+read through the coercion `A'[Iⁿ] → GeomFibrePt f' (𝟙 _)`.
+
+`hdim'` IS CONSUMED HERE, and only here in this cluster: it is passed to
+`card_torsion_of_isMaximal_finiteBase` and from there to
+`card_torsion_span_natCast_finiteBase` (which needs `g = [D:ℚ]` to state
+the count) and to `card_torsion_ne_one_of_isMaximal_finiteBase` (where
+relative dimension `0` is an outright counterexample). -/
 theorem exists_levelTateFrame_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -12588,8 +12865,37 @@ theorem exists_levelTateFrame_finiteBase
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ) :
     ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c :=
-  sorry
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c := by
+  haveI : I.IsMaximal := hI
+  have hI0 : I ≠ ⊥ :=
+    (I.bot_lt_of_maximal (NumberField.RingOfIntegers.not_isField D)).ne'
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI hI0
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ I) :=
+    Ideal.finiteQuotientOfFreeOfNeBot I hI0
+  letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI := m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  obtain ⟨e⟩ :=
+    LevelFrame.exists_linearEquiv_tors_pow
+      (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I hI hI0 hπ hπ2
+      (fun j y hy => exists_mem_torsion_act_uniformizer_eq m'
+        (𝟙 (Spec (CommRingCat.of k))) I hI π hπ hπ2 j y hy)
+      (card_torsion_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN I hI hqI) n
+  refine ⟨fun u => (e u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
+    fun u => (e u).2, ?_, ?_, ?_, ?_⟩
+  · intro u v
+    exact congrArg Subtype.val (e.map_add u v)
+  · intro u v huv
+    exact e.injective (Subtype.ext huv)
+  · intro y hy
+    obtain ⟨u, hu⟩ := e.surjective ⟨y, hy⟩
+    exact ⟨u, congrArg Subtype.val hu⟩
+  · intro a u
+    have hsmul : (fun i => Ideal.Quotient.mk (I ^ n) a * u i) = a • u := by
+      funext i
+      show Ideal.Quotient.mk (I ^ n) a * u i = a • u i
+      rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+    rw [hsmul]
+    exact congrArg Subtype.val (e.map_smul a u)
 
 open _root_.NumberField in
 /-- **THE DETERMINANT OF FROBENIUS AT A PRIME-TO-`p` LEVEL IS `N`**
