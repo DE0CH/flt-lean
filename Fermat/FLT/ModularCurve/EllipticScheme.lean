@@ -999,6 +999,143 @@ theorem toHom_smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : (smul u c).toHom 
     c.map_irrelevant_eq_top (smul u c).map_irrelevant_eq_top
     (ringHom_smul_apply_of_mem_projGrading u c)
 
+section Congruences
+
+/-! ### Corollaries of the two `Proj.fromOfGlobalSections` congruences (**PROVEN**)
+
+`toHom_comap` is `fromOfGlobalSections_comp` read on a coordinate datum, and `toHom_negC`
+is `fromOfGlobalSections_comp_map` read on the Weierstrass involution.  Together with
+`toHom_inftyC` — which identifies `WeierstrassCurve.Projective.projInfty` as the morphism
+of the datum `![0, 1, 0]` — they are what discharges the clauses
+`specPointEquiv_comp_projInfty_eq_zero` and `specPointEquiv_comp_projNeg` below. -/
+
+/-- **The pullback of a coordinate datum along `g : Y ⟶ X`.** -/
+noncomputable def comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) : ProjCoords E Y where
+  base := g.appTop.hom.comp c.base
+  coord := ⇑g.appTop.hom ∘ c.coord
+  equation := by
+    rw [← WeierstrassCurve.map_map]
+    exact WeierstrassCurve.Projective.Equation.map _ c.equation
+  span_coord := by
+    have h := congrArg (Ideal.map g.appTop.hom) c.span_coord
+    rw [Ideal.map_span, Ideal.map_top, ← Set.range_comp] at h
+    exact h
+
+@[simp] theorem comap_coord {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) (i : Fin 3) :
+    (c.comap g).coord i = g.appTop.hom (c.coord i) := rfl
+
+theorem ringHom_comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) :
+    (c.comap g).ringHom = g.appTop.hom.comp c.ringHom := by
+  refine RingHom.ext fun a => ?_
+  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective a
+  simpa [comap] using (MvPolynomial.eval₂_comp_left g.appTop.hom c.base c.coord p).symm
+
+theorem toHom_comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) :
+    g ≫ c.toHom = (c.comap g).toHom := by
+  refine (fromOfGlobalSections_comp (projGrading E) g c.ringHom c.map_irrelevant_eq_top).trans ?_
+  congr 1
+  exact (ringHom_comap g c).symm
+
+/-- **The Weierstrass involution preserves the projective equation.** -/
+theorem equation_neg {R : Type*} [CommRing R] (W' : WeierstrassCurve R) {P : Fin 3 → R}
+    (h : WeierstrassCurve.Projective.Equation W' P) :
+    WeierstrassCurve.Projective.Equation W' (WeierstrassCurve.Projective.neg W' P) := by
+  rw [WeierstrassCurve.Projective.equation_iff] at h ⊢
+  simp only [WeierstrassCurve.Projective.neg_X, WeierstrassCurve.Projective.neg_Y,
+    WeierstrassCurve.Projective.neg_Z, WeierstrassCurve.Projective.negY]
+  linear_combination h
+
+/-- **The Weierstrass involution applied to a coordinate datum.** -/
+noncomputable def negC (c : ProjCoords E X) : ProjCoords E X where
+  base := c.base
+  coord := WeierstrassCurve.Projective.neg (E.map c.base) c.coord
+  equation := equation_neg _ c.equation
+  span_coord := by
+    refine top_le_iff.mp ?_
+    rw [← c.span_coord, Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    have h0 : c.coord 0 ∈ Ideal.span (Set.range (WeierstrassCurve.Projective.neg (E.map c.base) c.coord)) :=
+      Ideal.subset_span ⟨0, rfl⟩
+    have h2 : c.coord 2 ∈ Ideal.span (Set.range (WeierstrassCurve.Projective.neg (E.map c.base) c.coord)) :=
+      Ideal.subset_span ⟨2, rfl⟩
+    have h1 : WeierstrassCurve.Projective.negY (E.map c.base) c.coord ∈
+        Ideal.span (Set.range (WeierstrassCurve.Projective.neg (E.map c.base) c.coord)) := Ideal.subset_span ⟨1, rfl⟩
+    fin_cases i
+    · exact h0
+    · have hc : c.coord 1 = -(WeierstrassCurve.Projective.negY (E.map c.base) c.coord) -
+          (E.map c.base).a₁ * c.coord 0 - (E.map c.base).a₃ * c.coord 2 := by
+        simp only [WeierstrassCurve.Projective.negY]
+        ring
+      show c.coord 1 ∈ _
+      rw [hc]
+      exact sub_mem (sub_mem (neg_mem h1) (Ideal.mul_mem_left _ _ h0))
+        (Ideal.mul_mem_left _ _ h2)
+    · exact h2
+
+@[simp] theorem negC_coord (c : ProjCoords E X) :
+    (negC c).coord = WeierstrassCurve.Projective.neg (E.map c.base) c.coord := rfl
+
+theorem ringHom_negC (c : ProjCoords E X) :
+    (negC c).ringHom = c.ringHom.comp (WeierstrassCurve.Projective.negQuot E) := by
+  have key : ((negC c).ringHom.comp (Ideal.Quotient.mk _)) =
+      ((c.ringHom.comp (WeierstrassCurve.Projective.negQuot E)).comp
+        (Ideal.Quotient.mk _)) := by
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => ?_)
+    · simp [negC, ringHom, WeierstrassCurve.Projective.negQuot,
+        WeierstrassCurve.Projective.negAlgHom]
+    · fin_cases i <;>
+        simp [negC, ringHom, WeierstrassCurve.Projective.negQuot,
+          WeierstrassCurve.Projective.negAlgHom, WeierstrassCurve.Projective.negVars,
+          WeierstrassCurve.Projective.neg, WeierstrassCurve.Projective.negY] <;>
+        try ring
+  refine RingHom.ext fun a => ?_
+  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective a
+  exact congrArg (fun φ => φ p) key
+
+theorem toHom_negC (c : ProjCoords E X) :
+    c.toHom ≫ WeierstrassCurve.Projective.projNeg E = (negC c).toHom := by
+  refine (fromOfGlobalSections_comp_map (projGrading E) (projGrading E)
+    (WeierstrassCurve.Projective.negGradedHom E)
+    (WeierstrassCurve.Projective.irrelevant_le_map_negGradedHom E) c.ringHom
+    c.map_irrelevant_eq_top).trans ?_
+  congr 1
+  exact (ringHom_negC c).symm
+
+/-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum.** -/
+noncomputable def inftyC (E : WeierstrassCurve ℚ) (X : Scheme.{0}) (base : ℚ →+* Γ(X, ⊤)) :
+    ProjCoords E X where
+  base := base
+  coord := ![0, 1, 0]
+  equation := by
+    rw [WeierstrassCurve.Projective.equation_iff]
+    simp
+  span_coord := by
+    refine Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span (Set.mem_range_self 1)) ?_
+    simpa using isUnit_one
+
+theorem toHom_inftyC (E : WeierstrassCurve ℚ)
+    (base : ℚ →+* Γ(Spec (CommRingCat.of ℚ), ⊤)) :
+    (inftyC E (Spec (CommRingCat.of ℚ)) base).toHom =
+      WeierstrassCurve.Projective.projInfty E := by
+  show Proj.fromOfGlobalSections (projGrading E) _ _ =
+    Proj.fromOfGlobalSections (projGrading E) _ _
+  congr 1
+  have hb : base = ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom := Subsingleton.elim _ _
+  have key : ((inftyC E (Spec (CommRingCat.of ℚ)) base).ringHom.comp (Ideal.Quotient.mk _)) =
+      (((((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom.comp
+        (WeierstrassCurve.Projective.evalInftyQuot E))).comp (Ideal.Quotient.mk _)) := by
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => ?_)
+    · simp [inftyC, ringHom, WeierstrassCurve.Projective.evalInftyQuot,
+        WeierstrassCurve.Projective.evalInfty, hb]
+    · fin_cases i <;>
+        simp [inftyC, ringHom, WeierstrassCurve.Projective.evalInftyQuot,
+          WeierstrassCurve.Projective.evalInfty]
+  refine RingHom.ext fun a => ?_
+  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective a
+  exact congrArg (fun φ => φ p) key
+
+end Congruences
+
 /-- **The chord–tangent sum of two coordinate data**, where it is
 non-degenerate (PROVEN from `equation_addXYZ`). -/
 noncomputable def add (c d : ProjCoords E X)
@@ -2081,8 +2218,23 @@ named above it is `ProjCoords.toHom` of the datum with `coordField = ![0, 1, 0]`
 `ProjCoords.specPointEquiv_toHom` and mathlib's `toAffine_zero` finish. -/
 theorem specPointEquiv_comp_projInfty_eq_zero {E : WeierstrassCurve ℚ} [E.IsElliptic]
     {K : Type} [Field K] (f : ℚ →+* K) (_P : Spec (CommRingCat.of K) ⟶ proj E) :
-    ProjCoords.specPointEquiv f (_P ≫ projToSpec E ≫ projInfty E) = 0 :=
-  sorry
+    ProjCoords.specPointEquiv f (_P ≫ projToSpec E ≫ projInfty E) = 0 := by
+  classical
+  have h1 : _P ≫ projToSpec E ≫ projInfty E =
+      (_P ≫ projToSpec E) ≫ (ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
+        ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).toHom := by
+    rw [ProjCoords.toHom_inftyC, Category.assoc]
+  rw [h1, ProjCoords.toHom_comap, ProjCoords.specPointEquiv_toHom, ProjCoords.affinePoint]
+  have hcf : ProjCoords.coordField
+      ((ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
+        ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).comap (_P ≫ projToSpec E)) =
+      ![0, 1, 0] := by
+    funext i
+    fin_cases i <;>
+      simp [ProjCoords.coordField, ProjCoords.comap, ProjCoords.inftyC,
+        ProjCoords.gammaSpecEquiv]
+  rw [hcf]
+  exact WeierstrassCurve.Projective.Point.toAffine_zero
 
 /-- **`projNeg` is negation on `E(K)`** (sorry node, introduced 2026-07-27 as clause 2 of
 `exists_projPtAddEquiv_algClosed`).
@@ -2095,8 +2247,24 @@ with `coordField = neg (coordField c)`, and then mathlib's `toAffine_neg` (which
 conclusion. -/
 theorem specPointEquiv_comp_projNeg {E : WeierstrassCurve ℚ} [E.IsElliptic]
     {K : Type} [Field K] (f : ℚ →+* K) (_P : Spec (CommRingCat.of K) ⟶ proj E) :
-    ProjCoords.specPointEquiv f (_P ≫ projNeg E) = -ProjCoords.specPointEquiv f _P :=
-  sorry
+    ProjCoords.specPointEquiv f (_P ≫ projNeg E) = -ProjCoords.specPointEquiv f _P := by
+  classical
+  obtain ⟨c, hc⟩ := ProjCoords.exists_of_specField E (CommRingCat.of K) (Field.toIsField K) _P
+  subst hc
+  rw [ProjCoords.toHom_negC, ProjCoords.specPointEquiv_toHom, ProjCoords.specPointEquiv_toHom,
+    ProjCoords.affinePoint, ProjCoords.affinePoint]
+  have hq : ∀ q : ℚ, (ProjCoords.gammaSpecEquiv K) (c.base q) = (q : K) := fun q =>
+    eq_ratCast ((ProjCoords.gammaSpecEquiv K).toRingHom.comp c.base) q
+  have hcf : ProjCoords.coordField (ProjCoords.negC c) =
+      WeierstrassCurve.Projective.neg (E.map f) (ProjCoords.coordField c) := by
+    funext i
+    fin_cases i <;>
+      simp [ProjCoords.coordField, ProjCoords.negC, WeierstrassCurve.Projective.neg,
+        WeierstrassCurve.Projective.negY, hq]
+  rw [hcf]
+  exact WeierstrassCurve.Projective.Point.toAffine_neg
+    (ProjCoords.nonsingular_of_equation_of_ne_zero f (ProjCoords.equation_coordField f c)
+      (ProjCoords.exists_coordField_ne_zero c))
 
 /-- **`E(K)` is 2-divisible for `K` algebraically closed** (sorry node, introduced
 2026-07-27 as clause 3 of `exists_projPtAddEquiv_algClosed`).
@@ -5706,17 +5874,36 @@ are `σ` applied to `c`'s — that is `Γ(Spec σ) = σ` under `Scheme.ΓSpecIso
 `Projective.Point.toAffine`.  The only missing ingredient is the SAME `Proj` congruence
 that `specPointEquiv_comp_projInfty_eq_zero` needs, namely naturality of
 `Proj.fromOfGlobalSections` in the source scheme; see the section header before
-`specPointEquiv_comp_projInfty_eq_zero` above, where it is stated. **Proving it once
-discharges three of this file's leaves**, so factor it out rather than proving this
-directly. -/
+`specPointEquiv_comp_projInfty_eq_zero` above, where it is stated.
+
+**UPDATE 2026-07-28: that congruence is now PROVEN** (`ProjCoords.fromOfGlobalSections_comp`,
+read on a datum as `ProjCoords.toHom_comap`), and this leaf is discharged over it.  What is
+left is the SCHEME-FREE residue `affinePoint_comap_specGal` immediately below: the geometry
+is gone, and only the two coordinate-level facts remain. -/
+theorem affinePoint_comap_specGal (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup ℚ)
+    (c : ProjCoords E (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) (c.comap (specGal σ)) =
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c) :=
+  sorry
+
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
+/-- **GALOIS EQUIVARIANCE of the dictionary** (**PROVEN 2026-07-28** from
+`ProjCoords.toHom_comap` — i.e. from the new `Proj.fromOfGlobalSections` naturality — and
+`affinePoint_comap_specGal`). -/
 theorem specPointEquiv_symm_map_galois (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point) :
     (ProjCoords.specPointEquiv (E := E) (algebraMap ℚ (AlgebraicClosure ℚ))).symm
         (WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
       = specGal σ ≫
-          (ProjCoords.specPointEquiv (E := E) (algebraMap ℚ (AlgebraicClosure ℚ))).symm x :=
-  sorry
+          (ProjCoords.specPointEquiv (E := E) (algebraMap ℚ (AlgebraicClosure ℚ))).symm x := by
+  classical
+  obtain ⟨c, hc⟩ := ProjCoords.exists_affinePoint_eq (algebraMap ℚ (AlgebraicClosure ℚ)) x
+  rw [← hc, ← affinePoint_comap_specGal E σ c, ProjCoords.specPointEquiv_symm_affinePoint,
+    ProjCoords.specPointEquiv_symm_affinePoint, ProjCoords.toHom_comap]
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **The chord–tangent multiplication `m`, its three chart axioms, AND the
