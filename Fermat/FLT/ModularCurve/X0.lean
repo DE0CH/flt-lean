@@ -35531,7 +35531,9 @@ remain, and they are of three DIFFERENT kinds:
   intersection theorem — `𝔪 = (ℓ)` outright, by Bézout on numerator and
   denominator.  The SCHEME-THEORETIC half — that a section out of a local
   scheme is determined by its images in the tower — is
-  `eq_zero_of_inKerRed_pow`, still open.
+  `eq_zero_of_inKerRed_pow`, **PROVEN** here as well: it is assembly over
+  `Scheme.preimage_eq_top_of_closedPoint_mem` and full faithfulness of
+  `Spec`, with no new theory.
 * **(c)** the `ℓ`-SHIFT, `x ∈ K_k \ K_(k+1) → ℓ • x ∉ K_(k+2)`.  THIS is
   where `e < ℓ − 1` enters and where the formal group law is
   irreplaceable; `not_inKerRed_nsmul_of_not_inKerRed`, still open.
@@ -35829,48 +35831,156 @@ theorem inKerRed_ker_of_pre_special {ℓ : ℕ} {R : Subring ℚ} (toF : R →+*
     _ = (abZ.zero (SpecLoc.quotIdeal R m)).1 := by rw [hsplit, Category.id_comp]
 
 /-- **OBLIGATION (b), geometric half: a section of `𝒥` over `Spec R` is
-determined by its images in the `𝔪`-adic tower** (sorry node).
+determined by its images in the `𝔪`-adic tower** (PROVEN).
 
-TRUE, and the argument is standard, but it is genuinely
-scheme-theoretic rather than algebraic — which is why the algebraic
-input is taken here as the HYPOTHESIS `hsep` (supplied by
-`eq_zero_of_mem_pow_ker`, proven above) rather than reproved inside.
+The predecessor's verdict — "check `closedPoint_mem_iff` first; if it is
+present at this pin, this leaf is ASSEMBLY, not theory" — was correct, and
+this is that assembly.  The pin has more than the audit hoped for: not
+just `IsLocalRing.closedPoint_mem_iff` but
+`AlgebraicGeometry.Scheme.preimage_eq_top_of_closedPoint_mem`, which is
+exactly "for `f : Spec R ⟶ X` with `R` local, an open containing the image
+of the closed point has preimage `⊤`", already packaged for schemes.
 
-The argument.  `Spec R` is the spectrum of a LOCAL ring, so its unique
-closed point lies in every nonempty open; hence for any morphism
-`s : Spec R ⟶ 𝒥` the preimage of an affine open containing the image of
-the closed point is an open containing the closed point, hence all of
-`Spec R`, and `s` FACTORS through that affine open.  Both `x` and the
-zero section have the same image at the closed point (that is the `k = 1`
-stage of the hypothesis, via `inKerRed_ker_of_pre_special`), so both
-factor through ONE affine `Spec A`, and correspond to ring maps
-`a, b : A → R`.  The `k`-th stage of the hypothesis says exactly that
-`a` and `b` agree modulo `𝔪 ^ k`, so `hsep` applied to `a f - b f` gives
-`a = b`, hence `x = 0`.
+The algebraic input is taken as the HYPOTHESIS `hsep` (supplied by
+`eq_zero_of_mem_pow_ker`, proven above) rather than reproved inside, so
+that half is consumed rather than duplicated.
 
-MISSING MACHINERY, and this is the check that would refute the verdict:
-the pin has `AlgebraicGeometry.Scheme.affineOpens` and the `ΓSpec`
-adjunction (`AlgebraicGeometry.Scheme.homEquiv` /
-`Spec.homEquiv`, both already used in this file), so the two halves that
-are genuinely absent are (i) "the only open of `Spec` of a local ring
-containing the closed point is everything" — mathlib has
-`IsLocalRing.isLocalRing_iff...` and `PrimeSpectrum.closedPoint`, and the
-statement is `PrimeSpectrum.closedPoint_mem_iff`, which DOES exist — and
-(ii) the passage from "the two ring maps agree mod `𝔪 ^ k`" to the
-`RelPoint` statement, which is `Spec.map_comp` bookkeeping.  So a
-successor should check `PrimeSpectrum.closedPoint_mem_iff` first: if it
-is present at this pin, this leaf is assembly, not theory.
+The argument, as carried out below.
 
-`IsLocalRing R` itself is available from `hbase`: `ker_eq_nonunits` says
-the nonunits form an ideal, which is `IsLocalRing.of_isUnit_or_isUnit_one_sub_self`. -/
+* `R` is LOCAL, and this needs only `hbase.ker_eq_nonunits`: the kernel of
+  a ring map is closed under addition, so the nonunits are, which is
+  `IsLocalRing.of_nonunits_add`.  `𝔪 = ker toF` is then the maximal ideal
+  (`hmeq`), so `𝔪 ^ (k+1) ≤ 𝔪 ≠ ⊤` and every stage `R ⧸ 𝔪 ^ (k+1)` is a
+  nontrivial LOCAL ring with `mk` a LOCAL hom (`hstage`).  Hence
+  `Spec (R ⧸ 𝔪 ^ (k+1)) ⟶ Spec R` carries the closed point to the closed
+  point (`AlgebraicGeometry.Spec_closedPoint`), which is what turns the
+  `k = 0` stage of the hypothesis into "`x` and `0` agree AT the closed
+  point".
+* `Spec R` is local, so the preimage of an affine open `U ∋ x(𝔪)` is an
+  open containing the closed point, hence `⊤`.  So the range of `x` lies
+  in `U`, and `AlgebraicGeometry.IsOpenImmersion.lift` factors `x` through
+  `hU.fromSpec : Spec Γ(𝒥, U) ⟶ 𝒥`.  Both `x` and the zero section factor
+  through the SAME `U`, by the previous point.
+* `Spec` is fully faithful (`Spec.map_surjective`, `Spec.map_injective`),
+  so the two factorisations are `Spec α` and `Spec β` for ring maps
+  `α, β : Γ(𝒥, U) → R`; `hU.fromSpec` is a monomorphism, so the `k`-th
+  stage of the hypothesis says exactly `mk ∘ α = mk ∘ β` modulo
+  `𝔪 ^ (k+1)`.  `hsep` applied to `α g - β g` gives `α = β`, hence `x = 0`.
+
+**No Noetherianity, no Krull intersection theorem, and no formal group**
+enter here; cf. the note on `eq_zero_of_mem_pow_ker`.  All three
+hypotheses are consumed: `hbase` for locality, `hsep` for separatedness,
+`hall` for the tower. -/
 theorem eq_zero_of_inKerRed_pow {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF)
-    (_hsep : ∀ t : ↥R, (∀ k : ℕ, t ∈ RingHom.ker toF ^ (k + 1)) → t = 0)
+    (hbase : IsReductionBase ℓ R toF)
+    (hsep : ∀ t : ↥R, (∀ k : ℕ, t ∈ RingHom.ker toF ^ (k + 1)) → t = 0)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
     (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
-    (_hall : ∀ k : ℕ, abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x) :
-    x = abZ.zero (𝟙 (SpecLoc R)) :=
-  sorry
+    (hall : ∀ k : ℕ, abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x) :
+    x = abZ.zero (𝟙 (SpecLoc R)) := by
+  classical
+  set m : Ideal ↥R := RingHom.ker toF with hm
+  -- `R` is LOCAL with maximal ideal `m = ker toF`: `hbase.ker_eq_nonunits` says the
+  -- kernel is the set of nonunits, which is closed under addition.
+  haveI hloc : IsLocalRing ↥R := by
+    refine IsLocalRing.of_nonunits_add ?_
+    intro u v hu hv
+    exact (hbase.ker_eq_nonunits (u + v)).1
+      (by rw [map_add, (hbase.ker_eq_nonunits u).2 hu, (hbase.ker_eq_nonunits v).2 hv, add_zero])
+  have hmeq : m = IsLocalRing.maximalIdeal ↥R := by
+    ext r
+    simpa [hm, RingHom.mem_ker, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] using
+      hbase.ker_eq_nonunits r
+  have hmne : m ≠ ⊤ := by
+    rw [hmeq]; exact (IsLocalRing.maximalIdeal.isMaximal ↥R).ne_top
+  have hpowle : ∀ k : ℕ, m ^ (k + 1) ≤ m := fun k => Ideal.pow_le_self (Nat.succ_ne_zero k)
+  have hpowne : ∀ k : ℕ, m ^ (k + 1) ≠ ⊤ := by
+    intro k h
+    exact hmne (top_le_iff.mp (h ▸ hpowle k))
+  -- It suffices to prove the corresponding statement about bare morphisms.
+  suffices hmain : ∀ a b : SpecLoc R ⟶ JZ,
+      (∀ k : ℕ, SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ a
+        = SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ b) → a = b by
+    refine Subtype.ext (hmain x.1 _ ?_)
+    intro k
+    have h2 : RelPoint.pre (SpecLoc.quotIdeal R (m ^ (k + 1))) (Category.comp_id _) x
+        = abZ.zero (SpecLoc.quotIdeal R (m ^ (k + 1))) := hall k
+    rw [← abZ.pre_zero (SpecLoc.quotIdeal R (m ^ (k + 1))) (Category.comp_id _)] at h2
+    exact congrArg Subtype.val h2
+  intro a b hq
+  -- Each stage of the tower is a nontrivial LOCAL ring and `mk` is a LOCAL hom, so the
+  -- closed point of the stage sits over the closed point of `Spec R`.
+  have hstage : ∀ (k : ℕ) (f g : SpecLoc R ⟶ JZ),
+      SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ f = SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ g →
+      f (IsLocalRing.closedPoint ↥R) = g (IsLocalRing.closedPoint ↥R) := by
+    intro k f g h
+    haveI : Nontrivial (↥R ⧸ m ^ (k + 1)) := Ideal.Quotient.nontrivial_iff.mpr (hpowne k)
+    haveI : IsLocalRing (↥R ⧸ m ^ (k + 1)) :=
+      IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+    haveI hlh : IsLocalHom (Ideal.Quotient.mk (m ^ (k + 1))) := by
+      constructor
+      intro u hu
+      by_contra hnu
+      obtain ⟨v, hv⟩ := isUnit_iff_exists_inv.mp hu
+      obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective v
+      have h1 : u * w - 1 ∈ m ^ (k + 1) := by
+        rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_mul, hv, map_one, sub_self]
+      have h2 : u ∈ m := by rw [hmeq]; exact hnu
+      have h3 : (1 : ↥R) ∈ m := by
+        have h4 := sub_mem (Ideal.mul_mem_right w m h2) (hpowle k h1)
+        simpa using h4
+      exact hmne ((Ideal.eq_top_iff_one m).mpr h3)
+    haveI : IsLocalHom (CommRingCat.ofHom (Ideal.Quotient.mk (m ^ (k + 1)))).hom := hlh
+    have h5 := congrArg
+      (fun t : Spec (CommRingCat.of (↥R ⧸ m ^ (k + 1))) ⟶ JZ =>
+        t (IsLocalRing.closedPoint (↥R ⧸ m ^ (k + 1)))) h
+    have hcp : (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (m ^ (k + 1)))))
+        (IsLocalRing.closedPoint (↥R ⧸ m ^ (k + 1))) = IsLocalRing.closedPoint ↥R :=
+      Spec_closedPoint
+    simpa only [Scheme.Hom.comp_apply, SpecLoc.quotIdeal, hcp] using h5
+  -- The two sections agree at the closed point.
+  have hbasept : a (IsLocalRing.closedPoint ↥R) = b (IsLocalRing.closedPoint ↥R) :=
+    hstage 0 a b (hq 0)
+  -- Choose an affine open of `JZ` around the common image of the closed point.
+  obtain ⟨_, ⟨U, hU, rfl⟩, hmemU, -⟩ := JZ.isBasis_affineOpens.exists_subset_of_mem_open
+    (Set.mem_univ (a (IsLocalRing.closedPoint ↥R))) isOpen_univ
+  -- `Spec R` is local, so both sections factor through that affine open.
+  have hfac : ∀ f : SpecLoc R ⟶ JZ, f (IsLocalRing.closedPoint ↥R) ∈ U →
+      Set.range f.base ⊆ Set.range hU.fromSpec.base := by
+    intro f hf
+    rw [hU.range_fromSpec]
+    rintro _ ⟨p, rfl⟩
+    have htop : f ⁻¹ᵁ U = ⊤ := Scheme.preimage_eq_top_of_closedPoint_mem f hf
+    have hp : p ∈ f ⁻¹ᵁ U := by rw [htop]; trivial
+    exact hp
+  have hmemUb : b (IsLocalRing.closedPoint ↥R) ∈ U := hbasept ▸ hmemU
+  set a' := IsOpenImmersion.lift hU.fromSpec a (hfac a hmemU)
+  set b' := IsOpenImmersion.lift hU.fromSpec b (hfac b hmemUb)
+  have ha' : a' ≫ hU.fromSpec = a := IsOpenImmersion.lift_fac _ _ _
+  have hb' : b' ≫ hU.fromSpec = b := IsOpenImmersion.lift_fac _ _ _
+  obtain ⟨α, hα⟩ := Spec.map_surjective a'
+  obtain ⟨β, hβ⟩ := Spec.map_surjective b'
+  -- The tower hypothesis says `α` and `β` agree modulo every `m ^ (k+1)`.
+  have hmod : ∀ k : ℕ,
+      α ≫ CommRingCat.ofHom (Ideal.Quotient.mk (m ^ (k + 1)))
+        = β ≫ CommRingCat.ofHom (Ideal.Quotient.mk (m ^ (k + 1))) := by
+    intro k
+    have h := hq k
+    rw [← ha', ← hb', ← Category.assoc, ← Category.assoc] at h
+    have h2 : SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ a' = SpecLoc.quotIdeal R (m ^ (k + 1)) ≫ b' :=
+      (cancel_mono hU.fromSpec).mp h
+    rw [← hα, ← hβ, SpecLoc.quotIdeal, ← Spec.map_comp, ← Spec.map_comp] at h2
+    exact Spec.map_injective h2
+  -- Separatedness of the filtration on `R` upgrades that to `α = β`.
+  have hαβ : α = β := by
+    refine CommRingCat.hom_ext (RingHom.ext fun g => ?_)
+    have hz : α.hom g - β.hom g = 0 := by
+      refine hsep _ fun k => ?_
+      have h := congrArg (fun t : _ ⟶ CommRingCat.of (↥R ⧸ m ^ (k + 1)) => t.hom g) (hmod k)
+      simp only [CommRingCat.hom_comp, RingHom.comp_apply, CommRingCat.hom_ofHom] at h
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, h, sub_self]
+    exact sub_eq_zero.mp hz
+  rw [← ha', ← hb', ← hα, ← hβ, hαβ]
 
 /-- **OBLIGATION (c): THE `ℓ`-SHIFT — multiplication by `ℓ` moves a point
 of the tower up by EXACTLY one step** (sorry node).
@@ -36044,7 +36154,9 @@ discharged:
   — PROVEN, and needing NEITHER Noetherianity nor Krull's intersection
   theorem, because `ker toF = (ℓ)` is principal
   (`ker_eq_span_natCast`) — and its scheme-theoretic half
-  `eq_zero_of_inKerRed_pow`, still open;
+  `eq_zero_of_inKerRed_pow`, ALSO PROVEN (2026-07-28), by assembly over
+  `Scheme.preimage_eq_top_of_closedPoint_mem` and full faithfulness of
+  `Spec`;
 * (c) `not_inKerRed_nsmul_of_not_inKerRed`, still open, and now carrying
   the formal-group content ALONE.
 
@@ -36054,9 +36166,8 @@ which is not the bottom one by (a); one step below it (c) applies, and
 says `ℓ • x` escapes a stage further up — but `ℓ • x = 0` by `htors`, and
 `0` lies in every stage (`inKerRed_zero`).  Contradiction.
 
-So the residual frontier under this node is exactly two named leaves, and
-they are of different kinds: one is scheme-theoretic bookkeeping over a
-local base, the other is the formal group law. -/
+So the residual frontier under this node is now exactly ONE named leaf,
+`not_inKerRed_nsmul_of_not_inKerRed` — the formal group law. -/
 theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (hbase : IsReductionBase ℓ R toF) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
