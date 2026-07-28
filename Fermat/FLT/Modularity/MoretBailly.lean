@@ -1705,11 +1705,15 @@ obtained from the proper kernel of the `ℚ`-linear map `v ↦ ℓ_v`, so `F` is
 product of finitely many LINEAR forms),
 `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (**PROVEN
 2026-07-26** — no longer a leaf: the two BERTINI theorems separate into
-`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (SORRY —
-Bertini smoothness; no `hdim`),
-`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY —
-Bertini/Lefschetz connectedness, **the sole consumer of `hdim`** and the
-deepest of the geometric leaves) and
+`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-27** — Bertini smoothness; no `hdim`; reduced to the algebraic Sard
+theorem `exists_genericSmoothFibre_of_smooth_of_charZero`, itself PROVEN),
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-27** — Bertini/Lefschetz connectedness, **the sole consumer of
+`hdim`**; proven over `exists_bertiniConnectedLocus_algebra`, whose one
+surviving leaf is `exists_bertiniConnectedLocus_algebraicClosure`, the
+deepest of the geometric leaves and the ONLY thing still open in this
+cluster) and
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
 2026-07-26** — no longer a leaf: cut into the point-set topology
 `irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN), the
@@ -1717,8 +1721,9 @@ minimal-prime bookkeeping `exists_isOpen_isIrreducible_of_isDomain_localization`
 `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` (both
 PROVEN, and all three now in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), and the single
-surviving leaf `isDomain_stalk_of_smooth_over_field` (SORRY — "smooth over a
-field ⟹ the local rings are domains", a pure mathlib gap)), assembled by
+surviving leaf `isDomain_stalk_of_smooth_over_field` (**PROVEN** — "smooth
+over a field ⟹ the local rings are domains", a pure mathlib gap, now closed;
+the `(SORRY)` label was stale and is corrected 2026-07-28)), assembled by
 multiplying the two genericity polynomials),
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
 2026-07-26** — no longer a leaf: the `ℝ`-topology half, a whole BOX of
@@ -1808,10 +1813,13 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    (projective closure, the Enriques–Severi–Zariski connectedness theorem,
    and openness of the geometrically-connected locus — the only place `hdim`
    is used) and `geometricallyIrreducible_of_smooth_of_geometricallyConnected`
-   (PROVEN 2026-07-26; of its own cut only
-   `isDomain_stalk_of_smooth_over_field` — "smooth over a field ⟹ the local
-   rings are domains" — survives, the "connected + normal ⟹ irreducible" half
-   having been discharged outright), with
+   (PROVEN 2026-07-26; of its own cut, `isDomain_stalk_of_smooth_over_field`
+   — "smooth over a field ⟹ the local rings are domains" — was the last to
+   survive and is itself **PROVEN** as of 2026-07-27, so nothing under this
+   name is open).  **UPDATED 2026-07-28: all three of the names in this
+   paragraph are PROVEN**; the whole Bertini branch has exactly ONE open
+   leaf left, `exists_bertiniConnectedLocus_algebraicClosure`, reached
+   through `exists_bertiniConnectedLocus_algebra`.  With
    `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` PROVEN over
    them. The real-topology approximation is now a SEPARATE item, 6 below, and
    the elementary nonzerodivisor step a third,
@@ -1881,7 +1889,9 @@ are now leaves of their own --
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` /
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (item 3 --
 their consumer `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`
-is PROVEN over them), and
+is PROVEN over them; **and as of 2026-07-28 all three of those names are
+PROVEN too**, item 3 having collapsed to the single leaf
+`exists_bertiniConnectedLocus_algebraicClosure`), and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
 `exists_bound_forall_formallySmooth_integralSystemModel` (item 5), and
 `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
@@ -2159,7 +2169,10 @@ itself PROVEN over the hyperplane PARAMETER SPACE and its three branches
 `exists_nonZeroDivisorLocus_...` (PROVEN 2026-07-26),
 `exists_bertiniGenericLocus_...` (itself PROVEN 2026-07-26 over
 `exists_bertiniSmoothLocus_...`, `exists_bertiniConnectedLocus_...` and
-`geometricallyIrreducible_of_smooth_of_geometricallyConnected`, all SORRY)
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected`, all three
+**PROVEN** by 2026-07-27; the label "all SORRY" here was stale and is
+corrected 2026-07-28.  The only open leaf left anywhere under this branch is
+`exists_bertiniConnectedLocus_algebraicClosure`)
 and `exists_realApproximationBall_of_affine_geometricallyIrreducible`
 (PROVEN 2026-07-26 over
 `exists_realArc_of_affine_geometricallyIrreducible`, itself PROVEN))
@@ -2820,9 +2833,11 @@ theorem nonempty_bertiniFibreAlgEquiv {k : Type u} [Field k] {S : Type u} [CommR
     exact ((Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).2 (hgenX i)).symm
 
 /-- **GENERIC SMOOTHNESS ON THE TARGET — THE ALGEBRAIC SARD THEOREM**
-(sorry node, 2026-07-27; cut out of
-`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible`, which is now
-PROVEN over this leaf).
+(**PROVEN 2026-07-27**; cut out of
+`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible`, which is
+PROVEN over this leaf.  The "sorry node" label here was stale and is
+corrected 2026-07-28 — see `exists_genericSmoothFibre_of_smooth_of_charZero`
+below, whose body is complete.)
 
 If `B` is a SMOOTH algebra over a field `k` of characteristic zero and
 `t : Fin m → B` is any family of elements — equivalently, any `k`-morphism
@@ -3795,8 +3810,82 @@ theorem exists_descent_nonvanishing_polynomial (k : Type u) [Field k]
   · intro v hv hzero
     exact hv (by rw [← key v, hzero, map_zero, Finsupp.coe_zero, Pi.zero_apply])
 
-/-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
-2026-07-27; cut out of
+/-- **BERTINI CONNECTEDNESS OVER THE ALGEBRAIC CLOSURE — THE ONE REMAINING
+OBLIGATION OF THE WHOLE BERTINI CLUSTER** (sorry node, PROMOTED 2026-07-28).
+
+**WHY THIS DECLARATION EXISTS.** This statement was already the single open
+obligation of `exists_bertiniConnectedLocus_algebra` below, but it lived
+there as an ANONYMOUS `obtain … : … := sorry` inside that proof. An anonymous
+sorry is invisible to every frontier scan this development runs — it emits a
+`declaration uses 'sorry'` warning attributed to its *enclosing* theorem, it
+matches no leaf name, and it therefore never gets an owner. (The enclosing
+theorem is not itself the leaf: its remaining content, the descent from `k̄`
+to `k`, is PROVEN and consumed there.) Promoting it changes no mathematics
+whatsoever — the body of `exists_bertiniConnectedLocus_algebra` now reads
+`exact`ly this theorem where it previously read `sorry` — and it makes the
+obligation nameable, greppable and dispatchable. Nothing else in the cluster
+is open: see the STATUS note at the head of
+`exists_bertiniConnectedLocus_algebra`.
+
+**THE STATEMENT** is the Bertini connectedness leaf with the good locus cut
+out over `AlgebraicClosure k` rather than over `k`, its nonvanishing tested
+only at `k`-RATIONAL parameters `v` (whence the `algebraMap k (AlgebraicClosure k) ∘ v`),
+while the CONCLUSION is still the `k`-rational
+`GeometricallyConnected`. That is deliberate: `GeometricallyConnected` is
+already a base-change-stable notion, so there is nothing to gain by stating
+the conclusion over `k̄`, whereas the good LOCUS is genuinely produced over
+`k̄` by every known route and is brought back to `k` by the PROVEN
+`exists_descent_nonvanishing_polynomial`.
+
+**IT IS EQUIVALENT TO THE LEAF BELOW, so the promotion introduces no falsity
+risk in either direction.** (⇐) Given the leaf's `F` over `k`, push it
+forward along `algebraMap k (AlgebraicClosure k)`, which is injective, hence
+`MvPolynomial.map` of it is injective and the image is nonzero; and
+`eval (algebraMap ∘ v) (map φ F) = φ (eval v F) ≠ 0` at `k`-rational `v`.
+(⇒) is the composition with `exists_descent_nonvanishing_polynomial` that the
+leaf below performs.
+
+**EVERY HYPOTHESIS IS LOAD-BEARING, WITH THE COUNTEREXAMPLES RECORDED ON THE
+LEAF BELOW.** `hgen` may not be dropped (`k = ℚ`, `S = ℚ[a,b]`, `n = 0`: the
+section is the EMPTY scheme, and `ConnectedSpace` extends `Nonempty`), and
+`hdim` may not be dropped (`S = k[s,t]/(s²+t²−1)`, `x = (s,t)`: a general
+`k`-rational line meets the conic in two geometric points). Both
+counterexamples survive the passage to `k̄` verbatim — they are statements
+about the section, not about the field of definition of `F` — so they refute
+THIS statement exactly as they refute the leaf below, which is the falsity
+half of the equivalence just stated.
+
+**THE MATHEMATICS THAT IS ACTUALLY MISSING** is item 4 of the PREREQUISITE
+LEDGER on `exists_bertiniConnectedLocus_algebra` below: Bertini
+IRREDUCIBILITY of the general hyperplane section over an algebraically closed
+field, from which connectedness of the affine part follows by the dimension
+count on `X̄ ∩ H ∩ H_∞`. Read that ledger — and in particular the LEDGER
+CORRECTION, which establishes that the projective closure (`ProjChart` /
+`exists_isOpenImmersion_isProper_of_proj` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`) and the
+reduction of `GeometricallyConnected` to the algebraic closure are NOT
+missing at this pin — before assuming anything must be built from scratch.
+Note also the ELIMINATION AUDIT there: the Sard-style elimination that closed
+the SMOOTHNESS half provably does not transfer to connectedness. -/
+theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [CharZero k]
+    {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k S))))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)))
+    {n : ℕ} (x : Fin n → S)
+    (hgen : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) = ⊤) :
+    ∃ F' : MvPolynomial (Fin (n + 1)) (AlgebraicClosure k), F' ≠ 0 ∧
+      ∀ v : Fin (n + 1) → k,
+        MvPolynomial.eval ((algebraMap k (AlgebraicClosure k)) ∘ v) F' ≠ 0 →
+          AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
+            (CommRingCat.ofHom (algebraMap k
+              (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+                - algebraMap k S (v (Fin.last n))})))) := sorry
+
+/-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (**PROVEN
+2026-07-28** over the single named leaf
+`exists_bertiniConnectedLocus_algebraicClosure` above, which until that date
+sat here as an ANONYMOUS `obtain … := sorry` and so had no owner; cut out of
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
 PROVEN over this leaf. **STATEMENT REPAIRED 2026-07-27** — see the FALSITY
 AUDIT below; the version first written here was FALSE).
@@ -4079,15 +4168,12 @@ theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
   -- `AlgebraicClosure k`. `hgi`, `hdim` and `hgen` are consumed HERE and
   -- nowhere else — this is the step that the `k̄` route proves, and the
   -- FALSITY AUDIT above is exactly the record of why `hgen` may not be
-  -- dropped from it.
-  obtain ⟨F', hF'0, hF'⟩ :
-      ∃ F' : MvPolynomial (Fin (n + 1)) (AlgebraicClosure k), F' ≠ 0 ∧
-        ∀ v : Fin (n + 1) → k,
-          MvPolynomial.eval ((algebraMap k (AlgebraicClosure k)) ∘ v) F' ≠ 0 →
-            AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
-              (CommRingCat.ofHom (algebraMap k
-                (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
-                  - algebraMap k S (v (Fin.last n))})))) := sorry
+  -- dropped from it.  It is the NAMED leaf
+  -- `exists_bertiniConnectedLocus_algebraicClosure` above; until 2026-07-28 it
+  -- sat here as an anonymous `obtain … := sorry`, invisible to every frontier
+  -- scan and therefore ownerless.
+  obtain ⟨F', hF'0, hF'⟩ :=
+    exists_bertiniConnectedLocus_algebraicClosure hgi hdim x hgen
   -- Ledger item 3, PROVEN: descend the `k̄`-rational good locus to a `k`-rational
   -- one. This is what turns the `k̄` route's output into the `∃ F` over `k` that
   -- the leaf's statement demands.
@@ -4247,9 +4333,13 @@ theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI CONNECTEDNESS: the generic hyperplane section of a variety of
-dimension `≥ 2` is geometrically connected** (sorry node, 2026-07-26 — the
+dimension `≥ 2` is geometrically connected** (**PROVEN 2026-07-27** over
+`exists_bertiniConnectedLocus_algebra`, and thence over the single named leaf
+`exists_bertiniConnectedLocus_algebraicClosure`; the "sorry node" label here
+was stale and is corrected 2026-07-28 — this theorem's own body has been
+complete since 2026-07-27, as the STATUS paragraph below already said.  The
 second of the two classical Bertini theorems, and **the only place `hdim` is
-used**).
+used**.)
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1`, presented in coordinates `x : Fin n → A`, there is a nonzero
@@ -4456,7 +4546,10 @@ statement and a genuine mathlib contribution.
 now PROVEN over `isRegularLocalRing_quotient_span_list_aux` (PROVEN — a general
 "quotient by part of a regular system of parameters is regular", which mathlib
 lacks entirely) and the single remaining leaf
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY),
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
+(**PROVEN** — it lives in `Modularity/RegularStalks.lean:791`, which emits
+ZERO sorry warnings; the `(SORRY)` label here was stale and is corrected
+2026-07-28),
 which asks only that the stalk BE presented as a regular local ring modulo a
 list independent mod `𝔪²`. So no commutative algebra is left below this node —
 only presentation bookkeeping and the Jacobian criterion.
@@ -4551,9 +4644,13 @@ exactly ONE is still open:
   irreducible open neighbourhood.  These three were HOISTED on 2026-07-28 into
   `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` and are no longer
   declared here;
-* **`isDomain_stalk_of_smooth_over_field` (SORRY)** — "smooth over a field ⟹
-  the local rings are domains", the sole surviving leaf and the only place
-  where any geometry is used;
+* **`isDomain_stalk_of_smooth_over_field` (PROVEN)** — "smooth over a field ⟹
+  the local rings are domains", once the sole surviving leaf and the only
+  place where any geometry is used.  Its whole tower —
+  `Modularity/RegularStalks.lean` and
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` — emits ZERO
+  sorry warnings.  The `(SORRY)` label here was stale and is corrected
+  2026-07-28;
 * `exists_isOpen_isIrreducible_of_smooth_over_field` (PROVEN) — the assembly.
 
 So the whole connected ⟹ irreducible upgrade is reduced to one sharply
@@ -4613,15 +4710,18 @@ theorem is the conjunction of a hard Lefschetz-type CONNECTEDNESS statement
 and a formal upgrade from connected to irreducible that is available as soon
 as the section is known to be SMOOTH. So the three conditions separate:
 
-* `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (SORRY) —
-  a nonzero `F₁` off whose zero locus the section is smooth. No `hdim`: this
-  half is true in every dimension.
-* `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY) —
+* `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (**PROVEN
+  2026-07-27**) — a nonzero `F₁` off whose zero locus the section is smooth.
+  No `hdim`: this half is true in every dimension.
+* `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (**PROVEN
+  2026-07-27**, over `exists_bertiniConnectedLocus_algebra` and thence over
+  the single leaf `exists_bertiniConnectedLocus_algebraicClosure`) —
   a nonzero `F₂` off whose zero locus the section is geometrically connected.
   **This is the sole consumer of `hdim`**, and it is false at `dim = 1`.
 * `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
-  2026-07-26**, over the single surviving leaf
-  `isDomain_stalk_of_smooth_over_field`) —
+  2026-07-26**, over `isDomain_stalk_of_smooth_over_field`, which is itself
+  **PROVEN** — the "single surviving leaf" wording is stale as of 2026-07-28
+  and nothing under this bullet is open) —
   smooth + geometrically connected ⟹ geometrically irreducible, for any
   scheme over `Spec (ULift ℚ)`. Pure formalities: smooth over a field ⟹
   regular ⟹ local rings are domains, and a connected locally noetherian
