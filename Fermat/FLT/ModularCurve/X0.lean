@@ -23198,30 +23198,167 @@ theorem isAffine_of_gamma0AtlasOver_zmod (N : ℕ) (hN : 0 < N) (p : ℕ) [Fact 
   haveI := hu
   exact IsAffine.of_isIso u
 
-/-- **The ring of global functions of the coarse space over `𝔽_p` is a DOMAIN**
-(sorry leaf — Deligne–Rapoport IV.5.5 / VI.6.7).
+/-! #### Deligne–Rapoport IV.5.5, stated ONCE
 
-The content is the irreducibility of `𝔐([Γ₀(N)], [Γ(n)])_{𝔽̄_p}`: `A` is then a
-domain and `A^G ⊆ A` is a subring, so `B = A^G` is a domain — the same
-one-line-once-you-have-it shape as `isDomain_of_gamma0GITPresentation` over
-`ℚ`, and the reason the statement is about `Γ(Y, ⊤)` rather than `IsIntegral Y`
-is likewise the same: that is the form the GIT construction supplies.
+`isDomain_of_gamma0AtlasOver_zmod` and `geometricallyConnected_of_gamma0AtlasOver_zmod`
+both cited Deligne–Rapoport IV.5.5 as bare `sorry`s, so the *same* classical
+input — irreducibility of the modular curve in characteristic `p` — was about to
+be built twice.  It is built once here, in the shape the `ℚ` side already uses:
+
+* `isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod` — the
+  coarse ring is a NORMAL DOMAIN (Katz–Mazur (8.1.1)+(8.1.2), DR IV.5.5);
+* `isAlgebraic_globalSections_of_gamma0AtlasOver_zmod` — `𝔽_p` is
+  ALGEBRAICALLY CLOSED in the coarse ring, i.e. no constant field extension
+  (DR IV.5.5's q-expansion content, Shimura §6.6);
+* `isDomain_tensorGlobalSections_of_gamma0AtlasOver_zmod` — the two combined
+  into geometric integrality, a THEOREM over the two leaves and the
+  mathlib-facing regular-extension leaf
+  `isDomain_tensorProduct_of_isAlgebraic_mem_bot`.
+
+Both target statements are then theorems: `IsDomain Γ(Y, ⊤)` is the first
+conjunct of the first leaf, and `GeometricallyConnected` is the affine criterion
+`geometricallyConnected_specMap_algebraMap_of_forall_isDomain` applied to the
+shared theorem.  Neither surviving leaf mentions a scheme — exactly the shape
+the `ℚ` side reached at `isDomain_tensorCoarseRing_of_gamma0GITPresentation`.
+
+**One char-`p` adjustment was needed downstream.**
+`isDomain_tensorProduct_of_isAlgebraic_mem_bot` carried `[CharZero k]`; its own
+faithfulness note's counterexample (`k = 𝔽_p(u)`, `B = k(u^{1/p})`) is a failure
+of PERFECTION, not of characteristic zero, and the proof sketch recorded there
+already says "`k` is perfect, so it is enough to treat `K/k` finite Galois".  So
+the hypothesis was weakened to `[PerfectField k]` on 2026-07-28.  It is strictly
+weaker (`PerfectField.ofCharZero` is an instance, so the `ℚ` call site is
+undisturbed) and `ZMod p` satisfies it by `PerfectField.ofFinite`. -/
+
+/-- **The coarse ring over `𝔽_p` is a NORMAL DOMAIN** (sorry leaf —
+Deligne–Rapoport IV.5.5 / VI.6.7 for the domain half, Katz–Mazur (8.1.1)+(8.1.2)
+for the normality half).
+
+The domain half is the irreducibility of `𝔐([Γ₀(N)], [Γ(n)])_{𝔽̄_p}`: `A` is then
+a domain and `A^G ⊆ A` is a subring, so `B = A^G` is a domain — the same
+one-line-once-you-have-it shape as `isDomain_of_gamma0GITPresentation` over `ℚ`,
+and the reason the statement is about `Γ(Y, ⊤)` rather than `IsIntegral Y` is
+likewise the same: that is the form the GIT construction supplies.
+
+The normality half is Katz–Mazur Lemma (8.1.2) (`𝒫` normal implies `M(𝒫)`
+normal) transported to the invariants, which is
+`Algebra.IsInvariant.isIntegrallyClosed_of_isInvariant` — already PROVEN in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, so this half is not new
+mathematics, only the `𝔽_p` GIT presentation it needs.  It is packaged WITH the
+domain half rather than stated separately because `IsIntegrallyClosed` is only
+meaningful for a domain and because both come from the one presentation.
 
 `hN : 0 < N` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be
 empty (`isEmpty_of_gamma0Datum_zero`), the coarse space is initial, and the
 global sections of `∅` form the zero ring, which is not `Nontrivial`.
 
-`hpN : ¬ p ∣ N` is not obviously load-bearing for THIS clause — reduction of
-`Y_0(N)` at `p ∣ N` is still irreducible, it is merely singular — and it is
-carried only so that all four statements in this block share one hypothesis
-set.  A prover who does not use it should say so rather than silently drop it.
+**`hpN : ¬ p ∣ N` is REQUIRED, and the previous docstring here was WRONG about
+it** (corrected 2026-07-28).  It read: "`hpN` is not obviously load-bearing for
+THIS clause — reduction of `Y_0(N)` at `p ∣ N` is still irreducible, it is
+merely singular".  That is false.  Deligne–Rapoport V.1.16: for `p ∥ N` the
+fibre `X_0(N)_{𝔽_p}` is the union of TWO copies of `X_0(N/p)_{𝔽_p}` crossing
+transversally at the supersingular points.  Two irreducible components means
+`Γ(Y, ⊤)` has zero divisors, so `IsDomain Γ(Y, ⊤)` is FALSE at `p ∣ N`, not
+merely unproven.  (The fibre is still CONNECTED there, which is why the
+companion connectedness statement does not need `hpN` for the same reason — but
+it is reached through this leaf here, so it carries the hypothesis anyway.)
 
 Stated for an arbitrary atlas: see `isAffine_of_gamma0AtlasOver_zmod` for why
 that is equivalent to stating it for the Katz–Mazur model. -/
-theorem isDomain_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime]
-    (_hpN : ¬ p ∣ N) (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
-    IsDomain Γ(A.Y, ⊤) :=
+theorem isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod
+    (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime] (_hpN : ¬ p ∣ N)
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
+    IsDomain Γ(A.Y, ⊤) ∧ IsIntegrallyClosed Γ(A.Y, ⊤) :=
   sorry
+
+/-- **`𝔽_p` is ALGEBRAICALLY CLOSED in the coarse ring over `𝔽_p`** (sorry leaf —
+Deligne–Rapoport IV.5.5, or Shimura §6.6).
+
+This is the constant-field statement: the `Γ₀(N)`-moduli problem is defined over
+the prime field, so the fibre acquires no constant field extension at `p ∤ N`,
+i.e. every element of `B = Γ(Y, ⊤)` that is algebraic over `𝔽_p` already lies in
+`𝔽_p · 1`.  It is the exact char-`p` analogue of
+`isAlgebraic_coarseRing_of_gamma0GITPresentation` over `ℚ`, and it is the
+q-expansion-principle half of DR IV.5.5 with all scheme theory stripped out.
+
+Combined with normality (the companion leaf above) this gives geometric
+integrality: an element of `Frac B` algebraic over `𝔽_p` is integral over `𝔽_p`,
+hence over `B`, hence lies in `B` by integral closedness, hence in `𝔽_p` by this
+leaf — so `Frac B / 𝔽_p` is a regular extension, `𝔽_p` being perfect.  That step
+is `isDomain_tensorProduct_of_isAlgebraic_mem_bot`.
+
+**Do not attempt this through a rational point.**  "Connected + a rational point
+⟹ geometrically connected" is unavailable for the same MATHEMATICAL reason as
+over `ℚ`, recorded at `isDomain_tensorCoarseRing_of_gamma0GITPresentation`:
+`Y_0(N)` has no reason to carry an `𝔽_p`-point, and over `ℚ` proving that it does
+not is the whole point of this module.
+
+**The rigidified moduli scheme cannot be used directly either**: `𝔐([Γ₀(N)],
+[Γ(n)])` is not geometrically connected — its geometric components are permuted
+through the Weil pairing — and connectedness is recovered only after quotienting
+by the full `G = GL₂(ℤ/n)`.  So this is a statement about `A^G`, never about `A`.
+
+**The `Algebra (ZMod p) Γ(A.Y, ⊤)` binder is not a choice**, and `hstr` is what
+pins it: `A.Y` is affine (`isAffine_of_gamma0AtlasOver_zmod`), `Spec` is fully
+faithful on affines, so `A.Y.isoSpec.inv ≫ A.str` is `Spec.map` of a UNIQUE ring
+map `ZMod p → Γ(A.Y, ⊤)` and `hstr` says the instance is that one.  Same idiom as
+`isDomain_tensorCoarseRing_of_gamma0GITPresentation` over `ℚ`; without it the
+statement would quantify over junk algebra structures and be false.
+
+`hN` and `hpN` are REQUIRED for the same reasons as on the companion leaf. -/
+theorem isAlgebraic_globalSections_of_gamma0AtlasOver_zmod
+    (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime] (_hpN : ¬ p ∣ N)
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) [IsAffine A.Y] :
+    ∀ [Algebra (ZMod p) Γ(A.Y, ⊤)],
+      Spec.map (CommRingCat.ofHom (algebraMap (ZMod p) Γ(A.Y, ⊤)))
+          = A.Y.isoSpec.inv ≫ A.str →
+      ∀ x : Γ(A.Y, ⊤), IsAlgebraic (ZMod p) x → x ∈ (⊥ : Subalgebra (ZMod p) Γ(A.Y, ⊤)) :=
+  sorry
+
+/-- **The coarse ring over `𝔽_p` is GEOMETRICALLY INTEGRAL** (PROVEN 2026-07-28
+over the two leaves above) — `B ⊗[𝔽_p] K` is a domain for every field extension
+`K/𝔽_p`.
+
+This is the SHARED input of `isDomain_of_gamma0AtlasOver_zmod` and
+`geometricallyConnected_of_gamma0AtlasOver_zmod`, and the reason those two are no
+longer separate citations of Deligne–Rapoport IV.5.5.
+
+The proof is the `ℚ`-side one with `ℚ` replaced by `ZMod p`: `B` is a normal
+domain, `𝔽_p` is algebraically closed in it, and `𝔽_p` is PERFECT
+(`PerfectField.ofFinite`), so
+`isDomain_tensorProduct_of_isAlgebraic_mem_bot` applies.  That mathlib-facing
+lemma carried `[CharZero k]` until 2026-07-28; see the section comment above and
+the lemma's own faithfulness note for why `[PerfectField k]` is the correct
+hypothesis and why the weakening leaves the `ℚ` call site untouched. -/
+theorem isDomain_tensorGlobalSections_of_gamma0AtlasOver_zmod
+    (N : ℕ) (hN : 0 < N) (p : ℕ) [Fact p.Prime] (hpN : ¬ p ∣ N)
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) [IsAffine A.Y] :
+    ∀ [Algebra (ZMod p) Γ(A.Y, ⊤)],
+      Spec.map (CommRingCat.ofHom (algebraMap (ZMod p) Γ(A.Y, ⊤)))
+          = A.Y.isoSpec.inv ≫ A.str →
+      ∀ (K : Type) [Field K] [Algebra (ZMod p) K],
+        IsDomain (TensorProduct (ZMod p) Γ(A.Y, ⊤) K) := by
+  intro _ hstr K _ _
+  obtain ⟨hdom, hic⟩ :=
+    isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod N hN p hpN A
+  haveI := hdom
+  haveI := hic
+  exact isDomain_tensorProduct_of_isAlgebraic_mem_bot (ZMod p) Γ(A.Y, ⊤)
+    (isAlgebraic_globalSections_of_gamma0AtlasOver_zmod N hN p hpN A hstr) K
+
+/-- **The ring of global functions of the coarse space over `𝔽_p` is a DOMAIN**
+(PROVEN 2026-07-28 — it is the first conjunct of
+`isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod`, where the
+Deligne–Rapoport IV.5.5 citation now lives once for this statement and for
+`geometricallyConnected_of_gamma0AtlasOver_zmod` together).
+
+`hN` and `hpN` are both REQUIRED; see that leaf's docstring, which also corrects
+the claim previously made here that `hpN` was not load-bearing (at `p ∥ N` the
+fibre has two components, so this statement is FALSE there). -/
+theorem isDomain_of_gamma0AtlasOver_zmod (N : ℕ) (hN : 0 < N) (p : ℕ) [Fact p.Prime]
+    (hpN : ¬ p ∣ N) (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
+    IsDomain Γ(A.Y, ⊤) :=
+  (isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod N hN p hpN A).1
 
 /-- **The coarse space is smooth of relative dimension `1` over `𝔽_p`** (sorry
 leaf — Katz–Mazur Lemma (8.1.2), and THE reason this whole block sits at the
@@ -23254,12 +23391,27 @@ theorem smoothOfRelativeDimension_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N
     SmoothOfRelativeDimension 1 A.str :=
   sorry
 
-/-- **The coarse space is geometrically connected over `𝔽_p`** (sorry leaf —
-Deligne–Rapoport IV.5.5, or Shimura 6.6).
+/-- **The coarse space is geometrically connected over `𝔽_p`** (PROVEN
+2026-07-28 over the shared geometric-integrality theorem
+`isDomain_tensorGlobalSections_of_gamma0AtlasOver_zmod`, i.e. over the two
+Deligne–Rapoport IV.5.5 leaves stated once above; formerly a bare `sorry` that
+cited DR IV.5.5 / Shimura §6.6 a second time).
 
 `det : Γ₀(N) → (ℤ/N)ˣ` is surjective, so `X_0(N)` over `ℤ[1/N]` has
 geometrically connected fibres; in particular no constant field extension
-occurs at `p ∤ N`.
+occurs at `p ∤ N`.  That last clause is exactly
+`isAlgebraic_globalSections_of_gamma0AtlasOver_zmod`.
+
+**The route, written out.**  `A.Y` is affine
+(`isAffine_of_gamma0AtlasOver_zmod`), so `A.Y.isoSpec.inv ≫ A.str` is `Spec.map`
+of a unique ring map `ZMod p → Γ(A.Y, ⊤)` (`Spec.map_surjective`);
+`geometricallyConnected_specMap_algebraMap_of_forall_isDomain` turns geometric
+connectedness of that morphism into "`Γ(A.Y, ⊤) ⊗[ZMod p] K` is a domain for
+every field `K/𝔽_p`", which is the shared theorem; and
+`MorphismProperty.RespectsIso.precomp` carries the conclusion back along
+`A.Y.isoSpec.hom`.  Exactly the `ℚ` route of
+`geometricallyConnected_of_gamma0GITPresentation`, with the GIT presentation
+replaced by `isoSpec` because there is no `Gamma0GITPresentation` over `𝔽_p`.
 
 **Do not attempt this through a rational point.**  "Connected + a rational
 point ⟹ geometrically connected" is unavailable for the same MATHEMATICAL
@@ -23277,15 +23429,31 @@ never about `A`.
 `hN : 0 < N` is REQUIRED: `GeometricallyConnected` carries nonemptiness through
 `ConnectedSpace`, and at `N = 0` the coarse space is empty.
 
-The `ℚ` analogue is `geometricallyConnected_of_gamma0GITPresentation`, which
-reduces to the purely algebraic "`B ⊗[k] K` is a domain for every field
-extension `K`" through `geometricallyConnected_specMap_algebraMap_of_forall_isDomain`.
-That helper is stated over a general base ring and is reusable here. -/
-theorem geometricallyConnected_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ)
-    [Fact p.Prime] (_hpN : ¬ p ∣ N)
+`hpN` is used only because the route passes through
+`isDomain_isIntegrallyClosed_globalSections_of_gamma0AtlasOver_zmod`, which
+genuinely needs it (at `p ∥ N` the fibre has two components).  The connectedness
+CONCLUSION itself is believed true at `p ∣ N` as well — the fibre is connected,
+just reducible — so a successor who wants the `p ∣ N` case must not expect to get
+it by dropping the hypothesis from this proof; it needs a different route that
+does not go through integrality. -/
+theorem geometricallyConnected_of_gamma0AtlasOver_zmod (N : ℕ) (hN : 0 < N) (p : ℕ)
+    [Fact p.Prime] (hpN : ¬ p ∣ N)
     (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
-    GeometricallyConnected A.str :=
-  sorry
+    GeometricallyConnected A.str := by
+  haveI := isAffine_of_gamma0AtlasOver_zmod N hN p hpN A
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective (A.Y.isoSpec.inv ≫ A.str)
+  letI : Algebra (ZMod p) Γ(A.Y, ⊤) := φ.hom.toAlgebra
+  have hstr : Spec.map (CommRingCat.ofHom (algebraMap (ZMod p) Γ(A.Y, ⊤)))
+      = A.Y.isoSpec.inv ≫ A.str := hφ
+  have hgc : GeometricallyConnected (A.Y.isoSpec.inv ≫ A.str) := by
+    rw [← hstr]
+    exact geometricallyConnected_specMap_algebraMap_of_forall_isDomain (ZMod p) Γ(A.Y, ⊤)
+      (fun K _ _ => isDomain_tensorGlobalSections_of_gamma0AtlasOver_zmod N hN p hpN A hstr K)
+  have hcomp : A.Y.isoSpec.hom ≫ (A.Y.isoSpec.inv ≫ A.str) = A.str := by
+    rw [← Category.assoc, Iso.hom_inv_id, Category.id_comp]
+  rw [← hcomp]
+  exact MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected)
+    A.Y.isoSpec.hom _ hgc
 
 /-- **The curve atlas in characteristic `p`, for `p ∤ N`** (PROVEN 2026-07-27
 over the atlas leaf and the three geometry leaves above; formerly a single
@@ -23296,7 +23464,15 @@ four geometric fields off it.  The split is the one the `ℚ` side already
 carries, and it is what makes the remaining work dispatchable: the atlas is
 Katz–Mazur (8.1.1), `isDomain` is Deligne–Rapoport IV.5.5/VI.6.7, `smooth` is
 Katz–Mazur Lemma (8.1.2) with `𝔽_p` perfect, `connected` is Deligne–Rapoport
-IV.5.5 or Shimura 6.6 — four different theorems, now four different leaves. -/
+IV.5.5 or Shimura 6.6.
+
+Since 2026-07-28 that is THREE open leaves rather than four, and the two DR
+IV.5.5 ones were merged: `isDomain` and `connected` are now both THEOREMS over
+the shared block above (`isDomain_isIntegrallyClosed_globalSections_…` and
+`isAlgebraic_globalSections_…`), so the classical irreducibility input is stated
+once instead of twice.  What remains open under this declaration is
+`exists_gamma0AtlasOver_isAffine_zmod` (the Katz–Mazur construction),
+`smoothOfRelativeDimension_of_gamma0AtlasOver_zmod`, and those two DR leaves. -/
 theorem nonempty_gamma0CurveAtlasOver_zmod (N : ℕ) (hN : 0 < N) (p : ℕ) [Fact p.Prime]
     (hpN : ¬ p ∣ N) :
     Nonempty (Gamma0CurveAtlasOver N (Spec (CommRingCat.of (ZMod p)))) := by
