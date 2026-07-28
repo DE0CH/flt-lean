@@ -76,7 +76,20 @@ of them about abelian schemes:
 * `lTensor_subtype_injective_of_pow_le` — the local flatness criterion's
   tensor step;
 * `nonempty_flatNoetherianStage_of_essFinitePresentation` — descent of
-  flatness to a noetherian stage;
+  flatness to a noetherian stage.  **PROVEN 2026-07-28** over four new leaves:
+  `nonempty_noetherianApproxSystem_of_essFinitePresentation` (Stacks 10.127.11 +
+  10.127.13), `exists_flatBase_index_of_noetherianApproxSystem` and
+  `exists_flatFibre_index_of_noetherianApproxSystem` (Stacks 10.128.3, twice),
+  and `exists_isLocalization_tensor_of_noetherianApproxSystem` (the localization
+  seam at the colimit).  See the section note "THE CUT OF THE APPROXIMATION
+  LEAF, TAKEN 2026-07-28".  **The two 10.128.3 leaves are themselves PROVEN
+  (2026-07-28)**, over the shared two-tower engine
+  `exists_flat_index_of_isNoetherianFlatDescentSystem` (the one statement of
+  10.128.3, consumed twice) plus the fibre-system verification
+  `isNoetherianFlatDescentSystem_fibre`, which is PROVEN over
+  `exists_mem_fibreIdealMid`, `exists_mem_fibreIdealTot` and
+  `exists_isLocalization_fibre`.  See the section note "10.128.3 IS ONE LEMMA
+  APPLIED TWICE";
 * `topologicalKrullDim_lt_top_of_isProper` — Noether normalisation;
 * `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
 * `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
@@ -1055,6 +1068,14 @@ this development).  Building them correctly is a task in its own right, and
 the wrong version of it is a FALSE leaf, as above.  So the system stays inside
 the approximation leaf's PROOF, where a wrong guess costs nothing.
 
+**UPDATE 2026-07-28.**  The refutation above is still exactly right and is why
+`NoetherianApproxSystem` (further down) uses `CommRingCat`-valued towers with
+their own transition maps and NOT `Subring R`-valued ones: the `Mid` and `Tot`
+transitions are not injective.  What has changed is only the last sentence — the
+system is now stated, in predicate form, so that the approximation leaf could be
+cut; `Ring.DirectLimit` is still not used anywhere, and no ring is constructed.
+See "THE CUT OF THE APPROXIMATION LEAF, TAKEN 2026-07-28" below.
+
 **WHAT THE CUT BUYS, concretely.**  00R7 is now PROVEN, and what was one leaf
 is two, along the source's own seam `00R7 = approximation + 00MP`:
 
@@ -1732,6 +1753,17 @@ this also implies", which verifies that the FIBRE system
 produces three leaves of which the "assembly" is not glue, and it is the
 first thing to reconsider if the leaf below turns out to be too big to prove
 in one go.
+
+**UPDATE 2026-07-28: the approximation leaf HAS now been cut, and the objection
+above was right about the wrong split.**  The fibre-system verification is
+indeed not glue — so it is not in the assembly; it is inside
+`exists_flatFibre_index_of_noetherianApproxSystem`, one of four declarations
+that replace the leaf.  The pin "no filtered colimit appears in the statement of
+any leaf" is the ONE decision of this note that has been reversed, and only
+because the free-floating objection that forced it (reason 4 below) expires
+exactly when the assembly is written.  The full argument is the section note
+"THE CUT OF THE APPROXIMATION LEAF, TAKEN 2026-07-28" further down; read it
+before treating anything in this note as current.
 -/
 
 /-- **THE OUTPUT OF STACKS 10.127.13 + 10.128.3, in the only form 00R7's
@@ -1829,35 +1861,1304 @@ structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B �
         (IsScalarTower.toAlgHom Mid Tot A) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid (B ⊗[Mid] Tot), IsLocalization W A
 
+/-! ### THE CUT OF THE APPROXIMATION LEAF, TAKEN 2026-07-28 — the system IS stated
+
+**SECTION NOTE for `NoetherianApproxSystem` and the four declarations under it.**
+
+The section note above pinned "**no filtered colimit appears in the statement of
+any leaf**" and, on the strength of it, the previous owner left
+`nonempty_flatNoetherianStage_of_essFinitePresentation` as ONE leaf carrying all
+of 10.127.11 + 10.127.13 + 10.128.3.  Its own "SURVEY FOR THE NEXT OWNER"
+recorded the obstruction in a refutable form, which is why it could be checked:
+
+> every honest cut of it needs the DIRECTED SYSTEM exposed in a statement,
+> because 10.128.3's conclusion is "for `λ` big enough", which is not
+> expressible about a single stage; a cut that merely hands the next leaf one
+> stage is fake, since the second leaf would have to rebuild the system anyway.
+
+**That paragraph is correct, and it is a specification, not a prohibition.**  The
+cut below satisfies it literally: the directed system IS exposed, as
+`NoetherianApproxSystem` — so 10.128.3's "for `λ` big enough" is stated in the
+only honest form it has, `∀ i, ∃ j ≥ i, …`, and nothing is handed one stage.
+
+**WHAT ACTUALLY CHANGED — the objection that used to block this has expired.**
+The four reasons the older note gave against putting a colimit in a statement
+were re-run one by one, and exactly one of them was load-bearing:
+
+1. *"a colimit API forces a transport"* — true of `Ring.DirectLimit`, which
+   CONSTRUCTS a ring, and false of the predicate form.  `NoetherianApproxSystem`
+   never asserts `R = colim R_λ` as an equality or a `RingEquiv`; it carries a
+   cocone `baseToR` plus the two ordinary filtered-colimit conditions
+   (`base_surj`, `base_sep`).  No hypothesis on `R`, `B`, `A` is ever transported.
+2. *"to be USEFUL it must carry all six properties of 10.127.13 — each a separate
+   opportunity to state something false, and none of which the consumer looks
+   at"* — the second clause is what changed.  Under this cut the consumers are
+   `exists_flatBase_index_of_noetherianApproxSystem`,
+   `exists_flatFibre_index_of_noetherianApproxSystem` and
+   `exists_isLocalization_tensor_of_noetherianApproxSystem`, and they look at
+   ALL of them: the Noetherian fields and the colimit conditions are what
+   10.128.3's Tor argument runs on, and `isLocalizationTotT` is the whole of the
+   third.  A field nobody reads is a risk; a field three leaves consume is an
+   interface.
+3. *"the free-floating rule makes the alternative impossible anyway — a colimit
+   API stated now would be consumed only inside the proof of a still-sorried
+   leaf, and a sorried body contributes no dependency edges"* — **this was the
+   real obstruction, and it dissolves exactly when the assembly is written.**
+   The leaf below is no longer sorried: its body is a real term that destructures
+   a `NoetherianApproxSystem` and builds a `FlatNoetherianStage` out of one of its
+   stages.  So the structure and all four leaves are in the cone of
+   `fermat_last_theorem` by the same edges that carried the old single leaf.
+   Glue-first is not merely permitted here, it is what makes the cut legal.
+4. *the three-way split "10.127.13 / 10.128.3 / assembly" leaves an assembly that
+   is not glue*, because 00R7's paragraph beginning "Note that this also implies"
+   — the verification that the FIBRE system is again a system as in 10.127.13 —
+   is itself substantial.  **Still true, and it is why that split is not the one
+   taken.**  Here the fibre-system verification is not in the assembly: it is
+   inside `exists_flatFibre_index_of_noetherianApproxSystem`, whose statement is
+   about the ring-level system and whose proof owns both the fibre check and the
+   second application of 10.128.3.  The assembly that remains is genuinely glue —
+   two `obtain`s, one proven lemma, and a structure instance.
+   *(Update 2026-07-28: that leaf is now PROVEN, and the two halves it owned have
+   been separated — the fibre check is `isNoetherianFlatDescentSystem_fibre`, the
+   second application of 10.128.3 is the SHARED engine
+   `exists_flat_index_of_isNoetherianFlatDescentSystem` that the base leaf uses too.
+   See the section note "10.128.3 IS ONE LEMMA APPLIED TWICE".)*
+
+**WHY THE `∀ i, ∃ j ≥ i` FORM, and why it is not a strengthening.**  10.128.3
+states "for some `λ`", but its PROOF fixes `λ` and produces `λ' ≥ λ` (it names
+the generators of `Tor_1^{R_λ}(M_λ, R_λ/𝔪_λ)`, which is finite because `S'_λ` is
+Noetherian, and pushes them to zero at a large enough `λ'`).  So the cofinal form
+is what the argument delivers.  It is also the only form that composes: after
+`exists_flatBase_index_of_noetherianApproxSystem` hands back `j₁`, the fibre
+application must be able to start AT `j₁`, or the two conclusions land at
+unrelated indices and cannot be combined.
+
+**WHAT THE ASSEMBLY HAD TO PROVE, and it is real content.**  Combining the two
+still needs base flatness to survive the passage `j₁ ≤ j₂`, and that is
+`NoetherianApproxSystem.flat_base_of_le` below, PROVEN: `Tot j₂` is a
+localization of `Base j₂ ⊗_{Base j₁} Tot j₁` (`isLocalizationTotBaseT`), the
+tensor factor is flat over `Base j₂` by base change, and `Module.Flat.trans`
+composes — the same three mathlib ingredients the endgame below uses, run one
+level down.  This is why `isLocalizationTotBaseT` is a field even though it is
+derivable from `isLocalizationMidT` and `isLocalizationTotT`: it is CONSUMED, by
+a proven lemma, in the assembly.
+
+**AXIS SEARCHED.**  Ways to cut `nonempty_flatNoetherianStage_of_essFinitePresentation`
+given that the directed system must appear in a statement.  NOT searched: whether
+`NoetherianApproxSystem`'s existence (10.127.11 + 10.127.13) can itself be cut —
+it can, and the survey in its docstring says where to start.  Also NOT searched:
+whether `Mid` can be dropped from the system.  It cannot, because
+`isLocalizationTotT` and the fibre leaf are both about `Mid`, but a reader
+looking for economy should know nobody tried.
+
+**THE CHECK THAT WOULD REFUTE THIS CUT.**  Exhibit a `NoetherianApproxSystem g v`
+— any one, junk included — for which one of the three sorried leaves is false.
+The junk stages that the `FlatNoetherianStage` docstring rules out are ruled out
+here for the same reason: `Base = Mid = Tot = R = B = A` fails `isNoetherianBase`
+unless `R` is Noetherian, and `Base = Mid = Tot = ℤ_(p)` fails `base_surj`.
+-/
+
+/-- **THE DIRECTED SYSTEM OF 10.127.13, as a predicate rather than a
+construction** — a filtered system of NOETHERIAN local stages
+`Base i → Mid i → Tot i` whose colimit is `R → B → A`, with the transition maps
+localizations after base change.
+
+In Stacks' notation the three towers are `R_λ`, `S_λ`, `S'_λ` and the module `M`
+is absent because 00R7 is applied at `M = S' = A`, where the presentation of `M`
+over `S'` may be taken to be `(S')^{⊕0} → (S')^{⊕1} → M → 0`; 10.127.13's
+property (6) (`M_λ ⊗_{S_λ} S_μ → M_μ` an isomorphism) is then vacuous and
+`M_λ = S'_λ` needs no separate carrier.
+
+**Why `CommRingCat` and not `Type u`.**  Purely to get the `CommRing` instances
+for a FAMILY of carriers without a `letI` in front of every field: `Base : Λ →
+CommRingCat.{u}` makes `CommRing ↥(Base i)` an instance, where `Base : Λ → Type
+u` would force `commRingBase : ∀ i, CommRing (Base i)` and then a `letI` prelude
+on all thirty fields below.  No category theory is used — the transition maps are
+plain `RingHom`s, not `⟶`s, and no (co)limit of the category is ever mentioned.
+
+**Why a raw relation `le` and not `[Preorder Λ]`.**  `Λ` is a field, so a
+`Preorder Λ` instance cannot be an instance-implicit binder of the structure, and
+`@IsDirected Λ preorder.toLE.le` is worse to read than the three explicit fields.
+
+**FAITHFULNESS.**  Every field is one of 10.127.11's or 10.127.13's conclusions,
+so this datum is no stronger than what those lemmas produce and
+`nonempty_noetherianApproxSystem_of_essFinitePresentation` is true if they are:
+
+* `isNoetherian*` — each `R_λ` is essentially of finite type over `ℤ`, each
+  `S_λ` over `R_λ`, each `S'_λ` over `S_λ`, hence all three are Noetherian.  Only
+  Noetherianity is asked for, not the `ℤ`-finiteness, because only Noetherianity
+  is used;
+* `isLocalRing*`, `isLocalHom*` — 10.127.11's system is one of LOCAL rings and
+  LOCAL homomorphisms, including the structure maps to the colimit;
+* `base_surj`/`base_sep` and their two siblings — the ordinary characterisation
+  of a filtered colimit, replacing "the colimit of the system is `R → B → A`";
+* `isLocalizationMidT` — 10.127.13(5) verbatim, `S_λ ⊗_{R_λ} R_μ → S_μ` a
+  localization, weakened from "at a prime ideal" to "at some submonoid" because
+  that is all any consumer uses;
+* `isLocalizationTotT` — the source's own property list one paragraph above the
+  end of 00R7's proof, `S'_λ ⊗_{S_λ} S_μ → S'_μ` a localization.  This is the
+  property whose misreading as an ISOMORPHISM produced the `isPushout` field that
+  had to be repaired on 2026-07-27; see the CORRECTION block above;
+* `isLocalizationTotBaseT` — 10.127.11 applied to `R → S'` rather than to
+  `R → S`.  It is DERIVABLE from the previous two (a localization base-changes to
+  a localization, and `S'_λ ⊗_{R_λ} R_μ ≅ S'_λ ⊗_{S_λ} (S_λ ⊗_{R_λ} R_μ)`), and
+  is a field anyway because `flat_base_of_le` consumes it directly and rederiving
+  it there would be strictly more work than proving it once inside
+  `nonempty_noetherianApproxSystem_of_essFinitePresentation`.
+
+**NON-DEGENERACY.**  The one-object system `Λ = PUnit`, `Base = Mid = Tot = R =
+B = A` satisfies every structural field but demands `IsNoetherianRing R`, `B`,
+`A` — exactly the junk stage that `FlatNoetherianStage`'s own check rules out —
+and the constant system on a Noetherian subring fails `base_surj`. -/
+structure NoetherianApproxSystem {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (g : R →+* B) (v : B →+* A) where
+  /-- The index set `Λ`. -/
+  Λ : Type u
+  /-- `Λ` is nonempty. -/
+  nonemptyΛ : Nonempty Λ
+  /-- The order on `Λ`, as a raw relation. -/
+  le : Λ → Λ → Prop
+  /-- `le` is reflexive. -/
+  le_rfl : ∀ i, le i i
+  /-- `le` is transitive. -/
+  le_trans' : ∀ {i j k}, le i j → le j k → le i k
+  /-- `Λ` is directed: this is what "filtered colimit" means here. -/
+  directed : ∀ i j, ∃ k, le i k ∧ le j k
+  /-- `R_λ`, the Noetherian local base at stage `i`. -/
+  Base : Λ → CommRingCat.{u}
+  /-- `S_λ`, the stage of `S = B`. -/
+  Mid : Λ → CommRingCat.{u}
+  /-- `S'_λ`, the stage of `S' = M = A`. -/
+  Tot : Λ → CommRingCat.{u}
+  /-- Each `R_λ` is local. -/
+  isLocalRingBase : ∀ i, IsLocalRing (Base i)
+  /-- Each `S_λ` is local. -/
+  isLocalRingMid : ∀ i, IsLocalRing (Mid i)
+  /-- Each `S'_λ` is local. -/
+  isLocalRingTot : ∀ i, IsLocalRing (Tot i)
+  /-- Each `R_λ` is Noetherian.  This, not essential finiteness over `ℤ`, is what
+  10.128.3's Tor argument and 00MP consume. -/
+  isNoetherianBase : ∀ i, IsNoetherianRing (Base i)
+  /-- Each `S_λ` is Noetherian. -/
+  isNoetherianMid : ∀ i, IsNoetherianRing (Mid i)
+  /-- Each `S'_λ` is Noetherian.  This is the field that makes
+  `Tor_1^{R_λ}(M_λ, R_λ/𝔪_λ)` finitely generated in 10.128.3. -/
+  isNoetherianTot : ∀ i, IsNoetherianRing (Tot i)
+  /-- `R_λ → S_λ`. -/
+  baseToMid : ∀ i, Base i →+* Mid i
+  /-- `S_λ → S'_λ`. -/
+  midToTot : ∀ i, Mid i →+* Tot i
+  /-- `R_λ → S_λ` is local. -/
+  isLocalHomBaseToMid : ∀ i, IsLocalHom (baseToMid i)
+  /-- `S_λ → S'_λ` is local. -/
+  isLocalHomMidToTot : ∀ i, IsLocalHom (midToTot i)
+  /-- The transition map `R_λ → R_μ`. -/
+  baseT : ∀ {i j}, le i j → (Base i →+* Base j)
+  /-- The transition map `S_λ → S_μ`. -/
+  midT : ∀ {i j}, le i j → (Mid i →+* Mid j)
+  /-- The transition map `S'_λ → S'_μ`. -/
+  totT : ∀ {i j}, le i j → (Tot i →+* Tot j)
+  /-- The cocone map `R_λ → R`. -/
+  baseToR : ∀ i, Base i →+* R
+  /-- The cocone map `S_λ → S`. -/
+  midToB : ∀ i, Mid i →+* B
+  /-- The cocone map `S'_λ → S'`. -/
+  totToA : ∀ i, Tot i →+* A
+  /-- The square `R_λ → S_λ → S` / `R_λ → R → S` commutes. -/
+  comm_baseMid : ∀ i, (midToB i).comp (baseToMid i) = g.comp (baseToR i)
+  /-- The square `S_λ → S'_λ → S'` / `S_λ → S → S'` commutes. -/
+  comm_midTot : ∀ i, (totToA i).comp (midToTot i) = v.comp (midToB i)
+  /-- The vertical maps are natural in `Λ`, at the `R_λ → S_λ` level. -/
+  comm_baseT : ∀ {i j} (h : le i j), (baseToMid j).comp (baseT h) = (midT h).comp (baseToMid i)
+  /-- The vertical maps are natural in `Λ`, at the `S_λ → S'_λ` level. -/
+  comm_midT : ∀ {i j} (h : le i j), (midToTot j).comp (midT h) = (totT h).comp (midToTot i)
+  /-- `baseT` is functorial. -/
+  baseT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (baseT h₂).comp (baseT h₁) = baseT (le_trans' h₁ h₂)
+  /-- `midT` is functorial. -/
+  midT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (midT h₂).comp (midT h₁) = midT (le_trans' h₁ h₂)
+  /-- `totT` is functorial. -/
+  totT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (totT h₂).comp (totT h₁) = totT (le_trans' h₁ h₂)
+  /-- `baseToR` is a cocone. -/
+  comm_baseToR : ∀ {i j} (h : le i j), (baseToR j).comp (baseT h) = baseToR i
+  /-- `midToB` is a cocone. -/
+  comm_midToB : ∀ {i j} (h : le i j), (midToB j).comp (midT h) = midToB i
+  /-- `totToA` is a cocone. -/
+  comm_totToA : ∀ {i j} (h : le i j), (totToA j).comp (totT h) = totToA i
+  /-- The transitions are local. -/
+  isLocalHomBaseT : ∀ {i j} (h : le i j), IsLocalHom (baseT h)
+  /-- The transitions are local. -/
+  isLocalHomMidT : ∀ {i j} (h : le i j), IsLocalHom (midT h)
+  /-- The transitions are local. -/
+  isLocalHomTotT : ∀ {i j} (h : le i j), IsLocalHom (totT h)
+  /-- The cocone maps are local.  This is what makes `𝔪_R` the colimit of the
+  `𝔪_{R_λ}`, which the fibre leaf below needs. -/
+  isLocalHomBaseToR : ∀ i, IsLocalHom (baseToR i)
+  /-- The cocone maps are local. -/
+  isLocalHomMidToB : ∀ i, IsLocalHom (midToB i)
+  /-- The cocone maps are local. -/
+  isLocalHomTotToA : ∀ i, IsLocalHom (totToA i)
+  /-- `R` is the colimit, half one: every element comes from some stage. -/
+  base_surj : ∀ x : R, ∃ i, ∃ y : Base i, baseToR i y = x
+  /-- `B` is the colimit, half one. -/
+  mid_surj : ∀ x : B, ∃ i, ∃ y : Mid i, midToB i y = x
+  /-- `A` is the colimit, half one. -/
+  tot_surj : ∀ x : A, ∃ i, ∃ y : Tot i, totToA i y = x
+  /-- `R` is the colimit, half two: elements identified downstairs are identified
+  at some later stage. -/
+  base_sep : ∀ i (x y : Base i), baseToR i x = baseToR i y →
+    ∃ j, ∃ h : le i j, baseT h x = baseT h y
+  /-- `B` is the colimit, half two. -/
+  mid_sep : ∀ i (x y : Mid i), midToB i x = midToB i y →
+    ∃ j, ∃ h : le i j, midT h x = midT h y
+  /-- `A` is the colimit, half two. -/
+  tot_sep : ∀ i (x y : Tot i), totToA i x = totToA i y →
+    ∃ j, ∃ h : le i j, totT h x = totT h y
+  /-- **10.127.13(5)**: `S_μ` is a localization of `R_μ ⊗_{R_λ} S_λ`. -/
+  isLocalizationMidT : ∀ {i j} (h : le i j),
+    letI : Algebra (Base i) (Mid i) := (baseToMid i).toAlgebra
+    letI : Algebra (Base i) (Base j) := (baseT h).toAlgebra
+    letI : Algebra (Base i) (Mid j) := ((baseToMid j).comp (baseT h)).toAlgebra
+    letI : Algebra (Base j) (Mid j) := (baseToMid j).toAlgebra
+    letI : Algebra (Mid i) (Mid j) := (midT h).toAlgebra
+    haveI : IsScalarTower (Base i) (Base j) (Mid j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (Base i) (Mid i) (Mid j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (comm_baseT h) x
+    letI : Algebra (Base j ⊗[Base i] Mid i) (Mid j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (Base i) (Base j) (Mid j))
+        (IsScalarTower.toAlgHom (Base i) (Mid i) (Mid j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (Base j ⊗[Base i] Mid i), IsLocalization W (Mid j)
+  /-- **The property 00R7's proof lists for the top tower**: `S'_μ` is a
+  localization of `S_μ ⊗_{S_λ} S'_λ`.  NOT an isomorphism — see the CORRECTION
+  block in the section note "THE COLIMIT-API DECISION". -/
+  isLocalizationTotT : ∀ {i j} (h : le i j),
+    letI : Algebra (Mid i) (Tot i) := (midToTot i).toAlgebra
+    letI : Algebra (Mid i) (Mid j) := (midT h).toAlgebra
+    letI : Algebra (Mid i) (Tot j) := ((midToTot j).comp (midT h)).toAlgebra
+    letI : Algebra (Mid j) (Tot j) := (midToTot j).toAlgebra
+    letI : Algebra (Tot i) (Tot j) := (totT h).toAlgebra
+    haveI : IsScalarTower (Mid i) (Mid j) (Tot j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (Mid i) (Tot i) (Tot j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (comm_midT h) x
+    letI : Algebra (Mid j ⊗[Mid i] Tot i) (Tot j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (Mid i) (Mid j) (Tot j))
+        (IsScalarTower.toAlgHom (Mid i) (Tot i) (Tot j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (Mid j ⊗[Mid i] Tot i), IsLocalization W (Tot j)
+  /-- **10.127.11(4) applied to `R → S'`**: `S'_μ` is a localization of
+  `R_μ ⊗_{R_λ} S'_λ`.  Derivable from the two fields above; carried because
+  `NoetherianApproxSystem.flat_base_of_le` consumes it. -/
+  isLocalizationTotBaseT : ∀ {i j} (h : le i j),
+    letI : Algebra (Base i) (Tot i) := ((midToTot i).comp (baseToMid i)).toAlgebra
+    letI : Algebra (Base i) (Base j) := (baseT h).toAlgebra
+    letI : Algebra (Base i) (Tot j) :=
+      ((midToTot j).comp ((baseToMid j).comp (baseT h))).toAlgebra
+    letI : Algebra (Base j) (Tot j) := ((midToTot j).comp (baseToMid j)).toAlgebra
+    letI : Algebra (Tot i) (Tot j) := (totT h).toAlgebra
+    haveI : IsScalarTower (Base i) (Base j) (Tot j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (Base i) (Tot i) (Tot j) :=
+      IsScalarTower.of_algebraMap_eq fun x =>
+        (congrArg (midToTot j) (DFunLike.congr_fun (comm_baseT h) x)).trans
+          (DFunLike.congr_fun (comm_midT h) ((baseToMid i) x))
+    letI : Algebra (Base j ⊗[Base i] Tot i) (Tot j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (Base i) (Base j) (Tot j))
+        (IsScalarTower.toAlgHom (Base i) (Tot i) (Tot j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (Base j ⊗[Base i] Tot i), IsLocalization W (Tot j)
+
+/-- **BASE FLATNESS IS STABLE UPWARDS IN THE SYSTEM** (PROVEN).  If `S'_λ` is
+flat over `R_λ` and `λ ≤ μ`, then `S'_μ` is flat over `R_μ`.
+
+This is what lets the two cofinal existence leaves below be COMBINED: the first
+delivers base flatness at `j₁`, the second delivers fibre flatness at some
+`j₂ ≥ j₁`, and without this lemma the two conclusions sit at different indices
+and no single stage carries both.
+
+The proof is 00R7's own endgame run one level down, on the three ingredients the
+section note above named: `S'_μ` is a localization of `R_μ ⊗_{R_λ} S'_λ`
+(`isLocalizationTotBaseT`), that tensor product is flat over `R_μ` by
+`Module.Flat.baseChange`, a localization is flat (`IsLocalization.flat`), and
+`Module.Flat.trans` composes the two. -/
+theorem NoetherianApproxSystem.flat_base_of_le {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
+    (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j)
+    (hi : ((sys.midToTot i).comp (sys.baseToMid i)).Flat) :
+    ((sys.midToTot j).comp (sys.baseToMid j)).Flat := by
+  letI : Algebra (sys.Base i) (sys.Tot i) :=
+    ((sys.midToTot i).comp (sys.baseToMid i)).toAlgebra
+  letI : Algebra (sys.Base i) (sys.Base j) := (sys.baseT h).toAlgebra
+  letI : Algebra (sys.Base i) (sys.Tot j) :=
+    ((sys.midToTot j).comp ((sys.baseToMid j).comp (sys.baseT h))).toAlgebra
+  letI : Algebra (sys.Base j) (sys.Tot j) := ((sys.midToTot j).comp (sys.baseToMid j)).toAlgebra
+  letI : Algebra (sys.Tot i) (sys.Tot j) := (sys.totT h).toAlgebra
+  haveI : IsScalarTower (sys.Base i) (sys.Base j) (sys.Tot j) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (sys.Base i) (sys.Tot i) (sys.Tot j) :=
+    IsScalarTower.of_algebraMap_eq fun x =>
+      (congrArg (sys.midToTot j) (DFunLike.congr_fun (sys.comm_baseT h) x)).trans
+        (DFunLike.congr_fun (sys.comm_midT h) ((sys.baseToMid i) x))
+  letI : Algebra (sys.Base j ⊗[sys.Base i] sys.Tot i) (sys.Tot j) :=
+    (Algebra.TensorProduct.lift
+      (IsScalarTower.toAlgHom (sys.Base i) (sys.Base j) (sys.Tot j))
+      (IsScalarTower.toAlgHom (sys.Base i) (sys.Tot i) (sys.Tot j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := sys.isLocalizationTotBaseT h
+  haveI : Module.Flat (sys.Base i) (sys.Tot i) := hi
+  haveI : Module.Flat (sys.Base j) (sys.Base j ⊗[sys.Base i] sys.Tot i) :=
+    Module.Flat.baseChange _ _ _
+  haveI : IsScalarTower (sys.Base j) (sys.Base j ⊗[sys.Base i] sys.Tot i) (sys.Tot j) :=
+    IsScalarTower.of_algebraMap_eq fun b => by
+      show ((sys.midToTot j).comp (sys.baseToMid j)) b = _
+      simp [RingHom.algebraMap_toAlgebra]
+  haveI : Module.Flat (sys.Base j ⊗[sys.Base i] sys.Tot i) (sys.Tot j) :=
+    IsLocalization.flat _ W
+  exact Module.Flat.trans (sys.Base j) (sys.Base j ⊗[sys.Base i] sys.Tot i) (sys.Tot j)
+
+/-- **NOETHERIAN APPROXIMATION: Stacks 10.127.11 + 10.127.13** (SORRY LEAF, cut
+2026-07-28 out of `nonempty_flatNoetherianStage_of_essFinitePresentation` below;
+read the section note "THE CUT OF THE APPROXIMATION LEAF" above first).
+
+*A local `R → B → A` with both `R → B` and `R → A` essentially of finite
+presentation is the filtered colimit of a directed system of NOETHERIAN local
+stages, with the transition maps localizations after base change.*
+
+This is 10.127.13 (which is 10.127.11 applied twice, once to `R → S` and once to
+`R → S'`, on a common index set) with the module dropped, because 00R7 is applied
+at `M = S' = A`.  It contains no flatness whatsoever: every flatness statement of
+00R7's proof is in the two leaves below.
+
+**SURVEY, carried over from the previous owner of the uncut leaf (2026-07-27) and
+still the place to start — three findings, each greppable.**
+
+1. **A large part of 10.127.13 IS ALREADY IN THE PIN, in a place a naive grep for
+   "Noetherian approximation" misses.**
+   `Mathlib/RingTheory/Extension/Presentation/Core.lean` defines, for a
+   `Presentation R S ι σ` with `ι`, `σ` finite (i.e. a finite presentation),
+   `P.coeffs`, the class `P.HasCoeffs R₀` ("`R₀ → R` hits every coefficient of
+   every relation"), `P.ModelOfHasCoeffs R₀` — carrying an instance
+   `Algebra.FinitePresentation R₀ (P.ModelOfHasCoeffs R₀)` — and, crucially,
+   `P.tensorModelOfHasCoeffsEquiv R₀ : R ⊗[R₀] P.ModelOfHasCoeffs R₀ ≃ₐ[R] S`.
+   That is exactly "descend a finitely presented algebra to a subring containing
+   the coefficients, and recover it by base change", which is the
+   `S_λ = R_λ[x]/(f_λ)` half of 10.127.13 with the base-change property supplied.
+   `R₀` need not be injective into `R` — the class only asks for
+   `coeffs ⊆ Set.range (algebraMap R₀ R)`.  `Mathlib/RingTheory/Smooth/Flat.lean`
+   uses the same machinery (`Algebra.exists_finiteType ℤ R A`) to run precisely a
+   "choose a model over a finitely generated `ℤ`-subalgebra" argument, so there is
+   a worked example of the idiom in the pin.  What is NOT supplied is everything
+   to do with the LOCALIZATIONS: the primes `𝔮_λ`, the locality of `S_λ → S`, and
+   the transition maps being localizations — i.e. `isLocalHomMidToB`,
+   `isLocalizationMidT` and `isLocalizationTotT` above.
+
+2. **The `Base` tower is provable today and the subring realisation IS correct
+   for it** — the note above refutes subrings only for `B` and `A`.  The
+   construction: for a finite `s ⊆ R`, put `C₀ = Subring.closure ↑s`
+   (`IsNoetherianRing ↥C₀` is `is_noetherian_subring_closure`,
+   `Mathlib/RingTheory/Adjoin/FG.lean:202`), `𝔭 = 𝔪_R ∩ C₀`, and take `R_s ⊆ R`
+   to be `{x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`.  It is a subring, it is
+   `IsLocalization 𝔭.primeCompl`-isomorphic to `(C₀)_𝔭` hence Noetherian
+   (`IsLocalization.isNoetherianRing`,
+   `Mathlib/RingTheory/Localization/Submodule.lean:82`), its non-units are exactly
+   `R_s ∩ 𝔪_R` so it is local, its inclusion is an `IsLocalHom`, and `s ↦ R_s` is
+   MONOTONE in `s` with `⋃ₛ R_s = R` — which is `base_surj` plus `directed` above,
+   and 10.127.11's opening.
+
+3. **Do not look for `Ring.DirectLimit` in this proof.**  Take `Λ = Finset R`
+   ordered by `⊆`, with `Base s = R_s` as in 2 and `Mid s`, `Tot s` the models of
+   1 localized at the contracted primes; with essential finite PRESENTATION the
+   ideals do not grow with `s` (fixed generators suffice), so the only thing the
+   transition maps do is enlarge the base — which is why the system is concrete
+   rather than abstract, and why the `∃`-form of this leaf is not asking for an
+   abstract colimit to be constructed.  `grep -rni "noetherian approximation"
+   .lake/packages/mathlib` was empty and `grep -rn "Ring.DirectLimit" Fermat/
+   ~/cs/FLT` found no use anywhere in this development on 2026-07-27; a hit on
+   either means this note has gone stale.
+
+**FAITHFULNESS.**  The hypotheses are 00R7's, and the conclusion is a strict
+subset of 10.127.13's conclusions (the module is dropped, "essentially of finite
+type over `ℤ`" is weakened to "Noetherian", and "localization at a prime" to
+"localization at a submonoid"), so this is true if 10.127.13 is.  Non-degeneracy
+is discussed in `NoetherianApproxSystem`'s docstring: `base_surj` is what rules
+out a constant system on a Noetherian subring. -/
+theorem nonempty_noetherianApproxSystem_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfpA : EssFinitePresentation (v.comp g))
+    (_hfpB : EssFinitePresentation g) :
+    Nonempty (NoetherianApproxSystem g v) :=
+  sorry
+
+/-! ### 10.128.3 IS ONE LEMMA APPLIED TWICE — the two-tower abstraction, 2026-07-28
+
+**SECTION NOTE for `IsNoetherianFlatDescentSystem` and the six declarations under it.**
+
+The two leaves of the cut above,
+`exists_flatBase_index_of_noetherianApproxSystem` and
+`exists_flatFibre_index_of_noetherianApproxSystem`, are the SAME source lemma —
+Stacks 10.128.3 ([Stacks 00R6]) — applied to two different systems.  00R7's proof
+says so in as many words: step 2 applies it to `(R_λ → S'_λ, M_λ)` and step 3
+checks that the fibre datum `(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again
+a system as in 10.127.13 and applies it AGAIN.  Proving the two leaves separately
+would therefore build 10.128.3 twice, so the machinery is stated ONCE here, as a
+predicate on an abstract two-tower system, and both leaves are `exact` applications
+of it.  That is the whole design of this block; the mathematics that is NOT shared —
+the fibre-system verification — is the three leaves under
+`isNoetherianFlatDescentSystem_fibre`.
+
+**WHY TWO TOWERS AND NOT THREE.**  10.128.3's data is a ring map `R → S` together
+with an `S`-module `M`; here `M = M_λ = S'_λ` throughout (the presentation of `M`
+over `S'` may be taken to be `(S')^{⊕0} → (S')^{⊕1} → M → 0`, which is why
+`NoetherianApproxSystem` has three towers and no module), so "module" and "top ring"
+coincide and the datum collapses to a tower `C_λ → D_λ` with `M_λ = D_λ`.  The two
+applications differ only in what `C` and `D` are:
+
+* **first application**: `C = Base`, `D = Tot`.  In Stacks' notation the pair is
+  `(R_λ → S'_λ, M_λ = S'_λ)`, i.e. the source's `S` is our `Tot` and NOT our `Mid`;
+* **second application**: `C i = Mid i ⧸ 𝔭_i`, `D i = Tot i ⧸ 𝔭_i`, the fibre system.
+
+**WHY `isLocalizationDT` IS THE SHAPE IT IS.**  10.128.3 ends by invoking the
+relative local criterion [Stacks 00MO] (Lemma 10.99.14), whose hypothesis (1) is
+"`S'` is a localization of `S ⊗_R R'`" for the square `R → R'`, `S → S'`.  At
+`λ ≤ μ` that square is `C_λ → C_μ`, `D_λ → D_μ`, so the hypothesis reads "`D_μ` is a
+localization of `C_μ ⊗_{C_λ} D_λ`" — which is exactly the field below, and exactly
+why `NoetherianApproxSystem.isLocalizationTotBaseT` exists as a field: the first
+application discharges it VERBATIM (`isLocalizationDT h := sys.isLocalizationTotBaseT h`,
+no transport).  For the fibre system it is the quotient of `isLocalizationTotT`, which
+is the leaf `exists_isLocalization_fibre`.
+
+**WHY THE CORE IS STILL A SORRY, and what specifically is missing.**  10.128.3's
+proof runs `Tor_1^{C_λ}(D_λ, C_λ/𝔪_λ)`, which the source rewrites (Remark 10.75.9) as
+`ker(𝔪_λ ⊗_{C_λ} D_λ → D_λ)` — so the Tor GROUP is expressible in this pin.  What is
+not is the last step: the criterion [Stacks 00MO] is proven from [Stacks 00ML] and
+the base-change comparison maps for `Tor_1`, all of which need the long exact
+sequence.  `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`'s module
+docstring records the same obstruction for the nilpotent local criterion and is the
+place a `Tor_1` theory belongs; that file is this leaf's natural prerequisite.
+
+**FAITHFULNESS OF THE PREDICATE.**  Every field is one of 10.127.13's conclusions or
+one of 10.99.14's hypotheses, so `IsNoetherianFlatDescentSystem` is no stronger than
+what the source has in hand when it applies 10.128.3, and both instances below are
+PROVEN (the `baseTot` one outright, the fibre one over three named leaves).  Nothing
+is asked for that no application can supply — which is the check a hypothesis-side
+datum has to pass, and the reason the fields were chosen by walking 00R6's and 00MO's
+proofs rather than by copying `NoetherianApproxSystem`.
+
+**AXIS SEARCHED.**  Whether the two 10.128.3 applications share a statement.  NOT
+searched: whether the module `M` can be reinstated as a fourth carrier so that this
+predicate covers 10.128.3 in full generality rather than at `M = S'` — it can, and it
+is what a mathlib-facing version should do, but nothing in this development needs it.
+
+**THE CHECK THAT WOULD REFUTE THIS CUT.**  Exhibit an
+`IsNoetherianFlatDescentSystem` with `w` flat for which no `j ≥ i` has `cd j` flat.
+By 10.128.3 that is a refutation of the source, so the real risk is the opposite one:
+a field that no application can supply.  Both applications below are written out, so
+that risk is discharged by the compiler rather than by argument.
+
+[Stacks 00R6]: https://stacks.math.columbia.edu/tag/00R6
+[Stacks 00MO]: https://stacks.math.columbia.edu/tag/00MO
+[Stacks 00ML]: https://stacks.math.columbia.edu/tag/00ML
+-/
+
+/-- **THE DATUM 10.128.3 RUNS ON, as a predicate over explicitly given data** — a
+filtered system of NOETHERIAN LOCAL rings `C i → D i` whose colimit is `w : Cbot →+* Dbot`,
+with `D` a localization of `C`-base-change along the transitions.
+
+Read the section note above for why this exists and why it has two towers rather than
+three.  In Stacks' notation `C i = R_λ`, `D i = S'_λ = M_λ`, `Cbot = R`, `Dbot = S' = M`.
+
+**WHY A PREDICATE OVER GIVEN DATA and not a bundled structure.**  Both consumers must
+land their conclusion ON THE NOSE — leaf 2's goal is an `Ideal.quotientMap`, written out
+— and a bundled structure would force a transport of `RingHom.Flat` along an
+isomorphism of carriers.  Here the carriers ARE the quotients, so `cd j` is
+syntactically the map the leaf asks about.
+
+**FAITHFULNESS, field by field.**  Each is either a conclusion of 10.127.13 (hence
+available in any `NoetherianApproxSystem`, which is what the first application uses) or
+a hypothesis of [Stacks 00MO], which is what 10.128.3's endgame invokes:
+
+* `le_rfl`, `le_trans'`, `directed` — `Λ` is a filtered index set;
+* `isLocalRingC`, `isLocalRingD`, `isNoetherianC`, `isNoetherianD`, `isLocalHomCD` —
+  00MO asks for local homomorphisms of local NOETHERIAN rings.  `isNoetherianD` is
+  additionally what makes `ker(𝔪_λ ⊗_{C_λ} D_λ → D_λ)` finitely generated, which is the
+  first line of 00R6's proof;
+* `cT_comp`, `dT_comp`, `comm_T`, `comm_cocone`, `comm_cToC`, `comm_dToD` — functoriality
+  and the cocone, i.e. "the colimit of the system is `w`";
+* `isLocalHomCT`, `isLocalHomDT`, `isLocalHomCToC`, `isLocalHomDToD` — 10.127.11's system
+  is one of local rings and local homomorphisms, structure maps included;
+* `c_surj`, `d_surj`, `c_sep`, `d_sep` — the ordinary characterisation of a filtered
+  colimit, and what 00R6's "tensor products commute with colimits" step consumes;
+* `isLocalizationDT` — hypothesis (1) of [Stacks 00MO]; see the section note.
+
+**NON-DEGENERACY.**  The one-object system `Λ = PUnit`, `C = D = Cbot = Dbot` satisfies
+every structural field but demands `IsNoetherianRing Cbot`, which is exactly the junk
+stage 00R7 is trying to avoid; and a constant system on a Noetherian subring fails
+`c_surj`. -/
+structure IsNoetherianFlatDescentSystem {Λ : Type u} (le : Λ → Λ → Prop)
+    (C D : Λ → Type u) [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    (cd : ∀ i, C i →+* D i)
+    (cT : ∀ {i j : Λ}, le i j → (C i →+* C j))
+    (dT : ∀ {i j : Λ}, le i j → (D i →+* D j))
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] (w : Cbot →+* Dbot)
+    (cToC : ∀ i, C i →+* Cbot) (dToD : ∀ i, D i →+* Dbot) : Prop where
+  /-- `le` is reflexive. -/
+  le_rfl : ∀ i, le i i
+  /-- `le` is transitive. -/
+  le_trans' : ∀ {i j k}, le i j → le j k → le i k
+  /-- `Λ` is directed. -/
+  directed : ∀ i j, ∃ k, le i k ∧ le j k
+  /-- Each `R_λ` is local. -/
+  isLocalRingC : ∀ i, IsLocalRing (C i)
+  /-- Each `S'_λ` is local. -/
+  isLocalRingD : ∀ i, IsLocalRing (D i)
+  /-- Each `R_λ` is Noetherian. -/
+  isNoetherianC : ∀ i, IsNoetherianRing (C i)
+  /-- Each `S'_λ` is Noetherian.  This is what makes `Tor_1^{R_λ}(M_λ, R_λ/𝔪_λ)`
+  finitely generated in 10.128.3. -/
+  isNoetherianD : ∀ i, IsNoetherianRing (D i)
+  /-- `R_λ → S'_λ` is local. -/
+  isLocalHomCD : ∀ i, IsLocalHom (cd i)
+  /-- The `C` transitions are functorial. -/
+  cT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (cT h₂).comp (cT h₁) = cT (le_trans' h₁ h₂)
+  /-- The `D` transitions are functorial. -/
+  dT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (dT h₂).comp (dT h₁) = dT (le_trans' h₁ h₂)
+  /-- The vertical maps are natural in `Λ`. -/
+  comm_T : ∀ {i j} (h : le i j), (cd j).comp (cT h) = (dT h).comp (cd i)
+  /-- The `C` transitions are local. -/
+  isLocalHomCT : ∀ {i j} (h : le i j), IsLocalHom (cT h)
+  /-- The `D` transitions are local. -/
+  isLocalHomDT : ∀ {i j} (h : le i j), IsLocalHom (dT h)
+  /-- The square `C i → D i → Dbot` / `C i → Cbot → Dbot` commutes. -/
+  comm_cocone : ∀ i, (dToD i).comp (cd i) = w.comp (cToC i)
+  /-- `cToC` is a cocone. -/
+  comm_cToC : ∀ {i j} (h : le i j), (cToC j).comp (cT h) = cToC i
+  /-- `dToD` is a cocone. -/
+  comm_dToD : ∀ {i j} (h : le i j), (dToD j).comp (dT h) = dToD i
+  /-- The `C` cocone maps are local. -/
+  isLocalHomCToC : ∀ i, IsLocalHom (cToC i)
+  /-- The `D` cocone maps are local. -/
+  isLocalHomDToD : ∀ i, IsLocalHom (dToD i)
+  /-- `Cbot` is the colimit, half one. -/
+  c_surj : ∀ x : Cbot, ∃ i, ∃ y : C i, cToC i y = x
+  /-- `Dbot` is the colimit, half one. -/
+  d_surj : ∀ x : Dbot, ∃ i, ∃ y : D i, dToD i y = x
+  /-- `Cbot` is the colimit, half two. -/
+  c_sep : ∀ i (x y : C i), cToC i x = cToC i y → ∃ j, ∃ h : le i j, cT h x = cT h y
+  /-- `Dbot` is the colimit, half two. -/
+  d_sep : ∀ i (x y : D i), dToD i x = dToD i y → ∃ j, ∃ h : le i j, dT h x = dT h y
+  /-- **Hypothesis (1) of [Stacks 00MO]**: `D_μ` is a localization of `C_μ ⊗_{C_λ} D_λ`.
+  See the section note for why this, and not an isomorphism, is what the source gives. -/
+  isLocalizationDT : ∀ {i j} (h : le i j),
+    letI : Algebra (C i) (D i) := (cd i).toAlgebra
+    letI : Algebra (C i) (C j) := (cT h).toAlgebra
+    letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+    letI : Algebra (C j) (D j) := (cd j).toAlgebra
+    letI : Algebra (D i) (D j) := (dT h).toAlgebra
+    haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (C i) (D i) (D j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (comm_T h) x
+    letI : Algebra (C j ⊗[C i] D i) (D j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (C i) (C j) (D j))
+        (IsScalarTower.toAlgHom (C i) (D i) (D j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (C j ⊗[C i] D i), IsLocalization W (D j)
+
+/-- **STACKS 10.128.3** ([Stacks 00R6]; SORRY LEAF, the single shared engine of the two
+applications — read the section note above before touching it).
+
+*In a `IsNoetherianFlatDescentSystem` whose colimit `w` is flat, `cd j` is flat cofinally
+in `Λ`.*
+
+**THE PROOF, from the source.**  Fix `i`.  `Tor_1^{C_i}(D_i, C_i/𝔪_i)` is the kernel of
+`𝔪_i ⊗_{C_i} D_i → D_i` (Remark 10.75.9), and it is a finitely generated `D_i`-module
+because `D_i` is Noetherian (`isNoetherianD`); let `ξ_1, …, ξ_n` generate it.  Flatness
+of `Dbot` over `Cbot` gives `ker(𝔪_i Cbot ⊗_{Cbot} Dbot → Dbot) = 0`, and tensor products
+commute with filtered colimits, so — using `c_surj`/`c_sep`/`d_surj`/`d_sep` — there is
+`j ≥ i` with every `ξ_k` mapping to zero in `𝔪_i C_j ⊗_{C_j} D_j`.  Hence
+`Tor_1^{C_i}(D_i, C_i/𝔪_i) → Tor_1^{C_j}(D_j, C_j/𝔪_i C_j)` is zero, and since
+`D_i ⊗_{C_i} C_i/𝔪_i` is flat over the FIELD `C_i/𝔪_i`, [Stacks 00MO] applied to the
+square `C_i → C_j`, `D_i → D_j` — whose hypothesis (1) is `isLocalizationDT` — gives
+`D_j` flat over `C_j`.
+
+**WHAT BLOCKS IT AT THIS PIN.**  Only the last step.  [Stacks 00MO] is proven from
+[Stacks 00ML] plus the two base-change comparison maps for `Tor_1`, and there is no
+`Tor` long exact sequence in this pin — see the module docstring of
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, which records the same
+obstruction and is where a `Tor_1` theory belongs.  A prover who builds `Tor_1` and its
+six-term sequence in the first variable closes that leaf and this one together.
+
+**FAITHFULNESS.**  The conclusion is 10.128.3's, in the cofinal form its PROOF delivers
+(the proof fixes `λ` and produces `λ' ≥ λ`); restricting the system to `{j | i ≤ j}`
+turns the cofinal form back into 10.128.3's bare `∃ λ`, so this is not a strengthening.
+
+[Stacks 00R6]: https://stacks.math.columbia.edu/tag/00R6
+[Stacks 00MO]: https://stacks.math.columbia.edu/tag/00MO
+[Stacks 00ML]: https://stacks.math.columbia.edu/tag/00ML -/
+theorem exists_flat_index_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (_hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    (_hflat : w.Flat) (i : Λ) :
+    ∃ j : Λ, ∃ _ : le i j, (cd j).Flat :=
+  sorry
+
+/-- **THE `R_λ → S'_λ` TOWER OF A `NoetherianApproxSystem` IS A DESCENT SYSTEM**
+(PROVEN).  Every field is a field of the system, a composite of two of them, or a
+one-line consequence of the commuting squares; `isLocalizationDT` is
+`isLocalizationTotBaseT` VERBATIM, which is what that field exists for. -/
+theorem NoetherianApproxSystem.isNoetherianFlatDescentSystem_baseTot {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
+    (sys : NoetherianApproxSystem g v) :
+    IsNoetherianFlatDescentSystem sys.le (fun i => sys.Base i) (fun i => sys.Tot i)
+      (fun i => (sys.midToTot i).comp (sys.baseToMid i))
+      (fun {_ _} h => sys.baseT h) (fun {_ _} h => sys.totT h)
+      (v.comp g) sys.baseToR sys.totToA where
+  le_rfl := sys.le_rfl
+  le_trans' := sys.le_trans'
+  directed := sys.directed
+  isLocalRingC := sys.isLocalRingBase
+  isLocalRingD := sys.isLocalRingTot
+  isNoetherianC := sys.isNoetherianBase
+  isNoetherianD := sys.isNoetherianTot
+  isLocalHomCD i := by
+    haveI := sys.isLocalHomBaseToMid i
+    haveI := sys.isLocalHomMidToTot i
+    infer_instance
+  cT_comp := sys.baseT_comp
+  dT_comp := sys.totT_comp
+  comm_T h := by
+    rw [RingHom.comp_assoc, sys.comm_baseT h, ← RingHom.comp_assoc, sys.comm_midT h,
+      RingHom.comp_assoc]
+  isLocalHomCT := sys.isLocalHomBaseT
+  isLocalHomDT := sys.isLocalHomTotT
+  comm_cocone i := by
+    rw [← RingHom.comp_assoc, sys.comm_midTot i, RingHom.comp_assoc, sys.comm_baseMid i,
+      ← RingHom.comp_assoc]
+  comm_cToC := sys.comm_baseToR
+  comm_dToD := sys.comm_totToA
+  isLocalHomCToC := sys.isLocalHomBaseToR
+  isLocalHomDToD := sys.isLocalHomTotToA
+  c_surj := sys.base_surj
+  d_surj := sys.tot_surj
+  c_sep := sys.base_sep
+  d_sep := sys.tot_sep
+  isLocalizationDT h := sys.isLocalizationTotBaseT h
+
+/-- **A QUOTIENT MAP ALONG A LOCAL HOM IS LOCAL** (PROVEN), provided the ideal downstairs
+sits inside the maximal ideal.  Bookkeeping for the fibre system below: `IsLocalHom` of an
+`Ideal.quotientMap` is needed six times there and the argument is the same each time —
+a unit upstairs in `T ⧸ I` forces a unit in `T`, because `I ≤ 𝔪_T` makes `1` a unit
+modulo `I` only if it is one already. -/
+theorem isLocalHom_quotientMap {S₀ T₀ : Type u} [CommRing S₀] [CommRing T₀] [IsLocalRing T₀]
+    {J : Ideal S₀} {I : Ideal T₀} (φ : S₀ →+* T₀) [IsLocalHom φ] (H : J ≤ I.comap φ)
+    (hI : I ≤ IsLocalRing.maximalIdeal T₀) :
+    IsLocalHom (Ideal.quotientMap I φ H) := by
+  constructor
+  intro a ha
+  obtain ⟨s, rfl⟩ := Ideal.Quotient.mk_surjective a
+  rw [Ideal.quotientMap_mk] at ha
+  have hfs : IsUnit (φ s) := by
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    intro hmem
+    obtain ⟨t, ht⟩ := ha.exists_right_inv
+    obtain ⟨t', rfl⟩ := Ideal.Quotient.mk_surjective t
+    have ht' : φ s * t' - 1 ∈ I := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_mul, map_one, ht, sub_self]
+    have h1 : (1 : T₀) ∈ IsLocalRing.maximalIdeal T₀ := by
+      have hmul : φ s * t' ∈ IsLocalRing.maximalIdeal T₀ := Ideal.mul_mem_right _ _ hmem
+      have h2 := (IsLocalRing.maximalIdeal T₀).sub_mem hmul (hI ht')
+      rwa [sub_sub_cancel] at h2
+    exact (IsLocalRing.maximalIdeal.isMaximal T₀).ne_top
+      ((IsLocalRing.maximalIdeal T₀).eq_top_iff_one.mpr h1)
+  exact ((isUnit_map_iff φ s).mp hfs).map _
+
+namespace NoetherianApproxSystem
+
+section FibreData
+
+variable {R B A : Type u} [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
+
+/-- `𝔭_λ S_λ`, the ideal `𝔪_{R_λ}` cuts out in `S_λ`. -/
+def fibreIdealMid (sys : NoetherianApproxSystem g v) (i : sys.Λ) : Ideal (sys.Mid i) :=
+  letI := sys.isLocalRingBase i
+  (IsLocalRing.maximalIdeal (sys.Base i)).map (sys.baseToMid i)
+
+/-- `𝔭_λ S'_λ`. -/
+def fibreIdealTot (sys : NoetherianApproxSystem g v) (i : sys.Λ) : Ideal (sys.Tot i) :=
+  letI := sys.isLocalRingBase i
+  (IsLocalRing.maximalIdeal (sys.Base i)).map ((sys.midToTot i).comp (sys.baseToMid i))
+
+theorem fibreIdealMid_eq (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    letI := sys.isLocalRingBase i
+    sys.fibreIdealMid i = (IsLocalRing.maximalIdeal (sys.Base i)).map (sys.baseToMid i) := rfl
+
+theorem fibreIdealTot_eq (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    letI := sys.isLocalRingBase i
+    sys.fibreIdealTot i =
+      (IsLocalRing.maximalIdeal (sys.Base i)).map ((sys.midToTot i).comp (sys.baseToMid i)) := rfl
+
+theorem fibreIdealMid_le_comap_midToTot (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    sys.fibreIdealMid i ≤ (sys.fibreIdealTot i).comap (sys.midToTot i) :=
+  letI := sys.isLocalRingBase i
+  map_le_comap_map_comp (sys.baseToMid i) (sys.midToTot i) (IsLocalRing.maximalIdeal (sys.Base i))
+
+theorem fibreIdealMid_le_comap_midT (sys : NoetherianApproxSystem g v) {i j : sys.Λ}
+    (h : sys.le i j) : sys.fibreIdealMid i ≤ (sys.fibreIdealMid j).comap (sys.midT h) := by
+  letI := sys.isLocalRingBase i
+  letI := sys.isLocalRingBase j
+  haveI := sys.isLocalHomBaseT h
+  rw [sys.fibreIdealMid_eq i, Ideal.map_le_iff_le_comap]
+  intro x hx
+  show sys.midT h (sys.baseToMid i x) ∈ sys.fibreIdealMid j
+  rw [show sys.midT h (sys.baseToMid i x) = sys.baseToMid j (sys.baseT h x) from
+    (DFunLike.congr_fun (sys.comm_baseT h) x).symm, sys.fibreIdealMid_eq j]
+  refine Ideal.mem_map_of_mem _ ?_
+  have hmem : x ∈ (IsLocalRing.maximalIdeal (sys.Base j)).comap (sys.baseT h) := by
+    rw [IsLocalRing.maximalIdeal_comap]; exact hx
+  exact hmem
+
+theorem fibreIdealTot_le_comap_totT (sys : NoetherianApproxSystem g v) {i j : sys.Λ}
+    (h : sys.le i j) : sys.fibreIdealTot i ≤ (sys.fibreIdealTot j).comap (sys.totT h) := by
+  letI := sys.isLocalRingBase i
+  letI := sys.isLocalRingBase j
+  haveI := sys.isLocalHomBaseT h
+  rw [sys.fibreIdealTot_eq i, Ideal.map_le_iff_le_comap]
+  intro x hx
+  show sys.totT h (sys.midToTot i (sys.baseToMid i x)) ∈ sys.fibreIdealTot j
+  have e : sys.totT h (sys.midToTot i (sys.baseToMid i x))
+      = sys.midToTot j (sys.baseToMid j (sys.baseT h x)) := by
+    rw [show sys.baseToMid j (sys.baseT h x) = sys.midT h (sys.baseToMid i x) from
+      DFunLike.congr_fun (sys.comm_baseT h) x]
+    exact (DFunLike.congr_fun (sys.comm_midT h) (sys.baseToMid i x)).symm
+  rw [e, sys.fibreIdealTot_eq j]
+  refine Ideal.mem_map_of_mem _ ?_
+  have hmem : x ∈ (IsLocalRing.maximalIdeal (sys.Base j)).comap (sys.baseT h) := by
+    rw [IsLocalRing.maximalIdeal_comap]; exact hx
+  exact hmem
+
+/-- `S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ`, the fibre of the stage.  This is the map
+`exists_flatFibre_index_of_noetherianApproxSystem` asks to be flat. -/
+def fibreCD (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    (sys.Mid i ⧸ sys.fibreIdealMid i) →+* (sys.Tot i ⧸ sys.fibreIdealTot i) :=
+  Ideal.quotientMap _ (sys.midToTot i) (sys.fibreIdealMid_le_comap_midToTot i)
+
+/-- The transition map of the fibre `Mid` tower. -/
+def fibreCT (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j) :
+    (sys.Mid i ⧸ sys.fibreIdealMid i) →+* (sys.Mid j ⧸ sys.fibreIdealMid j) :=
+  Ideal.quotientMap _ (sys.midT h) (sys.fibreIdealMid_le_comap_midT h)
+
+/-- The transition map of the fibre `Tot` tower. -/
+def fibreDT (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j) :
+    (sys.Tot i ⧸ sys.fibreIdealTot i) →+* (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+  Ideal.quotientMap _ (sys.totT h) (sys.fibreIdealTot_le_comap_totT h)
+
+@[simp] theorem fibreCD_mk (sys : NoetherianApproxSystem g v) (i : sys.Λ) (x : sys.Mid i) :
+    sys.fibreCD i (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (sys.midToTot i x) :=
+  Ideal.quotientMap_mk
+
+@[simp] theorem fibreCT_mk (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j)
+    (x : sys.Mid i) :
+    sys.fibreCT h (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (sys.midT h x) :=
+  Ideal.quotientMap_mk
+
+@[simp] theorem fibreDT_mk (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j)
+    (x : sys.Tot i) :
+    sys.fibreDT h (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (sys.totT h x) :=
+  Ideal.quotientMap_mk
+
+/-- Naturality of the fibre tower, extracted because it is needed BEFORE the descent-system
+instance below (it is what makes the `IsScalarTower` in `exists_isLocalization_fibre`'s
+statement typecheck) as well as inside it. -/
+theorem fibre_comm_T (sys : NoetherianApproxSystem g v) {i j : sys.Λ} (h : sys.le i j) :
+    (sys.fibreCD j).comp (sys.fibreCT h) = (sys.fibreDT h).comp (sys.fibreCD i) := by
+  apply Ideal.Quotient.ringHom_ext
+  ext x
+  simp only [RingHom.comp_apply, fibreCT_mk, fibreCD_mk, fibreDT_mk]
+  exact congrArg _ (DFunLike.congr_fun (sys.comm_midT h) x)
+
+end FibreData
+
+section FibreColimit
+
+variable {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] {g : R →+* B} {v : B →+* A}
+
+theorem fibreIdealMid_le_comap_midToB (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    sys.fibreIdealMid i ≤ ((IsLocalRing.maximalIdeal R).map g).comap (sys.midToB i) := by
+  letI := sys.isLocalRingBase i
+  haveI := sys.isLocalHomBaseToR i
+  rw [sys.fibreIdealMid_eq i, Ideal.map_le_iff_le_comap]
+  intro x hx
+  show sys.midToB i (sys.baseToMid i x) ∈ (IsLocalRing.maximalIdeal R).map g
+  rw [show sys.midToB i (sys.baseToMid i x) = g (sys.baseToR i x) from
+    DFunLike.congr_fun (sys.comm_baseMid i) x]
+  refine Ideal.mem_map_of_mem _ ?_
+  have hmem : x ∈ (IsLocalRing.maximalIdeal R).comap (sys.baseToR i) := by
+    rw [IsLocalRing.maximalIdeal_comap]; exact hx
+  exact hmem
+
+theorem fibreIdealTot_le_comap_totToA (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    sys.fibreIdealTot i ≤ ((IsLocalRing.maximalIdeal R).map (v.comp g)).comap (sys.totToA i) := by
+  letI := sys.isLocalRingBase i
+  haveI := sys.isLocalHomBaseToR i
+  rw [sys.fibreIdealTot_eq i, Ideal.map_le_iff_le_comap]
+  intro x hx
+  show sys.totToA i (sys.midToTot i (sys.baseToMid i x)) ∈
+    (IsLocalRing.maximalIdeal R).map (v.comp g)
+  have e : sys.totToA i (sys.midToTot i (sys.baseToMid i x)) = v (g (sys.baseToR i x)) := by
+    rw [show sys.totToA i (sys.midToTot i (sys.baseToMid i x))
+        = v (sys.midToB i (sys.baseToMid i x)) from
+      DFunLike.congr_fun (sys.comm_midTot i) (sys.baseToMid i x)]
+    rw [show sys.midToB i (sys.baseToMid i x) = g (sys.baseToR i x) from
+      DFunLike.congr_fun (sys.comm_baseMid i) x]
+  rw [e]
+  refine Ideal.mem_map_of_mem _ ?_
+  have hmem : x ∈ (IsLocalRing.maximalIdeal R).comap (sys.baseToR i) := by
+    rw [IsLocalRing.maximalIdeal_comap]; exact hx
+  exact hmem
+
+/-- The cocone map `S_λ/𝔭_λ S_λ → S/𝔪_R S`. -/
+def fibreCToC (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    (sys.Mid i ⧸ sys.fibreIdealMid i) →+* (B ⧸ (IsLocalRing.maximalIdeal R).map g) :=
+  Ideal.quotientMap _ (sys.midToB i) (sys.fibreIdealMid_le_comap_midToB i)
+
+/-- The cocone map `S'_λ/𝔭_λ S'_λ → S'/𝔪_R S'`. -/
+def fibreDToD (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    (sys.Tot i ⧸ sys.fibreIdealTot i) →+*
+      (A ⧸ (IsLocalRing.maximalIdeal R).map (v.comp g)) :=
+  Ideal.quotientMap _ (sys.totToA i) (sys.fibreIdealTot_le_comap_totToA i)
+
+@[simp] theorem fibreCToC_mk (sys : NoetherianApproxSystem g v) (i : sys.Λ) (x : sys.Mid i) :
+    sys.fibreCToC i (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (sys.midToB i x) :=
+  Ideal.quotientMap_mk
+
+@[simp] theorem fibreDToD_mk (sys : NoetherianApproxSystem g v) (i : sys.Λ) (x : sys.Tot i) :
+    sys.fibreDToD i (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (sys.totToA i x) :=
+  Ideal.quotientMap_mk
+
+end FibreColimit
+
+end NoetherianApproxSystem
+
+/-- `S/𝔪_R S → S'/𝔪_R S'`, the colimit of the fibre system.  This is the map
+`exists_flatFibre_index_of_noetherianApproxSystem` assumes flat, written as a definition so
+that it can be handed to `exists_flat_index_of_isNoetherianFlatDescentSystem` as the `w`
+of the fibre system without a transport. -/
+def fibreBaseMap {R B A : Type u} [CommRing R] [CommRing B] [CommRing A] [IsLocalRing R]
+    (g : R →+* B) (v : B →+* A) :
+    (B ⧸ (IsLocalRing.maximalIdeal R).map g) →+*
+      (A ⧸ (IsLocalRing.maximalIdeal R).map (v.comp g)) :=
+  Ideal.quotientMap _ v (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))
+
+@[simp] theorem fibreBaseMap_mk {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] (g : R →+* B) (v : B →+* A) (x : B) :
+    fibreBaseMap g v (Ideal.Quotient.mk _ x) = Ideal.Quotient.mk _ (v x) :=
+  Ideal.quotientMap_mk
+
+namespace NoetherianApproxSystem
+
+section FibreSystem
+
+variable {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+
+/-- **`𝔪_R S` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S_λ`** (SORRY LEAF; one of the three
+pieces of the fibre-system verification, which is what
+`exists_flatFibre_index_of_noetherianApproxSystem` owns beyond the shared 10.128.3 core).
+
+This is the load-bearing half of 00R7's sentence "the colimit of the fibre system is
+`S/𝔪_R S → S'/𝔪_R S'`", and it is where the LOCALITY of the cocone maps
+(`isLocalHomBaseToR`) is spent — the field exists for this leaf.
+
+**THE PROOF.**  `(𝔪_R).map g` is generated by `g m`, `m ∈ 𝔪_R`, so write
+`midToB i z = ∑_k b_k · g m_k` (finite).  Pull each `m_k` back to a stage by `base_surj`,
+say `baseToR i_k y_k = m_k`; since `baseToR i_k` is LOCAL and `m_k ∈ 𝔪_R`, locality gives
+`y_k ∈ 𝔪_{Base i_k}` — a unit would map to a unit.  Pull each `b_k` back by `mid_surj`.
+Take `j₀ ≥ i` above all the finitely many indices (`directed`).  The two sides of the
+displayed equation now both come from `Mid j₀` and agree in `B`, so `mid_sep` gives
+`j ≥ j₀` where they agree in `Mid j`; there `midT z = ∑ (…) · baseToMid j (baseT y_k)` with
+`baseT y_k ∈ 𝔪_{Base j}` by locality of `baseT`, hence `midT z ∈ 𝔭_j S_j`.
+
+**FAITHFULNESS.**  Stated as the cofinal `∃ j ≥ i` because that is what the colimit
+argument delivers and what `c_sep` of the fibre system needs; the converse inclusion
+(`𝔭_j S_j` maps into `𝔪_R S`) is `fibreIdealMid_le_comap_midToB`, PROVEN above, so this
+leaf is exactly the half that is not formal. -/
+theorem exists_mem_fibreIdealMid (sys : NoetherianApproxSystem g v) (i : sys.Λ)
+    (z : sys.Mid i) (_hz : sys.midToB i z ∈ (IsLocalRing.maximalIdeal R).map g) :
+    ∃ j, ∃ h : sys.le i j, sys.midT h z ∈ sys.fibreIdealMid j :=
+  sorry
+
+/-- **`𝔪_R S'` IS THE UNION OF THE IMAGES OF THE `𝔭_λ S'_λ`** (SORRY LEAF).  The same
+argument as `exists_mem_fibreIdealMid`, run on the `Tot` tower: `base_surj` plus locality
+of `baseToR` to put the generators at a stage, `directed` to align the finitely many
+indices, `tot_sep` to close the gap.  Both are stated because the fibre system needs
+`c_sep` and `d_sep` separately; a prover should factor the common argument out into a
+lemma about a single tower over the `Base` system rather than writing it twice. -/
+theorem exists_mem_fibreIdealTot (sys : NoetherianApproxSystem g v) (i : sys.Λ)
+    (z : sys.Tot i) (_hz : sys.totToA i z ∈ (IsLocalRing.maximalIdeal R).map (v.comp g)) :
+    ∃ j, ∃ h : sys.le i j, sys.totT h z ∈ sys.fibreIdealTot j :=
+  sorry
+
+/-- **THE LOCALIZATION PROPERTY OF THE FIBRE SYSTEM** (SORRY LEAF; the third piece of the
+fibre-system verification).
+
+*`S'_μ/𝔭_μ S'_μ` is a localization of `(S_μ/𝔭_μ S_μ) ⊗_{S_λ/𝔭_λ S_λ} (S'_λ/𝔭_λ S'_λ)`.*
+
+**THE PROOF.**  `isLocalizationTotT` gives `S'_μ = W^{-1}(S_μ ⊗_{S_λ} S'_λ)`.  Quotient by
+`𝔭_μ`: localization commutes with quotients, so `S'_μ/𝔭_μ S'_μ` is the localization at the
+image of `W` of `(S_μ ⊗_{S_λ} S'_λ)/𝔭_μ(…)`.  That quotient is
+`(S_μ/𝔭_μ) ⊗_{S_λ} S'_λ`, and since `𝔭_λ` dies in `S_μ/𝔭_μ` (because `𝔭_λ S_μ ⊆ 𝔭_μ S_μ`,
+which is `fibreIdealMid_le_comap_midT`), the standard identification
+`M ⊗_R N ≅ M ⊗_{R/I} (N/IN)` for `IM = 0` rewrites it as
+`(S_μ/𝔭_μ) ⊗_{S_λ/𝔭_λ} (S'_λ/𝔭_λ S'_λ)`.
+
+**WHY IT IS NOT AN ISOMORPHISM.**  For the same reason `isLocalizationTotT` is not — see
+the CORRECTION block in the section note "THE CUT OF THE APPROXIMATION LEAF"; a quotient
+of a localization is a localization, not an isomorphism, and asking for more here would
+make the leaf false. -/
+theorem exists_isLocalization_fibre (sys : NoetherianApproxSystem g v) {i j : sys.Λ}
+    (h : sys.le i j) :
+    letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i) :=
+      (sys.fibreCD i).toAlgebra
+    letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Mid j ⧸ sys.fibreIdealMid j) :=
+      (sys.fibreCT h).toAlgebra
+    letI : Algebra (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+      ((sys.fibreCD j).comp (sys.fibreCT h)).toAlgebra
+    letI : Algebra (sys.Mid j ⧸ sys.fibreIdealMid j) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+      (sys.fibreCD j).toAlgebra
+    letI : Algebra (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+      (sys.fibreDT h).toAlgebra
+    haveI : IsScalarTower (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Mid j ⧸ sys.fibreIdealMid j)
+        (sys.Tot j ⧸ sys.fibreIdealTot j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (sys.Mid i ⧸ sys.fibreIdealMid i) (sys.Tot i ⧸ sys.fibreIdealTot i)
+        (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.fibre_comm_T h) x
+    letI : Algebra ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
+        (sys.Tot i ⧸ sys.fibreIdealTot i)) (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+      (Algebra.TensorProduct.lift
+        (IsScalarTower.toAlgHom (sys.Mid i ⧸ sys.fibreIdealMid i)
+          (sys.Mid j ⧸ sys.fibreIdealMid j) (sys.Tot j ⧸ sys.fibreIdealTot j))
+        (IsScalarTower.toAlgHom (sys.Mid i ⧸ sys.fibreIdealMid i)
+          (sys.Tot i ⧸ sys.fibreIdealTot i) (sys.Tot j ⧸ sys.fibreIdealTot j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid ((sys.Mid j ⧸ sys.fibreIdealMid j) ⊗[sys.Mid i ⧸ sys.fibreIdealMid i]
+      (sys.Tot i ⧸ sys.fibreIdealTot i)), IsLocalization W (sys.Tot j ⧸ sys.fibreIdealTot j) :=
+  sorry
+
+/-- **THE FIBRE SYSTEM IS AGAIN A NOETHERIAN DESCENT SYSTEM** (PROVEN over the three leaves
+above).  This is 00R7's paragraph beginning "Note that this also implies", and it is the
+part of `exists_flatFibre_index_of_noetherianApproxSystem` that is NOT shared with the base
+application — which is why the two leaves were given one owner and why the naive three-way
+split "10.127.13 / 10.128.3 / assembly" was rejected (see the section note "THE CUT OF THE
+APPROXIMATION LEAF").
+
+Everything formal is discharged here: Noetherianity and locality of the quotients, the
+functoriality of `Ideal.quotientMap`, the commuting squares, and the surjectivity half of
+both colimit conditions.  What is left over is exactly the three leaves above — the two
+"the maximal ideal is the union of the stage ideals" statements, where the locality of
+`baseToR` is spent, and the quotient of the localization property. -/
+theorem isNoetherianFlatDescentSystem_fibre (sys : NoetherianApproxSystem g v) :
+    IsNoetherianFlatDescentSystem sys.le
+      (fun i => sys.Mid i ⧸ sys.fibreIdealMid i) (fun i => sys.Tot i ⧸ sys.fibreIdealTot i)
+      sys.fibreCD (fun {_ _} h => sys.fibreCT h) (fun {_ _} h => sys.fibreDT h)
+      (fibreBaseMap g v) sys.fibreCToC sys.fibreDToD where
+  le_rfl := sys.le_rfl
+  le_trans' := sys.le_trans'
+  directed := sys.directed
+  isLocalRingC i := by
+    letI := sys.isLocalRingBase i
+    letI := sys.isLocalRingMid i
+    haveI := sys.isLocalHomBaseToMid i
+    haveI : Nontrivial (sys.Mid i ⧸ sys.fibreIdealMid i) :=
+      Ideal.Quotient.nontrivial_iff.mpr
+        (ne_of_lt (IsLocalRing.map_maximalIdeal_lt_top (sys.baseToMid i)))
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+  isLocalRingD i := by
+    letI := sys.isLocalRingBase i
+    letI := sys.isLocalRingTot i
+    haveI := sys.isLocalHomBaseToMid i
+    haveI := sys.isLocalHomMidToTot i
+    haveI : Nontrivial (sys.Tot i ⧸ sys.fibreIdealTot i) :=
+      Ideal.Quotient.nontrivial_iff.mpr
+        (ne_of_lt (IsLocalRing.map_maximalIdeal_lt_top
+          ((sys.midToTot i).comp (sys.baseToMid i))))
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+  isNoetherianC i := by
+    haveI := sys.isNoetherianMid i; infer_instance
+  isNoetherianD i := by
+    haveI := sys.isNoetherianTot i; infer_instance
+  isLocalHomCD i := by
+    letI := sys.isLocalRingBase i
+    letI := sys.isLocalRingTot i
+    haveI := sys.isLocalHomBaseToMid i
+    haveI := sys.isLocalHomMidToTot i
+    exact isLocalHom_quotientMap _ _
+      (IsLocalRing.map_maximalIdeal_le ((sys.midToTot i).comp (sys.baseToMid i)))
+  cT_comp h₁ h₂ := by
+    apply Ideal.Quotient.ringHom_ext
+    ext x
+    simp only [RingHom.comp_apply, fibreCT_mk]
+    exact congrArg _ (DFunLike.congr_fun (sys.midT_comp h₁ h₂) x)
+  dT_comp h₁ h₂ := by
+    apply Ideal.Quotient.ringHom_ext
+    ext x
+    simp only [RingHom.comp_apply, fibreDT_mk]
+    exact congrArg _ (DFunLike.congr_fun (sys.totT_comp h₁ h₂) x)
+  comm_T h := sys.fibre_comm_T h
+  isLocalHomCT := fun {_ j} h => by
+    letI := sys.isLocalRingBase j
+    letI := sys.isLocalRingMid j
+    haveI := sys.isLocalHomMidT h
+    haveI := sys.isLocalHomBaseToMid j
+    exact isLocalHom_quotientMap _ _ (IsLocalRing.map_maximalIdeal_le (sys.baseToMid j))
+  isLocalHomDT := fun {_ j} h => by
+    letI := sys.isLocalRingBase j
+    letI := sys.isLocalRingTot j
+    haveI := sys.isLocalHomTotT h
+    haveI := sys.isLocalHomBaseToMid j
+    haveI := sys.isLocalHomMidToTot j
+    exact isLocalHom_quotientMap _ _
+      (IsLocalRing.map_maximalIdeal_le ((sys.midToTot j).comp (sys.baseToMid j)))
+  comm_cocone i := by
+    apply Ideal.Quotient.ringHom_ext
+    ext x
+    simp only [RingHom.comp_apply, fibreCD_mk, fibreDToD_mk, fibreCToC_mk, fibreBaseMap_mk]
+    exact congrArg _ (DFunLike.congr_fun (sys.comm_midTot i) x)
+  comm_cToC h := by
+    apply Ideal.Quotient.ringHom_ext
+    ext x
+    simp only [RingHom.comp_apply, fibreCT_mk, fibreCToC_mk]
+    exact congrArg _ (DFunLike.congr_fun (sys.comm_midToB h) x)
+  comm_dToD h := by
+    apply Ideal.Quotient.ringHom_ext
+    ext x
+    simp only [RingHom.comp_apply, fibreDT_mk, fibreDToD_mk]
+    exact congrArg _ (DFunLike.congr_fun (sys.comm_totToA h) x)
+  isLocalHomCToC i := by
+    haveI := sys.isLocalHomMidToB i
+    exact isLocalHom_quotientMap _ _ (IsLocalRing.map_maximalIdeal_le g)
+  isLocalHomDToD i := by
+    haveI := sys.isLocalHomTotToA i
+    exact isLocalHom_quotientMap _ _ (IsLocalRing.map_maximalIdeal_le (v.comp g))
+  c_surj x := by
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨i, y, hy⟩ := sys.mid_surj b
+    exact ⟨i, Ideal.Quotient.mk _ y, by rw [sys.fibreCToC_mk i y, hy]⟩
+  d_surj x := by
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨i, y, hy⟩ := sys.tot_surj a
+    exact ⟨i, Ideal.Quotient.mk _ y, by rw [sys.fibreDToD_mk i y, hy]⟩
+  c_sep i x y hxy := by
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [sys.fibreCToC_mk i a, sys.fibreCToC_mk i b,
+      Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← map_sub] at hxy
+    obtain ⟨j, h, hj⟩ := sys.exists_mem_fibreIdealMid i (a - b) hxy
+    refine ⟨j, h, ?_⟩
+    rw [sys.fibreCT_mk h a, sys.fibreCT_mk h b, Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← map_sub]
+    exact hj
+  d_sep i x y hxy := by
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [sys.fibreDToD_mk i a, sys.fibreDToD_mk i b,
+      Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← map_sub] at hxy
+    obtain ⟨j, h, hj⟩ := sys.exists_mem_fibreIdealTot i (a - b) hxy
+    refine ⟨j, h, ?_⟩
+    rw [sys.fibreDT_mk h a, sys.fibreDT_mk h b, Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← map_sub]
+    exact hj
+  isLocalizationDT h := sys.exists_isLocalization_fibre h
+
+end FibreSystem
+
+end NoetherianApproxSystem
+
+/-- **STACKS 10.128.3, FIRST APPLICATION: flatness over the base descends to a
+stage** (cut 2026-07-28; **PROVEN 2026-07-28** over the shared engine
+`exists_flat_index_of_isNoetherianFlatDescentSystem` — read the section note "10.128.3 IS
+ONE LEMMA APPLIED TWICE" above first).
+
+*If `M = A` is flat over `R`, then in any `NoetherianApproxSystem` and cofinally
+in `Λ`, `S'_j` is flat over `R_j`.*
+
+**Why the conclusion is `∀ i, ∃ j ≥ i` and not `∃ j`.**  Because that is what
+10.128.3's proof gives, and because it is the only form that composes with the
+fibre leaf below — see the section note.  Restricting the system to `{j | i ≤ j}`
+turns the cofinal form back into the bare `∃ j`, so this is not a strengthening.
+
+**WHERE THE PROOF WENT.**  The argument that used to be recorded here — the
+`Tor_1^{R_i}(S'_i, R_i/𝔪_i)` computation and the passage to a large `j` — is
+10.128.3 itself, and it is now stated once, for an abstract two-tower system, as
+`exists_flat_index_of_isNoetherianFlatDescentSystem`; read its docstring for the
+argument and for what blocks it at this pin.  All that is left here is to exhibit
+the `Base → Tot` tower of `sys` as such a system, which is
+`NoetherianApproxSystem.isNoetherianFlatDescentSystem_baseTot`, PROVEN — and whose
+`isLocalizationDT` field is `sys.isLocalizationTotBaseT` verbatim.
+
+**FAITHFULNESS.**  The statement quantifies over ALL systems, so it cannot be
+weakened by a bad choice of system upstream; and it uses only fields the source's
+argument uses (`isNoetherianTot`, the six colimit conditions, and the locality of
+the cocone maps).  It says nothing when `Λ` is empty, which is why
+`nonemptyΛ` is a field of the system rather than a hypothesis here. -/
+theorem exists_flatBase_index_of_noetherianApproxSystem
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (sys : NoetherianApproxSystem g v)
+    (hflat : (v.comp g).Flat) (i : sys.Λ) :
+    ∃ j : sys.Λ, ∃ _ : sys.le i j, ((sys.midToTot j).comp (sys.baseToMid j)).Flat :=
+  exists_flat_index_of_isNoetherianFlatDescentSystem
+    sys.isNoetherianFlatDescentSystem_baseTot hflat i
+
+/-- **STACKS 10.128.3, SECOND APPLICATION: fibre flatness descends to a stage**
+(cut 2026-07-28; **PROVEN 2026-07-28** over the shared engine
+`exists_flat_index_of_isNoetherianFlatDescentSystem` and the fibre-system verification —
+read the section note "10.128.3 IS ONE LEMMA APPLIED TWICE" above first).
+
+*If `A/𝔪_R A` is flat over `B/𝔪_R B`, then in any `NoetherianApproxSystem` and
+cofinally in `Λ`, `S'_j/𝔭_j S'_j` is flat over `S_j/𝔭_j S_j`, where
+`𝔭_j = 𝔪_{R_j}`.*
+
+**THIS LEAF OWNS THE FIBRE-SYSTEM VERIFICATION.**  That is the paragraph of
+00R7's proof beginning "Note that this also implies", and it is why the naive
+three-way split "10.127.13 / 10.128.3 / assembly" was rejected: the check that
+`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ)` is again a system as in 10.127.13 is substantial,
+so it must live inside a leaf and not in glue.  Concretely, for `λ ≤ μ` the
+quotients of `isLocalizationMidT` and `isLocalizationTotT` are again
+localizations (a localization base-changes to a localization, and quotients
+commute with base change), each `S_λ/𝔭_λ S_λ` is Noetherian local because
+`S_λ` is, and the colimit of the fibre system is `S/𝔪_R S → S'/𝔪_R S'` because
+the cocone maps are LOCAL (`isLocalHomBaseToR`), which is exactly what makes
+`𝔪_R` the union of the images of the `𝔪_{R_λ}`: if `x ∈ 𝔪_R` comes from
+`y ∈ R_λ`, then `y` is not a unit — a unit would map to a unit — so
+`y ∈ 𝔪_{R_λ}`.  With that in hand, 10.128.3 applies verbatim to the fibre system
+over `{j | i ≤ j}` and yields the cofinal conclusion.
+
+**AND IT IS NOW DISCHARGED, as `isNoetherianFlatDescentSystem_fibre`** (2026-07-28).
+Everything formal in that paragraph is PROVEN there — Noetherianity and locality of
+`S_λ/𝔭_λ S_λ` and `S'_λ/𝔭_λ S'_λ`, functoriality and locality of the quotient
+transition maps, the commuting squares, and the surjectivity half of both colimit
+conditions.  What survives as sorries is exactly the three named leaves
+`exists_mem_fibreIdealMid`, `exists_mem_fibreIdealTot` (the two "`𝔪_R` is the union of
+the images of the `𝔭_λ`" statements, where `isLocalHomBaseToR` is spent) and
+`exists_isLocalization_fibre`.  The second application of 10.128.3 itself is NOT here:
+it is the shared engine above, which the base application uses too.
+
+**FAITHFULNESS.**  As for the first application: it quantifies over all systems
+and uses only fields of the structure.  Note the ideal is `𝔪_{R_j}`, the maximal
+ideal of the STAGE — not the contraction of `𝔪_R` — because that is what
+`FlatNoetherianStage.flatFibre` asks for and what 00R7 writes (`𝔭_λ`).  The
+`Ideal.quotientMap` written out in the conclusion is, on the nose,
+`sys.fibreCD j` — which is why the descent system is a predicate over given data and
+not a bundled structure: no transport of `RingHom.Flat` is needed anywhere. -/
+theorem exists_flatFibre_index_of_noetherianApproxSystem
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (sys : NoetherianApproxSystem g v)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) (i : sys.Λ) :
+    ∃ j : sys.Λ, ∃ _ : sys.le i j,
+      letI := sys.isLocalRingBase j
+      (Ideal.quotientMap
+        ((IsLocalRing.maximalIdeal (sys.Base j)).map
+          ((sys.midToTot j).comp (sys.baseToMid j)))
+        (sys.midToTot j)
+        (map_le_comap_map_comp (sys.baseToMid j) (sys.midToTot j)
+          (IsLocalRing.maximalIdeal (sys.Base j)))).Flat :=
+  exists_flat_index_of_isNoetherianFlatDescentSystem
+    sys.isNoetherianFlatDescentSystem_fibre hfib i
+
+/-- **THE LOCALIZATION SEAM, PASSED TO THE COLIMIT** (SORRY LEAF, cut 2026-07-28;
+read the section note "THE CUT OF THE APPROXIMATION LEAF" above first).
+
+*At every stage `i` of a `NoetherianApproxSystem`, `A` is a localization of
+`B ⊗_{S_i} S'_i`.*
+
+This is the field `FlatNoetherianStage.isLocalizationTensor` and nothing else, so
+its docstring — including the CORRECTION that replaced `Algebra.IsPushout` by
+`IsLocalization` on 2026-07-27, and the checked degeneracy argument for why plain
+`Module.Flat` there would be too weak — is the specification for this leaf.
+
+**THE PROOF.**  `isLocalizationTotT` says `S'_j` is a localization of
+`S_j ⊗_{S_i} S'_i` for every `j ≥ i`.  Both sides are functors of `j` on the
+cofinal set `{j | i ≤ j}`, tensor products commute with filtered colimits, and a
+filtered colimit of localizations along compatible maps is the localization at the
+union of the images of the submonoids — so passing to the colimit over `j` turns
+`S_j ⊗_{S_i} S'_i → S'_j` into `B ⊗_{S_i} S'_i → A`, still a localization.  Only
+`isLocalizationTotT`, the functoriality fields, and `mid_surj`/`tot_surj`/
+`tot_sep` are used.
+
+**FAITHFULNESS.**  Stated at EVERY `i`, which is what the source's property list
+gives (it holds for every `λ`, not for large `λ`), and what the assembly needs:
+the index at which the two flatness leaves land is chosen by them, not by this
+one. -/
+theorem exists_isLocalization_tensor_of_noetherianApproxSystem
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    {g : R →+* B} {v : B →+* A} (sys : NoetherianApproxSystem g v) (i : sys.Λ) :
+    letI : Algebra (sys.Mid i) (sys.Tot i) := (sys.midToTot i).toAlgebra
+    letI : Algebra (sys.Mid i) B := (sys.midToB i).toAlgebra
+    letI : Algebra (sys.Tot i) A := (sys.totToA i).toAlgebra
+    letI : Algebra B A := v.toAlgebra
+    letI : Algebra (sys.Mid i) A := (v.comp (sys.midToB i)).toAlgebra
+    haveI : IsScalarTower (sys.Mid i) B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (sys.Mid i) (sys.Tot i) A :=
+      IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun (sys.comm_midTot i) x).symm
+    letI : Algebra (B ⊗[sys.Mid i] sys.Tot i) A :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) B A)
+        (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) A)
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (B ⊗[sys.Mid i] sys.Tot i), IsLocalization W A :=
+  sorry
+
 /-- **NOETHERIAN APPROXIMATION FOR 00R7: Stacks 10.127.13 + 10.128.3**
-(SORRY LEAF, cut 2026-07-27 out of the approximation half below; read the
-section note "THE COLIMIT-API DECISION" above first, and the docstring of
+(cut 2026-07-27 out of the approximation half below; **PROVEN 2026-07-28** over
+the four declarations above.  Read the section note "THE CUT OF THE APPROXIMATION
+LEAF" for the design decision that produced it, and the docstring of
 `FlatNoetherianStage` for what the datum is and why it is as weak as it is).
 
 *Under 00R7's hypotheses at `M = S' = A`, a `FlatNoetherianStage v` exists.*
 
-**THIS IS 00R7'S PROOF MINUS ITS LAST SENTENCE.**  Everything in the Stacks
-argument lives here: writing `R = colim R_λ` as a directed colimit of local
-`ℤ`-algebras essentially of finite type (10.127.11, so each `R_λ` is
-Noetherian); descending `S` to `S_λ = (R_λ[x₁,…,x_n]/(f_{1,λ},…,f_{u,λ}))_{𝔮_λ}`
-and `S'` to `S'_λ = (S_λ[y₁,…,y_m]/(ḡ_{1,λ},…,ḡ_{v,λ}))_{𝔮̄'_λ}`, which is
-where `_hfpA` and `_hfpB` are both consumed and which is why 00R7 needs
-essential finite PRESENTATION on both maps; applying **10.128.3** once to get
-`M_λ` flat over `R_λ` for large `λ`; checking that
-`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system as in 10.127.13
-and applying **10.128.3** a second time to get the fibre flatness at the
-stage.  At `M = S' = A` the presentation of `M` over `S'` may be taken to be
+**THIS IS 00R7'S PROOF MINUS ITS LAST SENTENCE**, and as of 2026-07-28 the four
+steps of that proof are four declarations rather than one sorry:
+
+1. writing `R = colim R_λ` as a directed colimit of local `ℤ`-algebras
+   essentially of finite type (10.127.11, so each `R_λ` is Noetherian) and
+   descending `S` to `S_λ = (R_λ[x₁,…,x_n]/(f_{1,λ},…,f_{u,λ}))_{𝔮_λ}` and `S'`
+   to `S'_λ = (S_λ[y₁,…,y_m]/(ḡ_{1,λ},…,ḡ_{v,λ}))_{𝔮̄'_λ}` — which is where
+   `_hfpA` and `_hfpB` are both consumed, and which is why 00R7 needs essential
+   finite PRESENTATION on both maps — is
+   `nonempty_noetherianApproxSystem_of_essFinitePresentation`;
+2. applying **10.128.3** once, to get `M_λ` flat over `R_λ` for large `λ`, is
+   `exists_flatBase_index_of_noetherianApproxSystem`;
+3. checking that `(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system
+   as in 10.127.13 and applying **10.128.3** a second time is
+   `exists_flatFibre_index_of_noetherianApproxSystem`;
+4. the localization seam `S'_λ ⊗_{S_λ} S → S'`, which is 00R7's own property
+   list passed to the colimit, is
+   `exists_isLocalization_tensor_of_noetherianApproxSystem`.
+
+At `M = S' = A` the presentation of `M` over `S'` may be taken to be
 `(S')^{⊕0} → (S')^{⊕1} → M → 0`, so `M_λ = S'_λ` and no separate module has to
 be carried — which is the whole reason `FlatNoetherianStage` has three
-carriers and not four.
+carriers and not four, and why `NoetherianApproxSystem` has three towers.
 
-**WHAT IS STILL MISSING FROM THE PIN**, re-greped 2026-07-27 and unchanged
-from the survey in the first section note: `grep -rni "noetherian approximation"
-.lake/packages/mathlib` is empty, and `grep -rn "Ring.DirectLimit" Fermat/ ~/cs/FLT`
-finds no use anywhere in this development.  Mathlib's `Ring.DirectLimit`,
-`Module.DirectLimit` and `Mathlib/Algebra/Colimit/TensorProduct.lean` are the
-raw materials; 10.127.11, 10.127.13 and 10.128.3 all have to be written.  A hit
-on either grep means this note has gone stale.
+**WHAT IS LEFT HERE is glue plus one proven lemma.**  Steps 2 and 3 land at
+DIFFERENT indices — each is cofinal, `∀ i, ∃ j ≥ i`, because that is what
+10.128.3's proof delivers — so the assembly starts step 3 at the index step 2
+returned and then carries step 2's conclusion up to it with
+`NoetherianApproxSystem.flat_base_of_le`, which is proven above.  That transport
+is the only mathematics in this body; everything else is `obtain` and a structure
+instance.
 
 **FAITHFULNESS, restated 2026-07-27 after the `isPushout` repair.**  The
 hypotheses are 00R7's verbatim at `M = S' = A`, and the conclusion is now
@@ -1881,69 +3182,49 @@ The corresponding degeneracy check for the WEAKER field "`A` is flat over
 flat over `B`, which is 00R7's conclusion — which is why the field is
 `IsLocalization` and not `Module.Flat`.
 
-**SURVEY FOR THE NEXT OWNER, 2026-07-27 — three findings, each greppable.**
-This leaf was NOT cut further (the three-way split "10.127.13 / 10.128.3 /
-assembly" flagged in the AXIS SEARCHED paragraph above is still not taken:
-every honest cut of it needs the DIRECTED SYSTEM exposed in a statement,
-because 10.128.3's conclusion is "for `λ` big enough", which is not
-expressible about a single stage; a cut that merely hands the next leaf one
-stage is fake, since the second leaf would have to rebuild the system anyway).
-What the cycle produced instead is the faithfulness repair above plus this
-survey.
-
-1. **A large part of 10.127.13 IS ALREADY IN THE PIN, in a place a naive grep
-   for "Noetherian approximation" misses.**
-   `Mathlib/RingTheory/Extension/Presentation/Core.lean` defines, for a
-   `Presentation R S ι σ` with `ι`, `σ` finite (i.e. a finite presentation),
-   `P.coeffs`, the class `P.HasCoeffs R₀` ("`R₀ → R` hits every coefficient of
-   every relation"), `P.ModelOfHasCoeffs R₀` — carrying an instance
-   `Algebra.FinitePresentation R₀ (P.ModelOfHasCoeffs R₀)` — and, crucially,
-   `P.tensorModelOfHasCoeffsEquiv R₀ : R ⊗[R₀] P.ModelOfHasCoeffs R₀ ≃ₐ[R] S`.
-   That is exactly "descend a finitely presented algebra to a subring
-   containing the coefficients, and recover it by base change", which is the
-   `S_λ = R_λ[x]/(f_λ)` half of 10.127.13 with the base-change property
-   supplied.  `R₀` need not be injective into `R` — the class only asks for
-   `coeffs ⊆ Set.range (algebraMap R₀ R)`.  `Mathlib/RingTheory/Smooth/Flat.lean`
-   uses the same machinery (`Algebra.exists_finiteType ℤ R A`) to run precisely
-   a "choose a model over a finitely generated `ℤ`-subalgebra" argument, so
-   there is a worked example of the idiom in the pin.  What is NOT supplied is
-   everything to do with the LOCALIZATIONS: the primes `𝔮_λ`, the locality of
-   `S_λ → S`, and the transition maps being localizations.
-
-2. **The `R_λ` half is provable today and the subring realisation IS correct
-   for it** — the note above refutes subrings only for `B` and `A`.  The
-   construction: for a finite `s ⊆ R`, put `C₀ = Subring.closure ↑s`
-   (`IsNoetherianRing ↥C₀` is `is_noetherian_subring_closure`,
-   `Mathlib/RingTheory/Adjoin/FG.lean:202`), `𝔭 = 𝔪_R ∩ C₀`, and take
-   `R_s ⊆ R` to be `{x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`.  It is a
-   subring, it is `IsLocalization 𝔭.primeCompl`-isomorphic to `(C₀)_𝔭` hence
-   Noetherian (`IsLocalization.isNoetherianRing`,
-   `Mathlib/RingTheory/Localization/Submodule.lean:82`), its non-units are
-   exactly `R_s ∩ 𝔪_R` so it is local, its inclusion is an `IsLocalHom`, and
-   `s ↦ R_s` is MONOTONE in `s` with `⋃ₛ R_s = R` — which is the directed
-   exhaustion 10.127.11 opens with.  This is the one piece that can be landed
-   as a proven lemma; it was not landed here only because, with no assembly
-   written, it would be free-floating.
-
-3. **Do not look for `Ring.DirectLimit` in this file's proof.**  For a
-   Noetherian stage the index set can be taken to be `Finset R` ordered by
-   `⊆`, with `R_s` as in 2 and `S_s`, `S'_s` the models of 1 localized at the
-   contracted primes; with essential finite PRESENTATION the ideals do not
-   grow with `s` (fixed generators suffice), so the only thing the transition
-   maps do is enlarge the base — which is why the system is concrete rather
-   than abstract.  The colimit is then a directed union in the `R` variable
-   and a filtered colimit of localizations in the `S`, `S'` variables. -/
+**WHERE THE SURVEY WENT.**  The three greppable findings the previous owner left
+here (mathlib's `Presentation.ModelOfHasCoeffs` machinery; the subring
+realisation of the `R_λ` tower; `Λ = Finset R` and why no `Ring.DirectLimit` is
+needed) are all about CONSTRUCTING the system, so they now live in the docstring
+of `nonempty_noetherianApproxSystem_of_essFinitePresentation`, which is the leaf
+that has to do it.  Finding 2 ended "this is the one piece that can be landed as
+a proven lemma; it was not landed here only because, with no assembly written, it
+would be free-floating" — that obstruction is gone: the assembly below is
+written, so a `Base`-tower lemma proven inside that leaf now has a consumer. -/
 theorem nonempty_flatNoetherianStage_of_essFinitePresentation
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_hfpA : EssFinitePresentation (v.comp g))
-    (_hfpB : EssFinitePresentation g)
-    (_hflat : (v.comp g).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
-    Nonempty (FlatNoetherianStage v) :=
-  sorry
+    Nonempty (FlatNoetherianStage v) := by
+  obtain ⟨sys⟩ := nonempty_noetherianApproxSystem_of_essFinitePresentation hfpA hfpB
+  obtain ⟨i₀⟩ := sys.nonemptyΛ
+  obtain ⟨j₁, _, hb₁⟩ := exists_flatBase_index_of_noetherianApproxSystem sys hflat i₀
+  obtain ⟨j₂, h₂, hf₂⟩ := exists_flatFibre_index_of_noetherianApproxSystem sys hfib j₁
+  exact ⟨{ Base := sys.Base j₂
+           Mid := sys.Mid j₂
+           Tot := sys.Tot j₂
+           isLocalRingBase := sys.isLocalRingBase j₂
+           isLocalRingMid := sys.isLocalRingMid j₂
+           isLocalRingTot := sys.isLocalRingTot j₂
+           isNoetherianBase := sys.isNoetherianBase j₂
+           isNoetherianMid := sys.isNoetherianMid j₂
+           isNoetherianTot := sys.isNoetherianTot j₂
+           baseToMid := sys.baseToMid j₂
+           midToTot := sys.midToTot j₂
+           isLocalHomBaseToMid := sys.isLocalHomBaseToMid j₂
+           isLocalHomMidToTot := sys.isLocalHomMidToTot j₂
+           midToB := sys.midToB j₂
+           totToA := sys.totToA j₂
+           comm := sys.comm_midTot j₂
+           flatBase := sys.flat_base_of_le h₂ hb₁
+           flatFibre := hf₂
+           isLocalizationTensor :=
+             exists_isLocalization_tensor_of_noetherianApproxSystem sys j₂ }⟩
 
 /-- **THE APPROXIMATION HALF OF 00R7** (cut 2026-07-27; **PROVEN the same day**
 over `nonempty_flatNoetherianStage_of_essFinitePresentation`.  The section notes
