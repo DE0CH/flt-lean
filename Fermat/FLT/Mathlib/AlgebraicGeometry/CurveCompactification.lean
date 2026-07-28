@@ -90,9 +90,12 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
    (`smoothOfRelativeDimension_one_fromNormalization`, PROVEN over
-   `isDiscreteValuationRing_stalk_normalization` — itself PROVEN 2026-07-28 over the single
-   normality leaf `isIntegrallyClosed_stalk_normalization` — and the shared DVR node in
-   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`);
+   `isDiscreteValuationRing_stalk_normalization` — itself PROVEN over
+   `isIntegrallyClosed_stalk_normalization`, which was REFUTED, RESTATED and PROVEN 2026-07-28
+   over `isIntegrallyClosed_sections_of_forall_stalk` (also PROVEN, hoisted from
+   `Modularity/MoretBailly.lean`) — and the shared DVR node in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`);  **THE WHOLE NORMALITY HALF IS
+   NOW CLOSED**;
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
    PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is itself
@@ -115,14 +118,38 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
 `exists_isOpenImmersion_isProper` have all been in it while closed.  **Regenerate it from the
 build's `declaration uses 'sorry'` warnings before acting on it; do not trust the prose.**  As
-of a green `lake build` on 2026-07-28 this file's sorries are exactly these four:
+of the release-14 integration (2026-07-28) this file's sorries are exactly these THREE — **the
+whole normality half is now CLOSED**:
 
 | leaf | content |
 | --- | --- |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction — but see the next section: every consumer now bypasses it |
 | `exists_finset_span_powSubalgebra_of_mem_span` | the FINITE-MODEL DESCENT, all that is left of E. Noether's finiteness theorem after 2026-07-28: over `A = k[x₁,…,x_d]` with `Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional `Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  `module_finite_integralClosure_of_isPurelyInseparable` (the inseparable residue, and with it all of `module_finite_integralClosure_of_isFractionRing`) is PROVEN over it |
-| `isIntegrallyClosed_stalk_normalization` | **the relative normalization is NORMAL** — its stalks are integrally closed.  All that is left of `isDiscreteValuationRing_stalk_normalization`, which is PROVEN over it after the 2026-07-28 cut |
+
+**Proven and no longer leaves** (do NOT dispatch at these):
+`isIntegrallyClosed_stalk_normalization` (REFUTED, RESTATED with an explicit normality
+hypothesis `hYn`, and PROVEN 2026-07-28 over `isIntegrallyClosed_sections_of_forall_stalk`,
+itself PROVEN and hoisted here from `Modularity/MoretBailly.lean`),
+`isDiscreteValuationRing_stalk_normalization`, `topologicalKrullDim_normalization_le_one`,
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`,
+`ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`,
+`topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, `finiteType_integralClosure_sections`,
+`smoothOfRelativeDimension_one_fromNormalization`, and `exists_isOpenImmersion_isProper`
+(PROVEN over `exists_isOpenImmersion_isProper_of_affineCase`).
+
+**`trdeg_le_of_isStandardSmoothOfRelativeDimension` NO LONGER EXISTS** (release-14 integration).
+`flt-lean-380` carried a `trdeg`-based route to the same dimension bound, defensively renamed to
+`ringKrullDim_le_of_isStandardSmoothOfRelativeDimension_of_trdeg_le` to dodge the collision with
+`CurveExtension.lean`'s same-named declaration.  That declaration is PROVEN OUTRIGHT there by
+Noether normalization, so 380's own docstring prescribed the end state taken here: the renamed
+copy, its `trdeg` leaf, and the helper `ringKrullDim_le_of_trdeg_le` are all dropped and the one
+consumer points at `CurveExtension`'s version.  **Do not dispatch at Matsumura 25.3 for this
+file; nothing here needs it.**
+
+`isIntegrallyClosed_sections_of_forall_stalk` (hoisted here) is the same theorem as
+`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` in `Modularity/MoretBailly.lean`; it
+was hoisted rather than cited because MoretBailly is not in this module's import cone.
 
 `infinite_of_smoothOfRelativeDimension_one` in `CurveExtension.lean` — once listed here as the
 only input to the density subsection at the end of this file — is **PROVEN**; do not dispatch
@@ -174,7 +201,12 @@ regularity" but two separate things, and only one of them lives here:
   `IsIntegralHom f.fromNormalization` but nothing about the stalks being integrally closed;
   `isDiscreteValuationRing_stalk_normalization` is PROVEN over it (2026-07-28) once the
   dimension bound is taken from `topologicalKrullDim_normalization_le_one`, which is why that
-  theorem now sits BELOW the dimension block rather than above it;
+  theorem now sits BELOW the dimension block rather than above it.  **That leaf was then
+  REFUTED and RESTATED on 2026-07-28** — it was false without a normality hypothesis on `Y`
+  (the identity morphism satisfies all its hypotheses and makes it say "every integral scheme
+  is normal"; see its FALSITY AUDIT) — and, restated, it is PROVEN over
+  `isIntegrallyClosed_sections_of_forall_stalk`, which is itself PROVEN, hoisted from
+  `Fermat/FLT/Modularity/MoretBailly.lean`.  Nothing in the normality half is open;
 * *regular ⟹ smooth over a perfect field* — `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`
   in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which is **shared** with
   `Fermat/FLT/ModularCurve/X0.lean`: that file needs the same equivalence in the *forward*
@@ -2826,45 +2858,207 @@ theorem isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one
   haveI : IsDedekindDomain (X.presheaf.stalk x) := ⟨⟩
   exact ((IsDiscreteValuationRing.TFAE (X.presheaf.stalk x) hx).out 2 0).mp ‹_›
 
-/-- **THE RELATIVE NORMALIZATION IS NORMAL** (sorry leaf — 2026-07-27, and after this cut it is
-ALL that is left of `isDiscreteValuationRing_stalk_normalization`, which is now a THEOREM over
-it).
+/-- **The integral closure of `A` in an integrally closed domain `B` is integrally closed**
+(PROVEN 2026-07-28; one line, and it is the whole ring-theoretic content of
+`isIntegrallyClosed_stalk_normalization` below).
 
-Every local ring of `i.normalization` is integrally closed in its fraction field.  That is what
-"normalization" means, and it is the one thing `Mathlib`'s `Scheme.Hom.normalization` does not
-record: the construction is `Spec` of `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)` over affine
-`U ⊆ P`, and nothing in `Mathlib/AlgebraicGeometry/Normalization.lean` says that ring — let
-alone its localizations — is integrally closed.  There is also no `IsNormal` for schemes at
-this pin to phrase it with, which is why the statement is made stalkwise.
+`C := integralClosure A B` is integrally closed *in* `B` by `Mathlib`'s
+`instance : IsIntegrallyClosedIn (integralClosure R A) A`, and `B` is integrally closed in
+`Frac B`; `IsIntegrallyClosed.of_isIntegrallyClosed_of_isIntegrallyClosedIn` composes the two.
+Note this is NOT `integralClosure.isIntegrallyClosedOfFiniteExtension`, which needs `B` to be a
+FIELD finite over `Frac A`; here `B` is an arbitrary integrally closed domain, which is the
+shape the normalization actually produces (`B = Γ(Y, i ⁻¹ᵁ U)`).
 
-**NOTE WHAT THIS LEAF DOES *NOT* NEED, because two audits over-scoped it.**  It needs neither
-the dimension of `i.normalization` nor `hY`: the hypotheses `IsProper strP`,
-`SmoothOfRelativeDimension 1` and `¬ IsField` have all been peeled off into the consumer below,
-where they are discharged from `topologicalKrullDim_normalization_le_one` (PROVEN above) and
-`isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one` (PROVEN above).  Normality
-is a property of the normalization in EVERY dimension, and the leaf now says exactly that.
+**`IsIntegrallyClosed B` is not decorative.** Drop it and the statement is false: take
+`A = B = k[t², t³]`, so that `C = B`, and `t = t³/t² ∈ Frac B` is integral over `B` (it is a
+root of `X² - t²`) but is not in `B`. -/
+theorem isIntegrallyClosed_integralClosure_of_isIntegrallyClosed
+    {A B : Type*} [CommRing A] [CommRing B] [Algebra A B] [IsDomain B] [IsIntegrallyClosed B] :
+    IsIntegrallyClosed (integralClosure A B) :=
+  IsIntegrallyClosed.of_isIntegrallyClosed_of_isIntegrallyClosedIn _ B
 
-**THE ROUTE.**  Compute the stalk through `Scheme.Hom.normalizationOpenCover` /
-`normalizationDiagramMap`: over an affine `U ∋ i.fromNormalization x`,
-`Γ(i.normalization, ·)` is `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`
-(`AlgebraicGeometry.Scheme.Hom.normalizationObjIso`, the same isomorphism
-`locallyOfFiniteType_fromNormalization` above is proved through), and the stalk is a
-localization of it at a prime.  Then:
+/-- **THE RELATIVE NORMALIZATION OF A NORMAL SCHEME IS NORMAL** (**REFUTED, RESTATED AND PROVEN
+2026-07-28**).
 
-* an integral closure is integrally closed in the ambient ring —
-  `IsIntegralClosure.isIntegrallyClosed` / `integralClosure.isIntegrallyClosed_of_finite_extension`
-  in `Mathlib/RingTheory/IntegralClosure/`, and `Y` integral makes the ambient ring embed in the
-  function field;
-* localizations of an integrally closed domain are integrally closed —
-  `IsIntegrallyClosed.of_isLocalization` (`Mathlib/RingTheory/IntegrallyClosed.lean`), which is
-  present and is the step that carries the property from the affine chart to the stalk.
+Every local ring of `i.normalization` is integrally closed in its fraction field, **provided the
+sections of `Y` are** — which is the hypothesis `hYn`.
 
-So both halves have named `Mathlib` support; what is missing is only the identification of the
-chart's ring, and that identification is already used twice in this file. -/
-theorem isIntegrallyClosed_stalk_normalization {Y P : Scheme.{u}}
+## FALSITY AUDIT (2026-07-28) — the previous statement, without `hYn`, was FALSE
+
+It read
+
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y] (x : i.normalization) :
-    IsIntegrallyClosed (i.normalization.presheaf.stalk x) :=
-  sorry
+        IsIntegrallyClosed (i.normalization.presheaf.stalk x)
+
+**Counterexample: `i = 𝟙`.** The identity of any scheme is an open immersion and quasi-compact,
+so it satisfies every hypothesis whenever `Y` is integral.  Unfolding `Mathlib`'s definition, the
+chart ring of the normalization over an affine `U` is `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`,
+which for `i = 𝟙` is `integralClosure Γ(Y, U) Γ(Y, U) = Γ(Y, U)` — the normalization is `Y`
+itself (`Mathlib` records this as `instance [IsIntegralHom f] : IsIso f.toNormalization`).  So
+the old statement asserted that **every integral scheme has integrally closed local rings**,
+i.e. that every integral scheme is normal.
+
+Take `Y = Spec k[t², t³]`, the cuspidal cubic, at the point `𝔪 = (t², t³)`.  Its local ring is
+not integrally closed: `t = t³/t² ∈ Frac` is integral over it, and `t ∉ (k[t², t³])_𝔪`, because
+`t · s ∈ k[t², t³]` with `s` of nonzero constant term would need the `t¹`-coefficient of a member
+of `k[t², t³] = span{1, t², t³, …}` to be nonzero.  So the leaf could never have been proven, and
+anything derived from it would have been worthless.
+
+The mathematics behind the error is the standard fact that the relative normalization of `Y` in
+`P` is normal **when `Y` is normal** (Stacks `035I`), not unconditionally: over an affine
+`U ⊆ P` its ring is the integral closure of `Γ(P, U)` **inside `Γ(Y, i ⁻¹ᵁ U)`**, and an element
+of the fraction field integral over that ring is integral over `Γ(P, U)` but is only known to lie
+in `Γ(Y, i ⁻¹ᵁ U)` when the latter is integrally closed.  That single implication is the whole
+gap, and `hYn` is exactly it — see
+`isIntegrallyClosed_integralClosure_of_isIntegrallyClosed` above.
+
+## The repair costs the consumer nothing new mathematically
+
+`isDiscreteValuationRing_stalk_normalization` below discharges `hYn` from the smoothness
+hypothesis `hY` it already carries, through
+`isIntegrallyClosed_sections_of_forall_stalk` (PROVEN below) and
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` (PROVEN): a smooth curve's local
+rings are DVRs or fields, and both are integrally closed.  Note `hY` really is needed for
+normality — it is not, as two earlier audits recorded, needed only for the *dimension* half.
+Those audits were right that properness and `¬ IsField` are not needed here, and wrong that `hY`
+is not: the dimension half is genuinely discharged in the consumer, the NORMALITY half is not.
+
+## THE PROOF
+
+Pick an affine `U ⊆ P` around `i.fromNormalization x`.  Then `V := i.fromNormalization ⁻¹ᵁ U` is
+affine (`i.fromNormalization` is integral, hence affine) and contains `x`, and
+`Γ(i.normalization, V) ≅ integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`
+(`AlgebraicGeometry.Scheme.Hom.normalizationObjIso`, the same isomorphism
+`locallyOfFiniteType_fromNormalization` above is proved through).  That ring is integrally closed
+by `isIntegrallyClosed_integralClosure_of_isIntegrallyClosed`, and the stalk is its localization
+at `hV.primeIdealOf x` (`IsAffineOpen.isLocalization_stalk`), so
+`isIntegrallyClosed_of_isLocalization` finishes.
+
+`i ⁻¹ᵁ U` is nonempty — needed for `IsDomain Γ(Y, i ⁻¹ᵁ U)` — because `i.toNormalization` is
+dominant and `V` is a nonempty open of `i.normalization`. -/
+theorem isIntegrallyClosed_stalk_normalization {Y P : Scheme.{u}}
+    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
+    (hYn : ∀ V : Y.Opens, Nonempty V → IsIntegrallyClosed Γ(Y, V)) (x : i.normalization) :
+    IsIntegrallyClosed (i.normalization.presheaf.stalk x) := by
+  classical
+  have hmem : i.fromNormalization.base x ∈ (⊤ : P.Opens) := trivial
+  rw [← iSup_affineOpens_eq_top P] at hmem
+  obtain ⟨U, hxU⟩ := TopologicalSpace.Opens.mem_iSup.mp hmem
+  set V : i.normalization.Opens := i.fromNormalization ⁻¹ᵁ (U : P.Opens)
+  have hV : IsAffineOpen V := U.2.preimage i.fromNormalization
+  have hxV : x ∈ V := hxU
+  haveI : Nonempty V := ⟨⟨x, hxV⟩⟩
+  haveI : Nonempty (i ⁻¹ᵁ (U : P.Opens)) := by
+    obtain ⟨y, hy⟩ := i.toNormalization.denseRange.exists_mem_open V.2 ⟨x, hxV⟩
+    refine ⟨⟨y, ?_⟩⟩
+    have hyU : i.fromNormalization.base (i.toNormalization.base y) ∈ (U : P.Opens) := hy
+    rwa [← Scheme.Hom.comp_apply, Scheme.Hom.toNormalization_fromNormalization] at hyU
+  letI := (i.app (U : P.Opens)).hom.toAlgebra
+  haveI : IsDomain Γ(Y, i ⁻¹ᵁ (U : P.Opens)) := IsIntegral.component_integral _
+  haveI : IsIntegrallyClosed Γ(Y, i ⁻¹ᵁ (U : P.Opens)) := hYn _ ‹_›
+  haveI : IsIntegrallyClosed
+      (integralClosure Γ(P, (U : P.Opens)) Γ(Y, i ⁻¹ᵁ (U : P.Opens))) :=
+    isIntegrallyClosed_integralClosure_of_isIntegrallyClosed
+  haveI : IsIntegrallyClosed Γ(i.normalization, V) :=
+    IsIntegrallyClosed.of_equiv (i.normalizationObjIso U.2).commRingCatIsoToRingEquiv.symm
+  haveI : IsDomain Γ(i.normalization, V) := IsIntegral.component_integral _
+  letI := i.normalization.presheaf.algebra_section_stalk (U := V) ⟨x, hxV⟩
+  haveI := hV.isLocalization_stalk ⟨x, hxV⟩
+  exact isIntegrallyClosed_of_isLocalization _ _
+    (hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl_le_nonZeroDivisors
+
+/-- **NORMALITY IS LOCAL ON AN INTEGRAL SCHEME: NORMAL STALKS GIVE NORMAL SECTIONS ON EVERY
+NONEMPTY OPEN** (PROVEN — general scheme theory, reusable, nothing specific to curves).
+
+**PROVENANCE (2026-07-28).**  This is HOISTED from
+`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` in
+`Fermat/FLT/Modularity/MoretBailly.lean`, where it was proven on 2026-07-27 for that file's own
+copy of the relative-normalization argument.  That module is not in this one's import cone, so
+the statement had to be repeated here rather than cited; the proof below is its proof, and the
+two should be deduplicated by whoever next touches both.  It was written as a leaf here for
+about an hour before the duplicate was found — which is the standing lesson that a "`Mathlib`
+does not have this" verdict must be checked against `Fermat/` as well as against the pin.
+
+`Mathlib` has NO notion of a normal scheme (`grep -rn "IsIntegrallyClosed"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is EMPTY, which is the check that would
+refute this), so this bridge has to be written here.  It is what makes stalk-level normality
+usable at the level of SECTIONS, which is where the relative normalization is computed.
+
+THE ARGUMENT, and note that it needs the open `W` to be arbitrary — `i ⁻¹ᵁ U` in
+`isIntegrallyClosed_stalk_normalization` above is an open of `Y` that is NOT affine, so
+`IsIntegrallyClosed`'s local-ring API (`IsIntegrallyClosed.of_isLocalization_maximal`) does not
+apply:
+
+* `Γ(X, W)` embeds in the function field `K(X)` by `Scheme.germToFunctionField_injective`, so it
+  suffices to show it is integrally closed IN `K(X)`
+  (`IsIntegrallyClosed.of_isIntegrallyClosedIn`);
+* let `z ∈ K(X)` be integral over `Γ(X, W)`.  For each `p ∈ W` the tower
+  `Γ(X, W) → 𝒪_{X,p} → K(X)` (`functionField_isScalarTower`) makes `z` integral over the stalk,
+  which is normal by hypothesis and has `K(X)` as its fraction field, so `z` is the germ at `p`
+  of a section on some open neighbourhood, shrunk to sit inside `W`;
+* those local sections agree on overlaps because `X` is IRREDUCIBLE, so the generic point lies in
+  every nonempty open, and `germ_injective_of_isIntegral` at the generic point turns "same image
+  in `K(X)`" into equality of sections;
+* `TopCat.Sheaf.existsUnique_gluing'` glues them, and the glued section has germ `z` at the
+  generic point.
+
+Irreducibility is used twice and is essential: once to know every nonempty open meets every
+other (through the generic point), and once for the injectivity of germs. -/
+theorem isIntegrallyClosed_sections_of_forall_stalk {X : Scheme.{u}} [IsIntegral X]
+    (h : ∀ x : X, IsIntegrallyClosed (X.presheaf.stalk x))
+    (W : X.Opens) [hWne : Nonempty W] : IsIntegrallyClosed Γ(X, W) := by
+  haveI : IsDomain Γ(X, W) := IsIntegral.component_integral W
+  have hinj : Function.Injective (algebraMap Γ(X, W) X.functionField) :=
+    X.germToFunctionField_injective W
+  haveI : FaithfulSMul Γ(X, W) X.functionField :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hinj
+  haveI : IsIntegrallyClosedIn Γ(X, W) X.functionField := by
+    refine isIntegrallyClosedIn_iff.mpr ⟨hinj, ?_⟩
+    intro z hz
+    have hloc : ∀ p : ↥W, ∃ (V : X.Opens) (hpV : (p : X) ∈ V), V ≤ W ∧ ∃ s : Γ(X, V),
+        algebraMap (X.presheaf.stalk (p : X)) X.functionField
+          (X.presheaf.germ V (p : X) hpV s) = z := by
+      intro p
+      haveI := h (p : X)
+      have hzint : _root_.IsIntegral (X.presheaf.stalk (p : X)) z := hz.tower_top
+      obtain ⟨t, ht⟩ := IsIntegrallyClosed.isIntegral_iff.mp hzint
+      obtain ⟨V₀, hpV₀, s₀, hs₀⟩ := X.presheaf.exists_germ_eq t
+      refine ⟨V₀ ⊓ W, ⟨hpV₀, p.2⟩, inf_le_right,
+        X.presheaf.map (homOfLE (inf_le_left : V₀ ⊓ W ≤ V₀)).op s₀, ?_⟩
+      rw [X.presheaf.germ_res_apply (homOfLE (inf_le_left : V₀ ⊓ W ≤ V₀)) (p : X) ⟨hpV₀, p.2⟩ s₀,
+        hs₀, ht]
+    choose V hpV hVW s hs using hloc
+    have hgen : ∀ p : ↥W, genericPoint ↥X ∈ V p := fun p =>
+      ((genericPoint_spec ↥X).mem_open_set_iff (V p).isOpen).mpr
+        ⟨(p : X), Set.mem_univ _, hpV p⟩
+    have hNE : ∀ p : ↥W, Nonempty (V p) := fun p => ⟨⟨(p : X), hpV p⟩⟩
+    have hgenW : genericPoint ↥X ∈ W :=
+      ((genericPoint_spec ↥X).mem_open_set_iff W.isOpen).mpr
+        ⟨hWne.some.1, Set.mem_univ _, hWne.some.2⟩
+    have hsz : ∀ p : ↥W, X.presheaf.germ (V p) (genericPoint ↥X) (hgen p) (s p) = z := by
+      intro p
+      haveI := hNE p
+      exact (X.algebraMap_germ_eq_germToFunctionField (hpV p) (s p)).symm.trans (hs p)
+    have hcompat : TopCat.Presheaf.IsCompatible X.presheaf V s := by
+      intro p q
+      apply germ_injective_of_isIntegral (X := X) (genericPoint ↥X)
+        (show genericPoint ↥X ∈ V p ⊓ V q from ⟨hgen p, hgen q⟩)
+      rw [X.presheaf.germ_res_apply (Opens.infLELeft (V p) (V q)) (genericPoint ↥X)
+            ⟨hgen p, hgen q⟩,
+          X.presheaf.germ_res_apply (Opens.infLERight (V p) (V q)) (genericPoint ↥X)
+            ⟨hgen p, hgen q⟩]
+      exact (hsz p).trans (hsz q).symm
+    have hcover : W ≤ iSup V := fun w hw => Opens.mem_iSup.mpr ⟨⟨w, hw⟩, hpV ⟨w, hw⟩⟩
+    obtain ⟨s₀, hs₀, -⟩ :=
+      X.sheaf.existsUnique_gluing' V W (fun p => homOfLE (hVW p)) hcover s hcompat
+    refine ⟨s₀, ?_⟩
+    have hres : X.presheaf.map (homOfLE (hVW hWne.some)).op s₀ = s hWne.some := hs₀ _
+    have hgerm : X.presheaf.germ W (genericPoint ↥X) hgenW s₀ = z := by
+      rw [← hsz hWne.some, ← hres,
+        X.presheaf.germ_res_apply (homOfLE (hVW hWne.some)) (genericPoint ↥X) (hgen hWne.some)]
+    exact hgerm
+  exact IsIntegrallyClosed.of_isIntegrallyClosedIn Γ(X, W) X.functionField
 
 /-- **The local rings of the normalized model are discrete valuation rings** (**PROVEN
 2026-07-27** over `isIntegrallyClosed_stalk_normalization` — the normality half of the old
@@ -2888,9 +3082,19 @@ instead of being carried inside the leaf.  Concretely:
 * `isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one` then needs only
   `IsIntegrallyClosed`, which is the leaf.
 
+**2026-07-28**: `isIntegrallyClosed_stalk_normalization` was refuted and restated (see its
+FALSITY AUDIT), so this proof now also discharges its normality hypothesis `hYn`.  That costs
+one case split: a local ring of the smooth curve `Y` is either a field (at the generic point)
+or a discrete valuation ring
+(`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, PROVEN in
+`CurveExtension.lean`), and both are integrally closed — a DVR through
+`IsPrincipalIdealRing → UniqueFactorizationMonoid → IsIntegrallyClosed`.  The passage from
+stalks to sections is `isIntegrallyClosed_sections_of_forall_stalk` above.
+
 `hY` is what pins the dimension to one; without it the same construction applies in every
 dimension and no local ring need be a DVR — it enters here through
-`topologicalKrullDim_normalization_le_one` and nowhere else. -/
+`topologicalKrullDim_normalization_le_one` and, since the refutation above, through the
+normality of `Y` as well. -/
 theorem isDiscreteValuationRing_stalk_normalization {Y P : Scheme.{u}}
     {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
@@ -2906,8 +3110,18 @@ theorem isDiscreteValuationRing_stalk_normalization {Y P : Scheme.{u}}
     refine le_trans ?_ (topologicalKrullDim_normalization_le_one i hY)
     rw [topologicalKrullDim_eq_iSup_coheight]
     exact le_iSup (fun y : i.normalization => (Order.coheight y : WithBot ℕ∞)) x
+  have hstalk : ∀ y : Y, IsIntegrallyClosed (Y.presheaf.stalk y) := by
+    haveI := hY
+    intro y
+    by_cases hy : IsField (Y.presheaf.stalk y)
+    · letI := hy.toField
+      infer_instance
+    · haveI := isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one (i ≫ strP) hy
+      infer_instance
+  have hYn : ∀ V : Y.Opens, Nonempty V → IsIntegrallyClosed Γ(Y, V) := fun V hV =>
+    @isIntegrallyClosed_sections_of_forall_stalk Y _ hstalk V hV
   exact isDiscreteValuationRing_of_isIntegrallyClosed_of_coheight_le_one
-    (by exact_mod_cast hdim) (isIntegrallyClosed_stalk_normalization i x) hx
+    (by exact_mod_cast hdim) (isIntegrallyClosed_stalk_normalization i hYn x) hx
 
 /-- **The normalization of a curve over a perfect field is a smooth curve** (PROVEN
 2026-07-27 over `isDiscreteValuationRing_stalk_normalization` and the shared DVR node
