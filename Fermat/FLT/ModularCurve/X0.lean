@@ -15162,7 +15162,24 @@ the `37` branch down to `exists_coarseModuliY0_thirtySeven_cardLe` and
 "Mazur's Theorem 1 is a single irreducible leaf" is not a true statement
 about this tree: it is already seven leaves in the module next door, and the
 only thing keeping it one leaf here is the direction of an import.
--/
+
+**IMPORT-DIRECTION CLAIM RE-CHECKED 2026-07-28** (it is the load-bearing
+one, and it is one grep): `Fermat/FLT/FreyCurve/MazurTorsion.lean` still
+carries `public import Fermat.FLT.ModularCurve.X0` in its header, and
+nothing under `Fermat/` imports `MazurTorsion` from this module or from
+anything this module imports.  So the direction is unchanged and the three
+leaves below cannot cite their counterparts.
+
+**And the hoist is bigger than "mechanical" suggests, measured rather than
+guessed.**  `namespace MazurIsogenyPrimeJ` … `end MazurIsogenyPrimeJ` in
+`MazurTorsion.lean` spans some `3 500` lines, and every X0-side declaration
+it consumes — `IsJMapOn`, `exists_jMap`, `HasRankZeroJacobian`,
+`card_le_of_rankZeroJacobian` — is declared BELOW the three leaves here.  So
+hoisting it into this file requires ALSO relocating this whole subsection
+past the `j`-map and rank-`0` layers, i.e. two relocations in two files with
+concurrent owners, not three `exact`s and three deletions.  That is an
+integrator-level refactor; the sentence above is right that the repair is a
+hoist and optimistic about its size. -/
 
 /-- **Mazur's Theorem 1 at the three genus-one levels** (sorry node, new
 2026-07-27): for `p ∈ {11, 17, 19}` a curve over `ℚ` with a rational
@@ -20613,7 +20630,31 @@ So the leaf keeps its bare (fully stated) `sorry` deliberately: every
 available cut either needs a declaration that cannot precede it, or
 produces a sub-leaf that is false.  **What would unblock it is a
 RELOCATION, not a proof** — and that is an integrator-level edit in a file
-with several concurrent owners, not a prover's. -/
+with several concurrent owners, not a prover's.
+
+## AUDIT RE-RUN 2026-07-28 (third time) — STILL BLOCKED, AND A THIRD CUT
+## CHECKED AND FOUND FALSE
+
+The one-grep refuting check above was re-run against the file as it stands
+and did not fire.  Current positions, so the next reader does not have to
+look them up: `SpecLoc` is declared once, at the head of the integral-model
+subsection; `IsX0JNeronDatum` and `exists_x0JNeronDatum` are further below
+still; `exists_x0JReductionAt` is at the very end of the file.  All four are
+tens of thousands of characters BELOW this declaration, so nothing has
+moved in the direction that would help.
+
+Also checked and recorded so it is not tried a fourth time: the field-wise
+split in the OTHER grouping — core plus `cusp_lift` in one leaf, and
+`formalImmersion` alone over a datum carrying them — is **FALSE** as well,
+and by a cheaper witness than the one above.  Take `Eis := Unit`,
+`EisRed := Unit`, `ajE`, `ajE'` constant and `redE := id`.  Then `red_ajE`
+is `rfl`, `redE_inj` holds (the identity on a subsingleton), `cusp_lift`
+can be satisfied by any `redX` that is onto the cusps, and
+`formalImmersion` fails for any `redX` collapsing two distinct rational
+points with cuspidal reduction.  So `formalImmersion` is not implied by the
+core together with `cusp_lift`, in either direction: the two field-wise
+groupings are each false, which is why the leaf is undivided rather than
+merely awkward. -/
 theorem exists_eisensteinFormalImmersionAt {p q : ℕ} (_hp : p.Prime)
     (_hmem : p ∉ mazurIsogenyPrimes) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqp : q ≠ p)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
@@ -50080,6 +50121,20 @@ weakened into service by any amount of interface work.  Nothing was found
 on the `~/cs/FLT` or `Mathlib` axes either: neither has a Coleman
 integral, a `p`-adic differential, or a Jacobian of a curve.
 
+**STALE-CLAIM CORRECTION (2026-07-28): "neither can be weakened into
+service by any amount of interface work" IS WRONG, and it was wrong when
+written.**  The weakening exists and is in this file:
+`HasRankZeroAbelianImage` asks only for SOME abelian variety under the
+curve with finite `A(ℚ)`, not for the Jacobian to have rank `0`, and
+`card_le_of_abelianSieve` consumes it.  Both `65` and `91` satisfy it, by
+the Atkin–Lehner Prym — the entire rank sits on the `w_N = +1` part at both
+levels, so `J_0(N)^-` has rank `0`.  See the subsection note above
+`hasRankZeroAbelianImage_of_chabautyColemanPrime` for the newform table,
+its PARI/GP certificate and the checks that refute it.  The paragraph above
+searched the theory axis for a weakening of `HasRankZeroJacobian` and found
+none, which is true; it did not look at the SIBLING interface introduced
+for exactly this situation at `169`.
+
 What the verdict did **not** cover, and what was TAKEN on 2026-07-27, is
 the **placement** axis.  The node decomposes into one criterion and one
 leaf, exactly as `26` does above, and the criterion is shared: this
@@ -50172,9 +50227,184 @@ variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
     {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
 
+/-! #### The Atkin–Lehner Prym at `65` and `91` — this level is NOT Chabauty
+
+(2026-07-28.)  The two leaves in this subsection replace the bare
+Chabauty–Coleman leaf below, which is now PROVEN from them.  The reason is
+a computation, and it REFUTES the irreducibility verdict recorded on
+`chabautyColemanPrimes` above along the one axis that verdict did not
+search: not the theory axis, not the placement axis, but **which abelian
+variety the reduction argument is run on**.
+
+**The whole Mordell–Weil rank of `J_0(N)` sits on the Atkin–Lehner PLUS
+part of `w_N`, at BOTH levels.**  So the Prym `J_0(N)^-` — the minus part,
+i.e. the Jacobian of the Prym of `X_0(N) → X_0(N)/w_N` — has rank `0`, and
+`c : x ↦ [x] − [w_N x]` is a rank-`0` abelian IMAGE of the curve in the
+sense of `HasRankZeroAbelianImage`.  That interface is already in this
+file, and `169` — where `rank J_0(169)(ℚ) = 3` sits entirely on the
+`w_169 = +1` part — already runs exactly this argument.
+
+PARI/GP 2.17.4, 2026-07-28 (untrusted searcher, statement check only):
+`mf = mfinit([N,2],0)`, `mfeigenbasis(mf)`, `mfatkineigenvalues(mf,N)`,
+and `lfunorderzero` on every embedding of every orbit.
+
+| `N` | orbit | `dim` | `w_N` | `ord_{s=1} L(f^σ, s)` |
+|-----|-------|-------|-------|-----------------------|
+| `65` | 1 | `1` | `+1` | `1` |
+| `65` | 2 | `2` | `−1` | `0, 0` |
+| `65` | 3 | `2` | `−1` | `0, 0` |
+| `91` | 1 | `1` | `+1` | `1` |
+| `91` | 2 | `1` | `+1` | `1` |
+| `91` | 3 | `2` | `−1` | `0, 0` |
+| `91` | 4 | `3` | `−1` | `0, 0, 0` |
+
+`5 = 1 + 2 + 2` and `7 = 1 + 1 + 2 + 3` are the two genera, so the tables
+are complete.  `dim J_0(65)^- = 4` and `dim J_0(91)^- = 5`; every
+constituent of the minus part has analytic rank `0`, so
+Kolyvagin–Logachev makes `J_0(N)^-(ℚ)` FINITE unconditionally (order-`0`
+vanishing is inside the Gross–Zagier–Kolyvagin range, and each factor is
+one `L`-function of order `0`, not one function of higher order — the same
+distinction `not_stableCyclic_oneHundredSixtyNine` records).  The `+1`
+parts carry `1` and `1 + 1 = 2`, which is exactly the `r = 1` and `r = 2`
+of the rank table above: nothing here contradicts that table, it LOCATES
+the rank.
+
+**The check that refutes this**: `mfatkineigenvalues(mfinit([N,2],0), N)`
+returning `−1` on an orbit whose `lfunorderzero` is positive, at either
+level; or `lfunorderzero` returning a positive value on any embedding of
+orbit `2`/`3` at `65` or orbit `3`/`4` at `91`.
+
+**Why `65` and `91` are EASIER than `169` once this is seen.**  At `169`
+the best single-prime point count is `4` against a target of `2`, so a
+Mordell–Weil SIEVE is still needed on top of the abelian image.  Here the
+counts are already SHARP — `#X_0(65)(𝔽_3) = #X_0(91)(𝔽_5) = 4 =
+numRationalCusps`, which is `mem_x0WitnessTable_of_chabautyColemanPrime` —
+so the plain reduction bound suffices and no sieve enters.
+
+**What this does NOT do.**  It removes no mathematics: `J_0(N)`, its
+Atkin–Lehner decomposition, the Prym and Kolyvagin–Logachev are all still
+absent from this pin, and they are now confined to
+`hasRankZeroAbelianImage_of_chabautyColemanPrime`.  What it removes is the
+need for `p`-adic integration and the Coleman integral, which exist in no
+form anywhere in mathlib, in `~/cs/FLT` or in this project, and which the
+previous phrasing of the residue genuinely required. -/
+
+/-- **A rank-`0` abelian image of `X_0(65)` and of `X_0(91)`, from the
+Atkin–Lehner Prym** (sorry LEAF, new 2026-07-28 — the ARITHMETIC half of
+`injective_redX_of_chabautyColemanPrime`).
+
+TRUE.  Let `w_N` be the Fricke involution and `A := J_0(N)^-` its minus
+part, of dimension `4` at `N = 65` and `5` at `N = 91`; take
+`c : x ↦ [x] − [w_N x]`, which has degree `0` and so needs no base point.
+The subsection note above gives the newform table with the PARI/GP
+commands that produced it: every constituent of `A` has analytic rank `0`,
+so `A(ℚ)` is finite by Kolyvagin–Logachev.
+
+**Injectivity of `c` on `ℚ`-points**, the second clause of
+`HasRankZeroAbelianImage`, and the reason the leaf is not just the rank
+statement.  If `[x] − [w x] = [y] − [w y]` then `[x] + [w y] ∼ [y] + [w x]`
+as divisors of degree `2`.  Neither curve is HYPERELLIPTIC — Ogg's list of
+hyperelliptic `X_0(N)` is `22, 23, 26, 28, 29, 30, 31, 33, 35, 37, 39, 40,
+41, 46, 47, 48, 50, 59, 71`, and `65` (genus `5`) and `91` (genus `7`) are
+not on it — so two DISTINCT effective divisors of degree `2` are never
+linearly equivalent, whence `{x, w y} = {y, w x}` as divisors.  That leaves
+`x = y`, or `x` and `y` both FIXED by `w_N`.
+
+The fixed points of `w_N` are the CM points of discriminant `−4N`, together
+with those of discriminant `−N` when `N ≡ 3 mod 4`; each is defined over
+the corresponding ring class field, so a RATIONAL one needs class number
+`1`.  PARI/GP `qfbclassno`, 2026-07-28: `h(−260) = 8`; `h(−364) = 6` and
+`h(−91) = 2`.  All exceed `1`, so `w_65` and `w_91` have NO rational fixed
+point at all and the second case is empty.  (The four cusps are not fixed
+either: `w_N` swaps `0 ↔ ∞` and `1/p ↔ 1/q`.)  **The check that refutes
+this**: `qfbclassno(−4·65)`, `qfbclassno(−4·91)` or `qfbclassno(−91)`
+returning `1`, or `65` or `91` appearing in Ogg's hyperelliptic list.
+
+**`h` and `d` are both load-bearing.**  `h` says `N ∈ {65, 91}`, which is
+what the newform table is about.  `d` is what pins `strX` as `X_0(N)` over
+`ℚ`: `d.model` is an `IsX0Compactification N` of the integral model and
+`d.genX` identifies `strX`'s relative points with its generic fibre's, so a
+junk `strX` cannot satisfy the hypothesis.  Without `d` the statement is
+FALSE — `HasRankZeroAbelianImage strX` fails for, e.g., `strX = 𝟙 SpecQ`,
+whose rational points are a single point but for which no `A` with the
+naturality clause is being asserted to exist by anything here.
+
+IRREDUCIBLE at this pin, and this is where all the missing theory now
+sits: `J_0(N)`, its Atkin–Lehner decomposition, the Prym, and
+Kolyvagin–Logachev.  **The check that would refute that**: a declaration in
+the tree producing an Atkin–Lehner decomposition of a modular Jacobian, or
+a rank-`0` abelian quotient of `J_0(65)` or `J_0(91)`.  Note that
+`exists_atkinLehnerPrym_x0OneSixtyNine` is the SAME statement at `169` and
+is itself open over four leaves, so the honest description of this node is
+"the `169` Prym leaf at two more levels", not "a new theory". -/
+theorem hasRankZeroAbelianImage_of_chabautyColemanPrime
+    (h : (N, ℓ) ∈ chabautyColemanPrimes)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    HasRankZeroAbelianImage strX :=
+  sorry
+
+/-- **Reduction is injective on `X_0(N)(ℚ)` whenever the curve has a
+rank-`0` abelian image** (sorry LEAF, new 2026-07-28 — the GEOMETRIC half
+of `injective_redX_of_chabautyColemanPrime`, and LEVEL-GENERIC: no `N`, no
+level list, no arithmetic).
+
+TRUE, and it is `card_le_of_rankZeroJacobian`'s injectivity step with the
+Jacobian replaced by an arbitrary abelian image — the replacement
+`HasRankZeroAbelianImage` was introduced for, at `169`.  The argument, and
+it is the one this file already runs in the `169` chain:
+
+1. translate `c` by `c o` and use the UNIVERSAL property of `jac` to factor
+   it through the Albanese, then corestrict to the image `B ⊆ A`: that is
+   `exists_albaneseQuotientAbelianImage_x0OneSixtyNine` over
+   `exists_surjectiveAbelianImage_of_isAdditiveOn`, giving a SURJECTION
+   `π : J ↠ B` with `B(ℚ)` finite and `x ↦ π(aj x)` injective on
+   `ℚ`-points;
+2. `d.genJ` makes `d`'s Jacobian model a Néron model of `J` over `ℤ_(ℓ)`,
+   so `exists_goodAbelianReduction_of_abelianQuotient` spreads `B` out with
+   GOOD reduction at `ℓ`, and `exists_abelianSpread_of_neronModel` spreads
+   `x ↦ π(aj x)` out over `d.model`;
+3. `neronReduction_injective` — the formal-group fact, and the reason
+   `hℓ2` is a hypothesis — makes reduction injective on `B(ℚ)`, which is
+   finite by (1);
+4. so `redB ∘ (π ∘ aj)` is injective and factors as `(π' ∘ aj') ∘ d.redX`,
+   whence `d.redX` is injective.  This is `card_le_of_rankZeroJacobian`'s
+   two-line sandwich verbatim, with `redJ_inj` replaced by `redB` injective
+   and `hajinj` by (1)'s injectivity.
+
+**`hℓ2 : ℓ ≠ 2` is not decoration.**  Step (3) is the statement that the
+kernel of reduction on a finite group of points of an abelian scheme with
+good reduction is trivial, which is the formal-group torsion-freeness of
+`neronKernel_torsionFree` and is FALSE at `ℓ = 2`.  Dropping it makes the
+leaf false.  Primality of `ℓ` is NOT added: it already follows from
+`d.base`, since `IsReductionBase` makes `ZMod ℓ` the residue field of a
+local ring, hence a field.
+
+**Nothing in the statement mentions `65`, `91` or `chabautyColemanPrimes`**,
+which is the point of the cut: this half is reusable at every level whose
+Jacobian has positive rank but which admits a rank-`0` abelian image, `169`
+included.  **The check that would refute the leaf**: a datum `d` and a
+rank-`0` abelian image for which `d.redX` identifies two rational points —
+which by the chain above would force either a non-injective `π ∘ aj`
+(contradicting `hA`) or a nontrivial reduction kernel on a finite group at
+an odd prime.
+
+A successor may reasonably prove this by GENERALISING
+`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, whose `_hX` is
+already recorded there as UNUSED — the literal `169` in its type is the
+only thing standing between that theorem and this leaf's step (1). -/
+theorem injective_redX_of_rankZeroAbelianImage (hℓ2 : ℓ ≠ 2)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+    (hA : HasRankZeroAbelianImage strX) :
+    Function.Injective d.redX :=
+  sorry
+
 /-- **Chabauty–Coleman at `65` and `91`: reduction is injective on
-`X_0(N)(ℚ)`** (sorry LEAF, introduced 2026-07-27 — and this is where ALL
-of the `65, 91` mathematics now lives).
+`X_0(N)(ℚ)`** (PROVEN 2026-07-28 over
+`hasRankZeroAbelianImage_of_chabautyColemanPrime` and
+`injective_redX_of_rankZeroAbelianImage`; a sorry LEAF from 2026-07-27,
+when it was where ALL of the `65, 91` mathematics lived).
 
 Reduction modulo `3` (resp. `5`) is injective on the rational points of
 `X_0(65)` (resp. `X_0(91)`).  `d.redX` is the Néron-pinned reduction of
@@ -50257,8 +50487,8 @@ records "`Coleman`: `0` files"):
 * the Coleman integral, i.e. the primitive of a differential on a disc,
   and its additivity over `J`;
 * the Mordell–Weil rank of `J_0(N)(ℚ)` as a number — this file has
-  `HasRankZeroJacobian` and `HasRankZeroAbelianImage`, both of which are
-  the `r = 0` case and are FALSE here, and no notion of rank at all.
+  `HasRankZeroJacobian`, which is the `r = 0` case and is FALSE here, and
+  no notion of rank at all.
 
 The last item is worth stating separately because it is the reason no
 interface work rescues the existing criteria: `card_le_of_rankZeroJacobian`
@@ -50266,6 +50496,20 @@ and `card_le_of_sieve` consume `HasRankZeroJacobian`, and `J_0(65)`
 contains the rank-`1` curve `65a` while `J_0(91)` has a rank-`1` factor
 twice over.  Positive rank is not a weakness of the packaging, it is the
 hypothesis failing.
+
+**STALE-CLAIM CORRECTION (2026-07-28).**  The first item above used to read
+"this file has `HasRankZeroJacobian` and `HasRankZeroAbelianImage`, both of
+which are the `r = 0` case and are FALSE here".  That is right about
+`HasRankZeroJacobian` and **WRONG about `HasRankZeroAbelianImage`**, which
+does not ask for the JACOBIAN to have rank `0` — it asks for SOME abelian
+variety under `X` with finite `A(ℚ)` and injective-on-`ℚ`-points structure
+map, which is a strictly weaker demand and is exactly why it was introduced
+at `169`, where `rank J_0(169)(ℚ) = 3`.  It is TRUE at `65` and `91`, by
+the Atkin–Lehner Prym; the newform table and the PARI/GP commands that
+establish it are in the subsection note above
+`hasRankZeroAbelianImage_of_chabautyColemanPrime`.  The error cost this
+node a standing "needs `p`-adic integration and the Coleman integral"
+verdict that was never true.
 
 **The checks that would refute this leaf**: a rational point of `X_0(65)`
 or `X_0(91)` that is not a cusp (contradicting Kenku); or two distinct
@@ -50275,12 +50519,44 @@ reduction; or a PARI/GP `mfheckemat` run contradicting a column of the
 table above.
 
 **Splitting into two owners** is a `fin_cases h` away and needs nothing
-from the assembly: the two levels share only the method. -/
+from the assembly: the two levels share only the method.
+
+## RESOLUTION (2026-07-28) — CHABAUTY IS NOT NEEDED, AND THE ROUTE ABOVE
+## IS SUPERSEDED
+
+Everything above about Chabauty–Coleman is correct *as a description of
+that method* and is no longer the route.  The residue-disc argument, the
+useless-uniform-bounds table and the four missing theories are all left in
+place because they remain the accurate account of what it would cost to run
+Chabauty here — and it is now known that nobody has to.
+
+The axis none of the audits searched is **which abelian variety the
+reduction argument is run on**.  At both levels the entire Mordell–Weil
+rank of `J_0(N)` sits on the Atkin–Lehner PLUS part of `w_N`, so the minus
+part (the Prym) has rank `0` and supplies a `HasRankZeroAbelianImage` — the
+interface `169` already uses for exactly this reason.  The newform table,
+its PARI/GP certificate and the refuting checks are in the subsection note
+above `hasRankZeroAbelianImage_of_chabautyColemanPrime`.
+
+So this node is now the two-line assembly of
+
+* `hasRankZeroAbelianImage_of_chabautyColemanPrime` — the ARITHMETIC:
+  `J_0(N)^-` has rank `0` (Kolyvagin–Logachev) and `x ↦ [x] − [w_N x]` is
+  injective on `ℚ`-points (non-hyperelliptic, no rational fixed point);
+* `injective_redX_of_rankZeroAbelianImage` — the GEOMETRY, LEVEL-GENERIC:
+  a rank-`0` abelian image plus a Néron-pinned datum at an odd prime makes
+  reduction injective.
+
+Neither mentions Coleman integration.  The total is one leaf more than
+before and the mathematics is strictly smaller: the first is the `169` Prym
+statement at two more levels, the second is the `169` transport chain with
+`169` erased. -/
 theorem injective_redX_of_chabautyColemanPrime (h : (N, ℓ) ∈ chabautyColemanPrimes)
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
     Function.Injective d.redX :=
-  sorry
+  injective_redX_of_rankZeroAbelianImage (chabautyColemanPrimes_spec h).2.2.1 d
+    (hasRankZeroAbelianImage_of_chabautyColemanPrime h d)
 
 end ChabautyColeman
 
