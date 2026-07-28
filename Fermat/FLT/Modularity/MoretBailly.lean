@@ -18496,6 +18496,36 @@ irreducible and none of those denominators vanishes identically on it.
 CONSUMER's chain false rather than easier, since item 4 downstream forces
 `N(S) ≥ p^e / c` while `N(f) ≤ p^n`.
 
+THE PIN HAS A BIRATIONAL-GEOMETRY API, AND NOBODY HERE HAD NOTICED (found
+2026-07-28). `Mathlib/AlgebraicGeometry/Birational/` — four files — carries
+`PartialIso`, `Birational`, **`BirationalOver sX sY`** (birational *over a base*,
+with `refl`/`symm`/`trans`), `PartialMap`, `RationalMap`, `RationalMap.domain`,
+and **`RationalMap.equivFunctionFieldOver`**, which for `X` integral and `Y`
+locally of finite type is the bijection between `S`-morphisms
+`Spec K(X) ⟶ Y` and `S`-rational maps `X ⤏ Y`. That last one **is** Schmidt's
+Chapter VI Theorem 4B — "`k(x) = k(y)` makes the two varieties birationally
+equivalent OVER `k`" — in this pin's language, and it is the step the argument
+above leans on to keep the maps `ℚ`-rational.
+
+Read that as a starting point, not as a discharge: Theorem 4D's *induction* (the
+primitive element dropping the ambient dimension one step at a time) and the
+whole `ℤ`-DESCENT are not there, and neither is the passage from an abstract
+`PartialIso` to the explicit `P`, `R`, `w` and the three ideal memberships this
+statement demands — which is the entire point of packaging the conclusion as a
+finite algebraic certificate rather than as `BirationalOver`. But a prover who
+starts by writing this leaf's own certificate machinery from scratch, without
+looking at `Birational/RationalMap.lean` first, is redoing the function-field
+dictionary.
+
+FAITHFULNESS NOTE (2026-07-28, an audit this leaf did not previously carry).
+`e` is NOT under-pinned even though no clause bounds it: assertion 2 exhibits
+`ψ = R` as a LEFT INVERSE of `φ = P ∘ Fin.castSucc` on the open set, so `φ` is
+injective there, so the `e`-dimensional irreducible `V(S₀) ∖ V(g₀)` (nonempty
+and dense because `hirr` makes `S₀` irreducible and `S₀ ∤ g₀`) injects into
+`V(f) ⊆ 𝔸^n`, forcing `e ≤ n`. So the docstring's remark that "`e` is not free"
+is a THEOREM of the statement, not an extra obligation on the prover, and an
+adversary cannot inflate `e` to make the consumer's `N(S) ≥ p^e / c` vacuous.
+
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ` and `ℚ̄` only,
 no prime `p`, no Galois representation, no modular form, nothing from
 `Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
@@ -33093,7 +33123,43 @@ re-survey (checked 2026-07-28 over `Fermat/`, `.lake/packages/mathlib` and
 a quasi-projective scheme by a finite group, and fpqc descent of morphism
 properties. All four are absent everywhere. The route is Serre's: `horb` gives
 the quotient `(X₀ ⊗ L)/Γ_{L/ℚ}` for the finite Galois `L` supplied by `hopen`,
-and the twisted action makes that quotient the desired form. -/
+and the twisted action makes that quotient the desired form.
+
+CORRECTION 2026-07-28 — "ALL FOUR ARE ABSENT EVERYWHERE" IS TOO STRONG, AND THE
+DIFFERENCE MATTERS FOR WHOEVER IS DISPATCHED HERE. Re-run of that survey against
+this pin, name by name:
+
+* **Descent data: PRESENT, abstractly.** `Mathlib/CategoryTheory/Sites/Descent/`
+  carries `DescentData` (a category, with `toDescentData`, `pullFunctor`, and a
+  full `pullFunctorEquivalence`), `IsPrestackFor`, and — this is the one the
+  survey called absent — **`IsStackFor`, whose docstring is literally "the
+  condition that a pseudofunctor has effective descent relative to a presieve"**,
+  together with `IsStack` over a Grothendieck topology
+  (`Sites/Descent/IsStack.lean`). So effectivity of descent is *stated* in the
+  pin. What is absent is any INSTANCE: `grep -rn "IsStack" Mathlib/AlgebraicGeometry/`
+  returns nothing, and no `AlgebraicGeometry` file imports `Sites.Descent` at all.
+* **The fpqc site: PRESENT.** `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` defines
+  `fpqcPrecoverage`, `fpqcTopology` (and the fppf ones), proves
+  `instance : fpqcTopology.Subcanonical`, and — closest of all to what this leaf
+  wants — gives `instance : EffectiveEpi f` for `f` flat, surjective and
+  quasi-compact. That is descent for the *representable sheaves*, not for
+  schemes, so it does not discharge this leaf; but it means the site, the
+  coverage and the flat-surjective-qc hypothesis class are all already there.
+* **Quotient of a quasi-projective scheme by a finite group: ABSENT**, confirmed
+  (`MulAction`/`quotientScheme` on `Scheme` returns nothing anywhere).
+* **Quasi-projectivity itself: ABSENT** (`QuasiProjective`/`IsQuasiProjective`
+  return nothing under `Mathlib/AlgebraicGeometry/`), which is *why* `horb`
+  carries Serre's criterion by hand rather than as a typeclass. That part of the
+  design is confirmed correct.
+
+WHY THE CORRECTION CHANGES THE PLAN. Per the standing rule that STATING a theory
+is not PROVING it, the missing piece is now a NAMED theorem — "the pseudofunctor
+of schemes over a base is an `IsStack` for `fpqcTopology`", or the weaker
+presieve form for the single cover `Spec K ⟶ Spec ℚ` — sitting on top of
+vocabulary that already exists, rather than a theory to be invented from
+nothing. A prover should look at `Sites/Descent/DescentData.lean`'s
+`pullFunctorEquivalence` and `Sites/Fpqc.lean` FIRST; only the finite-group
+quotient genuinely has to be built here. -/
 theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
