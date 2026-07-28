@@ -146,6 +146,16 @@ public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- resolving these names through `MazurTorsion` exactly as before.
 public import Fermat.FLT.GaloisRepresentation.SubQuotCharacter
 public import Fermat.FLT.GaloisRepresentation.MinkowskiUnramified
+-- TAME INERTIA THEORY at a finite place (`wildInertiaGroup`,
+-- `exists_pow_eq_of_mem_wildInertiaGroup` — `P_v` is pro-`ℓ` so the `n`-th
+-- power map is onto it for `ℓ ∤ n` — and
+-- `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` — every finite
+-- abstract quotient of `I_v` killing `P_v` is cyclic). Those two are what
+-- prove `WeierstrassCurve.exists_isogenyTameExponentAt` (leaf `A₀-2`) below.
+-- COST CHECK (2026-07-27): this adds exactly ONE module to this file's
+-- import cone — `ArtinConductor`'s own 23-module cone is already contained
+-- in it.
+public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
 -- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, the place of `ℚ`
 -- attached to a prime number.
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
@@ -5649,7 +5659,14 @@ of `A₀`'s five conclusion clauses from assumptions into theorems.
   tree; blocked only by declaration order.  See its docstring: this leaf is
   a HOIST, not a proof.**
 * `A₀-2` = `exists_isogenyTameExponentAt` — `λ|_{I_N}` is a power of
-  `χ|_{I_N}` (tame-inertia theory).
+  `χ|_{I_N}` (tame-inertia theory).  **PROVEN 2026-07-28**, over the tame
+  block of
+  `Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`
+  (`exists_pow_eq_of_mem_wildInertiaGroup`,
+  `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) plus `A₀-1`.
+  Its own docstring's step-1 audit — "`ker lam` is OPEN, so the curve data
+  is load-bearing" — is REFUTED there: the proof uses no continuity and no
+  curve data at all.
 * `A₀-3` = `exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg` —
   the semistability defect `e ∈ {1,2,3,4,6}` and Raynaud's exponent `r ≤ e`
   with `λ^e = χ^r` on `I_N`.  The genuinely deep leaf.
@@ -5678,11 +5695,15 @@ existence of a quartic ramified extension "`ℚ_N(⁴√N)`-like".  That is not
 where it comes from — it is pure congruence arithmetic, and the corrected
 derivation is the one just given.
 
-What is left genuinely missing is exactly two things, both in `A₀-3` and
-`A₀-2`: the `{1,2,3,4,6}` bound on the semistability defect at residue
-characteristic `≥ 5`, and Raynaud's classification of finite flat group
-schemes over a base of absolute ramification `e < N − 1`.  Neither is in
-mathlib, in `~/cs/FLT`, or in this project.
+What is left genuinely missing is exactly two things, and — as of 2026-07-28,
+when `A₀-2` closed — both of them are in `A₀-3` alone: the `{1,2,3,4,6}` bound
+on the semistability defect at residue characteristic `≥ 5`, and Raynaud's
+classification of finite flat group schemes over a base of absolute
+ramification `e < N − 1`.  Neither is in mathlib, in `~/cs/FLT`, or in this
+project.  (The earlier version of this sentence named `A₀-2` as well; that was
+true when written and stopped being true once the tame-inertia block was
+hoisted into `ArtinConductor.lean` and cut along the seam that removes the
+continuity hypothesis.)
 -/
 
 /-- **`A₀-1` — the mod-`N` cyclotomic character maps the inertia at `N` ONTO
@@ -5734,55 +5755,75 @@ theorem exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq
   sorry
 
 /-- **`A₀-2` — the isogeny character is TAME at `N`: `λ|_{I_N}` is a power of
-`χ|_{I_N}`** (sorry leaf; Serre, Invent. Math. 15 (1972), §1.3, §1.7 and
-§5.4): there is an exponent `a` with `λ(σ) = χ(σ)^a` for every `σ` in the
-local inertia group at `N`.
+`χ|_{I_N}`** (**PROVEN 2026-07-28**; Serre, Invent. Math. 15 (1972), §1.3,
+§1.7 and §5.4): there is an exponent `a` with `λ(σ) = χ(σ)^a` for every `σ`
+in the local inertia group at `N`.
 
 Stated with NO reduction hypothesis, deliberately: this is true at every
 prime and for every reduction type, and only the Raynaud leaf below needs
 `v_N(j) ≥ 0`.  So it is separately ownable and separately reusable.
 
-Proof (not formalised), in three steps, of which only the third is missing
-from this project:
+**CORRECTION OF THIS DOCSTRING'S OWN ROUTE AUDIT (2026-07-28).**  The
+previous version recorded a three-step proof whose step 1 was "`ker lam` is
+OPEN", and asserted that the curve data `g`, `hg`, `hlam` are *load-bearing*
+because "the same statement for an ARBITRARY `MonoidHom Γ ℚ →* (ZMod N)ˣ` is
+FALSE, a discontinuous character having no reason to be tame".
 
-1. *`ker lam` is OPEN.*  `ker lam` contains the kernel of the mod-`N`
-   representation `E.galoisRep N`, which is open by
-   `isOpen_setOf_galoisRep_eq_one`: if `galoisRep N σ = 1` then `σ` fixes
-   every `N`-torsion point, in particular `g`, so `hlam` reads
-   `(lam σ).val • g = g`, and `addOrderOf g = N` forces `lam σ = 1`.  This
-   argument is ALREADY WRITTEN OUT AND VERIFIED, in full, inside
-   `isogenyCharacter_pow_twelve_eq_of_localInertia` (leaf `C`) below — copy
-   it rather than re-deriving it.  This is exactly why the curve data `g`,
-   `hg`, `hlam` are load-bearing here rather than decorative: the same
-   statement for an ARBITRARY `MonoidHom (Γ ℚ) →* (ZMod N)ˣ` is FALSE, a
-   discontinuous character having no reason to be tame.
-2. *Wild inertia dies.*  `lam` takes values in `(ZMod N)ˣ`, of order `N − 1`,
-   prime to `N`; the wild inertia `P_N` is a pro-`N` group; so a continuous
-   homomorphism `P_N → (ZMod N)ˣ` is trivial and `λ|_{I_N}` factors through
-   the TAME quotient.
-3. *Every character of the tame quotient valued in `μ_{N−1}` is a power of
-   `χ`.*  The tame quotient is `∏_{ℓ ≠ N} ℤ_ℓ`, so continuous homomorphisms
-   into a cyclic group of order `N − 1` form
-   `∏_{ℓ ∣ N−1} Hom(ℤ_ℓ, ℤ/ℓ^{v_ℓ(N−1)})`, itself cyclic of order `N − 1`;
-   and `χ|_{I_N}` generates it precisely because `χ` is SURJECTIVE there,
-   which is leaf `A₀-1` above.
+**That is wrong, and the proof below is the refutation: NO CONTINUITY IS USED
+ANYWHERE.**  `E`, `_g`, `_hg` and `_hlam` are consumed by nothing — they are
+underscore-prefixed so the emptiness is mechanically visible — and the
+theorem holds verbatim for an arbitrary monoid homomorphism.  Both places
+where continuity was expected to enter turn out to have it already discharged
+inside the local-Galois machinery, in a form that quantifies over ELEMENTS
+rather than over continuous quotients:
 
-The closest existing machinery is `exists_mem_localInertiaGroup_tameOrbit`
-(PROVEN, ~45000 lines below in this file): the same tame-character
-surjectivity, in orbit form, over an arbitrary number field, built on the
-PROVEN `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`.  Step 3 is
-the reformulation of that as a statement about the character GROUP, and it
-is where the remaining work is. -/
+* *Wild inertia dies*, and it dies ABSTRACTLY.  The argument is not "a
+  continuous map from a pro-`N` group to a group of order prime to `N` is
+  trivial"; it is `exists_pow_eq_of_mem_wildInertiaGroup`
+  (`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`), which
+  says every element of `P_N` **is** an `(N−1)`-st power *inside* `P_N`,
+  because the `n`-th power map is a bijection of a pro-`ℓ` group for `ℓ ∤ n`.
+  An `(N−1)`-st power is killed by **any** homomorphism into `(ZMod N)ˣ`,
+  continuous or not, since `#(ZMod N)ˣ = N − 1`.
+* *The tame quotient is procyclic*, and again abstractly:
+  `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` (same file) says
+  every FINITE quotient of `I_v` that kills `P_v` is cyclic with a
+  non-negative-exponent generator, and its docstring is explicit that no
+  continuity is required and none *can* be, the target carrying no topology.
+
+The general moral is the one this development keeps relearning: an audit is a
+dated claim about the tree, and the tree moves.  The step-1 note was written
+when the tame-inertia block still lived in `Threeadic.lean` in continuous
+form; it was hoisted into `ArtinConductor.lean` on 2026-07-27 and cut along
+exactly the seam that removes the continuity hypothesis.  Grepping for
+`wildInertiaGroup` was the one-line check that would have refuted it.
+
+THE PROOF, then, is the assembly of three inputs and no analysis:
+
+1. *Wild inertia dies* — `exists_pow_eq_of_mem_wildInertiaGroup` at `n = N−1`
+   (prime to the residue characteristic `N` since `0 < N − 1 < N`), applied to
+   BOTH `λ` and `χ`.  So the pair character `F = (λ, χ)` on `I_N` kills `P_N`.
+2. *Procyclicity* — `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`
+   applied to `F` corestricted to its (finite) range: one `σ₀ ∈ I_N` with
+   `F τ = (F σ₀)^k` for every `τ ∈ I_N`, with `k : ℕ`.
+3. *`χ(σ₀)` generates* — this is where leaf `A₀-1` above is consumed, and it is
+   the ONLY place: surjectivity of `χ` on `I_N` plus step 2 makes every unit a
+   power of `χ(res σ₀)`.  Take `a` with `χ(res σ₀)^a = λ(res σ₀)`; then for any
+   `σ ∈ I_N`, `λ(res σ) = λ(res σ₀)^k = (χ(res σ₀)^k)^a = χ(res σ)^a`.
+
+Note step 3 is what makes `A₀-1` genuinely necessary rather than decorative:
+without surjectivity, `χ(res σ₀)` generates only the image of `χ` on `I_N`,
+and `λ` could be nontrivial on inertia where `χ` is trivial. -/
 theorem WeierstrassCurve.exists_isogenyTameExponentAt
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (_g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
     (hN : N.Prime)
-    (hg : addOrderOf g = N)
+    (_hg : addOrderOf _g = N)
     (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+    (_hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
       Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
-        ((lam σ : ZMod N).val) • g) :
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom _g =
+        ((lam σ : ZMod N).val) • _g) :
     ∃ a : ℕ,
       ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
         lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
@@ -5791,8 +5832,78 @@ theorem WeierstrassCurve.exists_isogenyTameExponentAt
           (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
             (Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ a :=
-  sorry
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ a := by
+  classical
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  set vN := hN.toHeightOneSpectrumRingOfIntegersRat with hvNdef
+  set res := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ vN)) with hresdef
+  set χ : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ :=
+    @GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ with hχdef
+  -- `#(ZMod N)ˣ = N − 1`
+  have hcard : Nat.card (ZMod N)ˣ = N - 1 := by
+    rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient, Nat.totient_prime hN]
+  -- `N − 1` is prime to the residue characteristic `N`, since `0 < N − 1 < N`
+  have hNm1 : ((N - 1 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ vN.asIdeal := by
+    rw [hvNdef, Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro h
+    have h2 := hN.two_le
+    have h3 : (N : ℤ) ≤ ((N - 1 : ℕ) : ℤ) := Int.le_of_dvd (by omega) h
+    omega
+  -- STEP 1.  ANY character into `(ZMod N)ˣ` kills the wild inertia, with NO
+  -- continuity: every element of `P_N` is an `(N−1)`-st power INSIDE `P_N`
+  -- (`P_N` is pro-`N` and `N ∤ N − 1`), and `(ZMod N)ˣ` has order `N − 1`.
+  have hkill : ∀ (φ : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+      (w : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ vN)),
+      w ∈ wildInertiaGroup vN → φ (res w) = 1 := by
+    intro φ w hw
+    obtain ⟨θ, -, hθw⟩ := exists_pow_eq_of_mem_wildInertiaGroup vN hNm1 hw
+    rw [← hθw, map_pow, map_pow, ← hcard]
+    exact pow_card_eq_one'
+  -- the PAIR character `(λ, χ)` on the inertia group at `N`
+  set F : localInertiaGroup vN →* (ZMod N)ˣ × (ZMod N)ˣ :=
+    ((lam.comp res.toMonoidHom).prod (χ.comp res.toMonoidHom)).comp
+      (localInertiaGroup vN).subtype with hFdef
+  have hFapp : ∀ τ : localInertiaGroup vN,
+      F τ = (lam (res (τ : _)), χ (res (τ : _))) := fun _ => rfl
+  -- STEP 2.  The tame quotient is PROCYCLIC: `F` factors through a finite
+  -- quotient of `I_N` that kills `P_N`, and every such quotient is cyclic.
+  obtain ⟨σ₀, hσ₀⟩ := exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker vN
+    F.rangeRestrict (MonoidHom.rangeRestrict_surjective F) (by
+      intro π hπ
+      apply Subtype.ext
+      show F π = 1
+      rw [hFapp, hkill lam _ hπ, hkill χ _ hπ]
+      rfl)
+  -- so every value of `F` on `I_N` is a NON-NEGATIVE power of `F σ₀`
+  have hgen : ∀ τ : localInertiaGroup vN, ∃ k : ℕ, F σ₀ ^ k = F τ := by
+    intro τ
+    obtain ⟨k, hk⟩ := hσ₀ (F.rangeRestrict τ)
+    exact ⟨k, congrArg Subtype.val hk⟩
+  -- STEP 3.  `χ (res σ₀)` GENERATES `(ZMod N)ˣ` — this, and only this, is
+  -- where leaf `A₀-1` (surjectivity of `χ` on `I_N`) is consumed.
+  have hgenχ : ∀ u : (ZMod N)ˣ, ∃ k : ℕ, χ (res (σ₀ : _)) ^ k = u := by
+    intro u
+    obtain ⟨σ, hσ, hσu⟩ := exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq hN u
+    obtain ⟨k, hk⟩ := hgen ⟨σ, hσ⟩
+    rw [hFapp, hFapp] at hk
+    refine ⟨k, ?_⟩
+    have h2 : χ (res (σ₀ : _)) ^ k = χ (res σ) := congrArg Prod.snd hk
+    rw [h2]
+    exact hσu
+  -- the exponent: `λ (res σ₀)` is a power of `χ (res σ₀)`
+  obtain ⟨a, ha⟩ := hgenχ (lam (res (σ₀ : _)))
+  refine ⟨a, fun σ hσ => ?_⟩
+  obtain ⟨k, hk⟩ := hgen ⟨σ, hσ⟩
+  rw [hFapp, hFapp] at hk
+  have h1 : lam (res σ) = lam (res (σ₀ : _)) ^ k := (congrArg Prod.fst hk).symm
+  have h2 : χ (res (σ₀ : _)) ^ k = χ (res σ) := congrArg Prod.snd hk
+  show lam (res σ) = χ (res σ) ^ a
+  calc lam (res σ) = lam (res (σ₀ : _)) ^ k := h1
+    _ = (χ (res (σ₀ : _)) ^ a) ^ k := by rw [ha]
+    _ = (χ (res (σ₀ : _)) ^ k) ^ a := by rw [← pow_mul, ← pow_mul, Nat.mul_comm]
+    _ = χ (res σ) ^ a := by rw [h2]
 
 /-- **`A₀-3` — the semistability defect and Raynaud's exponent at `N`** (sorry
 leaf; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF
