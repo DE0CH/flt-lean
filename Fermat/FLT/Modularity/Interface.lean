@@ -29032,11 +29032,194 @@ theorem isOpen_ker_of_cyclotomicChar
   rw [hχcyc g]
   linear_combination -hy2
 
+/-- **THE SECOND INEQUALITY AT MODULUS `1`, IN THE LITERATURE'S OWN SHAPE:
+a finite ABELIAN extension of `ℚ(μ_p)` unramified at every finite place has
+degree at most `h_K`** (SORRY LEAF, cut 2026-07-28 out of
+`index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le` below).
+
+This is the ARITHMETIC half of that leaf: no `Γℚ`, no `localInertiaGroup`,
+no `topologicalClosure`, no `ker χ`. Only number fields, `IsGalois`,
+`Algebra.IsUnramifiedAt`, `Module.finrank` and `ClassGroup` occur, so a
+prover may work entirely inside algebraic number theory. The Galois-side
+bookkeeping that connects it to the consumer is the separate sibling
+`exists_unramifiedAbelian_finrank_eq_index` below.
+
+**Route (and it is NOT reciprocity).** For `L/K` finite abelian,
+`[I_K : P_K · N_{L/K} I_L] ≥ [L : K]` — the classical second inequality,
+proven by the cohomological / ambiguous-class-number computation (Herbrand
+quotient of the unit and idele class groups; Neukirch VI (6.9) and the
+sections preceding it, Childress ch. 4–5, Lang *ANT* ch. X,
+Cassels–Fröhlich ch. VII). Since `P_K ≤ P_K · N_{L/K} I_L ≤ I_K` the middle
+index is the order of a QUOTIENT of `Cl(𝓞 K) = I_K/P_K`, hence at most
+`h_K`. The alternative route through surjectivity of the Artin map
+`Cl(𝓞 K) ↠ Gal(L/K)` needs RECIPROCITY (principal ideals in the kernel),
+which is the sibling `exists_artinIdealMap_of_unramifiedAbelianSubgroup`'s
+business; the norm-index route is the independent one and is the reason
+this leaf exists separately.
+
+**⚠ THE BASE IS PINNED TO `ℚ(μ_p)` BECAUSE THE GENERAL STATEMENT IS FALSE.
+Do not "generalize" `IsCyclotomicExtension {p} ℚ K` away.** For a number
+field with REAL places the WIDE class number does not bound finite-level
+unramified-at-the-finite-places extensions. Explicit counterexample,
+computed with PARI/GP on 2026-07-28 and stated here so the next reader does
+not have to redo it: `K = ℚ(√3)` has `bnfinit(x^2-3,1).no = 1` but
+`bnrinit(K,[1,[1,1]]).no = 2`, i.e. `h_K = 1` while the NARROW class number
+is `2`. The narrow Hilbert class field is therefore a QUADRATIC extension
+of `K`, abelian and unramified at every finite place, of degree `2 > 1 =
+h_K`. The correct statement over a general base needs unramifiedness at the
+infinite places too (equivalently the narrow class number on the right).
+
+What `IsCyclotomicExtension {p} ℚ K` supplies is exactly the missing input,
+in two disjoint cases: for ODD `p` the field `ℚ(μ_p)` is totally complex,
+so every infinite place is complex, carries no ramification, and wide and
+narrow class groups agree; at `p = 2` the field is `K = ℚ` with `h_K = 1`
+and the claim degenerates to MINKOWSKI's theorem, which this project
+already has as `open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`). Both cases
+must be handled; neither is vacuous.
+
+**Not vacuous.** `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), so for `p = 23`
+the bound is a genuine constraint and not `≤ 1`.
+
+**Mathlib survey (inherited from the parent, re-checked 2026-07-28).** Ray
+class groups, the Hilbert class field, the ideal norm index `[I_K : P_K N
+I_L]`, the Artin map and Artin reciprocity are ALL absent from the pin and
+from `~/cs/FLT`. `Ideal.relNorm` and `Ideal.spanNorm` exist and are already
+used in this project; `ClassGroup`, `Ideal.ramificationIdx`,
+`Algebra.IsUnramifiedAt` and `Ideal.inertia` exist. The Herbrand-quotient
+machinery does not: `Mathlib/RepresentationTheory/Homological/TateCohomology/`
+carries `Basic.lean` only — definitions, no class formations and no Tate
+theorem — so the cohomological route must be built, not cited.
+
+**The check that would refute it**: a finite abelian extension of `ℚ(μ_p)`,
+unramified at every finite place, of degree `> h_{ℚ(μ_p)}`. -/
+theorem finrank_le_card_classGroup_of_unramified_abelian
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (L : IntermediateField CF (AlgebraicClosure CF)) [FiniteDimensional CF L]
+    [IsGalois CF L]
+    (habel : ∀ a b : L ≃ₐ[CF] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q) :
+    Module.finrank CF L ≤ Nat.card (ClassGroup (𝓞 CF)) :=
+  sorry
+
+/-- **THE GALOIS DICTIONARY, FORWARD DIRECTION: an open subgroup of `Γ_K`
+above `D` is `Gal(K̄/L)` for a finite ABELIAN everywhere-unramified `L/K` of
+degree `[Γ_K : M]`** (SORRY LEAF, cut 2026-07-28 out of
+`index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le` below).
+
+This is the BOOKKEEPING half of that leaf, and it contains **no class field
+theory whatever** — only infinite Galois theory, the inertia dictionary,
+and transport between two models of `ℚ(μ_p)`. Its arithmetic partner is
+`finrank_le_card_classGroup_of_unramified_abelian` above.
+
+**Route, in four steps a prover may want to cut into named sub-leaves.**
+
+1. *`ker χ` is exactly `Γ_{ℚ(μ_p)}`*. `isOpen_ker_of_cyclotomicChar` above
+   proves the inclusion `Γ_{ℚ(μ_p)} ≤ ker χ`; the reverse holds because
+   `algebraMap ℤ_[p] kk'` has kernel EXACTLY `p·ℤ_[p]` — it kills `p` since
+   `CharP kk' p`, so it factors through the field map `𝔽_p → kk'`, which is
+   injective. Hence `χ g = 1 ↔ c(g) ≡ 1 (mod p) ↔ g` fixes `μ_p`, and
+   `ker χ = E.fixingSubgroup` for `E := ℚ(μ_p) ⊆ ℚ̄` the intermediate field
+   already written out in `isOpen_ker_of_cyclotomicChar`'s proof.
+2. *Index is degree*. Push `M` forward to `M' := Subgroup.map (ker χ).subtype M
+   ≤ Γℚ`; it is open (an open subgroup of the open `ker χ`), so its fixed
+   field `L₀` is finite over `ℚ` (`InfiniteGalois.isOpen_iff_finite`) and
+   `M'` is recovered as `L₀.fixingSubgroup`
+   (`InfiniteGalois.fixingSubgroup_fixedField`). `E ≤ L₀` because
+   `M' ≤ ker χ`, and `M.index = [Γ_E : M'] = [L₀ : E]` — the first equality
+   is `Subgroup.comap_map_eq_self_of_injective` along
+   `(ker χ).subtype_injective`, exactly as in the parent's own `hrel` step.
+3. *Abelian and unramified*. `D ≤ M` gives both clauses at once. The
+   commutator half makes `M'` normal in `Γ_E` with abelian quotient, hence
+   `IsGalois E L₀` (`InfiniteGalois.normal_iff_isGalois`) with commutative
+   `Gal(L₀/E)`. The inertia half is
+   `isUnramifiedAt_of_inertia_le_fixingSubgroup`
+   (`MinkowskiUnramified.lean`), applied at every rational prime `ℓ`: `D`
+   contains every `Γℚ`-conjugate of a local inertia element that LIES IN
+   `ker χ`, and those conjugates are precisely the inertia subgroups of
+   `Γ_E` at the places of `E` above `ℓ` — which is why the leaf reaches the
+   ramified place `p` as well.
+4. *Model transport*. `CF` is an abstract model of `ℚ(μ_p)`, so
+   `IsCyclotomicExtension` gives `CF ≃ₐ[ℚ] E`; carry `L₀` across it and
+   along an `E`-embedding into `AlgebraicClosure CF`, which preserves
+   `Module.finrank`, `IsGalois`, commutativity of the Galois group and
+   `Algebra.IsUnramifiedAt` at every nonzero prime.
+
+**Faithfulness.** The conclusion is an EXISTENCE statement, so it is
+weakened, not strengthened, by the `Q ≠ ⊥` guard on the unramifiedness
+clause; that guard is present only so the clause matches the hypothesis of
+the arithmetic leaf verbatim (at `Q = ⊥` the localization is `L` itself and
+the condition is automatic in characteristic zero, so nothing is lost). The
+statement says nothing about the infinite places — correctly, since the
+group-side hypothesis `D ≤ M` says nothing about them either; the
+archimedean input the pair needs is supplied on the arithmetic leaf by
+`IsCyclotomicExtension`, and putting it here instead would make THIS leaf
+unprovable at `p = 2` for want of Minkowski.
+
+**The check that would refute it**: an open `M` above `D` whose fixed field
+is ramified at some finite place of `ℚ(μ_p)`, or of degree `≠ M.index`. -/
+theorem exists_unramifiedAbelian_finrank_eq_index
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (M : Subgroup (MonoidHom.ker χ))
+    (hMopen : IsOpen (M : Set (MonoidHom.ker χ)))
+    (hMle : (Subgroup.closure
+        ({x : MonoidHom.ker χ | ∃ (ℓ : ℕ) (hℓ : ℓ.Prime)
+            (n : Field.absoluteGaloisGroup
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat))
+            (σ : Field.absoluteGaloisGroup ℚ),
+          n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
+          (x : Field.absoluteGaloisGroup ℚ) =
+            σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
+         {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+            a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure ≤ M) :
+    ∃ (L : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF L) (_ : IsGalois CF L),
+      (∀ a b : L ≃ₐ[CF] L, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      Module.finrank CF L = M.index :=
+  sorry
+
 /-- **UNRAMIFIED CFT, THE UPPER BOUND, AT FINITE LEVEL: an everywhere
 unramified abelian extension of `ℚ(μ_p)` has degree at most `h_K`** (E3c
 support leaf, cut 2026-07-27 out of
-`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` below; SORRY
-LEAF — one of the two classical inequalities of Neukirch VI (6.9)).
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` below — one of
+the two classical inequalities of Neukirch VI (6.9); **DECOMPOSED
+2026-07-28 — the assembly below is PROVEN**, over the two leaves stated
+immediately above and nothing else).
+
+**THE CUT, along the ARITHMETIC/BOOKKEEPING axis.** The two halves this
+statement was carrying jointly are now separate leaves, neither of which
+implies the other:
+
+* `finrank_le_card_classGroup_of_unramified_abelian` above — the second
+  inequality at modulus `1` for finite extensions, phrased with no `Γℚ`, no
+  `localInertiaGroup` and no `ker χ`: pure algebraic number theory. This is
+  where the missing mathematics is.
+* `exists_unramifiedAbelian_finrank_eq_index` above — infinite Galois
+  theory plus the inertia dictionary, carrying `M` to the finite extension
+  it cuts out. No class field theory at all.
+
+The proof below is `obtain`/`rw`/`exact` and nothing more.
+
+**Read the arithmetic leaf's docstring before generalizing anything**: it
+records an explicit PARI/GP counterexample (`ℚ(√3)`, `h = 1`, narrow
+`h⁺ = 2`) showing that the same inequality over an arbitrary number field,
+with the WIDE class group and unramifiedness only at the finite places, is
+FALSE. The archimedean input is what `IsCyclotomicExtension {p} ℚ CF`
+supplies, and it must stay on the arithmetic leaf: the group-side
+hypothesis `D ≤ M` constrains no infinite place, so demanding archimedean
+unramifiedness from the dictionary leaf instead would make THAT leaf
+unprovable at `p = 2`.
 
 With `K = ℚ(μ_p)` and `ker χ = Γ_K` (by `hχcyc`), let `D` be the closed
 subgroup of `Γ_K` generated by the conjugated local-inertia elements lying
@@ -29099,14 +29282,160 @@ theorem index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le
                 hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
          {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
             a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure ≤ M) :
-    M.index ≤ Nat.card (ClassGroup (𝓞 CF)) :=
+    M.index ≤ Nat.card (ClassGroup (𝓞 CF)) := by
+  obtain ⟨L, hfd, hgal, habel, hunr, hrank⟩ :=
+    exists_unramifiedAbelian_finrank_eq_index χ hχcyc CF M hMopen hMle
+  haveI := hfd
+  haveI := hgal
+  rw [← hrank]
+  exact finrank_le_card_classGroup_of_unramified_abelian (p := p) CF L habel hunr
+
+/-- **THE EXISTENCE THEOREM AT MODULUS `1` (THE HILBERT CLASS FIELD), IN
+THE LITERATURE'S OWN SHAPE: `ℚ(μ_p)` has a finite ABELIAN extension,
+unramified at every finite place, of degree EXACTLY `h_K`** (SORRY LEAF,
+cut 2026-07-28 out of
+`exists_localInertiaCommutatorSubgroup_le_index_eq_card_classGroup` below).
+
+This is the ARITHMETIC half of that leaf, and it is **the genuinely deep
+one of the four** — the existence theorem of class field theory applied to
+the congruence subgroup `P_K ⊆ I_K`. As with its upper-bound counterpart,
+nothing Galois-theoretic survives in the statement: no `Γℚ`, no
+`localInertiaGroup`, no `ker χ`. And, deliberately, **no Artin map, no
+Frobenius element and no ideal**, so the ANALYTIC route can be run at it in
+isolation — Dirichlet density for `ζ_K` and the ray-class `L`-functions
+(Childress ch. 4–5, Lang *ANT* ch. X, Cassels–Fröhlich ch. VIII, Neukirch
+VI (6.9)), which never needs the reciprocity machinery that the sibling
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below does.
+
+**Soundness — the intended inhabitant.** `H` = the Hilbert class field of
+`K = ℚ(μ_p)`; it is abelian over `K`, unramified at every place, and
+`[H : K] = h_K`. At `p = 2` the field is `K = ℚ` with `h_K = 1` and `H = ⊥`
+works, so the statement is CONSISTENT there rather than degenerate-false.
+
+**Not vacuous.** The degree is required to be EXACTLY `h_K`, not at most:
+for `p = 23`, `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), so the leaf demands a
+cubic everywhere-unramified abelian extension of `ℚ(μ_23)` and `H = ⊥` does
+not discharge it. It is trivial exactly when `h_K = 1`.
+
+**Note the asymmetry with the upper-bound leaf, and preserve it.** That one
+is an INEQUALITY over open subgroups, where finite index is automatic; this
+one is an EQUALITY producing a single finite extension, which is what makes
+its consumer a DIVISIBILITY rather than a lower bound. That is how the
+finiteness content is kept out of this half — see the parent's docstring.
+
+**Unlike the upper bound, this statement is TRUE over an arbitrary number
+field** (the wide Hilbert class field always exists and is unramified
+everywhere), so a prover who finds it easier may prove the general
+statement first and specialise. The `IsCyclotomicExtension` hypothesis is
+carried only to keep the pair symmetric and may be ignored.
+
+**The check that would refute it**: show that every abelian extension of
+`ℚ(μ_p)` unramified at every finite place has degree properly dividing
+`h_K` — i.e. that the Hilbert class field is smaller than the class number
+predicts. -/
+theorem exists_unramifiedAbelian_finrank_eq_card_classGroup
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ (H : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF H) (_ : IsGalois CF H),
+      (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      Module.finrank CF H = Nat.card (ClassGroup (𝓞 CF)) :=
+  sorry
+
+/-- **THE GALOIS DICTIONARY, REVERSE DIRECTION: a finite ABELIAN extension
+of `ℚ(μ_p)` unramified at every finite place cuts out a subgroup of `Γ_K`
+above `D` of index its degree** (SORRY LEAF, cut 2026-07-28 out of
+`exists_localInertiaCommutatorSubgroup_le_index_eq_card_classGroup` below).
+
+The BOOKKEEPING half of that leaf, and the mirror of
+`exists_unramifiedAbelian_finrank_eq_index` above; **no class field theory
+occurs in it**. It shares almost all of that leaf's infrastructure, run
+backwards, so the two should probably be owned together.
+
+**Route.** Step 1 is identical and is worth proving once for both:
+`ker χ = E.fixingSubgroup` for `E := ℚ(μ_p) ⊆ ℚ̄`, the reverse inclusion of
+the one inside `isOpen_ker_of_cyclotomicChar` above, which holds because
+`algebraMap ℤ_[p] kk'` factors through the injective field map `𝔽_p → kk'`
+and therefore has kernel exactly `p·ℤ_[p]`. Then transport `H` along an
+isomorphism `CF ≃ₐ[ℚ] E` and an `E`-embedding into `ℚ̄`, obtaining
+`H₀ : IntermediateField ℚ ℚ̄` with `E ≤ H₀`, `[H₀ : E] = Module.finrank CF H`,
+`Gal(H₀/E)` abelian and `H₀/E` unramified at every finite place. Take
+`M := H₀.fixingSubgroup.subgroupOf (ker χ)`. Then:
+
+* `M.index = [Γ_E : Γ_{H₀}] = [H₀ : E]`, by the same
+  `Subgroup.comap_map_eq_self_of_injective` step the parent already uses;
+* `D ≤ M` because `M` is CLOSED (a fixing subgroup is closed), so it
+  suffices that `M` contain the generating set, and it does: the
+  commutators of `Γ_E` lie in `Γ_{H₀}` since `Gal(H₀/E)` is abelian, and
+  each `Γℚ`-conjugate of a local inertia element that lies in `ker χ = Γ_E`
+  is an inertia element of `Γ_E` at a finite place of `E`, hence acts
+  trivially on the unramified `H₀`.
+
+The last clause is the converse of `MinkowskiUnramified.lean`'s
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` — "unramified implies inertia
+trivial" rather than "inertia trivial implies unramified" — and is the one
+piece of this leaf that direction does not already supply.
+
+**Faithfulness.** Both `habel` and `hunr` are HYPOTHESES here, so the leaf
+is strengthened, not weakened, by the `Q ≠ ⊥` guard being narrow; it is
+written exactly as the arithmetic leaf's conclusion so the two compose
+verbatim. Nothing is assumed at the infinite places, and nothing is needed:
+this direction only discards archimedean information.
+
+**The check that would refute it**: such an `H` whose associated subgroup
+either fails to contain some conjugated local inertia element of `ker χ`,
+or has index `≠ [H : ℚ(μ_p)]`. -/
+theorem exists_localInertiaCommutatorSubgroup_le_index_eq_finrank
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (H : IntermediateField CF (AlgebraicClosure CF)) [FiniteDimensional CF H]
+    [IsGalois CF H]
+    (habel : ∀ a b : H ≃ₐ[CF] H, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q) :
+    ∃ M : Subgroup (MonoidHom.ker χ),
+      (Subgroup.closure
+        ({x : MonoidHom.ker χ | ∃ (ℓ : ℕ) (hℓ : ℓ.Prime)
+            (n : Field.absoluteGaloisGroup
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat))
+            (σ : Field.absoluteGaloisGroup ℚ),
+          n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
+          (x : Field.absoluteGaloisGroup ℚ) =
+            σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
+         {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+            a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure ≤ M ∧
+      M.index = Module.finrank CF H :=
   sorry
 
 /-- **UNRAMIFIED CFT, THE EXISTENCE HALF: `h_K` DIVIDES the degree of the
 maximal everywhere-unramified abelian extension of `ℚ(μ_p)`** (E3c support
 leaf, cut 2026-07-27 out of
-`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` below; SORRY
-LEAF — the other of the two classical inequalities of Neukirch VI (6.9)).
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` below — the
+other of the two classical inequalities of Neukirch VI (6.9); **DECOMPOSED
+2026-07-28 — the assembly below is PROVEN**, over the two leaves stated
+immediately above and nothing else).
+
+**THE CUT, along the ARITHMETIC/BOOKKEEPING axis**, mirroring the one made
+on the upper-bound leaf above:
+
+* `exists_unramifiedAbelian_finrank_eq_card_classGroup` above — the
+  existence theorem at modulus `1`, i.e. the Hilbert class field, phrased
+  purely as "a finite abelian everywhere-finite-unramified extension of
+  `ℚ(μ_p)` of degree exactly `h_K` exists". This is the deep half, and the
+  one the analytic route reaches.
+* `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank` above — the
+  Galois dictionary run backwards, carrying that extension to a subgroup of
+  `Γ_K` above `D` of index its degree. No class field theory.
+
+The proof below is `obtain`/`exact` and nothing more.
 
 With `D` the closed subgroup of `Γ_K` written out below, the statement asks
 for a subgroup `M` with `D ≤ M ≤ Γ_K` of index EXACTLY `h_K`. Since
@@ -29161,8 +29490,14 @@ theorem exists_localInertiaCommutatorSubgroup_le_index_eq_card_classGroup
                 hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
          {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
             a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure ≤ M ∧
-      M.index = Nat.card (ClassGroup (𝓞 CF)) :=
-  sorry
+      M.index = Nat.card (ClassGroup (𝓞 CF)) := by
+  obtain ⟨H, hfd, hgal, habel, hunr, hrank⟩ :=
+    exists_unramifiedAbelian_finrank_eq_card_classGroup (p := p) CF
+  haveI := hfd
+  haveI := hgal
+  obtain ⟨M, hMle, hMidx⟩ :=
+    exists_localInertiaCommutatorSubgroup_le_index_eq_finrank χ hχcyc CF H habel hunr
+  exact ⟨M, hMle, by rw [hMidx, hrank]⟩
 
 /-- **UNRAMIFIED CLASS FIELD THEORY, THE EXISTENCE HALF: the degree of
 the maximal everywhere-unramified abelian extension of `ℚ(μ_p)` is the
@@ -29196,6 +29531,26 @@ where the literature proves them:
   above — a subgroup above `D` of index exactly `h_K`, i.e.
   `h_K ∣ [Γ_K : D]`. This is the EXISTENCE THEOREM at modulus `1`, and it
   is what the analytic route reaches.
+
+**SECOND CUT, along the ARITHMETIC/BOOKKEEPING axis (2026-07-28).** Both
+of those two are now PROVEN as glue, and the four leaves actually open in
+this cluster are stated above them. Each inequality split into the piece
+that is class field theory and the piece that is infinite Galois theory:
+
+* `finrank_le_card_classGroup_of_unramified_abelian` — the second
+  inequality for FINITE extensions, in the literature's own language.
+  Carries the archimedean subtlety: its docstring records the PARI/GP
+  counterexample `ℚ(√3)` (`h = 1`, narrow `h⁺ = 2`) showing that the same
+  statement over a general number field is FALSE.
+* `exists_unramifiedAbelian_finrank_eq_card_classGroup` — the existence
+  theorem for FINITE extensions (the Hilbert class field). **The deepest of
+  the four**, and the one the analytic route reaches.
+* `exists_unramifiedAbelian_finrank_eq_index` and
+  `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank` — the Galois
+  dictionary in its two directions, containing NO class field theory. They
+  share step 1 (`ker χ = ℚ(μ_p).fixingSubgroup`, the reverse inclusion of
+  the one inside `isOpen_ker_of_cyclotomicChar` above) and most of the
+  rest, so they should probably be owned together.
 
 Everything else is now proven here: the passage from the finite layers to
 the whole profinite tower is
