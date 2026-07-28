@@ -13201,8 +13201,217 @@ theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
   exact h E g hg hst
 
 
+/-- **Basis completion in `(ℤ/p)²`**: a vector `w` of full additive order `p`
+extends to a basis `{w, u}` (PROVEN 2026-07-27, an input of
+`exists_pTorsion_complement` below and through it of the Vélu reduction).
+
+Stated in the `ℤ`-smul form the transport to an elliptic curve's `p`-torsion
+wants: `u` is independent of `w` (only multiples of `p` of it land in `⟨w⟩`) and
+`{w, u}` spans.
+
+`p` is NOT assumed prime — that is the whole reason this is a separate lemma.
+For prime `p` the statement is one line of linear algebra over `𝔽_p`; for general
+`p` it is the unimodularity of `w = (a, b)`, i.e. `gcd(a, b, p) = 1`, which is
+where `addOrderOf w = p` is spent: if `d := gcd(gcd(a,b), p)` were `> 1` then
+`(p/d) • w = 0` with `p/d < p`.  Bézout twice then gives `x, y` with
+`a·x + b·y = 1`, and `u := (-y, x)` has determinant `a·x + b·y = 1` against `w`,
+which is exactly what both conclusions unwind to.
+
+A group of order `p` and exponent dividing `p` need NOT be cyclic when `p` is
+composite (`p = 4`: `ℤ/2 × ℤ/2`), so the naive counting route to the second
+stable line is unavailable at composite `p`; the determinant is what replaces
+it. -/
+theorem exists_zmodSq_complement {p : ℕ} (hp : 2 ≤ p) (w : ZMod p × ZMod p)
+    (hw : addOrderOf w = p) :
+    ∃ u : ZMod p × ZMod p,
+      (∀ k m : ℤ, k • u = m • w → (p : ℤ) ∣ k) ∧
+      (∀ z : ZMod p × ZMod p, ∃ α β : ℤ, z = α • w + β • u) := by
+  classical
+  haveI : NeZero p := ⟨by omega⟩
+  have hp0 : 0 < p := by omega
+  obtain ⟨a, b⟩ := w
+  have hval : ∀ γ : ZMod p, ((γ.val : ℕ) : ZMod p) = γ := by
+    intro γ; simp [ZMod.natCast_val, ZMod.cast_id]
+  -- Step 1: `(a, b)` is unimodular.
+  have hn1 : Nat.gcd (Nat.gcd a.val b.val) p = 1 := by
+    obtain ⟨p₁, hp₁⟩ : Nat.gcd (Nat.gcd a.val b.val) p ∣ p := Nat.gcd_dvd_right _ _
+    obtain ⟨a₁, ha₁⟩ : Nat.gcd (Nat.gcd a.val b.val) p ∣ a.val :=
+      (Nat.gcd_dvd_left _ _).trans (Nat.gcd_dvd_left _ _)
+    obtain ⟨b₁, hb₁⟩ : Nat.gcd (Nat.gcd a.val b.val) p ∣ b.val :=
+      (Nat.gcd_dvd_left _ _).trans (Nat.gcd_dvd_right _ _)
+    have hn0 : 0 < Nat.gcd (Nat.gcd a.val b.val) p := by
+      rcases Nat.eq_zero_or_pos (Nat.gcd (Nat.gcd a.val b.val) p) with h | h
+      · rw [h, zero_mul] at hp₁; omega
+      · exact h
+    have hp1pos : 0 < p₁ := by
+      rcases Nat.eq_zero_or_pos p₁ with h | h
+      · rw [h, mul_zero] at hp₁; omega
+      · exact h
+    have hzero : p₁ • ((a, b) : ZMod p × ZMod p) = 0 := by
+      have hA : p₁ • a = 0 := by
+        rw [nsmul_eq_mul, ← hval a, ha₁, ← Nat.cast_mul]
+        have he : p₁ * (Nat.gcd (Nat.gcd a.val b.val) p * a₁) = p * a₁ := by
+          conv_rhs => rw [hp₁]
+          ring
+        rw [he, Nat.cast_mul, ZMod.natCast_self, zero_mul]
+      have hB : p₁ • b = 0 := by
+        rw [nsmul_eq_mul, ← hval b, hb₁, ← Nat.cast_mul]
+        have he : p₁ * (Nat.gcd (Nat.gcd a.val b.val) p * b₁) = p * b₁ := by
+          conv_rhs => rw [hp₁]
+          ring
+        rw [he, Nat.cast_mul, ZMod.natCast_self, zero_mul]
+      exact Prod.ext hA hB
+    have hdvd : p ∣ p₁ := by
+      have h := addOrderOf_dvd_of_nsmul_eq_zero hzero
+      rwa [hw] at h
+    have h1 : p ≤ p₁ := Nat.le_of_dvd hp1pos hdvd
+    have h2 : p₁ ≤ p := by
+      calc p₁ = 1 * p₁ := (one_mul _).symm
+        _ ≤ Nat.gcd (Nat.gcd a.val b.val) p * p₁ := Nat.mul_le_mul_right _ hn0
+        _ = p := hp₁.symm
+    have hp1p : p₁ = p := le_antisymm h2 h1
+    subst hp1p
+    have he : Nat.gcd (Nat.gcd a.val b.val) p₁ * p₁ = 1 * p₁ := by rw [← hp₁, one_mul]
+    exact Nat.eq_of_mul_eq_mul_right hp1pos he
+  have key : ∃ x y : ZMod p, a * x + b * y = 1 := by
+    refine ⟨((Nat.gcdA a.val b.val * Nat.gcdA (Nat.gcd a.val b.val) p : ℤ) : ZMod p),
+            ((Nat.gcdB a.val b.val * Nat.gcdA (Nat.gcd a.val b.val) p : ℤ) : ZMod p), ?_⟩
+    have h1 := Nat.gcd_eq_gcd_ab a.val b.val
+    have h2 := Nat.gcd_eq_gcd_ab (Nat.gcd a.val b.val) p
+    rw [hn1] at h2
+    have hZ : (1 : ℤ) =
+        (a.val : ℤ) * (Nat.gcdA a.val b.val * Nat.gcdA (Nat.gcd a.val b.val) p)
+        + (b.val : ℤ) * (Nat.gcdB a.val b.val * Nat.gcdA (Nat.gcd a.val b.val) p)
+        + (p : ℤ) * Nat.gcdB (Nat.gcd a.val b.val) p := by
+      push_cast at h2 ⊢
+      linear_combination h2 + (Nat.gcdA (Nat.gcd a.val b.val) p : ℤ) * h1
+    have hcast := congrArg (fun z : ℤ => (z : ZMod p)) hZ
+    simp only [Int.cast_one, Int.cast_add, Int.cast_mul, Int.cast_natCast] at hcast
+    rw [hval a, hval b, ZMod.natCast_self, zero_mul, add_zero] at hcast
+    push_cast
+    exact hcast.symm
+  obtain ⟨x, y, hxy⟩ := key
+  -- Step 2: `u := (-y, x)` completes the basis; the determinant is `a * x + b * y = 1`.
+  refine ⟨(-y, x), ?_, ?_⟩
+  · intro k m hkm
+    have hc : (k : ZMod p) * (-y) = (m : ZMod p) * a := by
+      have h := congrArg Prod.fst hkm
+      simpa [Prod.smul_def, zsmul_eq_mul] using h
+    have hd : (k : ZMod p) * x = (m : ZMod p) * b := by
+      have h := congrArg Prod.snd hkm
+      simpa [Prod.smul_def, zsmul_eq_mul] using h
+    have hk0 : (k : ZMod p) = 0 := by
+      have he : (k : ZMod p) = a * ((k : ZMod p) * x) - b * ((k : ZMod p) * (-y)) := by
+        linear_combination (k : ZMod p) * hxy.symm
+      rw [hd, hc] at he
+      rw [he]; ring
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd k p).mp hk0
+  · rintro ⟨z₁, z₂⟩
+    refine ⟨((x * z₁ + y * z₂).val : ℤ), ((a * z₂ - b * z₁).val : ℤ), ?_⟩
+    have hα : (((x * z₁ + y * z₂).val : ℤ) : ZMod p) = x * z₁ + y * z₂ := by
+      push_cast; exact hval _
+    have hβ : (((a * z₂ - b * z₁).val : ℤ) : ZMod p) = a * z₂ - b * z₁ := by
+      push_cast; exact hval _
+    have h1 : (x * z₁ + y * z₂) * a + (a * z₂ - b * z₁) * (-y) = z₁ := by
+      linear_combination z₁ * hxy
+    have h2 : (x * z₁ + y * z₂) * b + (a * z₂ - b * z₁) * x = z₂ := by
+      linear_combination z₂ * hxy
+    apply Prod.ext
+    · simpa [Prod.smul_def, zsmul_eq_mul, hα, hβ] using h1.symm
+    · simpa [Prod.smul_def, zsmul_eq_mul, hα, hβ] using h2.symm
+
+/-- **A complement to the line `⟨p·g₀⟩` inside the `p`-torsion** (PROVEN
+2026-07-27; the ONLY place the Vélu reduction below touches the structure of
+`E[p]`, and hence the only place it needs `WeierstrassCurve.n_torsion_dimension`).
+
+Given `g₀` of order `p²` on `E_ℚ̄`, the line `⟨p·g₀⟩` sits inside `E[p]` and has
+order `p`; this produces `t ∈ E[p]` complementary to it, i.e. `E[p] = ⟨p·g₀⟩ ⊕ ⟨t⟩`
+written out as "`t` is `p`-torsion", "only multiples of `p` of `t` land in
+`⟨p·g₀⟩`" and "every `p`-torsion point is a combination of the two".
+
+The proof transports `E[p] ≃+ (ℤ/p)²` (`n_torsion_dimension`, available since the
+residue characteristic is `0` so `(p : ℚ̄) ≠ 0`) and applies
+`exists_zmodSq_complement` to the image of `p·g₀`, whose order is `p` because
+`addOrderOf g₀ = p²`.
+
+The complement is what makes `⟨φ t⟩` a GALOIS-STABLE line downstream: `φ(E[p])`
+is stable because `E[p]` is, and the spanning clause is exactly what identifies
+`⟨φ t⟩` with `φ(E[p])`.  A bare point of order `p` outside `⟨p·g₀⟩` would give a
+line that need not be stable. -/
+theorem exists_pTorsion_complement {p : ℕ} (hp : 2 ≤ p)
+    (E₀ : WeierstrassCurve ℚ) (_hE₀ : E₀.IsElliptic)
+    (g₀ : (E₀⁄(AlgebraicClosure ℚ)).Point) (hg₀ : addOrderOf g₀ = p ^ 2) :
+    ∃ t : (E₀⁄(AlgebraicClosure ℚ)).Point,
+      p • t = 0 ∧
+      (∀ k m : ℤ, k • t = m • (p • g₀) → (p : ℤ) ∣ k) ∧
+      (∀ z : (E₀⁄(AlgebraicClosure ℚ)).Point, p • z = 0 →
+        ∃ α β : ℤ, z = α • (p • g₀) + β • t) := by
+  classical
+  haveI := _hE₀
+  haveI : NeZero p := ⟨by omega⟩
+  have hp0 : 0 < p := by omega
+  have hp2g : (p * p) • g₀ = 0 := by
+    have h1 : addOrderOf g₀ • g₀ = 0 := addOrderOf_nsmul_eq_zero g₀
+    rw [hg₀, pow_two] at h1; exact h1
+  have hordpg : addOrderOf (p • g₀) = p := by
+    apply Nat.dvd_antisymm
+    · exact addOrderOf_dvd_of_nsmul_eq_zero (by rw [smul_smul]; exact hp2g)
+    · have h0 : (addOrderOf (p • g₀) * p) • g₀ = 0 := by
+        rw [← smul_smul]; exact addOrderOf_nsmul_eq_zero _
+      have hd : addOrderOf g₀ ∣ addOrderOf (p • g₀) * p := addOrderOf_dvd_of_nsmul_eq_zero h0
+      rw [hg₀, pow_two] at hd
+      exact (Nat.mul_dvd_mul_iff_right hp0).mp hd
+  have hpK : ((p : ℕ) : AlgebraicClosure ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  have hψ : Nonempty ((Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ))
+      ≃+ (ZMod p × ZMod p)) :=
+    _root_.WeierstrassCurve.n_torsion_dimension
+      (E := E₀.map (algebraMap ℚ (AlgebraicClosure ℚ))) (n := p) hpK
+  obtain ⟨ψ⟩ := hψ
+  have hgz : (p : ℤ) • (p • g₀) = 0 := by
+    rw [natCast_zsmul, smul_smul]; exact hp2g
+  set v : Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ) :=
+    ⟨p • g₀, (Submodule.mem_torsionBy_iff _ _).mpr hgz⟩ with hvdef
+  have hvcoe : ((v : (E₀⁄(AlgebraicClosure ℚ)).Point)) = p • g₀ := rfl
+  have hvord : addOrderOf v = p := by
+    have hinj := addOrderOf_injective
+      ((Submodule.subtype
+        (Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ))).toAddMonoidHom)
+      (Submodule.injective_subtype _) v
+    rw [← hinj]
+    exact hordpg
+  have hword : addOrderOf (ψ v) = p := by
+    have h := addOrderOf_injective ψ.toAddMonoidHom ψ.injective v
+    simpa using h.trans hvord
+  obtain ⟨u, hindep, hspan⟩ := exists_zmodSq_complement hp (ψ v) hword
+  refine ⟨((ψ.symm u : Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ)) :
+    (E₀⁄(AlgebraicClosure ℚ)).Point), ?_, ?_, ?_⟩
+  · have h := (Submodule.mem_torsionBy_iff _ _).mp (ψ.symm u).2
+    rwa [natCast_zsmul] at h
+  · intro k m hkm
+    have hsub : k • (ψ.symm u) = m • v := by
+      refine Subtype.ext ?_
+      show k • ((ψ.symm u : Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ)) :
+        (E₀⁄(AlgebraicClosure ℚ)).Point) = m • (p • g₀)
+      exact hkm
+    have h2 : k • u = m • ψ v := by
+      have h := congrArg ψ hsub
+      simpa using h
+    exact hindep k m h2
+  · intro z hz
+    have hzt : z ∈ Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ) :=
+      (Submodule.mem_torsionBy_iff _ _).mpr (by rwa [natCast_zsmul])
+    obtain ⟨α, β, hαβ⟩ := hspan (ψ ⟨z, hzt⟩)
+    refine ⟨α, β, ?_⟩
+    have hT : (⟨z, hzt⟩ : Submodule.torsionBy ℤ ((E₀⁄(AlgebraicClosure ℚ)).Point) (p : ℤ))
+        = α • v + β • ψ.symm u := by
+      apply ψ.injective
+      simpa using hαβ
+    have h2 := congrArg Subtype.val hT
+    simpa [hvcoe] using h2
+
 /-- **The Vélu reduction: a stable cyclic subgroup of order `p²` produces a
-curve with TWO DISTINCT stable lines** (sorry leaf, promoted 2026-07-27 from an
+curve with TWO DISTINCT stable lines** (PROVEN 2026-07-27 over the two named
+leaves immediately above, both of them also proven; promoted 2026-07-27 from an
 in-body step of `not_stableCyclic_sq_of_isogenyClassPrime` below).
 
 TRUE, and **uniform in `p`: only `2 ≤ p` is used**, no primality.  This is the
@@ -13228,32 +13437,36 @@ hence `p² ∣ 1 - kp` and so `p ∣ 1`.  And `ker φ̂ = φ(E₀[p])`, because
 `φ(g₀) ∈ ker φ̂` would force `g₀ ∈ E₀[p] + ker φ = E₀[p]`, contradicting
 `addOrderOf g₀ = p²`.
 
-## What is available and what is not (surveyed 2026-07-27)
+## What was used (2026-07-27), and two corrections to the earlier survey
 
-`Fermat/FLT/EllipticCurve/Velu.lean` already carries the Vélu construction
-over a field: `IsPointSubgroup`, `veluT`, `veluW`, `veluCurve`, `veluCoordX`,
-`veluCoordY`, together with `veluCoordX_add_mem` / `veluCoordY_add_mem` and
-the kernel computation `velu_sum_kernel`.  What is *not* there is the descent
-— the `G_ℚ`-invariance of the coefficients — and that is one invariance
-argument rather than a theory.
+The descent was NOT rebuilt: `Fermat/FLT/EllipticCurve/Velu.lean` already
+carries it, packaged as
+`WeierstrassCurve.exists_velu_quotient_isogeny_of_subgroup` — for a FINITE
+Galois-stable `C ≤ E(ℚ̄)` of arbitrary order it returns a curve `E'` over `ℚ`,
+a `G_ℚ`-equivariant `φ : E(ℚ̄) →+ E'(ℚ̄)`, and `ker φ = C` on points.  That is
+the entire geometric content of this leaf; everything else here is group
+theory.
 
-`Fermat/FLT/EllipticCurve/Isogeny.lean` **is already in this module's cone**
-(`public import`, so its names are available in proof bodies as well as in
-signatures) and carries `IsRationalMap`, `IsIsogeny`, `mulByHom` and the
-finiteness/surjectivity API for rational maps over `ℚ̄`.  It does NOT carry a
-DUAL isogeny, and `ker φ̂ = φ(E₀[p])` is stated above in terms of one; a prover
-who would rather not build duals can replace that half by working with
-`φ(E₀[p])` directly, which is a Galois-stable subgroup of order `p` since
-`φ(E₀[p]) ⊇ φ(⟨p·g₀⟩) = 0` and `#E₀[p] = p²`.
+**CORRECTION 1: `Velu.lean` did NOT need importing.**  The previous version of
+this docstring said it was absent from the cone and that adding it would be the
+successor's first line.  It is already there: `EllipticCurve/Isogeny.lean` is a
+`public import` of this module and `public import`s `Velu.lean` itself, so the
+whole chain re-exports and no import line was added.  (The comment on the
+`Isogeny` import above already recorded that the pair enters together.)
 
-`Velu.lean` is NOT yet imported here.  The cost was MEASURED rather than
-guessed: its project-module cone is itself, so
-`public import Fermat.FLT.EllipticCurve.Velu` adds **exactly one** project
-module to this file's 47-module cone, and `FreyCurve/MazurTorsion.lean`, the
-only importer of this module that consumes this cluster, already reaches it.
-**The check that refutes this** if it is wrong: recompute the two cones and
-diff them.  The import is not added here because nothing in this file uses it
-yet; adding it is the successor's first line. -/
+**CORRECTION 2: the dual isogeny was avoided, as this docstring suggested, but
+the substitute needs MORE than "`φ(E₀[p])` has order `p`".**  A group of order
+`p` and exponent dividing `p` need not be CYCLIC when `p` is composite
+(`p = 4`), and only cyclic subgroups can be presented as `⟨g₂⟩` the way the
+conclusion demands.  The fix is `exists_pTorsion_complement` above: a
+complement `t` with `E₀[p] = ⟨p·g₀⟩ ⊕ ⟨t⟩`, so that `⟨φ t⟩ = φ(E₀[p])` is both
+cyclic of order `p` and Galois-stable.  That is the only place the structure of
+`E₀[p]` is used, and it is what keeps the leaf uniform in `p`.
+
+The distinctness half needs no torsion structure at all: if `⟨φ g₀⟩ = ⟨φ t⟩`
+then `g₀ = k·t + c` with `c ∈ ⟨p·g₀⟩`, and both summands are killed by `p`, so
+`p·g₀ = 0` against `addOrderOf g₀ = p²` — which is where `2 ≤ p` is spent, and
+nowhere else. -/
 theorem exists_twoStableLines_of_stableCyclicSq {p : ℕ} (hp : 2 ≤ p)
     (E₀ : WeierstrassCurve ℚ) (_hE₀ : E₀.IsElliptic)
     (g₀ : (E₀⁄(AlgebraicClosure ℚ)).Point) (hg₀ : addOrderOf g₀ = p ^ 2)
@@ -13272,8 +13485,155 @@ theorem exists_twoStableLines_of_stableCyclicSq {p : ℕ} (hp : 2 ≤ p)
       (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g₂) :=
-  sorry
+          AddSubgroup.zmultiples g₂) := by
+  classical
+  haveI := _hE₀
+  have hp0 : 0 < p := by omega
+  have hp2g : (p * p) • g₀ = 0 := by
+    have h1 : addOrderOf g₀ • g₀ = 0 := addOrderOf_nsmul_eq_zero g₀
+    rw [hg₀, pow_two] at h1; exact h1
+  have hordpg : addOrderOf (p • g₀) = p := by
+    apply Nat.dvd_antisymm
+    · exact addOrderOf_dvd_of_nsmul_eq_zero (by rw [smul_smul]; exact hp2g)
+    · have h0 : (addOrderOf (p • g₀) * p) • g₀ = 0 := by
+        rw [← smul_smul]; exact addOrderOf_nsmul_eq_zero _
+      have hd : addOrderOf g₀ ∣ addOrderOf (p • g₀) * p := addOrderOf_dvd_of_nsmul_eq_zero h0
+      rw [hg₀, pow_two] at hd
+      exact (Nat.mul_dvd_mul_iff_right hp0).mp hd
+  -- `σ` carries `g₀` into `⟨g₀⟩`.
+  have hσg₀ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∃ m : ℤ,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g₀ = m • g₀ := by
+    intro σ
+    obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hst σ g₀ (AddSubgroup.mem_zmultiples g₀))
+    exact ⟨m, hm.symm⟩
+  -- membership in the line `⟨p • g₀⟩`
+  have hmemC : ∀ k : ℤ, k • g₀ ∈ AddSubgroup.zmultiples (p • g₀) ↔ (p : ℤ) ∣ k := by
+    intro k
+    constructor
+    · intro h
+      obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp h
+      have h0 : (m * p - k) • g₀ = 0 := by
+        rw [sub_smul, ← smul_smul, natCast_zsmul, hm, sub_self]
+      have hsq : ((p ^ 2 : ℕ) : ℤ) ∣ (m * p - k) := by
+        rw [← hg₀]; exact addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+      have hsq' : ((p : ℤ) ^ 2) ∣ (m * p - k) := by push_cast at hsq; exact hsq
+      have hpd : (p : ℤ) ∣ (m * p - k) :=
+        dvd_trans (dvd_pow_self (p : ℤ) two_ne_zero) hsq'
+      have hpm : (p : ℤ) ∣ m * p := ⟨m, by ring⟩
+      have hk : (p : ℤ) ∣ (m * p - (m * p - k)) := dvd_sub hpm hpd
+      simpa using hk
+    · rintro ⟨j, rfl⟩
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨j, ?_⟩
+      rw [← natCast_zsmul (n := p) g₀, smul_smul, mul_comm]
+  have hCfin : ((AddSubgroup.zmultiples (p • g₀) :
+      AddSubgroup ((E₀⁄(AlgebraicClosure ℚ)).Point)) :
+      Set ((E₀⁄(AlgebraicClosure ℚ)).Point)).Finite :=
+    finite_zmultiples.mpr (addOrderOf_pos_iff.mp (by rw [hordpg]; omega))
+  have hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples (p • g₀),
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples (p • g₀) := by
+    intro σ x hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    obtain ⟨m, hm⟩ := hσg₀ σ
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k * m, ?_⟩
+    rw [← hk, map_zsmul, map_nsmul, hm, smul_comm (p : ℕ) m g₀, smul_smul]
+  obtain ⟨E', hE', φ₀, hgal₀, hker₀⟩ :=
+    _root_.WeierstrassCurve.exists_velu_quotient_isogeny_of_subgroup E₀
+      (AddSubgroup.zmultiples (p • g₀)) hCfin hCstable
+  -- Re-package at this file's spelling of the point group, so that `rw` can see through it.
+  obtain ⟨φ, hgal, hker⟩ :
+      ∃ φ : (E₀⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point,
+        (∀ (σ : Field.absoluteGaloisGroup ℚ) (Pt : (E₀⁄(AlgebraicClosure ℚ)).Point),
+          φ (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+            WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+        (∀ Pt : (E₀⁄(AlgebraicClosure ℚ)).Point,
+          φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (p • g₀)) :=
+    ⟨φ₀, hgal₀, hker₀⟩
+  obtain ⟨t, htp, htindep, htspan⟩ := exists_pTorsion_complement hp E₀ _hE₀ g₀ hg₀
+  refine ⟨E', hE', φ g₀, φ t, ?_, ?_, ?_, ?_, ?_⟩
+  · -- order of `φ g₀`
+    apply Nat.dvd_antisymm
+    · exact addOrderOf_dvd_of_nsmul_eq_zero
+        ((map_nsmul φ p g₀).symm.trans ((hker _).mpr (AddSubgroup.mem_zmultiples _)))
+    · have h0 : (addOrderOf (φ g₀)) • g₀ ∈ AddSubgroup.zmultiples (p • g₀) :=
+        (hker _).mp ((map_nsmul φ (addOrderOf (φ g₀)) g₀).trans
+          (addOrderOf_nsmul_eq_zero (φ g₀)))
+      have hdd := (hmemC (addOrderOf (φ g₀) : ℤ)).mp (by rwa [natCast_zsmul])
+      exact_mod_cast hdd
+  · -- order of `φ t`
+    apply Nat.dvd_antisymm
+    · exact addOrderOf_dvd_of_nsmul_eq_zero
+        ((map_nsmul φ p t).symm.trans ((congrArg (⇑φ) htp).trans (map_zero φ)))
+    · have h0 : (addOrderOf (φ t)) • t ∈ AddSubgroup.zmultiples (p • g₀) :=
+        (hker _).mp ((map_nsmul φ (addOrderOf (φ t)) t).trans (addOrderOf_nsmul_eq_zero (φ t)))
+      obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp h0
+      have hdd := htindep (addOrderOf (φ t) : ℤ) m (by rw [natCast_zsmul]; exact hm.symm)
+      exact_mod_cast hdd
+  · -- the two lines are distinct
+    intro hEq
+    have hmem : φ g₀ ∈ AddSubgroup.zmultiples (φ t) := by
+      rw [← hEq]; exact AddSubgroup.mem_zmultiples _
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+    have hφ0 : φ (g₀ - k • t) = 0 := by
+      rw [map_sub φ g₀ (k • t), map_zsmul φ k t, hk, sub_self]
+    obtain ⟨j, hj⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hker _).mp hφ0)
+    have hz : ∀ c : ℤ, ((p : ℤ) * c) • t = 0 := by
+      intro c
+      refine addOrderOf_dvd_iff_zsmul_eq_zero.mp ?_
+      have h1 : (addOrderOf t : ℤ) ∣ (p : ℤ) := by
+        exact_mod_cast addOrderOf_dvd_of_nsmul_eq_zero htp
+      exact h1.mul_right c
+    have hz2 : ∀ c : ℤ, ((p : ℤ) * c) • (p • g₀) = 0 := by
+      intro c
+      refine addOrderOf_dvd_iff_zsmul_eq_zero.mp ?_
+      rw [hordpg]
+      exact ⟨c, rfl⟩
+    have e1 : (p : ℤ) • (g₀ - k • t) = (p : ℤ) • g₀ := by
+      rw [smul_sub (p : ℤ) g₀ (k • t), smul_smul, hz k, sub_zero]
+    have e2 : (p : ℤ) • (g₀ - k • t) = 0 := by
+      rw [← hj, smul_smul, hz2 j]
+    have hpg : p • g₀ = 0 := by
+      rw [← natCast_zsmul (n := p) g₀, ← e1, e2]
+    have hdd : addOrderOf g₀ ∣ p := addOrderOf_dvd_of_nsmul_eq_zero hpg
+    rw [hg₀] at hdd
+    have hle := Nat.le_of_dvd hp0 hdd
+    rw [pow_two] at hle
+    nlinarith
+  · -- `⟨φ g₀⟩` is stable
+    intro σ x hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    obtain ⟨m, hm⟩ := hσg₀ σ
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k * m, ?_⟩
+    have e : WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x = (k * m) • φ g₀ := by
+      rw [← hk, map_zsmul (WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) k (φ g₀),
+        ← hgal σ g₀, hm, map_zsmul φ m g₀, smul_smul]
+    exact e.symm
+  · -- `⟨φ t⟩` is stable
+    intro σ x hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    have hσt : p • (WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom t) = 0 :=
+      (map_nsmul (WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) p t).symm.trans
+        ((congrArg _ htp).trans (map_zero _))
+    obtain ⟨α, β, hαβ⟩ := htspan _ hσt
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k * β, ?_⟩
+    have e : WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x = (k * β) • φ t := by
+      rw [← hk, map_zsmul (WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) k (φ t),
+        ← hgal σ t, hαβ, map_add φ, map_zsmul φ α (p • g₀), map_zsmul φ β t,
+        (hker (p • g₀)).mpr (AddSubgroup.mem_zmultiples _)]
+      simp [smul_smul]
+    exact e.symm
 
 /-! #### `not_stableCyclic_oneHundredSixtyNine` and the `169` chain moved BELOW
 
