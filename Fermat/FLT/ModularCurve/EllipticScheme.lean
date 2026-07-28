@@ -40,6 +40,7 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveEquationAdd
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Projective.Point
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveAddition
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveEquationAdd2
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth
 public import Mathlib.Algebra.MvPolynomial.PDeriv
