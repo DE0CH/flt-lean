@@ -17229,21 +17229,35 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are SIX:
-`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
-`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
-now-proven `exists_stepanovAuxiliaryFunction`),
-`exists_irreducible_planeSection_of_irreducible` and
-`exists_noetherBadLocusForms` (the two halves of the now-proven
-`exists_bertiniNoetherWitness_of_three_le`), and
-`exists_integralHypersurfaceCertificate`.  All the glue between them is written
-and compiles, and this leaf itself has nothing left to prove.
+So after the 2026-07-27/28 work the remaining open leaves under this node are
+these EIGHT:
 
-**This list was REGENERATED at integration (2026-07-27) from the merged source,
-not merged as prose.**  Six branches in this batch each rewrote it and each was
-correct on its own branch; a comment-stripped scan attributing every `sorry` to
-its enclosing declaration settles it.  What the branches closed, and what it
-leaves:
+* the Stepanov side — `exists_stepanovJetSolution` (one of the three children of
+  the now-proven `exists_stepanovAuxiliaryFunction`; its two siblings
+  `stepanov_not_dvd_stepanovAnsatz` and
+  `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` are PROVEN), together with the
+  Lemma 2D trio `stepanov_dvd_specZ_resultant`,
+  `stepanov_dvd_resultant_of_dvd_specZ` and `stepanov_irreducible_stepanovFZ`
+  (Schmidt's Corollary 2C, the only genuinely field-theoretic one of them and
+  the only one absent from the pin) that `stepanov_not_dvd_stepanovAnsatz` was
+  proven over;
+* the Bertini–Noether side — `exists_irreducible_planeSection_of_irreducible`
+  and `exists_noetherBadLocusForms`, the two halves of the now-proven
+  `exists_bertiniNoetherWitness_of_three_le`;
+* the hypersurface certificate — `exists_rationalHypersurfaceCertificate` and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, which replaced
+  `exists_integralHypersurfaceCertificate` when that was PROVEN over them.
+
+All the glue between them is written and compiles, and this leaf itself has
+nothing left to prove.
+
+**This list is REGENERATED at every integration from the merged source, never
+merged as prose** — most recently at release 10 (2026-07-28), against the
+compiler's own `declaration uses 'sorry'` warning set.  Three branches in the
+release-10 batch each rewrote it (claiming SIX, SEVEN and FOUR open leaves
+respectively) and each was correct on its own branch; a comment-stripped scan
+attributing every `sorry` to its enclosing declaration settles it, and the
+build's warning set confirms it.  What the branches closed, and what it leaves:
 
 * `exists_stepanovDiscriminant`, `exists_stepanovNormalisation` and
   `stepanov_pow_sub_dvd_resultant` are PROVEN (the last by Schmidt Lemma 5A(i),
