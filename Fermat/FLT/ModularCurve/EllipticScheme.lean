@@ -1408,6 +1408,67 @@ theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField �
   have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
   rw [← toHom_smul u c, hd]
 
+/-! ### The unit section AS A COORDINATE DATUM
+
+**RESTORED AND TRIMMED at the release-13 integration.**  `flt-lean-250` rewrote
+this cluster higher up in the file (the `Congruences` section), PROVING
+`toHom_negC` and `toHom_inftyC`, and the two versions merged side by side --
+leaving `negC`, `negC_coord` and `toHom_negC` declared TWICE.  The PROVEN copies
+are 250's; what survives here is only what 250 has no counterpart for: the
+general-`X` infinity datum `infty` and its still-sorried `toHom_infty`, which the
+`projMulCoords_unit` / `projMulCoords_inv` proofs below consume by name.
+
+**`toHom_infty` is very likely now CLOSEABLE and was left open deliberately.**
+250's `toHom_inftyC` is the same statement at `X = Spec ℚ`, PROVEN, and
+`comap_toHom` transports a datum along any `g : X ⟶ Spec ℚ`; `infty E base` is
+`inftyC` comapped, since both are the triple `![0, 1, 0]`.  Closing it is an
+author's edit, not an integrator's, so the leaf is restored exactly as it stood.
+
+What the leaf is: naturality of `Proj.fromOfGlobalSections` in its SCHEME
+argument, `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _`.
+Re-checked 2026-07-27 against `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`,
+which carries exactly four lemmas about it -- `_preimage_basicOpen`,
+`_morphismRestrict`, `_resLE`, `_toSpecZero` -- and no naturality in `X`.  The
+shortcut worth trying first: the infinity datum has `coord 1 = 1`, a UNIT, so
+`X.basicOpen (f Ȳ) = ⊤` and `fromOfGlobalSections_morphismRestrict` at `r = Ȳ`
+already exhibits BOTH sides as factoring through the single chart
+`Proj.awayι 𝒜 Ȳ`, an open immersion hence a monomorphism, reducing the statement
+to an equality of two ring maps out of `Away 𝒜 Ȳ` -- no gluing at all. -/
+
+/-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum** (PROVEN).
+
+Its `equation` is mathlib's `equation_zero` and its `span_coord` holds because
+the middle coordinate is `1`. -/
+noncomputable def infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    ProjCoords E X where
+  base := base
+  coord := ![0, 1, 0]
+  equation := equation_zero
+  span_coord := by
+    refine Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨1, rfl⟩) ?_
+    simp
+
+@[simp] theorem infty_coord (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    (infty E base).coord = ![0, 1, 0] := rfl
+
+@[simp] theorem infty_base (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    (infty E base).base = base := rfl
+
+@[simp] theorem negC_base (c : ProjCoords E X) : (negC c).base = c.base := rfl
+
+/-- **The infinity datum computes `projInfty`** (sorry node — naturality of
+`Proj.fromOfGlobalSections` in its SCHEME argument, absent from the pin; see the
+section docstring above, including the `awayι` shortcut that applies to this
+leaf and not to `toHom_negC`).
+
+The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
+subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
+base change of the unit section", with no choice involved. -/
+theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
+    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
+    (infty E base).toHom = s ≫ projInfty E :=
+  sorry
+
 end ProjCoords
 
 /-! ### Completeness of the two-law system
@@ -3084,7 +3145,9 @@ theorem projMulCoords_inv (E : WeierstrassCurve ℚ) [E.IsElliptic]
       = (ProjCoords.infty E (X := Spec K) c.base).toHom := by
     rw [← Category.assoc]
     exact (ProjCoords.toHom_infty E c.base _).symm
-  have hn : c.toHom ≫ projNeg E = (ProjCoords.negC c).toHom := (ProjCoords.toHom_negC c).symm
+  -- `toHom_negC` is now PROVEN (flt-lean-250) and states this equation in exactly
+  -- this direction; the old sorried version stated its converse, hence the dropped `.symm`.
+  have hn : c.toHom ≫ projNeg E = (ProjCoords.negC c).toHom := ProjCoords.toHom_negC c
   rw [hn, ho]
   rcases exists_units_smul_neg_left hR h2 hΔ c.equation c.span_coord with ⟨u, hu⟩ | ⟨u, hu⟩
   · have hspan : Ideal.span (Set.range (addXYZ (E.map (ProjCoords.negC c).base)
