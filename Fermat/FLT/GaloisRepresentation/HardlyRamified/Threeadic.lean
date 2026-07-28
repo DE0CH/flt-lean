@@ -4730,13 +4730,266 @@ theorem connected_locus_mem_of_displacement_stable_of_hopf_package
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **MULTIPLICATIVE TYPE: local inertia acts on the WHOLE connected
+locus by a single power** (SORRY LEAF — cut 2026-07-28 out of
+`exists_ordinary_line_of_flat_hopf_package` below, which is now PROVEN
+over it together with
+`exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` just
+below. This is the RAYNAUD DÉVISSAGE half; it carries NO residual
+input.)
+
+Setting: `G` a finite flat `𝒪₃ᵥ ≅ ℤ₃`-Hopf order with étale generic
+fibre, `e₀` its connected counit idempotent, and `fG` a
+`Γ ℚ₃ᵥ`-equivariant bijection from the geometric points of the generic
+fibre onto `N`. Write `N⁰` for the CONNECTED LOCUS — the `z : N` whose
+point has value `1` on `e₀`.
+
+Hypothesis `hstab₃` is the ONE-DIMENSIONALITY input, in the shape
+`OortTate.exists_muType_coordinate`'s `hstab` takes: local inertia
+moves every `3`-TORSION connected vector to a MULTIPLE OF ITSELF. The
+conclusion upgrades that pointwise, `3`-torsion statement to a UNIFORM
+power on the whole of `N⁰`: one `m : ℕ` with `ρ'(σ) z = m • z` for
+EVERY connected `z`, of whatever `3`-power order.
+
+ROUTE (Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.6; Oort–Tate; Tate,
+*Finite flat group schemes* §4).
+
+1. `hstab₃` puts every `3`-torsion connected point in the situation of
+   the PROVEN
+   `OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+   (`Fermat/FLT/GroupScheme/ConnectedEtale.lean`), whose two halves are
+   `inertia_character_trivial_or_cyclotomic` (Raynaud's dichotomy at
+   `e = 1 < p − 1 = 2`) and `not_inertia_character_trivial_of_connected`
+   (connectedness kills the unramified branch). So `σ • φ = φ ^ n` for
+   every `n ≡ χ_cyc(σ) mod 3`, i.e. `𝒢⁰[3]` is of MULTIPLICATIVE type.
+2. DÉVISSAGE up the `3`-power filtration: a finite flat group scheme
+   over `ℤ₃` whose `3`-torsion is multiplicative is itself
+   multiplicative — the multiplicative part is the largest
+   multiplicative subgroup and its quotient would have non-multiplicative
+   `3`-torsion. Hence local inertia acts on ALL of `𝒢⁰` by `χ_cyc`.
+   THIS STEP IS THE WHOLE REMAINING CONTENT; step 1 is already proven
+   and step 3 is bookkeeping.
+3. UNIFORMITY of `m`. `χ_cyc(σ) ∈ ℤ₃ˣ` is one scalar, but the
+   conclusion asks for a NATURAL number. The connected locus is finite
+   (`finite_points_of_hopf_order` above) and `3`-power torsion
+   (`connected_vector_threePow_torsion_of_hopf_package` above), so it is
+   killed by a single `3 ^ K`, and any `m ≡ χ_cyc(σ) mod 3 ^ K` — which
+   exists by density of `ℕ` in `ℤ₃` — works for every `z` at once.
+
+WHY `hstab₃` MAY NOT BE DROPPED. Without it the statement is FALSE, by
+the supersingular counterexample recorded in the FALSITY AUDIT of
+`exists_inertia_scalar_on_connected_locus_of_hopf_package` below: for
+`E ⧸ ℚ` with good SUPERSINGULAR reduction at `3` and `G = 𝒪(E[9])`, the
+scheme is connected, `e₀ = 1`, the connected locus is everything, and
+`I₃` acts on `E[3]` through the level-`2` fundamental characters of
+`𝔽₉ˣ` (Serre, Invent. Math. 15 (1972), §1.11 prop. 12) — a nonsplit
+Cartan, on which no vector is moved to a multiple of itself. So that
+`G` fails `hstab₃` and is excluded, which is exactly the point of the
+hypothesis.
+
+FAITHFULNESS. Both quantifiers are over `localInertiaGroup 𝔭₃` and
+never over `Γ ℚ₃ᵥ`. Over the full decomposition group the connected
+character is `χ_cyc · ψ` with `ψ` an UNRAMIFIED twist and no single
+power works, so the inertia-only form is the true one — inertia-only
+conclusions are twist-blind. The conclusion is a VALUE-level identity in
+`N`; no element of `G`, no coordinate and no `Γ`-wide rationality is
+produced, so the leaf is on the true side of the development's
+`𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
+that killed `exists_muType_closure`.
+
+**The check that would refute it**: exhibit a finite flat `ℤ₃`-group
+scheme with étale generic fibre whose `3`-torsion connected points are
+inertia-power-stable but on which inertia does NOT act by a uniform
+power — i.e. a connected finite flat group scheme over `ℤ₃` with
+multiplicative `3`-torsion that is not itself of multiplicative type.
+Raynaud at `e = 1 < p − 1` says there is none. -/
+theorem exists_uniform_pow_localInertia_smul_connected_of_hopf_package
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (hstab₃ : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ z : N, (3 : ℕ) • z = 0 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      ∃ k : ℕ, (ρ'.toLocal 𝔭₃) τ z = k • z)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃) :
+    ∃ m : ℕ, ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ρ'.toLocal 𝔭₃) σ z = m • z :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **ONE-DIMENSIONALITY OF THE CONNECTED `3`-TORSION out of the
+residual package** (SORRY LEAF — cut 2026-07-28 out of
+`exists_ordinary_line_of_flat_hopf_package` just below, which is PROVEN
+over it together with the dévissage
+`exists_uniform_pow_localInertia_smul_connected_of_hopf_package` above.
+This is the half where the RESIDUAL PACKAGE is spent, and it is what the
+docstring of `exists_inertia_scalar_on_connected_locus_of_hopf_package`
+below calls "the crux": producing `hstab` out of `3`-distinguishedness.)
+
+Statement: for every `τ ∈ I₃` and every `3`-TORSION connected vector `z`
+of `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V`, `ρ(τ̃) z` is a MULTIPLE `k • z` of `z`.
+That is exactly `OortTate.exists_muType_coordinate`'s `hstab`,
+transported through the equivariant bijection `fG`, and it is the ONLY
+thing the dévissage above still needs.
+
+ROUTE (Wiles, Ann. of Math. 141 (1995), ch. 1 §1 prop. 1.1;
+Ramakrishna, Compositio 87 (1993); Darmon–Diamond–Taylor §3).
+
+1. THE CONNECTED LOCUS IS RESIDUALLY INSIDE `ker π`. Every inertia
+   displacement is killed by `π` (that is `hπequiv`), and
+   `connected_locus_mem_of_displacement_stable_of_hopf_package` above
+   says a connected vector lies in ANY submodule containing `𝔪ⁿ⁺² • ⊤`
+   and all the inertia displacements — apply it to
+   `W := ker (x ↦ π ((1 : kk) ⊗ₜ x))`, whose `𝔪ⁿ⁺² • ⊤ ≤ W` is
+   `one_tmul_eq_zero_of_mem_maximalIdeal_smul_top` above. So the
+   connected locus reduces into the `w₀`-line.
+2. `3`-DISTINGUISHEDNESS. `hπequiv` makes `ρ̄` an extension of the
+   TRIVIAL character by a character `a`; `hV` and `hρ` force
+   `det ρ̄ = ω`, hence `a = ω`
+   (`residual_twist_eq_cyclotomicCharacterModL` above); and `hσω` says
+   `ω ≠ 1` on `I₃`. So `ρ̄|_{D₃}` is reducible with DISTINCT characters.
+3. Hence the residual connected part is EXACTLY the `ω`-line: it cannot
+   be `0` (inertia displacements are connected and `ω ≠ 1` makes one of
+   them residually nonzero) and it cannot be everything (the étale
+   quotient would then vanish, forcing inertia to act trivially on
+   `ρ̄`, against `hσω`). A line is inertia-stable, so inertia moves each
+   connected `3`-torsion vector into its own span, which is the
+   conclusion.
+
+WHAT IS *NOT* ENOUGH, and why flatness is genuinely used. Residual
+one-dimensionality plus Nakayama does NOT give this: over `A = ℤ⧸9` the
+submodule `N = A · (1,0) + A · (0,3) ⊆ A²` reduces into a line, yet
+`N[3] = 3A · (1,0) + A · (0,3)` has `𝔽₃`-rank `2` and carries
+non-power-stable actions. That module is the counterexample already
+recorded on `connected_locus_cyclic_of_hopf_package` below, and what it
+FAILS is being the connected part of a finite flat group scheme. So the
+Hopf package `G`/`fG`/`e₀` is load-bearing here and may not be dropped
+either.
+
+WHY THE RESIDUAL PACKAGE MAY NOT BE DROPPED — the FALSITY AUDIT
+recorded on `exists_inertia_scalar_on_connected_locus_of_hopf_package`
+below applies VERBATIM: without `hV`, `hρ`, `kk`, `π`, `v₀`, `w₀`,
+`hσω`, the `9`-torsion of an elliptic curve with GOOD SUPERSINGULAR
+reduction at `3` satisfies every remaining hypothesis, is connected with
+`e₀ = 1`, and has `I₃` acting through the level-`2` fundamental
+characters of `𝔽₉ˣ` — a nonsplit Cartan, under which no vector is moved
+to a multiple of itself. `3`-distinguished ordinariness is precisely
+what excludes it. `σ`, `hσ` and `hσω` appear only to carry that
+exclusion; the conclusion quantifies over all of `I₃` independently of
+them.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup 𝔭₃` and NEVER
+over `Γ ℚ₃ᵥ`: over the full decomposition group the connected character
+is `χ_cyc · ψ` with `ψ` an unramified twist, and a Frobenius lift need
+not move a connected vector into its own span at all. The conclusion is
+a VALUE-level identity in `M`; no element of `G`, no coordinate and no
+`Γ`-wide rationality is asked for, so the leaf is on the true side of
+the `𝒪ᵥ`-descent rule and blind to the `p − 1` twists `μ₃ ⊗ ψ`.
+
+**The check that would refute it**: exhibit a `3`-distinguished ordinary
+residual `ρ̄` admitting a finite flat lift some of whose connected
+`3`-torsion is moved by inertia outside its own span — i.e. whose
+connected part is not of multiplicative type. Wiles ch. 1 prop. 1.1 says
+there is none. -/
+theorem exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (hσω : cyclotomicCharacterModL 3
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) ≠ 1) :
+    ∀ τ ∈ localInertiaGroup 𝔭₃,
+      ∀ z : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V,
+      (3 : ℕ) • z = 0 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      ∃ k : ℕ, ((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = k • z :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **FLAT IMPLIES ORDINARY at `3`: the multiplicative line `L`, the
 inertia scalar on it, and the triviality of inertia on `V ⧸ L`**
-(SORRY LEAF — hoisted 2026-07-27 out of the `hordinary` step of
-`exists_inertia_scalar_on_connected_locus_of_hopf_package` below, which
-is now PROVEN over it together with the PROVEN transport
-`connected_locus_mem_of_displacement_stable_of_hopf_package` above. It
-is the SOLE remaining arithmetic input of that node.)
+(**PROVEN 2026-07-28** — hoisted 2026-07-27 out of the `hordinary` step
+of `exists_inertia_scalar_on_connected_locus_of_hopf_package` below,
+which is PROVEN over it together with the PROVEN transport
+`connected_locus_mem_of_displacement_stable_of_hopf_package` above; it
+was the SOLE remaining arithmetic input of that node, and it is now
+DECOMPOSED into the two named leaves directly above, of which this
+declaration is pure glue.)
+
+**DECOMPOSED 2026-07-28.** The two halves of Wiles ch. 1 prop. 1.1 are
+now separate top-level leaves and this node consumes both:
+
+* `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` —
+  ONE-DIMENSIONALITY of the connected `3`-torsion, the half where the
+  RESIDUAL PACKAGE is spent (`hV`, `hρ`, `kk`, `π`, `v₀`, `w₀`, `hσω`
+  are passed to it verbatim, and `hσω` is consumed only there);
+* `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` —
+  the RAYNAUD DÉVISSAGE, which upgrades that `3`-torsion,
+  vector-by-vector statement to a single power `m : ℕ` acting on the
+  whole connected locus. It carries no residual input.
+
+THE GLUE (below). Take `L := span R {x : V | 1 ⊗ x is connected}` —
+the `R`-span of the connected vectors, which needs no additivity or
+`R`-stability lemma for the connected locus itself — and `c := (m : R)`.
+
+* Clause (1) is `Submodule.span_induction`: on a generator `x` the
+  dévissage gives `ρ(σ̃)(1 ⊗ x) = m • (1 ⊗ x)` in `M`, so
+  `1 ⊗ (ρ(σ̃) x − c • x) = 0` and
+  `mem_smul_top_of_one_tmul_quotient_eq_zero` above puts the difference
+  in `𝔪ⁿ⁺² • ⊤`; the three closure cases are `R`-linearity of
+  `y ↦ ρ(σ̃) y − c • y`.
+* Clause (2) is FREE with this `L`: an inertia displacement is
+  connected (`inertia_displacement_apply_connected_idempotent_eq_one`
+  above, the étale half of the connected–étale dichotomy), hence lies in
+  `L` itself — the `𝔪ⁿ⁺² • ⊤` summand of the conclusion is not even
+  needed.
+
+So no Raynaud content is left in this declaration; all of it sits in the
+two leaves above.
 
 Statement: there are a submodule `L ⊆ V` and a scalar `c : R` with
 
@@ -4833,8 +5086,67 @@ theorem exists_ordinary_line_of_flat_hopf_package
           (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) ∧
       (∀ τ ∈ localInertiaGroup 𝔭₃, ∀ w : V,
         ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) w - w ∈
-          L ⊔ (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) :=
-  sorry
+          L ⊔ (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+  classical
+  have hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀ :=
+    fun y hy => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ y hy
+  have hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  -- ## (1) ONE-DIMENSIONALITY of the connected `3`-torsion, out of the residual
+  -- ## package (`exists_pow_smul_connected_threeTorsion_of_flat_hopf_package`
+  -- ## above) — this is where `hV`, `hρ`, `kk`, `π`, `v₀`, `w₀` and `hσω` go
+  have hstab₃ := exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
+    V hV hρ kk hsurj π hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG
+    e₀ he₀ hε₀ hmin₀ habs₀ σ hσ hσω
+  -- ## (2) RAYNAUD DÉVISSAGE
+  -- ## (`exists_uniform_pow_localInertia_smul_connected_of_hopf_package`
+  -- ## above): a SINGLE power `m` acts on the whole connected locus
+  obtain ⟨m, hm⟩ := exists_uniform_pow_localInertia_smul_connected_of_hopf_package
+    (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+    hprim₀ hcomul₀ fG hfG hstab₃ σ hσ
+  -- ## the line is the `R`-span of the connected vectors, the scalar is `m`
+  refine ⟨Submodule.span R {x : V |
+    (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1}, (m : R), ?_, ?_⟩
+  · -- clause (1): span induction, the generators being the connected vectors
+    intro y hy
+    induction hy using Submodule.span_induction with
+    | mem x hx =>
+        have hz := hm ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x) hx
+        rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul] at hz
+        refine mem_smul_top_of_one_tmul_quotient_eq_zero _ ?_
+        rw [TensorProduct.tmul_sub, hz, TensorProduct.tmul_smul,
+          Nat.cast_smul_eq_nsmul, sub_self]
+    | zero =>
+        rw [map_zero, smul_zero, sub_zero]
+        exact Submodule.zero_mem _
+    | add x y _ _ ihx ihy =>
+        have hsplit : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) (x + y) -
+            (m : R) • (x + y) =
+            (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - (m : R) • x) +
+            (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) y - (m : R) • y) := by
+          rw [map_add, smul_add]; abel
+        rw [hsplit]
+        exact Submodule.add_mem _ ihx ihy
+    | smul a x _ ih =>
+        have hsplit : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) (a • x) -
+            (m : R) • (a • x) =
+            a • (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x -
+              (m : R) • x) := by
+          rw [map_smul, smul_sub, smul_comm a (m : R) x]
+        rw [hsplit]
+        exact Submodule.smul_mem _ a ih
+  · -- clause (2): an inertia displacement is connected, hence lies in the span
+    intro τ hτ w
+    refine Submodule.mem_sup_left (Submodule.subset_span ?_)
+    have hconn := inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG τ hτ ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w)
+    rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      ← TensorProduct.tmul_sub] at hconn
+    exact hconn
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -4852,7 +5164,11 @@ are now the two named top-level declarations above, and this node is
 pure glue over them:
 
 * `exists_ordinary_line_of_flat_hopf_package` — flat-implies-ordinary,
-  the SOLE remaining leaf of this cluster;
+  itself **PROVEN 2026-07-28** and decomposed into the two named leaves
+  `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` (the
+  residual/one-dimensionality half) and
+  `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` (the
+  Raynaud dévissage), which are now this cluster's remaining leaves;
 * `connected_locus_mem_of_displacement_stable_of_hopf_package` —
   **PROVEN**, the `V`-level transport of
   `connected_locus_mem_displacement_closure_of_hopf_package`, together
@@ -4957,7 +5273,9 @@ Those are two genuinely separate inputs, and the body below is CUT along
 exactly that line. Since 2026-07-27 both are top-level declarations
 above rather than sorried `have`s:
 
-1. `exists_ordinary_line_of_flat_hopf_package` — ORDINARITY (OPEN): `∃ L : Submodule R V, ∃ c : R` with
+1. `exists_ordinary_line_of_flat_hopf_package` — ORDINARITY (**PROVEN 2026-07-28**, over the two
+   leaves `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` and
+   `exists_uniform_pow_localInertia_smul_connected_of_hopf_package`): `∃ L : Submodule R V, ∃ c : R` with
    `ρ g₀ y − c • y ∈ 𝔪ⁿ⁺² • ⊤` for `y ∈ L`, and
    `ρ (τ̃) w − w ∈ L ⊔ 𝔪ⁿ⁺² • ⊤` for every `w : V` and every
    `τ ∈ I₃` (inertia trivial on `V ⧸ L`). This is flat-implies-ordinary
@@ -5062,7 +5380,7 @@ theorem exists_inertia_scalar_on_connected_locus_of_hopf_package
       ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - c • x ∈
         (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
   classical
-  -- ## (1) FLAT IMPLIES ORDINARY (the SOLE remaining leaf,
+  -- ## (1) FLAT IMPLIES ORDINARY (PROVEN 2026-07-28 over two leaves,
   -- ## `exists_ordinary_line_of_flat_hopf_package` above): the multiplicative
   -- ## line `L`, the scalar `c` by which inertia acts on it, and the
   -- ## triviality of the inertia action on `V ⧸ L` that pins `L` down
