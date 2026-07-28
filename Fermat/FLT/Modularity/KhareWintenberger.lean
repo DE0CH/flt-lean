@@ -8881,8 +8881,19 @@ produces POINT COUNTS of a curve over the residue field of `w`, together
 with the Eichler–Shimura pair among its Frobenius eigenvalues, and the
 passage from counts to the individual eigenvalue bound is pure complex
 analysis.  The two lemmas of this block are that passage — PROVEN; the two
-`exists_frobEigenvalues_…_of_heckePackage` leaves below are the geometry —
-SORRIED.
+`exists_frobEigenvalues_…` leaves below are the geometry.
+
+SECOND CUT, LATER THE SAME DAY, ON THE AUTOMORPHIC AXIS.
+`exists_frobEigenvalues_heckeF_of_heckePackage` is itself now PROVEN, over
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` (Jacquet–Langlands,
+already a leaf of this module) and the new
+`exists_frobEigenvalues_of_totallyDefinite_heckeCharacter`, which receives
+the automorphic form as a HYPOTHESIS and owes only the Shimura curve.  The
+gain is that the claim "`heckeF` is automorphic" — the deepest thing in
+either leaf, and modularity lifting in disguise — is now owned by ONE
+declaration instead of being asserted independently by two.  The descended
+sibling `exists_frobEigenvalues_descended_of_heckePackage` is separately
+owned and is NOT cut this way here.
 
 WHY THE CUT STOPS HERE AND DOES NOT GO ONE STEP FURTHER.  `Interface.lean`
 splits its geometric leaf again, into a modular half handing over a PLANE
@@ -9157,10 +9168,137 @@ theorem absNorm_asIdeal_pos {F : Type u} [Field F] [NumberField F]
     0 < Ideal.absNorm w.asIdeal :=
   Nat.pos_of_ne_zero fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
 
+/-- **Eichler–Shimura in point-count shape, GIVEN the automorphic form**
+(SORRIED CITATION; the geometric residue, cut 2026-07-28 on the
+AUTOMORPHIC axis out of `exists_frobEigenvalues_heckeF_of_heckePackage`
+immediately below, which is now PROVEN over this leaf and
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`).
+
+WHAT THIS LEAF IS.  Identical in statement to the node below, EXCEPT that
+the automorphic object is now a HYPOTHESIS rather than something the leaf
+must conjure: `D` is a totally definite quaternion algebra over `F`, `𝒮`
+a `U₁`-level datum, and `θ` a Hecke character of
+`TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` whose eigenvalues are
+those of `heckeF` away from `𝒮.S ∪ 𝒮.Q ∪ badF`.  Everything left to do
+here is GEOMETRY.
+
+WHY THE CUT IS ON THIS AXIS.  The two audits below rule out the axes that
+had been searched: the plane-model/curve-Weil cut is blocked by layering
+and by prime powers (NEXT CUT), and the arithmetic cut through purity is
+blocked by the effectivity of `Npt` (CUT AUDIT).  What neither audit
+examined is the AUTOMORPHIC axis, and on that axis the node below splits
+cleanly, because the deepest thing in it is not the geometry at all — it
+is the claim that `heckeF` is automorphic in the first place.  That claim
+is *already* a named leaf of this module,
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` (Albert–Brauer–
+Hasse–Noether plus Jacquet–Langlands), stated from exactly the same
+arithmetic package.  Routing the node below through it means the
+modularity content is OWNED ONCE instead of being asserted twice, which
+is the whole gain: whatever eventually discharges that leaf serves this
+subtree too.
+
+WHAT REMAINS, CLASSICALLY.  `θ` is an automorphic form on `Dˣ` for a
+TOTALLY DEFINITE `D`, so its Shimura variety is `0`-dimensional and
+carries no `H¹`.  Jacquet–Langlands in the other direction returns a
+cuspidal automorphic representation `π` of `GL₂/F` which is discrete
+series at every infinite place — parallel weight `2` — and a second
+application of Jacquet–Langlands transfers `π` to a quaternion algebra
+`D'/F` split at exactly ONE infinite place, whose Shimura variety is a
+CURVE.  Carayol's integral model of that curve has good reduction at
+every `w ∉ badF`, `Npt s` is the point count of its special fibre over
+`𝔽_{(Nw)^s}`, the `γ_κ` are the `2·genus` eigenvalues of `Frob_w` on
+`H¹`, clause 1 is the Lefschetz trace formula, clause 2 is the Weil
+conjectures with `Bw = 2·genus`, and clause 3 is the Eichler–Shimura
+congruence `T_w = Frob_w + Nw·Frob_w^{−1}`.  Jacquet–Langlands,
+*Automorphic forms on GL(2)*, LNM **114** (1970), §14–16; Carayol,
+Ann. Sci. ÉNS **19** (1986); Deligne, *La conjecture de Weil I*,
+Publ. IHÉS **43** (1974); Blasius (2006); Shimura, Duke Math. J. **45**
+(1978) for the normalisation `X² − a_w·X + Nw`.
+
+WHAT `hθ` DOES NOT COVER, STATED SO IT IS NOT MISREAD AS A GAP.  `hθ`
+pins the eigenvalues only away from the finite sets `𝒮.S` and `𝒮.Q`,
+which are level-structure artefacts, whereas the conclusion is asked at
+every `w ∉ badF`.  That is not a defect: `hbad2`/`hbadℓ` already make
+`ρ|_{G_F}` unramified at every `w ∉ badF`, so every such `w` is a GOOD
+place of the newform and `hmod` identifies `heckeF w` with its Hecke
+polynomial there; the finitely many places of `𝒮.S ∪ 𝒮.Q` are recovered
+from `hmod`, not from `θ`.
+
+FAITHFULNESS.  TRUE, by the classical package above — and trivially safe
+as a cut, since this leaf is the node below with STRICTLY MORE
+hypotheses, so it cannot be false unless that node is.  The audits on
+that node apply here verbatim and are not repeated: the FALSITY AUDIT
+(why `hbad2` and `hbadℓ` are load-bearing — without them the conclusion
+is refuted at every `w ∣ 2`), the CUT AUDIT (why the arithmetic axis is
+closed), and the NEXT CUT paragraph (why the plane-model cut is not
+available at this point of the import graph, with the grep that would
+refute it).  `hirrF` remains load-bearing for the reason recorded there.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_frobEigenvalues_of_totallyDefinite_heckeCharacter
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+    (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E)
+    (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+      (heckeF w).coeff 1 =
+        -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∀ w ∉ badF, ∀ φ : E →+* ℂ,
+      ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
+        (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
+            = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
+        (∀ s : ℕ, 0 < s →
+            |(Npt s : ℝ) - ((Ideal.absNorm w.asIdeal : ℕ) : ℝ) ^ s - 1|
+              ≤ Bw * Real.sqrt (Ideal.absNorm w.asIdeal) ^ s) ∧
+        γ i + γ j = - φ ((heckeF w).coeff 1) ∧
+        γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) :=
+  sorry
+
 /-- **Eichler–Shimura in point-count shape for the Hilbert newform over
-`F`** (SORRIED CITATION, cut 2026-07-28 as the GEOMETRIC residue of
-`weilBound_heckeF_of_heckePackage` below, which is now PROVEN over this
-leaf and `norm_le_two_mul_sqrt_of_frobEigenvalues` above).
+`F`** (**PROVEN 2026-07-28** over
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` (Jacquet–Langlands)
+and `exists_frobEigenvalues_of_totallyDefinite_heckeCharacter` (the
+geometry) immediately above; cut 2026-07-28 as the GEOMETRIC residue of
+`weilBound_heckeF_of_heckePackage` below, which is PROVEN over this
+node and `norm_le_two_mul_sqrt_of_frobEigenvalues` above).
 
 STATEMENT.  At every good place `w ∉ badF` and every complex embedding `φ`
 of the Hecke field there are finitely many complex numbers `γ₀, …, γ_{n−1}`,
@@ -9199,6 +9337,105 @@ individual eigenvalues be factored out into the two lemmas above, which
 are pure complex analysis.  Nothing geometric is left in them, and
 nothing analytic is left here.
 
+**FALSITY AUDIT AND STATEMENT REPAIR (2026-07-28, SECOND RESTATEMENT —
+`hbad2` AND `hbadℓ` ADDED).**  The cut-day faithfulness paragraph below
+was written against the statement WITHOUT `hbad2`/`hbadℓ` and is void as
+an audit of the present one; it is re-run at the end of this block.  As
+first cut, this leaf was refuted at every place `w ∣ 2` outside `badF`,
+by the hypotheses' OWN content and with no automorphic input at all:
+
+* `hρ.isTameAtTwo` supplies a surjective `π : V →ₗ[O] O` and a character
+  `δ : GaloisRep ℚ_[2] O O` with `π ∘ ρ(g) = δ(g) · π` on the
+  decomposition group at `2`, `δ` unramified and `δ·δ = 1`.  `ker π` is
+  a rank-`1` direct summand, so at every `σ` in that decomposition group
+  `ρ(σ)` is triangular with diagonal `(det ρ(σ)/δ(σ), δ(σ))` and
+  `charpoly(ρ(σ)) = (X − det ρ(σ)·δ(σ))·(X − δ(σ))`, using
+  `δ(σ)⁻¹ = δ(σ)`.
+* `O` is a domain of characteristic `0` (`hZinj`), so `δ(σ)² = 1` forces
+  `δ(σ) = ±1`.
+* `w ∣ 2` does not lie over `ℓ` (`hℓ5` gives `ℓ ≥ 5`), so the PROVEN
+  `charFrob_baseChange_coeff_zero_eq_absNorm` of this module gives
+  `det ρ(globalFrob w) = Nw`.  Hence
+  `(ρ|_{G_F}.charFrob w).coeff 1 = −δ(σ)·(1 + Nw) = ∓(1 + Nw)`.
+* `hmod` then pins `ψℓ((heckeF w).coeff 1) = ∓(1 + Nw)` in `ℚ̄_ℓ`; that
+  is a rational integer and `ψℓ` is injective, so
+  `(heckeF w).coeff 1 = ∓(1 + Nw)` in `E` and
+  `‖φ((heckeF w).coeff 1)‖ = 1 + Nw` at EVERY complex `φ`.
+* Any witness of the conclusion forces `‖φ((heckeF w).coeff 1)‖ ≤ 2√(Nw)`
+  (that is `norm_le_two_mul_sqrt_of_frobEigenvalues`, which is exactly
+  how the consumer below uses this leaf), and
+  `1 + Nw > 2√(Nw)` for every `Nw ≥ 2`, i.e. for every height-one prime.
+
+So no witness could exist at such a `w`.  The eigensystem there is
+EISENSTEIN-shaped for the same structural reason `ρ = 1 ⊕ χ_ℓ` is —
+`hirrF` does not help, because the failure is not about cuspidality of
+the newform but about `hmod` pinning `heckeF` to `charFrob` at a place
+where `ρ` RAMIFIES and where `heckeF` is therefore not the newform's
+eigenvalue at all.  At a ramified place `charFrob` is not even
+independent of the choice of arithmetic Frobenius, so Deligne's theorem
+has no right to a matching clause there; the leaf was in effect asking
+for the Ramanujan bound on a value the newform never produced.  The only
+non-circular discharge of the unrepaired statement would have been to
+prove the arithmetic package UNSATISFIABLE, which is the module headline
+and consumes this subtree.
+
+THE REPAIR, AND WHY IT COSTS NOTHING.  `hbad2` and `hbadℓ` — the places
+of `F` over `2` and over `ℓ` are bad — are exactly the narrowing that
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` and
+`exists_threeadic_realization_of_heckePackage` received on 2026-07-26 for
+this same reason, and they are FREE at the single call site: the witness
+built by `nonempty_potentialModularityWitness_of_five_le` already enlarges
+`badF` by the places over `2`, `3` and `ℓ` in its step (ii') and holds
+both facts in hand there.  With them, `ρ|_{G_F}` is unramified at every
+`w ∉ badF` (`hρ.isUnramified`, `2` and `ℓ` being the only ramified
+rational primes), the newform's level is supported over `2` and `ℓ`, and
+`heckeF w` IS the newform's Hecke polynomial at a GOOD place — which is
+where Deligne's theorem applies and where the classical package above is
+a theorem.
+
+`hbad3` PLAYS NO PART IN THIS REPAIR, and is present for an unrelated
+reason.  The Weil bound does not need it: `3` is the residue
+characteristic of the `3`-adic member of the compatible system, nothing
+in this leaf is `3`-adic, and `hρ.isUnramified` already makes `ρ`
+unramified at `3` for `ℓ ≥ 5`.  It appears in the binders only because
+the AUTOMORPHIC-axis cut below routes this node through
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which requires
+it (together with `hFeven`).  Accordingly the geometric leaf
+`exists_frobEigenvalues_of_totallyDefinite_heckeCharacter` above, which
+does not make that call, carries `hbad2` and `hbadℓ` and NOT `hbad3`.
+
+CUT AUDIT — THE ARITHMETIC AXIS, SEARCHED 2026-07-28 AND CLOSED.  Besides
+the geometric axis (the NEXT CUT paragraph below), one further axis is
+worth recording because it looks like a short-cut and is not: reduce this
+leaf to PURITY, i.e. to `∃ α β, α + β = −φ(a_w) ∧ αβ = Nw ∧ ‖α‖ = ‖β‖ =
+√(Nw)` — the sharp Ramanujan statement, with no curve, no count and no
+Lefschetz — and then BUILD the point-count package from `α, β`.  That
+fails, and the obstruction is exactly the `ℕ`-valuedness of `Npt`:
+
+* Lefschetz forces `Σ_κ γ_κ^s = Nw^s + 1 − Npt s`, so the multiset `{γ}`
+  must have RATIONAL INTEGER power sums at every `s ≥ 1` — by Newton, it
+  must be the root multiset of a monic INTEGER polynomial.  `φ(a_w)` is
+  merely an algebraic number, so `{α, β}` alone will not do.
+* Taking the full Galois orbit repairs integrality — `∏_{φ'} (X² −
+  φ'(a_w)·X + Nw)` is monic with rational integer coefficients when `a_w`
+  is an algebraic integer — but not EFFECTIVITY: its first power sum is
+  `Tr_{E/ℚ}(a_w)`, which purity bounds only by `2·[E : ℚ]·√(Nw)`, and
+  that exceeds `Nw + 1` as soon as `[E : ℚ] > (Nw + 1)/(2√(Nw))`.  Then
+  `Npt 1 = Nw + 1 − Tr(a_w) < 0`, which `Npt : ℕ → ℕ` forbids.
+* Repairing THAT by adjoining further modulus-`√(Nw)` algebraic integers
+  with negative power sums is precisely the classical effective-Weil-
+  polynomial problem (Ihara's and Oesterlé's bounds): the `s = 1` deficit
+  is paid for at `s = 2`, and controlling all `s` simultaneously is the
+  content of the explicit formulae, not a bookkeeping step.
+
+CONCLUSION, and it is the useful half: the point-count formulation is
+STRICTLY STRONGER than Ramanujan–Petersson, the gap being the effectivity
+constraint `Npt s ≥ 0`, and it is therefore not reachable from any purely
+arithmetic bound on `a_w`.  The leaf genuinely needs a curve.  CHECK THAT
+WOULD REFUTE THIS: exhibit, from `‖α‖ = ‖β‖ = √q` and `αβ = q` alone, a
+finite multiset of complex numbers containing `α, β`, with integer power
+sums `p_s ≤ q^s + 1` for all `s ≥ 1`.
+
 `hirrF` IS LOAD-BEARING AND MUST NOT BE DROPPED.  Without it `ρ = 1 ⊕ χ_ℓ`
 satisfies every remaining hypothesis and has `a_w = 1 + Nw > 2√(Nw)`; by
 the FAITHFULNESS paragraph below any witness of this leaf FORCES
@@ -9207,8 +9444,14 @@ would be FALSE, not merely unprovable.  This is the same falsity that
 `PotentialModularityWitness.weilBoundF`'s audit records, inherited
 verbatim through the consumer's binders.
 
-FAITHFULNESS, AND WHY THIS IS NOT VACUOUS.  TRUE, by the classical
-package above.  It is also Weil-STRENGTH — it cannot be discharged by
+FAITHFULNESS, AND WHY THIS IS NOT VACUOUS (RE-RUN 2026-07-28 against the
+repaired statement, the cut-day version of this paragraph being void —
+see the FALSITY AUDIT above).  TRUE, by the classical package above, and
+now genuinely so: with `hbad2` and `hbadℓ` every `w ∉ badF` is a place at
+which `ρ|_{G_F}` is unramified and at which `heckeF w` is the Hecke
+polynomial of the newform at a GOOD place, which is where Deligne's
+theorem lives.  Without them the leaf was refuted at every `w ∣ 2`.  It is
+also Weil-STRENGTH — it cannot be discharged by
 bookkeeping: the two displayed estimates feed
 `norm_le_two_mul_sqrt_of_frobEigenvalues` to give `‖φ(a_w)‖ ≤ 2√(Nw)`
 outright, which is exactly the consumer's conclusion.  `i = j` is
@@ -9256,6 +9499,13 @@ bound over an arbitrary finite base field anywhere UPSTREAM of this module
 If one has appeared, the plane-model cut is available immediately and this
 leaf should be split rather than proven.
 
+RE-RUN 2026-07-28, BOTH BLOCKERS STILL LIVE.  The grep returns prose only
+— `MoretBailly.lean` names Lang–Weil in docstrings and carries the
+Stepanov machinery, but no curve-level or plane-model point-count bound;
+and `exists_const_natCard_zeroLocus_sub_le` is still in `Interface.lean`
+and still stated with `{q : ℕ} [Fact q.Prime]`, i.e. over the prime field.
+So the plane-model cut remains unavailable and this paragraph stands.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_frobEigenvalues_heckeF_of_heckePackage
@@ -9280,6 +9530,7 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -9288,7 +9539,13 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
     (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
       ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
         (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
@@ -9297,8 +9554,26 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
             |(Npt s : ℝ) - ((Ideal.absNorm w.asIdeal : ℕ) : ℝ) ^ s - 1|
               ≤ Bw * Real.sqrt (Ideal.absNorm w.asIdeal) ^ s) ∧
         γ i + γ j = - φ ((heckeF w).coeff 1) ∧
-        γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) :=
-  sorry
+        γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) := by
+  -- STEP 1 — JACQUET–LANGLANDS (`exists_totallyDefinite_heckeCharacter_of_heckePackage`):
+  -- the eigensystem `heckeF` is that of an automorphic form on the units of a
+  -- totally definite quaternion algebra over `F`.  This is where the claim
+  -- "`heckeF` is automorphic" lives, and it lives there ONCE.
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hθ⟩ :=
+    exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO
+      hmod hbad2 hbad3 hbadℓ
+  letI := hDdiv
+  letI := hDalg
+  letI := hDquat
+  letI := hDdef
+  letI := hDrig
+  -- STEP 2 — THE GEOMETRY: back to `GL₂/F`, out to a quaternion algebra split at
+  -- exactly one infinite place, Carayol's integral model of the resulting Shimura
+  -- CURVE, Lefschetz, Weil and Eichler–Shimura.
+  exact exists_frobEigenvalues_of_totallyDefinite_heckeCharacter hℓodd hℓ5
+    hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
+    ιO hιO hmod hbad2 hbadℓ D p 𝒮 θ hθ
 
 /-- **Ramanujan–Petersson for the Hilbert newform over `F`** (**PROVEN
 2026-07-28**, over `exists_frobEigenvalues_heckeF_of_heckePackage`
@@ -9361,6 +9636,31 @@ is classically true for every package.  Route (ii) is a soundness
 justification only, NOT an available Lean discharge: the headline
 consumes this subtree, so `absurd hirr …` is circular here.
 
+**NARROWED 2026-07-28: `hbad2` AND `hbadℓ` ADDED.**  The
+`RESIDUAL FAITHFULNESS GAP` above understates the problem, and the
+correction is on the geometric leaf below (`FALSITY AUDIT AND STATEMENT
+REPAIR`): with `badF` unconstrained, `hmod` pins `heckeF w` to
+`charFrob w` at places where `ρ` RAMIFIES, and at `w ∣ 2` the tame
+quotient `δ` of `hρ.isTameAtTwo` together with
+`charFrob_baseChange_coeff_zero_eq_absNorm` forces
+`(heckeF w).coeff 1 = ∓(1 + Nw)`, whose norm `1 + Nw` exceeds `2√(Nw)`.
+So this clause was refutable at every such `w`, for a reason `hirrF`
+cannot touch — the eigensystem there is not the newform's at all.  Both
+new hypotheses are FREE at the single call site
+(`nonempty_potentialModularityWitness_of_five_le`, step (ii'), which
+already enlarges `badF` by the places over `2`, `3` and `ℓ` and holds
+both facts), so `PotentialModularityWitness.weilBoundF` is discharged
+exactly as before and the carrier's field is unchanged.
+
+`hFeven` and `hbad3` are threaded for a different reason, added the same
+day: the geometric leaf below is now proven through
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, and those are the
+two hypotheses the Jacquet–Langlands step needs (`hFeven` for
+Albert–Brauer–Hasse–Noether, `hbad3` because `3` is the residue
+characteristic of the `3`-adic member).  Both are likewise free at the
+same call site — `hev` comes out of `exists_moretBailly_seed_of_five_le`
+and `hbad3` out of step (ii').
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem weilBound_heckeF_of_heckePackage
@@ -9385,6 +9685,7 @@ theorem weilBound_heckeF_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -9393,7 +9694,13 @@ theorem weilBound_heckeF_of_heckePackage
     (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
       ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
   intro w hw φ
@@ -9401,7 +9708,8 @@ theorem weilBound_heckeF_of_heckePackage
   -- to the newform at `w` by the Eichler–Shimura congruence relation
   obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
     exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod w hw φ
+      hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod hbad2
+      hbad3 hbadℓ w hw φ
   -- the analysis: counts bound the power sums, hence each eigenvalue, hence
   -- the extremal pair exactly, hence the sum by the triangle inequality
   have hb := norm_le_two_mul_sqrt_of_frobEigenvalues (absNorm_asIdeal_pos w) γ Npt Bw
@@ -9867,8 +10175,14 @@ theorem exists_potentialModularityWitness_of_five_le
   -- eigensystem is Eisenstein). Both citations are stated with `hirrF`,
   -- the non-Eisenstein condition, which step (i) already produced and
   -- steps (ii)/(iii) already consume.
+  -- `hbad2`/`hbadℓ` are handed on to the Weil-bound citation as well
+  -- (2026-07-28 narrowing): at a place where `ρ` ramifies, `hmod` pins
+  -- `heckeF` to a `charFrob` that is Eisenstein-shaped at `2`, so the
+  -- Ramanujan bound is FALSE there and Deligne's theorem never claimed
+  -- it. Both facts are already in hand from step (ii') above.
   have hweil := weilBound_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
-    hirr π hπsurj hπ F hFtr hFgal hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
+    hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂ hbad2
+    hbad3 hbadℓ
   have hweild := weilBound_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
     hirr π hπsurj hπ F hFtr hFgal hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E₂,
