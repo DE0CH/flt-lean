@@ -43066,6 +43066,241 @@ theorem IsReductionBase.ne_zero {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMo
   have hz : IsUnit (2 : ℤ) := hr ▸ hu.map toF
   rcases Int.isUnit_iff.mp hz with h1 | h1 <;> omega
 
+/-! ### The GENERIC FIBRE IS A DENSE OPEN SUBSCHEME (new 2026-07-28)
+
+`SpecLoc.generic R : Spec ℚ ⟶ Spec R` has been used throughout this file as a
+BASE POINT — a morphism one composes with — and never as a subscheme.  It is in
+fact an OPEN IMMERSION with dense image, and this subsection proves it from the
+two axioms of `IsReductionBase` alone.
+
+**Why it is here.**  The CUT-OBSTRUCTION AUDIT on
+`exists_neronExtension_of_abelianScheme` (far below) named exactly this as the
+first of three things missing for the Bosch–Lütkebohmert–Raynaud route through
+rational maps: *"`SpecLoc.generic R` is not known here to be an OPEN immersion,
+which is what would present `X` as an open subscheme of `XZ` rather than merely
+as a fibre (it IS one — the generic point of the spectrum of a DVR is open — but
+nothing in this development says so)."*  It is now said.  The audit is re-run in
+that docstring; the short version is that this closes the first obstruction and
+one more (density, which `Scheme.PartialMap` also requires and which the audit
+did not notice it needed), and leaves the third — Weil's extension theorem — as
+the whole of the residue.
+
+**The route, and why no `IsDiscreteValuationRing` instance is needed.**  `ℚ` is
+the localization of `R` AWAY FROM `ℓ`: every rational becomes `ℓ`-integral after
+multiplication by a power of `ℓ` (`exists_pow_mul_mem`, by strong induction on
+the denominator), and an `ℓ`-integral rational lies in `R`
+(`mem_of_not_dvd_den`, the converse of `not_dvd_den` above and the other half of
+"`R = ℤ_(ℓ)`").  `IsOpenImmersion.of_isLocalization` then applies verbatim.
+Density is separate and even cheaper: `R ⊆ ℚ` is injective, so the closure of
+the range of `PrimeSpectrum.comap` is the zero locus of the zero ideal, i.e.
+everything (`PrimeSpectrum.denseRange_comap_iff_ker_le_nilRadical`) — no
+hypothesis on `R` beyond being a subring of `ℚ`, which is why
+`SpecLoc.denseRange_generic` takes no `IsReductionBase`. -/
+
+/-- **A non-zero residue means a unit** (PROVEN): `ker_eq_nonunits` read in the
+contrapositive, which is the direction every use below wants. -/
+theorem IsReductionBase.isUnit_of_ne_zero {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) {r : R} (hr : toF r ≠ 0) : IsUnit r :=
+  not_not.mp (fun hu => hr ((h.ker_eq_nonunits r).mpr hu))
+
+/-- **`ℓ ≠ 1`** (PROVEN): at `ℓ = 1` the residue ring is trivial, so `toF 1 = 0`
+and `ker_eq_nonunits` would make `1` a non-unit.  This is the same observation as
+`nontrivialResidue`, in the numerical form `two_le` needs. -/
+theorem IsReductionBase.ne_one {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) : ℓ ≠ 1 := by
+  rintro rfl
+  exact ((h.ker_eq_nonunits 1).mp (Subsingleton.elim _ _)) isUnit_one
+
+/-- **`2 ≤ ℓ`** (PROVEN), from `ne_zero` and `ne_one`.  Primality of `ℓ` is also
+a consequence of `IsReductionBase` (see its docstring) but is not needed
+anywhere below: the strong induction in `exists_pow_mul_mem` only needs
+`ℓ ≥ 2`, which is what makes the quotient `den / ℓ` strictly smaller. -/
+theorem IsReductionBase.two_le {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) : 2 ≤ ℓ := by
+  have h0 := h.ne_zero
+  have h1 := h.ne_one
+  omega
+
+/-- **The converse of `not_dvd_den`** (PROVEN): a rational whose denominator is
+prime to `ℓ` lies in `R`.  Together with `not_dvd_den` this is the full
+membership criterion `q ∈ R ↔ ¬ ℓ ∣ q.den`, i.e. `R = ℤ_(ℓ)` on the nose.
+
+The proof is one line of arithmetic once the right unit is produced: `ℓ ∤ den`
+makes `toF (den : R) ≠ 0`, hence `(den : R)` a unit by `isUnit_of_ne_zero`, and
+then `z = num · den⁻¹` is visibly an element of `R`. -/
+theorem IsReductionBase.mem_of_not_dvd_den {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) {z : ℚ} (hz : ¬ ℓ ∣ z.den) : z ∈ R := by
+  have hF : toF ((z.den : ℕ) : R) ≠ 0 := by
+    rw [map_natCast]
+    intro hc
+    exact hz ((ZMod.natCast_eq_zero_iff _ _).mp hc)
+  obtain ⟨s, hs⟩ := (h.isUnit_of_ne_zero hF).exists_right_inv
+  have hsQ : ((z.den : ℕ) : ℚ) * (s : ℚ) = 1 := by
+    have hsQ' := congrArg (fun t : R => (t : ℚ)) hs
+    push_cast at hsQ'
+    exact hsQ'
+  have hnum : z * ((z.den : ℕ) : ℚ) = (z.num : ℚ) := Rat.mul_den_eq_num z
+  have key : (((z.num : R) * s : R) : ℚ) = z := by
+    push_cast
+    linear_combination (s : ℚ) * hnum.symm + z * hsQ
+  exact key ▸ ((z.num : R) * s).2
+
+/-- **The induction behind `exists_pow_mul_mem`** (PROVEN), on the DENOMINATOR.
+
+If `ℓ ∤ z.den` then `z ∈ R` already.  Otherwise `z.den = ℓ · c` with `c < z.den`
+(here, and only here, is `2 ≤ ℓ` used), and `z · ℓ = z.num / c` has denominator
+dividing `c`; the induction hypothesis applies to it. -/
+theorem IsReductionBase.exists_pow_mul_mem_aux {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) :
+    ∀ (d : ℕ) (z : ℚ), z.den = d → ∃ n : ℕ, z * (ℓ : ℚ) ^ n ∈ R := by
+  intro d
+  induction d using Nat.strong_induction_on with
+  | _ d ih =>
+    intro z hzd
+    by_cases hdvd : ℓ ∣ z.den
+    · obtain ⟨c, hc⟩ := hdvd
+      have hl2 := h.two_le
+      have hdpos : 0 < z.den := z.pos
+      have hcpos : 0 < c := by
+        rcases Nat.eq_zero_or_pos c with rfl | hp
+        · simp [hc] at hdpos
+        · exact hp
+      have hclt : c < d := by subst hzd; nlinarith
+      have hcne : (c : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+      have hdenq : ((z.den : ℕ) : ℚ) = (ℓ : ℚ) * (c : ℚ) := by
+        rw [hc]; push_cast; ring
+      have key : z * (ℓ : ℚ) = (z.num : ℚ) / (c : ℚ) := by
+        rw [eq_div_iff hcne, mul_assoc, ← hdenq, Rat.mul_den_eq_num]
+      have hdvd' : ((z * (ℓ : ℚ)).den : ℤ) ∣ (c : ℤ) := by
+        have hkey : z * (ℓ : ℚ) = Rat.divInt z.num ((c : ℕ) : ℤ) := by
+          rw [Rat.divInt_eq_div]
+          push_cast
+          exact key
+        rw [hkey]
+        exact Rat.den_dvd _ _
+      have hlt' : (z * (ℓ : ℚ)).den < d :=
+        lt_of_le_of_lt (Nat.le_of_dvd hcpos (Int.ofNat_dvd.mp hdvd')) hclt
+      obtain ⟨n, hn⟩ := ih _ hlt' (z * (ℓ : ℚ)) rfl
+      refine ⟨n + 1, ?_⟩
+      have hrw : z * (ℓ : ℚ) ^ (n + 1) = z * (ℓ : ℚ) * (ℓ : ℚ) ^ n := by ring
+      rw [hrw]
+      exact hn
+    · exact ⟨0, by simpa using h.mem_of_not_dvd_den hdvd⟩
+
+/-- **Every rational is `ℓ`-integral after multiplication by a power of `ℓ`**
+(PROVEN).  This is the surjectivity half of "`ℚ` is `R` localized away from
+`ℓ`". -/
+theorem IsReductionBase.exists_pow_mul_mem {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) (z : ℚ) : ∃ n : ℕ, z * (ℓ : ℚ) ^ n ∈ R :=
+  h.exists_pow_mul_mem_aux z.den z rfl
+
+/-- **`ℚ` is the localization of `R` away from `ℓ`** (PROVEN).
+
+The three conditions of `isLocalization_iff`: `ℓ^n` is invertible in `ℚ` because
+`ℓ ≠ 0` (`IsReductionBase.ne_zero`); surjectivity is `exists_pow_mul_mem`; and
+the equalizer condition is trivial because `R → ℚ` is an inclusion of a subring,
+hence injective.
+
+The `Algebra R ℚ` instance is supplied HERE, as a `letI` in the statement, rather
+than globally: `R.subtype.toAlgebra` makes `algebraMap R ℚ` reduce to `R.subtype`
+definitionally, which is what lets the conclusion be transported to
+`SpecLoc.generic R = Spec.map (CommRingCat.ofHom R.subtype)` with no comparison
+step at all. -/
+theorem IsReductionBase.isLocalization_away {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) :
+    letI : Algebra R ℚ := (R.subtype).toAlgebra
+    IsLocalization.Away ((ℓ : ℕ) : R) ℚ := by
+  letI : Algebra R ℚ := (R.subtype).toAlgebra
+  have hl0 : (ℓ : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr h.ne_zero
+  refine (isLocalization_iff (Submonoid.powers (((ℓ : ℕ) : R))) ℚ).mpr ⟨?_, ?_, ?_⟩
+  · rintro ⟨y, n, rfl⟩
+    have hy : (algebraMap R ℚ) (((ℓ : ℕ) : R) ^ n) = (ℓ : ℚ) ^ n := by
+      show (((((ℓ : ℕ) : R) ^ n : R)) : ℚ) = _
+      push_cast
+      ring
+    rw [hy]
+    exact (pow_ne_zero n hl0).isUnit
+  · intro z
+    obtain ⟨n, hn⟩ := h.exists_pow_mul_mem z
+    refine ⟨⟨⟨z * (ℓ : ℚ) ^ n, hn⟩, ⟨((ℓ : ℕ) : R) ^ n, n, rfl⟩⟩, ?_⟩
+    show z * ((((ℓ : ℕ) : R) ^ n : R) : ℚ) = _
+    push_cast
+    rfl
+  · intro x y hxy
+    exact ⟨1, by rw [Subtype.ext hxy]⟩
+
+/-- **THE GENERIC POINT IS AN OPEN IMMERSION** (PROVEN) — `Spec ℚ` is the basic
+open `D(ℓ)` of `Spec ℤ_(ℓ)`, not merely a fibre of it.
+
+This is the first of the three obstructions the CUT-OBSTRUCTION AUDIT on
+`exists_neronExtension_of_abelianScheme` lists against the rational-map route,
+and the audit's own words — "it *is* one … but nothing in this development says
+so" — are now out of date. -/
+theorem IsReductionBase.isOpenImmersion_generic {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) : IsOpenImmersion (SpecLoc.generic R) := by
+  letI : Algebra R ℚ := (R.subtype).toAlgebra
+  haveI := h.isLocalization_away
+  exact AlgebraicGeometry.IsOpenImmersion.of_isLocalization (S := ℚ) ((ℓ : ℕ) : R)
+
+/-- **THE GENERIC POINT HAS DENSE IMAGE** (PROVEN), for an ARBITRARY subring of
+`ℚ` — no `IsReductionBase` anywhere.
+
+`R ⊆ ℚ` is injective, so the closure of the range of `PrimeSpectrum.comap` is
+the zero locus of `ker = ⊥`, which is everything.  Density is what
+`Scheme.PartialMap` requires of its domain, alongside openness; the audit below
+asked only for openness, and this is the half it did not notice it needed. -/
+theorem SpecLoc.denseRange_generic (R : Subring ℚ) : DenseRange (SpecLoc.generic R) := by
+  show DenseRange (PrimeSpectrum.comap (CommRingCat.ofHom R.subtype).hom)
+  rw [PrimeSpectrum.denseRange_comap_iff_ker_le_nilRadical]
+  have hker : RingHom.ker (CommRingCat.ofHom R.subtype).hom = ⊥ :=
+    (RingHom.injective_iff_ker_eq_bot _).mp Subtype.val_injective
+  rw [hker]
+  exact bot_le
+
+/-- **A fibre over an OPEN base point is an OPEN SUBSCHEME** (PROVEN, over an
+arbitrary base).
+
+`IsFibreIdent.compareIso` presents `A'` as `A ×_S S'` with `universalPoint.1` as
+the first projection, and the first projection of a pullback along an open
+immersion is an open immersion.  So this is Yoneda plus one mathlib instance,
+and it is what turns `IsReductionBase.isOpenImmersion_generic` into a statement
+about the generic fibre of an arbitrary model. -/
+theorem IsFibreIdent.isOpenImmersion_universalPoint {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') [IsOpenImmersion s] :
+    IsOpenImmersion e.universalPoint.1 := by
+  haveI : IsIso e.compareHom := e.compareIso.isIso_hom
+  rw [← e.compareHom_fst]
+  infer_instance
+
+/-- **A fibre over a DENSE base point is DENSE, provided the model is an open
+map** (PROVEN, over an arbitrary base).
+
+Same presentation as above: the range of `universalPoint.1` is the range of the
+first projection, which is `f ⁻¹' (range s)` by `Scheme.Pullback.range_fst`, and
+the preimage of a dense set under an open map is dense.
+
+`hopen` is where flatness enters at the use site: a SMOOTH morphism is flat and
+locally of finite presentation, hence universally open
+(`UniversallyOpen.of_flat`), so `Scheme.Hom.isOpenMap` discharges it.  That is
+the only place the smoothness of the model is used in the assembly below — and
+it is genuinely used, not decoration: for `f = Spec (R ⧸ ker toF) ⟶ Spec R`, a
+model supported on the special fibre, the generic fibre is EMPTY and the
+conclusion fails. -/
+theorem IsFibreIdent.denseRange_universalPoint {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
+    (hopen : IsOpenMap f) (hdense : DenseRange s) :
+    DenseRange e.universalPoint.1 := by
+  haveI : IsIso e.compareHom := e.compareIso.isIso_hom
+  have hsurj : Function.Surjective (e.compareHom) :=
+    (Scheme.homeoOfIso (asIso e.compareHom)).surjective
+  have h1 : Set.range ⇑e.universalPoint.1 = Set.range ⇑(Limits.pullback.fst f s) := by
+    rw [← e.compareHom_fst]
+    show Set.range (⇑(Limits.pullback.fst f s) ∘ ⇑e.compareHom) = _
+    exact hsurj.range_comp _
+  show Dense (Set.range ⇑e.universalPoint.1)
+  rw [h1, Scheme.Pullback.range_fst]
+  exact hdense.preimage hopen
+
 /-- **A proper morphism has finitely many `𝔽_ℓ`-points over ANY base
 point** (sorry node — general scheme theory, no modular curves anywhere
 in it).
@@ -48481,9 +48716,11 @@ theorem exists_hom_of_relPointNatural {X A S : Scheme.{0}} {strX : X ⟶ S} {ast
   rfl
 
 /-- **THE NÉRON MAPPING PROPERTY, as an equation between two morphisms
-of schemes** (sorry leaf, 2026-07-28) — LEVEL-GENERIC, and now free of
-every functor-of-points family: this is the textbook statement and
-nothing else.
+of schemes** (sorry leaf, 2026-07-28; WIDENED and re-audited later the
+same day — it was `exists_neronExtension_of_abelianScheme`, which is now
+the one-line wrapper below) — LEVEL-GENERIC, and free of every
+functor-of-points family: this is the textbook statement and nothing
+else.
 
 TRUE.  `𝒜 = AZ ⟶ Spec R` is an abelian scheme over a discrete valuation
 ring, hence the NÉRON MODEL of its generic fibre `A`
@@ -48505,23 +48742,43 @@ over `Spec ℚ`.  So `u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ
 is literally the commuting square that says `uZ|_ℚ = u`.  Only
 UNIQUENESS is dropped, because the consumer does not need it.
 
-**Only SMOOTHNESS of `xstr` is used.**  `IsSmoothProperCurve` is what the
-curve model hands over (`⟨cm.model.isProper, cm.model.smooth,
-cm.model.connected⟩`), so it is taken whole; properness and connectedness
-of the fibres are inert here, and weakening the hypothesis would buy
-nothing.  `hbase` is what makes `R` a discrete valuation ring with
-fraction field `ℚ` — see the discussion under
-`bijective_pre_generic_of_isProper` — so the statement really is the
-classical one over a DVR and not one about an arbitrary subring of `ℚ`.
+**ONLY SMOOTHNESS OF `xstr` IS USED, and as of 2026-07-28 that is what the
+statement asks for.**  The previous revision took `IsSmoothProperCurve
+xstr` — what the curve model happens to hand over
+(`⟨cm.model.isProper, cm.model.smooth, cm.model.connected⟩`) — while its
+own docstring recorded that properness and geometric connectedness are
+inert.  They are now dropped: `hsm : Smooth xstr` is the hypothesis, and
+`exists_neronExtension_of_abelianScheme` below is the one-line
+compatibility wrapper for the callers that hold the curve structure.
+`hbase` is what makes `R` a discrete valuation ring with fraction field
+`ℚ` — see the discussion under `bijective_pre_generic_of_isProper` — so
+the statement really is the classical one over a DVR and not one about
+an arbitrary subring of `ℚ`.
 
-**CUT-OBSTRUCTION AUDIT (2026-07-28), and the axis it searched.**  The
-axis that WAS searched, and successfully, is the functor-of-points axis:
-`exists_hom_of_relPointNatural` above and `IsFibreIdent.apply_eq_comp`
-between them remove `c`, `cZ`, both naturality clauses and both fibre
-identifications from the residue, which is why this leaf is an equation
-between two composites of morphisms rather than a statement about
-families.  That is the whole of the reduction, and
-`exists_abelianSpread_of_neronModel` below is now PROVEN from it.
+**`hopen` AND `hdense` ARE NOT HYPOTHESES IN ANY REAL SENSE.**  Both are
+THEOREMS about `genX.universalPoint.1` — respectively
+`IsFibreIdent.isOpenImmersion_universalPoint` (from
+`IsReductionBase.isOpenImmersion_generic`) and
+`IsFibreIdent.denseRange_universalPoint` (from
+`SpecLoc.denseRange_generic` and the openness of a smooth morphism) —
+and the wrapper below discharges both.  They are carried in the
+signature because the BLR route needs exactly them and needs them as
+instances: together they say that `X` is a DENSE OPEN SUBSCHEME of `XZ`,
+which is precisely the data of a `Scheme.PartialMap XZ AZ`
+(`domain := (genX.universalPoint.1).opensRange`,
+`dense_domain := hdense`, `hom := ` the composite through `u`).  So the
+residue below starts where BLR starts, with a rational map, rather than
+with the problem of producing one.
+
+**CUT-OBSTRUCTION AUDIT, RE-RUN 2026-07-28 (the previous run asked for
+this re-run by name).**  The axis that WAS searched, and successfully, is
+the functor-of-points axis: `exists_hom_of_relPointNatural` above and
+`IsFibreIdent.apply_eq_comp` between them remove `c`, `cZ`, both
+naturality clauses and both fibre identifications from the residue, which
+is why this leaf is an equation between two composites of morphisms
+rather than a statement about families.  That is the whole of the
+reduction, and `exists_abelianSpread_of_neronModel` below is PROVEN from
+it.
 
 The axis NOT searched to a conclusion is BLR's own two-step proof, which
 would split this leaf again into (i) *the rational map `𝒳 ⇢ 𝒜` is defined
@@ -48532,26 +48789,86 @@ criterion applies — and (ii) *Weil's extension theorem* (BLR 4.4/1: an
 `S`-rational map from a smooth `S`-scheme to a smooth separated
 `S`-group scheme defined in codimension `≤ 1` is defined everywhere).
 
-**The checks that would refute the verdict that (i)/(ii) are not worth
-cutting here**, in the order they should be run.  The pin *does* carry
-`AlgebraicGeometry.Scheme.RationalMap` with `PartialMap`, `domain`,
-`fromSpecStalkOfMem` and `ofFromSpecStalk`
-(`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`), so the first
-half of the objection — "rational maps cannot be phrased at this pin" —
-is FALSE and must not be repeated.  What is missing is narrower and
-concrete: (a) `SpecLoc.generic R` is not known here to be an OPEN
-immersion, which is what would present `X` as an open subscheme of `XZ`
-rather than merely as a fibre (it *is* one — the generic point of the
-spectrum of a DVR is open — but nothing in this development says so);
-(b) there is no codimension predicate on points of a scheme in use
-anywhere in this project; and (c) Weil's extension theorem is in neither
-mathlib nor `~/cs/FLT`.  Whoever closes (a) should re-run this audit:
-with `X` an open subscheme of `XZ`, `u` becomes a `PartialMap` in one
-line and the two-leaf split becomes writable.
+The previous run listed three obstructions to writing that split, and
+asked whoever closed the first to re-run the audit.  Here is the current
+state of all three, with one correction and one addition:
+
+* (a) *"`SpecLoc.generic R` is not known here to be an OPEN immersion"* —
+  **CLOSED** (`IsReductionBase.isOpenImmersion_generic`, and its transport
+  `IsFibreIdent.isOpenImmersion_universalPoint`, both proven in the
+  subsection *The generic fibre is a dense open subscheme* far above).
+  `ℚ` is `R` localized away from `ℓ`, which is the content of
+  "`R = ℤ_(ℓ)`" and is now derived from the two axioms of
+  `IsReductionBase` alone.
+* (a′) **NEW, and the previous run's "`u` becomes a `PartialMap` in one
+  line" was wrong without it**: `Scheme.PartialMap` requires its domain
+  to be DENSE as well as open.  Also **CLOSED**
+  (`SpecLoc.denseRange_generic`, `IsFibreIdent.denseRange_universalPoint`)
+  — and note what pays for it: density needs `xstr` to be an OPEN MAP,
+  which is where the smoothness of the model enters (smooth ⟹ flat and
+  locally of finite presentation ⟹ universally open).  So the two facts
+  have different sources and only the second is about the model.
+* (b) *"there is no codimension predicate on points of a scheme in use
+  anywhere in this project"* — **FALSE AS STATED, corrected 2026-07-28.**
+  The pin carries `ringKrullDim` and `Ideal.height`, and this project
+  already uses BOTH, in `Fermat/FLT/Modularity/RegularStalks.lean`
+  (`IsLocalization.AtPrime.ringKrullDim_eq_height`,
+  `Ideal.height_le_ringKrullDim_of_isPrime`,
+  `ringKrullDim_le_ringKrullDim_quotient_add_encard`, …).  "The
+  codimension of `x` in `Z`" is `ringKrullDim (Z.presheaf.stalk x)` and
+  is writable today.  This obstruction does not exist.
+* (c) *Weil's extension theorem is in neither mathlib nor `~/cs/FLT`* —
+  **STILL OPEN**, re-checked by `grep` on 2026-07-28.
+
+So the verdict is UNCHANGED, but for ONE reason rather than three: (c) is
+a theory, not a lemma, and splitting this leaf into (i) + (ii) would
+replace one classical statement by two, of which (ii) is strictly larger
+than what it replaces.  Anyone reviving the split should therefore price
+(c) alone, and should not repeat (a), (a′) or (b) as reasons.  What the closure of (a)
+and (a′) buys is that a future prover of this leaf may START from a
+`Scheme.PartialMap` — the object BLR's proof manipulates — instead of
+spending the first half of the argument constructing one.  That is why
+they are in the signature rather than merely in this docstring.
 
 **The check that refutes the LEAF**: a smooth `R`-scheme `𝒳` and an
 abelian scheme `𝒜` over `R` with a morphism `𝒳_ℚ ⟶ 𝒜_ℚ` not extending
-over `R` — which would contradict `𝒜` being a Néron model. -/
+over `R` — which would contradict `𝒜` being a Néron model.  Note this
+check is unaffected by the widening: BLR's mapping property is stated for
+an arbitrary SMOOTH `S`-scheme, so dropping properness and connectedness
+of `xstr` cannot make the statement false, and the non-vacuity witness
+`X := A`, `XZ := AZ`, `u := 𝟙` still satisfies every hypothesis
+(`abZ.smooth`). -/
+theorem exists_neronExtension_of_smooth (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
+    {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
+    (hsm : Smooth xstr)
+    {astr : A ⟶ SpecQ} {astrZ : AZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct astrZ)
+    (genX : IsFibreIdent (SpecLoc.generic R) xstr strX)
+    (genA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
+    (hopen : IsOpenImmersion genX.universalPoint.1)
+    (hdense : DenseRange genX.universalPoint.1)
+    (u : X ⟶ A) (hu : u ≫ astr = strX) :
+    ∃ uZ : XZ ⟶ AZ, uZ ≫ astrZ = xstr ∧
+      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ :=
+  sorry
+
+/-- **The Néron mapping property for a smooth PROPER CURVE model** (PROVEN
+2026-07-28 as a one-line specialization of `exists_neronExtension_of_smooth`
+above; a sorry leaf from 2026-07-28 until then).
+
+This is the form every caller in this development holds, and it exists only so
+that the widening of the leaf costs the callers nothing: `IsSmoothProperCurve`
+gives `Smooth` through `SmoothOfRelativeDimension.smooth`, and the two facts
+`hopen` and `hdense` — that the generic fibre is a dense open subscheme of the
+model — are supplied here rather than assumed, from
+`IsReductionBase.isOpenImmersion_generic` and `SpecLoc.denseRange_generic`
+through their two `IsFibreIdent` transports.  Properness and geometric
+connectedness of `xstr` are consumed by nothing.
+
+**Retire this wrapper when its callers can be repointed.**  Its only consumer
+today is `exists_abelianSpread_of_neronModel` below, plus
+`Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean`'s `exists_neronExtension`
+on an unmerged branch; both hold `IsSmoothProperCurve` and neither needs it. -/
 theorem exists_neronExtension_of_abelianScheme (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (hbase : IsReductionBase ℓ R toF)
     {X XZ A AZ : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
@@ -48561,8 +48878,14 @@ theorem exists_neronExtension_of_abelianScheme (ℓ : ℕ) (R : Subring ℚ) (to
     (genA : IsFibreIdent (SpecLoc.generic R) astrZ astr)
     (u : X ⟶ A) (hu : u ≫ astr = strX) :
     ∃ uZ : XZ ⟶ AZ, uZ ≫ astrZ = xstr ∧
-      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ :=
-  sorry
+      u ≫ genA.universalPoint.1 = genX.universalPoint.1 ≫ uZ := by
+  haveI := hcurve.smooth
+  haveI : Smooth xstr := SmoothOfRelativeDimension.smooth (n := 1) (f := xstr)
+  haveI := hbase.isOpenImmersion_generic
+  exact exists_neronExtension_of_smooth ℓ R toF hbase inferInstance abZ genX genA
+    genX.isOpenImmersion_universalPoint
+    (genX.denseRange_universalPoint (Scheme.Hom.isOpenMap xstr)
+      (SpecLoc.denseRange_generic R)) u hu
 
 /-- **The Néron mapping property: a morphism from the generic fibre of a
 smooth proper model into an abelian variety with good reduction spreads
