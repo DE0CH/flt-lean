@@ -170,10 +170,12 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   second-law cut — do `exists_projMulOfCoordsTwo` (the gluing, now characterised
   by BOTH Bosma–Lenstra laws), while `projMulCoords_unit` and
   `projMulCoords_inv` (the two axioms) are **PROVEN as of 2026-07-27**, over the
-  two NEW leaves `ProjCoords.toHom_infty` and `ProjCoords.toHom_negC` — the two
-  missing `Proj.fromOfGlobalSections` congruences, naturality in the SCHEME
-  argument and compatibility with `Proj.map`.  `exists_projMulOfCoords` itself is
-  PROVEN from `exists_projMulOfCoordsTwo` plus those two axioms.
+  two `Proj.fromOfGlobalSections` congruences `ProjCoords.toHom_infty`
+  (naturality in the SCHEME argument) and `ProjCoords.toHom_negC` (compatibility
+  with `Proj.map`) — **both of which are now PROVEN**, `toHom_negC` on
+  2026-07-27 and `toHom_infty` on 2026-07-28, so neither is a leaf any more.
+  `exists_projMulOfCoords` itself is PROVEN from `exists_projMulOfCoordsTwo`
+  plus those two axioms.
   **`projMulCoords_inv` gained `[E.IsElliptic]` at the same time, and it is
   NECESSARY**: the `dblZ` / `add2Y` dichotomy it needs has elimination ideal
   exactly `⟨Δ²⟩`, so it is false-shaped for a singular Weierstrass equation —
@@ -1001,7 +1003,11 @@ so on the class of a polynomial `p` this says
     eval₂ base (u • coord) p = u ^ n * eval₂ base coord p   for `p` homogeneous of degree `n`,
 
 which is a monomial-by-monomial computation: a monomial of total degree `n`
-picks up exactly `u ^ n`.  The one step that is not literally that computation
+picks up exactly `u ^ n`.  (Not in the pin: mathlib's
+`RingTheory/MvPolynomial/Homogeneous.lean` has `IsHomogeneous.eval₂` — the image of
+a homogeneous polynomial under a homogeneous substitution is homogeneous — but no
+scaling identity, and `WeightedHomogeneous.lean` has none either.)
+The one step that is not literally that computation
 is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
 a homogeneous representative of degree `n`, i.e. surjectivity of
 `HomogeneousIdeal.quotientGrading` onto its graded pieces; that is
@@ -1052,8 +1058,10 @@ theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoor
 /-- **Rescaling the coordinates by a unit does not change the morphism**
 (**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
 `ringHom_smul_apply_of_mem_projGrading` — it is a REDUCTION, not a result: the
-two leaves above still carry the content, and this declaration has no `sorry`
-of its own).
+two declarations above carry the content, and this one has no `sorry` of its
+own.  **Of those two, `ringHom_smul_apply_of_mem_projGrading` is PROVEN as of
+2026-07-28**, so only `toBasicOpenOfGlobalSections_eq_of_gradedSmul`, the chart
+identity, is still a leaf here).
 
 The general statement is: for `u : Γ(X, ⊤)ˣ` and `f : A →+* Γ(X, ⊤)` with
 `A` graded, the rescaled map `f_u : a ↦ ∑ n, u ^ n * f aₙ` satisfies
@@ -1474,25 +1482,32 @@ this cluster higher up in the file (the `Congruences` section), PROVING
 `toHom_negC` and `toHom_inftyC`, and the two versions merged side by side --
 leaving `negC`, `negC_coord` and `toHom_negC` declared TWICE.  The PROVEN copies
 are 250's; what survives here is only what 250 has no counterpart for: the
-general-`X` infinity datum `infty` and its still-sorried `toHom_infty`, which the
-`projMulCoords_unit` / `projMulCoords_inv` proofs below consume by name.
+general-`X` infinity datum `infty` and its `toHom_infty` (sorried when restored,
+PROVEN 2026-07-28), which the `projMulCoords_unit` / `projMulCoords_inv` proofs
+below consume by name.
 
-**`toHom_infty` is very likely now CLOSEABLE and was left open deliberately.**
-250's `toHom_inftyC` is the same statement at `X = Spec ℚ`, PROVEN, and
-`comap_toHom` transports a datum along any `g : X ⟶ Spec ℚ`; `infty E base` is
-`inftyC` comapped, since both are the triple `![0, 1, 0]`.  Closing it is an
-author's edit, not an integrator's, so the leaf is restored exactly as it stood.
+**`toHom_infty` is now PROVEN (2026-07-28), and it MOVED** — it is no longer in
+this section.  It sits immediately after `ProjCoords.comap_toHom`, in the
+`namespace ProjCoords` block that opens after `projFromOfGlobalSections_comp`;
+see its own docstring there for the proof.  The route this docstring predicted
+is the one that worked: 250's `toHom_inftyC` is the same statement at
+`X = Spec ℚ`, and `infty E base` is `inftyC` comapped along `s`, both being the
+triple `![0, 1, 0]`.
 
-What the leaf is: naturality of `Proj.fromOfGlobalSections` in its SCHEME
-argument, `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _`.
-Re-checked 2026-07-27 against `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`,
-which carries exactly four lemmas about it -- `_preimage_basicOpen`,
-`_morphismRestrict`, `_resLE`, `_toSpecZero` -- and no naturality in `X`.  The
-shortcut worth trying first: the infinity datum has `coord 1 = 1`, a UNIT, so
-`X.basicOpen (f Ȳ) = ⊤` and `fromOfGlobalSections_morphismRestrict` at `r = Ȳ`
-already exhibits BOTH sides as factoring through the single chart
-`Proj.awayι 𝒜 Ȳ`, an open immersion hence a monomorphism, reducing the statement
-to an equality of two ring maps out of `Away 𝒜 Ȳ` -- no gluing at all. -/
+**Two claims that stood here are CORRECTED.**  (1) "What the leaf is: naturality
+of `Proj.fromOfGlobalSections` in its SCHEME argument, ABSENT FROM THE PIN."
+Absent from mathlib, yes — the re-check of
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean` finding only
+`_preimage_basicOpen`, `_morphismRestrict`, `_resLE`, `_toSpecZero` is accurate.
+But it is present HERE: `projFromOfGlobalSections_comp` is proven in this file,
+and `comap_toHom` is exactly its `ProjCoords`-level packaging.  So the leaf never
+needed new theory.  (2) The `awayι`-through-the-`Ȳ`-chart shortcut — factoring
+both sides through the single chart `Proj.awayι 𝒜 Ȳ` because `coord 1 = 1` is a
+unit — is sound but UNNECESSARY, and nobody should spend a cycle on it.
+
+What actually held the leaf open was **declaration ORDER**: it was stated ~800
+lines above `comap`, and `comap` cannot precede `projFromOfGlobalSections_comp`.
+Moving the declaration was the entire fix. -/
 
 /-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum** (PROVEN).
 
@@ -1515,18 +1530,14 @@ noncomputable def infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ 
 
 @[simp] theorem negC_base (c : ProjCoords E X) : (negC c).base = c.base := rfl
 
-/-- **The infinity datum computes `projInfty`** (sorry node — naturality of
-`Proj.fromOfGlobalSections` in its SCHEME argument, absent from the pin; see the
-section docstring above, including the `awayι` shortcut that applies to this
-leaf and not to `toHom_negC`).
-
-The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
-subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
-base change of the unit section", with no choice involved. -/
-theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
-    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
-    (infty E base).toHom = s ≫ projInfty E :=
-  sorry
+/-! `toHom_infty` — "the infinity datum computes `projInfty`" — was PROVEN on
+2026-07-28 and **now lives further down the file**, immediately after
+`ProjCoords.comap_toHom` in the `namespace ProjCoords` block that opens after
+`projFromOfGlobalSections_comp`.  It had to move: its proof is
+`comap_toHom` applied to `inftyC`, and `comap` cannot be stated before
+`projFromOfGlobalSections_comp` exists.  Nothing between here and there
+consumes it — its only two consumers are the `specPointEquiv` clauses
+thousands of lines below. -/
 
 end ProjCoords
 
@@ -2432,6 +2443,44 @@ theorem comap_toHom (c : ProjCoords E X) (g : Y ⟶ X) : (c.comap g).toHom = g �
   (projFromOfGlobalSections_congr (projGrading E) hr (c.comap g).map_irrelevant_eq_top
       (hr ▸ (c.comap g).map_irrelevant_eq_top)).trans
     (projFromOfGlobalSections_comp (projGrading E) g c.ringHom c.map_irrelevant_eq_top _)
+
+/-- **The infinity datum computes `projInfty`** (**PROVEN 2026-07-28**).
+
+The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
+subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
+base change of the unit section", with no choice involved.
+
+*How it closed, and the correction it carries.*  This leaf was recorded — in the
+`### The unit section AS A COORDINATE DATUM` docstring above and in its own — as
+needing "naturality of `Proj.fromOfGlobalSections` in its SCHEME argument, absent
+from the pin", with an `awayι`-through-the-`Ȳ`-chart shortcut suggested as the
+route to try first.  **Neither was needed.**  The naturality in question is
+`projFromOfGlobalSections_comp`, which is PROVEN in this very file (immediately
+above this `namespace ProjCoords` block) and already packaged at the
+`ProjCoords` level as `comap_toHom` — so the missing-from-the-pin note was true
+of mathlib and irrelevant here.
+
+What actually blocked the leaf was **declaration ORDER**, not mathematics: the
+statement sat ~800 lines above `comap`, which cannot be written before
+`projFromOfGlobalSections_comp`.  Moving the declaration here is the whole fix.
+
+The proof is then three steps: `infty E base` IS `inftyC E (Spec ℚ) _` pulled
+back along `s` — both coordinate triples are `![0, 1, 0]`, and a ring map sends
+`0 ↦ 0`, `1 ↦ 1`, so the pullback triple is literally the same triple, while the
+two `base` fields agree by `Subsingleton` (`ProjCoords.ext` asks only for
+`coord`).  Then `comap_toHom` turns the morphism of the pullback into
+`s ≫ (inftyC …).toHom`, and 250's `toHom_inftyC` identifies that last morphism
+with `projInfty E`. -/
+theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
+    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
+    (infty E base).toHom = s ≫ projInfty E := by
+  have hcomap : (inftyC E (Spec (CommRingCat.of ℚ))
+      ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).comap s = infty E base := by
+    refine ProjCoords.ext ?_
+    rw [comap_coord, infty_coord]
+    funext i
+    fin_cases i <;> simp [inftyC]
+  rw [← hcomap, comap_toHom, toHom_inftyC]
 
 /-- **The chord–tangent triple commutes with pullback** (PROVEN from
 `map_addXYZ`). -/
