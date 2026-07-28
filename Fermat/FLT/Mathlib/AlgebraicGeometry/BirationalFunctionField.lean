@@ -45,15 +45,16 @@ in; no new mathematics of Lüroth type is left in it.  It too is now **proven**,
 over the two open leaves that carry the translation:
 
 * `exists_iso_specRatFunc_specFunctionField_affineSpace` — the affine-space
-  half, `K(𝔸(n; Spec K)) ≃ K(t)` over `K`, mentioning neither `P` nor Lüroth;
+  half, `K(𝔸(n; Spec K)) ≃ K(t)` over `K`, mentioning neither `P` nor Lüroth.
+  **PROVEN 2026-07-28.**
 * `exists_iso_specRatFunc_specFunctionField_of_isDominant` — the curve half:
   the stalk-map embedding `K(P) ↪ K(t)`, the `hcurve`-driven non-degeneracy, and
-  Lüroth itself.
+  Lüroth itself.  **This is the file's ONLY remaining leaf** (2026-07-28).
 
-**These two are the file's only remaining leaves** (2026-07-28).  They are stated
-in a deliberately identical shape — an isomorphism out of the common object
-`Spec (RatFunc K)`, commuting with the maps down to `Spec K` — which is what makes
-the assembly of the Lüroth statement out of them a single `Iso.trans`.
+They are stated in a deliberately identical shape — an isomorphism out of the
+common object `Spec (RatFunc K)`, commuting with the maps down to `Spec K` —
+which is what makes the assembly of the Lüroth statement out of them a single
+`Iso.trans`.
 
 Together these give, in three lines, "a curve over a field dominated by `𝔸¹`
 is rational over that field" — the statement that replaces `ℙ¹` and
@@ -496,7 +497,7 @@ theorem birationalOver_of_iso_specFunctionField {S X Y : Scheme.{u}}
 /-! ### Lüroth, in scheme language -/
 
 /-- **The function field of affine `n`-space over `K` with `Unique n` is `K(t)`, compatibly
-with the structure morphism to `Spec K`** (sorry leaf, 2026-07-28) — step 2 of the Lüroth
+with the structure morphism to `Spec K`** (**PROVEN 2026-07-28**) — step 2 of the Lüroth
 translation, isolated because it mentions neither `P`, nor `u`, nor smoothness, nor Lüroth:
 it is pure affine bookkeeping about `𝔸(n; Spec K)`.
 
@@ -525,7 +526,31 @@ would have to be justified anyway.
    `MvPolynomial.uniqueAlgEquiv K n : MvPolynomial n K ≃ₐ[K] K[X]` (this is the current name —
    `pUnitAlgEquiv` is deprecated since 2026-04-15 and takes `PUnit`, not a general `Unique n`)
    transports that to a fraction field of `K[X]`, i.e. to `RatFunc K`, and
-   `IsFractionRing`-uniqueness supplies the isomorphism. -/
+   `IsFractionRing.ringEquivOfRingEquiv` supplies the isomorphism, with
+   `ringEquivOfRingEquiv_algebraMap` giving the `K`-compatibility in one rewrite.
+
+**Two `CommRingCat` traps, both of which cost a cycle here and neither of which is visible in
+the mathematics.**
+
+*First: the `Algebra`/`IsFractionRing` instances on `↥(CommRingCat.of R)` are NOT found by
+instance search*, even though `IsDomain ↥(CommRingCat.of (MvPolynomial n K))` and
+`IrreducibleSpace ↥(Spec (CommRingCat.of (MvPolynomial n K)))` both are.  Supply them by name:
+`letI := (StructureSheaf.toStalk _ (genericPoint _)).hom.toAlgebra` — which is literally
+`Mathlib`'s own instance, so nothing is being changed, only re-found — and then
+`functionField_isFractionRing_of_affine _`.  This also has the pleasant side effect that
+`algebraMap` is *definitionally* `toStalk`, which is what lets the `K`-compatibility be
+discharged by a single `show`.
+
+*Second: use `Spec.fromSpecStalk_eq`, NOT `Spec.fromSpecStalk_eq'`.*  The two differ only by
+which spelling of the ring map they expose — `(ΓSpecIso R).inv ≫ (Spec R).presheaf.germ ⊤ x`
+versus `StructureSheaf.toStalk R x` — and `Mathlib` proves the second FROM the first by `rfl`,
+so they are interchangeable to `exact`.  They are *not* interchangeable to `rw`: `toStalk R x`
+lands in `(structurePresheafInCommRingCat R).stalk x`, while the isomorphism produced above
+lands in `(Spec R).presheaf.stalk x`.  Those are equal only by delta, `rw` type-checks its
+motive at `instances` transparency, and the resulting `Spec.map_comp` failure is reported as
+"did not find an occurrence of the pattern" with the pattern plainly visible in the goal.
+The primed version is the one that "breaks abstraction boundaries", and that is exactly the
+abstraction boundary `rw` is standing on. -/
 theorem exists_iso_specRatFunc_specFunctionField_affineSpace {K : Type u} [Field K]
     {n : Type u} [Unique n] :
     ∃ e : Spec (CommRingCat.of (RatFunc K)) ≅
@@ -533,8 +558,66 @@ theorem exists_iso_specRatFunc_specFunctionField_affineSpace {K : Type u} [Field
       e.hom ≫ (𝔸(n; Spec (CommRingCat.of K))).fromSpecStalk
             (genericPoint (𝔸(n; Spec (CommRingCat.of K)))) ≫
           (𝔸(n; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
-        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) :=
-  sorry
+        = Spec.map (CommRingCat.ofHom (algebraMap K (RatFunc K))) := by
+  have hbase := AffineSpace.SpecIso_inv_over (n := n) (CommRingCat.of K)
+  set g : 𝔸(n; Spec (CommRingCat.of K)) ⟶ Spec (CommRingCat.of (MvPolynomial n K)) :=
+    (AffineSpace.SpecIso n (CommRingCat.of K)).hom with hg
+  have hstr : (𝔸(n; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+      = g ≫ Spec.map (CommRingCat.ofHom (MvPolynomial.C (σ := n) (R := K))) := by
+    rw [← hbase, hg, ← Category.assoc, Iso.hom_inv_id, Category.id_comp]
+  haveI : IsIso g := by rw [hg]; infer_instance
+  have hgen : g (genericPoint (𝔸(n; Spec (CommRingCat.of K))))
+      = genericPoint (Spec (CommRingCat.of (MvPolynomial n K))) :=
+    genericPoint_eq_of_isOpenImmersion g
+  have hstalk := Scheme.SpecMap_stalkMap_fromSpecStalk g
+    (x := genericPoint (𝔸(n; Spec (CommRingCat.of K))))
+  obtain ⟨φ, hφ⟩ : ∃ φ : (Spec (CommRingCat.of (MvPolynomial n K))).presheaf.stalk
+        (g (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) ≅ CommRingCat.of (RatFunc K),
+      CommRingCat.ofHom (MvPolynomial.C (σ := n) (R := K)) ≫
+          ((Scheme.ΓSpecIso (CommRingCat.of (MvPolynomial n K))).inv ≫
+            (Spec (CommRingCat.of (MvPolynomial n K))).presheaf.germ ⊤
+              (g (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) trivial) ≫ φ.hom
+        = CommRingCat.ofHom (algebraMap K (RatFunc K)) := by
+    rw [hgen]
+    letI alg : Algebra ↥(CommRingCat.of (MvPolynomial n K))
+        ↥(Spec (CommRingCat.of (MvPolynomial n K))).functionField :=
+      (StructureSheaf.toStalk (CommRingCat.of (MvPolynomial n K))
+        (genericPoint ↥(Spec (CommRingCat.of (MvPolynomial n K))))).hom.toAlgebra
+    haveI hfr : IsFractionRing ↥(CommRingCat.of (MvPolynomial n K))
+        ↥(Spec (CommRingCat.of (MvPolynomial n K))).functionField :=
+      functionField_isFractionRing_of_affine _
+    refine ⟨(IsFractionRing.ringEquivOfRingEquiv
+      (A := ↥(CommRingCat.of (MvPolynomial n K))) (B := Polynomial K)
+      (K := ↥(Spec (CommRingCat.of (MvPolynomial n K))).functionField)
+      (L := RatFunc K)
+      (MvPolynomial.uniqueAlgEquiv K n).toRingEquiv).toCommRingCatIso, ?_⟩
+    ext c
+    show (IsFractionRing.ringEquivOfRingEquiv
+        (A := ↥(CommRingCat.of (MvPolynomial n K))) (B := Polynomial K)
+        (K := ↥(Spec (CommRingCat.of (MvPolynomial n K))).functionField) (L := RatFunc K)
+        (MvPolynomial.uniqueAlgEquiv K n).toRingEquiv)
+        (algebraMap ↥(CommRingCat.of (MvPolynomial n K))
+          ↥(Spec (CommRingCat.of (MvPolynomial n K))).functionField (MvPolynomial.C c))
+      = algebraMap K (RatFunc K) c
+    rw [IsFractionRing.ringEquivOfRingEquiv_algebraMap]
+    simp [← MvPolynomial.algebraMap_eq]
+  haveI : IsIso (Scheme.Hom.stalkMap g (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) :=
+    inferInstance
+  set ψ := inv (Scheme.Hom.stalkMap g (genericPoint (𝔸(n; Spec (CommRingCat.of K))))) ≫ φ.hom
+    with hψ
+  have hkey : Scheme.Hom.stalkMap g (genericPoint (𝔸(n; Spec (CommRingCat.of K)))) ≫ ψ
+      = φ.hom := by
+    rw [hψ]; exact IsIso.hom_inv_id_assoc _ _
+  have h2 : Spec.map ψ ≫
+      Spec.map (Scheme.Hom.stalkMap g (genericPoint (𝔸(n; Spec (CommRingCat.of K)))))
+      = Spec.map φ.hom := by
+    rw [← Spec.map_comp, hkey]
+  refine ⟨asIso (Spec.map ψ), ?_⟩
+  rw [asIso_hom, hstr,
+    ← Category.assoc ((𝔸(n; Spec (CommRingCat.of K))).fromSpecStalk _) g, ← hstalk,
+    Spec.fromSpecStalk_eq]
+  simp only [Category.assoc]
+  rw [← Category.assoc, h2, ← Spec.map_comp, ← Spec.map_comp, Category.assoc, hφ]
 
 /-- **The function field of a curve over `K` dominated by the affine line is `K(t)`, compatibly
 with the structure morphism** (sorry leaf, 2026-07-28) — steps 1, 3 and 4 of the Lüroth
