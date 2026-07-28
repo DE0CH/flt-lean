@@ -36589,9 +36589,103 @@ theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧ IsAtkinLehner N hX w hw :=
   sorry
 
-/-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (sorry
-node, introduced 2026-07-27) — LEVEL-SPECIFIC, and the leaf that
-consumes the moduli pin.
+/-- **`X_0(169)(ℚ)` HAS AT MOST TWO ELEMENTS** (sorry leaf, 2026-07-27) —
+LEVEL-SPECIFIC, and the point-counting half of
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`.
+
+TRUE, and in fact `X_0(169)(ℚ)` has EXACTLY two elements: the cusps `0`
+and `∞`.  Stated as "no three pairwise distinct rational points" rather
+than as an enumeration `∃ c₀ c₁, ∀ x, x = c₀ ∨ x = c₁`, because the
+enumeration additionally asserts that `RelPoint strX (𝟙 SpecQ)` is
+INHABITED — true, but content the consumer never uses — and because this
+form needs no `IsX0Compactification.CuspIndexing` to state.
+
+**Why it is true, in two halves.**
+
+* *No non-cuspidal rational point.*  `Y_0(169)(ℚ)` classifies pairs
+  `(E, C)` with `C` cyclic of order `169`, i.e. elliptic curves over `ℚ`
+  admitting a rational cyclic `169`-isogeny.  By Mazur's isogeny theorem
+  together with Kenku's completion of the list, a rational cyclic
+  `N`-isogeny exists only for
+  `N ∈ {1, …, 19, 21, 25, 27, 37, 43, 67, 163}`, and `169` is not among
+  them.  So every rational point of `X` is a cusp.  This module already
+  depends on `Y_0(169)(ℚ) = ∅` elsewhere — it is the reason `IsAtkinLehner`
+  is quantified over every test object rather than over `ℚ`-points, where
+  it would be vacuous.
+* *Only two of the fourteen cusps are rational.*  The cusps above a
+  divisor `d ∣ N` number `φ(gcd(d, N/d))`, and they are `ℚ`-rational
+  exactly when that count is `1`, which is what `rationalCuspDivisors`
+  computes.  At `N = 169` the divisors are `1, 13, 169` with
+  `φ(gcd(d, N/d)) = 1, 12, 1`, so `rationalCuspDivisors 169 = {1, 169}`
+  and `numRationalCusps 169 = 2` — both decidable here — while the twelve
+  cusps above `13` are conjugate and none of them is rational.
+
+**The check that refutes it**: an elliptic curve over `ℚ` carrying a
+rational cyclic `169`-isogeny, or `numRationalCusps 169 ≠ 2`.
+
+**What proving it needs**: Mazur–Kenku, which is absent from mathlib,
+from `~/cs/FLT` and from this project (`grep -rn "isogenyPrimes\|Kenku"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns only
+`mazurIsogenyPrimes` noise), together with the identification of
+`X(ℚ) ∖ Y(ℚ)` with the rational cusps — `IsX0Compactification.IsCusp`
+and `CuspIndexing` are the local API for that half.
+
+**`_hX` carries the entire content**: without it `X` is an arbitrary
+scheme over `ℚ` and the statement is false for, say, `X = 𝔸¹_ℚ`. -/
+theorem eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification 169 strX strY jY)
+    (x y z : RelPoint strX (𝟙 SpecQ)) : x = y ∨ x = z ∨ y = z :=
+  sorry
+
+/-- **`w_169` MOVES A RATIONAL POINT OF `X_0(169)`** (sorry leaf,
+2026-07-27) — LEVEL-SPECIFIC, and the cusp-swap half of
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`.
+
+TRUE: `w_N` exchanges the cusps above `d` and `N/d`, and
+`rationalCuspDivisors 169 = {1, 169}`, so `w_169` SWAPS the two rational
+cusps `∞` and `0` and in particular moves both of them.
+
+**Only "moves at least one" is asserted**, and that is not a weakening in
+context: combined with `eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine` it
+is EQUIVALENT to moving every rational point, since an involution of a
+two-element set that moves one point moves the other (the assembly below
+is that argument).  Asserting the swap by name would force this leaf to
+produce a `CuspIndexing` as well, mixing the cusp bookkeeping into a
+statement that does not need it.
+
+**`_hal` may not be dropped, and it is the only thing keeping this leaf
+true.**  `w := 𝟙 X` is an involution over `ℚ` that moves nothing, and
+`X_0(169)(ℚ)` is nonempty (it has two rational cusps), so without the
+moduli pin the statement is FALSE.
+
+**What proving it needs, and it is NOT the CM theory the consumer's
+previous docstring named.**  The pin constrains `w` only on moduli
+points, and `Y_0(169)(ℚ) = ∅`, so it says nothing about `ℚ`-points
+directly; the route is (i) `w` is determined on `X` by its restriction to
+the dense open `Y_0(169)` — separatedness plus reducedness of a smooth
+curve — and (ii) the induced permutation of cusps is `d ↦ N/d`, which
+exchanges `1` and `169` in `rationalCuspDivisors 169`.  Step (ii) is
+where `IsX0Compactification.CuspIndexing` is used.
+
+The CM half — the fixed points of `w_N` on `Y_0(N)` are the CM points of
+discriminant `−4N`, and `h(−676) = 6` so none is rational — is what would
+be needed at a level with rational non-cuspidal points.  At `169` it is
+SUBSUMED by the point count above, because `Y_0(169)` has no rational
+point to fix at all.  That is a genuine simplification of the route this
+leaf's consumer originally recorded, and it is why `h(−676)` appears
+nowhere below. -/
+theorem exists_ne_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
+    ∃ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
+  sorry
+
+/-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (PROVEN
+2026-07-27 over the two leaves immediately above; introduced as a sorry
+node earlier the same day) — LEVEL-SPECIFIC, and the leaf that consumes
+the moduli pin.
 
 TRUE.  The fixed points of `w_N` on `X_0(N)` are the CM points of
 discriminant `−4N`, together with those of discriminant `−N` when
@@ -36615,20 +36709,58 @@ right notion for a *quotient* — an order-`2` action.  Without `_hal`
 the statement is FALSE, since `w := 𝟙` is an involution over `ℚ` with
 every point fixed and `X_0(169)(ℚ) ≠ ∅` (it has two rational cusps).
 
-**What proving it needs, and it is two theories, not one.**  On moduli
-points: the CM theory of the fixed points of `w_N` (complex
-multiplication, ring class fields, `h(−4N)`), none of which exists at
-this pin.  On the cusps: that `w` is determined on `X` by its
-restriction to the dense open `Y_0(169)` — a separatedness/reducedness
-argument — plus the cusp permutation `d ↦ N/d`, which needs
-`IsX0Compactification.CuspIndexing`.  The second half is the cheaper
-one and is where a prover should start. -/
+#### The cut, TAKEN 2026-07-27, and it is cheaper than the one recorded here
+
+The previous version of this docstring said "it is two theories, not
+one": the CM theory of the fixed points of `w_N` on moduli points, and
+the cusp permutation `d ↦ N/d` on the boundary, with the second named as
+the cheaper half a prover should start from.  Carrying that out shows the
+CM half is not needed at ALL at this level, and the cut is instead
+
+| leaf | theory |
+|---|---|
+| `eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine` | Mazur–Kenku: `X_0(169)(ℚ)` has at most two elements |
+| `exists_ne_atkinLehner_x0OneSixtyNine` | the cusp swap: `w_169` moves at least one of them |
+
+**Why the CM half disappears.**  `h(−676) = 6` bounds the fixed points of
+`w_169` on `Y_0(169)`; but `Y_0(169)(ℚ)` is EMPTY — the same fact this
+module already uses to explain why `IsAtkinLehner` must be quantified
+over every test object — so there is no rational moduli point for the CM
+count to be about.  The whole of `X_0(169)(ℚ)` is the two rational cusps,
+and the only input needed there is that `w_169` does not fix them.  The
+numerics remain recorded above because they are the classical reason the
+statement is true, and because at a level with rational non-cuspidal
+points they would be load-bearing; at `169` they are not.
+
+**Why "moves ONE point" suffices.**  `w` is an involution, so
+`RelPoint.post w hw` is an involution of `X(ℚ)`.  Given `x₀` with
+`w x₀ ≠ x₀`, the two points `x₀` and `w x₀` are distinct, and by the
+count every rational point is one of them; `w` moves `x₀` by choice and
+moves `w x₀` because `w (w x₀) = x₀ ≠ w x₀`.  That is the entire proof
+below, and it is why the second leaf does not have to name the cusps. -/
 theorem noFixedRationalPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
     (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
-    ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
-  sorry
+    ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x := by
+  obtain ⟨x₀, hx₀⟩ := exists_ne_atkinLehner_x0OneSixtyNine hX w hw _hw2 _hal
+  -- `post w` is an involution of `X(ℚ)`, because `w ≫ w = 𝟙 X`.
+  have hinv : ∀ u : RelPoint strX (𝟙 SpecQ),
+      RelPoint.post w hw (RelPoint.post w hw u) = u := by
+    intro u
+    refine Subtype.ext ?_
+    show (u.1 ≫ w) ≫ w = u.1
+    rw [Category.assoc, _hw2, Category.comp_id]
+  intro x hx
+  rcases eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine hX x x₀
+    (RelPoint.post w hw x₀) with h | h | h
+  · subst h; exact hx₀ hx
+  · -- `x = w x₀`, so `w x = x` reads `w (w x₀) = w x₀`, i.e. `x₀ = w x₀`.
+    refine hx₀ ?_
+    have : x₀ = RelPoint.post w hw x₀ :=
+      ((hinv x₀).symm.trans (congrArg (RelPoint.post w hw) h.symm)).trans (hx.trans h)
+    exact this.symm
+  · exact hx₀ h.symm
 
 /-- **The Prym of an involution of a curve** (sorry node, introduced
 2026-07-27) — LEVEL-GENERIC, and the half of the `169` node that knows
@@ -36704,8 +36836,326 @@ theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
           ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) :=
   sorry
 
+/-- **A SUBSET of a finitely generated abelian group all of whose
+elements are torsion is FINITE** (PROVEN 2026-07-27) — pure group theory,
+and the bridge that lets the Kolyvagin–Logachev leaf below be stated as
+"torsion" rather than as "finite", exactly as
+`isTorsion_jacobian_of_kenkuLevel` is separated from
+`finite_jacobian_of_kenkuLevel`.
+
+**Why a SUBSET and not a subgroup.**  `AddCommGroup.finite_of_fg_torsion`
+— the structure theorem for finitely generated abelian groups, which is
+what `finite_jacobian_of_kenkuLevel` uses — needs a GROUP, and the
+anti-invariant set `{z | w_J z = −z}` is not known to be one at this pin:
+it is a subgroup exactly when `RelPoint.post w_J` is additive, and
+additivity of `w_J` is a field of `IsHeckeIsotypicDecomposition`
+(`IsAdditiveOn`), never a theorem about `IsJacobianOf.mapEnd`.  Rather
+than add a hypothesis the consumer cannot supply, the subset is embedded
+into `AddCommGroup.torsion G`, which IS a subgroup, is finitely generated
+because `ℤ` is Noetherian and `G` is a finite `ℤ`-module, and is torsion
+by construction.
+
+Nothing here is specific to Jacobians or to `169`; it is stated over an
+abstract `G` so that the geometry stays in the leaf below. -/
+theorem finite_subtype_of_fg_of_forall_isOfFinAddOrder {G : Type*} [AddCommGroup G]
+    [AddGroup.FG G] (P : G → Prop) (hP : ∀ z, P z → IsOfFinAddOrder z) :
+    Finite {z : G // P z} := by
+  haveI : Module.Finite ℤ G := Module.Finite.iff_addGroup_fg.mpr ‹_›
+  haveI : IsNoetherian ℤ G := isNoetherian_of_isNoetherianRing_of_finite ℤ G
+  haveI : AddGroup.FG (AddCommGroup.torsion G) := by
+    have h1 : (AddSubgroup.toIntSubmodule (AddCommGroup.torsion G)).FG :=
+      IsNoetherian.noetherian _
+    have h2 := (Submodule.fg_iff_addSubgroup_fg _).mp h1
+    rw [AddSubgroup.toIntSubmodule_toAddSubgroup] at h2
+    exact (AddGroup.fg_iff_addSubgroup_fg _).mpr h2
+  haveI : Finite (AddCommGroup.torsion G) := by
+    refine AddCommGroup.finite_of_fg_torsion _ fun z => ?_
+    obtain ⟨n, hn, hz⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp z.2
+    exact isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n, hn, Subtype.ext (by simpa using hz)⟩
+  refine Finite.of_injective
+    (fun z : {z : G // P z} => (⟨z.1, hP z.1 z.2⟩ : AddCommGroup.torsion G)) ?_
+  intro a b h
+  exact Subtype.ext (congrArg (fun t : AddCommGroup.torsion G => (t : G)) h)
+
+/-- **A SINGLE element is torsion when its images in finitely many
+factors are, provided the JOINT KERNEL is finite** (PROVEN 2026-07-27) —
+the pointwise form of `isTorsion_of_finite_jointKer`, which is stated
+about the whole group.
+
+The pointwise form is what the anti-invariant argument needs, because the
+anti-invariant SET is not known to be a subgroup at this pin (see
+`finite_subtype_of_fg_of_forall_isOfFinAddOrder`), so there is no group
+to apply the whole-group version to.  The proof is the same one, read at
+a fixed `z`: pick `k i > 0` killing `φ i z`, set `n = ∏ k i`, then `n • z`
+lies in the finite joint kernel and so has finite order.
+
+`Fintype ι` is what makes `n` exist; the statement is FALSE for an
+infinite family (take `G = ℤ`, `H i = ℤ/i`, `z = 1`). -/
+theorem isOfFinAddOrder_of_finite_jointKer {G : Type*} [AddCommGroup G] {ι : Type*}
+    [Fintype ι] {H : ι → Type*} [∀ i, AddCommGroup (H i)] (φ : ∀ i, G →+ H i)
+    (hker : {x : G | ∀ i, φ i x = 0}.Finite) {z : G}
+    (htor : ∀ i, IsOfFinAddOrder (φ i z)) : IsOfFinAddOrder z := by
+  have hset : ((⨅ i, (φ i).ker : AddSubgroup G) : Set G) = {x : G | ∀ i, φ i x = 0} := by
+    ext y
+    simp [AddMonoidHom.mem_ker]
+  haveI : Finite ((⨅ i, (φ i).ker : AddSubgroup G)) := by
+    have h2 : (((⨅ i, (φ i).ker : AddSubgroup G) : Set G)).Finite := hset ▸ hker
+    exact h2.to_subtype
+  rw [isOfFinAddOrder_iff_nsmul_eq_zero]
+  choose k hk hkz using fun i => isOfFinAddOrder_iff_nsmul_eq_zero.mp (htor i)
+  set n : ℕ := ∏ i, k i
+  have hnpos : 0 < n := Finset.prod_pos fun i _ => hk i
+  have hmem : n • z ∈ (⨅ i, (φ i).ker : AddSubgroup G) := by
+    rw [AddSubgroup.mem_iInf]
+    intro i
+    rw [AddMonoidHom.mem_ker, map_nsmul]
+    obtain ⟨m, hm⟩ : k i ∣ n := Finset.dvd_prod_of_mem k (Finset.mem_univ i)
+    rw [hm, mul_comm, ← smul_smul, hkz i, smul_zero]
+  obtain ⟨m, hmpos, hmz⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp
+    (isOfFinAddOrder_of_finite (⟨n • z, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)))
+  refine ⟨m * n, Nat.mul_pos hmpos hnpos, ?_⟩
+  have hcoe : ((m • (⟨n • z, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)) : _) : G) = 0 := by
+    rw [hmz]; rfl
+  rw [← smul_smul]
+  simpa using hcoe
+
+/-- **THE ATKIN–LEHNER OPERATOR DESCENDS TO A HECKE-ISOTYPIC
+DECOMPOSITION, WITH A SIGN ON EACH FACTOR** (new 2026-07-27) — the datum
+that lets the `+1` factors be discharged with no arithmetic at all, so
+that the level-specific Kolyvagin–Logachev leaf is about the `−1` factors
+only.
+
+`w_N` commutes with every `T_n` for `(n, N) = 1`, so it preserves each
+anemic-isotypic piece of `J_0(N)`, and it is an involution there; a
+decomposition can therefore be CHOSEN adapted to it, splitting each piece
+into its `+1` and `−1` parts.  `Plus` records that choice as a predicate
+on the index set and the two `descend` fields record how `w_J` acts.
+
+**THE SIGN IS READ OFF THE GEOMETRY, NOT OFF THE LABEL, AND THAT IS THE
+WHOLE POINT.**  `IsHeckeIsotypicDecomposition.T` is not pinned to be the
+genuine Hecke correspondences, so the eigenform LABEL `D.form i` is not
+pinned either; a datum that said "`A i` is the factor of the eigenform
+`D.form i`, which has Atkin–Lehner eigenvalue `ε`" would be spoofable by
+permuting labels, exactly as `isTorsion_factor_of_heckeIsotypic`'s
+DEGENERACY AUDIT describes — and at `169` that would be fatal rather than
+merely weak, since the rank-carrying factor is the `+1` one and a
+label-permuted datum would let a leaf assert that it is torsion.  `Plus`
+carries no such risk: `descend_plus`/`descend_minus` are equations about
+`w_J` itself.
+
+**Quantified over every test object**, not over `ℚ`-points.  On
+`ℚ`-points alone a factor with `2 · A i(ℚ) = 0` would satisfy both
+clauses at once and the sign would not be determined; over every test
+object it is.
+
+**Not vacuous, and not trivially satisfiable.**  `Plus := fun _ => True`
+forces `u i ∘ w_J = u i` for every `i`, which with `finite_ker` forces
+`w_J` to be the identity up to a finite group — false for `w_169`, whose
+minus part is `5`-dimensional. -/
+structure IsAtkinLehnerDescent {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} {h : IsX0Compactification N strX strY jY}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o} (D : IsHeckeIsotypicDecomposition N h jac)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr) where
+  /-- the factors on which the Atkin–Lehner operator acts as `+1` -/
+  Plus : D.idx → Prop
+  /-- on a `+1` factor, `u i ∘ w_J = u i` -/
+  descend_plus : ∀ (i : D.idx), Plus i → ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ}
+      (x : RelPoint jstr g),
+    RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post wJ hwJ x)
+      = RelPoint.post (D.u i) (D.u_comp i) x
+  /-- on a `−1` factor, `u i ∘ w_J = − u i` -/
+  descend_minus : ∀ (i : D.idx), ¬ Plus i → ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ}
+      (x : RelPoint jstr g),
+    RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post wJ hwJ x)
+      = (D.abA i).neg (RelPoint.post (D.u i) (D.u_comp i) x)
+
+/-- **EICHLER–SHIMURA, ADAPTED TO THE ATKIN–LEHNER INVOLUTION: an
+isotypic decomposition of `J_0(N)` on which `w_N` acts factorwise by
+`±1`** (sorry leaf, 2026-07-27) — LEVEL-GENERIC, and the strengthening of
+`exists_heckeIsotypicDecomposition` that the anti-invariant argument
+needs.
+
+TRUE.  `w_N` normalises `Γ_0(N)` and commutes with `T_n` for
+`(n, N) = 1`, so it preserves each anemic-isotypic piece of `J_0(N)`;
+`w_N² = 1` makes it an involution there, and an involution of an abelian
+variety splits it up to isogeny into its `+1` and `−1` parts.  Refining
+`exists_heckeIsotypicDecomposition`'s factors along that splitting gives
+the datum: `isotypic` survives because the two parts are still isotypic
+for the same anemic system, `cover` survives because a split factor keeps
+its label on at least one part, `u_surj` survives because the projections
+are surjective, and `finite_ker` survives because the joint kernel only
+shrinks under refinement.
+
+**IT MUST PRODUCE `D` ITSELF, and this is not bookkeeping.**  The
+statement "for EVERY `D` there is an Atkin–Lehner descent" is **FALSE**:
+at a level with oldforms, a newform `g` of level `M ∣ N` contributes
+`σ₀(N/M)` copies of `A_g`, and `w_N` PERMUTES the degeneracy copies
+rather than acting on each by a scalar — so a decomposition chosen with
+no reference to `w_N` generally admits no sign.  Only an adapted
+decomposition does, which is why `D` is existentially bound here.  (At
+`N = 169` the point is moot — `genus X_0(13) = genus X_0(1) = 0`, so
+`S_2(Γ_0(169))` is entirely new and every decomposition is adapted — but
+the leaf is stated level-generically and the distinction is real one
+level up.)
+
+**What proving it needs**: everything
+`exists_heckeIsotypicDecomposition` needs, plus the action of `w_N` on
+`J_0(N)` through the moduli description and Poincaré reducibility for the
+`±1` splitting.  Both are absent at this pin, and this leaf is strictly
+stronger than that one, so a prover should close that one first. -/
+theorem exists_heckeIsotypicDecomposition_atkinLehnerDescent (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    ∃ D : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D wJ hwJ) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV AT `169`: every `w_169 = −1` ISOGENY FACTOR of
+`J_0(169)` has torsion Mordell–Weil group** (sorry leaf, 2026-07-27) —
+LEVEL-SPECIFIC, and the ONLY arithmetic input left under
+`finite_antiInvariant_jacobian_x0OneSixtyNine`.
+
+TRUE, and **unconditionally so** — no BSD, no `p`-adic integration.  The
+minus part of `J_0(169)` is `5`-dimensional, isogenous to the product of
+the two `w_169 = −1` newform factors of dimensions `2` and `3`, and every
+embedding of both orbits has `L(f^σ, 1) ≠ 0`; Kolyvagin–Logachev then
+gives rank `0`.  The full PARI/GP reconnaissance — dimensions, eigenvalue
+pattern, `L`-values, and the `g(X_0(169)/w_169) = 3` cross-check — is
+recorded on `finite_antiInvariant_jacobian_x0OneSixtyNine` below and was
+recomputed for this leaf on 2026-07-27.
+
+**Why this is stated about `A i` and not about the eigenform labelling
+it.**  A leaf reading "the factor labelled by a `w_N = −1` eigenform is
+torsion" would be FALSE, by the label-permutation counterexample recorded
+in `isTorsion_factor_of_heckeIsotypic`'s docstring: with
+`IsHeckeIsotypicDecomposition.T` unpinned, `D.form` is not pinned either,
+and at `169` a permuted label would make the leaf assert that the
+rank-`3` PLUS factor is torsion.  The hypothesis used here is
+`¬ E.Plus i`, which is an equation about `w_J` itself
+(`IsAtkinLehnerDescent.descend_minus`) and cannot be spoofed that way.
+
+**`_hal` and `_hchar` are load-bearing** for the same reason as on the
+consumer: they are what make `wJ` the Atkin–Lehner operator, hence what
+make "the `−1` part" the `5`-dimensional rank-`0` piece rather than an
+arbitrary anti-invariant subvariety.  Without them, `w := 𝟙 X` and
+`wJ := −1` would make EVERY factor a `−1` factor and the statement would
+assert `rank J_0(169)(ℚ) = 0`, which is false.
+
+**What proving it needs**: Kolyvagin–Logachev — the Heegner-point Euler
+system and Gross–Zagier — together with the identification of the `−1`
+part with the span of the `w_169 = −1` newform factors, which is the
+Eichler–Shimura half.  The analytic seam `L(f, 1) ≠ 0` cannot be split
+off here for the reason recorded on the consumer: it needs `T` pinned. -/
+theorem isTorsion_minusFactor_x0OneSixtyNine {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition 169 hX jac) (E : IsAtkinLehnerDescent D wJ hwJ)
+    (i : D.idx) (_hi : ¬ E.Plus i) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV AT `169`, WITH MORDELL–WEIL FACTORED OUT: every
+`w_169`-ANTI-INVARIANT rational point of `J_0(169)` is TORSION** (PROVEN
+2026-07-27 over the two leaves immediately above) — the exact analogue of
+`isTorsion_jacobian_of_kenkuLevel`.
+
+This is the whole arithmetic content of
+`finite_antiInvariant_jacobian_x0OneSixtyNine` below; the passage from
+torsion to finite is Mordell–Weil (`fg_relPoint_of_abelianScheme`) plus
+the structure theorem, and is PROVEN there.  Separating them is the same
+seam `isTorsion_jacobian_of_kenkuLevel` / `finite_jacobian_of_kenkuLevel`
+sits on, and for the same reason: Mordell–Weil is a general theorem about
+abelian schemes over `ℚ` with nothing to do with modular curves, and
+keeping it here would make one leaf carry two unrelated theories.
+
+TRUE, and **unconditionally so** — no BSD, no `p`-adic integration.  See
+the docstring of the consumer below for the PARI/GP reconnaissance that
+establishes it: `S_2(Γ_0(169))` is `8`-dimensional and entirely new,
+splitting into three newform orbits of dimensions `2, 3, 3` with
+`w_169`-eigenvalues `−1, −1, +1`; every embedding of both `−1` orbits has
+`L(f^σ, 1) ≠ 0`, while the `+1` orbit vanishes to order `1` at each of
+its three embeddings.  So all of `rank J_0(169)(ℚ) = 3` sits in the PLUS
+part and the MINUS part has rank `0`, which is exactly this statement.
+
+**Why TORSION is the right conclusion and not finiteness.**  Rank `0`
+and finiteness are the same statement only *given* Mordell–Weil.  Stated
+as torsion, this is a statement about each anti-invariant point
+separately, which is what the Euler-system argument actually produces.
+
+**Hypotheses.**  `_hal` and `_hw2` are load-bearing for the reasons given
+on the consumer; `_hchar` is what makes `wJ` the Atkin–Lehner operator
+`w_*` rather than an arbitrary endomorphism, by the uniqueness half of
+`IsJacobianOf.existsUnique_mapEnd`.
+
+#### The proof, and where the `+1` factors go
+
+Take an adapted isotypic decomposition `D` with an Atkin–Lehner descent
+`E` (`exists_heckeIsotypicDecomposition_atkinLehnerDescent`), and let `z`
+be anti-invariant.  For each factor:
+
+* if `E.Plus i`, then `u i z = u i (w_J z) = u i (−z) = − u i z`, so
+  `2 • u i z = 0`.  **No arithmetic input at all** — the `+1` factors,
+  which at `169` are exactly where all of `rank J_0(169)(ℚ) = 3` lives,
+  are discharged by the anti-invariance of `z` alone.
+* if `¬ E.Plus i`, then `u i z` is torsion because the whole factor is
+  (`isTorsion_minusFactor_x0OneSixtyNine`).
+
+`D.finite_ker` then makes `z` itself torsion
+(`isOfFinAddOrder_of_finite_jointKer`).  This is what isolates the
+Kolyvagin–Logachev input to the `−1` factors, which is the sharpest
+form available while `IsHeckeIsotypicDecomposition.T` is unpinned. -/
+theorem isTorsion_antiInvariant_jacobian_x0OneSixtyNine {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    ∀ z : RelPoint jstr (𝟙 SpecQ), RelPoint.post wJ hwJ z = ab.neg z →
+      IsOfFinAddOrder z := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  intro z hz
+  obtain ⟨D, ⟨E⟩⟩ := exists_heckeIsotypicDecomposition_atkinLehnerDescent 169 hX jac
+    w hw _hw2 _hal wJ hwJ _hchar
+  letI := D.fintypeIdx
+  letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+    fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+  set φ : ∀ i : D.idx, RelPoint jstr (𝟙 SpecQ) →+ RelPoint (D.astr i) (𝟙 SpecQ) :=
+    fun i => AddMonoidHom.mk' (fun x => RelPoint.post (D.u i) (D.u_comp i) x)
+      (fun x y => D.u_add i x y)
+  refine isOfFinAddOrder_of_finite_jointKer (φ := φ) D.finite_ker ?_
+  intro i
+  by_cases hs : E.Plus i
+  · -- a `+1` factor: the anti-invariance of `z` collapses to `2 • u i z = 0`,
+    -- with no arithmetic input at all.
+    have h1 : φ i (RelPoint.post wJ hwJ z) = φ i z := E.descend_plus i hs z
+    rw [hz] at h1
+    have h2 : -(φ i z) = φ i z := (map_neg (φ i) z).symm.trans h1
+    refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨2, by norm_num, ?_⟩
+    rw [two_nsmul]
+    exact add_eq_zero_iff_eq_neg.mpr h2.symm
+  · exact isTorsion_minusFactor_x0OneSixtyNine hX jac w hw _hw2 _hal wJ hwJ _hchar D E i
+      hs (φ i z)
+
 /-- **Kolyvagin–Logachev at `169`: the `w_169`-ANTI-INVARIANT subgroup of
-`J_0(169)(ℚ)` is finite** (sorry node, introduced 2026-07-27) —
+`J_0(169)(ℚ)` is finite** (PROVEN 2026-07-27 from the torsion leaf above
+and Mordell–Weil; introduced as a sorry node earlier the same day) —
 LEVEL-SPECIFIC, and the exact analogue of
 `isTorsion_jacobian_of_kenkuLevel`.
 
@@ -36765,13 +37215,64 @@ with no geometry in it, and the assembly recovers `Finite A(ℚ)` by
 `J_0(N)` into modular abelian varieties, compatibly with the
 Atkin–Lehner operator), and Kolyvagin–Logachev — the same two theories
 `isTorsion_jacobian_of_lFunction_ne_zero` records as missing, plus the
-Atkin–Lehner eigenspace decomposition.  The right further cut is the one
-that file already uses: introduce the analytic input
-`L(f, 1) ≠ 0 for every eigenform with w_N f = −f` as a hypothesis, and
-split off the numerics as a separate level-specific leaf.  That cut is
-not taken here because it needs an Atkin–Lehner operator on
-`CuspForm (Gamma0GL N) 2`, which does not exist at this pin — refute
-with `grep -rn "atkinLehner\|AtkinLehner" Fermat/FLT/ModularCurve/`. -/
+Atkin–Lehner eigenspace decomposition.  Both now sit on the leaf
+`isTorsion_antiInvariant_jacobian_x0OneSixtyNine` above; what is PROVEN
+here is only the passage from rank `0` to finiteness.
+
+#### The further ANALYTIC cut, and why its recorded blocker is WRONG
+
+The previous version of this docstring proposed introducing
+`L(f, 1) ≠ 0 for every eigenform with w_N f = −f` as a hypothesis and
+splitting off the numerics, mirroring
+`lFunction_apply_one_ne_zero_of_kenkuLevel`, and recorded the cut as
+blocked "because it needs an Atkin–Lehner operator on
+`CuspForm (Gamma0GL N) 2`, which does not exist at this pin".
+
+**That blocker does not survive checking.**  Stating "`f` has
+Atkin–Lehner eigenvalue `ε`" needs no OPERATOR — only the slash action,
+which mathlib has and which `Fermat/FLT/Modularity/HeckeOperator.lean`
+already uses to build `heckeOp`.  The predicate is
+`⇑f ∣[(2 : ℤ)] W_N = ε • ⇑f` with
+`W_N = Matrix.GeneralLinearGroup.mkOfDetNeZero !![0, -1; (N : ℝ), 0]`,
+an equation between FUNCTIONS `ℍ → ℂ`; nothing has to be proved about
+`f ∣ W_N` being again a cusp form, which is the only part an operator
+would supply.  So the cut is expressible.
+
+**The real blocker is the one `isTorsion_factor_of_heckeIsotypic`
+records, and it is a FALSITY risk rather than an expressibility one.**
+Any cut of this shape must route through an isotypic decomposition of
+`J_0(169)`, and `IsHeckeIsotypicDecomposition.T` is not pinned to be the
+genuine Hecke correspondences.  With `T` unpinned the eigenform LABEL
+`D.form i` is not pinned either, so a leaf of the form "every factor
+labelled by a `w_N = −1` eigenform has torsion `ℚ`-points" is FALSE by
+exactly the label-permutation counterexample recorded there — and here it
+would be fatal rather than merely weak, because `J_0(169)(ℚ)` has rank
+`3` and the rank-carrying factor is the `+1` one.  A safe version has to
+read the sign off the GEOMETRY (how `w_J` acts on the factor) rather than
+off the label.
+
+So the cut that IS available — and it is the one TAKEN above — extends
+the isotypic datum by an Atkin–Lehner DESCENT (`u i ∘ w_J = ± u i`,
+quantified over every test object, with the sign as data), observes that
+a `+1` factor contributes only `2`-torsion to the anti-invariant part
+with no arithmetic input at all, and leaves "every `−1` factor has
+torsion `ℚ`-points" as the single level-specific leaf.  The analytic seam
+`L(f, 1) ≠ 0` is still NOT available, and will not be until `T` is
+pinned.
+
+#### The cut, TAKEN 2026-07-27
+
+| leaf | theory | level |
+|---|---|---|
+| `exists_heckeIsotypicDecomposition_atkinLehnerDescent` | Eichler–Shimura, adapted to `w_N` | generic |
+| `isTorsion_minusFactor_x0OneSixtyNine` | Kolyvagin–Logachev on the `−1` factors | `169` |
+
+together with two PROVEN assemblies —
+`isTorsion_antiInvariant_jacobian_x0OneSixtyNine` (the `+1` factors, and
+the joint-kernel argument) and this statement (Mordell–Weil plus the
+structure theorem).  Note what the split buys: the `+1` factors are
+exactly where all of `rank J_0(169)(ℚ) = 3` lives, and they are now
+discharged by pure algebra. -/
 theorem finite_antiInvariant_jacobian_x0OneSixtyNine {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY) {jstr : J ⟶ SpecQ}
@@ -36781,8 +37282,11 @@ theorem finite_antiInvariant_jacobian_x0OneSixtyNine {X Y J : Scheme.{0}}
     (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
     (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
       RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
-    Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z} :=
-  sorry
+    Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z} := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  haveI := fg_relPoint_of_abelianScheme ab
+  exact finite_subtype_of_fg_of_forall_isOfFinAddOrder _
+    (isTorsion_antiInvariant_jacobian_x0OneSixtyNine hX jac w hw _hw2 _hal wJ hwJ _hchar)
 
 /-- **The Atkin–Lehner involution `w_169` and its Prym, an abelian
 subvariety of `J_0(169)` with finite `ℚ`-points** (PROVEN 2026-07-27
