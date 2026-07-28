@@ -739,6 +739,13 @@ public import Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+-- The `norm_num` extension for `Nat.Prime`.  `not_twoStableLines_of_cmEndomorphism`
+-- needs `Nat.Prime p` for each of `p = 11, 19, 43, 67, 163`, and without this
+-- extension the only route is `decide`, which overflows `maxRecDepth` at `163`
+-- (checked 2026-07-28: `decide` succeeds at `11, 19, 43, 67` and needs
+-- `maxRecDepth 8000` at `163`).  A resource bump is the wrong tool for a decision
+-- procedure that has a norm_num extension upstream; this is that extension.
+public import Mathlib.Tactic.NormNum.Prime
 
 @[expose] public section
 
@@ -15555,6 +15562,174 @@ theorem exists_cmEndomorphism_of_mem_isolatedCMJInvariants {p : ℕ}
           φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P :=
   sorry
 
+/-! #### `ψ = 2φ − 1 = √−p`: the shared arithmetic of both CM leaves
+
+(2026-07-28.)  Everything in this block is PROVEN and is consumed by
+`not_twoStableLines_of_cmEndomorphism` below.  It is the part of the Serre
+argument that is *not* CM theory: the passage from the minimal polynomial of
+`φ = (1 + √−p)/2` to the endomorphism `ψ = 2φ − 1` with `ψ² = [−p]`, and the
+computation of its degree.  A successor attacking `not_stable_of_cmEndomorphism`
+(the `q ≠ p` branch) should reuse it verbatim — the same `ψ` is what runs the
+inert/split trichotomy there.
+-/
+
+/-- **`ψ := 2φ − 1`, the square root of `−p` inside `End(E_ℚ̄)`** (PROVEN
+2026-07-28).
+
+`φ` is the CM endomorphism `(1 + √−p)/2` produced by
+`exists_cmEndomorphism_of_mem_isolatedCMJInvariants`, presented by its minimal
+polynomial `φ² − φ + (p+1)/4 = 0`.  Then `ψ = 2φ − 1` satisfies
+`ψ² = 4φ² − 4φ + 1 = 1 − 4·(p+1)/4 = −p`, so `ψ = √−p` and `𝔭 = (ψ)` is the
+ramified prime of `O_K = ℤ[φ]` above `p`.
+
+Stated as a bare `AddMonoidHom` rather than as an element of `End (E⁄ℚ̄)`, to
+match the shape in which `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`
+hands `φ` over; `isIsogeny_cmSqrt` supplies the geometry separately. -/
+noncomputable def cmSqrt (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point) :
+    (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+  φ + φ - AddMonoidHom.id _
+
+@[simp] theorem cmSqrt_apply (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) : cmSqrt E φ P = φ P + φ P - P := rfl
+
+/-- **`ψ = 2φ − 1` is again an isogeny** (PROVEN 2026-07-28).
+
+Note that `IsIsogeny.add` carries `[IsAlgClosed F]` — it is FALSE without it,
+see the FALSITY AUDIT in `EllipticCurve/Isogeny.lean` — which is exactly why
+this lives over `ℚ̄` and not over `ℚ`.  The `haveI` is the standard spelling of
+"a base change of an elliptic curve is elliptic" used throughout
+`EllipticCurve/TorsionCard.lean`. -/
+theorem isIsogeny_cmSqrt (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point}
+    (hφ : WeierstrassCurve.IsIsogeny φ) : WeierstrassCurve.IsIsogeny (cmSqrt E φ) := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  have h : cmSqrt E φ = φ + φ + (-(AddMonoidHom.id _)) := by
+    ext P; simp [cmSqrt, sub_eq_add_neg]
+  rw [h]
+  exact (hφ.add hφ).add (WeierstrassCurve.IsIsogeny.id.neg)
+
+/-- **`ψ² = [−p]`** (PROVEN 2026-07-28): pure `AddMonoidHom` algebra out of the
+minimal polynomial of `φ`, with no geometry at all.
+
+`hm` is the exactness of the NATURAL division `(p+1)/4`.  It holds at all five
+values (`11, 19, 43, 67, 163 ↦ 3, 5, 11, 17, 41`, all `≡ 3 mod 4`) and it is
+precisely what turns `1 − 4·((p+1)/4)` into `−p`; at a `p ≢ 3 mod 4` the
+identity would be off by the truncation and the lemma would be false, which is
+why it is a hypothesis rather than a `norm_num` step inside. -/
+theorem cmSqrt_comp_cmSqrt {p : ℕ} (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
+    (hm : 4 * ((p + 1) / 4) = p + 1)
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) :
+    cmSqrt E φ (cmSqrt E φ P) = -(p • P) := by
+  set m : ℕ := (p + 1) / 4 with hmdef
+  have h1 : ∀ Q, φ (φ Q) = φ Q - m • Q := fun Q => eq_sub_of_add_eq (hφsq Q)
+  have h2 : φ (cmSqrt E φ P) = φ P - (m • P + m • P) := by
+    rw [cmSqrt_apply, map_sub, map_add, h1]; abel
+  have h4 : (4 * m) • P = m • P + m • P + m • P + m • P := by
+    rw [show 4 * m = m + m + m + m by ring, add_nsmul, add_nsmul, add_nsmul]
+  have hp4 : p • P = m • P + m • P + m • P + m • P - P := by
+    have h5 : (p + 1) • P = (4 * m) • P := by rw [hm]
+    rw [succ_nsmul, h4] at h5
+    exact eq_sub_of_add_eq h5
+  rw [cmSqrt_apply, h2, cmSqrt_apply, hp4]
+  abel
+
+/-- **`deg ψ = p`, i.e. `#ker ψ = p`** (PROVEN 2026-07-28).
+
+This is the statement that `𝔭 = (ψ)` is a PRIME of `O_K` above `p` rather than
+`p` itself, in the only form the Galois argument needs.  The proof is the
+multiplicativity of the degree read against the count of the `p`-torsion:
+
+    (deg ψ)² = deg (ψ ∘ ψ) = deg [−p] = #E[p] = p²,   so   deg ψ = p,
+
+using `Isogeny.degree_comp` (`EllipticCurve/Isogeny.lean`) and
+`WeierstrassCurve.n_torsion_card` (`EllipticCurve/Torsion.lean`).  Since
+`Isogeny.degree` *is* the cardinality of the kernel, the conclusion is literally
+`#ker ψ = p`.
+
+**Why this is load-bearing and not bookkeeping.**  It is the one fact that
+forbids `ψ` from vanishing on all of `E[p]`, which is the *only* way both of two
+distinct stable lines could be `ψ`-stable — i.e. the only gap in the argument of
+`not_twoStableLines_of_cmEndomorphism`.  Note `ψ|E[p] = 0` is NOT excluded by
+the algebra alone: `2φ = 1` on `E[p]` is numerically consistent with
+`φ² = φ − (p+1)/4` there (both sides read `1/4` mod `p`), so the degree really
+is needed.
+
+`[−p] ≠ 0` is obtained from the torsion count as well: if every point were
+`p`-torsion then `#E(ℚ̄)` would be both `p²` and `p⁴`.
+
+`hp` is consumed only through `0 < p` and `2 ≤ p`; no primality is used here. -/
+theorem card_ker_cmSqrt {p : ℕ} (hp : p.Prime) (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point}
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
+    (hm : 4 * ((p + 1) / 4) = p + 1) :
+    Nat.card (AddMonoidHom.ker (cmSqrt E φ)) = p := by
+  haveI hell : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  have hsq := cmSqrt_comp_cmSqrt E φ hφsq hm
+  -- `#E[n] = n²`
+  have htor : ∀ n : ℕ, 0 < n →
+      Nat.card {P : (E⁄(AlgebraicClosure ℚ)).Point // n • P = 0} = n ^ 2 := by
+    intro n hn
+    have hne : ((n : AlgebraicClosure ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr hn.ne'
+    have h := WeierstrassCurve.n_torsion_card (E := E⁄(AlgebraicClosure ℚ)) hne
+    rw [← h]
+    exact Nat.card_congr (Equiv.subtypeEquivRight (fun P => by
+      rw [Submodule.mem_torsionBy_iff, natCast_zsmul]
+      exact Iff.rfl))
+  -- multiplication by `p` is not the zero map
+  have hnz : ∃ P : (E⁄(AlgebraicClosure ℚ)).Point, p • P ≠ 0 := by
+    by_contra hcon
+    have hc : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, p • P = 0 := fun P => by
+      by_contra h; exact hcon ⟨P, h⟩
+    have h1 := htor p hp.pos
+    have h2 := htor (p ^ 2) (pow_pos hp.pos 2)
+    have e1 : Nat.card {P : (E⁄(AlgebraicClosure ℚ)).Point // p • P = 0}
+        = Nat.card ((E⁄(AlgebraicClosure ℚ)).Point) :=
+      Nat.card_congr (Equiv.subtypeUnivEquiv hc)
+    have e2 : Nat.card {P : (E⁄(AlgebraicClosure ℚ)).Point // (p ^ 2) • P = 0}
+        = Nat.card ((E⁄(AlgebraicClosure ℚ)).Point) :=
+      Nat.card_congr (Equiv.subtypeUnivEquiv (fun P => by
+        simp [pow_two, mul_nsmul, hc]))
+    rw [e1] at h1
+    rw [e2] at h2
+    have heq : p ^ 2 = (p ^ 2) ^ 2 := h1.symm.trans h2
+    have hx : 0 < p ^ 2 := pow_pos hp.pos 2
+    have hmm : p ^ 2 * 1 = p ^ 2 * p ^ 2 := by rw [mul_one]; exact heq.trans (pow_two _)
+    have h1' : (1 : ℕ) = p ^ 2 := Nat.eq_of_mul_eq_mul_left hx hmm
+    have hb : 4 ≤ p ^ 2 := by nlinarith [hp.two_le]
+    omega
+  obtain ⟨P₀, hP₀⟩ := hnz
+  have hψψ : (cmSqrt E φ).comp (cmSqrt E φ) ≠ 0 := by
+    intro hcon
+    apply hP₀
+    have h := congrArg (fun f : (E⁄(AlgebraicClosure ℚ)).Point →+
+      (E⁄(AlgebraicClosure ℚ)).Point => f P₀) hcon
+    simp only [AddMonoidHom.coe_comp, Function.comp_apply, AddMonoidHom.zero_apply] at h
+    rw [hsq P₀, neg_eq_zero] at h
+    exact h
+  have hψ0 : cmSqrt E φ ≠ 0 := fun hcon => hψψ (by rw [hcon]; ext P; simp)
+  set Ψ : WeierstrassCurve.Isogeny (E⁄(AlgebraicClosure ℚ)) (E⁄(AlgebraicClosure ℚ)) :=
+    ⟨cmSqrt E φ, isIsogeny_cmSqrt E hφ⟩ with hΨ
+  have hd : (Ψ.comp Ψ).degree = Ψ.degree * Ψ.degree := WeierstrassCurve.Isogeny.degree_comp Ψ Ψ
+  have hd2 : (Ψ.comp Ψ).degree = p ^ 2 := by
+    rw [WeierstrassCurve.Isogeny.degree_of_ne_zero (φ := Ψ.comp Ψ) hψψ, ← htor p hp.pos]
+    exact Nat.card_congr (Equiv.subtypeEquivRight (fun P => by
+      simp only [AddMonoidHom.mem_ker, WeierstrassCurve.Isogeny.comp_toHom,
+        AddMonoidHom.coe_comp, Function.comp_apply]
+      rw [hsq P, neg_eq_zero]))
+  have hdeg : Ψ.degree = p := by
+    have h : Ψ.degree * Ψ.degree = p * p := by rw [← hd, hd2]; ring
+    exact Nat.mul_self_inj.mp h
+  rw [← hdeg, WeierstrassCurve.Isogeny.degree_of_ne_zero (φ := Ψ) hψ0]
+
 /-- **SERRE: a curve over `ℚ` with CM by the maximal order of `ℚ(√−p)`
 has no `Γ_ℚ`-stable subgroup of prime order `q ≠ p`** (sorry leaf, cut
 2026-07-27 out of `not_stable_of_mem_isolatedCMJInvariants`; the
@@ -15827,9 +16002,95 @@ of four enumerations.  The same correction is recorded at
 `FreyCurve/MazurTorsion.lean`'s `MazurIsogenyPrimeJ` section note.
 -/
 
+/-- **THE CM IMAGE LOWER BOUND AT THE RAMIFIED PRIME: `Γ_K` does not act on
+`E[p]` by scalars** (sorry leaf, cut 2026-07-28 out of
+`not_twoStableLines_of_cmEndomorphism`; item 4 of that node's theory list, and
+the ONLY place `h(−p) = 1` is consumed).
+
+Read the statement as follows.  `σ` ranges over the elements of `Γ_ℚ` that
+COMMUTE with `φ`; since `σφσ⁻¹ ∈ {φ, 1 − φ}` and `φ ∉ ℤ`, those are exactly the
+elements of `Γ_K`, `K = ℚ(√−p)`.  `u, v` is an arbitrary basis of `E[p]` — two
+`p`-torsion points with `u ≠ 0` and `v ∉ ⟨u⟩`, which for `#E[p] = p²` is the
+same thing.  "Acting by a common integer scalar `c` on `u` and on `v`" is
+exactly "acting as the scalar `c` on `E[p]`.  So the conclusion is:
+
+> the image of `Γ_K` in `Aut(E[p])` is NOT contained in the scalars.
+
+TRUE, by the main theorem of complex multiplication.  `p` ramifies in `K`
+(`p ∣ disc K = −p`), `pO_K = 𝔭²` with `𝔭 = (√−p)`, and `E[p]` is free of rank
+`1` over the Cartan `C = (O_K/pO_K)ˣ ≅ 𝔽_p[ε]ˣ`, of order `p(p−1)`.  Because
+`h(−p) = 1`, `K(E[p])` contains the ray class field of conductor `p`, so the
+image of `Γ_K` in `C` has index dividing `#O_Kˣ · h(−p) = 2 · 1 = 2`.  The
+scalars `𝔽_pˣ ⊆ C` have index `p ≥ 11 > 2`.  Hence the image is not scalar.
+
+**WHY EACH HYPOTHESIS IS LOAD-BEARING.**
+
+* `_hu0 : u ≠ 0` cannot be dropped.  With `u = 0` the statement degenerates to
+  "`⟨v⟩` is not `Γ_K`-stable", and that is FALSE for exactly one line: the
+  ramified Cartan `𝔽_p[ε]ˣ` fixes `⟨ε⟩ = E[𝔭] = ker √−p`.  (That one fixed line
+  is why `19, 43, 67, 163` have a rational `p`-isogeny at all.)
+* `_hφ : IsIsogeny φ` cannot be weakened to a bare `AddMonoidHom`, for the
+  reason recorded on `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`:
+  `X² − X + (p+1)/4` has a root in `M₂(Ẑ)`, so every elliptic curve over `ℚ`
+  carries an abstract group endomorphism satisfying `_hφsq`, and the commutant
+  of an abstract such `φ` is not `Γ_K`.
+* `_hp` is used through `p ≡ 3 mod 4` (so that `ℤ[φ]` is the MAXIMAL order and
+  the Cartan is `(O_K/p)ˣ`) and through `h(−p) = 1` (the index bound).  A
+  successor may honestly widen it to "`p` prime, `p ≡ 3 mod 4`, `h(−p) = 1`,
+  `p > 2`"; widening further is a falsification.  Unlike the `q ≠ p` sibling,
+  `p ≡ 3 mod 8` is NOT needed — that hypothesis exists only to put `q = 2` in
+  the inert branch, and `q = 2` does not arise at `q = p`.
+
+**NOT VACUOUS.**  The identity of `Γ_ℚ` commutes with `φ` and acts by the
+scalar `1`, so the universally quantified statement being negated is not
+vacuously false for silly reasons; what is being asserted is that SOME
+commuting `σ` fails to be scalar.
+
+**WHAT PROVING IT NEEDS** (this is items 1–4 of the list on
+`not_stable_of_cmEndomorphism`, with item 3 specialised to the ramified prime):
+
+1. the Galois action on `End(E_ℚ̄)` by `σ ↦ σ ∘ φ ∘ σ⁻¹`, by ring
+   automorphisms;
+2. `End_ℚ(E) = ℤ`, equivalently that `K` is the exact field of definition of
+   the endomorphisms (*ATAEC* II.2.2) — this is what identifies the commutant
+   of `φ` with `Γ_K`;
+3. `E[p]` as a free rank-`1` `O_K/pO_K`-module, giving the Cartan
+   `𝔽_p[ε]ˣ` at the RAMIFIED prime;
+4. the CM-theoretic lower bound on the image of `Γ_K` in `C` (index dividing
+   `#O_Kˣ · h(−p)`), which is the only consumer of `h(−p) = 1`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve `E/ℚ` with CM by `O_{−p}`
+for one of the five `p` whose `p`-division field `ℚ(E[p])` has
+`[ℚ(E[p]) : K] ∣ p−1` with `Γ_K` acting by scalars — equivalently a CM curve
+all of whose `p+1` lines in `E[p]` are `Γ_K`-stable. -/
+theorem not_forall_galoisScalar_of_cmEndomorphism {p : ℕ}
+    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hφ : WeierstrassCurve.IsIsogeny φ)
+    (_hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
+    (u v : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hu : (p : ℤ) • u = 0) (_hv : (p : ℤ) • v = 0)
+    (_hu0 : u ≠ 0) (_huv : v ∉ AddSubgroup.zmultiples u) :
+    ¬ ∀ σ : Field.absoluteGaloisGroup ℚ,
+        (∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+          φ (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+            = WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ P)) →
+        ∃ c : ℤ,
+          WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom u = c • u ∧
+          WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom v = c • v :=
+  sorry
+
 /-- **The ramified branch: a curve over `ℚ` with CM by the maximal order of
-`ℚ(√−p)` has at most ONE `Γ_ℚ`-stable line of order `p`** (sorry leaf, new
-2026-07-28; the GALOIS-IMAGE half at `q = p`, uniform in `p`).
+`ℚ(√−p)` has at most ONE `Γ_ℚ`-stable line of order `p`** (PROVEN 2026-07-28
+over `not_forall_galoisScalar_of_cmEndomorphism` and the `ψ = 2φ − 1` block
+above; introduced as a single sorry leaf earlier the same day.  The
+GALOIS-IMAGE half at `q = p`, uniform in `p`).
 
 The statement is verbatim `not_stable_of_cmEndomorphism` with `q` specialised
 to `p` — the case that leaf's hypothesis `hpq` throws away — and strengthened
@@ -15884,30 +16145,134 @@ such a `φ` AND a `Γ_ℚ`-stable line of order `p` (`ellisomat` returns
 jointly realised and the leaf really is asserting that the SECOND line cannot
 exist.  It is not closable by refuting its own hypotheses.
 
+**THE CUT, 2026-07-28, and what it leaves open.**  Steps 1–3 above are now
+PROVEN here; only step 4 survives, as
+`not_forall_galoisScalar_of_cmEndomorphism`.  Concretely the proof below is:
+
+* `ψ := 2φ − 1` with `ψ² = [−p]` and `deg ψ = p` — `cmSqrt`,
+  `cmSqrt_comp_cmSqrt`, `card_ker_cmSqrt`, all PROVEN above;
+* `σ` commutes with `φ` ⟹ `σ` commutes with `ψ`, since `σ` is additive;
+* at most ONE of `⟨g₁⟩, ⟨g₂⟩` can be `ψ`-stable.  A `ψ`-stable line of order
+  `p` is killed by `ψ` (its scalar `c` has `c² ≡ 0 mod p`), so two of them
+  would force `⟨g₁⟩ = ker ψ = ⟨g₂⟩` against `hne` — this is exactly where
+  `#ker ψ = p` is spent;
+* so some stable `⟨g⟩` has `k := ψ g ∉ ⟨g⟩`, and then `(g, k)` is a basis of
+  `E[p]` on which every `σ ∈ Γ_K` acts by ONE scalar: `σ g = c • g` because
+  `⟨g⟩` is stable, and `σ k = σ(ψ g) = ψ(σ g) = c • k` for free.  That is the
+  Serre step, and it is what `not_forall_galoisScalar_of_cmEndomorphism`
+  contradicts.
+
+Note the CM lower bound is used ONLY through that last bullet: nothing else in
+this node needs `h(−p) = 1`, and nothing needs the classical
+`End(E/L) = ℤ + pO_K` route recorded above (that remains an alternative proof
+of the LEAF, not of this node).
+
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with an
 isogeny `φ` of `E_ℚ̄` satisfying `φ² − φ + (p+1)/4 = 0` for one of the five
 `p`, together with two independent rational `p`-isogenies out of `E` —
 equivalently a rational point of `X_0(p²)` whose curve has CM by `O_{−p}`. -/
 theorem not_twoStableLines_of_cmEndomorphism {p : ℕ}
-    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ))
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hφ : WeierstrassCurve.IsIsogeny φ)
-    (_hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
       φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
     (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
-    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₁)
-    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₂) :
-    False :=
-  sorry
+    False := by
+  have hpp : p.Prime := by fin_cases hp <;> norm_num
+  have hm : 4 * ((p + 1) / 4) = p + 1 := by fin_cases hp <;> norm_num
+  have hsq := cmSqrt_comp_cmSqrt E φ hφsq hm
+  have hker : Nat.card (AddMonoidHom.ker (cmSqrt E φ)) = p :=
+    card_ker_cmSqrt hpp E hφ hφsq hm
+  -- STEP 1: `σ` commutes with `φ` ⟹ `σ` commutes with `ψ = 2φ − 1`.
+  have hcomm : ∀ (σ : Field.absoluteGaloisGroup ℚ),
+      (∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+        φ (WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+          = WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ P)) →
+      ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+        cmSqrt E φ (WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+          = WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (cmSqrt E φ P) := by
+    intro σ hσ P
+    rw [cmSqrt_apply, cmSqrt_apply, hσ, map_sub, map_add]
+  -- STEP 2: the Serre step.  A `Γ_ℚ`-stable line `⟨g⟩` with `ψ g ∉ ⟨g⟩` makes
+  -- `(g, ψ g)` a basis of `E[p]` on which every `σ ∈ Γ_K` is the SAME scalar.
+  have key : ∀ g : (E⁄(AlgebraicClosure ℚ)).Point, addOrderOf g = p →
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) →
+      cmSqrt E φ g ∉ AddSubgroup.zmultiples g → False := by
+    intro g hg hstab hout
+    have hgp : (p : ℤ) • g = 0 := by
+      rw [natCast_zsmul, ← hg]; exact addOrderOf_nsmul_eq_zero g
+    have hg0 : g ≠ 0 := by
+      intro hcon
+      rw [hcon, addOrderOf_zero] at hg
+      fin_cases hp <;> omega
+    refine not_forall_galoisScalar_of_cmEndomorphism hp E φ hφ hφsq g (cmSqrt E φ g)
+      hgp ?_ hg0 hout ?_
+    · rw [← map_zsmul (cmSqrt E φ), hgp, map_zero]
+    · intro σ hσ
+      obtain ⟨c, hc⟩ := AddSubgroup.mem_zmultiples_iff.mp
+        (hstab σ g (AddSubgroup.mem_zmultiples g))
+      refine ⟨c, hc.symm, ?_⟩
+      rw [← hcomm σ hσ g, ← hc, map_zsmul]
+  -- STEP 3: at most one of the two stable lines can be `ψ`-stable.
+  by_cases h₁ : cmSqrt E φ g₁ ∈ AddSubgroup.zmultiples g₁
+  · by_cases h₂ : cmSqrt E φ g₂ ∈ AddSubgroup.zmultiples g₂
+    · -- both `ψ`-stable ⟹ both killed by `ψ` ⟹ both are `ker ψ`, against `hne`
+      have kill : ∀ g : (E⁄(AlgebraicClosure ℚ)).Point, addOrderOf g = p →
+          cmSqrt E φ g ∈ AddSubgroup.zmultiples g →
+          (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point)
+            = (AddMonoidHom.ker (cmSqrt E φ) : Set (E⁄(AlgebraicClosure ℚ)).Point) := by
+        intro g hg hmem
+        obtain ⟨c, hc⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+        have hz : cmSqrt E φ g = 0 := by
+          have h2 : (c * c) • g = 0 := by
+            have hh := hsq g
+            rw [← hc, map_zsmul, ← hc, smul_smul] at hh
+            rw [hh, ← hg, addOrderOf_nsmul_eq_zero, neg_zero]
+          have hdvd : (p : ℤ) ∣ c * c := by
+            rw [← hg]; exact addOrderOf_dvd_iff_zsmul_eq_zero.mpr h2
+          have hpc : (p : ℤ) ∣ c := (Int.Prime.dvd_mul' (by exact_mod_cast hpp) hdvd).elim id id
+          have hcg : c • g = 0 := by
+            refine addOrderOf_dvd_iff_zsmul_eq_zero.mp ?_
+            rw [hg]; exact hpc
+          rw [← hc, hcg]
+        have hsub : (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point)
+            ⊆ (AddMonoidHom.ker (cmSqrt E φ) : Set (E⁄(AlgebraicClosure ℚ)).Point) := by
+          intro x hx
+          obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+          show k • g ∈ AddMonoidHom.ker (cmSqrt E φ)
+          rw [AddMonoidHom.mem_ker, map_zsmul, hz]
+          exact smul_zero (A := (E⁄(AlgebraicClosure ℚ)).Point) k
+        haveI : Finite (AddMonoidHom.ker (cmSqrt E φ)) :=
+          (Nat.card_pos_iff.mp (by rw [hker]; exact hpp.pos)).2
+        have ec : (AddMonoidHom.ker (cmSqrt E φ) :
+            Set (E⁄(AlgebraicClosure ℚ)).Point).ncard = p := by
+          rw [← Nat.card_coe_set_eq]; exact hker
+        have eg : (AddSubgroup.zmultiples g :
+            Set (E⁄(AlgebraicClosure ℚ)).Point).ncard = p := by
+          rw [← Nat.card_coe_set_eq, ← hg]; exact Nat.card_zmultiples g
+        exact Set.eq_of_subset_of_ncard_le hsub (by rw [ec, eg]) (Set.toFinite _)
+      exact hne (SetLike.coe_injective ((kill g₁ hg₁ h₁).trans (kill g₂ hg₂ h₂).symm))
+    · exact key g₂ hg₂ hs₂ h₂
+  · exact key g₁ hg₁ hs₁ h₁
 
 /-- **The non-CM rows carry no second `p`-isogeny either** (sorry leaf, new
 2026-07-28; the EXPLICIT-COMPUTATION half at `q = p`).
