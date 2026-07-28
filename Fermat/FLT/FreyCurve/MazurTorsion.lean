@@ -184,8 +184,10 @@ public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
 -- because `WeierstrassCurve.PotentiallyGoodModel` uses `HasGoodReduction` in
 -- SIGNATURE position, where a merely transitive import is not re-exported.
--- (That structure was hoisted to `Fermat.FLT.FreyCurve.PotentiallyGoodModel`
--- on 2026-07-28; `PotentiallyGoodModel.redCurve` below still needs this.)
+-- (A 2026-07-28 branch hoisted that structure into a new
+-- `Fermat.FLT.FreyCurve.PotentiallyGoodModel`; the release-12 integration
+-- REJECTED the hoist and deleted the file, so the structure is still below in
+-- THIS file and this import is still needed here.)
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- `IsOpenImmersion.of_flat_of_mono`, consumed by
 -- `X0GenusOne.isIso_of_mono_of_relCurve` below.  PUBLIC deliberately: a
@@ -7128,124 +7130,81 @@ defect really can have order `8` (`Q₈`) or `24` (`SL₂(𝔽₃)`), so `B₀¹
 alone does NOT give `λ¹² = 1`; and `B₀²` alone bounds nothing.
 -/
 
-/-! ##### The Galois-module core of `B₀¹` (CUT 2026-07-28)
+/-! ##### The Galois-module core of `B₀¹`: the 2026-07-28 cut, and why it is GONE
 
-`B₀¹` concludes `λ²⁴ = 1` on `I_q`.  Everything in it that is not
-bookkeeping about the character is one sentence,
+`B₀¹` was briefly DECOMPOSED (branch `flt-lean-341`, `b23bab50`) into a
+Galois-MODULE statement
+`WeierstrassCurve.map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg` — "for
+`σ ∈ I_q`, `σ²⁴` acts trivially on `E[N]`" — over two leaves under it,
+`map_pow_twentyFour_eq_self_of_potentiallyGoodModel` (the `q ≠ 2` half, with
+the reduction theory handed over as data) and
+`map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg_two` (the wild prime `2`).
+That cut names `WeierstrassCurve.PotentiallyGoodModel`, which is declared
+~1100 lines BELOW this point, and the branch made it TYPE by hoisting the whole
+`PotentiallyGoodModel` cluster out into a new module.
 
-> for `σ ∈ I_q`, `σ²⁴` acts trivially on the `N`-torsion of `E`,
-
-which mentions neither `lam`, nor `hlam`, nor `hg`, nor `hN19`, nor even
-`N.Prime` beyond `q ≠ N`.  That sentence is
-`WeierstrassCurve.map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg`
-below, and `B₀¹` is derived from it in a dozen lines by the standard
-`(lam σ).val • g = g ⟹ lam σ = 1` argument that
-`isogenyCharacter_pow_twelve_eq_of_localInertia` already runs further
-down this file.
-
-WHY THE CHARACTER IS WORTH STRIPPING OFF.  The statement above is a fact
-about the mod-`N` Galois REPRESENTATION, not about a character of it, so
-it is the same input that `B₀²` needs (`B₀²` reads off the exponent of
-`Φ^{ab}`, `B₀¹` the exponent of `Φ`, and both are facts about the image
-of `I_q` in `Aut(E[N])`).  Cutting here therefore does not duplicate
-work between the two halves of the `B₀` cut; it factors it.
-
-THE GALOIS-MODULE STATEMENT IS THEN SPLIT ON THE RESIDUE
-CHARACTERISTIC, because that is where the AVAILABLE machinery splits:
-
-* `q ≠ 2` — `WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral`
-  turns this leaf's own hypothesis `0 ≤ v_q(j)` into a good model over a
-  number field with residue degree one at `q`.  The residual leaf
-  `map_pow_twentyFour_eq_self_of_potentiallyGoodModel` is then pure
-  Néron–Ogg–Shafarevich plus the classification of the semistability
-  defect, with the reduction theory handed over as data.
-* `q = 2` — that producer is **not stated** at `q = 2` (its own docstring
-  says so: the tame route needs `q ≠ 2`, and the `2`-adic case is where
-  `Q₈` and `SL₂(𝔽₃)` occur), so the `2`-adic case is a separate leaf.
-
-THE HOIST THAT THIS CUT NEEDS, AND WHICH HAS NOT BEEN DONE.
-`PotentiallyGoodModel` and its producers sit ~1100 lines BELOW this point
-IN THIS FILE, so Lean's lack of forward references puts them out of reach
-here, and the three-leaf split described above therefore does NOT exist in
-the tree: `B₀¹` below is still the single leaf it always was.
-
-The branch that wrote this paragraph moved the cluster VERBATIM into a new
-`Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean` (the Minkowski precedent).
-That could not be applied at the release-12 integration: two other branches
-had meanwhile GROWN the moved region (`TranslationDatum`,
-`PreTranslationDatum` and the whole `exists_potentiallyGoodModel_of_*`
-family, none of which is in the hoisted file) and MOVED part of it
+The release-12 integration rejected the hoist — two other branches had
+meanwhile GROWN the moved region (`TranslationDatum`, `PreTranslationDatum`,
+the whole `exists_potentiallyGoodModel_of_*` family) and MOVED part of it
 elsewhere (`flt-lean-381` took `WeierstrassCurve.TameBaseAux` into
 `EllipticCurve/TorsionReduction.lean`), so the extraction lost twenty
-declarations and duplicated seven.
+declarations and duplicated seven — and then, at build 4, reverted the cut with
+it, because the mathematics and the refactor were not separable: the refactor
+was not packaging, it was what put the structure in scope.  **So none of those
+three names exists anywhere in the tree**, and a grep for them finds only
+prose.
 
-**The cut is worth re-landing, and the way to do it is an IN-FILE hoist**
-against the current declaration order — move the `PotentiallyGoodModel`
-cluster up to just above this section — not a new module. This paragraph is
-kept because it is the design, and the design is right. -/
+THE CUT IS NOT WORTH RE-LANDING, and this paragraph deliberately REPLACES the
+one that said it was (which prescribed doing the same hoist IN-FILE).  The
+declaration-order obstruction is real, but `B₀¹` no longer has to fight it:
+`B₀²ᵃ` = `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg` below
+carries the same Serre–Tate transport in a form that is UNIFORM IN `q` — no
+`q ≠ 2` exception, hence no separate `2`-adic leaf — and its `htrans` at
+`n = 12`, against
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq`, gives
+`λ(σ)¹² = 1`.  So `λ(σ)²⁴ = 1` is two lines.  `B₀¹` is accordingly PROVEN
+below, immediately after `B₀²ᵃ`; moving it past `B₀²ᵃ` was the entire cost.
 
--- (flt-lean-341's two-leaf cut of B_0^1 was REVERTED at the release-12 integration.
--- Its `map_pow_twentyFour_eq_self_of_potentiallyGoodModel` names
--- `WeierstrassCurve.PotentiallyGoodModel`, which is declared ~1100 lines BELOW this
--- point, and Lean has no forward references; 341 made that work by hoisting the whole
--- PotentiallyGoodModel cluster out into a new module, which is not applicable to this
--- tree (see the release-12 notes).  The cut is worth re-landing: it needs the hoist
--- done IN-FILE against the current declaration order, not a new module.)
+WHAT REMAINS TRUE of the old note: the reduction theory really is the content
+of `B₀`, and it really is blocked by declaration order.  That burden now sits
+in exactly ONE place — `exists_inertiaAut_of_padicValRat_j_nonneg`, whose own
+docstring records it — instead of in three leaves spread across a refactor
+that has already been rejected once.
 
-/-- **`B₀¹` — Néron–Ogg–Shafarevich: the isogeny character has order
-dividing `24` on inertia at `q`** (sorry leaf; Serre–Tate, *Ann. of Math.*
-88 (1968), Cor. 2 and 3; Silverman *AEC* VII.7; Kraus, *Manuscripta Math.*
-69 (1990), for the two wild primes): at a prime `q ≠ N` with `v_q(j) ≥ 0`,
-the twenty-fourth power of the isogeny character kills the inertia group
-at `q`.
+AND THAT BURDEN IS FAR SMALLER THAN EVERY NOTE HERE HAS ASSUMED.  Both the
+old note and `B₀²ᵃ`'s own docstring say the repair is to hoist the
+`PotentiallyGoodModel` cluster UPWARDS — ~2300 lines, into or above a region
+that several worktrees are concurrently growing, which is exactly the
+collision that sank the last attempt.  The opposite move was never measured.
+It should have been: **moving the `B₀` cluster DOWN past
+`exists_reductionFrame_of_potentiallyGoodModel` costs SEVEN declarations and
+about 480 lines, and the cascade terminates** —
 
-Proof (not formalised).  `v_q(j) ≥ 0` is potentially good reduction
-(Silverman *AEC* VII.5.5), so `E` acquires good reduction over a finite
-extension `K/ℚ_q`.  Since `N ≠ q`, the criterion of
-Néron–Ogg–Shafarevich makes `I_K` act trivially on `E[N]`, so the action of
-`I_q` on `E[N]` — and with it `λ|_{I_q}`, which is that action read on the
-stable line `⟨g⟩` — factors through the semistability defect
-`Φ = Gal(K^{nr}/ℚ_q^{nr})`.  Every `|Φ|` in the classification divides
-`24`: `|Φ| ∈ {1,2,3,4,6}` at residue characteristic `≥ 5` (Serre–Tate),
-with the extra possibilities `Q₈` (order `8`) and `SL₂(𝔽₃)` (order `24`)
-at `q = 2` and the dicyclic group of order `12` at `q = 3` (Kraus).  So
-`orderOf (λ σ) ∣ |Φ| ∣ 24` for every `σ ∈ I_q`.
+    exists_inertiaAut_of_padicValRat_j_nonneg                     (~78 lines)
+    isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg (~104)
+    not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg  (~64)
+    isogenyCharacter_pow_twelve_eq_one_of_padicValRat_j_nonneg      (~41)
+    isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup     (~54)
+    exists_isogenyRamificationData                                  (~61)
+    exists_isogenySignature                                         (~78)
 
-`hlam` IS LOAD-BEARING, not decoration: without it `lam` is an arbitrary
-character of `Γ ℚ` and the statement is FALSE.  Everything the proof knows
-about `lam` at `q` comes from its being the Galois action on the
-`N`-torsion point `g`.  `hN19` is not needed for this leaf (only `q ≠ N`
-is), and is carried so that the two halves of the cut have one signature.
+— because every remaining consumer of `exists_isogenySignature` is already
+BELOW the frame (in this file: the two `obtain ⟨s, hsmem, hsig, hs6⟩ :=
+E.exists_isogenySignature` call sites; and `ModularCurve/X0.lean`, where
+declaration order does not apply).  Nothing in the gaps between those seven
+consumes any of them, which is why the closure stops.
 
-WHERE THE MACHINERY ALREADY IS, AND THE DECLARATION-ORDER OBSTRUCTION.
-`WeierstrassCurve.PotentiallyGoodModel` — below IN THIS FILE, ~700 lines
-down — is precisely the "acquires good reduction over a number field, with
-residue degree one at `q`" datum this proof wants, and
-`WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral` produces it
-from this leaf's own hypothesis `0 ≤ v_q(j)` (for `q ≠ 2`; the `q = 2` case
-of that producer is not stated there).  Lean has no forward references, so
-none of it is usable at this point of the file as it stands.  The
-precedent for the repair is the Minkowski block and
-`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`: hoist the
-`PotentiallyGoodModel` block VERBATIM into an upstream module and
-`public import` it.  Whoever closes this leaf should do that rather than
-reprove the reduction theory. -/
-theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN19 : 19 < N)
-    (hg : addOrderOf g = N)
-    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
-        ((lam σ : ZMod N).val) • g)
-    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
-    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 :=
-  sorry
+THE CHECK THAT WOULD REFUTE THIS, and it is one pass over the file rather
+than a survey: take the transitive set of declarations in this module that
+consume `exists_inertiaAut_of_padicValRat_j_nonneg`, keep those declared
+ABOVE the frame, and confirm it is the seven above.  If a new consumer lands
+above the frame the number grows, so re-run it rather than quoting it.
+
+This is recorded here and not acted on because
+`exists_inertiaAut_of_padicValRat_j_nonneg` had a live owner when it was
+measured, and a 480-line relocation of a declaration somebody is mid-proof in
+is the one edit guaranteed to conflict. It belongs to whoever closes that
+leaf, and it is theirs to do in the same commit. -/
 
 /-- **`B₀²ᵃ` — SERRE–TATE TRANSPORT: on inertia at a prime of potentially good
 reduction, the isogeny character is a character of an AUTOMORPHISM of the
@@ -7323,6 +7282,93 @@ theorem WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ n = 1 :=
   sorry
+
+/-- **`B₀¹` — Néron–Ogg–Shafarevich: the isogeny character has order
+dividing `24` on inertia at `q`** (PROVEN 2026-07-28 over `B₀²ᵃ`
+`WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg` immediately
+above; Serre–Tate, *Ann. of Math.* 88 (1968), Cor. 2 and 3; Silverman *AEC*
+VII.7; Kraus, *Manuscripta Math.* 69 (1990), for the two wild primes): at a
+prime `q ≠ N` with `v_q(j) ≥ 0`, the twenty-fourth power of the isogeny
+character kills the inertia group at `q`.
+
+THE PROOF IS TWO LINES, and that is the point.  `B₀²ᵃ` produces, for each
+`σ ∈ I_q`, an elliptic curve `W` over `𝔽̄_q` and an automorphism `C` of it
+such that every relation `Cⁿ = 1` is inherited by `λ(σ)`; and
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq` supplies
+`C¹² = 1` over ANY field.  So `λ(σ)¹² = 1`, and a fortiori `λ(σ)²⁴ = 1`.
+
+WHERE THE MATHEMATICS WENT.  `v_q(j) ≥ 0` is potentially good reduction
+(Silverman *AEC* VII.5.5), so `E` acquires good reduction over a finite
+extension `K/ℚ_q`; since `N ≠ q`, Néron–Ogg–Shafarevich makes `I_K` act
+trivially on `E[N]`, so the action of `I_q` on `E[N]` — and with it
+`λ|_{I_q}`, which is that action read on the stable line `⟨g⟩` — factors
+through the semistability defect `Φ = Gal(K^{nr}/ℚ_q^{nr})`; and every `|Φ|`
+in the classification has element orders dividing `12` (`{1,2,3,4,6}` at
+residue characteristic `≥ 5` by Serre–Tate, together with `Q₈` and `SL₂(𝔽₃)`
+at `q = 2` and dicyclic-`12` at `q = 3`, by Kraus).  The FIRST half is
+`B₀²ᵃ`; the SECOND is `pow_twelve_eq_one_of_smul_eq`, in
+`Fermat/FLT/EllipticCurve/AutomorphismExponent.lean`.  Neither is duplicated
+here, and this declaration adds no mathematics of its own.
+
+THIS IS NOW A CONSUMER, NOT A FRONTIER NODE.  It is sorry-free but
+transitively open through `B₀²ᵃ`; there is nothing left to prove AT this
+declaration, so a prover dispatched at it has no work.  The leaf to attack is
+`exists_inertiaAut_of_padicValRat_j_nonneg`.
+
+WHY `24` AND NOT `12`, given that the derivation plainly yields `λ(σ)¹² = 1`.
+It is not that `24` is what is available — `12` is.  The `B₀¹`/`B₀²` cut
+predates this route and both halves are separately cited, and `B₀`'s glue
+(`d ∣ 24` and `8 ∤ d` imply `d ∣ 12`) is exactly what the two were written to
+feed; the statement is left at `24` so that the cut is not silently rewritten
+underneath its consumers.  A later pass that collapses `B₀¹`, `B₀²` and `B₀`
+into one derivation from `B₀²ᵃ` would be correct and is not attempted here.
+
+DECLARATION-ORDER NOTE, now HISTORY.  This docstring used to record that
+`WeierstrassCurve.PotentiallyGoodModel` and
+`WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral` sit ~1100 lines
+BELOW here and were therefore out of reach, and it prescribed hoisting them
+into an upstream module.  That prescription is WITHDRAWN **for this leaf** —
+the route above needs neither.  It still applies to `B₀²ᵃ`, which does consume
+them; see the section note above for why the hoist that was attempted (and
+reverted) is not the way to give it them.
+
+`hlam` IS LOAD-BEARING, not decoration: without it `lam` is an arbitrary
+character of `Γ ℚ` and the statement is FALSE.  Everything the proof knows
+about `lam` at `q` comes from its being the Galois action on the `N`-torsion
+point `g`, and `B₀²ᵃ` is where that is used.  `hN19` is likewise not
+mathematically needed here (only `q ≠ N` is); it is carried so that the halves
+of the `B₀` cut share one signature, and is consumed below only by being
+passed on to `B₀²ᵃ`, whose docstring records the same thing. -/
+theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  intro σ hσ
+  -- the Serre–Tate transport: `λ(σ)` is a character value of an automorphism
+  -- `C` of the good reduction over `𝔽̄_q`
+  obtain ⟨W, hW, C, hC, htrans⟩ :=
+    E.exists_inertiaAut_of_padicValRat_j_nonneg g hN hN19 hg lam hlam hq hqN hj σ hσ
+  haveI : W.IsElliptic := hW
+  -- the classification input: `Aut(W)` has exponent dividing `12`
+  have h12 : lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 = 1 :=
+    htrans 12 (WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq hC)
+  -- `24 = 12 * 2`
+  have h242 : (24 : ℕ) = 12 * 2 := by norm_num
+  rw [h242, pow_mul, h12, one_pow]
 
 /-- **`B₀²` — no element of order `8` in the inertia image** (sorry leaf;
 Kraus, *Manuscripta Math.* 69 (1990), the classification of the
