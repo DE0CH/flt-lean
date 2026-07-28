@@ -16,7 +16,7 @@ What it does **not** have is the last step of the dictionary: that an
 bijection above is a bijection of `Hom`-sets, not an equivalence of categories,
 and nothing in `Mathlib` turns a mutually inverse pair of rational maps into a
 `Scheme.PartialIso`.  That single missing bridge is what this file supplies, as
-`birationalOver_of_iso_specFunctionField`, **proven here** over two leaves that
+`birationalOver_of_iso_specFunctionField`, **proven here** over two lemmas that
 between them carry all of its residue:
 
 * `exists_opens_iso_of_partialMap_equiv_id` — the purely geometric half: two
@@ -39,10 +39,10 @@ The other main declaration here, `exists_iso_specFunctionField_affineSpace_of_is
 is **Lüroth's theorem in scheme language**: a curve over a field dominated by the
 affine line has function field `K`-isomorphic to `K(t)`.  Lüroth itself is
 already proven in `Mathlib` (`Mathlib/FieldTheory/RatFunc/Luroth.lean`,
-`RatFunc.Luroth.algEquiv`), so that leaf is *only* the translation between the
-scheme-level `Spec` picture and the intermediate-field picture Lüroth is stated
-in; no new mathematics of Lüroth type is left in it.  It too is now **proven**,
-over the two open leaves that carry the translation:
+`RatFunc.Luroth.algEquiv`), so that statement is *only* the translation between
+the scheme-level `Spec` picture and the intermediate-field picture Lüroth is
+stated in; no new mathematics of Lüroth type is left in it.  It too is now
+**proven**, over the two lemmas that carry the translation:
 
 * `exists_iso_specRatFunc_specFunctionField_affineSpace` — the affine-space
   half, `K(𝔸(n; Spec K)) ≃ K(t)` over `K`, mentioning neither `P` nor Lüroth.
@@ -56,16 +56,24 @@ over the two open leaves that carry the translation:
   * `exists_iso_specRatFunc_specFunctionField_of_hom` — that such an embedding
     of the function field of a CURVE is an isomorphism.  Mentions neither `𝔸`
     nor `u`.  **PROVEN 2026-07-28**, over
-    `not_surjective_specPreimage_of_smoothOfRelativeDimension_one`: "the
-    structure map `K ⟶ K(P)` of a smooth curve is not surjective".  **That is
-    the file's ONLY remaining leaf** (2026-07-28) — it is where `hcurve` is
-    consumed, it mentions no function fields of anything but `P`, and it is the
-    one statement here that is false without `hcurve`.
+    `not_surjective_specPreimage_of_smoothOfRelativeDimension_one` — "the
+    structure map `K ⟶ K(P)` of a smooth curve is not surjective", which is
+    where `hcurve` is consumed and is the one statement here that is false
+    without it.  **PROVEN 2026-07-28.**
+
+**THIS FILE IS SORRY-FREE** (2026-07-28).
 
 The first two are stated in a deliberately identical shape — an isomorphism out
 of the common object `Spec (RatFunc K)`, commuting with the maps down to
 `Spec K` — which is what makes the assembly of the Lüroth statement out of them
 a single `Iso.trans`.
+
+## Import note
+
+`CurveExtension` is imported for `infinite_of_smoothOfRelativeDimension_one`
+alone, which is the arithmetic input to the non-degeneracy leaf.  It costs no
+module in any cone: `X0.lean` is this file's only consumer and already
+`public import`s `CurveExtension` directly.
 
 Together these give, in three lines, "a curve over a field dominated by `𝔸¹`
 is rational over that field" — the statement that replaces `ℙ¹` and
@@ -87,6 +95,7 @@ public import Mathlib.AlgebraicGeometry.Birational.Composition
 public import Mathlib.AlgebraicGeometry.AffineSpace
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.FieldTheory.RatFunc.Luroth
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 
 @[expose] public section
 
@@ -680,9 +689,9 @@ theorem exists_hom_functionField_ratFunc_of_isDominant {K : Type u} [Field K]
   rw [Spec.map_comp, Spec.map_preimage, Category.assoc, ← Category.assoc _ (P.fromSpecStalk _),
     transport _ hu'.symm, Category.assoc, hu, hA]
 
-/-- **A smooth curve over `K` has strictly more rational functions than `K`** (sorry leaf,
-2026-07-28) — this is where `hcurve` is consumed, and it is the whole reason the Lüroth leaf
-below is not vacuous.
+/-- **A smooth curve over `K` has strictly more rational functions than `K`** (**PROVEN
+2026-07-28**) — this is where `hcurve` is consumed, and it is the whole reason the Lüroth
+statement below is not vacuous.
 
 The map whose surjectivity is denied is the ring map underlying `P.fromSpecStalk (genericPoint P)
 ≫ strP : Spec K(P) ⟶ Spec K`, i.e. the structure map `K ⟶ K(P)`.  It is phrased through
@@ -708,13 +717,58 @@ preirreducible space is a subsingleton.  But `hcurve` gives `Infinite P` by
 **Do not try to run this argument on a single affine open.**  "Some nonempty affine open is a
 single point" is NOT a contradiction: `Spec` of a DVR has a one-point open (its generic point)
 while the scheme has two points.  The argument genuinely needs *every* affine open, which is
-what turns it into a statement about the topology of `P` rather than about one ring. -/
+what turns it into a statement about the topology of `P` rather than about one ring.
+
+**The step that looked expensive and is not.**  "The composite `K ⟶ Γ(P, U) ⟶ K(P)` is the
+structure map" would be a painful `appTop` computation if done on global sections.  It is
+free at the level of SCHEMES: `IsAffineOpen.fromSpecStalk` *is* `Spec.map (germ) ≫ hU.fromSpec`
+by definition, and `fromSpecStalk_eq_fromSpecStalk` says that equals `P.fromSpecStalk` for any
+affine open containing the point.  So `Spec.map_injective` turns the desired factorisation
+`α = β ≫ germ` into a three-rewrite identity of scheme morphisms, with
+`β := Spec.preimage (hU.fromSpec ≫ strP)` — no `appTop`, no `ΓSpecIso`.  Prefer this shape
+whenever a ring-level factorisation through an affine open is needed.
+
+**Last step, once `Γ(P, U)` is a field**: the *generic point* does the topology.  Rather than
+"discrete + preirreducible ⟹ subsingleton", note that a singleton open must contain the generic
+point (`IsGenericPoint.mem_open_set_iff`), so every point of `P` *equals* `genericPoint P`
+directly.  One `Subsingleton.elim` inside `↥U` finishes it. -/
 theorem not_surjective_specPreimage_of_smoothOfRelativeDimension_one {K : Type u} [Field K]
     {P : Scheme.{u}} {strP : P ⟶ Spec (CommRingCat.of K)}
     [IsIntegral P] (hcurve : SmoothOfRelativeDimension 1 strP) :
     ¬ Function.Surjective
-      (Spec.preimage (P.fromSpecStalk (genericPoint P) ≫ strP)).hom :=
-  sorry
+      (Spec.preimage (P.fromSpecStalk (genericPoint P) ≫ strP)).hom := by
+  haveI := hcurve
+  haveI : Infinite ↥P := infinite_of_smoothOfRelativeDimension_one strP
+  intro hsurj
+  have hpt : ∀ x : ↥P, x = genericPoint P := by
+    intro x
+    obtain ⟨_, ⟨U, hU, rfl⟩, hxU, -⟩ :=
+      P.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ x) isOpen_univ
+    have hηU : genericPoint P ∈ U :=
+      ((genericPoint_spec P).mem_open_set_iff U.2).mpr ⟨x, Set.mem_univ x, hxU⟩
+    have hinj : Function.Injective (P.presheaf.germ U (genericPoint P) hηU) :=
+      germ_injective_of_isIntegral P (genericPoint P) hηU
+    have hfac : Spec.preimage (P.fromSpecStalk (genericPoint P) ≫ strP)
+        = Spec.preimage (hU.fromSpec ≫ strP) ≫ P.presheaf.germ U (genericPoint P) hηU := by
+      apply Spec.map_injective
+      rw [Spec.map_comp, Spec.map_preimage, Spec.map_preimage, ← Category.assoc,
+        ← IsAffineOpen.fromSpecStalk, hU.fromSpecStalk_eq_fromSpecStalk hηU]
+    have hsurjgerm : Function.Surjective (P.presheaf.germ U (genericPoint P) hηU) := by
+      intro y
+      obtain ⟨c, hc⟩ := hsurj y
+      exact ⟨(Spec.preimage (hU.fromSpec ≫ strP)).hom c, by rw [← hc, hfac]; rfl⟩
+    letI : Field ↥Γ(P, U) :=
+      ((RingEquiv.ofBijective (P.presheaf.germ U (genericPoint P) hηU).hom
+        ⟨hinj, hsurjgerm⟩).toMulEquiv.isField (Field.toIsField _)).toField
+    have hinj2 : Function.Injective (hU.isoSpec.hom.base) := by
+      intro a b hab
+      have h := congrArg (hU.isoSpec.inv.base) hab
+      simpa [← Scheme.Hom.comp_apply] using h
+    haveI : Subsingleton ↥(Spec Γ(P, U)) :=
+      inferInstanceAs (Subsingleton (PrimeSpectrum ↥Γ(P, U)))
+    haveI : Subsingleton ↥U := hinj2.subsingleton
+    exact congrArg Subtype.val (Subsingleton.elim (⟨x, hxU⟩ : ↥U) ⟨genericPoint P, hηU⟩)
+  exact absurd ⟨fun a b => (hpt a).trans (hpt b).symm⟩ (not_subsingleton ↥P)
 
 /-- **A `K`-embedding `K(P) ↪ K(t)` of the function field of a CURVE is an isomorphism**
 (**PROVEN 2026-07-28**, over the non-degeneracy leaf immediately above) — Lüroth, and nothing
