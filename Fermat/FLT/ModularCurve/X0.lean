@@ -24892,10 +24892,254 @@ theorem birationalOver_affineLine_of_not_exists_section {K : Type} [Field K] {P 
   birationalOver_affineLine_of_isDominant hcurve hconn u hu
     (isDominant_of_not_exists_section hcurve hconn u hu hnc)
 
+/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
+DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (sorry
+leaf, 2026-07-28) — the level-free, base-free geometric core of
+`not_birationalOver_affineLine_of_one_le_x0Genus` below.  It mentions
+neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor the base `S`,
+and it is the ONLY new mathematics that half of the genus formula needs.
+
+TRUE and classical (Milne, *Abelian Varieties* I.3; Mumford, *Abelian
+Varieties* §4: an abelian variety contains no rational curve).  Two
+steps, in this order:
+
+* **Extend.**  `V` is a dense open of the smooth integral curve `𝔸¹_K`
+  and `A` is PROPER over `K` (`abA.proper`), so `d` extends uniquely to
+  `Φ : 𝔸¹_K ⟶ A` over `K` by the valuative criterion at each of the
+  finitely many missing codimension-one points.
+* **Constancy.**  A `K`-morphism `𝔸¹_K ⟶ A` is constant.  Extending once
+  more to `ℙ¹_K` (again properness of `A`) and applying the RIGIDITY
+  LEMMA — already available here as `isAdditiveOn_of_post_zero`'s input
+  in `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — a
+  morphism from a proper geometrically connected `K`-scheme with
+  `f_*𝒪 = 𝒪` into an abelian scheme is determined by its value at one
+  point.  The image point is `K`-rational because `𝔸¹_K` has `K`-points,
+  which is why the conclusion can be stated as a SECTION `s` rather than
+  as a point of the underlying space.
+
+**THE EXTENSION MACHINERY IS ALREADY HERE, AND ITS EXACT GAP IS
+COMPILER-CHECKED.**  `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN,
+`public import`ed above) is precisely the first step and, unlike the
+packaged `exists_unique_extension_of_isSmoothProperCurve`, it does NOT
+require the SOURCE to be proper — so `𝔸¹_K` is an admissible source.  It
+wants `[IsIntegral 𝔸(Unit; Spec K)]` and `ValuationRing` stalks.  Checked
+against this pin on 2026-07-28, by `infer_instance`:
+
+* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available**;
+* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
+  instance**, and it is what `valuationRing_stalk_of_smoothOfRelativeDimension_one`
+  (PROVEN, same file) needs to supply the stalk hypothesis;
+* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
+  instance** either.
+
+So the cheapest route for a successor is to prove smoothness of the
+affine line, or to give the `ValuationRing` stalks of `𝔸¹_K = Spec K[t]`
+directly (localisations of a PID).  That is a `Mathlib`-shaped statement
+about affine space, not about modular curves.
+
+**`hV` IS LOAD-BEARING and the statement is FALSE without it**: for
+`V = ⊥` the empty scheme maps to `A` in exactly one way, and taking `A`
+an elliptic curve and `d` the unique morphism, the conclusion still
+holds — but for a NON-dense `V` in a general source it would not be
+determined; density is what makes the extension unique and what the
+consumer supplies (`f.dense_target`).  `abA` is load-bearing twice over:
+properness gives the extension, and the group structure is what makes
+constancy true — the statement is FALSE for a non-proper target
+(`A = 𝔸¹_K`, `d` the inclusion) and FALSE for a proper non-group target
+(`A` a genus-`0` conic with `d` a birational parametrisation).
+
+**NOT VACUOUS**: the conclusion is an existence statement about `s`, and
+it fails for `A = 𝔸(Unit; Spec K)` with `d = V.ι` whenever `V` is a
+proper dense open, since `V.ι` is not constant.  So the hypothesis
+`abA` is really consumed. -/
+theorem exists_section_of_denseOpen_affineLine_toAbelianScheme {K : Type} [Field K]
+    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (abA : AbelianSchemeStruct astr) (V : (𝔸(Unit; Spec (CommRingCat.of K))).Opens)
+    (hV : Dense (X := 𝔸(Unit; Spec (CommRingCat.of K))) (V : Set _))
+    (d : V.toScheme ⟶ A)
+    (hd : d ≫ astr =
+      V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
+      d = (V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) ≫ s :=
+  sorry
+
+/-- **A RATIONAL curve over `K` maps CONSTANTLY to every abelian scheme
+over `K`** (PROVEN 2026-07-28 over
+`exists_section_of_denseOpen_affineLine_toAbelianScheme`) — the level-free
+half of `not_birationalOver_affineLine_of_one_le_x0Genus`.
+
+**What the assembly does, and why nothing but the leaf above is needed.**
+`hrat` is a `Scheme.PartialIso` `f` between a dense open `f.source ⊆ P`
+and a dense open `f.target ⊆ 𝔸¹_K`, compatible with the two structure
+maps (`f.IsOver`).  Transporting `c` backwards along `f.iso` gives a
+`K`-morphism `f.iso.inv ≫ f.source.ι ≫ c` out of `f.target`, which the
+leaf makes equal to `(structure map) ≫ s` for a section `s`.  Pushing
+that forward again says `c` and `strP ≫ s` AGREE ON `f.source`; and
+since `P` is REDUCED, `f.source.ι` is DOMINANT (`Opens.isDominant_ι`
+applied to `f.dense_source`) and `astr` is SEPARATED (an abelian scheme
+is proper), `Mathlib`'s `ext_of_isDominant_of_isSeparated` upgrades that
+to equality on all of `P`.
+
+**Reducedness of `P` is derived, not assumed**, and this is the one place
+the `hcurve` hypothesis is spent: `SmoothOfRelativeDimension 1 strP` gives
+`Smooth strP`, hence `GeometricallyReduced strP` by this development's own
+`AlgebraicGeometry.GeometricallyReduced.of_smooth`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`,
+sorry-free), and `IsReduced P` follows by
+`GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian` — flatness
+over a field being free and local noetherianness coming from
+`LocallyOfFiniteType`.  Mathlib itself proves NOTHING of this shape
+(`Smooth ⟹ IsReduced` is absent from the pin; see the audit in
+`ModularCurve/EllipticScheme.lean`), so the route matters.
+
+**`hcurve` IS LOAD-BEARING and the statement is FALSE without it**: on a
+NON-REDUCED source the conclusion fails.  Take `K` of any characteristic,
+`P = 𝔸¹_K` with a nilpotent thickening at the origin — more precisely any
+`P` whose reduction is `𝔸¹_K`, so that `hrat` still holds through the
+reduced dense open — and `c` a morphism to an elliptic curve that is
+constant on the reduction but has a nonzero tangent component at the fat
+point.  Then `c ≠ strP ≫ s` for every `s`, while `hrat` is untouched.
+`GeometricallyConnected` is NOT assumed: it is implied by `hrat`, since a
+scheme with a dense open isomorphic to an open of the irreducible `𝔸¹_K`
+is itself irreducible. -/
+theorem eq_comp_of_birationalOver_affineLine_toAbelianScheme {K : Type} [Field K]
+    {P A : Scheme.{0}}
+    {strP : P ⟶ Spec (CommRingCat.of K)} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (hcurve : SmoothOfRelativeDimension 1 strP)
+    (abA : AbelianSchemeStruct astr)
+    (hrat : Scheme.BirationalOver strP
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)))
+    (c : P ⟶ A) (hc : c ≫ astr = strP) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, c = strP ≫ s := by
+  obtain ⟨f, hf⟩ := hrat
+  haveI := hcurve
+  haveI : AlgebraicGeometry.Smooth strP := SmoothOfRelativeDimension.smooth 1 strP
+  haveI : GeometricallyReduced strP := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth strP
+  haveI : IsLocallyNoetherian P := LocallyOfFiniteType.isLocallyNoetherian strP
+  haveI : IsReduced P := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian strP
+  haveI : IsProper astr := abA.proper
+  haveI : IsDominant f.source.ι := _root_.AlgebraicGeometry.Opens.isDominant_ι f.dense_source
+  have hd : (f.iso.inv ≫ f.source.ι ≫ c) ≫ astr =
+      f.target.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
+    rw [Category.assoc, Category.assoc, hc, ← hf, ← Category.assoc, ← Category.assoc,
+      Iso.inv_hom_id, Category.id_comp]
+  obtain ⟨s, hsec, hs⟩ :=
+    exists_section_of_denseOpen_affineLine_toAbelianScheme abA f.target f.dense_target _ hd
+  refine ⟨s, ?_⟩
+  refine ext_of_isDominant_of_isSeparated astr ?_ f.source.ι ?_
+  · rw [hc, Category.assoc, hsec, Category.comp_id]
+  · have h2 := congrArg (fun t => f.iso.hom ≫ t) hs
+    simp only [← Category.assoc, Iso.hom_inv_id, Category.id_comp] at h2
+    have hf0 : f.iso.hom ≫ f.target.ι ≫
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) =
+        f.source.ι ≫ strP := hf
+    simp only [Category.assoc] at h2 ⊢
+    rw [h2, reassoc_of% hf0]
+
+/-- **A `Γ₀(N)`-compactification whose base has a FIELD-VALUED POINT forces
+`0 < N`** (sorry leaf, 2026-07-28) — the base-general analogue of
+`pos_of_isX0Compactification`, and, exactly as there, NOT bookkeeping:
+without it the leaf below is FALSE at `N = 0`, because `x0Genus 0 = 1`
+(compiler-verified by `decide`; see `pos_of_isX0Compactification`'s
+docstring for the full degeneration).
+
+TRUE, by the same argument as the `Spec ℚ` version, with `k` supplying
+the nonemptiness that the `Spec ℚ` version got from its base.
+`GeometricallyConnected` is `geometrically (ConnectedSpace ·)` and
+`ConnectedSpace` carries `Nonempty`, so the fibre `X ×_S Spec K` is
+nonempty and `X` is nonempty; a smooth proper curve over a field is
+infinite, so `finite_compl` makes `Y` nonempty; a point of `Y` produces a
+`Gamma0Datum 0`, i.e. a `CyclicSubgroupOfOrder 0` subgroup scheme, and a
+group scheme cannot have order `0` since its geometric fibres contain the
+identity section.
+
+**THE `Spec ℚ` VERSION'S "WHERE THE BURDEN SITS" NOTE IS SUPERSEDED.**  It
+records "a smooth proper geometrically connected curve over a field is
+infinite" as the one step this file does not have.  It DOES have it, as
+of 2026-07-27: `infinite_of_smoothOfRelativeDimension_one`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN and
+`public import`ed above, over a field base).  What remains for THIS
+statement is to move it to the fibre — `SmoothOfRelativeDimension 1` and
+`IsProper` are stable under base change, so that is a base-change
+bookkeeping step, not a new theory.
+
+**`k` IS LOAD-BEARING and the statement is FALSE without it**, for exactly
+the reason `pos_of_isX0Compactification` records: over an EMPTY base
+`S = X = Y = ∅` satisfies every field of `IsX0Compactification 0`
+vacuously.  A field-valued point of `S` is the weakest nonemptiness
+hypothesis that excludes it, and it is the one the consumer has in
+hand. -/
+theorem pos_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
+    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) : 0 < N :=
+  sorry
+
+/-- **EICHLER–SHIMURA, FIBREWISE: `genus X_0(N) ≥ 1` gives EVERY fibre of
+`X_0(N)` a nonconstant map to an abelian variety** (sorry leaf,
+2026-07-28) — the arithmetic half of
+`not_birationalOver_affineLine_of_one_le_x0Genus`, the ONLY piece that
+mentions `N`, and the base-general analogue of
+`hasNonconstantAbelianMap_of_one_le_x0Genus`.
+
+TRUE.  `hmodel` makes the fibre `X_K = X ×_S Spec K` a smooth proper
+geometrically connected curve which is the `X_0(N)` of `K`, and `hg`
+together with `hN` says its genus is `≥ 1` (the classical formula,
+Diamond–Shurman Thm 3.1.1 — this is the ONLY place where the computed
+number `x0Genus N` meets the scheme `X`).  A smooth proper geometrically
+connected curve of genus `≥ 1` over ANY field admits a nonconstant
+`K`-morphism to an abelian variety.
+
+**NO RATIONAL POINT IS NEEDED, and this is worth stating because the
+obvious route wants one.**  Abel–Jacobi `x ↦ [x] − [o]` needs a
+`K`-rational base point, which `IsX0Compactification` does not supply
+(the cusp `∞` is rational over `ℚ`, but nothing here carries a section of
+`strX`).  The repair is standard: any closed point of `X_K` has some
+finite residue degree `n ≥ 1`, giving a `K`-rational divisor CLASS `D` of
+degree `n`, and `x ↦ n[x] − D` is a `K`-morphism `X_K ⟶ Pic⁰(X_K)`
+needing no rational point.  It is nonconstant for genus `≥ 1` because
+`[n]` is an isogeny of `Pic⁰` and Abel–Jacobi is a closed immersion, so
+the composite is finite onto its image.
+
+**THE MODULAR ROUTE, which is the axis this file prefers.**  The other
+way is to base-change the modular parametrisation: `1 ≤ x0Genus N` gives
+`S_2(Γ_0(N)) ≠ 0` (`exists_ne_zero_cuspForm_of_one_le_x0Genus`, already a
+named leaf above, which is why `hN` is a hypothesis here rather than an
+internal obligation), Eichler–Shimura gives a newform quotient `A_f/ℚ`
+and a nonconstant `X_0(N) ↠ A_f`, and both spread out over the base and
+base-change to `K`.  Nonconstancy is geometric, so it survives.  Note
+`hmodel` asserts `strX` is SMOOTH over the whole of `S`, which is what
+keeps `k` out of the bad-reduction locus where the argument would fail.
+
+**`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
+`N = 1`, `X_0(1) = ℙ¹` and every morphism from `ℙ¹` to an abelian variety
+is constant, so no such `c` exists at any `K`.  `hN` is load-bearing for
+the reason its own leaf records (`x0Genus 0 = 1`).  `hmodel` is
+load-bearing twice over — it supplies the curve conditions AND it is the
+only thing tying the arithmetic `x0Genus N` to the geometry of `strX`.
+`N` enters only through `hg`, `hN` and `hmodel`.
+
+**NOT VACUOUS, and the junk witness is killed by the nonconstancy clause
+alone**: `A = Spec K` with `astr = 𝟙` forces `c = curveBaseChangeProj
+strX k`, which is `curveBaseChangeProj strX k ≫ 𝟙`, so the final clause
+fails at `s = 𝟙`.  A prover must therefore produce a genuinely
+positive-dimensional `A`. -/
+theorem exists_nonconstant_toAbelianScheme_of_one_le_x0Genus {N : ℕ} (hN : 0 < N)
+    (hg : 1 ≤ x0Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K))
+      (_ : AbelianSchemeStruct astr) (c : curveBaseChange strX k ⟶ A),
+      c ≫ astr = curveBaseChangeProj strX k ∧
+        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ curveBaseChangeProj strX k ≫ s :=
+  sorry
+
 /-- **The genus formula: no fibre of `X_0(N)` is a RATIONAL curve when
-`genus X_0(N) ≥ 1`** (sorry leaf, 2026-07-27) — the arithmetic half of
-`hasNoFibreAffineLine_of_one_le_x0Genus`, and the ONLY half that mentions
-`N`.  The base-general analogue of
+`genus X_0(N) ≥ 1`** (PROVEN 2026-07-28 by decomposition along the MODULAR
+axis; formerly a sorry leaf audited as irreducible) — the arithmetic half
+of `hasNoFibreAffineLine_of_one_le_x0Genus`, and the ONLY half that
+mentions `N`.  The base-general analogue of
 `hasNonconstantAbelianMap_of_one_le_x0Genus`.
 
 TRUE.  `hmodel` makes the fibre `X_K = X ×_S Spec K` a smooth proper
@@ -24926,24 +25170,54 @@ have different dimensions, so no partial isomorphism exists whatever `N`
 is.  Rationality is a property of the FIBRE, which is why the base change
 is taken here rather than left to the consumer.
 
-IRREDUCIBLE at this pin, along the axis searched (the identification of
-the arithmetic `x0Genus N` with a birational invariant of the fibre):
-that needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
-degree-`μ(N)` map to the `j`-line, and none of the three exists in
-`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
-successor should prefer: the MODULAR one** — a modular parametrisation
-`X_0(N) ↠ A_f` out of the `Modularity` subtree never mentions the genus of
-a scheme, and the same note on
-`hasNonconstantAbelianMap_of_one_le_x0Genus` applies verbatim.  **The
-check that would refute this verdict**: a genus, an `h¹`, or a modular
-parametrisation appearing in any of the three trees. -/
+**THE OLD IRREDUCIBILITY VERDICT IS WITHDRAWN, AND HERE IS WHY IT WAS
+WRONG.**  The previous docstring recorded this leaf as IRREDUCIBLE at this
+pin "along the axis searched (the identification of the arithmetic
+`x0Genus N` with a birational invariant of the fibre)", needing a genus of
+a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz — none of which exists in
+`Mathlib`, in `~/cs/FLT`, or here.  That axis really is exhausted; the
+verdict was wrong only because it named its own escape and then did not
+take it: **the MODULAR axis**, which its own last paragraph flagged as
+unsearched.  It is taken below, exactly as it was taken for the `Spec ℚ`
+sibling `hasNonconstantAbelianMap_of_one_le_x0Genus` the day before.  No
+step of the route mentions the genus of a scheme, an `h¹`, a `ℙ¹`, or
+Riemann–Hurwitz.
+
+**THE SPLIT.**  The birational invariant that separates a genus-`≥ 1`
+curve from `𝔸¹_K` is not a number but a MAP: *does the curve admit a
+nonconstant morphism to an abelian variety?*  Rational curves do not,
+positive-genus curves do, and both halves are statable at this pin:
+
+* `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` — the arithmetic
+  half, the only piece that mentions `N`;
+* `eq_comp_of_birationalOver_affineLine_toAbelianScheme` — the level-free
+  half, PROVEN here over the single geometric leaf
+  `exists_section_of_denseOpen_affineLine_toAbelianScheme` (*an abelian
+  variety contains no rational curve*);
+* `pos_of_isX0Compactification_of_fieldPoint` — `0 < N`, which is NOT
+  bookkeeping: `x0Genus 0 = 1`, so `hg` alone does not exclude `N = 0`.
+
+The assembly is three lines: get the nonconstant `c : X_K ⟶ A` from the
+arithmetic half, feed `hrat` and `c` to the level-free half to get a
+section `s` with `c = strP ≫ s`, and contradict nonconstancy at that `s`.
+Smoothness of the fibre is the only side condition, and it is base change
+of `hmodel.smooth`. -/
 theorem not_birationalOver_affineLine_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
     {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY)
     (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
     ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
-        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
-  sorry
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
+  intro hrat
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  obtain ⟨A, astr, abA, c, hc, hnc⟩ :=
+    exists_nonconstant_toAbelianScheme_of_one_le_x0Genus
+      (pos_of_isX0Compactification_of_fieldPoint hmodel K k) hg hmodel K k
+  obtain ⟨s, hs⟩ := eq_comp_of_birationalOver_affineLine_toAbelianScheme hsm abA hrat c hc
+  exact hnc s hs
 
 /-- **The genus formula, fibrewise: `genus X_0(N) ≥ 1` puts no rational
 curve in any fibre of `X_0(N)`** (PROVEN 2026-07-27 by decomposition;
