@@ -794,71 +794,19 @@ Added 2026-07-24 for the conductor leaf
 produces an eigenform of level `M ∣ 2` — i.e. `M = 1` or `M = 2`. The
 `M = 2` branch is refuted by `weightTwoEigenform_level_two_false`
 above; the `M = 1` branch needs the (classical, easier) level-1
-vanishing `S₂(SL(2, ℤ)) = 0`, proven here by the same norm/Sturm
-route with relative index `1` in place of `3` (weight stays
-`2·1 = 2 < 12`, so the level-1 Sturm bound is again `0`). -/
+vanishing `S₂(SL(2, ℤ)) = 0`, by the same norm/Sturm route with
+relative index `1` in place of `3` (weight stays `2·1 = 2 < 12`, so the
+level-1 Sturm bound is again `0`).
 
-/-- `Γ₀(1) = SL(2, ℤ)`: the mod-1 congruence condition is vacuous
-(`ZMod 1` is trivial). -/
-theorem Gamma0_one_eq_top : CongruenceSubgroup.Gamma0 1 = ⊤ := by
-  ext g
-  simp [CongruenceSubgroup.Gamma0_mem, Subsingleton.elim (g.1 1 0 : ZMod 1) 0]
-
-/-- The relative index of `Γ₀(1)` in `SL(2, ℤ)` (both viewed in
-`GL(2, ℝ)`) is `1`: `Γ₀(1)` IS `SL(2, ℤ)`. The level-1 analogue of
-`Gamma0GL_two_relIndex`. -/
-theorem Gamma0GL_one_relIndex : (Gamma0GL 1).relIndex 𝒮ℒ = 1 := by
-  show ((CongruenceSubgroup.Gamma0 1).map (mapGL ℝ)).relIndex 𝒮ℒ = 1
-  rw [Gamma0_one_eq_top, ← MonoidHom.range_eq_map, Subgroup.relIndex_self]
-
-/-- Every `SL(2, ℤ)`-translate of a weight-2 cusp form on `Γ₀(1)`
-vanishes at `i∞` — the level-1 analogue of
-`quotientFunc_isZeroAtImInfty`. -/
-theorem quotientFunc_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2)
-    (q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) :
-    IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
-  induction q using Quotient.inductionOn with
-  | h r =>
-    rw [SlashInvariantForm.quotientFunc_mk]
-    have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
-    have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL 1) :=
-      (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
-    exact CuspFormClass.zero_at_cusps f hcusp _ rfl
-
-/-- The norm (over `SL(2, ℤ)`) of a weight-2 cusp form on `Γ₀(1)`
-vanishes at `i∞` — the level-1 analogue of `norm_isZeroAtImInfty`. -/
-theorem norm_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2) :
-    IsZeroAtImInfty ⇑(ModularForm.norm 𝒮ℒ f) := by
-  rw [ModularForm.coe_norm]
-  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ)
-  rw [IsZeroAtImInfty, Filter.ZeroAtFilter]
-  have hzero : (0 : ℂ) = ∏ _q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ, (0 : ℂ) := by
-    rw [Finset.prod_const, zero_pow]
-    simp [Finset.card_univ, Fintype.card_ne_zero]
-  rw [Finset.prod_fn, hzero]
-  exact tendsto_finsetProd _ fun q _ => quotientFunc_level_one_isZeroAtImInfty f q
-
-/-- **`S₂(Γ₀(1)) = 0`** — every weight-2 cusp form on `Γ₀(1)` (i.e. on
-`SL(2, ℤ)`) vanishes identically: its norm to level 1 is a weight-2
-level-1 form vanishing at `i∞`, killed by the level-1 Sturm bound
-(`2/12 = 0`). Level-1 analogue of `cuspForm_level_two_coe_eq_zero`. -/
-theorem cuspForm_level_one_coe_eq_zero (f : CuspForm (Gamma0GL 1) 2) : ⇑f = 0 := by
-  by_contra hf
-  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
-  apply sturm_bound_levelOne
-  have hcoeff0 : (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).coeff 0 = 0 := by
-    rw [qExpansion_coeff_zero one_pos
-      (ModularFormClass.analyticAt_cuspFunction_zero _ one_pos one_mem_strictPeriods_SL)
-      (SlashInvariantFormClass.periodic_comp_ofComplex _ one_mem_strictPeriods_SL)]
-    exact (norm_level_one_isZeroAtImInfty f).valueAtInfty_eq_zero
-  rw [PowerSeries.coeff_zero_eq_constantCoeff] at hcoeff0
-  have horder : 1 ≤ (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).order :=
-    PowerSeries.one_le_order_iff_constCoeff_eq_zero.mpr hcoeff0
-  have hwt : ((2 * (Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12) = 0 := by
-    rw [show Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) = 1 from Gamma0GL_one_relIndex]
-    decide
-  rw [hwt]
-  exact lt_of_lt_of_le (by norm_num) horder
+**MOVED OUT OF THIS FILE ON 2026-07-28.**  `Gamma0_one_eq_top`,
+`Gamma0GL_one_relIndex`, `quotientFunc_level_one_isZeroAtImInfty`,
+`norm_level_one_isZeroAtImInfty` and `cuspForm_level_one_coe_eq_zero` now
+live in `Modularity/HeckeOperator.lean` (same namespace, so every use here
+is unchanged), because `ModularCurve/X0.lean` — which is UPSTREAM of this
+file — needs the level-1 vanishing for
+`Fermat.cuspForm_eq_zero_of_properDivisor_oneSixtyNine`, whose divisors of
+`169` are `1` and `13`.  Only `weightTwoEigenform_level_one_false` stays,
+because it is stated with `qCoeff`, which is defined here. -/
 
 /-- **There is no weight-2 level-1 normalized eigenform**: the carrier
 `IsWeightTwoEigenform 1` is empty, since `S₂(Γ₀(1)) = 0` while a
