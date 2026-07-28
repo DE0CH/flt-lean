@@ -28443,7 +28443,16 @@ formally vacuous, that leaf would be exactly as hard as the undecomposed
 node and no harder, so the cut degrades gracefully.  **The check that
 settles it**: produce one `IsGamma0Isogeny` over `Spec ℚ̄` from
 `exists_velu_quotient_isogeny` plus
-`exists_ellipticScheme_of_weierstrass`. -/
+`exists_ellipticScheme_of_weierstrass`.
+
+**THAT CHECK WAS RUN ON 2026-07-28 AND DOES NOT CLOSE FROM THOSE TWO
+INPUTS** — see the docstring of `exists_heckeCorrespondenceFamily` below
+for the diagnosis and for the coordinate-level route that could.  In one
+line: both named inputs produce maps of POINT GROUPS (an `AddMonoidHom`
+on `(E⁄ℚ̄).Point`, and an equivariant `≃+` of geometric-fibre groups),
+while `map` above is a morphism of SCHEMES, and nothing here bridges the
+two.  The sentence is left standing because the check is still the right
+one to run; only its cost was mis-estimated. -/
 def IsModularHeckeAction (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -28632,10 +28641,157 @@ structure IsHeckeIsotypicDecomposition (N : ℕ)
   finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
       ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
 
-/-- **THE HECKE CORRESPONDENCE ACTS ON `J₀(N)`** (sorry leaf, new
-2026-07-28) — the first half of the cut of `exists_heckeIsotypicDecomposition`
-below, and the one carrying the *construction* of `T_ℓ` as opposed to its
-decomposition.
+/-- **THE HECKE CORRESPONDENCE AS A NATURAL FAMILY ON POINTS** (sorry
+leaf, new 2026-07-28) — the geometric half of `exists_modularHeckeAction`
+below, from which that theorem is PROVEN by the Albanese universal
+property.
+
+For a prime `ℓ ∤ N`, the family is `c := T_ℓ ∘ aj`, i.e. the composite of
+Abel–Jacobi with the Hecke operator, but presented WITHOUT the operator:
+`c g x` is the class `∑_D [x_D] − (ℓ+1)[o]` of the correspondence image
+of `x`, as a natural transformation from the points of `X₀(N)` to the
+points of `J₀(N)`.  `IsJacobianOf.universal` turns exactly this datum
+into the endomorphism, so the whole of the operator-level bookkeeping —
+the morphism, its compatibility with `jstr`, and its additivity — is
+discharged formally below and does not appear here.
+
+**WHY THE THREE CLAUSES ARE THE RIGHT ONES, and in particular why the
+base point costs nothing.**  Write `[·]` for `IsCoarseModuliY0.classify`
+pushed into `X` and `aj x = [x] − [o]`.  The classical `T_ℓ` on `Div⁰`
+sends `[x] − [o]` to `∑_k [x_k] − ∑_j [o_j]`, where the `o_j` are the
+partners of the BASE POINT; the recipe clause below instead demands
+`∑_k aj [x_k] = ∑_k [x_k] − (ℓ+1)[o]`.  The two agree because
+`∑_j [o_j] − (ℓ+1)[o]` is `T_ℓ` applied to `aj o = 0`, hence `0`, `T_ℓ`
+being a homomorphism.  So `c o = 0` — the second clause — is not an extra
+normalisation imposed on the correspondence: it is the same fact that
+makes the recipe's right-hand side the honest image of `[x] − [o]`.  This
+is the one place where a cut of this node can silently go wrong by a
+constant, and it is why the base-point clause is stated rather than
+derived.
+
+**FAITHFULNESS.**  True, with witness `c := T_ℓ ∘ aj` as above.  It is
+NOT true of the zero family `c := fun g _ => ab.zero g` unless the recipe
+is vacuous — which is precisely the `IsGamma0Isogeny`-inhabitation
+question recorded on `IsModularHeckeAction`, and is the same degradation
+the parent cut already carries: if the pin turns out formally vacuous
+this leaf becomes cheap (take `c := 0`), and `exists_modularHeckeAction`
+is then cheap too, exactly as its docstring predicts.  So the cut does
+not change the worst case in either direction.
+
+**THE SETTLING CHECK WAS RUN AND DID NOT SETTLE** (2026-07-28; this
+replaces the instruction on `IsModularHeckeAction` to "produce one
+`IsGamma0Isogeny` over `Spec ℚ̄` from `exists_velu_quotient_isogeny` plus
+`exists_ellipticScheme_of_weierstrass`", which is not achievable from
+those two inputs).  What blocks it is a MISSING BRIDGE, not a missing
+formula, and naming it is worth more than another attempt:
+
+* `IsGamma0Isogeny.map` is a morphism of SCHEMES `d.E ⟶ d'.E`.  Vélu
+  (`exists_velu_quotient_isogeny`, `…_model`) produces an
+  `AddMonoidHom` on `(E⁄ℚ̄).Point` together with its Galois equivariance
+  and its Vélu coordinates — a map of POINT GROUPS.
+  `exists_ellipticScheme_of_weierstrass` likewise relates the scheme to
+  the curve only through an equivariant `≃+` of geometric-fibre point
+  groups.  Nothing in this development turns a (Galois-equivariant)
+  homomorphism of geometric point groups into a morphism of abelian
+  schemes; that is a representability statement, and it is false for
+  arbitrary group homomorphisms, so it cannot be added as a lemma
+  without a hypothesis pinning the map by coordinates.
+* The route that COULD work is coordinate-level and stays inside
+  `ModularCurve/EllipticScheme.lean`: `ProjCoords E X` with its
+  `toHom : X ⟶ proj E` is exactly a way to BUILD a morphism into a
+  Weierstrass model out of three sections, so the Vélu isogeny would be
+  `ProjCoords (E.veluModel t w) (proj E)` built from the homogenised
+  Vélu forms.  Two obligations then remain, both real: that those three
+  forms generate the irrelevant ideal (Vélu's formulas are rational, with
+  poles exactly on the kernel, so this is where the kernel's absence from
+  the base locus is used), and that the resulting morphism has
+  scheme-theoretic kernel the given `CyclicSubgroupOfOrder` — `ker_eq`
+  quantifies over EVERY test scheme, including non-reduced ones, so it
+  cannot be checked on `ℚ̄`-points.
+* A third obligation is independent of Vélu: the pin evaluates
+  `IsGamma0Isogeny` at data over `Spec ℚ̄`, and
+  `exists_ellipticScheme_of_weierstrass` produces its abelian scheme over
+  `Spec ℚ`.  `exists_gamma0Datum_baseChange` supplies the base change, so
+  this one is bookkeeping rather than mathematics — but it has to be
+  written.
+* Degenerate inhabitations were checked and all fail, which is what makes
+  the question genuine rather than notational.  `map := 𝟙` forces `ker`
+  to be the trivial subgroup, contradicting `geom_cyclic` at order `ℓ > 1`;
+  `mulByNat ℓ` from `Modularity/AbelianSchemeIsogeny.lean` is a morphism
+  of abelian schemes but its kernel is `E[ℓ]`, of order `ℓ²`, not cyclic
+  of order `ℓ`; and an empty base is excluded by `GeometricallyConnected`
+  in `AbelianSchemeStruct` and would in any case say nothing about data
+  over `Spec ℚ̄`, which is all the pin quantifies over.
+
+**The check that would refute this paragraph**: any declaration producing
+a morphism between two abelian schemes over a common base other than
+`mulByNat`, `addHom`, `negHom` and the outputs of universal properties.
+
+**WHAT REMAINS GENUINELY MISSING for the leaf itself.**  The
+correspondence scheme `X₀(N, ℓ)` with its two degeneracy maps, and the
+trace of a finite flat correspondence on the functor of points (the "sum
+over the fibre" that turns `α, β : Z ⟶ X` into `x ↦ ∑_{α z = x} aj (β z)`
+naturally in the test scheme).  Neither exists here, in mathlib at this
+pin, or in `~/cs/FLT`.  That is why this leaf is stated on POINTS: the
+statement is writable today, and it is the exact input
+`IsJacobianOf.universal` consumes.
+
+**AXIS NOT SEARCHED**, recorded so the next owner does not assume it was:
+the complex-analytic route, where `c` comes from the action of
+`Γ₀(N)`-double cosets on `H₁(Γ₀(N)\ℍ*, ℤ)`.  Everything above is the
+algebraic-moduli axis. -/
+theorem exists_heckeCorrespondenceFamily (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g,
+      (∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+          (hg : p ≫ g = g') (x : RelPoint strX g),
+          c g' (RelPoint.pre p hg x) = RelPoint.pre p hg (c g x)) ∧
+        c (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ) ∧
+        ∀ (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma0Isogeny N ℓ d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          c (specAlgClos ℚ)
+              (RelPoint.post jY h.comm (h.coarse.classify (specAlgClos ℚ) d))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY h.comm (h.coarse.classify (specAlgClos ℚ) (dq k))) :=
+  sorry
+
+/-- **THE HECKE CORRESPONDENCE ACTS ON `J₀(N)`** (**PROVEN 2026-07-28**
+over the single leaf `exists_heckeCorrespondenceFamily` above; a sorry
+leaf from earlier the same day until then) — the first half of the cut of
+`exists_heckeIsotypicDecomposition` below, and the one carrying the
+*construction* of `T_ℓ` as opposed to its decomposition.
+
+**THE PROOF, and what it removes from the frontier.**  Three formal steps,
+none of them geometry:
+
+* `IsJacobianOf.universal`, applied to the natural family `c` supplied by
+  the leaf, returns the endomorphism `u : J ⟶ J` together with
+  `u ≫ jstr = jstr` (that is `T_comp`) and the Albanese equation
+  `(c g x).1 = (aj g x).1 ≫ u`, i.e. `RelPoint.post u _ ∘ aj = c`;
+* `isAdditiveOn_of_post_zero` — relative RIGIDITY, PROVEN in this file —
+  upgrades `u` to a homomorphism from the single equation
+  `RelPoint.post u _ (0) = 0`, which is the leaf's base-point clause read
+  through `aj_base` and the Albanese equation.  This is why the leaf does
+  not have to say anything about additivity;
+* the family `T : ℕ → (J ⟶ J)` is assembled pointwise, taking `u` at the
+  primes `ℓ ∤ N` — the only arity `IsModularHeckeAction` constrains — and
+  `𝟙 J` at every other `n`.  `𝟙 J` satisfies `T_comp` and `T_add` (this
+  is the observation that made the UNPINNED cut vacuous, here used for
+  what it is actually good for: the unconstrained arities).
+
+So the whole of the operator-level layer is now formal, and the open work
+is exactly the correspondence on points.
 
 TRUE, and it is the classical construction: the modular correspondence
 `X₀(N) ⟵ X₀(N, ℓ) ⟶ X₀(N)` — on the open part, `(E, C) ↤ (E, C, D) ↦
@@ -28656,10 +28812,11 @@ from a correspondence — it is the Albanese image of the natural family
 and it is why the leaf is a construction problem about the moduli functor
 rather than about Picard functoriality.
 
-**WHAT REMAINS GENUINELY MISSING, checked 2026-07-28.**  What the route
-needs and does not have is the quotient `Γ₀(N)`-datum over a general base:
-`Fermat/FLT/EllipticCurve/Velu.lean` gives `E/C` for a *Weierstrass curve
-over `ℚ`* with a Galois-stable finite subgroup of `E(ℚ̄)`
+**WHAT REMAINS GENUINELY MISSING, checked 2026-07-28 — and it is now
+entirely inside `exists_heckeCorrespondenceFamily` above.**  What the
+route needs and does not have is the quotient `Γ₀(N)`-datum over a general
+base: `Fermat/FLT/EllipticCurve/Velu.lean` gives `E/C` for a *Weierstrass
+curve over `ℚ`* with a Galois-stable finite subgroup of `E(ℚ̄)`
 (`exists_velu_quotient_isogeny`), which is the `ℚ̄`-fibrewise statement, and
 the naturality clause of `IsJacobianOf.universal` quantifies over every test
 scheme.  Two ways out, both statable now: descend the family from `ℚ̄` by
@@ -28668,9 +28825,20 @@ the quotient as an interface (`IsGamma0Isogeny` above) and prove existence
 separately.  **The check that would refute this paragraph**: exhibit an
 `IsGamma0Isogeny` over a base other than `Spec ℚ̄`.
 
+See the leaf's own docstring for the result of running the settling check
+that `IsModularHeckeAction`'s docstring asks for — it does NOT settle from
+`exists_velu_quotient_isogeny` plus `exists_ellipticScheme_of_weierstrass`,
+because both produce maps of POINT GROUPS and `IsGamma0Isogeny.map` is a
+morphism of SCHEMES; the coordinate-level route that could work, and the
+three obligations it leaves, are named there.
+
 **NOT VACUOUS**, and this is the whole point of the pin: `T n := 𝟙 J`
 satisfies `T_comp` and `T_add` and is exactly what made the unpinned version
-of this cut vacuous, but it does not satisfy `IsModularHeckeAction`. -/
+of this cut vacuous, but it does not satisfy `IsModularHeckeAction`.  Note
+that the proof below nevertheless USES `𝟙 J`, at the arities `n` that
+`IsModularHeckeAction` does not constrain — that is legitimate precisely
+because the pin is a statement about primes `ℓ ∤ N` only, and it is the
+reason no second leaf is needed for the remaining arities. -/
 theorem exists_modularHeckeAction (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -28678,8 +28846,49 @@ theorem exists_modularHeckeAction (N : ℕ)
     (jac : IsJacobianOf strX ab o) :
     ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
-        IsModularHeckeAction N h jac T T_comp :=
-  sorry
+        IsModularHeckeAction N h jac T T_comp := by
+  classical
+  -- One endomorphism per natural number, with the pin attached at exactly the
+  -- arities `IsModularHeckeAction` constrains: the Albanese image of the
+  -- correspondence family at a prime `n ∤ N`, and `𝟙 J` at every other `n`.
+  have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      IsAdditiveOn ab ab u hu ∧
+      (n.Prime → ¬ n ∣ N →
+        ∀ (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma0Isogeny N n d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab n, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          RelPoint.post u hu
+              (jac.aj (specAlgClos ℚ)
+                (RelPoint.post j h.comm (h.coarse.classify (specAlgClos ℚ) d)))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post j h.comm (h.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+    intro n
+    by_cases hn : n.Prime ∧ ¬ n ∣ N
+    · obtain ⟨c, hnat, hzero, hrec⟩ := exists_heckeCorrespondenceFamily N n hn.1 hn.2 h jac
+      obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
+      -- the Albanese equation, read as an equation of relative points
+      have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post u hu (jac.aj g x) = c g x := fun g x =>
+        Subtype.ext (hueq g x).symm
+      refine ⟨u, hu, ?_, ?_⟩
+      · -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
+        refine isAdditiveOn_of_post_zero ab ab hu ?_
+        rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base]
+      · intro _ _ d m dq iso hinj hsurj
+        rw [hpost (specAlgClos ℚ) _]
+        exact hrec d m dq iso hinj hsurj
+    · exact ⟨𝟙 J, Category.id_comp jstr, fun x y => by
+        simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
+        fun hp hd => absurd ⟨hp, hd⟩ hn⟩
+  choose T T_comp T_add T_pin using key
+  exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN⟩
 
 /-- **THE ISOTYPIC DECOMPOSITION, GIVEN THE HECKE ACTION** (sorry leaf, new
 2026-07-28) — the second half of the cut of
