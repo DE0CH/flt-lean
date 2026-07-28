@@ -70,7 +70,14 @@ field extension `K/ℚ`.  The pieces live here:
 * `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
   algebraic half of regularity (PROVEN)
 * `isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot` — the
-  transcendental half (LEAF)
+  transcendental half (PROVEN 2026-07-28 over the two leaves below)
+* `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_fractionRing_eq_bot`
+  — the transcendence-basis reduction, all of the plumbing (PROVEN)
+* `isDomain_tensorProduct_adjoin_of_algebraicIndependent` — purely
+  transcendental base change of a field is a domain (LEAF)
+* `algebraicClosure_fractionRing_tensorProduct_adjoin_eq_bot` — regularity is
+  stable under purely transcendental base change (LEAF; the one genuinely
+  missing piece of mathematics)
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — regular extensions
   (PROVEN over the transcendental leaf)
 * `isDomain_tensorProduct_of_injective` — descent to a subring (PROVEN)
@@ -95,6 +102,8 @@ public import Mathlib.FieldTheory.LinearDisjoint
 public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
+public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+public import Mathlib.RingTheory.TensorProduct.Maps
 
 @[expose] public section
 
@@ -452,7 +461,169 @@ theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
   haveI : IsDomain (K ⊗[k] L) := IntermediateField.LinearDisjoint.isDomain' hld2
   exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
 
-/-- **The transcendental half of regularity** (sorry leaf).
+/-- **Geometric integrality descends from the fraction field to the ring**
+(PROVEN).
+
+If `B` is a `k`-algebra which embeds in a `k`-algebra `L` and `L ⊗[k] K` is a
+domain, then so is `B ⊗[k] K`: over a field every module is flat, so
+`B ⊗[k] K → L ⊗[k] K` is injective, and a subring of a domain is a domain.
+
+HOISTED 2026-07-28 from the bottom of the file to here: the transcendence-basis
+reduction below consumes it, and Lean's declaration order forced the move.  Its
+own proof depends on nothing in this file. -/
+theorem isDomain_tensorProduct_of_injective
+    (k B L K : Type*) [Field k] [CommRing B] [CommRing L] [CommRing K]
+    [Algebra k B] [Algebra k L] [Algebra k K]
+    (f : B →ₐ[k] L) (hf : Function.Injective f) [IsDomain (L ⊗[k] K)] :
+    IsDomain (B ⊗[k] K) := by
+  have hcoe : ∀ x : B ⊗[k] K, Algebra.TensorProduct.map f (AlgHom.id k K) x
+      = LinearMap.rTensor K f.toLinearMap x := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul b c => simp
+    | add x y hx hy => simp [map_add, hx, hy]
+  have hrt : Function.Injective (LinearMap.rTensor K f.toLinearMap) :=
+    Module.Flat.rTensor_preserves_injective_linearMap _ hf
+  have hinj : Function.Injective (Algebra.TensorProduct.map f (AlgHom.id k K)) := by
+    intro x y hxy
+    refine hrt ?_
+    rw [← hcoe x, ← hcoe y]
+    exact hxy
+  exact Function.Injective.isDomain
+    (Algebra.TensorProduct.map f (AlgHom.id k K)).toRingHom hinj
+
+/-! #### The transcendence-basis reduction
+
+The three declarations below reduce the transcendental half of regularity to two
+sharp statements about a **purely transcendental** base change.  Everything that
+is pure plumbing — the transcendence basis, the tensor associativities, the
+flatness embeddings — is discharged here, so that the two remaining leaves carry
+only mathematics. -/
+
+/-- **Purely transcendental base change of a field is a domain** (sorry leaf).
+
+Let `x : ι → K` be algebraically independent over `k` and let
+`F = k(xᵢ) = IntermediateField.adjoin k (range x)`.  Then `F ⊗[k] L` is a domain
+for every field extension `L/k`.  No hypothesis relating `k` and `L` is needed:
+this is the statement that a *purely transcendental* extension is regular, which
+holds over any base.
+
+**The route, for whoever closes it.**  Put `R₀ = Algebra.adjoin k (range x)`.
+
+* `R₀ ≃ₐ[k] MvPolynomial ι k` — this is mathlib's
+  `AlgebraicIndependent.aevalEquiv`, and it is exactly what algebraic
+  independence of `x` says.
+* Hence `R₀ ⊗[k] L ≃ₐ MvPolynomial ι k ⊗[k] L ≃ₐ MvPolynomial ι L`, a polynomial
+  ring over a field and therefore a domain.
+* `F` is the *fraction ring* of `R₀`: mathlib has this as the scoped instance
+  `IsFractionRing (Algebra.adjoin F S) (IntermediateField.adjoin F S)` in
+  `Mathlib/FieldTheory/IntermediateField/Adjoin/Algebra.lean`.
+* Therefore `F ⊗[k] L ≃ₐ F ⊗[R₀] (R₀ ⊗[k] L)` (`Algebra.TensorProduct.cancelBaseChange`)
+  is a **localization** of `R₀ ⊗[k] L` — mathlib's `IsLocalization.tensor` in
+  `Mathlib/RingTheory/Localization/BaseChange.lean` — at the image of
+  `nonZeroDivisors R₀`.  That image consists of nonzero elements because
+  `R₀ → R₀ ⊗[k] L` is injective (`L` is free, hence flat, over the field `k`),
+  and a localization of a domain at a submonoid of nonzero elements is a domain.
+
+*The check that would refute this note*: `AlgebraicIndependent.aevalEquiv`,
+the scoped `IsFractionRing` instance, or `IsLocalization.tensor` failing to
+exist under our pin.  All three were confirmed present on 2026-07-28. -/
+theorem isDomain_tensorProduct_adjoin_of_algebraicIndependent
+    (k : Type*) [Field k] (L : Type*) [Field L] [Algebra k L]
+    {K : Type*} [Field K] [Algebra k K] {ι : Type*} {x : ι → K}
+    (hx : AlgebraicIndependent k x) :
+    IsDomain ((IntermediateField.adjoin k (Set.range x)) ⊗[k] L) :=
+  sorry
+
+/-- **Regularity is stable under purely transcendental base change** (sorry leaf).
+
+This is the one genuinely missing piece of mathematics in the transcendental
+half.  With `F = k(xᵢ)` purely transcendental over `k` and `k` algebraically
+closed in `L`, the base field `F` is algebraically closed in the compositum
+`Frac (F ⊗[k] L) = L(xᵢ)`.
+
+**The route, for whoever closes it.**  By `algebraicClosure_fractionRing_eq_bot`
+(proven above) it is enough to show that `F ⊗[k] L` is *integrally closed* and
+that every `y : F ⊗[k] L` algebraic over `F` already lies in `F`.
+
+* *Integrally closed*: by the route recorded on
+  `isDomain_tensorProduct_adjoin_of_algebraicIndependent`, `F ⊗[k] L` is a
+  localization of `MvPolynomial ι L`.  A polynomial ring over a field is a UFD,
+  a UFD is integrally closed
+  (`UniqueFactorizationMonoid.instIsIntegrallyClosed`), and
+  `isIntegrallyClosed_of_isLocalization` carries that to the localization.
+* *No new constants* — the actual content.  `F ⊗[k] L` is a free `F`-module on
+  any `k`-basis `(eⱼ)` of `L`, which we may take to contain `1`.  Write
+  `y = Σ cⱼ eⱼ` with `cⱼ : F` rational functions in the `xᵢ`, only finitely many
+  nonzero and involving only finitely many of the variables.  **Specialize the
+  variables**: `k` is infinite (characteristic zero), so a nonzero polynomial in
+  finitely many variables over `k` has a non-root, and we may choose `t₀ ∈ kⁿ`
+  avoiding the denominators of the `cⱼ` and of the minimal polynomial of `y`
+  over `F`.  Evaluating at `t₀` sends the algebraic relation over `F = k(x)` to
+  an algebraic relation over `k`, so `Σ cⱼ(t₀) eⱼ ∈ L` is algebraic over `k`,
+  hence lies in `k` because `algebraicClosure k L = ⊥`.  Since `(eⱼ)` is a
+  `k`-basis containing `1`, that forces `cⱼ(t₀) = 0` for every `j` with
+  `eⱼ ≠ 1`, at *every* admissible `t₀`; a rational function vanishing on a
+  Zariski-dense set of `kⁿ` is zero.  So `cⱼ = 0` for `j ≠ 1` and `y = c₁ ∈ F`.
+
+**Faithfulness note — `CharZero k` is load-bearing, and NOT only through
+perfection.**  The statement is true over any *perfect* `k`, but the
+specialization proof above additionally needs `k` **infinite**, so it does not
+survive verbatim to `k = 𝔽_q`.  That matters here: see the report note on the
+`PerfectField` weakening of `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`
+on the `merger` branch.  Over a finite `k` the theorem still holds but needs a
+different argument (descent along `k̄/k` rather than specialization).
+
+*The check that would refute this note*: exhibiting `y ∈ F ⊗[k] L` algebraic
+over `F` but not in `F` with `k` algebraically closed in `L` — impossible in
+characteristic zero by the above, so a refutation would have to break the
+specialization step. -/
+theorem algebraicClosure_fractionRing_tensorProduct_adjoin_eq_bot
+    (k : Type*) [Field k] [CharZero k] (L : Type*) [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    {K : Type*} [Field K] [Algebra k K] {ι : Type*} {x : ι → K}
+    (hx : AlgebraicIndependent k x)
+    [IsDomain ((IntermediateField.adjoin k (Set.range x)) ⊗[k] L)] :
+    algebraicClosure (IntermediateField.adjoin k (Set.range x))
+      (FractionRing ((IntermediateField.adjoin k (Set.range x)) ⊗[k] L)) = ⊥ :=
+  sorry
+
+/-- **The transcendence-basis reduction** (PROVEN).
+
+If `F` is an intermediate field of `K/k` over which `K` is algebraic, and `F` is
+algebraically closed in `Frac (F ⊗[k] L)`, then `L ⊗[k] K` is a domain.
+
+This is the whole plumbing chain of the transcendental half, isolated so that it
+elaborates over an abstract `F` rather than over the subtype
+`↥(IntermediateField.adjoin …)` — instance search on the latter times out.
+
+The chain: the algebraic case over the base `F` gives
+`IsDomain (Frac (F ⊗[k] L) ⊗[F] K)`; `isDomain_tensorProduct_of_injective`
+descends it to `(F ⊗[k] L) ⊗[F] K`; and
+`Algebra.TensorProduct.cancelBaseChange` together with two commutativity
+isomorphisms rewrites that as `L ⊗[k] K`. -/
+theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_fractionRing_eq_bot
+    (k : Type*) [Field k] (F : Type*) [Field F] (L : Type*) [Field L] (K : Type*) [Field K]
+    [Algebra k F] [Algebra k L] [Algebra k K] [Algebra F K] [IsScalarTower k F K]
+    [CharZero F] [Algebra.IsAlgebraic F K] [IsDomain (F ⊗[k] L)]
+    (hbotF : algebraicClosure F (FractionRing (F ⊗[k] L)) = ⊥) :
+    IsDomain (L ⊗[k] K) := by
+  haveI : IsDomain (FractionRing (F ⊗[k] L) ⊗[F] K) :=
+    isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot F
+      (FractionRing (F ⊗[k] L)) hbotF K
+  haveI : IsDomain ((F ⊗[k] L) ⊗[F] K) :=
+    isDomain_tensorProduct_of_injective F (F ⊗[k] L) (FractionRing (F ⊗[k] L)) K
+      (IsScalarTower.toAlgHom F (F ⊗[k] L) (FractionRing (F ⊗[k] L)))
+      (IsFractionRing.injective _ _)
+  haveI : IsDomain (K ⊗[F] (F ⊗[k] L)) :=
+    (Algebra.TensorProduct.comm F K (F ⊗[k] L)).toMulEquiv.isDomain
+  haveI : IsDomain (K ⊗[k] L) :=
+    (Algebra.TensorProduct.cancelBaseChange k F F K L).symm.toMulEquiv.isDomain
+  exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
+
+/-- **The transcendental half of regularity** (PROVEN 2026-07-28 over the two
+leaves above).
 
 `k` is algebraically closed in `L`, the characteristic is zero, and `K/k` is
 *not* algebraic.  The conclusion `IsDomain (L ⊗[k] K)` is true for every `K/k`;
@@ -492,9 +663,20 @@ element in
 theorem isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
-    (K : Type*) [Field K] [Algebra k K] (hna : ¬ Algebra.IsAlgebraic k K) :
-    IsDomain (L ⊗[k] K) :=
-  sorry
+    (K : Type*) [Field K] [Algebra k K] (_hna : ¬ Algebra.IsAlgebraic k K) :
+    IsDomain (L ⊗[k] K) := by
+  obtain ⟨s, hs⟩ := exists_isTranscendenceBasis k K
+  haveI : Algebra.IsAlgebraic (Algebra.adjoin k (Set.range ((↑) : s → K))) K := hs.isAlgebraic
+  haveI : Algebra.IsAlgebraic (IntermediateField.adjoin k (Set.range ((↑) : s → K))) K :=
+    ⟨fun a => (Algebra.IsAlgebraic.isAlgebraic
+      (R := Algebra.adjoin k (Set.range ((↑) : s → K))) a).tower_top_of_subalgebra_le
+        (IntermediateField.algebra_adjoin_le_adjoin k _)⟩
+  haveI : CharZero (IntermediateField.adjoin k (Set.range ((↑) : s → K))) :=
+    charZero_of_injective_algebraMap (algebraMap k _).injective
+  haveI := isDomain_tensorProduct_adjoin_of_algebraicIndependent k L hs.1
+  exact isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_fractionRing_eq_bot k
+    (IntermediateField.adjoin k (Set.range ((↑) : s → K))) L K
+    (algebraicClosure_fractionRing_tensorProduct_adjoin_eq_bot k L hbot hs.1)
 
 /-- **A field extension in which the base field is algebraically closed is
 regular** (PROVEN over
@@ -534,34 +716,6 @@ theorem isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot
     IsDomain (FractionRing B ⊗[k] K) :=
   isDomain_tensorProduct_of_algebraicClosure_eq_bot k (FractionRing B)
     (algebraicClosure_fractionRing_eq_bot k B h) K
-
-/-- **Geometric integrality descends from the fraction field to the ring**
-(PROVEN).
-
-If `B` is a `k`-algebra which embeds in a `k`-algebra `L` and `L ⊗[k] K` is a
-domain, then so is `B ⊗[k] K`: over a field every module is flat, so
-`B ⊗[k] K → L ⊗[k] K` is injective, and a subring of a domain is a domain. -/
-theorem isDomain_tensorProduct_of_injective
-    (k B L K : Type*) [Field k] [CommRing B] [CommRing L] [CommRing K]
-    [Algebra k B] [Algebra k L] [Algebra k K]
-    (f : B →ₐ[k] L) (hf : Function.Injective f) [IsDomain (L ⊗[k] K)] :
-    IsDomain (B ⊗[k] K) := by
-  have hcoe : ∀ x : B ⊗[k] K, Algebra.TensorProduct.map f (AlgHom.id k K) x
-      = LinearMap.rTensor K f.toLinearMap x := by
-    intro x
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | tmul b c => simp
-    | add x y hx hy => simp [map_add, hx, hy]
-  have hrt : Function.Injective (LinearMap.rTensor K f.toLinearMap) :=
-    Module.Flat.rTensor_preserves_injective_linearMap _ hf
-  have hinj : Function.Injective (Algebra.TensorProduct.map f (AlgHom.id k K)) := by
-    intro x y hxy
-    refine hrt ?_
-    rw [← hcoe x, ← hcoe y]
-    exact hxy
-  exact Function.Injective.isDomain
-    (Algebra.TensorProduct.map f (AlgHom.id k K)).toRingHom hinj
 
 /-- **A normal domain in which the base field is algebraically closed is
 geometrically integral** (PROVEN over
