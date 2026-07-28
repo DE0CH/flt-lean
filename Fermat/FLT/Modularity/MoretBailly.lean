@@ -37282,7 +37282,381 @@ theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
       (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
   DivisibleTorsion.exists_torsionParam hcard
 
-/-- **THE ADAPTED FRAME OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+section AdaptedFrame
+
+namespace DivisibleTorsion
+
+variable {P : Type*} [AddCommGroup P]
+
+/-- **AN ADAPTED FRAME AT LEVEL `n`** (2026-07-28): a `ℤ/n`-basis `(p, q)` of the
+`n`-torsion of `P` in which the involution `c` is the matrix `[[1, ε], [0, −1]]`.
+
+This is `IsTorsionBasis` (same file) plus the two intertwining equations, and it
+is the finite-level shadow of the ADAPTED FRAME that
+`exists_conjFrame_realConjAdd` below asks for over `ℚ/ℤ`. -/
+structure IsAdaptedFrame (ε : Bool) (c : P →+ P) (n : ℕ) (pq : P × P) : Prop where
+  basis : IsTorsionBasis n pq
+  fix : c pq.1 = pq.1
+  twist : c pq.2 = (if ε then pq.1 else 0) - pq.2
+
+/-- Restricting an adapted frame at level `m * d` to one at level `m`.
+
+Adaptedness costs NOTHING here: `c` is additive, so it commutes with `d • −`, and
+both equations survive the restriction verbatim.  All the content is
+`IsTorsionBasis.restrict`.  This is the reason the Kőnig argument below is a
+transcription of `exists_compatibleBasis` rather than a new argument. -/
+theorem IsAdaptedFrame.restrict {ε : Bool} {c : P →+ P} {m d : ℕ} (hm : m ≠ 0) (hd : d ≠ 0)
+    {pq : P × P} (h : IsAdaptedFrame ε c (m * d) pq) :
+    IsAdaptedFrame ε c m ((d : ℤ) • pq.1, (d : ℤ) • pq.2) where
+  basis := h.basis.restrict hm hd
+  fix := by
+    show c ((d : ℤ) • pq.1) = (d : ℤ) • pq.1
+    rw [map_zsmul, h.fix]
+  twist := by
+    show c ((d : ℤ) • pq.2) = (if ε then (d : ℤ) • pq.1 else 0) - (d : ℤ) • pq.2
+    rw [map_zsmul, h.twist]
+    cases ε <;> simp [smul_sub]
+
+/-- **A COMPATIBLE SYSTEM OF ADAPTED FRAMES** (PROVEN 2026-07-28), by Kőnig's
+lemma over the divisibility order, exactly as `exists_compatibleBasis` does it
+for plain torsion bases: the sets of adapted frames of the `i !`-torsion are
+finite and nonempty, and the transition maps are the restrictions above.
+
+Note the hypothesis is FINITENESS of each torsion subgroup, not the count `n²`
+that `exists_compatibleBasis` asks for.  The count is used there only to derive
+finiteness; nonemptiness comes from `hlevel` here, so the weaker hypothesis
+suffices and is much cheaper for a consumer to supply. -/
+theorem exists_compatibleAdaptedFrame {ε : Bool} {c : P →+ P}
+    (hfinT : ∀ n : ℕ, n ≠ 0 → Finite {x : P // (n : ℤ) • x = 0})
+    (hlevel : ∀ n : ℕ, n ≠ 0 → ∃ pq : P × P, IsAdaptedFrame ε c n pq) :
+    ∃ f : ℕ → P × P, (∀ i, IsAdaptedFrame ε c (Nat.factorial i) (f i)) ∧
+      ∀ i j, i ≤ j → (cfac i j : ℤ) • (f j).1 = (f i).1 ∧
+        (cfac i j : ℤ) • (f j).2 = (f i).2 := by
+  have hne : ∀ i : ℕ, Nonempty {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} := by
+    intro i
+    obtain ⟨pq, h⟩ := hlevel _ (Nat.factorial_ne_zero i)
+    exact ⟨⟨pq, h⟩⟩
+  have hfin : ∀ i : ℕ, Finite {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} := by
+    intro i
+    haveI := hfinT _ (Nat.factorial_ne_zero i)
+    refine Finite.of_injective
+      (fun x : {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq} =>
+        ((⟨x.1.1, x.2.basis.smul_fst⟩ : {y : P // ((Nat.factorial i : ℕ) : ℤ) • y = 0}),
+         (⟨x.1.2, x.2.basis.smul_snd⟩ : {y : P // ((Nat.factorial i : ℕ) : ℤ) • y = 0}))) ?_
+    intro x y hxy
+    have h1 : x.1.1 = y.1.1 := congrArg Subtype.val (congrArg Prod.fst hxy)
+    have h2 : x.1.2 = y.1.2 := congrArg Subtype.val (congrArg Prod.snd hxy)
+    exact Subtype.ext (Prod.ext h1 h2)
+  let α : ℕ → Type _ := fun i => {pq : P × P // IsAdaptedFrame ε c (Nat.factorial i) pq}
+  let π : {i j : ℕ} → (hij : i ≤ j) → α j → α i := fun {i j} hij x =>
+    ⟨((cfac i j : ℤ) • x.1.1, (cfac i j : ℤ) • x.1.2),
+      IsAdaptedFrame.restrict (Nat.factorial_ne_zero i) (cfac_ne_zero hij)
+        (by rw [cfac_spec hij]; exact x.2)⟩
+  obtain ⟨g, hg⟩ := @exists_seq_forall_proj_of_forall_finite α (hfin 0) hne π
+    (fun i a => by
+      apply Subtype.ext
+      show ((cfac i i : ℤ) • a.1.1, (cfac i i : ℤ) • a.1.2) = a.1
+      rw [cfac_self]
+      simp)
+    (fun i j k hij hjk a => by
+      apply Subtype.ext
+      show ((cfac i j : ℤ) • ((cfac j k : ℤ) • a.1.1), (cfac i j : ℤ) • ((cfac j k : ℤ) • a.1.2))
+          = ((cfac i k : ℤ) • a.1.1, (cfac i k : ℤ) • a.1.2)
+      rw [smul_smul, smul_smul, ← Nat.cast_mul, cfac_trans hij hjk])
+    (fun i a => by
+      haveI := hfin (i + 1)
+      exact Set.toFinite _)
+  refine ⟨fun i => (g i).1, fun i => (g i).2, fun i j hij => ⟨?_, ?_⟩⟩
+  · exact congrArg (fun z => z.1.1) (hg hij)
+  · exact congrArg (fun z => z.1.2) (hg hij)
+
+/-- **THE ADAPTED PARAMETRISATION** (PROVEN 2026-07-28): from adapted frames at
+every finite level, a pair of additive maps `u, w : ℚ/ℤ → P` intertwining
+`realConjAdd ε` with `c`, injective as a pair, with image the whole torsion
+subgroup.
+
+This is `exists_torsionParam` (same file) carrying the involution along.  The
+two intertwining equations hold because `qmap` sends `x` to `a • rₖ` for a single
+integer `a` and a single level `k`, so they are the frame's own equations scaled
+by `a` — no compatibility argument is needed for them, only for the system. -/
+theorem exists_adaptedParam {ε : Bool} {c : P →+ P}
+    (hfinT : ∀ n : ℕ, n ≠ 0 → Finite {x : P // (n : ℤ) • x = 0})
+    (hlevel : ∀ n : ℕ, n ≠ 0 → ∃ pq : P × P, IsAdaptedFrame ε c n pq) :
+    ∃ u w : (ℚ ⧸ (1 : Submodule ℤ ℚ)) →+ P,
+      (∀ t, c (u t) = u t) ∧
+      (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
+      Function.Injective (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) ∧
+      (∀ y : P, (∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • y = 0) →
+        ∃ v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)), u (v 0) + w (v 1) = y) := by
+  obtain ⟨f, hframe, hcompat⟩ := exists_compatibleAdaptedFrame hfinT hlevel
+  have hbasis : ∀ i, IsTorsionBasis (Nat.factorial i) (f i) := fun i => (hframe i).basis
+  have hp : ∀ i j : ℕ, i ≤ j → (cfac i j : ℤ) • (fun i => (f i).1) j = (fun i => (f i).1) i :=
+    fun i j h => (hcompat i j h).1
+  have hq : ∀ i j : ℕ, i ≤ j → (cfac i j : ℤ) • (fun i => (f i).2) j = (fun i => (f i).2) i :=
+    fun i j h => (hcompat i j h).2
+  have hp0 : (fun i => (f i).1) 0 = 0 := by
+    have h := (hbasis 0).smul_fst
+    simpa using h
+  have hq0 : (fun i => (f i).2) 0 = 0 := by
+    have h := (hbasis 0).smul_snd
+    simpa using h
+  set U := qquot hp hp0 with hU
+  set W := qquot hq hq0 with hW
+  have hcU : ∀ x : ℚ, c (qmap (fun i => (f i).1) x) = qmap (fun i => (f i).1) x := by
+    intro x
+    show c ((x * ((Nat.factorial x.den : ℕ) : ℚ)).num • (f x.den).1) = _
+    rw [map_zsmul, (hframe x.den).fix]
+    rfl
+  have hcW : ∀ x : ℚ, c (qmap (fun i => (f i).2) x)
+      = (if ε then qmap (fun i => (f i).1) x else 0) - qmap (fun i => (f i).2) x := by
+    intro x
+    show c ((x * ((Nat.factorial x.den : ℕ) : ℚ)).num • (f x.den).2) = _
+    rw [map_zsmul, (hframe x.den).twist]
+    cases ε <;> simp [qmap, smul_sub]
+  have hrep : ∀ v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)), ∃ (k : ℕ) (a b : ℤ),
+      U (v 0) + W (v 1) = a • (f k).1 + b • (f k).2 ∧
+      v 0 = Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) ∧
+      v 1 = Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) := by
+    intro v
+    obtain ⟨x, hx⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 0)
+    obtain ⟨y, hy⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 1)
+    have hkpos : 0 < x.den * y.den :=
+      Nat.mul_pos (Nat.pos_of_ne_zero x.den_ne_zero) (Nat.pos_of_ne_zero y.den_ne_zero)
+    have hkfac : x.den * y.den ∣ Nat.factorial (x.den * y.den) := Nat.dvd_factorial hkpos le_rfl
+    obtain ⟨a, ha⟩ := exists_num_of_dvd (dvd_trans ⟨y.den, rfl⟩ hkfac)
+    obtain ⟨b, hb⟩ := exists_num_of_dvd (dvd_trans ⟨x.den, mul_comm x.den y.den⟩ hkfac)
+    have hfacne : ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) ≠ 0 := by
+      exact_mod_cast Nat.factorial_ne_zero _
+    have hxa : (a : ℚ) / ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) = x := by
+      rw [← ha]; field_simp
+    have hyb : (b : ℚ) / ((Nat.factorial (x.den * y.den) : ℕ) : ℚ) = y := by
+      rw [← hb]; field_simp
+    refine ⟨x.den * y.den, a, b, ?_, ?_, ?_⟩
+    · rw [← hx, ← hy, hU, hW, qquot_mk, qquot_mk, qmap_eq hp ha, qmap_eq hq hb]
+    · rw [hxa, hx]
+    · rw [hyb, hy]
+  refine ⟨U.toAddMonoidHom, W.toAddMonoidHom, ?_, ?_, ?_, ?_⟩
+  · intro t
+    obtain ⟨x, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) t
+    show c (U (Submodule.Quotient.mk x)) = U (Submodule.Quotient.mk x)
+    rw [hU, qquot_mk]
+    exact hcU x
+  · intro t
+    obtain ⟨x, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) t
+    show c (W (Submodule.Quotient.mk x))
+      = (if ε then U (Submodule.Quotient.mk x) else 0) - W (Submodule.Quotient.mk x)
+    rw [hU, hW, qquot_mk, qquot_mk]
+    exact hcW x
+  · intro v w hvw
+    have hvw' : U (v 0) + W (v 1) = U (w 0) + W (w 1) := hvw
+    have hzero : U ((v - w) 0) + W ((v - w) 1) = 0 := by
+      simp only [Pi.sub_apply, map_sub]
+      rw [sub_add_sub_comm, hvw', sub_self]
+    obtain ⟨k, a, b, hsum, h0, h1⟩ := hrep (v - w)
+    rw [hsum] at hzero
+    obtain ⟨hda, hdb⟩ := (hbasis k).indep a b hzero
+    have hmk : ∀ e : ℤ, ((Nat.factorial k : ℕ) : ℤ) ∣ e →
+        (Submodule.Quotient.mk ((e : ℚ) / ((Nat.factorial k : ℕ) : ℚ)) :
+          ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+      intro e he
+      obtain ⟨e', rfl⟩ := he
+      have hfacne : ((Nat.factorial k : ℕ) : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero k
+      have hrw : ((((Nat.factorial k : ℕ) : ℤ) * e' : ℤ) : ℚ) / ((Nat.factorial k : ℕ) : ℚ)
+          = ((e' : ℤ) : ℚ) := by push_cast; field_simp
+      rw [hrw, Submodule.Quotient.mk_eq_zero]
+      exact Submodule.mem_one.mpr ⟨e', by simp⟩
+    have hv0 : (v - w) 0 = 0 := by rw [h0]; exact hmk a hda
+    have hv1 : (v - w) 1 = 0 := by rw [h1]; exact hmk b hdb
+    funext i
+    fin_cases i
+    · have h := hv0
+      simp only [Pi.sub_apply] at h
+      exact sub_eq_zero.mp h
+    · have h := hv1
+      simp only [Pi.sub_apply] at h
+      exact sub_eq_zero.mp h
+  · rintro y ⟨n, hn, hy⟩
+    have hnd : (n : ℤ) ∣ ((Nat.factorial n : ℕ) : ℤ) := by
+      exact_mod_cast Nat.dvd_factorial (Nat.pos_of_ne_zero hn) le_rfl
+    have hy' : ((Nat.factorial n : ℕ) : ℤ) • y = 0 := by
+      obtain ⟨e, he⟩ := hnd
+      rw [he, mul_comm (n : ℤ) e, ← smul_smul, hy, smul_zero]
+    obtain ⟨a, b, hab⟩ := (hbasis n).span y hy'
+    have hfacne : ((Nat.factorial n : ℕ) : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero n
+    refine ⟨![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+      Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))], ?_⟩
+    have hU' : U (Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)))
+        = a • (f n).1 := by
+      rw [hU, qquot_mk]
+      refine qmap_eq hp ?_
+      field_simp
+    have hW' : W (Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ)))
+        = b • (f n).2 := by
+      rw [hW, qquot_mk]
+      refine qmap_eq hq ?_
+      field_simp
+    show U (![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+        Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))] 0)
+      + W (![Submodule.Quotient.mk ((a : ℚ) / ((Nat.factorial n : ℕ) : ℚ)),
+        Submodule.Quotient.mk ((b : ℚ) / ((Nat.factorial n : ℕ) : ℚ))] 1) = y
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [hU', hW', hab]
+
+/-- Every `n`-torsion element of `ℚ/ℤ` is `a/n` for an integer `a`. -/
+theorem exists_intDiv_of_ratQuot_torsion {n : ℕ} (hn : n ≠ 0)
+    {x : ℚ ⧸ (1 : Submodule ℤ ℚ)} (hx : (n : ℤ) • x = 0) :
+    ∃ a : ℤ, x = Submodule.Quotient.mk ((a : ℚ) / (n : ℚ)) := by
+  obtain ⟨r, rfl⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) x
+  have hnq : (n : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  have h0 : (Submodule.Quotient.mk ((n : ℚ) * r) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+    rw [show ((n : ℚ) * r) = ((n : ℤ) • r) by rw [zsmul_eq_mul]; push_cast; ring]
+    exact hx
+  obtain ⟨a, ha⟩ := Submodule.mem_one.mp (Submodule.Quotient.mk_eq_zero _ |>.mp h0)
+  refine ⟨a, ?_⟩
+  have ha' : (a : ℚ) = (n : ℚ) * r := by rw [← ha]; simp
+  rw [ha']
+  congr 1
+  field_simp
+
+/-- The `n`-torsion of `ℚ/ℤ` is finite (it is `ℤ/n`, but only finiteness is
+needed downstream). -/
+theorem finite_ratQuot_torsion {n : ℕ} (hn : n ≠ 0) :
+    Finite {x : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • x = 0} := by
+  haveI : NeZero n := ⟨hn⟩
+  have hnq : (n : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  have hmem : ∀ a : ℤ, (n : ℤ) •
+      (Submodule.Quotient.mk ((a : ℚ) / (n : ℚ)) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0 := by
+    intro a
+    show (Submodule.Quotient.mk ((n : ℤ) • ((a : ℚ) / (n : ℚ))) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0
+    rw [Submodule.Quotient.mk_eq_zero]
+    refine Submodule.mem_one.mpr ⟨a, ?_⟩
+    have halg : (algebraMap ℤ ℚ) a = (a : ℚ) := by simp
+    rw [halg, zsmul_eq_mul]
+    push_cast
+    field_simp
+  refine Finite.of_surjective
+    (fun a : ZMod n => (⟨Submodule.Quotient.mk (((a.val : ℤ) : ℚ) / (n : ℚ)),
+      hmem (a.val : ℤ)⟩ : {x : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • x = 0})) ?_
+  rintro ⟨x, hx⟩
+  obtain ⟨a, rfl⟩ := exists_intDiv_of_ratQuot_torsion hn hx
+  refine ⟨(a : ZMod n), Subtype.ext ?_⟩
+  have hdvd : (n : ℤ) ∣ (((a : ZMod n).val : ℤ) - a) := by
+    have h := (ZMod.intCast_zmod_eq_zero_iff_dvd (((a : ZMod n).val : ℤ) - a) n).mp (by
+      push_cast [ZMod.natCast_val, ZMod.intCast_cast, ZMod.cast_id]
+      ring)
+    exact h
+  obtain ⟨e, he⟩ := hdvd
+  show (Submodule.Quotient.mk ((((a : ZMod n).val : ℤ) : ℚ) / (n : ℚ)) :
+    ℚ ⧸ (1 : Submodule ℤ ℚ)) = Submodule.Quotient.mk ((a : ℚ) / (n : ℚ))
+  rw [Submodule.Quotient.eq]
+  refine Submodule.mem_one.mpr ⟨e, ?_⟩
+  have hz : ((((a : ZMod n).val : ℤ) : ℚ)) - (a : ℚ) = ((n : ℚ)) * (e : ℚ) := by
+    exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) he
+  show ((e : ℤ) : ℚ) = ((((a : ZMod n).val : ℤ) : ℚ) / (n : ℚ)) - ((a : ℚ) / (n : ℚ))
+  field_simp
+  linarith [hz]
+
+/-- Every element of `(ℚ/ℤ)²` is torsion.  This is what turns the injectivity and
+torsion-surjectivity of `exists_adaptedParam` into BIJECTIVITY. -/
+theorem exists_smul_eq_zero_ratQuotSq (v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) :
+    ∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • v = 0 := by
+  obtain ⟨x, hx⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 0)
+  obtain ⟨y, hy⟩ := Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (v 1)
+  refine ⟨x.den * y.den, Nat.mul_ne_zero x.den_ne_zero y.den_ne_zero, ?_⟩
+  have hkill : ∀ (r : ℚ) (m : ℕ), r.den ∣ m →
+      ((m : ℤ) • (Submodule.Quotient.mk r : ℚ ⧸ (1 : Submodule ℤ ℚ))) = 0 := by
+    intro r m hm
+    obtain ⟨a, ha⟩ := exists_num_of_dvd (x := r) (N := m) hm
+    show (Submodule.Quotient.mk ((m : ℤ) • r) : ℚ ⧸ (1 : Submodule ℤ ℚ)) = 0
+    rw [Submodule.Quotient.mk_eq_zero]
+    refine Submodule.mem_one.mpr ⟨a, ?_⟩
+    rw [show ((m : ℤ) • r) = r * (m : ℚ) by rw [zsmul_eq_mul]; push_cast; ring, ha]
+    simp
+  funext i
+  fin_cases i
+  · show (((x.den * y.den : ℕ) : ℤ) • v 0) = 0
+    rw [← hx]
+    exact hkill x _ ⟨y.den, rfl⟩
+  · show (((x.den * y.den : ℕ) : ℤ) • v 1) = 0
+    rw [← hy]
+    exact hkill y _ ⟨x.den, mul_comm x.den y.den⟩
+
+/-- The `n`-torsion of `(ℚ/ℤ)²` is finite. -/
+theorem finite_ratQuotSq_torsion {n : ℕ} (hn : n ≠ 0) :
+    Finite {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) // (n : ℤ) • x = 0} := by
+  haveI := finite_ratQuot_torsion hn
+  refine Finite.of_injective
+    (fun x : {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) // (n : ℤ) • x = 0} =>
+      ((⟨x.1 0, congrFun x.2 0⟩ : {z : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • z = 0}),
+       (⟨x.1 1, congrFun x.2 1⟩ : {z : ℚ ⧸ (1 : Submodule ℤ ℚ) // (n : ℤ) • z = 0}))) ?_
+  intro x y hxy
+  have h0 : x.1 0 = y.1 0 := congrArg Subtype.val (congrArg Prod.fst hxy)
+  have h1 : x.1 1 = y.1 1 := congrArg Subtype.val (congrArg Prod.snd hxy)
+  refine Subtype.ext (funext fun i => ?_)
+  fin_cases i
+  · exact h0
+  · exact h1
+
+end DivisibleTorsion
+
+/-- **THE FINITE-LEVEL CLASSIFICATION OF THE INVOLUTION** (sorry leaf, cut
+2026-07-28 out of `exists_conjFrame_realConjAdd` below): the involution `c` of
+`(ℚ/ℤ)²` admits an ADAPTED FRAME AT EVERY FINITE LEVEL `n ≠ 0` — a `ℤ/n`-basis
+`(p, q)` of `A[n]` with `c p = p` and `c q = [ε]·p − q`.
+
+THIS IS THE WHOLE REMAINING MATHEMATICS OF THE NODE.  Everything else in the
+cluster — the inverse limit, the passage to `ℚ/ℤ`, the bijectivity, the
+reassembly of the automorphism — is now real code.
+
+WHAT HAS TO BE PROVEN, and it is exactly the classification the parent docstring
+describes, read at a FINITE level.  `A[n] ≅ (ℤ/n)²` and `c|A[n]` is an involution
+of it; split `n` by CRT and argue prime by prime.
+
+* At an ODD prime power `p^k`: `2` is invertible in `ℤ/p^k`, so `e = (1+c)/2` is
+  an idempotent and `(ℤ/p^k)² = im e ⊕ ker e` with the two summands free of ranks
+  `a + b = 2`.  The multiplicities are visible mod `p`, and `hne_id`/`hne_neg`
+  read at `n = p` (legal, since `p ≥ 3`) say `c|A[p] ≠ ±1`, forcing `a = b = 1`,
+  i.e. `c ~ diag(1, −1)`.  Finally `diag(1, −1)` is `[[1, 1], [0, −1]]`-conjugate
+  over `ℤ/p^k`, because the `−1`-eigenvector `(1, −2)` is a unit vector there.
+* At `2^k`: the indecomposable `ℤ₂[C₂]`-lattices are `triv`, `sign` and the
+  regular module (Diederichsen–Reiner), so a rank-two module is one of
+  `c = 1`, `diag(1, −1)`, `c = −1`, or the SWAP.  `hne_id`/`hne_neg` read at
+  `n = 4` (legal, `4 ≥ 3`) kill `c = ±1`, and the two survivors are separated by
+  `hfix2`: on `A[2]` negation is the identity, so `diag(1, −1)` fixes all `4`
+  elements while the swap fixes only the `2` diagonal ones.  The swap IS
+  `[[1, 1], [0, −1]]` in the basis `(0, 1), (1, −1)` (determinant `−1`, a unit).
+
+WHY THE HYPOTHESES SUFFICE, checked level by level, because this is exactly where
+a cut of this shape goes wrong.  `hne_id`/`hne_neg` are quantified over ALL
+`n ≥ 3`, so they may be read at each odd prime `p ∣ n` AND at `4`; that is what
+pins every primary component separately, which "`c|A[n] ≠ ±1`" alone would not
+do.  `hfix2` is needed only for the `2`-part and only to separate the last two
+cases.  At `n = 1` the statement is trivial (`p = q = 0`), at `n = 2` it is
+`hfix2` alone (`ε = false` forces `c|A[2] = id`, so any basis is adapted;
+`ε = true` makes `c|A[2]` a transvection).
+
+THE CHECK THAT WOULD REFUTE THIS CUT: an `n ≠ 0` and an involution satisfying all
+four hypotheses with no adapted frame at level `n`.  There is none — the argument
+above is uniform in `n` — and note the leaf is strictly WEAKER than its parent:
+the parent's conclusion restricts to an adapted frame at every level, so any
+counterexample here is a counterexample there. -/
+theorem exists_adaptedFrame_level (ε : Bool)
+    (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+    (hc : ∀ x, c (c x) = x)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4)
+    (n : ℕ) (hn : n ≠ 0) :
+    ∃ pq : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) × (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      DivisibleTorsion.IsAdaptedFrame ε c n pq :=
+  sorry
+
+end AdaptedFrame
+
+/-- **THE ADAPTED FRAME OF THE INVOLUTION** (**PROVEN 2026-07-28** over the single
+leaf `exists_adaptedFrame_level` above; formerly a bare `sorry`, cut 2026-07-27
+out of
 `exists_conj_realConjAdd`, itself cut the same day out of
 `exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
 which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
@@ -37331,7 +37705,15 @@ so this is not vacuous.
 CUT 2026-07-27 (this task): the existential over `≃+` is replaced by an
 existential over an ADAPTED FRAME (`exists_conjFrame_realConjAdd` below), and the
 assembly — building the automorphism out of the frame and checking the
-intertwining equation — is real code. -/
+intertwining equation — is real code.
+
+CUT 2026-07-28: this leaf is PROVEN from `exists_adaptedFrame_level` above, the
+same statement read at a single finite level.  The passage from finite levels to
+`ℚ/ℤ` — the inverse limit over the divisibility order, the two intertwining
+identities, injectivity, and surjectivity onto the torsion subgroup — is
+`DivisibleTorsion.exists_adaptedParam`, real code built by carrying the
+involution through the machinery that already existed for
+`exists_torsionParam_of_divisible`. -/
 theorem exists_conjFrame_realConjAdd (ε : Bool)
     (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
     (hc : ∀ x, c (c x) = x)
@@ -37343,8 +37725,13 @@ theorem exists_conjFrame_realConjAdd (ε : Bool)
       (∀ t, c (u t) = u t) ∧
       (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
       Function.Bijective
-        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) :=
-  sorry
+        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) := by
+  obtain ⟨u, w, hfix, htwist, hinj, hsurj⟩ :=
+    DivisibleTorsion.exists_adaptedParam
+      (fun n hn => DivisibleTorsion.finite_ratQuotSq_torsion hn)
+      (exists_adaptedFrame_level ε c hc hne_id hne_neg hfix2)
+  exact ⟨u, w, hfix, htwist, hinj,
+    fun y => hsurj y (DivisibleTorsion.exists_smul_eq_zero_ratQuotSq y)⟩
 
 /-- **THE CLASSIFICATION OF THE INVOLUTION** (PROVEN 2026-07-27 from
 `exists_conjFrame_realConjAdd`; formerly a sorry leaf, cut 2026-07-27 out of
@@ -37365,9 +37752,26 @@ and, from `c ∘ u = u` and `c ∘ w = [ε]·u − w`, exactly the same value fo
 `c (α v)`.  So the whole mathematical content is now in the frame leaf, and the
 `≃+` bookkeeping is discharged.
 
-WHAT REMAINS OPEN, and it is the honest cost of this cut: the frame leaf.  It
-still asks for the `ℤ₂`-lattice classification described above.  Two routes, both
-recorded so a successor need not rediscover them:
+WHAT REMAINS OPEN (updated 2026-07-28): the frame leaf is now PROVEN too, and
+what is left is only its FINITE-LEVEL shadow `exists_adaptedFrame_level`, i.e.
+the `ℤ₂`-lattice classification read at one level `n`.
+
+CORRECTION to the second route below, which was STALE when written and is the
+reason this note is being rewritten rather than deleted: it says the inverse-limit
+machinery is "the SAME machinery the sibling `exists_torsionParam_of_divisible`
+needs, so building it once discharges both".  That machinery was ALREADY BUILT
+and sorry-free, in `Fermat/FLT/Modularity/DivisibleTorsionParam.lean` — Kőnig's
+lemma over the divisibility order (`exists_compatibleBasis`), the `ℚ → P`
+attached to a compatible system (`qmap`/`qhom`/`qquot`), and the parametrisation
+itself (`exists_torsionParam`).  Nothing had to be built; the involution only had
+to be CARRIED THROUGH it, which is `DivisibleTorsion.exists_adaptedParam` and
+cost one extra field on the frame predicate plus a two-line restriction lemma
+(`c` is additive, so it commutes with `d • −`, and both intertwining equations
+survive verbatim).
+
+The two routes, kept because the FIRST one is still exactly what the remaining
+finite-level leaf needs (read at level `n` rather than over `Ẑ`), and the SECOND
+is now DONE:
 
 * *Ẑ-lattices*: `End((ℚ/ℤ)²) = M₂(Ẑ)` and the problem splits over the primes; at
   odd `p` the idempotent `(1+c)/2` splits the `ℤ_p`-lattice and `c|A[p] ≠ ±1`
@@ -37378,9 +37782,13 @@ recorded so a successor need not rediscover them:
   finite and (by the previous item at level `n`) nonempty, the restriction maps
   make an inverse system over the divisibility order, and
   `nonempty_sections_of_finite_cofiltered_system` (Mathlib,
-  `CategoryTheory/CofilteredSystem.lean`) produces a section — the SAME
-  machinery the sibling `exists_torsionParam_of_divisible` needs, so building it
-  once discharges both.
+  `CategoryTheory/CofilteredSystem.lean`) produces a section.  DONE 2026-07-28 as
+  `DivisibleTorsion.exists_compatibleAdaptedFrame` /
+  `DivisibleTorsion.exists_adaptedParam`, over the pre-existing machinery in
+  `DivisibleTorsionParam.lean` (which routes the section through
+  `exists_seq_forall_proj_of_forall_finite` rather than the cofiltered-system
+  lemma named here — a detail, but a successor grepping for the latter will not
+  find it).
 
 FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
 and both values of `ε` are genuinely reachable (the two conjugacy classes above),
