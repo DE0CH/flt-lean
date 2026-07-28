@@ -3043,12 +3043,23 @@ theorem isWeightTwoEigenformOn_gamma0_iff (N : ℕ) (f : CuspForm (Gamma0GL N) 2
     fun p hp hpN => MulChar.one_apply ((ZMod.isUnit_prime_iff_not_dvd hp).2 hpN)
   constructor
   · intro h
-    exact ⟨h.qExpansion, h.zero, h.one, fun p hp hpN n hn => by
+    exact ⟨h.qExpansion, h.qExpansionSummable, h.zero, h.one, fun p hp hpN n hn => by
       have := h.hecke p hp hpN n hn; rwa [key p hp hpN, one_mul] at this, h.atkin⟩
   · intro h
-    exact ⟨h.qExpansion, h.zero, h.one, fun p hp hpN n hn => by
+    exact ⟨h.qExpansion, h.qExpansionSummable, h.zero, h.one, fun p hp hpN n hn => by
       rw [key p hp hpN, one_mul]; exact h.hecke p hp hpN n hn, h.atkin⟩
 ```
+
+**The `qExpansionSummable` entries in those two anonymous constructors
+were ADDED on 2026-07-27 and the snippet was BROKEN without them** — a
+worked example that no longer compiled, of exactly the shape the doctrine
+warns about.  `IsWeightTwoEigenform` gained a `qExpansionSummable` field
+the same day this subsection was written (see its `SOUNDNESS AUDIT`), and
+this file's copy of the structure did not follow; the `→` direction of the
+bridge was therefore not merely unverified but UNPROVABLE, because nothing
+on the left produced the summability the right demands.  Adding the field
+to `IsWeightTwoEigenformOn` restores the field-for-field match, which is
+what makes "on the nose" true rather than aspirational.
 -/
 
 section KolyvaginLogachev
@@ -3090,15 +3101,47 @@ an interface on bare sequences `a : ℕ → ℂ` is junk-satisfiable (take
 universally quantified leaf false and a hypothesis vacuous.  `qExpansion`
 is what rules that out and may not be dropped.
 
+**SOUNDNESS REPAIR (2026-07-27): `qExpansion` ALONE IS NOT ENOUGH, and
+its absence made `lFunction_apply_one_ne_zero_x1TwentyFive` FALSE AS
+STATED.**  This structure was written as a copy of `X0.lean`'s
+`IsWeightTwoEigenform` *before* that structure gained its
+`qExpansionSummable` field, and the copy was never updated.  The junk
+witness is exactly the one recorded under `SOUNDNESS AUDIT` in
+`ModularCurve/WeightTwoEigenform.lean`'s module docstring, and it
+transfers verbatim because nothing in it is `Γ₀`-specific: `tsum` of a
+NON-summable family is `0`, so
+
+> `f := 0`, together with the multiplicative `a` with `a p := 2 ^ (p ^ 2)`
+> at every prime `p ∤ N` (extended over prime powers by the very
+> recursions below, which constrain the SIZE of `a p` not at all),
+
+satisfies `qExpansion` with both sides `0`, satisfies `zero`, `one`,
+`hecke` and `atkin` by construction, and is the `q`-expansion of no
+modular form whatsoever.  See the `FALSITY AUDIT` on
+`lFunction_apply_one_ne_zero_x1TwentyFive` below for what that junk then
+does to the `L`-value leaf, and to the analytic hypothesis `hL` of
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape`.
+
+Adding a field only STRENGTHENS the predicate, so every occurrence in
+this file — all three take it as a hypothesis and none constructs one —
+is unaffected except that it becomes easier to discharge.
+
 At `G = Gamma0GL N` and `χ = 1` this is `IsWeightTwoEigenform N f a` on
 the nose; the machine-checked bridge is recorded in the subsection
-docstring. -/
+docstring, and **the field is what keeps that bridge provable in the
+`→` direction**, since the `Γ₀` structure demands summability. -/
 structure IsWeightTwoEigenformOn (G : Subgroup (GL (Fin 2) ℝ)) (N : ℕ)
     (χ : DirichletCharacter ℂ N) (f : CuspForm G 2) (a : ℕ → ℂ) : Prop where
   /-- `a` is the Fourier expansion of `f`; the constant term is `0`
   because `f` is a cusp form, so the sum starts at `n = 1`. -/
   qExpansion : ∀ τ : UpperHalfPlane,
     f τ = ∑' n : ℕ, a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))
+  /-- The `q`-expansion CONVERGES.  Without this field the previous one
+  is junk-satisfiable through the junk value of `tsum`, and the interface
+  is unsound — see the `SOUNDNESS REPAIR` heading above, and the
+  identical field on `X0.lean`'s `IsWeightTwoEigenform`. -/
+  qExpansionSummable : ∀ τ : UpperHalfPlane,
+    Summable fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))
   /-- The `0`-th coefficient is `0`; `f` is a cusp form. -/
   zero : a 0 = 0
   /-- `f` is normalized. -/
@@ -3307,7 +3350,48 @@ abelian variety.  Everything geometric under the rank-`0` claim has moved
 to `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` above, which
 is shared with the `Γ₀` layer.
 
-TRUE, and here is the complete verification.
+**FALSITY AUDIT (2026-07-27) — THIS LEAF WAS FALSE AS STATED, and the
+repair is one field on `IsWeightTwoEigenformOn`, not one word here.**
+
+The statement below is UNCHANGED.  What changed is `hf`: until today
+`IsWeightTwoEigenformOn` had no `qExpansionSummable` field, and without
+it this leaf had an explicit counterexample.  Recording it, because a
+future editor tempted to "simplify" that field away is re-breaking this
+leaf, not tidying a structure:
+
+* `χ := 1`, `f := 0`, and `a` the multiplicative sequence with
+  `a p := 2 ^ (p ^ 2)` at every prime `p ≠ 5`, `a 5 := 0`, extended over
+  prime powers by `a_{p^{k+1}} = a p · a_{p^k} − χ(p)·p·a_{p^{k-1}}` — the
+  `hecke` field itself, which bounds the size of `a p` not at all.
+* `qExpansion` holds with both sides `0`: along the primes
+  `|a p · q^p| = exp (p² log 2 − 2π p · Im τ) → ∞` for every `τ ∈ ℍ`, so
+  the family is not summable, and `tsum` of a non-summable family is `0`.
+  `zero`, `one`, `hecke`, `atkin` hold by construction.
+* `L := 0` then satisfies `IsLFunctionOf a L`: it is entire, and
+  `|a p · p^{-s}| = 2^{p²} p^{-Re s} → ∞` makes `LSeries a s` non-summable
+  for every `s`, hence `LSeries a s = 0` on `Re s > 2`.
+* So `L 1 = 0`, contradicting the conclusion.
+
+Two consequences beyond this leaf, both repaired by the same field:
+
+1. `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` was VACUOUS at
+   `.gamma1 25` — and at `.gamma0 N` too, since it quantifies over the
+   same predicate.  For the junk `a` above, ANY `L` with
+   `IsLFunctionOf a L` is `0` by `isLFunctionOf_apply_eq`, so its `hL`
+   demanded `0 ≠ 0` and was unsatisfiable.  A leaf whose hypothesis
+   cannot hold proves nothing about `J_1(25)(ℚ)`, which is the failure
+   mode that subsection's own docstring says it was written to avoid.
+2. The bridge `isWeightTwoEigenformOn_gamma0_iff` recorded in the
+   subsection docstring was unprovable in the `→` direction.
+
+`X0.lean`'s `lFunction_apply_one_ne_zero_of_kenkuLevel` was FALSE for the
+identical reason and was repaired the identical way; this is that repair
+transported, not a new one.  With the field, the `q`-series converges on
+all of `ℍ`, so its Taylor coefficients in `q` are unique, `a` really is
+determined by `f`, `f = 0` forces `a = 0`, and `a 1 = 1` rules the junk
+out.
+
+TRUE as now stated, and here is the complete verification.
 
 **RECONNAISSANCE (PARI/GP 2.17.4, 2026-07-27, EXHAUSTIVE — every
 eigenform, not a sample).**  `S_2(Γ_1(25)) = ⊕_χ S_2(25, χ)` over the
@@ -3335,7 +3419,18 @@ decomposition is complete.  All **12** embeddings were evaluated and
 repeat in conjugate pairs `(2, 18)`, `(4, 16)`, `(6, 14)`, `(8, 12)`
 exactly as the Galois action on characters predicts, which is a third
 consistency check.  PARI/GP is an untrusted searcher: this establishes
-that the statement is not false, and is not a proof.  (The `A₄ × A₈`
+that the statement is not false, and is not a proof.
+
+*Independently re-run on 2026-07-27* by the owner of the falsity audit
+above, from a script written without reference to this table
+(`znstar(25,1)` has `cyc = [20]`; `mfinit([25,2,[G,[a]]],1)` for
+`a = 0..19`, `mfeigenbasis` on the newspace, `lfun(lfunmf(...), 1)` at
+every embedding).  Every entry reproduced to the digits printed here:
+eight nonzero characters, `newdim = cuspdim` throughout, `Σ dim = 12`,
+`12` embeddings evaluated, `0` vanishing, and
+`min |L(f, 1)| = 0.42121777347760654…`.  Reproducing the numerics is what
+makes the repair above a *correction* rather than a retraction: the leaf
+was false only in its HYPOTHESIS, and is true as now stated.  (The `A₄ × A₈`
 description in this module's opening docstring is the same fact read
 through Eichler–Shimura: the four `dim 2` orbits assemble the
 `8`-dimensional factor and the four `dim 1` orbits the `4`-dimensional
