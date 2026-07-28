@@ -42,9 +42,9 @@ nonzero rational coordinate tuples, injective *up to scaling* (i.e.
 injective as a map to `ℙⁿ(ℚ)`), whose naïve logarithmic height satisfies
 the approximate parallelogram law.
 
-`ProjectiveHeightSource.toParallelogramHeight` turns that into a
-`Fermat.ParallelogramHeight`, and hence — through
-`Fermat.ParallelogramHeight.toDescentHeight` and
+`ProjectiveHeightSource.toWeilHeight` turns that into a
+`Fermat.WeilHeight`, and hence — through
+`Fermat.WeilHeight.toDescentHeight` and
 `Fermat.fg_of_descentHeight` — into finite generation, given weak
 Mordell–Weil.  The only mathematical content added here is the Northcott
 half:
@@ -198,19 +198,30 @@ theorem finite_setOf_logHeight_coords_le (ps : ProjectiveHeightSource A) (B : �
     linear_combination h
 
 /-- **A projective embedding with the parallelogram law is a
-`ParallelogramHeight`** (PROVEN) — the naïve logarithmic height of the
+`WeilHeight`** (PROVEN) — the naïve logarithmic height of the
 homogeneous coordinates, with Northcott supplied by
 `finite_setOf_logHeight_coords_le`.
 
-Composed with `ParallelogramHeight.toDescentHeight` and
-`fg_of_descentHeight`, this is the whole route from "the abelian variety
-is projectively embedded and its naïve height satisfies the
-parallelogram law" to "its group of rational points is finitely
-generated", given weak Mordell–Weil. -/
-noncomputable def ProjectiveHeightSource.toParallelogramHeight (ps : ProjectiveHeightSource A) :
-    ParallelogramHeight A where
+Composed with `WeilHeight.toDescentHeight` and `fg_of_descentHeight`,
+this is the whole route from "the abelian variety is projectively
+embedded and its naïve height satisfies the parallelogram law" to "its
+group of rational points is finitely generated", given weak
+Mordell–Weil.
+
+**Renamed 2026-07-28** from `toParallelogramHeight`.  It used to target
+`Fermat.ParallelogramHeight`, which was a field-for-field duplicate of
+`Fermat.WeilHeight` inside the same file and was retired; the only
+difference between the two was whether the law was written
+`− 2 h P − 2 h Q` or `− (2 h P + 2 h Q)`, which is the `sub_sub` below. -/
+noncomputable def ProjectiveHeightSource.toWeilHeight (ps : ProjectiveHeightSource A) :
+    WeilHeight A where
   height P := logHeight (ps.coords P)
-  parallelogram := ps.parallelogram
+  quasiParallelogram := by
+    obtain ⟨C, hC⟩ := ps.parallelogram
+    refine ⟨C, fun P Q => ?_⟩
+    have h := hC P Q
+    rw [sub_sub] at h
+    exact h
   northcott := ⟨fun B => finite_setOf_logHeight_coords_le ps B⟩
 
 /-!
@@ -386,7 +397,7 @@ shared fields are carried over verbatim and the analytic field is
 `parallelogram` above.
 
 This is the composite the Mordell–Weil assembly consumes:
-`CubeEmbedding → ProjectiveHeightSource → ParallelogramHeight →
+`CubeEmbedding → ProjectiveHeightSource → WeilHeight →
 DescentHeight → AddGroup.FG`. -/
 def toProjectiveHeightSource : ProjectiveHeightSource A where
   dim := ce.dim
