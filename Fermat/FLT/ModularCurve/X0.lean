@@ -469,6 +469,14 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- field-of-moduli descent `exists_rationalJ_of_galoisInvariant`, and the only
 -- reason `Galois/Infinite` is in this cone.
 public import Mathlib.FieldTheory.Galois.Infinite
+-- `WeierstrassCurve.ofJ` / `ofJ_j` and `exists_variableChange_of_j_eq`: step 2 of
+-- the `j`-generic Weil descent (`exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic`)
+-- is "the curve descends because `j` does", and both halves of it are in the pin —
+-- a curve over `ℚ` with a prescribed `j`, and the fact that over a separably closed
+-- field equal `j` means related by a change of variables.  `IsomOfJ` was already in
+-- the project cone through `FreyCurve/MazurTorsion.lean`; `ModelsWithJ` is new here.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.ModelsWithJ
+public import Mathlib.AlgebraicGeometry.EllipticCurve.IsomOfJ
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- `Affine.Point.mapVariableChange` / `equivOfEq`: the isomorphism of Mordell–Weil
 -- groups induced by an admissible change of variables.  This is what turns an
@@ -22603,8 +22611,161 @@ theorem not_isSpecialJ_of_gamma0Datum_fieldOfModuli {p : ℕ} (hp : p.Prime)
     W.j ≠ 0 ∧ W.j ≠ 1728 :=
   sorry
 
-/-- **WEIL DESCENT FOR THE PAIR, at `j ∉ {0, 1728}`** (sorry leaf, opened
-2026-07-28): the arithmetic heart of
+/-- **RIGIDITY: two `ℚ̄`-data with a COMMON Weierstrass model and the same level
+locus are isomorphic** (sorry leaf, opened 2026-07-28 as the cut of
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` below) — the `ℚ̄`-analogue
+of `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN) with the
+coarse space replaced by the coordinate pinning.
+
+TRUE, and it carries NO arithmetic: `hinv`, the `j`-invariant and the Galois group
+appear nowhere.  Both `d₁.E` and `d₂.E` are proper smooth curves over `ℚ̄`
+containing `weierstrassAffine W` as a dense open — that is `ho`/`hs` — whose
+complement is exactly the image of the zero section, by the `Set.range` clause.
+A smooth affine curve has a unique smooth compactification, so the identity of
+`weierstrassAffine W` extends to an isomorphism `d₁.E ≅ d₂.E` over `ℚ̄` carrying
+the one missing point to the one missing point, i.e. zero section to zero
+section; by rigidity of abelian schemes a zero-preserving isomorphism is a
+homomorphism, so the group laws agree; and `hlevel` says the two level
+subschemes agree on the affine part, which together with `zero_liesIn` on both
+sides (and `Etale`ness of a finite flat group scheme in characteristic zero,
+which makes the subschemes reduced) makes them agree outright.  Those four are
+the four fields of `IsBaseChangeOf (𝟙 _)`.
+
+**THE LEVEL COMPARISON IS DELIBERATELY SUBFUNCTORIAL, AND THE OBVIOUS
+ALTERNATIVE IS FALSE-MAKING.**  `hlevel` compares the level loci as subfunctors
+of `weierstrassAffine W` through the two model immersions.  It must NOT be
+weakened to "the two level subgroups agree under some additive identification of
+the geometric fibres with `W(ℚ̄)`": over `ℚ̄` every elliptic curve has
+`E(ℚ̄) ≅ (ℚ/ℤ)²` abstractly, so a free `≃+` variable carries any cyclic subgroup
+of order `N` onto any other, and the leaf so phrased is refuted by `(W, ⟨P⟩)` and
+`(W, ⟨Q⟩)` whenever no automorphism of `W` takes `⟨P⟩` to `⟨Q⟩` — which at
+`N ≥ 5` is the generic situation.  Compared as subschemes there is no such junk
+witness, because a subfunctor of `Hom(-, weierstrassAffine W)` cut out by a
+closed immersion determines that closed subscheme (Yoneda, taking `T = d₁.cyc.C`
+and `s` the canonical factorisation).
+
+**The check that would refute this leaf**: two `Γ₀(N)`-data over `ℚ̄` admitting
+open immersions of ONE `weierstrassAffine W` onto the complements of their zero
+sections, with equal level loci on that common open, that are not isomorphic.
+There is none: the compactification, the zero section, the group law and the
+level subscheme are each determined by the data given.
+
+**NOT VACUOUS.**  The hypotheses are satisfiable — `d₂ := d₁` with `ι₂ := ι₁`
+satisfies all of them — so the conclusion is a genuine obligation, and the
+consumer below applies it to a genuinely different pair (`d` and the base change
+of the descended `d₀`).
+
+`hN : N ≠ 0` is not needed by the argument sketched above and is carried only so
+that the leaf reads uniformly with its siblings and so that a prover may use it
+freely; at `N = 0` the hypotheses are anyway contradictory by
+`isEmpty_of_gamma0Datum_zero`. -/
+theorem nonempty_isBaseChangeOf_of_isWeierstrassModel_common {N : ℕ} (hN : N ≠ 0)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (ι₁ : weierstrassAffine W ⟶ d₁.E) (ho₁ : IsOpenImmersion ι₁)
+    (hs₁ : ι₁ ≫ d₁.f = weierstrassAffineStr W)
+    (hr₁ : Set.range ι₁.base
+      = (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (ι₂ : weierstrassAffine W ⟶ d₂.E) (ho₂ : IsOpenImmersion ι₂)
+    (hs₂ : ι₂ ≫ d₂.f = weierstrassAffineStr W)
+    (hr₂ : Set.range ι₂.base
+      = (Set.range (d₂.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (hlevel : ∀ (T : Scheme.{0}) (s : T ⟶ weierstrassAffine W),
+      (∃ y : T ⟶ d₁.cyc.C, y ≫ d₁.cyc.ι = s ≫ ι₁) ↔
+        (∃ y : T ⟶ d₂.cyc.C, y ≫ d₂.cyc.ι = s ≫ ι₂)) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **THE ARITHMETIC HALF OF THE `j`-GENERIC DESCENT** (sorry leaf, opened
+2026-07-28 as the cut of `exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic`
+below): the pair descends to `ℚ`, and the descended datum is delivered TOGETHER
+WITH its Weierstrass model and with the identification of the two level loci —
+which is what the rigidity leaf above then consumes.
+
+`E` and `Cv` are a `ℚ`-form of `W` and the change of variables realising it.  They
+are HYPOTHESES rather than outputs because the consumer produces them outright —
+`E := WeierstrassCurve.ofJ j₀` for the rational `j₀` that `hinv` supplies, and
+`Cv` from `WeierstrassCurve.exists_variableChange_of_j_eq` over the separably
+closed `ℚ̄` — so handing them in costs the consumer nothing and removes step 2 of
+the classical route from this leaf entirely.
+
+TRUE.  This is Weil descent for the pair with a trivial obstruction group.  With
+`j(W) ∉ {0, 1728}` one has `Aut(W⁄ℚ̄) = {±1}`
+(`WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq`), and `−1`
+preserves every subgroup, so `Aut(W, C) = Aut(W)` and the quotient in which the
+obstruction lives is trivial.  Concretely: transport the level locus of `d`
+through `ι` and `Cv` to a cyclic subgroup `⟨g⟩ ⊆ (E⁄ℚ̄).Point` of order `p`;
+`hinv` makes `⟨g⟩` Galois-stable up to an automorphism of `E⁄ℚ̄`
+(`exists_weierstrassQ_autStable_of_weierstrassAlgClos` is this step in the
+sibling's development), and `autPoint_eq_self_or_neg` — the ONLY place `hj₀`,
+`hj₁` are consumed — turns "up to `±1`" into stability on the nose, since
+`AddSubgroup.zmultiples g` is closed under negation.  `(E, g)` then feeds
+`exists_weierstrassModel_gamma0Datum` for `d₀`, and `exists_gamma0Datum_baseChange`
+for `d'` with `IsBaseChangeOf (specAlgClos ℚ) d' d₀`; the model `ι'` and the
+level identification are read off the construction.
+
+**WHERE EACH HYPOTHESIS IS CONSUMED.**  `hinv` — Galois stability of the level
+locus, and nothing else.  `hj₀`/`hj₁` — the triviality of `Aut(W, C)/Aut(W)`,
+without which the conclusion is FALSE (that is exactly the descent obstruction,
+and it is why the `j`-split exists; see the subsection docstring).  `hp` — only
+through `p ≠ 0`, so that `d.cyc.geom_cyclic` supplies a generator; primality is
+carried for uniformity with the consumer.  `hs`/`hr` and `ho` pin `ι` as a
+genuine model rather than an arbitrary map, which is what makes the level
+comparison in the conclusion meaningful.
+
+**NO TWIST IS AVAILABLE AND NONE IS NEEDED.**  The conclusion pins `d` (through
+the level identification) rather than merely producing some curve over `ℚ`, so
+`E` is not ours to move; at `j ∉ {0, 1728}` it does not have to be.  A prover
+reaching for `.../GaloisDescent.lean` has taken the sibling's branch by mistake.
+
+**The check that would refute this leaf**: a `Γ₀(p)`-datum over `ℚ̄` with
+`j ∉ {0, 1728}`, all of whose Galois conjugates are isomorphic to it, admitting no
+`ℚ`-rational descent of its level locus.  There is none.
+
+**NOT VACUOUS**, and the level clause is the reason: the conclusion is not
+satisfiable by an arbitrary `d₀` — `d'` must carry the SAME level locus as `d`
+inside the SAME `weierstrassAffine W`, so a datum with a different cyclic
+subgroup of order `p` does not discharge it.  (What is vacuous is only the
+further composite with Mazur; see the consumer's docstring.)
+
+**A SUCCESSOR SHOULD CUT THIS FURTHER**, in two:  (a) the level locus of `d`,
+transported along `ι` and `Cv`, is defined over `ℚ` — all of `hinv`, `hj₀`, `hj₁`
+live here;  (b) a `ℚ`-rational level locus on `E` assembles into a
+`Gamma0Datum p SpecQ` carrying its Weierstrass model and that locus — the
+level-aware strengthening of `exists_weierstrassModel_gamma0Datum`, which is
+PROVEN but whose conclusion forgets the generator and therefore cannot be cited
+for (b) as it stands. -/
+theorem exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm {p : ℕ}
+    (hp : p.Prime)
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (ι : weierstrassAffine W ⟶ d.E) (ho : IsOpenImmersion ι)
+    (hs : ι ≫ d.f = weierstrassAffineStr W)
+    (hr : Set.range ι.base
+      = (Set.range (d.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Cv : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+    (hCv : Cv • W = E⁄(AlgebraicClosure ℚ))
+    (hj₀ : W.j ≠ 0) (hj₁ : W.j ≠ 1728) :
+    ∃ (d₀ : Gamma0Datum p SpecQ)
+      (d' : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (_ : IsBaseChangeOf (specAlgClos ℚ) d' d₀)
+      (ι' : weierstrassAffine W ⟶ d'.E) (_ : IsOpenImmersion ι')
+      (_ : ι' ≫ d'.f = weierstrassAffineStr W),
+      Set.range ι'.base
+          = (Set.range (d'.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ ∧
+        ∀ (T : Scheme.{0}) (s : T ⟶ weierstrassAffine W),
+          (∃ y : T ⟶ d.cyc.C, y ≫ d.cyc.ι = s ≫ ι) ↔
+            (∃ y : T ⟶ d'.cyc.C, y ≫ d'.cyc.ι = s ≫ ι') :=
+  sorry
+
+/-- **WEIL DESCENT FOR THE PAIR, at `j ∉ {0, 1728}`** (a sorry leaf from
+2026-07-28; **DECOMPOSED and PROVEN the same day** over the two leaves
+immediately above): the arithmetic heart of
 `exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`, with the two special
 `j`-values — and with them `hmem`, and with them the entire descent obstruction —
 removed.
@@ -22643,18 +22804,58 @@ needed only at `j ∈ {0, 1728}`, and that case does not arise here — it is
 excluded upstream by `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` rather than
 handled.
 
-**MISSING MACHINERY, surveyed 2026-07-28.**  Step 1 needs
-`weierstrassModel_j_unique` (a LEAF in this file, step (ii) of the
-`exists_jSectionOnAffine` cut) and the conjugate model `W^σ`, which is
-`isWeierstrassModel_map_of_isBaseChangeOf` applied to `specGal σ`.  Step 2 is
-entirely in the pin.  Step 3 needs the transport of a cyclic subgroup along a
-`VariableChange` — `Affine.Point.mapVariableChange` and `autPoint` above, both
-present — plus the comparison "two `ℚ̄`-data with a common Weierstrass model and
-a common level structure are isomorphic", which is NOT present and is the one
-genuinely new statement a prover will have to write.  It is the `ℚ̄`-analogue of
-`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN) with the
-coarse space replaced by the coordinate pinning, and it is a rigidity statement,
-not an arithmetic one.
+**DECOMPOSED 2026-07-28** — this is no longer a leaf.  Steps 1 and 2 of the
+route above are PROVEN in the assembly below; steps 3 and the comparison are the
+two leaves stated immediately before it.
+
+* *Step 1 and step 2 are closed here.*  `j W ∈ ℚ` comes from `hinv` through
+  `exists_rationalJ_of_galoisInvariant` (PROVEN), tied to `W` by
+  `exists_jSection_algClosModel`; and the `ℚ`-form of `W` is produced outright as
+  `WeierstrassCurve.ofJ j₀`, from `WeierstrassCurve.ofJ_j` and
+  `WeierstrassCurve.exists_variableChange_of_j_eq` over the separably closed `ℚ̄`.
+  Both are in the pin — `Mathlib.AlgebraicGeometry.EllipticCurve.ModelsWithJ` and
+  `….IsomOfJ` were added to this module's imports for exactly this, and `IsomOfJ`
+  was already in the project cone through `MazurTorsion.lean`.
+* `exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm` is step 3,
+  the arithmetic: the level structure descends, and the descended datum is
+  delivered TOGETHER WITH its Weierstrass model and with an identification of the
+  two level loci.
+* `nonempty_isBaseChangeOf_of_isWeierstrassModel_common` is the RIGIDITY — the
+  "one genuinely new statement" the earlier survey here named, the `ℚ̄`-analogue of
+  `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN) with the
+  coarse space replaced by the coordinate pinning.  It is what turns that
+  identification into `IsBaseChangeOf (𝟙 _) d d'`.
+
+**WHY THE LEVEL COMPARISON IS CARRIED BY THE MODEL IMMERSION AND NOT BY A
+POINTS-DICTIONARY — this is the one place the obvious phrasing is UNSOUND.**  The
+natural reading of "common level structure" is "the two level subgroups agree
+under an additive identification of the two geometric fibres with `W(ℚ̄)`".  Taken
+as a HYPOTHESIS with the identification as a free variable, that is false-making:
+over `ℚ̄` every elliptic curve has `E(ℚ̄) ≅ (ℚ/ℤ)²` abstractly, so a junk `≃+` can
+carry any cyclic subgroup of order `N` onto any other, and the rigidity leaf so
+phrased would be refuted by `(W, ⟨P⟩)` and `(W, ⟨Q⟩)` with no automorphism of `W`
+taking `⟨P⟩` to `⟨Q⟩`.  Both leaves below therefore compare the level loci as
+SUBFUNCTORS of `weierstrassAffine W`, through the model immersions `ι`, `ι'`
+themselves — a statement about closed subschemes, which admits no junk witness.
+That is also why `hW` is destructured in the assembly and the immersion `ι`
+handed to both leaves explicitly rather than re-existentialised.
+
+**MISSING MACHINERY for the two leaves, surveyed 2026-07-28.**  Rigidity needs
+the uniqueness of the smooth compactification of a smooth affine curve — the zero
+section is the one missing point on each side, which is exactly the `Set.range`
+clause of `IsWeierstrassModel` — together with the rigidity of the group law (an
+`AbelianSchemeStruct` is determined by its zero section).  The arithmetic leaf
+needs `weierstrassModel_j_unique` (a LEAF in this file) and the conjugate model
+`W^σ`, i.e. `isWeierstrassModel_map_of_isBaseChangeOf` applied to `specGal σ`,
+plus `Affine.Point.mapVariableChange` and `autPoint` (both present) for the
+transport along `Cv`.  **A successor should cut it further** along the axis this
+decomposition could not reach: (a) the level locus of `d`, transported along
+`Cv`, is DEFINED OVER `ℚ` — this is where `hinv` and `hj₀`/`hj₁` are consumed,
+through `autPoint_eq_self_or_neg`; and (b) a `ℚ`-rational level locus on `E`
+assembles into a `Gamma0Datum p SpecQ` carrying its model, which is the
+level-aware strengthening of `exists_weierstrassModel_gamma0Datum` (PROVEN, but
+its conclusion FORGETS the link to the generator, which is precisely why it
+cannot be cited here as it stands).
 
 **The check that would refute this leaf**: a `Γ₀(p)`-datum over `ℚ̄` with
 `j ∉ {0, 1728}`, all of whose Galois conjugates are isomorphic to it, that is not
@@ -22675,8 +22876,41 @@ theorem exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic {p : ℕ} (hp : p.P
         Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
     (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
     (hW : IsWeierstrassModel d.ab W) (hj₀ : W.j ≠ 0) (hj₁ : W.j ≠ 1728) :
-    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
-  sorry
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) := by
+  classical
+  letI := d.cyc.etale_of_specQBase (specAlgClos ℚ)
+  -- Step 1: `j W` is rational.  `exists_rationalJ_of_galoisInvariant` (PROVEN)
+  -- turns `hinv` into Galois invariance of the `j`-section's value, and
+  -- `exists_jSection_algClosModel` (LEAF) ties that value to `W.j`.
+  obtain ⟨ja, hja⟩ := exists_jSection_algClosModel
+  obtain ⟨j₀, hjr⟩ := exists_rationalJ_of_galoisInvariant hp.ne_zero ja d hinv
+  have hj : W.j = algebraMap ℚ (AlgebraicClosure ℚ) j₀ := by
+    rw [← hja W (d.ofDvd hp.ne_zero (one_dvd p)) hW]
+    exact hjr
+  -- Step 2: the curve descends.  `ofJ j₀` is an elliptic curve over `ℚ` with
+  -- `j`-invariant `j₀`, hence a `ℚ`-form of `W` over the separably closed `ℚ̄`.
+  haveI : ((WeierstrassCurve.ofJ j₀)⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((WeierstrassCurve.ofJ j₀).map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  have hEj : ((WeierstrassCurve.ofJ j₀)⁄(AlgebraicClosure ℚ)).j = W.j := by
+    rw [hj]
+    exact (WeierstrassCurve.map_j (W := WeierstrassCurve.ofJ j₀)
+      (f := algebraMap ℚ (AlgebraicClosure ℚ))).trans
+      (congrArg (algebraMap ℚ (AlgebraicClosure ℚ)) (WeierstrassCurve.ofJ_j (j := j₀)))
+  obtain ⟨Cv, hCv⟩ :=
+    WeierstrassCurve.exists_variableChange_of_j_eq W
+      ((WeierstrassCurve.ofJ j₀)⁄(AlgebraicClosure ℚ)) hEj.symm
+  -- Step 3: the pair descends, with the model and the level locus carried along.
+  obtain ⟨ι, ho, hs, hr⟩ := hW
+  obtain ⟨d₀, d', bc, ι', ho', hs', hr', hlev⟩ :=
+    exists_gamma0Datum_specQ_isBaseChangeOf_liesIn_of_weierstrassQForm hp d hinv W ι ho hs hr
+      (WeierstrassCurve.ofJ j₀) Cv hCv hj₀ hj₁
+  -- Step 4: rigidity identifies `d` with the base change of `d₀`.
+  obtain ⟨iso⟩ :=
+    nonempty_isBaseChangeOf_of_isWeierstrassModel_common hp.ne_zero d d' W ι ho hs hr
+      ι' ho' hs' hr' hlev
+  refine ⟨d₀, ⟨?_⟩⟩
+  have h := iso.comp bc
+  rwa [Category.id_comp] at h
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose field of moduli is `ℚ` IS the base
 change of a datum over `ℚ`** (PROVEN 2026-07-28 over the three leaves of the
