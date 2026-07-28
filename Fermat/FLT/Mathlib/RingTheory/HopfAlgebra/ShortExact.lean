@@ -10,6 +10,11 @@ public import Mathlib.RingTheory.Etale.Basic
 public import Mathlib.RingTheory.Smooth.Fiber
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Mathlib.RingTheory.Finiteness.ModuleFinitePresentation
+public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
+public import Mathlib.RingTheory.Flat.EquationalCriterion
+public import Mathlib.Algebra.Module.FinitePresentation
+public import Mathlib.LinearAlgebra.TensorProduct.Tower
+public import Mathlib.LinearAlgebra.TensorProduct.RightExactness
 
 /-!
 # Short exact sequences of finite flat commutative group schemes, and exactness of Cartier duality
@@ -100,17 +105,21 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
   extension-closed. **PROVEN**.
 * `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
-  assembly of the four statements below, three of which are open.
+  assembly of the four statements below, two of which are open.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` — `i(A'')` is an `R`-module direct summand
-  of `A`. OPEN; equivalent to the surjectivity field, and free of Hopf structure.
+  of `A`. **PROVEN** (2026-07-27) from faithful flatness alone, via purity of a faithfully flat
+  algebra map; the fppf-descent route the docstring used to record is not needed. See the
+  `FaithfullyFlatSplit` section.
 * `HopfAlgebra.IsShortExact.surjective_cartierDual_map` — **PROVEN** from the retraction.
 * `HopfAlgebra.IsShortExact.le_ker_cartierDual` — the easy half of the dual kernel condition.
   **PROVEN**, from `apply_comp` alone.
-* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN, and *gated on fppf
-  descent*, which this pin does not carry.
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN. (Its "gated on fppf
+  descent" note is **withdrawn**: the sibling field carrying the identical note turned out to
+  need no descent at all. See its docstring for the recommended cut.)
 * `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — OPEN; the deepest field, classically
-  `Ext¹(G'', 𝔾ₘ) = 0`.
+  `Ext¹(G'', 𝔾ₘ) = 0`. Reduces to `Module.Free (CartierDual R A') (CartierDual R A)` by an
+  instance already in the pin.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
   with no non-Hopf leaf left under it.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
@@ -350,6 +359,171 @@ end Map
 
 end CartierDual
 
+/-! ### Faithfully flat algebra maps are split as maps of modules
+
+This section is pure commutative algebra — no Hopf structure, no group schemes. It supplies the
+module-theoretic input to `HopfAlgebra.IsShortExact.exists_linearRetraction`, and it says
+something strictly more general than the normal-basis argument the docstring there used to
+appeal to: **the faithful flatness hypothesis alone splits `i`, with no descent, no torsor and
+no local triviality.**
+
+The chain is three steps, each of which is a standard fact whose mathlib form was the only thing
+missing:
+
+1. `AlgHom.rTensor_injective_of_faithfullyFlat` — a faithfully flat algebra map `f : B → A` is a
+   **pure** monomorphism of `R`-modules: `B ⊗[R] Z → A ⊗[R] Z` is injective for *every* `R`-module
+   `Z`. This is `Module.FaithfullyFlat.tensorProduct_mk_injective` applied to the `B`-module
+   `B ⊗[R] Z`, transported along `cancelBaseChange : A ⊗[B] (B ⊗[R] Z) ≃ A ⊗[R] Z`; the point is
+   that an *induced* `B`-module already computes the `R`-linear base change.
+2. `AlgHom.flat_quotient_range_of_faithfullyFlat` — hence the cokernel `A ⧸ f(B)` is `R`-flat.
+   With `A` and `B` flat, the long exact sequence collapses to exactly the purity of step 1; the
+   proof below is that collapse written as a diagram chase, since the pin has no `Tor`-free
+   statement of it.
+3. `AlgHom.exists_linearRetraction_of_faithfullyFlat` — the cokernel is finitely presented
+   (both sides are finite free), so flat makes it projective
+   (`Module.Flat.projective_of_finitePresentation`), so the sequence splits.
+
+The reason this is worth isolating: it removes "fppf descent" from the dependency list of the
+surjectivity half of exactness of Cartier duality. -/
+
+section FaithfullyFlatSplit
+
+variable {R : Type u} {B : Type v} {A : Type w}
+variable [CommRing R] [CommRing B] [CommRing A] [Algebra R B] [Algebra R A]
+
+/-- **A faithfully flat algebra map is a pure monomorphism of `R`-modules**: tensoring it with an
+arbitrary `R`-module `Z` keeps it injective.
+
+Proof: `B ⊗[R] Z` is a `B`-module, and faithful flatness of `A` over `B` makes
+`M →ₗ[B] A ⊗[B] M` injective for every `B`-module `M`
+(`Module.FaithfullyFlat.tensorProduct_mk_injective`). For the induced module `M = B ⊗[R] Z` the
+target is `A ⊗[B] (B ⊗[R] Z) ≅ A ⊗[R] Z` and the map becomes `f ⊗ id`. -/
+theorem AlgHom.rTensor_injective_of_faithfullyFlat (f : B →ₐ[R] A)
+    (hf : RingHom.FaithfullyFlat (f : B →+* A)) (Z : Type*) [AddCommGroup Z] [Module R Z] :
+    Function.Injective ((f.toLinearMap).rTensor Z) := by
+  algebraize [(f : B →+* A)]
+  haveI : IsScalarTower R B A :=
+    IsScalarTower.of_algebraMap_eq fun r => (f.commutes r).symm
+  set e := TensorProduct.AlgebraTensorModule.cancelBaseChange R B A A Z with he
+  have key : ∀ x : B ⊗[R] Z,
+      (f.toLinearMap).rTensor Z x = e (TensorProduct.mk B A (B ⊗[R] Z) 1 x) := by
+    intro x
+    induction x with
+    | zero => simp
+    | tmul b z =>
+        simp only [LinearMap.rTensor_tmul, AlgHom.toLinearMap_apply, TensorProduct.mk_apply, he,
+          TensorProduct.AlgebraTensorModule.cancelBaseChange_tmul]
+        rw [Algebra.smul_def, mul_one]
+        rfl
+    | add x y hx hy => rw [map_add, map_add, hx, hy, map_add]
+  have hmk : Function.Injective (TensorProduct.mk B A (B ⊗[R] Z) 1) :=
+    Module.FaithfullyFlat.tensorProduct_mk_injective (B ⊗[R] Z)
+  intro x y hxy
+  exact hmk (e.injective (by rw [← key, ← key]; exact hxy))
+
+/-- **The cokernel of a faithfully flat algebra map is a flat `R`-module.**
+
+Given `g : X ↪ Y` and `x ∈ X ⊗ (A ⧸ f(B))` killed by `g ⊗ id`, lift `x` to `y ∈ X ⊗ A`. Then
+`(g ⊗ id) y` dies in `Y ⊗ (A ⧸ f(B))`, so by right exactness it is `(id ⊗ f) u` for some
+`u ∈ Y ⊗ B`. Purity (step 1 above), applied to `Z = Y ⧸ g(X)`, forces `u` into the image of
+`X ⊗ B`; flatness of `A` then forces `y` into the image of `X ⊗ B`, and `x = 0`.
+
+Flatness of `A` and of `B` is all that is used besides purity — in the application both are
+finite free. -/
+theorem AlgHom.flat_quotient_range_of_faithfullyFlat (f : B →ₐ[R] A)
+    (hf : RingHom.FaithfullyFlat (f : B →+* A)) [Module.Flat R A] [Module.Flat R B] :
+    Module.Flat R (A ⧸ LinearMap.range f.toLinearMap) := by
+  set K : Submodule R A := LinearMap.range f.toLinearMap with hK
+  have hex : Function.Exact f.toLinearMap K.mkQ :=
+    LinearMap.exact_iff.mpr (Submodule.ker_mkQ K)
+  refine Module.Flat.iff_rTensor_preserves_injective_linearMap'.mpr ?_
+  show ∀ ⦃X Y : Type u⦄ [AddCommGroup X] [AddCommGroup Y] [Module R X] [Module R Y]
+      (g : X →ₗ[R] Y), Function.Injective g → Function.Injective (g.rTensor (A ⧸ K))
+  intro X Y _ _ _ _ g hg
+  refine (injective_iff_map_eq_zero _).mpr fun x hx => ?_
+  obtain ⟨y, rfl⟩ := LinearMap.lTensor_surjective X (Submodule.mkQ_surjective K) x
+  have hsq : ∀ z : X ⊗[R] A, LinearMap.rTensor _ g (LinearMap.lTensor X K.mkQ z) =
+      LinearMap.lTensor Y K.mkQ (LinearMap.rTensor A g z) := fun z => by
+    rw [← LinearMap.comp_apply, ← LinearMap.comp_apply, LinearMap.rTensor_comp_lTensor,
+      LinearMap.lTensor_comp_rTensor]
+  rw [hsq] at hx
+  -- `rTensor A g y` is killed by `lTensor Y mkQ`, hence comes from `Y ⊗ B`
+  obtain ⟨u, hu⟩ := (_root_.lTensor_exact Y hex (Submodule.mkQ_surjective K) _).mp hx
+  -- its image in `C ⊗ B` dies, where `C = Y ⧸ range g`; purity makes that mean `u ∈ X ⊗ B`
+  set C := Y ⧸ LinearMap.range g with hC
+  set p : Y →ₗ[R] C := (LinearMap.range g).mkQ with hp
+  have hpg : p ∘ₗ g = 0 := by
+    ext b
+    simp only [hp, LinearMap.coe_comp, Function.comp_apply, LinearMap.zero_apply]
+    exact (Submodule.Quotient.mk_eq_zero _).mpr (LinearMap.mem_range_self g b)
+  have hu0 : LinearMap.rTensor B p u = 0 := by
+    refine (f.toLinearMap.lTensor_inj_iff_rTensor_inj C).mpr
+      (f.rTensor_injective_of_faithfullyFlat hf C) ?_
+    rw [map_zero]
+    have h1 : ∀ z : Y ⊗[R] B, LinearMap.lTensor C f.toLinearMap (LinearMap.rTensor B p z) =
+        LinearMap.rTensor A p (LinearMap.lTensor Y f.toLinearMap z) := fun z => by
+      rw [← LinearMap.comp_apply, ← LinearMap.comp_apply, LinearMap.lTensor_comp_rTensor,
+        LinearMap.rTensor_comp_lTensor]
+    rw [h1, hu, ← LinearMap.comp_apply, ← LinearMap.rTensor_comp, hpg, LinearMap.rTensor_zero,
+      LinearMap.zero_apply]
+  obtain ⟨w, hw⟩ := (Module.Flat.rTensor_exact B
+    (LinearMap.exact_iff.mpr (Submodule.ker_mkQ (LinearMap.range g))) _).mp hu0
+  -- and then `y` comes from `X ⊗ B`, so `x = 0`
+  have hy : LinearMap.lTensor X f.toLinearMap w = y := by
+    refine Module.Flat.rTensor_preserves_injective_linearMap (M := A) g hg ?_
+    have h2 : ∀ z : X ⊗[R] B, LinearMap.rTensor A g (LinearMap.lTensor X f.toLinearMap z) =
+        LinearMap.lTensor Y f.toLinearMap (LinearMap.rTensor B g z) := fun z => by
+      rw [← LinearMap.comp_apply, ← LinearMap.comp_apply, LinearMap.rTensor_comp_lTensor,
+        LinearMap.lTensor_comp_rTensor]
+    rw [h2, hw, hu]
+  rw [← hy, ← LinearMap.comp_apply, ← LinearMap.lTensor_comp]
+  have hzero : K.mkQ ∘ₗ f.toLinearMap = 0 := by
+    ext b
+    simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.zero_apply,
+      Submodule.mkQ_apply]
+    exact (Submodule.Quotient.mk_eq_zero _).mpr (LinearMap.mem_range_self _ b)
+  rw [hzero, LinearMap.lTensor_zero, LinearMap.zero_apply]
+
+/-- **A faithfully flat map of finite free `R`-algebras admits an `R`-linear retraction.**
+
+The cokernel is finitely presented because both sides are finite free, and flat by the previous
+theorem; a finitely presented flat module is projective, so the quotient map splits and the
+splitting exhibits `f(B)` as a direct summand. -/
+theorem AlgHom.exists_linearRetraction_of_faithfullyFlat (f : B →ₐ[R] A)
+    (hf : RingHom.FaithfullyFlat (f : B →+* A))
+    [Module.Finite R A] [Module.Free R A] [Module.Finite R B] [Module.Free R B] :
+    ∃ r : A →ₗ[R] B, ∀ b : B, r (f b) = b := by
+  set K : Submodule R A := LinearMap.range f.toLinearMap with hK
+  haveI : Module.Flat R (A ⧸ K) := f.flat_quotient_range_of_faithfullyFlat hf
+  haveI : Module.FinitePresentation R A := Module.finitePresentation_of_projective R A
+  haveI : Module.FinitePresentation R (A ⧸ K) :=
+    Module.finitePresentation_of_surjective K.mkQ (Submodule.mkQ_surjective K)
+      (by rw [Submodule.ker_mkQ]; exact Module.Finite.iff_fg.mp inferInstance)
+  haveI : Module.Projective R (A ⧸ K) := Module.Flat.projective_of_finitePresentation
+  obtain ⟨s, hs⟩ := Module.projective_lifting_property K.mkQ (LinearMap.id (R := R) (M := A ⧸ K))
+    (Submodule.mkQ_surjective K)
+  have hinj : Function.Injective f.toLinearMap := hf.injective
+  set t : A →ₗ[R] A := LinearMap.id - s ∘ₗ K.mkQ with ht
+  have htK : ∀ a : A, t a ∈ K := by
+    intro a
+    rw [← Submodule.ker_mkQ K, LinearMap.mem_ker, ht]
+    simp only [LinearMap.sub_apply, LinearMap.id_apply, LinearMap.comp_apply, map_sub]
+    rw [← LinearMap.comp_apply, hs]
+    simp
+  set eB : B ≃ₗ[R] K := LinearEquiv.ofInjective f.toLinearMap hinj with heB
+  refine ⟨eB.symm ∘ₗ t.codRestrict K htK, fun b => ?_⟩
+  have hb : t (f b) = f b := by
+    have hker : K.mkQ (f b) = 0 := by
+      rw [← LinearMap.mem_ker, Submodule.ker_mkQ, hK]; exact LinearMap.mem_range_self _ b
+    simp [ht, hker]
+  have hcod : (t.codRestrict K htK) (f b) = eB b := by
+    apply Subtype.ext
+    show t (f b) = f.toLinearMap b
+    exact hb
+  simp [hcod]
+
+end FaithfullyFlatSplit
+
 namespace HopfAlgebra
 
 /-! ### Short exact sequences -/
@@ -513,7 +687,7 @@ here. The split is by *where the mathematics is*:
 
 | statement | status | content |
 | --------- | ------ | ------- |
-| `exists_linearRetraction` | OPEN | `i(A'')` is an `R`-module direct summand of `A` |
+| `exists_linearRetraction` | **PROVEN** | `i(A'')` is an `R`-module direct summand of `A` |
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `ker_cartierDual_le` | OPEN | the hard half: a character trivial on `Spec A'` descends |
@@ -521,31 +695,35 @@ here. The split is by *where the mathematics is*:
 
 -/
 
+omit [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A'] [Module.Finite R A'] [Module.Free R A'] in
 /-- **`i(A'')` is an `R`-module direct summand of `A`**: the inclusion of the sub-bialgebra
 admits an `R`-linear retraction.
 
-OPEN, and this is the module-theoretic heart of the surjectivity half of exactness of duality.
-It is *equivalent* to `surjective_cartierDual_map` — `A''` is finite free over `R`, so a
-retraction can be reassembled from extensions of a dual basis — so stating it this way is a
+**PROVEN** (2026-07-27), and by a route much cheaper than the one this docstring used to
+advertise. It is *equivalent* to `surjective_cartierDual_map` — `A''` is finite free over `R`, so
+a retraction can be reassembled from extensions of a dual basis — so stating it this way is a
 change of formulation, not a weakening.
 
-Why it is true. `A` is faithfully flat over `i(A'')`, so `Spec A → Spec A''` is an fppf
-`Spec A'`-torsor; locally on `Spec R` the torsor is trivial and the normal-basis isomorphism
-`A ≅ A'' ⊗[R] A'` of `A''`-modules carries `i(A'')` to `A'' ⊗ R·1`. Since `ε_{A'} : A' → R`
-splits `R·1 ⊆ A'`, the quotient `A / i(A'')` is *locally free*, hence — being finitely presented
-over `R` — projective, hence the sequence `0 → i(A'') → A → A/i(A'') → 0` splits globally.
-Locality is not an obstruction here precisely because it is used to establish projectivity of the
-quotient, which is a local property, rather than to produce the splitting directly.
+**The old docstring said this needed the normal-basis isomorphism `A ≅ A'' ⊗[R] A'`, hence fppf
+local triviality of the torsor `Spec A → Spec A''`. That is not so, and the correction is worth
+recording because the same over-estimate is repeated in the two leaves below.** The faithful
+flatness field of `IsShortExact` already does all of the work, through purity:
 
-Refuting check, if this is ever doubted: exhibit a short exact sequence of finite free
-commutative Hopf algebras in which `A / i(A'')` has `R`-torsion. Equivalently, exhibit a
-functional on `A''` that does not extend to `A`.
+* a faithfully flat ring map is a **pure** monomorphism of `R`-modules, i.e. stays injective after
+  tensoring with an arbitrary `R`-module (`AlgHom.rTensor_injective_of_faithfullyFlat`);
+* so `A ⧸ i(A'')` is `R`-**flat** (`AlgHom.flat_quotient_range_of_faithfullyFlat`);
+* it is finitely presented because `A''` and `A` are finite free, hence projective, hence the
+  sequence `0 → i(A'') → A → A ⧸ i(A'') → 0` splits.
 
-Note this needs *no* finiteness or freeness over `R` to state, and the freeness enters only
-through the proof; it is stated in the `Dual` section only because that is where it is used. -/
+No torsor, no descent, no local triviality, and no Hopf structure: the whole statement is
+`AlgHom.exists_linearRetraction_of_faithfullyFlat` applied to `i.toAlgHom`. In particular the
+"gated on fppf descent" note that used to sit here — and still sits on `ker_cartierDual_le` —
+was an over-estimate for *this* field. -/
 theorem IsShortExact.exists_linearRetraction (h : IsShortExact i π) :
-    ∃ r : A →ₗ[R] A'', ∀ a : A'', r (i a) = a := sorry
+    ∃ r : A →ₗ[R] A'', ∀ a : A'', r (i a) = a :=
+  i.toAlgHom.exists_linearRetraction_of_faithfullyFlat h.faithfullyFlat
 
+omit [IsCocomm R A'] [Module.Finite R A'] [Module.Free R A'] in
 /-- **The transposed inclusion `(Spec A)^D → (Spec A'')^D` is a closed immersion**, i.e.
 `CartierDual.map i` is surjective.
 
@@ -589,10 +767,15 @@ sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by
 OPEN. In functor-of-points language this is exactness of
 `1 → (Spec A'')^D → (Spec A)^D → (Spec A')^D` at the middle term: a character of `Spec A`
 that is trivial on the subgroup `Spec A'` factors through the fppf quotient
-`Spec A / Spec A' = Spec A''`. That factorisation is **fppf descent along the faithfully flat
-`Spec A → Spec A''`**, and the descent statement for modules is *not in this pin* — the same gap
-`CartierDual.lean`'s "What remains" section records as the reason a definition of the quotient
-could not be written there. So this leaf is gated on descent, not merely hard.
+`Spec A / Spec A' = Spec A''`.
+
+**ROUTE-AUDIT CORRECTION (2026-07-27). This docstring used to end "so this leaf is gated on
+descent, not merely hard". Treat that as a hypothesis, not a fact.** The identical claim sat on
+`IsShortExact.exists_linearRetraction` — "locally on `Spec R` the torsor is trivial", hence
+fppf descent — and it was simply an over-estimate: that field is now **PROVEN** from the
+faithful-flatness field alone, by purity of a faithfully flat ring map, with no descent, no
+torsor and no local triviality (see the `FaithfullyFlatSplit` section). One sibling's descent
+gate evaporating is a reason to re-derive this one rather than inherit it.
 
 What is available, and what is not:
 
@@ -600,8 +783,35 @@ What is available, and what is not:
   `(CartierDual.map π) (ker ε) = Ann(ker π) ∩ Ann(1)` as an `R`-submodule — that much is
   elementary;
 * the ideal generated by that submodule is taken in the **convolution** ring structure of
-  `CartierDual R A`, which is where the elementary description stops, and where the comodule
-  decomposition `A ≅ A'' ⊗[R] A'` is spent.
+  `CartierDual R A`, which is where the elementary description stops.
+
+**The recommended cut, which serves this leaf and `faithfullyFlat_cartierDual` at once.** Both
+remaining fields follow from the *single* classical input, the normal-basis decomposition of `A`
+as an `A''`-module and right `A'`-comodule,
+
+    e : A ≃ₗ[R] A'' ⊗[R] A',    e (i a'') = a'' ⊗ₜ 1,    e intertwining (id ⊗ π) ∘ Δ ,
+
+so a decomposition of *this file* should state that once and consume it twice, rather than
+attacking the two fields separately. Given `e`, dualise: `A^D ≅ (A'')^D ⊗[R] (A')^D` as
+`R`-modules, `map π` becomes `1 ⊗ (regular representation of (A')^D)`, and
+
+* `A^D` is **free over `(A')^D` of rank `rk_R A''`** — the `(A')^D`-action is dual to the
+  coaction `(id ⊗ π) ∘ Δ`, which `e` intertwines with `id ⊗ Δ_{A'}`, i.e. with the regular
+  representation on the second factor. That alone is `faithfullyFlat_cartierDual`, through the
+  pin's `[Nontrivial M] [Module.Free R M] → Module.FaithfullyFlat R M` instance;
+* **and then a rank count gives this leaf, with no further input.** Write `J` for the ideal on
+  the right-hand side. By construction `A^D ⧸ J = A^D ⊗_{(A')^D} R` along the counit, so freeness
+  of rank `rk_R A''` makes `A^D ⧸ J` finite free of rank `rk_R A''` over `R`. On the other side
+  `map i` is surjective (`surjective_cartierDual_map`, PROVEN), so
+  `A^D ⧸ ker (map i) ≅ (A'')^D`, also finite free of rank `rk_R A''`. The inclusion `J ≤ ker`
+  (`le_ker_cartierDual`, PROVEN) induces a **surjection between finite free `R`-modules of equal
+  rank**, which is therefore injective — i.e. `ker (map i) = J`.
+
+  (Under `e`, `map i` is `α ⊗ β ↦ β 1 • α` and `map π` is `ψ ↦ 1 ⊗ ψ`, so `ker (map i)` is
+  `(A'')^D ⊗ ε-kernel`; but note the ideal `J` is generated in the **convolution** ring `A^D`,
+  not merely as an `(A')^D`-submodule, and `e` is *not* an algebra isomorphism — the extension
+  need not split as group schemes. So the direct "read off the ideal in coordinates" argument
+  does **not** work, and the rank count above is what replaces it.)
 
 Refuting check: the reverse inclusion `IsShortExact.le_ker_cartierDual` is proven, so a
 counterexample would be a `φ : A →ₗ[R] R` killing `i(A'')` that is not a convolution combination
@@ -616,12 +826,23 @@ theorem IsShortExact.ker_cartierDual_le (h : IsShortExact i π) :
 
 /-- **`(Spec A)^D → (Spec A')^D` is faithfully flat.**
 
-OPEN, and this is the deepest of the three fields: it is the statement that Cartier duality turns
-the closed immersion `Spec A' ↪ Spec A` into an fppf quotient, i.e. that every character of the
-subgroup `Spec A'` extends fppf-locally to `Spec A`. Classically (Tate, *Finite flat group
-schemes*, §2) this is `Ext¹(G'', 𝔾ₘ) = 0` for finite flat `G''`, proven by exhibiting
+OPEN, and this is the deepest of the two remaining fields: it is the statement that Cartier
+duality turns the closed immersion `Spec A' ↪ Spec A` into an fppf quotient, i.e. that every
+character of the subgroup `Spec A'` extends fppf-locally to `Spec A`. Classically (Tate, *Finite
+flat group schemes*, §2) this is `Ext¹(G'', 𝔾ₘ) = 0` for finite flat `G''`, proven by exhibiting
 `CartierDual R A` as a *free* `CartierDual R A'`-module on a basis dual to an
 `R`-basis of `A''` — the linear dual of the normal-basis decomposition `A ≅ A'' ⊗[R] A'`.
+
+**The last step of that route is already in the pin, so the leaf really is only the freeness.**
+`Mathlib/RingTheory/Flat/FaithfullyFlat/Basic.lean` carries
+`instance [Nontrivial M] [Module.Free R M] : Module.FaithfullyFlat R M`; so once
+`Module.Free (CartierDual R A') (CartierDual R A)` is available along `(map π).toAlgebra`, this
+field is that instance plus `Nontrivial (CartierDual R A)`. Note the corner: `Nontrivial` fails
+exactly when `R` is the zero ring, where the whole statement is vacuous because a trivial ring
+has no maximal ideals — so any assembly must case-split on `Subsingleton R` rather than assume
+nontriviality. See `ker_cartierDual_le` for the shared normal-basis input that supplies the
+freeness, and note that the "needs fppf descent" framing that used to sit on the sibling field
+`exists_linearRetraction` was refuted there on 2026-07-27.
 
 Refuting check: `RingHom.FaithfullyFlat` unfolds to `Module.FaithfullyFlat` along
 `(CartierDual.map π).toAlgebra`, so a refutation would be a maximal ideal `m` of
