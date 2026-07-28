@@ -59361,7 +59361,475 @@ theorem tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
     finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_zero (by simp) hN0 hN2]
   simp
 
-/-- **NO INERTIA INVARIANTS AT DEEP LEVEL** (sorry leaf, cut 2026-07-27,
+/-! ### The deep-level local machinery (2026-07-28, fifteenth owner)
+
+The two leaves below — `inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le`
+and `isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two` — are
+now PROVEN, over the four leaves cut here and the checked local Galois theory
+of this block. The shape of the cut is the thirteenth owner's, applied at deep
+level: the CITATION moves up to statements that are literally Carayol's, and
+everything the docstrings used to derive in prose becomes Lean.
+
+WHAT MOVED WHERE.
+
+* The `dim V^{I_q} = 1` cases of the old three-case derivation are now the ONE
+  theorem `isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one`: a
+  `2`-dimensional `τ` with UNRAMIFIED DETERMINANT and a nonzero inertia-fixed
+  vector is TAMELY ramified at `q ≠ p`, with tame exponent `≤ 1`. That merges
+  the old `N ≠ 0` and `N = 0` cases, because the determinant condition is what
+  kills both: `det = 1` on `I_q` plus an eigenvalue `1` forces the OTHER
+  eigenvalue to be `1`, i.e. square-zero unipotence, and a square-zero
+  unipotent inertia action is tame at `q ≠ p`. No Weil–Deligne parameter is
+  needed anywhere, and the trivial-nebentypus input appears exactly once, as
+  the determinant leaf.
+* `Sw_q ≥ dim V − dim V^{P_q}` (`wildCodim_le_swanExponentAux`) is what turns
+  a conductor exponent of `2` into TAMENESS rather than merely into
+  `swanExponent = 0`. It needs a ramification filtration to exist, which is
+  the fourth leaf.
+
+THE FOUR LEAVES, and why each is smaller than what it replaces:
+
+1. `nonempty_ramificationFiltration` — the upper-numbering filtration EXISTS
+   (Serre, *Corps Locaux* IV §3, VI §3). Pure local field theory, no modular
+   forms. **This is also the leaf that stops `swanExponentAux` from being the
+   junk `sInf ∅ = 0`**: with `RamificationFiltration v` empty,
+   `IsSwanExponentAt` is vacuous, `swanExponentAux = 0` identically, and every
+   `conductorExponent` collapses to its tame part — which would make the
+   `3 ≤ ord_q M₀` sibling FALSE, since a tame exponent is `≤ dim V = 2`. It
+   belongs in `ArtinConductor.lean` beside `RamificationFiltration` and is
+   stated here only to avoid rebuilding that module's whole cone; hoisting it
+   is a free follow-up.
+2. `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` — `det τ` is the
+   `p`-adic cyclotomic character (Chebotarev on the Frobenius data in `hτ`),
+   hence trivial on inertia at every `q ≠ p`. It carries NO newform, NO
+   irreducibility and NO level: only `hτ` and continuity.
+3. `two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` — Carayol's
+   identity, LOWER half only, and only the bound `2 ≤ a_q`.
+4. `conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two` —
+   Carayol's identity, UPPER half, only at the boundary `ord_q M₀ = 2`.
+
+Leaves 3 and 4 are jointly equivalent to the parent AT `ord_q M₀ = 2` and to
+nothing more; in particular they do NOT discharge
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le`, which still needs
+the equality at `3 ≤ ord_q M₀` and `GaloisRep.exists_isSwanExponentAt`. The
+`2 ≤ ord_q M₀` half of the old citation is therefore split along exactly the
+line the fourteenth owner identified — the two sub-ranges are blocked by
+different things — with the difference that the split is now visible in the
+STATEMENTS rather than argued in prose.
+-/
+
+/-- **A FIXED VECTOR AND DETERMINANT ONE FORCE SQUARE-ZERO UNIPOTENCE IN
+DIMENSION `2`** (PROVEN — pure linear algebra, 2026-07-28, fifteenth
+owner of the deep-level cluster).
+
+If `u` is an endomorphism of a `2`-dimensional coordinate space with a
+NONZERO fixed vector `w` and `det u = 1`, then `(u − 1)² = 0`.
+
+THE PROOF IS CAYLEY–HAMILTON, USED TWICE. In dimension `2` the
+characteristic polynomial is `X² − (tr u)·X + det u`
+(`Matrix.charpoly_fin_two`), so `u² − (tr u)·u + (det u) = 0`
+(`Matrix.aeval_self_charpoly`, transported along
+`LinearMap.toMatrixAlgEquiv'`). Evaluating THAT identity at `w` and using
+`u w = w`, `det u = 1` gives `(2 − tr u)·w = 0`, whence `tr u = 2`
+because `w ≠ 0` and the ground ring is a FIELD. The identity then reads
+`u² − 2u + 1 = 0`, i.e. `(u − 1)² = 0`.
+
+This is the "an eigenvalue `1` together with determinant `1` makes the
+other eigenvalue `1`" step of the local classification, written without
+ever choosing a basis adapted to the fixed line — which is what keeps it
+free of `Module.Free`/basis-extension bookkeeping. -/
+theorem sq_sub_one_eq_zero_of_fixed_of_det_eq_one
+    {F : Type*} [Field F] {u : Module.End F (Fin 2 → F)}
+    {w : Fin 2 → F} (hw : w ≠ 0) (huw : u w = w)
+    (hdet : LinearMap.det u = 1) : (u - 1) ^ 2 = 0 := by
+  classical
+  set A : Matrix (Fin 2) (Fin 2) F := LinearMap.toMatrixAlgEquiv' u with hA
+  have hAu : Matrix.toLinAlgEquiv' A = u := by
+    rw [hA, Matrix.toLinAlgEquiv'_toMatrixAlgEquiv']
+  have hAdet : A.det = 1 := by
+    rw [hA, show (LinearMap.toMatrixAlgEquiv' u) = LinearMap.toMatrix' u from rfl,
+      LinearMap.det_toMatrix']
+    exact hdet
+  have hCH : A ^ 2 - algebraMap F (Matrix (Fin 2) (Fin 2) F) A.trace * A
+      + algebraMap F (Matrix (Fin 2) (Fin 2) F) A.det = 0 := by
+    have h := Matrix.aeval_self_charpoly A
+    rw [Matrix.charpoly_fin_two] at h
+    simpa using h
+  have hCH' : u ^ 2 - algebraMap F (Module.End F (Fin 2 → F)) A.trace * u
+      + algebraMap F (Module.End F (Fin 2 → F)) A.det = 0 := by
+    have h := congrArg (LinearMap.toMatrixAlgEquiv' (n := Fin 2) (R := F)).symm hCH
+    simpa [hAu, AlgEquiv.commutes] using h
+  have happ : ((2 : F) - A.trace) • w = 0 := by
+    have h := congrArg (fun f : Module.End F (Fin 2 → F) => f w) hCH'
+    simp only [LinearMap.add_apply, LinearMap.sub_apply, LinearMap.zero_apply,
+      Module.End.mul_apply, Module.algebraMap_end_apply, pow_two, huw, hAdet,
+      one_smul] at h
+    rw [sub_smul, two_smul, ← h]
+    abel
+  have htr : A.trace = 2 := by
+    rcases smul_eq_zero.mp happ with h | h
+    · exact (sub_eq_zero.mp h).symm
+    · exact absurd h hw
+  rw [htr, hAdet] at hCH'
+  simp only [map_one, map_ofNat] at hCH'
+  have hexp : (u - 1) ^ 2 = u ^ 2 - 2 * u + 1 := by
+    simp only [pow_two, sub_mul, mul_sub, mul_one, one_mul, two_mul]
+    abel
+  rw [hexp, hCH']
+
+/-- **A `2`-DIMENSIONAL REPRESENTATION WITH UNRAMIFIED DETERMINANT AND A
+NONZERO INERTIA-FIXED VECTOR IS TAMELY RAMIFIED** (PROVEN 2026-07-28,
+fifteenth owner; Serre, *Corps Locaux* IV §2).
+
+This is the whole `dim V^{I_q} ≥ 1` half of the deep-level derivation,
+and it is a statement of PURE LOCAL GALOIS THEORY: no newform, no level,
+no Hecke data, no Weil–Deligne parameter.
+
+THE ARGUMENT IS TWO STEPS, and the second is already in this file.
+
+1. A nonzero `w₀ ∈ V^{I_q}` is fixed by every `σ ∈ I_q`, and
+   `det (τσ) = 1` there, so `sq_sub_one_eq_zero_of_fixed_of_det_eq_one`
+   gives `(τσ − 1)² = 0` for every `σ ∈ I_q`. **This is where the
+   trivial nebentypus enters, and it is the only place.**
+2. A square-zero-unipotent inertia action at a place whose residue
+   characteristic is prime to `p` is trivial on the WILD inertia:
+   `toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero` above
+   (the fourteenth owner's place-generic block — additivity of
+   `σ ↦ τσ − 1`, `pᵏ`-th roots inside `P_v` from
+   `exists_pow_eq_of_mem_wildInertiaGroup`, and boundedness of the
+   continuous image of the compact `Γ Kᵥ`).
+
+So the only NEW mathematics here is step 1: the derivation of
+square-zero unipotence from the DETERMINANT rather than from a
+Weil–Deligne monodromy operator. That is what merges the old `N ≠ 0` and
+`N = 0` cases of the deep-level docstring into one.
+
+`hqp : q ≠ p` IS LOAD-BEARING and enters exactly once, as the side
+condition `(p : 𝓞 ℚ) ∉ v_q` of step 2. At `q = p` the wild inertia is
+pro-`p`, the pro-`p`/pro-`p` clash disappears, and the statement is
+false in general. -/
+theorem isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hdet : ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1)
+    (hne : τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat ≠ ⊥) :
+    τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hv
+  obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hne
+  -- STEP 1: a fixed vector plus determinant `1` makes inertia SQUARE-ZERO
+  -- unipotent. This is the only place the trivial nebentypus is used.
+  have hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0 := fun σ hσ =>
+    sq_sub_one_eq_zero_of_fixed_of_det_eq_one hw₀ne (hw₀mem σ hσ) (hdet σ hσ)
+  -- STEP 2: `p` is prime to the residue characteristic `q`, so the
+  -- place-generic block above kills the wild inertia.
+  have hpn : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal := by
+    rw [hv, Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro hdvd
+    have hqp' : q ∣ p := by exact_mod_cast hdvd
+    exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp.out).mp hqp')
+  intro σ hσ x
+  rw [toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero hpn hsq hσ]
+  rfl
+
+/-- **THE SWAN CONDUCTOR DOMINATES THE WILD CODIMENSION**,
+`Sw_v(V) ≥ dim V − dim V^{P_v}` (PROVEN 2026-07-28, fifteenth owner,
+given a ramification filtration).
+
+This is "check 3" of the NON-VACUITY note on `GaloisRep.IsSwanExponentAt`
+in `ArtinConductor.lean`, promoted from a scratch verification to a
+consumed lemma. The proof is one line of the specification: at `u = 1`
+the normalisation axiom `RamificationFiltration.gp_eq_wild` gives
+`G¹ = P_v`, so the counting clause reads
+
+  `wildCodim = #{k < wildCodim : 1 ≤ μ k}`,
+
+and a filtered subset of `range d` with `d` elements IS `range d`, so
+every break satisfies `μ k ≥ 1`. Summing, `Sw = ∑ μ k ≥ d`.
+
+It is the ONLY route from "the wild inertia acts nontrivially" to
+"the Swan exponent is nonzero", which is what turns a conductor exponent
+of `2` into TAMENESS rather than merely into `swanExponent = 0`. -/
+theorem wildCodim_le_swanExponentAux
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    (F : RamificationFiltration v) :
+    τ.wildCodim v ≤ τ.swanExponentAux v := by
+  classical
+  obtain ⟨μ, hcount, hsum⟩ := τ.isSwanExponentAt_swanExponentAux v F
+  have h1 := hcount 1 (by norm_num)
+  rw [F.gp_eq_wild 1 (by norm_num) le_rfl] at h1
+  have hcard : ((Finset.range (τ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
+      = Finset.range (τ.wildCodim v) := by
+    refine Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) ?_
+    rw [Finset.card_range, ← h1]
+    exact le_rfl
+  have hall : ∀ k ∈ Finset.range (τ.wildCodim v), (1 : ℚ) ≤ μ k := by
+    intro k hk
+    have hmem : k ∈ (Finset.range (τ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k := by
+      rw [hcard]; exact hk
+    exact (Finset.mem_filter.mp hmem).2
+  have hge : ((τ.wildCodim v : ℕ) : ℚ) ≤ ∑ k ∈ Finset.range (τ.wildCodim v), μ k := by
+    calc ((τ.wildCodim v : ℕ) : ℚ)
+        = ∑ _k ∈ Finset.range (τ.wildCodim v), (1 : ℚ) := by simp
+      _ ≤ ∑ k ∈ Finset.range (τ.wildCodim v), μ k := Finset.sum_le_sum hall
+  rw [← hsum] at hge
+  exact_mod_cast hge
+
+/-- **A WILDLY RAMIFIED PLACE HAS A POSITIVE SWAN CONDUCTOR** (PROVEN
+2026-07-28, fifteenth owner, given a ramification filtration).
+
+If `P_v` does NOT act trivially then `V^{P_v}` is a proper submodule of
+the `2`-dimensional `V`, so `wildCodim ≥ 1`, and
+`wildCodim_le_swanExponentAux` transports that to `swanExponentAux ≥ 1`.
+
+This is the converse direction of the `if` built into
+`GaloisRep.swanExponent`: without it, `swanExponent = 0` would carry NO
+information at a place that might be wild, since the `else` branch could
+also be `0`. -/
+theorem one_le_swanExponentAux_of_not_isTamelyRamifiedAt
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    (F : RamificationFiltration v) (hnt : ¬ τ.IsTamelyRamifiedAt v) :
+    1 ≤ τ.swanExponentAux v := by
+  refine le_trans ?_ (wildCodim_le_swanExponentAux τ F)
+  have hne : τ.fixedSubmodule v (wildInertiaGroup v) ≠ ⊤ := by
+    intro h
+    refine hnt fun σ hσ x => ?_
+    have hx : x ∈ τ.fixedSubmodule v (wildInertiaGroup v) := by
+      rw [h]; exact Submodule.mem_top
+    exact hx σ hσ
+  have hV : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  have hlt : Module.finrank (AlgebraicClosure ℚ_[p])
+      (τ.fixedSubmodule v (wildInertiaGroup v))
+      < Module.finrank (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    Submodule.finrank_lt hne
+  rw [hV] at hlt
+  have hgoal : 1 ≤ 2 - Module.finrank (AlgebraicClosure ℚ_[p])
+      (τ.fixedSubmodule v (wildInertiaGroup v)) := by omega
+  simpa [GaloisRep.wildCodim, hV] using hgoal
+
+/-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** (SORRY LEAF,
+cut 2026-07-28, fifteenth owner; Serre, *Corps Locaux* IV §3 for the
+lower numbering and Herbrand's `ψ`, IV §3 / VI §2 for the upper
+numbering; Neukirch, *Algebraic Number Theory* II.10).
+
+`RamificationFiltration v` (`ArtinConductor.lean`) is the family
+`G^u ≤ Γ Kᵥ` with five axioms: decreasing, `G⁰ = I_v`, `G^u = P_v` on
+`(0, 1]`, left continuity, and separatedness `⋂_{u>0} G^u = 1`. This leaf
+says the type is INHABITED.
+
+WHY IT IS TRUE. The lower-numbering filtration `G_i` of each finite
+Galois subextension is defined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`;
+Herbrand's function `ψ_{L/K}` renumbers it so that the result is
+compatible with quotients, and the upper numbering therefore passes to
+the inverse limit and defines `G^u` on the absolute Galois group. The
+five axioms are then the standard facts: `G^0 = G_0 = I_v` because
+`ψ(0) = 0`; `G^u = G_1 = P_v` for `0 < u ≤ 1` because `ψ(u) = u` there;
+left continuity is the standard convention `G^u = ⋂_{w<u} G^w`; and
+separatedness is that every element of the inertia has finite image in
+some finite level, where the filtration reaches `1`. For `u < 0` any
+group containing `I_v` will do — the axioms constrain nothing there —
+so the whole content is at `u ≥ 0`.
+
+WHY THIS LEAF MATTERS BEYOND ITS CONSUMER, and this is the sharpest
+thing this cut records. `GaloisRep.IsSwanExponentAt` quantifies
+UNIVERSALLY over `RamificationFiltration v`. If the type were EMPTY the
+specification would be vacuously true of every `s`, so
+`swanExponentAux = sInf ℕ = 0` identically, and `conductorExponent`
+would collapse to its tame part — which is `≤ dim V = 2`. Every citation
+asserting a conductor exponent `≥ 3` would then be FALSE rather than
+merely open, including
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` below at
+`ord_q M₀ ≥ 3`. So this leaf is a NON-DEGENERACY condition on the whole
+Swan development, not merely a convenience for the present proof.
+
+PLACEMENT. It belongs in `ArtinConductor.lean` beside
+`RamificationFiltration` itself, and is stated here only because moving
+it there rebuilds that module's entire downstream cone. Hoisting it is a
+free follow-up for whoever next edits that file.
+
+THE CHECK THAT WOULD REFUTE IT: exhibit an axiom of
+`RamificationFiltration` that the genuine upper-numbering filtration of
+`Γ Kᵥ` fails. The candidate is separatedness, and it holds because the
+absolute Galois group of a local field is the inverse limit of finite
+Galois groups in each of which the ramification filtration terminates at
+`1`. AXIS SEARCHED: the five axioms individually. NOT SEARCHED: whether
+the axioms are strong enough to make the filtration UNIQUE — they are
+not known to be, which is deliberate and is why
+`GaloisRep.exists_isSwanExponentAt` is a separate leaf. -/
+theorem nonempty_ramificationFiltration
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Nonempty (RamificationFiltration v) :=
+  sorry
+
+/-- **THE DETERMINANT OF `τ` IS THE CYCLOTOMIC CHARACTER, HENCE TRIVIAL
+ON INERTIA AWAY FROM `p`** (SORRY LEAF, cut 2026-07-28, fifteenth owner;
+Chebotarev density, plus the unramifiedness of the `p`-adic cyclotomic
+character outside `p`).
+
+STATEMENT. If `τ`'s Frobenius characteristic polynomials are
+`X² − a_r X + r` off a finite set, then for every prime `q ≠ p` the
+determinant of `τ` is trivial on `localInertiaGroup q`.
+
+WHY IT IS TRUE. For a `2`-dimensional representation the constant term
+of the characteristic polynomial of `τ(Frob_r)` IS `det τ(Frob_r)`, so
+`hτ` says `det τ (Frob_r) = r` for every prime `r ∉ S_τ`. The `p`-adic
+cyclotomic character `ε_p` satisfies the same identity at every
+unramified `r`. Both are CONTINUOUS characters of `Γ ℚ`, and a set of
+Frobenii of density one determines a continuous character (Chebotarev),
+so `det τ = ε_p`. The cyclotomic character is unramified at every place
+away from `p`, i.e. trivial on `localInertiaGroup q` for `q ≠ p`.
+
+**THIS IS WHERE THE TRIVIAL NEBENTYPUS ENTERS THE DEEP-LEVEL
+DERIVATION, AND IT IS THE ONLY PLACE.** The whole content of "weight 2
+on `Γ₀(M₀)`, so `det = ε_p`" is here; the two consumers use nothing else
+about the newform's character.
+
+MINIMALITY. The leaf deliberately does NOT take `hM₀`, `hg₀` or `hirr`:
+neither the positivity of the level, nor newform-ness, nor
+irreducibility is used in the argument above — only `hτ` and the
+continuity built into `GaloisRep`. Stating it with the smaller
+hypothesis bundle keeps it strictly stronger and makes it reusable at
+any `τ` with cyclotomic Frobenius determinants. `g₀` and `κ₀` survive
+only because `hτ` mentions `heckeCoeff M₀ g₀`.
+
+TERMINALITY AT THIS PIN. What is missing is Chebotarev in the form
+"two continuous characters of `Γ K` agreeing on the Frobenii outside a
+finite set are equal". The file has `Chebotarev.lean` and the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` for `2`-dimensional
+representations, but no character-level statement; the neighbouring
+`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p` runs the
+other way (it ASSUMES unramifiedness outside `p`). THE CHECK THAT WOULD
+REFUTE THIS VERDICT: exhibit a statement in this tree deducing equality
+of two continuous `Γ ℚ`-characters from agreement on a density-one set
+of Frobenii. AXIS SEARCHED: the character axis and the
+`exists_linearEquiv_of_charFrob_eq` transport axis. NOT SEARCHED:
+whether `det` of the rigidity isomorphism can be run directly, which
+would need a second representation with known determinant. -/
+theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
+    {M₀ : ℕ} {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 :=
+  sorry
+
+/-- **CARAYOL AT DEEP LEVEL, LOWER HALF: `2 ≤ a_q(τ)`** (SORRY LEAF, cut
+2026-07-28, fifteenth owner, out of
+`inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le` below;
+Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)).
+
+Carayol's identity is `a_q(τ) = ord_q M₀` at every `q ≠ p`. This leaf
+asserts only the LOWER bound at `2 ≤ ord_q M₀`, and only the numeric
+bound `2 ≤ a_q(τ)` rather than the full `ord_q M₀ ≤ a_q(τ)` — that is
+all the consumer needs, and taking less keeps the citation as small as
+the derivation permits.
+
+WHAT IT BUYS. Together with the local theory above it is exactly what
+excludes a fixed inertia vector at deep level: a nonzero `V^{I_q}` makes
+`τ` tame at `q` (`isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_
+det_eq_one`), hence `Sw_q = 0`, and gives `tameExponent ≤ 1`
+(`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`), so
+`a_q = tameExponent + Sw_q ≤ 1 < 2`.
+
+RANGE, NOT TAMENESS. `2 ≤ ord_q M₀` is a restriction on the LEVEL and
+never an assumption about ramification: wild ramification at `q ∈ {2, 3}`
+is not excluded, it is exactly what makes `ord_q M₀` large, and Carayol's
+identity absorbs it in the Swan summand. `M₀ = 27, q = 3` and
+`M₀ = 32, q = 2` are inhabitants, not counterexamples. The
+semistability-defect trap (`a_q ≤ 2` only for `q ≥ 5`) is about an
+INEQUALITY BOUNDING `a_q` ABOVE by a tame quantity and does not apply to
+a lower bound.
+
+TERMINALITY. The prerequisites are the ones recorded throughout this
+cluster — Casselman's newvector theory computing `cond(π_q) = ord_q M₀`,
+Deligne's compatibility of local Langlands with conductors, and
+geometrically the Deligne–Rapoport model of `X₀(M₀)` at `q` with
+Néron–Ogg–Shafarevich. None is on this pin and `~/cs/FLT` has nothing
+vendorable. NOT VACUOUS: inhabited by any newform of level divisible by
+`q²`, e.g. `M₀ = 49`, `q = 7`. -/
+theorem two_le_conductorExponent_of_isWeightTwoNewform_of_two_le
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord₂ : 2 ≤ M₀.factorization q) :
+    2 ≤ τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **CARAYOL AT THE DEEP-LEVEL BOUNDARY, UPPER HALF: `a_q(τ) ≤ 2` WHEN
+`ord_q M₀ = 2`** (SORRY LEAF, cut 2026-07-28, fifteenth owner, out of
+`isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two`
+below; Carayol, Théorème (A), plus Casselman's newvector theory).
+
+The complement of the leaf above, and deliberately confined to the
+BOUNDARY `ord_q M₀ = 2`. The two together pin `a_q(τ) = 2` there — which
+is the parent's assertion at that one value of `ord_q M₀` — and they say
+NOTHING at `3 ≤ ord_q M₀`. That is the point of splitting Carayol this
+way rather than citing the equality: the deep-level range is not
+uniformly wild, and the sub-range where tameness is derivable is exactly
+the sub-range where the upper bound is `2`.
+
+WHAT IT BUYS. With `V^{I_q} = 0` from the leaf below (so
+`tameExponent = 2`), `a_q ≤ 2` forces `swanExponent = 0`; and
+`one_le_swanExponentAux_of_not_isTamelyRamifiedAt` says a NON-tame place
+has `swanExponentAux ≥ 1`. So `swanExponent = 0` is only possible if the
+wild inertia acts trivially, which is tameness. On the automorphic side
+this is the classification of conductor-`2` representations of
+`GL₂(ℚ_q)` with trivial central character — a ramified principal series
+with `a(χ) = 1`, `χ ⊗ St` with `χ` ramified quadratic, or a DEPTH-ZERO
+supercuspidal — all of which are tame.
+
+Note `ord_q M₀ = 2` is the commonest deep level in practice: every
+elliptic curve over `ℚ` with additive, potentially good reduction at a
+prime `q ≥ 5` has `ord_q N = 2`.
+
+TERMINALITY: as on the lower half. NOT VACUOUS: `M₀ = 49`, `q = 7`,
+`p ≠ 7`. -/
+theorem conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord : M₀.factorization q = 2) :
+    τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat ≤ 2 :=
+  sorry
+
+/-- **NO INERTIA INVARIANTS AT DEEP LEVEL** (**PROVEN 2026-07-28,
+fifteenth owner**, over
+`two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` and
+`det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` above; opened
+as a sorry leaf 2026-07-27,
 fourteenth owner, from
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
 below; Carayol, Théorème (A), together with Casselman's newvector theory
@@ -59439,7 +59907,37 @@ Carayol, or a ramified `det`, contradicting trivial nebentypus. AXIS
 SEARCHED: the local-type axis (all three shapes of a 2-dimensional
 Weil–Deligne parameter). NOT SEARCHED: whether the statement is better
 cited at the level of `π_q` than of `τ` — the same axis the eleventh owner
-left open on the parent. -/
+left open on the parent.
+
+**PROVEN 2026-07-28 (fifteenth owner), and the three-case derivation
+above collapsed to ONE case.** Everything from here down is the record of
+how. The three cases were `dim V^{I_q} ∈ {2, 1, 1}`; the two `dim = 1`
+cases differed only in whether the monodromy `N` vanished, and BOTH are
+killed by the determinant. So the whole of "suppose `V^{I_q} ≠ 0`" is:
+
+* a nonzero fixed vector plus `det τ|_{I_q} = 1` (that is the leaf
+  `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup`, i.e. the
+  trivial nebentypus) makes every `τ(σ)`, `σ ∈ I_q`, a SQUARE-ZERO
+  unipotent (`sq_sub_one_eq_zero_of_fixed_of_det_eq_one`);
+* a square-zero unipotent inertia action at `q ≠ p` is TAME
+  (`isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one`), so
+  `Sw_q(τ) = 0`;
+* and a nonzero fixed vector gives `tameExponent ≤ 1`
+  (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`),
+* whence `a_q(τ) = tameExponent + Sw_q ≤ 1`, contradicting the LOWER
+  half of Carayol's identity, `2 ≤ a_q(τ)`.
+
+The `dim V^{I_q} = 2` case is not special-cased: an unramified `τ` has
+`V^{I_q} = V ≠ 0` and is caught by the same argument. NO
+Weil–Deligne parameter, NO monodromy operator and NO case split on `N`
+appear anywhere in the Lean proof — the case analysis above is the
+classical PRESENTATION of an argument that is uniform once written in
+terms of the determinant.
+
+WHAT REMAINS ASSUMED is therefore exactly two things: Carayol's identity
+in its lower-bound form, and the cyclotomic determinant. Both are named
+leaves immediately above, and neither mentions a newform's local
+component or a Weil–Deligne parameter. -/
 theorem inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -59455,11 +59953,32 @@ theorem inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord₂ : 2 ≤ M₀.factorization q) :
-    τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat = ⊥ :=
-  sorry
+    τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat = ⊥ := by
+  by_contra hne
+  -- A nonzero inertia-fixed vector together with the CYCLOTOMIC determinant
+  -- makes the inertia action square-zero unipotent, hence TAME at `q ≠ p`.
+  have htame : τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one hq hqp
+      (det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup κ₀ hτ hq hqp) hne
+  have hswan : τ.swanExponent hq.toHeightOneSpectrumRingOfIntegersRat = 0 :=
+    GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt _ _ htame
+  -- and the same fixed vector caps the TAME part at `1`.
+  obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hne
+  have htameexp : τ.tameExponent hq.toHeightOneSpectrumRingOfIntegersRat ≤ 1 := by
+    have h := GaloisRep.tameExponent_add_one_le_finrank_of_fixed τ
+      hq.toHeightOneSpectrumRingOfIntegersRat hw₀ne hw₀mem
+    simpa using h
+  -- so `a_q(τ) ≤ 1`, against Carayol's lower bound `2 ≤ a_q(τ)`.
+  have h2 := two_le_conductorExponent_of_isWeightTwoNewform_of_two_le
+    hM₀ hg₀ κ₀ hτ hirr hq hqp hord₂
+  rw [GaloisRep.conductorExponent, hswan] at h2
+  omega
 
 /-- **TAMENESS AT A PRIME EXACTLY SQUARE-DIVIDING THE NEWFORM LEVEL**
-(sorry leaf, cut 2026-07-27, fourteenth owner, from
+(**PROVEN 2026-07-28, fifteenth owner**, over
+`conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two`
+and `nonempty_ramificationFiltration` above together with the sibling
+leaf below it; opened as a sorry leaf 2026-07-27, fourteenth owner, from
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
 below; Carayol, Théorème (A), plus the depth-zero classification of the
 conductor-`2` representations of `GL₂(ℚ_q)`): for a weight-2 NEWFORM `g₀`
@@ -59507,7 +60026,28 @@ THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a weight-2 newform with
 `ord_q M₀ = 2` at some `q ≠ p` whose `p`-adic representation has nonzero
 Swan conductor at `q`. By the display above that forces `a_q ≥ 3`,
 contradicting Carayol. AXIS SEARCHED: the local-type axis at conductor
-exactly `2`. -/
+exactly `2`.
+
+**HOW IT WAS PROVEN (2026-07-28), and what the automorphic paragraph
+above turned into.** The classification of the conductor-`2` local types
+is NOT used; what is used is the numerical shadow of it, the UPPER half
+of Carayol's identity at the boundary, `a_q(τ) ≤ 2`. Given that:
+
+* the sibling leaf gives `V^{I_q} = 0`, i.e. `tameExponent = 2`;
+* so `a_q = 2 + swanExponent ≤ 2` forces `swanExponent = 0`;
+* and `swanExponent = 0` implies TAMENESS, because at a non-tame place
+  `swanExponent` takes its `else` branch `swanExponentAux`, which is
+  `≥ wildCodim ≥ 1` (`one_le_swanExponentAux_of_not_isTamelyRamifiedAt`,
+  over `wildCodim_le_swanExponentAux` and hence over the existence of a
+  ramification filtration).
+
+The third bullet is the step that the `if`-branch packaging of
+`GaloisRep.swanExponent` makes necessary and that nothing in the tree
+supplied before: without a lower bound on `swanExponentAux` at a wild
+place, `swanExponent = 0` carries no information at all. It is also why
+`nonempty_ramificationFiltration` had to be cut — see its docstring for
+why an EMPTY `RamificationFiltration` would make the whole Swan
+development degenerate rather than merely unproven. -/
 theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -59523,8 +60063,25 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord : M₀.factorization q = 2) :
-    τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  by_contra hnt
+  -- The TAME part is `2`: no inertia invariants at deep level.
+  have hbot := inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le
+    hM₀ hg₀ κ₀ hτ hirr hq hqp (by omega)
+  have htame : τ.tameExponent hq.toHeightOneSpectrumRingOfIntegersRat = 2 := by
+    rw [GaloisRep.tameExponent, hbot]
+    simp
+  -- A wildly ramified place has a POSITIVE Swan conductor.
+  have hswan : 1 ≤ τ.swanExponent hq.toHeightOneSpectrumRingOfIntegersRat := by
+    rw [GaloisRep.swanExponent, if_neg hnt]
+    exact one_le_swanExponentAux_of_not_isTamelyRamifiedAt τ
+      (nonempty_ramificationFiltration _).some hnt
+  -- so `a_q(τ) ≥ 3`, against Carayol's upper bound at the boundary.
+  have hle := conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
+    hM₀ hg₀ κ₀ hτ hirr hq hqp hord
+  rw [GaloisRep.conductorExponent, htame] at hle
+  omega
 
 /-- **THE WILD PART AT DEEP LEVEL `q³ ∣ M₀`** (sorry leaf, cut 2026-07-27,
 fourteenth owner, from
@@ -59746,6 +60303,19 @@ written out in full on
 reader can check no new literature input enters. The same bookkeeping
 applies to the thirteenth owner's `q ∥ M₀` pair. The sorry count rises by
 two.
+
+UPDATE 2026-07-28 (fifteenth owner): TWO OF THOSE THREE LEAVES ARE NOW
+PROVEN. `inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le` and
+`isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two` are
+checked Lean over four smaller leaves — Carayol's identity split into a
+LOWER bound `2 ≤ a_q` at `2 ≤ ord_q M₀` and an UPPER bound `a_q ≤ 2` at
+the boundary `ord_q M₀ = 2`, the cyclotomic determinant, and the
+existence of an upper-numbering ramification filtration — plus the local
+Galois theory in the block above them. Only
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` remains open
+among the three, and it is untouched: the two Carayol halves cited here
+say nothing at `3 ≤ ord_q M₀`. See the section docstring above
+`sq_sub_one_eq_zero_of_fixed_of_det_eq_one` for the full accounting.
 
 FAITHFULNESS AUDIT OF THE STATEMENT ITSELF (2026-07-27, fourteenth owner
 — run because conductor-exponent statements are a known trap class in
