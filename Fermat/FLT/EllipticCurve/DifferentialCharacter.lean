@@ -69,11 +69,25 @@ uniqueness needs no `φ ≠ 0` hypothesis.
   and `isDiffChar_comp`, so it is transitively sorried with nothing left to prove.
 * `isDiffChar_galConj` — `λ(φ^σ) = σ(λ φ)` for `σ ∈ Gal(ℚ̄/ℚ)`. **PROVEN.**
 
-Still open, and these three are the whole remaining mathematics of the file:
+**STALE LIST, CORRECTED 2026-07-28.** This paragraph used to say "still open, and
+these three are the whole remaining mathematics of the file: `exists_isDiffChar`,
+`isDiffChar_add`, `isDiffChar_comp`". Two of those three have since been closed in
+this very file — `isDiffChar_comp` outright (via the `homogSubst` chain rule) and
+`isDiffChar_add` as an assembly over the five-way branch split. The list as it
+stands is:
+
+* `isDiffChar_comp` — `λ` is multiplicative on composites. **PROVEN.**
+* `isDiffChar_add` — `λ` is additive. **PROVEN as an assembly**; four of its five
+  branches are discharged, the fifth is `isDiffChar_add_of_ne` below.
+* `isDiffChar_two` — `[2]*ω = 2ω`, the doubling branch. **PROVEN** (2026-07-28),
+  from `PsiSumCompanion.wronskian` at `n = 2` plus `eval_preΨ₄_two`.
+
+Genuinely still open, and these two are the whole remaining mathematics:
 
 * `exists_isDiffChar` — every rational map acts on `ω` by some scalar;
-* `isDiffChar_add` — `λ` is additive;
-* `isDiffChar_comp` — `λ` is multiplicative on composites.
+* `isDiffChar_add_of_ne` — the CHORD branch of additivity. Its docstring carries
+  the mapped route, including that the differentiated chord addition law is
+  already proven (sorry-free) as `PsiSumCompanion.DK_addition_step`.
 
 **Do not attack them from the raw definition.** The section "What the certificate
 really says" below is PROVEN infrastructure written for exactly this purpose:
@@ -87,11 +101,13 @@ with no nonvanishing hypotheses in either direction; and
 points whose `x`-coordinate avoids ONE finite set of the prover's choosing, so
 `φP ≠ 0`, `B(x) ≠ 0`, `E(x) ≠ 0`, `ψ₂(P) ≠ 0` and `ψ₂(φP) ≠ 0` are all free.
 
-With that, `isDiffChar_comp` reduces to the CHAIN RULE for the composite
+With that, `isDiffChar_comp` reduced to the CHAIN RULE for the composite
 `x`-witnesses produced by `IsRationalMap.comp` (i.e. to a `homogSubst`
-derivative identity), and `isDiffChar_add` to the corresponding statement for
-the chord/duplication witnesses of `IsRationalMap.add`. Those two derivative
-identities are the actual remaining content.
+derivative identity) — that is how it was closed — and `isDiffChar_add` to the
+corresponding statement for the chord/duplication witnesses of
+`IsRationalMap.add`. The duplication half of that is now `isDiffChar_two`,
+PROVEN; the chord half is `isDiffChar_add_of_ne`, the last derivative identity in
+the file.
 
 Reference: Silverman, *AEC* III.5 (the invariant differential and its
 functoriality), *ATAEC* II.2.
@@ -1005,14 +1021,16 @@ right-hand side is ALREADY A THEOREM:
 At `n = 2` that reads `Φ₂′·ΨSq₂ − Φ₂·ΨSq₂′ = 2 · preΨ 4`, so the target collapses to
 the `y`-side statement
 
-  `ΨSq₂² · ψ₂([2]P) = preΨ 4 (x P) · ψ₂(P)`  (up to `preΨ`'s normalisation),
+  `ΨSq₂² · ψ₂([2]P) = preΨ 4 (x P) · ψ₂(P)`,
 
-i.e. the classical `2y(nP) + a₁x(nP) + a₃ = ψ₂ₙ/ψₙ⁴` at `n = 2`. **VERIFY THAT
-NORMALISATION BEFORE BUILDING ON IT** — mathlib's `preΨ` differs from the classical
-`ψ` by a `ψ₂` factor in the even case, which is exactly where an off-by-`ψ₂` error
-would hide, and this docstring has not checked it. The material to settle it is
-`addY_two_core` (`Isogeny.lean`), which gives `y([2]P)·ψ₂⁴` as an explicit `y`-affine
-expression, so the comparison is a `linear_combination` against the curve equation
+i.e. the classical `2y(nP) + a₁x(nP) + a₃ = ψ₂ₙ/ψₙ⁴` at `n = 2`. **THE
+NORMALISATION IS NOW CHECKED, AND THE DISPLAY ABOVE IS EXACT** (2026-07-28; this
+paragraph used to end "up to `preΨ`'s normalisation … this docstring has not checked
+it"). `ψ₄ = preΨ₄·ψ₂`, so `ψ₄/ψ₂⁴ = preΨ₄/ψ₂³`, and since `ΨSq₂ = ψ₂²` the display
+is `ψ₂⁴·ψ₂([2]P) = preΨ₄·ψ₂` — no stray `ψ₂` in either direction. `eval_preΨ₄_two`
+is that identity in the `veluPoint` spelling, and `preΨ₄_two_core` is the ring
+identity `ψ₂³·ψ₂([2]P) = preΨ₄(x)` behind it; the route was indeed the one predicted
+here, a `linear_combination` over the curve equation and the tangent-slope relation
 rather than a search.
 
 Note the whole statement is true in EVERY characteristic, including `2`, where both
@@ -1258,7 +1276,76 @@ is the reduced certificate for `c + d`.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: two rational maps, neither zero, with
 `φ ≠ ψ` and `φ + ψ ≠ 0`, whose sum acts on `ω` by something other than the sum of
-their scalars. -/
+their scalars.
+
+## The route, mapped 2026-07-28 — and the invariance identities are ALREADY PROVEN
+
+Two findings, both checked, that the paragraph above did not have.
+
+**(1) `PsiSumCompanion.DK_addition_step` (`WronskianStep.lean`, SORRY-FREE) IS the
+differentiated chord addition law.** Its file docstring calls it exactly that: "the
+additivity of the invariant differential `ω = dx/ψ₂`, proven as a polynomial
+certificate". It takes `DK x₁ = ψ₂(P₁)`, `DK y₁ = −(a₁y₁ − ν₀(x₁))`,
+`DK xₙ = m·ψ₂(Pₙ)`, `DK yₙ = −m(a₁yₙ − ν₀(xₙ))` and the chord formulas, and returns
+`DK x₃ = (m+1)·ψ₂(P₃)` **and** `DK y₃ = −(m+1)(a₁y₃ − ν₀(x₃))`. Its companion
+`DK_doubling_step` is the tangent case. So the "two halves of the invariance" above
+are not open mathematics — they are done, with cofactors already extracted.
+
+It is NOT directly reusable here: it is stated for the specific derivation `DK` on
+the universal function field `Kuniv`, and `InvariantDerivation.lean` builds `Dham`,
+`DB`, `DK` only over `ℤ[A₁,…,A₅]` — there is no base-ring-generic version, and this
+file works over an arbitrary algebraically closed `F`. What transfers is the
+**certificate**: the same saturation exponents and the same hypothesis list.
+
+**(2) The general-scalar version is TRUE and has the same shape** (verified in
+Singular before this note was written; both remainders `0`). With `ψ₂ᵢ = 2yᵢ + a₁xᵢ
++ a₃`, `νᵢ = 3xᵢ² + 2a₂xᵢ + a₄ − a₁yᵢ`, and the DEFINITIONS
+
+  `Dx₁ = c·ψ₂₁`, `Dy₁ = c·ν₁`, `Dx₂ = d·ψ₂₂`, `Dy₂ = d·ν₂`,
+  `DL·(x₁ − x₂) = (Dy₁ − Dy₂) − L·(Dx₁ − Dx₂)`   (quotient rule),
+  `Dx₃ = (2L + a₁)·DL − Dx₁ − Dx₂`                (chain rule),
+
+the two curve equations and `L(x₁ − x₂) = y₁ − y₂` imply
+
+  `(Dx₃ − (c+d)·ψ₂(P₃))·(x₁ − x₂)⁴ = 0`  and  `(Dy₃ − (c+d)·ν(P₃))·(x₁ − x₂)⁵ = 0`,
+
+i.e. exactly `DK_addition_step` with `(1, m)` replaced by `(c, d)`. Saturation
+exponents `4` and `5`, the same as there.
+
+## What is actually left, and the tool for it
+
+Given (2), the leaf reduces to ONE thing: connecting the *defined* `Dx₃` above to
+the polynomial Wronskian `A₃′B₃ − A₃B₃′` of a genuine `x`-witness of `φ + ψ`. That
+splits again:
+
+* *The `x`-side is free.* `IsRationalMap.add_of_x_ne` already builds the witness
+  `(V, Hp²K)` explicitly out of `A₁,…,E₂`, so `derivative V` and `derivative (Hp²K)`
+  are the product rule applied to explicit polynomial expressions, and
+  `diffChar_xWitness_eq` + `diffChar_wronskian_transfer` move the result onto
+  whatever witness `IsRationalMap.add_of_ne` hands back — the pattern
+  `isDiffChar_comp` already uses.
+* *The `y`-side is the real gap.* The Wronskian of `V` involves `C₁′, D₁′, E₁′`,
+  and nothing in `IsDiffChar` constrains them directly. What constrains them is the
+  `y`-companion `D(y∘φ) = c·ν(φP)`, in cleared form
+
+    `ψ₂(P)·(C′(t)y + D′(t))·E(t) + C(t)·ν(P)·E(t) − (C(t)y + D(t))·ψ₂(P)·E′(t)`
+      `= c·ν(φP)·E(t)²`.
+
+  **This does NOT need a derivation on `F[t,y]/(W)`, contrary to the first
+  impression.** The `W'`-equation at `(x∘φ, y∘φ)`, cleared of denominators, is a
+  polynomial identity in `F[t][y]` holding at every point of `W`; `y` occurs
+  linearly after one reduction, so writing it as `q(t)·y + p(t) = 0` and evaluating
+  at `R` and `−R` forces `q = 0` and `p = 0` as POLYNOMIALS — this is precisely the
+  mechanism already implemented inside `isDiffCharCert_of_cofinite`, reusable
+  verbatim. Differentiating the two polynomial identities `q = 0`, `p = 0` with the
+  ordinary `Polynomial.derivative` then gives the `y`-companion.
+
+So the leaf is large but has no missing theory: `isDiffCharCert_of_cofinite`'s
+`q`/`p` trick, `DK_addition_step`'s certificate, and `add_of_x_ne`'s `V`/`Hp²K`
+are the three pieces, and all three exist.
+
+**Do not attempt the polarisation `2φ = (φ+χ) + (φ−χ)`** to avoid this: see the
+section docstring — no `χ` with a known scalar exists on a bare pair `(W, W')`. -/
 theorem isDiffChar_add_of_ne [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ ψ : W.Point →+ W'.Point} {c d : F}
     (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d)
