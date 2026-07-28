@@ -4070,28 +4070,445 @@ theorem IsTaylorWilesPrimeSet.exists_card_eq.{uK, uW}
         IsTaylorWilesPrimeSet.exists_insert hpodd hW hρbar hirr n hQ''
       exact ⟨Q', by rw [hcard', hcard''], hQ'⟩
 
+/-! #### The Hermite–Minkowski input, in the form `finite_h1TwistUnramified` needs it
+
+Added 2026-07-28 by the decomposition of `finite_h1TwistUnramified` below.
+
+`HardlyRamified/HermiteMinkowski.lean` — which **is** in this file's import
+cone, contrary to what the docstring of `finite_h1TwistUnramified` used to say
+(the `import` is on the header line above, non-public, which is enough for the
+proof bodies here) — proves `finite_setOf_subgroup_inertiaAt_le`: finitely many
+open normal subgroups of `Γ ℚ` of bounded index into which the inertia at every
+`q ∉ {2, p}` maps.  That is hard-wired to the two-element set `{2, p}`, and the
+cut below needs the same statement for an ARBITRARY finite set `T` of rational
+primes.
+
+**Why an arbitrary `T`, and not `{2, p}`.**  `finite_h1TwistUnramified` carries
+NO hypothesis on `ρbar`, so `ad⁰ρbar(1)` need not be unramified outside
+`{2, p}`: the cocycle bookkeeping below cuts out a field `K/ℚ` which is
+unramified outside `{2, p} ∪ ram(ρbar)`, and `ram(ρbar)` is finite but not
+bounded in advance.  (This is the same phenomenon as the classical proof going
+through `L = ℚ(M)` rather than through `ℚ` directly.)  The generalisation is
+pure bookkeeping over the SAME per-prime input
+`exists_discr_factorization_le_of_finrank_le`, which is already stated for a
+general prime `q`; only the assembly `|d_K| = 2^{v₂}·p^{v_p}` had to become
+`|d_K| = ∏_{q ∈ T} q^{v_q}`.
+
+**Follow-up worth recording**: the identical generalisation is what
+`HardlyRamified/Deformation.lean`'s `finiteDimensional_h1_adZeroTwistRestricted`
+needs, and that module also imports `HermiteMinkowski.lean` — but it is
+UPSTREAM of this one, so it cannot consume the version below.  Hoisting
+`finite_inertiaOutsideSubgroups` into `HermiteMinkowski.lean` (upstream of both)
+is what would make it shared; it is not done here only because that file is a
+different owner's and a change there rebuilds `Deformation.lean`. -/
+
+/-- **Open normal subgroups of `Γ ℚ` of bounded index, unramified outside a
+finite set `T` of rational primes** (ADDED 2026-07-28): the subgroups `N` that
+are normal, open, of index at most `n`, and into which the inertia at every
+prime `q ∉ T` maps.
+
+Under the infinite Galois correspondence these are exactly the finite Galois
+subfields `K ⊆ ℚᵃˡᵍ` of degree at most `n` unramified outside `T`; the set is
+FINITE, which is `finite_inertiaOutsideSubgroups` below.
+
+Written with this module's own `inertiaToGlobalHom` rather than with
+`HermiteMinkowski.lean`'s `InertiaTrivialAt`.  The two conditions are the same
+up to the subtype packaging of `localInertiaGroup` — the bridge is the one line
+`hinert q hq hqT ⟨σ, hσ⟩` at the end of the proof below — and keeping
+`InertiaTrivialAt` out of the signature is what lets the `HermiteMinkowski`
+import on this file's header stay non-public. -/
+def inertiaOutsideSubgroups (T : Finset ℕ) (n : ℕ) :
+    Set (Subgroup (Field.absoluteGaloisGroup ℚ)) :=
+  {N | N.Normal ∧ IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧
+    N.FiniteIndex ∧ N.index ≤ n ∧
+    ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ : ↥(localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat),
+        inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ ∈ N}
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hermite–Minkowski for an arbitrary finite set of ramified primes**
+(PROVEN 2026-07-28 — the arithmetic input of `finite_h1TwistUnramified` below):
+`inertiaOutsideSubgroups T n` is finite.
+
+This is `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le` with the
+hard-wired `{2, p}` replaced by an arbitrary `T : Finset ℕ`, and the proof is
+that file's two steps run again over `T`:
+
+* the FIELD step.  A field `K` in the set has `q ∤ d_K` for every prime
+  `q ∉ T` (`not_dvd_discr_of_inertiaTrivialAt`), so the support of the
+  factorisation of `|d_K|` lies in `T.filter Nat.Prime`; the exponent at each
+  `q` is bounded by a constant `C q` depending only on `q` and `n`
+  (`exists_discr_factorization_le_of_finrank_le`, already general in `q`), so
+  `|d_K| ≤ ∏_{q ∈ T, q prime} q^{C q}` and mathlib's Hermite theorem
+  `NumberField.finite_of_discr_bdd` applies.  Only this step differs from the
+  `{2, p}` original, and only in replacing `Finset.prod_pair` by a `Finset`
+  product over `T`.
+* the SUBGROUP step, verbatim: such an `N` is closed (open ⟹ closed), hence the
+  fixing subgroup of its fixed field, which is finite-dimensional
+  (`InfiniteGalois.isOpen_iff_finite`), Galois (`normal_iff_isGalois`), of
+  degree `= [Γ ℚ : N] ≤ n`, and inertia-trivial off `T`; so the set injects into
+  the finite field set along `fixingSubgroup`.
+
+Both-ways audit: a plain classical finiteness statement with no
+representation-theoretic hypotheses.  It is not vacuous — `⊤` is a member for
+every `T` and every `n ≥ 1`, and for `T = {2, 3}`, `n = 2` the members are `⊤`
+and the fixing subgroups of `ℚ(i)`, `ℚ(√±3)`, `ℚ(√±2)`, `ℚ(√6)`, `ℚ(√-6)`. -/
+theorem finite_inertiaOutsideSubgroups (T : Finset ℕ) (n : ℕ) :
+    (inertiaOutsideSubgroups T n).Finite := by
+  classical
+  -- per-prime discriminant-exponent bounds; at a non-prime `q` the exponent is `0`
+  have hex : ∀ q : ℕ, ∃ C : ℕ, ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ))
+      (hfd : FiniteDimensional ℚ K), Module.finrank ℚ K ≤ n →
+      haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+      (NumberField.discr K).natAbs.factorization q ≤ C := by
+    intro q
+    by_cases hq : q.Prime
+    · exact exists_discr_factorization_le_of_finrank_le q n hq
+    · refine ⟨0, fun K hfd hr => ?_⟩
+      haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+      simp [Nat.factorization_eq_zero_of_not_prime _ hq]
+  choose C hC using hex
+  set T' : Finset ℕ := T.filter Nat.Prime with hT'def
+  -- STEP A: finitely many fields of degree `≤ n` unramified outside `T`
+  have hfield : {K : IntermediateField ℚ (AlgebraicClosure ℚ) |
+      ∃ _ : FiniteDimensional ℚ K,
+        IsGalois ℚ K ∧ Module.finrank ℚ K ≤ n ∧
+        ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+          InertiaTrivialAt hq K.fixingSubgroup}.Finite := by
+    refine Set.Finite.subset
+      ((NumberField.finite_of_discr_bdd (AlgebraicClosure ℚ)
+        (∏ q ∈ T', q ^ C q)).image Subtype.val) ?_
+    rintro K ⟨hfd, hgal, hrank, hinert⟩
+    haveI := hfd
+    haveI hNF : NumberField K := @NumberField.mk _ _ inferInstance hfd
+    haveI := hgal
+    refine ⟨⟨K, hfd⟩, ?_, rfl⟩
+    show |NumberField.discr K| ≤ ((∏ q ∈ T', q ^ C q : ℕ) : ℤ)
+    have hD0 : NumberField.discr K ≠ 0 := NumberField.discr_ne_zero K
+    have hN0 : (NumberField.discr K).natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hD0
+    have hsupp : (NumberField.discr K).natAbs.factorization.support ⊆ T' := by
+      intro q hqmem
+      rw [Nat.support_factorization] at hqmem
+      have hqp : q.Prime := Nat.prime_of_mem_primeFactors hqmem
+      have hqd : q ∣ (NumberField.discr K).natAbs := Nat.dvd_of_mem_primeFactors hqmem
+      refine Finset.mem_filter.mpr ⟨?_, hqp⟩
+      by_contra hqT
+      refine not_dvd_discr_of_inertiaTrivialAt K hqp (hinert q hqp hqT) ?_
+      have h1 : (((NumberField.discr K).natAbs : ℤ)) ∣ NumberField.discr K := by
+        rw [Int.natCast_natAbs]
+        exact (abs_dvd _ _).mpr dvd_rfl
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hqd) h1
+    have hNeq : (NumberField.discr K).natAbs =
+        ∏ q ∈ T', q ^ (NumberField.discr K).natAbs.factorization q := by
+      conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+      exact Finsupp.prod_of_support_subset _ hsupp (· ^ ·) (fun i _ => pow_zero i)
+    have hkey : (NumberField.discr K).natAbs ≤ ∏ q ∈ T', q ^ C q := by
+      rw [hNeq]
+      refine Finset.prod_le_prod' ?_
+      intro q hq
+      exact Nat.pow_le_pow_right (Finset.mem_filter.mp hq).2.pos (hC q K hfd hrank)
+    have habs : |NumberField.discr K| =
+        (((NumberField.discr K).natAbs : ℤ)) := (Int.natCast_natAbs _).symm
+    rw [habs]
+    exact_mod_cast hkey
+  -- STEP B: transport to subgroups along the infinite Galois correspondence
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  refine Set.Finite.subset (hfield.image fun K => K.fixingSubgroup) ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  have hclosed : IsClosed (N : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure ℚ)
+      N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :=
+    (InfiniteGalois.normal_iff_isGalois _).mp (by rw [hfix]; exact hnorm)
+  haveI hnorm' := hnorm
+  have hcard : Module.finrank ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) =
+      Nat.card (Field.absoluteGaloisGroup ℚ ⧸ N) := by
+    rw [← IsGalois.card_aut_eq_finrank]
+    exact (Nat.card_congr (InfiniteGalois.normalAutEquivQuotient
+      (⟨N, hclosed⟩ : ClosedSubgroup
+        (Field.absoluteGaloisGroup ℚ))).toEquiv).symm
+  have hrank : Module.finrank ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) ≤ n := by
+    rw [hcard, ← Subgroup.index_eq_card N]
+    exact hidx
+  refine ⟨_, ⟨hfd, hgalK, hrank, ?_⟩, hfix⟩
+  intro q hq hqT σ hσ
+  rw [hfix]
+  exact hinert q hq hqT ⟨σ, hσ⟩
+
+/-- The inclusion `N ↪ Γ ℚ` of a subgroup, as a continuous group homomorphism —
+the restriction datum of `resSubgroupTwist1` below. -/
+noncomputable def subgroupToGlobalHom (N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+    ↥N →ₜ* Field.absoluteGaloisGroup ℚ :=
+  ⟨N.subtype, continuous_subtype_val⟩
+
+/-- `ad⁰ρbar(1)` restricted to a subgroup `N ≤ Γ ℚ` — the analogue of
+`adZeroTwistInertia` / `adZeroTwistDecomp` along `subgroupToGlobalHom N`. -/
+noncomputable def adZeroTwistSubgroup.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+    TopRep k ↥N :=
+  TopRep.res (subgroupToGlobalHom N).toMonoidHom (adZeroTwist p ρbar)
+
+/-- The restriction `H¹(ℚ, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` along the inclusion
+of a subgroup `N ≤ Γ ℚ`.  Its KERNEL is the inflation image from `Γ ℚ ⧸ N`
+whenever `N` is closed normal, which is why it is finite for open `N` of finite
+index (`finite_ker_resSubgroupTwist1` below). -/
+noncomputable def resSubgroupTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+    continuousCohomology 1 (adZeroTwist p ρbar) ⟶
+      continuousCohomology 1 (adZeroTwistSubgroup p ρbar N) :=
+  ContinuousCohomology.map (subgroupToGlobalHom N)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistSubgroup p ρbar N)) 1
+
+/-- **A continuous representation of `Γ ℚ` over a finite coefficient field is
+unramified outside a finite set of primes** (SORRY LEAF, cut out 2026-07-28 as
+the first of the three inputs of `finite_h1TwistUnramified` below).
+
+This is the classical "a number field is ramified at only finitely many
+primes", transported through the kernel of `ρbar`.  Route, all of whose steps
+already have their tooling in this tree: `k` is `Finite` and `W` is a finite
+`k`-module, so `Module.End k W` is finite discrete and the continuity of `ρbar`
+makes `ker ρbar` an OPEN normal subgroup of `Γ ℚ`; its fixed field `K` is a
+finite Galois number field (`InfiniteGalois.isOpen_iff_finite`,
+`normal_iff_isGalois`, exactly as in the second half of
+`finite_inertiaOutsideSubgroups` above); take
+`T = (NumberField.discr K).natAbs.primeFactors`.  For `q ∉ T` mathlib's
+`NumberField.not_dvd_discr_iff_forall_mem` says every prime of `𝓞 K` over `q`
+is unramified, and the inertia at `q` therefore lands in `K.fixingSubgroup =
+ker ρbar`, i.e. `ρbar` is unramified at `q`.
+
+**What is genuinely missing and is this leaf's content**: the last step is the
+CONVERSE of `MinkowskiUnramified.lean`'s PROVEN
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` (which runs
+inertia-trivial ⟹ unramified).  `grep -rn "isUnramifiedAt_of_inertia_le_fixingSubgroup"
+Fermat/` finds only that direction, and
+`open_normal_subgroup_eq_top_of_inertia_le` in the same file is a Minkowski
+statement about ALL primes at once, so it does not supply it either.  That
+converse — "`q` unramified in the finite Galois `K` ⟹ the image of `I_q` fixes
+`K` pointwise" — is the one new dictionary lemma this leaf costs.
+
+Both-ways audit: a plain classical finiteness with no hypothesis on `ρbar`
+beyond its type, hence non-vacuous and not discharge-able by refuting any
+package.  It is stated for the FULL prime set rather than for a bound so that
+the consumer may enlarge `T` freely (it adds `2` and `p` itself). -/
+theorem exists_finset_isUnramifiedAt_of_notMem.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := sorry
+
+/-- **An unramified-outside-`{2, p}` class dies on a small open subgroup**
+(SORRY LEAF, cut out 2026-07-28 as the second of the three inputs of
+`finite_h1TwistUnramified` below — this is the cocycle bookkeeping, and the only
+one of the three that touches the cochain model).
+
+Given a finite set `T` of primes containing `2`, `p` and every prime at which
+`ρbar` ramifies, there is a bound `n` such that EVERY class `c` unramified
+outside `{2, p}` restricts to zero on SOME `N ∈ inertiaOutsideSubgroups T n`.
+
+# ROUTE (this is `finite_setOf_galoisRep_isUnramifiedAt`'s argument, run on
+cocycles instead of on representations)
+
+Write `M = ad⁰ρbar(1)`, a finite discrete `Γ ℚ`-module, and let `z` be a
+continuous `1`-cocycle representing `c`.
+
+* `N₁ := ker(Γ ℚ → Aut_k M)` is open normal of index at most `#Aut_k M`, since
+  `M` is finite discrete and the action is continuous.
+* `N := {g ∈ N₁ | z g = 0}` is again OPEN (preimage of `{0}` under a continuous
+  map into a discrete space) and NORMAL in `Γ ℚ` — not merely in `N₁`: for
+  `g ∈ Γ ℚ` and `x ∈ N₁` one computes `z (g x g⁻¹) = g · z x`, using
+  `z (g⁻¹) = −g⁻¹ · z g` and that `x` acts trivially on `M`.  Its index is at
+  most `#Aut_k M · #M`, which is the `n` to take.
+* `N ∈ inertiaOutsideSubgroups T n`: for a prime `q ∉ T` the module `M` is
+  unramified at `q` (`hT` for the `ad⁰` factor; the mod-`p` cyclotomic
+  character is unramified away from `p ∈ T`), so `I_q ⊆ N₁`; and `c` unramified
+  at `q` means `z|_{I_q}` is a coboundary `σ ↦ σ·m − m` on `I_q`, which VANISHES
+  because `I_q` acts trivially.  Hence `I_q ⊆ N`.  (This is the "honest zero
+  cocycle, not merely a coboundary" step recorded on `h1TwistUnramified`.)
+* `res^{Γ ℚ}_N c = 0` because `z` restricts to the zero cocycle on `N`.
+
+# WHAT IT COSTS
+
+The degree-`1` INHOMOGENEOUS cochain dictionary, which neither our pin nor
+`~/cs/FLT` has: our pin's `ContCohomology/LowDegree.lean` computes `H⁰` only,
+and the vendored
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+supplies `cocycleClass` / `cocycleClass_eq_zero_iff` for the HOMOGENEOUS model
+`(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`.  What is needed is the
+identification of that with `C(G, M)` — `F ↦ (y ↦ F 1 y)`, inverse
+`z ↦ (x, y) ↦ x · z (x⁻¹ y)` — carrying `d` to the usual cocycle condition, plus
+the compatibility of `ContinuousCohomology.map` with it.  Everything after that
+is the four bullets above.
+
+Both-ways audit: `T` and `n` are existentially/universally placed so that the
+statement is a genuine assertion about every class; it is not vacuous, since
+`h1TwistUnramified` contains `0` and the hypotheses on `T` are satisfiable
+(`exists_finset_isUnramifiedAt_of_notMem` above supplies one).  No hypothesis on
+`ρbar` beyond its type, so no circular discharge is available. -/
+theorem exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) (T : Finset ℕ)
+    (h2T : 2 ∈ T) (hpT : p ∈ T)
+    (hT : ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ n : ℕ, ∀ c ∈ h1TwistUnramified p ρbar,
+      ∃ N ∈ inertiaOutsideSubgroups T n,
+        c ∈ LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap := sorry
+
+/-- **Inflation–restriction: the kernel of restriction to an open normal
+subgroup is finite** (SORRY LEAF, cut out 2026-07-28 as the third of the three
+inputs of `finite_h1TwistUnramified` below).
+
+For `N ≤ Γ ℚ` open, normal and of finite index, the kernel of
+`res : H¹(Γ ℚ, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` is finite.
+
+# ROUTE
+
+The inflation–restriction sequence in degree `1`,
+`0 → H¹(Γ ℚ ⧸ N, M^N) → H¹(Γ ℚ, M) → H¹(N, M)`, identifies the kernel with
+`H¹(Γ ℚ ⧸ N, M^N)`; `Γ ℚ ⧸ N` is a FINITE discrete group (`N` open of finite
+index) and `M^N ⊆ M` is finite, so that group is a subquotient of the finite set
+of functions `Γ ℚ ⧸ N → M` and hence finite.
+
+Only the INJECTIVITY half of inflation–restriction is needed, and it can be had
+directly rather than through the exact sequence: a class in the kernel is
+represented by a cocycle vanishing on `N` after adjusting by a coboundary, and
+such a cocycle is constant on the left cosets `gN` (`z (g x) = z g + g · z x =
+z g`), so the map "kernel → functions `Γ ℚ ⧸ N → M`" is well defined and
+injective modulo the finite group of coboundaries `B¹ ≅ M / M^{Γ ℚ}`.  Both
+routes need the same missing input as
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` above — the degree-`1`
+inhomogeneous cochain dictionary — which is why the two leaves are natural
+companions and are best given to ONE owner.
+
+Both-ways audit: `hnorm`, `hopen` and `hFI` are all load-bearing.  Dropping
+`hopen` makes the statement FALSE as a matter of continuous cohomology: a
+non-closed `N` of finite index has no inflation–restriction sequence, and
+dropping `hFI` makes `Γ ℚ ⧸ N` infinite and the kernel infinite-dimensional
+(this is exactly the `dim_k H¹(Γ ℚ, ad⁰(1)) = ℵ₀` computation recorded on
+`Sha1Twist` in `HardlyRamified/Deformation.lean`, at `N = 1`). -/
+theorem finite_ker_resSubgroupTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) (hnorm : N.Normal)
+    (hopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hFI : N.FiniteIndex) :
+    Finite ↥(LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap) := sorry
+
 /-- **Finiteness of the unramified-outside-`{2, p}` part of
-`H¹(ℚ, ad⁰ρbar(1))`** (SORRY LEAF, cut out 2026-07-27 as the first of the
-two inputs of DDT Thm. 2.49; see `exists_taylorWilesPrimeSet_core`
-below).
+`H¹(ℚ, ad⁰ρbar(1))`** (cut out 2026-07-27 as the first of the two inputs of
+DDT Thm. 2.49, see `exists_taylorWilesPrimeSet_core` below; **PROVEN
+2026-07-28** over the three named leaves immediately above —
+`exists_finset_isUnramifiedAt_of_notMem`,
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
+`finite_ker_resSubgroupTwist1` — together with the newly PROVEN
+Hermite–Minkowski input `finite_inertiaOutsideSubgroups`).
+
+# THE ASSEMBLY, IN ONE LINE
+
+`h1TwistUnramified` is covered by the union, over the FINITELY many `N` in
+`inertiaOutsideSubgroups T n`, of the kernels of restriction to `N`; each such
+kernel is finite; a finite union of finite sets is finite; and a finite module
+over a field is `Module.Finite`.
+
+# WHY IT IS TRUE, AND THE ROUTE
 
 `h1TwistUnramified p ρbar` is canonically `H¹(G_{ℚ,S}, ad⁰ρbar(1))` for
 `S = hardlyRamifiedPlaces p = {2, p}` — see that definition's docstring
 for the inflation identification, which is where the argument starts —
 and the assertion is that this `k`-vector space is FINITE-dimensional.
 
-# WHY IT IS TRUE, AND THE ROUTE
-
 `ad⁰ρbar(1)` is a FINITE discrete `Γ ℚ`-module (`k` is `Finite` and
-`dim_k ad⁰ = 3`), unramified outside `S`.  A class in
-`H¹(G_{ℚ,S}, M)` is a continuous cocycle, hence factors through a finite
-quotient of `G_{ℚ,S}`, and the extension of `ℚ(M)` it cuts out is
-unramified outside `S` of degree bounded by `#M`.  Hermite–Minkowski
-bounds the number of such fields, so there are finitely many cocycles up
-to coboundary.
+`dim_k ad⁰ = 3`).  A class in `H¹(G_{ℚ,S}, M)` is a continuous cocycle, hence
+factors through a finite quotient of `G_{ℚ,S}`, and the extension of `ℚ(M)` it
+cuts out is unramified outside `S ∪ ram(ρbar)` of degree bounded by
+`#Aut M · #M`.  Hermite–Minkowski bounds the number of such fields, so there are
+finitely many cocycles up to coboundary.
 
-**THE HERMITE–MINKOWSKI INPUT IS ALREADY PROVEN IN THIS TREE**, which is
-the reason this leaf is cheap enough to be worth naming separately:
+**CORRECTION 2026-07-28 — the previous version of this docstring said the
+Hermite–Minkowski module "is NOT currently in this file's import cone — wiring
+it in is part of this leaf".  That was FALSE when written**: the header of this
+file has carried `import Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski`
+since before the leaf was cut, and `finite_setOf_isHardlyRamified` from that
+module is already consumed in a proof body here.  The import is non-public,
+which is enough for proof-body use and is why nothing had to change.  What was
+genuinely missing was not the import but the GENERALITY: that module's
+`finite_setOf_subgroup_inertiaAt_le` is hard-wired to `{2, p}`, and this leaf
+needs an arbitrary finite prime set because it carries no hypothesis on `ρbar`.
+That generalisation is `finite_inertiaOutsideSubgroups` above, now proven.
+
+CIRCULARITY GUARD (inherited from pillar 3b, and it binds this leaf):
+must not be proven through `Family.lean` or anything downstream of it,
+and not through `not_isIrreducible_of_isHardlyRamified_of_five_le` or
+`IsHardlyRamified.mod_three_reducible` — the point is moot here, since
+this statement carries NO hypothesis on `ρbar` beyond its type and so
+cannot be discharged by refuting the hardly ramified package.  The proof below
+and the three leaves it rests on all satisfy this: none of them mentions
+`IsHardlyRamified` at all. -/
+theorem finite_h1TwistUnramified.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    Module.Finite k ↥(h1TwistUnramified p ρbar) := by
+  classical
+  obtain ⟨T₀, hT₀⟩ := exists_finset_isUnramifiedAt_of_notMem p ρbar
+  set T : Finset ℕ := insert 2 (insert p T₀) with hTdef
+  obtain ⟨n, hcov⟩ := exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero p ρbar T
+    (Finset.mem_insert_self 2 _)
+    (Finset.mem_insert_of_mem (Finset.mem_insert_self p _))
+    (fun q hq hqT => hT₀ q hq fun hq0 =>
+      hqT (Finset.mem_insert_of_mem (Finset.mem_insert_of_mem hq0)))
+  have hfin : (⋃ N ∈ inertiaOutsideSubgroups T n,
+      (LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap :
+        Set (continuousCohomology 1 (adZeroTwist p ρbar)))).Finite := by
+    refine (finite_inertiaOutsideSubgroups T n).biUnion fun N hN => ?_
+    haveI := finite_ker_resSubgroupTwist1 p ρbar N hN.1 hN.2.1 hN.2.2.1
+    exact Set.toFinite _
+  have hsub : (h1TwistUnramified p ρbar :
+      Set (continuousCohomology 1 (adZeroTwist p ρbar))) ⊆
+      ⋃ N ∈ inertiaOutsideSubgroups T n,
+        (LinearMap.ker (resSubgroupTwist1 p ρbar N).hom.toLinearMap :
+          Set (continuousCohomology 1 (adZeroTwist p ρbar))) := by
+    intro c hc
+    obtain ⟨N, hN, hres⟩ := hcov c hc
+    exact Set.mem_biUnion hN hres
+  haveI : Finite ↥(h1TwistUnramified p ρbar) := (hfin.subset hsub).to_subtype
+  exact Module.Finite.of_finite
+
+/-! #### Record: what the leaf's original docstring claimed, superseded 2026-07-28
+
+# WHY IT WAS THOUGHT CHEAP
+
 `Fermat/FLT/GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean`
 proves `finite_setOf_subgroup_inertiaAt_le` (finitely many open normal
 subgroups of `Γ ℚ` of bounded index containing the global inertia at
@@ -4102,28 +4519,23 @@ cocycle-to-subgroup bookkeeping, of which
 `finite_setOf_galoisRep_isUnramifiedAt`'s proof is a worked model in the
 same file (a representation is determined by the induced function
 `Γ ℚ ⧸ N → E` on `Quotient.out` representatives; a cocycle is determined
-the same way, and coboundaries are a subspace of a finite space).  That
-module is NOT currently in this file's import cone — wiring it in is part
-of this leaf.
+the same way, and coboundaries are a subspace of a finite space).
+
+That estimate was right about the SHAPE and wrong about two costs, both now
+itemised as leaves above: the generality of the prime set (fixed by
+`finite_inertiaOutsideSubgroups`, proven) and the absence of a degree-`1`
+inhomogeneous cochain dictionary (still open, and it is what
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
+`finite_ker_resSubgroupTwist1` both cost).
 
 This is the finiteness that `Sha1Twist`'s docstring in
-`HardlyRamified/Deformation.lean` records as missing and folds into
-`rank_sha2_le_rank_sha1_twist`'s obligation; a proof here supplies it
-there too (over `G_{ℚ,S}` rather than over `Γ ℚ` with the unramifiedness
-condition, which the docstring notes are the same group in degree 1).
-
-CIRCULARITY GUARD (inherited from pillar 3b, and it binds this leaf):
-must not be proven through `Family.lean` or anything downstream of it,
-and not through `not_isIrreducible_of_isHardlyRamified_of_five_le` or
-`IsHardlyRamified.mod_three_reducible` — the point is moot here, since
-this statement carries NO hypothesis on `ρbar` beyond its type and so
-cannot be discharged by refuting the hardly ramified package. -/
-theorem finite_h1TwistUnramified.{uK, uW} (p : ℕ) [Fact p.Prime]
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
-    Module.Finite k ↥(h1TwistUnramified p ρbar) := sorry
+`HardlyRamified/Deformation.lean` records, and that
+`finiteDimensional_h1_adZeroTwistRestricted` in that module states over
+`G_{ℚ,S}` rather than over `Γ ℚ` with the unramifiedness condition — the same
+group in degree `1`.  A proof here does NOT literally discharge that leaf (this
+module is DOWNSTREAM of `Deformation.lean`, which therefore cannot import it),
+but the arithmetic input is shared and is available to both; see the section
+header above `inertiaOutsideSubgroups` for what hoisting it would take. -/
 
 /-- **Chebotarev separation of a single dual-Selmer class by a
 Taylor–Wiles prime — DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-27 as
