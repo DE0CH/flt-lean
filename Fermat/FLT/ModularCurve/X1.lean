@@ -1656,10 +1656,17 @@ whose defining clauses are exactly the two remaining conjuncts of
 Note that `hcov` is stated with the level structure rather than with a
 classifying map, which is what keeps it independent of `R`: the
 rigidifying cover is a property of ONE datum and the fine moduli scheme
-converts it into a cover in the sense of `Gamma1Rigidification`. -/
+converts it into a cover in the sense of `Gamma1Rigidification`.
+
+`hcov`'s binder `_g` is underscored because the CONCLUSION of `hcov` does
+not mention it — but it is **load-bearing for the truth of the supplier**
+`exists_gamma1FullLevelStructure_cover`, since it is what makes `T` an
+`S`-scheme and hence forces the residue characteristics of `T` to be
+those of `S`.  Weakening `hcov` by dropping it would make it false at a
+base of characteristic dividing `n`; it is used here at `p ≫ g`. -/
 theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 ≤ n)
     {S : Scheme.{0}} (R : Gamma1RigidifiedModuli N n S)
-    (hcov : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    (hcov : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma1Datum N T),
       ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
         Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
