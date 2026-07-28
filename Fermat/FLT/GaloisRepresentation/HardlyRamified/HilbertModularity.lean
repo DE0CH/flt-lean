@@ -457,6 +457,17 @@ public import Fermat.FLT.Modularity.PatchingCore
 -- `IsHilbertTaylorWilesPrimeSet` below.
 public import Mathlib.Data.Nat.ModEq
 public import Mathlib.RingTheory.Ideal.Quotient.Operations
+-- Continuous group cohomology, for the DUAL-SELMER clause of
+-- `IsHilbertTaylorWilesPrimeSet` below: `TopRep`, `ContRepresentation`,
+-- `continuousCohomology` and its functoriality `ContinuousCohomology.map`.
+-- Our pin carries the whole theory sorry-free; the `ℚ`-level twin of the
+-- clause (`Modularity/Patching.lean`'s `IsTaylorWilesPrimeSet`) is built from
+-- exactly these, and that file is DOWNSTREAM of this one, so the `F`-level
+-- vocabulary is written here rather than reused. `LinearAlgebra.Trace` is
+-- `ad⁰` itself, the trace-zero endomorphisms of `V`.
+public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functoriality
+public import Mathlib.LinearAlgebra.Trace
+public import Mathlib.Algebra.Module.ULift
 -- proof-only: `ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient`, which
 -- makes the coefficient ring of a `HilbertDeformationDatum` PROFINITE and hence
 -- its closed trace subring compact — the hypothesis of
@@ -17869,6 +17880,271 @@ theorem surjective_classifyingMap_hilbertHeckeDatum
   have hey : e (ψ r) = e y := by rw [hr]; exact hez
   exact e.injective hey
 
+/-! ### The dual-Selmer vocabulary over `F`
+
+Added 2026-07-27 as the CUT-LEVEL repair of `IsHilbertTaylorWilesPrimeSet`
+below, which was a conjunction of purely LOCAL conditions and so admitted
+prime sets for which the Taylor–Wiles method does not work — with every
+arithmetic leaf downstream quantified over all of them. This is the `F`-level
+twin of the same repair made at the `ℚ` level on `IsTaylorWilesPrimeSet`
+(`Modularity/Patching.lean`), and it has to be WRITTEN here rather than
+reused: `Patching.lean` transitively imports this module.
+
+Three deliberate deviations from the `ℚ`-level text, all forced or improving:
+
+1. **The twist is by `det ρbar|_{G_F}`, not by a cyclotomic character built
+   from `ℓ`.** For a hardly ramified `ρbar` those agree — that is exactly
+   `IsHilbertHardlyRamified.det`, transported by `HilbertDeformationDatum.resid`
+   — and `GaloisRep.det` costs no instance at all, whereas the `ℚ`-level
+   `adZeroCycloChar` needs `[Algebra ℤ_[ℓ] k]`. Since the predicate is a
+   hypothesis of six declarations in this file that do NOT carry that instance,
+   spelling the twist this way is what keeps their signatures untouched.
+2. **The carrier is `ULift`ed into `Type (max u v)`.** `continuousCohomology`
+   demands a `TopRep.{max u₂ u₃}` whose carrier universe is `max` of the
+   GROUP's universe with a free one. Over `ℚ` the group is `Γ ℚ : Type 0` and
+   the constraint is vacuous, which is why the `ℚ`-level file can use the bare
+   kernel; over `F : Type u` it is not, and the plain
+   `↥(ker (trace k V)) : Type v` is REJECTED with an unsolvable universe
+   constraint `v =?= max u ?u`. The `ULift` is the whole fix and carries no
+   mathematical content.
+3. `[DiscreteTopology k]` is genuinely needed and is new on six signatures:
+   `TopRep` asks for `ContinuousSMul k (ad⁰)`, and with `ad⁰` discrete that
+   holds exactly when `k` is discrete. The `ℚ`-level predicate has carried it
+   all along. Every consumer of the predicate in this file already instantiates
+   `k` as the residue field of a `HilbertDeformationDatum`, which is finite and
+   discrete, so nothing is lost.
+
+**Why the unramifiedness clause is not optional** (inherited verbatim from the
+`ℚ` level): `Ш¹(F, ad⁰(1)) = 0` alone is unachievable over the full `Γ F`, since
+a class ramified at some auxiliary place outside `Q` is invisible to every
+localisation in the family and the source is infinite-dimensional. Restricting
+to classes UNRAMIFIED OUTSIDE the hardly ramified places of `F` is what replaces
+the missing `G_{F,S}` here, and it is statable because `localInertiaGroup`
+exists.
+
+**The local Tate pairing is NOT needed.** The classical clause is
+`H¹_{Q*}(F, ad⁰ρbar(1)) = 0`, whose `Q*` condition at `w ∈ Q` is the annihilator
+of the unramified local condition under the local pairing. The clause below
+drops the pairing and asks for the FULL local restriction to vanish at each
+`w ∈ Q`, which is a SMALLER local condition, hence a LARGER kernel: the group it
+kills CONTAINS `H¹_{Q*}`. So the clause is STRONGER than the classical one,
+therefore sufficient for every consumer, and needs no duality theory. -/
+
+/-- **The adjoint module `ad⁰`** — the trace-zero endomorphisms of `V`, as a
+type of its own so that the discrete topology can be installed on it without
+colliding with the `moduleTopology` that `GaloisRep` puts on `Module.End k V`,
+and `ULift`ed into `Type (max u v)` for the universe reason recorded in the
+section note above.
+
+This is the `F`-level twin of `Deformation.lean`'s `AdZero`, which lives
+DOWNSTREAM of this module and therefore cannot be reused; the two differ only
+by the `ULift` and by `rep` being stated over an arbitrary base field. -/
+def HilbertAdZero (k : Type u) [Field k] (V : Type v) [AddCommGroup V]
+    [Module k V] : Type (max u v) :=
+  ULift.{u} ↥(LinearMap.ker (LinearMap.trace k V))
+
+namespace HilbertAdZero
+
+variable {k : Type u} [Field k] {V : Type v} [AddCommGroup V] [Module k V]
+
+noncomputable instance : AddCommGroup (HilbertAdZero k V) :=
+  inferInstanceAs (AddCommGroup (ULift.{u} ↥(LinearMap.ker (LinearMap.trace k V))))
+
+noncomputable instance : Module k (HilbertAdZero k V) :=
+  inferInstanceAs (Module k (ULift.{u} ↥(LinearMap.ker (LinearMap.trace k V))))
+
+instance : TopologicalSpace (HilbertAdZero k V) := ⊥
+
+instance : DiscreteTopology (HilbertAdZero k V) := ⟨rfl⟩
+
+instance : IsTopologicalAddGroup (HilbertAdZero k V) where
+  continuous_add := continuous_of_discreteTopology
+  continuous_neg := continuous_of_discreteTopology
+
+instance [TopologicalSpace k] [DiscreteTopology k] :
+    ContinuousSMul k (HilbertAdZero k V) := ⟨continuous_of_discreteTopology⟩
+
+variable (k V) in
+/-- The defining equivalence with the honest kernel of the trace. -/
+noncomputable def equivKer :
+    HilbertAdZero k V ≃ₗ[k] ↥(LinearMap.ker (LinearMap.trace k V)) :=
+  ULift.moduleEquiv
+
+variable (k V) in
+/-- The underlying endomorphism of a trace-zero endomorphism. -/
+noncomputable def toEnd : HilbertAdZero k V →ₗ[k] Module.End k V :=
+  (LinearMap.ker (LinearMap.trace k V)).subtype ∘ₗ (equivKer k V).toLinearMap
+
+lemma toEnd_injective : Function.Injective (toEnd k V) :=
+  (Submodule.injective_subtype _).comp (equivKer k V).injective
+
+@[ext]
+lemma ext {x y : HilbertAdZero k V} (h : toEnd k V x = toEnd k V y) : x = y :=
+  toEnd_injective h
+
+/-- Conjugation by a unit preserves trace-zero endomorphisms: `tr (a f b) = tr f`
+whenever `b * a = 1`, by `trace_mul_comm`. -/
+lemma conj_mem (a b : Module.End k V) (hab : b * a = 1) (f : Module.End k V)
+    (hf : f ∈ LinearMap.ker (LinearMap.trace k V)) :
+    a * f * b ∈ LinearMap.ker (LinearMap.trace k V) := by
+  rw [LinearMap.mem_ker] at hf ⊢
+  rw [LinearMap.trace_mul_comm, ← mul_assoc, hab, one_mul]
+  exact hf
+
+/-- The `k`-linear conjugation map `f ↦ a * f * b` on trace-zero endomorphisms. -/
+noncomputable def conjₗ (a b : Module.End k V) (hab : b * a = 1) :
+    HilbertAdZero k V →ₗ[k] HilbertAdZero k V :=
+  (equivKer k V).symm.toLinearMap ∘ₗ
+    (LinearMap.restrict ((LinearMap.mulLeft k a).comp (LinearMap.mulRight k b))
+      (fun f hf => by simpa [mul_assoc] using conj_mem a b hab f hf)) ∘ₗ
+    (equivKer k V).toLinearMap
+
+/-- The conjugation map as a continuous linear map — everything in sight is
+discrete, so continuity is free. -/
+noncomputable def conjL [TopologicalSpace k] [DiscreteTopology k]
+    (a b : Module.End k V) (hab : b * a = 1) :
+    HilbertAdZero k V →L[k] HilbertAdZero k V :=
+  ⟨conjₗ a b hab, continuous_of_discreteTopology⟩
+
+@[simp]
+lemma toEnd_conjL [TopologicalSpace k] [DiscreteTopology k]
+    (a b : Module.End k V) (hab : b * a = 1) (x : HilbertAdZero k V) :
+    toEnd k V (conjL a b hab x) = a * toEnd k V x * b :=
+  (mul_assoc a (toEnd k V x) b).symm
+
+/-- **`ad⁰ ρ`** — the adjoint representation on the trace-zero endomorphisms,
+`σ ↦ (f ↦ ρ σ ∘ f ∘ ρ σ⁻¹)`, over an ARBITRARY base field `K`. (The `ℚ`-level
+`AdZero.rep` is stated only for `K = ℚ`; here `K = F` is what is wanted.)
+
+Note `ContRepresentation k G M` is by definition just a monoid homomorphism
+`G →* (M →L[k] M)`: continuity of the ACTION is not part of the datum, so no
+continuity input is drawn from `ρ` and none is silently consumed. -/
+noncomputable def rep [TopologicalSpace k] [DiscreteTopology k]
+    {K : Type*} [Field K] (ρ : GaloisRep K k V) :
+    ContRepresentation k (Field.absoluteGaloisGroup K) (HilbertAdZero k V) where
+  toMonoidHom :=
+  { toFun := fun σ => conjL (ρ σ) (ρ σ⁻¹)
+      (by rw [← map_mul, inv_mul_cancel, map_one])
+    map_one' := by
+      refine ContinuousLinearMap.ext fun x => HilbertAdZero.ext ?_
+      rw [toEnd_conjL, one_apply_eq_self, inv_one, map_one, one_mul, mul_one]
+    map_mul' := fun σ τ => by
+      refine ContinuousLinearMap.ext fun x => HilbertAdZero.ext ?_
+      rw [toEnd_conjL, mul_apply_eq_comp, toEnd_conjL, toEnd_conjL,
+        map_mul, mul_inv_rev, map_mul]
+      simp only [mul_assoc] }
+
+end HilbertAdZero
+
+/-- **`ad⁰ ρbar|_{G_F}(1) = ad⁰ ⊗ det ρbar|_{G_F}`** as a continuous
+representation of `Γ F`.
+
+Built BY HAND, on the same carrier, with each `ρ σ` rescaled by `det ρbar σ`:
+`TopRep` has no monoidal structure to tensor with (surveyed at the `ℚ` level on
+`adZeroTwistRep` — there is no `TopRep.tensor`, no `TopRep.dual`, and no
+`MonoidalCategory (TopRep k G)` in the pin). Twisting by a ONE-dimensional
+character is the one case where that costs nothing, since the carrier does not
+change.
+
+**Why `det ρbar|_{G_F}` and not `χ̄_ℓ` spelled cyclotomically**: see deviation
+(1) of the section note. For the `ρbar` this file is ever applied to they are
+the same character, and this spelling needs no `[Algebra ℤ_[ℓ] k]`. -/
+noncomputable def hilbertAdZeroTwistRep
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
+    ContRepresentation k (Γ F) (HilbertAdZero k V) where
+  toMonoidHom :=
+  { toFun := fun σ =>
+      ((ρbar.map (algebraMap ℚ F)).det σ) •
+        (HilbertAdZero.rep (ρbar.map (algebraMap ℚ F)) σ)
+    map_one' := by simp
+    map_mul' := fun σ τ => by
+      simp only [map_mul, smul_mul_smul_comm] }
+
+/-- `ad⁰(1)` over `F` as an object of `TopRep k (Γ F)`, so that
+`continuousCohomology n (hilbertAdZeroTwist F ρbar)` is its continuous
+cohomology. -/
+noncomputable def hilbertAdZeroTwist
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
+    TopRep.{max u v} k (Γ F) :=
+  TopRep.of (hilbertAdZeroTwistRep F ρbar)
+
+/-- The decomposition map `Γ F_w →ₜ* Γ F` at a finite place `w` of `F`, i.e.
+the continuous group homomorphism induced by `F → F_w`. -/
+noncomputable def hilbertDecompHom (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    Γ (HeightOneSpectrum.adicCompletion F w) →ₜ* Γ F :=
+  Field.absoluteGaloisGroup.map (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+
+/-- **Inertia at `w` inside the global Galois group** — the composite
+`I_w ↪ Γ F_w → Γ F`. Continuity of the inclusion is `continuous_subtype_val`;
+`hilbertDecompHom` is continuous by construction. -/
+noncomputable def hilbertInertiaToGlobalHom (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    ↥(localInertiaGroup w) →ₜ* Γ F :=
+  (hilbertDecompHom F w).comp
+    ⟨(localInertiaGroup w).subtype, continuous_subtype_val⟩
+
+/-- `ad⁰(1)` restricted to the INERTIA group at `w`. -/
+noncomputable def hilbertAdZeroTwistInertia
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (w : HeightOneSpectrum (𝓞 F)) :
+    TopRep.{max u v} k ↥(localInertiaGroup w) :=
+  TopRep.res (hilbertInertiaToGlobalHom F w).toMonoidHom (hilbertAdZeroTwist F ρbar)
+
+/-- `ad⁰(1)` restricted to the DECOMPOSITION group at `w`. -/
+noncomputable def hilbertAdZeroTwistDecomp
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (w : HeightOneSpectrum (𝓞 F)) :
+    TopRep.{max u v} k (Γ (HeightOneSpectrum.adicCompletion F w)) :=
+  TopRep.res (hilbertDecompHom F w).toMonoidHom (hilbertAdZeroTwist F ρbar)
+
+/-- The restriction `H¹(F, ad⁰(1)) → H¹(I_w, ad⁰(1))`. A class in its kernel is
+exactly a class UNRAMIFIED at `w`; that is the notion the global clause of
+`IsHilbertTaylorWilesPrimeSet` below quantifies over. -/
+noncomputable def hilbertLocResInertiaTwist1
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (w : HeightOneSpectrum (𝓞 F)) :
+    continuousCohomology 1 (hilbertAdZeroTwist F ρbar) ⟶
+      continuousCohomology 1 (hilbertAdZeroTwistInertia F ρbar w) :=
+  ContinuousCohomology.map (hilbertInertiaToGlobalHom F w)
+    (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistInertia F ρbar w)) 1
+
+/-- The restriction `H¹(F, ad⁰(1)) → H¹(F_w, ad⁰(1))` — the FULL local
+restriction the dual-Selmer clause asks to vanish at each `w ∈ Q`. -/
+noncomputable def hilbertLocResDecompTwist1
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (w : HeightOneSpectrum (𝓞 F)) :
+    continuousCohomology 1 (hilbertAdZeroTwist F ρbar) ⟶
+      continuousCohomology 1 (hilbertAdZeroTwistDecomp F ρbar w) :=
+  ContinuousCohomology.map (hilbertDecompHom F w)
+    (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistDecomp F ρbar w)) 1
+
+/-- The places of `F` at which the `F`-level hardly ramified condition permits
+ramification: those above `2` and those above `ℓ`. The `F`-level twin of
+`Deformation.lean`'s `hardlyRamifiedPlaces` (which is `{(2), (ℓ)}` over `ℚ`),
+written here because that module is downstream. -/
+def hilbertHardlyRamifiedPlaces (ℓ : ℕ) (F : Type u) [Field F] [NumberField F] :
+    Set (HeightOneSpectrum (𝓞 F)) :=
+  {w | ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal ∨ ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal}
+
 /-- **Taylor–Wiles primes of a totally real field `F`** — the `F`-level twin of
 `Modularity/Patching.lean`'s `IsTaylorWilesPrimeSet`, with rational primes
 replaced by finite places of `F`.
@@ -17891,18 +18167,66 @@ distinct eigenvalues".
 
 This is the `F`-level form of Wiles, Ann. of Math. 141 (1995), ch. 3;
 Diamond–Darmon–Taylor (1995), §5.3, as used by Fujiwara and Skinner–Wiles over
-totally real fields. -/
+totally real fields.
+
+# THE GLOBAL CLAUSE (ADDED 2026-07-27 — THE CUT-LEVEL REPAIR)
+
+The second conjunct is the DUAL-SELMER VANISHING condition, and without it this
+predicate is not the Taylor–Wiles hypothesis at all. The Taylor–Wiles
+construction does not work for an arbitrary set of places satisfying the local
+conditions: it works for a `Q` chosen so that
+
+    H¹_{Q*}(F, ad⁰ρbar(1)) = 0 ,
+
+which by Greenberg–Wiles over `F` is exactly what forces
+`dim_k H¹_Q(F, ad⁰ρbar) = #Q`, hence what makes the auxiliary deformation ring
+`R_Q` generated by `#Q` elements over `𝒪` — i.e. what makes the presentation
+`pres` of `exists_hilbertTaylorWilesAuxLevelData` exist at all. With only the
+local conjunct, the arithmetic leaves below were universally quantified over
+sets `Q` for which `dim_k H¹_Q > #Q` and for which NO such presentation exists,
+so they were STRICTLY STRONGER than the classical theorem and unreachable by any
+classical route. That defect is what this clause removes.
+
+As written the clause says: every class in `H¹(F, ad⁰ρbar(1))` that is
+UNRAMIFIED OUTSIDE the hardly ramified places of `F` and dies under restriction
+to every `w ∈ Q` is zero. The two deliberate deviations from the classical
+`H¹_{Q*}` — the full local restriction in place of the annihilator of the
+unramified condition under the local Tate pairing, and the
+unramified-outside-`hilbertHardlyRamifiedPlaces` restriction standing in for the
+missing `G_{F,S}` — are recorded in the section note above, and both make the
+clause STRONGER, hence safe for every consumer.
+
+**MONOTONICITY.** The two conjuncts are monotone in `Q` in the direction that
+matters: the local one is a `∀ w ∈ Q` condition and so is ANTI-monotone, while
+the global one is MONOTONE INCREASING (a larger `Q` imposes more vanishing on
+`c`, so the antecedent is harder and the implication easier). Consequently the
+predicate is preserved by ENLARGING `Q` with further places satisfying the local
+conditions — that is `IsHilbertTaylorWilesPrimeSet.exists_insert` below — and is
+NOT preserved by shrinking. The former `isHilbertTaylorWilesPrimeSet_of_subset`
+and the shrinking normalisation `exists_card_eq_isHilbertTaylorWilesPrimeSet`
+are therefore both DELETED, and the exact-cardinality supply now carries a lower
+bound `q0 ≤ r` reached by enlargement instead.
+
+`[DiscreteTopology k]` is new on this declaration and on every declaration below
+that mentions it; see deviation (3) of the section note for why it is needed and
+why nothing is lost. -/
 def IsHilbertTaylorWilesPrimeSet (ℓ : ℕ) (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (ρbar : GaloisRep ℚ k V) (n : ℕ)
     (Q : Finset (HeightOneSpectrum (𝓞 F))) : Prop :=
-  ∀ w ∈ Q, ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧ ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
+  (∀ w ∈ Q, ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧ ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
     Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] ∧
     ∃ α β : k, α ≠ β ∧
       (ρbar.map (algebraMap ℚ F)).charFrob w =
-        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) ∧
+  ∀ c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar),
+    (∀ w : HeightOneSpectrum (𝓞 F), w ∉ hilbertHardlyRamifiedPlaces ℓ F →
+        c ∈ LinearMap.ker (hilbertLocResInertiaTwist1 F ρbar w).hom.toLinearMap) →
+    (∀ w ∈ Q, c ∈ LinearMap.ker
+        (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap) →
+    c = 0
 
 /-! ### The single Taylor–Wiles prime of `F`, and how it is cut
 
@@ -18772,59 +19096,133 @@ theorem exists_hilbertTaylorWilesPrime
   rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj]
   exact hxpoly
 
-/-- **The Taylor–Wiles prime supply over `F`** (PROVEN 2026-07-26 by iterating
-the per-place leaf `exists_hilbertTaylorWilesPrime`; the `F`-level twin of
-`Modularity/Patching.lean`'s `exists_taylorWilesPrimeSet`, and derived exactly
-as that one is).
+/-- **Enlarging a Taylor–Wiles set of `F` by one place** (PROVEN 2026-07-27):
+given a Taylor–Wiles set `Q` of level `n`, a fresh Taylor–Wiles place adjoined
+to it is again one. This is the monotonicity recorded in
+`IsHilbertTaylorWilesPrimeSet`'s docstring, made usable: the local conjunct is
+checked at the new place by `exists_hilbertTaylorWilesPrime` and inherited on
+`Q`, and the global conjunct transfers because the antecedent for `insert w Q`
+implies the antecedent for `Q`.
 
-For every level `n` and every required size `r` there is a set of at least `r`
-Taylor–Wiles primes of `F` of level `n`.
+It is what lets the supply leaf below pad a dual-Selmer-killing core of the
+level-independent size `q0` up to any exact cardinality `r ≥ q0` — the direction
+that *is* sound, as against the shrinking the deleted
+`exists_card_eq_isHilbertTaylorWilesPrimeSet` performed. -/
+theorem IsHilbertTaylorWilesPrimeSet.exists_insert
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (n : ℕ) {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    ∃ Q' : Finset (HeightOneSpectrum (𝓞 F)), Q'.card = Q.card + 1 ∧
+      IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q' := by
+  classical
+  obtain ⟨w, hwQ, hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩ :=
+    exists_hilbertTaylorWilesPrime ℓ hℓ5 F hirrF 𝒟₀ n Q
+  refine ⟨insert w Q, Finset.card_insert_of_notMem hwQ, ?_, ?_⟩
+  · intro w' hw'
+    rcases Finset.mem_insert.mp hw' with rfl | hmem
+    · exact ⟨hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩
+    · exact hQ.1 w' hmem
+  · intro c hunr hloc
+    exact hQ.2 c hunr fun w' hw' => hloc w' (Finset.mem_insert_of_mem hw')
 
-PROOF: induction on `r`. At each step the per-place leaf is called with the
-places already chosen as the excluded set `S`, so the place it returns is
-genuinely fresh and `insert` strictly increases the cardinality. The `r`
-witnesses are therefore pairwise distinct and `r ≤ Q.card` is established from
-`r` real extractions — there is no route through an empty `Q`.
+/-- **The Taylor–Wiles prime supply over `F`** (was PROVEN 2026-07-26 against
+the purely LOCAL predicate; **RE-OPENED 2026-07-27** by the dual-Selmer repair
+of `IsHilbertTaylorWilesPrimeSet` above, exactly as its `ℚ`-level twin
+`Modularity/Patching.lean`'s `exists_taylorWilesPrimeSet` was on the same day,
+and the half that survives is the same half): for the irreducible
+`ρbar|_{G_F}` there is a LEVEL-INDEPENDENT `q0` such that at every level `n` and
+every size `r ≥ q0` there is a Taylor–Wiles set of EXACTLY `r` places of `F`.
 
-THE CLASSICAL ROUTE — Chebotarev over `F` rather than over `ℚ` — now lives
-entirely in the per-place leaf above, together with the SHAPE AUDIT recording
-why that leaf may not be cut any finer.
+# WHY THE STATEMENT NEEDED A LOWER BOUND, AND WHY THE OLD ONE IS NOW FALSE
 
-`htr` and `hgal` are deliberately ABSENT: the prime supply is a Chebotarev
-statement about `F` and the representation, with no archimedean or base-change
-input. They enter only in `exists_hilbertPatchedModule` below, where the
-Selmer/dual-Selmer count and Brauer induction genuinely need them.
+The old statement produced sets of size at least `r` for EVERY `r`, including
+`r = 0`, and the exact size was then reached by SHRINKING
+(`exists_card_eq_isHilbertTaylorWilesPrimeSet`, now deleted). Under the repaired
+predicate both steps are unsound:
+
+* shrinking does not preserve the global conjunct, which is MONOTONE INCREASING
+  in `Q`;
+* and no set of fewer than `dim_k` of the unramified-outside-`{w ∣ 2ℓ}` part of
+  `H¹(F, ad⁰ρbar(1))` places can cut a group of that dimension to zero, one
+  place killing at most one dimension. So the lower bound `q0 ≤ r` is not a
+  convenience — it is what makes the statement true.
+
+`q0` must be independent of `n` because the tower consumes ONE `q` at every
+level: `q` is a field of `Modularity.TaylorWilesSystem` and only the depth `n`
+is a parameter of the level.
+
+# WHAT IS PROVEN HERE AND WHAT IS THE LEAF
+
+* **PROVEN — the padding.** From a dual-Selmer-killing core of size `q0` the
+  exact sizes `r ≥ q0` are reached by `Nat.le_induction` over
+  `IsHilbertTaylorWilesPrimeSet.exists_insert`, i.e. by adjoining fresh
+  Taylor–Wiles places from the Chebotarev extraction
+  `exists_hilbertTaylorWilesPrime`. This is the old proof's content in the only
+  direction that remains sound: ENLARGING preserves the predicate, SHRINKING
+  does not.
+* **LEAF `hcore` — the dual-Selmer-killing core.** That there is a
+  level-independent `q0` and, at each level `n`, a set of exactly `q0`
+  Taylor–Wiles places of `F` killing every
+  unramified-outside-`hilbertHardlyRamifiedPlaces` class of
+  `H¹(F, ad⁰ρbar(1))`. This is Taylor–Wiles / Wiles Ann. of Math. 141 (1995)
+  ch. 3 over a totally real base, in the form of DDT Thm. 2.49 (with Lemma 2.48
+  as the single-class separation step): for a nonzero class `c` the places with
+  `loc_w c ≠ 0` have positive density among those satisfying the local
+  conditions — a Chebotarev argument over `F` in the field cut out by
+  `ρbar|_{G_F}` and the class — so one may kill a basis of the
+  (finite-dimensional) space one place at a time, and `q0` is its dimension.
+
+  Two inputs it needs that this tree does not yet have: finiteness of the
+  unramified-outside-`S` part of `H¹(F, ad⁰ρbar(1))`, and the Chebotarev
+  separation itself. Note it does NOT need Poitou–Tate or the local Tate
+  pairing — see the deviation note on the section above.
+
+THE CLASSICAL ROUTE for the individual place — Chebotarev over `F` rather than
+over `ℚ` — lives entirely in the per-place theorem above, together with the
+SHAPE AUDIT recording why that leaf may not be cut any finer.
+
+`htr` and `hgal` are deliberately ABSENT: the prime supply is a statement about
+`F` and the representation, with no archimedean or base-change input. They enter
+only in `exists_hilbertPatchedModule` below, where the Selmer/dual-Selmer count
+and Brauer induction genuinely need them.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
-(1995), Lemma 5.31; Fujiwara, *Deformation rings and Hecke algebras in the
-totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
+(1995), Thm. 2.49 and Lemma 5.31; Fujiwara, *Deformation rings and Hecke
+algebras in the totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
 theorem exists_hilbertTaylorWilesPrimeSet
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
-    ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
+    ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
+      ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+        Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
   classical
-  intro n r
-  induction r with
-  | zero =>
-    exact ⟨∅, Nat.zero_le _, fun w hw => absurd hw (Finset.notMem_empty w)⟩
-  | succ r ih =>
-    obtain ⟨Q, hQcard, hQ⟩ := ih
-    -- exclude the places already chosen, so the new one is genuinely fresh
-    obtain ⟨w, hwQ, hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩ :=
-      exists_hilbertTaylorWilesPrime ℓ hℓ5 F hirrF 𝒟₀ n Q
-    refine ⟨insert w Q, ?_, fun w' hw' => ?_⟩
-    · rw [Finset.card_insert_of_notMem hwQ]
-      omega
-    · rcases Finset.mem_insert.mp hw' with rfl | hmem
-      · exact ⟨hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩
-      · exact hQ w' hmem
+  -- LEAF: the dual-Selmer-killing CORE, at the level-INDEPENDENT size `q0`.
+  have hcore : ∃ q0 : ℕ, ∀ n : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = q0 ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := sorry
+  obtain ⟨q0, hcore⟩ := hcore
+  refine ⟨q0, fun n r hr => ?_⟩
+  -- PADDING (proven): enlarge the core to the exact size `r ≥ q0`, one fresh
+  -- Taylor–Wiles place at a time.
+  induction r, hr using Nat.le_induction with
+  | base => exact hcore n
+  | succ r _ ih =>
+    obtain ⟨Q, hcard, hQ⟩ := ih
+    obtain ⟨Q', hcard', hQ'⟩ :=
+      IsHilbertTaylorWilesPrimeSet.exists_insert ℓ hℓ5 F hirrF 𝒟₀ n hQ
+    exact ⟨Q', by rw [hcard', hcard], hQ'⟩
 
 /-! ### The Taylor–Wiles tower over `F`: no `F`-level interface any more
 
@@ -18892,55 +19290,18 @@ the content those fields do carry. See the STATUS block on
 `exists_surjective_ker_le_taylorWilesAug` for what still has to consume THAT.
 -/
 
-/-- **Taylor–Wiles prime sets are closed under subsets** (PROVEN 2026-07-27).
-
-Immediate from the shape of `IsHilbertTaylorWilesPrimeSet`, which is a
-POINTWISE condition `∀ w ∈ Q, …`: goodness away from `2ℓ`, the congruence
-`N w ≡ 1 mod ℓ ^ n`, and split-with-distinct-eigenvalues at `Frob_w` are all
-properties of the individual place `w`, so nothing is lost by discarding
-places. -/
-theorem isHilbertTaylorWilesPrimeSet_of_subset (ℓ : ℕ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    (ρbar : GaloisRep ℚ k V) (n : ℕ)
-    {Q Q' : Finset (HeightOneSpectrum (𝓞 F))}
-    (hsub : Q' ⊆ Q) (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
-    IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q' :=
-  fun w hw => hQ w (hsub hw)
-
-/-- **The Taylor–Wiles prime supply normalises to EXACT cardinality**
-(PROVEN 2026-07-27).
-
-`exists_hilbertTaylorWilesPrimeSet` delivers sets of cardinality `≥ r`, but the
-Taylor–Wiles argument needs sets of cardinality EXACTLY `r`: the Taylor–Wiles
-number `q` is a field of `Modularity.TaylorWilesSystem` and only the depth `n`
-is a parameter of the level, so the auxiliary levels must all be raised at prime
-sets of the SAME size — a level raised at a larger `Q` has a larger
-`dim_k H¹_{Q}(F, ad⁰ ρbar)` and would present its deformation ring over more
-variables.
-
-That normalisation is not arithmetic, and it is performed here rather than
-inside the two arithmetic leaves below: `Finset.exists_subset_card_eq` cuts `Q`
-down to size `r`, and `isHilbertTaylorWilesPrimeSet_of_subset` carries the
-Taylor–Wiles property across. Compare `Modularity/Patching.lean`, whose
-`exists_taylorWilesLevelRaw` takes the exact-cardinality supply
-`Q.card = r` as a hypothesis for the same reason. -/
-theorem exists_card_eq_isHilbertTaylorWilesPrimeSet (ℓ : ℕ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    (ρbar : GaloisRep ℚ k V)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
-    ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
-  intro n r
-  obtain ⟨Q, hcard, hQ⟩ := hTW n r
-  obtain ⟨Q', hsub, hcard'⟩ := Finset.exists_subset_card_eq hcard
-  exact ⟨Q', hcard', isHilbertTaylorWilesPrimeSet_of_subset ℓ F ρbar n hsub hQ⟩
+/-! **DELETED 2026-07-27 — `isHilbertTaylorWilesPrimeSet_of_subset` and
+`exists_card_eq_isHilbertTaylorWilesPrimeSet`.** They said that Taylor–Wiles
+prime sets are closed under SUBSETS, and used that to cut a supplied `Q` down
+to an exact cardinality with `Finset.exists_subset_card_eq`. Both were sound
+while `IsHilbertTaylorWilesPrimeSet` was a pointwise `∀ w ∈ Q` condition; with
+the dual-Selmer clause the global conjunct is MONOTONE INCREASING in `Q`, so a
+subset of a Taylor–Wiles set is in general not one and the shrunk statement is
+outright FALSE for `r` below the Taylor–Wiles number. The exact cardinality is
+now reached by ENLARGING — `IsHilbertTaylorWilesPrimeSet.exists_insert` above —
+and the supply therefore carries the lower bound `q0 ≤ r` instead. This is
+exactly the deletion `Modularity/Patching.lean` made at the `ℚ` level on the
+same day. -/
 
 /-- **The RING half of the bottom Taylor–Wiles level over `F`** (LEAF — new
 2026-07-27, LEAF B1 of the RING/MODULE cut of
@@ -19081,21 +19442,70 @@ matters and getting it wrong is how the sibling silently becomes false:
    * then add `(q0 : ℕ)` to this statement, restrict `hTW` to `q0 ≤ r`, add
      `q0 ≤ q` to the conclusion, and thread `q0` down through
      `exists_hilbertTaylorWilesBottomLevel` to
-     `exists_hilbertTaylorWilesAuxLevelData` as a hypothesis `hq0`.
+     `exists_hilbertTaylorWilesLevelRaw`.
 
-   **Doing the second step alone is churn, not a repair**: the current Hilbert
-   prime supply offers sets of EVERY cardinality with no lower bound, so the
-   only `q0` nameable today is `0` and `hq0 : 0 ≤ q` constrains nothing. The
-   hazard therefore stays where it is — in prose — until the dual-Selmer clause
-   lands. What must not change under any of this is the requirement itself:
-   the `q` returned here must be at least the Taylor–Wiles number, i.e.
-   `max(Cohen's q, that number)`.
+   **Doing the second step alone is churn, not a repair**: with a prime supply
+   offering sets of EVERY cardinality and no lower bound, the only `q0`
+   nameable is `0` and `hq0 : 0 ≤ q` constrains nothing.
+
+# BOTH STEPS ARE NOW DONE (2026-07-27), AND THIS IS WHAT CHANGED
+
+**Step (a).** `IsHilbertTaylorWilesPrimeSet` above now carries the dual-Selmer
+conjunct, over the `F`-level `ad⁰(1)` vocabulary written for it in the section
+`The dual-Selmer vocabulary over F`. Since that clause lives in the DEFINITION,
+it reaches every leaf taking `hQ : IsHilbertTaylorWilesPrimeSet …` as a
+hypothesis — `exists_hilbertAuxHeckeAlgebra`,
+`exists_isWeaklyUniversal_hilbertAuxDeformationDatum`,
+`exists_hilbertAuxDeformationRingPresentation`,
+`exists_hilbertAuxHeckeModuleData` and hence
+`exists_hilbertTaylorWilesAuxLevelData` — with NO change to any of their
+signatures. Those leaves are all strictly WEAKER than before, which is the
+repair: they were previously quantified over prime sets at which their
+conclusions are false.
+
+**Step (b).** This statement now takes `(q0 : ℕ)`, `hTW` is restricted to
+`q0 ≤ r`, and the conclusion asserts `q0 ≤ q`. The bound is threaded on to
+`exists_hilbertTaylorWilesBottomLevel` and `exists_hilbertTaylorWilesLevelRaw`,
+where it stops being decoration and becomes NECESSARY: `LevelRaw` obtains its
+depth-`n` prime set as `hTW n q hq0`, so without `hq0 : q0 ≤ q` the supply
+cannot be called at all. That is what makes this a repair rather than empty
+freedom — the hypothesis is consumed by the type, not merely carried.
+
+`exists_hilbertTaylorWilesAuxLevelData` is deliberately NOT given a `q0`
+hypothesis. It does not need one: `q = Q.card` there is fixed by `hQcard`, and
+what its arithmetic actually needs from `q` is the dual-Selmer property of `Q`,
+which now arrives inside `hQ`.
+
+**What did NOT change, and must not**: the `q` returned here must still be at
+least the Taylor–Wiles number, i.e. `max(Cohen's q, that number)`. With `q0`
+explicit, a prover discharges that by passing `q0` as the lower bound to
+whatever supplies Cohen's theorem (at the `ℚ` level,
+`Modularity.exists_taylorWilesCoefficientsPresentation`, which already accepts
+one), never by passing `0`.
+
+**THE HOIST IS THEREFORE NOW UNBLOCKED, AND IT IS THE NEXT STEP** (2026-07-27,
+NOT done here). The reason finding (3) gave for deferring it — that this
+statement had no `q₀` to pass, so `0` was the only thing a prover could supply
+and the returned `q` would be Cohen's — is now stale: `q0` is an explicit
+argument and `q0 ≤ q` is in the conclusion. So moving
+`Modularity.exists_taylorWilesCoefficientsPresentation` and its three supports
+(`exists_taylorWilesCoefficients_ringHom` — itself a LEAF —
+`exists_fin_span_range_eq_maximalIdeal`,
+`exists_ringHom_mvPowerSeries_of_isAdicComplete` and
+`surjective_of_span_range_eq_maximalIdeal`) from `Modularity/Patching.lean` into
+`Modularity/PatchingCore.lean` would let this leaf be discharged by a citation
+with `q₀ := q0`, and finding (1) still applies: that MERGES this sorry with the
+`ℚ`-level `exists_taylorWilesCoefficients_ringHom` rather than closing either.
+It is worth doing for exactly that reason — one proof of the commutative algebra
+instead of two — and it is a ~500-line move across two large, actively edited
+files, which is why it is recorded here rather than performed in the same commit
+as the interface repair.
 
 References: as for `exists_hilbertTaylorWilesBottomLevel` below. -/
 theorem exists_hilbertTaylorWilesBottomPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [Finite k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k] [Finite k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -19103,11 +19513,13 @@ theorem exists_hilbertTaylorWilesBottomPresentation
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
       Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
-    ∃ (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
-      (pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R),
-      Function.Surjective pres :=
+    ∃ (q : ℕ), q0 ≤ q ∧
+      ∃ (coeff : Modularity.TaylorWilesCoefficients)
+        (pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R),
+        Function.Surjective pres :=
   sorry
 
 /-- **The MODULE half of the bottom Taylor–Wiles level over `F`** (LEAF — new
@@ -19375,10 +19787,11 @@ the docstring of `exists_hilbertTaylorWilesLevels` below.
 tower would be built for the wrong map; `e` supplies `Module.Finite ℤ_[ℓ] 𝒟T.R`
 on the Hecke side.
 
-The prime supply is taken here in EXACT-cardinality form; the conversion from
-the `r ≤ Q.card` form delivered by `exists_hilbertTaylorWilesPrimeSet` is
-proven above as `exists_card_eq_isHilbertTaylorWilesPrimeSet` and performed by
-the glue.
+The prime supply is taken here in EXACT-cardinality form, and since the
+dual-Selmer repair of 2026-07-27 it carries the level-independent LOWER BOUND
+`q0` that `exists_hilbertTaylorWilesPrimeSet` returns.  The old conversion from
+an `r ≤ Q.card` form (`exists_card_eq_isHilbertTaylorWilesPrimeSet`) is deleted:
+it SHRANK a supplied `Q`, which the repaired predicate makes unsound.
 
 # DECOMPOSED 2026-07-27 — THIS IS NOW A PROVEN ASSEMBLY OVER TWO LEAVES
 
@@ -19439,7 +19852,7 @@ totally real case*, §3; Skinner–Wiles, Duke 107 (2001); Kisin, Ann. of Math.
 theorem exists_hilbertTaylorWilesBottomLevel
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -19452,10 +19865,12 @@ theorem exists_hilbertTaylorWilesBottomLevel
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
       Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
+      q0 ≤ q ∧
       Nonempty (M0 ≃ₗ[𝒟T.R] (Fin 2 → 𝒟T.R)) ∧
       Nonempty
         (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0) := by
@@ -19465,10 +19880,11 @@ theorem exists_hilbertTaylorWilesBottomLevel
   haveI := T.finiteK
   -- LEAF B1 (`exists_hilbertTaylorWilesBottomPresentation`): the coefficient
   -- ring `𝒪 = W(k)`, the Taylor–Wiles number `q`, and the `q`-generator
-  -- presentation of `𝒟.R` over `𝒪`.
-  obtain ⟨q, coeff, pres, hpres⟩ :=
+  -- presentation of `𝒟.R` over `𝒪`.  `hq0 : q0 ≤ q` is what the depth-`n`
+  -- levels need in order to call the prime supply at size `q` at all.
+  obtain ⟨q, hq0, coeff, pres, hpres⟩ :=
     exists_hilbertTaylorWilesBottomPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
-      h𝒟t hTW
+      h𝒟t q0 hTW
   -- LEAF B2 (`exists_hilbertTaylorWilesBottomHeckeModule`): the bottom Hecke
   -- module `M₀`, `Λ`-free of rank `d` through the augmentation.
   obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, hM0T, ⟨coord⟩⟩ :=
@@ -19478,7 +19894,7 @@ theorem exists_hilbertTaylorWilesBottomLevel
   -- through `ψ`.
   letI : Module 𝒟.R M0 := Module.compHom M0 ψ
   have hRsmul : ∀ (x : 𝒟.R) (m : M0), x • m = ψ x • m := fun _ _ => rfl
-  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hM0T, ⟨?_⟩⟩
+  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hq0, hM0T, ⟨?_⟩⟩
   refine { R := 𝒟.R
            commRingR := inferInstance
            pres := pres
@@ -20443,7 +20859,7 @@ theorem isHilbertAuxFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 �
     (F : Type u) [Field F] [NumberField F]
     (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] {ρbar : GaloisRep ℚ k V}
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
@@ -20992,7 +21408,7 @@ The new content is the split-torus clause at `w ∈ Q`, on its own leaf
 and the residual pinning `(πR, hπR)` are spent. -/
 theorem isHilbertAuxProLimitClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓOdd : Odd ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] {ρbar : GaloisRep ℚ k V}
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
@@ -22340,7 +22756,7 @@ statement as written needs none of them.
 theorem exists_hilbertAuxHeckeAlgebra
     (ℓ : ℕ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -22360,7 +22776,10 @@ theorem exists_hilbertAuxHeckeAlgebra
           e (T.ρT.toLocal w g v) = (χ g (e v).1, δ g (e v).2)) ∧
         localInertiaGroup w ≤ δ.ker := by
     intro w hw
-    obtain ⟨hwℓ, hw2, -, α, β, hαβ, hpoly⟩ := hQ w hw
+    -- `hQ.1` is the LOCAL conjunct of `IsHilbertTaylorWilesPrimeSet`; since the
+    -- dual-Selmer repair of 2026-07-27 the predicate is a conjunction, and this
+    -- clause consumes only its pointwise half.
+    obtain ⟨hwℓ, hw2, -, α, β, hαβ, hpoly⟩ := hQ.1 w hw
     refine exists_isSplitTorusAt_of_isUnramifiedAt w T.πT T.πT_surjective T.ρT
       (T.isHilbertHardlyRamified.isUnramified w hw2 hwℓ) α β hαβ ?_
     -- `charFrob` is the charpoly at `globalFrob w`, so `residT` transports it
@@ -22612,7 +23031,7 @@ totally real case*, §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDeformationRingPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -22687,7 +23106,7 @@ totally real case*, §3; Skinner–Wiles, Duke 107 (2001). -/
 theorem exists_hilbertAuxHeckeModuleData
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -22748,13 +23167,13 @@ What was stripped off relative to the PARENT leaf
 (`exists_hilbertTaylorWilesLevelRaw`), and where it went:
 
 * the CHOICE of the depth-`n` prime set `Q` with `#Q = q` — now made in the
-  assembly by `hTW n q`, so it arrives here as the hypotheses `hQcard` and
-  `hQ`.  The cohomological sharpening (dual-Selmer vanishing over `F`, the
-  Greenberg–Wiles formula whose archimedean terms consume `htr`) stays inside
-  this leaf, which is free to re-choose within the same supply — subsets of a
-  Taylor–Wiles prime set are Taylor–Wiles prime sets
-  (`isHilbertTaylorWilesPrimeSet_of_subset`), and the supply is available at
-  every size;
+  assembly by `hTW n q hq0`, so it arrives here as the hypotheses `hQcard` and
+  `hQ`.  Since 2026-07-27 the dual-Selmer vanishing over `F` is part of `hQ`
+  itself — it is the global conjunct of `IsHilbertTaylorWilesPrimeSet` — so this
+  leaf no longer has to establish it, only to consume it; the Greenberg–Wiles
+  formula whose archimedean terms consume `htr` stays here.  Note this leaf may
+  NOT re-choose by shrinking: subsets of a Taylor–Wiles prime set are no longer
+  Taylor–Wiles prime sets, and the supply is available only at sizes `≥ q0`;
 * the SHAPE of the level ideal.  Instead of an arbitrary
   `bIdeal : Ideal Λ` this leaf produces only the exponent vector
   `ex : Fin q → ℕ` — classically `ex i = v_ℓ(N w_i − 1)` for the `i`-th place
@@ -22947,8 +23366,9 @@ arithmetic, mirroring the `ℚ`-level assembly `exists_taylorWilesLevelRaw` in
 * it makes the prime-set CHOICE, `obtain ⟨Q, hQcard, hQ⟩ := hTW n q`, so the
   depth-`n` Taylor–Wiles set of exact size `q` arrives at the arithmetic leaf
   as a hypothesis rather than an obligation.  This is the one place the
-  exact-cardinality form of `hTW` is consumed, and it is why the glue above
-  normalises the supply with `exists_card_eq_isHilbertTaylorWilesPrimeSet`;
+  exact-cardinality form of `hTW` is consumed, and it is where `hq0 : q0 ≤ q`
+  becomes load-bearing: since the dual-Selmer repair the supply exists only at
+  sizes `≥ q0`, so without `hq0` it could not be called at size `q` at all;
 * it fixes the SHAPE of the level ideal.  Instead of an arbitrary
   `bIdeal : Ideal Λ` the arithmetic leaf produces only the exponent vector
   `ex : Fin q → ℕ` with `∀ i, n ≤ ex i` — classically `ex i = v_ℓ(N w_i − 1)`
@@ -22998,9 +23418,11 @@ theorem exists_hilbertTaylorWilesLevelRaw
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
       Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
-    (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
+    (q d : ℕ) (hq0 : q0 ≤ q)
+    (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
     [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
     (hbot : Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
@@ -23009,7 +23431,11 @@ theorem exists_hilbertTaylorWilesLevelRaw
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) := by
   classical
   -- The prime-set choice: a depth-`n` Taylor–Wiles set of exact size `q`.
-  obtain ⟨Q, hQcard, hQ⟩ := hTW n q
+  -- `hq0` is CONSUMED here: since the dual-Selmer repair of
+  -- `IsHilbertTaylorWilesPrimeSet`, exact-size Taylor–Wiles sets over `F`
+  -- exist only above the level-independent `q0`, so the supply cannot be
+  -- called at size `q` without it.
+  obtain ⟨Q, hQcard, hQ⟩ := hTW n q hq0
   -- The arithmetic leaf, at that prime set.
   obtain ⟨ex, hex, R, instR, pres, diamond, toRuniv, M, instMadd, instMR,
     instML, projM, hpres, htoRuniv, hker, hdsmul, ⟨coord⟩, hprojsurj,
@@ -23345,23 +23771,26 @@ theorem exists_hilbertTaylorWilesLevels
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
       ∀ n : ℕ, Nonempty
         (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) := by
-  have hTWe : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q :=
-    exists_card_eq_isHilbertTaylorWilesPrimeSet ℓ F ρbar hTW
-  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
+  -- The exact-cardinality normalisation that used to happen here is GONE: the
+  -- supply now arrives in exact-cardinality form already, carrying the lower
+  -- bound `q0` that the dual-Selmer clause of `IsHilbertTaylorWilesPrimeSet`
+  -- forces.  (The old `exists_card_eq_isHilbertTaylorWilesPrimeSet` SHRANK a
+  -- supplied `Q`, which the repaired predicate makes unsound.)
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hq0, hbot⟩ :=
     exists_hilbertTaylorWilesBottomLevel ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ hTWe
+      ψ hψalg hψπ hψρ q0 hTW
   letI := iAG
   letI := iMod
   exact ⟨q, d, coeff, M0, iAG, iMod, iNt, fun n =>
     exists_hilbertTaylorWilesLevelRaw ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ hTWe q d coeff M0 iNt hbot.2 n⟩
+      ψ hψalg hψπ hψρ q0 hTW q d hq0 coeff M0 iNt hbot.2 n⟩
 
 /-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
 2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
@@ -23405,12 +23834,13 @@ theorem exists_hilbertPatchingSystem
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
     Nonempty (Modularity.TaylorWilesSystem.{u, 0, u, u, u} ℓ ψ) := by
   obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hlev⟩ :=
     exists_hilbertTaylorWilesLevels ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ hTW
+      hψalg hψπ hψρ q0 hTW
   letI := iAG
   letI := iMod
   exact Modularity.nonempty_taylorWilesSystem_of_tower
@@ -23521,8 +23951,9 @@ theorem exists_hilbertPatchedModule
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (q0 : ℕ)
+    (hTW : ∀ n r : ℕ, q0 ≤ r → ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
     Nonempty (Modularity.PatchedModule.{u, u, u, u} ℓ ψ) := by
   -- residual finiteness of `R_F`: `𝒟.π : 𝒟.R ↠ k` is surjective onto a field,
   -- so its kernel is THE maximal ideal of the local ring `𝒟.R`.
@@ -23534,7 +23965,7 @@ theorem exists_hilbertPatchedModule
     exact Finite.of_equiv k
       (RingHom.quotientKerEquivOfSurjective 𝒟.π_surjective).symm.toEquiv
   exact (exists_hilbertPatchingSystem ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ hTW).elim
+      hψalg hψπ hψρ q0 hTW).elim
     fun S => S.exists_patchedModule 𝒟.isAdicComplete hres
 
 /-- **`R_F ↪ T_F`: the classifying map is INJECTIVE** (PROVEN 2026-07-26 as
@@ -23617,10 +24048,10 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
     Function.Injective ψ :=
-  (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ
-      (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟)).elim
-    Modularity.PatchedModule.injective
+  (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟).elim fun q0 hTW =>
+    (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
+        hψalg hψπ hψρ q0 hTW).elim
+      Modularity.PatchedModule.injective
 
 /-- **`R_F` IS a Hilbert Hecke algebra** (PROVEN 2026-07-26 over the three
 leaves above, after the FAITHFULNESS REPAIR recorded below; the
