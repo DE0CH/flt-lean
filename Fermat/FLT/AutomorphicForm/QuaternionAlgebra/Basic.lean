@@ -85,12 +85,14 @@ The closure's only unproven statements are now:
   (Dirichlet's unit theorem itself is NOT a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ`
   supplies it, via `subgroup_fg_of_le_fg`.)
 * `isCompact_normOne_infiniteAdele` — `{x ∈ D ⊗ 𝔸^∞ : Nm(x) = 1}` is compact. Now
-  PROVEN (2026-07-28), decomposed over the infinite places into three new leaves —
+  PROVEN (2026-07-28), decomposed over the infinite places into three new leaves, of
+  which the definiteness-carrying one is now itself PROVEN (2026-07-28):
   `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
-  now the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file),
-  `norm_infiniteAdele_apply` (the norm is componentwise) and
+  the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file) is CLOSED,
+  leaving `norm_infiniteAdele_apply` (the norm is componentwise) and
   `continuous_infiniteAdeleTensorPiEquiv_symm` (the decomposition is a homeomorphism).
-  The last two are definiteness-free. The place-local half
+  Those two are definiteness-free, so NO sorried leaf in this file carries total
+  definiteness any more. The place-local half
   `isCompact_normOne_completion` is PROVEN, on the way proving
   `norm_quaternion_eq_normSq_sq` (`Nm_{ℍ/ℝ} = normSq²`, absent from the pin) and
   `isCompact_normOne_quaternion`.
@@ -1704,11 +1706,11 @@ then PROVEN 2026-07-28. THREE sorried leaves remain beneath them:
   meets `Fˣ` inside `(𝓞 F)ˣ`. Statement about `F` alone.
 * `isCompact_normOne_infiniteAdele` — `{Nm = 1}` is compact in `D ⊗ 𝔸^∞`. PROVEN
   2026-07-28 by decomposition over the infinite places, as is its place-local half
-  `isCompact_normOne_completion`. The three leaves beneath them are
+  `isCompact_normOne_completion`. Of the three leaves beneath them,
   `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
-  where total definiteness is now consumed, here and nowhere else),
-  `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm` (both
-  definiteness-free).
+  where total definiteness was consumed, there and nowhere else) is now PROVEN
+  (2026-07-28), leaving `norm_infiniteAdele_apply` and
+  `continuous_infiniteAdeleTensorPiEquiv_symm`, both definiteness-free.
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
 
 `index_ray_ne_zero` — finiteness of a ray class group of `F`, which does not
