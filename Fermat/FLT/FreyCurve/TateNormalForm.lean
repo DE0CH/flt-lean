@@ -529,6 +529,29 @@ work and the argument must be global.
    to "`E(ℚ)` is finite". **This is the genuinely large missing theory: it is
    absent from mathlib entirely** — there is no Mordell–Weil, no rank, no
    height machinery — so it must be built or the last step routed around it.
+
+   **CORRECTION (2026-07-28), and it is exactly the sweep this note would
+   have misled.** "No height machinery" is FALSE at pin `a3364fa`, and so
+   is the implied absence of the abstract descent step. Mathlib has
+   `Mathlib/NumberTheory/Height/` — six modules, with `Height.mulHeight` /
+   `logHeight` on tuples, `AdmissibleAbsValues` for every number field
+   (hence `ℚ`), Northcott as a real instance, the height machine for
+   homogeneous forms in BOTH directions, and
+   `Height/EllipticCurve.lean`'s
+   `abs_logHeight_addSubMap_sub_two_mul_logHeight_le` — and
+   `Mathlib/GroupTheory/Descent.lean`, whose
+   `AddCommGroup.fg_of_descent'` is precisely "parallelogram law +
+   Northcott + `G/2G` finite ⟹ finitely generated". The reason this reads
+   as absent is that `WeilHeight`, `NeronTate` and `MordellWeil` occur
+   NOWHERE in those files, so any grep for them returns nothing.
+
+   What genuinely remains on this axis is narrower than the item claims:
+   the *canonical* (Néron–Tate) height, the naive height as a function on
+   `E(ℚ)` together with its parallelogram law (all three are `TODO`s in
+   `Height/EllipticCurve.lean`), and weak Mordell–Weil. The abstract
+   descent step and the underlying height theory are not among them.
+   Full correction: the CORRECTION section of
+   `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 5. The concrete computation for this curve: both descent images trivial, then
    the torsion determination.
 
