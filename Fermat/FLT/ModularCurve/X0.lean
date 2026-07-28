@@ -45005,5 +45005,70 @@ before any question about which torsion points are cuspidal arises.
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
   y0HasNoRationalPoint_of_sieveLevel 75 (by decide) (by decide) (by decide)
 
+/-! ### Re-exporting the Weierstrass model of a `Γ₀(N)`-datum
+
+`EllipticScheme.lean`'s
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` is
+PROVEN and is the reverse bridge that several downstream files want.  It
+is nevertheless **unreachable from anywhere but this file**: this module
+imports `EllipticScheme` NON-publicly, on purpose (a `public import`
+propagates the reserved token `over` through this whole cone — see
+`.flt-agent-doctrine.md`'s note on `X0.lean`'s `open scoped` line, which
+silently TRUNCATES a structure with a field named `over`), and **no other
+module in the tree imports `EllipticScheme` at all**.
+
+So a consumer such as `FreyCurve/MazurTorsion.lean` cannot name it, in
+signature or in proof body — the doctrine's "private import upstream"
+shape.  The single declaration below is the fix, and it is deliberately
+the smallest one that works: a re-export whose statement is written
+entirely in THIS module's vocabulary (`Gamma0Datum`, `IsWeierstrassModel`)
+plus `AbelianScheme.lean`'s (`GeomFibrePt`, `galSMul`), so it mentions
+neither `proj` nor `projToSpec` and needs no change to any import line.
+Everything from `EllipticScheme` stays inside its proof body, which is
+exactly where the non-public import does reach (`Fermat.exists_weierstrass_jm_of_gamma0Datum`
+above already relies on that, and is the precedent). -/
+
+/-- **A `Γ₀(N)`-datum over `ℚ` has a Weierstrass model, whose geometric
+points ARE `E(ℚ̄)` Galois-equivariantly** (PROVEN 2026-07-28; a re-export,
+with no mathematical content of its own).
+
+This is
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+(`ModularCurve/EllipticScheme.lean`, itself proven over
+`exists_weierstrassModel_of_ellipticScheme` (Riemann–Roch) and
+`exists_geomFibreAddEquiv_of_weierstrassModel` (rigidity)), specialised to
+the `AbelianSchemeStruct` and the relative-dimension-one witness that a
+`Gamma0Datum … SpecQ` already carries, and with the model conjunct folded
+back up into `IsWeierstrassModel` — which is *this* module's definition and
+is therefore nameable downstream, unlike the spelled-out form.
+
+**WHY IT EXISTS: an IMPORT fact, not a mathematical one.**  See the
+subsection note above.  Without this declaration the theorem it re-exports
+is visible only inside `X0.lean`, and the bridge leaf
+`MazurIsogenyPrimeJ.nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`
+in `FreyCurve/MazurTorsion.lean` had to take the arithmetic as a hypothesis
+because it could not obtain `(E, g)` for itself.  It now can.
+
+**`N` IS UNCONSTRAINED**, and that is correct: the level structure plays no
+part.  Only `d.ab` and `d.relativeDimensionOne` are consumed, so the
+statement is really about the elliptic scheme underlying the datum.  It is
+not vacuous — `Gamma0Datum p SpecQ` is inhabited at `p = 43, 67, 163` (the
+curve with CM by the maximal order of discriminant `−p`, carrying its
+ramified `p`-isogeny over `ℚ`), and at `N = 1` for every elliptic curve
+over `ℚ`. -/
+theorem exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum {N : ℕ}
+    (d : Gamma0Datum N SpecQ) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+      IsWeierstrassModel d.ab E ∧
+        (letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+         ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt d.f (𝟙 SpecQ),
+           ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = d.ab.galSMul (𝟙 SpecQ) σ (e x)) := by
+  obtain ⟨E, hE, hmodel, hequiv⟩ :=
+    exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme d.ab d.relativeDimensionOne
+  exact ⟨E, hE, hmodel, hequiv⟩
+
 end Fermat
 

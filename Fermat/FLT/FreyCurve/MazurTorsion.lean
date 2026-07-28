@@ -36520,11 +36520,11 @@ curve `E/ℚ` and a geometric point `g` realising the level structure, feed them
 `harith`, and transport the resulting `φ` back to an endomorphism of `d`'s
 functor of points.
 
-**HOW THE `(E, g)` IS OBTAINED, and why this is now possible.**
-`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
-(`ModularCurve/EllipticScheme.lean`) applied to `d₀.ab` and
-`d₀.relativeDimensionOne` gives `E`, `IsWeierstrassModel d₀.ab E`, and a
-Galois-equivariant `≃+` from `E(ℚ̄)` onto the geometric fibre of `d₀`.  Then
+**HOW THE `(E, g)` IS OBTAINED — AND IT IS NOW OBTAINED IN THE PROOF BELOW,
+NOT MERELY DESCRIBED** (2026-07-28, flt-lean-185).
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum` (`X0.lean`)
+applied to `d₀` gives `E`, `IsWeierstrassModel d₀.ab E`, and a
+Galois-equivariant `≃+` `e` from `E(ℚ̄)` onto the geometric fibre of `d₀`.  Then
 `d₀.cyc.geom_cyclic` supplies a generator `y` of the geometric-fibre subgroup and
 `e.symm y` is the wanted `g`: it has order `p`, and its `zmultiples` is
 Galois-stable because `RelPoint.LiesIn` is preserved by precomposition while
@@ -36534,28 +36534,62 @@ written and verified inside `Fermat.exists_weierstrass_jm_of_gamma0Datum`
 (`X0.lean`), whose `hmem` sits on a LATER conjunct (`IsJMapOn.jm_classify`) and
 is not needed for this part.
 
-**WHY `harith` IS A HYPOTHESIS RATHER THAN A CITATION.**  `X0.lean` imports
-`EllipticScheme` NON-publicly — deliberately, because a `public import`
-propagates the reserved token `over` through this cone — and nothing else in the
-tree imports it.  So that theorem is unavailable HERE, in signature and in proof
-body alike.  Passing the arithmetic in as a hypothesis keeps every
-`IsWeierstrassModel`/`proj`/geometric-fibre name out of this statement, so the
-cut costs no new interface and duplicates none.  A future owner who makes the
-`EllipticScheme` names reachable (a `public import`, or a re-export theorem in
-`X0.lean` whose statement avoids `proj`/`projToSpec`) may then discharge
-`harith`'s consumer directly and drop the hypothesis.
+**THE IMPORT OBSTRUCTION IS GONE.**  The paragraph this replaces recorded that
+`X0.lean` imports `EllipticScheme` NON-publicly — deliberately, because a
+`public import` propagates the reserved token `over` through this cone — and that
+nothing else in the tree imports it, so
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` was
+unnameable here in signature and in proof body alike.  All of that is still true
+of *that* theorem.  What changed is that `X0.lean` now carries the re-export
+named above, whose statement is written entirely in `X0.lean`'s and
+`AbelianScheme.lean`'s vocabulary (`Gamma0Datum`, `IsWeierstrassModel`,
+`GeomFibrePt`, `galSMul`) and therefore crosses the non-public import
+untouched.  `harith` is nevertheless KEPT as a hypothesis: the cut is worth
+having on its own terms — its consumer
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` discharges it in three
+lines from `exists_endMinpoly_of_stable_cyclic_mazurLevel`, and keeping the
+arithmetic out of this statement is what makes the residue below purely
+formal.
 
-**THE REMAINING WORK, which is where the difficulty actually is.**  `harith`
-gives an endomorphism of `E(ℚ̄)` as a group; `IsCMByRamifiedMaximalOrder.phi`
-must be an endomorphism of `RelPoint d.f g'` for EVERY `g' : T' ⟶ Spec ℚ̄`, i.e.
-a morphism of schemes, with `phi_pre` its naturality.  So the transport needs the
-`IsWeierstrassModel` identification at the SCHEME level, not merely the
-point-group equivalence — the `IsRationalMap` certificate carried by
-`WeierstrassCurve.End` is precisely what makes that possible and is why the
-arithmetic leaf is stated in `End` vocabulary rather than as a bare additive map.
-`phi_add` and `phi_sq` then descend from the ring identity in
-`WeierstrassCurve.End`, and `liesIn_iff` from the kernel clause, since
-`phi x + phi x = x` is `(2φ − 1) x = 0`.
+**THE REMAINING WORK IS NOW THE WHOLE OF THE RESIDUE, AND IT IS THE LAST
+`sorry` OF THE PROOF BELOW.**  Everything up to it is written and compiles:
+`(E, hmodel, e)`, the generator `y`, `hord`, `hstab`, the application of
+`harith` producing `φ` with `hsq` and `hker`, and `hliesIn` — the kernel clause
+rewritten as `RelPoint.LiesIn d₀.cyc.ι (e x) ↔ (2φ − 1) x = 0`, which is the
+form `IsCMByRamifiedMaximalOrder.liesIn_iff` wants.  What is left is exactly the
+transport: `φ` is an endomorphism of `E(ℚ̄)` as a group, while
+`IsCMByRamifiedMaximalOrder.phi` must be an endomorphism of `RelPoint d.f g'`
+for EVERY `g' : T' ⟶ Spec ℚ̄` with `phi_pre` its naturality — by Yoneda
+(`T' = d.E`, `g' = d.f`, evaluated at `𝟙`) that IS a morphism of schemes
+`d.E ⟶ d.E` over `Spec ℚ̄`.  So the transport needs the `IsWeierstrassModel`
+identification at the SCHEME level, not merely the point-group equivalence;
+the `IsRationalMap` certificate carried by `WeierstrassCurve.End` is what makes
+that possible in principle and is why the arithmetic leaf is stated in `End`
+vocabulary rather than as a bare additive map.  `phi_add` and `phi_sq` then
+descend from the ring identity in `WeierstrassCurve.End`, and `liesIn_iff` from
+`hliesIn`, since `phi x + phi x = x` is `(2φ − 1) x = 0`.
+
+**WHY THE RESIDUE IS NOT SPLIT OFF AS A NAMED TOP-LEVEL LEAF, and the check
+that would license doing so.**  The obvious cut — a lemma taking `bc`, `E`,
+`hmodel : IsWeierstrassModel d₀.ab E`, an arbitrary Galois-equivariant `≃+` `e`,
+and `φ` with `hsq`/`hliesIn`, and concluding
+`Nonempty (IsCMByRamifiedMaximalOrder p d)` — is **not obviously true**, and a
+false leaf is worse than an open one.  The danger is that `e` is quantified over
+rather than pinned: replacing `e` by `e ∘ α` for an additive automorphism `α` of
+`E(ℚ̄)` satisfies every hypothesis while moving `ker(2φ − 1)` off the subgroup
+that `hmodel`'s open immersion canonically identifies with `d₀.cyc`.  There is a
+repair argument — `ψ = 2φ − 1` satisfies `ψ² = [−p]` (from `hsq`, exactly when
+`p ≡ 3 mod 4`, so that `(p+1)/4` is exact), the two roots of `X² − X + (p+1)/4`
+in the commutative ring `End E` are conjugate and give the SAME kernel, and at
+`p = 43, 67, 163` the unique Galois-stable order-`p` subgroup of a CM curve is
+`E[𝔭]` — but it is Mazur-level input, not formalism, and it would have to be
+discharged before the leaf could be stated honestly.  **The clean licensing
+check is different and cheaper: a statement pinning `e` to `hmodel`'s open
+immersion `ι` on points** (for an affine point `P` of `E⁄ℚ̄`, `e P` is
+`ι` precomposed with the `ℚ̄`-point of `Spec ℚ[E]` evaluating at `P`).  With
+that clause the `α`-ambiguity vanishes and the residue splits with no
+arithmetic in it at all.  That clause is a statement ABOUT `IsWeierstrassModel`
+and belongs in `X0.lean`; it does not exist yet.
 
 **NOT VACUOUS.**  `harith` is satisfiable — it is exactly
 `exists_endMinpoly_of_stable_cyclic_mazurLevel`, which is proven above — and
@@ -36571,7 +36605,7 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly (p :
     {d₀ : Gamma0Datum p SpecQ}
     {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (_bc : IsBaseChangeOf (specAlgClos ℚ) d d₀)
-    (_harith : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (harith : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
         (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = p →
         (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
           WeierstrassCurve.Affine.Point.map
@@ -36585,7 +36619,77 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly (p :
                     AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
                   (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
               = AddSubgroup.zmultiples g) :
-    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
+    Nonempty (IsCMByRamifiedMaximalOrder p d) := by
+  -- **1.** the Weierstrass model of the `ℚ`-datum, and the Galois-equivariant
+  -- identification of its geometric fibre with `E(ℚ̄)`.  This is the re-export
+  -- in `X0.lean`; the theorem it re-exports is not nameable here.
+  obtain ⟨E, hE, hmodel, hequiv⟩ :=
+    Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum d₀
+  haveI := hE
+  letI := d₀.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨e, he⟩ := hequiv
+  -- **2.** the level structure gives a generator `y` of the geometric-fibre
+  -- subgroup; `e.symm y` is the point the arithmetic leaf asks for.
+  obtain ⟨y, -, hyOrd, hyGen⟩ :=
+    d₀.cyc.geom_cyclic (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  have hord : addOrderOf (e.symm y) = p := by
+    rw [AddEquiv.addOrderOf_eq]; exact hyOrd
+  -- its `zmultiples` is Galois-stable, because `LiesIn` is preserved by
+  -- precomposition and `galSMul` IS precomposition
+  have hstab : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples (e.symm y),
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples (e.symm y) := by
+    intro σ x hx
+    have hex : e x ∈ AddSubgroup.zmultiples y := by
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+      exact AddSubgroup.mem_zmultiples_iff.mpr
+        ⟨k, by rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]⟩
+    obtain ⟨w, hw⟩ := (hyGen (e x)).mpr hex
+    have hIn : RelPoint.LiesIn d₀.cyc.ι (d₀.ab.galSMul (𝟙 SpecQ) σ (e x)) := by
+      refine ⟨Fermat.specGal σ ≫ w, ?_⟩
+      show (Fermat.specGal σ ≫ w) ≫ d₀.cyc.ι = Fermat.specGal σ ≫ (e x).1
+      rw [Category.assoc, hw]
+    have hmem : d₀.ab.galSMul (𝟙 SpecQ) σ (e x) ∈ AddSubgroup.zmultiples y :=
+      (hyGen _).mp hIn
+    rw [← he σ x] at hmem
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    apply e.injective
+    rw [map_zsmul, AddEquiv.apply_symm_apply]
+    exact hk
+  -- **3.** the arithmetic, applied to that curve and that point
+  obtain ⟨φ, hsq, hker⟩ := harith E (e.symm y) hord hstab
+  -- **4.** the kernel clause, rewritten in the form `liesIn_iff` wants:
+  -- a geometric point lies in the level structure exactly when `(2φ − 1)`
+  -- kills its preimage under `e`.
+  have hliesIn : ∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
+      RelPoint.LiesIn d₀.cyc.ι (e x) ↔
+        x ∈ AddMonoidHom.ker
+          (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
+              AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point) := by
+    intro x
+    rw [hker, hyGen (e x)]
+    constructor
+    · intro hx
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      apply e.injective
+      rw [map_zsmul, AddEquiv.apply_symm_apply]
+      exact hk
+    · intro hx
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]
+  -- **5.** THE RESIDUE, and the only step left: transport `φ` across `hmodel`
+  -- to a NATURAL endomorphism of `d`'s functor of points.  See the docstring's
+  -- last two sections for what this needs (a scheme-level reading of
+  -- `IsWeierstrassModel`, i.e. `φ`'s `IsRationalMap` certificate turned into a
+  -- morphism `d.E ⟶ d.E` over `Spec ℚ̄`) and for why it is deliberately NOT a
+  -- named top-level leaf yet.  In scope here: `hmodel`, `e`, `he`, `φ`, `hsq`,
+  -- `hliesIn`, and `_bc`.
   sorry
 
 /-- **MAZUR'S ISOGENY THEOREM at `43, 67, 163`: a `Γ₀(p)`-structure defined
