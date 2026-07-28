@@ -10428,7 +10428,7 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
 
 set_option linter.checkUnivs false in
 /-- **The bottom Hecke module IS the augmentation quotient of the level-`n`
-coordinate model** (sorry node, LEAF A2'-4a of the 2026-07-28 cut of
+coordinate model** (PROVEN 2026-07-28, LEAF A2'-4a of the 2026-07-28 cut of
 `exists_auxHeckeModuleData` below): the ROUTE NOTE of
 `exists_taylorWilesAuxLevelPresentedDatum` below, turned from prose into a
 statement a prover can be dispatched at.
@@ -10456,7 +10456,33 @@ Note the level-`0` ideal `L.bIdeal` is NOT assumed to be
 abstract `bIdeal` with the two bounds — which is exactly why the third bullet
 uses only `bIdeal_le_aug`.  `hM0` is not needed for the isomorphism itself and
 is carried because every consumer has it and because a prover may want
-`Nontrivial` while transporting.
+`Nontrivial` while transporting.  The proof below indeed does NOT use it — it is
+underscore-prefixed (`_hM0`) so that this is mechanically visible rather than
+merely asserted; the argument is a chain of equivalences and never needs a
+nonzero element.  The hypothesis is deliberately kept in the signature so that
+no consumer has to change.
+
+PROOF (2026-07-28), exactly the docstring's five bullets:
+
+1. `ker projM = 𝔫 · ⊤` on the bottom level `L`: `⊆` is `L.projM_eq_zero`, and
+   `⊇` is `Submodule.smul_induction_on` over `L.diamond_smul`, `L.projM_smul`
+   and `L.ker_toRuniv` — for `r ∈ 𝔫`, `L.diamond r ∈ 𝔫.map L.diamond =
+   ker L.toRuniv`, so the semilinear scalar `ψ (toRuniv (diamond r))` is `0`.
+2. Hence `L.M ⧸ 𝔫·⊤ ≃+ M₀`, through `Submodule.Quotient.restrictScalarsEquiv ℤ`
+   (`projM` is only additive, so the first isomorphism theorem is applied over
+   `ℤ`) and `LinearMap.quotKerEquivOfSurjective`.
+3. The KEY step is stated once for EVERY ideal `a ≤ 𝔫`: the componentwise
+   reduction `(Λ ⧸ a)^d ↠ (Λ ⧸ 𝔫)^d` has kernel exactly `𝔫 · ⊤` (`⊇` because
+   `𝔫` acts as zero on `Λ ⧸ 𝔫`; `⊆` because a killed vector has all coordinates
+   represented in `𝔫` and `d` is finite, so `v = ∑ᵢ yᵢ • eᵢ` with `yᵢ ∈ 𝔫`).
+   So `(Λ ⧸ a)^d ⧸ 𝔫·⊤ ≃ₗ (Λ ⧸ 𝔫)^d` INDEPENDENTLY of `a`.
+4. Applying it at `a = L.bIdeal` (via `bIdeal_le_aug`, transported along
+   `L.coordM` with `Submodule.map_smul''`) and at
+   `a = taylorWilesLevelIdeal p (fun _ => n)` (via `taylorWilesLevelIdeal_le_aug`)
+   gives both sides the same `(Λ ⧸ 𝔫)^d`, and composing yields the claim.
+
+Note the two ideals are never compared with each other — only each with `𝔫` —
+which is what makes step 3 the whole content and why the level `n` is free.
 
 Only additive structure is asked for, because that is all the consumer uses:
 the `T`-action on `M₀` is compared with the ring action in the SEMILINEARITY
@@ -10479,14 +10505,161 @@ theorem nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR}
     {Runiv : Type uR} [CommRing Runiv]
     {T : Type s} [CommRing T] {ψ : Runiv →+* T} {q d : ℕ}
     {coeff : TaylorWilesCoefficients}
-    {M0 : Type} [AddCommGroup M0] [Module T M0] (hM0 : Nontrivial M0)
+    {M0 : Type} [AddCommGroup M0] [Module T M0] (_hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (n : ℕ) :
     Nonempty ((taylorWilesCoordModel p q d n ⧸
         (taylorWilesAug p q • ⊤ :
           Submodule (MvPowerSeries (Fin q) ℤ_[p])
-            (taylorWilesCoordModel p q d n))) ≃+ M0) :=
-  sorry
+            (taylorWilesCoordModel p q d n))) ≃+ M0) := by
+  classical
+  obtain ⟨L⟩ := hbot
+  letI := L.commRingR
+  letI := L.addCommGroupM
+  letI := L.moduleRM
+  letI := L.moduleCoeffM
+  -- An augmentation scalar `r ∈ 𝔫` acts as zero on `Λ ⧸ 𝔫`.
+  have hsmulzero : ∀ r ∈ taylorWilesAug p q,
+      ∀ z : MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q, r • z = 0 := by
+    intro r hr z
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+    have hmul : r • (Ideal.Quotient.mk (taylorWilesAug p q) y) =
+        Ideal.Quotient.mk (taylorWilesAug p q) (r * y) := rfl
+    rw [hmul, Ideal.Quotient.eq_zero_iff_mem]
+    exact Ideal.mul_mem_right _ _ hr
+  -- **STEP 1** — for EVERY ideal `a ≤ 𝔫`, the `𝔫`-augmentation quotient of the
+  -- coordinate model `(Λ ⧸ a)^d` is `(Λ ⧸ 𝔫)^d`, independently of `a`.  This
+  -- is what makes the level-`n` model and the level-`0` one comparable without
+  -- ever comparing `a = 𝔟_{(n)}` with `L.bIdeal`: only `bIdeal_le_aug` and
+  -- `taylorWilesLevelIdeal_le_aug` are used.
+  have key : ∀ a : Ideal (MvPowerSeries (Fin q) ℤ_[p]), a ≤ taylorWilesAug p q →
+      Nonempty (((Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ a) ⧸
+          (taylorWilesAug p q • ⊤ :
+            Submodule (MvPowerSeries (Fin q) ℤ_[p])
+              (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ a)))
+        ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+          (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q)) := by
+    intro a ha
+    -- the componentwise reduction `Λ ⧸ a ↠ Λ ⧸ 𝔫`
+    let red : (MvPowerSeries (Fin q) ℤ_[p] ⧸ a) →ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+        (MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q) :=
+      Submodule.mapQ a (taylorWilesAug p q) LinearMap.id (by simpa using ha)
+    have hredmk : ∀ y : MvPowerSeries (Fin q) ℤ_[p],
+        red (Ideal.Quotient.mk a y) = Ideal.Quotient.mk (taylorWilesAug p q) y := by
+      intro y; rfl
+    have hredsurj : Function.Surjective red := by
+      intro z
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+      exact ⟨Ideal.Quotient.mk a y, hredmk y⟩
+    let π : (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ a) →ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+        (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q) :=
+      LinearMap.compLeft red (Fin d)
+    have hπapp : ∀ v i, π v i = red (v i) := fun _ _ => rfl
+    have hπsurj : Function.Surjective π := by
+      intro w
+      choose y hy using fun i => hredsurj (w i)
+      exact ⟨y, funext fun i => hy i⟩
+    -- the kernel of `π` is EXACTLY `𝔫 · ⊤`
+    have hker : LinearMap.ker π = (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p])
+          (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ a)) := by
+      apply le_antisymm
+      · -- a vector killed by `π` has all coordinates represented in `𝔫`, and
+        -- `d` is finite, so it is a finite sum of `𝔫`-multiples of unit vectors
+        intro v hv
+        have hv0 : ∀ i, red (v i) = 0 := by
+          intro i
+          have hcomp := congrFun (LinearMap.mem_ker.mp hv) i
+          simpa [hπapp] using hcomp
+        choose y hy using fun i => Ideal.Quotient.mk_surjective (v i)
+        have hymem : ∀ i, y i ∈ taylorWilesAug p q := by
+          intro i
+          have h1 : red (Ideal.Quotient.mk a (y i)) = 0 := by rw [hy i]; exact hv0 i
+          rw [hredmk] at h1
+          exact Ideal.Quotient.eq_zero_iff_mem.mp h1
+        have hsplit : ∀ i : Fin d,
+            (Pi.single i (v i) : Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ a) =
+              y i • Pi.single i (Ideal.Quotient.mk a 1) := by
+          intro i
+          funext j
+          by_cases hj : j = i
+          · subst hj
+            simp only [Pi.single_eq_same, Pi.smul_apply]
+            rw [← hy j]
+            show _ = Ideal.Quotient.mk a (y j * 1)
+            rw [mul_one]
+          · simp [Pi.single_eq_of_ne hj]
+        have hv' : v = ∑ i : Fin d, Pi.single i (v i) := (Finset.univ_sum_single v).symm
+        rw [hv']
+        refine Submodule.sum_mem _ fun i _ => ?_
+        rw [hsplit i]
+        exact Submodule.smul_mem_smul (hymem i) Submodule.mem_top
+      · refine Submodule.smul_le.mpr fun r hr v _ => ?_
+        rw [LinearMap.mem_ker, map_smul]
+        funext i
+        exact hsmulzero r hr _
+    exact ⟨(Submodule.quotEquivOfEq _ _ hker.symm).trans
+      (LinearMap.quotKerEquivOfSurjective π hπsurj)⟩
+  -- **STEP 2** — transport the level-`0` module along Diamond's coordinate
+  -- equivalence: `L.M ⧸ 𝔫·⊤ ≅ (Λ ⧸ 𝔫)^d`.
+  obtain ⟨e⟩ := L.coordM
+  obtain ⟨g0⟩ := key L.bIdeal L.bIdeal_le_aug
+  have hmap : (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M).map
+        (e : L.M →ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+          (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal)) =
+      (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p])
+          (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal)) := by
+    rw [Submodule.map_smul'', Submodule.map_top]
+    congr 1
+    exact LinearMap.range_eq_top.mpr e.surjective
+  have hbotEquiv : Nonempty ((L.M ⧸ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M))
+      ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+        (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q)) :=
+    ⟨(Submodule.Quotient.equiv _ _ e hmap).trans g0⟩
+  -- **STEP 3** — `projM` identifies `L.M ⧸ 𝔫·⊤` with `M₀`, additively.  One
+  -- inclusion is `projM_eq_zero`; the reverse is forced by `diamond_smul`,
+  -- `projM_smul` and `ker_toRuniv`, which is the second bullet of the docstring.
+  have hkerproj : LinearMap.ker L.projM.toIntLinearMap =
+      (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M).restrictScalars ℤ := by
+    apply le_antisymm
+    · intro m hm
+      exact L.projM_eq_zero m (LinearMap.mem_ker.mp hm)
+    · intro m hm
+      have hm' : m ∈ (taylorWilesAug p q • ⊤ :
+          Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M) := hm
+      refine LinearMap.mem_ker.mpr ?_
+      show L.projM m = 0
+      refine Submodule.smul_induction_on hm' ?_ ?_
+      · intro r hr x _
+        have h1 : L.projM (r • x) = L.projM (L.diamond r • x) := by
+          rw [L.diamond_smul]
+        have h2 : L.toRuniv (L.diamond r) = 0 := by
+          have hmem : L.diamond r ∈ RingHom.ker L.toRuniv := by
+            rw [L.ker_toRuniv]
+            exact Ideal.mem_map_of_mem _ hr
+          exact hmem
+        rw [h1, L.projM_smul, h2, map_zero, zero_smul]
+      · intro x y hx hy
+        rw [map_add, hx, hy, add_zero]
+  have hM0Equiv : Nonempty ((L.M ⧸ (taylorWilesAug p q • ⊤ :
+      Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M)) ≃+ M0) :=
+    ⟨LinearEquiv.toAddEquiv
+      (((Submodule.Quotient.restrictScalarsEquiv ℤ
+          (taylorWilesAug p q • ⊤ :
+            Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M)).symm.trans
+        ((Submodule.quotEquivOfEq _ _ hkerproj).symm.trans
+          (LinearMap.quotKerEquivOfSurjective L.projM.toIntLinearMap
+            L.projM_surjective))))⟩
+  -- **STEP 4** — assemble: both coordinate models have the same `𝔫`-quotient.
+  obtain ⟨gn⟩ := key (taylorWilesLevelIdeal p fun _ : Fin q => n)
+    (taylorWilesLevelIdeal_le_aug p _)
+  obtain ⟨f⟩ := hbotEquiv
+  obtain ⟨θ⟩ := hM0Equiv
+  exact ⟨(gn.trans f.symm).toAddEquiv.trans θ⟩
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary Hecke module: the `R_Q`-action on the coordinate model and
