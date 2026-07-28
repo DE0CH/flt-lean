@@ -15909,10 +15909,147 @@ theorem not_twoStableLines_of_cmEndomorphism {p : ℕ}
     False :=
   sorry
 
+/-- **A monic product of distinct linear factors all of whose roots are roots
+of a nonzero `q` divides `q`** (PROVEN 2026-07-28).
+
+Pure polynomial algebra over a domain, and the only reason it is stated
+separately is that the obvious `Polynomial.prod_multiset_X_sub_C_dvd` is about
+the root MULTISET: the bridge is that a `Finset` is `Nodup`, so its underlying
+multiset is `≤` the root multiset as soon as every element is a root. -/
+theorem prod_X_sub_C_dvd_of_roots {R : Type*} [CommRing R] [IsDomain R]
+    [DecidableEq R] (S : Finset R) (q : Polynomial R) (hq : q ≠ 0)
+    (hroots : ∀ α ∈ S, q.eval α = 0) :
+    (∏ α ∈ S, (Polynomial.X - Polynomial.C α)) ∣ q := by
+  have hle : S.val ≤ q.roots := by
+    refine Multiset.le_iff_count.mpr fun a => ?_
+    by_cases ha : a ∈ S
+    · have h1 : Multiset.count a S.val = 1 := Multiset.count_eq_one_of_mem S.nodup ha
+      have h2 : 1 ≤ Multiset.count a q.roots := by
+        refine Multiset.one_le_count_iff_mem.mpr ?_
+        exact (Polynomial.mem_roots hq).mpr
+          (by simpa [Polynomial.IsRoot] using hroots a ha)
+      omega
+    · simp [Multiset.count_eq_zero_of_notMem (show a ∉ S.val by simpa using ha)]
+  refine dvd_trans ?_ (Polynomial.prod_multiset_X_sub_C_dvd q)
+  have hmap := Multiset.map_le_map
+    (f := fun a : R => Polynomial.X - Polynomial.C a) hle
+  rw [Finset.prod_eq_multiset_prod]
+  exact Multiset.prod_dvd_prod_of_le hmap
+
+/-- **Galois descent of a monic polynomial** (PROVEN 2026-07-28): a monic
+`P ∈ ℚ̄[X]` fixed by every element of `Gal(ℚ̄/ℚ)` is the image of a monic
+`Q ∈ ℚ[X]` of the same degree.
+
+This is the polynomial-valued form of `MazurGenusZero.mem_range_of_fixed`
+below, and the descent step that the route notes on
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge` and on
+`exists_monic_dvd_preΨ_of_twoStableLines` both name as the uniform half of
+"stable subgroup ⟹ kernel-polynomial certificate".  Two mathlib facts do all
+the work: `Polynomial.lifts_iff_coeff_lifts` reduces descent of a polynomial
+to descent of its coefficients, and `InfiniteGalois` supplies the latter;
+`Polynomial.lifts_and_natDegree_eq_and_monic` then upgrades a bare lift to a
+monic one of equal degree, which is what keeps the degree bookkeeping honest
+downstream.
+
+Stated over a VARIABLE base field for the same reason
+`MazurGenusZero.mem_range_of_fixed` is: at the literal `F = ℚ` the two
+`Algebra ℚ ℚ̄` instances form a diamond and `IsAlgClosure ℚ ℚ̄` fails to
+synthesise. -/
+theorem exists_monic_map_eq_of_fixed {F : Type} [Field F] [CharZero F]
+    (P : Polynomial (AlgebraicClosure F)) (hP : P.Monic)
+    (h : ∀ σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F,
+      P.map (σ : AlgebraicClosure F →+* AlgebraicClosure F) = P) :
+    ∃ Q : Polynomial F, Q.Monic ∧ Q.natDegree = P.natDegree ∧
+      Q.map (algebraMap F (AlgebraicClosure F)) = P := by
+  have hcoeff : ∀ n, P.coeff n ∈ Set.range (algebraMap F (AlgebraicClosure F)) := by
+    intro n
+    refine (InfiniteGalois.mem_range_algebraMap_iff_fixed (P.coeff n)).mpr ?_
+    intro σ
+    have hc := congrArg (fun p => Polynomial.coeff p n) (h σ)
+    simpa [Polynomial.coeff_map] using hc
+  have hlifts : P ∈ Polynomial.lifts (algebraMap F (AlgebraicClosure F)) :=
+    (Polynomial.lifts_iff_coeff_lifts P).mpr hcoeff
+  obtain ⟨Q, hQmap, hQdeg, hQmonic⟩ :=
+    Polynomial.lifts_and_natDegree_eq_and_monic hlifts hP
+  exact ⟨Q, hQmonic, hQdeg, hQmap⟩
+
+/-- **Two independent stable lines of order `p` contribute `p − 1` distinct
+`Γ_ℚ`-permuted abscissae of `p`-torsion points** (sorry leaf, cut 2026-07-28
+out of `exists_monic_dvd_preΨ_of_twoStableLines`; ALL of that leaf's remaining
+content, and it mentions no polynomial at all).
+
+This is the whole of the "stable subgroup ⟹ kernel polynomial" descent that is
+not already discharged by `exists_monic_map_eq_of_fixed` and
+`prod_X_sub_C_dvd_of_roots` above.  What it asks for is a statement about
+POINTS and their `x`-coordinates:
+
+1. `x` is exactly `2`-to-`1` on `⟨g_i⟩ ∖ 0` — `x(P) = x(Q)` iff `Q = ±P`, and
+   `P ≠ −P` since `p` is odd — so each line contributes exactly `(p − 1)/2`
+   distinct abscissae, and `2 · (p − 1)/2 = p − 1` by `hodd`.
+2. The two contributions are DISJOINT: `L₁ ≠ L₂` are distinct subgroups of
+   prime order, so `L₁ ∩ L₂ = 0`, and a shared abscissa would put a nonzero
+   `±P` in both.  This is the only place `hne` and the primality of `p` are
+   used, and dropping either makes the leaf FALSE (`S.card` collapses to
+   `(p − 1)/2`).
+3. `Γ_ℚ` permutes `S`: `hs₁`/`hs₂` say each line is stable, `σ` commutes with
+   the group law, and `x(σ · P) = σ(x(P))` — this last is
+   `WeierstrassCurve.Affine.Point.map_some`, exactly as in
+   `MazurGenusZero.exists_rat_abscissa`, which is the `(p − 1)/2 = 1` case of
+   this whole leaf and should be read first.
+4. Every `α ∈ S` is a root of `preΨ' p`: `α` is the abscissa of a point killed
+   by `p`, so `ΨSq p` vanishes there
+   (`TorsionCard.smul_some_eq_zero_iff`), and `ΨSq p = (preΨ' p)²` for odd `p`
+   (`WeierstrassCurve.ΨSq_ofNat`), so `preΨ' p` vanishes there too.
+
+**A note for whoever proves it: the natural construction is
+`S := (Finset.Ico 1 p).image (fun i => x (i • g₁)) ∪ (… g₂)`**, and then (1)
+and (2) are injectivity statements about `i ↦ x(i • g)` on `1 ≤ i ≤ (p−1)/2`
+and about the two images, while (3) is closure of that image under `σ`.
+`MazurGenusZero.zsmul_cases` is the `p ∈ {2, 3}` analogue of the arithmetic in
+(1) and generalises to `k • g ∈ {±(k mod p) • g}`.
+
+**NOT VACUOUS.**  The conclusion pins `S.card = p − 1`, which is the entire
+arithmetic content; with `S = ∅` the other two clauses are trivially true, so
+the cardinality clause must not be weakened to `≤`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` with two
+distinct `Γ_ℚ`-stable lines of odd prime order `p` whose `p`-torsion points
+supply fewer than `p − 1` distinct abscissae. -/
+theorem exists_stableAbscissaSet_of_twoStableLines {p : ℕ}
+    (_hp : p.Prime) (_hodd : Odd p)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
+    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    ∃ S : Finset (AlgebraicClosure ℚ), S.card = p - 1 ∧
+      (∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, S.image σ = S) ∧
+      (∀ α ∈ S, ((E⁄(AlgebraicClosure ℚ)).preΨ' p).eval α = 0) :=
+  sorry
+
 /-- **Two independent stable lines multiply into a rational factor of `Ψ_p`
-of degree `p − 1`** (sorry leaf, cut 2026-07-28 out of
-`not_twoStableLines_of_mem_isolatedNonCMJInvariants`; the UNIFORM half, and
-the only one that is about elliptic curves rather than about `ℚ[X]`).
+of degree `p − 1`** (PROVEN 2026-07-28 over
+`exists_stableAbscissaSet_of_twoStableLines`,
+`exists_monic_map_eq_of_fixed` and `prod_X_sub_C_dvd_of_roots`; introduced as
+a bare sorry leaf earlier the same day, as the UNIFORM half of
+`not_twoStableLines_of_mem_isolatedNonCMJInvariants`).
+
+**WHAT IS NOW DONE, and what the residue is.**  Everything about POLYNOMIALS
+is discharged here: the monic product over the abscissa set, its degree, its
+Galois invariance, the descent to `ℚ[X]`, the divisibility by `preΨ' p` over
+`ℚ̄`, and the descent of that divisibility back to `ℚ[X]` (which needs `f`
+monic — `Polynomial.map_dvd_map`).  What is left is
+`exists_stableAbscissaSet_of_twoStableLines`, which mentions no polynomial:
+it asks only that the two lines supply `p − 1` distinct `Γ_ℚ`-permuted
+abscissae of `p`-torsion points.  So the leaf that remains is strictly about
+points, and the `p − 1` in it is where `hne` and the primality of `p` live.
 
 This is the CONVERSE of `WeierstrassCurve.exists_point_of_isKernelPolynomial`
 (`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN), taken twice and
@@ -15960,25 +16097,77 @@ explicitly, three of them at these very `j`-values — and the consumer would
 then be FALSE.  Nothing here is special to Mazur's table: the statement is
 about an arbitrary elliptic curve over `ℚ`.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` with two
+**IMPLEMENTATION NOTE — the abscissa set is taken as a UNION, not as two
+polynomials.**  Steps 1–4 above describe the mathematics as "two kernel
+polynomials, coprime, multiplied", which is how the cut was designed.  The
+proof written below takes the equivalent but shorter route of forming ONE
+`Finset` of `p − 1` abscissae and one product over it, so that coprimality
+never has to be phrased: disjointness of the two contributions is already
+inside `exists_stableAbscissaSet_of_twoStableLines`'s cardinality claim.  The
+`IsCoprime` API is therefore not used anywhere in this cluster.
+
+**THE CHECK THAT WOULD REFUTE THIS NODE**: an elliptic curve over `ℚ` with two
 distinct `Γ_ℚ`-stable lines of order an odd prime `p` whose `p`-division
 polynomial has no rational factor of degree `p − 1`. -/
 theorem exists_monic_dvd_preΨ_of_twoStableLines {p : ℕ}
-    (_hp : p.Prime) (_hodd : Odd p)
+    (hp : p.Prime) (hodd : Odd p)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
-    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₁)
-    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₂) :
-    ∃ f : Polynomial ℚ, f.Monic ∧ f.natDegree = p - 1 ∧ f ∣ E.preΨ' p :=
-  sorry
+    ∃ f : Polynomial ℚ, f.Monic ∧ f.natDegree = p - 1 ∧ f ∣ E.preΨ' p := by
+  classical
+  -- STEP 1 — the only elliptic-curve step, and the only one still open.
+  obtain ⟨S, hScard, hSfix, hSroot⟩ :=
+    exists_stableAbscissaSet_of_twoStableLines hp hodd E g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+  -- STEP 2 — the monic polynomial with that root set, over `ℚ̄`.
+  set F : Polynomial (AlgebraicClosure ℚ) :=
+    ∏ α ∈ S, (Polynomial.X - Polynomial.C α) with hFdef
+  have hFmonic : F.Monic :=
+    Polynomial.monic_prod_of_monic _ _ fun i _ => Polynomial.monic_X_sub_C i
+  have hFdeg : F.natDegree = p - 1 := by
+    rw [hFdef, Polynomial.natDegree_prod _ _ fun i _ =>
+      (Polynomial.monic_X_sub_C i).ne_zero]
+    simp [hScard]
+  have hFfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+      F.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) = F := by
+    intro σ
+    have hinj : Set.InjOn σ (S : Set (AlgebraicClosure ℚ)) :=
+      Set.injOn_of_injective σ.injective
+    calc F.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)
+        = ∏ α ∈ S, (Polynomial.X - Polynomial.C (σ α)) := by
+          rw [hFdef, Polynomial.map_prod]; simp
+      _ = ∏ β ∈ S.image σ, (Polynomial.X - Polynomial.C β) :=
+          (Finset.prod_image
+            (f := fun β => Polynomial.X - Polynomial.C β) hinj).symm
+      _ = F := by rw [hSfix σ]
+  -- STEP 3 — Galois descent to `ℚ[X]`.
+  obtain ⟨f, hfm, hfdeg, hfmap⟩ := exists_monic_map_eq_of_fixed F hFmonic hFfix
+  -- STEP 4 — divisibility, over `ℚ̄` and then descended.
+  have hpK : ((p : ℕ) : AlgebraicClosure ℚ) ≠ 0 := by
+    have h : (p : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+    simpa using (map_ne_zero_iff (algebraMap ℚ (AlgebraicClosure ℚ))
+      (algebraMap ℚ (AlgebraicClosure ℚ)).injective).mpr h
+  have hFdvd : F ∣ (E⁄(AlgebraicClosure ℚ)).preΨ' p :=
+    prod_X_sub_C_dvd_of_roots S _ (WeierstrassCurve.preΨ'_ne_zero _ hpK) hSroot
+  have hmapeq : (E⁄(AlgebraicClosure ℚ)).preΨ' p
+      = (E.preΨ' p).map (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+    rw [← WeierstrassCurve.map_preΨ']; rfl
+  have h1 : F ∣ (E.preΨ' p).map (algebraMap ℚ (AlgebraicClosure ℚ)) := hmapeq ▸ hFdvd
+  have hmapdvd : (f.map (algebraMap ℚ (AlgebraicClosure ℚ))) ∣
+      ((E.preΨ' p).map (algebraMap ℚ (AlgebraicClosure ℚ))) :=
+    dvd_trans (dvd_of_eq hfmap) h1
+  exact ⟨f, hfm, by rw [hfdeg, hFdeg],
+    (Polynomial.map_dvd_map (algebraMap ℚ (AlgebraicClosure ℚ))
+      (algebraMap ℚ (AlgebraicClosure ℚ)).injective hfm).mp hmapdvd⟩
 
 /-- **The `p`-division polynomial of each of the six non-CM rows has no
 rational factor of degree `p − 1`** (sorry leaf, cut 2026-07-28 out of
