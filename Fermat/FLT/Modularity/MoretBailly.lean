@@ -34776,6 +34776,34 @@ order, so it has a section by
 Divisibility is what makes each transition map `A[nm] → A[n]` surjective, hence
 each fibre nonempty.
 
+**MACHINERY AUDIT (2026-07-28, compiler-checked — this HALVES the leaf, so read
+it before starting, and in preference to the Kaplansky/Fuchs paragraph above).**
+The first step, "`P[n] ≅ (ℤ/n)²` from the counting hypothesis", is **already
+PROVEN and already in this module's import cone**, for an abstract abelian group
+and needing NO divisibility:
+
+    group_theory_lemma {A : Type*} [AddCommGroup A] {n : ℕ} (hn : 0 < n) (r : ℕ)
+      (h : ∀ d : ℕ, d ∣ n → Nat.card (Submodule.torsionBy ℤ A d) = d ^ r) :
+      Nonempty ((Submodule.torsionBy ℤ A n) ≃+ (Fin r → ZMod n))
+
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, backed by
+`TorsionCounting.nonempty_torsionBy_addEquiv_pi_zmod`; `Fermat.FLT.EllipticCurve.Torsion`
+is in this module's transitive imports — verified by computing the closure, not
+assumed).  Take `r = 2`; its hypothesis is exactly `hcard` restricted to
+divisors, modulo the one-line bridge
+`{x : P // (n : ℤ) • x = 0} ≃ Submodule.torsionBy ℤ P n`.
+
+So do NOT rebuild the structure theorem and do NOT go via the classification of
+divisible groups.  What genuinely remains is only (i) the COMPATIBILITY of the
+bases across `n` — the inverse limit of nonempty finite sets over the
+divisibility order, i.e. `nonempty_sections_of_finite_cofiltered_system`, which
+the paragraph above already identifies — and (ii) the assembly of `θ` from a
+section.  `hdiv` is consumed only in (i), to make each transition map
+`P[nm] → P[n]` surjective and hence each fibre nonempty.
+
+The refuting check, if this note has gone stale:
+`grep -n group_theory_lemma Fermat/FLT/EllipticCurve/Torsion.lean`.
+
 The inputs are exactly what the elliptic-curve side already PROVES: divisibility
 is `TorsionCard.smul_surjective` and the count is
 `WeierstrassCurve.n_torsion_card`.
