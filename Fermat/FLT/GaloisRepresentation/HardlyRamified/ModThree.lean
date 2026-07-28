@@ -51309,12 +51309,23 @@ Stated for arbitrary groups because **nothing arithmetic is used**: given
 `𝔄` in `PE ⊔ NE`, and `Subgroup.map_sup` pushes that forward. All the
 arithmetic sits in the three hypotheses, which is the point of the extraction:
 a consumer must produce the norm map and prove consistency and the two
-push-forwards, and then gets the descent for free. -/
+push-forwards, and then gets the descent for free.
+
+**`hcons` WEAKENED TO `∀ x ∈ ImE` (2026-07-28, flt-lean-182).** The proof only
+ever evaluates consistency at a member of `ImE` — the `y` it extracts from
+`x ∈ Subgroup.map 𝔑 ImE` — so this costs the lemma nothing. It is not
+cosmetic: `exists_relNormDivisorHom_ray_class` below can supply the
+consistency property ONLY on `Im'`, because at a prime `W` lying over a prime
+`w ∣ mm` at which `χ` is genuinely ramified, `φ' (single W 1) =
+χ (ι (globalFrob W))` and `φ (𝔑 (single W 1)) = χ (globalFrob w) ^ f` differ by
+`χ` of an inertia element, which nothing in that leaf's hypotheses constrains.
+See the FALSITY AUDIT there.  The binders `ImE PE NE P N` therefore now come
+BEFORE `hcons`, which mentions `ImE`. -/
 theorem map_inf_ker_le_sup_of_normCompatible_ray_class {D D' G : Type*}
     [Group D] [Group D'] [Group G]
     (𝔑 : D →* D') (φ : D' →* G) (φ' : D →* G)
-    (hcons : ∀ x : D, φ (𝔑 x) = φ' x)
     (ImE PE NE : Subgroup D) (P N : Subgroup D')
+    (hcons : ∀ x ∈ ImE, φ (𝔑 x) = φ' x)
     (hP : Subgroup.map 𝔑 PE ≤ P) (hN : Subgroup.map 𝔑 NE ≤ N)
     (hker : φ'.ker ⊓ ImE ≤ PE ⊔ NE) :
     Subgroup.map 𝔑 ImE ⊓ φ.ker ≤ P ⊔ N := by
@@ -51325,7 +51336,7 @@ theorem map_inf_ker_le_sup_of_normCompatible_ray_class {D D' G : Type*}
     refine ⟨?_, hy⟩
     have hker0 : φ (𝔑 y) = 1 := hxker
     show φ' y = 1
-    rw [← hcons y]
+    rw [← hcons y hy]
     exact hker0
   have hmap : Subgroup.map 𝔑 (PE ⊔ NE) ≤ P ⊔ N := by
     rw [Subgroup.map_sup]
@@ -51383,12 +51394,219 @@ theorem exists_rayClassPackage_ray_class (E : Type*) [Field E] [NumberField E]
   rw [hφ' w]
   exact (hu (globalFrob w)).unit_spec
 
+/-- **THE PRIME OF `𝓞 F` UNDER A HEIGHT-ONE PRIME OF `𝓞 E`** (PROVEN
+2026-07-28, flt-lean-182). `Ideal.under` of a prime is prime
+(`Ideal.IsPrime.under`) and is nonzero because `𝓞 E` is integral over `𝓞 F`
+(`Ideal.under_ne_bot`), so it is again a height-one prime. This is what turns
+the basis prescription `W ↦ single (W ∩ 𝓞_F) (f (W / W ∩ 𝓞_F))` of the relative
+norm on divisors into a function into the divisor group of `F`. -/
+theorem exists_heightOneSpectrum_under_ray_class
+    (F : Type u) [Field F] [NumberField F] (E : Type u) [Field E] [NumberField E]
+    [Algebra F E]
+    (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E)) :
+    ∃ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal := by
+  haveI : W.asIdeal.IsPrime := W.isPrime
+  haveI : Algebra.IsIntegral (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E) :=
+    Algebra.IsIntegral.tower_top (R := ℤ)
+  exact ⟨⟨W.asIdeal.under (NumberField.RingOfIntegers F), Ideal.IsPrime.under _ _,
+    Ideal.under_ne_bot _ W.ne_bot⟩, rfl⟩
+
+/-- **FROBENIUS RESTRICTION: `Frob_W` RESTRICTS TO `Frob_w ^ f(W/w)` MODULO
+INERTIA AND CONJUGACY** (SORRY LEAF, created 2026-07-28 (flt-lean-182) as
+sub-leaf (α) of `exists_relNormDivisorHom_ray_class` below).
+
+This is the ONLY arithmetic input to the Consistency Property `φ ∘ 𝔑 = φ'` of
+Childress ch. 5: the Artin symbol of a norm is the Artin symbol upstairs.
+
+**WHY THE STATEMENT CARRIES A CONJUGATOR `a` AND AN INERTIA FACTOR `σ`, and
+why dropping either makes it FALSE.** `globalFrob` is
+`Field.absoluteGaloisGroup.map (algebraMap K Kᵥ) (adicArithFrob v)`, i.e. the
+image of a local arithmetic Frobenius under the map induced by a
+*choice* of embedding of algebraic closures. The choice made for `E → E_W` and
+the one made for `F → F_w` are unrelated, so `ι (globalFrob W)` and
+`globalFrob w` are attached to two possibly different places of `F̄` above `w`;
+those places are conjugate, which is the `a`. And a local arithmetic Frobenius
+is well defined only modulo inertia, which is the `σ`. What IS canonical is the
+image in the residue Galois group, and there `Frob_W` restricts to the
+`f(W/w)`-th power of `Frob_w` — that is the content.
+
+Consumers recover a clean identity because `χ` is conjugation-invariant (it is
+a homomorphism with `χ 1 = 1`, so `χ (a x a⁻¹) = χ x`) and kills inertia at
+every `w ∤ mm` by `hmmram`. At `w ∣ mm` it does not, which is exactly why
+clause (α) of the consumer is restricted to `Im'`.
+
+**Check that would refute it**: a `W ∣ w` for which `ι (globalFrob W)` is not in
+the coset `a · globalFrob w ^ f · I_w · a⁻¹` for any `a` — equivalently, an
+`ι (globalFrob W)` whose image in `Gal(κ(W)/κ(w))`-land is not `Frob_w ^ f`. -/
+theorem exists_conj_globalFrob_pow_inertiaDeg_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (ι : Γ E →* Γ F) (hinj : Function.Injective ι)
+    (jE : E →ₐ[F] AlgebraicClosure F)
+    (j : AlgebraicClosure E ≃+* AlgebraicClosure F)
+    (hjE : ∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x)
+    (hιapp : ∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x))
+    (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hW : W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal) :
+    ∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+      ι (globalFrob W)
+        = a * (globalFrob w ^ (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F))
+            * Field.absoluteGaloisGroup.map
+                (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ) * a⁻¹ :=
+  sorry
+
+/-- **A PRIME WHOSE GLOBAL FROBENIUS LIES IN `Gal(F̄/E)` HAS A PRIME ABOVE IT OF
+RESIDUE DEGREE ONE** (SORRY LEAF, created 2026-07-28 (flt-lean-182) as sub-leaf
+(γ) of `exists_relNormDivisorHom_ray_class` below).
+
+This is Artin's splitting criterion in the only form the cluster needs, and it
+is what `hvsplit` — clause (iv) of `hartin`, `globalFrob v ∈ H` — is FOR: the
+residue degree of the prime of `E` cut out by the chosen place above `v` is the
+least `n > 0` with `Frob_v ^ n ∈ H · I_v`, so `Frob_v ∈ H` forces `f = 1`.
+Together with clause (0) of the consumer it gives `single v 1 = 𝔑 (single W 1)`,
+i.e. `v` IS a norm — the last clause of Childress's construction.
+
+Note the statement asks only for ONE prime above `v` of residue degree one, not
+for `v` to split completely; that is all the norm computation needs, and it is
+what the hypothesis actually delivers (nothing here bounds the ramification
+index).
+
+**Check that would refute it**: a `v` with `globalFrob v = ι σ` for some `σ`
+and `W.asIdeal.inertiaDeg (𝓞 F) ≠ 1` for every `W` over `v`. -/
+theorem exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (ι : Γ E →* Γ F) (hinj : Function.Injective ι)
+    (jE : E →ₐ[F] AlgebraicClosure F)
+    (j : AlgebraicClosure E ≃+* AlgebraicClosure F)
+    (hjE : ∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x)
+    (hιapp : ∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hvsplit : ∃ σ : Γ E, ι σ = globalFrob v) :
+    ∃ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      W.asIdeal.under (NumberField.RingOfIntegers F) = v.asIdeal ∧
+      W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) = 1 :=
+  sorry
+
+/-- **THE DIVISOR OF A NORM IS THE NORM OF THE DIVISOR** (SORRY LEAF, created
+2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
+`exists_relNormDivisorHom_ray_class` below).
+
+`𝔑 (d' δ) = d (N_{E/F} δ)`: the relative norm on divisors, prescribed on the
+basis by `h𝔑`, carries the divisor of `(δ)` to the divisor of `(N_{E/F} δ)`.
+Equivalently `Ideal.relNorm (span {δ}) = span {N δ}` — which IS in the pin,
+`Ideal.relNorm_singleton` — together with the factorisation identity
+`relNorm 𝔓 = 𝔭 ^ f(𝔓/𝔭)`. The divisor maps `d`, `d'` are pinned by divisibility
+alone (`hd`, `hd'`), so the proof is a comparison of exponents at each `w`:
+`ord_w (N δ) = Σ_{W ∣ w} f(W/w) · ord_W (δ)`.
+
+**Check that would refute it**: a `δ ≠ 0` and a `w` with
+`ord_w (N_{E/F} δ) ≠ Σ_{W ∣ w} f(W/w) · ord_W δ`. -/
+theorem relNormDivisorHom_apply_divisorMap_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (d' : NumberField.RingOfIntegers E → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (w.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) w))
+    (hd' : ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E), ∀ n : ℕ,
+        (w.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w))
+    (𝔑 : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers E) →₀ ℤ) →*
+      Multiplicative (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) →₀ ℤ))
+    (h𝔑 : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+        𝔑 (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+          = Multiplicative.ofAdd (Finsupp.single w
+              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)))
+    (δ : NumberField.RingOfIntegers E) (hδ : δ ≠ 0) :
+    𝔑 (d' δ) = d (_root_.RingOfIntegers.norm F δ) :=
+  sorry
+
+/-- **THE NORM OF A TOTALLY POSITIVE INTEGER IS TOTALLY POSITIVE** (SORRY LEAF,
+created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
+`exists_relNormDivisorHom_ray_class` below).
+
+For a real embedding `ψ` of `F`, `ψ (N_{E/F} δ)` is the product of `δ`'s images
+under the embeddings of `E` into `ℂ` extending `ψ`; the non-real ones occur in
+complex-conjugate pairs, each contributing `|·|² > 0`, and each real one
+contributes a positive number by hypothesis. -/
+theorem norm_totallyPositive_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (δ : NumberField.RingOfIntegers E)
+    (hδpos : ∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) :
+    ∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F
+      (_root_.RingOfIntegers.norm F δ)) :=
+  sorry
+
+/-- **CONGRUENCE DESCENDS ALONG THE NORM** (SORRY LEAF, created 2026-07-28
+(flt-lean-182) as sub-leaf (β-ray) of `exists_relNormDivisorHom_ray_class`
+below).
+
+If `δ ≡ 1 (mod mmE)` and `mmE` is divisible by the EXTENDED ideal `mm 𝓞_E`,
+then `N_{E/F} δ ≡ 1 (mod mm)`: write `N δ = ∏ σ δ` over the embeddings of `E`
+into a normal closure, each `σ δ ≡ 1` modulo the extension of `mm` there, so the
+product is `≡ 1` modulo it, and the congruence descends to `𝓞 F` because
+`mm 𝓞_L ∩ 𝓞_F = mm`.
+
+**This hypothesis is `hmmEext`, and it REPLACES the old `hmmEabs`**
+(`span {absNorm mm} ∣ mmE`), which was strong enough for this step but made
+clause (γ) of the consumer FALSE — see the FALSITY AUDIT there. -/
+theorem norm_sub_one_mem_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (mm : Ideal (NumberField.RingOfIntegers F))
+    (mmE : Ideal (NumberField.RingOfIntegers E))
+    (hmmEext : mm.map (algebraMap (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E)) ∣ mmE)
+    (δ : NumberField.RingOfIntegers E) (hδ : δ - 1 ∈ mmE) :
+    _root_.RingOfIntegers.norm F δ - 1 ∈ mm :=
+  sorry
+
+/-- **THE NORM OF A NONZERO INTEGER IS NONZERO** (PROVEN 2026-07-28,
+flt-lean-182), over `Algebra.norm_ne_zero_iff` and injectivity of
+`𝓞 F → F`. -/
+theorem norm_ne_zero_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (δ : NumberField.RingOfIntegers E) (hδ : δ ≠ 0) :
+    _root_.RingOfIntegers.norm F δ ≠ 0 := by
+  haveI : FiniteDimensional F E := hfin
+  intro h
+  apply hδ
+  have hc : Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E δ) = 0 := by
+    have := congrArg (algebraMap (NumberField.RingOfIntegers F) F) h
+    simpa using this
+  have : (algebraMap (NumberField.RingOfIntegers E) E δ) = 0 := by
+    by_contra hne
+    exact (Algebra.norm_ne_zero_iff.mpr hne) hc
+  exact (map_eq_zero_iff _ (FaithfulSMul.algebraMap_injective _ _)).mp this
+
 set_option maxHeartbeats 1000000 in
 /-- **THE RELATIVE NORM ON DIVISORS, WITH THE CONSISTENCY PROPERTY AND THE TWO
-PUSH-FORWARDS** (SORRY LEAF, created 2026-07-28 (flt-lean-346) by hoisting the
+PUSH-FORWARDS** (created 2026-07-28 (flt-lean-346) by hoisting the
 two sorried `have`s `hnorm₁`/`hnorm₂` out of
 `exists_artinNormSubgroups_ramified_ray_class` below, which is now glue over
-this leaf and one remaining `have`).
+this leaf and one remaining `have`; **REFUTED, RESTATED AND DECOMPOSED the same
+day (flt-lean-182)** — the statement is no longer a `sorry`, it is glue over the
+five named sub-leaves immediately above, with clause (0) PROVEN. Read the
+FALSITY AUDIT below before citing anything the earlier form claimed).
 
 **THIS IS A NET REDUCTION, not a repackaging.** The parent applied the SAME
 implication twice — once at the auxiliary field of `v`, once at that of `v₀` —
@@ -51418,17 +51636,20 @@ and the ray and norm subgroups `P`, `N`, `P'`, `N'` — produce the relative nor
   `ι` a cut-level defect until 2026-07-28; it is fixed here at the same time
   and for the same reason.
 
-* (α) the **CONSISTENCY PROPERTY** `φ (𝔑 x) = φ' x` — Childress ch. 5, the
-  statement that the Artin symbol of a norm is the Artin symbol upstairs;
+* (α) the **CONSISTENCY PROPERTY** `φ (𝔑 x) = φ' x` **for `x ∈ Im'`** —
+  Childress ch. 5, the statement that the Artin symbol of a norm is the Artin
+  symbol upstairs. The restriction to `Im'` is NOT a convenience; the unrestricted
+  form is false, see the FALSITY AUDIT below;
 * (β) `𝔑 (P') ≤ P` and `𝔑 (N') ≤ N` — the norm of a totally positive
   `α ≡ 1 (mod mmE)` is totally positive and `≡ 1 (mod mm)` (this is what
-  `hmmEabs` is for: `Ideal.absNorm mm ∈ mm`, so congruence mod
-  `(absNorm mm) 𝓞_E` descends to congruence mod `mm` after taking norms), and
+  `hmmEext` is for: `mmE` is divisible by the EXTENDED ideal `mm 𝓞_E`, so
+  congruence mod `mmE` descends to congruence mod `mm` after taking norms), and
   `𝔑 (single W n) = single w (n · f)` with
   `orderOf (χ (globalFrob w)) ∣ n · f` because `n = orderOf (χ (globalFrob w) ^ f)`;
-* (γ) `single v 1 ∈ 𝔑 (Im')` — the prime `v` SPLITS COMPLETELY in `E`, which is
-  what `hvsplit` (`globalFrob v` is in the image of `ι`, i.e. Artin's clause
-  `globalFrob v ∈ H`) encodes, so `v = N_{E/F} 𝔓` for any `𝔓 ∣ v`.
+* (γ) `single v 1 ∈ 𝔑 (Im')` — the prime `v` has a prime above it of residue
+  degree `1`, which is what `hvsplit` (`globalFrob v` is in the image of `ι`,
+  i.e. Artin's clause `globalFrob v ∈ H`) encodes, so `v = N_{E/F} 𝔓` for such a
+  `𝔓 ∣ v`; and that `𝔓` is outside `mmE` by `hmmEsupp`.
 
 **ROUTE.** `Ideal.relNorm` IS in the pin (already used in
 `Fermat/FLT/EllipticCurve/WeilPairing.lean`), so the ideal norm need not be
@@ -51452,16 +51673,88 @@ closures, i.e. `ι` IS restriction; with them (α) is a theorem. This was
 recorded as a possible cut-level defect on 2026-07-27 with exactly this repair
 prescribed, and the repair is now in the two lemmas above.
 
-**FAITHFULNESS: TRUE as stated, and NOT vacuous.** True by the route (it is
-Childress's own construction). Not vacuous in the strongest available sense:
-(0) determines `𝔑` completely, so there is exactly one witness and no junk one
-— (α), (β), (γ) are then genuine assertions about the relative norm rather than
-constraints a witness may be tailored to. `hv` is load-bearing in (β): a prime
-dividing `mm` is not a generator of `N`.
+**FALSITY AUDIT — 2026-07-28 (flt-lean-182). THE FORM OF 2026-07-27 WAS FALSE,
+in TWO independent places, and the earlier faithfulness audit quoted below is
+VOID rather than inherited** (CLAUDE.md: a leaf restated a second time gets a
+second audit; the first one certified a statement that no longer exists). Both
+defects are modulus/quantifier bookkeeping; the mathematics Childress runs is
+untouched, and the glue over it is now written.
 
-**Check that would refute it**: hypotheses as stated together with an `x` in
-the divisor group of `E` for which no `𝔑` can satisfy (α) — equivalently, a
-`W ∣ w` with `w ∤ mm` and `χ (ι (globalFrob W)) ≠ χ (globalFrob w) ^ f(W/w)`. -/
+**(A) CLAUSE (γ) WAS REFUTED BY AN EXPLICIT COUNTEREXAMPLE.** The old binder
+`hmmEabs : span {(absNorm mm : 𝓞 E)} ∣ mmE` bounds `mmE` below by the ABSOLUTE
+norm of `mm`, whose rational prime factors are under primes of `F` that need
+NOT divide `mm` — every prime conjugate to a prime of `mm`, in particular. So
+`mmE` may be divisible by every prime above `v`, and then NO element of `Im'`
+has `v` in the support of its image under `𝔑` at all.
+
+  Witness. `F = ℚ(i)`, `𝓞 F = ℤ[i]`, `mm = (2+i)` (so `absNorm mm = 5`),
+  `E = F` with `ι = id`, `j = id`, `jE = algebraMap`, `m = 3`,
+  `mmE = span {(15 : ℤ[i])}`, `χ ≡ 1` (so `hmmram` is vacuous and `hcyc`
+  trivial), `φ = φ' = 1`, `v = (2−i)`. Then `hmm`, `hmmE`, `hmmEm`
+  (`span {3} ∣ (15)`), `hmmEabs` (`span {5} ∣ (15)`), `hv` (`(2−i) ∤ (2+i)`),
+  `hvm` (`3 ∉ (2−i)`) and `hvsplit` all hold. Clause (0) forces `𝔑 = id`
+  (`E = F`, `under W = W`, `f = 1`), so `𝔑 (Im') = Im'`. But
+  `5 = (2+i)(2−i) ∈ v`, hence `15 ∈ v`, hence `v ∣ mmE`, hence every `x ∈ Im'`
+  has `toAdd x v = 0` while `toAdd (single v 1) v = 1`. So
+  `single v 1 ∉ 𝔑 (Im')`. Not a corner case: any split prime of a `mm` with a
+  conjugate prime factor does the same.
+
+  *Repair.* `hmmEabs` is replaced by the two clauses Childress's own modulus
+  `m · mm 𝓞_E` satisfies:
+  `hmmEext : mm 𝓞_E ∣ mmE` — what the RAY push-forward needs, and strictly
+  better than `hmmEabs` for it — and
+  `hmmEsupp : ∀ W ∣ mmE, under W ∣ mm ∨ (m : 𝓞 E) ∈ W` — an UPPER bound on the
+  support of `mmE`, which is what (γ) needs and what no lower bound can give.
+  The consumer's `mmE_i` becomes `span {m_i} * mm 𝓞_{E_i}`, which satisfies
+  `hmmE`, `hmmEm`, `hmmEext` and `hmmEsupp` (primality of `W` splits the
+  product).
+
+**(B) CLAUSE (α) WAS TOO STRONG, and the excess is exactly the ramified part.**
+`φ'` is pinned at EVERY `W` by `hφv'`, and `φ` at every `w` by `hφv`, so
+`∀ x, φ (𝔑 x) = φ' x` asserts `χ (ι (globalFrob W)) = χ (globalFrob w) ^ f(W/w)`
+for every `W`, ramified `w` included. What is true is
+`ι (globalFrob W) = a · (globalFrob w ^ f · s) · a⁻¹` with `s` in inertia at `w`
+(sub-leaf `exists_conj_globalFrob_pow_inertiaDeg_ray_class` above; the two
+Frobenius elements are attached to unrelated choices of embedding of algebraic
+closures, and each is canonical only modulo inertia). `χ` is conjugation-
+invariant, so the discrepancy is exactly `χ s`, and `χ s = 1` is available from
+`hmmram` precisely at `w ∤ mm`. At a `w ∣ mm` at which `χ` IS ramified — which
+is the whole point of the `hunr`-free form this leaf serves — NOTHING in the
+binder list constrains `χ s`, so the clause is not provable.
+
+  Unlike (A) this is not Lean-exhibitable: `globalFrob` at a ramified place is
+  a choice, so the discrepancy cannot be COMPUTED. That is the reason it must be
+  excluded by a quantifier rather than argued away, and the reason it survived
+  an audit.
+
+  *Repair.* (α) is restricted to `x ∈ Im'`, which costs the consumer nothing:
+  its sole consumer `map_inf_ker_le_sup_of_normCompatible_ray_class` evaluates
+  consistency only at members of `ImE`, and that lemma's hypothesis is weakened
+  to match. Every `W ∣ mmE` is excluded from the support of an `x ∈ Im'`, and by
+  `hmmEext` every `W` over a `w ∣ mm` divides `mmE`, so the restricted clause
+  never meets a ramified `w`.
+
+**FAITHFULNESS OF THE REPAIRED FORM (audited 2026-07-28): TRUE as stated, and
+NOT vacuous.** True by the route, over the five named sub-leaves above. Not
+vacuous in the strongest available sense: (0) determines `𝔑` completely, so
+there is exactly one witness and no junk one — (α), (β), (γ) are then genuine
+assertions about the relative norm rather than constraints a witness may be
+tailored to. `hv` is load-bearing in (β): a prime dividing `mm` is not a
+generator of `N`. `hvm` and `hmmEsupp` are load-bearing in (γ), and (A) above is
+precisely what happens when the latter is missing.
+
+**STATE (2026-07-28).** The glue is WRITTEN and clause (0) is PROVEN; the leaf
+is now decomposed into five named sub-leaves, three of them genuinely
+arithmetic: `exists_conj_globalFrob_pow_inertiaDeg_ray_class` (for (α) and the
+`N`-half of (β)), `relNormDivisorHom_apply_divisorMap_ray_class` +
+`norm_totallyPositive_ray_class` + `norm_sub_one_mem_ray_class` (for the
+`P`-half of (β)), and `exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class`
+(for (γ)). `exists_heightOneSpectrum_under_ray_class` and
+`norm_ne_zero_ray_class` are proven.
+
+**Check that would refute the repaired form**: hypotheses as stated together
+with an `x ∈ Im'` for which no `𝔑` can satisfy (α) — equivalently, a `W ∤ mmE`
+with `χ (ι (globalFrob W)) ≠ χ (globalFrob (W ∩ 𝓞_F)) ^ f(W / W ∩ 𝓞_F)`. -/
 theorem exists_relNormDivisorHom_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -51473,17 +51766,21 @@ theorem exists_relNormDivisorHom_ray_class
     (j : AlgebraicClosure E ≃+* AlgebraicClosure F)
     (hjE : ∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x)
     (hιapp : ∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x))
-    (m : ℕ) (hm : 0 < m)
-    (hcyc : ∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1)
-    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (m : ℕ) (_hm : 0 < m)
+    (_hcyc : ∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1)
+    (mm : Ideal (NumberField.RingOfIntegers F)) (_hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
         χ (a * Field.absoluteGaloisGroup.map
           (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
           ≠ 1) → w.asIdeal ∣ mm)
-    (mmE : Ideal (NumberField.RingOfIntegers E)) (hmmE : mmE ≠ ⊥)
-    (hmmEm : Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE)
-    (hmmEabs : Ideal.span {((Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E)} ∣ mmE)
+    (mmE : Ideal (NumberField.RingOfIntegers E)) (_hmmE : mmE ≠ ⊥)
+    (_hmmEm : Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE)
+    (hmmEext : mm.map (algebraMap (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E)) ∣ mmE)
+    (hmmEsupp : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      W.asIdeal ∣ mmE → W.asIdeal.under (NumberField.RingOfIntegers F) ∣ mm ∨
+        (m : NumberField.RingOfIntegers E) ∈ W.asIdeal)
     (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
       (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
     (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
@@ -51537,10 +51834,191 @@ theorem exists_relNormDivisorHom_ray_class
         𝔑 (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
           = Multiplicative.ofAdd (Finsupp.single w
               (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) ∧
-      (∀ x, φ (𝔑 x) = φ' x) ∧
+      (∀ x ∈ Im', φ (𝔑 x) = φ' x) ∧
       Subgroup.map 𝔑 P' ≤ P ∧ Subgroup.map 𝔑 N' ≤ N ∧
-      Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)) ∈ Subgroup.map 𝔑 Im' :=
-  sorry
+      Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)) ∈ Subgroup.map 𝔑 Im' := by
+  classical
+  -- the prime of `F` below a prime of `E`, as a function
+  choose wU hwU using
+    (fun W => exists_heightOneSpectrum_under_ray_class F E W :
+      ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        ∃ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal)
+  -- `𝔑`, prescribed on the basis: the divisor group is free abelian on the
+  -- height-one primes, so this determines it outright.
+  obtain ⟨𝔑, h𝔑⟩ := exists_monoidHom_ofAdd_single_ray_class
+    (fun W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) =>
+      Multiplicative.ofAdd
+        (Finsupp.single (wU W) (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)))
+  -- CLAUSE (0)
+  have hbasis : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+      (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+      𝔑 (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+        = Multiplicative.ofAdd (Finsupp.single w
+            (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)) := by
+    intro W w hw
+    have hWw : wU W = w :=
+      IsDedekindDomain.HeightOneSpectrum.ext ((hwU W).symm.trans hw)
+    rw [h𝔑 W, hWw]
+  -- `χ` is a conjugation-invariant homomorphism with `χ 1 = 1`.  Unitality comes
+  -- from `hφv` at `v`: `χ (globalFrob v)` is the value of a UNIT.
+  have hχone : χ 1 = 1 := by
+    have hu : IsUnit (χ (globalFrob v)) := by rw [← hφv v]; exact Units.isUnit _
+    refine hu.mul_left_cancel ?_
+    rw [mul_one, ← hmul, mul_one]
+  have hconj : ∀ a x : Γ F, χ (a * x * a⁻¹) = χ x := by
+    intro a x
+    have hinv : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hχone]
+    rw [hmul, hmul]
+    calc χ a * χ x * χ a⁻¹ = χ a * χ a⁻¹ * χ x := by ring
+      _ = χ x := by rw [hinv, one_mul]
+  have hχpow : ∀ (g : Γ F) (n : ℕ), χ (g ^ n) = χ g ^ n := by
+    intro g n
+    induction n with
+    | zero => simpa using hχone
+    | succ k ih => rw [pow_succ, hmul, ih, pow_succ]
+  -- the basis divisor of exponent `c` is the `c`-th power of the basis divisor
+  have hgenF : ∀ (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (c : ℕ), Multiplicative.ofAdd (Finsupp.single w (c : ℤ))
+        = (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ))) ^ c := by
+    intro w c
+    rw [← ofAdd_nsmul, Finsupp.smul_single]
+    simp
+  have hgenE : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+      (c : ℕ), Multiplicative.ofAdd (Finsupp.single W (c : ℤ))
+        = (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ))) ^ c := by
+    intro W c
+    rw [← ofAdd_nsmul, Finsupp.smul_single]
+    simp
+  -- a prime of `E` outside `mmE` lies over a prime of `F` outside `mm`; this is
+  -- where `hmmEext` is consumed, and it is what makes `χ` inertia-trivial there.
+  have hwnotmm : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ¬ W.asIdeal ∣ mmE → ¬ (wU W).asIdeal ∣ mm := by
+    intro W hW hdvd
+    refine hW (dvd_trans ?_ hmmEext)
+    rw [Ideal.dvd_iff_le] at hdvd ⊢
+    rw [← hwU W] at hdvd
+    exact Ideal.map_le_iff_le_comap.mpr hdvd
+  -- THE CONSISTENCY PROPERTY AT THE BASIS, away from `mmE`
+  have hfrobα : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ¬ W.asIdeal ∣ mmE →
+      χ (ι (globalFrob W))
+        = χ (globalFrob (wU W)) ^ (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) := by
+    intro W hW
+    obtain ⟨a, σ, hσ, heq⟩ := exists_conj_globalFrob_pow_inertiaDeg_ray_class
+      F E hfin ι hinj jE j hjE hιapp W (wU W) (hwU W)
+    have hσ1 : χ (Field.absoluteGaloisGroup.map
+        (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F (wU W))) σ) = 1 := by
+      by_contra hne
+      refine hwnotmm W hW (hmmram (wU W) ⟨1, σ, hσ, ?_⟩)
+      simpa using hne
+    rw [heq, hconj, hmul, hσ1, mul_one, hχpow]
+  have hbasisα : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ¬ W.asIdeal ∣ mmE →
+      φ (𝔑 (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ))))
+        = φ' (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ))) := by
+    intro W hW
+    refine Units.ext ?_
+    rw [hφv' W, hbasis W (wU W) (hwU W),
+      hgenF (wU W) (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)), map_pow,
+      Units.val_pow_eq_pow_val, hφv, hfrobα W hW]
+  -- CLAUSE (α), on `Im'`: both sides are homomorphisms, so it is enough to know
+  -- them on the basis elements OUTSIDE `mmE`, which is exactly the support
+  -- condition defining `Im'`.
+  have hα : ∀ x ∈ Im', φ (𝔑 x) = φ' x := by
+    intro x hx
+    have key : ∀ g : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers E) →₀ ℤ,
+        (∀ W ∈ g.support, ¬ W.asIdeal ∣ mmE) →
+        φ (𝔑 (Multiplicative.ofAdd g)) = φ' (Multiplicative.ofAdd g) := by
+      intro g
+      induction g using Finsupp.induction with
+      | zero => intro _; simp
+      | single_add W b g hWg hb ih =>
+        intro hs
+        have hWmem : W ∈ (Finsupp.single W b + g).support := by
+          rw [Finsupp.mem_support_iff, Finsupp.add_apply, Finsupp.single_eq_same,
+            Finsupp.notMem_support_iff.mp hWg, add_zero]
+          exact hb
+        have hgsub : ∀ W' ∈ g.support, W' ∈ (Finsupp.single W b + g).support := by
+          intro W' hW'
+          have hne : W' ≠ W := fun h => hWg (h ▸ hW')
+          rw [Finsupp.mem_support_iff, Finsupp.add_apply,
+            Finsupp.single_eq_of_ne hne, zero_add]
+          exact Finsupp.mem_support_iff.mp hW'
+        have hW : ¬ W.asIdeal ∣ mmE := hs W hWmem
+        rw [ofAdd_add, map_mul, map_mul, map_mul,
+          ih (fun W' hW' => hs W' (hgsub W' hW'))]
+        congr 1
+        have hsingle : Multiplicative.ofAdd (Finsupp.single W b)
+            = (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ))) ^ b := by
+          rw [← ofAdd_zsmul, Finsupp.smul_single]
+          simp
+        rw [hsingle, map_zpow, map_zpow, map_zpow, hbasisα W hW]
+    have hsupp : ∀ W ∈ (Multiplicative.toAdd x).support, ¬ W.asIdeal ∣ mmE := by
+      intro W hWmem hWdvd
+      exact (Finsupp.mem_support_iff.mp hWmem) ((hIm' x).mp hx W hWdvd)
+    simpa using key (Multiplicative.toAdd x) hsupp
+  -- CLAUSE (β), the ray: `𝔑 (d' δ) = d (N δ)`, and `N δ` is a generator of `P`.
+  have hPmap : Subgroup.map 𝔑 P' ≤ P := by
+    rw [hP', Subgroup.map_le_iff_le_comap, Subgroup.closure_le]
+    rintro y ⟨δ, hδ0, hδpos, hδcong, rfl⟩
+    show 𝔑 (d' δ) ∈ P
+    rw [hP]
+    refine Subgroup.subset_closure ⟨_root_.RingOfIntegers.norm F δ,
+      norm_ne_zero_ray_class F E hfin δ hδ0,
+      norm_totallyPositive_ray_class F E hfin δ hδpos,
+      norm_sub_one_mem_ray_class F E hfin mm mmE hmmEext δ hδcong, ?_⟩
+    exact relNormDivisorHom_apply_divisorMap_ray_class F E hfin d d' hd hd' 𝔑 hbasis δ hδ0
+  -- CLAUSE (β), the norms: `𝔑 (single W n) = single w (n · f)`, and
+  -- `orderOf (χ (globalFrob w)) ∣ n · f` because `n = orderOf (χ (globalFrob w) ^ f)`.
+  have hNmap : Subgroup.map 𝔑 N' ≤ N := by
+    rw [hN', Subgroup.map_le_iff_le_comap, Subgroup.closure_le]
+    rintro y ⟨W, hWmmE, rfl⟩
+    show 𝔑 (Multiplicative.ofAdd (Finsupp.single W
+      (orderOf (χ (ι (globalFrob W))) : ℤ))) ∈ N
+    have hdvdord : orderOf (χ (globalFrob (wU W))) ∣
+        orderOf (χ (ι (globalFrob W))) *
+          W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) := by
+      refine orderOf_dvd_of_pow_eq_one ?_
+      rw [mul_comm, pow_mul, ← hfrobα W hWmmE]
+      exact pow_orderOf_eq_one _
+    obtain ⟨k, hk⟩ := hdvdord
+    have hstep : 𝔑 (Multiplicative.ofAdd (Finsupp.single W
+          (orderOf (χ (ι (globalFrob W))) : ℤ)))
+        = (Multiplicative.ofAdd (Finsupp.single (wU W)
+            (orderOf (χ (globalFrob (wU W))) : ℤ))) ^ k := by
+      rw [hgenE W (orderOf (χ (ι (globalFrob W)))), map_pow, hbasis W (wU W) (hwU W),
+        hgenF (wU W) (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)),
+        hgenF (wU W) (orderOf (χ (globalFrob (wU W)))), ← pow_mul, ← pow_mul,
+        mul_comm (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)), hk]
+    rw [hstep, hN]
+    refine Subgroup.pow_mem _ (Subgroup.subset_closure ?_) k
+    exact ⟨wU W, hwnotmm W hWmmE, rfl⟩
+  -- CLAUSE (γ): a prime `W₀` of `E` over `v` with `f = 1`, outside `mmE`.
+  obtain ⟨W₀, hW₀u, hW₀f⟩ := exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
+    F E hfin ι hinj jE j hjE hιapp v hvsplit
+  have hW₀mmE : ¬ W₀.asIdeal ∣ mmE := by
+    intro hdvd
+    rcases hmmEsupp W₀ hdvd with h | h
+    · exact hv (hW₀u ▸ h)
+    · refine hvm ?_
+      have hmap : algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E)
+          (m : NumberField.RingOfIntegers F) ∈ W₀.asIdeal := by
+        simpa using h
+      have hmem : (m : NumberField.RingOfIntegers F) ∈
+          W₀.asIdeal.under (NumberField.RingOfIntegers F) := hmap
+      rwa [hW₀u] at hmem
+  refine ⟨𝔑, hbasis, hα, hPmap, hNmap,
+    ⟨Multiplicative.ofAdd (Finsupp.single W₀ (1 : ℤ)), ?_, ?_⟩⟩
+  · rw [SetLike.mem_coe, hIm']
+    intro W hW
+    have hne : W ≠ W₀ := fun h => hW₀mmE (h ▸ hW)
+    show Finsupp.single W₀ (1 : ℤ) W = 0
+    exact Finsupp.single_eq_of_ne hne
+  · rw [hbasis W₀ v hW₀u, hW₀f]
+    norm_num
 
 set_option maxHeartbeats 1000000 in
 /-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
@@ -51662,6 +52140,17 @@ TWO anonymous sorried `have`s (`hnorm₁`, `hnorm₂`) carrying identical
 mathematics, so hoisting it was a net **−1** on the open frontier as well as
 making it dispatchable. Step 2 — the common norm base `β` from the compositum
 — is the ONE remaining sorried `have` (`hbase`) in the body below.
+
+**THE MODULI AT THE AUXILIARY FIELDS CHANGED 2026-07-28 (flt-lean-182), and it
+was a correctness fix, not a style choice.** `mmE_i` was
+`span {(m_i · absNorm mm)}` and is now `span {m_i} · mm 𝓞_{E_i}` — Childress's
+own modulus. With the old one, clause (γ) of
+`exists_relNormDivisorHom_ray_class` (`single v 1` is a norm from `E_i`) is
+FALSE, because the primes of `absNorm mm` include primes of `F` conjugate to
+those of `mm` and hence possibly `v` itself; the explicit counterexample is
+recorded in that leaf's FALSITY AUDIT. Nothing else in this assembly depends on
+which modulus is used: `hcycl`'s clause (ii) needs only `span {m_i} ∣ mmE_i`,
+which still holds, and `hbase` does not mention `mmE_i` at all.
 
 **AND THE CUT-LEVEL DEFECT RECORDED AGAINST STEP 3 IS REPAIRED.** The caveat
 below used to read that `exists_artinAuxiliaryNumberField_ray_class` pins `ι`
@@ -51786,7 +52275,6 @@ theorem exists_artinNormSubgroups_ramified_ray_class
       𝒜 ⊓ φ.ker ≤ P ⊔ N ∧ 𝒜₀ ⊓ φ.ker ≤ P ⊔ N := by
   classical
   have hℓk : ℓ ^ k ≠ 0 := pow_ne_zero k hℓ.ne_zero
-  have hNmm : Ideal.absNorm mm ≠ 0 := fun h => hmm (Ideal.absNorm_eq_zero_iff.mp h)
   -- STEP 1 (Childress p. 121): Artin's Lemma at `v` and at `v₀`, with the
   -- auxiliary fields realised as number fields in `Type u`.  The second call
   -- avoids the primes of `m₁`, which is Childress's coprimality of the two moduli.
@@ -51802,45 +52290,65 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   letI := fE₂
   letI := nE₂
   letI := aE₂
-  -- The moduli at the auxiliary fields: `(m_i · N(mm))`.  Divisibility by `(m_i)`
-  -- is `hcycl`'s admissibility clause; divisibility by `mm 𝓞_{E_i}` — which holds
-  -- because `Ideal.absNorm mm ∈ mm` — is what makes the ray push-forward of
-  -- `hnorm_i` true.
+  -- The moduli at the auxiliary fields: `(m_i) · mm 𝓞_{E_i}`, which is Childress's
+  -- own modulus.  Divisibility by `(m_i)` is `hcycl`'s admissibility clause;
+  -- divisibility by the EXTENDED ideal `mm 𝓞_{E_i}` is what makes the ray
+  -- push-forward of `exists_relNormDivisorHom_ray_class` true; and the SUPPORT
+  -- bound `hmmE_i supp` — no prime of `mmE_i` lies over a prime outside `mm`
+  -- unless it divides `(m_i)` — is what makes its clause (γ) true.
+  --
+  -- **This replaces `span {(m_i · absNorm mm)}` (2026-07-28, flt-lean-182).** The
+  -- absolute norm has prime factors under primes of `F` that do NOT divide `mm`,
+  -- so with that modulus every prime above `v` could divide `mmE_i` and clause (γ)
+  -- of the leaf was FALSE; see the FALSITY AUDIT on it.
   set mmE₁ : Ideal (NumberField.RingOfIntegers E₁) :=
-    Ideal.span {((m₁ * Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₁)}
+    Ideal.span {(m₁ : NumberField.RingOfIntegers E₁)} *
+      mm.map (algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E₁))
     with hmmE₁def
   set mmE₂ : Ideal (NumberField.RingOfIntegers E₂) :=
-    Ideal.span {((m₂ * Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₂)}
+    Ideal.span {(m₂ : NumberField.RingOfIntegers E₂)} *
+      mm.map (algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E₂))
     with hmmE₂def
-  have hcast₁ : ((m₁ * Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₁)
-      = (m₁ : NumberField.RingOfIntegers E₁) *
-        (Ideal.absNorm mm : NumberField.RingOfIntegers E₁) := Nat.cast_mul _ _
-  have hcast₂ : ((m₂ * Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₂)
-      = (m₂ : NumberField.RingOfIntegers E₂) *
-        (Ideal.absNorm mm : NumberField.RingOfIntegers E₂) := Nat.cast_mul _ _
   have hmmE₁ne : mmE₁ ≠ ⊥ := by
-    rw [hmmE₁def, Ne, Ideal.span_singleton_eq_bot]
-    exact Nat.cast_ne_zero.mpr (Nat.mul_ne_zero hm₁pos.ne' hNmm)
+    rw [hmmE₁def, Ne, Ideal.mul_eq_bot]
+    push_neg
+    refine ⟨?_, Ideal.map_ne_bot_of_ne_bot hmm⟩
+    rw [Ne, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hm₁pos.ne'
   have hmmE₂ne : mmE₂ ≠ ⊥ := by
-    rw [hmmE₂def, Ne, Ideal.span_singleton_eq_bot]
-    exact Nat.cast_ne_zero.mpr (Nat.mul_ne_zero hm₂pos.ne' hNmm)
+    rw [hmmE₂def, Ne, Ideal.mul_eq_bot]
+    push_neg
+    refine ⟨?_, Ideal.map_ne_bot_of_ne_bot hmm⟩
+    rw [Ne, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hm₂pos.ne'
   have hmmE₁dvd : Ideal.span {(m₁ : NumberField.RingOfIntegers E₁)} ∣ mmE₁ := by
-    rw [hmmE₁def, hcast₁, ← Ideal.span_singleton_mul_span_singleton]
-    exact dvd_mul_right _ _
+    rw [hmmE₁def]; exact dvd_mul_right _ _
   have hmmE₂dvd : Ideal.span {(m₂ : NumberField.RingOfIntegers E₂)} ∣ mmE₂ := by
-    rw [hmmE₂def, hcast₂, ← Ideal.span_singleton_mul_span_singleton]
-    exact dvd_mul_right _ _
-  -- Divisibility by `(N(mm))` at the auxiliary fields: this is what makes the RAY
-  -- push-forward of `exists_relNormDivisorHom_ray_class` true, since
-  -- `Ideal.absNorm mm ∈ mm`.
-  have hmmE₁abs : Ideal.span {((Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₁)}
-      ∣ mmE₁ := by
-    rw [hmmE₁def, hcast₁, ← Ideal.span_singleton_mul_span_singleton]
-    exact dvd_mul_left _ _
-  have hmmE₂abs : Ideal.span {((Ideal.absNorm mm : ℕ) : NumberField.RingOfIntegers E₂)}
-      ∣ mmE₂ := by
-    rw [hmmE₂def, hcast₂, ← Ideal.span_singleton_mul_span_singleton]
-    exact dvd_mul_left _ _
+    rw [hmmE₂def]; exact dvd_mul_right _ _
+  have hmmE₁ext : mm.map (algebraMap (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E₁)) ∣ mmE₁ := by
+    rw [hmmE₁def]; exact dvd_mul_left _ _
+  have hmmE₂ext : mm.map (algebraMap (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E₂)) ∣ mmE₂ := by
+    rw [hmmE₂def]; exact dvd_mul_left _ _
+  have hmmE₁supp : ∀ W : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₁), W.asIdeal ∣ mmE₁ →
+      W.asIdeal.under (NumberField.RingOfIntegers F) ∣ mm ∨
+        (m₁ : NumberField.RingOfIntegers E₁) ∈ W.asIdeal := by
+    intro W hW
+    rw [hmmE₁def, Ideal.dvd_iff_le] at hW
+    rcases (W.isPrime.mul_le).mp hW with h | h
+    · exact Or.inr (h (Ideal.mem_span_singleton_self _))
+    · exact Or.inl (Ideal.dvd_iff_le.mpr (Ideal.map_le_iff_le_comap.mp h))
+  have hmmE₂supp : ∀ W : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E₂), W.asIdeal ∣ mmE₂ →
+      W.asIdeal.under (NumberField.RingOfIntegers F) ∣ mm ∨
+        (m₂ : NumberField.RingOfIntegers E₂) ∈ W.asIdeal := by
+    intro W hW
+    rw [hmmE₂def, Ideal.dvd_iff_le] at hW
+    rcases (W.isPrime.mul_le).mp hW with h | h
+    · exact Or.inr (h (Ideal.mem_span_singleton_self _))
+    · exact Or.inl (Ideal.dvd_iff_le.mpr (Ideal.map_le_iff_le_comap.mp h))
   -- The base-changed characters and their divisor-group packages at `E₁`, `E₂`.
   have hmul₁ : ∀ a b : Γ E₁, χ (ι₁ (a * b)) = χ (ι₁ a) * χ (ι₁ b) := fun a b => by
     rw [map_mul]; exact hmul _ _
@@ -51894,12 +52402,14 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- two anonymous sorried `have`s carrying identical mathematics.
   obtain ⟨𝔑₁, hbasis₁, hcons₁, hP𝔑₁, hN𝔑₁, hv𝔑₁⟩ :=
     exists_relNormDivisorHom_ray_class F χ hmul E₁ hfin₁ ι₁ hinj₁ jE₁ j₁ hjE₁ hιapp₁
-      m₁ hm₁pos hcyc₁ mm hmm hmmram mmE₁ hmmE₁ne hmmE₁dvd hmmE₁abs φ φ₁ d d₁ P N
+      m₁ hm₁pos hcyc₁ mm hmm hmmram mmE₁ hmmE₁ne hmmE₁dvd hmmE₁ext hmmE₁supp
+      φ φ₁ d d₁ P N
       Im₁ P₁ N₁ hd hd₁ hφv hφv₁ hIm₁ hP hN hP₁def hN₁def v hv hm₁v
       (hsurH₁ (globalFrob v) hfrobv₁)
   obtain ⟨𝔑₂, hbasis₂, hcons₂, hP𝔑₂, hN𝔑₂, hv𝔑₂⟩ :=
     exists_relNormDivisorHom_ray_class F χ hmul E₂ hfin₂ ι₂ hinj₂ jE₂ j₂ hjE₂ hιapp₂
-      m₂ hm₂pos hcyc₂ mm hmm hmmram mmE₂ hmmE₂ne hmmE₂dvd hmmE₂abs φ φ₂ d d₂ P N
+      m₂ hm₂pos hcyc₂ mm hmm hmmram mmE₂ hmmE₂ne hmmE₂dvd hmmE₂ext hmmE₂supp
+      φ φ₂ d d₂ P N
       Im₂ P₂ N₂ hd hd₂ hφv hφv₂ hIm₂ hP hN hP₂def hN₂def v₀ hv₀ hm₂v
       (hsurH₂ (globalFrob v₀) hfrobv₂)
   -- STEP 2 (OPEN, item (2) of the decomposition note): the common norm base,
@@ -51933,9 +52443,9 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   obtain ⟨β, hβsym, hβ₁, hβ₂⟩ :=
     hbase hi₁ hi₂ hH₁open hH₂open hm₂cop hbasis₁ hbasis₂
   exact ⟨β, Subgroup.map 𝔑₁ Im₁, Subgroup.map 𝔑₂ Im₂, hβsym, hv𝔑₁, hβ₁, hv𝔑₂, hβ₂,
-    map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ hcons₁ Im₁ P₁ N₁ P N
+    map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ Im₁ P₁ N₁ P N hcons₁
       hP𝔑₁ hN𝔑₁ hker₁,
-    map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₂ φ φ₂ hcons₂ Im₂ P₂ N₂ P N
+    map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₂ φ φ₂ Im₂ P₂ N₂ P N hcons₂
       hP𝔑₂ hN𝔑₂ hker₂⟩
 
 set_option maxHeartbeats 1000000 in
