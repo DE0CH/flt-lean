@@ -26806,6 +26806,490 @@ theorem Fermat.atkinLehnerFixed_x0OneTwentyFive {X Y : Scheme.{0}}
         = RelPoint.post jY hX.comm y :=
   sorry
 
+/-! #### The round trip `(E, C) ⟶ Y_0(N) ⟶ (E, C)`, cut into its three steps
+
+(2026-07-28, flt-lean-168.)  `exists_atkinLehnerIsom_of_x0Fixed` below was a
+single `sorry` whose own docstring named the route in three steps — *down*,
+*across*, *up*.  This subsection is that route written out.  Two of the three
+steps are now PROVEN here and the residue is three named leaves, **all
+LEVEL-GENERIC**, so `169` and every future level get them for free:
+
+| declaration | status |
+|---|---|
+| `IsX0Compactification.post_jY_injective` | PROVEN — `jY` is an open immersion, hence a mono |
+| `WeierstrassCurve.IsGamma0ModelOf` | the pin: a `Γ₀(N)`-datum over `ℚ` MODELS the pair `(E, S)` |
+| `WeierstrassCurve.exists_gamma0Model_of_stable` | PROVEN — step 1, *down*, with the identification RETAINED |
+| `WeierstrassCurve.exists_generator_image_nTorsion` | LEAF — elementary: `φ(E[N])` is cyclic of order `N` |
+| `WeierstrassCurve.nonempty_isNIsogenyPair_of_gamma0Model` | **LEAF — THE GATE**: the dual isogeny as a morphism of elliptic schemes |
+| `WeierstrassCurve.exists_gamma0Model_isNIsogenyPair_of_isogeny` | PROVEN over the two leaves above plus step 1 |
+| `WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` | LEAF — step 3, *up*: an isomorphism of `ℚ̄`-data as an isogeny of Weierstrass models |
+| `WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_classify_eq` | PROVEN over the leaf above — the coarse-moduli half of step 3 |
+
+**Why the pin `IsGamma0ModelOf` is the seam, and why it had to be introduced.**
+`nonempty_gamma0Datum_of_stable` (`X0.lean`, PROVEN) turns `(E, g, hstable)`
+into a `Gamma0Datum N SpecQ`, but it returns `Nonempty` — the datum it produces
+carries NO recorded relation to the curve it came from.  For a *one-way*
+consumer (the twelve level nodes, which only need a rational point of `Y_0(N)`
+to exist in order to contradict `Y0HasNoRationalPoint`) that is enough.  A ROUND
+TRIP cannot use it: after crossing to `d'` and coming back one holds an
+isomorphism of *data*, and without an identification of each datum's geometric
+fibre with the Weierstrass point group there is nothing to transport it to.
+That is exactly the gap `weierstrassModel_j_unique` was expected to fill, and
+`IsGamma0ModelOf` fills it more cheaply *in the direction this leaf needs*: the
+data are BUILT here, so the identification is available at construction time and
+never has to be recovered from the `j`-invariant.  **`weierstrassModel_j_unique`
+is therefore NOT on the critical path of this leaf** — a correction to the
+docstring of `exists_atkinLehnerIsom_of_veluQuotient_order_125` below, which
+records it as one of the two things the round trip is waiting for.
+
+**FAITHFULNESS of the pin.**  `IsGamma0ModelOf E d S` is the conjunction of
+(i) a Galois-EQUIVARIANT additive equivalence `e : E(ℚ̄) ≃+ (geometric fibre of
+`d`)` and (ii) `e` carrying `S` onto the level structure, read through
+`RelPoint.LiesIn d.cyc.ι`.  Clause (ii) is what makes it a pin rather than a
+statement about `j`: the `α`-ambiguity recorded on
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly` above —
+"replacing `e` by `e ∘ α` satisfies every hypothesis while moving the kernel off
+the subgroup" — is precisely what (ii) excludes, since it constrains `e` on the
+level structure itself.  **The check that refutes this paragraph**: an additive
+automorphism `α` of `E(ℚ̄)` that is Galois-equivariant and preserves `S`
+setwise but changes the isomorphism class of the pair `(E, S)` — impossible,
+since `(E, S)` and `(E, α S) = (E, S)` are the same pair. -/
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **Pushing a relative point of `Y_0(N)` into `X_0(N)` is injective**
+(PROVEN 2026-07-28, no leaf) — the one-line fact that lets an equation between
+points of the compactification be read back on the open part.
+
+`hX.isOpen` says `jY` is an open immersion, hence a monomorphism in `Scheme`,
+and `RelPoint.post jY` is postcomposition by `jY` on the underlying morphism,
+so `cancel_mono` finishes it.
+
+This is what makes `IsAtkinLehner` — which is stated about the images of moduli
+points in `X`, because `w` lives on the proper curve — usable as a statement
+about `Y`.  It is the formal content of the parenthesis "the open immersion
+`jY` is a monomorphism, so the equality descends from `X` to `Y`" in the route
+note of `exists_atkinLehnerIsom_of_x0Fixed` below. -/
+theorem Fermat.IsX0Compactification.post_jY_injective {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY)
+    {T : Scheme.{0}} {g : T ⟶ SpecQ} {y₁ y₂ : RelPoint strY g}
+    (h : RelPoint.post jY hX.comm y₁ = RelPoint.post jY hX.comm y₂) : y₁ = y₂ := by
+  haveI := hX.isOpen
+  refine Subtype.ext ?_
+  have h1 : y₁.1 ≫ jY = y₂.1 ≫ jY := congrArg Subtype.val h
+  exact (cancel_mono jY).mp h1
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **The `Γ₀(N)`-datum `d` over `ℚ` MODELS the pair `(E, S)`**: its geometric
+fibre is identified, Galois-equivariantly, with `E(ℚ̄)` in such a way that its
+level structure is `S`.
+
+This is the pin the round trip through `Y_0(N)` runs on; see the subsection
+docstring above for why `nonempty_gamma0Datum_of_stable`'s bare `Nonempty` will
+not do and why this is cheaper than `weierstrassModel_j_unique`.
+
+Two clauses, and BOTH are load-bearing:
+
+* **equivariance** — `e` intertwines `Affine.Point.map σ` on `E(ℚ̄)` with
+  `AbelianSchemeStruct.galSMul σ` on the geometric fibre.  Without it the pin
+  says nothing about the `ℚ`-structure and a `ℚ̄`-isomorphism of pairs could not
+  be recognised as coming from a rational moduli point;
+* **the level clause** — `RelPoint.LiesIn d.cyc.ι (e x) ↔ x ∈ S`.  This is what
+  excludes the `α`-ambiguity described in the subsection docstring.
+
+`S` is a bare `Set` rather than an `AddSubgroup` on purpose: the two sets it is
+instantiated at are `↑(AddSubgroup.zmultiples g)` and `φ '' E[N]`, and forcing
+the second into subgroup form would make the statement of
+`exists_generator_image_nTorsion` circular with its own conclusion. -/
+def WeierstrassCurve.IsGamma0ModelOf (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (d : Gamma0Datum N SpecQ) (S : Set (E⁄(AlgebraicClosure ℚ)).Point) : Prop :=
+  letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt d.f (𝟙 SpecQ),
+    (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+        e (WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+          = d.ab.galSMul (𝟙 SpecQ) σ (e x)) ∧
+      ∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
+        RelPoint.LiesIn d.cyc.ι (e x) ↔ x ∈ S
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **STEP 1, *down*: a Galois-stable cyclic subgroup of order `N` gives a
+`Γ₀(N)`-datum over `ℚ` MODELLING the pair** (PROVEN 2026-07-28, no leaf) —
+the strengthening of `X0.lean`'s `nonempty_gamma0Datum_of_stable` that retains
+the identification.
+
+The mathematics is `nonempty_gamma0Datum_of_stable`'s, and the construction is
+its construction: `exists_ellipticScheme_of_weierstrass` produces the elliptic
+scheme together with the Galois-equivariant `e : E(ℚ̄) ≃+ GeomFibrePt`, and the
+level structure is the span of the `N` multiples of `e g`
+(`spanScheme (zmulPts ab N (e g))`, with `ratPoint_liesIn_spanScheme`,
+`exists_addHom_factor_zmulPts`, `exists_negHom_factor_zmulPts` and
+`geom_cyclic_zmulPts` discharging the five fields of `CyclicSubgroupOfOrder`).
+
+**Why the construction is REPEATED here rather than cited.**
+`exists_cyclicSubgroupOfOrder_of_galoisStable` returns `Nonempty`, so the
+generator `e g` of the subgroup it builds is not recoverable from its statement —
+and the level clause of `IsGamma0ModelOf` is exactly a statement about that
+generator.  The extra step this proof takes over `X0.lean`'s is one lemma:
+`geomPt_liesIn_spanScheme` at the index `1 % N` gives `LiesIn ι (e g)`, so the
+generator `z` that `geom_cyclic_zmulPts` returns satisfies
+`e g ∈ ⟨z⟩`, and `⟨e g⟩ = ⟨z⟩` follows from both having order `N`
+(`AddSubgroup.eq_of_le_of_card_ge`).  `1 % N` rather than `1` is what covers
+`N = 1`, where the family is indexed by `Fin 1`.
+
+**The cheaper alternative, recorded so a successor can take it**: hoist the
+`LiesIn ι y` clause into `exists_cyclicSubgroupOfOrder_of_galoisStable`'s own
+conclusion in `X0.lean` and delete the duplication here.  That was not done
+because `X0.lean` is upstream of a very expensive cone and heavily shared; the
+duplication is ~25 lines and costs no mathematics. -/
+theorem WeierstrassCurve.exists_gamma0Model_of_stable (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] {N : ℕ} (hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ d : Gamma0Datum N SpecQ,
+      E.IsGamma0ModelOf d
+        (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) := by
+  classical
+  obtain ⟨A, f, ab, hdim, e, he⟩ := exists_ellipticScheme_of_weierstrass E
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  set y : GeomFibrePt f (𝟙 SpecQ) := e g with hy_def
+  have hord : addOrderOf y = N := by rw [hy_def, AddEquiv.addOrderOf_eq]; exact hg
+  have hst : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y := by
+    intro σ
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ g (AddSubgroup.mem_zmultiples g))
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    rw [hy_def, ← he σ g, ← hk, map_zsmul]
+  have hzero : zmulPts ab N y ⟨0, Nat.pos_of_ne_zero hN⟩
+      = specAlgClos ℚ ≫ (ab.zero (𝟙 SpecQ)).1 := by
+    have h := ab.pre_zero (specAlgClos ℚ) (g := 𝟙 SpecQ)
+      (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl
+    show ((0 : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)).1 = _
+    rw [zero_smul]
+    exact congrArg Subtype.val h.symm
+  obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
+    (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
+  obtain ⟨μ, hμ⟩ := exists_addHom_factor_zmulPts ab N hN y hord hst
+  obtain ⟨ν, hν⟩ := exists_negHom_factor_zmulPts ab N hN y hord hst
+  refine ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim
+            cyc := { C := spanScheme (zmulPts ab N y)
+                     ι := spanSchemeι (zmulPts ab N y)
+                     isClosedImmersion := inferInstance
+                     isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
+                     flat := inferInstance
+                     zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
+                     add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
+                     neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
+                     geom_cyclic := fun K _ _ t =>
+                       geom_cyclic_zmulPts ab N hN y hord hst K t } }, e, he, ?_⟩
+  -- the level structure is generated by `y = e g`
+  obtain ⟨z, -, hzord, hzgen⟩ :=
+    geom_cyclic_zmulPts ab N hN y hord hst (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- `y` itself lies in the span, being the `1 % N`-th member of the family
+  have hylies : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) y := by
+    obtain ⟨u, hu⟩ :=
+      geomPt_liesIn_spanScheme (zmulPts ab N y) ⟨1 % N, Nat.mod_lt 1 (Nat.pos_of_ne_zero hN)⟩
+    refine ⟨u, hu.trans ?_⟩
+    show (((1 % N : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).1 = y.1
+    rw [← hord, mod_addOrderOf_nsmul, one_nsmul]
+  -- so `⟨y⟩ = ⟨z⟩`, both being of order `N`
+  have hsub : AddSubgroup.zmultiples y = AddSubgroup.zmultiples z := by
+    have hmem : y ∈ AddSubgroup.zmultiples z := (hzgen y).mp hylies
+    have hle : AddSubgroup.zmultiples y ≤ AddSubgroup.zmultiples z :=
+      AddSubgroup.zmultiples_le.mpr hmem
+    have hcy : Nat.card (AddSubgroup.zmultiples y) = N := by
+      rw [Nat.card_zmultiples, hord]
+    have hcz : Nat.card (AddSubgroup.zmultiples z) = N := by
+      rw [Nat.card_zmultiples, hzord]
+    haveI : Finite (AddSubgroup.zmultiples z) :=
+      Nat.finite_of_card_ne_zero (by rw [hcz]; exact hN)
+    exact AddSubgroup.eq_of_le_of_card_ge hle (by rw [hcy, hcz])
+  intro x
+  rw [hzgen (e x), ← hsub, hy_def]
+  constructor
+  · intro hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    exact AddSubgroup.mem_zmultiples_iff.mpr ⟨k, e.injective (by rw [map_zsmul]; exact hk)⟩
+  · intro hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    exact AddSubgroup.mem_zmultiples_iff.mpr ⟨k, by rw [← hk, map_zsmul]⟩
+
+/-- **`φ(E[N])` is cyclic of order `N`, generated by the image of a single
+`N`-torsion point** (LEAF, cut 2026-07-28 off
+`exists_gamma0Model_isNIsogenyPair_of_isogeny` below) — **LEVEL-GENERIC**, and
+the ONLY declaration in this subsection with no scheme theory in it at all.
+
+TRUE, and it is the classical `E[N] ≅ (ℤ/N)²` computation.  `φ` is an isogeny
+with `ker φ = C := ⟨g⟩`, `g` of order `N`, so `C ⊆ E[N]` and
+`φ(E[N]) ≅ E[N]/C`.  Over `ℚ̄` (characteristic `0`) the structure theorem
+`WeierstrassCurve.n_torsion_dimension`
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, PROVEN:
+`Nonempty (E.nTorsion n ≃+ ZMod n × ZMod n)`) identifies `E[N]` with `(ℤ/N)²`,
+in which `g` becomes a vector `v = (a, b)` of additive order `N` — equivalently
+`gcd(a, b, N) = 1`.  Choose `s, t` with `s a + t b ≡ 1 (mod N)` and set
+`ψ : (ℤ/N)² → ℤ/N`, `ψ(x, y) = a y − b x`.  Then `ψ v = 0` and
+`ψ(−t, s) = a s + b t = 1`, so `ψ` is surjective, `#ker ψ = N² / N = N` by
+`WeierstrassCurve.n_torsion_card`, and `ker ψ = ⟨v⟩` since it contains the
+order-`N` subgroup `⟨v⟩`.  Pull `(−t, s)` back to `h ∈ E[N]`: every `x ∈ E[N]`
+satisfies `x − ψ(x) • h ∈ ker ψ = C`, so `E[N] = C + ⟨h⟩` and therefore
+`φ(E[N]) = ⟨φ h⟩`; the order is `N` because `#φ(E[N]) = #E[N] / #C = N`.
+
+The Galois-stability clause is then three lines and is bundled here rather than
+left to the consumer: `φ(E[N])` is stable because `E[N]` is (`Affine.Point.map`
+is additive, so it preserves `N • x = 0`) and `φ` is equivariant (`hgal`); the
+conclusion rewrites that along the second conjunct.
+
+**Why it is a separate leaf from `nonempty_isNIsogenyPair_of_gamma0Model`.**
+Nothing here is about schemes, moduli or the dual isogeny — it is a statement
+about a finite abelian group and a homomorphism out of it, closable with mathlib
+plus the two `Torsion.lean` theorems named above.  Bundling it with the
+scheme-theoretic gate would put an elementary obligation behind a deep one.
+
+**`hN : N ≠ 0` is load-bearing**: at `N = 0` `E[0]` is the whole group, `⟨g⟩` is
+infinite cyclic, and `φ(E)` is not cyclic.
+
+**The check that refutes this leaf**: a cyclic subgroup `C` of order `N` in
+`E[N]` for which `E[N]/C` is NOT cyclic — impossible in `(ℤ/N)²`, where a cyclic
+subgroup of order `N` is generated by a unimodular vector and is therefore a
+direct summand. -/
+theorem WeierstrassCurve.exists_generator_image_nTorsion {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples g) :
+    ∃ h : (E⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf (φ h) = N ∧
+      ((φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}
+        = (AddSubgroup.zmultiples (φ h) :
+            Set ((E'⁄(AlgebraicClosure ℚ)).Point))) ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples (φ h),
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples (φ h) :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **STEP 2, *across*: the two modelled `Γ₀(N)`-data are related by a cyclic
+`N`-isogeny** (LEAF, cut 2026-07-28 off
+`exists_gamma0Model_isNIsogenyPair_of_isogeny` below) — **LEVEL-GENERIC**, and
+**THIS IS THE GATE** the route note of `exists_atkinLehnerIsom_of_x0Fixed` names:
+*the dual isogeny as a morphism of elliptic schemes*.
+
+TRUE.  `d` and `d'` model `(E, ⟨g⟩)` and `(E', φ(E[N]))`, and `φ` is an isogeny
+over `ℚ̄` with `ker φ = ⟨g⟩` which is Galois-equivariant, hence descends to a
+`ℚ`-isogeny of the two elliptic schemes.  What `IsNIsogenyPair N d d'` asks for
+is that isogeny AS A MORPHISM OF SCHEMES `map : d.E ⟶ d'.E` over `Spec ℚ`,
+together with a `dual : d'.E ⟶ d.E`, and the four conditions
+`ker map = d.cyc`, `ker dual = d'.cyc`, `dual ∘ map = [N]`, `map ∘ dual = [N]`,
+each read on relative points at EVERY base — i.e. scheme-theoretically, not
+merely on `ℚ̄`-points.
+
+**What proving it needs, and this is the whole of it.**
+
+1. *`φ` as a morphism.*  `hφ : IsIsogeny φ` carries an `IsRationalMap`
+   certificate, so `φ` is given by rational functions in the Weierstrass
+   coordinates; that is what turns the point map into a morphism of the affine
+   models, and `IsGamma0ModelOf`'s `e`/`e'` are what transport it to
+   `d.E ⟶ d'.E`.  **This is the same wall** the CM bridge
+   `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly` above
+   hit and deliberately did not name — see its step **5** and the two paragraphs
+   after it — so a prover who closes one should close the other, and the shared
+   piece is "a scheme-level reading of `IsWeierstrassModel`".
+2. *The dual.*  `φ̂` with `φ̂φ = [N]` and `φφ̂ = [N]`.  Over a field the dual
+   isogeny is classical (Silverman *AEC* III.6.1); in this tree the degree API
+   is `Fermat/FLT/EllipticCurve/Isogeny.lean` (`IsIsogeny.comp`,
+   `Isogeny.degree`), and `deg φ = #ker φ = N` in characteristic `0`.
+3. *`ker φ̂ = φ(E[N])`.*  This is why `d'`'s level structure is `φ(E[N])` and not
+   something chosen: `φ̂(y) = 0 ↔ y ∈ φ(E[N])` because `φ̂φ = [N]` gives
+   `φ(E[N]) ⊆ ker φ̂`, and both have order `N`
+   (`exists_generator_image_nTorsion` for the first, `deg φ̂ = N` for the second).
+
+**Rationality over `ℚ` is not an extra hypothesis** — it is `hgal` plus the
+equivariance clause of `IsGamma0ModelOf`, which is exactly Galois descent for a
+morphism between two schemes already defined over `ℚ`.
+
+**NOT VACUOUS**: at `N = 11`, `E = X_0(11)` and its rational `11`-isogeny
+inhabit every hypothesis.  Contrast the level-`125` consumer, which is vacuous
+because `Y_0(125)(ℚ) = ∅` — that vacuity lives on `hfix`, not here.
+
+**The check that refutes this leaf**: a Galois-equivariant isogeny of elliptic
+curves over `ℚ̄` with cyclic kernel of order `N` whose two `ℚ`-models are NOT
+`N`-isogenous as `Γ₀(N)`-data — impossible, the moduli interpretation of
+`w_N` being exactly this correspondence. -/
+theorem WeierstrassCurve.nonempty_isNIsogenyPair_of_gamma0Model {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples g)
+    {d d' : Gamma0Datum N SpecQ}
+    (hd : E.IsGamma0ModelOf d
+      (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)))
+    (hd' : E'.IsGamma0ModelOf d'
+      ((φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
+        {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0})) :
+    Nonempty (IsNIsogenyPair N d d') :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **STEP 2 assembled: the quotient pair, as a modelled `Γ₀(N)`-datum
+`N`-isogenous to `d`** (PROVEN 2026-07-28 over the two leaves immediately above
+plus `exists_gamma0Model_of_stable`).
+
+Three lines: `exists_generator_image_nTorsion` supplies a generator `φ h` of
+`φ(E[N])` together with its order and the Galois-stability of `⟨φ h⟩`;
+`exists_gamma0Model_of_stable` applied to `(E', φ h)` builds `d'` and its pin;
+and `nonempty_isNIsogenyPair_of_gamma0Model` supplies the isogeny pair.  The
+only bookkeeping is rewriting the pin's set along
+`φ(E[N]) = ⟨φ h⟩`, which is the second conjunct of the first leaf.
+
+Note that the `d'` produced here is built from `E'` DIRECTLY, so its pin comes
+free — this is the reason the round trip does not need
+`weierstrassModel_j_unique`. -/
+theorem WeierstrassCurve.exists_gamma0Model_isNIsogenyPair_of_isogeny {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples g)
+    (d : Gamma0Datum N SpecQ)
+    (hd : E.IsGamma0ModelOf d
+      (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point))) :
+    ∃ d' : Gamma0Datum N SpecQ,
+      E'.IsGamma0ModelOf d'
+          ((φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
+            {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}) ∧
+        Nonempty (IsNIsogenyPair N d d') := by
+  obtain ⟨h, hord, himg, hstab'⟩ :=
+    WeierstrassCurve.exists_generator_image_nTorsion hN E E' g hg φ hgal hker
+  obtain ⟨d', hd'⟩ := WeierstrassCurve.exists_gamma0Model_of_stable E' hN (φ h) hord hstab'
+  have hd2 : E'.IsGamma0ModelOf d'
+      ((φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
+        {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}) := by
+    rw [himg]; exact hd'
+  exact ⟨d', hd2,
+    WeierstrassCurve.nonempty_isNIsogenyPair_of_gamma0Model hN E g hg E' φ hφ hgal hker hd hd2⟩
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **STEP 3, *up*: an isomorphism of `ℚ̄`-data between two modelled `Γ₀(N)`-data
+is an isomorphism of the modelled PAIRS** (LEAF, cut 2026-07-28 off
+`exists_isogenyIsom_of_gamma0Model_classify_eq` below) — **LEVEL-GENERIC**.
+
+TRUE.  `iso : IsBaseChangeOf (𝟙 (Spec ℚ̄)) d₁ d₂` is, over the identity base, an
+isomorphism of `Γ₀(N)`-data: `iso.map : d₁.E ⟶ d₂.E` sits in a cartesian square
+over `𝟙`, hence is an isomorphism of schemes, `map_zero`/`map_add` make it a
+homomorphism of the group functors, and `liesIn_iff` says it carries the level
+structure of `d₁` onto that of `d₂`.  Composing with the base-change
+identifications `bc₁`, `bc₂` and the pins `hd`, `hd'` turns it into an additive
+isomorphism `E(ℚ̄) ≃+ E'(ℚ̄)` carrying `S` onto `S'`; the conclusion is its
+inverse.
+
+**What proving it needs**, and both halves are genuinely open here:
+
+1. *Relative points across the base change.*  `IsBaseChangeOf.toRelPoint` gives
+   the map on relative points and `X0.lean` proves it INJECTIVE; what is needed
+   here is that it is BIJECTIVE onto the points over the shifted base, i.e.
+   `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` from
+   `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, applied at the cartesian
+   square of `bc₁` and `bc₂`.  That is the plumbing half.
+2. *An additive isomorphism of point groups is an `IsIsogeny`.*  This is the
+   real content, and it is the SAME wall as item 1 of
+   `nonempty_isNIsogenyPair_of_gamma0Model` above, in the opposite direction: a
+   morphism of schemes has to be read back as a rational map in the Weierstrass
+   coordinates in order to produce the `IsRationalMap` certificate that
+   `WeierstrassCurve.IsIsogeny` carries.  A prover who has a scheme-level
+   reading of `IsWeierstrassModel` gets both.
+
+**The kernel clause is free once (2) is available**: `iso.map` is an
+isomorphism, so the transported `ι` is injective, which is the conjunct
+`∀ Q, ι Q = 0 → Q = 0`.
+
+**The check that refutes this leaf**: an isomorphism of `Γ₀(N)`-data over `ℚ̄`
+between two modelled data whose modelled pairs are NOT isomorphic — impossible,
+since `IsGamma0ModelOf` pins each datum's geometric fibre AND level structure to
+its pair. -/
+theorem WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_isBaseChangeOf {N : ℕ}
+    (hN : 0 < N)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
+    {S : Set (E⁄(AlgebraicClosure ℚ)).Point} {S' : Set (E'⁄(AlgebraicClosure ℚ)).Point}
+    {d d' : Gamma0Datum N SpecQ}
+    (hd : E.IsGamma0ModelOf d S) (hd' : E'.IsGamma0ModelOf d' S')
+    {d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (bc₁ : IsBaseChangeOf (specAlgClos ℚ) d₁ d) (bc₂ : IsBaseChangeOf (specAlgClos ℚ) d₂ d')
+    (iso : IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :
+    ∃ ι : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny ι ∧
+        (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
+        (ι : (E'⁄(AlgebraicClosure ℚ)).Point → (E⁄(AlgebraicClosure ℚ)).Point) '' S' = S :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **STEP 3 assembled: equal moduli points give isomorphic pairs** (PROVEN
+2026-07-28 over the leaf immediately above) — the COARSE-MODULI half of the way
+back, and it costs no new geometry.
+
+`exists_gamma0Datum_baseChange` pulls `d` and `d'` back to `ℚ̄`;
+`classify_natural` turns the equality of their `ℚ`-moduli points into an equality
+of the `ℚ̄`-moduli points of the pullbacks (both sides being
+`RelPoint.pre (specAlgClos ℚ)` of the same point); and
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` — injectivity of
+`classify` on `ℚ̄`-points, PROVEN in `X0.lean` for arbitrary `N` — upgrades that
+to an isomorphism of `ℚ̄`-data.  Only the transport back to Weierstrass point
+groups is left, and that is the leaf above.
+
+`hN : 0 < N` is consumed only by
+`nonempty_isBaseChangeOf_of_classify_eq`, which needs it to produce a
+`Gamma0GITPresentation`. -/
+theorem WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_classify_eq {N : ℕ} (hN : 0 < N)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hY : IsCoarseModuliY0 N strY)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
+    {S : Set (E⁄(AlgebraicClosure ℚ)).Point} {S' : Set (E'⁄(AlgebraicClosure ℚ)).Point}
+    {d d' : Gamma0Datum N SpecQ}
+    (hd : E.IsGamma0ModelOf d S) (hd' : E'.IsGamma0ModelOf d' S')
+    (hcl : hY.classify (𝟙 SpecQ) d = hY.classify (𝟙 SpecQ) d') :
+    ∃ ι : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny ι ∧
+        (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
+        (ι : (E'⁄(AlgebraicClosure ℚ)).Point → (E⁄(AlgebraicClosure ℚ)).Point) '' S' = S := by
+  obtain ⟨d₁, ⟨bc₁⟩⟩ := exists_gamma0Datum_baseChange (specAlgClos ℚ) d
+  obtain ⟨d₂, ⟨bc₂⟩⟩ := exists_gamma0Datum_baseChange (specAlgClos ℚ) d'
+  have hcl' : hY.classify (specAlgClos ℚ) d₁ = hY.classify (specAlgClos ℚ) d₂ := by
+    rw [hY.classify_natural (specAlgClos ℚ) (Category.comp_id _) bc₁,
+      hY.classify_natural (specAlgClos ℚ) (Category.comp_id _) bc₂, hcl]
+  obtain ⟨iso⟩ := hY.nonempty_isBaseChangeOf_of_classify_eq hN d₁ d₂ hcl'
+  exact WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_isBaseChangeOf hN E E' hd hd'
+    bc₁ bc₂ iso
+
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **The moduli dictionary for an Atkin–Lehner FIXED point, in isogeny
 vocabulary** (LEAF, cut 2026-07-28 off
@@ -26868,13 +27352,52 @@ level where `Y_0(N)(ℚ) ≠ ∅`.
 **`hN : 0 < N` is load-bearing**: `nonempty_gamma0Datum_of_stable` and
 `exists_x0Compactification` both require it, and at `N = 0`
 `isEmpty_of_gamma0Datum_zero` forbids a datum over the nonempty base
-`Spec ℚ`, so step 1 has nothing to produce. -/
-theorem WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed {N : ℕ} (_hN : 0 < N)
+`Spec ℚ`, so step 1 has nothing to produce.
+
+#### PROVEN 2026-07-28 (flt-lean-168) over the subsection above
+
+The three steps are now written out; see the subsection docstring "The round
+trip `(E, C) ⟶ Y_0(N) ⟶ (E, C)`, cut into its three steps" for the table.  The
+assembly below is six lines and the residue is THREE leaves, all
+level-generic — `exists_generator_image_nTorsion` (elementary),
+`nonempty_isNIsogenyPair_of_gamma0Model` (**the gate: the dual isogeny as a
+morphism of elliptic schemes**) and
+`exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` (the way back).  What is
+PROVEN here and was expected to be a leaf: step 1 in its pinned form
+(`exists_gamma0Model_of_stable`), the descent of the `w`-equation from `X` to
+`Y` (`IsX0Compactification.post_jY_injective`), and the whole coarse-moduli
+half of step 3 (`exists_isogenyIsom_of_gamma0Model_classify_eq`).
+
+**A CORRECTION TO THIS DOCSTRING'S OWN STEP 3, AND TO THE CONSUMER'S LAST
+PARAGRAPH.**  Step 3 above says the transport back to Weierstrass point groups
+"is where `weierstrassModel_j_unique` (still a leaf in `X0.lean`) enters, since
+`exists_stableCyclic_of_gamma0Datum` returns *some* Weierstrass model and the
+identification with `E` is what that leaf supplies."  **That is not how the
+route was taken and `weierstrassModel_j_unique` is NOT on this leaf's critical
+path.**  The identification is not RECOVERED at the end, it is CARRIED
+throughout, by `WeierstrassCurve.IsGamma0ModelOf`: both data are built here
+(step 1 for `d`, step 2 for `d'`), so each comes with its equivalence to the
+Weierstrass point group at construction time.  A `j`-invariant uniqueness
+statement is needed only when a datum arrives from outside with no such
+identification, which is not the situation here.  The last paragraph of
+`exists_atkinLehnerIsom_of_veluQuotient_order_125` below therefore names one
+prerequisite too many; its own refuting check —
+"`weierstrassModel_j_unique` closing without
+`exists_atkinLehnerIsom_of_x0Fixed` becoming provable" — is answered the other
+way round.
+
+**`hN : 0 < N` is consumed** by `exists_gamma0Model_of_stable` (as `N ≠ 0`) and
+by `exists_isogenyIsom_of_gamma0Model_classify_eq`; `_hw2` is consumed by
+NOTHING and is underscore-prefixed so that this is mechanically visible.  It is
+retained because it is what makes "fixed point" the right notion for an
+order-`2` action, i.e. it is part of what a consumer must supply to make `hfix`
+meaningful. -/
+theorem WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed {N : ℕ} (hN : 0 < N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY)
     (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
-    (_hal : IsAtkinLehner N hX w hw)
-    (_hfix : ∀ y : RelPoint strY (𝟙 SpecQ),
+    (hal : IsAtkinLehner N hX w hw)
+    (hfix : ∀ y : RelPoint strY (𝟙 SpecQ),
       RelPoint.post w hw (RelPoint.post jY hX.comm y)
         = RelPoint.post jY hX.comm y)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
@@ -26884,7 +27407,7 @@ theorem WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed {N : ℕ} (_hN : 0 < 
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g)
-    (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+    (E' : WeierstrassCurve ℚ) (hE' : E'.IsElliptic)
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
     (hφ : WeierstrassCurve.IsIsogeny φ)
     (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
@@ -26900,8 +27423,28 @@ theorem WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed {N : ℕ} (_hN : 0 < 
       (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
       (fun P => ι (φ P)) ''
           {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}
-        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) :=
-  sorry
+        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) := by
+  classical
+  haveI := hE'
+  -- **1. Down**: the pair `(E, ⟨g⟩)` as a `Γ₀(N)`-datum over `ℚ`, with the
+  -- identification of `E(ℚ̄)` with its geometric fibre RETAINED.
+  obtain ⟨d, hd⟩ := WeierstrassCurve.exists_gamma0Model_of_stable E hN.ne' g hg hstable
+  -- **2. Across**: the quotient pair `(E', φ(E[N]))`, and the cyclic
+  -- `N`-isogeny relating the two data.
+  obtain ⟨d', hd', ⟨pair⟩⟩ :=
+    WeierstrassCurve.exists_gamma0Model_isNIsogenyPair_of_isogeny hN.ne' E g hg E' φ hφ
+      hgal hker d hd
+  -- `w` carries the moduli point of `d` to that of `d'` (`hal`) and fixes it
+  -- (`hfix`), so the two moduli points agree in `X`, hence in `Y`.
+  have hcl : hX.coarse.classify (𝟙 SpecQ) d = hX.coarse.classify (𝟙 SpecQ) d' :=
+    hX.post_jY_injective
+      ((hfix (hX.coarse.classify (𝟙 SpecQ) d)).symm.trans (hal (𝟙 SpecQ) d d' pair))
+  -- **3. Up**: equal moduli points give isomorphic pairs.
+  obtain ⟨ι, hι, hkerι, himg⟩ :=
+    WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_classify_eq hN hX.coarse E E' hd hd' hcl
+  refine ⟨ι, hι, hkerι, ?_⟩
+  rw [← Set.image_image]
+  exact himg
 
 /-- **Atkin–Lehner fixedness at level `125`, in VÉLU-QUOTIENT vocabulary**
 (PROVEN 2026-07-28 over the two leaves immediately above —
