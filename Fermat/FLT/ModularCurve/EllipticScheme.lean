@@ -1762,68 +1762,690 @@ theorem toHom_add2_eq_toHom_add (c d : ProjCoords E X)
 
 end ProjCoords
 
-/-- **Coordinate data exist locally on `A ×_ℚ A`** (sorry node — item 2 of the
-gluing's plan, and after the 2026-07-27 cut the only GEOMETRIC input the
-construction still needs beyond the gluing itself).
+/-! ### The two missing faces of `Proj.fromOfGlobalSections` (2026-07-28)
+
+`exists_projMulOfCoordsTwo_of_cover`'s docstring below recorded that "the residual
+mathlib gap is ONE lemma with two faces — NATURALITY and RIGIDITY of
+`Proj.fromOfGlobalSections`".  Both are now written, and everything the gluing
+needs on top of them is PROVEN here:
+
+* *naturality* is cut the same way `ProjCoords.toHom_smul` was: the scheme-theoretic
+  half (`projFromOfGlobalSections_comp`) is proven from a single CHART-LEVEL leaf
+  `projToBasicOpenOfGlobalSections_comp`, which is the exact sibling of
+  `toBasicOpenOfGlobalSections_eq_of_gradedSmul` and lives in
+  `HomogeneousLocalization`, not in scheme theory;
+* *rigidity* is the single leaf `ProjCoords.exists_units_smul_of_toHom_eq`.
+
+Everything else in this section — the pullback `ProjCoords.comap` of coordinate
+data, its compatibility with both addition laws, the refinement of a cover by the
+six basic opens of the two laws, and the gluing itself — is proven. -/
+
+/-- **A section is a unit on its own basic open** (PROVEN) — the standard
+`RingedSpace.isUnit_res_basicOpen`, transported across
+`Γ(U.toScheme, ⊤) ≅ Γ(X, U)` by the germwise criterion so that it is stated for
+`U.ι.appTop` rather than for the presheaf restriction map.  This is what turns
+"the six forms generate the unit ideal" into "on each piece of the refined cover
+the corresponding law is non-degenerate". -/
+theorem isUnit_ι_appTop_basicOpen {X : Scheme.{0}} (f : Γ(X, ⊤)) :
+    IsUnit ((Scheme.Hom.appTop (X.basicOpen f).ι) f) := by
+  have h1 : (X.basicOpen f).toScheme.basicOpen
+      ((Scheme.Hom.appTop (X.basicOpen f).ι) f) = ⊤ := by
+    rw [← Scheme.preimage_basicOpen_top]
+    apply TopologicalSpace.Opens.ext
+    apply Set.eq_univ_of_forall
+    intro x
+    exact x.2
+  refine RingedSpace.isUnit_of_isUnit_germ
+    (X := (X.basicOpen f).toScheme.toLocallyRingedSpace.toRingedSpace) ⊤ _ fun x hx ↦ ?_
+  exact (Scheme.mem_basicOpen (X.basicOpen f).toScheme _ x hx).mp (by rw [h1]; trivial)
+
+/-- **A family of global sections generating the unit ideal has covering basic
+opens** (PROVEN) — the germwise argument: if every `v i` vanished at `x` then
+`1 = ∑ rᵢ vᵢ` would land in the maximal ideal of the local ring `𝒪_{X,x}`. -/
+theorem exists_mem_basicOpen_of_span_eq_top {X : Scheme.{0}} {ι : Type*} (v : ι → Γ(X, ⊤))
+    (hv : Ideal.span (Set.range v) = ⊤) (x : X) : ∃ i, x ∈ X.basicOpen (v i) := by
+  by_contra hx
+  push_neg at hx
+  have hle : Ideal.span (Set.range v) ≤
+      Ideal.comap (X.presheaf.germ ⊤ x trivial).hom
+        (IsLocalRing.maximalIdeal (X.presheaf.stalk x)) := by
+    rw [Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    have := hx i
+    rw [Scheme.mem_basicOpen_top] at this
+    exact (IsLocalRing.mem_maximalIdeal _).mpr this
+  rw [hv] at hle
+  have h1 : (1 : X.presheaf.stalk x) ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk x) := by
+    have := hle (Submodule.mem_top (x := (1 : Γ(X, ⊤))))
+    simpa using this
+  exact (IsLocalRing.maximalIdeal (X.presheaf.stalk x)).ne_top_iff_one.mp
+    (IsLocalRing.maximalIdeal.isMaximal _).ne_top h1
+
+/-- **The cover of a scheme by the basic opens of a spanning family of global
+sections** (PROVEN). -/
+noncomputable def basicOpenCover {X : Scheme.{0}} {ι : Type} (v : ι → Γ(X, ⊤))
+    (hv : Ideal.span (Set.range v) = ⊤) : X.OpenCover.{0} :=
+  Scheme.Cover.mkOfCovers ι (fun i ↦ (X.basicOpen (v i)).toScheme)
+    (fun i ↦ (X.basicOpen (v i)).ι)
+    (fun x ↦ by
+      obtain ⟨i, hi⟩ := exists_mem_basicOpen_of_span_eq_top v hv x
+      exact ⟨i, ⟨x, hi⟩, rfl⟩)
+
+/-- **`Proj.fromOfGlobalSections` depends only on the ring map** (PROVEN,
+formal) — the `hf` argument is a proof of a proposition, so `subst` on the map
+suffices.  Needed because `ProjCoords.comap`'s `map_irrelevant_eq_top` is a
+different proof term from the composed one. -/
+theorem projFromOfGlobalSections_congr {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    {f f' : A →+* Γ(X, ⊤)} (h : f = f')
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hf' : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f' = ⊤) :
+    Proj.fromOfGlobalSections 𝒜 f hf = Proj.fromOfGlobalSections 𝒜 f' hf' := by
+  subst h; rfl
+
+/-- **The chart-level half of NATURALITY** (sorry node — the exact sibling of
+`ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul`, and the only thing
+naturality of `Proj.fromOfGlobalSections` still needs).
+
+`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht`, composed with
+`Proj.basicOpenIsoSpec`, is `Spec` of the ring map
+
+    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
+
+(`IsLocalization.map` after `algebraMap (Away 𝒜 t) (Localization.Away t)`).  For
+`φ ∘ f` with `φ = g.appTop` the same formula reads `φ (f a) / φ (f t) ^ k`, which
+is the image of `f a / (f t) ^ k` under the map on localisations induced by `φ`;
+and that induced map is exactly what `g ∣_ X.basicOpen (f t)` is on global
+sections, because `X.toSpecΓ` is natural in `X`
+(`AlgebraicGeometry.Scheme.toSpecΓ_naturality`).  **That is the whole content**:
+`Away` is the degree-`0` part, base change along `φ` commutes with inverting `t`,
+and the chart map is `Spec` of that base change.
+
+The `Scheme.isoOfEq` on the right is `hpre`: `Y.basicOpen ((φ ∘ f) t)` and
+`g ⁻¹ᵁ X.basicOpen (f t)` are equal (`Scheme.preimage_basicOpen_top`) but not
+syntactically so; carrying the equation as a hypothesis rather than inlining it
+is deliberate, because the inlined form produces a term that is only
+defeq-correct and then defeats `rw`/`simp` on the surrounding composition.
+
+*What is NOT missing.*  The gluing is already done:
+`projFromOfGlobalSections_comp` below derives the full naturality statement from
+this leaf by `Scheme.Cover.hom_ext` plus `Scheme.Cover.ι_glueMorphisms`, with no
+further scheme theory — an owner of this leaf never has to touch
+`glueMorphisms`. -/
+theorem projToBasicOpenOfGlobalSections_comp {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}}
+    (g : Y ⟶ X) (f : A →+* Γ(X, ⊤)) {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n)
+    (hpre : Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t) = g ⁻¹ᵁ X.basicOpen (f t)) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) rfl hn ht ≫
+        (Proj.basicOpen 𝒜 t).ι =
+      (Y.isoOfEq hpre).hom ≫ (g ∣_ X.basicOpen (f t)) ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+  sorry
+
+/-- **NATURALITY of `Proj.fromOfGlobalSections`** (PROVEN from the chart leaf
+above) — the first of the two faces the gluing needs, and **absent from the
+pin**: `ProjectiveSpectrum/Basic.lean` has only `_preimage_basicOpen`,
+`_morphismRestrict`, `_resLE` and `_toSpecZero`, and `fromOfGlobalSections` is
+used nowhere else in mathlib.
+
+The cover `X.basicOpen (f r)` pulls back along `g` to the cover
+`Y.basicOpen (φ (f r))` (`Scheme.preimage_basicOpen_top`), so the two
+`glueMorphisms` are compared piece by piece and `Scheme.Cover.hom_ext`
+finishes. -/
+theorem projFromOfGlobalSections_comp {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}}
+    (g : Y ⟶ X) (f : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map ((Scheme.Hom.appTop g).hom.comp f) = ⊤) :
+    Proj.fromOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) hg =
+      g ≫ Proj.fromOfGlobalSections 𝒜 f hf := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 _ hg).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hpre : Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t) = g ⁻¹ᵁ X.basicOpen (f t) :=
+    (Scheme.preimage_basicOpen_top g (f t)).symm
+  have hL : (Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t)).ι ≫
+        Proj.fromOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) hg =
+      Proj.toBasicOpenOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) rfl hn ht ≫
+        (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 _ hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  have hR : (X.basicOpen (f t)).ι ≫ Proj.fromOfGlobalSections 𝒜 f hf =
+      Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  show (Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t)).ι ≫
+      Proj.fromOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) hg =
+    (Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t)).ι ≫
+      g ≫ Proj.fromOfGlobalSections 𝒜 f hf
+  have hfeq : (Y.basicOpen (((Scheme.Hom.appTop g).hom.comp f) t)).ι ≫ g =
+      (Y.isoOfEq hpre).hom ≫ (g ∣_ X.basicOpen (f t)) ≫ (X.basicOpen (f t)).ι := by
+    rw [morphismRestrict_ι, Scheme.isoOfEq_hom_ι_assoc]
+  rw [hL, reassoc_of% hfeq, hR]
+  exact projToBasicOpenOfGlobalSections_comp 𝒜 g f hn ht hpre
+
+namespace ProjCoords
+
+variable {E : WeierstrassCurve ℚ} {X Y : Scheme.{0}}
+
+/-- **Coordinate data pull back along any morphism of schemes** (PROVEN) — the
+`ProjCoords`-level form of naturality: apply `g.appTop` to base and coordinates.
+The Weierstrass equation survives by `Equation.map`, and the span condition
+because `Ideal.map` of the unit ideal is the unit ideal. -/
+noncomputable def comap (c : ProjCoords E X) (g : Y ⟶ X) : ProjCoords E Y where
+  base := (Scheme.Hom.appTop g).hom.comp c.base
+  coord := (Scheme.Hom.appTop g).hom ∘ c.coord
+  equation := by
+    rw [← WeierstrassCurve.map_map E c.base (Scheme.Hom.appTop g).hom]
+    exact c.equation.map (Scheme.Hom.appTop g).hom
+  span_coord := by
+    rw [Set.range_comp, ← Ideal.map_span, c.span_coord, Ideal.map_top]
+
+@[simp] theorem comap_coord (c : ProjCoords E X) (g : Y ⟶ X) :
+    (c.comap g).coord = (Scheme.Hom.appTop g).hom ∘ c.coord := rfl
+
+@[simp] theorem comap_base (c : ProjCoords E X) (g : Y ⟶ X) :
+    (c.comap g).base = (Scheme.Hom.appTop g).hom.comp c.base := rfl
+
+/-- **Pulling back the coordinates composes the coordinate ring map with
+`g.appTop`** (PROVEN) — a monomial induction through `Ideal.Quotient.lift`. -/
+theorem comap_ringHom (c : ProjCoords E X) (g : Y ⟶ X) :
+    (c.comap g).ringHom = (Scheme.Hom.appTop g).hom.comp c.ringHom := by
+  refine Ideal.Quotient.ringHom_ext (RingHom.ext fun p ↦ ?_)
+  show (c.comap g).ringHom (Ideal.Quotient.mk _ p) =
+    (Scheme.Hom.appTop g).hom (c.ringHom (Ideal.Quotient.mk _ p))
+  rw [ringHom_mk, ringHom_mk]
+  simp only [comap_base, comap_coord]
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p i hp => simp [hp]
+
+/-- **NATURALITY, in the form the gluing consumes** (PROVEN from
+`projFromOfGlobalSections_comp`): the morphism of the pulled-back data is the
+composite. -/
+theorem comap_toHom (c : ProjCoords E X) (g : Y ⟶ X) : (c.comap g).toHom = g ≫ c.toHom :=
+  have hr : (c.comap g).ringHom = (Scheme.Hom.appTop g).hom.comp c.ringHom := comap_ringHom c g
+  (projFromOfGlobalSections_congr (projGrading E) hr (c.comap g).map_irrelevant_eq_top
+      (hr ▸ (c.comap g).map_irrelevant_eq_top)).trans
+    (projFromOfGlobalSections_comp (projGrading E) g c.ringHom c.map_irrelevant_eq_top _)
+
+/-- **The chord–tangent triple commutes with pullback** (PROVEN from
+`map_addXYZ`). -/
+theorem comap_addXYZ (c d : ProjCoords E X) (g : Y ⟶ X) :
+    addXYZ (E.map (c.comap g).base) (c.comap g).coord (d.comap g).coord =
+      (Scheme.Hom.appTop g).hom ∘ addXYZ (E.map c.base) c.coord d.coord := by
+  rw [comap_base, comap_coord, comap_coord,
+    ← WeierstrassCurve.map_map E c.base (Scheme.Hom.appTop g).hom]
+  exact _root_.WeierstrassCurve.Projective.map_addXYZ ..
+
+/-- **The second-law triple commutes with pullback** (PROVEN from
+`projMap_add2XYZ`). -/
+theorem comap_add2XYZ (c d : ProjCoords E X) (g : Y ⟶ X) :
+    add2XYZ (E.map (c.comap g).base) (c.comap g).coord (d.comap g).coord =
+      (Scheme.Hom.appTop g).hom ∘ add2XYZ (E.map c.base) c.coord d.coord := by
+  rw [comap_base, comap_coord, comap_coord,
+    ← WeierstrassCurve.map_map E c.base (Scheme.Hom.appTop g).hom]
+  exact projMap_add2XYZ _ _ _ _
+
+/-- **Non-degeneracy of the first law survives pullback** (PROVEN). -/
+theorem comap_span_addXYZ (c d : ProjCoords E X) (g : Y ⟶ X)
+    (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    Ideal.span (Set.range (addXYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤ := by
+  rw [comap_addXYZ, Set.range_comp, ← Ideal.map_span, h, Ideal.map_top]
+
+/-- **Non-degeneracy of the second law survives pullback** (PROVEN). -/
+theorem comap_span_add2XYZ (c d : ProjCoords E X) (g : Y ⟶ X)
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    Ideal.span (Set.range (add2XYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤ := by
+  rw [comap_add2XYZ, Set.range_comp, ← Ideal.map_span, h, Ideal.map_top]
+
+/-- **One unit form makes the first law non-degenerate** (PROVEN) — this is how a
+piece of the refined cover gets its non-degeneracy hypothesis. -/
+theorem comap_span_addXYZ_of_isUnit (c d : ProjCoords E X) (g : Y ⟶ X) (j : Fin 3)
+    (h : IsUnit ((Scheme.Hom.appTop g).hom (addXYZ (E.map c.base) c.coord d.coord j))) :
+    Ideal.span (Set.range (addXYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤ := by
+  rw [comap_addXYZ]
+  exact Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span (Set.mem_range_self j)) h
+
+/-- **One unit form makes the second law non-degenerate** (PROVEN). -/
+theorem comap_span_add2XYZ_of_isUnit (c d : ProjCoords E X) (g : Y ⟶ X) (j : Fin 3)
+    (h : IsUnit ((Scheme.Hom.appTop g).hom (add2XYZ (E.map c.base) c.coord d.coord j))) :
+    Ideal.span (Set.range (add2XYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤ := by
+  rw [comap_add2XYZ]
+  exact Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span (Set.mem_range_self j)) h
+
+/-- **Pullback commutes with the chord–tangent sum** (PROVEN). -/
+theorem comap_add (c d : ProjCoords E X) (g : Y ⟶ X)
+    (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤)
+    (h' : Ideal.span (Set.range (addXYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤) :
+    (c.comap g).add (d.comap g) h' = (c.add d h).comap g :=
+  ProjCoords.ext (by
+    show addXYZ (E.map (c.comap g).base) (c.comap g).coord (d.comap g).coord =
+      (Scheme.Hom.appTop g).hom ∘ addXYZ (E.map c.base) c.coord d.coord
+    exact comap_addXYZ c d g)
+
+/-- **Pullback commutes with the second-law sum** (PROVEN). -/
+theorem comap_add2 (c d : ProjCoords E X) (g : Y ⟶ X)
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤)
+    (h' : Ideal.span (Set.range (add2XYZ (E.map (c.comap g).base)
+      (c.comap g).coord (d.comap g).coord)) = ⊤) :
+    (c.comap g).add2 (d.comap g) h' = (c.add2 d h).comap g :=
+  ProjCoords.ext (by
+    show add2XYZ (E.map (c.comap g).base) (c.comap g).coord (d.comap g).coord =
+      (Scheme.Hom.appTop g).hom ∘ add2XYZ (E.map c.base) c.coord d.coord
+    exact comap_add2XYZ c d g)
+
+/-- **RIGIDITY of `Proj.fromOfGlobalSections`** (sorry node — the SECOND of the
+two faces, and the converse of `ProjCoords.toHom_smul`).
+
+Two coordinate data defining the SAME morphism differ by a unit.  This is
+`Pic`-freeness of the pullback of `𝒪(1)`: `c` and `d` trivialise the same line
+bundle `a^*𝒪(1)` on `X`, and two trivialisations of a line bundle differ by a
+global unit.
+
+*Route, and it needs no new mathlib API beyond what naturality already gives.*
+Write `a := c.toHom = d.toHom`.  For each `i`,
+`Proj.fromOfGlobalSections_preimage_basicOpen` gives
+`a ⁻¹ᵁ D₊(X̄ᵢ) = X.basicOpen (c.coord i) = X.basicOpen (d.coord i)`, so the two
+data have the SAME three basic opens and those cover `X`
+(`exists_mem_basicOpen_of_span_eq_top` applied to `span_coord`).  On
+`Uᵢ := X.basicOpen (c.coord i)` both `c.coord i` and `d.coord i` are units
+(`isUnit_ι_appTop_basicOpen`), and comparing the two factorisations through
+`Proj.awayι` — i.e. the two ring maps `Away 𝒜 X̄ᵢ →+* Γ(Uᵢ, ⊤)` that
+`Proj.basicOpenIsoSpec` turns them into — gives
+`d.coord j / d.coord i = c.coord j / c.coord i` on `Uᵢ`.  Hence
+`uᵢ := (d.coord i) * (c.coord i)⁻¹ ∈ Γ(Uᵢ, ⊤)ˣ` satisfies `uᵢ • c = d` there, and
+on `Uᵢ ∩ Uⱼ` the two units agree (both equal `d.coord k / c.coord k` for any `k`
+with `c.coord k` invertible), so they glue to a global `u : Γ(X, ⊤)ˣ` by the
+sheaf condition.
+
+*Where it is used*: it is what makes the gluing's characterisation hold at an
+ARBITRARY test scheme rather than only on the pieces of the chosen cover — see
+`ProjCoords.toHom_add_congr` and `isProjMulOn_of_cover` below, which are its only
+consumers. -/
+theorem exists_units_smul_of_toHom_eq (c d : ProjCoords E X) (h : c.toHom = d.toHom) :
+    ∃ u : (Γ(X, ⊤))ˣ, smul u c = d :=
+  sorry
+
+/-- **Rigidity, in coordinate form** (PROVEN from the leaf above). -/
+theorem coord_eq_smul_of_toHom_eq (c d : ProjCoords E X) (h : c.toHom = d.toHom) :
+    ∃ u : (Γ(X, ⊤))ˣ, d.coord = (u : Γ(X, ⊤)) • c.coord := by
+  obtain ⟨u, hu⟩ := exists_units_smul_of_toHom_eq c d h
+  exact ⟨u, by rw [← hu, smul_coord]⟩
+
+/-- **Non-degeneracy of the first law depends only on the two MORPHISMS**
+(PROVEN from rigidity and the bidegree-`(2,2)` homogeneity `addXYZ_smul`). -/
+theorem span_addXYZ_congr (c d c' d' : ProjCoords E X)
+    (hc : c.toHom = c'.toHom) (hd : d.toHom = d'.toHom)
+    (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    Ideal.span (Set.range (addXYZ (E.map c'.base) c'.coord d'.coord)) = ⊤ := by
+  obtain ⟨u, hu⟩ := coord_eq_smul_of_toHom_eq c c' hc
+  obtain ⟨v, hv⟩ := coord_eq_smul_of_toHom_eq d d' hd
+  have hb : c'.base = c.base := base_eq _ _
+  have hcast : ((u : Γ(X, ⊤)) * (v : Γ(X, ⊤))) ^ 2 = (((u * v) ^ 2 : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) := by
+    push_cast; ring
+  rw [hb, hu, hv, addXYZ_smul, hcast, span_range_smul_unit]
+  exact h
+
+/-- **Non-degeneracy of the second law depends only on the two MORPHISMS**
+(PROVEN). -/
+theorem span_add2XYZ_congr (c d c' d' : ProjCoords E X)
+    (hc : c.toHom = c'.toHom) (hd : d.toHom = d'.toHom)
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    Ideal.span (Set.range (add2XYZ (E.map c'.base) c'.coord d'.coord)) = ⊤ := by
+  obtain ⟨u, hu⟩ := coord_eq_smul_of_toHom_eq c c' hc
+  obtain ⟨v, hv⟩ := coord_eq_smul_of_toHom_eq d d' hd
+  have hb : c'.base = c.base := base_eq _ _
+  have hcast : ((u : Γ(X, ⊤)) * (v : Γ(X, ⊤))) ^ 2 = (((u * v) ^ 2 : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) := by
+    push_cast; ring
+  rw [hb, hu, hv, add2XYZ_smul, hcast, span_range_smul_unit]
+  exact h
+
+/-- **The chord–tangent SUM depends only on the two morphisms** (PROVEN from
+rigidity, `addXYZ_smul` and `ProjCoords.toHom_smul`).
+
+This is the lemma that makes the gluing below independent of WHICH coordinate
+data a piece of the cover happens to carry, and it is the only place rigidity is
+really needed. -/
+theorem toHom_add_congr (c d c' d' : ProjCoords E X)
+    (hc : c.toHom = c'.toHom) (hd : d.toHom = d'.toHom)
+    (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤)
+    (h' : Ideal.span (Set.range (addXYZ (E.map c'.base) c'.coord d'.coord)) = ⊤) :
+    (c.add d h).toHom = (c'.add d' h').toHom := by
+  obtain ⟨u, hu⟩ := coord_eq_smul_of_toHom_eq c c' hc
+  obtain ⟨v, hv⟩ := coord_eq_smul_of_toHom_eq d d' hd
+  have hb : c'.base = c.base := base_eq _ _
+  have key : smul ((u * v) ^ 2) (c.add d h) = c'.add d' h' := by
+    refine ProjCoords.ext ?_
+    rw [smul_coord, add_coord, add_coord, hb, hu, hv, addXYZ_smul]
+    push_cast
+    rfl
+  rw [← key, toHom_smul]
+
+/-- **The second-law SUM depends only on the two morphisms** (PROVEN). -/
+theorem toHom_add2_congr (c d c' d' : ProjCoords E X)
+    (hc : c.toHom = c'.toHom) (hd : d.toHom = d'.toHom)
+    (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤)
+    (h' : Ideal.span (Set.range (add2XYZ (E.map c'.base) c'.coord d'.coord)) = ⊤) :
+    (c.add2 d h).toHom = (c'.add2 d' h').toHom := by
+  obtain ⟨u, hu⟩ := coord_eq_smul_of_toHom_eq c c' hc
+  obtain ⟨v, hv⟩ := coord_eq_smul_of_toHom_eq d d' hd
+  have hb : c'.base = c.base := base_eq _ _
+  have key : smul ((u * v) ^ 2) (c.add2 d h) = c'.add2 d' h' := by
+    refine ProjCoords.ext ?_
+    rw [smul_coord, add2_coord, add2_coord, hb, hu, hv, add2XYZ_smul]
+    push_cast
+    rfl
+  rw [← key, toHom_smul]
+
+end ProjCoords
+
+/-! ### The gluing, as a LOCAL property
+
+`IsProjMulOn E s mm` is the characterisation of `exists_projMulOfCoordsTwo` read
+along a morphism `s` into `A ×_ℚ A`.  It is what makes the gluing modular:
+
+* it RESTRICTS along any morphism, trivially (compose `g`);
+* it is LOCAL on the source (`isProjMulOn_of_cover`), by `Scheme.Cover.hom_ext`
+  over the pullback of the cover;
+* it HOLDS on a piece carrying coordinate data with one non-degenerate law
+  (`isProjMulOn_of_add`, `isProjMulOn_of_add2`).
+
+Quantifying over an arbitrary test scheme `W` inside the predicate is exactly what
+lets the final characterisation be stated at every `X`, and it is why the law case
+split never has to appear in a dependent `match`: it is hidden inside an
+existential. -/
+
+/-- **`mm` computes both Bosma–Lenstra laws along `s`** — the local form of
+`exists_projMulOfCoordsTwo`'s conclusion. -/
+def IsProjMulOn (E : WeierstrassCurve ℚ) [E.IsElliptic] {Z : Scheme.{0}}
+    (s : Z ⟶ Limits.pullback (projToSpec E) (projToSpec E)) (mm : Z ⟶ proj E) : Prop :=
+  ∀ (W : Scheme.{0}) (g : W ⟶ Z) (c d : ProjCoords E W),
+      c.toHom = g ≫ s ≫ Limits.pullback.fst (projToSpec E) (projToSpec E) →
+      d.toHom = g ≫ s ≫ Limits.pullback.snd (projToSpec E) (projToSpec E) →
+      (∀ h1 : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤,
+          g ≫ mm = (c.add d h1).toHom) ∧
+        (∀ h2 : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤,
+          g ≫ mm = (c.add2 d h2).toHom)
+
+/-- **A piece where the FIRST law is non-degenerate carries the group law**
+(PROVEN) — note both conjuncts come out, the second through `hagree`. -/
+theorem isProjMulOn_of_add (E : WeierstrassCurve ℚ) [E.IsElliptic] {Z : Scheme.{0}}
+    (s : Z ⟶ Limits.pullback (projToSpec E) (projToSpec E)) (C D : ProjCoords E Z)
+    (hC : C.toHom = s ≫ Limits.pullback.fst (projToSpec E) (projToSpec E))
+    (hD : D.toHom = s ≫ Limits.pullback.snd (projToSpec E) (projToSpec E))
+    (hagree : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
+      (h1 : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤)
+      (h2 : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤),
+      (c.add2 d h2).toHom = (c.add d h1).toHom)
+    (h : Ideal.span (Set.range (addXYZ (E.map C.base) C.coord D.coord)) = ⊤) :
+    IsProjMulOn E s ((C.add D h).toHom) := by
+  intro W g c d hc hd
+  have hCg : (C.comap g).toHom = c.toHom := by
+    rw [ProjCoords.comap_toHom, hC]; exact hc.symm
+  have hDg : (D.comap g).toHom = d.toHom := by
+    rw [ProjCoords.comap_toHom, hD]; exact hd.symm
+  have hg : Ideal.span (Set.range (addXYZ (E.map (C.comap g).base)
+      (C.comap g).coord (D.comap g).coord)) = ⊤ := ProjCoords.comap_span_addXYZ C D g h
+  have hbase : g ≫ (C.add D h).toHom = ((C.comap g).add (D.comap g) hg).toHom := by
+    rw [ProjCoords.comap_add C D g h hg, ProjCoords.comap_toHom]
+  refine ⟨fun h1 ↦ ?_, fun h2 ↦ ?_⟩
+  · rw [hbase]
+    exact ProjCoords.toHom_add_congr _ _ _ _ hCg hDg hg h1
+  · have h1 : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤ :=
+      ProjCoords.span_addXYZ_congr _ _ _ _ hCg hDg hg
+    rw [hbase, hagree W c d h1 h2]
+    exact ProjCoords.toHom_add_congr _ _ _ _ hCg hDg hg h1
+
+/-- **A piece where the SECOND law is non-degenerate carries the group law**
+(PROVEN). -/
+theorem isProjMulOn_of_add2 (E : WeierstrassCurve ℚ) [E.IsElliptic] {Z : Scheme.{0}}
+    (s : Z ⟶ Limits.pullback (projToSpec E) (projToSpec E)) (C D : ProjCoords E Z)
+    (hC : C.toHom = s ≫ Limits.pullback.fst (projToSpec E) (projToSpec E))
+    (hD : D.toHom = s ≫ Limits.pullback.snd (projToSpec E) (projToSpec E))
+    (hagree : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
+      (h1 : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤)
+      (h2 : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤),
+      (c.add2 d h2).toHom = (c.add d h1).toHom)
+    (h : Ideal.span (Set.range (add2XYZ (E.map C.base) C.coord D.coord)) = ⊤) :
+    IsProjMulOn E s ((C.add2 D h).toHom) := by
+  intro W g c d hc hd
+  have hCg : (C.comap g).toHom = c.toHom := by
+    rw [ProjCoords.comap_toHom, hC]; exact hc.symm
+  have hDg : (D.comap g).toHom = d.toHom := by
+    rw [ProjCoords.comap_toHom, hD]; exact hd.symm
+  have hg : Ideal.span (Set.range (add2XYZ (E.map (C.comap g).base)
+      (C.comap g).coord (D.comap g).coord)) = ⊤ := ProjCoords.comap_span_add2XYZ C D g h
+  have hbase : g ≫ (C.add2 D h).toHom = ((C.comap g).add2 (D.comap g) hg).toHom := by
+    rw [ProjCoords.comap_add2 C D g h hg, ProjCoords.comap_toHom]
+  have h2' : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤ :=
+    ProjCoords.span_add2XYZ_congr _ _ _ _ hCg hDg hg
+  refine ⟨fun h1 ↦ ?_, fun h2 ↦ ?_⟩
+  · rw [hbase, ← hagree W c d h1 h2']
+    exact ProjCoords.toHom_add2_congr _ _ _ _ hCg hDg hg h2'
+  · rw [hbase]
+    exact ProjCoords.toHom_add2_congr _ _ _ _ hCg hDg hg h2
+
+/-- **`IsProjMulOn` is LOCAL on the source** (PROVEN) — pull the cover back along
+the test morphism and apply `Scheme.Cover.hom_ext`.  This is the descent step
+that turns the piecewise construction into the characterisation at every `X`. -/
+theorem isProjMulOn_of_cover (E : WeierstrassCurve ℚ) [E.IsElliptic] {Z : Scheme.{0}}
+    (s : Z ⟶ Limits.pullback (projToSpec E) (projToSpec E)) (mm : Z ⟶ proj E)
+    (𝒱 : Z.OpenCover.{0}) (hloc : ∀ k, IsProjMulOn E (𝒱.f k ≫ s) (𝒱.f k ≫ mm)) :
+    IsProjMulOn E s mm := by
+  intro W g c d hc hd
+  have main : ∀ (k : 𝒱.I₀),
+      Limits.pullback.fst g (𝒱.f k) ≫ g ≫ mm =
+        Limits.pullback.snd g (𝒱.f k) ≫ 𝒱.f k ≫ mm := by
+    intro k
+    rw [← Category.assoc, Limits.pullback.condition, Category.assoc]
+  refine ⟨fun h1 ↦ ?_, fun h2 ↦ ?_⟩
+  · refine Scheme.Cover.hom_ext (𝒱.pullback₁ g) _ _ fun k ↦ ?_
+    show Limits.pullback.fst g (𝒱.f k) ≫ g ≫ mm =
+      Limits.pullback.fst g (𝒱.f k) ≫ (c.add d h1).toHom
+    rw [main k]
+    have hcc : (c.comap (Limits.pullback.fst g (𝒱.f k))).toHom =
+        Limits.pullback.snd g (𝒱.f k) ≫ (𝒱.f k ≫ s) ≫
+          Limits.pullback.fst (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hc, ← Category.assoc, ← Category.assoc,
+        Limits.pullback.condition]
+      simp
+    have hdd : (d.comap (Limits.pullback.fst g (𝒱.f k))).toHom =
+        Limits.pullback.snd g (𝒱.f k) ≫ (𝒱.f k ≫ s) ≫
+          Limits.pullback.snd (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hd, ← Category.assoc, ← Category.assoc,
+        Limits.pullback.condition]
+      simp
+    have hg1 := ProjCoords.comap_span_addXYZ c d (Limits.pullback.fst g (𝒱.f k)) h1
+    rw [(hloc k _ (Limits.pullback.snd g (𝒱.f k)) _ _ hcc hdd).1 hg1,
+      ProjCoords.comap_add c d _ h1 hg1, ProjCoords.comap_toHom]
+  · refine Scheme.Cover.hom_ext (𝒱.pullback₁ g) _ _ fun k ↦ ?_
+    show Limits.pullback.fst g (𝒱.f k) ≫ g ≫ mm =
+      Limits.pullback.fst g (𝒱.f k) ≫ (c.add2 d h2).toHom
+    rw [main k]
+    have hcc : (c.comap (Limits.pullback.fst g (𝒱.f k))).toHom =
+        Limits.pullback.snd g (𝒱.f k) ≫ (𝒱.f k ≫ s) ≫
+          Limits.pullback.fst (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hc, ← Category.assoc, ← Category.assoc,
+        Limits.pullback.condition]
+      simp
+    have hdd : (d.comap (Limits.pullback.fst g (𝒱.f k))).toHom =
+        Limits.pullback.snd g (𝒱.f k) ≫ (𝒱.f k ≫ s) ≫
+          Limits.pullback.snd (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hd, ← Category.assoc, ← Category.assoc,
+        Limits.pullback.condition]
+      simp
+    have hg2 := ProjCoords.comap_span_add2XYZ c d (Limits.pullback.fst g (𝒱.f k)) h2
+    rw [(hloc k _ (Limits.pullback.snd g (𝒱.f k)) _ _ hcc hdd).2 hg2,
+      ProjCoords.comap_add2 c d _ h2 hg2, ProjCoords.comap_toHom]
+
+/-- **The six forms refine any test scheme into pieces on which ONE law is
+non-degenerate** (PROVEN from `ProjCoords.span_union_coords_eq_top` — supplied
+here as `hcomplete` — and `basicOpenCover`).
+
+This is item 1 of the gluing's plan, done once and for all at an arbitrary `X`. -/
+theorem exists_lawCover {E : WeierstrassCurve ℚ} {X : Scheme.{0}} (c d : ProjCoords E X)
+    (hcomplete : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord) ∪
+      Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    ∃ 𝒲 : X.OpenCover.{0}, ∀ k,
+      Ideal.span (Set.range (addXYZ (E.map (c.comap (𝒲.f k)).base)
+        (c.comap (𝒲.f k)).coord (d.comap (𝒲.f k)).coord)) = ⊤ ∨
+      Ideal.span (Set.range (add2XYZ (E.map (c.comap (𝒲.f k)).base)
+        (c.comap (𝒲.f k)).coord (d.comap (𝒲.f k)).coord)) = ⊤ := by
+  set v : Fin 3 ⊕ Fin 3 → Γ(X, ⊤) :=
+    Sum.elim (addXYZ (E.map c.base) c.coord d.coord)
+      (add2XYZ (E.map c.base) c.coord d.coord) with hv
+  have hvl : ∀ j : Fin 3, v (Sum.inl j) = addXYZ (E.map c.base) c.coord d.coord j := by
+    intro j; simp only [hv, Sum.elim_inl]
+  have hvr : ∀ j : Fin 3, v (Sum.inr j) = add2XYZ (E.map c.base) c.coord d.coord j := by
+    intro j; simp only [hv, Sum.elim_inr]
+  have hvtop : Ideal.span (Set.range v) = ⊤ := by
+    rw [hv, Set.Sum.elim_range]; exact hcomplete
+  refine ⟨basicOpenCover v hvtop, fun k ↦ ?_⟩
+  have hunit : IsUnit ((Scheme.Hom.appTop ((basicOpenCover v hvtop).f k)) (v k)) :=
+    isUnit_ι_appTop_basicOpen (v k)
+  rcases k with j | j
+  · exact Or.inl (ProjCoords.comap_span_addXYZ_of_isUnit c d _ j
+      (by rw [← hvl]; exact hunit))
+  · exact Or.inr (ProjCoords.comap_span_add2XYZ_of_isUnit c d _ j
+      (by rw [← hvr]; exact hunit))
+
+/-- **A cover of `A ×_ℚ A` carrying coordinate data AND a non-degenerate law on
+every piece** (PROVEN from `exists_lawCover`) — the refinement step of the
+gluing's plan. -/
+theorem exists_projCoordsCoverLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (hcover : ∃ (𝒰 : (Limits.pullback (projToSpec E) (projToSpec E)).OpenCover.{0})
+      (c : ∀ i, ProjCoords E (𝒰.X i)) (d : ∀ i, ProjCoords E (𝒰.X i)),
+      (∀ i, (c i).toHom = 𝒰.f i ≫ Limits.pullback.fst (projToSpec E) (projToSpec E)) ∧
+      (∀ i, (d i).toHom = 𝒰.f i ≫ Limits.pullback.snd (projToSpec E) (projToSpec E)))
+    (hcomplete : ∀ (X : Scheme.{0}) (c d : ProjCoords E X),
+      Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord) ∪
+        Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤) :
+    ∃ (𝒱 : (Limits.pullback (projToSpec E) (projToSpec E)).OpenCover.{0})
+      (C : ∀ k, ProjCoords E (𝒱.X k)) (D : ∀ k, ProjCoords E (𝒱.X k)),
+      (∀ k, (C k).toHom = 𝒱.f k ≫ Limits.pullback.fst (projToSpec E) (projToSpec E)) ∧
+      (∀ k, (D k).toHom = 𝒱.f k ≫ Limits.pullback.snd (projToSpec E) (projToSpec E)) ∧
+      (∀ k, Ideal.span (Set.range (addXYZ (E.map (C k).base) (C k).coord (D k).coord)) = ⊤ ∨
+            Ideal.span (Set.range (add2XYZ (E.map (C k).base) (C k).coord (D k).coord)) = ⊤) := by
+  classical
+  obtain ⟨𝒰, c, d, hc, hd⟩ := hcover
+  choose 𝒲 h𝒲 using fun i ↦ exists_lawCover (c i) (d i) (hcomplete _ (c i) (d i))
+  refine ⟨Scheme.Cover.mkOfCovers (Σ i : 𝒰.I₀, (𝒲 i).I₀)
+      (fun ik ↦ (𝒲 ik.1).X ik.2) (fun ik ↦ (𝒲 ik.1).f ik.2 ≫ 𝒰.f ik.1) ?_,
+    fun ik ↦ (c ik.1).comap ((𝒲 ik.1).f ik.2),
+    fun ik ↦ (d ik.1).comap ((𝒲 ik.1).f ik.2), ?_, ?_, fun ik ↦ h𝒲 ik.1 ik.2⟩
+  · intro x
+    obtain ⟨i, y, hy⟩ := 𝒰.exists_eq x
+    obtain ⟨k, z, hz⟩ := (𝒲 i).exists_eq y
+    refine ⟨⟨i, k⟩, z, ?_⟩
+    show 𝒰.f i ((𝒲 i).f k z) = x
+    rw [hz, hy]
+  · intro ik
+    rw [ProjCoords.comap_toHom, hc, ← Category.assoc]
+    rfl
+  · intro ik
+    rw [ProjCoords.comap_toHom, hd, ← Category.assoc]
+    rfl
+
+/-- **The projective model has coordinate data locally** (sorry node — the
+GEOMETRIC input of the whole cluster, and the thing `exists_projCoordsCover`
+below is now a formal consequence of).
+
+`Proj 𝒜` is covered by the three standard charts `D₊(X̄ᵢ) ≅ Spec (Away 𝒜 X̄ᵢ)`
+(`Proj.awayι`, `Proj.opensRange_awayι`, `Proj.basicOpenIsoSpec`), and on
+`D₊(X̄ᵢ)` the tautological `𝒪(1)` is trivialised by `X̄ᵢ` itself: the triple
+`(X̄₀/X̄ᵢ, X̄₁/X̄ᵢ, X̄₂/X̄ᵢ) ∈ (Away 𝒜 X̄ᵢ)³` satisfies the Weierstrass equation
+(the polynomial is homogeneous of degree `3`, so `F(X)/X̄ᵢ³ = 0`) and generates
+the unit ideal (its `i`-th entry is `1`).  The content is the identification
+`toHom = Proj.awayι`, i.e. that `Proj.fromOfGlobalSections` of that ring map is
+the chart inclusion.
+
+## ⚠ THIS IS THE SAME FACT AS `ProjCoords.exists_of_specField`
+
+Both say "a morphism to `Proj` has coordinates when the pullback of `𝒪(1)` is
+trivial" — this one over the standard charts, that one over a field.  **Neither
+implies the other** (a `Spec K`-point argument says nothing about a
+positive-dimensional chart, and a chart statement says nothing about an arbitrary
+`K`-point), so both are real leaves; but a single general lemma "if
+`a ⁻¹ᵁ D₊(X̄ᵢ)` cover `T` and `a^*𝒪(1)` is trivial then `a` has coordinates"
+would close both.  Whoever writes one should say so loudly rather than
+duplicating. -/
+theorem exists_projCoordsOpenCover (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ (𝒰 : (proj E).OpenCover.{0}) (c : ∀ i, ProjCoords E (𝒰.X i)),
+      ∀ i, (c i).toHom = 𝒰.f i :=
+  sorry
+
+/-- **Coordinate data exist locally on `A ×_ℚ A`** (**PROVEN 2026-07-28** from
+`exists_projCoordsOpenCover` and `ProjCoords.comap_toHom` — it is a REDUCTION,
+not a result: the geometry now sits entirely in the chart leaf above, and this
+declaration has no `sorry` of its own).
 
 `A ×_ℚ A` is covered by the nine products `D₊(Xᵢ) × D₊(Xⱼ)` of standard basic
-opens, and on each of them the tautological `𝒪(1)` is trivialised on both
-factors, so both projections acquire honest `ProjCoords`: on `D₊(Xᵢ)` the triple
-is `(X₀/Xᵢ, X₁/Xᵢ, X₂/Xᵢ)` in `HomogeneousLocalization.Away 𝒜 Xᵢ`, whose `i`-th
-entry is `1` and so certainly generates.  Mathlib supplies the chart as
-`Proj.awayι` with `Proj.opensRange_awayι` and `Proj.basicOpenIsoSpec`.
-
-This is the same fact as `ProjCoords.exists_of_specField` — "a morphism to `Proj`
-has coordinates when the pullback of `𝒪(1)` is trivial" — over the standard
-charts rather than over a field, and the two want ONE owner: whoever writes the
-chart trivialisation once gets both.  It is NOT implied by the field version,
-because a `Spec K`-point argument says nothing about a positive-dimensional
-chart. -/
+opens — mathlib's `Scheme.Pullback.openCoverOfLeftRight` applied to the chart
+cover twice — and on such a product each projection is the composite of the
+product's projection with a chart, so `ProjCoords.comap` of the chart's
+coordinate data along `Limits.pullback.fst`/`snd` is exactly what is wanted;
+`ProjCoords.comap_toHom` (naturality) turns "the chart datum realises the chart
+inclusion" into "the pulled-back datum realises the composite". -/
 theorem exists_projCoordsCover (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (𝒰 : (Limits.pullback (projToSpec E) (projToSpec E)).OpenCover.{0})
       (c : ∀ i, ProjCoords E (𝒰.X i)) (d : ∀ i, ProjCoords E (𝒰.X i)),
       (∀ i, (c i).toHom = 𝒰.f i ≫ Limits.pullback.fst (projToSpec E) (projToSpec E)) ∧
-      (∀ i, (d i).toHom = 𝒰.f i ≫ Limits.pullback.snd (projToSpec E) (projToSpec E)) :=
-  sorry
+      (∀ i, (d i).toHom = 𝒰.f i ≫ Limits.pullback.snd (projToSpec E) (projToSpec E)) := by
+  obtain ⟨𝒰, c, hc⟩ := exists_projCoordsOpenCover E
+  refine ⟨Scheme.Pullback.openCoverOfLeftRight 𝒰 𝒰 (projToSpec E) (projToSpec E),
+    fun ij ↦ (c ij.1).comap (Limits.pullback.fst _ _),
+    fun ij ↦ (c ij.2).comap (Limits.pullback.snd _ _), ?_, ?_⟩
+  · intro ij
+    rw [ProjCoords.comap_toHom, hc]
+    show Limits.pullback.fst _ _ ≫ 𝒰.f ij.1 = _
+    exact (Limits.pullback.lift_fst _ _ _).symm
+  · intro ij
+    rw [ProjCoords.comap_toHom, hc]
+    show Limits.pullback.snd _ _ ≫ 𝒰.f ij.2 = _
+    exact (Limits.pullback.lift_snd _ _ _).symm
 
-/-- **The GLUING, with its three inputs supplied as hypotheses** (sorry node —
-this is what is left of `exists_projMulOfCoordsTwo` after the 2026-07-27 cut).
+/-- **The GLUING, with its three inputs supplied as hypotheses** (**PROVEN
+2026-07-28** — this declaration has NO `sorry` of its own any more).
 
 The three hypotheses are exactly what the construction consumes, and all three
-are already discharged at the call site below, so a witness for this leaf has
-only the SCHEME-THEORETIC work to do:
+are discharged at the call site below:
 
-* `hcover` — local coordinate data (`exists_projCoordsCover`, a leaf of its own);
+* `hcover` — local coordinate data (`exists_projCoordsCover`, itself now reduced
+  to the chart leaf `exists_projCoordsOpenCover`);
 * `hcomplete` — the two non-degeneracy loci cover
   (`ProjCoords.span_union_coords_eq_top`, **PROVEN**);
 * `hagree` — the two laws define the same morphism on the overlap
   (`ProjCoords.toHom_add2_eq_toHom_add`, **PROVEN**).
 
-## What is left to do, in the order it is needed
+## How it is proved, and what it now rests on
 
-1. Refine `𝒰` by the six basic opens `D(addX), …, D(add2Z)` of each piece.  They
-   COVER because `hcomplete` gives `span = ⊤` and a spanning family of global
-   sections has covering basic opens; on `D(add?)` that section is a unit
-   (`RingedSpace.isUnit_res_basicOpen`), so `Ideal.eq_top_of_isUnit_mem` supplies
-   the non-degeneracy hypothesis `ProjCoords.add`/`add2` wants.
-2. On each refined piece the morphism is `(c.add d h).toHom` or
-   `(c.add2 d h).toHom`.
-3. On an overlap the two agree: same-law overlaps by `addXYZ_smul` /
-   `add2XYZ_smul` plus `ProjCoords.toHom_smul`, cross-law overlaps by `hagree`.
-   Both need `ProjCoords` to be pulled back along a morphism together with
-   `(c.comap g).toHom = g ≫ c.toHom` — the naturality of
-   `Proj.fromOfGlobalSections`, which is ABSENT from the pin (that file has only
-   `_preimage_basicOpen`, `_morphismRestrict`, `_resLE`, `_toSpecZero`) and is
-   the sibling of `ProjCoords.toHom_smul`.
+The five-step plan recorded here previously is carried out above, in the
+`IsProjMulOn` section, and the residue is exactly the "one lemma with two faces"
+that plan predicted:
+
+1. `exists_projCoordsCoverLaw` refines `𝒰` by the six basic opens of the two
+   laws.  They COVER by `exists_mem_basicOpen_of_span_eq_top`, and on each the
+   corresponding form is a unit (`isUnit_ι_appTop_basicOpen`), which is the
+   non-degeneracy hypothesis `ProjCoords.add`/`add2` wants.
+2. On a refined piece the morphism is `(C.add D h).toHom` or `(C.add2 D h).toHom`
+   and satisfies `IsProjMulOn` (`isProjMulOn_of_add`, `isProjMulOn_of_add2`).
+3. Compatibility on overlaps is *derived from* `IsProjMulOn` itself: on
+   `pullback (𝒱.f k) (𝒱.f k')` the pulled-back data of piece `k` are legitimate
+   test data for BOTH pieces, so both restrictions equal the same
+   `(c.add d h).toHom`.  No separate overlap analysis is needed.
 4. `Scheme.Cover.glueMorphisms` assembles `m`.
-5. The characterisation at an arbitrary test scheme `X` is then local on `X`:
-   pull the cover back along `pullback.lift c.toHom d.toHom`, and on each piece
-   the two coordinate data agree up to a unit, so their `toHom`s agree.  This
-   step wants the rigidity statement "`c.toHom = d.toHom → ∃ u, smul u c = d`",
-   which is again a `fromOfGlobalSections` fact.
+5. `isProjMulOn_of_cover` descends the property to `𝟙`, which is the
+   characterisation at an arbitrary test scheme.
 
-So the residual mathlib gap is ONE lemma with two faces — naturality and
-rigidity of `Proj.fromOfGlobalSections` — and no polynomial algebra at all. -/
+So the whole thing is now proved **modulo exactly two named leaves**, which are
+the two faces the previous plan identified:
+`projToBasicOpenOfGlobalSections_comp` (the chart half of NATURALITY) and
+`ProjCoords.exists_units_smul_of_toHom_eq` (RIGIDITY).  No polynomial algebra is
+left anywhere in this cluster. -/
 theorem exists_projMulOfCoordsTwo_of_cover (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (hcover : ∃ (𝒰 : (Limits.pullback (projToSpec E) (projToSpec E)).OpenCover.{0})
       (c : ∀ i, ProjCoords E (𝒰.X i)) (d : ∀ i, ProjCoords E (𝒰.X i)),
@@ -1843,8 +2465,55 @@ theorem exists_projMulOfCoordsTwo_of_cover (E : WeierstrassCurve ℚ) [E.IsEllip
         (∀ (X : Scheme.{0}) (c d : ProjCoords E X)
           (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤),
           Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m =
-            (c.add2 d h).toHom) :=
-  sorry
+            (c.add2 d h).toHom) := by
+  obtain ⟨𝒱, C, D, hC, hD, hlaw⟩ := exists_projCoordsCoverLaw E hcover hcomplete
+  have hloc : ∀ k, ∃ mm : 𝒱.X k ⟶ proj E, IsProjMulOn E (𝒱.f k) mm := by
+    intro k
+    rcases hlaw k with h | h
+    · exact ⟨((C k).add (D k) h).toHom,
+        isProjMulOn_of_add E (𝒱.f k) (C k) (D k) (hC k) (hD k) hagree h⟩
+    · exact ⟨((C k).add2 (D k) h).toHom,
+        isProjMulOn_of_add2 E (𝒱.f k) (C k) (D k) (hC k) (hD k) hagree h⟩
+  choose mm hmm using hloc
+  have hcompat : ∀ k k', Limits.pullback.fst (𝒱.f k) (𝒱.f k') ≫ mm k =
+      Limits.pullback.snd (𝒱.f k) (𝒱.f k') ≫ mm k' := by
+    intro k k'
+    have hπ : Limits.pullback.fst (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k =
+        Limits.pullback.snd (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k' := Limits.pullback.condition
+    have hc0 : ((C k).comap (Limits.pullback.fst (𝒱.f k) (𝒱.f k'))).toHom =
+        Limits.pullback.fst (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k ≫
+          Limits.pullback.fst (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hC]
+    have hd0 : ((D k).comap (Limits.pullback.fst (𝒱.f k) (𝒱.f k'))).toHom =
+        Limits.pullback.fst (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k ≫
+          Limits.pullback.snd (projToSpec E) (projToSpec E) := by
+      rw [ProjCoords.comap_toHom, hD]
+    have hc0' : ((C k).comap (Limits.pullback.fst (𝒱.f k) (𝒱.f k'))).toHom =
+        Limits.pullback.snd (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k' ≫
+          Limits.pullback.fst (projToSpec E) (projToSpec E) := by
+      rw [hc0, ← Category.assoc, hπ, Category.assoc]
+    have hd0' : ((D k).comap (Limits.pullback.fst (𝒱.f k) (𝒱.f k'))).toHom =
+        Limits.pullback.snd (𝒱.f k) (𝒱.f k') ≫ 𝒱.f k' ≫
+          Limits.pullback.snd (projToSpec E) (projToSpec E) := by
+      rw [hd0, ← Category.assoc, hπ, Category.assoc]
+    rcases hlaw k with h | h
+    · have h0 := ProjCoords.comap_span_addXYZ (C k) (D k)
+        (Limits.pullback.fst (𝒱.f k) (𝒱.f k')) h
+      rw [(hmm k _ _ _ _ hc0 hd0).1 h0, (hmm k' _ _ _ _ hc0' hd0').1 h0]
+    · have h0 := ProjCoords.comap_span_add2XYZ (C k) (D k)
+        (Limits.pullback.fst (𝒱.f k) (𝒱.f k')) h
+      rw [(hmm k _ _ _ _ hc0 hd0).2 h0, (hmm k' _ _ _ _ hc0' hd0').2 h0]
+  have hglobal : IsProjMulOn E (𝟙 _) (𝒱.glueMorphisms mm hcompat) := by
+    refine isProjMulOn_of_cover E (𝟙 _) (𝒱.glueMorphisms mm hcompat) 𝒱 fun k ↦ ?_
+    rw [Category.comp_id, Scheme.Cover.ι_glueMorphisms]
+    exact hmm k
+  refine ⟨𝒱.glueMorphisms mm hcompat, fun X c d h ↦ ?_, fun X c d h ↦ ?_⟩
+  · exact (hglobal X (Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _)) c d
+      (by rw [Category.id_comp, Limits.pullback.lift_fst])
+      (by rw [Category.id_comp, Limits.pullback.lift_snd])).1 h
+  · exact (hglobal X (Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _)) c d
+      (by rw [Category.id_comp, Limits.pullback.lift_fst])
+      (by rw [Category.id_comp, Limits.pullback.lift_snd])).2 h
 
 /-- **The chord–tangent multiplication morphism, characterised on coordinate
 data by BOTH Bosma–Lenstra addition laws** (**PROVEN as of 2026-07-27** from
