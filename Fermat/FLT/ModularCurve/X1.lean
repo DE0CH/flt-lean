@@ -396,7 +396,8 @@ open in them has been split along the theories it needed:
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
 | `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
-| `exists_heckeIsotypicDecomposition_gamma1` | Eichler-Shimura for `J_1(N)`, as a datum | `ℚ` |
+| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` on `Γ₁(N)`, with the Hecke action it acts through — the "build the factors" half of Eichler-Shimura.  (`exists_heckeIsotypicDecomposition_gamma1` is PROVEN over this and the next row, 2026-07-28.  `IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  Also owns the `N = 0` case, which — unlike its `Γ₀` sibling — is NOT discharged by an emptiness lemma; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
@@ -6788,8 +6789,208 @@ structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
   finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
       ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
 
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, TOGETHER WITH THE HECKE ACTION IT ACTS
+THROUGH** (sorry leaf, new 2026-07-28) — the "BUILD the factors" half of
+the cut of `exists_heckeIsotypicDecomposition_gamma1` below, and the
+`Γ₁` transport of `X0.lean`'s pair
+`exists_modularHeckeAction` / `exists_isotypicQuotient_of_isWeightTwoEigenform`.
+
+**`IsIsotypicQuotient` IS REUSED VERBATIM FROM `X0.lean`, NOT MIRRORED.**
+That structure is stated over `(ab : AbelianSchemeStruct jstr)`,
+`(T : ℕ → (J ⟶ J))`, `N` and the eigen-system `a` alone — it mentions no
+compactification, no moduli problem and no congruence subgroup, so there
+is nothing `Γ₀`-specific in it to mirror.  `N` enters only through
+`Nat.Coprime n N` in its `isotypic` field, which is the same anemic range
+the `Γ₁` structure above uses.  This is why the `Γ₁` side of the cut costs
+one theorem rather than one theorem plus a 15-field structure.
+
+**WHY THE HECKE ACTION IS PRODUCED HERE AND NOT SEPARATELY — the one
+place this cut MUST differ from `X0.lean`'s.**  On the `Γ₀` side the two
+halves are separable because `IsHeckeIsotypicDecomposition.T` is PINNED by
+its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28): the
+factor-building leaf may therefore take `T` as a HYPOTHESIS, and that
+hypothesis is not vacuous because `hmod` fails for `T n := 𝟙 J`.
+`IsHeckeIsotypicDecompositionGamma1` carries no such field — see its
+docstring, "WHAT IS NOT PINNED, and it is the crux" — so a `Γ₁` leaf
+taking `T` as an input would be **FALSE**, by exactly the refutation
+recorded on the `Γ₀` factor leaf: with `T n := 𝟙 J`, `equivariant` forces
+`S n = 𝟙 A` on the image of the surjection `u`, `isotypic` then demands
+`minpoly ℤ (a n)` to annihilate the identity, and for `nontriv`-nontrivial
+`A` that forces `a n = 1` for every `n` coprime to `N`, which already
+fails at `N = 11`, `a₂ = −2`.  Quantifying `T` existentially — one action
+serving every factor — is what keeps the statement true, and it is the
+whole reason this leaf is the pair of `X0.lean`'s two rather than one of
+them.
+
+Consequence worth stating, because it is the price of the missing pin:
+this leaf is strictly harder than `exists_isotypicQuotient_of_isWeightTwoEigenform`
+alone, and closing it would be most of the way to closing that one too.
+
+**DO NOT "HARMONISE" THIS LEAF WITH ITS `Γ₀` COUNTERPART — THAT COUNTERPART
+IS FALSE** (recorded 2026-07-28, from a refutation found on the `Γ₀` side
+after this cut was taken).  An earlier version of this paragraph proposed,
+as the repair that would make the two cuts identical, giving
+`IsHeckeIsotypicDecompositionGamma1` a `heckeModuli` field over a `Γ₁`
+analogue of `IsGamma0Isogeny`, and then taking `T` as a hypothesis here the
+way the `Γ₀` leaf does.  **Following that advice would import a falsity.**
+
+The defect is an ARITY GAP, and it is worth stating precisely because it is
+invisible unless the two ranges are compared side by side.
+`IsModularHeckeAction` pins `T` only at **primes `ℓ` with `ℓ ∤ N`**, whereas
+`IsIsotypicQuotient`'s `isotypic` and `equivariant` constrain **every `n`
+coprime to `N`**.  Composite `n` coprime to `N` — `n = 4` at `N = 37`, say —
+are therefore constrained by the conclusion and left entirely free by the
+pin, so a caller may hand over a `T` that is genuine at primes and junk at
+composite arities.  Both `exists_isotypicQuotient_of_isWeightTwoEigenform`
+and `exists_heckeIsotypicDecomposition_of_modularHeckeAction` are FALSE for
+that reason, refuted at `N = 37` with a family that
+`exists_modularHeckeAction` itself constructs.
+
+**THIS LEAF IS IMMUNE, AND THE IMMUNITY IS STRUCTURAL RATHER THAN LUCKY.**
+`T` is quantified EXISTENTIALLY here and in the sibling below, and the `∃ T`
+sits OUTSIDE the `∀ χ f a` — one action serving every factor, chosen by the
+prover rather than supplied by a caller.  A prover picks the genuine Hecke
+action, which satisfies `isotypic` and `equivariant` at every `n` coprime to
+`N` and not merely at primes, so there is no arity at which junk can enter.
+This is the same fact as the `T n := 𝟙 J` refutation two paragraphs above,
+seen from the other side: unpinned `T` as an INPUT is what makes a statement
+false, and unpinned `T` as an OUTPUT is what makes one true.
+
+So if a `Γ₁` moduli pin is built later, the thing to check FIRST is that its
+arity range matches `isotypic`/`equivariant` exactly — every `n` coprime to
+`N`, not just the primes — or else that the structure's own ranges are
+narrowed to match it.  And it must not be combined with any other change to
+these statements in the same edit: two individually-correct edits to one
+leaf have made a statement false in this development before, which is
+precisely what happened on the `Γ₀` side here.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
+witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
+so `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a`'s `hecke` recursion is
+VACUOUS and the nebentypus is unconstrained; the transcendental system
+`a (2 ^ k) = π ^ k`, `a n = 0` otherwise, carried by
+`g τ = ∑_{k ≥ 1} π ^ k q ^ (2 ^ k)` (convergent on all of `ℍ` because
+`2 ^ k` outruns `π ^ k`), is then an admissible eigen-system, and
+`IsIsotypicQuotient.integral` fails outright for it.  `Gamma1GL 0` is
+smaller than `Gamma0GL 0` — it is `⟨T⟩` without `−I` — so the witness
+transfers a fortiori.  The `N = 0` case is therefore owned by the sibling
+below, which receives `hquot` only under `N ≠ 0`.
+
+**`h` AND `jac` ARE LOAD-BEARING** and are not decoration inherited from
+the parent: together they say `J` is the Jacobian of the compactified
+coarse space of the `Γ₁(N)`-moduli problem.  Drop either and the statement
+becomes "some abelian scheme over `ℚ` carries an action with a quotient
+cut out by every weight-two eigenform of level `N`", which is false for,
+say, an elliptic curve of conductor `11` at `N = 23`.
+
+**WHAT REMAINS GENUINELY MISSING**, re-checked 2026-07-28 and identical to
+the `Γ₀` list: no Hecke algebra acting on a Jacobian, no `A_g`, no
+old/new decomposition of `S₂(Γ₁(N))`, and no isogeny theory for abelian
+SCHEMES here (`Modularity/AbelianSchemeIsogeny.lean` supplies `[n]` and
+its flatness, nothing more) — in this project, in mathlib at this pin, or
+in `~/cs/FLT`.  The `Γ₁`-specific extra is only the nebentypus
+decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`. -/
+theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+          IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
+            Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
+/-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
+new 2026-07-28) — the "ASSEMBLE the factors" half of the cut of
+`exists_heckeIsotypicDecomposition_gamma1` below, and the `Γ₁` transport
+of `X0.lean`'s `exists_heckeIsotypicDecomposition_of_isotypicQuotients`.
+
+TRUE, and it is what is left of Eichler–Shimura once Shimura's `A_f` is
+granted.  The three things this leaf owns are exactly the ones a single
+factor cannot see, and they are the `Γ₀` list plus one:
+
+* **finiteness of the index set.**  `S₂(Γ₁(N))` is finite-dimensional and
+  eigenforms with distinct eigen-systems are linearly independent, so
+  there are finitely many systems; `hquot` supplies one factor for each,
+  and `cover` is then immediate.
+* **the MULTIPLICITIES.**  `hquot` gives ONE quotient per system; the
+  decomposition needs `σ₀(N/M)` copies of `A_g`, carried by the distinct
+  degeneracy-twisted surjections `J_1(N) ↠ J_1(M) ↠ A_g`.  Those maps are
+  not in `hquot`'s output and must be built.  That the copies are needed
+  is the same multiplicity computation `X0.lean` records: at `N = p³M`
+  with `p ∤ M` the `g`-old space is `4`-dimensional while `U_p` on it has
+  only `2` eigenvalues and is not semisimple.
+* **`finite_ker`**, i.e. that the map to the product is an isogeny.  This
+  is Poincaré complete reducibility together with `∑_i dim A_i =
+  g(X_1(N))`.  Mumford, *Abelian Varieties* §19; Diamond–Shurman
+  Thm 6.6.6.
+* **`neben`, the field with no `Γ₀` counterpart.**  Each factor must be
+  labelled by the nebentypus of the eigenform cutting it out, which is
+  the decomposition of `S₂(Γ₁(N))` into `χ`-eigenspaces under the action
+  of `Γ₀(N)/Γ₁(N) ≅ (ℤ/N)ˣ`.  `hquot` is already quantified over `χ`, so
+  this leaf receives the labels rather than having to produce the
+  decomposition — it only has to keep them attached to the right factor.
+
+**THE `N = 0` OBLIGATION IS THIS LEAF'S, AND — UNLIKE ON THE `Γ₀` SIDE —
+IT IS NOT KNOWN TO BE DISCHARGEABLE.  Do not copy `X0.lean`'s argument.**
+There the sibling obligation is discharged by
+`isEmpty_of_isCoarseModuliY0_zero`: a cyclic subgroup of order `0` does
+not exist, so `Y_0(0) = ∅` and the hypotheses are contradictory.  **That
+route is unavailable here and the difference is mathematical, not
+notational**: `PointOfExactOrder ab 0` asks for a section whose geometric
+fibres have `addOrderOf = 0`, i.e. a point of INFINITE order, and those
+exist in abundance over an algebraically closed field of characteristic
+`0`.  So `Gamma1Datum 0` is inhabited, there is no
+`isEmpty_of_isCoarseModuliY1_zero` in this file (checked 2026-07-28), and
+a prover here must either produce a decomposition at `N = 0` or refute
+`IsX1Compactification 0 strX strY jY` by some other route.
+
+**The check that would settle it, and it is worth running first**:
+`IsCoarseModuliY1 0 strY` still demands a coarse space for `[Γ₁(0)]`,
+whose `ℚ̄`-points are pairs `(E, P)` with `P` of infinite order modulo
+isomorphism — a set that is not the `ℚ̄`-points of a finite-type
+`ℚ`-scheme of dimension `1`, since already a single `E` contributes
+uncountably many classes.  If `IsCoarseModuliY1`'s bijection clause is
+strong enough to see that, the hypotheses are contradictory after all and
+the case is `False.elim`; if it only asks for a map, they are not.  Read
+`IsCoarseModuliY1` before assuming either.
+
+**WHY THIS IS A CUT AND NOT A RESTATEMENT.**  `hquot` is consumed three
+times — one factor per system for `cover`, the factors themselves for
+`A`/`u`/`S`/`neben`, and `integral` per factor — and it is the single
+hardest object in the parent, the existence of an abelian-variety
+quotient with a prescribed Hecke action.  What it does NOT remove is the
+global content: a prover here still has to produce ONE datum whose
+`finite_ker` holds, which is why the cut is "the factors / all factors"
+rather than a split of the field groups.  Every such split dies to the
+witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
+`finite_ker` kills globally and no per-field split does.
+
+**AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
+route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
+factors in the first place.  Everything above is the algebraic-moduli
+axis. -/
+theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (hquot : N ≠ 0 → ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+          IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
+            Nonempty (IsIsotypicQuotient ab T N a)) :
+    Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
+  sorry
+
 /-- **EICHLER–SHIMURA for `Γ₁(N)`: the Hecke-isotypic decomposition
-exists** (sorry node, new 2026-07-28) — the first of the two leaves
+exists** (**PROVEN 2026-07-28**, over the two leaves
+`exists_heckeAction_isotypicQuotients_gamma1` and
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
+immediately above; a bare sorry node from earlier the same day until
+then) — the first of the two leaves
 `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` decomposes into, and the
 one carrying Eichler–Shimura.
 
@@ -6809,19 +7010,50 @@ if anything the better-documented one; Cornell–Silverman–Stevens Ch. V.
 `exists_heckeIsotypicDecomposition` records, and nothing more: no Hecke
 algebra acting on a Jacobian, no `A_g`, no old/new decomposition of
 `S₂(Γ₁(N))`, and no isogeny theory for abelian schemes beyond `[n]` and
-its flatness (`Modularity/AbelianSchemeIsogeny.lean`).  **So this leaf and
+its flatness (`Modularity/AbelianSchemeIsogeny.lean`).  **So this node and
 its `Γ₀` sibling are gated on the SAME missing theory** and should be
 taken together by whoever builds it — the `Γ₁` case needs, additionally,
 only the decomposition of `S₂(Γ₁(N))` by nebentypus, which is a statement
 about the finite abelian group `(ℤ/N)ˣ` acting on a finite-dimensional
-space. -/
+space.  The decomposition below does not change that; it partitions the
+obligation, it does not shrink it.
+
+**THE CUT (2026-07-28): THE FACTORS / ALL FACTORS**, transported from
+`X0.lean`, where `exists_heckeIsotypicDecomposition` is PROVEN over
+`exists_modularHeckeAction` and
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction`, the latter in
+turn over `exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients`.  The `Γ₁`
+transport is **two** leaves rather than three, and the reason is recorded
+in full on `exists_heckeAction_isotypicQuotients_gamma1` above: the `Γ₀`
+side can hand `T` to its factor-building leaf as a hypothesis only because
+`IsHeckeIsotypicDecomposition` PINS `T` by its `heckeModuli` field, and
+`IsHeckeIsotypicDecompositionGamma1` has no such field, so the `Γ₁` leaf
+must quantify `T` existentially and thereby absorbs
+`exists_modularHeckeAction`'s job.
+
+`IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
+shape-free — so this transport adds no structure.
+
+**THE `Γ₀` CHAIN NAMED ABOVE IS A MAP OF THE TERRITORY, NOT A MODEL TO
+COPY** (2026-07-28).  Two of its links —
+`exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` — were refuted
+the same day, on an ARITY GAP between the `heckeModuli` pin (primes
+`ℓ ∤ N` only) and the isotypy fields (every `n` coprime to `N`).  The `Γ₁`
+cut below is unaffected because it quantifies `T` existentially, with the
+`∃ T` outside the `∀ χ f a`; the full argument is on
+`exists_heckeAction_isotypicQuotients_gamma1`.  Anyone tempted to bring
+the two cuts into line should move the `Γ₀` one toward this shape, not
+this one toward the `Γ₀` shape. -/
 theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) :
     Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
-  sorry
+  exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N h jac
+    fun hN => exists_heckeAction_isotypicQuotients_gamma1 N hN h jac
 
 /-- **KOLYVAGIN–LOGACHEV for `Γ₁(N)`: a Hecke-isotypic factor of `J_1(N)`
 has torsion Mordell–Weil group** (sorry node, new 2026-07-28) — the second
@@ -6841,21 +7073,75 @@ the direction needed, `L(f, s)` differing from `L(g, s)` by Euler factors.
 **WHY THE HYPOTHESIS IS THE WHOLE OF `hL` AND NOT `L(form i, 1) ≠ 0`.**
 Because `IsHeckeIsotypicDecompositionGamma1.T` is not pinned to be the
 genuine Hecke correspondences, and with an unpinned `T` the sharper
-statement is **FALSE** — `X0.lean`'s `N = 37` counterexample (swap the
-eigensystems of `E_{37a}` and `E_{37b}`, which no field of the structure
-can see) transfers verbatim, since it uses nothing about the level
-structure.  With the full `hL` the statement is TRUE for any `T`
-whatsoever, because `hL` already forces `J_1(N)(ℚ)` to be torsion and
-`u_surj` bounds the rank of a factor: by Poincaré reducibility there is
-`v : A i ⟶ J` with `u i ∘ v = [m]` for some `m ≠ 0`, so `m • x` is torsion
-for every `x ∈ A i(ℚ)`, hence so is `x`.  As on the `Γ₀` side, the honest
-reading is that **this leaf is stated at the strength its hypotheses can
-support, and becomes the sharp Kolyvagin–Logachev statement the moment `T`
-is pinned**; sharpening it is a cut-level repair gated on the same missing
-input, and it should be done rather than routed around.
+statement is **FALSE**: swap the eigen-systems of `E_{37a}` and
+`E_{37b}`, which no field of this structure can see.  The swap uses
+nothing about the level structure, so it inhabits the `Γ₁` structure
+exactly as it inhabited the `Γ₀` one.
+
+**THE `Γ₀` CROSS-REFERENCE THAT USED TO STAND HERE IS NOW STALE, AND THE
+ASYMMETRY IS THE POINT** (corrected 2026-07-28).  This paragraph used to
+say the counterexample "transfers verbatim from `X0.lean`".  It no longer
+lives there: `IsHeckeIsotypicDecomposition` acquired a `heckeModuli`
+field (`IsModularHeckeAction`, the moduli description
+`(E, C) ↦ ∑_D (E/D, (C+D)/D)` of `T_ℓ` at `ℓ ∤ N`), the `N = 37` swap does
+**not** inhabit the pinned structure, and sharpening the `Γ₀` leaf is
+recorded there as UNBLOCKED.  `IsHeckeIsotypicDecompositionGamma1` has no
+such field, so the swap survives here and the sharpening is still blocked
+on the `Γ₁` side.  **The repair is to build the `Γ₁` pin** — a
+`ModularLevelShape`-shaped or `Γ₁`-specific analogue of `IsGamma0Isogeny`
+with `(E, P) ↦ ∑_D (E/D, P + D)` — and then to sharpen this leaf in a
+SEPARATE edit with its own faithfulness audit.
+
+**BEFORE BUILDING THAT PIN, READ THE ARITY-GAP WARNING** on
+`exists_heckeAction_isotypicQuotients_gamma1` above.  `IsModularHeckeAction`
+constrains `T` only at PRIMES `ℓ ∤ N`, while the isotypy fields it is meant
+to support range over EVERY `n` coprime to `N`; that mismatch is what made
+`exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` FALSE on the `Γ₀`
+side (refuted at `N = 37`, 2026-07-28).  A `Γ₁` pin copied at the `Γ₀` arity
+range would reproduce that falsity here, and it would do so while looking
+like a faithful transport.  Do not do both at once:
+two individually-correct edits to one statement have made a leaf false in
+this development before.
+
+**A ROUTE THAT READS AS AVAILABLE AND IS CIRCULAR** (recorded so it is
+not re-tried; the `Γ₀` leaf carries the same warning).  "With the full
+`hL` the statement is TRUE for any `T`, because `hL` already forces
+`J_1(N)(ℚ)` to be torsion and `u_surj` bounds the rank of a factor" —
+`J_1(N)(ℚ)` torsion is the conclusion of THIS LEAF'S OWN CONSUMER,
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1` below, so a prover
+taking that sentence literally has nothing to start from.  The
+non-circular route uses `D.u_surj i` and nothing else about `D`: `A i` is
+an abelian-variety QUOTIENT of `J_1(N)`; by Eichler–Shimura every such
+quotient is `ℚ`-isogenous to a product of modular abelian varieties `A_g`
+with `g` a newform of level `M ∣ N` and some nebentypus; each such `g` is
+an eigenform to which `hL` applies directly at its own `χ`; and
+Kolyvagin–Logachev makes each `A_g(ℚ)` torsion, with isogeny invariance
+already PROVEN as `X0.lean`'s `isTorsion_of_finite_jointKer`.
+
+**THAT ROUTE IS A PROOF SKETCH, NOT A CUT**, and this is why this leaf is
+left whole rather than decomposed alongside its sibling above.  Its
+second step — "every quotient of `J_1(N)` is `ℚ`-isogenous to a product
+of modular abelian varieties" — cannot be split off without an interface
+for "`B` is the modular abelian variety attached to `g`", and every
+pin-free way of writing that is either too weak (a bare Hecke-isotypy
+condition, which the `E_{37a}`/`E_{37b}` swap satisfies) or is this leaf
+verbatim (a quotient of `J_1(N)` plus the full `hL`).  The shape that
+would work is the `L`-function characterisation `L(B, s) = ∏_σ L(g^σ, s)`,
+which needs a Hasse–Weil `L`-function of an abelian variety — absent from
+this project, from mathlib at this pin, and from `~/cs/FLT`.  The route's
+one further input, Poincaré reducibility, is absent from all three as
+well (`grep -ri "poincar" Fermat/ .lake/packages/mathlib/Mathlib/
+~/cs/FLT/FLT/` returns only this development's own prose).
+
+**AXIS NOT SEARCHED**: everything above ranges over algebraic-moduli and
+isogeny-shaped cuts.  The complex-analytic route — Heegner points on
+`X_1(N)` and the Gross–Zagier formula read on `Γ₁(N)\ℍ*` — has not been
+searched as a source of sub-leaves.
 
 `D.u_surj`, `D.isotypic`, `D.cover`, `D.equivariant` and `D.integral` are
-all available to a prover and none is decoration. -/
+all available to a prover and none is decoration: the first carries the
+rank bound, the rest identify which eigenform `A i` belongs to. -/
 theorem isTorsion_factor_of_heckeIsotypic_gamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     {h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY} {jstr : J ⟶ SpecQ}
@@ -7756,7 +8042,9 @@ disappearing:
 | `locallyIntegrableOn_axisRestrictOn` | continuity on the axis | no | here, **PROVEN 2026-07-28** |
 | `isBigO_atTop_coeffOn` | Hecke's coefficient bound | no | here, **PROVEN 2026-07-28** |
 | `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here, **PROVEN** |
-| `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here |
+| `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here, **PROVEN 2026-07-28** |
+| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` | no | here |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
