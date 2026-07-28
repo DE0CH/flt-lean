@@ -23688,13 +23688,17 @@ of variables, because `∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞ g(iu) du`, whence
 > `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`.
 
 That identity is `cuspPeriod_of_isStabilizationOf`, and it is PROVEN
-here.  What is left open is exactly three statements, none of which is
-analysis-on-the-period any more:
+here.  **`integrableOn_qSeriesAt` and `stabilizationRoot_ne_natCast` are
+now PROVEN too** (2026-07-28), the first over the analytic trio of
+`ModularCurve/WeightTwoEigenform.lean` and the second over a pair of
+purely archimedean bounds; both acquired `M ≠ 0`, which is LOAD-BEARING
+(see the FALSITY AUDITs on them).  What is left open is exactly three
+statements, none of which is analysis-on-the-period any more:
 
-* `integrableOn_qSeriesAt` — the period integral converges (decay of a
-  weight-two cusp form at BOTH ends of the imaginary axis);
-* `stabilizationRoot_ne_natCast` — `β_p ≠ p` (Deligne/Atkin–Lehner:
-  `|β_p| ≤ √p < p`);
+* `norm_coeff_le_two_mul_sqrt_of_not_dvd` — `|a_p| ≤ 2√p` for `p ∤ M`
+  (Deligne: Eichler–Shimura plus Weil);
+* `norm_coeff_le_sqrt_of_dvd` — `|a_p| ≤ √p` for `p ∣ M`
+  (Atkin–Lehner's `U_p`, plus Deligne);
 * `cuspPeriod_ne_zero_of_isNewEigenformAt` — the arithmetic gate, now
   quantified over NEWFORMS only.
 
@@ -23899,42 +23903,198 @@ hypothesis of the arithmetic leaf
 would only make that leaf harder, never false. -/
 def IsNewEigenformAt (N : ℕ) (a : ℕ → ℂ) : Prop := ¬ IsOldEigenformAt N a
 
-/-- **The period integral of a weight-two eigenform converges** (sorry
-leaf) — the one analytic input the stabilization identity cannot supply
-itself.
+/-- **A cusp form restricted to the rescaled imaginary axis is integrable
+on `(0, ∞)`** (PROVEN 2026-07-28) — the two-ended decay, obtained from
+the sibling leaves rather than re-derived.
 
-TRUE, and classical: `qSeriesAt a y = f (iy)` on `Set.Ioi 0`, and a
-weight-two cusp form on `Γ₀(M)` decays exponentially at BOTH ends of the
-imaginary axis — at `y → ∞` from the `q`-expansion, and at `y → 0`
-because `f` vanishes at the cusp `0` as well, which is exactly what
-mathlib's `CuspForm` asserts (`zero_at_cusps'`, quantified over EVERY
-cusp).  Continuity of `f` transported through the `ℍ`-coercion gives the
-measurability.
+`cuspFEPair N hN f` is a STRONG FE-pair (`isStrongFEPair_cuspFEPair`),
+and mathlib's `IsStrongFEPair.hasMellin` says the Mellin transform of a
+strong pair's `f` converges at EVERY `s`.  At `s = 1` the Mellin weight
+`t ^ (s - 1)` is `1`, so `MellinConvergent (axisRestrict N f) 1` IS the
+statement below.
 
-**This leaf is SHARED with the sibling
-`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`**, whose Mellin argument
-needs the same two-ended decay; whoever proves that one should expect to
-prove this one on the way, and the two should then be stated once.  The
-*axis not searched*: deducing integrability from `hL` instead, which
-would make this leaf a corollary of the Mellin identity rather than an
-input to it. -/
-theorem integrableOn_qSeriesAt {M : ℕ} {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
+So this needs NO new analytic leaf: the decay at `∞` is
+`isBigO_atTop_axisRestrict`, the decay at `0` comes from it through the
+functional equation `exists_frickeInvolution` (a strong pair has
+`f₀ = g₀ = 0`, so `f (1/x) = ε x^k g x` converts rapid decay at `∞` into
+rapid decay at `0`), and the measurability is
+`locallyIntegrableOn_axisRestrict`.  All three already live in
+`ModularCurve/WeightTwoEigenform.lean`; mathlib's `AbstractFuncEq`
+supplies the assembly.
+
+Its natural home is beside them, in `WeightTwoEigenform.lean`; it is
+stated here only because that module has other owners.  Hoisting it is a
+free move. -/
+theorem integrableOn_axisRestrict (M : ℕ) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) :
+    IntegrableOn (axisRestrict M g) (Set.Ioi (0 : ℝ)) := by
+  have h := ((isStrongFEPair_cuspFEPair M hM g).hasMellin 1).1
+  rw [MellinConvergent] at h
+  refine h.congr_fun ?_ measurableSet_Ioi
+  intro t _
+  simp [cuspFEPair]
+
+/-- **The `0`-indexed `q`-series IS the cusp form on the imaginary axis**
+(PROVEN): `qSeriesAt b y = g (i y)`, and `axisRestrict M g` evaluates `g`
+at `i y / √M`, so the two differ by the change of variables `y ↦ √M · y`.
+
+This is the bridge that lets `integrableOn_qSeriesAt` consume the
+`axisRestrict` analysis instead of redoing it. -/
+theorem qSeriesAt_eq_axisRestrict {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
+    {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) {y : ℝ} (hy : 0 < y) :
+    qSeriesAt b y = axisRestrict M g (Real.sqrt M * y) := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  have hHS := hasSum_axisRestrict hM hb (mul_pos hsq hy)
+  rw [qSeriesAt, (summable_qSeriesAt hb hy).tsum_eq_zero_add, hb.zero, zero_mul, zero_add,
+    ← hHS.tsum_eq]
+  have hsqC : ((Real.sqrt M : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
+  refine tsum_congr fun n => ?_
+  congr 1
+  rw [Complex.ofReal_exp]
+  congr 1
+  push_cast
+  field_simp
+
+/-- **The period integral of a weight-two eigenform converges** (PROVEN
+2026-07-28, and RESTATED — it acquired `hM : M ≠ 0`) — the one analytic
+input the stabilization identity cannot supply itself.
+
+**FALSITY AUDIT (2026-07-28): the statement WITHOUT `hM` is FALSE, and
+the counterexample is level `0`.**  Mathlib's cusp condition is
+`zero_at_cusps'`, quantified over the `c` with `IsCusp c Γ`, and
+`IsCusp c Γ := ∃ g ∈ Γ, g.IsParabolic ∧ g • c = c` — *the cusps of `Γ`
+are the fixed points of the parabolic elements OF `Γ`*.  Now
+`Gamma0 0 = {g : SL(2, ℤ) | c = 0} = ⟨T, -I⟩`, whose parabolic elements
+are the `±T^n`, `n ≠ 0`, and their only fixed point is `∞`.  So a
+`CuspForm (Gamma0GL 0) 2` need vanish at `∞` ONLY — there is no
+condition at `0` at all.
+
+Witness: `b 0 = 0`, `b n = 1` for `n ≥ 1`, carried by
+`g (τ) = ∑_{n ≥ 1} q^n = q/(1 - q)`, which is holomorphic on `ℍ`,
+`T`-invariant (and `-I` acts trivially in weight `2`), and `→ 0` at
+`i∞`.  Every field of `IsWeightTwoEigenform 0 g b` holds: `hecke` is
+VACUOUS because `p ∣ 0` for every `p`, and `atkin` is
+`1 = 1 · 1`.  But `qSeriesAt b y = e^{-2πy}/(1 - e^{-2πy}) ∼ 1/(2πy)` as
+`y → 0⁺`, so the integral diverges logarithmically.
+
+This is exactly why the whole cluster carries `N ≠ 0` — the same
+hypothesis `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` acquired, for
+the same reason.  `hM` is not a convenience; without it the level-`0`
+`Γ₀` is not a lattice, `f ∣ S` is not periodic, and the decay at the
+cusp `0` that the whole argument rests on simply is not asserted.
+
+**PROVEN, over the sibling leaves and with NO new leaf**: transport to
+`axisRestrict` (`qSeriesAt_eq_axisRestrict`), where the two-ended decay
+is `integrableOn_axisRestrict` above — i.e. exactly
+`exists_frickeInvolution`, `isBigO_atTop_axisRestrict` and
+`locallyIntegrableOn_axisRestrict`, the analytic trio of
+`ModularCurve/WeightTwoEigenform.lean`, run through mathlib's
+`IsStrongFEPair.hasMellin` at `s = 1`.  The *axis not searched* — proving
+the decay directly from the `q`-expansion at `∞` and the Fricke relation
+at `0` — is now moot: it would duplicate that trio. -/
+theorem integrableOn_qSeriesAt {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
     (hb : IsWeightTwoEigenform M g b) :
-    IntegrableOn (qSeriesAt b) (Set.Ioi (0 : ℝ)) :=
+    IntegrableOn (qSeriesAt b) (Set.Ioi (0 : ℝ)) := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  have hcomp : IntegrableOn (fun y : ℝ => axisRestrict M g (Real.sqrt M * y))
+      (Set.Ioi (0 : ℝ)) :=
+    (integrableOn_Ioi_comp_mul_left_iff (axisRestrict M g) 0 hsq).mpr
+      (by simpa using integrableOn_axisRestrict M hM g)
+  exact hcomp.congr_fun (fun y hy => (qSeriesAt_eq_axisRestrict hM hb hy).symm) measurableSet_Ioi
+
+/-- **RAMANUJAN–PETERSSON IN WEIGHT TWO, AWAY FROM THE LEVEL** (sorry
+leaf): `|a_p| ≤ 2√p` for a prime `p ∤ M`.
+
+TRUE — this is Deligne's bound for weight two, i.e. Eichler–Shimura
+(`a_p = p + 1 - #A(𝔽_p)` for the abelian variety attached to the form)
+plus the Weil conjectures for curves (the Riemann hypothesis over `𝔽_p`,
+`|p + 1 - #C(𝔽_p)| ≤ 2g√p`).  For `p ∤ M` the eigenvalue is that of the
+underlying newform of some level `M₀ ∣ M`, and `p ∤ M₀` too, so the
+newform bound transfers verbatim.
+
+`M = 0` needs no hypothesis here: `p ∣ 0` for every `p`, so `hpM` is
+CONTRADICTORY at level `0` and the statement is vacuous there.  (Its
+sibling below is NOT vacuous at level `0` and genuinely needs `M ≠ 0`.)
+
+The check that would refute this being missing:
+`grep -rn "Ramanujan\|Petersson\|EichlerShimura\|eichler" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` (run 2026-07-28: mathlib has
+`petersson`, the *inner product*, and nothing about the bound).
+
+The *axis not searched*: whether `2√p` can be weakened to something the
+`hecke` recursion alone gives.  It cannot — the recursions constrain only
+the RELATIONS among the `a_p`, never their size, which is the same gap
+that made `qExpansionSummable` necessary.  But the CONSUMER below needs
+only `|a_p| < p + 1`, which is strictly weaker than Deligne for every
+`p ≥ 5`; a cheaper bound of that strength would close it. -/
+theorem norm_coeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} {g : CuspForm (Gamma0GL M) 2}
+    {a : ℕ → ℂ} (_ha : IsWeightTwoEigenform M g a) {p : ℕ} (_hp : p.Prime) (_hpM : ¬ p ∣ M) :
+    ‖a p‖ ≤ 2 * Real.sqrt p :=
   sorry
 
-/-- **A stabilization root is never `p`** (sorry leaf) — Deligne, and it
-is the ONLY place the reduction needs a bound on Hecke eigenvalues.
+/-- **THE `U_p` BOUND AT A PRIME DIVIDING THE LEVEL** (sorry leaf):
+`|a_p| ≤ √p` for a prime `p ∣ M`, `M ≠ 0`.
 
-TRUE.  Evaluating `hab` at `n = p` gives `β = b p - a p`, so `β` is not
-a free parameter, and Atkin–Lehner pins it in each of the two cases:
+TRUE, by Atkin–Lehner theory together with Deligne.  A normalized common
+eigenform of `S₂(Γ₀(M))` comes from a newform `h` of some level
+`M₀ ∣ M`, and the `U_p`-eigenvalue is pinned by a two-case computation on
+the old space `⟨h(dτ) : d ∣ M/M₀⟩`:
 
-* `p ∤ M'`: `β` is a root of `X² - b_p X + p`, and `|β| = √p < p` by
-  Deligne (Ramanujan–Petersson in weight two, i.e. Eichler–Shimura plus
-  the Weil conjectures for curves).  Equivalently `β = p` would force
-  `b_p = p + 1`.
-* `p ∣ M'`: `U_p` on the old space `⟨g, g(p·)⟩` has eigenvalues `b_p`
-  and `0`, so `β ∈ {0, b_p}`, and `|b_p| ≤ √p < p`.
+* `p ∣ M₀`: `U_p` is upper triangular in the basis ordered by the
+  `p`-part of `d`, with diagonal `(a_p(h), 0, …, 0)`, so its eigenvalues
+  are `a_p(h)` and `0`; and `|a_p(h)| = 1` if `p ∥ M₀`, `= 0` if
+  `p² ∣ M₀` (Atkin–Lehner), both `≤ √p`.
+* `p ∤ M₀`: `U_p v_0 = a_p(h) v_0 - p v_1` and `U_p v_j = v_{j-1}`, whose
+  nonzero eigenvalues are the roots of `X² - a_p(h) X + p`; those have
+  product `p` and are complex conjugate because `|a_p(h)| ≤ 2√p`
+  (Deligne), hence each has absolute value exactly `√p`.
+
+**`hM` IS LOAD-BEARING — the statement is FALSE at `M = 0`.**  See the
+FALSITY AUDIT on `integrableOn_qSeriesAt` above for why
+`CuspForm (Gamma0GL 0) 2` is a near-empty condition (`Γ₀(0) = ⟨T, -I⟩`
+has `∞` as its only cusp).  Concretely `b n = n`, carried by
+`∑_{n ≥ 1} n q^n = q/(1 - q)²`, satisfies every field of
+`IsWeightTwoEigenform 0 g b` — `hecke` vacuously, `atkin` because `b` is
+completely multiplicative — and has `‖b p‖ = p > √p`.  The same witness
+refutes `stabilizationRoot_ne_natCast` below without ITS `hM0`; see
+there. -/
+theorem norm_coeff_le_sqrt_of_dvd {M : ℕ} (_hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
+    {a : ℕ → ℂ} (_ha : IsWeightTwoEigenform M g a) {p : ℕ} (_hp : p.Prime) (_hpM : p ∣ M) :
+    ‖a p‖ ≤ Real.sqrt p :=
+  sorry
+
+/-- **A stabilization root is never `p`** (PROVEN 2026-07-28, and
+RESTATED — it acquired `hM0 : M ≠ 0`) — the ONLY place the reduction
+needs a bound on Hecke eigenvalues, and that bound is now the named pair
+of leaves above rather than a hidden appeal to Deligne.
+
+**The algebra is entirely in the interface, and is PROVEN here.**
+Evaluating `hab` at `n = p` gives `a_p = b_p - β`, so `β` is not a free
+parameter; evaluating it at `n = p²` and combining with `atkin` for `a`
+(legitimate because `p ∣ M`) pins `β` in each of two cases:
+
+* `p ∤ M'`: `hecke` for `b` gives `b_{p²} = b_p² - p`, and the two
+  expressions for `a_{p²}` force **`β² - b_p β + p = 0`**.  So `β = p`
+  would force `b_p = p + 1`, which
+  `norm_coeff_le_two_mul_sqrt_of_not_dvd` forbids because
+  `p + 1 - 2√p = (√p - 1)² > 0` for every prime `p`.
+* `p ∣ M'`: `atkin` for `b` gives `b_{p²} = b_p²`, and the same
+  comparison forces **`β² = b_p β`**, i.e. `β ∈ {0, b_p}`.  So `β = p`
+  would force `b_p = p`, which `norm_coeff_le_sqrt_of_dvd` forbids
+  because `√p < p`.
+
+**`hM0` IS LOAD-BEARING — the statement is FALSE at `M = 0`**, by the
+same level-`0` degeneracy audited on `integrableOn_qSeriesAt`.  Explicit
+counterexample: `M = M' = 0`, `p = 2`, `b n = n` (carried by
+`q/(1 - q)²`), `a n = n` for odd `n` and `a n = 0` for even `n` (carried
+by `∑_{n odd} n q^n`), and `β = 2 = p`.  Then `hab` holds — `a n = b n`
+off the multiples of `p`, and `a (pm) = pm - p · m = 0` — and both `a`
+and `b` satisfy every field of `IsWeightTwoEigenform 0 · ·` (`hecke` is
+vacuous since `p ∣ 0`; `atkin` holds for `b` by multiplicativity and for
+`a` because `a_p = 0` kills both sides on the multiples of `p`).  So the
+conclusion `β ≠ p` fails outright.  `hM0` gives `M' ≠ 0` through `hM'`,
+which is what the `U_p` leaf needs.
 
 **EXACTLY CHECKED at every level this file uses** (PARI/GP, 2026-07-27,
 rational arithmetic — not floating point).  For each of the thirteen
@@ -23943,21 +24103,69 @@ and each prime `p ∣ N`, the characteristic polynomial `P` of the Hecke
 operator on the newspace was computed and evaluated at the forbidden
 value: `P(p+1) ≠ 0` when `p ∤ M`, and `P(p) ≠ 0` when `p ∣ M`.  All
 **45** checks came back nonzero (smallest value `1`, at `N = M = 42`,
-`p = 2`).  So no stabilization root at any level reachable from
-`kenkuLevels` equals `p`.  PARI/GP is an untrusted searcher: this
-establishes that the statement is not false, and is not a proof.
+`p = 2`).  That reconnaissance is now *explained* rather than merely
+recorded: `P(p+1) ≠ 0` and `P(p) ≠ 0` are precisely the two cases above,
+and both follow from the archimedean bounds.
 
-The *axis not searched*: a direct proof of `β ≠ p` from the interface's
-`hecke`/`atkin` recursions alone, without any archimedean bound.  Those
-recursions constrain only the RELATIONS among the `a_p`, never their
-size — which is the same gap that made `qExpansionSummable` necessary —
-so it is unlikely to exist, but nobody has ruled it out. -/
-theorem stabilizationRoot_ne_natCast {M M' : ℕ} {g : CuspForm (Gamma0GL M) 2}
+The *axis not searched*: a proof of `β ≠ p` from the `hecke`/`atkin`
+recursions with NO archimedean input.  It does not exist — the level-`0`
+counterexample above is built entirely inside those recursions, so any
+such proof would prove a false statement. -/
+theorem stabilizationRoot_ne_natCast {M M' : ℕ} (hM0 : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
     {g' : CuspForm (Gamma0GL M') 2} {a b : ℕ → ℂ}
     (ha : IsWeightTwoEigenform M g a) (hb : IsWeightTwoEigenform M' g' b)
     {p : ℕ} (hp : p.Prime) (hpM : p ∣ M) (hM' : M' ∣ M) {β : ℂ}
-    (hab : IsStabilizationOf p β a b) : β ≠ (p : ℂ) :=
-  sorry
+    (hab : IsStabilizationOf p β a b) : β ≠ (p : ℂ) := by
+  intro hβ
+  have hM'0 : M' ≠ 0 := fun h => hM0 (Nat.eq_zero_of_zero_dvd (h ▸ hM'))
+  have hpc : ((p : ℂ)) ≠ 0 := by
+    simpa using (Nat.cast_ne_zero (R := ℂ)).mpr hp.pos.ne'
+  have hpR : (1 : ℝ) < (p : ℝ) := by exact_mod_cast hp.one_lt
+  have e1 : a p = b p - β := by
+    have h := hab p
+    rwa [if_pos dvd_rfl, Nat.div_self hp.pos, hb.one, mul_one] at h
+  have e2 : a (p * p) = b (p * p) - β * b p := by
+    have h := hab (p * p)
+    rwa [if_pos ⟨p, rfl⟩, Nat.mul_div_cancel_left p hp.pos] at h
+  have e3 : a (p * p) = a p * a p := ha.atkin p hp hpM p hp.pos
+  by_cases hdvd : p ∣ M'
+  · -- `U_p`: `β ∈ {0, b_p}`, so `β = p` forces `b_p = p > √p`
+    have e4 : b (p * p) = b p * b p := hb.atkin p hp hdvd p hp.pos
+    have key : β ^ 2 - β * b p = 0 := by
+      linear_combination (-1 : ℂ) * e3 + e2 + e4 + (β - b p - a p) * e1
+    have hbp : b p = (p : ℂ) := by
+      rw [hβ] at key
+      have h : (p : ℂ) * ((p : ℂ) - b p) = 0 := by linear_combination key
+      rcases mul_eq_zero.mp h with h' | h'
+      · exact absurd h' hpc
+      · exact (sub_eq_zero.mp h').symm
+    have hnorm := norm_coeff_le_sqrt_of_dvd hM'0 hb hp hdvd
+    rw [hbp, Complex.norm_natCast] at hnorm
+    have hs : Real.sqrt p * Real.sqrt p = (p : ℝ) := Real.mul_self_sqrt (by positivity)
+    nlinarith [hs, hnorm, hpR, Real.sqrt_nonneg ((p : ℝ))]
+  · -- `T_p`: `β² - b_p β + p = 0`, so `β = p` forces `b_p = p + 1 > 2√p`
+    have e4 : b (p * p) + (p : ℂ) * 1 = b p * b p := by
+      have h := hb.hecke p hp hdvd p hp.pos
+      rwa [if_pos dvd_rfl, Nat.div_self hp.pos, hb.one] at h
+    have key : β ^ 2 - β * b p + (p : ℂ) = 0 := by
+      linear_combination (-1 : ℂ) * e3 + e2 + e4 + (β - b p - a p) * e1
+    have hbp : b p = (p : ℂ) + 1 := by
+      rw [hβ] at key
+      have h : (p : ℂ) * (((p : ℂ) + 1) - b p) = 0 := by linear_combination key
+      rcases mul_eq_zero.mp h with h' | h'
+      · exact absurd h' hpc
+      · exact (sub_eq_zero.mp h').symm
+    have hnorm := norm_coeff_le_two_mul_sqrt_of_not_dvd hb hp hdvd
+    have hn : ‖((p : ℂ) + 1)‖ = (p : ℝ) + 1 := by
+      rw [show ((p : ℂ) + 1) = ((p + 1 : ℕ) : ℂ) by push_cast; ring, Complex.norm_natCast]
+      push_cast
+      ring
+    rw [hbp, hn] at hnorm
+    have hs : Real.sqrt p * Real.sqrt p = (p : ℝ) := Real.mul_self_sqrt (by positivity)
+    have hs1 : 1 < Real.sqrt p := by
+      have h := Real.sqrt_lt_sqrt (zero_le_one (α := ℝ)) hpR
+      rwa [Real.sqrt_one] at h
+    nlinarith [hs, hs1, hnorm]
 
 /-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
 nonzero period** (sorry leaf).  This is what remains of
@@ -24072,9 +24280,11 @@ a hypothesis of `cuspPeriod_ne_zero_of_isNewEigenformAt`, where a weaker
 predicate makes that leaf harder rather than false.
 
 The residue after the cut is THREE leaves, and only the last carries the
-`L`-value numerics: `integrableOn_qSeriesAt` (convergence of the period
-integral, shared with the sibling Mellin leaf),
-`stabilizationRoot_ne_natCast` (Deligne), and
+`L`-value numerics (updated 2026-07-28: `integrableOn_qSeriesAt` and
+`stabilizationRoot_ne_natCast` are now PROVEN, and the archimedean input
+the second needed is what remains):
+`norm_coeff_le_two_mul_sqrt_of_not_dvd` and `norm_coeff_le_sqrt_of_dvd`
+(Deligne / Atkin–Lehner bounds on Hecke eigenvalues), and
 `cuspPeriod_ne_zero_of_isNewEigenformAt` (the arithmetic gate, now
 quantified over NEWFORMS only).  The old note that a newform predicate
 "does not exist at this pin in mathlib, in `~/cs/FLT`, or here" is
@@ -24116,13 +24326,15 @@ theorem cuspPeriod_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
       by_cases hold : IsOldEigenformAt M b
       · obtain ⟨M', hM'M, hM'ne, g', b', hb', p, β, hp, hpM, hab⟩ := hold
         have hM0 : 0 < M := Nat.pos_of_ne_zero fun h => hN0 (by simpa [h] using hM)
+        have hM'0 : M' ≠ 0 := fun h => hM0.ne' (Nat.eq_zero_of_zero_dvd (h ▸ hM'M))
         have hlt : M' < M := lt_of_le_of_ne (Nat.le_of_dvd hM0 hM'M) hM'ne
         have hb'ne : cuspPeriod b' ≠ 0 := ih M' hlt (hM'M.trans hM) g' b' hb'
-        rw [cuspPeriod_of_isStabilizationOf hb hb' (integrableOn_qSeriesAt hb') hp.pos hab]
+        rw [cuspPeriod_of_isStabilizationOf hb hb' (integrableOn_qSeriesAt hM'0 hb')
+          hp.pos hab]
         refine mul_ne_zero ?_ hb'ne
         have hpc : ((p : ℂ)) ≠ 0 := by
           simpa using (Nat.cast_ne_zero (R := ℂ)).mpr hp.pos.ne'
-        have hne := stabilizationRoot_ne_natCast hb hb' hp hpM hM'M hab
+        have hne := stabilizationRoot_ne_natCast hM0.ne' hb hb' hp hpM hM'M hab
         intro hzero
         apply hne
         have h1 : β / (p : ℂ) = 1 := by linear_combination -hzero
@@ -27289,7 +27501,9 @@ not projective space.
 completed transform at `s = 1` and the change of variables `y ↦ y/√N`.  It
 acquired the hypothesis `N ≠ 0` in the process — see the SCOPE AUDIT on it.
 So of the two successors of `lFunction_apply_one_ne_zero_of_kenkuLevel` only
-the arithmetic one, `cuspPeriod_ne_zero_of_kenkuLevel`, is still open.
+the arithmetic one, `cuspPeriod_ne_zero_of_kenkuLevel`, was still open — and
+that one was in turn decomposed by Atkin–Lehner descent on the level (below),
+so it is a PROVEN assembly now too.
 
 The open leaves under this node, and the single theory each one needs, are
 TABULATED below — **without a count, deliberately**: the table and the count
@@ -27323,8 +27537,10 @@ docstring).
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
-| `exists_relPoint_of_galSMul_fixed` | Galois descent for points | no |
-| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
+| `norm_coeff_le_two_mul_sqrt_of_not_dvd` | Deligne (`p ∤ M`) | no |
+| `norm_coeff_le_sqrt_of_dvd` | Atkin–Lehner `U_p` (`p ∣ M`) | no |
+| `cuspPeriod_ne_zero_of_isNewEigenformAt` | `L`-value numerics | **yes** |
 | `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
 | `finite_kummerCochains_of_abelianScheme` | class group + units (weak Mordell–Weil) | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
@@ -27341,6 +27557,18 @@ docstring).
 the elementary third step, isogeny invariance, is PROVEN as
 `isTorsion_of_finite_jointKer`.  `ajMor_eq_const_of_not_injective` is
 likewise PROVEN, over the two Riemann-Roch/rigidity rows above it.)
+
+(`cuspPeriod_ne_zero_of_kenkuLevel` stood here until 2026-07-27, when it
+was decomposed by Atkin-Lehner descent on the level into the three rows
+that replace it — the reduction to newforms is a change of variables on
+the period, `cuspPeriod_of_isStabilizationOf`, and is PROVEN.  Two of
+those three rows, `integrableOn_qSeriesAt` and
+`stabilizationRoot_ne_natCast`, were themselves closed on 2026-07-28:
+the first over `WeightTwoEigenform.lean`'s analytic trio with no new
+leaf, the second over the two archimedean bounds that now stand in its
+place.  Both acquired `M ≠ 0` — see their FALSITY AUDITs; a level-`0`
+`Γ₀` is not a lattice and `CuspForm (Gamma0GL 0) 2` imposes no condition
+at the cusp `0`.)
 
 Only two of the rows mention `N` or `kenkuLevels` at all, and each of
 the others is a named classical theorem stated for an arbitrary
