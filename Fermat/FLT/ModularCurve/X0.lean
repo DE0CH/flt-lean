@@ -23136,24 +23136,193 @@ smoothness one false; the general field is reached by
 `nonempty_gamma0CurveAtlasOver_of_ringHom` instead, which is now PROVEN modulo
 one quotient-descent leaf. -/
 
-/-- **The Katz–Mazur atlas of `Y_0(N)` over `𝔽_p`, for `p ∤ N`** (sorry leaf —
-the ONE remaining modular EXISTENCE statement behind `X_0(N)` over a general
-field).
+/-! ##### The Katz–Mazur GIT presentation over an ARBITRARY base
+
+`Gamma0GITPresentation` is `Gamma0Atlas` with its `quotient` field replaced by
+the data that *produces* it — `M = Spec A` affine, a finite group `G` acting,
+and `Y = Spec (A^G)` — and the ONLY thing tying it to `ℚ` is
+`subsingleton_hom_specQ`.  `Gamma0GITPresentationOver` below is that structure
+with `SpecQ` replaced by an arbitrary base `S`, and with the two base-point
+clauses that `Gamma0AtlasOver` carries, for exactly the reason recorded in the
+section comment above `Gamma0AtlasOver`.
+
+This is the transposition the old docstring of
+`exists_gamma0AtlasOver_isAffine_zmod` asked for ("transpose that machinery to
+`Spec (ZMod p)`, not rebuild it"), and it buys two things at once:
+
+* `IsAffine Y` becomes **literal** — `Y` is `Spec (CommRingCat.of B)` — so the
+  affineness conjunct of the atlas leaf costs nothing at all; and
+* the categorical-quotient field becomes a **THEOREM**, over
+  `specInvariants_universal`, which is already PROVEN and mentions no base.
+
+So the modular EXISTENCE leaf shrinks from "an atlas over `𝔽_p` whose coarse
+space is affine" to "the Katz–Mazur GIT data over `𝔽_p`", which is what (8.1.1)
+literally constructs. -/
+
+/-- **A Katz–Mazur GIT presentation over an arbitrary base scheme `S`.**
+
+Field for field this is `Gamma0GITPresentation` with `SpecQ` replaced by `S`,
+except that `cover` carries the base-point equation `p ≫ g = m ≫ strM` —
+exactly the strengthening `Gamma0AtlasOver.cover` makes over
+`Gamma0Atlas.cover`, and for the same reason: over a general base
+`subsingleton_hom_specQ` is unavailable and the equation is FALSE to omit (see
+the section comment above `Gamma0AtlasOver` for the `K = ℂ` witness).
+
+There is no `quotient` field: it is DERIVED, in `toGamma0AtlasOver` below.
+
+**Non-vacuity.** `Gamma0GITPresentation.toGamma0Atlas` certifies the `ℚ` case of
+the analogous structure, and the same argument applies here: over `SpecQ` the
+extra `cover` clause is discharged by `subsingleton_hom_specQ`, so a `ℚ` GIT
+presentation gives one of these at `S = SpecQ`.  Nothing in the definition can
+therefore be accidentally contradictory. -/
+structure Gamma0GITPresentationOver (N : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the ring of invariants, whose spectrum is the coarse space -/
+  B : Type
+  [commRing_B : CommRing B]
+  [algebra_BA : Algebra B A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  [smulComm_GBA : SMulCommClass G B A]
+  [isInvariant_BAG : Algebra.IsInvariant B A G]
+  /-- `B` is a subring of `A`, not merely an algebra over it -/
+  injective_algebraMap : Function.Injective (algebraMap B A)
+  /-- the structure morphism of the coarse space -/
+  str : Spec (CommRingCat.of B) ⟶ S
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma0Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+    IsBaseChangeOf h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the universal family carried by the rigidified moduli scheme -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- the classifying map of the universal family is the quotient map -/
+  classify_dM : (classify strM dM).1 = Spec.map (CommRingCat.ofHom (algebraMap B A))
+  /-- **rigidification, over the base**: every datum over an `S`-scheme is,
+  after a faithfully flat quasi-compact base change, a base change of `dM`, and
+  the rigidifying map may be taken to lie over the given base point. -/
+  cover : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      p ≫ g = m ≫ strM ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+
+attribute [instance] Gamma0GITPresentationOver.commRing_A Gamma0GITPresentationOver.commRing_B
+  Gamma0GITPresentationOver.algebra_BA Gamma0GITPresentationOver.group_G
+  Gamma0GITPresentationOver.finite_G Gamma0GITPresentationOver.action_GA
+  Gamma0GITPresentationOver.smulComm_GBA Gamma0GITPresentationOver.isInvariant_BAG
+
+/-- **The deck group fixes the coarse ring pointwise, so `Spec σ` commutes with
+the quotient map** (PROVEN) — `σ • (b • 1) = b • (σ • 1) = b • 1` by
+`SMulCommClass G B A`.
+
+This is what makes both `strM` and the cocone `φ` in `toGamma0AtlasOver`
+`G`-invariant, and it is the only computation in this block. -/
+theorem Gamma0GITPresentationOver.specMap_toRingHom_comp {N : ℕ} {S : Scheme.{0}}
+    (P : Gamma0GITPresentationOver N S) (σ : P.G) :
+    Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap P.B P.A))
+      = Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) := by
+  rw [← Spec.map_comp]
+  congr 1
+  ext b
+  show σ • algebraMap P.B P.A b = algebraMap P.B P.A b
+  rw [Algebra.algebraMap_eq_smul_one, smul_comm, smul_one]
+
+/-- **A GIT presentation over `S` IS an atlas over `S`** (PROVEN) — the
+base-general form of `Gamma0GITPresentation.toGamma0Atlas`.
+
+Two things have to be produced, and neither is modular:
+
+* the FACTORISATION is `specInvariants_universal` (already PROVEN, for an
+  arbitrary — not necessarily affine — target), fed the `G`-invariance of `φ`
+  that `dM_equivariant` supplies exactly as over `ℚ`;
+* the extra conclusion `ψ ≫ str' = str`, which `Gamma0Atlas.quotient` got for
+  free from `subsingleton_hom_specQ`, is obtained by applying the SAME
+  universal property a second time, with target `S` and cocone `strM`: both
+  `ψ ≫ str'` and `str` factor `strM` through the quotient map, and `strM` is
+  `G`-invariant because it factors through it (`specMap_toRingHom_comp`). -/
+noncomputable def Gamma0GITPresentationOver.toGamma0AtlasOver {N : ℕ} {S : Scheme.{0}}
+    (P : Gamma0GITPresentationOver N S) : Gamma0AtlasOver N S where
+  Y := Spec (CommRingCat.of P.B)
+  str := P.str
+  classify := P.classify
+  classify_natural := P.classify_natural
+  M := Spec (CommRingCat.of P.A)
+  strM := P.strM
+  dM := P.dM
+  cover := P.cover
+  quotient := by
+    intro Y' str' φ hφ hsep
+    rw [P.classify_dM]
+    -- the quotient map is the structure morphism of `M` over `Y`
+    have hπ : Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ P.str = P.strM := by
+      rw [← P.classify_dM]; exact (P.classify P.strM P.dM).2
+    -- so `strM` is `G`-invariant
+    have hinvM : ∀ σ : P.G,
+        Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫ P.strM
+          = P.strM := by
+      intro σ
+      rw [← hπ, ← Category.assoc, P.specMap_toRingHom_comp σ]
+    -- and `φ` is `G`-invariant: `𝟙` and `Spec σ` are two rigidifications of the
+    -- SAME datum `d₁` over ONE base point, so `hsep` cannot tell them apart.
+    have hinvφ : ∀ σ : P.G,
+        Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫ φ = φ := by
+      intro σ
+      obtain ⟨d₁, ⟨h1⟩, ⟨h2⟩⟩ := P.dM_equivariant σ
+      have h := hsep (𝟙 _) _ d₁ (by rw [Category.id_comp, hinvM σ]) h1 h2
+      rw [Category.id_comp] at h
+      exact h.symm
+    obtain ⟨ψ, hψ, huniq⟩ :=
+      specInvariants_universal P.G P.injective_algebraMap φ hinvφ
+    refine ⟨ψ, ⟨?_, hψ⟩, ?_⟩
+    · obtain ⟨χ, -, huniq'⟩ :=
+        specInvariants_universal P.G P.injective_algebraMap P.strM hinvM
+      rw [huniq' (ψ ≫ str')
+          (show Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ ψ ≫ str' = P.strM by
+            rw [← Category.assoc, hψ, hφ]),
+        huniq' P.str hπ]
+    · rintro ψ' ⟨-, hψ'⟩
+      exact huniq ψ' hψ'
+
+/-- **The Katz–Mazur GIT data of `Y_0(N)` over `𝔽_p`, for `p ∤ N`** (sorry leaf,
+opened 2026-07-28 — the ONE remaining modular EXISTENCE statement behind
+`X_0(N)` over a general field).
 
 TRUE and classical, and it is Katz–Mazur (8.1.1) run over the ring `𝔽_p`:
 choose an auxiliary level `n ≥ 3` invertible in `𝔽_p` (`n = 3`, or `n = 4`
 when `p = 3`), form the representable, finite étale galois problem
-`([Γ₀(N)], [Γ(n)])` with group `G = GL₂(ℤ/n)`, and take `Y = 𝔐/G = Spec (A^G)`,
-which exists and is affine because `𝔐 = Spec A` is.  That is where the
-`IsAffine A.Y` conjunct comes from — it is literal, not an extra assertion.
+`([Γ₀(N)], [Γ(n)])` with group `G = GL₂(ℤ/n)` — so `𝔐 = Spec A` is affine — and
+take `B := A^G`, so that `Y = 𝔐/G = Spec (A^G)`.
 
-**This is the base-general analogue of `exists_gamma0Atlas`**, and the same
-architecture is available to a prover: `Gamma0GITPresentation` /
-`exists_gamma0GITPresentation_of_rigidified` do exactly this over `ℚ`, and the
-only thing tying them to `ℚ` is `subsingleton_hom_specQ` — every use of which
-is replaced, in `Gamma0AtlasOver`, by an explicit base-point clause.  So the
-intended route is to transpose that machinery to `Spec (ZMod p)`, not to
-rebuild it.
+**This replaces the old leaf `exists_gamma0AtlasOver_isAffine_zmod`**, which
+asked for the atlas and its affineness directly.  Nothing is lost — that
+statement is now DERIVED, immediately below — and two things are gained: the
+`IsAffine` conjunct is literal rather than asserted, and the categorical
+quotient is no longer part of the leaf at all, because
+`Gamma0GITPresentationOver.toGamma0AtlasOver` derives it from
+`specInvariants_universal`.
+
+**This is the base-general analogue of `exists_gamma0GITPresentation`**, and the
+same architecture is available to a prover:
+`exists_gamma0GITPresentation_of_rigidified` and
+`exists_gamma0GITPresentation_of_cover` do exactly this over `ℚ`, and the only
+thing tying them to `ℚ` is `subsingleton_hom_specQ` — every use of which is
+replaced here by an explicit base-point clause.
 
 **Do NOT attack this by base-changing an integral model from `ℤ[1/N]`.**
 Katz–Mazur Remark (8.1.7) is explicit that formation of the coarse moduli
@@ -23162,13 +23331,32 @@ scheme does not always commute with base change, with counterexamples at
 construction over `𝔽_p` is direct and unconditional; see the section comment
 above `Gamma0AtlasOver`.
 
-`¬ p ∣ N` and `0 < N` are underscored here because the ATLAS alone does not
-need them — they are load-bearing on the three geometry leaves below, where
-each is used for a stated reason. -/
-theorem exists_gamma0AtlasOver_isAffine_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime]
+**Do NOT strengthen this to `IsDomain A`.**  Over `ℚ` the rigidified moduli
+scheme IS integral, and `exists_gamma0GITPresentation_dedekindModuli` asserts
+it; over `𝔽_p` that is **FALSE in general**.  See the CUT-OBSTRUCTION note on
+`isRegularRing_coarseRing_of_gamma0AtlasOver_zmod` below for the explicit
+counterexample.
+
+`¬ p ∣ N` and `0 < N` are underscored here because the GIT data alone does not
+need them — they are load-bearing on the geometry leaves below, where each is
+used for a stated reason. -/
+theorem exists_gamma0GITPresentationOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime]
     (_hpN : ¬ p ∣ N) :
-    ∃ A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p))), IsAffine A.Y :=
+    Nonempty (Gamma0GITPresentationOver N (Spec (CommRingCat.of (ZMod p)))) :=
   sorry
+
+/-- **The Katz–Mazur atlas of `Y_0(N)` over `𝔽_p`, for `p ∤ N`** (PROVEN
+2026-07-28 over `exists_gamma0GITPresentationOver_zmod`; formerly a sorry leaf
+asserting the atlas and its affineness directly).
+
+The coarse space of a GIT presentation is `Spec (CommRingCat.of B)`, so
+`IsAffine A.Y` is `inferInstance` — it is literal, not an extra assertion, which
+is precisely the point of routing the atlas through the GIT presentation. -/
+theorem exists_gamma0AtlasOver_isAffine_zmod (N : ℕ) (hN : 0 < N) (p : ℕ) [Fact p.Prime]
+    (hpN : ¬ p ∣ N) :
+    ∃ A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p))), IsAffine A.Y :=
+  (exists_gamma0GITPresentationOver_zmod N hN p hpN).elim fun P =>
+    ⟨P.toGamma0AtlasOver, inferInstanceAs (IsAffine (Spec (CommRingCat.of P.B)))⟩
 
 /-- **The coarse space over `𝔽_p` is affine** — for an ARBITRARY atlas (PROVEN
 2026-07-27 from the exhibited one, by initiality).
@@ -23213,36 +23401,147 @@ theorem isDomain_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact
     IsDomain Γ(A.Y, ⊤) :=
   sorry
 
-/-- **The coarse space is smooth of relative dimension `1` over `𝔽_p`** (sorry
-leaf — Katz–Mazur Lemma (8.1.2), and THE reason this whole block sits at the
-prime field).
+/-- **The coarse ring `B = Γ(Y, ⊤)` is a regular finite-type `𝔽_p`-algebra of
+Krull dimension one** (sorry leaf, opened 2026-07-28 as the algebraic half of
+`smoothOfRelativeDimension_of_gamma0AtlasOver_zmod` below) — Katz–Mazur
+Lemma (8.1.2).
 
-Lemma (8.1.2): `𝒫` normal implies `M(𝒫)` normal.  So `Y` is a normal curve over
-`𝔽_p`; `𝔽_p` is PERFECT, so normal + finite type over it gives regular, and a
-regular curve over a field is smooth.
+Lemma (8.1.2): `𝒫` normal implies `M(𝒫)` normal.  So `Y_0(N)_{𝔽_p}` is a normal
+affine curve over `𝔽_p`, and — `𝔽_p` being PERFECT — normal plus finite type
+over it is regular.  This leaf is that sentence and nothing else; the passage
+from "regular" to "smooth" is the mathlib-facing bridge
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`, and it is
+already PROVEN, so the consumer below is a THEOREM.
 
-**`𝔽_p` perfect is load-bearing and must not be generalised away.**  Over an
-imperfect field of characteristic `p` a normal curve need not be smooth — the
-standard witness is the quasi-elliptic curve `y² = x³ + t` over `𝔽₃(t)`, which
-is regular but not smooth, and which appears in full in the FALSITY AUDIT on
-`exists_x0Compactification_field` below.  That is exactly why the general field
-is reached by base change from here rather than by restating this leaf.
+`IsDomain Γ(Y, ⊤)` is deliberately NOT part of this statement: it is the
+sibling leaf `isDomain_of_gamma0AtlasOver_zmod` (Deligne–Rapoport IV.5.5 /
+VI.6.7), and duplicating it here would give the tree two owners for one fact.
+
+Stated for an arbitrary atlas: see `isAffine_of_gamma0AtlasOver_zmod` for why
+that is equivalent to stating it for the Katz–Mazur model.  The `[IsAffine A.Y]`
+binder is not a hypothesis in any real sense — `isAffine_of_gamma0AtlasOver_zmod`
+discharges it for every atlas over `𝔽_p` — it is there only so that
+`A.Y.isoSpec` can be written, which is what pins the `Algebra (ZMod p) Γ(A.Y, ⊤)`
+structure to the one `A.str` induces.
 
 `hpN : ¬ p ∣ N` is REQUIRED and the statement is FALSE without it: at `p ∣ N`
 the `Γ₀(N)`-structure degenerates (the subgroup scheme of order `N` acquires an
-infinitesimal part) and `Y_0(N)_{𝔽_p}` is not smooth.
+infinitesimal part), `Y_0(N)_{𝔽_p}` is singular, and a singular curve's
+coordinate ring is not regular.  `hN : 0 < N` is REQUIRED too: at `N = 0` a
+`Γ₀(0)`-datum forces its base to be empty, so `B` is the zero ring and
+`ringKrullDim B = ⊥ ≠ 1`.
 
-The `ℚ` analogue routes through the coarse RING —
-`isRegularRing_coarseRing_of_gamma0GITPresentation` plus
-`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` — and that
-mathlib-facing second half is base-general, so it is reusable here verbatim
-once `B` is known to be a regular finite-type `𝔽_p`-domain of Krull dimension
-one.  A successor should probably cut along that line. -/
-theorem smoothOfRelativeDimension_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ)
+## CUT-OBSTRUCTION AUDIT (2026-07-28): the `ℚ` route does NOT transpose, and
+## trying to transpose it produces a FALSE leaf
+
+The obvious next cut is the one the `ℚ` side takes: push this onto the
+RIGIDIFIED moduli ring, as `isRegularRing_coarseRing_of_gamma0GITPresentation`
+does — assert `IsDedekindDomain A` for one presentation
+(`exists_gamma0GITPresentation_dedekindModuli`) and let
+`Algebra.IsInvariant.isRegularRing_of_isInvariant` carry it to `B = A^G`.  That
+lemma is fully base-general, so the route *looks* available.
+
+**It is not, because `IsDomain A` is FALSE over `𝔽_p`.**  Over `ℚ` the
+rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` is integral because
+`Gal(ℚ(ζ_n)/ℚ)` permutes its geometric components — indexed by the Weil pairing
+`e_n` of the level-`n` structure, i.e. by the primitive `n`-th roots of unity —
+**transitively**.  Over `𝔽_p` the corresponding group is generated by the single
+Frobenius `ζ ↦ ζ^p`, whose orbits on the `φ(n)` primitive `n`-th roots have size
+`ord_n(p)`, so the number of `𝔽_p`-components is `φ(n) / ord_n(p)`.
+
+*Explicit counterexample*: take the smallest admissible auxiliary level `n = 3`
+and any `p ≡ 1 mod 3`, e.g. `p = 7`.  Then `ζ_3 ∈ 𝔽_7` (`2³ = 8 = 1`), both
+primitive cube roots are `𝔽_7`-rational, Frobenius acts trivially on them, and
+`𝔐([Γ₀(N)], [Γ(3)])_{𝔽_7}` has two connected components.  `A` is then a product
+of two rings — not a domain, and in particular not a Dedekind domain — so
+`isRegularRing_of_isInvariant`'s `[IsDedekindDomain S]` hypothesis is
+unsatisfiable and the transposed leaf is unprovable because it is false.
+
+`B = A^G` is still a domain, because `det : GL₂(ℤ/n) → (ℤ/n)ˣ` is surjective and
+`e_n(gP, gQ) = e_n(P, Q)^{det g}`, so `G` permutes the components transitively
+even when Frobenius does not.  That is why the leaf belongs at `B`, where it is
+stated, and not at `A`.
+
+*The check that would refute this audit*: an invariants lemma concluding
+`IsRegularRing R` from `S` merely REGULAR of dimension one (not a domain) plus
+transitivity of `G` on `Spec S`'s connected components.  No such lemma is in the
+pin — `grep -rn "isRegularRing_of_isInvariant\|isDedekindDomain_of_isInvariant"
+Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` shows both existing ones
+demand `IsDedekindDomain S` — and writing one is a strictly larger job than this
+leaf.  If someone does write it, this leaf can be re-cut onto `A`. -/
+theorem isRegularRing_coarseRing_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ)
     [Fact p.Prime] (_hpN : ¬ p ∣ N)
-    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
-    SmoothOfRelativeDimension 1 A.str :=
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) [IsAffine A.Y] :
+    ∀ [Algebra (ZMod p) Γ(A.Y, ⊤)],
+      Spec.map (CommRingCat.ofHom (algebraMap (ZMod p) Γ(A.Y, ⊤))) = A.Y.isoSpec.inv ≫ A.str →
+        IsRegularRing Γ(A.Y, ⊤) ∧ Algebra.FiniteType (ZMod p) Γ(A.Y, ⊤) ∧
+          ringKrullDim Γ(A.Y, ⊤) = (1 : ℕ) :=
   sorry
+
+/-- **Smoothness transports along an isomorphism over an ARBITRARY base**
+(PROVEN) — `smoothOfRelativeDimension_transport` with `SpecQ` replaced by `S`;
+that proof uses the base only as a fixed object.
+
+`isSmoothCurve_transport_base` above carries all five curve properties at once
+and therefore demands all five as input; this is the smoothness clause alone,
+which is what a caller holding only smoothness can use. -/
+theorem smoothOfRelativeDimension_transport_base {S Y Y' : Scheme.{0}}
+    {strY : Y ⟶ S} {strY' : Y' ⟶ S}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (h : SmoothOfRelativeDimension 1 strY') : SmoothOfRelativeDimension 1 strY := by
+  haveI := h
+  subst hu
+  exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
+
+/-- **The coarse space is smooth of relative dimension `1` over `𝔽_p`** (PROVEN
+2026-07-28 over the coarse-ring leaf `isRegularRing_coarseRing_of_gamma0AtlasOver_zmod`
+and the mathlib-facing bridge
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`; formerly a
+sorry leaf asserting Katz–Mazur Lemma (8.1.2) directly).
+
+The proof is the `ℚ` proof of `smoothOfRelativeDimension_of_gamma0GITPresentation`
+with two changes forced by the base.  `A.Y` is not literally a `Spec`, so it is
+identified with `Spec Γ(A.Y, ⊤)` through `Scheme.isoSpec` — legitimate because
+`isAffine_of_gamma0AtlasOver_zmod` is a THEOREM for an arbitrary atlas over
+`𝔽_p` — and the smoothness is then pulled back along that isomorphism by
+`smoothOfRelativeDimension_transport_base`.  `IsDomain Γ(A.Y, ⊤)` is the sibling
+leaf `isDomain_of_gamma0AtlasOver_zmod`, which the bridge needs.
+
+**`PerfectField (ZMod p)` is where `𝔽_p` perfect enters**, and it enters exactly
+once, inside
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` — mathlib's
+`PerfectField.ofFinite`.  That is the mechanised form of the paragraph above:
+over an imperfect field of characteristic `p` the bridge is FALSE (the
+quasi-elliptic `y² = x³ + t` over `𝔽₃(t)`), which is why this whole block sits
+at the prime field and the general field is reached by base change.  The full
+counterexample is in the FALSITY AUDIT on `exists_x0Compactification_field`
+below and in the docstring of the bridge itself.
+
+**Both hypotheses are still load-bearing**, and both are now consumed through
+the coarse-ring leaf rather than here.  `hpN : ¬ p ∣ N` is REQUIRED and the
+statement is FALSE without it: at `p ∣ N` the `Γ₀(N)`-structure degenerates (the
+subgroup scheme of order `N` acquires an infinitesimal part) and `Y_0(N)_{𝔽_p}`
+is singular.  `hN : 0 < N` is REQUIRED because the route runs through
+`ringKrullDim B = 1`, and at `N = 0` the coarse space is empty, so `B` is the
+zero ring and its Krull dimension is `⊥`. -/
+theorem smoothOfRelativeDimension_of_gamma0AtlasOver_zmod (N : ℕ) (hN : 0 < N) (p : ℕ)
+    [Fact p.Prime] (hpN : ¬ p ∣ N)
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) :
+    SmoothOfRelativeDimension 1 A.str := by
+  haveI := isAffine_of_gamma0AtlasOver_zmod N hN p hpN A
+  haveI := isDomain_of_gamma0AtlasOver_zmod N hN p hpN A
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective (A.Y.isoSpec.inv ≫ A.str)
+  letI : Algebra (ZMod p) Γ(A.Y, ⊤) := φ.hom.toAlgebra
+  have hstr : Spec.map (CommRingCat.ofHom (algebraMap (ZMod p) Γ(A.Y, ⊤)))
+      = A.Y.isoSpec.inv ≫ A.str := hφ
+  obtain ⟨hreg, hft, hdim⟩ :=
+    isRegularRing_coarseRing_of_gamma0AtlasOver_zmod N hN p hpN A hstr
+  haveI := hreg
+  haveI := hft
+  refine smoothOfRelativeDimension_transport_base A.Y.isoSpec.hom ?_
+    (smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing
+      (ZMod p) Γ(A.Y, ⊤) 1 hdim)
+  rw [hstr, ← Category.assoc, Iso.hom_inv_id, Category.id_comp]
 
 /-- **The coarse space is geometrically connected over `𝔽_p`** (sorry leaf —
 Deligne–Rapoport IV.5.5, or Shimura 6.6).
