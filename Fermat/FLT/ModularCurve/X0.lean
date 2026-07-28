@@ -527,8 +527,10 @@ public import Fermat.FLT.EllipticCurve.Isogeny
 -- `Gamma0GL` and `heckeOp` occur in the STATEMENTS of the two leaves below,
 -- not merely in proof bodies.
 public import Fermat.FLT.Modularity.HeckeOperator
--- The linear algebra behind `exists_basis_charpoly_heckeOp`, the single leaf
--- that carries both banked Hecke columns (`x0HeckeCharpolyTable`):
+-- The linear algebra behind `exists_basis_charpoly_heckeOp`, which carries
+-- both banked Hecke columns (`x0HeckeCharpolyTable`) over its two leaves
+-- `finrank_cuspForm_of_x0HeckeCharpolyTable` and
+-- `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable`:
 -- `Module.Basis`, `LinearMap.toMatrix`, `Matrix.charpoly` and its two
 -- coefficient dictionaries `Matrix.trace_eq_neg_charpoly_coeff` /
 -- `Matrix.eval_charpoly`, plus `List.getD_eq_default` for reading a
@@ -33172,7 +33174,8 @@ Lefschetz trace formula for Frobenius on `X₀(N)_{𝔽_ℓ}` together with the
 Eichler–Shimura relation identifying `Frob_ℓ + Frob_ℓ^∨` with `T_ℓ` on
 `H¹`) and `traceHeckeOp_of_x0WitnessTable` (the arithmetic: the eleven
 banked trace values — since 2026-07-28 a THEOREM over the merged
-banked-charpoly leaf `exists_basis_charpoly_heckeOp`, not a leaf itself).  Neither is stated in `ℤ`: the trace of `heckeOp`
+banked-charpoly statement `exists_basis_charpoly_heckeOp`, itself proven the
+same day over a dimension leaf and a Hecke leaf, not a leaf itself).  Neither is stated in `ℤ`: the trace of `heckeOp`
 is a COMPLEX number by construction, and casting the count into `ℂ`
 avoids importing the integrality of the Hecke action as a silent side
 condition of the cut.  Integrality is a real theorem and belongs to
@@ -33211,13 +33214,39 @@ determinant of the SAME operator `heckeOp N ℓ` on the SAME space
 them — a basis of the cusp space, the matrix of `T_ℓ` in it — is shared, and
 two owners would have built it twice.
 
-Both are now PROVEN, from a single leaf `exists_basis_charpoly_heckeOp`:
+Both are now PROVEN, through `exists_basis_charpoly_heckeOp`:
 *`S₂(Γ₀(N))` has a basis indexed by `Fin d`, and in it `T_ℓ` has
 characteristic polynomial `P`*, with `(d, P)` read off
 `x0HeckeCharpolyTable`.  Everything the two consumers used to assert is
 then a computation over mathlib's charpoly dictionaries — `Matrix.trace =
 −charpoly.coeff (d−1)` and `det((ℓ+1)·1 − T) = charpoly.eval (ℓ+1)` — done
 by the kernel rather than banked as an independent numerical claim.
+
+**AND THAT STATEMENT IS ITSELF NOW PROVEN, over TWO leaves** (2026-07-28).
+It was a leaf for one day; the cut that replaced it separates the two
+different pieces of mathematics it was carrying:
+
+* `finrank_cuspForm_of_x0HeckeCharpolyTable` — `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))`
+  at the sixteen banked levels.  The classical weight-2 dimension formula.
+  It mentions no Hecke operator and no basis.
+* `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` — given ANY basis
+  indexed by `Fin d`, the matrix of `T_ℓ` in it has the banked charpoly.
+
+Neither implies the other, and nothing is asserted twice: the second is
+vacuous at exactly the levels where the first is false, since a
+`Module.Basis (Fin d)` cannot exist unless the dimension is `d`.  Taking the
+basis as a hypothesis costs no strength, because the characteristic
+polynomial is conjugation-invariant.  The assembly — genus back to the banked
+column `d`, `0 < d` to finite dimensionality, `Module.finBasisOfFinrankEq` to
+a basis — is on `exists_basis_charpoly_heckeOp` itself.
+
+The one thing the cut does NOT do is fold in
+`X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+(`FreyCurve/MazurTorsion.lean`), which is the same dimension formula at every
+genus-`1` level and therefore overlaps at `N = 20, 24, 36`.  That file is
+downstream of this one, so the overlap cannot be removed by citation in
+either direction; see the dimension leaf's docstring for why unifying them is
+a decision about the shape of the frontier rather than a local edit.
 
 **Why the characteristic polynomial and not the two scalars.**  It is
 basis-INDEPENDENT, so the existential above is a statement about the space
@@ -33320,7 +33349,11 @@ existing tables' source data, kept in the form that generates both columns.
 The `d` column is `dim_ℂ S₂(Γ₀(N))` and matches `x0Genus` at every row, as
 it must — `g(X₀(N)) = dim_ℂ S₂(Γ₀(N))` — and `x0Genus` is already
 `decide`-computable in this file, which is a cheap independent check on the
-degree of each banked polynomial. -/
+degree of each banked polynomial.  **Since 2026-07-28 that match is a
+theorem**, `x0Genus_eq_of_mem_x0HeckeCharpolyTable`, proven by one `decide`
+per row; it is what the dimension leaf is stated against, and it is the first
+machine check of `x0Genus 65 = 5` and `x0Genus 91 = 7`, neither of which is a
+Kenku level. -/
 def x0HeckeCharpolyTable : List (ℕ × ℕ × ℕ × List ℤ) :=
   [(20, 3, 1, [2, 1]), (24, 5, 1, [2, 1]), (28, 5, 2, [0, 0, 1]),
     (30, 17, 3, [-24, 28, -10, 1]), (35, 3, 3, [4, -5, 0, 1]), (36, 5, 1, [0, 1]),
@@ -33330,19 +33363,110 @@ def x0HeckeCharpolyTable : List (ℕ × ℕ × ℕ × List ℤ) :=
     (26, 5, 2, [3, 4, 1]), (45, 7, 3, [0, 0, 0, 1]), (54, 5, 4, [0, 0, -9, 0, 1]),
     (63, 5, 5, [96, 48, -32, -16, 2, 1]), (75, 7, 5, [0, 0, 0, -9, 0, 1])]
 
-/-- **THE ARITHMETIC LEAF: `S₂(Γ₀(N))` has dimension `d`, and `T_ℓ` has the
-banked characteristic polynomial in it** (sorry node — the single unproven
-statement behind every banked Hecke column in this file; the merged
-successor of the two leaves `traceHeckeOp_of_x0WitnessTable` and
-`heckeOp_traceDet_of_x0SieveTable`, both of which are now PROVEN from it,
-2026-07-28).
+/-- **Every banked charpoly row has positive dimension** (PROVEN, one
+`norm_num` per row).  Consumed by `exists_basis_charpoly_heckeOp` below, which
+needs `0 < d` to turn the dimension leaf `finrank_cuspForm_of_x0HeckeCharpolyTable`
+into finite dimensionality (`Module.finite_of_finrank_pos`): over a field
+`Module.finrank` is `0` both at dimension `0` and at infinite dimension, so
+`finrank = d` alone carries no finiteness. -/
+theorem pos_of_mem_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) : 0 < d := by
+  fin_cases h <;> norm_num
+
+/-- **The `d` column of `x0HeckeCharpolyTable` IS `x0Genus N`** (PROVEN, one
+`decide` per row — the `decide` evaluates the classical genus formula, index,
+elliptic points, cusps and all, at each of the sixteen levels).
+
+The docstring of `x0HeckeCharpolyTable` asserted this match ("as it must —
+`g(X₀(N)) = dim_ℂ S₂(Γ₀(N))`"); since 2026-07-28 it is a theorem, and that
+matters at two levels which no other `decide` in this file reaches:
+`x0Genus 65 = 5` and `x0Genus 91 = 7` are outside `kenkuLevels`, so the
+sixteen-row match had never been machine-checked before.  Like
+`exists_charpolyRow_of_x0WitnessTable`, this is a drift guard: a charpoly row
+whose `d` disagrees with the genus of `X₀(N)` breaks HERE, at a `decide`,
+rather than silently downstream.
+
+It is also what lets the dimension leaf below be stated against `x0Genus N`
+rather than against the raw column, so that the sixteen numbers stay banked in
+exactly one place. -/
+theorem x0Genus_eq_of_mem_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) : x0Genus N = (d : ℤ) := by
+  fin_cases h <;> decide
+
+/-- **THE DIMENSION LEAF: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))` at the sixteen banked
+levels** (sorry node, 2026-07-28 — one of the two halves into which the old
+single leaf `exists_basis_charpoly_heckeOp` was cut; the other is
+`charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` below).
+
+This is the classical dimension formula at weight `2` — Diamond–Shurman
+Theorem 3.5.1 / §3.6, i.e. `S₂(Γ) ≅ H⁰(X_Γ, Ω¹)` and Riemann–Roch — with the
+genus supplied by the already-computable `x0Genus`.  It mentions NEITHER the
+Hecke operator NOR a basis, which is the whole point of the cut: the
+arithmetic of `T_ℓ` and the size of the space are different mathematics and
+were being carried by one leaf.
+
+**WHY THIS IS KEYED TO THE TABLE RATHER THAN STATED FOR ALL `N`.**  The
+uniform statement `∀ N, 0 < N → dim_ℂ S₂(Γ₀(N)) = x0Genus N` is true (it is
+the dimension formula, and the docstring of
+`X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one` in
+`FreyCurve/MazurTorsion.lean` records a PARI/GP check `mfdim([N,2],1)` against
+the genus over all `1 ≤ N ≤ 60`), and stating it that way would subsume that
+leaf as well.  It is deliberately NOT stated that way here, because doing so
+would destroy the cheap attack surface: at a SINGLE level the dimension can be
+discharged by exhibiting an explicit basis — eta quotients, with
+`Mathlib/NumberTheory/ModularForms/DedekindEta.lean` in the pin — together
+with the Sturm bound for the upper bound, and that route needs no Riemann–Roch
+and no genus of a scheme.  Sixteen levels of dimension `1`–`7` is a finite
+amount of that; `∀ N` is not.
+
+**OVERLAP TO BE RESOLVED AT CUT LEVEL, NOT HERE** (recorded 2026-07-28 rather
+than acted on).  `X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+(`FreyCurve/MazurTorsion.lean`) is the same theorem at every level of genus
+`1`, and `20, 24, 36` are common to both — so those three rows are asserted
+twice in the tree.  It cannot be repaired by citation in either direction:
+`MazurTorsion.lean` is DOWNSTREAM of this file, so its leaf cannot serve this
+one, and this leaf is table-keyed, so it cannot serve levels outside the
+table.  The repair is to state the uniform `0 < N → dim = x0Genus N` once,
+upstream, and derive both — which trades the per-level attack surface above
+for a single Riemann–Roch obligation, and is therefore a decision about the
+shape of the frontier rather than a local edit.
+
+**FAITHFULNESS.**  `0 < N` is not needed as a hypothesis because every row of
+`x0HeckeCharpolyTable` has `N ≥ 20`; at `N = 0` the statement would be false
+as `x0Genus 0 = 0` while `Gamma0GL 0` degenerates.  The right-hand side is
+pinned to `d` by `x0Genus_eq_of_mem_x0HeckeCharpolyTable` above, and each `d`
+is `≥ 1`, so the conclusion is never the vacuous `0 = 0`: it always asserts
+that a specific nonzero-dimensional space of cusp forms has a specific finite
+dimension, which is refutable. -/
+theorem finrank_cuspForm_of_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
+    (_h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    ((Module.finrank ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℕ) : ℤ)
+      = x0Genus N :=
+  sorry
+
+/-- **THE HECKE LEAF: in ANY basis of `S₂(Γ₀(N))` indexed by `Fin d`, `T_ℓ`
+has the banked characteristic polynomial** (sorry node, 2026-07-28 — the
+second of the two halves into which the old single leaf
+`exists_basis_charpoly_heckeOp` was cut; the first is
+`finrank_cuspForm_of_x0HeckeCharpolyTable` above, which is what supplies the
+basis).
+
+Taking the basis as a HYPOTHESIS rather than producing it is what makes this
+half independent of the dimension half.  It costs nothing in strength — the
+characteristic polynomial of an endomorphism is conjugation-invariant, so
+"for some basis" and "for every basis" agree whenever a basis exists — and it
+costs nothing in content, because when `dim_ℂ S₂(Γ₀(N)) ≠ d` there is no
+`Module.Basis (Fin d)` at all and the statement is vacuous exactly where the
+dimension half is doing the work.  So no assertion is duplicated between the
+two leaves, and neither implies the other.
 
 Faithfulness is settled affirmatively at all sixteen rows by the PARI/GP run
-recorded on `x0HeckeCharpolyTable`.  It is NOT vacuous through a junk
-branch: handing over a `Module.Basis (Fin d)` forces
-`dim_ℂ S₂(Γ₀(N)) = d`, and the banked polynomials include eleven with a
-nonzero non-leading coefficient, so the statement genuinely pins the
-operator rather than being satisfied by any degenerate reading of it.
+recorded on `x0HeckeCharpolyTable`.  It is NOT vacuous through a junk branch:
+the hypothesis `b` forces `dim_ℂ S₂(Γ₀(N)) = d`, and the banked polynomials
+include eleven with a nonzero non-leading coefficient, so the statement
+genuinely pins the operator rather than being satisfied by any degenerate
+reading of it.
 
 WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
 constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by `heckeOp_coe`,
@@ -33414,15 +33538,56 @@ known to span `S₂(Γ₀(N))` at some of the small-dimension rows here and
 certainly not at the dimension-`7` row `N = 91`, and the pin does have
 `Mathlib/NumberTheory/ModularForms/DedekindEta.lean`.  That is the direction
 with the best prospects, and it is a per-row question rather than a uniform
-one. -/
+one.  Note that this axis is now split across the two leaves in exactly the
+way the axis itself suggests: an explicit spanning family at a row settles
+the DIMENSION half there, and the matrix of `T_ℓ` in it settles THIS half. -/
+theorem charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable {N ℓ d : ℕ}
+    {c : List ℤ} (_h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable)
+    (b : Module.Basis (Fin d) ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)) :
+    (LinearMap.toMatrix b b
+      (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)).charpoly =
+        charpolyOfCoeffs c :=
+  sorry
+
+/-- **`S₂(Γ₀(N))` has a basis indexed by `Fin d`, and in it `T_ℓ` has the
+banked characteristic polynomial** (PROVEN 2026-07-28 by decomposition; was
+itself the single leaf behind every banked Hecke column in this file, and
+before that the two leaves `traceHeckeOp_of_x0WitnessTable` and
+`heckeOp_traceDet_of_x0SieveTable`).
+
+The two halves it now stands on are `finrank_cuspForm_of_x0HeckeCharpolyTable`
+(the DIMENSION: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))`, no Hecke operator anywhere in
+it) and `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` (the HECKE
+computation, given a basis).  Everything between them is bookkeeping and is
+done here: `x0Genus_eq_of_mem_x0HeckeCharpolyTable` turns the genus back into
+the banked column `d`, `pos_of_mem_x0HeckeCharpolyTable` gives `0 < d` so that
+`Module.finite_of_finrank_pos` upgrades the dimension equality to finite
+dimensionality (over a field `finrank` cannot distinguish dimension `0` from
+infinite dimension, so this step is not decoration), and
+`Module.finBasisOfFinrankEq` then produces the `Fin d`-indexed basis the two
+consumers need.
+
+Its consumers are unchanged: `trace_heckeOp_of_charpolyTable` and
+`det_heckeOp_of_charpolyTable` immediately below, hence
+`traceHeckeOp_of_x0WitnessTable` and `heckeOp_traceDet_of_x0SieveTable`. -/
 theorem exists_basis_charpoly_heckeOp {N ℓ d : ℕ} {c : List ℤ}
-    (_h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
     ∃ b : Module.Basis (Fin d) ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2),
       (LinearMap.toMatrix b b
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)).charpoly =
-          charpolyOfCoeffs c :=
-  sorry
+          charpolyOfCoeffs c := by
+  have hfr : Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) = d := by
+    have h1 := finrank_cuspForm_of_x0HeckeCharpolyTable h
+    rw [x0Genus_eq_of_mem_x0HeckeCharpolyTable h] at h1
+    exact_mod_cast h1
+  haveI : FiniteDimensional ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) :=
+    Module.finite_of_finrank_pos (by rw [hfr]; exact pos_of_mem_x0HeckeCharpolyTable h)
+  exact ⟨Module.finBasisOfFinrankEq ℂ _ hfr,
+    charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable h _⟩
 
 /-- **`Tr(T_ℓ ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN): the trace
 of an endomorphism is the trace of its matrix in any basis
@@ -43953,9 +44118,11 @@ The cut, and what each piece costs:
   determinant at those five rows.  ONE theorem for both, because they are
   the trace and determinant of the same `≤ 5 × 5` matrix; PROVEN
   2026-07-28, together with its sibling
-  `traceHeckeOp_of_x0WitnessTable`, over the single merged leaf
+  `traceHeckeOp_of_x0WitnessTable`, over the merged statement
   `exists_basis_charpoly_heckeOp` (the banked characteristic polynomial of
-  `T_ℓ`, `x0HeckeCharpolyTable`).
+  `T_ℓ`, `x0HeckeCharpolyTable`), which is itself proven over the two leaves
+  `finrank_cuspForm_of_x0HeckeCharpolyTable` and
+  `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable`.
 * The Eichler-Shimura counts on the datum's special fibre are supplied
   inline by `exists_isX0Compactification_specialFibre` then
   `exists_isX0EichlerShimura`.  Until 2026-07-28 they sat behind a sorried
@@ -50230,8 +50397,9 @@ character, and only one of them is Chabauty–Coleman:
   a statement about the SPECIAL FIBRE, which knows nothing about the rank.
   This is now two rows of `x0WitnessTable`, and it costs no new leaf: it is
   absorbed by `traceHeckeOp_of_x0WitnessTable`, itself PROVEN since
-  2026-07-28 over the single banked-charpoly leaf
-  `exists_basis_charpoly_heckeOp`.
+  2026-07-28 over the banked-charpoly statement
+  `exists_basis_charpoly_heckeOp`, itself proven over a dimension leaf and a
+  Hecke leaf.
 * reduction mod `ℓ` is INJECTIVE on `X_0(N)(ℚ)` — this is the
   Chabauty–Coleman half, and it is the whole of what remains.  It is
   `injective_redX_of_chabautyColemanPrime` below.
