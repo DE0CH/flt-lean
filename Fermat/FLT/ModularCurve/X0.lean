@@ -4681,18 +4681,52 @@ matrix is not locally constant.  It cannot be done once step 2 is
 available, because `Hom_Z(Z, S_Z)` is locally constant functions for any
 finite `S`.
 
-## THE MISSING INFRASTRUCTURE, precisely
+## THE MISSING INFRASTRUCTURE, precisely — and it is SMALLER than it was
 
-`(ℤ/n)²_Z ≅ d.E[n]` **as finite étale group schemes**.  What the project
-does have is `AbelianSchemeStruct.mulByNat`
-(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), so `E[n]` is
-constructible as the fibre product of `[n]` with the zero section; what
-is missing is its finiteness and étaleness over a `ℚ`-scheme, and the
-constant group scheme `(ℤ/n)²_Z` with its sections computed.  The SAME
-object is what `exists_isomTorsor_of_geomPoint` above owes — that leaf
-needs the `Isom`-sheaf and its representability, this one needs only the
-torsion scheme and local constancy of sections of a constant scheme, so
-the torsion scheme is shared and should be built once.
+`(ℤ/n)²_Z ≅ d.E[n]` **as finite étale group schemes**.  Three of the four
+pieces this used to need are now IN THIS TREE, and the note is corrected
+here rather than left to mislead the next owner:
+
+* **The torsion scheme as an OBJECT is a solved pattern.**
+  `CyclicSubgroupOfOrder.torsionScheme` below is
+  `Limits.pullback (c.ι ≫ ab.mulByNat n) ab.zeroSection`, with
+  `isClosedImmersion_torsionι`, `isFinite_torsionι` and — the whole
+  functor-of-points content — `liesIn_torsionι_iff`, all PROVEN.  `E[n]`
+  is the SAME construction with `c.ι` replaced by `𝟙 d.E`, and
+  `AbelianSchemeStruct.isClosedImmersion_zeroSection` (PROVEN) is what
+  makes the projection a closed immersion in either case.
+* **Étaleness is available**, and with no characteristic hypothesis:
+  `AlgebraicGeometry.etale_of_isReduced_pullback`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/EtaleOfGeometricFibres.lean`) —
+  finite, flat, locally of finite presentation, reduced geometric fibres
+  ⟹ étale — together with
+  `isReduced_pullback_of_finrank_le_card_geometricPoints` and
+  `locallyOfFinitePresentation_of_finrank_const` named in its docstring.
+  This is where `g : Z ⟶ SpecQ` is consumed: it is what makes the fibres
+  reduced.
+* **The `n`-torsion over the base** — needed to make
+  `(a, b) ↦ a·L₁.P + b·L₁.Q` a homomorphism of group schemes rather than
+  a map of point sets — is `L₁.nsmul_P` / `nsmul_Q`, fields of
+  `FullLevelStructure`.
+
+What is genuinely still owed is therefore only: **finiteness and flatness
+of `d.E[n] ⟶ Z`** (`C[n]` inherits finiteness from `C` being finite over
+the base; `d.E ⟶ Z` is proper, not finite, so this needs a real argument
+— `n` invertible plus relative dimension one), and **the constant group
+scheme `(ℤ/n)²_Z` with its sections computed**, i.e. `Hom_Z(Z, S_Z)` =
+locally constant functions for finite `S`, which is what turns the
+comparison into the CLOPEN decomposition.
+
+*The check that would refute this paragraph*:
+`grep -n 'torsionScheme\|isClosedImmersion_zeroSection' ` in this file
+and `grep -rn 'etale_of_isReduced_pullback' Fermat/`.
+
+`exists_isomTorsor_of_geomPoint` far above owes the same torsion scheme,
+plus the `Isom`-sheaf and its representability, which this leaf does NOT
+need — `L₁` trivialises the torsor, so what is left here is only local
+constancy of sections of a constant scheme.  Its own "what this project
+does not have" paragraph predates the material listed above and should be
+re-read against it before anyone acts on it.
 
 ## Faithfulness
 
