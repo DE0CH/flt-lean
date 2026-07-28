@@ -2361,8 +2361,9 @@ theorem exists_flatFibre_index_of_noetherianApproxSystem
           (IsLocalRing.maximalIdeal (sys.Base j)))).Flat :=
   sorry
 
-/-- **THE LOCALIZATION SEAM, PASSED TO THE COLIMIT** (SORRY LEAF, cut 2026-07-28;
-read the section note "THE CUT OF THE APPROXIMATION LEAF" above first).
+/-- **THE LOCALIZATION SEAM, PASSED TO THE COLIMIT** (cut 2026-07-28 out of
+`nonempty_flatNoetherianStage_of_essFinitePresentation`; **PROVEN the same day**.
+Read the section note "THE CUT OF THE APPROXIMATION LEAF" above first).
 
 *At every stage `i` of a `NoetherianApproxSystem`, `A` is a localization of
 `B ⊗_{S_i} S'_i`.*
@@ -2372,14 +2373,41 @@ its docstring — including the CORRECTION that replaced `Algebra.IsPushout` by
 `IsLocalization` on 2026-07-27, and the checked degeneracy argument for why plain
 `Module.Flat` there would be too weak — is the specification for this leaf.
 
-**THE PROOF.**  `isLocalizationTotT` says `S'_j` is a localization of
-`S_j ⊗_{S_i} S'_i` for every `j ≥ i`.  Both sides are functors of `j` on the
-cofinal set `{j | i ≤ j}`, tensor products commute with filtered colimits, and a
-filtered colimit of localizations along compatible maps is the localization at the
-union of the images of the submonoids — so passing to the colimit over `j` turns
-`S_j ⊗_{S_i} S'_i → S'_j` into `B ⊗_{S_i} S'_i → A`, still a localization.  Only
-`isLocalizationTotT`, the functoriality fields, and `mid_surj`/`tot_surj`/
-`tot_sep` are used.
+**THE PROOF, and it needs NO colimit machinery at all.**  The submonoid is not
+constructed as a union of the stage submonoids; it is simply
+
+  `W = {w ∈ B ⊗_{S_i} S'_i | the image of w in A is a unit}`,
+
+for which `IsLocalization.map_units` is true by definition.  The other two
+clauses of `isLocalization_iff` are then each discharged at a SINGLE stage:
+
+* *`surj`.*  Given `a : A`, `tot_surj` puts `a = totToA j₀ t₀`; `directed`
+  raises `j₀` to some `k ≥ i` and `comm_totToA` carries `t₀` along, so
+  `a = totToA k t` with `t : S'_k`.  Now `isLocalizationTotT` at `i ≤ k` says
+  `S'_k` is a localization of `S_k ⊗_{S_i} S'_i`, so `t = x/w` there, and
+  applying `totToA k` to that equation gives `a = φ_k x / φ_k w` after the
+  comparison `key` below.  `φ_k w` lies in `W` because a ring map sends units to
+  units.
+* *`exists_of_eq`.*  Given `f x = f y`, write `x - y` as an explicit finite sum
+  `∑ midToB j (m_l) ⊗ₜ t_l` — this is `hsum`, an induction on the tensor product
+  using `mid_surj` and `directed`, and it is the ONLY place where "every element
+  comes from some stage" is used.  Its stage-`j` lift `d_j = ∑ m_l ⊗ₜ t_l` has
+  `totToA j (ψ_j d_j) = f (x - y) = 0`, so `tot_sep` gives `k ≥ j` with
+  `totT (ψ_j d_j) = 0`; the stage-`k` lift `d_k = ∑ midT (m_l) ⊗ₜ t_l` then has
+  `ψ_k d_k = 0` (by `comm_midT` and `totT_comp`, termwise), and
+  `IsLocalization.exists_of_eq` at `k` produces `c` with `c · d_k = 0`.  Pushing
+  down, `φ_k c ∈ W` kills `x - y`.
+
+The one recurring ingredient is the comparison `key`: the two ring maps
+`S_k ⊗_{S_i} S'_i → A` — one through `B ⊗_{S_i} S'_i`, one through `S'_k` —
+agree.  Both are determined by their values on pure tensors, where the identity
+is `comm_midTot` together with `comm_totToA`; the proof is a three-case
+`TensorProduct.induction_on`.
+
+So the "filtered colimit of localizations is a localization" sentence of the
+older design note is TRUE but was never needed: only `mid_surj`, `tot_surj`,
+`tot_sep`, `directed`, the three `comm_*` naturality fields, `totT_comp` and
+`isLocalizationTotT` are consumed, and the colimit itself never has to be built.
 
 **FAITHFULNESS.**  Stated at EVERY `i`, which is what the source's property list
 gives (it holds for every `λ`, not for large `λ`), and what the assembly needs:
@@ -2400,8 +2428,221 @@ theorem exists_isLocalization_tensor_of_noetherianApproxSystem
       (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) B A)
         (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) A)
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
-    ∃ W : Submonoid (B ⊗[sys.Mid i] sys.Tot i), IsLocalization W A :=
-  sorry
+    ∃ W : Submonoid (B ⊗[sys.Mid i] sys.Tot i), IsLocalization W A := by
+  letI : Algebra (sys.Mid i) (sys.Tot i) := (sys.midToTot i).toAlgebra
+  letI : Algebra (sys.Mid i) B := (sys.midToB i).toAlgebra
+  letI : Algebra (sys.Tot i) A := (sys.totToA i).toAlgebra
+  letI : Algebra B A := v.toAlgebra
+  letI : Algebra (sys.Mid i) A := (v.comp (sys.midToB i)).toAlgebra
+  haveI : IsScalarTower (sys.Mid i) B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (sys.Mid i) (sys.Tot i) A :=
+    IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun (sys.comm_midTot i) x).symm
+  letI : Algebra (B ⊗[sys.Mid i] sys.Tot i) A :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) B A)
+      (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) A)
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  show ∃ W : Submonoid (B ⊗[sys.Mid i] sys.Tot i), IsLocalization W A
+  -- Pointwise forms of the system's naturality/cocone fields.
+  have hMB : ∀ {a b : sys.Λ} (hh : sys.le a b) (m : sys.Mid a),
+      sys.midToB b (sys.midT hh m) = sys.midToB a m :=
+    fun hh m => DFunLike.congr_fun (sys.comm_midToB hh) m
+  have hTA : ∀ {a b : sys.Λ} (hh : sys.le a b) (t : sys.Tot a),
+      sys.totToA b (sys.totT hh t) = sys.totToA a t :=
+    fun hh t => DFunLike.congr_fun (sys.comm_totToA hh) t
+  have hMT : ∀ (a : sys.Λ) (m : sys.Mid a),
+      sys.totToA a (sys.midToTot a m) = v (sys.midToB a m) :=
+    fun a m => DFunLike.congr_fun (sys.comm_midTot a) m
+  have hMTT : ∀ {a b : sys.Λ} (hh : sys.le a b) (m : sys.Mid a),
+      sys.midToTot b (sys.midT hh m) = sys.totT hh (sys.midToTot a m) :=
+    fun hh m => DFunLike.congr_fun (sys.comm_midT hh) m
+  have hTT : ∀ {a b c : sys.Λ} (h₁ : sys.le a b) (h₂ : sys.le b c) (t : sys.Tot a),
+      sys.totT h₂ (sys.totT h₁ t) = sys.totT (sys.le_trans' h₁ h₂) t :=
+    fun h₁ h₂ t => DFunLike.congr_fun (sys.totT_comp h₁ h₂) t
+  -- The structure map `B ⊗_{S_i} S'_i → A` on pure tensors.
+  have hf : ∀ (b : B) (t : sys.Tot i),
+      algebraMap (B ⊗[sys.Mid i] sys.Tot i) A (b ⊗ₜ[sys.Mid i] t) = v b * sys.totToA i t :=
+    fun _ _ => rfl
+  -- Every element of `B ⊗_{S_i} S'_i` is an explicit finite sum coming from one stage.
+  have hsum : ∀ d : B ⊗[sys.Mid i] sys.Tot i, ∃ (j : sys.Λ) (_ : sys.le i j)
+      (L : List (sys.Mid j × sys.Tot i)),
+      d = (L.map (fun p => (sys.midToB j p.1) ⊗ₜ[sys.Mid i] p.2)).sum := by
+    intro d
+    induction d using TensorProduct.induction_on with
+    | zero => exact ⟨i, sys.le_rfl i, [], by simp⟩
+    | tmul b t =>
+        obtain ⟨j₀, m, hm⟩ := sys.mid_surj b
+        obtain ⟨k, hik, hj₀k⟩ := sys.directed i j₀
+        refine ⟨k, hik, [(sys.midT hj₀k m, t)], ?_⟩
+        simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_zero]
+        rw [hMB hj₀k m, hm]
+    | add d₁ d₂ h₁ h₂ =>
+        obtain ⟨j₁, hij₁, L₁, hL₁⟩ := h₁
+        obtain ⟨j₂, hij₂, L₂, hL₂⟩ := h₂
+        obtain ⟨k, ha, hb⟩ := sys.directed j₁ j₂
+        refine ⟨k, sys.le_trans' hij₁ ha,
+          (L₁.map (fun p => (sys.midT ha p.1, p.2))) ++
+            (L₂.map (fun p => (sys.midT hb p.1, p.2))), ?_⟩
+        rw [hL₁, hL₂, List.map_append, List.sum_append]
+        simp only [List.map_map, Function.comp_def, hMB]
+  -- The submonoid is the full preimage of the units of `A`.
+  refine ⟨{ carrier := {w | IsUnit (algebraMap (B ⊗[sys.Mid i] sys.Tot i) A w)}
+            one_mem' := by simp
+            mul_mem' := by
+              intro a b ha hb
+              simp only [Set.mem_setOf_eq, map_mul] at *
+              exact ha.mul hb }, ?_⟩
+  refine (isLocalization_iff _ A).mpr ⟨fun y => y.2, ?_, ?_⟩
+  · -- SURJECTIVITY: every `a : A` is a fraction over the stage tensor.
+    intro a
+    obtain ⟨j₀, t₀, ht₀⟩ := sys.tot_surj a
+    obtain ⟨k, hik, hj₀k⟩ := sys.directed i j₀
+    letI : Algebra (sys.Mid i) (sys.Mid k) := (sys.midT hik).toAlgebra
+    letI : Algebra (sys.Mid k) (sys.Tot k) := (sys.midToTot k).toAlgebra
+    letI : Algebra (sys.Mid i) (sys.Tot k) := ((sys.midToTot k).comp (sys.midT hik)).toAlgebra
+    letI : Algebra (sys.Tot i) (sys.Tot k) := (sys.totT hik).toAlgebra
+    haveI : IsScalarTower (sys.Mid i) (sys.Mid k) (sys.Tot k) :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (sys.Mid i) (sys.Tot i) (sys.Tot k) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.comm_midT hik) x
+    letI : Algebra (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) (sys.Mid k) (sys.Tot k))
+        (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) (sys.Tot k))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    obtain ⟨Wk, hWk⟩ := sys.isLocalizationTotT hik
+    haveI := hWk
+    let φk : (sys.Mid k ⊗[sys.Mid i] sys.Tot i) →ₐ[sys.Mid i] (B ⊗[sys.Mid i] sys.Tot i) :=
+      Algebra.TensorProduct.map
+        ({ toRingHom := sys.midToB k, commutes' := fun x => hMB hik x } :
+          sys.Mid k →ₐ[sys.Mid i] B)
+        (AlgHom.id (sys.Mid i) (sys.Tot i))
+    have hφk : ∀ (m : sys.Mid k) (t : sys.Tot i),
+        φk (m ⊗ₜ[sys.Mid i] t) = (sys.midToB k m) ⊗ₜ[sys.Mid i] t := fun _ _ => rfl
+    have hψk : ∀ (m : sys.Mid k) (t : sys.Tot i),
+        algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) (m ⊗ₜ[sys.Mid i] t)
+          = sys.midToTot k m * sys.totT hik t := fun _ _ => rfl
+    have key : ∀ z : sys.Mid k ⊗[sys.Mid i] sys.Tot i,
+        algebraMap (B ⊗[sys.Mid i] sys.Tot i) A (φk z)
+          = sys.totToA k (algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) z) := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul m t => rw [hφk, hψk, hf, map_mul, hMT k m, hTA hik t]
+      | add z₁ z₂ e₁ e₂ => simp only [map_add, e₁, e₂]
+    have ha : sys.totToA k (sys.totT hj₀k t₀) = a := by rw [hTA hj₀k t₀, ht₀]
+    obtain ⟨⟨xk, wk⟩, hxw⟩ := IsLocalization.surj (M := Wk) (sys.totT hj₀k t₀)
+    refine ⟨⟨φk xk, ⟨φk (wk : sys.Mid k ⊗[sys.Mid i] sys.Tot i), ?_⟩⟩, ?_⟩
+    · show IsUnit (algebraMap (B ⊗[sys.Mid i] sys.Tot i) A
+        (φk (wk : sys.Mid k ⊗[sys.Mid i] sys.Tot i)))
+      rw [key]
+      exact (IsLocalization.map_units (sys.Tot k) wk).map (sys.totToA k)
+    · show a * algebraMap (B ⊗[sys.Mid i] sys.Tot i) A
+          (φk (wk : sys.Mid k ⊗[sys.Mid i] sys.Tot i))
+        = algebraMap (B ⊗[sys.Mid i] sys.Tot i) A (φk xk)
+      rw [key, key, ← ha, ← map_mul, hxw]
+  · -- SEPARATEDNESS: two elements with the same image are identified by a unit of `W`.
+    intro x y hxy
+    obtain ⟨j, hij, L, hL⟩ := hsum (x - y)
+    letI : Algebra (sys.Mid i) (sys.Mid j) := (sys.midT hij).toAlgebra
+    letI : Algebra (sys.Mid j) (sys.Tot j) := (sys.midToTot j).toAlgebra
+    letI : Algebra (sys.Mid i) (sys.Tot j) := ((sys.midToTot j).comp (sys.midT hij)).toAlgebra
+    letI : Algebra (sys.Tot i) (sys.Tot j) := (sys.totT hij).toAlgebra
+    haveI : IsScalarTower (sys.Mid i) (sys.Mid j) (sys.Tot j) :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (sys.Mid i) (sys.Tot i) (sys.Tot j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.comm_midT hij) x
+    letI : Algebra (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) (sys.Mid j) (sys.Tot j))
+        (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) (sys.Tot j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    let φj : (sys.Mid j ⊗[sys.Mid i] sys.Tot i) →ₐ[sys.Mid i] (B ⊗[sys.Mid i] sys.Tot i) :=
+      Algebra.TensorProduct.map
+        ({ toRingHom := sys.midToB j, commutes' := fun x => hMB hij x } :
+          sys.Mid j →ₐ[sys.Mid i] B)
+        (AlgHom.id (sys.Mid i) (sys.Tot i))
+    have hφj : ∀ (m : sys.Mid j) (t : sys.Tot i),
+        φj (m ⊗ₜ[sys.Mid i] t) = (sys.midToB j m) ⊗ₜ[sys.Mid i] t := fun _ _ => rfl
+    have hψj : ∀ (m : sys.Mid j) (t : sys.Tot i),
+        algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j) (m ⊗ₜ[sys.Mid i] t)
+          = sys.midToTot j m * sys.totT hij t := fun _ _ => rfl
+    have keyj : ∀ z : sys.Mid j ⊗[sys.Mid i] sys.Tot i,
+        algebraMap (B ⊗[sys.Mid i] sys.Tot i) A (φj z)
+          = sys.totToA j (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j) z) := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul m t => rw [hφj, hψj, hf, map_mul, hMT j m, hTA hij t]
+      | add z₁ z₂ e₁ e₂ => simp only [map_add, e₁, e₂]
+    -- The stage-`j` lift of `x - y`, and its vanishing in `A`.
+    have hdj : φj ((L.map (fun p => p.1 ⊗ₜ[sys.Mid i] p.2)).sum) = x - y := by
+      rw [hL, map_list_sum, List.map_map]
+      simp only [Function.comp_def, hφj]
+    have hzero : sys.totToA j
+        (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)
+          ((L.map (fun p => p.1 ⊗ₜ[sys.Mid i] p.2)).sum)) = 0 := by
+      rw [← keyj, hdj, map_sub, hxy, sub_self]
+    obtain ⟨k, hjk, hsep⟩ := sys.tot_sep j
+      (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)
+        ((L.map (fun p => p.1 ⊗ₜ[sys.Mid i] p.2)).sum)) 0 (by rw [hzero, map_zero])
+    have hik : sys.le i k := sys.le_trans' hij hjk
+    letI : Algebra (sys.Mid i) (sys.Mid k) := (sys.midT hik).toAlgebra
+    letI : Algebra (sys.Mid k) (sys.Tot k) := (sys.midToTot k).toAlgebra
+    letI : Algebra (sys.Mid i) (sys.Tot k) := ((sys.midToTot k).comp (sys.midT hik)).toAlgebra
+    letI : Algebra (sys.Tot i) (sys.Tot k) := (sys.totT hik).toAlgebra
+    haveI : IsScalarTower (sys.Mid i) (sys.Mid k) (sys.Tot k) :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (sys.Mid i) (sys.Tot i) (sys.Tot k) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (sys.comm_midT hik) x
+    letI : Algebra (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (sys.Mid i) (sys.Mid k) (sys.Tot k))
+        (IsScalarTower.toAlgHom (sys.Mid i) (sys.Tot i) (sys.Tot k))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    obtain ⟨Wk, hWk⟩ := sys.isLocalizationTotT hik
+    haveI := hWk
+    let φk : (sys.Mid k ⊗[sys.Mid i] sys.Tot i) →ₐ[sys.Mid i] (B ⊗[sys.Mid i] sys.Tot i) :=
+      Algebra.TensorProduct.map
+        ({ toRingHom := sys.midToB k, commutes' := fun x => hMB hik x } :
+          sys.Mid k →ₐ[sys.Mid i] B)
+        (AlgHom.id (sys.Mid i) (sys.Tot i))
+    have hφk : ∀ (m : sys.Mid k) (t : sys.Tot i),
+        φk (m ⊗ₜ[sys.Mid i] t) = (sys.midToB k m) ⊗ₜ[sys.Mid i] t := fun _ _ => rfl
+    have hψk : ∀ (m : sys.Mid k) (t : sys.Tot i),
+        algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) (m ⊗ₜ[sys.Mid i] t)
+          = sys.midToTot k m * sys.totT hik t := fun _ _ => rfl
+    have keyk : ∀ z : sys.Mid k ⊗[sys.Mid i] sys.Tot i,
+        algebraMap (B ⊗[sys.Mid i] sys.Tot i) A (φk z)
+          = sys.totToA k (algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k) z) := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul m t => rw [hφk, hψk, hf, map_mul, hMT k m, hTA hik t]
+      | add z₁ z₂ e₁ e₂ => simp only [map_add, e₁, e₂]
+    -- The stage-`k` lift of `x - y`, which is already killed at stage `k`.
+    have hdk : φk ((L.map (fun p => (sys.midT hjk p.1) ⊗ₜ[sys.Mid i] p.2)).sum) = x - y := by
+      rw [hL, map_list_sum, List.map_map]
+      simp only [Function.comp_def, hφk, hMB]
+    have hψeq : algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k)
+          ((L.map (fun p => (sys.midT hjk p.1) ⊗ₜ[sys.Mid i] p.2)).sum)
+        = sys.totT hjk (algebraMap (sys.Mid j ⊗[sys.Mid i] sys.Tot i) (sys.Tot j)
+            ((L.map (fun p => p.1 ⊗ₜ[sys.Mid i] p.2)).sum)) := by
+      rw [map_list_sum, map_list_sum, map_list_sum, List.map_map, List.map_map, List.map_map]
+      simp only [Function.comp_def, hψk, hψj, map_mul, hMTT, hTT]
+    have hzk : algebraMap (sys.Mid k ⊗[sys.Mid i] sys.Tot i) (sys.Tot k)
+        ((L.map (fun p => (sys.midT hjk p.1) ⊗ₜ[sys.Mid i] p.2)).sum) = 0 := by
+      rw [hψeq, hsep, map_zero]
+    obtain ⟨c, hc⟩ := IsLocalization.exists_of_eq (M := Wk) (S := sys.Tot k)
+      (x := (L.map (fun p => (sys.midT hjk p.1) ⊗ₜ[sys.Mid i] p.2)).sum) (y := 0)
+      (by rw [hzk, map_zero])
+    refine ⟨⟨φk (c : sys.Mid k ⊗[sys.Mid i] sys.Tot i), ?_⟩, ?_⟩
+    · show IsUnit (algebraMap (B ⊗[sys.Mid i] sys.Tot i) A
+        (φk (c : sys.Mid k ⊗[sys.Mid i] sys.Tot i)))
+      rw [keyk]
+      exact (IsLocalization.map_units (sys.Tot k) c).map (sys.totToA k)
+    · have hkill : φk (c : sys.Mid k ⊗[sys.Mid i] sys.Tot i) * (x - y) = 0 := by
+        rw [← hdk, ← map_mul, hc, mul_zero, map_zero]
+      have h2 : φk (c : sys.Mid k ⊗[sys.Mid i] sys.Tot i) * x
+          - φk (c : sys.Mid k ⊗[sys.Mid i] sys.Tot i) * y = 0 := by
+        rw [← mul_sub]; exact hkill
+      exact sub_eq_zero.mp h2
 
 /-- **NOETHERIAN APPROXIMATION FOR 00R7: Stacks 10.127.13 + 10.128.3**
 (cut 2026-07-27 out of the approximation half below; **PROVEN 2026-07-28** over
