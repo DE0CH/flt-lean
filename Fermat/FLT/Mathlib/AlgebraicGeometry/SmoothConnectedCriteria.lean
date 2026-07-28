@@ -42,6 +42,10 @@ ring so that a consumer can discharge them by commutative algebra.
   previous item once regularity and perfectness have been consumed: for a
   **smooth** finite-type domain over ANY field, the relative dimension is the
   Krull dimension (LEAF; no perfectness, no regularity, pure dimension theory).
+* `ringKrullDim_eq_of_isIntegral_of_injective` — an injective integral ring
+  extension preserves the Krull dimension, Stacks `00OJ`+`00OK` (**PROVEN
+  2026-07-28**, by an `RelSeries.inductionOn'` lift of chains — this is the
+  arbitrary-length going-up theorem mathlib records as a TODO of its own).
 
 ## Why the connectedness criterion has to go through the function field
 
@@ -62,6 +66,7 @@ public import Mathlib.RingTheory.Spectrum.Prime.Topology
 public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.KrullDimension.Basic
+public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.FieldTheory.PerfectClosure
 public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
 -- (restored at the release-12 integration: these were dropped when an import-block
@@ -88,9 +93,11 @@ open CategoryTheory Limits TensorProduct CommRingCat
 
 /-! ### Commutative-algebra input: regularity, smoothness, and the rank of `Ω`
 
-The two `sorry` leaves of this file both live here, in ring-theoretic form.  The
-scheme-level statement at the end of the file is then *assembled* from them with
-no further mathematical content.
+This section is now sorry-free (`ringKrullDim_eq_of_isIntegral_of_injective`, the
+last leaf here, was PROVEN 2026-07-28).  The one remaining leaf of the file is
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`, in the scheme section at
+the end; everything else there is *assembled* with no further mathematical
+content.
 -/
 
 namespace Algebra
@@ -237,30 +244,43 @@ theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
 end Algebra
 
 /-- **An injective integral ring extension preserves the Krull dimension**
-(sorry leaf, opened 2026-07-27).
+(opened as a sorry leaf 2026-07-27; **PROVEN 2026-07-28**).
 
 Stacks `00OK` (`dim S ≤ dim R`, by incomparability) together with `00OJ`
-(`dim R ≤ dim S`, by lying over and going up).  This is the only gap left in the
-dimension half of this file, and it is stated in full mathlib generality rather
-than for the finite-type case that needs it, because that is what it is.
+(`dim R ≤ dim S`, by lying over and going up).  It is stated in full mathlib
+generality rather than for the finite-type case that needs it, because that is
+what it is.  Mathlib flags the chain form of going-up as a TODO of its own — see
+below — so this fills that gap.
 
-## What the pin has, checked 2026-07-27
+## The proof
 
-Both halves of the argument are present as statements about a *single* prime; only
-the passage to chains is missing.
+Both halves of the argument are present in the pin as statements about a *single*
+prime; the content added here is the passage to chains.
 
-* Incomparability: `Ideal.IsIntegral.comap_lt_comap` — for `I < J` primes of `S`,
-  `comap I < comap J`.  So `PrimeSpectrum.comap (algebraMap R S)` is strictly
-  monotone and `Order.krullDim_le_of_strictMono` gives `dim S ≤ dim R` directly.
-* Lying over and going up: `Ideal.exists_ideal_over_prime_of_isIntegral` and
-  `Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime` (the latter takes a
-  prime `I` of `S` with `comap I ≤ P` and produces `Q ≥ I` over `P`).  Turning a
-  chain `p₀ < ⋯ < p_n` of `R` into a chain of `S` is an induction on the chain
-  using the second, i.e. an `RelSeries`/`LTSeries` induction; that induction is the
-  work, and **mathlib says so itself** — the comment above
-  `exists_ideal_over_prime_of_isIntegral_of_isPrime` reads *"TODO: Version of
-  going-up theorem with arbitrary length chains (by induction on this)?  Not sure
-  how best to write an ascending chain in Lean"*.
+* `≤` (Stacks `00OK`): incomparability, `Ideal.IsIntegral.comap_lt_comap` — for
+  `I < J` primes of `S`, `comap I < comap J`.  So `PrimeSpectrum.comap
+  (algebraMap R S)` is strictly monotone and `Order.krullDim_le_of_strictMono`
+  gives `dim S ≤ dim R` in one line.  (Injectivity is not needed here.)
+* `≥` (Stacks `00OJ`): every `LTSeries (PrimeSpectrum R)` is lifted to an
+  `LTSeries (PrimeSpectrum S)` of the *same length* lying over it, by
+  `RelSeries.inductionOn'` — the induction principle that builds a series from a
+  singleton by repeated `snoc`, which is exactly the shape of a going-up
+  argument.  The singleton case is lying over,
+  `Ideal.exists_ideal_over_prime_of_isIntegral` applied with `I = ⊥` (this is
+  where injectivity enters, as `RingHom.ker (algebraMap R S) = ⊥ ≤ P`); the
+  `snoc` case is going up,
+  `Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime`, which produces
+  `Q ≥ q.last` over the next prime `x` of the chain.  Strictness of the new step
+  is *not* given by that lemma and has to be argued: `q.last ≤ Q` and the two
+  contract to `p.last < x`, so they cannot be equal.  Then
+  `Order.LTSeries.length_le_krullDim` on the lifted series bounds each length in
+  the supremum defining `krullDim (PrimeSpectrum R)`.
+
+Mathlib asks for precisely this: the comment above
+`exists_ideal_over_prime_of_isIntegral_of_isPrime` reads *"TODO: Version of
+going-up theorem with arbitrary length chains (by induction on this)?  Not sure
+how best to write an ascending chain in Lean"*.  The answer is `LTSeries`, and
+`RelSeries.inductionOn'` is the induction it asks for.
 
 A dead end worth recording so it is not re-explored: the `≥` direction does **not**
 follow from `Order.krullDim_le_of_strictComono_and_surj` even though
@@ -269,20 +289,63 @@ follow from `Order.krullDim_le_of_strictComono_and_surj` even though
 `S = k[x] × k[x]`, `q₁ = 0 × k[x]`, `q₂ = k[x] × (x)`; then
 `comap q₁ = (0) < (x) = comap q₂` while `q₁ ⊄ q₂` (as `(0,1) ∈ q₁ \ q₂`).  So the
 lifted chain really has to be built step by step, each prime chosen above the
-previous one.
-
-*The check that would refute this*: `grep -rn "krullDim" Mathlib/RingTheory/Ideal/GoingUp.lean`
-or `grep -rn "IsIntegral" Mathlib/RingTheory/KrullDimension/` returning anything —
-both are empty at this pin.
+previous one — which is what the `snoc` case does.
 
 ## Faithfulness
 
-Injectivity is load-bearing on both sides: without it take `R` any ring and
-`S = 0`, which is integral over `R` with `ringKrullDim S = ⊥ ≠ ringKrullDim R`. -/
+Injectivity is load-bearing: without it take `R` any ring and `S = 0`, which is
+integral over `R` with `ringKrullDim S = ⊥ ≠ ringKrullDim R`.  It is used exactly
+once, in the lying-over step. -/
 theorem ringKrullDim_eq_of_isIntegral_of_injective (R S : Type u) [CommRing R] [CommRing S]
     [Algebra R S] [Algebra.IsIntegral R S] (h : Function.Injective (algebraMap R S)) :
-    ringKrullDim S = ringKrullDim R :=
-  sorry
+    ringKrullDim S = ringKrullDim R := by
+  have hker : RingHom.ker (algebraMap R S) = ⊥ := (RingHom.injective_iff_ker_eq_bot _).mp h
+  refine le_antisymm ?_ ?_
+  · -- `00OK`: incomparability makes `comap` strictly monotone.
+    refine Order.krullDim_le_of_strictMono (PrimeSpectrum.comap (algebraMap R S)) ?_
+    intro x y hxy
+    rw [← PrimeSpectrum.asIdeal_lt_asIdeal] at hxy ⊢
+    exact Ideal.IsIntegral.comap_lt_comap hxy
+  · -- `00OJ`: lying over and going up lift a chain of `R` to a chain of `S` of the same length.
+    have key : ∀ p : LTSeries (PrimeSpectrum R), ∃ q : LTSeries (PrimeSpectrum S),
+        q.length = p.length ∧ PrimeSpectrum.comap (algebraMap R S) q.last = p.last := by
+      intro p
+      induction p using RelSeries.inductionOn' with
+      | singleton x =>
+          -- lying over
+          obtain ⟨Q, -, hQp, hQc⟩ :=
+            Ideal.exists_ideal_over_prime_of_isIntegral x.asIdeal (⊥ : Ideal S)
+              (by simp [← RingHom.ker_eq_comap_bot, hker])
+          refine ⟨RelSeries.singleton _ ⟨Q, hQp⟩, rfl, ?_⟩
+          rw [RelSeries.last_singleton]
+          exact PrimeSpectrum.ext hQc
+      | snoc p x hx ih =>
+          -- going up, one step
+          obtain ⟨q, hlen, hcomap⟩ := ih
+          have hlt : p.last.asIdeal < x.asIdeal := PrimeSpectrum.asIdeal_lt_asIdeal _ _ |>.mpr hx
+          have hle : q.last.asIdeal.comap (algebraMap R S) ≤ x.asIdeal := by
+            have : (PrimeSpectrum.comap (algebraMap R S) q.last).asIdeal ≤ x.asIdeal := by
+              rw [hcomap]; exact hlt.le
+            exact this
+          obtain ⟨Q, hQge, hQp, hQc⟩ :=
+            Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime x.asIdeal q.last.asIdeal hle
+          -- the new prime is *strictly* above the old one, because their contractions differ
+          have hrel : q.last < (⟨Q, hQp⟩ : PrimeSpectrum S) := by
+            rw [← PrimeSpectrum.asIdeal_lt_asIdeal]
+            refine lt_of_le_of_ne hQge fun hEq => ?_
+            have h1 : (PrimeSpectrum.comap (algebraMap R S) q.last).asIdeal = x.asIdeal := by
+              show q.last.asIdeal.comap (algebraMap R S) = x.asIdeal
+              rw [hEq]; exact hQc
+            rw [hcomap] at h1
+            exact absurd h1 hlt.ne
+          refine ⟨q.snoc ⟨Q, hQp⟩ hrel, by simp [hlen], ?_⟩
+          simp only [RelSeries.last_snoc]
+          exact PrimeSpectrum.ext hQc
+    rw [ringKrullDim, ringKrullDim, Order.krullDim]
+    refine iSup_le fun p => ?_
+    obtain ⟨q, hlen, -⟩ := key p
+    rw [← hlen]
+    exact Order.LTSeries.length_le_krullDim q
 
 namespace Algebra
 
