@@ -1716,9 +1716,10 @@ deepest of the geometric leaves) and
 minimal-prime bookkeeping `exists_isOpen_isIrreducible_of_isDomain_localization` /
 `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` (both
 PROVEN, and all three now in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), and the single
-surviving leaf `isDomain_stalk_of_smooth_over_field` (SORRY — "smooth over a
-field ⟹ the local rings are domains", a pure mathlib gap)), assembled by
+`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), and
+`isDomain_stalk_of_smooth_over_field` ("smooth over a field ⟹ the local rings
+are domains", a pure mathlib gap — **PROVEN, no longer a leaf**, and in
+`Modularity/RegularStalks.lean` since 2026-07-28)), assembled by
 multiplying the two genericity polynomials),
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
 2026-07-26** — no longer a leaf: the `ℝ`-topology half, a whole BOX of
@@ -1808,10 +1809,10 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    (projective closure, the Enriques–Severi–Zariski connectedness theorem,
    and openness of the geometrically-connected locus — the only place `hdim`
    is used) and `geometricallyIrreducible_of_smooth_of_geometricallyConnected`
-   (PROVEN 2026-07-26; of its own cut only
+   (PROVEN 2026-07-26, and since 2026-07-28 nothing under it survives either:
    `isDomain_stalk_of_smooth_over_field` — "smooth over a field ⟹ the local
-   rings are domains" — survives, the "connected + normal ⟹ irreducible" half
-   having been discharged outright), with
+   rings are domains" — is PROVEN, and the whole cut now lives in
+   `Modularity/RegularStalks.lean`), with
    `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` PROVEN over
    them. The real-topology approximation is now a SEPARATE item, 6 below, and
    the elementary nonzerodivisor step a third,
@@ -2163,8 +2164,9 @@ itself PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`
 itself PROVEN over the hyperplane PARAMETER SPACE and its three branches
 `exists_nonZeroDivisorLocus_...` (PROVEN 2026-07-26),
 `exists_bertiniGenericLocus_...` (itself PROVEN 2026-07-26 over
-`exists_bertiniSmoothLocus_...`, `exists_bertiniConnectedLocus_...` and
-`geometricallyIrreducible_of_smooth_of_geometricallyConnected`, all SORRY)
+`exists_bertiniSmoothLocus_...` and `exists_bertiniConnectedLocus_...` (SORRY)
+and `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (PROVEN —
+this bullet said "all SORRY" and was wrong about the third))
 and `exists_realApproximationBall_of_affine_geometricallyIrreducible`
 (PROVEN 2026-07-26 over
 `exists_realArc_of_affine_geometricallyIrreducible`, itself PROVEN))
@@ -4423,8 +4425,7 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
 -- independent copy in `Mathlib/AlgebraicGeometry/CurveExtension.lean` had
 -- given it; that copy is deleted too).  The shim has ZERO `Fermat` imports, so
 -- it is reachable from both sides of the tree and a third copy should never be
--- necessary.  Consumed below in
--- `geometricallyIrreducible_of_smooth_of_geometricallyConnected`.
+-- necessary.
 
 -- `isDomain_of_isRegularLocalRing_aux` and `isDomain_of_isRegularLocalRing`
 -- were HOISTED out of this file into `Modularity/RegularStalks.lean` on
@@ -4434,54 +4435,6 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
 -- unqualified through the `public import` of that module above.
 
 
-open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (**PROVEN 2026-07-26** over
-`isRegularLocalRing_stalk_of_smooth_over_field` (**PROVEN 2026-07-26**, over one
-remaining geometric leaf) and `isDomain_of_isRegularLocalRing` (PROVEN)).
-
-For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
-an integral domain.
-
-THE CLASSICAL ARGUMENT named TWO mathlib gaps. A smooth morphism has
-geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme over
-any field; and a regular local ring is an integral domain.
-
-**ONE OF THE TWO IS NOW CLOSED (2026-07-26).** `regular local ⟹ IsDomain` is
-PROVEN here as `isDomain_of_isRegularLocalRing`, over the exchange lemma
-`exists_finset_card_span_insert_eq_maximalIdeal` and the induction
-`isDomain_of_isRegularLocalRing_aux`. It is mathlib's own recorded TODO in
-`Mathlib/RingTheory/RegularLocalRing/Defs.lean`, and the proof needed nothing
-beyond Nakayama, prime avoidance and the two halves of Krull's height theorem
-that the pin already carries — in particular NOT the associated graded ring
-that the earlier version of this docstring proposed. It is a general, reusable
-statement and a genuine mathlib contribution.
-
-**AND SO IS THE OTHER, DOWN TO ONE GEOMETRIC LEAF (2026-07-26).**
-`isRegularLocalRing_stalk_of_smooth_over_field` (stated immediately above) is
-now PROVEN over `isRegularLocalRing_quotient_span_list_aux` (PROVEN — a general
-"quotient by part of a regular system of parameters is regular", which mathlib
-lacks entirely) and the single remaining leaf
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY),
-which asks only that the stalk BE presented as a regular local ring modulo a
-list independent mod `𝔪²`. So no commutative algebra is left below this node —
-only presentation bookkeeping and the Jacobian criterion.
-
-Note this SUBSUMES the weaker "smooth over a field ⟹ reduced": the sibling
-`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
-2026-07-26 by a different route (associated primes) and no longer needs it,
-but any future consumer of reducedness can take it from here.
-
-Stated with `hf` an explicit hypothesis rather than an instance because the
-call site has `Smooth` as a hypothesis of a theorem, not in the instance
-cache. -/
-theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
-    {Z : AlgebraicGeometry.Scheme.{u}}
-    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
-    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
-    IsDomain (Z.presheaf.stalk z) :=
-  haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
-  isDomain_of_isRegularLocalRing _
-
 -- `exists_isOpen_isIrreducible_primeSpectrum` (a prime with domain
 -- localization has an irreducible open neighbourhood in `Spec R`) and
 -- `exists_isOpen_isIrreducible_of_isDomain_stalk` (its scheme-level form) were
@@ -4490,93 +4443,29 @@ theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
 -- `exists_isOpen_isIrreducible_of_isDomain_localization` and
 -- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`.  The
 -- second, independent copy of the same pair in
--- `Mathlib/AlgebraicGeometry/CurveExtension.lean` is deleted too.  Consumed
--- below in `exists_isOpen_isIrreducible_of_smooth_over_field`.
+-- `Mathlib/AlgebraicGeometry/CurveExtension.lean` is deleted too.
 
-open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (**PROVEN 2026-07-26** over
-the two leaves above).
-
-Smoothness enters twice and in two different ways, which is exactly why the
-two leaves are separate: it supplies the domain stalks
-(`isDomain_stalk_of_smooth_over_field`, the geometric content), and — through
-`Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
-`LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
-the local noetherianity that
-`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) needs. -/
-theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
-    {Z : AlgebraicGeometry.Scheme.{u}}
-    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
-    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
-    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
-  have : AlgebraicGeometry.Smooth f := hf
-  have : AlgebraicGeometry.IsLocallyNoetherian Z :=
-    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
-  exact AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk z
-    (isDomain_stalk_of_smooth_over_field f hf z)
-
-open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE**
-(**PROVEN 2026-07-26** over the four names above — the formal half of Bertini
-irreducibility, isolated so that the Lefschetz content lives alone in
-`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`).
-
-A scheme smooth over `ℚ` whose geometric fibres are connected has
-irreducible geometric fibres. No Bertini theorem, no hyperplanes and no
-parameter space occur here: it is the standard chain
-
-* `X_K ⟶ Spec K` is smooth for every field extension `K/ℚ`, since `Smooth` is
-  stable under base change (`AlgebraicGeometry.Smooth` is a
-  `MorphismProperty.IsStableUnderBaseChange`);
-* a scheme smooth over a field is REGULAR, so all of its local rings are
-  regular local rings, hence integral domains;
-* a locally noetherian scheme whose local rings are domains has its
-  irreducible components equal to its connected components — through a point
-  lying on two components the local ring would have two minimal primes — so
-  CONNECTED ⟹ IRREDUCIBLE.
-
-`GeometricallyConnected` already carries nonemptiness (`ConnectedSpace`
-extends `Nonempty`), which is what `IrreducibleSpace` also demands, so no
-extra hypothesis is needed.
-
-Stated for a general scheme `X` over `Spec (ULift ℚ)` rather than for the
-hyperplane sections alone, both because it is true at that generality and
-because the concrete base `ULift ℚ` is what every statement in this file
-uses, so the call site matches syntactically.
-
-**PROVEN 2026-07-26** over the five names immediately above it, of which
-exactly ONE is still open:
-
-* `irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN) — the
-  point-set topology;
-* `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN) and
-  `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
-  (PROVEN) — the minimal-prime bookkeeping that turns a domain stalk into an
-  irreducible open neighbourhood.  These three were HOISTED on 2026-07-28 into
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` and are no longer
-  declared here;
-* **`isDomain_stalk_of_smooth_over_field` (SORRY)** — "smooth over a field ⟹
-  the local rings are domains", the sole surviving leaf and the only place
-  where any geometry is used;
-* `exists_isOpen_isIrreducible_of_smooth_over_field` (PROVEN) — the assembly.
-
-So the whole connected ⟹ irreducible upgrade is reduced to one sharply
-stated mathlib gap. See the cut note on the topological lemma for why that is
-the right split. -/
-theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
-    {X : AlgebraicGeometry.Scheme.{u}}
-    (h : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsm : AlgebraicGeometry.Smooth h)
-    (hconn : AlgebraicGeometry.GeometricallyConnected h) :
-    AlgebraicGeometry.GeometricallyIrreducible h := by
-  have : AlgebraicGeometry.Smooth h := hsm
-  refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
-  have : ConnectedSpace ↥(Limits.pullback h y) :=
-    AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
-  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
-    (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
-      (Limits.pullback.snd h y) inferInstance z)
+-- `isDomain_stalk_of_smooth_over_field` ("smooth over a field ⟹ the stalks are
+-- integral domains", PROVEN over `isRegularLocalRing_stalk_of_smooth_over_field`
+-- and `isDomain_of_isRegularLocalRing`),
+-- `exists_isOpen_isIrreducible_of_smooth_over_field` (PROVEN — the same plus
+-- `LocallyOfFiniteType.isLocallyNoetherian`) and
+-- `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (PROVEN — the
+-- assembly, consumed below in
+-- `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`) were HOISTED
+-- out of this file on 2026-07-28 into `Modularity/RegularStalks.lean`, which is
+-- `public import`ed above, so they remain available here unqualified and every
+-- call site in this file is unchanged.
+--
+-- WHY.  `ModularCurve/X0.lean` needed the third of them and had restated it as
+-- a fresh `sorry` leaf, because this module is 34 000 lines whose import cone
+-- reaches the Deformations and automorphic-form subtrees — a trade nobody would
+-- take for three formalities.  `RegularStalks.lean` imports mathlib and one
+-- `Fermat` shim with no `Fermat` imports of its own, so both sides can reach it.
+-- The third was GENERALISED in the move, from the fixed base `Spec (ULift ℚ)` to
+-- an arbitrary base scheme: `geometrically P` quantifies over all `Spec K ⟶ Y`
+-- with `K` a field, so the base occurs in the proof only as a fixed object and
+-- the generalisation is free.  `X0.lean`'s leaf is closed by the same statement.
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI in characteristic zero: the generic hyperplane section is
@@ -4624,13 +4513,14 @@ as the section is known to be SMOOTH. So the three conditions separate:
 * `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY) —
   a nonzero `F₂` off whose zero locus the section is geometrically connected.
   **This is the sole consumer of `hdim`**, and it is false at `dim = 1`.
-* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
-  2026-07-26**, over the single surviving leaf
-  `isDomain_stalk_of_smooth_over_field`) —
-  smooth + geometrically connected ⟹ geometrically irreducible, for any
-  scheme over `Spec (ULift ℚ)`. Pure formalities: smooth over a field ⟹
-  regular ⟹ local rings are domains, and a connected locally noetherian
-  scheme with domain local rings is irreducible.
+* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN,
+  and its whole cone with it** — `isDomain_stalk_of_smooth_over_field` is no
+  longer a leaf; both live in `Modularity/RegularStalks.lean` since
+  2026-07-28 and that module is entirely sorry-free) —
+  smooth + geometrically connected ⟹ geometrically irreducible, over an
+  ARBITRARY base scheme since the hoist. Pure formalities: smooth over a
+  field ⟹ regular ⟹ local rings are domains, and a connected locally
+  noetherian scheme with domain local rings is irreducible.
 
 The assembly here is `F := F₁ * F₂`: `MvPolynomial (Fin (n+1)) ℚ` is a
 domain, so the product is nonzero, and a non-root of the product is a
@@ -7233,7 +7123,9 @@ short. So this is now proven over:
 * `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (**PROVEN
   2026-07-26** over `exists_bertiniSmoothLocus_…` (SORRY),
   `exists_bertiniConnectedLocus_…` (SORRY) and
-  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY)) —
+  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN**,
+  in `Modularity/RegularStalks.lean` since 2026-07-28 — this bullet labelled
+  it SORRY and was wrong)) —
   off a proper `ℚ`-rational closed subset, the section is smooth and
   geometrically irreducible;
 * `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
@@ -25688,7 +25580,8 @@ glue is PROVEN here and three named sub-leaves remain, stated immediately
 above. What this node's proof now does, every step out of mathlib or out of
 this file:
 
-* `C` is REDUCED, because `isDomain_stalk_of_smooth_over_field` (PROVEN above)
+* `C` is REDUCED, because `isDomain_stalk_of_smooth_over_field` (PROVEN, and
+  in `Modularity/RegularStalks.lean` since 2026-07-28 rather than above)
   makes each of its stalks a domain and `isReduced_of_isReduced_stalk` glues
   that to `IsReduced C`;
 * `C` is IRREDUCIBLE, because `Spec (ULift ℚ)` is a one-point space and
@@ -35183,13 +35076,15 @@ bookkeeping — it discharges FOUR of the ten clauses of
   it removes a clause from the leaf's obligations by making another one
   more informative.
 * `AlgebraicGeometry.GeometricallyIrreducible fX₀` comes from
-  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (line
-  ~3705 of this file, PROVEN over the single mathlib gap
-  `isDomain_stalk_of_smooth_over_field`), so the leaf need only assert
+  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
+  outright** — not "over the single mathlib gap
+  `isDomain_stalk_of_smooth_over_field`", which is itself proven; both moved
+  to `Modularity/RegularStalks.lean` on 2026-07-28, `public import`ed above,
+  so the name still resolves unqualified here), so the leaf need only assert
   GEOMETRIC CONNECTEDNESS — which is what the classical statement gives,
-  irreducibility being the formal smooth-plus-connected upgrade. That
-  lemma is stated for morphisms to `Spec (ULift ℚ)`, which is exactly the
-  shape of `fX₀`, so it applies with no massaging.
+  irreducibility being the formal smooth-plus-connected upgrade. That lemma
+  is now stated over an ARBITRARY base scheme, so a fortiori it applies to
+  `fX₀` with no massaging.
 * NONDEGENERACY of `Λ` and of `Λp` are the fourth clause of
   `IsStandardLevelModule` verbatim, so they come from `hstd`/`hstdp` and
   never reach the geometry at all. This is the concrete payoff of the

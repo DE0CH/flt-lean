@@ -23569,51 +23569,41 @@ noncomputable def Gamma0AtlasOver.baseChange {N : ℕ} {S S' : Scheme.{0}}
 end Gamma0AtlasOverBaseChange
 
 /-- **A smooth geometrically connected scheme over a field is geometrically
-IRREDUCIBLE** (sorry leaf HERE, but see the warning: it is **NOT open
-mathematics and NOT open Lean** — it is one HOIST away).
+IRREDUCIBLE** (**PROVEN 2026-07-28 by the HOIST the previous docstring here
+asked for** — this is now an instance-argument repackaging of
+`GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected`
+and carries no mathematics of its own).
 
-## DO NOT PROVE THIS.  IT IS ALREADY PROVEN IN THIS REPOSITORY.
+WHAT HAPPENED.  This was a `sorry` leaf whose docstring said, correctly, DO NOT
+PROVE THIS — the identical theorem was already sorry-free in
+`Fermat/FLT/Modularity/MoretBailly.lean` at the fixed base `Spec (ULift ℚ)`,
+and every lemma under it was already general in the base field.  The obstacle
+was purely structural: `MoretBailly.lean` is a 34 000-line module whose import
+cone reaches the Deformations and automorphic-form subtrees, so importing it to
+reach three formalities was not a trade anyone would take, and a verbatim copy
+into a second module is worse than an honest leaf.
 
-`Fermat/FLT/Modularity/MoretBailly.lean` carries, **sorry-free**, the identical
-theorem under the identical name at the fixed base `Spec (ULift ℚ)`:
+So the block was HOISTED rather than copied.  Its two purely topological /
+commutative-algebra layers had already moved to
+`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`
+(`irreducibleSpace_of_isOpen_isIrreducible_nhds`,
+`exists_isOpen_isIrreducible_of_isDomain_localization`,
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`); the
+three geometric ones — `isDomain_stalk_of_smooth_over_field`,
+`exists_isOpen_isIrreducible_of_smooth_over_field` and the assembly — moved on
+2026-07-28 to `Fermat/FLT/Modularity/RegularStalks.lean`, beside
+`isRegularLocalRing_stalk_of_smooth_over_field`, which was hoisted there for the
+same reason on 2026-07-27.  `MoretBailly.lean` `public import`s that module, so
+its own call sites are unchanged; this file reaches it through
+`Fermat.FLT.Modularity.AbelianSchemeIsogeny`.
 
-    theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
-      {X : Scheme.{u}} (h : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
-      (hsm : Smooth h) (hconn : GeometricallyConnected h) :
-      GeometricallyIrreducible h
-
-and every lemma it stands on is **already general in the base field**:
-
-* `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` — pure topology;
-* `exists_isOpen_isIrreducible_primeSpectrum` — pure commutative algebra;
-* `exists_isOpen_isIrreducible_of_isDomain_stalk` — the affine chart transport;
-* `isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]` — PROVEN over
-  `isRegularLocalRing_stalk_of_smooth_over_field`, which lives in
-  `Fermat/FLT/Modularity/RegularStalks.lean` and is sorry-free;
-* `exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]` —
-  the assembly.
-
-Only the last declaration in that chain is specialised to `ULift ℚ`, and its
-proof body uses the base as a fixed object only, so it generalises verbatim.
-
-**So the work here is a HOIST, not a proof.**  `RegularStalks.lean` imports
-mathlib and nothing else — it exists precisely as the home for material of this
-kind, and the same hoist was performed for
-`isRegularLocalRing_stalk_of_smooth_over_field` on 2026-07-27.  The five
-declarations above belong there (or in this project's own shim tree beside
-`GeometricallyReduced.of_smooth`, which this file already `public import`s from
-`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`), stated at
-an arbitrary field.  Then `X0.lean` imports that module and this declaration
-becomes two lines.
-
-It was NOT done in this task because it means deleting five declarations from
-`MoretBailly.lean` — another owner's 30k-line module, whose `public import` of
-`RegularStalks.lean` would keep its own two call sites resolving unqualified —
-and a verbatim copy into a second module is worse than an honest leaf.
-
-*The check that refutes any claim that this is new mathematics*:
-`grep -n 'geometricallyIrreducible_of_smooth_of_geometricallyConnected'
-Fermat/FLT/Modularity/MoretBailly.lean`.
+The assembly was GENERALISED in the move, from `Spec (ULift ℚ)` to an arbitrary
+base scheme.  That is free rather than a strengthening: `geometrically P`
+quantifies over all `Spec K ⟶ Y` with `K` a field, so the statement is about the
+geometric fibres and the base appears in the proof only as the fixed object those
+morphisms land in.  The form below — an arbitrary field `k`, with `Smooth` and
+`GeometricallyConnected` as INSTANCES, which is what the call site in
+`geometricallyIntegral_of_gamma0CurveAtlasOver` has — is one instance of it.
 
 For the record, the mathematics: after any field extension `L/k` the base
 change `X_L` is smooth over `L` and connected; smooth over a field ⟹ regular ⟹
@@ -23625,7 +23615,8 @@ project built it in the first place. -/
 theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected {X : Scheme.{u}}
     {k : Type u} [Field k] (g : X ⟶ Spec (CommRingCat.of k))
     [Smooth g] [GeometricallyConnected g] : GeometricallyIrreducible g :=
-  sorry
+  _root_.GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected
+    g ‹Smooth g› ‹GeometricallyConnected g›
 
 /-- **A curve atlas over a field is GEOMETRICALLY INTEGRAL** (PROVEN 2026-07-27
 over the mathlib-facing leaf above).
