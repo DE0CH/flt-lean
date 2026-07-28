@@ -8692,11 +8692,16 @@ rational primes), the newform's level is supported over `2` and `ℓ`, and
 where Deligne's theorem applies and where the classical package above is
 a theorem.
 
-`hbad3` is deliberately NOT added.  It is needed by the two citations
-above because `3` is the residue characteristic of the `3`-adic member of
-the compatible system; nothing here is `3`-adic, and `hρ.isUnramified`
-already makes `ρ` unramified at `3` for `ℓ ≥ 5`.  Adding it would be a
-hypothesis with no consumer.
+`hbad3` PLAYS NO PART IN THIS REPAIR, and is present for an unrelated
+reason.  The Weil bound does not need it: `3` is the residue
+characteristic of the `3`-adic member of the compatible system, nothing
+in this leaf is `3`-adic, and `hρ.isUnramified` already makes `ρ`
+unramified at `3` for `ℓ ≥ 5`.  It appears in the binders only because
+the AUTOMORPHIC-axis cut below routes this node through
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which requires
+it (together with `hFeven`).  Accordingly the geometric leaf
+`exists_frobEigenvalues_of_totallyDefinite_heckeCharacter` above, which
+does not make that call, carries `hbad2` and `hbadℓ` and NOT `hbad3`.
 
 CUT AUDIT — THE ARITHMETIC AXIS, SEARCHED 2026-07-28 AND CLOSED.  Besides
 the geometric axis (the NEXT CUT paragraph below), one further axis is
