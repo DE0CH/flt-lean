@@ -40296,8 +40296,12 @@ The chain, top down:
 
 | what | where | status |
 |---|---|---|
-| the fine AFFINE moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` over `𝔽_ℓ` | `exists_rigidifiedModuliData_specF` | **LEAF** (KM 4.7.2, 5.1.1, 6.6.1, 6.6.2, and the affineness parenthesis of 8.1.1) |
-| the level-`n` torsor over `𝔽_ℓ`-schemes | `exists_fullLevelStructure_cover_specF` | **LEAF** |
+| the fine AFFINE moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` over `𝔽_ℓ` | `exists_rigidifiedModuliData_specF` | **PROVEN** (2026-07-28) from the two rows below plus `nonempty_rigidifiedModuliData_of_isAffine` |
+| ↳ representability over `𝔽_ℓ` | `exists_rigidifiedModuliScheme_specF` | **LEAF** (KM 4.7.2, 5.1.1, 6.6.1, 6.6.2) |
+| ↳ affineness | `isAffine_of_rigidifiedModuliScheme_specF` | **LEAF** (the affineness parenthesis of KM 8.1.1) |
+| the level-`n` torsor over `𝔽_ℓ`-schemes | `exists_fullLevelStructure_cover_specF` | **PROVEN** (2026-07-28) from the two rows below plus base-free `ℚ`-side glue |
+| ↳ the `Isom`-scheme over `𝔽_ℓ` | `exists_isomTorsor_of_geomPoint_specF` | **LEAF** (KM 2.3.1, 8.1.1) |
+| ↳ the `n`-torsion at a geometric point of characteristic `ℓ ∤ n` | `exists_zmodBasis_torsion_geomPoint_specF` | **LEAF** (Silverman *AEC* III.6.4(b)) |
 | the deck action of `GL₂(ℤ/n)` on `A`, and that it IS the deck action | `exists_deckActionOver` | **PROVEN** |
 | the quotient map coequalises ANY two rigidifications | `deckAction_coequalisesOver` | **LEAF** |
 | assembling those into a rigidification over `𝔽_ℓ` | `nonempty_gamma0Rigidification_of_rigidifiedModuli`, `exists_gamma0Rigidification_specF` | **PROVEN** |
@@ -40705,32 +40709,600 @@ theorem nonempty_gamma0Rigidification_of_rigidifiedModuli {N n : ℕ} (hn : 3 �
   · exact deckAction_coequalisesOver hn R.strM R.dM R.lvlM
       (fun {T} g d L => R.universal g d L) hpin
 
-/-- **Katz–Mazur representability and affineness of the rigidified moduli
-problem over `𝔽_ℓ`** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ`
-counterpart of `exists_rigidifiedModuliScheme` and
-`isAffine_of_rigidifiedModuliScheme` taken together, and the ONLY
-citation in the construction half of the special fibre.
+/-! #### The two `𝔽_ℓ` citation leaves, cut along the `ℚ` side's own lines
+
+**What this sub-subsection does** (2026-07-28).  The two leaves the
+sub-subsection docstring above lists as `exists_rigidifiedModuliData_specF`
+and `exists_fullLevelStructure_cover_specF` are now **PROVEN** from four
+smaller ones plus proven glue.  Neither cut is new: each is the cut the
+`ℚ` side already made for the same statement, transcribed at the base
+`𝔽_ℓ`.  The `ℚ`-side chains are
+
+| `ℚ` | `𝔽_ℓ` |
+|---|---|
+| `exists_fullLevelStructure_cover` | `exists_fullLevelStructure_cover_specF` |
+| ← `exists_isomTorsor_of_geomPoint` (LEAF) | ← `exists_isomTorsor_of_geomPoint_specF` (LEAF) |
+| ← `exists_zmodBasis_torsion_geomPoint` (LEAF) | ← `exists_zmodBasis_torsion_geomPoint_specF` (LEAF) |
+| ← `surjective_of_exists_lift_geomPoint`, `nsmul_eq_zero_iff_existsUnique_finPair`, `nonempty_fullLevelStructure_of_geomBasis`, `exists_gamma0Datum_baseChange` (all PROVEN, all base-free) | *the same four declarations, reused verbatim* |
+| `exists_rigidifiedModuli` | `exists_rigidifiedModuliData_specF` |
+| ← `exists_rigidifiedModuliScheme` (LEAF) | ← `exists_rigidifiedModuliScheme_specF` (LEAF) |
+| ← `isAffine_of_rigidifiedModuliScheme` (LEAF) | ← `isAffine_of_rigidifiedModuliScheme_specF` (LEAF) |
+| ← `nonempty_rigidifiedModuli_of_isAffine` (PROVEN) | ← `nonempty_rigidifiedModuliData_of_isAffine` (PROVEN here, at a general base) |
+
+**What is reused and what is duplicated.**  The whole level-`n` torsor
+chain reuses the `ℚ` side's proven glue *unchanged* — those four
+declarations never mention `SpecQ`, so nothing had to be restated.  The
+rigidification chain could not: `RigidifiedModuliScheme` and
+`RigidifiedModuli` bake `SpecQ` into their types, so
+`RigidifiedModuliSchemeData` below is the general-base restatement of the
+first, `RigidifiedModuliData` above is already the general-base
+restatement of the second, and `nonempty_rigidifiedModuliData_of_iso` is
+`nonempty_rigidifiedModuli_of_iso` with `SpecQ` replaced by `S` — the same
+proof, which is base-agnostic line for line.  It is duplicated rather than
+shared because generalising the `ℚ` declarations would change types other
+owners are consuming; if the two are ever unified, this is the one to keep,
+since it subsumes the `ℚ` one at `S = SpecQ`.
+
+**The two pairs of citation leaves are the SAME Katz–Mazur statement read
+at two bases**, and a prover who attacks one should attack the other in
+the same breath.  4.7.2 represents `[Γ(n)]` by a smooth affine curve
+`Y(n)` over **`ℤ[1/n]`** — not over `ℚ` — and 6.6.2 combines it with
+`[Γ₀(N)]` over `ℤ`; `Spec ℚ` and `Spec 𝔽_ℓ` for `ℓ ∤ n` are both
+`ℤ[1/n]`-schemes, so both leaves are base changes of one statement.  The
+same is true of the `Isom`-scheme: `E[n]` is finite étale of rank `n²`
+over any base on which `n` is invertible, which is exactly `ℓ ∤ n` here
+and "characteristic `0`" there.  The honest long-run repair is to state
+each citation once over a base with `n` invertible and derive the four
+leaves; that is not done here because this project has no predicate for
+"`n` is invertible on `S`", and inventing one is a larger change than the
+cut this sub-subsection is making.
+
+*The check that would refute the previous paragraph*: exhibit a
+`ℚ`-scheme or `𝔽_ℓ`-scheme argument in either pair that does not descend
+to `ℤ[1/n]` — i.e. a step using `char = 0` for something other than
+invertibility of `n`, or a step using finiteness of `𝔽_ℓ`. -/
+
+/-- **The `n`-torsion at a geometric point of an `𝔽_ℓ`-scheme is
+`(ℤ/n)²`** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ` counterpart of
+`exists_zmodBasis_torsion_geomPoint`, and the only *fibrewise* citation in
+the level-`n` torsor over `𝔽_ℓ`.
 
 ## What the prover of this node owes
 
-That the moduli problem "`Γ₀(N)`-datum over an `𝔽_ℓ`-scheme together
-with a full level-`n` structure" is representable by an AFFINE scheme.
-The citations are the ones already quoted verbatim in the section comment
-above `RigidifiedModuliScheme`, read at the base `𝔽_ℓ` rather than `ℚ`:
+Silverman *AEC* III.6.4(b) in characteristic `ℓ`: for an elliptic curve
+`E` over an algebraically closed field `K` and an integer `n` prime to
+`char K`, `E(K)[n] ≅ ℤ/n × ℤ/n`.  Here `char K = ℓ` because `t` factors
+`g` through `SpecF ℓ = Spec (ZMod ℓ)`, and `ℓ ∤ n` is the coprimality.
+The conclusion is stated in the same "two generators, spanning,
+independent" shape as the `ℚ` version, so that
+`nsmul_eq_zero_iff_existsUnique_finPair` — pure algebra, PROVEN above —
+converts it to the `Fin n × Fin n` form `FullLevelStructure.geom_basis`
+asks for.  Nothing scheme-theoretic is owed: no `E[n]` as a subscheme, no
+flatness, no étaleness, no `Isom`-sheaf; all of that is
+`exists_isomTorsor_of_geomPoint_specF` below.
 
-* **(4.7.2)** for `n ≥ 3` the level-`n` problem is representable by a
-  smooth **affine** curve `Y(n)` over `ℤ[1/n]` — this is where `¬ ℓ ∣ n`
-  is consumed, since `Y(n)` exists over `𝔽_ℓ` exactly when `n` is
-  invertible there;
-* **(5.1.1)** and **(6.6.1)**: `[Γ₀(N)]` is *relatively* representable
-  and finite flat over `(Ell)`, over `ℤ` and hence over `𝔽_ℓ`;
-* **(6.6.2)** applied with `𝒮 = [Γ(n)]`, which produces `M(𝒮, Γ₀(N))`
-  and states that it is finite and flat over `M(𝒮)`;
-* the affineness parenthesis of **(8.1.1)**: a scheme finite over an
-  affine scheme is affine — and that last step is not a citation, it is
-  available in the pin.
+## Faithfulness
+
+`hℓ` is **load-bearing for TRUTH and cannot be dropped**, which is a
+difference from the `ℚ` side worth stating: at `ℓ = 0` we have
+`SpecF 0 = Spec ℤ`, every scheme is a `Spec ℤ`-scheme, so `g` carries no
+information at all, and `¬ (0 ∣ n)` holds for every `n ≥ 3`.  Taking
+`K = 𝔽̄_p` for a prime `p ∣ n` then makes the statement FALSE —
+`E(K)[p]` is `ℤ/p` for an ordinary curve and trivial for a supersingular
+one, so no spanning independent pair exists.  Primality of `ℓ` is what
+turns `g` into a characteristic hypothesis.
+
+`hℓn` is load-bearing for the same reason at `ℓ ∣ n`, and by the same
+counterexample.  `hn` is inherited from the parent and is not needed for
+truth here (at `n = 1, 2` the statement is true; at `n = 0` it reads
+"`E(K)` is free of rank two over `ℤ`", which is false, so it is
+load-bearing there).  `hdim` is load-bearing: at relative dimension `d`
+the `n`-torsion is `(ℤ/n)^{2d}` and admits no two-element basis for
+`d ≥ 2`. -/
+theorem exists_zmodBasis_torsion_geomPoint_specF (n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecF ℓ)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
+      (∀ x : RelPoint f t, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :=
+  sorry
+
+/-- **The `n`-torsion at a geometric point of an `𝔽_ℓ`-scheme has unique
+`Fin n`-coordinates** (PROVEN 2026-07-28) — `exists_torsionBasis_geomPoint`
+at the base `𝔽_ℓ`, and, like it, nothing but the citation above read
+through `nsmul_eq_zero_iff_existsUnique_finPair`.
+
+The geometric hypotheses `hdim`, `g`, `hℓ` and `hℓn` are consumed only by
+the citation; `hn` is used only to know `0 < n`, which is what makes
+`Fin n` inhabited by the residues `a % n`. -/
+theorem exists_torsionBasis_geomPoint_specF (n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecF ℓ)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z := by
+  letI := ab.addCommGroup t
+  obtain ⟨y, z, hy, hz, hspan, hindep⟩ :=
+    exists_zmodBasis_torsion_geomPoint_specF n ℓ hn hℓ hℓn ab hdim g K t
+  exact ⟨y, z, nsmul_eq_zero_iff_existsUnique_finPair (by omega) hy hz hspan hindep⟩
+
+/-- **The `Isom`-scheme of the level-`n` torsor over `𝔽_ℓ`** (sorry leaf,
+opened 2026-07-28) — the `𝔽_ℓ` counterpart of
+`exists_isomTorsor_of_geomPoint`, verbatim except that the base is
+`SpecF ℓ` and `n` is invertible there because `ℓ ∤ n` rather than because
+the characteristic is `0`.
+
+## What the prover of this node owes
+
+That over an `𝔽_ℓ`-scheme with `ℓ ∤ n` the bases of the `n`-torsion of an
+elliptic scheme form a finite étale `GL₂(ℤ/n)`-torsor.  Concretely: `n` is
+invertible on the base, so the kernel `E[n] ⟶ T` of multiplication by `n`
+is finite locally free of rank `n²` and étale (Katz–Mazur 2.3.1, plus
+flatness of the multiplication-by-`n` kernel); hence the sheaf
+`Isom_T((ℤ/n)²_T, E[n])` is representable by a finite étale scheme
+`T' ⟶ T`, which is a `GL₂(ℤ/n)`-torsor, and the tautological isomorphism
+over `T'` is a pair of sections `P, Q : RelPoint f p` that is a basis at
+every geometric point of `T'`.  Katz–Mazur (8.1.1) is the citation for
+rigidifying by `[Γ(n)]`-structures at `n ≥ 3` invertible on the base — and
+"invertible on the base" is precisely `ℓ ∤ n`, which is why the same
+citation serves here and on the `ℚ` side.
+
+Finite étale gives the properties asked for: `Flat` because étale is flat,
+`QuasiCompact` because finite morphisms are affine, and a lift of every
+geometric point of `T` *at which the torsion admits a basis*, because the
+`Isom`-scheme is by construction nonempty exactly over those points.  The
+last clause — `n • P = 0` and `n • Q = 0` **over `T'`**, not merely at
+geometric points — is free from the construction, since `P` and `Q` are
+images of the standard generators of `(ℤ/n)²_{T'}` under the tautological
+isomorphism and so are sections of `E[n]`.  It cannot be weakened to the
+fibrewise form; see `FullLevelStructure`'s docstring for the
+`Spec ℚ(ζ_n)[ε]` counterexample, whose characteristic-`ℓ` analogue is
+`Spec 𝔽̄_ℓ[ε]`.
 
 ## What it does NOT owe
+
+* the base-changed datum `d'` — that is `exists_gamma0Datum_baseChange`,
+  which is base-free and PROVEN;
+* the fibrewise structure of `E[n]` — that is
+  `exists_zmodBasis_torsion_geomPoint_specF` above, fed in through
+  `exists_torsionBasis_geomPoint_specF`;
+* surjectivity of `p` as a map of topological spaces — that is
+  `surjective_of_exists_lift_geomPoint`, base-free and PROVEN;
+* anything about `Γ₀(N)`: the statement is about a bare abelian scheme of
+  relative dimension one, and the level structure `d.cyc` plays no part.
+
+## What this project does not have, and would have to be built
+
+Exactly what the `ℚ`-side leaf records, and it is the SAME missing
+machinery, not a second copy of it: no theory of finite locally free group
+schemes, no `Isom`-sheaf, no representability criterion for it.  What does
+exist and is directly usable is `AbelianSchemeStruct.mulByNat`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), which gives `[n]` as a
+morphism of schemes, so `E[n]` is constructible as the fibre product of
+`[n]` and the zero section.  **Whoever builds that theory should state it
+over a base on which `n` is invertible and discharge this leaf and
+`exists_isomTorsor_of_geomPoint` together** — see the sub-subsection
+docstring above.
+
+## Faithfulness
+
+The lifting clause is conditional on the geometric point admitting a
+basis, so nothing here asserts that such points exist; the node is
+satisfiable by an *empty* `T'` when `E[n]` has no fibrewise basis
+anywhere, which is why the conditional form is the faithful one.  It is
+not vacuous, because the hypothesis of the implication is TRUE over an
+`𝔽_ℓ`-scheme with `ℓ ∤ n` (it is
+`exists_torsionBasis_geomPoint_specF`), so the clause really does force
+surjectivity there.
+
+`hℓ` and `hℓn` are load-bearing together: at `ℓ ∣ n` the kernel `E[n]` is
+not étale — it is infinitesimal at a supersingular point — and the torsor
+does not exist; at `ℓ = 0` the base is `Spec ℤ` and imposes nothing, so
+the statement collapses to the false unconditioned one.  `hdim` is
+load-bearing for the *rank* (a two-element basis needs relative dimension
+one).  `hn` is inherited from the parent. -/
+theorem exists_isomTorsor_of_geomPoint_specF (n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecF ℓ) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+          (letI := ab.addCommGroup t
+            ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+              ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
+  sorry
+
+/-- **The rigidified moduli scheme at an arbitrary base, with affineness
+NOT asserted** — `RigidifiedModuliScheme` with `SpecQ` relaxed to `S`, and
+the exact boundary between "representable" (Katz–Mazur 4.7.2 + 5.1.1 +
+6.6.1, combined by 6.6.2) and "affine" (the parenthesis of 8.1.1).
+
+It stands to `RigidifiedModuliData` above as `RigidifiedModuliScheme`
+stands to `RigidifiedModuli`: the representing object is an arbitrary
+scheme `M` rather than a `Spec`.
+
+Every remark on `RigidifiedModuli` applies unchanged, and the one that
+matters is that `universal` is a **fine** moduli property, so an inhabitant
+is pinned up to unique isomorphism and quantifying over
+`RigidifiedModuliSchemeData N n S` is not the junk-witness trap.  That is
+what makes `isAffine_of_rigidifiedModuliScheme_specF` below a legitimate
+`∀`-statement: `IsAffine` transports along the unique isomorphism between
+any two inhabitants, so "some inhabitant is affine" and "every inhabitant
+is affine" are the same statement.
+
+`hn : 3 ≤ n` is not a field: it is load-bearing for the *inhabitedness* of
+this structure (at `n ≤ 2` the rigidified problem still has the
+automorphism `-1`), and inhabitedness is what
+`exists_rigidifiedModuliScheme_specF` asserts. -/
+structure RigidifiedModuliSchemeData (N n : ℕ) (S : Scheme.{0}) where
+  /-- the rigidified moduli scheme -/
+  M : Scheme.{0}
+  /-- its structure morphism -/
+  strM : M ⟶ S
+  /-- the universal `Γ₀(N)`-datum -/
+  dM : Gamma0Datum N M
+  /-- the universal full level-`n` structure on it -/
+  lvlM : FullLevelStructure n dM
+  /-- **fine moduli**: a datum-with-level-structure over an `S`-scheme is a
+  base change of `(dM, lvlM)` along a UNIQUE morphism -/
+  universal : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
+      (L : FullLevelStructure n d),
+    ∃! m : T ⟶ M,
+      ∃ bc : IsBaseChangeOf m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-- **From a fine moduli scheme with a chosen affine presentation to
+`RigidifiedModuliData`, at an arbitrary base** (PROVEN 2026-07-28) —
+`nonempty_rigidifiedModuli_of_iso` with `SpecQ` replaced by `S`.
+
+The proof is that one line for line, and it is worth recording *why* it
+transcribes with no change at all: the base enters the `ℚ` proof in
+exactly two places, as the type of `strM` (where it is only carried,
+`strM := φ.hom ≫ R.strM`) and as the type of `universal`'s binder `_g`
+(where it is only passed on, `R.universal g d L`).  Neither is inspected.
+So the whole transport — the base-changed datum `Gamma0BaseChange.datumBC`,
+the level structure across `dbc.alongEquiv`, the cancellation of `dbc` out
+of `bc₀` by `IsPullback.of_bot`, and the uniqueness through
+`IsBaseChangeOf.comp` — is base-agnostic.
+
+See `nonempty_rigidifiedModuli_of_iso`'s docstring for the mathematics and
+for the base-point trap it walks around (`RelPoint.along dbc.map` and
+`RelPoint.along bc₀.map` land over propositionally-but-not-definitionally
+equal base points, so every step is stated on the underlying morphisms and
+the residual identifications absorbed by `AbelianSchemeStruct.zero_val_congr`,
+`AbelianSchemeStruct.add_val_congr` and `RelPoint.liesIn_congr`).
+
+**This declaration subsumes the `ℚ` one** at `S = SpecQ`, up to the fact
+that `RigidifiedModuli` and `RigidifiedModuliData N n SpecQ` are different
+Lean types with identical fields.  If the two families are ever unified,
+delete the `ℚ` version and keep this. -/
+theorem nonempty_rigidifiedModuliData_of_iso {N n : ℕ} {S : Scheme.{0}}
+    (R : RigidifiedModuliSchemeData N n S)
+    {A : Type} [CommRing A] (φ : Spec (CommRingCat.of A) ≅ R.M) :
+    Nonempty (RigidifiedModuliData N n S) := by
+  classical
+  -- the transported datum, and its base-change relation to the universal one
+  let dM' : Gamma0Datum N (Spec (CommRingCat.of A)) := Gamma0BaseChange.datumBC φ.hom R.dM
+  let dbc : IsBaseChangeOf φ.hom dM' R.dM := Gamma0BaseChange.isBaseChangeBC φ.hom R.dM
+  -- the transported level structure, defined by pulling `R.lvlM` back through `dbc`
+  let P' : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))) :=
+    dbc.alongInv (RelPoint.pre φ.hom (by simp) R.lvlM.P)
+  let Q' : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))) :=
+    dbc.alongInv (RelPoint.pre φ.hom (by simp) R.lvlM.Q)
+  have hP' : P'.1 ≫ dbc.map = φ.hom ≫ R.lvlM.P.1 := dbc.alongInv_val_comp _
+  have hQ' : Q'.1 ≫ dbc.map = φ.hom ≫ R.lvlM.Q.1 := dbc.alongInv_val_comp _
+  -- the level structure transports because `along` is an additive bijection
+  have hpre : ∀ {K : Type} [Field K] [IsAlgClosed K]
+      (t : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of A))
+      (X : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))))
+      (Y : RelPoint R.dM.f (𝟙 R.M)), X.1 ≫ dbc.map = φ.hom ≫ Y.1 →
+      dbc.alongEquiv t (RelPoint.pre t (Category.comp_id t) X)
+        = RelPoint.pre (t ≫ φ.hom) (Category.comp_id _) Y := by
+    intro K _ _ t X Y hXY
+    refine Subtype.ext ?_
+    show (t ≫ X.1) ≫ dbc.map = (t ≫ φ.hom) ≫ Y.1
+    rw [Category.assoc, hXY, Category.assoc]
+  have hgφ : φ.hom ≫ 𝟙 R.M = 𝟙 (Spec (CommRingCat.of A)) ≫ φ.hom := by simp
+  let lvl : FullLevelStructure n dM' :=
+    { P := P'
+      Q := Q'
+      nsmul_P := by
+        -- the `n`-torsion of the level structure crosses the cartesian square of `dbc`
+        refine dbc.nsmul_eq_zero_of_toRelPoint P' ?_
+        rw [show dbc.toRelPoint P' = RelPoint.pre φ.hom hgφ R.lvlM.P from Subtype.ext hP']
+        exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM.nsmul_P
+      nsmul_Q := by
+        refine dbc.nsmul_eq_zero_of_toRelPoint Q' ?_
+        rw [show dbc.toRelPoint Q' = RelPoint.pre φ.hom hgφ R.lvlM.Q from Subtype.ext hQ']
+        exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM.nsmul_Q
+      geom_basis := by
+        intro K _ _ t x
+        letI := dM'.ab.addCommGroup t
+        letI := R.dM.ab.addCommGroup (t ≫ φ.hom)
+        have hb := R.lvlM.geom_basis K (t ≫ φ.hom) (dbc.alongEquiv t x)
+        rw [show (n • x = 0) ↔ (n • dbc.alongEquiv t x = 0) by
+              rw [← map_nsmul (dbc.alongEquiv t) n x, ← (dbc.alongEquiv t).map_zero,
+                (dbc.alongEquiv t).injective.eq_iff], hb]
+        refine existsUnique_congr fun ab => ?_
+        rw [← hpre t P' R.lvlM.P hP', ← hpre t Q' R.lvlM.Q hQ',
+          ← map_nsmul (dbc.alongEquiv t), ← map_nsmul (dbc.alongEquiv t),
+          ← (dbc.alongEquiv t).map_add, (dbc.alongEquiv t).injective.eq_iff] }
+  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl,
+            universal := ?_ }⟩
+  intro T g d L
+  obtain ⟨m₀, ⟨bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
+  refine ⟨m₀ ≫ φ.inv, ?_, ?_⟩
+  · -- existence: cancel `dbc` out of `bc₀`
+    have hmφ : (m₀ ≫ φ.inv) ≫ φ.hom = m₀ := by simp
+    have hw : (d.f ≫ m₀ ≫ φ.inv) ≫ φ.hom = bc₀.map ≫ R.dM.f := by
+      rw [Category.assoc, hmφ]; exact bc₀.isPullback.w
+    let k : d.E ⟶ dM'.E := dbc.isPullback.lift (d.f ≫ m₀ ≫ φ.inv) bc₀.map hw
+    have hk₁ : k ≫ dM'.f = d.f ≫ m₀ ≫ φ.inv := dbc.isPullback.lift_fst _ _ _
+    have hk₂ : k ≫ dbc.map = bc₀.map := dbc.isPullback.lift_snd _ _ _
+    have hsq : IsPullback d.f k (m₀ ≫ φ.inv) dM'.f := by
+      refine IsPullback.of_bot ?_ hk₁.symm dbc.isPullback
+      rw [hk₂, hmφ]; exact bc₀.isPullback
+    let bc : IsBaseChangeOf (m₀ ≫ φ.inv) d dM' :=
+      { map := k
+        isPullback := hsq
+        map_zero := by
+          intro U u
+          refine dbc.along_injective ?_
+          have z₁ : (d.ab.zero u).1 ≫ bc₀.map = (R.dM.ab.zero (u ≫ m₀)).1 :=
+            congrArg Subtype.val (bc₀.map_zero u)
+          have z₂ : (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+              = (R.dM.ab.zero ((u ≫ m₀ ≫ φ.inv) ≫ φ.hom)).1 :=
+            congrArg Subtype.val (dbc.map_zero (u ≫ m₀ ≫ φ.inv))
+          show ((d.ab.zero u).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.zero_val_congr R.dM.ab
+            (by rw [Category.assoc, hmφ])
+        map_add := by
+          intro U u x y
+          refine dbc.along_injective ?_
+          have hx : x.1 ≫ bc₀.map = (x.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have hy : y.1 ≫ bc₀.map = (y.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have z₁ : (d.ab.add x y).1 ≫ bc₀.map
+              = (R.dM.ab.add (RelPoint.along bc₀.map bc₀.isPullback.w x)
+                  (RelPoint.along bc₀.map bc₀.isPullback.w y)).1 :=
+            congrArg Subtype.val (bc₀.map_add x y)
+          have z₂ : (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1
+                ≫ dbc.map
+              = (R.dM.ab.add
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w x))
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w y))).1 :=
+            congrArg Subtype.val (dbc.map_add (RelPoint.along k hsq.w x)
+              (RelPoint.along k hsq.w y))
+          show ((d.ab.add x y).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.add_val_congr R.dM.ab (by rw [Category.assoc, hmφ]) _ _ _ _
+            hx hy
+        liesIn_iff := by
+          intro U u x
+          rw [bc₀.liesIn_iff x, dbc.liesIn_iff (RelPoint.along k hsq.w x)]
+          exact RelPoint.liesIn_congr _ (by
+            show x.1 ≫ bc₀.map = (x.1 ≫ k) ≫ dbc.map
+            rw [Category.assoc, hk₂]) }
+    refine ⟨bc, ?_, ?_⟩
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.P.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ P'.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.P.2, Category.id_comp,
+          Category.assoc, P'.2, Category.comp_id]
+      · show (L.P.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ P'.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₁, Category.assoc, hP', ← Category.assoc, hmφ]
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.Q.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ Q'.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.Q.2, Category.id_comp,
+          Category.assoc, Q'.2, Category.comp_id]
+      · show (L.Q.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ Q'.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₂, Category.assoc, hQ', ← Category.assoc, hmφ]
+  · -- uniqueness: compose with `dbc` and use uniqueness upstairs
+    rintro m₁ ⟨bc₁, f₁, f₂⟩
+    have := huniq (m₁ ≫ φ.hom) ⟨bc₁.comp dbc, ?_, ?_⟩
+    · rw [← this, Category.assoc, φ.hom_inv_id, Category.comp_id]
+    · show L.P.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.P.1
+      rw [← Category.assoc, f₁, Category.assoc, hP', ← Category.assoc]
+    · show L.Q.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.Q.1
+      rw [← Category.assoc, f₂, Category.assoc, hQ', ← Category.assoc]
+
+/-- **From an affine fine moduli scheme to `RigidifiedModuliData`, at an
+arbitrary base** (PROVEN 2026-07-28) — the pure FORMALISATION third of
+`exists_rigidifiedModuliData_specF`, with **no Katz–Mazur citation left in
+it**, and the reason the two citation leaves below may forget about affine
+presentations entirely.
+
+It is `nonempty_rigidifiedModuliData_of_iso` at the isomorphism
+`Scheme.isoSpec.symm`, with the coordinate ring taken to be the carrier of
+`Γ(R.M, ⊤)` — the general-base counterpart of
+`nonempty_rigidifiedModuli_of_isAffine`, and split off from the transport
+for the same reason: to keep the `CommRingCat`-carrier step (`A : Type`
+versus `A : CommRingCat`) out of a proof where it would interact with the
+base-point transports for no reason.
+
+## Faithfulness
+
+No hypothesis is decorative: `hR` is what supplies the isomorphism, and
+without it there is no ring `A` at all.  Neither `N` nor `n` nor `S` is
+constrained, and none needs to be — the statement holds for every `N`, `n`
+and `S` for which an inhabitant of `RigidifiedModuliSchemeData N n S`
+exists, which is the honest generality; the arithmetic hypotheses live on
+the two citation leaves below, where they are load-bearing. -/
+theorem nonempty_rigidifiedModuliData_of_isAffine {N n : ℕ} {S : Scheme.{0}}
+    (R : RigidifiedModuliSchemeData N n S) (hR : IsAffine R.M) :
+    Nonempty (RigidifiedModuliData N n S) :=
+  letI := hR
+  nonempty_rigidifiedModuliData_of_iso R (A := (Γ(R.M, ⊤) : CommRingCat).carrier)
+    R.M.isoSpec.symm
+
+/-- **Katz–Mazur representability of the rigidified moduli problem over
+`𝔽_ℓ`** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ` counterpart of
+`exists_rigidifiedModuliScheme`, and it says NOTHING about affineness.
+
+## What the prover of this node owes
+
+That the moduli problem "`Γ₀(N)`-datum over an `𝔽_ℓ`-scheme together with
+a full level-`n` structure" is representable by a scheme.  The citations
+are the ones quoted verbatim in the section comment above
+`RigidifiedModuliScheme`, read at the base `𝔽_ℓ` rather than `ℚ`:
+
+* **(4.7.2)** for `n ≥ 3` the level-`n` problem is representable by a
+  smooth **affine** curve `Y(n)` over `ℤ[1/n]` — this is where `hℓn` is
+  consumed, since `𝔽_ℓ` is a `ℤ[1/n]`-algebra exactly when `ℓ ∤ n`, and it
+  is the ONLY thing the `ℚ` side gets for free that must be paid for here.
+  (4.7.1 is the general criterion behind it: relatively representable,
+  affine and étale over `(Ell)`, and rigid, implies representable by a
+  smooth affine curve; 5.1.1's last sentence and 2.7.2's rigidity are its
+  two inputs at `[Γ(n)]`, `n ≥ 3`.)
+* **(5.1.1)** and **(6.6.1)**: `[Γ₀(N)]` is *relatively* representable and
+  finite flat over `(Ell)`, over `ℤ` and hence over `𝔽_ℓ`.
+* **(6.6.2)** applied with `𝒮 = [Γ(n)]` — legitimate because 5.1.1 makes
+  `[Γ(n)]` finite étale over `(Ell/ℤ[1/n])` — which produces
+  `M(𝒮, Γ₀(N))` and states that it is finite and flat over `M(𝒮)`.
+
+The `∃!` of `universal` is what "representable" means; the finiteness and
+flatness of `M(𝒮, Γ₀(N)) ⟶ M(𝒮)` are NOT part of this statement, and are
+needed only by the next leaf.
+
+## What it does NOT owe
+
+Affineness of `M` (that is `isAffine_of_rigidifiedModuliScheme_specF`, a
+different citation), the transport to a coordinate ring (that is
+`nonempty_rigidifiedModuliData_of_isAffine`, PROVEN above), and anything
+about `GL₂(ℤ/n)`, invariants, descent, the coarse space, or the integral
+model `Y_0(N)_{ℤ_(ℓ)}`.
+
+## Faithfulness
+
+`hn` is load-bearing for TRUTH: at `n ≤ 2` the rigidified problem still has
+the automorphism `-1`, so it is not representable and no inhabitant exists.
+`hℓn` is load-bearing for TRUTH at `ℓ ∣ n`: the level-`n` problem is not
+étale in characteristic `ℓ` and `Y(n)` does not exist over `𝔽_ℓ`.  `hℓ` is
+load-bearing at `ℓ = 0`, where `SpecF 0 = Spec ℤ` and `¬ (0 ∣ n)` is
+vacuously satisfied while the level-`n` problem is genuinely not
+representable over `ℤ` (only over `ℤ[1/n]`).
+
+`hℓN` is carried but is **not claimed** to be load-bearing —
+(5.1.1)/(6.6.1)/(6.6.2) hold over `ℤ`, so the rigidified problem is
+plausibly representable at `ℓ ∣ N` as well, with the `Γ₀(N)`-part becoming
+a Drinfeld structure; it is passed in because it is available at the call
+site and because whether this development's `CyclicSubgroupOfOrder` is the
+Drinfeld notion at `ℓ ∣ N` has not been checked.  A prover who does not
+need it should say so and drop it.  This is inherited verbatim from the
+analysis on the node this leaf was cut out of.
+
+*The check that would refute the claim that this is open*: a
+`RigidifiedModuliSchemeData`-valued producer anywhere in the tree —
+`grep -rn "RigidifiedModuliSchemeData" Fermat/` currently finds only this
+file. -/
+theorem exists_rigidifiedModuliScheme_specF (N n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n) (hℓN : ¬ ℓ ∣ N) :
+    Nonempty (RigidifiedModuliSchemeData N n (SpecF ℓ)) :=
+  sorry
+
+/-- **Katz–Mazur affineness of the rigidified moduli scheme over `𝔽_ℓ`**
+(sorry leaf, opened 2026-07-28) — the `𝔽_ℓ` counterpart of
+`isAffine_of_rigidifiedModuliScheme`: the parenthesis of (8.1.1) and
+nothing else.
+
+## What the prover of this node owes
+
+The clause of (8.1.1) that reads, of `M(𝒫, 𝒮)` with `𝒮 = [Γ(n)]` and
+`G = GL₂(ℤ/n)` for `n ≥ 3` invertible on the base:
+
+> It "exists" because `M(𝒫, 𝒮)` is itself affine.
+
+Concretely: `M(𝒮) = Y(n) ⊗ 𝔽_ℓ` is affine by (4.7.2) — `Y(n)` is an affine
+curve over `ℤ[1/n]` and `ℓ ∤ n`, so the base change exists and is affine —
+the `Γ₀(N)`-problem is affine, indeed finite, over `(Ell)` by (6.6.1), so
+`M(𝒮, Γ₀(N)) ⟶ M(𝒮)` is a finite hence affine morphism by (6.6.2), and a
+scheme finite over an affine scheme is affine.
+
+That last step is NOT a citation and is available in the pin (`IsAffineHom`
+is stable under composition and `IsAffine` descends along an affine
+morphism to an affine target), so what is genuinely cited here is only
+"`M(𝒮)` is affine" and "`M(𝒮, Γ₀(N)) ⟶ M(𝒮)` is finite".
+
+## Why the `∀` is legitimate, and not the junk-witness trap
+
+`RigidifiedModuliSchemeData.universal` is a **fine** moduli property, so
+any two inhabitants are related by a unique isomorphism (apply each one's
+`universal` to the other's universal family, and then to its own to see
+that the two composites are the identity).  `IsAffine` is invariant under
+isomorphism of schemes.  So "the Katz–Mazur `M(𝒫, 𝒮)` over `𝔽_ℓ` is affine"
+and "every inhabitant of `RigidifiedModuliSchemeData N n (SpecF ℓ)` has
+affine `M`" are the same statement, and stating it with a `∀` is what
+decouples this leaf from `exists_rigidifiedModuliScheme_specF`.
+
+*The check that would refute this paragraph*: exhibit two inhabitants of
+`RigidifiedModuliSchemeData N n (SpecF ℓ)` (for some `N`, `n ≥ 3`, `ℓ`
+prime with `ℓ ∤ n`) that are not isomorphic as schemes over `SpecF ℓ`.
+
+The formal cost of the `∀` is exactly that uniqueness argument, which is
+elementary category theory and carries no citation; if a prover would
+rather not pay it, the honest weakening is to prove instead
+`∃ R : RigidifiedModuliSchemeData N n (SpecF ℓ), IsAffine R.M` and to
+change the assembly below accordingly — but note that then
+`exists_rigidifiedModuliScheme_specF` becomes redundant and the two
+citation halves fuse back together, which is the thing this cut exists to
+prevent.
+
+## Faithfulness
+
+`hn` is load-bearing for the citation (8.1.1 needs `n ≥ 3` invertible, and
+4.7.2 needs `n ≥ 3`); at `n ≤ 2` the statement is *vacuously* true, since
+no inhabitant exists at all, but proving that vacuity is strictly harder
+than using the citation, so the hypothesis stays.  `hℓ` and `hℓn` are the
+invertibility of `n` on the base, and are what the citation needs.  `hℓN`
+is carried only to match `exists_rigidifiedModuliScheme_specF`. -/
+theorem isAffine_of_rigidifiedModuliScheme_specF (N n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n) (hℓN : ¬ ℓ ∣ N) (R : RigidifiedModuliSchemeData N n (SpecF ℓ)) :
+    IsAffine R.M :=
+  sorry
+
+/-- **Katz–Mazur representability and affineness of the rigidified moduli
+problem over `𝔽_ℓ`** (ASSEMBLED 2026-07-28; no longer a leaf) — three
+lines over three named nodes, exactly as `exists_rigidifiedModuli` is on
+the `ℚ` side.
+
+## What used to be here, and where each piece went
+
+This declaration used to carry, in one `sorry`, all four Katz–Mazur
+citations at once *plus* the transport from a fine moduli scheme to a
+coordinate ring.  The burden is now split three ways along the same
+"representable" / "affine" / "transport" line the `ℚ` side already uses:
+
+* **`exists_rigidifiedModuliScheme_specF`** — (4.7.2, with 4.7.1 behind
+  it), (5.1.1) and (6.6.1), combined by (6.6.2).  Representability over
+  `𝔽_ℓ`, by an arbitrary scheme, with affineness not mentioned.
+* **`isAffine_of_rigidifiedModuliScheme_specF`** — the affineness
+  parenthesis of (8.1.1), "it exists because `M(𝒫, 𝒮)` is itself affine",
+  and nothing else.  Legitimate as a `∀` because `universal` is a fine
+  moduli property; see its docstring.
+* **`nonempty_rigidifiedModuliData_of_isAffine`** — transport along
+  `R.M ≅ Spec Γ(R.M, ⊤)`.  **No citation at all**, and **PROVEN**, so it
+  is a discharged hypothesis and not an open leaf.
+
+Both citation leaves are the `𝔽_ℓ` reading of the same Katz–Mazur
+statements their `ℚ`-side twins cite; the sub-subsection docstring above
+records why the two pairs should be discharged together, over `ℤ[1/n]`.
+
+## What this node does NOT owe
 
 Anything about `GL₂(ℤ/n)`, invariants, descent, the coarse space, or the
 integral model `Y_0(N)_{ℤ_(ℓ)}`.  All of those live in
@@ -40739,60 +41311,80 @@ integral model `Y_0(N)_{ℤ_(ℓ)}`.  All of those live in
 
 ## Faithfulness
 
-`_hn` is load-bearing for TRUTH: at `n ≤ 2` the rigidified problem still
+`hn` is load-bearing for TRUTH: at `n ≤ 2` the rigidified problem still
 has the automorphism `-1`, so it is not representable and no inhabitant
-exists.  `_hℓn` is load-bearing for the same reason at `ℓ ∣ n`: the
+exists.  `hℓn` is load-bearing for the same reason at `ℓ ∣ n`: the
 level-`n` problem is not étale in characteristic `ℓ` and `Y(n)` does not
-exist over `𝔽_ℓ`.  `_hℓN` is carried but is **not claimed** to be
-load-bearing here — (5.1.1)/(6.6.1)/(6.6.2) hold over `ℤ`, so the
+exist over `𝔽_ℓ`.  `hℓ` is load-bearing at `ℓ = 0`, where `SpecF 0` is
+`Spec ℤ` and imposes nothing.  `hℓN` is carried but is **not claimed** to
+be load-bearing here — (5.1.1)/(6.6.1)/(6.6.2) hold over `ℤ`, so the
 rigidified problem is plausibly representable at `ℓ ∣ N` as well, with
 the `Γ₀(N)`-part becoming a Drinfeld structure; it is passed in because
 it is available at the call site and because whether the development's
 `CyclicSubgroupOfOrder` is the Drinfeld notion at `ℓ ∣ N` has not been
-checked.  A prover who does not need it should say so and drop it.
-
-*The check that would refute the claim that this is open*: a
-`RigidifiedModuliData`-valued producer anywhere in the tree —
-`grep -rn "RigidifiedModuliData" Fermat/` currently finds only this file. -/
-theorem exists_rigidifiedModuliData_specF (N n ℓ : ℕ) (_hn : 3 ≤ n) (_hℓ : ℓ.Prime)
-    (_hℓn : ¬ ℓ ∣ n) (_hℓN : ¬ ℓ ∣ N) :
+checked.  A prover who does not need it should say so and drop it.  All
+four are passed straight through to the two citation nodes, which record
+the same analysis. -/
+theorem exists_rigidifiedModuliData_specF (N n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n) (hℓN : ¬ ℓ ∣ N) :
     Nonempty (RigidifiedModuliData N n (SpecF ℓ)) :=
-  sorry
+  (exists_rigidifiedModuliScheme_specF N n ℓ hn hℓ hℓn hℓN).elim fun R =>
+    nonempty_rigidifiedModuliData_of_isAffine R
+      (isAffine_of_rigidifiedModuliScheme_specF N n ℓ hn hℓ hℓn hℓN R)
 
 /-- **Every `Γ₀(N)`-datum over an `𝔽_ℓ`-scheme acquires a full level-`n`
-structure fppf-locally** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ`
-counterpart of `exists_fullLevelStructure_cover`, and the level-`n`
-torsor and nothing else.
+structure fppf-locally** (ASSEMBLED 2026-07-28; no longer a leaf) — the
+`𝔽_ℓ` counterpart of `exists_fullLevelStructure_cover`, and, like it, the
+level-`n` torsor and nothing else.
 
-## What the prover of this node owes
+## How it is proven, and what it reuses
 
-That over an `𝔽_ℓ`-scheme with `ℓ ∤ n` the full level-`n` structures on
-an elliptic scheme form a finite étale `GL₂(ℤ/n)`-torsor, so that the
-torsor itself is a cover of the required kind: finite étale is flat,
-surjective and quasi-compact, and the pulled-back family carries a
-tautological level structure.  The `ℚ`-side proof of
-`exists_fullLevelStructure_cover_of_baseChange` is the template, and
-`nonempty_fullLevelStructure_of_geomBasis`,
-`exists_torsionBasis_cover_of_geomPoint` and
-`exists_gamma0Datum_baseChange` above are all base-independent — none of
-them mentions `SpecQ` — so what is genuinely new here is only that
-`E[n]` is étale of rank `n²` in characteristic `ℓ ∤ n`.
+The `ℚ`-side chain transcribes with **no new glue at all**, because every
+proven declaration in it is base-free:
+
+* `exists_isomTorsor_of_geomPoint_specF` (LEAF) produces the flat
+  quasi-compact `p : T' ⟶ T`, the two sections `P, Q` of `d.f` over `p`
+  that are a basis at every geometric point of `T'`, their `n`-torsion
+  over `T'`, and the pointwise lifting clause;
+* `surjective_of_exists_lift_geomPoint` — **PROVEN, base-free, reused
+  verbatim from the `ℚ` side** — turns that pointwise clause into
+  `Surjective p`, fed with `exists_torsionBasis_geomPoint_specF`;
+* `exists_gamma0Datum_baseChange` — **PROVEN, base-free, reused** —
+  produces `d'` and the base change `bc` along that very `p`;
+* `nonempty_fullLevelStructure_of_geomBasis` — **PROVEN, base-free,
+  reused** — turns `(P, Q)` into a `FullLevelStructure n d'` across `bc`,
+  the `n`-torsion hypotheses filling its `nsmul_P` / `nsmul_Q` fields.
+
+Note the order, which is what makes the split legitimate: the cover is
+built from `d` ALONE, and only then is base change applied to it, so
+nothing in the torsor half needs to know which base-changed datum will be
+chosen and no canonicity of `d'` is assumed anywhere.  The only genuinely
+new content is therefore that `E[n]` is finite étale of rank `n²` in
+characteristic `ℓ ∤ n`, which is exactly what the one leaf owes.
 
 ## Faithfulness
 
-`_hℓn` is load-bearing for TRUTH: at `ℓ ∣ n` the `n`-torsion of an
+`hℓn` is load-bearing for TRUTH: at `ℓ ∣ n` the `n`-torsion of an
 ordinary curve over `𝔽_ℓ` has rank `< n²` and of a supersingular one is
 infinitesimal, so no full level-`n` structure exists even fppf-locally
-and the statement is FALSE.  `_hn` matches the consumer and is what makes
+and the statement is FALSE.  `hℓ` is load-bearing at `ℓ = 0`, where
+`SpecF 0 = Spec ℤ` makes `g` vacuous and the statement collapses to the
+false unconditioned one.  `hn` matches the consumer and is what makes
 `FullLevelStructure.twist` an action.  `N` plays no role: the level
 structure is data on the underlying elliptic scheme, which is why `¬ ℓ ∣ N`
 is NOT a hypothesis here — it is consumed elsewhere. -/
-theorem exists_fullLevelStructure_cover_specF (N n ℓ : ℕ) (_hn : 3 ≤ n) (_hℓ : ℓ.Prime)
-    (_hℓn : ¬ ℓ ∣ n) {T : Scheme.{0}} (_g : T ⟶ SpecF ℓ) (d : Gamma0Datum N T) :
+theorem exists_fullLevelStructure_cover_specF (N n ℓ : ℕ) (hn : 3 ≤ n) (hℓ : ℓ.Prime)
+    (hℓn : ¬ ℓ ∣ n) {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (d : Gamma0Datum N T) :
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
-      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') :=
-  sorry
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') := by
+  obtain ⟨T', p, hflat, hqc, P, Q, hb, hlift, hnP, hnQ⟩ :=
+    exists_isomTorsor_of_geomPoint_specF n ℓ hn hℓ hℓn d.ab d.relativeDimensionOne g
+  obtain ⟨d', ⟨bc⟩⟩ := exists_gamma0Datum_baseChange p d
+  exact ⟨T', p, d', hflat,
+    surjective_of_exists_lift_geomPoint p (fun K _ _ t => hlift K t
+      (exists_torsionBasis_geomPoint_specF n ℓ hn hℓ hℓn d.ab d.relativeDimensionOne g K t)),
+    hqc, ⟨bc⟩, nonempty_fullLevelStructure_of_geomBasis bc P Q hnP hnQ hb⟩
 
 /-- **The Katz–Mazur rigidification of `Γ₀(N)` over `𝔽_ℓ` exists**
 (PROVEN 2026-07-28 from the three leaves above).
