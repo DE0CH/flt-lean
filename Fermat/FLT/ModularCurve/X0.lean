@@ -374,6 +374,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.SmoothConnectedCriteria
 -- arbitrary proper target, so all three sites are one-line specialisations; its own residue
 -- is the shared "smooth curve ⟹ DVR local rings" node.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
+-- `Scheme.BirationalOver` — birationality of two schemes OVER a common base, as a
+-- `PartialIso` (an isomorphism of dense opens) compatible with the structure maps.
+-- This is what lets `hasNoFibreAffineLine_of_one_le_x0Genus` be cut into a level-free
+-- geometric half and an arithmetic half WITHOUT a genus, a `ℙ¹`, or a Riemann–Hurwitz
+-- formula: "the fibre is a rational curve" is `BirationalOver _ (𝔸(Unit; Spec K) ↘ _)`.
+-- Adds exactly one module to the cone — its own imports (`AffineSpace`,
+-- `Birational.RationalMap`) are already here, the latter through `CurveExtension`.
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 -- `f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected fibres,
 -- and the RIGIDITY LEMMA over it; this is what makes `isAdditiveOn_of_post_zero`
 -- below a theorem rather than a leaf.
@@ -24769,50 +24777,158 @@ theorem mono_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
     ⟨formallyUnramified_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr,
       universallyInjective_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr⟩
 
-/-- **The genus formula, fibrewise: `genus X_0(N) ≥ 1` puts no rational
-curve in any fibre of `X_0(N)`** (sorry leaf, 2026-07-27) — the
-arithmetic half of `mono_ajHom_of_one_le_x0Genus`, and the ONLY half that
-mentions `N`.  The base-general analogue of
+/-- **A nonconstant morphism from the affine line to a curve over a field
+is DOMINANT** (sorry leaf, 2026-07-27) — step 1 of the level-free half of
+`hasNoFibreAffineLine_of_one_le_x0Genus`.  It mentions neither `N`, nor
+`x0Genus`, nor `IsX0Compactification`, nor the base `S`.
+
+TRUE and elementary.  `hcurve` and `hconn` make `P` INTEGRAL
+(`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`, in
+`CurveExtension.lean`) of relative dimension `1` over `K`, and `𝔸¹_K` is
+irreducible, so the closure of the image of `u` is an irreducible closed
+subset of `P`: either all of `P` — which is `IsDominant u` — or a proper
+one, which in an irreducible `1`-dimensional scheme is a single point
+`p`.  In that case `u` factors through `Spec 𝒪_{Z,p} = Spec κ(p)`, where
+`Z` is the reduced induced structure on `closure {p}` and `p` is its
+generic point (`𝔸¹_K` is reduced, so the scheme-theoretic image is
+reduced).  The resulting `K`-algebra map `κ(p) ⟶ Γ(𝔸¹_K, 𝒪) = K[t]` is
+injective, being a map out of a field, so **every nonzero element of
+`κ(p)` lands on a UNIT of `K[t]`, i.e. in `K`** — no finiteness or
+`κ(p)/K` degree argument is needed — whence `κ(p) = K`.  So `p` is a
+`K`-point, `u` factors through the corresponding section (the map
+`𝔸¹_K ⟶ Spec κ(p) = Spec K` being the structure morphism, by uniqueness),
+and that contradicts `hnc`.
+
+**`hcurve` IS LOAD-BEARING and the statement is FALSE without it**: on a
+surface — `P = 𝔸(Fin 2; Spec K)`, `u` the inclusion of a coordinate axis
+— `u` is nonconstant and not dominant.  Relative dimension `1` is exactly
+what makes "not dominant" mean "a point".  `hconn` is load-bearing too:
+`P = 𝔸¹_K ⊔ 𝔸¹_K` receives the inclusion of one component, which is
+nonconstant and not dominant.
+
+**Properness of `P` is deliberately NOT assumed.**  It is not used, and
+assuming it would make the leaf unusable for the smooth affine curves the
+argument passes through.  `hu` is what makes `u` a `K`-morphism, without
+which "factors through a `K`-point" is not the right form of constancy —
+see the docstring of `HasNoFibreAffineLine`. -/
+theorem isDominant_of_not_exists_section {K : Type} [Field K] {P : Scheme.{0}}
+    {strP : P ⟶ Spec (CommRingCat.of K)}
+    (hcurve : SmoothOfRelativeDimension 1 strP) (hconn : GeometricallyConnected strP)
+    (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ P)
+    (hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    (hnc : ∀ s : Spec (CommRingCat.of K) ⟶ P,
+      u ≠ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s) :
+    IsDominant u :=
+  sorry
+
+/-- **LÜROTH: a curve over a field dominated by the affine line is
+RATIONAL** (sorry leaf, 2026-07-27) — step 2 of the level-free half of
+`hasNoFibreAffineLine_of_one_le_x0Genus`, and the step that replaces `ℙ¹`
+and Riemann–Hurwitz.  It mentions neither `N`, nor `x0Genus`, nor
+`IsX0Compactification`, nor the base `S`.
+
+TRUE and classical.  `hcurve` and `hconn` make `P` integral, so a
+dominant `u` induces a `K`-embedding of function fields
+`K(P) ↪ K(𝔸¹_K) = K(t)`.  Its image is an intermediate field of
+`K(t)/K`, and **Lüroth's theorem is already IN `Mathlib`, proven** —
+`Mathlib/FieldTheory/RatFunc/Luroth.lean`, `RatFunc.Luroth.algEquiv`:
+every intermediate field of `K⟮X⟯/K` is either `K` or `K`-isomorphic to
+`K⟮X⟯`.  The image is not `K`, because `P` has relative dimension `1`, so
+`K(P)` has transcendence degree `1` over `K`.  Hence `K(P) ≃ₐ[K] K(t)`,
+and a `K`-isomorphism of the function fields of two integral `K`-schemes
+of finite type is exactly a birational map over `K`.
+
+**WHY THIS IS THE CUT, AND WHAT IT MAKES UNNECESSARY.**  The previous
+statement of the genus half routed through `ℙ¹`: extend `𝔸¹_K ⟶ X_K` to
+`ℙ¹_K ⟶ X_K` (available — `exists_unique_extension_of_isSmoothProperCurve`,
+proven, `public import`ed above) and then compare genera by
+Riemann–Hurwitz (NOT available — there is no genus of a scheme in
+`Mathlib`, in `~/cs/FLT`, or here).  **This route needs neither**: no `ℙ¹`
+is constructed, no genus is defined, and the extension theorem is not
+used.  So the standing note on the old leaf — "what is still missing is
+`ℙ¹` and the genus" — is superseded: `ℙ¹` is not missing, it is not
+needed.
+
+What IS left to build is the function-field dictionary, in two pieces:
+the `K`-embedding of function fields induced by a dominant morphism, and
+the reconstruction of a `Scheme.PartialIso` from a `K`-isomorphism of
+function fields.  `Mathlib` supplies `Scheme.PartialMap`,
+`Scheme.RationalMap`, `RationalMap.fromFunctionField`,
+`RationalMap.eq_of_fromFunctionField_eq` and `Scheme.PartialIso`, but no
+`Birational ↔ functionField ≃` bridge — that bridge is this leaf's whole
+residue, and it is level-free, base-free and mathlib-shaped.
+
+**Properness is again NOT assumed**, and the statement is true without
+it.  **`hcurve` IS LOAD-BEARING**: without the dimension, `P = Spec K` is
+dominated by `𝔸¹_K` (its structure morphism is surjective) and is not
+birational to it. -/
+theorem birationalOver_affineLine_of_isDominant {K : Type} [Field K] {P : Scheme.{0}}
+    {strP : P ⟶ Spec (CommRingCat.of K)}
+    (hcurve : SmoothOfRelativeDimension 1 strP) (hconn : GeometricallyConnected strP)
+    (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ P)
+    (hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    (hdom : IsDominant u) :
+    Scheme.BirationalOver strP
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
+  sorry
+
+/-- **A curve over a field carrying a nonconstant affine line is RATIONAL**
+(PROVEN 2026-07-27 over the two level-free leaves above) — the level-free
+half of `hasNoFibreAffineLine_of_one_le_x0Genus`, in the form its
+arithmetic half is stated against.
+
+"Nonconstant" is "does not factor through a `K`-point", which is the form
+`HasNoFibreAffineLine` uses and the form the docstring of that predicate
+argues is the right one over a non-reduced base. -/
+theorem birationalOver_affineLine_of_not_exists_section {K : Type} [Field K] {P : Scheme.{0}}
+    {strP : P ⟶ Spec (CommRingCat.of K)}
+    (hcurve : SmoothOfRelativeDimension 1 strP) (hconn : GeometricallyConnected strP)
+    (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ P)
+    (hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    (hnc : ∀ s : Spec (CommRingCat.of K) ⟶ P,
+      u ≠ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s) :
+    Scheme.BirationalOver strP
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
+  birationalOver_affineLine_of_isDominant hcurve hconn u hu
+    (isDominant_of_not_exists_section hcurve hconn u hu hnc)
+
+/-- **The genus formula: no fibre of `X_0(N)` is a RATIONAL curve when
+`genus X_0(N) ≥ 1`** (sorry leaf, 2026-07-27) — the arithmetic half of
+`hasNoFibreAffineLine_of_one_le_x0Genus`, and the ONLY half that mentions
+`N`.  The base-general analogue of
 `hasNonconstantAbelianMap_of_one_le_x0Genus`.
 
-TRUE.  `hmodel` makes every fibre of `xstr` a smooth proper geometrically
-connected curve which is the `X_0(N)` of its residue field, and `hg` says
+TRUE.  `hmodel` makes the fibre `X_K = X ×_S Spec K` a smooth proper
+geometrically connected curve which is the `X_0(N)` of `K`, and `hg` says
 its genus is `≥ 1` (the classical formula, Diamond–Shurman Thm 3.1.1 —
 this is the ONLY place where the computed number `x0Genus N` meets the
-scheme `X`).  A nonconstant `K`-morphism `𝔸¹_K ⟶ X` over a `K`-point of
-`S` lands in one such fibre `X_K`; it extends to `ℙ¹_K ⟶ X_K` because
-`𝔸¹_K` is a dense open of the smooth proper curve `ℙ¹_K` and `X_K` is
-proper, and a nonconstant morphism of smooth proper curves is finite
-surjective, so Riemann–Hurwitz gives `genus X_K ≤ genus ℙ¹_K = 0` —
-contradicting `hg`.  Hence every such morphism is constant, which is
-`HasNoFibreAffineLine`.
-
-**THE EXTENSION STEP IS ALREADY PROVEN AND IN THIS FILE'S CONE** — do not
-rebuild it.  `exists_unique_extension_of_isSmoothProperCurve`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, `public
-import`ed above, proven outright from `Mathlib` by the valuative
-criterion) extends a morphism from a dense open of a smooth proper curve
-over a field into any PROPER target, which is exactly "`𝔸¹_K ⟶ X_K`
-extends to `ℙ¹_K ⟶ X_K`" once `ℙ¹_K` is written down.  What is still
-missing is therefore only `ℙ¹` itself and the genus, not the extension.
+scheme `X`).  Genus is a birational invariant of a smooth proper curve
+and `𝔸¹_K` has genus `0`, so `X_K` is not birational to `𝔸¹_K` over `K`.
 
 **`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
-`N = 1`, `X_0(1) = ℙ¹` and the identity `𝔸¹ ⟶ 𝔸¹ ⊂ ℙ¹` is a nonconstant
-witness over every base.  `hmodel` is load-bearing twice over — it
-supplies the curve conditions AND it is the only thing tying the
-arithmetic `x0Genus N` to the geometry of `strX`.  `N` enters only
-through those two.
+`N = 1`, `X_0(1) = ℙ¹` contains `𝔸¹` as a dense open, so the fibre IS
+birational to `𝔸¹_K` over `K`, at every `K`.  `hmodel` is load-bearing
+twice over — it supplies the curve conditions AND it is the only thing
+tying the arithmetic `x0Genus N` to the geometry of `strX`.  `N` enters
+only through those two.
 
 **NOT VACUOUS, and this is worth checking because the conclusion is a
-negative statement.**  `HasNoFibreAffineLine` is refutable: it fails for
-`X = 𝔸¹_ℚ ⊂ ℙ¹_ℚ` over `Spec ℚ` — take `K = ℚ`, `k = 𝟙`, `u` the open
-immersion, which factors through no `ℚ`-point since its image is
-`1`-dimensional.  So the predicate really constrains the curve, and this
-leaf really consumes the genus.
+negative statement.**  `Scheme.BirationalOver _ (𝔸(Unit; Spec K) ↘ _)` is
+satisfiable: it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
+any smooth proper rational curve — `X_0(1)` at `K = ℚ` — since a dense
+open is birational to the whole (`Opens.birationalOver_of_dense`).  So the
+conclusion is a real constraint and this leaf really consumes the genus.
+
+**WHY THE FIBRE AND NOT `X` ITSELF.**  `BirationalOver strX (…)` over the
+base `S` would be FALSE for a reason having nothing to do with the genus:
+over `S = Spec ℤ` the arithmetic surface `X` and the curve `𝔸¹_{𝔽_p}`
+have different dimensions, so no partial isomorphism exists whatever `N`
+is.  Rationality is a property of the FIBRE, which is why the base change
+is taken here rather than left to the consumer.
 
 IRREDUCIBLE at this pin, along the axis searched (the identification of
-the arithmetic `x0Genus N` with an invariant of the scheme `X`): that
-needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
+the arithmetic `x0Genus N` with a birational invariant of the fibre):
+that needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
 degree-`μ(N)` map to the `j`-line, and none of the three exists in
 `Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
 successor should prefer: the MODULAR one** — a modular parametrisation
@@ -24821,11 +24937,84 @@ a scheme, and the same note on
 `hasNonconstantAbelianMap_of_one_le_x0Genus` applies verbatim.  **The
 check that would refute this verdict**: a genus, an `h¹`, or a modular
 parametrisation appearing in any of the three trees. -/
+theorem not_birationalOver_affineLine_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
+    {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
+  sorry
+
+/-- **The genus formula, fibrewise: `genus X_0(N) ≥ 1` puts no rational
+curve in any fibre of `X_0(N)`** (PROVEN 2026-07-27 by decomposition;
+formerly a sorry leaf) — the arithmetic half of
+`mono_ajHom_of_one_le_x0Genus`, and the ONLY half that mentions `N`.
+
+**THE SPLIT, and why it needs neither `ℙ¹` nor a genus.**  The old
+statement of this leaf recorded its own route as "`𝔸¹_K` extends to
+`ℙ¹_K`, then Riemann–Hurwitz", and its residue as "`ℙ¹` and the genus,
+not the extension".  That is superseded.  Rationality of a curve is
+`Scheme.BirationalOver _ (𝔸(Unit; Spec K) ↘ Spec K)` — birational to the
+affine line over `K` — which is a statement about `𝔸¹` alone, so `ℙ¹`
+never appears; and the level-free implication "nonconstant `𝔸¹_K ⟶ X_K`
+⟹ `X_K` rational" is **Lüroth**, which `Mathlib` already proves
+(`RatFunc.Luroth`).  The three pieces are:
+
+* `isDominant_of_not_exists_section` — nonconstant ⟹ dominant, level-free;
+* `birationalOver_affineLine_of_isDominant` — Lüroth, level-free;
+* `not_birationalOver_affineLine_of_one_le_x0Genus` — the genus formula,
+  the only piece that mentions `N`.
+
+`exists_unique_extension_of_isSmoothProperCurve` is therefore NOT used
+here, and no `ℙ¹` is built.  Whoever attacks the geometric half should
+attack the function-field dictionary described on the Lüroth leaf, not a
+projective line.
+
+**What the assembly does.**  Given `K`, a `K`-point `k` of `S` and a
+`K`-morphism `u : 𝔸¹_K ⟶ X` over `k`, the universal property of the
+pullback lifts `u` to the FIBRE `X_K = X ×_S Spec K`
+(`Limits.pullback.lift u (𝔸¹_K ↘ Spec K) hu`), and a factorisation of
+that lift through a `K`-point of `X_K` pushes back down to one of `u`
+through a `K`-point of `X` — so nonconstancy transfers both ways.  The
+fibre is a smooth curve because `SmoothOfRelativeDimension 1` is stable
+under base change (`smoothOfRelativeDimension_isStableUnderBaseChange`)
+and geometrically connected because `GeometricallyConnected` is
+(instance).  Properness of the fibre is available but not needed.
+
+**`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
+`N = 1`, `X_0(1) = ℙ¹` and the open immersion `𝔸¹ ⊂ ℙ¹` is a nonconstant
+witness over every base.  `hmodel` is load-bearing twice over — it
+supplies the curve conditions AND it is the only thing tying the
+arithmetic `x0Genus N` to the geometry of `strX`.  `N` enters only
+through those two.
+
+**NOT VACUOUS**: `HasNoFibreAffineLine` is refutable — it fails for
+`X = 𝔸¹_ℚ` over `Spec ℚ`, taking `K = ℚ`, `k = 𝟙` and `u = 𝟙`, which
+factors through no `ℚ`-point since its image is `1`-dimensional. -/
 theorem hasNoFibreAffineLine_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
     {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY) :
-    HasNoFibreAffineLine strX :=
-  sorry
+    HasNoFibreAffineLine strX := by
+  intro K _ k u hu
+  by_contra hcon'
+  have hcon : ∀ s : Spec (CommRingCat.of K) ⟶ X,
+      u ≠ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s :=
+    fun s hs => hcon' ⟨s, hs⟩
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI : GeometricallyConnected strX := hmodel.connected
+  haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  refine not_birationalOver_affineLine_of_one_le_x0Genus hg hmodel K k ?_
+  refine birationalOver_affineLine_of_not_exists_section hsm inferInstance
+    (CategoryTheory.Limits.pullback.lift u
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) hu) ?_ ?_
+  · exact CategoryTheory.Limits.pullback.lift_snd _ _ _
+  · intro s hs
+    refine hcon (s ≫ CategoryTheory.Limits.pullback.fst strX k) ?_
+    have h2 := congrArg (fun t => t ≫ CategoryTheory.Limits.pullback.fst strX k) hs
+    simp only [CategoryTheory.Limits.pullback.lift_fst, Category.assoc] at h2
+    exact h2
 
 /-- **The Abel–Jacobi morphism of `X_0(N)` with `genus ≥ 1` is a
 MONOMORPHISM, over an arbitrary base** (PROVEN 2026-07-27 by
@@ -24878,7 +25067,11 @@ same two theories the `Spec ℚ` version splits into:
   base-general, the analogue of `injective_aj_of_not_isIso_jacobian`;
 * `hasNoFibreAffineLine_of_one_le_x0Genus` — **the genus formula**, the
   only half that mentions `N`, the analogue of
-  `not_isIso_jacobian_of_one_le_x0Genus`.
+  `not_isIso_jacobian_of_one_le_x0Genus`.  PROVEN since 2026-07-27, by a
+  further split into `isDominant_of_not_exists_section`,
+  `birationalOver_affineLine_of_isDominant` (**Lüroth**, and the reason no
+  `ℙ¹` and no genus of a scheme is needed anywhere) and
+  `not_birationalOver_affineLine_of_one_le_x0Genus`.
 
 `hg` and `hmodel` are now CONSUMED rather than underscored, which is
 itself a faithfulness gain: the previous statement of this node could not
