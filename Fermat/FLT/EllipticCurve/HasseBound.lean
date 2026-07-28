@@ -752,6 +752,111 @@ theorem natCard_ker_degreeFormEnd (q : ℕ) [Fact q.Prime]
   rw [← hcval]
   exact hc m n hm
 
+/-! ### Naming the coefficient: `F² = a·F − q`
+
+`exists_sq_frobeniusPointEnd` deliberately leaves the middle coefficient
+existential, and `natCard_ker_degreeFormEnd` above pins it only *inside* the
+degree form.  `FreyCurve/MazurTorsion.lean` needs the characteristic equation
+itself with the coefficient NAMED — its Lefschetz cluster reads
+`tr(F | Wbar[N])` off it and must recognise that trace as `frobeniusTrace` —
+so the pinning is performed once here, on the endomorphism identity.
+
+This section adds no leaf: everything below is proven over
+`exists_sq_frobeniusPointEnd` and the two degree-form leaves already open above.
+-/
+
+/-- **The degree form for a GIVEN coefficient** (PROVEN 2026-07-28): the body of
+`exists_natCard_ker_degreeFormEnd` above, stated for an arbitrary `c` satisfying
+the characteristic equation rather than for the one its existential produces.
+
+That distinction is what the pinning below needs.  `Exists.choose` on
+`exists_natCard_ker_degreeFormEnd` yields a coefficient with no stated relation
+to the one `exists_sq_frobeniusPointEnd` yields, so the two cannot be identified
+after the fact; threading `hc` through instead makes the same argument apply to
+whichever `c` the caller is holding.  (They are in fact equal — the coefficient
+is unique, see `sq_frobeniusPointEnd` below — but that uniqueness is a
+consequence of this lemma, not an input to it.) -/
+theorem natCard_ker_degreeFormEnd_of_sq (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    {m n : ℤ} (hm : ¬ ((q : ℤ) ∣ m)) :
+    (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+      = m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) := by
+  by_cases hd : ((q : ℤ) ∣ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ))
+  · exact natCard_ker_degreeFormEnd_of_dvd q Wbar hc hm hd
+  · -- `q ∤ d`: the two kernel counts multiply to `d²` and each is at most `d`
+    have hmul := natCard_ker_mul_natCard_ker_conj q Wbar hc (m := m) (n := n) hd
+    have hle := natCard_ker_degreeFormEnd_le q Wbar hc m n
+    have hle' := natCard_ker_degreeFormEnd_le q Wbar hc (m - n * c) (-n)
+    rw [degreeForm_conj c m n (q : ℤ)] at hle'
+    have hg0 : (0 : ℤ) ≤ (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ) :=
+      Int.natCast_nonneg _
+    have hg0' : (0 : ℤ)
+        ≤ (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ) :=
+      Int.natCast_nonneg _
+    refine le_antisymm hle ?_
+    nlinarith [hmul, hle, hle', hg0, hg0']
+
+/-- **The Frobenius characteristic equation with the coefficient NAMED**
+(PROVEN 2026-07-28 over `exists_sq_frobeniusPointEnd`,
+`natCard_ker_degreeFormEnd_of_sq` and `natCard_ker_one_sub_frobeniusPointEnd`):
+in `Module.End ℤ (Wbar(𝔽̄_q))`,
+
+    F² = a·F − q,      a = frobeniusTrace = q + 1 − #Wbar(𝔽_q).
+
+Silverman *AEC* V.2.3.1 (the monic quadratic with constant term `deg F = q`)
+together with V.1.1 (which evaluates the middle coefficient).
+
+THE PROOF IS THE COEFFICIENT PINNING, AND THAT PINNING IS NOT FREE.  The
+existential leaf supplies *some* `c`; `natCard_ker_degreeFormEnd_of_sq` at
+`(m, n) = (1, 1)` — legitimate because `q ≥ 2` gives `q ∤ 1` — reads
+`#ker([1] − F) = 1 − c + q`; and `natCard_ker_one_sub_frobeniusPointEnd`
+evaluates that count independently as `#Wbar(𝔽_q)`.  Hence
+`c = q + 1 − #Wbar(𝔽_q)`.
+
+A dispatch note of 2026-07-28 described this step as adding "only the
+separability of `1 − F` at `(m, n) = (1, 1)`, where
+`natCard_ker_one_sub_frobeniusPointEnd` is already proven", which reads as if
+the naming were free given that theorem.  It is not.  The classical chain is
+`#Wbar(𝔽_q) = #ker([1] − F) = deg([1] − F) = 1 − c + q`; the PROVEN theorem is
+the FIRST equality only, and the second — separability — is what the degree-form
+leaves above carry.  As a corollary the coefficient is UNIQUE, so
+`exists_sq_frobeniusPointEnd` cannot be discharged by a junk value. -/
+theorem sq_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = frobeniusTrace q Wbar • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
+  obtain ⟨c, hc⟩ := exists_sq_frobeniusPointEnd q Wbar
+  have hq2 : 2 ≤ (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).two_le
+  have hone : ¬ ((q : ℤ) ∣ (1 : ℤ)) := fun hdvd => by
+    have := Int.le_of_dvd one_pos hdvd
+    linarith
+  have hpin := natCard_ker_degreeFormEnd_of_sq q Wbar hc (m := 1) (n := 1) hone
+  rw [natCard_ker_one_sub_frobeniusPointEnd] at hpin
+  have hcval : c = frobeniusTrace q Wbar := by
+    rw [frobeniusTrace]
+    linarith [hpin]
+  rwa [hcval] at hc
+
+/-- **The Frobenius characteristic equation, read on a POINT** (PROVEN
+2026-07-28): `F (F P) = a • F P − q • P` for every `P ∈ Wbar(𝔽̄_q)`.
+
+`sq_frobeniusPointEnd` above evaluated at `P`.  This is the shape
+`FreyCurve/MazurTorsion.lean`'s `charEquation_point_map_frobAlgHom` consumes;
+since `frobeniusPointEnd` is `Affine.Point.map (frobAlgHom q)` by definition,
+that declaration is literally this one. -/
+theorem charEquation_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+      = frobeniusTrace q Wbar • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  have h := LinearMap.congr_fun (sq_frobeniusPointEnd q Wbar) P
+  simpa only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.smul_apply,
+    Module.End.one_apply] using h
+
 /-- **Positivity of the degree form** (PROVEN 2026-07-27, and this is the
 entire point of the cut): the value `m² − a·m·n + n²q` is a cardinality,
 hence nonnegative.  No inequality is proven here — the nonnegativity is
