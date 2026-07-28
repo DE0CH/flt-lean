@@ -45990,6 +45990,126 @@ sequence for the same form. -/
 def IsAtkinLehnerMinusForm (N : ℕ) (f : CuspForm (Gamma0GL N) 2) : Prop :=
   (⇑f) ∣[(2 : ℤ)] frickeRep N = -⇑f
 
+/-- **POINCARÉ REDUCIBILITY, QUOTIENT HALF, ON THE ISOTYPIC FACTORS**
+(sorry leaf, 2026-07-28) — a quasi-section of the optimal quotient map
+`u i : J ⟶ A i`: some `v : A i ⟶ J` with `u i ∘ v = [m]` on `ℚ`-points,
+`m ≠ 0`.
+
+TRUE and classical (Mumford, *Abelian Varieties* §19; Milne, *Abelian
+Varieties* I.12.1).  `u i` is a SURJECTIVE homomorphism of abelian
+varieties over `ℚ` (`D.u_surj i`, `D.u_add i`), so its kernel has an
+almost-complement: choosing a polarisation of `J` and taking the
+orthogonal complement `B` of `(ker u i)⁰` gives an abelian subvariety with
+`B ∩ ker u i` finite, so `u i|_B : B ⟶ A i` is an isogeny; composing
+`A i ⟶ B ⟶ J` with a quasi-inverse of that isogeny gives `v` with
+`u i ∘ v = [m]` where `m = deg(u i|_B)`.
+
+**STATED ON RATIONAL POINTS, NOT ON MORPHISMS, AND THAT IS DELIBERATE.**
+The classical theorem gives `v ≫ u i = [m]` as a morphism identity; the
+consumer needs only its shadow on `RelPoint _ (𝟙 SpecQ)`, and asking for
+less keeps the leaf free of a multiplication-by-`m` endomorphism that this
+file does not otherwise have.  Nothing is lost: the morphism form implies
+this one.
+
+**Under-pinning audit.**  A junk witness would have to satisfy
+`u i (v x) = m • x` for EVERY `x`, which is exactly the content; the only
+way to satisfy it cheaply is `RelPoint (D.astr i) (𝟙 SpecQ)` being
+trivial, and there the consumer's conclusion is true anyway.  So a
+spoofed witness cannot make the consumer false — it can only make it
+uninformative in a case where it was already free.
+
+**WHY IT IS WORTH STATING SEPARATELY**, and this is the recommendation
+the consumer's own docstring already made: Poincaré reducibility is
+absent from mathlib, from `~/cs/FLT` and from this development
+(`grep -rin "poincar"` finds only prose), and it is needed at THREE
+places in this file — here, on `isTorsion_factor_of_heckeIsotypic`, and
+inside `exists_atkinLehnerDescent_of_factorwise`, whose docstring says
+"passing from here to a sign is Poincaré reducibility and nothing else".
+Proving it once is strictly cheaper than proving it three times inside
+proofs.
+
+**No Atkin–Lehner datum appears**, and none is needed: this is a statement
+about a surjection of abelian schemes and nothing else.  In particular it
+is available to the `+1` factors too. -/
+theorem exists_quasiSection_heckeIsotypicFactor (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (i : D.idx) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    ∃ (v : D.A i ⟶ J) (hv : v ≫ jstr = D.astr i) (m : ℕ), 0 < m ∧
+      ∀ x : RelPoint (D.astr i) (𝟙 SpecQ),
+        RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post v hv x) = m • x :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, ON THE IMAGE OF `J(ℚ)`**
+(sorry leaf, 2026-07-28) — the ARITHMETIC half of
+`isTorsion_minusFactor_of_lFunction_ne_zero` below, with Poincaré
+reducibility removed.
+
+TRUE, and strictly WEAKER than the consumer: it asserts torsion only for
+points of `A i(ℚ)` that come from `J(ℚ)`, which is exactly the part of
+the conclusion that the Eichler–Shimura / Kolyvagin–Logachev argument
+produces directly.  Passing from the image to the whole group is
+Poincaré reducibility and nothing else — that is
+`exists_quasiSection_heckeIsotypicFactor` above, and the two are combined
+below.
+
+The route, unchanged from the consumer's docstring except that it now
+stops one step earlier:
+
+* `E.descend_minus i _hi` gives `u i ∘ w_J = − u i`, so for `z ∈ J(ℚ)`
+  the point `z' := z − w_J z` is `w_J`-ANTI-INVARIANT (`_hw2` and
+  `_hchar` make `w_J` an involution, by the uniqueness half of
+  `IsJacobianOf.existsUnique_mapEnd`) and satisfies
+  `u i z' = 2 • u i z`.
+* `_hnew` makes `S₂(Γ₀(N))` entirely new, so `J₀(N) ∼ ∏_g A_g` over the
+  newform orbits with no repeated factors and `w_N` acting on each by a
+  scalar `ε_g = ±1` (multiplicity one); hence `J⁻ ∼ ∏_{ε_g = −1} A_g`.
+* Each such `g` has `g ∣[2] W_N = −g`, so `_hL` gives `L(g, 1) ≠ 0` and
+  Kolyvagin–Logachev makes `A_g(ℚ)` torsion; so `z'`, being
+  anti-invariant, is torsion, hence so is `2 • u i z` and hence `u i z`.
+
+**Why this is NOT a relocation of the consumer.**  The two differ by
+exactly the surjectivity input: `u i` is surjective as a MORPHISM
+(`D.u_surj i`), which does not make `A i(ℚ)` the image of `J(ℚ)` —
+`H¹(ℚ, ker u i)` obstructs it, and that obstruction is real (it is why
+optimal quotients have nontrivial Shafarevich–Tate contributions).  So
+the consumer genuinely needs a quasi-section and this leaf genuinely does
+not.
+
+**`_hnew` MAY NOT BE DROPPED**, with the `N = 74` witness recorded in
+full on the consumer below: at `74` both `_hL` and the anti-invariance
+hold while the minus part contains a rank-`1` old factor, so the
+conclusion fails there for `z` in the image too.  `_hi` may not be
+dropped either: at `169` the `+1` factors carry all of
+`rank J₀(169)(ℚ) = 3`, and they are images of `J(ℚ)`.
+
+**LABEL-FREEDOM.**  Neither hypothesis names `D.form` or `D.coeff` and
+the factor is selected by `¬ E.Plus i`, an equation about `w_J`; the
+`N = 37` eigen-system swap recorded on `isTorsion_factor_of_heckeIsotypic`
+therefore does not touch this leaf, for the same reason it does not touch
+the consumer. -/
+theorem isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (E : IsAtkinLehnerDescent D wJ hwJ)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (_hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
+    (i : D.idx) (_hi : ¬ E.Plus i) (z : RelPoint jstr (𝟙 SpecQ)) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) z) :=
+  sorry
+
 /-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (sorry leaf,
 2026-07-28) — every Atkin–Lehner-minus factor of `J₀(N)` has torsion
 Mordell–Weil group, given that `L(g, 1) ≠ 0` for every Atkin–Lehner-minus
@@ -46083,7 +46203,28 @@ isotypic piece.  Poincaré reducibility is absent from all four places —
 `grep -rin "poincar" Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/FLT/`
 returns only this file's own prose — and `isTorsion_factor_of_heckeIsotypic`
 needs it too, so it is worth stating once as a shared leaf rather than
-twice inside proofs. -/
+twice inside proofs.
+
+**DECOMPOSED 2026-07-28 ALONG POINCARÉ REDUCIBILITY, taking that
+recommendation; this was a single `sorry` until then.**  The two theories
+the node carried are now on two named leaves immediately above:
+
+| leaf | theory |
+|---|---|
+| `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev |
+| `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half |
+
+and this declaration is their composition: given `x : A i(ℚ)`, the
+quasi-section gives `v` and `m > 0` with `u i (v x) = m • x`, the
+arithmetic leaf makes `u i (v x)` of finite order, so `n • (m • x) = 0`
+for some `n > 0` and `x` has order dividing `n·m`.
+
+The cut is faithful rather than a relocation, because surjectivity of
+`u i` as a MORPHISM does not make `A i(ℚ)` the image of `J(ℚ)`
+(`H¹(ℚ, ker u i)` obstructs it) — see the audit on the arithmetic leaf.
+And the Poincaré half is genuinely shared: `isTorsion_factor_of_heckeIsotypic`
+and `exists_atkinLehnerDescent_of_factorwise` both need it, and it is now
+stateable once. -/
 theorem isTorsion_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -46100,8 +46241,18 @@ theorem isTorsion_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}
       IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
     (i : D.idx) (_hi : ¬ E.Plus i) :
     letI := (D.abA i).addCommGroup (𝟙 SpecQ)
-    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
-  sorry
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) := by
+  letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+  intro x
+  obtain ⟨v, hv, m, hm, hvm⟩ := exists_quasiSection_heckeIsotypicFactor N hX jac D i
+  have h1 : IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post v hv x)) :=
+    isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero N hX jac w hw _hw2 _hal wJ hwJ
+      _hchar D E _hnew _hL i _hi (RelPoint.post v hv x)
+  rw [hvm x] at h1
+  obtain ⟨n, hn, hnx⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp h1
+  refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n * m, Nat.mul_pos hn hm, ?_⟩
+  rw [← smul_smul]
+  exact hnx
 
 /-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`, ON FUNCTIONS**
 (sorry leaf, 2026-07-28) — the whole arithmetic content of
@@ -46971,13 +47122,51 @@ to make the pencil base-point-free, and putting it here would have been
 decoration.
 
 The three curve hypotheses are consumed only through `exists_relPicZero`.
-**What it still needs** is the inventory recorded on
-`relPicEquiv_sectionIdeal_of_aj_eq` — transport of `IsRelPicZeroOf` along
-an `aj`-compatible isomorphism, plus tensor algebra on `Scheme.Modules`,
-of which this development currently has the DEFINITION `modTensor` and no
-lemma at all.  **The check that would refute this note**: a route from
-`IsJacobianOf` to a divisor statement that does not pass through a
-representing object for `Pic⁰`. -/
+
+**INVENTORY CORRECTION, 2026-07-28 — "no `modTensor` lemma at all" IS
+FALSE, and it was the more expensive half of the recorded inventory.**
+The previous version of this paragraph (and the identical claim on
+`relPicEquiv_sectionIdeal_of_aj_eq`, which is separately owned and where
+it should also be corrected) said that this development has "the
+DEFINITION `modTensor` and no lemma at all", on the strength of a
+`grep -rn 'modTensor' Fermat/` that listed only four files.  The grep was
+right about the file list and wrong about its contents:
+`Fermat/FLT/Modularity/AmpleSheaf.lean` is one of them and carries a real
+tensor API, all of it in THIS file's PUBLIC cone
+(`X0.lean` `public import`s `AbelianSchemeIsogeny.lean`, which
+`public import`s `AmpleSheaf.lean`):
+
+* `nonempty_modTensor_assoc` — the ASSOCIATOR, **PROVEN** 2026-07-28;
+* `modTensorMapIso` — functoriality in both arguments, on isomorphisms;
+* `modTensorUnitLeftIso` — the LEFT UNITOR `𝒪_Z ⊗ M ≅ M`;
+* `modTensorLocIso`, `modTensorMk`, `modTensorPow` with
+  `modTensorPowMapIso` and `modTensorPowUnitIso`;
+* `presheafOfModulesSymmetric` — the presheaf-level SYMMETRIC monoidal
+  structure, i.e. the braiding.
+
+So the honest residual inventory is smaller and sharper than "tensor
+algebra": (i) transport of `IsRelPicZeroOf` along an `aj`-compatible
+isomorphism of abelian schemes, and (ii) an INVERSE for an invertible
+sheaf, hence CANCELLATION.  Only (ii) is genuinely absent, and the reason
+is visible in the definition: `IsInvertibleSheaf L`
+(`ModularCurve/RelativePicard.lean`) is LOCAL triviality, `∀ z, ∃ U ∋ z,
+L|_U ≅ 𝒪_U`, which hands back no global dual — the dual sheaf has to be
+constructed and shown to satisfy `L ⊗ L^∨ ≅ 𝒪`.  With the associator,
+braiding and unitor already available, cancellation is exactly that one
+missing step and nothing more.  (`nonempty_modTensor_modPullback`, the
+compatibility of `modTensor` with `modPullback`, is still a sorry in
+`AmpleSheaf.lean` and is likely wanted too, since `RelPicEquiv` is a
+quotient by pulled-back sheaves.)
+
+Both (i) and (ii) are shared VERBATIM with `relPicEquiv_sectionIdeal_of_aj_eq`
+and with the `Pic` statements in `AbelianSchemeIsogeny.lean`, so they
+should be stated ONCE as their own leaves rather than proven inside
+either proof.
+
+**The check that would refute this note**: a route from `IsJacobianOf` to
+a divisor statement that does not pass through a representing object for
+`Pic⁰`; or a construction of `L^∨` with `L ⊗ L^∨ ≅ 𝒪` from
+`IsInvertibleSheaf` appearing anywhere in `Fermat/`. -/
 theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
