@@ -11687,24 +11687,31 @@ existential form does **not** soften this: `exists_coarseModuliY0_zero`
 produces a coarse space at `N = 0` too, and it is empty, so there is no
 model to exhibit.
 
-The five conclusions are exactly the hypotheses of
-`exists_isSmoothCompactification`, and none is decoration:
-`QuasiCompact` and `IsSeparated` are what Nagata's compactification
-consumes, `IsIntegral` is what makes the relative normalization integral,
-`SmoothOfRelativeDimension 1` is what pins the relative dimension of
-the compactification to `1` rather than leaving it arbitrary, and
+The five conclusions were once exactly the hypotheses of the general
+compactification theorem `exists_isSmoothCompactification`.  **That is no
+longer the shape of the consumer** (2026-07-28): the consumers call the
+AFFINE compactification theorem
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, whose
+hypotheses are a strict SUBSET of these five — `IsIntegral` and
+`SmoothOfRelativeDimension 1` — plus `IsAffine Y`.  `QuasiCompact` and
+`IsSeparated` come free from affineness and are **no longer consumed on
+the `ℚ` route**; they are retained in the conjunction so that existing
+destructurings keep working, and because they are true and cheap.  The
+general `exists_isSmoothCompactification` was deleted as free-floating on
+2026-07-28, together with the Nagata gluing induction it rested on.
+
+Of the three that are still consumed, none is decoration: `IsIntegral` is
+what makes the relative normalization integral,
+`SmoothOfRelativeDimension 1` is what pins the relative dimension of the
+compactification to `1` rather than leaving it arbitrary, and
 `GeometricallyConnected` is what
 `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
 carries across to `X_0(N)`.
 
-**Since 2026-07-28 the consumers call the AFFINE compactification theorem**
-`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, whose
-hypotheses are a strict SUBSET of these five (`QuasiCompact` and
-`IsSeparated` come free from affineness) plus `IsAffine Y`.  The affineness
-is not added to this conjunction — it is exported separately, and for an
-ARBITRARY coarse space rather than the exhibited one, by
-`isAffine_of_isCoarseModuliY0` below.  Nothing here is weakened; the two
-extra clauses are simply no longer consumed on the `ℚ` route. -/
+The affineness is not added to this conjunction — it is exported
+separately, and for an ARBITRARY coarse space rather than the exhibited
+one, by `isAffine_of_isCoarseModuliY0` below.  Nothing here is
+weakened. -/
 theorem exists_isCoarseModuliY0_isSmoothCurve (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_hc : IsCoarseModuliY0 N strY),
       IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
@@ -11734,10 +11741,10 @@ model with the five properties, transport them to the given coarse space
 along the canonical isomorphism supplied by initiality.
 
 **This is the ONLY modular input to `X_0(N)`'s existence.**  Everything
-else — that a smooth curve over a field has a smooth proper
-compactification with finite complement — is
-`AlgebraicGeometry.exists_isSmoothCompactification`, which is general
-algebraic geometry and lives in
+else — that a smooth AFFINE curve over a perfect field has a smooth
+proper compactification with finite complement — is
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, which is
+general algebraic geometry and lives in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`. -/
 theorem isSmoothCurve_of_isCoarseModuliY0 {N : ℕ} (hN : 0 < N) {Y : Scheme.{0}}
     {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY) :
@@ -11759,18 +11766,18 @@ isomorphic to it, so `IsAffine.of_isIso` carries affineness to an
 ARBITRARY one.  It was simply never exported, which is the whole reason
 this lemma exists.
 
-**Why it matters, and what it buys** (2026-07-28).  The compactification
-theorem `AlgebraicGeometry.exists_isSmoothCompactification` routes through
-Nagata's gluing induction
-(`AlgebraicGeometry.exists_isOpenImmersion_isProper_of_affineCase`), which
-is the hardest open leaf of
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` and has
-no cut.  Its affine variant
+**Why it matters, and what it buys** (2026-07-28).  The general
+compactification theorem that used to stand in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` routed
+through Nagata's gluing induction, the hardest open leaf of that file and
+one with no cut.  Its affine variant
 `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` does NOT:
 the affine case of Nagata is PROVEN there, via `Proj` of a graded chart.
 With this lemma every consumer of the compactification theorem in the
-`X_0(N)` cone can call the affine variant, so that cone no longer depends
-on the gluing induction at all.
+`X_0(N)` cone calls the affine variant, so that cone does not depend on
+the gluing induction at all — and once the rewiring was complete, the
+general theorem and its gluing induction were deleted as free-floating,
+removing that sorry leaf outright.
 
 `hN : 0 < N` is required for the same reason as everywhere else in this
 section — `exists_gamma0AffineModel` needs it, since at `N = 0` the coarse
@@ -11808,12 +11815,13 @@ modular:
   leaves of its own, none of which mentions modular curves.
 
   **The AFFINE variant is called deliberately** (2026-07-28): the general
-  `exists_isSmoothCompactification` routes through Nagata's gluing
-  induction `exists_isOpenImmersion_isProper_of_affineCase`, which is
-  open and uncut, whereas the affine case of Nagata is PROVEN.  `Y_0(N)`
-  is affine by `isAffine_of_isCoarseModuliY0` above — Katz–Mazur build it
-  as `Spec (A^G)` — so the whole `X_0(N)` cone avoids the gluing
-  induction.
+  form routed through Nagata's gluing induction, which was open and
+  uncut, whereas the affine case of Nagata is PROVEN.  `Y_0(N)` is affine
+  by `isAffine_of_isCoarseModuliY0` above — Katz–Mazur build it as
+  `Spec (A^G)` — so the whole `X_0(N)` cone avoids the gluing induction.
+  With every consumer rewired, the general form and the gluing induction
+  became free-floating and were deleted; the affine variant is the only
+  compactification theorem that file now provides.
 
 For `N = 0` the moduli problem is supported on the empty base (a scheme
 finite over its base cannot have infinite cyclic geometric fibres), so
@@ -23430,9 +23438,9 @@ characteristic-`p` model.  See the section comment above `Gamma0AtlasOver`.
 the exhibited model has carried all along and which was simply not being
 passed on.  It is what lets the consumer call
 `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` instead of
-the general `exists_isSmoothCompactification`, and so avoid the open
-Nagata gluing induction `exists_isOpenImmersion_isProper_of_affineCase`
-entirely.  Note the affineness is a property of THIS exhibited model only
+the general compactification theorem, and so avoid the open Nagata gluing
+induction entirely — the two of them, having no other consumer, were
+deleted as free-floating on 2026-07-28.  Note the affineness is a property of THIS exhibited model only
 in appearance: initiality makes every coarse space of the level isomorphic
 to it, so nothing is lost by stating it existentially here. -/
 theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (hN : 0 < N) (K : Type)
@@ -23526,9 +23534,11 @@ doctrine predicts**, and it is recorded for the next auditor.  It read:
 "neither modular curves nor a smooth-compactification theorem for curves
 over a general base field exists anywhere in `Mathlib`".  The first half
 is still true; the second half had ceased to be true — this project's own
-shim tree carries `AlgebraicGeometry.exists_isSmoothCompactification` in
+shim tree carries a smooth-compactification theorem in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, general
-in `K`, proven over four leaves of its own, none modular.  So the
+in `K`, proven over leaves of its own, none modular (today
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, the affine
+form; the non-affine one was deleted as free-floating on 2026-07-28).  So the
 statement was never atomic: it always split into "the modular half" and
 "the curve half", and only the modular half is deep.
 
@@ -33567,8 +33577,8 @@ and they are now three leaves rather than one:
   leaf `exists_isCoarseModuliY0_isSmoothCurve_field`, one leaf for both
   base fields rather than two.  The second half — the compactification
   of a smooth curve — is not a leaf at all: it is
-  `AlgebraicGeometry.exists_isSmoothCompactification`, over a PERFECT
-  base field.  A perfectness-free restatement of it was briefly a leaf
+  `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, over a
+  PERFECT base field.  A perfectness-free restatement of it was briefly a leaf
   here and was REFUTED and deleted on 2026-07-27; see the FALSITY AUDIT
   on `exists_x0Compactification_field` for the quasi-elliptic
   counterexample over `𝔽₃(t)`;
@@ -37109,8 +37119,8 @@ dense open with finite complement — i.e. every field of
 sound.**  One might expect this leaf to carry `IsIntegral`,
 `QuasiCompact`, `IsSeparated`, `SmoothOfRelativeDimension 1` and
 `GeometricallyConnected` on `ystr`, as
-`AlgebraicGeometry.exists_isSmoothCompactification` does over a perfect
-field.  It does not,
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` does over a
+perfect field.  It does not,
 and deliberately: over a field that theorem is a statement of GENERAL
 curve theory, applicable to an arbitrary smooth curve, so it must be told
 that its input is one.  Here the input is pinned to be the modular curve
@@ -37178,8 +37188,8 @@ theorems: ch. 8 builds the coarse space of the `Γ₀(N)`-problem over
 `ℤ[1/N]`, and 13.11 compactifies it.  Splitting them is exactly the split
 that `exists_x0Compactification_field` already takes over a FIELD base,
 between `exists_isCoarseModuliY0_isSmoothCurve_field` (modular) and
-`AlgebraicGeometry.exists_isSmoothCompactification` (general curve
-theory, over a PERFECT base field — the perfectness-free restatement that
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` (general
+curve theory, over a PERFECT base field — the perfectness-free restatement that
 used to stand here as a leaf was refuted and deleted on 2026-07-27; see
 the FALSITY AUDIT on `exists_x0Compactification_field`) — with the
 one difference recorded on the compactification leaf above: over a discrete

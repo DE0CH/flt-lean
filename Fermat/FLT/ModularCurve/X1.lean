@@ -2640,12 +2640,21 @@ a point of exact order `N` acquires an infinitesimal part and the
 `smooth` field of `IsX1Compactification` would be FALSE.  At `char K = 0`
 the hypothesis reads `N ≠ 0`, which `hN` already gives.
 
-The five conclusions are exactly the hypotheses of
-`AlgebraicGeometry.exists_isSmoothCompactification`, and none is
-decoration: `QuasiCompact` and `IsSeparated` are what Nagata's
-compactification consumes, `IsIntegral` is what makes the relative
-normalization integral, `SmoothOfRelativeDimension 1` pins the relative
-dimension of the compactification, and `GeometricallyConnected` is what
+The five conclusions were exactly the hypotheses of the general
+compactification theorem `AlgebraicGeometry.exists_isSmoothCompactification`.
+**Since 2026-07-28 the consumer calls the AFFINE variant**
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` (see the
+sixth `IsAffine` clause below), whose hypotheses are the strict subset
+`IsIntegral` and `SmoothOfRelativeDimension 1`: `QuasiCompact` and
+`IsSeparated` come free from affineness and are no longer consumed here.
+They are retained in the conjunction so that existing destructurings keep
+working, and the general theorem itself has since been deleted as
+free-floating together with the Nagata gluing induction it rested on.
+
+Of the clauses still consumed, none is decoration: `IsIntegral` is what
+makes the relative normalization integral, `SmoothOfRelativeDimension 1`
+pins the relative dimension of the compactification, and
+`GeometricallyConnected` is what
 `geometricallyConnected_of_isSmoothCompactification` carries across.
 
 **Why the statement is EXISTENTIAL, and this is the whole point of the
@@ -2662,7 +2671,8 @@ from `isIntegral_of_isAffine_of_isDomain`.
 AXIS SEARCHED: the BASE-FIELD axis (taken — one node for `ℚ` and `𝔽_ℓ`
 at once), the COMPACTIFICATION axis (taken — the whole
 Nagata/normalization half is
-`AlgebraicGeometry.exists_isSmoothCompactification` and is not modular),
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` and is not
+modular),
 and, as of 2026-07-27, the GIT axis: the `Γ₁` analogue of
 `exists_gamma0AffineModel` is now built above, the previous "NOT
 searched" note is DISCHARGED.  What remains open below this node is a
@@ -2702,10 +2712,11 @@ nothing: it is `Gamma1AffineModel.isAffine`, i.e. Katz–Mazur's
 the five clauses above are already *derived* from it) and which was simply
 not being passed on.  It is what lets `exists_x1Compactification_field`
 below call `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`
-instead of the general `exists_isSmoothCompactification`, and so avoid the
-open Nagata gluing induction
-`AlgebraicGeometry.exists_isOpenImmersion_isProper_of_affineCase` — the
-hardest leaf of `CurveCompactification.lean` — entirely.
+instead of the general compactification theorem, and so avoid the open
+Nagata gluing induction — the hardest leaf `CurveCompactification.lean`
+ever carried — entirely.  With every consumer rewired, that general
+theorem and its gluing induction had no consumer left and were deleted as
+free-floating on 2026-07-28, removing the leaf outright.
 
 Stating the affineness existentially loses nothing: initiality
 (`IsCoarseModuliY1.exists_inverse`) makes every coarse space of the level

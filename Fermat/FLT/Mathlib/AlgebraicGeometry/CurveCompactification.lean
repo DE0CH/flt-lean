@@ -74,8 +74,9 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
 
 1. compactify `Y` as a *scheme*, ignoring smoothness — Nagata's compactification theorem
    produces a proper `strP : P ⟶ Spec K` and an open immersion `i : Y ⟶ P`
-   (`exists_isOpenImmersion_isProper`, PROVEN as of the third pass below over three
-   sharper leaves);
+   (`exists_isOpenImmersion_isProper_of_isAffine`, PROVEN outright via `Proj` of a graded
+   chart; the general non-affine form is not needed here and no longer exists — see the
+   section "The Nagata gluing induction was DELETED" below);
 2. take `X := i.normalization`, the normalization of `P` in `Y`.  Then
    `j := i.toNormalization : Y ⟶ X` is an open immersion **by Zariski's Main Theorem**
    and dominant **by construction** — both free from `Mathlib`;
@@ -116,15 +117,15 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_one_fromNormalization`,
 `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, `nonempty_projChart_mvPolynomial`,
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
-`exists_isOpenImmersion_isProper` have all been in it while closed.  **Regenerate it from the
-build's `declaration uses 'sorry'` warnings before acting on it; do not trust the prose.**  As
-of the release-14 integration (2026-07-28) this file's sorries are exactly these THREE — **the
-whole normality half is now CLOSED**:
+the now-deleted `exists_isOpenImmersion_isProper` have all been in it while closed.
+**Regenerate it from the build's `declaration uses 'sorry'` warnings before acting on it; do
+not trust the prose.**  As of the free-floating deletion of the Nagata gluing cluster
+(2026-07-28) this file's sorries are exactly these TWO — **the whole normality half is now
+CLOSED**:
 
 | leaf | content |
 | --- | --- |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
-| `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction — but see the next section: every consumer now bypasses it |
 | `exists_finset_span_powSubalgebra_of_mem_span` | the FINITE-MODEL DESCENT, all that is left of E. Noether's finiteness theorem after 2026-07-28: over `A = k[x₁,…,x_d]` with `Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional `Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  `module_finite_integralClosure_of_isPurelyInseparable` (the inseparable residue, and with it all of `module_finite_integralClosure_of_isFractionRing`) is PROVEN over it |
 
 **Proven and no longer leaves** (do NOT dispatch at these):
@@ -135,8 +136,9 @@ itself PROVEN and hoisted here from `Modularity/MoretBailly.lean`),
 `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`,
 `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`,
 `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, `finiteType_integralClosure_sections`,
-`smoothOfRelativeDimension_one_fromNormalization`, and `exists_isOpenImmersion_isProper`
-(PROVEN over `exists_isOpenImmersion_isProper_of_affineCase`).
+`smoothOfRelativeDimension_one_fromNormalization`, and
+`exists_isOpenImmersion_isProper_of_isAffine` (PROVEN outright over
+`exists_isOpenImmersion_isProper_of_proj`).
 
 **`trdeg_le_of_isStandardSmoothOfRelativeDimension` NO LONGER EXISTS** (release-14 integration).
 `flt-lean-380` carried a `trdeg`-based route to the same dimension bound, defensively renamed to
@@ -159,32 +161,37 @@ over `CurveExtension.lean`'s `ringKrullDim_le_of_isStandardSmoothOfRelativeDimen
 new mathematics — the bound had been proven upstream, inside this file's own import cone, while
 every audit here was still pricing a missing dimension theory.
 
-## The Nagata gluing induction is BYPASSED by every consumer (2026-07-28)
+## The Nagata gluing induction was DELETED (2026-07-28)
 
-`exists_isOpenImmersion_isProper_of_affineCase` — the row above calls it "all that is left of
-Nagata", and it is the hardest leaf in this file — **blocks nothing**.  The only consumer of
-`exists_isOpenImmersion_isProper` is `exists_isSmoothCompactification`, and the only consumers
-of *that* are four sites in `Fermat/FLT/ModularCurve/{X0,X1}.lean`, every one of which takes
-its `Y` from a Katz–Mazur coarse moduli existential whose exhibited model is `Spec (A^G)` —
-**affine**.  The affineness was simply not being exported.
+`exists_isOpenImmersion_isProper_of_affineCase` — the hardest leaf this file ever carried, and
+the only part of the decomposition that was still Nagata's theorem proper — **blocked nothing**
+and is **gone**, together with the two declarations that existed only to consume it.
 
-So this file now carries three statements instead of one:
+Why it blocked nothing: its only consumer was `exists_isOpenImmersion_isProper`, whose only
+consumer was `exists_isSmoothCompactification`, whose only consumers were four sites in
+`Fermat/FLT/ModularCurve/{X0,X1}.lean` — every one of which takes its `Y` from a Katz–Mazur
+coarse moduli existential whose exhibited model is `Spec (A^G)`, i.e. **affine**.  The
+affineness was simply not being exported.  Once it was, all four call
+`exists_isSmoothCompactification_of_isAffine`, and the whole gluing chain became free-floating:
+a `Name.transitivelyUsedConstants` scan over the `X0`/`X1`/`MoretBailly` cone found **zero**
+users of any of the three, direct or transitive.  Deleting all three together removed the sorry
+leaf outright, at zero mathematical cost.
+
+So this file carries two compactification statements, both PROVEN:
 
 * `exists_isSmoothCompactification_of_properModel` — the non-Nagata half: normalize a given
-  proper model.  No `QuasiCompact`/`IsSeparated` hypotheses; they belong to Nagata alone.
-* `exists_isSmoothCompactification` — the general theorem, unchanged in statement, still
-  routed through the gluing induction.
-* `exists_isSmoothCompactification_of_isAffine` — the same conclusion with `[IsAffine Y]`,
-  routed through `exists_isOpenImmersion_isProper_of_isAffine`, which is PROVEN.  **This is
-  what the four modular-curve sites now call**, so the `X_0(N)` / `X_1(N)` cone no longer
-  depends on Nagata's gluing induction at all.
+  proper model.  No `QuasiCompact`/`IsSeparated` hypotheses; they belonged to Nagata alone.
+* `exists_isSmoothCompactification_of_isAffine` — the smooth compactification of an affine
+  smooth curve over a perfect field, routed through `exists_isOpenImmersion_isProper_of_isAffine`
+  (PROVEN, via `Proj` of a graded chart).  **This is what the four modular-curve sites call**,
+  so the `X_0(N)` / `X_1(N)` cone does not depend on Nagata's gluing induction at all.
 
-Consequence to act on, recorded here rather than acted on unilaterally: with the four sites
-rewired, `exists_isSmoothCompactification`, `exists_isOpenImmersion_isProper` and
-`exists_isOpenImmersion_isProper_of_affineCase` have no consumer in the root cone and are
-therefore FREE-FLOATING.  They are kept because the general statement is the honest one for a
-curve not presented affinely; if the free-floating sweep wants them gone, deleting all three
-together also removes the gluing-induction sorry leaf outright.
+What is *not* available here, and should not be assumed: Nagata compactification for a
+quasi-compact separated finite-type `Y` that is **not affine**.  If a future consumer genuinely
+needs it, the deleted statements are recoverable from git history at this commit's parent; they
+were `exists_isOpenImmersion_isProper_of_affineCase` (the gluing induction, a sorry leaf),
+`exists_isOpenImmersion_isProper` (proven over it) and `exists_isSmoothCompactification` (the
+general smooth compactification, proven over that).
 
 ## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
 
@@ -280,7 +287,7 @@ That module independently states the SAME construction as its LEAF A/B/C
 (`exists_quasiFinite_toProper_of_isAffine_finiteType`,
 `isFinite_fromNormalization_of_smooth_affine`, and the smoothness of the normalized
 model), in the special case of an **affine** `C` over `Spec (ULift ℚ)`.  Those three are
-exactly `exists_isOpenImmersion_isProper`, `isFinite_fromNormalization` and
+exactly `exists_isOpenImmersion_isProper_of_isAffine`, `isFinite_fromNormalization` and
 `smoothOfRelativeDimension_one_fromNormalization` below, specialised.
 
 **Its LEAF A is now REDUNDANT (2026-07-27)**: `exists_quasiFinite_toProper_of_isAffine_finiteType`
@@ -404,8 +411,8 @@ structure IsSmoothCompactification {Y X S : Scheme.{u}} (strY : Y ⟶ S) (strX :
 
 /-! #### Nagata compactification, decomposed (2026-07-27)
 
-`exists_isOpenImmersion_isProper` below is no longer a citation: it is PROVEN from three
-sharper leaves, two of which are pure commutative algebra.  The route is the classical one
+`exists_isOpenImmersion_isProper_of_isAffine` below is no longer a citation: it is PROVEN from
+two sharper leaves, both of which are pure commutative algebra.  The route is the classical one
 for a scheme over a field, and it exists here only because `Mathlib` turns out to carry the
 one hard geometric input — `AlgebraicGeometry.Proj.instIsProperToSpecZero`, the properness
 of `Proj 𝒜` over `Spec 𝒜₀` for `𝒜` a finite-type graded algebra
@@ -415,15 +422,18 @@ criterion).  Every previous audit of this leaf recorded "`Proj` exists only as
 which is true of the *closure* and false of the *properness*; the properness is the part
 one cannot write oneself.
 
-The three pieces:
+The two pieces:
 
 * `nonempty_projChart_mvPolynomial` (PROVEN 2026-07-27) — the standard affine chart of `ℙⁿ`:
   dehomogenisation at `X₀`, now a theorem over the single arithmetic leaf
   `eq_zero_of_isHomogeneous_of_dehomogenisation`, which is itself proven;
 * `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
-  descends along a surjection `B' ↠ B`;
-* `exists_isOpenImmersion_isProper_of_affineCase` (LEAF) — Nagata's gluing induction, which
-  is the only piece that is still Nagata's theorem proper.
+  descends along a surjection `B' ↠ B`.
+
+(A third piece, `exists_isOpenImmersion_isProper_of_affineCase` — Nagata's gluing induction,
+the only part that was still Nagata's theorem proper — was needed solely by the general
+non-affine form, and was deleted with it as free-floating on 2026-07-28; see the module
+docstring.)
 
 Everything joining them is proven here.  Note the same `Proj`-chart pattern (a
 `HomogeneousLocalization.Away` identified with a concrete ring, together with the commuting
@@ -868,58 +878,6 @@ theorem exists_isOpenImmersion_isProper_of_isAffine {Y : Scheme.{u}} [IsAffine Y
   letI := C.zeroFinite
   exact exists_isOpenImmersion_isProper_of_proj strY C.A C.grading C.f C.f_deg C.awayIso
     C.compat
-
-/-- **Nagata's gluing induction: the affine case implies the general case** (sorry leaf).
-
-TRUE and classical, and this is the only part of the decomposition that is still Nagata's
-theorem proper: Nagata (1962), Deligne's notes as written up by Conrad, Lütkebohmert
-(1993), Temkin; Stacks tags `0F3T`–`0F41`.  A quasi-compact separated finite-type `Y` has a
-FINITE affine open cover, and the induction is on its size: given compactifications of
-`U = U₁ ∪ ⋯ ∪ Uₖ₋₁` and of the affine `V = Uₖ`, one produces a compactification of `U ∪ V`
-by blowing up along the boundary and gluing the two proper models along the closure of the
-graph over `U ∩ V`.  Nothing of this is in `Mathlib` and nothing of it is in this project.
-
-`H` is the affine case, which is PROVEN here — see
-`exists_isOpenImmersion_isProper_of_isAffine`.  Passing it as a hypothesis rather than
-using it directly is what makes this leaf strictly the gluing content and nothing else.
-
-Note that the induction genuinely needs blowups (equivalently, scheme-theoretic images of
-non-quasi-compact opens): the naive "glue the two closures along `U ∩ V`" fails because the
-two proper models need not agree there.  That is the whole reason Nagata's theorem was open
-for so long and why Deligne's write-up exists. -/
-theorem exists_isOpenImmersion_isProper_of_affineCase {Y : Scheme.{u}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
-    [LocallyOfFiniteType strY]
-    (_H : ∀ (Z : Scheme.{u}) (strZ : Z ⟶ Spec (CommRingCat.of K)), IsAffine Z →
-      LocallyOfFiniteType strZ → ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K))
-        (i : Z ⟶ P), IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strZ) :
-    ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
-      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY :=
-  sorry
-
-/-- **Nagata's compactification theorem, for a quasi-compact separated finite-type scheme
-over a field** (PROVEN over the three leaves above — no longer a citation).
-
-Any separated finite-type morphism to a quasi-compact quasi-separated base factors as an
-open immersion followed by a proper morphism.  Nagata (1962); Stacks tag `0F41`.
-
-Note what is NOT claimed: `P` is **not** asserted normal, smooth, or even reduced.  That
-is the whole point of routing through the normalization afterwards — Nagata's `P` is an
-arbitrary proper model, and steps 3–4 of the module docstring repair it.
-
-`QuasiCompact i` is part of the conclusion rather than derived: an open immersion need not
-be quasi-compact in general, and every consumer here needs it (Zariski's Main Theorem takes
-it as a hypothesis).  In the affine case it is free (see
-`exists_isOpenImmersion_isProper_of_proj`); in general it is carried through the
-induction. -/
-theorem exists_isOpenImmersion_isProper {Y : Scheme.{u}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
-    [LocallyOfFiniteType strY] :
-    ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
-      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY :=
-  exists_isOpenImmersion_isProper_of_affineCase strY fun _ strZ hZ hft => by
-    letI := hZ; letI := hft
-    exact exists_isOpenImmersion_isProper_of_isAffine strZ
 
 /-! ### E. Noether's finiteness theorem for the normalization
 
@@ -3263,16 +3221,15 @@ theorem finite_compl_range_toNormalization {Y P : Scheme.{u}}
 /-! ### The theorem -/
 
 /-- **Normalizing an arbitrary proper model turns it into a SMOOTH compactification**
-(PROVEN over the leaves above) — the half of `exists_isSmoothCompactification` that is
+(PROVEN over the leaves above) — the half of the smooth-compactification theorem that is
 *not* Nagata.
 
-Everything Nagata contributes is packaged in the hypothesis `H`, which is exactly the
-conclusion of `exists_isOpenImmersion_isProper`.  Isolating it is what lets a consumer that
-can produce a proper model CHEAPLY — an AFFINE `Y`, where
-`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN — reach a smooth compactification
-without touching the gluing induction `exists_isOpenImmersion_isProper_of_affineCase`.  See
+Everything Nagata contributes is packaged in the hypothesis `H`, an open immersion of `Y`
+into a proper `K`-scheme.  Isolating it is what lets a consumer that can produce a proper
+model CHEAPLY — an AFFINE `Y`, where `exists_isOpenImmersion_isProper_of_isAffine` is PROVEN
+— reach a smooth compactification without any gluing induction.  See
 `exists_isSmoothCompactification_of_isAffine` below, which is the form every consumer in
-this development actually uses.
+this development actually uses, and which is the only form this file now provides.
 
 The construction is the one in the module docstring: compactify as a scheme (Nagata),
 then normalize.  What `Mathlib` supplies for free, and what makes this assembly short, is
@@ -3314,45 +3271,26 @@ theorem exists_isSmoothCompactification_of_properModel [PerfectField K] {Y : Sch
       smooth := hsX
       finite_compl := hfin }
 
-/-- **Every smooth curve over a perfect field has a smooth compactification** (PROVEN over
-the four leaves above).
-
-⚠ **This is the form that still depends on the Nagata gluing induction**
-(`exists_isOpenImmersion_isProper_of_affineCase`, the one open leaf of the Nagata
-decomposition).  Every consumer in this development has an AFFINE `Y` and should use
-`exists_isSmoothCompactification_of_isAffine` below instead, which is free of that leaf.
-The general statement is kept because it is the honest one for a curve that is not
-presented affinely, and because nothing here is weakened by having both.
-
-`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
-irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
-fails, and the finiteness of the complement is false for a disconnected `Y` with an
-infinite component structure.  A geometrically connected smooth curve over a field is
-integral, so the hypothesis is met in the intended application. -/
-theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
-    [IsSeparated strY] [SmoothOfRelativeDimension 1 strY] :
-    ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
-      IsSmoothCompactification strY strX j := by
-  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
-  exact exists_isSmoothCompactification_of_properModel strY
-    (exists_isOpenImmersion_isProper strY)
-
 /-- **Every smooth AFFINE curve over a perfect field has a smooth compactification**
-(PROVEN, and — unlike `exists_isSmoothCompactification` — *without* Nagata's gluing
-induction).
+(PROVEN, with no Nagata gluing induction anywhere in its proof term).
 
-This is the same theorem with `[IsAffine Y]` added, and the point of the added hypothesis
-is which Nagata statement it lets the proof call: the affine case
-`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN here (via `Proj` of a graded chart),
-whereas the general case routes through the open leaf
-`exists_isOpenImmersion_isProper_of_affineCase`.  So this variant's proof term contains no
-`sorryAx` from the Nagata direction at all.
+The `[IsAffine Y]` hypothesis is what lets the proof call the affine case
+`exists_isOpenImmersion_isProper_of_isAffine`, which is PROVEN here (via `Proj` of a graded
+chart).  The general (non-affine) Nagata statement is *not* available in this development:
+its gluing induction was an open leaf with no consumer and was deleted, together with the
+general `exists_isSmoothCompactification` that routed through it.  So this variant's proof
+term contains no `sorryAx` from the Nagata direction at all.
 
 `QuasiCompact strY` and `IsSeparated strY` are not hypotheses here, and dropping them is not
 a weakening of the input: an affine scheme over the affine `Spec K` has an affine structure
 morphism, which is automatically quasi-compact and separated.  They were only ever needed by
 Nagata's general theorem.
+
+`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
+irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
+fails, and the finiteness of the complement is false for a disconnected `Y` with an
+infinite component structure.  A geometrically connected smooth curve over a field is
+integral, so the hypothesis is met in the intended application.
 
 **Every consumer of the compactification theorem in this development is of this shape** —
 `Y_0(N)` and `Y_1(N)` are Katz–Mazur coarse spaces `Spec (A^G)`, affine by construction; see
