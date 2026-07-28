@@ -11,6 +11,10 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
 public import Mathlib.AlgebraicGeometry.GammaSpecAdjunction
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
+public import Mathlib.AlgebraicGeometry.ResidueField
+public import Mathlib.AlgebraicGeometry.Gluing
+public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -37,10 +41,22 @@ direct images of quasi-coherent sheaves at all.
   an arbitrary `Y ⟶ S`, and `𝒪_S = f_*𝒪_X` alone does not survive that (it does under
   flatness + geometric connectedness + geometric reducedness, which is exactly what the
   main theorem below asserts).
-* `isIso_appTop_of_isProper_of_flat` — **THE LEAF** (2026-07-27): `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is
-  an isomorphism, for a single fixed `f` with the classical hypotheses.  This is all that
-  is left of the theorem: see the next item.
-* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **PROVEN** over that leaf.  Both
+* `isIso_appTop_of_isIso_app_affineOpens` — **PROVEN**: `f.appTop` is an isomorphism as soon
+  as `f.app U` is for every *affine* open `U ⊆ S`.  Pure sheaf theory (`f.app U` is the
+  component at `U` of `𝒪_S ⟶ f_*𝒪_X`, and the affine opens are a basis), and it is what
+  lets the remaining leaf be stated over an affine base.
+* `isIso_appTop_of_isProper_over_field` — **LEAF** (2026-07-27): `H⁰(Z, 𝒪_Z) = K` for `Z`
+  proper, geometrically connected and geometrically reduced over a field `K`.  One scheme,
+  one field, no flatness and no base change — the tractable half, and the one to take first.
+* `isIso_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-27): degree-zero cohomology and
+  base change.  For `f` proper, flat and of finite presentation over an **affine** base,
+  `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism as soon as `κ(s) ⟶ Γ(X_s, ⊤)` is one for every
+  `s ∈ S`.  Geometric connectedness and reducedness do not appear: they enter only through
+  the fibrewise hypothesis.  This is the genuine theory build.
+* `isIso_appTop_of_isProper_of_flat_of_isAffine` — **PROVEN** over those two, by feeding the
+  first into the second (every fibre is a base change of `f`).
+* `isIso_appTop_of_isProper_of_flat` — **PROVEN** over it, by the affine reduction.
+* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **PROVEN** over it too.  Both
   of the theorem's quantifiers turned out to be bookkeeping rather than mathematics: all
   five hypotheses are stable under base change, and an open restriction `f ∣_ U` is itself
   a base change (`isPullback_morphismRestrict`), so `∀ U, IsIso (f.app U)` *and* the
@@ -61,13 +77,33 @@ direct images of quasi-coherent sheaves at all.
 * `exists_comp_snd_eq_of_isAffine_pullback` — PROVEN: **rigidity with a target AFFINE OVER
   THE BASE**, i.e. whenever `Y ×_S Z` is affine (in particular for `[IsAffine Y]`
   `[IsAffineHom r]`).  This is the form the classical proof consumes.
+* `surjective_of_hasUniversallyTrivialPushforward`, `eq_of_comp_eq_of_hasTrivialPushforward`
+  and `eq_of_comp_snd_eq` — **PROVEN**: `𝒪_S = p_*𝒪_X` universally makes `p` SURJECTIVE
+  (base change along `Spec κ(s) ⟶ S`; an empty fibre would give `κ(s) ≅ Γ(∅, ⊤) = 0`), and
+  surjectivity upgrades the affine-target injectivity to an arbitrary target, so
+  `pullback.snd p q` is an EPIMORPHISM.  This is the uniqueness the gluing step runs on.
+* `isPullback_sliceOverOpen` — **PROVEN**: `X ×_S V` is the part of `X ×_S Y` over `V`, i.e.
+  `sliceOverOpen` sits in a cartesian square over `V.ι`; in particular it is an open
+  immersion.
 * `exists_comp_snd_eq_of_slice_const` — the RIGIDITY LEMMA (Mumford *AV* §4;
-  BLR *Néron Models* 8.4 in the relative case), PROVEN over the two leaves below.
-* `exists_isAffineOver_cover_of_slice_const` — **LEAF**: `Y` is covered by opens over each of
-  which `m` factors through a scheme affine over the base.  This is where properness of
-  `pullback.snd`, the section `σ` and `[GeometricallyConnected q]` are consumed.
-* `exists_comp_snd_eq_of_open_cover` — **LEAF**: local factorizations through the projection,
-  over an open cover of `Y`, glue to a global one.
+  BLR *Néron Models* 8.4 in the relative case), PROVEN over the single leaf below.
+* `exists_comp_snd_eq_of_open_cover` — **PROVEN**: local factorizations through the
+  projection, over an open cover of `Y`, glue to a global one.  Overlaps agree by
+  `eq_of_comp_snd_eq`; the assembly is `Scheme.Cover.glueMorphisms` on
+  `Y.openCoverOfIsOpenCover`, checked against the pullback of that cover along
+  `pullback.snd p q` via `isPullback_sliceOverOpen`.
+* `exists_isAffineOver_cover_of_slice_const` — **PROVEN** from the pointwise form below, by
+  indexing the cover by the points of `Y`.
+* `exists_isAffineOver_nbhd_of_slice_const` — **PROVEN** from the leaf below by
+  `IsOpenImmersion.lift`: at each point `y : Y` there is an open `V ∋ y` over which `m`
+  factors through a scheme affine over the base.
+* `exists_isAffineOpen_slice_nbhd_of_slice_const` — **THE ONE REMAINING LEAF of the
+  rigidity lemma**, and it is now a bare statement about OPENS: at each `y : Y` there are
+  an open `V ∋ y` in `Y` and an open `U ⊆ Z` with `V ×_S U` affine and
+  `range (X ×_S V ⟶ Z) ⊆ U`.  This is where properness of `pullback.snd`, the section `σ`
+  and `[GeometricallyConnected q]` are consumed, and it is the *whole* of what is missing
+  — every morphism, index-set, gluing and uniqueness obligation around it has been
+  discharged.
 
 ## `geometricallyReduced_of_smooth` WAS A DUPLICATE LEAF, and has been deleted (2026-07-27)
 
@@ -110,7 +146,28 @@ base"* — the topological argument runs there and nowhere else.  So the leaf sp
    factorization through the projection UNIQUE (`exists_comp_snd_eq_of_isAffine` is stated as
    an `∃!` for exactly this reason).
 
-Both leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
+**UPDATE (2026-07-27): (2) IS CLOSED, AND (1) HAS BEEN LOCALISED TO A POINT.**  The gluing
+is proven, and what it cost is recorded because it is the reusable part: the uniqueness it
+needs is the statement that `pullback.snd p q` is an EPIMORPHISM OF SCHEMES, which does NOT
+follow from `HasTrivialPushforward` alone (Hartogs: `𝒪_{𝔸²} ≅ j_*𝒪_{𝔸² ∖ 0}` for a
+non-surjective `j`).  It follows from the UNIVERSAL form, which forces `p` to be surjective
+by base change along `Spec κ(s) ⟶ S` — an empty fibre would make the field `κ(s)` a zero
+ring.  Surjectivity then upgrades `eq_of_comp_eq_of_isAffine` to an arbitrary target
+because it makes two candidate factorizations agree on points, hence have the same
+preimage of each affine open of `Z`.  So the `∃!` in the affine case is not merely
+convenient — the general uniqueness is a theorem with real content, and it is now
+`eq_of_comp_snd_eq`.
+
+(1) has in turn been peeled twice.  First to `exists_isAffineOver_nbhd_of_slice_const` —
+the same statement at ONE point of `Y` — plus a proven assembly that indexes the cover by
+the points of `Y`; then to `exists_isAffineOpen_slice_nbhd_of_slice_const`, which drops the
+morphism data entirely and asks only for two OPENS (`V ∋ y` in `Y` and `U` in `Z`) with
+`V ×_S U` affine and `m(X ×_S V) ⊆ U`, the factorizing morphism being recovered by
+`IsOpenImmersion.lift`.  The remaining leaf therefore carries exactly the geometry
+(properness ⟹ closed map; the `GeometricallyConnected` clopen argument) and none of the
+bookkeeping.
+
+The leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
 induced by an open `V ⊆ Y`.
 
 ## FAITHFULNESS NOTE on the rigidity lemma: the second factor MUST be connected
@@ -221,62 +278,370 @@ theorem HasTrivialPushforward.existsUnique_comp_eq {X S Z : Scheme.{u}} {p : X �
       ← Scheme.toSpecΓ_naturality_assoc, Scheme.toSpecΓ_isoSpec_inv, Category.comp_id]
   exact ⟨_, key, fun c hc => eq_of_comp_eq_of_isAffine (p := p) (by rw [hc, key])⟩
 
+/-! ### Reduction to an affine base
+
+`IsIso (f.app U)` is a statement about the ⊤-component of a map of **sheaves** on `S`, namely
+`f.c : 𝒪_S ⟶ f_*𝒪_X`.  So it is local on `S`, and the reduction of the theorem below to the
+case of an affine base is pure sheaf theory, with no geometry in it at all. -/
+
+/-- **`f.appTop` IS AN ISOMORPHISM AS SOON AS `f.app U` IS FOR EVERY AFFINE OPEN `U ⊆ S`**
+(PROVEN).
+
+`f.app U` is the component at `U` of `f.c : 𝒪_S ⟶ f_*𝒪_X`, a morphism of sheaves of rings on
+`S` (the target is a sheaf by `TopCat.Sheaf.pushforward_sheaf_of_sheaf`).  The affine opens are
+a basis of `S` (`Scheme.isBasis_affineOpens`), so componentwise bijectivity on them gives
+bijectivity on every stalk — injectivity by `stalkFunctor_map_injective_of_isBasis`, surjectivity
+because every germ is represented on a basis open (`exists_mem_germ_eq_of_isBasis`) — and a
+morphism of sheaves that is a stalkwise isomorphism is an isomorphism on every open, in
+particular on `⊤` (`app_isIso_of_stalkFunctor_map_iso`).
+
+This is the step that lets the cohomological content below be stated over an **affine** base,
+where `Γ(S, ⊤)` is an honest ring and `Γ(X, ⊤)` an honest module over it. -/
+theorem isIso_appTop_of_isIso_app_affineOpens (f : X ⟶ S)
+    (h : ∀ U ∈ S.affineOpens, IsIso (f.app U)) : IsIso f.appTop := by
+  let G : TopCat.Sheaf CommRingCat S :=
+    ⟨f.base _* X.presheaf, TopCat.Sheaf.pushforward_sheaf_of_sheaf f.base X.sheaf.2⟩
+  let α : S.sheaf ⟶ G := ⟨f.c⟩
+  have hb : TopologicalSpace.Opens.IsBasis S.affineOpens := S.isBasis_affineOpens
+  have hbij : ∀ x : S, Function.Bijective
+      ((TopCat.Presheaf.stalkFunctor CommRingCat x).map α.1) := by
+    intro x
+    constructor
+    · refine TopCat.Presheaf.stalkFunctor_map_injective_of_isBasis hb ?_ x
+      intro U hU
+      haveI := h U hU
+      exact (ConcreteCategory.bijective_of_isIso (f.app U)).1
+    · intro t
+      obtain ⟨U, hxU, hU, s, rfl⟩ := TopCat.Presheaf.exists_mem_germ_eq_of_isBasis hb G.1 x t
+      haveI := h U hU
+      obtain ⟨s', rfl⟩ := (ConcreteCategory.bijective_of_isIso (f.app U)).2 s
+      exact ⟨S.presheaf.germ U x hxU s',
+        TopCat.Presheaf.stalkFunctor_map_germ_apply U x hxU α.1 s'⟩
+  haveI : ∀ x : S, IsIso ((TopCat.Presheaf.stalkFunctor CommRingCat x).map α.1) :=
+    fun x => (ConcreteCategory.isIso_iff_bijective _).mpr (hbij x)
+  exact TopCat.Presheaf.app_isIso_of_stalkFunctor_map_iso α ⊤
+
+/-! ### The two leaves: the fibrewise computation, and cohomology and base change
+
+The classical proof of `f_*𝒪_X = 𝒪_S` has exactly two moving parts, and they are independent
+of one another:
+
+* **over a field** — `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically connected and
+  geometrically reduced over `K` (`isIso_appTop_of_isProper_over_field`).  No flatness, no
+  base change, no cohomology in positive degree: this is a statement about *one* scheme over
+  *one* field, and it is by far the more tractable half;
+* **cohomology and base change** — for `f` proper, flat and of finite presentation over an
+  affine base, `𝒪_S ⟶ f_*𝒪_X` is an isomorphism as soon as it is one on every fibre
+  (`isIso_appTop_of_isIso_appTop_fiber`).  This half never sees geometric connectedness or
+  reducedness: they enter *only* through the fibrewise hypothesis.
+
+`isIso_appTop_of_isProper_of_flat_of_isAffine` is PROVEN by feeding the first into the second,
+which is why the two are cut apart here rather than proved together. -/
+
+/-- **`H⁰(Z, 𝒪_Z) = K` FOR A PROPER, GEOMETRICALLY CONNECTED, GEOMETRICALLY REDUCED SCHEME
+OVER A FIELD** (LEAF, 2026-07-27) — the fibrewise half of the pushforward theorem, and the
+tractable one.
+
+**The classical argument.**  Write `A := Γ(Z, ⊤)`.
+
+1. `K ⟶ A` is *integral*: this is already in `Mathlib`, as
+   `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` (properness is not even needed,
+   universal closedness over an affine base suffices).
+2. `A` is *reduced*, because `Z` is (geometric reducedness over `K` in particular gives
+   `IsReduced Z`, `AlgebraicGeometry.GeometricallyReduced` instances).
+3. Hence `A` is a *field*.  Every `a ∈ A` is algebraic over `K`, so `K[a]` is a finite reduced
+   `K`-algebra, i.e. a finite product of fields; an idempotent of `K[a]` is an idempotent of
+   `A`, and `Z` is connected, so `A` has no idempotents other than `0` and `1` (a nontrivial
+   idempotent of `Γ(Z, ⊤)` is exactly a decomposition of `Z` into two nonempty opens).  So
+   `K[a]` is a field and `a` is invertible when nonzero.
+4. `A` is *finite* over `K`, by `AlgebraicGeometry.finite_appTop_of_universallyClosed` once
+   `A` is known to be a field — note that mathlib's version is stated under `[IsIntegral Z]`,
+   which is *stronger* than what is available here (connected + reduced does not give
+   irreducible: two lines meeting in a point are a standing counterexample, and they do have
+   `H⁰ = k`).  So this step needs the mathlib proof re-run without irreducibility; its actual
+   content is `RingHom.finite_of_algHom_finiteType_of_isJacobsonRing` applied to
+   `Γ(Z, ⊤) ⟶ Γ(Z, U)` for an affine open `U`, and irreducibility is used there only to know
+   `Z` is nonempty — which geometric connectedness also gives.
+5. Finally `[A : K] = 1`.  `A/K` is a finite field extension; geometric reducedness makes it
+   *separable*, so `A ⊗_K K̄ ≅ K̄^{[A:K]}` has `[A : K]` idempotents, while geometric
+   connectedness makes `Z_{K̄}` connected, hence `Γ(Z_{K̄}, 𝒪)` idempotent-free.  The one
+   nontrivial input is that `Γ` of a quasi-compact quasi-separated scheme over a field
+   commutes with the (flat) base change `K ⟶ K̄` — which for `H⁰` alone is the equalizer of a
+   finite Čech diagram of affines and the exactness of `- ⊗_K K̄`, *not* the full
+   cohomology-and-base-change theorem.
+
+**FAITHFULNESS.**  All three hypotheses are load-bearing.  Without geometric connectedness the
+statement fails for `Z = Spec (K × K)`; without geometric reducedness it fails for
+`Z = Spec (K[ε]/ε²)`; and *geometric* connectedness cannot be weakened to connectedness — for
+`K = ℝ` and `Z = Spec ℂ`, `Z` is connected, reduced and proper over `ℝ`, and
+`H⁰(Z, 𝒪) = ℂ ≠ ℝ`.  Likewise geometric reducedness cannot be weakened to reducedness, by the
+usual inseparable example `Z = Spec 𝔽_p(t^{1/p})` over `K = 𝔽_p(t)`. -/
+theorem isIso_appTop_of_isProper_over_field {K : CommRingCat.{u}} [Field K] {Z : Scheme.{u}}
+    (g : Z ⟶ Spec K) [IsProper g] [GeometricallyConnected g] [GeometricallyReduced g] :
+    IsIso g.appTop :=
+  sorry
+
+/-- **COHOMOLOGY AND BASE CHANGE IN DEGREE ZERO: `𝒪_S ⟶ f_*𝒪_X` IS AN ISOMORPHISM AS SOON AS
+IT IS ONE ON EVERY FIBRE** (LEAF, 2026-07-27; Hartshorne III.12.11, Grauert, Stacks 0E0L /
+EGA III 7.8.6) — the half of the pushforward theorem that is a genuine theory build.
+
+Note what is *not* here: no geometric connectedness, no geometric reducedness.  Those enter
+only through the hypothesis `h`, discharged by `isIso_appTop_of_isProper_over_field` above.
+What is left is exactly the classical cohomology-and-base-change statement, with the fibre
+input abstracted away.
+
+**THE ROUTE, in the vocabulary `[IsAffine S]` provides.**  Put `R := Γ(S, ⊤)`,
+`A := Γ(X, ⊤)`, `φ := f.appTop : R ⟶ A`.  Three inputs give `φ` bijective:
+
+1. *`A` is a finitely presented `R`-module* — properness plus local finite presentation.
+   Mathlib gives the weaker `isIntegral_appTop_of_universallyClosed` (`R ⟶ A` is integral) for
+   free, but not finiteness.
+2. *`A` is `R`-flat* — this is where `Flat f` enters, through cohomology and base change:
+   `f_*𝒪_X` is locally free with formation commuting with base change (Grauert).
+3. *For every maximal ideal `m ⊂ R`, `R/m ⟶ A/mA` is bijective* — degree-zero base change
+   identifies `A/mA` with `Γ(X_s, ⊤)` for the point `s` cut out by `m`, and `κ(s) = R/m`, so
+   this is precisely the hypothesis `h s`.
+
+Given those, `φ` is surjective by Nakayama applied to `coker φ` (finitely generated, and zero
+modulo every maximal ideal), and then injective because flatness of `A` keeps
+`0 ⟶ ker φ ⟶ R ⟶ A ⟶ 0` exact after `- ⊗_R R/m`, forcing `ker φ = m · ker φ` for every
+maximal `m`, with `ker φ` finitely generated by `Module.FinitePresentation.fg_ker`.
+
+**Why `[IsAffine S]` costs nothing**: `isIso_appTop_of_isIso_app_affineOpens` above reduces the
+general base to this one, because `f.app U` is the component at `U` of the sheaf map
+`𝒪_S ⟶ f_*𝒪_X` and the affine opens are a basis of `S`.  It is what makes `R` and `A` honest
+rings and the argument above expressible at all.
+
+**FAITHFULNESS.**  Flatness is essential — without it `h⁰` jumps and the conclusion is false
+(blow up a point on a surface and the exceptional fibre still has `H⁰ = κ(s)`, but a
+non-flat family does not have `f_*𝒪 = 𝒪`).  The hypothesis `h` also silently forces every
+fibre to be *nonempty*: for `X_s = ∅` one has `Γ(X_s, ⊤) = 0`, and a field never maps
+isomorphically to the zero ring.  That is correct and intended — `𝒪_S ⟶ f_*𝒪_X` is not an
+isomorphism over a point missed by `f`.
+
+**PIN STATE, checked rather than assumed (2026-07-27, re-checked at `122c02b0`).**  `Mathlib`
+has no higher direct images of quasi-coherent sheaves, no `Rⁱf_*`, no semicontinuity, no
+cohomology-and-base-change: `grep -rn 'higherDirectImage\|directImage\|
+cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/
+Fermat/` returns zero hits.  So this leaf is a theory build and not a missing-lemma hunt.
+What mathlib *does* supply, and what an earlier version of this docstring did not record, is
+`AlgebraicGeometry.isIntegral_appTop_of_universallyClosed`,
+`AlgebraicGeometry.isField_of_universallyClosed` and
+`AlgebraicGeometry.finite_appTop_of_universallyClosed`
+(`Mathlib/AlgebraicGeometry/Morphisms/Proper.lean`) — the last two under `[IsIntegral X]`. -/
+theorem isIso_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    IsIso f.appTop :=
+  sorry
+
+/-! ### `𝒪_S = p_*𝒪_X` makes `p` an EPIMORPHISM
+
+This is what makes the factorization through the base *unique* for an arbitrary — not
+necessarily affine — target, and it is exactly what the gluing step of the rigidity lemma
+needs: two local factorizations over `V i` and `V j` agree on the overlap because there is
+at most one.
+
+Two ingredients, and both are consequences of the pushforward hypothesis alone:
+
+* `surjective_of_hasUniversallyTrivialPushforward` — the UNIVERSAL form forces `p` to be
+  surjective, by base change along `Spec κ(s) ⟶ S`: an empty fibre would give
+  `κ(s) ≅ Γ(∅, ⊤) = 0`, and `κ(s)` is a field.  This is the only place the *universal*
+  form is used for anything other than an honest base change, and it is why
+  `HasTrivialPushforward` alone will not do: `𝒪_{𝔸²} ≅ j_*𝒪_{𝔸² ∖ 0}` by Hartogs, and
+  that `j` is not surjective.
+* `eq_of_comp_eq_of_hasTrivialPushforward` — surjectivity plus `IsIso (p.app U)` at every
+  open `U` upgrades the affine-target injectivity `eq_of_comp_eq_of_isAffine` to an
+  arbitrary target, by covering `Z` with affine opens: surjectivity makes the two
+  candidate morphisms agree on POINTS, hence have the same preimage of each affine open,
+  and on that preimage the affine case applies to `p ∣_ (c₁ ⁻¹ᵁ U)`. -/
+
+/-- Global sections of an empty scheme form the zero ring — `⊤ = ⊥` there, and
+`Subsingleton Γ(X, ⊥)` is a `Mathlib` instance (the sheaf condition over the empty
+cover). -/
+theorem subsingleton_globalSections_of_isEmpty (W : Scheme.{u}) [IsEmpty W] :
+    Subsingleton Γ(W, ⊤) := by
+  have h : (⊤ : W.Opens) = ⊥ := by
+    ext x
+    exact (IsEmpty.false x).elim
+  rw [h]
+  infer_instance
+
+/-- **`𝒪_S = p_*𝒪_X` UNIVERSALLY FORCES `p` TO BE SURJECTIVE** (PROVEN).
+
+Base-change `p` along `S.fromSpecResidueField s : Spec κ(s) ⟶ S`, whose range is `{s}`.
+If `s` were not in the range of `p` the two ranges would be disjoint, so the fibre
+product would be EMPTY (`Scheme.isEmpty_pullback_iff`) and its ring of global sections
+would be the zero ring; but the hypothesis makes `(pullback.snd p _).app ⊤` an
+isomorphism onto it from `Γ(Spec κ(s), ⊤) ≅ κ(s)`, forcing the field `κ(s)` to be
+subsingleton.
+
+Note this genuinely needs the UNIVERSAL form: `HasTrivialPushforward` alone does not
+imply surjectivity — Hartogs gives `𝒪_{𝔸²} ≅ j_*𝒪_{𝔸² ∖ {0}}` for the inclusion `j` of
+the complement of a codimension-two point. -/
+theorem surjective_of_hasUniversallyTrivialPushforward {p : X ⟶ S}
+    (hpush : HasUniversallyTrivialPushforward p) : Surjective p := by
+  constructor
+  intro s
+  by_contra hs
+  have h : HasTrivialPushforward (pullback.snd p (S.fromSpecResidueField s)) :=
+    hpush (pullback.fst p _) _ (pullback.snd p _)
+      (IsPullback.of_hasPullback p (S.fromSpecResidueField s)).flip
+  haveI : IsEmpty ↥(pullback p (S.fromSpecResidueField s)) := by
+    rw [Scheme.isEmpty_pullback_iff, Scheme.range_fromSpecResidueField]
+    simpa [Set.disjoint_singleton_right] using hs
+  haveI := h ⊤
+  haveI : Subsingleton Γ(pullback p (S.fromSpecResidueField s), ⊤) :=
+    subsingleton_globalSections_of_isEmpty _
+  haveI : Subsingleton Γ(Spec (S.residueField s), ⊤) :=
+    (asIso ((pullback.snd p (S.fromSpecResidueField s)).app
+      ⊤)).commRingCatIsoToRingEquiv.toEquiv.subsingleton_congr.mpr inferInstance
+  haveI : Subsingleton (S.residueField s) :=
+    (Scheme.ΓSpecIso (CommRingCat.of (S.residueField s))).commRingCatIsoToRingEquiv.toEquiv
+      |>.subsingleton_congr.mp inferInstance
+  exact false_of_nontrivial_of_subsingleton (S.residueField s)
+
+/-- `IsIso (g.app V)` for every open transfers to the RESTRICTED morphism `g ∣_ V`, whose
+`appTop` is `g.app (V.ι ''ᵁ ⊤)` composed with an `eqToHom`-induced isomorphism.
+
+Stated in this direction — the composite form first, then `rw [← morphismRestrict_appTop]`
+— on purpose: rewriting FORWARDS with `morphismRestrict_appTop` produces a goal that is
+not type-correct at `instances` transparency, so instance synthesis then fails on the
+`eqToHom` factor even when every ingredient is available. -/
+theorem HasTrivialPushforward.isIso_appTop_morphismRestrict {g : X ⟶ S}
+    (hg : HasTrivialPushforward g) (V : S.Opens) : IsIso (g ∣_ V).appTop := by
+  have h2 : IsIso (g.app (V.ι ''ᵁ ⊤) ≫
+      X.presheaf.map (eqToHom (image_morphismRestrict_preimage g V ⊤)).op) := by
+    haveI := hg (V.ι ''ᵁ ⊤)
+    infer_instance
+  rwa [← morphismRestrict_appTop] at h2
+
+/-- **A SURJECTIVE MORPHISM WITH `𝒪_S = g_*𝒪_X` IS AN EPIMORPHISM OF SCHEMES** (PROVEN),
+i.e. `(g ≫ ·)` is injective on morphisms into an ARBITRARY scheme `Z`.
+
+`eq_of_comp_eq_of_isAffine` is this statement for affine `Z`; the passage to a general
+`Z` is local on `Z` and uses surjectivity twice:
+
+* surjectivity makes `c₁` and `c₂` agree on POINTS, so `c₁ ⁻¹ᵁ U = c₂ ⁻¹ᵁ U` for every
+  open `U ⊆ Z` — without which the two restrictions would not even have a common source;
+* on `V := c₁ ⁻¹ᵁ U` with `U` an affine open around `c₁ s`, the affine case applies to
+  `g ∣_ V`, whose `appTop` is an isomorphism by
+  `HasTrivialPushforward.isIso_appTop_morphismRestrict`.
+
+`Scheme.hom_ext_of_forall` then assembles the local equalities. -/
+theorem eq_of_comp_eq_of_hasTrivialPushforward {g : X ⟶ S} (hg : HasTrivialPushforward g)
+    [Surjective g] {c₁ c₂ : S ⟶ Z} (h : g ≫ c₁ = g ≫ c₂) : c₁ = c₂ := by
+  have hbase : ∀ s : S, c₁.base s = c₂.base s := by
+    intro s
+    obtain ⟨x, rfl⟩ := g.surjective s
+    rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply, h]
+  have hpre : ∀ U : Z.Opens, c₁ ⁻¹ᵁ U = c₂ ⁻¹ᵁ U := by
+    intro U
+    ext s
+    simp [hbase s]
+  refine Scheme.hom_ext_of_forall c₁ c₂ fun s => ?_
+  obtain ⟨U, hU, hmem, -⟩ := exists_isAffineOpen_mem_and_subset
+    (X := Z) (x := c₁.base s) (U := ⊤) (by trivial)
+  haveI : IsAffine U.toScheme := hU
+  refine ⟨c₁ ⁻¹ᵁ U, hmem, ?_⟩
+  have e₂ : (c₁ ⁻¹ᵁ U) ≤ c₂ ⁻¹ᵁ U := (hpre U) ▸ le_rfl
+  haveI : IsIso (g.resLE (c₁ ⁻¹ᵁ U) (g ⁻¹ᵁ (c₁ ⁻¹ᵁ U)) le_rfl).appTop := by
+    rw [Scheme.Hom.resLE_eq_morphismRestrict]
+    exact hg.isIso_appTop_morphismRestrict _
+  have key : c₁.resLE U (c₁ ⁻¹ᵁ U) le_rfl = c₂.resLE U (c₁ ⁻¹ᵁ U) e₂ := by
+    refine eq_of_comp_eq_of_isAffine
+      (p := g.resLE (c₁ ⁻¹ᵁ U) (g ⁻¹ᵁ (c₁ ⁻¹ᵁ U)) le_rfl) ?_
+    rw [Scheme.Hom.resLE_comp_resLE, Scheme.Hom.resLE_comp_resLE]
+    congr 1
+  have := congrArg (fun t => t ≫ U.ι) key
+  simpa only [Scheme.Hom.resLE_comp_ι] using this
+
+/-- **THE PROJECTION `X ×_S Y ⟶ Y` IS AN EPIMORPHISM** (PROVEN) when
+`HasUniversallyTrivialPushforward p`.
+
+`HasUniversallyTrivialPushforward` is stable under base change, so it passes from `p` to
+`pullback.snd p q`, which is then surjective and has trivial pushforward — the two
+hypotheses of `eq_of_comp_eq_of_hasTrivialPushforward`.
+
+This is the uniqueness that `exists_comp_snd_eq_of_isAffine` records as an `∃!` in the
+affine case, now available for an arbitrary target; it is what makes the local
+factorizations of the rigidity lemma agree on overlaps. -/
+theorem eq_of_comp_snd_eq {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (hpush : HasUniversallyTrivialPushforward p) {c₁ c₂ : Y ⟶ Z}
+    (h : pullback.snd p q ≫ c₁ = pullback.snd p q ≫ c₂) : c₁ = c₂ := by
+  have hu : HasUniversallyTrivialPushforward (pullback.snd p q) :=
+    MorphismProperty.pullback_snd (P := hasTrivialPushforwardProperty.universally) p q hpush
+  haveI : Surjective (pullback.snd p q) := surjective_of_hasUniversallyTrivialPushforward hu
+  exact eq_of_comp_eq_of_hasTrivialPushforward hu.hasTrivialPushforward h
+
 /-! ### The theorem -/
 
 /-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
-CONNECTED AND REDUCED FIBRES** (sorry node — Hartshorne III.12, Mumford *AV* §5, Stacks
-0E6R / 0BUG).  This is `f_*𝒪_X = 𝒪_S` read at global sections, and by
-`hasUniversallyTrivialPushforward_of_isProper_of_flat` below it is *equivalent* to the
-full sheaf-theoretic, universal statement — the reduction is recorded there.
+CONNECTED AND REDUCED FIBRES, OVER AN AFFINE BASE** — **PROVEN** (2026-07-27) over the two
+leaves above, by the one-line assembly they were cut for: every fibre
+`f.fiberToSpecResidueField s : X_s ⟶ Spec κ(s)` is a base change of `f`, hence proper,
+geometrically connected and geometrically reduced over the field `κ(s)`, so
+`isIso_appTop_of_isProper_over_field` discharges the fibrewise hypothesis of
+`isIso_appTop_of_isIso_appTop_fiber`.
 
 This is the missing classical input behind the whole Jacobian half of this development:
 `isAdditiveOn_of_post_zero` (relative rigidity), `exists_albaneseOfCurve` and
 `universal_jacobianBaseChangeAj` all reduce to it, which is why it is stated here, once,
 in the shim tree rather than inside a modular-curve file.
 
-**The proof, and what formalizing it costs.**  Let `s ∈ S`.  The fibre `X_s` is proper,
-geometrically connected and geometrically reduced over `κ(s)`, so `H⁰(X_s, 𝒪) = κ(s)`:
-a global section generates a finite `κ(s)`-subalgebra of `H⁰`, which is a field extension
-because `X_s` is reduced and connected, and is trivial because it is geometrically
-connected.  Flatness plus properness plus finite presentation then give cohomology and
-base change (Grauert / Hartshorne III.12.11): `f_*𝒪_X` is locally free of rank one and its
-formation commutes with base change, and the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism
-because it is one on every fibre.
+**The instance plumbing, for the record.**  `f.fiberToSpecResidueField s` is by definition
+`pullback.snd f (S.fromSpecResidueField s)`, and mathlib already carries
+`GeometricallyConnected (f.fiberToSpecResidueField s)` and
+`GeometricallyReduced (f.fiberToSpecResidueField s)` as instances; only `IsProper` has to be
+produced by hand, from `MorphismProperty.pullback_snd`. -/
+theorem isIso_appTop_of_isProper_of_flat_of_isAffine (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    [GeometricallyConnected f] [GeometricallyReduced f] :
+    IsIso f.appTop := by
+  refine isIso_appTop_of_isIso_appTop_fiber f fun s => ?_
+  haveI : IsProper (f.fiberToSpecResidueField s) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  exact isIso_appTop_of_isProper_over_field _
 
-**PIN STATE, checked rather than assumed (2026-07-27).**  `Mathlib` has no higher direct
-images of quasi-coherent sheaves, no `Rⁱf_*`, no semicontinuity, no cohomology-and-base-
-change; `grep` for `higherDirectImage`/`directImage` over `Mathlib/AlgebraicGeometry` and
-over `~/cs/FLT` returns nothing.  So this leaf is a genuine theory build, and it is the
-one whose completion unblocks three separate leaves at once.
+/-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
+CONNECTED AND REDUCED FIBRES**, over an arbitrary base — **PROVEN** over the affine-base leaf
+`isIso_appTop_of_isProper_of_flat_of_isAffine` above.
 
-**LEAF: `Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM.**  This is the whole content: the two
-quantifiers that decorate it — "and after every base change", "and over every open
-`U ⊆ S`" — are both discharged by
-`hasUniversallyTrivialPushforward_of_isProper_of_flat` below, because *all five*
-hypotheses are stable under base change and an open restriction `f ∣_ U` is itself a base
-change (`AlgebraicGeometry.isPullback_morphismRestrict`).  So whoever takes this leaf owes
-**one global-sections computation and nothing else**; in particular there is no need to
-carry the `universally` wrapper or the `∀ U` through the cohomological argument.
+The base is made affine by `isIso_appTop_of_isIso_app_affineOpens`: `f.app U` is the component
+at `U` of the sheaf map `𝒪_S ⟶ f_*𝒪_X`, so it is enough to treat the affine opens, which are a
+basis of `S`.  Over an affine open `U`, `isPullback_morphismRestrict` exhibits `f ∣_ U` as a
+base change of `f`, so it inherits all five hypotheses, and `morphismRestrict_appTop` together
+with `Scheme.Opens.ι_image_top` identifies `(f ∣_ U).appTop` with `f.app U` up to the
+`eqToHom`-induced isomorphism.
 
-**THE ROUTE, restated at this reduced generality.**  `f` is proper, flat and of finite
-presentation with geometrically connected and geometrically reduced fibres.  Cohomology
-and base change (Grauert; Hartshorne III.12.11, Stacks 0E6R / 0BUG) makes `f_*𝒪_X` locally
-free with formation commuting with base change; its fibre at `s` is `H⁰(X_s, 𝒪_{X_s})`,
-which is `κ(s)` because `X_s` is proper, geometrically connected and geometrically reduced
-over `κ(s)` (a global section generates a finite `κ(s)`-subalgebra of `H⁰`, which is a
-field by reducedness and connectedness and is `κ(s)` itself by geometric connectedness).
-Hence the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism on fibres, so an isomorphism, so an
-isomorphism on global sections.
-
-**WHAT IS MISSING, and the check that refutes it**: `grep -rn 'higherDirectImage\|
-directImage\|cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/
-~/cs/FLT/FLT/ Fermat/` — zero hits at `982e0aea`.  There is no quasi-coherent cohomology
-in the pin at all, so this is a theory build and not a missing-lemma hunt. -/
+So the affine reduction and the `universally`/`∀ U` bookkeeping of
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` below are all discharged mechanically:
+the only remaining mathematics is the global-sections computation over an **affine** base. -/
 theorem isIso_appTop_of_isProper_of_flat (f : X ⟶ S)
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     [GeometricallyConnected f] [GeometricallyReduced f] :
-    IsIso f.appTop :=
-  sorry
+    IsIso f.appTop := by
+  refine isIso_appTop_of_isIso_app_affineOpens f fun U hU => ?_
+  haveI : IsAffine U := hU
+  haveI : IsProper (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip ‹IsProper f›
+  haveI : Flat (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip ‹Flat f›
+  haveI : LocallyOfFinitePresentation (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹LocallyOfFinitePresentation f›
+  haveI : GeometricallyConnected (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹GeometricallyConnected f›
+  haveI : GeometricallyReduced (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹GeometricallyReduced f›
+  haveI hiso : IsIso (f.app (U.ι ''ᵁ ⊤) ≫
+      X.presheaf.map (eqToHom (image_morphismRestrict_preimage f U ⊤)).op) := by
+    rw [← morphismRestrict_appTop]
+    exact isIso_appTop_of_isProper_of_flat_of_isAffine (f ∣_ U)
+  haveI h2 := (isIso_comp_right_iff _ _).mp hiso
+  rwa [U.ι_image_top] at h2
 
 /-- **`f_*𝒪_X = 𝒪_S`, UNIVERSALLY, FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY CONNECTED
 AND REDUCED FIBRES** — PROVEN over `isIso_appTop_of_isProper_of_flat`.
@@ -491,37 +856,256 @@ noncomputable def sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
     pullback p (V.ι ≫ q) ⟶ pullback p q :=
   pullback.map p (V.ι ≫ q) p q (𝟙 X) V.ι (𝟙 S) (by simp) (by simp)
 
-/-- **THE COVERING STEP OF THE RIGIDITY LEMMA** (sorry node) — the whole topological content,
-and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
+/-! ### Ranges: the two point-set facts the covering step needs
 
-The assertion is that `Y` is covered by opens `V i` over each of which `m` factors through a
-scheme `W i` that is **affine over the base**, in the sense that `V i ×_S W i` is an affine
-scheme.  Given that, `exists_comp_snd_eq_of_isAffine_pullback` factors `m` over each `V i`,
-and `exists_comp_snd_eq_of_open_cover` glues.
+Everything in this block is PROVEN and axiom-clean.  It is stated here rather than inside
+`exists_isAffineOver_cover_of_slice_const` because it is exactly the part of that leaf's
+argument that a diagram chase on points CANNOT supply, and because it is reusable:
 
-**The proof** (Mumford *AV* §4; BLR 8.4).  Fix `s ∈ S`, an affine open `S₀ ⊆ S` around it,
-and an affine open `U ⊆ Z` with `c(S₀) ⊆ U` and `r(U) ⊆ S₀`.  Then `m ⁻¹(Z ∖ U)` is closed
-in `X ×_S Y`, and `pullback.snd p q` is proper (base change of `p`), hence a closed map, so
-its image is closed in `Y` and — by `hconst`, which puts the slice `σ(S)` into `U` — misses
-`σ(S₀)`.  The complement is an open `V ∋ σ(s)` over which `m` lands in `U`; refine `V` to an
-affine open inside `q ⁻¹ S₀` and take `W = U`, so that `V ×_S W = V ×_{S₀} U` is a fibre
-product of affines over an affine, hence affine.
+**the underlying set of a fibre product of schemes is NOT the fibre product of the
+underlying sets.**  So "the fibre of `pullback.snd p q` over `σ.base s` is covered by the
+slice" — which is what turns `hconst` (a statement about the slice) into a statement about a
+whole fibre, and hence what makes `m ⁻¹ (Z ∖ U)` miss that fibre — is a real theorem and not
+bookkeeping.  What supplies it is that `sliceIncl` is a BASE CHANGE of `σ`, together with
+`Scheme.Pullback.range_map`: the range of a base change is the preimage of the range.
 
-**Where the connectedness is consumed, and why the leaf is FALSE without it**: the opens
-produced this way a priori cover only the part of `Y` reachable from the section.  Their
-union is open, and the argument above run at every point of it shows it is also closed in
-each fibre of `q`; `[GeometricallyConnected q]` is what upgrades "clopen in each fibre and
-meets each fibre (via `σ`)" to `⨆ i, V i = ⊤`.  With `Y` two points over `S = Spec k` the
-union is a single point and the conclusion fails — see the FAITHFULNESS NOTE in the module
-docstring.
+`sliceOverMap` below is `sliceOverOpen` generalised from an open immersion to an arbitrary
+morphism, which is needed because the slice is the base change of the SECTION `σ : S ⟶ Y` —
+an immersion, but not an open one. -/
+
+/-- **The canonical map `X ×_S V ⟶ X ×_S Y` induced by an arbitrary `g : V ⟶ Y`.**
+`sliceOverOpen p q V` is the special case `g = V.ι`, definitionally. -/
+noncomputable def sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) : pullback p (g ≫ q) ⟶ pullback p q :=
+  pullback.map p (g ≫ q) p q (𝟙 X) g (𝟙 S) (by simp) (by simp)
+
+theorem sliceOverOpen_eq_sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    (V : Y.Opens) : sliceOverOpen p q V = sliceOverMap p q V.ι :=
+  rfl
+
+@[reassoc (attr := simp)]
+theorem sliceOverMap_fst {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    sliceOverMap p q g ≫ pullback.fst p q = pullback.fst p (g ≫ q) :=
+  (pullback.lift_fst _ _ _).trans (Category.comp_id _)
+
+@[reassoc (attr := simp)]
+theorem sliceOverMap_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    sliceOverMap p q g ≫ pullback.snd p q = pullback.snd p (g ≫ q) ≫ g :=
+  pullback.lift_snd _ _ _
+
+/-- **THE RANGE OF `sliceOverMap` IS THE PREIMAGE OF THE RANGE OF `g`** (PROVEN), because
+`sliceOverMap p q g` is the base change of `g` along `pullback.snd p q`. -/
+theorem range_sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    Set.range (sliceOverMap p q g).base = (pullback.snd p q).base ⁻¹' Set.range g.base := by
+  rw [sliceOverMap, Scheme.Pullback.range_map]
+  simp
+
+/-- **THE RANGE OF `sliceOverOpen p q V` IS `(pullback.snd p q) ⁻¹ V`** (PROVEN).
+
+This is what says that "the part of `X ×_S Y` lying over `V`", as written by
+`sliceOverOpen`, really is the part lying over `V`. -/
+theorem range_sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    Set.range (sliceOverOpen p q V).base = (pullback.snd p q).base ⁻¹' (V : Set Y) := by
+  rw [sliceOverOpen_eq_sliceOverMap, range_sliceOverMap, Scheme.Opens.range_ι]
+
+section Slice
+
+variable {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+
+/-- **The canonical isomorphism `X ≅ X ×_S S` supplied by the section `σ`.**
+
+`σ ≫ q = 𝟙 S` makes `pullback p (σ ≫ q)` a pullback along an identity, hence a copy of `X`.
+Composing it with `sliceOverMap p q σ` is `sliceIncl`, which is what exhibits the slice as
+the base change of `σ`. -/
+noncomputable def sliceIso : X ⟶ pullback p (σ ≫ q) :=
+  pullback.lift (𝟙 X) p (by rw [Category.id_comp, hσ, Category.comp_id])
+
+@[reassoc (attr := simp)]
+theorem sliceIso_fst : sliceIso p q σ hσ ≫ pullback.fst p (σ ≫ q) = 𝟙 X :=
+  pullback.lift_fst _ _ _
+
+@[reassoc (attr := simp)]
+theorem sliceIso_snd : sliceIso p q σ hσ ≫ pullback.snd p (σ ≫ q) = p :=
+  pullback.lift_snd _ _ _
+
+instance : IsIso (sliceIso p q σ hσ) := by
+  refine ⟨pullback.fst p (σ ≫ q), sliceIso_fst p q σ hσ, ?_⟩
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sliceIso_fst, Category.comp_id, Category.id_comp]
+  · rw [Category.assoc, sliceIso_snd, Category.id_comp, pullback.condition, hσ,
+      Category.comp_id]
+
+/-- **THE SLICE IS THE BASE CHANGE OF THE SECTION** (PROVEN). -/
+theorem sliceIso_comp : sliceIso p q σ hσ ≫ sliceOverMap p q σ = sliceIncl p q σ hσ := by
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sliceOverMap_fst, sliceIso_fst, sliceIncl_fst]
+  · rw [Category.assoc, sliceOverMap_snd, sliceIso_snd_assoc, sliceIncl_snd]
+
+/-- **THE SLICE IS EXACTLY THE PART OF `X ×_S Y` LYING OVER `σ(S)`** (PROVEN).
+
+This is the fact the covering step turns on: because the fibre of `pullback.snd p q` over
+`σ.base s` is entirely covered by the slice, `hconst` — which constrains `m` only on the
+slice — pins `m` on that whole fibre, and so the closed set `m ⁻¹ (Z ∖ U)` misses it.
+
+It is NOT a diagram chase: the underlying set of a fibre product of schemes is not the fibre
+product of the underlying sets, and the fibre of `pullback.snd p q` over a point `y` is
+`X ×_S Spec κ(y)`, which is larger than `X_{q y}` for a general `y`.  It is the fact that `σ`
+is a SECTION — so that `κ(σ.base s) = κ(s)` — that collapses it, and that is exactly the
+content of `sliceIncl` being a base change of `σ`. -/
+theorem range_sliceIncl :
+    Set.range (sliceIncl p q σ hσ).base = (pullback.snd p q).base ⁻¹' Set.range σ.base := by
+  rw [← sliceIso_comp p q σ hσ, ← range_sliceOverMap p q σ]
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+  rw [Set.range_eq_univ.mpr (fun z => ((ConcreteCategory.bijective_of_isIso
+    (sliceIso p q σ hσ).base).surjective z)), Set.image_univ]
+
+end Slice
+
+/-- **`X ×_S V` IS THE PART OF `X ×_S Y` LYING OVER `V`** (PROVEN): the square
+
+```
+X ×_S V --sliceOverOpen--> X ×_S Y
+   | snd                      | snd
+   V --------- ι ---------->  Y
+```
+
+is cartesian.  Pasting: the outer rectangle obtained by adjoining `pullback.fst p q` and
+`q` on the right is `pullback p (V.ι ≫ q)`, and the right-hand square is `X ×_S Y`, so
+`IsPullback.of_bot` gives the left one.
+
+Two consequences are used below: `sliceOverOpen` is an open immersion (base change of
+`V.ι`), and `X ×_S V` is *the* fibre product `(X ×_S Y) ×_Y V`, which is how the
+`sliceOverOpen`s are recognised as members of the pullback of an open cover of `Y`. -/
+theorem isPullback_sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    IsPullback (sliceOverOpen p q V) (pullback.snd p (V.ι ≫ q)) (pullback.snd p q) V.ι := by
+  refine (IsPullback.of_bot (h₁₁ := pullback.snd p (V.ι ≫ q)) (v₁₁ := sliceOverOpen p q V)
+    (v₁₂ := V.ι) (h₂₁ := pullback.snd p q) (v₂₁ := pullback.fst p q) (v₂₂ := q) ?_ ?_
+    (IsPullback.of_hasPullback p q).flip).flip
+  · have e : sliceOverOpen p q V ≫ pullback.fst p q = pullback.fst p (V.ι ≫ q) := by
+      simp [sliceOverOpen, pullback.map, pullback.lift_fst]
+    rw [e]
+    exact (IsPullback.of_hasPullback p (V.ι ≫ q)).flip
+  · simp [sliceOverOpen, pullback.map, pullback.lift_snd]
+
+instance {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    IsOpenImmersion (sliceOverOpen p q V) :=
+  MorphismProperty.of_isPullback (isPullback_sliceOverOpen p q V).flip inferInstance
+
+/-- **THE ONE REMAINING LEAF OF THE RIGIDITY LEMMA** (sorry node) — the whole topological
+content, and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
+
+Everything else is discharged: `exists_isAffineOver_nbhd_of_slice_const` below turns this
+into the morphism-level factorization (by `IsOpenImmersion.lift`, since the containment
+below is exactly the hypothesis that lift needs),
+`exists_isAffineOver_cover_of_slice_const` turns THAT into an open cover (by indexing on
+the points of `Y`), and `exists_comp_snd_eq_of_open_cover` glues.  So what is left here is
+a bare statement about opens and set-theoretic images — no morphism plumbing, no index
+set, no uniqueness.
+
+**What has to be produced at `y`.**  An open `V ∋ y` in `Y` and an open `U ⊆ Z` such that
+
+* `m` maps the whole of `X ×_S V` into `U` — written as the containment of set-theoretic
+  ranges, which is precisely `IsOpenImmersion.lift`'s hypothesis; and
+* `V ×_S U` is an AFFINE SCHEME — "`U` is affine over the base, over `V`".  In the
+  intended construction `V` and `U` are affine opens lying over one affine open
+  `S₀ ⊆ S`, so `V ×_S U = V ×_{S₀} U` is a fibre product of affines over an affine.
+
+**The proof** (Mumford *AV* §4; BLR 8.4), in two halves.
+
+1. *The properness half, which is local and needs no connectedness.*  Suppose the whole
+   slice of `X ×_S Y` over `y` is mapped by `m` into an affine open `U ⊆ Z` with
+   `r(U) ⊆ S₀` for an affine open `S₀ ∋ q y`.  Then `m ⁻¹(Z ∖ U)` is closed in `X ×_S Y`,
+   and `pullback.snd p q` is proper (base change of `p`), hence a CLOSED MAP, so its image
+   is closed in `Y` and misses `y`.  The complement is an open `V ∋ y` over which `m`
+   lands in `U`; shrink `V` to an affine open inside `q ⁻¹ᵁ S₀` and take `W = U`, so
+   `V ×_S W = V ×_{S₀} U` is a fibre product of affines over an affine, hence affine.
+
+2. *The connectedness half, which is the actual content.*  The hypothesis of (1) — that
+   the slice over `y` lands in a single affine — is what has to be established at EVERY
+   `y`, and it is here that `σ`, `hconst` and `[GeometricallyConnected q]` enter.  At
+   `y = σ(s)` it is immediate from `hconst`, which puts that slice at the single point
+   `c(s)`.  Step (1) then propagates it to an open neighbourhood, so the locus where it
+   holds is OPEN; running (1) at every point of that locus shows it is also closed in each
+   fibre of `q`, and `[GeometricallyConnected q]` upgrades "clopen in each fibre and meets
+   each fibre (via `σ`)" to "everything".
+
+**WHY THE LEAF IS FALSE WITHOUT `[GeometricallyConnected q]`**: with `Y = {y₀, y₁}` two
+points over `S = Spec k` the locus produced by (1) is a single point — see the FAITHFULNESS
+NOTE in the module docstring.  So half (2) is not decoration and cannot be dropped.
 
 **AXIS SEARCHED**: the affine and affine-over-the-base cases are DONE and are not what is
 missing here (`exists_comp_snd_eq_of_isAffine`, `exists_comp_snd_eq_of_isAffine_pullback`);
-so is the `Γ ⊣ Spec` corollary.  What is missing is purely the scheme-theoretic topology:
-`IsProper → IsClosedMap` for the base-changed projection, and the `GeometricallyConnected`
-clopen argument.  The étale axis (`section_eq_of_formallyUnramified`, diagonal
-simultaneously open and closed) is searched and DEAD: `Δ_{B/S}` is an open immersion iff
-`Ω_{B/S} = 0`, which fails in relative dimension `> 0`. -/
+so is the `Γ ⊣ Spec` corollary, and so — as of this cut — are the epimorphism property of
+the projection (`eq_of_comp_snd_eq`), the cartesian square
+(`isPullback_sliceOverOpen`) and the whole gluing step.  What is missing is purely the
+scheme-theoretic topology: `IsProper → IsClosedMap` for the base-changed projection, and
+the `GeometricallyConnected` clopen argument.  The étale axis
+(`section_eq_of_formallyUnramified`, diagonal simultaneously open and closed) is searched
+and DEAD: `Δ_{B/S}` is an open immersion iff `Ω_{B/S} = 0`, which fails in relative
+dimension `> 0`. -/
+theorem exists_isAffineOpen_slice_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (y : Y) :
+    ∃ (V : Y.Opens) (U : Z.Opens), y ∈ V ∧
+      IsAffine (pullback (V.ι ≫ q) (U.ι ≫ r)) ∧
+      Set.range (sliceOverOpen p q V ≫ m) ⊆ (U : Set Z) :=
+  sorry
+
+/-- **THE COVERING STEP, LOCALISED AT A POINT** — PROVEN over
+`exists_isAffineOpen_slice_nbhd_of_slice_const`.
+
+At each point `y : Y` there is an open `V ∋ y` over which `m` factors through a scheme
+affine over the base.  Given the leaf's opens `V` and `U`, the factorizing morphism is
+`IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m)`: `U.ι` is an open immersion and the
+leaf's range containment is literally the hypothesis that `lift` requires, so `W = U`,
+`w = U.ι ≫ r` and `j = U.ι`.  That `n` is an `S`-morphism is `hm` together with
+`sliceOverOpen p q V ≫ pullback.fst p q = pullback.fst p (V.ι ≫ q)`.
+
+Neither `σ`, `hconst`, `hpush` nor any of the three instance hypotheses is used HERE —
+they are all consumed inside the leaf; they are carried only so the statement matches
+what the covering step needs. -/
+theorem exists_isAffineOver_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (y : Y) :
+    ∃ (V : Y.Opens) (W : Scheme.{u}) (w : W ⟶ S) (j : W ⟶ Z)
+      (n : pullback p (V.ι ≫ q) ⟶ W),
+      y ∈ V ∧ IsAffine (pullback (V.ι ≫ q) w) ∧
+      n ≫ w = pullback.fst p (V.ι ≫ q) ≫ p ∧
+      n ≫ j = sliceOverOpen p q V ≫ m := by
+  obtain ⟨V, U, hy, haff, hrange⟩ :=
+    exists_isAffineOpen_slice_nbhd_of_slice_const hpush σ hσ hm c hconst y
+  have hrange' : Set.range (sliceOverOpen p q V ≫ m) ⊆ Set.range U.ι := by
+    rwa [Scheme.Opens.range_ι]
+  refine ⟨V, U.toScheme, U.ι ≫ r, U.ι,
+    IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m) hrange', hy, haff, ?_,
+    IsOpenImmersion.lift_fac _ _ _⟩
+  rw [← Category.assoc, IsOpenImmersion.lift_fac, Category.assoc, hm, ← Category.assoc]
+  congr 1
+  simp [sliceOverOpen, pullback.map, pullback.lift_fst]
+
+/-- **THE COVERING STEP OF THE RIGIDITY LEMMA** — PROVEN over
+`exists_isAffineOver_nbhd_of_slice_const`.
+
+`Y` is covered by opens `V i` over each of which `m` factors through a scheme `W i` that is
+**affine over the base**, in the sense that `V i ×_S W i` is an affine scheme.  Given that,
+`exists_comp_snd_eq_of_isAffine_pullback` factors `m` over each `V i`, and
+`exists_comp_snd_eq_of_open_cover` glues.
+
+The passage from the pointwise statement is pure bookkeeping and is done here once: index
+the cover by the POINTS of `Y`, choosing for each `y` the neighbourhood `V y` produced by
+the leaf.  Then `⨆ y, V y = ⊤` because `y ∈ V y`, and every other component of the
+conclusion is transported unchanged.  That is the whole reason the remaining leaf may be
+stated at a single point — no generality is lost, and a topological argument that had to
+carry an index set through itself would be strictly worse. -/
 theorem exists_isAffineOver_cover_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
     {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)
@@ -532,30 +1116,85 @@ theorem exists_isAffineOver_cover_of_slice_const {X Y Z S : Scheme.{u}} {p : X �
       (j : ∀ i, W i ⟶ Z) (n : ∀ i, pullback p ((V i).ι ≫ q) ⟶ W i),
       (⨆ i, V i) = ⊤ ∧ (∀ i, IsAffine (pullback ((V i).ι ≫ q) (w i))) ∧
       (∀ i, n i ≫ w i = pullback.fst p ((V i).ι ≫ q) ≫ p) ∧
-      (∀ i, n i ≫ j i = sliceOverOpen p q (V i) ≫ m) :=
-  sorry
+      (∀ i, n i ≫ j i = sliceOverOpen p q (V i) ≫ m) := by
+  choose V W w j n hmem haff hnw hnj using
+    exists_isAffineOver_nbhd_of_slice_const (r := r) hpush σ hσ hm c hconst
+  refine ⟨↥Y, V, W, w, j, n, ?_, haff, hnw, hnj⟩
+  refine top_le_iff.mp fun y _ => ?_
+  exact TopologicalSpace.Opens.mem_iSup.mpr ⟨y, hmem y⟩
 
-/-- **THE GLUING STEP OF THE RIGIDITY LEMMA** (sorry node): local factorizations of `m`
+/-- **THE GLUING STEP OF THE RIGIDITY LEMMA** (PROVEN): local factorizations of `m`
 through the projection, over an open cover of `Y`, glue to a global one.
 
-**The proof.**  The local data `d i : V i ⟶ Z` agree on overlaps because the factorization
-is UNIQUE: over `V i ⊓ V j`, two factorizations of the same morphism through the projection
-agree after composing with the projection, and `HasUniversallyTrivialPushforward p`
-base-changes to make that projection an epimorphism — concretely, both restrict over each
-affine open of `Z` to the situation of `exists_comp_snd_eq_of_isAffine`, whose conclusion is
-an `∃!`.  Then `Scheme.OpenCover.glueMorphisms` on the cover `V` of `Y` produces `d`, and
-`m = pullback.snd p q ≫ d` is checked on the cover of `X ×_S Y` by the
-`pullback.snd p q ⁻¹ᵁ V i`.
+**The proof, as carried out.**  Two halves, and the first is the one that is not free.
+
+*Overlaps.*  The chosen `d i : V i ⟶ Z` agree on `V i ×_Y V j` because the factorization
+through the projection is UNIQUE — that is `eq_of_comp_snd_eq`, the statement that
+`pullback.snd p _` is an EPIMORPHISM, which is where the pushforward hypothesis is spent
+(via surjectivity of `p` and the affine-target injectivity; see the section above).
+Concretely: write `w := pullback.fst (V i).ι (V j).ι ≫ (V i).ι` for the canonical map
+`V i ×_Y V j ⟶ Y`, which equals `pullback.snd (V i).ι (V j).ι ≫ (V j).ι` by
+`pullback.condition`.  Base-changing `m` along `w` and using the defining property of
+`d k` twice — once through the `i`-leg, once through the `j`-leg — expresses
+`pullback.snd p (w ≫ q) ≫ (leg ≫ d k)` as ONE AND THE SAME morphism
+`pullback.map … ≫ m` in both cases; cancelling the epimorphism gives the agreement.
+
+*Assembly.*  `Scheme.Cover.glueMorphisms` on `Y.openCoverOfIsOpenCover V hV` produces the
+global `d`, and `m = pullback.snd p q ≫ d` is checked on the pullback of that cover along
+`pullback.snd p q`.  The `i`-th member of THAT cover is `(X ×_S Y) ×_Y V i`, which
+`isPullback_sliceOverOpen` identifies with `X ×_S V i` carrying `sliceOverOpen p q (V i)`;
+under that identification the goal is exactly the hypothesis `hd i` combined with
+`ι_glueMorphisms`.
 
 This is bookkeeping rather than mathematics, but it is not free: it is the reason
-`exists_comp_snd_eq_of_isAffine` is stated as an `∃!` rather than an `∃`. -/
+`exists_comp_snd_eq_of_isAffine` is stated as an `∃!` rather than an `∃`, and the reason
+`eq_of_comp_snd_eq` had to be proven at all. -/
 theorem exists_comp_snd_eq_of_open_cover {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (hpush : HasUniversallyTrivialPushforward p) {m : pullback p q ⟶ Z}
     {ι : Type u} (V : ι → Y.Opens) (hV : (⨆ i, V i) = ⊤)
     (hd : ∀ i, ∃ d : (V i).toScheme ⟶ Z,
       sliceOverOpen p q (V i) ≫ m = pullback.snd p ((V i).ι ≫ q) ≫ d) :
-    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d :=
-  sorry
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d := by
+  choose d hd using hd
+  let 𝒰 : Y.OpenCover := Y.openCoverOfIsOpenCover V hV
+  have hcompat : ∀ i j : ι, pullback.fst ((V i).ι) ((V j).ι) ≫ d i
+      = pullback.snd ((V i).ι) ((V j).ι) ≫ d j := by
+    intro i j
+    refine eq_of_comp_snd_eq (p := p)
+      (q := (pullback.fst ((V i).ι) ((V j).ι) ≫ (V i).ι) ≫ q) hpush ?_
+    have key : ∀ (k : ι) (w : pullback ((V i).ι) ((V j).ι) ⟶ Y)
+        (c : pullback ((V i).ι) ((V j).ι) ⟶ (V k).toScheme), c ≫ (V k).ι = w →
+        pullback.snd p (w ≫ q) ≫ c ≫ d k
+          = pullback.map p (w ≫ q) p q (𝟙 X) w (𝟙 S) (by simp) (by simp) ≫ m := by
+      intro k w c hc
+      have hNs : pullback.map p (w ≫ q) p ((V k).ι ≫ q) (𝟙 X) c (𝟙 S) (by simp)
+            (by rw [Category.comp_id, ← Category.assoc, hc]) ≫ pullback.snd p ((V k).ι ≫ q)
+          = pullback.snd p (w ≫ q) ≫ c := by
+        simp [pullback.map, pullback.lift_snd]
+      have hNslice : pullback.map p (w ≫ q) p ((V k).ι ≫ q) (𝟙 X) c (𝟙 S) (by simp)
+            (by rw [Category.comp_id, ← Category.assoc, hc]) ≫ sliceOverOpen p q (V k)
+          = pullback.map p (w ≫ q) p q (𝟙 X) w (𝟙 S) (by simp) (by simp) := by
+        apply pullback.hom_ext <;>
+          simp [sliceOverOpen, pullback.map, pullback.lift_fst, pullback.lift_snd,
+            pullback.lift_snd_assoc, hc]
+      calc pullback.snd p (w ≫ q) ≫ c ≫ d k
+          = (pullback.map p (w ≫ q) p ((V k).ι ≫ q) (𝟙 X) c (𝟙 S) (by simp)
+              (by rw [Category.comp_id, ← Category.assoc, hc]) ≫
+                sliceOverOpen p q (V k)) ≫ m := by
+            rw [Category.assoc, hd k, ← Category.assoc, ← hNs, Category.assoc]
+        _ = _ := by rw [hNslice]
+    rw [key i _ (pullback.fst ((V i).ι) ((V j).ι)) rfl,
+      key j _ (pullback.snd ((V i).ι) ((V j).ι)) pullback.condition.symm]
+  have hglue : ∀ i, (V i).ι ≫ 𝒰.glueMorphisms d hcompat = d i :=
+    fun i => 𝒰.ι_glueMorphisms d hcompat i
+  refine ⟨𝒰.glueMorphisms d hcompat, ?_⟩
+  refine Scheme.Cover.hom_ext (𝒰.pullback₁ (pullback.snd p q)) _ _ fun i => ?_
+  show pullback.fst (pullback.snd p q) ((V i).ι) ≫ m
+      = pullback.fst (pullback.snd p q) ((V i).ι) ≫ pullback.snd p q ≫
+        𝒰.glueMorphisms d hcompat
+  refine (cancel_epi ((isPullback_sliceOverOpen p q (V i)).isoPullback.hom)).mp ?_
+  rw [← Category.assoc, ← Category.assoc, IsPullback.isoPullback_hom_fst, hd i,
+    ← Category.assoc, (isPullback_sliceOverOpen p q (V i)).w, Category.assoc, hglue i]
 
 /-- **THE RIGIDITY LEMMA** (PROVEN over the covering and gluing leaves above — Mumford
 *Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case; Mumford *GIT* Prop. 6.1
@@ -592,8 +1231,17 @@ is an input to the *hypothesis* `hpush`, not to this proof).  What is left is ex
 topology, split into `exists_isAffineOver_cover_of_slice_const` (the covering — properness,
 `σ`, connectedness) and `exists_comp_snd_eq_of_open_cover` (the gluing).
 
+**STATUS (2026-07-27, later).**  The gluing is now PROVEN — over `eq_of_comp_snd_eq`, the
+epimorphism property of the projection, which is itself proven from the universal
+pushforward hypothesis via surjectivity of `p`.  The covering is PROVEN over
+`exists_isAffineOver_nbhd_of_slice_const` (its pointwise form), which is in turn PROVEN
+over `exists_isAffineOpen_slice_nbhd_of_slice_const` (its opens-only form).  So this
+theorem now rests on exactly ONE open leaf, and that leaf is purely
+`IsProper ⟹ IsClosedMap` plus the `GeometricallyConnected` clopen argument at a single
+point of `Y`.
+
 The concrete obstruction the earlier audit named is still worth recording, because it is
-what those two leaves have to get past: the reduction to an affine target cannot be done
+what that leaf has to get past: the reduction to an affine target cannot be done
 globally — with `S = Spec k`, `X = Spec k`, `Y = Z = ℙ¹`, `q = r` the structure maps and
 `m = 𝟙`, every hypothesis holds, `d = 𝟙` is the factorization, and `m` factors through no
 affine scheme.  So the work is genuinely local-to-global on `Y`. -/
