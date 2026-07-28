@@ -6884,136 +6884,6 @@ theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
   simpa only [LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul,
     qCoeffL_apply] using happ
 
-/-- **The rational structure of `S₂(Γ₀(N))`** (PROVEN assembly,
-2026-07-25, over the coordinate leaf `exists_qCoeff_rational_relations`
-— SHIMURA'S RATIONALITY THEOREM, isolated 2026-07-25 as the first of
-the two
-genuinely different classical inputs of the former single integral
-node `exists_integral_qExpansion_spanning`, which is now a PROVEN
-denominator-clearing assembly over this leaf and
-`exists_qExpansion_denominator` below): the weight-2 level-`N` cusp
-space is spanned over `ℂ` by finitely many cusp forms ALL of whose
-`q`-expansion coefficients are RATIONAL — equivalently
-`S₂(Γ₀(N); ℚ) ⊗_ℚ ℂ = S₂(Γ₀(N))`.
-
-This is Shimura, *Introduction to the Arithmetic Theory of Automorphic
-Functions*, Theorem 3.52 (equivalently Diamond–Shurman §6.5, where the
-`ℚ`-structure is what defines the `Aut(ℂ)`-action `f ↦ f^σ`). The
-classical proof is the `q`-expansion principle on the `ℚ`-model of the
-modular curve `X₀(N)`: cusp forms of weight 2 are global differentials,
-`X₀(N)` and its cusp `∞` are defined over `ℚ`, and the formal expansion
-of a `ℚ`-rational differential in the `ℚ`-rational uniformizer `q` has
-`ℚ`-coefficients, while flat base change gives
-`H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`. No modular curve exists on
-this pin, hence the interface shape.
-
-WHY THIS IS THE RIGHT CUT (2026-07-25). The `ℤ`-statement below bundles
-two inputs that the literature also keeps apart — rationality (this
-leaf) and BOUNDED DENOMINATORS (`exists_qExpansion_denominator`) — and
-only the second needs an INTEGRAL model of the curve; the first needs
-only the `ℚ`-model. The separation also isolates what the in-file
-consumers actually use: the `Aut(ℂ)`-transport
-`exists_cuspForm_ringEquiv_conj` (and hence the whole
-`cuspForm_mem_span_rational` cluster) consumes only `σ`-invariance of
-the spanning coefficients, which `map_ratCast` already supplies from
-THIS leaf — the integral refinement is needed there not at all, and is
-kept for the mod-`p` congruence pillars, the anticipated consumers of
-the sharper form. (Those consumers are not rewired here: this owner's
-mandate is the two leaves only; the shortening of
-`exists_cuspForm_ringEquiv_conj`'s dependency from the `ℤ`-node to this
-`ℚ`-node is a one-line change for that declaration's owner —
-`map_intCast` becomes `map_ratCast`.)
-
-ASSEMBLY (2026-07-25, this node's owner): the geometric citation has
-been moved one step down to the coordinate leaf
-`exists_qCoeff_rational_relations` — "every coefficient functional
-`a_m` is a `ℚ`-combination of `D = dim_ℂ S₂(Γ₀(N))` of them" — and this
-node is now PROVEN from it, with the DUAL BASIS supplying the rational
-forms. (i) The `D` selected functionals `a_{n i}` have trivial joint
-kernel: a cusp form killed by all of them is killed by every `a_m`,
-hence is `0` by the `q`-expansion principle
-`cuspForm_eq_of_forall_qCoeff_eq`. So their span has trivial
-dual-coannihilator and therefore is the whole dual space
-(`Subspace.finrank_add_finrank_dualCoannihilator_eq`). (ii) Being `D`
-vectors spanning a `D`-dimensional space they form a BASIS `ψ`
-(`basisOfTopLeSpanOfCardEqFinrank`, using `Subspace.dual_finrank_eq`).
-(iii) Its predual basis `E = ψ* ∘ evalEquiv⁻¹` of `S₂(Γ₀(N))` obeys
-`a_{n j}(E k) = δ_{jk}`, so the `ℚ`-relations evaluate to
-`a_m(E k) = c_k^{(m)} ∈ ℚ`: `E` is a basis of rational-`q`-expansion
-forms, which is the assertion. Note where the arithmetic sits — step
-(iii) is where "`ℚ`-combination" becomes "rational coefficient", and it
-uses the cardinality `D` of the leaf's family in an essential way (see
-that leaf's docstring for the counterexample when the cardinality is
-left free).
-
-SOUNDNESS: the statement is sound for every `N ≥ 1` — spanning is
-claimed only over `ℂ` (no independence, no echelon normalization, no
-`ℚ`-rank claim), so at genus-zero levels `n = 0` witnesses it. -/
-theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
-    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
-      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) := by
-  classical
-  haveI := cuspForm_finiteDimensional N hN
-  obtain ⟨n, hn⟩ := exists_qCoeff_rational_relations hN
-  choose c hc using hn
-  -- (i) the `D` selected coefficient functionals span the full dual space
-  have hco : (Submodule.span ℂ
-      (Set.range fun i => qCoeffL N (n i))).dualCoannihilator = ⊥ := by
-    rw [eq_bot_iff]
-    intro v hv
-    rw [Submodule.mem_dualCoannihilator] at hv
-    have hzero : ∀ i, qCoeff N v (n i) = 0 := fun i => by
-      simpa using hv (qCoeffL N (n i)) (Submodule.subset_span ⟨i, rfl⟩)
-    have hv0 : v = 0 := by
-      refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
-      rw [hc m v, qCoeff_zero_cuspForm]
-      exact Finset.sum_eq_zero fun i _ => by rw [hzero i, mul_zero]
-    simp [hv0]
-  have hrank := Subspace.finrank_add_finrank_dualCoannihilator_eq
-    (Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)))
-  rw [hco, finrank_bot, add_zero] at hrank
-  have hspan : Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)) = ⊤ :=
-    Submodule.eq_top_of_finrank_eq (by rw [hrank, Subspace.dual_finrank_eq])
-  -- (ii) `D` spanning vectors in a `D`-dimensional dual space form a basis
-  have hcard : Fintype.card (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)))
-      = Module.finrank ℂ (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) := by
-    rw [Fintype.card_fin, Subspace.dual_finrank_eq]
-  let ψ : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
-      (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
-    basisOfTopLeSpanOfCardEqFinrank (fun i => qCoeffL N (n i)) hspan.ge hcard
-  have hψ : ∀ i, ψ i = qCoeffL N (n i) := fun i =>
-    congrFun (coe_basisOfTopLeSpanOfCardEqFinrank
-      (fun i => qCoeffL N (n i)) hspan.ge hcard) i
-  -- (iii) its predual basis has rational `q`-expansion coefficients
-  let E : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
-      (CuspForm (Gamma0GL N) 2) :=
-    ψ.dualBasis.map (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm
-  have hEval : ∀ j k, qCoeff N (E k) (n j) = if j = k then (1 : ℂ) else 0 := by
-    intro j k
-    have h1 : (ψ j) (E k) = ψ.dualBasis k (ψ j) := by
-      show (ψ j) ((ψ.dualBasis.map
-        (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm) k) = _
-      rw [Module.Basis.map_apply]
-      exact Module.apply_evalEquiv_symm_apply ℂ _ (ψ j) (ψ.dualBasis k)
-    have h2 : qCoeff N (E k) (n j) = (ψ j) (E k) := by rw [hψ j, qCoeffL_apply]
-    rw [h2, h1, Module.Basis.dualBasis_apply_self]
-  refine ⟨Module.finrank ℂ (CuspForm (Gamma0GL N) 2), fun k => E k,
-    fun f => ⟨fun i => E.repr f i, (E.sum_repr f).symm⟩, fun k m => ⟨c m k, ?_⟩⟩
-  have hterm : ∀ i, ((c m i : ℂ)) * qCoeff N (E k) (n i)
-      = if i = k then ((c m k : ℂ)) else 0 := by
-    intro i
-    rw [hEval i k]
-    split_ifs with h
-    · subst h; ring
-    · ring
-  calc qCoeff N (E k) m
-      = ∑ i, ((c m i : ℂ)) * qCoeff N (E k) (n i) := hc m (E k)
-    _ = ∑ i, (if i = k then ((c m k : ℂ)) else 0) :=
-        Finset.sum_congr rfl fun i _ => hterm i
-    _ = ((c m k : ℂ)) := by simp
-
-
 /-- **A Hecke-stable `ℤ`-lattice of full rank** (PROVEN, 2026-07-26,
 over the single `q`-expansion-principle citation
 `integralCuspForms_span_eq_top` far above; formerly itself the
@@ -7434,208 +7304,64 @@ theorem exists_qExpansion_denominator {N : ℕ} (hN : 0 < N)
       ring
   exact fun m => key _ (hmemW m)
 
-/-- **The integral structure of `S₂(Γ₀(N))`** (PROVEN assembly,
-2026-07-25, over the two classical inputs
-`exists_rational_qExpansion_spanning` (Shimura's rationality theorem,
-still a citation leaf) and `exists_qExpansion_denominator` (bounded
-denominators — since 2026-07-25 itself a PROVEN assembly, over the
-Hecke-finiteness node `heckeSubring_moduleFinite`); formerly
-itself the single sorried carrier, isolated 2026-07-24 as the sharpest
-satisfiable form of the leaf `exists_cuspForm_ringEquiv_conj`, which is
-PROVEN from it by the coordinate-transport glue below): the weight-2
-level-`N` cusp space is spanned over `ℂ` by finitely many cusp forms
-ALL of whose `q`-expansion coefficients are INTEGERS — equivalently,
-`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`.
-
-Assembly (denominator clearing, pure linear algebra): take the
-rational spanning family `g`, clear the denominators of each member
-separately — `dᵢ ≥ 1` with `dᵢ·a_m(gᵢ) ∈ ℤ` for all `m` — and pass to
-`gᵢ' := dᵢ • gᵢ`. Integrality of `gᵢ'` is `qCoeffL`-linearity plus the
-denominator property; spanning survives because each `dᵢ` is a nonzero
-scalar, so `f = ∑ cᵢ • gᵢ = ∑ (cᵢ/dᵢ) • gᵢ'`.
-
-The two leaves are the two genuinely different classical inputs: the
-`ℚ`-form needs only the `ℚ`-model of `X₀(N)`, the denominator bound
-needs its INTEGRAL model — see each docstring for the citations and for
-which in-file consumers actually need which. -/
-theorem exists_integral_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
-    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
-      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) := by
-  classical
-  obtain ⟨n, g, hspan, hrat⟩ := exists_rational_qExpansion_spanning hN
-  choose d hdpos hdint using fun i => exists_qExpansion_denominator hN (g i) (hrat i)
-  have hdne : ∀ i, ((d i : ℂ)) ≠ 0 := fun i => Nat.cast_ne_zero.mpr (hdpos i).ne'
-  refine ⟨n, fun i => (d i : ℂ) • g i, fun f => ?_, fun i m => ?_⟩
-  · obtain ⟨c, hc⟩ := hspan f
-    refine ⟨fun i => c i / (d i : ℂ), ?_⟩
-    rw [hc]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [smul_smul, div_mul_cancel₀ _ (hdne i)]
-  · obtain ⟨z, hz⟩ := hdint i m
-    refine ⟨z, ?_⟩
-    have hlin : qCoeff N ((d i : ℂ) • g i) m = (d i : ℂ) * qCoeff N (g i) m := by
-      have hs := (qCoeffL N m).map_smul ((d i : ℂ)) (g i)
-      simp only [smul_eq_mul, qCoeffL_apply] at hs
-      exact hs
-    rw [hlin, hz]
-
-/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (PROVEN
-glue, 2026-07-24, over the integral-structure citation node
-`exists_integral_qExpansion_spanning`; formerly THE residual
-arithmetic sorried leaf of the rational-spanning node, isolated
-2026-07-24 when `cuspForm_mem_span_rational` was reduced to it by the
-Galois-descent linear algebra below): for every field automorphism
-`σ` of `ℂ` (as a ring automorphism — no continuity) and every
-weight-2 level-`N` cusp form `f` there is a cusp form `f^σ` whose
-`q`-expansion is the coefficientwise `σ`-conjugate of that of `f`.
-This is Shimura's rationality theorem (*Introduction to the
-Arithmetic Theory of Automorphic Functions*, Theorem 3.52 together
-with the `Aut(ℂ)`-action of §3.5; equivalently Diamond–Shurman §6.5,
-where the action `f ↦ f^σ` on `S₂(Γ₀(N))` is defined through the
-`ℚ`-structure). Proof from the carrier — coordinate transport: write
-`f = ∑ cᵢ • gᵢ` in an integral spanning family and set
-`f^σ := ∑ σ(cᵢ) • gᵢ`; then coefficientwise
-`a_m(f^σ) = ∑ σ(cᵢ)·zᵢₘ = σ(∑ cᵢ·zᵢₘ) = σ(a_m(f))` because `σ` fixes
-the integer coefficients `zᵢₘ` (`map_intCast`). Note the equivalence
-with the rational-basis form of the theorem: given a rational basis,
-`σ` acts coordinatewise on the rational-coefficient span (the
-argument here), and conversely (the direction proven in
-`cuspForm_mem_span_rational`) stability under all `σ` descends the
-space to `ℚ`. -/
-theorem exists_cuspForm_ringEquiv_conj {N : ℕ} (hN : 0 < N)
-    (σ : ℂ ≃+* ℂ) (f : CuspForm (Gamma0GL N) 2) :
-    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) := by
-  classical
-  obtain ⟨n, g, hspan, hint⟩ := exists_integral_qExpansion_spanning hN
-  choose z hz using hint
-  obtain ⟨c, hc⟩ := hspan f
-  refine ⟨∑ i, σ (c i) • g i, fun m => ?_⟩
-  have hconj : qCoeff N (∑ i, σ (c i) • g i) m
-      = ∑ i, σ (c i) * qCoeff N (g i) m := by
-    have hs := map_sum (qCoeffL N m) (fun i => σ (c i) • g i) Finset.univ
-    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
-    exact hs
-  have horig : qCoeff N f m = ∑ i, c i * qCoeff N (g i) m := by
-    have hs := map_sum (qCoeffL N m) (fun i => c i • g i) Finset.univ
-    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
-    rw [hc]
-    exact hs
-  rw [hconj, horig, map_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [hz i m, map_mul, map_intCast]
-
 -- HOISTED 2026-07-27 (pure move, no textual change): the two field-theory
 -- lemmas `exists_complex_ringEquiv_extension` and
--- `exists_ratCast_eq_of_forall_ringEquiv_fixed` used to live here, between
--- `exists_cuspForm_ringEquiv_conj` and `cuspForm_mem_span_rational`.  They are
+-- `exists_ratCast_eq_of_forall_ringEquiv_fixed` used to live here, just above
+-- `cuspForm_mem_span_rational`.  They are
 -- now declared just above `ringEquivStable_le_span_rationalCuspForms`, which
 -- needs the second of them and sits ~2000 lines earlier in the file.  Neither
 -- mentions a modular form, so the move stays inside their own dependency
 -- order: both use only mathlib (transcendence bases,
 -- `IsAlgClosure.equivOfEquiv`, `minpoly`,
 -- `IntermediateField.algHomAdjoinIntegralEquiv`).
-/-- **Rational spanning of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
-over `exists_cuspForm_ringEquiv_conj` — itself since PROVEN
-(2026-07-24) over the integral-structure citation node
-`exists_integral_qExpansion_spanning` — and
-the PROVEN field-theory lemma
-`exists_ratCast_eq_of_forall_ringEquiv_fixed`): every weight-2
-level-`N` cusp form is a `ℂ`-linear combination of cusp forms ALL of
-whose `q`-expansion coefficients are rational (Shimura Theorem 3.52 /
-Diamond–Shurman §6.5). Proof — Galois descent through the Sturm
-coordinates: (i) by the Sturm bound the coefficient functionals
-`qCoeffL N m`, `m < B`, have trivial joint kernel, hence span the full
-dual of the finite-dimensional space `S₂(Γ₀(N))`
-(`Subspace.finrank_add_finrank_dualCoannihilator_eq`); (ii) extract a
-dual-space basis `ψ` from this spanning family
-(`exists_linearIndependent`) and take its predual basis
-`E = ψ* ∘ evalEquiv⁻¹` of `S₂(Γ₀(N))`, characterized by
-`ψⱼ (E k) = δⱼₖ`; (iii) for any `σ ∈ Aut(ℂ)` the `σ`-conjugate of
-`E k` (the arithmetic leaf) has the same `ψ`-coordinates `σ(δⱼₖ) =
-δⱼₖ`, hence EQUALS `E k` — so every `q`-coefficient of `E k` is fixed
-by all of `Aut(ℂ)` and is rational by the field-theory leaf; (iv) the
-basis `E` therefore lies in the rational-coefficient set and spans.
-Combined with `cuspForm_finiteDimensional`, any maximal independent
-subfamily of the rational-coefficient forms is a basis, which is how
-`exists_rational_qExpansion_basis` consumes it. -/
+/-- **Rational spanning of `S₂(Γ₀(N))`** (PROVEN, 2026-07-24; RE-PROVEN
+2026-07-28 as a three-line restatement of `rationalCuspForms_span_eq_top`
+far above): every weight-2 level-`N` cusp form is a `ℂ`-linear
+combination of cusp forms ALL of whose `q`-expansion coefficients are
+rational (Shimura Theorem 3.52 / Diamond–Shurman §6.5). Combined with
+`cuspForm_finiteDimensional`, any maximal independent subfamily of the
+rational-coefficient forms is a basis, which is how
+`exists_rational_qExpansion_basis` below consumes it.
+
+**COLLAPSE (2026-07-28).** The spanning set written here,
+`{g | ∀ m, ∃ r : ℚ, a_m(g) = r}`, is *definitionally* the carrier of the
+`ℤ`-submodule `rationalCuspForms N` — so this statement is
+`rationalCuspForms_span_eq_top` read at a point, and the set equality
+holds by `rfl`. That theorem has been PROVEN since 2026-07-27, by strong
+induction on the level over `rationalCuspForms_sup_oldCuspSpace_eq_top`.
+
+The former proof of this declaration reached the same conclusion the long
+way round, running a Galois-descent predual-basis argument over the chain
+`rationalCuspForms_span_eq_top` → `exists_qCoeff_rational_relations` →
+`exists_rational_qExpansion_spanning` → `exists_integral_qExpansion_spanning`
+→ `exists_cuspForm_ringEquiv_conj` → here. No step of it was circular, but
+none of it added anything the first link had not already given — the same
+descent is carried upstream by `ringEquivStable_le_span_rationalCuspForms`,
+which is what `rationalCuspForms_sup_oldCuspSpace_eq_top` uses. The
+redundancy was recorded in that node's docstring on 2026-07-27 and
+collected here on 2026-07-28: the three middle links had no other consumer
+anywhere in the tree and were DELETED.
+
+Two consequences worth knowing.
+
+* `exists_qExpansion_denominator` (bounded denominators) lost its only
+  consumer with them, so the whole rationality cluster now rests on
+  `rationalCuspForms_span_eq_top` alone — and in particular on nothing
+  requiring an INTEGRAL model of `X₀(N)`.
+* The `Aut(ℂ)`-transport `f ↦ f^σ` for a GENERAL cusp form is no longer
+  stated in this file; only the eigenform form
+  `exists_eigenform_ringEquiv_conj`, which the induction consumes,
+  survives. A consumer needing the general transport should re-derive it
+  from this theorem (rational spanning ⟹ coordinatewise `σ`-action)
+  rather than resurrect the deleted node. -/
 theorem cuspForm_mem_span_rational {N : ℕ} (hN : 0 < N)
     (f : CuspForm (Gamma0GL N) 2) :
     f ∈ Submodule.span ℂ
       {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} := by
-  classical
-  haveI := cuspForm_finiteDimensional N hN
-  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
-  -- (i) the first `B` coefficient functionals span the full dual space
-  have hspan : Submodule.span ℂ
-      (Set.range fun i : Fin B => qCoeffL N (i : ℕ)) = ⊤ := by
-    have hco : (Submodule.span ℂ
-        (Set.range fun i : Fin B => qCoeffL N (i : ℕ))).dualCoannihilator = ⊥ := by
-      rw [eq_bot_iff]
-      intro v hv
-      rw [Submodule.mem_dualCoannihilator] at hv
-      have hv0 : v = 0 := hB v fun m hm => by
-        simpa using hv (qCoeffL N m) (Submodule.subset_span ⟨⟨m, hm⟩, rfl⟩)
-      simp [hv0]
-    have hrank := Subspace.finrank_add_finrank_dualCoannihilator_eq
-      (Submodule.span ℂ (Set.range fun i : Fin B => qCoeffL N (i : ℕ)))
-    rw [hco, finrank_bot, add_zero] at hrank
-    exact Submodule.eq_top_of_finrank_eq (by rw [hrank, Subspace.dual_finrank_eq])
-  -- (ii) a dual basis `ψ` from the spanning family, and its predual `E`
-  obtain ⟨b, hbsub, hbspan, hbind⟩ :=
-    exists_linearIndependent ℂ (Set.range fun i : Fin B => qCoeffL N (i : ℕ))
-  rw [hspan] at hbspan
-  have hbfin : b.Finite := hbind.setFinite
-  letI := hbfin.fintype
-  let ψ : Module.Basis b ℂ (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
-    Module.Basis.mk hbind (le_of_eq (by rw [Subtype.range_coe]; exact hbspan.symm))
-  let E : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
-    ψ.dualBasis.map (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm
-  have hEval : ∀ (j k : b),
-      (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) (E k) = if j = k then 1 else 0 := by
-    intro j k
-    have h2 : ψ j = (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
-      Module.Basis.mk_apply _ _ j
-    have h1 : (ψ j) (E k) = ψ.dualBasis k (ψ j) := by
-      show (ψ j) ((ψ.dualBasis.map
-        (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm) k) = _
-      rw [Module.Basis.map_apply]
-      exact Module.apply_evalEquiv_symm_apply ℂ _ (ψ j) (ψ.dualBasis k)
-    rw [← h2, h1, Module.Basis.dualBasis_apply_self]
-  have hSep : ∀ u w : CuspForm (Gamma0GL N) 2,
-      (∀ j : b, (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) u =
-        (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) w) → u = w := by
-    intro u w h
-    have h3 : Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2) u =
-        Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2) w := by
-      refine ψ.ext fun i => ?_
-      rw [Module.evalEquiv_apply, Module.Dual.eval_apply,
-        Module.evalEquiv_apply, Module.Dual.eval_apply, Module.Basis.mk_apply]
-      exact h i
-    exact (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).injective h3
-  -- (iii) every coefficient of every `E k` is `Aut(ℂ)`-fixed, hence rational
-  have hrat : ∀ k : b, ∀ m : ℕ, ∃ r : ℚ, qCoeff N (E k) m = (r : ℂ) := by
-    intro k m
-    refine exists_ratCast_eq_of_forall_ringEquiv_fixed fun σ => ?_
-    obtain ⟨g, hg⟩ := exists_cuspForm_ringEquiv_conj hN σ (E k)
-    have hgE : g = E k := by
-      refine hSep g (E k) fun j => ?_
-      obtain ⟨i, hi⟩ := hbsub j.2
-      have h1 : (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) g =
-          σ ((j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) (E k)) := by
-        rw [← hi]; exact hg i
-      rw [h1, hEval j k]
-      split_ifs <;> simp
-    rw [← hg m, hgE]
-  -- (iv) the basis `E` lies in the rational-coefficient set and spans
-  have hsub : Set.range (fun k : b => E k) ⊆
-      {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} := by
-    rintro _ ⟨k, rfl⟩
-    exact hrat k
-  have hle := Submodule.span_mono (R := ℂ) hsub
-  have hEtop : Submodule.span ℂ (Set.range fun k : b => E k) = ⊤ := E.span_eq
-  rw [hEtop] at hle
-  exact hle Submodule.mem_top
+  have hset : {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)}
+      = ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := rfl
+  rw [hset, rationalCuspForms_span_eq_top hN]
+  exact Submodule.mem_top
 
 end SturmFiniteness
 
