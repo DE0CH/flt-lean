@@ -46532,6 +46532,225 @@ theorem exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve {q : ℕ}
               (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D :=
   sorry
 
+/-- **Separable rigidity: equal power sums determine the NONZERO values**
+(PROVEN 2026-07-28, EIGHTEENTH decomposition — the algebraic half of
+`exists_index_qCoeff_of_frobEigenvalues_x0Compactification` below).
+
+STATEMENT. If two finite families `γ : Fin n → ℂ` and `δ : Fin m → ℂ` have
+equal power sums `Σₖ γₖ^s = Σₖ δₖ^s` for every `s ≥ 1`, then every NONZERO
+value taken by `δ` is also taken by `γ`.
+
+It is pure characteristic-zero algebra with NO modular content whatsoever, and
+it is what converts the `∃`-form Eichler–Shimura statement below into the
+`∀`-form the parent needs: an eigenvalue system is pinned by the Lefschetz
+clause only up to zeros and reindexing, and both ES roots are nonzero.
+
+PROOF, and it is deliberately NOT the Newton-identities route the previous
+docstring here proposed. Newton's identities
+(`Mathlib.RingTheory.MvPolynomial.Symmetric.NewtonIdentities`) would ask for a
+padding-to-common-length argument and a factorisation comparison; the
+following is shorter and needs nothing but `Polynomial.eval`.
+
+Group both families by value over the common finite set of values
+`B = image γ ∪ image δ` (`Finset.sum_fiberwise_of_maps_to`) and drop the value
+`0`, which contributes nothing to a power sum with `s ≥ 1`
+(`Finset.sum_erase`). Writing `d b` for the difference of the two fibre
+cardinalities over `A = B.erase 0`, the hypothesis becomes
+
+  `Σ_{b ∈ A} d b · b^s = 0`   for every `s ≥ 1`,
+
+equivalently `Σ_{b ∈ A} (d b · b) · b^t = 0` for every `t ≥ 0`. Expanding an
+arbitrary `P : ℂ[X]` in powers (`Polynomial.eval_eq_sum_range`) and exchanging
+the two sums gives `Σ_{b ∈ A} (d b · b) · P(b) = 0` for EVERY polynomial `P`.
+Feed it `P = ∏_{b' ∈ A \ {z}} (X - b')`, which kills every term but `b = z`:
+`(d z · z) · ∏_{b' ≠ z} (z - b') = 0`. Both factors are nonzero if `z` occurs
+among the `δ` and not among the `γ` — `d z = −#{k : δₖ = z} ≠ 0`, `z ≠ 0`, and
+the product is over differences of distinct elements — which is the
+contradiction.
+
+FAITHFULNESS. TRUE. `hz : z ≠ 0` is essential and not decoration: `γ = ![]`
+and `δ = ![0]` have equal power sums for every `s ≥ 1` while `0` is taken by
+`δ` and not by `γ`. Multiplicities are deliberately NOT claimed — the
+conclusion is membership in the range, not equality of multisets — because
+that is all the parent consumes, and it is what makes the statement immune to
+the padding ambiguity. -/
+theorem mem_range_of_forall_sum_pow_eq {n m : ℕ} (γ : Fin n → ℂ) (δ : Fin m → ℂ)
+    (h : ∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = ∑ k, δ k ^ s)
+    {z : ℂ} (hz : z ≠ 0) (hzδ : ∃ k, δ k = z) : ∃ k, γ k = z := by
+  classical
+  by_contra hcon
+  push Not at hcon
+  set B : Finset ℂ := (Finset.univ.image γ) ∪ (Finset.univ.image δ) with hB
+  set A : Finset ℂ := B.erase 0 with hA
+  -- The fibre-count expansion of a power sum over `A`.
+  have expand : ∀ (l : ℕ) (f : Fin l → ℂ), (∀ k, f k ∈ B) → ∀ s : ℕ, 0 < s →
+      ∑ k, f k ^ s
+        = ∑ b ∈ A,
+            ((Finset.card (Finset.univ.filter (fun k : Fin l => f k = b)) : ℕ) : ℂ) * b ^ s := by
+    intro l f hf s hs
+    have h1 : ∑ b ∈ B, ∑ k ∈ Finset.univ.filter (fun k : Fin l => f k = b), f k ^ s
+        = ∑ k, f k ^ s := Finset.sum_fiberwise_of_maps_to (fun k _ => hf k) _
+    have h2 : ∀ b ∈ B, ∑ k ∈ Finset.univ.filter (fun k : Fin l => f k = b), f k ^ s
+        = ((Finset.card (Finset.univ.filter (fun k : Fin l => f k = b)) : ℕ) : ℂ) * b ^ s := by
+      intro b _
+      rw [Finset.sum_congr rfl (fun k hk => by rw [(Finset.mem_filter.mp hk).2] :
+        ∀ k ∈ Finset.univ.filter (fun k : Fin l => f k = b), f k ^ s = b ^ s)]
+      simp [Finset.sum_const, nsmul_eq_mul]
+    have h3 : ∑ b ∈ A,
+          ((Finset.card (Finset.univ.filter (fun k : Fin l => f k = b)) : ℕ) : ℂ) * b ^ s
+        = ∑ b ∈ B,
+          ((Finset.card (Finset.univ.filter (fun k : Fin l => f k = b)) : ℕ) : ℂ) * b ^ s := by
+      rw [hA]
+      exact Finset.sum_erase _ (by simp [zero_pow hs.ne'])
+    rw [← h1, Finset.sum_congr rfl h2, ← h3]
+  have hγB : ∀ k, γ k ∈ B := fun k =>
+    Finset.mem_union_left _ (Finset.mem_image_of_mem _ (Finset.mem_univ k))
+  have hδB : ∀ k, δ k ∈ B := fun k =>
+    Finset.mem_union_right _ (Finset.mem_image_of_mem _ (Finset.mem_univ k))
+  set d : ℂ → ℂ := fun b =>
+    ((Finset.card (Finset.univ.filter (fun k : Fin n => γ k = b)) : ℕ) : ℂ)
+      - ((Finset.card (Finset.univ.filter (fun k : Fin m => δ k = b)) : ℕ) : ℂ) with hd
+  have hvanish : ∀ s : ℕ, 0 < s → ∑ b ∈ A, d b * b ^ s = 0 := by
+    intro s hs
+    have hps := h s hs
+    rw [expand n γ hγB s hs, expand m δ hδB s hs] at hps
+    rw [hd]
+    simp only [sub_mul]
+    rw [Finset.sum_sub_distrib, hps, sub_self]
+  have hshift : ∀ t : ℕ, ∑ b ∈ A, (d b * b) * b ^ t = 0 := by
+    intro t
+    rw [← hvanish (t + 1) t.succ_pos]
+    exact Finset.sum_congr rfl fun b _ => by ring
+  have key : ∀ P : _root_.Polynomial ℂ, ∑ b ∈ A, (d b * b) * P.eval b = 0 := by
+    intro P
+    have hrw : ∀ b ∈ A, (d b * b) * P.eval b
+        = ∑ t ∈ Finset.range (P.natDegree + 1), P.coeff t * ((d b * b) * b ^ t) := by
+      intro b _
+      rw [_root_.Polynomial.eval_eq_sum_range, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun t _ => by ring
+    rw [Finset.sum_congr rfl hrw, Finset.sum_comm]
+    refine Finset.sum_eq_zero fun t _ => ?_
+    rw [← Finset.mul_sum, hshift t, mul_zero]
+  -- `z` lies in `A`.
+  obtain ⟨kz, hkz⟩ := hzδ
+  have hzA : z ∈ A := by
+    rw [hA]
+    exact Finset.mem_erase.mpr ⟨hz, hkz ▸ hδB kz⟩
+  -- `d z ≠ 0`, because `z` occurs among the `δ` and not among the `γ`.
+  have hcardγ : Finset.card (Finset.univ.filter (fun k : Fin n => γ k = z)) = 0 := by
+    rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+    exact fun k _ => hcon k
+  have hcardδ : 0 < Finset.card (Finset.univ.filter (fun k : Fin m => δ k = z)) := by
+    rw [Finset.card_pos]
+    exact ⟨kz, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hkz⟩⟩
+  have hdz : d z ≠ 0 := by
+    rw [hd]
+    simp only [hcardγ, Nat.cast_zero, zero_sub, neg_ne_zero, Ne, Nat.cast_eq_zero]
+    exact hcardδ.ne'
+  -- The interpolating polynomial vanishing on `A \ {z}`.
+  set P : _root_.Polynomial ℂ :=
+    ∏ b' ∈ A.erase z, (_root_.Polynomial.X - _root_.Polynomial.C b') with hP
+  have hPeval : ∀ b : ℂ, P.eval b = ∏ b' ∈ A.erase z, (b - b') := by
+    intro b
+    rw [hP]
+    simp [_root_.Polynomial.eval_prod]
+  have hsingle : ∑ b ∈ A, (d b * b) * P.eval b = (d z * z) * P.eval z := by
+    refine Finset.sum_eq_single z ?_ (fun hn => absurd hzA hn)
+    intro b hb hbz
+    rw [hPeval b, Finset.prod_eq_zero (Finset.mem_erase.mpr ⟨hbz, hb⟩) (by ring), mul_zero]
+  have hPz : P.eval z ≠ 0 := by
+    rw [hPeval z]
+    refine Finset.prod_ne_zero_iff.mpr fun b' hb' => ?_
+    exact sub_ne_zero.mpr (Ne.symm (Finset.mem_erase.mp hb').1)
+  have hfin := key P
+  rw [hsingle] at hfin
+  exact hPz (by
+    rcases mul_eq_zero.mp hfin with h1 | h1
+    · exact absurd h1 (mul_ne_zero hdz hz)
+    · exact h1)
+
+/-- **Eichler–Shimura in `∃`-form: SOME Lefschetz eigenvalue system of
+`X₀(M)_{𝔽_q}` contains the two roots of `X² − a_q·X + q`** (sorry node,
+EIGHTEENTH decomposition 2026-07-28 — the MODULAR half of
+`exists_index_qCoeff_of_frobEigenvalues_x0Compactification` below, which is
+PROVEN over this leaf and `mem_range_of_forall_sum_pow_eq` above).
+
+STATEMENT. Let `g` be a weight-two newform of level exactly `M`, let `q ∤ M`,
+and let `strX` be the smooth compactification of the `Γ₀(M)`-problem over
+`𝔽_q` — the good reduction of `X₀(M)`, supplied by
+`Fermat.exists_x0Compactification_finiteField`. Then there are finitely many
+complex numbers `δ₀, …, δ_{n−1}` with
+
+* `Σₖ δₖ^s = q^s + 1 − #X(𝔽_{q^s})` for every `s ≥ 1`   (Lefschetz), and
+* `δ_i + δ_j = a_q(g)`, `δ_i·δ_j = q` for two indices `i, j`  (Eichler–Shimura).
+
+WHAT IT PACKAGES, CLASSICALLY. Take `n = 2·genus` and `δ` the eigenvalues of
+`Frob_q` on `H¹(X₀(M)_{𝔽̄_q}, ℚ_ℓ)` for any `ℓ ≠ q`; the first clause is the
+Lefschetz trace formula, and the second is the Eichler–Shimura relation
+`T_q = Frob_q + q·Frob_q^{−1}` on `J₀(M)_{𝔽_q}` (Diamond–Shurman §8.7): the
+characteristic polynomial of `Frob_q` on the `g`-isotypic piece of `H¹` is
+`X² − a_q(g)·X + q`, and `g` being a newform of level exactly `M` is what puts
+that piece inside `H¹` with multiplicity `≥ 1`.
+
+WHY THE LEFSCHETZ CLAUSE IS RESTATED HERE rather than taken from the sibling
+`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` above. The sibling
+produces SOME system existentially, and Eichler–Shimura is a statement about
+the system that carries the `g`-isotypic piece — there is no way to say "and
+that system is this one" without either naming a canonical `H¹`, which this
+development does not have, or re-deriving rationality. Producing the system
+here, with both clauses about the SAME `δ`, is the cheapest honest packaging;
+the parent then transports the conclusion to an ARBITRARY Lefschetz system by
+`mem_range_of_forall_sum_pow_eq`, which is exactly why that rigidity lemma
+exists. Nothing is proved twice: the sibling is consumed by
+`exists_planeModel_frobEigenvalues_of_not_dvd`, which needs a system it can
+hand on together with a plane model.
+
+THE OTHER EICHLER–SHIMURA INTERFACE IN THIS TREE DOES NOT SERVE THIS LEAF,
+and this was checked rather than assumed. `card_relPoint_x0_eichlerShimura`
+(`Fermat/FLT/ModularCurve/X0.lean`) gives
+`#X₀(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S₂(Γ₀(N)))` — the FULL trace, at `s = 1` only.
+That is the sum `Σₖ δₖ` of all the eigenvalues, with no way to isolate the
+two-dimensional `g`-isotypic piece, and it says nothing at `s ≥ 2`. It is a
+strictly weaker statement drawn from the same classical input, so it is a
+sibling and not a duplicate; whoever proves this leaf will very likely prove
+that one on the way, and should then discharge it from here rather than
+leaving two independent developments.
+
+`i = j` IS PERMITTED, deliberately, and it is not a convenience: when
+`a_q(g)² = 4q` the two roots of `X² − a_q·X + q` coincide, and a single index
+with `δ_i = a_q/2` is then the honest witness. Requiring `i ≠ j` would demand
+multiplicity `≥ 2` in the eigenvalue system, which is true classically but is
+extra content nothing downstream needs.
+
+FAITHFULNESS. TRUE, by the classical package. NOT vacuous, and the two clauses
+are what stop each other from being free: a system satisfying only the second
+clause is trivially available (`n = 2`, `δ = (α, β)` the two roots of the
+quadratic), and a system satisfying only the first is available from the
+sibling; what is asserted is that ONE system does both, i.e. that the roots of
+`X² − a_q·X + q` really occur among the Frobenius eigenvalues of THIS curve.
+That is the whole Eichler–Shimura content, and it is refutable — for a curve
+whose point counts force every `‖δₖ‖ ≤ 1` there is no pair with product
+`q ≥ 2`.
+
+`0 < M` and `¬ q ∣ M` are load-bearing: `hX` is the good-reduction hypothesis
+and both are needed to have it at all
+(`exists_x0Compactification_finiteField`). `hg` is load-bearing because
+`a_q(g)` is otherwise unrelated to `H¹(X₀(M))`: for a form that is not an
+eigenform at `q`, `a_q(g)` is not an eigenvalue of `T_q` at all and no pair of
+Frobenius eigenvalues has to reproduce it. -/
+theorem exists_frobEigenvalues_qCoeff_x0Compactification {M : ℕ}
+    (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M)
+    {X Y : Scheme.{0}} {strX : X ⟶ _root_.Fermat.SpecF q}
+    {strY : Y ⟶ _root_.Fermat.SpecF q} {jY : Y ⟶ X}
+    (hX : _root_.Fermat.IsX0Compactification M strX strY jY) :
+    ∃ (n : ℕ) (δ : Fin n → ℂ) (i j : Fin n),
+      (∀ s : ℕ, 0 < s →
+        ∑ k, δ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) ∧
+      δ i + δ j = qCoeff M g q ∧ δ i * δ j = (q : ℂ) :=
+  sorry
+
+
 /-- **Eichler–Shimura: the two roots of `X² − a_q·X + q` occur among ANY
 Lefschetz eigenvalue system of `X₀(M)_{𝔽_q}`** (sorry node, SEVENTEENTH
 decomposition 2026-07-27 — the MODULAR half of
@@ -46560,20 +46779,13 @@ eigenvalues: equal power sums `Σγₖ^s` for all `s ≥ 1` force equal generati
 functions `Σₖ γₖT/(1 − γₖT)`, hence equal nonzero multisets.  Both ES roots are
 nonzero (`γ_i·γ_j = q ≠ 0`), so they survive that ambiguity.
 
-THE RIGIDITY STEP IS A SEPARABLE SUB-LEAF, stated here in full so a successor
-can split it out rather than rediscover it:
-
-    theorem mem_range_of_forall_sum_pow_eq {n m : ℕ} (γ : Fin n → ℂ)
-        (δ : Fin m → ℂ) (h : ∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = ∑ k, δ k ^ s)
-        {z : ℂ} (hz : z ≠ 0) (hzδ : ∃ k, δ k = z) : ∃ k, γ k = z
-
-It is pure algebra over a characteristic-zero field and has NO modular content:
-pad both families with zeros to a common length, use Newton's identities
-(`Mathlib.RingTheory.MvPolynomial.Symmetric.NewtonIdentities`) to turn equal
-power sums into equal elementary symmetric functions, conclude that
-`∏ (T − γₖ)` and `∏ (T − δₖ)` agree up to a power of `T`, and read off the
-nonzero roots.  It is NOT stated as its own leaf here only because nothing in
-the assembly below would consume it — it is consumed by the proof of THIS leaf.
+THE RIGIDITY STEP IS NOW SPLIT OUT AND PROVEN, as the previous version of this
+docstring said a successor should: it is `mem_range_of_forall_sum_pow_eq`
+above, pure characteristic-zero algebra with no modular content, and it is
+consumed by the proof below — so it is not floating.  (The Newton-identities
+route sketched here previously was not the one taken; see that lemma's
+docstring for the shorter argument through `Polynomial.eval` that replaced
+it.)
 
 `i = j` IS PERMITTED, deliberately, and it is not a convenience: when
 `a_q(g)² = 4q` the two roots of `X² − a_q·X + q` coincide, and a single index
@@ -46585,7 +46797,18 @@ FAITHFULNESS. TRUE.  NOT vacuous: the hypothesis class is nonempty
 (`exists_x0Compactification_finiteField` at `0 < M`, `q` prime, `q ∤ M`, and
 the sibling above supplies a `γ`), and the conclusion is not satisfiable by
 shape — it pins two eigenvalues to the roots of an explicit quadratic whose
-coefficients come from `g`. -/
+coefficients come from `g`.
+
+PROVEN 2026-07-28 by the EIGHTEENTH decomposition, over
+`exists_frobEigenvalues_qCoeff_x0Compactification` (the modular content, in
+`∃`-form) and `mem_range_of_forall_sum_pow_eq` (the rigidity, PROVEN).  The
+assembly is three lines of mathematics: the `∃`-form leaf supplies a system
+`δ` satisfying the SAME Lefschetz clause as `γ` and containing the two ES
+roots; both power-sum sequences therefore agree term by term; and each ES root
+is nonzero because their product is `q ≠ 0`, so rigidity carries each of them
+into the range of `γ`.  Note the `∃`-form leaf keeps its own copy of the
+Lefschetz clause precisely so that this step is available — see the discussion
+in its docstring. -/
 theorem exists_index_qCoeff_of_frobEigenvalues_x0Compactification {M : ℕ}
     (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M)
@@ -46595,8 +46818,20 @@ theorem exists_index_qCoeff_of_frobEigenvalues_x0Compactification {M : ℕ}
     {n : ℕ} (γ : Fin n → ℂ)
     (hlef : ∀ s : ℕ, 0 < s →
       ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) :
-    ∃ i j : Fin n, γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
-  sorry
+    ∃ i j : Fin n, γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) := by
+  obtain ⟨m, δ, i₀, j₀, hδlef, hδsum, hδprod⟩ :=
+    exists_frobEigenvalues_qCoeff_x0Compactification hM g hg hqM hX
+  -- The two systems have the same power sums, both being the same point counts.
+  have hpow : ∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = ∑ k, δ k ^ s := fun s hs => by
+    rw [hlef s hs, hδlef s hs]
+  -- Both ES roots are nonzero, their product being `q ≠ 0`.
+  have hq0 : (q : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (Fact.out (p := q.Prime)).ne_zero
+  have hi₀ : δ i₀ ≠ 0 := fun hzero => hq0 (by rw [← hδprod, hzero, zero_mul])
+  have hj₀ : δ j₀ ≠ 0 := fun hzero => hq0 (by rw [← hδprod, hzero, mul_zero])
+  -- Rigidity carries each of them into the range of `γ`.
+  obtain ⟨i, hi⟩ := mem_range_of_forall_sum_pow_eq γ δ hpow hi₀ ⟨i₀, rfl⟩
+  obtain ⟨j, hj⟩ := mem_range_of_forall_sum_pow_eq γ δ hpow hj₀ ⟨j₀, rfl⟩
+  exact ⟨i, j, by rw [hi, hj]; exact hδsum, by rw [hi, hj]; exact hδprod⟩
 
 end X0GoodReduction
 
