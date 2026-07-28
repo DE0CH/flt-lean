@@ -99,6 +99,11 @@ public import Fermat.FLT.EllipticCurve.Velu
 -- position there.
 public import Fermat.FLT.EllipticCurve.Isogeny
 public import Fermat.FLT.EllipticCurve.IsogenyTrace
+-- Infinite Galois theory (`InfiniteGalois.mem_range_algebraMap_iff_fixed`) and
+-- perfect fields (`Algebra.IsAlgebraic.isSeparable_of_perfectField`), used by
+-- `MazurLevelFortyNine.mem_range_algebraMap_of_fixed` below.
+public import Mathlib.FieldTheory.Galois.Infinite
+public import Mathlib.FieldTheory.Perfect
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -23755,10 +23760,305 @@ end MazurEndLattice
 
 end EndLattice
 
-/-- **LEAF — the COTANGENT CHARACTER `End(W) → F` exists** (re-cut 2026-07-27
+/-! ### The invariant-differential (cotangent) character
+
+**THE MISSING LAYER, BUILT ONCE FOR BOTH CONSUMERS** (cut 2026-07-28).
+
+`End.exists_ringHomToBase` below and `MazurLevelFortyNine.exists_galoisConj_ne`
+far below were *the same* missing input at two base fields: the action of an
+isogeny on the one-dimensional space of invariant differentials, over `F = ℚ̄`
+for the first and (through Galois descent) over `ℚ` for the second. This section
+builds that action once, in the general form `c : {isogenies over F} → F`, and
+both leaves are proven over it.
+
+**HOW IT IS STATED, AND WHY THERE IS NO FUNCTION FIELD IN SIGHT.** With
+`ω = dx / (2y + a₁x + a₃)` and `IsRationalMap` witnesses
+`x(φ P)·B(x P) = A(x P)`, `y(φ P)·E(x P) = C(x P)·y P + D(x P)`, the identity
+`d(A/B) = (A'B − AB')/B² · dx` clears denominators to
+
+    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
+      = c · B(x P)² · (2·y (φ P) + a₁·x (φ P) + a₃)
+
+which is `IsCotangentScalar φ c`: a statement about `veluPointX`/`veluPointY`
+and `Polynomial.derivative` only. Sanity checks, both discharged below rather
+than asserted: `φ = id` (`A = X`, `B = C = E = 1`, `D = 0`) forces `c = 1`
+(`isCotangentScalar_id`), and `φ = 0` forces `c = 0`
+(`isCotangentScalar_zero`).
+
+**Why no `B(x P) ≠ 0` side condition is needed**, although the informal identity
+carries one: where `B` vanishes the certificate `x(φP)·B(xP) = A(xP)` forces
+`A(x P) = 0` as well, so the left-hand side is `(A'·0 − 0·B')·(…) = 0` and the
+right-hand side is `c·0²·(…) = 0`. The identity is therefore true at every
+`P ≠ 0` with `φ P ≠ 0`, and dropping the hypothesis makes the predicate
+strictly easier to consume.
+
+**The `φ = 0 → c = 0` conjunct is not decoration.** At `φ = 0` the whole
+differential identity is vacuous (its hypothesis `φ P ≠ 0` is never met), so
+without that conjunct every `c` would be a cotangent scalar for the zero map,
+`isCotangentScalar_unique` would be FALSE, and the ring homomorphism below could
+not have `map_zero`. Mathematically it says `0*ω = 0`, which is correct and not
+a weakening.
+
+**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves are cut here, in decreasing order
+of difficulty:
+
+1. `exists_isCotangentScalar` — the genuinely geometric input: the holomorphic
+   differentials of an elliptic curve form a ONE-dimensional space, so `φ*ω'` is
+   a scalar multiple of `ω`. Silverman *AEC* III.5 and IV.2. This is the only
+   place in the section where geometry is used.
+2. `IsCotangentScalar.add` — additivity, *AEC* III.5.2; equivalently `c φ` is
+   the linear coefficient of `φ` on the formal group, where additivity is
+   immediate from `F(z, w) = z + w + ⋯`.
+3. `IsCotangentScalar.comp` — multiplicativity, the chain rule for the
+   composite rational map. Elementary but a real polynomial computation:
+   `IsRationalMap.comp` already produces the composed witnesses.
+4. `isCotangentScalar_unique` — the cheapest of the four, and purely
+   elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
+   satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
+   `exists_nonsingular_of_x` every element of `F` is an `x`-coordinate while
+   only the finitely many points of `ker φ` are excluded), whence
+   `(A'B − AB')B₂² = (A₂'B₂ − A₂B₂')B²`; evaluating both differential
+   identities at any `P` with `B(x P) ≠ 0`, `B₂(x P) ≠ 0` and
+   `φ P ∉ W'[2]` — all cofinite conditions, and `W.Point` is infinite by
+   `infinite_point` — gives `c = d`.
+
+Everything else here is proven: the two sanity checks, the assembly of the
+choice function `End.cotangent`, and the ring homomorphism `End.cotangentHom`
+that discharges `End.exists_ringHomToBase`.
+
+**INJECTIVITY IS NOT AMONG THE LEAVES.** It is free in characteristic zero —
+see `End.injective_ringHomToBase` below, which proves that *every* ring
+homomorphism `End W → F` is injective, from the characteristic polynomial
+alone. -/
+
+section Cotangent
+
+namespace WeierstrassCurve
+
+open Polynomial
+
+variable {F : Type*} [Field F] [DecidableEq F] {W W' W'' : Affine F}
+
+/-- The denominator `2y + a₁x + a₃` of the invariant differential
+`ω = dx / (2y + a₁x + a₃)`, evaluated at a point (junk value `a₃` at the point
+at infinity, which is harmless: every statement below excludes `P = 0`). -/
+def invariantDiffDenom (W : Affine F) (P : W.Point) : F :=
+  2 * veluPointY P + W.a₁ * veluPointX P + W.a₃
+
+/-- **`IsCotangentScalar φ c`: the pullback identity `φ*ω' = c · ω`**, written
+with no function field and no differentials — see the section docstring for the
+derivation and for why no `B(x P) ≠ 0` hypothesis is needed.
+
+The first conjunct pins the value at the zero map, where the second is vacuous;
+without it uniqueness would fail there. -/
+def IsCotangentScalar (φ : W.Point →+ W'.Point) (c : F) : Prop :=
+  (φ = 0 → c = 0) ∧
+  ∃ A B C D E : F[X], B ≠ 0 ∧ E ≠ 0 ∧
+    (∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) ∧
+    (∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
+      (derivative A * B - A * derivative B).eval (veluPointX P)
+          * invariantDiffDenom W P
+        = c * (B.eval (veluPointX P)) ^ 2 * invariantDiffDenom W' (φ P))
+
+/-- **The zero isogeny has cotangent scalar `0`.** `0*ω' = 0`. -/
+theorem isCotangentScalar_zero : IsCotangentScalar (0 : W.Point →+ W'.Point) (0 : F) := by
+  refine ⟨fun _ => rfl, 0, 1, 0, 0, 1, one_ne_zero, one_ne_zero, ?_, ?_⟩
+  · intro P hP; exact absurd (AddMonoidHom.zero_apply P) hP
+  · intro P _ hP; exact absurd (AddMonoidHom.zero_apply P) hP
+
+/-- **The identity has cotangent scalar `1`.** This is the first of the two
+sanity checks that the pointwise identity above really is `φ*ω' = c·ω`: with
+`A = X`, `B = C = E = 1`, `D = 0` the left side is `2y + a₁x + a₃` and the right
+side is `c · (2y + a₁x + a₃)`.
+
+`[IsAlgClosed F]` and `[W.IsElliptic]` are used only to know that `W.Point` is
+infinite (`infinite_point`), hence that `AddMonoidHom.id ≠ 0`, which is what
+discharges the `φ = 0 → c = 0` conjunct. -/
+theorem isCotangentScalar_id [IsAlgClosed F] [W.IsElliptic] :
+    IsCotangentScalar (AddMonoidHom.id W.Point) (1 : F) := by
+  refine ⟨?_, X, 1, 1, 0, 1, one_ne_zero, one_ne_zero, ?_, ?_⟩
+  · intro h
+    haveI := infinite_point W
+    obtain ⟨P, hP⟩ := exists_ne (0 : W.Point)
+    refine absurd ?_ hP
+    have hh := congrArg (fun f : W.Point →+ W.Point => f P) h
+    simpa using hh
+  · intro P _; simp
+  · intro P _ _; simp
+
+/-- **LEAF (cut 2026-07-28): the invariant differential of an elliptic curve
+spans a ONE-dimensional space, so every isogeny acts on it by a scalar.**
+
+This is the whole geometric content of the section, and the only leaf here that
+is not elementary: Silverman *AEC* III.5 (the space of holomorphic differentials
+of an elliptic curve is `1`-dimensional, spanned by `ω = dx/(2y + a₁x + a₃)`)
+together with *AEC* IV.2. Equivalently, in the concrete form used here: for
+*some* — hence, by `isCotangentScalar_unique`, for every — witness system of
+`φ`, the ratio
+
+    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
+      ⧸  B(x P)² · (2·y (φ P) + a₁·x (φ P) + a₃)
+
+is INDEPENDENT of `P`. The content is exactly that constancy; a value at a
+single good point is then the scalar.
+
+`EllipticCurve/InvariantDerivation.lean`'s `DK` — the invariant derivation on
+the universal function field `Kuniv` — is the closest existing material and the
+natural place to start; what it lacks is the pullback along an isogeny.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny `φ` and two points
+`P, Q ≠ 0` outside `ker φ` at which the displayed ratio takes different
+values. -/
+theorem exists_isCotangentScalar [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} (hφ : IsIsogeny φ) :
+    ∃ c : F, IsCotangentScalar φ c :=
+  sorry
+
+/-- **LEAF (cut 2026-07-28): the cotangent scalar is unique.** The cheapest of
+the four leaves in this section and entirely elementary — see item 4 of the
+section docstring for the argument in full. In outline: two witness systems for
+the same `φ` are proportional (`A B₂ = A₂ B` as polynomials, because every
+element of `F` is an `x`-coordinate by `exists_nonsingular_of_x` and only the
+finitely many points of `ker φ` are excluded), the expression
+`(A'B − AB')/B²` is invariant under that proportionality, and a point at which
+`B`, `B₂` and `2y(φP) + a₁x(φP) + a₃` are all nonzero exists because each
+vanishing locus is finite while `W.Point` is infinite (`infinite_point`).
+
+At `φ = 0` uniqueness is immediate from the `φ = 0 → c = 0` conjunct, so no
+separate case analysis is needed at the consumer.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny with two distinct
+cotangent scalars — which, by the above, would need two witness systems that
+are NOT proportional. -/
+theorem isCotangentScalar_unique [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c d : F} (hφ : IsIsogeny φ)
+    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d :=
+  sorry
+
+/-- The cotangent scalar exists and is unique — the packaging that makes
+`End.cotangent` a function. Proven over `exists_isCotangentScalar` and
+`isCotangentScalar_unique`. -/
+theorem exists_unique_isCotangentScalar [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} (hφ : IsIsogeny φ) :
+    ∃! c : F, IsCotangentScalar φ c := by
+  obtain ⟨c, hc⟩ := exists_isCotangentScalar hφ
+  exact ⟨c, hc, fun d hd => isCotangentScalar_unique hφ hd hc⟩
+
+/-- **LEAF (cut 2026-07-28): MULTIPLICATIVITY — the chain rule.**
+`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·c·ω`.
+
+Elementary but a genuine polynomial computation. `IsRationalMap.comp` already
+constructs the composed witnesses (by homogeneous substitution,
+`homogSubst`/`eval_homogSubst`), and what remains is the chain rule for
+`(A ∘ (A₂/B₂))' ` after clearing denominators, together with
+`isCotangentScalar_unique` to transfer the conclusion from those particular
+witnesses to the ones supplied by `hc` and `hd`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a composite of isogenies whose
+cotangent scalar is not the product of the two scalars — e.g. computable
+directly for `φ = ψ = [−1]`, where `c = d = −1` and the composite is `id` with
+scalar `1`. -/
+theorem IsCotangentScalar.comp [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] [W'.IsElliptic] [W''.IsElliptic]
+    {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point} {c d : F}
+    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
+    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
+    IsCotangentScalar (ψ.comp φ) (d * c) :=
+  sorry
+
+/-- **LEAF (cut 2026-07-28): ADDITIVITY — `(φ + ψ)*ω' = φ*ω' + ψ*ω'`.**
+
+Silverman *AEC* III.5.2, and the genuinely hard half of the classical proof that
+`c` is a ring homomorphism. Equivalently: `c φ` is the linear coefficient of `φ`
+on the formal group of `W`, where additivity is immediate from the shape
+`F(z, w) = z + w + (higher order)` of the formal group law.
+
+`[IsAlgClosed F]` is inherited from `IsIsogeny.add`, which is FALSE without it
+(see the falsity audit in `Isogeny.lean`); the sum of two isogenies need not be
+an isogeny over a general field, so there would be nothing to state.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: two isogenies `φ, ψ` with
+`c (φ + ψ) ≠ c φ + c ψ`. Note the degenerate instance `ψ = -φ` is already
+consistent: `φ + ψ = 0` forces `c + d = 0`, and indeed `c (-φ) = -c φ` because
+`x(-Q) = x(Q)` leaves `A, B` unchanged while
+`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`. -/
+theorem IsCotangentScalar.add [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] [W'.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point} {c d : F}
+    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
+    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
+    IsCotangentScalar (φ + ψ) (c + d) :=
+  sorry
+
+section EndChar
+
+variable [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+
+/-- **The cotangent character of an endomorphism**, `φ ↦ c` with `φ*ω = c·ω`.
+Well defined by `exists_unique_isCotangentScalar`. -/
+noncomputable def End.cotangent (f : End W) : F :=
+  (exists_unique_isCotangentScalar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose
+
+/-- `End.cotangent f` is a cotangent scalar for `f`. -/
+theorem End.isCotangentScalar_cotangent (f : End W) :
+    IsCotangentScalar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)
+      (End.cotangent f) :=
+  (exists_unique_isCotangentScalar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose_spec.1
+
+/-- Any cotangent scalar for `f` IS `End.cotangent f`. -/
+theorem End.cotangent_eq {f : End W} {c : F}
+    (h : IsCotangentScalar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point) c) :
+    c = End.cotangent f :=
+  (exists_unique_isCotangentScalar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose_spec.2 c h
+
+/-- **THE COTANGENT CHARACTER `End W →+* F`** — the object
+`End.exists_ringHomToBase` asks for, assembled from the four leaves above:
+`map_one'` from `isCotangentScalar_id`, `map_zero'` from
+`isCotangentScalar_zero`, `map_mul'` from `IsCotangentScalar.comp` (`End`'s
+multiplication is composition, `End.mul_apply`), and `map_add'` from
+`IsCotangentScalar.add`. -/
+noncomputable def End.cotangentHom : End W →+* F where
+  toFun := End.cotangent
+  map_one' := (End.cotangent_eq (f := (1 : End W)) (isCotangentScalar_id (W := W))).symm
+  map_mul' f g := by
+    refine (End.cotangent_eq (f := f * g) ?_).symm
+    exact IsCotangentScalar.comp g.2 f.2 (End.isCotangentScalar_cotangent g)
+      (End.isCotangentScalar_cotangent f)
+  map_zero' := (End.cotangent_eq (f := (0 : End W)) isCotangentScalar_zero).symm
+  map_add' f g := by
+    refine (End.cotangent_eq (f := f + g) ?_).symm
+    exact IsCotangentScalar.add f.2 g.2 (End.isCotangentScalar_cotangent f)
+      (End.isCotangentScalar_cotangent g)
+
+@[simp] theorem End.cotangentHom_apply (f : End W) :
+    End.cotangentHom (W := W) f = End.cotangent f := rfl
+
+end EndChar
+
+end WeierstrassCurve
+
+end Cotangent
+
+/-- **The COTANGENT CHARACTER `End(W) → F` exists** (re-cut 2026-07-27
 out of `End.mul_comm_charZero`, which is now PROVEN over this and nothing else;
 `mul_comm_charZero` in turn carries `End.exists_zsmul_rel` and
 `End.exists_intBasis`).
+
+**PROVEN 2026-07-28** — it is `End.cotangentHom`, built in the
+`section Cotangent` immediately above out of the four leaves
+`exists_isCotangentScalar`, `isCotangentScalar_unique`,
+`IsCotangentScalar.comp` and `IsCotangentScalar.add`. Route A of the audit
+below is the route that was taken, in exactly the concrete pointwise form the
+audit proposed; read that section's docstring rather than this one for the
+current state of the frontier. The same construction also closes
+`MazurLevelFortyNine.exists_galoisConj_ne` far below, which was the *same*
+missing layer at the base field `ℚ` — see the RELATION note there.
 
 This asks only for a ring homomorphism to the base field. **Injectivity is NOT
 part of the leaf**: it is proven unconditionally in characteristic zero just
@@ -23858,7 +24158,7 @@ field theory, far heavier than Route A. -/
 theorem WeierstrassCurve.End.exists_ringHomToBase {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic] :
     Nonempty (WeierstrassCurve.End W →+* F) :=
-  sorry
+  ⟨WeierstrassCurve.End.cotangentHom⟩
 
 /-- **EVERY ring homomorphism `End(W) → F` is automatically INJECTIVE in
 characteristic zero** (PROVEN 2026-07-27, and it is why the leaf above asks only
@@ -30448,7 +30748,73 @@ theorem galoisConj_eq_or (E : WeierstrassCurve ℚ) [E.IsElliptic]
     simp only [WeierstrassCurve.End.coe_add_apply, WeierstrassCurve.End.intCast_apply] at hap
     exact eq_sub_of_add_eq hap
 
-/-- **LEAF (cut 2026-07-27): `Ψ` does not commute with all of `Gal(ℚ̄/ℚ)`.**
+/-- **An element of `K̄` fixed by every `K`-automorphism lies in `K`**, for `K`
+perfect (introduced 2026-07-28 with `exists_galoisConj_ne` below).
+
+This is `InfiniteGalois.mem_range_algebraMap_iff_fixed`, whose `[IsGalois K K̄]`
+instance is free: `Normal` from `IsAlgClosure`, and `Algebra.IsSeparable` from
+`Algebra.IsAlgebraic.isSeparable_of_perfectField`.
+
+**STATED OVER A VARIABLE FIELD `K`, DELIBERATELY, AND IT MUST STAY THAT WAY.**
+At the literal `ℚ` the two `Algebra ℚ (AlgebraicClosure ℚ)` instances form a
+diamond, and `Normal ℚ (AlgebraicClosure ℚ)`, `Algebra.IsAlgebraic ℚ ℚ̄` and
+hence `IsGalois ℚ ℚ̄` all stop synthesising — this was measured here, not
+inferred: `example : Normal ℚ (AlgebraicClosure ℚ) := inferInstance` succeeds in
+a bare file and FAILS with this module's import cone loaded. `X0.lean` records
+the same trap twice (see `exists_algEquiv_comp_of_ker_eq` and
+`exists_injective_pre_geomBase` there). Instantiating at `K = ℚ` afterwards is
+fine, because the statement then pins `AlgebraicClosure.instAlgebra`, which is
+also the instance inside `Field.absoluteGaloisGroup`.
+
+Consumers should immediately `rw [eq_ratCast]` (at `K = ℚ`) to leave the
+`algebraMap` instance behind entirely: `Rat.cast` is canonical and diamond-free,
+and mixing the two is what makes an otherwise-obvious `rw [hq]` fail with "did
+not find an occurrence" against a goal that displays the pattern verbatim. -/
+theorem mem_range_algebraMap_of_fixed {K : Type*} [Field K] [PerfectField K]
+    (x : AlgebraicClosure K)
+    (h : ∀ σ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K, σ x = x) :
+    x ∈ Set.range (algebraMap K (AlgebraicClosure K)) := by
+  haveI : IsGalois K (AlgebraicClosure K) := ⟨⟩
+  exact (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr h
+
+/-- **LEAF (cut 2026-07-28): the cotangent character is GALOIS-EQUIVARIANT.**
+`c (σ Ψ σ⁻¹) = σ (c Ψ)`.
+
+This is the one new input `exists_galoisConj_ne` needs beyond the cotangent
+character itself, and it is the precise sense in which that leaf and
+`End.exists_ringHomToBase` were "the same missing layer at two base fields":
+`E` is defined over `ℚ`, so the invariant differential
+`ω = dx/(2y + a₁x + a₃)` has `ℚ`-rational coefficients and is fixed by `σ`;
+applying `σ` to `Ψ*ω = c·ω` therefore gives `(σΨσ⁻¹)*ω = σ(c)·ω`.
+
+**THE ARGUMENT, and why it is elementary.** In the concrete form of
+`IsCotangentScalar` the witnesses transport verbatim: if `A, B, C, D, E` certify
+`Ψ`, then `A.map σ, B.map σ, C.map σ, D.map σ, E.map σ` certify
+`galoisConj E Ψ σ` — this is exactly the computation inside
+`isIsogeny_galoisConj` above (`Affine.Point.map` is coordinatewise by
+`Affine.Point.map_some`, `σ` commutes with `Polynomial.eval` after mapping
+coefficients, and `Polynomial.map` along an injective ring map is injective).
+Applying `σ` to the differential identity then works because
+`Polynomial.derivative` commutes with `Polynomial.map`, and because
+`σ (2y + a₁x + a₃) = 2σ(y) + a₁σ(x) + a₃` — the coefficients `a₁, a₃` come from
+`E` over `ℚ` and so are `σ`-fixed. That last point is where "defined over `ℚ`"
+is consumed, and it is the only place.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an `E/ℚ`, an endomorphism `Ψ` of
+`E_ℚ̄` with cotangent scalar `c`, and a `σ` for which `σ Ψ σ⁻¹` has cotangent
+scalar different from `σ c`. -/
+theorem isCotangentScalar_galoisConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (σ : Field.absoluteGaloisGroup ℚ) {c : AlgebraicClosure ℚ}
+    (hc : WeierstrassCurve.IsCotangentScalar Ψ c) :
+    WeierstrassCurve.IsCotangentScalar (galoisConj E Ψ σ)
+      ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) c) :=
+  sorry
+
+/-- **`Ψ` does not commute with all of `Gal(ℚ̄/ℚ)`** (cut 2026-07-27,
+**PROVEN 2026-07-28** over `isCotangentScalar_galoisConj` and the cotangent
+character `WeierstrassCurve.End.cotangentHom` built in `section Cotangent`).
 
 This is item 2 of the MISSING MACHINERY list on
 `trace_eq_zero_of_stable_cyclic` — `End_ℚ(E) = ℤ` for `E/ℚ`, i.e. no curve over
@@ -30470,9 +30836,25 @@ III.9 for the cotangent action.
 **RELATION TO `End.exists_ringHomToBase`.** The cotangent action is the same
 missing layer that leaf asks for, one level down — there over `F = ℚ̄`, here
 over `ℚ`. A prover who builds the invariant-differential character in the
-general form
-`c : {isogenies defined over k} → k` closes BOTH, and that is the single
-highest-leverage construction in this cluster.
+general form `c : {isogenies defined over k} → k` closes BOTH. **That is what
+`section Cotangent` now does**, and it is why this leaf and
+`End.exists_ringHomToBase` closed together.
+
+**HOW IT IS PROVEN.** Suppose every `σ` fixes `Ψ`. Then
+`isCotangentScalar_galoisConj` gives `σ (c Ψ) = c (σΨσ⁻¹) = c Ψ` for every `σ`
+(uniqueness, `isCotangentScalar_unique`, is what turns the second equality into
+the first), so `c Ψ ∈ ℚ` by `mem_range_algebraMap_of_fixed`. Write `c Ψ = q`
+with `q : ℚ`. Applying the ring homomorphism `End.cotangentHom` to the
+characteristic polynomial `Ψ² + [n] = [t]Ψ`
+(`MazurEndLattice.exists_charPolyRing`) gives `q² + n = t q`, so `q` is integral
+over `ℤ` and, `ℤ` being integrally closed in `ℚ`, is an integer `m`. Then
+`c Ψ = c [m]`, and `End.injective_ringHomToBase` — injectivity is free in
+characteristic zero — gives `Ψ = [m]`, contradicting `hnotint`.
+
+Note this is the classical argument with the CM field replaced by its image
+under `c`: "the CM field is imaginary quadratic and cannot embed in `ℚ`" becomes
+"a `Gal`-invariant `c Ψ` is a rational algebraic integer, hence rational
+multiplication". No quadratic-field theory is needed.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve `E/ℚ` and an endomorphism of
 `E_ℚ̄` that is not multiplication by an integer yet commutes with every element
@@ -30482,8 +30864,76 @@ theorem exists_galoisConj_ne (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
     (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt) :
     ∃ σ : Field.absoluteGaloisGroup ℚ,
-      ∃ P : (E⁄(AlgebraicClosure ℚ)).Point, galoisConj E Ψ σ P ≠ Ψ P :=
-  sorry
+      ∃ P : (E⁄(AlgebraicClosure ℚ)).Point, galoisConj E Ψ σ P ≠ Ψ P := by
+  classical
+  by_contra hcontra
+  have hcon : ∀ (σ : Field.absoluteGaloisGroup ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Point),
+      galoisConj E Ψ σ P = Ψ P := by
+    intro σ P
+    by_contra hne
+    exact hcontra ⟨σ, P, hne⟩
+  haveI hell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- Package `Ψ` as an element of the endomorphism ring, keeping the coercion
+  -- opaque so that no `let`-bound definition blocks later rewriting.
+  obtain ⟨ψ, hψeq⟩ : ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)),
+      ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).Point) :
+        (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point) = Ψ :=
+    ⟨⟨Ψ, hΨiso⟩, rfl⟩
+  have hcs : WeierstrassCurve.IsCotangentScalar Ψ (WeierstrassCurve.End.cotangent ψ) := by
+    rw [← hψeq]; exact WeierstrassCurve.End.isCotangentScalar_cotangent ψ
+  -- The cotangent scalar of `Ψ` is fixed by every element of `Gal(ℚ̄/ℚ)`.
+  have hfix : ∀ f : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+      f (WeierstrassCurve.End.cotangent ψ) = WeierstrassCurve.End.cotangent ψ := by
+    intro f
+    have hgc : galoisConj E Ψ (f : Field.absoluteGaloisGroup ℚ) = Ψ :=
+      AddMonoidHom.ext (hcon f)
+    have h2 := isCotangentScalar_galoisConj E Ψ hΨiso (f : Field.absoluteGaloisGroup ℚ) hcs
+    rw [hgc, ← hψeq] at h2
+    exact (WeierstrassCurve.End.cotangent_eq h2).trans
+      (WeierstrassCurve.End.cotangent_eq (hψeq ▸ hcs)).symm
+  obtain ⟨q, hq⟩ :=
+    mem_range_algebraMap_of_fixed (K := ℚ) (WeierstrassCurve.End.cotangent ψ) hfix
+  -- Leave the `Algebra ℚ ℚ̄` instance diamond behind: `Rat.cast` is canonical.
+  rw [eq_ratCast] at hq
+  obtain ⟨t, n, hn0, hchar, hb⟩ := MazurEndLattice.exists_charPolyRing ψ
+  have hcc : WeierstrassCurve.End.cotangent ψ * WeierstrassCurve.End.cotangent ψ
+      + (n : AlgebraicClosure ℚ)
+      = (t : AlgebraicClosure ℚ) * WeierstrassCurve.End.cotangent ψ := by
+    have hh := congrArg
+      (WeierstrassCurve.End.cotangentHom (W := (E⁄(AlgebraicClosure ℚ)))) hchar
+    rw [map_add, map_mul, map_intCast, map_mul, map_intCast] at hh
+    exact hh
+  have hq2 : q * q + (n : ℚ) = (t : ℚ) * q := by
+    refine (Rat.cast_injective (α := AlgebraicClosure ℚ)) ?_
+    push_cast
+    rw [hq]
+    exact hcc
+  -- A rational root of a monic integral quadratic is an integer.
+  have hintq : IsIntegral ℤ q := by
+    refine ⟨Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X + Polynomial.C n, ?_, ?_⟩
+    · monicity!
+    · simp only [Polynomial.eval₂_add, Polynomial.eval₂_sub, Polynomial.eval₂_mul,
+        Polynomial.eval₂_pow, Polynomial.eval₂_X, Polynomial.eval₂_C]
+      linear_combination hq2
+  obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hintq
+  rw [eq_intCast] at hm
+  have hcm : WeierstrassCurve.End.cotangent ψ = ((m : ℤ) : AlgebraicClosure ℚ) := by
+    rw [← hq, ← hm]
+    push_cast
+    ring
+  -- Injectivity of the cotangent character is free in characteristic zero.
+  have hψm : ψ = ((m : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) := by
+    refine WeierstrassCurve.End.injective_ringHomToBase
+      (WeierstrassCurve.End.cotangentHom (W := (E⁄(AlgebraicClosure ℚ)))) ?_
+    rw [map_intCast, WeierstrassCurve.End.cotangentHom_apply, hcm]
+  obtain ⟨Pt, hPt⟩ := hnotint m
+  refine hPt ?_
+  have hh := congrArg
+    (fun f : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)) =>
+      (f : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).Point) Pt) hψm
+  rw [hψeq] at hh
+  exact hh
 
 /-- **The trace of a `Gal`-stable cyclic `49`-endomorphism vanishes** (**PROVEN
 2026-07-27** over `isIsogeny_galoisConj` and `exists_galoisConj_ne`).
