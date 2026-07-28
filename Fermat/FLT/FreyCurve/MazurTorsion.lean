@@ -238,6 +238,10 @@ public import Fermat.FLT.ModularCurve.X1
 -- The Tate normal form and the level-`7` parametrisation, used by
 -- `not_order_two_and_order_seven_point` below.
 public import Fermat.FLT.FreyCurve.TateNormalForm
+-- Gauss's theory of integral binary quadratic forms — reduction theory and
+-- Rabinowitsch's criterion — carrying `mazurIsogeny_rabinowitsch_bound` down
+-- to the single deep input `neg_163_le_of_classNumberOne` (class number one).
+public import Fermat.FLT.Mathlib.NumberTheory.BinaryQuadraticForm
 
 @[expose] public section
 
@@ -9020,10 +9024,49 @@ Heegner–Stark/CM axis beyond confirming its prerequisites are absent, and
 Baker's linear-forms-in-logarithms axis. Neither has any representative in
 any of the three trees, so neither is a near-term route; but "no elementary
 and no analytic route exists" is the claim this pass supports, and the
-stronger "no route exists" is not. -/
+stronger "no route exists" is not.
+
+SEVENTH PASS (2026-07-27, flt-lean-6) — **NO LONGER A SORRY HERE.** This
+declaration is now PROVEN, over one deep leaf that lives elsewhere. What was
+built, and it is a theory rather than a rename:
+`Fermat/FLT/Mathlib/NumberTheory/BinaryQuadraticForm.lean` develops Gauss's
+theory of integral binary quadratic forms from scratch (mathlib has none of
+it, and neither does `~/cs/FLT`): the `SL₂(ℤ)` action with its composition
+law, invariance of the discriminant, proper equivalence with `symm`/`trans`,
+positivity of the values of a positive definite form, and — the substantive
+piece — **Gauss reduction**, `exists_reduced_equivalent`: every positive
+definite form is properly equivalent to one with `|b| ≤ a ≤ c`, by the
+classical `T`-translate/`S`-swap descent on `a`. All of that is proven.
+
+On top of it, `a_eq_one_of_primeGenerating` is Rabinowitsch's criterion in
+its elementary half — for a reduced form of discriminant `1 − 4m` one has
+`b` odd, `|b| = 2x + 1`, and `a·c = x² + x + m`, while `3a² ≤ 4m − 1` forces
+`x + 1 < m`, so the hypothesis makes that product prime and `a ≤ c` pins
+`a = 1` — and `equivalent_of_primeGenerating` upgrades this, via reduction,
+to: EVERY positive definite form of discriminant `1 − 4m` is properly
+equivalent to the principal form `⟨1, 1, m⟩`. That is precisely
+"`1 − 4m` has one class".
+
+So the residue is now the class number one theorem itself, stated with no
+elliptic curve, no prime-generating quadratic and no Legendre symbol in
+sight: `neg_163_le_of_classNumberOne`, "a negative discriminant with a
+single class of positive definite forms is `≥ −163`". That is verbatim what
+Heegner, Stark and Baker prove, and it is where any future CM or
+linear-forms-in-logarithms work must attach. Its faithfulness was
+machine-checked by enumerating reduced representatives of ALL positive
+definite forms (primitive and imprimitive) for every discriminant down to
+`−20000`: exactly `{−3, −4, −7, −8, −11, −19, −43, −67, −163}` have one
+class, so the bound is true and sharp. The imprimitive forms matter — the
+leaf would be FALSE at `m = 7` if the hypothesis were restricted to
+primitive forms, since `h(−27) = 1` while `x² + x + 7 = 9` at `x = 1`.
+
+The sixth pass's verdict is therefore unchanged in substance and sharpened
+in form: neither Heegner–Stark nor Baker was built, and this pass makes no
+claim to have moved that boundary. What it removes is everything AROUND the
+boundary. -/
 theorem mazurIsogeny_rabinowitsch_bound {m : ℕ} (hm : 2 ≤ m)
     (hgen : ∀ x : ℕ, x + 1 < m → Nat.Prime (x ^ 2 + x + m)) : m ≤ 41 :=
-  sorry
+  Fermat.BinaryQuadraticForm.le_41_of_primeGenerating hm hgen
 
 /-- **Class number one, in purely elementary form** (PROVEN 2026-07-26 over
 `mazurIsogeny_rabinowitsch_bound`, replacing the bare sorry this node was
