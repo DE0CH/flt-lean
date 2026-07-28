@@ -26,6 +26,13 @@ public import Mathlib.LinearAlgebra.Trace
 public import Mathlib.RingTheory.LocalRing.Module
 public import Mathlib.Algebra.Module.Projective
 public import Mathlib.RingTheory.Trace.Basic
+-- ADDED AT THE RELEASE-17 MERGE: `HenselianRing` and `IsAdicComplete.henselianRing`,
+-- used by `isAdicComplete_of_isNilpotent` / `isLocalRing_int_quotient_of_eq_span` below.
+-- In `HermiteMinkowski.lean`, where this block used to live, those names arrived
+-- TRANSITIVELY through its `public import`s of `MazurTorsion` / `Chebotarev` /
+-- `HardlyRamified.Defs`.  This module deliberately keeps a `Mathlib`-only cone
+-- (that is the whole point of the split), so the dependency is named directly.
+public import Mathlib.RingTheory.Henselian
 
 /-!
 # The different-exponent and discriminant-exponent bounds (Serre, *Corps Locaux* III §6)

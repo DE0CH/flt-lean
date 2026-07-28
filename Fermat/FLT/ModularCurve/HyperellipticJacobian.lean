@@ -2424,7 +2424,7 @@ what algebraic geometry produces, and it is *already proven* generically:
   from the geometric non-vanishing;
 * `Fermat.CubeEmbedding.toProjectiveHeightSource` supplies the approximate parallelogram
   law from the theorem of the cube, over `Mathlib/NumberTheory/Height/MvPolynomial.lean`;
-* `Fermat.ProjectiveHeightSource.toParallelogramHeight` supplies **Northcott** from
+* `Fermat.ProjectiveHeightSource.toWeilHeight` supplies **Northcott** from
   `Mathlib`'s Northcott property for `ℚ`;
 * `Fermat.ParallelogramHeight.toDescentHeight` supplies `translate`, `double` and `m = 2`.
 
@@ -2488,7 +2488,7 @@ theorem exists_descentHeight_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : Plac
     Nonempty (DescentHeight D.Pic) := by
   obtain ⟨cm⟩ := exists_cubeModel_pic D hsep
   obtain ⟨ce⟩ := cm.nonempty_cubeEmbedding
-  exact ⟨ce.toProjectiveHeightSource.toParallelogramHeight.toDescentHeight⟩
+  exact ⟨ce.toProjectiveHeightSource.toWeilHeight.toDescentHeight⟩
 
 /-!
 ### The geometric Picard group and its Galois action

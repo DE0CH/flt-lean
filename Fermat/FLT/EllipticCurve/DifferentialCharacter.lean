@@ -1345,8 +1345,6 @@ theorem isDiffChar_add [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
       · exact hsumP (by show φ P + ψ P = 0; rw [hcase]; simp)
     exact isDiffCharCert_add_of_ne hφ hψ hB hE hrat P hP0 hφP hψP hsumP hxne hBP hEP
 
-/-- **LEAF: `λ` is injective, in characteristic zero.**
-
 /-- **PROVEN 2026-07-28: `λ` is injective, in characteristic zero.**
 
 `(φ − ψ)*ω' = 0`, and a rational map killing the invariant differential is
