@@ -64643,6 +64643,417 @@ theorem isPeuRamifiee_iff_dvd_log_valuation
 
 end PeuRamifiee
 
+/-- **THE ABELIAN-DESCENT LEMMA, PROVEN, in pure field-theoretic form**
+(**PROVEN 2026-07-28**, seventeenth owner of
+`pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`;
+this is the Kummer-cocycle computation of
+`exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed` below, with
+the ONE arithmetic input it cannot supply itself isolated as `hram`).
+
+Let `F` be a field of characteristic zero, `q` a prime, and `I` ANY
+subgroup of `Γ F = Gal(Fᵃˡᵍ/F)`. Let `r ∈ Fᵃˡᵍ` be nonzero whose Kummer
+cocycle `σ ↦ σ r / r` takes values in `μ_{qⁿ}` (`hroot`), and suppose the
+cocycle is ABELIAN over `I` in the weakest usable sense: every COMMUTATOR
+of two elements of `I` fixes `r` (`hcomm`). Then the cocycle is a
+COBOUNDARY inside `μ_{qⁿ}` — there is a `qⁿ`-th root of unity `z` with
+`r / z` fixed by all of `I`.
+
+`hram` IS THE WHOLE ARITHMETIC INPUT, and it is exactly "`μ_q ⊄ Fᵀ`" for
+`Fᵀ` the fixed field of `I`. Nothing else about `F`, `I` or the ambient
+arithmetic enters; in particular there is no valuation, no ramification
+theory and no group scheme in this proof.
+
+THE PROOF, in the notation of the statement. Fix a primitive `qⁿ`-th root
+`ζ` of `Fᵃˡᵍ` (`HasEnoughRootsOfUnity`, using `CharZero F`) and let
+`χ := hζ.autToPow F : Γ F →* (ZMod qⁿ)ˣ` be the cyclotomic character.
+`hroot` and `IsPrimitiveRoot.eq_pow_of_pow_eq_one` give a well-defined
+`a : Γ F → ZMod qⁿ` with `σ r / r = ζ ^ (a σ).val`. Then:
+
+* the COCYCLE IDENTITY `a (σ τ) = χ σ · a τ + a σ`, from
+  `(στ)(r)/r = σ(τ r / r) · (σ r / r)` and `σ (ζ ^ m) = ζ ^ (χ σ · m)`;
+* `χ` kills commutators, because `(ZMod qⁿ)ˣ` is COMMUTATIVE — so the
+  commutator `c := σ τ σ⁻¹ τ⁻¹` fixes every power of `ζ`; combined with
+  `hcomm` (which says `c` fixes `r`) and `σ τ = c · (τ σ)` this gives
+  `a (σ τ) = a (τ σ)` for `σ, τ ∈ I`, hence
+  `a τ · (χ σ − 1) = a σ · (χ τ − 1)`;
+* `hram`, applied to the primitive `q`-th root `ζ ^ q ^ (n−1)`, produces
+  `σ₁ ∈ I` with `χ σ₁ ≢ 1 mod q`, i.e. with `χ σ₁ − 1` a UNIT of
+  `ZMod qⁿ` (non-units of `ZMod qⁿ` are the multiples of `q`, and a
+  multiple of `q` in the exponent acts trivially on `ζ ^ q ^ (n−1)`);
+* so `a τ = c₀ · (χ τ − 1)` with `c₀ := a σ₁ · (χ σ₁ − 1)⁻¹`, and
+  `z := ζ ^ c₀.val` works: `τ (r / z) = r / z` reduces to
+  `a τ + c₀ = χ τ · c₀` in `ZMod qⁿ`.
+
+`n = 0` is degenerate and is discharged first: there `hroot` says every
+`σ ∈ Γ F` fixes `r`, and `z = 1`. -/
+theorem exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne
+    {F : Type*} [Field F] [CharZero F] {q : ℕ} [hq : Fact q.Prime]
+    (I : Subgroup (Field.absoluteGaloisGroup F)) {n : ℕ}
+    {r : AlgebraicClosure F} (hr0 : r ≠ 0)
+    (hroot : ∀ σ : Field.absoluteGaloisGroup F, (σ r / r) ^ q ^ n = 1)
+    (hcomm : ∀ σ ∈ I, ∀ τ ∈ I, (σ * τ * σ⁻¹ * τ⁻¹) r = r)
+    (hram : ∀ ξ : AlgebraicClosure F, IsPrimitiveRoot ξ q → ∃ σ ∈ I, σ ξ ≠ ξ) :
+    ∃ z : AlgebraicClosure F, z ≠ 0 ∧ z ^ q ^ n = 1 ∧
+      ∀ σ ∈ I, σ (r / z) = r / z := by
+  classical
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · refine ⟨1, one_ne_zero, by simp, fun σ _ => ?_⟩
+    have h := hroot σ
+    rw [pow_zero, pow_one] at h
+    rw [div_one]
+    exact (div_eq_one_iff_eq hr0).mp h
+  obtain ⟨N, rfl⟩ : ∃ N, n = N + 1 := ⟨n - 1, by omega⟩
+  have hq1 : 1 < q := hq.out.one_lt
+  have hqne : q ≠ 0 := hq.out.ne_zero
+  have hN1 : 1 < q ^ (N + 1) := Nat.one_lt_pow (by omega) hq1
+  haveI : NeZero (q ^ (N + 1)) := ⟨by omega⟩
+  haveI : Fact (1 < q ^ (N + 1)) := ⟨hN1⟩
+  haveI : NeZero ((q : ℕ) : F) := ⟨Nat.cast_ne_zero.mpr hqne⟩
+  obtain ⟨ζ, hζ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) (q ^ (N + 1))
+  have hζ0 : ζ ≠ 0 := by
+    intro h
+    have h1 := hζ.pow_eq_one
+    rw [h, zero_pow (by positivity)] at h1
+    exact zero_ne_one h1
+  have hord : orderOf ζ = q ^ (N + 1) := hζ.eq_orderOf.symm
+  have hfin : IsOfFinOrder ζ := by
+    rw [← orderOf_pos_iff, hord]
+    positivity
+  have hexp : ∀ i j : ℕ, ζ ^ i = ζ ^ j ↔
+      ((i : ZMod (q ^ (N + 1))) = (j : ZMod (q ^ (N + 1)))) := by
+    intro i j
+    rw [hfin.pow_eq_pow_iff_modEq, hord, ZMod.natCast_eq_natCast_iff]
+  -- the cyclotomic character mod `q ^ (N+1)`
+  set χ := hζ.autToPow F with hχdef
+  have hσζ : ∀ (σ : Field.absoluteGaloisGroup F) (m : ℕ),
+      σ (ζ ^ m) = ζ ^ ((χ σ : ZMod (q ^ (N + 1))).val * m) := by
+    intro σ m
+    rw [map_pow, hχdef, ← hζ.autToPow_spec F σ, ← pow_mul]
+  -- the Kummer cocycle `a : Γ F → ZMod (q ^ (N+1))`
+  have hex : ∀ σ : Field.absoluteGaloisGroup F,
+      ∃ k : ZMod (q ^ (N + 1)), σ r / r = ζ ^ k.val := by
+    intro σ
+    obtain ⟨i, hi, hieq⟩ := hζ.eq_pow_of_pow_eq_one (hroot σ)
+    exact ⟨(i : ZMod (q ^ (N + 1))), by rw [ZMod.val_natCast_of_lt hi]; exact hieq.symm⟩
+  choose A hA using hex
+  have hAr : ∀ σ : Field.absoluteGaloisGroup F, σ r = ζ ^ (A σ).val * r := by
+    intro σ
+    rw [← hA σ, div_mul_cancel₀ _ hr0]
+  -- the cocycle identity
+  have hAmul : ∀ σ τ : Field.absoluteGaloisGroup F,
+      A (σ * τ) = (χ σ : ZMod (q ^ (N + 1))) * A τ + A σ := by
+    intro σ τ
+    have key : ζ ^ (A (σ * τ)).val
+        = ζ ^ ((χ σ : ZMod (q ^ (N + 1))).val * (A τ).val + (A σ).val) := by
+      rw [← hA (σ * τ), AlgEquiv.mul_apply, hAr τ, map_mul, hσζ σ, hAr σ, pow_add ζ]
+      field_simp
+    rw [hexp] at key
+    push_cast [ZMod.natCast_val, ZMod.cast_id] at key
+    exact key
+  -- the character kills commutators
+  have hχcomm : ∀ σ τ : Field.absoluteGaloisGroup F, χ (σ * τ * σ⁻¹ * τ⁻¹) = 1 := by
+    intro σ τ
+    simp only [map_mul, map_inv]
+    rw [mul_comm (χ σ) (χ τ)]
+    group
+  -- abelianness of the inertia action makes the cocycle symmetric
+  have hAsymm : ∀ σ ∈ I, ∀ τ ∈ I, A (σ * τ) = A (τ * σ) := by
+    intro σ hσ τ hτ
+    have hcr : (σ * τ * σ⁻¹ * τ⁻¹) r = r := hcomm σ hσ τ hτ
+    have hcζ : ∀ m : ℕ, (σ * τ * σ⁻¹ * τ⁻¹) (ζ ^ m) = ζ ^ m := by
+      intro m
+      rw [hσζ _ m, hχcomm σ τ]
+      simp [ZMod.val_one]
+    have hst : σ * τ = (σ * τ * σ⁻¹ * τ⁻¹) * (τ * σ) := by group
+    have hEq : (σ * τ) r = (τ * σ) r := by
+      conv_lhs => rw [hst]
+      rw [AlgEquiv.mul_apply, hAr (τ * σ), map_mul, hcζ, hcr, ← hAr (τ * σ)]
+    have key : ζ ^ (A (σ * τ)).val = ζ ^ (A (τ * σ)).val := by
+      rw [← hA (σ * τ), ← hA (τ * σ), hEq]
+    rw [hexp] at key
+    simpa [ZMod.natCast_val, ZMod.cast_id] using key
+  -- the resulting linear relation
+  have hrel : ∀ σ ∈ I, ∀ τ ∈ I,
+      A τ * ((χ σ : ZMod (q ^ (N + 1))) - 1)
+        = A σ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by
+    intro σ hσ τ hτ
+    have h := hAsymm σ hσ τ hτ
+    rw [hAmul σ τ, hAmul τ σ] at h
+    linear_combination h
+  -- `μ_q ⊄ Fᴵ` supplies a `σ₁` with `χ σ₁ - 1` a unit
+  have hζp : IsPrimitiveRoot (ζ ^ q ^ N) q :=
+    IsPrimitiveRoot.pow (by positivity) hζ (by rw [pow_succ])
+  obtain ⟨σ₁, hσ₁I, hσ₁ne⟩ := hram _ hζp
+  have hunit : IsUnit ((χ σ₁ : ZMod (q ^ (N + 1))) - 1) := by
+    by_contra hnu
+    apply hσ₁ne
+    have hval : (((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val : ZMod (q ^ (N + 1)))
+        = (χ σ₁ : ZMod (q ^ (N + 1))) - 1 := by
+      simp [ZMod.natCast_val, ZMod.cast_id]
+    have hdvd : q ∣ ((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val := by
+      by_contra hd
+      exact hnu (by
+        rw [← hval, ZMod.isUnit_iff_coprime]
+        exact (((Nat.Prime.coprime_iff_not_dvd hq.out).mpr hd).symm).pow_right _)
+    obtain ⟨m, hm⟩ := hdvd
+    have hqz : ((q : ZMod (q ^ (N + 1))) ^ (N + 1)) = 0 := by
+      have := ZMod.natCast_self (q ^ (N + 1))
+      push_cast at this
+      exact this
+    have hk : ((χ σ₁ : ZMod (q ^ (N + 1))).val : ZMod (q ^ (N + 1)))
+        = 1 + (q : ZMod (q ^ (N + 1))) * (m : ZMod (q ^ (N + 1))) := by
+      have h1 : (((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val : ZMod (q ^ (N + 1)))
+          = ((q * m : ℕ) : ZMod (q ^ (N + 1))) := by rw [hm]
+      rw [hval] at h1
+      push_cast at h1
+      rw [ZMod.natCast_val, ZMod.cast_id]
+      linear_combination h1
+    rw [hσζ σ₁ (q ^ N), hexp]
+    push_cast
+    rw [hk]
+    linear_combination (m : ZMod (q ^ (N + 1))) * hqz
+  obtain ⟨w, hw⟩ := hunit
+  have hww : (w : ZMod (q ^ (N + 1))) * ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) :
+      ZMod (q ^ (N + 1))) = 1 := by
+    rw [← Units.val_mul, mul_inv_cancel, Units.val_one]
+  set c₀ : ZMod (q ^ (N + 1)) :=
+    A σ₁ * ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) with hc₀
+  have hAτ : ∀ τ ∈ I, A τ = c₀ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by
+    intro τ hτ
+    have h := hrel σ₁ hσ₁I τ hτ
+    rw [← hw] at h
+    calc A τ = A τ * ((w : ZMod (q ^ (N + 1))) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1)))) := by rw [hww, mul_one]
+      _ = (A τ * (w : ZMod (q ^ (N + 1)))) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) := by ring
+      _ = (A σ₁ * ((χ τ : ZMod (q ^ (N + 1))) - 1)) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) := by rw [h]
+      _ = c₀ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by rw [hc₀]; ring
+  refine ⟨ζ ^ c₀.val, pow_ne_zero _ hζ0, ?_, ?_⟩
+  · rw [← pow_mul, mul_comm, pow_mul, hζ.pow_eq_one, one_pow]
+  · intro τ hτ
+    have hkey : ζ ^ ((A τ).val + c₀.val)
+        = ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) := by
+      rw [hexp]
+      push_cast [ZMod.natCast_val, ZMod.cast_id]
+      rw [hAτ τ hτ]
+      ring
+    rw [map_div₀, hAr τ, hσζ τ c₀.val,
+      div_eq_div_iff (pow_ne_zero _ hζ0) (pow_ne_zero _ hζ0)]
+    calc ζ ^ (A τ).val * r * ζ ^ c₀.val
+        = ζ ^ ((A τ).val + c₀.val) * r := by rw [pow_add ζ]; ring
+      _ = ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) * r := by rw [hkey]
+      _ = r * ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) := by ring
+
+set_option maxHeartbeats 1000000 in
+include hpodd in
+/-- **`μ_p ⊄ (ℚᵖᵥ)^{nr}`: local inertia at `p` moves a primitive `p`-th
+root of unity** (**PROVEN 2026-07-28**, seventeenth owner; the ONE
+arithmetic input of the ABELIAN-DESCENT LEMMA above, cut out of
+`exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed` when the
+cocycle computation was proven, and then closed).
+
+Equivalently: `ℚᵖᵥ(μ_p)/ℚᵖᵥ` is RAMIFIED. This is the only place in the
+abelian-descent branch where the arithmetic of `ℚ_p` — as opposed to
+pure Galois cohomology of a cyclic module — is used.
+
+**`hpodd` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** At
+`p = 2` one has `ξ = −1 ∈ ℚ₂`, so `σ ξ = ξ` for EVERY `σ ∈ Γ ℚ₂` and no
+such `σ` exists. This is the same `p = 2` failure that the consumer's
+docstring records, and it is why `hpodd` travels down the whole branch to
+land here. In the proof below `hpodd` is used exactly twice, and both
+uses are essential: `(−1) ^ p = −1` in the binomial step, and
+`∑_{i<p} i = p · k` with `p = 2k + 1` in the final congruence — the
+latter is precisely "`p ∣ p(p−1)/2`", which fails at `p = 2`.
+
+THE PROOF, the classical ramification computation. Suppose every
+`σ ∈ localInertiaGroup 𝔭ᵥ` fixed `ξ`. Then
+`M := ℚᵖᵥ⟮ξ⟯ ≤ IntermediateField.fixedField (localInertiaGroup 𝔭ᵥ)`, and
+`M` is finite over `ℚᵖᵥ` (`ξ` is algebraic), so the PROVEN
+
+    maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+
+of `Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
+gives `e(M/ℚᵖᵥ) = 1`, i.e. `𝔪 R = (𝔪 𝒪ᵖᵥ) · R` for
+`R := IntegralClosure 𝒪ᵖᵥ M`. Since `𝔪 𝒪ᵖᵥ = (p)` — the PROVEN
+`maximalIdeal_adicCompletionIntegers_eq_span`, absolute unramifiedness of
+the base — this reads `𝔪 R = (p)`, and that is contradictory:
+
+* `p ∈ 𝔪 R`, and `p ≠ 0` in `R` because `R` embeds in the
+  characteristic-zero field `M`;
+* `(ξ − 1) ^ p = ξ ^ p + (−1) ^ p + p · ξ · (−1) · r = p · (−ξr)` by
+  `Commute.exists_add_pow_prime_eq` (**first use of `hpodd`**, for
+  `(−1) ^ p = −1`), so `(ξ − 1) ^ p ∈ 𝔪 R`; `𝔪 R` is prime, hence
+  `ξ − 1 ∈ 𝔪 R = (p)`, say `ξ − 1 = p y`;
+* `∑_{i<p} ξ ^ i = 0`, since `(∑_{i<p} ξ^i)(ξ − 1) = ξ^p − 1 = 0` in the
+  domain `R` and `ξ ≠ 1`;
+* an induction gives `ξ ^ i = 1 + i (ξ−1) + (ξ−1)² c i`, so
+  `0 = p + (∑_{i<p} i)(ξ−1) + (ξ−1)² C = p + p k (ξ−1) + (ξ−1)² C`
+  using `∑_{i<p} i = p k` for `p = 2k+1` (**second use of `hpodd`**);
+* substituting `ξ − 1 = p y` and cancelling the nonzero `p` in the domain
+  `R` leaves `1 + k(ξ−1) + p y² C = 0`, i.e. `1 ∈ 𝔪 R` — contradicting
+  `𝔪 R ≠ ⊤`. ∎ -/
+theorem exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot
+    (ξ : AlgebraicClosure ℚᵖᵥ) (hξ : IsPrimitiveRoot ξ p) :
+    ∃ σ ∈ localInertiaGroup 𝔭ᵥ, σ ξ ≠ ξ := by
+  by_contra hcontra
+  have hcon : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, σ ξ = ξ := by
+    intro σ hσ
+    by_contra h
+    exact hcontra ⟨σ, hσ, h⟩
+  obtain ⟨k, hk⟩ := hpodd
+  have hp1 : 1 < p := hp.out.one_lt
+  -- ## the field cut out by `ξ` sits inside the inertia fixed field
+  set M : IntermediateField ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) :=
+    IntermediateField.adjoin ℚᵖᵥ {ξ} with hMdef
+  have hint : IsIntegral ℚᵖᵥ ξ := Algebra.IsIntegral.isIntegral ξ
+  haveI : FiniteDimensional ℚᵖᵥ M := by
+    rw [hMdef]
+    exact IntermediateField.adjoin.finiteDimensional hint
+  have hM : M ≤ IntermediateField.fixedField (localInertiaGroup 𝔭ᵥ) := by
+    rw [hMdef]
+    refine IntermediateField.adjoin_le_iff.mpr ?_
+    rintro x rfl
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    exact fun σ hσ => hcon σ hσ
+  have he := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup 𝔭ᵥ M hM
+  -- ## `e = 1` says the maximal ideal of the integral closure is `(p)`
+  have hmR : IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M)
+      = Ideal.span {(p : IntegralClosure 𝒪ᵖᵥ ↥M)} := by
+    rw [← he, maximalIdeal_adicCompletionIntegers_eq_span (Fact.out : p.Prime),
+      Ideal.map_span, Set.image_singleton, map_natCast]
+  -- ## the root of unity, as an element of the integral closure
+  have hξM : ξ ∈ M := by
+    rw [hMdef]
+    exact IntermediateField.subset_adjoin _ _ rfl
+  have hxMp : (⟨ξ, hξM⟩ : ↥M) ^ p = 1 := by
+    apply Subtype.ext
+    push_cast
+    exact hξ.pow_eq_one
+  have hxint : IsIntegral 𝒪ᵖᵥ (⟨ξ, hξM⟩ : ↥M) :=
+    IsIntegral.of_pow (n := p) (by omega) (by rw [hxMp]; exact isIntegral_one)
+  set x : IntegralClosure 𝒪ᵖᵥ ↥M :=
+    (⟨(⟨ξ, hξM⟩ : ↥M), hxint⟩ : integralClosure 𝒪ᵖᵥ ↥M) with hxdef
+  have hinjRM : Function.Injective (algebraMap (IntegralClosure 𝒪ᵖᵥ ↥M) ↥M) :=
+    fun a b h => Subtype.ext h
+  have hxval : algebraMap (IntegralClosure 𝒪ᵖᵥ ↥M) ↥M x = (⟨ξ, hξM⟩ : ↥M) := rfl
+  have hxp : x ^ p = 1 := by
+    apply hinjRM
+    rw [map_pow, map_one, hxval]
+    exact hxMp
+  have hxne : x ≠ 1 := by
+    intro h
+    have h1 : algebraMap (IntegralClosure 𝒪ᵖᵥ ↥M) ↥M x = 1 := by rw [h, map_one]
+    rw [hxval] at h1
+    exact hξ.ne_one hp1 (congrArg Subtype.val h1)
+  -- ## `p` is a nonzero non-unit of the integral closure
+  haveI : CharZero ↥M := inferInstance
+  have hpne : (p : IntegralClosure 𝒪ᵖᵥ ↥M) ≠ 0 := by
+    intro h
+    have h1 : ((p : ℕ) : ↥M) = 0 := by
+      rw [← map_natCast (algebraMap (IntegralClosure 𝒪ᵖᵥ ↥M) ↥M), h, map_zero]
+    exact hp.out.ne_zero (by exact_mod_cast h1)
+  have hpmem : (p : IntegralClosure 𝒪ᵖᵥ ↥M) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M) := by
+    rw [hmR]
+    exact Ideal.subset_span rfl
+  -- ## `ξ ≡ 1` modulo the maximal ideal
+  have hprime : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵖᵥ ↥M)).isPrime
+  have hm1 : x - 1 ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M) := by
+    obtain ⟨r, hr⟩ :=
+      (Commute.all x (-1 : IntegralClosure 𝒪ᵖᵥ ↥M)).exists_add_pow_prime_eq (Fact.out : p.Prime)
+    have hneg : ((-1 : IntegralClosure 𝒪ᵖᵥ ↥M)) ^ p = -1 := Odd.neg_one_pow ⟨k, hk⟩
+    have hkey : (x - 1) ^ p = (p : IntegralClosure 𝒪ᵖᵥ ↥M) * (-(x * r)) := by
+      have hxx : x - 1 = x + (-1) := by ring
+      rw [hxx, hr, hxp, hneg]
+      ring
+    refine hprime.mem_of_pow_mem p ?_
+    rw [hkey]
+    exact Ideal.mul_mem_right _ _ hpmem
+  have hm1' := hm1
+  rw [hmR, Ideal.mem_span_singleton] at hm1'
+  obtain ⟨y, hy⟩ := hm1'
+  -- ## the geometric sum vanishes
+  have hsum0 : (∑ i ∈ Finset.range p, x ^ i) = 0 := by
+    have h1 : (∑ i ∈ Finset.range p, x ^ i) * (x - 1) = 0 := by
+      rw [geom_sum_mul, hxp, sub_self]
+    rcases mul_eq_zero.mp h1 with h | h
+    · exact h
+    · exact absurd (sub_eq_zero.mp h) hxne
+  -- ## the binomial expansion to second order
+  have hbin : ∀ i : ℕ, ∃ c : IntegralClosure 𝒪ᵖᵥ ↥M,
+      x ^ i = 1 + (i : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1) + (x - 1) ^ 2 * c := by
+    intro i
+    induction i with
+    | zero => exact ⟨0, by simp⟩
+    | succ i ih =>
+      obtain ⟨c, hc⟩ := ih
+      refine ⟨(i : IntegralClosure 𝒪ᵖᵥ ↥M) + c + (x - 1) * c, ?_⟩
+      rw [pow_succ, hc]
+      push_cast
+      ring
+  choose c hc using hbin
+  have hgauss : (∑ i ∈ Finset.range p, i) = p * k := by
+    have h2 := Finset.sum_range_id_mul_two p
+    have hpm : p - 1 = 2 * k := by omega
+    rw [hpm] at h2
+    have h3 : (∑ i ∈ Finset.range p, i) * 2 = (p * k) * 2 := by rw [h2]; ring
+    exact Nat.eq_of_mul_eq_mul_right (by norm_num) h3
+  have hexpand : (∑ i ∈ Finset.range p, x ^ i)
+      = (p : IntegralClosure 𝒪ᵖᵥ ↥M) + (p : IntegralClosure 𝒪ᵖᵥ ↥M) *
+          (k : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1)
+        + (x - 1) ^ 2 * (∑ i ∈ Finset.range p, c i) := by
+    have hsumi : (∑ i ∈ Finset.range p, (i : IntegralClosure 𝒪ᵖᵥ ↥M))
+        = (p : IntegralClosure 𝒪ᵖᵥ ↥M) * (k : IntegralClosure 𝒪ᵖᵥ ↥M) := by
+      have hcast : ((∑ i ∈ Finset.range p, i : ℕ) : IntegralClosure 𝒪ᵖᵥ ↥M)
+          = ∑ i ∈ Finset.range p, (i : IntegralClosure 𝒪ᵖᵥ ↥M) :=
+        Nat.cast_sum (Finset.range p) (fun i => i)
+      rw [← hcast, hgauss]
+      push_cast
+      ring
+    calc (∑ i ∈ Finset.range p, x ^ i)
+        = ∑ i ∈ Finset.range p,
+            (1 + (i : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1) + (x - 1) ^ 2 * c i) :=
+          Finset.sum_congr rfl (fun i _ => hc i)
+      _ = (∑ i ∈ Finset.range p, (1 : IntegralClosure 𝒪ᵖᵥ ↥M))
+            + (∑ i ∈ Finset.range p, (i : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1))
+            + (∑ i ∈ Finset.range p, (x - 1) ^ 2 * c i) := by
+          rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
+      _ = (p : IntegralClosure 𝒪ᵖᵥ ↥M) + (p : IntegralClosure 𝒪ᵖᵥ ↥M) *
+            (k : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1)
+            + (x - 1) ^ 2 * (∑ i ∈ Finset.range p, c i) := by
+          have h1 : (∑ i ∈ Finset.range p, (i : IntegralClosure 𝒪ᵖᵥ ↥M)) * (x - 1)
+              = ∑ i ∈ Finset.range p, (i : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1) :=
+            Finset.sum_mul ..
+          have h2 : (x - 1) ^ 2 * (∑ i ∈ Finset.range p, c i)
+              = ∑ i ∈ Finset.range p, (x - 1) ^ 2 * c i := Finset.mul_sum ..
+          have h3 : (∑ _i ∈ Finset.range p, (1 : IntegralClosure 𝒪ᵖᵥ ↥M))
+              = (p : IntegralClosure 𝒪ᵖᵥ ↥M) := by simp
+          rw [h3, ← hsumi, h1, h2]
+  -- ## the contradiction
+  rw [hexpand, hy] at hsum0
+  have hfinal : (p : IntegralClosure 𝒪ᵖᵥ ↥M) *
+      (1 + (k : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1)
+        + (p : IntegralClosure 𝒪ᵖᵥ ↥M) * y ^ 2 * (∑ i ∈ Finset.range p, c i)) = 0 := by
+    rw [hy]
+    linear_combination hsum0
+  have hone : (1 : IntegralClosure 𝒪ᵖᵥ ↥M) + (k : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1)
+      + (p : IntegralClosure 𝒪ᵖᵥ ↥M) * y ^ 2 * (∑ i ∈ Finset.range p, c i) = 0 :=
+    (mul_eq_zero.mp hfinal).resolve_left hpne
+  have hmemtop : (1 : IntegralClosure 𝒪ᵖᵥ ↥M) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M) := by
+    have hmem0 : ((k : IntegralClosure 𝒪ᵖᵥ ↥M) * (x - 1)
+        + (p : IntegralClosure 𝒪ᵖᵥ ↥M) * y ^ 2 * (∑ i ∈ Finset.range p, c i))
+        ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ↥M) :=
+      Ideal.add_mem _ (Ideal.mul_mem_left _ _ hm1)
+        (Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _ hpmem))
+    convert neg_mem hmem0 using 1
+    linear_combination hone
+  exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵖᵥ ↥M)).ne_top
+    ((Ideal.eq_top_iff_one _).mpr hmemtop)
+
 include hpodd in
 /-- **THE ABELIAN-DESCENT LEMMA, in the only form this development needs**
 (LEAF — new 2026-07-27, the FIRST of the two pieces of the
@@ -64695,7 +65106,25 @@ THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a field `E` with
 root in `L` but `q ∉ (Eˣ)^{pⁿ}` — equivalently, find the error in the
 five-line cocycle computation above. Note the necessity witness recorded
 with the lemma: over `E = ℚ_p(μ_p)` the extension `E(p^{1/p})` IS abelian
-and `p` is not a `p`-th power, so `μ_p ⊄ E` cannot be dropped. -/
+and `p` is not a `p`-th power, so `μ_p ⊄ E` cannot be dropped.
+
+# REDUCED 2026-07-28 (seventeenth owner) — THIS IS NOW PROVEN GLUE
+
+The entire cocycle computation described above is PROVEN, in the general
+field-theoretic form
+`exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne` stated
+immediately above this docstring: it takes ANY subgroup `I ≤ Γ F` of the
+absolute Galois group of ANY characteristic-zero field, and needs exactly
+one arithmetic input beyond `hroot` and `hcomm`, namely `μ_q ⊄ Fᴵ`. Here
+that input is `exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot`
+— exactly "`ℚᵖᵥ(μ_p)/ℚᵖᵥ` is RAMIFIED", the ONLY consumer of `hpodd` in
+this branch and the only place its `p = 2` failure lives — and that is
+**PROVEN** too (same day), over the PROVEN
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` and
+`maximalIdeal_adicCompletionIntegers_eq_span`. So the whole ABELIAN
+branch of the INERTIA-COMMUTATIVITY CUT is now CLOSED: this statement,
+both leaves it was cut into, and the general field-theoretic lemma under
+them carry no `sorry`. -/
 theorem exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed
     {n : ℕ} {r : AlgebraicClosure ℚᵖᵥ} (hr0 : r ≠ 0)
     (hroot : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, (σ r / r) ^ p ^ n = 1)
@@ -64703,7 +65132,9 @@ theorem exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed
       (σ * τ * σ⁻¹ * τ⁻¹) r = r) :
     ∃ z : AlgebraicClosure ℚᵖᵥ, z ≠ 0 ∧ z ^ p ^ n = 1 ∧
       ∀ σ ∈ localInertiaGroup 𝔭ᵥ, σ (r / z) = r / z :=
-  sorry
+  exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne
+    (localInertiaGroup 𝔭ᵥ) hr0 hroot hcomm
+    (fun ξ hξ => exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot hpodd ξ hξ)
 
 /-- **A radical fixed by local inertia has `pⁿ`-divisible valuation**
 (LEAF — new 2026-07-27, the SECOND of the two pieces of the
