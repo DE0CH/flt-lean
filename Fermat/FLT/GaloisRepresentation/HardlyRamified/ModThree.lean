@@ -46245,8 +46245,199 @@ theorem exists_modulus_independentOrders_ray_class (a n : ℕ) (ha : 1 < a) (hn 
     rw [hjα, mul_one] at hij
     exact hij
 
+/-- **CLAUSE (1) OF CHILDRESS 2.7: A MODULUS PRIME TO THE RESIDUE
+CHARACTERISTIC OF `p` IS NOT IN `p`** (PROVEN 2026-07-27, axiom-clean;
+created the same day as sub-leaf (A3a-1-1-b-2-B-1) of
+`exists_cyclotomicRealization_ray_class` just below, which is now GLUE
+over this leaf and the two Minkowski leaves (B-2), (B-3) that follow).
+
+The bad set is the SINGLETON `{ℓ}`, where `ℓ` is the rational prime under
+`p`: `p ∩ ℤ` is a nonzero prime of the PID `ℤ` (nonzero by
+`Ideal.eq_bot_of_comap_eq_bot` against `p.ne_bot`, since `𝓞 F` is
+integral over `ℤ`), so it is `(z)` for a prime `z`, and `ℓ = |z|`. If
+`(m : 𝓞 F) ∈ p` then `(m : ℤ) ∈ p ∩ ℤ = (z)`, so `ℓ ∣ m` — which is
+exactly what avoiding `T` forbids.
+
+**FORMAL-CONTENT NOTE: `0 < m` IS NOT USED**, and is underscore-prefixed
+so that this is mechanically visible. It is carried only so that the
+statement has the same shape as its two siblings and can be applied
+uniformly by the glue below. At `m = 0` the hypothesis
+`∀ q ∈ T, q.Prime → ¬ q ∣ m` is already contradictory (`ℓ ∣ 0`), so the
+conclusion holds vacuously there rather than being false. -/
+theorem exists_badPrimes_natCast_notMem_ray_class (F : Type u) [Field F] [NumberField F]
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+      ((m : NumberField.RingOfIntegers F) ∉ p.asIdeal) := by
+  classical
+  haveI := p.isPrime
+  have hp0 : p.asIdeal.under ℤ ≠ ⊥ := mt Ideal.eq_bot_of_comap_eq_bot p.ne_bot
+  haveI : (p.asIdeal.under ℤ).IsPrime := Ideal.IsPrime.under ℤ p.asIdeal
+  obtain ⟨z, hz⟩ := (IsPrincipalIdealRing.principal (p.asIdeal.under ℤ)).principal
+  have hzne : z ≠ 0 := by
+    rintro rfl
+    exact hp0 (by rw [hz]; exact Ideal.span_singleton_eq_bot.mpr rfl)
+  have hzprime : Prime z := by
+    have hpp := ‹(p.asIdeal.under ℤ).IsPrime›
+    rw [hz] at hpp
+    exact (Ideal.span_singleton_prime hzne).mp hpp
+  have hq : z.natAbs.Prime := Int.prime_iff_natAbs_prime.mp hzprime
+  refine ⟨{z.natAbs}, ?_⟩
+  intro m _hm hT hmem
+  have hmemZ : ((m : ℤ)) ∈ p.asIdeal.under ℤ := by
+    rw [Ideal.under_def, Ideal.mem_comap]
+    simpa using hmem
+  rw [hz, Ideal.mem_span_singleton] at hmemZ
+  have hdvd' : ((z.natAbs : ℤ)) ∣ ((m : ℕ) : ℤ) := Int.natAbs_dvd.mpr hmemZ
+  have hdvd : z.natAbs ∣ m := by exact_mod_cast hdvd'
+  exact hT z.natAbs (Finset.mem_singleton_self _) hq hdvd
+
+/-- **THE MOD-`m` CYCLOTOMIC CHARACTER OF `F` IS SURJECTIVE FOR ALMOST
+EVERY `m`** (sorry node, created 2026-07-27 as sub-leaf
+(A3a-1-1-b-2-B-2) of `exists_cyclotomicRealization_ray_class` just
+below).
+
+There is a finite bad set `T` — the primes ramifying in `F/ℚ`, i.e. those
+dividing `discr F` — such that for EVERY modulus `m > 0` prime to `T`,
+every exponent `k` coprime to `m` is realised by some `g ∈ Γ F`:
+`g ζ = ζ ^ k` for every `m`-th root of unity `ζ`.
+
+Equivalently, and this is the form to prove it in: the mod-`m` cyclotomic
+character `Γ F →* (ZMod m)ˣ` of `exists_cyclotomicChar_ray_class` above
+is SURJECTIVE. (The two are interchangeable through
+`ZMod.val_coe_unit_coprime` and `pow_eq_pow_val_ray_class`; the `ℕ`-form
+is stated here because it is what the glue below and
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` already speak.)
+
+WHY IT IS TRUE, AND THE ROUTE. Surjectivity is exactly
+`[F(ζ_m) : F] = φ(m)`, i.e. `F ∩ ℚ(ζ_m) = ℚ`. Since `m` is prime to every
+prime ramifying in `F/ℚ`, and `ℚ(ζ_m)/ℚ` ramifies only at primes dividing
+`m`, the field `F ∩ ℚ(ζ_m)` is unramified over `ℚ` at EVERY prime, hence
+equals `ℚ` by MINKOWSKI. **The argument must go through `ℚ`** — "`E/F` is
+everywhere unramified, hence trivial" is false for a general number field
+`F`, which has a Hilbert class field.
+
+**MINKOWSKI IS ALREADY IN THIS FILE'S IMPORT CONE, DO NOT REBUILD IT**:
+`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, PROVEN) says
+that an OPEN NORMAL subgroup of `Γ ℚ` containing the image of the local
+inertia group at every rational prime is `⊤`. Applied to
+`H := Γ_F · Γ_{ℚ(ζ_m)}` — a subgroup because the second factor is normal,
+open because the first is, and normal because its fixed field
+`F ∩ ℚ(ζ_m)` is abelian over `ℚ` hence Galois — it gives `H = ⊤`, which
+is `F ∩ ℚ(ζ_m) = ℚ`, which is the surjectivity wanted.
+
+**Recommended next cut.** The `ℚ`-side statement is common to this leaf
+and to `exists_badPrimes_charKernel_mul_muFixer_ray_class` just below,
+and it is the only place Minkowski enters either of them:
+
+    ∀ (H : Subgroup (Γ ℚ)), IsOpen (H : Set (Γ ℚ)) →
+      ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+        ∀ σ : Γ ℚ, ∃ τ ρ : Γ ℚ, τ ∈ H ∧
+          (∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ
+
+It was NOT cut out here because doing so honestly requires also writing
+the transport of both leaves along `Field.absoluteGaloisGroup.map` from
+`Γ F` (resp. the fixed field of `ker χ`) to `Γ ℚ`, and a sorried lemma
+with no written consumer is floating. Whoever takes this leaf should
+write that transport first and then the `ℚ`-side statement becomes a
+second named leaf consumed by both.
+
+**THE TRANSPORT MACHINERY EXISTS — DO NOT REBUILD IT** (checked
+2026-07-27, in this file's import cone through
+`Deformations.RepresentationTheory.AbsoluteGaloisGroup`):
+
+* `Field.absoluteGaloisGroup.map (f : K →+* L) : Γ L →ₜ* Γ K` — the
+  restriction homomorphism along an arbitrarily chosen embedding of
+  algebraic closures. Instantiate at `f := algebraMap ℚ F` to get
+  `Γ F →ₜ* Γ ℚ`. **It carries an UNNAMED `[NumberField K]` binder that
+  `#check` does not print** — read the `variable` block, or use
+  `set_option pp.explicit true`, before assuming it applies at your
+  generality.
+* `Field.absoluteGaloisGroup.lift_map (f) (σ : Γ L) (x : Kᵃˡᵍ) :
+  AlgebraicClosure.map f (map f σ x) = σ (AlgebraicClosure.map f x)` —
+  this is the ONE compatibility a `μ_m`-clause needs: `AlgebraicClosure.map f`
+  is an injective ring hom, so it carries `μ_m ⊆ ℚᵃˡᵍ` into `μ_m ⊆ Fᵃˡᵍ`
+  and turns "`σ` acts by the `k`-th power on `μ_m ⊆ Fᵃˡᵍ`" into the same
+  statement downstairs. Every `μ_m`-clause in both leaves crosses the
+  seam through this single lemma.
+
+Also worth knowing, though NOT currently imported here:
+`normal_range_absoluteGaloisGroup_map` and
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
+(`Fermat/FLT/Modularity/MoretBailly.lean`) compute the range of that map.
+Check whether you need them before adding the import edge — this file's
+header records that import edges to the largest modules are a wall-clock
+regression the merger will want to know about.
+
+FAITHFULNESS. Non-vacuous: the conclusion pins the ACTION of `g` on all
+of `μ_m`, so a junk witness does not discharge it — at `m = 5`, `k = 2`
+it asserts the existence of an element of `Γ F` inducing a generator of
+`(ℤ/5)ˣ`, which is false for `F = ℚ(ζ₅)` and is exactly why `T` must
+contain the primes ramifying in `F/ℚ` (here `5`). `0 < m` is carried
+because the cyclotomic dictionary above needs `NeZero m`. -/
+theorem exists_badPrimes_cyclotomicChar_surjective_ray_class
+    (F : Type u) [Field F] [NumberField F] :
+    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+      ∀ k : ℕ, Nat.Coprime k m →
+        ∃ g : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → g ζ = ζ ^ k :=
+  sorry
+
+/-- **CHILDRESS'S CLAUSE (iii): `Γ F = ker χ · Γ_{F(ζ_m)}` FOR ALMOST
+EVERY `m`** (sorry node, created 2026-07-27 as sub-leaf
+(A3a-1-1-b-2-B-3) of `exists_cyclotomicRealization_ray_class` just
+below). This is Artin's Lemma 2.8(iii), i.e. `K ∩ F(ζ_m) = F` for `K` the
+fixed field of `ker χ`.
+
+There is a finite bad set `T` — the primes dividing `discr F` and those
+dividing `discr K` — such that every modulus `m > 0` prime to `T` already
+has the property that every `σ ∈ Γ F` factors as `τ ρ` with `χ τ = 1` and
+`ρ` fixing `μ_m` pointwise.
+
+WHY IT IS TRUE, AND THE ROUTE. Both `ker χ` and `muFixerRayClass F m` are
+NORMAL in `Γ F` (`charKernelRayClass_normal`, `muFixerRayClass_normal`
+above), so their product is a subgroup and the statement is
+`Γ F / (ker χ · Γ_{F(ζ_m)}) = 1`, i.e. `K ∩ F(ζ_m) = F`. Two Minkowski
+inputs, both over `ℚ` and both as in the leaf above:
+
+* `m` prime to `discr F` gives `F ∩ ℚ(ζ_m) = ℚ`, which makes restriction
+  `Gal(F(ζ_m)/F) ≅ Gal(ℚ(ζ_m)/ℚ)` an ISOMORPHISM; hence the intermediate
+  fields of `F(ζ_m)/F` are exactly the composita `F·L` with `L`
+  intermediate in `ℚ(ζ_m)/ℚ`, and `F·L ∩ ℚ(ζ_m) = L`.
+* `m` prime to `discr K` gives `K ∩ ℚ(ζ_m) = ℚ` by the same argument
+  applied to `K` — which is a NUMBER FIELD precisely because `hVopen`
+  and `hVker` make `ker χ` OPEN, hence `K/F` finite. Without an open
+  kernel "the primes ramifying in `K/ℚ`" is not a finite set and `T` does
+  not exist; that is where those two hypotheses are load-bearing.
+
+Applying the first bullet to `E := K ∩ F(ζ_m)` gives `E = F·(E ∩ ℚ(ζ_m))`
+with `E ∩ ℚ(ζ_m) ⊆ K ∩ ℚ(ζ_m) = ℚ` by the second, so `E = F`.
+
+The Minkowski input itself is PROVEN and in this file's cone:
+`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`. See the
+"recommended next cut" paragraph in the leaf above — the `ℚ`-side
+statement it names is shared with this one.
+
+FAITHFULNESS. Non-vacuous and `0 < m` IS load-bearing: at `m = 0` the
+only `ζ` with `ζ ^ 0 = 1` is every `ζ`, so `muFixerRayClass F 0` is
+trivial and the conclusion would assert `χ σ = 1` for every `σ`, false
+whenever `χ ≠ 1`. Stated generically in the target monoid `M` rather than
+at `Dickson.K 3`, since nothing about the target is used beyond
+`charKernelRayClass`'s own hypotheses — the same generality as
+`isOpen_charKernel_inter_muFixer_ray_class` above. -/
+theorem exists_badPrimes_charKernel_mul_muFixer_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    {M : Type*} [CommMonoid M] (χ : Γ F → M)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+      ∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ :=
+  sorry
+
 /-- **CHILDRESS 2.7 AND MINKOWSKI: THE GALOIS SIDE OF THE ARTIN MODULUS**
-(sorry node, created 2026-07-27 as sub-leaf (A3a-1-1-b-2-B) of
+(**DECOMPOSED AND ITS GLUE PROVEN 2026-07-27**; created the same day as
+sub-leaf (A3a-1-1-b-2-B) of
 `exists_artinModulusCore_ray_class` below).
 
 There is a finite set `T` of "bad" primes — those ramifying in `F/ℚ`,
@@ -46304,7 +46495,34 @@ number exponent `k` rather than a unit of `ZMod m`; the two are
 interchangeable through `ZMod.val_coe_unit_coprime` and
 `pow_eq_pow_val_ray_class`, and the `ℕ` form is what
 `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` above already
-speaks. -/
+speaks.
+
+**STATUS 2026-07-27: THIS IS NOW GLUE, AND THE GLUE IS PROVEN.** The
+three clauses have been cut into the three named leaves just above:
+
+* (1) `exists_badPrimes_natCast_notMem_ray_class` — **PROVEN**,
+  axiom-clean; the bad set is the singleton `{ℓ}` for `ℓ` the residue
+  characteristic of `p`.
+* (2) `exists_badPrimes_charKernel_mul_muFixer_ray_class` (sorry) —
+  clause (iii), `K ∩ F(ζ_m) = F`. Clause (2) here IS this leaf verbatim.
+* (3) `exists_badPrimes_cyclotomicChar_surjective_ray_class` (sorry) —
+  surjectivity of the mod-`m` cyclotomic character of `F`.
+
+**Clause (3) needs NO further Galois input beyond (2) and the
+surjectivity leaf**, and that is the content the glue below supplies: it
+is the bookkeeping of the paragraph above, mechanised through
+`exists_cyclotomicChar_ray_class`. Given `k` coprime to `m`, it realises
+the unit `u = k · (cyc w)⁻¹` by an element `g` (surjectivity leaf),
+splits `g = τ ρ` with `χ τ = 1` and `ρ` fixing `μ_m` (leaf (2)), observes
+`cyc ρ = 1` and hence `cyc τ = u`, and returns `w' = w τ`, whose
+`cyc`-value is `k` and whose `χ`-value is `χ w` — so `hgen` transports
+along the units homomorphism `χ' : Γ F →* (Dickson.K 3)ˣ` built exactly
+as in `exists_cyclicGenerator_ray_class` above.
+
+So both remaining leaves are pure MINKOWSKI statements with no
+generator bookkeeping left in them, and both reduce to one and the same
+`ℚ`-side statement — see the "recommended next cut" paragraph in the
+surjectivity leaf's docstring. -/
 theorem exists_cyclotomicRealization_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -46320,8 +46538,65 @@ theorem exists_cyclotomicRealization_ray_class
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
       (∀ k : ℕ, Nat.Coprime k m → ∃ w' : Γ F,
         (∀ x : Γ F, ∃ i : ℤ, χ (x * w' ^ (-i)) = 1) ∧
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → w' ζ = ζ ^ k)) :=
-  sorry
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → w' ζ = ζ ^ k)) := by
+  classical
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  set χ' : Γ F →* (Dickson.K 3)ˣ :=
+    { toFun := fun a => Units.mk0 (χ a) (hne a)
+      map_one' := by ext; exact hone
+      map_mul' := by intro a b; ext; exact hmul a b } with hχ'
+  have hcoe : ∀ a : Γ F, ((χ' a : (Dickson.K 3)ˣ) : Dickson.K 3) = χ a := fun a => rfl
+  obtain ⟨T₁, hT₁⟩ := exists_badPrimes_natCast_notMem_ray_class F p
+  obtain ⟨T₂, hT₂⟩ := exists_badPrimes_cyclotomicChar_surjective_ray_class F
+  obtain ⟨T₃, hT₃⟩ :=
+    exists_badPrimes_charKernel_mul_muFixer_ray_class F χ hmul V hVopen hVker
+  refine ⟨T₁ ∪ T₂ ∪ T₃, ?_⟩
+  intro m hm hT
+  have h1 : ∀ q ∈ T₁, q.Prime → ¬ q ∣ m := fun q hq => hT q (by simp [hq])
+  have h2 : ∀ q ∈ T₂, q.Prime → ¬ q ∣ m := fun q hq => hT q (by simp [hq])
+  have h3 : ∀ q ∈ T₃, q.Prime → ¬ q ∣ m := fun q hq => hT q (by simp [hq])
+  refine ⟨hT₁ m hm h1, hT₃ m hm h3, ?_⟩
+  intro k hk
+  haveI : NeZero m := ⟨hm.ne'⟩
+  obtain ⟨c, hcspec, hcuniq⟩ := exists_cyclotomicChar_ray_class F m hm
+  have hku : IsUnit ((k : ℕ) : ZMod m) := (ZMod.isUnit_iff_coprime k m).mpr hk
+  set u : (ZMod m)ˣ := hku.unit * (c w)⁻¹ with hu
+  obtain ⟨g, hgg⟩ := hT₂ m hm h2 ((u : ZMod m)).val (ZMod.val_coe_unit_coprime u)
+  obtain ⟨τ, ρ, hτ, hρ, hgeq⟩ := hT₃ m hm h3 g
+  have hcρ : c ρ = 1 := by
+    have h := hcuniq ρ 1 (by intro ζ hζ; rw [pow_one]; exact hρ ζ hζ)
+    ext
+    simpa using h
+  have hcg : c g = u := by
+    have h := hcuniq g ((u : ZMod m)).val hgg
+    ext
+    rw [h]
+    exact ZMod.natCast_rightInverse (u : ZMod m)
+  have hcτ : c τ = u := by
+    rw [hgeq, map_mul, hcρ, mul_one] at hcg
+    exact hcg
+  refine ⟨w * τ, ?_, ?_⟩
+  · intro x
+    obtain ⟨i, hi⟩ := hgen x
+    refine ⟨i, ?_⟩
+    have hτ' : χ' τ = 1 := by ext; exact hτ
+    have hwτ : χ' (w * τ) = χ' w := by rw [map_mul, hτ', mul_one]
+    have hstep : χ' (x * (w * τ) ^ (-i)) = χ' (x * w ^ (-i)) := by
+      rw [map_mul, map_mul, map_zpow, map_zpow, hwτ]
+    have h0 : χ' (x * w ^ (-i)) = 1 := by ext; exact hi
+    rw [← hcoe, hstep, h0, Units.val_one]
+  · intro ζ hζ
+    have hspec := hcspec (w * τ) ζ hζ
+    have hcwτu : c (w * τ) = hku.unit := by
+      rw [map_mul, hcτ, hu, mul_comm hku.unit ((c w)⁻¹), ← mul_assoc, mul_inv_cancel, one_mul]
+    have hcwτ : ((c (w * τ) : (ZMod m)ˣ) : ZMod m) = ((k : ℕ) : ZMod m) := by
+      rw [hcwτu]; exact hku.unit_spec
+    rw [hspec, hcwτ, ← pow_eq_pow_val_ray_class hζ k]
 
 set_option maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC CHOICE OF THE MODULUS *AND OF THE GENERATOR*:
