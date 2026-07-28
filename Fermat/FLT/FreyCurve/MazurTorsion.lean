@@ -23555,12 +23555,200 @@ end MazurLevel125
 -- the `X_0(7)` section independently — one to there, one to here — and the earlier
 -- position dominates every consumer, including the level-`125` assembly below, so
 -- only that copy survives.  Nothing about the statement or proof changed.)
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **Every rational point of `Y_0(125)` is fixed by the Atkin–Lehner
+involution `w_125`** (LEAF, cut 2026-07-28 off
+`exists_atkinLehnerIsom_of_veluQuotient_order_125` below) — LEVEL-SPECIFIC,
+and the ONLY declaration in the whole level-`125` cluster that carries the
+rank input `rank J_0(125)⁻(ℚ) = 0`.
+
+TRUE, and this is Kenku's descent verbatim.  Let `P ∈ X_0(125)(ℚ)` be the
+image of a rational point of the open part `Y_0(125)`.  The divisor class
+`[(P) − (w_125 P)]` is anti-invariant, so it lies in `J_0(125)⁻(ℚ)`; by the
+newform table recorded in the section note above (Magma, `125`: three new
+factors of dimensions `2, 2, 4` with `w_125`-eigenvalues `−1, +1, −1`, and
+`L(A_f, 1) ≠ 0` on BOTH `w_125 = −1` factors) that group has rank `0`, and
+Kolyvagin–Logachev makes the vanishing unconditional.  A torsion
+anti-invariant class on a curve of genus `8 > 0` is `0` by the Abel–Jacobi
+injectivity that `injective_ajMinus_x0OneSixtyNine` packages at level `169`,
+so `P ∼ w_125 P` and hence `P = w_125 P`.
+
+**Restricted to the OPEN part on purpose — the unrestricted statement is
+FALSE.**  `w_N` exchanges the cusps above `d` and `N/d`, and
+`rationalCuspDivisors 125 = {1, 125}`, so `w_125` SWAPS the two rational
+cusps of `X_0(125)` and fixes neither.  Quantifying over
+`RelPoint strX (𝟙 SpecQ)` rather than over `RelPoint strY (𝟙 SpecQ)` would
+therefore be refuted by either cusp.  This is the exact complement of the
+level-`169` leaf `noFixedRationalPoint_atkinLehner_x0OneSixtyNine`, which
+asserts fixed-point-FREENESS on all of `X_0(169)(ℚ)` — the two are consistent
+because both levels have `Y_0(ℚ) = ∅`, and they are used for opposite
+purposes: `169` uses the CM count to kill the point, `125` uses the descent to
+FIX it and leaves the killing to the already-PROVEN class-number half
+`MazurLevel125.classPoly500_no_rat_root` downstream.
+
+**VACUITY AUDIT — read before consuming this leaf.**  It is vacuously true,
+because `Y_0(125)(ℚ) = ∅` (Kenku); so is every other node of this cluster, its
+parent included.  Two consequences a prover must respect:
+
+* **Do NOT discharge it by proving `Y_0(125)(ℚ) = ∅`.**  That is Kenku's
+  theorem at this level, i.e. the whole cluster, and closing this leaf that
+  way would launder the arithmetic — in particular it would strand the
+  already-PROVEN `classPoly500_no_rat_root`, which is the `h(−500) = 10` half
+  of the very same argument.  The intended proof is the Prym descent above,
+  which knows nothing about rational points being absent.
+* The hypotheses `_hw2` and `_hal` are consumed by NOTHING in the statement
+  and are underscore-prefixed so that this is mechanically visible.  They are
+  retained because they are what a prover needs: `_hal` pins `w` to the moduli
+  action `(E, C) ↦ (E/C, E[125]/C)` — without it `w` could be any involution
+  of `X` over `ℚ` — and `_hw2` is what makes "fixed point" the right notion
+  for an order-`2` action.
+
+**What proving it needs**, and it is exactly the level-`169` list with `169`
+replaced by `125`: `J_0(125)`, its Atkin–Lehner decomposition, the Prym of
+`w_125` (`exists_prym_of_involution`, LEVEL-GENERIC and already stated in
+`X0.lean`), Kolyvagin–Logachev for the two `w_125 = −1` factors, and the
+Abel–Jacobi injectivity on the minus part.  The first four are shared verbatim
+with `exists_atkinLehnerPrym_x0OneSixtyNine`; only the rank table is new.  So
+the honest next cut here is the level-`125` instance of
+`HasRankZeroAbelianImage` for the ANTI-INVARIANT quotient, and a successor
+should write `exists_atkinLehnerPrym_x0OneTwentyFive` beside its `169`
+sibling rather than re-deriving the generic half.
+
+**The check that refutes this leaf**: a `w_125 = −1` newform factor of
+`S_2(Γ_0(125))` with `L(A_f, 1) = 0` (recompute with
+`lfun(mfeigenbasis(mfinit([125,2],0)), 1)` in PARI/GP, or `LRatio` in Magma),
+or a non-cuspidal rational point of `X_0(125)` not fixed by `w_125`. -/
+theorem Fermat.atkinLehnerFixed_x0OneTwentyFive {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY)
+    (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
+    (_hal : IsAtkinLehner 125 hX w hw) :
+    ∀ y : RelPoint strY (𝟙 SpecQ),
+      RelPoint.post w hw (RelPoint.post jY hX.comm y)
+        = RelPoint.post jY hX.comm y :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **The moduli dictionary for an Atkin–Lehner FIXED point, in isogeny
+vocabulary** (LEAF, cut 2026-07-28 off
+`exists_atkinLehnerIsom_of_veluQuotient_order_125` below) — **LEVEL-GENERIC**:
+nothing in it mentions `125`, and proving it once serves every level of this
+file, `169` included.
+
+**What it says.**  `(E, C = ⟨g⟩)` is a `Γ₀(N)`-pair over `ℚ`, `φ : E → E'` is
+an isogeny over `ℚ̄` with kernel exactly `C`, Galois-equivariant, and `w` is
+the Atkin–Lehner involution of `X_0(N)` — PINNED by `hal` to the moduli action
+`(E, C) ↦ (E/C, E[N]/C)`.  If `w` fixes every rational point of the open part
+`Y_0(N)`, then the pair `(E, C)` is isomorphic to the pair
+`(E', φ(E[N]))`: there is an isogeny `ι : E' → E` with trivial kernel — an
+isomorphism, `ι` being surjective by `IsIsogeny.surjective` over the
+algebraically closed `ℚ̄` — carrying `φ(E[N])` onto `C`.
+
+**Why this is the right seam.**  Everything level-specific has been pushed
+into `hfix` (`atkinLehnerFixed_x0OneTwentyFive` at `125`), and everything
+geometric that remains is uniform in `N`.  What a prover of THIS leaf owes is
+exactly the round trip through the coarse space, in three steps, all of them
+level-free:
+
+1. **Down.**  `nonempty_gamma0Datum_of_stable` (PROVEN) turns `(E, g, hstable)`
+   into `d : Gamma0Datum N SpecQ`, whose classifying point
+   `hX.coarse.classify (𝟙 SpecQ) d` is the rational point of `Y_0(N)` that
+   `hfix` is about.
+2. **Across.**  `hal` is stated about a pair `d, d'` related by an
+   `IsNIsogenyPair N d d'`, so the genuinely new obligation is to BUILD `d'`
+   out of `(E', φ(E[N]))` together with that pair structure — which needs the
+   DUAL isogeny `φ̂ : E' → E` with `φ̂ ∘ φ = [N]`, `φ ∘ φ̂ = [N]` and
+   `ker φ̂ = φ(E[N])`, as a morphism of elliptic schemes rather than of point
+   groups.  This is the real gate, and it is the same gate
+   `exists_atkinLehner_x0` names.  With it, `hal` plus `hfix` give
+   `classify d = classify d'` (the open immersion `jY` is a monomorphism, so
+   the equality descends from `X` to `Y`).
+3. **Up.**  `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN,
+   injectivity of `classify` on `ℚ̄`-points, arbitrary `N`) turns that equality
+   into an isomorphism `d_ℚ̄ ≅ d'_ℚ̄` of `Γ₀(N)`-data — an
+   `IsBaseChangeOf (𝟙 _)` — whose `liesIn_iff` clause is precisely
+   `ι (φ (E[N])) = C`.  Transporting it back to Weierstrass point groups is
+   where `weierstrassModel_j_unique` (still a leaf in `X0.lean`) enters, since
+   `exists_stableCyclic_of_gamma0Datum` returns *some* Weierstrass model and
+   the identification with `E` is what that leaf supplies.
+
+**FAITHFULNESS: the second conjunct is not decoration.**  Dropping
+`ι (φ (E[N])) = C` and keeping only `E' ≅ E` gives a FALSE weakening; the
+counterexample is recorded on the consumer below (`j = 1728`, `α = 11 + 2i` of
+norm `125`, where `E/C ≅ E` while `α(E[125]) = ker ᾱ ≠ ker α` because `5`
+splits in `ℤ[i]`).  So the `liesIn_iff` clause of step 3 must be carried, not
+discarded.
+
+**VACUITY AUDIT.**  At every level this file cares about the hypotheses are
+unsatisfiable (`Y_0(N)(ℚ) = ∅`), so the statement is vacuously true there —
+as is its consumer and every other node of the cluster.  It is NOT vacuous as
+a statement about general `N`: at `N = 11`, say, rational cyclic `11`-isogenies
+exist and `hfix` is a genuine constraint.  That is the gain of stating it
+level-generically, and a prover should test any candidate proof against a
+level where `Y_0(N)(ℚ) ≠ ∅`.
+
+**`hN : 0 < N` is load-bearing**: `nonempty_gamma0Datum_of_stable` and
+`exists_x0Compactification` both require it, and at `N = 0`
+`isEmpty_of_gamma0Datum_zero` forbids a datum over the nonempty base
+`Spec ℚ`, so step 1 has nothing to produce. -/
+theorem WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed {N : ℕ} (_hN : 0 < N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY)
+    (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
+    (_hal : IsAtkinLehner N hX w hw)
+    (_hfix : ∀ y : RelPoint strY (𝟙 SpecQ),
+      RelPoint.post w hw (RelPoint.post jY hX.comm y)
+        = RelPoint.post jY hX.comm y)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples g) :
+    ∃ ι : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny ι ∧
+      (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
+      (fun P => ι (φ P)) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}
+        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) :=
+  sorry
 
 /-- **Atkin–Lehner fixedness at level `125`, in VÉLU-QUOTIENT vocabulary**
-(LEAF, cut 2026-07-27 off
-`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`, which is PROVEN
-over it just below).  This is now the only open leaf of the level-`125`
-cluster.
+(PROVEN 2026-07-28 over the two leaves immediately above —
+`Fermat.atkinLehnerFixed_x0OneTwentyFive`, level-specific, and
+`WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed`, level-generic — plus the
+already-existing level-generic `X0.lean` leaf `Fermat.exists_atkinLehner_x0`;
+a LEAF itself from 2026-07-27, when it was cut off
+`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`).
+
+#### The 2026-07-28 cut, and why it is along this seam
+
+The node was a single `sorry` mixing two entirely independent obligations: the
+ARITHMETIC of level `125` (`rank J_0(125)⁻(ℚ) = 0` and the Prym descent) and
+the GEOMETRY of the moduli dictionary (the round trip
+`(E, C) ⟶ Y_0(N) ⟶ (E, C)`, which knows nothing about `125`).  Splitting them
+is what the audit below asked for and both halves now have their own
+docstring; the assembly is four lines and consumes nothing else.
+
+The accounting is honest about the cost: one leaf becomes two, plus a
+re-use of one that already existed.  What is bought is that the level-specific
+residue is now a SINGLE rank statement with a Magma table behind it, and that
+the plumbing half is stated uniformly in `N`, so it is shared with `169` and
+with every future level rather than re-proved here.
+
+**What it says.**  `C = ⟨g⟩` is a Galois-stable cyclic subgroup of order `125`,
 
 **What it says.**  `C = ⟨g⟩` is a Galois-stable cyclic subgroup of order `125`,
 `φ : E → E'` is *any* isogeny over `ℚ̄` with kernel exactly `C` (in practice the
@@ -23587,8 +23775,10 @@ plumbing rather than mathematics is now PROVEN and lives outside this leaf:
 * the KERNEL and IMAGE bookkeeping of the consumer's two conjuncts is discharged
   from `ker φ = C` and the triviality of `ker ι`.
 
-So a prover of THIS leaf owes only the modular geometry.  The cut is
-one-leaf-for-one-leaf: it does not raise the frontier.
+So a prover of THIS leaf owes only the modular geometry, and after the
+2026-07-28 cut this declaration owes nothing at all: the modular geometry is
+`exists_atkinLehnerIsom_of_x0Fixed` and the arithmetic is
+`atkinLehnerFixed_x0OneTwentyFive`.
 
 **The second conjunct is not decoration** (carried over from the consumer's
 audit, and re-verified by hand 2026-07-27).  Dropping `ι (φ (E[125])) = C` and
@@ -23599,21 +23789,34 @@ is cyclic; there `C := ker α` has `E/C ≅ E`, yet `α² = 117 + 44i ≠ -125`.
 curve satisfies the weakened statement and fails this one, because
 `α(E[125]) = ker ᾱ ≠ ker α`.
 
-**WHAT IS GENUINELY MISSING, unchanged by the cut**: `rank J_0(125)⁻(ℚ) = 0`,
-a predicate that exists nowhere in the tree — `HasRankZeroJacobian` is the FULL
-Jacobian and is FALSE here (`rank J_0(125)(ℚ) = 2`; the `w_125 = +1` factor has
-`L(A_f, 1) = 0`).  With it the classical argument is: a rational point `P` of
-`X_0(125)` is not a cusp, `[(P) - (w P)]` lies in the minus part, which is
-trivial, so `P ∼ w P` and hence `P = w P` since the genus is `8 > 0`; the fixed
-points of `w_125` are the CM points of discriminant `-4 · 125 = -500`, and
-`h(-500) = 10`, so none is rational.  The `h(-500)` half of that is ALREADY
-PROVEN in this file (`classPoly500_no_rat_root`, and
-`classPoly500_of_end_closure_eq_top` above it), which is why routing this level
-through a new `Y0HasNoRationalPoint 125` leaf in `X0.lean` is the wrong trade:
-it would relocate the arithmetic into a leaf whose own proof re-derives what is
-already proven here, and turn this whole cluster into `ex falso` laundering —
+**WHAT IS GENUINELY MISSING — now ISOLATED, and it is one statement**:
+`rank J_0(125)⁻(ℚ) = 0`, a predicate that exists nowhere in the tree —
+`HasRankZeroJacobian` is the FULL Jacobian and is FALSE here
+(`rank J_0(125)(ℚ) = 2`; the `w_125 = +1` factor has `L(A_f, 1) = 0`).  With it
+the classical argument is: a rational point `P` of `X_0(125)` is not a cusp,
+`[(P) - (w P)]` lies in the minus part, which is trivial, so `P ∼ w P` and hence
+`P = w P` since the genus is `8 > 0`; the fixed points of `w_125` are the CM
+points of discriminant `-4 · 125 = -500`, and `h(-500) = 10`, so none is
+rational.  **The two halves of that sentence now live in different places, and
+that is the point of the 2026-07-28 cut**: the first half — up to and including
+`P = w P` — is `atkinLehnerFixed_x0OneTwentyFive` above, and the `h(-500)` half
+is ALREADY PROVEN in this file (`classPoly500_no_rat_root`, and
+`classPoly500_of_end_closure_eq_top` above it) and stays where it is.
+
+**THE STANDING OBJECTION TO ROUTING THIS LEVEL THROUGH `Y0HasNoRationalPoint
+125` STANDS, and the cut above is precisely how to get `X0.lean`'s apparatus
+without paying it.**  A `Y0HasNoRationalPoint 125` leaf would relocate the
+arithmetic into a statement whose own proof re-derives `h(-500)`, stranding what
+is already proven here and turning the cluster into `ex falso` laundering —
 exactly what the `169` section of `X0.lean` records as having happened at that
-level.
+level (`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169` is now proven
+FROM `False`, and its own FORMAL-CONTENT AUDIT says the Atkin–Lehner apparatus
+below it is no longer load-bearing).  `atkinLehnerFixed_x0OneTwentyFive` is
+deliberately weaker than `Y0HasNoRationalPoint 125`: it says the rational points
+of `Y_0(125)` are `w_125`-FIXED, not that there are none, so the `h(-500)`
+contradiction is still drawn downstream and `classPoly500_no_rat_root` remains
+load-bearing.  **The check that refutes this paragraph**: a proof of
+`atkinLehnerFixed_x0OneTwentyFive` that goes through `Y_0(125)(ℚ) = ∅`.
 
 **THE ISOGENY-CHARACTER AXIS IS NOW DEMONSTRATED DEAD, not merely untried**
 (2026-07-27; the previous audit recorded it as UNTRIED and asked for the
@@ -23662,17 +23865,25 @@ then open.  Today:
   which that audit listed as "genuinely absent".
 
 So the descent `[(P) - (w P)]` is expressible and the moduli half of the
-assembly is available.  What is still missing for it, and is the honest next
-cut, is TWO things: the level-`125` instance of the Prym/rank-`0` datum (the
-analogue of `exists_atkinLehnerPrym_x0OneSixtyNine`, carrying
-`rank J_0(125)⁻(ℚ) = 0`), and `w` PINNED to its moduli description
-`(E, C) ↦ (E/C, E[125]/C)` — the `169` leaf produces `w` existentially and its
-own docstring says pinning is what it is waiting for.  Note the round trip
-`E ↦ Γ₀(125)`-datum `↦ E` is NOT yet available: `exists_stableCyclic_of_gamma0Datum`
-returns *some* Weierstrass curve, and recovering an isomorphism with the given
-`E` needs `weierstrassModel_j_unique`, still a leaf in `X0.lean`.  **The check
-that refutes this paragraph**: `weierstrassModel_j_unique` closing, or a pinned
-`w_N` appearing in `X0.lean`. -/
+assembly is available.  **THE CUT IS NOW CARRIED OUT (2026-07-28), AND ONE OF
+THE TWO ITEMS THIS PARAGRAPH LISTED AS MISSING WAS ALREADY THERE.**  The
+paragraph named two: the level-`125` Prym/rank-`0` datum, and `w` PINNED to
+`(E, C) ↦ (E/C, E[125]/C)`.  The second is `Fermat.IsAtkinLehner` — the pin was
+written into `X0.lean` on 2026-07-27 as part of the four-leaf cut of
+`exists_atkinLehnerPrym_x0OneSixtyNine`, together with the level-generic
+`Fermat.exists_atkinLehner_x0` that produces a `w` satisfying it — so the
+refuting check this paragraph itself stated ("a pinned `w_N` appearing in
+`X0.lean`") had already fired when it was written.  Only the first item
+survives, and it is now `atkinLehnerFixed_x0OneTwentyFive` above.
+
+The round trip `E ↦ Γ₀(125)`-datum `↦ E` is indeed still missing —
+`exists_stableCyclic_of_gamma0Datum` returns *some* Weierstrass curve, and
+recovering an isomorphism with the given `E` needs `weierstrassModel_j_unique`,
+still a leaf in `X0.lean` — and that, together with the dual isogeny as a
+morphism of elliptic schemes, is exactly what
+`exists_atkinLehnerIsom_of_x0Fixed` above now carries, uniformly in `N`.  **The
+check that refutes this paragraph**: `weierstrassModel_j_unique` closing without
+`exists_atkinLehnerIsom_of_x0Fixed` becoming provable. -/
 theorem WeierstrassCurve.exists_atkinLehnerIsom_of_veluQuotient_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -23697,8 +23908,14 @@ theorem WeierstrassCurve.exists_atkinLehnerIsom_of_veluQuotient_order_125
       (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
       (fun P => ι (φ P)) ''
           {P : (E⁄(AlgebraicClosure ℚ)).Point | (125 : ℕ) • P = 0}
-        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) :=
-  sorry
+        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) := by
+  classical
+  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ :=
+    Fermat.exists_x0Compactification 125 (by norm_num)
+  obtain ⟨w, hw, hw2, hal⟩ := Fermat.exists_atkinLehner_x0 125 hX
+  exact WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed (by norm_num) hX w hw hw2 hal
+    (Fermat.atkinLehnerFixed_x0OneTwentyFive hX w hw hw2 hal) E g hg hstable E' _hE'
+    φ hφ hgal hker
 
 /-- **Atkin-Lehner fixedness at level `125`, in isogeny vocabulary** (PROVEN
 2026-07-27 over the single leaf
