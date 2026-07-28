@@ -28772,7 +28772,10 @@ is the whole reason the Fricke hypothesis is worth having — is PROVEN
 **Second round (2026-07-28): the third of those is itself now a PROVEN
 assembly**, cut along the FRICKE SIGN — the one thing quantifying over
 newforms bought, and a thing that is not even statable above.  It leaves
-`exists_frickeSign_of_isNewEigenformAt` (Atkin–Lehner multiplicity one,
+`isFrickeEigenform_of_isNewEigenformAt` — itself decomposed on
+2026-07-28 down to `exists_frickeSlash_eq_smul_of_isNewEigenformAt`
+(Atkin–Lehner multiplicity one, level-free; the `ε = ±1` half is now
+proven from `axisRestrict_frickeSlash`) —
 level-free) and `frickeTail_ne_zero_of_kenkuDivisor` (the arithmetic,
 now stated over an exponentially convergent tail integral rather than
 over `∫₀^∞`).  See `integral_Ioi_zero_eq_of_inversion` for the analysis
@@ -29726,26 +29729,158 @@ theorem cuspPeriod_ne_zero_of_isFrickeEigenform (N : ℕ) (hN : N ∈ kenkuLevel
   refine mul_ne_zero (Complex.ofReal_ne_zero.mpr (inv_ne_zero hsq.ne')) ?_
   exact mul_ne_zero (by norm_num) htail
 
-/-- **A NEWFORM IS A FRICKE EIGENVECTOR** (sorry leaf) — the modular
-half of the cut, and the only place old/new theory is still needed.
+/-- **`axisRestrict` is `ℂ`-linear in the form** (PROVEN — one `rfl`
+under the `0 < y ∧ M ≠ 0` guard, and `0 = c · 0` outside it).
 
-TRUE, and classical (Atkin–Lehner 1970; Diamond–Shurman §5.6–5.8).
-`W_M` is an involution of `S₂(Γ₀(M))` commuting with `T_n` for
-`(n, M) = 1`, so it preserves each newform eigenspace; multiplicity one
-says that eigenspace is a line; hence `g ∣ W_M = ε g` with `ε² = 1`, i.e.
-`ε = ±1`.
+Needed because the Atkin–Lehner leaf below is stated about `frickeSlash`
+as an operator on `CuspForm`, while everything analytic in this
+subsection is stated about the restriction to the rescaled axis. -/
+theorem axisRestrict_smul (N : ℕ) (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (y : ℝ) :
+    axisRestrict N (c • f) y = c * axisRestrict N f y := by
+  by_cases h : 0 < y ∧ N ≠ 0
+  · rw [axisRestrict_of_pos h.2 _ h.1, axisRestrict_of_pos h.2 _ h.1]
+    rfl
+  · simp [axisRestrict, h]
+
+/-- **THE FRICKE FUNCTIONAL EQUATION WITH ITS WITNESS NAMED** (PROVEN
+2026-07-28) — `exists_frickeInvolution` with the `∃` removed:
+
+> `axisRestrict N f (1/y) = -y² · axisRestrict N (frickeSlash N hN f) y`.
+
+`exists_frickeInvolution` chooses its partner, so nothing downstream can
+say *which* cusp form the partner is; and the Atkin–Lehner statement
+below — "on a newform the partner is `± f` itself" — is precisely a
+statement about that witness.  So the anonymous form cannot be used, and
+this is the identity the cut needs.  Its proof is the one already given
+for `exists_frickeInvolution` (`W_N • (i y/√N) = i (1/y)/√N`, weight
+`|det|^{k-1} denom^{-k} = N · (i y √N)^{-2} = -1/y²`), applied to the
+explicit witness `frickeSlash N hN f` rather than to a chosen one.
+
+Its natural home is beside `exists_frickeInvolution` in
+`ModularCurve/WeightTwoEigenform.lean`; it is stated here only because
+that module has other owners.  Hoisting it — and then rewriting
+`exists_frickeInvolution` as its `⟨frickeSlash N hN f, ·⟩` corollary — is
+a free move. -/
+theorem axisRestrict_frickeSlash (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2)
+    {y : ℝ} (hy : 0 < y) :
+    axisRestrict N f (1 / y)
+      = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N (frickeSlash N hN f) y := by
+  have hy' : (0 : ℝ) < 1 / y := by positivity
+  rw [axisRestrict_of_pos hN f hy', axisRestrict_of_pos hN _ hy]
+  simp only [coe_frickeSlash, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
+    UpperHalfPlane.σ, UpperHalfPlane.denom, frickeMatrix_coe, frickeMatrix_det, coe_axisPoint]
+  norm_num
+  rw [if_pos (Nat.pos_of_ne_zero hN), ContinuousAlgEquiv.refl_apply]
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  rw [Complex.I_sq]
+  ring
+
+/-- **ATKIN–LEHNER MULTIPLICITY ONE: on a newform the Fricke partner is a
+SCALAR multiple of the form itself** (sorry leaf) — the whole modular
+content of `isFrickeEigenform_of_isNewEigenformAt`, and the only place
+old/new theory is still needed.
+
+TRUE, and classical (Atkin–Lehner 1970, Lemma 17 and Theorem 3;
+Diamond–Shurman §5.6–5.8).  `W_M` is an involution of `S₂(Γ₀(M))`
+commuting with `T_n` for `(n, M) = 1`, so it preserves each system of
+`T_n`-eigenvalues; multiplicity one for the newspace says the
+corresponding eigenspace is a LINE; hence `g ∣ W_M ∈ ℂ · g`.
+
+LEVEL-FREE: `kenkuLevels` does not appear.  It says nothing about the
+value of `c` — not even that `c = ±1`, which is *derived* below from the
+functional equation applied twice, i.e. from `W_M² = 1`.  The value `-1`
+at a Kenku divisor is the separate arithmetic leaf
+`frickeSign_eq_neg_one_of_isNewEigenformAt`.
+
+**Why the conclusion is `∃ c` and not `∃ c, c = 1 ∨ c = -1`.**  The sign
+constraint is free once the scalar exists: `W_M` is an involution, so
+`c² = 1`.  That half is PROVEN in
+`isFrickeEigenform_of_isNewEigenformAt` below (through
+`axisRestrict_frickeSlash` used at `y` and at `1/y`, which is the
+involution in the only form the analytic side needs), and putting it in
+this statement would only hide proven mathematics inside a `sorry`.
+
+**What this leaf still needs**, and it is a genuinely missing theory:
+Hecke operators as OPERATORS on `S₂(Γ₀(M))` — this development's
+`IsWeightTwoEigenform` carries them only as recurrences on the
+`q`-expansion sequence, which is enough to *state* eigenness but not to
+say that `W_M` commutes with them — the commutation `W_M T_n = T_n W_M`
+for `(n, M) = 1` (a double-coset computation), and multiplicity one for
+the newspace (Atkin–Lehner, via the Petersson inner product or via the
+theory of oldforms).  `grep -rn "Hecke\|heckeOp\|newform" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` returns no operator-level Hecke theory
+anywhere on this pin; `Mathlib/NumberTheory/ModularForms/` has no Hecke
+operator at all.  So this is a subtree to be built, not a proof to be
+found — and it is the SAME missing subtree named by
+`frickeSign_eq_neg_one_of_isNewEigenformAt`.
+
+**The axis NOT searched** (in the sense of the doctrine's
+irreducibility-verdict rule): everything above ranges over
+*operator-shaped* routes, where the missing Hecke theory is fatal.  A
+`q`-expansion-shaped route — compute the Fourier coefficients of
+`g ∣ W_M` directly from those of `g`, e.g. through the theta/Mellin
+dictionary already in this file — is NOT ruled out here, and would be
+the thing to try before building the operator theory.  It needs the
+Mellin transform of `axisRestrict M (frickeSlash M hM g)` identified with
+a Dirichlet series, which `IsLFunctionOf` can already state.
+
+`hM : M ≠ 0` is load-bearing for the same reason as everywhere else in
+this cluster: at `M = 0` there is no Atkin–Lehner theory and `Γ₀(0)` has
+infinite index in `SL(2, ℤ)`.  Here it is additionally needed just to
+*form* `frickeSlash M hM g`. -/
+theorem exists_frickeSlash_eq_smul_of_isNewEigenformAt (M : ℕ) (hM : M ≠ 0)
+    (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) (hb : IsWeightTwoEigenform M g b)
+    (hnew : IsNewEigenformAt M b) :
+    ∃ c : ℂ, frickeSlash M hM g = c • g :=
+  sorry
+
+/-- **A NEWFORM IS A FRICKE EIGENVECTOR** (PROVEN 2026-07-28, from
+Atkin–Lehner multiplicity one) — the modular half of the cut.
+
+**DECOMPOSED 2026-07-28.**  What used to be one `sorry` carrying three
+separate things is now one leaf carrying one:
+
+* that the Fricke partner of a newform is a scalar multiple of it at all
+  — old/new theory and multiplicity one — is
+  `exists_frickeSlash_eq_smul_of_isNewEigenformAt`, the leaf above;
+* that the scalar is `± 1` is PROVEN here, and it is the `W_M² = 1` half:
+  `axisRestrict_frickeSlash` at `y` gives
+  `A(1/y) = -c y² A(y)`, and the same identity at `1/y` (where
+  `1/(1/y) = y` and the Jacobians `(1/y)² · y²` cancel exactly) gives
+  `A(y) = c² A(y)`.  So `(c² - 1) A(y₀) = 0` at any `y₀` where `A` is
+  nonzero, and `c = ± 1` by `mul_self_eq_one_iff`;
+* that `axisRestrict` sees the scalar is `axisRestrict_smul`.
+
+**The `A ≡ 0` branch is not a gap.**  If `axisRestrict M g` vanishes
+identically on `(0, ∞)` — which for a genuine newform it does not, but
+nothing here needs that — the required functional equation holds with
+`ε = 1` because both sides are `0`.  Taking that branch is honest rather
+than degenerate: `IsFrickeEigenform M b` really is satisfied by `ε = 1`
+in that case, and the *consumer*
+`cuspPeriod_ne_zero_of_isFrickeEigenform` is protected against it by
+`frickeSign_eq_neg_one_of_isNewEigenformAt`, which forces `ε = -1` at a
+Kenku divisor and so rules the branch out downstream rather than here.
+Proving `g ≠ 0` instead would need `q`-expansion uniqueness against
+`b 1 = 1`, which is strictly more work for no gain.
 
 LEVEL-FREE: `kenkuLevels` does not appear, and the statement says nothing
 about the value of `ε` — that is
 `frickeSign_eq_neg_one_of_isNewEigenformAt`, which is where the
 arithmetic lives.
 
-**What this leaf needs**: `W_M` as an operator on `S₂(Γ₀(M))` (which
-`frickeSlash` already supplies — see `exists_frickeInvolution`), the
-commutation with the Hecke operators, and multiplicity one for the
-newspace.  Only the last is genuinely missing; the first is proven in
-`ModularCurve/WeightTwoEigenform.lean` and the second is a computation
-with double cosets.
+⚠ **The degenerate split to avoid**, recorded because it looks like the
+same move and is not: folding `∫₀^∞` against itself (rather than folding
+the FE against itself, as here) gives `(1 + ε) ∫₀^∞ A = 0`, which is a
+VANISHING CRITERION and carries no information when `ε = -1`.  The fold
+that is worth having is `integral_Ioi_zero_eq_of_fricke`, over
+`Set.Ioi 1`.
 
 `hM : M ≠ 0` is load-bearing for the same reason as everywhere else in
 this cluster: at `M = 0` there is no Atkin–Lehner theory, `Γ₀(0)` has
@@ -29754,8 +29889,36 @@ infinite index in `SL(2, ℤ)`, and `axisRestrict 0 g` is identically zero
 theorem isFrickeEigenform_of_isNewEigenformAt (M : ℕ) (hM : M ≠ 0)
     (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) (hb : IsWeightTwoEigenform M g b)
     (hnew : IsNewEigenformAt M b) :
-    IsFrickeEigenform M b :=
-  sorry
+    IsFrickeEigenform M b := by
+  obtain ⟨c, hc⟩ := exists_frickeSlash_eq_smul_of_isNewEigenformAt M hM g b hb hnew
+  refine ⟨hM, g, hb, ?_⟩
+  have key : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -c * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y := by
+    intro y hy
+    rw [axisRestrict_frickeSlash M hM g hy, hc, axisRestrict_smul]
+    ring
+  by_cases hz : ∃ y : ℝ, 0 < y ∧ axisRestrict M g y ≠ 0
+  · obtain ⟨y₀, hy₀, hne⟩ := hz
+    have hYY : ((y₀ ^ (2 : ℝ) : ℝ) : ℂ) * (((1 / y₀) ^ (2 : ℝ) : ℝ) : ℂ) = 1 := by
+      rw [← Complex.ofReal_mul, one_div, Real.inv_rpow hy₀.le,
+        mul_inv_cancel₀ (Real.rpow_pos_of_pos hy₀ 2).ne']
+      norm_num
+    have h1 := key y₀ hy₀
+    have h2 := key (1 / y₀) (by positivity)
+    rw [one_div_one_div, h1] at h2
+    have hstep : (c * c - 1) * axisRestrict M g y₀ = 0 := by
+      linear_combination (-1 : ℂ) * h2 + (-(c * c * axisRestrict M g y₀)) * hYY
+    have hcc : c * c = 1 := by
+      rcases mul_eq_zero.mp hstep with h | h
+      · exact sub_eq_zero.mp h
+      · exact absurd h hne
+    exact ⟨c, mul_self_eq_one_iff.mp hcc, key⟩
+  · have hall : ∀ y : ℝ, 0 < y → axisRestrict M g y = 0 := fun y hy => by
+      by_contra h
+      exact hz ⟨y, hy, h⟩
+    refine ⟨1, Or.inl rfl, fun y hy => ?_⟩
+    rw [hall (1 / y) (by positivity), hall y hy]
+    ring
 
 /-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
 nonzero period** (PROVEN 2026-07-28, from the Fricke cut above).  This is
