@@ -41,10 +41,16 @@ This module states it.
   categories.
 
   Note what `modTensor` is *not*: no monoidal-category structure is
-  built on `X.Modules` here, so there are no associativity, unit or
-  symmetry isomorphisms available, and none are used.  Every statement
-  below is invariant under isomorphism of sheaves and never composes two
-  tensor products, which is why the bare `tensorObj` suffices.
+  built on `X.Modules` here.  **Amended 2026-07-28** — the sentence that
+  stood here went on to say "so there are no associativity, unit or
+  symmetry isomorphisms available, and none are used", and both halves
+  are now false.  The tensor-calculus section below PROVES congruence
+  (`modTensorMapIso`) and the right unitor (`modTensorUnitRightIso`), and
+  states the remaining four as named leaves; `relPicEquiv_refl`,
+  `relPicEquiv_symm` and `relPicEquiv_trans` use them, and the two
+  representability leaves consume the resulting
+  `relPicEquiv_equivalence`.  What is still absent is a
+  monoidal-CATEGORY structure — coherence — which nothing here needs.
 
 ## The functor
 
@@ -131,10 +137,36 @@ composition of the two classical theorems its own docstring had always
 been citing side by side, along the CONSTRUCTION axis its atomicity
 audit recorded as unsearched:
 
-* `exists_relPicFull` (sorry leaf) — BLR 8.2/1, existence of the full
-  relative Picard scheme, stated through the new `IsRelPicOf`;
-* `exists_relPicZero_of_isRelPicOf` (sorry leaf) — BLR 9.4/4, `Pic⁰` is
-  an abelian scheme once `Pic` exists.
+* `exists_relPicFull` — BLR 8.2/1, existence of the full relative
+  Picard scheme, stated through the new `IsRelPicOf`;
+* `exists_relPicZero_of_isRelPicOf` — BLR 9.4/4, `Pic⁰` is an abelian
+  scheme once `Pic` exists.
+
+Amended again 2026-07-28: **both of those are now PROVEN too**, each as a
+short composition that discharges the classical inputs of its own leaf.
+The frontier moved DOWN one level rather than closing, and the seven
+leaves it moved to are, in dependency order:
+
+* three in the tensor-calculus section — `nonempty_modTensor_assocPic`,
+  `nonempty_modPullback_modTensorPic` and `exists_modTensor_inv`.  None
+  mentions Picard theory.  They are what `relPicEquiv_equivalence` runs
+  on.  **Only the last is a legitimate dispatch target**: the first two
+  are restatements of declarations in
+  `Fermat/FLT/Modularity/AmpleSheaf.lean` that are respectively proven
+  and owned there, and the action on them is a hoist rather than a
+  proof — see their docstrings;
+* `exists_relPicOf_of_hasUniversallyTrivialPushforward` — FGA 232 with
+  `f_*𝒪 = 𝒪` and the equivalence relation supplied;
+* `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
+  the equivalence relation and the group law on `Pic`'s points supplied.
+
+Also PROVEN here and worth knowing about before re-deriving them:
+`modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
+`modPullbackUnitIso`, `isInvertibleSheaf_modUnit`,
+`isInvertibleSheaf_modTensorPic`, `relPicEquiv_refl/symm/trans/equivalence`,
+and `IsRelPicOf.zeroPoint/addPoint` with their two classification specs.
+Most of the first group was HOISTED from `AmpleSheaf.lean`; see the
+tensor-calculus section header.
 
 `IsRelPicOf` is `IsRelPicZeroOf` with the group law and the Abel–Jacobi
 fields dropped and a **surjectivity** field added; that field is what
@@ -173,13 +205,17 @@ module
 public import Mathlib.AlgebraicGeometry.Modules.Sheaf
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Monoidal
 public import Mathlib.AlgebraicGeometry.Pullbacks
+public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafification
+public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackFree
 public import Fermat.FLT.Modularity.AbelianScheme
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 
 @[expose] public section
 
 universe u
 
 open CategoryTheory AlgebraicGeometry CategoryTheory.Limits
+open TopologicalSpace MonoidalCategory Opposite
 
 namespace Fermat
 
@@ -239,6 +275,282 @@ satisfies would make `RelPicEquiv` empty and every field of
 def IsInvertibleSheaf {Z : Scheme.{u}} (L : Z.Modules) : Prop :=
   ∀ z : Z, ∃ U : Z.Opens, z ∈ U ∧
     Nonempty (L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+
+/-! ### A tensor calculus for `modTensor`
+
+**This section exists because of a specific recorded finding, and it
+absorbs one that was made independently downstream.**
+
+The ROUTE AUDIT on `exists_relPicFull` below concluded that the one live
+gate on every route to representability is that `modTensor` supplies only
+the OBJECT part of a tensor product: with no unitor, no associator and no
+inverses, `RelPicEquiv` is not known to be reflexive, symmetric or
+transitive, so the relative Picard presheaf cannot be assembled as a
+functor and none of mathlib's representability machinery can be pointed
+at it.  That audit named the discharging check explicitly — "prove
+`RelPicEquiv` is an equivalence relation … and the fppf/Zariski route
+opens".  This section runs that check; `relPicEquiv_equivalence` below is
+the result.
+
+**Where this material came from (2026-07-28).**  Most of it was NOT
+written here.  `Fermat/FLT/Modularity/AmpleSheaf.lean`, which *imports*
+this module, had already built the same calculus for its own purposes,
+having reached the same conclusion the audit above did and recorded it in
+its own words:
+
+> `RelativePicard.lean` built only the object part of `⊗` because
+> "building the monoidal category would require knowing that
+> sheafification is monoidal".  That is true of the ASSOCIATOR and false
+> of everything else.
+
+That is correct, and it was found by a `declaration uses 'sorry'`-level
+collision rather than by reading: an attempt to state
+`isInvertibleSheaf_modUnit` here failed to build `AmpleSheaf.lean` with
+"`Fermat.isInvertibleSheaf_modUnit` has already been declared".  Since
+`AmpleSheaf` imports this module and not conversely, the material had to
+move UP for the Picard leaves to use it, so the following declarations
+were **hoisted out of `AmpleSheaf.lean` unchanged** and deleted there:
+`modPullbackCompIso`, `modPullbackCongrIso`, `modPullbackMapIso`,
+`presheafOfModulesMonoidal`, `modSheafifyValIso`, `modTensorMapIso`,
+`modTensorUnitLeftIso`, `opensMapFinal`, `modPullbackUnitIso`,
+`modRestrictPullbackIso`, `modRestrictLEIso`, `trivializationOfLE`,
+`isInvertibleSheaf_modUnit`.  `AmpleSheaf.lean` inherits every one of
+them by import and is otherwise untouched.
+
+**So do not re-derive any of this, and note in particular that two
+statements the audit listed as missing are FREE at this pin**:
+`modPullbackUnitIso` (`f^*𝒪_Y ≅ 𝒪_X`, because `Opens.map g` is a Final
+functor — `opensMapFinal` — so mathlib's
+`SheafOfModules.pullbackObjUnitToUnit` is an isomorphism), and both
+unitors.
+
+**What is genuinely still open** is exactly the part needing
+*sheafification to be monoidal*.  Two leaves are stated below,
+`nonempty_modTensor_assocPic` and `nonempty_modPullback_modTensorPic`,
+and **both already have proofs or owners in `AmpleSheaf.lean`** — see
+their docstrings.  They are duplicated here only because the declarations
+that discharge them sit below this module in the import order and could
+not be hoisted without colliding with live work.  **They must not be
+dispatched at independently**; the correct action on either is a hoist,
+not a proof. -/
+
+/-! #### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
+
+/-- **`f^*(g^* L) ≅ (f ≫ g)^* L`** — `Scheme.Modules.pullbackComp`, read on an
+object. -/
+noncomputable def modPullbackCompIso {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z) (L : Z.Modules) :
+    modPullback f (modPullback g L) ≅ modPullback (f ≫ g) L :=
+  (Scheme.Modules.pullbackComp f g).app L
+
+/-- **Pullbacks along equal morphisms agree** — `Scheme.Modules.pullbackCongr`,
+read on an object.  Needed because `pullback.condition` is an equality of
+morphisms, not a definitional identity. -/
+noncomputable def modPullbackCongrIso {X Y : Scheme.{u}} {f g : X ⟶ Y} (h : f = g) (L : Y.Modules) :
+    modPullback f L ≅ modPullback g L :=
+  (Scheme.Modules.pullbackCongr h).app L
+
+/-- **`f^*` carries isomorphisms to isomorphisms** — it is a functor. -/
+noncomputable def modPullbackMapIso {X Y : Scheme.{u}} (f : X ⟶ Y) {L M : Y.Modules} (e : L ≅ M) :
+    modPullback f L ≅ modPullback f M :=
+  (Scheme.Modules.pullback f).mapIso e
+
+/-! #### The monoidal structure that `modTensor` inherits from presheaves -/
+
+/-- The presheaf-level monoidal structure, re-keyed on `Z.ringCatSheaf.obj`.
+
+`Mathlib`'s instance is stated for `PresheafOfModules (R ⋙ forget₂ CommRingCat
+RingCat)` with `R` a presheaf of *commutative* rings; typeclass search cannot
+invert that composition against `Z.ringCatSheaf.obj`, which is definitionally
+`Z.presheaf ⋙ forget₂ CommRingCat RingCat`.  This instance supplies it. -/
+noncomputable instance presheafOfModulesMonoidal (Z : Scheme.{u}) :
+    MonoidalCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+  inferInstanceAs (MonoidalCategory
+    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
+
+/-- **Sheafifying a sheaf changes nothing**: `a(M.val) ≅ M`.
+
+The counit of `PresheafOfModules.sheafificationAdjunction`, which mathlib
+already knows is an isomorphism. -/
+noncomputable def modSheafifyValIso {Z : Scheme.{u}} (M : Z.Modules) :
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj M.val ≅ M :=
+  (asIso (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).counit).app M
+
+/-- **`modTensor` is functorial** (on isomorphisms, which is all that is used).
+
+The morphism part this module originally declined to define: sheafify
+`PresheafOfModules.Monoidal.tensorHom`. -/
+noncomputable def modTensorMapIso {Z : Scheme.{u}} {L L' M M' : Z.Modules}
+    (e : L ≅ L') (e' : M ≅ M') : modTensor L M ≅ modTensor L' M' :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso
+    (MonoidalCategory.tensorIso
+      ((SheafOfModules.forget _).mapIso e) ((SheafOfModules.forget _).mapIso e'))
+
+/-- **The LEFT UNITOR**, `𝒪_Z ⊗ M ≅ M`.  Sheafify the presheaf-level unitor,
+then use that `M` is already a sheaf. -/
+noncomputable def modTensorUnitLeftIso {Z : Scheme.{u}} (M : Z.Modules) :
+    modTensor (modUnit Z) M ≅ M :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (λ_ M.val) ≪≫
+    modSheafifyValIso M
+
+/-- **THE RIGHT UNITOR**, `L ⊗ 𝒪_Z ≅ L` (PROVEN 2026-07-28, new here).
+
+`AmpleSheaf.lean` built only the left unitor, "since nothing here consumes
+the right one"; `relPicEquiv_refl` below does, because `RelPicEquiv` puts
+the twisting sheaf on the RIGHT.  Same three-line construction with
+`MonoidalCategory.rightUnitor` in place of `λ_`. -/
+noncomputable def modTensorUnitRightIso {Z : Scheme.{u}} (L : Z.Modules) :
+    modTensor L (modUnit Z) ≅ L :=
+  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (ρ_ L.val) ≪≫
+    modSheafifyValIso L
+
+/-! #### `f^* 𝒪_Y ≅ 𝒪_X` -/
+
+/-- **`Opens.map g` is a FINAL functor**, for every continuous `g : X ⟶ Y`.
+
+`StructuredArrow U (Opens.map g)` has the TERMINAL object `⊤` — every `U` obeys
+`U ≤ g ⁻¹ᵁ ⊤` — and a category with a terminal object is connected. -/
+instance opensMapFinal {X Y : TopCat.{u}} (g : X ⟶ Y) : (Opens.map g).Final := by
+  constructor
+  intro U
+  have hterm : ∀ A : StructuredArrow U (Opens.map g),
+      Nonempty (A ⟶ StructuredArrow.mk (Y := (⊤ : Opens Y)) (homOfLE le_top)) :=
+    fun _ => ⟨StructuredArrow.homMk (homOfLE le_top) (Subsingleton.elim _ _)⟩
+  have : Nonempty (StructuredArrow U (Opens.map g)) :=
+    ⟨StructuredArrow.mk (Y := ⊤) (homOfLE le_top)⟩
+  apply zigzag_isConnected
+  intro j₁ j₂
+  exact Relation.ReflTransGen.head (Or.inl (hterm j₁))
+    (Relation.ReflTransGen.single (Or.inr (hterm j₂)))
+
+/-- **`f^* 𝒪_Y ≅ 𝒪_X`** — mathlib's `SheafOfModules.pullbackObjUnitToUnit`,
+which is an isomorphism because `Opens.map f.base` is final (`opensMapFinal`).
+
+The `IsIso` instance is supplied by name rather than by `inferInstance`: the
+two occurrences of `pullbackObjUnitToUnit` otherwise pick up different (but
+defeq) `IsRightAdjoint` instance arguments and unification stalls. -/
+noncomputable def modPullbackUnitIso {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    modPullback f (modUnit Y) ≅ modUnit X :=
+  @asIso _ _ _ _ (SheafOfModules.pullbackObjUnitToUnit.{u} (Scheme.Hom.toRingCatSheafHom f))
+    (SheafOfModules.instIsIsoPullbackObjUnitToUnitOfFinal _)
+
+/-! #### Restriction to an open, as a pullback -/
+
+/-- **Restriction along an open immersion IS the pullback** —
+`Scheme.Modules.restrictFunctorIsoPullback`, read on an object. -/
+noncomputable def modRestrictPullbackIso {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (A : Y.Modules) : A.restrict f ≅ modPullback f A :=
+  (Scheme.Modules.restrictFunctorIsoPullback f).app A
+
+/-- **`A|_W ≅ (A|_U)|_W` for `W ≤ U`** (PROVEN — pseudo-functoriality of
+`modPullback`, plus `Scheme.homOfLE_ι`). -/
+noncomputable def modRestrictLEIso {Z : Scheme.{u}} (A : Z.Modules) {W U : Z.Opens} (h : W ≤ U) :
+    A.restrict W.ι ≅ (A.restrict U.ι).restrict (Z.homOfLE h) :=
+  modRestrictPullbackIso W.ι A ≪≫
+    modPullbackCongrIso (Z.homOfLE_ι h).symm A ≪≫
+    (modPullbackCompIso (Z.homOfLE h) U.ι A).symm ≪≫
+    modPullbackMapIso (Z.homOfLE h) (modRestrictPullbackIso U.ι A).symm ≪≫
+    (modRestrictPullbackIso (Z.homOfLE h) (A.restrict U.ι)).symm
+
+/-- **A trivialization over `U` restricts to one over any `W ≤ U`** (PROVEN). -/
+noncomputable def trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens} (h : W ≤ U)
+    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    A.restrict W.ι ≅ modUnit (W : Scheme.{u}) :=
+  modRestrictLEIso A h ≪≫ (Scheme.Modules.restrictFunctor (Z.homOfLE h)).mapIso φ ≪≫
+    Scheme.Modules.restrictUnitIso (Z.homOfLE h)
+
+/-! #### Invertibility -/
+
+/-- `𝒪_Z` is invertible.  (Recorded as a one-liner in the `IsInvertibleSheaf`
+docstring above; it has consumers now, so it is a declaration.) -/
+theorem isInvertibleSheaf_modUnit (Z : Scheme.{u}) : IsInvertibleSheaf (modUnit Z) :=
+  fun _ => ⟨⊤, trivial, ⟨Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι⟩⟩
+
+/-! #### The two leaves that remain, and their downstream twins -/
+
+/-- **ASSOCIATIVITY OF `modTensor`** (sorry leaf — **BUT SEE THE WARNING**).
+
+`modTensor` sheafifies after each tensor, so this compares
+`sheafify (sheafify (L ⊗ M) ⊗ N)` with `sheafify (L ⊗ sheafify (M ⊗ N))`.
+Both are `sheafify (L ⊗ M ⊗ N)`, and proving so is exactly the statement
+that **sheafification is monoidal**.
+
+**DO NOT DISPATCH A PROVER AT THIS.**  It is the verbatim twin of
+`Fermat.nonempty_modTensor_assoc` in
+`Fermat/FLT/Modularity/AmpleSheaf.lean`, which is **PROVEN** there
+(2026-07-28) by localizing the presheaf monoidal category at the class
+`modLocW` of local isomorphisms and transporting — over two leaves of its
+own, `modLocW_whiskerLeft` and `modLocW_whiskerRight`, which have their
+own owners.
+
+It is restated here only because that proof and its ~150 lines of
+localization machinery sit BELOW this module in the import order, in a
+region of `AmpleSheaf.lean` with live owners, so it could not be hoisted
+the way everything above it was.  **The correct action is the hoist**:
+once `modLocW_whiskerLeft`/`Right` are settled, move the
+`modLocW`/`ModLM`/`modTensorLocIso`/`nonempty_modTensor_assoc` block up
+here and delete this declaration, redirecting its two uses in
+`relPicEquiv_symm` and `relPicEquiv_trans`. -/
+theorem nonempty_modTensor_assocPic {Z : Scheme.{u}} (L M N : Z.Modules) :
+    Nonempty (modTensor (modTensor L M) N ≅ modTensor L (modTensor M N)) := sorry
+
+/-- **PULLBACK COMMUTES WITH `modTensor`** (sorry leaf — **BUT SEE THE
+WARNING**).
+
+`Scheme.Modules.pullback` is a left adjoint and the presheaf pullback is
+strong monoidal, so the content is again that sheafification is monoidal:
+the sheafification inside `modTensor` has to move across the pullback.
+
+**DO NOT DISPATCH A PROVER AT THIS.**  It is the verbatim twin of
+`Fermat.nonempty_modPullback_modTensor` in
+`Fermat/FLT/Modularity/AmpleSheaf.lean`, which is an open leaf there with
+a live owner as of 2026-07-28.  Same reason as the leaf above: it could
+not be hoisted without colliding with that owner's work.  **The correct
+action is the hoist**, once that owner has finished. -/
+theorem nonempty_modPullback_modTensorPic {Z W : Scheme.{u}} (h : W ⟶ Z) (L M : Z.Modules) :
+    Nonempty (modPullback h (modTensor L M) ≅ modTensor (modPullback h L) (modPullback h M)) :=
+  sorry
+
+/-- **RESTRICTION COMMUTES WITH `modTensor`** (PROVEN over
+`nonempty_modPullback_modTensorPic`) — the special case the invertibility
+argument below actually consumes, and strictly weaker than the general
+statement. -/
+theorem nonempty_restrict_modTensorPic {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) :
+    Nonempty ((modTensor L M).restrict f ≅ modTensor (L.restrict f) (M.restrict f)) := by
+  obtain ⟨e⟩ := nonempty_modPullback_modTensorPic f L M
+  exact ⟨modRestrictPullbackIso f _ ≪≫ e ≪≫
+    modTensorMapIso (modRestrictPullbackIso f L).symm (modRestrictPullbackIso f M).symm⟩
+
+/-- **A TENSOR PRODUCT OF INVERTIBLE SHEAVES IS INVERTIBLE** (PROVEN over
+`nonempty_modPullback_modTensorPic`): trivialize both over `U ⊓ V`.
+
+Consumed by `IsRelPicOf.addPoint`, which needs the tensor product of two
+classified sheaves to be invertible before `surj` will classify it, and
+by `relPicEquiv_trans`. -/
+theorem isInvertibleSheaf_modTensorPic {Z : Scheme.{u}} {L M : Z.Modules}
+    (hL : IsInvertibleSheaf L) (hM : IsInvertibleSheaf M) : IsInvertibleSheaf (modTensor L M) := by
+  intro z
+  obtain ⟨U, hzU, ⟨φ⟩⟩ := hL z
+  obtain ⟨V, hzV, ⟨ψ⟩⟩ := hM z
+  obtain ⟨e⟩ := nonempty_restrict_modTensorPic (U ⊓ V : Z.Opens).ι L M
+  exact ⟨U ⊓ V, ⟨hzU, hzV⟩, ⟨e ≪≫ modTensorMapIso (trivializationOfLE inf_le_left φ)
+    (trivializationOfLE inf_le_right ψ) ≪≫ modTensorUnitLeftIso _⟩⟩
+
+/-- **AN INVERTIBLE SHEAF HAS AN INVERSE** (sorry leaf — genuinely new,
+with no twin anywhere in the development).
+
+The dual `L^∨ = Hom(L, 𝒪)`, with the evaluation `L ⊗ L^∨ ⟶ 𝒪` an
+isomorphism because it is one locally.  The pin has no internal Hom on
+`SheafOfModules`, so the dual has to be produced — either as the internal
+Hom, or (avoiding it) by gluing the local trivialisations that
+`IsInvertibleSheaf` already supplies as data.
+
+This is the field that makes `RelPicEquiv` SYMMETRIC, and it is the only
+one of this section's obligations that is genuinely about invertibility
+rather than about sheafification.  Unlike the two leaves above it has no
+owner and no downstream proof, so it IS a legitimate dispatch target. -/
+theorem exists_modTensor_inv {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertibleSheaf L) :
+    ∃ M : Z.Modules, IsInvertibleSheaf M ∧ Nonempty (modTensor L M ≅ modUnit Z) := sorry
 
 /-! ### The relative Picard functor -/
 
@@ -311,6 +623,81 @@ def RelPicEquiv {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
     (L L' : (curveBaseChange strX g).Modules) : Prop :=
   ∃ N : T.Modules, IsInvertibleSheaf N ∧
     Nonempty (L ≅ modTensor L' (modPullback (curveBaseChangeProj strX g) N))
+
+/-! ### `RelPicEquiv` IS an equivalence relation
+
+**PROVEN over the five tensor-calculus leaves above.**  This closes the
+check the ROUTE AUDIT on `exists_relPicFull` named as the one that would
+"refute the note", i.e. that opens the fppf/Zariski route: with these
+three lemmas the naive quotient `Pic(X_T)/Pic(T)` is a genuine quotient
+SET, hence assemblable as a presheaf, hence a legitimate target for
+`AlgebraicGeometry.Scheme.LocalRepresentability.isRepresentable`.
+
+The three docstring claims this supersedes are corrected in place above:
+the module docstring's "there are no associativity, unit or symmetry
+isomorphisms available, and none are used" was true when written and is
+now false in its second half (the unit isomorphism is `modTensorUnitRightIso`,
+and it IS used), and the `IsRelPicOf` docstring's "`RelPicEquiv` is not
+proven symmetric or transitive in this module" is likewise superseded —
+though the direction conventions there were chosen while it was true and
+are left alone, since they cost nothing.
+
+Note which leaf does what.  Reflexivity needs the unit isomorphisms
+only; transitivity needs associativity and the pullback/tensor
+interchange; symmetry is the only one that needs inverses.  So a prover
+reflexivity is already UNCONDITIONAL, since `modPullbackUnitIso` and
+`modTensorUnitRightIso` are both proven. -/
+
+section RelPicEquivIsEquivalence
+
+variable {X S T : Scheme.{u}} (strX : X ⟶ S) (g : T ⟶ S)
+
+/-- **`RelPicEquiv` is reflexive**: take `N = 𝒪_T`. -/
+theorem relPicEquiv_refl (L : (curveBaseChange strX g).Modules) :
+    RelPicEquiv strX g L L := by
+  refine ⟨modUnit T, isInvertibleSheaf_modUnit T, ⟨?_⟩⟩
+  refine (modTensorUnitRightIso L).symm ≪≫ ?_
+  exact modTensorMapIso (Iso.refl L)
+    (modPullbackUnitIso (curveBaseChangeProj strX g)).symm
+
+/-- **`RelPicEquiv` is symmetric**: replace `N` by its inverse. -/
+theorem relPicEquiv_symm {L L' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') : RelPicEquiv strX g L' L := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨N', hN', ⟨u⟩⟩ := exists_modTensor_inv hN
+  refine ⟨N', hN', ⟨?_⟩⟩
+  have step : modTensor L (modPullback (curveBaseChangeProj strX g) N')
+      ≅ modTensor (modTensor L' (modPullback (curveBaseChangeProj strX g) N))
+          (modPullback (curveBaseChangeProj strX g) N') :=
+    modTensorMapIso e (Iso.refl _)
+  refine ?_ ≪≫ step.symm
+  refine (modTensorUnitRightIso L').symm ≪≫ ?_ ≪≫
+    (nonempty_modTensor_assocPic L' (modPullback (curveBaseChangeProj strX g) N)
+      (modPullback (curveBaseChangeProj strX g) N')).some.symm
+  refine modTensorMapIso (Iso.refl L') ?_
+  refine (modPullbackUnitIso (curveBaseChangeProj strX g)).symm ≪≫ ?_
+  refine (modPullbackMapIso (curveBaseChangeProj strX g) u).symm ≪≫ ?_
+  exact (nonempty_modPullback_modTensorPic (curveBaseChangeProj strX g) N N').some
+
+/-- **`RelPicEquiv` is transitive**: multiply the two twists. -/
+theorem relPicEquiv_trans {L L' L'' : (curveBaseChange strX g).Modules}
+    (h : RelPicEquiv strX g L L') (h' : RelPicEquiv strX g L' L'') :
+    RelPicEquiv strX g L L'' := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := h
+  obtain ⟨N', hN', ⟨e'⟩⟩ := h'
+  refine ⟨Fermat.modTensor N' N, isInvertibleSheaf_modTensorPic hN' hN, ⟨?_⟩⟩
+  refine e ≪≫ modTensorMapIso e' (Iso.refl _) ≪≫ ?_
+  refine (nonempty_modTensor_assocPic L'' (modPullback (curveBaseChangeProj strX g) N')
+    (modPullback (curveBaseChangeProj strX g) N)).some ≪≫ ?_
+  exact modTensorMapIso (Iso.refl L'')
+    (nonempty_modPullback_modTensorPic (curveBaseChangeProj strX g) N' N).some.symm
+
+/-- **The relative Picard relation is an equivalence relation** — the
+hypothesis both representability leaves below now receive in hand. -/
+theorem relPicEquiv_equivalence : Equivalence (RelPicEquiv strX g) :=
+  ⟨relPicEquiv_refl strX g, relPicEquiv_symm strX g, relPicEquiv_trans strX g⟩
+
+end RelPicEquivIsEquivalence
 
 /-! ### `Pic⁰` as an abelian scheme -/
 
@@ -394,7 +781,13 @@ larger functor.
 `RelPicEquiv` is not proven symmetric or transitive in this module —
 that would need a unitor, an inverse and an associator for `modTensor`,
 none of which is built here — so the direction of each occurrence is
-part of the statement.  Both fields are written in the same direction as
+part of the statement.  (**Amended 2026-07-28**: it now IS proven an
+equivalence relation, by `relPicEquiv_equivalence`, over five named
+leaves; the unitor is no longer among them, being PROVEN as
+`modTensorUnitRightIso`.  The direction conventions below were chosen while
+this paragraph was true and are deliberately left alone — they cost
+nothing and changing them would churn every consumer.)  Both fields are
+written in the same direction as
 the corresponding field of `IsRelPicZeroOf` (`sheaf p` on the left), and
 classically the relation IS an equivalence, so nothing is lost.
 
@@ -418,6 +811,55 @@ structure IsRelPicOf {X P S : Scheme.{u}} (strX : X ⟶ S) (pstr : P ⟶ S) wher
     (hg : h ≫ g = g') (p : RelPoint pstr g),
     RelPicEquiv strX g' (sheaf (RelPoint.pre h hg p))
       (modPullback (curveBaseChangeMap strX h hg) (sheaf p))
+
+/-! ### The group law on the points of `Pic`, derived rather than assumed
+
+The `IsRelPicOf` docstring above argues that dropping `sheaf_zero` and
+`sheaf_add` "costs nothing", because `inj` and `surj` pin `P` by Yoneda
+and its group law is then determined.  That argument is **carried out**
+here rather than left as prose: `zeroPoint` and `addPoint` are the
+determined operations, and `sheaf_zeroPoint` / `sheaf_addPoint` are the
+two identities `IsRelPicZeroOf` asks for as fields.  Both are PROVEN.
+
+They are obtained by choice from `surj`, and they are the CORRECT
+operations rather than arbitrary choices because `inj` makes the point
+they name unique — a fact a consumer needs and can prove on the spot,
+since `inj` is a field of the same structure.
+
+`addPoint` is where `isInvertibleSheaf_modTensorPic` is consumed: `surj`
+only classifies INVERTIBLE sheaves, so the tensor product of two
+classified sheaves has to be known invertible before it has a point.
+That is the whole reason that leaf is stated above. -/
+
+namespace IsRelPicOf
+
+variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
+
+/-- **The origin of `Pic`**: the point classifying `𝒪_{X_T}`. -/
+noncomputable def zeroPoint {T : Scheme.{u}} (g : T ⟶ S) : RelPoint pstr g :=
+  (hP.surj (modUnit _) (isInvertibleSheaf_modUnit _)).choose
+
+/-- `zeroPoint` classifies the trivial class (PROVEN) — the `sheaf_zero`
+field of `IsRelPicZeroOf`, at the level of `Pic`. -/
+theorem sheaf_zeroPoint {T : Scheme.{u}} (g : T ⟶ S) :
+    RelPicEquiv strX g (hP.sheaf (hP.zeroPoint g)) (modUnit _) :=
+  (hP.surj (modUnit _) (isInvertibleSheaf_modUnit _)).choose_spec
+
+/-- **The group law of `Pic`**: the point classifying `L_p ⊗ L_q`. -/
+noncomputable def addPoint {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g) :
+    RelPoint pstr g :=
+  (hP.surj (modTensor (hP.sheaf p) (hP.sheaf q))
+    (isInvertibleSheaf_modTensorPic (hP.invertible p) (hP.invertible q))).choose
+
+/-- `addPoint` classifies the tensor product (PROVEN) — the `sheaf_add`
+field of `IsRelPicZeroOf`, at the level of `Pic`. -/
+theorem sheaf_addPoint {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g) :
+    RelPicEquiv strX g (hP.sheaf (hP.addPoint p q))
+      (modTensor (hP.sheaf p) (hP.sheaf q)) :=
+  (hP.surj (modTensor (hP.sheaf p) (hP.sheaf q))
+    (isInvertibleSheaf_modTensorPic (hP.invertible p) (hP.invertible q))).choose_spec
+
+end IsRelPicOf
 
 /-- **EXISTENCE OF THE RELATIVE PICARD SCHEME** — FGA exposé 232,
 Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (sorry node).
@@ -540,6 +982,22 @@ name the wrong gate.**
   **The check that refutes this note**: prove `RelPicEquiv` is an
   equivalence relation — which needs `L ⊗ pr^*𝒪 ≅ L`, an inverse for an
   invertible sheaf, and associativity — and the fppf/Zariski route opens.
+
+  **THAT CHECK WAS RUN 2026-07-28 AND THE NOTE IS HALF-REFUTED.**  The
+  grep is still accurate — there is no `MonoidalCategory` instance on
+  `SheafOfModules` — but the inference drawn from it was too strong on
+  two counts.  (i) `PresheafOfModules` DOES carry a full
+  `MonoidalCategory` instance, and sheafification is a functor whose
+  adjunction counit is an isomorphism on sheaves, so CONGRUENCE and the
+  RIGHT UNITOR are available with no new theory: `modTensorMapIso` and
+  `modTensorUnitRightIso` are proven above.  (ii) `RelPicEquiv` is now proven
+  reflexive, symmetric and transitive (`relPicEquiv_equivalence`) over
+  five named leaves, so this route IS open, in the precise sense the
+  note demanded — what is left is those five leaves, not an unbounded
+  theory.  The residue of the gate is genuinely "sheafification is
+  monoidal" (needed for the associator and the pullback/tensor
+  interchange), plus invertibility of a tensor product and existence of
+  inverses.
 * `Mathlib/AlgebraicGeometry/Group/Abelian.lean` is **not** abelian
   schemes: it is commutativity of a proper geometrically integral group
   scheme over a FIELD.  There is still no abelian-scheme theory in the
@@ -549,11 +1007,53 @@ name the wrong gate.**
   is EMPTY.  So the `Sym^d`/`Div^d` axis named on `exists_relPicZero`
   would have to STATE relative effective Cartier divisors before it could
   cut — see the axis inventory on `exists_relPicZero_of_isRelPicOf`. -/
-theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
+theorem exists_relPicOf_of_hasUniversallyTrivialPushforward {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S)) :
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g)) :
     ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) :=
   sorry
+
+/-- **EXISTENCE OF THE RELATIVE PICARD SCHEME** (PROVEN 2026-07-28 over
+`exists_relPicOf_of_hasUniversallyTrivialPushforward`, discharging both
+of that leaf's two extra hypotheses).
+
+What this two-line proof buys, and why the extra hypotheses are not
+ceremony:
+
+* **`_hpush` is discharged outright.**  `f_*𝒪_X = 𝒪_S` universally is
+  `AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth`
+  in `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, whose
+  three instance hypotheses are exactly the three geometric hypotheses
+  here (`Smooth strX` from `SmoothOfRelativeDimension.smooth`).  A
+  previous note in this file identified it and deliberately left the
+  import unadded because nothing consumed it; this declaration is the
+  consumer, and `public import
+  Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward` is now in the
+  header.  It carries no direct `sorry`, though it is transitively
+  sorried through that file's own two leaves
+  (`finiteType_appTop_of_isProper`,
+  `surjective_quotientMap_appTop_of_isIso_appTop_fiber`) — which belong
+  to that file's owner, not to this one.
+* **`_hequiv` is discharged over five named leaves** by
+  `relPicEquiv_equivalence`.  This is not ceremony either: without it
+  `IsRelPicOf` is not merely hard to satisfy, it is not obviously
+  SATISFIABLE at all, since `surj` produces a classifying point and
+  `inj` demands it be unique, and uniqueness of a representative is
+  exactly what symmetry and transitivity supply.  A prover of the leaf
+  who did not have `_hequiv` would have to prove it first. -/
+theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) := by
+  haveI := hproper
+  haveI := hsmooth
+  haveI := hconn
+  haveI : Smooth strX := SmoothOfRelativeDimension.smooth (n := 1) (f := strX)
+  exact exists_relPicOf_of_hasUniversallyTrivialPushforward strX hproper hsmooth hconn o
+    (AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth strX)
+    (fun g => relPicEquiv_equivalence strX g)
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** —
 Bosch–Lütkebohmert–Raynaud, *Néron Models*, 9.4/4 (sorry node).
@@ -645,14 +1145,72 @@ that an irreducibility verdict is only as wide as the axis searched):
 
 Everything above is gated on the same thing as `exists_relPicFull`: the
 missing monoidal structure on `SheafOfModules`.  See that leaf's ROUTE
-AUDIT for the grep that establishes it and the check that refutes it. -/
-theorem exists_relPicZero_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+AUDIT for the grep that establishes it and the check that refutes it.
+
+**Amended 2026-07-28**: the last paragraph is now only half true.  The
+gate on `SheafOfModules` has been split into the five named leaves in
+the tensor-calculus section, one of which
+(`modTensorUnitRightIso`, the right unitor) turned out to be available at
+this pin and is PROVEN.  What remains gated is the associator and the
+pullback/tensor interchange — both instances of "sheafification is
+monoidal" — plus invertibility of a tensor product and the existence of
+inverses. -/
+theorem exists_relPicZeroOf_of_relPicGroupLaw {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
-    (_hP : IsRelPicOf strX pstr) :
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (_hzero : ∀ {T : Scheme.{u}} (g : T ⟶ S),
+      RelPicEquiv strX g (hP.sheaf (hP.zeroPoint g)) (modUnit _))
+    (_hadd : ∀ {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g),
+      RelPicEquiv strX g (hP.sheaf (hP.addPoint p q))
+        (modTensor (hP.sheaf p) (hP.sheaf q))) :
     ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
       Nonempty (IsRelPicZeroOf strX ab o) :=
   sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** (PROVEN 2026-07-28 over
+`exists_relPicZeroOf_of_relPicGroupLaw`, discharging all four of that
+leaf's extra hypotheses).
+
+The four discharged inputs are the ones BLR 9.4/4 spends its first page
+setting up, and none of them is ceremony:
+
+* `_hpush` — `f_*𝒪_X = 𝒪_S` universally, from
+  `hasUniversallyTrivialPushforward_of_isProper_of_smooth`; see
+  `exists_relPicFull`.
+* `_hequiv` — `RelPicEquiv` is an equivalence relation, from
+  `relPicEquiv_equivalence`.  Needed here for the same reason as there,
+  and additionally because every field of `IsRelPicZeroOf` is a
+  `RelPicEquiv` statement that has to be CHAINED with others.
+* `_hzero`, `_hadd` — the group law on the points of `Pic`, derived from
+  `_hP` by `IsRelPicOf.zeroPoint` / `addPoint` and their specs.  This is
+  the concrete content of the `IsRelPicOf` docstring's claim that
+  dropping `sheaf_zero` and `sheaf_add` "costs nothing because the group
+  law is determined rather than assumed": it is determined, and here it
+  is, so what remains of BLR 9.4/4 is the GEOMETRY — smoothness and
+  separatedness of `Pic ⟶ S`, cutting out the identity component,
+  properness of `Pic⁰`, and the `𝒪(D)` dictionary for `aj` — with the
+  functor-of-points bookkeeping already done.
+
+What the remaining leaf still owes is therefore strictly the geometric
+half, and it now has the algebraic half in hand. -/
+theorem exists_relPicZero_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
+      Nonempty (IsRelPicZeroOf strX ab o) := by
+  haveI := hproper
+  haveI := hsmooth
+  haveI := hconn
+  haveI : Smooth strX := SmoothOfRelativeDimension.smooth (n := 1) (f := strX)
+  exact exists_relPicZeroOf_of_relPicGroupLaw hproper hsmooth hconn o hP
+    (AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth strX)
+    (fun g => relPicEquiv_equivalence strX g)
+    (fun g => hP.sheaf_zeroPoint g)
+    (fun p q => hP.sheaf_addPoint p q)
 
 /-- **GROTHENDIECK REPRESENTABILITY: `Pic⁰_{X/S}` is an abelian scheme,
 for a smooth proper geometrically connected curve with a section, over an
