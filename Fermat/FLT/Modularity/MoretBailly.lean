@@ -80,6 +80,11 @@ elaborate against this list unchanged.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- The abelian-group-theory content of `exists_torsionParam_of_divisible` below:
+-- a coherent system of bases of the `n`-torsion, via Kőnig's lemma.  Split out
+-- because it is pure group theory, shares nothing with this module, and this
+-- module is already 38k lines (the file is the unit of elaboration).
+public import Fermat.FLT.Modularity.DivisibleTorsionParam
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
 -- Hecke algebras).  It is imported HERE, and only here, because
@@ -36200,31 +36205,41 @@ instance realTestCurve_isElliptic (ε : Bool) : (realTestCurve.{u} ε).IsEllipti
   apply_fun ULift.down at h
   cases ε <;> simp at h
 
-/-- **THE STRUCTURE OF THE TORSION** (sorry leaf, cut 2026-07-27 out of
-`exists_realWeierstrassCurveWithConjTorsion`): an abelian group that is DIVISIBLE
-and whose `n`-torsion has exactly `n²` elements for every `n ≥ 1` has torsion
+/-- **THE STRUCTURE OF THE TORSION** (PROVEN 2026-07-28; formerly a sorry leaf,
+cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`): an abelian
+group whose `n`-torsion has exactly `n²` elements for every `n ≥ 1` has torsion
 subgroup `(ℚ/ℤ)²`.
 
 No elliptic curve, no field, nothing archimedean: this is a statement of pure
 abelian group theory, and it is where the "`E[n] ≅ (ℤ/n)²` for all `n`, coherently
-in `n`" content of the node lives.
+in `n`" content of the node lives.  The proof is
+`DivisibleTorsion.exists_torsionParam`, in
+`Fermat/FLT/Modularity/DivisibleTorsionParam.lean`; that module's header documents
+the argument in full.  It is split out because it shares nothing with this file
+and this file is already 38k lines.
 
-CLASSICALLY: a divisible torsion abelian group is a direct sum of Prüfer groups
-`ℤ(p^∞)` (Kaplansky, *Infinite Abelian Groups*, Thm. 4; or Fuchs I §23), and
-`#A[p] = p²` says there are exactly two summands at each prime `p`, so
-`A_tors ≅ ⊕_p (ℤ(p^∞))² ≅ (ℚ/ℤ)²`.  An equivalent route that avoids the general
-classification, and is probably the cheaper one in Lean: choose a COMPATIBLE
-system of bases `(P_n, Q_n)` of `A[n]` with `[m] P_{nm} = P_n` — the inverse
-system of bases is an inverse system of NONEMPTY FINITE sets over the divisibility
-order, so it has a section by
-`nonempty_sections_of_finite_cofiltered_system` (Mathlib,
-`CategoryTheory/CofilteredSystem.lean`) — and set `θ (a/n, b/n) = a P_n + b Q_n`.
-Divisibility is what makes each transition map `A[nm] → A[n]` surjective, hence
-each fibre nonempty.
+**`hdiv` IS NOT USED, and the binder is underscored to say so mechanically.**
+The old docstring here recorded, as the reason divisibility is a hypothesis,
+that "divisibility is what makes each transition map `A[nm] → A[n]` surjective,
+hence each fibre nonempty".  That describes a DIFFERENT proof — the one that
+builds the coherent system by recursion out of surjective transition maps — and
+it is not the one used.  Kőnig's lemma for inverse systems
+(`exists_seq_forall_proj_of_forall_finite`) asks for fibres that are FINITE and
+levels that are NONEMPTY, not for surjective transitions, and both of those come
+from `hcard` alone: nonemptiness is `group_theory_lemma`
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, already proven for an abstract
+`AddCommGroup`), finiteness is `#A[n] = n² > 0`.
 
-The inputs are exactly what the elliptic-curve side already PROVES: divisibility
-is `TorsionCard.smul_surjective` and the count is
-`WeierstrassCurve.n_torsion_card`.
+That is not a technicality of the proof: the statement is TRUE without `hdiv`.
+`P = (ℚ/ℤ)² ⊕ ℤ` satisfies `hcard`, is not divisible, and has torsion subgroup
+`(ℚ/ℤ)²`.  The hypothesis is retained only because the consumer
+`exists_conj_realConjAdd` already holds it (`TorsionCard.smul_surjective`) and
+passes it positionally; removing it would be a gratuitous restatement.
+
+Incidentally, the classification route the old docstring gave as the primary one
+— a divisible torsion abelian group is a direct sum of Prüfer groups (Kaplansky,
+*Infinite Abelian Groups*, Thm. 4; Fuchs I §23) — is not needed either, and is
+not in mathlib.  Only the coherent-bases route was used.
 
 FAITHFULNESS: `θ` is asked to be additive, injective, TORSION-VALUED and to hit
 every `n`-torsion element, so it is an isomorphism `(ℚ/ℤ)² ≅ A_tors` and not
@@ -36232,14 +36247,14 @@ merely some injection.  The third clause (image is torsion) is not redundant wit
 the fourth: it is what lets a consumer transport an endomorphism of `A` back along
 `θ` without first proving `ℚ/ℤ` is a torsion group. -/
 theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
-    (hdiv : ∀ n : ℕ, n ≠ 0 → ∀ y : P, ∃ x : P, (n : ℤ) • x = y)
+    (_hdiv : ∀ n : ℕ, n ≠ 0 → ∀ y : P, ∃ x : P, (n : ℤ) • x = y)
     (hcard : ∀ n : ℕ, n ≠ 0 → Nat.card {x : P // (n : ℤ) • x = 0} = n ^ 2) :
     ∃ θ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) → P,
       (∀ v w, θ (v + w) = θ v + θ w) ∧
       Function.Injective θ ∧
       (∀ v, ∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • θ v = 0) ∧
       (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
-  sorry
+  DivisibleTorsion.exists_torsionParam hcard
 
 /-- **THE ADAPTED FRAME OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
 `exists_conj_realConjAdd`, itself cut the same day out of
@@ -37307,8 +37322,12 @@ THE CHEAP ROUTE WAS TAKEN, AND IT WORKED (2026-07-27). The Weierstrass
 uniformisation `E(ℂ) ≅ ℂ/Λ` is NOT in mathlib and building it is a large
 analytic project; **none of it was built**. The decomposition above replaces it
 by the two algebraic shadows described in the next two items, and the assembly
-below is real code. What remains open is `exists_torsionParam_of_divisible`
-(divisible torsion groups), `exists_conj_realConjAdd` (integral involutions),
+below is real code. `exists_torsionParam_of_divisible` (divisible torsion
+groups) is now PROVEN (2026-07-28), out of
+`Fermat/FLT/Modularity/DivisibleTorsionParam.lean`, and needed no divisibility
+and no Prüfer classification — see its own docstring. What remained open when
+this list was written was, besides it, `exists_conj_realConjAdd` (integral
+involutions),
 `exists_torsion_conj_ne` (the Weil pairing over `ULift ℝ`) and
 `card_fixed_twoTorsion_realTestCurve` (the root count) — see their own
 docstrings. The two items below are the audit that produced that cut:
