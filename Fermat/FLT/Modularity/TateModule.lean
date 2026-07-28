@@ -2448,9 +2448,27 @@ hypotheses, both statements about the point group alone:
   every `N ≠ 0`.  For an abelian variety this is surjectivity of `[N]`,
   which is PROVEN (`exists_comp_mulByNat_eq`);
 * `hprin` — the count `#P[(a)] = #(𝒪_D/(a))²` at every nonzero PRINCIPAL
-  ideal.  For an abelian variety this is the classical
-  `deg[a] = N_{D/ℚ}(a)²`, and it is the single geometric leaf of the
-  whole cluster (`card_torsion_span_singleton_of_isAlgClosed`).
+  ideal **THAT IS A POWER OF `J`**.  For an abelian variety this is the
+  classical `deg[a] = N_{D/ℚ}(a)²`, and it is the single geometric leaf
+  of the whole cluster (`card_torsion_span_singleton_of_isAlgClosed`
+  over an algebraically closed base, `card_torsion_span_singleton_of_field`
+  over an arbitrary one).
+
+  **WHY `hprin` IS RESTRICTED TO POWERS OF `J`, and it costs the
+  characteristic-zero consumer nothing** (weakened 2026-07-28).  The
+  proof below spends `hprin` EXACTLY ONCE, at the generator `a` of
+  `J ^ h` produced from the class group in step 2, so the restriction is
+  free here.  It is what makes the statement usable over a FINITE base,
+  where the unrestricted form is **FALSE**: at `a = p = char k` with a
+  supersingular fibre `#P[(p)] = p^r` with `r ≤ g`, against
+  `#(𝒪_D/(p))² = p^(2g)`.  Restricted to powers of a `J` of residue
+  characteristic prime to `#k`, `N(J ^ n) = N(J)^n` is prime to `#k` and
+  the count is available from `card_torsion_span_singleton_of_field`;
+  that is exactly how `card_torsion_of_isMaximal_finiteBase` discharges
+  it, and it is why that theorem needs no parity and no nonvanishing
+  input.  The characteristic-zero consumer
+  `card_torsion_isMaximal_of_isAlgClosed` holds the STRONGER unrestricted
+  form and simply ignores the two extra arguments.
 
 THE ARGUMENT.  Let `J` be maximal.  The class group of `𝒪_D` is FINITE,
 so `J^h = (a)` is principal with `a ≠ 0`, where `h` is the order of the
@@ -2491,11 +2509,11 @@ theorem card_tors_eq_sq_of_principal
     {D : Type*} [Field D] [NumberField D]
     {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
     (hdiv : ∀ N : ℕ, N ≠ 0 → ∀ y : P, ∃ w : P, N • w = y)
-    (hprin : ∀ a : 𝓞 D, a ≠ 0 →
+    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥)
+    (hprin : ∀ (n : ℕ) (a : 𝓞 D), a ≠ 0 → Ideal.span {a} = J ^ n →
       Nat.card (Submodule.torsionBySet (𝓞 D) P
           ((Ideal.span {a} : Ideal (𝓞 D)) : Set (𝓞 D)))
-        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2)
-    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥) :
+        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2) :
     Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
       = Nat.card (𝓞 D ⧸ J) ^ 2 := by
   classical
@@ -2594,7 +2612,7 @@ theorem card_tors_eq_sq_of_principal
   -- ### 4. the count at `J ^ h`, read off the principal-ideal input
   have hcardh : Nat.card (Submodule.torsionBySet (𝓞 D) P
       ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D))) = Nat.card (𝓞 D ⧸ J) ^ (2 * h) := by
-    have h1 := hprin a ha0
+    have h1 := hprin h a ha0 ha'.symm
     rw [← ha'] at h1
     rw [h1, card_quotient_pow, ← pow_mul, Nat.mul_comm]
   -- ### 5. the residual rank, and the same count from the tower
@@ -3272,9 +3290,8 @@ its `finrank` carries no information.
 below — `card_torsion_span_singleton_of_isAlgClosed`,
 `card_torsion_isMaximal_of_isAlgClosed`, `exists_bettiFrame`, the whole
 char-`0` cluster, and now the finite-base cluster
-(`card_torsion_span_singleton_of_field`,
-`card_torsion_span_natCast_finiteBase`,
-`card_torsion_ne_one_of_isMaximal_finiteBase`) — is proven over THIS
+(`card_torsion_span_singleton_of_field`, and over it
+`card_torsion_of_isMaximal_finiteBase`) — is proven over THIS
 statement.  The honest inputs are all OUTSIDE this file: the theorem of
 the cube, singular/étale homology, or the rational Tate module. -/
 theorem finrank_mulByElt_of_field {X : Scheme.{u}} {K : Type u} [Field K]
@@ -3630,8 +3647,8 @@ theorem card_torsion_isMaximal_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Fie
       ∀ y : RelPoint fK (𝟙 (Spec (CommRingCat.of K))), ∃ w, N • w = y := fun N hN y =>
     abK.exists_nsmul_of_exists_comp N y (exists_comp_mulByNat_eq abK N hN y.1)
   exact LevelFrame.card_tors_eq_sq_of_principal
-    (D := D) (P := RelPoint fK (𝟙 (Spec (CommRingCat.of K)))) hdiv
-    (fun a ha => card_torsion_span_singleton_of_isAlgClosed m hdim a ha) J hJ hJ0
+    (D := D) (P := RelPoint fK (𝟙 (Spec (CommRingCat.of K)))) hdiv J hJ hJ0
+    (fun _ a ha _ => card_torsion_span_singleton_of_isAlgClosed m hdim a ha)
 
 end FibreReduction
 
@@ -14281,8 +14298,12 @@ theorem exists_frobLevelMatrix_of_levelTateFrame
 
 `exists_levelTateFrame_finiteBase` below is **PROVEN (2026-07-28)** by
 the same assembly that proves `exists_levelTateFrame` in characteristic
-zero, over the three geometric leaves stated in this subsection.  What
-follows records the cut and why it is the right one.
+zero, and — since the rewiring of 2026-07-28 recorded at the end of this
+note — over the SAME single geometric statement as the characteristic-zero
+cluster, namely the count at PRINCIPAL levels
+(`card_torsion_span_singleton_of_field`, itself proven over the degree
+leaf `finrank_mulByElt_of_field`).  What follows records the cut, the
+three-input cut it replaced, and why the replacement is the right one.
 
 **WHAT WAS REUSED, VERBATIM.**  Everything about a single-level frame
 that is *module theory over `𝒪_D`* is base-independent, and all of it
@@ -14300,18 +14321,27 @@ is already proven above:
   inseparability costs nothing for surjectivity on `k̄`-points).  It was
   generalized to a bare `[Field F]` base on 2026-07-26 and therefore
   applies here with `F = k` and `x = 𝟙` with no change at all.
-* `LevelFrame.card_tors_eq_sq` — the arithmetic bridge from the count at
-  a rational prime, plus parity and nonvanishing at each maximal ideal
-  above it, to the residual count at a single maximal ideal.
+* `LevelFrame.card_tors_eq_sq_of_principal` — the arithmetic bridge from
+  the count at the principal powers of a single maximal ideal `J`, plus
+  divisibility of the point group, to the residual count at `J`.  It is
+  what the finite-base cluster now calls.  Its sibling
+  `LevelFrame.card_tors_eq_sq` — the bridge from the count at a rational
+  prime, plus parity and nonvanishing at each maximal ideal above it — is
+  what it called until 2026-07-28, and is still what the char-`0`
+  `card_torsion_of_isMaximal` calls.
 
-**SO THE WHOLE CHARACTERISTIC-`p` CONTENT IS THE THREE INPUTS OF
-`card_tors_eq_sq`**, and that is exactly the cut made here.  In
+**THE CUT THAT WAS MADE FIRST, AND WHY IT WAS REPLACED.**  The original
+finite-base cut took the THREE INPUTS OF `card_tors_eq_sq`.  In
 characteristic zero those three are
 `card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal` and
 `card_torsion_ne_one_of_isMaximal`, all three proven from the single
-Betti leaf `exists_bettiFrame`.  **That shortcut is unavailable here** —
-there is no `H₁(A_x, ℤ)` over a finite field — so the three finite-base
-analogues below are stated separately and are genuinely independent.
+Betti leaf `exists_bettiFrame`; **that shortcut is unavailable here** —
+there is no `H₁(A_x, ℤ)` over a finite field — so three finite-base
+analogues were stated separately and were genuinely independent.  Two of
+them were proven; the third, PARITY, rested on the existence of an
+`𝒪_D`-linear polarization over a finite base and its Weil pairing, which
+is a whole geometric theory.  All three were deleted on 2026-07-28 when
+the principal-ideal bridge made them unnecessary — see the update below.
 
 **WHY A LATTICE-SHAPED SINGLE LEAF WAS NOT USED** (recorded because it
 is the obvious thing to try, and it is circular).  The tempting move is
@@ -14325,45 +14355,54 @@ the theorem.  In characteristic zero the analogous object is not circular
 only because `H₁(A_x, ℤ)` exists independently, as singular homology.  So
 the honest cut here is the three-input one.
 
-**WHERE THE PRIME-TO-`p` HYPOTHESIS IS AND IS NOT NEEDED.**  It is
-carried by all three leaves, but it is load-bearing in different degrees:
-`card_torsion_span_natCast_finiteBase` is FALSE at `M = p` (the count is
-`p^(rn)` with `r ≤ g` the `p`-rank, and `1` in the supersingular case);
-`card_torsion_ne_one_of_isMaximal_finiteBase` is FALSE at a maximal ideal
-over `p` for a supersingular fibre; parity is probably true at `p` as
-well (`r = 0` is even), and its hypothesis is kept only so that the three
-leaves have one common shape and one common owner.
+**WHERE THE PRIME-TO-`p` HYPOTHESIS IS NEEDED, AND IT SURVIVES THE
+REWIRING.**  `hqN` is spent in exactly one place now: converting
+`q ∤ #k` into `(N(a) : k) ≠ 0` for the principal levels `(a) = J ^ n`,
+which is `formallyUnramified_mulByElt_of_field`'s hypothesis and what
+makes `[a]` étale rather than merely finite flat.  Dropping it makes the
+count FALSE — at `a = p = char k` with a supersingular fibre
+`#A'[(p)] = p^r` with `r ≤ g`, against `#(𝒪_D/(p))² = p^(2g)`.
 
-**UPDATE 2026-07-28 — TWO OF THE THREE ARE NOW PROVEN, AND THE CUT ABOVE
-IS SUPERSEDED FOR THEM.**  `card_torsion_span_natCast_finiteBase` and
-`card_torsion_ne_one_of_isMaximal_finiteBase` are both proven below over
-the SINGLE bridge `card_torsion_span_singleton_of_field`, which is itself
-proven over the degree leaf `finrank_mulByElt_of_field` — the
-characteristic-free generalization of `finrank_mulByElt_of_isAlgClosed`,
-and the only geometric statement left in the chain.  Nothing recorded
-above was wrong; what changed is that the char-`0` cluster had meanwhile
-been re-cut from a POINT COUNT to a DEGREE, and a degree identity does
-not care about the characteristic.  So the "shortcut unavailable here"
-paragraph applies to `exists_bettiFrame` and to nothing else — the route
-that replaced it is characteristic-free, and the separability that
-genuinely needs `M` prime to `p` shows up exactly once, as
-`formallyUnramified_mulByElt_of_field`'s hypothesis `(N : k) ≠ 0`.
+**UPDATE 2026-07-28 — THE THREE-INPUT CUT IS SUPERSEDED AND ITS THREE
+LEAVES ARE DELETED.**  `card_torsion_span_singleton_of_field` gives the
+count at a principal level over an ARBITRARY field base, proven over the
+degree leaf `finrank_mulByElt_of_field` — the characteristic-free
+generalization of `finrank_mulByElt_of_isAlgClosed`, and the only
+geometric statement left in the chain.  Nothing recorded above was wrong;
+what changed is that the char-`0` cluster had meanwhile been re-cut from
+a POINT COUNT to a DEGREE, and a degree identity does not care about the
+characteristic.  So the "shortcut unavailable here" paragraph applies to
+`exists_bettiFrame` and to nothing else.
 
-Two consequences a successor should act on, NEITHER of them taken here:
+`LevelFrame.card_tors_eq_sq_of_principal` therefore reaches
+`card_torsion_of_isMaximal_finiteBase` by itself, exactly as
+`card_torsion_isMaximal_of_isAlgClosed` does in characteristic zero, and
+that is now what the theorem below calls.  The ONE obstruction was that
+its `hprin` demanded the count at EVERY nonzero principal ideal, which
+over a finite field is false by the supersingular counterexample above;
+it spends `hprin` exactly ONCE, at the class-group generator of `J ^ h`,
+so `hprin` was weakened to powers of `J` — free for the char-`0`
+consumer, and dischargeable here because `N(J ^ n) = N(J)^n` divides
+`q^(gn)`.  Deleted as free-floating in the same commit:
+`card_torsion_span_natCast_finiteBase`,
+`card_torsion_ne_one_of_isMaximal_finiteBase` (both proven),
+`even_dim_torsion_of_isMaximal_finiteBase` (proven over the next), and
+the OPEN geometric leaf `exists_polarizationStruct_finiteBase` — the
+existence of an `𝒪_D`-linear polarization over a finite base with
+nondegenerate induced pairing at `J`.  **A successor who needs a
+polarization over a finite base must state that existence itself; it is
+no longer in this file.**  CHECKED 2026-07-28: nobody does today.  The
+one remaining Weil-pairing leaf over a finite base,
+`exists_levelWeilPairing_finiteBase`, asks for an `𝒪_D/Iⁿ`-VALUED
+pairing and its own docstring records that `PolarizationStruct` "is not
+directly the statement here"; and
+`det_frobLevelMatrix_eq_natCast_finiteBase`, which an earlier note
+predicted would cite the deleted leaf, is PROVEN over that one instead.
 
-* the parity leaf `even_dim_torsion_of_isMaximal_finiteBase` is no
-  longer NEEDED by this cluster.  With the count at every prime-to-`p`
-  PRINCIPAL ideal available, `LevelFrame.card_tors_eq_sq_of_principal`
-  reaches `card_torsion_of_isMaximal_finiteBase` by itself, exactly as
-  `card_torsion_isMaximal_of_isAlgClosed` does in characteristic zero —
-  the three-input assembly `LevelFrame.card_tors_eq_sq` is no longer the
-  right one to call.  It is left standing, with its own owner, because
-  rewiring the consumer is a cut-level decision and not this owner's to
-  take;
-* the lattice-shaped single leaf refuted just below is still refuted for
-  the route it names, and is now moot for a second reason: the honest
-  cut turned out to be neither three-input nor lattice-shaped but the
-  DEGREE. -/
+The lattice-shaped single leaf refuted just below is still refuted for
+the route it names, and is now moot for a second reason: the honest cut
+turned out to be neither three-input nor lattice-shaped but the
+DEGREE. -/
 
 /-- **A NATURAL NUMBER PRIME TO `#k` IS INVERTIBLE IN `k`** (PROVEN
 2026-07-28).  The one arithmetic step that turns the coprimality
@@ -14498,78 +14537,6 @@ theorem card_torsion_span_singleton_of_field {k : Type u} [Field k]
   exact card_fibrePt_eq_of_finrank_eq (m'.mulByElt a) _
     (fun y => finrank_mulByElt_of_field m' hdim' a ha y) (g ≫ ab'.zeroSection)
 
-open _root_.NumberField in
-/-- **`#A'[M] = M^(2g)` AT A LEVEL PRIME TO THE CHARACTERISTIC**
-(**PROVEN 2026-07-28** over `card_torsion_span_singleton_of_field`
-immediately above, hence over the single degree leaf
-`finrank_mulByElt_of_field`; Mumford *Abelian Varieties* §6, Milne
-*Abelian Varieties* §I.7,
-Silverman *AEC* III.6 for the elliptic case).
-
-For `k` finite with `N` elements and `M` a nonzero natural number
-COPRIME TO `N`, the `M`-torsion of the geometric fibre has exactly
-`M^(2g)` points, `g = [D : ℚ]` being the relative dimension (`hdim'`).
-
-Classically: `[M]` is an isogeny of degree `M^(2g)`, and it is SEPARABLE
-— indeed étale — exactly when `M` is prime to the characteristic, so its
-kernel is a reduced group scheme of rank `M^(2g)` and has `M^(2g)`
-geometric points.  This is the finite-base counterpart of
-`card_torsion_span_natCast`, and it is the ONLY one of the three leaves
-of this subsection whose statement is about a rational integer rather
-than about a maximal ideal of `𝒪_D`.
-
-**THE COPRIMALITY IS NOT DECORATION.**  At `M = p = char k` the statement
-is false: `#A'[pⁿ](k̄) = p^(rn)` with `r ≤ g` the `p`-rank of the fibre,
-and `r = 0` — so `A'[pⁿ](k̄) = 0` — precisely in the supersingular case.
-`hfin` and `hN` are what give `Nat.Coprime M N` its meaning: `N = #k` is
-a power of `char k`, so coprimality to `N` says exactly `char k ∤ M`.
-
-WHAT THE PROOF DOES.  `(M)`-torsion IS `M`-torsion, so this is
-`card_torsion_span_singleton_of_field` at `a = (M : 𝒪_D)`, plus the two
-arithmetic identities `#(𝒪_D/(M)) = N(M) = M^g`
-(`Ideal.absNorm_span_natCast` with `NumberField.RingOfIntegers.rank`) and
-`(M^g)² = M^(2g)`.  The coprimality is consumed exactly once, through
-`natCast_ne_zero_of_coprime_natCard`, to say `(M^g : k) ≠ 0` — i.e. that
-`[M]` is étale and not merely finite flat.
-
-The old MISSING-MACHINERY note here — "the DEGREE of a finite locally
-free morphism and the ÉTALENESS of `[M]`" — is retired: étaleness is
-`Mult.formallyUnramified_mulByElt_of_field` (PROVEN, from the
-factorisation `[N] = [a] ≫ [b]`), and the degree is what the single
-remaining leaf `finrank_mulByElt_of_field` states.  The real
-multiplication is indeed not used, and a successor may still freely
-restate this over `ab'` alone. -/
-theorem card_torsion_span_natCast_finiteBase
-    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
-    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
-    (ab' : AbelianSchemeStruct f')
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m' : Mult ab' (NumberField.RingOfIntegers D))
-    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
-    (M : ℕ) (hM : M ≠ 0) (hMN : Nat.Coprime M N) :
-    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k)))
-        (Ideal.span {(M : NumberField.RingOfIntegers D)})).1
-      = M ^ (2 * Module.finrank ℚ D) := by
-  haveI := hfin
-  have hM0 : ((M : ℕ) : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hM
-  have hMk : ((M : ℕ) : k) ≠ 0 :=
-    natCast_ne_zero_of_coprime_natCard (by rw [hN]; exact hMN)
-  have hnorm : Ideal.absNorm (Ideal.span {((M : ℕ) : 𝓞 D)} : Ideal (𝓞 D))
-      = M ^ Module.finrank ℚ D := by
-    rw [Ideal.absNorm_span_natCast, NumberField.RingOfIntegers.rank]
-  have hchar : ((Ideal.absNorm (Ideal.span {((M : ℕ) : 𝓞 D)} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0 := by
-    rw [hnorm]
-    push_cast
-    exact pow_ne_zero _ hMk
-  rw [card_torsion_span_singleton_of_field m' hdim' _ hM0 hchar]
-  have hq : Nat.card (𝓞 D ⧸ (Ideal.span {((M : ℕ) : 𝓞 D)} : Ideal (𝓞 D)))
-      = M ^ Module.finrank ℚ D := by
-    rw [show Nat.card (𝓞 D ⧸ (Ideal.span {((M : ℕ) : 𝓞 D)} : Ideal (𝓞 D)))
-        = Ideal.absNorm (Ideal.span {((M : ℕ) : 𝓞 D)} : Ideal (𝓞 D)) by
-      simp [Ideal.absNorm_apply, Submodule.cardQuot_apply]]
-    exact hnorm
-  rw [hq, ← pow_mul, Nat.mul_comm]
-
 /-- **A MULTIPLICATIVE PAIRING THAT IS ALTERNATING, ADJOINT AND
 NONDEGENERATE UPGRADES TO AN ALTERNATING NONDEGENERATE `κ`-BILINEAR
 FORM** (**PROVEN 2026-07-28** — SCHEME-FREE LINEAR ALGEBRA over a finite
@@ -14577,12 +14544,26 @@ field; Mumford *Abelian Varieties* §20, Milne *Abelian Varieties* §I.13,
 where this is the passage from the `μ_q`-valued Weil pairing to the
 `𝒪_D/J`-valued one).
 
-This is the algebraic half of `even_dim_torsion_of_isMaximal_finiteBase`
-below and it mentions no scheme, no abelian variety and no number field:
-it is a statement about a finite `κ`-vector space `V` carrying a pairing
-into a cyclic group `μ` of exponent dividing `q = char κ`.  It is
-deliberately stated in the MULTIPLICATIVE vocabulary of
-`DualStruct.weil`, so that the consumer below has nothing to translate.
+It mentions no scheme, no abelian variety and no number field: it is a
+statement about a finite `κ`-vector space `V` carrying a pairing into a
+cyclic group `μ` of exponent dividing `q = char κ`.  It is deliberately
+stated in the MULTIPLICATIVE vocabulary of `DualStruct.weil`, so that a
+Weil-pairing consumer has nothing to translate.
+
+**CURRENTLY UNCONSUMED (2026-07-28), AND DELIBERATELY KEPT.**  It was the
+algebraic half of `even_dim_torsion_of_isMaximal_finiteBase`, which was
+deleted that day when `card_torsion_of_isMaximal_finiteBase` was rewired
+onto `LevelFrame.card_tors_eq_sq_of_principal` and stopped needing a
+parity input at all (see the subsection note above).  Nothing in this
+file calls it now, and the same is true of the two symplectic lemmas it
+feeds, `exists_card_eq_pow_two_mul_of_isAlt_nondegenerate` and
+`even_finrank_of_isAlt_nondegenerate`.  They are kept rather than deleted
+because they are generic, scheme-free, and are the natural bridge from a
+`μ`-valued Weil pairing to a residue-field one — which is what the one
+remaining finite-base pairing leaf, `exists_levelWeilPairing_finiteBase`,
+will have to cross, though at level `Iⁿ` rather than at `J`.  **They are
+UNCONSUMED as of 2026-07-28 and a free-floating sweep will flag them.  If
+that leaf closes without them, delete all three.**
 
 THE ARGUMENT, in four steps — this is the proof written below, with the
 step numbers of the docstring matching the `### n` comments of the body.
@@ -14781,441 +14762,51 @@ theorem exists_isAlt_nondegenerate_of_adjointPairing
     rw [hBskew, show Bf y z = 0 from hz y, neg_zero]
 
 open _root_.NumberField in
-/-- **AN `𝒪_D`-LINEAR POLARIZATION EXISTS OVER A FINITE BASE, AND ITS
-INDUCED PAIRING IS NONDEGENERATE AT `J`** (sorry leaf — the GEOMETRIC
-half of `even_dim_torsion_of_isMaximal_finiteBase` below; Mumford
-*Abelian Varieties* §13, §16, §23, Milne *Abelian Varieties* §I.10–13).
-
-This is the gap that the characteristic-zero sibling
-`even_dim_torsion_of_isMaximal` dodged through `exists_bettiFrame`, and
-it is the one named in that leaf's own docstring: nothing in
-`Modularity/AbelianScheme.lean` asserts that a `DualStruct` or a
-`PolarizationStruct` EXISTS for a given `ab`/`m`.  Everything the
-`PolarizationStruct` namespace proves — `pairing_add_left`,
-`pairing_add_right`, `pairing_self`, `pairing_act`,
-`pairing_nondegenerate` — is a consequence of the axioms, so this
-existence statement is the whole geometric content of the parity leaf.
-
-THE CLASSICAL FACTS BEHIND IT.  An abelian variety over any field
-carries a dual `A^∨ = Pic⁰(A)` with its canonical Weil pairing
-`A[I] × A^∨[I] ⟶ μ_n` (that is `DualStruct`), and it admits a
-polarization `λ : A ⟶ A^∨` — over a finite field one may take the one
-attached to an ample line bundle.  `DualStruct.weil_act`, the
-`R`-adjointness, is the statement that the Rosati involution is the
-identity on `𝒪_D`; for `D` TOTALLY REAL this is automatic, since the
-Rosati involution is positive and a totally real field admits no
-nontrivial positive involution.  That is where
-`NumberField.IsTotallyReal D` is used, and it is why the induced pairing
-is `𝒪_D`-bilinear rather than merely `ℤ`-bilinear.
-
-`J ∈ 𝒩` is nondegeneracy of the INDUCED pairing at level `J`, i.e.
-`ker λ ∩ A'[J] = 0`, i.e. `deg λ` prime to `J`.  The `𝒩`-guard on
-`PolarizationStruct` exists precisely so that this may be demanded at
-the levels one cares about without forcing a PRINCIPAL polarization,
-which a Hilbert–Blumenthal abelian variety need not admit; see that
-structure's docstring.  A producer may enlarge `deg λ` away from `J`
-freely, so a single level is never an obstruction.
-
-**THE PRIME-TO-`p` HYPOTHESIS `hqN` IS LOAD-BEARING HERE**, and this is
-where it is spent: at a maximal ideal over `p = char k` the polarized
-pairing on the — possibly trivial — `p`-torsion carries no nondegeneracy
-whatsoever.  The parity CONCLUSION of the consumer is probably true at
-`p` as well (`r = 0` is even); it is this intermediate statement that
-fails there.
-
-NOTE ON THE SIBLING SUBTREE.  `det_frobLevelMatrix_eq_natCast_finiteBase`
-wants Galois EQUIVARIANCE (`PolarizationStruct.pairing_gal`) from the
-same polarization, where this leaf wants alternation and nondegeneracy.
-They are expected to share exactly this existence statement and nothing
-else: whoever proves this leaf should state it once and let both
-consumers cite it. -/
-theorem exists_polarizationStruct_finiteBase
-    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
-    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
-    (ab' : AbelianSchemeStruct f')
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m' : Mult ab' (NumberField.RingOfIntegers D))
-    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
-    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
-    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
-    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
-    ∃ (d : DualStruct ab' m') (𝒩 : Set (Ideal (NumberField.RingOfIntegers D)))
-      (𝔞 : Ideal (NumberField.RingOfIntegers D)) (𝔞pos : Set (NumberField.RingOfIntegers D))
-      (_ : PolarizationStruct d 𝒩 𝔞 𝔞pos), J ∈ 𝒩 :=
-  sorry
-
-open _root_.NumberField in
-/-- **THE RESIDUAL RANK IS EVEN AT EVERY MAXIMAL IDEAL OF RESIDUE
-CHARACTERISTIC PRIME TO `#k`** (**PROVEN 2026-07-28** over the SINGLE new
-leaf `exists_polarizationStruct_finiteBase` — the geometric half; its
-algebraic half `exists_isAlt_nondegenerate_of_adjointPairing` is proven
-above; the Weil pairing attached to an `𝒪_D`-linear polarization;
-Mumford *Abelian Varieties* §16, §20, §23, Milne *Abelian Varieties*
-§I.13).
-
-`#A'[J] = #(𝒪_D/J)^(2r)` for some `r`.  This is the finite-base
-counterpart of `even_dim_torsion_of_isMaximal`, and — unlike that one —
-it CANNOT be routed through a homology lattice; see the subsection note.
-
-THE ARGUMENT.  An `𝒪_D`-linear polarization `λ : A' ⟶ A'^∨` induces,
-through the canonical Weil pairing on `A' × A'^∨`, an `𝒪_D`-bilinear
-ALTERNATING pairing on `A'[J]` — `PolarizationStruct.pairing` together
-with `pairing_add_left`, `pairing_add_right`, `pairing_self` and
-`pairing_act` in `Modularity/AbelianScheme.lean`, all PROVEN there from
-the axioms.  If it is moreover NONDEGENERATE, `A'[J]` is a symplectic
-vector space over the residue field `𝒪_D/J` and has even dimension; the
-mathlib gap that closes that last step is already filled here by
-`even_finrank_of_isAlt_nondegenerate` and
-`exists_card_eq_pow_two_mul_of_isAlt_nondegenerate` above, which
-`LevelFrame.card_tors_eq_sq` also consumes.
-
-**WHAT THE PROOF BELOW DOES, AND WHERE THE TWO RESIDUES SIT.**  The body
-is now written in full and consumes exactly three inputs, of which only
-ONE — the geometric one — is open:
-
-* `card_torsion_span_natCast_finiteBase` (the sibling leaf, separate
-  owner) — used ONLY to know that `A'[J]` is FINITE, through
-  `A'[J] ⊆ A'[q𝒪_D]` and `#A'[q𝒪_D] = q^(2g) ≠ 0`.  Nothing about the
-  VALUE of that count is used here, so this leaf does not inherit its
-  content;
-* `exists_polarizationStruct_finiteBase` — the geometric residue: that
-  an `𝒪_D`-linear polarization exists at all, nondegenerate at `J`.
-  This is the same gap the characteristic-zero sibling records, where it
-  was dodged via `exists_bettiFrame`;
-* `exists_isAlt_nondegenerate_of_adjointPairing` — PROVEN above: turning
-  the MULTIPLICATIVE `μ_q`-valued pairing supplied by
-  `PolarizationStruct.pairing` into an ADDITIVE `𝒪_D/J`-bilinear form.
-  That step is not bookkeeping: `pairing_act` gives ADJOINTNESS
-  (`⟨a·y, z⟩ = ⟨y, a·z⟩`), not `𝒪_D/J`-homogeneity, and the target
-  `μ_q` is not an `𝒪_D/J`-module at all, so the residue field has to be
-  brought in through the trace form of `κ / 𝔽_q`.
-
-The glue between them is the module theory: `A'[J]` is `torsionBySet` for
-`Mult.module`, hence a module over `𝒪_D/J` by mathlib's
-`Submodule.instModuleQuotient…`, and `𝒪_D/J` is a finite field because
-`J` is maximal and nonzero.
-
-**IS THIS LEAF STILL NEEDED?  CHECKED 2026-07-28, AND THE ANSWER IS YES
-AS THE TREE IS WIRED — but only by one hypothesis of one assembly.**
-`card_torsion_span_singleton_of_field` above now gives the count at a
-principal ideal over an ARBITRARY field base, which raises the obvious
-question of whether `LevelFrame.card_tors_eq_sq_of_principal` reaches
-`card_torsion_of_isMaximal_finiteBase` on its own, making parity and
-nonvanishing both unnecessary.  It does NOT, as those two are stated:
-that assembly's `hprin` demands the count at EVERY nonzero principal
-ideal, and over a finite field that is **FALSE** — take `a = p = char k`
-and a supersingular fibre, where `#A'[(p)] = p^r` with `r ≤ g` while
-`#(𝒪_D/(p))² = p^(2g)`.  That is the same counterexample
-`card_torsion_span_singleton_of_field`'s own docstring gives for dropping
-its `hchar`, and it is why that hypothesis is there.
-
-THE REPAIR, IF SOMEONE WANTS IT, AND THE CHECK THAT WOULD REFUTE THIS
-NOTE.  `card_tors_eq_sq_of_principal` uses `hprin` **exactly once**, at
-the generator `a` of `J ^ h` produced from the class group inside its own
-proof (`have h1 := hprin a ha0`, in the step commented "the count at
-`J ^ h`").  So weakening `hprin` to
-
-    ∀ (n : ℕ) (a : 𝒪_D), a ≠ 0 → Ideal.span {a} = J ^ n → …
-
-costs its characteristic-zero consumer
-`card_torsion_isMaximal_of_isAlgClosed` nothing (it holds the stronger
-form) and lets the finite-base consumer discharge it: `N(J ^ n)` is a
-power of `N(J)`, hence prime to `char k` whenever `J` is, which is
-`natCast_ne_zero_of_coprime_natCard` composed with
-`Ideal.absNorm_pow`.  Grep for `hprin` in this file to check the "exactly
-once" claim; it takes a second.
-
-If that repair lands, THIS LEAF AND ITS GEOMETRIC RESIDUE
-`exists_polarizationStruct_finiteBase` BECOME FREE-FLOATING and should be
-DELETED, together with `card_torsion_ne_one_of_isMaximal_finiteBase` and
-`card_torsion_span_natCast_finiteBase` — and, unless
-`det_frobLevelMatrix_eq_natCast_finiteBase` is first rewired to cite it,
-the polarization existence statement disappears with them.  That is a
-cut-level decision across four owners' declarations, not one this leaf's
-owner should take unilaterally.
-
-**THE PAIRING IS ONLY AVAILABLE PRIME TO `p`**, which is why `hq`/`hqN`
-are carried: over a finite field the Weil pairing on `A'[J]` is
-nondegenerate exactly when `J` has residue characteristic different from
-`char k` (at `p` the pairing on the — possibly trivial — `p`-torsion
-carries no such information).  Both hypotheses are spent inside
-`exists_polarizationStruct_finiteBase`; `hqN` is additionally spent, here
-in the glue, on the cyclicity of `μ_q(k̄)` — see the corresponding
-paragraph of `exists_isAlt_nondegenerate_of_adjointPairing`.
-
-`hdim'` is carried for uniformity with the sibling leaf
-`card_torsion_ne_one_of_isMaximal_finiteBase`, where relative dimension
-`0` is an outright counterexample; here it is not needed for TRUTH (`r =
-0` satisfies the conclusion for the trivial fibre) but the route below
-does use it, since it passes through
-`card_torsion_span_natCast_finiteBase` and through the polarization of a
-fibre of positive dimension.
-
-NOTE ON THE SIBLING SUBTREE.  This leaf and
-`det_frobLevelMatrix_eq_natCast_finiteBase` both want a Weil pairing over
-a finite field, but they want different facts about it — ALTERNATION and
-NONDEGENERACY here, Galois EQUIVARIANCE (the cyclotomic character) there
-— and neither statement mentions the other.  They are expected to share
-infrastructure, not proofs, and the shared infrastructure is now NAMED:
-`exists_polarizationStruct_finiteBase` above is what both should cite.
-The equivariance consumer needs `PolarizationStruct.pairing_gal`, which
-is already proven from the same axioms. -/
-theorem even_dim_torsion_of_isMaximal_finiteBase
-    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
-    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
-    (ab' : AbelianSchemeStruct f')
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m' : Mult ab' (NumberField.RingOfIntegers D))
-    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
-    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
-    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
-    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
-    ∃ r, Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1
-      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ (2 * r) := by
-  classical
-  haveI : NeZero q := ⟨hq.ne_zero⟩
-  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
-    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
-  letI : Module (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
-    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
-  haveI : J.IsMaximal := hJ
-  -- ### 1. the residue field `𝒪_D/J` is a FINITE FIELD
-  have hqne : (q : NumberField.RingOfIntegers D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
-  have hJ0 : J ≠ ⊥ := fun h => hqne (by rw [h] at hqJ; exact Ideal.mem_bot.mp hqJ)
-  haveI : Finite (NumberField.RingOfIntegers D ⧸ J) :=
-    Ideal.finiteQuotientOfFreeOfNeBot J hJ0
-  letI : Field (NumberField.RingOfIntegers D ⧸ J) := Ideal.Quotient.field J
-  -- ### 2. `A'[J]` is FINITE, through `A'[J] ⊆ A'[q𝒪_D]`
-  have hcop : Nat.Coprime q N := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqN
-  have hcardq : Nat.card (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
-        Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)))
-      = q ^ (2 * Module.finrank ℚ D) :=
-    card_torsion_span_natCast_finiteBase hfin N hN ab' m' hdim' q hq.ne_zero hcop
-  haveI hfinq : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
-        Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))) := by
-    refine (Nat.card_ne_zero.mp ?_).2
-    rw [hcardq]
-    exact pow_ne_zero _ hq.ne_zero
-  have hle : (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)))
-      ≤ Submodule.torsionBySet (NumberField.RingOfIntegers D)
-        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-        ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
-          Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)) :=
-    LevelFrame.tors_mono (Ideal.span_le.2 (by simpa using hqJ))
-  haveI hfinJ : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))) :=
-    Finite.of_injective (fun x => (⟨(x : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))), hle x.2⟩ :
-        Submodule.torsionBySet (NumberField.RingOfIntegers D)
-          (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-          ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
-            Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))))
-      (by intro x y hxy; simp only [Subtype.mk.injEq] at hxy; exact Subtype.ext hxy)
-  -- ### 3. the polarization, and the `μ_q`-valued pairing it induces on `A'[J]`
-  obtain ⟨d, 𝒩, 𝔞, 𝔞pos, pol, hJ𝒩⟩ :=
-    exists_polarizationStruct_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ
-  set V := Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)) with hVdef
-  set e : V → V → rootsOfUnity q (AlgebraicClosure k) :=
-    fun y z => pol.pairing (𝟙 (Spec (CommRingCat.of k))) J q hqJ (y : _) (z : _) with hedef
-  have hmem : ∀ y : V, (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-      ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1 := fun y => y.2
-  have hel : ∀ y y' z : V, e (y + y') z = e y z * e y' z := fun y y' z =>
-    pol.pairing_add_left _ _ _ _ _ _ _ (hmem y) (hmem y') (hmem z)
-  have her : ∀ y z z' : V, e y (z + z') = e y z * e y z' := fun y z z' =>
-    pol.pairing_add_right _ _ _ _ _ _ _ (hmem y) (hmem z) (hmem z')
-  have hself : ∀ y : V, e y y = 1 := fun y => pol.pairing_self _ _ _ _ _ (hmem y)
-  have hact : ∀ (a : NumberField.RingOfIntegers D ⧸ J) (y z : V), e (a • y) z = e y (a • z) := by
-    intro a y z
-    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective a
-    have h1 : ((Ideal.Quotient.mk J b • y : V) :
-        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-        = m'.act b (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
-      congrArg Subtype.val (Submodule.torsionBySet.mk_smul _ b y)
-    have h2 : ((Ideal.Quotient.mk J b • z : V) :
-        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-        = m'.act b (z : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
-      congrArg Subtype.val (Submodule.torsionBySet.mk_smul _ b z)
-    simp only [hedef, h1, h2]
-    exact pol.pairing_act _ _ _ _ b _ _ (hmem y) (hmem z)
-  have hnd : ∀ y : V, (∀ z, e y z = 1) → y = 0 := by
-    intro y hy
-    exact Subtype.ext (pol.pairing_nondegenerate _ _ _ _ hJ𝒩 _ (hmem y) fun z hz => hy ⟨z, hz⟩)
-  -- ### 4. the residue field has characteristic `q`, and `μ_q(k̄)` is cyclic of exponent `q`
-  have hqκ : ((q : ℕ) : NumberField.RingOfIntegers D ⧸ J) = 0 := by
-    rw [← map_natCast (Ideal.Quotient.mk J) q]
-    exact Ideal.Quotient.eq_zero_iff_mem.mpr hqJ
-  have hμq : ∀ z : rootsOfUnity q (AlgebraicClosure k), z ^ q = 1 := fun z =>
-    Subtype.ext (by simpa using (mem_rootsOfUnity q (z : (AlgebraicClosure k)ˣ)).mp z.2)
-  -- ### 5. the symplectic form, and the parity it forces
-  obtain ⟨B, halt, hBnd⟩ :=
-    exists_isAlt_nondegenerate_of_adjointPairing
-      (κ := NumberField.RingOfIntegers D ⧸ J) hq hqκ hμq e hel her hself hact hnd
-  obtain ⟨r, hr⟩ := exists_card_eq_pow_two_mul_of_isAlt_nondegenerate B halt hBnd
-  exact ⟨r, hr⟩
-
-open _root_.NumberField in
-/-- **THE RESIDUAL TORSION IS NONTRIVIAL AT EVERY MAXIMAL IDEAL OF
-RESIDUE CHARACTERISTIC PRIME TO `#k`** (**PROVEN 2026-07-28** over
-`card_torsion_span_singleton_of_field`, hence over the single degree leaf
-`finrank_mulByElt_of_field`; Mumford *Abelian Varieties* §6, Milne
-*Abelian Varieties* §I.7).
-
-`#A'[J] ≠ 1`.  Together with parity and the rational count this is what
-pins the residual rank to exactly `2` inside
-`LevelFrame.card_tors_eq_sq`: the counterexample that parity alone leaves
-standing is `(r_{J₁}, r_{J₂}) = (0, 4)`, and this leaf is what excludes
-the `0`.
-
-WHAT THE PROOF DOES, and why the route recorded here was NOT the one
-taken.  The old note suggested the CRT route (`A'[q] = ⨁_{J ∣ q}
-A'[J^(e_J)]`, no summand vanishing once `A'[q]` is faithful over
-`𝒪_D/q𝒪_D`) or a direct contradiction with the surjectivity of `·π`.
-**The CRT route cannot work from the rational count alone**, and that is
-already recorded in `LevelFrame.card_tors_eq_sq`'s own audit: the
-distribution `(r_{J₁}, r_{J₂}) = (0, 4)` at a split prime has exactly the
-right total, so `#A'[q] = q^(2g)` is consistent with `A'[J] = 0`.  What
-separates the primes above `q` is a count at a power of the SINGLE prime
-`J`, which is what the principal-ideal input supplies:
-
-1. the class group of `𝒪_D` is finite, so `J^h = (a)` with `h ≠ 0` and
-   `a ≠ 0` (the argument of `LevelFrame.card_tors_eq_sq_of_principal`,
-   step 2, repeated here);
-2. `N(a) = N(J)^h` divides `q^(gh)` because `J ∣ (q)`, so it is prime to
-   `#k`, and `card_torsion_span_singleton_of_field` gives
-   `#A'[J^h] = #(𝒪_D/J)^(2h) ≥ 2^(2h) > 1`;
-3. but `#A'[J] = 1` would give `#A'[J^h] = 1` by the tower lemma
-   `LevelFrame.card_tors_pow` at residual rank `0`, whose divisibility
-   hypothesis is the sibling `exists_mem_torsion_act_uniformizer_eq` —
-   so the direct route's ingredient IS used, as the tower step rather
-   than as the whole argument.
-
-**`hdim'` IS LOAD-BEARING AND WITHOUT IT THE STATEMENT IS FALSE.**  This
-is the finite-base copy of the FALSITY REPAIR recorded under
-`card_torsion_ne_one_of_isMaximal`: `AbelianSchemeStruct` asks only for
-proper, smooth and geometrically connected, and the IDENTITY
-`f' = 𝟙 (Spec k)` satisfies all three — an abelian scheme of relative
-dimension `0`.  Its geometric fibres are a single point, so
-`Nat.card (m'.torsion x J).1 = 1` for every `J`, and a `Mult ab' 𝒪_D`
-exists because the endomorphism ring of the trivial group scheme is the
-zero ring.  `hdim'` is what rules that out, and the sole consumer
-(`card_torsion_of_isMaximal_finiteBase` below) already carries it.
-
-**`hqN` IS ALSO LOAD-BEARING**, and this is the finite-base-only half: at
-a maximal ideal `J` over `p = char k` the statement is FALSE for a
-supersingular fibre, where `A'[p](k̄) = 0`. -/
-theorem card_torsion_ne_one_of_isMaximal_finiteBase
-    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
-    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
-    (ab' : AbelianSchemeStruct f')
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m' : Mult ab' (NumberField.RingOfIntegers D))
-    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
-    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
-    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
-    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
-    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1 ≠ 1 := by
-  classical
-  haveI := hfin
-  haveI : J.IsMaximal := hJ
-  letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
-  letI := m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
-  intro hone
-  -- ### `J ≠ ⊥`, and a uniformizer
-  have hq0 : ((q : ℕ) : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
-  have hJ0 : J ≠ ⊥ := by
-    intro h
-    rw [h] at hqJ
-    exact hq0 (Ideal.mem_bot.mp hqJ)
-  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hJ hJ0
-  -- ### 1. a power of `J` is principal, because the class group is finite
-  haveI := NumberField.RingOfIntegers.instFintypeClassGroup D
-  have hJmem : J ∈ nonZeroDivisors (Ideal (𝓞 D)) :=
-    mem_nonZeroDivisors_iff_ne_zero.mpr hJ0
-  have hJhbot : ∀ n : ℕ, J ^ n ≠ ⊥ := fun n => pow_ne_zero n hJ0
-  set c : ClassGroup (𝓞 D) := ClassGroup.mk0 ⟨J, hJmem⟩ with hc
-  set h : ℕ := orderOf c
-  have hh0 : h ≠ 0 := (orderOf_pos c).ne'
-  have hmemh : (J ^ h) ∈ nonZeroDivisors (Ideal (𝓞 D)) :=
-    mem_nonZeroDivisors_iff_ne_zero.mpr (hJhbot h)
-  have hcl1 : ClassGroup.mk0 (⟨J ^ h, hmemh⟩ : nonZeroDivisors (Ideal (𝓞 D))) = 1 := by
-    have hpc : (⟨J ^ h, hmemh⟩ : nonZeroDivisors (Ideal (𝓞 D)))
-        = (⟨J, hJmem⟩ : nonZeroDivisors (Ideal (𝓞 D))) ^ h :=
-      Subtype.ext (by simp)
-    rw [hpc, map_pow, ← hc]
-    exact pow_orderOf_eq_one c
-  obtain ⟨a, ha⟩ := (ClassGroup.mk0_eq_one_iff hmemh).mp hcl1
-  have ha' : J ^ h = Ideal.span {a} := ha
-  have ha0 : a ≠ 0 := by
-    rintro rfl
-    rw [Ideal.span_singleton_eq_bot.mpr rfl] at ha'
-    exact hJhbot h ha'
-  -- ### 2. the residue field is finite with at least two elements
-  have hNJ : Nat.card (𝓞 D ⧸ J) = Ideal.absNorm J := by
-    simp [Ideal.absNorm_apply, Submodule.cardQuot_apply]
-  haveI : Finite (𝓞 D ⧸ J) := by
-    refine (Nat.card_ne_zero.mp ?_).2
-    rw [hNJ]
-    exact fun hz => hJ0 (Ideal.absNorm_eq_zero_iff.mp hz)
-  letI : Field (𝓞 D ⧸ J) := Ideal.Quotient.field J
-  have hq2 : 2 ≤ Nat.card (𝓞 D ⧸ J) := Finite.one_lt_card
-  -- ### 3. `N(a) = N(J)^h` divides `q^(gh)`, hence is prime to `#k`
-  have hJdvd : J ∣ Ideal.span {((q : ℕ) : 𝓞 D)} :=
-    Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hqJ))
-  have hnormJ : Ideal.absNorm J ∣ q ^ Module.finrank ℚ D := by
-    have hd := map_dvd (Ideal.absNorm (S := 𝓞 D)) hJdvd
-    rwa [Ideal.absNorm_span_natCast, NumberField.RingOfIntegers.rank] at hd
-  have hcopq : Nat.Coprime q N := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqN
-  have hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0 := by
-    refine natCast_ne_zero_of_coprime_natCard (M := Ideal.absNorm (Ideal.span {a})) ?_
-    rw [hN, ← ha', map_pow]
-    exact Nat.Coprime.pow_left _
-      (Nat.Coprime.coprime_dvd_left hnormJ (Nat.Coprime.pow_left _ hcopq))
-  -- ### 4. the two counts of `A'[J ^ h]`, which disagree
-  have hsurj : ∀ (n : ℕ) (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))),
-      y ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-          ((J ^ n : Ideal (𝓞 D)) : Set (𝓞 D)) →
-      ∃ z ∈ Submodule.torsionBySet (𝓞 D) (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-          ((J ^ (n + 1) : Ideal (𝓞 D)) : Set (𝓞 D)), π • z = y :=
-    fun n y hy => exists_mem_torsion_act_uniformizer_eq m'
-      (𝟙 (Spec (CommRingCat.of k))) J hJ π hπ hπ2 n y hy
-  have htow : Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (J ^ h)).1 = 1 := by
-    have h0 : Nat.card (Submodule.torsionBySet (𝓞 D)
-        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
-        ((J : Ideal (𝓞 D)) : Set (𝓞 D))) = Nat.card (𝓞 D ⧸ J) ^ 0 := by
-      rw [pow_zero]
-      exact hone
-    have hres := LevelFrame.card_tors_pow
-      (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) J hJ hJ0 hπ hπ2 hsurj 0 h0 h
-    rw [Nat.zero_mul, pow_zero] at hres
-    exact hres
-  have hprin := card_torsion_span_singleton_of_field m' hdim' a ha0 hchar
-  rw [← ha', LevelFrame.card_quotient_pow, ← pow_mul, htow] at hprin
-  have hge : 2 ^ (h * 2) ≤ Nat.card (𝓞 D ⧸ J) ^ (h * 2) := Nat.pow_le_pow_left hq2 _
-  have hh2 : 1 < 2 ^ (h * 2) := Nat.one_lt_two_pow (by omega)
-  exact absurd hprin (Nat.ne_of_lt (lt_of_lt_of_le hh2 hge))
-
-open _root_.NumberField in
 /-- **`#A'[I] = #(𝒪_D/I)²` AT A MAXIMAL IDEAL OF RESIDUE CHARACTERISTIC
-PRIME TO `#k`** (PROVEN 2026-07-28 over the three geometric leaves
-`card_torsion_span_natCast_finiteBase`,
-`even_dim_torsion_of_isMaximal_finiteBase` and
-`card_torsion_ne_one_of_isMaximal_finiteBase`, and the arithmetic bridge
-`LevelFrame.card_tors_eq_sq`).
+PRIME TO `#k`** (**PROVEN 2026-07-28** over the SINGLE geometric input
+`card_torsion_span_singleton_of_field` — hence over the single degree
+leaf `finrank_mulByElt_of_field` — through the arithmetic bridge
+`LevelFrame.card_tors_eq_sq_of_principal`).
 
 This is the finite-base counterpart of `card_torsion_of_isMaximal`, and
-its proof is that one with a single change: the rational prime is HANDED
-IN as `q` rather than extracted from `I` by
-`Ideal.exists_prime_and_absNorm_eq_pow`, because it is `q` — not `I` —
-that the prime-to-characteristic hypothesis is attached to.
+it is now proven by the same route as
+`card_torsion_isMaximal_of_isAlgClosed`: the class-group argument of
+`card_tors_eq_sq_of_principal`, fed by the count at principal ideals.
+
+**REWIRED 2026-07-28, AND THIS DELETED FOUR LEAVES INCLUDING AN OPEN
+GEOMETRIC ONE.**  The previous proof went through
+`LevelFrame.card_tors_eq_sq`, which reaches `r_I = 2` from the count at
+the RATIONAL prime `q` together with PARITY and NONVANISHING at every
+`J ∣ q` — because an integer count cannot separate the primes above `q`
+(its own audit exhibits the surviving distribution
+`(r_{J₁}, r_{J₂}) = (1,3)` at a split prime).  That demanded three
+geometric leaves:
+
+* `card_torsion_span_natCast_finiteBase` (proven),
+* `card_torsion_ne_one_of_isMaximal_finiteBase` (proven),
+* `even_dim_torsion_of_isMaximal_finiteBase`, whose own proof rested on
+  the OPEN leaf `exists_polarizationStruct_finiteBase` — the existence
+  of an `𝒪_D`-linear polarization over a finite base, nondegenerate at
+  `J`, i.e. the whole Weil-pairing/Rosati package.
+
+`card_tors_eq_sq_of_principal` needs NONE of that: `J ^ h` is a power of
+the SINGLE prime `J`, so the count at it sees `r_J` and nothing else,
+which is exactly the split-prime counterexample's blind spot.  The one
+obstruction was that its `hprin` demanded the count at EVERY nonzero
+principal ideal, which over a finite field is **FALSE** (`a = p = char k`
+with a supersingular fibre gives `#A'[(p)] = p^r`, `r ≤ g`, against
+`#(𝒪_D/(p))² = p^(2g)`).  It spends `hprin` exactly ONCE, at the
+class-group generator of `J ^ h`, so restricting `hprin` to powers of `J`
+costs the characteristic-zero consumer nothing and IS dischargeable here:
+`N(J ^ n) = N(J)^n` divides `q^(gn)`, hence is prime to `#k`.  All four
+declarations above were deleted as free-floating in the same commit.
+
+**WHERE EACH HYPOTHESIS IS SPENT.**  `hq`/`hqN`/`hfin`/`hN` are spent
+only in `hchar`, converting `q ∤ #k` into `(N(a) : k) ≠ 0` through
+`natCast_ne_zero_of_coprime_natCard`; `hdim'` is spent inside
+`card_torsion_span_singleton_of_field` (without it `f' = 𝟙 (Spec k)` is
+an abelian scheme of relative dimension `0`, whose torsion is trivial at
+every level, and the statement is FALSE).
 
 The residual count is the ONLY geometric input of
 `exists_levelTateFrame_finiteBase`; everything else about a single-level
@@ -15239,17 +14830,39 @@ theorem card_torsion_of_isMaximal_finiteBase
       (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
     m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
   haveI : I.IsMaximal := hI
-  exact LevelFrame.card_tors_eq_sq
-    (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I hI q hq hqI
-    (fun J hJ π hπ hπ2 j y hy =>
-      exists_mem_torsion_act_uniformizer_eq m' (𝟙 (Spec (CommRingCat.of k)))
-        J hJ π hπ hπ2 j y hy)
-    (card_torsion_span_natCast_finiteBase hfin N hN ab' m' hdim' q hq.ne_zero
-      ((Nat.Prime.coprime_iff_not_dvd hq).mpr hqN))
-    (fun J hJ hqJ =>
-      even_dim_torsion_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
-    (fun J hJ hqJ =>
-      card_torsion_ne_one_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
+  haveI := hfin
+  -- ### `I ≠ ⊥`, because it contains the nonzero rational integer `q`
+  have hq0 : ((q : ℕ) : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h] at hqI
+    exact hq0 (Ideal.mem_bot.mp hqI)
+  -- ### DIVISIBILITY of the geometric point group, PROVEN upstream
+  have hdiv : ∀ M : ℕ, M ≠ 0 →
+      ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), ∃ w, M • w = y :=
+    fun M hM y => exists_nsmul_eq_geomFibrePt ab' (𝟙 (Spec (CommRingCat.of k))) M hM y
+  -- ### `N(I)` divides `q ^ g`, hence every `N(I ^ n)` is prime to `#k`
+  have hIdvd : I ∣ Ideal.span {((q : ℕ) : 𝓞 D)} :=
+    Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hqI))
+  have hnormI : Ideal.absNorm I ∣ q ^ Module.finrank ℚ D := by
+    have hd := map_dvd (Ideal.absNorm (S := 𝓞 D)) hIdvd
+    rwa [Ideal.absNorm_span_natCast, NumberField.RingOfIntegers.rank] at hd
+  have hcopq : Nat.Coprime q N := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqN
+  -- ### the count at the principal powers of `I`
+  have hprin : ∀ (n : ℕ) (a : 𝓞 D), a ≠ 0 → Ideal.span {a} = I ^ n →
+      Nat.card (Submodule.torsionBySet (𝓞 D)
+          (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+          ((Ideal.span {a} : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2 := by
+    intro n a ha0 han
+    have hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0 := by
+      refine natCast_ne_zero_of_coprime_natCard (M := Ideal.absNorm (Ideal.span {a})) ?_
+      rw [hN, han, map_pow]
+      exact Nat.Coprime.pow_left _
+        (Nat.Coprime.coprime_dvd_left hnormI (Nat.Coprime.pow_left _ hcopq))
+    exact card_torsion_span_singleton_of_field m' hdim' a ha0 hchar
+  exact LevelFrame.card_tors_eq_sq_of_principal
+    (D := D) (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) hdiv I hI hI0 hprin
 
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME WITH REAL
@@ -15302,9 +14915,9 @@ read through the coercion `A'[Iⁿ] → GeomFibrePt f' (𝟙 _)`.
 
 `hdim'` IS CONSUMED HERE, and only here in this cluster: it is passed to
 `card_torsion_of_isMaximal_finiteBase` and from there to
-`card_torsion_span_natCast_finiteBase` (which needs `g = [D:ℚ]` to state
-the count) and to `card_torsion_ne_one_of_isMaximal_finiteBase` (where
-relative dimension `0` is an outright counterexample). -/
+`card_torsion_span_singleton_of_field`, which needs `g = [D:ℚ]` to state
+the count — and without which `f' = 𝟙 (Spec k)` is an abelian scheme of
+relative dimension `0` and an outright counterexample. -/
 theorem exists_levelTateFrame_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
