@@ -60400,7 +60400,12 @@ THE FOUR LEAVES, and why each is smaller than what it replaces:
 
 1. `nonempty_ramificationFiltration` — the upper-numbering filtration EXISTS
    (Serre, *Corps Locaux* IV §3, VI §3). Pure local field theory, no modular
-   forms. **This is also the leaf that stops `swanExponentAux` from being the
+   forms. **⚠ 2026-07-28: THIS LEAF IS NOW FALSE — `RamificationFiltration v`
+   is EMPTY, because the sixth axiom `gp_herbrand` added under it that day is
+   inconsistent with `gp_eq_wild`. Read its FALSITY AUDIT before acting on
+   anything in this block; `wildCodim_le_swanExponentAux` below is refuted by
+   the same witness.** The rest of this item describes the pre-refutation
+   state: **This is also the leaf that stops `swanExponentAux` from being the
    junk `sInf ∅ = 0`**: with `RamificationFiltration v` empty,
    `IsSwanExponentAt` is vacuous, `swanExponentAux = 0` identically, and every
    `conductorExponent` collapses to its tame part — which would make the
@@ -60654,55 +60659,172 @@ theorem hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform
     τ.HasFiniteWildMonodromyAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** (SORRY LEAF,
-cut 2026-07-28, fifteenth owner; Serre, *Corps Locaux* IV §3 for the
-lower numbering and Herbrand's `ψ`, IV §3 / VI §2 for the upper
-numbering; Neukirch, *Algebraic Number Theory* II.10).
+/-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** — **FALSE AS
+STATED. `RamificationFiltration v` IS EMPTY** (FALSITY AUDIT
+2026-07-28, sixteenth owner; the leaf was cut the same day by the
+fifteenth owner, against the FIVE-axiom structure, and the sixth axiom
+`gp_herbrand` landed under it hours later).
 
-`RamificationFiltration v` (`ArtinConductor.lean`) is the family
-`G^u ≤ Γ Kᵥ` with five axioms: decreasing, `G⁰ = I_v`, `G^u = P_v` on
-`(0, 1]`, left continuity, and separatedness `⋂_{u>0} G^u = 1`. This leaf
-says the type is INHABITED.
+**DO NOT DISPATCH A PROVER AT THIS LEAF. It cannot be closed until
+`RamificationFiltration.gp_eq_wild` is repaired in
+`ArtinConductor.lean`; the repair is prescribed below.**
 
-WHY IT IS TRUE. The lower-numbering filtration `G_i` of each finite
-Galois subextension is defined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`;
-Herbrand's function `ψ_{L/K}` renumbers it so that the result is
-compatible with quotients, and the upper numbering therefore passes to
-the inverse limit and defines `G^u` on the absolute Galois group. The
-five axioms are then the standard facts: `G^0 = G_0 = I_v` because
-`ψ(0) = 0`; `G^u = G_1 = P_v` for `0 < u ≤ 1` because `ψ(u) = u` there;
-left continuity is the standard convention `G^u = ⋂_{w<u} G^w`; and
-separatedness is that every element of the inertia has finite image in
-some finite level, where the filtration reaches `1`. For `u < 0` any
-group containing `I_v` will do — the axioms constrain nothing there —
-so the whole content is at `u ≥ 0`.
+## THE TWO AXIOMS THAT CLASH
 
-WHY THIS LEAF MATTERS BEYOND ITS CONSUMER, and this is the sharpest
-thing this cut records. `GaloisRep.IsSwanExponentAt` quantifies
-UNIVERSALLY over `RamificationFiltration v`. If the type were EMPTY the
-specification would be vacuously true of every `s`, so
-`swanExponentAux = sInf ℕ = 0` identically, and `conductorExponent`
-would collapse to its tame part — which is `≤ dim V = 2`. Every citation
-asserting a conductor exponent `≥ 3` would then be FALSE rather than
-merely open, including
-`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` below at
-`ord_q M₀ ≥ 3`. So this leaf is a NON-DEGENERACY condition on the whole
-Swan development, not merely a convenience for the present proof.
+`RamificationFiltration v` now carries SIX axioms, and two of them are
+jointly unsatisfiable:
 
-PLACEMENT. It belongs in `ArtinConductor.lean` beside
-`RamificationFiltration` itself, and is stated here only because moving
-it there rebuilds that module's entire downstream cone. Hoisting it is a
-free follow-up for whoever next edits that file.
+* `gp_eq_wild : ∀ u, 0 < u → u ≤ 1 → gp u = wildInertiaGroup v` — "the
+  filtration is constantly `P_v` on `(0, 1]`";
+* `gp_herbrand : ∀ D m, gp (D.phi m) ⊔ D.lvl = D.gp m` — Herbrand's
+  theorem against every finite level `D : LowerRamificationData v`.
 
-THE CHECK THAT WOULD REFUTE IT: exhibit an axiom of
-`RamificationFiltration` that the genuine upper-numbering filtration of
-`Γ Kᵥ` fails. The candidate is separatedness, and it holds because the
-absolute Galois group of a local field is the inverse limit of finite
-Galois groups in each of which the ramification filtration terminates at
-`1`. AXIS SEARCHED: the five axioms individually. NOT SEARCHED: whether
-the axioms are strong enough to make the filtration UNIQUE — they are
-not known to be, which is deliberate and is why
-`GaloisRep.exists_isSwanExponentAt` is a separate leaf. -/
+`gp_herbrand` is CORRECT: it is exactly the defining property of the
+upper numbering for an infinite extension (Serre, *Corps Locaux* IV §3,
+"Passage à la limite"), and the genuine `G^u` of `Γ Kᵥ` satisfies it,
+along with `gp_le_gp`, `gp_zero`, `gp_of_forall_lt` and
+`eq_one_of_forall_mem`.
+
+**`gp_eq_wild` is the false one**, and its stated justification —
+"`ψ(u) = u` on `[0,1]`" — is where the error is. At a finite level
+`φ_{L/K}(u) = ∫₀^u dt / [G₀ : G_t]`, so on `(0, 1]` it is `u / [G₀ : G₁]`,
+NOT `u`: it equals `u` only when `G₁ = G₀`, i.e. only for a TOTALLY
+WILDLY ramified level with no tame part. What `gp_eq_wild` really
+asserts is that **the first upper-numbering break is `≥ 1`**. That is
+Hasse–Arf, and Hasse–Arf is a theorem about ABELIAN extensions only. For
+`Γ Kᵥ` it is false: the upper breaks of a local field's absolute Galois
+group accumulate at `0`, and the smallest one is `0`, not `1`.
+
+## THE COUNTEREXAMPLE, AT `v = (3)`
+
+Let `L/ℚ₃` be the totally ramified Galois extension with
+`Gal(L/ℚ₃) ≅ S₃` and ramification groups
+
+  `G₀ = S₃`  (order 6),  `G₁ = A₃ ≅ ℤ/3`,  `G₂ = 1`.
+
+It exists: take `M = ℚ₃(√3)` (tame quadratic) and, by local class field
+theory, the cyclic cubic `L/M` cut out by the character
+`M^× ↠ U¹/U² ≅ 𝔽₃⁺ ≅ ℤ/3` (conductor `𝔪_M²`, so the break of `L/M` is
+`b = 1`). Its kernel is `Gal(M/ℚ₃)`-stable — `σ` acts on `U¹/U²` by `−1`
+and kills `π_M^ℤ · μ₂` modulo the kernel — so `L/ℚ₃` is Galois, and the
+action of `ℤ/2` on `Gal(L/M) ≅ ℤ/3` is by `−1`, i.e. `S₃`. Lower
+numbering is insensitive to the subgroup, so `G_i(L/ℚ₃) = G_i(L/M)` for
+`i ≥ 1`, giving `G₁ = ℤ/3` and `G₂ = 1`.
+
+CROSS-CHECK 1 (conductor–discriminant). `d = ∑_{i≥0}(|G_i| − 1) = 5 + 2 = 7`,
+so `v₃(disc L/ℚ₃) = 7`. Against `∏_χ 𝔣(χ)^{dim χ}` over `S₃`'s irreps
+that is `a(sgn) + 2·a(2-dim) = 1 + 2·3 = 7`. ✓
+
+CROSS-CHECK 2 (an elliptic curve anyone can look up). The `2`-dimensional
+irrep of `S₃` here has `a = 3`, and that is realised: the curves of
+conductor `27 = 3³` (`X₀(27)`, `j = 0`, CM by `ℚ(√−3)`). For them
+`a₃ = 3 = (dim V − dim V^{I₃}) + Sw₃ = 2 + 1`, so **`Sw₃ = 1` while
+`wildCodim = 2`**: the local representation is induced from a character
+of the RAMIFIED quadratic `ℚ₃(√−3)` with `a(χ) = 2`, so both of its
+slopes are `φ_{M/ℚ₃}(1) = 1/2`. Slopes of `1/2` are entirely ordinary —
+Hasse–Arf constrains the SUM `Sw ∈ ℤ`, never the individual breaks.
+
+THE DERIVATION. Let `D : LowerRamificationData v` be the datum of that
+level (`lvl = Gal(ℚ̄₃/L)`, `unif = π_L`; `D.gp m` is then the preimage of
+`G_m(L/ℚ₃)`, since `mem_gp` is the classical
+`v_L(σx − x) ≥ m+1 ∀ x ∈ 𝒪_L`). Then
+
+  `[G₀ : G₁] = 2`, `[G₀ : G₂] = 6`,  so  `D.phi 2 = 1/2 + 1/6 = 2/3 ∈ (0, 1]`.
+
+Given any `F : RamificationFiltration v`,
+
+  `F.gp (2/3) = wildInertiaGroup v`        (`gp_eq_wild`, `0 < 2/3 ≤ 1`)
+  `F.gp (2/3) ⊔ D.lvl = D.gp 2 = D.lvl`    (`gp_herbrand`, `G₂ = 1`)
+
+hence `wildInertiaGroup v ≤ Gal(ℚ̄₃/L)`, i.e. `L ⊆ ℚ₃^tame` — contradicting
+that `L/ℚ₃` is wildly ramified. (`wildInertiaGroup v` CONTAINS the true
+`P_v = Gal(ℚ̄ᵥ/Kᵥ^tame)`: `tameFixingSubgroup` is defined by fixing a set
+of elements of `Kᵥ^tame`, so it can only be larger. The step is
+therefore robust to that definition being loose.) ∎
+
+COMPILER-VERIFIED HALF (scratch module against `ArtinConductor.lean`,
+`EXIT=0`, then deleted — this project admits no free-floating
+declarations). Everything except the classical existence of `L` is
+mechanical:
+
+  `theorem isEmpty_ramificationFiltration (D : LowerRamificationData v) (m : ℕ)`
+  `    (h0 : 0 < D.phi m) (h1 : D.phi m ≤ 1) (hw : ¬ wildInertiaGroup v ≤ D.gp m) :`
+  `    IsEmpty (RamificationFiltration v) := ⟨fun F => hw (le_sup_left.trans`
+  `      ((F.gp_eq_wild _ h0 h1 ▸ F.gp_herbrand D m).le))⟩`
+
+together with `[G₀:G₁] = 2 → [G₀:G₂] = 6 → D.phi 2 = 2/3`.
+
+## WHAT ELSE THIS FALSIFIES
+
+* `wildCodim_le_swanExponentAux` above (`Sw ≥ dim V − dim V^{P_v}`) is
+  **mathematically FALSE**, by the very same witness: `Sw₃ = 1 < 2 =
+  wildCodim` for the conductor-`27` curves. It is Lean-true today only
+  because it takes `F : RamificationFiltration v` as a hypothesis and
+  that type is empty. Its proof consumes `gp_eq_wild 1` and nothing else,
+  which is exactly the false axiom. The bound it wanted —
+  "every break is `≥ 1`" — is not a theorem.
+* `GaloisRep.exists_isSwanExponentAt`'s step `hexists`
+  (`ArtinConductor.lean`) is this leaf verbatim and is equally false, so
+  `exists_isSwanExponentAt` is false as it stands: `IsSwanExponentAt`
+  carries `Nonempty (RamificationFiltration v)` as a conjunct.
+* The three NON-VACUITY checks recorded on `GaloisRep.IsSwanExponentAt`
+  are void: check 3 IS `wildCodim_le_swanExponentAux`, and checks 1–3 all
+  route through `gp_eq_wild`. Their own docstring already flagged that
+  they had not been re-run against `gp_herbrand`.
+
+Downstream CITATIONS are NOT affected. `a_q ≥ 3` at wildly ramified `q`
+survives the repair, because it needs only `Sw ≥ 1` (integrality plus
+positivity at a wild place), never `Sw ≥ wildCodim`.
+
+## THE PRESCRIBED REPAIR (in `ArtinConductor.lean`, not here)
+
+Replace `gp_eq_wild` by the two facts that ARE true of `G^u`:
+
+* `gp_le_wild : ∀ u : ℚ, 0 < u → gp u ≤ wildInertiaGroup v`
+  (`G^u ⊆ G^{0+} = P_v` for `u > 0`); and
+* the density clause `P_v = closure (⨆_{u>0} gp u)` — note the union of a
+  decreasing family is NOT closed here, precisely because the breaks
+  accumulate at `0`, so `⨆` alone is too strong an axiom and would empty
+  the class again.
+
+Scale is then still anchored, because `gp_herbrand` — the only
+non-scale-invariant axiom, and the one this repair leaves untouched —
+does the anchoring; `gp_eq_wild` never contributed to it (the FALSITY
+AUDIT on `RamificationFiltration` says as much: `gp_eq_wild` rules out
+`c > 1` only).
+
+`one_le_swanExponentAux_of_not_isTamelyRamifiedAt` survives, by a
+different route that does not go through the false bound: if `s = 0`
+satisfies the specification then the counting clause forces
+`V^{G^u} = V` for every `u > 0`; `ρ` has finite wild monodromy, so
+`ρ(P_v)` is finite and the dense `⨆_{u>0} gp u` already surjects onto it;
+hence `P_v` acts trivially and `ρ` is tame. `wildCodim_le_swanExponentAux`
+itself must be DELETED, not re-proved.
+
+## WHY NO EARLIER AUDIT CAUGHT IT
+
+This is CLAUDE.md's "two individually-correct repairs can be fatal
+together" pattern, with a twist: `gp_eq_wild` was not correct even alone,
+but nothing could SEE that while the class was inhabited by junk
+filtrations — the junk satisfied `gp_eq_wild` happily, so every check run
+against the five-axiom structure passed. `gp_herbrand` did not create the
+error; it removed the junk that was hiding it. The predecessor of this
+docstring even named the check that would refute the leaf and then
+searched the wrong axis: it nominated SEPARATEDNESS as the candidate
+(which is fine) and certified the other four "individually", which is
+exactly the search that cannot see a clash BETWEEN two axioms.
+
+THE CHECK THAT WOULD REFUTE **THIS** AUDIT: exhibit a
+`LowerRamificationData v` for the `S₃`-level above whose `D.gp 2` does
+contain `wildInertiaGroup v` — i.e. show `mem_gp` does not cut out the
+classical `G_2(L/ℚ₃)` — or show that no wildly ramified finite Galois
+`L/Kᵥ` has `φ_{L/Kᵥ}(m) ≤ 1` for an `m` past its last wild index. The
+second is refuted by any `2`-dimensional local representation of slope
+`< 1`, of which the conductor-`27` curves are the standard example.
+
+PLACEMENT (unchanged, and now more urgent). This leaf belongs in
+`ArtinConductor.lean` beside `RamificationFiltration`, where the repair
+has to happen anyway. -/
 theorem nonempty_ramificationFiltration
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
     Nonempty (RamificationFiltration v) :=
