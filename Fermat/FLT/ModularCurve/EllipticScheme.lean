@@ -98,8 +98,9 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-The open leaves of this FILE are therefore SEVENTEEN, and this list is the
-COMPILER's `declaration uses 'sorry'` warning set of a green
+The open leaves of this FILE are therefore SIXTEEN (2026-07-28:
+`projSpan_add2XYZ_self_eq_top` closed, taking the count from seventeen), and
+this list is the COMPILER's `declaration uses 'sorry'` warning set of a green
 `lake build Fermat.FLT.ModularCurve.EllipticScheme` after merging release 6,
 transcribed (2026-07-27) rather than taken from any branch's prose —
 several branches each carried a list that was correct on its own branch and
@@ -180,11 +181,13 @@ is, in source order:
   certificate; see the section heading "Completeness of the two-law system" for
   why the certificate hunt this file used to prescribe was unnecessary) and
   `ProjCoords.toHom_add2_eq_toHom_add` (the two laws agree on the overlap).
+  A THIRD, `projSpan_add2XYZ_self_eq_top` (the second law is non-degenerate on
+  the DIAGONAL over a field), **is PROVEN as of 2026-07-28** — see its docstring
+  for the two small INTEGRAL certificates that do it, and for why the certificate
+  shape this file used to prescribe for it was the wrong one.
   The open residues are `projAdd2X_mul_addY` (the third cross-relation, a
   polynomial certificate, sibling of the two in `ProjectiveAddition.lean` and
   stated here only to avoid a concurrent edit of that file),
-  `projSpan_add2XYZ_self_eq_top` (the second law is non-degenerate on the
-  DIAGONAL over a field — the ONE remaining polynomial input to completeness),
   `exists_projCoordsCover` (local coordinate data on `A ×_ℚ A`) and
   `exists_projMulOfCoordsTwo_of_cover` (the gluing proper, now purely
   scheme-theoretic — its residual mathlib gap is naturality and rigidity of
@@ -1067,8 +1070,9 @@ exponent is what a *linear_combination* proof needs; passing to `R ⧸ M` needs
 none, because it turns a global ideal-membership question into a pointwise one.
 
 So the finite case analysis over a field, which was already the plan for the
-`K`-point axioms, is ALSO all that item 1 needs — and it is now isolated in a
-single leaf, `projSpan_add2XYZ_self_eq_top`.  The general rule worth keeping:
+`K`-point axioms, is ALSO all that item 1 needs — and it was isolated in
+`projSpan_add2XYZ_self_eq_top`, **PROVEN 2026-07-28**.  The general rule worth
+keeping:
 **"no small certificate exists" bounds the LINEAR_COMBINATION route only.  A
 `span = ⊤` statement over an arbitrary ring is a statement about maximal
 ideals, and reduces to the residue fields for free.** -/
@@ -1140,13 +1144,11 @@ theorem projAdd2X_mul_addY {R : Type*} [CommRing R] (W' : WeierstrassCurve R)
     add2X W' P Q * addY W' P Q = add2Y W' P Q * addX W' P Q :=
   sorry
 
-/-- **The second law is non-degenerate on the DIAGONAL, over a field** (sorry
-node — the ONE remaining polynomial input to completeness, and a finite case
-analysis).
+/-- **The second law is non-degenerate on the DIAGONAL, over a field**
+(**PROVEN 2026-07-28**) — the last polynomial input to completeness.
 
-This is the whole of Bosma–Lenstra's completeness that is not already in the
-tree: `projSpan_addXYZ_or_add2XYZ_eq_top` below reduces the dichotomy to it in
-four lines, because `ProjCoords.exists_units_smul_of_addXYZ_not_span` (PROVEN)
+`projSpan_addXYZ_or_add2XYZ_eq_top` below reduces the dichotomy to it in four
+lines, because `ProjCoords.exists_units_smul_of_addXYZ_not_span` (PROVEN)
 already says that the STANDARD law degenerates only where `Q = u • P`, and
 `add2XYZ_smul` then rescales the second law's value at `(P, Q)` to its value at
 `(P, P)`.
@@ -1157,33 +1159,185 @@ Over a field, `span (range v) = ⊤` says exactly that some coordinate of `v` is
 nonzero.  Split on `P z`:
 
 * `P z = 0`: then `P x = 0` (`X_eq_zero_of_Z_eq_zero`) and `P y ≠ 0` by
-  non-degeneracy, so `P = P y • ![0, 1, 0]`.  By `add2XYZ_smul` and
-  `add2XYZ_of_infty_left`,
-  `add2XYZ P P = P y ^ 4 • (negY ![0,1,0] • ![0,1,0]) = -P y ^ 4 • ![0,1,0]`,
-  whose middle coordinate is the unit `-P y ^ 4`.
+  non-degeneracy, so `P = P y • ![0, 1, 0]` and `add2Y P P = -(P y) ^ 4`, a unit.
+  This is an IDENTITY — no curve equation is used.
 * `P z ≠ 0` and `P y ≠ negY P` (i.e. `P` is not `2`-torsion): the `Z`-coordinate
-  does it.  `add2Z P Q = addY P (negOf Q)`, so `add2Z P P = -dblZ P`
-  `= -P z (P y - negY P) ^ 3 ≠ 0`.
+  does it.  With `λ := P y - negY P = 2 P y + a₁ P x + a₃ P z`,
+
+      add2Z P P = -P z * λ ^ 3 + 3 λ * W(P),
+
+  an identity in `ℤ[X, Y, Z, a₁, …, a₆]`, so `add2Z P P = -P z λ ^ 3 ≠ 0` on the
+  curve.
 * `P z ≠ 0` and `P y = negY P` (`P` is `2`-torsion): **this is the only branch
   that uses `IsUnit W'.Δ`, and it cannot be dropped** — over a SINGULAR
   Weierstrass curve the two-law system is genuinely incomplete at the node, so a
-  proof of this leaf that never touches `hΔ` is a proof of something false.  Here
-  `add2Y P P` is the surviving coordinate; with `a₁ = a₂ = a₃ = 0`, `P z = 1` and
-  `P y = 0` it is `9a₄²Px² + 27a₄a₆Px + a₄³ + 27a₆²`, which is a unit multiple of
-  `Δ`-over-the-2-torsion-relation `Px³ + a₄Px + a₆ = 0`.
+  proof of this leaf that never touches `hΔ` is a proof of something false.
 
-*The shape of the wanted certificate*, for whoever takes this: an identity
-`c · Δ ^ k = A · add2X P P + B · add2Y P P + C · add2Z P P + D · W(P)` with `A`,
-`B`, `C`, `D` polynomial in `P` and the `aᵢ` — homogeneous, so `Singular`'s
-`lift` can produce it — after which the branch is `Ideal.eq_top_of_isUnit_mem`.
-This is a certificate hunt with a *guaranteed* answer (unlike the ring-level one
-retired above), because the variety of
-`(add2X P P, add2Y P P, add2Z P P, W(P))` over `Δ ≠ 0` is empty. -/
+## The certificate, and why the shape recorded here before was the wrong one
+
+The note this docstring used to carry asked for a single identity
+`c · Δ ^ k = A · add2X P P + B · add2Y P P + C · add2Z P P + D · W(P)`.  That
+shape exists but is a bad target: `Singular`'s `lift` returns it with cofactors
+of 105, 449 and 871 monomials, and — worse — its ℚ-cofactors carry denominators
+`1/2`, which is useless over a field of characteristic `2`.
+
+The certificate that works factors through the SINGULAR-POINT ideal, and both
+halves are small and INTEGRAL.  Write `W_X := a₁ Y Z - 3 X² - 2 a₂ X Z - a₄ Z²`
+for the `X`-partial of the homogeneous Weierstrass polynomial.  Then, in
+`ℤ[X, Y, Z, a₁, …, a₆]`,
+
+    Z ^ 2 * add2Y P P  +  W_X ^ 3   ∈  (W(P), λ)        (cofactors 13, 27)
+    Δ * Z ^ 4                       ∈  (W(P), λ, W_X)   (cofactors 17, 46, 36)
+
+The first says `add2Y P P = 0` forces `W_X = 0` at a `2`-torsion point; the
+second is the classical "a singular point of the cubic kills the discriminant"
+(note `W_Y = Z λ`, and `W_Z` then follows from Euler's relation because
+`P z ≠ 0`).  Together: `add2Y P P = 0` would give `Δ * (P z) ^ 4 = 0`,
+contradicting `hΔ` in a field with `P z ≠ 0`.
+
+Both certificates were produced by `Singular`'s `lift` over `ring integer` — the
+ℚ-lift of the second one has `1/2`s and the integral one does not, so ASK FOR
+THE INTEGRAL ONE — and the transcription into the `linear_combination` calls
+below was checked mechanically by parsing it back and differencing against
+`Singular`'s output. -/
 theorem projSpan_add2XYZ_self_eq_top {R : Type*} [CommRing R] (hR : IsField R)
     (W' : WeierstrassCurve R) (hΔ : IsUnit W'.Δ) {P : Fin 3 → R} (hP : Equation W' P)
     (hPs : Ideal.span (Set.range P) = ⊤) :
-    Ideal.span (Set.range (add2XYZ W' P P)) = ⊤ :=
-  sorry
+    Ideal.span (Set.range (add2XYZ W' P P)) = ⊤ := by
+  haveI : Nontrivial R := ⟨hR.exists_pair_ne⟩
+  have hunit : ∀ a : R, a ≠ 0 → IsUnit a := fun a ha =>
+    isUnit_iff_exists_inv.mpr (hR.mul_inv_cancel ha)
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    by_cases ha : a = 0
+    · exact Or.inl ha
+    · obtain ⟨a', ha'⟩ := hR.mul_inv_cancel ha
+      refine Or.inr ?_
+      calc b = a' * (a * b) := by rw [← mul_assoc, mul_comm a' a, ha', one_mul]
+        _ = 0 := by rw [hab, mul_zero]
+  -- a triple with a nonzero entry spans the unit ideal
+  have hspan_top : ∀ (v : Fin 3 → R) (i : Fin 3), v i ≠ 0 →
+      Ideal.span (Set.range v) = ⊤ := fun v i hvi =>
+    Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨i, rfl⟩) (hunit _ hvi)
+  -- a spanning triple whose outer entries vanish has a nonzero middle entry
+  have hmid : ∀ (v : Fin 3 → R), Ideal.span (Set.range v) = ⊤ →
+      v 0 = 0 → v 2 = 0 → v 1 ≠ 0 := by
+    intro v hv h0 h2 h1
+    have hle : Ideal.span (Set.range v) ≤ ⊥ := by
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      fin_cases i <;> simp [h0, h1, h2]
+    rw [hv] at hle
+    exact one_ne_zero (Ideal.mem_bot.mp (hle Submodule.mem_top))
+  have hEq : P 1 ^ 2 * P 2 + W'.a₁ * P 0 * P 1 * P 2 + W'.a₃ * P 1 * P 2 ^ 2
+      - (P 0 ^ 3 + W'.a₂ * P 0 ^ 2 * P 2 + W'.a₄ * P 0 * P 2 ^ 2 + W'.a₆ * P 2 ^ 3) = 0 :=
+    (equation_iff P).mp hP
+  by_cases hPz : P 2 = 0
+  · -- **Case A: `P` is the point at infinity.**  `add2Y P P = -(P y) ^ 4`, no equation used.
+    have hPx : P 0 = 0 := X_eq_zero_of_Z_eq_zero hP hPz
+    have hPy : P 1 ≠ 0 := hmid P hPs hPx hPz
+    refine hspan_top _ 1 ?_
+    rw [add2XYZ_Y]
+    have hval : add2Y W' P P = -P 1 ^ 4 := by
+      simp only [add2Y]
+      rw [hPx, hPz]
+      ring
+    rw [hval]
+    exact neg_ne_zero.mpr (pow_ne_zero 4 hPy)
+  · by_cases hlam : 2 * P 1 + W'.a₁ * P 0 + W'.a₃ * P 2 = 0
+    · -- **Case C: `P` is `2`-torsion.**  This is the ONLY branch that uses `hΔ`, and it must be:
+      -- over a SINGULAR Weierstrass curve the two-law system is genuinely incomplete at the node.
+      refine hspan_top _ 1 ?_
+      rw [add2XYZ_Y]
+      intro hY0
+      -- Step 1: `P z ^ 2 * add2Y P P = -W_X ^ 3` modulo `W(P)` and the `2`-torsion relation, so
+      -- `add2Y P P = 0` forces the `X`-partial of the homogeneous Weierstrass polynomial to vanish.
+      have hWX : W'.a₁ * P 1 * P 2 - 3 * P 0 ^ 2 - 2 * W'.a₂ * P 0 * P 2 - W'.a₄ * P 2 ^ 2 = 0 := by
+        have hcert : P 2 ^ 2 * add2Y W' P P = -(W'.a₁ * P 1 * P 2 - 3 * P 0 ^ 2 - 2 * W'.a₂ * P 0 * P 2 - W'.a₄ * P 2 ^ 2) ^ 3 := by
+          simp only [add2Y]
+          linear_combination
+            (- P 1 * P 2 ^ 2 * W'.a₁ ^ 3 - 2 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ + P 2 ^ 3 * W'.a₁ ^ 2
+           * W'.a₄ - 8 * P 1 * P 2 ^ 2 * W'.a₁ * W'.a₂ + 8 * P 0 * P 2 ^ 2 * W'.a₂ ^ 2 + 3 * P 2
+           ^ 3 * W'.a₃ ^ 2 + 4 * P 2 ^ 3 * W'.a₂ * W'.a₄ + 27 * P 0 ^ 2 * P 2 * W'.a₂ + 24 * P 1 *
+           P 2 ^ 2 * W'.a₃ + 3 * P 0 * P 2 ^ 2 * W'.a₄ - 9 * P 2 ^ 3 * W'.a₆ + 27 * P 0 ^ 3 + 27 *
+           P 1 ^ 2 * P 2) * hEq +
+            (- P 2 ^ 5 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + P 2 ^ 5 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - P 2 ^ 5 *
+           W'.a₁ ^ 3 * W'.a₆ + P 1 ^ 2 * P 2 ^ 3 * W'.a₁ ^ 3 - P 0 * P 1 * P 2 ^ 3 * W'.a₁ ^ 2 *
+           W'.a₂ + 3 * P 1 * P 2 ^ 4 * W'.a₁ * W'.a₂ * W'.a₃ - 2 * P 0 * P 2 ^ 4 * W'.a₂ ^ 2 *
+           W'.a₃ + P 2 ^ 5 * W'.a₃ ^ 3 - 2 * P 1 * P 2 ^ 4 * W'.a₁ ^ 2 * W'.a₄ + P 0 * P 2 ^ 4 *
+           W'.a₁ * W'.a₂ * W'.a₄ - P 2 ^ 5 * W'.a₂ * W'.a₃ * W'.a₄ + 2 * P 2 ^ 5 * W'.a₁ * W'.a₄
+           ^ 2 - 6 * P 2 ^ 5 * W'.a₁ * W'.a₂ * W'.a₆ - P 0 ^ 2 * P 1 * P 2 ^ 2 * W'.a₁ ^ 2 + 4 *
+           P 1 ^ 2 * P 2 ^ 3 * W'.a₁ * W'.a₂ - 4 * P 0 * P 1 * P 2 ^ 3 * W'.a₂ ^ 2 + P 0 * P 1 *
+           P 2 ^ 3 * W'.a₁ * W'.a₃ - 4 * P 1 * P 2 ^ 4 * W'.a₃ ^ 2 - 2 * P 1 * P 2 ^ 4 * W'.a₂ *
+           W'.a₄ + 6 * P 0 * P 2 ^ 4 * W'.a₃ * W'.a₄ - 9 * P 0 * P 2 ^ 4 * W'.a₁ * W'.a₆ + 9 * P 2
+           ^ 5 * W'.a₃ * W'.a₆ - 7 * P 0 * P 1 ^ 2 * P 2 ^ 2 * W'.a₁ - 19 * P 1 ^ 2 * P 2 ^ 3 *
+           W'.a₃ + 12 * P 0 * P 1 * P 2 ^ 3 * W'.a₄ + 18 * P 1 * P 2 ^ 4 * W'.a₆ - 14 * P 1 ^ 3 *
+           P 2 ^ 2) * hlam
+        rw [hY0, mul_zero] at hcert
+        have h3 : (W'.a₁ * P 1 * P 2 - 3 * P 0 ^ 2 - 2 * W'.a₂ * P 0 * P 2 - W'.a₄ * P 2 ^ 2) ^ 3 = 0 := by linear_combination hcert
+        exact pow_eq_zero_iff three_ne_zero |>.mp h3
+      -- Step 2: `W = W_Y = W_X = 0` says `P` is a SINGULAR point of the cubic (the third partial
+      -- follows from Euler's relation since `P z ≠ 0`), and `Δ * P z ^ 4` lies in the ideal the
+      -- three of them generate — with INTEGER cofactors, so the identity is characteristic-free.
+      have hΔ0 : W'.Δ * P 2 ^ 4 = 0 := by
+        have hcert3 : W'.Δ * P 2 ^ 4 =
+            (- P 0 * P 2 * W'.a₁ ^ 6 - P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₃ - P 1 * P 2 * W'.a₁ ^ 5 - 10 * P 0
+           * P 2 * W'.a₁ ^ 4 * W'.a₂ - 8 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ - P 2 ^ 2 * W'.a₁
+           ^ 4 * W'.a₄ - 8 * P 1 * P 2 * W'.a₁ ^ 3 * W'.a₂ - 32 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2
+           + 36 * P 0 * P 2 * W'.a₁ ^ 3 * W'.a₃ - 16 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 33 *
+           P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 - 8 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 12 * P 0 *
+           P 1 * W'.a₁ ^ 3 - 12 * P 0 ^ 2 * W'.a₁ ^ 2 * W'.a₂ - 16 * P 1 * P 2 * W'.a₁ * W'.a₂ ^ 2
+           - 32 * P 0 * P 2 * W'.a₂ ^ 3 + 48 * P 1 * P 2 * W'.a₁ ^ 2 * W'.a₃ + 72 * P 0 * P 2 *
+           W'.a₁ * W'.a₂ * W'.a₃ + 60 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₄ - 16 * P 2 ^ 2 * W'.a₂ ^ 2 *
+           W'.a₄ + 96 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ - 12 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₆ + 16 *
+           P 1 ^ 2 * W'.a₁ ^ 2 + 48 * P 0 * P 1 * W'.a₁ * W'.a₂ - 32 * P 0 ^ 2 * W'.a₂ ^ 2 - 24 *
+           P 0 ^ 2 * W'.a₁ * W'.a₃ + 64 * P 1 * P 2 * W'.a₂ * W'.a₃ - 108 * P 0 * P 2 * W'.a₃ ^ 2 +
+           64 * P 1 * P 2 * W'.a₁ * W'.a₄ + 112 * P 0 * P 2 * W'.a₂ * W'.a₄ + 64 * P 2 ^ 2 * W'.a₄
+           ^ 2 - 48 * P 2 ^ 2 * W'.a₂ * W'.a₆ + 80 * P 1 ^ 2 * W'.a₂ - 144 * P 0 * P 1 * W'.a₃ + 96
+           * P 0 ^ 2 * W'.a₄ - 144 * P 0 * P 2 * W'.a₆) *
+              (W'.a₁ * P 1 * P 2 - 3 * P 0 ^ 2 - 2 * W'.a₂ * P 0 * P 2 - W'.a₄ * P 2 ^ 2) := by
+          simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+            WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+          linear_combination
+            (P 2 * W'.a₁ ^ 6 + 12 * P 2 * W'.a₁ ^ 4 * W'.a₂ + 48 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 36 *
+           P 2 * W'.a₁ ^ 3 * W'.a₃ - 12 * P 1 * W'.a₁ ^ 3 + 24 * P 0 * W'.a₁ ^ 2 * W'.a₂ + 64 * P 2
+           * W'.a₂ ^ 3 - 144 * P 2 * W'.a₁ * W'.a₂ * W'.a₃ - 60 * P 2 * W'.a₁ ^ 2 * W'.a₄ - 48 *
+           P 1 * W'.a₁ * W'.a₂ + 96 * P 0 * W'.a₂ ^ 2 + 36 * P 0 * W'.a₁ * W'.a₃ + 288 * P 2 *
+           W'.a₃ ^ 2 - 240 * P 2 * W'.a₂ * W'.a₄ + 360 * P 1 * W'.a₃ - 288 * P 0 * W'.a₄ + 432 *
+           P 2 * W'.a₆) * hEq +
+            (- P 0 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₂ - P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ - 2 * P 0 ^ 2
+           * P 2 * W'.a₁ ^ 5 - 2 * P 1 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ - 8 * P 0 * P 2 ^ 2 * W'.a₁
+           ^ 3 * W'.a₂ ^ 2 - P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₃ - 8 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂
+           ^ 2 * W'.a₃ + P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ ^ 2 + P 0 * P 1 * P 2 * W'.a₁ ^ 4 - 18 * P 0
+           ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₂ - 16 * P 1 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 16 * P 0 *
+           P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 3 + P 1 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ + 30 * P 0 * P 2 ^ 2 *
+           W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 16 * P 2 ^ 3 * W'.a₂ ^ 3 * W'.a₃ + 36 * P 2 ^ 3 * W'.a₁ *
+           W'.a₂ * W'.a₃ ^ 2 - 3 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₄ + 3 * P 2 ^ 3 * W'.a₁ ^ 2 *
+           W'.a₃ * W'.a₄ - 2 * P 1 ^ 2 * P 2 * W'.a₁ ^ 3 + 12 * P 0 * P 1 * P 2 * W'.a₁ ^ 2 * W'.a₂
+           - 48 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ ^ 2 - 32 * P 1 * P 2 ^ 2 * W'.a₂ ^ 3 + 72 * P 0 ^ 2
+           * P 2 * W'.a₁ ^ 2 * W'.a₃ + 72 * P 1 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ + 27 * P 0 * P 2
+           ^ 2 * W'.a₁ * W'.a₃ ^ 2 - 27 * P 2 ^ 3 * W'.a₃ ^ 3 + 6 * P 1 * P 2 ^ 2 * W'.a₁ ^ 2 *
+           W'.a₄ + 48 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₄ + 72 * P 2 ^ 3 * W'.a₂ * W'.a₃ *
+           W'.a₄ + 24 * P 0 ^ 2 * P 1 * W'.a₁ ^ 2 - 12 * P 0 ^ 3 * W'.a₁ * W'.a₂ - 16 * P 1 ^ 2 *
+           P 2 * W'.a₁ * W'.a₂ + 32 * P 0 * P 1 * P 2 * W'.a₂ ^ 2 - 36 * P 0 * P 1 * P 2 * W'.a₁ *
+           W'.a₃ + 72 * P 0 ^ 2 * P 2 * W'.a₂ * W'.a₃ - 234 * P 1 * P 2 ^ 2 * W'.a₃ ^ 2 + 120 * P 0
+           ^ 2 * P 2 * W'.a₁ * W'.a₄ + 160 * P 1 * P 2 ^ 2 * W'.a₂ * W'.a₄ + 180 * P 0 * P 2 ^ 2 *
+           W'.a₃ * W'.a₄ - 36 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₆ + 72 * P 2 ^ 3 * W'.a₃ * W'.a₆ + 120
+           * P 0 ^ 2 * P 1 * W'.a₂ - 36 * P 0 ^ 3 * W'.a₃ - 180 * P 1 ^ 2 * P 2 * W'.a₃ + 144 * P 0
+           * P 1 * P 2 * W'.a₄ - 216 * P 1 * P 2 ^ 2 * W'.a₆) * hlam
+        rw [hcert3, hWX, mul_zero]
+      rcases mul_eq_zero.mp hΔ0 with h | h
+      · exact hΔ.ne_zero h
+      · exact hPz (pow_eq_zero_iff (by norm_num : (4 : ℕ) ≠ 0) |>.mp h)
+    · -- **Case B: `P z ≠ 0` and `P` is not `2`-torsion.**  The `Z`-coordinate survives:
+      -- `add2Z P P = -(P z) * (P y - negY P) ^ 3` on the curve.
+      refine hspan_top _ 2 ?_
+      rw [add2XYZ_Z]
+      have hval : add2Z W' P P = -(P 2 * (2 * P 1 + W'.a₁ * P 0 + W'.a₃ * P 2) ^ 3) := by
+        simp only [add2Z]
+        linear_combination (3 * (2 * P 1 + W'.a₁ * P 0 + W'.a₃ * P 2)) * hEq
+      rw [hval]
+      exact neg_ne_zero.mpr (mul_ne_zero hPz (pow_ne_zero 3 hlam))
 
 /-- **Over a field the two Bosma–Lenstra laws cannot both degenerate** (PROVEN
 from `ProjCoords.exists_units_smul_of_addXYZ_not_span` and
@@ -1462,10 +1616,11 @@ The two RING-LEVEL inputs the gluing used to carry with it —
 `ProjCoords.span_union_coords_eq_top` (the two loci cover) and
 `ProjCoords.toHom_add2_eq_toHom_add` (they agree on the overlap) — are now
 **PROVEN** and are supplied here, so what remains above is purely
-scheme-theoretic.  Their own residue is two leaves,
-`projSpan_add2XYZ_self_eq_top` (a case analysis over a field) and
-`projAdd2X_mul_addY` (a polynomial certificate), plus the pin's missing
-naturality/rigidity of `Proj.fromOfGlobalSections`.
+scheme-theoretic.  Their own residue is ONE leaf, `projAdd2X_mul_addY` (a
+polynomial certificate), plus the pin's missing naturality/rigidity of
+`Proj.fromOfGlobalSections`; the other,
+`projSpan_add2XYZ_self_eq_top` (a case analysis over a field), is **PROVEN as of
+2026-07-28**.
 
 Relative to the leaf this replaced, the two axioms `hunit` and `hinv` have been
 REMOVED from the statement: they are now derived, in `exists_projMulOfCoords`
@@ -4084,7 +4239,8 @@ shape `(u * v) ^ n` other than the `add?` family — there is none.
    six forms failed to generate they would lie in some `M`, and over the
    FIELD `R ⧸ M` the two laws cannot both degenerate.  So the whole item
    reduces, with no certificate at all, to one finite case analysis over a
-   field — now the single leaf `projSpan_add2XYZ_self_eq_top`.
+   field — `projSpan_add2XYZ_self_eq_top`, itself **PROVEN 2026-07-28** from
+   two small integral certificates through the singular-point ideal.
 
    *The Bosma–Lenstra theorem above is what makes the field case true*, and
    says exactly why: a common zero would be a pair `(P, Q)` exceptional
