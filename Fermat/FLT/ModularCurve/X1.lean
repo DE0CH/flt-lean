@@ -1005,14 +1005,34 @@ is modular.  So a prover here works purely in commutative algebra over
 `K`, with no schemes in sight.
 
 The FIRST route — "regular + finite type over a perfect field ⟹ smooth"
-— remains unbuilt, and the state-of-the-pin check on the `Γ₀` sibling
-still stands (checked again 2026-07-27):
+— is still not PROVEN anywhere, but as of the same release it is at
+least STATED, as
+`AlgebraicGeometry.smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`
+(`SmoothConnectedCriteria.lean`, itself a sorry leaf).  The pin check
+behind it is unchanged and was re-run at this commit:
 `grep -rn "SmoothOfRelativeDimension" .lake/packages/mathlib/Mathlib/`
 returns one file, `AlgebraicGeometry/Morphisms/Smooth.lean`, with
 nothing dimension-theoretic in it, and `Mathlib/RingTheory/Smooth/`
 carries `smooth_iff_locally_isStandardSmooth` only WITHOUT the relative
-dimension.  Building that bridge would serve this leaf, its `Γ₀`
-sibling, and `CurveCompactification.lean`. -/
+dimension.
+
+**That route cannot close THIS leaf as stated, and the reason is worth
+recording** (2026-07-27): the regular-ring bridge carries
+`[PerfectField K]`, which is load-bearing there — over an imperfect
+field of characteristic `p` the curve `y^p = t·x^p + t` is regular and
+not smooth — while this leaf, and every statement above it up to
+`exists_isCoarseModuliY1_isSmoothCurve`, quantifies over an ARBITRARY
+`K` with `char K ∤ N`.  Adding `[PerfectField K]` here would be a
+restatement reaching several declarations with other owners.
+
+And it would be the wrong repair anyway: the statement IS true over an
+imperfect `K`, because `Y_1(N)` over `K` is the base change of `Y_1(N)`
+over the prime field and `SmoothOfRelativeDimension` is stable under
+base change (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).  So the
+route that fits this leaf is Katz–Mazur 8.2.1 directly — `ℤ[1/N]`-smoothness
+of the moduli problem, then base change — not regularity plus
+perfectness.  The perfect-field bridge is the right tool for the `Γ₀`
+sibling (base `ℚ`) and for `CurveCompactification.lean`, not for here. -/
 theorem locallyStandardSmooth_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -1073,15 +1093,32 @@ The cheap criterion — connected plus a `k`-rational point, EGA IV
 4.5.13 — is unavailable for a MATHEMATICAL reason, not a formal one:
 `Y_1(N)(ℚ)` is empty for most `N`, and stating that emptiness is the
 entire purpose of this module.  So the route must go through the
-function field, and `AlgebraicGeometry.pullbackSpecIso` is what carries
-it: the pullback of `Spec B ⟶ Spec K` along `Spec L ⟶ Spec K` is
-`Spec (B ⊗[K] L)`, whose underlying space is `PrimeSpectrum (B ⊗[K] L)`.
-Mathlib still offers no sufficient criterion for
+function field.  Mathlib still offers no sufficient criterion for
 `GeometricallyConnected` itself — the string occurs 31 times, all in
 `Geometrically/Connected.lean`, every one a consequence or a stability
-property (re-checked 2026-07-27) — but it does offer
-`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms`, which is
-what makes this reduction a theorem rather than a wish.
+property (re-checked 2026-07-27) — but the missing constructor for the
+affine case now exists in this project, as
+`AlgebraicGeometry.geometricallyConnected_specMap_algebraMap_of_forall_connectedSpace`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`,
+PROVEN, written for the `Γ₀` sibling in the same release and reused
+verbatim here), whose hypothesis this leaf states.
+
+## Note for whoever proves this, and for the `Γ₀` owner
+
+The `Γ₀` side states the STRONGER hypothesis
+`isDomain_tensorCoarseRing_of_gamma0GITPresentation` — `B ⊗[ℚ] K` is a
+DOMAIN — and goes through
+`geometricallyConnected_specMap_algebraMap_of_forall_isDomain`.  That is
+also true here (`Y_1(N)` is geometrically *irreducible*, not merely
+connected), and strengthening this leaf to `IsDomain` would additionally
+re-prove `isDomain_of_gamma1GITPresentation` by taking `L := K`.  It is
+deliberately NOT stated that way: integrality is obtained here from
+`geometricComponents_of_gamma1GITPresentation`, i.e. from the components
+of the RIGIDIFIED scheme, which is where Katz–Mazur (8.1.1) actually
+leaves it — so asking for `IsDomain (B ⊗ L)` would make this leaf carry
+integrality a second time.  Anyone who prefers the merged form should
+delete `geometricComponents_of_gamma1GITPresentation` at the same time,
+not in addition to it.
 
 The hypotheses are REQUIRED: at `N = 0` or at `char K ∣ N` the coarse
 space is empty, and `ConnectedSpace` carries nonemptiness. -/
@@ -1097,12 +1134,15 @@ theorem connectedSpace_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4
 2026-07-27 over `connectedSpace_tensorProduct_of_gamma1GITPresentation`;
 formerly a sorry leaf) — Deligne–Rapoport IV.5.5.
 
-The proof unfolds `GeometricallyConnected` to `geometrically
-(ConnectedSpace ·)`, uses
-`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` to reduce
-to field extensions `L/K` of the base ring, and transports along
-`pullbackSpecIso K B L` — which identifies the geometric fibre with
-`Spec (B ⊗[K] L)` — via the homeomorphism underlying that isomorphism. -/
+`Gamma1GITPresentation.specMap_algebraMap` puts the structure morphism
+in the shape `Spec.map (ofHom (algebraMap K B))`, and the criterion
+`geometricallyConnected_specMap_algebraMap_of_forall_connectedSpace`
+(`SmoothConnectedCriteria.lean`, PROVEN) does the rest.  An earlier
+version of this proof inlined that criterion —
+`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` followed by
+transport along `pullbackSpecIso K B L` — before the same release landed
+it as a reusable lemma for the `Γ₀` side; the inline copy was deleted in
+favour of the shared one. -/
 theorem geometricallyConnected_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -1110,11 +1150,9 @@ theorem geometricallyConnected_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
   letI := P.commRing_B
   letI := P.algebraB
   show GeometricallyConnected P.str
-  rw [← P.specMap_algebraMap, GeometricallyConnected.eq_geometrically,
-    geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms]
-  intro L _ _
-  exact ((pullbackSpecIso K P.B L).hom.homeomorph).connectedSpace_iff.mpr
-    (connectedSpace_tensorProduct_of_gamma1GITPresentation hN hchar P L)
+  rw [← P.specMap_algebraMap]
+  exact geometricallyConnected_specMap_algebraMap_of_forall_connectedSpace K P.B
+    fun L _ _ => connectedSpace_tensorProduct_of_gamma1GITPresentation hN hchar P L
 
 /-- **The affine integral Katz–Mazur model of `Y_1(N)`** — an atlas
 together with the four geometric properties read off it.
