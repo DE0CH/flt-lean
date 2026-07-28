@@ -2251,8 +2251,8 @@ leaves need is downstream of that, by the commutative algebra in
 WHY IT IS STATED AS CARDINALITIES.  The three consumers are cardinality
 statements, so this is exactly what they need, and it is the weakest
 clause that supplies them — which makes the geometric leaf beneath
-`exists_bettiFrame` (`card_torsion_isMaximal_of_isAlgClosed`) as easy as
-it can honestly be.  A successor that
+`exists_bettiFrame` (`card_torsion_span_singleton_of_isAlgClosed`) as
+easy as it can honestly be.  A successor that
 needs the GALOIS module structure of `A[I]` (rather than only its size)
 should strengthen `card_torsion` to a `𝒪_D`-linear equivalence
 `H₁ ⧸ I H₁ ≃ₗ A[I]`; every consumer below goes through unchanged.
@@ -2418,6 +2418,204 @@ theorem card_tors_eq_sq_of_ne_bot
     simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using h1
   rw [hcardprod, Finset.prod_congr rfl hper, Finset.prod_pow, hringprod]
 
+/-- **From the count at PRINCIPAL ideals to the count at every MAXIMAL
+ideal** (PROVEN 2026-07-28).  Pure module theory over `𝒪_D`: no schemes,
+no abelian varieties, no parity and no nonvanishing.  Exactly two
+hypotheses, both statements about the point group alone:
+
+* `hdiv`  — the module is DIVISIBLE, i.e. `N • w = y` is solvable for
+  every `N ≠ 0`.  For an abelian variety this is surjectivity of `[N]`,
+  which is PROVEN (`exists_comp_mulByNat_eq`);
+* `hprin` — the count `#P[(a)] = #(𝒪_D/(a))²` at every nonzero PRINCIPAL
+  ideal.  For an abelian variety this is the classical
+  `deg[a] = N_{D/ℚ}(a)²`, and it is the single geometric leaf of the
+  whole cluster (`card_torsion_span_singleton_of_isAlgClosed`).
+
+THE ARGUMENT.  Let `J` be maximal.  The class group of `𝒪_D` is FINITE,
+so `J^h = (a)` is principal with `a ≠ 0`, where `h` is the order of the
+class of `J`; `h ≠ 0`.  Write `#P[J] = #(𝒪_D/J)^r` — legitimate because
+`P[J]` is a vector space over the residue FIELD `𝒪_D/J`, and finite
+because it sits inside `P[J^h] = P[(a)]`, which `hprin` gives `N(a)² ≠ 0`
+elements.  Now count `P[J^h]` twice:
+
+* by the tower lemma `card_tors_pow`, whose divisibility hypothesis is
+  supplied from `hdiv` by the uniformizer argument in step 1 below,
+  `#P[J^h] = #(𝒪_D/J)^(r·h)`;
+* by `hprin` at `a` and multiplicativity of the absolute norm
+  (`card_quotient_pow`), `#P[J^h] = #(𝒪_D/J^h)² = #(𝒪_D/J)^(2h)`.
+
+`#(𝒪_D/J) ≥ 2`, so the exponents agree: `r·h = 2h`, and `h ≠ 0` gives
+`r = 2`.
+
+WHY THIS IS NOT `card_tors_eq_sq`, and why it needs ONE geometric input
+where that one needs three.  `card_tors_eq_sq` reaches `r_J = 2` from the
+integer count `#P[p] = p^(2g)` at a rational prime TOGETHER WITH parity
+and nonvanishing at every `J ∣ p`, because the integer count cannot
+separate the primes above `p` — its own audit exhibits the surviving
+distribution `(r_{J₁}, r_{J₂}) = (1,3)` at a split prime.  The
+principal-ideal input separates them by itself: `J^h` is a power of the
+SINGLE prime `J`, so the count at it sees `r_J` and nothing else.  That
+is exactly the counterexample's blind spot, closed.
+
+STEP 1 REPEATS `exists_mem_torsion_act_uniformizer_eq` at the abstract
+level, deliberately.  That theorem is the same four-step argument
+(`π ∣ N(π) ∈ ℤ`; divisibility by `N`; split off the prime-to-`J` part of
+`(π)`; correct by an idempotent) stated for `GeomFibrePt f x`, whose base
+point is `specAlgClos F ≫ x` and therefore NOT the base point `𝟙 (Spec K)`
+of an abelian variety already over an algebraically closed field.  Rather
+than restate that theorem's base point (someone else's declaration), the
+argument is repeated here over the abstract hypothesis `hdiv`, which is
+what both instances actually consume. -/
+theorem card_tors_eq_sq_of_principal
+    {D : Type*} [Field D] [NumberField D]
+    {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
+    (hdiv : ∀ N : ℕ, N ≠ 0 → ∀ y : P, ∃ w : P, N • w = y)
+    (hprin : ∀ a : 𝓞 D, a ≠ 0 →
+      Nat.card (Submodule.torsionBySet (𝓞 D) P
+          ((Ideal.span {a} : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2)
+    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥) :
+    Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ J) ^ 2 := by
+  classical
+  haveI : J.IsMaximal := hJ
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hJ hJ0
+  -- ### 1. divisibility by the uniformizer, from `N`-divisibility
+  have hsurj : ∀ (k : ℕ) (y : P),
+      y ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ k : Ideal (𝓞 D)) : Set (𝓞 D)) →
+      ∃ z ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ (k + 1) : Ideal (𝓞 D)) : Set (𝓞 D)),
+        π • z = y := by
+    intro n y hy
+    have hπ0 : π ≠ 0 := by rintro rfl; exact hπ2 (Submodule.zero_mem _)
+    have hspan0 : Ideal.span {π} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hπ0
+    have hNne : Ideal.absNorm (Ideal.span {π}) ≠ 0 := fun h =>
+      hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+    obtain ⟨a, ha⟩ : π ∣ ((Ideal.absNorm (Ideal.span {π}) : ℕ) : 𝓞 D) :=
+      Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {π}))
+    obtain ⟨Jb, hJb⟩ : J ∣ Ideal.span {π} :=
+      Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hπ))
+    have hJnotle : ¬ Jb ≤ J := by
+      intro h
+      refine hπ2 ?_
+      have hle : Ideal.span {π} ≤ J ^ 2 := by rw [hJb, sq]; exact Ideal.mul_mono_right h
+      exact hle (Ideal.mem_span_singleton_self π)
+    have hsup : J ⊔ Jb = ⊤ := by
+      rcases eq_or_lt_of_le (le_sup_left : J ≤ J ⊔ Jb) with h | h
+      · exact absurd (le_sup_right.trans h.ge) hJnotle
+      · exact hJ.out.2 _ h
+    have hcop : J ^ (n + 1) ⊔ Jb = ⊤ :=
+      Ideal.isCoprime_iff_sup_eq.mp (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+    obtain ⟨e, he, j, hj, hej⟩ :=
+      Submodule.mem_sup.mp (hcop ▸ (Submodule.mem_top : (1 : 𝓞 D) ∈ (⊤ : Ideal (𝓞 D))))
+    obtain ⟨w, hw⟩ := hdiv _ hNne y
+    have hw' : ((Ideal.absNorm (Ideal.span {π}) : ℕ) : 𝓞 D) • w = y := by
+      rw [Nat.cast_smul_eq_nsmul]; exact hw
+    have hπz₀ : π • (a • w) = y := by rw [smul_smul, ← ha]; exact hw'
+    have hann : (J ^ n) * Ideal.span {π} ≤
+        (Submodule.span (𝓞 D) {a • w}).annihilator := by
+      rw [Ideal.mul_le]
+      intro r hr s hs
+      rw [Submodule.mem_annihilator_span_singleton]
+      obtain ⟨d, rfl⟩ := Ideal.mem_span_singleton.mp hs
+      have h1 : (r * (π * d)) • (a • w) = (r * d) • (π • (a • w)) := by
+        simp only [← mul_smul]
+        congr 1
+        ring
+      rw [h1, hπz₀]
+      exact (mem_tors_iff _ y).mp hy (r * d) (Ideal.mul_mem_right d _ hr)
+    have hjy : j • y = y := by
+      have hey : e • y = 0 :=
+        (mem_tors_iff _ y).mp hy e (Ideal.pow_le_pow_right (Nat.le_succ n) he)
+      have h := add_smul e j y
+      rw [hej, one_smul, hey, zero_add] at h
+      exact h.symm
+    have hEq : (J ^ (n + 1)) * Jb = (J ^ n) * Ideal.span {π} := by
+      rw [hJb, pow_succ, mul_assoc]
+    refine ⟨j • (a • w), ?_, ?_⟩
+    · refine (mem_tors_iff _ _).mpr fun b hb => ?_
+      rw [smul_smul]
+      refine (Submodule.mem_annihilator_span_singleton _ _).mp (hann ?_)
+      rw [← hEq]
+      exact Ideal.mul_mem_mul hb hj
+    · rw [smul_smul, mul_comm, ← smul_smul, hπz₀, hjy]
+  -- ### 2. a power of `J` is principal, because the class group is finite
+  haveI := NumberField.RingOfIntegers.instFintypeClassGroup D
+  have hJmem : J ∈ nonZeroDivisors (Ideal (𝓞 D)) :=
+    mem_nonZeroDivisors_iff_ne_zero.mpr hJ0
+  have hJhbot : ∀ k : ℕ, J ^ k ≠ ⊥ := fun k => pow_ne_zero k hJ0
+  set c : ClassGroup (𝓞 D) := ClassGroup.mk0 ⟨J, hJmem⟩ with hc
+  set h : ℕ := orderOf c with hhdef
+  have hh0 : h ≠ 0 := (orderOf_pos c).ne'
+  have hmemh : (J ^ h) ∈ nonZeroDivisors (Ideal (𝓞 D)) :=
+    mem_nonZeroDivisors_iff_ne_zero.mpr (hJhbot h)
+  have hone : ClassGroup.mk0 (⟨J ^ h, hmemh⟩ : nonZeroDivisors (Ideal (𝓞 D))) = 1 := by
+    have hpc : (⟨J ^ h, hmemh⟩ : nonZeroDivisors (Ideal (𝓞 D)))
+        = (⟨J, hJmem⟩ : nonZeroDivisors (Ideal (𝓞 D))) ^ h :=
+      Subtype.ext (by simp)
+    rw [hpc, map_pow, ← hc]
+    exact pow_orderOf_eq_one c
+  obtain ⟨a, ha⟩ := (ClassGroup.mk0_eq_one_iff hmemh).mp hone
+  have ha' : J ^ h = Ideal.span {a} := ha
+  have ha0 : a ≠ 0 := by
+    rintro rfl
+    rw [Ideal.span_singleton_eq_bot.mpr rfl] at ha'
+    exact hJhbot h ha'
+  -- ### 3. the residue field is finite and has at least two elements
+  have hNJ : Nat.card (𝓞 D ⧸ J) = Ideal.absNorm J := by
+    simp [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  haveI : Finite (𝓞 D ⧸ J) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hNJ]
+    exact fun hz => hJ0 (Ideal.absNorm_eq_zero_iff.mp hz)
+  letI : Field (𝓞 D ⧸ J) := Ideal.Quotient.field J
+  have hq2 : 2 ≤ Nat.card (𝓞 D ⧸ J) := Finite.one_lt_card
+  -- ### 4. the count at `J ^ h`, read off the principal-ideal input
+  have hcardh : Nat.card (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D))) = Nat.card (𝓞 D ⧸ J) ^ (2 * h) := by
+    have h1 := hprin a ha0
+    rw [← ha'] at h1
+    rw [h1, card_quotient_pow, ← pow_mul, Nat.mul_comm]
+  -- ### 5. the residual rank, and the same count from the tower
+  haveI hfinh : Finite (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hcardh]
+    exact pow_ne_zero _ (by omega)
+  have hle : (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+      ≤ Submodule.torsionBySet (𝓞 D) P ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D)) :=
+    tors_mono (Ideal.pow_le_self hh0)
+  haveI hfin : Finite (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) :=
+    Finite.of_injective
+      (fun x : Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)) =>
+        (⟨(x : P), hle x.2⟩ :
+          Submodule.torsionBySet (𝓞 D) P ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D))))
+      (by
+        intro x y hxy
+        simp only [Subtype.mk.injEq] at hxy
+        exact Subtype.ext hxy)
+  haveI : Module.Finite (𝓞 D ⧸ J)
+      (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) :=
+    Module.Finite.of_finite
+  set r : ℕ := Module.finrank (𝓞 D ⧸ J)
+    (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) with hrdef
+  have hcardr : Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ J) ^ r := by
+    haveI := Fintype.ofFinite (𝓞 D ⧸ J)
+    haveI := Fintype.ofFinite
+      (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+    have hcc := Module.card_eq_pow_finrank (K := 𝓞 D ⧸ J)
+      (V := (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))))
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card] at hcc
+    exact hcc
+  have htower := card_tors_pow J hJ hJ0 hπ hπ2 hsurj r hcardr h
+  rw [hcardh] at htower
+  have hrh : 2 * h = r * h := Nat.pow_right_injective hq2 htower
+  have hr2 : r = 2 := by
+    have hcancel := Nat.eq_of_mul_eq_mul_right (Nat.pos_of_ne_zero hh0) hrh.symm
+    omega
+  rw [hcardr, hr2]
+
 end LevelFrame
 
 /-! #### Base change of a multiplication, and the reduction of the Betti
@@ -2561,13 +2759,118 @@ theorem cardTorsion_baseChange (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S)
 end Mult
 
 open _root_.NumberField in
+/-- **`#A[a] = N_{D/ℚ}(a)²` FOR AN ABELIAN VARIETY WITH REAL
+MULTIPLICATION OVER AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC
+ZERO** — the classical `deg[a] = N(a)²` (sorry leaf, created 2026-07-28;
+it is now the ONLY geometric input of the six-theorem cluster below.
+Mumford *Abelian Varieties* §6, §19 (Thm 4, `deg` is a homogeneous
+polynomial of degree `2g` on `End⁰(A)`), Milne *Abelian Varieties*
+I.7, I.10, Goren *Lectures on Hilbert Modular Varieties* I.1, Shimura).
+
+`A` is an abelian variety over an algebraically closed field `K` of
+characteristic zero, of dimension `g = [D : ℚ]`, with an action of `𝒪_D`;
+`A(K) = RelPoint fK (𝟙 (Spec K))` is its group of points.  The claim is
+that the kernel of `a : A(K) → A(K)` has exactly `N_{D/ℚ}(a)²` elements,
+for every nonzero `a ∈ 𝒪_D` — note `#(𝒪_D/(a)) = |N_{D/ℚ}(a)|`, so the
+right-hand side is the classical `N(a)²`.
+
+**WHY IT IS TRUE.**  `H₁(A, ℤ)` is a lattice of rank `2g` carrying the
+`𝒪_D`-action, and `A[I] ≅ H₁/I H₁` for every nonzero `I`.  `H₁ ⊗ ℚ` is
+then a `D`-vector space — `D` is a FIELD, so no freeness has to be
+argued — of `ℚ`-dimension `2g = 2[D : ℚ]`, hence of `D`-dimension exactly
+`2`.  `H₁` is finitely generated and torsion-free over the Dedekind
+domain `𝒪_D`, hence projective of rank `2`, hence `≅ 𝒪_D ⊕ 𝔞`, so
+`#(H₁/aH₁) = #(𝒪_D/(a))²`.  This is where the relative dimension `hdim`
+is consumed, and it is the only place.
+
+**WHY THIS STATEMENT RATHER THAN THE MAXIMAL-IDEAL ONE** (the shape this
+leaf replaced, 2026-07-28).  The two are equivalent — `card_torsion_of_
+isMaximal`'s content is unchanged — but this one is
+the statement the sources actually prove, and it is better shaped for a
+prover in three ways:
+
+* it is about ONE endomorphism, not about the ideal theory of `𝒪_D`:
+  no maximal ideals, no residue fields, no ranks;
+* it is the exact analogue of what
+  `Modularity/AbelianSchemeIsogeny.lean` already builds for `[n]`
+  (`mulByNat`, `finite_preimage_mulByNat`, `flat_mulByNat`,
+  `surjective_mulByNat`, `formallyUnramified_mulByNat`).  A successor
+  should first make `[a]` a MORPHISM — by Yoneda,
+  `(m.act a (RelPoint.self fK)).1 : X ⟶ X`, with
+  `m.act a y = ⟨y.1 ≫ [a], _⟩` from `Mult.pre_act` — and then reuse that
+  development verbatim with `n` replaced by `a`: `[a]` is proper, of
+  finite presentation, quasi-finite and (char 0, `a ≠ 0`) unramified,
+  hence finite flat, and `#ker[a](K) = deg[a]`;
+* the residue is then exactly `deg[a] = N(a)²`, which is what the
+  theorem of the cube computes.  At `a = n ∈ ℤ` it is the familiar
+  `deg[n] = n^(2g)`, so nothing is lost relative to the classical route.
+
+**THE THREE STANDING ROUTES, all still available**, and any ONE of them
+closes this leaf: (1) the degree of `[a]` by the theorem of the cube
+(Mumford §6, §18, §19); (2) singular homology after an embedding
+`K ↪ ℂ`, or étale homology `H₁^{ét}(A, ẑ)`; (3) the rational Tate module
+`V_ℓ(A)` free of rank `2` over `D ⊗ ℚ_ℓ`.  All three are mathlib-scale.
+
+**TWO AXES SEARCHED AND REFUTED — do not re-take them.**
+
+* The full `ℤ`-module structure `A[n] ≅ (ℤ/n)^(2g)`, PLUS divisibility,
+  PLUS faithfulness of `𝒪_D → End(A)`, is provably INSUFFICIENT: at a
+  split prime of a real quadratic field the module `𝒪_{J₁} ⊕ 𝒪_{J₂}³`
+  has the right `ℤ_p`-rank `2g` and the wrong local ranks `(1,3)`.  It is
+  the *rational* input `dim_ℚ H₁ = 2g` that pins all local ranks at once,
+  and this leaf is exactly the smallest statement that carries it: the
+  count at `(a)` for `a` generating a power of a single prime sees that
+  prime's local rank alone.
+* The Lie-algebra / Rapoport axis gives nothing: freeness of `Lie(A)`
+  over `𝒪_D ⊗ 𝒪_S` is an extra condition, not a consequence, and the
+  local ranks are `ℓ`-adic and invisible to it.
+
+**`[CharZero K]` IS LOAD-BEARING.**  In characteristic `p` the statement
+is FALSE at every `a` divisible by a prime above `p`: for an ordinary
+abelian variety `#A[p](K) = p^g`, not `p^(2g)`.  In the scheme-level form
+the hypothesis arrives ONLY through `[NumberField F]` — the geometric
+fibre is taken over `F̄`.  A successor must not weaken it; the honest
+weakening, if one is ever wanted, is "`a` prime to the characteristic",
+not `IsAlgClosed` alone.
+
+**`hdim` IS LOAD-BEARING TOO.**  `AbelianSchemeStruct` requires only
+proper, smooth and geometrically connected, which the IDENTITY `fK = 𝟙`
+satisfies: an abelian variety of dimension `0`, whose point group is
+trivial, giving `#A[a] = 1` against `N(a)² > 1`.  So the leaf is FALSE
+without it.
+
+**`IsTotallyReal D` IS NOT NEEDED AND IS DELIBERATELY ABSENT**, and
+neither is faithfulness of `𝒪_D → End(A)`: a nonzero kernel would make
+`𝒪_D/ker` a FINITE ring mapping unitally into the torsion-free `End(A)`,
+which is nonzero because `g ≥ 1`.  Recording either would record a
+dependence that does not exist.
+
+**CIRCULARITY WARNING.**  Everything below this leaf in the file —
+`card_torsion_isMaximal_of_isAlgClosed`, `exists_bettiFrame`,
+`card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal`,
+`card_torsion_ne_one_of_isMaximal`, `card_torsion_of_isMaximal` — is
+PROVEN over THIS statement.  Citing any of them here would close the
+loop and prove nothing.  They are one node with one owner, not six. -/
+theorem card_torsion_span_singleton_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
+    [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
+    (m : Mult abK (NumberField.RingOfIntegers D))
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) fK)
+    (a : NumberField.RingOfIntegers D) (ha : a ≠ 0) :
+    m.cardTorsion (𝟙 (Spec (CommRingCat.of K)))
+        (Ideal.span {a} : Ideal (NumberField.RingOfIntegers D))
+      = Nat.card (NumberField.RingOfIntegers D ⧸
+          (Ideal.span {a} : Ideal (NumberField.RingOfIntegers D))) ^ 2 := sorry
+
+open _root_.NumberField in
 /-- **`#A[J] = #(𝒪_D/J)²` FOR AN ABELIAN VARIETY WITH REAL
 MULTIPLICATION OVER AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC
-ZERO** (sorry leaf, created 2026-07-27; it is the whole geometric content
-of `exists_bettiFrame` below, hoisted out of a sorried `have` and
-restated over a FIELD.  Mumford *Abelian Varieties* §1, §6, §19, Milne
-*Abelian Varieties* I.1–I.7, Shimura, Goren *Lectures on Hilbert Modular
-Varieties* I.1).
+ZERO** (PROVEN 2026-07-28, over the single leaf
+`card_torsion_span_singleton_of_isAlgClosed` above — which was this
+statement's own content, re-cut from MAXIMAL to PRINCIPAL ideals.  It was
+a sorry leaf from 2026-07-27 until then.  Mumford *Abelian Varieties* §1,
+§6, §19, Milne *Abelian Varieties* I.1–I.7, Shimura, Goren *Lectures on
+Hilbert Modular Varieties* I.1).
 
 `A` is an abelian variety over an algebraically closed field `K` of
 characteristic zero, of dimension `g = [D : ℚ]`, with an action of `𝒪_D`;
@@ -2575,36 +2878,43 @@ characteristic zero, of dimension `g = [D : ℚ]`, with an action of `𝒪_D`;
 that its `J`-torsion has exactly `#(𝒪_D/J)²` points, at every maximal
 `J`.
 
-**WHY IT IS TRUE, and what the residue actually is.**  `H₁(A, ℤ)` is a
-lattice of rank `2g` carrying the `𝒪_D`-action, and `A[I] ≅ H₁/I H₁` for
-every nonzero `I`.  Everything after that is FREE and needs no
-hypothesis beyond `[D : ℚ] = g`:
+**WHERE THE MATHEMATICS NOW SITS.**  Two inputs, and only the second is
+open:
 
-* `H₁ ⊗ ℚ` is a `D`-vector space of `ℚ`-dimension `2g = 2[D : ℚ]`, hence
-  of `D`-dimension exactly `2` — this is where the relative dimension is
-  consumed, and it pins ALL the local ranks at once;
-* `H₁` is a finitely generated torsion-free module over the Dedekind
-  domain `𝒪_D`, hence projective, hence `≅ 𝒪_D ⊕ 𝔞` with `𝔞`
-  invertible, so `H₁/J H₁ ≅ (𝒪_D/J)²`.
+* DIVISIBILITY of `A(K)` — proven here in four lines, since solving
+  `N • w = y` is by Yoneda a factorization through `[N] : X ⟶ X`, and
+  `exists_comp_mulByNat_eq` supplies it for any algebraically closed
+  base field;
+* the count `#A[(a)] = #(𝒪_D/(a))²` at nonzero PRINCIPAL ideals — the
+  leaf `card_torsion_span_singleton_of_isAlgClosed`, i.e. the classical
+  `deg[a] = N_{D/ℚ}(a)²`.
 
-So the residue is exactly the first Betti number, `dim_ℚ H₁(A, ℚ) = 2g`,
-and the three classical inputs it used to be cut into (the degree of
-`[N]`, parity from a polarization, nonvanishing from
-`End(A) ↪ End(T_p A)`) are three DIFFERENT ways of reaching the same
-place; see the docstring of `exists_bettiFrame` for all three, and the
-audit under `card_torsion_ne_one_of_isMaximal` for why no combination of
-integer counts can replace the rational input.
+`LevelFrame.card_tors_eq_sq_of_principal` assembles them: the class group
+of `𝒪_D` is finite, so `J^h = (a)` for some `h ≠ 0`; the leaf counts
+`A[J^h]` as `#(𝒪_D/J)^(2h)`, the tower lemma counts it as
+`#(𝒪_D/J)^(r·h)` where `r` is the residual rank, and cancelling exponents
+gives `r = 2`.  Nothing else is used.
 
-**`[CharZero K]` IS LOAD-BEARING, AND NOTHING IN THE OLD PHRASING SHOWED
-IT** (recorded 2026-07-27, at the hoist).  In characteristic `p` the
-statement is FALSE at every `J` above `p`: for an ordinary abelian
-variety `#A[p](K) = p^g`, not `p^(2g)`, and correspondingly `A[J]` drops
-rank at `J ∣ p`.  In the scheme-level form the hypothesis arrives ONLY
-through `[NumberField F]` — the geometric fibre is taken over
-`F̄` — which is why the dependence deserves to be written down here
-rather than inferred.  A successor must not weaken it; the honest
-weakening, if one is ever wanted, is `J` above a residue characteristic
-INVERTIBLE in `K`, not `IsAlgClosed` alone.
+**WHY THAT RE-CUT IS WORTH ITS WEIGHT, given the two statements are
+EQUIVALENT.**  The classical assembly `LevelFrame.card_tors_eq_sq` needs
+THREE geometric inputs — the integer count `#A[p] = p^(2g)`, parity from
+a nondegenerate polarized Weil pairing, and nonvanishing from
+`End(A) ↪ End(T_p A)` — because the integer count alone cannot separate
+the primes above `p` (the audit under `card_torsion_ne_one_of_isMaximal`
+exhibits the surviving distribution `(r_{J₁}, r_{J₂}) = (1,3)`), and
+because `PolarizationStruct` must be REPAIRED before parity can even be
+stated.  Passing through principal ideals separates the primes for free:
+`J^h` is a power of one prime.  So the cluster went from three leaves,
+two of which need new structures, to one leaf that needs none.
+
+**`[CharZero K]` IS LOAD-BEARING.**  In characteristic `p` the statement
+is FALSE at every `J` above `p`: for an ordinary abelian variety
+`#A[p](K) = p^g`, not `p^(2g)`, and correspondingly `A[J]` drops rank at
+`J ∣ p`.  In the scheme-level form the hypothesis arrives ONLY through
+`[NumberField F]` — the geometric fibre is taken over `F̄`.  A successor
+must not weaken it; the honest weakening, if one is ever wanted, is `J`
+above a residue characteristic INVERTIBLE in `K`, not `IsAlgClosed`
+alone.
 
 **`IsTotallyReal D` IS NOT NEEDED AND IS DELIBERATELY ABSENT.**  The
 consumer has it; the classical proof does not use it.  Nor is
@@ -2614,23 +2924,12 @@ into the torsion-free `End(A)`, and `End(A) ≠ 0` because `g ≥ 1`.
 Recording either as a hypothesis would record a dependence that does not
 exist.
 
-**WHAT THE HOIST BUYS, AND WHAT IT DOES NOT.**  It does not touch the
-mathematics: the residue is unchanged and still needs one of the three
-routes, each of which is a mathlib-scale build (there is no degree of a
-finite locally free morphism, no theorem of the cube, no singular or
-étale homology at this pin).  What it buys is that the statement is now
-the one the sources prove — an abelian VARIETY over an algebraically
-closed field, its group of points, no relative bookkeeping — and that
-the descent from it to the geometric fibre of an abelian SCHEME is
-PROVEN, by `Mult.cardTorsion_baseChange` above.  A prover here may work
-entirely over `K`.
-
-**DO NOT ALSO DISPATCH AT `card_torsion_of_isMaximal`.**  That theorem's
-statement is this one at the geometric base point, and the whole
-five-theorem cluster between them (`exists_bettiFrame`,
-`card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal`,
-`card_torsion_ne_one_of_isMaximal`, `card_torsion_of_isMaximal`) is
-PROVEN over this single leaf.  They are one node, not five. -/
+**DO NOT DISPATCH AT THIS THEOREM, NOR AT `card_torsion_of_isMaximal`.**
+The whole six-theorem cluster (`card_torsion_isMaximal_of_isAlgClosed`,
+`exists_bettiFrame`, `card_torsion_span_natCast`,
+`even_dim_torsion_of_isMaximal`, `card_torsion_ne_one_of_isMaximal`,
+`card_torsion_of_isMaximal`) is PROVEN over the single leaf above.  They
+are one node with one owner, not six. -/
 theorem card_torsion_isMaximal_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
     [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
     {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
@@ -2638,16 +2937,38 @@ theorem card_torsion_isMaximal_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Fie
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) fK)
     (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal) :
     m.cardTorsion (𝟙 (Spec (CommRingCat.of K))) J
-      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := sorry
+      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := by
+  classical
+  letI := abK.addCommGroup (𝟙 (Spec (CommRingCat.of K)))
+  letI := m.module (𝟙 (Spec (CommRingCat.of K)))
+  -- `𝒪_D` is not a field, so a maximal ideal of it is nonzero
+  have hJ0 : J ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hJ (NumberField.RingOfIntegers.not_isField D)
+  /- **DIVISIBILITY, and it is PROVEN.**  Solving `N • w = y` in
+  `A(K) = RelPoint fK (𝟙 (Spec K))` is, by Yoneda
+  (`exists_nsmul_of_exists_comp`), factoring `y.1 : Spec K ⟶ X` through
+  `[N] : X ⟶ X`, and that factorization is `exists_comp_mulByNat_eq`,
+  which needs only that `K` is algebraically closed.  Note this is the
+  base point `𝟙 (Spec K)`, not a geometric fibre, so
+  `exists_nsmul_eq_geomFibrePt` does not apply verbatim — but its
+  geometric input does. -/
+  have hdiv : ∀ N : ℕ, N ≠ 0 →
+      ∀ y : RelPoint fK (𝟙 (Spec (CommRingCat.of K))), ∃ w, N • w = y := fun N hN y =>
+    abK.exists_nsmul_of_exists_comp N y (exists_comp_mulByNat_eq abK N hN y.1)
+  exact LevelFrame.card_tors_eq_sq_of_principal
+    (D := D) (P := RelPoint fK (𝟙 (Spec (CommRingCat.of K)))) hdiv
+    (fun a ha => card_torsion_span_singleton_of_isAlgClosed m hdim a ha) J hJ hJ0
 
 end FibreReduction
 
 open _root_.NumberField in
 /-- **The homology of a geometric fibre exists** (PROVEN 2026-07-27 over
-the single geometric leaf `card_torsion_isMaximal_of_isAlgClosed` above,
+the geometric statement `card_torsion_isMaximal_of_isAlgClosed` above,
 which is what the sorried `have` of the 2026-07-27 decomposition became
 when it was hoisted to a named statement over an algebraically closed
-FIELD.  Mumford *Abelian Varieties* §1, §6, §19, Milne *Abelian
+FIELD — and which is itself PROVEN since 2026-07-28 over the single leaf
+`card_torsion_span_singleton_of_isAlgClosed`, the count at PRINCIPAL
+ideals.  Mumford *Abelian Varieties* §1, §6, §19, Milne *Abelian
 Varieties* I.1–I.7, Silverman *AEC* VI for the elliptic case).
 
 **NO HOMOLOGY IS NEEDED, AND THIS IS THE POINT OF THE DECOMPOSITION.**
@@ -2662,12 +2983,16 @@ outright by the FREE module `H := Fin 2 → 𝒪_D`, whose `ℤ`-rank is
 of the leaf is the single `card_torsion` clause, and the homology is
 merely one way of producing it.
 
-WHAT ACTUALLY REMAINS, in full: `#A[J] = #(𝒪_D/J)²` at every MAXIMAL
-`J` — and that is now the NAMED leaf
-`card_torsion_isMaximal_of_isAlgClosed` above, stated over an
-algebraically closed field of characteristic zero, with the descent from
-it to the geometric fibre PROVEN here by `Mult.cardTorsion_baseChange`.
-Two further proven steps carry it to the stated frame:
+WHAT ACTUALLY REMAINS, in full: `#A[(a)] = #(𝒪_D/(a))²` at every nonzero
+PRINCIPAL ideal — the NAMED leaf
+`card_torsion_span_singleton_of_isAlgClosed` above, i.e. the classical
+`deg[a] = N_{D/ℚ}(a)²`, stated over an algebraically closed field of
+characteristic zero.  From it,
+`card_torsion_isMaximal_of_isAlgClosed` gets the maximal-ideal count
+(class group plus tower — see `LevelFrame.card_tors_eq_sq_of_principal`),
+and the descent from that to the geometric fibre is PROVEN here by
+`Mult.cardTorsion_baseChange`.  Two further proven steps carry it to the
+stated frame:
 
 * `LevelFrame.card_tors_eq_sq_of_ne_bot` (above) propagates the maximal
   count to every NONZERO ideal, by the factorisation `I = ∏ J^(e_J)`,
@@ -2689,20 +3014,28 @@ input to the leaf; citing any of it would close the loop and prove
 nothing.  This is not a defect introduced by the decomposition: it is a
 fact about the cluster that the decomposition makes visible, namely that
 `BettiFrame` carries exactly the information of
-`card_torsion_of_isMaximal` and no more.  The five theorems named here
-are ONE node with one owner, not five.
+`card_torsion_of_isMaximal` and no more.  The theorems named here are ONE
+node with one owner, not six.
 
 THE THREE HONEST ROUTES, all of which are inputs from OUTSIDE this
-cluster, and any ONE of which closes it:
+cluster, and any ONE of which closes it.  Route 1 is now the RECOMMENDED
+one and has been simplified: since 2026-07-28 the leaf asks for the
+degree of `[a]` at a general `a ∈ 𝒪_D` and needs NEITHER of the other
+two members of the classical triple.
 
-1. the classical triple, recombined by `LevelFrame.card_tors_eq_sq`:
-   the integer count `#A[p] = p^(2g)` (theorem of the cube — Mumford §6,
-   §18; the missing piece is a `degree` for the finite locally free
-   `[N]` of `Modularity/AbelianSchemeIsogeny.lean`), PARITY from a
-   nondegenerate `𝒪_D`-linear polarized Weil pairing (Mumford §16, §20,
-   §23 — note `PolarizationStruct` in `Modularity/AbelianScheme.lean` is
-   satisfied by the constant zero map and must be repaired first), and
-   NONVANISHING from `End(A) ↪ End(T_p A)` (Mumford §19);
+1. the DEGREE route.  `deg[a] = N_{D/ℚ}(a)²` (theorem of the cube —
+   Mumford §6, §18, §19; the missing piece is a `degree` for the finite
+   locally free `[a]`, and `Modularity/AbelianSchemeIsogeny.lean`
+   already builds properness, finiteness, flatness, finite presentation
+   and surjectivity of `[n]`).  The older form of this route also needed
+   PARITY from a nondegenerate `𝒪_D`-linear polarized Weil pairing
+   (Mumford §16, §20, §23 — note `PolarizationStruct` in
+   `Modularity/AbelianScheme.lean` is satisfied by the constant zero map
+   and must be repaired first) and NONVANISHING from
+   `End(A) ↪ End(T_p A)` (Mumford §19), recombined by
+   `LevelFrame.card_tors_eq_sq`.  Both are now UNNECESSARY: passing
+   through principal ideals separates the primes above `p` without them
+   (`LevelFrame.card_tors_eq_sq_of_principal`);
 2. `H₁(A_x, ℤ)` itself — singular homology after an embedding
    `F̄ ↪ ℂ`, or étale homology `H₁^{ét}(A, ẑ)`.  This remains a correct
    route and it is the one the section note above describes; it is now
@@ -8483,8 +8816,9 @@ anywhere beneath this declaration is `exists_tateWeilSystem_of_mult`
 pairings, before the inverse limit).  This declaration and the whole
 chain between it and that leaf are proven; do NOT dispatch a prover
 here.  The module's other direct sorries
-(`card_torsion_isMaximal_of_isAlgClosed` — the geometric residue of the
-now-proven `exists_bettiFrame` —,
+(`card_torsion_span_singleton_of_isAlgClosed` — the geometric residue of
+the now-proven `exists_bettiFrame` and
+`card_torsion_isMaximal_of_isAlgClosed` —,
 `exists_finset_frobSpecialization_of_mult`,
 `exists_frobEndoCharEq_of_mult_finiteBase`) are outside this chain.
 
