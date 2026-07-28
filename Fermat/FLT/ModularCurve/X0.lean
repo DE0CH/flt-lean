@@ -35571,103 +35571,148 @@ theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧ IsAtkinLehner N hX w hw :=
   sorry
 
-/-- **`X_0(169)(ℚ)` HAS AT MOST TWO ELEMENTS** (sorry leaf, 2026-07-27) —
-LEVEL-SPECIFIC, and the point-counting half of
+/-! #### A CIRCULAR CUT, FOUND AND WITHDRAWN 2026-07-28
+
+The cut recorded here on 2026-07-27 replaced the CM half of
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine` by a POINT COUNT —
+`eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine`, asserting
+`x = y ∨ x = z ∨ y = z` for any three rational points of `X_0(169)`,
+i.e. `#X_0(169)(ℚ) ≤ 2`.  That statement is Kenku's theorem, and it is
+**the conclusion of the very tower it was made an input to**:
+
+    eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine    -- ASSUMED  #X_0(169)(ℚ) ≤ 2
+      → noFixedRationalPoint_atkinLehner_x0OneSixtyNine
+      → exists_atkinLehnerPrym_x0OneSixtyNine
+      → hasRankZeroAbelianImage_x0OneSixtyNine
+      → card_le_numRationalCusps_x0OneSixtyNine     -- PROVED   #X_0(169)(ℚ) ≤ 2
+      → not_stableCyclic_oneHundredSixtyNine
+      → y0HasNoRationalPoint_oneSixtyNine
+
+`card_le_numRationalCusps_x0OneSixtyNine` concludes
+`s.card ≤ numRationalCusps 169` for every finite set of rational points,
+and `numRationalCusps 169 = 2`; so the two are the same statement, and the
+Jacobian, Prym, Kolyvagin–Logachev, Riemann–Roch and Mordell–Weil-sieve
+leaves in between were deriving it from itself.  Nothing unsound followed
+and Lean saw no cycle — a sorried leaf is an assumption, and declaration
+order forbids the literal loop — but the FRONTIER was the casualty: the
+assumed leaf is exactly as hard as the theorem the tower exists to prove,
+so no leaf in that chain could ever pay for itself.
+
+**Where the reasoning went wrong**, since the mistake is a tempting one.
+The 2026-07-27 argument for dropping the CM half was "`Y_0(169)(ℚ)` is
+EMPTY, so there is no rational moduli point for the CM count to be
+about".  That is true of the genuine curve, and it is exactly
+`y0HasNoRationalPoint_oneSixtyNine` — proved in this file *below*, and
+only through this node.  The module's remark that `IsAtkinLehner` is
+quantified over every test object *because* `Y_0(169)(ℚ)` is empty is a
+remark about the mathematics, not a fact available to a proof here.
+
+**The repair** is the cut this file's own subsection note above
+`IsAtkinLehner` has described all along — "the CM/class-number count
+`h(−676) = 6` plus the cusp swap" — with the assembly now mechanised
+rather than asserted:
+
+| leaf | theory | needs Kenku? |
+|---|---|---|
+| `noFixedRationalCusp_atkinLehner_x0OneSixtyNine` | `w_N` exchanges the cusps above `d` and `N/d` | no |
+| `noFixedModuliPoint_atkinLehner_x0OneSixtyNine` | CM points of discriminant `−676`, `h(−676) = 6` | no |
+
+Both are strictly weaker than Kenku's theorem, neither is downstream of
+anything in this file, and the case split between them is free:
+`IsX0Compactification.IsCusp` is BY DEFINITION "not in the image of
+`Y(ℚ)`", so the two leaves cover `X(ℚ)` exactly and the assembly is
+`by_cases`.
+
+The withdrawn leaf `exists_ne_atkinLehner_x0OneSixtyNine` ("`w_169` moves
+at least one rational point") goes with it: "moves one, hence moves both"
+is an argument about a TWO-element set, so it was usable only in the
+presence of the count. -/
+
+/-- **`w_169` FIXES NO RATIONAL CUSP OF `X_0(169)`** (sorry leaf,
+2026-07-28) — LEVEL-SPECIFIC, and the cusp half of
 `noFixedRationalPoint_atkinLehner_x0OneSixtyNine`.
 
-TRUE, and in fact `X_0(169)(ℚ)` has EXACTLY two elements: the cusps `0`
-and `∞`.  Stated as "no three pairwise distinct rational points" rather
-than as an enumeration `∃ c₀ c₁, ∀ x, x = c₀ ∨ x = c₁`, because the
-enumeration additionally asserts that `RelPoint strX (𝟙 SpecQ)` is
-INHABITED — true, but content the consumer never uses — and because this
-form needs no `IsX0Compactification.CuspIndexing` to state.
+TRUE.  `w_N` exchanges the cusps above `d` and `N/d`.  The divisors of
+`169` are `1, 13, 169`, with `φ(gcd(d, N/d)) = 1, 12, 1`, so
+`rationalCuspDivisors 169 = {1, 169}` and `numRationalCusps 169 = 2`
+(both decidable here).  `w_169` therefore SWAPS the two rational cusps
+`∞` and `0`, and fixes neither.  Note that the only self-paired divisor
+is `d = 13`, whose `12` cusps are conjugate and irrational — so no
+rational cusp of `X_0(169)` is even a candidate for being fixed.
 
-**Why it is true, in two halves.**
+**The check that refutes it**: `numRationalCusps 169 ≠ 2`, or a rational
+cusp of `X_0(169)` fixed by `w_169`.
 
-* *No non-cuspidal rational point.*  `Y_0(169)(ℚ)` classifies pairs
-  `(E, C)` with `C` cyclic of order `169`, i.e. elliptic curves over `ℚ`
-  admitting a rational cyclic `169`-isogeny.  By Mazur's isogeny theorem
-  together with Kenku's completion of the list, a rational cyclic
-  `N`-isogeny exists only for
-  `N ∈ {1, …, 19, 21, 25, 27, 37, 43, 67, 163}`, and `169` is not among
-  them.  So every rational point of `X` is a cusp.  This module already
-  depends on `Y_0(169)(ℚ) = ∅` elsewhere — it is the reason `IsAtkinLehner`
-  is quantified over every test object rather than over `ℚ`-points, where
-  it would be vacuous.
-* *Only two of the fourteen cusps are rational.*  The cusps above a
-  divisor `d ∣ N` number `φ(gcd(d, N/d))`, and they are `ℚ`-rational
-  exactly when that count is `1`, which is what `rationalCuspDivisors`
-  computes.  At `N = 169` the divisors are `1, 13, 169` with
-  `φ(gcd(d, N/d)) = 1, 12, 1`, so `rationalCuspDivisors 169 = {1, 169}`
-  and `numRationalCusps 169 = 2` — both decidable here — while the twelve
-  cusps above `13` are conjugate and none of them is rational.
+**What proving it needs.**  `IsX0Compactification.CuspLocus.ratPoint`
+presents a rational cusp as a `ℚ`-point factoring through `κ d` for a
+divisor `d ∣ 169`, and
+`IsX0Compactification.CuspLocus.mem_rationalCuspDivisors` puts that `d`
+in `rationalCuspDivisors 169` — both PROVEN here, over the single
+Deligne–Rapoport leaf `exists_cuspResidueIndexing`.  What is left is the
+permutation itself: `w` is determined on `X` by its restriction to the
+dense open `Y_0(169)` (separatedness plus reducedness of a smooth curve —
+`ext_of_isDominant_of_isSeparated`, in this file), and the boundary
+permutation it induces is `d ↦ N/d`.  That last sentence is the whole of
+the leaf, and it is where `_hal` enters, since the pin is what identifies
+the restriction.
 
-**The check that refutes it**: an elliptic curve over `ℚ` carrying a
-rational cyclic `169`-isogeny, or `numRationalCusps 169 ≠ 2`.
-
-**What proving it needs**: Mazur–Kenku, which is absent from mathlib,
-from `~/cs/FLT` and from this project (`grep -rn "isogenyPrimes\|Kenku"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns only
-`mazurIsogenyPrimes` noise), together with the identification of
-`X(ℚ) ∖ Y(ℚ)` with the rational cusps — `IsX0Compactification.IsCusp`
-and `CuspIndexing` are the local API for that half.
-
-**`_hX` carries the entire content**: without it `X` is an arbitrary
-scheme over `ℚ` and the statement is false for, say, `X = 𝔸¹_ℚ`. -/
-theorem eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine {X Y : Scheme.{0}}
-    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification 169 strX strY jY)
-    (x y z : RelPoint strX (𝟙 SpecQ)) : x = y ∨ x = z ∨ y = z :=
-  sorry
-
-/-- **`w_169` MOVES A RATIONAL POINT OF `X_0(169)`** (sorry leaf,
-2026-07-27) — LEVEL-SPECIFIC, and the cusp-swap half of
-`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`.
-
-TRUE: `w_N` exchanges the cusps above `d` and `N/d`, and
-`rationalCuspDivisors 169 = {1, 169}`, so `w_169` SWAPS the two rational
-cusps `∞` and `0` and in particular moves both of them.
-
-**Only "moves at least one" is asserted**, and that is not a weakening in
-context: combined with `eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine` it
-is EQUIVALENT to moving every rational point, since an involution of a
-two-element set that moves one point moves the other (the assembly below
-is that argument).  Asserting the swap by name would force this leaf to
-produce a `CuspIndexing` as well, mixing the cusp bookkeeping into a
-statement that does not need it.
-
-**`_hal` may not be dropped, and it is the only thing keeping this leaf
-true.**  `w := 𝟙 X` is an involution over `ℚ` that moves nothing, and
-`X_0(169)(ℚ)` is nonempty (it has two rational cusps), so without the
-moduli pin the statement is FALSE.
-
-**What proving it needs, and it is NOT the CM theory the consumer's
-previous docstring named.**  The pin constrains `w` only on moduli
-points, and `Y_0(169)(ℚ) = ∅`, so it says nothing about `ℚ`-points
-directly; the route is (i) `w` is determined on `X` by its restriction to
-the dense open `Y_0(169)` — separatedness plus reducedness of a smooth
-curve — and (ii) the induced permutation of cusps is `d ↦ N/d`, which
-exchanges `1` and `169` in `rationalCuspDivisors 169`.  Step (ii) is
-where `IsX0Compactification.CuspIndexing` is used.
-
-The CM half — the fixed points of `w_N` on `Y_0(N)` are the CM points of
-discriminant `−4N`, and `h(−676) = 6` so none is rational — is what would
-be needed at a level with rational non-cuspidal points.  At `169` it is
-SUBSUMED by the point count above, because `Y_0(169)` has no rational
-point to fix at all.  That is a genuine simplification of the route this
-leaf's consumer originally recorded, and it is why `h(−676)` appears
-nowhere below. -/
-theorem exists_ne_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
+**`_hal` may not be dropped.**  `w := 𝟙 X` is an involution over `ℚ`
+fixing every point, and `X_0(169)(ℚ)` contains two rational cusps, so
+without the moduli pin the statement is FALSE. -/
+theorem noFixedRationalCusp_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
     (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
-    ∃ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
+    ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x → RelPoint.post w hw x ≠ x :=
   sorry
 
-/-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (PROVEN
-2026-07-27 over the two leaves immediately above; introduced as a sorry
-node earlier the same day) — LEVEL-SPECIFIC, and the leaf that consumes
-the moduli pin.
+/-- **`w_169` FIXES NO RATIONAL POINT OF `Y_0(169)`** (sorry leaf,
+2026-07-28) — LEVEL-SPECIFIC, and the moduli half of
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`.
+
+TRUE, by the CM count.  A point of `Y_0(N)` fixed by `w_N` is a pair
+`(E, C)` with `(E/C, E[N]/C) ≅ (E, C)`; composing `E → E/C ≅ E` gives an
+endomorphism of `E` of degree `N`, so `E` has complex multiplication by
+an order of discriminant `−4N` — and of discriminant `−N` as well when
+`N ≡ 3 (mod 4)`, which `169 ≡ 1 (mod 4)` excludes.  A CM point of
+discriminant `D` is defined over the ring class field of that order,
+which has degree `h(D)` over the imaginary quadratic field; here
+`D = −676 = −4 · 169`, the order is `ℤ[13i] ⊂ ℚ(i)` of conductor `13`,
+and `h(−676) = 6` (`quadclassunit(-676).no`, PARI/GP, recomputed
+2026-07-28).  So the fixed points are defined over a field of degree
+`12` over `ℚ` and none of them is rational.
+
+**The check that refutes it**: `h(−676) = 1`, or a rational point of
+`Y_0(169)` fixed by `w_169`.
+
+**VACUITY AUDIT, and it is the reason for the fixed-point phrasing.**
+The statement is in fact vacuously true, because `Y_0(169)(ℚ) = ∅` — but
+that is Kenku's theorem, in this file `y0HasNoRationalPoint_oneSixtyNine`,
+proved BELOW and only through this node.  Writing the leaf as
+`IsEmpty (RelPoint strY (𝟙 SpecQ))` would therefore reinstate exactly the
+circularity recorded in the subsection note above.  The fixed-point form
+is what the CM argument discharges ON ITS OWN, with no Kenku input, and
+it is all the consumer needs.  A prover who closes this leaf by first
+proving Kenku has not done anything wrong, but has also not made this
+node any cheaper — the point of the phrasing is that a much smaller
+theory suffices.
+
+**`_hal` may not be dropped**: `w := 𝟙 X` fixes every point, so without
+the moduli pin the leaf would assert `Y_0(169)(ℚ) = ∅` outright — Kenku
+again, and circular again.  `_hw2` is what makes "fixed point" the right
+notion for an order-`2` action. -/
+theorem noFixedModuliPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
+    ∀ y : RelPoint strY (𝟙 SpecQ),
+      RelPoint.post w hw (sectionAlong jY hX.comm y) ≠ sectionAlong jY hX.comm y :=
+  sorry
+
+/-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (PROVEN over
+the two leaves immediately above — re-cut 2026-07-28, the 2026-07-27 cut
+having been circular; introduced as a sorry node 2026-07-27) —
+LEVEL-SPECIFIC, and the leaf that consumes the moduli pin.
 
 TRUE.  The fixed points of `w_N` on `X_0(N)` are the CM points of
 discriminant `−4N`, together with those of discriminant `−N` when
@@ -35691,58 +35736,51 @@ right notion for a *quotient* — an order-`2` action.  Without `_hal`
 the statement is FALSE, since `w := 𝟙` is an involution over `ℚ` with
 every point fixed and `X_0(169)(ℚ) ≠ ∅` (it has two rational cusps).
 
-#### The cut, TAKEN 2026-07-27, and it is cheaper than the one recorded here
+#### The cut, RESTORED 2026-07-28 after the 2026-07-27 one was withdrawn
 
-The previous version of this docstring said "it is two theories, not
-one": the CM theory of the fixed points of `w_N` on moduli points, and
-the cusp permutation `d ↦ N/d` on the boundary, with the second named as
-the cheaper half a prover should start from.  Carrying that out shows the
-CM half is not needed at ALL at this level, and the cut is instead
+The 2026-07-27 cut ran this node over a POINT COUNT and over "`w_169`
+moves at least one point", and it was CIRCULAR — the count is the
+conclusion of the tower this node feeds.  The full diagnosis is the
+subsection note above `noFixedRationalCusp_atkinLehner_x0OneSixtyNine`.
+What is in force is the cut this module's `IsAtkinLehner` subsection note
+has described all along, "it is two theories, not one":
 
 | leaf | theory |
 |---|---|
-| `eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine` | Mazur–Kenku: `X_0(169)(ℚ)` has at most two elements |
-| `exists_ne_atkinLehner_x0OneSixtyNine` | the cusp swap: `w_169` moves at least one of them |
+| `noFixedRationalCusp_atkinLehner_x0OneSixtyNine` | the cusp permutation `d ↦ N/d`; `rationalCuspDivisors 169 = {1, 169}` |
+| `noFixedModuliPoint_atkinLehner_x0OneSixtyNine` | CM points of discriminant `−676`, `h(−676) = 6` |
 
-**Why the CM half disappears.**  `h(−676) = 6` bounds the fixed points of
-`w_169` on `Y_0(169)`; but `Y_0(169)(ℚ)` is EMPTY — the same fact this
-module already uses to explain why `IsAtkinLehner` must be quantified
-over every test object — so there is no rational moduli point for the CM
-count to be about.  The whole of `X_0(169)(ℚ)` is the two rational cusps,
-and the only input needed there is that `w_169` does not fix them.  The
-numerics remain recorded above because they are the classical reason the
-statement is true, and because at a level with rational non-cuspidal
-points they would be load-bearing; at `169` they are not.
+**Why the split is exhaustive, and free.**
+`IsX0Compactification.IsCusp x` is by definition
+`¬ ∃ y : Y(ℚ), sectionAlong jY hX.comm y = x`, so `IsCusp x ∨ ¬ IsCusp x`
+partitions `X(ℚ)` into the rational cusps and the image of `Y(ℚ)` with no
+geometry entering at all.  The proof below is that case split and nothing
+else.
 
-**Why "moves ONE point" suffices.**  `w` is an involution, so
-`RelPoint.post w hw` is an involution of `X(ℚ)`.  Given `x₀` with
-`w x₀ ≠ x₀`, the two points `x₀` and `w x₀` are distinct, and by the
-count every rational point is one of them; `w` moves `x₀` by choice and
-moves `w x₀` because `w (w x₀) = x₀ ≠ w x₀`.  That is the entire proof
-below, and it is why the second leaf does not have to name the cusps. -/
+**What the repair costs and what it buys.**  The leaf COUNT is unchanged,
+two before and two after.  What changes is that neither new leaf is
+Kenku: the cusp half is the Deligne–Rapoport boundary combinatorics
+(`rationalCuspDivisors 169 = {1, 169}`, already decidable here) plus the
+classical `d ↦ N/d`, and the moduli half is a class-number computation
+that PARI does in milliseconds.  The involution bookkeeping that used to
+live in this proof — "an involution of a two-element set that moves one
+point moves both" — is gone with the count it depended on.  `_hw2`
+survives in the signature because both leaves take it and because
+`exists_atkinLehnerPrym_x0OneSixtyNine` supplies it. -/
 theorem noFixedRationalPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
     (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
     ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x := by
-  obtain ⟨x₀, hx₀⟩ := exists_ne_atkinLehner_x0OneSixtyNine hX w hw _hw2 _hal
-  -- `post w` is an involution of `X(ℚ)`, because `w ≫ w = 𝟙 X`.
-  have hinv : ∀ u : RelPoint strX (𝟙 SpecQ),
-      RelPoint.post w hw (RelPoint.post w hw u) = u := by
-    intro u
-    refine Subtype.ext ?_
-    show (u.1 ≫ w) ≫ w = u.1
-    rw [Category.assoc, _hw2, Category.comp_id]
-  intro x hx
-  rcases eq_or_eq_or_eq_rationalPoint_x0OneSixtyNine hX x x₀
-    (RelPoint.post w hw x₀) with h | h | h
-  · subst h; exact hx₀ hx
-  · -- `x = w x₀`, so `w x = x` reads `w (w x₀) = w x₀`, i.e. `x₀ = w x₀`.
-    refine hx₀ ?_
-    have : x₀ = RelPoint.post w hw x₀ :=
-      ((hinv x₀).symm.trans (congrArg (RelPoint.post w hw) h.symm)).trans (hx.trans h)
-    exact this.symm
-  · exact hx₀ h.symm
+  classical
+  intro x
+  by_cases hc : hX.IsCusp x
+  · -- `x` is a rational CUSP: `w_169` swaps the cusps above `1` and `169`.
+    exact noFixedRationalCusp_atkinLehner_x0OneSixtyNine hX w hw _hw2 _hal x hc
+  · -- `x` comes from `Y_0(169)(ℚ)`: the CM count `h(−676) = 6` applies.
+    obtain ⟨y, rfl⟩ : ∃ y : RelPoint strY (𝟙 SpecQ), sectionAlong jY hX.comm y = x :=
+      not_not.mp hc
+    exact noFixedModuliPoint_atkinLehner_x0OneSixtyNine hX w hw _hw2 _hal y
 
 /-- **The Prym of an involution of a curve** (sorry node, introduced
 2026-07-27) — LEVEL-GENERIC, and the half of the `169` node that knows
