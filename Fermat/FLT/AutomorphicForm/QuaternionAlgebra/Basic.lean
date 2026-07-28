@@ -8,6 +8,13 @@ module
 public import Fermat.FLT.Mathlib.NumberTheory.NumberField.FiniteAdeleRing
 public import Fermat.FLT.QuaternionAlgebra.NumberField
 public import Fermat.FLT.DivisionAlgebra.Finiteness
+-- Both of the next two are ALREADY in this module's transitive cone (through
+-- `DivisionAlgebra.Finiteness` and `QuaternionAlgebra.NumberField` respectively), but only
+-- via BARE `import`s there, which are not re-exported. `finite_setOf_tmul_mem_of_isCompact`
+-- below needs `inter_Discrete` and the `IsModuleTopology R (Matrix m n R)` instance in a
+-- proof body, so they must arrive `public`. Cone growth: zero.
+public import Fermat.FLT.Mathlib.Topology.HomToDiscrete
+public import Fermat.FLT.Mathlib.Topology.Instances.Matrix
 public import Fermat.FLT.AutomorphicForm.GroupTheoryStuff
 public import Fermat.FLT.AutomorphicForm.Stuff
 public import Fermat.FLT.Mathlib.GroupTheory.DoubleCoset
@@ -1008,34 +1015,115 @@ theorem isCompact_normOne_infiniteAdele [NumberField.IsTotallyReal F] [IsQuatern
       Algebra.norm (NumberField.InfiniteAdeleRing F) x = 1} :=
   sorry
 
+omit [WithRigidification F D] in
+/-- `d ↦ d ⊗ₜ 1 : D → D ⊗[F] 𝔸_F` is INJECTIVE.
+
+Immediate from `Aux.D_discrete`, which supplies for each `x : D` an open `U` with
+`includeLeft ⁻¹' U = {x}`: two elements with the same image lie in the same singleton.
+Only `Module.Finite F D` is used, so this holds for a SPLIT `D` as well. -/
+theorem includeLeft_injective [IsQuaternionAlgebra F D] :
+    Function.Injective (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) := by
+  intro a b hab
+  obtain ⟨U, -, hUeq⟩ := NumberField.AdeleRing.DivisionAlgebra.Aux.D_discrete F D a
+  have ha : a ∈ (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) ⁻¹' U := by
+    rw [hUeq]; exact Set.mem_singleton a
+  have hb : b ∈ (Algebra.TensorProduct.includeLeft :
+      D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F) ⁻¹' U := by
+    simp only [Set.mem_preimage] at ha ⊢
+    rwa [← hab]
+  rw [hUeq] at hb
+  exact hb.symm
+
 /--
-**(sorry leaf — `D` is discrete and closed in `D ⊗ 𝔸_F`.)**
+**PROVEN 2026-07-28.**
 
 An element of `D` confined to a COMPACT set in the archimedean direction and to a
 COMPACT set in the finite direction ranges over a FINITE set.
 
-**Why it is true.** `D ⊗_F 𝔸_F = (D ⊗ 𝔸^∞) × (D ⊗ 𝔸_f)`, and the rigidification
-`WithRigidification.algEquiv` identifies `D ⊗ 𝔸_f` topologically with `M₂(𝔸ᶠ)`
-carrying `d ↦ WithRigidification.incl d`. So the set in question is the preimage in
-`D` of a compact subset of `D ⊗ 𝔸_F`; `D` is discrete and closed there, and a
-discrete subset of a compact set is finite.
+**Proof.** `D ⊗_F 𝔸_F ≃ (D ⊗ 𝔸^∞) × (D ⊗ 𝔸ᶠ)` topologically (`Aux.D𝔸ProdRight''`), and
+the rigidification identifies `D ⊗ 𝔸ᶠ` with `M₂(𝔸ᶠ)` (`WithRigidification.algEquiv` is an
+`𝔸ᶠ`-ALGEBRA equivalence, hence continuous both ways for the module topologies — an
+`F`-linear one would not suffice, cf. the note on `tensorLid`). The set in question is
+therefore the preimage under `d ↦ d ⊗ₜ 1` of `Z ∩ D`, where `Z` is the compact set
+`Zi ×ˢ algEquiv⁻¹(Zf)` pulled back to `D ⊗ 𝔸_F`. `D` is discrete and closed there
+(`Aux.discrete_includeLeft_subgroup` and `AddSubgroup.isClosed_of_discrete`), so `Z ∩ D`
+is compact and discrete, hence finite (`inter_Discrete`), and `includeLeft_injective`
+carries that finiteness back to `D`.
 
-This is exactly the pattern of
-`NumberField.AdeleRing.DivisionAlgebra.Aux.T_finite_extracted1` and `T_finite` in
-`Fermat/FLT/DivisionAlgebra/Finiteness.lean` (`D_discrete`,
-`discrete_includeLeft_subgroup`, `inter_Discrete`), which are stated there for `D`
-a DIVISION ring; only `Module.Finite F D` is used mathematically. Reusing them
-either needs those statements relaxed to `[Ring D]`, or `DivisionRing D` derived
-from total definiteness (`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`
-plus `ℍ` having no zero divisors while `M₂(ℝ)` does).
+(Mathlib's `Algebra.TensorProduct.includeLeft_injective` would also serve, but it wants
+`Nontrivial (𝔸_F)`, which is not currently an inferrable instance here — hence the local
+`includeLeft_injective` below, which reads the injectivity off `Aux.D_discrete` instead.)
 
-Note neither definiteness nor total reality is needed here: this is discreteness. -/
+This is the PATTERN of `Aux.T_finite_extracted1` / `Aux.T_finite`, but NOT an instance of
+them: `T_finite` is about `Dˣ` sitting inside `D_𝔸ˣ`, and about the single fixed compact
+set `Y = (E−E)(E−E)` of Fujisaki's argument, whereas this leaf quantifies over ARBITRARY
+compacts and splits its condition across the two factors. It is a sibling, not a corollary.
+
+Neither definiteness nor total reality is used — this is pure discreteness. `D` is NOT
+assumed to be a division ring, and must not be: a quaternion algebra may be split. That is
+exactly why `Fermat/FLT/DivisionAlgebra/Finiteness.lean` carries this material under
+`[Ring D]`. -/
 theorem finite_setOf_tmul_mem_of_isCompact [IsQuaternionAlgebra F D]
     (Zi : Set (D ⊗[F] (NumberField.InfiniteAdeleRing F))) (hZi : IsCompact Zi)
     (Zf : Set M₂(𝔸ᶠ[F])) (hZf : IsCompact Zf) :
     {d : D | (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F)) ∈ Zi ∧
-      WithRigidification.incl (F := F) d ∈ Zf}.Finite :=
-  sorry
+      WithRigidification.incl (F := F) d ∈ Zf}.Finite := by
+  classical
+  set ι : D →ₐ[F] D ⊗[F] NumberField.AdeleRing (𝓞 F) F :=
+    Algebra.TensorProduct.includeLeft with hι
+  -- `Zf` pulled back to `D ⊗ 𝔸ᶠ` along the rigidification, still compact
+  set Zf' : Set (D ⊗[F] 𝔸ᶠ[F]) := (WithRigidification.algEquiv F D) ⁻¹' Zf with hZf'def
+  have hZf'eq : Zf' = (WithRigidification.algEquiv F D).symm '' Zf := by
+    rw [hZf'def, Set.image_eq_preimage_of_inverse]
+    · intro x; simp
+    · intro x; simp
+  have hZf'c : IsCompact Zf' := by
+    rw [hZf'eq]
+    exact hZf.image (IsModuleTopology.continuous_of_linearMap
+      (WithRigidification.algEquiv F D).symm.toLinearMap)
+  -- the compact set in `D ⊗ 𝔸_F`
+  set Z : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F) :=
+    (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'' F D).toHomeomorph ⁻¹'
+      (Zi ×ˢ Zf') with hZdef
+  have hZc : IsCompact Z :=
+    (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight''
+      F D).toHomeomorph.isCompact_preimage.mpr (hZi.prod hZf'c)
+  -- `D` is discrete and closed in `D ⊗ 𝔸_F`
+  have hrange : (Set.range ι : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F))
+      = (NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D :
+          Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F)) := by
+    ext x
+    simp [NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup, hι]
+  haveI hdisc : DiscreteTopology
+      ((Set.range ι : Set (D ⊗[F] NumberField.AdeleRing (𝓞 F) F))) := by
+    rw [hrange]
+    exact NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_includeLeft_subgroup F D
+  have hclosed : IsClosed (Set.range ι) := by
+    haveI : DiscreteTopology
+        (NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D).carrier :=
+      NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_includeLeft_subgroup F D
+    rw [hrange]
+    exact AddSubgroup.isClosed_of_discrete
+      (H := NumberField.AdeleRing.DivisionAlgebra.Aux.includeLeftSubgroup F D)
+  -- compact ∩ closed, and discrete, hence finite
+  have hfin : (Z ∩ Set.range ι).Finite :=
+    (hZc.inter_right hclosed).finite ⟨inter_Discrete (Set.range ι) Z⟩
+  refine Set.Finite.of_finite_image (f := ι) (hfin.subset ?_)
+    (includeLeft_injective (F := F) (D := D)).injOn
+  rintro _ ⟨d, hd, rfl⟩
+  have hprod : (NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'' F D) (ι d)
+      = (d ⊗ₜ[F] (1 : NumberField.InfiniteAdeleRing F), d ⊗ₜ[F] (1 : 𝔸ᶠ[F])) := by
+    simp only [hι, NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight'',
+      NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight]
+    rfl
+  refine ⟨?_, ⟨d, rfl⟩⟩
+  simp only [hZdef, Set.mem_preimage, Set.mem_prod]
+  rw [show ((NumberField.AdeleRing.DivisionAlgebra.Aux.D𝔸ProdRight''
+    F D).toHomeomorph (ι d)) = _ from hprod]
+  exact ⟨hd.1, by simp only [hZf'def, Set.mem_preimage,
+    WithRigidification.algEquiv_tmul, one_smul]; exact hd.2⟩
 
 /-- `B ⊗[R] A ≃ₐ[A] A ⊗[R] B`: the right-action version of `Algebra.TensorProduct.comm`,
 built exactly as the first factor of `WithRigidification.algEquiv`. -/
