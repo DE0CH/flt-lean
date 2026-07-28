@@ -11797,13 +11797,35 @@ than worked around:
   (`Fr ≫ V = [N]`).  The second identity `V ≫ Fr = [N]` is FREE given
   rigidity; see that leaf's docstring for the three-line derivation.
 
-So what is still open in this subsection is: rigidity, the one-sided
-factorisation (`ker F ⊆ ker[N]` plus descent along a finite faithfully
-flat map — Mumford *AV* §15, Milne *AV* §I.5, and
-`Modularity/AbelianSchemeIsogeny.lean` is its natural home), and the Weil
+**STATUS, 2026-07-28.**  RIGIDITY IS NOW PROVEN, and the one-sided
+factorisation has been restated for the CONCRETE Frobenius:
+
+* `eq_of_comp_geomFibrePt_eq` is proven outright, from the pin: base-change
+  to `k̄`, closed points are dense because `A'_{k̄}` is a Jacobson space, at a
+  closed point the residue field IS `k̄`, and mathlib's two `ext` lemmas
+  (`ext_of_fromSpecResidueField_eq`, `ext_of_isDominant_of_isSeparated`) do
+  the rest.  No new theory was needed.
+* `exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase` is now PROVEN over
+  the single leaf `exists_comp_eq_mulByNat_absFrobScheme`, which states the
+  factorisation for `absFrobScheme A' p a` — the actual absolute Frobenius —
+  instead of for an abstract `Fr` characterised on points.  That is legitimate
+  precisely BECAUSE rigidity is available: it proves `Fr` is unique, and
+  `Modularity/SchemeFrobenius.lean` exhibits the absolute Frobenius as one
+  such, so the two statements are equivalent.  The new leaf also drops the
+  clause `V ≫ f' = f'`, which is free (`eq_of_absFrobScheme_comp_eq`: the
+  absolute Frobenius of a REDUCED scheme cancels on the left against
+  morphisms into an affine scheme).
+
+So what is still open in this subsection is: the one-sided factorisation
+`exists_comp_eq_mulByNat_absFrobScheme` (`ker F ⊆ ker[N]` plus descent along
+a finite faithfully flat map — Mumford *AV* §15, Milne *AV* §I.5, and
+`Modularity/AbelianSchemeIsogeny.lean` is its natural home; that leaf's
+docstring records an EQUIVALENT affine-local reformulation, "every section in
+the image of `[N]^{\#}` is a `p ^ a`-th power", which needs no scheme
+morphism to be constructed), and the Weil
 leaf `exists_frobTraceAct_of_mult_finiteBase` (the Tate module of an
 abelian variety over a finite field — Mumford *AV* §19, Milne *AV* §V,
-Tate 1966).  The three are disjoint and can be owned independently. -/
+Tate 1966).  The two are disjoint and can be owned independently. -/
 
 /-- **THE FROBENIUS ENDOMORPHISM OF AN ABELIAN SCHEME OVER A FINITE
 FIELD** (**PROVEN 2026-07-27** over `exists_absFrobenius_of_finiteBase`
@@ -11833,7 +11855,10 @@ because `y (a ^ N) = y a ^ N = σ (y a)` by `hσ`.  Note that it FORCES
 `Fr`: `A'` is smooth over `k`, hence reduced, so a morphism is
 determined by its effect on `k̄`-points.  There is therefore no junk
 witness, and the leaf below that consumes `Fr` is not weakened by
-receiving it existentially.
+receiving it existentially.  **Since 2026-07-28 that is a THEOREM and not
+an argument in a docstring**: it is `eq_of_comp_geomFibrePt_eq` below, and
+`exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase` uses it to replace
+its abstract `Fr` by the concrete `absFrobScheme A' (ringChar k) n`.
 
 NOT ASSERTED: that `Fr` is a group endomorphism or commutes with the
 real multiplication.  Both are FREE on geometric points from the
@@ -11883,16 +11908,88 @@ in the docstring of `exists_frobEndomorphism_of_finiteBase`, that the
 pointwise clause FORCES `Fr` and therefore admits no junk witness.
 
 So the cut is: RIGIDITY (a `k`-morphism of an abelian scheme over a field
-is determined by its `k̄`-points) plus the ONE-SIDED factorisation
-`Fr ≫ V = [N]` (Mumford *AV* §15).  The derivation of the second identity
+is determined by its `k̄`-points — **PROVEN 2026-07-28**) plus the ONE-SIDED
+factorisation `Fr ≫ V = [N]` (Mumford *AV* §15, still open, and since
+2026-07-28 stated for the concrete `absFrobScheme` rather than for an
+abstract `Fr` — see `exists_comp_eq_mulByNat_absFrobScheme`).
+The derivation of the second identity
 is written out in the docstring of
 `exists_verschiebung_of_frobEndomorphism_finiteBase`; the point is that it
 uses the invertibility of `y ↦ σ · y` on points — the very triviality the
 subsection note warns against — but uses it to prove an identity of
 MORPHISMS, which is legitimate precisely because rigidity is available. -/
 
+/-- **A SCHEME SMOOTH OVER A FIELD IS REDUCED** (PROVEN 2026-07-28; the
+stalkwise route, extracted from the proof of
+`isIntegral_of_smooth_geometricallyConnected` in
+`Modularity/AbelianSchemeIsogeny.lean` so that it can be used without the
+`GeometricallyConnected` hypothesis that theorem also carries).
+
+The stalks are regular local (`isRegularLocalRing_stalk_of_smooth`), hence
+domains, hence reduced, and `isReduced_of_isReduced_stalk` lifts that to the
+scheme.  Note this route is `sorryAx`-free, whereas the project's own
+`AlgebraicGeometry.isReduced_of_smooth_over_field`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`) is built
+over the still-open `Algebra.Smooth.isReduced_of_isField`. -/
+theorem isReduced_of_smooth_over_field_stalkwise {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] : AlgebraicGeometry.IsReduced X := by
+  haveI : ∀ x : X, _root_.IsReduced (X.presheaf.stalk x) := fun x => by
+    haveI := isRegularLocalRing_stalk_of_smooth g x
+    haveI := _root_.GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing
+      (X.presheaf.stalk x)
+    infer_instance
+  exact isReduced_of_isReduced_stalk X
+
+/-- **`s ↦ s ^ p ^ a` IS INJECTIVE ON THE SECTIONS OF A REDUCED SCHEME IN
+WHICH `p` VANISHES** (PROVEN 2026-07-28).
+
+This is what makes a `p ^ a`-th root of a section UNIQUE when it exists, and
+it is the reason the absolute Frobenius is an epimorphism on a reduced scheme
+(`eq_of_absFrobScheme_comp_eq` below).  The proof is
+`x ^ p ^ a - y ^ p ^ a = (x - y) ^ p ^ a` — which is `map_sub` for the ring
+endomorphism `powFrobHom` of `Modularity/SchemeFrobenius.lean`, so no `CharP`
+instance on `Γ(X, U)` is needed and the trivial ring `Γ(X, ⊥)` is not a special
+case — followed by reducedness. -/
+theorem pow_left_injective_sections {X : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    (U : X.Opens) {x y : Γ(X, U)} (h : x ^ p ^ a = y ^ p ^ a) : x = y := by
+  haveI := AlgebraicGeometry.IsReduced.component_reduced (X := X) U
+  have h1 : (x - y) ^ p ^ a = x ^ p ^ a - y ^ p ^ a :=
+    map_sub (powFrobHom Γ(X, U) p a hp (hchar U)) x y
+  rw [h, sub_self] at h1
+  exact sub_eq_zero.mp (IsNilpotent.eq_zero ⟨p ^ a, h1⟩)
+
+/-- **THE ABSOLUTE FROBENIUS OF A REDUCED SCHEME CANCELS ON THE LEFT AGAINST
+MORPHISMS INTO AN AFFINE SCHEME** (PROVEN 2026-07-28).
+
+`absFrobScheme X p a` is the identity on the underlying space and
+`s ↦ s ^ p ^ a` on sections, so `(Fr ≫ g).appTop = g.appTop ≫ Fr.appTop` is
+`s ↦ (g^{\#} s) ^ p ^ a`; on a REDUCED `X` that power map is injective
+(`pow_left_injective_sections`), and a morphism into an affine scheme is
+determined by its global sections (`ext_of_isAffine`).  So `Fr` is an
+epimorphism as far as affine targets are concerned — which is all that is
+needed, because the only cancellation this file performs is against the
+structure morphism `f' : A' ⟶ Spec k`.
+
+This is why the one-sided factorisation leaf below does NOT have to assert
+that its `V` is a `k`-morphism: `V ≫ f' = f'` follows from
+`Fr ≫ V = [N]` alone. -/
+theorem eq_of_absFrobScheme_comp_eq {X Z : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    [IsAffine Z] (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+    (g₁ g₂ : X ⟶ Z)
+    (h : absFrobScheme X p a hp hchar ≫ g₁ = absFrobScheme X p a hp hchar ≫ g₂) :
+    g₁ = g₂ := by
+  apply AlgebraicGeometry.ext_of_isAffine
+  have hh : g₁.appTop ≫ (absFrobScheme X p a hp hchar).appTop
+      = g₂.appTop ≫ (absFrobScheme X p a hp hchar).appTop := by
+    rw [← Scheme.Hom.comp_appTop, ← Scheme.Hom.comp_appTop, h]
+  ext s
+  exact pow_left_injective_sections p a hp hchar ⊤
+    (congrArg (fun φ : Γ(Z, ⊤) ⟶ Γ(X, ⊤) => φ.hom s) hh)
+
+open _root_.CategoryTheory.Limits in
 /-- **A `k`-MORPHISM OF AN ABELIAN SCHEME OVER A FIELD IS DETERMINED BY
-ITS GEOMETRIC POINTS** (sorry leaf).
+ITS GEOMETRIC POINTS** (**PROVEN 2026-07-28**).
 
 Two morphisms `u, v : A' ⟶ A'` over `Spec k` which agree after composition
 with every `k̄`-point of `A'` are equal.
@@ -11919,48 +12016,187 @@ WHY IT IS STATED HERE AND NOT UPSTREAM.  It belongs in
 `Modularity/AbelianSchemeIsogeny.lean` beside the rest of the
 abelian-scheme geometry, and should be relocated there when that file next
 has an owner; it is stated in this file only to keep the present cut
-inside one region. -/
+inside one region.
+
+**THE PROOF, 2026-07-28**, is the classical argument above, and every step of
+it is already in the pin — the two `ext` lemmas of
+`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean` do the work, and NO new
+theory had to be built:
+
+1. `A'` is REDUCED (`isReduced_of_smooth_over_field_stalkwise` above, from
+   `ab'.smooth`), and `f'` is SEPARATED (from `ab'.proper`).
+2. Base-change to `k̄`: put `P = A' ×_{Spec k} Spec k̄`, `ι = pullback.fst`,
+   `π = pullback.snd`.  `π` is smooth (base change), so `P` is reduced too,
+   and `π` is locally of finite type, so `P` is a JACOBSON SPACE and its
+   closed points are DENSE (`closure_closedPoints`).
+3. At a closed point `x` of `P` the residue field is `k̄` itself, because `k̄`
+   is algebraically closed and `π` is locally of finite type
+   (`residueFieldIsoBase`); so `pointOfClosedPoint π x` is a `k̄`-point of `P`
+   over the identity of `Spec k̄`, and composing it with `ι` gives a GEOMETRIC
+   POINT `y` of `f'` — the base clause `y ≫ f' = specAlgClos k` is
+   `pullback.condition` followed by `pointOfClosedPoint_comp`.  The hypothesis
+   `h` at that `y` is exactly what `ext_of_fromSpecResidueField_eq` wants at
+   `x`, after cancelling the residue-field isomorphism (an epimorphism).
+   Hence `ι ≫ u = ι ≫ v`.
+4. `Spec k̄ ⟶ Spec k` is surjective (the target has one point), hence so is
+   `ι` (`Scheme.Pullback.range_fst`), hence `ι` is DOMINANT; `A'` is reduced
+   and `f'` separated, so `ext_of_isDominant_of_isSeparated` cancels `ι` and
+   gives `u = v`.
+
+Note that `hu` is used only to supply `u ≫ f' = v ≫ f'` to the two `ext`
+lemmas (the "agree over a separated base" clause); it is not used to make the
+geometric points compose. -/
 theorem eq_of_comp_geomFibrePt_eq
     {k : Type u} [Field k]
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (u v : A' ⟶ A') (hu : u ≫ f' = f') (hv : v ≫ f' = f')
     (h : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), y.1 ≫ u = y.1 ≫ v) :
-    u = v :=
+    u = v := by
+  haveI := ab'.proper
+  haveI := ab'.smooth
+  haveI hredA : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  haveI hsub : Subsingleton ↥(Spec (CommRingCat.of k)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum k))
+  haveI hs0 : Surjective (specAlgClos k) :=
+    ⟨fun x => ⟨IsLocalRing.closedPoint (AlgebraicClosure k), Subsingleton.elim _ _⟩⟩
+  haveI hsmoothP : Smooth (pullback.snd f' (specAlgClos k)) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  haveI hredP : AlgebraicGeometry.IsReduced (pullback f' (specAlgClos k)) :=
+    isReduced_of_smooth_over_field_stalkwise (pullback.snd f' (specAlgClos k))
+  haveI hsurjfst : Surjective (pullback.fst f' (specAlgClos k)) := by
+    refine ⟨?_⟩
+    rw [← Set.range_eq_univ, Scheme.Pullback.range_fst, range_eq_univ, Set.preimage_univ]
+  haveI : JacobsonSpace ↥(pullback f' (specAlgClos k)) :=
+    LocallyOfFiniteType.jacobsonSpace (pullback.snd f' (specAlgClos k))
+  have hstep : pullback.fst f' (specAlgClos k) ≫ u = pullback.fst f' (specAlgClos k) ≫ v := by
+    refine ext_of_fromSpecResidueField_eq _ _ f'
+      (closedPoints ↥(pullback f' (specAlgClos k))) ?_ ?_ ?_
+    · rw [dense_iff_closure_eq]
+      exact closure_closedPoints
+    · intro x hx
+      rw [← cancel_epi
+        (Spec.map (residueFieldIsoBase (pullback.snd f' (specAlgClos k)) x hx).hom)]
+      have hy : (pointOfClosedPoint (pullback.snd f' (specAlgClos k)) x hx ≫
+          pullback.fst f' (specAlgClos k)) ≫ f'
+          = specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)) := by
+        rw [Category.assoc, pullback.condition, ← Category.assoc,
+          pointOfClosedPoint_comp, Category.id_comp, Category.comp_id]
+      have hh := h ⟨_, hy⟩
+      simpa [pointOfClosedPoint, Category.assoc] using hh
+    · rw [Category.assoc, Category.assoc, hu, hv]
+  exact ext_of_isDominant_of_isSeparated f' (by rw [hu, hv]) _ hstep
+
+/-- **`[N]` FACTORS THROUGH THE ABSOLUTE `p ^ a`-POWER FROBENIUS** (sorry
+leaf, RESTATED 2026-07-28 for the CONCRETE Frobenius — Mumford *AV* §15,
+Milne *AV* §I.5).  This is the deep half of the Verschiebung leaf: the
+ONE-SIDED identity `Fr ≫ V = [N]`, by a morphism.
+
+**WHAT CHANGED, AND WHY IT IS A SHARPENING RATHER THAN A RESTATEMENT.**
+This leaf used to quantify over an ARBITRARY endomorphism `Fr` characterised
+only by its action on geometric points, and to assert of `V` both that it is
+a `k`-morphism and that it factors `[N]`.  Two of those three features have
+now been discharged rather than assumed:
+
+* `Fr` is no longer abstract.  Rigidity (`eq_of_comp_geomFibrePt_eq` above)
+  proves that an endomorphism with that pointwise clause is UNIQUE, and
+  `Modularity/SchemeFrobenius.lean` builds one — so it IS
+  `absFrobScheme A' p a`, the identity on the space and `s ↦ s ^ p ^ a` on
+  sections.  A prover may therefore use the explicit sheaf description, which
+  is what every classical proof actually uses.  (The reduction is carried out
+  in `exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase` immediately
+  below, so the consumer's statement is unchanged.)
+* The clause `V ≫ f' = f'` is GONE, because it is free: `Fr` cancels on the
+  left against morphisms into an affine scheme
+  (`eq_of_absFrobScheme_comp_eq` above), and `Spec k` is affine.
+
+So what is left here is exactly the mathematics, and nothing else.
+
+**THE CLASSICAL PROOF.**  `Fr` is purely inseparable of degree `N ^ dim`, and
+for `N = p ^ a` it is the `a`-th power of the `p`-Frobenius, so `ker Fr` is
+infinitesimal and killed by `N`; hence `ker Fr ⊆ ker [N]`, and `Fr` is an
+isogeny, hence finite faithfully flat, so `A'` is the fppf quotient of `A'`
+by `ker Fr` and `[N]` descends along it to a morphism `V`.  The missing
+machinery is exactly that: the kernel of `Fr` as a finite group scheme, the
+fact that it is killed by `N` (for which the standard argument is that a
+commutative group scheme `G` with `F_G = 0` satisfies
+`[p]_G = V_G ∘ F_G = 0`, i.e. Cartier's Verschiebung of a general commutative
+group scheme), and descent of a morphism along a finite faithfully flat map
+that kills the kernel.  `Modularity/AbelianSchemeIsogeny.lean` already has
+`mulByNat`, `isProper_mulByNat`, `isFinite_ker_mulByNat_of_field_char` and
+the shearing block, which is the natural home for the factorisation.
+
+**THE EQUIVALENT SHEAF-LOCAL FORM, which is the concrete thing to attack.**
+Because `absFrobScheme` is the identity on the space and `s ↦ s ^ p ^ a` on
+sections, and because `A'` is reduced so that `p ^ a`-th roots are UNIQUE
+where they exist (`pow_left_injective_sections` above), this leaf is
+EQUIVALENT to:
+
+> for every open `U ⊆ A'` and every `s : Γ(A', U)`, the section
+> `([N])^{\#}(s) : Γ(A', [N] ⁻¹ᵁ U)` is a `p ^ a`-th power.
+
+Indeed if `Fr ≫ V = [N]` then, `Fr` being the identity on the space,
+`([N])^{\#}_U = (·) ^ p ^ a ∘ V^{\#}_U`, so every `([N])^{\#}(s)` is such a
+power; conversely, uniqueness of the root makes `s ↦ \sqrt[p^a]{[N]^{\#} s}`
+a natural transformation `𝒪_{A'} ⟶ ([N])_* 𝒪_{A'}` (it is additive because
+`(x + y) ^ p ^ a = x ^ p ^ a + y ^ p ^ a`, i.e. `powFrobHom` is a ring map),
+its stalk maps are local because their `p ^ a`-th powers are, and the
+resulting morphism `V` satisfies `Fr ≫ V = [N]` by construction.  That
+reformulation is the reason this leaf is stated for the concrete Frobenius:
+it is an affine-local statement about `[N]`, with no scheme morphism left to
+construct.
+
+**WHY THIS IS NOT A STATEMENT ABOUT POINTS.**  On the geometric point set
+`A'(k̄)` the corresponding claim is a TRIVIALITY carrying none of the content
+above: `y ↦ σ · y` is a bijection there, with inverse `y ↦ σ⁻¹ · y`, so
+`V y := N · (σ⁻¹ · y)` satisfies it by `Mult.galSMul_act` alone.  What is
+true only for a morphism — and what the Weil leaf needs — is that `V` is
+ALGEBRAIC.
+
+`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`; `hfin` and
+`hN` are not used by the reformulation above but are what make the statement
+about an abelian variety over a FINITE field rather than about an arbitrary
+characteristic-`p` base, which is where the classical proof lives. -/
+theorem exists_comp_eq_mulByNat_absFrobScheme
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    (p a : ℕ) (hp : p.Prime) (hpa : p ^ a = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0) :
+    ∃ V : A' ⟶ A', absFrobScheme A' p a hp hchar ≫ V = ab'.mulByNat N :=
   sorry
 
-/-- **`[N]` FACTORS THROUGH THE FROBENIUS ENDOMORPHISM** (sorry leaf —
-Mumford *AV* §15, Milne *AV* §I.5).  This is the deep half of the
-Verschiebung leaf: the ONE-SIDED identity `Fr ≫ V = [N]`, by a morphism.
-
-Classically: `Fr` is purely inseparable of degree `N ^ dim`, and for
-`N = p ^ a` it is the `a`-th power of the `p`-Frobenius, so `ker Fr` is
-infinitesimal and killed by `N`; hence `ker Fr ⊆ ker [N]`, and `Fr` is an
-isogeny, hence finite faithfully flat, so `A'` is the fppf quotient of
-`A'` by `ker Fr` and `[N]` descends along it to a morphism `V`.  The
-missing machinery is exactly that: the kernel of `Fr` as a finite group
-scheme, the fact that it is killed by `N`, and descent of a morphism along
-a finite faithfully flat map that kills the kernel.
-`Modularity/AbelianSchemeIsogeny.lean` already has `mulByNat`,
-`isProper_mulByNat`, `isFinite_ker_mulByNat_of_field_char` and the
-shearing block, which is the natural home for the factorisation.
-
-**WHY THIS IS STATED FOR MORPHISMS AND NOT FOR POINTS.**  On the geometric
-point set `A'(k̄)` the statement is a TRIVIALITY carrying none of the
-content above: `y ↦ σ · y` is a bijection there, with inverse
-`y ↦ σ⁻¹ · y`, so `V y := N · (σ⁻¹ · y)` satisfies it by
-`Mult.galSMul_act` alone.  What is true only for a morphism — and what the
-Weil leaf needs — is that `V` is ALGEBRAIC.
+/-- **`[N]` FACTORS THROUGH THE FROBENIUS ENDOMORPHISM** (**PROVEN
+2026-07-28** over `exists_comp_eq_mulByNat_absFrobScheme` immediately above
+together with rigidity; Mumford *AV* §15, Milne *AV* §I.5).
 
 `hFrpt` is what pins `Fr` as the Frobenius: without it `Fr` could be any
 endomorphism, and `[N]` does not factor through an arbitrary one (take
-`Fr = 0` with `dim ≥ 1`).  It pins it COMPLETELY, by
-`eq_of_comp_geomFibrePt_eq` above together with
-`exists_frobEndomorphism_of_finiteBase`, which produces the absolute
-`N`-power Frobenius satisfying the same clause — so there is no junk `Fr`
-for which this statement could be false.  `hfin`, `hN` and `hσ` are
-carried because they are what make `hFrpt` say "Frobenius" rather than
-merely "some endomorphism inducing `σ`". -/
+`Fr = 0` with `dim ≥ 1`).  It pins it COMPLETELY, and that is now a theorem
+rather than a remark: `eq_of_comp_geomFibrePt_eq` says a `k`-morphism is
+determined by its geometric points, and `Modularity/SchemeFrobenius.lean`
+exhibits `absFrobScheme A' (ringChar k) n` as one endomorphism satisfying the
+clause, so `Fr = absFrobScheme A' (ringChar k) n` — there is no junk `Fr` for
+which the statement could be false.
+
+**THE PROOF.**  Write `p = ringChar k` and `N = p ^ n` (`FiniteField.card`).
+
+* `absFrobScheme (Spec k) p n = 𝟙` because `z ^ N = z` on `k`
+  (`FiniteField.pow_card`), so by naturality `absFrobScheme A' p n` is a
+  `k`-morphism.
+* `absFrobScheme (Spec k̄) p n = specGal σ`, because `hσ` says `σ` IS the
+  `N`-power map on `k̄` and `absFrobScheme_spec` identifies the Frobenius of
+  an affine scheme with `Spec` of any such ring map.  Naturality at the
+  geometric point `y.1 : Spec k̄ ⟶ A'` turns that into the pointwise clause,
+  so `absFrobScheme A' p n` satisfies the same hypothesis as `Fr`.
+* Rigidity gives `Fr = absFrobScheme A' p n`, and the leaf above supplies
+  `V`.
+* Finally `V ≫ f' = f'` is free: `Fr ≫ (V ≫ f') = [N] ≫ f' = f' = Fr ≫ f'`,
+  and `Fr` cancels on the left against morphisms into the affine `Spec k`
+  (`eq_of_absFrobScheme_comp_eq`).
+
+`ab'` is used only through `mulByNat_comp` and `smooth` (for reducedness);
+the group law plays no role in this reduction. -/
 theorem exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -11971,8 +12207,62 @@ theorem exists_comp_eq_mulByNat_of_frobEndomorphism_finiteBase
     (Fr : A' ⟶ A') (hFrf : Fr ≫ f' = f')
     (hFrpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
       (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr) :
-    ∃ V : A' ⟶ A', V ≫ f' = f' ∧ Fr ≫ V = ab'.mulByNat N :=
-  sorry
+    ∃ V : A' ⟶ A', V ≫ f' = f' ∧ Fr ≫ V = ab'.mulByNat N := by
+  classical
+  haveI : Fintype k := Fintype.ofFinite k
+  haveI := ab'.smooth
+  haveI hredA : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  obtain ⟨n, hpp, hcard⟩ := FiniteField.card k (ringChar k)
+  have hpN : (ringChar k) ^ (n : ℕ) = N := by
+    rw [← hcard, ← Nat.card_eq_fintype_card, hN]
+  have hk0 : ((ringChar k : ℕ) : k) = 0 := (ringChar.spec k _).mpr dvd_rfl
+  have hchar : ∀ U : A'.Opens, ((ringChar k : ℕ) : Γ(A', U)) = 0 := fun U =>
+    natCast_sections_eq_zero_of_over f' _ hk0 U
+  have hcharK : ∀ U : (Spec (CommRingCat.of k)).Opens,
+      ((ringChar k : ℕ) : Γ(Spec (CommRingCat.of k), U)) = 0 := fun U =>
+    natCast_sections_eq_zero_of_over (𝟙 (Spec (CommRingCat.of k))) _ hk0 U
+  have hcharAC : ∀ U : (Spec (CommRingCat.of (AlgebraicClosure k))).Opens,
+      ((ringChar k : ℕ) : Γ(Spec (CommRingCat.of (AlgebraicClosure k)), U)) = 0 := fun U =>
+    natCast_sections_eq_zero_of_over (specAlgClos k) _ hk0 U
+  -- the absolute Frobenius of `Spec k` is the identity
+  have hid : absFrobScheme (Spec (CommRingCat.of k)) (ringChar k) (n : ℕ) hpp hcharK = 𝟙 _ := by
+    have hpow : ∀ z : k, (RingHom.id k) z = z ^ (ringChar k) ^ (n : ℕ) := by
+      intro z
+      show z = z ^ (ringChar k) ^ (n : ℕ)
+      rw [← hcard]
+      exact (FiniteField.pow_card z).symm
+    have hoid : CommRingCat.ofHom (RingHom.id k) = 𝟙 (CommRingCat.of k) := rfl
+    rw [absFrobScheme_spec (R := k) (ringChar k) (n : ℕ) hpp hcharK (RingHom.id k) hpow,
+      hoid, Spec.map_id]
+  -- hence the absolute Frobenius of `A'` is a `k`-morphism
+  have hFrbase : absFrobScheme A' (ringChar k) (n : ℕ) hpp hchar ≫ f' = f' := by
+    rw [absFrobScheme_naturality (ringChar k) (n : ℕ) hpp hchar hcharK f', hid,
+      Category.comp_id]
+  -- the absolute Frobenius of `Spec k̄` is `specGal σ`
+  have hgal : absFrobScheme (Spec (CommRingCat.of (AlgebraicClosure k))) (ringChar k) (n : ℕ)
+      hpp hcharAC = specGal σ := by
+    rw [absFrobScheme_spec (R := AlgebraicClosure k) (ringChar k) (n : ℕ) hpp hcharAC
+      ((σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k).toAlgHom.toRingHom)
+      (fun z => by rw [hpN]; exact hσ z)]
+    rfl
+  -- so it satisfies the same pointwise clause as `Fr`
+  have hFrpt2 : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 =
+        y.1 ≫ absFrobScheme A' (ringChar k) (n : ℕ) hpp hchar := by
+    intro y
+    have hnat := absFrobScheme_naturality (X := Spec (CommRingCat.of (AlgebraicClosure k)))
+      (Y := A') (ringChar k) (n : ℕ) hpp hcharAC hchar y.1
+    rw [hgal] at hnat
+    exact hnat
+  -- rigidity pins `Fr`
+  have hFreq : Fr = absFrobScheme A' (ringChar k) (n : ℕ) hpp hchar :=
+    eq_of_comp_geomFibrePt_eq ab' _ _ hFrf hFrbase
+      (fun y => by rw [← hFrpt y, hFrpt2 y])
+  obtain ⟨V, hV⟩ :=
+    exists_comp_eq_mulByNat_absFrobScheme hfin N hN (ringChar k) (n : ℕ) hpp hpN ab' hchar
+  refine ⟨V, ?_, by rw [hFreq]; exact hV⟩
+  refine eq_of_absFrobScheme_comp_eq (ringChar k) (n : ℕ) hpp hchar _ _ ?_
+  rw [← Category.assoc, hV, ab'.mulByNat_comp N, hFrbase]
 
 /-- **THE VERSCHIEBUNG: `[N]` FACTORS THROUGH THE FROBENIUS
 ENDOMORPHISM** (**PROVEN 2026-07-27** over the two leaves immediately
