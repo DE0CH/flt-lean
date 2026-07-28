@@ -437,6 +437,51 @@ section, the naive quotient `T ↦ Pic(X_T)/Pic(T)` is representable by an
   makes the conclusion statable with no site theory, and it is the only
   place the section is used.
 
+**THE `f_*𝒪_X = 𝒪_S` HALF IS ALREADY PROVEN IN THIS PROJECT — do not
+rebuild it** (checked 2026-07-28 against the compiler, not against a
+docstring).  It is
+
+    AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth
+      (f) [IsProper f] [Smooth f] [GeometricallyConnected f] :
+        HasUniversallyTrivialPushforward f
+
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`
+(namespace `AlgebraicGeometry`), and its three instance hypotheses are
+exactly this leaf's three: `Smooth strX` comes from `_hsmooth` by
+`SmoothOfRelativeDimension.smooth`
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).
+
+Precisely: it carries **no direct `sorry`** — its proof is written and
+elaborates — but it is very likely still TRANSITIVELY sorried, because
+that file has two direct leaves of its own,
+`finiteType_appTop_of_isProper` and
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber`, which the route to
+it plausibly passes through.  That distinction does not change the
+advice: it means the statement is available to CONSUME here, and those
+two leaves belong to `ProperPushforward.lean`'s owner, not to this one.
+Rebuilding the argument in this module would duplicate it and inherit the
+same two leaves.
+
+It is NOT in this module's import cone — `AbelianScheme.lean` does not
+reach it — so whoever attacks this leaf must add
+
+    public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
+
+The import is **cycle-free**: `ProperPushforward.lean`'s only project
+import is `Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced`,
+so it depends on nothing in this seam.  It is deliberately not added
+here, because nothing in this module consumes it while both leaves are
+sorried, and an unused import would grow the cone of `AmpleSheaf.lean`
+for no gain.  (`X0.lean` already imports it.)
+
+So what `exists_relPicFull` genuinely still owes is the FIRST bullet
+only — representability itself — plus the passage from
+`HasUniversallyTrivialPushforward` to "the naive quotient is the Picard
+functor".  **The check that would refute this note**: `grep -n
+hasUniversallyTrivialPushforward_of_isProper_of_smooth
+Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` and confirm
+the declaration is not in the build's `declaration uses 'sorry'` set.
+
 This is the half of `exists_relPicZero` that constructs a scheme at all.
 The other half — cutting `Pic⁰` out of `Pic` and proving it proper and
 smooth — is `exists_relPicZero_of_isRelPicOf`. -/
