@@ -10148,6 +10148,37 @@ the two lemmas above. So `PrimeSpectrum.isConstructible_comap_image` is NOT used
 and no generic-freeness theory was built; the note above about the pin remains
 accurate as a description of mathlib, it is just no longer on the critical path.
 
+**ADDITION TO THAT NOTE, MEASURED 2026-07-27 AND IT SHORTENS ROUTE (i)
+SUBSTANTIALLY.** The search above is right that generic freeness is absent under
+its own name — re-verified with
+`grep -rniE 'genericFree|generic_free|genericFlat|generic_flat|genericallyFree|genericallyFlat' --include=*.lean Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/`,
+which returns nothing but docstrings recording the absence. But it stops one
+directory too early, and what it misses is exactly the geometry route (i) needs:
+
+* `Mathlib/RingTheory/Spectrum/Prime/FreeLocus.lean` (PRESENT — refute by
+  `ls .lake/packages/mathlib/Mathlib/RingTheory/Spectrum/Prime/FreeLocus.lean`)
+  defines `Module.freeLocus R M`, the set of primes `p` with `Mₚ` free over `Rₚ`,
+  and proves **`Module.isOpen_freeLocus`** — the free locus is OPEN whenever
+  `[Module.FinitePresentation R M]` — together with
+  **`Module.basicOpen_subset_freeLocus_iff : D(f) ⊆ freeLocus ↔ Module.Projective R_f M_f`**.
+* Over `R = ℤ` those two ARE generic freeness for a finitely presented MODULE, and
+  the argument is three lines: the generic point `(0)` lies in the free locus
+  because `M ⊗ ℚ` is a `ℚ`-vector space; openness therefore puts a basic open
+  `D(N)` inside it; and a finitely generated projective module over the PID
+  `ℤ[1/N]` is free. **So route (i) does not require building the free-locus
+  geometry — it is here.**
+* What is genuinely missing is one level up: `IntegralSystemModel f ℤ` is a
+  finitely generated ℤ-ALGEBRA, not a finite ℤ-module, so
+  `Module.FinitePresentation ℤ` is false for it and `freeLocus` does not apply
+  directly. Grothendieck's proof filters the algebra by a finite chain whose
+  graded pieces ARE finite modules; **that dévissage is the missing step, and it
+  is the only one.** A prover taking route (i) should state it as a separate
+  named lemma about a finitely generated ℤ-algebra, since nothing in it mentions
+  a polynomial system and it is reusable well beyond this file.
+
+`Mathlib/RingTheory/Flat/LocallyFree.lean` and `Mathlib/RingTheory/Support.lean`
+are the neighbouring files worth reading before starting.
+
 FAITHFULNESS. Not vacuous and not trivially true: take `f = (x * y)` in two
 variables and `a = x`. Then `D(a)` misses the component `V(x)` in EVERY fibre and
 the hypothesis FAILS over `ℚ`, so the leaf says nothing there — while for
@@ -25586,6 +25617,24 @@ corrections and one extension, because the survey as written says less than it s
   sole `Cohomology` hit is `Sites/ElladicCohomology.lean`). **So §3.6's Riemann–Roch is not
   merely unproven — the sheaves it is about cannot be written**, and that, not the Picard
   scheme, is the largest single missing chapter.
+
+**SURVEY RE-RUN A THIRD TIME AND UNCHANGED (2026-07-27, after release 4).** All five
+absence greps above, plus the ten measured absences in the EXTENSION bullet, were
+re-executed against `Fermat/`, the pin and `~/cs/FLT`. Every one still returns
+nothing outside this docstring: `CartierDivisor`, `WeilDivisor`, `InvertibleSheaf`,
+`LineBundle`, `IsAmple` and `SerreDuality` each match **zero files** under
+`Mathlib/AlgebraicGeometry/` and `Mathlib/Geometry/`; `SymmetricPower` matches zero
+files under `Mathlib/AlgebraicGeometry/`; and the Picard-scheme,
+generalised-Jacobian and strong-approximation greps are empty in all three trees.
+So this leaf's blocker is real and not a stale audit, and a prover dispatched here
+today still has nothing to write — which is exactly what this datestamp exists to
+save the next reader from re-establishing. Note the contrast with the
+integral-system cluster ~11000 lines above, whose own "absent from the pin" note
+DID turn out to be one directory too narrow (see the free-locus addition on
+`exists_inverted_ker_localizationAway_le_nilradical_integralSystemModel`): the
+difference is that the objects here cannot even be STATED at this pin, which is a
+stronger and more stable kind of absence than a missing theorem about statable
+objects.
 
 **THE ONE PIECE THAT IS BUILDABLE TODAY — NOW BUILT (2026-07-27).** §3.8's engine is
 strong approximation, and it is the only input of §3 that needs NEITHER a Picard scheme
