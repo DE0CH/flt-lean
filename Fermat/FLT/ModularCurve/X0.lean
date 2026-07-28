@@ -31173,57 +31173,274 @@ theorem card_jacobianFibre_of_x0SieveTable {m n : ℕ}
   rw [(heckeOp_traceDet_of_x0SieveTable hrow).2] at h1
   exact_mod_cast h1
 
-/-- **The survivor classes number at most `numRationalCusps N`** (sorry
-node — THE arithmetic residue of the Mordell–Weil sieve, and the only
-part of `exists_sharpSievePrime_classCount` that is not now bookkeeping).
+/-! ##### The concrete presentation of the special fibre
+
+The old form of the residual leaf carried both point counts as
+hypotheses and said, honestly, that they do not make it provable: "the
+counts say how big the two subsets are, not where they sit".  Its
+`NOT searched` line named what would actually close it — *a concrete
+presentation of `J_0(N)(𝔽_ℓ)`, with the Abel–Jacobi image inside it as
+an explicitly computable finite object, built from a plane model of
+`X_0(N)`*.  `IsX0SieveFibrePresentation` is that requirement WRITTEN
+DOWN: a finite abelian group `G`, an additive bijection from the
+Jacobian's special fibre onto it, and the two subsets in question as
+honest `Finset G`s.
+
+**What this cut buys, and what it does not — stated plainly, because the
+distinction is the whole point.**  It does NOT weaken the leaf.  The
+tautological presentation always exists (`G` is the point set itself,
+`toG` the identity, the two `Finset`s the filters of `Finset.univ`), and
+the proof of `card_inter_range_redJ_aj_le_of_x0SieveTable` below builds
+exactly that one — so `card_inter_ajPts_redPts_le_of_x0SieveTable` is
+EQUIVALENT to the leaf it replaces, not a special case of it.  Anyone
+recording an "irreducibility verdict" here should say so: the arithmetic
+residue is still one indivisible fact, and no soft argument reaches it
+(`|A ∩ B| ≤ min(|A|, |B|) = m` gives `10, 8, 6, 8, 8`, never `4`).
+
+What it does buy is that the residue is now a statement about EXPLICIT
+FINITE DATA — two `Finset`s of a `Fintype` abelian group — with the
+scheme layer and all of the `Set.ncard` transport done and PROVEN here,
+once (`ncard_inter_eq`).  A prover arriving with the Magma computation
+of `J_0(N)(𝔽_ℓ)` from a plane model has a place to put it, and does not
+have to re-derive the bookkeeping that turns a class count into an
+intersection of ranges.
+
+**Three facts are handed to the residue that the old statement could not
+express**, each proven here from the surrounding interface:
+
+* `card_ajPts` — `#ajPts = #X_0(N)(𝔽_ℓ)`, by injectivity of Abel–Jacobi
+  on the special fibre (`aj_injective_of_x0NeronDatum`);
+* `card_redPts` — `#redPts = #J_0(N)(ℚ)`, by injectivity of reduction at
+  an odd good prime (`neronReduction_injective`), which is where `hfin`
+  is consumed and what makes `redPts` a *subgroup* of known order rather
+  than an arbitrary subset;
+* `card_eq` — `#G = #J_0(N)(𝔽_ℓ)`.
+
+At the five rows those are `10, 8, 6, 8, 8`, then `21, 32, 81, 96, 80`,
+then `63, 512, 972, 6144, 28160`.  They remain insufficient, exactly as
+the old docstring said; they are simply the complete list of what the
+cardinality axis gives, now in the form a computation consumes.
+
+`map_add` is deliberately a field even though the counting argument does
+not use it: without it `redPts` need not be a subgroup and `G` need not
+carry the Jacobian's group law, and then a prover could not run any
+group theory inside the presentation.  It costs nothing — the
+tautological presentation satisfies it by `rfl`.
+-/
+
+/-- **A concrete presentation of the sieve's special fibre** — the
+missing input of `card_inter_ajPts_redPts_le_of_x0SieveTable`, and the
+second half of the old irreducibility verdict, stated.
+
+`G` is `J_0(N)(𝔽_ℓ)` as an explicit finite abelian group; `ajPts` is the
+Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` in it; `redPts` is the image of
+`J_0(N)(ℚ)` under reduction.  The two `mem_` fields are what pin the
+`Finset`s to those two sets rather than letting them be arbitrary, and
+`bij`/`map_add` are what make `G` the group rather than a relabelling of
+the underlying type.
+
+See the subsection docstring above for why this is an interface and not
+a weakening. -/
+structure IsX0SieveFibrePresentation
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+    (G : Type) [AddCommGroup G] [Fintype G] [DecidableEq G] where
+  /-- the presenting map, `J_0(N)(𝔽_ℓ) → G` -/
+  toG : RelPoint jstr' (𝟙 (SpecF ℓ)) → G
+  /-- it is a bijection -/
+  bij : Function.Bijective toG
+  /-- it carries the Jacobian's group law to that of `G` -/
+  map_add : ∀ x y : RelPoint jstr' (𝟙 (SpecF ℓ)), toG (ab'.add x y) = toG x + toG y
+  /-- the Abel–Jacobi image, as an explicit `Finset` -/
+  ajPts : Finset G
+  /-- and it really is the Abel–Jacobi image -/
+  mem_ajPts : ∀ g : G, g ∈ ajPts ↔ ∃ x, toG (jac'.aj (𝟙 (SpecF ℓ)) x) = g
+  /-- the reduced rational Jacobian, as an explicit `Finset` -/
+  redPts : Finset G
+  /-- and it really is the reduction image -/
+  mem_redPts : ∀ g : G, g ∈ redPts ↔ ∃ a, toG (d.redJ a) = g
+
+namespace IsX0SieveFibrePresentation
+
+variable {d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ}
+    {G : Type} [AddCommGroup G] [Fintype G] [DecidableEq G]
+    (p : IsX0SieveFibrePresentation d G)
+
+/-- **`ajPts` is the range of `toG ∘ aj`** (PROVEN, unfolding
+`mem_ajPts`). -/
+theorem coe_ajPts : (↑p.ajPts : Set G) = Set.range (p.toG ∘ jac'.aj (𝟙 (SpecF ℓ))) := by
+  ext g
+  simp [p.mem_ajPts, eq_comm]
+
+/-- **`redPts` is the range of `toG ∘ redJ`** (PROVEN, unfolding
+`mem_redPts`). -/
+theorem coe_redPts : (↑p.redPts : Set G) = Set.range (p.toG ∘ d.redJ) := by
+  ext g
+  simp [p.mem_redPts, eq_comm]
+
+/-- **THE TRANSPORT** (PROVEN): the class count the sieve asks for IS the
+`Finset` count inside a presentation.
+
+This is the bookkeeping that the old formulation forced every closer to
+redo: `toG` is injective, so it carries the intersection of the two
+ranges bijectively onto `↑(ajPts ∩ redPts)`, and `Set.ncard` of a
+`Finset` coercion is its `card`.  With this proven once, the residual
+leaf can be stated entirely in terms of explicit finite data. -/
+theorem ncard_inter_eq :
+    (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
+      = (p.ajPts ∩ p.redPts).card := by
+  have hinj : Function.Injective p.toG := p.bij.1
+  have himg : p.toG '' (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ))))
+      = ↑(p.ajPts ∩ p.redPts) := by
+    rw [Set.image_inter hinj, Finset.coe_inter, p.coe_ajPts, p.coe_redPts,
+      ← Set.range_comp, ← Set.range_comp]
+    exact Set.inter_comm _ _
+  rw [← Set.ncard_image_of_injective _ hinj, himg, Set.ncard_coe_finset]
+
+/-- **`#ajPts = #X_0(N)(𝔽_ℓ)`** (PROVEN), given injectivity of
+Abel–Jacobi on the special fibre — which is
+`aj_injective_of_x0NeronDatum`.  At the five sieve rows the right-hand
+side is the table's `m`: `10, 8, 6, 8, 8`. -/
+theorem card_ajPts (haj : Function.Injective (jac'.aj (𝟙 (SpecF ℓ)))) :
+    p.ajPts.card = Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
+  have hinj : Function.Injective (p.toG ∘ jac'.aj (𝟙 (SpecF ℓ))) := p.bij.1.comp haj
+  rw [← Set.ncard_coe_finset, p.coe_ajPts, Set.ncard_range_of_injective hinj]
+
+/-- **`#redPts = #J_0(N)(ℚ)`** (PROVEN), given injectivity of reduction
+— which is `neronReduction_injective` through
+`IsX0NeronDatum.toReduction`, and is where the rank-`0` hypothesis
+`hfin` is consumed.  At the five sieve rows the right-hand side is
+`21, 32, 81, 96, 80`.
+
+This is the fact the old statement had no way to say: it makes `redPts`
+a subgroup of `G` of known order, rather than an arbitrary subset of
+known size. -/
+theorem card_redPts (hred : Function.Injective d.redJ) :
+    p.redPts.card = Nat.card (RelPoint jstr (𝟙 SpecQ)) := by
+  have hinj : Function.Injective (p.toG ∘ d.redJ) := p.bij.1.comp hred
+  rw [← Set.ncard_coe_finset, p.coe_redPts, Set.ncard_range_of_injective hinj]
+
+include p in
+/-- **`#G = #J_0(N)(𝔽_ℓ)`** (PROVEN), which at the five sieve rows is the
+table's `n`: `63, 512, 972, 6144, 28160`. -/
+theorem card_eq : Fintype.card G = Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) := by
+  rw [← Nat.card_eq_fintype_card]
+  exact (Nat.card_eq_of_bijective _ p.bij).symm
+
+end IsX0SieveFibrePresentation
+
+/-- **The survivor classes number at most `numRationalCusps N`, counted
+inside a concrete presentation** (sorry node — THE arithmetic residue of
+the Mordell–Weil sieve, and now the ONLY open statement in the sieve
+cluster).
 
 TRUE; see `exists_sharpSievePrime_classCount` below for the five witness
 rows, the survivor computation at `N = 26` (done directly in Magma), and
 the refutation test each witness passes.
 
-**What this leaf is, after the cut.**  `Set.range d.redJ` is an
-isomorphic copy of `J_0(N)(ℚ)` inside `J_0(N)(𝔽_ℓ)` — a subgroup of
-order `21, 32, 81, 96, 80` at the five levels — and
-`Set.range (jac'.aj)` is the set of Abel–Jacobi classes of the `m`
-points of `X_0(N)(𝔽_ℓ)`, of size exactly `m` because Abel–Jacobi is
-injective there (`aj_injective_of_x0NeronDatum`).  The claim is that
-these two subsets of a group of order `n` meet in at most
-`numRationalCusps N = 4` elements — and they meet in exactly `4`, since
-the reductions of the four rational cusps always survive.
+**What this leaf is.**  `p.redPts` is an isomorphic copy of `J_0(N)(ℚ)`
+inside `J_0(N)(𝔽_ℓ)` — a subgroup of order `21, 32, 81, 96, 80` at the
+five levels, by `card_redPts` — and `p.ajPts` is the set of Abel–Jacobi
+classes of the `m` points of `X_0(N)(𝔽_ℓ)`, of size exactly `m` by
+`card_ajPts`.  The claim is that these two subsets of a group of order
+`n` meet in at most `numRationalCusps N = 4` elements — and they meet in
+exactly `4`, since the reductions of the four rational cusps always
+survive.
 
-**Why the two cardinality hypotheses are load-bearing rather than
-decorative.**  They are what makes this a statement about an EXPLICIT
-finite abelian group: `hn` pins `#J_0(N)(𝔽_ℓ)`, which is what certifies
-that an enumeration of that group is complete, and `hm` pins the size of
-the Abel–Jacobi image.  Neither is derivable inside this section — both
-come from `IsX0EichlerShimura` through the two lemmas above — and
-supplying them here is precisely how the Eichler–Shimura half of the old
-irreducibility verdict was discharged.  **They do not make the leaf
-provable in isolation**, and that is the honest situation: the counts
-say how big the two subsets are, not where they sit, and the
-intersection depends on where they sit.  Closing this leaf needs the
-group presented concretely, which is the second half of the verdict —
-"the Abel–Jacobi image inside it as an explicitly computable finite
-object" — and that half is untouched by this cut.
+**Every hypothesis is what it looks like, and none of them suffices.**
+`_hm`, `_hn` and `_hred` are the complete output of the cardinality
+axis, now stated about the explicit data rather than about `Set.range`s;
+`_hred` is derivable from `_hfin` and `_hrow` (that derivation is run in
+the consumer below) and is supplied because a computation wants the
+number, not the derivation.  As the previous form of this leaf recorded:
+**the counts say how big the two subsets are, not where they sit, and
+the intersection depends on where they sit.**  What closes this is `p`
+being produced from a PLANE MODEL — the divisor class group of an
+explicit curve of genus `2`–`5` over `𝔽_ℓ` with `ℓ ≤ 7` is a finite
+computation — rather than from the tautological presentation the
+consumer below builds.
 
-AXIS SEARCHED: the CARDINALITY axis (what the two point counts alone
-give) and the EICHLER–SHIMURA axis (where the counts come from).  NOT
-searched: whether a concrete presentation of `J_0(N)(𝔽_ℓ)` can be built
-from a plane model of `X_0(N)` at these five levels — genus `2`–`5`,
-`ℓ ≤ 7`, so the divisor class group is a finite computation — which is
-the direction that would actually close it.
+AXES SEARCHED: the CARDINALITY axis (what the point counts alone give,
+now including `#J_0(N)(ℚ)`), the EICHLER–SHIMURA axis (where the counts
+come from, CLOSED — both counts are theorems), and the TRANSPORT axis
+(what a change of presentation gives — nothing, by `ncard_inter_eq`: all
+presentations of one datum give the same count, which is also why this
+leaf is equivalent to and not weaker than its predecessor).  NOT
+searched: the plane-model/divisor-class-group construction of `p`
+itself.  That is the direction that would actually close it, and it is
+now a statement one can aim at, namely
+`IsX0SieveFibrePresentation d G` for a `G` one can write down.
 
 The hypotheses carry underscores only because the body is `sorry`. -/
-theorem card_inter_range_redJ_aj_le_of_x0SieveTable {m n : ℕ}
+theorem card_inter_ajPts_redPts_le_of_x0SieveTable {m n : ℕ} {G : Type}
+    [AddCommGroup G] [Fintype G] [DecidableEq G]
     (_hrow : (N, ℓ, m, n) ∈ x0SieveTable)
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+    (p : IsX0SieveFibrePresentation d G)
     (_hfin : Finite (RelPoint jstr (𝟙 SpecQ)))
-    (_hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
-    (_hn : Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n) :
-    (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
-      ≤ numRationalCusps N :=
+    (_hm : p.ajPts.card = m)
+    (_hn : Fintype.card G = n)
+    (_hred : p.redPts.card = Nat.card (RelPoint jstr (𝟙 SpecQ))) :
+    (p.ajPts ∩ p.redPts).card ≤ numRationalCusps N :=
   sorry
+
+/-- **The survivor classes number at most `numRationalCusps N`** (PROVEN
+2026-07-28, over `card_inter_ajPts_redPts_le_of_x0SieveTable` and the
+tautological presentation).
+
+The counting argument in full, and it is exactly the part of the old
+leaf that was bookkeeping rather than arithmetic:
+
+* `hn` and a `decide` on the table give `n ≠ 0`, hence `J_0(N)(𝔽_ℓ)` is
+  FINITE — which is what lets the fibre be presented at all, and is the
+  first time `hn` does work rather than merely being recorded;
+* `ab'.addCommGroup` makes it a finite abelian group, and the
+  tautological presentation (`toG = id`) is an
+  `IsX0SieveFibrePresentation`;
+* `aj_injective_of_x0NeronDatum` and `neronReduction_injective` (through
+  `IsX0NeronDatum.toReduction`) turn `hm` and `hfin` into
+  `#ajPts = m` and `#redPts = #J_0(N)(ℚ)`;
+* `ncard_inter_eq` identifies the `Set.ncard` the consumer asks for with
+  the `Finset.card` the residual leaf bounds.
+
+The arithmetic itself is untouched and sits in the leaf above; see its
+docstring and the subsection docstring for why the split is an interface
+rather than a weakening. -/
+theorem card_inter_range_redJ_aj_le_of_x0SieveTable {m n : ℕ}
+    (hrow : (N, ℓ, m, n) ∈ x0SieveTable)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+    (hfin : Finite (RelPoint jstr (𝟙 SpecQ)))
+    (hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
+    (hn : Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n) :
+    (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
+      ≤ numRationalCusps N := by
+  classical
+  obtain ⟨-, -, hℓ2, -, -⟩ := x0SieveTable_spec hrow
+  have hkenku : N ∈ kenkuLevels := by fin_cases hrow <;> decide
+  have hnpos : n ≠ 0 := by fin_cases hrow <;> decide
+  haveI hfinJ : Finite (RelPoint jstr' (𝟙 (SpecF ℓ))) :=
+    Nat.finite_of_card_ne_zero (by rw [hn]; exact hnpos)
+  letI : AddCommGroup (RelPoint jstr' (𝟙 (SpecF ℓ))) := ab'.addCommGroup _
+  letI : Fintype (RelPoint jstr' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  set p : IsX0SieveFibrePresentation d (RelPoint jstr' (𝟙 (SpecF ℓ))) :=
+    { toG := id
+      bij := Function.bijective_id
+      map_add := fun _ _ => rfl
+      ajPts := Finset.univ.filter (fun g => ∃ x, jac'.aj (𝟙 (SpecF ℓ)) x = g)
+      mem_ajPts := fun g => by simp
+      redPts := Finset.univ.filter (fun g => ∃ a, d.redJ a = g)
+      mem_redPts := fun g => by simp } with hp
+  have haj : Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) :=
+    aj_injective_of_x0NeronDatum hkenku d
+  have hred : Function.Injective d.redJ :=
+    (d.toReduction (neronReduction_injective ℓ R toF d.base hℓ2 abZ
+      (d.finite_intPoints hfin))).redJ_inj
+  rw [p.ncard_inter_eq]
+  exact card_inter_ajPts_redPts_le_of_x0SieveTable hrow d p hfin
+    ((p.card_ajPts haj).trans hm) (p.card_eq.trans hn) (p.card_redPts hred)
 
 end SharpSieveCounts
 
@@ -31345,8 +31562,13 @@ The cut, and what each piece costs:
   three thousand lines below (`exists_isX0Compactification_specialFibre`
   then `exists_isX0EichlerShimura`) and was compiler-checked in a scratch
   module.  See its docstring; do not dispatch a prover at it.
-* `card_inter_range_redJ_aj_le_of_x0SieveTable` — THE arithmetic residue,
-  now stated with both cardinalities in hand.
+* `card_inter_range_redJ_aj_le_of_x0SieveTable` — PROVEN 2026-07-28 over
+  the tautological presentation; it is now the counting argument only.
+* `card_inter_ajPts_redPts_le_of_x0SieveTable` — THE arithmetic residue,
+  stated inside an `IsX0SieveFibrePresentation`, i.e. about two
+  `Finset`s of an explicit finite abelian group, with `#ajPts`,
+  `#redPts` and `#G` all supplied.  It is EQUIVALENT to the old residual
+  leaf, not weaker; see the subsection docstring there.
 
 **The second conjunct is therefore PROVEN**, which is the concrete gain:
 `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` reduces to `4 ≤ m` against the
@@ -31375,8 +31597,9 @@ already carries.
 * *The Eichler–Shimura axis is CLOSED*: both counts are theorems here.
 * *NOT searched, and the direction that would close what is left*:
   a concrete presentation of `J_0(N)(𝔽_ℓ)` and of the Abel–Jacobi image
-  in it, at genus `2`–`5` and `ℓ ≤ 7`.  See
-  `card_inter_range_redJ_aj_le_of_x0SieveTable`. -/
+  in it, at genus `2`–`5` and `ℓ ≤ 7`.  That requirement is now STATED,
+  as `IsX0SieveFibrePresentation`, and the residual leaf is
+  `card_inter_ajPts_redPts_le_of_x0SieveTable`. -/
 theorem exists_sharpSievePrime_classCount (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
     ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
       ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
