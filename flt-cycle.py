@@ -59,6 +59,40 @@ MERGER_LAKE = "/scratch/chend-flt/flt-staging/.lake/build"
 # filled up before, so this stays at exactly ONE copy (rsync --delete).
 HOME_SEED = os.path.expanduser("~/.flt-release-lake/build")
 SCRATCH = "/scratch/chend-flt"
+# A donor is "seeded" if its Mathlib olean directory has real content. The
+# threshold is deliberately low (the directory holds ~60-90 top-level entries);
+# an earlier version of this check used `-gt 100` and so matched NOTHING, which
+# is a reminder to compare against a measured number rather than a guessed one.
+_MATHLIB_OLEANS = ".lake/packages/mathlib/.lake/build/lib/lean/Mathlib"
+
+
+def _ensure_packages_cmd(name: str) -> str:
+    """Shell snippet: make sure {name} has mathlib oleans, copying host-locally.
+
+    Runs ON the worker host. A no-op (fast `ls`) when packages are already
+    there, so it is safe to call on every release for every worktree. If no
+    donor exists on that host it FAILS loudly rather than leaving a worktree
+    that looks `ready` but would spend two hours rebuilding mathlib -- an
+    unseeded worktree is worse than an unavailable one.
+    """
+    d = f"{SCRATCH}/{name}"
+    return (
+        f'c=$(ls "{d}/{_MATHLIB_OLEANS}" 2>/dev/null | wc -l); '
+        f'if [ "$c" -le 20 ]; then '
+        f'  donor=""; '
+        f'  for p in {SCRATCH}/flt-lean-* {SCRATCH}/flt-staging; do '
+        f'    [ "$p" = "{d}" ] && continue; '
+        f'    n=$(ls "$p/{_MATHLIB_OLEANS}" 2>/dev/null | wc -l); '
+        f'    [ "$n" -gt 20 ] && {{ donor="$p"; break; }}; '
+        f'  done; '
+        f'  [ -z "$donor" ] && {{ echo "no mathlib donor on this host" >&2; exit 1; }}; '
+        f'  cp -a "$donor/.lake/packages" "{d}/.lake/packages.tmp" && '
+        f'  rm -rf "{d}/.lake/packages" && '
+        f'  mv "{d}/.lake/packages.tmp" "{d}/.lake/packages"; '
+        f'fi'
+    )
+
+
 LAST_RELEASE = os.path.expanduser("~/.flt-last-release")
 MALFUNCTION_LOG = os.path.expanduser("~/.flt-malfunction-log")
 
@@ -1078,10 +1112,44 @@ def cmd_release(args):
             print("[dry-run] would stage to home and seed the above")
             return 0
 
+        # Stage into a SIBLING, verify, then swap. The old form rsynced
+        # `--delete` straight into HOME_SEED from the merger's LIVE build dir --
+        # and the merger is a running agent that nothing quiesces. `lake`
+        # deletes an output before rebuilding it, so an rsync landing in that
+        # window copies a module's `.trace` WITHOUT its `.olean`, and `--delete`
+        # then propagates the absence: a torn snapshot DESTROYS the previous
+        # good seed instead of being rejected.
+        #
+        # That is not hypothetical. On 2026-07-28 the seed carried
+        # `Modularity/Interface.trace` plus all five `.hash` files and no
+        # `Interface.olean` -- the single most expensive module in the tree
+        # (~15k lines), so every worktree seeded from it paid a full Interface
+        # elaboration on first build. No donor copy existed anywhere on any
+        # host, because the good one had been deleted from the seed rather than
+        # misplaced.
+        #
+        # A `.trace` with no `.olean` is the exact signature of the race, and it
+        # is cheap to test for, so it is the completeness check: any module that
+        # fails it means the snapshot was taken mid-build. Keep the old seed and
+        # fail -- a stale complete seed costs one rebuild of what changed; a
+        # torn one costs a full elaboration in every worktree it reaches.
+        stage = HOME_SEED + ".staging"
         print(f"  staging {MERGER_HOST}:{MERGER_LAKE} -> {HOME_SEED}")
         res = sh(MERGER_HOST,
-                 f"mkdir -p {HOME_SEED} && "
-                 f"rsync -a --delete {MERGER_LAKE}/ {HOME_SEED}/ && "
+                 f"mkdir -p {stage} && "
+                 f"rsync -a --delete {MERGER_LAKE}/ {stage}/ && "
+                 f"torn=$(find {stage} -name '*.trace' | while read t; do "
+                 f"  [ -f \"${{t%.trace}}.olean\" ] || echo \"${{t%.trace}}\"; "
+                 f"done); "
+                 f"if [ -n \"$torn\" ]; then "
+                 f"  echo \"TORN SNAPSHOT -- trace without olean:\" >&2; "
+                 f"  echo \"$torn\" | sed 's|.*/lean/||' >&2; "
+                 f"  rm -rf {stage}; exit 1; "
+                 f"fi; "
+                 f"rm -rf {HOME_SEED}.old && "
+                 f"if [ -d {HOME_SEED} ]; then mv {HOME_SEED} {HOME_SEED}.old; fi && "
+                 f"mv {stage} {HOME_SEED} && "
+                 f"rm -rf {HOME_SEED}.old && "
                  f"du -sh {HOME_SEED}")
         if res.returncode != 0:
             # Roll back to `free`: unseeded is not `ready`, and dispatching into
@@ -1099,8 +1167,20 @@ def cmd_release(args):
                 failed.append((name, "no host mapping"))
                 continue
             dest = f"{SCRATCH}/{name}/.lake/build"
+            # `.lake/packages` (mathlib's oleans, ~7.4G) is NOT part of the
+            # release seed and never has been: MERGER_LAKE points at
+            # `.lake/build`. That was invisible while every pooled worktree had
+            # been seeded by hand long ago -- but a worktree created by
+            # `git worktree add` starts with an EMPTY `.lake`, so `lake build`
+            # there compiles MATHLIB FROM SOURCE: ~2 hours, versus ~3 minutes of
+            # local copy. 131 worktrees were in that state on 2026-07-28.
+            #
+            # packages depend only on the mathlib PIN, not on the release, so
+            # they are seeded once per worktree from a donor on the SAME HOST
+            # (disk-to-disk, no network) rather than shipped every release.
             r = sh(host, f"mkdir -p {dest} && "
-                         f"rsync -a --delete {HOME_SEED}/ {dest}/")
+                         f"rsync -a --delete {HOME_SEED}/ {dest}/ && "
+                         + _ensure_packages_cmd(name))
             if r.returncode != 0:
                 failed.append((name, r.stderr.strip()[:90]))
             else:

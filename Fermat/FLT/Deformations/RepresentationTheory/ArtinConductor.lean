@@ -299,17 +299,40 @@ The second is the form consumers want, and it carries NO continuity
 hypothesis; see its docstring for why none is needed.
 
 The `TameProcyclic` section immediately below carries out the
-decomposition. Everything in it is PROVEN except **two leaves**:
+decomposition. Everything in it is PROVEN except **two arithmetic
+leaves**, which are the two classical halves of tame ramification theory
+over `Kᵥⁿʳ` and are the ONLY places where the valuation theory of
+`Kᵥᵃˡᵍ` is still needed:
+
+* `exists_smul_eq_self_pow_eq_algebraMap_of_isUnit` — the UNITS of `𝒪ᵥ`
+  are `m`-divisible over `Kᵥⁿʳ` for `ℓ ∤ m` (residue field of `Kᵥⁿʳ`
+  algebraically closed, plus Hensel);
+* `exists_localInertia_smul_eq_mul_of_pow_eq_one` — the tame character at
+  a uniformizer is SURJECTIVE onto `μ_M`, i.e.
+  `[Kᵥⁿʳ(π^{1/M}) : Kᵥⁿʳ] = M` (total ramification).
 
 * `exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq` — the KERNEL of
   the tame character `θ_n(σ) = σ(π^{1/n})/π^{1/n}`, i.e.
   `ker θ_n ⊆ I_vⁿ · P_v` (Serre, *Corps Locaux* IV §2 Prop. 8; Neukirch
-  II.7.7). The reverse inclusion is free from the definition of
-  `tameFixingSubgroup`, so this is the half carrying the arithmetic.
+  II.7.7) — was the first leaf and is **PROVEN 2026-07-27** over exactly
+  those two. Everything else it needed is discharged: the normal form
+  `y = ζ · c^d · z^{kd}` for a tame generator
+  (`smul_tameGen_eq_of_smul_root_eq`, which is
+  "`Kᵥᵗᵃᵐᵉ = Kᵥⁿʳ(π^{1/m} : ℓ ∤ m)`" in generator form), the `μ_M`
+  bookkeeping, and the profinite limit.
+
 * `exists_pow_prime_mul_mem_wildInertiaGroup` — the tame quotient is
-  `ℓ`-DIVISIBLE, `Q = Q^ℓ` for `ℓ` the residue characteristic. This is
-  the exact complement of `mem_of_pow_prime_mem_of_mem_wildInertiaGroup`
-  further down ("`P_v` is pro-`ℓ`"); neither implies the other.
+  `ℓ`-DIVISIBLE, `Q = Q^ℓ` for `ℓ` the residue characteristic — was the
+  second leaf and is **PROVEN 2026-07-27** from the FINITE LEVELS of the
+  tame quotient built at the head of the section (`tameLevel`,
+  `coprime_card_quotient_tameLevel`, `exists_pow_mul_mem_of_directed`).
+  It needed no arithmetic at all: `P_v` is *defined* as the elements
+  fixing every tame generator, so the subgroups fixing a FINITE set of
+  generators are open, directed and intersect in `P_v`, and each of their
+  quotients embeds in a product of `μ_m` with `ℓ ∤ m`, hence has order
+  prime to `ℓ`. It remains the exact complement of
+  `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` further down ("`P_v` is
+  pro-`ℓ`"); neither implies the other.
 
 Everything between those two and the statement is proven here: the tame
 character itself, the unramifiedness of `μ_n` for `n` prime to `ℓ`
@@ -318,6 +341,65 @@ a homomorphism), normality of `P_v` in `I_v` — hence the tame quotient
 `Q` as an actual group — and the strong induction that reduces an
 arbitrary `n` to one prime to `ℓ`.
 -/
+
+/-!
+### Topological inputs: the inertia group is CLOSED
+
+Hoisted 2026-07-27 from the pro-`ℓ` block far below (their statements and
+proofs are unchanged) because `exists_pow_prime_mul_mem_wildInertiaGroup`
+inside `TameProcyclic` needs `I_v` to be COMPACT, which is exactly
+`isClosed_localInertiaGroup` plus compactness of `Γ Kᵥ`.
+-/
+
+/-- The set of `σ` fixing a given integral element is CLOSED. It is the
+stabilizer, which `ContinuousSMulDiscrete` makes open, and an open
+subgroup is closed. -/
+theorem isClosed_setOf_smul_eq_self
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) :
+    IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = x} :=
+  Subgroup.isClosed_of_isOpen
+    (MulAction.stabilizer (Field.absoluteGaloisGroup (v.adicCompletion K)) x)
+    (ContinuousSMulDiscrete.isOpen_smul_eq _ x x)
+
+/-- **`localInertiaGroup v` is closed.** `AddSubgroup.inertia` is the set
+of `σ` with `σ • x − x ∈ 𝔪` for every `x` of the integral closure, and
+each such condition is CLOPEN: its complement is the union over the
+`y` with `y − x ∉ 𝔪` of the open sets `{σ | σ • x = y}`
+(`ContinuousSMulDiscrete`). -/
+theorem isClosed_localInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    IsClosed ((localInertiaGroup v :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
+  set R := IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (v.adicCompletion K)) with hR
+  have key : ∀ x : R,
+      IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
+    intro x
+    rw [← isOpen_compl_iff]
+    have hc : {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+          σ • x - x ∈ IsLocalRing.maximalIdeal R}ᶜ =
+        ⋃ (y : R) (_ : y - x ∉ IsLocalRing.maximalIdeal R),
+          {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = y} := by
+      ext σ
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion]
+      exact ⟨fun h => ⟨σ • x, h, rfl⟩, by rintro ⟨y, hy, rfl⟩; exact hy⟩
+    rw [hc]
+    exact isOpen_iUnion fun y => isOpen_iUnion fun _ =>
+      ContinuousSMulDiscrete.isOpen_smul_eq _ x y
+  have hrw : (localInertiaGroup v :
+        Set (Field.absoluteGaloisGroup (v.adicCompletion K))) =
+      ⋂ x : R, {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
+    ext σ
+    simp only [Set.mem_iInter, Set.mem_setOf_eq]
+    rfl
+  rw [hrw]
+  exact isClosed_iInter key
 
 section TameProcyclic
 
@@ -511,9 +593,586 @@ set_option quotPrecheck false in
 local notation "Qᵥ" =>
   localInertiaGroup v ⧸ Subgroup.subgroupOf (wildInertiaGroup v) (localInertiaGroup v)
 
-/-- **THE KERNEL OF THE TAME CHARACTER** (SORRY LEAF, cut 2026-07-27 out
-of `exists_localInertia_generator_mod_pow_wildInertiaGroup` below, which
-is PROVEN over it together with
+/-!
+### THE COMMON INPUT OF THIS SECTION: the tame character and the FINITE
+### LEVELS of the tame quotient
+
+Built 2026-07-27 as the shared machinery of the two leaves of this
+section. The predecessor's plan recorded the common input as "a finite
+tame extension of `Kᵥⁿʳ` is `Kᵥⁿʳ(π^{1/e})`", i.e. the full structure
+theorem for the tame quotient. That is the right common input for the
+KERNEL leaf, but it is strictly more than the DIVISIBILITY leaf needs,
+and the weaker thing that both share is elementary and is built here in
+full:
+
+* `tameCharacter` — the character `θ(τ) = τ(X)/X` attached to any `X`
+  with `Xⁿ` Galois-fixed and `n` prime to the residue characteristic,
+  packaged as a `MonoidHom` into `μ_n`. It is a homomorphism exactly
+  because inertia fixes `μ_n` pointwise
+  (`smul_eq_self_of_pow_eq_one_algebraicClosure`), and it was previously
+  reconstructed inline inside
+  `exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem`.
+* `tameLevel` — for a FINITE set `F` of tame generators, the subgroup of
+  `I_v` fixing them all, realised as the KERNEL of the product of their
+  tame characters (so it is normal for free). These subgroups are open,
+  they are directed downwards, and their intersection is EXACTLY the wild
+  inertia `P_v` — because `P_v` is *defined* by fixing every tame
+  generator. So they are the finite levels of the tame quotient
+  `Q = I_v / P_v`, with no field theory and no Galois correspondence
+  anywhere.
+* `coprime_card_quotient_tameLevel` — the ONE arithmetic fact this buys:
+  `I_v ⧸ tameLevel F` embeds in `∏_{x ∈ F} μ_{m_x}` with every `m_x`
+  prime to `ℓ`, so its order is prime to `ℓ`. That is "tame degrees are
+  prime to the residue characteristic" in the only form needed, and it is
+  a consequence of Lagrange rather than of ramification theory.
+* `exists_pow_mul_mem_of_directed` — the abstract profinite step, stated
+  for a general compact topological group: an `n`-th root modulo every
+  member of a directed family of OPEN subgroups is an `n`-th root modulo
+  their intersection. This is the "mod `P`" analogue of
+  `exists_pow_eq_of_forall_openNormal` further down, which solves
+  `θ ^ n = σ` on the nose inside a closed subgroup; here the equation is
+  only asked modulo the intersection, which is what a statement about a
+  QUOTIENT needs.
+
+`exists_pow_prime_mul_mem_wildInertiaGroup` (the `ℓ`-divisibility leaf)
+is PROVEN outright from these four, with no new arithmetic at all.
+-/
+
+/-- **THE ABSTRACT PROFINITE STEP** (PROVEN 2026-07-27): an `n`-th root
+modulo every member of a DIRECTED family of OPEN subgroups is an `n`-th
+root modulo their intersection.
+
+Stated for an arbitrary compact topological group, so it is reusable.
+THE PROOF is Cantor's intersection theorem, exactly as in
+`exists_pow_eq_of_forall_openNormal` below: the sets
+`t i := (θ ↦ σ⁻¹θⁿ)⁻¹(W i)` are closed (an open subgroup is closed and
+`θ ↦ σ⁻¹θⁿ` is continuous), nonempty by hypothesis, and directed; in a
+compact space their intersection is nonempty, and any `θ` in it satisfies
+`σ⁻¹θⁿ ∈ W i` for every `i`.
+
+The difference from `exists_pow_eq_of_forall_openNormal` is that the
+conclusion is an equation MODULO a subgroup rather than on the nose, and
+correspondingly the hypothesis `hP` — "an element of every `W i` lies in
+`P`" — replaces a `T1` + neighbourhood-basis argument. That is what makes
+it usable for a statement about the quotient `I_v / P_v`, where no
+element-level equation is available. -/
+theorem exists_pow_mul_mem_of_directed
+    {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G] [CompactSpace G]
+    {ι : Type*} [Nonempty ι] (W : ι → Subgroup G)
+    (hopen : ∀ i, IsOpen (W i : Set G))
+    (hdir : Directed (fun a b => b ≤ a) W)
+    {P : Subgroup G} (hP : ∀ g : G, (∀ i, g ∈ W i) → g ∈ P)
+    {n : ℕ} {σ : G}
+    (hlevel : ∀ i, ∃ θ : G, σ⁻¹ * θ ^ n ∈ W i) :
+    ∃ θ : G, σ⁻¹ * θ ^ n ∈ P := by
+  classical
+  have hcont : Continuous fun θ : G => σ⁻¹ * θ ^ n := (continuous_pow n).const_mul _
+  set t : ι → Set G := fun i => (fun θ : G => σ⁻¹ * θ ^ n) ⁻¹' (W i : Set G) with ht
+  have hclosed : ∀ i, IsClosed (t i) := fun i =>
+    (Subgroup.isClosed_of_isOpen _ (hopen i)).preimage hcont
+  have hdir' : Directed (· ⊇ ·) t := by
+    intro i j
+    obtain ⟨k, hki, hkj⟩ := hdir i j
+    exact ⟨k, Set.preimage_mono hki, Set.preimage_mono hkj⟩
+  have hne : ∀ i, (t i).Nonempty := by
+    intro i
+    obtain ⟨θ, hθ⟩ := hlevel i
+    exact ⟨θ, hθ⟩
+  obtain ⟨θ, hθ⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    t hdir' hne (fun i => (hclosed i).isCompact) hclosed
+  exact ⟨θ, hP _ fun i => Set.mem_iInter.mp hθ i⟩
+
+/-- **THE FINITE LEVEL** (PROVEN 2026-07-27), pure group theory: if
+`G ⧸ U` has order coprime to `n` then every `σ` is an `n`-th power
+modulo `U`, because `x ↦ xⁿ` is then a bijection of `G ⧸ U`
+(`Nat.Coprime.pow_left_bijective`).
+
+This is the "mod `U`" companion of `exists_pow_mem_of_coprime_card_quotient`
+below, which places the root inside a prescribed subgroup instead. No
+finiteness hypothesis is needed: `pow_card_eq_one'` holds vacuously when
+`Nat.card = 0`. -/
+theorem exists_pow_mul_mem_of_coprime_card_quotient
+    {G : Type*} [Group G] {U : Subgroup G} [U.Normal] {n : ℕ}
+    (hcop : Nat.Coprime (Nat.card (G ⧸ U)) n) (σ : G) :
+    ∃ θ : G, σ⁻¹ * θ ^ n ∈ U := by
+  obtain ⟨c, hc⟩ := hcop.pow_left_bijective.surjective (QuotientGroup.mk σ : G ⧸ U)
+  obtain ⟨θ, rfl⟩ := QuotientGroup.mk_surjective c
+  refine ⟨θ, ?_⟩
+  rw [← QuotientGroup.eq, QuotientGroup.mk_pow]
+  exact hc.symm
+
+/-- The group of `k`-th roots of unity in a domain is cyclic and killed by
+`k`, so its order DIVIDES `k` (mathlib's `card_rootsOfUnity` only bounds
+it by `k`, which is not enough for a coprimality argument). -/
+theorem natCard_rootsOfUnity_dvd {R : Type*} [CommRing R] [IsDomain R] (k : ℕ) [NeZero k] :
+    Nat.card (rootsOfUnity k R) ∣ k := by
+  obtain ⟨g, hg⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := rootsOfUnity k R)
+  rw [← hg]
+  refine orderOf_dvd_of_pow_eq_one ?_
+  ext
+  push_cast
+  exact (mem_rootsOfUnity' k (g : Rˣ)).mp g.2
+
+/-- `(n : 𝓞 K) ∉ v.asIdeal` forces `n ≠ 0`, since `0 ∈ v.asIdeal`. -/
+theorem ne_zero_of_natCast_notMem {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) : n ≠ 0 := by
+  rintro rfl
+  exact hn (by simp)
+
+/-- `τ(X)/X` is an `n`-th root of unity when `Xⁿ` is Galois-fixed. -/
+theorem tameChar_pow_eq_one {n : ℕ} {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0)
+    (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n) (τ : Γᵥ) :
+    ((τ • X) / X) ^ n = 1 := by
+  rw [div_pow, ← smul_pow_algebraicClosure, hXn τ, div_self (pow_ne_zero n hX0)]
+
+/-- … and in particular it is nonzero. -/
+theorem tameChar_ne_zero {n : ℕ} {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0)
+    (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n) (hn0 : n ≠ 0) (τ : Γᵥ) :
+    (τ • X) / X ≠ 0 := by
+  intro h
+  have h1 := tameChar_pow_eq_one v hX0 hXn τ
+  rw [h, zero_pow hn0] at h1
+  exact zero_ne_one h1
+
+/-- The defining identity `τ(X) = θ(τ) · X`. -/
+theorem tameChar_smul_eq {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0) (τ : Γᵥ) :
+    τ • X = ((τ • X) / X) * X := by
+  field_simp
+
+/-- **`θ` IS MULTIPLICATIVE ON THE INERTIA GROUP**. The one input is that
+inertia fixes `μ_n` pointwise for `n` prime to the residue characteristic
+(`smul_eq_self_of_pow_eq_one_algebraicClosure`), which is what lets
+`a • (θ(b) · X)` be expanded as `θ(b) · a • X`. -/
+theorem tameChar_mul {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0)
+    (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n) (a b : localInertiaGroup v) :
+    (((a * b : localInertiaGroup v) : Γᵥ) • X) / X
+      = ((((a : localInertiaGroup v) : Γᵥ) • X) / X) *
+        ((((b : localInertiaGroup v) : Γᵥ) • X) / X) := by
+  have h1 : ((a * b : localInertiaGroup v) : Γᵥ) • X
+      = (((((a : localInertiaGroup v) : Γᵥ) • X) / X) *
+        ((((b : localInertiaGroup v) : Γᵥ) • X) / X)) * X := by
+    show ((a : Γᵥ) * b) • X = _
+    rw [mul_smul, tameChar_smul_eq v hX0 (b : Γᵥ), smul_mul',
+      smul_eq_self_of_pow_eq_one_algebraicClosure v a.2 hn
+        (tameChar_pow_eq_one v hX0 hXn (b : Γᵥ)),
+      tameChar_smul_eq v hX0 (a : Γᵥ)]
+    field_simp
+  exact mul_right_cancel₀ hX0 ((tameChar_smul_eq v hX0
+    ((a * b : localInertiaGroup v) : Γᵥ)).symm.trans h1)
+
+/-- **THE TAME CHARACTER** `θ(τ) = τ(X)/X : I_v →* μ_n`, attached to any
+`X ∈ Kᵥᵃˡᵍ` with `Xⁿ` fixed by the whole of `Γ Kᵥ` and `n` prime to the
+residue characteristic.
+
+The classical instance is `X = π^{1/n}` for a uniformizer `π`, but
+nothing here needs `X` to be a root of a uniformizer — only that `Xⁿ` is
+Galois-fixed, which is what an `n`-th root of an element of `𝒪ᵥ`
+satisfies. That generality is what lets the SAME construction serve the
+finite levels of the tame quotient below, where the generators are
+arbitrary. -/
+noncomputable def tameCharacter {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0) (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n) :
+    localInertiaGroup v →* rootsOfUnity n Kᵥᵃˡᵍ :=
+  MonoidHom.mk'
+    (fun τ => ⟨Units.mk0 (((τ : Γᵥ) • X) / X)
+        (tameChar_ne_zero v hX0 hXn (ne_zero_of_natCast_notMem v hn) (τ : Γᵥ)),
+      (mem_rootsOfUnity' n _).mpr (by simpa using tameChar_pow_eq_one v hX0 hXn (τ : Γᵥ))⟩)
+    (fun a b => by ext; simpa using tameChar_mul v hn hX0 hXn a b)
+
+@[simp]
+theorem tameCharacter_apply_val {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0) (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n)
+    (τ : localInertiaGroup v) :
+    (((tameCharacter v hn hX0 hXn τ : Kᵥᵃˡᵍˣ)) : Kᵥᵃˡᵍ) = ((τ : Γᵥ) • X) / X := rfl
+
+/-- The KERNEL of the tame character is the stabilizer of `X` — the shape
+in which every use below reads it. -/
+theorem tameCharacter_eq_one_iff {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {X : Kᵥᵃˡᵍ} (hX0 : X ≠ 0) (hXn : ∀ σ : Γᵥ, σ • (X ^ n) = X ^ n)
+    (τ : localInertiaGroup v) :
+    tameCharacter v hn hX0 hXn τ = 1 ↔ (τ : Γᵥ) • X = X := by
+  constructor
+  · intro h
+    have h1 := congrArg (fun u : rootsOfUnity n Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ)) h
+    rw [tameCharacter_apply_val] at h1
+    simp only [Units.val_one, OneMemClass.coe_one] at h1
+    field_simp at h1
+    exact h1
+  · intro h
+    ext
+    rw [tameCharacter_apply_val, h, div_self hX0]
+    simp
+
+/-- **THE NONZERO TAME GENERATORS AT `v`**: the elements `x` of the
+integral closure, other than `0`, some power of which prime to the
+residue characteristic already lies in `𝒪ᵥ`.
+
+This is *exactly* the set `tameFixingSubgroup v` is defined to fix, up to
+the element `0`, which every automorphism fixes anyway. Hence
+`P_v = I_v ⊓ tameFixingSubgroup v` is the intersection over this set of
+the stabilizers — which is what makes the finite levels below cofinal. -/
+def tameGens : Set Oᵥ :=
+  {x | x ≠ 0 ∧ ∃ n : ℕ, (n : 𝓞 K) ∉ v.asIdeal ∧ ∃ a : 𝒪ᵥ, x ^ n = algebraMap 𝒪ᵥ Oᵥ a}
+
+/-- A choice of exponent prime to the residue characteristic for a tame
+generator. Any one will do; the arguments below only use that it exists
+and is prime to `ℓ`. -/
+noncomputable def tameExp (x : tameGens v) : ℕ := x.2.2.choose
+
+theorem tameExp_notMem (x : tameGens v) : ((tameExp v x : ℕ) : 𝓞 K) ∉ v.asIdeal :=
+  x.2.2.choose_spec.1
+
+theorem tameExp_pow (x : tameGens v) :
+    ∃ a : 𝒪ᵥ, (x : Oᵥ) ^ tameExp v x = algebraMap 𝒪ᵥ Oᵥ a := x.2.2.choose_spec.2
+
+theorem tameGen_ne_zero (x : tameGens v) : ((x : Oᵥ).1 : Kᵥᵃˡᵍ) ≠ 0 := by
+  intro h
+  exact x.2.1 (Subtype.ext h)
+
+/-- The chosen power of a tame generator lies in `𝒪ᵥ`, hence is fixed by
+every element of `Γ Kᵥ` — the hypothesis `tameCharacter` asks for. -/
+theorem tameGen_smul_pow (x : tameGens v) (σ : Γᵥ) :
+    σ • ((x : Oᵥ).1 ^ tameExp v x) = (x : Oᵥ).1 ^ tameExp v x := by
+  obtain ⟨a, ha⟩ := tameExp_pow v x
+  have h : ((x : Oᵥ).1 : Kᵥᵃˡᵍ) ^ tameExp v x = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a :=
+    congrArg Subtype.val ha
+  rw [h]
+  exact smul_algebraMap_algebraicClosure_eq v σ a
+
+/-- The tame character attached to a tame generator. -/
+noncomputable def tameGenChar (x : tameGens v) :
+    localInertiaGroup v →* rootsOfUnity (tameExp v x) Kᵥᵃˡᵍ :=
+  tameCharacter v (tameExp_notMem v x) (tameGen_ne_zero v x) (tameGen_smul_pow v x)
+
+theorem tameGenChar_eq_one_iff (x : tameGens v) (τ : localInertiaGroup v) :
+    tameGenChar v x τ = 1 ↔ (τ : Γᵥ) • (x : Oᵥ) = (x : Oᵥ) := by
+  rw [tameGenChar, tameCharacter_eq_one_iff]
+  constructor
+  · intro h
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul]
+    exact h
+  · intro h
+    rw [← IntegralClosure.coe_smul]
+    exact congrArg Subtype.val h
+
+/-- **THE `F`-TH FINITE LEVEL OF THE TAME QUOTIENT**: the inertia elements
+fixing every tame generator in the finite set `F`.
+
+It is DEFINED as the kernel of the product of the corresponding tame
+characters, which makes normality free and gives the cardinality bound
+`coprime_card_quotient_tameLevel` by Lagrange. -/
+noncomputable def tameLevel (F : Finset (tameGens v)) : Subgroup (localInertiaGroup v) :=
+  (MonoidHom.pi fun p : {y // y ∈ F} => tameGenChar v p.1).ker
+
+instance tameLevel_normal (F : Finset (tameGens v)) : (tameLevel v F).Normal :=
+  inferInstanceAs ((MonoidHom.pi fun p : {y // y ∈ F} => tameGenChar v p.1).ker.Normal)
+
+theorem mem_tameLevel_iff (F : Finset (tameGens v)) (τ : localInertiaGroup v) :
+    τ ∈ tameLevel v F ↔ ∀ x ∈ F, (τ : Γᵥ) • (x : Oᵥ) = (x : Oᵥ) := by
+  simp only [tameLevel, MonoidHom.mem_ker, funext_iff, MonoidHom.pi_apply, Pi.one_apply]
+  constructor
+  · intro h x hx
+    exact (tameGenChar_eq_one_iff v x τ).mp (h ⟨x, hx⟩)
+  · intro h p
+    exact (tameGenChar_eq_one_iff v p.1 τ).mpr (h p.1 p.2)
+
+/-- Each finite level is OPEN: it is a finite intersection of stabilizers
+of integral elements, each open by `ContinuousSMulDiscrete`. -/
+theorem isOpen_tameLevel (F : Finset (tameGens v)) :
+    IsOpen ((tameLevel v F : Set (localInertiaGroup v))) := by
+  have hrw : (tameLevel v F : Set (localInertiaGroup v))
+      = (fun τ : localInertiaGroup v => (τ : Γᵥ)) ⁻¹'
+        (⋂ x ∈ (F : Set (tameGens v)), {σ : Γᵥ | σ • (x : Oᵥ) = (x : Oᵥ)}) := by
+    ext τ
+    simp only [SetLike.mem_coe, Set.mem_preimage, Set.mem_iInter, Set.mem_setOf_eq]
+    exact mem_tameLevel_iff v F τ
+  rw [hrw]
+  refine IsOpen.preimage continuous_subtype_val ?_
+  exact Set.Finite.isOpen_biInter (F : Set (tameGens v)).toFinite
+    fun x _ => ContinuousSMulDiscrete.isOpen_smul_eq _ (x : Oᵥ) (x : Oᵥ)
+
+/-- The finite levels are DIRECTED downwards: `tameLevel (F ∪ G)` refines
+both. -/
+theorem tameLevel_directed : Directed (fun a b => b ≤ a) (tameLevel v) := by
+  classical
+  intro F G
+  refine ⟨F ∪ G, ?_, ?_⟩ <;> intro τ hτ <;> rw [mem_tameLevel_iff] at hτ ⊢ <;> intro x hx
+  · exact hτ x (Finset.mem_union_left _ hx)
+  · exact hτ x (Finset.mem_union_right _ hx)
+
+/-- **THE INTERSECTION OF ALL THE FINITE LEVELS IS THE WILD INERTIA.**
+This is where the definition of `tameFixingSubgroup` is used and it is the
+whole reason the levels are the right ones: fixing every tame generator
+IS the defining condition of `P_v`, and the single generator `0` — the
+only one excluded from `tameGens` — is fixed by everything. -/
+theorem mem_subgroupOf_wild_of_forall_mem_tameLevel (g : localInertiaGroup v)
+    (h : ∀ F, g ∈ tameLevel v F) :
+    g ∈ (wildInertiaGroup v).subgroupOf (localInertiaGroup v) := by
+  rw [Subgroup.mem_subgroupOf, wildInertiaGroup, Subgroup.mem_inf]
+  refine ⟨g.2, ?_⟩
+  intro n hn x hx
+  by_cases hx0 : x = 0
+  · rw [hx0, smul_zero]
+  · have hmem : x ∈ tameGens v := ⟨hx0, n, hn, hx⟩
+    exact (mem_tameLevel_iff v {⟨x, hmem⟩} g).mp (h _) ⟨x, hmem⟩ (Finset.mem_singleton_self _)
+
+/-- **THE FINITE LEVELS OF THE TAME QUOTIENT HAVE ORDER PRIME TO THE
+RESIDUE CHARACTERISTIC** — "tame degrees are prime to `ℓ`", in the only
+form this development needs, and with no ramification theory in the
+proof.
+
+`I_v ⧸ tameLevel F` is isomorphic to the RANGE of the product of the tame
+characters indexed by `F`, hence embeds in `∏_{x ∈ F} μ_{m_x}`; each
+`Nat.card (μ_{m_x})` divides `m_x` (`natCard_rootsOfUnity_dvd`), and each
+`m_x` is prime to `q` because `(m_x : 𝓞 K) ∉ v.asIdeal` while
+`(q : 𝓞 K) ∈ v.asIdeal`. Lagrange does the rest. -/
+theorem coprime_card_quotient_tameLevel {q : ℕ} (hq : q.Prime) (hqv : (q : 𝓞 K) ∈ v.asIdeal)
+    (F : Finset (tameGens v)) :
+    Nat.Coprime (Nat.card (localInertiaGroup v ⧸ tameLevel v F)) q := by
+  classical
+  set f := MonoidHom.pi fun p : {y // y ∈ F} => tameGenChar v p.1 with hf
+  have hcop : ∀ x : tameGens v, Nat.Coprime (tameExp v x) q := by
+    intro x
+    refine Nat.Coprime.symm ((Nat.Prime.coprime_iff_not_dvd hq).mpr ?_)
+    rintro ⟨c, hc⟩
+    refine tameExp_notMem v x ?_
+    rw [hc]
+    push_cast
+    exact Ideal.mul_mem_right _ _ hqv
+  have hcard : Nat.card (localInertiaGroup v ⧸ tameLevel v F) = Nat.card f.range :=
+    (Subgroup.index_eq_card (tameLevel v F)).symm.trans (Subgroup.index_ker f)
+  rw [hcard]
+  refine Nat.Coprime.coprime_dvd_left (Subgroup.card_subgroup_dvd_card _) ?_
+  rw [Nat.card_pi]
+  refine Nat.Coprime.prod_left ?_
+  intro p _
+  haveI : NeZero (tameExp v p.1) := ⟨ne_zero_of_natCast_notMem v (tameExp_notMem v p.1)⟩
+  exact Nat.Coprime.coprime_dvd_left (natCard_rootsOfUnity_dvd _) (hcop p.1)
+
+/-!
+### THE TWO ARITHMETIC ATOMS OF THE KERNEL LEAF
+
+`exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq` — `ker θ_n ⊆ I_vⁿ · P_v` —
+is PROVEN below (2026-07-27) over exactly **two** leaves, and the whole of
+its group theory, Kummer bookkeeping and profinite limit is discharged
+here. The two leaves are the classical two halves of tame ramification
+theory over `Kᵥⁿʳ`, and neither follows from the other:
+
+* `exists_smul_eq_self_pow_eq_algebraMap_of_isUnit` — **the UNITS are
+  `m`-divisible over `Kᵥⁿʳ`**, i.e. the residue field of `Kᵥⁿʳ` is
+  algebraically closed and Hensel lifts. This is what makes every tame
+  generator a root of unity times a power of `π^{1/M}`, hence what makes
+  the roots of a uniformizer COFINAL among the tame generators
+  (`smul_tameGen_eq_of_smul_root_eq` below).
+* `exists_localInertia_smul_eq_mul_of_pow_eq_one` — **the tame character
+  at a uniformizer is SURJECTIVE onto `μ_M`**, i.e.
+  `[Kᵥⁿʳ(π^{1/M}) : Kᵥⁿʳ] = M`, the total-ramification half. Without it
+  the leaf is FALSE at every finite level: with `θ_M(I_v) = μ_d` a proper
+  subgroup, `ker θ_n` is strictly larger than the `n`-th powers (take
+  `M = 4`, `n = 2`, `d = 2`: `θ_4(σ) = −1` lies in `ker θ_2` but the
+  squares of `μ_2` are trivial).
+
+Note the SURJECTIVITY that is *not* needed is the one the section
+docstring already disclaims: the consumer
+`exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem` uses
+only that the IMAGE of `θ_n` is cyclic. The kernel statement is a
+different matter — it says the kernel is no larger than the `n`-th
+powers, and that is exactly a lower bound on the image.
+-/
+
+/-- **LEAF (arithmetic): THE UNITS OF `𝒪ᵥ` ARE `m`-DIVISIBLE OVER
+`Kᵥⁿʳ`** — for `m` prime to the residue characteristic `ℓ`, every unit
+`u` of `𝒪ᵥ` has an `m`-th root in `Kᵥᵃˡᵍ` FIXED BY THE WHOLE INERTIA
+GROUP, i.e. lying in `Kᵥⁿʳ`.
+
+WHY IT IS TRUE (Serre, *Corps Locaux* IV §2; Neukirch II.7.7 and II.7.9).
+`Kᵥⁿʳ` is henselian with residue field the algebraic closure `𝔽̄_ℓ` of
+the residue field of `v`. So `X^m − ū` has a root in `𝔽̄_ℓ`, and `X^m − u`
+is separable over the residue field precisely because `ℓ ∤ m`; Hensel
+lifts that root to `𝒪_{Kᵥⁿʳ}`.
+
+### FAITHFULNESS — both hypotheses are load-bearing
+
+* `_hu` is ESSENTIAL. For `u = π` a uniformizer the conclusion asserts
+  `π^{1/m} ∈ Kᵥⁿʳ`, which is FALSE: that extension is totally (tamely)
+  ramified of degree `m > 1`. Indeed the whole point of the sibling leaf
+  `exists_localInertia_smul_eq_mul_of_pow_eq_one` is that inertia acts on
+  `π^{1/m}` through the FULL `μ_m`.
+* `_hm` is ESSENTIAL. For `ℓ ∣ m` the polynomial `X^m − u` is not
+  separable mod `𝔪`, Hensel does not apply, and the statement is false
+  already for `m = ℓ`, `u = 1 + ϖ` over `ℚ_ℓ` when `ℓ > 2`: an `ℓ`-th
+  root of a principal unit generates a WILDLY ramified extension.
+* It is NOT vacuous: `c := 1` discharges it only for `u = 1`, and the
+  conclusion pins `c^m` on the nose.
+
+### WHAT IS MISSING FROM THE PIN — checked 2026-07-27
+
+The same gap the sibling leaf
+`exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup` records further
+down: nothing in the pin computes the residue field of any subfield of
+`Kᵥᵃˡᵍ`, and `Mathlib/RingTheory/Henselian.lean` has henselian LOCAL
+RINGS but not "an algebraic extension of a henselian valued field is
+henselian". THE CHECK THAT WOULD REFUTE THIS: find a valuation on
+`AlgebraicClosure (v.adicCompletion K)` together with a computation of
+its residue field; the project's `localValuationSubring`
+(`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`)
+is the natural starting point and does NOT yet come with a residue-field
+computation.
+
+Both hypotheses are underscore-prefixed because the body is `sorry`. -/
+theorem exists_smul_eq_self_pow_eq_algebraMap_of_isUnit
+    {m : ℕ} (_hm : (m : 𝓞 K) ∉ v.asIdeal) {u : 𝒪ᵥ} (_hu : IsUnit u) :
+    ∃ c : Kᵥᵃˡᵍ, c ^ m = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ u ∧
+      ∀ τ : Γᵥ, τ ∈ localInertiaGroup v → τ • c = c :=
+  sorry
+
+/-- **LEAF (arithmetic): THE TAME CHARACTER AT A UNIFORMIZER IS
+SURJECTIVE** — for `M` prime to the residue characteristic, `π` a
+uniformizer of `𝒪ᵥ` and `z` an `M`-th root of `π`, every `M`-th root of
+unity `ζ` is realised as `τ(z)/z` for some `τ` in the INERTIA group.
+
+WHY IT IS TRUE. `v(z) = v(π)/M` while the value group of `Kᵥⁿʳ` is
+`ℤ · v(π)`, so `e(Kᵥⁿʳ(z)/Kᵥⁿʳ) ≥ M`; and `z` is a root of the degree-`M`
+polynomial `X^M − π`, so the degree is exactly `M` and `X^M − π` is
+irreducible over `Kᵥⁿʳ`. Since `μ_M ⊆ Kᵥⁿʳ` (`ℓ ∤ M`), the extension is
+Galois with group `≅ μ_M` via `τ ↦ τ(z)/z`, and every `ζ` occurs.
+Serre, *Corps Locaux* IV §2 Prop. 8; Neukirch, *ANT* II.7.7.
+
+### FAITHFULNESS — every hypothesis is load-bearing
+
+* `_hπ` is ESSENTIAL. For `π = ϖ^d · unit` the extension `Kᵥⁿʳ(π^{1/M})`
+  has degree `M / gcd(M, d)` and the image of the character is only
+  `μ_{M/gcd(M,d)}`. Extreme case `π = 1`: `z` is a root of unity, fixed
+  by all of `I_v`, and the image is trivial.
+* `_hM` is ESSENTIAL. For `ℓ ∣ M` the extension is WILDLY ramified,
+  `μ_M ⊄ Kᵥⁿʳ`, and `τ ↦ τ(z)/z` is not even a homomorphism on `I_v`.
+* `_hζ` is ESSENTIAL: `τ(z)/z` always satisfies `(τ(z)/z)^M = 1`, so no
+  `ζ` outside `μ_M` can occur.
+* It is NOT vacuous: at `ζ = 1` it is discharged by `τ = 1`, but the
+  statement quantifies over all `M` roots of unity and the case
+  `ζ ≠ 1` asserts the existence of a genuinely nontrivial inertia
+  element.
+
+### WHAT IS MISSING FROM THE PIN — checked 2026-07-27
+
+Exactly the same absence as the leaf above: no valuation on
+`AlgebraicClosure (v.adicCompletion K)` with a computed value group, hence
+no way to bound the ramification index from below. Equivalently one wants
+the irreducibility of `X^M − π` over the inertia-fixed field;
+`Mathlib/FieldTheory/KummerExtension.lean` proves
+`X_pow_sub_C_irreducible_of_prime` only under an `a ∉ Fˣ^p` hypothesis
+that is itself the missing statement here.
+
+All three hypotheses are underscore-prefixed because the body is
+`sorry`. -/
+theorem exists_localInertia_smul_eq_mul_of_pow_eq_one
+    {M : ℕ} (_hM : (M : 𝓞 K) ∉ v.asIdeal) {π : 𝒪ᵥ} (_hπ : Irreducible π)
+    {z : Kᵥᵃˡᵍ} (_hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π)
+    {ζ : Kᵥᵃˡᵍ} (_hζ : ζ ^ M = 1) :
+    ∃ τ : localInertiaGroup v, (τ : Γᵥ) • z = ζ * z :=
+  sorry
+
+/-- `algebraMap 𝒪ᵥ Kᵥᵃˡᵍ` is injective — it factors as the inclusion of a
+valuation subring followed by an algebraic closure. -/
+theorem algebraMap_adicCompletionIntegers_algebraicClosure_injective :
+    Function.Injective (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ) := by
+  rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+  exact (algebraMap Kᵥ Kᵥᵃˡᵍ).injective.comp (FaithfulSMul.algebraMap_injective 𝒪ᵥ Kᵥ)
+
+/-- An `M`-th root of a uniformizer is nonzero. -/
+theorem root_ne_zero_of_irreducible {M : ℕ} (hM0 : M ≠ 0) {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {z : Kᵥᵃˡᵍ} (hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) : z ≠ 0 := by
+  intro h
+  rw [h, zero_pow hM0] at hz
+  exact hπ.ne_zero
+    (algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using hz.symm))
+
+/-- **THE ROOTS OF A UNIFORMIZER ARE COFINAL AMONG THE TAME GENERATORS**
+(PROVEN 2026-07-27 over the units leaf above): an inertia element fixing
+an `M`-th root `z` of a uniformizer fixes EVERY tame generator whose
+exponent divides `M`.
+
+THE PROOF is the classical normal form for a tame generator. Let `y` be
+one, with `y^m = a ∈ 𝒪ᵥ` and `m ∣ M`, say `M = m · d`. Since `y ≠ 0` also
+`a ≠ 0`, so in the discrete valuation ring `𝒪ᵥ` we may write
+`a = u · π^k` with `u` a unit. The units leaf supplies `c` with `c^M = u`
+and `c` fixed by inertia, and then
+
+  `(y / (c^d · z^{k d}))^M = a^d / (u^d · π^{k d}) = 1`,
+
+so `w := y / (c^d z^{kd})` is an `M`-th root of unity — hence also fixed
+by inertia, `ℓ ∤ M` (`smul_eq_self_of_pow_eq_one_algebraicClosure`). Thus
+`y = w · c^d · z^{kd}` is built out of three inertia-fixed factors and one
+factor `z`, so anything fixing `z` fixes `y`.
+
+This is precisely the statement "`Kᵥᵗᵃᵐᵉ = Kᵥⁿʳ(π^{1/m} : ℓ ∤ m)`", in the
+generator-level form the definition of `tameFixingSubgroup` asks for. -/
+theorem smul_tameGen_eq_of_smul_root_eq
+    {M : ℕ} (hM : (M : 𝓞 K) ∉ v.asIdeal) {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {z : Kᵥᵃˡᵍ} (hz : z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π)
+    (y : tameGens v) (hdvd : tameExp v y ∣ M)
+    {τ : localInertiaGroup v} (hτ : (τ : Γᵥ) • z = z) :
+    (τ : Γᵥ) • (y : Oᵥ) = (y : Oᵥ) := by
+  have hM0 : M ≠ 0 := ne_zero_of_natCast_notMem v hM
+  have hz0 : z ≠ 0 := root_ne_zero_of_irreducible v hM0 hπ hz
+  obtain ⟨a, ha⟩ := tameExp_pow v y
+  set Y : Kᵥᵃˡᵍ := (y : Oᵥ).1 with hY
+  have hY0 : Y ≠ 0 := tameGen_ne_zero v y
+  have hYm : Y ^ tameExp v y = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a := congrArg Subtype.val ha
+  have ha0 : a ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hYm
+    exact hY0 (pow_eq_zero_iff (ne_zero_of_natCast_notMem v (tameExp_notMem v y)) |>.mp hYm)
+  obtain ⟨k, u, hu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible ha0 hπ
+  obtain ⟨d, hd⟩ := hdvd
+  obtain ⟨c, hcM, hcfix⟩ :=
+    exists_smul_eq_self_pow_eq_algebraMap_of_isUnit v hM (u := (u : 𝒪ᵥ)) u.isUnit
+  have hc0 : c ≠ 0 := by
+    intro h
+    rw [h, zero_pow hM0] at hcM
+    have hu0 : (u : 𝒪ᵥ) = 0 :=
+      algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using hcM.symm)
+    exact u.ne_zero hu0
+  set D : Kᵥᵃˡᵍ := c ^ d * z ^ (k * d) with hD
+  have hD0 : D ≠ 0 := mul_ne_zero (pow_ne_zero _ hc0) (pow_ne_zero _ hz0)
+  have hYM : Y ^ M = D ^ M := by
+    have hL : Y ^ M = (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ (u : 𝒪ᵥ)) ^ d *
+        (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π) ^ (k * d) :=
+      calc Y ^ M = (Y ^ tameExp v y) ^ d := by rw [hd, pow_mul]
+        _ = (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a) ^ d := by rw [hYm]
+        _ = _ := by rw [hu, map_mul, map_pow]; ring
+    have hR : D ^ M = (c ^ M) ^ d * (z ^ M) ^ (k * d) := by rw [hD]; ring
+    rw [hL, hR, hcM, hz]
+  set W : Kᵥᵃˡᵍ := Y / D with hW
+  have hWM : W ^ M = 1 := by
+    rw [hW, div_pow, hYM, div_self (pow_ne_zero M hD0)]
+  have hWfix : (τ : Γᵥ) • W = W :=
+    smul_eq_self_of_pow_eq_one_algebraicClosure v τ.2 hM hWM
+  have hYeq : Y = W * D := by
+    rw [hW]
+    field_simp
+  refine Subtype.ext ?_
+  rw [IntegralClosure.coe_smul, ← hY, hYeq, hD]
+  rw [smul_mul', smul_mul', smul_pow_algebraicClosure, smul_pow_algebraicClosure,
+    hWfix, hcfix _ τ.2, hτ]
+
+/-- A product of tame exponents is again prime to the residue
+characteristic, because `v.asIdeal` is PRIME. -/
+theorem natCast_prod_tameExp_notMem (F : Finset (tameGens v)) :
+    ((∏ y ∈ F, tameExp v y : ℕ) : 𝓞 K) ∉ v.asIdeal := by
+  push_cast
+  refine Finset.prod_induction _ (fun w => w ∉ v.asIdeal) ?_ ?_ fun y _ => tameExp_notMem v y
+  · intro a b ha hb hmem
+    rcases (Ideal.IsPrime.mem_or_mem v.isPrime) hmem with h | h
+    · exact ha h
+    · exact hb h
+  · intro h1
+    exact v.isPrime.ne_top (Ideal.eq_top_iff_one _ |>.mpr h1)
+
+/-- **THE KERNEL OF THE TAME CHARACTER** (PROVEN 2026-07-27 over the two
+arithmetic leaves above; cut 2026-07-27 out of
+`exists_localInertia_generator_mod_pow_wildInertiaGroup` below, which is
+PROVEN over it together with
 `exists_pow_prime_mul_mem_wildInertiaGroup`).
 
 SET-UP. `n` is prime to the residue characteristic `ℓ` (spelled
@@ -534,21 +1193,26 @@ literally one of the generators that `P_v` is defined to fix), and
 `θ_n(ρⁿ) = θ_n(ρ)ⁿ = 1` because `θ_n` lands in `μ_n`. So this leaf is the
 one half that carries arithmetic.
 
-### ROUTE, AND WHY IT IS THE ONE GENUINELY MISSING INPUT
+### THE PROOF, and what is left over
 
-`ker θ_n = P_v · I_vⁿ` is Serre, *Corps Locaux* IV §2 Prop. 8 (Neukirch,
-*ANT* II.7.7): every finite TAMELY ramified extension of `Kᵥⁿʳ` is
-`Kᵥⁿʳ(π^{1/e})`, so the fixed field of `P_v · I_vⁿ` is exactly
-`Kᵥⁿʳ(x)`. Equivalently: the tame quotient is
-`Q ≅ lim_{ℓ ∤ m} μ_m(k̄_v) ≅ ∏_{ℓ' ≠ ℓ} ℤ_{ℓ'}`, and `θ_n` induces
-`Q / Qⁿ ≅ μ_n`.
+Everything except the two arithmetic leaves above is discharged here. Fix
+a finite set `F` of tame generators and let `M := n · ∏_{y ∈ F} m_y`,
+which is prime to `ℓ` because `v.asIdeal` is prime; put `e := M / n` and
+choose an `M`-th root `z` of `π` in the algebraically closed `Kᵥᵃˡᵍ`.
 
-It must be proved against THIS file's `tameFixingSubgroup`, which is
-spelled through GENERATORS (`xⁿ ∈ 𝒪ᵥ`, `ℓ ∤ n`) precisely so that no
-theory of `Kᵥᵗᵃᵐᵉ` is presupposed — mathlib's `RamificationGroup.lean`
-has only `decompositionSubgroup`/`inertiaSubgroup`, and `~/cs/FLT` has
-only a `localTameAbelianInertiaGroup` whose own docstring calls it
-"somewhat cheating" (absence re-verified 2026-07-27).
+1. `x` and `z^e` are both `n`-th roots of `π`, so `ξ := x / z^e` lies in
+   `μ_n` and is fixed by inertia. Hence `σ(x) = x` forces
+   `σ(z)^e = z^e`, i.e. `ω := σ(z)/z` satisfies `ω^e = 1`.
+2. `Kᵥᵃˡᵍ` is algebraically closed, so `ω` has an `n`-th root `η`, and
+   `η^M = (η^n)^e = ω^e = 1` — no cyclic-group argument is needed to
+   place `η` in `μ_M`.
+3. The SURJECTIVITY leaf produces `ρ ∈ I_v` with `ρ(z) = η z`. Then
+   `θ_M(σ⁻¹ρⁿ) = ω⁻¹ ηⁿ = 1`, i.e. `σ⁻¹ρⁿ` fixes `z`.
+4. The UNITS leaf, through `smul_tameGen_eq_of_smul_root_eq`, upgrades
+   "fixes `z`" to "fixes every `y ∈ F`", i.e. `σ⁻¹ρⁿ ∈ tameLevel F`.
+5. The finite levels are open, directed and intersect in `P_v`, so
+   `exists_pow_mul_mem_of_directed` (compactness of `I_v`) turns the
+   family of solutions into a single `ρ` with `σ⁻¹ρⁿ ∈ P_v`.
 
 ### FAITHFULNESS
 
@@ -557,28 +1221,122 @@ only a `localTameAbelianInertiaGroup` whose own docstring calls it
   injective on `Q/Qⁿ`, and the kernel is strictly larger than
   `I_vⁿ · P_v` — the statement is then FALSE. (Extreme case `π = 1`: `x`
   is a root of unity, fixed by ALL of `I_v`, while `I_vⁿ · P_v` has
-  index `n`.)
+  index `n`.) In the proof it is consumed twice: once by
+  `smul_tameGen_eq_of_smul_root_eq` and once by the surjectivity leaf.
 * `hn` is ESSENTIAL. For `ℓ ∣ n` the element `x = π^{1/n}` generates a
   WILDLY ramified extension, `μ_n ⊄ Kᵥⁿʳ`, and `θ_n` is not even a
   homomorphism.
 * It is NOT vacuous: `ρ := 1, w := σ` would need `σ ∈ P_v`, but the
   hypothesis only puts `σ` in `ker θ_n`, a subgroup of index `n` in
-  `I_v` that strictly contains `P_v` whenever `Q ≠ 1`.
-
-Every hypothesis is underscore-prefixed because the body is `sorry`;
-all four are genuinely needed and must be consumed by a real proof. -/
+  `I_v` that strictly contains `P_v` whenever `Q ≠ 1`. -/
 theorem exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq
-    {n : ℕ} (_hn : (n : 𝓞 K) ∉ v.asIdeal)
-    {π : 𝒪ᵥ} (_hπ : Irreducible π)
-    {x : Oᵥ} (_hx : x ^ n = algebraMap 𝒪ᵥ Oᵥ π)
-    {σ : localInertiaGroup v} (_hσ : (σ : Γᵥ) • x = x) :
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {π : 𝒪ᵥ} (hπ : Irreducible π)
+    {x : Oᵥ} (hx : x ^ n = algebraMap 𝒪ᵥ Oᵥ π)
+    {σ : localInertiaGroup v} (hσ : (σ : Γᵥ) • x = x) :
     ∃ ρ w : localInertiaGroup v,
-      (w : Γᵥ) ∈ wildInertiaGroup v ∧ σ = ρ ^ n * w :=
-  sorry
+      (w : Γᵥ) ∈ wildInertiaGroup v ∧ σ = ρ ^ n * w := by
+  classical
+  haveI : CompactSpace (localInertiaGroup v) :=
+    isCompact_iff_compactSpace.mp (isClosed_localInertiaGroup v).isCompact
+  have hn0 : n ≠ 0 := ne_zero_of_natCast_notMem v hn
+  have hπ0 : algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π ≠ 0 := fun h =>
+    hπ.ne_zero (algebraMap_adicCompletionIntegers_algebraicClosure_injective v (by simpa using h))
+  set X : Kᵥᵃˡᵍ := (x : Oᵥ).1 with hXdef
+  have hXn : X ^ n = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π := congrArg Subtype.val hx
+  have hX0 : X ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hXn
+    exact hπ0 hXn.symm
+  have hσX : (σ : Γᵥ) • X = X := congrArg Subtype.val hσ
+  have hlevel : ∀ F : Finset (tameGens v),
+      ∃ ρ : localInertiaGroup v, σ⁻¹ * ρ ^ n ∈ tameLevel v F := by
+    intro F
+    have hM : ((n * ∏ y ∈ F, tameExp v y : ℕ) : 𝓞 K) ∉ v.asIdeal := by
+      push_cast
+      intro hmem
+      rcases (Ideal.IsPrime.mem_or_mem v.isPrime) hmem with h | h
+      · exact hn h
+      · exact natCast_prod_tameExp_notMem v F (by push_cast; exact h)
+    set M : ℕ := n * ∏ y ∈ F, tameExp v y with hMdef
+    have hM0 : M ≠ 0 := ne_zero_of_natCast_notMem v hM
+    set e : ℕ := ∏ y ∈ F, tameExp v y with hedef
+    have he : M = n * e := rfl
+    obtain ⟨z, hz⟩ : ∃ z : Kᵥᵃˡᵍ, z ^ M = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π :=
+      IsAlgClosed.exists_pow_nat_eq _ (Nat.pos_of_ne_zero hM0)
+    have hz0 : z ≠ 0 := root_ne_zero_of_irreducible v hM0 hπ hz
+    have hzfix : ∀ τ : Γᵥ, τ • (z ^ M) = z ^ M := by
+      intro τ
+      rw [hz]
+      exact smul_algebraMap_algebraicClosure_eq v τ π
+    have hze0 : z ^ e ≠ 0 := pow_ne_zero _ hz0
+    have hze : (z ^ e) ^ n = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π := by
+      rw [← pow_mul, mul_comm e n, ← he, hz]
+    have hξn : (X / z ^ e) ^ n = 1 := by
+      rw [div_pow, hXn, hze, div_self hπ0]
+    have hξ0 : X / z ^ e ≠ 0 := div_ne_zero hX0 hze0
+    have hξfix : (σ : Γᵥ) • (X / z ^ e) = X / z ^ e :=
+      smul_eq_self_of_pow_eq_one_algebraicClosure v σ.2 hn hξn
+    have hXsplit : X = (X / z ^ e) * z ^ e := by field_simp
+    have hsz : ((σ : Γᵥ) • z) ^ e = z ^ e := by
+      have h1 : (σ : Γᵥ) • X = (X / z ^ e) * ((σ : Γᵥ) • z) ^ e := by
+        conv_lhs => rw [hXsplit]
+        rw [smul_mul', hξfix, smul_pow_algebraicClosure]
+      rw [hσX] at h1
+      exact mul_left_cancel₀ hξ0 (h1.symm.trans hXsplit)
+    set ω : Kᵥᵃˡᵍ := ((σ : Γᵥ) • z) / z with hω
+    have hωe : ω ^ e = 1 := by rw [hω, div_pow, hsz, div_self hze0]
+    obtain ⟨η, hη⟩ : ∃ η : Kᵥᵃˡᵍ, η ^ n = ω :=
+      IsAlgClosed.exists_pow_nat_eq _ (Nat.pos_of_ne_zero hn0)
+    have hηM : η ^ M = 1 := by rw [he, pow_mul, hη, hωe]
+    obtain ⟨ρ, hρz⟩ := exists_localInertia_smul_eq_mul_of_pow_eq_one v hM hπ hz hηM
+    refine ⟨ρ, ?_⟩
+    have hpow : (tameCharacter v hM hz0 hzfix ρ) ^ n = tameCharacter v hM hz0 hzfix σ := by
+      ext
+      push_cast
+      rw [tameCharacter_apply_val, tameCharacter_apply_val, hρz, mul_div_assoc,
+        div_self hz0, mul_one]
+      exact hη.trans hω
+    have hker : tameCharacter v hM hz0 hzfix (σ⁻¹ * ρ ^ n) = 1 := by
+      rw [map_mul, map_inv, map_pow, hpow, inv_mul_cancel]
+    have hfixz : ((σ⁻¹ * ρ ^ n : localInertiaGroup v) : Γᵥ) • z = z :=
+      (tameCharacter_eq_one_iff v hM hz0 hzfix _).mp hker
+    rw [mem_tameLevel_iff]
+    intro y hy
+    exact smul_tameGen_eq_of_smul_root_eq v hM hπ hz y
+      (Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ hy) n) hfixz
+  obtain ⟨ρ, hρ⟩ := exists_pow_mul_mem_of_directed (tameLevel v) (isOpen_tameLevel v)
+    (tameLevel_directed v) (mem_subgroupOf_wild_of_forall_mem_tameLevel v) (n := n) (σ := σ)
+    hlevel
+  refine ⟨ρ, (σ⁻¹ * ρ ^ n)⁻¹, ?_, ?_⟩
+  · simpa using (wildInertiaGroup v).inv_mem (Subgroup.mem_subgroupOf.mp hρ)
+  · group
 
 /-- **THE TAME QUOTIENT IS DIVISIBLE BY THE RESIDUE CHARACTERISTIC**
-(SORRY LEAF, cut 2026-07-27 out of
+(PROVEN 2026-07-27 from the finite-level machinery immediately above; cut
+2026-07-27 out of
 `exists_localInertia_generator_mod_pow_wildInertiaGroup` below).
+
+THE PROOF, and note it needs NO new arithmetic and no structure theorem
+for the tame quotient — in particular it does NOT need "a finite tame
+extension of `Kᵥⁿʳ` is `Kᵥⁿʳ(π^{1/e})`", which is the common input the
+sibling KERNEL leaf still wants:
+
+1. The finite levels `tameLevel F` — the inertia elements fixing a finite
+   set `F` of tame generators — are open, directed, and intersect in
+   exactly `P_v` (`mem_subgroupOf_wild_of_forall_mem_tameLevel`).
+2. `I_v ⧸ tameLevel F` has order prime to `q = ℓ`
+   (`coprime_card_quotient_tameLevel`), because it embeds in a product of
+   `μ_m` with every `m` prime to `ℓ`. So `x ↦ x ^ q` is a BIJECTION there
+   and `τ` is a `q`-th power modulo `tameLevel F`
+   (`exists_pow_mul_mem_of_coprime_card_quotient`).
+3. `I_v` is compact (it is closed in the compact `Γ Kᵥ`), so the profinite
+   step `exists_pow_mul_mem_of_directed` upgrades "modulo every level" to
+   "modulo the intersection", i.e. modulo `P_v`.
+
+Both hypotheses are consumed exactly once, in step 2: `hqv` says
+`q ∤ m` for every tame exponent `m`, and `hq` is what turns "not coprime"
+into a common prime.
 
 STATEMENT IN WORDS: with `q` the residue characteristic `ℓ` — which is
 what `q.Prime` together with `(q : 𝓞 K) ∈ v.asIdeal` says, since
@@ -615,14 +1373,20 @@ subgroups of `Γ Kᵥ`, this one continuity-free over `I_v` itself).
   because `Q^{ℓm} = Q^m ≠ Q`. Primality plus `_hqv` is what pins
   `q = ℓ`.
 * It is NOT vacuous: `ρ := 1` would force `τ ∈ P_v` for every `τ`, i.e.
-  `Q = 1`, which the tame character refutes.
-
-Both hypotheses are underscore-prefixed because the body is `sorry`. -/
+  `Q = 1`, which the tame character refutes. -/
 theorem exists_pow_prime_mul_mem_wildInertiaGroup
-    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∈ v.asIdeal) (τ : localInertiaGroup v) :
+    {q : ℕ} (hq : q.Prime) (hqv : (q : 𝓞 K) ∈ v.asIdeal) (τ : localInertiaGroup v) :
     ∃ ρ w : localInertiaGroup v,
-      (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = ρ ^ q * w :=
-  sorry
+      (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = ρ ^ q * w := by
+  haveI : CompactSpace (localInertiaGroup v) :=
+    isCompact_iff_compactSpace.mp (isClosed_localInertiaGroup v).isCompact
+  obtain ⟨ρ, hρ⟩ := exists_pow_mul_mem_of_directed (tameLevel v) (isOpen_tameLevel v)
+    (tameLevel_directed v) (mem_subgroupOf_wild_of_forall_mem_tameLevel v) (n := q) (σ := τ)
+    (fun F => exists_pow_mul_mem_of_coprime_card_quotient
+      (coprime_card_quotient_tameLevel v hq hqv F) τ)
+  refine ⟨ρ, (τ⁻¹ * ρ ^ q)⁻¹, ?_, ?_⟩
+  · simpa using (wildInertiaGroup v).inv_mem (Subgroup.mem_subgroupOf.mp hρ)
+  · group
 
 /-- **THE PRIME-TO-`ℓ` CASE OF PROCYCLICITY, PROVEN** (2026-07-27) from
 the single leaf `exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq`.
@@ -1155,19 +1919,6 @@ theorem exists_openNormal_subset_of_mem_nhds_one
   haveI : IsGalois (v.adicCompletion K) E := ⟨⟩
   exact ⟨E.fixingSubgroup, inferInstance, E.fixingSubgroup_isOpen, hsub⟩
 
-/-- The set of `σ` fixing a given integral element is CLOSED. It is the
-stabilizer, which `ContinuousSMulDiscrete` makes open, and an open
-subgroup is closed. -/
-theorem isClosed_setOf_smul_eq_self
-    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
-    (x : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K))) :
-    IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = x} :=
-  Subgroup.isClosed_of_isOpen
-    (MulAction.stabilizer (Field.absoluteGaloisGroup (v.adicCompletion K)) x)
-    (ContinuousSMulDiscrete.isOpen_smul_eq _ x x)
-
 /-- **`tameFixingSubgroup v` is closed**: it is by definition an
 intersection of stabilizers of integral elements, each closed by
 `isClosed_setOf_smul_eq_self`. -/
@@ -1190,43 +1941,6 @@ theorem isClosed_tameFixingSubgroup
   rw [hrw]
   exact isClosed_iInter fun n => isClosed_iInter fun _ => isClosed_iInter fun x =>
     isClosed_iInter fun _ => isClosed_setOf_smul_eq_self v x
-
-/-- **`localInertiaGroup v` is closed.** `AddSubgroup.inertia` is the set
-of `σ` with `σ • x − x ∈ 𝔪` for every `x` of the integral closure, and
-each such condition is CLOPEN: its complement is the union over the
-`y` with `y − x ∉ 𝔪` of the open sets `{σ | σ • x = y}`
-(`ContinuousSMulDiscrete`). -/
-theorem isClosed_localInertiaGroup
-    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
-    IsClosed ((localInertiaGroup v :
-      Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
-  set R := IntegralClosure
-    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-    (AlgebraicClosure (v.adicCompletion K)) with hR
-  have key : ∀ x : R,
-      IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
-        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
-    intro x
-    rw [← isOpen_compl_iff]
-    have hc : {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
-          σ • x - x ∈ IsLocalRing.maximalIdeal R}ᶜ =
-        ⋃ (y : R) (_ : y - x ∉ IsLocalRing.maximalIdeal R),
-          {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = y} := by
-      ext σ
-      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion]
-      exact ⟨fun h => ⟨σ • x, h, rfl⟩, by rintro ⟨y, hy, rfl⟩; exact hy⟩
-    rw [hc]
-    exact isOpen_iUnion fun y => isOpen_iUnion fun _ =>
-      ContinuousSMulDiscrete.isOpen_smul_eq _ x y
-  have hrw : (localInertiaGroup v :
-        Set (Field.absoluteGaloisGroup (v.adicCompletion K))) =
-      ⋂ x : R, {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
-        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
-    ext σ
-    simp only [Set.mem_iInter, Set.mem_setOf_eq]
-    rfl
-  rw [hrw]
-  exact isClosed_iInter key
 
 /-- **The wild inertia is closed** — a meet of two closed subgroups. -/
 theorem isClosed_wildInertiaGroup
