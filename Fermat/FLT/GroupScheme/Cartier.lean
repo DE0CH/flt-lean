@@ -228,7 +228,7 @@ lemma convMul_one_eval (f g : WithConv (A →ₗ[K] K)) : (f * g) (1 : A) = f 1 
   simp [Bialgebra.comul_one, Algebra.TensorProduct.one_def]
 
 lemma pow_one_eval (f : WithConv (A →ₗ[K] K)) : ∀ n : ℕ, (f ^ n) (1 : A) = (f 1) ^ n
-  | 0 => by simpa using one_apply (K := K) (1 : A)
+  | 0 => by simp
   | (n+1) => by rw [pow_succ, pow_succ, convMul_one_eval, pow_one_eval f n]
 
 lemma eval_one_eq_zero (f : WithConv (A →ₗ[K] K)) (hf : IsPrimitive f) : f (1 : A) = 0 := by
