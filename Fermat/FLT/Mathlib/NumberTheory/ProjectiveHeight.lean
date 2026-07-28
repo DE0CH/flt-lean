@@ -615,8 +615,22 @@ is injective up to scaling, nonzero, and `[−1]` is induced by the linear map
 so any faithful further cut must carry the link between `coords` and the
 scheme — i.e. must be made at the level of the invertible sheaf and its
 global sections, not in coordinates.  The axis searched here is
-COORDINATE-LEVEL cuts; the sheaf-level axis is untried and is named in the
-producer's docstring. -/
+COORDINATE-LEVEL cuts.
+
+**THE SHEAF-LEVEL AXIS WAS TRIED ON 2026-07-28 AND IT WORKS.**  The producer
+`Fermat.exists_cubeModel_of_abelianScheme` (`Fermat/FLT/ModularCurve/X0.lean`)
+is now PROVEN over `Fermat.exists_isAmpleSheaf_symmetric_cube`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` — a symmetric, normalized,
+ample invertible sheaf with `σ^*L ⊗ δ^*L ≅ p₁^*L^{⊗2} ⊗ p₂^*L^{⊗2}`, over any
+field) and `Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (the coordinate
+dictionary).  The counterexample above does not lift to that cut, because
+there `coords` is manufactured from `L` rather than chosen: `n ↦ (1 : n³ : n⁶)`
+would have to be the restriction to the Zariski-dense set `E(ℚ)` of a morphism
+`E ⟶ ℙ²` given by global sections, and a degree-`d` such morphism has height
+`≍ d · ĥ(P) ≍ d n²`, never `6 log|n|`.  The blocker the producer's docstring
+recorded against this axis — "there is no `Γ(L, ⊤) → Γ(modPullback P L, ⊤)`
+pullback-of-sections map" — was already false: it is
+`Fermat.modPullbackSection` (`Modularity/AmpleSheaf.lean`), PROVEN. -/
 structure CubeModel (A : Type*) [AddCommGroup A] where
   /-- the number of homogeneous coordinates -/
   dim : ℕ
