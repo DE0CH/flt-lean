@@ -33,8 +33,13 @@ back.
   Minkowski at a degree-one base.
 * `NumberField.relNormClassSubgroup` — the image of the ideal norm in the
   class group; `index` of this subgroup IS the classical `[I_K : P_K·N I_L]`.
-* `NumberField.finrank_le_index_relNormClassSubgroup` — OPEN. The second
-  inequality at modulus `1`. This is where the missing mathematics is.
+* `NumberField.exists_surjective_classGroupHom_aut_of_unramified_abelian` — OPEN.
+  The Artin map at modulus `1`, packaged as "there is a surjection
+  `Cl(𝓞 K) ↠ Gal(L/K)` killing the norm classes". **This is where the missing
+  mathematics is** (decomposed out of the leaf below on 2026-07-28).
+* `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the leaf
+  above by pure group theory (index is antitone; `Subgroup.index_ker`).
+  The second inequality at modulus `1`.
 * `NumberField.finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
   — PROVEN from the previous one by Lagrange.
 -/
@@ -159,10 +164,98 @@ noncomputable def relNormClassSubgroup : Subgroup (ClassGroup (𝓞 K)) :=
       mem_nonZeroDivisors_of_ne_zero (by
         simpa using (Ideal.relNorm_eq_bot_iff (R := 𝓞 K) (I := I)).not.mpr hI)⟩}
 
+/-- **THE ARTIN MAP AT MODULUS `1`, AS AN EXISTENTIAL: for `L/K` finite
+abelian, unramified at every finite prime and at every infinite place, there
+is a SURJECTIVE homomorphism `Cl(𝓞 K) →* Gal(L/K)` that kills the class of
+every relative norm `N_{L/K} I`** (SORRY LEAF, cut 2026-07-28 out of
+`finrank_le_index_relNormClassSubgroup` below — **this is where the missing
+mathematics is**).
+
+Classically this is the Artin map of the everywhere-unramified abelian
+extension `L/K`: `𝔭 ↦ Frob_𝔭` on `I_K`, which descends to `Cl(𝓞 K)` because
+principal ideals lie in its kernel (Artin RECIPROCITY), is surjective by
+Chebotarev, and kills `N_{L/K} I_L` because `Frob_{N𝔓} = Frob_𝔭^{f(𝔓/𝔭)} = 1`.
+Only the first of those three is deep; the third is a two-line computation
+once the map exists, and is the reason the norm clause is cheap to add here.
+
+**Why the conclusion is an `∃` and why that is safely PINNED.** The consumer
+below uses EXACTLY the two stated clauses and nothing else, and the
+inequality it deduces holds for ANY witness: `Nat.card (Gal(L/K))` is the
+index of `ker φ` for any surjection `φ`, and `ker φ` contains
+`relNormClassSubgroup K L` as soon as the second clause holds. So an
+adversary who post-composes an automorphism of `Gal(L/K)`, or replaces `φ`
+by a different surjection with a larger kernel, still yields a true
+consumer — there is nothing to pin. Note that the true Artin map has kernel
+EXACTLY `relNormClassSubgroup K L`; only `≤` is asked for, because only `≤`
+is used, and asking for equality would make the leaf strictly harder for no
+gain.
+
+**Route.** Neukirch VI (6.9) and the sections preceding it; Childress
+ch. 4–5; Lang *ANT* ch. X; Cassels–Fröhlich ch. VII.
+
+**Relation to the sibling leaf — read this before starting.** This IS the
+reciprocity route, and the docstring that this leaf was cut out of said, in
+so many words, that the reciprocity route is "NOT independent of the sibling
+leaf `exists_artinIdealMap_of_unramifiedAbelianSubgroup` in
+`Modularity/Interface.lean`". That remains true and the choice was made
+anyway, deliberately, on 2026-07-28: the allegedly independent route is the
+cohomological one, and it needs the idele class group and the Tate
+cohomology of a class formation, of which the pin has NEITHER (see the
+survey below). Between "no decomposition" and "a decomposition that shares
+mathematical content with a sibling", the second is worth more — and this
+statement is strictly smaller than the sibling's (no `χ`, no `CF`, no
+`frobIdeal`, no cyclotomic vocabulary) and lives in a module that elaborates
+in ten seconds rather than the sibling's tens of minutes. Whoever proves one
+should look hard at the other.
+
+**An idele-free route that reaches the ULTIMATE consumer, recorded here
+because it is not obvious and was found while cutting this leaf.** The
+consumer of this whole file,
+`finrank_le_card_classGroup_of_unramified_abelian` in
+`Modularity/Interface.lean`, needs only `[L : K] ≤ h_K` — it never uses the
+norm index. For `L/K` CYCLIC that inequality drops straight out of
+Chevalley's ambiguous class number formula
+`|Cl_L^{Gal(L/K)}| = h_K · ∏_v e_v / ([L:K] · [E_K : E_K ∩ N L^×])`:
+everywhere-unramified makes every `e_v = 1`, so
+`h_K = [L:K] · |Cl_L^{Gal}| · [E_K : E_K ∩ N L^×] ≥ [L:K]`. That derivation
+uses only ideals, units and Hilbert 90 — all of which the pin HAS
+(`Mathlib/RepresentationTheory/Homological/GroupCohomology/Hilbert90.lean`) —
+and no ideles at all. **The gap is cyclic → abelian**: the naive tower
+induction FAILS, because `[Cl_K : N_{M/K} Cl_M] · [Cl_M : N_{L/M} Cl_L]` only
+bounds `[Cl_K : N_{L/K} Cl_L]` from ABOVE (the image index
+`[N_{M/K} Cl_M : N_{M/K} N_{L/M} Cl_L]` can be smaller than
+`[Cl_M : N_{L/M} Cl_L]`), and multiplicativity of the norm index in towers is
+itself a theorem of class field theory. Anyone who closes that gap gets the
+whole file without reciprocity.
+
+**⚠ ALL THREE HYPOTHESES ARE LOAD-BEARING, and for this statement `habel` is
+load-bearing FORMALLY.** `Cl(𝓞 K)` is abelian, so it cannot surject onto a
+non-abelian group at all; without `habel` the leaf is false for every
+everywhere-unramified extension with non-abelian Galois group (such exist —
+they are what a Golod–Shafarevich class field tower of length `≥ 2`
+produces). For the two ramification hypotheses see the consumer below;
+both counterexamples recorded there refute THIS statement as well, since in
+each of them `Cl(𝓞 K)` is trivial and `Gal(L/K)` has order `2`.
+
+**The check that would refute it**: a finite abelian extension of a number
+field `K`, unramified at every finite prime and at every infinite place, for
+which no surjection `Cl(𝓞 K) ↠ Gal(L/K)` kills the norm classes — for
+instance any such `L/K` with `[L : K] > h_K`. -/
+theorem exists_surjective_classGroupHom_aut_of_unramified_abelian [IsGalois K L]
+    [IsUnramifiedAtInfinitePlaces K L]
+    (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    ∃ φ : ClassGroup (𝓞 K) →* (L ≃ₐ[K] L), Function.Surjective φ ∧
+      ∀ (I : Ideal (𝓞 L)) (J : (Ideal (𝓞 K))⁰), I ≠ ⊥ →
+        (J : Ideal (𝓞 K)) = Ideal.relNorm (𝓞 K) I → φ (ClassGroup.mk0 J) = 1 :=
+  sorry
+
 /-- **THE SECOND INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
 unramified at every finite prime and at every infinite place,
-`[L : K] ≤ [I_K : P_K · N_{L/K} I_L]`** (SORRY LEAF, cut 2026-07-28 —
-**this is where the missing mathematics is**).
+`[L : K] ≤ [I_K : P_K · N_{L/K} I_L]`** (cut 2026-07-28, PROVEN the same day
+from `exists_surjective_classGroupHom_aut_of_unramified_abelian` above and
+pure group theory).
 
 This is the classical second inequality of class field theory, at the
 modulus `1`, written with `Subgroup.index` of `relNormClassSubgroup` in
@@ -171,42 +264,53 @@ docstring for why the two agree). Nothing else in this development is
 needed to state it: no `Γℚ`, no `ker χ`, no Artin map, no Frobenius, no
 cyclotomic theory.
 
-**Route.** Neukirch VI (6.9) and the sections preceding it; Childress
-ch. 4–5; Lang *ANT* ch. X; Cassels–Fröhlich ch. VII. The classical proof is
-the cohomological / ambiguous-class-number computation — the Herbrand
-quotient of the unit and idele class groups — or, equivalently, the
-analytic argument through Dirichlet density and the `L`-functions of the
-ray class characters. The route through surjectivity of the Artin map
-`Cl(𝓞 K) ↠ Gal(L/K)` needs RECIPROCITY (principal ideals in the kernel) and
-is therefore NOT independent of the sibling leaf
-`exists_artinIdealMap_of_unramifiedAbelianSubgroup` in
-`Modularity/Interface.lean`; the norm-index route is the independent one and
-is the reason this leaf is stated this way.
+**The step performed here.** Given the surjection `φ : Cl(𝓞 K) ↠ Gal(L/K)`
+of the leaf above, `Subgroup.index_ker` gives
+`(ker φ).index = Nat.card (Gal(L/K)) = [L : K]`
+(`IsGalois.card_aut_eq_finrank`, which in this pin is already stated with
+`Nat.card` — not `Fintype.card`). The norm clause of that leaf is exactly
+the generating set of `relNormClassSubgroup`, so `Subgroup.closure_le` puts
+that subgroup inside `ker φ`, and `Subgroup.index_dvd_of_le` (index is
+antitone, and every index in the finite group `Cl(𝓞 K)` is nonzero) finishes.
+All the mathematics is in the leaf above.
 
 **⚠ BOTH RAMIFICATION HYPOTHESES ARE LOAD-BEARING.**
 
 * `habel` is needed because the norm index only ever sees the
   abelianization: for non-abelian `L/K` the inequality is false as soon as
   `Gal(L/K)` has a proper commutator subgroup.
+* `hunr` (unramifiedness at the FINITE primes) is load-bearing, and deleting
+  it makes the statement FALSE. Witness: `K = ℚ`, `L = ℚ(√5)`. The extension
+  is abelian of degree `2`, and it is unramified at the infinite place (the
+  discriminant `5` is positive, so both archimedean places of `L` are real),
+  so it satisfies every OTHER hypothesis; it is ramified at `5`. Since
+  `Cl(ℤ)` is trivial, `(relNormClassSubgroup ℚ (ℚ(√5))).index = 1` while
+  `[L : K] = 2`, so the conclusion reads `2 ≤ 1`.
 * `IsUnramifiedAtInfinitePlaces` is what makes modulus `1` ADMISSIBLE, and
   deleting it makes the statement FALSE. Counterexample computed with
-  PARI/GP on 2026-07-28: `K = ℚ(√3)` has `bnfinit(x^2-3,1).no = 1` but
-  `bnrinit(K,[1,[1,1]]).no = 2`, so its narrow Hilbert class field is a
-  quadratic extension, abelian and unramified at every FINITE place, with
-  `[L : K] = 2` while `Cl(𝓞 K)` is trivial — so the right-hand side is `1`.
-  That extension is ramified at both real places of `ℚ(√3)`, which is
-  exactly what this hypothesis excludes.
+  PARI/GP on 2026-07-28 and re-checked on 2026-07-28: `K = ℚ(√3)` has
+  `bnfinit(x^2-3,1).no = 1` but `bnrinit(K,[1,[1,1]]).no = 2`, so its narrow
+  Hilbert class field is a quadratic extension, abelian and unramified at
+  every FINITE place, with `[L : K] = 2` while `Cl(𝓞 K)` is trivial — so the
+  right-hand side is `1`. That extension is ramified at both real places of
+  `ℚ(√3)`, which is exactly what this hypothesis excludes.
 
-**Mathlib survey (checked 2026-07-28).** Ray class groups, the Hilbert class
-field, the norm index, the Artin map and Artin reciprocity are ALL absent
-from the pin and from `~/cs/FLT`. Present and usable: `ClassGroup`,
-`ClassGroup.mk0`, `Ideal.relNorm` (in the general, `Module.Free`-free form —
-see `relNormClassSubgroup`), `Ideal.ramificationIdx`, `Ideal.inertiaDeg`,
-`Algebra.IsUnramifiedAt`, `NumberField.InfinitePlace.IsUnramified` and
-`IsUnramifiedAtInfinitePlaces`. The Herbrand-quotient machinery is NOT:
-`Mathlib/RepresentationTheory/Homological/TateCohomology/` carries
-`Basic.lean` only — definitions, no class formations and no Tate theorem —
-so the cohomological route must be built, not cited.
+**Mathlib survey (checked 2026-07-28, re-checked 2026-07-28).** Ray class
+groups, the Hilbert class field, the norm index, the Artin map, Artin
+reciprocity and Chebotarev density are ALL absent from the pin and from
+`~/cs/FLT`. Present and usable: `ClassGroup`, `ClassGroup.mk0`,
+`Ideal.relNorm` (in the general, `Module.Free`-free form — see
+`relNormClassSubgroup`), `Ideal.ramificationIdx`, `Ideal.inertiaDeg`,
+`Algebra.IsUnramifiedAt`, `NumberField.InfinitePlace.IsUnramified`,
+`IsUnramifiedAtInfinitePlaces`, `IsGalois.card_aut_eq_finrank`,
+`Subgroup.index_ker`, `Subgroup.index_dvd_of_le`, and — newly noted —
+Hilbert 90 in
+`Mathlib/RepresentationTheory/Homological/GroupCohomology/Hilbert90.lean`.
+The Herbrand-quotient machinery is NOT: `Mathlib/RepresentationTheory/`
+`Homological/TateCohomology/` still carries `Basic.lean` only — definitions,
+no class formations and no Tate theorem — and there is no `Herbrand`, no
+idele class group and no `ClassFormation` anywhere in the pin, so the
+cohomological route must be built, not cited.
 
 **The check that would refute it**: a finite abelian extension of a number
 field `K`, unramified at every finite prime and at every infinite place,
@@ -216,8 +320,22 @@ theorem finrank_le_index_relNormClassSubgroup [IsGalois K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q) :
-    Module.finrank K L ≤ (relNormClassSubgroup K L).index :=
-  sorry
+    Module.finrank K L ≤ (relNormClassSubgroup K L).index := by
+  obtain ⟨φ, hsurj, hnorm⟩ :=
+    exists_surjective_classGroupHom_aut_of_unramified_abelian K L habel hunr
+  -- The norm classes generate `relNormClassSubgroup`, so they cut it into `ker φ`.
+  have hker : relNormClassSubgroup K L ≤ φ.ker := by
+    refine (Subgroup.closure_le _).2 ?_
+    rintro c ⟨I, hI, rfl⟩
+    exact hnorm I _ hI rfl
+  -- `ker φ` has index `#Gal(L/K) = [L : K]`.
+  have hidx : φ.ker.index = Module.finrank K L := by
+    rw [Subgroup.index_ker, MonoidHom.range_eq_top.2 hsurj, Subgroup.card_top]
+    exact IsGalois.card_aut_eq_finrank K L
+  calc Module.finrank K L = φ.ker.index := hidx.symm
+    _ ≤ (relNormClassSubgroup K L).index :=
+        Nat.le_of_dvd (Nat.pos_of_ne_zero Subgroup.index_ne_zero_of_finite)
+          (Subgroup.index_dvd_of_le hker)
 
 /-- **UNRAMIFIED CFT, THE UPPER BOUND: a finite ABELIAN extension of a
 number field `K`, unramified at every finite prime AND at every infinite
