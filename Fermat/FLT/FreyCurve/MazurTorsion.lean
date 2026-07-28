@@ -27791,9 +27791,328 @@ end MazurLevel125
 -- the `X_0(7)` section independently — one to there, one to here — and the earlier
 -- position dominates every consumer, including the level-`125` assembly below, so
 -- only that copy survives.  Nothing about the statement or proof changed.)
+
+/-! ### The level-`125` Kolyvagin–Logachev chain, and the Kenku descent
+
+`atkinLehnerFixed_x0OneTwentyFive` below was a single sorry node until
+2026-07-28; it is now a PROVEN assembly, and this block is its
+decomposition.  The cut is the one its own VACUITY AUDIT prescribed —
+"the honest next cut here is the level-`125` instance of the rank-`0`
+input for the ANTI-INVARIANT quotient" — with one correction to the
+route recorded there, described on `ajMinus_eq_zero_x0OneTwentyFive`.
+
+The shape mirrors level `169` in `X0.lean` declaration for declaration,
+and reuses every level-GENERIC piece rather than re-deriving it:
+
+| declaration | theory | status |
+|---|---|---|
+| `not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive` | `S₂(Γ₀(M)) = 0` for `M ∣ 125`, `M ≠ 125` | LEAF |
+| `lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive` | numerics: six `L`-values | LEAF |
+| `isTorsion_minusFactor_x0OneTwentyFive` | — | PROVEN |
+| `isTorsion_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
+| `finite_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
+| `ajMinus_eq_zero_x0OneTwentyFive` | the descent proper | LEAF |
+| `atkinLehnerFixed_x0OneTwentyFive` | — | PROVEN |
+
+**What the decomposition BUYS, since the sorry count goes from `1` to `3`.**
+It removes the entire GEOMETRIC half from the frontier.  The step
+"`[P] = [w P]` in `J_0(125)(ℚ)` implies `P = w_125 P`" is Riemann–Roch on a
+curve of genus `≥ 1`, and it is already PROVEN in this tree as
+`injective_aj_of_one_le_x0Genus` (over `1 ≤ x0Genus 125`, which `decide`
+evaluates: `(12 + 150 − 3·2 − 4·0 − 6·10)/12 = 8`).  Nothing of that has to
+be redone here, and no leaf below mentions the curve's gonality, its genus,
+or hyperellipticity.  What is left is arithmetic and analysis only.
+
+**THE PARI/GP RECONNAISSANCE, RUN FOR THIS BLOCK 2026-07-28** (PARI 2.17.4;
+these are outputs, not quotations, and they confirm the table the parent's
+docstring had recorded from Magma):
+
+    ? M = mfinit([125,2],0); mfdim(M)
+    8
+    ? mfatkineigenvalues(M,125)
+    [[-1, -1], [1, 1], [-1, -1, -1, -1]]
+
+| orbit | `dim` | `w_125` | `ord_{s=1} L(f^σ, s)` | `L(f^σ, 1)` |
+|---|---|---|---|---|
+| `1` | `2` | `−1` | `0, 0` | `1.18492403…, 1.75892613…` |
+| `2` | `2` | `+1` | `1, 1` | `0` to `57` digits |
+| `3` | `4` | `−1` | `0, 0, 0, 0` | `1.83208150…, 0.69024708…, 1.94894295…, 0.49408575…` |
+
+and `mfdim(mfinit([M,2],1)) = 0` for `M = 1, 5, 25`, so `S₂(Γ₀(125))` is
+entirely NEW.  Hence the MINUS part is `2 + 4 = 6`-dimensional with every
+embedding non-vanishing at `s = 1`, the PLUS part is `2`-dimensional and
+carries all of `rank J_0(125)(ℚ) = 2`, and Kolyvagin–Logachev gives
+`rank J_0(125)⁻(ℚ) = 0`.
+
+**Two independent cross-checks of that table**, both of which would have
+caught a swapped eigenvalue pattern:
+
+* `g(X_0(125)/w_125) = 2 =` the PLUS dimension, and Riemann–Hurwitz on
+  `X_0(125) → X_0(125)/w_125` reads `2·8 − 2 = 2(2·2 − 2) + ν`, i.e. `ν = 10`
+  fixed points;
+* `ν = h(−4·125) = h(−500) = 10` — the fixed points of `w_125` are the CM
+  points of discriminant `−500` (`−125 ≡ 3 mod 4` is not a discriminant, so
+  there is no second family).  The two counts agree, and `h(−500) = 10` is
+  exactly the number `MazurLevel125.classPoly500_no_rat_root` consumes
+  downstream.  The whole cluster is one argument, and this is the seam. -/
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `125`** (LEAF,
+2026-07-28), stated as "no weight-two eigenform of level `M`" because that
+is the shape `isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew` takes.
+It is what says that `S₂(Γ₀(125))` is entirely NEW, and it is the exact
+level-`125` analogue of
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine`.
+
+TRUE: the proper divisors of `125` are `1, 5, 25`, and
+`genus X_0(1) = genus X_0(5) = genus X_0(25) = 0`.
+
+**The check that refutes this leaf**: `mfdim(mfinit([M,2],1))` returning
+anything other than `0` for `M ∈ {1, 5, 25}`.  Run 2026-07-28: all three
+return `0`.
+
+**What proving it needs** is what the `169` sibling needs — a valence /
+genus bound for `Γ₀(M)` at weight `2`, which mathlib lacks at `a3364fa`
+(`grep -rn "valence\|genus" .lake/packages/mathlib/Mathlib/NumberTheory/ModularForms/`).
+A prover who closes either sibling closes both, since neither uses anything
+about its own level beyond `genus X_0(M) = 0`; the honest repair is a single
+level-generic leaf `¬ IsWeightTwoEigenform M g b` from `x0Genus M = 0`, and
+a successor should write THAT rather than a third copy. -/
+theorem Fermat.not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive (M : ℕ) (_hM : M ∣ 125)
+    (_hMne : M ≠ 125) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) :
+    ¬ IsWeightTwoEigenform M g b :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE NUMERICS AT `125`: every Atkin–Lehner-MINUS eigenform of level
+`125` has `L(f, 1) ≠ 0`** (LEAF, 2026-07-28) — the exact analogue of
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine`, and the ONLY
+analytic input under `isTorsion_minusFactor_x0OneTwentyFive`.
+
+TRUE.  The six values are tabulated in the section note above, recomputed in
+PARI/GP 2.17.4 for this leaf on 2026-07-28: orbits `1` (`dim 2`) and `3`
+(`dim 4`) are the `w_125 = −1` orbits, `lfunorderzero` returns `0` at each
+of their six embeddings, and the smallest value is `0.49408575…`.
+
+**Why `_hw` may not be dropped.**  Orbit `2` is an eigenform of level `125`
+with `L(f, 1) = 0` (`ord_{s=1} = 1` at both its embeddings — this is where
+`rank J_0(125)(ℚ) = 2` lives).  So the statement WITHOUT `_hw` is FALSE, and
+that is precisely why `125 ∉ kenkuLevels` and why this leaf exists at all
+rather than an appeal to `lFunction_apply_one_ne_zero_of_kenkuLevel`.
+
+**The check that refutes it**: `lfunorderzero` returning a nonzero value at
+any embedding of orbit `1` or `3`, or `mfatkineigenvalues(mfinit([125,2],0),
+125)` returning a pattern other than `[[-1,-1], [1,1], [-1,-1,-1,-1]]`.
+
+**What proving it needs**: Hecke's analytic continuation
+(`exists_isLFunctionOf_of_isWeightTwoEigenform`, PROVEN) and then a certified
+evaluation of six real numbers.  Identical in kind to the `169` sibling, and
+a prover who builds the certified-evaluation machinery closes both. -/
+theorem Fermat.lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive
+    (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 125 f a)
+    (_hw : IsAtkinLehnerMinusForm 125 f) (L : ℂ → ℂ) (_hL : IsLFunctionOf a L) :
+    L 1 ≠ 0 :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **KOLYVAGIN–LOGACHEV AT `125`: every `w_125 = −1` isogeny factor of
+`J_0(125)` has torsion Mordell–Weil group** (PROVEN 2026-07-28, over the two
+leaves above and the LEVEL-GENERIC
+`isTorsion_minusFactor_of_lFunction_ne_zero`).
+
+Nothing level-specific happens here: the generic theorem takes the newness
+input `_hnew` and the analytic input `_hL` and does the rest.  Both inputs
+are keyed on the SLASH ACTION (`IsAtkinLehnerMinusForm`) rather than on the
+eigenform LABEL `D.form i`, which is what makes them invariant under
+relabelling the isotypic factors — see the `169` sibling's docstring for the
+label-permutation counterexample that shape avoids. -/
+theorem Fermat.isTorsion_minusFactor_x0OneTwentyFive {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 125 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition 125 hX jac) (E : IsAtkinLehnerDescent D wJ hwJ)
+    (i : D.idx) (_hi : ¬ E.Plus i) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+  isTorsion_minusFactor_of_lFunction_ne_zero 125 hX jac w hw _hw2 _hal wJ hwJ _hchar D E
+    (fun M hM hMne g b => not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive M hM hMne g b)
+    (fun f a hf hfm L hL =>
+      lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive f a hf hfm L hL)
+    i _hi
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **Every `w_125`-ANTI-INVARIANT rational point of `J_0(125)` is TORSION**
+(PROVEN 2026-07-28) — the exact analogue of
+`isTorsion_antiInvariant_jacobian_x0OneSixtyNine`, and Mordell–Weil is
+deliberately NOT in it (see the consumer below).
+
+The Hecke isotypic decomposition `D` and its Atkin–Lehner descent `E` come
+from the LEVEL-GENERIC `exists_heckeIsotypicDecomposition_atkinLehnerDescent`,
+so the case split is:
+
+* `E.Plus i` — anti-invariance of `z` collapses to `2 • u i z = 0` on that
+  factor, with **no arithmetic input at all**;
+* `¬ E.Plus i` — `isTorsion_minusFactor_x0OneTwentyFive` above, i.e. the
+  `L`-values.
+
+`D.finite_ker` then assembles the factors.  `_hal` may not be dropped: the
+statement with it removed is FALSE for hyperelliptic curves, where the
+hyperelliptic involution has `w_* = −1` on the whole Jacobian, so its
+anti-invariant subgroup is everything.  `X_0(125)` is not hyperelliptic
+(genus `8`, and `125` is not on Ogg's list), but establishing that is a
+strictly harder input than `_hal`. -/
+theorem Fermat.isTorsion_antiInvariant_jacobian_x0OneTwentyFive {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 125 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    ∀ z : RelPoint jstr (𝟙 SpecQ), RelPoint.post wJ hwJ z = ab.neg z →
+      IsOfFinAddOrder z := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  intro z hz
+  obtain ⟨D, ⟨E⟩⟩ := exists_heckeIsotypicDecomposition_atkinLehnerDescent 125 hX jac
+    w hw _hw2 _hal wJ hwJ _hchar
+  letI := D.fintypeIdx
+  letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+    fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+  set φ : ∀ i : D.idx, RelPoint jstr (𝟙 SpecQ) →+ RelPoint (D.astr i) (𝟙 SpecQ) :=
+    fun i => AddMonoidHom.mk' (fun x => RelPoint.post (D.u i) (D.u_comp i) x)
+      (fun x y => D.u_add i x y)
+  refine isOfFinAddOrder_of_finite_jointKer (φ := φ) D.finite_ker ?_
+  intro i
+  by_cases hs : E.Plus i
+  · -- a `+1` factor: the anti-invariance of `z` collapses to `2 • u i z = 0`,
+    -- with no arithmetic input at all.
+    have h1 : φ i (RelPoint.post wJ hwJ z) = φ i z := E.descend_plus i hs z
+    rw [hz] at h1
+    have h2 : -(φ i z) = φ i z := (map_neg (φ i) z).symm.trans h1
+    refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨2, by norm_num, ?_⟩
+    rw [two_nsmul]
+    exact add_eq_zero_iff_eq_neg.mpr h2.symm
+  · exact isTorsion_minusFactor_x0OneTwentyFive hX jac w hw _hw2 _hal wJ hwJ _hchar D E i
+      hs (φ i z)
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **`rank J_0(125)⁻(ℚ) = 0`: the `w_125`-ANTI-INVARIANT subgroup of
+`J_0(125)(ℚ)` is FINITE** (PROVEN 2026-07-28 from the torsion theorem above
+and Mordell–Weil) — the exact analogue of
+`finite_antiInvariant_jacobian_x0OneSixtyNine`.
+
+TRUE, and **unconditionally so** — no BSD, no `p`-adic integration.  The
+passage from torsion to finite is Mordell–Weil
+(`fg_relPoint_of_abelianScheme`) plus the structure theorem, and keeping it
+separate from the torsion statement is the same seam
+`isTorsion_jacobian_of_kenkuLevel` / `finite_jacobian_of_kenkuLevel` sits on:
+Mordell–Weil is a general theorem about abelian schemes over `ℚ` with nothing
+to do with modular curves.
+
+**Why the ANTI-INVARIANT SUBGROUP OF `J(ℚ)` and not `Finite A(ℚ)` for a Prym
+`A`.**  Stating it about the Prym would make it depend on the object
+`exists_prym_of_involution` produces, and the two would no longer be
+separable.  This is the same arithmetic with no geometry in it — and it is
+also why THIS assembly does not need the Prym at all: the consumer below
+takes the anti-invariant subgroup directly, so `exists_prym_of_involution`
+never enters the level-`125` chain.  (The parent's earlier audit expected it
+to; that expectation was written before this seam existed and is corrected
+there.) -/
+theorem Fermat.finite_antiInvariant_jacobian_x0OneTwentyFive {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 125 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z} := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  haveI := fg_relPoint_of_abelianScheme ab
+  exact finite_subtype_of_fg_of_forall_isOfFinAddOrder _
+    (isTorsion_antiInvariant_jacobian_x0OneTwentyFive hX jac w hw _hw2 _hal wJ hwJ _hchar)
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **KENKU'S DESCENT AT `125`, ARITHMETIC RESIDUE: for `P` the image of a
+rational point of the OPEN part `Y_0(125)`, the class `[(P) − (w_125 P)]`
+VANISHES in `J_0(125)(ℚ)`** (LEAF, cut 2026-07-28 off
+`atkinLehnerFixed_x0OneTwentyFive` below) — LEVEL-SPECIFIC.
+
+Stated as `aj (w P) = aj P`, i.e. `[P] − [o] = [w P] − [o]`, which is
+`[(P) − (w_125 P)] = 0` with the base point cancelling.
+
+TRUE, and vacuously so — `Y_0(125)(ℚ) = ∅` (Kenku).  The VACUITY AUDIT on the
+consumer below applies verbatim to this leaf and **must be read before
+attempting it**; in particular, discharging it by proving `Y_0(125)(ℚ) = ∅`
+is forbidden for the reason recorded there.
+
+**Restricted to the OPEN part on purpose — the unrestricted statement is
+FALSE**, and the counterexample is the same one the consumer records:
+`w_125` SWAPS the two rational cusps, and for `P` a rational cusp
+`[(P) − (w_125 P)]` is the nonzero cuspidal class.  So `y : RelPoint strY`
+may not be weakened to `x : RelPoint strX`.
+
+**WHY THIS IS THE SEAM, and what it removes from the frontier.**  Everything
+geometric has been pushed OUT of this leaf and into the already-PROVEN
+`injective_aj_of_one_le_x0Genus`: a degree-`0` class `[(P) − (Q)]` on a curve
+of genus `≥ 1` vanishes only for `P = Q`, since otherwise `P ∼ Q` gives a
+degree-`1` map to `ℙ¹`.  So this leaf knows nothing about the genus, the
+gonality, or hyperellipticity of `X_0(125)`, and a prover of it never touches
+Riemann–Roch.
+
+**CORRECTION TO THE ROUTE THE PARENT RECORDED, and it is the reason this leaf
+is stated with `_hfin` as an explicit hypothesis.**  The parent's docstring
+said "a torsion anti-invariant class on a curve of genus `8 > 0` is `0` by
+Abel–Jacobi injectivity".  **That inference does not hold**: Abel–Jacobi
+injectivity says `[(P) − (Q)] = 0 → P = Q`, which is the step AFTER the
+vanishing, and it says nothing about a torsion class being zero.  A nonzero
+torsion anti-invariant class is exactly what the two rational cusps provide
+at this level, so the gap is not hypothetical.
+
+Consequently `_hfin` — `rank J_0(125)⁻(ℚ) = 0`, discharged by
+`finite_antiInvariant_jacobian_x0OneTwentyFive` above — is **necessary and
+NOT sufficient**, and a prover owes the rest:
+
+* that `[(P) − (w_125 P)]` is anti-invariant, hence lands in the finite group
+  `_hfin` names (this half is cheap: `_hchar` pins `wJ`, and `_hw2` makes
+  `w_*` an involution, so `w_*([P] − [wP]) = [wP] − [P]`);
+* that the resulting TORSION class is `0` for `P` off the cusps.  This is the
+  genuine residue and it is a computation, not a formality: the anti-invariant
+  torsion is generated by the cuspidal class `[(∞) − (0)]`, and the argument
+  that no non-cuspidal `P` hits a nonzero multiple of it is a reduction/sieve
+  step at a prime of good reduction — the same shape as
+  `card_le_of_abelianSieve`, which this file already carries.
+
+**The check that refutes this leaf**: a non-cuspidal rational point of
+`X_0(125)` whose class `[(P) − (w_125 P)]` is nonzero — equivalently, by the
+consumer, one not fixed by `w_125`.  Kenku's theorem says there is none. -/
+theorem Fermat.ajMinus_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 125 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (_hfin : Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z})
+    (y : RelPoint strY (𝟙 SpecQ)) :
+    jac.aj (𝟙 SpecQ) (RelPoint.post w hw (RelPoint.post jY hX.comm y))
+      = jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y) :=
+  sorry
+
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **Every rational point of `Y_0(125)` is fixed by the Atkin–Lehner
-involution `w_125`** (LEAF, cut 2026-07-28 off
+involution `w_125`** (PROVEN 2026-07-28 over the block above; a single sorry
+node earlier the same day, cut off
 `exists_atkinLehnerIsom_of_veluQuotient_order_125` below) — LEVEL-SPECIFIC,
 and the ONLY declaration in the whole level-`125` cluster that carries the
 rank input `rank J_0(125)⁻(ℚ) = 0`.
@@ -27801,13 +28120,31 @@ rank input `rank J_0(125)⁻(ℚ) = 0`.
 TRUE, and this is Kenku's descent verbatim.  Let `P ∈ X_0(125)(ℚ)` be the
 image of a rational point of the open part `Y_0(125)`.  The divisor class
 `[(P) − (w_125 P)]` is anti-invariant, so it lies in `J_0(125)⁻(ℚ)`; by the
-newform table recorded in the section note above (Magma, `125`: three new
-factors of dimensions `2, 2, 4` with `w_125`-eigenvalues `−1, +1, −1`, and
-`L(A_f, 1) ≠ 0` on BOTH `w_125 = −1` factors) that group has rank `0`, and
-Kolyvagin–Logachev makes the vanishing unconditional.  A torsion
-anti-invariant class on a curve of genus `8 > 0` is `0` by the Abel–Jacobi
-injectivity that `injective_ajMinus_x0OneSixtyNine` packages at level `169`,
-so `P ∼ w_125 P` and hence `P = w_125 P`.
+newform table recomputed in the section note above (PARI/GP 2026-07-28,
+`125`: three new factors of dimensions `2, 2, 4` with `w_125`-eigenvalues
+`−1, +1, −1`, and `L(f^σ, 1) ≠ 0` at every embedding of BOTH `w_125 = −1`
+factors) that group has rank `0`, and Kolyvagin–Logachev makes it finite
+unconditionally.  The class then VANISHES, so `P ∼ w_125 P`, and a
+degree-`0` class `[(P) − (Q)]` on a curve of genus `8 ≥ 1` vanishes only for
+`P = Q`.
+
+**THE ASSEMBLY, and where each half now lives.**  The two steps are cut apart
+and only the first is still open:
+
+* `[(P) − (w_125 P)] = 0` — `ajMinus_eq_zero_x0OneTwentyFive`, LEAF, over the
+  PROVEN `finite_antiInvariant_jacobian_x0OneTwentyFive`;
+* `[(P) − (Q)] = 0 → P = Q` — `injective_aj_of_one_le_x0Genus` at `N = 125`,
+  ALREADY PROVEN in `X0.lean`, with `1 ≤ x0Genus 125` by `decide`
+  (`x0Genus 125 = 8`).
+
+**One correction to the route this docstring previously recorded.**  It read
+"a torsion anti-invariant class on a curve of genus `8 > 0` is `0` by the
+Abel–Jacobi injectivity that `injective_ajMinus_x0OneSixtyNine` packages".
+Abel–Jacobi injectivity is the SECOND step above and does not imply the
+first — a nonzero torsion anti-invariant class is exactly what the two
+rational cusps of `X_0(125)` provide.  The gap is recorded, with what a
+prover still owes, on `ajMinus_eq_zero_x0OneTwentyFive`.  Nothing downstream
+changes: the statement here is unaltered.
 
 **Restricted to the OPEN part on purpose — the unrestricted statement is
 FALSE.**  `w_N` exchanges the cusps above `d` and `N/d`, and
@@ -27822,38 +28159,47 @@ purposes: `169` uses the CM count to kill the point, `125` uses the descent to
 FIX it and leaves the killing to the already-PROVEN class-number half
 `MazurLevel125.classPoly500_no_rat_root` downstream.
 
-**VACUITY AUDIT — read before consuming this leaf.**  It is vacuously true,
-because `Y_0(125)(ℚ) = ∅` (Kenku); so is every other node of this cluster, its
-parent included.  Two consequences a prover must respect:
+**VACUITY AUDIT — read before consuming this node, and it now applies to
+`ajMinus_eq_zero_x0OneTwentyFive` above, which inherits every word of it.**
+It is vacuously true, because `Y_0(125)(ℚ) = ∅` (Kenku); so is every other
+node of this cluster, its parent included.  Two consequences a prover must
+respect:
 
 * **Do NOT discharge it by proving `Y_0(125)(ℚ) = ∅`.**  That is Kenku's
-  theorem at this level, i.e. the whole cluster, and closing this leaf that
+  theorem at this level, i.e. the whole cluster, and closing this node that
   way would launder the arithmetic — in particular it would strand the
   already-PROVEN `classPoly500_no_rat_root`, which is the `h(−500) = 10` half
-  of the very same argument.  The intended proof is the Prym descent above,
-  which knows nothing about rational points being absent.
-* The hypotheses `_hw2` and `_hal` are consumed by NOTHING in the statement
+  of the very same argument.  The intended proof is the descent above, which
+  knows nothing about rational points being absent.  **The assembly written
+  here does not go anywhere near it**: it consumes the vanishing of the
+  anti-invariant class and Riemann–Roch, and neither mentions emptiness.
+* `_hw2` and `_hal` are consumed here only by being handed to the two leaves,
   and are underscore-prefixed so that this is mechanically visible.  They are
-  retained because they are what a prover needs: `_hal` pins `w` to the moduli
-  action `(E, C) ↦ (E/C, E[125]/C)` — without it `w` could be any involution
-  of `X` over `ℚ` — and `_hw2` is what makes "fixed point" the right notion
-  for an order-`2` action.
+  what a prover of the descent needs: `_hal` pins `w` to the moduli action
+  `(E, C) ↦ (E/C, E[125]/C)` — without it `w` could be any involution of `X`
+  over `ℚ`, and `finite_antiInvariant_jacobian_x0OneTwentyFive` is FALSE for
+  a hyperelliptic involution — and `_hw2` is what makes "fixed point" the
+  right notion for an order-`2` action.
 
-**What proving it needs**, and it is exactly the level-`169` list with `169`
-replaced by `125`: `J_0(125)`, its Atkin–Lehner decomposition, the Prym of
-`w_125` (`exists_prym_of_involution`, LEVEL-GENERIC and already stated in
-`X0.lean`), Kolyvagin–Logachev for the two `w_125 = −1` factors, and the
-Abel–Jacobi injectivity on the minus part.  The first four are shared verbatim
-with `exists_atkinLehnerPrym_x0OneSixtyNine`; only the rank table is new.  So
-the honest next cut here is the level-`125` instance of
-`HasRankZeroAbelianImage` for the ANTI-INVARIANT quotient, and a successor
-should write `exists_atkinLehnerPrym_x0OneTwentyFive` beside its `169`
-sibling rather than re-deriving the generic half.
+**CORRECTION TO THE "next cut" THIS DOCSTRING RECORDED.**  It said the honest
+next cut was the level-`125` instance of `HasRankZeroAbelianImage`, and that a
+successor should write `exists_atkinLehnerPrym_x0OneTwentyFive` beside its
+`169` sibling.  **The Prym turns out not to be needed at all here**, and that
+is the one structural difference from `169`.  `169` routes through a Prym
+because its consumer (`hasRankZeroAbelianImage_x0OneSixtyNine`) wants an
+abelian variety `A` with an injective map from the curve; this node wants only
+the VANISHING of one class in `J(ℚ)`, so it takes
+`finite_antiInvariant_jacobian_x0OneTwentyFive` — the anti-invariant subgroup
+of `J(ℚ)` — directly, and `exists_prym_of_involution` never enters.  That is
+one whole level-generic dependency removed, not deferred.  (An audit tells you
+what to check first, never what to skip; this one was checked and found to
+over-prescribe.)
 
-**The check that refutes this leaf**: a `w_125 = −1` newform factor of
-`S_2(Γ_0(125))` with `L(A_f, 1) = 0` (recompute with
-`lfun(mfeigenbasis(mfinit([125,2],0)), 1)` in PARI/GP, or `LRatio` in Magma),
-or a non-cuspidal rational point of `X_0(125)` not fixed by `w_125`. -/
+**The check that refutes the arithmetic under this node**: a `w_125 = −1`
+newform factor of `S_2(Γ_0(125))` with `L(A_f, 1) = 0` (recompute with
+`mfatkineigenvalues` / `lfunorderzero` on `mfinit([125,2],0)` in PARI/GP, or
+`LRatio` in Magma — done 2026-07-28, table in the section note above), or a
+non-cuspidal rational point of `X_0(125)` not fixed by `w_125`. -/
 theorem Fermat.atkinLehnerFixed_x0OneTwentyFive {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 125 strX strY jY)
@@ -27861,8 +28207,22 @@ theorem Fermat.atkinLehnerFixed_x0OneTwentyFive {X Y : Scheme.{0}}
     (_hal : IsAtkinLehner 125 hX w hw) :
     ∀ y : RelPoint strY (𝟙 SpecQ),
       RelPoint.post w hw (RelPoint.post jY hX.comm y)
-        = RelPoint.post jY hX.comm y :=
-  sorry
+        = RelPoint.post jY hX.comm y := by
+  classical
+  intro y
+  -- Base point for the Jacobian: a rational cusp (`numRationalCusps 125 = 2`).
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps 125 hX
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos (by norm_num))
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 125 hX o
+  -- `rank J_0(125)⁻(ℚ) = 0`, through the operator `w_*` induced by `w` on `J`.
+  have hfin := finite_antiInvariant_jacobian_x0OneTwentyFive hX jac w hw _hw2 _hal
+    (jac.mapEnd w hw) (jac.mapEnd_comp w hw) (fun g x => jac.post_mapEnd_aj w hw g x)
+  -- The descent, then Riemann–Roch: `[P] = [w P]` and `genus X_0(125) = 8 ≥ 1`.
+  exact injective_aj_of_one_le_x0Genus 125 (by decide) hX jac
+    (ajMinus_eq_zero_x0OneTwentyFive hX jac w hw _hw2 _hal
+      (jac.mapEnd w hw) (jac.mapEnd_comp w hw) (fun g x => jac.post_mapEnd_aj w hw g x)
+      hfin y)
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **The moduli dictionary for an Atkin–Lehner FIXED point, in isogeny
