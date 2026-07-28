@@ -11816,13 +11816,18 @@ factorisation has been restated for the CONCRETE Frobenius:
   absolute Frobenius of a REDUCED scheme cancels on the left against
   morphisms into an affine scheme).
 
-So what is still open in this subsection is: the one-sided factorisation
-`exists_comp_eq_mulByNat_absFrobScheme` (`ker F ⊆ ker[N]` plus descent along
-a finite faithfully flat map — Mumford *AV* §15, Milne *AV* §I.5, and
-`Modularity/AbelianSchemeIsogeny.lean` is its natural home; that leaf's
-docstring records an EQUIVALENT affine-local reformulation, "every section in
-the image of `[N]^{\#}` is a `p ^ a`-th power", which needs no scheme
-morphism to be constructed), and the Weil
+**STATUS, LATER ON 2026-07-28.**  `exists_comp_eq_mulByNat_absFrobScheme` is
+now PROVEN too, over the affine-local reformulation its docstring recorded:
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow` DIVIDES an arbitrary
+morphism out of a reduced scheme by the absolute Frobenius, given only that
+its sheaf map lands in `p ^ a`-th powers, so no scheme morphism has to be
+constructed by hand anywhere in this cut.
+
+So what is still open in this subsection is: the sheaf-local leaf
+`exists_pow_eq_app_mulByNat` (`ker F ⊆ ker[N]`, read on sections: every
+section in the image of `[N]^{\#}` is a `p ^ a`-th power — Mumford *AV* §15,
+Milne *AV* §I.5, and `Modularity/AbelianSchemeIsogeny.lean` is its natural
+home), and the Weil
 leaf `exists_frobTraceAct_of_mult_finiteBase` (the Tate module of an
 abelian variety over a finite field — Mumford *AV* §19, Milne *AV* §V,
 Tate 1966).  The two are disjoint and can be owned independently. -/
@@ -11909,9 +11914,10 @@ pointwise clause FORCES `Fr` and therefore admits no junk witness.
 
 So the cut is: RIGIDITY (a `k`-morphism of an abelian scheme over a field
 is determined by its `k̄`-points — **PROVEN 2026-07-28**) plus the ONE-SIDED
-factorisation `Fr ≫ V = [N]` (Mumford *AV* §15, still open, and since
-2026-07-28 stated for the concrete `absFrobScheme` rather than for an
-abstract `Fr` — see `exists_comp_eq_mulByNat_absFrobScheme`).
+factorisation `Fr ≫ V = [N]` (Mumford *AV* §15, **PROVEN 2026-07-28** for the
+concrete `absFrobScheme` rather than for an abstract `Fr` — see
+`exists_comp_eq_mulByNat_absFrobScheme` — over the one remaining sheaf-local
+leaf `exists_pow_eq_app_mulByNat`).
 The derivation of the second identity
 is written out in the docstring of
 `exists_verschiebung_of_frobEndomorphism_finiteBase`; the point is that it
@@ -11958,6 +11964,14 @@ theorem pow_left_injective_sections {X : Scheme.{u}} [AlgebraicGeometry.IsReduce
     map_sub (powFrobHom Γ(X, U) p a hp (hchar U)) x y
   rw [h, sub_self] at h1
   exact sub_eq_zero.mp (IsNilpotent.eq_zero ⟨p ^ a, h1⟩)
+
+/-- **THE `p ^ a`-POWER MAP IS ADDITIVE** in a commutative ring in which the
+prime `p` vanishes (PROVEN 2026-07-28).  This is `map_add` for `powFrobHom`,
+stated with the powers written out so that it can be used by `rw`; as there,
+no `CharP` instance is needed, so the trivial ring is not a special case. -/
+theorem add_pow_pow_prime_eq {R : Type*} [CommRing R] (p a : ℕ) (hp : p.Prime)
+    (h : (p : R) = 0) (x y : R) : (x + y) ^ p ^ a = x ^ p ^ a + y ^ p ^ a :=
+  map_add (powFrobHom R p a hp h) x y
 
 /-- **THE ABSOLUTE FROBENIUS OF A REDUCED SCHEME CANCELS ON THE LEFT AGAINST
 MORPHISMS INTO AN AFFINE SCHEME** (PROVEN 2026-07-28).
@@ -12087,8 +12101,243 @@ theorem eq_of_comp_geomFibrePt_eq
     · rw [Category.assoc, Category.assoc, hu, hv]
   exact ext_of_isDominant_of_isSeparated f' (by rw [hu, hv]) _ hstep
 
-/-- **`[N]` FACTORS THROUGH THE ABSOLUTE `p ^ a`-POWER FROBENIUS** (sorry
-leaf, RESTATED 2026-07-28 for the CONCRETE Frobenius — Mumford *AV* §15,
+/-! #### Dividing a morphism by the absolute Frobenius
+
+**PROVEN 2026-07-28.**  This block turns the AFFINE-LOCAL statement
+
+> every section in the image of `g^{\#}` is a `p ^ a`-th power
+
+into the GEOMETRIC statement `∃ V, Fr ≫ V = g`, for `Fr = absFrobScheme X p a`
+the absolute Frobenius of a REDUCED scheme `X` and `g : X ⟶ Y` any morphism.
+That is the whole reduction the one-sided factorisation leaf below needs: after
+it, `exists_comp_eq_mulByNat_absFrobScheme` is a statement about the sheaf map
+of `[N]` alone, with no scheme morphism left to construct.
+
+The construction is forced, and every step of it is bookkeeping:
+
+* `Fr` is the IDENTITY on the underlying space, so `Fr ≫ V` and `V` have the
+  same base map; hence `V.base` MUST be `g.base`, and `(Fr ≫ V)^{\#}_U` is
+  `s ↦ (V^{\#}_U s) ^ p ^ a`.  So `V^{\#}_U s` must be a `p ^ a`-th root of
+  `g^{\#}_U s` — which is exactly what the hypothesis supplies, and which
+  `pow_left_injective_sections` makes UNIQUE because `X` is reduced.
+* Uniqueness is what makes the root map a RING HOMOMORPHISM
+  (`absFrobRootHom`) and NATURAL in `U` (`absFrobRootC`): in each case the two
+  sides have the same `p ^ a`-th power, by `add_pow_pow_prime_eq` / `mul_pow`
+  and the corresponding property of `g^{\#}`, so they are equal.  No choice
+  needs to be made coherently — there is only one root to choose.
+* Locality of the stalk maps (`absFrobRootPsh_isLocalHom`) is likewise free:
+  the stalk map of the root, raised to the `p ^ a`, is the stalk map of `g`
+  (`absFrobRootPsh_stalkMap_pow`, by the germ description of both), and a unit
+  stays a unit under the power map, so `g`'s own locality transfers.
+
+WHERE THIS BELONGS.  With the rest of the abelian-scheme geometry, in
+`Modularity/AbelianSchemeIsogeny.lean` — or, since nothing here mentions
+abelian schemes, in `Modularity/SchemeFrobenius.lean` beside `absFrobScheme`
+itself.  It is stated here only to keep the present cut inside one region, and
+`pow_left_injective_sections` (which it uses) is in this file for the same
+reason; moving the two together is a pure relocation. -/
+
+section AbsFrobRoot
+
+variable {X Y : Scheme.{u}} (p a : ℕ) (g : X ⟶ Y)
+  (H : ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ p ^ a = (g.app U).hom s)
+
+/-- **THE CHOSEN `p ^ a`-th ROOT of `g^{\#}(s)`.**  On a reduced `X` it is the
+ONLY root (`pow_left_injective_sections`), so nothing depends on the choice. -/
+noncomputable def absFrobRootFun (U : Y.Opens) (s : Γ(Y, U)) : Γ(X, g ⁻¹ᵁ U) :=
+  Classical.choose (H U s)
+
+theorem absFrobRootFun_pow (U : Y.Opens) (s : Γ(Y, U)) :
+    absFrobRootFun p a g H U s ^ p ^ a = (g.app U).hom s :=
+  Classical.choose_spec (H U s)
+
+variable [AlgebraicGeometry.IsReduced X] (hp : p.Prime)
+  (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0)
+
+/-- **THE ROOT MAP IS A RING HOMOMORPHISM**, because the root is unique: each
+identity is checked after raising both sides to the `p ^ a`, where it becomes
+the corresponding identity for `g^{\#}`. -/
+noncomputable def absFrobRootHom (U : Y.Opens) : Γ(Y, U) ⟶ Γ(X, g ⁻¹ᵁ U) :=
+  CommRingCat.ofHom
+    { toFun := absFrobRootFun p a g H U
+      map_one' := by
+        refine pow_left_injective_sections p a hp hchar _ ?_
+        rw [absFrobRootFun_pow, one_pow, map_one]
+      map_mul' := fun x y => by
+        refine pow_left_injective_sections p a hp hchar _ ?_
+        rw [absFrobRootFun_pow, mul_pow, absFrobRootFun_pow, absFrobRootFun_pow, map_mul]
+      map_zero' := by
+        refine pow_left_injective_sections p a hp hchar _ ?_
+        rw [absFrobRootFun_pow, zero_pow (pow_ne_zero a hp.ne_zero), map_zero]
+      map_add' := fun x y => by
+        refine pow_left_injective_sections p a hp hchar _ ?_
+        rw [absFrobRootFun_pow, add_pow_pow_prime_eq p a hp (hchar (g ⁻¹ᵁ U)),
+          absFrobRootFun_pow, absFrobRootFun_pow, map_add] }
+
+theorem absFrobRootHom_pow (U : Y.Opens) (s : Γ(Y, U)) :
+    (absFrobRootHom p a g H hp hchar U).hom s ^ p ^ a = (g.app U).hom s :=
+  absFrobRootFun_pow p a g H U s
+
+/-- **THE ROOT MAP IS NATURAL**, i.e. a morphism of presheaves
+`𝒪_Y ⟶ g_* 𝒪_X`.  Again by uniqueness: the two sides have the same `p ^ a`-th
+power, namely the two sides of `g`'s own naturality square. -/
+noncomputable def absFrobRootC : Y.presheaf ⟶ g.base _* X.presheaf where
+  app U := absFrobRootHom p a g H hp hchar U.unop
+  naturality := by
+    intro U V i
+    ext s
+    refine pow_left_injective_sections p a hp hchar _ ?_
+    show (absFrobRootHom p a g H hp hchar V.unop).hom ((Y.presheaf.map i).hom s) ^ p ^ a
+      = ((X.presheaf.map ((_root_.TopologicalSpace.Opens.map g.base).map i.unop).op).hom
+          ((absFrobRootHom p a g H hp hchar U.unop).hom s)) ^ p ^ a
+    rw [absFrobRootHom_pow, ← map_pow, absFrobRootHom_pow]
+    exact congrArg (fun φ : Γ(Y, U.unop) ⟶ Γ(X, g ⁻¹ᵁ V.unop) => φ.hom s)
+      (g.c.naturality i)
+
+/-- **THE ROOT MORPHISM AT THE LEVEL OF PRESHEAFED SPACES**: the same base map
+as `g`, and the root of `g^{\#}` on sections. -/
+noncomputable def absFrobRootPsh : X.toPresheafedSpace.Hom Y.toPresheafedSpace where
+  base := g.base
+  c := absFrobRootC p a g H hp hchar
+
+/-- **`Fr ≫ root = g` AT THE LEVEL OF PRESHEAFED SPACES.**  The bases agree
+definitionally (`Fr` is the identity on the space) and the sheaf maps agree by
+the defining property of the root. -/
+theorem absFrobPsh_comp_absFrobRootPsh :
+    (absFrobPsh X p a hp hchar ≫ absFrobRootPsh p a g H hp hchar :
+      X.toPresheafedSpace ⟶ Y.toPresheafedSpace) = g.toLRSHom.toHom := by
+  refine PresheafedSpace.hext _ _ rfl (heq_of_eq ?_)
+  refine NatTrans.ext ?_
+  funext U
+  ext s
+  exact absFrobRootHom_pow p a g H hp hchar U.unop s
+
+/-- **THE STALK MAP OF THE ROOT MORPHISM, RAISED TO THE `p ^ a`, IS THE STALK
+MAP OF `g`.**  Both sides are computed on a germ by
+`PresheafedSpace.stalkMap_germ_apply`, and the germ map is a ring
+homomorphism. -/
+theorem absFrobRootPsh_stalkMap_pow (x : X) (y : Y.presheaf.stalk (g.base x)) :
+    ((absFrobRootPsh p a g H hp hchar).stalkMap x).hom y ^ p ^ a
+      = (g.toLRSHom.toHom.stalkMap x).hom y := by
+  obtain ⟨U, m, s, rfl⟩ := Y.presheaf.exists_germ_eq y
+  have h1 : ((absFrobRootPsh p a g H hp hchar).stalkMap x).hom
+        ((Y.presheaf.germ U (g x) m).hom s)
+      = (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom ((absFrobRootHom p a g H hp hchar U).hom s) :=
+    PresheafedSpace.stalkMap_germ_apply (absFrobRootPsh p a g H hp hchar) U x m s
+  have h2 : (g.toLRSHom.toHom.stalkMap x).hom ((Y.presheaf.germ U (g x) m).hom s)
+      = (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom ((g.app U).hom s) :=
+    PresheafedSpace.stalkMap_germ_apply g.toLRSHom.toHom U x m s
+  calc ((absFrobRootPsh p a g H hp hchar).stalkMap x).hom
+        ((Y.presheaf.germ U (g x) m).hom s) ^ p ^ a
+      = ((X.presheaf.germ (g ⁻¹ᵁ U) x m).hom
+          ((absFrobRootHom p a g H hp hchar U).hom s)) ^ p ^ a :=
+        congrArg (fun z => z ^ p ^ a) h1
+    _ = (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom
+          (((absFrobRootHom p a g H hp hchar U).hom s) ^ p ^ a) :=
+        (map_pow (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom _ _).symm
+    _ = (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom ((g.app U).hom s) :=
+        congrArg (X.presheaf.germ (g ⁻¹ᵁ U) x m).hom
+          (absFrobRootHom_pow p a g H hp hchar U s)
+    _ = (g.toLRSHom.toHom.stalkMap x).hom ((Y.presheaf.germ U (g x) m).hom s) := h2.symm
+
+/-- **THE ROOT MORPHISM IS LOCAL ON STALKS**: a unit stays a unit under the
+`p ^ a`-power map, so `g`'s own locality transfers back along
+`absFrobRootPsh_stalkMap_pow`. -/
+theorem absFrobRootPsh_isLocalHom (x : X) :
+    IsLocalHom ((absFrobRootPsh p a g H hp hchar).stalkMap x).hom := by
+  constructor
+  intro y hy
+  refine (g.toLRSHom.prop x).1 y ?_
+  rw [← absFrobRootPsh_stalkMap_pow p a g H hp hchar x y]
+  exact hy.pow _
+
+/-- **THE ROOT MORPHISM AS A MORPHISM OF LOCALLY RINGED SPACES.** -/
+noncomputable def absFrobRootLRS : X.toLocallyRingedSpace.Hom Y.toLocallyRingedSpace where
+  toHom := absFrobRootPsh p a g H hp hchar
+  prop := absFrobRootPsh_isLocalHom p a g H hp hchar
+
+/-- **THE `p ^ a`-th ROOT OF A MORPHISM** whose sheaf map lands in `p ^ a`-th
+powers, as a morphism of SCHEMES. -/
+noncomputable def absFrobRootScheme : X ⟶ Y := ⟨absFrobRootLRS p a g H hp hchar⟩
+
+theorem absFrobScheme_comp_absFrobRootScheme :
+    absFrobScheme X p a hp hchar ≫ absFrobRootScheme p a g H hp hchar = g := by
+  apply Scheme.Hom.ext'
+  apply LocallyRingedSpace.Hom.ext'
+  exact absFrobPsh_comp_absFrobRootPsh p a g H hp hchar
+
+end AbsFrobRoot
+
+/-- **A MORPHISM OUT OF A REDUCED SCHEME WHOSE SHEAF MAP LANDS IN `p ^ a`-th
+POWERS FACTORS THROUGH THE ABSOLUTE FROBENIUS** (PROVEN 2026-07-28).
+
+This is the packaged form of the block above, and it is what reduces the
+one-sided factorisation leaf below to an affine-local statement about the sheaf
+map of `[N]`.  The converse is immediate — if `Fr ≫ V = g` then
+`g^{\#}_U s = (V^{\#}_U s) ^ p ^ a` because `Fr` is the identity on the space —
+so the hypothesis is not merely sufficient but EQUIVALENT to the conclusion. -/
+theorem exists_absFrobScheme_comp_eq_of_forall_exists_pow
+    {X Y : Scheme.{u}} [AlgebraicGeometry.IsReduced X]
+    (p a : ℕ) (hp : p.Prime) (hchar : ∀ U : X.Opens, (p : Γ(X, U)) = 0) (g : X ⟶ Y)
+    (H : ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ p ^ a = (g.app U).hom s) :
+    ∃ V : X ⟶ Y, absFrobScheme X p a hp hchar ≫ V = g :=
+  ⟨absFrobRootScheme p a g H hp hchar, absFrobScheme_comp_absFrobRootScheme p a g H hp hchar⟩
+
+/-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (sorry leaf, CUT 2026-07-28 —
+Mumford *AV* §15, Milne *AV* §I.5).  This is the DEEP HALF of the Verschiebung,
+and after `exists_absFrobScheme_comp_eq_of_forall_exists_pow` above it is all
+that is left of it: an affine-local statement about the sheaf map of `[N]`,
+with NO scheme morphism to construct.
+
+For `A'` an abelian variety over a field `k` with `N = #k = p ^ a` elements,
+every section in the image of `([N])^{\#}` is a `p ^ a`-th power.
+
+**WHY THIS IS EQUIVALENT to `Fr ≫ V = [N]`** (both directions, so nothing is
+lost or gained by the restatement).  `Fr = absFrobScheme A' p a` is the
+identity on the underlying space and `s ↦ s ^ p ^ a` on sections, so
+`(Fr ≫ V)^{\#}_U s = (V^{\#}_U s) ^ p ^ a`.  Hence `Fr ≫ V = [N]` gives
+`([N])^{\#}_U s = (V^{\#}_U s) ^ p ^ a`, a `p ^ a`-th power; conversely the
+roots are UNIQUE because `A'` is reduced (`pow_left_injective_sections`), which
+makes `s ↦ \sqrt[p^a]{[N]^{\#} s}` additive and multiplicative and natural, and
+the resulting morphism satisfies `Fr ≫ V = [N]` by construction.  That is
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow`.
+
+**THE CLASSICAL PROOF.**  `Fr` is purely inseparable of degree `N ^ dim`, so
+`ker Fr` is infinitesimal and killed by `N` (for a commutative group scheme `G`
+with `F_G = 0` one has `[p]_G = V_G ∘ F_G = 0`, Cartier's Verschiebung); hence
+`ker Fr ⊆ ker [N]`, and `Fr` — being a finite faithfully flat isogeny — exhibits
+`A'` as the fppf quotient of `A'` by `ker Fr`, along which `[N]` descends.
+Read on sheaves, `ker Fr ⊆ ker [N]` says precisely that `[N]^{\#}` factors
+through `Fr^{\#} = (·) ^ p ^ a`, which is the statement here.
+
+**WHY THIS IS NOT A STATEMENT ABOUT POINTS.**  On `A'(k̄)` the corresponding
+claim is a TRIVIALITY carrying none of the content above: `y ↦ σ · y` is a
+bijection, so `V y := N · (σ⁻¹ · y)` satisfies it by `Mult.galSMul_act` alone.
+What is true only for a morphism — and what the Weil leaf needs — is that `V`
+is ALGEBRAIC.
+
+`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`, and they are
+essential: over an infinite base of characteristic `p`, or for `p ^ a ≠ #k`,
+the statement is FALSE (the `N`-power Frobenius is then not even a
+`k`-morphism, and `[N]` does not factor through it).  `ab'` enters through the
+group law, which is where `ker Fr ⊆ ker [N]` lives.
+
+WHERE THIS BELONGS: `Modularity/AbelianSchemeIsogeny.lean`, beside `mulByNat`,
+`isProper_mulByNat` and `isFinite_ker_mulByNat_of_field_char`; it is stated
+here only to keep the present cut inside one region. -/
+theorem exists_pow_eq_app_mulByNat
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    (p a : ℕ) (hp : p.Prime) (hpa : p ^ a = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (U : A'.Opens) (s : Γ(A', U)) :
+    ∃ t : Γ(A', ab'.mulByNat N ⁻¹ᵁ U), t ^ p ^ a = ((ab'.mulByNat N).app U).hom s :=
+  sorry
+
+/-- **`[N]` FACTORS THROUGH THE ABSOLUTE `p ^ a`-POWER FROBENIUS**
+(**PROVEN 2026-07-28** over the single sheaf-local leaf
+`exists_pow_eq_app_mulByNat` immediately above — Mumford *AV* §15,
 Milne *AV* §I.5).  This is the deep half of the Verschiebung leaf: the
 ONE-SIDED identity `Fr ≫ V = [N]`, by a morphism.
 
@@ -12126,11 +12375,11 @@ that kills the kernel.  `Modularity/AbelianSchemeIsogeny.lean` already has
 `mulByNat`, `isProper_mulByNat`, `isFinite_ker_mulByNat_of_field_char` and
 the shearing block, which is the natural home for the factorisation.
 
-**THE EQUIVALENT SHEAF-LOCAL FORM, which is the concrete thing to attack.**
-Because `absFrobScheme` is the identity on the space and `s ↦ s ^ p ^ a` on
-sections, and because `A'` is reduced so that `p ^ a`-th roots are UNIQUE
-where they exist (`pow_left_injective_sections` above), this leaf is
-EQUIVALENT to:
+**THE EQUIVALENT SHEAF-LOCAL FORM IS NOW THE LEAF, AND THE MORPHISM IS BUILT**
+(2026-07-28).  Because `absFrobScheme` is the identity on the space and
+`s ↦ s ^ p ^ a` on sections, and because `A'` is reduced so that `p ^ a`-th
+roots are UNIQUE where they exist (`pow_left_injective_sections` above), this
+theorem is EQUIVALENT to:
 
 > for every open `U ⊆ A'` and every `s : Γ(A', U)`, the section
 > `([N])^{\#}(s) : Γ(A', [N] ⁻¹ᵁ U)` is a `p ^ a`-th power.
@@ -12141,10 +12390,15 @@ power; conversely, uniqueness of the root makes `s ↦ \sqrt[p^a]{[N]^{\#} s}`
 a natural transformation `𝒪_{A'} ⟶ ([N])_* 𝒪_{A'}` (it is additive because
 `(x + y) ^ p ^ a = x ^ p ^ a + y ^ p ^ a`, i.e. `powFrobHom` is a ring map),
 its stalk maps are local because their `p ^ a`-th powers are, and the
-resulting morphism `V` satisfies `Fr ≫ V = [N]` by construction.  That
-reformulation is the reason this leaf is stated for the concrete Frobenius:
-it is an affine-local statement about `[N]`, with no scheme morphism left to
-construct.
+resulting morphism `V` satisfies `Fr ≫ V = [N]` by construction.
+
+That converse is no longer a remark in a docstring: it is
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, PROVEN in full for
+an arbitrary morphism out of a reduced scheme.  So this theorem is now proven
+over the single leaf `exists_pow_eq_app_mulByNat`, which is the sheaf-local
+statement displayed above and carries all of the remaining mathematics
+(`ker Fr ⊆ ker [N]`); there is no scheme morphism left to construct anywhere
+in this cut.
 
 **WHY THIS IS NOT A STATEMENT ABOUT POINTS.**  On the geometric point set
 `A'(k̄)` the corresponding claim is a TRIVIALITY carrying none of the content
@@ -12153,18 +12407,21 @@ above: `y ↦ σ · y` is a bijection there, with inverse `y ↦ σ⁻¹ · y`, 
 true only for a morphism — and what the Weil leaf needs — is that `V` is
 ALGEBRAIC.
 
-`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`; `hfin` and
-`hN` are not used by the reformulation above but are what make the statement
-about an abelian variety over a FINITE field rather than about an arbitrary
-characteristic-`p` base, which is where the classical proof lives. -/
+`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`; they are
+passed straight through to `exists_pow_eq_app_mulByNat`, which is where they
+are consumed, and are what make the statement about an abelian variety over a
+FINITE field rather than about an arbitrary characteristic-`p` base. -/
 theorem exists_comp_eq_mulByNat_absFrobScheme
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     (p a : ℕ) (hp : p.Prime) (hpa : p ^ a = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0) :
-    ∃ V : A' ⟶ A', absFrobScheme A' p a hp hchar ≫ V = ab'.mulByNat N :=
-  sorry
+    ∃ V : A' ⟶ A', absFrobScheme A' p a hp hchar ≫ V = ab'.mulByNat N := by
+  haveI := ab'.smooth
+  haveI : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  exact exists_absFrobScheme_comp_eq_of_forall_exists_pow p a hp hchar (ab'.mulByNat N)
+    (exists_pow_eq_app_mulByNat hfin N hN p a hp hpa ab' hchar)
 
 /-- **`[N]` FACTORS THROUGH THE FROBENIUS ENDOMORPHISM** (**PROVEN
 2026-07-28** over `exists_comp_eq_mulByNat_absFrobScheme` immediately above
