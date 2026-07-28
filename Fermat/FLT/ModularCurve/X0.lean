@@ -503,6 +503,12 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.QuarticTwist
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `exists_monic_dvd_preΨ'_of_twoStableLines`: two distinct Galois-stable lines
+-- of odd prime order `p` multiply into a monic RATIONAL factor of `preΨ'ₚ` of
+-- degree `p − 1` — the converse of `exists_point_of_isKernelPolynomial`, taken
+-- twice.  It adds ONE module to the cone (its own); `KernelPolynomial` and
+-- `TorsionCard` beneath it are already here through `Torsion` above.
+public import Fermat.FLT.EllipticCurve.StableLineFactor
 -- `WeierstrassCurve.IsIsogeny`, the GEOMETRIC hypothesis (rational map,
 -- surjective, finite kernel) that separates a genuine endomorphism of
 -- `E_ℚ̄` from an arbitrary endomorphism of the abstract group `E(ℚ̄)`.  It
@@ -15962,23 +15968,35 @@ about an arbitrary elliptic curve over `ℚ`.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` with two
 distinct `Γ_ℚ`-stable lines of order an odd prime `p` whose `p`-division
-polynomial has no rational factor of degree `p − 1`. -/
+polynomial has no rational factor of degree `p − 1`.
+
+**PROVEN 2026-07-28**, over a variable base field, in
+`Fermat/FLT/EllipticCurve/StableLineFactor.lean`.  The proof is the argument
+above verbatim; it lives in its own module because it is about elliptic curves
+rather than modular curves, and because the descent step it needs
+(`MazurGenusZero.mem_range_of_fixed`, `InfiniteGalois` under the hood) sits
+BELOW this leaf in this file, so an in-file proof would have forced a hoist.
+One simplification against the route note: step 4 needs no separability of
+`preΨ'ₚ` — distinct linear factors are pairwise coprime, so
+`Finset.prod_dvd_of_coprime` gives the divisibility from root containment
+alone. -/
 theorem exists_monic_dvd_preΨ_of_twoStableLines {p : ℕ}
-    (_hp : p.Prime) (_hodd : Odd p)
+    (hp : p.Prime) (hodd : Odd p)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
-    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₁)
-    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₂) :
     ∃ f : Polynomial ℚ, f.Monic ∧ f.natDegree = p - 1 ∧ f ∣ E.preΨ' p :=
-  sorry
+  _root_.WeierstrassCurve.exists_monic_dvd_preΨ'_of_twoStableLines hp hodd E g₁ g₂
+    hg₁ hg₂ hne (fun σ => hs₁ σ) (fun σ => hs₂ σ)
 
 /-- **The `p`-division polynomial of each of the six non-CM rows has no
 rational factor of degree `p − 1`** (sorry leaf, cut 2026-07-28 out of
