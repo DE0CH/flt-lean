@@ -28134,8 +28134,8 @@ without that conjunct every `c` would be a cotangent scalar for the zero map,
 not have `map_zero`. Mathematically it says `0*ω = 0`, which is correct and not
 a weakening.
 
-**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves are cut here, in decreasing order
-of difficulty:
+**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves were cut here, in decreasing
+order of difficulty; **item 3 is now PROVEN (2026-07-28)** and three remain:
 
 1. `exists_isCotangentScalar` — the genuinely geometric input: the holomorphic
    differentials of an elliptic curve form a ONE-dimensional space, so `φ*ω'` is
@@ -28143,10 +28143,16 @@ of difficulty:
    place in the section where geometry is used.
 2. `IsCotangentScalar.add` — additivity, *AEC* III.5.2; equivalently `c φ` is
    the linear coefficient of `φ` on the formal group, where additivity is
-   immediate from `F(z, w) = z + w + ⋯`.
+   immediate from `F(z, w) = z + w + ⋯`. **Still open**, and the chain-rule
+   machinery added for item 3 does NOT reach it — see the ROUTE NOTE on the
+   declaration itself for the axis that was searched and the shape of the
+   missing input.
 3. `IsCotangentScalar.comp` — multiplicativity, the chain rule for the
-   composite rational map. Elementary but a real polynomial computation:
-   `IsRationalMap.comp` already produces the composed witnesses.
+   composite rational map. **PROVEN 2026-07-28** over the new polynomial
+   identity `wrBracket_homogSubst` (the chain rule for `homogSubst`, stated and
+   proved just above the declaration) together with the composed witnesses of
+   `IsRationalMap.comp`. It did **not** need `isCotangentScalar_unique`, and it
+   does not need `IsIsogeny ψ`.
 4. `isCotangentScalar_unique` — the cheapest of the four, and purely
    elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
    satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
@@ -28282,15 +28288,260 @@ theorem exists_unique_isCotangentScalar [IsAlgClosed F] [CharZero F]
   obtain ⟨c, hc⟩ := exists_isCotangentScalar hφ
   exact ⟨c, hc, fun d hd => isCotangentScalar_unique hφ hd hc⟩
 
-/-- **LEAF (cut 2026-07-28): MULTIPLICATIVITY — the chain rule.**
+/-! #### The chain rule for `homogSubst`, in polynomial form
+
+`IsCotangentScalar.comp` below needs exactly one new polynomial identity, and it
+is the algebraic shadow of the chain rule. Write
+
+    ⟨f, g⟩ := f' · g − f · g'
+
+for the (sign-flipped) Wronskian bracket, which is what the differential
+identity of `IsCotangentScalar` measures: with `x ∘ φ = A / B` the numerator of
+`d(A/B)` is `⟨A, B⟩ = A'B − AB'`.
+
+Substituting `A/B` into a second pair `(p, q)` — which is what
+`homogSubst A B n` does, up to the factor `B ^ n` that clears denominators —
+composes the two rational functions, and the identity below says the bracket
+transforms by the chain rule:
+
+    ⟨homogSubst A B n p, homogSubst A B n q⟩
+      = homogSubst A B (2n − 2) ⟨p, q⟩ · ⟨A, B⟩.
+
+The exponent `2n − 2` is forced: `⟨p, q⟩` has degree at most `2n − 2` because
+the `x ^ (2n−1)` coefficients of `p'q` and `pq'` are both `n · pₙ · qₙ` and
+cancel. (The consumer never needs that sharp bound — it applies the identity at
+`n + 1` rather than `n`, where the crude estimate `deg ⟨p, q⟩ ≤ 2n` suffices.)
+
+The proof is bilinear expansion: both sides are `F`-bilinear in `(p, q)`, so it
+is enough to check monomials `p = X ^ i`, `q = X ^ j`, where
+`homogSubst A B n (X ^ i) = A ^ i B ^ (n−i)` and both sides come out as
+`(i − j) · A ^ (i+j−1) · B ^ (2n−i−j−1) · ⟨A, B⟩`. Writing `j = i + t + 1` and
+`n = i + t + 1 + r` in the case `i < j` removes every truncated subtraction, and
+antisymmetry gives `i > j`. -/
+
+omit [DecidableEq F] in
+theorem homogSubst_zero (A B : F[X]) (m : ℕ) : homogSubst A B m 0 = 0 := by
+  simp [homogSubst]
+
+omit [DecidableEq F] in
+theorem homogSubst_add (A B : F[X]) (m : ℕ) (Q R : F[X]) :
+    homogSubst A B m (Q + R) = homogSubst A B m Q + homogSubst A B m R := by
+  unfold homogSubst
+  rw [← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_add, map_add]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_neg (A B : F[X]) (m : ℕ) (Q : F[X]) :
+    homogSubst A B m (-Q) = -homogSubst A B m Q := by
+  unfold homogSubst
+  rw [← Finset.sum_neg_distrib]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_neg, map_neg]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_C_mul (A B : F[X]) (m : ℕ) (a : F) (Q : F[X]) :
+    homogSubst A B m (C a * Q) = C a * homogSubst A B m Q := by
+  unfold homogSubst
+  rw [Finset.mul_sum]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_C_mul, map_mul]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_finsetSum {ι : Type*} (A B : F[X]) (m : ℕ) (s : Finset ι) (f : ι → F[X]) :
+    homogSubst A B m (∑ x ∈ s, f x) = ∑ x ∈ s, homogSubst A B m (f x) := by
+  classical
+  induction s using Finset.induction with
+  | empty => simp [homogSubst_zero]
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, homogSubst_add, ih, Finset.sum_insert ha]
+
+omit [DecidableEq F] in
+/-- `homogSubst` of a monomial: the only surviving term of the defining sum. -/
+theorem homogSubst_C_mul_X_pow (A B : F[X]) (a : F) {m r : ℕ} (hr : r ≤ m) :
+    homogSubst A B m (C a * X ^ r) = C a * A ^ r * B ^ (m - r) := by
+  unfold homogSubst
+  rw [Finset.sum_eq_single r]
+  · rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+  · intro i _ hi
+    rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_neg hi, mul_zero, map_zero,
+      zero_mul, zero_mul]
+  · intro h
+    exact absurd (Finset.mem_range.2 (Nat.lt_succ_of_le hr)) h
+
+omit [DecidableEq F] in
+/-- A polynomial of degree at most `n` written as a sum of `n + 1` monomials. -/
+theorem eq_sum_range_C_mul_X_pow {p : F[X]} {n : ℕ} (hp : p.natDegree ≤ n) :
+    p = ∑ i ∈ Finset.range (n + 1), C (p.coeff i) * X ^ i := by
+  conv_lhs => rw [Polynomial.as_sum_range' p (n + 1) (Nat.lt_succ_of_le hp)]
+  exact Finset.sum_congr rfl fun i _ => (Polynomial.C_mul_X_pow_eq_monomial).symm
+
+omit [DecidableEq F] in
+/-- A common factor pulls out of the bracket as its square. -/
+theorem wrBracket_mul_left (h u v : F[X]) :
+    derivative (h * u) * (h * v) - h * u * derivative (h * v)
+      = h ^ 2 * (derivative u * v - u * derivative v) := by
+  simp only [Polynomial.derivative_mul]
+  ring
+
+omit [DecidableEq F] in
+/-- The bracket is `F`-bilinear. -/
+theorem wrBracket_C_mul (a b : F) (f g : F[X]) :
+    derivative (C a * f) * (C b * g) - C a * f * derivative (C b * g)
+      = C a * C b * (derivative f * g - f * derivative g) := by
+  simp only [Polynomial.derivative_C_mul]
+  ring
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_succ (A B : F[X]) (t : ℕ) :
+    derivative (B ^ (t + 1)) * A ^ (t + 1) - B ^ (t + 1) * derivative (A ^ (t + 1))
+      = -(C ((t : F) + 1)) * A ^ t * B ^ t * (derivative A * B - A * derivative B) := by
+  simp only [Polynomial.derivative_pow_succ]
+  ring
+
+omit [DecidableEq F] in
+/-- The monomial case of the chain rule, in the subtraction-free parametrisation
+`j = i + t + 1`, `n = i + t + 1 + r`. -/
+theorem wrBracket_monomial (A B : F[X]) (i t r : ℕ) :
+    derivative (A ^ i * B ^ (t + 1 + r)) * (A ^ (i + t + 1) * B ^ r)
+        - A ^ i * B ^ (t + 1 + r) * derivative (A ^ (i + t + 1) * B ^ r)
+      = -(C ((t : F) + 1)) * A ^ (2 * i + t) * B ^ (2 * r + t)
+          * (derivative A * B - A * derivative B) := by
+  have e1 : A ^ i * B ^ (t + 1 + r) = A ^ i * B ^ r * B ^ (t + 1) := by ring
+  have e2 : A ^ (i + t + 1) * B ^ r = A ^ i * B ^ r * A ^ (t + 1) := by ring
+  rw [e1, e2, wrBracket_mul_left, wrBracket_pow_succ]
+  ring
+
+omit [DecidableEq F] in
+/-- `⟨X ^ i, X ^ j⟩ = (i − j) · X ^ (i+j−1)`, in the case `j = i + t + 1`. -/
+theorem wrBracket_X_pow (i t : ℕ) :
+    derivative (X ^ i : F[X]) * X ^ (i + t + 1) - X ^ i * derivative (X ^ (i + t + 1))
+      = C (-((t : F) + 1)) * X ^ (2 * i + t) := by
+  cases i with
+  | zero =>
+      simp only [pow_zero, Polynomial.derivative_one, zero_mul, one_mul,
+        zero_add, mul_zero, Polynomial.derivative_pow_succ, Polynomial.derivative_X,
+        mul_one, map_neg, map_add, map_natCast, map_one]
+      ring
+  | succ i' =>
+      rw [show i' + 1 + t + 1 = i' + 1 + t + 1 from rfl, Polynomial.derivative_pow_succ,
+        Polynomial.derivative_pow_succ, Polynomial.derivative_X, mul_one, mul_one]
+      simp only [map_add, map_natCast, map_one, map_neg]
+      push_cast
+      ring
+
+omit [DecidableEq F] in
+/-- Bilinear expansion of the bracket over a finite sum. -/
+theorem wrBracket_finsetSum {ι : Type*} (s : Finset ι) (f g : ι → F[X]) :
+    derivative (∑ i ∈ s, f i) * (∑ j ∈ s, g j)
+        - (∑ i ∈ s, f i) * derivative (∑ j ∈ s, g j)
+      = ∑ i ∈ s, ∑ j ∈ s, (derivative (f i) * g j - f i * derivative (g j)) := by
+  rw [Polynomial.derivative_sum, Polynomial.derivative_sum, Finset.sum_mul_sum,
+    Finset.sum_mul_sum, ← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl fun i _ => by rw [← Finset.sum_sub_distrib]
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_pair_of_lt {A B : F[X]} {n i j : ℕ} (hj : j ≤ n) (hlt : i < j) :
+    derivative (A ^ i * B ^ (n - i)) * (A ^ j * B ^ (n - j))
+        - A ^ i * B ^ (n - i) * derivative (A ^ j * B ^ (n - j))
+      = homogSubst A B (2 * n - 2)
+          (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j))
+        * (derivative A * B - A * derivative B) := by
+  obtain ⟨t, rfl⟩ : ∃ t, j = i + t + 1 := ⟨j - i - 1, by omega⟩
+  obtain ⟨r, rfl⟩ : ∃ r, n = i + t + 1 + r := ⟨n - (i + t + 1), by omega⟩
+  rw [show i + t + 1 + r - i = t + 1 + r by omega,
+    show i + t + 1 + r - (i + t + 1) = r by omega, wrBracket_monomial, wrBracket_X_pow,
+    homogSubst_C_mul_X_pow A B _ (show 2 * i + t ≤ 2 * (i + t + 1 + r) - 2 by omega),
+    show 2 * (i + t + 1 + r) - 2 - (2 * i + t) = 2 * r + t by omega, map_neg]
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_pair {A B : F[X]} {n i j : ℕ} (hi : i ≤ n) (hj : j ≤ n) :
+    derivative (A ^ i * B ^ (n - i)) * (A ^ j * B ^ (n - j))
+        - A ^ i * B ^ (n - i) * derivative (A ^ j * B ^ (n - j))
+      = homogSubst A B (2 * n - 2)
+          (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j))
+        * (derivative A * B - A * derivative B) := by
+  rcases lt_trichotomy i j with hlt | heq | hgt
+  · exact wrBracket_pow_pair_of_lt hj hlt
+  · subst heq
+    rw [show derivative (X ^ i : F[X]) * X ^ i - X ^ i * derivative (X ^ i) = 0 by ring,
+      homogSubst_zero, zero_mul]
+    ring
+  · have h := wrBracket_pow_pair_of_lt (A := A) (B := B) hi hgt
+    rw [show derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j)
+        = -(derivative (X ^ j : F[X]) * X ^ i - X ^ j * derivative (X ^ i)) by ring,
+      homogSubst_neg]
+    linear_combination -h
+
+omit [DecidableEq F] in
+/-- **THE CHAIN RULE FOR `homogSubst`.** See the subsection docstring above. -/
+theorem wrBracket_homogSubst {A B p q : F[X]} {n : ℕ}
+    (hp : p.natDegree ≤ n) (hq : q.natDegree ≤ n) :
+    derivative (homogSubst A B n p) * homogSubst A B n q
+        - homogSubst A B n p * derivative (homogSubst A B n q)
+      = homogSubst A B (2 * n - 2) (derivative p * q - p * derivative q)
+          * (derivative A * B - A * derivative B) := by
+  have hf : ∀ Q : F[X], homogSubst A B n Q
+      = ∑ i ∈ Finset.range (n + 1), C (Q.coeff i) * (A ^ i * B ^ (n - i)) := by
+    intro Q
+    unfold homogSubst
+    exact Finset.sum_congr rfl fun i _ => by ring
+  rw [hf p, hf q, wrBracket_finsetSum]
+  have hRHS : derivative p * q - p * derivative q
+      = ∑ i ∈ Finset.range (n + 1), ∑ j ∈ Finset.range (n + 1),
+          C (p.coeff i) * C (q.coeff j)
+            * (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j)) := by
+    conv_lhs => rw [eq_sum_range_C_mul_X_pow hp, eq_sum_range_C_mul_X_pow hq]
+    rw [wrBracket_finsetSum]
+    exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ =>
+      wrBracket_C_mul _ _ _ _
+  rw [hRHS, homogSubst_finsetSum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [homogSubst_finsetSum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun j hj => ?_
+  have hi' : i ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  have hj' : j ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
+  rw [wrBracket_C_mul, wrBracket_pow_pair hi' hj', ← Polynomial.C_mul, homogSubst_C_mul]
+  ring
+
+/-- **MULTIPLICATIVITY — the chain rule. PROVEN 2026-07-28.**
 `(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·c·ω`.
 
-Elementary but a genuine polynomial computation. `IsRationalMap.comp` already
-constructs the composed witnesses (by homogeneous substitution,
-`homogSubst`/`eval_homogSubst`), and what remains is the chain rule for
-`(A ∘ (A₂/B₂))' ` after clearing denominators, together with
-`isCotangentScalar_unique` to transfer the conclusion from those particular
-witnesses to the ones supplied by `hc` and `hd`.
+The witness system for `ψ ∘ φ` is the one `IsRationalMap.comp` builds — the
+homogeneous substitution `Ã = homogSubst A B (n+1) A'`,
+`B̃ = homogSubst A B (n+1) B'` of `φ`'s `x`-witness into `ψ`'s — and the
+differential identity for it is `wrBracket_homogSubst` above followed by the two
+hypotheses:
+
+    ⟨Ã, B̃⟩(t) · 𝔡_W(P)
+      = B(t)^(2n) · ⟨A', B'⟩(u) · ⟨A, B⟩(t) · 𝔡_W(P)          (chain rule)
+      = B(t)^(2n) · ⟨A', B'⟩(u) · c · B(t)² · 𝔡_{W'}(φP)      (`hc` at `P`)
+      = c · B(t)^(2n+2) · d · B'(u)² · 𝔡_{W''}(ψφP)           (`hd` at `φP`)
+      = (d·c) · B̃(t)² · 𝔡_{W''}(ψφP),
+
+with `t = x P`, `u = x (φ P)` and `𝔡 = invariantDiffDenom`. Note `hd` is applied
+at the point `φ P`, which is exactly why the second conjunct of
+`IsCotangentScalar` is quantified over all points rather than asserted at one.
+
+**Why the substitution degree is `n + 1` rather than `n = max (deg A') (deg B')`.**
+`wrBracket_homogSubst` at degree `m` produces `homogSubst A B (2m−2) ⟨A', B'⟩`,
+and evaluating that through `eval_homogSubst` needs `deg ⟨A', B'⟩ ≤ 2m − 2`. At
+`m = n` that is the *sharp* bound (the top coefficients of `A''B'` and `A'B''`
+cancel); at `m = n + 1` the crude `deg ⟨A', B'⟩ ≤ 2n` suffices, and one degree of
+padding costs nothing since `homogSubst` at a larger degree only multiplies by a
+power of `B`.
+
+**Where `φ ≠ 0` is used**: `B̃ ≠ 0` can fail only when `x ∘ φ` is the constant
+`A = C c₀ · B` (`exists_const_of_homogSubst_eq_zero`), and a rational map with
+constant `x`-witness is zero (`eq_zero_of_constX`). The `φ = 0` and `ψ = 0`
+branches are handled first, where the composite is `0` and `d · c = 0` by the
+`φ = 0 → c = 0` conjunct of the corresponding hypothesis.
+
+`_hψ` is unused: **`IsIsogeny ψ` is not needed for multiplicativity** — only
+`ψ`'s cotangent identity is, and `φ`'s surjectivity (from `hφ`) is what makes
+the `ψ ∘ φ = 0 → d·c = 0` conjunct vacuous. The binder is kept so that the
+statement matches the one the section docstring and `End.cotangentHom` were
+written against.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a composite of isogenies whose
 cotangent scalar is not the product of the two scalars — e.g. computable
@@ -28299,10 +28550,95 @@ scalar `1`. -/
 theorem IsCotangentScalar.comp [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic] [W''.IsElliptic]
     {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point} {c d : F}
-    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
+    (hφ : IsIsogeny φ) (_hψ : IsIsogeny ψ)
     (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
-    IsCotangentScalar (ψ.comp φ) (d * c) :=
-  sorry
+    IsCotangentScalar (ψ.comp φ) (d * c) := by
+  by_cases hφ0 : φ = 0
+  · have hc0 : c = 0 := hc.1 hφ0
+    have hz : ψ.comp φ = 0 := by
+      ext P
+      show ψ (φ P) = 0
+      rw [hφ0]; simp
+    rw [hz, hc0, mul_zero]
+    exact isCotangentScalar_zero
+  by_cases hψ0 : ψ = 0
+  · have hd0 : d = 0 := hd.1 hψ0
+    have hz : ψ.comp φ = 0 := by
+      ext P
+      show ψ (φ P) = 0
+      rw [hψ0]; simp
+    rw [hz, hd0, zero_mul]
+    exact isCotangentScalar_zero
+  obtain ⟨-, A, B, Cx, D, E, hB, hE, hcert, hdiff⟩ := hc
+  obtain ⟨-, A', B', C', D', E', hB', hE', hcert', hdiff'⟩ := hd
+  obtain ⟨n, hA'n, hB'n⟩ : ∃ m, A'.natDegree ≤ m ∧ B'.natDegree ≤ m :=
+    ⟨max A'.natDegree B'.natDegree, le_max_left _ _, le_max_right _ _⟩
+  obtain ⟨d2, hC'n, hD'n, hE'n⟩ :
+      ∃ m, C'.natDegree ≤ m ∧ D'.natDegree ≤ m ∧ E'.natDegree ≤ m :=
+    ⟨max (max C'.natDegree D'.natDegree) E'.natDegree,
+      le_trans (le_max_left _ _) (le_max_left _ _),
+      le_trans (le_max_right _ _) (le_max_left _ _), le_max_right _ _⟩
+  have hA'le : A'.natDegree ≤ n + 1 := le_trans hA'n (Nat.le_succ _)
+  have hB'le : B'.natDegree ≤ n + 1 := le_trans hB'n (Nat.le_succ _)
+  have hnc : ¬ ∃ c₀ : F, A = Polynomial.C c₀ * B := by
+    rintro ⟨c₀, hc₀⟩
+    exact hφ0 (eq_zero_of_constX hB c₀ hc₀ fun P hP => (hcert P hP).1)
+  have hne : ∀ Q : F[X], Q ≠ 0 → ∀ m : ℕ, Q.natDegree ≤ m → homogSubst A B m Q ≠ 0 :=
+    fun Q hQ m hm hz => hnc (exists_const_of_homogSubst_eq_zero hB hQ hm hz)
+  refine ⟨?_, homogSubst A B (n + 1) A', homogSubst A B (n + 1) B',
+    homogSubst A B d2 C' * Cx,
+    homogSubst A B d2 C' * D + homogSubst A B d2 D' * E,
+    homogSubst A B d2 E' * E,
+    hne B' hB' (n + 1) hB'le,
+    mul_ne_zero (hne E' hE' d2 hE'n) hE, ?_, ?_⟩
+  · -- `ψ ∘ φ = 0` is impossible: `φ` is surjective and `ψ ≠ 0`.
+    intro hzero
+    refine absurd (AddMonoidHom.ext fun Q => ?_) hψ0
+    obtain ⟨P, rfl⟩ := hφ.surjective hφ0 Q
+    have h := congrArg (fun f : W.Point →+ W''.Point => f P) hzero
+    simpa using h
+  · -- The composed rational-map certificate, exactly as in `IsRationalMap.comp`.
+    intro P hP
+    have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+    obtain ⟨hx, hy⟩ := hcert P hφP
+    obtain ⟨hx', hy'⟩ := hcert' (φ P) hP
+    have hxA := eval_homogSubst (A := A) (B := B) (Q := A') (d := n + 1) hA'le hx
+    have hxB := eval_homogSubst (A := A) (B := B) (Q := B') (d := n + 1) hB'le hx
+    have hyC := eval_homogSubst (A := A) (B := B) (Q := C') (d := d2) hC'n hx
+    have hyD := eval_homogSubst (A := A) (B := B) (Q := D') (d := d2) hD'n hx
+    have hyE := eval_homogSubst (A := A) (B := B) (Q := E') (d := d2) hE'n hx
+    refine ⟨?_, ?_⟩
+    · rw [hxA, hxB]
+      linear_combination (B.eval (veluPointX P)) ^ (n + 1) * hx'
+    · simp only [Polynomial.eval_mul, Polynomial.eval_add, hyC, hyD, hyE]
+      linear_combination
+        ((B.eval (veluPointX P)) ^ d2 * E.eval (veluPointX P)) * hy'
+          + ((B.eval (veluPointX P)) ^ d2 * C'.eval (veluPointX (φ P))) * hy
+  · -- The differential identity: the chain rule, then `hc` at `P`, then `hd` at `φ P`.
+    intro P hP0 hP
+    have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+    obtain ⟨hx, -⟩ := hcert P hφP
+    have hdegW : (derivative A' * B' - A' * derivative B').natDegree ≤ 2 * n := by
+      have h1 : (derivative A' * B').natDegree ≤ 2 * n := by
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        have := Polynomial.natDegree_derivative_le A'
+        omega
+      have h2 : (A' * derivative B').natDegree ≤ 2 * n := by
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        have := Polynomial.natDegree_derivative_le B'
+        omega
+      have h3 := Polynomial.natDegree_sub_le (derivative A' * B') (A' * derivative B')
+      omega
+    rw [wrBracket_homogSubst hA'le hB'le, show 2 * (n + 1) - 2 = 2 * n by omega,
+      Polynomial.eval_mul, eval_homogSubst hdegW hx, eval_homogSubst hB'le hx]
+    have h1 := hdiff P hP0 hφP
+    have h2 := hdiff' (φ P) hφP hP
+    have hcomp : ((ψ.comp φ) : W.Point →+ W''.Point) P = ψ (φ P) := rfl
+    rw [hcomp]
+    linear_combination
+      ((B.eval (veluPointX P)) ^ (2 * n)
+        * (derivative A' * B' - A' * derivative B').eval (veluPointX (φ P))) * h1
+      + (c * (B.eval (veluPointX P)) ^ (2 * n + 2)) * h2
 
 /-- **LEAF (cut 2026-07-28): ADDITIVITY — `(φ + ψ)*ω' = φ*ω' + ψ*ω'`.**
 
@@ -28319,7 +28655,56 @@ an isogeny over a general field, so there would be nothing to state.
 `c (φ + ψ) ≠ c φ + c ψ`. Note the degenerate instance `ψ = -φ` is already
 consistent: `φ + ψ = 0` forces `c + d = 0`, and indeed `c (-φ) = -c φ` because
 `x(-Q) = x(Q)` leaves `A, B` unchanged while
-`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`. -/
+`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`.
+
+## ROUTE NOTE (2026-07-28, written while proving `IsCotangentScalar.comp`)
+
+**The chain-rule machinery does NOT reach additivity, and the axis searched was
+"consequences of multiplicativity plus the already-proven `End` layer".** Along
+that axis the leaf is irreducible, and the section note further down gives the
+refutation test that confirms it: the LIPSCHITZ QUATERNION ORDER `ℤ⟨i, j⟩`
+satisfies every property the proven layer supplies, so no argument from that
+layer alone can produce a ring map to a commutative field. A genuinely new
+differential input is required. What was *not* searched: routes through the
+formal group, and routes through the function field of `W`.
+
+**The concrete shape of the missing input, in this file's idiom.** Additivity is
+`σ*ω' = pr₁*ω' + pr₂*ω'` for the addition morphism `σ : W' × W' → W'`, and the
+one-variable shadow of that — which is what the pointwise predicate here wants —
+is a purely ALGEBRAIC identity about derivations, with no geometry in it:
+
+> Let `S` be a commutative `F`-algebra and `Dv : S → S` an `F`-derivation. Let
+> `(x₁, y₁), (x₂, y₂), (x₃, y₃) ∈ S × S` satisfy `W'`'s Weierstrass equation,
+> with `(x₃, y₃)` the chord-and-tangent sum of the first two (so `x₁ - x₂` is a
+> unit in the chord branch). Write `𝔡ᵢ = 2yᵢ + a₁xᵢ + a₃`. Then
+>
+>     Dv x₃ · 𝔡₁ · 𝔡₂ = Dv x₁ · 𝔡₃ · 𝔡₂ + Dv x₂ · 𝔡₃ · 𝔡₁.
+>
+> After clearing the chord denominator this is a polynomial identity in
+> `x₁, y₁, x₂, y₂, Dv x₁, Dv y₁, Dv x₂, Dv y₂` modulo the two Weierstrass
+> equations and their `Dv`-derivatives — i.e. exactly a `linear_combination`
+> obligation, not an appeal to the theory of differentials.
+
+Two things stand between that statement and this leaf, and both are real:
+
+1. **A derivation-carrying model.** The predicate here is POINTWISE (a family of
+   identities in `F`, with derivatives appearing only as
+   `Polynomial.derivative` of the witnesses), so there is no `Dv` to feed the
+   identity. One needs the identity transported to the witnesses, which means
+   working in `F(t)[y]/(Weierstrass)` — `EllipticCurve/InvariantDerivation.lean`
+   builds exactly such a derivation (`DK` on the universal function field
+   `Kuniv`) and is the natural starting point.
+2. **The witnesses of `φ + ψ`.** `IsRationalMap.add` is proven, but additivity
+   needs its witnesses to be the chord-formula combination of `φ`'s and `ψ`'s,
+   which its statement does not record. Either that construction is exposed, or
+   the transfer is made through `isCotangentScalar_unique` (any witness system
+   gives the same scalar), which is the cheaper of the two.
+
+**Reusable from `comp`**: `wrBracket_homogSubst` and the `homogSubst`
+linearity lemmas above it. They are about substitution into a rational map and
+so are the wrong tool for a SUM, but the bilinear-expansion technique
+(`wrBracket_finsetSum` plus a subtraction-free monomial parametrisation) is what
+made the chain rule cheap and would likely do the same for a sum. -/
 theorem IsCotangentScalar.add [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic]
     {φ ψ : W.Point →+ W'.Point} {c d : F}
