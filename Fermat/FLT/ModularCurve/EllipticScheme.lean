@@ -644,81 +644,6 @@ theorem openCover_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike
   unfold Proj.openCoverOfMapIrrelevantEqTop
   congr 1
 
-/-- **The chart-level half of the congruence** (sorry node — this is where ALL
-the remaining content of `ProjCoords.toHom_smul` now sits, and it is the piece
-that lives in `HomogeneousLocalization` rather than in scheme theory).
-
-`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
-`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
-
-    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
-
-(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
-in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
-
-    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
-
-so the two ring maps are literally equal once `Localization.Away (g t)` is
-identified with `Localization.Away (f t)` — which is legitimate because
-`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
-the same elements.  **That is the whole mathematical content**: `Away` is the
-degree-`0` part and the rescaling is by `u` to the power of the degree, so it
-cancels between numerator and denominator.
-
-The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
-have equal — but not syntactically equal — domains.
-
-*What is NOT missing.*  The gluing is already done: `openCover_eq_of_gradedSmul`
-shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
-derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
-`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So an owner of
-this leaf never has to touch `glueMorphisms`. -/
-theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
-    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
-    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
-    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
-    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
-    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
-      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-  sorry
-
-/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
-from `openCover_eq_of_gradedSmul` and
-`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
-
-This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
-leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
-rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
-exactly what `ProjCoords.smul` provides. -/
-theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
-    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
-    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
-    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
-    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
-    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
-    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
-  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
-  obtain ⟨n, t, hn, ht⟩ := i
-  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
-    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
-  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
-      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
-    simp [Proj.openCoverOfMapIrrelevantEqTop]
-  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
-        Proj.fromOfGlobalSections 𝒜 g hg =
-      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
-  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
-        Proj.fromOfGlobalSections 𝒜 f hf =
-      (X.isoOfEq hopen).hom ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
-    rw [hfeq]
-    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
-      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
-  rw [hL, hR]
-  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
-
 end GradedSmul
 
 section ProjFunctoriality
@@ -966,6 +891,243 @@ theorem fromOfGlobalSections_comp_map {σ τ : Type} {A B : Type} [CommRing A] [
 
 end ProjFunctoriality
 
+section GradedSmulCharts
+
+/-! ### The chart-level unit-rescaling congruence (**PROVEN 2026-07-28**)
+
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul` was the last open piece of
+`ProjCoords.toHom_smul`.  It is proven here rather than in `GradedSmul` above only because
+its proof runs through `toBasicOpenOfGlobalSections_eq` and `awayLoc` — the unfolding of a
+chart into "restrict `X.toSpecΓ` to a basic open, then `Spec` of one ring map" — which
+`ProjFunctoriality` immediately above supplies.  Both congruences of the `GradedSmul`
+cluster were therefore MOVED down here verbatim; nothing else moved, and
+`basicOpen_eq_of_gradedSmul` / `openCover_eq_of_gradedSmul` are still where they were.
+
+The proof splits exactly as the old docstring predicted, into a ring identity and affine
+plumbing:
+
+* `awayLoc_eq_comp_of_gradedSmul` — on the degree-`0` localisation the rescaling by
+  `u ^ deg` cancels between numerator and denominator, because a `HomogeneousLocalization`
+  numerator and denominator carry the SAME degree.  **This needs no relation between that
+  degree and `n`**: it is `h c.deg` applied to `c.num` and to `c.den`, never `h (k * n)`,
+  which is why none of the divisibility bookkeeping the old docstring's formula suggests
+  actually appears.
+* `toSpecΓ_restrict_unitMul` — the analogue for a unit rescaling of
+  `toSpecΓ_restrict_naturality`, proven the same way: cancel the mono
+  `Spec.map (algebraMap Γ(X, ⊤) Γ(X, ⊤)_r)` and rewrite with
+  `basicOpenIsoSpecAway_hom_SpecMap` on both sides.
+
+`Localization.Away (v * r)` and `Localization.Away r` are compared by `awayCompOfUnitMul`,
+which is `IsLocalization.lift` of `algebraMap`.  It depends on the unit `v` only through
+the *proof* that `r` becomes invertible, so it is insensitive to the mismatch between the
+rescaling exponent `n` (the degree of `t`) and the degree of an arbitrary element of
+`Away 𝒜 t` — that insensitivity is what makes the two halves compose. -/
+
+/-- **`r` is a unit in `Γ_s` when `s = v * r` with `v` a unit** (PROVEN) — the reason the
+two `Submonoid.powers` invert the same elements. -/
+theorem isUnit_algebraMap_of_unitMul {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) :
+    IsUnit (algebraMap R (Localization.Away s) r) := by
+  have h : IsUnit (algebraMap R (Localization.Away s) s) :=
+    IsLocalization.Away.algebraMap_isUnit s
+  have hsplit : algebraMap R (Localization.Away s) s =
+      algebraMap R (Localization.Away s) (v : R) * algebraMap R (Localization.Away s) r := by
+    rw [← map_mul, ← hs]
+  rw [hsplit] at h
+  exact (IsUnit.mul_iff.mp h).2
+
+/-- **The canonical comparison `Γ_r →+* Γ_s` for `s = v * r`, `v` a unit** (PROVEN).  It
+does not mention `v` outside the unit proof, which is what lets it be used at a rescaling
+exponent unrelated to the degree being compared. -/
+noncomputable def awayCompOfUnitMul {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) :
+    Localization.Away r →+* Localization.Away s :=
+  IsLocalization.lift (M := Submonoid.powers r) (S := Localization.Away r)
+    (g := algebraMap R (Localization.Away s))
+    (fun y => by
+      obtain ⟨k, hk⟩ := y.2
+      simp only [← hk, map_pow]
+      exact (isUnit_algebraMap_of_unitMul v r s hs).pow k)
+
+@[simp] theorem awayCompOfUnitMul_algebraMap {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) (x : R) :
+    awayCompOfUnitMul v r s hs (algebraMap R (Localization.Away r) x) =
+      algebraMap R (Localization.Away s) x :=
+  IsLocalization.lift_eq _ _
+
+/-- **A unit rescaling does not move a basic open** (PROVEN) — the same fact as
+`basicOpen_eq_of_gradedSmul`, in the form the plumbing below needs. -/
+theorem basicOpen_eq_of_unitMul {X : Scheme.{0}} (v : (Γ(X, ⊤))ˣ) (r s : Γ(X, ⊤))
+    (hs : s = (v : Γ(X, ⊤)) * r) : X.basicOpen s = X.basicOpen r := by
+  rw [hs, Scheme.basicOpen_mul, Scheme.basicOpen_of_isUnit _ v.isUnit, top_inf_eq]
+
+/-- **The affine plumbing behind the unit-rescaling congruence** (PROVEN) — the chart map
+of `D(s)` followed by `Spec` of the comparison is the chart map of `D(r)`, along the
+identification `D(s) = D(r)`.  Companion of `toSpecΓ_restrict_naturality` above. -/
+@[reassoc]
+theorem toSpecΓ_restrict_unitMul {X : Scheme.{0}} (v : (Γ(X, ⊤))ˣ) (r s : Γ(X, ⊤))
+    (hs : s = (v : Γ(X, ⊤)) * r) :
+    (X.isoOfEq (X.toSpecΓ_preimage_basicOpen s)).inv ≫
+        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen s) ≫ (basicOpenIsoSpecAway s).hom ≫
+          Spec.map (CommRingCat.ofHom (awayCompOfUnitMul v r s hs)) =
+      (X.isoOfEq (basicOpen_eq_of_unitMul v r s hs)).hom ≫
+        (X.isoOfEq (X.toSpecΓ_preimage_basicOpen r)).inv ≫
+          (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen r) ≫ (basicOpenIsoSpecAway r).hom := by
+  rw [← cancel_mono (Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))))]
+  simp only [Category.assoc]
+  rw [basicOpenIsoSpecAway_hom_SpecMap]
+  have hcomp : Spec.map (CommRingCat.ofHom (awayCompOfUnitMul v r s hs)) ≫
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))) =
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away s))) := by
+    rw [← Spec.map_comp, ← CommRingCat.ofHom_comp]
+    congr 1
+    ext x
+    exact awayCompOfUnitMul_algebraMap v r s hs x
+  rw [hcomp, basicOpenIsoSpecAway_hom_SpecMap]
+  simp only [Scheme.isoOfEq_inv, Scheme.isoOfEq_hom, morphismRestrict_ι,
+    Scheme.homOfLE_ι_assoc]
+
+/-- **The ring-level content of the chart congruence** (PROVEN) — the two chart ring maps
+out of `Away 𝒜 t` agree once `Γ_{g t}` is identified with `Γ_{f t}`.
+
+The only fact used about `f` and `g` is the degreewise identity `h`, applied at the degree
+`c.deg` carried by BOTH the numerator and the denominator of a homogeneous fraction; the
+two factors of `u ^ c.deg` then cancel. -/
+theorem awayLoc_eq_comp_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A}
+    (hgt : g t = ((u ^ n : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) * f t) :
+    awayLoc 𝒜 g t =
+      (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt).comp (awayLoc 𝒜 f t) := by
+  ext x
+  obtain ⟨c, rfl⟩ := HomogeneousLocalization.mk_surjective x
+  have hLg : awayLoc 𝒜 g t (HomogeneousLocalization.mk c) =
+      IsLocalization.mk' (Localization.Away (g t)) (g c.num)
+        (⟨g c.den, powers_le_comap g t c.den_mem⟩ : Submonoid.powers (g t)) := by
+    simp only [awayLoc, RingHom.coe_comp, Function.comp_apply,
+      HomogeneousLocalization.algebraMap_apply, HomogeneousLocalization.val_mk,
+      Localization.mk_eq_mk', IsLocalization.map_mk']
+  have hLf : awayLoc 𝒜 f t (HomogeneousLocalization.mk c) =
+      IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+        (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t)) := by
+    simp only [awayLoc, RingHom.coe_comp, Function.comp_apply,
+      HomogeneousLocalization.algebraMap_apply, HomogeneousLocalization.val_mk,
+      Localization.mk_eq_mk', IsLocalization.map_mk']
+  rw [RingHom.coe_comp, Function.comp_apply, hLf, hLg]
+  refine (IsLocalization.eq_mk'_iff_mul_eq.mpr ?_).symm
+  have hspec := IsLocalization.mk'_spec (Localization.Away (f t)) (f c.num)
+    (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))
+  have hmap := congrArg (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt) hspec
+  rw [map_mul, awayCompOfUnitMul_algebraMap, awayCompOfUnitMul_algebraMap] at hmap
+  calc awayCompOfUnitMul (u ^ n) (f t) (g t) hgt
+        (IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+          (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))) *
+        algebraMap Γ(X, ⊤) (Localization.Away (g t)) (g c.den)
+      = (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt
+          (IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+            (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f c.den)) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ c.deg) := by
+        rw [h c.deg c.den c.den.2, map_mul]; ring
+    _ = algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f c.num) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ c.deg) := by
+        rw [hmap]
+    _ = algebraMap Γ(X, ⊤) (Localization.Away (g t)) (g c.num) := by
+        rw [h c.deg c.num c.num.2, map_mul]; ring
+
+/-- **The chart-level half of the congruence** (**PROVEN 2026-07-28** — this carried ALL
+the remaining content of `ProjCoords.toHom_smul`, and it is the piece that lives in
+`HomogeneousLocalization` rather than in scheme theory).
+
+`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
+`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
+
+    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
+
+(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
+in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
+
+    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
+
+so the two ring maps are literally equal once `Localization.Away (g t)` is
+identified with `Localization.Away (f t)` — which is legitimate because
+`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
+the same elements.  **That is the whole mathematical content**: `Away` is the
+degree-`0` part and the rescaling is by `u` to the power of the degree, so it
+cancels between numerator and denominator.
+
+The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
+have equal — but not syntactically equal — domains.
+
+*One correction to the sketch above, made when it was carried out.*  The `a ∈ 𝒜 (k * n)`
+framing is a red herring, and chasing it costs bookkeeping that the proof does not need.
+A `HomogeneousLocalization.NumDenSameDeg` carries ONE degree `c.deg` shared by numerator
+and denominator, and nothing forces `c.deg = k * n` (if it differs, the denominator lies
+in two graded pieces at once, hence is `0`, and both localisations are trivial).  The
+proof therefore applies the degreewise identity at `c.deg` to `c.num` and to `c.den`
+separately, and the two factors of `u ^ c.deg` cancel — see
+`awayLoc_eq_comp_of_gradedSmul`.
+
+*What was NOT missing.*  The gluing was already done: `openCover_eq_of_gradedSmul`
+shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
+derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
+`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So this proof never
+touches `glueMorphisms`. -/
+theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
+      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+  have hgt : g t = ((u ^ n : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) * f t := by
+    rw [Units.val_pow_eq_pow_val]; exact h n t ht
+  rw [toBasicOpenOfGlobalSections_eq 𝒜 g hn ht, toBasicOpenOfGlobalSections_eq 𝒜 f hn ht,
+    awayLoc_eq_comp_of_gradedSmul 𝒜 u f g h hgt, CommRingCat.ofHom_comp, Spec.map_comp]
+  simp only [Category.assoc]
+  rw [toSpecΓ_restrict_unitMul_assoc (u ^ n) (f t) (g t) hgt]
+
+/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
+from `openCover_eq_of_gradedSmul` and
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
+
+This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
+leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
+rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
+exactly what `ProjCoords.smul` provides. -/
+theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
+    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
+  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
+      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
+    simp [Proj.openCoverOfMapIrrelevantEqTop]
+  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 g hg =
+      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 f hf =
+      (X.isoOfEq hopen).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+    rw [hfeq]
+    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
+      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
+  rw [hL, hR]
+  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
+
+end GradedSmulCharts
+
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
 `n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
 
@@ -1173,67 +1335,6 @@ noncomputable def add2 (c d : ProjCoords E X)
 
 @[simp] theorem add2_coord (c d : ProjCoords E X) (h) :
     (c.add2 d h).coord = add2XYZ (E.map c.base) c.coord d.coord := rfl
-
-/-- **Every point of the projective model over a FIELD admits coordinates**
-(sorry node).
-
-TRUE and standard, and the restriction to `Spec K` is what makes it true:
-a morphism `T ⟶ Proj 𝒜` is a line bundle on `T` plus generating sections,
-and over `Spec K` every line bundle is trivial (`Pic (Spec K) = 0`, since
-`K` is local — indeed a field — so every finitely generated projective
-module of rank `1` is free).  Hence the tautological `𝒪(1)` pulls back to
-`𝒪_{Spec K}` and its three coordinate sections become elements of
-`Γ(Spec K, ⊤)`.
-
-*Concretely*, without any Picard-group machinery: `a : Spec K ⟶ Proj 𝒜`
-has image a single point, which lies in some basic open `D₊(r)` with `r`
-one of `X̄`, `Ȳ`, `Z̄` (the three generate the irrelevant ideal, so they
-cannot all vanish at it).  Factor `a` through
-`D₊(r) ≅ Spec (Away 𝒜 r)`, giving a ring map `Away 𝒜 r →+* K`, and take
-`coord i := (image of Xᵢ/r)` scaled by any lift; the coordinate `r/r = 1`
-is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
-`Proj.awayι` together with `Proj.opensRange_awayι` and
-`Proj.basicOpenIsoSpec`.
-
-*What it is used for*: it is the bridge from the residue-field ext lemma
-`ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
-no `K`-point argument in this cluster can start.
-
-## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
-
-This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
-stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
-— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
-structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
-SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
-`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
-hypothesis constrains nothing about the ring whose spectrum is being taken.
-
-This was verified, not guessed.  The transport
-
-    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
-
-fails with *"synthesized type class instance is not definitionally equal"*,
-`Field.toSemifield.toDivisionSemiring.toSemiring` against
-`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
-`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
-it also elaborates at the one instantiation site, `Scheme.residueField x`, where
-the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
-`Field.toIsField _` and nothing else.
-
-Under the old binder the statement is not just unprovable but FALSE.  Take
-`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
-`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
-`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
-`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
-`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
-when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
-false-shaped whenever the proof needs the field structure to BE `K.str`, which
-"a proper ideal of a field is zero" does. -/
-theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
-    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
-    ∃ c : ProjCoords E (Spec K), c.toHom = a :=
-  sorry
 
 /-- **Over a FIELD the chord–tangent triple degenerates exactly on the
 diagonal** (PROVEN) — the ring-level content of
@@ -3129,6 +3230,113 @@ theorem exists_projCoordsOpenCover (E : WeierstrassCurve ℚ) [E.IsElliptic] :
       ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
   exact ⟨projChartCover E hcoord, fun i => projChartCoords E i (hcoord i),
     fun i => projChartCoords_toHom E i (hcoord i)⟩
+
+namespace ProjCoords
+
+/-- **Every point of the projective model over a FIELD admits coordinates**
+(**PROVEN 2026-07-28**, from `exists_projCoords_of_range_le` and `exists_mem_projChart`).
+
+**Relocated 2026-07-28**: this used to sit ~1900 lines above, next to `ProjCoords.add2`.
+Its proof cites `exists_projCoords_of_range_le`, so Lean's declaration order forced it
+below that lemma; it is here, in its own `ProjCoords` block, rather than there.  Its first
+consumer (`exists_projMulOfCoords`) is further down still, so nothing else moved.
+
+TRUE and standard, and the restriction to `Spec K` is what makes it true:
+a morphism `T ⟶ Proj 𝒜` is a line bundle on `T` plus generating sections,
+and over `Spec K` every line bundle is trivial (`Pic (Spec K) = 0`, since
+`K` is local — indeed a field — so every finitely generated projective
+module of rank `1` is free).  Hence the tautological `𝒪(1)` pulls back to
+`𝒪_{Spec K}` and its three coordinate sections become elements of
+`Γ(Spec K, ⊤)`.
+
+*Concretely*, without any Picard-group machinery: `a : Spec K ⟶ Proj 𝒜`
+has image a single point, which lies in some basic open `D₊(r)` with `r`
+one of `X̄`, `Ȳ`, `Z̄` (the three generate the irrelevant ideal, so they
+cannot all vanish at it).  Factor `a` through
+`D₊(r) ≅ Spec (Away 𝒜 r)`, giving a ring map `Away 𝒜 r →+* K`, and take
+`coord i := (image of Xᵢ/r)` scaled by any lift; the coordinate `r/r = 1`
+is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
+`Proj.awayι` together with `Proj.opensRange_awayι` and
+`Proj.basicOpenIsoSpec`.
+
+*What it is used for*: it is the bridge from the residue-field ext lemma
+`ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
+no `K`-point argument in this cluster can start.
+
+*How it actually closed* (2026-07-28).  The Picard-group framing above is
+correct but was never needed: the general chart lemma
+`fromOfGlobalSections_eq_toSpecΓ_comp_awayι` and its corollary
+`exists_projCoords_of_range_le` reduce this to "the image of `Spec K` lies in one
+standard chart", and `Spec K` has a single point, so `exists_mem_projChart` at
+that point supplies the chart.  Both halves of the "single general lemma" the old
+`exists_projCoordsOpenCover` docstring asked for are therefore now in the file.
+
+*And one instance-level correction worth recording.*  The note in
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` warns that `Subsingleton ↥(Spec K)`
+and `Unique ↥(Spec K)` FAIL to synthesise for a bundled `K : CommRingCat`.  That is
+true under the `[Field K]` binder — an unrelated field structure on the carrier —
+and it is **not** an obstruction here.  Under the `IsField ↥K` binder,
+`letI : Field ↥K := hK.toField` produces a `Field` built from `‹Ring ↥K›` itself
+(`IsField.toField` is `__ := (‹Ring R› :)`), so its `CommRing` path is
+definitionally `K.str` and `inferInstanceAs (Subsingleton (PrimeSpectrum ↥K))`
+closes `Subsingleton ↥(Spec K)` directly.  This is a further payoff of the
+2026-07-27 binder repair, beyond the one that audit records.
+
+## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
+
+This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
+stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
+— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
+structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
+SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
+`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
+hypothesis constrains nothing about the ring whose spectrum is being taken.
+
+This was verified, not guessed.  The transport
+
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
+
+fails with *"synthesized type class instance is not definitionally equal"*,
+`Field.toSemifield.toDivisionSemiring.toSemiring` against
+`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
+`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
+it also elaborates at the one instantiation site, `Scheme.residueField x`, where
+the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
+`Field.toIsField _` and nothing else.
+
+Under the old binder the statement is not just unprovable but FALSE.  Take
+`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
+`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
+`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
+`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
+`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
+when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
+false-shaped whenever the proof needs the field structure to BE `K.str`, which
+"a proper ideal of a field is zero" does. -/
+theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
+    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
+    ∃ c : ProjCoords E (Spec K), c.toHom = a := by
+  have hcoord : ∀ i : Fin 3, projCoord E i ∈ projGrading E 1 := fun i =>
+    HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
+  haveI : Subsingleton ↥(Spec K) := by
+    letI : Field ↥K := hK.toField
+    exact inferInstanceAs (Subsingleton (PrimeSpectrum ↥K))
+  haveI : Nonempty ↥(Spec K) := by
+    letI : Field ↥K := hK.toField
+    exact inferInstanceAs (Nonempty (PrimeSpectrum ↥K))
+  obtain ⟨x₀⟩ := ‹Nonempty ↥(Spec K)›
+  obtain ⟨i, hi⟩ := exists_mem_projChart E (a.base x₀)
+  refine exists_projCoords_of_range_le E a i (hcoord i) ?_
+  have hmem : a.base x₀ ∈
+      (Proj.awayι (projGrading E) (projCoord E i) (hcoord i) one_pos).opensRange := by
+    rw [Proj.opensRange_awayι]
+    exact hi
+  rintro _ ⟨x, rfl⟩
+  rw [Subsingleton.elim x x₀]
+  exact hmem
+
+end ProjCoords
 
 /-- **Coordinate data exist locally on `A ×_ℚ A`** (**PROVEN 2026-07-28** from
 `exists_projCoordsOpenCover` and `ProjCoords.comap_toHom` — it is a REDUCTION,
