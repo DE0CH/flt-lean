@@ -443,6 +443,13 @@ public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `HenselianLocalRing`, for the Teichmüller-root existence lemma
 -- `exists_mem_teichmullerRootSet_map_eq` in the Carayol trace-descent section.
 import Mathlib.RingTheory.Henselian
+-- The vendored totally definite quaternionic automorphic development
+-- (`TotallyDefiniteQuaternionAlgebra.U₁Data`, `.U₁`, `LevelStruct.form`,
+-- `HeckeOperator.T`). It is what `IsQuaternionicEigensystem` below — and hence
+-- `HilbertHeckeAlgebra.automorphic` — is stated against. Its import cone is the
+-- adelic/automorphic one and mentions nothing from `HardlyRamified/`, so no
+-- cycle is created.
+public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete
 -- `Modularity.PatchedModule` and `Modularity.PatchedModule.injective`: the
 -- BASE-FIELD-INDEPENDENT core of Taylor–Wiles patching. This is what
 -- `injective_classifyingMap_hilbertHeckeDatum` below is assembled over, and
@@ -11811,6 +11818,121 @@ theorem isLocalRing_of_algEquiv_heckeLocalFactor {T : Type u} [CommRing T]
 
 end HeckePresentation
 
+/-! #### The automorphic content of a Hecke algebra
+
+`IsQuaternionicEigensystem` below is the predicate that
+`HilbertHeckeAlgebra.automorphic` — and, downstream of it, the whole
+Jacquet–Langlands half of `Modularity/KhareWintenberger.lean`'s Carayol node —
+is stated against.
+
+WHY IT EXISTS (2026-07-28, the AUTOMORPHY AUDIT of
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`).  Before this, NOTHING
+anywhere in the potential-modularity chain carried an automorphic object.
+`MoretBaillySeed.modular₀` is a RATIONALITY statement about Frobenius traces
+(`hecke₀` is an abstract `Polynomial E₀`-valued function); `HilbertHeckeAlgebra`
+— the only object in the chain called a Hecke algebra — was an abstract
+commutative ring with operators `heckeT`, a representation `ρT` and the
+compatibility `charFrobT`, **with no module it acts on**.  Every hypothesis of
+the Jacquet–Langlands leaf at the bottom was therefore Galois-theoretic while
+its conclusion demanded a genuine automorphic form, so that leaf was asking for
+Serre's conjecture plus a modularity lifting theorem over `F` — the theorem the
+module exists to prove — rather than for the transfer its title claimed.
+
+The repair is to record the automorphic object AT ITS BIRTH.  A Hecke algebra
+IS an algebra of operators on a space of automorphic forms; that is what the
+field `automorphic` now says, and every number-field-valued point `θ` of the
+`ℤ`-form `T₀` — i.e. every Hecke eigensystem occurring in `T` — is thereby
+realized by a nonzero quaternionic eigenform with matching eigenvalues.  The
+downstream leaf then becomes what its title claims. -/
+
+/-- **The eigensystem `b` is QUATERNIONIC-AUTOMORPHIC over `F`, away from
+`bad`**: for EVERY totally definite rigidified quaternion algebra `D/F` and
+every auxiliary prime `p` admissible for the `U₁`-level datum, there is a level
+datum `𝒮` with no Taylor–Wiles primes and a NONZERO weight-`2` automorphic form
+`f` on `Dˣ` of level `U₁(𝒮.S, ∅)` which is a simultaneous eigenvector for every
+`T_w`, `w ∉ 𝒮.S`, with eigenvalue `b w` at every `w` outside `𝒮.S ∪ bad`.
+
+This is the Jacquet–Langlands transfer in its EIGENFORM form, packaged so that
+it can be carried down a chain whose coefficient field and bad set both grow:
+
+* it is MONOTONE in `bad` (`IsQuaternionicEigensystem.mono`), so enlarging the
+  exceptional set — which the potential-modularity assembly does three times,
+  at the places over `2`, `3` and `ℓ` — only weakens it;
+* it is stated for a FIXED coefficient field `E`, and the producers below
+  deliver it uniformly in a coefficient extension `ι : E →+* E'`, which is what
+  survives the descent-closure enlargement `E ⇝ E₂`.
+
+NON-VACUITY.  `f ≠ 0` carries no content by itself — the constant function is a
+`WeightTwoAutomorphicForm F D R` lying in `ℒ.form D R` whenever `ℒ.χ = 1`, and
+is nonzero (it is the Eisenstein eigensystem `a_w = Nw + 1`).  The entire
+content is the EIGENVALUE MATCHING against `b`.
+
+`𝒮.Q = ∅` is part of the conclusion and is not a weakening: `Q` is the set of
+Taylor–Wiles primes, an auxiliary datum imposed by the patching argument
+downstream and not by the transfer, and pinning it empty is what makes the
+`U`-generators of the quaternionic Hecke algebra vacuous — hence what lets a
+consumer build an algebra CHARACTER out of the `T`-eigenvalues alone
+(`Modularity/KhareWintenberger.lean`'s `exists_algHom_of_smul_eq_smul` together
+with `HeckeAlgebra.adjoin_T_U_eq_top`).
+
+The eigenvalue function `a` is existential and is pinned only OUTSIDE
+`𝒮.S ∪ bad`.  That asymmetry is necessary: `f` must be a `T_w`-eigenvector at
+every `w ∉ 𝒮.S`, including the `w ∈ bad \ 𝒮.S` where nothing determines the
+eigenvalue, so `a` there must not be asserted to be `b w`.
+
+DEFINITENESS IS LOAD-BEARING, at every `D` this quantifies over: `M₂(F)` is a
+rigidified quaternion algebra over every `F`, and the split algebra has no
+compact-mod-centre unit group, so the finite-dimensional space of weight-`2`
+forms the vendored `HeckeAlgebra` is built from is not the one
+Jacquet–Langlands transfers into. -/
+def IsQuaternionicEigensystem (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E]
+    (bad : Finset (HeightOneSpectrum (𝓞 F)))
+    (b : HeightOneSpectrum (𝓞 F) → E) : Prop :=
+  ∀ (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ), p.Prime → 2 < Module.finrank F (CyclotomicField p F) →
+    ∃ (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (a : HeightOneSpectrum (𝓞 F) → E)
+      (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
+      𝒮.Q = ∅ ∧ f ≠ 0 ∧
+      (∀ (w : HeightOneSpectrum (𝓞 F)) (hwS : w ∉ 𝒮.S),
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f
+          = a w • f) ∧
+      (∀ w : HeightOneSpectrum (𝓞 F), w ∉ 𝒮.S → w ∉ bad → a w = b w)
+
+/-- **Enlarging the exceptional set only weakens quaternionic automorphy**
+(PROVEN).  This is what lets the potential-modularity assembly enlarge `badF`
+by the places over `2`, `3` and `ℓ` without disturbing the automorphic clause
+it is carrying. -/
+theorem IsQuaternionicEigensystem.mono {F : Type u} [Field F] [NumberField F]
+    {E : Type u} [Field E] [NumberField E]
+    {bad bad' : Finset (HeightOneSpectrum (𝓞 F))}
+    {b : HeightOneSpectrum (𝓞 F) → E}
+    (h : IsQuaternionicEigensystem F E bad b) (hsub : bad ⊆ bad') :
+    IsQuaternionicEigensystem F E bad' b := by
+  intro D _ _ _ _ _ p hp hcyc
+  obtain ⟨𝒮, a, f, hQ, hf0, hT, hm⟩ := h D p hp hcyc
+  exact ⟨𝒮, a, f, hQ, hf0, hT, fun w hwS hw => hm w hwS fun hb => hw (hsub hb)⟩
+
+/-- **Quaternionic automorphy only sees the eigenvalues outside the bad set**
+(PROVEN): two eigenvalue functions agreeing away from `bad` are automorphic
+together.  Used where the eigenvalue datum is rewritten — e.g. from the
+`E`-valued trace `a w` to `-(heckeF w).coeff 1` once the Hecke polynomial has
+been assembled around it. -/
+theorem IsQuaternionicEigensystem.congr_eigenvalues {F : Type u} [Field F]
+    [NumberField F] {E : Type u} [Field E] [NumberField E]
+    {bad : Finset (HeightOneSpectrum (𝓞 F))}
+    {b b' : HeightOneSpectrum (𝓞 F) → E}
+    (h : IsQuaternionicEigensystem F E bad b)
+    (hbb : ∀ w ∉ bad, b w = b' w) :
+    IsQuaternionicEigensystem F E bad b' := by
+  intro D _ _ _ _ _ p hp hcyc
+  obtain ⟨𝒮, a, f, hQ, hf0, hT, hm⟩ := h D p hp hcyc
+  exact ⟨𝒮, a, f, hQ, hf0, hT, fun w hwS hw => (hm w hwS hw).trans (hbb w hw)⟩
+
 /-- **The Hecke algebra `T_F` of Hilbert modular forms over `F`**
 (interface structure): the `ℤ_ℓ`-algebra generated by the Hecke operators
 `T_w` at the places `w` away from a finite bad set, acting on the space
@@ -12277,6 +12399,49 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   `πT`, at every element of `G_F`. -/
   residT : ∀ g : Γ F, ((ρT g).charpoly).map πT =
     ((ρbar.map (algebraMap ℚ F)) g).charpoly
+  /-- **`T` ACTS ON AUTOMORPHIC FORMS** — the automorphic content of the Hecke
+  algebra, added 2026-07-28 by the AUTOMORPHY AUDIT recorded above
+  `IsQuaternionicEigensystem`.
+
+  Every number-field-valued point `θ : T₀ →+* E` of the `ℤ`-form — i.e. every
+  Hecke eigensystem occurring in `T` — is realized by a NONZERO weight-`2`
+  automorphic form on `Dˣ`, for every totally definite rigidified quaternion
+  algebra `D/F`, with `T_w`-eigenvalue `θ (heckeT₀ w)` at every good `w`.
+
+  Classically this is two standard facts, and the reason it belongs HERE rather
+  than downstream is that both are available here and nowhere below.  First,
+  `T` is by construction the Hecke algebra of a space of Hilbert modular forms
+  of parallel weight `2` and fixed level over the totally real `F`, so a point
+  of `T₀` is the eigensystem of a Hilbert newform `g` (this is what the rest of
+  this structure records only through its shadow on Frobenius traces).  Second,
+  Jacquet–Langlands (*Automorphic forms on GL(2)*, LNM **114** (1970), §14–16;
+  Carayol 1986 §0.9) transfers `g` — cuspidal, discrete series at every infinite
+  place because the weight is `2` — to an automorphic representation of `Dˣ`
+  with the same finite components, and `f` is the new vector in the
+  `U₁(S, ∅)`-fixed line; the eigenvalues agree at the unramified places.
+
+  WITHOUT THIS FIELD the structure carried no automorphic object at all, and
+  the Jacquet–Langlands leaf at the bottom of the Carayol chain
+  (`exists_eigenform_of_totallyDefinite_quaternionAlgebra`) was, as stated,
+  strictly stronger than Jacquet–Langlands: all of its hypotheses were
+  Galois-theoretic, so closing it meant deriving modularity of `ρ|_{G_F}` from
+  Galois data alone.  It is now a one-line consequence of this field, threaded
+  through `exists_heckeTraceAlgebra_of_congruentSeed`,
+  `exists_heckeEigensystem_of_congruentSeed` and `exists_heckePackage_of_seed`.
+
+  QUANTIFICATION OVER `E` AND `θ` IS WHAT MAKES THE THREAD WORK, and it is not
+  a strengthening beyond the classical statement: `T₀` is module-finite over
+  `ℤ`, so its number-field-valued points are exactly the Hecke eigensystems,
+  each of which is the eigensystem of a Hilbert newform.  Downstream the
+  consumers instantiate `θ := ι ∘ g` for the classifying map `g : T₀ →+* E` of
+  `ρ|_{G_F}` composed with a coefficient extension `ι : E →+* E'`, which is
+  exactly what survives the descent-closure enlargement of the coefficient
+  field.
+
+  The bad set is this structure's own `bad`; `IsQuaternionicEigensystem.mono`
+  weakens it to any larger one. -/
+  automorphic : ∀ (E : Type u) [Field E] [NumberField E] (θ : T₀ →+* E),
+    IsQuaternionicEigensystem F E bad (fun w => θ (heckeT₀ w))
 
 attribute [instance] HilbertHeckeAlgebra.commRing
   HilbertHeckeAlgebra.topologicalSpace HilbertHeckeAlgebra.isTopologicalRing
@@ -12640,6 +12805,27 @@ the nebentypus that restores `det ρT = χ_ℓ` on the nose; and `hℓ5` togethe
 with `hres2` (`N(w) = 2`) is `ℓ ∤ N(w)² − 1 = 3`, the tame-at-`2` gluing
 condition that `ℚ(√5)` — totally real, Galois, `2` inert, `N(w) = 4`,
 `5 ∣ 15` — refutes without it.
+
+AUTOMORPHY (2026-07-28, and this is now the WIDEST clause of the leaf).  The
+structure gained the field `automorphic`, so this leaf must now also produce
+the Jacquet–Langlands transfer of the newform's eigensystem to every totally
+definite rigidified quaternion algebra over `F` — see
+`IsQuaternionicEigensystem` and the field's own docstring.  That is a genuine
+enlargement of what this citation asserts, and it is deliberate: it is the
+ONLY point in the whole potential-modularity chain at which an automorphic
+object exists, because it is the only point at which `T` is being built AS the
+Hecke algebra of a space of Hilbert modular forms rather than received as an
+abstract ring.  Discharging it is Taylor's Theorem B (which produces the
+newform `g`, whose Hecke algebra `T` is) followed by Jacquet–Langlands, LNM
+**114** §14–16 — both already named above as what this leaf cites.
+
+The burden did not appear from nowhere: it MOVED here from
+`Modularity/KhareWintenberger.lean`'s
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`, which is now PROVEN.
+That leaf's hypotheses were all Galois-theoretic while its conclusion demanded
+an automorphic form, so it was asking for Serre's conjecture plus a modularity
+lifting theorem over `F` rather than for the transfer; here the same clause is
+the transfer and nothing more.
 
 CIRCULARITY GUARD, inherited: as for the sibling leaf above. -/
 theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed

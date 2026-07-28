@@ -1420,7 +1420,7 @@ theorem exists_numberField_ringHom_of_moduleFinite_int
     (T : Type u) [CommRing T] [Module.Finite ℤ T]
     (ιT : T →+* AlgebraicClosure ℚ_[ℓ]) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
-      (ψ : E →+* AlgebraicClosure ℚ_[ℓ]) (g : T → E),
+      (ψ : E →+* AlgebraicClosure ℚ_[ℓ]) (g : T →+* E),
       ∀ t : T, ψ (g t) = ιT t := by
   classical
   obtain ⟨S, hS⟩ : (⊤ : Submodule ℤ T).FG := Module.finite_def.mp inferInstance
@@ -1449,9 +1449,16 @@ theorem exists_numberField_ringHom_of_moduleFinite_int
   haveI : FiniteDimensional ℚ (ULift.{u} E₀) :=
     LinearEquiv.finiteDimensional (ULift.algEquiv (R := ℚ) (A := E₀)).toLinearEquiv.symm
   haveI : NumberField (ULift.{u} E₀) := {}
+  -- `g` is the CORESTRICTION of `ιT` to the subfield `E₀`, `ULift`ed — a ring
+  -- HOMOMORPHISM, not merely a section of `ψ`.  (Bundled 2026-07-28: the
+  -- automorphic clause threaded through the nodes below instantiates
+  -- `HilbertHeckeAlgebra.automorphic` at this `g`, and that field quantifies
+  -- over ring homomorphisms `T₀ →+* E` because a POINT of the Hecke algebra is
+  -- what corresponds to an eigensystem; an unbundled function would not.)
   exact ⟨ULift.{u} E₀, inferInstance, inferInstance,
     E₀.subtype.comp (ULift.ringEquiv (R := E₀)).toRingHom,
-    fun t => ULift.up ⟨ιT t, hmem t⟩, fun t => rfl⟩
+    (ULift.ringEquiv (R := E₀)).symm.toRingHom.comp (ιT.codRestrict E₀ hmem),
+    fun t => rfl⟩
 
 /-! #### The modularity-lifting cut, SPLIT AT ITS TWO LITERATURE JOINTS
 (2026-07-27)
@@ -1945,8 +1952,18 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
       (t : HeightOneSpectrum (NumberField.RingOfIntegers F) → T),
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
           (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
-      ∀ w ∉ badF,
-        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w) := by
+      (∀ w ∉ badF,
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w)) ∧
+      -- AUTOMORPHY (2026-07-28).  Every number-field-valued point of the
+      -- Hecke algebra is a QUATERNIONIC eigensystem.  This is the automorphic
+      -- object, carried out of `HilbertHeckeAlgebra.automorphic` — the first
+      -- point in the chain at which one exists — and it is what the
+      -- Jacquet–Langlands leaf at the bottom of the Carayol node ultimately
+      -- consumes.  Quantifying over `θ` rather than fixing the classifying
+      -- map is what lets the consumers below compose with a coefficient
+      -- extension and so survive the descent-closure enlargement of `E`.
+      (∀ (E : Type u) [Field E] [NumberField E] (θ : T →+* E),
+        IsQuaternionicEigensystem F E badF (fun w => θ (t w))) := by
   classical
   -- potential modularity at the given `F`: the seed newform's Hecke algebra
   obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed hℓodd hℓ5 hW
@@ -1959,10 +1976,15 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
     Nat.cast_ne_zero.mpr (Fact.out (p := ℓ.Prime)).ne_zero
   obtain ⟨badF, hsub, hbadℓ⟩ :=
     exists_finset_superset_of_places_mem H.bad ((ℓ : ℕ) : NumberField.RingOfIntegers F) hℓne
+  -- the automorphic clause, weakened from the Hecke algebra's own bad set to
+  -- the enlarged `badF` (`mono`)
+  have hauto : ∀ (E : Type u) [Field E] [NumberField E] (θ : H.T₀ →+* E),
+      IsQuaternionicEigensystem F E badF (fun w => θ (H.heckeT₀ w)) :=
+    fun E _ _ θ => (H.automorphic E θ).mono hsub
   refine ⟨H.T₀, inferInstance, inferInstance,
     ιO.comp (φ.comp (H.TEquiv.symm.toAlgHom.toRingHom.comp
       (heckeZFormMap ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal))),
-    badF, H.heckeT₀, hbadℓ, ?_⟩
+    badF, H.heckeT₀, hbadℓ, ?_, hauto⟩
   intro w hw
   have hwbad : w ∉ H.bad := fun h => hw (hsub h)
   -- the charpoly compatibility at the arithmetic Frobenius over `w`
@@ -2232,10 +2254,18 @@ theorem exists_heckeEigensystem_of_congruentSeed
       (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
           (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
-      ∀ w ∉ badF,
-        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) := by
+      (∀ w ∉ badF,
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w)) ∧
+      -- AUTOMORPHY (2026-07-28): the eigenvalue function `a` this node
+      -- returns is realized by a nonzero quaternionic eigenform, over ANY
+      -- coefficient extension `ι : E →+* E'`.  The extension quantifier is
+      -- not decoration — the potential-modularity assembly downstream
+      -- replaces `E` by a descent-closed enlargement `E₂`, and this is the
+      -- form of the clause that survives that replacement.
+      (∀ (E' : Type u) [Field E'] [NumberField E'] (ι : E →+* E'),
+        IsQuaternionicEigensystem F E' badF (fun w => ι (a w))) := by
   -- the automorphic half: the Hecke algebra, module-finite over `ℤ`
-  obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr⟩ :=
+  obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr, hauto⟩ :=
     exists_heckeTraceAlgebra_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
   letI : CommRing T := iT
@@ -2243,7 +2273,10 @@ theorem exists_heckeEigensystem_of_congruentSeed
   -- the commutative-algebra half: its image lies in a number field
   obtain ⟨E, iE, hNE, ψℓ, g, hg⟩ :=
     exists_numberField_ringHom_of_moduleFinite_int (ℓ := ℓ) T ιT
-  refine ⟨E, iE, hNE, ψℓ, badF, fun w => g (t w), hbadℓ, fun w hw => ?_⟩
+  -- the eigensystem of `ρ|_{G_F}` is the point `g` of the Hecke algebra, so
+  -- its quaternionic realization over `E'` is the one at the point `ι ∘ g`
+  refine ⟨E, iE, hNE, ψℓ, badF, fun w => g (t w), hbadℓ, fun w hw => ?_,
+    fun E' _ _ ι => hauto E' (ι.comp g)⟩
   rw [htr w hw, hg (t w)]
 
 /-! ### The Carayol/Shimura sub-cut — RETIRED 2026-07-26
@@ -2761,9 +2794,20 @@ theorem exists_heckePackage_of_seed
         Polynomial E)
       (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
       (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
-      ∀ w ∉ badF,
+      (∀ w ∉ badF,
         ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-          (heckeF w).map ψℓ := by
+          (heckeF w).map ψℓ) ∧
+      -- AUTOMORPHY (2026-07-28): the Hecke eigensystem this node produces is
+      -- carried by a nonzero quaternionic eigenform, over any coefficient
+      -- extension of `E`.  Threaded from `HilbertHeckeAlgebra.automorphic`
+      -- through the two nodes above; consumed at the bottom of the Carayol
+      -- node by `exists_eigenform_of_totallyDefinite_quaternionAlgebra`, which
+      -- is PROVEN over it.  Before this clause existed, that leaf's
+      -- hypotheses were all Galois-theoretic while its conclusion demanded an
+      -- automorphic object — see the AUTOMORPHY AUDIT in its docstring.
+      (∀ (E' : Type u) [Field E'] [NumberField E'] (ι : E →+* E'),
+        IsQuaternionicEigensystem F E' badF
+          (fun w => -ι ((heckeF w).coeff 1))) := by
   classical
   -- (c) the residual bridge: `ρ|_{G_F}` is a lift of `ρbar|_{G_F}`
   obtain ⟨badρ, hcong⟩ :=
@@ -2777,18 +2821,25 @@ theorem exists_heckePackage_of_seed
   -- (a) `R = 𝕋` over `F`: the Hecke field `E`, the place `ψℓ`, a genuine
   -- level `badF` containing the places over `ℓ`, and the `E`-valued
   -- eigenvalue function `a`
-  obtain ⟨E, hE, hNE, ψℓ, badF, a, hbadℓ, htr⟩ :=
+  obtain ⟨E, hE, hNE, ψℓ, badF, a, hbadℓ, htr, hauto⟩ :=
     exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
   letI : Field E := hE
+  -- the trace of the assembled Hecke polynomial is the eigenvalue back again
+  have hcoeff : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((X ^ 2 - C (a w) * X + C ((Ideal.absNorm w.asIdeal : E)) :
+        Polynomial E)).coeff 1 = -a w := by
+    intro w
+    simp [Polynomial.coeff_X_pow, Polynomial.coeff_C]
   -- (b) the determinant half, PROVEN: the constant coefficient is the
   -- rational integer `Nw` away from `ℓ`, so the trace datum already
   -- assembles the Hecke polynomial `X² − a_w·X + Nw` over `E`
   refine ⟨E, hE, hNE, badF,
     fun w => X ^ 2 - C (a w) * X + C ((Ideal.absNorm w.asIdeal : E)), ψℓ, ιO,
-    hιO, ?_⟩
-  exact charFrob_map_eq_heckePolynomial_of_heckeTrace hℓodd hrank hρ F ψℓ badF
-    a ιO hbadℓ htr
+    hιO, charFrob_map_eq_heckePolynomial_of_heckeTrace hℓodd hrank hρ F ψℓ badF
+      a ιO hbadℓ htr,
+    fun E' _ _ ι => (hauto E' ι).congr_eigenvalues fun w _ => ?_⟩
+  simp only [hcoeff w, map_neg, neg_neg]
 
 /-- **Free-lattice normalization over `ℤ_p`** (PROVEN, 2026-07-24; the
 formal half of the Hilbert-modular `3`-adic realization leaf below): a
@@ -4422,22 +4473,20 @@ at every infinite place, transfers to an automorphic representation `π'` of
 `U₁(S, ∅)`-fixed line of `π'`; the eigenvalues at `w ∉ S` agree because
 `π'_w ≅ π_w` is unramified there.
 
-AUTOMORPHY AUDIT (2026-07-28) — **THIS LEAF IS NOT "PURE JACQUET–LANGLANDS",
-AND A JL PROVER CANNOT CLOSE IT.** The sentence this paragraph replaced said
-"what is LEFT here is the analytic statement and nothing else"; that is FALSE,
-and it has already been read back as a dispatch brief ("pure Jacquet–Langlands
-now — the two non-JL ingredients were factored out and proven"). The two
-factored-out ingredients really were non-JL and really are proven; what remains
-is strictly MORE than JL, not equal to it.
+AUTOMORPHY AUDIT (2026-07-28) — **THE AUDIT'S CUT-LEVEL REPAIR HAS NOW BEEN
+MADE, AND THIS DECLARATION IS PROVEN.** The audit and the repair are both
+recorded below, in that order, because the audit is what determined the shape
+of the repair and a future owner needs both.
 
-Every hypothesis of this leaf is GALOIS-THEORETIC. `heckeF` is an abstract
-family of polynomials over a number field `E`; the only thing tying it to
-anything is `hmod`, which says its members are the Frobenius characteristic
-polynomials of `ρ|_{G_F}` outside `badF`. But the CONCLUSION demands a genuine
-automorphic object — a nonzero element of `(U₁ 𝒮).toStruct.form D E`. This is
-the FIRST and, at present, the ONLY place in the whole Carayol chain where an
-automorphic object is produced, and nothing upstream of it carries one. Two
-greps, both run:
+*The audit, as written.* The sentence it replaced said "what is LEFT here is
+the analytic statement and nothing else"; that was FALSE, and it had already
+been read back as a dispatch brief ("pure Jacquet–Langlands now"). Every
+hypothesis of this leaf was GALOIS-THEORETIC: `heckeF` is an abstract family of
+polynomials over a number field `E`, tied to anything only by `hmod`, which
+says its members are the Frobenius characteristic polynomials of `ρ|_{G_F}`
+outside `badF`. But the CONCLUSION demands a genuine automorphic object — a
+nonzero element of `(U₁ 𝒮).toStruct.form D E` — and NOTHING upstream carried
+one. Two greps, both run at the time:
 
 * `MoretBaillySeed` (`Modularity/MoretBailly.lean`) is where "modularity"
   first enters the chain. Its `modular₀` field reads
@@ -4446,42 +4495,57 @@ greps, both run:
   Frobenius traces of a Galois representation. No automorphic object.
 * `HilbertHeckeAlgebra` (`HardlyRamified/HilbertModularity.lean`), the object
   `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` produces and the only
-  thing in the chain called a Hecke algebra, is an abstract commutative ring
+  thing in the chain called a Hecke algebra, was an abstract commutative ring
   `T` carrying operators `heckeT`, a Galois representation `ρT`, and the
   compatibility `charFrobT`. No automorphic object, and no module it acts on.
 
-So closing this leaf means deriving "`ρ|_{G_F}` is modular" from purely
-Galois-theoretic hypotheses. That is Serre's conjecture for `ρbar` together
-with a modularity lifting theorem over `F` — or over `ℚ` plus base change,
-which is unavailable for a non-solvable Galois `F`, and `hFgal` supplies no
-solvability. It is the theorem this module exists to prove, and the
-CIRCULARITY GUARD below forbids the only in-tree route to it. Jacquet–Langlands
-is the smaller half of what is being asked; no amount of LNM 114 / Carayol §0.9
-work closes this leaf.
+So closing this leaf as it stood meant deriving "`ρ|_{G_F}` is modular" from
+purely Galois-theoretic hypotheses: Serre's conjecture for `ρbar` together with
+a modularity lifting theorem over `F` — or over `ℚ` plus base change, which is
+unavailable for a non-solvable Galois `F`, and `hFgal` supplies no solvability.
+That is the theorem this module exists to prove, and the CIRCULARITY GUARD
+below forbids the only in-tree route to it. Jacquet–Langlands was the smaller
+half of what was being asked; no amount of LNM 114 / Carayol §0.9 work would
+have closed it.
 
-Sharpest single check: `seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))`
-is present on every ancestor of this leaf down to `exists_heckePackage_of_seed`
-and is DROPPED by that declaration's conclusion. Everything below it — this
-leaf included — sees only `hmod`.
+Sharpest single check, and the one that located the repair:
+`seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))` is present on every
+ancestor of this leaf down to `exists_heckePackage_of_seed`, and is DROPPED by
+that declaration's conclusion. Everything below it saw only `hmod`.
 
-THE REPAIR IS UPSTREAM, AND IT IS NOW MUCH CHEAPER THAN WHEN THE PARENT'S
-"RESIDUAL FAITHFULNESS GAP" PARAGRAPH WAS WRITTEN (that paragraph, in
-`carayol_threeadic_realization_of_heckePackage`, names the same gap in prose
-and calls the fix "define Hilbert modular forms"; half of its premise is
-already retired). The vendored `TotallyDefiniteQuaternionAlgebra` development
-is in tree and green, `D` exists (STEP 1a) because `Even (Module.finrank ℚ F)`
-is now recorded where `F` is chosen, and `exists_algHom_of_smul_eq_smul` turns
-an eigenform into a Hecke character. So the automorphic object can be carried
-FROM ITS BIRTH: a field on `MoretBaillySeed` (the seed newform really is a
-Hilbert newform, hence by JL a quaternionic one), or on `HilbertHeckeAlgebra`
-(`T` really does act on `(U₁ 𝒮).toStruct.form D E`), threaded through
-`exists_heckeTraceAlgebra_of_congruentSeed`,
-`exists_heckeEigensystem_of_congruentSeed` and `exists_heckePackage_of_seed`.
-With that in hand THIS leaf becomes what its title claims — a transfer and a
-level comparison. That is a cut-level change touching six declarations across
-two files, so it is reported and deliberately NOT made here.
+*The repair, made 2026-07-28.* The automorphic object is now carried FROM ITS
+BIRTH. `HilbertHeckeAlgebra` gained the field `automorphic`: every
+number-field-valued point `θ : T₀ →+* E` of the `ℤ`-form of the Hecke algebra —
+i.e. every Hecke eigensystem occurring in `T` — is realized by a nonzero
+quaternionic weight-`2` eigenform with matching eigenvalues, for every totally
+definite rigidified `D/F`. That is `IsQuaternionicEigensystem`, and it is
+threaded verbatim through `exists_heckeTraceAlgebra_of_congruentSeed` (where it
+is instantiated at the classifying point of `ρ|_{G_F}`),
+`exists_heckeEigensystem_of_congruentSeed`, `exists_heckePackage_of_seed`,
+`exists_descentClosed_heckePackage` (which now exposes the coefficient
+enlargement `ι₂ : E →+* E₂` it was already constructing, so the clause survives
+the descent-closure step), and the Carayol chain, arriving here as `hauto`.
 
-WHAT THIS LEAF IS NOT. It is not false, and it is not vacuous in the
+The burden did NOT disappear; it moved to
+`nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`, which is where it belongs —
+that is the only point in the chain at which `T` is being BUILT as the Hecke
+algebra of a space of Hilbert modular forms rather than received as an abstract
+ring, so it is the only point at which Jacquet–Langlands is a statement about
+objects that exist. It is already a citation of Taylor's Theorem B, and the
+transfer is the standard companion of that citation.
+
+HYPOTHESIS AUDIT (2026-07-28). The proof consumes exactly `hauto`, `D`, `p`,
+`hp` and `hcyc`. Every remaining hypothesis is INERT: the Galois-theoretic
+block, `hmod`, `hbad2`, `hbad3`, `hbadℓ` and the embeddings are now carried by
+the producers of `hauto` rather than re-derived here, which is precisely the
+point of the repair — an automorphic conclusion should rest on an automorphic
+hypothesis and on nothing else. They are retained, not deleted, for the reason
+`exists_heckeTraceAlgebra_of_congruentSeed` retains `_hπ` and `_hιO`: the
+parent applies this node positionally, and an owner who later narrows `hauto`
+(for instance by pinning the level `𝒮.S ⊇ badF`, the level-axis strengthening
+the cut audit identified) inherits the binders that narrowing will need.
+
+WHAT THIS DECLARATION IS NOT. It is not false, and it is not vacuous in the
 junk-witness sense. Nor is `f ≠ 0` where the content lives: the space is never
 zero, because a CONSTANT function is an element of it — constants are
 `Dˣ`-invariant on the left, invariant under all of `GL₂(𝔸ᶠ)` on the right, and
@@ -4561,6 +4625,12 @@ theorem exists_eigenform_of_totallyDefinite_quaternionAlgebra
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28).  Produced at the birth of the Hecke
+    -- algebra (`HilbertHeckeAlgebra.automorphic`) and threaded down; see the
+    -- AUTOMORPHY AUDIT above for why an automorphic conclusion cannot rest on
+    -- Galois hypotheses alone.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (D : Type u) [DivisionRing D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
     [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
@@ -4575,7 +4645,9 @@ theorem exists_eigenform_of_totallyDefinite_quaternionAlgebra
         _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f) ∧
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
         (heckeF w).coeff 1 = - a w) := by
-  sorry
+  obtain ⟨𝒮, a, f, hQ, hf0, hT, hm⟩ := hauto D p hp hcyc
+  exact ⟨𝒮, a, f, hQ, hf0, hT,
+    fun w hwS hwbad => by simp only [hm w hwS hwbad, neg_neg]⟩
 
 /-- **STEP 1b of the Carayol node — JACQUET–LANGLANDS proper: the Hilbert
 eigensystem `(E, heckeF)` transfers to a GIVEN totally definite rigidified
@@ -4685,6 +4757,9 @@ theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded unchanged to STEP 1b′.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (D : Type u) [DivisionRing D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
     [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
@@ -4701,8 +4776,8 @@ theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
   -- Jacquet–Langlands proper, as an eigenform at the minimal level `U₁(S, ∅)`.
   obtain ⟨𝒮, a, f, hQ, hf0, hTa, hmatch⟩ :=
     exists_eigenform_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
-      p hp hcyc
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ
+      hauto D p hp hcyc
   -- `f` is scaled by every element of the Hecke algebra, not merely by the
   -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
   -- `𝒮.Q = ∅`.
@@ -4857,7 +4932,10 @@ theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded unchanged to STEP 1b.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -4878,7 +4956,7 @@ theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
   obtain ⟨p, 𝒮, θ, hθ⟩ :=
     exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ
       hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
-      hbad2 hbad3 hbadℓ D
+      hbad2 hbad3 hbadℓ hauto D
   exact ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hθ⟩
 
 /-- **The module topology on a finite-dimensional `ℚ_p`-algebra is a ring
@@ -8270,7 +8348,15 @@ theorem carayol_threeadic_realization_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28).  STEP 1 (Jacquet–Langlands) is the
+    -- only consumer; STEP 2 (Carayol) receives the character it builds.  See
+    -- the AUTOMORPHY AUDIT in `exists_eigenform_of_totallyDefinite_quaternionAlgebra`
+    -- for why this cannot be derived from `hmod` and the Galois hypotheses,
+    -- and the RESIDUAL FAITHFULNESS GAP paragraph below for the older prose
+    -- statement of the same gap, which this hypothesis closes.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∃ (B : Type u) (_ : CommRing B)
       (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
       letI : TopologicalSpace B := moduleTopology ℤ_[3] B
@@ -8297,7 +8383,7 @@ theorem carayol_threeadic_realization_of_heckePackage
       hbad3 hbadℓ
     (exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
-      hbad2 hbad3 hbadℓ)
+      hbad2 hbad3 hbadℓ hauto)
 
 /-- **The Hilbert-modular `3`-adic realization, integral-domain form**
 (PROVEN assembly, 2026-07-25 — Carayol 1986 / Taylor 1989 at one
@@ -8398,7 +8484,10 @@ theorem exists_threeadic_realization_domain_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded to the Carayol node.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B)
       (_ : TopologicalSpace B)
       (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
@@ -8416,7 +8505,7 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   obtain ⟨B₀, hCR₀, hAlg₀, hFin₀, τ₀, ψ₃, ι₀, hmatch₀⟩ :=
     carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO
-      hmod hbad2 hbad3 hbadℓ
+      hmod hbad2 hbad3 hbadℓ hauto
   -- (a') DOMAIN NORMALIZATION: `ker ι₀` is prime, so the whole package
   -- descends to `B₀ ⧸ ker ι₀` without moving any `ι₀`-image of a Frobenius
   -- characteristic polynomial. This is why the citation no longer has to
@@ -8558,7 +8647,10 @@ theorem exists_threeadic_realization_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded to the Carayol node.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∃ (B : Type u) (_ : CommRing B) (_ : TopologicalSpace B)
       (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
       (_ : Module.Finite ℤ_[3] B) (_ : Module.Free ℤ_[3] B)
@@ -8574,7 +8666,7 @@ theorem exists_threeadic_realization_of_heckePackage
     ιB, hιB, hmatch⟩ :=
     exists_threeadic_realization_domain_of_heckePackage hℓodd hℓ5 hZinj
       hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF
-      heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ
+      heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto
   -- (c) the eigensystem-match transport: the normalization below does
   -- not move the coefficient ring, so `hmatch` is carried verbatim and
   -- only the `Module.Free` component remains to be supplied
@@ -8728,7 +8820,17 @@ theorem exists_descentClosed_heckePackage
     ∃ (E₂ : Type u) (_ : Field E₂) (_ : NumberField E₂)
       (heckeF₂ : HeightOneSpectrum (NumberField.RingOfIntegers F) →
         Polynomial E₂)
-      (ψ₂ : E₂ →+* AlgebraicClosure ℚ_[ℓ]),
+      (ψ₂ : E₂ →+* AlgebraicClosure ℚ_[ℓ])
+      -- THE ENLARGEMENT ITSELF (exposed 2026-07-28).  The proof already built
+      -- `ι₂ : E ↪ E₂` and set `heckeF₂ := heckeF.map ι₂`; it simply did not
+      -- say so.  Saying so is what lets a clause about the block `(E, heckeF)`
+      -- be transported across this step — in particular the automorphic
+      -- clause `IsQuaternionicEigensystem`, which the producers state
+      -- uniformly in a coefficient extension for exactly this reason.
+      (ι₂ : E →+* E₂),
+      (∀ x : E, ψ₂ (ι₂ x) = ψℓ x) ∧
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        heckeF₂ w = (heckeF w).map ι₂) ∧
       (∀ w ∉ badF,
         ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF₂ w).map ψ₂) ∧
       (∀ (H : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
@@ -8850,7 +8952,7 @@ theorem exists_descentClosed_heckePackage
   have hcompatE : ∀ x : E, ψ₂ (ι₂ x) = ψℓ x := by
     intro x; rfl
   refine ⟨ULift.{u} K₀, inferInstance, inferInstance,
-    fun w => (heckeF w).map ι₂, ψ₂, ?_, ?_⟩
+    fun w => (heckeF w).map ι₂, ψ₂, ι₂, hcompatE, fun _ => rfl, ?_, ?_⟩
   · -- the ℓ-adic clause is carried along `E ↪ E₂` by functoriality of
     -- `Polynomial.map`; no clause pins `E` as GENERATED by `heckeF`
     intro w hw
@@ -9545,7 +9647,11 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded to the Jacquet–Langlands
+    -- step this node's second cut runs through.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
       ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
         (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
@@ -9562,7 +9668,7 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
   obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hθ⟩ :=
     exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
       hW hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO
-      hmod hbad2 hbad3 hbadℓ
+      hmod hbad2 hbad3 hbadℓ hauto
   letI := hDdiv
   letI := hDalg
   letI := hDquat
@@ -9700,7 +9806,10 @@ theorem weilBound_heckeF_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded to the geometry node.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
       ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
   intro w hw φ
@@ -9709,7 +9818,7 @@ theorem weilBound_heckeF_of_heckePackage
   obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
     exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod hbad2
-      hbad3 hbadℓ w hw φ
+      hbad3 hbadℓ hauto w hw φ
   -- the analysis: counts bound the power sums, hence each eigenvalue, hence
   -- the extremal pair exactly, hence the sum by the triangle inequality
   have hb := norm_le_two_mul_sqrt_of_frobEigenvalues (absNorm_asIdeal_pos w) γ Npt Bw
@@ -10093,7 +10202,10 @@ theorem weilBound_descended_of_heckePackage
     (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (2026-07-28), forwarded to the geometry node.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1)) :
     ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
       [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
@@ -10139,7 +10251,7 @@ theorem weilBound_descended_of_heckePackage
   obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
     exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
-      hbad2 hbad3 hbadℓ V hVbad φ'
+      hbad2 hbad3 hbadℓ hauto V hVbad φ'
   have hNV : (0 : ℕ) < Ideal.absNorm V.asIdeal := absNorm_asIdeal_pos V
   have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq.pos
   have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
@@ -10319,7 +10431,7 @@ theorem exists_potentialModularityWitness_of_five_le
     exists_moretBailly_seed_of_five_le hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ
   -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
-  obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod⟩ :=
+  obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod, hauto⟩ :=
     exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
       π hπsurj hπ F hFtr hFgal hirrF seed
   -- (ii') ENLARGE the exceptional set by the places of `F` over `2`, `3`
@@ -10358,6 +10470,11 @@ theorem exists_potentialModularityWitness_of_five_le
   have hmod' : ∀ w ∉ badF',
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ :=
     fun w hw => hmod w fun h => hw (hsub h)
+  -- the automorphic clause weakens with the exceptional set, exactly as
+  -- `hmod` does (`IsQuaternionicEigensystem.mono`)
+  have hauto' : ∀ (E' : Type u) [Field E'] [NumberField E'] (ι : E →+* E'),
+      IsQuaternionicEigensystem F E' badF' (fun w => -ι ((heckeF w).coeff 1)) :=
+    fun E' _ _ ι => (hauto E' ι).mono hsub
   -- (ii'') ENLARGE the coefficient field to a DESCENT-CLOSED one
   -- (2026-07-27, when `PotentialModularityWitness.descentClosed` was
   -- added). The `E` that step (ii) returns is the Hecke field of the
@@ -10369,9 +10486,17 @@ theorem exists_potentialModularityWitness_of_five_le
   -- the carrier asserts that `heckeF` GENERATES `E`. This is what
   -- discharges the carrier's `descentClosed` field, and the enlarged
   -- block is what steps (iii) and the gluing below are handed.
-  obtain ⟨E₂, hE₂, hNE₂, heckeF₂, ψ₂, hmod₂, hdc⟩ :=
+  obtain ⟨E₂, hE₂, hNE₂, heckeF₂, ψ₂, ι₂, _hι₂ψ, hι₂F, hmod₂, hdc⟩ :=
     exists_descentClosed_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal E badF' heckeF ψℓ ιO hιO hmod'
+  -- and it is carried ACROSS the coefficient enlargement by instantiating its
+  -- extension quantifier at `ι₂`: `heckeF₂ = heckeF.map ι₂`, so the eigenvalue
+  -- datum is transported on the nose.  This is the step for which the
+  -- producers state the clause uniformly in `ι` rather than at a fixed `E`.
+  have hauto₂ : IsQuaternionicEigensystem F E₂ badF'
+      (fun w => -(heckeF₂ w).coeff 1) :=
+    (hauto' E₂ ι₂).congr_eigenvalues fun w _ => by
+      simp only [hι₂F w, Polynomial.coeff_map]
   -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block.
   -- `hirrF` — already in hand from step (i) and already consumed by step
   -- (ii) — is now also handed to the Carayol citation (round-4 narrowing,
@@ -10381,7 +10506,7 @@ theorem exists_potentialModularityWitness_of_five_le
     hmatch⟩ :=
     exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
       hW hρbar hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO
-      hmod₂ hbad2 hbad3 hbadℓ
+      hmod₂ hbad2 hbad3 hbadℓ hauto₂
   -- glue: instantiate the carrier fieldwise
   -- (iii') CUSPIDALITY of the newform and of all its solvable descents
   -- (2026-07-27, when `weilBoundF`/`weilBoundDescent` were added to the
@@ -10397,10 +10522,10 @@ theorem exists_potentialModularityWitness_of_five_le
   -- it. Both facts are already in hand from step (ii') above.
   have hweil := weilBound_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
     hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂ hbad2
-    hbad3 hbadℓ
+    hbad3 hbadℓ hauto₂
   have hweild := weilBound_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
     hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
-    hbad2 hbad3 hbadℓ
+    hbad2 hbad3 hbadℓ hauto₂
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E₂,
            badF := badF', heckeF := heckeF₂, ψℓ := ψ₂, ιO := ιO,
            ιO_injective := hιO, modularF := hmod₂, descentClosed := hdc,
