@@ -11354,10 +11354,22 @@ remaining content splits into four disjoint theorems:
   in general NOT zero on the `p`-part.  What rules that out is that
   `F + W - t` comes from a MORPHISM of schemes and `⋃ₙ A'[ℓⁿ]` is
   Zariski dense — equivalently `End(A') ↪ End(T_ℓ A')`.  That is why this
-  leaf carries `Fr`, `V`, `hFrf`, `hVf`, `hFrV` and `hVpt` although the
+  leaf carries `Fr`, `V`, `hFrf`, `hVf` and `hVpt` although the
   assembly itself needs only `hVFr`: they are the data that makes the
   operator algebraic, and a prover of this leaf must use them.  It needs
   neither `hdim'` nor the rank-two theory.
+
+  **PROVEN 2026-07-28**, over a two-way cut of exactly that argument:
+  `eq_of_dense_geomPt_comp_eq` (scheme theory — a separated target and a
+  reduced source make the equaliser of two morphisms a closed subscheme
+  which a dense set of points fills out) and
+  `dense_torsionGeomPt_finiteBase` (abelian varieties — `⋃ₙ A'[Iⁿ](k̄)` is
+  Zariski dense for `I` of residue characteristic prime to `#k`).  The
+  Yoneda step joining them is `RelPoint.pre_self`, and it is what turns
+  `hFrpt`/`hVpt` into the two morphisms `Fr + V` and `[t]`.  Two
+  hypotheses of the original statement turned out NOT to be needed and
+  are now underscored: `hσ` (density is blind to which `σ` induces `Fr`)
+  and `hFrV`/`hVFr` (blind to the multiplicative relations).
 
 **FAITHFULNESS OF THE TWO FRAME-QUANTIFIED LEAVES.**  Both are stated
 `∀ c, IsLevelTateFrame … c → ∀ Φ, (∀ u, F (c u) = c (Φ *ᵥ u)) → …`.  A
@@ -11382,7 +11394,17 @@ in characteristic `p` (Mumford *AV* §6, Milne *AV* §I.7), the Weil
 pairing (Mumford *AV* §16, §20), Weil's rationality of the
 characteristic polynomial (Mumford *AV* §19, Tate 1966), and Zariski
 density of torsion / faithfulness of the Tate module (Mumford *AV* §19,
-Milne *AV* §V.1) — and can be owned independently. -/
+Milne *AV* §V.1) — and can be owned independently.
+
+**UPDATED 2026-07-28**: the fourth of those four, the density one, is no
+longer a leaf.  It split cleanly into `eq_of_dense_geomPt_comp_eq` and
+`dense_torsionGeomPt_finiteBase`, and the SECOND of those is the only one
+of the two that needs abelian-variety theory — the first needs nothing
+beyond "smooth over a field is reduced", which this tree already has in
+`Modularity/MoretBailly.lean` (`isReduced_of_smooth_field`,
+`isReduced_of_smooth_over_rat`), plus separatedness from `IsProper`.  So
+the frontier here is now three arithmetic leaves and two density ones,
+and the cheapest of the five is the scheme-theoretic half. -/
 
 /-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
 `2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
@@ -11611,12 +11633,108 @@ theorem exists_frobLevelTrace_of_mult_finiteBase
               Φ.trace = Ideal.Quotient.mk (I ^ n) t :=
   sorry
 
+/-- **TWO MORPHISMS AGREEING AT A ZARISKI-DENSE SET OF GEOMETRIC POINTS
+ARE EQUAL** (sorry leaf — the SCHEME-THEORETIC half of the density
+argument; EGA IV 11.10.1, or Hartshorne II Ex. 4.2 for the reduced /
+separated equaliser criterion).
+
+Let `u v : A' ⟶ A'` be morphisms over the base and `s` a set of geometric
+points of the fibre whose images sweep out a dense subset of `|A'|`.  If
+`y ≫ u = y ≫ v` for every `y ∈ s`, then `u = v`.
+
+Classically: `A'` is SEPARATED over `k` — it is proper (`ab'.proper`) —
+so the equaliser `E = A' ×_{A' ×_k A'} A'` of `u` and `v` is a CLOSED
+subscheme of `A'`; every `y ∈ s` factors through `E` by its universal
+property, so `|E|` contains the dense set of `hs` and hence `|E| = |A'|`;
+and `A'` is REDUCED — it is smooth over a field (`ab'.smooth`) — so a
+surjective closed immersion into it is an isomorphism.  Therefore
+`E = A'` and `u = v`.
+
+WHAT IS ALREADY AVAILABLE, checked rather than assumed.  Reducedness of a
+smooth scheme over a field is developed IN THIS TREE:
+`isReduced_of_smooth_field` and `isReduced_of_smooth_over_rat` in
+`Modularity/MoretBailly.lean` (the latter stated over `ℚ` only because
+that is where it is used; its docstring records that nothing in it is
+special to `ℚ`), running through mathlib's
+`Algebra.FormallyUnramified.isReduced_of_field` and
+`IsReduced.of_openCover` — regularity theory, which mathlib lacks, is
+NOT needed.  Separatedness is carried by `IsProper` at this pin.
+
+Only two fields of `AbelianSchemeStruct` are used, `proper` and `smooth`;
+neither the group law nor the multiplication nor the base field enters,
+which is why this leaf is stated for arbitrary `u`, `v` rather than for
+homomorphisms.
+
+FAITHFULNESS.  `hs` is what makes the statement non-vacuous and it is
+implied by nothing else here: for `s = ∅` the hypothesis `h` is empty and
+`Dense ∅` fails as soon as `A'` is nonempty, so there is no junk `s` that
+discharges the leaf. -/
+theorem eq_of_dense_geomPt_comp_eq
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (u v : A' ⟶ A') (hu : u ≫ f' = f') (hv : v ≫ f' = f')
+    (s : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+    (hs : Dense {x : A' | ∃ y ∈ s, x ∈ Set.range y.1.base})
+    (h : ∀ y ∈ s, y.1 ≫ u = y.1 ≫ v) :
+    u = v :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME OVER A FINITE FIELD
+IS ZARISKI DENSE** (sorry leaf — the ABELIAN-VARIETY half of the density
+argument; Mumford *Abelian Varieties* §19, Milne *Abelian Varieties*
+§V.1).
+
+For `I` a maximal ideal of `𝒪_D` of residue characteristic `q` NOT
+dividing `N = #k`, the geometric points killed by some power `Iⁿ` sweep
+out a dense subset of `|A'|`.
+
+Classically: `T = ⋃ₙ A'[Iⁿ](k̄)` is a SUBGROUP — an increasing union of
+subgroups, since `Iⁿ⁺¹ ≤ Iⁿ` — so its Zariski closure `B` is an abelian
+subvariety of `A'_{k̄}`, and `B` is `𝒪_D`-stable because every `A'[Iⁿ]`
+is.  Suppose `B ≠ A'_{k̄}`.  Then `C = A'_{k̄}/B` is a NONZERO abelian
+variety on which `D` acts, and the action is FAITHFUL because `D` is a
+field and `1 ↦ 1 ≠ 0`; hence `D ⊗ ℚ_q = ∏_{J ∣ q} D_J` acts faithfully on
+`V_q C`, so every factor acts nontrivially and in particular
+`V_I C ≠ 0`.  But `T_I B = T_I A'` by construction, so `V_I C = 0` — a
+contradiction.  Therefore `B = A'_{k̄}`, and density descends to `|A'|`
+because `|A'_{k̄}| → |A'|` is surjective: the preimage of the closure of
+the image of `T` is closed and contains `T`, hence is everything.
+
+**`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
+residue characteristic of `k` the group `A'[pⁿ](k̄)` has order `p^{rn}`
+with `r ≤ g` the `p`-rank, and is TRIVIAL in the supersingular case, so
+the union is `{0}` and is not dense as soon as `dim A' > 0`.  `hfin` and
+`hN` are carried for exactly that reason: they are what makes `¬ q ∣ N`
+say `q ≠ char k`.
+
+Note what is NOT needed, which is what separates this leaf from
+`exists_levelTateFrame_finiteBase`: no rank hypothesis (`hdim'`) and no
+`IsTotallyReal` — the argument above uses only that `D` is a FIELD acting
+on `A'`, never the signature and never that `A'[Iⁿ]` is free of rank two.
+The single maximal ideal `I` suffices; there is no need to range over all
+`J ∣ q` and reassemble by CRT. -/
+theorem dense_torsionGeomPt_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) :
+    Dense {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      x ∈ Set.range y.1.base} :=
+  sorry
+
 open _root_.NumberField in
 /-- **AN IDENTITY VERIFIED ON ALL PRIME-TO-`p` TORSION HOLDS AT EVERY
-GEOMETRIC POINT** (sorry leaf — Zariski density of the prime-to-`p`
-torsion, equivalently the faithfulness of the Tate module; Mumford
-*Abelian Varieties* §19, Milne *Abelian Varieties* §V.1.  See the
-subsection note above for the cut).
+GEOMETRIC POINT** (**PROVEN 2026-07-28** over the two density leaves
+immediately above — Zariski density of the prime-to-`p` torsion,
+equivalently the faithfulness of the Tate module; Mumford *Abelian
+Varieties* §19, Milne *Abelian Varieties* §V.1.  See the subsection note
+above for the cut).
 
 If `F y + V y = t · y` for every `y` killed by `Iⁿ`, for every maximal
 `I` of residue characteristic prime to `#k` and every `n`, then it holds
@@ -11634,20 +11752,53 @@ in `A'` for any `ℓ` different from the characteristic, so a morphism
 vanishing on it vanishes.  Equivalently `End(A') → End(T_ℓ A')` is
 injective.
 
-That is why the leaf carries the whole morphism package `Fr`, `V`,
-`hFrf`, `hVf`, `hFrpt`, `hFrV`, `hVpt` even though the assembly of the
-consumer uses only `hVFr` among them: they are what makes the operator
-algebraic, and any proof of this leaf must use them.  The one piece of
-the arithmetic package it does NOT need is `hdim'` — density is
+That is why the leaf carries the morphism package `Fr`, `V`, `hFrf`,
+`hVf`, `hFrpt`, `hVpt` even though the assembly of the consumer uses only
+`hVFr` and `hFrpt` among them: they are what makes the operator
+algebraic, and the proof below does use every one of them.  The one piece
+of the arithmetic package it does NOT need is `hdim'` — density is
 independent of the relative dimension — and the rank-two theory does not
 enter.
+
+**WHICH HYPOTHESES THE PROOF ACTUALLY CONSUMES**, now that it exists;
+this CORRECTS the earlier reading of this docstring, which claimed `hσ`
+was load-bearing here and that a prover must use the whole package
+including `hFrV`/`hVFr`.
+
+* USED: `Fr`, `V`, `hFrf`, `hVf`, `hFrpt`, `hVpt` — these six are what
+  turn `F + V` and `[t]` into two MORPHISMS `A' ⟶ A'`, namely
+  `Fr + V = ab'.add ⟨Fr, hFrf⟩ ⟨V, hVf⟩` and `m'.act t (RelPoint.self f')`,
+  read off the tautological relative point; `hfin`, `hN`, `ab'`, `m'`,
+  `t` and `htors` all enter through the two leaves.
+* NOT USED, and provably not needed: `hσ`, `hFrV`, `hVFr` (marked with a
+  leading underscore).  Density is a statement about the SOURCE of the
+  two morphisms and is blind both to which `σ ∈ Γ_k` induces `Fr` and to
+  the multiplicative relations `Fr ≫ V = V ≫ Fr = [N]`.  They are kept
+  in the signature because the consumer holds them anyway and because
+  dropping them would restate a leaf that several sibling statements are
+  written against; the underscore is what makes their absence from the
+  proof mechanically visible rather than merely asserted.
+
+  This is NOT a vacuity: what carries the content is `hFrpt`/`hVpt`,
+  which say the two operators come from morphisms of schemes, and that is
+  exactly the algebraicity the trap above is about.
 
 FAITHFULNESS.  The conclusion is universally quantified over `t`, so a
 junk `t` would falsify the leaf if the hypothesis admitted one; it does
 not, because the prime-to-`p` torsion already pins `t` (it is determined
 modulo `Iⁿ` for every prime-to-`p` `I` and every `n`, hence determined).
-`hσ` is load-bearing for the same reason as in the sibling leaves: it is
-what identifies the Galois action with the Frobenius endomorphism. -/
+
+THE ROUTE OF THE PROOF BELOW.  By Yoneda for relative points
+(`RelPoint.pre_self`: every relative point is the tautological one pulled
+back along itself) the identity at a geometric point `y` is EXACTLY
+`y ≫ (Fr + V) = y ≫ [t]` for those two morphisms — this is `hkey`, and it
+is where `hFrpt` and `hVpt` are consumed, through naturality of the group
+law (`pre_add`) and of the multiplication (`pre_act`).  So the identity
+holds at every `y` as soon as the two morphisms are EQUAL, and that is
+`eq_of_dense_geomPt_comp_eq` fed by `dense_torsionGeomPt_finiteBase` at
+one auxiliary prime `q ∤ N` and one maximal ideal of `𝒪_D` above it — the
+existence of such a pair is `Nat.exists_infinite_primes` together with
+`Ideal.exists_ideal_over_maximal_of_isIntegral` over `ℤ ⊆ 𝒪_D`. -/
 theorem frobTraceAct_of_torsion_of_mult_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -11655,12 +11806,12 @@ theorem frobTraceAct_of_torsion_of_mult_finiteBase
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (m' : Mult ab' (NumberField.RingOfIntegers D))
     (σ : Field.absoluteGaloisGroup k)
-    (hσ : ∀ z : AlgebraicClosure k,
+    (_hσ : ∀ z : AlgebraicClosure k,
       (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
     (Fr V : A' ⟶ A') (hFrf : Fr ≫ f' = f') (hVf : V ≫ f' = f')
     (hFrpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
       (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr)
-    (hFrV : Fr ≫ V = ab'.mulByNat N) (hVFr : V ≫ Fr = ab'.mulByNat N)
+    (_hFrV : Fr ≫ V = ab'.mulByNat N) (_hVFr : V ≫ Fr = ab'.mulByNat N)
     (Vpt : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
       GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
     (hVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), (Vpt y).1 = y.1 ≫ V)
@@ -11671,8 +11822,73 @@ theorem frobTraceAct_of_torsion_of_mult_finiteBase
         ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
           ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y) :
     ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y :=
-  sorry
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y := by
+  classical
+  haveI := hfin
+  -- **Yoneda.**  The identity at a geometric point `y` is precomposition of `y` with
+  -- the two MORPHISMS `Fr + V` and `[t]`, both read off the tautological relative
+  -- point `RelPoint.self f'`.  This is the step that uses the algebraicity of the
+  -- operators, i.e. `hFrpt` and `hVpt`.
+  have hkey : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y)
+        ↔ y.1 ≫ (ab'.add (⟨Fr, hFrf⟩ : RelPoint f' f') ⟨V, hVf⟩).1
+            = y.1 ≫ (m'.act t (RelPoint.self f')).1 := by
+    intro y
+    have e1 : RelPoint.pre y.1 y.2 (⟨Fr, hFrf⟩ : RelPoint f' f')
+        = ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y := Subtype.ext (hFrpt y).symm
+    have e2 : RelPoint.pre y.1 y.2 (⟨V, hVf⟩ : RelPoint f' f') = Vpt y :=
+      Subtype.ext (hVpt y).symm
+    have h1 : RelPoint.pre y.1 y.2 (ab'.add (⟨Fr, hFrf⟩ : RelPoint f' f') ⟨V, hVf⟩)
+        = ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) := by
+      rw [ab'.pre_add y.1 y.2, e1, e2]
+    have h2 : RelPoint.pre y.1 y.2 (m'.act t (RelPoint.self f')) = m'.act t y := by
+      rw [m'.pre_act y.1 y.2, RelPoint.pre_self]
+    rw [← h1, ← h2]
+    exact Subtype.ext_iff
+  -- an auxiliary prime `q` not dividing `N`, and a maximal ideal of `𝒪_D` above it
+  have hNpos : 0 < N := by
+    rw [← hN]
+    exact Nat.card_pos
+  obtain ⟨q, hqge, hq⟩ := Nat.exists_infinite_primes (N + 1)
+  have hqN : ¬ q ∣ N := fun hdvd => by
+    have := Nat.le_of_dvd hNpos hdvd
+    omega
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  have hqmax : (Ideal.span {(q : ℤ)}).IsMaximal :=
+    ((Ideal.span_singleton_prime hqZ.ne_zero).mpr hqZ).isMaximal (by simpa using hqZ.ne_zero)
+  obtain ⟨I, hI, hIcomap⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral (R := ℤ)
+      (S := NumberField.RingOfIntegers D) (Ideal.span {(q : ℤ)}) (fun x ↦ by simp +contextual)
+  have hqI : (q : NumberField.RingOfIntegers D) ∈ I := by
+    have hmem : (q : ℤ) ∈ Ideal.span {(q : ℤ)} := Ideal.mem_span_singleton_self _
+    rw [← hIcomap] at hmem
+    simpa using hmem
+  -- the two morphisms agree, by Zariski density of the prime-to-`p` torsion
+  have hmorph : (ab'.add (⟨Fr, hFrf⟩ : RelPoint f' f') ⟨V, hVf⟩).1
+      = (m'.act t (RelPoint.self f')).1 := by
+    refine eq_of_dense_geomPt_comp_eq ab' _ _
+      (ab'.add (⟨Fr, hFrf⟩ : RelPoint f' f') ⟨V, hVf⟩).2
+      (m'.act t (RelPoint.self f')).2
+      {y | ∃ n : ℕ, y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1} ?_ ?_
+    · have hsets : {x : A' | ∃ y ∈ ({y | ∃ n : ℕ,
+            y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1} :
+              Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+              , x ∈ Set.range y.1.base}
+          = {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+              x ∈ Set.range y.1.base} := by
+        ext x
+        simp only [Set.mem_setOf_eq]
+        constructor
+        · rintro ⟨y, ⟨n, hy⟩, hx⟩
+          exact ⟨n, y, hy, hx⟩
+        · rintro ⟨n, y, hy, hx⟩
+          exact ⟨y, ⟨n, hy⟩, hx⟩
+      rw [hsets]
+      exact dense_torsionGeomPt_finiteBase hfin N hN ab' m' q hq hqN I hI hqI
+    · rintro y ⟨n, hy⟩
+      exact (hkey y).mp (htors q hq hqN I hI hqI n y hy)
+  intro y
+  exact (hkey y).mpr (by rw [hmorph])
 
 /-- **THE TRACE OF FROBENIUS IS A GLOBAL INTEGER OF `D`** (**PROVEN
 2026-07-27** by assembly over the four leaves in the subsection note
