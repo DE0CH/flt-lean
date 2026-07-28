@@ -25723,12 +25723,50 @@ Stated for a general `n ≠ 0` rather than only at the prime `p` of the
 consumer because the classical proof is uniform in `n` and nothing is
 gained by narrowing.
 
-**MISSING MACHINERY**: the degree of the multiplication-by-`n` isogeny of
-an abelian scheme.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is
-in this file's cone and is where such a statement belongs; the check that
-would refute this note is `grep -rn "torsion" ` over that file and over
+**THE OLD MISSING-MACHINERY NOTE OVER-STATED WHAT IS MISSING, IN TWO
+WAYS** (corrected 2026-07-28, by the sibling leaf's owner, after running
+the check it prescribed).  It read: "MISSING MACHINERY: the degree of the
+multiplication-by-`n` isogeny of an abelian scheme.
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone
+and is where such a statement belongs; the check that would refute this
+note is `grep -rn "torsion"` over that file and over
 `Fermat/FLT/Modularity/AbelianScheme.lean`, whose `Mult.torsion` supplies
-the Galois-stable torsion SET but no finiteness. -/
+the Galois-stable torsion SET but no finiteness."
+
+First, the DEGREE is not needed.  Nothing here asks for `#A[n] = n^{2g}`,
+only that the set be FINITE, and finiteness does not go through a degree
+computation.  A prover sent after `n^{2g}` is sent after a much harder
+statement than this leaf needs.
+
+Second, the finiteness input is already PROVEN and directly applicable:
+`Fermat.finite_preimage_mulByNat_of_field_prime_to_char` in
+`AbelianSchemeIsogeny.lean` gives `(⇑(ab.mulByNat n) ⁻¹' {a}).Finite` for
+an abelian scheme over `Spec K`, `K` a field, whenever `(n : K) ≠ 0`.  It
+specialises to THIS base with no glue — `SpecQ` is `Spec (CommRingCat.of ℚ)`
+and `(n : ℚ) ≠ 0` is `exact_mod_cast hn` — compiler-checked 2026-07-28:
+
+    theorem scratch {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+        (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) (a : J) :
+        (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
+      finite_preimage_mulByNat_of_field_prime_to_char ℚ ab n
+        (by exact_mod_cast hn) a
+
+(the grep the retracted note prescribed returns only prose from that file
+because the lemma is not spelled "torsion" — which is exactly why a
+name-shaped refutation check is weaker than a statement-shaped one).
+
+**WHAT IS ACTUALLY LEFT** is a POINT-SET step, not isogeny theory: that
+`y ↦ (y.1 evaluated at the point of `Spec ℚᵃˡᵍ`)` is finite-to-one from
+the kernel into the finite set `[n]⁻¹{0}`.  A morphism `Spec ℚᵃˡᵍ ⟶ J` is
+a point `x` together with a `ℚ`-embedding `κ(x) ↪ ℚᵃˡᵍ`; such an embedding
+exists only when `κ(x)/ℚ` is algebraic, hence (as `J` is of finite type
+over `ℚ`, being proper) only at closed `x` with `κ(x)/ℚ` FINITE, and then
+there are at most `[κ(x) : ℚ]` of them.  So the fibres of that map are
+finite and its image lands in a finite set.  The missing API is the
+`Spec K`-points/residue-field-embedding dictionary, not the degree of
+`[n]`.  The check that would refute THIS note is to find a mathlib lemma
+computing `(Spec (CommRingCat.of K) ⟶ X)` as a sigma over points of `X` of
+`κ(x) →ₐ[R] K`. -/
 theorem finite_torsion_geomPt_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
