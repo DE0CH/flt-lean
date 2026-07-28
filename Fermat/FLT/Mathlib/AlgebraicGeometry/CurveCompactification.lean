@@ -25,6 +25,10 @@ public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.NoetherNormalization
 public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 public import Mathlib.RingTheory.EssentialFiniteness
+public import Mathlib.RingTheory.Unramified.Finite
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
+public import Mathlib.RingTheory.Localization.Integral
+public import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.MvPolynomial.Basic
@@ -96,8 +100,9 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
    PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is itself
    now PROVEN over `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`,
-   PROVEN 2026-07-27 over the single ring-theoretic leaf
-   `trdeg_le_of_isStandardSmoothOfRelativeDimension`, and over
+   PROVEN 2026-07-27 over the ring-theoretic statement
+   `trdeg_le_of_isStandardSmoothOfRelativeDimension`, itself PROVEN 2026-07-28 over
+   `isAlgebraic_of_subsingleton_kaehlerDifferential`, and over
    `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, PROVEN outright 2026-07-27).
 
 Step 2, the assembly, and the whole of steps 3 and 5 apart from their two named inputs are
@@ -112,14 +117,14 @@ declarations that had already been proven** (`topologicalKrullDim_normalization_
 `smoothOfRelativeDimension_of_isDominant`, `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`
 were all in it while PROVEN).  **Regenerate it from the build's `declaration uses 'sorry'`
 warnings before acting on it.**  As of `lake build` on 2026-07-28 the file's sorries are
-exactly these five:
+exactly these four:
 
 | leaf | content |
 | --- | --- |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
 | `module_finite_integralClosure_of_isPurelyInseparable` | the INSEPARABLE residue of E. Noether's finiteness theorem: `B` integrally closed of finite type over `k`, `L / Frac B` finite purely inseparable ⟹ the integral closure of `B` in `L` is `B`-finite (Stacks `0335`).  All that is left of `module_finite_integralClosure_of_isFractionRing`, which is PROVEN over it (2026-07-27): Noether normalization plus the factorisation through `separableClosure` spend the separable half, which is exactly what `Mathlib`'s `IsIntegralClosure.finite` supplies.  **This SUPERSEDES the earlier cut `module_finite_integralClosure_mvPolynomial`** ("a polynomial ring over a field is Japanese"), which is gone: it stated the residue over a polynomial base and still owed the reduction, whereas this one owes only the inseparable step |
-| `trdeg_le_of_isStandardSmoothOfRelativeDimension` | **Matsumura 25.3** — a standard smooth algebra of relative dimension `n` over a field has transcendence degree `≤ n`.  All that is left of "a smooth curve over a field is one-dimensional" |
+| ~~`trdeg_le_of_isStandardSmoothOfRelativeDimension`~~ | a standard smooth algebra of relative dimension `n` over a field has transcendence degree `≤ n` — this was "all that is left of *a smooth curve over a field is one-dimensional*".  **NO LONGER A LEAF: PROVEN 2026-07-28**, and NOT over Matsumura 25.3, which its own docstring had recorded as the missing input; do not dispatch at it |
 | `isIntegrallyClosed_stalk_normalization` | **the relative normalization is NORMAL** — its stalks are integrally closed.  All that is left of "the local rings of the normalized model are DVRs" |
 
 and, upstream, `infinite_of_smoothOfRelativeDimension_one` in `CurveExtension.lean` (a nonempty
@@ -1969,14 +1974,18 @@ theorem exists_coheight_le_of_isOpenImmersion_of_irreducible {C X : Scheme.{u}}
 /-! ### Dimension of a smooth algebra over a field, via transcendence degree
 
 The 2026-07-27 cut of `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
-reduced it to pure ring theory; this block cuts it once more, and after it **exactly one
-statement is open**: `trdeg_le_of_isStandardSmoothOfRelativeDimension`.  The route is
+reduced it to pure ring theory; this block cuts it once more, and **the whole block is now
+PROVEN** (2026-07-28).  The route is
 
     Ω free of rank n  ⟹  trdeg ≤ n  ⟹  dim ≤ n  ⟹  dim ≤ 1 locally,
 
-of which the middle implication is `ringKrullDim_le_of_trdeg_le` (PROVEN here, four lines over
-Noether normalization) and the last two steps are pure localisation bookkeeping (also proven
-here).  Only the FIRST implication — Matsumura, *Commutative Ring Theory*, Thm. 25.3 — is owed.
+of which the middle implication is `ringKrullDim_le_of_trdeg_le` (four lines over Noether
+normalization) and the last two steps are pure localisation bookkeeping.  The FIRST
+implication is `trdeg_le_of_isStandardSmoothOfRelativeDimension`, proven here over two new
+statements — `isAlgebraic_of_subsingleton_kaehlerDifferential` ("étale ⟹ algebraic", the only
+non-formal step) and `subsingleton_kaehlerDifferential_adjoin_free`.  Matsumura,
+*Commutative Ring Theory*, Thm. 25.3 was recorded as the missing input and turned out NOT to
+be needed; see the leaf's docstring for why.
 -/
 
 /-- **Krull dimension is bounded by transcendence degree over a field** (PROVEN 2026-07-27).
@@ -2019,30 +2028,154 @@ theorem ringKrullDim_le_of_trdeg_le {k A : Type u} [Field k] [CommRing A] [Algeb
       _ = (s : WithBot ℕ∞) := hdimB
       _ ≤ (n : WithBot ℕ∞) := by exact_mod_cast hsn
 
+/-- **An unramified extension of a domain by a domain is algebraic** (PROVEN 2026-07-28).
+
+`B` is a domain acting faithfully on a domain `D`, essentially of finite type, and
+`Ω[D⁄B] = 0`.  Then every element of `D` is algebraic over `B`.  This is the ring-theoretic
+content of "étale ⟹ quasi-finite", and it is the mathematical heart of
+`trdeg_le_of_isStandardSmoothOfRelativeDimension` below.
+
+THE PROOF.  Write `L = Frac D` and `F = Frac B ⊆ L`.
+
+* `Ω[L⁄B] = 0`: the image of `Ω[D⁄B]` under `KaehlerDifferential.map` kills every `d(x)` with
+  `x ∈ D`, and the quotient rule propagates that to all of `L` — for `x = a/s` the Leibniz
+  identity applied to `s · x = a` gives `s · dx = 0`, and `s` is a unit in `L`.
+* `Ω[L⁄F] = 0`, because `KaehlerDifferential.map B F L L` is surjective.
+* So `L` is formally unramified over the FIELD `F`, and every module over a field is free, so
+  `Algebra.FormallyUnramified.finite_of_free` makes `L` a FINITE `F`-module — this is the one
+  genuinely non-formal step, and it is the only place the hypotheses are spent.
+* Hence `L / F` is algebraic, hence (`IsFractionRing.comap_isAlgebraic_iff`) `L` is algebraic
+  over `B`, and `D ↪ L` inherits it. -/
+theorem isAlgebraic_of_subsingleton_kaehlerDifferential (B D : Type u) [CommRing B] [IsDomain B]
+    [CommRing D] [IsDomain D] [Algebra B D] [FaithfulSMul B D]
+    [Algebra.EssFiniteType B D] [Subsingleton (Ω[D⁄B])] : Algebra.IsAlgebraic B D := by
+  have hBDL : (algebraMap B (FractionRing D))
+      = (algebraMap D (FractionRing D)).comp (algebraMap B D) :=
+    IsScalarTower.algebraMap_eq B D (FractionRing D)
+  have hinjBL : Function.Injective (algebraMap B (FractionRing D)) :=
+    hBDL ▸ (IsFractionRing.injective D (FractionRing D)).comp
+      (FaithfulSMul.algebraMap_injective B D)
+  letI : Algebra (FractionRing B) (FractionRing D) := (IsFractionRing.lift hinjBL).toAlgebra
+  haveI : IsScalarTower B (FractionRing B) (FractionRing D) :=
+    IsScalarTower.of_algebraMap_eq fun x => (IsFractionRing.lift_algebraMap hinjBL x).symm
+  have hDzero : ∀ x : D,
+      KaehlerDifferential.D B (FractionRing D) (algebraMap D (FractionRing D) x) = 0 := by
+    intro x
+    rw [← KaehlerDifferential.map_D B B D (FractionRing D) x,
+      Subsingleton.elim (KaehlerDifferential.D B D x) 0, map_zero]
+  have hLzero : ∀ x : FractionRing D, KaehlerDifferential.D B (FractionRing D) x = 0 := by
+    intro x
+    obtain ⟨⟨a, s⟩, rfl⟩ := IsLocalization.mk'_surjective (nonZeroDivisors D) x
+    have hspec : algebraMap D (FractionRing D) s * IsLocalization.mk' (FractionRing D) a s
+        = algebraMap D (FractionRing D) a := IsLocalization.mk'_spec' _ a s
+    have h1 := congrArg (KaehlerDifferential.D B (FractionRing D)) hspec
+    rw [Derivation.leibniz, hDzero (s : D), hDzero a, smul_zero, add_zero] at h1
+    have hu : IsUnit (algebraMap D (FractionRing D) (s : D)) := IsLocalization.map_units _ s
+    obtain ⟨v, hv⟩ := hu
+    have := congrArg (fun z => (↑v⁻¹ : FractionRing D) • z) h1
+    simpa [smul_smul, ← hv] using this
+  haveI : Subsingleton (Ω[FractionRing D⁄B]) := by
+    have htop : (⊤ : Submodule (FractionRing D) (Ω[FractionRing D⁄B])) = ⊥ := by
+      rw [← KaehlerDifferential.span_range_derivation, Submodule.span_eq_bot]
+      rintro x ⟨y, rfl⟩
+      exact hLzero y
+    refine subsingleton_of_forall_eq 0 fun x => ?_
+    have hx : x ∈ (⊤ : Submodule (FractionRing D) (Ω[FractionRing D⁄B])) := Submodule.mem_top
+    rw [htop] at hx
+    simpa using hx
+  haveI : Subsingleton (Ω[FractionRing D⁄FractionRing B]) := by
+    refine subsingleton_of_forall_eq 0 fun x => ?_
+    obtain ⟨y, rfl⟩ :=
+      KaehlerDifferential.map_surjective B (FractionRing B) (FractionRing D) x
+    rw [Subsingleton.elim y 0, map_zero]
+  haveI : Algebra.FormallyUnramified (FractionRing B) (FractionRing D) := ⟨inferInstance⟩
+  haveI : Algebra.EssFiniteType D (FractionRing D) :=
+    Algebra.EssFiniteType.of_isLocalization _ (nonZeroDivisors D)
+  haveI : Algebra.EssFiniteType B (FractionRing D) := Algebra.EssFiniteType.comp B D _
+  haveI : Algebra.EssFiniteType (FractionRing B) (FractionRing D) :=
+    Algebra.EssFiniteType.of_comp B _ _
+  haveI : Module.Finite (FractionRing B) (FractionRing D) :=
+    Algebra.FormallyUnramified.finite_of_free _ _
+  haveI : Algebra.IsAlgebraic (FractionRing B) (FractionRing D) :=
+    Algebra.IsAlgebraic.of_finite _ _
+  haveI : Algebra.IsAlgebraic B (FractionRing D) :=
+    (IsFractionRing.comap_isAlgebraic_iff (A := B) (K := FractionRing B)
+      (C := FractionRing D)).mpr ‹_›
+  exact Algebra.IsAlgebraic.of_injective (IsScalarTower.toAlgHom B D (FractionRing D))
+    (IsFractionRing.injective D (FractionRing D))
+
+/-- **The free variables of a submersive presentation kill the differentials of any quotient**
+(PROVEN 2026-07-28).
+
+`P` is a submersive presentation of `A` over `k` — variables indexed by `ι`, relations by `σ`,
+with an injection `P.map : σ ↪ ι` singling out the variables the Jacobian is taken in — and
+`D` is any quotient of `A`.  Let `B ⊆ D` be the `k`-subalgebra generated by the images of the
+*free* variables `P.val i`, `i ∉ range P.map`.  Then `Ω[D⁄B] = 0`.
+
+THE PROOF is one line of mathematics on top of `SubmersivePresentation.basisKaehler`, which
+says the `d(P.val i)` for `i ∉ range P.map` are an `A`-BASIS of `Ω[A⁄k]`.  The comparison map
+`Ω[A⁄k] → Ω[D⁄B]` is surjective because `A ↠ D` is, and it kills that basis, since each basis
+vector maps to `d` of an element of `B`.  So it is the zero map with dense image. -/
+theorem subsingleton_kaehlerDifferential_adjoin_free {k A D : Type u} [Field k] [CommRing A]
+    [Algebra k A] [CommRing D] [Algebra k D] [Algebra A D] [IsScalarTower k A D]
+    (hsurj : Function.Surjective (algebraMap A D))
+    {ι σ : Type} [Finite ι] [Finite σ] (P : Algebra.SubmersivePresentation k A ι σ) :
+    Subsingleton
+      (Ω[D⁄(Algebra.adjoin k ((fun i => algebraMap A D (P.val i)) '' (Set.range P.map)ᶜ))]) := by
+  set s : Set D := (fun i => algebraMap A D (P.val i)) '' (Set.range P.map)ᶜ with hs
+  set B : Subalgebra k D := Algebra.adjoin k s with hB
+  haveI : SMulCommClass ↥B A D := ⟨fun b a d => by
+    simp only [Algebra.smul_def, ← mul_assoc]
+    rw [mul_comm (algebraMap ↥B D b) (algebraMap A D a)]⟩
+  have hmap0 : KaehlerDifferential.map k ↥B A D = 0 := by
+    refine P.basisKaehler.ext fun i => ?_
+    rw [Algebra.SubmersivePresentation.basisKaehler_apply, KaehlerDifferential.map_D]
+    have hmem : algebraMap A D (P.val (i : ι)) ∈ B :=
+      Algebra.subset_adjoin ⟨(i : ι), i.2, rfl⟩
+    have hb : algebraMap A D (P.val (i : ι))
+        = algebraMap ↥B D ⟨algebraMap A D (P.val (i : ι)), hmem⟩ := rfl
+    rw [hb, Derivation.map_algebraMap]
+    simp
+  refine subsingleton_of_forall_eq 0 fun x => ?_
+  obtain ⟨y, rfl⟩ := KaehlerDifferential.map_surjective_of_surjective k ↥B A D hsurj x
+  rw [hmap0]
+  rfl
+
 /-- **A standard smooth algebra of relative dimension `n` over a field has transcendence degree
-at most `n`** (sorry leaf — 2026-07-27; after this cut it is the ONLY thing owed by
+at most `n`** (**PROVEN 2026-07-28**; it used to be the ONLY thing owed by
 `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` and hence by
 `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`).
 
-TRUE and classical.  `Algebra.IsStandardSmoothOfRelativeDimension n k A` gives a presentation
-`A ≅ k[x₁,…,x_m]/(g₁,…,g_{m-n})` with an invertible Jacobian minor, and
-`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential` (PRESENT at this pin,
-`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean:313`) already says `Ω[A⁄k]` is FREE of
-rank `n` — over the whole of `A`, not merely at a point.  What is owed is the passage from that
-to transcendence degree.
+**THE ROUTE TAKEN, and why it is NOT the one this docstring used to prescribe.**  The earlier
+plan was Matsumura, *Commutative Ring Theory*, Thm. 25.3 (`trdeg_k L ≤ dim_L Ω[L⁄k]` for a
+finitely generated field extension) plus a minimal-primes reduction, and it recorded 25.3 as
+"the one genuinely missing input" — `grep -rn "trdeg" Mathlib/RingTheory/Kaehler/
+Mathlib/FieldTheory/` is indeed EMPTY at this pin, and `trdeg` occurs in exactly three mathlib
+files, none of them connecting it to `Ω` or to dimension.  **That audit was right about
+mathlib and wrong about the leaf**: 25.3 is not needed, because the SEPARATION OF VARIABLES the
+submersive presentation already carries does the same work more cheaply.  Matsumura 25.3 is a
+statement about an arbitrary f.g. field extension, where the inseparable case forces `p`-bases;
+here the extension comes with a distinguished set of `n` variables, and one only needs that the
+rest are algebraic over them.
 
-**THE ROUTE.** It is *Matsumura, Commutative Ring Theory*, Thm. 25.3 (equivalently Stacks
-`0CD7` / `07P2`) plus a minimal-primes reduction:
+So the proof is, with `P` a submersive presentation of dimension `n`:
 
-1. Let `S ⊆ A` be algebraically independent over `k`.  `k[S]` is reduced, so `S` stays
-   algebraically independent in `A_red`; `A` is Noetherian, so `A_red ↪ ∏ A/𝔭ᵢ` over the
-   finitely many minimal primes, and `k[S]` being a domain it embeds in a single `A/𝔭`, hence
-   in `L := κ(𝔭) = Frac (A/𝔭)`.  So `trdeg_k A = max_𝔭 trdeg_k κ(𝔭)`.
-2. `Ω[L⁄k]` is a quotient of `L ⊗_A Ω[A⁄k] ≅ L^n`, so `dim_L Ω[L⁄k] ≤ n`.
-3. **Matsumura 25.3**: for a finitely generated field extension `L/k`,
-   `trdeg_k L ≤ dim_L Ω[L⁄k]`, with equality exactly when `L/k` is separably generated.  This
-   is the one genuinely missing input; `grep -rn "trdeg" Mathlib/RingTheory/Kaehler/
-   Mathlib/FieldTheory/` is EMPTY at this pin, so nothing links the two invariants.
+1. `trdeg_k A ≤ n` unfolds to: every algebraically independent `t ⊆ A` has `#t ≤ n`.
+2. Fix such a `t`.  `k[t] ↪ A` is injective, so by `Ideal.exists_comap_eq_of_mem_minimalPrimes`
+   `_of_injective` (Stacks `00FK`) there is a PRIME `𝔭 ⊆ A` with `𝔭 ∩ k[t] = 0`.  This replaces
+   the "finitely many minimal primes + prime avoidance" argument of the old plan by one mathlib
+   citation, and needs no Noetherian hypothesis.  Put `D := A ⧸ 𝔭`, a DOMAIN in which `t` is
+   still algebraically independent, so `#t ≤ trdeg_k D`.
+3. `Ω[D⁄B] = 0` for `B` the subalgebra generated by the images of the `n` free variables
+   (`subsingleton_kaehlerDifferential_adjoin_free` above, over
+   `SubmersivePresentation.basisKaehler`).
+4. `D` is a domain, `B` a domain, and `D` is essentially of finite type over `B`, so
+   `isAlgebraic_of_subsingleton_kaehlerDifferential` above makes `D` ALGEBRAIC over `B`.
+5. `Algebra.IsAlgebraic.trdeg_le_cardinalMk` then gives `trdeg_k D ≤ #B`'s generating set `≤ n`,
+   the last inequality being `Fintype.card ↥(range P.map)ᶜ = #ι - #σ = P.dimension = n`.
+
+The only non-formal input is step 4's use of `Algebra.FormallyUnramified.finite_of_free`: an
+unramified algebra over a FIELD is a finite module, because every module over a field is free.
 
 **A WARNING FOR WHOEVER STRENGTHENS THIS.**  The naive generalisation
 `trdeg_k A ≤ Module.rank A Ω[A⁄k]` for every finite-type `A` is **FALSE**, and the
@@ -2061,8 +2194,70 @@ integral extension" is NOT missing — the half that is needed is `ringKrullDim_
 proven above in this file. -/
 theorem trdeg_le_of_isStandardSmoothOfRelativeDimension {k A : Type u} [Field k] [CommRing A]
     [Algebra k A] (n : ℕ) [Algebra.IsStandardSmoothOfRelativeDimension n k A] :
-    Algebra.trdeg k A ≤ (n : Cardinal) :=
-  sorry
+    Algebra.trdeg k A ≤ (n : Cardinal) := by
+  classical
+  obtain ⟨ι, σ, hσfin, hιfin, P, hPdim⟩ :=
+    (‹Algebra.IsStandardSmoothOfRelativeDimension n k A›).out
+  haveI := hσfin
+  haveI := hιfin
+  haveI : Algebra.FiniteType k A :=
+    haveI : Algebra.IsStandardSmooth k A :=
+      Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth n
+    haveI : Algebra.FinitePresentation k A := inferInstance
+    inferInstance
+  refine ciSup_le' ?_
+  rintro ⟨t, ht⟩
+  -- `t` is algebraically independent; embed `k[t]` into a quotient of `A` by a prime
+  have hφ : Function.Injective
+      (MvPolynomial.aeval (fun x : ↥t => (x : A)) : MvPolynomial ↥t k →ₐ[k] A) := ht
+  have hbot : (⊥ : Ideal (MvPolynomial ↥t k)) ∈ minimalPrimes (MvPolynomial ↥t k) :=
+    ⟨⟨Ideal.isPrime_bot, bot_le⟩, fun _ _ _ => bot_le⟩
+  obtain ⟨p, hp, hcomap⟩ := Ideal.exists_comap_eq_of_mem_minimalPrimes_of_injective
+    (f := ((MvPolynomial.aeval (fun x : ↥t => (x : A)) :
+      MvPolynomial ↥t k →ₐ[k] A) : MvPolynomial ↥t k →+* A)) hφ ⊥ hbot
+  haveI := hp
+  haveI : IsDomain (A ⧸ p) := Ideal.Quotient.isDomain p
+  -- the images of `t` stay algebraically independent
+  have htD : AlgebraicIndependent k (fun x : ↥t => Ideal.Quotient.mk p (x : A)) := by
+    have hcomp : ((MvPolynomial.aeval (fun x : ↥t => Ideal.Quotient.mk p (x : A)) :
+        MvPolynomial ↥t k →ₐ[k] A ⧸ p) : MvPolynomial ↥t k →+* A ⧸ p)
+        = (Ideal.Quotient.mk p).comp
+          ((MvPolynomial.aeval (fun x : ↥t => (x : A)) :
+            MvPolynomial ↥t k →ₐ[k] A) : MvPolynomial ↥t k →+* A) := by
+      ext i <;> simp
+    show Function.Injective
+      ((MvPolynomial.aeval (fun x : ↥t => Ideal.Quotient.mk p (x : A)) :
+        MvPolynomial ↥t k →ₐ[k] A ⧸ p) : MvPolynomial ↥t k →+* A ⧸ p)
+    rw [hcomp, RingHom.injective_iff_ker_eq_bot, RingHom.ker_eq_comap_bot, ← Ideal.comap_comap,
+      ← RingHom.ker_eq_comap_bot, Ideal.mk_ker]
+    exact hcomap
+  -- the free variables of the presentation, and the subalgebra they generate
+  set s : Set (A ⧸ p) :=
+    (fun i => algebraMap A (A ⧸ p) (P.val i)) '' (Set.range P.map)ᶜ with hs
+  haveI := subsingleton_kaehlerDifferential_adjoin_free (D := A ⧸ p)
+    Ideal.Quotient.mk_surjective P
+  haveI : Algebra.FiniteType k (A ⧸ p) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ k p) Ideal.Quotient.mk_surjective
+  haveI : Algebra.EssFiniteType k (A ⧸ p) := inferInstance
+  haveI : Algebra.EssFiniteType ↥(Algebra.adjoin k s) (A ⧸ p) :=
+    Algebra.EssFiniteType.of_comp k _ _
+  haveI : Algebra.IsAlgebraic ↥(Algebra.adjoin k s) (A ⧸ p) :=
+    isAlgebraic_of_subsingleton_kaehlerDifferential _ _
+  calc (Cardinal.mk ↥t) ≤ Algebra.trdeg k (A ⧸ p) := htD.cardinalMk_le_trdeg
+    _ ≤ Cardinal.mk ↥s := Algebra.IsAlgebraic.trdeg_le_cardinalMk k s
+    _ ≤ (n : Cardinal) := by
+        haveI := Fintype.ofFinite ι
+        haveI := Fintype.ofFinite σ
+        have hcard : Cardinal.mk (((Set.range P.map)ᶜ : Set ι)) = ((n : ℕ) : Cardinal.{0}) := by
+          rw [Cardinal.mk_fintype]
+          congr 1
+          rw [← hPdim, Fintype.card_compl_set, Set.card_range_of_injective P.map_inj,
+            Algebra.Presentation.dimension, Nat.card_eq_fintype_card, Nat.card_eq_fintype_card]
+        have h1 := Cardinal.mk_image_le_lift
+          (f := fun i => algebraMap A (A ⧸ p) (P.val i)) (s := ((Set.range P.map)ᶜ : Set ι))
+        rw [hcard] at h1
+        rw [hs]
+        simpa using h1
 
 /-- **A standard smooth algebra of relative dimension `n` over a field has Krull dimension at
 most `n`** (PROVEN 2026-07-27 over the two statements above).
