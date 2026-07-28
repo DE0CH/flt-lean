@@ -2265,7 +2265,8 @@ rather than proving a third copy of it. The audit recorded by the previous
 owner said: `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`
 is, together with `IsFlatPointsGroupAt.pi`, exactly this statement and was
 already PROVEN there; and `hasFlatProlongationAt_of_surjective` in
-`Modularity/KhareWintenberger.lean` is a `sorry` in the `n = 1` special case.
+`Modularity/KhareWintenberger.lean` was at that time a `sorry` in the `n = 1`
+special case (**it is no longer** — see the update at the end of this audit).
 Both live ABOVE this module (`Interface` imports `KhareWintenberger`, which
 imports this file), so neither could be consumed here. So the mathematics was
 never open — only misplaced.
@@ -2292,9 +2293,29 @@ one). `Interface.lean` now keeps only the assembly
 `GaloisRep.hasFlatProlongationAt_of_pi_embedding`, whose consumers are there.
 Nothing was restated, weakened or re-proven; `Interface.lean`'s own consumers
 see the same declarations through the import. THE COPY COUNT IS THEREFORE
-DOWN, not up: `KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
-is now redundant (it is this theorem at `n = 1`) and should be redirected here
-by its owner.
+DOWN, not up.
+
+UPDATE 2026-07-27 — THE LAST ITEM OF THIS AUDIT IS CLOSED, AND NOT IN THE WAY
+THE AUDIT PROPOSED. `KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
+is **PROVEN**, and the earlier text here (which recommended redirecting it into
+this theorem at `n = 1`) is retired rather than merely dated: that redirection
+was EVALUATED AND REJECTED as the worse of the two routes. Both routes bottom
+out in the same brick — `IsFlatPointsGroupAt.of_surjective` in
+`FlatPointsGroup.lean` — so nothing is reproven either way, and the choice is
+purely about how much adapter code sits on top:
+
+* via this theorem at `n = 1`, the caller must supply a `Fin 1 → X ≃ X`
+  adaptation to meet the finite-power shape, AND convert its GLOBAL
+  equivariance hypothesis into the LOCAL one this statement quantifies over;
+* going straight to the shared carrier needs NEITHER — the target statement is
+  already at `n = 1` and already carrier-shaped, so it is
+  `hasFlatProlongationAt_iff_isFlatPointsGroupAt` on both sides of
+  `IsFlatPointsGroupAt.of_surjective`, with the global-to-local step a
+  three-line `intro`/`show`/`exact` on the definitional unfolding of `toLocal`.
+
+Five lines instead of a dozen, with the deep content in exactly one place
+either way. Do not re-litigate this: the redirection is not an outstanding
+task, it is a considered non-choice.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
 (1974), §3; Tate–Oort, *A classification of group schemes of order p*, Ann.
@@ -2691,11 +2712,22 @@ below by the three-line assembly the audit predicted, with NO fourth
 copy of the content — the same shape as its sibling
 `hasFlatProlongationAt_of_pi_surjection` above.
 
-The one remaining item of that audit is still open and belongs to
-another owner: `Modularity/KhareWintenberger.lean`'s
+THE AUDIT IS NOW FULLY DISCHARGED (updated 2026-07-27). Its last item
+used to read: `Modularity/KhareWintenberger.lean`'s
 `hasFlatProlongationAt_of_surjective` is this file's
 `hasFlatProlongationAt_of_pi_surjection` at `n = 1` and should be
-redirected rather than reproven.
+redirected rather than reproven. That leaf is **PROVEN**, so the item is
+closed — but note it did NOT close by that redirection, which was
+evaluated and deliberately rejected. It closes over the SAME shared
+brick this theorem uses (`IsFlatPointsGroupAt.of_surjective` in
+`FlatPointsGroup.lean`), reached directly rather than through this
+module: going via `hasFlatProlongationAt_of_pi_surjection` would have
+cost a `Fin 1 → X ≃ X` adaptation to the finite-power shape AND a
+global-to-local equivariance conversion, where the direct route needs
+neither and runs to five lines. No copy of the mathematics was added on
+either route. See the fuller note on
+`hasFlatProlongationAt_of_pi_surjection` above; do not re-open this as a
+redirection task.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF
 102 (1974), §3; Tate–Oort, *A classification of group schemes of order
@@ -18125,9 +18157,23 @@ group `ℚ(S, ℓ)` of dimension `2` over `G_{ℚ,S}`.
 Over `G_{ℚ,S}` — which is what Poitou–Tate (NSW VIII.6.7) and Greenberg–Wiles
 are stated for — the source is FINITE-dimensional (NSW VIII.3) and both leaves
 below are the theorems they were meant to be. Note that finiteness is NOT
-proven here and is not needed to STATE anything; it is part of
+proven here and is not needed to STATE anything.
+
+**CORRECTION 2026-07-28 — this paragraph used to end "it is part of
 `rank_sha2_le_rank_sha1_twist`'s proof obligation, where it was already
-itemised.
+itemised", and that is now stale twice over.** (a) The finiteness is no longer
+folded into that consumer: it was cut out the same day as its own leaf,
+`finiteDimensional_h1_adZeroTwistRestricted` immediately below, which
+`rank_sha2_le_rank_sha1_twist` now consumes by name. (b) More importantly, the
+standing reading of this note — that finiteness of `H¹(G_{ℚ,S}, M)` for finite
+`M` "is standard and is itself missing from this tree" — is WRONG about the
+arithmetic half. Its Hermite–Minkowski input is PROVEN, in
+`HardlyRamified/HermiteMinkowski.lean` (`finite_setOf_subgroup_inertiaAt_le`:
+finitely many open normal subgroups of `Γ ℚ` of bounded index into which the
+inertia at every `q ∉ {2, p}` maps), and **that module is imported by THIS one**
+— see the `import` on the header, non-public, which is enough for proof-body
+use. What is actually missing is recorded on
+`finiteDimensional_h1_adZeroTwistRestricted` below.
 
 The degree-`1` half could alternatively have been stated over `Γ ℚ` with an
 unramified-outside-`S` condition imposed on cocycles, since inflation is
@@ -18161,6 +18207,48 @@ its work, and isolating it makes that visible to the compiler. Note also that
 the passage `Ш² ≅ (Ш¹)^∨ ⟹ dim Ш² ≤ dim Ш¹` genuinely NEEDS it —
 `dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and
 `rank_le_rank_dual` above only gives the OTHER direction.
+
+**COST AUDIT, 2026-07-28 — the arithmetic half is PROVEN AND IN THIS MODULE'S
+OWN IMPORT CONE; what is missing is the cochain dictionary, plus one
+generalisation.** Written by the owner of `Modularity/Patching.lean`'s
+`finite_h1TwistUnramified`, which is the same finiteness stated over `Γ ℚ` with
+an unramified-outside-`S` condition instead of over `G_{ℚ,S}` (the same group in
+degree `1`, by inflation), and which was decomposed the same day. Itemised:
+
+1. *Hermite–Minkowski, "`G_{ℚ,S}` is small"* — **PROVEN**, as
+   `finite_setOf_subgroup_inertiaAt_le` in
+   `HardlyRamified/HermiteMinkowski.lean`, which THIS module imports (header
+   line, non-public, sufficient for proof bodies). Do not plan to build it, and
+   do not repeat the claim that it is missing from the tree; the refuting check
+   is `grep -n HermiteMinkowski` on this file's header.
+2. *The same statement for an arbitrary finite set of primes* — needed as soon
+   as the coefficient module is not assumed unramified outside `{2, p}`, since
+   the field cut out by a cocycle is then unramified only outside
+   `S ∪ ram(ρbar)`. `finite_setOf_subgroup_inertiaAt_le` is hard-wired to
+   `{2, p}`. A worked, verified generalisation exists as
+   `finite_inertiaOutsideSubgroups` in `Modularity/Patching.lean` — pure
+   bookkeeping over the SAME per-prime input
+   `exists_discr_factorization_le_of_finrank_le`, replacing `Finset.prod_pair`
+   by a product over `T`. **It is DOWNSTREAM of this module and therefore not
+   consumable here**; hoisting it into `HermiteMinkowski.lean`, which is
+   upstream of both, is what would make it shared. (For THIS leaf, whose `ρbar`
+   IS hardly ramified, item 2 may be avoidable: `{2, ℓ}` then really does
+   contain the ramification.)
+3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — genuinely missing, and it
+   is the real cost. Our pin's `ContCohomology/LowDegree.lean` computes `H⁰`
+   only; the vendored
+   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+   gives `cocycleClass` / `cocycleClass_eq_zero_iff` for the HOMOGENEOUS model
+   `(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`. What is needed is its
+   identification with `C(G, M)` (`F ↦ (y ↦ F 1 y)`, inverse
+   `z ↦ (x, y) ↦ x · z (x⁻¹ y)`), carrying `d` to the usual cocycle condition,
+   together with the compatibility of `ContinuousCohomology.map` with it.
+   `~/cs/FLT` does not have it either.
+
+So this leaf is **not** blocked on missing arithmetic; it is blocked on item 3,
+which is shared with `Modularity/Patching.lean`'s
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
+`finite_ker_resSubgroupTwist1`. Those three are best given to ONE owner.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -18326,7 +18414,15 @@ So `Module.rank k (Sha1Twist …)` is no longer `ℵ₀`: over `G_{ℚ,S}` the s
 `H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional (NSW VIII.3), and this leaf reads
 `dim Ш²_S(ad⁰) ≤ dim Ш¹_S(ad⁰(1))` — the perfect Poitou–Tate pairing, with
 content. **It remains OPEN**, and the porting audit above (cup product, local
-invariant map, finiteness of `H¹(G_S, M)`) is what it still costs. Nothing in
+invariant map, finiteness of `H¹(G_S, M)`) is what it still costs.
+**CORRECTION 2026-07-28 to the third of those three items**: the finiteness of
+`H¹(G_S, M)` is NOT an unbounded cost, and in particular its Hermite–Minkowski
+input is not missing from this tree — `HermiteMinkowski.lean`'s
+`finite_setOf_subgroup_inertiaAt_le` proves it and is imported by this module.
+The residual cost is the degree-`1` inhomogeneous cochain dictionary; the full
+itemisation is on `finiteDimensional_h1_adZeroTwistRestricted` above, which is
+where that obligation now lives (it is a leaf of its own, not a clause of this
+one). Nothing in
 the audit's *computation* was wrong; it was a correct refutation of a
 definition that no longer exists, and it is kept because it is the reason the
 group below the `H` is `G_{ℚ,S}` and must stay that way.
