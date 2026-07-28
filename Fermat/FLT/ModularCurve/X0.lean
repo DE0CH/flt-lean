@@ -45754,8 +45754,280 @@ theorem exists_heckeIsotypicDecomposition_atkinLehnerFactorwise (N : ℕ) {X Y J
     ∃ D : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerFactorwise D wJ hwJ) :=
   sorry
 
+/-! #### Poincaré reducibility, and the bookkeeping it discharges
+
+Everything from here to `exists_atkinLehnerDescent_of_factorwise` below is
+new on 2026-07-28.  The generic lemmas are about `RelPoint.post` and
+`IsAdditiveOn` and are used only in the construction below; the structure
+`IsInvolutionSignSplitting` and the leaf `exists_involutionSignSplitting`
+isolate the one piece of abelian-variety theory that construction needs.
+-/
+
+/-- **`RelPoint.post` is functorial** (PROVEN) — postcomposing along
+`v ≫ w` is postcomposing along `v` and then along `w`.  Both sides are
+`x.1 ≫ v ≫ w`, associated differently.  The proof `hvw` is implicit
+because `RelPoint bf g` does not depend on it, so any proof will do. -/
+theorem RelPoint.post_comp {A B C S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} {cf : C ⟶ S}
+    (v : A ⟶ B) (hv : v ≫ bf = af) (w : B ⟶ C) (hw : w ≫ cf = bf)
+    {hvw : (v ≫ w) ≫ cf = af} {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    RelPoint.post (v ≫ w) hvw x = RelPoint.post w hw (RelPoint.post v hv x) :=
+  Subtype.ext (Category.assoc _ _ _).symm
+
+/-- **Postcomposing along the identity does nothing** (PROVEN). -/
+theorem RelPoint.post_id {A S : Scheme.{0}} {af : A ⟶ S} {h : 𝟙 A ≫ af = af}
+    {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    RelPoint.post (𝟙 A) h x = x :=
+  Subtype.ext (Category.comp_id _)
+
+/-- **Postcomposition depends only on the MORPHISM, not on the proof that
+it lies over the base** (PROVEN).  This is what lets a family of
+endomorphisms defined by an `if` be compared with its branches. -/
+theorem RelPoint.post_congr {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} {v w : A ⟶ B}
+    {hv : v ≫ bf = af} {hw : w ≫ bf = af} (h : v = w) {T : Scheme.{0}} {g : T ⟶ S}
+    (x : RelPoint af g) : RelPoint.post v hv x = RelPoint.post w hw x := by
+  subst h; rfl
+
+/-- **The identity is a homomorphism** (PROVEN). -/
+theorem isAdditiveOn_id {A S : Scheme.{0}} {af : A ⟶ S} (ab : AbelianSchemeStruct af)
+    (h : 𝟙 A ≫ af = af) : IsAdditiveOn ab ab (𝟙 A) h := by
+  intro T g x y
+  rw [RelPoint.post_id, RelPoint.post_id, RelPoint.post_id]
+
+/-- **Additivity transports along an equality of morphisms** (PROVEN). -/
+theorem isAdditiveOn_congr {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v w : A ⟶ B}
+    (hvw : v = w) {hv : v ≫ bf = af} {hw : w ≫ bf = af}
+    (h : IsAdditiveOn abA abB v hv) : IsAdditiveOn abA abB w hw := by
+  subst hvw; exact h
+
+/-- **A composite of homomorphisms is a homomorphism** (PROVEN). -/
+theorem IsAdditiveOn.comp {A B C S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} {cf : C ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf}
+    {abC : AbelianSchemeStruct cf} {v : A ⟶ B} {hv : v ≫ bf = af} {w : B ⟶ C}
+    {hw : w ≫ cf = bf} (h1 : IsAdditiveOn abA abB v hv) (h2 : IsAdditiveOn abB abC w hw)
+    {hvw : (v ≫ w) ≫ cf = af} : IsAdditiveOn abA abC (v ≫ w) hvw := by
+  intro T g x y
+  rw [RelPoint.post_comp v hv w hw (abA.add x y), RelPoint.post_comp v hv w hw x,
+    RelPoint.post_comp v hv w hw y, h1, h2]
+
+/-- **A homomorphism carries the zero section to the zero section**
+(PROVEN) — the usual `a = a + a → a = 0` argument, read on relative
+points.  Note the direction: `isAdditiveOn_of_post_zero` above goes the
+other way (rigidity), and is a much deeper statement. -/
+theorem IsAdditiveOn.post_zero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} (g : T ⟶ S) :
+    RelPoint.post u hu (abA.zero g) = abB.zero g := by
+  letI := abA.addCommGroup g
+  letI := abB.addCommGroup g
+  have h0 : RelPoint.post u hu (abA.zero g)
+      = RelPoint.post u hu (abA.zero g) + RelPoint.post u hu (abA.zero g) := by
+    conv_lhs => rw [show abA.zero g = abA.add (abA.zero g) (abA.zero g) from
+      (abA.zero_add (abA.zero g)).symm]
+    exact h _ _
+  have h1 : (0 : RelPoint bf g) + RelPoint.post u hu (abA.zero g)
+      = RelPoint.post u hu (abA.zero g) + RelPoint.post u hu (abA.zero g) := by
+    rw [zero_add]; exact h0
+  exact ((add_left_inj _).mp h1).symm
+
+/-- **A homomorphism intertwining two endomorphisms carries an integral
+polynomial expression in the one to the same expression in the other**
+(PROVEN).
+
+This is the shape in which `IsHeckeIsotypicDecomposition.isotypic` is
+stated — `∑_k P.coeff k • (T_n)^k x = 0` written with `Function.iterate`
+rather than with a module structure, because `RelPoint` carries only an
+`AddCommGroup` — and it is the only thing needed to move that annihilation
+along a map of abelian schemes. -/
+theorem sum_zsmul_iterate_map {G H : Type*} [AddCommGroup G] [AddCommGroup H]
+    (φ : G → H) (hadd : ∀ x y, φ (x + y) = φ x + φ y)
+    (σ : G → G) (τ : H → H) (hcomm : ∀ x, φ (σ x) = τ (φ x))
+    (c : ℕ → ℤ) (m : ℕ) (x : G) :
+    φ (∑ k ∈ Finset.range m, c k • σ^[k] x) = ∑ k ∈ Finset.range m, c k • τ^[k] (φ x) := by
+  have hiter : ∀ (k : ℕ) (y : G), φ (σ^[k] y) = τ^[k] (φ y) := by
+    intro k
+    induction k with
+    | zero => intro y; simp
+    | succ k ih =>
+      intro y
+      rw [Function.iterate_succ_apply, ih, hcomm, ← Function.iterate_succ_apply]
+  let ψ : G →+ H := AddMonoidHom.mk' φ hadd
+  have hψ : ∀ y, ψ y = φ y := fun _ => rfl
+  calc φ (∑ k ∈ Finset.range m, c k • σ^[k] x)
+      = ψ (∑ k ∈ Finset.range m, c k • σ^[k] x) := (hψ _).symm
+    _ = ∑ k ∈ Finset.range m, c k • ψ (σ^[k] x) := by
+        rw [map_sum]; exact Finset.sum_congr rfl fun k _ => map_zsmul ψ _ _
+    _ = ∑ k ∈ Finset.range m, c k • τ^[k] (φ x) := by
+        refine Finset.sum_congr rfl fun k _ => ?_
+        rw [hψ, hiter]
+
+/-- **The preimage of a finite set under a homomorphism with finite kernel
+is finite** (PROVEN) — a finite union of cosets of the kernel.
+
+This is what upgrades `IsHeckeIsotypicDecomposition.finite_ker` along a
+REFINEMENT of the decomposition: the refined joint kernel is the set of
+points whose image in each old factor lies in that factor's (finite)
+`±`-joint kernel, i.e. the preimage of a finite set. -/
+theorem finite_preimage_of_finite_ker {G H : Type*} [AddCommGroup G] [AddCommGroup H]
+    (φ : G → H) (hadd : ∀ x y, φ (x + y) = φ x + φ y)
+    (hker : {x : G | φ x = 0}.Finite) {K : Set H} (hK : K.Finite) :
+    (φ ⁻¹' K).Finite := by
+  classical
+  let ψ : G →+ H := AddMonoidHom.mk' φ hadd
+  have hψ : ∀ x, ψ x = φ x := fun _ => rfl
+  have hcover : φ ⁻¹' K = ⋃ t ∈ K, {x : G | φ x = t} := by
+    ext x; simp [Set.mem_preimage]
+  rw [hcover]
+  refine hK.biUnion fun t _ => ?_
+  by_cases h : ∃ x₀ : G, φ x₀ = t
+  · obtain ⟨x₀, hx₀⟩ := h
+    have hset : {x : G | φ x = t} = (fun k => x₀ + k) '' {x : G | φ x = 0} := by
+      ext x
+      simp only [Set.mem_setOf_eq, Set.mem_image]
+      constructor
+      · intro hx
+        refine ⟨x - x₀, ?_, by abel⟩
+        have hsub := map_sub ψ x x₀
+        rw [hψ, hψ, hψ, hx, hx₀, sub_self] at hsub
+        exact hsub
+      · rintro ⟨k, hk, rfl⟩
+        rw [hadd, hk, hx₀, add_zero]
+    rw [hset]
+    exact hker.image _
+  · have hempty : {x : G | φ x = t} = ∅ := by
+      ext x
+      simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+      exact fun hx => h ⟨x, hx⟩
+    rw [hempty]
+    exact Set.finite_empty
+
+/-- **THE `±`-SPLITTING OF AN ABELIAN SCHEME UNDER AN INVOLUTION, AS A
+DATUM** (new 2026-07-28) — Poincaré reducibility for an involution `ι` of
+an abelian scheme `A/ℚ`, packaged as the two quotients on which `ι` acts
+by `+1` and by `−1`.  It is the whole non-modular content of
+`exists_atkinLehnerDescent_of_factorwise` below, which is PROVEN over it.
+
+Writing `B^± := ((1 ± ι)(A))⁰`, the intended witness is
+`P true := A / B⁻` and `P false := A / B⁺`, with `p b` the quotient map.
+`ι(1 ∓ ι) = ∓(1 ∓ ι)` is why `ι` descends to `P b` and acts there as the
+sign `b`, which is `sign_plus` / `sign_minus`.
+
+**`p_epi` IS NOT `p_surj`, AND THAT DISTINCTION IS THE POINT.**
+`AlgebraicGeometry.Surjective` is a condition on the underlying
+topological spaces: it lifts no `T`-point, so it transfers no identity
+about relative points.  The quotient of an abelian scheme by an abelian
+subscheme is **faithfully flat** — recorded here as `p_flat` together with
+`p_surj` — hence an epimorphism of schemes, and it is the EPIMORPHISM
+property that `isotypic` is transported along in the consumer:
+`P(desc) ∘ p = p ∘ P(S) = 0` forces `P(desc) = 0`.  `p_epi` is stated as
+its own field rather than derived because faithfully-flat-implies-epi is
+fppf descent, which is absent at this pin; it is true of the intended
+witness, so recording it costs the producer nothing it does not already
+have.
+
+**Why `desc` is total.**  A producer cannot in general descend an
+arbitrary endomorphism, only one commuting with `ι`; `desc` is therefore
+allowed to return junk (`𝟙`) elsewhere, and `desc_spec` — the only field
+that says what it IS — is conditioned on `s ≫ ι = ι ≫ s`.  Where that
+hypothesis holds, `p_epi` pins `desc b s` uniquely, so nothing is
+spoofable.  This is exactly the range in which
+`IsAtkinLehnerFactorwise.hecke_comm` supplies the commutation, i.e. `n`
+coprime to `N`.
+
+**`ker_finite` is the `2`-torsion argument.**  The joint kernel of
+`(p⁺, p⁻)` is `B⁺ ∩ B⁻`, on which `ι y = y` and `ι y = −y`, so `2y = 0`;
+the `2`-torsion of an abelian variety over `ℚ` is finite.
+
+**Not vacuous.**  `P b := A`, `p b := 𝟙` fails `sign_minus` unless `ι` is
+`−1`, and `P b := Spec ℚ` fails `ker_finite` unless `A(ℚ)` is finite. -/
+structure IsInvolutionSignSplitting {A : Scheme.{0}} {astr : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct astr) (ι : A ⟶ A) (hι : ι ≫ astr = astr) where
+  /-- the `+1` part (`b = true`) and the `−1` part (`b = false`) -/
+  P : Bool → Scheme.{0}
+  /-- their structure morphisms -/
+  pstr : ∀ b, P b ⟶ SpecQ
+  /-- each part is an abelian scheme over `ℚ` -/
+  abP : ∀ b, AbelianSchemeStruct (pstr b)
+  /-- the quotient maps -/
+  p : ∀ b, A ⟶ P b
+  /-- they lie over the base -/
+  p_comp : ∀ b, p b ≫ pstr b = astr
+  /-- they are homomorphisms -/
+  p_add : ∀ b, IsAdditiveOn abA (abP b) (p b) (p_comp b)
+  /-- they are surjective -/
+  p_surj : ∀ b, AlgebraicGeometry.Surjective (p b)
+  /-- they are flat; with `p_surj` this is faithful flatness -/
+  p_flat : ∀ b, AlgebraicGeometry.Flat (p b)
+  /-- they are epimorphisms -/
+  p_epi : ∀ b, CategoryTheory.Epi (p b)
+  /-- `ι` acts as `+1` on the `+1` part -/
+  sign_plus : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint astr g),
+    RelPoint.post (p true) (p_comp true) (RelPoint.post ι hι x)
+      = RelPoint.post (p true) (p_comp true) x
+  /-- `ι` acts as `−1` on the `−1` part -/
+  sign_minus : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint astr g),
+    RelPoint.post (p false) (p_comp false) (RelPoint.post ι hι x)
+      = (abP false).neg (RelPoint.post (p false) (p_comp false) x)
+  /-- the descent of an endomorphism of `A` -/
+  desc : ∀ (b : Bool), (A ⟶ A) → (P b ⟶ P b)
+  /-- it lies over the base -/
+  desc_comp : ∀ b s, desc b s ≫ pstr b = pstr b
+  /-- it is a homomorphism -/
+  desc_add : ∀ b s, IsAdditiveOn (abP b) (abP b) (desc b s) (desc_comp b s)
+  /-- it really is the descent, for `s` an endomorphism commuting with `ι` -/
+  desc_spec : ∀ (b : Bool) (s : A ⟶ A), s ≫ astr = astr → s ≫ ι = ι ≫ s →
+    s ≫ p b = p b ≫ desc b s
+  /-- the joint kernel on rational points is finite -/
+  ker_finite : {x : RelPoint astr (𝟙 SpecQ) |
+    ∀ b, RelPoint.post (p b) (p_comp b) x = (abP b).zero (𝟙 SpecQ)}.Finite
+
+/-- **POINCARÉ REDUCIBILITY FOR AN INVOLUTION** (sorry leaf, new
+2026-07-28) — every involution of an abelian scheme over `ℚ` admits a
+`±`-splitting in the sense of `IsInvolutionSignSplitting` above.  This is
+the ONLY mathematical content left in
+`exists_atkinLehnerDescent_of_factorwise` below, which is PROVEN over it.
+
+TRUE.  In characteristic `0`, `B^± := ((1 ± ι)(A))⁰` are abelian
+subvarieties with `B⁺ ∩ B⁻` killed by `2`, hence finite, and
+`B⁺ × B⁻ → A` is an isogeny (Poincaré reducibility); the quotients
+`A / B^∓` are abelian schemes and the quotient maps are faithfully flat.
+`ι` preserves `B^∓` because `ι(1 ∓ ι) = ∓(1 ∓ ι)`, so it descends, and it
+acts on `A / B^∓` as `±1` because `(1 ∓ ι)` dies there.  Endomorphisms
+commuting with `ι` preserve both `B^±`, hence descend, which is `desc`.
+
+**Nothing modular, nothing about `X₀(N)`.**  The statement mentions no
+modular curve, no Hecke operator and no eigenform: it is a statement about
+one abelian scheme with one involution.  That is the axis along which
+`exists_heckeIsotypicDecomposition_atkinLehnerDescent` was cut on
+2026-07-28, and this leaf is the non-modular half of that cut carried one
+step further — the bookkeeping that turns a `±`-splitting of each factor
+into a refined `IsHeckeIsotypicDecomposition` is now DISCHARGED below, so
+what remains here is exactly the abelian-variety theorem.
+
+**`_hadd` and `_hinv` are load-bearing for TRUTH, not for the (sorried)
+proof.**  Without `_hinv` there is no involution to split along, and
+without `_hadd` no reason for `(1 ± ι)(A)` to be a subgroup; they are
+underscore-prefixed only because they do not occur in the conclusion's
+type.
+
+**What proving it needs**: abelian varieties over a field — absent from
+mathlib entirely, by the absence table on
+`exists_heckeIsotypicDecomposition` above — together with the quotient of
+an abelian scheme by an abelian subscheme as a faithfully flat map, and
+fppf descent to see that such a quotient is an epimorphism of schemes.
+
+**REFERENCES.**  Mumford, *Abelian Varieties*, §19 Thm 1 (Poincaré
+reducibility); Milne, *Abelian Varieties* (in Cornell–Silverman), I.12.1
+and I.10 (quotients by finite and by abelian subschemes). -/
+theorem exists_involutionSignSplitting {A : Scheme.{0}} {astr : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct astr) (ι : A ⟶ A) (hι : ι ≫ astr = astr)
+    (_hadd : IsAdditiveOn abA abA ι hι) (_hinv : ι ≫ ι = 𝟙 A) :
+    Nonempty (IsInvolutionSignSplitting abA ι hι) :=
+  sorry
+
 /-- **POINCARÉ REDUCIBILITY: a FACTORWISE Atkin–Lehner involution can be
-REFINED to one with a SIGN** (sorry leaf, new 2026-07-28) — the second
+REFINED to one with a SIGN** (introduced as a sorry leaf 2026-07-28;
+**PROVEN 2026-07-28** over `exists_involutionSignSplitting` above) — the second
 half of the cut, and the only place where the `±`-splitting of an abelian
 variety is used.
 
@@ -45824,11 +46096,30 @@ so no junk `D'` discharges it; and `D' := D` with `Plus := fun _ => True`
 does not, since that forces `u i ∘ w_J = u i` for every `i`, which
 `D.finite_ker` refutes for `w_169`.
 
-**What proving it needs**: Poincaré reducibility — a complement up to
-isogeny for an abelian subvariety — in characteristic `0` over `ℚ`,
-together with the quotient of an abelian scheme by an abelian subscheme
-as a faithfully flat map.  Absent at this pin: mathlib has no abelian
-varieties at all, by the absence table on
+**PROVEN 2026-07-28, over `exists_involutionSignSplitting`.**  The
+construction above is carried out verbatim: `SS i` is the `±`-splitting of
+the factor `A i` along `ι := F.wA i`, `idx' := D.idx × Bool`,
+`A' (i,b) := (SS i).P b` and `u' (i,b) := D.u i ≫ (SS i).p b`.  Everything
+in the bullet list is now a Lean proof rather than a plan:
+
+* `u_surj` is `Surjective` closed under composition;
+* `isotypic` is the epimorphism argument — evaluated at the UNIVERSAL
+  point of `A' (i,b)`, pulled back along `p b` (which is `RelPoint.pre`),
+  identified with the push of the universal point of `A i` (which is
+  `RelPoint.post`), reduced to `D.isotypic` there, and then cancelled by
+  `cancel_epi`.  `sum_zsmul_iterate_map` above is the transport lemma;
+* `finite_ker` is `finite_preimage_of_finite_ker` above applied to
+  `x ↦ (D.u i x)ᵢ`, whose kernel is `D.finite_ker` and whose target
+  constraint is `Set.Finite.pi` of the `(SS i).ker_finite`;
+* `equivariant` and `heckeModuli` are the `T' n := 𝟙 J` choice at `n` NOT
+  coprime to `N`, which `heckeModuli` tolerates because
+  `IsModularHeckeAction` quantifies only over primes `ℓ ∤ N`.
+
+**What is left**: exactly `exists_involutionSignSplitting` — Poincaré
+reducibility, a complement up to isogeny for an abelian subvariety in
+characteristic `0` over `ℚ`, together with the quotient of an abelian
+scheme by an abelian subscheme as a faithfully flat map.  Absent at this
+pin: mathlib has no abelian varieties at all, by the absence table on
 `exists_heckeIsotypicDecomposition` above.
 
 **REFERENCES.**  Mumford, *Abelian Varieties*, §19 Thm 1 (Poincaré
@@ -45841,8 +46132,234 @@ theorem exists_atkinLehnerDescent_of_factorwise (N : ℕ) {X Y J : Scheme.{0}}
     (jac : IsJacobianOf strX ab o) (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
     (D : IsHeckeIsotypicDecomposition N hX jac)
     (F : IsAtkinLehnerFactorwise D wJ hwJ) :
-    ∃ D' : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D' wJ hwJ) :=
-  sorry
+    ∃ D' : IsHeckeIsotypicDecomposition N hX jac, Nonempty (IsAtkinLehnerDescent D' wJ hwJ) := by
+  classical
+  obtain ⟨SS⟩ : Nonempty (∀ i : D.idx,
+      IsInvolutionSignSplitting (D.abA i) (F.wA i) (F.wA_comp i)) :=
+    ⟨fun i => Classical.choice (exists_involutionSignSplitting (D.abA i) (F.wA i)
+      (F.wA_comp i) (F.wA_add i) (F.wA_invol i))⟩
+  -- the descent equation for the anemic Hecke operators
+  have hdesc : ∀ (i : D.idx) (b : Bool) (n : ℕ), Nat.Coprime n N →
+      D.S i n ≫ (SS i).p b = (SS i).p b ≫ (SS i).desc b (D.S i n) :=
+    fun i b n hn => (SS i).desc_spec b (D.S i n) (D.S_comp i n) (F.hecke_comm i n hn)
+  -- ISOTYPY, in the form that only needs the descent equation
+  have key : ∀ (i : D.idx) (b : Bool) (n : ℕ), Nat.Coprime n N →
+      ∀ (s : (SS i).P b ⟶ (SS i).P b) (hs : s ≫ (SS i).pstr b = (SS i).pstr b),
+        D.S i n ≫ (SS i).p b = (SS i).p b ≫ s →
+      ∀ {T'' : Scheme.{0}} (g : T'' ⟶ SpecQ) (x : RelPoint ((SS i).pstr b) g),
+        letI := ((SS i).abP b).addCommGroup g
+        ∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+          (minpoly ℤ (D.coeff i n)).coeff k •
+            ((fun y : RelPoint ((SS i).pstr b) g => RelPoint.post s hs y)^[k] x) = 0 := by
+    intro i b n hn s hs hds T'' g x
+    letI := ((SS i).abP b).addCommGroup g
+    letI := ((SS i).abP b).addCommGroup ((SS i).pstr b)
+    letI := ((SS i).abP b).addCommGroup (D.astr i)
+    letI := (D.abA i).addCommGroup (D.astr i)
+    -- the universal points
+    set x₀ : RelPoint ((SS i).pstr b) ((SS i).pstr b) :=
+      ⟨𝟙 ((SS i).P b), Category.id_comp _⟩ with hx₀def
+    set y₀ : RelPoint (D.astr i) (D.astr i) := ⟨𝟙 (D.A i), Category.id_comp _⟩ with hy₀def
+    -- `p b` intertwines `S i n` with `s`
+    have hπcomm : ∀ y : RelPoint (D.astr i) (D.astr i),
+        RelPoint.post ((SS i).p b) ((SS i).p_comp b)
+            (RelPoint.post (D.S i n) (D.S_comp i n) y)
+          = RelPoint.post s hs (RelPoint.post ((SS i).p b) ((SS i).p_comp b) y) := by
+      intro y
+      refine Subtype.ext ?_
+      show (y.1 ≫ D.S i n) ≫ (SS i).p b = (y.1 ≫ (SS i).p b) ≫ s
+      rw [Category.assoc, Category.assoc, hds]
+    have hx₀p : RelPoint.pre ((SS i).p b) ((SS i).p_comp b) x₀
+        = RelPoint.post ((SS i).p b) ((SS i).p_comp b) y₀ := by
+      refine Subtype.ext ?_
+      show (SS i).p b ≫ 𝟙 ((SS i).P b) = 𝟙 (D.A i) ≫ (SS i).p b
+      rw [Category.comp_id, Category.id_comp]
+    -- STEP 1: the identity at the universal point of `P b`
+    have hZ : (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+          (minpoly ℤ (D.coeff i n)).coeff k •
+            ((fun y : RelPoint ((SS i).pstr b) ((SS i).pstr b) =>
+              RelPoint.post s hs y)^[k] x₀))
+        = ((SS i).abP b).zero ((SS i).pstr b) := by
+      haveI := (SS i).p_epi b
+      have hρ : RelPoint.pre ((SS i).p b) ((SS i).p_comp b)
+            (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+              (minpoly ℤ (D.coeff i n)).coeff k •
+                ((fun y : RelPoint ((SS i).pstr b) ((SS i).pstr b) =>
+                  RelPoint.post s hs y)^[k] x₀))
+          = ((SS i).abP b).zero (D.astr i) := by
+        calc RelPoint.pre ((SS i).p b) ((SS i).p_comp b)
+              (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+                (minpoly ℤ (D.coeff i n)).coeff k •
+                  ((fun y : RelPoint ((SS i).pstr b) ((SS i).pstr b) =>
+                    RelPoint.post s hs y)^[k] x₀))
+            = ∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+                (minpoly ℤ (D.coeff i n)).coeff k •
+                  ((fun y : RelPoint ((SS i).pstr b) (D.astr i) =>
+                    RelPoint.post s hs y)^[k]
+                    (RelPoint.pre ((SS i).p b) ((SS i).p_comp b) x₀)) :=
+              sum_zsmul_iterate_map _
+                (((SS i).abP b).pre_add ((SS i).p b) ((SS i).p_comp b))
+                (fun y => RelPoint.post s hs y) (fun y => RelPoint.post s hs y)
+                (fun z => (RelPoint.post_pre s hs ((SS i).p b) ((SS i).p_comp b) z).symm)
+                (fun k => (minpoly ℤ (D.coeff i n)).coeff k) _ x₀
+          _ = ∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+                (minpoly ℤ (D.coeff i n)).coeff k •
+                  ((fun y : RelPoint ((SS i).pstr b) (D.astr i) =>
+                    RelPoint.post s hs y)^[k]
+                    (RelPoint.post ((SS i).p b) ((SS i).p_comp b) y₀)) := by rw [hx₀p]
+          _ = RelPoint.post ((SS i).p b) ((SS i).p_comp b)
+                (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+                  (minpoly ℤ (D.coeff i n)).coeff k •
+                    ((fun y : RelPoint (D.astr i) (D.astr i) =>
+                      RelPoint.post (D.S i n) (D.S_comp i n) y)^[k] y₀)) :=
+              (sum_zsmul_iterate_map _ ((SS i).p_add b)
+                (fun y => RelPoint.post (D.S i n) (D.S_comp i n) y)
+                (fun y => RelPoint.post s hs y) hπcomm
+                (fun k => (minpoly ℤ (D.coeff i n)).coeff k) _ y₀).symm
+          _ = RelPoint.post ((SS i).p b) ((SS i).p_comp b) ((D.abA i).zero (D.astr i)) :=
+              congrArg _ (D.isotypic i n hn (D.astr i) y₀)
+          _ = ((SS i).abP b).zero (D.astr i) := IsAdditiveOn.post_zero ((SS i).p_add b) _
+      have hρ' := hρ.trans (((SS i).abP b).pre_zero ((SS i).p b) ((SS i).p_comp b)).symm
+      have hval := congrArg Subtype.val hρ'
+      exact Subtype.ext ((cancel_epi ((SS i).p b)).mp hval)
+    -- STEP 2: pull it back to an arbitrary point
+    have hx : RelPoint.pre x.1 x.2 x₀ = x := Subtype.ext (Category.comp_id _)
+    calc (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+            (minpoly ℤ (D.coeff i n)).coeff k •
+              ((fun y : RelPoint ((SS i).pstr b) g => RelPoint.post s hs y)^[k] x))
+        = ∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+            (minpoly ℤ (D.coeff i n)).coeff k •
+              ((fun y : RelPoint ((SS i).pstr b) g => RelPoint.post s hs y)^[k]
+                (RelPoint.pre x.1 x.2 x₀)) := by rw [hx]
+      _ = RelPoint.pre x.1 x.2
+            (∑ k ∈ Finset.range ((minpoly ℤ (D.coeff i n)).natDegree + 1),
+              (minpoly ℤ (D.coeff i n)).coeff k •
+                ((fun y : RelPoint ((SS i).pstr b) ((SS i).pstr b) =>
+                  RelPoint.post s hs y)^[k] x₀)) :=
+          (sum_zsmul_iterate_map _ (((SS i).abP b).pre_add x.1 x.2)
+            (fun y => RelPoint.post s hs y) (fun y => RelPoint.post s hs y)
+            (fun z => (RelPoint.post_pre s hs x.1 x.2 z).symm)
+            (fun k => (minpoly ℤ (D.coeff i n)).coeff k) _ x₀).symm
+      _ = RelPoint.pre x.1 x.2 (((SS i).abP b).zero ((SS i).pstr b)) := congrArg _ hZ
+      _ = 0 := ((SS i).abP b).pre_zero x.1 x.2
+  refine ⟨{
+      T := fun n => if Nat.Coprime n N then D.T n else 𝟙 J
+      T_comp := ?_
+      T_add := ?_
+      heckeModuli := ?_
+      idx := D.idx × Bool
+      fintypeIdx := ?_
+      A := fun j => (SS j.1).P j.2
+      astr := fun j => (SS j.1).pstr j.2
+      abA := fun j => (SS j.1).abP j.2
+      u := fun j => D.u j.1 ≫ (SS j.1).p j.2
+      u_comp := ?_
+      u_add := ?_
+      u_surj := ?_
+      form := fun j => D.form j.1
+      coeff := fun j => D.coeff j.1
+      isEigen := fun j => D.isEigen j.1
+      S := fun j n => if Nat.Coprime n N then (SS j.1).desc j.2 (D.S j.1 n) else 𝟙 _
+      S_comp := ?_
+      S_add := ?_
+      equivariant := ?_
+      integral := fun j n => D.integral j.1 n
+      isotypic := ?_
+      cover := ?_
+      finite_ker := ?_ }, ⟨{
+      Plus := fun j => j.2 = true
+      descend_plus := ?_
+      descend_minus := ?_ }⟩⟩
+  · -- T_comp
+    intro n
+    by_cases h : Nat.Coprime n N
+    · rw [if_pos h]; exact D.T_comp n
+    · rw [if_neg h]; exact Category.id_comp _
+  · -- T_add
+    intro n
+    by_cases h : Nat.Coprime n N
+    · exact isAdditiveOn_congr (if_pos h).symm (D.T_add n)
+    · exact isAdditiveOn_congr (if_neg h).symm (isAdditiveOn_id ab (Category.id_comp jstr))
+  · -- heckeModuli
+    intro ℓ hℓ hℓN d m dq iso hinj hsurj
+    have hcop : Nat.Coprime ℓ N := (Nat.Prime.coprime_iff_not_dvd hℓ).mpr hℓN
+    exact (RelPoint.post_congr (if_pos hcop) _).trans
+      (D.heckeModuli ℓ hℓ hℓN d m dq iso hinj hsurj)
+  · -- fintypeIdx
+    letI := D.fintypeIdx
+    exact inferInstance
+  · -- u_comp
+    intro j
+    rw [Category.assoc, (SS j.1).p_comp j.2, D.u_comp j.1]
+  · -- u_add
+    intro j
+    exact IsAdditiveOn.comp (D.u_add j.1) ((SS j.1).p_add j.2)
+  · -- u_surj
+    intro j
+    haveI := D.u_surj j.1
+    haveI := (SS j.1).p_surj j.2
+    exact inferInstance
+  · -- S_comp
+    intro j n
+    by_cases h : Nat.Coprime n N
+    · rw [if_pos h]; exact (SS j.1).desc_comp j.2 _
+    · rw [if_neg h]; exact Category.id_comp _
+  · -- S_add
+    intro j n
+    by_cases h : Nat.Coprime n N
+    · exact isAdditiveOn_congr (if_pos h).symm ((SS j.1).desc_add j.2 (D.S j.1 n))
+    · exact isAdditiveOn_congr (if_neg h).symm (isAdditiveOn_id ((SS j.1).abP j.2) (Category.id_comp _))
+  · -- equivariant
+    intro j n
+    by_cases h : Nat.Coprime n N
+    · rw [if_pos h, if_pos h, ← Category.assoc, D.equivariant j.1 n, Category.assoc,
+        hdesc j.1 j.2 n h, ← Category.assoc]
+    · rw [if_neg h, if_neg h, Category.id_comp, Category.comp_id]
+  · -- isotypic
+    rintro ⟨i, b⟩ n hn T'' g x
+    exact key i b n hn _ _ (by rw [if_pos hn]; exact hdesc i b n hn) g x
+  · -- cover
+    intro f a hf
+    obtain ⟨i, hi⟩ := D.cover f a hf
+    exact ⟨(i, true), hi⟩
+  · -- finite_ker
+    letI : ∀ i : D.idx, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+      fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    letI := D.fintypeIdx
+    have hK : ∀ i : D.idx, {y : RelPoint (D.astr i) (𝟙 SpecQ) |
+        ∀ b, RelPoint.post ((SS i).p b) ((SS i).p_comp b) y
+          = ((SS i).abP b).zero (𝟙 SpecQ)}.Finite := fun i => (SS i).ker_finite
+    have hbig := finite_preimage_of_finite_ker
+      (fun x : RelPoint jstr (𝟙 SpecQ) =>
+        fun i : D.idx => RelPoint.post (D.u i) (D.u_comp i) x)
+      (fun x y => funext fun i => D.u_add i x y)
+      (Set.Finite.subset D.finite_ker (fun x hx i => congrFun hx i))
+      (Set.Finite.pi hK)
+    refine Set.Finite.subset hbig ?_
+    intro x hx
+    simp only [Set.mem_preimage, Set.mem_pi, Set.mem_univ, Set.mem_setOf_eq, forall_true_left]
+    intro i b
+    rw [← RelPoint.post_comp (D.u i) (D.u_comp i) ((SS i).p b) ((SS i).p_comp b)]
+    exact hx (i, b)
+  · -- descend_plus
+    rintro ⟨i, b⟩ hb T g x
+    simp only at hb
+    subst hb
+    rw [RelPoint.post_comp (D.u i) (D.u_comp i) ((SS i).p true) ((SS i).p_comp true),
+      RelPoint.post_comp (D.u i) (D.u_comp i) ((SS i).p true) ((SS i).p_comp true),
+      F.descend i x, (SS i).sign_plus]
+  · -- descend_minus
+    rintro ⟨i, b⟩ hb T g x
+    simp only at hb
+    have hb' : b = false := by
+      cases b
+      · rfl
+      · exact absurd rfl hb
+    subst hb'
+    rw [RelPoint.post_comp (D.u i) (D.u_comp i) ((SS i).p false) ((SS i).p_comp false),
+      RelPoint.post_comp (D.u i) (D.u_comp i) ((SS i).p false) ((SS i).p_comp false),
+      F.descend i x, (SS i).sign_minus]
 
 /-- **EICHLER–SHIMURA, ADAPTED TO THE ATKIN–LEHNER INVOLUTION: an
 isotypic decomposition of `J_0(N)` on which `w_N` acts factorwise by
