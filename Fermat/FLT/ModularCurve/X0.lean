@@ -499,6 +499,19 @@ public import Fermat.FLT.Mathlib.FieldTheory.AbsoluteHilbert90
 -- `Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms`, so it adds ONE module
 -- to the cone.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.QuarticTwist
+-- The companion at `j = 0`: the normal form `y² = x³ + b` and the SEXTIC TWIST
+-- built from it.  Unlike the quartic file it contains no arithmetic leaf — the
+-- Kummer generator is an input — so it makes
+-- `exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero` a theorem outright.
+-- Its imports are `QuarticTwist` (immediately above, whose generic `autMap`
+-- machinery it reuses verbatim) and `Mathlib.FieldTheory.IsAlgClosed.Basic`.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.SexticTwist
+-- The Galois action on automorphisms of a base-changed curve (`map_autMap`,
+-- `autMap_mul`), and the `μ₃`-valued descent cocycle at `j = 0` built from it.
+-- This is what makes `exists_muThree_cocycle_of_autStable_of_j_eq_zero` a
+-- theorem over two leaves rather than a leaf itself.  Its imports are
+-- `SexticTwist` (immediately above) and `Mathlib.FieldTheory.Galois.Basic`.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.AutCocycle
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
@@ -13232,9 +13245,39 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N �
     charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
   exact WeierstrassCurve.exists_stableCyclic_quarticTwist hN E hj g hg haut ι hι hmove hu
 
-/-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (sorry leaf, opened 2026-07-28 by
+/-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (opened as a sorry leaf 2026-07-28 by
 decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`; the FIRST of its
-two halves).
+two halves.  **PROVEN 2026-07-28** over the two leaves
+`WeierstrassCurve.sq_u_eq_sq_u_of_autStable` and
+`WeierstrassCurve.exists_finiteGaloisLevel_of_addOrder`, both in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/AutCocycle.lean`.)
+
+#### What is now proven, and what is left
+
+The route below is written out in `AutCocycle.lean` as
+`WeierstrassCurve.exists_muThreeCocycle_of_autStable_of_j_eq_zero`, and this declaration
+is one `exact` onto it.  Proven there:
+
+* `baseChange_map_algEquiv` / `smul_map_of_smul_baseChange` — a `K`-automorphism `σ` of `Ω`
+  fixes a curve defined over `K`, so the Galois conjugate `C.map σ` of an automorphism of
+  `E⁄Ω` is again one;
+* `Affine.Point.autMap_mul` — the composition law `autMap (C * D) = autMap D ∘ autMap C`
+  (`autMap` is an ANTI-homomorphism, because `mapVariableChange W C` runs from
+  `(C • W).Point` to `W.Point`);
+* `Affine.Point.map_autMap` — the intertwining `σ(C·P) = (σC)·(σP)`.  This is the general
+  form of `equivVariableChangeBaseChange_galois`, whose variable change has coefficients in
+  the base field and is therefore FIXED by `σ`; here they genuinely move, and that
+  displacement is exactly what makes the datum a `1`-cocycle rather than a homomorphism;
+* **the COCYCLE IDENTITY itself**, which is the substantive part: `(σ C_τ) * C_σ` is a
+  stable witness for `σ * τ`, and reading off `u` gives `c(στ) = c(σ)·σ(c(τ))`;
+* the normal-form reduction to `y² = x³ + b` and the transport of `g`, `haut`, `ι`, `hmove`
+  along it.
+
+The two residues are the `A = μ₂` argument (`sq_u_eq_sq_u_of_autStable`) and the finiteness
+of the level (`exists_finiteGaloisLevel_of_addOrder`).  Everything about `ι`, `hmove`,
+`hu6`, `hu2` is consumed by the first; `hN` and `hg` by the second.
+
+#### The original statement of the route
 
 This is everything in the `j = 0` descent that happens *before* Kummer theory: the
 extraction, out of the bare hypothesis `haut`, of an honest `1`-cocycle
@@ -13305,12 +13348,46 @@ theorem exists_muThree_cocycle_of_autStable_of_j_eq_zero {N : ℕ} (hN : N ≠ 0
           ∀ x ∈ AddSubgroup.zmultiples g,
             autPoint h (WeierstrassCurve.Affine.Point.map
                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
-              AddSubgroup.zmultiples g) :=
-  sorry
+              AddSubgroup.zmultiples g) := by
+  haveI : CharZero (AlgebraicClosure ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+  -- `AlgebraicClosure.isAlgebraic` IS an instance and this module imports it, but synthesis
+  -- does not find it here; supplying the term directly avoids the search.
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  exact WeierstrassCurve.exists_muThreeCocycle_of_autStable_of_j_eq_zero hN E hj g hg haut
+    ι hι hmove hu6 hu2
 
-/-- **THE SEXTIC TWIST, GIVEN A KUMMER GENERATOR TRIVIALISING THE COCYCLE** (sorry leaf,
-opened 2026-07-28 by decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`;
-the SECOND of its two halves, and the only one that touches coordinates).
+/-- **THE SEXTIC TWIST, GIVEN A KUMMER GENERATOR TRIVIALISING THE COCYCLE** (opened as a
+sorry leaf 2026-07-28 by decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`;
+the SECOND of its two halves, and the only one that touches coordinates.
+**PROVEN 2026-07-28, WITH NO REMAINING LEAF**, over
+`WeierstrassCurve.exists_stableCyclic_sexticTwist` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/SexticTwist.lean`.)
+
+#### Status
+
+`SexticTwist.lean` is the `j = 0` mirror of `QuarticTwist.lean` and is **entirely
+sorry-free**.  Note the asymmetry with the `j = 1728` case, and that it is real rather than
+an accident of effort: `QuarticTwist.lean` still carries the leaf
+`exists_quarticTwistParameter`, because there the twisting parameter has to be MANUFACTURED
+from the obstruction character.  Here it is an INPUT — `γ`, `hγ` and `hd` are supplied by
+the caller out of Kummer theory — so no arithmetic leaf arises, and the file is pure
+coordinate geometry.
+
+Everything generic was reused verbatim from `QuarticTwist.lean` rather than duplicated:
+`autMap`, `autMap_congr`, `autMap_diag_neg`, `autMap_twist_comm` and `map_twist` are stated
+for an arbitrary curve with `a₁ = a₃ = 0`, or for arbitrary diagonal variable changes, and
+apply unchanged.  What is redone is only the model: `y² = x³ + b` rather than
+`y² = x³ + ax`, a diagonal change scaling `a₆` by `u⁻⁶` rather than `a₄` by `u⁻⁴`, and
+automorphisms being SIXTH roots of unity.
+
+**One hypothesis of this leaf turns out to be unnecessary, and the docstring's own claim
+about it is confirmed**: no `c σ ^ 3 = 1` is needed.  The proof gets `ζ_σ⁶ = σ(δ⁶)/δ⁶ =
+σ(d)/d = 1` from `hd` alone, because `d` lies in the BASE field `ℚ`.  `hN` is likewise
+unconsumed — the order of `g'` is `N` because `ψ` is an `AddEquiv` — and is underscored in
+the generic statement to make that mechanically visible.
+
+#### The original statement of the route
 
 Input: the `μ₃`-cocycle `c` produced by `exists_muThree_cocycle_of_autStable_of_j_eq_zero`
 (as the datum `hc`, which is that leaf's last conjunct), together with a `γ ∈ ℚ̄ˣ`
@@ -13394,8 +13471,10 @@ theorem exists_stableCyclic_of_muThree_coboundary_of_j_eq_zero {N : ℕ} (hN : N
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g' :=
-  sorry
+          AddSubgroup.zmultiples g' := by
+  haveI : CharZero (AlgebraicClosure ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+  exact WeierstrassCurve.exists_stableCyclic_sexticTwist hN E hj g hg c hc γ hγ0 hγ d hd
 
 /-- **THE ARITHMETIC HEART at `j = 0`: the descent obstruction is killed by a SEXTIC
 twist** (sorry leaf, opened 2026-07-27 by decomposing
