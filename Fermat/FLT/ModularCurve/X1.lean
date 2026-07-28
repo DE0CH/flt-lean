@@ -419,6 +419,16 @@ branches rewrote it in the same release and each was correct on its own base.
 `nonempty_gamma1Datum_of_ratPoint` and `hasRankZeroJacobian_x1TwentyFive` all
 stood in one version of it or another and are all PROVEN in the merged tree.
 
+**Updated again 2026-07-27** for the reduction/descent cluster.
+`exists_inverse_of_smoothCompactification` is now PROVEN outright, over
+`AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` — its own
+"absent from the pin" grep was aimed at the conclusion rather than at the
+proof's input, and the input was there.  `exists_x1ReductionAt` and
+`exists_section_of_galoisInvariant` are now PROVEN over the three leaves listed
+in the table, which is a net `+1` on the direct-sorry count and is disclosure,
+not regression: each of the three names a strictly smaller obligation than the
+node it replaced.
+
 **Reorganised again 2026-07-27, along the RESIDUE-FIELD axis at both bases.**
 `nonempty_cuspLocusX1` and `card_cusp_x1_finiteField` are now THEOREMS; what
 was open in them is `exists_rationalCuspPointsX1` and
@@ -4395,6 +4405,29 @@ a field, via `Fact ℓ.Prime`, and the extension theorem is stated over
 `exists_inverse_of_isX0Compactification`, and that one is now PROVEN too,
 by the same citation — so the sharing recorded below was real and both
 sides have cashed it in.  Nothing in `X0.lean` is edited here.
+
+**HOW IT CLOSED, AND WHY THE OLD VERDICT WAS WRONG.**  The route taken is
+NOT the closure of the graph.  It is three applications of ONE proven
+theorem — `exists_unique_extension_of_isSmoothProperCurve` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`: *a morphism
+from a dense open of a smooth proper geometrically connected curve over a
+field into a proper scheme extends UNIQUELY over the base*.  Extend
+`u ≫ jY₂` to `w : X₁ ⟶ X₂` and `v ≫ jY₁` to `w' : X₂ ⟶ X₁`; then `w ≫ w'`
+and `𝟙 X₁` both extend `jY₁`, so the SAME theorem's uniqueness clause
+identifies them, and symmetrically on `X₂`.  Density of `Y` in `X` is
+derived inside that theorem from `smooth`, `connected` and `finite_compl`
+jointly (`isDominant_of_finite_compl`), which is why all twelve geometric
+hypotheses are consumed.
+
+The refuting grep this docstring itself prescribed — "a declaration in
+`Mathlib`, `~/cs/FLT` or `Fermat/` producing an isomorphism of smooth
+proper curves from an isomorphism of dense opens; as of 2026-07-27 `grep`
+over all three finds none" — was **correct as literally posed and useless
+as posed**.  No declaration produces the *isomorphism*; one produces the
+*extension*, from which the isomorphism is a ten-line corollary.  The
+lesson is the one already recorded for `exists_jacobianOf_curve` in this
+file: search the INFRASTRUCTURE axis, and grep for what the proof needs
+rather than for the statement you want.
 
 **THIS LEAF IS MODULI-FREE, AND THAT IS THE POINT.**  It is stated over
 the raw geometric fields — `IsOpenImmersion`, `IsProper`,
