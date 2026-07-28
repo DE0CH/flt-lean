@@ -40299,7 +40299,8 @@ The chain, top down:
 | the fine AFFINE moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` over `𝔽_ℓ` | `exists_rigidifiedModuliData_specF` | **LEAF** (KM 4.7.2, 5.1.1, 6.6.1, 6.6.2, and the affineness parenthesis of 8.1.1) |
 | the level-`n` torsor over `𝔽_ℓ`-schemes | `exists_fullLevelStructure_cover_specF` | **LEAF** |
 | the deck action of `GL₂(ℤ/n)` on `A`, and that it IS the deck action | `exists_deckActionOver` | **PROVEN** |
-| the quotient map coequalises ANY two rigidifications | `deckAction_coequalisesOver` | **LEAF** |
+| the quotient map coequalises ANY two rigidifications | `deckAction_coequalisesOver` | **PROVEN** (2026-07-28) |
+| two full level structures on ONE datum differ Zariski-locally by a CONSTANT matrix | `exists_openCover_twist_of_fullLevelStructureOver` | **LEAF** (the whole geometric content, and the ONLY thing still owed under `deckAction_coequalisesOver`) |
 | assembling those into a rigidification over `𝔽_ℓ` | `nonempty_gamma0Rigidification_of_rigidifiedModuli`, `exists_gamma0Rigidification_specF` | **PROVEN** |
 | the special fibre of the GIVEN coarse space IS `Spec A^G` | `exists_specialFibreInvariantsIso` | **LEAF** (good reduction) |
 | the target | `exists_gamma0GITPresentationData_pullbackSpecial` | **PROVEN** |
@@ -40601,61 +40602,134 @@ theorem exists_deckActionOver {N n : ℕ} (hn : 3 ≤ n) {S : Scheme.{0}} {A : T
     rw [hmap σ⁻¹, inv_inv]
     exact hmmu σ y hy
 
+/-- **Two full level structures on ONE datum differ ZARISKI-locally by a
+CONSTANT matrix, over ANY base** (sorry leaf, opened 2026-07-28) — the
+whole geometric content of `deckAction_coequalisesOver`, and after the
+cut below the only step of the general-base coequalising clause that is
+still open.
+
+This is `exists_openCover_twist_of_fullLevelStructure` far above with its
+`ℚ`-structure `g : Z ⟶ SpecQ` **DROPPED**, so it is strictly stronger and
+that leaf is its one-line specialisation (`fun N n hn _ d L₁ L₂ => …`).
+The route is that leaf's route verbatim — trivialise the comparison
+torsor with `L₁`, so the comparison becomes a section of the CONSTANT
+group scheme `(ℤ/n)²_Z`, hence a locally constant `GL₂(ℤ/n)`-valued
+function, hence a finite CLOPEN decomposition of `Z` — and its "MISSING
+INFRASTRUCTURE" paragraph applies here unchanged: what is owed is
+finiteness and flatness of `d.E[n] ⟶ Z` and the sections of a constant
+finite group scheme.  **Whoever proves one of the two should prove this
+one and derive the other**; they are not independent leaves.
+
+## Faithfulness: why NO hypothesis on the base is needed
+
+`exists_openCover_twist_of_fullLevelStructure`'s own faithfulness note
+says its `g` "is load-bearing and cannot be dropped: over a base of
+residue characteristic `p ∣ n` the kernel `E[n]` is not étale, the
+comparison is not locally constant, and the statement is FALSE".  The
+geometry there is right and the conclusion drawn from it is **not**: at
+such a base there is no `L₁` to compare with, because
+`FullLevelStructure n d` is EMPTY there.
+
+> `geom_basis` says that at every geometric point `t : Spec K ⟶ Z` the
+> `n`-torsion of the fibre is in bijection with `Fin n × Fin n`, i.e. has
+> exactly `n²` elements.  `Gamma0Datum.relativeDimensionOne` makes that
+> fibre an elliptic curve, and for an elliptic curve over an
+> algebraically closed field of characteristic `p ∣ n` one has
+> `#E[n](K) = n²/p^a` or `n²/p^{2a}` with `a = v_p n ≥ 1`, which is
+> `< n²`.  Every point of `Z` carries such a geometric point (take the
+> algebraic closure of its residue field), so `n` is invertible at every
+> point of `Z`, or `Z` is empty and the empty cover works.
+
+So the invertibility the argument needs is supplied by the DATA rather
+than by the base, and the statement is true at an arbitrary base — true
+for the real reason where a level structure exists, vacuously true where
+one does not.
+
+**`relativeDimensionOne` is load-bearing in that paragraph**, and this is
+worth recording because it is the shape of counterexample that would kill
+the un-based statement.  Drop it — allow an abelian scheme of relative
+dimension `2` — and `geom_basis` no longer forces `p ∤ n`: an ORDINARY
+abelian surface in characteristic `p` has `A[p](K) ≅ (ℤ/p)²`, of order
+`p² = n²` at `n = p`, so it satisfies `geom_basis`.  Then over
+`Z = Spec 𝔽_p[ε]/(ε²)` the connected part `μ_p ⊆ A[p]` has the nonzero
+section `1 + ε`, invisible at every geometric point; adding it to `L₁.P`
+gives a second full level structure `L₂` that is not `twist hn L₁ σ` on
+any nonempty open of the one-point scheme `Z`, and the conclusion fails.
+Relative dimension one is exactly what rules this out.
+
+*The check that would refute the audit*: exhibit a scheme `Z` with a
+point of residue characteristic dividing `n`, a `Gamma0Datum N Z`, and a
+`FullLevelStructure n d` on it. -/
+theorem exists_openCover_twist_of_fullLevelStructureOver (N n : ℕ) (hn : 3 ≤ n)
+    {Z : Scheme.{0}} (d : Gamma0Datum N Z) (L₁ L₂ : FullLevelStructure n d) :
+    ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀, ∃ σ : gamma0DeckGroup n,
+      𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (FullLevelStructure.twist hn L₁ σ).P.1 ∧
+      𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (FullLevelStructure.twist hn L₁ σ).Q.1 :=
+  sorry
+
 /-- **The deck quotient map coequalises ANY two rigidifications of one
-datum** (sorry leaf, opened 2026-07-28) — clause (b) of
+datum** (opened and **PROVEN** 2026-07-28) — clause (b) of
 `exists_deckAction`, at a general base and with the action PINNED rather
 than merely existentially quantified.
 
-## What the prover of this node owes
+## STATUS: PROVEN, from one named geometric leaf
 
-Two rigidifications `a, b : Z ⟶ Spec A` of one datum `d₁` differ by a
-section of the `GL₂(ℤ/n)`-torsor of full level structures, which lies in
-`GL₂(ℤ/n)` only fppf-LOCALLY.  The argument, recorded in full on
-`exists_deckAction` and not repeated here, is:
+The proof is `exists_deckAction_of_torsion`'s coequalising `have`
+transcribed to a general base, which is possible because every step of it
+except the geometry is base-free:
 
-> because `huniv` is a fine moduli property, two full level structures
-> over a base admit a **locally constant** `GL₂(ℤ/n)`-valued comparison.
-> Locally constant means a finite CLOPEN decomposition of `Z`; on each
-> piece the two classifying maps differ by composition with a single
-> global `Spec σ`; and `Spec σ ≫ π = π` because `π` is `Spec` of the
-> inclusion of the invariants.  So `a ≫ π = b ≫ π` holds piecewise and
-> therefore globally.
+* `exists_fullLevelStructure_baseChange` (PROVEN) pulls `lvlM` back along
+  `ha` and along `hb`, giving two full level structures `La`, `Lb` on the
+  ONE datum `d₁` over `Z`, each PINNED by `L.P.1 ≫ bc.map = a ≫ lvlM.P.1`;
+* `exists_openCover_twist_of_fullLevelStructureOver` (the LEAF, above)
+  produces the cover and, on each piece, the constant `σ` with
+  `Lb = twist hn La σ` after restriction.  **That is the only thing owed
+  under this node, and it is owed nowhere else here**;
+* `comp_eq_of_openCover_translation` (PROVEN) glues the pieces, and
+  `specInvariantsQuotient_toRingHom_comp` (PROVEN) is `Spec σ ≫ π = π`;
+* the piecewise identification `𝒰.f i ≫ b = (𝒰.f i ≫ a) ≫ m` is the
+  UNIQUENESS half of `huniv` applied to the restricted datum-with-level-
+  structure, using `exists_gamma0Datum_baseChange` and
+  `FullLevelStructure.twist_baseChange` (both PROVEN).
 
 **Use the piecewise argument** — a search for a single global `σ` cannot
-succeed, and that is the trap this leaf exists to record.  The step
-`Spec σ ≫ π = π` is where `_hpin` is consumed: it identifies
-`Spec (toRingHom σ)` with the classifier of a twist, which is what makes
-it a map over the invariants.
+succeed, and that is the trap this node exists to record.  The step
+`Spec σ ≫ π = π` is where `hpin` is consumed: it identifies the
+classifier `m` of the `σ`-twist with `Spec (toRingHom σ⁻¹)`, which is
+what makes it a map over the invariants.
 
 ## Faithfulness
 
-`_hpin` is what makes the `∀` over the action legitimate.  The audit on
+`hpin` is what makes the `∀` over the action legitimate.  The audit on
 `exists_deckAction` records that clause (a) alone does NOT pin the
 action — `σ ↦ id` satisfies it, and under that action `A^G = A`, `π = 𝟙`
 and this statement is FALSE — so a leaf quantifying over an arbitrary
-`MulSemiringAction` would be the junk-witness trap.  `_hpin` says
+`MulSemiringAction` would be the junk-witness trap.  `hpin` says
 `Spec σ⁻¹` is the unique classifier of the `σ`-twist, which by
 `Spec.map_injective` determines `toRingHom σ` and hence the whole action;
 at `σ ↦ id` it fails as soon as the twist acts nontrivially on some
-level structure, i.e. for every `n ≥ 3`.
+level structure, i.e. for every `n ≥ 3`.  It is consumed exactly once,
+at the `m ≫ π = π` step, and nothing else in the proof looks at the
+action at all.
 
-`_huniv` is carried because the piecewise argument runs on it; both
-binders are underscored only because the body is `sorry`.
+`strM` is consumed only as the `_g` binder of `huniv`, which restricts
+the moduli problem to `S`-schemes and nothing more — the same role it has
+on the `ℚ` side.
 
 *The check that would refute this audit*: exhibit a
-`MulSemiringAction (gamma0DeckGroup n) A` satisfying `_hpin` for which
+`MulSemiringAction (gamma0DeckGroup n) A` satisfying `hpin` for which
 two rigidifications of one datum are separated by
 `specInvariantsQuotient`. -/
 theorem deckAction_coequalisesOver {N n : ℕ} (hn : 3 ≤ n) {S : Scheme.{0}} {A : Type}
     [CommRing A] [MulSemiringAction (gamma0DeckGroup n) A]
     (strM : Spec (CommRingCat.of A) ⟶ S) (dM : Gamma0Datum N (Spec (CommRingCat.of A)))
     (lvlM : FullLevelStructure n dM)
-    (_huniv : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
+    (huniv : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
         (L : FullLevelStructure n d),
       ∃! m : T ⟶ Spec (CommRingCat.of A),
         ∃ bc : IsBaseChangeOf m d dM,
           L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1)
-    (_hpin : ∀ (σ : gamma0DeckGroup n)
+    (hpin : ∀ (σ : gamma0DeckGroup n)
         (y : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of A)),
         (∃ bc : IsBaseChangeOf y dM dM,
           (FullLevelStructure.twist hn lvlM σ).P.1 ≫ bc.map = y ≫ lvlM.P.1 ∧
@@ -40665,8 +40739,63 @@ theorem deckAction_coequalisesOver {N n : ℕ} (hn : 3 ≤ n) {S : Scheme.{0}} {
     ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A)) (d₁ : Gamma0Datum N Z),
       IsBaseChangeOf a d₁ dM → IsBaseChangeOf b d₁ dM →
       a ≫ specInvariantsQuotient (gamma0DeckGroup n) A
-        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) A :=
-  sorry
+        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) A := by
+  classical
+  haveI : NeZero n := ⟨by omega⟩
+  intro Z a b d₁ ha hb
+  -- step 1: the two pulled-back level structures on the ONE datum `d₁`
+  obtain ⟨La, haP, haQ⟩ := exists_fullLevelStructure_baseChange ha lvlM
+  obtain ⟨Lb, hbP, hbQ⟩ := exists_fullLevelStructure_baseChange hb lvlM
+  -- steps 2–3: the geometry, and the only open leaf under this node
+  obtain ⟨𝒰, h𝒰⟩ := exists_openCover_twist_of_fullLevelStructureOver N n hn d₁ La Lb
+  refine comp_eq_of_openCover_translation a b _ 𝒰 fun i => ?_
+  obtain ⟨σ, hσP, hσQ⟩ := h𝒰 i
+  -- the comparison morphism, pinned by `huniv` at the `σ`-twist
+  obtain ⟨m, ⟨bcm, hmP, hmQ⟩, -⟩ := huniv strM dM (FullLevelStructure.twist hn lvlM σ)
+  refine ⟨m, ?_, ?_⟩
+  · -- `m ≫ π = π`: `hpin` identifies `m` with `Spec (toRingHom σ⁻¹)`
+    rw [hpin σ m ⟨bcm, hmP, hmQ⟩]
+    exact specInvariantsQuotient_toRingHom_comp _ _ _
+  · -- step 4: restrict the datum and `Lb` to the piece, and use UNIQUENESS
+    obtain ⟨dU, ⟨bcU⟩⟩ := exists_gamma0Datum_baseChange (𝒰.f i) d₁
+    obtain ⟨LU, hUP, hUQ⟩ := exists_fullLevelStructure_baseChange bcU Lb
+    obtain ⟨w, -, hwu⟩ := huniv (𝒰.f i ≫ a ≫ strM) dU LU
+    obtain ⟨htP, htQ⟩ := FullLevelStructure.twist_baseChange hn ha haP haQ σ
+    have h1 : 𝒰.f i ≫ b = w := by
+      refine hwu _ ⟨bcU.comp hb, ?_, ?_⟩
+      · show LU.P.1 ≫ bcU.map ≫ hb.map = (𝒰.f i ≫ b) ≫ lvlM.P.1
+        rw [← Category.assoc, hUP, Category.assoc, hbP, Category.assoc]
+      · show LU.Q.1 ≫ bcU.map ≫ hb.map = (𝒰.f i ≫ b) ≫ lvlM.Q.1
+        rw [← Category.assoc, hUQ, Category.assoc, hbQ, Category.assoc]
+    have h2 : (𝒰.f i ≫ a) ≫ m = w := by
+      refine hwu _ ⟨(bcU.comp ha).comp bcm, ?_, ?_⟩
+      · show LU.P.1 ≫ (bcU.map ≫ ha.map) ≫ bcm.map = ((𝒰.f i ≫ a) ≫ m) ≫ lvlM.P.1
+        calc LU.P.1 ≫ (bcU.map ≫ ha.map) ≫ bcm.map
+            = ((LU.P.1 ≫ bcU.map) ≫ ha.map) ≫ bcm.map := by simp only [Category.assoc]
+          _ = ((𝒰.f i ≫ Lb.P.1) ≫ ha.map) ≫ bcm.map := by rw [hUP]
+          _ = ((𝒰.f i ≫ (FullLevelStructure.twist hn La σ).P.1) ≫ ha.map) ≫ bcm.map := by
+                rw [hσP]
+          _ = (𝒰.f i ≫ (FullLevelStructure.twist hn La σ).P.1 ≫ ha.map) ≫ bcm.map := by
+                simp only [Category.assoc]
+          _ = (𝒰.f i ≫ a ≫ (FullLevelStructure.twist hn lvlM σ).P.1) ≫ bcm.map := by rw [htP]
+          _ = (𝒰.f i ≫ a) ≫ (FullLevelStructure.twist hn lvlM σ).P.1 ≫ bcm.map := by
+                simp only [Category.assoc]
+          _ = (𝒰.f i ≫ a) ≫ m ≫ lvlM.P.1 := by rw [hmP]
+          _ = ((𝒰.f i ≫ a) ≫ m) ≫ lvlM.P.1 := by simp only [Category.assoc]
+      · show LU.Q.1 ≫ (bcU.map ≫ ha.map) ≫ bcm.map = ((𝒰.f i ≫ a) ≫ m) ≫ lvlM.Q.1
+        calc LU.Q.1 ≫ (bcU.map ≫ ha.map) ≫ bcm.map
+            = ((LU.Q.1 ≫ bcU.map) ≫ ha.map) ≫ bcm.map := by simp only [Category.assoc]
+          _ = ((𝒰.f i ≫ Lb.Q.1) ≫ ha.map) ≫ bcm.map := by rw [hUQ]
+          _ = ((𝒰.f i ≫ (FullLevelStructure.twist hn La σ).Q.1) ≫ ha.map) ≫ bcm.map := by
+                rw [hσQ]
+          _ = (𝒰.f i ≫ (FullLevelStructure.twist hn La σ).Q.1 ≫ ha.map) ≫ bcm.map := by
+                simp only [Category.assoc]
+          _ = (𝒰.f i ≫ a ≫ (FullLevelStructure.twist hn lvlM σ).Q.1) ≫ bcm.map := by rw [htQ]
+          _ = (𝒰.f i ≫ a) ≫ (FullLevelStructure.twist hn lvlM σ).Q.1 ≫ bcm.map := by
+                simp only [Category.assoc]
+          _ = (𝒰.f i ≫ a) ≫ m ≫ lvlM.Q.1 := by rw [hmQ]
+          _ = ((𝒰.f i ≫ a) ≫ m) ≫ lvlM.Q.1 := by simp only [Category.assoc]
+    rw [h1, ← Category.assoc, h2]
 
 /-- **A fine moduli scheme plus the level-`n` torsor IS a rigidification**
 (PROVEN 2026-07-28) — the assembly half, carrying no citation at all.
