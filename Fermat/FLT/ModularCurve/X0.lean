@@ -25478,10 +25478,12 @@ PROVEN, leaving two open leaves:
   (`exists_finiteIndex_divisible_of_abelianScheme`) — the deep arithmetic
   input.  Since 2026-07-28 it is PROVEN in turn, over Hermite's theorem
   (`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le`, proven from
-  mathlib) and two further leaves: surjectivity of `[p]` on geometric
-  points (`exists_geomPt_nsmul_eq_of_abelianScheme`) and a uniform
+  mathlib) and two further nodes: surjectivity of `[p]` on geometric
+  points (`exists_geomPt_nsmul_eq_of_abelianScheme` — itself PROVEN
+  2026-07-28 over `exists_comp_mulByNat_eq`) and a uniform
   discriminant bound on the division fields
-  (`exists_discrBound_divisionField_of_abelianScheme`).  Class groups and
+  (`exists_discrBound_divisionField_of_abelianScheme`, the one still
+  OPEN of the two).  Class groups and
   the unit theorem are NOT on that path — see the cut note there.
 
 **What the assembly is, and why it needs no group cohomology.**  Choose
@@ -25806,7 +25808,8 @@ theorem exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le (D : ℕ) :
   exact IntermediateField.fixingSubgroup_antitone hle
 
 /-- **`[n]` is surjective on the geometric points of an abelian scheme
-over `ℚ`, for every `n ≠ 0`** (sorry node) — the leaf that makes division
+over `ℚ`, for every `n ≠ 0`** (PROVEN 2026-07-28, by CITATION — see the
+retracted MISSING MACHINERY note below) — the leaf that makes division
 points exist at all.
 
 TRUE and classical: over an algebraically closed field of characteristic
@@ -25829,18 +25832,46 @@ because the classical proof is uniform in `n`, exactly as for the sibling
 leaf `finite_torsion_geomPt_of_abelianScheme`; the two are the surjectivity
 and the finite-kernel halves of the same isogeny statement.
 
-**MISSING MACHINERY**: the multiplication-by-`n` isogeny of an abelian
-scheme and its surjectivity on geometric points.
-`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone
-and is where such a statement belongs; the check that would refute this
-note is `grep -rn "nsmul\|surj" ` over that file and over
-`Fermat/FLT/Modularity/AbelianScheme.lean`. -/
+**THE MISSING-MACHINERY NOTE WAS STALE, AND ITS OWN REFUTATION CHECK IS
+WHAT CLOSED IT.**  The retracted note read: "MISSING MACHINERY: the
+multiplication-by-`n` isogeny of an abelian scheme and its surjectivity
+on geometric points.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`
+is in this file's cone and is where such a statement belongs; the check
+that would refute this note is `grep -rn "nsmul\|surj"` over that file."
+Running exactly that grep refutes it: the machinery is there and this
+file already `public import`s it.
+
+The proof is the Yoneda translation, in two citations.  `RelPoint`s are
+morphisms, so solving `n • y = w` is exactly factoring the morphism
+`w.1 : Spec ℚᵃˡᵍ ⟶ J` through `[n] : J ⟶ J`; that translation is
+`AbelianSchemeStruct.exists_nsmul_of_exists_comp` (PROVEN — it also
+derives the compatibility `y.1 ≫ jstr = specAlgClos ℚ ≫ 𝟙 SpecQ` for
+free from `jstr`-linearity of `[n]`, which is why no base compatibility
+has to be supplied here), and the factorization itself is
+`exists_comp_mulByNat_eq` (`[n]` is universally open, hence has clopen
+image, hence is surjective by connectedness of the fibres; an `ℚᵃˡᵍ`-point
+then lifts because the base-changed fibre is a nonempty Jacobson space
+over an algebraically closed field).  `hn` enters through
+`exists_comp_mulByNat_eq`, which needs it for surjectivity.
+
+Both live in `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, which is a
+`public import` of this file (line ~310), so no new import is incurred.
+The remaining geometric content sits one level further down, in
+`flat_locallyOfFinitePresentation_mulByNat` (the theorem of the cube),
+which is that file's leaf, not this one's.
+
+This is the `𝟙 SpecQ`-based-point instance of
+`Fermat.exists_nsmul_eq_geomFibrePt` in
+`Fermat/FLT/Modularity/TateModule.lean`, which is the identical citation
+over the identical two lemmas.  It is NOT cited directly: `TateModule` is
+not in this file's import cone, and reproducing the two-line term here
+costs nothing and adds no module to the cone. -/
 theorem exists_geomPt_nsmul_eq_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0)
     (w : GeomFibrePt jstr (𝟙 SpecQ)) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
     ∃ y : GeomFibrePt jstr (𝟙 SpecQ), n • y = w :=
-  sorry
+  ab.exists_nsmul_of_exists_comp n w (exists_comp_mulByNat_eq ab n hn w.1)
 
 /-- **The `p`-division fields of `A(ℚ)` have BOUNDED DISCRIMINANT** (sorry
 node) — THE deep arithmetic input to weak Mordell–Weil, and the only one
@@ -26000,10 +26031,13 @@ discriminant.  So **Hermite–Minkowski replaces class groups and units
 here**, and the Hermite half is now PROVEN
 (`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le`).
 
-What is left is two leaves: `exists_geomPt_nsmul_eq_of_abelianScheme` (the
-division points exist) and `exists_discrBound_divisionField_of_abelianScheme`
-(they are defined over fields of bounded discriminant).  The proof below is
-their composition and nothing else. -/
+What is left is ONE leaf, `exists_discrBound_divisionField_of_abelianScheme`
+(the division points are defined over fields of bounded discriminant).  The
+other half — `exists_geomPt_nsmul_eq_of_abelianScheme`, that the division
+points exist at all — was PROVEN on 2026-07-28 by citation to
+`exists_comp_mulByNat_eq` in `Modularity/AbelianSchemeIsogeny.lean`, which
+this file already imports.  The proof below is their composition and nothing
+else. -/
 theorem exists_finiteIndex_divisible_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -32163,7 +32197,6 @@ docstring).
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
-| `exists_geomPt_nsmul_eq_of_abelianScheme` | `[n]` is a surjective isogeny | no |
 | `exists_discrBound_divisionField_of_abelianScheme` | Kummer degree bound + Néron–Ogg–Shafarevich | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
