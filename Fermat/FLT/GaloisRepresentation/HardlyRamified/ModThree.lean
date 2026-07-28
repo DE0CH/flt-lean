@@ -17605,50 +17605,360 @@ theorem hasCompleteIntersectionPresentation_of_pi_quotient {k : Type*} [CommRing
   obtain ⟨s, m, F, ⟨E⟩⟩ := h
   exact (hasCompleteIntersectionPresentation_pi s _
     fun i => hasCompleteIntersectionPresentation_quotient k (m i) (F i)).of_algEquiv E.symm
+
+/-- **THE CONVERSE OF `hasCompleteIntersectionPresentation_of_pi_quotient`** (PROVEN
+2026-07-27): a complete-intersection presentation IS a one-factor product of
+complete-intersection quotients, with `s = 1`.
+
+Together with `hasCompleteIntersectionPresentation_of_pi_quotient` this says the predicate
+`HasCompleteIntersectionPresentation k A` and the pi-quotient SHAPE
+`A ≃ₐ[k] ∏_{i<s} k[x₁,…,x_{m i}] ⧸ (F i)` are EQUIVALENT.  That equivalence is what lets the
+group-scheme leaves below be assembled in whichever of the two currencies is convenient: the
+predicate is the one with closure properties (`of_algEquiv`, `_prod`, `_pi`, `_tensor`), the
+pi-shape is the one the consumers are stated in.
+
+The proof is the `Algebra.Generators` round trip — `P.σ` makes `aeval P.val` surjective, so
+`Ideal.quotientKerAlgEquivOfSurjective` identifies `A` with `P.Ring ⧸ ker`, and
+`Algebra.Generators.ker_eq_ker_aeval_val` rewrites that kernel as the span of the relations.
+`AlgEquiv.funUnique` then inserts the one-element product. -/
+theorem exists_pi_quotient_algEquiv_of_hasCompleteIntersectionPresentation
+    {k : Type*} [CommRing k] {A : Type*} [CommRing A] [Algebra k A]
+    (h : HasCompleteIntersectionPresentation k A) :
+    ∃ (s : ℕ) (m : Fin s → ℕ) (F : ∀ i : Fin s, Fin (m i) → MvPolynomial (Fin (m i)) k),
+      Nonempty (A ≃ₐ[k] (∀ i : Fin s, MvPolynomial (Fin (m i)) k ⧸
+        Ideal.span (Set.range (F i)))) := by
+  obtain ⟨n, P, f, hf⟩ := h
+  refine ⟨1, fun _ => n, fun _ => f, ⟨?_⟩⟩
+  have hsurj : Function.Surjective (aeval P.val : MvPolynomial (Fin n) k →ₐ[k] A) :=
+    fun a => ⟨P.σ a, P.aeval_val_σ a⟩
+  have e1 : (MvPolynomial (Fin n) k ⧸ RingHom.ker
+      (aeval P.val : MvPolynomial (Fin n) k →ₐ[k] A)) ≃ₐ[k] A :=
+    Ideal.quotientKerAlgEquivOfSurjective hsurj
+  have hker : RingHom.ker (aeval P.val : MvPolynomial (Fin n) k →ₐ[k] A)
+      = Ideal.span (Set.range f) := by
+    rw [hf, Algebra.Generators.ker_eq_ker_aeval_val]
+  rw [hker] at e1
+  exact e1.symm.trans (AlgEquiv.funUnique k (Fin 1) _).symm
+
+/-- **A TENSOR PRODUCT of two complete intersections is a complete intersection** (PROVEN
+2026-07-27).  The companion of `hasCompleteIntersectionPresentation_prod`, and the reason the
+group-theoretic leaf below is allowed to hand back the connected and étale halves SEPARATELY
+rather than already glued.
+
+Like `_prod` it needs NO field, NO finiteness and NO flatness — it holds over an arbitrary
+commutative base ring.  The variable type is `Fin nA ⊕ Fin nB` and the relations are the two
+old families renamed into it, so `#relations = nA + nB = #variables` with no interpolation
+needed: unlike the product, the tensor product does not have to be cut into sheets.
+
+WHY IT IS TRUE, conceptually.  Writing `A = P_A ⧸ I_A`, `B = P_B ⧸ I_B` and
+`k[y,z] = P_A ⊗_k P_B`, right-exactness of `- ⊗ P_B` on `I_A → P_A → A → 0` and of `A ⊗ -` on
+`I_B → P_B → B → 0` gives
+
+    ker (P_A ⊗ P_B ↠ A ⊗ B) = im (I_A ⊗ P_B) + im (P_A ⊗ I_B),
+
+i.e. the kernel is spanned by the `f_A(i)` and the `f_B(j)`.  **No flatness enters**: only that
+`⊗` is right exact.
+
+WHAT THE PROOF ACTUALLY DOES, since the `Ideal`/`TensorProduct` interface for that display is
+not in the pin.  Put `Q = MvPolynomial (Fin nA ⊕ Fin nB) k`, `J = span (range F)` with
+`F = Sum.elim (rename Sum.inl ∘ f_A) (rename Sum.inr ∘ f_B)`, and
+`Φ = aeval (Sum.elim (fun i => P_A.val i ⊗ₜ 1) (fun j => 1 ⊗ₜ P_B.val j)) : Q →ₐ[k] A ⊗ B`.
+
+* `Φ ∘ rename Sum.inl = includeLeft ∘ aeval P_A.val` and its mirror image, each one
+  `MvPolynomial.aeval_rename` followed by `MvPolynomial.comp_aeval_apply`.  Those two identities
+  carry the whole computation.
+* `Φ` is SURJECTIVE by `TensorProduct.induction_on`: `a ⊗ₜ b = Φ (rename inl p * rename inr q)`
+  for any preimages `p, q` (which exist because `P.σ` is a section of `aeval P.val`).
+* `J ≤ ker Φ` is the same identity applied to each `f_A(i)`, `f_B(j)`.
+* `ker Φ ≤ J` is the only real step, and it is discharged by an explicit RETRACTION rather than
+  by a kernel computation.  `AlgHom.liftOfSurjective` descends `(mk J).comp (rename Sum.inl)`
+  along `aeval P_A.val` to `φ_A : A →ₐ[k] Q ⧸ J` — the hypothesis being exactly
+  `ker (aeval P_A.val) ≤ ker ((mk J).comp (rename inl))`, which is `Ideal.map_span` plus
+  `hfA` — and likewise `φ_B`.  Since `Q ⧸ J` is commutative,
+  `Ψ := Algebra.TensorProduct.lift φ_A φ_B (fun _ _ => mul_comm _ _)` exists, and
+  `Ψ.comp Φ = Ideal.Quotient.mkₐ k J` by `MvPolynomial.algHom_ext` (both sides send `X n` to
+  `mk J (X n)`).  Hence `Φ p = 0` forces `mk J p = 0`, i.e. `p ∈ J`.
+
+`hasCompleteIntersectionPresentation_of_generators` then finishes, since `Fin nA ⊕ Fin nB` is a
+`Fintype`; no reindexing to `Fin (nA + nB)` has to be done by hand. -/
+theorem hasCompleteIntersectionPresentation_tensor {k : Type*} [CommRing k] {A B : Type*}
+    [CommRing A] [CommRing B] [Algebra k A] [Algebra k B]
+    (hA : HasCompleteIntersectionPresentation k A)
+    (hB : HasCompleteIntersectionPresentation k B) :
+    HasCompleteIntersectionPresentation k (A ⊗[k] B) := by
+  classical
+  obtain ⟨nA, PA, fA, hfA⟩ := hA
+  obtain ⟨nB, PB, fB, hfB⟩ := hB
+  set sA : MvPolynomial (Fin nA) k →ₐ[k] MvPolynomial (Fin nA ⊕ Fin nB) k :=
+    rename Sum.inl with hsA
+  set sB : MvPolynomial (Fin nB) k →ₐ[k] MvPolynomial (Fin nA ⊕ Fin nB) k :=
+    rename Sum.inr with hsB
+  set F : Fin nA ⊕ Fin nB → MvPolynomial (Fin nA ⊕ Fin nB) k :=
+    Sum.elim (fun i => sA (fA i)) (fun j => sB (fB j))
+  set J : Ideal (MvPolynomial (Fin nA ⊕ Fin nB) k) := Ideal.span (Set.range F) with hJ
+  set val : Fin nA ⊕ Fin nB → A ⊗[k] B :=
+    Sum.elim (fun i => PA.val i ⊗ₜ[k] (1 : B)) (fun j => (1 : A) ⊗ₜ[k] PB.val j) with hval
+  -- the two half-evaluations
+  have hΦA : ∀ p, (aeval (R := k) val) (sA p)
+      = (Algebra.TensorProduct.includeLeft : A →ₐ[k] A ⊗[k] B) (aeval PA.val p) := by
+    intro p
+    rw [hsA]
+    show aeval val (rename Sum.inl p) = _
+    rw [aeval_rename, MvPolynomial.comp_aeval_apply]
+    rfl
+  have hΦB : ∀ q, (aeval (R := k) val) (sB q)
+      = (Algebra.TensorProduct.includeRight : B →ₐ[k] A ⊗[k] B) (aeval PB.val q) := by
+    intro q
+    rw [hsB]
+    show aeval val (rename Sum.inr q) = _
+    rw [aeval_rename, MvPolynomial.comp_aeval_apply]
+    rfl
+  have hsurjA : Function.Surjective (aeval PA.val : MvPolynomial (Fin nA) k →ₐ[k] A) :=
+    fun a => ⟨PA.σ a, PA.aeval_val_σ a⟩
+  have hsurjB : Function.Surjective (aeval PB.val : MvPolynomial (Fin nB) k →ₐ[k] B) :=
+    fun b => ⟨PB.σ b, PB.aeval_val_σ b⟩
+  -- surjectivity of the joint evaluation
+  have hsurj : Function.Surjective (aeval (R := k) val) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | tmul a b =>
+      obtain ⟨p, hp⟩ := hsurjA a
+      obtain ⟨q, hq⟩ := hsurjB b
+      refine ⟨sA p * sB q, ?_⟩
+      rw [map_mul, hΦA, hΦB, hp, hq]
+      simp [Algebra.TensorProduct.includeLeft_apply, Algebra.TensorProduct.includeRight_apply,
+        Algebra.TensorProduct.tmul_mul_tmul]
+    | add x y hx hy =>
+      obtain ⟨p, hp⟩ := hx
+      obtain ⟨q, hq⟩ := hy
+      exact ⟨p + q, by rw [map_add, hp, hq]⟩
+  -- the relations lie in the kernel
+  have hfAzero : ∀ i, (aeval PA.val) (fA i) = 0 := by
+    intro i
+    exact Algebra.Generators.aeval_val_eq_zero (hfA ▸ Ideal.subset_span ⟨i, rfl⟩)
+  have hfBzero : ∀ j, (aeval PB.val) (fB j) = 0 := by
+    intro j
+    exact Algebra.Generators.aeval_val_eq_zero (hfB ▸ Ideal.subset_span ⟨j, rfl⟩)
+  have hJker : J ≤ RingHom.ker (aeval (R := k) val) := by
+    rw [hJ, Ideal.span_le]
+    rintro _ ⟨n, rfl⟩
+    simp only [SetLike.mem_coe, RingHom.mem_ker]
+    rcases n with i | j
+    · show (aeval (R := k) val) (sA (fA i)) = 0
+      rw [hΦA, hfAzero, map_zero]
+    · show (aeval (R := k) val) (sB (fB j)) = 0
+      rw [hΦB, hfBzero, map_zero]
+  -- the retraction
+  have hAle : RingHom.ker (aeval PA.val : MvPolynomial (Fin nA) k →ₐ[k] A).toRingHom
+      ≤ RingHom.ker ((Ideal.Quotient.mkₐ k J).comp sA).toRingHom := by
+    intro a ha
+    have ha' : a ∈ Ideal.span (Set.range fA) := by
+      rw [hfA, Algebra.Generators.ker_eq_ker_aeval_val]; exact ha
+    have hmem : sA a ∈ J := by
+      have hmap : Ideal.map sA (Ideal.span (Set.range fA)) ≤ J := by
+        rw [Ideal.map_span, Ideal.span_le]
+        rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
+        exact Ideal.subset_span ⟨Sum.inl i, rfl⟩
+      exact hmap (Ideal.mem_map_of_mem _ ha')
+    simp only [RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.coe_comp,
+      Function.comp_apply]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hmem
+  have hBle : RingHom.ker (aeval PB.val : MvPolynomial (Fin nB) k →ₐ[k] B).toRingHom
+      ≤ RingHom.ker ((Ideal.Quotient.mkₐ k J).comp sB).toRingHom := by
+    intro b hb
+    have hb' : b ∈ Ideal.span (Set.range fB) := by
+      rw [hfB, Algebra.Generators.ker_eq_ker_aeval_val]; exact hb
+    have hmem : sB b ∈ J := by
+      have hmap : Ideal.map sB (Ideal.span (Set.range fB)) ≤ J := by
+        rw [Ideal.map_span, Ideal.span_le]
+        rintro _ ⟨_, ⟨j, rfl⟩, rfl⟩
+        exact Ideal.subset_span ⟨Sum.inr j, rfl⟩
+      exact hmap (Ideal.mem_map_of_mem _ hb')
+    simp only [RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.coe_comp,
+      Function.comp_apply]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hmem
+  set φA : A →ₐ[k] (MvPolynomial (Fin nA ⊕ Fin nB) k ⧸ J) :=
+    AlgHom.liftOfSurjective (aeval PA.val) hsurjA ((Ideal.Quotient.mkₐ k J).comp sA) hAle with hφA
+  set φB : B →ₐ[k] (MvPolynomial (Fin nA ⊕ Fin nB) k ⧸ J) :=
+    AlgHom.liftOfSurjective (aeval PB.val) hsurjB ((Ideal.Quotient.mkₐ k J).comp sB) hBle with hφB
+  have hφAval : ∀ p, φA (aeval PA.val p) = Ideal.Quotient.mk J (sA p) := by
+    intro p
+    rw [hφA, AlgHom.liftOfSurjective_apply]
+    rfl
+  have hφBval : ∀ q, φB (aeval PB.val q) = Ideal.Quotient.mk J (sB q) := by
+    intro q
+    rw [hφB, AlgHom.liftOfSurjective_apply]
+    rfl
+  set Ψ : (A ⊗[k] B) →ₐ[k] (MvPolynomial (Fin nA ⊕ Fin nB) k ⧸ J) :=
+    Algebra.TensorProduct.lift φA φB (fun _ _ => mul_comm _ _) with hΨ
+  have key : ∀ p : MvPolynomial (Fin nA ⊕ Fin nB) k,
+      Ψ ((aeval (R := k) val) p) = Ideal.Quotient.mk J p := by
+    have hcomp : Ψ.comp (aeval (R := k) val) = Ideal.Quotient.mkₐ k J := by
+      apply MvPolynomial.algHom_ext
+      rintro (i | j)
+      · rw [AlgHom.comp_apply, aeval_X, hval]
+        show Ψ (PA.val i ⊗ₜ[k] (1 : B)) = _
+        rw [hΨ, Algebra.TensorProduct.lift_tmul, map_one, mul_one]
+        have hpi : PA.val i = aeval PA.val (X i : MvPolynomial (Fin nA) k) := by simp
+        rw [hpi, hφAval]
+        simp [hsA]
+      · rw [AlgHom.comp_apply, aeval_X, hval]
+        show Ψ ((1 : A) ⊗ₜ[k] PB.val j) = _
+        rw [hΨ, Algebra.TensorProduct.lift_tmul, map_one, one_mul]
+        have hpj : PB.val j = aeval PB.val (X j : MvPolynomial (Fin nB) k) := by simp
+        rw [hpj, hφBval]
+        simp [hsB]
+    intro p
+    have h := DFunLike.congr_fun hcomp p
+    simpa using h
+  have hkerJ : RingHom.ker (aeval (R := k) val) ≤ J := by
+    intro p hp
+    have hzero : Ideal.Quotient.mk J p = 0 := by
+      rw [← key p, RingHom.mem_ker.mp hp, map_zero]
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hzero
+  refine hasCompleteIntersectionPresentation_of_generators
+    (Algebra.Generators.ofSurjective val hsurj) F ?_
+  rw [Algebra.Generators.ker_eq_ker_aeval_val]
+  show Ideal.span (Set.range F) = RingHom.ker (aeval (R := k) val)
+  exact le_antisymm (hJ ▸ hJker) hkerJ
+
+/-- A quotient of the ONE-VARIABLE polynomial ring is a complete intersection (PROVEN
+2026-07-27): one relation on one variable.  `MvPolynomial.uniqueAlgEquiv` moves
+`hasCompleteIntersectionPresentation_quotient k 1` across
+`MvPolynomial (Fin 1) k ≃ₐ[k] k[X]`, and `Ideal.quotientEquivAlg` carries the quotient with
+it. -/
+theorem hasCompleteIntersectionPresentation_polynomial_quotient {k : Type*} [CommRing k]
+    (g : Polynomial k) :
+    HasCompleteIntersectionPresentation k (Polynomial k ⧸ Ideal.span {g}) := by
+  classical
+  set e : MvPolynomial (Fin 1) k ≃ₐ[k] Polynomial k := MvPolynomial.uniqueAlgEquiv k (Fin 1)
+    with he
+  refine (hasCompleteIntersectionPresentation_quotient k 1 (fun _ => e.symm g)).of_algEquiv ?_
+  refine Ideal.quotientEquivAlg _ _ e ?_
+  rw [Ideal.map_span]
+  congr 1
+  rw [Set.range_const]
+  simp
+
+/-- **A MONOGENIC algebra over a field is a complete intersection** (PROVEN 2026-07-27).  The
+point is that `k[X]` is a PID, so the kernel of `aeval a` is PRINCIPAL for free — no minimal
+polynomial and no integrality hypothesis is needed, only surjectivity. -/
+theorem hasCompleteIntersectionPresentation_of_monogenic {k L : Type*} [Field k] [CommRing L]
+    [Algebra k L] (a : L)
+    (hsurj : Function.Surjective (Polynomial.aeval a : Polynomial k →ₐ[k] L)) :
+    HasCompleteIntersectionPresentation k L := by
+  classical
+  obtain ⟨g, hg⟩ : ∃ g : Polynomial k,
+      RingHom.ker (Polynomial.aeval a : Polynomial k →ₐ[k] L) = Ideal.span {g} :=
+    ⟨Submodule.IsPrincipal.generator (RingHom.ker (Polynomial.aeval a : Polynomial k →ₐ[k] L)),
+      (Submodule.IsPrincipal.span_singleton_generator _).symm⟩
+  refine (hasCompleteIntersectionPresentation_polynomial_quotient g).of_algEquiv ?_
+  exact (Ideal.quotientEquivAlgOfEq k hg.symm).trans
+    (Ideal.quotientKerAlgEquivOfSurjective hsurj)
+
+/-- A finite SEPARABLE field extension is a complete intersection (PROVEN 2026-07-27): the
+primitive element theorem makes it monogenic. -/
+theorem hasCompleteIntersectionPresentation_of_finite_separable_field {k L : Type*} [Field k]
+    [Field L] [Algebra k L] [Module.Finite k L] [Algebra.IsSeparable k L] :
+    HasCompleteIntersectionPresentation k L := by
+  obtain ⟨a, ha⟩ := Field.exists_primitive_element k L
+  refine hasCompleteIntersectionPresentation_of_monogenic a ?_
+  intro y
+  have hy : y ∈ Algebra.adjoin k {a} := by
+    have h1 : (IntermediateField.adjoin k {a}).toSubalgebra = Algebra.adjoin k {a} :=
+      IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+        (Algebra.IsIntegral.isIntegral (R := k) a).isAlgebraic
+    rw [← h1, ha]
+    trivial
+  rw [Algebra.adjoin_singleton_eq_range_aeval] at hy
+  exact hy
+
+/-- `hasCompleteIntersectionPresentation_pi` over an arbitrary FINITE index type (PROVEN
+2026-07-27), by transporting along `AlgEquiv.piCongrLeft'` and `Finite.exists_equiv_fin`. -/
+theorem hasCompleteIntersectionPresentation_pi_finite {k : Type*} [CommRing k] {ι : Type*}
+    [Finite ι] (B : ι → Type*) [∀ i, CommRing (B i)] [∀ i, Algebra k (B i)]
+    (h : ∀ i, HasCompleteIntersectionPresentation k (B i)) :
+    HasCompleteIntersectionPresentation k (∀ i, B i) := by
+  classical
+  obtain ⟨s, ⟨e⟩⟩ := Finite.exists_equiv_fin ι
+  exact (hasCompleteIntersectionPresentation_pi s (fun j => B (e.symm j)) fun j => h _).of_algEquiv
+    (AlgEquiv.piCongrLeft' k B e).symm
+
+/-- **AN ÉTALE ALGEBRA over a field is a complete intersection** (PROVEN 2026-07-27).  This was
+step 1 of the three-step cut recommended on
+`exists_pi_quotient_algEquiv_residue_of_hopf_package`, and it turned out to need no new
+mathematics at all: the pin already has the structure theorem.
+
+`Algebra.Etale.iff_exists_algEquiv_prod` (`Mathlib/RingTheory/Etale/Field.lean`) says an étale
+algebra over a field is a FINITE PRODUCT of finite separable field extensions.  Each factor is
+monogenic by the primitive element theorem, hence a complete intersection with one relation on
+one variable; `hasCompleteIntersectionPresentation_pi_finite` multiplies them up.
+
+WHY `Algebra.Etale` AND NOT `Module.Finite` + `Algebra.IsSeparable`, which is what an earlier
+version of this leaf asked for: `Algebra.FormallyUnramified.of_isSeparable` is stated for a
+FIELD extension, so `IsSeparable` does not by itself give `FormallyUnramified` for a general
+finite commutative algebra at this pin, and the structure theorem is stated for `Etale`.
+`Etale` is also the mathematically standard hypothesis here — "the étale part is étale" — so
+nothing is lost in what the group-theoretic leaf has to supply.  (Module-finiteness is a
+CONSEQUENCE and does not have to be assumed: it comes out of the structure theorem.) -/
+theorem hasCompleteIntersectionPresentation_of_etale {k : Type*} [Field k]
+    (E : Type*) [CommRing E] [Algebra k E] [Algebra.Etale k E] :
+    HasCompleteIntersectionPresentation k E := by
+  obtain ⟨I, hI, Ai, hfield, halg, e, H⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod k E).mp inferInstance
+  have h : ∀ i, HasCompleteIntersectionPresentation k (Ai i) := by
+    intro i
+    obtain ⟨h1, h2⟩ := H i
+    haveI := h1
+    haveI := h2
+    exact hasCompleteIntersectionPresentation_of_finite_separable_field
+  exact (hasCompleteIntersectionPresentation_pi_finite Ai h).of_algEquiv e.symm
+
 end CompleteIntersectionPresentation
 
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **THE GROUP-SCHEME CORE, ON THE SPECIAL FIBRE: the reduction `𝔽₃ ⊗ G` of a finite flat
-Hopf order SPLITS AS A FINITE PRODUCT OF COMPLETE-INTERSECTION LOCAL ALGEBRAS** (SORRY LEAF,
-cut 2026-07-27 out of `exists_generators_span_range_eq_ker_residue_of_hopf_package`, which is
-now PROVEN over this leaf alone).
+/-- **THE GROUP THEORY, AND NOTHING ELSE: over a PERFECT field the connected–étale sequence of
+a finite commutative Hopf algebra SPLITS, and the connected part is a MONOMIAL complete
+intersection** (SORRY LEAF, cut 2026-07-27 out of
+`exists_pi_quotient_algEquiv_residue_of_hopf_package`, which is now PROVEN over this leaf ALONE
+— the two commutative-algebra leaves it was cut against,
+`hasCompleteIntersectionPresentation_tensor` and `hasCompleteIntersectionPresentation_of_etale`,
+were both proven the same day).  **This is the ONLY remaining open node in the whole
+special-fibre chain.**
 
-There are `s`, variable counts `m₁,…,m_s`, and for each `i` a family of `m i` polynomials in
-`m i` variables over the residue field `𝓀 = ResidueField 𝒪₃ᵥ = 𝔽₃`, such that
+Over a perfect field `k` there are `r`, exponents `d₁,…,d_r`, and an ÉTALE `k`-algebra `E`,
+such that
 
-    𝓀 ⊗ G  ≅  ∏_{i<s} 𝓀[x₁,…,x_{m i}] / (F_i(1),…,F_i(m i))
+    A  ≅  k[y₁,…,y_r] / (y₁^{d₁},…,y_r^{d_r})  ⊗_k  E.
 
-as `𝓀`-algebras.  Each factor is a complete intersection ON THE NOSE (`#relations =
-#variables`); what this leaf asserts is only the DECOMPOSITION into such factors.
+**WHAT THIS LEAF IS BASE-GENERIC ABOUT, AND WHY.**  The parent is stated at the single residue
+field `𝓀 = ResidueField 𝒪₃ᵥ = 𝔽₃`; nothing in the argument uses that, so this leaf is stated for
+an arbitrary perfect field.  The parent recovers its own case by
+`PerfectField.ofFinite` — `Finite (ResidueField 𝒪₃ᵥ)` is already an INSTANCE at this pin, via
+the compact-space route of `Mathlib/Topology/Algebra/Ring/Compact.lean`, so no arithmetic input
+about `𝒪₃ᵥ` is needed anywhere in the assembly.
 
-**WHAT THIS CUT BOUGHT, AND WHY THE PRODUCT IS NOT THE HARD PART ANY MORE** (2026-07-27).
-The parent leaf asked for a SINGLE complete-intersection presentation of `𝓀 ⊗ G`.  Passing
-from a product of complete intersections to one complete intersection is a genuine
-obstruction over a small field — `𝔽₃^m` is monogenic only for `m ≤ 3`, so for `m ≥ 4` one
-must cut `m` points of `𝔽₃ⁿ` out by `n` equations, and the parent flagged the staircase
-witness `𝔽₃⁵ ≅ 𝔽₃[x,y]/(x² − x, (1 − x)(y³ − y) + x(y² − y))` as the concrete missing lemma.
-**That lemma is now PROVEN**, in full generality over an arbitrary commutative base ring, as
-`hasCompleteIntersectionPresentation_prod` above (the witness generalised: one sheet-selector
-variable `w` with `w² − w`, and each old relation interpolated as `(1 − w)f + w·g`).  So the
-finite-field combinatorics is done, and what is left here is exactly the GROUP THEORY.
+**THE CONCLUSION IS DELIBERATELY WEAKER THAN DEMAZURE–GABRIEL, AND THE WEAKENING IS FREE.**
+The true normal form has `dᵢ = p^{eᵢ}` with `p = char k` (`p = 3` in the application), and the
+connected part is LOCAL.  This leaf asks only for arbitrary exponents `dᵢ` and says nothing
+about locality, because that is ALL its consumer
+`hasCompleteIntersectionPresentation_of_finite_hopf` uses: `k[y]/(y^{d})` is a complete
+intersection on the nose (`#relations = #variables = r`) whatever the exponents are.  Proving
+the stronger statement is of course fine; do not let the weaker one mislead you into thinking
+the `p`-power structure is avoidable in the PROOF.
 
-WHY IT IS TRUE.  Over the perfect field `𝓀` the connected–étale sequence splits, so
-`𝓀 ⊗ G ≅ A₀ ⊗_𝓀 A_et` with `A₀` the (local) connected part and `A_et` étale.
-Demazure–Gabriel III §3 5.6 gives `A₀ ≅ 𝓀[y₁,…,y_r]/(y₁^{3^{e₁}},…,y_r^{3^{e_r}})`, a complete
-intersection with the relations DIAGONAL — in particular triangular and monic in their own
-variables, which is the shape the lifting leaf
-`exists_generators_quotient_linearEquiv_of_residue` wants.  `A_et` is a finite separable
-`𝓀`-algebra, i.e. a finite product `∏_i K_i` of finite extensions of `𝔽₃`, each MONOGENIC
-(`K_i = 𝓀[t]/(g_i)`, primitive element, automatic over a finite field).  Distributing the
-tensor product over that product gives
+WHY IT IS TRUE.  Over the perfect field `k` the connected–étale sequence
+`1 → G⁰ → G → G^{et} → 1` SPLITS, so `A ≅ A₀ ⊗_k A_et` with `A₀` the (local) connected part and
+`A_et` étale.  Demazure–Gabriel III §3 6.1 gives `A₀ ≅ k[y₁,…,y_r]/(y₁^{p^{e₁}},…,y_r^{p^{e_r}})`
+— a complete intersection with the relations DIAGONAL, in particular triangular and monic in
+their own variables.  `A_et` is a finite separable `k`-algebra, i.e. a finite product `∏_i K_i`
+of finite separable extensions of `k`, each MONOGENIC (`K_i = k[t]/(g_i)`, primitive element).
+That last decomposition is NOT part of this leaf: it is the separate, purely commutative-algebra
+theorem `hasCompleteIntersectionPresentation_of_etale`, which is PROVEN — so a successor here
+has to produce only `Algebra.Etale k E`, not a product decomposition of it.
 
-    𝓀 ⊗ G ≅ ∏_i (A₀ ⊗_𝓀 K_i) ≅ ∏_i 𝓀[t, y₁,…,y_r]/(g_i(t), y₁^{3^{e₁}},…,y_r^{3^{e_r}}),
-
-which is the stated shape with `m i = r + 1`.
-
-**THE `μ₃` WITNESS.**  `μ₃` satisfies this leaf on the nose: `𝓀 ⊗ μ₃ = 𝔽₃[y]/(y³)`, `s = 1`,
-`m 1 = 1`, `F = (y³)`.  Note that `μ₃` is ALSO the counterexample showing why the
+**THE `μ₃` WITNESS.**  `μ₃` satisfies this leaf on the nose over `𝔽₃`: `𝓀 ⊗ μ₃ = 𝔽₃[y]/(y³)`,
+`r = 1`, `d = (3)`, `E = 𝓀`.  Note that `μ₃` is ALSO the counterexample showing why the
 `H¹`-vanishing half could never have been obtained from the special fibre —
 `H¹(L_{𝔽₃[y]/(y³) ⁄ 𝔽₃}) ≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y²dy = 0` in characteristic `3`.
 That is why the cut had to separate the two: LCI DOES descend to the closed fibre, `H¹ = 0`
@@ -17659,12 +17969,12 @@ THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite commutative Hopf `𝔽�
 local factor whose minimal presentation needs strictly more relations than generators.  **The
 Hopf hypothesis is genuinely load-bearing and a refutation must respect it**: without it the
 statement is FALSE, and the witness is `𝔽₃[e,f]/(e², f², ef)` — the reduction of the order
-`𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale algebra `𝒪₃ᵥ³` — which is local of embedding dimension `2`
-and length `3`, whereas a complete intersection of embedding dimension `2` has length at
-least `4` (both relations lie in `𝔪²`).  So three relations are needed on two generators, and
-no argument for this leaf can avoid using the comultiplication.  Note the counterexample is
-LOCAL, hence really is a counterexample to THIS statement and not merely to the parent's:
-splitting into a product cannot rescue it.
+`𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale algebra `𝒪₃ᵥ³` — which is local of embedding dimension `2` and
+length `3`, whereas a complete intersection of embedding dimension `2` has length at least `4`
+(both relations lie in `𝔪²`).  So three relations are needed on two generators, and no argument
+for this leaf can avoid using the comultiplication.  **The counterexample is LOCAL**, hence it
+refutes the product-shaped parent as well as this one — splitting into factors cannot rescue
+it, and the comultiplication remains load-bearing at every level of the cut.
 
 AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
 `Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over `~/cs/FLT`): there is
@@ -17677,17 +17987,17 @@ recorded by the earlier audits is NO LONGER on the critical path — see
 relevant are the connected–étale package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
 (`exists_minimal_counit_idempotent`, `Bialgebra.exists_connected_counit_idempotent`), which is
 the splitting half, and this file's own PROVEN
-`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`), which pins
-`r` above as the rank of the cotangent space.
+`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`), which pins `r`
+above as the rank of the cotangent space.
 
-THE THREE SUB-STEPS A SUCCESSOR SHOULD CUT THIS INTO, in increasing difficulty:
+THE TWO SUB-STEPS A SUCCESSOR SHOULD CUT THIS INTO, in increasing difficulty (the third step of
+the older three-step plan — "the étale part is a product of monogenic extensions" — has been
+SPLIT OFF already, as `hasCompleteIntersectionPresentation_of_etale`):
 
-1. `A_et ≅ ∏_i K_i` with each `K_i` a finite separable extension of `𝓀` — Artinian structure
-   theory plus reducedness; the monogenicity of each `K_i` is `Field.exists_primitive_element`.
-2. The connected–étale splitting `𝓀 ⊗ G ≅ A₀ ⊗_𝓀 A_et` over the perfect field `𝓀` — the
+1. The connected–étale splitting `A ≅ A₀ ⊗_k A_et` over the perfect field `k` — the
    counit-idempotent package above is the half of this that already exists.
-3. `A₀ ≅ 𝓀[y]/(y^{3^{e}})`-shaped — Demazure–Gabriel; this is the deep one, and it is the
-   only one that needs group-scheme quotients.
+2. `A₀ ≅ k[y]/(y^{p^{e}})`-shaped — Demazure–Gabriel; this is the deep one, and it is the only
+   one that needs group-scheme quotients.
 
 RAYNAUD'S ROUTE, for contrast: a finite flat commutative group scheme over ANY base is a local
 complete intersection — embed `G` in the smooth affine `GL(G)` by the regular representation,
@@ -17697,6 +18007,102 @@ the fppf quotient `GL(G)/G` is smooth of the same dimension, and `G` is the fibr
 intersections and symmetric algebras*, J. Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7
 cites it as standard).  Nothing about group-scheme QUOTIENTS exists at this pin, which is why
 the closed-fibre route is the recommended attack instead. -/
+theorem exists_etale_tensor_algEquiv_of_finite_hopf (k : Type) [Field k] [PerfectField k]
+    (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
+    ∃ (r : ℕ) (d : Fin r → ℕ) (E : Type) (_ : CommRing E) (_ : Algebra k E),
+      Algebra.Etale k E ∧
+        Nonempty (A ≃ₐ[k] (MvPolynomial (Fin r) k ⧸
+          Ideal.span (Set.range fun i : Fin r =>
+            (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)) ⊗[k] E) :=
+  sorry
+
+/-- **A FINITE COMMUTATIVE HOPF ALGEBRA OVER A PERFECT FIELD IS A COMPLETE INTERSECTION**
+(PROVEN 2026-07-27 over the SINGLE remaining leaf
+`exists_etale_tensor_algEquiv_of_finite_hopf`; the two commutative-algebra inputs
+`hasCompleteIntersectionPresentation_tensor` and `hasCompleteIntersectionPresentation_of_etale`
+are themselves PROVEN above).
+
+This is the base-generic form of `exists_pi_quotient_algEquiv_residue_of_hopf_package`, and the
+assembly is three lines: the splitting leaf hands back
+`A ≅ k[y]/(y^{d}) ⊗_k E`; the monomial quotient is a complete intersection by
+`hasCompleteIntersectionPresentation_quotient` (`r` relations on `r` variables, one per
+variable); `E` is one by the separability leaf; the tensor leaf multiplies them; and
+`HasCompleteIntersectionPresentation.of_algEquiv` transports back along the splitting. -/
+theorem hasCompleteIntersectionPresentation_of_finite_hopf (k : Type) [Field k] [PerfectField k]
+    (A : Type) [CommRing A] [HopfAlgebra k A] [Module.Finite k A] :
+    HasCompleteIntersectionPresentation k A := by
+  obtain ⟨r, d, E, _, _, hetale, ⟨e⟩⟩ := exists_etale_tensor_algEquiv_of_finite_hopf k A
+  haveI := hetale
+  exact HasCompleteIntersectionPresentation.of_algEquiv
+    (hasCompleteIntersectionPresentation_tensor
+      (hasCompleteIntersectionPresentation_quotient k r
+        fun i => (MvPolynomial.X i : MvPolynomial (Fin r) k) ^ d i)
+      (hasCompleteIntersectionPresentation_of_etale E)) e.symm
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE GROUP-SCHEME CORE, ON THE SPECIAL FIBRE: the reduction `𝔽₃ ⊗ G` of a finite flat
+Hopf order SPLITS AS A FINITE PRODUCT OF COMPLETE-INTERSECTION LOCAL ALGEBRAS** (PROVEN
+2026-07-27 over the three leaves listed below; cut 2026-07-27 out of
+`exists_generators_span_range_eq_ker_residue_of_hopf_package`, which is PROVEN over it).
+
+There are `s`, variable counts `m₁,…,m_s`, and for each `i` a family of `m i` polynomials in
+`m i` variables over the residue field `𝓀 = ResidueField 𝒪₃ᵥ = 𝔽₃`, such that
+
+    𝓀 ⊗ G  ≅  ∏_{i<s} 𝓀[x₁,…,x_{m i}] / (F_i(1),…,F_i(m i))
+
+as `𝓀`-algebras.  Each factor is a complete intersection ON THE NOSE (`#relations =
+#variables`); what this leaf asserts is only the DECOMPOSITION into such factors.
+
+**WHAT REMAINS OPEN, AND WHERE** (2026-07-27).  This declaration is now an ASSEMBLY and has no
+mathematical content of its own.  It was cut against three named leaves; TWO OF THE THREE WERE
+PROVEN THE SAME DAY, so exactly ONE node is open and that is where a successor should be
+dispatched:
+
+* **OPEN — `exists_etale_tensor_algEquiv_of_finite_hopf`**, the group theory and nothing else:
+  over a perfect field the connected–étale sequence of a finite commutative Hopf algebra splits
+  and the connected part is `k[y₁,…,y_r]/(y₁^{d₁},…,y_r^{d_r})`.  The `μ₃` witness, the non-Hopf
+  counterexample, the pin/axis survey, Raynaud's route and the remaining two-step cut all live
+  on that docstring now.
+* PROVEN — `hasCompleteIntersectionPresentation_tensor`: a TENSOR PRODUCT of two complete
+  intersections is a complete intersection, over an ARBITRARY commutative base ring.  Closed by
+  an explicit retraction `A ⊗ B →ₐ Q ⧸ J` built with `AlgHom.liftOfSurjective`, so no
+  homological algebra and no flatness is used.
+* PROVEN — `hasCompleteIntersectionPresentation_of_etale`: an ÉTALE algebra over a field is a
+  complete intersection.  It needed no new mathematics — `Algebra.Etale.iff_exists_algEquiv_prod`
+  in `Mathlib/RingTheory/Etale/Field.lean` already gives the decomposition into finite separable
+  field extensions, each monogenic by the primitive element theorem.
+
+**HOW THE ASSEMBLY GOES.**  `Finite (ResidueField 𝒪₃ᵥ)` is already an INSTANCE at this pin (the
+compact-local-ring route of `Mathlib/Topology/Algebra/Ring/Compact.lean`), hence so is
+`PerfectField (ResidueField 𝒪₃ᵥ)` by `PerfectField.ofFinite`; the base change `𝓀 ⊗[𝒪₃ᵥ] G`
+carries `HopfAlgebra 𝓀 _` by `Mathlib/RingTheory/HopfAlgebra/TensorProduct.lean` and
+`Module.Finite 𝓀 _` by base change — all four by instance search, with no arithmetic input about
+`𝒪₃ᵥ` anywhere.  So the base-generic `hasCompleteIntersectionPresentation_of_finite_hopf`
+applies verbatim, and `exists_pi_quotient_algEquiv_of_hasCompleteIntersectionPresentation`
+converts its predicate back into the pi-quotient shape with `s = 1`.
+
+`Module.Flat 𝒪₃ᵥ G` is **not used** by this proof; it is kept because the whole Hopf-package
+family carries it and its consumers pass it through.
+
+**WHY AN `s = 1` WITNESS IS NOT A CHEAT.**  The grandparent asked for a SINGLE
+complete-intersection presentation, and passing from a product of complete intersections to one
+is a genuine obstruction over a small field — `𝔽₃^m` is monogenic only for `m ≤ 3`, so for
+`m ≥ 4` one must cut `m` points of `𝔽₃ⁿ` out by `n` equations, with the concrete witness
+`𝔽₃⁵ ≅ 𝔽₃[x,y]/(x² − x, (1 − x)(y³ − y) + x(y² − y))`.  That obstruction is DISCHARGED, over an
+arbitrary commutative base ring, by `hasCompleteIntersectionPresentation_prod` above.  Since the
+two shapes are now interconvertible in both directions
+(`hasCompleteIntersectionPresentation_of_pi_quotient` and its converse), a one-factor witness
+carries exactly as much as a genuinely multi-factor one.
+
+**FAITHFULNESS NOTE THAT MUST NOT BE DROPPED.**  The non-Hopf counterexample
+`𝔽₃[e,f]/(e², f², ef)` — the reduction of the order `𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale algebra
+`𝒪₃ᵥ³`, local of embedding dimension `2` and length `3`, against a complete intersection of
+embedding dimension `2` having length at least `4` — is **LOCAL**.  So it refutes THIS
+product-shaped statement and not merely the grandparent's single-presentation one: splitting
+into factors cannot rescue it, and the comultiplication is load-bearing at every level of the
+cut.  Any successor who weakens the Hopf hypothesis anywhere in this chain has made the
+statement false. -/
 theorem exists_pi_quotient_algEquiv_residue_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G] :
@@ -17706,7 +18112,9 @@ theorem exists_pi_quotient_algEquiv_residue_of_hopf_package
       Nonempty ((IsLocalRing.ResidueField 𝒪₃ᵥ ⊗[𝒪₃ᵥ] G) ≃ₐ[IsLocalRing.ResidueField 𝒪₃ᵥ]
         (∀ i : Fin s, MvPolynomial (Fin (m i)) (IsLocalRing.ResidueField 𝒪₃ᵥ) ⧸
           Ideal.span (Set.range (F i)))) :=
-  sorry
+  exists_pi_quotient_algEquiv_of_hasCompleteIntersectionPresentation
+    (hasCompleteIntersectionPresentation_of_finite_hopf
+      (IsLocalRing.ResidueField 𝒪₃ᵥ) (IsLocalRing.ResidueField 𝒪₃ᵥ ⊗[𝒪₃ᵥ] G))
 
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -17736,12 +18144,25 @@ sheets as `(1 − w)·f + w·g`; the proof computes the two coordinate kernels a
 theory.  It is stated over `MvPolynomial` with an arbitrary finite variable type and reindexed
 to `Fin n` by `hasCompleteIntersectionPresentation_of_generators`.
 
-So the remaining content of this leaf is EXACTLY the group theory, and it has been moved
-verbatim into the single sorried leaf above: the connected–étale splitting, the
-Demazure–Gabriel normal form for the connected part, and the fact that the étale part is a
-finite product of monogenic field extensions.  The `μ₃` witness, the non-Hopf counterexample
-`𝔽₃[e,f]/(e², f², ef)`, the refutation check and the pin/axis survey all live there now,
-because they all bear on the group-theoretic half rather than on the combinatorics. -/
+**UPDATE 2026-07-27, LATER: `exists_pi_quotient_algEquiv_residue_of_hopf_package` IS ALSO
+PROVEN NOW**, so this whole chain down to the special fibre is assembly.  What is open sits in
+three named leaves reached through it — two of which have since been PROVEN — and NONE of them
+mentions `𝒪₃ᵥ`; they are all base-generic:
+
+* `exists_etale_tensor_algEquiv_of_finite_hopf` — the group theory: connected–étale
+  splitting plus the Demazure–Gabriel normal form for the connected part.  The `μ₃` witness,
+  the non-Hopf counterexample `𝔽₃[e,f]/(e², f², ef)`, the refutation check, the pin/axis survey
+  and Raynaud's route all live on that docstring.
+* `hasCompleteIntersectionPresentation_tensor` — **PROVEN 2026-07-27**: a tensor product of
+  complete intersections is a complete intersection, over any commutative base ring.
+* `hasCompleteIntersectionPresentation_of_etale` — **PROVEN 2026-07-27**: an étale algebra over
+  a field is a complete intersection; this is where "the étale part is a finite product of
+  monogenic field extensions" now lives.
+
+So only the FIRST of the three is still open.
+
+The residue field's own contribution is nil: `Finite (ResidueField 𝒪₃ᵥ)` is an instance at this
+pin, hence `PerfectField` is too, and that is the only property of `𝔽₃` the assembly uses. -/
 theorem exists_generators_span_range_eq_ker_residue_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G] :
