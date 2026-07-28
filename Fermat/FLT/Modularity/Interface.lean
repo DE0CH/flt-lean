@@ -58514,6 +58514,272 @@ theorem isPeuRamifiee_iff_dvd_log_valuation
 
 end PeuRamifiee
 
+/-- **THE ABELIAN-DESCENT LEMMA, PROVEN, in pure field-theoretic form**
+(**PROVEN 2026-07-28**, seventeenth owner of
+`pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`;
+this is the Kummer-cocycle computation of
+`exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed` below, with
+the ONE arithmetic input it cannot supply itself isolated as `hram`).
+
+Let `F` be a field of characteristic zero, `q` a prime, and `I` ANY
+subgroup of `Γ F = Gal(Fᵃˡᵍ/F)`. Let `r ∈ Fᵃˡᵍ` be nonzero whose Kummer
+cocycle `σ ↦ σ r / r` takes values in `μ_{qⁿ}` (`hroot`), and suppose the
+cocycle is ABELIAN over `I` in the weakest usable sense: every COMMUTATOR
+of two elements of `I` fixes `r` (`hcomm`). Then the cocycle is a
+COBOUNDARY inside `μ_{qⁿ}` — there is a `qⁿ`-th root of unity `z` with
+`r / z` fixed by all of `I`.
+
+`hram` IS THE WHOLE ARITHMETIC INPUT, and it is exactly "`μ_q ⊄ Fᵀ`" for
+`Fᵀ` the fixed field of `I`. Nothing else about `F`, `I` or the ambient
+arithmetic enters; in particular there is no valuation, no ramification
+theory and no group scheme in this proof.
+
+THE PROOF, in the notation of the statement. Fix a primitive `qⁿ`-th root
+`ζ` of `Fᵃˡᵍ` (`HasEnoughRootsOfUnity`, using `CharZero F`) and let
+`χ := hζ.autToPow F : Γ F →* (ZMod qⁿ)ˣ` be the cyclotomic character.
+`hroot` and `IsPrimitiveRoot.eq_pow_of_pow_eq_one` give a well-defined
+`a : Γ F → ZMod qⁿ` with `σ r / r = ζ ^ (a σ).val`. Then:
+
+* the COCYCLE IDENTITY `a (σ τ) = χ σ · a τ + a σ`, from
+  `(στ)(r)/r = σ(τ r / r) · (σ r / r)` and `σ (ζ ^ m) = ζ ^ (χ σ · m)`;
+* `χ` kills commutators, because `(ZMod qⁿ)ˣ` is COMMUTATIVE — so the
+  commutator `c := σ τ σ⁻¹ τ⁻¹` fixes every power of `ζ`; combined with
+  `hcomm` (which says `c` fixes `r`) and `σ τ = c · (τ σ)` this gives
+  `a (σ τ) = a (τ σ)` for `σ, τ ∈ I`, hence
+  `a τ · (χ σ − 1) = a σ · (χ τ − 1)`;
+* `hram`, applied to the primitive `q`-th root `ζ ^ q ^ (n−1)`, produces
+  `σ₁ ∈ I` with `χ σ₁ ≢ 1 mod q`, i.e. with `χ σ₁ − 1` a UNIT of
+  `ZMod qⁿ` (non-units of `ZMod qⁿ` are the multiples of `q`, and a
+  multiple of `q` in the exponent acts trivially on `ζ ^ q ^ (n−1)`);
+* so `a τ = c₀ · (χ τ − 1)` with `c₀ := a σ₁ · (χ σ₁ − 1)⁻¹`, and
+  `z := ζ ^ c₀.val` works: `τ (r / z) = r / z` reduces to
+  `a τ + c₀ = χ τ · c₀` in `ZMod qⁿ`.
+
+`n = 0` is degenerate and is discharged first: there `hroot` says every
+`σ ∈ Γ F` fixes `r`, and `z = 1`. -/
+theorem exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne
+    {F : Type*} [Field F] [CharZero F] {q : ℕ} [hq : Fact q.Prime]
+    (I : Subgroup (Field.absoluteGaloisGroup F)) {n : ℕ}
+    {r : AlgebraicClosure F} (hr0 : r ≠ 0)
+    (hroot : ∀ σ : Field.absoluteGaloisGroup F, (σ r / r) ^ q ^ n = 1)
+    (hcomm : ∀ σ ∈ I, ∀ τ ∈ I, (σ * τ * σ⁻¹ * τ⁻¹) r = r)
+    (hram : ∀ ξ : AlgebraicClosure F, IsPrimitiveRoot ξ q → ∃ σ ∈ I, σ ξ ≠ ξ) :
+    ∃ z : AlgebraicClosure F, z ≠ 0 ∧ z ^ q ^ n = 1 ∧
+      ∀ σ ∈ I, σ (r / z) = r / z := by
+  classical
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · refine ⟨1, one_ne_zero, by simp, fun σ _ => ?_⟩
+    have h := hroot σ
+    rw [pow_zero, pow_one] at h
+    rw [div_one]
+    exact (div_eq_one_iff_eq hr0).mp h
+  obtain ⟨N, rfl⟩ : ∃ N, n = N + 1 := ⟨n - 1, by omega⟩
+  have hq1 : 1 < q := hq.out.one_lt
+  have hqne : q ≠ 0 := hq.out.ne_zero
+  have hN1 : 1 < q ^ (N + 1) := Nat.one_lt_pow (by omega) hq1
+  haveI : NeZero (q ^ (N + 1)) := ⟨by omega⟩
+  haveI : Fact (1 < q ^ (N + 1)) := ⟨hN1⟩
+  haveI : NeZero ((q : ℕ) : F) := ⟨Nat.cast_ne_zero.mpr hqne⟩
+  obtain ⟨ζ, hζ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) (q ^ (N + 1))
+  have hζ0 : ζ ≠ 0 := by
+    intro h
+    have h1 := hζ.pow_eq_one
+    rw [h, zero_pow (by positivity)] at h1
+    exact zero_ne_one h1
+  have hord : orderOf ζ = q ^ (N + 1) := hζ.eq_orderOf.symm
+  have hfin : IsOfFinOrder ζ := by
+    rw [← orderOf_pos_iff, hord]
+    positivity
+  have hexp : ∀ i j : ℕ, ζ ^ i = ζ ^ j ↔
+      ((i : ZMod (q ^ (N + 1))) = (j : ZMod (q ^ (N + 1)))) := by
+    intro i j
+    rw [hfin.pow_eq_pow_iff_modEq, hord, ZMod.natCast_eq_natCast_iff]
+  -- the cyclotomic character mod `q ^ (N+1)`
+  set χ := hζ.autToPow F with hχdef
+  have hσζ : ∀ (σ : Field.absoluteGaloisGroup F) (m : ℕ),
+      σ (ζ ^ m) = ζ ^ ((χ σ : ZMod (q ^ (N + 1))).val * m) := by
+    intro σ m
+    rw [map_pow, hχdef, ← hζ.autToPow_spec F σ, ← pow_mul]
+  -- the Kummer cocycle `a : Γ F → ZMod (q ^ (N+1))`
+  have hex : ∀ σ : Field.absoluteGaloisGroup F,
+      ∃ k : ZMod (q ^ (N + 1)), σ r / r = ζ ^ k.val := by
+    intro σ
+    obtain ⟨i, hi, hieq⟩ := hζ.eq_pow_of_pow_eq_one (hroot σ)
+    exact ⟨(i : ZMod (q ^ (N + 1))), by rw [ZMod.val_natCast_of_lt hi]; exact hieq.symm⟩
+  choose A hA using hex
+  have hAr : ∀ σ : Field.absoluteGaloisGroup F, σ r = ζ ^ (A σ).val * r := by
+    intro σ
+    rw [← hA σ, div_mul_cancel₀ _ hr0]
+  -- the cocycle identity
+  have hAmul : ∀ σ τ : Field.absoluteGaloisGroup F,
+      A (σ * τ) = (χ σ : ZMod (q ^ (N + 1))) * A τ + A σ := by
+    intro σ τ
+    have key : ζ ^ (A (σ * τ)).val
+        = ζ ^ ((χ σ : ZMod (q ^ (N + 1))).val * (A τ).val + (A σ).val) := by
+      rw [← hA (σ * τ), AlgEquiv.mul_apply, hAr τ, map_mul, hσζ σ, hAr σ, pow_add ζ]
+      field_simp
+    rw [hexp] at key
+    push_cast [ZMod.natCast_val, ZMod.cast_id] at key
+    exact key
+  -- the character kills commutators
+  have hχcomm : ∀ σ τ : Field.absoluteGaloisGroup F, χ (σ * τ * σ⁻¹ * τ⁻¹) = 1 := by
+    intro σ τ
+    simp only [map_mul, map_inv]
+    rw [mul_comm (χ σ) (χ τ)]
+    group
+  -- abelianness of the inertia action makes the cocycle symmetric
+  have hAsymm : ∀ σ ∈ I, ∀ τ ∈ I, A (σ * τ) = A (τ * σ) := by
+    intro σ hσ τ hτ
+    have hcr : (σ * τ * σ⁻¹ * τ⁻¹) r = r := hcomm σ hσ τ hτ
+    have hcζ : ∀ m : ℕ, (σ * τ * σ⁻¹ * τ⁻¹) (ζ ^ m) = ζ ^ m := by
+      intro m
+      rw [hσζ _ m, hχcomm σ τ]
+      simp [ZMod.val_one]
+    have hst : σ * τ = (σ * τ * σ⁻¹ * τ⁻¹) * (τ * σ) := by group
+    have hEq : (σ * τ) r = (τ * σ) r := by
+      conv_lhs => rw [hst]
+      rw [AlgEquiv.mul_apply, hAr (τ * σ), map_mul, hcζ, hcr, ← hAr (τ * σ)]
+    have key : ζ ^ (A (σ * τ)).val = ζ ^ (A (τ * σ)).val := by
+      rw [← hA (σ * τ), ← hA (τ * σ), hEq]
+    rw [hexp] at key
+    simpa [ZMod.natCast_val, ZMod.cast_id] using key
+  -- the resulting linear relation
+  have hrel : ∀ σ ∈ I, ∀ τ ∈ I,
+      A τ * ((χ σ : ZMod (q ^ (N + 1))) - 1)
+        = A σ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by
+    intro σ hσ τ hτ
+    have h := hAsymm σ hσ τ hτ
+    rw [hAmul σ τ, hAmul τ σ] at h
+    linear_combination h
+  -- `μ_q ⊄ Fᴵ` supplies a `σ₁` with `χ σ₁ - 1` a unit
+  have hζp : IsPrimitiveRoot (ζ ^ q ^ N) q :=
+    IsPrimitiveRoot.pow (by positivity) hζ (by rw [pow_succ])
+  obtain ⟨σ₁, hσ₁I, hσ₁ne⟩ := hram _ hζp
+  have hunit : IsUnit ((χ σ₁ : ZMod (q ^ (N + 1))) - 1) := by
+    by_contra hnu
+    apply hσ₁ne
+    have hval : (((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val : ZMod (q ^ (N + 1)))
+        = (χ σ₁ : ZMod (q ^ (N + 1))) - 1 := by
+      simp [ZMod.natCast_val, ZMod.cast_id]
+    have hdvd : q ∣ ((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val := by
+      by_contra hd
+      exact hnu (by
+        rw [← hval, ZMod.isUnit_iff_coprime]
+        exact (((Nat.Prime.coprime_iff_not_dvd hq.out).mpr hd).symm).pow_right _)
+    obtain ⟨m, hm⟩ := hdvd
+    have hqz : ((q : ZMod (q ^ (N + 1))) ^ (N + 1)) = 0 := by
+      have := ZMod.natCast_self (q ^ (N + 1))
+      push_cast at this
+      exact this
+    have hk : ((χ σ₁ : ZMod (q ^ (N + 1))).val : ZMod (q ^ (N + 1)))
+        = 1 + (q : ZMod (q ^ (N + 1))) * (m : ZMod (q ^ (N + 1))) := by
+      have h1 : (((χ σ₁ : ZMod (q ^ (N + 1))) - 1).val : ZMod (q ^ (N + 1)))
+          = ((q * m : ℕ) : ZMod (q ^ (N + 1))) := by rw [hm]
+      rw [hval] at h1
+      push_cast at h1
+      rw [ZMod.natCast_val, ZMod.cast_id]
+      linear_combination h1
+    rw [hσζ σ₁ (q ^ N), hexp]
+    push_cast
+    rw [hk]
+    linear_combination (m : ZMod (q ^ (N + 1))) * hqz
+  obtain ⟨w, hw⟩ := hunit
+  have hww : (w : ZMod (q ^ (N + 1))) * ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) :
+      ZMod (q ^ (N + 1))) = 1 := by
+    rw [← Units.val_mul, mul_inv_cancel, Units.val_one]
+  set c₀ : ZMod (q ^ (N + 1)) :=
+    A σ₁ * ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) with hc₀
+  have hAτ : ∀ τ ∈ I, A τ = c₀ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by
+    intro τ hτ
+    have h := hrel σ₁ hσ₁I τ hτ
+    rw [← hw] at h
+    calc A τ = A τ * ((w : ZMod (q ^ (N + 1))) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1)))) := by rw [hww, mul_one]
+      _ = (A τ * (w : ZMod (q ^ (N + 1)))) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) := by ring
+      _ = (A σ₁ * ((χ τ : ZMod (q ^ (N + 1))) - 1)) *
+          ((w⁻¹ : (ZMod (q ^ (N + 1)))ˣ) : ZMod (q ^ (N + 1))) := by rw [h]
+      _ = c₀ * ((χ τ : ZMod (q ^ (N + 1))) - 1) := by rw [hc₀]; ring
+  refine ⟨ζ ^ c₀.val, pow_ne_zero _ hζ0, ?_, ?_⟩
+  · rw [← pow_mul, mul_comm, pow_mul, hζ.pow_eq_one, one_pow]
+  · intro τ hτ
+    have hkey : ζ ^ ((A τ).val + c₀.val)
+        = ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) := by
+      rw [hexp]
+      push_cast [ZMod.natCast_val, ZMod.cast_id]
+      rw [hAτ τ hτ]
+      ring
+    rw [map_div₀, hAr τ, hσζ τ c₀.val,
+      div_eq_div_iff (pow_ne_zero _ hζ0) (pow_ne_zero _ hζ0)]
+    calc ζ ^ (A τ).val * r * ζ ^ c₀.val
+        = ζ ^ ((A τ).val + c₀.val) * r := by rw [pow_add ζ]; ring
+      _ = ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) * r := by rw [hkey]
+      _ = r * ζ ^ ((χ τ : ZMod (q ^ (N + 1))).val * c₀.val) := by ring
+
+include hpodd in
+/-- **`μ_p ⊄ (ℚᵖᵥ)^{nr}`: local inertia at `p` moves a primitive `p`-th
+root of unity** (LEAF — new 2026-07-28, the ONE arithmetic input of the
+ABELIAN-DESCENT LEMMA above, cut out of
+`exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed` when the
+cocycle computation was proven).
+
+Equivalently: `ℚᵖᵥ(μ_p)/ℚᵖᵥ` is RAMIFIED. Everything else in the
+abelian-descent branch is now proven; this is the only place where the
+arithmetic of `ℚ_p` — as opposed to pure Galois cohomology of a cyclic
+module — is used.
+
+**`hpodd` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** At
+`p = 2` one has `ζ = −1 ∈ ℚ₂`, so `σ ζ = ζ` for EVERY `σ ∈ Γ ℚ₂` and no
+such `σ` exists. This is the same `p = 2` failure that the consumer's
+docstring records, and it is why `hpodd` travels down the whole branch to
+land here.
+
+THE PROOF, and it is the classical ramification computation. Suppose
+every `σ ∈ localInertiaGroup 𝔭ᵥ` fixed `ξ`. Then
+`M := ℚᵖᵥ⟮ξ⟯ ≤ IntermediateField.fixedField (localInertiaGroup 𝔭ᵥ)`, and
+`M` is finite over `ℚᵖᵥ` (`ξ` is a root of `X ^ p − 1`), so the PROVEN
+
+    maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+
+of `Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
+(which this file `public import`s — do not rebuild it) gives `e(M/ℚᵖᵥ) = 1`,
+i.e. `𝔪 R = (𝔪 𝒪ᵖᵥ) · R` for `R := IntegralClosure 𝒪ᵖᵥ M`. That is
+contradictory:
+
+* `p` is a non-unit of `R` (else `p⁻¹` would be integral over the
+  integrally closed `𝒪ᵖᵥ`), so `p ∈ 𝔪 R` and the residue field `R/𝔪 R`
+  has characteristic `p`;
+* in `R/𝔪 R` one has `(ξ̄ − 1) ^ p = ξ̄ ^ p − 1 = 0`, and a field is
+  reduced, so `ξ ≡ 1 mod 𝔪 R`;
+* `𝔪 𝒪ᵖᵥ = (p)` (`p` is a uniformizer of `ℚ_p`), so `𝔪 R = p R` and
+  `ξ = 1 + p y` for some `y ∈ R`;
+* then `0 = ∑_{i<p} ξ ^ i = ∑_{i<p} (1 + p y) ^ i ≡ p + p ^ 2 y ·
+  (p (p−1) / 2) ≡ p mod p ^ 2`, **where `p` ODD is what makes
+  `p (p−1) / 2` divisible by `p`**; cancelling `p` in the domain `R`
+  gives `1 ∈ p R`, i.e. `p` a unit — contradicting the first bullet.
+
+MACHINERY LOCATED 2026-07-28, so that the next owner does not re-survey:
+
+* `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` is PROVEN in
+  `LocalInertiaFixedField.lean` and is the `e = 1` input (bullet 0);
+* `𝔪 𝒪ᵖᵥ = (p)` is NOT stated anywhere in this project, but mathlib's
+  `Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv v :
+  v.adicCompletionIntegers ℚ ≃A[ℤ] ℤ_[natGenerator v]`
+  (`Mathlib/NumberTheory/Padics/HeightOneSpectrum.lean`) transports
+  `PadicInt.maximalIdeal_eq_span_p` across it; `natGenerator 𝔭ᵥ = p`
+  follows from `Rat.HeightOneSpectrum.span_natGenerator` in the same file.
+  That is the third bullet, and it is the only piece with no local
+  precedent.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit an unramified extension of
+`ℚ_p` containing a primitive `p`-th root of unity, for `p` odd.
+Equivalently, find the error in the four bullets above. -/
+theorem exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot
+    (ξ : AlgebraicClosure ℚᵖᵥ) (hξ : IsPrimitiveRoot ξ p) :
+    ∃ σ ∈ localInertiaGroup 𝔭ᵥ, σ ξ ≠ ξ :=
+  sorry
+
 include hpodd in
 /-- **THE ABELIAN-DESCENT LEMMA, in the only form this development needs**
 (LEAF — new 2026-07-27, the FIRST of the two pieces of the
@@ -58566,7 +58832,21 @@ THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a field `E` with
 root in `L` but `q ∉ (Eˣ)^{pⁿ}` — equivalently, find the error in the
 five-line cocycle computation above. Note the necessity witness recorded
 with the lemma: over `E = ℚ_p(μ_p)` the extension `E(p^{1/p})` IS abelian
-and `p` is not a `p`-th power, so `μ_p ⊄ E` cannot be dropped. -/
+and `p` is not a `p`-th power, so `μ_p ⊄ E` cannot be dropped.
+
+# REDUCED 2026-07-28 (seventeenth owner) — THIS IS NOW PROVEN GLUE
+
+The entire cocycle computation described above is PROVEN, in the general
+field-theoretic form
+`exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne` stated
+immediately above this docstring: it takes ANY subgroup `I ≤ Γ F` of the
+absolute Galois group of ANY characteristic-zero field, and needs exactly
+one arithmetic input beyond `hroot` and `hcomm`, namely `μ_q ⊄ Fᴵ`. Here
+that input is `exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot`,
+the single remaining leaf of this branch and the ONLY consumer of `hpodd`
+left in it — it is exactly "`ℚᵖᵥ(μ_p)/ℚᵖᵥ` is ramified", and it is false
+at `p = 2`, which is where the `p = 2` failure of this statement now
+lives. -/
 theorem exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed
     {n : ℕ} {r : AlgebraicClosure ℚᵖᵥ} (hr0 : r ≠ 0)
     (hroot : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, (σ r / r) ^ p ^ n = 1)
@@ -58574,7 +58854,9 @@ theorem exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed
       (σ * τ * σ⁻¹ * τ⁻¹) r = r) :
     ∃ z : AlgebraicClosure ℚᵖᵥ, z ≠ 0 ∧ z ^ p ^ n = 1 ∧
       ∀ σ ∈ localInertiaGroup 𝔭ᵥ, σ (r / z) = r / z :=
-  sorry
+  exists_pow_eq_one_forall_mem_div_fixed_of_exists_apply_ne
+    (localInertiaGroup 𝔭ᵥ) hr0 hroot hcomm
+    (fun ξ hξ => exists_mem_localInertiaGroup_apply_ne_of_isPrimitiveRoot hpodd ξ hξ)
 
 /-- **A radical fixed by local inertia has `pⁿ`-divisible valuation**
 (LEAF — new 2026-07-27, the SECOND of the two pieces of the
