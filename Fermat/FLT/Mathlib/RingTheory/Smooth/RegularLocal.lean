@@ -239,6 +239,39 @@ Both nontrivial inputs are ALREADY PROVEN, sorry-free, in this repository, in
 That module has NO `Fermat` imports either, so a prover closing this leaf can
 import it here without creating a cycle, or hoist the four declarations.
 
+**The MATHLIB half of that proof, name by name, each type-checked against this
+pin on 2026-07-28 before being written down.**  The three project lemmas above
+cover the regular-local bookkeeping; these cover everything else, and none of it
+needs building:
+
+* Turning both tensor products into dimensions:
+  `Module.finrank_eq_spanFinrank_of_free` composed with
+  `TensorProduct.spanFinrank_top_eq_of_residueField`
+  (`Mathlib/Algebra/Module/SpanRankOperations.lean`) gives, in two lines,
+  `Module.finrank κ (κ ⊗[P] N) = N.spanFinrank` for any finitely generated `N`
+  over a local ring.  There is no lemma under that name — this composite IS the
+  bridge, and it is what makes "`I/𝔪_P I` has dimension `spanFinrank I`" a
+  rewrite rather than a development.
+* The two dimension bounds: `IsRegularLocalRing.spanFinrank_maximalIdeal` is the
+  definitional `(𝔪).spanFinrank = ringKrullDim` (usable through `exact_mod_cast`,
+  since `ringKrullDim` lands in `WithBot ℕ∞`), and for a quotient that is *not
+  yet known* regular the inequality is
+  `ringKrullDim_le_spanFinrank_maximalIdeal`.
+* "A surjection of domains of equal dimension has zero kernel" needs NO
+  hand-rolled height argument: `ringKrullDim_quotient_add_one_of_mem_nonZeroDivisors`
+  (`Mathlib/RingTheory/KrullDimension/Regular.lean`) says
+  `dim (R ⧸ span {r}) + 1 = dim R` for `r` a nonzerodivisor in `𝔪`, and in a
+  domain every nonzero element qualifies; so a nonzero kernel would strictly drop
+  the dimension.
+* Monotonicity of `ringKrullDim` along `P ⧸ I' ↠ P ⧸ I` is
+  `ringKrullDim_le_of_surjective` / `ringKrullDim_quotient_le`
+  (`Mathlib/RingTheory/KrullDimension/Basic.lean`) applied to
+  `Ideal.Quotient.factor`; there is no `ringKrullDim (P ⧸ J) ≤ ringKrullDim (P ⧸ I)`
+  under any name, and `exact?` fails on it, so do not hunt for one.
+* Finally, `ringKrullDim_le_ringKrullDim_add_spanFinrank` (same file) is the EASY
+  direction `dim P ≤ dim S + spanFinrank I` — i.e. precisely the inequality this
+  leaf does *not* need.  Reaching for it is the natural wrong turn here.
+
 **Both hypotheses are load-bearing.**  `IsRegularLocalRing S` is what the whole
 argument rests on; drop it and the statement is false already for
 `P = K[x]_{(x)}`, `S = P/(x²)`, where `I = (x²)` gives a one-dimensional
