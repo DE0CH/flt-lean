@@ -60562,10 +60562,11 @@ of `2` into TAMENESS rather than merely into `swanExponent = 0`. -/
 theorem wildCodim_le_swanExponentAux
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    (F : RamificationFiltration v) :
+    (F : RamificationFiltration v) (hfin : τ.HasFiniteWildMonodromyAt v) :
     τ.wildCodim v ≤ τ.swanExponentAux v := by
   classical
-  obtain ⟨μ, hcount, hsum⟩ := τ.isSwanExponentAt_swanExponentAux v F
+  obtain ⟨-, hF⟩ := τ.isSwanExponentAt_swanExponentAux v hfin
+  obtain ⟨μ, hcount, hsum⟩ := hF F
   have h1 := hcount 1 (by norm_num)
   rw [F.gp_eq_wild 1 (by norm_num) le_rfl] at h1
   have hcard : ((Finset.range (τ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
@@ -60599,9 +60600,10 @@ also be `0`. -/
 theorem one_le_swanExponentAux_of_not_isTamelyRamifiedAt
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    (F : RamificationFiltration v) (hnt : ¬ τ.IsTamelyRamifiedAt v) :
+    (F : RamificationFiltration v) (hfin : τ.HasFiniteWildMonodromyAt v)
+    (hnt : ¬ τ.IsTamelyRamifiedAt v) :
     1 ≤ τ.swanExponentAux v := by
-  refine le_trans ?_ (wildCodim_le_swanExponentAux τ F)
+  refine le_trans ?_ (wildCodim_le_swanExponentAux τ F hfin)
   have hne : τ.fixedSubmodule v (wildInertiaGroup v) ≠ ⊤ := by
     intro h
     refine hnt fun σ hσ x => ?_
@@ -60618,6 +60620,39 @@ theorem one_le_swanExponentAux_of_not_isTamelyRamifiedAt
   have hgoal : 1 ≤ 2 - Module.finrank (AlgebraicClosure ℚ_[p])
       (τ.fixedSubmodule v (wildInertiaGroup v)) := by omega
   simpa [GaloisRep.wildCodim, hV] using hgoal
+
+/-- **THE WILD INERTIA AT `q ≠ p` HAS FINITE IMAGE** (SORRY LEAF, cut at
+the release-13 integration): the `p`-adic representation `τ` kills an open
+subgroup of the wild inertia at every prime `q ≠ p`.
+
+**Why this leaf exists, and it is an integration seam rather than a new
+mathematical demand.**  `GaloisRep.HasFiniteWildMonodromyAt` was added to
+`ArtinConductor.lean` on 2026-07-28 by the SECOND falsity refutation of
+`GaloisRep.exists_isSwanExponentAt`: even with the Herbrand anchor, the
+break list `μ : ℕ → ℚ` that `IsSwanExponentAt` demands exists exactly when
+some `G^u` acts trivially, i.e. exactly when the image of `P_v` is finite.
+The counterexample there is `v ∣ ℓ` with `ρ` the `ℓ`-adic cyclotomic
+character, whose wild ramification in `K_v(μ_{ℓⁿ})/K_v` is unbounded in `n`.
+That branch recorded "neither theorem had any code consumer, so this is
+signature-compatible with the whole tree", which was true of its base and
+false by the time it merged: `wildCodim_le_swanExponentAux` above was built
+on the ungated API concurrently, in this same file.
+
+TRUE at every `q ≠ p`, and the reason is exactly the one that branch gave:
+`P_q` is pro-`q` and `τ` lands in a pro-`p` group, so a continuous
+homomorphism `P_q → GL₂(ℚ̄_p)` has finite (indeed, by Grothendieck's
+`ℓ`-adic monodromy theorem, trivial-on-an-open-subgroup) image.  It fails
+only at `q = p`, which `hqp` excludes — the same exclusion the whole
+tame/wild analysis in this section already carries.
+
+THE CHECK THAT WOULD REFUTE IT: a prime `q ≠ p` and a two-dimensional
+`p`-adic representation of `Γ_ℚ` whose restriction to `P_q` has infinite
+image.  There is none; at `q = p` the cyclotomic character is one. -/
+theorem hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) :
+    τ.HasFiniteWildMonodromyAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
 
 /-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** (SORRY LEAF,
 cut 2026-07-28, fifteenth owner; Serre, *Corps Locaux* IV §3 for the
@@ -61085,7 +61120,8 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
   have hswan : 1 ≤ τ.swanExponent hq.toHeightOneSpectrumRingOfIntegersRat := by
     rw [GaloisRep.swanExponent, if_neg hnt]
     exact one_le_swanExponentAux_of_not_isTamelyRamifiedAt τ
-      (nonempty_ramificationFiltration _).some hnt
+      (nonempty_ramificationFiltration _).some
+      (hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform τ hq hqp) hnt
   -- so `a_q(τ) ≥ 3`, against Carayol's upper bound at the boundary.
   have hle := conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
     hM₀ hg₀ κ₀ hτ hirr hq hqp hord
