@@ -13470,104 +13470,74 @@ theorem totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero {K : Type*
   rw [hsingle]
   exact hlt
 
-/-- **PROVEN**: GENERAL POSITION FOR THE PLANE DIRECTION. Over an algebraically
-closed (hence infinite) field, a polynomial of positive total degree `d` admits
-an independent pair of directions `(u₁, u₂)` with `h_d(u₁) ≠ 0`.
-
-This is Schmidt's Theorem 3D specialised to what the Bertini leaf actually needs,
-and it is elementary: `h_d ≠ 0` because some monomial attains the `sup` defining
-`totalDegree`; `K` is infinite so `h_d` has a non-vanishing point `u₁`; that point
-is nonzero because `d > 0` makes `h_d` vanish at the origin; and `Fin (n+3)` has
-at least two indices, so a standard basis vector `e_j` at some `j ≠ i` with
-`u₁ i ≠ 0` completes `u₁` to an independent pair. -/
-theorem exists_planeDirections_of_totalDegree {K : Type*} [Field K] [IsAlgClosed K] {n d : ℕ}
-    (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d) (hd : 0 < d) :
-    ∃ u₁ u₂ : Fin (n + 3) → K, LinearIndependent K ![u₁, u₂] ∧
-      MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 := by
-  classical
-  have hne : h ≠ 0 := by
-    intro hc
-    rw [hc, MvPolynomial.totalDegree_zero] at hdeg
-    omega
-  have hHC : MvPolynomial.homogeneousComponent d h ≠ 0 := by
-    obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup h.support
-      (MvPolynomial.support_nonempty.mpr hne) (fun s => s.sum fun _ e => e)
-    intro hzero
-    have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent d h)
-        = MvPolynomial.coeff m h := by
-      rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
-      show Finsupp.degree m = d
-      rw [← hdeg, MvPolynomial.totalDegree, hmeq]
-      rfl
-    rw [hzero, MvPolynomial.coeff_zero] at h1
-    exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
-  obtain ⟨w, hw⟩ : ∃ w : Fin (n + 3) → K,
-      MvPolynomial.eval w (MvPolynomial.homogeneousComponent d h) ≠ 0 := by
-    by_contra hcon
-    refine hHC (MvPolynomial.funext (fun x => ?_))
-    simp only [map_zero]
-    by_contra hx
-    exact hcon ⟨x, hx⟩
-  have hw0 : w ≠ 0 := by
-    intro hc
-    refine hw ?_
-    rw [hc]
-    have h0 : MvPolynomial.eval (0 : Fin (n + 3) → K) (MvPolynomial.homogeneousComponent d h)
-        = MvPolynomial.coeff 0 (MvPolynomial.homogeneousComponent d h) := by
-      rw [MvPolynomial.eval_zero, MvPolynomial.constantCoeff_eq]
-    rw [h0, MvPolynomial.coeff_homogeneousComponent, if_neg]
-    simp only [map_zero]
-    omega
-  obtain ⟨i, hi⟩ := Function.ne_iff.mp hw0
-  obtain ⟨j, hj⟩ := exists_ne i
-  refine ⟨w, Pi.single j 1, ?_, hw⟩
-  rw [LinearIndependent.pair_iff]
-  intro s t hst
-  have hI := congrFun hst i
-  simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply,
-    Pi.single_apply, if_neg (Ne.symm hj)] at hI
-  have hs0 : s = 0 := by
-    have hI' : s * w i = 0 := by simpa using hI
-    rcases mul_eq_zero.mp hI' with h' | h'
-    · exact h'
-    · exact absurd h' hi
-  refine ⟨hs0, ?_⟩
-  have hJ := congrFun hst j
-  rw [hs0] at hJ
-  simpa using hJ
-
 /-- **BERTINI'S IRREDUCIBILITY THEOREM, THE IRREDUCIBILITY HALF ALONE (SORRY
 LEAF, cut 2026-07-27)** -- what is left of
-`exists_irreducible_planeSection_of_irreducible` once general position and the
-degree bookkeeping are discharged above.
+`exists_irreducible_planeSection_of_irreducible` once the degree bookkeeping is
+discharged above.
 
-WHAT IT SAYS, AND WHAT IT DOES NOT. The plane DIRECTION `(u₁, u₂)` is GIVEN --
-only the base point `v` is existentially quantified -- and the conclusion is
-IRREDUCIBILITY ONLY, since
-`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` already gives
-degree exactly `d` for every `v` under `hlead`. So the family swept out here is
-the pencil (more precisely the `(n+3)`-parameter family) of planes PARALLEL to
-one fixed 2-plane direction, which is exactly the family Schmidt's proof varies.
-Letting `v` range over all of `K^(n+3)` rather than over a complement of
-`span(u₁, u₂)` is harmless redundancy: `planeSection h v u₁ u₂` depends on `v`
-only modulo that span.
+WHAT IT SAYS, AND WHAT IT DOES NOT. The conclusion produces a plane together
+with the normalisation `h_d(u₁) ≠ 0` and asks for IRREDUCIBILITY ONLY: the
+DEGREE claim of the parent then follows from
+`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, which turns
+`h_d(u₁) ≠ 0` into `totalDegree = d` for free. So the whole degree half of
+Bertini is closed, and what is open is exactly irreducibility.
 
-BOTH HYPOTHESES ARE NECESSARY, not conveniences.
+The normalisation costs nothing. If a plane `W = span(u₁, u₂)` carries a section
+of total degree `d` at all, then the degree-`d` part of that section is the
+binary form `h_d(s·u₁ + t·u₂)`, which is therefore nonzero; `K` is infinite, so
+some `u ∈ W` has `h_d(u) ≠ 0`, and re-choosing the basis of `W` to start with
+`u` changes the section by an invertible affine substitution of `𝔸²`
+(`irreducible_planeSection_of_det_ne_zero`), preserving irreducibility.
 
-* `hindep`. If `u₂ = c • u₁` the parametrisation degenerates to a LINE: the
-  section becomes a polynomial in the single linear form `s + c·t`, hence (over
-  an algebraically closed field, for `d ≥ 2`) a product of `d` linear factors,
-  hence reducible. No base point repairs this.
-* `hlead`. Without it the leading form can vanish identically on the plane
-  direction and every section drops degree; `d` would then be unattainable.
-  `exists_planeDirections_of_totalDegree` supplies both.
+**FALSITY AUDIT (2026-07-27) -- THE OBVIOUS SHARPER CUT IS FALSE, DO NOT
+RETRY IT.** The natural-looking strengthening is to FIX the plane direction and
+quantify only the base point:
 
-THE ROUTE (Schmidt, *Equations over Finite Fields*, Chapter V, Lemma 4A; the
-same argument is Fried-Jarden, *Field Arithmetic*, around Proposition 10.4.2).
-Choose coordinates in which `(u₁, u₂)` is the last coordinate 2-plane, so `h`
-becomes a polynomial in `(y, z)` over `K[x₁ … x_{n+1}]` of degree exactly `d` in
-`(y, z)` -- that normalisation is precisely what `hlead` encodes. Three steps
-remain:
+    (u₁ u₂ given) (hindep : LinearIndependent K ![u₁, u₂])
+      (hlead : eval u₁ (homogeneousComponent d h) ≠ 0) :
+        ∃ v, Irreducible (planeSection h v u₁ u₂)
+
+That statement is FALSE, and the counterexample is small. Take `n = 0`,
+`K` algebraically closed, and
+
+    h = X 1 ^ 2 - X 0   ∈ MvPolynomial (Fin 3) K,   d = 2.
+
+`h` is irreducible (degree one in `X 0`, and primitive there);
+`homogeneousComponent 2 h = X 1 ^ 2`. Take `u₁ = Pi.single 1 1` and
+`u₂ = Pi.single 2 1`. Then `hindep` holds, and `hlead` holds because
+`eval u₁ (X 1 ^ 2) = 1`. But for EVERY base point `v`,
+
+    planeSection h v u₁ u₂ = (C (v 1) + X 0) ^ 2 - C (v 0),
+
+a polynomial in the single variable `X 0`, of degree `2`, over an algebraically
+closed field -- hence a product of two linear factors, hence never irreducible.
+
+The mistake the counterexample exposes is a real mathematical one, not a
+bookkeeping slip: the degree condition `h_d|_W ≠ 0` is NECESSARY for a good
+plane but is NOT the general-position condition Bertini needs. Schmidt's
+Theorem 3D (Chapter V §3) delivers a linear change of coordinates after which
+`h` has degree `d` in the last two variables **AND is absolutely irreducible
+over `K(x₁ … x_{n+1})`**, and the text there gives the companion example
+`X 1 ^ 2 - X 0 * X 2 ^ 2` precisely to show the second condition does not
+follow from the first. In the counterexample above the good planes are the ones
+containing the `X 0` direction (e.g. `u₁ = Pi.single 1 1`, `u₂ = Pi.single 0 1`
+gives the irreducible `(C (v 1) + X 0) ^ 2 - (C (v 0) + X 1)`), and no condition
+on `h_d` alone can select them.
+
+Consequence for anyone sharpening this leaf: the direction must stay inside the
+existential unless the hypothesis added is genuinely absolute irreducibility
+over the residual function field, which is the content of the leaf itself. A
+proven general-position lemma
+(`∃ u₁ u₂, LinearIndependent K ![u₁, u₂] ∧ eval u₁ (homogeneousComponent d h) ≠ 0`,
+elementary: `h_d ≠ 0`, `K` infinite, `dim ≥ 2`) was written for the false cut and
+then removed as free-floating; recover it from commit `859e326f` if the eventual
+proof wants it.
+
+THE ROUTE (Schmidt, *Equations over Finite Fields*, Chapter V, Theorem 3D and
+Lemma 4A; the same argument is Fried-Jarden, *Field Arithmetic*, around
+Proposition 10.4.2). Apply Theorem 3D to choose coordinates in which the plane
+direction is the last coordinate 2-plane and `h`, read in `K(x₁ … x_{n+1})[y, z]`,
+has degree exactly `d` and is absolutely irreducible. Three steps remain:
 
 1. **Gauss.** `h` irreducible in `K[x, y, z]` and primitive in `(y, z)` implies
    `h` irreducible in `K(x)[y, z]`.
@@ -13603,12 +13573,12 @@ notion of ABSOLUTE irreducibility for multivariate polynomials, and geometric
 integrality of a hypersurface over an algebraically closed field. The
 `AbsolutelyIrreducible` names in `~/cs/FLT` are about Galois REPRESENTATIONS and
 are a name collision, not a result. -/
-theorem exists_irreducible_planeSection_of_directions {K : Type*} [Field K] [IsAlgClosed K]
-    (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d)
-    (hirr : Irreducible h) (u₁ u₂ : Fin (n + 3) → K)
-    (hindep : LinearIndependent K ![u₁, u₂])
-    (hlead : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0) :
-    ∃ v : Fin (n + 3) → K, Irreducible (planeSection h v u₁ u₂) :=
+theorem exists_irreducible_planeSection_leadingForm_ne_zero {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d)
+    (hirr : Irreducible h) :
+    ∃ v u₁ u₂ : Fin (n + 3) → K,
+      MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h v u₁ u₂) :=
   sorry
 
 /-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (PROVEN 2026-07-27 over
@@ -13632,7 +13602,7 @@ derives this half FROM his Theorem 2A, i.e. from the sibling's content. What
 remains true, and is the point of the split, is that this half needs only a
 PROPER CLOSED bad locus over ONE algebraically closed field, with no degree bound
 and in particular none uniform in `p`. See
-`exists_irreducible_planeSection_of_directions`.)
+`exists_irreducible_planeSection_leadingForm_ne_zero`.)
 
 WHY IT IS TRUE IN EVERY CHARACTERISTIC. This is the IRREDUCIBILITY Bertini
 (Schmidt, *Equations over Finite Fields*, Chapter V §1; Fried-Jarden, *Field
@@ -13652,21 +13622,20 @@ buys nothing. Concretely the family used is the planes PARALLEL to one fixed
 direction, which is expressible directly as `planeSection h v u₁ u₂` with
 `(u₁, u₂)` fixed and `v` varying -- no new definition needed at all.
 
-The cut is therefore into three PROVEN pieces and ONE sorry leaf:
+The cut is therefore into PROVEN degree machinery and ONE sorry leaf:
 
-* `exists_planeDirections_of_totalDegree` (PROVEN) -- general position: an
-  independent pair `(u₁, u₂)` with the leading form `h_d` not vanishing at `u₁`.
-  This is Schmidt's Theorem 3D in the form actually needed.
 * `coeff_single_planeSection_eq_eval_homogeneousComponent` (PROVEN) -- the
   leading-form identity: the coefficient of `s^d` in any section equals
-  `h_d(u₁)`.
+  `h_d(u₁)`, whatever the base point and the second direction.
 * `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` (PROVEN) -- so
-  under general position EVERY section in that direction has degree exactly `d`,
-  for every base point. The degree half of this leaf is thus fully discharged.
-* `exists_irreducible_planeSection_of_directions` (SORRY) -- the irreducibility
-  half, with the direction given and only the base point quantified. That leaf's
-  docstring carries the remaining three steps (Gauss, geometric integrality,
-  specialisation) and an audit of what is missing from the pin.
+  once `h_d(u₁) ≠ 0` the section has total degree exactly `d`. THE DEGREE HALF OF
+  THIS LEAF IS THEREFORE FULLY DISCHARGED.
+* `exists_irreducible_planeSection_leadingForm_ne_zero` (SORRY) -- the
+  irreducibility half: produce a plane, normalised so that `h_d(u₁) ≠ 0`, whose
+  section is irreducible. That leaf's docstring carries the remaining three steps
+  (Gauss, geometric integrality, specialisation), an audit of what is missing
+  from the pin, and a FALSITY AUDIT refuting the sharper "fix the plane
+  direction" variant that one would naturally try next.
 
 WHY `N ≥ 3` AND NOT GENERAL `N`. At `N ≤ 2` the statement is true but carries no
 Bertini content and is already discharged elsewhere: at `N = 2` the identity
@@ -13678,33 +13647,17 @@ the missing mathematics -- see `exists_bertiniNoetherWitness_zero` / `_one` /
 
 FAITHFULNESS NOTE. `d` is not assumed positive, and need not be: at `d = 0` the
 hypothesis `Irreducible h` is already false over a field (a constant is a unit or
-zero), so the statement is vacuous there rather than wrong -- and the proof below
-makes that argument explicit rather than leaving it in prose, deriving `0 < d`
-from `Irreducible h` before invoking general position. Likewise no independence
-condition is imposed on the produced `(u₁, u₂)`; it is forced, since a degenerate
-parametrisation makes the section a univariate polynomial in a linear form, which
-for `d ≥ 2` is reducible. (The sub-leaf does carry independence as a hypothesis,
-because there it is an INPUT the caller must supply, not an output.) -/
+zero), so the statement is vacuous there rather than wrong. Likewise no
+independence condition is imposed on the produced `(u₁, u₂)`; it is forced, since
+a degenerate parametrisation makes the section a univariate polynomial in a
+linear form, which for `d ≥ 2` is reducible. -/
 theorem exists_irreducible_planeSection_of_irreducible {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) :
     ∃ v u₁ u₂ : Fin (n + 3) → K,
       (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) := by
-  have hd : 0 < d := by
-    rcases Nat.eq_zero_or_pos d with rfl | hpos
-    · exfalso
-      have hC : h = MvPolynomial.C (MvPolynomial.coeff 0 h) :=
-        MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hdeg
-      by_cases hc0 : MvPolynomial.coeff 0 h = 0
-      · rw [hc0, map_zero] at hC
-        exact not_irreducible_zero (hC ▸ hirr)
-      · refine hirr.not_isUnit ?_
-        rw [hC]
-        exact IsUnit.map MvPolynomial.C (isUnit_iff_ne_zero.mpr hc0)
-    · exact hpos
-  obtain ⟨u₁, u₂, hindep, hlead⟩ := exists_planeDirections_of_totalDegree h hdeg hd
-  obtain ⟨v, hv⟩ :=
-    exists_irreducible_planeSection_of_directions n d h hdeg hirr u₁ u₂ hindep hlead
+  obtain ⟨v, u₁, u₂, hlead, hv⟩ :=
+    exists_irreducible_planeSection_leadingForm_ne_zero n d h hdeg hirr
   exact ⟨v, u₁, u₂,
     totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero h hdeg v u₁ u₂ hlead, hv⟩
 
@@ -13837,10 +13790,9 @@ WHAT IS OPEN AFTER THIS CUT: exactly `exists_irreducible_planeSection_of_irreduc
 `exists_noetherBadLocusForms` (Noether, elimination theory with a `p`-uniform
 degree bound). They are independently dispatchable. (UPDATED 2026-07-27: the
 Bertini leaf is now PROVEN over the single smaller leaf
-`exists_irreducible_planeSection_of_directions` -- the plane DIRECTION is
-supplied by `exists_planeDirections_of_totalDegree` and the DEGREE claim by
-`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, so what is open
-on this side is irreducibility alone. The accompanying claim that the two halves
+`exists_irreducible_planeSection_leadingForm_ne_zero`; the DEGREE claim is
+supplied by `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, so
+what is open on this side is irreducibility alone. The accompanying claim that the two halves
 "share no technique" is withdrawn: Schmidt derives the Bertini half from
 Noether's Theorem 2A. See that leaf's docstring.)
 
@@ -13937,12 +13889,16 @@ whatever — see `exists_bertiniNoetherWitness_zero`,
 * `exists_irreducible_planeSection_of_irreducible` — Bertini's irreducibility
   theorem, pure geometry over ONE algebraically closed field, EXISTENCE of a good
   plane only. (Since 2026-07-27 this is itself PROVEN over the one smaller leaf
-  `exists_irreducible_planeSection_of_directions`, which fixes the plane
-  direction and asks for irreducibility alone; the degree half is closed.)
+  `exists_irreducible_planeSection_leadingForm_ne_zero`, which asks for
+  irreducibility alone; the degree half is closed. That leaf's docstring also
+  carries a FALSITY AUDIT of the sharper fixed-direction variant.)
 * `exists_noetherBadLocusForms` — E. Noether's irreducibility forms, elimination
   theory, carrying the degree bound that is UNIFORM in `p`.
 
-They share no technique and are independently dispatchable.
+They are independently dispatchable. (2026-07-27: the claim that they "share no
+technique" is withdrawn -- Schmidt's Lemma 4A derives the Bertini half from
+Noether's Theorem 2A. What is true is that the Bertini half needs no degree
+bound, uniform in `p` or otherwise.)
 
 WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
 `N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
