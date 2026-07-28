@@ -25464,8 +25464,9 @@ theorem exists_relPoint_of_galSMul_fixed {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
 Everything from here to `finite_quotient_psmul_of_abelianScheme` is the
 classical Kummer argument (Silverman, *AEC* VIII.1) written out.  The
 ASSEMBLY is proven; what it consumes is four named inputs, each a single
-classical theorem — and as of 2026-07-28 the two descent halves are
-PROVEN, leaving two open leaves:
+classical theorem — and as of 2026-07-28 the two descent halves and the
+torsion finiteness are PROVEN, so nothing directly under this heading is
+open any more:
 
 * two halves of **Galois descent** for the points of `A` — that a
   rational point is determined by its geometric point
@@ -25473,7 +25474,9 @@ PROVEN, leaving two open leaves:
   point is rational (`exists_ratPoint_of_galoisInvariant`, PROVEN over
   the hypothesis-free `exists_comp_specAlgClos_eq_of_galoisInvariant`);
 * finiteness of the **`n`-torsion** of `A(ℚ̄)`
-  (`finite_torsion_geomPt_of_abelianScheme`);
+  (`finite_torsion_geomPt_of_abelianScheme`, PROVEN 2026-07-28 over the
+  general `finite_torsion_relPoint_algClosRat`, which reduces it to
+  `ker[n]` being a finite `ℚ`-scheme — no degree, no cube);
 * finiteness of the **Kummer field** `ℚ(p^{-1} A(ℚ))`
   (`exists_finiteIndex_divisible_of_abelianScheme`) — the deep arithmetic
   input.  Since 2026-07-28 it is PROVEN in turn, over Hermite's theorem
@@ -25699,16 +25702,145 @@ theorem exists_ratPoint_of_galoisInvariant {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   rw [← Category.assoc, hP₀]
   exact y.2
 
-/-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (sorry
-node).
+open _root_.CategoryTheory.Limits in
+/-- **The `n`-torsion of the `ℚ̄`-points of an abelian scheme over `ℚ` is
+finite** (PROVEN, 2026-07-28), for every `n ≠ 0` and every base point
+`g : Spec ℚ̄ ⟶ Spec ℚ`.
+
+This is the general form of `finite_torsion_geomPt_of_abelianScheme`
+below; the base point is left free so that the consumer's
+`specAlgClos ℚ ≫ 𝟙 SpecQ` needs no massaging.
+
+**THE ROUTE, IN SIX STEPS, AND NO DEGREE ANYWHERE.**
+
+1.  `ker[n] = A ×_{[n], A, e} S`.  Its structure morphism `pullback.snd`
+    has finite fibres: `pullback.fst` is a MONO (base change of the split
+    mono `e`, which is split by `f` itself — `zeroSection_comp`), hence
+    universally injective, hence injective on points
+    (`Scheme.Hom.injective`); and `pullback.condition` puts its image
+    inside `[n] ⁻¹' {e s}`, which is finite by
+    `finite_preimage_mulByNat_of_field_prime_to_char` — the base is `ℚ`,
+    so `(n : ℚ) ≠ 0` is exactly `n ≠ 0`.
+2.  Zariski's main theorem, through the already-proven bridge
+    `isFinite_ker_mulByNat_of_finite_preimage`, upgrades that to
+    `IsFinite (ker[n] ⟶ Spec ℚ)`; so `ker[n]` is AFFINE
+    (`isAffine_of_isAffineHom`).
+3.  Transporting along `Scheme.isoSpec` and `Spec.preimage`, the
+    structure morphism becomes `Spec.map φ` for a ring map
+    `φ : ℚ ⟶ Γ(ker[n], ⊤)`, and `IsFinite.SpecMap_iff` says `φ` is
+    module-finite: `Γ(ker[n], ⊤)` is a finite-dimensional `ℚ`-algebra.
+4.  Hence there are only finitely many RING maps `Γ(ker[n], ⊤) ⟶ ℚ̄`.
+    **`ℚ` being the prime field is what makes this cheap**: every ring
+    map out of a `ℚ`-algebra is automatically `ℚ`-linear
+    (`RingHom.ext_rat`), so the ring maps inject into the `ℚ`-algebra
+    maps, of which there are finitely many by `Finite.algHom`.
+5.  `Spec.homEquiv` (fully faithfulness of `Spec`) turns those into the
+    `ℚ̄`-points of `ker[n]`.
+6.  Finally `n • y = 0` says exactly `y ≫ [n] = g ≫ e`
+    (`nsmul_val`, `zero_val`), which is the data of a lift of `y` to
+    `ker[n]`; the lift determines `y` because `lift ≫ fst = y`.
+
+**WHAT WAS ACTUALLY MISSING WAS THE POINT-SET DICTIONARY, NOT ISOGENY
+THEORY.**  A `ℚ̄`-point is a point `x` plus an embedding `κ(x) ↪ ℚ̄`, and
+the finiteness of the second factor is what step 3–4 supply — through
+`Γ` of a finite affine scheme rather than through residue fields, which
+avoids needing "a residue field of a scheme locally of finite type over a
+field, if algebraic, is finite" (absent at this pin: `grep -rn
+"residueField" Mathlib/AlgebraicGeometry/Morphisms/` returns only
+`FormallyUnramified`, `QuasiFinite`, `UniversallyInjective`, none of them
+this statement).
+
+**FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the set is all
+of `A(ℚ̄)`, infinite for every `A` of positive dimension.  `g` is
+unconstrained and it does not need to be — every morphism
+`Spec ℚ̄ ⟶ Spec ℚ` is `specAlgClos ℚ`, since `ℚ → ℚ̄` is the unique ring
+map, so quantifying over `g` adds no generality and removes a rewrite.
+*Not vacuous*: `0` is always in the set, and the set is the target of the
+Kummer cocycle below. -/
+theorem finite_torsion_relPoint_algClosRat {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0)
+    (g : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ SpecQ) :
+    letI := ab.addCommGroup g
+    Finite {y : RelPoint jstr g // n • y = 0} := by
+  classical
+  letI := ab.addCommGroup g
+  have hnQ : ((n : ℕ) : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  haveI : IsSplitMono ab.zeroSection := ⟨⟨⟨jstr, ab.zeroSection_comp⟩⟩⟩
+  -- 1.  every fibre of `ker[n] ⟶ Spec ℚ` is a finite set
+  have hpt : ∀ s : ↥(Spec (CommRingCat.of ℚ)),
+      (⇑(pullback.snd (ab.mulByNat n) ab.zeroSection) ⁻¹' {s}).Finite := by
+    intro s
+    have hinj : Function.Injective ⇑(pullback.fst (ab.mulByNat n) ab.zeroSection) :=
+      Scheme.Hom.injective _
+    refine Set.Finite.of_finite_image ?_ hinj.injOn
+    refine Set.Finite.subset (finite_preimage_mulByNat_of_field_prime_to_char ℚ ab n hnQ
+      (ab.zeroSection s)) ?_
+    rintro _ ⟨z, hz, rfl⟩
+    simp only [Set.mem_preimage, Set.mem_singleton_iff] at hz ⊢
+    have h2 : (ab.mulByNat n) ((pullback.fst (ab.mulByNat n) ab.zeroSection) z)
+        = ab.zeroSection ((pullback.snd (ab.mulByNat n) ab.zeroSection) z) := by
+      rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply, pullback.condition]
+    rw [h2, hz]
+  -- 2.  hence `ker[n] ⟶ Spec ℚ` is a finite morphism, and `ker[n]` is affine
+  haveI hker : IsFinite (pullback.snd (ab.mulByNat n) ab.zeroSection) :=
+    ab.isFinite_ker_mulByNat_of_finite_preimage n hpt
+  haveI : IsAffine (pullback (ab.mulByNat n) ab.zeroSection) :=
+    isAffine_of_isAffineHom (pullback.snd (ab.mulByNat n) ab.zeroSection)
+  -- 3.  `Γ(ker[n])` is a finite `ℚ`-algebra
+  set K := pullback (ab.mulByNat n) ab.zeroSection with hKdef
+  set φ : CommRingCat.of ℚ ⟶ Γ(K, ⊤) :=
+    Spec.preimage (K.isoSpec.inv ≫ pullback.snd (ab.mulByNat n) ab.zeroSection) with hφ
+  have hφspec : Spec.map φ = K.isoSpec.inv ≫ pullback.snd (ab.mulByNat n) ab.zeroSection :=
+    Spec.map_preimage _
+  haveI : IsFinite (Spec.map φ) := by rw [hφspec]; infer_instance
+  have hfinφ : φ.hom.Finite := (IsFinite.SpecMap_iff φ).mp inferInstance
+  letI : Algebra ℚ Γ(K, ⊤) := φ.hom.toAlgebra
+  haveI : Module.Finite ℚ Γ(K, ⊤) := hfinφ
+  -- 4.  finitely many ring maps `Γ(ker[n]) ⟶ ℚ̄` (all of them are `ℚ`-algebra maps)
+  have hfinhom : Finite (Γ(K, ⊤) ⟶ CommRingCat.of (AlgebraicClosure ℚ)) := by
+    refine Finite.of_injective
+      (fun ψ => ({ toRingHom := ψ.hom
+                   commutes' := fun r => by
+                     have h := RingHom.ext_rat (ψ.hom.comp φ.hom)
+                       (algebraMap ℚ (AlgebraicClosure ℚ))
+                     exact DFunLike.congr_fun h r } :
+                  Γ(K, ⊤) →ₐ[ℚ] AlgebraicClosure ℚ)) ?_
+    intro ψ₁ ψ₂ h
+    exact CommRingCat.hom_ext (congrArg AlgHom.toRingHom h)
+  -- 5.  hence finitely many `ℚ̄`-points of `ker[n]`
+  have hfinpt : Finite (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ K) := by
+    refine Finite.of_injective (fun y => Spec.preimage (y ≫ K.isoSpec.hom)) ?_
+    intro y₁ y₂ h
+    have h' := congrArg Spec.map h
+    rw [Spec.map_preimage, Spec.map_preimage] at h'
+    exact (cancel_mono K.isoSpec.hom).mp h'
+  -- 6.  the torsion points inject into the `ℚ̄`-points of `ker[n]`
+  have hcond : ∀ y : {y : RelPoint jstr g // n • y = 0},
+      y.1.1 ≫ ab.mulByNat n = g ≫ ab.zeroSection := by
+    intro y
+    calc y.1.1 ≫ ab.mulByNat n = (n • y.1).1 := (ab.nsmul_val n y.1).symm
+      _ = (0 : RelPoint jstr g).1 := by rw [y.2]
+      _ = g ≫ ab.zeroSection := ab.zero_val g
+  refine Finite.of_injective
+    (fun y => pullback.lift (f := ab.mulByNat n) (g := ab.zeroSection) y.1.1 g (hcond y)) ?_
+  intro y₁ y₂ h
+  have h1 : y₁.1.1 = y₂.1.1 := by
+    have h2 := congrArg (fun m => m ≫ pullback.fst (ab.mulByNat n) ab.zeroSection) h
+    simp only [pullback.lift_fst] at h2
+    exact h2
+  exact Subtype.ext (Subtype.ext h1)
+
+/-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (PROVEN,
+2026-07-28, over `finite_torsion_relPoint_algClosRat` just above).
 
 TRUE and classical: for an abelian variety `A` of dimension `g` over an
-algebraically closed field of characteristic `0`,
-`A[n] ≅ (ℤ/n)^{2g}`, of order `n^{2g}`.  The proof is that `[n]` is a
-finite flat isogeny of degree `n^{2g}` — `[n]` is finite because `A` is
-proper and `[n]` is quasi-finite (its kernel is a closed subgroup scheme
-of dimension `0`, since multiplication by `n` is an isogeny), and flat
-because `A` is smooth and the fibres are finite of constant length.
+algebraically closed field of characteristic `0`, `A[n] ≅ (ℤ/n)^{2g}`, of
+order `n^{2g}`.  **That cardinality is NOT what is proven here, and it is
+not what this statement asks for.**  What is proven is the finiteness
+alone, and it costs only the "`[n]` is an isogeny" half of the classical
+argument: `[n]` is proper and quasi-finite, so `ker[n]` is a finite
+`ℚ`-scheme, and a finite `ℚ`-scheme has finitely many `ℚ̄`-points.  No
+flatness, no degree and no theorem of the cube enter.
 
 **FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the set is all
 of `A(ℚ̄)`, which is infinite for every `A` of positive dimension, so the
@@ -25721,17 +25853,29 @@ Stated for a general `n ≠ 0` rather than only at the prime `p` of the
 consumer because the classical proof is uniform in `n` and nothing is
 gained by narrowing.
 
-**MISSING MACHINERY**: the degree of the multiplication-by-`n` isogeny of
-an abelian scheme.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is
-in this file's cone and is where such a statement belongs; the check that
-would refute this note is `grep -rn "torsion" ` over that file and over
-`Fermat/FLT/Modularity/AbelianScheme.lean`, whose `Mult.torsion` supplies
-the Galois-stable torsion SET but no finiteness. -/
+**THE OLD "MISSING MACHINERY" NOTE WAS WRONG, TWICE OVER** (corrected
+2026-07-28, when this leaf was proven).  It read: "MISSING: the degree of
+the multiplication-by-`n` isogeny of an abelian scheme", and prescribed
+`grep -rn "torsion"` over `Modularity/AbelianSchemeIsogeny.lean` as the
+check that would refute it.  Both halves fail.
+
+1.  **The degree is not needed.**  This leaf asks only for FINITENESS.
+    `#A[n] = n^{2g}` is strictly harder and nothing in this file consumes
+    it — the Kummer assembly needs a finite type, not a cardinality.
+2.  **The finiteness input was already PROVEN**, and the prescribed grep
+    could not see it because the lemma is not spelled "torsion":
+    `finite_preimage_mulByNat_of_field_prime_to_char` (finite fibres of
+    `[n]` over a field in which `n` is invertible).  A name-shaped
+    absence check is weaker than a statement-shaped one.
+
+See `finite_torsion_relPoint_algClosRat` just below for the proof; the
+only genuinely new step was the point-set one, and it is not isogeny
+theory. -/
 theorem finite_torsion_geomPt_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
     Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // n • y = 0} :=
-  sorry
+  finite_torsion_relPoint_algClosRat ab n hn (specAlgClos ℚ ≫ 𝟙 SpecQ)
 
 /-- **The discriminant of a finite subextension of `ℚᵃˡᵍ / ℚ`**, as a plain
 integer: mathlib's `NumberField.discr`, read at the number-field instance
