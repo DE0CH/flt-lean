@@ -6,56 +6,43 @@ Authors: Claude
 module
 
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Projective.Formula
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Projective.Point
 
 /-!
-# The chord–tangent addition law preserves the Weierstrass equation
+# The SECOND Bosma–Lenstra addition law, over an arbitrary commutative ring
 
-Mathlib's `WeierstrassCurve.Projective.addXYZ` is defined over an arbitrary
-commutative ring, but the fact that it lands back on the curve is proved there
-only over a FIELD, and only after dividing by `P z * Q z`
-(`Projective/Point.lean`'s `nonsingular_add`, which routes through the affine
-model and therefore needs `P z` and `Q z` invertible).  The ring-level
-statement is absent from the pin.
+Mathlib's `WeierstrassCurve.Projective.addXYZ` is the Bosma–Lenstra addition law
+of the line `Z = 0`; this module supplies the law of the line `Y = 0`
+(`add2X`, `add2Y`, `add2Z`, `add2XYZ`) together with what makes the PAIR of laws
+complete: at every pair of points at least one of the two is non-degenerate.
 
-This module supplies it:
+## Companion module — and why it is a SIBLING, not a parent
 
-* `WeierstrassCurve.Projective.equation_addXYZ` —
-  `W.Equation P → W.Equation Q → W.Equation (W.addXYZ P Q)` over any
-  `[CommRing R]`.
+The ring-level statement for the FIRST law,
+`WeierstrassCurve.Projective.equation_addXYZ`
+(`W.Equation P → W.Equation Q → W.Equation (W.addXYZ P Q)` over any
+`[CommRing R]`), lives in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveEquationAdd.lean`.
 
-It also carries the SECOND Bosma–Lenstra addition law, the law of the line
-`Y = 0` (`add2X`, `add2Y`, `add2Z`, `add2XYZ`), which is what completes `addXYZ`
-to a complete system; see the section docstring further down for where those
-polynomials come from.  Of its three ring-level facts, two are PROVEN
-(`add2X_mul_addZ` and `add2Y_mul_addZ`, the proportionality of the two laws) and
-`equation_add2XYZ` is still open — **read its docstring before attempting it, it
-records two abandoned multi-hour `ring1` runs and where the cost actually sits.**
+It was SPLIT OUT of this file at the release-10 integration (2026-07-28) and
+**nothing here uses it**.  Elaboration is single-threaded per file, and this
+file carried two independent multi-minute `linear_combination`/`ring1`
+normalisations — `equation_addXYZ` and
+`add2Y_neg_left_ne_zero_of_dblZ_eq_zero` below — so they were paid in SERIES on
+one core, **4173 s together**, which put this file at the head of the whole
+build's critical path.  As two sibling modules, both imported by their single
+consumer `ModularCurve/EllipticScheme.lean`, they elaborate concurrently.
 
-## Why the ring-level statement is needed
+**So do not merge the two files back together, and do not make either import
+the other.**  Their being siblings is the point.
+
+## Why the ring-level statements are needed at all
 
 `Fermat.ProjCoords` (`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is a
 trivialised `Proj`-coordinate datum over an arbitrary `Γ(X, ⊤)`, where `P z`
 is emphatically not a unit — that is the whole point of using it to glue the
-group law of the projective Weierstrass model.  So the field-level statement
-cannot be used, and no base change rescues it.
-
-## Implementation notes
-
-The proof is a single `linear_combination` against the two curve equations,
-with cofactors computed in `Singular`: reduce `W(addX, addY, addZ)` modulo
-`(W(P), W(Q))` in `ℚ(a₁, …, a₆)[Px, Py, Pz, Qx, Qy, Qz]`, where the two
-generators have coprime leading terms (`-Px³` and `-Qx³`) and so already form
-a Gröbner basis, then `lift` to read off the cofactors.  They come out with
-**130 and 186 monomials** and — this is the part that makes the statement true
-over an arbitrary ring rather than only over a ℚ-algebra — with **no
-denominators in the `aᵢ`**, i.e. they lie in `ℤ[a₁, …, a₆][P, Q]`.
-
-Both sides are bihomogeneous of bidegree `(6, 6)`, so `ring1` is normalising a
-large polynomial; it takes about four and a half minutes and needs the
-heartbeat bump below.  **That is a genuine cost of the computation, not a
-resource bump hiding a defect** — and it is exactly why this lives in its own
-module: `EllipticScheme.lean` is edited constantly by several agents at once,
-and a four-minute `ring1` in it would be paid on every one of their rebuilds.
+group law of the projective Weierstrass model.  So the field-level statements
+in the pin cannot be used, and no base change rescues them.
 -/
 
 @[expose] public section
@@ -63,547 +50,6 @@ and a four-minute `ring1` in it would be paid on every one of their rebuilds.
 namespace WeierstrassCurve.Projective
 
 variable {R : Type*} [CommRing R] {W' : WeierstrassCurve R} {P Q : Fin 3 → R}
-
-set_option maxHeartbeats 4000000 in
-/-- **The chord–tangent triple again satisfies the Weierstrass equation**,
-over an arbitrary commutative ring (PROVEN).
-
-`W(addX P Q, addY P Q, addZ P Q) = A · W(P) + B · W(Q)` with `A`, `B` in
-`ℤ[a₁, …, a₆][P, Q]`; see the module docstring for how the two cofactors were
-obtained and verified. -/
-theorem equation_addXYZ (hP : Equation W' P) (hQ : Equation W' Q) :
-    Equation W' (addXYZ W' P Q) := by
-  rw [equation_iff] at hP hQ ⊢
-  simp only [addXYZ_X, addXYZ_Y, addXYZ_Z, addY, negY_eq, addX, negAddY, addZ]
-  linear_combination
-    (9 * P 0 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 ^ 4 + (-3 * W'.a₁ ^ 2 + 3 * W'.a₂) * P 2 ^ 3 * Q 0 ^ 2 * Q 1 ^ 4 +
-      (-3 * W'.a₁) * P 2 ^ 3 * Q 0 * Q 1 ^ 5 - P 2 ^ 3 * Q 1 ^ 6 + (-36 * W'.a₁) * P 0 ^ 2 *
-      P 2 * Q 0 ^ 2 * Q 1 ^ 3 * Q 2 + 36 * P 0 * P 1 * P 2 * Q 0 ^ 2 * Q 1 ^ 3 * Q 2 + (6 *
-      W'.a₁ ^ 3 - 36 * W'.a₁ * W'.a₂ + 36 * W'.a₃) * P 0 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 ^ 3 * Q 2 +
-      (-12 * W'.a₁ ^ 2 + 12 * W'.a₂) * P 1 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 ^ 3 * Q 2 + (4 * W'.a₁ ^ 3 *
-      W'.a₂ - 6 * W'.a₁ ^ 2 * W'.a₃ - 12 * W'.a₁ * W'.a₂ ^ 2 + 12 * W'.a₁ * W'.a₄ + 12 *
-      W'.a₂ * W'.a₃) * P 2 ^ 3 * Q 0 ^ 2 * Q 1 ^ 3 * Q 2 - 27 * P 0 ^ 2 * P 2 * Q 0 * Q 1 ^ 4 *
-      Q 2 + (21 * W'.a₁ ^ 2 - 12 * W'.a₂) * P 0 * P 2 ^ 2 * Q 0 * Q 1 ^ 4 * Q 2 + (-15 *
-      W'.a₁) * P 1 * P 2 ^ 2 * Q 0 * Q 1 ^ 4 * Q 2 + (-W'.a₁ ^ 4 + 9 * W'.a₁ ^ 2 * W'.a₂ -
-      12 * W'.a₁ * W'.a₃ - 3 * W'.a₂ ^ 2 + 6 * W'.a₄) * P 2 ^ 3 * Q 0 * Q 1 ^ 4 * Q 2 + (15 *
-      W'.a₁) * P 0 * P 2 ^ 2 * Q 1 ^ 5 * Q 2 - 6 * P 1 * P 2 ^ 2 * Q 1 ^ 5 * Q 2 + (-W'.a₁ ^ 3 +
-      6 * W'.a₁ * W'.a₂ - 6 * W'.a₃) * P 2 ^ 3 * Q 1 ^ 5 * Q 2 + (9 * W'.a₁ ^ 2) * P 0 ^ 3 *
-      Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 + (-45 * W'.a₁) * P 0 ^ 2 * P 1 * Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 +
-      36 * P 0 * P 1 ^ 2 * Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 + (24 * W'.a₁ ^ 2 * W'.a₂ - 45 *
-      W'.a₁ * W'.a₃ - 21 * W'.a₂ ^ 2 + 63 * W'.a₄) * P 0 ^ 2 * P 2 * Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 +
-      (12 * W'.a₁ ^ 3 - 60 * W'.a₁ * W'.a₂ + 90 * W'.a₃) * P 0 * P 1 * P 2 * Q 0 ^ 2 * Q 1 ^ 2 *
-      Q 2 ^ 2 + (-15 * W'.a₁ ^ 2 + 12 * W'.a₂) * P 1 ^ 2 * P 2 * Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 +
-      (27 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 30 * W'.a₁ ^ 2 * W'.a₄ - 54 * W'.a₁ * W'.a₂ * W'.a₃ - 18 *
-      W'.a₂ ^ 3 + 60 * W'.a₂ * W'.a₄ + 36 * W'.a₃ ^ 2 - 54 * W'.a₆) * P 0 * P 2 ^ 2 * Q 0 ^ 2 *
-      Q 1 ^ 2 * Q 2 ^ 2 + (9 * W'.a₁ ^ 3 * W'.a₂ - 15 * W'.a₁ ^ 2 * W'.a₃ - 27 * W'.a₁ *
-      W'.a₂ ^ 2 + 36 * W'.a₁ * W'.a₄ + 30 * W'.a₂ * W'.a₃) * P 1 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 ^ 2 *
-      Q 2 ^ 2 + (10 * W'.a₁ ^ 2 * W'.a₂ ^ 3 - 21 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 9 * W'.a₁ ^ 2 *
-      W'.a₆ - 21 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 24 * W'.a₁ * W'.a₃ * W'.a₄ - 5 * W'.a₂ ^ 4 +
-      21 * W'.a₂ ^ 2 * W'.a₄ + 12 * W'.a₂ * W'.a₃ ^ 2 - 18 * W'.a₂ * W'.a₆ - 12 * W'.a₄ ^ 2) *
-      P 2 ^ 3 * Q 0 ^ 2 * Q 1 ^ 2 * Q 2 ^ 2 + (27 * W'.a₁) * P 0 ^ 3 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 -
-      54 * P 0 ^ 2 * P 1 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 + (-12 * W'.a₁ ^ 3 + 30 * W'.a₁ * W'.a₂ -
-      81 * W'.a₃) * P 0 ^ 2 * P 2 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 + (54 * W'.a₁ ^ 2 - 12 * W'.a₂) *
-      P 0 * P 1 * P 2 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 + (-24 * W'.a₁) * P 1 ^ 2 * P 2 * Q 0 * Q 1 ^ 3 *
-      Q 2 ^ 2 + (-15 * W'.a₁ ^ 3 * W'.a₂ + 33 * W'.a₁ ^ 2 * W'.a₃ + 27 * W'.a₁ * W'.a₂ ^ 2 -
-      72 * W'.a₁ * W'.a₄ - 30 * W'.a₂ * W'.a₃) * P 0 * P 2 ^ 2 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 +
-      (-3 * W'.a₁ ^ 4 + 24 * W'.a₁ ^ 2 * W'.a₂ - 42 * W'.a₁ * W'.a₃ - 6 * W'.a₂ ^ 2 + 24 *
-      W'.a₄) * P 1 * P 2 ^ 2 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 + (-6 * W'.a₁ ^ 3 * W'.a₂ ^ 2 + 7 *
-      W'.a₁ ^ 3 * W'.a₄ + 15 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ + 8 * W'.a₁ * W'.a₂ ^ 3 - 30 *
-      W'.a₁ * W'.a₂ * W'.a₄ - 12 * W'.a₁ * W'.a₃ ^ 2 + 18 * W'.a₁ * W'.a₆ - 9 * W'.a₂ ^ 2 *
-      W'.a₃ + 24 * W'.a₃ * W'.a₄) * P 2 ^ 3 * Q 0 * Q 1 ^ 3 * Q 2 ^ 2 + 27 * P 0 ^ 3 * Q 1 ^ 4 *
-      Q 2 ^ 2 + (-12 * W'.a₁ ^ 2 + 18 * W'.a₂) * P 0 ^ 2 * P 2 * Q 1 ^ 4 * Q 2 ^ 2 + (42 *
-      W'.a₁) * P 0 * P 1 * P 2 * Q 1 ^ 4 * Q 2 ^ 2 - 12 * P 1 ^ 2 * P 2 * Q 1 ^ 4 * Q 2 ^ 2 +
-      (-15 * W'.a₁ ^ 2 * W'.a₂ + 42 * W'.a₁ * W'.a₃ + 15 * W'.a₂ ^ 2 - 33 * W'.a₄) * P 0 * P 2 ^ 2 *
-      Q 1 ^ 4 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 3 + 18 * W'.a₁ * W'.a₂ - 27 * W'.a₃) * P 1 * P 2 ^ 2 *
-      Q 1 ^ 4 * Q 2 ^ 2 + (-W'.a₁ ^ 3 * W'.a₃ - 6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 6 * W'.a₁ ^ 2 *
-      W'.a₄ + 18 * W'.a₁ * W'.a₂ * W'.a₃ + 4 * W'.a₂ ^ 3 - 12 * W'.a₂ * W'.a₄ - 12 * W'.a₃ ^ 2 +
-      9 * W'.a₆) * P 2 ^ 3 * Q 1 ^ 4 * Q 2 ^ 2 + (6 * W'.a₁ * W'.a₂ ^ 2 - 18 * W'.a₁ *
-      W'.a₄) * P 0 ^ 3 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (12 * W'.a₁ ^ 2 * W'.a₂ - 36 * W'.a₁ *
-      W'.a₃ - 6 * W'.a₂ ^ 2 + 18 * W'.a₄) * P 0 ^ 2 * P 1 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (6 *
-      W'.a₁ ^ 3 - 12 * W'.a₁ * W'.a₂ + 36 * W'.a₃) * P 0 * P 1 ^ 2 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 +
-      (-6 * W'.a₁ ^ 2) * P 1 ^ 3 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (18 * W'.a₁ * W'.a₂ ^ 3 - 60 *
-      W'.a₁ * W'.a₂ * W'.a₄ + 54 * W'.a₁ * W'.a₆ - 24 * W'.a₂ ^ 2 * W'.a₃ + 72 * W'.a₃ *
-      W'.a₄) * P 0 ^ 2 * P 2 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (24 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 36 *
-      W'.a₁ ^ 2 * W'.a₄ - 48 * W'.a₁ * W'.a₂ * W'.a₃ - 12 * W'.a₂ ^ 3 + 48 * W'.a₂ * W'.a₄ +
-      36 * W'.a₃ ^ 2 - 108 * W'.a₆) * P 0 * P 1 * P 2 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (6 * W'.a₁ ^ 3 *
-      W'.a₂ - 12 * W'.a₁ ^ 2 * W'.a₃ - 12 * W'.a₁ * W'.a₂ ^ 2 + 24 * W'.a₁ * W'.a₄ + 12 *
-      W'.a₂ * W'.a₃) * P 1 ^ 2 * P 2 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (18 * W'.a₁ * W'.a₂ ^ 4 -
-      78 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ + 72 * W'.a₁ * W'.a₂ * W'.a₆ + 48 * W'.a₁ * W'.a₄ ^ 2 -
-      24 * W'.a₂ ^ 3 * W'.a₃ + 84 * W'.a₂ * W'.a₃ * W'.a₄ - 108 * W'.a₃ * W'.a₆) * P 0 * P 2 ^ 2 *
-      Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (12 * W'.a₁ ^ 2 * W'.a₂ ^ 3 - 30 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ +
-      18 * W'.a₁ ^ 2 * W'.a₆ - 24 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 36 * W'.a₁ * W'.a₃ * W'.a₄ -
-      6 * W'.a₂ ^ 4 + 30 * W'.a₂ ^ 2 * W'.a₄ + 12 * W'.a₂ * W'.a₃ ^ 2 - 36 * W'.a₂ * W'.a₆ -
-      24 * W'.a₄ ^ 2) * P 1 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 * Q 2 ^ 3 + (6 * W'.a₁ * W'.a₂ ^ 5 -
-      32 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ + 30 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 36 * W'.a₁ * W'.a₂ *
-      W'.a₄ ^ 2 - 36 * W'.a₁ * W'.a₄ * W'.a₆ - 8 * W'.a₂ ^ 4 * W'.a₃ + 36 * W'.a₂ ^ 2 *
-      W'.a₃ * W'.a₄ - 36 * W'.a₂ * W'.a₃ * W'.a₆ - 24 * W'.a₃ * W'.a₄ ^ 2) * P 2 ^ 3 * Q 0 ^ 2 *
-      Q 1 * Q 2 ^ 3 + (-3 * W'.a₁ ^ 2 * W'.a₂ + 27 * W'.a₁ * W'.a₃ + 9 * W'.a₂ ^ 2 - 27 *
-      W'.a₄) * P 0 ^ 3 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 + (-12 * W'.a₁ ^ 3 - 3 * W'.a₁ * W'.a₂ - 81 *
-      W'.a₃) * P 0 ^ 2 * P 1 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 + (33 * W'.a₁ ^ 2 + 24 * W'.a₂) * P 0 *
-      P 1 ^ 2 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 + (-12 * W'.a₁) * P 1 ^ 3 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 +
-      (-15 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 48 * W'.a₁ ^ 2 * W'.a₄ + 33 * W'.a₁ * W'.a₂ * W'.a₃ + 3 *
-      W'.a₂ ^ 3 - 21 * W'.a₂ * W'.a₄ - 54 * W'.a₃ ^ 2 + 108 * W'.a₆) * P 0 ^ 2 * P 2 * Q 0 *
-      Q 1 ^ 2 * Q 2 ^ 3 + (-18 * W'.a₁ ^ 3 * W'.a₂ + 54 * W'.a₁ ^ 2 * W'.a₃ + 18 * W'.a₁ *
-      W'.a₂ ^ 2 - 120 * W'.a₁ * W'.a₄ + 6 * W'.a₂ * W'.a₃) * P 0 * P 1 * P 2 * Q 0 * Q 1 ^ 2 *
-      Q 2 ^ 3 + (-3 * W'.a₁ ^ 4 + 15 * W'.a₁ ^ 2 * W'.a₂ - 42 * W'.a₁ * W'.a₃ + 24 * W'.a₄) *
-      P 1 ^ 2 * P 2 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 + (-15 * W'.a₁ ^ 2 * W'.a₂ ^ 3 + 63 * W'.a₁ ^ 2 *
-      W'.a₂ * W'.a₄ - 45 * W'.a₁ ^ 2 * W'.a₆ + 33 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ - 108 * W'.a₁ *
-      W'.a₃ * W'.a₄ + 3 * W'.a₂ ^ 4 - 33 * W'.a₂ ^ 2 * W'.a₄ - 12 * W'.a₂ * W'.a₃ ^ 2 + 36 *
-      W'.a₂ * W'.a₆ + 60 * W'.a₄ ^ 2) * P 0 * P 2 ^ 2 * Q 0 * Q 1 ^ 2 * Q 2 ^ 3 + (-9 *
-      W'.a₁ ^ 3 * W'.a₂ ^ 2 + 15 * W'.a₁ ^ 3 * W'.a₄ + 24 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ + 9 *
-      W'.a₁ * W'.a₂ ^ 3 - 54 * W'.a₁ * W'.a₂ * W'.a₄ - 24 * W'.a₁ * W'.a₃ ^ 2 + 54 * W'.a₁ *
-      W'.a₆ - 9 * W'.a₂ ^ 2 * W'.a₃ + 60 * W'.a₃ * W'.a₄) * P 1 * P 2 ^ 2 * Q 0 * Q 1 ^ 2 *
-      Q 2 ^ 3 + (-5 * W'.a₁ ^ 2 * W'.a₂ ^ 4 + 27 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ - 21 *
-      W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 18 * W'.a₁ ^ 2 * W'.a₄ ^ 2 + 11 * W'.a₁ * W'.a₂ ^ 3 *
-      W'.a₃ - 48 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + 36 * W'.a₁ * W'.a₃ * W'.a₆ + W'.a₂ ^ 5 -
-      11 * W'.a₂ ^ 3 * W'.a₄ - 6 * W'.a₂ ^ 2 * W'.a₃ ^ 2 + 12 * W'.a₂ ^ 2 * W'.a₆ + 24 *
-      W'.a₂ * W'.a₄ ^ 2 + 24 * W'.a₃ ^ 2 * W'.a₄ - 36 * W'.a₄ * W'.a₆) * P 2 ^ 3 * Q 0 * Q 1 ^ 2 *
-      Q 2 ^ 3 + (-W'.a₁ ^ 3 - 9 * W'.a₁ * W'.a₂ + 54 * W'.a₃) * P 0 ^ 3 * Q 1 ^ 3 * Q 2 ^ 3 +
-      (-15 * W'.a₁ ^ 2 - 18 * W'.a₂) * P 0 ^ 2 * P 1 * Q 1 ^ 3 * Q 2 ^ 3 + (24 * W'.a₁) * P 0 *
-      P 1 ^ 2 * Q 1 ^ 3 * Q 2 ^ 3 - 8 * P 1 ^ 3 * Q 1 ^ 3 * Q 2 ^ 3 + (-15 * W'.a₁ ^ 2 *
-      W'.a₃ - 15 * W'.a₁ * W'.a₂ ^ 2 + 33 * W'.a₁ * W'.a₄ + 27 * W'.a₂ * W'.a₃) * P 0 ^ 2 *
-      P 2 * Q 1 ^ 3 * Q 2 ^ 3 + (-18 * W'.a₁ ^ 2 * W'.a₂ + 78 * W'.a₁ * W'.a₃ + 12 * W'.a₂ ^ 2 -
-      60 * W'.a₄) * P 0 * P 1 * P 2 * Q 1 ^ 3 * Q 2 ^ 3 + (-3 * W'.a₁ ^ 3 + 12 * W'.a₁ *
-      W'.a₂ - 36 * W'.a₃) * P 1 ^ 2 * P 2 * Q 1 ^ 3 * Q 2 ^ 3 + (-15 * W'.a₁ ^ 2 * W'.a₂ *
-      W'.a₃ - 15 * W'.a₁ * W'.a₂ ^ 3 + 48 * W'.a₁ * W'.a₂ * W'.a₄ + 24 * W'.a₁ * W'.a₃ ^ 2 -
-      54 * W'.a₁ * W'.a₆ + 36 * W'.a₂ ^ 2 * W'.a₃ - 96 * W'.a₃ * W'.a₄) * P 0 * P 2 ^ 2 * Q 1 ^ 3 *
-      Q 2 ^ 3 + (-3 * W'.a₁ ^ 3 * W'.a₃ - 9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 12 * W'.a₁ ^ 2 * W'.a₄ +
-      36 * W'.a₁ * W'.a₂ * W'.a₃ + 6 * W'.a₂ ^ 3 - 24 * W'.a₂ * W'.a₄ - 36 * W'.a₃ ^ 2 + 36 *
-      W'.a₆) * P 1 * P 2 ^ 2 * Q 1 ^ 3 * Q 2 ^ 3 + (W'.a₁ ^ 3 * W'.a₆ - 6 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 2 * W'.a₃ + 6 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - 5 * W'.a₁ * W'.a₂ ^ 4 + 21 * W'.a₁ *
-      W'.a₂ ^ 2 * W'.a₄ + 12 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 24 * W'.a₁ * W'.a₂ * W'.a₆ - 12 *
-      W'.a₁ * W'.a₄ ^ 2 + 11 * W'.a₂ ^ 3 * W'.a₃ - 36 * W'.a₂ * W'.a₃ * W'.a₄ - 8 * W'.a₃ ^ 3 +
-      36 * W'.a₃ * W'.a₆) * P 2 ^ 3 * Q 1 ^ 3 * Q 2 ^ 3 + (W'.a₂ ^ 4 - 6 * W'.a₂ ^ 2 * W'.a₄ +
-      9 * W'.a₄ ^ 2) * P 0 ^ 3 * Q 0 ^ 2 * Q 2 ^ 4 + (3 * W'.a₁ * W'.a₂ ^ 3 - 12 * W'.a₁ *
-      W'.a₂ * W'.a₄ + 27 * W'.a₁ * W'.a₆ - 3 * W'.a₂ ^ 2 * W'.a₃ + 9 * W'.a₃ * W'.a₄) * P 0 ^ 2 *
-      P 1 * Q 0 ^ 2 * Q 2 ^ 4 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 6 * W'.a₁ ^ 2 * W'.a₄ - 6 *
-      W'.a₁ * W'.a₂ * W'.a₃ + 9 * W'.a₃ ^ 2) * P 0 * P 1 ^ 2 * Q 0 ^ 2 * Q 2 ^ 4 + (W'.a₁ ^ 3 *
-      W'.a₂ - 3 * W'.a₁ ^ 2 * W'.a₃) * P 1 ^ 3 * Q 0 ^ 2 * Q 2 ^ 4 + (3 * W'.a₂ ^ 5 - 21 *
-      W'.a₂ ^ 3 * W'.a₄ + 27 * W'.a₂ ^ 2 * W'.a₆ + 36 * W'.a₂ * W'.a₄ ^ 2 - 81 * W'.a₄ *
-      W'.a₆) * P 0 ^ 2 * P 2 * Q 0 ^ 2 * Q 2 ^ 4 + (6 * W'.a₁ * W'.a₂ ^ 4 - 30 * W'.a₁ *
-      W'.a₂ ^ 2 * W'.a₄ + 36 * W'.a₁ * W'.a₂ * W'.a₆ + 24 * W'.a₁ * W'.a₄ ^ 2 - 6 * W'.a₂ ^ 3 *
-      W'.a₃ + 24 * W'.a₂ * W'.a₃ * W'.a₄ - 54 * W'.a₃ * W'.a₆) * P 0 * P 1 * P 2 * Q 0 ^ 2 *
-      Q 2 ^ 4 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 3 - 9 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 9 * W'.a₁ ^ 2 *
-      W'.a₆ - 6 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 12 * W'.a₁ * W'.a₃ * W'.a₄ + 3 * W'.a₂ * W'.a₃ ^ 2) *
-      P 1 ^ 2 * P 2 * Q 0 ^ 2 * Q 2 ^ 4 + (3 * W'.a₂ ^ 6 - 24 * W'.a₂ ^ 4 * W'.a₄ + 30 *
-      W'.a₂ ^ 3 * W'.a₆ + 54 * W'.a₂ ^ 2 * W'.a₄ ^ 2 - 108 * W'.a₂ * W'.a₄ * W'.a₆ - 24 *
-      W'.a₄ ^ 3 + 81 * W'.a₆ ^ 2) * P 0 * P 2 ^ 2 * Q 0 ^ 2 * Q 2 ^ 4 + (3 * W'.a₁ * W'.a₂ ^ 5 -
-      18 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ + 21 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 24 * W'.a₁ * W'.a₂ *
-      W'.a₄ ^ 2 - 36 * W'.a₁ * W'.a₄ * W'.a₆ - 3 * W'.a₂ ^ 4 * W'.a₃ + 15 * W'.a₂ ^ 2 *
-      W'.a₃ * W'.a₄ - 18 * W'.a₂ * W'.a₃ * W'.a₆ - 12 * W'.a₃ * W'.a₄ ^ 2) * P 1 * P 2 ^ 2 *
-      Q 0 ^ 2 * Q 2 ^ 4 + (W'.a₂ ^ 7 - 9 * W'.a₂ ^ 5 * W'.a₄ + 11 * W'.a₂ ^ 4 * W'.a₆ + 25 *
-      W'.a₂ ^ 3 * W'.a₄ ^ 2 - 51 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ - 20 * W'.a₂ * W'.a₄ ^ 3 + 27 *
-      W'.a₂ * W'.a₆ ^ 2 + 36 * W'.a₄ ^ 2 * W'.a₆) * P 2 ^ 3 * Q 0 ^ 2 * Q 2 ^ 4 + (-W'.a₁ *
-      W'.a₂ ^ 3 + 6 * W'.a₁ * W'.a₂ * W'.a₄ - 27 * W'.a₁ * W'.a₆ + 9 * W'.a₂ ^ 2 * W'.a₃ -
-      27 * W'.a₃ * W'.a₄) * P 0 ^ 3 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 24 *
-      W'.a₁ ^ 2 * W'.a₄ - 6 * W'.a₁ * W'.a₂ * W'.a₃ - 6 * W'.a₂ * W'.a₄ - 27 * W'.a₃ ^ 2 +
-      54 * W'.a₆) * P 0 ^ 2 * P 1 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 * W'.a₁ ^ 3 * W'.a₂ + 21 *
-      W'.a₁ ^ 2 * W'.a₃ - 24 * W'.a₁ * W'.a₄ + 24 * W'.a₂ * W'.a₃) * P 0 * P 1 ^ 2 * Q 0 * Q 1 *
-      Q 2 ^ 4 + (-W'.a₁ ^ 4 - 12 * W'.a₁ * W'.a₃) * P 1 ^ 3 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 *
-      W'.a₁ * W'.a₂ ^ 4 + 33 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - 36 * W'.a₁ * W'.a₂ * W'.a₆ - 60 *
-      W'.a₁ * W'.a₄ ^ 2 + 3 * W'.a₂ ^ 3 * W'.a₃ - 24 * W'.a₂ * W'.a₃ * W'.a₄ + 135 * W'.a₃ *
-      W'.a₆) * P 0 ^ 2 * P 2 * Q 0 * Q 1 * Q 2 ^ 4 + (-6 * W'.a₁ ^ 2 * W'.a₂ ^ 3 + 42 *
-      W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 54 * W'.a₁ ^ 2 * W'.a₆ + 12 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ -
-      96 * W'.a₁ * W'.a₃ * W'.a₄ - 12 * W'.a₂ ^ 2 * W'.a₄ + 6 * W'.a₂ * W'.a₃ ^ 2 - 36 *
-      W'.a₂ * W'.a₆ + 48 * W'.a₄ ^ 2) * P 0 * P 1 * P 2 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 * W'.a₁ ^ 3 *
-      W'.a₂ ^ 2 + 9 * W'.a₁ ^ 3 * W'.a₄ + 9 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 12 * W'.a₁ * W'.a₂ *
-      W'.a₄ - 15 * W'.a₁ * W'.a₃ ^ 2 + 36 * W'.a₁ * W'.a₆ + 24 * W'.a₃ * W'.a₄) * P 1 ^ 2 *
-      P 2 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 * W'.a₁ * W'.a₂ ^ 5 + 36 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ -
-      39 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ - 84 * W'.a₁ * W'.a₂ * W'.a₄ ^ 2 + 144 * W'.a₁ * W'.a₄ *
-      W'.a₆ + 3 * W'.a₂ ^ 4 * W'.a₃ - 39 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 18 * W'.a₂ * W'.a₃ *
-      W'.a₆ + 84 * W'.a₃ * W'.a₄ ^ 2) * P 0 * P 2 ^ 2 * Q 0 * Q 1 * Q 2 ^ 4 + (-3 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 4 + 24 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ - 24 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 24 *
-      W'.a₁ ^ 2 * W'.a₄ ^ 2 + 6 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ - 42 * W'.a₁ * W'.a₂ * W'.a₃ *
-      W'.a₄ + 54 * W'.a₁ * W'.a₃ * W'.a₆ - 6 * W'.a₂ ^ 3 * W'.a₄ - 3 * W'.a₂ ^ 2 * W'.a₃ ^ 2 +
-      6 * W'.a₂ ^ 2 * W'.a₆ + 24 * W'.a₂ * W'.a₄ ^ 2 + 24 * W'.a₃ ^ 2 * W'.a₄ - 72 * W'.a₄ *
-      W'.a₆) * P 1 * P 2 ^ 2 * Q 0 * Q 1 * Q 2 ^ 4 + (-W'.a₁ * W'.a₂ ^ 6 + 13 * W'.a₁ *
-      W'.a₂ ^ 4 * W'.a₄ - 14 * W'.a₁ * W'.a₂ ^ 3 * W'.a₆ - 39 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ ^ 2 +
-      66 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ + 20 * W'.a₁ * W'.a₄ ^ 3 - 27 * W'.a₁ * W'.a₆ ^ 2 +
-      W'.a₂ ^ 5 * W'.a₃ - 14 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄ + 15 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ +
-      36 * W'.a₂ * W'.a₃ * W'.a₄ ^ 2 - 72 * W'.a₃ * W'.a₄ * W'.a₆) * P 2 ^ 3 * Q 0 * Q 1 * Q 2 ^ 4 +
-      (3 * W'.a₁ ^ 2 * W'.a₄ - 9 * W'.a₁ * W'.a₂ * W'.a₃ - W'.a₂ ^ 3 + 9 * W'.a₂ * W'.a₄ +
-      27 * W'.a₃ ^ 2 - 54 * W'.a₆) * P 0 ^ 3 * Q 1 ^ 2 * Q 2 ^ 4 + (-12 * W'.a₁ ^ 2 * W'.a₃ -
-      3 * W'.a₁ * W'.a₂ ^ 2 + 21 * W'.a₁ * W'.a₄ - 27 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 * Q 1 ^ 2 *
-      Q 2 ^ 4 + (-3 * W'.a₁ ^ 2 * W'.a₂ + 42 * W'.a₁ * W'.a₃ + 12 * W'.a₄) * P 0 * P 1 ^ 2 *
-      Q 1 ^ 2 * Q 2 ^ 4 + (-W'.a₁ ^ 3 - 12 * W'.a₃) * P 1 ^ 3 * Q 1 ^ 2 * Q 2 ^ 4 + (18 *
-      W'.a₁ ^ 2 * W'.a₆ - 15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 39 * W'.a₁ * W'.a₃ * W'.a₄ - 3 *
-      W'.a₂ ^ 4 + 18 * W'.a₂ ^ 2 * W'.a₄ + 9 * W'.a₂ * W'.a₃ ^ 2 - 18 * W'.a₂ * W'.a₆ - 21 *
-      W'.a₄ ^ 2) * P 0 ^ 2 * P 2 * Q 1 ^ 2 * Q 2 ^ 4 + (-18 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 6 *
-      W'.a₁ * W'.a₂ ^ 3 + 24 * W'.a₁ * W'.a₂ * W'.a₄ + 42 * W'.a₁ * W'.a₃ ^ 2 - 72 * W'.a₁ *
-      W'.a₆ + 18 * W'.a₂ ^ 2 * W'.a₃ - 78 * W'.a₃ * W'.a₄) * P 0 * P 1 * P 2 * Q 1 ^ 2 * Q 2 ^ 4 +
-      (-3 * W'.a₁ ^ 3 * W'.a₃ - 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 6 * W'.a₁ ^ 2 * W'.a₄ + 18 *
-      W'.a₁ * W'.a₂ * W'.a₃ - 27 * W'.a₃ ^ 2 + 36 * W'.a₆) * P 1 ^ 2 * P 2 * Q 1 ^ 2 * Q 2 ^ 4 +
-      (15 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 15 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ + 48 * W'.a₁ * W'.a₂ *
-      W'.a₃ * W'.a₄ - 54 * W'.a₁ * W'.a₃ * W'.a₆ - 3 * W'.a₂ ^ 5 + 21 * W'.a₂ ^ 3 * W'.a₄ +
-      21 * W'.a₂ ^ 2 * W'.a₃ ^ 2 - 42 * W'.a₂ ^ 2 * W'.a₆ - 36 * W'.a₂ * W'.a₄ ^ 2 - 60 *
-      W'.a₃ ^ 2 * W'.a₄ + 126 * W'.a₄ * W'.a₆) * P 0 * P 2 ^ 2 * Q 1 ^ 2 * Q 2 ^ 4 + (3 *
-      W'.a₁ ^ 3 * W'.a₆ - 9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ + 12 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ -
-      3 * W'.a₁ * W'.a₂ ^ 4 + 15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ + 18 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 -
-      36 * W'.a₁ * W'.a₂ * W'.a₆ - 12 * W'.a₁ * W'.a₄ ^ 2 + 9 * W'.a₂ ^ 3 * W'.a₃ - 36 *
-      W'.a₂ * W'.a₃ * W'.a₄ - 12 * W'.a₃ ^ 3 + 90 * W'.a₃ * W'.a₆) * P 1 * P 2 ^ 2 * Q 1 ^ 2 *
-      Q 2 ^ 4 + (6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ - 6 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ - 5 *
-      W'.a₁ * W'.a₂ ^ 4 * W'.a₃ + 21 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ - 30 * W'.a₁ *
-      W'.a₂ * W'.a₃ * W'.a₆ - 12 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 - W'.a₂ ^ 6 + 8 * W'.a₂ ^ 4 *
-      W'.a₄ + 7 * W'.a₂ ^ 3 * W'.a₃ ^ 2 - 14 * W'.a₂ ^ 3 * W'.a₆ - 18 * W'.a₂ ^ 2 * W'.a₄ ^ 2 -
-      24 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + 48 * W'.a₂ * W'.a₄ * W'.a₆ + 36 * W'.a₃ ^ 2 * W'.a₆ +
-      8 * W'.a₄ ^ 3 - 27 * W'.a₆ ^ 2) * P 2 ^ 3 * Q 1 ^ 2 * Q 2 ^ 4 + (W'.a₂ ^ 3 * W'.a₄ - 9 *
-      W'.a₂ ^ 2 * W'.a₆ - 3 * W'.a₂ * W'.a₄ ^ 2 + 27 * W'.a₄ * W'.a₆) * P 0 ^ 3 * Q 0 * Q 2 ^ 5 +
-      (3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ + 9 * W'.a₁ * W'.a₂ * W'.a₆ - 12 * W'.a₁ * W'.a₄ ^ 2 -
-      3 * W'.a₂ * W'.a₃ * W'.a₄ + 27 * W'.a₃ * W'.a₆) * P 0 ^ 2 * P 1 * Q 0 * Q 2 ^ 5 + (3 *
-      W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 9 * W'.a₁ ^ 2 * W'.a₆ - 12 * W'.a₁ * W'.a₃ * W'.a₄ + 6 *
-      W'.a₂ * W'.a₃ ^ 2) * P 0 * P 1 ^ 2 * Q 0 * Q 2 ^ 5 + (W'.a₁ ^ 3 * W'.a₄ - 3 * W'.a₁ *
-      W'.a₃ ^ 2) * P 1 ^ 3 * Q 0 * Q 2 ^ 5 + (3 * W'.a₂ ^ 4 * W'.a₄ - 3 * W'.a₂ ^ 3 * W'.a₆ -
-      18 * W'.a₂ ^ 2 * W'.a₄ ^ 2 + 27 * W'.a₂ * W'.a₄ * W'.a₆ + 24 * W'.a₄ ^ 3 - 81 * W'.a₆ ^ 2) *
-      P 0 ^ 2 * P 2 * Q 0 * Q 2 ^ 5 + (6 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ - 6 * W'.a₁ * W'.a₂ ^ 2 *
-      W'.a₆ - 24 * W'.a₁ * W'.a₂ * W'.a₄ ^ 2 + 72 * W'.a₁ * W'.a₄ * W'.a₆ - 6 * W'.a₂ ^ 2 *
-      W'.a₃ * W'.a₄ - 18 * W'.a₂ * W'.a₃ * W'.a₆ + 24 * W'.a₃ * W'.a₄ ^ 2) * P 0 * P 1 * P 2 *
-      Q 0 * Q 2 ^ 5 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ - 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 6 *
-      W'.a₁ ^ 2 * W'.a₄ ^ 2 - 6 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + 18 * W'.a₁ * W'.a₃ * W'.a₆ +
-      6 * W'.a₃ ^ 2 * W'.a₄) * P 1 ^ 2 * P 2 * Q 0 * Q 2 ^ 5 + (3 * W'.a₂ ^ 5 * W'.a₄ - 3 *
-      W'.a₂ ^ 4 * W'.a₆ - 21 * W'.a₂ ^ 3 * W'.a₄ ^ 2 + 45 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ + 36 *
-      W'.a₂ * W'.a₄ ^ 3 - 108 * W'.a₄ ^ 2 * W'.a₆) * P 0 * P 2 ^ 2 * Q 0 * Q 2 ^ 5 + (3 *
-      W'.a₁ * W'.a₂ ^ 4 * W'.a₄ - 3 * W'.a₁ * W'.a₂ ^ 3 * W'.a₆ - 15 * W'.a₁ * W'.a₂ ^ 2 *
-      W'.a₄ ^ 2 + 30 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ + 12 * W'.a₁ * W'.a₄ ^ 3 - 27 * W'.a₁ *
-      W'.a₆ ^ 2 - 3 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄ + 3 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ + 12 * W'.a₂ *
-      W'.a₃ * W'.a₄ ^ 2 - 36 * W'.a₃ * W'.a₄ * W'.a₆) * P 1 * P 2 ^ 2 * Q 0 * Q 2 ^ 5 +
-      (W'.a₂ ^ 6 * W'.a₄ - W'.a₂ ^ 5 * W'.a₆ - 8 * W'.a₂ ^ 4 * W'.a₄ ^ 2 + 17 * W'.a₂ ^ 3 *
-      W'.a₄ * W'.a₆ + 18 * W'.a₂ ^ 2 * W'.a₄ ^ 3 - 9 * W'.a₂ ^ 2 * W'.a₆ ^ 2 - 48 * W'.a₂ *
-      W'.a₄ ^ 2 * W'.a₆ - 8 * W'.a₄ ^ 4 + 54 * W'.a₄ * W'.a₆ ^ 2) * P 2 ^ 3 * Q 0 * Q 2 ^ 5 +
-      (9 * W'.a₁ * W'.a₂ * W'.a₆ - 3 * W'.a₁ * W'.a₄ ^ 2 - W'.a₂ ^ 3 * W'.a₃ + 9 * W'.a₂ *
-      W'.a₃ * W'.a₄ - 54 * W'.a₃ * W'.a₆) * P 0 ^ 3 * Q 1 * Q 2 ^ 5 + (9 * W'.a₁ ^ 2 * W'.a₆ -
-      3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 15 * W'.a₁ * W'.a₃ * W'.a₄ - 9 * W'.a₂ * W'.a₃ ^ 2 +
-      18 * W'.a₂ * W'.a₆ - 6 * W'.a₄ ^ 2) * P 0 ^ 2 * P 1 * Q 1 * Q 2 ^ 5 + (-3 * W'.a₁ ^ 2 *
-      W'.a₂ * W'.a₃ + 15 * W'.a₁ * W'.a₃ ^ 2 - 36 * W'.a₁ * W'.a₆ + 12 * W'.a₃ * W'.a₄) * P 0 *
-      P 1 ^ 2 * Q 1 * Q 2 ^ 5 + (-W'.a₁ ^ 3 * W'.a₃ - 6 * W'.a₃ ^ 2) * P 1 ^ 3 * Q 1 * Q 2 ^ 5 +
-      (15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ - 45 * W'.a₁ * W'.a₄ * W'.a₆ - 3 * W'.a₂ ^ 4 * W'.a₃ +
-      18 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ - 9 * W'.a₂ * W'.a₃ * W'.a₆ - 24 * W'.a₃ * W'.a₄ ^ 2) *
-      P 0 ^ 2 * P 2 * Q 1 * Q 2 ^ 5 + (18 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 6 * W'.a₁ * W'.a₂ ^ 3 *
-      W'.a₃ + 24 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ - 90 * W'.a₁ * W'.a₃ * W'.a₆ + 6 * W'.a₂ ^ 2 *
-      W'.a₃ ^ 2 - 12 * W'.a₂ ^ 2 * W'.a₆ - 24 * W'.a₃ ^ 2 * W'.a₄ + 36 * W'.a₄ * W'.a₆) * P 0 *
-      P 1 * P 2 * Q 1 * Q 2 ^ 5 + (3 * W'.a₁ ^ 3 * W'.a₆ - 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ +
-      6 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ + 6 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 12 * W'.a₁ * W'.a₂ *
-      W'.a₆ - 6 * W'.a₃ ^ 3 + 36 * W'.a₃ * W'.a₆) * P 1 ^ 2 * P 2 * Q 1 * Q 2 ^ 5 + (15 *
-      W'.a₁ * W'.a₂ ^ 3 * W'.a₆ - 48 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ + 27 * W'.a₁ * W'.a₆ ^ 2 -
-      3 * W'.a₂ ^ 5 * W'.a₃ + 21 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄ - 48 * W'.a₂ ^ 2 * W'.a₃ *
-      W'.a₆ - 36 * W'.a₂ * W'.a₃ * W'.a₄ ^ 2 + 144 * W'.a₃ * W'.a₄ * W'.a₆) * P 0 * P 2 ^ 2 *
-      Q 1 * Q 2 ^ 5 + (9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ - 12 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ -
-      3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ + 15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ - 36 * W'.a₁ *
-      W'.a₂ * W'.a₃ * W'.a₆ - 12 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 + 3 * W'.a₂ ^ 3 * W'.a₃ ^ 2 - 6 *
-      W'.a₂ ^ 3 * W'.a₆ - 12 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + 24 * W'.a₂ * W'.a₄ * W'.a₆ + 36 *
-      W'.a₃ ^ 2 * W'.a₆ - 54 * W'.a₆ ^ 2) * P 1 * P 2 ^ 2 * Q 1 * Q 2 ^ 5 + (5 * W'.a₁ *
-      W'.a₂ ^ 4 * W'.a₆ - 21 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ + 18 * W'.a₁ * W'.a₂ *
-      W'.a₆ ^ 2 + 12 * W'.a₁ * W'.a₄ ^ 2 * W'.a₆ - W'.a₂ ^ 6 * W'.a₃ + 8 * W'.a₂ ^ 4 * W'.a₃ *
-      W'.a₄ - 17 * W'.a₂ ^ 3 * W'.a₃ * W'.a₆ - 18 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ ^ 2 + 60 *
-      W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆ + 8 * W'.a₃ * W'.a₄ ^ 3 - 54 * W'.a₃ * W'.a₆ ^ 2) * P 2 ^ 3 *
-      Q 1 * Q 2 ^ 5 + (W'.a₂ ^ 3 * W'.a₆ - 9 * W'.a₂ * W'.a₄ * W'.a₆ + W'.a₄ ^ 3 + 27 *
-      W'.a₆ ^ 2) * P 0 ^ 3 * Q 2 ^ 6 + (3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ - 9 * W'.a₁ * W'.a₄ *
-      W'.a₆ + 9 * W'.a₂ * W'.a₃ * W'.a₆ - 3 * W'.a₃ * W'.a₄ ^ 2) * P 0 ^ 2 * P 1 * Q 2 ^ 6 +
-      (3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 18 * W'.a₁ * W'.a₃ * W'.a₆ + 3 * W'.a₃ ^ 2 * W'.a₄) *
-      P 0 * P 1 ^ 2 * Q 2 ^ 6 + (W'.a₁ ^ 3 * W'.a₆ - W'.a₃ ^ 3) * P 1 ^ 3 * Q 2 ^ 6 + (3 *
-      W'.a₂ ^ 4 * W'.a₆ - 18 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ + 27 * W'.a₄ ^ 2 * W'.a₆) * P 0 ^ 2 *
-      P 2 * Q 2 ^ 6 + (6 * W'.a₁ * W'.a₂ ^ 3 * W'.a₆ - 24 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ +
-      54 * W'.a₁ * W'.a₆ ^ 2 - 6 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ + 18 * W'.a₃ * W'.a₄ * W'.a₆) *
-      P 0 * P 1 * P 2 * Q 2 ^ 6 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ - 6 * W'.a₁ ^ 2 * W'.a₄ *
-      W'.a₆ - 6 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆ + 9 * W'.a₃ ^ 2 * W'.a₆) * P 1 ^ 2 * P 2 * Q 2 ^ 6 +
-      (3 * W'.a₂ ^ 5 * W'.a₆ - 21 * W'.a₂ ^ 3 * W'.a₄ * W'.a₆ + 27 * W'.a₂ ^ 2 * W'.a₆ ^ 2 +
-      36 * W'.a₂ * W'.a₄ ^ 2 * W'.a₆ - 81 * W'.a₄ * W'.a₆ ^ 2) * P 0 * P 2 ^ 2 * Q 2 ^ 6 +
-      (3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₆ - 15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ + 18 * W'.a₁ *
-      W'.a₂ * W'.a₆ ^ 2 + 12 * W'.a₁ * W'.a₄ ^ 2 * W'.a₆ - 3 * W'.a₂ ^ 3 * W'.a₃ * W'.a₆ +
-      12 * W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆ - 27 * W'.a₃ * W'.a₆ ^ 2) * P 1 * P 2 ^ 2 * Q 2 ^ 6 +
-      (W'.a₂ ^ 6 * W'.a₆ - 8 * W'.a₂ ^ 4 * W'.a₄ * W'.a₆ + 10 * W'.a₂ ^ 3 * W'.a₆ ^ 2 + 18 *
-      W'.a₂ ^ 2 * W'.a₄ ^ 2 * W'.a₆ - 36 * W'.a₂ * W'.a₄ * W'.a₆ ^ 2 - 8 * W'.a₄ ^ 3 * W'.a₆ +
-      27 * W'.a₆ ^ 3) * P 2 ^ 3 * Q 2 ^ 6) * hP +
-    (- 27 * P 0 ^ 3 * P 1 ^ 2 * P 2 * Q 0 ^ 3 + (9 * W'.a₁ * W'.a₂ - 27 * W'.a₃) * P 0 ^ 3 * P 1 *
-      P 2 ^ 2 * Q 0 ^ 3 + (-9 * W'.a₁ ^ 2 - 27 * W'.a₂) * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 * Q 0 ^ 3 +
-      (2 * W'.a₂ ^ 3 - 9 * W'.a₂ * W'.a₄ + 27 * W'.a₆) * P 0 ^ 3 * P 2 ^ 3 * Q 0 ^ 3 + (3 *
-      W'.a₁ * W'.a₂ ^ 2 + 18 * W'.a₁ * W'.a₄ - 27 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 * P 2 ^ 3 *
-      Q 0 ^ 3 + (-6 * W'.a₁ ^ 2 * W'.a₂ - 9 * W'.a₂ ^ 2) * P 0 * P 1 ^ 2 * P 2 ^ 3 * Q 0 ^ 3 +
-      (W'.a₁ ^ 3) * P 1 ^ 3 * P 2 ^ 3 * Q 0 ^ 3 + (W'.a₂ ^ 4 - 3 * W'.a₂ ^ 2 * W'.a₄ + 27 *
-      W'.a₂ * W'.a₆ - 9 * W'.a₄ ^ 2) * P 0 ^ 2 * P 2 ^ 4 * Q 0 ^ 3 + (-W'.a₁ * W'.a₂ ^ 3 +
-      12 * W'.a₁ * W'.a₂ * W'.a₄ - 9 * W'.a₂ ^ 2 * W'.a₃) * P 0 * P 1 * P 2 ^ 4 * Q 0 ^ 3 +
-      (-3 * W'.a₁ ^ 2 * W'.a₄ - W'.a₂ ^ 3) * P 1 ^ 2 * P 2 ^ 4 * Q 0 ^ 3 + (W'.a₂ ^ 3 *
-      W'.a₄ + 9 * W'.a₂ ^ 2 * W'.a₆ - 6 * W'.a₂ * W'.a₄ ^ 2) * P 0 * P 2 ^ 5 * Q 0 ^ 3 + (3 *
-      W'.a₁ * W'.a₄ ^ 2 - W'.a₂ ^ 3 * W'.a₃) * P 1 * P 2 ^ 5 * Q 0 ^ 3 + (W'.a₂ ^ 3 * W'.a₆ -
-      W'.a₄ ^ 3) * P 2 ^ 6 * Q 0 ^ 3 + 54 * P 0 ^ 4 * P 1 * P 2 * Q 0 ^ 2 * Q 1 + (-9 *
-      W'.a₁ * W'.a₂ + 27 * W'.a₃) * P 0 ^ 4 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 + (9 * W'.a₁ ^ 2 + 72 *
-      W'.a₂) * P 0 ^ 3 * P 1 * P 2 ^ 2 * Q 0 ^ 2 * Q 1 + (-9 * W'.a₁) * P 0 ^ 2 * P 1 ^ 2 *
-      P 2 ^ 2 * Q 0 ^ 2 * Q 1 + (-9 * W'.a₁ * W'.a₂ ^ 2 - 9 * W'.a₁ * W'.a₄ + 36 * W'.a₂ *
-      W'.a₃) * P 0 ^ 3 * P 2 ^ 3 * Q 0 ^ 2 * Q 1 + (6 * W'.a₁ ^ 2 * W'.a₂ + 9 * W'.a₁ *
-      W'.a₃ + 24 * W'.a₂ ^ 2 + 36 * W'.a₄) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 0 ^ 2 * Q 1 + (3 *
-      W'.a₁ ^ 3 - 6 * W'.a₁ * W'.a₂) * P 0 * P 1 ^ 2 * P 2 ^ 3 * Q 0 ^ 2 * Q 1 + (6 * W'.a₁ ^ 2) *
-      P 1 ^ 3 * P 2 ^ 3 * Q 0 ^ 2 * Q 1 + (-3 * W'.a₁ * W'.a₂ ^ 3 - 6 * W'.a₁ * W'.a₂ *
-      W'.a₄ - 27 * W'.a₁ * W'.a₆ + 12 * W'.a₂ ^ 2 * W'.a₃ + 18 * W'.a₃ * W'.a₄) * P 0 ^ 2 *
-      P 2 ^ 4 * Q 0 ^ 2 * Q 1 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 6 * W'.a₁ ^ 2 * W'.a₄ + 6 *
-      W'.a₁ * W'.a₂ * W'.a₃ + 24 * W'.a₂ * W'.a₄) * P 0 * P 1 * P 2 ^ 4 * Q 0 ^ 2 * Q 1 + (3 *
-      W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₂ ^ 2 - 12 * W'.a₁ * W'.a₄) * P 1 ^ 2 * P 2 ^ 4 *
-      Q 0 ^ 2 * Q 1 + (-3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - 18 * W'.a₁ * W'.a₂ * W'.a₆ + 3 *
-      W'.a₁ * W'.a₄ ^ 2 + 12 * W'.a₂ * W'.a₃ * W'.a₄) * P 0 * P 2 ^ 5 * Q 0 ^ 2 * Q 1 + (3 *
-      W'.a₁ * W'.a₂ ^ 2 * W'.a₃ - 6 * W'.a₁ * W'.a₃ * W'.a₄ + 6 * W'.a₄ ^ 2) * P 1 * P 2 ^ 5 *
-      Q 0 ^ 2 * Q 1 + (-3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 3 * W'.a₃ * W'.a₄ ^ 2) * P 2 ^ 6 * Q 0 ^ 2 *
-      Q 1 - 27 * P 0 ^ 5 * P 2 * Q 0 * Q 1 ^ 2 + (-45 * W'.a₂) * P 0 ^ 4 * P 2 ^ 2 * Q 0 * Q 1 ^ 2 +
-      (-9 * W'.a₁) * P 0 ^ 3 * P 1 * P 2 ^ 2 * Q 0 * Q 1 ^ 2 - 9 * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 *
-      Q 0 * Q 1 ^ 2 + (6 * W'.a₁ ^ 2 * W'.a₂ - 18 * W'.a₁ * W'.a₃ - 21 * W'.a₂ ^ 2 - 27 *
-      W'.a₄) * P 0 ^ 3 * P 2 ^ 3 * Q 0 * Q 1 ^ 2 + (-6 * W'.a₁ ^ 3 - 6 * W'.a₁ * W'.a₂ - 9 *
-      W'.a₃) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 0 * Q 1 ^ 2 + (3 * W'.a₁ ^ 2 - 6 * W'.a₂) * P 0 *
-      P 1 ^ 2 * P 2 ^ 3 * Q 0 * Q 1 ^ 2 + (12 * W'.a₁) * P 1 ^ 3 * P 2 ^ 3 * Q 0 * Q 1 ^ 2 +
-      (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 6 * W'.a₁ ^ 2 * W'.a₄ - 12 * W'.a₁ * W'.a₂ * W'.a₃ - 3 *
-      W'.a₂ ^ 3 - 18 * W'.a₂ * W'.a₄ - 9 * W'.a₃ ^ 2 - 27 * W'.a₆) * P 0 ^ 2 * P 2 ^ 4 * Q 0 *
-      Q 1 ^ 2 + (-3 * W'.a₁ ^ 3 * W'.a₂ - 3 * W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₂ ^ 2 - 12 *
-      W'.a₁ * W'.a₄ - 6 * W'.a₂ * W'.a₃) * P 0 * P 1 * P 2 ^ 4 * Q 0 * Q 1 ^ 2 + (-3 * W'.a₁ ^ 2 *
-      W'.a₂ + 12 * W'.a₁ * W'.a₃ + 3 * W'.a₂ ^ 2 - 12 * W'.a₄) * P 1 ^ 2 * P 2 ^ 4 * Q 0 * Q 1 ^ 2 +
-      (3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 9 * W'.a₁ ^ 2 * W'.a₆ - 6 * W'.a₁ * W'.a₃ * W'.a₄ - 3 *
-      W'.a₂ ^ 2 * W'.a₄ - 6 * W'.a₂ * W'.a₃ ^ 2 - 18 * W'.a₂ * W'.a₆) * P 0 * P 2 ^ 5 * Q 0 *
-      Q 1 ^ 2 + (-3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ + 3 * W'.a₁ * W'.a₃ ^ 2 + 3 * W'.a₂ ^ 2 *
-      W'.a₃ - 12 * W'.a₃ * W'.a₄) * P 1 * P 2 ^ 5 * Q 0 * Q 1 ^ 2 + (3 * W'.a₁ ^ 2 * W'.a₂ *
-      W'.a₆ - 3 * W'.a₂ ^ 2 * W'.a₆ - 3 * W'.a₃ ^ 2 * W'.a₄) * P 2 ^ 6 * Q 0 * Q 1 ^ 2 + (18 *
-      W'.a₁) * P 0 ^ 4 * P 2 ^ 2 * Q 1 ^ 3 + (24 * W'.a₁ * W'.a₂) * P 0 ^ 3 * P 2 ^ 3 * Q 1 ^ 3 +
-      (-12 * W'.a₁ ^ 2) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 1 ^ 3 + (-6 * W'.a₁) * P 0 * P 1 ^ 2 *
-      P 2 ^ 3 * Q 1 ^ 3 + 8 * P 1 ^ 3 * P 2 ^ 3 * Q 1 ^ 3 + (-W'.a₁ ^ 3 * W'.a₂ + 3 * W'.a₁ ^ 2 *
-      W'.a₃ + 6 * W'.a₁ * W'.a₂ ^ 2 + 18 * W'.a₁ * W'.a₄) * P 0 ^ 2 * P 2 ^ 4 * Q 1 ^ 3 +
-      (W'.a₁ ^ 4 - 6 * W'.a₁ ^ 2 * W'.a₂ - 6 * W'.a₁ * W'.a₃) * P 0 * P 1 * P 2 ^ 4 * Q 1 ^ 3 +
-      (W'.a₁ ^ 3 - 6 * W'.a₁ * W'.a₂ + 12 * W'.a₃) * P 1 ^ 2 * P 2 ^ 4 * Q 1 ^ 3 + (-W'.a₁ ^ 3 *
-      W'.a₄ + 6 * W'.a₁ * W'.a₂ * W'.a₄ + 3 * W'.a₁ * W'.a₃ ^ 2 + 18 * W'.a₁ * W'.a₆) * P 0 *
-      P 2 ^ 5 * Q 1 ^ 3 + (W'.a₁ ^ 3 * W'.a₃ - 6 * W'.a₁ * W'.a₂ * W'.a₃ + 6 * W'.a₃ ^ 2) *
-      P 1 * P 2 ^ 5 * Q 1 ^ 3 + (-W'.a₁ ^ 3 * W'.a₆ + 6 * W'.a₁ * W'.a₂ * W'.a₆ + W'.a₃ ^ 3) *
-      P 2 ^ 6 * Q 1 ^ 3 + 27 * P 0 ^ 4 * P 1 ^ 2 * Q 0 ^ 2 * Q 2 + (-18 * W'.a₁ * W'.a₂ + 54 *
-      W'.a₃) * P 0 ^ 4 * P 1 * P 2 * Q 0 ^ 2 * Q 2 + (9 * W'.a₁ ^ 2 + 9 * W'.a₂) * P 0 ^ 3 *
-      P 1 ^ 2 * P 2 * Q 0 ^ 2 * Q 2 + (9 * W'.a₁) * P 0 ^ 2 * P 1 ^ 3 * P 2 * Q 0 ^ 2 * Q 2 +
-      (-6 * W'.a₂ ^ 3 + 27 * W'.a₂ * W'.a₄ - 81 * W'.a₆) * P 0 ^ 4 * P 2 ^ 2 * Q 0 ^ 2 * Q 2 +
-      (-6 * W'.a₁ * W'.a₂ ^ 2 - 27 * W'.a₁ * W'.a₄ + 45 * W'.a₂ * W'.a₃) * P 0 ^ 3 * P 1 * P 2 ^ 2 *
-      Q 0 ^ 2 * Q 2 + (3 * W'.a₁ ^ 2 * W'.a₂ - 9 * W'.a₁ * W'.a₃ + 3 * W'.a₂ ^ 2 - 36 *
-      W'.a₄) * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 * Q 0 ^ 2 * Q 2 + (3 * W'.a₁ ^ 3 + 6 * W'.a₁ *
-      W'.a₂) * P 0 * P 1 ^ 3 * P 2 ^ 2 * Q 0 ^ 2 * Q 2 + (3 * W'.a₁ ^ 2) * P 1 ^ 4 * P 2 ^ 2 *
-      Q 0 ^ 2 * Q 2 + (-4 * W'.a₂ ^ 4 + 15 * W'.a₂ ^ 2 * W'.a₄ - 81 * W'.a₂ * W'.a₆ + 18 *
-      W'.a₄ ^ 2) * P 0 ^ 3 * P 2 ^ 3 * Q 0 ^ 2 * Q 2 + (-12 * W'.a₁ * W'.a₂ * W'.a₄ + 27 *
-      W'.a₁ * W'.a₆ + 15 * W'.a₂ ^ 2 * W'.a₃ - 18 * W'.a₃ * W'.a₄) * P 0 ^ 2 * P 1 * P 2 ^ 3 *
-      Q 0 ^ 2 * Q 2 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 12 * W'.a₁ ^ 2 * W'.a₄ - 6 * W'.a₁ *
-      W'.a₂ * W'.a₃ + 3 * W'.a₂ ^ 3 - 24 * W'.a₂ * W'.a₄) * P 0 * P 1 ^ 2 * P 2 ^ 3 * Q 0 ^ 2 *
-      Q 2 + (6 * W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₂ ^ 2 - 6 * W'.a₁ * W'.a₄) * P 1 ^ 3 *
-      P 2 ^ 3 * Q 0 ^ 2 * Q 2 + (-W'.a₂ ^ 5 + 3 * W'.a₂ ^ 3 * W'.a₄ - 27 * W'.a₂ ^ 2 * W'.a₆ +
-      9 * W'.a₂ * W'.a₄ ^ 2) * P 0 ^ 2 * P 2 ^ 4 * Q 0 ^ 2 * Q 2 + (W'.a₁ * W'.a₂ ^ 4 - 9 *
-      W'.a₁ * W'.a₂ ^ 2 * W'.a₄ + 18 * W'.a₁ * W'.a₂ * W'.a₆ + 15 * W'.a₁ * W'.a₄ ^ 2 + 3 *
-      W'.a₂ ^ 3 * W'.a₃ - 12 * W'.a₂ * W'.a₃ * W'.a₄) * P 0 * P 1 * P 2 ^ 4 * Q 0 ^ 2 * Q 2 +
-      (-9 * W'.a₁ ^ 2 * W'.a₆ + 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ - 12 * W'.a₁ * W'.a₃ * W'.a₄ +
-      W'.a₂ ^ 4 - 6 * W'.a₂ ^ 2 * W'.a₄ + 3 * W'.a₄ ^ 2) * P 1 ^ 2 * P 2 ^ 4 * Q 0 ^ 2 * Q 2 +
-      (-W'.a₂ ^ 4 * W'.a₄ - 3 * W'.a₂ ^ 3 * W'.a₆ + 6 * W'.a₂ ^ 2 * W'.a₄ ^ 2 - 6 * W'.a₄ ^ 3) *
-      P 0 * P 2 ^ 5 * Q 0 ^ 2 * Q 2 + (-3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 18 * W'.a₁ * W'.a₄ *
-      W'.a₆ + W'.a₂ ^ 4 * W'.a₃ - 6 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 6 * W'.a₃ * W'.a₄ ^ 2) * P 1 *
-      P 2 ^ 5 * Q 0 ^ 2 * Q 2 + (-W'.a₂ ^ 4 * W'.a₆ + 6 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ - 9 *
-      W'.a₄ ^ 2 * W'.a₆) * P 2 ^ 6 * Q 0 ^ 2 * Q 2 - 54 * P 0 ^ 5 * P 1 * Q 0 * Q 1 * Q 2 +
-      (18 * W'.a₁ * W'.a₂ - 54 * W'.a₃) * P 0 ^ 5 * P 2 * Q 0 * Q 1 * Q 2 + (-54 * W'.a₂) *
-      P 0 ^ 4 * P 1 * P 2 * Q 0 * Q 1 * Q 2 + 18 * P 0 ^ 2 * P 1 ^ 3 * P 2 * Q 0 * Q 1 * Q 2 +
-      (24 * W'.a₁ * W'.a₂ ^ 2 - 72 * W'.a₂ * W'.a₃) * P 0 ^ 4 * P 2 ^ 2 * Q 0 * Q 1 * Q 2 +
-      (6 * W'.a₁ ^ 2 * W'.a₂ - 18 * W'.a₂ ^ 2 + 18 * W'.a₄) * P 0 ^ 3 * P 1 * P 2 ^ 2 * Q 0 *
-      Q 1 * Q 2 + (-12 * W'.a₁ ^ 3 - 12 * W'.a₁ * W'.a₂ + 18 * W'.a₃) * P 0 ^ 2 * P 1 ^ 2 *
-      P 2 ^ 2 * Q 0 * Q 1 * Q 2 + (12 * W'.a₂) * P 0 * P 1 ^ 3 * P 2 ^ 2 * Q 0 * Q 1 * Q 2 +
-      (12 * W'.a₁) * P 1 ^ 4 * P 2 ^ 2 * Q 0 * Q 1 * Q 2 + (16 * W'.a₁ * W'.a₂ ^ 3 - 18 *
-      W'.a₁ * W'.a₂ * W'.a₄ + 54 * W'.a₁ * W'.a₆ - 30 * W'.a₂ ^ 2 * W'.a₃ - 18 * W'.a₃ *
-      W'.a₄) * P 0 ^ 3 * P 2 ^ 3 * Q 0 * Q 1 * Q 2 + (-6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 36 *
-      W'.a₁ ^ 2 * W'.a₄ - 6 * W'.a₁ * W'.a₂ * W'.a₃ - 6 * W'.a₂ ^ 3 + 24 * W'.a₂ * W'.a₄ +
-      18 * W'.a₃ ^ 2 + 54 * W'.a₆) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 0 * Q 1 * Q 2 + (-6 * W'.a₁ ^ 3 *
-      W'.a₂ - 6 * W'.a₁ * W'.a₂ ^ 2 - 6 * W'.a₁ * W'.a₄ + 12 * W'.a₂ * W'.a₃) * P 0 * P 1 ^ 2 *
-      P 2 ^ 3 * Q 0 * Q 1 * Q 2 + (-6 * W'.a₁ ^ 2 * W'.a₂ + 30 * W'.a₁ * W'.a₃ + 6 * W'.a₂ ^ 2 -
-      12 * W'.a₄) * P 1 ^ 3 * P 2 ^ 3 * Q 0 * Q 1 * Q 2 + (4 * W'.a₁ * W'.a₂ ^ 4 + 36 *
-      W'.a₁ * W'.a₂ * W'.a₆ - 24 * W'.a₁ * W'.a₄ ^ 2 - 6 * W'.a₂ ^ 3 * W'.a₃ - 6 * W'.a₂ *
-      W'.a₃ * W'.a₄) * P 0 ^ 2 * P 2 ^ 4 * Q 0 * Q 1 * Q 2 + (-4 * W'.a₁ ^ 2 * W'.a₂ ^ 3 +
-      18 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 6 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 6 * W'.a₁ * W'.a₃ *
-      W'.a₄ - 6 * W'.a₂ ^ 2 * W'.a₄ + 12 * W'.a₂ * W'.a₃ ^ 2 + 36 * W'.a₂ * W'.a₆ + 24 *
-      W'.a₄ ^ 2) * P 0 * P 1 * P 2 ^ 4 * Q 0 * Q 1 * Q 2 + (-6 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ -
-      4 * W'.a₁ * W'.a₂ ^ 3 + 12 * W'.a₁ * W'.a₂ * W'.a₄ + 12 * W'.a₁ * W'.a₃ ^ 2 - 36 *
-      W'.a₁ * W'.a₆ + 12 * W'.a₂ ^ 2 * W'.a₃ - 30 * W'.a₃ * W'.a₄) * P 1 ^ 2 * P 2 ^ 4 * Q 0 *
-      Q 1 * Q 2 + (4 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ + 12 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ - 12 *
-      W'.a₁ * W'.a₂ * W'.a₄ ^ 2 - 18 * W'.a₁ * W'.a₄ * W'.a₆ - 6 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ +
-      12 * W'.a₃ * W'.a₄ ^ 2) * P 0 * P 2 ^ 5 * Q 0 * Q 1 * Q 2 + (6 * W'.a₁ ^ 2 * W'.a₂ *
-      W'.a₆ - 4 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ + 12 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ - 18 *
-      W'.a₁ * W'.a₃ * W'.a₆ + 6 * W'.a₂ ^ 2 * W'.a₃ ^ 2 - 6 * W'.a₂ ^ 2 * W'.a₆ - 12 * W'.a₃ ^ 2 *
-      W'.a₄ + 36 * W'.a₄ * W'.a₆) * P 1 * P 2 ^ 5 * Q 0 * Q 1 * Q 2 + (4 * W'.a₁ * W'.a₂ ^ 3 *
-      W'.a₆ - 12 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ - 6 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ + 18 *
-      W'.a₃ * W'.a₄ * W'.a₆) * P 2 ^ 6 * Q 0 * Q 1 * Q 2 + 27 * P 0 ^ 6 * Q 1 ^ 2 * Q 2 +
-      (-9 * W'.a₁ ^ 2 + 45 * W'.a₂) * P 0 ^ 5 * P 2 * Q 1 ^ 2 * Q 2 + (27 * W'.a₁) * P 0 ^ 4 *
-      P 1 * P 2 * Q 1 ^ 2 * Q 2 - 27 * P 0 ^ 3 * P 1 ^ 2 * P 2 * Q 1 ^ 2 * Q 2 + (-27 *
-      W'.a₁ ^ 2 * W'.a₂ + 36 * W'.a₁ * W'.a₃ + 33 * W'.a₂ ^ 2 - 9 * W'.a₄) * P 0 ^ 4 * P 2 ^ 2 *
-      Q 1 ^ 2 * Q 2 + (9 * W'.a₁ ^ 3 + 42 * W'.a₁ * W'.a₂ - 27 * W'.a₃) * P 0 ^ 3 * P 1 * P 2 ^ 2 *
-      Q 1 ^ 2 * Q 2 + (-30 * W'.a₁ ^ 2 - 30 * W'.a₂) * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 * Q 1 ^ 2 *
-      Q 2 + (-30 * W'.a₁) * P 0 * P 1 ^ 3 * P 2 ^ 2 * Q 1 ^ 2 * Q 2 + 12 * P 1 ^ 4 * P 2 ^ 2 *
-      Q 1 ^ 2 * Q 2 + (-21 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 9 * W'.a₁ ^ 2 * W'.a₄ + 42 * W'.a₁ *
-      W'.a₂ * W'.a₃ + 19 * W'.a₂ ^ 3 - 30 * W'.a₂ * W'.a₄ + 27 * W'.a₆) * P 0 ^ 3 * P 2 ^ 3 *
-      Q 1 ^ 2 * Q 2 + (12 * W'.a₁ ^ 3 * W'.a₂ - 15 * W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₂ ^ 2 +
-      66 * W'.a₁ * W'.a₄ - 30 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 1 ^ 2 * Q 2 +
-      (3 * W'.a₁ ^ 4 - 3 * W'.a₁ ^ 2 * W'.a₂ - 48 * W'.a₁ * W'.a₃ - 15 * W'.a₂ ^ 2 + 12 *
-      W'.a₄) * P 0 * P 1 ^ 2 * P 2 ^ 3 * Q 1 ^ 2 * Q 2 + (3 * W'.a₁ ^ 3 - 18 * W'.a₁ * W'.a₂ +
-      36 * W'.a₃) * P 1 ^ 3 * P 2 ^ 3 * Q 1 ^ 2 * Q 2 + (-6 * W'.a₁ ^ 2 * W'.a₂ ^ 3 - 9 *
-      W'.a₁ ^ 2 * W'.a₂ * W'.a₄ - 18 * W'.a₁ ^ 2 * W'.a₆ + 12 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ +
-      24 * W'.a₁ * W'.a₃ * W'.a₄ + 4 * W'.a₂ ^ 4 + 3 * W'.a₂ ^ 2 * W'.a₄ - 3 * W'.a₂ * W'.a₃ ^ 2 +
-      18 * W'.a₂ * W'.a₆ - 36 * W'.a₄ ^ 2) * P 0 ^ 2 * P 2 ^ 4 * Q 1 ^ 2 * Q 2 + (6 * W'.a₁ ^ 3 *
-      W'.a₂ ^ 2 - 9 * W'.a₁ ^ 3 * W'.a₄ + 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 4 * W'.a₁ * W'.a₂ ^ 3 +
-      30 * W'.a₁ * W'.a₂ * W'.a₄ - 21 * W'.a₁ * W'.a₃ ^ 2 + 18 * W'.a₁ * W'.a₆ - 15 * W'.a₂ ^ 2 *
-      W'.a₃ + 12 * W'.a₃ * W'.a₄) * P 0 * P 1 * P 2 ^ 4 * Q 1 ^ 2 * Q 2 + (3 * W'.a₁ ^ 3 *
-      W'.a₃ + 6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 6 * W'.a₁ ^ 2 * W'.a₄ - 30 * W'.a₁ * W'.a₂ * W'.a₃ -
-      4 * W'.a₂ ^ 3 + 12 * W'.a₂ * W'.a₄ + 27 * W'.a₃ ^ 2 - 36 * W'.a₆) * P 1 ^ 2 * P 2 ^ 4 *
-      Q 1 ^ 2 * Q 2 + (-6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ - 15 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ +
-      6 * W'.a₁ ^ 2 * W'.a₄ ^ 2 + 12 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + 18 * W'.a₁ * W'.a₃ *
-      W'.a₆ + 4 * W'.a₂ ^ 3 * W'.a₄ + 15 * W'.a₂ ^ 2 * W'.a₆ - 12 * W'.a₂ * W'.a₄ ^ 2 - 6 *
-      W'.a₃ ^ 2 * W'.a₄ - 36 * W'.a₄ * W'.a₆) * P 0 * P 2 ^ 5 * Q 1 ^ 2 * Q 2 + (-3 * W'.a₁ ^ 3 *
-      W'.a₆ + 6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ - 6 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ - 12 * W'.a₁ *
-      W'.a₂ * W'.a₃ ^ 2 + 18 * W'.a₁ * W'.a₂ * W'.a₆ - 4 * W'.a₂ ^ 3 * W'.a₃ + 12 * W'.a₂ *
-      W'.a₃ * W'.a₄ + 6 * W'.a₃ ^ 3 - 36 * W'.a₃ * W'.a₆) * P 1 * P 2 ^ 5 * Q 1 ^ 2 * Q 2 +
-      (-6 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ + 6 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ + 12 * W'.a₁ *
-      W'.a₂ * W'.a₃ * W'.a₆ + 4 * W'.a₂ ^ 3 * W'.a₆ - 12 * W'.a₂ * W'.a₄ * W'.a₆ - 9 * W'.a₃ ^ 2 *
-      W'.a₆) * P 2 ^ 6 * Q 1 ^ 2 * Q 2 + (9 * W'.a₁ * W'.a₂ - 27 * W'.a₃) * P 0 ^ 5 * P 1 *
-      Q 0 * Q 2 ^ 2 + (18 * W'.a₂) * P 0 ^ 4 * P 1 ^ 2 * Q 0 * Q 2 ^ 2 + (-18 * W'.a₁) * P 0 ^ 3 *
-      P 1 ^ 3 * Q 0 * Q 2 ^ 2 - 9 * P 0 ^ 2 * P 1 ^ 4 * Q 0 * Q 2 ^ 2 + (6 * W'.a₂ ^ 3 - 27 *
-      W'.a₂ * W'.a₄ + 81 * W'.a₆) * P 0 ^ 5 * P 2 * Q 0 * Q 2 ^ 2 + (3 * W'.a₁ * W'.a₂ ^ 2 -
-      9 * W'.a₂ * W'.a₃) * P 0 ^ 4 * P 1 * P 2 * Q 0 * Q 2 ^ 2 + (9 * W'.a₁ ^ 2 * W'.a₂ - 9 *
-      W'.a₁ * W'.a₃ + 3 * W'.a₂ ^ 2 + 36 * W'.a₄) * P 0 ^ 3 * P 1 ^ 2 * P 2 * Q 0 * Q 2 ^ 2 +
-      (-6 * W'.a₁ ^ 3 - 9 * W'.a₁ * W'.a₂ - 9 * W'.a₃) * P 0 ^ 2 * P 1 ^ 3 * P 2 * Q 0 * Q 2 ^ 2 +
-      (-3 * W'.a₁ ^ 2 - 6 * W'.a₂) * P 0 * P 1 ^ 4 * P 2 * Q 0 * Q 2 ^ 2 + (3 * W'.a₁) * P 1 ^ 5 *
-      P 2 * Q 0 * Q 2 ^ 2 + (6 * W'.a₂ ^ 4 - 27 * W'.a₂ ^ 2 * W'.a₄ + 81 * W'.a₂ * W'.a₆) *
-      P 0 ^ 4 * P 2 ^ 2 * Q 0 * Q 2 ^ 2 + (6 * W'.a₁ * W'.a₂ ^ 3 - 24 * W'.a₁ * W'.a₂ *
-      W'.a₄ - 27 * W'.a₁ * W'.a₆ - 6 * W'.a₂ ^ 2 * W'.a₃ + 45 * W'.a₃ * W'.a₄) * P 0 ^ 3 * P 1 *
-      P 2 ^ 2 * Q 0 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 + 30 * W'.a₁ ^ 2 * W'.a₄ - 9 *
-      W'.a₁ * W'.a₂ * W'.a₃ - 3 * W'.a₂ ^ 3 + 21 * W'.a₂ * W'.a₄ - 9 * W'.a₃ ^ 2 - 27 *
-      W'.a₆) * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 * Q 0 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 3 * W'.a₂ + 3 *
-      W'.a₁ ^ 2 * W'.a₃ - 6 * W'.a₁ * W'.a₂ ^ 2 + 18 * W'.a₁ * W'.a₄ - 6 * W'.a₂ * W'.a₃) *
-      P 0 * P 1 ^ 3 * P 2 ^ 2 * Q 0 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 2 * W'.a₂ + 12 * W'.a₁ * W'.a₃ -
-      3 * W'.a₄) * P 1 ^ 4 * P 2 ^ 2 * Q 0 * Q 2 ^ 2 + (4 * W'.a₂ ^ 5 - 22 * W'.a₂ ^ 3 *
-      W'.a₄ + 36 * W'.a₂ ^ 2 * W'.a₆ + 21 * W'.a₂ * W'.a₄ ^ 2 - 27 * W'.a₄ * W'.a₆) * P 0 ^ 3 *
-      P 2 ^ 3 * Q 0 * Q 2 ^ 2 + (12 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - 9 * W'.a₁ * W'.a₂ * W'.a₆ -
-      48 * W'.a₁ * W'.a₄ ^ 2 - 6 * W'.a₂ ^ 3 * W'.a₃ + 33 * W'.a₂ * W'.a₃ * W'.a₄) * P 0 ^ 2 *
-      P 1 * P 2 ^ 3 * Q 0 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 2 * W'.a₂ ^ 3 + 15 * W'.a₁ ^ 2 * W'.a₂ *
-      W'.a₄ - 9 * W'.a₁ ^ 2 * W'.a₆ - 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ - 3 * W'.a₂ ^ 4 + 18 *
-      W'.a₂ ^ 2 * W'.a₄ - 6 * W'.a₂ * W'.a₃ ^ 2 - 18 * W'.a₂ * W'.a₆ - 24 * W'.a₄ ^ 2) * P 0 *
-      P 1 ^ 2 * P 2 ^ 3 * Q 0 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ - 3 * W'.a₁ *
-      W'.a₂ ^ 3 + 12 * W'.a₁ * W'.a₂ * W'.a₄ + 12 * W'.a₁ * W'.a₃ ^ 2 - 18 * W'.a₁ * W'.a₆ +
-      3 * W'.a₂ ^ 2 * W'.a₃ - 12 * W'.a₃ * W'.a₄) * P 1 ^ 3 * P 2 ^ 3 * Q 0 * Q 2 ^ 2 +
-      (W'.a₂ ^ 6 - 4 * W'.a₂ ^ 4 * W'.a₄ + 12 * W'.a₂ ^ 3 * W'.a₆ - 6 * W'.a₂ ^ 2 * W'.a₄ ^ 2 -
-      27 * W'.a₂ * W'.a₄ * W'.a₆ + 24 * W'.a₄ ^ 3) * P 0 ^ 2 * P 2 ^ 4 * Q 0 * Q 2 ^ 2 +
-      (-W'.a₁ * W'.a₂ ^ 5 + 10 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ - 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ -
-      24 * W'.a₁ * W'.a₂ * W'.a₄ ^ 2 + 18 * W'.a₁ * W'.a₄ * W'.a₆ - 3 * W'.a₂ ^ 4 * W'.a₃ +
-      15 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ - 12 * W'.a₃ * W'.a₄ ^ 2) * P 0 * P 1 * P 2 ^ 4 * Q 0 *
-      Q 2 ^ 2 + (3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ - 3 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ + 12 * W'.a₁ *
-      W'.a₂ * W'.a₃ * W'.a₄ - 36 * W'.a₁ * W'.a₃ * W'.a₆ - W'.a₂ ^ 5 + 7 * W'.a₂ ^ 3 * W'.a₄ +
-      3 * W'.a₂ ^ 2 * W'.a₃ ^ 2 - 9 * W'.a₂ ^ 2 * W'.a₆ - 12 * W'.a₂ * W'.a₄ ^ 2 - 12 *
-      W'.a₃ ^ 2 * W'.a₄ + 18 * W'.a₄ * W'.a₆) * P 1 ^ 2 * P 2 ^ 4 * Q 0 * Q 2 ^ 2 + (W'.a₂ ^ 5 *
-      W'.a₄ + 3 * W'.a₂ ^ 4 * W'.a₆ - 7 * W'.a₂ ^ 3 * W'.a₄ ^ 2 - 9 * W'.a₂ ^ 2 * W'.a₄ *
-      W'.a₆ + 12 * W'.a₂ * W'.a₄ ^ 3) * P 0 * P 2 ^ 5 * Q 0 * Q 2 ^ 2 + (3 * W'.a₁ * W'.a₂ ^ 3 *
-      W'.a₆ - 12 * W'.a₁ * W'.a₂ * W'.a₄ * W'.a₆ + 27 * W'.a₁ * W'.a₆ ^ 2 - W'.a₂ ^ 5 *
-      W'.a₃ + 7 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄ - 12 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ - 12 * W'.a₂ *
-      W'.a₃ * W'.a₄ ^ 2 + 36 * W'.a₃ * W'.a₄ * W'.a₆) * P 1 * P 2 ^ 5 * Q 0 * Q 2 ^ 2 +
-      (W'.a₂ ^ 5 * W'.a₆ - 7 * W'.a₂ ^ 3 * W'.a₄ * W'.a₆ + 9 * W'.a₂ ^ 2 * W'.a₆ ^ 2 + 12 *
-      W'.a₂ * W'.a₄ ^ 2 * W'.a₆ - 27 * W'.a₄ * W'.a₆ ^ 2) * P 2 ^ 6 * Q 0 * Q 2 ^ 2 + (-9 *
-      W'.a₁ * W'.a₂ + 27 * W'.a₃) * P 0 ^ 6 * Q 1 * Q 2 ^ 2 + (-9 * W'.a₁ ^ 2 - 18 * W'.a₂) *
-      P 0 ^ 5 * P 1 * Q 1 * Q 2 ^ 2 + (36 * W'.a₁) * P 0 ^ 4 * P 1 ^ 2 * Q 1 * Q 2 ^ 2 +
-      (-21 * W'.a₁ * W'.a₂ ^ 2 + 27 * W'.a₁ * W'.a₄ + 36 * W'.a₂ * W'.a₃) * P 0 ^ 5 * P 2 *
-      Q 1 * Q 2 ^ 2 + (-24 * W'.a₁ ^ 2 * W'.a₂ + 27 * W'.a₁ * W'.a₃ - 72 * W'.a₄) * P 0 ^ 4 *
-      P 1 * P 2 * Q 1 * Q 2 ^ 2 + (9 * W'.a₁ ^ 3 + 57 * W'.a₁ * W'.a₂ - 27 * W'.a₃) * P 0 ^ 3 *
-      P 1 ^ 2 * P 2 * Q 1 * Q 2 ^ 2 + (-15 * W'.a₁ ^ 2 + 6 * W'.a₂) * P 0 ^ 2 * P 1 ^ 3 * P 2 *
-      Q 1 * Q 2 ^ 2 + (-21 * W'.a₁) * P 0 * P 1 ^ 4 * P 2 * Q 1 * Q 2 ^ 2 + 6 * P 1 ^ 5 * P 2 *
-      Q 1 * Q 2 ^ 2 + (-30 * W'.a₁ * W'.a₂ ^ 3 + 78 * W'.a₁ * W'.a₂ * W'.a₄ - 54 * W'.a₁ *
-      W'.a₆ + 33 * W'.a₂ ^ 2 * W'.a₃ - 45 * W'.a₃ * W'.a₄) * P 0 ^ 4 * P 2 ^ 2 * Q 1 * Q 2 ^ 2 +
-      (-12 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 36 * W'.a₁ ^ 2 * W'.a₄ + 54 * W'.a₁ * W'.a₂ * W'.a₃ +
-      18 * W'.a₂ ^ 3 - 90 * W'.a₂ * W'.a₄ - 27 * W'.a₃ ^ 2) * P 0 ^ 3 * P 1 * P 2 ^ 2 * Q 1 *
-      Q 2 ^ 2 + (15 * W'.a₁ ^ 3 * W'.a₂ - 30 * W'.a₁ ^ 2 * W'.a₃ + 15 * W'.a₁ * W'.a₂ ^ 2 +
-      45 * W'.a₁ * W'.a₄ - 21 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 ^ 2 * P 2 ^ 2 * Q 1 * Q 2 ^ 2 +
-      (3 * W'.a₁ ^ 4 + 6 * W'.a₁ ^ 2 * W'.a₂ - 48 * W'.a₁ * W'.a₃ - 12 * W'.a₂ ^ 2 + 48 *
-      W'.a₄) * P 0 * P 1 ^ 3 * P 2 ^ 2 * Q 1 * Q 2 ^ 2 + (3 * W'.a₁ ^ 3 - 12 * W'.a₁ * W'.a₂ +
-      27 * W'.a₃) * P 1 ^ 4 * P 2 ^ 2 * Q 1 * Q 2 ^ 2 + (-20 * W'.a₁ * W'.a₂ ^ 4 + 54 *
-      W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - 63 * W'.a₁ * W'.a₂ * W'.a₆ + 27 * W'.a₁ * W'.a₄ ^ 2 + 28 *
-      W'.a₂ ^ 3 * W'.a₃ - 75 * W'.a₂ * W'.a₃ * W'.a₄ + 27 * W'.a₃ * W'.a₆) * P 0 ^ 3 * P 2 ^ 3 *
-      Q 1 * Q 2 ^ 2 + (6 * W'.a₁ ^ 2 * W'.a₂ ^ 3 - 54 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 27 *
-      W'.a₁ ^ 2 * W'.a₆ + 12 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 63 * W'.a₁ * W'.a₃ * W'.a₄ + 6 *
-      W'.a₂ ^ 4 - 12 * W'.a₂ ^ 2 * W'.a₄ - 21 * W'.a₂ * W'.a₃ ^ 2 + 18 * W'.a₂ * W'.a₆ - 48 *
-      W'.a₄ ^ 2) * P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 1 * Q 2 ^ 2 + (9 * W'.a₁ ^ 3 * W'.a₂ ^ 2 - 15 *
-      W'.a₁ ^ 3 * W'.a₄ + 9 * W'.a₁ * W'.a₂ ^ 3 - 12 * W'.a₁ * W'.a₂ * W'.a₄ - 30 * W'.a₁ *
-      W'.a₃ ^ 2 + 36 * W'.a₁ * W'.a₆ - 33 * W'.a₂ ^ 2 * W'.a₃ + 84 * W'.a₃ * W'.a₄) * P 0 *
-      P 1 ^ 2 * P 2 ^ 3 * Q 1 * Q 2 ^ 2 + (3 * W'.a₁ ^ 3 * W'.a₃ + 9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 -
-      12 * W'.a₁ ^ 2 * W'.a₄ - 30 * W'.a₁ * W'.a₂ * W'.a₃ - 6 * W'.a₂ ^ 3 + 24 * W'.a₂ *
-      W'.a₄ + 36 * W'.a₃ ^ 2 - 36 * W'.a₆) * P 1 ^ 3 * P 2 ^ 3 * Q 1 * Q 2 ^ 2 + (-5 * W'.a₁ *
-      W'.a₂ ^ 5 + 6 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ - 33 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ + 36 *
-      W'.a₁ * W'.a₂ * W'.a₄ ^ 2 + 9 * W'.a₁ * W'.a₄ * W'.a₆ + 7 * W'.a₂ ^ 4 * W'.a₃ - 3 *
-      W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 27 * W'.a₂ * W'.a₃ * W'.a₆ - 60 * W'.a₃ * W'.a₄ ^ 2) * P 0 ^ 2 *
-      P 2 ^ 4 * Q 1 * Q 2 ^ 2 + (5 * W'.a₁ ^ 2 * W'.a₂ ^ 4 - 30 * W'.a₁ ^ 2 * W'.a₂ ^ 2 *
-      W'.a₄ + 24 * W'.a₁ ^ 2 * W'.a₄ ^ 2 + 8 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ - 6 * W'.a₁ * W'.a₂ *
-      W'.a₃ * W'.a₄ + 54 * W'.a₁ * W'.a₃ * W'.a₆ + 6 * W'.a₂ ^ 3 * W'.a₄ - 21 * W'.a₂ ^ 2 *
-      W'.a₃ ^ 2 + 12 * W'.a₂ ^ 2 * W'.a₆ - 24 * W'.a₂ * W'.a₄ ^ 2 + 48 * W'.a₃ ^ 2 * W'.a₄) *
-      P 0 * P 1 * P 2 ^ 4 * Q 1 * Q 2 ^ 2 + (-3 * W'.a₁ ^ 3 * W'.a₆ + 9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 *
-      W'.a₃ - 12 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ + 5 * W'.a₁ * W'.a₂ ^ 4 - 21 * W'.a₁ * W'.a₂ ^ 2 *
-      W'.a₄ - 18 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + 30 * W'.a₁ * W'.a₂ * W'.a₆ + 12 * W'.a₁ *
-      W'.a₄ ^ 2 - 13 * W'.a₂ ^ 3 * W'.a₃ + 48 * W'.a₂ * W'.a₃ * W'.a₄ + 12 * W'.a₃ ^ 3 - 90 *
-      W'.a₃ * W'.a₆) * P 1 ^ 2 * P 2 ^ 4 * Q 1 * Q 2 ^ 2 + (-5 * W'.a₁ * W'.a₂ ^ 4 * W'.a₄ -
-      15 * W'.a₁ * W'.a₂ ^ 3 * W'.a₆ + 21 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ ^ 2 + 30 * W'.a₁ *
-      W'.a₂ * W'.a₄ * W'.a₆ - 12 * W'.a₁ * W'.a₄ ^ 3 - 27 * W'.a₁ * W'.a₆ ^ 2 + 7 * W'.a₂ ^ 3 *
-      W'.a₃ * W'.a₄ + 21 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ - 24 * W'.a₂ * W'.a₃ * W'.a₄ ^ 2 - 36 *
-      W'.a₃ * W'.a₄ * W'.a₆) * P 0 * P 2 ^ 5 * Q 1 * Q 2 ^ 2 + (-9 * W'.a₁ ^ 2 * W'.a₂ ^ 2 *
-      W'.a₆ + 12 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ + 5 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ - 21 * W'.a₁ *
-      W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 36 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆ + 12 * W'.a₁ * W'.a₃ *
-      W'.a₄ ^ 2 - 7 * W'.a₂ ^ 3 * W'.a₃ ^ 2 + 6 * W'.a₂ ^ 3 * W'.a₆ + 24 * W'.a₂ * W'.a₃ ^ 2 *
-      W'.a₄ - 24 * W'.a₂ * W'.a₄ * W'.a₆ - 36 * W'.a₃ ^ 2 * W'.a₆ + 54 * W'.a₆ ^ 2) * P 1 *
-      P 2 ^ 5 * Q 1 * Q 2 ^ 2 + (-5 * W'.a₁ * W'.a₂ ^ 4 * W'.a₆ + 21 * W'.a₁ * W'.a₂ ^ 2 *
-      W'.a₄ * W'.a₆ - 18 * W'.a₁ * W'.a₂ * W'.a₆ ^ 2 - 12 * W'.a₁ * W'.a₄ ^ 2 * W'.a₆ + 7 *
-      W'.a₂ ^ 3 * W'.a₃ * W'.a₆ - 24 * W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆ + 27 * W'.a₃ * W'.a₆ ^ 2) *
-      P 2 ^ 6 * Q 1 * Q 2 ^ 2 + (-2 * W'.a₂ ^ 3 + 9 * W'.a₂ * W'.a₄ - 27 * W'.a₆) * P 0 ^ 6 *
-      Q 2 ^ 3 + (9 * W'.a₁ * W'.a₄ - 9 * W'.a₂ * W'.a₃) * P 0 ^ 5 * P 1 * Q 2 ^ 3 + (-6 *
-      W'.a₁ ^ 2 * W'.a₂ + 18 * W'.a₁ * W'.a₃ + 3 * W'.a₂ ^ 2) * P 0 ^ 4 * P 1 ^ 2 * Q 2 ^ 3 +
-      (-6 * W'.a₁ * W'.a₂) * P 0 ^ 3 * P 1 ^ 3 * Q 2 ^ 3 + (3 * W'.a₁ ^ 2 - 3 * W'.a₂) * P 0 ^ 2 *
-      P 1 ^ 4 * Q 2 ^ 3 + (3 * W'.a₁) * P 0 * P 1 ^ 5 * Q 2 ^ 3 + P 1 ^ 6 * Q 2 ^ 3 + (-4 *
-      W'.a₂ ^ 4 + 21 * W'.a₂ ^ 2 * W'.a₄ - 27 * W'.a₂ * W'.a₆ - 18 * W'.a₄ ^ 2) * P 0 ^ 5 *
-      P 2 * Q 2 ^ 3 + (-8 * W'.a₁ * W'.a₂ ^ 3 + 36 * W'.a₁ * W'.a₂ * W'.a₄ - 27 * W'.a₁ *
-      W'.a₆ + 3 * W'.a₂ ^ 2 * W'.a₃ - 36 * W'.a₃ * W'.a₄) * P 0 ^ 4 * P 1 * P 2 * Q 2 ^ 3 +
-      (-3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 9 * W'.a₁ ^ 2 * W'.a₄ + 21 * W'.a₁ * W'.a₂ * W'.a₃ +
-      W'.a₂ ^ 3 + 3 * W'.a₂ * W'.a₄ + 27 * W'.a₆) * P 0 ^ 3 * P 1 ^ 2 * P 2 * Q 2 ^ 3 + (2 *
-      W'.a₁ ^ 3 * W'.a₂ - 12 * W'.a₁ ^ 2 * W'.a₃ + 3 * W'.a₁ * W'.a₂ ^ 2 - 21 * W'.a₁ *
-      W'.a₄ - 3 * W'.a₂ * W'.a₃) * P 0 ^ 2 * P 1 ^ 3 * P 2 * Q 2 ^ 3 + (W'.a₁ ^ 4 + 3 *
-      W'.a₁ ^ 2 * W'.a₂ - 6 * W'.a₁ * W'.a₃ - 6 * W'.a₄) * P 0 * P 1 ^ 4 * P 2 * Q 2 ^ 3 +
-      (W'.a₁ ^ 3 + 6 * W'.a₃) * P 1 ^ 5 * P 2 * Q 2 ^ 3 + (-6 * W'.a₂ ^ 5 + 38 * W'.a₂ ^ 3 *
-      W'.a₄ - 36 * W'.a₂ ^ 2 * W'.a₆ - 57 * W'.a₂ * W'.a₄ ^ 2 + 81 * W'.a₄ * W'.a₆) * P 0 ^ 4 *
-      P 2 ^ 2 * Q 2 ^ 3 + (-6 * W'.a₁ * W'.a₂ ^ 4 + 18 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ - 54 *
-      W'.a₁ * W'.a₂ * W'.a₆ + 27 * W'.a₁ * W'.a₄ ^ 2 + 10 * W'.a₂ ^ 3 * W'.a₃ - 42 * W'.a₂ *
-      W'.a₃ * W'.a₄ + 27 * W'.a₃ * W'.a₆) * P 0 ^ 3 * P 1 * P 2 ^ 2 * Q 2 ^ 3 + (3 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 3 - 21 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ + 45 * W'.a₁ ^ 2 * W'.a₆ + 3 * W'.a₁ *
-      W'.a₂ ^ 2 * W'.a₃ + 21 * W'.a₁ * W'.a₃ * W'.a₄ + 3 * W'.a₂ ^ 4 - 18 * W'.a₂ ^ 2 *
-      W'.a₄ - 3 * W'.a₂ * W'.a₃ ^ 2 + 18 * W'.a₂ * W'.a₆ + 30 * W'.a₄ ^ 2) * P 0 ^ 2 * P 1 ^ 2 *
-      P 2 ^ 2 * Q 2 ^ 3 + (3 * W'.a₁ ^ 3 * W'.a₂ ^ 2 - 7 * W'.a₁ ^ 3 * W'.a₄ - 3 * W'.a₁ ^ 2 *
-      W'.a₂ * W'.a₃ + 6 * W'.a₁ * W'.a₂ ^ 3 - 24 * W'.a₁ * W'.a₂ * W'.a₄ - 6 * W'.a₁ * W'.a₃ ^ 2 +
-      36 * W'.a₁ * W'.a₆ - 6 * W'.a₂ ^ 2 * W'.a₃ + 12 * W'.a₃ * W'.a₄) * P 0 * P 1 ^ 3 * P 2 ^ 2 *
-      Q 2 ^ 3 + (W'.a₁ ^ 3 * W'.a₃ + 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 - 6 * W'.a₁ ^ 2 * W'.a₄ - 6 *
-      W'.a₁ * W'.a₂ * W'.a₃ + 12 * W'.a₃ ^ 2 - 9 * W'.a₆) * P 1 ^ 4 * P 2 ^ 2 * Q 2 ^ 3 +
-      (-4 * W'.a₂ ^ 6 + 26 * W'.a₂ ^ 4 * W'.a₄ - 38 * W'.a₂ ^ 3 * W'.a₆ - 36 * W'.a₂ ^ 2 *
-      W'.a₄ ^ 2 + 117 * W'.a₂ * W'.a₄ * W'.a₆ - 18 * W'.a₄ ^ 3 - 27 * W'.a₆ ^ 2) * P 0 ^ 3 *
-      P 2 ^ 3 * Q 2 ^ 3 + (-12 * W'.a₁ * W'.a₂ ^ 3 * W'.a₄ + 6 * W'.a₁ * W'.a₂ ^ 2 * W'.a₆ +
-      48 * W'.a₁ * W'.a₂ * W'.a₄ ^ 2 - 117 * W'.a₁ * W'.a₄ * W'.a₆ + 6 * W'.a₂ ^ 4 * W'.a₃ -
-      24 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 27 * W'.a₂ * W'.a₃ * W'.a₆ + 6 * W'.a₃ * W'.a₄ ^ 2) *
-      P 0 ^ 2 * P 1 * P 2 ^ 3 * Q 2 ^ 3 + (3 * W'.a₁ ^ 2 * W'.a₂ ^ 4 - 18 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 2 * W'.a₄ + 15 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ + 18 * W'.a₁ ^ 2 * W'.a₄ ^ 2 + 3 *
-      W'.a₁ * W'.a₂ ^ 3 * W'.a₃ - 6 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ + 36 * W'.a₁ * W'.a₃ *
-      W'.a₆ + 3 * W'.a₂ ^ 5 - 21 * W'.a₂ ^ 3 * W'.a₄ - 6 * W'.a₂ ^ 2 * W'.a₃ ^ 2 + 27 *
-      W'.a₂ ^ 2 * W'.a₆ + 36 * W'.a₂ * W'.a₄ ^ 2 + 12 * W'.a₃ ^ 2 * W'.a₄ - 72 * W'.a₄ *
-      W'.a₆) * P 0 * P 1 ^ 2 * P 2 ^ 3 * Q 2 ^ 3 + (-W'.a₁ ^ 3 * W'.a₆ + 3 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 2 * W'.a₃ - 6 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄ + 3 * W'.a₁ * W'.a₂ ^ 4 - 15 * W'.a₁ *
-      W'.a₂ ^ 2 * W'.a₄ - 6 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + 18 * W'.a₁ * W'.a₂ * W'.a₆ + 12 *
-      W'.a₁ * W'.a₄ ^ 2 - 3 * W'.a₂ ^ 3 * W'.a₃ + 12 * W'.a₂ * W'.a₃ * W'.a₄ + 8 * W'.a₃ ^ 3 -
-      36 * W'.a₃ * W'.a₆) * P 1 ^ 3 * P 2 ^ 3 * Q 2 ^ 3 + (-W'.a₂ ^ 7 + 5 * W'.a₂ ^ 5 *
-      W'.a₄ - 13 * W'.a₂ ^ 4 * W'.a₆ + 3 * W'.a₂ ^ 3 * W'.a₄ ^ 2 + 27 * W'.a₂ ^ 2 * W'.a₄ *
-      W'.a₆ - 28 * W'.a₂ * W'.a₄ ^ 3 - 27 * W'.a₂ * W'.a₆ ^ 2 + 54 * W'.a₄ ^ 2 * W'.a₆) * P 0 ^ 2 *
-      P 2 ^ 4 * Q 2 ^ 3 + (W'.a₁ * W'.a₂ ^ 6 - 11 * W'.a₁ * W'.a₂ ^ 4 * W'.a₄ + 4 * W'.a₁ *
-      W'.a₂ ^ 3 * W'.a₆ + 33 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ ^ 2 - 30 * W'.a₁ * W'.a₂ * W'.a₄ *
-      W'.a₆ - 20 * W'.a₁ * W'.a₄ ^ 3 - 27 * W'.a₁ * W'.a₆ ^ 2 + 3 * W'.a₂ ^ 5 * W'.a₃ - 18 *
-      W'.a₂ ^ 3 * W'.a₃ * W'.a₄ + 33 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆ + 24 * W'.a₂ * W'.a₃ *
-      W'.a₄ ^ 2 - 72 * W'.a₃ * W'.a₄ * W'.a₆) * P 0 * P 1 * P 2 ^ 4 * Q 2 ^ 3 + (-3 * W'.a₁ ^ 2 *
-      W'.a₂ ^ 2 * W'.a₆ + 6 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ + 3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ - 15 *
-      W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ + 24 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆ + 12 * W'.a₁ *
-      W'.a₃ * W'.a₄ ^ 2 + W'.a₂ ^ 6 - 8 * W'.a₂ ^ 4 * W'.a₄ - 3 * W'.a₂ ^ 3 * W'.a₃ ^ 2 + 10 *
-      W'.a₂ ^ 3 * W'.a₆ + 18 * W'.a₂ ^ 2 * W'.a₄ ^ 2 + 12 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ - 36 *
-      W'.a₂ * W'.a₄ * W'.a₆ - 36 * W'.a₃ ^ 2 * W'.a₆ - 8 * W'.a₄ ^ 3 + 27 * W'.a₆ ^ 2) * P 1 ^ 2 *
-      P 2 ^ 4 * Q 2 ^ 3 + (-W'.a₂ ^ 6 * W'.a₄ - 3 * W'.a₂ ^ 5 * W'.a₆ + 8 * W'.a₂ ^ 4 *
-      W'.a₄ ^ 2 + 11 * W'.a₂ ^ 3 * W'.a₄ * W'.a₆ - 18 * W'.a₂ ^ 2 * W'.a₄ ^ 3 - 27 * W'.a₂ ^ 2 *
-      W'.a₆ ^ 2 + 8 * W'.a₄ ^ 4 + 54 * W'.a₄ * W'.a₆ ^ 2) * P 0 * P 2 ^ 5 * Q 2 ^ 3 + (-3 *
-      W'.a₁ * W'.a₂ ^ 4 * W'.a₆ + 15 * W'.a₁ * W'.a₂ ^ 2 * W'.a₄ * W'.a₆ - 18 * W'.a₁ *
-      W'.a₂ * W'.a₆ ^ 2 - 12 * W'.a₁ * W'.a₄ ^ 2 * W'.a₆ + W'.a₂ ^ 6 * W'.a₃ - 8 * W'.a₂ ^ 4 *
-      W'.a₃ * W'.a₄ + 13 * W'.a₂ ^ 3 * W'.a₃ * W'.a₆ + 18 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ ^ 2 -
-      48 * W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆ - 8 * W'.a₃ * W'.a₄ ^ 3 + 54 * W'.a₃ * W'.a₆ ^ 2) *
-      P 1 * P 2 ^ 5 * Q 2 ^ 3 + (-W'.a₂ ^ 6 * W'.a₆ + 8 * W'.a₂ ^ 4 * W'.a₄ * W'.a₆ - 10 *
-      W'.a₂ ^ 3 * W'.a₆ ^ 2 - 18 * W'.a₂ ^ 2 * W'.a₄ ^ 2 * W'.a₆ + 36 * W'.a₂ * W'.a₄ *
-      W'.a₆ ^ 2 + 8 * W'.a₄ ^ 3 * W'.a₆ - 27 * W'.a₆ ^ 3) * P 2 ^ 6 * Q 2 ^ 3) * hQ
 
 /-! ## The SECOND Bosma-Lenstra addition law -- the line `Y = 0`
 
@@ -858,6 +304,622 @@ lemma add2XYZ_neg (P : Fin 3 → R) :
   rw [add2XYZ, add2X_neg, add2Z_neg, smul_fin3]
   norm_num [Matrix.cons_val_two, Matrix.tail_cons]
 
+/-! ### The two laws in the argument order `(−P, P)` and at `(O, Q)`
+
+The value lemmas above are stated in the argument orders mathlib uses,
+`addXYZ P (−P)` and `add2XYZ P (−P)`.  The gluing in `EllipticScheme.lean`
+consumes them in the OPPOSITE order — `hinv` reads `m(−P, P) = O`, so the
+first component of the pair is `−P` — and the standard law's unit clause is
+consumed at `(O, Q)`.  Both re-orderings are recorded here as `ring`
+identities rather than derived at the point of use, so that no consumer has
+to redo them.
+
+`neg` is mathlib's negation triple `![P x, negY P, P z]`
+(`Projective/Point.lean`, imported here for it and for `addXYZ_neg`). -/
+
+/-- **The standard law computes the UNIT LAW away from `Z = 0`** (PROVEN,
+`ring`): `addXYZ O Q = Q z • Q`, with NO curve equation used.
+
+This is the companion of `add2XYZ_of_infty_left`: the two scalars are `Q z`
+and `negY Q`, and over a field one of them is always a unit — at `Q z = 0`
+non-degeneracy forces `Q y` to be a unit and `negY Q = −Q y`.  Mathlib's
+`addXYZ_of_Z_eq_zero_left` is the same identity but assumes
+`[NoZeroDivisors R]` and the curve equation, because it derives `P x = 0`
+from `P z = 0`; here `P = ![0, 1, 0]` has `P x = 0` on the nose, so the
+identity is unconditional. -/
+lemma addX_of_infty_left (Q : Fin 3 → R) : addX W' ![0, 1, 0] Q = Q 2 * Q 0 := by
+  simp only [addX, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma addZ_of_infty_left (Q : Fin 3 → R) : addZ W' ![0, 1, 0] Q = Q 2 * Q 2 := by
+  simp only [addZ, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma addY_of_infty_left (Q : Fin 3 → R) : addY W' ![0, 1, 0] Q = Q 2 * Q 1 := by
+  simp only [addY, addX, negAddY, addZ, negY, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+/-- **`addXYZ O Q = Q z • Q`** (PROVEN, `ring`), unconditionally. -/
+lemma addXYZ_of_infty_left (Q : Fin 3 → R) : addXYZ W' ![0, 1, 0] Q = Q 2 • Q := by
+  rw [addXYZ, addX_of_infty_left, addY_of_infty_left, addZ_of_infty_left, smul_fin3]
+
+/-- **The Weierstrass equation is invariant under negation**, over an
+arbitrary commutative ring (PROVEN, `ring`).
+
+Mathlib has `Affine.equation_neg` in affine coordinates and
+`Projective.nonsingular_neg` over a FIELD, but not the projective
+ring-level `Equation` statement, which is what a `ProjCoords` datum needs
+in order to be negated. -/
+lemma equation_neg (hP : Equation W' P) : Equation W' (neg W' P) := by
+  rw [equation_iff] at hP ⊢
+  simp only [neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  linear_combination hP
+
+lemma add2X_neg_left (P : Fin 3 → R) : add2X W' (neg W' P) P = 0 := by
+  simp only [add2X, neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma add2Z_neg_left (P : Fin 3 → R) : add2Z W' (neg W' P) P = 0 := by
+  simp only [add2Z, neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+/-- **The second law sends `(−P, P)` to the point at infinity** (PROVEN,
+`ring`) — `add2XYZ_neg` in the argument order the gluing consumes.  As
+there, the two vanishing coordinates vanish IDENTICALLY, with no curve
+equation used. -/
+lemma add2XYZ_neg_left (P : Fin 3 → R) :
+    add2XYZ W' (neg W' P) P = add2Y W' (neg W' P) P • ![0, 1, 0] := by
+  rw [add2XYZ, add2X_neg_left, add2Z_neg_left, smul_fin3]
+  norm_num [Matrix.cons_val_two, Matrix.tail_cons]
+
+/-- **At the point at infinity the second law's scalar is `−(P y) ^ 4`**
+(PROVEN, `ring`) — the easy half of the `hinv` dichotomy.  When `P z = 0`
+the curve equation forces `P x = 0`, so non-degeneracy makes `P y` a unit
+and this scalar is a unit, whereas `dblZ P = P z * (…) ^ 3` vanishes. -/
+lemma add2Y_neg_left_of_Z_eq_zero (P : Fin 3 → R) (hx : P 0 = 0) (hz : P 2 = 0) :
+    add2Y W' (neg W' P) P = -(P 1) ^ 4 := by
+  simp only [add2Y, neg, negY, hx, hz, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+/-- **`addXYZ (−P) P = dblZ P • ![0, 1, 0]`** (PROVEN from mathlib's
+`addXYZ_neg` and antisymmetry) — the standard law's `hinv` clause in the
+argument order the gluing consumes. -/
+lemma addXYZ_neg_left (hP : Equation W' P) :
+    addXYZ W' (neg W' P) P = dblZ W' P • ![0, 1, 0] := by
+  have hc : addXYZ W' (neg W' P) P = (-1 : R) • addXYZ W' P (neg W' P) := by
+    rw [addXYZ, addXYZ, smul_fin3]
+    refine funext fun i => ?_
+    fin_cases i
+    · show addX W' (neg W' P) P = -1 * addX W' P (neg W' P)
+      simp only [addX, neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+        Matrix.cons_val_two, Matrix.tail_cons]
+      ring1
+    · show addY W' (neg W' P) P = -1 * addY W' P (neg W' P)
+      simp only [addY, addX, negAddY, addZ, negY, neg, Matrix.cons_val_zero, Matrix.cons_val_one,
+        Matrix.head_cons, Matrix.cons_val_two, Matrix.tail_cons]
+      ring1
+    · show addZ W' (neg W' P) P = -1 * addZ W' P (neg W' P)
+      simp only [addZ, neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+        Matrix.cons_val_two, Matrix.tail_cons]
+      ring1
+  rw [hc, addXYZ_neg hP, smul_smul]
+  congr 1
+  ring1
+
+/-! ### The `hinv` dichotomy over a field
+
+`hinv` reads `m(−P, P) = O`, and it is discharged by whichever of the two laws
+is non-degenerate at `(−P, P)`.  The two scalars are `dblZ P` (standard law)
+and `add2Y (−P) P` (second law), and the content of this section is that over a
+field they cannot both vanish — **provided the discriminant is a unit**.
+
+## THE DISCRIMINANT HYPOTHESIS IS NECESSARY, NOT A CONVENIENCE
+
+Computed in `Singular`, 2026-07-27, and this is what forced `[E.IsElliptic]`
+onto `projMulCoords_inv` in `EllipticScheme.lean`.  Write
+
+* `W = Y²Z + a₁XYZ + a₃YZ² − X³ − a₂X²Z − a₄XZ² − a₆Z³` (the curve),
+* `T = 2Y + a₁X + a₃Z` (which is `P y − negY P`, so `T = 0` is the
+  `2`-torsion condition that makes `dblZ` vanish off `Z = 0`),
+* `g = add2Y (−P) P`.
+
+Then the elimination ideal of `(W, T, g) : Z^∞` in the coefficient space
+`ℚ[a₁, a₂, a₃, a₄, a₆]` is **exactly `⟨Δ²⟩`** — not merely contained in it.
+So for every SINGULAR Weierstrass curve there is a point, defined over some
+field of characteristic zero, with `Z ≠ 0` at which BOTH laws degenerate at
+`(−P, P)`; the statement is therefore not provable by any local argument
+without `IsUnit Δ`, and a leaf asserting it for an arbitrary
+`E : WeierstrassCurve ℚ` would be asking for something false-shaped.
+
+## The certificate, and how to regenerate it
+
+`Δ² · Z⁶ ∈ (W, T, g)` and `Z⁶` is minimal (`Z⁵` is not in the ideal, and
+`Δ·Zⁿ` is in it for no `n ≤ 8`).  The straight `lift` of `32 Δ² Z⁶` against
+`(W, T, g)` has cofactors of 420, 919 and 91 monomials; that is avoided here by
+eliminating `Y` first, which is legitimate because `2` is a unit (`Γ(Spec K, ⊤)`
+is a `ℚ`-algebra).  Substituting `Y = −(a₁X + a₃Z)/2` gives the binary forms
+
+    Wt = 4W − Z·T²  =  −(4X³ + b₂X²Z + 2b₄XZ² + b₆Z³),
+    ft = 16g − T·h  (a binary quartic in `X, Z`, 42 monomials),
+
+and the certificate becomes `32 Δ² Z⁶ = A·Wt + C·ft` with `A` of 252 and `C` of
+79 monomials — one order of magnitude smaller, and split over three `ring1`
+calls rather than one.  Regenerate with
+
+    ideal I = Wt, ft;  matrix M = lift(I, 32*D^2*Z1^6);
+
+after building `Wt`, `ft` and `h = (16g − ft)/T` by the `map` substitution.
+This is why the lemma lives in THIS module and not in `EllipticScheme.lean`:
+the `ring1` calls are large, and that file is edited concurrently. -/
+
+-- The `linear_combination` for `hkey` is the `Δ² Z⁶` certificate above: 252- and
+-- 79-monomial cofactors against a 7- and a 42-monomial generator, with `Δ²`
+-- itself expanding to some 200 monomials.  This is the same budget the file
+-- already grants `equation_addXYZ`, and for the same reason — the identity is
+-- verified externally in `Singular`, so what is being paid for is arithmetic,
+-- not a search.
+set_option maxHeartbeats 4000000 in
+theorem add2Y_neg_left_ne_zero_of_dblZ_eq_zero (hR : _root_.IsField R) (h2 : IsUnit (2 : R))
+    (hD : IsUnit W'.Δ) (hP : Equation W' P) (hPs : Ideal.span (Set.range P) = ⊤)
+    (hd : dblZ W' P = 0) : add2Y W' (neg W' P) P ≠ 0 := by
+  haveI : Nontrivial R := ⟨hR.exists_pair_ne⟩
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    by_cases ha : a = 0
+    · exact Or.inl ha
+    · obtain ⟨a', ha'⟩ := hR.mul_inv_cancel ha
+      refine Or.inr ?_
+      calc b = a' * (a * b) := by rw [← mul_assoc, mul_comm a' a, ha', one_mul]
+        _ = 0 := by rw [hab, mul_zero]
+  intro hg
+  have hW := (equation_iff P).mp hP
+  have hz : P 2 = 0 := by
+    by_contra hz
+    have hd' : P 2 * (P 1 - negY W' P) ^ 3 = 0 := hd
+    have ht : P 1 - negY W' P = 0 := by
+      rcases mul_eq_zero.mp hd' with h | h
+      · exact absurd h hz
+      · exact pow_eq_zero_iff three_ne_zero |>.mp h
+    have hT : 2 * P 1 + W'.a₁ * P 0 + W'.a₃ * P 2 = 0 := by
+      simp only [negY] at ht
+      linear_combination ht
+    have hgg :
+        P 1 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 2 * P 0 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      - P 1 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄
+      + 2 * P 0 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄
+      - P 2 ^ 4 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + P 2 ^ 4 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2
+      + P 1 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₆ - 2 * P 0 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆
+      - P 2 ^ 4 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ - P 0 ^ 3 * P 1 * W'.a₁ ^ 3
+      + P 0 ^ 4 * W'.a₁ ^ 2 * W'.a₂ - 3 * P 0 ^ 2 * P 1 * P 2 * W'.a₁ ^ 2 * W'.a₃
+      - 3 * P 0 * P 1 * P 2 ^ 2 * W'.a₁ * W'.a₃ ^ 2
+      - 6 * P 0 ^ 2 * P 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2 - 2 * P 1 * P 2 ^ 3 * W'.a₃ ^ 3
+      + 2 * P 0 ^ 3 * P 2 * W'.a₁ ^ 2 * W'.a₄
+      + 6 * P 0 ^ 2 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ - P 1 * P 2 ^ 3 * W'.a₁ * W'.a₄ ^ 2
+      + 2 * P 0 * P 2 ^ 3 * W'.a₂ * W'.a₄ ^ 2 + P 2 ^ 4 * W'.a₄ ^ 3
+      + 4 * P 1 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₆ - 8 * P 0 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₆
+      + 6 * P 0 * P 2 ^ 3 * W'.a₁ * W'.a₃ * W'.a₆ + 3 * P 2 ^ 4 * W'.a₃ ^ 2 * W'.a₆
+      - 4 * P 2 ^ 4 * W'.a₂ * W'.a₄ * W'.a₆ - 3 * P 0 ^ 2 * P 1 ^ 2 * W'.a₁ ^ 2
+      + P 0 ^ 3 * P 1 * W'.a₁ * W'.a₂ + P 0 ^ 4 * W'.a₂ ^ 2 - 3 * P 0 ^ 4 * W'.a₁ * W'.a₃
+      - 6 * P 0 * P 1 ^ 2 * P 2 * W'.a₁ * W'.a₃ - 3 * P 0 ^ 2 * P 1 * P 2 * W'.a₂ * W'.a₃
+      - 6 * P 0 ^ 3 * P 2 * W'.a₃ ^ 2 - 3 * P 1 ^ 2 * P 2 ^ 2 * W'.a₃ ^ 2
+      + 3 * P 0 ^ 2 * P 1 * P 2 * W'.a₁ * W'.a₄ + 2 * P 0 ^ 3 * P 2 * W'.a₂ * W'.a₄
+      - 3 * P 0 * P 1 * P 2 ^ 2 * W'.a₃ * W'.a₄ + 6 * P 0 ^ 2 * P 2 ^ 2 * W'.a₄ ^ 2
+      + 9 * P 0 * P 1 * P 2 ^ 2 * W'.a₁ * W'.a₆ - 18 * P 0 ^ 2 * P 2 ^ 2 * W'.a₂ * W'.a₆
+      - 3 * P 1 * P 2 ^ 3 * W'.a₃ * W'.a₆ + 6 * P 0 * P 2 ^ 3 * W'.a₄ * W'.a₆
+      + 9 * P 2 ^ 4 * W'.a₆ ^ 2 - 3 * P 0 * P 1 ^ 3 * W'.a₁ - 3 * P 0 ^ 3 * P 1 * W'.a₃
+      - 3 * P 1 ^ 3 * P 2 * W'.a₃ - 3 * P 0 ^ 4 * W'.a₄ - 18 * P 0 ^ 3 * P 2 * W'.a₆
+      - P 1 ^ 4 = 0 := by
+      rw [← hg]
+      simp only [add2Y, neg, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+        Matrix.cons_val_two, Matrix.tail_cons]
+      ring1
+    have hWt :
+        - P 0 ^ 2 * P 2 * W'.a₁ ^ 2 - 2 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ - P 2 ^ 3 * W'.a₃ ^ 2
+      - 4 * P 0 ^ 2 * P 2 * W'.a₂ - 4 * P 0 * P 2 ^ 2 * W'.a₄ - 4 * P 2 ^ 3 * W'.a₆
+      - 4 * P 0 ^ 3 = 0 := by
+      linear_combination 4 * hW - P 2 * (2 * P 1 + W'.a₁ * P 0 + W'.a₃ * P 2) * hT
+    have hft :
+        - 8 * P 0 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2
+      - 8 * P 2 ^ 4 * W'.a₁ * W'.a₂ * W'.a₃ ^ 3
+      + 8 * P 0 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄
+      + 8 * P 2 ^ 4 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ - 8 * P 0 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₆
+      - 8 * P 2 ^ 4 * W'.a₁ ^ 3 * W'.a₃ * W'.a₆ + P 0 ^ 4 * W'.a₁ ^ 4
+      + 4 * P 0 ^ 3 * P 2 * W'.a₁ ^ 3 * W'.a₃
+      + 6 * P 0 ^ 2 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2
+      - 32 * P 0 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₃ ^ 2 + 12 * P 0 * P 2 ^ 3 * W'.a₁ * W'.a₃ ^ 3
+      + 9 * P 2 ^ 4 * W'.a₃ ^ 4 + 32 * P 0 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄
+      - 16 * P 2 ^ 4 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + 8 * P 0 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₄ ^ 2
+      + 24 * P 2 ^ 4 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2
+      - 64 * P 0 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆
+      - 32 * P 2 ^ 4 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆
+      - 16 * P 2 ^ 4 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ + 8 * P 0 ^ 4 * W'.a₁ ^ 2 * W'.a₂
+      + 16 * P 0 ^ 3 * P 2 * W'.a₁ * W'.a₂ * W'.a₃
+      - 72 * P 0 ^ 2 * P 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2 + 8 * P 0 ^ 3 * P 2 * W'.a₁ ^ 2 * W'.a₄
+      + 96 * P 0 ^ 2 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄
+      + 24 * P 0 * P 2 ^ 3 * W'.a₃ ^ 2 * W'.a₄ + 32 * P 0 * P 2 ^ 3 * W'.a₂ * W'.a₄ ^ 2
+      + 16 * P 2 ^ 4 * W'.a₄ ^ 3 - 72 * P 0 ^ 2 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₆
+      - 128 * P 0 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₆ + 48 * P 0 * P 2 ^ 3 * W'.a₁ * W'.a₃ * W'.a₆
+      + 72 * P 2 ^ 4 * W'.a₃ ^ 2 * W'.a₆ - 64 * P 2 ^ 4 * W'.a₂ * W'.a₄ * W'.a₆
+      + 16 * P 0 ^ 4 * W'.a₂ ^ 2 - 24 * P 0 ^ 4 * W'.a₁ * W'.a₃
+      - 72 * P 0 ^ 3 * P 2 * W'.a₃ ^ 2 + 32 * P 0 ^ 3 * P 2 * W'.a₂ * W'.a₄
+      + 96 * P 0 ^ 2 * P 2 ^ 2 * W'.a₄ ^ 2 - 288 * P 0 ^ 2 * P 2 ^ 2 * W'.a₂ * W'.a₆
+      + 96 * P 0 * P 2 ^ 3 * W'.a₄ * W'.a₆ + 144 * P 2 ^ 4 * W'.a₆ ^ 2
+      - 48 * P 0 ^ 4 * W'.a₄ - 288 * P 0 ^ 3 * P 2 * W'.a₆ = 0 := by
+      linear_combination 16 * hgg -
+        (8 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 - 8 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄
+      + 8 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₆ - P 0 ^ 3 * W'.a₁ ^ 3
+      - 3 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₃ - 3 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ ^ 2
+      - 9 * P 2 ^ 3 * W'.a₃ ^ 3 - 8 * P 2 ^ 3 * W'.a₁ * W'.a₄ ^ 2
+      + 32 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₆ - 14 * P 0 ^ 2 * P 1 * W'.a₁ ^ 2
+      + 8 * P 0 ^ 3 * W'.a₁ * W'.a₂ - 28 * P 0 * P 1 * P 2 * W'.a₁ * W'.a₃
+      - 24 * P 0 ^ 2 * P 2 * W'.a₂ * W'.a₃ - 14 * P 1 * P 2 ^ 2 * W'.a₃ ^ 2
+      + 24 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₄ - 24 * P 0 * P 2 ^ 2 * W'.a₃ * W'.a₄
+      + 72 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₆ - 24 * P 2 ^ 3 * W'.a₃ * W'.a₆
+      - 20 * P 0 * P 1 ^ 2 * W'.a₁ - 24 * P 0 ^ 3 * W'.a₃ - 20 * P 1 ^ 2 * P 2 * W'.a₃
+      - 8 * P 1 ^ 3) * hT
+    have hkey : (32 : R) * W'.Δ ^ 2 * P 2 ^ 6 = 0 := by
+      simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+        WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      linear_combination
+        (- 8 * P 2 ^ 3 * W'.a₁ ^ 10 * W'.a₂ * W'.a₃ ^ 2 + 8 * P 2 ^ 3 * W'.a₁ ^ 11 * W'.a₃ * W'.a₄
+      - 8 * P 2 ^ 3 * W'.a₁ ^ 12 * W'.a₆ + P 0 ^ 3 * W'.a₁ ^ 12
+      + 3 * P 0 ^ 2 * P 2 * W'.a₁ ^ 11 * W'.a₃ + 3 * P 0 * P 2 ^ 2 * W'.a₁ ^ 10 * W'.a₃ ^ 2
+      - 160 * P 2 ^ 3 * W'.a₁ ^ 8 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      + 9 * P 2 ^ 3 * W'.a₁ ^ 9 * W'.a₃ ^ 3
+      + 160 * P 2 ^ 3 * W'.a₁ ^ 9 * W'.a₂ * W'.a₃ * W'.a₄
+      + 8 * P 2 ^ 3 * W'.a₁ ^ 10 * W'.a₄ ^ 2 - 192 * P 2 ^ 3 * W'.a₁ ^ 10 * W'.a₂ * W'.a₆
+      + 24 * P 0 ^ 3 * W'.a₁ ^ 10 * W'.a₂ + 60 * P 0 ^ 2 * P 2 * W'.a₁ ^ 9 * W'.a₂ * W'.a₃
+      - 28 * P 0 * P 2 ^ 2 * W'.a₁ ^ 8 * W'.a₂ * W'.a₃ ^ 2
+      - 1280 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₂ ^ 3 * W'.a₃ ^ 2
+      + 608 * P 2 ^ 3 * W'.a₁ ^ 7 * W'.a₂ * W'.a₃ ^ 3
+      + 6 * P 0 ^ 2 * P 2 * W'.a₁ ^ 10 * W'.a₄
+      + 88 * P 0 * P 2 ^ 2 * W'.a₁ ^ 9 * W'.a₃ * W'.a₄
+      + 1280 * P 2 ^ 3 * W'.a₁ ^ 7 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄
+      - 446 * P 2 ^ 3 * W'.a₁ ^ 8 * W'.a₃ ^ 2 * W'.a₄
+      + 160 * P 2 ^ 3 * W'.a₁ ^ 8 * W'.a₂ * W'.a₄ ^ 2
+      - 76 * P 0 * P 2 ^ 2 * W'.a₁ ^ 10 * W'.a₆
+      - 1920 * P 2 ^ 3 * W'.a₁ ^ 8 * W'.a₂ ^ 2 * W'.a₆
+      + 500 * P 2 ^ 3 * W'.a₁ ^ 9 * W'.a₃ * W'.a₆ + 240 * P 0 ^ 3 * W'.a₁ ^ 8 * W'.a₂ ^ 2
+      - 72 * P 0 ^ 3 * W'.a₁ ^ 9 * W'.a₃
+      + 480 * P 0 ^ 2 * P 2 * W'.a₁ ^ 7 * W'.a₂ ^ 2 * W'.a₃
+      - 198 * P 0 ^ 2 * P 2 * W'.a₁ ^ 8 * W'.a₃ ^ 2
+      - 928 * P 0 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      - 5120 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 4 * W'.a₃ ^ 2
+      - 104 * P 0 * P 2 ^ 2 * W'.a₁ ^ 7 * W'.a₃ ^ 3
+      + 6432 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₂ ^ 2 * W'.a₃ ^ 3
+      - 482 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₃ ^ 4
+      + 120 * P 0 ^ 2 * P 2 * W'.a₁ ^ 8 * W'.a₂ * W'.a₄
+      + 1408 * P 0 * P 2 ^ 2 * W'.a₁ ^ 7 * W'.a₂ * W'.a₃ * W'.a₄
+      + 5120 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄
+      - 4352 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄
+      + 88 * P 0 * P 2 ^ 2 * W'.a₁ ^ 8 * W'.a₄ ^ 2
+      + 1280 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₂ ^ 2 * W'.a₄ ^ 2
+      - 1392 * P 2 ^ 3 * W'.a₁ ^ 7 * W'.a₃ * W'.a₄ ^ 2
+      - 1520 * P 0 * P 2 ^ 2 * W'.a₁ ^ 8 * W'.a₂ * W'.a₆
+      - 10240 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₂ ^ 3 * W'.a₆
+      + 8000 * P 2 ^ 3 * W'.a₁ ^ 7 * W'.a₂ * W'.a₃ * W'.a₆
+      + 1000 * P 2 ^ 3 * W'.a₁ ^ 8 * W'.a₄ * W'.a₆ + 1280 * P 0 ^ 3 * W'.a₁ ^ 6 * W'.a₂ ^ 3
+      - 1152 * P 0 ^ 3 * W'.a₁ ^ 7 * W'.a₂ * W'.a₃
+      + 1920 * P 0 ^ 2 * P 2 * W'.a₁ ^ 5 * W'.a₂ ^ 3 * W'.a₃
+      - 2592 * P 0 ^ 2 * P 2 * W'.a₁ ^ 6 * W'.a₂ * W'.a₃ ^ 2
+      - 6528 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ ^ 3 * W'.a₃ ^ 2
+      - 10240 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 5 * W'.a₃ ^ 2
+      + 3296 * P 0 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₂ * W'.a₃ ^ 3
+      + 24576 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ ^ 3 * W'.a₃ ^ 3
+      - 11864 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ ^ 4 - 144 * P 0 ^ 3 * W'.a₁ ^ 8 * W'.a₄
+      + 960 * P 0 ^ 2 * P 2 * W'.a₁ ^ 6 * W'.a₂ ^ 2 * W'.a₄
+      - 576 * P 0 ^ 2 * P 2 * W'.a₁ ^ 7 * W'.a₃ * W'.a₄
+      + 8448 * P 0 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄
+      + 10240 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ ^ 4 * W'.a₃ * W'.a₄
+      - 4752 * P 0 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₃ ^ 2 * W'.a₄
+      - 9408 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₄
+      + 6080 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₃ ^ 3 * W'.a₄
+      + 1408 * P 0 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₂ * W'.a₄ ^ 2
+      + 5120 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 3 * W'.a₄ ^ 2
+      - 16704 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₂ * W'.a₃ * W'.a₄ ^ 2
+      - 928 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₄ ^ 3 - 216 * P 0 ^ 2 * P 2 * W'.a₁ ^ 8 * W'.a₆
+      - 12160 * P 0 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₂ ^ 2 * W'.a₆
+      - 30720 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 4 * W'.a₆
+      + 4128 * P 0 * P 2 ^ 2 * W'.a₁ ^ 7 * W'.a₃ * W'.a₆
+      + 48000 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆
+      - 9936 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₃ ^ 2 * W'.a₆
+      + 16000 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₂ * W'.a₄ * W'.a₆
+      + 3840 * P 0 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 4
+      - 6912 * P 0 ^ 3 * W'.a₁ ^ 5 * W'.a₂ ^ 2 * W'.a₃
+      + 3840 * P 0 ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₂ ^ 4 * W'.a₃
+      + 1728 * P 0 ^ 3 * W'.a₁ ^ 6 * W'.a₃ ^ 2
+      - 12096 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      - 18688 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 4 * W'.a₃ ^ 2
+      - 8192 * P 2 ^ 3 * W'.a₂ ^ 6 * W'.a₃ ^ 2
+      + 4320 * P 0 ^ 2 * P 2 * W'.a₁ ^ 5 * W'.a₃ ^ 3
+      + 31360 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ ^ 2 * W'.a₃ ^ 3
+      + 32000 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ ^ 3
+      - 312 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₃ ^ 4
+      - 44640 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 4
+      + 7056 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ ^ 5 - 2304 * P 0 ^ 3 * W'.a₁ ^ 6 * W'.a₂ * W'.a₄
+      + 3840 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₂ ^ 3 * W'.a₄
+      - 6912 * P 0 ^ 2 * P 2 * W'.a₁ ^ 5 * W'.a₂ * W'.a₃ * W'.a₄
+      + 22528 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ ^ 3 * W'.a₃ * W'.a₄
+      + 8192 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 5 * W'.a₃ * W'.a₄
+      - 29760 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄
+      + 19456 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₃ ^ 2 * W'.a₄
+      - 5632 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ ^ 3 * W'.a₄
+      - 576 * P 0 ^ 2 * P 2 * W'.a₁ ^ 6 * W'.a₄ ^ 2
+      + 8448 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₄ ^ 2
+      + 10240 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 4 * W'.a₄ ^ 2
+      - 13632 * P 0 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₃ * W'.a₄ ^ 2
+      - 66816 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ ^ 2
+      + 33216 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      - 11136 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₄ ^ 3
+      - 3456 * P 0 ^ 2 * P 2 * W'.a₁ ^ 6 * W'.a₂ * W'.a₆
+      - 48640 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ ^ 3 * W'.a₆
+      - 49152 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 5 * W'.a₆
+      + 49536 * P 0 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₂ * W'.a₃ * W'.a₆
+      + 128000 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ ^ 3 * W'.a₃ * W'.a₆
+      - 89280 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ ^ 2 * W'.a₆
+      + 8256 * P 0 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₄ * W'.a₆
+      + 96000 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆
+      - 29952 * P 2 ^ 3 * W'.a₁ ^ 5 * W'.a₃ * W'.a₄ * W'.a₆
+      - 4896 * P 2 ^ 3 * W'.a₁ ^ 6 * W'.a₆ ^ 2 + 6144 * P 0 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 5
+      - 18432 * P 0 ^ 3 * W'.a₁ ^ 3 * W'.a₂ ^ 3 * W'.a₃
+      + 3072 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ ^ 5 * W'.a₃
+      + 13824 * P 0 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ ^ 2
+      - 23040 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₃ ^ 2
+      - 19456 * P 0 * P 2 ^ 2 * W'.a₂ ^ 5 * W'.a₃ ^ 2
+      + 27648 * P 0 ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ ^ 3
+      + 66048 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ ^ 3
+      - 63936 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 4
+      - 19584 * P 2 ^ 3 * W'.a₂ ^ 3 * W'.a₃ ^ 4
+      + 39744 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ ^ 5
+      - 13824 * P 0 ^ 3 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₄
+      + 7680 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 4 * W'.a₄
+      + 6912 * P 0 ^ 3 * W'.a₁ ^ 5 * W'.a₃ * W'.a₄
+      - 27648 * P 0 ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₂ ^ 2 * W'.a₃ * W'.a₄
+      + 22528 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ * W'.a₄
+      + 15552 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₃ ^ 2 * W'.a₄
+      - 9984 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₄
+      + 64000 * P 2 ^ 3 * W'.a₂ ^ 4 * W'.a₃ ^ 2 * W'.a₄
+      + 61440 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ ^ 3 * W'.a₄
+      - 119808 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ ^ 3 * W'.a₄
+      + 2592 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₃ ^ 4 * W'.a₄
+      - 6912 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₄ ^ 2
+      + 22528 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₄ ^ 2
+      + 8192 * P 2 ^ 3 * W'.a₂ ^ 5 * W'.a₄ ^ 2
+      - 109056 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ * W'.a₄ ^ 2
+      - 89088 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ * W'.a₄ ^ 2
+      + 102912 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      - 9088 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₄ ^ 3
+      - 44544 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ ^ 3
+      + 54272 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄ ^ 3
+      - 20736 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₆
+      - 97280 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 4 * W'.a₆
+      - 32768 * P 2 ^ 3 * W'.a₂ ^ 6 * W'.a₆
+      + 10368 * P 0 ^ 2 * P 2 * W'.a₁ ^ 5 * W'.a₃ * W'.a₆
+      + 198144 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ ^ 2 * W'.a₃ * W'.a₆
+      + 128000 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ * W'.a₆
+      - 63936 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₃ ^ 2 * W'.a₆
+      - 237312 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₆
+      + 67968 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ ^ 3 * W'.a₆
+      + 99072 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₄ * W'.a₆
+      + 256000 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₄ * W'.a₆
+      - 239616 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆
+      - 29952 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₄ ^ 2 * W'.a₆
+      - 58752 * P 2 ^ 3 * W'.a₁ ^ 4 * W'.a₂ * W'.a₆ ^ 2 + 4096 * P 0 ^ 3 * W'.a₂ ^ 6
+      - 18432 * P 0 ^ 3 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃
+      + 27648 * P 0 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      - 13824 * P 0 ^ 2 * P 2 * W'.a₂ ^ 4 * W'.a₃ ^ 2
+      - 13824 * P 0 ^ 3 * W'.a₁ ^ 3 * W'.a₃ ^ 3
+      + 41472 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ ^ 3
+      - 31104 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₃ ^ 4
+      - 17280 * P 0 * P 2 ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 4
+      + 25920 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ ^ 5 - 15552 * P 2 ^ 3 * W'.a₃ ^ 6
+      - 36864 * P 0 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₄
+      + 6144 * P 0 ^ 2 * P 2 * W'.a₂ ^ 5 * W'.a₄
+      + 55296 * P 0 ^ 3 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ * W'.a₄
+      - 36864 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ * W'.a₄
+      + 82944 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄
+      + 132096 * P 0 * P 2 ^ 2 * W'.a₂ ^ 3 * W'.a₃ ^ 2 * W'.a₄
+      - 221184 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ ^ 3 * W'.a₄
+      + 79488 * P 2 ^ 3 * W'.a₂ * W'.a₃ ^ 4 * W'.a₄ + 6912 * P 0 ^ 3 * W'.a₁ ^ 4 * W'.a₄ ^ 2
+      - 27648 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ ^ 2
+      + 22528 * P 0 * P 2 ^ 2 * W'.a₂ ^ 4 * W'.a₄ ^ 2
+      + 20736 * P 0 ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄ ^ 2
+      - 218112 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ ^ 2
+      + 294912 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      - 119808 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      - 34560 * P 2 ^ 3 * W'.a₁ * W'.a₃ ^ 3 * W'.a₄ ^ 2
+      - 72704 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 3
+      - 59392 * P 2 ^ 3 * W'.a₂ ^ 3 * W'.a₄ ^ 3
+      + 217088 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ ^ 3
+      + 27136 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₄ ^ 4
+      - 55296 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₆
+      - 77824 * P 0 * P 2 ^ 2 * W'.a₂ ^ 5 * W'.a₆
+      + 82944 * P 0 ^ 2 * P 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ * W'.a₆
+      + 264192 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃ * W'.a₆
+      - 290304 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₆
+      - 156672 * P 2 ^ 3 * W'.a₂ ^ 3 * W'.a₃ ^ 2 * W'.a₆
+      + 317952 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ ^ 3 * W'.a₆
+      + 20736 * P 0 ^ 2 * P 2 * W'.a₁ ^ 4 * W'.a₄ * W'.a₆
+      + 396288 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆
+      + 256000 * P 2 ^ 3 * W'.a₂ ^ 4 * W'.a₄ * W'.a₆
+      - 221184 * P 0 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄ * W'.a₆
+      - 479232 * P 2 ^ 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄ * W'.a₆
+      + 89856 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ * W'.a₆
+      - 239616 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 2 * W'.a₆
+      - 17280 * P 0 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₆ ^ 2
+      - 235008 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆ ^ 2
+      + 158976 * P 2 ^ 3 * W'.a₁ ^ 3 * W'.a₃ * W'.a₆ ^ 2
+      - 36864 * P 0 ^ 3 * W'.a₂ ^ 4 * W'.a₄
+      + 110592 * P 0 ^ 3 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄
+      - 82944 * P 0 ^ 3 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄
+      + 82944 * P 0 ^ 2 * P 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₄
+      - 124416 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₃ ^ 3 * W'.a₄
+      + 51840 * P 0 * P 2 ^ 2 * W'.a₃ ^ 4 * W'.a₄
+      + 55296 * P 0 ^ 3 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 2
+      - 36864 * P 0 ^ 2 * P 2 * W'.a₂ ^ 3 * W'.a₄ ^ 2
+      + 82944 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ ^ 2
+      - 221184 * P 0 * P 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      + 13824 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₄ ^ 3
+      - 145408 * P 0 * P 2 ^ 2 * W'.a₂ ^ 2 * W'.a₄ ^ 3
+      + 466944 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ ^ 3
+      - 23040 * P 2 ^ 3 * W'.a₃ ^ 2 * W'.a₄ ^ 3 + 108544 * P 2 ^ 3 * W'.a₂ * W'.a₄ ^ 4
+      - 55296 * P 0 ^ 2 * P 2 * W'.a₂ ^ 4 * W'.a₆
+      + 165888 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₆
+      - 124416 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₆
+      - 138240 * P 0 * P 2 ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 * W'.a₆
+      + 207360 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ ^ 3 * W'.a₆
+      - 186624 * P 2 ^ 3 * W'.a₃ ^ 4 * W'.a₆
+      + 165888 * P 0 ^ 2 * P 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ * W'.a₆
+      + 528384 * P 0 * P 2 ^ 2 * W'.a₂ ^ 3 * W'.a₄ * W'.a₆
+      - 884736 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄ * W'.a₆
+      + 635904 * P 2 ^ 3 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ * W'.a₆
+      - 221184 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₄ ^ 2 * W'.a₆
+      - 479232 * P 2 ^ 3 * W'.a₂ ^ 2 * W'.a₄ ^ 2 * W'.a₆
+      - 138240 * P 2 ^ 3 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 * W'.a₆
+      - 138240 * P 0 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ ^ 2
+      - 313344 * P 2 ^ 3 * W'.a₂ ^ 3 * W'.a₆ ^ 2
+      + 635904 * P 2 ^ 3 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆ ^ 2
+      + 317952 * P 2 ^ 3 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ ^ 2
+      + 110592 * P 0 ^ 3 * W'.a₂ ^ 2 * W'.a₄ ^ 2
+      - 165888 * P 0 ^ 3 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2
+      - 124416 * P 0 ^ 2 * P 2 * W'.a₃ ^ 2 * W'.a₄ ^ 2
+      + 55296 * P 0 ^ 2 * P 2 * W'.a₂ * W'.a₄ ^ 3 + 233472 * P 0 * P 2 ^ 2 * W'.a₄ ^ 4
+      + 331776 * P 0 ^ 2 * P 2 * W'.a₂ ^ 2 * W'.a₄ * W'.a₆
+      - 497664 * P 0 ^ 2 * P 2 * W'.a₁ * W'.a₃ * W'.a₄ * W'.a₆
+      + 414720 * P 0 * P 2 ^ 2 * W'.a₃ ^ 2 * W'.a₄ * W'.a₆
+      - 884736 * P 0 * P 2 ^ 2 * W'.a₂ * W'.a₄ ^ 2 * W'.a₆
+      - 92160 * P 2 ^ 3 * W'.a₄ ^ 3 * W'.a₆ - 276480 * P 0 * P 2 ^ 2 * W'.a₂ ^ 2 * W'.a₆ ^ 2
+      + 414720 * P 0 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₆ ^ 2
+      - 746496 * P 2 ^ 3 * W'.a₃ ^ 2 * W'.a₆ ^ 2
+      + 1271808 * P 2 ^ 3 * W'.a₂ * W'.a₄ * W'.a₆ ^ 2 - 110592 * P 0 ^ 3 * W'.a₄ ^ 3
+      - 497664 * P 0 ^ 2 * P 2 * W'.a₄ ^ 2 * W'.a₆
+      + 829440 * P 0 * P 2 ^ 2 * W'.a₄ * W'.a₆ ^ 2 - 995328 * P 2 ^ 3 * W'.a₆ ^ 3) * hWt +
+        (P 0 * P 2 * W'.a₁ ^ 10 + P 2 ^ 2 * W'.a₁ ^ 9 * W'.a₃ + 20 * P 0 * P 2 * W'.a₁ ^ 8 * W'.a₂
+      + 16 * P 2 ^ 2 * W'.a₁ ^ 7 * W'.a₂ * W'.a₃ + 2 * P 2 ^ 2 * W'.a₁ ^ 8 * W'.a₄
+      + 4 * P 0 ^ 2 * W'.a₁ ^ 8 + 160 * P 0 * P 2 * W'.a₁ ^ 6 * W'.a₂ ^ 2
+      - 52 * P 0 * P 2 * W'.a₁ ^ 7 * W'.a₃ + 96 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₂ ^ 2 * W'.a₃
+      - 50 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₃ ^ 2 + 32 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₂ * W'.a₄
+      + 64 * P 0 ^ 2 * W'.a₁ ^ 6 * W'.a₂ + 640 * P 0 * P 2 * W'.a₁ ^ 4 * W'.a₂ ^ 3
+      - 624 * P 0 * P 2 * W'.a₁ ^ 5 * W'.a₂ * W'.a₃
+      + 256 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ ^ 3 * W'.a₃
+      - 344 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₃ ^ 2 - 104 * P 0 * P 2 * W'.a₁ ^ 6 * W'.a₄
+      + 192 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ ^ 2 * W'.a₄
+      - 256 * P 2 ^ 2 * W'.a₁ ^ 5 * W'.a₃ * W'.a₄ + 56 * P 2 ^ 2 * W'.a₁ ^ 6 * W'.a₆
+      + 384 * P 0 ^ 2 * W'.a₁ ^ 4 * W'.a₂ ^ 2 + 1280 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 4
+      - 192 * P 0 ^ 2 * W'.a₁ ^ 5 * W'.a₃ - 2496 * P 0 * P 2 * W'.a₁ ^ 3 * W'.a₂ ^ 2 * W'.a₃
+      + 256 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 4 * W'.a₃ + 744 * P 0 * P 2 * W'.a₁ ^ 4 * W'.a₃ ^ 2
+      - 352 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+      + 592 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ ^ 3 - 1248 * P 0 * P 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₄
+      + 512 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 3 * W'.a₄
+      - 2048 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃ * W'.a₄
+      - 256 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₄ ^ 2 + 672 * P 2 ^ 2 * W'.a₁ ^ 4 * W'.a₂ * W'.a₆
+      + 1024 * P 0 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 3 + 1024 * P 0 * P 2 * W'.a₂ ^ 5
+      - 1536 * P 0 ^ 2 * W'.a₁ ^ 3 * W'.a₂ * W'.a₃
+      - 3328 * P 0 * P 2 * W'.a₁ * W'.a₂ ^ 3 * W'.a₃
+      + 3264 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2
+      + 896 * P 2 ^ 2 * W'.a₂ ^ 3 * W'.a₃ ^ 2 - 1728 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ ^ 3
+      - 384 * P 0 ^ 2 * W'.a₁ ^ 4 * W'.a₄ - 4992 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₄
+      + 512 * P 2 ^ 2 * W'.a₂ ^ 4 * W'.a₄ + 2688 * P 0 * P 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄
+      - 4096 * P 2 ^ 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ * W'.a₄
+      + 5280 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄
+      - 2048 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄ ^ 2 + 288 * P 0 * P 2 * W'.a₁ ^ 4 * W'.a₆
+      + 2688 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ ^ 2 * W'.a₆
+      - 1728 * P 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₆ + 1024 * P 0 ^ 2 * W'.a₂ ^ 4
+      - 3072 * P 0 ^ 2 * W'.a₁ * W'.a₂ ^ 2 * W'.a₃ + 2304 * P 0 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2
+      + 1152 * P 0 * P 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 - 1728 * P 0 * P 2 * W'.a₁ * W'.a₃ ^ 3
+      + 864 * P 2 ^ 2 * W'.a₃ ^ 4 - 3072 * P 0 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₄
+      - 6656 * P 0 * P 2 * W'.a₂ ^ 3 * W'.a₄
+      + 10752 * P 0 * P 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄
+      - 3456 * P 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄
+      + 2688 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₄ ^ 2 - 4096 * P 2 ^ 2 * W'.a₂ ^ 2 * W'.a₄ ^ 2
+      + 12288 * P 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2
+      + 2304 * P 0 * P 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆ + 3584 * P 2 ^ 2 * W'.a₂ ^ 3 * W'.a₆
+      - 6912 * P 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆
+      - 3456 * P 2 ^ 2 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆ - 6144 * P 0 ^ 2 * W'.a₂ ^ 2 * W'.a₄
+      + 9216 * P 0 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ - 3456 * P 0 * P 2 * W'.a₃ ^ 2 * W'.a₄
+      + 10752 * P 0 * P 2 * W'.a₂ * W'.a₄ ^ 2 + 8192 * P 2 ^ 2 * W'.a₄ ^ 3
+      + 4608 * P 0 * P 2 * W'.a₂ ^ 2 * W'.a₆ - 6912 * P 0 * P 2 * W'.a₁ * W'.a₃ * W'.a₆
+      + 6912 * P 2 ^ 2 * W'.a₃ ^ 2 * W'.a₆ - 13824 * P 2 ^ 2 * W'.a₂ * W'.a₄ * W'.a₆
+      + 9216 * P 0 ^ 2 * W'.a₄ ^ 2 - 13824 * P 0 * P 2 * W'.a₄ * W'.a₆
+      + 13824 * P 2 ^ 2 * W'.a₆ ^ 2) * hft
+    have h32 : IsUnit ((32 : R) * W'.Δ ^ 2) := by
+      refine IsUnit.mul ?_ (hD.pow 2)
+      have h := h2.pow 5
+      norm_num at h
+      exact h
+    exact hz (pow_eq_zero_iff (n := 6) (by norm_num) |>.mp (h32.mul_right_eq_zero.mp hkey))
+  have hx : P 0 = 0 := X_eq_zero_of_Z_eq_zero hP hz
+  have hy : P 1 ≠ 0 := by
+    intro h1
+    have hle : Ideal.span (Set.range P) ≤ ⊥ := by
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      fin_cases i <;> simp [hx, h1, hz]
+    rw [hPs] at hle
+    exact one_ne_zero (Ideal.mem_bot.mp (hle Submodule.mem_top))
+  rw [add2Y_neg_left_of_Z_eq_zero _ hx hz] at hg
+  exact hy (pow_eq_zero_iff (n := 4) (by norm_num) |>.mp (neg_eq_zero.mp hg))
+
+/-- **At `(−P, P)` one of the two laws is a UNIT multiple of `![0, 1, 0]`**
+(PROVEN over a field with `2` and `Δ` units) — the exact input `hinv` needs, and
+the reason `projMulCoords_inv` carries `[E.IsElliptic]`. -/
+theorem exists_units_smul_neg_left (hR : _root_.IsField R) (h2 : IsUnit (2 : R))
+    (hD : IsUnit W'.Δ) (hP : Equation W' P) (hPs : Ideal.span (Set.range P) = ⊤) :
+    (∃ u : Rˣ, addXYZ W' (neg W' P) P = (u : R) • ![0, 1, 0]) ∨
+      (∃ u : Rˣ, add2XYZ W' (neg W' P) P = (u : R) • ![0, 1, 0]) := by
+  have hunit : ∀ a : R, a ≠ 0 → IsUnit a := fun a ha =>
+    isUnit_iff_exists_inv.mpr (hR.mul_inv_cancel ha)
+  by_cases hd : dblZ W' P = 0
+  · refine Or.inr ⟨(hunit _ (add2Y_neg_left_ne_zero_of_dblZ_eq_zero hR h2 hD hP hPs hd)).unit, ?_⟩
+    rw [add2XYZ_neg_left, IsUnit.unit_spec]
+  · refine Or.inl ⟨(hunit _ hd).unit, ?_⟩
+    rw [addXYZ_neg_left hP, IsUnit.unit_spec]
+
+/-- **At `(O, Q)` one of the two laws is a UNIT rescaling of `Q`** (PROVEN over a
+field) — the exact input `hunit` needs.  No discriminant hypothesis is required
+here, unlike at `(−P, P)`: the two scalars are `Q z` and `negY Q`, and where
+`Q z = 0` the curve equation forces `Q x = 0`, so non-degeneracy makes `Q y` a
+unit and `negY Q = −Q y`. -/
+theorem exists_units_smul_infty_left (hR : _root_.IsField R) (hQ : Equation W' Q)
+    (hQs : Ideal.span (Set.range Q) = ⊤) :
+    (∃ u : Rˣ, addXYZ W' ![0, 1, 0] Q = (u : R) • Q) ∨
+      (∃ u : Rˣ, add2XYZ W' ![0, 1, 0] Q = (u : R) • Q) := by
+  haveI : Nontrivial R := ⟨hR.exists_pair_ne⟩
+  have hunit : ∀ a : R, a ≠ 0 → IsUnit a := fun a ha =>
+    isUnit_iff_exists_inv.mpr (hR.mul_inv_cancel ha)
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    by_cases ha : a = 0
+    · exact Or.inl ha
+    · obtain ⟨a', ha'⟩ := hR.mul_inv_cancel ha
+      refine Or.inr ?_
+      calc b = a' * (a * b) := by rw [← mul_assoc, mul_comm a' a, ha', one_mul]
+        _ = 0 := by rw [hab, mul_zero]
+  by_cases hz : Q 2 = 0
+  · have hx : Q 0 = 0 := X_eq_zero_of_Z_eq_zero hQ hz
+    have hy : Q 1 ≠ 0 := by
+      intro h1
+      have hle : Ideal.span (Set.range Q) ≤ ⊥ := by
+        rw [Ideal.span_le]
+        rintro _ ⟨i, rfl⟩
+        fin_cases i <;> simp [hx, h1, hz]
+      rw [hQs] at hle
+      exact one_ne_zero (Ideal.mem_bot.mp (hle Submodule.mem_top))
+    have hneg : negY W' Q = -Q 1 := by
+      show -Q 1 - W'.a₁ * Q 0 - W'.a₃ * Q 2 = -Q 1
+      rw [hx, hz]; ring1
+    refine Or.inr ⟨(hunit _ (neg_ne_zero.mpr hy)).unit, ?_⟩
+    rw [add2XYZ_of_infty_left, IsUnit.unit_spec, hneg]
+  · refine Or.inl ⟨(hunit _ hz).unit, ?_⟩
+    rw [addXYZ_of_infty_left, IsUnit.unit_spec]
+
 /-- **The second triple again satisfies the Weierstrass equation** (sorry node).
 
 Exactly what `equation_addXYZ` proves for the standard law, for the law of the
@@ -870,7 +932,8 @@ the Lean-side certificate.
 `lift` returns cofactors `A`, `B` with `W(add2X, add2Y, add2Z) = A * W(P) + B * W(Q)`
 and with **no denominators in the `aᵢ`**, so they lie in `ℤ[a₁, …, a₆][P, Q]` and the
 identity holds over an arbitrary commutative ring, exactly as stated here.  In
-`Singular`, with `W1`, `W2`, `add2X`, `add2Y`, `add2Z` as in this file:
+`Singular`, with `W1`, `W2` the two Weierstrass polynomials and `BX`, `BY`, `BZ` the
+three coordinates defined above:
 
     ring r = (0,a1,a2,a3,a4,a6), (py,px,pz,qy,qx,qz), Dp;
     poly WB = BY^2*BZ + a1*BX*BY*BZ + a3*BY*BZ^2
@@ -888,45 +951,46 @@ both certificates, and both runs were abandoned unfinished:
 
 | certificate | monomials `ring1` must normalise | outcome |
 |---|---|---|
-| `equation_addXYZ` above, for comparison | ~5 000 | 4 min 30 s, fine |
+| `equation_addXYZ`, the sibling module, for comparison | ~5 000 | 4 min 30 s, fine |
 | `dp`, `px > py > pz` | 67 577 | killed at **4 h 08 m, 294 GB** RSS |
 | `Dp`, `py > px > pz` | 54 968 | killed at **3 h 52 m, 298 GB** RSS |
 
-Both were still allocating when killed, on a 96-core/2 TB host with the whole
-elaboration on ONE core (elaboration is single-threaded), so neither number is an
-upper bound -- they are lower bounds on a job that never converged.
+Both were still allocating when killed, on a 96-core/2 TB host, so neither number
+is an upper bound -- they are lower bounds on a job that never converged.  Note
+what that would do to this module: the release-10 split above was made because
+**4173 s** in one file was already the head of the build's critical path.
 
 **Where the cost sits, and it is NOT where the old version of this docstring
-guessed.**  The breakdown in the 11 variables `P 0 … Q 2, W'.a₁ … W'.a₆` is
-`|W(add2XYZ)| = 20 254` (degree 24), against `|A * W(P)| + |B * W(Q)| = 34 714`
-for the better certificate.  So the **certificate is two thirds of the work**:
-shrinking `A` and `B` is worth more than restructuring the goal, which is why the
-monomial-order sweep above was worth doing.  Empirically `ring1` costs about
-`n^1.5` here, so splitting the goal into `k` independent declarations buys only
-`√k` -- not enough by itself, and it would need `k` explicit intermediate
-polynomials of thousands of monomials each in their STATEMENTS, which are then
-expensive to elaborate before any tactic runs.
+guessed.**  The breakdown in the 11 atoms `P 0 … Q 2, W'.a₁ … W'.a₆` is
+`|W(add2XYZ)| = 20 254` (total degree 24), against
+`|A * W(P)| + |B * W(Q)| = 34 714` for the better certificate.  So the
+**certificate is two thirds of the work**: shrinking `A` and `B` is worth more than
+restructuring the goal, which is why the monomial-order sweep was worth doing.
+Empirically `ring1` costs about `n^1.5` here, so splitting the goal into `k`
+independent declarations buys only `√k` -- not enough by itself, and it would need
+`k` explicit intermediate polynomials of thousands of monomials each in their
+STATEMENTS, which are expensive to elaborate before any tactic runs.
 
 **A route that looks attractive and is MEASURABLY WORSE.**  From the two
 proportionality lemmas below (`add2X_mul_addZ`, `add2Y_mul_addZ`, both PROVEN) and
 `equation_addXYZ` one gets `addZ ^ 3 * W(add2XYZ) = add2Z ^ 3 * W(addXYZ) = 0`,
-leaving only the cancellation of `addZ ^ 3` -- which is unavailable over an
-arbitrary ring, but would be available wherever `addZ` is a non-zerodivisor.  That
-is a cut-level restatement, not this leaf's to make.  And the `ring` step it needs
-is far bigger, not smaller: `addZ ^ 3 * W(add2XYZ) - add2Z ^ 3 * W(addXYZ)` has
-**412 929** monomials, with cofactors over `(t₁, t₂)` whose products run to another
-686 000.  Do not take this route.
+leaving only the cancellation of `addZ ^ 3` -- which an arbitrary ring does not
+license, but which would be free wherever `addZ` is a non-zerodivisor.  That is a
+cut-level restatement, not this leaf's to make.  And the `ring` step it needs is far
+BIGGER, not smaller: `addZ ^ 3 * W(add2XYZ) - add2Z ^ 3 * W(addXYZ)` has **412 929**
+monomials, with cofactors over `(t₁, t₂)` whose products run to another 686 000.
+Do not take this route.
 
 Nor is there room to make the law itself smaller: `add2X`, `add2Y`, `add2Z` are the
 UNIQUE bidegree-`(2, 2)` representatives up to a scalar, because `(W(P), W(Q))`
 contains no nonzero form of bidegree `(2, 2)` -- its generators have `P`-degree `3`
-and `Q`-degree `3`.  Their 56/74/43 monomials are intrinsic.
+and `Q`-degree `3` respectively.  Their 56/74/43 monomials are intrinsic.
 
-**So what is left to try**, in rough order of promise: a cheaper normaliser than
-`ring1` for a certified linear combination; a decomposition of the identity that
-keeps every intermediate STATEMENT small (a `def` does not help -- it is unfolded
-again before `ring1` sees it); or a restatement carrying a non-zerodivisor
-hypothesis on `addZ`, which collapses the whole thing to the short argument above. -/
+**So what is left to try**, in rough order of promise: a cheaper certified
+normaliser than `ring1`; a decomposition that keeps every intermediate STATEMENT
+small (a `def` does not help — it is unfolded again before `ring1` sees it); or a
+restatement carrying a non-zerodivisor hypothesis on `addZ`, which collapses the
+whole thing to the short argument above. -/
 theorem equation_add2XYZ (hP : Equation W' P) (hQ : Equation W' Q) :
     Equation W' (add2XYZ W' P Q) :=
   sorry
@@ -944,13 +1008,13 @@ The proof is a `linear_combination` against cofactors obtained by a `Singular`
 `lift` of `add2X * addZ - add2Z * addX` over `(W(P), W(Q))` in
 `ℚ(a₁, …, a₆)[Px, Py, Pz, Qx, Qy, Qz]`, where the two generators have coprime
 leading terms `-Px³` and `-Qx³` and so already form a Gröbner basis.  They come out
-with **27 and 21 monomials** in the `P, Q` variables and, as for `equation_addXYZ`,
-with **no denominators in the `aᵢ`** -- which is what makes the identity true over
+with **27 and 21 monomials** in the `P, Q` variables and — as for `equation_addXYZ`
+— with **no denominators in the `aᵢ`**, which is what makes the identity true over
 an arbitrary commutative ring rather than only over a ℚ-algebra.
 
-Cost is about a minute of `ring1`; the certificate is bidegree `(4, 4)`, an order
-of magnitude below the `(6, 6)` of `equation_add2XYZ` above, which is why these two
-close and that one does not. -/
+The certificate is bidegree `(4, 4)`, an order of magnitude below the `(6, 6)` of
+`equation_add2XYZ` above, which is exactly why these two close and that one does
+not; the two `ring1`s here cost about a minute together. -/
 theorem add2X_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
     add2X W' P Q * addZ W' P Q = add2Z W' P Q * addX W' P Q := by
   rw [equation_iff] at hP hQ

@@ -141,8 +141,118 @@ theorem eq_one_or_eq_negVariableChange_of_smul_eq [E.IsElliptic] (hj₀ : E.j �
   E.eq_one_or_eq_negVariableChange_of_smul_eq_of_c₄_ne_zero (E.j_eq_zero_iff.not.mp hj₀)
     (E.c₆_eq_zero_iff_j_eq_1728.not.mpr hj₁₇₂₈) hC
 
-/-! ### The automorphism group -/
+/-! ### The automorphism group at `j ∈ {0, 1728}`
 
+At `j ∈ {0, 1728}` the conclusion `Aut(E) = {±1}` is FALSE — the curves `y² = x³ + ax` and
+`y² = x³ + b` carry the extra automorphisms `(x, y) ↦ (u²x, u³y)` for `u⁴ = 1`, resp. `u⁶ = 1`.
+What survives, and what this subsection isolates, is the *shape* of the argument above:
+
+* the `c₄` and `c₆` transformation laws give `u⁴ = 1` whenever `c₄ ≠ 0` and `u⁶ = 1` whenever
+  `c₆ ≠ 0` (`u_pow_four_eq_one_of_smul_eq`, `u_pow_six_eq_one_of_smul_eq`) — these are the two
+  halves of `u_eq_one_or_eq_neg_one` used separately rather than together, and exactly one of the
+  two hypotheses survives at each special `j`;
+* an elliptic curve never has `c₄ = c₆ = 0` (`c_relation`), so at `j = 1728` (`c₆ = 0`) one gets
+  `u⁴ = 1` and at `j = 0` (`c₄ = 0`) one gets `u⁶ = 1`
+  (`u_pow_four_eq_one_of_smul_eq_of_j_eq_1728`, `u_pow_six_eq_one_of_smul_eq_of_j_eq_zero`);
+* in characteristic `≠ 2, 3`, and with NO hypothesis on `j` at all, `u` determines the
+  automorphism: `u = 1` forces `C = 1` (`eq_one_of_u_eq_one_of_smul_eq`) and `u = -1` forces
+  `C = negVariableChange E` (`eq_negVariableChange_of_u_eq_neg_one`).  The `r = 0` step of
+  `eq_one_or_eq_negVariableChange_of_u_eq_one` needed `c₆ ≠ 0` because it had to work in
+  characteristic `2`; away from characteristics `2` and `3` the `a₁`, `a₂`, `a₃` laws alone give
+  `s = r = t = 0` and no hypothesis on `j` is needed.
+
+Together these say that `C ↦ C.u` embeds `Aut(E)` into `μ₄` (at `j = 1728`) or `μ₆` (at `j = 0`)
+in characteristic `0`, which is the form in which the automorphism group is consumed by the
+descent argument of `ModularCurve/X0.lean`
+(`exists_stableCyclic_twist_of_autStable_of_j_special`): there one needs to know that an
+automorphism which does NOT preserve a cyclic subgroup has `u ≠ ±1`, hence `u² = -1` at
+`j = 1728` and `u` of order `3` or `6` at `j = 0`. -/
+
+/-- **An automorphism with `u = 1` is the identity**, in characteristic `≠ 2, 3`.
+
+Unlike `eq_one_or_eq_negVariableChange_of_u_eq_one` this needs NO hypothesis on `j`: that lemma
+had to cover characteristic `2`, where `1 = -1` and `negVariableChange` is a genuine second
+solution, and paid for it with `c₄, c₆ ≠ 0`.  Here the `a₁` law gives `2s = 0`, hence `s = 0`;
+the `a₂` law then gives `3r = 0`, hence `r = 0`; and the `a₃` law gives `2t = 0`. -/
+lemma eq_one_of_u_eq_one_of_smul_eq (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0)
+    {C : VariableChange K} (hu : C.u = 1) (hCE : C • E = E) : C = 1 := by
+  obtain ⟨e1, e2, e3, -, -⟩ := WeierstrassCurve.ext_iff.mp hCE
+  simp only [variableChange_a₁, variableChange_a₂, variableChange_a₃, hu, inv_one,
+    Units.val_one, one_pow, one_mul] at e1 e2 e3
+  have hs : C.s = 0 := by
+    rcases mul_eq_zero.mp (show (2 : K) * C.s = 0 by linear_combination e1) with h | h
+    · exact absurd h h2
+    · exact h
+  have hr : C.r = 0 := by
+    rcases mul_eq_zero.mp
+      (show (3 : K) * C.r = 0 by linear_combination e2 + (E.a₁ + C.s) * hs) with h | h
+    · exact absurd h h3
+    · exact h
+  have ht : C.t = 0 := by
+    rcases mul_eq_zero.mp (show (2 : K) * C.t = 0 by linear_combination e3 - E.a₁ * hr) with h | h
+    · exact absurd h h2
+    · exact h
+  exact VariableChange.ext hu hr hs ht
+
+/-- **An automorphism with `u = -1` is `negVariableChange E`**, in characteristic `≠ 2, 3` and
+with no hypothesis on `j`.  Compose with the involution `negVariableChange E` and apply
+`eq_one_of_u_eq_one_of_smul_eq`. -/
+theorem eq_negVariableChange_of_u_eq_neg_one (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0)
+    {C : VariableChange K} (hu : C.u = -1) (hCE : C • E = E) : C = E.negVariableChange := by
+  have hmul : (E.negVariableChange * C) • E = E := by
+    rw [mul_smul, hCE, negVariableChange_smul_self]
+  have hu1 : (E.negVariableChange * C).u = 1 := by
+    show E.negVariableChange.u * C.u = 1
+    rw [negVariableChange_u, hu, neg_mul_neg, one_mul]
+  have h1 := E.eq_one_of_u_eq_one_of_smul_eq h2 h3 hu1 hmul
+  calc C = E.negVariableChange * E.negVariableChange * C := by
+        rw [negVariableChange_mul_self, one_mul]
+    _ = E.negVariableChange * (E.negVariableChange * C) := by rw [mul_assoc]
+    _ = E.negVariableChange := by rw [h1, mul_one]
+
+/-- The `c₄` transformation law alone: an automorphism of a curve with `c₄ ≠ 0` has `u⁴ = 1`. -/
+lemma u_pow_four_eq_one_of_smul_eq (hc4 : E.c₄ ≠ 0) {C : VariableChange K}
+    (hCE : C • E = E) : (C.u : K) ^ 4 = 1 := by
+  have h := congrArg c₄ hCE
+  rwa [variableChange_c₄, Units.val_inv_eq_inv_val, mul_eq_right₀ hc4, inv_pow, inv_eq_one] at h
+
+/-- The `c₆` transformation law alone: an automorphism of a curve with `c₆ ≠ 0` has `u⁶ = 1`. -/
+lemma u_pow_six_eq_one_of_smul_eq (hc6 : E.c₆ ≠ 0) {C : VariableChange K}
+    (hCE : C • E = E) : (C.u : K) ^ 6 = 1 := by
+  have h := congrArg c₆ hCE
+  rwa [variableChange_c₆, Units.val_inv_eq_inv_val, mul_eq_right₀ hc6, inv_pow, inv_eq_one] at h
+
+/-- An elliptic curve with `j = 1728` has `c₄ ≠ 0`: `c₆ = 0` there, and `1728Δ = c₄³ - c₆²`
+would force `Δ = 0`. -/
+lemma c₄_ne_zero_of_j_eq_1728 [E.IsElliptic] (h1728 : (1728 : K) ≠ 0) (hj : E.j = 1728) :
+    E.c₄ ≠ 0 := by
+  intro hc4
+  have hc6 : E.c₆ = 0 := E.c₆_eq_zero_iff_j_eq_1728.mpr hj
+  have hrel := E.c_relation
+  rw [hc4, hc6] at hrel
+  exact mul_ne_zero h1728 E.isUnit_Δ.ne_zero (by simpa using hrel)
+
+/-- An elliptic curve with `j = 0` has `c₆ ≠ 0`: `c₄ = 0` there, and `1728Δ = c₄³ - c₆²`
+would force `Δ = 0`. -/
+lemma c₆_ne_zero_of_j_eq_zero [E.IsElliptic] (h1728 : (1728 : K) ≠ 0) (hj : E.j = 0) :
+    E.c₆ ≠ 0 := by
+  intro hc6
+  have hc4 : E.c₄ = 0 := E.j_eq_zero_iff.mp hj
+  have hrel := E.c_relation
+  rw [hc4, hc6] at hrel
+  exact mul_ne_zero h1728 E.isUnit_Δ.ne_zero (by simpa using hrel)
+
+/-- **`Aut(E) ↪ μ₄` at `j = 1728`**: every automorphism of an elliptic curve with `j = 1728`
+has `u⁴ = 1`. -/
+theorem u_pow_four_eq_one_of_smul_eq_of_j_eq_1728 [E.IsElliptic] (h1728 : (1728 : K) ≠ 0)
+    (hj : E.j = 1728) {C : VariableChange K} (hCE : C • E = E) : (C.u : K) ^ 4 = 1 :=
+  E.u_pow_four_eq_one_of_smul_eq (E.c₄_ne_zero_of_j_eq_1728 h1728 hj) hCE
+
+/-- **`Aut(E) ↪ μ₆` at `j = 0`**: every automorphism of an elliptic curve with `j = 0`
+has `u⁶ = 1`. -/
+theorem u_pow_six_eq_one_of_smul_eq_of_j_eq_zero [E.IsElliptic] (h1728 : (1728 : K) ≠ 0)
+    (hj : E.j = 0) {C : VariableChange K} (hCE : C • E = E) : (C.u : K) ^ 6 = 1 :=
+  E.u_pow_six_eq_one_of_smul_eq (E.c₆_ne_zero_of_j_eq_zero h1728 hj) hCE
 
 end WeierstrassCurve
 
