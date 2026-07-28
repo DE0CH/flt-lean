@@ -3795,6 +3795,134 @@ theorem exists_descent_nonvanishing_polynomial (k : Type u) [Field k]
   · intro v hv hzero
     exact hv (by rw [← key v, hzero, map_zero, Finsupp.coe_zero, Pi.zero_apply])
 
+open _root_.TensorProduct in
+/-- **LEDGER ITEM 1: GEOMETRIC CONNECTEDNESS IS CHECKED OVER `k̄`** (sorry leaf,
+NAMED 2026-07-28; it was previously an ANONYMOUS `obtain … := sorry` inside the
+body of `exists_bertiniConnectedLocus_algebra` below, invisible to every
+frontier scan we run, and therefore ownerless for its whole life).
+
+For a `k`-algebra `T` over a field `k`: if `Spec (k̄ ⊗[k] T)` is CONNECTED as a
+topological space, then `Spec T ⟶ Spec k` is GEOMETRICALLY connected, i.e. the
+base change `Spec (K ⊗[k] T)` is connected for EVERY field extension `K / k`,
+not merely for `K = k̄`.
+
+Stacks tag `04KV` (the "geometrically connected ⟺ connected after base change to
+the algebraic closure" characterisation); EGA IV 4.5.13. TRUE for an arbitrary
+`k`-scheme, and this is stated in the affine/commutative-algebra form the
+Bertini chain uses.
+
+WHY IT IS WORTH A NAMED LEAF RATHER THAN A STEP. It is entirely independent of
+Bertini — no smoothness, no irreducibility, no dimension hypothesis, no
+`CharZero` — and `GeometricallyConnected` currently has NO consumer in `Mathlib`
+outside the file that defines it. So this is the missing FRONT DOOR to the whole
+`Mathlib/AlgebraicGeometry/Geometrically/` namespace, reusable well beyond this
+chain, and it belongs upstream (`Fermat/FLT/Mathlib/AlgebraicGeometry/`) as soon
+as anyone proves it. It is kept here only so that naming it costs this module no
+new import.
+
+THE ROUTE, and the one step that is not formal. `Mathlib`'s
+`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` reduces the goal to
+`ConnectedSpace (Spec (K ⊗[k] T))` for every field `K` with `[Algebra k K]` —
+that reduction is free, and is exactly the move
+`geometricallyConnected_of_isSmoothCompactification`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, PROVEN)
+already makes. Given `K`, pick a field `Ω` receiving both `K` and `k̄` (any
+residue field of the nonzero ring `k̄ ⊗[k] K`). Then
+
+* `Spec (Ω ⊗[k] T) ⟶ Spec (K ⊗[k] T)` is SURJECTIVE, because
+  `Ω ⊗[k] T = Ω ⊗[K] (K ⊗[k] T)` and `Ω` is faithfully flat over `K`; and a
+  continuous surjection out of a connected space has connected image, so it
+  suffices to know `Spec (Ω ⊗[k] T)` is connected;
+* `Ω ⊗[k] T = Ω ⊗[k̄] (k̄ ⊗[k] T)`, so what remains is: **a connected scheme over
+  an ALGEBRAICALLY CLOSED field stays connected after any field extension**
+  (Stacks `0385`). That is the only non-formal step, and it is where the
+  algebraic closedness of `k̄` is consumed — the statement is false over a
+  general base field, which is the whole reason `04KV` is a theorem.
+
+ABSENCE CHECK, run 2026-07-28 over all three trees the doctrine requires
+(`grep -rn "IsAlgClosed\|AlgebraicClosure"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/Geometrically/`;
+`grep -rn "geometricallyConnected_of_connectedSpace" Fermat/ ~/cs/FLT/`): nothing
+in any of them runs in this direction. The refuting check for a future reader is
+that same grep. -/
+theorem geometricallyConnected_of_connectedSpace_baseChange
+    {k : Type u} [Field k] {T : Type u} [CommRing T] [Algebra k T]
+    (h : ConnectedSpace ↥(AlgebraicGeometry.Spec
+      (CommRingCat.of (AlgebraicClosure k ⊗[k] T)))) :
+    AlgebraicGeometry.GeometricallyConnected
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k T))) := by
+  sorry
+
+open _root_.TensorProduct in
+/-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (sorry leaf, NAMED
+2026-07-28 — the other half of the anonymous `obtain … := sorry` that used to sit
+inside `exists_bertiniConnectedLocus_algebra` below).
+
+Same hypotheses as `exists_bertiniConnectedLocus_algebra`, and the same
+hyperplane pencil `ℓ_v = ∑ᵢ vᵢ xᵢ − v_last` indexed by `k`-RATIONAL `v`; but the
+good locus is cut out by a polynomial with coefficients in `k̄`, and the
+conclusion is bare `ConnectedSpace` of the base change to `k̄` rather than
+`GeometricallyConnected` over `k`. Those two weakenings are exactly what
+separates this leaf from the two PROVEN pieces that surround it:
+
+* the descent of the good locus from `k̄` to `k` is
+  `exists_descent_nonvanishing_polynomial` (above, PROVEN, and stated for an
+  arbitrary `k`-algebra `L`);
+* the upgrade of `ConnectedSpace` over `k̄` to `GeometricallyConnected` over `k`
+  is `geometricallyConnected_of_connectedSpace_baseChange` (above, ledger item
+  1).
+
+So `exists_bertiniConnectedLocus_algebra` is now GLUE ONLY over those three, and
+this leaf carries the whole mathematical frontier: ledger item 4 (Bertini
+irreducibility of the general hyperplane section of an irreducible variety of
+dimension `≥ 2` over an algebraically closed field) together with ledger item 2
+(insensitivity of `topologicalKrullDim` to base field extension, which is what
+transports `hdim` across the base change). Neither is in `Mathlib`, in
+`~/cs/FLT`, or in this project; see the PREREQUISITE LEDGER in the docstring of
+`exists_bertiniConnectedLocus_algebra` below for the measured survey, the ROUTE
+paragraph (projective closure, `X̄ ∩ H` irreducible, `X̄ ∩ H ⊄ H_∞`), and the
+ELIMINATION AUDIT explaining why the Sard-style trick that closed the SMOOTHNESS
+half provably does not transfer here.
+
+TWO LEDGER CORRECTIONS MADE WHILE CUTTING THIS LEAF (2026-07-28), both of which
+change what a prover here should do:
+
+1. The ledger's closing note says of the "base change commutes with the
+   hyperplane quotient" bridge that "an algebra-level version of it does not
+   exist and would have to be written". **That is FALSE at this pin.**
+   `Algebra.TensorProduct.quotIdealMapEquivTensorQuot`
+   (`Mathlib/RingTheory/TensorProduct/Quotient.lean`, and that file is ALREADY
+   `public import`ed by this module) is precisely the algebra-level statement
+   `B ⧸ I.map (algebraMap A B) ≃ₐ[B] B ⊗[A] (A ⧸ I)`; instantiating it at
+   `A := S`, `B := k̄ ⊗[k] S` and composing with
+   `Algebra.TensorProduct.cancelBaseChange` gives
+   `k̄ ⊗[k] (S ⧸ I) ≃ₐ (k̄ ⊗[k] S) ⧸ I.map (…)`, which is the bridge. Do not
+   write a second one.
+2. `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` really does
+   carry the projective-closure interface the ledger correction below advertises
+   (`ProjChart`, `nonempty_projChart`, `exists_isOpenImmersion_isProper_of_proj`,
+   `exists_isOpenImmersion_isProper`), but **this module does not import it** —
+   the ledger correction did not say so. A prover taking that route must add
+   `public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification`
+   here; it is upstream of everything in this file (its own imports are
+   `Mathlib`-only) so the import is acyclic, and its cone cost should be
+   measured before adopting the route. -/
+theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [CharZero k]
+    {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k S))))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)))
+    {n : ℕ} (x : Fin n → S)
+    (hgen : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) = ⊤) :
+    ∃ F' : MvPolynomial (Fin (n + 1)) (AlgebraicClosure k), F' ≠ 0 ∧
+      ∀ v : Fin (n + 1) → k,
+        MvPolynomial.eval ((algebraMap k (AlgebraicClosure k)) ∘ v) F' ≠ 0 →
+          ConnectedSpace ↥(AlgebraicGeometry.Spec (CommRingCat.of
+            (AlgebraicClosure k ⊗[k]
+              (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+                - algebraMap k S (v (Fin.last n))})))) := by
+  sorry
+
 /-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
 2026-07-27; cut out of
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
@@ -4057,8 +4185,34 @@ lands *because* mathlib lacks it. Re-run on all three:
    A partial base to build on: `TensorProduct.quotientTensorEquiv`
    (`Mathlib/LinearAlgebra/TensorProduct/Quotient.lean`) supplies the
    module-level half of the "base change commutes with the hyperplane
-   quotient" step that items 1 and 3 have to be glued through; an algebra-level
-   version of it does not exist and would have to be written. -/
+   quotient" step that items 1 and 3 have to be glued through.
+
+   **CORRECTION 2026-07-28 to the sentence that used to end this paragraph.**
+   It said "an algebra-level version of it does not exist and would have to be
+   written". FALSE at this pin, and refuted by one grep
+   (`grep -rn quotIdealMapEquivTensorQuot .lake/packages/mathlib/Mathlib`):
+   `Algebra.TensorProduct.quotIdealMapEquivTensorQuot`
+   (`Mathlib/RingTheory/TensorProduct/Quotient.lean`) is exactly
+   `B ⧸ I.map (algebraMap A B) ≃ₐ[B] B ⊗[A] (A ⧸ I)`, and that file is already
+   `public import`ed by this module (see the import block at the top). With
+   `Algebra.TensorProduct.cancelBaseChange` it gives the bridge outright. The
+   earlier survey searched `Mathlib/LinearAlgebra/TensorProduct/Quotient.lean`
+   only, i.e. the module-level file, and read its absence there as absence from
+   the pin.
+
+   **THE CUT, 2026-07-28.** This body used to close over an ANONYMOUS
+   `obtain ⟨F', hF'0, hF'⟩ : … := sorry`, which no frontier scan can see and
+   which therefore never had an owner. That step is now two NAMED leaves stated
+   above — `geometricallyConnected_of_connectedSpace_baseChange` (ledger item 1,
+   verbatim as the ledger proposed it) and
+   `exists_bertiniConnectedLocus_algebraicClosure` (ledger items 2 and 4) — and
+   this theorem is GLUE ONLY over them plus the proven
+   `exists_descent_nonvanishing_polynomial`. The ledger's judgement that a cut
+   into all four items would buy nothing stands; this is the two-way cut, and
+   what it buys is (a) a visible, ownable name for the mathematical frontier and
+   (b) a mathlib-facing item 1 that is reusable outside Bertini and outside this
+   file. The direct-sorry count of this file rises by one, which is disclosure of
+   a leaf that was already there, not a regression. -/
 theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
     {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
     (hgi : AlgebraicGeometry.GeometricallyIrreducible
@@ -4073,26 +4227,21 @@ theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
             (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
               - algebraMap k S (v (Fin.last n))})))) := by
   classical
-  -- THE ONE REMAINING OBLIGATION, and it is stated over `k̄` rather than over
-  -- `k`: ledger items 1, 2 and 4, together with the algebra-level base-change
-  -- bridge, deliver a good locus cut out by a polynomial with coefficients in
-  -- `AlgebraicClosure k`. `hgi`, `hdim` and `hgen` are consumed HERE and
-  -- nowhere else — this is the step that the `k̄` route proves, and the
-  -- FALSITY AUDIT above is exactly the record of why `hgen` may not be
-  -- dropped from it.
-  obtain ⟨F', hF'0, hF'⟩ :
-      ∃ F' : MvPolynomial (Fin (n + 1)) (AlgebraicClosure k), F' ≠ 0 ∧
-        ∀ v : Fin (n + 1) → k,
-          MvPolynomial.eval ((algebraMap k (AlgebraicClosure k)) ∘ v) F' ≠ 0 →
-            AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
-              (CommRingCat.ofHom (algebraMap k
-                (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
-                  - algebraMap k S (v (Fin.last n))})))) := sorry
+  -- LEDGER ITEMS 2 AND 4, the mathematical frontier, now a NAMED leaf: the good
+  -- locus as a polynomial over `k̄`, with bare `ConnectedSpace` of the base
+  -- change as its conclusion. `hgi`, `hdim` and `hgen` are consumed HERE and
+  -- nowhere else, and the FALSITY AUDIT above is exactly the record of why
+  -- `hgen` may not be dropped from it.
+  obtain ⟨F', hF'0, hF'⟩ :=
+    exists_bertiniConnectedLocus_algebraicClosure hgi hdim x hgen
   -- Ledger item 3, PROVEN: descend the `k̄`-rational good locus to a `k`-rational
   -- one. This is what turns the `k̄` route's output into the `∃ F` over `k` that
   -- the leaf's statement demands.
   obtain ⟨F, hF0, hFv⟩ := exists_descent_nonvanishing_polynomial k F' hF'0
-  exact ⟨F, hF0, fun v hv => hF' v (hFv v hv)⟩
+  -- LEDGER ITEM 1, a NAMED leaf: upgrade connectedness over `k̄` to geometric
+  -- connectedness over `k`.
+  exact ⟨F, hF0, fun v hv =>
+    geometricallyConnected_of_connectedSpace_baseChange (hF' v (hFv v hv))⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI SMOOTHNESS: the generic hyperplane section is smooth**
