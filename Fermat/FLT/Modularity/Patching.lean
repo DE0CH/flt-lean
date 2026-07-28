@@ -5615,40 +5615,343 @@ lemma survivingLocus_conj.{uK, uW} (p : ℕ) [Fact p.Prime]
     g * x * g⁻¹ ∈ survivingLocus p ρbar z :=
   fun hmem => hx (ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj z g x hmem)
 
-/-- **The GLOBAL half of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28):
-for a cocycle `z` representing a nonzero class `c` unramified outside
-`{2, p}`, the surviving locus of `z` is OPEN and MEETS the Taylor–Wiles
-locus at level `n`.  (The representative itself is supplied by
-`ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+/-! #### The openness half of DDT 2.48, and the reduction of its nonemptiness half
 
-This is the deep half — the "nonemptiness step" of DDT §2 — and it is
-where `ρbar|_{ℚ(ζ_p)}` absolutely irreducible is used classically.
+Added 2026-07-28 by the decomposition of
+`isOpen_survivingLocus_and_meets_taylorWilesLocus` below.  Everything in
+this block except the single leaf
+`exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus` is PROVEN.
+
+The openness argument is elementary once the right open subgroup is
+named, and it does **not** need the finiteness of `ad⁰ρbar(1)` nor any
+continuity of the twisted action: the set
+
+    K = ker ρbar ∩ Fix(μ_p) ∩ {g | z g = 0}
+
+is open (three preimages of points in discrete spaces — `ρbar` is
+continuous into the discrete `Module.End k W`, `Fix(μ_p)` is
+`isOpen_setOf_fixes_rootsOfUnity`, and `eval₁ z` is continuous into the
+discrete `AdZero k W`), it is closed under the two operations the cocycle
+identity needs, and on it the twisted adjoint action is trivial —
+`ρbar g = 1` kills the conjugation and `g ∈ Fix(μ_p)` kills the
+cyclotomic twist, because `k` has characteristic `p`
+(`natCast_self_eq_zero`) so the `p`-adic cyclotomic character, which is
+`≡ 1 mod p` at such a `g`, maps to `1` in `k`.  The surviving locus is
+then a union of left cosets `x · K`, hence open. -/
+
+/-- **The `k`-valued cyclotomic character is trivial on elements fixing
+`μ_p`** (PROVEN 2026-07-28).  `adZeroCycloChar p k` is mathlib's `p`-adic
+`cyclotomicCharacter` pushed into `k` along `algebraMap ℤ_[p] k`.  If `g`
+fixes every `p`-th root of unity in `ℚᵃˡᵍ` then, by
+`cyclotomicCharacter.spec` at a primitive `p`-th root, its value is
+`≡ 1 mod p` in `ℤ_[p]`; and `k` receives `ℤ_[p]` and is a finite field,
+so `(p : k) = 0` (`natCast_self_eq_zero`) and the residue of that value
+is `1`.
+
+This is what makes the twisted adjoint action `ad⁰ρbar(1)` trivial on
+`ker ρbar ∩ Fix(μ_p)`, hence what makes `isOpen_survivingLocus` below
+work with an OPEN subgroup rather than needing continuity of the twist. -/
+lemma adZeroCycloChar_eq_one_of_fixes_rootsOfUnity.{uK}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {g : Field.absoluteGaloisGroup ℚ}
+    (hg : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → g ζ = ζ) :
+    adZeroCycloChar p k g = 1 := by
+  classical
+  haveI : NeZero (p ^ 1) := ⟨pow_ne_zero 1 (Fact.out : p.Prime).ne_zero⟩
+  set u : ℤ_[p] := ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) : ℤ_[p]) with hu
+  have hone : u.toZModPow 1 = 1 := by
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) (p ^ 1)
+    have hspec := cyclotomicCharacter.spec p g.toRingEquiv ζ hζ.pow_eq_one
+    have hgz : g ζ = ζ := hg ζ (by simpa using hζ.pow_eq_one)
+    have h1lt : 1 < p ^ 1 := by simpa using (Fact.out : p.Prime).one_lt
+    have hz : ζ ^ ((u.toZModPow 1)).val = ζ ^ 1 :=
+      hspec.symm.trans (by rw [pow_one]; exact hgz)
+    have hval : ((u.toZModPow 1)).val = 1 := hζ.pow_inj (ZMod.val_lt _) h1lt hz
+    have h2 := congrArg (fun t : ℕ => (t : ZMod (p ^ 1))) hval
+    simpa [ZMod.natCast_val, ZMod.cast_id] using h2
+  have hdvd : ((p : ℤ_[p]) ^ 1) ∣ u - 1 := by
+    have hker : u - 1 ∈ RingHom.ker (PadicInt.toZModPow 1 : ℤ_[p] →+* ZMod (p ^ 1)) := by
+      rw [RingHom.mem_ker, map_sub, hone, map_one, sub_self]
+    rw [PadicInt.ker_toZModPow, Ideal.mem_span_singleton] at hker
+    exact hker
+  obtain ⟨w, hw⟩ := hdvd
+  have hk : algebraMap ℤ_[p] k u = 1 := by
+    have huw : u = 1 + (p : ℤ_[p]) ^ 1 * w := by rw [← hw]; ring
+    rw [huw, map_add, map_one, map_mul, map_pow, map_natCast,
+      (natCast_self_eq_zero : ((p : ℕ) : k) = 0)]
+    simp
+  refine Units.ext ?_
+  simpa [adZeroCycloChar, hu] using hk
+
+/-- **`ad⁰ρbar(1)` is acted on trivially by `ker ρbar ∩ Fix(μ_p)`**
+(PROVEN 2026-07-28): the twisted adjoint action is
+`σ ↦ χ(σ) · (f ↦ ρbar σ ∘ f ∘ ρbar σ⁻¹)`, so it is the identity as soon as
+both factors are — `ρbar g = 1` (which forces `ρbar g⁻¹ = 1`) and
+`χ(g) = 1` (`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`). -/
+lemma adZeroTwist_rho_apply_eq_self.{uK, uW}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W) {g : Field.absoluteGaloisGroup ℚ}
+    (hg1 : ρbar g = 1) (hgχ : adZeroCycloChar p k g = 1)
+    (m : ↥(adZeroTwist p ρbar)) :
+    (adZeroTwist p ρbar).ρ g m = m := by
+  have hginv : ρbar g⁻¹ = 1 := by
+    have h : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    rwa [hg1, mul_one] at h
+  refine AdZero.ext ?_
+  have hval : (adZeroTwist p ρbar).ρ g m
+      = (adZeroCycloChar p k g : k) • ((AdZero.rep ρbar) g m) := rfl
+  have hrep : (AdZero.rep ρbar) g m = AdZero.conjL (ρbar g) (ρbar g⁻¹)
+      (by rw [← map_mul, inv_mul_cancel, map_one]) m := rfl
+  rw [hval, hgχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL, hg1, hginv,
+    one_mul, mul_one]
+
+/-- **The surviving locus is a union of left cosets of the trivialising
+subgroup** (PROVEN 2026-07-28): if `g` acts trivially on `ad⁰ρbar(1)` and
+`z g = 0` then `z (x g) = z x` (crossed-homomorphism identity,
+`cocycles₁_eval₁_mul`) and `ρ (x g) = ρ x`, so the two membership
+conditions at `x` and at `x * g` are literally the same. -/
+lemma mem_survivingLocus_mul.{uK, uW}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {x g : Field.absoluteGaloisGroup ℚ}
+    (hgρ : ∀ m, (adZeroTwist p ρbar).ρ g m = m)
+    (hgz : ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0)
+    (hx : x ∈ survivingLocus p ρbar z) :
+    x * g ∈ survivingLocus p ρbar z := by
+  have hzy : ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 (x * g) =
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 x := by
+    rw [ContinuousCohomology.cocycles₁_eval₁_mul z x g, hgz, map_zero, add_zero]
+  have hry : ∀ m, (adZeroTwist p ρbar).ρ (x * g) m = (adZeroTwist p ρbar).ρ x m := by
+    intro m
+    have hcomp : (adZeroTwist p ρbar).ρ (x * g) m =
+        (adZeroTwist p ρbar).ρ x ((adZeroTwist p ρbar).ρ g m) := by rw [map_mul]; rfl
+    rw [hcomp, hgρ m]
+  intro hmem
+  obtain ⟨m, hm⟩ := hmem
+  have hm' : (adZeroTwist p ρbar).ρ (x * g) m - m =
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 (x * g) := hm
+  refine hx ⟨m, ?_⟩
+  show (adZeroTwist p ρbar).ρ x m - m = _
+  rw [← hry m, hm', hzy]
+
+/-- **The surviving locus is OPEN** (PROVEN 2026-07-28) — the openness half
+of DDT Lemma 2.48.
+
+The open subgroup is `K = ker ρbar ∩ Fix(μ_p) ∩ ker (eval₁ z)`, all three
+factors being preimages of points under continuous maps into DISCRETE
+spaces: `ρbar` is continuous into `Module.End k W` with its module
+topology, which is discrete because `k` is finite and discrete;
+`Fix(μ_p)` is `isOpen_setOf_fixes_rootsOfUnity`; and `eval₁ z` is
+continuous (`ContinuousCohomology.continuous_eval₁`) into
+`AdZero k W`, which carries the discrete topology by construction.
+
+`K` contains `1` and every one of its elements acts trivially on
+`ad⁰ρbar(1)` (`adZeroTwist_rho_apply_eq_self`), so by
+`mem_survivingLocus_mul` the locus is stable under right translation by
+`K`; each `x` in it therefore has the open neighbourhood
+`(x⁻¹ · ·) ⁻¹' K` inside it.  Note this needs neither the finiteness of
+`ad⁰ρbar(1)` nor any continuity statement about the twisted action. -/
+lemma isOpen_survivingLocus.{uK, uW}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar)) :
+    IsOpen (survivingLocus p ρbar z) := by
+  classical
+  haveI : DiscreteTopology ↥(adZeroTwist p ρbar) := ⟨rfl⟩
+  letI := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) := discreteTopology_moduleTopology _ _
+  have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  set K : Set (Field.absoluteGaloisGroup ℚ) :=
+    {g | ρbar g = 1} ∩ ({g | ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → g ζ = ζ} ∩
+      {g | ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0}) with hKdef
+  have hKopen : IsOpen K := by
+    rw [hKdef]
+    refine IsOpen.inter ((isOpen_discrete {(1 : Module.End k W)}).preimage hρcont) ?_
+    refine IsOpen.inter
+      (isOpen_setOf_fixes_rootsOfUnity p (Fact.out : p.Prime).pos) ?_
+    exact (isOpen_discrete {(0 : ↥(adZeroTwist p ρbar))}).preimage
+      (ContinuousCohomology.continuous_eval₁ (adZeroTwist p ρbar) z.1)
+  have hK1 : (1 : Field.absoluteGaloisGroup ℚ) ∈ K := by
+    rw [hKdef]
+    exact ⟨map_one _, fun _ _ => rfl,
+      ContinuousCohomology.eval₁_one (ContinuousCohomology.cocycles₁_d_eq_zero z)⟩
+  have hKmem : ∀ g ∈ K, (∀ m, (adZeroTwist p ρbar).ρ g m = m) ∧
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0 := by
+    intro g hg
+    rw [hKdef] at hg
+    exact ⟨fun m => adZeroTwist_rho_apply_eq_self p ρbar hg.1
+      (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hg.2.1) m, hg.2.2⟩
+  rw [isOpen_iff_forall_mem_open]
+  intro x hx
+  refine ⟨(fun y => x⁻¹ * y) ⁻¹' K, ?_,
+    hKopen.preimage (continuous_const.mul continuous_id), ?_⟩
+  · intro y hy
+    obtain ⟨h1, h2⟩ := hKmem _ hy
+    have hmem := mem_survivingLocus_mul p ρbar z h1 h2 hx
+    simpa using hmem
+  · show x⁻¹ * x ∈ K
+    simpa using hK1
+
+/-- **The Taylor–Wiles locus is ANTITONE in the level** (PROVEN
+2026-07-28): `μ_{p^m} ⊆ μ_{p^n}` for `m ≤ n`, so fixing the larger group
+pointwise is the stronger condition and the charpoly clause does not
+mention `n` at all.
+
+This is what lets the nonemptiness leaf below assume `1 ≤ n`: proving the
+intersection nonempty at level `max n 1` gives it at level `n`.  The
+restriction matters — at `n = 0` the roots-of-unity clause of
+`taylorWilesLocus` is VACUOUS, so a given `σ` in it carries no constraint
+on the cyclotomic character, `ρ σ - 1` on `ad⁰ρbar(1)` may then be
+invertible, and no `τ` can rescue that particular `σ`.  Stating the leaf
+without `1 ≤ n` would therefore have made it FALSE. -/
+lemma taylorWilesLocus_subset_of_le.{uK, uW}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W) {m n : ℕ} (hmn : m ≤ n) :
+    taylorWilesLocus p ρbar n ⊆ taylorWilesLocus p ρbar m := by
+  rintro x ⟨hfix, α, β, hαβ, hpoly⟩
+  refine ⟨fun ζ hζ => hfix ζ ?_, α, β, hαβ, hpoly⟩
+  obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hmn
+  rw [pow_add, pow_mul, hζ, one_pow]
+
+/-- **The Taylor–Wiles locus is stable under right translation by
+`ker ρbar ∩ Fix(μ_{p^n})`** (PROVEN 2026-07-28): `ρbar (x τ) = ρbar x`
+kills the charpoly clause and `(x τ) ζ = x ζ` kills the roots-of-unity
+clause.  This is what turns the leaf below — which produces such a `τ`
+with `σ τ` in the surviving locus — into a point of the INTERSECTION. -/
+lemma mem_taylorWilesLocus_mul.{uK, uW}
+    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W) (n : ℕ) {x τ : Field.absoluteGaloisGroup ℚ}
+    (hτ1 : ρbar τ = 1)
+    (hτζ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ)
+    (hx : x ∈ taylorWilesLocus p ρbar n) :
+    x * τ ∈ taylorWilesLocus p ρbar n := by
+  obtain ⟨hfix, α, β, hαβ, hpoly⟩ := hx
+  refine ⟨fun ζ hζ => ?_, α, β, hαβ, ?_⟩
+  · rw [AlgEquiv.mul_apply, hτζ ζ hζ, hfix ζ hζ]
+  · rw [map_mul, hτ1, mul_one]
+    exact hpoly
+
+/-- **The arithmetic core of the nonemptiness half of DDT Lemma 2.48**
+(SORRY LEAF, cut out 2026-07-28 from
+`isOpen_survivingLocus_and_meets_taylorWilesLocus`): given a Taylor–Wiles
+element `σ` at a level `n ≥ 1`, the surviving locus of `z` is met SOMEWHERE
+ON THE COSET `σ · Γ_L`, by an element `σ τ` whose translating factor `τ`
+lies in `ker ρbar ∩ Fix(μ_{p^n})` — so that `mem_taylorWilesLocus_mul`
+returns `σ τ` to the Taylor–Wiles locus and the intersection is nonempty.
+
+Everything else in DDT 2.48's global half is now PROVEN around this leaf:
+openness is `isOpen_survivingLocus`, the supply of `σ` is
+`nonempty_taylorWilesLocus`, the return to the Taylor–Wiles locus is
+`mem_taylorWilesLocus_mul`, and the `n = 0` case is reduced to `n = 1` by
+`taylorWilesLocus_subset_of_le`.  What is left is exactly the arithmetic.
 
 # ROUTE
 
-Let `M = ad⁰ρbar(1)` and `L = ℚ(M, μ_{p^n})`, a finite Galois extension of
-`ℚ`.
+Write `M = ad⁰ρbar(1)` and let `L = ℚ(M, μ_{p^n})` be the fixed field of
+`N = ker ρbar ∩ Fix(μ_{p^n}) ∩ Fix(μ_p)`, an OPEN NORMAL subgroup of
+`Γ ℚ`; `Γ_L = N` acts trivially on `M`
+(`adZeroTwist_rho_apply_eq_self`, and `Fix(μ_{p^n}) ⊆ Fix(μ_p)` since
+`n ≥ 1`), so `z|_N` is a genuine HOMOMORPHISM `N → M`
+(`ContinuousCohomology.cocycles₁_eval₁_mul` with `ρ τ = 1`) and, by
+`ContinuousCohomology.eval₁_conj` with `ρ (g τ g⁻¹) = 1`, it is
+`Γ ℚ`-EQUIVARIANT: `z (g τ g⁻¹) = ρ g (z τ)`.
 
-*Openness.*  `M` is a finite discrete `k`-module and `z` is continuous
-(`ContinuousCohomology.continuous_eval₁`), so `x ↦ z x` is continuous into
-a discrete space; `x ↦ ρ x` is likewise continuous into the discrete
-`End_k M`, because `ρbar` is.  So `x ↦ (z x, ρ x)` is continuous into a
-discrete space and the surviving locus is the preimage of a subset of it.
-Concretely the locus is a union of cosets of the open normal subgroup
-`Γ_{L_z}`, where `L_z/L` is the extension cut out by `z|_{Γ L}`.
+*Step 1 — the restriction is nonzero.*  `H¹(Gal(L/ℚ), M) = 0`; this is DDT
+Lemma 2.48 proper, and it is the step that consumes absolute
+irreducibility of `ρbar|_{ℚ(ζ_p)}` (available here from `hρbar` together
+with `hirr`, `p` odd).  Inflation–restriction then makes
+`H¹(Γ ℚ, M) → Hom_{Γ}(N, M)` injective on classes unramified outside
+`{2, p}`, so `hc0` gives `τ₀ ∈ N` with `z τ₀ ≠ 0`.  (Taking `N` cut out
+by `ker ρbar` rather than by `ker ad⁰ρbar` is harmless: the intermediate
+group acts trivially on `M` and has order prime to `p`, so its `Hom` into
+the `p`-group `M` vanishes and the two `H¹`'s agree.)
 
-*Nonemptiness.*  `Γ L` acts trivially on `M`, so `z|_{Γ L}` is a
-HOMOMORPHISM `Γ L → M`, and `Γ L` is normal, so `taylorWilesLocus`
-contains the whole coset `σ · Γ L` of any `σ` in it
-(`nonempty_taylorWilesLocus` supplies one).  Restriction
-`H¹(Γ ℚ, M) → Hom(Γ L, M)` is injective on classes unramified outside
-`{2, p}` because `H¹(Gal(L/ℚ), M) = 0` — this is the step needing absolute
-irreducibility of `ρbar|_{ℚ(ζ_p)}`, which for odd `p` follows from `hρbar`
-together with `hirr` — so `z|_{Γ L} ≠ 0`.  Now `ρ σ` has two DISTINCT
-eigenvalues, so `(ρ σ - 1) · M` is a PROPER subspace of `M`; if
-`z σ ∈ (ρ σ - 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
-`z (σ τ) = z σ + ρ σ (z τ)` (`ContinuousCohomology.cocycles₁_eval₁_mul`)
-to move out.  Either `σ` or `σ τ` then lies in the intersection.
+*Step 2 — `(ρ σ - 1) · M` is a PROPER subspace.*  Since `n ≥ 1`, `σ`
+fixes `μ_p`, so `χ(σ) = 1`
+(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`) and `ρ σ` is plain
+conjugation by `ρbar σ`.  The charpoly clause of `hσ` gives `ρbar σ` two
+DISTINCT eigenvalues, so `ρbar σ` is not a scalar and its traceless part
+`ρbar σ - (tr ρbar σ / 2) · 1` — legitimate because `p` is odd, so
+`(2 : k) ≠ 0` — is a NONZERO element of `M` commuting with `ρbar σ`,
+i.e. a nonzero fixed vector of `ρ σ`.  Hence `ρ σ - 1` is not injective
+on the finite-dimensional `M`, hence not surjective.
+
+*Step 3 — move out.*  If `z σ ∉ (ρ σ - 1) · M` take `τ = 1`.  Otherwise
+apply Step 1 inside the `Γ`-stable subgroup `z(N) ⊆ M` and use
+`z (σ τ) = z σ + ρ σ (z τ)` with `ρ (σ τ) = ρ σ`: it suffices to find
+`τ ∈ N` with `z τ` outside the proper subspace `(ρ σ)⁻¹ ((ρ σ - 1) · M)`,
+which is where the module structure of `z(N)` (Wiles, Lemma 1.12 /
+DDT Theorem 2.49) is used.
+
+Both-ways audit: at the intended instantiation this is the cited
+Taylor–Wiles separation step; abstractly the hypothesis set contains the
+classically unsatisfiable irreducible hardly ramified `ρbar`, so the
+statement is classically true outright and CANNOT be false as stated.
+The `1 ≤ n` hypothesis is NOT decoration — see
+`taylorWilesLocus_subset_of_le` for why the statement is false without it.
+CIRCULARITY GUARD: it must not be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` is the circular
+discharge and is BANNED. -/
+theorem exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) {n : ℕ} (hn : 1 ≤ n)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    {c : continuousCohomology 1 (adZeroTwist p ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
+    (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0)
+    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n) :
+    ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
+      σ * τ ∈ survivingLocus p ρbar z := sorry
+
+/-- **The GLOBAL half of DDT Lemma 2.48** (cut out 2026-07-28; **PROVEN the
+same day** over the single leaf
+`exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus`): for a cocycle `z`
+representing a nonzero class `c` unramified outside `{2, p}`, the surviving
+locus of `z` is OPEN and MEETS the Taylor–Wiles locus at level `n`.  (The
+representative itself is supplied by
+`ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+
+What was closed here, and what is left:
+
+* *Openness* — PROVEN, `isOpen_survivingLocus`.  The earlier route note on
+  this declaration proposed the pair `x ↦ (z x, ρ x)` into a discrete
+  product; that needs continuity of the TWISTED action, which is not part
+  of the `ContRepresentation` datum (continuity of the action is not a
+  field; only the cochains are continuous).  The route actually taken is
+  cheaper and needs no such input: the locus is a union of left cosets of
+  the OPEN subgroup `ker ρbar ∩ Fix(μ_p) ∩ ker (eval₁ z)`, on which the
+  twisted action is trivial because `k` has characteristic `p`.  It does
+  not even need `ad⁰ρbar(1)` to be finite.
+* *Reduction to `n ≥ 1`* — PROVEN, `taylorWilesLocus_subset_of_le`; and
+  the restriction is load-bearing rather than cosmetic, see that lemma.
+* *Return to the Taylor–Wiles locus after translating* — PROVEN,
+  `mem_taylorWilesLocus_mul`.
+* *The supply of a Taylor–Wiles element* — PROVEN,
+  `nonempty_taylorWilesLocus`.
+* *The arithmetic* — the one remaining leaf, with the classical route
+  (`H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0`, inflation–restriction, and Wiles'
+  moving argument) recorded on it.
 
 Both-ways audit: at the intended instantiation this is the cited
 Taylor–Wiles separation step; abstractly the hypothesis set contains the
@@ -5658,7 +5961,8 @@ CIRCULARITY GUARD: for that very reason it must not be discharged through
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
 downstream of them — a proof ending in `exfalso` on `hirr` is the circular
-discharge and is BANNED. -/
+discharge and is BANNED.  Nothing in the proof below, nor in any lemma it
+consumes, touches those. -/
 theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -5673,7 +5977,15 @@ theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
     (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
     (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0) :
     IsOpen (survivingLocus p ρbar z) ∧
-      (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := sorry
+      (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := by
+  refine ⟨isOpen_survivingLocus p ρbar z, ?_⟩
+  obtain ⟨σ, hσ⟩ := nonempty_taylorWilesLocus hpodd hW hρbar hirr (max n 1)
+  obtain ⟨τ, hτ1, hτζ, hmem⟩ :=
+    exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus hpodd hW hρbar hirr
+      (le_max_right n 1) z hzc hcunr hc0 hσ
+  exact ⟨σ * τ, hmem,
+    taylorWilesLocus_subset_of_le p ρbar (le_max_left n 1)
+      (mem_taylorWilesLocus_mul p ρbar (max n 1) hτ1 hτζ hσ)⟩
 
 /-- **The LOCAL half of DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28):
 at a prime `q ∉ {2, p}` where the class `c` is unramified, membership of
