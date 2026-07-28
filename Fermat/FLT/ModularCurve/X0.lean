@@ -14858,10 +14858,475 @@ theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall {p q : ℕ}
       pow_eq_zero_iff (two_ne_zero)] at hx₀
     exact MazurGenusZero.no_rat_root_three_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
 
-/-- **The genus-zero remainder at the three largest levels** (sorry leaf, cut
-2026-07-27 out of `not_stable_of_mem_isolatedNonCMJInvariants_genusZero`): the
-`18` checks `q ∈ {5, 7, 13}` × the six non-CM entries of Mazur's table that
-survive `..._genusZeroSmall`.
+/-! #### The three largest genus-zero levels, through Fricke's hauptmodul
+
+`q ∈ {5, 7, 13}` is the range where the `q ≤ 3` collapse fails: `⟨g⟩ ∖ 0`
+has `(q − 1)/2 = 2, 3, 6` distinct abscissae, Galois permutes them, and only
+their symmetric functions descend.  What a stable `⟨g⟩` gives is a rational
+FACTOR of `Ψ_q` of degree `2, 3, 6`, not a rational ROOT, and no mod-`ℓ`
+root certificate sees that.
+
+The route taken here goes around the factorisation problem entirely, and
+the observation that makes it cheap is this: **`X_0(5)`, `X_0(7)` and
+`X_0(13)` have genus `0` and a rational cusp**, hence are `ℙ¹_ℚ`, hence
+carry a hauptmodul `t` defined over `ℚ` in which the `j`-map is an explicit
+rational function
+
+    j = N_q(t) / t^q,    deg N_q = q + 1 = 6, 8, 14.
+
+So the modular input becomes ONE uniform leaf
+(`exists_x0GenusZeroHauptmodul`), and each of the `18` checks becomes "the
+degree-`q + 1` integer polynomial `d₀ N_q(t) − n₀ t^q` has no rational
+root", which is exactly the shape the CERTIFICATES section above already
+handles — extended here from degrees `3, 4` to degrees `6, 8, 14`.
+
+**Why not the modular polynomial `Φ_q`.**  The previous version of this
+subtree priced the `Φ_q(j, Y)` route and rejected it because the
+coefficients of `Φ₁₃` are astronomical.  That verdict is correct about
+`Φ_q` and does not apply here: the hauptmodul numerators are TINY
+(largest coefficient `3.03 × 10¹⁴`, in `N₁₃`), because `t` is a hauptmodul
+of `X_0(q)` and not a second `j`-invariant.  The two routes are not the
+same route at different sizes.
+
+**Why not the kernel polynomial.**  For the record, so that a successor
+does not re-price it: `Ψ_q` for the six tabulated `j`-values is
+IRREDUCIBLE over `ℚ` in all `18` cases (PARI/GP 2.17.4, on the model
+`y² = x³ − 3j(j − 1728)x − 2j(j − 1728)²`, whose `j`-invariant is `j`; the
+factorisation type is twist-invariant because a quadratic twist scales
+every abscissa by the twisting parameter).  So the fact to be certified
+would be irreducibility of a degree-`12`, `24` or `84` polynomial, and
+there is no `decide`-shaped route to that.
+-/
+
+/-- **The numerator of the `j`-map of the genus-zero modular curve
+`X_0(q)`, for `q ∈ {5, 7, 13}`** — Fricke's hauptmodul parametrisation.
+
+With `t` the hauptmodul `(η(τ)/η(qτ))^{24/(q−1)}` of `X_0(q)`,
+
+    j = x0GenusZeroJNum q t / t ^ q,
+
+a degree-`(q + 1)` numerator over a `q`-th power.  Explicitly
+
+    q = 5   (t² + 250t + 3125)³
+    q = 7   (t² + 13t + 49)(t² + 245t + 2401)³
+    q = 13  (t² + 5t + 13)(t⁴ + 247t³ + 3380t² + 15379t + 28561)³
+
+Levels outside `{5, 7, 13}` fall into the `q = 13` branch, which is junk
+there; every consumer carries `q = 5 ∨ q = 7 ∨ q = 13`.
+
+**DERIVED, NOT TRANSCRIBED (PARI/GP 2.17.4, 2026-07-28).**  Each numerator
+was recomputed from `q`-expansions to `80` terms rather than copied from a
+table: with `t = q⁻¹ (∏(1−qⁿ)/∏(1−q^{Nn}))^{24/(N−1)}` and `j` the
+`j`-function's own `q`-expansion, the coefficients of `j·t^N` in the basis
+`t^0, …, t^{N+1}` were read off greedily, and the residual vanished to
+order `83, 81, 75` respectively — far beyond the `15` coefficients being
+determined.  The three results then factor as displayed.
+
+This mattered: the formula for `X_0(13)` that circulates with the quartic
+`t⁴ + 7t³ + 20t² + 19t + 1` is WRONG.  It was tried first, and PARI's
+`ellisomat` on `ellfromj` found a `13`-isogeny at `t = 1` and NONE at
+`t = 2, 3, −5`.  With the derived quartic
+`t⁴ + 247t³ + 3380t² + 15379t + 28561` all four give isogeny degree
+multiset `{1, 13}`.  The `q = 5` and `q = 7` numerators passed the same
+`ellisomat` test before and after derivation. -/
+def x0GenusZeroJNum (q : ℕ) (t : ℚ) : ℚ :=
+  if q = 5 then (t ^ 2 + 250 * t + 3125) ^ 3
+  else if q = 7 then (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3
+  else (t ^ 2 + 5 * t + 13) *
+    (t ^ 4 + 247 * t ^ 3 + 3380 * t ^ 2 + 15379 * t + 28561) ^ 3
+
+theorem x0GenusZeroJNum_five (t : ℚ) :
+    x0GenusZeroJNum 5 t = (t ^ 2 + 250 * t + 3125) ^ 3 := rfl
+
+theorem x0GenusZeroJNum_seven (t : ℚ) :
+    x0GenusZeroJNum 7 t = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := rfl
+
+theorem x0GenusZeroJNum_thirteen (t : ℚ) :
+    x0GenusZeroJNum 13 t = (t ^ 2 + 5 * t + 13) *
+      (t ^ 4 + 247 * t ^ 3 + 3380 * t ^ 2 + 15379 * t + 28561) ^ 3 := rfl
+
+/-- **Fricke's hauptmodul parametrisation of the three genus-zero levels**
+(sorry leaf, new 2026-07-28): a curve over `ℚ` with a `Γ_ℚ`-stable
+subgroup of order `q ∈ {5, 7, 13}` has `j = N_q(t)/t^q` for some rational
+`t`.
+
+TRUE, and classical: `X_0(5)`, `X_0(7)`, `X_0(13)` have genus `0` (the
+genus of `X_0(q)` is `0` exactly for `q ∈ {2, 3, 5, 7, 13}`, which is why
+Mazur's Theorem 1 says nothing at these levels) and carry the rational
+cusp `∞`, so each is isomorphic to `ℙ¹_ℚ` over `ℚ` and the `j`-map is the
+rational function of degree `q + 1` recorded on `x0GenusZeroJNum`.
+REFERENCES: Fricke, *Die elliptischen Funktionen und ihre Anwendungen* II;
+Ligozat, *Courbes modulaires de genre 1*; the parametrisations are the
+standard `η`-quotient hauptmoduln.
+
+**This is the SAME easy direction as `mem_isolatedJInvariants_of_stable`,
+at the levels where the target is a curve rather than a finite table.**  A
+`Γ_ℚ`-stable subgroup of order `q` gives a non-cuspidal rational point of
+`X_0(q)`, whose image under the `j`-map is `E.j`; no coarse-space subtlety
+enters, because the subtlety is entirely in the converse.  What has to be
+supplied is the identification `X_0(q) ≅ ℙ¹_ℚ` together with the explicit
+`j`-map — i.e. the genus-zero counterpart of the three technique leaves
+`mem_isolatedJInvariants_of_stable_{genusOne, thirtySeven,
+classNumberOne}`, and strictly the easiest of the four groups: no
+Mordell–Weil computation, no Chabauty, no Eisenstein ideal.
+
+**`t ≠ 0` is deliberately NOT asserted**, and nothing is lost: the
+conclusion already excludes `t = 0` on its own, since
+`x0GenusZeroJNum q 0` is `3125³`, `49·2401³`, `13·28561³` at
+`q = 5, 7, 13` and none of those is `0`, while the left-hand side is `0`.
+Asserting non-cuspidality would therefore add a hypothesis the consumer
+never uses.
+
+**NON-VACUITY.**  The conclusion is a genuine constraint on `E.j`: the
+image of `t ↦ N_q(t)/t^q` on `ℚ ∖ {0}` is a proper subset of `ℚ`, and the
+whole point of the sibling `MazurGenusZero.no_hauptmodul_of_mem_nonCM` is
+that the six tabulated non-CM `j`-invariants are outside it — checked by
+`18` mod-`ℓ` certificates, all of which would fail if the parametrisation
+were satisfiable by an arbitrary `j`. -/
+theorem exists_x0GenusZeroHauptmodul {q : ℕ} (_hq : q = 5 ∨ q = 7 ∨ q = 13)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∃ t : ℚ, E.j * t ^ q = x0GenusZeroJNum q t :=
+  sorry
+
+section MazurGenusZeroLargeCertificates
+
+namespace MazurGenusZero
+
+/-! ### Rational-root certificates in degrees `6`, `8` and `14`
+
+The three lemmas below are the degree-`6`, `8`, `14` analogues of
+`no_rat_root_cubic` and `no_rat_root_quartic` above, with the same proof:
+clear denominators on a putative rational root `w = num/den` to get an
+integer relation between `num` and `den`, reduce it mod `ℓ`, and use that
+`gcd(num, den) = 1` to contradict `num ≡ den ≡ 0`.  The hypothesis is the
+homogenised form having no nonzero zero over `𝔽_ℓ`, which is `decide`able
+at the small primes used here. -/
+
+theorem no_rat_root_sextic {c6 c5 c4 c3 c2 c1 c0 : ℤ} {ℓ : ℕ} (hℓ : Nat.Prime ℓ)
+    (h : ∀ a b : ZMod ℓ, (c6 : ZMod ℓ) * a ^ 6 + (c5 : ZMod ℓ) * a ^ 5 * b
+        + (c4 : ZMod ℓ) * a ^ 4 * b ^ 2 + (c3 : ZMod ℓ) * a ^ 3 * b ^ 3
+        + (c2 : ZMod ℓ) * a ^ 2 * b ^ 4 + (c1 : ZMod ℓ) * a * b ^ 5
+        + (c0 : ZMod ℓ) * b ^ 6 = 0 → a = 0 ∧ b = 0)
+    (w : ℚ) (hw : (c6 : ℚ) * w ^ 6 + (c5 : ℚ) * w ^ 5 + (c4 : ℚ) * w ^ 4
+      + (c3 : ℚ) * w ^ 3 + (c2 : ℚ) * w ^ 2 + (c1 : ℚ) * w + (c0 : ℚ) = 0) :
+    False := by
+  have hd : ((w.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast w.den_ne_zero
+  have hnum : (w.num : ℚ) = w * ((w.den : ℕ) : ℚ) := (div_eq_iff hd).mp (Rat.num_div_den w)
+  have hkey : c6 * w.num ^ 6 + c5 * w.num ^ 5 * (w.den : ℤ)
+      + c4 * w.num ^ 4 * (w.den : ℤ) ^ 2 + c3 * w.num ^ 3 * (w.den : ℤ) ^ 3
+      + c2 * w.num ^ 2 * (w.den : ℤ) ^ 4 + c1 * w.num * (w.den : ℤ) ^ 5
+      + c0 * (w.den : ℤ) ^ 6 = 0 := by
+    have hq : (c6 : ℚ) * (w.num : ℚ) ^ 6 + (c5 : ℚ) * (w.num : ℚ) ^ 5 * ((w.den : ℕ) : ℚ)
+        + (c4 : ℚ) * (w.num : ℚ) ^ 4 * ((w.den : ℕ) : ℚ) ^ 2
+        + (c3 : ℚ) * (w.num : ℚ) ^ 3 * ((w.den : ℕ) : ℚ) ^ 3
+        + (c2 : ℚ) * (w.num : ℚ) ^ 2 * ((w.den : ℕ) : ℚ) ^ 4
+        + (c1 : ℚ) * (w.num : ℚ) * ((w.den : ℕ) : ℚ) ^ 5
+        + (c0 : ℚ) * ((w.den : ℕ) : ℚ) ^ 6 = 0 := by
+      rw [hnum]
+      linear_combination ((w.den : ℕ) : ℚ) ^ 6 * hw
+    exact_mod_cast hq
+  have hmod : (c6 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 6
+      + (c5 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 5 * ((w.den : ℕ) : ZMod ℓ)
+      + (c4 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 4 * ((w.den : ℕ) : ZMod ℓ) ^ 2
+      + (c3 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 3 * ((w.den : ℕ) : ZMod ℓ) ^ 3
+      + (c2 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 2 * ((w.den : ℕ) : ZMod ℓ) ^ 4
+      + (c1 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 5
+      + (c0 : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 6 = 0 := by
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) hkey
+    push_cast at hc
+    linear_combination hc
+  obtain ⟨h1, h2⟩ := h _ _ hmod
+  exact num_den_zero hℓ w h1 h2
+
+theorem no_rat_root_octic {c8 c7 c6 c5 c4 c3 c2 c1 c0 : ℤ} {ℓ : ℕ} (hℓ : Nat.Prime ℓ)
+    (h : ∀ a b : ZMod ℓ, (c8 : ZMod ℓ) * a ^ 8 + (c7 : ZMod ℓ) * a ^ 7 * b
+        + (c6 : ZMod ℓ) * a ^ 6 * b ^ 2 + (c5 : ZMod ℓ) * a ^ 5 * b ^ 3
+        + (c4 : ZMod ℓ) * a ^ 4 * b ^ 4 + (c3 : ZMod ℓ) * a ^ 3 * b ^ 5
+        + (c2 : ZMod ℓ) * a ^ 2 * b ^ 6 + (c1 : ZMod ℓ) * a * b ^ 7
+        + (c0 : ZMod ℓ) * b ^ 8 = 0 → a = 0 ∧ b = 0)
+    (w : ℚ) (hw : (c8 : ℚ) * w ^ 8 + (c7 : ℚ) * w ^ 7 + (c6 : ℚ) * w ^ 6
+      + (c5 : ℚ) * w ^ 5 + (c4 : ℚ) * w ^ 4 + (c3 : ℚ) * w ^ 3 + (c2 : ℚ) * w ^ 2
+      + (c1 : ℚ) * w + (c0 : ℚ) = 0) :
+    False := by
+  have hd : ((w.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast w.den_ne_zero
+  have hnum : (w.num : ℚ) = w * ((w.den : ℕ) : ℚ) := (div_eq_iff hd).mp (Rat.num_div_den w)
+  have hkey : c8 * w.num ^ 8 + c7 * w.num ^ 7 * (w.den : ℤ)
+      + c6 * w.num ^ 6 * (w.den : ℤ) ^ 2 + c5 * w.num ^ 5 * (w.den : ℤ) ^ 3
+      + c4 * w.num ^ 4 * (w.den : ℤ) ^ 4 + c3 * w.num ^ 3 * (w.den : ℤ) ^ 5
+      + c2 * w.num ^ 2 * (w.den : ℤ) ^ 6 + c1 * w.num * (w.den : ℤ) ^ 7
+      + c0 * (w.den : ℤ) ^ 8 = 0 := by
+    have hq : (c8 : ℚ) * (w.num : ℚ) ^ 8 + (c7 : ℚ) * (w.num : ℚ) ^ 7 * ((w.den : ℕ) : ℚ)
+        + (c6 : ℚ) * (w.num : ℚ) ^ 6 * ((w.den : ℕ) : ℚ) ^ 2
+        + (c5 : ℚ) * (w.num : ℚ) ^ 5 * ((w.den : ℕ) : ℚ) ^ 3
+        + (c4 : ℚ) * (w.num : ℚ) ^ 4 * ((w.den : ℕ) : ℚ) ^ 4
+        + (c3 : ℚ) * (w.num : ℚ) ^ 3 * ((w.den : ℕ) : ℚ) ^ 5
+        + (c2 : ℚ) * (w.num : ℚ) ^ 2 * ((w.den : ℕ) : ℚ) ^ 6
+        + (c1 : ℚ) * (w.num : ℚ) * ((w.den : ℕ) : ℚ) ^ 7
+        + (c0 : ℚ) * ((w.den : ℕ) : ℚ) ^ 8 = 0 := by
+      rw [hnum]
+      linear_combination ((w.den : ℕ) : ℚ) ^ 8 * hw
+    exact_mod_cast hq
+  have hmod : (c8 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 8
+      + (c7 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 7 * ((w.den : ℕ) : ZMod ℓ)
+      + (c6 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 6 * ((w.den : ℕ) : ZMod ℓ) ^ 2
+      + (c5 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 5 * ((w.den : ℕ) : ZMod ℓ) ^ 3
+      + (c4 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 4 * ((w.den : ℕ) : ZMod ℓ) ^ 4
+      + (c3 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 3 * ((w.den : ℕ) : ZMod ℓ) ^ 5
+      + (c2 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 2 * ((w.den : ℕ) : ZMod ℓ) ^ 6
+      + (c1 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 7
+      + (c0 : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 8 = 0 := by
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) hkey
+    push_cast at hc
+    linear_combination hc
+  obtain ⟨h1, h2⟩ := h _ _ hmod
+  exact num_den_zero hℓ w h1 h2
+
+theorem no_rat_root_deg14 {c14 c13 c12 c11 c10 c9 c8 c7 c6 c5 c4 c3 c2 c1 c0 : ℤ}
+    {ℓ : ℕ} (hℓ : Nat.Prime ℓ)
+    (h : ∀ a b : ZMod ℓ, (c14 : ZMod ℓ) * a ^ 14 + (c13 : ZMod ℓ) * a ^ 13 * b
+        + (c12 : ZMod ℓ) * a ^ 12 * b ^ 2 + (c11 : ZMod ℓ) * a ^ 11 * b ^ 3
+        + (c10 : ZMod ℓ) * a ^ 10 * b ^ 4 + (c9 : ZMod ℓ) * a ^ 9 * b ^ 5
+        + (c8 : ZMod ℓ) * a ^ 8 * b ^ 6 + (c7 : ZMod ℓ) * a ^ 7 * b ^ 7
+        + (c6 : ZMod ℓ) * a ^ 6 * b ^ 8 + (c5 : ZMod ℓ) * a ^ 5 * b ^ 9
+        + (c4 : ZMod ℓ) * a ^ 4 * b ^ 10 + (c3 : ZMod ℓ) * a ^ 3 * b ^ 11
+        + (c2 : ZMod ℓ) * a ^ 2 * b ^ 12 + (c1 : ZMod ℓ) * a * b ^ 13
+        + (c0 : ZMod ℓ) * b ^ 14 = 0 → a = 0 ∧ b = 0)
+    (w : ℚ) (hw : (c14 : ℚ) * w ^ 14 + (c13 : ℚ) * w ^ 13 + (c12 : ℚ) * w ^ 12
+      + (c11 : ℚ) * w ^ 11 + (c10 : ℚ) * w ^ 10 + (c9 : ℚ) * w ^ 9 + (c8 : ℚ) * w ^ 8
+      + (c7 : ℚ) * w ^ 7 + (c6 : ℚ) * w ^ 6 + (c5 : ℚ) * w ^ 5 + (c4 : ℚ) * w ^ 4
+      + (c3 : ℚ) * w ^ 3 + (c2 : ℚ) * w ^ 2 + (c1 : ℚ) * w + (c0 : ℚ) = 0) :
+    False := by
+  have hd : ((w.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast w.den_ne_zero
+  have hnum : (w.num : ℚ) = w * ((w.den : ℕ) : ℚ) := (div_eq_iff hd).mp (Rat.num_div_den w)
+  have hkey : c14 * w.num ^ 14 + c13 * w.num ^ 13 * (w.den : ℤ)
+      + c12 * w.num ^ 12 * (w.den : ℤ) ^ 2 + c11 * w.num ^ 11 * (w.den : ℤ) ^ 3
+      + c10 * w.num ^ 10 * (w.den : ℤ) ^ 4 + c9 * w.num ^ 9 * (w.den : ℤ) ^ 5
+      + c8 * w.num ^ 8 * (w.den : ℤ) ^ 6 + c7 * w.num ^ 7 * (w.den : ℤ) ^ 7
+      + c6 * w.num ^ 6 * (w.den : ℤ) ^ 8 + c5 * w.num ^ 5 * (w.den : ℤ) ^ 9
+      + c4 * w.num ^ 4 * (w.den : ℤ) ^ 10 + c3 * w.num ^ 3 * (w.den : ℤ) ^ 11
+      + c2 * w.num ^ 2 * (w.den : ℤ) ^ 12 + c1 * w.num * (w.den : ℤ) ^ 13
+      + c0 * (w.den : ℤ) ^ 14 = 0 := by
+    have hq : (c14 : ℚ) * (w.num : ℚ) ^ 14 + (c13 : ℚ) * (w.num : ℚ) ^ 13 * ((w.den : ℕ) : ℚ)
+        + (c12 : ℚ) * (w.num : ℚ) ^ 12 * ((w.den : ℕ) : ℚ) ^ 2
+        + (c11 : ℚ) * (w.num : ℚ) ^ 11 * ((w.den : ℕ) : ℚ) ^ 3
+        + (c10 : ℚ) * (w.num : ℚ) ^ 10 * ((w.den : ℕ) : ℚ) ^ 4
+        + (c9 : ℚ) * (w.num : ℚ) ^ 9 * ((w.den : ℕ) : ℚ) ^ 5
+        + (c8 : ℚ) * (w.num : ℚ) ^ 8 * ((w.den : ℕ) : ℚ) ^ 6
+        + (c7 : ℚ) * (w.num : ℚ) ^ 7 * ((w.den : ℕ) : ℚ) ^ 7
+        + (c6 : ℚ) * (w.num : ℚ) ^ 6 * ((w.den : ℕ) : ℚ) ^ 8
+        + (c5 : ℚ) * (w.num : ℚ) ^ 5 * ((w.den : ℕ) : ℚ) ^ 9
+        + (c4 : ℚ) * (w.num : ℚ) ^ 4 * ((w.den : ℕ) : ℚ) ^ 10
+        + (c3 : ℚ) * (w.num : ℚ) ^ 3 * ((w.den : ℕ) : ℚ) ^ 11
+        + (c2 : ℚ) * (w.num : ℚ) ^ 2 * ((w.den : ℕ) : ℚ) ^ 12
+        + (c1 : ℚ) * (w.num : ℚ) * ((w.den : ℕ) : ℚ) ^ 13
+        + (c0 : ℚ) * ((w.den : ℕ) : ℚ) ^ 14 = 0 := by
+      rw [hnum]
+      linear_combination ((w.den : ℕ) : ℚ) ^ 14 * hw
+    exact_mod_cast hq
+  have hmod : (c14 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 14
+      + (c13 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 13 * ((w.den : ℕ) : ZMod ℓ)
+      + (c12 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 12 * ((w.den : ℕ) : ZMod ℓ) ^ 2
+      + (c11 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 11 * ((w.den : ℕ) : ZMod ℓ) ^ 3
+      + (c10 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 10 * ((w.den : ℕ) : ZMod ℓ) ^ 4
+      + (c9 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 9 * ((w.den : ℕ) : ZMod ℓ) ^ 5
+      + (c8 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 8 * ((w.den : ℕ) : ZMod ℓ) ^ 6
+      + (c7 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 7 * ((w.den : ℕ) : ZMod ℓ) ^ 7
+      + (c6 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 6 * ((w.den : ℕ) : ZMod ℓ) ^ 8
+      + (c5 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 5 * ((w.den : ℕ) : ZMod ℓ) ^ 9
+      + (c4 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 4 * ((w.den : ℕ) : ZMod ℓ) ^ 10
+      + (c3 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 3 * ((w.den : ℕ) : ZMod ℓ) ^ 11
+      + (c2 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 2 * ((w.den : ℕ) : ZMod ℓ) ^ 12
+      + (c1 : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 13
+      + (c0 : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 14 = 0 := by
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) hkey
+    push_cast at hc
+    linear_combination hc
+  obtain ⟨h1, h2⟩ := h _ _ hmod
+  exact num_den_zero hℓ w h1 h2
+
+/-- **The eighteen explicit checks at `q ∈ {5, 7, 13}`** (PROVEN
+2026-07-28): none of the six non-CM entries of Mazur's table is a value of
+the `j`-map of `X_0(5)`, `X_0(7)` or `X_0(13)`.
+
+Writing `j = n₀/d₀` in lowest terms, `j·t^q = N_q(t)` says that `t` is a
+rational root of
+
+    H(t) = d₀ N_q(t) − n₀ t^q ∈ ℤ[t],   deg H = q + 1 = 6, 8, 14,
+
+whose leading coefficient is `d₀` (the `t^q` term cannot cancel it,
+`q < q + 1`).  Each of the eighteen `H` is refuted by a single prime `ℓ`
+at which the HOMOGENISED form `Σ cᵢ aⁱ b^{n−i}` has no zero other than
+`(0, 0)` over `𝔽_ℓ` — equivalently `ℓ ∤ d₀` and `H` has no root in `𝔽_ℓ`.
+
+## THE CERTIFYING PRIMES
+
+    j                       q=5    q=7    q=13
+    −121                     2      3      2
+    −24729001                2      3      2
+    −882216989/131072        3      3      3
+    −297756989/2             3      3      3
+    −9317                    2      3      2
+    −162677523113838677      2      3      2
+
+`ℓ = 2` is unavailable at the two non-integral `j`, whose denominators are
+`2¹⁷` and `2`; `ℓ = 3` serves there and at every `q = 7`.  PARI/GP was
+used only to FIND these primes; each is verified in the kernel by `decide`
+over `ZMod ℓ`, which is four or nine pairs `(a, b)`.
+
+## NON-VACUITY, AND WHY THE CERTIFICATES ARE NOT ACCIDENTAL
+
+Independently of the certificates, `H` was factored over `ℚ` in all
+eighteen cases and has NO linear factor — so the statement is true for the
+reason claimed and not because some coefficient was mistyped into a
+polynomial that is trivially root-free.  The complementary control is on
+`x0GenusZeroJNum` itself: at `q = 13` the same eighteen-check apparatus
+run against the WRONG (circulating) quartic would have been equally
+`decide`able while certifying nothing, which is why that numerator was
+re-derived from `q`-expansions rather than transcribed. -/
+theorem no_hauptmodul_of_mem_nonCM {q : ℕ} (hq : q = 5 ∨ q = 7 ∨ q = 13) {j : ℚ}
+    (hj : j = -121 ∨ j = -24729001 ∨ j = -882216989 / 131072
+      ∨ j = -297756989 / 2 ∨ j = -9317 ∨ j = -162677523113838677)
+    (t : ℚ) (hw : j * t ^ q = x0GenusZeroJNum q t) : False := by
+  rcases hq with rfl | rfl | rfl
+  -- `q = 5`: the sextic `d₀ N₅(t) − n₀ t⁵`
+  · rw [x0GenusZeroJNum_five] at hw
+    rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+    · exact no_rat_root_sextic (c6 := 1) (c5 := 871) (c4 := 196875) (c3 := 20312500)
+        (c2 := 615234375) (c1 := 7324218750) (c0 := 30517578125) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_sextic (c6 := 1) (c5 := 24729751) (c4 := 196875) (c3 := 20312500)
+        (c2 := 615234375) (c1 := 7324218750) (c0 := 30517578125) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_sextic (c6 := 131072) (c5 := 980520989) (c4 := 25804800000)
+        (c3 := 2662400000000) (c2 := 80640000000000) (c1 := 960000000000000)
+        (c0 := 4000000000000000) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-131072 : ℚ) * hw)
+    · exact no_rat_root_sextic (c6 := 2) (c5 := 297758489) (c4 := 393750) (c3 := 40625000)
+        (c2 := 1230468750) (c1 := 14648437500) (c0 := 61035156250) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-2 : ℚ) * hw)
+    · exact no_rat_root_sextic (c6 := 1) (c5 := 10067) (c4 := 196875) (c3 := 20312500)
+        (c2 := 615234375) (c1 := 7324218750) (c0 := 30517578125) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_sextic (c6 := 1) (c5 := 162677523113839427) (c4 := 196875)
+        (c3 := 20312500) (c2 := 615234375) (c1 := 7324218750) (c0 := 30517578125) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+  -- `q = 7`: the octic `d₀ N₇(t) − n₀ t⁷`
+  · rw [x0GenusZeroJNum_seven] at hw
+    rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+    · exact no_rat_root_octic (c8 := 1) (c7 := 869) (c6 := 196882) (c5 := 20706224)
+        (c4 := 695893835) (c3 := 10976181104) (c2 := 90957030178) (c1 := 387556041628)
+        (c0 := 678223072849) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_octic (c8 := 1) (c7 := 24729749) (c6 := 196882) (c5 := 20706224)
+        (c4 := 695893835) (c3 := 10976181104) (c2 := 90957030178) (c1 := 387556041628)
+        (c0 := 678223072849) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_octic (c8 := 131072) (c7 := 980258845) (c6 := 25805717504)
+        (c5 := 2714006192128) (c4 := 91212196741120) (c3 := 1438670009663488)
+        (c2 := 11921919859490816) (c1 := 50797745488265216) (c0 := 88896054604464128)
+        (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-131072 : ℚ) * hw)
+    · exact no_rat_root_octic (c8 := 2) (c7 := 297758485) (c6 := 393764) (c5 := 41412448)
+        (c4 := 1391787670) (c3 := 21952362208) (c2 := 181914060356) (c1 := 775112083256)
+        (c0 := 1356446145698) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-2 : ℚ) * hw)
+    · exact no_rat_root_octic (c8 := 1) (c7 := 10065) (c6 := 196882) (c5 := 20706224)
+        (c4 := 695893835) (c3 := 10976181104) (c2 := 90957030178) (c1 := 387556041628)
+        (c0 := 678223072849) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_octic (c8 := 1) (c7 := 162677523113839425) (c6 := 196882)
+        (c5 := 20706224) (c4 := 695893835) (c3 := 10976181104) (c2 := 90957030178)
+        (c1 := 387556041628) (c0 := 678223072849) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+  -- `q = 13`: the degree-`14` form `d₀ N₁₃(t) − n₀ t¹³`
+  · rw [x0GenusZeroJNum_thirteen] at hw
+    rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+    · exact no_rat_root_deg14 (c14 := 1) (c13 := 867) (c12 := 196885) (c11 := 21099988)
+        (c10 := 778915592) (c9 := 15274994020) (c8 := 189124030238) (c7 := 1610126946220)
+        (c6 := 9858921494006) (c5 := 44326807379140) (c4 := 146681435327336)
+        (c3 := 351263437231252) (c2 := 582452128062025) (c1 := 605750213184506)
+        (c0 := 302875106592253) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_deg14 (c14 := 1) (c13 := 24729747) (c12 := 196885) (c11 := 21099988)
+        (c10 := 778915592) (c9 := 15274994020) (c8 := 189124030238) (c7 := 1610126946220)
+        (c6 := 9858921494006) (c5 := 44326807379140) (c4 := 146681435327336)
+        (c3 := 351263437231252) (c2 := 582452128062025) (c1 := 605750213184506)
+        (c0 := 302875106592253) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_deg14 (c14 := 131072) (c13 := 979996701) (c12 := 25806110720)
+        (c11 := 2765617627136) (c10 := 102094024474624) (c9 := 2002124016189440)
+        (c8 := 24788864891355136) (c7 := 211042559094947840) (c6 := 1292228558062354432)
+        (c5 := 5810003296798638080) (c4 := 19225829091224584192)
+        (c3 := 46040801244774662144) (c2 := 76343165329345740800)
+        (c1 := 79396891942519570432) (c0 := 39698445971259785216) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-131072 : ℚ) * hw)
+    · exact no_rat_root_deg14 (c14 := 2) (c13 := 297758481) (c12 := 393770) (c11 := 42199976)
+        (c10 := 1557831184) (c9 := 30549988040) (c8 := 378248060476) (c7 := 3220253892440)
+        (c6 := 19717842988012) (c5 := 88653614758280) (c4 := 293362870654672)
+        (c3 := 702526874462504) (c2 := 1164904256124050) (c1 := 1211500426369012)
+        (c0 := 605750213184506) (ℓ := 3)
+        (by decide) (by decide) t (by push_cast; linear_combination (-2 : ℚ) * hw)
+    · exact no_rat_root_deg14 (c14 := 1) (c13 := 10063) (c12 := 196885) (c11 := 21099988)
+        (c10 := 778915592) (c9 := 15274994020) (c8 := 189124030238) (c7 := 1610126946220)
+        (c6 := 9858921494006) (c5 := 44326807379140) (c4 := 146681435327336)
+        (c3 := 351263437231252) (c2 := 582452128062025) (c1 := 605750213184506)
+        (c0 := 302875106592253) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+    · exact no_rat_root_deg14 (c14 := 1) (c13 := 162677523113839423) (c12 := 196885)
+        (c11 := 21099988) (c10 := 778915592) (c9 := 15274994020) (c8 := 189124030238)
+        (c7 := 1610126946220) (c6 := 9858921494006) (c5 := 44326807379140)
+        (c4 := 146681435327336) (c3 := 351263437231252) (c2 := 582452128062025)
+        (c1 := 605750213184506) (c0 := 302875106592253) (ℓ := 2)
+        (by decide) (by decide) t (by push_cast; linear_combination -hw)
+
+end MazurGenusZero
+
+end MazurGenusZeroLargeCertificates
+
+/-- **The genus-zero remainder at the three largest levels** (introduced as a
+leaf 2026-07-27, PROVEN 2026-07-28 over the single modular leaf
+`exists_x0GenusZeroHauptmodul`): the `18` checks `q ∈ {5, 7, 13}` × the six
+non-CM entries of Mazur's table that survive `..._genusZeroSmall`.
+
+## HOW IT IS PROVEN — AND WHY IT IS NOT THE ROUTE THIS DOCSTRING PREDICTED
+
+The two routes this node was introduced with — Galois descent of the kernel
+polynomial, and the modular polynomial `Φ_q` — were both correctly priced as
+expensive, and both are avoided.  `X_0(5)`, `X_0(7)` and `X_0(13)` have
+**genus `0`** with a rational cusp, so each is `ℙ¹_ℚ` and the `j`-map is an
+explicit rational function `j = N_q(t)/t^q` of a rational hauptmodul, with
+`deg N_q = q + 1 = 6, 8, 14` and coefficients no larger than `3 × 10¹⁴`.
+That gives the split actually used:
+
+* `exists_x0GenusZeroHauptmodul` — the modular content, ONE uniform leaf:
+  a stable `⟨g⟩` of order `q ∈ {5, 7, 13}` puts `E.j` in the image of the
+  `j`-map.  This is the same easy direction as
+  `mem_isolatedJInvariants_of_stable`, at the levels where the target is a
+  curve instead of a finite table, and it is the easiest of the four level
+  groups: no Mordell–Weil, no Chabauty, no Eisenstein ideal.
+* `MazurGenusZero.no_hauptmodul_of_mem_nonCM` — the arithmetic, PROVEN:
+  all `18` checks, each a mod-`ℓ` rational-root certificate on a degree-`q+1`
+  integer polynomial, with `ℓ ∈ {2, 3}` throughout.
+
+**Why the genus-zero route is not "the `Φ_q` route, cheaper".**  The
+objection recorded below to `Φ_q` — that `Φ₁₃`'s coefficients are
+astronomical — is correct and simply does not transfer: `t` is a hauptmodul
+of `X_0(q)`, not a second `j`-invariant, so `N₁₃` has degree `14` with
+`15`-digit coefficients where `Φ₁₃` has bidegree `14` with coefficients of
+hundreds of digits.
+
+**Why the kernel-polynomial route was not taken.**  Its blocking half was
+not the descent (which is genuinely uniform, as recorded below) but the
+certificate: `Ψ_q` is IRREDUCIBLE over `ℚ` for all six `j`-values at all
+three `q` (PARI/GP 2.17.4; the factorisation type is twist-invariant), so
+the fact needing certification is irreducibility in degree `12`, `24`, `84`,
+for which no `decide`-shaped route exists.  The analysis below of why
+`q ≥ 5` differs from `q ≤ 3` remains correct and is kept.
 
 ## WHY THIS IS THE CUT, AND WHY IT IS NOT `q ≤ 3` WITH A BIGGER `q`
 
@@ -14879,7 +15344,7 @@ FACTOR of `Ψ_q` of degree `2, 3, 6`, not a rational ROOT.  A mod-`ℓ` root
 certificate is blind to that, so the technique that closes the twelve small
 checks does not extend by any amount of arithmetic.
 
-## WHAT PROVING IT NEEDS
+## WHAT PROVING IT NEEDS — the route NOT taken, kept for the record
 
 1. **The converse of `exists_point_of_isKernelPolynomial`** — the descent
    *stable subgroup ⟹ certificate*.  The forward direction
@@ -14914,18 +15379,28 @@ carries a rational cyclic isogeny of degree `5`, `7` or `13`.  PARI/GP
 degree multiset `{1, p}` at every one of the six, so no such curve is
 expected; and the one-prime Frobenius sieve tabulated on the parent node
 gives an explicit `(ℓ, a_ℓ)` witness for each of these `18` checks, with the
-negative control at `q = p` finding no witness below `2000`. -/
+negative control at `q = p` finding no witness below `2000`.  The `18`
+hauptmodul certificates actually used are tabulated on
+`MazurGenusZero.no_hauptmodul_of_mem_nonCM`, and are an independent second
+confirmation of the same conclusion by a different mechanism. -/
 theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge {p q : ℕ}
-    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q = 5 ∨ q = 7 ∨ q = 13)
+    (hp : p ∈ isolatedIsogenyPrimes) (hq : q = 5 ∨ q = 7 ∨ q = 13)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  have hj6 : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
+      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677 := by
+    fin_cases hp <;>
+      simp only [isolatedJInvariants, isolatedCMJInvariants, Finset.mem_sdiff,
+        Finset.mem_insert, Finset.mem_singleton] at hj <;>
+      norm_num at hj ⊢ <;> tauto
+  obtain ⟨t, hw⟩ := exists_x0GenusZeroHauptmodul hq E g hg hstable
+  exact MazurGenusZero.no_hauptmodul_of_mem_nonCM hq hj6 t hw
 
 /-- **The genus-zero remainder of the non-CM half** (sorry node,
 introduced 2026-07-27; this is what is left of the `66` checks): for the
