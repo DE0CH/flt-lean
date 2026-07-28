@@ -755,7 +755,7 @@ restricted to a basic open.
 
 These two discharge `specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`
 and `specPointEquiv_symm_map_galois` below, through the `ProjCoords`-level corollaries
-`toHom_comap` and `toHom_negC`. -/
+`comap_toHom` and `toHom_negC`. -/
 
 theorem powers_le_comap {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S) (t : R) :
     Submonoid.powers t ≤ (Submonoid.powers (f t)).comap f := by
@@ -1033,38 +1033,12 @@ section Congruences
 
 /-! ### Corollaries of the two `Proj.fromOfGlobalSections` congruences (**PROVEN**)
 
-`toHom_comap` is `fromOfGlobalSections_comp` read on a coordinate datum, and `toHom_negC`
+`comap_toHom` (already in this file, above) is `fromOfGlobalSections_comp` read on a
+coordinate datum, and `toHom_negC`
 is `fromOfGlobalSections_comp_map` read on the Weierstrass involution.  Together with
 `toHom_inftyC` — which identifies `WeierstrassCurve.Projective.projInfty` as the morphism
 of the datum `![0, 1, 0]` — they are what discharges the clauses
 `specPointEquiv_comp_projInfty_eq_zero` and `specPointEquiv_comp_projNeg` below. -/
-
-/-- **The pullback of a coordinate datum along `g : Y ⟶ X`.** -/
-noncomputable def comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) : ProjCoords E Y where
-  base := g.appTop.hom.comp c.base
-  coord := ⇑g.appTop.hom ∘ c.coord
-  equation := by
-    rw [← WeierstrassCurve.map_map]
-    exact WeierstrassCurve.Projective.Equation.map _ c.equation
-  span_coord := by
-    have h := congrArg (Ideal.map g.appTop.hom) c.span_coord
-    rw [Ideal.map_span, Ideal.map_top, ← Set.range_comp] at h
-    exact h
-
-@[simp] theorem comap_coord {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) (i : Fin 3) :
-    (c.comap g).coord i = g.appTop.hom (c.coord i) := rfl
-
-theorem ringHom_comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) :
-    (c.comap g).ringHom = g.appTop.hom.comp c.ringHom := by
-  refine RingHom.ext fun a => ?_
-  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective a
-  simpa [comap] using (MvPolynomial.eval₂_comp_left g.appTop.hom c.base c.coord p).symm
-
-theorem toHom_comap {Y : Scheme.{0}} (g : Y ⟶ X) (c : ProjCoords E X) :
-    g ≫ c.toHom = (c.comap g).toHom := by
-  refine (fromOfGlobalSections_comp (projGrading E) g c.ringHom c.map_irrelevant_eq_top).trans ?_
-  congr 1
-  exact (ringHom_comap g c).symm
 
 /-- **The Weierstrass involution preserves the projective equation.** -/
 theorem equation_neg {R : Type*} [CommRing R] (W' : WeierstrassCurve R) {P : Fin 3 → R}
@@ -1433,128 +1407,6 @@ theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField �
     c.span_coord d.span_coord h
   have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
   rw [← toHom_smul u c, hd]
-
-/-! ### The unit section and the involution AS COORDINATE DATA
-
-**This is the missing bridge, and it is one shape of missing MATHLIB work, not
-two** (2026-07-27, found while proving `projMulCoords_unit` / `projMulCoords_inv`).
-
-Those two leaves are statements about the morphisms `projInfty E` and
-`projNeg E`; the two Bosma–Lenstra laws are statements about coordinate TRIPLES.
-Everything in between is a finite case analysis over a field and is proven below
-— but the two ends only meet through a congruence for
-`Proj.fromOfGlobalSections` that does not exist at this pin.  Re-checked
-2026-07-27 against `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`,
-which carries exactly four lemmas about it — `_preimage_basicOpen`,
-`_morphismRestrict`, `_resLE`, `_toSpecZero` — and **no naturality in `X`, and
-nothing relating it to `Proj.map`**.
-
-So `toHom_infty` and `toHom_negC` below are those two absent congruences,
-specialised to the data this cluster uses:
-
-| leaf | the general statement it instantiates |
-|---|---|
-| `toHom_infty` | `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _` |
-| `toHom_negC` | `fromOfGlobalSections 𝒜 f hf ≫ Proj.map φ hφ = fromOfGlobalSections _ (f ∘ φ) _` |
-
-They are the same CLASS as `toBasicOpenOfGlobalSections_eq_of_gradedSmul` above
-— a chart computation in `HomogeneousLocalization` — and an owner should expect
-to copy that lemma's shape: `Scheme.Cover.hom_ext` over the `X.basicOpen (f r)`
-cover, then `Proj.basicOpenIsoSpec` to reduce each piece to a map of `Away`
-rings, where both sides become the same `IsLocalization.map`.
-
-For `toHom_infty` there is a shortcut worth trying first, which the general
-statement does not have: the infinity datum has `coord 1 = 1`, a UNIT, so
-`X.basicOpen (f Ȳ) = ⊤` and `fromOfGlobalSections_morphismRestrict` at `r = Ȳ`
-already exhibits BOTH sides as factoring through the single chart
-`Proj.awayι 𝒜 Ȳ`, which is an open immersion and hence a monomorphism.  The
-statement then reduces to an equality of two morphisms of AFFINE schemes, i.e.
-of two ring maps out of `Away 𝒜 Ȳ` — no gluing at all.  The same shortcut does
-not apply to `toHom_negC`, whose datum has no distinguished unit coordinate. -/
-
-/-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum** (PROVEN).
-
-Its `equation` is mathlib's `equation_zero` and its `span_coord` holds because
-the middle coordinate is `1`. -/
-noncomputable def infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
-    ProjCoords E X where
-  base := base
-  coord := ![0, 1, 0]
-  equation := equation_zero
-  span_coord := by
-    refine Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨1, rfl⟩) ?_
-    simp
-
-@[simp] theorem infty_coord (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
-    (infty E base).coord = ![0, 1, 0] := rfl
-
-@[simp] theorem infty_base (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
-    (infty E base).base = base := rfl
-
-/-- **The Weierstrass involution of a coordinate datum** (PROVEN) —
-`[X : Y : Z] ↦ [X : negY : Z]`, mathlib's `neg` triple.
-
-`equation` is `equation_neg` (proved over an arbitrary ring in
-`Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`; mathlib has only the affine
-and the over-a-field forms).  `span_coord` holds because the involution is its
-own inverse on the span: `c.coord 1 = -negY c - a₁ * c.coord 0 - a₃ * c.coord 2`
-lies in the span of the negated triple. -/
-noncomputable def negC (c : ProjCoords E X) : ProjCoords E X where
-  base := c.base
-  coord := neg (E.map c.base) c.coord
-  equation := equation_neg c.equation
-  span_coord := by
-    refine top_le_iff.mp ?_
-    rw [← c.span_coord, Ideal.span_le]
-    have h0 : c.coord 0 ∈ Ideal.span (Set.range (neg (E.map c.base) c.coord)) :=
-      Ideal.subset_span ⟨0, rfl⟩
-    have h2 : c.coord 2 ∈ Ideal.span (Set.range (neg (E.map c.base) c.coord)) :=
-      Ideal.subset_span ⟨2, rfl⟩
-    have h1 : negY (E.map c.base) c.coord ∈
-        Ideal.span (Set.range (neg (E.map c.base) c.coord)) := Ideal.subset_span ⟨1, rfl⟩
-    rintro _ ⟨i, rfl⟩
-    fin_cases i
-    · exact h0
-    · have hrw : c.coord 1 = -(negY (E.map c.base) c.coord) - (E.map c.base).a₁ * c.coord 0
-          - (E.map c.base).a₃ * c.coord 2 := by
-        simp only [negY]
-        ring1
-      show c.coord 1 ∈ _
-      rw [hrw]
-      exact sub_mem (sub_mem (neg_mem h1) (Ideal.mul_mem_left _ _ h0))
-        (Ideal.mul_mem_left _ _ h2)
-    · exact h2
-
-@[simp] theorem negC_coord (c : ProjCoords E X) :
-    (negC c).coord = neg (E.map c.base) c.coord := rfl
-
-@[simp] theorem negC_base (c : ProjCoords E X) : (negC c).base = c.base := rfl
-
-/-- **The infinity datum computes `projInfty`** (sorry node — naturality of
-`Proj.fromOfGlobalSections` in its SCHEME argument, absent from the pin; see the
-section docstring above, including the `awayι` shortcut that applies to this
-leaf and not to `toHom_negC`).
-
-The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
-subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
-base change of the unit section", with no choice involved. -/
-theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
-    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
-    (infty E base).toHom = s ≫ projInfty E :=
-  sorry
-
-/-- **The negated datum computes `projNeg`** (sorry node — compatibility of
-`Proj.fromOfGlobalSections` with `Proj.map`, absent from the pin; see the section
-docstring above).
-
-`projNeg E` is `Proj.map (negGradedHom E) _`, and `negC` is the same involution
-read on coordinates, so this says that the two descriptions of the Weierstrass
-involution agree — the ring map `negQuot` composed with `c.ringHom` is
-`(negC c).ringHom`, which is itself a one-line `MvPolynomial` computation; what
-is missing is only that `fromOfGlobalSections` turns that ring-level identity
-into the identity of morphisms. -/
-theorem toHom_negC (c : ProjCoords E X) : (negC c).toHom = c.toHom ≫ projNeg E :=
-  sorry
 
 end ProjCoords
 
@@ -3995,7 +3847,7 @@ theorem specPointEquiv_comp_projInfty_eq_zero {E : WeierstrassCurve ℚ} [E.IsEl
       (_P ≫ projToSpec E) ≫ (ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
         ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).toHom := by
     rw [ProjCoords.toHom_inftyC, Category.assoc]
-  rw [h1, ProjCoords.toHom_comap, ProjCoords.specPointEquiv_toHom, ProjCoords.affinePoint]
+  rw [h1, ← ProjCoords.comap_toHom, ProjCoords.specPointEquiv_toHom, ProjCoords.affinePoint]
   have hcf : ProjCoords.coordField
       ((ProjCoords.inftyC E (Spec (CommRingCat.of ℚ))
         ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).comap (_P ≫ projToSpec E)) =
@@ -7903,7 +7755,7 @@ that `specPointEquiv_comp_projInfty_eq_zero` needs, namely naturality of
 `specPointEquiv_comp_projInfty_eq_zero` above, where it is stated.
 
 **UPDATE 2026-07-28: that congruence is now PROVEN** (`ProjCoords.fromOfGlobalSections_comp`,
-read on a datum as `ProjCoords.toHom_comap`), and this leaf is discharged over it.  What is
+read on a datum as `ProjCoords.comap_toHom`), and this leaf is discharged over it.  What is
 left is the SCHEME-FREE residue `affinePoint_comap_specGal` immediately below: the geometry
 is gone, and only the two coordinate-level facts remain. -/
 theorem affinePoint_comap_specGal (E : WeierstrassCurve ℚ) [E.IsElliptic]
@@ -7917,7 +7769,7 @@ theorem affinePoint_comap_specGal (E : WeierstrassCurve ℚ) [E.IsElliptic]
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **GALOIS EQUIVARIANCE of the dictionary** (**PROVEN 2026-07-28** from
-`ProjCoords.toHom_comap` — i.e. from the new `Proj.fromOfGlobalSections` naturality — and
+`ProjCoords.comap_toHom` — i.e. from the new `Proj.fromOfGlobalSections` naturality — and
 `affinePoint_comap_specGal`). -/
 theorem specPointEquiv_symm_map_galois (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point) :
@@ -7929,7 +7781,7 @@ theorem specPointEquiv_symm_map_galois (E : WeierstrassCurve ℚ) [E.IsElliptic]
   classical
   obtain ⟨c, hc⟩ := ProjCoords.exists_affinePoint_eq (algebraMap ℚ (AlgebraicClosure ℚ)) x
   rw [← hc, ← affinePoint_comap_specGal E σ c, ProjCoords.specPointEquiv_symm_affinePoint,
-    ProjCoords.specPointEquiv_symm_affinePoint, ProjCoords.toHom_comap]
+    ProjCoords.specPointEquiv_symm_affinePoint, ← ProjCoords.comap_toHom]
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **The chord–tangent multiplication `m`, its three chart axioms, AND the

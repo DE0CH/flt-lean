@@ -9404,8 +9404,17 @@ theorem isPrime_radical_integralSystemIdeal_rat_of_algebraicClosure
 
 /-- **Total degree is unchanged by an injective coefficient map** (PROVEN glue).
 `totalDegree` is a `sup` over the support, and an injective coefficient map does
-not move the support (`MvPolynomial.support_map_of_injective`). -/
-theorem totalDegree_map_of_injective {σ R S : Type*} [CommSemiring R] [CommSemiring S]
+not move the support (`MvPolynomial.support_map_of_injective`).
+
+**RENAMED at the release-13 integration.**  It was `totalDegree_map_of_injective`,
+which is ALSO the name of a byte-identical lemma in `Modularity/Interface.lean`, in
+this same namespace.  Neither module imports the other, so both built green in
+isolation — but `HardlyRamified/Lift.lean` imports `Family` (hence `Interface`) and
+`Deformation` (hence `HilbertModularity`, hence this file), and importing two
+modules that declare the same constant is an error.  A single-module build cannot
+see this; only the consumer can.  The right long-term fix is to hoist ONE copy into
+a module both cones already contain and delete the other. -/
+theorem totalDegree_map_of_injective_coeff {σ R S : Type*} [CommSemiring R] [CommSemiring S]
     (p : MvPolynomial σ R) {φ : R →+* S} (hφ : Function.Injective φ) :
     (MvPolynomial.map φ p).totalDegree = p.totalDegree := by
   simp only [MvPolynomial.totalDegree, MvPolynomial.support_map_of_injective _ hφ]
@@ -9432,7 +9441,7 @@ theorem irreducible_of_irreducible_map_field {σ K L : Type*} [Field K] [Field L
     rw [MvPolynomial.coeff_map] at hq0
     refine ⟨isUnit_iff_ne_zero.2 fun h0 => (isUnit_iff_ne_zero.1 hq0) ?_, ?_⟩
     · rw [h0, map_zero]
-    · rw [← totalDegree_map_of_injective q hφ]; exact hqd
+    · rw [← totalDegree_map_of_injective_coeff q hφ]; exact hqd
   refine ⟨fun hu => h.not_isUnit (hu.map (MvPolynomial.map φ)), ?_⟩
   intro q r hqr
   have hmul : MvPolynomial.map φ p = MvPolynomial.map φ q * MvPolynomial.map φ r := by

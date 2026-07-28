@@ -26061,32 +26061,6 @@ theorem integral_Ioi_zero_eq_of_inversion {A : ℝ → ℂ}
   rw [hsplit, h2]
   ring
 
-/-- **`qSeriesAt` IS `axisRestrict`, RESCALED** (PROVEN):
-`qSeriesAt b y = f (iy)` while
-`ModularCurve/WeightTwoEigenform.lean`'s `axisRestrict M g u = f (iu/√M)`,
-so the two differ by `u = √M · y`.
-
-The `√M` rescaling is exactly what turns the level-`M` Fricke involution
-`z ↦ -1/(Mz)` into the level-free inversion `u ↦ 1/u` that the lemma
-above wants.  Its fixed point `u = 1` is `y = 1/√M`, which is why the
-tail integral below starts there and not at `1`. -/
-theorem qSeriesAt_eq_axisRestrict {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
-    (hb : IsWeightTwoEigenform M g b) {y : ℝ} (hy : 0 < y) :
-    qSeriesAt b y = axisRestrict M g (Real.sqrt M * y) := by
-  have hsq : (0 : ℝ) < Real.sqrt M :=
-    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
-  have hsqR : Real.sqrt M ≠ 0 := hsq.ne'
-  have hsqC : ((Real.sqrt M : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
-  have h := (hasSum_axisRestrict hM hb (mul_pos hsq hy)).tsum_eq
-  have hs := summable_qSeriesAt hb hy
-  rw [qSeriesAt, hs.tsum_eq_zero_add, hb.zero, zero_mul, zero_add, ← h]
-  refine tsum_congr fun n => ?_
-  congr 1
-  rw [Complex.ofReal_exp]
-  congr 1
-  push_cast
-  field_simp
-
 /-- **A NEWFORM IS AN ATKIN–LEHNER EIGENFORM** (sorry leaf): the Fricke
 involution `W_M` acts on a newform by a SIGN, so the anonymous partner
 produced by `exists_frickeInvolution` is `± g` itself.
