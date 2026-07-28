@@ -2622,56 +2622,210 @@ theorem nsmul_eq_zero_iff_existsUnique_finPair {G : Type*} [AddCommGroup G] {n :
   · rintro ⟨c, hc, -⟩
     rw [hc, smul_add, hkill _ y hy, hkill _ z hz, add_zero]
 
-/-- **The `n`-torsion at a geometric point is free of rank two over
-`ℤ/n`** (sorry leaf, opened 2026-07-27; restated 2026-07-27 in
-`ℕ`-coefficient form) — the fibre input to the level-`n` torsor, and the
-only citation in it.
+/-! #### The Silverman citation, reduced to a Weierstrass model
+
+Third round (2026-07-28).  `exists_zmodBasis_torsion_geomPoint` below was
+a *citation of Silverman AEC III.6.4* — `E[n] ≅ (ℤ/n)²` over an
+algebraically closed field of characteristic zero — stated about the
+abstract fibre `RelPoint f t` of an abelian scheme.  But that citation is
+**already PROVEN in this tree**, for elliptic curves in Weierstrass form:
+`WeierstrassCurve.n_torsion_dimension`
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, sorry-free, over
+`TorsionCard.card_torsionBy` and the counting lemmas of
+`TorsionCounting.lean`) gives
+`E.nTorsion n ≃+ ZMod n × ZMod n` for every `n` invertible in a separably
+closed base field.
+
+So the leaf does not owe the torsion computation at all; it owes only the
+**identification of the geometric fibre of `f` with the points of a
+Weierstrass curve**.  That is split off below as
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`, and the two purely formal steps
+between them are proven here:
+
+* `exists_zmodBasis_of_torsionEquiv` — the passage from an `AddEquiv`
+  onto `(ℤ/n)²` *of the torsion subgroup* to the `ℕ`-coefficient basis
+  clauses in the *ambient* group.  Pure algebra, no geometry.
+* the characteristic-zero derivation, which is `g` spent exactly once:
+  `Γ` of `t ≫ g` is a ring map `ℚ → K`, hence `CharZero K`, hence
+  `(n : K) ≠ 0` at `n ≥ 3`, which is `n_torsion_dimension`'s hypothesis.
+
+What this buys: the residual geometric leaf mentions no `n`, no torsion
+and no `ℤ/n`.  It is the classical statement that a proper smooth
+geometrically connected relative curve with a section is an elliptic
+curve over an algebraically closed field, i.e. that it has a Weierstrass
+model whose chord–tangent law is the group law of `ab` — Silverman *AEC*
+III.3.1 (Riemann–Roch) plus III.3.4e (uniqueness of the group law with a
+given origin), rather than III.6.4. -/
+
+/-- **A `ℤ/n`-basis of the `n`-torsion, out of an additive isomorphism
+with `(ℤ/n)²`** (PROVEN 2026-07-28) — pure algebra, the bridge between
+the shape mathlib-style torsion theory produces and the
+`ℕ`-coefficient shape the geometric leaves below are stated in.
+
+`WeierstrassCurve.n_torsion_dimension` delivers `E[n] ≅ (ℤ/n)²` as an
+`AddEquiv` of the SUBGROUP `Submodule.torsionBy ℤ _ n`.  What the leaves
+want instead is two elements of the AMBIENT group together with the three
+`ℕ`-coefficient clauses.  Three steps connect them: the standard
+generators of `(ℤ/n)²` pull back to `y, z`; the coordinates of a torsion
+point are the `ZMod.val`s of its image, which is why the `∃ a b : ℕ` form
+needs no division; and a vanishing combination maps to
+`((a : ZMod n), (b : ZMod n)) = 0`, which is `ZMod.natCast_eq_zero_iff`,
+i.e. `n ∣ a ∧ n ∣ b`.
+
+`hn` is load-bearing: at `n = 0` the hypothesis reads `A ≃+ ℤ²` (the
+`0`-torsion being all of `A`), and `ZMod.val` — hence the whole
+coordinate step — is not available. -/
+theorem exists_zmodBasis_of_torsionEquiv {A : Type*} [AddCommGroup A] {n : ℕ} (hn : 0 < n)
+    (ψ : Submodule.torsionBy ℤ A (n : ℤ) ≃+ ZMod n × ZMod n) :
+    ∃ y z : A, n • y = 0 ∧ n • z = 0 ∧
+      (∀ x : A, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) := by
+  haveI : NeZero n := ⟨hn.ne'⟩
+  have hmem : ∀ x : A, n • x = 0 ↔ x ∈ Submodule.torsionBy ℤ A (n : ℤ) := fun x => by
+    rw [Submodule.mem_torsionBy_iff, natCast_zsmul]
+  obtain ⟨y₀, hy₀⟩ : ∃ w : Submodule.torsionBy ℤ A (n : ℤ), ψ w = (1, 0) :=
+    ⟨ψ.symm (1, 0), ψ.apply_symm_apply _⟩
+  obtain ⟨z₀, hz₀⟩ : ∃ w : Submodule.torsionBy ℤ A (n : ℤ), ψ w = (0, 1) :=
+    ⟨ψ.symm (0, 1), ψ.apply_symm_apply _⟩
+  have hcoord : ∀ a b : ℕ, ψ (a • y₀ + b • z₀) = ((a : ZMod n), (b : ZMod n)) := by
+    intro a b
+    rw [map_add, map_nsmul, map_nsmul, hy₀, hz₀]
+    simp [nsmul_eq_mul]
+  have hcast : ∀ a b : ℕ,
+      ((a • y₀ + b • z₀ : Submodule.torsionBy ℤ A (n : ℤ)) : A)
+        = a • (y₀ : A) + b • (z₀ : A) := by
+    intro a b
+    simp
+  refine ⟨(y₀ : A), (z₀ : A), (hmem _).2 y₀.2, (hmem _).2 z₀.2, ?_, ?_⟩
+  · intro x hx
+    refine ⟨(ψ ⟨x, (hmem x).1 hx⟩).1.val, (ψ ⟨x, (hmem x).1 hx⟩).2.val, ?_⟩
+    have key : (⟨x, (hmem x).1 hx⟩ : Submodule.torsionBy ℤ A (n : ℤ))
+        = (ψ ⟨x, (hmem x).1 hx⟩).1.val • y₀ + (ψ ⟨x, (hmem x).1 hx⟩).2.val • z₀ := by
+      apply ψ.injective
+      rw [hcoord]
+      simp [ZMod.natCast_val, ZMod.cast_id]
+    have hval := congrArg (fun w : Submodule.torsionBy ℤ A (n : ℤ) => (w : A)) key
+    simpa [hcast] using hval
+  · intro a b hab
+    have h0 : (a • y₀ + b • z₀ : Submodule.torsionBy ℤ A (n : ℤ)) = 0 := by
+      apply Subtype.ext
+      rw [hcast]
+      simpa using hab
+    have h2 := congrArg ψ h0
+    rw [hcoord, map_zero] at h2
+    simpa [Prod.ext_iff, ZMod.natCast_eq_zero_iff] using h2
+
+/-- **The geometric fibre of an elliptic scheme is the group of points of
+a Weierstrass elliptic curve** (sorry leaf, opened 2026-07-28) — all of
+the geometry that `exists_zmodBasis_torsion_geomPoint` used to carry, and
+none of the arithmetic.
 
 ## What the prover of this node owes
 
-That for an elliptic curve over an algebraically closed field `K` of
-characteristic `0`, `E(K)[n] ≅ (ℤ/n)²`: Silverman *AEC* III.6.4 (`E[m] ≅
-ℤ/m × ℤ/m` whenever `m` is invertible in `K`).  Here `E(K)` is spelled
-`RelPoint f t`, the `Spec K`-points of `f` over the geometric point `t`,
-with the group law `ab.addCommGroup t`; the fibre `E ×_T Spec K` is an
-elliptic curve because `ab` makes `f` proper, smooth and geometrically
-connected and `hdim` makes the fibres curves, so the fibre is a smooth
-proper geometrically connected genus-one curve with the origin `ab.zero t`.
+That the fibre `E ×_T Spec K` of `f` at a geometric point is an elliptic
+curve over `K` *with the group law of `ab`*.  Concretely: `ab` makes `f`
+proper, smooth and geometrically connected, and `hdim` makes its fibres
+of relative dimension one, so the fibre is a smooth proper geometrically
+connected curve over the algebraically closed field `K`, with the
+`K`-rational origin `ab.zero t`.  Such a curve has genus one (properness
++ smoothness + the existence of a nowhere-vanishing invariant
+differential, or the standard classification), Riemann–Roch on
+`n · (origin)` produces a Weierstrass model `W` (Silverman *AEC*
+III.3.1), and the chord–tangent law on `W` is the unique group law with
+that origin (*AEC* III.3.4e), so it agrees with `ab.add` — which is what
+makes the identification an `AddEquiv` rather than a bijection.
 
-The conclusion is the plain module-theoretic reading of "free of rank two
-over `ℤ/n` with basis `y, z`": both generators are killed by `n`, every
-`n`-torsion point is an `ℕ`-combination of them, and a combination
-vanishes only when `n` divides both coefficients.  Silverman's proof is
-that `[n]` is separable of degree `n²` in characteristic `0`, so
-`#E[m] = m²` for every `m ∣ n`, which forces the structure.
+`RelPoint f t` is the set of sections of `f` over `t`, i.e. the
+`K`-points of that fibre, so the statement really is "`E_t(K) ≅ W(K)` as
+groups".
 
 ## What it does NOT owe
 
-Nothing scheme-theoretic: no `E[n]` as a subscheme, no finiteness, no
-flatness, no étaleness, no `Isom`-sheaf.  All of that is
-`exists_torsionBasis_cover_of_geomPoint`, which receives the
-`Fin n`-coordinate consequence of this statement as a hypothesis.
-
-Nothing about `Fin n` either: the passage from this statement to the
-`∃!`-over-`Fin n × Fin n` form is `nsmul_eq_zero_iff_existsUnique_finPair`
-above, which is PROVEN.
+Nothing about `n`, torsion, `ℤ/n`, or characteristic: `n` does not occur
+in the statement, and there is deliberately no `g : T ⟶ SpecQ`
+hypothesis.  A Weierstrass model exists in every characteristic, and
+making the leaf characteristic-free is what keeps it reusable — the
+characteristic-zero input is spent downstream, on
+`WeierstrassCurve.n_torsion_dimension`'s `(n : K) ≠ 0`.
 
 ## Faithfulness
 
+`hdim` is load-bearing: for an abelian scheme of relative dimension `d`
+the fibre is an abelian variety of dimension `d`, which for `d ≥ 2` is
+not a curve and has no Weierstrass model.  `ab`'s properness and
+connectedness are load-bearing for the same reason — a smooth affine
+relative curve (`𝔾_a`, `𝔾_m`) is a one-dimensional group scheme whose
+point group is not that of any elliptic curve.
+
+`[DecidableEq K]` is Lean bookkeeping only: it is what mathlib's
+chord–tangent addition on `WeierstrassCurve.Affine.Point` requires, and
+the consumer supplies it classically.
+
+## Where to start — the `T = Spec ℚ` case is ALREADY PROVEN
+
+Do not build this from nothing.  `EllipticScheme.lean` carries the whole
+argument at the base `Spec ℚ` and the geometric point `specAlgClos ℚ`:
+`exists_weierstrassModel_of_ellipticScheme` (the Riemann–Roch model),
+`exists_geomFibreAddEquiv_of_weierstrassModel` (the group-law
+identification), and their combination
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which is
+the statement below with `T = Spec ℚ`, `K = ℚ̄` and an extra Galois
+equivariance clause.  X0.lean already imports that module (non-publicly,
+which is fine for a proof body — see the note at the import line).
+
+So the work here is a GENERALISATION, not a construction: base change
+`f` along `t : Spec K ⟶ T` to an abelian scheme over `Spec K`, and run
+the same argument over `K` in place of `ℚ`.  The `ℚ`-specific steps in
+`EllipticScheme.lean` to audit are the ones that mention `specAlgClos ℚ`
+and `Field.absoluteGaloisGroup ℚ`; the equivariance clause is not needed
+here at all, which removes most of them.
+
+REFERENCES: Silverman *AEC* III.3.1, III.3.4e; Katz–Mazur 2.1.1 for the
+relative statement. -/
+theorem exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (K : Type) [Field K] [IsAlgClosed K] [DecidableEq K]
+    (t : Spec (CommRingCat.of K) ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ W : WeierstrassCurve K, ∃ _ : W.IsElliptic,
+      Nonempty (RelPoint f t ≃+ (W⁄K).Point) :=
+  sorry
+
+/-- **The `n`-torsion at a geometric point is free of rank two over
+`ℤ/n`** (opened 2026-07-27; restated 2026-07-27 in `ℕ`-coefficient form;
+**PROVEN 2026-07-28**) — the fibre input to the level-`n` torsor.
+
+It is `exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint` — the geometric fibre read as
+the points of a Weierstrass elliptic curve — fed to
+`WeierstrassCurve.n_torsion_dimension`
+(`Fermat/FLT/EllipticCurve/Torsion.lean`, sorry-free), which is this
+tree's own proof of Silverman *AEC* III.6.4, and then to
+`exists_zmodBasis_of_torsionEquiv` above, which is pure algebra.
+
+## Where each hypothesis is spent
+
 `g` is **load-bearing for TRUTH and cannot be dropped**: it is the only
-route by which `K` is known to have characteristic `0`.  Over
-`K = 𝔽̄_p` with `p ∣ n` the statement is FALSE — `E(K)[p]` is `ℤ/p` for
-an ordinary curve and trivial for a supersingular one, so no `hindep`
-pair `(y, z)` can also satisfy `hspan`.
+route by which `K` is known to have characteristic `0`.  It is consumed
+exactly once, in the three lines below that turn `Γ(t ≫ g)` into a ring
+map `ℚ → K` and hence `CharZero K`, which is what makes
+`(n : K) ≠ 0` — `n_torsion_dimension`'s hypothesis.  Over `K = 𝔽̄_p`
+with `p ∣ n` the statement is FALSE: `E(K)[p]` is `ℤ/p` for an ordinary
+curve and trivial for a supersingular one, so no `hindep` pair `(y, z)`
+can also satisfy `hspan`.
 
-`hn` is inherited from the parent.  Unlike on the `Fin n` form it is not
-needed for truth here — at `n = 0` the statement reads "`E(K)` is free of
-rank two over `ℤ`", which is false, so `hn` is in fact load-bearing at
-`n = 0` for a different reason; at `n = 1, 2` the statement is true.
+`hn` is used only through `0 < n` and `(n : K) ≠ 0`.  At `n = 0` the
+statement reads "`E(K)` is free of rank two over `ℤ`", which is false, so
+`hn` is load-bearing there; at `n = 1, 2` the statement is true.
 
-`hdim` is load-bearing: without it `f` is an abelian scheme of arbitrary
-relative dimension `d`, whose `n`-torsion is `(ℤ/n)^{2d}` and admits no
-two-element basis for `d ≥ 2`. -/
+`hdim` is load-bearing, and is now spent inside
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`: without it `f` is an abelian scheme
+of arbitrary relative dimension `d`, whose `n`-torsion is `(ℤ/n)^{2d}`
+and admits no two-element basis for `d ≥ 2`.
+
+Nothing about `Fin n` happens here either: the passage to the
+`∃!`-over-`Fin n × Fin n` form is `nsmul_eq_zero_iff_existsUnique_finPair`
+above, which is PROVEN. -/
 theorem exists_zmodBasis_torsion_geomPoint (n : ℕ) (hn : 3 ≤ n)
     {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
@@ -2679,8 +2833,20 @@ theorem exists_zmodBasis_torsion_geomPoint (n : ℕ) (hn : 3 ≤ n)
     letI := ab.addCommGroup t
     ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
       (∀ x : RelPoint f t, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
-      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :=
-  sorry
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) := by
+  letI := ab.addCommGroup t
+  haveI : CharZero K := by
+    obtain ⟨ψ⟩ : Nonempty (ℚ →+* K) :=
+      ⟨((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv ≫ (t ≫ g).appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom⟩
+    letI : Algebra ℚ K := ψ.toAlgebra
+    exact charZero_of_injective_algebraMap ψ.injective
+  letI : DecidableEq K := Classical.typeDecidableEq K
+  obtain ⟨W, hW, ⟨φ⟩⟩ := exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint ab hdim K t
+  haveI := hW
+  obtain ⟨χ⟩ := W.n_torsion_dimension (n := n) (Nat.cast_ne_zero.mpr (by omega))
+  exact exists_zmodBasis_of_torsionEquiv (by omega)
+    ((TorsionCounting.torsionByCongr (n : ℤ) φ).trans χ)
 
 /-- **The `n`-torsion at a geometric point has unique `Fin n`-coordinates**
 (PROVEN 2026-07-27) — the fibre input to the level-`n` torsor, in the
@@ -2738,8 +2904,123 @@ theorem surjective_of_exists_lift_geomPoint {T' T : Scheme.{0}} (p : T' ⟶ T)
   simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at h2
   exact h2.trans (Scheme.fromSpecResidueField_apply x _)
 
-/-- **The `Isom`-scheme of the level-`n` torsor** (sorry leaf, opened
-2026-07-27) — everything in `exists_torsionBasis_cover_of_geomPoint`
+/-- **`E[n] ⟶ T` is finite and flat** (sorry leaf, opened 2026-07-28) —
+the first of the two halves of the `Isom`-torsor, and the one that is
+about `E[n]` alone.
+
+`E[n]` is spelled as the fibre product of `[n] : E ⟶ E` with the zero
+section, which is the same construction
+`CyclicSubgroupOfOrder.torsionScheme` below uses for `C[n]`, with `c.ι`
+replaced by the identity; `Limits.pullback.fst _ _ ≫ f` is its structure
+morphism to `T`.
+
+## What the prover of this node owes
+
+That `[n]` is finite and flat as a morphism `E[n] ⟶ T` when `n` is
+invertible on `T` and `f` has relative dimension one.  The classical
+argument: `[n] : E ⟶ E` is finite flat of degree `n²` on an elliptic
+scheme (Katz–Mazur 2.3.1), so its kernel — the fibre product with the
+zero section — is finite locally free of rank `n²` over `T`, being a base
+change of a finite flat morphism along the zero section.  `flat_mulByNat`
+and `locallyOfFinitePresentation_mulByNat` (both PROVEN, in
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) are the inputs on the
+`[n]` side; what is not yet available is that `[n]` is FINITE, which is
+where relative dimension one is spent — `[n]` is proper
+(`isProper_mulByNat`) and quasi-finite because the fibres of `[n]` are
+the `n`-torsion of a one-dimensional group, and proper + quasi-finite is
+finite.
+
+## Faithfulness
+
+`g` is load-bearing: over a base of residue characteristic `p ∣ n` the
+kernel `E[n]` is not flat of rank `n²` — for a supersingular curve in
+characteristic `p` the fibre rank of `E[p]` is `p²` only as a scheme with
+nilpotents, and the *étale* rank drops, which is precisely the failure
+`etale_of_isReduced_pullback` is guarded against.  Flatness itself is the
+subtler half: it is `n` invertible that makes `[n]` étale, hence flat with
+constant fibre rank.
+
+`hdim` is load-bearing: for relative dimension `d` the kernel has rank
+`n^{2d}`, still finite flat, but `[n]` finite needs the fibres of `[n]`
+to be finite, which is relative dimension `> 0` and properness — at
+`d = 0` the statement is trivial and at `d ≥ 2` it is still true, so
+`hdim` is used for the ROUTE rather than for truth.  `hn` is inherited
+from the parent and only `n ≠ 0` is needed: at `n = 0`, `[0]` is the zero
+section composed with `f` and `E[0] = E`, which is proper and not finite,
+so the statement is FALSE at `n = 0` and `hn` is load-bearing there.
+
+REFERENCES: Katz–Mazur 2.3.1; Mumford, *Abelian Varieties* §6 (the
+degree of `[n]`); SGA 3, VI_B. -/
+theorem isFinite_flat_nTorsion (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ) :
+    IsFinite (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) ∧
+      AlgebraicGeometry.Flat (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) :=
+  sorry
+
+/-- **The `Isom`-scheme of the level-`n` torsor, given the finite flat
+torsion scheme** (sorry leaf, opened 2026-07-28) — the second half of the
+cut, and the one that is genuinely about the `Isom`-functor.
+
+Everything in `exists_isomTorsor_of_geomPoint` below, with the finiteness
+and flatness of `E[n] ⟶ T` handed in as `hfin` and `hflat` rather than
+proven.  See that node's docstring for what the conclusion says and why
+each clause is there; this node owes only the passage from
+"`E[n] ⟶ T` is finite locally free" to "the bases of `E[n]` form a flat
+quasi-compact cover carrying a tautological pair".
+
+## What the prover of this node owes, precisely
+
+With `hfin`/`hflat` in hand, `E[n] ⟶ T` is finite flat, and it is ÉTALE
+by `AlgebraicGeometry.etale_of_isReduced_pullback` together with
+`locallyOfFinitePresentation_of_finrank_const` — this is where `g` is
+spent, exactly as in
+`CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase`.  What remains
+is the `Isom`-sheaf `Isom_T((ℤ/n)²_T, E[n])`: that it is representable by
+a finite étale `T`-scheme `T'` (Katz–Mazur 8.1.1), that the tautological
+isomorphism over `T'` is a pair of sections `P, Q` of `E[n]` — hence
+killed by `n` ON THE NOSE over `T'`, which is the last conjunct — and
+that `T'` has a point over exactly those geometric points of `T` at which
+`E[n]` admits a basis.
+
+A concrete route that avoids the general representability machinery:
+`E[n] ×_T E[n]` is finite étale over `T`, "being a basis" is a locally
+constant condition on a finite étale scheme, so the basis locus is a
+clopen subscheme of `E[n] ×_T E[n]`; take `T'` to be that subscheme, `p`
+its structure morphism (flat and quasi-compact because finite étale is),
+and `P, Q` the two tautological projections.
+
+## Faithfulness
+
+Unchanged from the parent, plus: `hfin` and `hflat` are TRUE (that is
+`isFinite_flat_nTorsion` above), so this node is not weakened into
+vacuity by assuming them — it is the parent statement with a true
+hypothesis exposed. -/
+theorem exists_isomTorsor_of_finiteFlat_nTorsion (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
+    (hfin : IsFinite (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f))
+    (hflat : AlgebraicGeometry.Flat
+      (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f)) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+          (letI := ab.addCommGroup t
+            ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+              ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
+  sorry
+
+/-- **The `Isom`-scheme of the level-`n` torsor** (opened 2026-07-27;
+DECOMPOSED and its own proof written 2026-07-28) — everything in
+`exists_torsionBasis_cover_of_geomPoint`
 except the passage from pointwise lifting to surjectivity.
 
 ## What the prover of this node owes
@@ -2793,16 +3074,51 @@ general fact about schemes; feeding it `hfib` is what
 
 ## What this project does not have, and would have to be built
 
-There is no theory of finite locally free group schemes, no `Isom`-sheaf,
-and no representability criterion for it at this pin, in
-`Fermat/FLT/Mathlib/`, or in `~/cs/FLT`.  *The check that would refute
-this*: `grep -rn 'Isom\|IsFiniteEtale\|torsionSubscheme' Fermat/
-.lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/`.  What
-does exist and is directly usable is `AbelianSchemeStruct.mulByNat`
-(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), which gives `[n]` as
-a morphism of schemes, so `E[n]` is constructible as the fibre product of
-`[n]` and the zero section; the missing content is its finiteness and
-flatness, and then the representability of the `Isom`-functor.
+**CORRECTED 2026-07-28, and the earlier version of this paragraph was
+STALE in the way `exists_openCover_twist_of_fullLevelStructure` predicted
+it would be** (that leaf's docstring says in terms: "its own 'what this
+project does not have' paragraph predates the material listed above and
+should be re-read against it before anyone acts on it").  It is re-read
+here, and the missing-infrastructure list has genuinely shrunk.
+
+Present and directly usable, all PROVEN:
+
+* `AbelianSchemeStruct.mulByNat n : E ⟶ E` and `zeroSection`
+  (`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), with `nsmul_val`,
+  `zero_val`, `mulByNat_comp`, `zeroSection_comp`,
+  `zeroSection_comp_mulByNat`, `flat_mulByNat`, `isProper_mulByNat`,
+  `locallyOfFinitePresentation_mulByNat`.  So `E[n]` is
+  `Limits.pullback (ab.mulByNat n) ab.zeroSection`, exactly as
+  `CyclicSubgroupOfOrder.torsionScheme` below builds `C[n]`.
+* `AbelianSchemeStruct.isClosedImmersion_zeroSection`, which makes the
+  projection `E[n] ⟶ E` a closed immersion — the same argument as
+  `CyclicSubgroupOfOrder.isClosedImmersion_torsionι`.
+* `AlgebraicGeometry.etale_of_isReduced_pullback`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/EtaleOfGeometricFibres.lean`):
+  finite + flat + locally of finite presentation + reduced geometric
+  fibres ⟹ étale.  This is where `g` is spent.
+* The functor-of-points description of the torsion scheme is a solved
+  pattern: `CyclicSubgroupOfOrder.liesIn_torsionι_iff`, whose proof
+  transcribes verbatim with `c.ι` replaced by `𝟙 E`.
+
+Genuinely still missing, and it is exactly two things:
+
+1. **`E[n] ⟶ T` finite and flat.**  `C[n]` inherits finiteness from `C`
+   being finite over the base, but `E ⟶ T` is proper and not finite, so
+   this needs a real argument (`n` invertible plus relative dimension
+   one).  This is now the separate leaf `isFinite_flat_nTorsion` below,
+   and it is the SAME object
+   `exists_openCover_twist_of_fullLevelStructure` records as owed.
+2. **The `Isom`-sheaf and its representability.**  Still absent from the
+   pin, from `Fermat/FLT/Mathlib/` and from `~/cs/FLT`.  *The check that
+   would refute this*: `grep -rn 'Isom\|IsFiniteEtale' Fermat/
+   .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/`.
+   This is what `exists_isomTorsor_of_finiteFlat_nTorsion` below now
+   carries, with (1) handed to it as a hypothesis.
+
+Because those two are independent — (1) is a statement about `E[n]` alone
+and (2) consumes it as a black box — this node is decomposed into them
+(2026-07-28), and its own proof is the one-line assembly.
 
 ## Faithfulness
 
@@ -2837,7 +3153,8 @@ theorem exists_isomTorsor_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
               ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
           ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
         (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
-  sorry
+  exists_isomTorsor_of_finiteFlat_nTorsion n hn ab hdim g
+    (isFinite_flat_nTorsion n hn ab hdim g).1 (isFinite_flat_nTorsion n hn ab hdim g).2
 
 /-- **The level-`n` torsor** (PROVEN 2026-07-27) — the scheme-theoretic
 half of `exists_fullLevelStructure_cover_of_baseChange`, with the fibre
