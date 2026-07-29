@@ -3555,6 +3555,201 @@ theorem isSwanExponentAt_swanExponentAux (ρ : GaloisRep K A M)
     ρ.IsSwanExponentAt v (ρ.swanExponentAux v) :=
   Nat.sInf_mem (ρ.exists_isSwanExponentAt v hfin)
 
+/-- **Two finite families of POSITIVE rationals whose "upper counting
+functions" `u ↦ #{k : u ≤ f k}` agree on `(0, ∞)` have the same sum.**
+
+This is the finite, measure-theory-free form of "the layer cake
+determines the integral": the counting function determines the
+non-increasing rearrangement of the family, hence its sum. The proof
+peels off the two maxima — which must agree, because each is detected by
+its own counting function at `u` equal to itself — and recurses.
+
+POSITIVITY IS NECESSARY, not decoration: the hypothesis only speaks about
+`u > 0`, so entries `≤ 0` are invisible to it. Witness: `s = t = {0}`,
+`f 0 = 0`, `g 0 = -1`; both counting functions are identically `0` on
+`(0, ∞)` and the sums differ.
+
+Its consumer is `GaloisRep.isSwanExponentAt_unique` below, where the
+positivity comes for free from `RamificationFiltration.gp_eq_wild`: on
+`(0, 1]` the filtration is constantly `P_v`, so every break is `≥ 1`. -/
+theorem _root_.Finset.sum_eq_sum_of_card_filter_le_eq :
+    ∀ (N : ℕ) {s t : Finset ℕ} {f g : ℕ → ℚ}, s.card = N → t.card = N →
+      (∀ k ∈ s, 0 < f k) → (∀ k ∈ t, 0 < g k) →
+      (∀ u : ℚ, 0 < u →
+        (s.filter fun k => u ≤ f k).card = (t.filter fun k => u ≤ g k).card) →
+      ∑ k ∈ s, f k = ∑ k ∈ t, g k := by
+  intro N
+  induction N with
+  | zero =>
+    intro s t f g hs ht _ _ _
+    rw [Finset.card_eq_zero] at hs ht
+    subst hs; subst ht; simp
+  | succ n ih =>
+    intro s t f g hs ht hf hg h
+    have hsne : s.Nonempty := Finset.card_pos.mp (by omega)
+    have htne : t.Nonempty := Finset.card_pos.mp (by omega)
+    obtain ⟨k₀, hk₀s, hk₀max⟩ := s.exists_max_image f hsne
+    obtain ⟨k₁, hk₁t, hk₁max⟩ := t.exists_max_image g htne
+    have hfa : 0 < f k₀ := hf k₀ hk₀s
+    have hgb : 0 < g k₁ := hg k₁ hk₁t
+    -- The two maxima agree: each is detected at `u` equal to itself.
+    have hab : f k₀ = g k₁ := by
+      refine le_antisymm ?_ ?_
+      · have h1 : (s.filter fun k => f k₀ ≤ f k).Nonempty := ⟨k₀, by simp [hk₀s]⟩
+        have h2 : (t.filter fun k => f k₀ ≤ g k).Nonempty := by
+          rw [← Finset.card_pos, ← h (f k₀) hfa, Finset.card_pos]; exact h1
+        obtain ⟨k, hk⟩ := h2
+        rw [Finset.mem_filter] at hk
+        exact hk.2.trans (hk₁max k hk.1)
+      · have h1 : (t.filter fun k => g k₁ ≤ g k).Nonempty := ⟨k₁, by simp [hk₁t]⟩
+        have h2 : (s.filter fun k => g k₁ ≤ f k).Nonempty := by
+          rw [← Finset.card_pos, h (g k₁) hgb, Finset.card_pos]; exact h1
+        obtain ⟨k, hk⟩ := h2
+        rw [Finset.mem_filter] at hk
+        exact hk.2.trans (hk₀max k hk.1)
+    -- Erasing one maximum from each side preserves the counting identity.
+    have herase : ∀ u : ℚ, 0 < u →
+        ((s.erase k₀).filter fun k => u ≤ f k).card
+          = ((t.erase k₁).filter fun k => u ≤ g k).card := by
+      intro u hu
+      rw [Finset.filter_erase, Finset.filter_erase]
+      by_cases huc : u ≤ f k₀
+      · have hm₀ : k₀ ∈ s.filter fun k => u ≤ f k := by
+          simp only [Finset.mem_filter]; exact ⟨hk₀s, huc⟩
+        have hm₁ : k₁ ∈ t.filter fun k => u ≤ g k := by
+          simp only [Finset.mem_filter]; exact ⟨hk₁t, hab ▸ huc⟩
+        rw [Finset.card_erase_of_mem hm₀, Finset.card_erase_of_mem hm₁, h u hu]
+      · have he₀ : (s.filter fun k => u ≤ f k) = ∅ := by
+          refine Finset.filter_eq_empty_iff.mpr fun {k} hk => ?_
+          exact fun hc => huc (hc.trans (hk₀max k hk))
+        have he₁ : (t.filter fun k => u ≤ g k) = ∅ := by
+          refine Finset.filter_eq_empty_iff.mpr fun {k} hk => ?_
+          exact fun hc => huc (hab ▸ (hc.trans (hk₁max k hk)))
+        rw [he₀, he₁]; simp
+    have hcs : (s.erase k₀).card = n := by
+      rw [Finset.card_erase_of_mem hk₀s, hs]; omega
+    have hct : (t.erase k₁).card = n := by
+      rw [Finset.card_erase_of_mem hk₁t, ht]; omega
+    have hrec := ih hcs hct
+      (fun k hk => hf k (Finset.mem_of_mem_erase hk))
+      (fun k hk => hg k (Finset.mem_of_mem_erase hk)) herase
+    rw [← Finset.sum_erase_add s f hk₀s, ← Finset.sum_erase_add t g hk₁t, hrec, hab]
+
+/-- **THE SWAN EXPONENT SPECIFICATION IS SINGLE-VALUED** (2026-07-28).
+
+`GaloisRep.IsSwanExponentAt ρ v` holds of AT MOST ONE natural number.
+The docstring of `IsSwanExponentAt` asserted this ("since the set is a
+singleton — the true filtration pins it"); it is now a theorem.
+
+THE ARGUMENT, and note it needs no arithmetic at all. Both witnesses are
+tested against the SAME filtration `F` — available because
+`IsSwanExponentAt` carries `Nonempty (RamificationFiltration v)` as its
+first conjunct — so their break lists `μ`, `μ'` have literally the same
+counting function `u ↦ dim V − dim V^{G^u}` on `(0, ∞)`. Both lists are
+entrywise `≥ 1`, since `RamificationFiltration.gp_eq_wild` makes the
+counting function constantly `wildCodim` on `(0, 1]`. Positivity plus
+equal counting functions forces equal sums
+(`Finset.sum_eq_sum_of_card_filter_le_eq`), and the sums ARE the two
+witnesses.
+
+WHY IT MATTERS BEYOND TIDINESS: it makes
+`swanExponentAux_eq_of_isSwanExponentAt` below available, which severs
+the dependence of every Swan COMPUTATION on the satisfiability leaf
+`exists_isSwanExponentAt`. See that declaration. -/
+theorem isSwanExponentAt_unique (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s₁ s₂ : ℕ}
+    (h₁ : ρ.IsSwanExponentAt v s₁) (h₂ : ρ.IsSwanExponentAt v s₂) : s₁ = s₂ := by
+  classical
+  obtain ⟨F⟩ := h₁.1
+  obtain ⟨μ, hcount, hsum⟩ := h₁.2 F
+  obtain ⟨μ', hcount', hsum'⟩ := h₂.2 F
+  have hwild : F.gp 1 = wildInertiaGroup v := F.gp_eq_wild 1 one_pos le_rfl
+  -- Every break is `≥ 1`: on `(0, 1]` the filtration is constantly `P_v`.
+  have key : ∀ (ν : ℕ → ℚ),
+      (∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ ν k).card) →
+      ∀ k ∈ Finset.range (ρ.wildCodim v), 0 < ν k := by
+    intro ν hν
+    have h1 := hν 1 one_pos
+    rw [hwild] at h1
+    have hfull : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ ν k)
+        = Finset.range (ρ.wildCodim v) := by
+      refine Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) ?_
+      rw [← h1, Finset.card_range]
+      exact le_of_eq rfl
+    intro k hk
+    have hmem : k ∈ (Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ ν k := by
+      rw [hfull]; exact hk
+    rw [Finset.mem_filter] at hmem
+    linarith [hmem.2]
+  have hcnt : ∀ u : ℚ, 0 < u →
+      ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card
+        = ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ' k).card := by
+    intro u hu
+    rw [← hcount u hu, ← hcount' u hu]
+  have hs := Finset.sum_eq_sum_of_card_filter_le_eq (ρ.wildCodim v)
+    (Finset.card_range _) (Finset.card_range _) (key μ hcount) (key μ' hcount') hcnt
+  have hq : (s₁ : ℚ) = (s₂ : ℚ) := by rw [hsum, hs, ← hsum']
+  exact_mod_cast hq
+
+/-- **THE SWAN CONDUCTOR IS READ OFF FROM ANY BREAK DECOMPOSITION**
+(2026-07-28) — and this is what makes `swanExponentAux` usable BEFORE
+`exists_isSwanExponentAt` is closed.
+
+`swanExponentAux ρ v = sInf {s | ρ.IsSwanExponentAt v s}`, so on the face
+of it computing it needs both a member and a minimality argument, and
+`isSwanExponentAt_swanExponentAux` above buys the member only at the
+price of the open leaf `exists_isSwanExponentAt`. By
+`isSwanExponentAt_unique` the set has at most one element, so exhibiting
+ONE break decomposition determines the value outright — and, as a
+by-product, discharges `exists_isSwanExponentAt` at that `v`.
+
+**CONSEQUENCE FOR DISPATCH, and it corrects a standing note.** A leaf of
+the form `ρ.swanExponent v = c` is NOT downstream of
+`exists_isSwanExponentAt`: it is equivalent to producing the break
+decomposition, which is what a prover would have to do in any case.
+`Fermat/FLT/Modularity/Interface.lean`'s
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` said
+otherwise ("do not dispatch a prover here before that one is closed")
+and has been corrected in place. -/
+theorem swanExponentAux_eq_of_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s : ℕ} (h : ρ.IsSwanExponentAt v s) :
+    ρ.swanExponentAux v = s := by
+  have hmem : ρ.IsSwanExponentAt v (ρ.swanExponentAux v) := by
+    rw [swanExponentAux]
+    exact Nat.sInf_mem (⟨s, h⟩ : {n : ℕ | ρ.IsSwanExponentAt v n}.Nonempty)
+  exact ρ.isSwanExponentAt_unique v hmem h
+
+/-- **A tamely ramified representation has no wild codimension**: the
+wild inertia fixes everything, so `V^{P_v} = V`. This is item 1 of the
+list in the `IsSwanExponentAt` docstring, now a declaration. -/
+theorem wildCodim_eq_zero_of_isTamelyRamifiedAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (h : ρ.IsTamelyRamifiedAt v) :
+    ρ.wildCodim v = 0 := by
+  have htop : ρ.fixedSubmodule v (wildInertiaGroup v) = ⊤ :=
+    eq_top_iff.mpr fun x _ σ hσ => h σ hσ x
+  rw [wildCodim, htop]
+  simp
+
+/-- **A NONZERO SWAN EXPONENT WITNESSES WILD RAMIFICATION.** Contrapositive
+of `wildCodim_eq_zero_of_isTamelyRamifiedAt`: under tameness the break
+list is indexed by `range 0`, so its sum — the exponent — is `0`.
+
+This is the form in which a Swan COMPUTATION discharges the `if` in
+`GaloisRep.swanExponent`: a prover who exhibits a break decomposition
+summing to something nonzero gets `¬ IsTamelyRamifiedAt` for free and
+need not argue it separately. -/
+theorem not_isTamelyRamifiedAt_of_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) {s : ℕ} (h : ρ.IsSwanExponentAt v s)
+    (hs : s ≠ 0) : ¬ ρ.IsTamelyRamifiedAt v := by
+  intro htame
+  obtain ⟨F⟩ := h.1
+  obtain ⟨μ, _, hsum⟩ := h.2 F
+  rw [wildCodim_eq_zero_of_isTamelyRamifiedAt ρ v htame] at hsum
+  simp only [Finset.range_zero, Finset.sum_empty] at hsum
+  exact hs (by exact_mod_cast hsum)
+
 open scoped Classical in
 /-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
 Swan conductor `Sw_v(V)`.

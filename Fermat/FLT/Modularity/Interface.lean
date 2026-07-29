@@ -61128,8 +61128,87 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
   rw [GaloisRep.conductorExponent, htame] at hle
   omega
 
-/-- **THE WILD PART AT DEEP LEVEL `q³ ∣ M₀`** (sorry leaf, cut 2026-07-27,
-fourteenth owner, from
+/-- **THE BREAK DECOMPOSITION AT DEEP LEVEL `q³ ∣ M₀`** (sorry leaf, cut
+2026-07-28, seventeenth owner, out of
+`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le`
+immediately below, which is now a THEOREM over it): for a weight-2
+NEWFORM `g₀` of level `M₀` and an IRREDUCIBLE `τ` matching its Hecke
+polynomials away from a finite set, `τ` admits a break decomposition at
+`q ≠ p` whose break sum is `ord_q M₀ − 2`.
+
+WHY THIS IS THE RIGHT SHAPE, AND WHAT IT REPLACES. The leaf below is an
+equation in `GaloisRep.swanExponentAux`, i.e. in a `sInf`. Its previous
+docstring recorded that computing that `sInf` needs
+`GaloisRep.exists_isSwanExponentAt` — `ArtinConductor.lean`'s
+satisfiability leaf — and concluded "do not dispatch a prover here
+before that one is closed". **That conclusion is now WRONG**, and the
+declaration that makes it wrong is
+`GaloisRep.swanExponentAux_eq_of_isSwanExponentAt` (proven 2026-07-28,
+over `GaloisRep.isSwanExponentAt_unique`): the specification
+`IsSwanExponentAt` is SINGLE-VALUED, so exhibiting ONE break
+decomposition determines `swanExponentAux` outright — and discharges
+`exists_isSwanExponentAt` at that `v` as a by-product rather than
+consuming it. This leaf is that break decomposition, stated directly.
+
+So the ordering between this cluster and `ArtinConductor.lean`'s
+satisfiability leaf is the OPPOSITE of what was recorded: this leaf is
+UPSTREAM of `exists_isSwanExponentAt` at `v_q`, not downstream of it.
+
+WHAT IS STILL MISSING FOR IT — unchanged, and it is the whole content.
+The number `ord_q M₀ − 2` comes from Carayol's `a_q(τ) = ord_q M₀`
+together with the PROVEN tame computation
+(`inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le`, giving
+`tameExponent = 2`), and `a_q(τ) = ord_q M₀` is the local–global input
+listed on `nonempty_modularTateGaloisData`: Deligne–Rapoport's integral
+model of `X₀(M₀)` at `q`, `J₀(M₀)`, Eichler–Shimura,
+Néron–Ogg–Shafarevich, joined on the automorphic side by Casselman's
+newvector theory and Deligne's compatibility of local Langlands with
+conductors. Nothing in this reshaping supplies any of that; what it
+supplies is that the geometry is now SUFFICIENT as well as necessary.
+
+FAITHFULNESS. `IsSwanExponentAt` quantifies over
+`RamificationFiltration v_q`, i.e. over subgroups of the LOCAL absolute
+Galois group at `q`; nothing is widened to `Γ ℚ`. The `∀ F` (rather
+than `∃ F`) is what pins the value — see the `RamificationFiltration`
+design note in `ArtinConductor.lean` — and a prover here must therefore
+produce the break list for EVERY admissible filtration, which is the
+honest form of the obligation.
+
+NOT VACUOUS, and the witness is the parent's: `M₀ = 27`, `q = 3`,
+`p ≠ 3`, where `ord₃ 27 = 3` and the newform of level `27` (the curve
+`X₀(27)`, CM by `ℚ(√−3)`) is wildly ramified at `3` with a single break
+and `Sw₃ = 1 = 3 − 2`.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a weight-2 newform with
+`3 ≤ ord_q M₀` at some `q ≠ p` that is tamely ramified at `q` — then
+`wildCodim = 0`, the break list is empty, the sum is `0`, and
+`ord_q M₀ − 2 ≥ 1` is unreachable. By the conductor dictionary that
+forces `a_q ≤ 2`, contradicting Carayol. AXIS SEARCHED: the tame/wild
+axis and the `sInf`-vs-specification axis (the latter is what this cut
+closed). -/
+theorem isSwanExponentAt_sub_two_of_isWeightTwoNewform_of_three_le
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord₃ : 3 ≤ M₀.factorization q) :
+    τ.IsSwanExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+      (M₀.factorization q - 2) :=
+  sorry
+
+/-- **THE WILD PART AT DEEP LEVEL `q³ ∣ M₀`** (**PROVEN 2026-07-28,
+seventeenth owner**, over the single leaf
+`isSwanExponentAt_sub_two_of_isWeightTwoNewform_of_three_le`
+immediately above; cut 2026-07-27, fourteenth owner, from
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
 below; Carayol, Théorème (A)): for a weight-2 NEWFORM `g₀` of level `M₀`
 and an IRREDUCIBLE `τ` matching its Hecke polynomials away from a finite
@@ -61165,18 +61244,35 @@ supplied by the other:
    the automorphic side by Casselman's newvector theory
    (`a(π_q) = ord_q M₀`) and Deligne's compatibility of local Langlands
    with conductors. This is what supplies `a_q(τ) = ord_q M₀`.
-2. **The break decomposition** — to convert that number into an equation
-   in `swanExponentAux` one needs `GaloisRep.exists_isSwanExponentAt`
-   (`ArtinConductor.lean`'s single leaf: essential uniqueness of the
-   upper-numbering filtration, the break decomposition, and Hasse–Arf
-   integrality). Without it `swanExponentAux` is `sInf ∅ = 0` and this
-   statement is FALSE for `ord_q M₀ ≥ 3`. **So this leaf is downstream of
-   `exists_isSwanExponentAt` in a strong sense: do not dispatch a prover
-   here before that one is closed.**
+2. **The break decomposition** — which is now the sub-leaf above,
+   `isSwanExponentAt_sub_two_of_isWeightTwoNewform_of_three_le`.
 
-That second point is the sharpest thing this cut records, and it is new:
-the previous single leaf could not express it, because with the tame part
-unpinned an unfavourable `swanExponentAux` could always be absorbed.
+**CORRECTION, 2026-07-28 (seventeenth owner).** Item 2 previously read:
+"to convert that number into an equation in `swanExponentAux` one needs
+`GaloisRep.exists_isSwanExponentAt` … **So this leaf is downstream of
+`exists_isSwanExponentAt` in a strong sense: do not dispatch a prover
+here before that one is closed.**" That was the sharpest thing the cut
+recorded and **it was wrong**, in the direction that costs most: it told
+dispatchers to skip a leaf that was in fact ready.
+
+What refutes it is `GaloisRep.isSwanExponentAt_unique` and
+`GaloisRep.swanExponentAux_eq_of_isSwanExponentAt` (both PROVEN
+2026-07-28 in `ArtinConductor.lean`, by finite combinatorics and no
+arithmetic): the specification `IsSwanExponentAt ρ v` holds of at most
+one natural number, because two witnesses are tested against the SAME
+filtration — `IsSwanExponentAt` carries `Nonempty
+(RamificationFiltration v)` as a conjunct — so their break lists have
+the same counting function, are entrywise `≥ 1` by
+`RamificationFiltration.gp_eq_wild`, and therefore have equal sums. A
+`sInf` over a subsingleton is its element, so exhibiting ONE break
+decomposition determines `swanExponentAux` without any minimality
+argument and without the satisfiability leaf. Indeed it PROVES
+`exists_isSwanExponentAt` at that `v`.
+
+The residual concern in the old text — "without it `swanExponentAux` is
+`sInf ∅ = 0` and this statement is FALSE for `ord_q M₀ ≥ 3`" — is
+therefore not a separate obligation: the sub-leaf above says the set is
+inhabited at `ord_q M₀ − 2`, which is exactly what rules out `sInf ∅`.
 
 FAITHFULNESS. `GaloisRep.swanExponent` is a function of `(ρ, v)` and its
 definition quantifies over `RamificationFiltration v`, i.e. over subgroups
@@ -61211,8 +61307,14 @@ theorem swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord₃ : 3 ≤ M₀.factorization q) :
     τ.swanExponent hq.toHeightOneSpectrumRingOfIntegersRat =
-      M₀.factorization q - 2 :=
-  sorry
+      M₀.factorization q - 2 := by
+  classical
+  have hmem := isSwanExponentAt_sub_two_of_isWeightTwoNewform_of_three_le
+    hM₀ hg₀ κ₀ hτ hirr hq hqp hord₃
+  have hne : M₀.factorization q - 2 ≠ 0 := by omega
+  rw [GaloisRep.swanExponent,
+    if_neg (GaloisRep.not_isTamelyRamifiedAt_of_isSwanExponentAt _ _ hmem hne)]
+  exact GaloisRep.swanExponentAux_eq_of_isSwanExponentAt _ _ hmem
 
 /-- **Carayol's conductor theorem at the NEWFORM level, DEEP-LEVEL case
 `q² ∣ M₀`** (**PROVEN 2026-07-27, fourteenth owner**, over the three
