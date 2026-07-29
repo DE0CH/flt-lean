@@ -4445,15 +4445,36 @@ end MittagLeffler
 
 /-! ### Extraction of the sign character at one finite level -/
 
-/-- **The tame-at-two datum at one finite level, in coordinates.** -/
+include hℓOdd in
+/-- **The tame-at-two datum at one finite level, in coordinates.**
+
+**HYPOTHESIS WEAKENED 2026-07-29, no mathematical change.** `h` used to supply
+the whole bundled `IsHardlyRamified` at the level `J`; the proof consumes
+exactly ONE field of it, `isTameAtTwo`, and now asks for that field alone. This
+is the `ℚ`-side mirror of the weakening already carried out on the Hilbert twin
+`exists_hilbertSignChar_of_isHilbertTameAtTwo` (2026-07-27), and it is forced by
+the same consumer: the RAISED-LEVEL pro-limit clause of `Modularity/Patching.lean`
+(`raisedLevelIsTameAtTwo_of_forall_isOpen_quotient`) has the tame datum at every
+finite level but NOT the bundled base-level predicate — `IsRaisedLevelHardlyRamified`
+exempts the raised primes `Q` from unramifiedness, so it does not imply
+`IsHardlyRamified` and cannot be handed over. Without the weakening these ~900
+lines would have to be transcribed a second time. The only call site,
+`isTameAtTwo_of_forall_isOpen_quotient` below, passes `….isTameAtTwo`. -/
 lemma exists_signChar_of_quotient_isTameAtTwo
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     {ρ : FramedGaloisRep ℚ R (Fin 2)}
     {J : Ideal R} (hJm : J ≤ IsLocalRing.maximalIdeal R)
     [IsLocalRing (R ⧸ J)] (hmk : Continuous (Ideal.Quotient.mk J))
-    (h : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ J))
-      (pushforwardFrame (Ideal.Quotient.mk J) hmk ρ)) :
+    (h : ∃ (π : (Fin 2 → (R ⧸ J)) →ₗ[R ⧸ J] (R ⧸ J))
+        (_ : Function.Surjective π) (δ : GaloisRep ℚ_[2] (R ⧸ J) (R ⧸ J)),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → (R ⧸ J),
+        π ((pushforwardFrame (Ideal.Quotient.mk J) hmk ρ).map
+            (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1)) :
     ∃ ε : Field.absoluteGaloisGroup ℚ_[2] → R,
       (∀ g, ε g = 1 ∨ ε g = -1) ∧
       (∀ g₁ g₂, ε (g₁ * g₂) = ε g₁ * ε g₂) ∧
@@ -4472,7 +4493,7 @@ lemma exists_signChar_of_quotient_isTameAtTwo
   have h2Q : IsUnit (2 : R ⧸ J) := by
     have hh := h2R.map (Ideal.Quotient.mk J)
     rwa [map_ofNat] at hh
-  obtain ⟨π', hπ'surj, δ', hδ'⟩ := h.isTameAtTwo
+  obtain ⟨π', hπ'surj, δ', hδ'⟩ := h
   -- `π'` in coordinates
   obtain ⟨b, hb⟩ : ∃ b : Fin 2 → (R ⧸ J), ∀ i, b i = π' (Pi.single i 1) :=
     ⟨_, fun _ => rfl⟩
@@ -4578,6 +4599,7 @@ lemma exists_signChar_of_quotient_isTameAtTwo
   rw [heq, hb]
   ring
 
+include hℓOdd in
 /-- **The tame quotient at `2` is detected on the finite levels** (PROVEN
 2026-07-25/26 — the ONE clause of `isHardlyRamified_of_forall_isOpen_quotient`
 below that is a genuine pro-limit statement rather than a congruence).
@@ -4670,7 +4692,13 @@ References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
 Conrad–Diamond–Taylor, JAMS 12 (1999), §2 (the deformation-condition
 axioms); Grothendieck, EGA III 5.4.1 (the same statement read
 geometrically: sections of a proper `R`-scheme over a complete local `R`
-are the compatible systems of sections over the Artinian truncations). -/
+are the compatible systems of sections over the Artinian truncations).
+
+**HYPOTHESIS WEAKENED 2026-07-29, no mathematical change.** `hq` used to supply
+the whole bundled `IsHardlyRamified` at every open level; the proof consumes
+exactly ONE field of it, `isTameAtTwo`, and now asks for that field alone —
+see `exists_signChar_of_quotient_isTameAtTwo` above for the full rationale and
+for the Hilbert-side precedent. Every call site passes `….isTameAtTwo`. -/
 theorem isTameAtTwo_of_forall_isOpen_quotient
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
@@ -4679,8 +4707,15 @@ theorem isTameAtTwo_of_forall_isOpen_quotient
     {ρ : FramedGaloisRep ℚ R (Fin 2)}
     (hq : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
       (hmk : Continuous (Ideal.Quotient.mk I)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
-        (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
+      ∃ (π : (Fin 2 → (R ⧸ I)) →ₗ[R ⧸ I] (R ⧸ I))
+          (_ : Function.Surjective π) (δ : GaloisRep ℚ_[2] (R ⧸ I) (R ⧸ I)),
+        ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → (R ⧸ I),
+          π ((pushforwardFrame (Ideal.Quotient.mk I) hmk ρ).map
+              (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+          (AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+          (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1)) :
     ∃ (π : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective π)
       (δ : GaloisRep ℚ_[2] R R),
       ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → R,
@@ -5087,7 +5122,8 @@ theorem isHardlyRamified_of_forall_isOpen_quotient
       exact hasFlatProlongationAt_of_conj _
         (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2)) _ h2
   · -- the tame quotient at `2`: the one genuine pro-limit clause
-    exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete hq
+    exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete
+      (fun I hI _ hmk => (hq I hI hmk).isTameAtTwo)
 
 /-! ### Generic subring-descent engine (RELOCATED 2026-07-26)
 
