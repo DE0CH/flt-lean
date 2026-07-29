@@ -147,6 +147,16 @@ public import Fermat.FLT.Modularity.HeckeFrameForm
 -- count.  PUBLIC: this file is one `@[expose] public section` and every
 -- consumer of `heckeOp` here reaches it through this import.
 public import Fermat.FLT.Modularity.HeckeOperator
+-- `stepanovShear`, `stepanovNest`, `stepanovExp`, `stepanovGenericLine`,
+-- `stepanov_natDegree_resultant_le`, `schmidt_leibniz_core` and
+-- `pow_X_sub_C_dvd_iff_hasseDeriv`, for the Stepanov block below (Schmidt III
+-- over an arbitrary finite field).  Already in this file's transitive cone, but
+-- PUBLIC is required: `stepanov_pderiv_one_shear` and `stepanovNest_derivative`
+-- name `stepanovShear` and `stepanovNest` in SIGNATURE position, where a merely
+-- transitive import is not re-exported and the elaborator reports the name as an
+-- Unknown identifier.  Added 2026-07-29; `MoretBailly.lean` does not import this
+-- file (only `HardlyRamified/Family.lean` does), so there is no cycle.
+public import Fermat.FLT.Modularity.MoretBailly
 -- `SpecF`, `RelPoint`, `IsX0Compactification` and
 -- `exists_x0Compactification_finiteField`, for the SEVENTEENTH decomposition of
 -- `exists_planeModel_frobEigenvalues_of_not_dvd` below: the good reduction of
@@ -47228,17 +47238,34 @@ theorem one_le_totalDegree_of_irreducible_map
 /-! ### Stepanov's auxiliary pair, NINETEENTH decomposition (2026-07-28)
 
 `exists_stepanovAuxiliaryPair` below is now **PROVEN** over four sub-leaves, cut
-along Schmidt III itself and stated over an ARBITRARY finite field `K` — of which
-**one is itself PROVEN here**, so THREE are open. They are the field-general
-counterparts of the `ZMod p` chain that `Fermat/FLT/Modularity/MoretBailly.lean`
-already carries PROVEN:
+along Schmidt III itself and stated over an ARBITRARY finite field `K` — and as of
+the TWENTIETH decomposition (2026-07-29) **all four are PROVEN**, the two
+`NormPolynomial` ones over three named Lemma-4A/5A sub-leaves cut below them.
+They are the field-general counterparts of the `ZMod p` chain that
+`Fermat/FLT/Modularity/MoretBailly.lean` already carries PROVEN:
 
 | this file (arbitrary `𝔽_q`)                   | status | `MoretBailly.lean` (`𝔽_p`)          | Schmidt III |
 |-----------------------------------------------|--------|--------------------------------------|-------------|
-| `exists_stepanovNormalisationField`            | SORRY  | `exists_stepanovNormalisation`       | §1, (4.1)–(4.2) |
+| `exists_stepanovNormalisationField`            | PROVEN | `exists_stepanovNormalisation`       | §1, (4.1)–(4.2) |
 | `exists_stepanovGoodLocusField`                | PROVEN | `exists_stepanovDiscriminant` + (4.5)| (4.1), (4.3), (4.5) |
-| `exists_stepanovNormPolynomialRationalField`   | SORRY  | — (`λ = 1` is new)                   | Lemmas 4A + 5A, `λ = 1` |
-| `exists_stepanovNormPolynomialIrrationalField` | SORRY  | `exists_stepanovNormPolynomial`      | Lemmas 4A + 5A, `λ = 2` |
+| `exists_stepanovNormPolynomialRationalField`   | PROVEN | — (`λ = 1` is new)                   | Lemmas 4A + 5A, `λ = 1` |
+| `exists_stepanovNormPolynomialIrrationalField` | PROVEN | `exists_stepanovNormPolynomial`      | Lemmas 4A + 5A, `λ = 2` |
+
+**WHERE THE PRIME-POWER GAP NOW LIVES** (2026-07-29). It is no longer in any of
+the four; it is in exactly THREE named sub-leaves, all cut below:
+
+| leaf                                              | Schmidt III      | why it is still open |
+|---------------------------------------------------|------------------|----------------------|
+| `exists_stepanovAuxiliaryFunctionIrrationalField`  | Lemma 4A, `λ = 2`| the `X^{qj} Y^{qk}` ansatz |
+| `exists_stepanovAuxiliaryFunctionRationalField`    | Lemma 4A, `λ = 1`| no `ZMod p` sibling exists |
+| `stepanov_pow_sub_dvd_resultant_rationalField`     | Lemma 5A(i), `λ = 1` | `schmidt_leibniz_core` counts branches by COMPLEMENT |
+
+Two findings from cutting them, both of which shrank the remaining work:
+Lemma 5A(i) at `λ = 2` generalises to an arbitrary finite field VERBATIM, because
+`schmidt_leibniz_core` was already stated at that generality — so Schmidt's
+§§7–9 valuation machinery is not needed for it; and Lemma 5A(ii) plus the
+nonvanishing generalise for BOTH `λ` at once, since `ε_λ` enters only as a
+number (`exists_stepanovNormPolynomialField_of_auxiliaryFunction`).
 
 **The two gaps recorded on the parent are now localised.** The prime-power gap
 (§§7–9) lives in the normalisation and the two `NormPolynomial` leaves; the good
@@ -47302,8 +47329,421 @@ theorem stepanov_natCard_rationalRoots_le {F : Type*} [Field F]
     _ ≤ Multiset.card p.roots := Multiset.toFinset_card_le _
     _ ≤ p.natDegree := Polynomial.card_roots' p
 
-/-- **SCHMIDT III §1: THE NORMALISATION, OVER AN ARBITRARY FINITE FIELD** (sorry
-leaf, NINETEENTH decomposition 2026-07-28).
+/-- **BOTH PARTIALS VANISHING FORCES A `p`-TH POWER** (PROVEN 2026-07-29).
+
+Over an algebraically closed field of characteristic `p`, a plane polynomial with
+`∂/∂X = ∂/∂Y = 0` has every exponent divisible by `p` — that is
+`MvPolynomial.coeff_pderiv` read at `m = s − eᵢ` — and `p`-th roots of its
+coefficients then assemble an `H` with `G = H^p`, by the freshman's dream
+(`sum_pow_char`) together with `MvPolynomial.monomial_pow`.
+
+Perfection of the base is where this fails over `𝔽_q` itself: the `p`-th roots
+live in `K̄`, which is why the whole argument is run after `map`ping there. -/
+
+theorem stepanov_exists_pow_of_pderiv_eq_zero {k : Type*} [Field k] [IsAlgClosed k]
+    (p : ℕ) [Fact p.Prime] [CharP k p] (G : MvPolynomial (Fin 2) k)
+    (h0 : MvPolynomial.pderiv 0 G = 0) (h1 : MvPolynomial.pderiv 1 G = 0) :
+    ∃ H : MvPolynomial (Fin 2) k, G = H ^ p := by
+  classical
+  have hp : p.Prime := Fact.out
+  haveI : CharP (MvPolynomial (Fin 2) k) p :=
+    charP_of_injective_ringHom (MvPolynomial.C_injective (Fin 2) k) p
+  -- every exponent occurring in `G` is divisible by `p`
+  have hkey : ∀ (j : Fin 2), MvPolynomial.pderiv j G = 0 → ∀ s ∈ G.support, p ∣ s j := by
+    intro j hj s hs
+    rcases Nat.eq_zero_or_pos (s j) with hz' | hz'
+    · simp [hz']
+    set m : Fin 2 →₀ ℕ := s - Finsupp.single j 1 with hm
+    have hms : m + Finsupp.single j 1 = s := by
+      refine Finsupp.ext fun u => ?_
+      by_cases hu : u = j
+      · subst hu
+        simp only [hm, Finsupp.add_apply, Finsupp.tsub_apply, Finsupp.single_eq_same]
+        omega
+      · have hzero : (Finsupp.single j (1 : ℕ)) u = 0 := by
+          classical
+          rw [Finsupp.single_apply, if_neg (fun h : j = u => hu h.symm)]
+        simp only [hm, Finsupp.add_apply, Finsupp.tsub_apply, hzero]
+        omega
+    have hmj : m j + 1 = s j := by
+      simp only [hm, Finsupp.tsub_apply, Finsupp.single_eq_same]
+      omega
+    have hcp := MvPolynomial.coeff_pderiv (i := j) G m
+    rw [hj, MvPolynomial.coeff_zero, hms] at hcp
+    have hcs : MvPolynomial.coeff s G ≠ 0 := MvPolynomial.mem_support_iff.mp hs
+    have hcast : ((m j : k) + 1) = 0 := by
+      rcases mul_eq_zero.mp hcp.symm with h | h
+      · exact absurd h hcs
+      · exact h
+    have hz : ((s j : ℕ) : k) = 0 := by
+      rw [← hmj]; push_cast; exact hcast
+    exact (CharP.cast_eq_zero_iff k p _).mp hz
+  have hdvd : ∀ s ∈ G.support, ∀ i : Fin 2, p ∣ s i := by
+    intro s hs i
+    fin_cases i
+    · exact hkey 0 h0 s hs
+    · exact hkey 1 h1 s hs
+  -- `p`-th roots of the coefficients
+  have hroot : ∀ a : k, ∃ b : k, b ^ p = a := fun a => IsAlgClosed.exists_pow_nat_eq a hp.pos
+  choose r hr using hroot
+  set t : (Fin 2 →₀ ℕ) → (Fin 2 →₀ ℕ) := fun s => Finsupp.mapRange (· / p) (by simp) s with ht
+  refine ⟨∑ s ∈ G.support, MvPolynomial.monomial (t s) (r (MvPolynomial.coeff s G)), ?_⟩
+  rw [_root_.sum_pow_char]
+  conv_lhs => rw [← MvPolynomial.support_sum_monomial_coeff G]
+  refine Finset.sum_congr rfl fun s hs => ?_
+  have hts : p • t s = s := by
+    refine Finsupp.ext fun j => ?_
+    simp only [ht, Finsupp.smul_apply, Finsupp.mapRange_apply, smul_eq_mul]
+    exact Nat.mul_div_cancel' (hdvd s hs j)
+  rw [MvPolynomial.monomial_pow, hr, hts]
+
+/-- **AN IRREDUCIBLE PLANE CURVE HAS A NONZERO PARTIAL** (PROVEN 2026-07-29).
+
+This is the correction to the claim recorded in `Modularity/MoretBailly.lean`
+that Schmidt's inseparability reduction "never fires". Over `𝔽_p` that is true —
+`p ∣ deg_Y f ≤ d < p` — and over `𝔽_{p^f}` with `p ≤ d` it is FALSE: `X + Y^p`
+is absolutely irreducible with `∂/∂Y = 0`. What survives in every characteristic
+is that both partials cannot vanish at once, since that makes `G` a `p`-th power
+over the perfect field `K̄`, hence a unit (units of `MvPolynomial` over a field
+are the nonzero constants), contradicting irreducibility.
+
+It gives NO information about WHICH partial survives, which is exactly why the
+normalisation below may have to swap `X` and `Y` before shearing. -/
+
+theorem stepanov_pderiv_ne_zero_of_irreducible {k : Type*} [Field k] [IsAlgClosed k]
+    (p : ℕ) [Fact p.Prime] [CharP k p] (G : MvPolynomial (Fin 2) k)
+    (hirr : Irreducible G) :
+    MvPolynomial.pderiv 0 G ≠ 0 ∨ MvPolynomial.pderiv 1 G ≠ 0 := by
+  by_contra hcon
+  rw [not_or, not_not, not_not] at hcon
+  obtain ⟨H, hH⟩ := stepanov_exists_pow_of_pderiv_eq_zero p G hcon.1 hcon.2
+  have hp : p.Prime := Fact.out
+  have hp2 : 2 ≤ p := hp.two_le
+  have hfac : G = H * H ^ (p - 1) := by
+    rw [hH, ← pow_succ']
+    congr 1
+    omega
+  rcases hirr.isUnit_or_isUnit hfac with hu | hu
+  · exact hirr.not_isUnit (by rw [hH]; exact hu.pow p)
+  · have hu' : IsUnit H := (isUnit_pow_iff (by omega)).mp hu
+    exact hirr.not_isUnit (by rw [hH]; exact hu'.pow p)
+
+/-- **THE CHAIN RULE FOR THE SHEAR** (PROVEN 2026-07-29). `∂/∂Y` of
+`g(X + cY, Y)` is `c·g_X + g_Y` read at the sheared point. Proven by
+`MvPolynomial.induction_on`; the multiplicative step reduces to the two
+generators through `MvPolynomial.pderiv_mul`, so only `pderiv 1 (X₀ + c·X₁) = c`
+and `pderiv 1 X₁ = 1` are computed by hand.
+
+CONSUMED to see that the shear preserves `∂/∂Y ≠ 0` for all but at most ONE
+value of `c`: the value pinned by `c·g_X + g_Y = 0`, which is unique when
+`g_X ≠ 0` and absent when `g_X = 0`. -/
+
+theorem stepanov_pderiv_one_shear {R : Type*} [CommRing R] (c : R)
+    (g : MvPolynomial (Fin 2) R) :
+    MvPolynomial.pderiv 1 (stepanovShear c g)
+      = stepanovShear c (MvPolynomial.C c * MvPolynomial.pderiv 0 g
+          + MvPolynomial.pderiv 1 g) := by
+  have hD : ∀ (a b : MvPolynomial (Fin 2) R),
+      MvPolynomial.C c * MvPolynomial.pderiv 0 (a * b) + MvPolynomial.pderiv 1 (a * b)
+        = a * (MvPolynomial.C c * MvPolynomial.pderiv 0 b + MvPolynomial.pderiv 1 b)
+          + b * (MvPolynomial.C c * MvPolynomial.pderiv 0 a + MvPolynomial.pderiv 1 a) := by
+    intro a b
+    simp only [MvPolynomial.pderiv_mul]
+    ring
+  have hbase : ∀ i : Fin 2,
+      MvPolynomial.pderiv 1 (stepanovShear c (MvPolynomial.X i))
+        = stepanovShear c (MvPolynomial.C c * MvPolynomial.pderiv 0 (MvPolynomial.X i)
+            + MvPolynomial.pderiv 1 (MvPolynomial.X i)) := by
+    intro i
+    fin_cases i
+    · simp [stepanovShear_apply, MvPolynomial.pderiv_X_of_ne (show (0 : Fin 2) ≠ 1 by decide)]
+    · simp [stepanovShear_apply, MvPolynomial.pderiv_X_of_ne (show (1 : Fin 2) ≠ 0 by decide)]
+  induction g using MvPolynomial.induction_on with
+  | C a => simp [stepanovShear_apply]
+  | add q₁ q₂ hq₁ hq₂ =>
+    simp only [map_add, hq₁, hq₂, mul_add]
+    ring
+  | mul_X q i hq =>
+    rw [map_mul, MvPolynomial.pderiv_mul, hq, hbase i, hD]
+    simp only [map_add, map_mul]
+    ring
+
+
+
+/-- **THE NESTED DERIVATIVE IS THE NESTED `Y`-PARTIAL** (PROVEN 2026-07-29).
+
+`stepanovNest` of `Modularity/MoretBailly.lean` packages `MvPolynomial (Fin 2) R`
+as `R[X][Y]`; this identifies `Polynomial.derivative` on the packaged form with
+`MvPolynomial.pderiv 1` on the unpackaged one, through the master dictionary
+`stepanovNest_coeff_coeff`. It is what turns the shear's `∂/∂Y ≠ 0` into the
+`Polynomial.derivative F ≠ 0` clause the good-locus leaf consumes. -/
+
+theorem stepanovNest_derivative {R : Type*} [CommRing R] (g : MvPolynomial (Fin 2) R) :
+    Polynomial.derivative (stepanovNest R g) = stepanovNest R (MvPolynomial.pderiv 1 g) := by
+  refine Polynomial.ext fun i => Polynomial.ext fun j => ?_
+  have hc : ((i : Polynomial R) + 1) = Polynomial.C ((i : R) + 1) := by
+    simp
+  rw [Polynomial.coeff_derivative, hc, Polynomial.coeff_mul_C, stepanovNest_coeff_coeff,
+    stepanovNest_coeff_coeff, MvPolynomial.coeff_pderiv]
+  have hexp : stepanovExp j i + Finsupp.single 1 1 = stepanovExp j (i + 1) := by
+    refine (stepanovExp_eq_iff _ _ _).mpr ⟨?_, ?_⟩
+    · classical
+      rw [Finsupp.add_apply, stepanovExp_zero, Finsupp.single_apply, if_neg (by decide)]
+      omega
+    · rw [Finsupp.add_apply, stepanovExp_one, Finsupp.single_eq_same]
+  rw [hexp, stepanovExp_one]
+
+/-- **THE SHEAR AS A BIJECTION OF THE AFFINE PLANE** (PROVEN). `(x, y) ↦ (x + cy, y)`,
+with inverse `(x, y) ↦ (x − cy, y)`. This is what transports the zero COUNT; no
+coordinate is ever pinned — see the count clauses of the leaf below. -/
+def stepanovShearPointEquiv {K : Type*} [Field K] (c : K) : K × K ≃ (Fin 2 → K) where
+  toFun z := ![z.1 + c * z.2, z.2]
+  invFun a := (a 0 - c * a 1, a 1)
+  left_inv := by rintro ⟨x, y⟩; simp
+  right_inv := by
+    intro a
+    funext i
+    fin_cases i <;> simp
+
+/-- **THE ZERO COUNT FIBRES OVER THE FIRST COORDINATE** (PROVEN 2026-07-29).
+
+If a bijection of `K²` carries the fibrewise zero set of `F` onto the zero set of
+`G`, the affine `K`-point count of `G` is the SUM of the fibre counts of `F` — an
+EQUALITY, where `MoretBailly.lean`'s `exists_stepanovNormalisation` delivers only
+the one-sided `∑ ≤ N` over `ZMod p`. The upper half of the Weil bound needs both
+directions, which is why the leaf below carries two link clauses. -/
+theorem stepanov_natCard_zeros_eq {K : Type*} [Field K] [Fintype K]
+    (F : Polynomial (Polynomial K)) (G : MvPolynomial (Fin 2) K)
+    (e : K × K ≃ (Fin 2 → K))
+    (he : ∀ x y : K, (F.map (Polynomial.evalRingHom x)).eval y = 0
+        ↔ MvPolynomial.eval (e (x, y)) G = 0) :
+    Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
+      = ∑ x : K, Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0} := by
+  classical
+  set P : K → K → Prop := fun x y => (F.map (Polynomial.evalRingHom x)).eval y = 0 with hP
+  have e1 : {a : Fin 2 → K // MvPolynomial.eval a G = 0} ≃ {z : K × K // P z.1 z.2} :=
+    (Equiv.subtypeEquiv e (fun z => he z.1 z.2)).symm
+  have e2 : {z : K × K // P z.1 z.2} ≃ Σ x : K, {y : K // P x y} :=
+    Equiv.subtypeProdEquivSigmaSubtype P
+  rw [Nat.card_congr (e1.trans e2), Nat.card_eq_fintype_card, Fintype.card_sigma]
+  exact Finset.sum_congr rfl fun x _ => (Nat.card_eq_fintype_card).symm
+
+/-- **RENAMING THE COORDINATES PRESERVES THE AFFINE POINT COUNT** (PROVEN
+2026-07-29). Used for the `X ↔ Y` swap, which is the step that arranges
+`∂/∂Y ≠ 0` and has no counterpart in the prime-field chain. -/
+
+theorem stepanov_natCard_zeros_rename {K : Type*} [Field K] [Finite K]
+    (G : MvPolynomial (Fin 2) K) (σ : Fin 2 ≃ Fin 2) :
+    Nat.card {a : Fin 2 → K // MvPolynomial.eval a (MvPolynomial.rename σ G) = 0}
+      = Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} := by
+  refine Nat.card_congr (Equiv.subtypeEquiv (Equiv.arrowCongr σ.symm (Equiv.refl K)) ?_)
+  intro a
+  rw [MvPolynomial.eval_rename]
+  rfl
+
+
+
+/-- **SCHMIDT III §1, THE NORMALISATION, GIVEN A SURVIVING `Y`-PARTIAL** (PROVEN
+2026-07-29).
+
+The whole content of `exists_stepanovNormalisationField` below except the
+coordinate swap; `hY : pderiv 1 G ≠ 0` is precisely what the swap arranges.
+
+The shear parameter must dodge TWO obstructions, and the second is new over
+`𝔽_{p^f}`: the `≤ d` values killing the top-degree form (Schmidt's own condition,
+formalised through `stepanovGenericLine`), and the `≤ 1` value killing
+`c·G_X + G_Y`. Both are packed into the single polynomial `Pg · (X − c₀)` of
+degree `≤ d + 1`, so `d + 1 < q` already supplies a good `c` through
+`Polynomial.exists_eval_ne_zero_of_natDegree_lt_card` — the cardinality
+hypothesis here is far weaker than the parent's `250 d⁵ < q`. -/
+theorem exists_stepanovNormalisationField_aux {K : Type*} [Field K] [Fintype K]
+    (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G))
+    (hcard : G.totalDegree + 1 < Fintype.card K)
+    (hY : MvPolynomial.pderiv 1 G ≠ 0) :
+    ∃ F : Polynomial (Polynomial K),
+      F.Monic ∧
+      F.natDegree = G.totalDegree ∧
+      (∀ i, (F.coeff i).natDegree ≤ G.totalDegree - i) ∧
+      Polynomial.derivative F ≠ 0 ∧
+      Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))) ∧
+      Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
+        = ∑ x : K, Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0} := by
+  classical
+  set d := G.totalDegree with hdd
+  -- a monomial of `G` of top total degree
+  obtain ⟨s, hs, hseq⟩ : ∃ s ∈ G.support, (s.sum fun _ e => e) = d := by
+    have hG0 : G ≠ 0 := by
+      intro h0
+      rw [h0] at hY
+      simp at hY
+    have hsup : G.support.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty, ne_eq, MvPolynomial.support_eq_empty]
+      exact hG0
+    obtain ⟨b, hb, hbeq⟩ := Finset.exists_mem_eq_sup G.support hsup (fun m => m.sum fun _ e => e)
+    exact ⟨b, hb, by rw [← hbeq, hdd]; rfl⟩
+  have hssum : s 0 + s 1 = d := by
+    rw [← hseq, Finsupp.sum_fintype _ _ (fun _ => rfl), Fin.sum_univ_two]
+  have hsexp : s = stepanovExp (s 0) (d - s 0) := (stepanovExp_eq_iff _ _ _).mpr ⟨rfl, by omega⟩
+  -- the coefficient of `X₁^d` in the sheared curve, as a polynomial in the shear parameter
+  set Pg : Polynomial K := (stepanovGenericLine K G).coeff d with hPgdef
+  have hPg0 : Pg ≠ 0 := by
+    intro h0
+    have hco := stepanovGenericLine_coeff_coeff G d (s 0)
+    rw [← hPgdef, h0, Polynomial.coeff_zero, if_pos (by omega : s 0 ≤ d)] at hco
+    exact (MvPolynomial.mem_support_iff.mp hs) (by rw [hsexp]; exact hco.symm)
+  have hPgdeg : Pg.natDegree ≤ d := by
+    refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun m hm => ?_
+    rw [hPgdef, stepanovGenericLine_coeff_coeff, if_neg (by omega)]
+  -- at most ONE shear parameter kills the `Y`-derivative
+  obtain ⟨c₀, hc₀⟩ : ∃ c₀ : K, ∀ c : K,
+      MvPolynomial.C c * MvPolynomial.pderiv 0 G + MvPolynomial.pderiv 1 G = 0 → c = c₀ := by
+    by_cases hX : MvPolynomial.pderiv 0 G = 0
+    · refine ⟨0, fun c hc => absurd ?_ hY⟩
+      rwa [hX, mul_zero, zero_add] at hc
+    · by_cases hex : ∃ c₁ : K,
+          MvPolynomial.C c₁ * MvPolynomial.pderiv 0 G + MvPolynomial.pderiv 1 G = 0
+      · obtain ⟨c₁, hc₁⟩ := hex
+        refine ⟨c₁, fun c hc => ?_⟩
+        have hzero : MvPolynomial.C (c - c₁) * MvPolynomial.pderiv 0 G = 0 := by
+          rw [map_sub, sub_mul]
+          rw [sub_eq_zero]
+          have := hc.trans hc₁.symm
+          exact add_right_cancel this
+        rcases mul_eq_zero.mp hzero with h | h
+        · exact eq_of_sub_eq_zero (MvPolynomial.C_eq_zero.mp h)
+        · exact absurd h hX
+      · simp only [not_exists] at hex
+        exact ⟨0, fun c hc => absurd hc (hex c)⟩
+  -- a shear parameter avoiding both obstructions
+  set Q : Polynomial K := Pg * (Polynomial.X - Polynomial.C c₀) with hQdef
+  have hQ0 : Q ≠ 0 := mul_ne_zero hPg0 (Polynomial.X_sub_C_ne_zero c₀)
+  have hQdeg : Q.natDegree ≤ d + 1 := by
+    refine le_trans (Polynomial.natDegree_mul_le) ?_
+    have hx : (Polynomial.X - Polynomial.C c₀ : Polynomial K).natDegree = 1 :=
+      Polynomial.natDegree_X_sub_C _
+    omega
+  obtain ⟨c, hcQ⟩ : ∃ c, Polynomial.eval c Q ≠ 0 := by
+    refine Q.exists_eval_ne_zero_of_natDegree_lt_card hQ0 ?_
+    rw [Cardinal.mk_fintype]
+    exact_mod_cast lt_of_le_of_lt hQdeg hcard
+  have hc : Polynomial.eval c Pg ≠ 0 := by
+    intro h0
+    rw [hQdef, Polynomial.eval_mul, h0, zero_mul] at hcQ
+    exact hcQ rfl
+  have hcne : c ≠ c₀ := by
+    intro h0
+    rw [hQdef, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, h0, sub_self, mul_zero] at hcQ
+    exact hcQ rfl
+  set u : K := Polynomial.eval c Pg with hudef
+  -- the sheared curve, of the same total degree `d`
+  set h : MvPolynomial (Fin 2) K := stepanovShear c G with hhdef
+  have hu : MvPolynomial.coeff (stepanovExp 0 d) h = u := by
+    rw [hhdef, hudef, hPgdef, stepanovShear_coeff_eq_eval]
+  have htd : h.totalDegree = d := by
+    refine le_antisymm ?_ ?_
+    · rw [hhdef]; exact stepanovShear_totalDegree_le c G
+    · have hmem : stepanovExp 0 d ∈ h.support :=
+        MvPolynomial.mem_support_iff.mpr (by rw [hu]; exact hc)
+      have hle := MvPolynomial.le_totalDegree hmem
+      rw [stepanovExp_sum] at hle
+      omega
+  -- the nested packaging, whose `d`-th coefficient is the CONSTANT `u`
+  set N : Polynomial (Polynomial K) := stepanovNest K h with hNdef
+  have hNd : N.coeff d = Polynomial.C u := by
+    refine Polynomial.ext fun j => ?_
+    rw [hNdef, stepanovNest_coeff_coeff, Polynomial.coeff_C]
+    rcases Nat.eq_zero_or_pos j with rfl | hj
+    · rw [if_pos rfl]; exact hu
+    · rw [if_neg (by omega)]
+      by_contra hcon
+      have hle := MvPolynomial.le_totalDegree (MvPolynomial.mem_support_iff.mpr hcon)
+      rw [stepanovExp_sum, htd] at hle
+      omega
+  have hNnd_le : N.natDegree ≤ d := by
+    rw [hNdef]; exact le_trans (stepanovNest_natDegree_le h) (le_of_eq htd)
+  -- divide by the leading coefficient
+  have hFd : (Polynomial.C (Polynomial.C u⁻¹) * N).coeff d = 1 := by
+    rw [Polynomial.coeff_C_mul, hNd, ← Polynomial.C_mul, inv_mul_cancel₀ hc, Polynomial.C_1]
+  have hFnd_le : (Polynomial.C (Polynomial.C u⁻¹) * N).natDegree ≤ d :=
+    le_trans (Polynomial.natDegree_C_mul_le _ _) hNnd_le
+  refine ⟨Polynomial.C (Polynomial.C u⁻¹) * N,
+    Polynomial.monic_of_natDegree_le_of_coeff_eq_one d hFnd_le hFd,
+    Polynomial.natDegree_eq_of_le_of_coeff_ne_zero hFnd_le (by rw [hFd]; exact one_ne_zero),
+    ?_, ?_, ?_, ?_⟩
+  · -- `deg gᵢ ≤ d − i`
+    intro i
+    rw [Polynomial.coeff_C_mul]
+    refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
+    have hb := stepanovNest_natDegree_coeff_le h i
+    rw [htd] at hb
+    rw [hNdef]
+    exact hb
+  · -- separability in `Y`: the shear preserves the nonvanishing `Y`-partial
+    have hpd : MvPolynomial.pderiv 1 h ≠ 0 := by
+      rw [hhdef, stepanov_pderiv_one_shear]
+      intro h0
+      have hz := (stepanovShear (R := K) c).injective (h0.trans (map_zero _).symm)
+      exact hcne (hc₀ c hz)
+    have hdN : Polynomial.derivative N ≠ 0 := by
+      rw [hNdef, stepanovNest_derivative]
+      intro h0
+      exact hpd ((stepanovNest K).injective (h0.trans (map_zero _).symm))
+    rw [Polynomial.derivative_C_mul]
+    refine mul_ne_zero ?_ hdN
+    simp only [ne_eq, Polynomial.C_eq_zero, inv_eq_zero]
+    exact hc
+  · -- absolute irreducibility, transported along the shear and the packaging
+    have hmapG : Polynomial.map (Polynomial.mapRingHom
+        (algebraMap K (AlgebraicClosure K))) N
+        = stepanovNest (AlgebraicClosure K)
+          (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) h) := by
+      rw [hNdef, stepanovNest_map]
+    have hirrh : Irreducible (MvPolynomial.map
+        (algebraMap K (AlgebraicClosure K)) h) := by
+      rw [hhdef, stepanovShear_map]
+      exact (MulEquiv.irreducible_iff
+        (f := stepanovShear (algebraMap K (AlgebraicClosure K) c))).mpr hirr
+    have hirrN : Irreducible (Polynomial.map (Polynomial.mapRingHom
+        (algebraMap K (AlgebraicClosure K))) N) := by
+      rw [hmapG]
+      exact (MulEquiv.irreducible_iff
+        (f := stepanovNest (AlgebraicClosure K))).mpr hirrh
+    have hv : (algebraMap K (AlgebraicClosure K)) u⁻¹ ≠ 0 := by
+      rw [ne_eq, map_eq_zero]
+      exact inv_ne_zero hc
+    have hunit : IsUnit (Polynomial.C (Polynomial.C
+        ((algebraMap K (AlgebraicClosure K)) u⁻¹)) :
+        Polynomial (Polynomial (AlgebraicClosure K))) :=
+      Polynomial.isUnit_C.mpr (Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr hv))
+    have hmapF : Polynomial.map (Polynomial.mapRingHom
+        (algebraMap K (AlgebraicClosure K))) (Polynomial.C (Polynomial.C u⁻¹) * N)
+        = Polynomial.C (Polynomial.C ((algebraMap K (AlgebraicClosure K)) u⁻¹)) *
+          Polynomial.map (Polynomial.mapRingHom
+            (algebraMap K (AlgebraicClosure K))) N := by
+      rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.coe_mapRingHom, Polynomial.map_C]
+    rw [hmapF, mul_comm, irreducible_mul_isUnit hunit]
+    exact hirrN
+  · -- the zero COUNT transports, because the shear is a bijection of `K²`
+    refine stepanov_natCard_zeros_eq _ G (stepanovShearPointEquiv c) ?_
+    intro x y
+    have h1 : Polynomial.map (Polynomial.evalRingHom x)
+        (Polynomial.C (Polynomial.C u⁻¹) * N)
+        = Polynomial.C u⁻¹ * Polynomial.map (Polynomial.evalRingHom x) N := by
+      rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.coe_evalRingHom, Polynomial.eval_C]
+    have h2 : (stepanovShearPointEquiv c) (x, y) = ![x + c * y, y] := rfl
+    rw [h1, Polynomial.eval_mul, Polynomial.eval_C, hNdef, stepanovNest_eval, hhdef,
+      stepanovShear_eval, h2]
+    constructor
+    · intro hz
+      rcases mul_eq_zero.mp hz with hz' | hz'
+      · exact absurd hz' (inv_ne_zero hc)
+      · exact hz'
+    · intro hz; rw [hz, mul_zero]
+
+/-- **SCHMIDT III §1: THE NORMALISATION, OVER AN ARBITRARY FINITE FIELD** (PROVEN
+2026-07-29, TWENTIETH decomposition; cut as a sorry leaf on 2026-07-28).
 
 A linear change of coordinates puts the plane curve `G` into the normal form
 `F = Y^d + g₁(X) Y^{d−1} + ⋯ + g_d(X)` with `deg gᵢ ≤ i` — Schmidt's (4.1) and
@@ -47367,8 +47807,84 @@ theorem exists_stepanovNormalisationField {K : Type*} [Field K] [Finite K]
       (∀ S : Finset K,
         Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
           ≤ (∑ x ∈ S, Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
-            + (Nat.card K - S.card) * G.totalDegree) :=
-  sorry
+            + (Nat.card K - S.card) * G.totalDegree) := by
+  classical
+  letI : Fintype K := Fintype.ofFinite K
+  have hqc : Nat.card K = Fintype.card K := Nat.card_eq_fintype_card
+  set d := G.totalDegree with hdd
+  have h5 : d ≤ d ^ 5 := Nat.le_self_pow (by norm_num) d
+  have hcard' : d + 1 < Fintype.card K := by omega
+  -- the characteristic
+  set p := ringChar K with hpdef
+  have hpp : p.Prime := CharP.char_is_prime K p
+  haveI : Fact p.Prime := ⟨hpp⟩
+  haveI : CharP (AlgebraicClosure K) p :=
+    charP_of_injective_algebraMap (algebraMap K (AlgebraicClosure K)).injective p
+  -- absolute irreducibility forbids both partials from vanishing
+  have hK : MvPolynomial.pderiv 0 G ≠ 0 ∨ MvPolynomial.pderiv 1 G ≠ 0 := by
+    have hkbar := stepanov_pderiv_ne_zero_of_irreducible (k := AlgebraicClosure K) p _ hirr
+    rcases hkbar with h | h
+    · exact Or.inl fun h0 => h (by rw [MvPolynomial.pderiv_map, h0, map_zero])
+    · exact Or.inr fun h0 => h (by rw [MvPolynomial.pderiv_map, h0, map_zero])
+  -- swap the coordinates if necessary, so that the `Y`-partial survives
+  obtain ⟨G', hG'deg, hG'irr, hG'Y, hG'count⟩ :
+      ∃ G' : MvPolynomial (Fin 2) K,
+        G'.totalDegree = d ∧
+        Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G') ∧
+        MvPolynomial.pderiv 1 G' ≠ 0 ∧
+        Nat.card {a : Fin 2 → K // MvPolynomial.eval a G' = 0}
+          = Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} := by
+    rcases hK with hX | hY
+    · refine ⟨MvPolynomial.rename (Equiv.swap (0 : Fin 2) 1) G, ?_, ?_, ?_, ?_⟩
+      · rw [show (MvPolynomial.rename (Equiv.swap (0 : Fin 2) 1) G)
+            = MvPolynomial.renameEquiv K (Equiv.swap (0 : Fin 2) 1) G from rfl,
+          MvPolynomial.totalDegree_renameEquiv]
+      · rw [MvPolynomial.map_rename]
+        exact (MulEquiv.irreducible_iff
+          (f := (MvPolynomial.renameEquiv (AlgebraicClosure K)
+            (Equiv.swap (0 : Fin 2) 1)).toMulEquiv)).mpr hirr
+      · have hinj : Function.Injective (Equiv.swap (0 : Fin 2) 1) := (Equiv.swap 0 1).injective
+        have hpr := MvPolynomial.pderiv_rename (R := K) hinj (x := (0 : Fin 2)) (p := G)
+        rw [Equiv.swap_apply_left] at hpr
+        rw [hpr]
+        intro h0
+        exact hX (MvPolynomial.rename_injective _ hinj (by rw [h0, map_zero]))
+      · exact stepanov_natCard_zeros_rename G (Equiv.swap (0 : Fin 2) 1)
+    · exact ⟨G, rfl, hirr, hY, rfl⟩
+  obtain ⟨F, hmon, hdegF, hcoeff, hderiv, hirrF, hcount⟩ :=
+    exists_stepanovNormalisationField_aux G' hG'irr (by rw [hG'deg]; exact hcard') hG'Y
+  rw [hG'deg] at hdegF hcoeff
+  rw [hG'count] at hcount
+  -- the fibres have at most `d` rational points
+  have hfib : ∀ x : K,
+      Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0} ≤ d := by
+    intro x
+    have hmx : (F.map (Polynomial.evalRingHom x)).Monic := hmon.map _
+    have hdx : (F.map (Polynomial.evalRingHom x)).natDegree = d := by
+      rw [hmon.natDegree_map, hdegF]
+    have := stepanov_natCard_rationalRoots_le _ hmx.ne_zero
+    omega
+  refine ⟨F, hmon, hdegF, hcoeff, hderiv, hirrF, ?_, ?_⟩
+  · intro S
+    rw [hcount]
+    exact Finset.sum_le_sum_of_subset (Finset.subset_univ S)
+  · intro S
+    rw [hcount]
+    have hsplit := Finset.sum_sdiff (f := fun x : K =>
+      Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+      (Finset.subset_univ S)
+    have hbound : (∑ x ∈ Finset.univ \ S,
+        Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+          ≤ (Finset.univ \ S).card * d := by
+      calc (∑ x ∈ Finset.univ \ S,
+            Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+          ≤ ∑ _x ∈ Finset.univ \ S, d := Finset.sum_le_sum fun x _ => hfib x
+        _ = (Finset.univ \ S).card * d := by rw [Finset.sum_const, smul_eq_mul]
+    have hcardsd : (Finset.univ \ S).card = Nat.card K - S.card := by
+      rw [Finset.card_sdiff, Finset.inter_univ, Finset.card_univ, hqc]
+    rw [hcardsd] at hbound
+    omega
+
 
 /-- **INFLATING THE SYLVESTER SIZE OF A MONIC RESULTANT IS FREE** (PROVEN).
 
@@ -47551,9 +48067,323 @@ theorem exists_stepanovGoodLocusField {K : Type*} [Field K] [Finite K]
       exact isUnit_iff_ne_zero.mpr hne
     exact (Polynomial.isUnit_resultant_iff_isCoprime hmonx).mp hu
 
+/-- **SCHMIDT III LEMMA 5A(i) OVER AN ARBITRARY FINITE FIELD, `λ = 2`** (PROVEN
+2026-07-29).
+
+If the auxiliary function `c(X, Y)` vanishes to order `M` along every IRRATIONAL
+branch of `F` above `x`, then `(X − x)^{M·|𝔐₂(x)|}` divides the norm
+`Res_Y(F, c)`.
+
+**The prime-field sibling generalises verbatim, and that is the finding.**
+`stepanov_pow_sub_dvd_resultant` of `Modularity/MoretBailly.lean` is this
+statement over `ZMod p`, and its whole proof is a base change to `K̄` followed by
+one application of `schmidt_leibniz_core` — which is ALREADY stated over an
+arbitrary finite field `k` with an algebraically closed target. So none of
+Schmidt's §§7–9 valuation machinery is needed for Lemma 5A(i): the prime-power
+gap in the `λ = 2` leaf below is confined to Lemma 4A's dimension count.
+
+The root count is written as `Nat.card` of a subtype rather than a
+`Finset.filter` card, to match the leaf below; `Fintype.card_subtype` is the
+bridge to `schmidt_leibniz_core`'s `T`. -/
+theorem stepanov_pow_sub_dvd_resultant_field {K : Type*} [Field K] [Finite K]
+    (d n M : ℕ) (F c : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d) (hcn : c.natDegree ≤ n)
+    (x : K)
+    (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
+    (hvan : ∀ η : Polynomial (AlgebraicClosure K),
+      (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap K (AlgebraicClosure K))) η F →
+      (∀ z : K, η.eval (algebraMap K (AlgebraicClosure K) x)
+        ≠ algebraMap K (AlgebraicClosure K) z) →
+      (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap K (AlgebraicClosure K))) η c) :
+    (Polynomial.X - Polynomial.C x) ^ (M * (d - Nat.card {y : K //
+        (F.map (Polynomial.evalRingHom x)).eval y = 0}))
+      ∣ F.resultant c d n := by
+  classical
+  letI : Fintype K := Fintype.ofFinite K
+  set ι : K →+* AlgebraicClosure K := algebraMap K (AlgebraicClosure K) with hι
+  have hιinj : Function.Injective ι := ι.injective
+  set Φ : Polynomial K →+* Polynomial (AlgebraicClosure K) :=
+    Polynomial.mapRingHom ι with hΦ
+  have hcomp : (Polynomial.evalRingHom (ι x)).comp Φ = ι.comp (Polynomial.evalRingHom x) := by
+    ext q
+    · simp [hΦ]
+    · simp [hΦ]
+  have hredF : (F.map Φ).map (Polynomial.evalRingHom (ι x))
+      = (F.map (Polynomial.evalRingHom x)).map ι := by
+    rw [Polynomial.map_map, Polynomial.map_map, hcomp]
+  have hTcard : Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0}
+      = (Finset.univ.filter
+        (fun y : K => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card := by
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  rw [hTcard, ← Polynomial.map_dvd_map ι hιinj ((Polynomial.monic_X_sub_C x).pow _),
+    Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    show Polynomial.map ι (F.resultant c d n) = Φ (F.resultant c d n) from rfl,
+    ← Polynomial.resultant_map_map F c d n Φ]
+  refine schmidt_leibniz_core ι d n M (F.map Φ) (c.map Φ) (ι x) _ (hmon.map Φ)
+    (by rw [hmon.natDegree_map, hdegY]) (le_trans Polynomial.natDegree_map_le hcn)
+    (by rw [hredF]; exact hsep.map) (fun y hy => ?_) (fun η h1 h2 => ?_)
+  · rw [hredF] at hy
+    have hzero : ι ((F.map (Polynomial.evalRingHom x)).eval y) = 0 := by
+      rw [← hy]
+      conv_rhs => rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    exact hιinj (by rw [hzero, map_zero])
+  · rw [Polynomial.eval_map] at h1 ⊢
+    exact hvan η h1 h2
+
+/-- **FROM THE AUXILIARY FUNCTION TO THE NORM POLYNOMIAL** (PROVEN 2026-07-29),
+Schmidt III Lemma 5A(ii) plus the nonvanishing, for BOTH values of `λ` at once.
+
+`r := Res_Y(F, c)` — which is Schmidt's norm `∏_j c(X, η_j)` because `F` is monic
+(`Polynomial.resultant_eq_prod_eval`). The three conjuncts come from:
+
+* `r ≠ 0` — Lemma 4A(i)'s `¬(F ∣ c)`, transported into `K̄(X)[Y]` where `F` stays
+  irreducible (Gauss, `Monic.irreducible_iff_irreducible_map_fraction_map`), so
+  `Irreducible.coprime_iff_not_dvd` gives coprimality and
+  `Polynomial.resultant_ne_zero` the claim. The mismatch between the formal
+  Sylvester size `n` and `c.natDegree` is absorbed by
+  `Polynomial.resultant_add_right_deg`, free because `F.coeff d = 1`.
+* the degree bound — `stepanov_natDegree_resultant_le` of
+  `Modularity/MoretBailly.lean`, which is stated over an arbitrary `CommRing` and
+  gives `deg ≤ d·n`; with `n = ε q (M/d) + q(d−1)` and `d ∣ M` that is exactly
+  `ε q M + q d(d−1)`, Schmidt's `ε_λ q M + q d(d−1)`.
+* the vanishing — `pow_X_sub_C_dvd_iff_hasseDeriv`, the Taylor translation
+  between "zero of multiplicity `k`" and "the first `k` hyperderivatives vanish".
+
+`ε` and `mult` are PARAMETERS here, so the same proof serves `λ = 1`
+(`ε = 1`, `mult = μ₁`) and `λ = 2` (`ε = d − 1`, `mult = μ₂`). Nothing in this
+lemma is characteristic-sensitive; `Nat.card K` enters only as a number. -/
+theorem exists_stepanovNormPolynomialField_of_auxiliaryFunction {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (ε : ℕ)
+    (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))))
+    (M : ℕ) (hMd : d ∣ M) (A : Finset K) (mult : K → ℕ)
+    (c : Polynomial (Polynomial K)) (hcdvd : ¬ (F ∣ c))
+    (hcdeg : ∀ i, c.coeff i = 0 ∨ (c.coeff i).natDegree + i
+      ≤ ε * Nat.card K * (M / d) + Nat.card K * (d - 1))
+    (hcvan : ∀ x ∈ A, ((Polynomial.X : Polynomial K) - Polynomial.C x) ^ (M * mult x)
+      ∣ F.resultant c d (ε * Nat.card K * (M / d) + Nat.card K * (d - 1))) :
+    ∃ r : Polynomial K, r ≠ 0 ∧
+      r.natDegree ≤ ε * Nat.card K * M + Nat.card K * (d * (d - 1)) ∧
+      (∀ x ∈ A, ∀ j < M * mult x, (Polynomial.hasseDeriv j r).eval x = 0) := by
+  classical
+  set q : ℕ := Nat.card K with hq
+  set n : ℕ := ε * q * (M / d) + q * (d - 1) with hn
+  have hcn : c.natDegree ≤ n := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro m hm
+    rcases hcdeg m with h | h
+    · exact h
+    · omega
+  have hcoeffF : ∀ i, F.coeff i = 0 ∨ (F.coeff i).natDegree + i ≤ d := by
+    intro i
+    by_cases hi : i ≤ d
+    · exact Or.inr (by have := hcoeff i; omega)
+    · exact Or.inl (Polynomial.coeff_eq_zero_of_natDegree_lt (by omega))
+  refine ⟨F.resultant c d n, ?_, ?_, ?_⟩
+  · -- `r ≠ 0`, from `¬(F ∣ c)` and irreducibility of `F` over `K̄(X)`
+    set A' := AlgebraicClosure K with hA
+    set φ : Polynomial K →+* Polynomial A' :=
+      Polynomial.mapRingHom (algebraMap K A') with hφ
+    have hφinj : Function.Injective φ :=
+      Polynomial.map_injective _ (algebraMap K A').injective
+    set L := FractionRing (Polynomial A') with hL
+    set ι : Polynomial A' →+* L := algebraMap (Polynomial A') L with hι
+    have hιinj : Function.Injective ι := IsFractionRing.injective _ _
+    set ψ : Polynomial K →+* L := ι.comp φ with hψ
+    have hψinj : Function.Injective ψ := hιinj.comp hφinj
+    have hmonbar : (F.map φ).Monic := hmon.map φ
+    have hirrL : Irreducible ((F.map φ).map ι) :=
+      (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map hmonbar).mp hirrF
+    have hmapmap : (F.map φ).map ι = F.map ψ := by rw [Polynomial.map_map]
+    rw [hmapmap] at hirrL
+    have hmonL : (F.map ψ).Monic := hmon.map ψ
+    have hnd : ¬ ((F.map ψ) ∣ (c.map ψ)) := by
+      rw [Polynomial.map_dvd_map ψ hψinj hmon]
+      exact hcdvd
+    have hcop : IsCoprime (F.map ψ) (c.map ψ) := hirrL.coprime_iff_not_dvd.mpr hnd
+    have hres0 : (F.map ψ).resultant (c.map ψ) ≠ 0 := Polynomial.resultant_ne_zero _ _ hcop
+    have hdegL : (F.map ψ).natDegree = d := by rw [hmon.natDegree_map ψ, hdegY]
+    have hcdegL : (c.map ψ).natDegree ≤ n := le_trans Polynomial.natDegree_map_le hcn
+    have hcoeffd : (F.map ψ).coeff d = 1 := by rw [← hdegL]; exact hmonL.coeff_natDegree
+    have hsizes : (F.map ψ).resultant (c.map ψ) d n
+        = (F.map ψ).resultant (c.map ψ) (F.map ψ).natDegree (c.map ψ).natDegree := by
+      rw [hdegL]
+      conv_lhs => rw [show n = (c.map ψ).natDegree + (n - (c.map ψ).natDegree) from by omega]
+      rw [Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl, hcoeffd, one_pow, one_mul]
+    intro hcon
+    refine hres0 ?_
+    rw [← hsizes, Polynomial.resultant_map_map F c d n ψ, hcon, map_zero]
+  · -- the degree bound, by weighting the Sylvester matrix
+    refine le_trans (stepanov_natDegree_resultant_le F c d n hcoeffF hcdeg) ?_
+    obtain ⟨M', rfl⟩ := hMd
+    have hd0 : 0 < d := hd
+    rw [hn, Nat.mul_div_cancel_left M' hd0]
+    have hexp : d * (ε * q * M' + q * (d - 1)) = ε * q * (d * M') + q * (d * (d - 1)) := by
+      ring
+    omega
+  · -- the vanishing clause, by the Taylor translation
+    intro x hx j hj
+    exact (pow_X_sub_C_dvd_iff_hasseDeriv _ x _).mp (hcvan x hx) j hj
+
+
+/-- **SCHMIDT III LEMMA 4A OVER AN ARBITRARY FINITE FIELD, `λ = 2`** (sorry leaf,
+TWENTIETH decomposition 2026-07-29). **This is the whole prime-power gap of the
+`λ = 2` leaf below, and everything else around it is now PROVEN.**
+
+The field-general counterpart of `exists_stepanovAuxiliaryFunction` in
+`Modularity/MoretBailly.lean`, which is PROVEN over `ZMod p`. Read that chain
+first — `exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz`,
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` — the intended route is to REPLAY it
+with `p` replaced by `q = Nat.card K`, not to redevelop it.
+
+WHAT ACTUALLY CHANGES. `stepanovAnsatz` is built out of `X^{pj}` and `Y^{pk}`;
+the correct field-general ansatz uses `X^{qj}`, `Y^{qk}`. That substitution keeps
+the two properties the argument turns on — `D(X^q) = 0` because `p ∣ q`, and
+`𝔽_q = {y | y^q = y}` — so the dimension count goes through with `p ↦ q`. The
+bookkeeping in `exists_stepanovJetSolution` and `stepanov_not_dvd_stepanovAnsatz`
+is where the substitution has to be made good; `[Fact p.Prime]` is used there for
+`ZMod p` being a field and for Frobenius, and both survive as `Finite K` plus
+`ExpChar K p`.
+
+The `hMd`, `hMsq`, `hMq` conditions are Schmidt's standing conditions on `M`,
+strengthened (`2d` for his `2(d−1)`) and hence easier.
+
+FAITHFULNESS. TRUE — a numbered statement of Schmidt's, with the branch
+condition `∀ z, η(x) ≠ z` naming exactly the irrational branches. NOT vacuous:
+`c := 0` is excluded by `¬(F ∣ c)` and `c := 1` by the vanishing clause, which is
+the tension Stepanov's method resolves.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovAuxiliaryFunctionIrrationalField {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (hcard : 250 * d ^ 5 < Nat.card K)
+    (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hsep : Polynomial.derivative F ≠ 0)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))))
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * d * (M + 8) ^ 2 ≤ Nat.card K)
+    (A : Finset K)
+    (hAsep : ∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
+      (F.map (Polynomial.evalRingHom x)).natDegree = d) :
+    ∃ c : Polynomial (Polynomial K),
+      ¬ (F ∣ c) ∧
+      (∀ i, c.coeff i = 0 ∨ (c.coeff i).natDegree + i
+        ≤ (d - 1) * Nat.card K * (M / d) + Nat.card K * (d - 1)) ∧
+      (∀ x ∈ A, ∀ η : Polynomial (AlgebraicClosure K),
+        (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+          Polynomial.eval₂ (Polynomial.mapRingHom
+            (algebraMap K (AlgebraicClosure K))) η F →
+        (∀ z : K, η.eval (algebraMap K (AlgebraicClosure K) x)
+          ≠ algebraMap K (AlgebraicClosure K) z) →
+        (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+          Polynomial.eval₂ (Polynomial.mapRingHom
+            (algebraMap K (AlgebraicClosure K))) η c) :=
+  sorry
+
+/-- **SCHMIDT III LEMMA 4A OVER AN ARBITRARY FINITE FIELD, `λ = 1`** (sorry leaf,
+TWENTIETH decomposition 2026-07-29). **Schmidt's EASIER case — and the half the
+whole `MoretBailly.lean` chain does not build at all, so there is no `ZMod p`
+sibling to generalise.**
+
+Identical to the `λ = 2` sibling above except that the branch condition is
+`∃ z : K, η(x) = z` — the RATIONAL branches — and the degree parameter is
+`ε₁ = 1` rather than `ε₂ = d − 1`.
+
+WHY IT IS EASIER AND WHY IT IS NEVERTHELESS MISSING. Schmidt's Case 1 has both
+coordinates rational, so `x^q = x` and `y^q = y` and the auxiliary function may be
+written directly in `X^q` and `Y^q` with no norm-form manipulation. But
+`MoretBailly.lean`'s chain was built for a NONEMPTINESS statement
+(`exists_count_of_absolutelyIrreducible_plane`, `q ≤ 2N`), which needs only the
+upper bound on `∑ |𝔐₂(x)|`; the `λ = 1` function is what bounds `∑ |𝔐₁(x)|`
+above, i.e. what supplies the UPPER half `N ≤ q + …` of the Weil bound. So this
+one is written from Schmidt directly.
+
+FAITHFULNESS. TRUE, same audit as the `λ = 2` sibling.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem exists_stepanovAuxiliaryFunctionRationalField {K : Type*} [Field K] [Finite K]
+    (d : ℕ) (hd : 1 ≤ d) (hcard : 250 * d ^ 5 < Nat.card K)
+    (F : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hsep : Polynomial.derivative F ≠ 0)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom (algebraMap K (AlgebraicClosure K)))))
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * d * (M + 8) ^ 2 ≤ Nat.card K)
+    (A : Finset K)
+    (hAsep : ∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
+      (F.map (Polynomial.evalRingHom x)).natDegree = d) :
+    ∃ c : Polynomial (Polynomial K),
+      ¬ (F ∣ c) ∧
+      (∀ i, c.coeff i = 0 ∨ (c.coeff i).natDegree + i
+        ≤ 1 * Nat.card K * (M / d) + Nat.card K * (d - 1)) ∧
+      (∀ x ∈ A, ∀ η : Polynomial (AlgebraicClosure K),
+        (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+          Polynomial.eval₂ (Polynomial.mapRingHom
+            (algebraMap K (AlgebraicClosure K))) η F →
+        (∃ z : K, η.eval (algebraMap K (AlgebraicClosure K) x)
+          = algebraMap K (AlgebraicClosure K) z) →
+        (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+          Polynomial.eval₂ (Polynomial.mapRingHom
+            (algebraMap K (AlgebraicClosure K))) η c) :=
+  sorry
+
+/-- **SCHMIDT III LEMMA 5A(i) OVER AN ARBITRARY FINITE FIELD, `λ = 1`** (sorry
+leaf, TWENTIETH decomposition 2026-07-29).
+
+If `c(X, Y)` vanishes to order `M` along every RATIONAL branch of `F` above `x`,
+then `(X − x)^{M·|𝔐₁(x)|}` divides `Res_Y(F, c)`.
+
+**WHY THIS IS NOT AN INSTANCE OF THE `λ = 2` VERSION, which was checked before
+cutting it.** `schmidt_leibniz_core` of `Modularity/MoretBailly.lean` — the
+Leibniz expansion (5.1) that proves the `λ = 2` statement over ANY finite field —
+concludes `(X − x)^{M(d − |T|)}` where `T` collects the branches that are NOT
+assumed to vanish, i.e. it counts the branches by COMPLEMENT. Here the vanishing
+set is `𝔐₁` itself, so the count wanted is `|T|` and not `d − |T|`, and the core
+has to be re-run with the roles exchanged. The mathematics is the same
+factorisation `Res_Y(F, c) = ∏_j c(X, η_j)` over the `d` distinct branches, of
+which `|𝔐₁(x)|` are rational; each contributes a factor divisible by
+`(X − x)^M`.
+
+`hsep` and `hdegx` are load-bearing: without them `F(x, Y)` need not have `d`
+DISTINCT roots and the branch count collapses.
+
+FAITHFULNESS. TRUE on the good locus `𝔄`, which is where the only consumer
+applies it.
+
+CIRCULARITY GUARD: polynomials over a finite field only. -/
+theorem stepanov_pow_sub_dvd_resultant_rationalField {K : Type*} [Field K] [Finite K]
+    (d n M : ℕ) (F c : Polynomial (Polynomial K))
+    (hmon : F.Monic) (hdegY : F.natDegree = d) (hcn : c.natDegree ≤ n)
+    (x : K)
+    (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
+    (hdegx : (F.map (Polynomial.evalRingHom x)).natDegree = d)
+    (hvan : ∀ η : Polynomial (AlgebraicClosure K),
+      (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap K (AlgebraicClosure K))) η F →
+      (∃ z : K, η.eval (algebraMap K (AlgebraicClosure K) x)
+        = algebraMap K (AlgebraicClosure K) z) →
+      (Polynomial.X - Polynomial.C (algebraMap K (AlgebraicClosure K) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap K (AlgebraicClosure K))) η c) :
+    (Polynomial.X - Polynomial.C x) ^ (M * Nat.card {y : K //
+        (F.map (Polynomial.evalRingHom x)).eval y = 0})
+      ∣ F.resultant c d n :=
+  sorry
+
 /-- **SCHMIDT III LEMMAS 4A + 5A AT `λ = 1`, OVER AN ARBITRARY FINITE FIELD**
-(sorry leaf, NINETEENTH decomposition 2026-07-28). **Schmidt's EASIER case, and
-the half that the whole `MoretBailly.lean` chain does not build at all.**
+(PROVEN 2026-07-29 over `exists_stepanovAuxiliaryFunctionRationalField` (Lemma 4A)
+and `stepanov_pow_sub_dvd_resultant_rationalField` (Lemma 5A(i)) through the
+shared bridge `exists_stepanovNormPolynomialField_of_auxiliaryFunction`; cut as a
+sorry leaf on 2026-07-28). **Schmidt's EASIER case, and the half that the whole
+`MoretBailly.lean` chain does not build at all.**
 
 There is a nonzero `r₁ ∈ K[X]` of degree at most `ε₁ q M + q d(d−1)` with
 `ε₁ = 1` which vanishes at each `x ∈ 𝔄` to order at least `M·|𝔐₁(x)|`, where
@@ -47620,13 +48450,34 @@ theorem exists_stepanovNormPolynomialRationalField {K : Type*} [Field K] [Finite
     ∃ r : Polynomial K, r ≠ 0 ∧
       r.natDegree ≤ Nat.card K * M + Nat.card K * (d * (d - 1)) ∧
       (∀ x ∈ A, ∀ j < M * Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0},
-        (Polynomial.hasseDeriv j r).eval x = 0) :=
-  sorry
+        (Polynomial.hasseDeriv j r).eval x = 0) := by
+  obtain ⟨c, hcdvd, hcdeg, hcvan⟩ :=
+    exists_stepanovAuxiliaryFunctionRationalField d hd hcard F hmon hdegY hcoeff hsep
+      hirrF M hMd hMsq hMq A hAsep
+  have hcn : c.natDegree ≤ 1 * Nat.card K * (M / d) + Nat.card K * (d - 1) := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro m hm
+    rcases hcdeg m with h | h
+    · exact h
+    · omega
+  obtain ⟨r, hr0, hrdeg, hrvan⟩ :=
+    exists_stepanovNormPolynomialField_of_auxiliaryFunction d hd 1 F hmon hdegY
+      hcoeff hirrF M hMd A
+      (fun x => Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+      c hcdvd hcdeg
+      (fun x hx => stepanov_pow_sub_dvd_resultant_rationalField d _ M F c hmon hdegY hcn x
+        (hAsep x hx).1 (hAsep x hx).2 (hcvan x hx))
+  exact ⟨r, hr0, by simpa using hrdeg, hrvan⟩
+
 
 /-- **SCHMIDT III LEMMAS 4A + 5A AT `λ = 2`, OVER AN ARBITRARY FINITE FIELD**
-(sorry leaf, NINETEENTH decomposition 2026-07-28). **This is the field-general
-counterpart of `exists_stepanovNormPolynomial`, which is PROVEN over `ZMod p` in
-`Modularity/MoretBailly.lean`; the prime-power gap is the whole content.**
+(PROVEN 2026-07-29 over the SINGLE remaining sub-leaf
+`exists_stepanovAuxiliaryFunctionIrrationalField` (Lemma 4A), through
+`stepanov_pow_sub_dvd_resultant_field` (Lemma 5A(i), PROVEN) and the shared bridge
+`exists_stepanovNormPolynomialField_of_auxiliaryFunction`; cut as a sorry leaf on
+2026-07-28). **This is the field-general counterpart of
+`exists_stepanovNormPolynomial`, which is PROVEN over `ZMod p` in
+`Modularity/MoretBailly.lean`; the prime-power gap is now confined to Lemma 4A.**
 
 There is a nonzero `r₂ ∈ K[X]` of degree at most `ε₂ q M + q d(d−1)` with
 `ε₂ = d − 1` which vanishes at each `x ∈ 𝔄` to order at least `M·|𝔐₂(x)|`, where
@@ -47686,8 +48537,23 @@ theorem exists_stepanovNormPolynomialIrrationalField {K : Type*} [Field K] [Fini
       r.natDegree ≤ (d - 1) * Nat.card K * M + Nat.card K * (d * (d - 1)) ∧
       (∀ x ∈ A, ∀ j < M * (d -
           Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0}),
-        (Polynomial.hasseDeriv j r).eval x = 0) :=
-  sorry
+        (Polynomial.hasseDeriv j r).eval x = 0) := by
+  obtain ⟨c, hcdvd, hcdeg, hcvan⟩ :=
+    exists_stepanovAuxiliaryFunctionIrrationalField d hd hcard F hmon hdegY hcoeff hsep
+      hirrF M hMd hMsq hMq A hAsep
+  have hcn : c.natDegree ≤ (d - 1) * Nat.card K * (M / d) + Nat.card K * (d - 1) := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro m hm
+    rcases hcdeg m with h | h
+    · exact h
+    · omega
+  exact exists_stepanovNormPolynomialField_of_auxiliaryFunction d hd (d - 1) F hmon hdegY
+    hcoeff hirrF M hMd A
+    (fun x => d - Nat.card {y : K // (F.map (Polynomial.evalRingHom x)).eval y = 0})
+    c hcdvd hcdeg
+    (fun x hx => stepanov_pow_sub_dvd_resultant_field d _ M F c hmon hdegY hcn x
+      (hAsep x hx).1 (hcvan x hx))
+
 
 /-- **STEPANOV'S AUXILIARY PAIR OVER AN ARBITRARY FINITE FIELD** (PROVEN
 2026-07-28, NINETEENTH decomposition, over the four sub-leaves immediately above;
