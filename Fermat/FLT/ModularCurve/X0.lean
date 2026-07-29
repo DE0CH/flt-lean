@@ -22172,9 +22172,408 @@ theorem nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel {R : Type} [CommRi
       map_mul' := ψ.hom.map_mul }
   exact ⟨AlgEquiv.ofRingEquiv (f := ρ) halg'⟩
 
+/-! #### From a LINEAR algebra map of coordinate rings to a `VariableChange`
+
+Everything in this subsection is PROVEN (2026-07-29, flt-lean-135) EXCEPT the
+single named leaf `exists_linearAlgHom_of_isWeierstrassModel` at its end.  It
+is the formalisation of the "verified plumbing" and the "what remains after
+that plumbing" paragraphs of `exists_variableChange_of_isWeierstrassModel`'s
+docstring, and it discharges the *bookkeeping* half of that leaf outright:
+
+  `exists_variableChange_of_linearAlgHom` — an `R`-ALGEBRA MAP (not even an
+  isomorphism) `R[W] → R[W']` sending `x ↦ a x' + r` and
+  `y ↦ b y' + c x' + t` with `a`, `b` units forces `W' = ⟨u, r, s, t⟩ • W`,
+  where `u := b a⁻¹`, `s := c a⁻¹`.
+
+so what is left of that leaf is exactly the GEOMETRIC step: producing a map of
+that LINEAR shape.  That residue is the named leaf
+`exists_linearAlgHom_of_isWeierstrassModel` below.
+
+**This split is sharp, and the `ℚ[ε]/(ε²)` counterexample proves it is.**  In
+that witness the coordinate rings are `R`-algebra isomorphic but `W'` is not
+`C • W`; since the theorem below is PROVEN, no isomorphism there can have the
+linear shape — and indeed the explicit one sends `x ↦ x' + ε(6x'² − 9x' + 4)/31`,
+which is quadratic in `x'`.  So "linear" is not a convenience hypothesis that a
+cleverer commutative-algebra argument could remove: it is the entire content
+that the compactification supplies.
+
+No `Nontrivial R`, no domain, no field hypotheses are used anywhere below; the
+degree/divisibility argument sketched in the older docstring is replaced by
+mathlib's `R[X]`-basis `{1, y}` of `R[W']`
+(`WeierstrassCurve.Affine.CoordinateRing.smul_basis_eq_zero`), which needs
+none of them. -/
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **The substitution `(X, Y) ↦ (aX + r, bY + cX + t)` on `R[X][Y]`.** -/
+noncomputable def wsubst {R : Type} [CommRing R] (a r b c t : R) : R[X][Y] →+* R[X][Y] :=
+  Polynomial.eval₂RingHom
+    (Polynomial.eval₂RingHom ((C : R[X] →+* R[X][Y]).comp (C : R →+* R[X]))
+      (C (C a * X + C r)))
+    (C (C b) * Y + C (C c * X + C t))
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+@[simp] lemma wsubst_C_C {R : Type} [CommRing R] (a r b c t v : R) :
+    wsubst a r b c t (C (C v)) = C (C v) := by
+  simp [wsubst]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+@[simp] lemma wsubst_C_X {R : Type} [CommRing R] (a r b c t : R) :
+    wsubst a r b c t (C X) = C (C a * X + C r) := by
+  simp [wsubst]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+@[simp] lemma wsubst_Y {R : Type} [CommRing R] (a r b c t : R) :
+    wsubst a r b c t Y = C (C b) * Y + C (C c * X + C t) := by
+  simp [wsubst]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **Two ring maps out of `R[X][Y]` agreeing on `R`, on `X` and on `Y` are
+equal.** -/
+theorem bivariate_ringHom_ext {R S : Type} [CommRing R] [CommRing S]
+    {f g : R[X][Y] →+* S}
+    (h₀ : ∀ v : R, f (C (C v)) = g (C (C v)))
+    (h₁ : f (C X) = g (C X)) (h₂ : f Y = g Y) : f = g := by
+  refine Polynomial.ringHom_ext ?_ h₂
+  intro p
+  have : f.comp (C : R[X] →+* R[X][Y]) = g.comp (C : R[X] →+* R[X][Y]) :=
+    Polynomial.ringHom_ext h₀ h₁
+  exact congrArg (fun u : R[X] →+* S => u p) this
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **The Weierstrass polynomial written in the atoms `C (C ·)`, `C X`, `Y`**, the
+form in which `wsubst` can be pushed through it by `map_add`/`map_mul`/`map_pow`. -/
+lemma weierstrassPolynomial_eq_atoms {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    W.toAffine.polynomial =
+      Y ^ 2 + (C (C W.a₁) * C X + C (C W.a₃)) * Y
+        - ((C X) ^ 3 + C (C W.a₂) * (C X) ^ 2 + C (C W.a₄) * C X + C (C W.a₆)) := by
+  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_mul, map_pow]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **The substituted Weierstrass polynomial**, before collecting in `Y`. -/
+lemma wsubst_weierstrassPolynomial {R : Type} [CommRing R] (W : WeierstrassCurve R)
+    (a r b c t : R) :
+    wsubst a r b c t W.toAffine.polynomial
+      = (C (C b) * Y + C (C c * X + C t)) ^ 2
+        + (C (C W.a₁) * C (C a * X + C r) + C (C W.a₃)) * (C (C b) * Y + C (C c * X + C t))
+        - ((C (C a * X + C r)) ^ 3 + C (C W.a₂) * (C (C a * X + C r)) ^ 2
+            + C (C W.a₄) * C (C a * X + C r) + C (C W.a₆)) := by
+  rw [weierstrassPolynomial_eq_atoms W]
+  simp only [map_add, map_sub, map_mul, map_pow, wsubst_C_C, wsubst_C_X, wsubst_Y]
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **The `Y`-linear remainder of the substituted Weierstrass polynomial modulo
+`C (C (b ^ 2)) * W'.polynomial`**, with both `R[X]`-coefficients expanded.  The
+`X ^ 3` coefficient `b ^ 2 - a ^ 3` is where `u` comes from; the other five are
+the five identities of `variableChange_def`. -/
+lemma wsubst_weierstrassPolynomial_sub {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) (a r b c t : R) :
+    wsubst a r b c t W.toAffine.polynomial - C (C (b ^ 2)) * W'.toAffine.polynomial
+      = C (C (2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁) * X
+            + C (2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃)) * Y
+        + C (C (b ^ 2 - a ^ 3) * X ^ 3
+            + C (c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂) * X ^ 2
+            + C (2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2
+                - 2 * W.a₂ * a * r - W.a₄ * a + b ^ 2 * W'.a₄) * X
+            + C (t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+                + b ^ 2 * W'.a₆)) := by
+  rw [wsubst_weierstrassPolynomial, weierstrassPolynomial_eq_atoms W']
+  simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+  ring
+
+open Polynomial in
+/-- Reading off the two coefficients of a vanishing linear polynomial. -/
+lemma eq_zero_of_linear_polynomial_eq_zero {R : Type} [CommRing R] {β₁ β₀ : R}
+    (h : (C β₁ * X + C β₀ : R[X]) = 0) : β₁ = 0 ∧ β₀ = 0 := by
+  refine ⟨?_, ?_⟩
+  · simpa using congrArg (fun p : R[X] => p.coeff 1) h
+  · simpa using congrArg (fun p : R[X] => p.coeff 0) h
+
+open Polynomial in
+/-- Reading off the four coefficients of a vanishing cubic polynomial. -/
+lemma eq_zero_of_cubic_polynomial_eq_zero {R : Type} [CommRing R] {α₃ α₂ α₁ α₀ : R}
+    (h : (C α₃ * X ^ 3 + C α₂ * X ^ 2 + C α₁ * X + C α₀ : R[X]) = 0) :
+    α₃ = 0 ∧ α₂ = 0 ∧ α₁ = 0 ∧ α₀ = 0 := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simpa using congrArg (fun p : R[X] => p.coeff 3) h
+  · simpa using congrArg (fun p : R[X] => p.coeff 2) h
+  · simpa using congrArg (fun p : R[X] => p.coeff 1) h
+  · simpa using congrArg (fun p : R[X] => p.coeff 0) h
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **The substituted Weierstrass polynomial of `W` dies in `R[W']`.**
+
+`algebraMap R R[W] v` is DEFEQ to `mk W (C (C v))`, which is what lets
+`AlgHom.commutes` discharge the constants case of `bivariate_ringHom_ext`. -/
+lemma mk_wsubst_weierstrassPolynomial {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) (a r b c t : R)
+    (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing)
+    (hx : Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)))
+    (hy : Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t))) :
+    mk W'.toAffine (wsubst a r b c t W.toAffine.polynomial) = 0 := by
+  have hEq : (mk W'.toAffine).comp (wsubst a r b c t)
+      = (Φ : W.toAffine.CoordinateRing →+* W'.toAffine.CoordinateRing).comp (mk W.toAffine) := by
+    refine bivariate_ringHom_ext ?_ ?_ ?_
+    · intro v
+      simp only [RingHom.comp_apply, wsubst_C_C, AlgHom.coe_toRingHom]
+      exact (Φ.commutes v).symm
+    · simp only [RingHom.comp_apply, wsubst_C_X, AlgHom.coe_toRingHom]
+      exact hx.symm
+    · simp only [RingHom.comp_apply, wsubst_Y, AlgHom.coe_toRingHom]
+      exact hy.symm
+  have := congrArg (fun u : R[X][Y] →+* W'.toAffine.CoordinateRing => u W.toAffine.polynomial) hEq
+  simpa [AdjoinRoot.mk_self] using this
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **The six coefficient identities** forced by an `R`-algebra map
+`R[W] → R[W']` carrying `x` to `a x' + r` and `y` to `b y' + c x' + t`.
+
+The third is `b ^ 2 = a ^ 3`, which is what makes `u := b a⁻¹` satisfy
+`u ^ 2 = a` and `u ^ 3 = b`; the other five become the five identities of
+`WeierstrassCurve.variableChange_def` after that substitution. -/
+lemma weierstrassCoeff_relations_of_algHom {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) (a r b c t : R)
+    (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing)
+    (hx : Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)))
+    (hy : Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t))) :
+    2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁ = 0 ∧
+      2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃ = 0 ∧
+      b ^ 2 - a ^ 3 = 0 ∧
+      c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂ = 0 ∧
+      2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2 - 2 * W.a₂ * a * r
+          - W.a₄ * a + b ^ 2 * W'.a₄ = 0 ∧
+      t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+          + b ^ 2 * W'.a₆ = 0 := by
+  have h0 := mk_wsubst_weierstrassPolynomial W W' a r b c t Φ hx hy
+  have h1 : mk W'.toAffine
+      (C (C (2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁) * X
+            + C (2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃)) * Y
+        + C (C (b ^ 2 - a ^ 3) * X ^ 3
+            + C (c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂) * X ^ 2
+            + C (2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2
+                - 2 * W.a₂ * a * r - W.a₄ * a + b ^ 2 * W'.a₄) * X
+            + C (t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+                + b ^ 2 * W'.a₆))) = 0 := by
+    rw [← wsubst_weierstrassPolynomial_sub W W' a r b c t]
+    simp [map_sub, map_mul, h0, AdjoinRoot.mk_self]
+  have h2 : (C (b ^ 2 - a ^ 3) * X ^ 3
+            + C (c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂) * X ^ 2
+            + C (2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2
+                - 2 * W.a₂ * a * r - W.a₄ * a + b ^ 2 * W'.a₄) * X
+            + C (t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+                + b ^ 2 * W'.a₆)) • (1 : W'.toAffine.CoordinateRing)
+        + (C (2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁) * X
+            + C (2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃)) • mk W'.toAffine Y = 0 := by
+    rw [show ((C (b ^ 2 - a ^ 3) * X ^ 3
+            + C (c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂) * X ^ 2
+            + C (2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2
+                - 2 * W.a₂ * a * r - W.a₄ * a + b ^ 2 * W'.a₄) * X
+            + C (t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+                + b ^ 2 * W'.a₆)) • (1 : W'.toAffine.CoordinateRing)
+        + (C (2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁) * X
+            + C (2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃)) • mk W'.toAffine Y)
+        = mk W'.toAffine
+      (C (C (2 * b * c + b * W.a₁ * a - b ^ 2 * W'.a₁) * X
+            + C (2 * b * t + b * (W.a₁ * r + W.a₃) - b ^ 2 * W'.a₃)) * Y
+        + C (C (b ^ 2 - a ^ 3) * X ^ 3
+            + C (c ^ 2 + W.a₁ * a * c - 3 * a ^ 2 * r - W.a₂ * a ^ 2 + b ^ 2 * W'.a₂) * X ^ 2
+            + C (2 * c * t + W.a₁ * a * t + (W.a₁ * r + W.a₃) * c - 3 * a * r ^ 2
+                - 2 * W.a₂ * a * r - W.a₄ * a + b ^ 2 * W'.a₄) * X
+            + C (t ^ 2 + (W.a₁ * r + W.a₃) * t - r ^ 3 - W.a₂ * r ^ 2 - W.a₄ * r - W.a₆
+                + b ^ 2 * W'.a₆))) from by
+      simp only [WeierstrassCurve.Affine.CoordinateRing.smul, map_add, map_mul, mul_one]
+      ring]
+    exact h1
+  obtain ⟨hq₀, hq₁⟩ := WeierstrassCurve.Affine.CoordinateRing.smul_basis_eq_zero h2
+  obtain ⟨f₁, f₀⟩ := eq_zero_of_linear_polynomial_eq_zero hq₁
+  obtain ⟨g₃, g₂, g₁, g₀⟩ := eq_zero_of_cubic_polynomial_eq_zero hq₀
+  exact ⟨f₁, f₀, g₃, g₂, g₁, g₀⟩
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **The bookkeeping half of `exists_variableChange_of_isWeierstrassModel`**
+(PROVEN 2026-07-29, flt-lean-135, no leaf).
+
+An `R`-algebra map — an isomorphism is NOT needed — of affine coordinate rings
+which is LINEAR in the sense that
+
+    `x ↦ a x' + r`,   `y ↦ b y' + c x' + t`   with `a`, `b` units
+
+comes from a `VariableChange`, namely `⟨b a⁻¹, r, c a⁻¹, t⟩`.  The `u² / u³`
+shape of `VariableChange` costs nothing extra and is not assumed: comparing the
+`Y⁰X³` coefficients forces `b ^ 2 = a ^ 3`, whence `u := b a⁻¹` has `u ^ 2 = a`
+and `u ^ 3 = b`.
+
+No `Nontrivial R`: instead of a degree argument, `mk W' (wsubst … W.polynomial)`
+is `0`, the residue modulo `C (C (b ^ 2)) * W'.polynomial` is `Y`-linear, and
+mathlib's `R[X]`-basis `{1, y'}` of `R[W']` kills both of its coefficients. -/
+theorem exists_variableChange_of_linearAlgHom {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) (a r b c t : R) (ha : IsUnit a) (hb : IsUnit b)
+    (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing)
+    (hx : Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)))
+    (hy : Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t))) :
+    ∃ V : WeierstrassCurve.VariableChange R, W' = V • W := by
+  obtain ⟨E1, E3, Edeg, E2, E4, E6⟩ :=
+    weierstrassCoeff_relations_of_algHom W W' a r b c t Φ hx hy
+  obtain ⟨u, hua, hub⟩ : ∃ u : Rˣ, a = (u : R) ^ 2 ∧ b = (u : R) ^ 3 := by
+    have hB : ((hb.unit : Rˣ) : R) = b := hb.unit_spec
+    have haw : a * ((ha.unit⁻¹ : Rˣ) : R) = 1 := by simp
+    refine ⟨hb.unit * ha.unit⁻¹, ?_, ?_⟩
+    · rw [Units.val_mul, hB]
+      linear_combination (-(((ha.unit⁻¹ : Rˣ) : R)) ^ 2) * Edeg
+        + (-(a * (a * ((ha.unit⁻¹ : Rˣ) : R) + 1))) * haw
+    · rw [Units.val_mul, hB]
+      linear_combination (-(b * ((ha.unit⁻¹ : Rˣ) : R) ^ 3)) * Edeg
+        + (-(b * (a ^ 2 * ((ha.unit⁻¹ : Rˣ) : R) ^ 2 + a * ((ha.unit⁻¹ : Rˣ) : R) + 1))) * haw
+  subst hua
+  subst hub
+  obtain ⟨s, hcs⟩ : ∃ s : R, c = (u : R) ^ 2 * s :=
+    ⟨((u⁻¹ : Rˣ) : R) ^ 2 * c, by
+      linear_combination (-(c * ((u : R) * ((u⁻¹ : Rˣ) : R) + 1))) * u.mul_inv⟩
+  subst hcs
+  have hv : (u : R) * ((u⁻¹ : Rˣ) : R) = 1 := u.mul_inv
+  have hcancel : ∀ x y : R, (u : R) ^ 6 * x = (u : R) ^ 6 * y → x = y := by
+    intro x y h
+    calc x = (((u⁻¹ : Rˣ) : R) * (u : R)) ^ 6 * x := by rw [u.inv_mul]; ring
+      _ = ((u⁻¹ : Rˣ) : R) ^ 6 * ((u : R) ^ 6 * x) := by ring
+      _ = ((u⁻¹ : Rˣ) : R) ^ 6 * ((u : R) ^ 6 * y) := by rw [h]
+      _ = (((u⁻¹ : Rˣ) : R) * (u : R)) ^ 6 * y := by ring
+      _ = y := by rw [u.inv_mul]; ring
+  refine ⟨⟨u, r, s, t⟩, ?_⟩
+  ext
+  · refine hcancel _ _ ?_
+    show (u : R) ^ 6 * W'.a₁ = (u : R) ^ 6 * (((u⁻¹ : Rˣ) : R) * (W.a₁ + 2 * s))
+    linear_combination (-1 : R) * E1 + (-((u : R) ^ 5 * (W.a₁ + 2 * s))) * hv
+  · refine hcancel _ _ ?_
+    show (u : R) ^ 6 * W'.a₂
+        = (u : R) ^ 6 * (((u⁻¹ : Rˣ) : R) ^ 2 * (W.a₂ - s * W.a₁ + 3 * r - s ^ 2))
+    linear_combination E2
+      + (-((W.a₂ - s * W.a₁ + 3 * r - s ^ 2) * (u : R) ^ 4
+          * ((u : R) * ((u⁻¹ : Rˣ) : R) + 1))) * hv
+  · refine hcancel _ _ ?_
+    show (u : R) ^ 6 * W'.a₃
+        = (u : R) ^ 6 * (((u⁻¹ : Rˣ) : R) ^ 3 * (W.a₃ + r * W.a₁ + 2 * t))
+    linear_combination (-1 : R) * E3
+      + (-((W.a₃ + r * W.a₁ + 2 * t) * (u : R) ^ 3
+          * (((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 2 + (u : R) * ((u⁻¹ : Rˣ) : R) + 1))) * hv
+  · refine hcancel _ _ ?_
+    show (u : R) ^ 6 * W'.a₄
+        = (u : R) ^ 6 * (((u⁻¹ : Rˣ) : R) ^ 4 * (W.a₄ - s * W.a₃ + 2 * r * W.a₂
+            - (t + r * s) * W.a₁ + 3 * r ^ 2 - 2 * s * t))
+    linear_combination E4
+      + (-((W.a₄ - s * W.a₃ + 2 * r * W.a₂ - (t + r * s) * W.a₁ + 3 * r ^ 2 - 2 * s * t)
+          * (u : R) ^ 2
+          * (((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 3 + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 2
+              + (u : R) * ((u⁻¹ : Rˣ) : R) + 1))) * hv
+  · refine hcancel _ _ ?_
+    show (u : R) ^ 6 * W'.a₆
+        = (u : R) ^ 6 * (((u⁻¹ : Rˣ) : R) ^ 6 * (W.a₆ + r * W.a₄ + r ^ 2 * W.a₂ + r ^ 3
+            - t * W.a₃ - t ^ 2 - r * t * W.a₁))
+    linear_combination E6
+      + (-((W.a₆ + r * W.a₄ + r ^ 2 * W.a₂ + r ^ 3 - t * W.a₃ - t ^ 2 - r * t * W.a₁)
+          * ((((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 5 + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 4
+              + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 3 + ((u : R) * ((u⁻¹ : Rˣ) : R)) ^ 2
+              + (u : R) * ((u⁻¹ : Rˣ) : R) + 1)))) * hv
+
+open Polynomial in
+open scoped Polynomial.Bivariate in
+open WeierstrassCurve.Affine.CoordinateRing (mk) in
+/-- **The GEOMETRIC half: two Weierstrass models of one elliptic scheme admit a
+LINEAR comparison map of coordinate rings** (sorry leaf, opened 2026-07-29,
+flt-lean-135, as the residue of `exists_variableChange_of_isWeierstrassModel`
+after `exists_variableChange_of_linearAlgHom` — which is PROVEN — has taken the
+bookkeeping).
+
+**WHAT IS LEFT HERE IS EXACTLY THE COMPACTIFICATION, AND NOTHING ELSE.**  Its
+sibling above is proven, so the two together give the leaf; and the `ℚ[ε]/(ε²)`
+counterexample recorded on that leaf is a machine-checked proof that this
+statement is NOT a consequence of `e` alone.  There `W` and `W'` have
+`R`-algebra isomorphic coordinate rings and `W' ≠ C • W` for every `C`; since
+the sibling is proven, no algebra map there can have the linear shape asked for
+below.  (Explicitly, the isomorphism exhibited there sends
+`x ↦ x' + ε(6x'² − 9x' + 4)/31`, quadratic in `x'`.)  So this leaf is where the
+two `IsWeierstrassModel` hypotheses have to be spent, and any attempt to prove
+it from `e` alone is refuted before it starts.
+
+**THE ROUTE.**  Write `U ⊆ A` for the complement of the zero section.  Both
+`hW` and `hW'` present `U` as an affine scheme, `ι : Spec R[W] ≅ U` and
+`ι' : Spec R[W'] ≅ U` over `Spec R` — this much is already carried out in
+`nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel`, whose `e` is the
+composite, and it is the map to use for `Φ`.  What that lemma cannot see is
+that `Φ` is the restriction of the IDENTITY of `A`.  Hence:
+
+* `O := ab.zero (𝟙 _)` is a section of the smooth proper curve `A/Spec R`, so
+  it is a relative effective Cartier divisor; let `I` be its ideal sheaf.
+* `Fₙ := Γ(A, I⁻ⁿ) ⊆ Γ(U, 𝒪_U)` — the sections with pole order `≤ n` along the
+  zero section — is defined from `(A, O)` alone, so `Φ` carries `Fₙ` to `F'ₙ`.
+* Relative Riemann–Roch (equivalently: cohomology and base change for a genus-1
+  curve, `H¹ = 0` in degree `≥ 1`) makes `π_* I⁻ⁿ` locally free of rank `n` and
+  compatible with base change.  For `n = 2` and `n = 3` it contains `1, x` resp.
+  `1, x, y`, which are already a basis fibrewise, so by Nakayama
+  `F₂ = R ⊕ R·x` and `F₃ = R ⊕ R·x ⊕ R·y`.
+* Therefore `Φ x ∈ F'₂` and `Φ y ∈ F'₃`, i.e. `Φ x = a x' + r` and
+  `Φ y = b y' + c x' + t`.  `Φ` restricts to an isomorphism `F₂ ≅ F'₂` and
+  `F₃ ≅ F'₃` fixing `1`, so in the bases `{1, x}` and `{1, x, y}` its matrix is
+  triangular with diagonal `1, a` resp. `1, a, b`; invertibility of a triangular
+  matrix over `R` gives `IsUnit a` and `IsUnit b`.
+
+**ABSENT FROM THE PIN, checked 2026-07-29 by grep, not from memory.**  Mathlib
+at this pin has NO `RiemannRoch` (zero files match), NO `EffectiveCartierDivisor`
+or `CartierDivisor` of any kind (zero files match), no `𝒪(D)` twist by a divisor
+and no `arithmeticGenus`/`geometricGenus`.  What it does have is
+`Mathlib/AlgebraicGeometry/IdealSheaf/`, a single-file
+`Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean` and
+`OrderOfVanishing.lean` — nothing that assembles them into an invertible sheaf
+with a global-sections rank statement.  So the third bullet is a genuine piece
+of theory to build, and it is the whole cost of this leaf.  Note that the
+statement needs only `n = 2` and `n = 3`, so a bespoke construction of
+`Γ(A, I⁻²)` and `Γ(A, I⁻³)` may be cheaper than general Riemann–Roch.
+
+**A SECOND, POSSIBLY CHEAPER AXIS, unsearched.**  `ω = dx / (2y + a₁x + a₃)`
+generates `Ω¹_{R[W]/R}` as a free rank-1 module and `R[W]ˣ = Rˣ`, so
+`Φ_* ω = u ω'` produces the unit `u` directly and might pin the shapes without
+any cohomology.  The axis that is CLOSED is the third one: pure commutative
+algebra on the coordinate rings, refuted by the `ℚ[ε]/(ε²)` witness.
+
+**THE CUT LOSES NOTHING: this leaf is EQUIVALENT to its consumer, not merely
+sufficient for it.**  Forward, `exists_variableChange_of_linearAlgHom` is proven,
+so this leaf implies `exists_variableChange_of_isWeierstrassModel`.  Backward, if
+`W' = ⟨u, r, s, t⟩ • W` then the substitution `x ↦ u²x' + r`,
+`y ↦ u³y' + u²s x' + t` IS an `R`-algebra map `R[W] → R[W']` of exactly the shape
+asked for, with `a = u²` and `b = u³` units.  So nothing has been over-asked
+here, and a proof of the consumer by any other route would give this leaf back.
+
+**NOT VACUOUS**: `W' = W`, `ι' = ι`, `Φ = AlgHom.id`, `a = b = 1`,
+`r = c = t = 0` satisfies every clause.  `e` is REDUNDANT BY DESIGN — it is
+derivable from `hW` and `hW'` — and is carried only so that the proven
+geometric half `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` is not
+orphaned, exactly as on the consumer. -/
+theorem exists_linearAlgHom_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
+    (W W' : WeierstrassCurve R)
+    (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W')
+    (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
+    ∃ (Φ : W.toAffine.CoordinateRing →ₐ[R] W'.toAffine.CoordinateRing) (a r b c t : R),
+      IsUnit a ∧ IsUnit b ∧
+      Φ (mk W.toAffine (C X)) = mk W'.toAffine (C (C a * X + C r)) ∧
+      Φ (mk W.toAffine Y) = mk W'.toAffine (C (C b) * Y + C (C c * X + C t)) :=
+  sorry
+
 /-- **Two Weierstrass models of ONE elliptic scheme are related by a
-`VariableChange`** (sorry leaf; REFUTED-AND-RESTATED 2026-07-28,
-flt-lean-68).
+`VariableChange`** (REFUTED-AND-RESTATED 2026-07-28, flt-lean-68; DECOMPOSED and
+no longer a leaf 2026-07-29, flt-lean-135).
 
 **FALSITY AUDIT — the previous statement was FALSE, with an explicit
 counterexample.**  This leaf used to read
@@ -22276,16 +22675,22 @@ DESIGN (it is derivable from `hW` and `hW'`), carried both because every
 proof of this leaf starts by building it and so that the proven geometric
 half is not orphaned.  Nothing in the consumer changed.
 
-**Everything below this line predates the refutation and is retained
-because it is still the route for the second half of the argument** — once
-the compactification pins `Φ x` and `Φ y` to the shapes `a x' + r` and
-`b y' + c x' + t`, the bookkeeping is unchanged, and the "hard step" is
-exactly the step that must now come from the geometry rather than from
-commutative algebra.  Read the degree/filtration discussion as a
-description of what is TRUE over a domain, not as a plan valid over a
-general base: the paragraph headed "WHY THAT IS NOT THE WHOLE PROOF"
-diagnosed the nilpotent obstruction as a gap in the PROOF, and it is in
-fact a gap in the STATEMENT.
+**THIS IS NO LONGER A LEAF (2026-07-29, flt-lean-135).**  It is now proven
+over exactly one open node.  The two-step split described below has been
+carried out:
+
+* the *bookkeeping* step is `exists_variableChange_of_linearAlgHom`, PROVEN
+  in the subsection above, and it needs neither `Nontrivial R` nor a domain
+  nor even that the comparison map be an isomorphism;
+* the *hard* step is the named leaf
+  `exists_linearAlgHom_of_isWeierstrassModel`, also above, which is where
+  the compactification is spent and where the whole remaining cost lies.
+
+**Everything below this line predates the refutation.**  Read the
+degree/filtration discussion as a description of what is TRUE over a
+domain, not as a plan valid over a general base: the paragraph headed "WHY
+THAT IS NOT THE WHOLE PROOF" diagnosed the nilpotent obstruction as a gap
+in the PROOF, and it is in fact a gap in the STATEMENT.
 
 **ABSENT FROM THE PIN, checked 2026-07-27.**  Mathlib knows that a
 variable change does not move `j` (`variableChange_j`,
@@ -22343,73 +22748,26 @@ the Hodge-bundle route (`ω = dx/(2y + a₁x + a₃)` generates `Ω¹_{A'/R}`,
 and `A'ˣ = Rˣ`, so `Φ_*ω = uω'` produces the unit `u` directly) — that
 axis is unsearched and may be shorter.
 
-**VERIFIED PLUMBING FOR THE BOOKKEEPING STEP, so nobody has to find it
-twice.**  The four declarations below were written and COMPILED against
-this file's cone on 2026-07-27 (in a scratch module, hence not committed —
-a proven lemma with no consumer would be free-floating).  They reduce the
-bookkeeping step to a polynomial identity plus one coefficient
-extraction, and the last of them is the non-obvious one: it never expands
-`W.polynomial` at all.
+**THE PLUMBING AND "WHAT REMAINS AFTER IT" ARE NOW FORMALISED** (2026-07-29,
+flt-lean-135), in the subsection above: `wsubst`, `bivariate_ringHom_ext`,
+`mk_wsubst_weierstrassPolynomial`, `weierstrassCoeff_relations_of_algHom`
+and `exists_variableChange_of_linearAlgHom`.  Two of the plans recorded here
+in 2026-07-27 were superseded by shorter routes and are recorded so nobody
+re-walks them:
 
-```lean
-open Polynomial in
-open scoped Polynomial.Bivariate in
--- the substitution `(X, Y) ↦ (aX + r, bY + cX + t)` on `R[X][Y]`
-noncomputable def wsubst (a r b c t : R) : R[X][Y] →+* R[X][Y] :=
-  Polynomial.eval₂RingHom
-    (Polynomial.eval₂RingHom ((C : R[X] →+* R[X][Y]).comp (C : R →+* R[X]))
-      (C (C a * X + C r)))
-    (C (C b) * Y + C (C c * X + C t))
+* the divisibility/degree route (`AdjoinRoot.mk_eq_zero`, then a monic
+  cofactor argument needing a separate `Subsingleton R` case) is NOT needed.
+  `wsubst_weierstrassPolynomial_sub` exhibits the residue of
+  `wsubst a r b c t W.polynomial` modulo `C (C (b ^ 2)) * W'.polynomial`
+  explicitly as `C p₁ * Y + C p₀`, and mathlib's `R[X]`-basis `{1, y'}` of
+  `R[W']` (`CoordinateRing.smul_basis_eq_zero`) kills `p₁` and `p₀` with no
+  hypothesis on `R` at all;
+* injectivity of `WeierstrassCurve.Affine.polynomial` is NOT needed either —
+  the six scalar identities are read off directly from `p₁` and `p₀`.
 
--- `simp [wsubst]` proves each of
---   wsubst a r b c t (C (C v)) = C (C v)
---   wsubst a r b c t (C X)     = C (C a * X + C r)
---   wsubst a r b c t Y         = C (C b) * Y + C (C c * X + C t)
-
--- two ring maps out of `R[X][Y]` agreeing on `R`, `X`, `Y` are equal
-theorem bivariate_ringHom_ext {S : Type} [CommRing S] {f g : R[X][Y] →+* S}
-    (h₀ : ∀ v : R, f (C (C v)) = g (C (C v)))
-    (h₁ : f (C X) = g (C X)) (h₂ : f Y = g Y) : f = g := by
-  refine Polynomial.ringHom_ext ?_ h₂
-  intro p
-  have : f.comp (C : R[X] →+* R[X][Y]) = g.comp (C : R[X] →+* R[X][Y]) :=
-    Polynomial.ringHom_ext h₀ h₁
-  exact congrArg (fun u : R[X] →+* S => u p) this
-```
-
-and then, for `e : R[W] →ₐ[R] R[W']` with
-`e (of W.polynomial X) = a·x' + r` and
-`e (root W.polynomial) = b·y' + c·x' + t` (all scalars via `algebraMap`),
-
-```lean
-theorem mk_wsubst_polynomial … :
-    AdjoinRoot.mk W'.toAffine.polynomial
-      (wsubst a r b c t W.toAffine.polynomial) = 0 := by
-  have hEq : (AdjoinRoot.mk W'.toAffine.polynomial).comp (wsubst a r b c t)
-      = (e : _ →+* _).comp (AdjoinRoot.mk W.toAffine.polynomial) := by
-    refine bivariate_ringHom_ext ?_ ?_ ?_ <;> …   -- three `show`/`rw [hx]`/`rw [hy]` cases
-  simpa [AdjoinRoot.mk_self] using
-    congrArg (fun u : R[X][Y] →+* _ => u W.toAffine.polynomial) hEq
-```
-
-Two things that cost time and are worth copying: `algebraMap R R[W] v` is
-DEFEQ to `AdjoinRoot.of W.polynomial (C v)` (so `rfl` discharges the
-constants case, and `AlgHom.commutes` moves `e` past it), and the `Y`
-case closes with `exact (add_assoc _ _ _).symm` rather than `rfl` because
-`hy` is bracketed `(· + ·) + ·`.
-
-**WHAT REMAINS AFTER THAT PLUMBING**, in order: `AdjoinRoot.mk_eq_zero`
-turns it into `W'.polynomial ∣ wsubst a r b c t W.polynomial`; the
-right-hand side has `Y`-degree `≤ 2` with `Y²`-coefficient `C (b ^ 2)`
-while `W'.polynomial` is `monic_polynomial` of `natDegree 2`, so the
-cofactor is the constant `C (C (b ^ 2))` (`Subsingleton R` is a separate
-trivial case); expanding `wsubst a r b c t W.polynomial` and comparing
-with `C (C (b ^ 2)) * W'.polynomial` gives, from the `X³` coefficient,
-`a ^ 3 = b ^ 2` — which is where `u := b * a⁻¹` comes from — and the
-remaining coefficients ARE the five identities of `variableChange_def`.
-The only genuinely new lemma needed at the end is injectivity of
-`WeierstrassCurve.Affine.polynomial` (from `coeff 1` and `coeff 0`), which
-is also absent from the pin.
+`algebraMap R R[W] v` being DEFEQ to `AdjoinRoot.of W.polynomial (C v)` is,
+as predicted, what discharges the constants case of `bivariate_ringHom_ext`
+via `AlgHom.commutes`.
 
 NOT VACUOUS, and the check is now sharper than it was.  The hypotheses are
 satisfiable — take `W' = W` with `ι' = ι` — and they are not satisfied by
@@ -22428,8 +22786,10 @@ theorem exists_variableChange_of_isWeierstrassModel {R : Type} [CommRing R]
     (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
     (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W')
     (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
-    ∃ C : WeierstrassCurve.VariableChange R, W' = C • W :=
-  sorry
+    ∃ C : WeierstrassCurve.VariableChange R, W' = C • W := by
+  obtain ⟨Φ, a, r, b, c, t, ha, hb, hx, hy⟩ :=
+    exists_linearAlgHom_of_isWeierstrassModel W W' hW hW' e
+  exact exists_variableChange_of_linearAlgHom W W' a r b c t ha hb Φ hx hy
 
 /-- **Two Weierstrass models of one elliptic scheme have the same `j`**
 (PROVEN 2026-07-27, over `exists_variableChange_of_isWeierstrassModel`).
