@@ -118,16 +118,27 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
 `exists_isOpenImmersion_isProper` have all been in it while closed.  **Regenerate it from the
 build's `declaration uses 'sorry'` warnings before acting on it; do not trust the prose.**  As
-of the release-14 integration (2026-07-28) this file's sorries are exactly these THREE — **the
-whole normality half is now CLOSED**:
+of 2026-07-29 this file's sorries are exactly these TWO — **the whole normality half is
+CLOSED, and so is the whole of E. Noether's finiteness theorem**:
 
 | leaf | content |
 | --- | --- |
-| `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
+| `nonempty_projChart_of_surjective` | the projective closure of an affine variety.  Its docstring's "cheaper route" note has now been CHECKED against the pin (see the CHECK WAS RUN section on the declaration): the route survives, but two of its steps are missing from `Mathlib` and it prices them at zero |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction — but see the next section: every consumer now bypasses it |
-| `exists_finset_span_powSubalgebra_of_mem_span` | the FINITE-MODEL DESCENT, all that is left of E. Noether's finiteness theorem after 2026-07-28: over `A = k[x₁,…,x_d]` with `Kf = Frac A` and `q = pⁿ`, the intersection of `A` with a finite-dimensional `Frac(Aᵍ)`-subspace of `Kf` is a finite `Aᵍ`-module.  `module_finite_integralClosure_of_isPurelyInseparable` (the inseparable residue, and with it all of `module_finite_integralClosure_of_isFractionRing`) is PROVEN over it |
+
+**`exists_finset_span_powSubalgebra_of_mem_span` — the finite-model descent — is PROVEN
+(2026-07-29)**, over three new elementary statements carried here:
+`exists_subfield_span_powSubalgebra` (the finite subfield `k₁`), `coeff_mem_of_mul_eq` (the
+saturation of `k₁[x]` in `k[x]`) and `exists_finset_span_of_coeff_mem_span` (`k₁[x]` is a
+finite `k^q[x^q]`-module), together with `mvPolynomialCoeffSubring` and
+`pow_mem_mvPolynomialCoeffSubring`.  **So E. Noether's finiteness theorem is now sorry-free
+here**, and with it `module_finite_integralClosure_of_isPurelyInseparable`,
+`module_finite_integralClosure_of_isFractionRing`, `finiteType_integralClosure_sections`
+and `locallyOfFiniteType_fromNormalization` — i.e. the whole finiteness half of the
+compactification, which was the leaf's only consumer chain.
 
 **Proven and no longer leaves** (do NOT dispatch at these):
+`exists_finset_span_powSubalgebra_of_mem_span`,
 `isIntegrallyClosed_stalk_normalization` (REFUTED, RESTATED with an explicit normality
 hypothesis `hYn`, and PROVEN 2026-07-28 over `isIntegrallyClosed_sections_of_forall_stalk`,
 itself PROVEN and hoisted here from `Modularity/MoretBailly.lean`),
@@ -820,7 +831,31 @@ Take `A := Φ.range` with the induced grading and `f := Φ f' = t` (note `f'/f' 
 degreewise pieces at this pin.  It is assembled from `DirectSum.toSemiring` / the `GradedRing`
 decomposition of `A'`, and the degreewise pieces are `HomogeneousLocalization.Away.mk` composed
 with `C.awayIso.hom` and `q`; if that assembly is genuinely unavailable, the note is wrong and
-the saturated-ideal route stands. -/
+the saturated-ideal route stands.
+
+**THE CHECK WAS RUN, 2026-07-28, AND THE NOTE SURVIVES IT — but two of its steps are NOT free
+and the note does not say so.**  Findings against our pin (`a3364fa`), each by grep:
+
+* *The assembly is available.*  `DirectSum.toSemiring` (`Mathlib/Algebra/DirectSum/Ring.lean`)
+  and `DirectSum.toAlgebra` (`Mathlib/Algebra/DirectSum/Algebra.lean`) both exist and take
+  exactly the degreewise-`AddMonoidHom`-plus-`hone`-plus-`hmul` data this route produces.  So
+  the note is NOT refuted and the saturated-ideal route does not have to be revived.
+* *`Away.mk` is well supplied.*  `Away.val_mk`, `Away.mk_surjective`, `ext_iff_val` and
+  `mk_eq_zero_of_num` are all there, so additivity and multiplicativity of
+  `a ↦ Away.mk 𝒜' hf' d a` in the numerator are provable through `val` with no new theory.
+* **`Polynomial B` has NO internal ℕ-grading at this pin.**  `grep GradedAlgebra` over
+  `Mathlib/Algebra/Polynomial/` and `Mathlib/RingTheory/Polynomial/` returns nothing, so
+  "grade `B[t]` by `t`-degree" is not a citation — it is a construction.  **Use
+  `MvPolynomial (Fin 1) B` instead**, whose `homogeneousSubmodule` grading and
+  `MvPolynomial.gradedAlgebra` instance do exist and are *already used in this very file*
+  by `nonempty_projChart_mvPolynomial` (note it is an `abbrev`, so it must be switched on with
+  `attribute [local instance]`, exactly as `section ProjChartMvPolynomial` does).
+* **A `GradedAlgebra` on a subalgebra or on a quotient by a homogeneous ideal is NOT in the
+  pin either.**  `Mathlib/RingTheory/GradedAlgebra/` has `Homogeneous/Ideal.lean` but no
+  quotient-grading instance, and nothing grades a `Subalgebra`.  So `A := Φ.range` with "the
+  induced grading" needs its `DirectSum.Decomposition` built by hand.  It is true and not deep
+  — `Φ` is graded and the target is an internal direct sum, so `Φ.range = ⨁_d Φ '' 𝒜'_d` — but
+  it is the single largest piece of work in this leaf and the note prices it at zero. -/
 theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
     {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
     (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
@@ -1051,9 +1086,274 @@ theorem isNoetherianRing_powSubalgebra (R : Type*) [CommRing R] [IsDomain R] [Is
     exact ⟨a, rfl⟩
   exact isNoetherianRing_of_ringEquiv R (RingEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩)
 
+/-! #### The finite-model descent, decomposed (2026-07-28)
+
+The three statements below are what `exists_finset_span_powSubalgebra_of_mem_span` — the
+last leaf of E. Noether's finiteness theorem — is PROVEN over.  Each is elementary and each
+is stated with no scheme theory and no fraction field in it.
+
+One simplification worth recording, because the leaf's own docstring priced it as work:
+**the subfield `k₁` needs no separate fieldness argument.**  Any subring `T ⊆ k` containing
+`k ^ q` is automatically a field, since for `x ≠ 0` one has
+`x⁻¹ = x ^ (q - 1) · (x ^ q)⁻¹` and `(x ^ q)⁻¹ = (x⁻¹) ^ q ∈ k ^ q ⊆ T`.  So `k₁` is built
+as the ordinary `k ^ q`-subalgebra generated by the finitely many coefficients — where
+module-finiteness over `k ^ q` is `fg_adjoin_of_finite` applied to `X ^ q - C (c ^ q)` — and
+upgraded to a `Subfield` by `Subring.toSubfield` at the end. -/
+
+/-- The coefficientwise multiplicativity behind `mvPolynomialCoeffSubring`. -/
+theorem coeff_mul_mem_of_forall {σ k : Type*} [DecidableEq σ] [CommRing k] (S : Subring k)
+    {a b : MvPolynomial σ k} (ha : ∀ m, MvPolynomial.coeff m a ∈ S)
+    (hb : ∀ m, MvPolynomial.coeff m b ∈ S) (m : σ →₀ ℕ) :
+    MvPolynomial.coeff m (a * b) ∈ S := by
+  rw [MvPolynomial.coeff_mul]
+  exact sum_mem fun x _ => S.mul_mem (ha _) (hb _)
+
+/-- The subring of `MvPolynomial σ k` consisting of the polynomials all of whose
+coefficients lie in a given subring `S` of `k`.  For `S = ↥k₁` this is the ring `k₁[x]`
+sitting inside `k[x]`, and expressing it as a `Subring` rather than as the image of
+`MvPolynomial σ ↥k₁` is what keeps the whole descent inside one polynomial ring. -/
+def mvPolynomialCoeffSubring (σ : Type*) [DecidableEq σ] {k : Type*} [CommRing k]
+    (S : Subring k) : Subring (MvPolynomial σ k) where
+  carrier := {a | ∀ m, MvPolynomial.coeff m a ∈ S}
+  mul_mem' := fun ha hb => coeff_mul_mem_of_forall S ha hb
+  one_mem' := by
+    intro m
+    rw [MvPolynomial.coeff_one]
+    split <;> simp
+  add_mem' := by
+    intro a b ha hb m
+    rw [MvPolynomial.coeff_add]
+    exact S.add_mem (ha m) (hb m)
+  zero_mem' := by intro m; simp
+  neg_mem' := by
+    intro a ha m
+    rw [MvPolynomial.coeff_neg]
+    exact S.neg_mem (ha m)
+
+theorem mem_mvPolynomialCoeffSubring_iff {σ k : Type*} [DecidableEq σ] [CommRing k]
+    {S : Subring k} {a : MvPolynomial σ k} :
+    a ∈ mvPolynomialCoeffSubring σ S ↔ ∀ m, MvPolynomial.coeff m a ∈ S := Iff.rfl
+
+/-- `A ^ q = k ^ q [x ^ q]`, in the only form the descent needs: every coefficient of a
+`q`-th power of a polynomial is a `q`-th power in the base ring.  This is where
+`add_pow_expChar_pow` — the Frobenius being additive — is spent, and it is the reason no
+case split on the characteristic occurs anywhere below. -/
+theorem pow_mem_mvPolynomialCoeffSubring {σ k : Type*} [DecidableEq σ] [CommRing k]
+    {p n : ℕ} [ExpChar k p] (a : MvPolynomial σ k) :
+    a ^ p ^ n ∈ mvPolynomialCoeffSubring σ (powSubalgebra k p n).toSubring := by
+  classical
+  induction a using MvPolynomial.induction_on with
+  | C r =>
+      intro m
+      rw [← map_pow, MvPolynomial.coeff_C]
+      split
+      · exact pow_mem_powSubalgebra r
+      · exact zero_mem _
+  | add f g hf hg =>
+      rw [add_pow_expChar_pow]
+      exact (mvPolynomialCoeffSubring σ (powSubalgebra k p n).toSubring).add_mem hf hg
+  | mul_X f i hf =>
+      rw [mul_pow]
+      refine (mvPolynomialCoeffSubring σ (powSubalgebra k p n).toSubring).mul_mem hf ?_
+      intro m
+      rw [MvPolynomial.X_pow_eq_monomial, MvPolynomial.coeff_monomial]
+      split
+      · exact one_mem _
+      · exact zero_mem _
+
+/-- **The finite subfield `k₁`** (PROVEN): finitely many prescribed elements of `k`, together
+with all of `k ^ q`, are contained in a subfield of `k` that is spanned by a FINITE set over
+`k ^ q`.
+
+Each `c ∈ C` is a root of the monic `X ^ q - C (c ^ q)` over `k ^ q`, so the `k ^ q`-subalgebra
+`T` they generate is module-finite (`fg_adjoin_of_finite`); and `T` is a field for free,
+because `x⁻¹ = x ^ (q - 1) · (x ^ q)⁻¹` and both factors lie in `T`.  Note that the field
+`k₁` and the spanning set `E` are produced together: `E` is exactly the `FG` witness for
+`T`, so no basis of `k₁` over `k ^ q` is ever chosen. -/
+theorem exists_subfield_span_powSubalgebra {k : Type*} [Field k] (p n : ℕ) [ExpChar k p]
+    (C : Finset k) :
+    ∃ (k₁ : Subfield k) (E : Finset k),
+      (∀ c ∈ C, c ∈ k₁) ∧
+      (∀ x ∈ powSubalgebra k p n, x ∈ k₁) ∧
+      (∀ y ∈ k₁, y ∈ Submodule.span ↥(powSubalgebra k p n) (E : Set k)) := by
+  classical
+  have hq0 : 0 < p ^ n := expChar_pow_pos k p n
+  -- NOTE: `_root_.` is load-bearing — inside `namespace AlgebraicGeometry` the bare
+  -- `IsIntegral` is the SCHEME predicate, and the error it produces names `Scheme`.
+  have hint : ∀ c : k, _root_.IsIntegral ↥(powSubalgebra k p n) c := by
+    intro c
+    refine ⟨Polynomial.X ^ (p ^ n) -
+      Polynomial.C ⟨c ^ (p ^ n), pow_mem_powSubalgebra c⟩, ?_, ?_⟩
+    · exact Polynomial.monic_X_pow_sub_C _ hq0.ne'
+    · simp
+  obtain ⟨E, hE⟩ := fg_adjoin_of_finite (R := ↥(powSubalgebra k p n)) C.finite_toSet
+    (fun x _ => hint x)
+  set T : Subalgebra ↥(powSubalgebra k p n) k := Algebra.adjoin _ (C : Set k) with hT
+  have hSsub : ∀ x ∈ powSubalgebra k p n, x ∈ T := by
+    intro x hx
+    have h := T.algebraMap_mem (⟨x, hx⟩ : ↥(powSubalgebra k p n))
+    simpa using h
+  have hinv : ∀ x ∈ T.toSubring, x⁻¹ ∈ T.toSubring := by
+    intro x hx
+    rcases eq_or_ne x 0 with rfl | hx0
+    · simpa using T.toSubring.zero_mem
+    have h2 : (x ^ (p ^ n))⁻¹ ∈ powSubalgebra k p n := by
+      have h : (x⁻¹) ^ (p ^ n) = (x ^ (p ^ n))⁻¹ := by rw [inv_pow]
+      exact h ▸ pow_mem_powSubalgebra x⁻¹
+    have hpow : x ^ (p ^ n) = x ^ (p ^ n - 1) * x := by
+      rw [← pow_succ]
+      congr 1
+      omega
+    have h3 : x⁻¹ = x ^ (p ^ n - 1) * (x ^ (p ^ n))⁻¹ := by
+      rw [hpow, mul_inv, ← mul_assoc, mul_inv_cancel₀ (pow_ne_zero _ hx0), one_mul]
+    rw [h3]
+    exact T.toSubring.mul_mem (T.toSubring.pow_mem hx _) (hSsub _ h2)
+  refine ⟨T.toSubring.toSubfield hinv, E, fun c hc => Algebra.subset_adjoin hc,
+    fun x hx => hSsub x hx, fun y hy => ?_⟩
+  have hy' : y ∈ Subalgebra.toSubmodule T := hy
+  rw [← hE] at hy'
+  exact hy'
+
+/-- **Saturation: `k₁[x]` is saturated in `k[x]`** (PROVEN).  If `v · z = u` with `u` and `v`
+having all their coefficients in a subfield `k₁ ⊆ k` and `v ≠ 0`, then so does `z`.
+
+This is the statement the leaf's docstring records as `k₁(x) ∩ k[x] = k₁[x]`, in the form
+that never mentions a fraction field: clearing the denominator FIRST turns the intersection
+into this divisibility.  The proof is the retraction argument — `k` is a `k₁`-vector space,
+so the inclusion `k₁ ↪ k` splits (`LinearMap.exists_leftInverse_of_injective`), giving a
+`k₁`-linear `τ : k → k` fixing `k₁` with image in `k₁`; applying `τ` coefficientwise gives a
+map `π` that is `k₁[x]`-linear, so `v · π z = π (v · z) = π u = u = v · z` and `v ≠ 0`
+cancels. -/
+theorem coeff_mem_of_mul_eq {k : Type*} [Field k] {σ : Type*} (k₁ : Subfield k)
+    {u v z : MvPolynomial σ k} (hv : v ≠ 0)
+    (hu : ∀ m, MvPolynomial.coeff m u ∈ k₁) (hvk : ∀ m, MvPolynomial.coeff m v ∈ k₁)
+    (h : v * z = u) : ∀ m, MvPolynomial.coeff m z ∈ k₁ := by
+  classical
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap ↥k₁ k).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (fun a b hab => Subtype.ext hab))
+  set τ : k →ₗ[↥k₁] k := (Algebra.linearMap ↥k₁ k).comp ρ with hτ
+  have hτmem : ∀ x, τ x ∈ k₁ := fun x => (ρ x).2
+  have hτfix : ∀ (c : k) (hc : c ∈ k₁), τ c = c := by
+    intro c hc
+    have h1 : ρ ((Algebra.linearMap ↥k₁ k) (⟨c, hc⟩ : ↥k₁)) = (⟨c, hc⟩ : ↥k₁) := by
+      have := congrArg (fun (F : ↥k₁ →ₗ[↥k₁] ↥k₁) => F (⟨c, hc⟩ : ↥k₁)) hρ
+      simpa using this
+    have h2 : τ c = ((ρ c : ↥k₁) : k) := rfl
+    rw [h2]
+    have h3 : ((Algebra.linearMap ↥k₁ k) (⟨c, hc⟩ : ↥k₁)) = c := rfl
+    rw [h3] at h1
+    rw [h1]
+  have hτsmul : ∀ (c : k) (_ : c ∈ k₁) (x : k), τ (c * x) = c * τ x := by
+    intro c hc x
+    have h := τ.map_smul (⟨c, hc⟩ : ↥k₁) x
+    simp only [Algebra.smul_def] at h
+    exact h
+  set π : MvPolynomial σ k → MvPolynomial σ k :=
+    fun w => ∑ m ∈ w.support, MvPolynomial.monomial m (τ (MvPolynomial.coeff m w)) with hπ
+  have hπcoeff : ∀ (w : MvPolynomial σ k) (m : σ →₀ ℕ),
+      MvPolynomial.coeff m (π w) = τ (MvPolynomial.coeff m w) := by
+    intro w m
+    rw [hπ, MvPolynomial.coeff_sum]
+    by_cases hm : m ∈ w.support
+    · rw [Finset.sum_eq_single m]
+      · rw [MvPolynomial.coeff_monomial, if_pos rfl]
+      · intro b _ hb
+        rw [MvPolynomial.coeff_monomial, if_neg hb]
+      · intro hnm
+        exact absurd hm hnm
+    · have hz : MvPolynomial.coeff m w = 0 := by
+        simpa [MvPolynomial.notMem_support_iff] using hm
+      rw [hz, map_zero]
+      refine Finset.sum_eq_zero fun b hb => ?_
+      rw [MvPolynomial.coeff_monomial, if_neg]
+      rintro rfl
+      exact hm hb
+  have hπv : π (v * z) = v * π z := by
+    refine MvPolynomial.ext _ _ fun m => ?_
+    rw [hπcoeff, MvPolynomial.coeff_mul, MvPolynomial.coeff_mul, map_sum]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [hτsmul _ (hvk x.1), hπcoeff]
+  have hπu : π u = u := by
+    refine MvPolynomial.ext _ _ fun m => ?_
+    rw [hπcoeff, hτfix _ (hu m)]
+  have key : v * π z = v * z := by
+    calc v * π z = π (v * z) := hπv.symm
+      _ = π u := by rw [h]
+      _ = u := hπu
+      _ = v * z := h.symm
+  have hz : π z = z := mul_left_cancel₀ hv key
+  intro m
+  have hcm := hπcoeff z m
+  rw [hz] at hcm
+  rw [hcm]
+  exact hτmem _
+
+/-- **`k₁[x]` is a finite `k^q[x^q]`-module** (PROVEN): if every coefficient of `a` lies in
+the `k ^ q`-span of a finite `E ⊆ k`, then `a` lies in the `A ^ q`-span of the finite set
+`{monomial α e : e ∈ E, αⱼ < q}`.
+
+This is the last bullet of the leaf's docstring: split each exponent as `β = q·γ + α` with
+`αⱼ < q` — a `Finsupp.mapRange` by `Nat.div` and `Nat.mod` — and use
+`monomial (q•γ) (y^q) · monomial α e = (monomial γ y)^q · monomial α e`. -/
+theorem exists_finset_span_of_coeff_mem_span {k : Type*} [Field k] (d p n : ℕ) [ExpChar k p]
+    (E : Finset k) :
+    ∃ G : Finset (MvPolynomial (Fin d) k), ∀ a : MvPolynomial (Fin d) k,
+      (∀ m, MvPolynomial.coeff m a ∈ Submodule.span ↥(powSubalgebra k p n) (E : Set k)) →
+      a ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+        (G : Set (MvPolynomial (Fin d) k)) := by
+  classical
+  have hq0 : 0 < p ^ n := expChar_pow_pos k p n
+  set Exp : Finset (Fin d →₀ ℕ) :=
+    Finset.image (fun g : Fin d → ℕ => Finsupp.equivFunOnFinite.symm g)
+      (Fintype.piFinset (fun _ : Fin d => Finset.range (p ^ n))) with hExp
+  refine ⟨(Exp ×ˢ E).image (fun z => MvPolynomial.monomial z.1 z.2), ?_⟩
+  intro a ha
+  have hmem : (∑ v ∈ a.support, MvPolynomial.monomial v (MvPolynomial.coeff v a)) ∈
+      Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+        (((Exp ×ˢ E).image (fun z : (Fin d →₀ ℕ) × k => MvPolynomial.monomial z.1 z.2) :
+          Finset (MvPolynomial (Fin d) k)) : Set (MvPolynomial (Fin d) k)) := by
+    refine sum_mem fun m _ => ?_
+    obtain ⟨f, _, hf⟩ := Submodule.mem_span_finset.mp (ha m)
+    rw [← hf, map_sum]
+    refine sum_mem fun e he => ?_
+    obtain ⟨y, hy⟩ := (f e).2
+    rw [iterateFrobenius_def] at hy
+    set γ : Fin d →₀ ℕ := Finsupp.mapRange (fun j => j / p ^ n) (by simp) m with hγ
+    set α : Fin d →₀ ℕ := Finsupp.mapRange (fun j => j % p ^ n) (by simp) m with hα
+    have hsplit : (p ^ n) • γ + α = m := by
+      refine Finsupp.ext fun i => ?_
+      simp only [Finsupp.add_apply, Finsupp.smul_apply, hγ, hα, Finsupp.mapRange_apply,
+        smul_eq_mul]
+      exact Nat.div_add_mod _ _
+    have hαmem : α ∈ Exp := by
+      rw [hExp]
+      refine Finset.mem_image.mpr ⟨fun i => m i % p ^ n, ?_, ?_⟩
+      · refine Fintype.mem_piFinset.mpr fun i => ?_
+        exact Finset.mem_range.mpr (Nat.mod_lt _ hq0)
+      · refine Finsupp.ext fun i => ?_
+        simp [hα]
+    have hGmem : MvPolynomial.monomial α e ∈
+        (Exp ×ˢ E).image (fun z : (Fin d →₀ ℕ) × k => MvPolynomial.monomial z.1 z.2) :=
+      Finset.mem_image.mpr ⟨(α, e), Finset.mem_product.mpr ⟨hαmem, he⟩, rfl⟩
+    have hval : (MvPolynomial.monomial m) ((f e : k) * e) =
+        ((MvPolynomial.monomial γ y) ^ (p ^ n)) * (MvPolynomial.monomial α e) := by
+      rw [MvPolynomial.monomial_pow, MvPolynomial.monomial_mul, hy, hsplit]
+    have hsm : (f e : ↥(powSubalgebra k p n)) • e = (f e : k) * e := Algebra.smul_def _ _
+    rw [hsm, hval]
+    have hpow : (MvPolynomial.monomial γ y : MvPolynomial (Fin d) k) ^ (p ^ n) ∈
+        powSubalgebra (MvPolynomial (Fin d) k) p n := pow_mem_powSubalgebra _
+    have hh := Submodule.smul_mem
+      (Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
+        (((Exp ×ˢ E).image (fun z : (Fin d →₀ ℕ) × k => MvPolynomial.monomial z.1 z.2) :
+          Finset (MvPolynomial (Fin d) k)) : Set (MvPolynomial (Fin d) k)))
+      (⟨_, hpow⟩ : ↥(powSubalgebra (MvPolynomial (Fin d) k) p n))
+      (Submodule.subset_span hGmem)
+    rwa [Algebra.smul_def] at hh
+  rwa [← a.as_sum] at hmem
+
 /-- **LEAF — the finite-model descent: the whole arithmetic content of E. Noether's
-finiteness theorem in characteristic `p`** (cut 2026-07-28; the entire cluster above is
-PROVEN over it).
+finiteness theorem in characteristic `p`** (cut 2026-07-28; **PROVEN 2026-07-28** over the
+three statements immediately above; the entire cluster above it is PROVEN over this).
 
 `A = k[x₁,…,x_d]` is a polynomial ring over a field `k` of exponential characteristic `p`,
 `Kf = Frac A`, `q = p ^ n`, and `Aq`, `Kfq` denote the subrings of `q`-th powers.  Then for
@@ -1068,15 +1368,17 @@ it is true because only FINITELY MANY elements of `k` are involved:
 * write each `θ ∈ Θ` as `u_θ / v_θ` with `u_θ, v_θ ∈ A`, and let `k₁ ⊆ k` be the subfield
   generated by `k ^ q` together with the finitely many coefficients of the `u_θ` and `v_θ`.
   Every such coefficient `c` has `c ^ q ∈ k ^ q`, hence is integral over `k ^ q` of degree
-  dividing `q`, so `k₁ / k ^ q` is FINITE;
+  dividing `q`, so `k₁ / k ^ q` is FINITE — this is `exists_subfield_span_powSubalgebra`;
 * `Kfq = Frac Aq ⊆ k₁(x)` because `Aq = k^q[x^q]`, so `Kfq-span Θ ⊆ k₁(x)`;
 * `k₁(x) ∩ k[x] = k₁[x]`: choose a `k₁`-linear retraction `ρ : k → k₁` — possible because
   `k₁` is a FIELD and `k` a `k₁`-vector space — and apply it coefficientwise to get a
   `k₁[x]`-linear retraction `π : k[x] → k₁[x]`.  If `z · v = u` in `k[x]` with `u, v ∈ k₁[x]`
-  and `v ≠ 0`, then `v · π z = π (z · v) = u = v · z`, so `z = π z ∈ k₁[x]`;
+  and `v ≠ 0`, then `v · π z = π (z · v) = u = v · z`, so `z = π z ∈ k₁[x]` —
+  this is `coeff_mem_of_mul_eq`;
 * `k₁[x]` is spanned over `Aq = k^q[x^q]` by the finite set
   `G = {eᵢ · x^α : eᵢ a k^q-basis of k₁, αⱼ < q}`: write `β = qγ + α` with `αⱼ < q` and
-  `c = ∑ᵢ tᵢ^q eᵢ`, so `c · x^β = ∑ᵢ (tᵢ x^γ)^q · (eᵢ x^α)`.
+  `c = ∑ᵢ tᵢ^q eᵢ`, so `c · x^β = ∑ᵢ (tᵢ x^γ)^q · (eᵢ x^α)` —
+  this is `exists_finset_span_of_coeff_mem_span`.
 
 Three remarks a prover should not have to rediscover.  (i) The finiteness of `k₁` is CHEAP
 and is not the gap.  (ii) A `PerfectField k` hypothesis would NOT remove the construction —
@@ -1084,7 +1386,26 @@ it only makes `k₁ = k`; the example usually quoted, `k = 𝔽_p`, `A = k[x,y]/
 over `k[x]` with a purely inseparable fraction-field extension, shows the inseparable case
 is live over a perfect field too.  (iii) In characteristic zero `p = 1`, `q = 1`, `Aq = A`
 and `G = {1}` works, which is why no case split on the characteristic occurs anywhere in
-this cluster. -/
+this cluster.
+
+**HOW THE PROOF ACTUALLY RUNS (2026-07-28), which differs from the sketch above in one
+respect worth recording: NO FRACTION FIELD OF A SUBRING IS EVER FORMED.**  The sketch's
+middle two bullets talk about `k₁(x)` and about intersecting it with `k[x]`, which in Lean
+would mean building `Frac (k₁[x])`, embedding it in `Kf`, and transporting integral
+closedness across the embedding.  All of that is avoided by CLEARING DENOMINATORS FIRST:
+
+* expand `ι a ∈ Kfq-span Θ` as `ι a = ∑_θ c_θ · θ` with `c_θ = w_θ ^ q`, and write both
+  `θ = ι u_θ / ι v_θ` and `w_θ = ι s_θ / ι t_θ`.  Multiplying by `D = ∏_θ (t_θ^q · v_θ)`
+  and using injectivity of `ι` gives an identity `a · D = U` **inside `A`**;
+* every coefficient of `D` and of `U` lies in `k₁`: those of `u_θ, v_θ` by construction of
+  `k₁`, and those of `s_θ^q, t_θ^q` because a `q`-th power has `q`-th-power coefficients
+  (`pow_mem_mvPolynomialCoeffSubring`, which is `add_pow_expChar_pow` and nothing else);
+* so `coeff_mem_of_mul_eq` applies directly to `D · a = U`, and the "intersection with a
+  subfield of fractions" never has to be formed.
+
+The second simplification is that `k₁` needs no fieldness argument: **every subring of `k`
+containing `k ^ q` is already a field**, by `x⁻¹ = x^(q-1) · (x^q)⁻¹`.  See the section
+comment above the three helpers. -/
 theorem exists_finset_span_powSubalgebra_of_mem_span
     (k : Type*) [Field k] (d p n : ℕ) [ExpChar k p]
     (Kf : Type*) [Field Kf] [Algebra (MvPolynomial (Fin d) k) Kf]
@@ -1094,8 +1415,124 @@ theorem exists_finset_span_powSubalgebra_of_mem_span
       algebraMap (MvPolynomial (Fin d) k) Kf a ∈
           Submodule.span ↥(powSubalgebra Kf p n) (Θ : Set Kf) →
         a ∈ Submodule.span ↥(powSubalgebra (MvPolynomial (Fin d) k) p n)
-          (G : Set (MvPolynomial (Fin d) k)) :=
-  sorry
+          (G : Set (MvPolynomial (Fin d) k)) := by
+  classical
+  have hιinj : Function.Injective (algebraMap (MvPolynomial (Fin d) k) Kf) :=
+    IsFractionRing.injective _ _
+  -- write every element of `Kf` as a fraction
+  have hnum : ∀ θ : Kf, ∃ uv : MvPolynomial (Fin d) k × MvPolynomial (Fin d) k,
+      uv.2 ≠ 0 ∧ algebraMap _ Kf uv.1 / algebraMap _ Kf uv.2 = θ := by
+    intro θ
+    obtain ⟨x, y, hy, hxy⟩ := IsFractionRing.div_surjective
+      (A := MvPolynomial (Fin d) k) (K := Kf) θ
+    exact ⟨⟨x, y⟩, nonZeroDivisors.ne_zero hy, hxy⟩
+  choose UV hUV0 hUV using hnum
+  -- the finitely many coefficients that occur, and the finite subfield they generate
+  set C : Finset k := Θ.biUnion (fun θ =>
+      ((UV θ).1.support.image (fun m => MvPolynomial.coeff m (UV θ).1)) ∪
+      ((UV θ).2.support.image (fun m => MvPolynomial.coeff m (UV θ).2))) with hC
+  obtain ⟨k₁, E, hCk₁, hSk₁, hspan⟩ := exists_subfield_span_powSubalgebra (k := k) p n C
+  obtain ⟨G, hG⟩ := exists_finset_span_of_coeff_mem_span (k := k) d p n E
+  refine ⟨G, ?_⟩
+  intro a ha
+  have hUVk : ∀ θ ∈ Θ, (UV θ).1 ∈ mvPolynomialCoeffSubring (Fin d) k₁.toSubring ∧
+      (UV θ).2 ∈ mvPolynomialCoeffSubring (Fin d) k₁.toSubring := by
+    intro θ hθ
+    constructor <;> intro m
+    · by_cases hm : m ∈ (UV θ).1.support
+      · exact hCk₁ _ (Finset.mem_biUnion.mpr ⟨θ, hθ, Finset.mem_union_left _
+          (Finset.mem_image.mpr ⟨m, hm, rfl⟩)⟩)
+      · rw [MvPolynomial.notMem_support_iff.mp hm]
+        exact zero_mem _
+    · by_cases hm : m ∈ (UV θ).2.support
+      · exact hCk₁ _ (Finset.mem_biUnion.mpr ⟨θ, hθ, Finset.mem_union_right _
+          (Finset.mem_image.mpr ⟨m, hm, rfl⟩)⟩)
+      · rw [MvPolynomial.notMem_support_iff.mp hm]
+        exact zero_mem _
+  have hpowk : ∀ w : MvPolynomial (Fin d) k,
+      w ^ (p ^ n) ∈ mvPolynomialCoeffSubring (Fin d) k₁.toSubring := by
+    intro w m
+    exact hSk₁ _ (pow_mem_mvPolynomialCoeffSubring (p := p) (n := n) w m)
+  obtain ⟨c, _, hc⟩ := Submodule.mem_span_finset.mp ha
+  -- `q`-th roots of the coefficients, and their fraction representations
+  have hroot : ∀ θ : Kf, ∃ st : MvPolynomial (Fin d) k × MvPolynomial (Fin d) k,
+      st.2 ≠ 0 ∧ (c θ : Kf) =
+        algebraMap _ Kf (st.1 ^ (p ^ n)) / algebraMap _ Kf (st.2 ^ (p ^ n)) := by
+    intro θ
+    obtain ⟨w, hw⟩ := (c θ).2
+    rw [iterateFrobenius_def] at hw
+    obtain ⟨x, y, hy, hxy⟩ := IsFractionRing.div_surjective
+      (A := MvPolynomial (Fin d) k) (K := Kf) w
+    refine ⟨⟨x, y⟩, nonZeroDivisors.ne_zero hy, ?_⟩
+    rw [← hw, ← hxy, div_pow, map_pow, map_pow]
+  choose ST hST0 hST using hroot
+  -- clearing denominators
+  set N : Kf → MvPolynomial (Fin d) k := fun θ => (ST θ).1 ^ (p ^ n) * (UV θ).1 with hN
+  set D : Kf → MvPolynomial (Fin d) k := fun θ => (ST θ).2 ^ (p ^ n) * (UV θ).2 with hD
+  have hD0 : ∀ θ, D θ ≠ 0 := by
+    intro θ
+    exact mul_ne_zero (pow_ne_zero _ (hST0 θ)) (hUV0 θ)
+  have hDι : ∀ θ, algebraMap (MvPolynomial (Fin d) k) Kf (D θ) ≠ 0 := by
+    intro θ
+    simpa using fun h => hD0 θ (hιinj (by simpa using h))
+  have hterm : ∀ θ, (c θ : Kf) * θ =
+      algebraMap _ Kf (N θ) / algebraMap _ Kf (D θ) := by
+    intro θ
+    have h1 : (c θ : Kf) * θ
+        = (algebraMap (MvPolynomial (Fin d) k) Kf ((ST θ).1 ^ (p ^ n)) /
+            algebraMap (MvPolynomial (Fin d) k) Kf ((ST θ).2 ^ (p ^ n)))
+          * (algebraMap (MvPolynomial (Fin d) k) Kf (UV θ).1 /
+            algebraMap (MvPolynomial (Fin d) k) Kf (UV θ).2) := by
+      rw [hST θ, hUV θ]
+    rw [h1, div_mul_div_comm]
+    simp only [hN, hD, map_mul]
+  set Dprod : MvPolynomial (Fin d) k := ∏ θ ∈ Θ, D θ with hDprod
+  have hDprod0 : Dprod ≠ 0 := Finset.prod_ne_zero_iff.mpr fun θ _ => hD0 θ
+  set U : MvPolynomial (Fin d) k :=
+    ∑ θ ∈ Θ, N θ * ∏ θ' ∈ Θ.erase θ, D θ' with hU
+  have hgen : ∀ x y z : Kf, y ≠ 0 → x / y * (y * z) = x * z := by
+    intro x y z hy
+    rw [div_mul_eq_mul_div, mul_comm y z, ← mul_assoc, mul_div_assoc, div_self hy, mul_one]
+  have hkey : ∀ θ ∈ Θ, (c θ : Kf) * θ * algebraMap (MvPolynomial (Fin d) k) Kf Dprod
+      = algebraMap (MvPolynomial (Fin d) k) Kf (N θ) *
+        algebraMap (MvPolynomial (Fin d) k) Kf (∏ θ' ∈ Θ.erase θ, D θ') := by
+    intro θ hθ
+    rw [hterm θ, hDprod, map_prod, map_prod,
+      ← Finset.mul_prod_erase _ (fun θ' => algebraMap (MvPolynomial (Fin d) k) Kf (D θ')) hθ]
+    exact hgen _ _ _ (hDι θ)
+  have hmain : a * Dprod = U := by
+    refine hιinj ?_
+    have hlhs : algebraMap (MvPolynomial (Fin d) k) Kf (a * Dprod)
+        = ∑ θ ∈ Θ, (c θ : Kf) * θ * algebraMap (MvPolynomial (Fin d) k) Kf Dprod := by
+      have hsm : ∀ (s : ↥(powSubalgebra Kf p n)) (t : Kf), s • t = (s : Kf) * t :=
+        fun s t => Algebra.smul_def s t
+      rw [map_mul, ← hc, Finset.sum_mul]
+      exact Finset.sum_congr rfl fun θ _ => by rw [hsm]
+    have hrhs : algebraMap (MvPolynomial (Fin d) k) Kf U
+        = ∑ θ ∈ Θ, algebraMap (MvPolynomial (Fin d) k) Kf (N θ) *
+            algebraMap (MvPolynomial (Fin d) k) Kf (∏ θ' ∈ Θ.erase θ, D θ') := by
+      rw [hU, map_sum]
+      exact Finset.sum_congr rfl fun θ _ => map_mul _ _ _
+    rw [hlhs, hrhs]
+    exact Finset.sum_congr rfl hkey
+  -- both sides of the cleared identity have coefficients in `k₁`
+  have hDprodk : Dprod ∈ mvPolynomialCoeffSubring (Fin d) k₁.toSubring := by
+    rw [hDprod]
+    refine Subring.prod_mem _ fun θ hθ => ?_
+    exact (mvPolynomialCoeffSubring (Fin d) k₁.toSubring).mul_mem (hpowk _) (hUVk θ hθ).2
+  have hUk : U ∈ mvPolynomialCoeffSubring (Fin d) k₁.toSubring := by
+    rw [hU]
+    refine Subring.sum_mem _ fun θ hθ => ?_
+    refine (mvPolynomialCoeffSubring (Fin d) k₁.toSubring).mul_mem
+      ((mvPolynomialCoeffSubring (Fin d) k₁.toSubring).mul_mem (hpowk _) (hUVk θ hθ).1) ?_
+    refine Subring.prod_mem _ fun θ' hθ' => ?_
+    exact (mvPolynomialCoeffSubring (Fin d) k₁.toSubring).mul_mem (hpowk _)
+      (hUVk θ' (Finset.mem_of_mem_erase hθ')).2
+  -- saturation, then the spanning statement
+  have hak : ∀ m, MvPolynomial.coeff m a ∈ k₁ :=
+    coeff_mem_of_mul_eq k₁ hDprod0 (u := U) (v := Dprod) (z := a) hUk hDprodk
+      (by rw [mul_comm]; exact hmain)
+  exact hG a fun m => hspan _ (hak m)
 
 /-- **The arithmetic core of E. Noether's finiteness theorem in characteristic `p`**
 (PROVEN 2026-07-28 over `exists_finset_span_powSubalgebra_of_mem_span` above).
