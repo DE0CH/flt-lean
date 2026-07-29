@@ -17809,8 +17809,233 @@ theorem exists_mem_ker_span_range_sup_span_singleton_eq_ker
     exact Ideal.add_mem _ (Submodule.mem_sup_left hj)
       (Submodule.mem_sup_right (Ideal.mem_span_singleton_self _))
 
+/-- **THE EXTRA GENERATOR CAN BE TAKEN IDEMPOTENT MODULO `(g)`** (PROVEN 2026-07-28,
+`flt-lean-308`; cut out of `exists_span_range_eq_ker_of_span_sup_span_singleton` below,
+which is now glue over this lemma and the single leaf
+`exists_span_range_isIntegral_of_isIdempotentElem` just below).
+
+Same data as the compression leaf, minus `μ`: `n` relations `g` inside `I = P.ker`, and an
+`r ≡ 1 (mod 𝔪·R[x])` with `r·I ≤ (g)`.  The conclusion replaces the sibling's `μ` by an
+element `e` with the *additional* property `e² ≡ e (mod (g))`.
+
+**WHY THAT IS THE RIGHT NORMAL FORM, and what it buys.**  Write `J = (g)`, `I = P.ker`.
+An idempotent-mod-`J` generator of `I/J` says exactly that the parasitic component splits
+off as a RING FACTOR: putting `K := J : I`, one gets `I + K = R[x]` and `I ∩ K = I·K = J`,
+so `R[x]/J ≅ S × R[x]/K` by CRT, `I/J` is the ideal `0 × R[x]/K`, and `V(J)` is the
+DISJOINT union `V(I) ⊔ V(K)` promised by the geometry note on the leaf below.  In the
+standing `ℤ₃` example (`I = (x)`, `g = x(1+3x)`) this is `ℤ₃[x]/(g) ≅ ℤ₃ × ℚ₃`, and
+`e = −3x` is the idempotent cutting out the `ℚ₃` factor.
+
+**THE PROOF** is the sibling's steps 3–5 with one extra line.  The image `ρ` of `r` in `S`
+is a unit (`1 − ρ ∈ 𝔪S ≤ Jac S`, because `S` is finite over the local ring `R`; Nakayama
+over `R` on `S/(ρ)` gives `(ρ) = ⊤`), so for `b` over `ρ⁻¹` the element `μ₀ = 1 − r·b` lies
+in `I` and satisfies `J ⊔ (μ₀) = I`.  The extra line is
+`μ₀² − μ₀ = μ₀(μ₀ − 1) = −b·(r·μ₀) ∈ J`, since `μ₀ ∈ I` and `r·I ≤ J` — idempotence is
+therefore FREE, it is just `r·I ≤ J` read at the element `μ₀`.  Correcting `μ₀` by an
+element `j ∈ J` into `𝔪·R[x]` preserves idempotence, because
+`(μ₀ − j)² − (μ₀ − j) = (μ₀² − μ₀) + j·(j − 2μ₀ + 1)`.  **No completeness is used.** -/
+theorem exists_isIdempotentElem_mod_span_range_sup_eq_ker
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    {S : Type*} [CommRing S] [Algebra R S] [Module.Finite R S]
+    {n : ℕ} (P : Algebra.Generators R S (Fin n)) (g : Fin n → P.Ring)
+    (hgle : Ideal.span (Set.range g) ≤ P.ker)
+    (hmod : P.ker ≤ Ideal.span (Set.range g) ⊔
+      (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
+    (r : P.Ring) (hr1 : r - 1 ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
+    (hrker : ∀ u ∈ P.ker, r * u ∈ Ideal.span (Set.range g)) :
+    ∃ e : P.Ring, e ∈ P.ker ∧
+      e ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
+      e * e - e ∈ Ideal.span (Set.range g) ∧
+      Ideal.span (Set.range g) ⊔ Ideal.span {e} = P.ker := by
+  classical
+  set mA : Ideal P.Ring := (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) with hmA
+  set J : Ideal P.Ring := Ideal.span (Set.range g) with hJdef
+  have hjac : IsLocalRing.maximalIdeal R ≤ (⊥ : Ideal R).jacobson := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+  have hmap : mA.map (algebraMap P.Ring S) =
+      (IsLocalRing.maximalIdeal R).map (algebraMap R S) := by
+    rw [hmA, Ideal.map_map, ← IsScalarTower.algebraMap_eq]
+  set rS : S := algebraMap P.Ring S r with hrSdef
+  have hrS1 : (1 : S) - rS ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R S) := by
+    rw [← hmap]
+    have h := Ideal.mem_map_of_mem (algebraMap P.Ring S) hr1
+    have he : (algebraMap P.Ring S) (r - 1) = rS - 1 := by rw [map_sub, map_one]
+    rw [he] at h
+    have h6 : (1 : S) - rS = -(rS - 1) := by ring
+    rw [h6]
+    exact neg_mem h
+  -- the image of `r` in `S` is a unit
+  have hspan : (Ideal.span {rS} : Ideal S) = ⊤ := by
+    haveI : Module.Finite R (S ⧸ (Ideal.span {rS} : Ideal S)) :=
+      Module.Finite.of_surjective
+        (Ideal.Quotient.mkₐ R (Ideal.span {rS} : Ideal S)).toLinearMap
+        Ideal.Quotient.mk_surjective
+    have hone : (1 : S ⧸ (Ideal.span {rS} : Ideal S)) ∈
+        (IsLocalRing.maximalIdeal R).map (algebraMap R (S ⧸ (Ideal.span {rS} : Ideal S))) := by
+      have h2 : Ideal.map (Ideal.Quotient.mk (Ideal.span {rS} : Ideal S))
+          ((IsLocalRing.maximalIdeal R).map (algebraMap R S)) =
+          (IsLocalRing.maximalIdeal R).map
+            (algebraMap R (S ⧸ (Ideal.span {rS} : Ideal S))) := by
+        rw [Ideal.map_map]
+        rfl
+      rw [← h2]
+      have h3 := Ideal.mem_map_of_mem (Ideal.Quotient.mk (Ideal.span {rS} : Ideal S)) hrS1
+      have h4 : (Ideal.Quotient.mk (Ideal.span {rS} : Ideal S)) ((1 : S) - rS) = 1 := by
+        rw [map_sub, map_one,
+          Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self rS), sub_zero]
+      rwa [h4] at h3
+    have htop : (⊤ : Submodule R (S ⧸ (Ideal.span {rS} : Ideal S))) ≤
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R (S ⧸ (Ideal.span {rS} : Ideal S))) := by
+      rw [Ideal.smul_top_eq_map]
+      intro x _
+      have hfull : (IsLocalRing.maximalIdeal R).map
+          (algebraMap R (S ⧸ (Ideal.span {rS} : Ideal S))) = ⊤ :=
+        Ideal.eq_top_iff_one _ |>.mpr hone
+      rw [Submodule.restrictScalars_mem, hfull]
+      trivial
+    have hbot : (⊤ : Submodule R (S ⧸ (Ideal.span {rS} : Ideal S))) = ⊥ :=
+      Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ _ (Module.Finite.fg_top) htop hjac
+    have hzero : (1 : S ⧸ (Ideal.span {rS} : Ideal S)) = 0 := by
+      have hmem := hbot ▸ (Submodule.mem_top :
+        (1 : S ⧸ (Ideal.span {rS} : Ideal S)) ∈ (⊤ : Submodule R _))
+      simpa using hmem
+    rw [Ideal.eq_top_iff_one]
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hzero
+  obtain ⟨b', hb'⟩ := Ideal.mem_span_singleton'.mp (hspan ▸ Submodule.mem_top : (1 : S) ∈ _)
+  obtain ⟨b, hb⟩ := P.algebraMap_surjective b'
+  set μ₀ : P.Ring := 1 - r * b with hμ₀def
+  have hμ₀ker : μ₀ ∈ P.ker := by
+    show (algebraMap P.Ring S) μ₀ = 0
+    rw [hμ₀def, map_sub, map_one, map_mul, hb, ← hrSdef, mul_comm, hb', sub_self]
+  have hsup₀ : J ⊔ Ideal.span {μ₀} = P.ker := by
+    apply le_antisymm
+    · exact sup_le hgle (Ideal.span_le.mpr (by rintro _ rfl; exact hμ₀ker))
+    · intro u hu
+      have hru : b * (r * u) ∈ J := Ideal.mul_mem_left _ _ (hrker u hu)
+      have hmu : u * μ₀ ∈ Ideal.span {μ₀} :=
+        Ideal.mul_mem_left _ _ (Ideal.mem_span_singleton_self _)
+      have hsplit : u = b * (r * u) + u * μ₀ := by rw [hμ₀def]; ring
+      rw [hsplit]
+      exact Submodule.add_mem_sup hru hmu
+  have hidem₀ : μ₀ * μ₀ - μ₀ ∈ J := by
+    have hEq : μ₀ * μ₀ - μ₀ = -(b * (r * μ₀)) := by rw [hμ₀def]; ring
+    rw [hEq]
+    exact neg_mem (Ideal.mul_mem_left _ _ (hrker μ₀ hμ₀ker))
+  -- correct into `𝔪 · R[x]`, which preserves idempotence modulo `J`
+  obtain ⟨j, hj, m₁, hm₁, hjm₁⟩ := Submodule.mem_sup.mp (hmod hμ₀ker)
+  have hm₁sub : m₁ = μ₀ - j := by rw [← hjm₁]; ring
+  have hm₁ker : m₁ ∈ P.ker := by
+    rw [hm₁sub]
+    exact Ideal.sub_mem _ hμ₀ker (hgle hj)
+  refine ⟨m₁, hm₁ker, hm₁, ?_, ?_⟩
+  · have hEq : m₁ * m₁ - m₁ = (μ₀ * μ₀ - μ₀) + j * (j - 2 * μ₀ + 1) := by rw [hm₁sub]; ring
+    rw [hEq]
+    exact Ideal.add_mem _ hidem₀ (Ideal.mul_mem_right _ _ hj)
+  · rw [← hsup₀]
+    apply le_antisymm
+    · refine sup_le le_sup_left (Ideal.span_le.mpr ?_)
+      rintro _ rfl
+      rw [hm₁sub]
+      exact Ideal.sub_mem _ (Submodule.mem_sup_right (Ideal.mem_span_singleton_self _))
+        (Submodule.mem_sup_left hj)
+    · refine sup_le le_sup_left (Ideal.span_le.mpr ?_)
+      rintro _ rfl
+      rw [← hjm₁]
+      exact Ideal.add_mem _ (Submodule.mem_sup_left hj)
+        (Submodule.mem_sup_right (Ideal.mem_span_singleton_self _))
+
+/-- **THE COMPRESSION, AS AN INTEGRALITY PROBLEM: make the `n` relations force each `xᵢ`
+INTEGRAL over `R`** (SORRY LEAF, cut 2026-07-28 by `flt-lean-308` out of
+`exists_span_range_eq_ker_of_span_sup_span_singleton` below, which is now glue over this
+leaf and the PROVEN `exists_isIdempotentElem_mod_span_range_sup_eq_ker` above).
+
+The hypotheses are the compression leaf's, with `μ` replaced by the strictly better `e`
+of the lemma above (`e² ≡ e mod (g)`, so `R[x]/(g) ≅ S × R[x]/K` splits — see there), plus
+the free gift `hmonic`: each `xᵢ` already satisfies a MONIC `pᵢ ∈ R[X]` with
+`pᵢ(xᵢ) ∈ I` (its characteristic polynomial on the finite `R`-module `S`; this is
+`Algebra.IsIntegral.of_finite`, it costs nothing and it is the only unconditional supply
+of elements of `I` with unit leading coefficients).
+
+**WHY THIS IS THE RIGHT TARGET.**  `A/(f)` is module-finite over `R` exactly when every
+`xᵢ` is integral mod `(f)` (finite = integral + finite type, and `A/(f)` is generated by
+the `xᵢ`), and module-finiteness is what the two sibling lemmas above convert into
+`(f) = I`.  So this leaf is EQUIVALENT to the compression — the point of the cut is that
+the goal is now a FINITENESS statement, where Weierstrass preparation / Hensel
+factorisation / the local factors of `S` apply, rather than an ideal equality.
+
+**FIVE FACTS ESTABLISHED WHILE CUTTING THIS, three of them negative.**
+
+1. *The ideal-theoretic statement alone is FALSE, so no formal argument can work.*  What
+   the hypotheses give abstractly is: comaximal `I + K = A` with `I·K = (g₁,…,g_n)`
+   `n`-generated; the conclusion would be `I` `n`-generated.  **Counterexample for
+   `n = 1`**: `A = ℤ[√−5]`, `I = (2, 1+√−5)`, `K = (3, 1+√−5)`.  Then `I + K ∋ 2, 3` so
+   `I + K = A`; `I·K = (1+√−5)` is principal (compare norms: `N(1+√−5) = 6 = 2·3`); and
+   `I` is NOT principal.  Any proof must therefore use that `A = R[x₁,…,x_n]` over a
+   complete local `R` — not merely the ideal combinatorics.
+2. *`n = 1` is TRUE unconditionally, by Cayley–Hamilton, and needs no completeness.*
+   `S` is free of rank `d` over the local ring `R`, so the characteristic polynomial `P`
+   of multiplication by `x` is monic of degree `d` and lies in `I`; then
+   `R[x]/(P) ↠ S` is a surjection of free `R`-modules of equal rank `d`, hence injective,
+   so `I = (P)`.  This is evidence FOR the leaf, and the template the general case wants:
+   produce the `n` relations as characteristic-polynomial-like elements, not as
+   corrections of `g`.
+3. *The rank-one update `fᵢ = gᵢ + e·λᵢ` has an exact criterion — and it is not
+   automatic.*  Writing `e² − e = Σ bᵢgᵢ`, one computes
+   `Σ bᵢfᵢ = e·(e − 1 + Σ bᵢλᵢ)`, so the update closes (i.e. `e ∈ (f)`, whence
+   `(f) = I`) as soon as `(e − 1) + (b₁,…,b_n)` contains a UNIT of `A`; taking the unit
+   `−1` this is exactly `e ∈ (b₁,…,b_n)`.  In the standing `ℤ₃` example
+   `e = −3x`, `e² − e = 3g`, so `(b) = (3) ∋ e` and `λ = x` gives `f = x` — which is
+   precisely why that example works.  Nothing in the hypotheses forces `e ∈ (b)`, and
+   that is the honest form of the "trap" recorded on the leaf below.
+4. *Degree-bounded lifting is FREE, by flatness.*  For any `D` with `A_{≤D} ↠ S`, the
+   sequence `0 → I ∩ A_{≤D} → A_{≤D} → S → 0` splits (`S` is free over the local `R`),
+   so `(I ∩ A_{≤D}) ⊗ k = Ī ∩ k[x]_{≤D}`: **every element of `Ī` of degree `≤ D` lifts to
+   an element of `I` of degree `≤ D`.**  So one may always choose lifts with NO degree
+   drop, hence with unit leading coefficients — the failure mode of `g = x + 3x²`
+   (leading coefficient `3`, not a unit) is always avoidable, one relation at a time.
+5. *The "no common zeros at infinity" route is CLOSED — do not spend a cycle on it.*
+   The criterion itself is correct and worth knowing: if the top-degree forms `Fᵢ` of the
+   `fᵢ` have unit leading coefficients and their reductions have no common zero in
+   `ℙ^{n−1}_{k̄}`, then `A/(f)` is `R`-finite (`V₊(F) → Spec R` is proper, so its image is
+   closed and misses the closed point of the LOCAL ring `R`, hence is empty).  Combined
+   with (4) it would close the leaf from a purely special-fibre statement.  **But that
+   statement is false.**  If the reduced top forms have no common projective zero then
+   Bezout gives `dim_k k[x]/(f̄) = ∏ deg f̄ᵢ`.  Take the parent's own example,
+   `𝔽₃⁵ ≅ 𝔽₃[x,y]/(x²−x, (1−x)(y³−y)+x(y²−y))`: `5 = d₁d₂` forces `{d₁,d₂} = {1,5}`, i.e.
+   a LINEAR element of `Ī`, i.e. `𝔽₃⁵ ≅ 𝔽₃[t]/(q)` with `deg q = 5` — impossible, since
+   five orthogonal idempotents need five distinct `𝔽₃`-roots and `𝔽₃` has three elements.
+   (`R`-finiteness itself is fine there — `x²−x` is monic in `x`, and
+   `y³−y ∈ (f)` — which is why the criterion is sufficient but not necessary, and why the
+   leaf should be attacked through integrality of each `xᵢ`, as stated, rather than
+   through degrees.)
+
+**AXIS EXPLICITLY NOT SEARCHED**, and still the recommended attack: the local factors of
+`S` (`R` complete ⟹ henselian ⟹ `S = ∏ Sⱼ` with `Sⱼ` local), one Weierstrass/Hensel
+factorisation per factor.  That is where `[IsAdicComplete …]` is meant to be spent; it is
+retained for that reason and is still, as of this cut, decorative in the formal proof. -/
+theorem exists_span_range_isIntegral_of_isIdempotentElem
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {S : Type*} [CommRing S] [Algebra R S] [Module.Flat R S] [Module.Finite R S]
+    {n : ℕ} (P : Algebra.Generators R S (Fin n)) (g : Fin n → P.Ring)
+    (hgle : Ideal.span (Set.range g) ≤ P.ker)
+    (e : P.Ring) (heker : e ∈ P.ker)
+    (hem : e ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
+    (hidem : e * e - e ∈ Ideal.span (Set.range g))
+    (hesup : Ideal.span (Set.range g) ⊔ Ideal.span {e} = P.ker)
+    (hmonic : ∀ i : Fin n, ∃ p : Polynomial R, p.Monic ∧
+      Polynomial.aeval (MvPolynomial.X i : P.Ring) p ∈ P.ker) :
+    ∃ f : Fin n → P.Ring, Ideal.span (Set.range f) ≤ P.ker ∧
+      P.ker ≤ Ideal.span (Set.range f) ⊔
+        (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
+      ∀ i : Fin n, IsIntegral R
+        (Ideal.Quotient.mk (Ideal.span (Set.range f)) (MvPolynomial.X i : P.Ring)) :=
+  sorry
+
 /-- **THE COMPRESSION `n+1 → n`: the whole residual content of the relation lift**
-(SORRY LEAF, cut 2026-07-28 out of
+(**PROVEN 2026-07-28** by `flt-lean-308` as glue over
+`exists_span_range_isIntegral_of_isIdempotentElem` and
+`exists_isIdempotentElem_mod_span_range_sup_eq_ker` above; cut 2026-07-28 out of
 `exists_span_range_le_ker_module_finite_of_span_range_le_ker` below, which is now glue over
 this leaf and the PROVEN `exists_mem_ker_span_range_sup_span_singleton_eq_ker` above).
 
@@ -17891,7 +18116,26 @@ NOT searched: the route through
 the local factors of `S` (`R` henselian ⟹ `S = ∏ Sⱼ` with `Sⱼ` local), which is what the
 literature takes and is the reason `IsAdicComplete` is retained here.  A successor who
 closes this without completeness should delete that hypothesis rather than leave it
-decorative — the `n+1` lemma above is evidence that it may well be droppable. -/
+decorative — the `n+1` lemma above is evidence that it may well be droppable.
+
+**STATUS 2026-07-28 (`flt-lean-308`): this node is now GLUE, and the residual content has
+moved to `exists_span_range_isIntegral_of_isIdempotentElem` above.**  Two steps were
+discharged here, both unconditionally:
+
+* the extra generator `μ` can be upgraded to an IDEMPOTENT-mod-`(g)` element `e`
+  (`exists_isIdempotentElem_mod_span_range_sup_eq_ker`), which is what makes the parasitic
+  component a ring FACTOR (`R[x]/(g) ≅ S × R[x]/K`) rather than merely a disjoint piece of
+  a zero locus; and
+* the goal `span f = P.ker` is equivalent to the INTEGRALITY of each `xᵢ` modulo
+  `span f` (finite = integral + finite type, then the two sibling lemmas above), so the
+  remaining obligation is a finiteness statement, not an ideal equality.
+
+The trap recorded above survives that move and is sharpened on the new leaf: the rank-one
+update closes precisely when `(e − 1) + (b₁,…,b_n)` contains a unit, where
+`e² − e = Σ bᵢgᵢ`.  Read the new leaf's docstring before attacking this again — it also
+records why the "no common zeros at infinity" route is closed (Bezout against the `𝔽₃⁵`
+example) and why no purely ideal-theoretic argument can work (a `ℤ[√−5]` counterexample to
+the abstract form). -/
 theorem exists_span_range_eq_ker_of_span_sup_span_singleton
     {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
@@ -17904,8 +18148,56 @@ theorem exists_span_range_eq_ker_of_span_sup_span_singleton
     (hsup : Ideal.span (Set.range g) ⊔ Ideal.span {μ} = P.ker)
     (r : P.Ring) (hr : r - 1 ∈ (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
     (hrker : ∀ u ∈ P.ker, r * u ∈ Ideal.span (Set.range g)) :
-    ∃ f : Fin n → P.Ring, Ideal.span (Set.range f) = P.ker :=
-  sorry
+    ∃ f : Fin n → P.Ring, Ideal.span (Set.range f) = P.ker := by
+  classical
+  have hmod : P.ker ≤ Ideal.span (Set.range g) ⊔
+      (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) := by
+    rw [← hsup]
+    exact sup_le le_sup_left
+      (Ideal.span_le.mpr (by rintro _ rfl; exact Submodule.mem_sup_right hμm))
+  obtain ⟨e, heker, hem, hidem, hesup⟩ :=
+    exists_isIdempotentElem_mod_span_range_sup_eq_ker P g hgle hmod r hr hrker
+  -- each `xᵢ` is integral over `R` in `S`: its characteristic polynomial lands in `P.ker`
+  have hmonic : ∀ i : Fin n, ∃ p : Polynomial R, p.Monic ∧
+      Polynomial.aeval (MvPolynomial.X i : P.Ring) p ∈ P.ker := by
+    intro i
+    haveI : Algebra.IsIntegral R S := Algebra.IsIntegral.of_finite R S
+    obtain ⟨p, hpm, hp0⟩ := Algebra.IsIntegral.isIntegral (R := R)
+      ((algebraMap P.Ring S) (MvPolynomial.X i : P.Ring))
+    refine ⟨p, hpm, ?_⟩
+    show (algebraMap P.Ring S) _ = 0
+    have hcomm : (algebraMap P.Ring S) (Polynomial.aeval (MvPolynomial.X i : P.Ring) p) =
+        Polynomial.aeval ((algebraMap P.Ring S) (MvPolynomial.X i : P.Ring)) p :=
+      (Polynomial.aeval_algHom_apply (IsScalarTower.toAlgHom R P.Ring S)
+        (MvPolynomial.X i : P.Ring) p).symm
+    rw [hcomm, Polynomial.aeval_def]
+    exact hp0
+  obtain ⟨f, hfle, hfmod, hfint⟩ :=
+    exists_span_range_isIntegral_of_isIdempotentElem P g hgle e heker hem hidem hesup hmonic
+  refine ⟨f, ?_⟩
+  -- integrality of the generators upgrades to module-finiteness of the quotient
+  haveI hFT : Algebra.FiniteType R (P.Ring ⧸ Ideal.span (Set.range f)) :=
+    Algebra.FiniteType.of_surjective
+      (Ideal.Quotient.mkₐ R (Ideal.span (Set.range f))) Ideal.Quotient.mk_surjective
+  haveI hII : Algebra.IsIntegral R (P.Ring ⧸ Ideal.span (Set.range f)) := by
+    rw [← integralClosure_eq_top_iff, eq_top_iff]
+    have hgen : Algebra.adjoin R (Set.range fun i : Fin n =>
+        (Ideal.Quotient.mk (Ideal.span (Set.range f)) (MvPolynomial.X i : P.Ring))) = ⊤ := by
+      have hrc : (Set.range fun i : Fin n =>
+          (Ideal.Quotient.mk (Ideal.span (Set.range f)) (MvPolynomial.X i : P.Ring))) =
+          (Ideal.Quotient.mkₐ R (Ideal.span (Set.range f))) ''
+            (Set.range (MvPolynomial.X : Fin n → P.Ring)) := by
+        rw [← Set.range_comp]
+        rfl
+      rw [hrc, ← AlgHom.map_adjoin, MvPolynomial.adjoin_range_X, Algebra.map_top,
+        AlgHom.range_eq_top]
+      exact Ideal.Quotient.mk_surjective
+    rw [← hgen]
+    exact Algebra.adjoin_le (by rintro _ ⟨i, rfl⟩; exact hfint i)
+  haveI : Module.Finite R (P.Ring ⧸ Ideal.span (Set.range f)) := Algebra.IsIntegral.finite
+  exact span_range_eq_ker_of_quotient_linearEquiv hfle
+    (Classical.choice
+      (nonempty_linearEquiv_of_module_finite_span_range_le_ker hfle hfmod inferInstance))
 
 open _root_.IsLocalRing in
 /-- **THE RELATION LIFT, IN ITS ONLY CORRECT FORM: `n` relations of the special fibre can be
