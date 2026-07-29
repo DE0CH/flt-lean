@@ -11705,10 +11705,461 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionR
       WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) :=
   sorry
 
+/-- **A CHANGE OF VARIABLES BETWEEN TWO INTEGRAL WEIERSTRASS MODELS WITH UNIT
+DISCRIMINANT HAS INTEGRAL ENTRIES** (PROVEN 2026-07-28, while proving
+`exists_aut_of_isTorsionReduction` below; this is the one genuinely
+valuation-theoretic step of the Serre–Tate route recorded on that leaf).
+
+Silverman *AEC* VII.1.3(b) for a valuation subring `𝒪` of an arbitrary field
+`F`, stated with `𝒪.valuation` so that "coefficient in `𝒪`" reads
+`valuation ≤ 1` and "unit discriminant" reads `valuation = 1`.
+
+WHY `2` MUST BE A UNIT, AND WHY `3` NEED NOT BE. The `a₁`-relation
+`u · (C • W).a₁ = W.a₁ + 2s` is the only source of information about `s`, so
+`2 ∈ 𝒪ˣ` is genuinely used (and is exactly the hypothesis `q ≠ 2` at the
+call site). It is tempting to read `r` off the `a₂`-relation
+`u² · (C • W).a₂ = W.a₂ - s·W.a₁ + 3r - s²` the same way, but that would need
+`3 ∈ 𝒪ˣ` and the consumers of this file explicitly need `q = 3`. The
+`a₆`-relation supplies `r` with no such cost: `r³` is the unique term of
+strictly largest valuation there once `v r > 1`, since the `a₃`-relation
+already forces `v t ≤ max 1 (v r)`, so every other term has valuation at most
+`(v r)²` while `v (r³) = (v r)³`. -/
+theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one
+    {F : Type*} [Field F] (𝒪 : ValuationSubring F)
+    (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
+    (h2 : 𝒪.valuation (2 : F) = 1)
+    (ha₁ : 𝒪.valuation W.a₁ ≤ 1) (ha₂ : 𝒪.valuation W.a₂ ≤ 1)
+    (ha₃ : 𝒪.valuation W.a₃ ≤ 1) (ha₄ : 𝒪.valuation W.a₄ ≤ 1)
+    (ha₆ : 𝒪.valuation W.a₆ ≤ 1)
+    (hc₁ : 𝒪.valuation (C • W).a₁ ≤ 1)
+    (hc₃ : 𝒪.valuation (C • W).a₃ ≤ 1)
+    (hc₆ : 𝒪.valuation (C • W).a₆ ≤ 1)
+    (hΔ : 𝒪.valuation W.Δ = 1) (hΔ' : 𝒪.valuation (C • W).Δ = 1) :
+    𝒪.valuation (C.u : F) = 1 ∧ 𝒪.valuation C.r ≤ 1 ∧ 𝒪.valuation C.s ≤ 1 ∧
+      𝒪.valuation C.t ≤ 1 := by
+  have cancel : ∀ {a b c : 𝒪.ValueGroup}, a ≠ 0 → a * b ≤ a * c → b ≤ c := by
+    intro a b c ha h
+    calc b = a⁻¹ * (a * b) := by rw [inv_mul_cancel_left₀ ha]
+      _ ≤ a⁻¹ * (a * c) := mul_le_mul_left' h _
+      _ = c := by rw [inv_mul_cancel_left₀ ha]
+  set v := 𝒪.valuation with hv
+  have hune : (C.u : F) ≠ 0 := C.u.ne_zero
+  have hu0 : v (C.u : F) ≠ 0 := by
+    simpa [hv] using (Valuation.ne_zero_iff v).mpr hune
+  -- Step 1 : `v u = 1`, because `u¹²` is the ratio of two unit discriminants.
+  have hu12 : v (C.u : F) ^ 12 = 1 := by
+    have h := congrArg v (W.variableChange_Δ C)
+    rw [Units.val_inv_eq_inv_val, map_mul, map_pow, map_inv₀, hΔ, hΔ', mul_one] at h
+    have h' : ((v (C.u : F))⁻¹) ^ 12 = 1 := h.symm
+    rw [inv_pow] at h'
+    exact inv_eq_one.mp h'
+  have huval : v (C.u : F) = 1 := by
+    rcases lt_trichotomy (v (C.u : F)) 1 with h | h | h
+    · exfalso
+      have hle : v (C.u : F) ^ 12 ≤ v (C.u : F) := by
+        calc v (C.u : F) ^ 12 = v (C.u : F) ^ 11 * v (C.u : F) := pow_succ _ 11
+          _ ≤ 1 * v (C.u : F) := mul_le_mul_right' (pow_le_one' h.le 11) _
+          _ = v (C.u : F) := one_mul _
+      rw [hu12] at hle
+      exact absurd (hle.trans_lt h) (lt_irrefl 1)
+    · exact h
+    · exfalso
+      have hle : v (C.u : F) ≤ v (C.u : F) ^ 12 := by
+        calc v (C.u : F) = 1 * v (C.u : F) := (one_mul _).symm
+          _ ≤ v (C.u : F) ^ 11 * v (C.u : F) :=
+              mul_le_mul_right' (one_le_pow_of_one_le' h.le 11) _
+          _ = v (C.u : F) ^ 12 := (pow_succ _ 11).symm
+      rw [hu12] at hle
+      exact absurd (h.trans_le hle) (lt_irrefl 1)
+  -- Step 2 : `v s ≤ 1`, from the `a₁`-relation and `2 ∈ 𝒪ˣ`.
+  have hs : v C.s ≤ 1 := by
+    have h := W.variableChange_a₁ C
+    rw [Units.val_inv_eq_inv_val] at h
+    have key : (2 : F) * C.s = (C.u : F) * (C • W).a₁ - W.a₁ := by
+      rw [h]; field_simp; ring
+    have hb : v ((2 : F) * C.s) ≤ 1 := by
+      rw [key]
+      refine Valuation.map_sub_le v ?_ ha₁
+      rw [map_mul, huval, one_mul]; exact hc₁
+    rw [map_mul, h2, one_mul] at hb
+    exact hb
+  -- Step 3 : `v t ≤ max 1 (v r)`, from the `a₃`-relation.
+  have key3 : (2 : F) * C.t = (C.u : F) ^ 3 * (C • W).a₃ - W.a₃ - C.r * W.a₁ := by
+    have h := W.variableChange_a₃ C
+    rw [Units.val_inv_eq_inv_val] at h
+    rw [h]; field_simp; ring
+  have ht_le : v C.t ≤ max 1 (v C.r) := by
+    have hb : v ((2 : F) * C.t) ≤ max 1 (v C.r) := by
+      rw [key3]
+      refine Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]
+        exact hc₃.trans (le_max_left _ _)
+      · exact ha₃.trans (le_max_left _ _)
+      · rw [map_mul]
+        calc v C.r * v W.a₁ ≤ v C.r * 1 := mul_le_mul_left' ha₁ _
+          _ = v C.r := mul_one _
+          _ ≤ max 1 (v C.r) := le_max_right _ _
+    rw [map_mul, h2, one_mul] at hb
+    exact hb
+  -- Step 4 : `v r ≤ 1`, because `r³` would dominate the `a₆`-relation.
+  have hr : v C.r ≤ 1 := by
+    by_contra hcon
+    push_neg at hcon
+    have hr0 : v C.r ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
+    have htr : v C.t ≤ v C.r := ht_le.trans (max_le hcon.le le_rfl)
+    have h1r2 : (1 : 𝒪.ValueGroup) ≤ v C.r ^ 2 := one_le_pow_of_one_le' hcon.le 2
+    have hrr2 : v C.r ≤ v C.r ^ 2 := by
+      calc v C.r = 1 * v C.r := (one_mul _).symm
+        _ ≤ v C.r * v C.r := mul_le_mul_right' hcon.le _
+        _ = v C.r ^ 2 := (pow_two _).symm
+    have key6 : C.r ^ 3 = (C.u : F) ^ 6 * (C • W).a₆ - W.a₆ - C.r * W.a₄ - C.r ^ 2 * W.a₂
+        + C.t * W.a₃ + C.t ^ 2 + C.r * C.t * W.a₁ := by
+      have h := W.variableChange_a₆ C
+      rw [Units.val_inv_eq_inv_val] at h
+      rw [h]; field_simp; ring
+    have hb : v (C.r ^ 3) ≤ v C.r ^ 2 := by
+      rw [key6]
+      refine Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v
+        (Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_) ?_)
+        ?_) ?_) ?_
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]; exact hc₆.trans h1r2
+      · exact ha₆.trans h1r2
+      · rw [map_mul]
+        exact ((mul_le_mul_left' ha₄ _).trans_eq (mul_one _)).trans hrr2
+      · rw [map_mul, map_pow]
+        exact (mul_le_mul_left' ha₂ _).trans_eq (mul_one _)
+      · rw [map_mul]
+        exact ((mul_le_mul_left' ha₃ _).trans_eq (mul_one _)).trans (htr.trans hrr2)
+      · rw [map_pow]
+        exact pow_le_pow_left' htr 2
+      · rw [map_mul, map_mul]
+        calc v C.r * v C.t * v W.a₁ ≤ v C.r * v C.t * 1 := mul_le_mul_left' ha₁ _
+          _ = v C.r * v C.t := mul_one _
+          _ ≤ v C.r * v C.r := mul_le_mul_left' htr _
+          _ = v C.r ^ 2 := (pow_two _).symm
+    rw [map_pow] at hb
+    have hlast : v C.r ^ 2 * v C.r ≤ v C.r ^ 2 * 1 := by
+      rw [mul_one]
+      calc v C.r ^ 2 * v C.r = v C.r ^ 3 := (pow_succ _ 2).symm
+        _ ≤ v C.r ^ 2 := hb
+    exact absurd (hcon.trans_le (cancel (pow_ne_zero 2 hr0) hlast)) (lt_irrefl 1)
+  exact ⟨huval, hr, hs, ht_le.trans (max_le le_rfl hr)⟩
+
+/-- **The good model of `D`, placed inside `ℚ̄` by an ARBITRARY `ℚ`-embedding**
+(PROVEN 2026-07-28, while proving `exists_aut_of_isTorsionReduction` below).
+
+This is `LocalFrame.model_eq` with the frame's own embedding replaced by any
+`ℚ`-embedding `φ : K ↪ ℚ̄`; the proof is verbatim the same, and the generality is
+exactly what is needed for the `τ`-CONJUGATE embedding `τ ∘ emb`, which is not a
+frame's embedding — it need not satisfy `comap_eq`, and does not have to. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.map_eq_variableChange_smul
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime]
+    (D : E.PotentiallyGoodModel q) (φ : D.K →+* AlgebraicClosure ℚ)
+    (hφ : ∀ x : ℚ, φ (algebraMap ℚ D.K x) = algebraMap ℚ (AlgebraicClosure ℚ) x) :
+    D.V.map φ = (D.C.map φ) • (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) := by
+  have hcomp : φ.comp (algebraMap ℚ D.K) = algebraMap ℚ (AlgebraicClosure ℚ) :=
+    RingHom.ext hφ
+  rw [D.V_eq, ← WeierstrassCurve.map_variableChange]
+  congr 1
+  show (E.map (algebraMap ℚ D.K)).map φ = _
+  rw [WeierstrassCurve.map_map, hcomp]
+
+/-- **The frame's model identification, read backwards on affine points**
+(PROVEN 2026-07-28, while proving `exists_aut_of_isTorsionReduction` below).
+
+`Fr.modelEquiv` transports `E`-points to `V`-points along `D.C`; its INVERSE is
+the forward change of variables `(X, Y) ↦ (u²X + r, u³Y + u²sX + t)` for
+`C₁ := D.C.map Fr.emb`, namely `Affine.Point.equivVariableChange` composed with
+the transport along `model_eq`. Stating the INVERSE rather than the forward map
+is deliberate: it is the direction whose coordinates come straight out of
+`equivVariableChange_some` with no inversion, and both uses below go through it
+— the forward values get pinned by applying `modelEquiv.symm` to an affine point
+that is already known. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.modelEquiv_symm_some
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    {X Y : AlgebraicClosure ℚ}
+    (hns : (D.V.map Fr.emb).toAffine.Nonsingular X Y) :
+    ∃ h : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Nonsingular
+        (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X + (D.C.map Fr.emb).r)
+        (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y
+          + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X
+          + (D.C.map Fr.emb).t),
+      Fr.modelEquiv.symm (WeierstrassCurve.Affine.Point.some X Y hns)
+        = WeierstrassCurve.Affine.Point.some _ _ h := by
+  have hsymm : ∀ {V V' : WeierstrassCurve (AlgebraicClosure ℚ)} (h : V = V')
+      (P : V'.toAffine.Point),
+      (WeierstrassCurve.Affine.Point.equivOfEq h).symm P
+        = WeierstrassCurve.Affine.Point.equivOfEq h.symm P := by
+    intro V V' h P; subst h; rfl
+  have key : Fr.modelEquiv.symm (WeierstrassCurve.Affine.Point.some X Y hns)
+      = WeierstrassCurve.Affine.Point.equivVariableChange
+          (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (D.C.map Fr.emb)
+          (WeierstrassCurve.Affine.Point.equivOfEq Fr.model_eq
+            (WeierstrassCurve.Affine.Point.some X Y hns)) := by
+    rw [WeierstrassCurve.PotentiallyGoodModel.LocalFrame.modelEquiv,
+      AddEquiv.symm_trans_apply, AddEquiv.symm_symm, hsymm]
+  rw [key, WeierstrassCurve.Affine.Point.equivOfEq_some,
+    WeierstrassCurve.Affine.Point.equivVariableChange_some]
+  exact ⟨_, rfl⟩
+
+/-- **`autTorsionEnd` in coordinates** (PROVEN 2026-07-28, while proving
+`exists_aut_of_isTorsionReduction` below): the endomorphism of the `N`-torsion
+induced by an automorphism `C` of `W` sends an affine point to the point with
+the `C`-transformed coordinates. Taking the affine presentation of the SOURCE as
+a hypothesis, rather than case-splitting inside, is what makes the statement
+usable: it forces the `Point.some` to be elaborated at the curve
+`W ⊗ (algebraMap F F)` that `equivOfEq hC.symm` acts on, which is the same curve
+as `W` only up to defeq — and a `rw` cannot see through that. -/
+theorem WeierstrassCurve.autTorsionEnd_val_some {F : Type*} [Field F] [DecidableEq F]
+    (W : WeierstrassCurve F) [W.IsElliptic] (C : WeierstrassCurve.VariableChange F)
+    (hC : C • (W.map (algebraMap F F)) = W.map (algebraMap F F)) (N : ℕ)
+    (y : W.nTorsion N) {x₀ y₀ : F}
+    (hns : (W.map (algebraMap F F)).toAffine.Nonsingular x₀ y₀)
+    (hy : y.val = WeierstrassCurve.Affine.Point.some x₀ y₀ hns) :
+    ∃ h', (WeierstrassCurve.autTorsionEnd W C hC N y).val
+      = WeierstrassCurve.Affine.Point.some ((C.u : F) ^ 2 * x₀ + C.r)
+          ((C.u : F) ^ 3 * y₀ + (C.u : F) ^ 2 * C.s * x₀ + C.t) h' := by
+  have hunf : (WeierstrassCurve.autTorsionEnd W C hC N y).val
+      = WeierstrassCurve.Affine.Point.equivVariableChange (W.map (algebraMap F F)) C
+          (WeierstrassCurve.Affine.Point.equivOfEq hC.symm y.val) := rfl
+  rw [hunf, hy, WeierstrassCurve.Affine.Point.equivOfEq_some,
+    WeierstrassCurve.Affine.Point.equivVariableChange_some]
+  exact ⟨_, rfl⟩
+
+open scoped Pointwise in
+/-- **THE INERTIA VARIABLE CHANGE, AND ITS REDUCTION — the Serre–Tate step**
+(PROVEN 2026-07-28 over `variableChange_valuation_of_valuation_Δ_eq_one`).
+
+`τ` need not fix `K`, so it does not commute with `modelEquiv`; the FAILURE to
+commute is the automorphism. Concretely: `τ` carries the placed variable change
+`C₁ := D.C.map Fr.emb` to its conjugate `C₁ᵗᵃᵘ`, and `Dτ := C₁ᵗᵃᵘ · C₁⁻¹` is a
+change of variables between the two integral models `V ⊗ emb` and
+`V ⊗ (τ ∘ emb)` of the SAME curve, both with unit discriminant. Hence its
+entries are integral (`variableChange_valuation_of_valuation_Δ_eq_one`), so it
+reduces to a change of variables `C` over `κ(𝒪) ≅ 𝔽̄_q`; and because `τ` lies in
+INERTIA it fixes `κ(𝒪)` pointwise, so the two models reduce to the same `Ẽ` and
+`C` is an automorphism of it. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_inertiaVariableChange
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    (hq2 : q ≠ 2) {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (τ : Field.absoluteGaloisGroup ℚ)
+    (hdecT : τ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hτin : (⟨τ, hdecT⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).inertiaSubgroup ℚ) :
+    ∃ (Dτ : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+      (hu : ((Dτ.u : AlgebraicClosure ℚ)) ∈ GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hr : Dτ.r ∈ GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hs : Dτ.s ∈ GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+      (ht : Dτ.t ∈ GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+      (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (_hC : C • ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
+      Dτ * (D.C.map Fr.emb)
+          = (D.C.map Fr.emb).map (AlgEquiv.toRingEquiv
+              (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toRingHom ∧
+        (C.u : AlgebraicClosure (ZMod q))
+            = Fr.resIso (IsLocalRing.residue _ ⟨(Dτ.u : AlgebraicClosure ℚ), hu⟩) ∧
+        C.r = Fr.resIso (IsLocalRing.residue _ ⟨Dτ.r, hr⟩) ∧
+        C.s = Fr.resIso (IsLocalRing.residue _ ⟨Dτ.s, hs⟩) ∧
+        C.t = Fr.resIso (IsLocalRing.residue _ ⟨Dτ.t, ht⟩) := by
+  classical
+  set Ob := GaloisRepresentation.globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat with hObdef
+  set τR : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ :=
+    (AlgEquiv.toRingEquiv (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toRingHom with hτRdef
+  set ρτ : Ob →+* Ob := MulSemiringAction.toRingHom (Ob.decompositionSubgroup ℚ) Ob
+    ⟨τ, hdecT⟩ with hρτdef
+  have hρτcoe : ∀ z : Ob, ((ρτ z : Ob) : AlgebraicClosure ℚ) = τ (z : AlgebraicClosure ℚ) :=
+    fun _ => rfl
+  have hτmem : ∀ (z : AlgebraicClosure ℚ), z ∈ Ob → τ z ∈ Ob := fun z hz => (ρτ ⟨z, hz⟩).2
+  have hτres : ∀ z : Ob, IsLocalRing.residue Ob (ρτ z) = IsLocalRing.residue Ob z := by
+    intro z
+    have h1 := MonoidHom.mem_ker.mp hτin
+    rw [show ρτ z = (⟨τ, hdecT⟩ : Ob.decompositionSubgroup ℚ) • z from rfl,
+      IsLocalRing.ResidueField.residue_smul]
+    calc (⟨τ, hdecT⟩ : Ob.decompositionSubgroup ℚ) • IsLocalRing.residue Ob z
+        = (MulSemiringAction.toRingAut (Ob.decompositionSubgroup ℚ)
+            (IsLocalRing.ResidueField Ob) ⟨τ, hdecT⟩) (IsLocalRing.residue Ob z) := rfl
+      _ = IsLocalRing.residue Ob z := by rw [h1]; rfl
+  -- the residue homomorphism `𝒪 → 𝔽̄_q`
+  set φ : Ob →+* AlgebraicClosure (ZMod q) :=
+    (Fr.resIso : IsLocalRing.ResidueField Ob ≃+* AlgebraicClosure (ZMod q)).toRingHom.comp
+      (IsLocalRing.residue Ob) with hφdef
+  have hφapp : ∀ z : Ob, φ z = Fr.resIso (IsLocalRing.residue Ob z) := fun _ => rfl
+  have hφρτ : φ.comp ρτ = φ := RingHom.ext fun z => by
+    rw [RingHom.comp_apply, hφapp, hφapp, hτres]
+  -- `R → 𝒪`
+  have hRO : ∀ z : D.R, Fr.emb (algebraMap D.R D.K z) ∈ Ob := by
+    intro z
+    have hmem : algebraMap D.R D.K z ∈ (algebraMap D.R D.K).range := ⟨z, rfl⟩
+    rw [← Fr.comap_eq] at hmem
+    exact hmem
+  have hROunit : ∀ z : D.R, IsUnit z →
+      IsUnit (⟨Fr.emb (algebraMap D.R D.K z), hRO z⟩ : Ob) := by
+    intro z hz
+    obtain ⟨w, hw⟩ := hz.exists_right_inv
+    refine isUnit_iff_exists_inv.mpr ⟨⟨Fr.emb (algebraMap D.R D.K w), hRO w⟩, Subtype.ext ?_⟩
+    show Fr.emb (algebraMap D.R D.K z) * Fr.emb (algebraMap D.R D.K w) = 1
+    rw [← map_mul, ← map_mul, hw, map_one, map_one]
+  -- the integral model of `V` over `R`, and integrality of its coefficients in `𝒪`
+  have ha₁ : Fr.emb D.V.a₁ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_a₁_eq D.R D.V]; exact hRO _
+  have ha₂ : Fr.emb D.V.a₂ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_a₂_eq D.R D.V]; exact hRO _
+  have ha₃ : Fr.emb D.V.a₃ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_a₃_eq D.R D.V]; exact hRO _
+  have ha₄ : Fr.emb D.V.a₄ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_a₄_eq D.R D.V]; exact hRO _
+  have ha₆ : Fr.emb D.V.a₆ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_a₆_eq D.R D.V]; exact hRO _
+  -- the discriminant of the integral model is a unit of `R`
+  have hΔRunit : IsUnit (WeierstrassCurve.integralModel D.R D.V).Δ := by
+    have hell : (D.V.reduction D.R).IsElliptic :=
+      (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction D.R).mp D.V_good
+    have h2 : IsUnit (IsLocalRing.residue D.R (WeierstrassCurve.integralModel D.R D.V).Δ) := by
+      have h3 := hell.isUnit
+      rwa [WeierstrassCurve.reduction, WeierstrassCurve.map_Δ] at h3
+    refine IsLocalRing.notMem_maximalIdeal.mp fun hcon => ?_
+    rw [← IsLocalRing.residue_eq_zero_iff] at hcon
+    rw [hcon] at h2
+    exact not_isUnit_zero h2
+  have hΔmem : Fr.emb D.V.Δ ∈ Ob := by
+    rw [← WeierstrassCurve.integralModel_Δ_eq D.R D.V]; exact hRO _
+  have hΔunit : IsUnit (⟨Fr.emb D.V.Δ, hΔmem⟩ : Ob) := by
+    have h := hROunit _ hΔRunit
+    convert h using 2
+    exact congrArg Fr.emb (WeierstrassCurve.integralModel_Δ_eq D.R D.V).symm
+  -- `2` is a unit of `𝒪`, because `q ≠ 2`
+  have h2Runit : IsUnit (2 : D.R) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp fun hcon => ?_
+    rw [← IsLocalRing.residue_eq_zero_iff, map_ofNat] at hcon
+    have hz : (2 : ZMod q) = 0 := by
+      have := congrArg D.resEquiv hcon
+      rwa [map_ofNat, map_zero] at this
+    have hz' : ((2 : ℕ) : ZMod q) = 0 := by exact_mod_cast hz
+    exact hq2 ((Nat.prime_dvd_prime_iff_eq (Fact.out : q.Prime) Nat.prime_two).mp
+      ((ZMod.natCast_eq_zero_iff 2 q).mp hz'))
+  have h2mem : (2 : AlgebraicClosure ℚ) ∈ Ob := by
+    have h := hRO (2 : D.R)
+    rwa [map_ofNat, map_ofNat] at h
+  have h2unit : IsUnit (⟨(2 : AlgebraicClosure ℚ), h2mem⟩ : Ob) := by
+    have h := hROunit (2 : D.R) h2Runit
+    convert h using 2
+    rw [map_ofNat, map_ofNat]
+  have hval_le : ∀ (z : AlgebraicClosure ℚ), z ∈ Ob → Ob.valuation z ≤ 1 :=
+    fun z hz => (ValuationSubring.valuation_le_one_iff Ob z).mpr hz
+  have h2val : Ob.valuation (2 : AlgebraicClosure ℚ) = 1 :=
+    (ValuationSubring.valuation_eq_one_iff Ob ⟨(2 : AlgebraicClosure ℚ), h2mem⟩).mp h2unit
+  have hΔval : Ob.valuation (Fr.emb D.V.Δ) = 1 :=
+    (ValuationSubring.valuation_eq_one_iff Ob ⟨Fr.emb D.V.Δ, hΔmem⟩).mp hΔunit
+  -- the `τ`-conjugate embedding, and the second integral model
+  set embT : D.K →+* AlgebraicClosure ℚ := τR.comp Fr.emb with hembTdef
+  have hembT : ∀ z : D.K, embT z = τ (Fr.emb z) := fun _ => rfl
+  have hm2 : D.V.map embT = (D.C.map embT) • (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) :=
+    D.map_eq_variableChange_smul embT (fun x => by
+      show τ (Fr.emb (algebraMap ℚ D.K x)) = _
+      rw [Fr.emb_comm]
+      exact (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).commutes x)
+  set Dτ : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) :=
+    (D.C.map embT) * (D.C.map Fr.emb)⁻¹ with hDτdef
+  have hpin : Dτ * (D.C.map Fr.emb) = D.C.map embT := by
+    rw [hDτdef, inv_mul_cancel_right]
+  have hpin' : Dτ * (D.C.map Fr.emb) = (D.C.map Fr.emb).map τR := by
+    rw [hpin, hembTdef, ← WeierstrassCurve.VariableChange.map_map]
+  have hsmul : Dτ • (D.V.map Fr.emb) = D.V.map embT := by
+    rw [Fr.model_eq, hm2, ← mul_smul, hpin]
+  -- the change of variables between the two integral models has integral entries
+  obtain ⟨huval, hrval, hsval, htval⟩ :=
+    WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one Ob (D.V.map Fr.emb) Dτ h2val
+      (hval_le _ ha₁) (hval_le _ ha₂) (hval_le _ ha₃) (hval_le _ ha₄) (hval_le _ ha₆)
+      (by rw [hsmul]; exact hval_le _ (hτmem _ ha₁))
+      (by rw [hsmul]; exact hval_le _ (hτmem _ ha₃))
+      (by rw [hsmul]; exact hval_le _ (hτmem _ ha₆))
+      (by rw [WeierstrassCurve.map_Δ]; exact hΔval)
+      (by
+        rw [hsmul, WeierstrassCurve.map_Δ]
+        show Ob.valuation (τ (Fr.emb D.V.Δ)) = 1
+        exact (ValuationSubring.valuation_eq_one_iff Ob (ρτ ⟨Fr.emb D.V.Δ, hΔmem⟩)).mp
+          (hΔunit.map (MulSemiringAction.toRingAut (Ob.decompositionSubgroup ℚ) Ob ⟨τ, hdecT⟩)))
+  have humem : (Dτ.u : AlgebraicClosure ℚ) ∈ Ob :=
+    (ValuationSubring.valuation_le_one_iff Ob _).mp huval.le
+  have hrmem : Dτ.r ∈ Ob := (ValuationSubring.valuation_le_one_iff Ob _).mp hrval
+  have hsmem : Dτ.s ∈ Ob := (ValuationSubring.valuation_le_one_iff Ob _).mp hsval
+  have htmem : Dτ.t ∈ Ob := (ValuationSubring.valuation_le_one_iff Ob _).mp htval
+  have huUnit : IsUnit (⟨(Dτ.u : AlgebraicClosure ℚ), humem⟩ : Ob) :=
+    (ValuationSubring.valuation_eq_one_iff Ob _).mpr huval
+  -- descend the whole picture to `𝒪`, then reduce it
+  set Ŵ : WeierstrassCurve Ob :=
+    ⟨⟨Fr.emb D.V.a₁, ha₁⟩, ⟨Fr.emb D.V.a₂, ha₂⟩, ⟨Fr.emb D.V.a₃, ha₃⟩,
+      ⟨Fr.emb D.V.a₄, ha₄⟩, ⟨Fr.emb D.V.a₆, ha₆⟩⟩ with hŴdef
+  set Ĉ : WeierstrassCurve.VariableChange Ob :=
+    ⟨huUnit.unit, ⟨Dτ.r, hrmem⟩, ⟨Dτ.s, hsmem⟩, ⟨Dτ.t, htmem⟩⟩ with hĈdef
+  have hŴmap : Ŵ.map Ob.subtype = D.V.map Fr.emb := by ext <;> rfl
+  have hŴτmap : (Ŵ.map ρτ).map Ob.subtype = D.V.map embT := by ext <;> rfl
+  have hĈmap : Ĉ.map Ob.subtype = Dτ := by
+    have hu' : ((Ĉ.map Ob.subtype).u : AlgebraicClosure ℚ) = (Dτ.u : AlgebraicClosure ℚ) := by
+      show ((huUnit.unit : Ob) : AlgebraicClosure ℚ) = (Dτ.u : AlgebraicClosure ℚ)
+      rw [IsUnit.unit_spec]
+    exact WeierstrassCurve.VariableChange.ext (Units.ext hu') rfl rfl rfl
+  have hkey : Ĉ • Ŵ = Ŵ.map ρτ := by
+    refine WeierstrassCurve.map_injective (f := Ob.subtype) Ob.subtype_injective ?_
+    show (Ĉ • Ŵ).map Ob.subtype = (Ŵ.map ρτ).map Ob.subtype
+    rw [← WeierstrassCurve.map_variableChange, hĈmap, hŴmap, hsmul, hŴτmap]
+  have hred : (Ĉ.map φ) • (Ŵ.map φ) = Ŵ.map φ := by
+    rw [WeierstrassCurve.map_variableChange, hkey, WeierstrassCurve.map_map, hφρτ]
+  -- the reduction of `Ŵ` is `Ẽ ⊗ 𝔽̄_q`
+  have hcoef : ∀ (z : D.R) (h : Fr.emb (algebraMap D.R D.K z) ∈ Ob),
+      φ ⟨Fr.emb (algebraMap D.R D.K z), h⟩
+        = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
+            (D.resEquiv (IsLocalRing.residue D.R z)) :=
+    fun z h => Fr.resIso_comm z h
+  have hŴφ : Ŵ.map φ = D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · have hsub : (⟨Fr.emb D.V.a₁, ha₁⟩ : Ob)
+          = ⟨Fr.emb (algebraMap D.R D.K (WeierstrassCurve.integralModel D.R D.V).a₁), hRO _⟩ :=
+        Subtype.ext (congrArg Fr.emb (WeierstrassCurve.integralModel_a₁_eq D.R D.V).symm)
+      exact (congrArg φ hsub).trans (hcoef _ _)
+    · have hsub : (⟨Fr.emb D.V.a₂, ha₂⟩ : Ob)
+          = ⟨Fr.emb (algebraMap D.R D.K (WeierstrassCurve.integralModel D.R D.V).a₂), hRO _⟩ :=
+        Subtype.ext (congrArg Fr.emb (WeierstrassCurve.integralModel_a₂_eq D.R D.V).symm)
+      exact (congrArg φ hsub).trans (hcoef _ _)
+    · have hsub : (⟨Fr.emb D.V.a₃, ha₃⟩ : Ob)
+          = ⟨Fr.emb (algebraMap D.R D.K (WeierstrassCurve.integralModel D.R D.V).a₃), hRO _⟩ :=
+        Subtype.ext (congrArg Fr.emb (WeierstrassCurve.integralModel_a₃_eq D.R D.V).symm)
+      exact (congrArg φ hsub).trans (hcoef _ _)
+    · have hsub : (⟨Fr.emb D.V.a₄, ha₄⟩ : Ob)
+          = ⟨Fr.emb (algebraMap D.R D.K (WeierstrassCurve.integralModel D.R D.V).a₄), hRO _⟩ :=
+        Subtype.ext (congrArg Fr.emb (WeierstrassCurve.integralModel_a₄_eq D.R D.V).symm)
+      exact (congrArg φ hsub).trans (hcoef _ _)
+    · have hsub : (⟨Fr.emb D.V.a₆, ha₆⟩ : Ob)
+          = ⟨Fr.emb (algebraMap D.R D.K (WeierstrassCurve.integralModel D.R D.V).a₆), hRO _⟩ :=
+        Subtype.ext (congrArg Fr.emb (WeierstrassCurve.integralModel_a₆_eq D.R D.V).symm)
+      exact (congrArg φ hsub).trans (hcoef _ _)
+  have hmapid : ∀ W : WeierstrassCurve (AlgebraicClosure (ZMod q)),
+      W.map (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))) = W := by
+    intro W; rw [Algebra.algebraMap_self]; exact W.map_id
+  refine ⟨Dτ, humem, hrmem, hsmem, htmem, Ĉ.map φ, ?_, hpin', ?_, rfl, rfl, rfl⟩
+  · rw [hmapid, ← hŴφ]; exact hred
+  · show φ (huUnit.unit : Ob) = _
+    rw [IsUnit.unit_spec]
+    rfl
+
+open scoped Pointwise in
 /-- **INERTIA ACTS THROUGH THE REDUCTION MAP AS AN AUTOMORPHISM OF THE REDUCED
-CURVE — SERRE–TATE** (sorry leaf, opened 2026-07-28 by cutting
-`exists_torsionFrame` below into three; this is where the remaining mathematics
-of that leaf sits).
+CURVE — SERRE–TATE** (**PROVEN 2026-07-28** by the elementary
+`Dτ := Cᵗᵃᵘ · C⁻¹` route recorded on this leaf when it was opened; opened
+2026-07-28 by cutting `exists_torsionFrame` below into three, as the place where
+the remaining mathematics of that leaf sat).
 
 WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above and
 `τ` lies in the inertia subgroup at `𝒪`, then `ψ₀ ρ(τ) ψ₀⁻¹` is
@@ -11721,22 +12172,38 @@ since `E` has potentially good but in general NOT good reduction, so `ρ` is
 genuinely ramified at `q`. Hence `τ` does not commute with `modelEquiv`, and the
 FAILURE to commute is precisely the automorphism.
 
-THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try first: `τ`
-carries the variable change `D.C.map Fr.emb` to its `τ`-conjugate, and
-`Dτ := (Cᵗᵃᵘ) · C⁻¹` is a variable change between two integral models of the same
-curve, both with unit discriminant, hence has unit entries in `𝒪`, hence reduces
-to a variable change over `κ(𝒪)` — and that reduction is the `C` of the
-conclusion. `τ` fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
-reduce to the SAME `Ẽ`.
+THE PROOF, which is the elementary route and needs no Néron models. `τ` carries
+the placed variable change `C₁ := D.C.map Fr.emb` to its conjugate `C₁ᵗᵃᵘ`, and
+`Dτ := C₁ᵗᵃᵘ · C₁⁻¹` is a change of variables between the two integral models
+`V ⊗ emb` and `V ⊗ (τ ∘ emb)` of the same curve, both with unit discriminant;
+`exists_inertiaVariableChange` above shows its entries are integral and produces
+the reduction `C`. The point-level half is then bookkeeping in coordinates:
+`modelEquiv_symm_some` says the model coordinates `(X, Y)` of `P` satisfy
+`P = (u²X + r, u³Y + u²sX + t)` for `C₁ = (u, r, s, t)`, `ρ(τ)` applies `τ` to
+both, and the pinning `Dτ · C₁ = C₁ᵗᵃᵘ` turns that into
+`(X, Y) ↦ (Dτ.u² τX + Dτ.r, …)`; reducing mod `𝔪_𝒪` and using that `τ` fixes
+`κ(𝒪)` pointwise gives exactly `autTorsionEnd C`.
 
-AVAILABLE AND NOT TO BE REBUILT: `Affine.Point.equivVariableChange`,
+WHERE EACH HYPOTHESIS IS USED. `hτin` (inertia, not merely decomposition) is
+used twice and both uses are essential: it makes the two models reduce to the
+SAME `Ẽ`, and it is what erases `τ` from the residue coordinates. `hq2`
+(`q ≠ 2`) is used exactly once, inside
+`variableChange_valuation_of_valuation_Δ_eq_one`, to solve the `a₁`-relation for
+`Dτ.s`; note `q = 3` is NOT excluded and must not be, since the consumers of
+this file need it. `hqN` is not used here at all — it belongs to
+`exists_isTorsionReduction`, which is where the torsion arithmetic lives — and
+is kept only because the statement is quantified uniformly with its siblings.
+
+AVAILABLE AND NOT REBUILT: `Affine.Point.equivVariableChange`,
 `equivVariableChangeBaseChange` and `equivVariableChangeBaseChange_galois`, in
 the project shim
 `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`; and
-`WeierstrassCurve.autTorsionEnd` above, which is already built on them.
-Serre–Tate itself is ABSENT from all three trees (`Fermat/`,
-`.lake/packages/mathlib/`, `~/cs/FLT/`, grepped 2026-07-27), which is why the
-elementary route is the recommended one.
+`WeierstrassCurve.autTorsionEnd` above, which is already built on them. Note
+`equivVariableChangeBaseChange_galois` itself could NOT be cited: it assumes the
+variable change is defined over the base field and `σ` is a `K`-automorphism,
+which is exactly the hypothesis that fails for inertia here. Serre–Tate itself
+remains ABSENT from all three trees (`Fermat/`, `.lake/packages/mathlib/`,
+`~/cs/FLT/`); it was not needed.
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: an inertia element at `𝒪` whose action on
 `E[N](ℚ̄)`, transported by `ψ₀`, is induced by no variable change of `Ẽ` over
@@ -11768,8 +12235,162 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsion
               (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
             (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
       ∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
-        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) :=
-  sorry
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) := by
+  classical
+  obtain ⟨Dτ, hu, hr, hs, ht, C, hC, hpin, hCu, hCr, hCs, hCt⟩ :=
+    Fr.exists_inertiaVariableChange hq2 τ hdecT hτin
+  refine ⟨C, hC, fun P => ?_⟩
+  set Ob := GaloisRepresentation.globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat with hObdef
+  have hu0 : ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ≠ 0 := (D.C.map Fr.emb).u.ne_zero
+  -- `τ` preserves `𝒪` and acts trivially on its residue field (it lies in inertia)
+  have hτmem : ∀ (z : AlgebraicClosure ℚ), z ∈ Ob → τ z ∈ Ob := fun z hz =>
+    ((⟨τ, hdecT⟩ : Ob.decompositionSubgroup ℚ) • (⟨z, hz⟩ : Ob)).2
+  have hτres : ∀ z : Ob,
+      IsLocalRing.residue Ob ((⟨τ, hdecT⟩ : Ob.decompositionSubgroup ℚ) • z)
+        = IsLocalRing.residue Ob z := by
+    intro z
+    rw [IsLocalRing.ResidueField.residue_smul]
+    have h1 := MonoidHom.mem_ker.mp hτin
+    calc (⟨τ, hdecT⟩ : Ob.decompositionSubgroup ℚ) • IsLocalRing.residue Ob z
+        = (MulSemiringAction.toRingAut (Ob.decompositionSubgroup ℚ)
+            (IsLocalRing.ResidueField Ob) ⟨τ, hdecT⟩) (IsLocalRing.residue Ob z) := rfl
+      _ = IsLocalRing.residue Ob z := by rw [h1]; rfl
+  have hφτ : ∀ (z : AlgebraicClosure ℚ) (hz : z ∈ Ob),
+      Fr.resIso (IsLocalRing.residue Ob ⟨τ z, hτmem z hz⟩)
+        = Fr.resIso (IsLocalRing.residue Ob ⟨z, hz⟩) :=
+    fun z hz => congrArg Fr.resIso (hτres ⟨z, hz⟩)
+  -- the pinning `Dτ * C₁ = C₁ᵗᵃᵘ`, entry by entry
+  have hpu : (Dτ.u : AlgebraicClosure ℚ) * ((D.C.map Fr.emb).u : AlgebraicClosure ℚ)
+      = τ ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) := by
+    have h := congrArg (fun c : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) =>
+      (c.u : AlgebraicClosure ℚ)) hpin
+    simpa [WeierstrassCurve.VariableChange.mul_def] using h
+  have hpr : Dτ.r * ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 + (D.C.map Fr.emb).r
+      = τ (D.C.map Fr.emb).r := by
+    have h := congrArg (fun c : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) => c.r) hpin
+    simpa [WeierstrassCurve.VariableChange.mul_def] using h
+  have hps : ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) * Dτ.s + (D.C.map Fr.emb).s
+      = τ (D.C.map Fr.emb).s := by
+    have h := congrArg (fun c : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) => c.s) hpin
+    simpa [WeierstrassCurve.VariableChange.mul_def] using h
+  have hpt : Dτ.t * ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3
+      + Dτ.r * (D.C.map Fr.emb).s * ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2
+      + (D.C.map Fr.emb).t = τ (D.C.map Fr.emb).t := by
+    have h := congrArg (fun c : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) => c.t) hpin
+    simpa [WeierstrassCurve.VariableChange.mul_def] using h
+  by_cases hP0 : P = 0
+  · subst hP0
+    have h0 : ψ₀ (E.galoisRep N hN.pos τ 0) = 0 := by
+      rw [map_zero]
+      exact map_zero ψ₀
+    have h1 : ψ₀ 0 = 0 := map_zero ψ₀
+    rw [h0]
+    exact (map_zero (WeierstrassCurve.autTorsionEnd
+      (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) C hC N)).symm.trans
+      (congrArg _ h1.symm)
+  -- `P` is affine; let `(X, Y)` be its model coordinates
+  have hPv : P.val ≠ 0 :=
+    fun h => hP0 (Subtype.ext h)
+  obtain ⟨X, Y, hns, hPeq⟩ : ∃ X Y hns,
+      Fr.modelEquiv P.val
+        = WeierstrassCurve.Affine.Point.some X Y hns := by
+    rcases hh : Fr.modelEquiv P.val
+      with _ | ⟨X, Y, hns⟩
+    · refine absurd ?_ hPv
+      have h2 := congrArg Fr.modelEquiv.symm hh
+      rw [Fr.modelEquiv.symm_apply_apply] at h2
+      rw [h2, show (WeierstrassCurve.Affine.Point.zero :
+        (D.V.map Fr.emb).toAffine.Point) = 0 from rfl, map_zero]
+      rfl
+    · exact ⟨X, Y, hns, rfl⟩
+  obtain ⟨hX, hY, hns', hψP⟩ := hψ₀ P X Y hns hPeq
+  obtain ⟨hxy, hPval⟩ := Fr.modelEquiv_symm_some hns
+  have hPvalEq : P.val = WeierstrassCurve.Affine.Point.some _ _ hxy := by
+    rw [← hPval, ← hPeq, Fr.modelEquiv.symm_apply_apply]
+  -- the image of `P` under `ρ(τ)`: apply `τ` to both coordinates
+  obtain ⟨hτxy, hQvalEq⟩ : ∃ h,
+      (E.galoisRep N hN.pos τ P).val
+        = WeierstrassCurve.Affine.Point.some
+            (τ (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X + (D.C.map Fr.emb).r))
+            (τ (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y
+              + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X
+              + (D.C.map Fr.emb).t)) h := by
+    have h1 : (E.galoisRep N hN.pos τ P).val
+        = WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+            (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+            P.val := rfl
+    rw [h1, hPvalEq]
+    exact ⟨_, rfl⟩
+  have hQv : (E.galoisRep N hN.pos τ P).val ≠ 0 := by
+    rw [hQvalEq]; exact fun hcon => by cases hcon
+  obtain ⟨X₂, Y₂, hns₂, hQeq⟩ : ∃ X₂ Y₂ hns₂,
+      Fr.modelEquiv (E.galoisRep N hN.pos τ P).val
+        = WeierstrassCurve.Affine.Point.some X₂ Y₂ hns₂ := by
+    rcases hh : Fr.modelEquiv (E.galoisRep N hN.pos τ P).val with _ | ⟨X₂, Y₂, hns₂⟩
+    · refine absurd ?_ hQv
+      have h2 := congrArg Fr.modelEquiv.symm hh
+      rw [Fr.modelEquiv.symm_apply_apply] at h2
+      rw [h2, show (WeierstrassCurve.Affine.Point.zero :
+        (D.V.map Fr.emb).toAffine.Point) = 0 from rfl, map_zero]
+      rfl
+    · exact ⟨X₂, Y₂, hns₂, rfl⟩
+  obtain ⟨hX₂, hY₂, hns₂', hψQ⟩ := hψ₀ (E.galoisRep N hN.pos τ P) X₂ Y₂ hns₂ hQeq
+  obtain ⟨hxy₂, hQval2⟩ := Fr.modelEquiv_symm_some hns₂
+  have hQcoord : (E.galoisRep N hN.pos τ P).val
+      = WeierstrassCurve.Affine.Point.some _ _ hxy₂ := by
+    rw [← hQval2, ← hQeq, Fr.modelEquiv.symm_apply_apply]
+  have hinj := hQvalEq.symm.trans hQcoord
+  injection hinj with hx2 hy2
+  -- transport the two coordinate equations across the pinning
+  have hXX : X₂ = (Dτ.u : AlgebraicClosure ℚ) ^ 2 * τ X + Dτ.r := by
+    rw [map_add, map_mul, map_pow, ← hpu, ← hpr] at hx2
+    refine mul_left_cancel₀ (pow_ne_zero 2 hu0) ?_
+    linear_combination -hx2
+  have hYY : Y₂ = (Dτ.u : AlgebraicClosure ℚ) ^ 3 * τ Y
+      + (Dτ.u : AlgebraicClosure ℚ) ^ 2 * Dτ.s * τ X + Dτ.t := by
+    rw [map_add, map_add, map_mul, map_mul, map_mul, map_pow, map_pow,
+      ← hpu, ← hps, ← hpt, hXX] at hy2
+    refine mul_left_cancel₀ (pow_ne_zero 3 hu0) ?_
+    linear_combination -hy2
+  -- reduce the two coordinate equations modulo the maximal ideal of `𝒪`
+  have hresX : Fr.resIso (IsLocalRing.residue Ob ⟨X₂, hX₂⟩)
+      = (C.u : AlgebraicClosure (ZMod q)) ^ 2
+          * Fr.resIso (IsLocalRing.residue Ob ⟨X, hX⟩) + C.r := by
+    have hsub : (⟨X₂, hX₂⟩ : Ob)
+        = (⟨(Dτ.u : AlgebraicClosure ℚ), hu⟩ : Ob) ^ 2 * ⟨τ X, hτmem X hX⟩ + ⟨Dτ.r, hr⟩ :=
+      Subtype.ext (by push_cast; exact hXX)
+    rw [hsub]
+    simp only [map_add, map_mul, map_pow]
+    rw [hCu, hCr, hφτ]
+  have hresY : Fr.resIso (IsLocalRing.residue Ob ⟨Y₂, hY₂⟩)
+      = (C.u : AlgebraicClosure (ZMod q)) ^ 3
+          * Fr.resIso (IsLocalRing.residue Ob ⟨Y, hY⟩)
+        + (C.u : AlgebraicClosure (ZMod q)) ^ 2 * C.s
+          * Fr.resIso (IsLocalRing.residue Ob ⟨X, hX⟩) + C.t := by
+    have hsub : (⟨Y₂, hY₂⟩ : Ob)
+        = (⟨(Dτ.u : AlgebraicClosure ℚ), hu⟩ : Ob) ^ 3 * ⟨τ Y, hτmem Y hY⟩
+          + (⟨(Dτ.u : AlgebraicClosure ℚ), hu⟩ : Ob) ^ 2 * ⟨Dτ.s, hs⟩ * ⟨τ X, hτmem X hX⟩
+          + ⟨Dτ.t, ht⟩ :=
+      Subtype.ext (by push_cast; exact hYY)
+    rw [hsub]
+    simp only [map_add, map_mul, map_pow]
+    rw [hCu, hCs, hCt, hφτ, hφτ]
+  -- assemble
+  refine Subtype.ext ?_
+  rw [hψQ]
+  obtain ⟨hhR, hRHS⟩ : ∃ h,
+      (WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ P)).val
+        = WeierstrassCurve.Affine.Point.some
+            ((C.u : AlgebraicClosure (ZMod q)) ^ 2
+              * Fr.resIso (IsLocalRing.residue Ob ⟨X, hX⟩) + C.r)
+            ((C.u : AlgebraicClosure (ZMod q)) ^ 3
+                * Fr.resIso (IsLocalRing.residue Ob ⟨Y, hY⟩)
+              + (C.u : AlgebraicClosure (ZMod q)) ^ 2 * C.s
+                * Fr.resIso (IsLocalRing.residue Ob ⟨X, hX⟩) + C.t) h := by
+    exact WeierstrassCurve.autTorsionEnd_val_some _ C hC N (ψ₀ P) hns' hψP
+  rw [hRHS]
+  exact WeierstrassCurve.Affine.Point.some_eq_some _ hresX hresY
 
 /-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
 (opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
