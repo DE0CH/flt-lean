@@ -8747,6 +8747,336 @@ structure WeierstrassCurve.PotentiallyGoodModel.LocalFrame
         = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
             (D.resEquiv (IsLocalRing.residue D.R r))
 
+/-- **The residue field of a valuation subring of `ℚ̄` is an algebraic closure of
+`ZMod p`, compatibly with any `R` it dominates** (PROVEN 2026-07-29; the general
+form of `WeierstrassCurve.PotentiallyGoodModel.exists_resIso` below, with no
+elliptic curve and no number field in sight).
+
+THE TWO FACTS, both proven inline:
+
+* `κ(A)` is ALGEBRAICALLY CLOSED. Lift a monic `p ∈ κ(A)[X]` to a monic
+  `P ∈ A[X]` (`Polynomial.lifts_and_degree_eq_and_monic` over the surjection
+  `residue`), take a root `x ∈ ℚ̄` (`IsAlgClosed`), observe `x` is integral over
+  `A` through `P`, and use that a valuation subring is integrally closed in its
+  fraction field (`IsIntegrallyClosed`, `IsFractionRing A ℚ̄` — both mathlib
+  instances) to put the root back in `A`.
+* `κ(A)` is ALGEBRAIC over `ZMod p`. An `a : A` is algebraic over `ℤ`; its
+  PRIMITIVE PART `g` still kills `a` (the content is a nonzero integer) and
+  `g mod p ≠ 0` precisely because `g` is primitive — if `p` divided every
+  coefficient then `C p ∣ g` would make `p` a unit of `ℤ`. Reducing `g(a) = 0`
+  along `residue` exhibits `residue a` as a root of a nonzero polynomial over
+  `ZMod p`. (Ring maps out of `ℤ` are unique, so the `ZMod p`-structure and the
+  `ℤ`-structure automatically agree — `RingHom.ext_int`.)
+
+Hence `IsAlgClosure (ZMod p) κ(A)` and `IsAlgClosure.equiv` produces the
+isomorphism, as a `ZMod p`-ALGEBRA map — which is what makes the compatibility
+clause free rather than an extra constraint: `hcomap` turns
+`r ↦ ⟨emb (algebraMap R L r), _⟩` into a LOCAL ring map `R → A` (locality is the
+`comap` equation again, applied to `(algebraMap R L r)⁻¹`), and the `ZMod p`
+algebra structure on `κ(A)` is DEFINED to be the induced one, so
+`AlgEquiv.commutes` closes it. -/
+theorem GaloisRepresentation.exists_resIso_of_comap_toSubring_eq_range
+    {p : ℕ} [Fact p.Prime]
+    {L : Type*} [Field L]
+    {R : Type*} [CommRing R] [IsDomain R] [IsLocalRing R] [Algebra R L] [IsFractionRing R L]
+    (resEquiv : IsLocalRing.ResidueField R ≃+* ZMod p)
+    (A : ValuationSubring (AlgebraicClosure ℚ))
+    (emb : L →+* AlgebraicClosure ℚ)
+    (hcomap : (A.comap emb).toSubring = (algebraMap R L).range) :
+    ∃ resIso : IsLocalRing.ResidueField A ≃+* AlgebraicClosure (ZMod p),
+      ∀ (r : R) (h : emb (algebraMap R L r) ∈ A),
+        resIso (IsLocalRing.residue _ ⟨emb (algebraMap R L r), h⟩)
+          = algebraMap (ZMod p) (AlgebraicClosure (ZMod p))
+              (resEquiv (IsLocalRing.residue R r)) := by
+  have hp : p.Prime := Fact.out
+  have hinj : Function.Injective (algebraMap R L) := IsFractionRing.injective R L
+  have hmem : ∀ r : R, emb (algebraMap R L r) ∈ A := by
+    intro r
+    have h1 : algebraMap R L r ∈ (A.comap emb).toSubring := by
+      rw [hcomap]; exact ⟨r, rfl⟩
+    exact h1
+  let φ : R →+* A :=
+    { toFun := fun r => ⟨emb (algebraMap R L r), hmem r⟩
+      map_one' := by apply Subtype.ext; simp
+      map_mul' := fun a b => by apply Subtype.ext; simp
+      map_zero' := by apply Subtype.ext; simp
+      map_add' := fun a b => by apply Subtype.ext; simp }
+  have hφ : ∀ r : R, (φ r : AlgebraicClosure ℚ) = emb (algebraMap R L r) := fun _ => rfl
+  haveI hloc : IsLocalHom φ := by
+    constructor
+    intro r hr
+    rw [isUnit_iff_exists_inv] at hr
+    obtain ⟨w, hw⟩ := hr
+    have hw' : emb (algebraMap R L r) * (w : AlgebraicClosure ℚ) = 1 := by
+      have := congrArg (fun z : A => (z : AlgebraicClosure ℚ)) hw
+      simpa [hφ] using this
+    have hne : algebraMap R L r ≠ 0 := by
+      intro h0
+      rw [h0, map_zero, zero_mul] at hw'
+      exact zero_ne_one hw'
+    have hwval : (w : AlgebraicClosure ℚ) = emb ((algebraMap R L r)⁻¹) := by
+      have hembne : emb (algebraMap R L r) ≠ 0 := by
+        intro h0
+        rw [h0, zero_mul] at hw'
+        exact zero_ne_one hw'
+      have h2 : emb (algebraMap R L r) * emb ((algebraMap R L r)⁻¹) = 1 := by
+        rw [← map_mul, mul_inv_cancel₀ hne, map_one]
+      exact mul_left_cancel₀ hembne (hw'.trans h2.symm)
+    have hmemA : emb ((algebraMap R L r)⁻¹) ∈ A := by rw [← hwval]; exact w.2
+    have hrange : (algebraMap R L r)⁻¹ ∈ (algebraMap R L).range := by
+      rw [← hcomap]; exact hmemA
+    obtain ⟨s, hs⟩ := hrange
+    refine IsUnit.of_mul_eq_one s ?_
+    apply hinj
+    rw [map_mul, hs, map_one, mul_inv_cancel₀ hne]
+  -- the residue field of `A` is algebraically closed
+  haveI hAC : IsAlgClosed (IsLocalRing.ResidueField A) := by
+    apply IsAlgClosed.of_exists_root
+    intro P0 hmonic hirr
+    have hsurj : Function.Surjective (IsLocalRing.residue A) := Ideal.Quotient.mk_surjective
+    obtain ⟨P, hPmap, hPdeg, hPmonic⟩ :=
+      Polynomial.lifts_and_degree_eq_and_monic
+        (Polynomial.mem_lifts_of_surjective hsurj P0) hmonic
+    have hdegne : (P.map (algebraMap A (AlgebraicClosure ℚ))).degree ≠ 0 := by
+      rw [hPmonic.degree_map, hPdeg]
+      exact (Polynomial.degree_pos_of_irreducible hirr).ne'
+    obtain ⟨x, hx⟩ :=
+      IsAlgClosed.exists_root (P.map (algebraMap A (AlgebraicClosure ℚ))) hdegne
+    have hint : IsIntegral A x := ⟨P, hPmonic, by rwa [Polynomial.eval₂_eq_eval_map]⟩
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.1 hint
+    have hPy : P.eval y = 0 := by
+      have h1 : algebraMap A (AlgebraicClosure ℚ) (P.eval y) = 0 := by
+        rw [← Polynomial.eval₂_at_apply (algebraMap A (AlgebraicClosure ℚ)) y, hy,
+          ← Polynomial.eval_map]
+        exact hx
+      have h2 : Function.Injective (algebraMap A (AlgebraicClosure ℚ)) :=
+        IsFractionRing.injective A (AlgebraicClosure ℚ)
+      exact h2 (by simpa using h1)
+    exact ⟨IsLocalRing.residue A y, by
+      rw [← hPmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hPy, map_zero]⟩
+  letI : Algebra (ZMod p) (IsLocalRing.ResidueField A) :=
+    RingHom.toAlgebra ((IsLocalRing.ResidueField.map φ).comp (resEquiv.symm : ZMod p →+* _))
+  -- and algebraic over its prime field
+  haveI hAA : Algebra.IsAlgebraic (ZMod p) (IsLocalRing.ResidueField A) := by
+    constructor
+    intro z
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+    have halgQ : IsAlgebraic ℚ ((a : AlgebraicClosure ℚ)) :=
+      (AlgebraicClosure.isAlgebraic (k := ℚ)).isAlgebraic _
+    have halgZ : IsAlgebraic ℤ ((a : AlgebraicClosure ℚ)) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).2 halgQ
+    obtain ⟨f, hf0, hfa⟩ := halgZ
+    set g := f.primPart with hgdef
+    have hgprim : g.IsPrimitive := f.isPrimitive_primPart
+    have hcont : (f.content : ℤ) ≠ 0 := by
+      simpa [Polynomial.content_eq_zero_iff] using hf0
+    have hga : (Polynomial.aeval ((a : AlgebraicClosure ℚ))) g = 0 := by
+      have hfeq := f.eq_C_content_mul_primPart
+      rw [hfeq, map_mul, Polynomial.aeval_C] at hfa
+      have hne : (algebraMap ℤ (AlgebraicClosure ℚ)) f.content ≠ 0 := by simpa using hcont
+      exact (mul_eq_zero.1 hfa).resolve_left hne
+    have hgA : (Polynomial.aeval a) g = 0 := by
+      have h2 : Function.Injective (algebraMap A (AlgebraicClosure ℚ)) :=
+        IsFractionRing.injective A (AlgebraicClosure ℚ)
+      apply h2
+      rw [map_zero, ← Polynomial.aeval_algebraMap_apply]
+      exact hga
+    have hgres : (Polynomial.aeval (IsLocalRing.residue A a)) g = 0 := by
+      show (Polynomial.aeval (algebraMap A (IsLocalRing.ResidueField A) a)) g = 0
+      rw [Polynomial.aeval_algebraMap_apply, hgA, map_zero]
+    refine ⟨g.map (Int.castRingHom (ZMod p)), ?_, ?_⟩
+    · intro hzero
+      have hdvd : (Polynomial.C (p : ℤ)) ∣ g := by
+        rw [Polynomial.C_dvd_iff_dvd_coeff]
+        intro n
+        have hc : ((g.coeff n : ℤ) : ZMod p) = 0 := by
+          have := congrArg (fun r => Polynomial.coeff r n) hzero
+          simpa using this
+        exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).1 hc
+      have hu := hgprim _ hdvd
+      rw [Int.isUnit_iff] at hu
+      have hp2 := hp.two_le
+      omega
+    · have hcomp : (algebraMap (ZMod p) (IsLocalRing.ResidueField A)).comp
+          (Int.castRingHom (ZMod p)) = algebraMap ℤ (IsLocalRing.ResidueField A) :=
+        RingHom.ext_int _ _
+      rw [Polynomial.aeval_def, Polynomial.eval₂_map, hcomp]
+      exact hgres
+  haveI : IsAlgClosure (ZMod p) (IsLocalRing.ResidueField A) := ⟨inferInstance, inferInstance⟩
+  refine ⟨(IsAlgClosure.equiv (ZMod p) (IsLocalRing.ResidueField A)
+    (AlgebraicClosure (ZMod p))).toRingEquiv, ?_⟩
+  intro r h
+  have hpt : (⟨emb (algebraMap R L r), h⟩ : A) = φ r := Subtype.ext rfl
+  have hres : IsLocalRing.residue A (⟨emb (algebraMap R L r), h⟩ : A)
+      = algebraMap (ZMod p) (IsLocalRing.ResidueField A) (resEquiv (IsLocalRing.residue R r)) := by
+    rw [hpt]
+    show _ = (IsLocalRing.ResidueField.map φ) (resEquiv.symm (resEquiv (IsLocalRing.residue R r)))
+    rw [RingEquiv.symm_apply_apply, IsLocalRing.ResidueField.map_residue]
+  rw [hres]
+  exact (IsAlgClosure.equiv (ZMod p) (IsLocalRing.ResidueField A)
+    (AlgebraicClosure (ZMod p))).commutes _
+
+open scoped Pointwise in
+/-- **Placing a valuation ring of a number field at a prescribed valuation
+subring of `ℚ̄`** (PROVEN 2026-07-29 over the transitivity leaf
+`GaloisRepresentation.exists_smul_eq_globalValuationSubring`; the general form
+of `WeierstrassCurve.PotentiallyGoodModel.exists_emb_comap_eq` below).
+
+THE ARGUMENT. `L/ℚ` is finite, so `IsAlgClosed.lift` gives SOME `ℚ`-embedding
+`emb₀ : L ↪ ℚ̄`. `IsLocalRing.exists_factor_valuationRing` (mathlib's form of
+CHEVALLEY extension: every local subring of a field is dominated by a valuation
+subring) applied to `R → L → ℚ̄` yields a valuation subring `B` of `ℚ̄` and the
+LOCALITY of `R → B`. Locality is exactly what pins `emb₀⁻¹ B = R`: `R` is a
+valuation ring of `L`, so any `x ∉ R` has `x⁻¹ = algebraMap R L r` with `r` a
+nonzero nonunit, and `emb₀ x = emb₀ ((algebraMap R L r)⁻¹) ∈ B` would make
+`emb₀ (algebraMap R L r)` a unit of `B`, hence `r` a unit of `R`.
+
+The same computation at `r = (p : R)` — a nonzero nonunit because `resEquiv`
+lands in `ZMod p`, so `residue (p : R) = 0` — gives `(p : ℚ̄)⁻¹ ∉ B`, which is
+the hypothesis the transitivity leaf consumes. Conjugating by the `γ` it returns
+and composing, `emb := γ ∘ emb₀` satisfies `emb⁻¹ A = emb₀⁻¹ B = R`
+(`ValuationSubring.smul_mem_pointwise_smul_iff`).
+
+NOTE the `(p : ℚ̄)⁻¹ ∉ B` phrasing is not decoration: it is exactly
+`p ∈ B.nonunits` for `p ≠ 0`, i.e. "B lies over `p`", and it is what makes the
+transitivity statement TRUE rather than merely plausible — see the leaf. -/
+theorem GaloisRepresentation.exists_emb_comap_eq_of_exists_smul_eq
+    {p : ℕ} [Fact p.Prime]
+    {L : Type*} [Field L] [Algebra ℚ L] [FiniteDimensional ℚ L]
+    {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    [Algebra R L] [IsFractionRing R L]
+    (resEquiv : IsLocalRing.ResidueField R ≃+* ZMod p)
+    (A : ValuationSubring (AlgebraicClosure ℚ))
+    (hTrans : ∀ B : ValuationSubring (AlgebraicClosure ℚ),
+        (algebraMap ℚ (AlgebraicClosure ℚ) (p : ℚ))⁻¹ ∉ B →
+        ∃ γ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, γ • B = A) :
+    ∃ emb : L →+* AlgebraicClosure ℚ,
+      (∀ x : ℚ, emb (algebraMap ℚ L x) = algebraMap ℚ (AlgebraicClosure ℚ) x) ∧
+      (A.comap emb).toSubring = (algebraMap R L).range := by
+  have hinj : Function.Injective (algebraMap R L) := IsFractionRing.injective R L
+  haveI : Algebra.IsAlgebraic ℚ L := Algebra.IsAlgebraic.of_finite ℚ L
+  let emb₀ : L →ₐ[ℚ] AlgebraicClosure ℚ := IsAlgClosed.lift
+  haveI : CharZero L := charZero_of_injective_algebraMap (algebraMap ℚ L).injective
+  have hpR0 : (p : R) ≠ 0 := by
+    intro h0
+    have h1 : algebraMap R L (p : R) = 0 := by rw [h0, map_zero]
+    rw [map_natCast] at h1
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).pos.ne' : ((p : ℕ) : L) ≠ 0) h1
+  have hpRm : (p : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [← IsLocalRing.residue_eq_zero_iff, map_natCast]
+    apply resEquiv.injective
+    rw [map_natCast, map_zero]
+    exact ZMod.natCast_self p
+  have hpRnu : ¬ IsUnit (p : R) := fun hu =>
+    (IsLocalRing.maximalIdeal.isMaximal R).ne_top (Ideal.eq_top_of_isUnit_mem _ hpRm hu)
+  obtain ⟨B, hmemB, hlocB⟩ := IsLocalRing.exists_factor_valuationRing
+      ((emb₀ : L →+* AlgebraicClosure ℚ).comp (algebraMap R L))
+  have hnu : ∀ r : R, r ≠ 0 → ¬ IsUnit r → emb₀ ((algebraMap R L r)⁻¹) ∉ B := by
+    intro r hr0 hr hmem
+    apply hr
+    have hne : algebraMap R L r ≠ 0 := fun h => hr0 (hinj (by rw [h, map_zero]))
+    have hprod : emb₀ (algebraMap R L r) * emb₀ ((algebraMap R L r)⁻¹) = 1 := by
+      rw [← map_mul, mul_inv_cancel₀ hne, map_one]
+    have hu : IsUnit (((emb₀ : L →+* AlgebraicClosure ℚ).comp
+        (algebraMap R L)).codRestrict B.toSubring hmemB r) := by
+      refine IsUnit.of_mul_eq_one (⟨emb₀ ((algebraMap R L r)⁻¹), hmem⟩ : B.toSubring) ?_
+      apply Subtype.ext
+      simpa using hprod
+    exact hlocB.1 _ hu
+  have hcomapB : (B.comap (emb₀ : L →+* AlgebraicClosure ℚ)).toSubring
+      = (algebraMap R L).range := by
+    apply le_antisymm
+    · intro x hx
+      by_contra hxR
+      rcases ValuationRing.isInteger_or_isInteger R x with h | h
+      · exact hxR h
+      obtain ⟨r, hr⟩ := h
+      have hr0 : r ≠ 0 := by
+        rintro rfl
+        rw [map_zero] at hr
+        exact hxR (by rw [show x = 0 by simpa using (inv_eq_zero.1 hr.symm)]; exact ⟨0, by simp⟩)
+      have hru : ¬ IsUnit r := by
+        rintro ⟨u, rfl⟩
+        refine hxR ⟨(↑u⁻¹ : R), ?_⟩
+        rw [map_units_inv, hr, inv_inv]
+      have hxeq : x = (algebraMap R L r)⁻¹ := by rw [hr, inv_inv]
+      rw [hxeq] at hx
+      exact hnu r hr0 hru hx
+    · rintro x ⟨r, rfl⟩
+      exact hmemB r
+  have hBnot : (algebraMap ℚ (AlgebraicClosure ℚ) (p : ℚ))⁻¹ ∉ B := by
+    have hcast : algebraMap ℚ (AlgebraicClosure ℚ) (p : ℚ) = emb₀ (algebraMap R L (p : R)) := by
+      simp
+    rw [hcast, ← map_inv₀]
+    exact hnu (p : R) hpR0 hpRnu
+  obtain ⟨γ, hγ⟩ := hTrans B hBnot
+  refine ⟨((γ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) :
+      AlgebraicClosure ℚ →+* AlgebraicClosure ℚ).comp
+      (emb₀ : L →+* AlgebraicClosure ℚ), fun x => ?_, ?_⟩
+  · simp
+  · have hkey : A.comap (((γ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ) :
+        AlgebraicClosure ℚ →+* AlgebraicClosure ℚ).comp (emb₀ : L →+* AlgebraicClosure ℚ))
+        = B.comap (emb₀ : L →+* AlgebraicClosure ℚ) := by
+      ext y
+      simp only [ValuationSubring.mem_comap, RingHom.comp_apply]
+      rw [← hγ]
+      exact ValuationSubring.smul_mem_pointwise_smul_iff (g := γ) (S := B) (x := emb₀ y)
+    rw [hkey]
+    exact hcomapB
+
+open scoped Pointwise in
+/-- **`Γ ℚ` acts transitively on the valuation subrings of `ℚ̄` above `q`**
+(sorry leaf, opened 2026-07-29 while proving
+`WeierstrassCurve.PotentiallyGoodModel.exists_emb_comap_eq` below; it is the
+ONLY thing that leaf now needs).
+
+Pure valuation theory: no elliptic curve, no `PotentiallyGoodModel`, no residue
+fields. Everything else in `exists_emb_comap_eq` — Chevalley extension, the
+locality bookkeeping, the transport of the `comap` along `γ` — is proven above
+in `GaloisRepresentation.exists_emb_comap_eq_of_exists_smul_eq`.
+
+WHY THE HYPOTHESIS IS THE RIGHT ONE, and why the statement is FAITHFUL. `B` is a
+subring of `ℚ̄`, hence contains `ℤ`, so `B ∩ ℚ` is a valuation subring of `ℚ`
+containing `ℤ` — i.e. `ℤ_(ℓ)` for some prime `ℓ`, or `ℚ`. The hypothesis
+`(q : ℚ̄)⁻¹ ∉ B` excludes `ℚ` and excludes every `ℓ ≠ q` (as `1/q ∈ ℤ_(ℓ)`
+there), so it says exactly `B ∩ ℚ = ℤ_(q)`. And
+`globalValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat` satisfies the
+same condition — it is the comap of `integralClosure 𝒪ᵥ ℚ̄_q` along the fixed
+`ℚ̄ ↪ ℚ̄_q`, and `1/q` is not integral over `ℤ_q` because `ℤ_q` is integrally
+closed in `ℚ_q` — the prime being `(q)` by
+`asIdeal_toHeightOneSpectrumRingOfIntegersRat`. So both sides lie over the SAME
+prime of `ℚ`, and the claim is the classical conjugacy of the extensions of
+`v_q` to the algebraic closure.
+
+A PROVER'S ROUTE. At finite level mathlib already has it —
+`Ideal.exists_smul_eq_of_isGaloisGroup` /
+`IsDedekindDomain.HeightOneSpectrum.isPretransitive_of_isGaloisGroup`
+(`Mathlib/NumberTheory/RamificationInertia/Galois.lean`) — and for the profinite
+limit `Algebra.IsInvariant.exists_smul_of_under_eq_of_profinite`
+(`Mathlib/RingTheory/Invariant/Profinite.lean`) is stated for exactly this
+situation: `G` profinite acting continuously on a discrete `B` with
+`Algebra.IsInvariant A B G`, concluding transitivity on the primes of `B` over a
+prime of `A`. Taking `A = ℤ_(q)` (or `ℤ`) and `B` the integral closure of `ℤ` in
+`ℚ̄`, with `G = Γ ℚ`, that lemma gives the transitivity on PRIMES; converting a
+prime of `B` to a valuation subring of `ℚ̄` and back is the remaining bridge
+(`ValuationSubring.ofPrime` / `LocalSubring`), together with the identification
+of `B ∩ ℚ` above.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a valuation subring of `ℚ̄` lying over
+`ℤ_(q)` that is not in the `Γ ℚ`-orbit of the pinned one — equivalently a
+failure of conjugacy of the extensions of `v_q` to `ℚ̄`, or a proof that
+`globalValuationSubring hq.…` does NOT satisfy `(q : ℚ̄)⁻¹ ∉ ·` (which would
+make the target of the conjugation lie over a different prime, or be all of
+`ℚ̄`). -/
+theorem GaloisRepresentation.exists_smul_eq_globalValuationSubring
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (B : ValuationSubring (AlgebraicClosure ℚ))
+    (hB : (algebraMap ℚ (AlgebraicClosure ℚ) (q : ℚ))⁻¹ ∉ B) :
+    ∃ γ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+      γ • B = GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
 /-- **The placement of `K` inside `ℚ̄` that puts the prime of `R` at the pinned
 subring** (sorry leaf, opened 2026-07-28 by cutting `nonempty_localFrame` below
 into its VALUATION-THEORETIC and its RESIDUE-FIELD halves).
@@ -8777,7 +9107,8 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_emb_comap_eq
       ((GaloisRepresentation.globalValuationSubring
           hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
         = (algebraMap D.R D.K).range :=
-  sorry
+  GaloisRepresentation.exists_emb_comap_eq_of_exists_smul_eq D.resEquiv _
+    (fun B hB => GaloisRepresentation.exists_smul_eq_globalValuationSubring hq B hB)
 
 /-- **The residue field of the pinned subring is an algebraic closure of `𝔽_q`,
 compatibly with `D.resEquiv`** (sorry leaf, opened 2026-07-28 by cutting
@@ -8820,7 +9151,7 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_resIso
         resIso (IsLocalRing.residue _ ⟨emb (algebraMap D.R D.K r), h⟩)
           = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
               (D.resEquiv (IsLocalRing.residue D.R r)) :=
-  sorry
+  GaloisRepresentation.exists_resIso_of_comap_toSubring_eq_range D.resEquiv _ emb hcomap
 
 /-- **Every potentially-good model admits a local frame** (PROVEN 2026-07-28 by
 assembly; opened 2026-07-27 by cutting
