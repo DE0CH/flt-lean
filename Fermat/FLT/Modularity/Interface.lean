@@ -4209,53 +4209,180 @@ theorem exists_ringHom_heckeSubring_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < 
     refine hval (S + T) (cS + cT) ?_
     rw [AddMemClass.coe_add, LinearMap.add_apply, hcS, hcT, add_smul]
 
-/-- **EICHLER–SELBERG AT WEIGHT TWO: `Tr(T_m)` IS A RATIONAL INTEGER**
-(sorry leaf, cut 2026-07-28 out of `exists_intPoly_spectrum_heckeSubring`
-immediately below, which is now a PROVEN assembly over this leaf alone).
-This is the single analytic input of the spectral half of leaf B.
+/-- **EICHLER–SELBERG AT WEIGHT TWO, AT `2 ≤ m`: `Tr(T_m)` IS A RATIONAL
+INTEGER** (sorry leaf, cut 2026-07-28 out of `exists_trace_heckeOpN_int`
+immediately below, which is now a PROVEN assembly over this leaf together
+with the two cases `m = 0`, `m = 1` that are computable here). This is
+the single analytic input of the spectral half of leaf B.
 
 THE CITATION. The Eichler–Selberg trace formula for `Γ₀(N)` at weight
-`k = 2` (Zagier's appendix to Lang, *Introduction to Modular Forms*;
-Serre, *Répartition asymptotique des valeurs propres de l'opérateur de
-Hecke `T_p`* §2; Diamond–Shurman §5 for the operators themselves)
-evaluates `Tr(T_m | S₂(Γ₀(N)))` as an explicit finite sum of Hurwitz
-class numbers, divisor sums and a `−1` correction term — every summand a
-RATIONAL INTEGER. So integrality of the trace, not merely its algebraic
-integrality, is what the formula delivers.
+`k = 2` (Zagier's appendix to Lang, *Introduction to Modular Forms*,
+Springer GMW 222; Serre, *Répartition asymptotique des valeurs propres de
+l'opérateur de Hecke `T_p`* §2; Diamond–Shurman §5 for the operators
+themselves) evaluates `Tr(T_m | S₂(Γ₀(N)))` as an explicit finite sum of
+Hurwitz class numbers, divisor sums and a `−1` correction term. Absence
+from the pin re-checked 2026-07-28: `grep -rn Eichler` and
+`grep -rn Hurwitz` over `.lake/packages/mathlib` and `~/cs/FLT` are both
+empty, so a theory build is expected here.
 
-**WHY THE `ℤ`-VALUED FORM IS CITED HERE, AND NOT THE WEAKER
-`isIntegral_trace_heckeOpN` FAR BELOW.** That declaration asks only that
-`Tr(T_m)` be an ALGEBRAIC integer, and its consumer recovers rationality
-from Shimura's rationality theorem `rationalCuspForms_span_eq_top`
-(through `exists_trace_heckeSubring_rat`). That route is UNAVAILABLE at
-this point of the file, and not for a bookkeeping reason: Shimura's
-theorem is proven here THROUGH leaf B, hence through
-`exists_intPoly_spectrum_heckeSubring` just below, so using it to prove
-that leaf would be circular. Splitting the citation as "algebraic integer
-(analysis) + rational (Shimura)" is therefore a decomposition that only
-works DOWNSTREAM of the rationality theorem; upstream of it the trace
-formula has to be cited in the form it is actually proven, which is this
-one.
+**WHY `2 ≤ m` AND NOT ALL `m`** (2026-07-28). At `m ≤ 1` the statement
+carries no analytic content and is now PROVEN rather than cited:
+`heckeOpN_zero` gives `Tr(T_0) = Tr 0 = 0`, and `heckeOpN_one` with
+`LinearMap.trace_one` gives `Tr(T_1) = dim_ℂ S₂(Γ₀(N))`, a natural
+number. Those two cases used to be recorded in this docstring as a
+non-vacuity remark; they are discharged in Lean below. Nothing else about
+the leaf changed, and the consumer's statement did not change at all.
 
-Consequences worth recording. This leaf IMPLIES `isIntegral_trace_heckeOpN`
-below in one line (`isIntegral_algebraMap` after rewriting by the witness),
-so that leaf — and with it the whole `exists_trace_heckeSubring_rat` →
-`isIntegral_trace_heckeSubring` → `exists_trace_heckeSubring_int` route —
-is redundant once this one is closed. Both are left in place here because
-`isIntegral_trace_heckeOpN` has a separate owner; retiring them is a
-one-declaration recut for whoever holds that region.
+**NUMERICAL CHECK, run 2026-07-28 before any Lean was written** (PARI/GP,
+`trace(mfheckemat(mfinit([N,2],1), m))`; CAS is an untrusted searcher, so
+this validates the STATEMENT, it does not prove it). Every value is a
+rational integer, at `m` coprime to `N` and not:
 
-SOUNDNESS AND NON-VACUITY. The statement has content at every `m` and is
-NOT satisfiable by the shape of the objects: at `m = 0` it is `Tr(0) = 0`
-and at `m = 1` it is `Tr(1) = dim_ℂ S₂(Γ₀(N))`, both computable here from
-`heckeOpN_zero`/`heckeOpN_one` above, while at `N = 11`, `m = 2` it
-asserts `Tr(T_2) = −2`, a genuine arithmetic value. `0 < N` is inherited
-from the consumer and is not needed mathematically — at `N = 0` every
+    N = 11,  dim 1  : Tr(T_m), m = 1..8   =  1, −2, −1, 2, 1, 2, −2, 0
+    N = 23,  dim 2  : Tr(T_m), m = 1..8   =  2, −1, 0, −1, −2, −5, 2, 0
+    N = 32,  dim 1  : Tr(T_m), m = 1..8   =  1, 0, 0, 0, −2, 0, 0, 0
+    N = 11,  m = 11 (so `U_11`)           =  1
+    N = 389, dim 32 : Tr(T_m), m = 1..5   = 32, −2, 0, 32, −6
+
+So `Tr(T_1) = dim` on the nose (the case proven below), and `N = 11`,
+`m = 2` gives `−2`, confirming the arithmetic value this docstring
+previously asserted. Non-squarefree level and `m` sharing a factor with
+`N` are both covered, so the leaf is not secretly a statement about
+`gcd(m, N) = 1`.
+
+**CUT-OBSTRUCTION AUDIT — EVERY NON-ANALYTIC ROUTE IN THIS FILE IS A
+CYCLE, AND THE CYCLE IS EXHIBITED** (2026-07-28; this replaces the older
+remark that merely said the rationality split "is unavailable at this
+point of the file"). The obstruction is not declaration order and cannot
+be repaired by hoisting. Reading the proof BODIES rather than the
+docstrings, this file contains the chain
+
+    exists_trace_heckeOpN_int                    (this leaf's consumer)
+      → exists_intPoly_spectrum_heckeSubring     (uses it, `| mem` branch)
+      → exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring
+      → exists_eigenform_ringEquiv_conj
+      → rationalCuspForms_sup_oldCuspSpace_eq_top
+      → rationalCuspForms_span_eq_top            (Shimura rationality)
+      → exists_heckeOpN_sturm_span               (Sturm's bound over `ℤ`)
+      → exists_heckeSubring_algebraGenerators
+      → heckeSubring_moduleFinite_int
+      → exists_heckeSubring_zForm
+      → integralCuspForms_span_eq_top
+      → exists_heckeStable_lattice
+      → heckeSubring_moduleFinite
+
+so EVERY integral-structure statement in this file — the full-rank
+lattice, the `ℤ`-form of `𝕋`, module-finiteness of `𝕋`, and
+`isIntegral_trace_heckeOpN` — is DOWNSTREAM of this leaf. Consequently:
+
+* *The lattice/duality route is circular.* It is a good argument: the
+  Hecke pairing `𝕋 × S₂ → ℂ`, `(T, f) ↦ a₁(T f)`, is perfect here — its
+  two nondegeneracies are `heckeSubring_eq_zero_of_forall_qCoeff_one` and
+  `cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring`, both PROVEN
+  ABOVE this leaf — so `S₂(Γ₀(N)) ≅ Hom_ℂ(𝕋_ℂ, ℂ)` as `𝕋`-modules and
+  `Tr(T_m | S₂) = Tr(L_{T_m} | 𝕋_ℂ)`, the trace of LEFT MULTIPLICATION on
+  the algebra. A `ℤ`-basis of `𝕋` then makes that matrix integral and the
+  leaf falls out. What it needs is exactly `Module.Finite ℤ 𝕋` spanning
+  `𝕋_ℂ` — the tail of the chain above — so taking it closes the cycle.
+  This is not merely an ordering problem: the mathematics is genuinely
+  circular, and Lean would reject it as well.
+* *The "algebraic integer + rational" split is circular for the same
+  reason, twice over.* Rationality is `exists_trace_heckeSubring_rat`,
+  proven over `rationalCuspForms_span_eq_top`, which is in the chain;
+  algebraic integrality is `isIntegral_trace_heckeOpN`, whose own only
+  non-analytic route runs through `heckeSubring_moduleFinite`, also in
+  the chain.
+* *So `Tr(T_m) ∈ ℤ` at `2 ≤ m` is the SINGLE arithmetic entry point of
+  the whole `q`-expansion knot in this file.* That is what makes closing
+  it worth real effort: it is the only route to Hecke integrality here
+  that does not pass through bounded denominators
+  (`exists_smul_mem_integralCuspForms`), and the two are otherwise the
+  same knot entered at two points. **Do not restate this leaf in terms of
+  a lattice, a `ℤ`-form, module-finiteness, or bounded denominators.**
+  Any such restatement is not a decomposition; it is the cycle above.
+
+**REFUTING CHECK for that audit**, so a successor need not redo the
+survey: does anything DECLARED ABOVE this leaf supply a full-rank
+`𝕋`-stable `ℤ`-lattice in `S₂(Γ₀(N))`, or `Module.Finite ℤ 𝕋`, or
+rationality of a single Hecke eigenvalue? If yes, the audit is stale and
+the duality route above is available immediately — it is written out in
+enough detail to execute. As of 2026-07-28 the answer is no: everything
+above this point is `ℂ`-linear Atkin–Lehner theory plus the Sturm-bound
+finite-dimensionality `cuspForm_finiteDimensional`, which carries no
+integral structure.
+
+**AXIS SEARCHED, and what was NOT searched.** The axes closed above are
+(i) integral structures internal to this file, (ii) the rationality
+split, (iii) declaration-order repairs of either. NOT searched, and the
+two places a successor should look first:
+
+* *Eichler–Shimura point counting.* For `p ∤ N` prime,
+  `Tr(T_p | S₂(Γ₀(N))) = p + 1 − #X₀(N)(𝔽_p)`, manifestly an integer,
+  from the congruence relation on the integral model. This is genuinely
+  independent of everything above, but it needs modular-curve geometry
+  over `ℤ` that this pin does not have, and it covers only prime `m`
+  coprime to `N` — the numerics above show the leaf has content at
+  `m = 11`, `N = 11` too.
+* *Brandt matrices / the Eichler basis problem* at squarefree `N`, where
+  the trace is a trace of an explicit non-negative integer matrix.
+  Quaternionic; `~/cs/FLT`'s Hecke material IS quaternionic and is worth
+  a look before anyone builds this from scratch.
+
+**WHY THE OBVIOUS DECOMPOSITION OF THE FORMULA IS A WORSE CUT.** Stating
+the trace formula as one leaf and "the right-hand side is an integer" as
+another produces two leaves of which the SECOND is harder than this one:
+the summands are not individually integral (the Hurwitz class numbers
+carry denominators `2` and `3`, from the extra units at discriminants
+`−4` and `−3`), so integrality of the sum is itself the miracle the
+formula is usually used to certify, not a corollary of it. Any successor
+tempted by a termwise argument is refuted before starting.
+
+SOUNDNESS AND NON-VACUITY. At `N = 11`, `m = 2` the statement asserts
+`Tr(T_2) = −2`, a genuine arithmetic value (checked above), so it is not
+satisfiable by the shape of the objects. `0 < N` is inherited from the
+consumer and is not needed mathematically — at `N = 0` every
 `heckeOpN 0 m` is the junk value `0`, whose trace is `0`; it is kept for
-uniformity with the siblings. -/
-theorem exists_trace_heckeOpN_int {N : ℕ} (hN : 0 < N) (m : ℕ) :
+uniformity with the siblings. `2 ≤ m` is a genuine restriction of the
+range and not a hidden strengthening: the consumer below supplies it. -/
+theorem exists_trace_heckeOpN_int_of_two_le {N : ℕ} (hN : 0 < N) {m : ℕ}
+    (hm : 2 ≤ m) :
     ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m) = (z : ℂ) :=
   sorry
+
+/-- **EICHLER–SELBERG AT WEIGHT TWO: `Tr(T_m)` IS A RATIONAL INTEGER**
+(formerly a sorry leaf; **PROVEN assembly 2026-07-28** over the single
+leaf `exists_trace_heckeOpN_int_of_two_le` immediately above, which
+carries the same statement at `2 ≤ m`). This is the single analytic input
+of the spectral half of leaf B; read that leaf's docstring for the
+citation, the numerical check and the cut-obstruction audit.
+
+WHAT IS DISCHARGED HERE, and it is exactly the part with no analytic
+content: `m = 0` is `Tr(T_0) = Tr 0 = 0` by `heckeOpN_zero`, and `m = 1`
+is `Tr(T_1) = Tr 1 = dim_ℂ S₂(Γ₀(N))` by `heckeOpN_one` and mathlib's
+`LinearMap.trace_one`, the dimension being a natural number and hence an
+integer. Finite-dimensionality arrives as the locally bound instance
+`cuspForm_finiteDimensional N hN`, which is why the `m = 1` case cannot
+be stated at top level without `0 < N`.
+
+Consequences worth recording, unchanged by the cut. This leaf IMPLIES
+`isIntegral_trace_heckeOpN` far below in one line
+(`isIntegral_algebraMap` after rewriting by the witness), so that leaf —
+and with it the whole `exists_trace_heckeSubring_rat` →
+`isIntegral_trace_heckeSubring` → `exists_trace_heckeSubring_int` route —
+is redundant once the leaf above is closed. They are left in place
+because `isIntegral_trace_heckeOpN` has a separate owner; retiring them
+is a one-declaration recut for whoever holds that region. Checked against
+the compiler rather than inherited from a report (2026-07-28):
+`isIntegral_trace_heckeOpN` is still a `sorry`. -/
+theorem exists_trace_heckeOpN_int {N : ℕ} (hN : 0 < N) (m : ℕ) :
+    ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m) = (z : ℂ) := by
+  rcases lt_or_ge m 2 with hm | hm
+  · interval_cases m
+    · exact ⟨0, by rw [heckeOpN_zero hN, map_zero]; norm_num⟩
+    · haveI := cuspForm_finiteDimensional N hN
+      refine ⟨(Module.finrank ℂ (CuspForm (Gamma0GL N) 2) : ℤ), ?_⟩
+      rw [heckeOpN_one hN, LinearMap.trace_one, Int.cast_natCast]
+  · exact exists_trace_heckeOpN_int_of_two_le hN hm
 
 /-- **LEAF B1 — THE SPECTRUM OF A HECKE OPERATOR IS `ℚ`-RATIONAL**
 (formerly a sorry leaf, cut 2026-07-27 out of
