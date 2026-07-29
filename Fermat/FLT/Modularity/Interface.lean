@@ -40505,16 +40505,304 @@ theorem mem_of_forall_primePowChar_pullback_mem {G : Type*} [Group G]
   rw [hψ', MonoidHom.comp_apply] at hx1
   simpa [hcst] using congrArg Multiplicative.toAdd hx1
 
+/-- **A character of `ker χ` evaluated at a LIST PRODUCT is the product of its
+pointwise values** (PROVEN; abstract group theory, no arithmetic).
+
+Hoisted out of the reciprocity glue below for the reason recorded on
+`mem_of_forall_primePowChar_pullback_mem` above: written inline against
+`Field.absoluteGaloisGroup ℚ` every unification is paid for inside a 71 000-line
+file, while over an abstract `G` the same induction elaborates in seconds.
+
+The awkward shape — the membership proof `hmem` universally quantified INSIDE
+the conclusion, and the list hypothesis `hl` an explicit argument rather than a
+context hypothesis — is what makes the induction on `l` go through: both depend
+on `l`, so neither may sit in the context when `l` is destructed. -/
+theorem ker_list_prod_map_eq {G : Type*} [Group G] {M : Type*} [Monoid M]
+    (χ : G →* M) {A : Type*} [CommMonoid A] (ψ : (MonoidHom.ker χ) →* A)
+    {β : Type*} (f : β → G) (d : β → A)
+    (hd : ∀ (b : β) (h : χ (f b) = 1), ψ ⟨f b, MonoidHom.mem_ker.mpr h⟩ = d b) :
+    ∀ (l : List β), (∀ b ∈ l, χ (f b) = 1) →
+      ∀ hmem : (l.map f).prod ∈ MonoidHom.ker χ, ψ ⟨_, hmem⟩ = (l.map d).prod := by
+  intro l
+  induction l with
+  | nil =>
+      intro _ hmem
+      have h1 : (⟨_, hmem⟩ : MonoidHom.ker χ) = 1 := by
+        ext
+        simp
+      rw [h1, map_one]
+      simp
+  | cons a t ih =>
+      intro hl hmem
+      have ha : χ (f a) = 1 := hl a (List.mem_cons_self ..)
+      have ht : ∀ b ∈ t, χ (f b) = 1 := fun b hb => hl b (List.mem_cons_of_mem _ hb)
+      have hmt : (t.map f).prod ∈ MonoidHom.ker χ := by
+        refine Subgroup.list_prod_mem _ ?_
+        intro z hz
+        obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hz
+        exact MonoidHom.mem_ker.mpr (ht q hq)
+      have hsplit : (⟨_, hmem⟩ : MonoidHom.ker χ)
+          = ⟨f a, MonoidHom.mem_ker.mpr ha⟩ * ⟨_, hmt⟩ := by
+        ext
+        simp
+      rw [hsplit, map_mul, hd a ha, ih ht hmt]
+      simp
+
+/-- **THE ARTIN SYMBOL OF `H'/K` AS A `ZMod nn`-VALUED CHARACTER ON IDEALS**
+(E3c support leaf (ii-a-1-i-B-2-a-ii-α-1-A); SORRY LEAF, cut 2026-07-29 out of
+`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar` below along the
+TRANSPORT / CONSTRUCTION axis).
+
+This leaf carries items **1, 2 and 3** of the four genuinely-open items that the
+leaf below records as standing between it and `ModThree.lean`'s reciprocity:
+
+1. *Transport.* `ker χ` is `Γ_{ℚ(μ_p)}` — by `hχcyc`, `χ` is the mod-`p`
+   cyclotomic character, so `g ∈ ker χ` iff `g` fixes `μ_p` pointwise (the
+   composite `ℤ_[p] → kk'` kills `p` and is injective on `ℤ_[p]/p = 𝔽_p`,
+   because `kk'` is a field of characteristic `p`). Along `ι` that identifies
+   `Field.absoluteGaloisGroup CF` with `ker χ`, and `χ'` is `ψ` transported
+   across it. This is the plumbing, not the mathematics.
+2. *The ideal symbol at ALL primes.* `c` is the multiplicative extension of
+   `w ↦ χ' (globalFrob w)` from the height-one primes of `𝓞 CF` to the whole
+   monoid `(Ideal (𝓞 CF))⁰`, by unique factorisation of ideals in a Dedekind
+   domain. **`hcfrob` must pin `c` at EVERY prime, not only at the degree-one
+   primes in the image of `frobIdeal`** — a principal ideal can involve
+   higher-degree primes, at which a `c` pinned only on the image of `frobIdeal`
+   would be junk, and the reciprocity leaf below would then be FALSE of it. That
+   is the trap recorded on the consumer, and it is the reason the two clauses
+   `hcfrob` (all primes, through `χ'`) and the `frobIdeal` compatibility (the
+   degree-one primes, through `ψ`) are BOTH present here: neither implies the
+   other.
+3. *`hunr` from `hNinert`.* `hNinert` is unramifiedness measured by inertia
+   subgroups inside `Γℚ`; the conclusion's clause is the same content measured
+   by inertia inside `Γ CF`. Same content, different group, and the transport of
+   1. is what converts it.
+
+**Why the compatibility clause is what pins the existential.** `χ' = 1`, `c = 1`
+satisfies openness, unramifiedness and `hcfrob` vacuously; it fails the last
+clause exactly when `ψ` is nontrivial on some Frobenius conjugate. So the leaf
+is not dischargeable by a junk witness.
+
+**Why the compatibility clause is TRUE**, which is the only non-plumbing
+content here: `hfrob` says `g · Frob_v · g⁻¹` restricts to an arithmetic
+Frobenius at a prime `Q` of a finite normal `M ⊇ ι(CF)` lying over
+`frobIdeal g v`, i.e. `g · Frob_v · g⁻¹` IS a Frobenius element at the prime
+`frobIdeal g v` of `𝓞 CF`, as is `globalFrob` of that prime. Two Frobenius
+elements at the same prime `w` of a number field differ by an element of the
+inertia subgroup at `w` times a conjugation by the decomposition group; `χ'`
+kills inertia (`hunr`, from `hNinert`) and factors through an ABELIAN quotient
+of `Γ CF` (from `hNab`: `N` contains every commutator of `ker χ`), and
+conjugation by `Γ CF` is trivial on any abelian quotient of `Γ CF`. Hence
+`χ' (globalFrob w) = ψ (g · Frob_v · g⁻¹)`, which is the clause.
+
+Note that `hfrob`'s conjugation is by `g ∈ Γℚ`, which need NOT be in `Γ CF` —
+but that is harmless, because the clause never compares two DIFFERENT `g`'s: it
+compares one conjugate with `globalFrob` of the prime it is a Frobenius at, and
+`hfrob` supplies exactly that.
+
+`nn` is arbitrary here — nothing in the construction needs it to be a prime
+power. The prime-power restriction lives entirely on the reciprocity leaf
+below, where it is what makes `ModThree.lean`'s `hℓ3 : ℓ ≠ 3` dichotomy
+expressible. -/
+theorem exists_zmodIdealSymbol_of_frobIdeal
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (nn : ℕ) (ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod nn))
+    (hψN : ∀ y : (MonoidHom.ker χ),
+      (y : Field.absoluteGaloisGroup ℚ) ∈ N → ψ y = 1)
+    (hψker : ∀ y : (MonoidHom.ker χ),
+      ψ y = 1 → (y : Field.absoluteGaloisGroup ℚ) ∈ N) :
+    ∃ (χ' : Field.absoluteGaloisGroup CF →* Multiplicative (ZMod nn))
+      (c : (Ideal (𝓞 CF))⁰ →* Multiplicative (ZMod nn)),
+      IsOpen ((MonoidHom.ker χ' : Subgroup (Field.absoluteGaloisGroup CF)) :
+        Set (Field.absoluteGaloisGroup CF)) ∧
+      (∀ (w : IsDedekindDomain.HeightOneSpectrum (𝓞 CF))
+          (σ : Field.absoluteGaloisGroup CF)
+          (n : Field.absoluteGaloisGroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion CF w)),
+        n ∈ localInertiaGroup w →
+        χ' (σ * Field.absoluteGaloisGroup.map (algebraMap CF
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion CF w)) n * σ⁻¹) = 1) ∧
+      (∀ (w : IsDedekindDomain.HeightOneSpectrum (𝓞 CF))
+          (hw : w.asIdeal ∈ (Ideal (𝓞 CF))⁰),
+        c ⟨w.asIdeal, hw⟩ = χ' (GaloisRepresentation.globalFrob w)) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ))
+          (h : χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1),
+        c (frobIdeal g v) = ψ ⟨_, MonoidHom.mem_ker.mpr h⟩) :=
+  sorry
+
+/-- **ARTIN RECIPROCITY FOR `ℚ(μ_p)`: an everywhere-unramified `ZMod (ll ^ nk)`
+symbol on ideals KILLS THE PRINCIPAL CLASS** (E3c support leaf
+(ii-a-1-i-B-2-a-ii-α-1-B); SORRY LEAF, cut 2026-07-29 out of
+`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar` below along the
+TRANSPORT / CONSTRUCTION axis — this half is the RECIPROCITY LAW, and carries
+item **4** of the four items recorded there plus the citation itself).
+
+Given a character `χ'` of `Γ CF` with OPEN kernel (`hχ'open`), trivial on every
+conjugate of every local inertia group (`hunr`), and the ideal symbol `c`
+attached to it at EVERY height-one prime (`hcfrob`), every ideal in the
+PRINCIPAL class is killed by `c`.
+
+**`[IsCyclotomicExtension {p} ℚ CF]` IS LOAD-BEARING — without it the statement
+is FALSE, and the witness is small.** Take `F = ℚ(√3)`. Then `h_F = 1` but the
+NARROW class group is `ℤ/2` (PARI/GP: `bnfinit(x^2-3,1).cyc = []`,
+`bnrinit(F,[1,[1,1]],1).cyc = [2]`), so the narrow Hilbert class field `H⁺/F` is
+a quadratic extension unramified at every FINITE place and ramified only at the
+two real places. Its Artin character `χ'` (values in `ZMod 2`, `ll = 2`,
+`nk = 1`) satisfies `hχ'open` and `hunr` — inertia at finite places is trivial —
+and its ideal symbol `c` sends the PRINCIPAL ideal `(√3)` to `−1 ≠ 1`, because
+`√3` is not totally positive. So "unramified at all finite places" does not by
+itself give reciprocity: what is needed is that the WIDE and NARROW class groups
+agree, i.e. that the total-positivity condition of the classical statement is
+vacuous.
+
+For `CF` cyclotomic of prime conductor `p` that is exactly what happens, in both
+cases of `p`:
+
+* `p` odd: `CF = ℚ(μ_p)` is TOTALLY IMAGINARY (`Φ_p` has no real root for
+  `p ≥ 3`), so `CF →+* ℝ` is EMPTY, there are no real places to ramify at, and
+  narrow `=` wide.
+* `p = 2`: `CF = ℚ(μ_2) = ℚ`, whose narrow class group is trivial as well
+  (every abelian extension of `ℚ` is cyclotomic, hence ramified at some finite
+  prime unless trivial), so `χ' = 1`, `c = 1` and the conclusion is immediate.
+
+Since `hpodd` is NOT among this file's included section variables at this point,
+the `p = 2` case really is reachable and a proof must dispatch it; it is the
+easier of the two.
+
+**ROUTE — and the point of the prime-power cut.** `ModThree.lean`'s
+`exists_conductor_artinSymbol_span_eq_one_ray_class` is precisely this theorem
+with the value group `Dickson.K 3` and the modulus left existential. It is
+usable HERE for `ll ≠ 3` and only for `ll ≠ 3`:
+
+* `Dickson.K 3` IS `AlgebraicClosure (ZMod 3)` (`Fermat/FLT/KnownIn1980s/PGL2/`
+  `Basic.lean`, `noncomputable abbrev K : Type := AlgebraicClosure (ZMod p)`),
+  i.e. `𝔽̄₃`, an ALGEBRAICALLY CLOSED field. So `X ^ (ll ^ nk) − 1` is separable
+  over `𝔽₃` and splits, `μ_{ll^nk}(𝔽̄₃)` is cyclic of order exactly `ll ^ nk`,
+  and there is an INJECTIVE `Multiplicative (ZMod (ll ^ nk)) →* (Dickson.K 3)ˣ`.
+  Compose to get the `Dickson.K 3`-valued data that chain consumes; injectivity
+  is what transports its conclusion back.
+* At `ll = 3` there is no such embedding: in characteristic `3` the hypothesis
+  `hord : ∀ a, χ a ^ (3 ^ nk) = 1` forces `χ ≡ 1`, and the `hℓ3 : ℓ ≠ 3` carried
+  through some thirty of that cluster's signatures is exactly this constraint,
+  not an artefact. **So the honest statement is: `ModThree.lean` is a complete
+  route for the prime-to-`3` part as it stands, and only the `3`-part needs its
+  value group generalised** (to any field containing `μ_{3^k}`). No edit to
+  `ModThree.lean` is needed for `ll ≠ 3`; the request to its owners is only for
+  `ll = 3`.
+* Item **4**, `mm = ⊤`: that chain returns a modulus `mm ≠ ⊥` together with
+  `∀ w, w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ' w`. Under `hunr` no place
+  is `IsRamifiedCharRayClass`, so no height-one prime divides `mm`; a nonzero
+  ideal of a Dedekind domain divisible by no height-one prime is `⊤`, and the
+  congruence `δ − 1 ∈ mm` is then vacuous. Elementary, but it has to be written.
+
+**CAVEAT, and it must be stated with the citation or the citation misleads.**
+`exists_conductor_artinSymbol_span_eq_one_ray_class` has a sorry-FREE body but is
+TRANSITIVELY sorried: as of 2026-07-28 its own cluster still has open leaves,
+among them `exists_artinDivisorNormIndex_le_ray_class`,
+`exists_artinNormSubgroups_ramified_ray_class`,
+`exists_prime_narrowRayEquiv_divisor_ray_class`,
+`exists_relNormDivisorHom_ray_class` and the two `exists_badPrimes_*_ray_class`.
+Citing it RELOCATES the debt onto those; it does not close it. Do not record
+"ModThree closes this".
+
+**The check that would refute it**: exhibit `ll`, `nk`, `χ'` and a principal
+`I` with `c I ≠ 1`. By the argument above that is a failure of Artin reciprocity
+for a finite cyclic extension of `ℚ(μ_p)` unramified at every place. -/
+theorem zmodIdealSymbol_eq_one_of_mk0_eq_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ll : ℕ) (hll : ll.Prime) (nk : ℕ)
+    (χ' : Field.absoluteGaloisGroup CF →* Multiplicative (ZMod (ll ^ nk)))
+    (hχ'open : IsOpen ((MonoidHom.ker χ' : Subgroup (Field.absoluteGaloisGroup CF)) :
+      Set (Field.absoluteGaloisGroup CF)))
+    (hunr : ∀ (w : IsDedekindDomain.HeightOneSpectrum (𝓞 CF))
+        (σ : Field.absoluteGaloisGroup CF)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion CF w)),
+      n ∈ localInertiaGroup w →
+      χ' (σ * Field.absoluteGaloisGroup.map (algebraMap CF
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion CF w)) n * σ⁻¹) = 1)
+    (c : (Ideal (𝓞 CF))⁰ →* Multiplicative (ZMod (ll ^ nk)))
+    (hcfrob : ∀ (w : IsDedekindDomain.HeightOneSpectrum (𝓞 CF))
+        (hw : w.asIdeal ∈ (Ideal (𝓞 CF))⁰),
+      c ⟨w.asIdeal, hw⟩ = χ' (GaloisRepresentation.globalFrob w))
+    (I : (Ideal (𝓞 CF))⁰) (hI : ClassGroup.mk0 I = 1) :
+    c I = 1 :=
+  sorry
+
 /-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT OF PRIME-POWER
-ORDER** (E3c support leaf (ii-a-1-i-B-2-a-ii-α-1); SORRY LEAF, cut 2026-07-28
+ORDER** (E3c support leaf (ii-a-1-i-B-2-a-ii-α-1); PROVEN 2026-07-29 as glue
+over the two leaves immediately above — `exists_zmodIdealSymbol_of_frobIdeal`
+(transport + construction of the ideal symbol) and
+`zmodIdealSymbol_eq_one_of_mk0_eq_one` (the reciprocity law proper). Cut
+2026-07-28
 out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar` below
 along the CHINESE-REMAINDER axis, and the entire arithmetic content of that
 node and hence of the two nodes above it).
 
 Word for word the leaf below, except that the modulus `nn` is a PRIME POWER
-`ll ^ nk`. The reduction is `zmod_eq_zero_of_forall_primePow_cast` just above
-applied to the value `ψ x` of the character at the product; nothing
-arithmetic happens in it.
+`ll ^ nk`.
+
+**THE PROOF, 2026-07-29 — a three-line computation once the symbol exists.**
+`exists_zmodIdealSymbol_of_frobIdeal` above supplies a character `χ'` of
+`Γ CF` and its ideal symbol `c : (Ideal (𝓞 CF))⁰ →* Multiplicative (ZMod
+(ll ^ nk))`, pinned at EVERY height-one prime by `χ'` and compatible with `ψ`
+on the Frobenius conjugates. Then, with `x` the product of the `g · Frob_v ·
+g⁻¹` (which lies in `ker χ` because every factor does, by `hL`),
+
+    ψ x = ∏_{q ∈ L} ψ (q.1 · Frob_{q.2} · q.1⁻¹)      (`ker_list_prod_map_eq`)
+        = ∏_{q ∈ L} c (frobIdeal q.1 q.2)              (compatibility)
+        = c (∏_{q ∈ L} frobIdeal q.1 q.2)              (`c` is a `MonoidHom`)
+        = 1                                            (`hprin` + reciprocity)
+
+and `hψker` converts `ψ x = 1` into `x ∈ N`. The first step is the abstract
+lemma `ker_list_prod_map_eq` above rather than an inline induction, for the
+elaboration reason recorded there and on
+`mem_of_forall_primePowChar_pullback_mem`; the third is `MonoidHom.map_list_prod`,
+which is available precisely because `c` is stated as a monoid homomorphism on
+the nonzero-divisor SUBMONOID `(Ideal (𝓞 CF))⁰` rather than as a bare
+multiplicative-on-nonzero-ideals function (that choice removes every
+`I ≠ ⊥` side condition from the glue, and `frobIdeal` already lands there).
+
+`hll` is used only by `zmodIdealSymbol_eq_one_of_mk0_eq_one`; the CONSTRUCTION
+half is uniform in the modulus, and is therefore stated at a general `nn`.
 
 **WHY THIS SHAPE AND NOT THE GENERAL ONE — this is the whole point of the
 cut, and it CORRECTS a standing obstruction note.** Every docstring in this
@@ -40575,6 +40863,16 @@ that and this leaf, and each is a separate, nameable piece of work:
    content, different group.
 4. *`mm = ⊤`.* An ideal that is nonzero and divisible by no height-one prime
    is `⊤`; elementary, but it has to be written.
+
+**WHERE THOSE FOUR NOW LIVE (2026-07-29).** Items 1, 2 and 3 are the content
+of `exists_zmodIdealSymbol_of_frobIdeal` above; item 4, together with the
+citation itself and the `ll ≠ 3` / `ll = 3` dichotomy, is the content of
+`zmodIdealSymbol_eq_one_of_mk0_eq_one` above. This node itself is now pure
+glue and holds no arithmetic. The trap in item 2 is honoured by the SHAPE of
+the cut: the construction leaf pins `c` at every height-one prime through
+`χ'`, and the reciprocity leaf consumes exactly that clause — a version
+pinning `c` only on the image of `frobIdeal` would make the reciprocity leaf
+false, which is why the two clauses are separate and both present.
 
 **And one caveat that must be stated with the correction, or the correction
 is itself misleading.** `exists_conductor_artinSymbol_span_eq_one_ray_class`
@@ -40652,15 +40950,46 @@ theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar
       IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
     (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
     (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
-    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
-  sorry
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N := by
+  classical
+  obtain ⟨χ', c, hχ'open, hunr, hcfrob, hcompat⟩ :=
+    exists_zmodIdealSymbol_of_frobIdeal (p := p) χ hχcyc CF ι frobIdeal hfrob
+      N hNopen hNker hNinert hNab (ll ^ nk) ψ hψN hψker
+  -- the product of the Frobenius conjugates lies in `ker χ`, every factor being
+  -- there by `hL`.  **`⟨_, hmem⟩` below, NEVER `⟨(L.map …).prod, hmem⟩`**: inside
+  -- this file re-spelling that product at the subtype's expected type diverges —
+  -- see the elaboration paragraph on `…_of_cyclicChar` below.
+  have hmem : (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod
+      ∈ MonoidHom.ker χ := by
+    refine Subgroup.list_prod_mem _ ?_
+    intro z hz
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hz
+    exact MonoidHom.mem_ker.mpr (hL q hq)
+  refine hψker ⟨_, hmem⟩ ?_
+  have hstep := ker_list_prod_map_eq χ ψ
+    (fun q : Field.absoluteGaloisGroup ℚ ×
+        IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) =>
+      q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)
+    (fun q => c (frobIdeal q.1 q.2))
+    (fun q h => (hcompat q.1 q.2 h).symm) L hL hmem
+  have hprod : (L.map (fun q => c (frobIdeal q.1 q.2))).prod
+      = c ((L.map (fun q => frobIdeal q.1 q.2)).prod) := by
+    rw [MonoidHom.map_list_prod, List.map_map]
+    rfl
+  rw [hstep, hprod]
+  exact zmodIdealSymbol_eq_one_of_mk0_eq_one (p := p) CF ll hll nk χ' hχ'open hunr c
+    hcfrob _ hprin
 
 /-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT — the CHARACTER
 form** (E3c support leaf (ii-a-1-i-B-2-a-ii-α); cut 2026-07-28
 out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` below along the
 PONTRYAGIN-DUALITY axis; **PROVEN 2026-07-28** over the prime-power leaf
 `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar` above,
-which now carries the entire arithmetic content of this node).
+which carried the entire arithmetic content of this node until 2026-07-29,
+when that node was itself proven as glue and the arithmetic moved down one
+more level, to `exists_zmodIdealSymbol_of_frobIdeal` (construction of the
+ideal symbol) and `zmodIdealSymbol_eq_one_of_mk0_eq_one` (the reciprocity
+law) above it).
 
 Word for word the leaf below, except that `N` is additionally presented as
 the KERNEL OF A CHARACTER: a homomorphism
@@ -40912,6 +41241,18 @@ load-bearing in ~30 signatures, and (2) CHARACTER-valued, so recovering the
 `Gal(H/K)`-valued symbol from it is Pontryagin duality over the class group,
 which exists nowhere in this tree. Do not edit `ModThree.lean` from here; the
 generalization must be requested from that file's owners.
+
+**BOTH HALVES OF THAT PARAGRAPH ARE NOW STALE (corrected 2026-07-29).**
+Obstruction (2) was discharged on 2026-07-28 by `mem_of_forall_char_pullback_mem`
+(see the next paragraph, which was written then). Obstruction (1) is
+OVERSTATED: `Dickson.K 3` is `AlgebraicClosure (ZMod 3)`
+(`Fermat/FLT/KnownIn1980s/PGL2/Basic.lean`), i.e. `𝔽̄₃`, which already contains
+`μ_n` for every `n` prime to `3` — so that chain is usable AS IT STANDS for the
+prime-to-`3` part, and no request to `ModThree.lean`'s owners is needed for
+`ℓ ≠ 3`. Only the `3`-part needs a value-group generalisation. The full
+statement, with the four items that genuinely remain and the caveat that the
+chain is itself transitively sorried, is on
+`zmodIdealSymbol_eq_one_of_mk0_eq_one` above.
 
 **THE CUT, 2026-07-28 — obstruction (2) above is now DISCHARGED, and this
 node is PROVEN over one leaf.** What is proved here is the classical
