@@ -412,7 +412,81 @@ in fact pins `φ` completely. Nothing weaker is needed here.
 
 **The check that would refute it**: an everywhere-unramified `L/K`, a
 homomorphism `φ` satisfying `hφ`, and a nonzero `I ⊆ 𝓞 L` with
-`φ [N_{L/K} I] ≠ 1`. -/
+`φ [N_{L/K} I] ≠ 1`.
+
+**SCAFFOLD FOR STEP 3, WRITTEN AND COMPILER-VERIFIED 2026-07-29 against this
+module's import cone, then NOT committed** — it has no consumer while this leaf
+is open, and free-floating code is not allowed here. Paste it back in as part of
+the proof. Each of the four compiles as written (whole file, 10 s):
+
+```
+theorem aut_eq_of_smul_eq {σ τ : L ≃ₐ[K] L} (h : ∀ x : 𝓞 L, σ • x = τ • x) : σ = τ := by
+  ext y
+  obtain ⟨a, b, hb, rfl⟩ := IsFractionRing.div_surjective (A := 𝓞 L) y
+  have ha : σ (algebraMap (𝓞 L) L a) = τ (algebraMap (𝓞 L) L a) :=
+    congrArg (algebraMap (𝓞 L) L) (h a)
+  have hb' : σ (algebraMap (𝓞 L) L b) = τ (algebraMap (𝓞 L) L b) :=
+    congrArg (algebraMap (𝓞 L) L) (h b)
+  rw [map_div₀, map_div₀, ha, hb']
+
+theorem cardQuot_pow (Q : Ideal (𝓞 L)) [Q.IsMaximal] [(Q.under (𝓞 K)).IsMaximal]
+    [Q.LiesOver (Q.under (𝓞 K))] :
+    Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ Q.inertiaDeg (𝓞 K) = Nat.card (𝓞 L ⧸ Q) := by
+  rw [← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
+  exact Ideal.cardQuot_pow_inertiaDeg _ _
+
+set_option maxHeartbeats 2000000 in
+theorem pow_card_sub_mem (Q : Ideal (𝓞 L)) [Q.IsMaximal] (hQ : Q ≠ ⊥) (x : 𝓞 L) :
+    x ^ (Nat.card (𝓞 L ⧸ Q)) - x ∈ Q := by
+  haveI : Finite (𝓞 L ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQ
+  haveI : IsDomain (𝓞 L ⧸ Q) := Ideal.Quotient.isDomain Q
+  letI : Field (𝓞 L ⧸ Q) := (Finite.isField_of_domain (𝓞 L ⧸ Q)).toField
+  cases nonempty_fintype (𝓞 L ⧸ Q)
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, sub_eq_zero, Nat.card_eq_fintype_card]
+  exact FiniteField.pow_card (Ideal.Quotient.mk Q x)
+
+theorem iterate_frob [IsGalois K L] (Q : Ideal (𝓞 L)) [Q.IsPrime] (σ : L ≃ₐ[K] L)
+    (hσ : IsArithFrobAt (𝓞 K) σ Q) (n : ℕ) (x : 𝓞 L) :
+    (σ ^ n) • x - x ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
+  have hstab : σ • Q = Q := hσ.mem_stabilizer
+  have hmem : ∀ y ∈ Q, σ • y ∈ Q := by
+    intro y hy
+    rw [← hstab]
+    exact Ideal.smul_mem_pointwise_smul _ _ _ hy
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have h2 : σ • ((σ ^ n) • x) - (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q := by
+      have := hmem _ ih
+      rwa [smul_sub, smul_pow'] at this
+    have h3 : (σ • x) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) -
+        (x ^ Nat.card (𝓞 K ⧸ Q.under (𝓞 K))) ^ (Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) ^ n) ∈ Q :=
+      Ideal.mem_of_dvd _ (sub_dvd_pow_sub_pow _ _ _) (hσ x)
+    have := Q.add_mem h2 h3
+    rw [pow_succ', mul_smul]
+    rw [← pow_mul, ← pow_succ'] at this
+    simpa using this
+```
+
+`iterate_frob` at `n = f` plus `cardQuot_pow` plus `pow_card_sub_mem` gives
+`σ ^ f • x - x ∈ Q` for every `x`; hence `σ ^ (f+1)` is ALSO an
+`IsArithFrobAt` witness at `Q`, so `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`
+(mathlib, and the ONLY place `hunr` enters) gives
+`MulSemiringAction.toAlgHom _ _ (σ ^ (f+1)) = MulSemiringAction.toAlgHom _ _ σ`,
+and `aut_eq_of_smul_eq` turns that into `σ ^ (f+1) = σ`, i.e. `σ ^ f = 1`.
+Requires `open scoped Pointwise` for `σ • Q`.
+
+**⚠ A DEFEQ TRAP THAT COSTS AN HOUR IF YOU MEET IT COLD.** In
+`pow_card_sub_mem` the `Field (𝓞 L ⧸ Q)` instance MUST be built as
+`(Finite.isField_of_domain _).toField`, NOT as mathlib's
+`Ideal.Quotient.field Q`. With the latter, `FiniteField.pow_card` is stated
+with `Field.toSemifield.toDivisionSemiring.toGroupWithZero.toMonoid` while the
+`^` produced by `map_pow` through `Ideal.Quotient.mk` carries
+`(Ideal.Quotient.semiring Q).toMonoid`, and the two are **not** defeq: `exact`
+fails at 2 000 000 heartbeats, and `convert … using n` peels
+`instHPow → NPow.toPow → …` forever until `whnf` times out.
+`IsField.toField` reuses the existing ring structure and the mismatch
+disappears. -/
 theorem apply_classGroupMk0_relNorm_eq_one [IsGalois K L]
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
       Algebra.IsUnramifiedAt (𝓞 K) Q)
