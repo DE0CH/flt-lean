@@ -51,7 +51,10 @@ covering collection.  Each namespace now reads top-down:
     exists_isPlaceOfPt            LEAF: the evaluation place of a rational point
       → exists_placeData          PROVEN: assembled, with pt_injective proven
     exists_degreeMap              LEAF: the degree map and deg (div g) = 0
-    sub_single_pt_notMem_princ    LEAF: genus ≥ 1, i.e. (Q)−(P) is not principal
+    exists_ratFunc_of_singlePolePt   LEAF: a single simple pole at a rational point
+                                     makes F = K(g)  (degree theory)
+    no_sextic_sq_of_purelyTranscendental  LEAF: K(t) carries no y² = f(x)  (genus)
+      → sub_single_pt_notMem_princ PROVEN: (Q)−(P) is not principal
       → aj_injective_of_separable PROVEN: assembled
     exists_reductionFiltration    LEAF: red together with the formal-group filtration
       → exists_reduction          PROVEN: torsion-freeness from the filtration
@@ -104,18 +107,27 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
   kernel of reduction is torsion-free; hence the kernel is trivial; hence `aj`
   injective plus the compatibility square makes `redPt` injective.
 
-**The remaining leaves are the eight listed in the tree above** (amended 2026-07-28, when
-the three generic obligations were themselves decomposed; the earlier amendment of
-2026-07-27 decomposed and PROVED `exists_jacobianPackage`).  Six of them —
-`exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`, `exists_degreeMap`,
-`sub_single_pt_notMem_princ`, `exists_reductionFiltration` — are generic in the sextic and
-the prime, so ONE genus-`2` divisor-theory development closes them for both levels at once;
-only `X18.finite_pic` and `X13.finite_pic`, which are Mordell–Weil together with
-`rank J(ℚ) = 0`, are specific to the curves.  (The count rose from five to eight while
-`exists_placeData`, `aj_injective_of_separable` and `exists_reduction` all became PROVEN:
-that is decomposition, and with it the two arguments that used to be sketched only in prose
-— `pt_injective` from the valuation axioms, and torsion-freeness from a formal-group
-filtration — are now machine-checked.)  Read the
+**The remaining leaves are ELEVEN, and the tree above is the authority** (amended
+2026-07-28; the count here was recorded as "eight" earlier the same day and was already
+stale by two when checked against the compiler, `X18.finite_pic` and `X13.finite_pic`
+having become PROVEN and been replaced by three leaves — `exists_descentHeight_pic`,
+`finite_quotient_psmul_pic`, and one `two_divisible_pic` per level).  **Do not trust this
+number either: regenerate it from `lake build`'s `declaration uses 'sorry'` warning set**,
+which is what these figures were finally checked against.
+
+NINE of the eleven are generic in the sextic and the prime, so ONE genus-`2` divisor-theory
+development closes them for both levels at once: `exists_functionFieldData`,
+`exists_placeSystem`, `exists_isPlaceOfPt` (obligation 1); `exists_degreeMap`,
+`exists_ratFunc_of_singlePolePt`, `no_sextic_sq_of_purelyTranscendental` (obligation 2);
+`exists_reductionFiltration` (obligation 3); `exists_descentHeight_pic` and
+`finite_quotient_psmul_pic` (Mordell–Weil).  Only `X18.two_divisible_pic` and
+`X13.two_divisible_pic` — `rank J(ℚ) = 0`, in the form `J(ℚ) = 2·J(ℚ)` — are specific to
+the curves.  (The count rose from five while `exists_placeData`,
+`aj_injective_of_separable`, `exists_reduction`, both `finite_pic` and
+`sub_single_pt_notMem_princ` all became PROVEN: that is decomposition and DISCLOSURE, not
+regression, and with it four arguments that used to be sketched only in prose —
+`pt_injective` from the valuation axioms, torsion-freeness from a formal-group filtration,
+the descent theorem, and `div` being a homomorphism — are now machine-checked.)  Read the
 `finite_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
 `0` sharp at both levels, `J(ℚ)_tors ≅ ℤ/21` and `ℤ/19`, `#J(𝔽₅) = 21`,
 `#J(𝔽₃) = #J(𝔽₅) = 19`, `Chabauty0` returning exactly six points at each level) and the
@@ -514,7 +526,7 @@ discharge:
 | obligation | statement | status |
 |---|---|---|
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
-| 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
+| 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap` and `sub_single_pt_notMem_princ`, the latter itself PROVEN later the same day from `exists_ratFunc_of_singlePolePt` and `no_sextic_sq_of_purelyTranscendental` |
 | 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration` |
 | 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | LEAF |
 
@@ -1101,21 +1113,188 @@ theorem exists_degreeMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field
     ∃ deg : D.Places → ℤ, (∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K, deg (D.pt P) = 1) ∧
       (∀ g : D.F, degHom D deg (D.divisor g) = 0) := sorry
 
-/-- **LEAF (obligation 2b): the genus is at least one.**
+/-!
+### Obligation 2b DECOMPOSED (2026-07-28): `div` is a homomorphism, degree theory, genus
 
-`(Q) − (P)` is not a principal divisor for `P ≠ Q`: a function with a single simple pole
-would be an isomorphism to `ℙ¹`, and a smooth model of a separable monic sextic has genus
-`2`.  This is where separability is indispensable — for `f = g²` the curve is rational and
-the conclusion is false.
+`sub_single_pt_notMem_princ` was a single leaf carrying three separable pieces of work.
+It is now a PROVEN assembly, and the three pieces are:
 
-Membership in `princ` (the subgroup GENERATED by the divisors of functions) is the same as
-being the divisor of a function, since `div` is multiplicative; stating the leaf as a
-non-membership avoids having to prove that identification here. -/
+1. **bookkeeping, PROVEN below** — membership in `princ` is the same as *being* `div g` for
+   a single nonzero `g`.  `princ` is defined as the subgroup GENERATED by the divisors, so
+   this is not definitional; it is `divisor_mul` plus `divisor_inv`, both of which are
+   `ord_mul` in disguise.  Both leaves below want one `g`, so this has to come first.
+2. **degree theory** — `exists_ratFunc_of_singlePolePt`: a function whose pole divisor is
+   one simple RATIONAL point generates the whole function field.  This is
+   `[F : K(g)] = deg (g)_∞` [Stichtenoth, *Algebraic Function Fields and Codes*, Thm 1.4.11]
+   at `deg (g)_∞ = 1`.
+3. **genus** — `no_sextic_sq_of_purelyTranscendental`: a rational function field carries no
+   square root of a separable monic sextic of a transcendental element.  This is the only
+   place separability and `2 ≠ 0` are used, and it is the whole mathematical content.
+
+The cut runs between 2 and 3 because they fail for different reasons and are refuted by
+different objects: 2 is about the DEGREE of the map to `ℙ¹`, 3 about the GENUS of the
+source.
+-/
+
+namespace PlaceData
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- `ord v 1 = 0` (PROVEN): `1` is a nonzero constant. -/
+lemma ord_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) : D.ord v 1 = 0 := by
+  simpa using D.ord_algebraMap v 1 one_ne_zero
+
+/-- The coefficient of `div g` at a place, for `g ≠ 0` (PROVEN): it is `ord v g`, the
+`if`-guard and the `Finsupp.onFinset` wrapper both being transparent here. -/
+lemma divisor_apply (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : g ≠ 0)
+    (v : D.Places) : D.divisor g v = D.ord v g := by
+  classical
+  rw [PlaceData.divisor, dif_neg hg]
+  simp
+
+/-- `div 0 = 0` (PROVEN) — the junk value, recorded so that `mem_princ_iff` can discard it
+without unfolding the definition again. -/
+lemma divisor_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 0 = 0 := by
+  classical
+  rw [PlaceData.divisor, dif_pos rfl]
+
+/-- `div 1 = 0` (PROVEN). -/
+lemma divisor_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.divisor 1 = 0 := by
+  ext v
+  rw [divisor_apply D one_ne_zero v, ord_one D v]
+  simp
+
+/-- **`div` is a homomorphism on `F ˣ`** (PROVEN, from `ord_mul`). -/
+lemma divisor_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g h : D.F} (hg : g ≠ 0) (hh : h ≠ 0) :
+    D.divisor (g * h) = D.divisor g + D.divisor h := by
+  ext v
+  rw [divisor_apply D (mul_ne_zero hg hh) v, Finsupp.add_apply, divisor_apply D hg v,
+    divisor_apply D hh v, D.ord_mul v g h hg hh]
+
+/-- `div g⁻¹ = − div g` (PROVEN). -/
+lemma divisor_inv (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : g ≠ 0) :
+    D.divisor g⁻¹ = - D.divisor g := by
+  ext v
+  have h := D.ord_mul v g⁻¹ g (inv_ne_zero hg) hg
+  rw [inv_mul_cancel₀ hg, ord_one D v] at h
+  rw [divisor_apply D (inv_ne_zero hg) v, Finsupp.neg_apply, divisor_apply D hg v]
+  omega
+
+/-- **A divisor is principal exactly when it IS the divisor of a nonzero function**
+(PROVEN).
+
+`princ` is the subgroup GENERATED by the divisors — that definition needs no proof to be
+well posed, which is why it was chosen — so this is a theorem and not a definition unfolded.
+It holds because the image of `div` is already a subgroup: `divisor_one` gives `0`,
+`divisor_mul` closure under addition, `divisor_inv` closure under negation, and the junk
+value `div 0 = 0` is absorbed by `div 1 = 0`. -/
+lemma mem_princ_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (z : D.Divisors) :
+    z ∈ D.princ ↔ ∃ g : D.F, g ≠ 0 ∧ D.divisor g = z := by
+  constructor
+  · intro hz
+    refine AddSubgroup.closure_induction ?_ ?_ ?_ ?_ hz
+    · rintro _ ⟨g, rfl⟩
+      by_cases hg : g = 0
+      · exact ⟨1, one_ne_zero, by rw [divisor_one D, hg, divisor_zero D]⟩
+      · exact ⟨g, hg, rfl⟩
+    · exact ⟨1, one_ne_zero, divisor_one D⟩
+    · rintro a b _ _ ⟨g, hg, rfl⟩ ⟨h, hh, rfl⟩
+      exact ⟨g * h, mul_ne_zero hg hh, divisor_mul D hg hh⟩
+    · rintro a _ ⟨g, hg, rfl⟩
+      exact ⟨g⁻¹, inv_ne_zero hg, divisor_inv D hg⟩
+  · rintro ⟨g, _, rfl⟩
+    exact AddSubgroup.subset_closure ⟨g, rfl⟩
+
+end PlaceData
+
+/-- **LEAF (obligation 2b-i): a function with a single simple pole at a RATIONAL point
+generates the function field.**
+
+If `div g = (Q) − (P)` for two distinct rational points, then `g` is transcendental over `K`
+and every element of `F` is a rational function of `g` — i.e. `F = K(g)`, so the map
+`g : X → ℙ¹` is an isomorphism.  This is `[F : K(g)] = deg (g)_∞` [Stichtenoth, Thm 1.4.11]
+specialised to a pole divisor of degree `1`; no separability and no genus enter.
+
+**`P`, `Q` MUST BE RATIONAL POINTS — the same statement over arbitrary places is FALSE**,
+and this is the trap that a "generic in the places" rewrite of this leaf falls into.  For
+two places `v ≠ w` of DEGREE `2` the conclusion fails: take `g = (x − b)/(x − a)` with
+`f(a)` and `f(b)` both non-squares in `K`, so that the fibres of `x` over `a` and over `b`
+are each a single inert place `w_a ≠ w_b` of degree `2`.  Then `div g = (w_b) − (w_a)`, of
+degree `2 − 2 = 0` exactly as required, while `[F : K(g)] = deg (g)_∞ = 2` and `F ≠ K(g)`
+— `g` is a Möbius function of `x`, and the map it defines is the hyperelliptic double cover,
+not an isomorphism.  Over `ℚ` both sextics of this file admit such `a`, `b`.  What rules
+this out here is `D.pt`: a `K`-rational point has residue field `K`, hence degree `1`, which
+is exactly the hypothesis `exists_degreeMap` also records as `deg (D.pt P) = 1`.
+
+`hPQ` is load-bearing only through `hdiv`: at `P = Q` the divisor is `0` and `g` may be a
+constant, for which the conclusion is false. -/
+theorem exists_ratFunc_of_singlePolePt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q)
+    {g : D.F} (hg : g ≠ 0)
+    (hdiv : D.divisor g = Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ)) :
+    Transcendental K g ∧
+      ∀ z : D.F, ∃ a b : K[X], aeval g b ≠ 0 ∧ z * aeval g b = aeval g a := sorry
+
+/-- **LEAF (obligation 2b-ii): a RATIONAL function field carries no square root of a
+separable monic sextic — the genus, and the whole mathematical content of obligation 2b.**
+
+`F = K(t)` with `t` transcendental has genus `0`; `y² = f(x)` with `f` a separable monic
+sextic and `x` transcendental defines a subfield of genus `2`, and by Lüroth every subfield
+of `K(t)` properly containing `K` is itself rational, so there is no room for it.  Stated
+with NO `PlaceData` in sight on purpose: it is a statement about polynomials and rational
+functions alone, so it can be attacked (and reused) without the divisor theory.
+
+**Both side conditions are load-bearing, with explicit counterexamples.**
+
+* `hsep`.  For `f = h²` the curve is rational: `y = h(x)` is a solution over `K(x)` itself,
+  so drop separability and the statement is false at `t = x`, `y = h(x)`.
+* `h2`.  **This leaf is FALSE in characteristic `2`, and that is not a degenerate corner**:
+  over a perfect field of characteristic `2` write `f = A(x)² + x·B(x)²` by splitting `f`
+  into even and odd parts (possible since squaring is onto).  Then `y² = f(x)` gives
+  `(y + A(x))² = x·B(x)²`, so `x = s²` for `s = (y + A(x))/B(x)`, and `K(x, y) = K(s)` is
+  RATIONAL.  Concretely over `𝔽₂` take `f = x⁶ + x + 1`, which is separable there
+  (`f' = 1`): with `s² = x + 1` one gets `x = s² + 1` and `y = s + (s² + 1)³`, a genuine
+  solution inside `𝔽₂(s)`.  So `h2` cannot be dropped, and it is also why the consumer
+  below now carries it.
+* `hx`.  For `x ∈ K` the equation `y² = f(x)` is solvable whenever `f(x)` is a square in
+  `K` — e.g. `x = 0`, `y = 1` for both sextics of this file, whose constant term is `1`.
+
+`hrat` says exactly `F = K(t)`; the conclusion needs `x` and `y` only to LIE in `F`, not to
+generate it, which is what makes Lüroth rather than a direct computation the route. -/
+theorem no_sextic_sq_of_purelyTranscendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K F : Type} [Field K]
+    [Field F] [Algebra K F] (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    (h2 : (2 : K) ≠ 0) {t : F} (ht : Transcendental K t)
+    (hrat : ∀ z : F, ∃ a b : K[X], aeval t b ≠ 0 ∧ z * aeval t b = aeval t a)
+    {x y : F} (hx : Transcendental K x) : y ^ 2 ≠ sext c₀ c₁ c₂ c₃ c₄ c₅ x := sorry
+
+/-- **Obligation 2b: the genus is at least one** — a LEAF until 2026-07-28, now PROVEN from
+`PlaceData.mem_princ_iff`, `exists_ratFunc_of_singlePolePt` and
+`no_sextic_sq_of_purelyTranscendental`.
+
+`(Q) − (P)` is not a principal divisor for `P ≠ Q`: it would be `div g` for a single `g`
+(that is `mem_princ_iff`, `princ` being the subgroup GENERATED by the divisors), such a `g`
+has one simple pole at a rational point and therefore makes `F` rational, and a rational
+function field admits no `y² = f(x)` with `f` a separable monic sextic and `x`
+transcendental.
+
+**`h2 : (2 : K) ≠ 0` is NEW (2026-07-28) and is not decoration.**  In characteristic `2`
+the statement is still true, but only VACUOUSLY and for a reason that has nothing to do with
+the genus: the two points at infinity of a monic sextic collide (`1 = −1`, so `ord_pt_infinite`
+imposes the SAME condition on both branches), no injective `pt` exists, and
+`PlaceData c₀ … K` is EMPTY — which is exactly why `exists_placeData` has carried `h2` all
+along.  Resting the leaf on that emptiness would have made the char-`2` case of the genus
+sub-leaf false as stated (see the counterexample `y² = x⁶ + x + 1` over `𝔽₂` recorded
+there), so the hypothesis is taken here instead, where every consumer has it for free:
+both call sites are at `K = ℚ`. -/
 theorem sub_single_pt_notMem_princ {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
     {P Q : Pt c₀ c₁ c₂ c₃ c₄ c₅ K} (hPQ : P ≠ Q) :
-    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := sorry
+    Finsupp.single (D.pt Q) (1 : ℤ) - Finsupp.single (D.pt P) (1 : ℤ) ∉ D.princ := by
+  intro hmem
+  obtain ⟨g, hg, hgdiv⟩ := (D.mem_princ_iff _).mp hmem
+  obtain ⟨htr, hrat⟩ := exists_ratFunc_of_singlePolePt D hPQ hg hgdiv
+  exact no_sextic_sq_of_purelyTranscendental hsep h2 htr hrat D.transcendental_xx D.eqn
 
 /-- **LEAF (obligation 2), now PROVEN from `exists_degreeMap` and
 `sub_single_pt_notMem_princ`.**
@@ -1124,10 +1303,15 @@ theorem sub_single_pt_notMem_princ {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Ty
 `y` principal.  Apply the degree: the left side has degree `1 − 1 = 0`, `y` has degree `0`
 because the degree map kills every `div g` and hence the subgroup they generate, and
 `n·[∞₊]` has degree `n`.  So `n = 0`, `(P) − (Q)` is principal, and the genus leaf forbids
-that unless `P = Q`. -/
+that unless `P = Q`.
+
+`h2 : (2 : K) ≠ 0` arrived on 2026-07-28 with the decomposition of the genus leaf; it is
+passed straight through and is free at both call sites, which are at `K = ℚ`.  See
+`sub_single_pt_notMem_princ` for why the hypothesis sits there rather than being derived
+from the emptiness of `PlaceData` in characteristic `2`. -/
 theorem aj_injective_of_separable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
     Function.Injective D.aj := by
   intro P Q hPQ
   by_contra hne
@@ -1161,7 +1345,7 @@ theorem aj_injective_of_separable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Typ
     rw [map_add, hker y hy, zero_add, hL, hR] at this
     exact this
   rw [hn0, zero_smul, add_zero] at hsum
-  exact sub_single_pt_notMem_princ D hsep (Ne.symm hne) (hsum ▸ hy)
+  exact sub_single_pt_notMem_princ D hsep h2 (Ne.symm hne) (hsum ▸ hy)
 
 /-!
 ### Obligation 3: good reduction — the reduction homomorphism, its compatibility
@@ -1617,7 +1801,40 @@ procedure returning a provably complete `C(ℚ)`, and it involves no covering co
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1` overturns this leaf
 outright; `RankBound(J)` returning a positive lower bound, or `TorsionSubgroup(J)` of even
 order, overturns it as well; a seventh point from `Chabauty0` overturns the conclusion
-downstream. -/
+downstream.
+
+## INDEPENDENT RE-CHECK, 2026-07-28, in PARI/GP rather than Magma
+
+Every arithmetic claim above that is not the rank was re-derived with a second, different
+CAS — worth doing because all four earlier runs were the same program:
+
+    ? f = x^6 - 4*x^5 + 10*x^4 - 10*x^3 + 5*x^2 - 2*x + 1;
+    ? factor(f)                          \\ irreducible of degree 6
+    ? factor(poldisc(f))                 \\ [-1, 1; 2, 15; 3, 4]  =  −2¹⁵·3⁴
+    ? hyperellcharpoly(Mod(1,5)*f)       \\ T⁴ − 5T² + 25
+    ? subst(hyperellcharpoly(Mod(1,5)*f), x, 1)      \\ 21  =  #J(𝔽₅)
+
+so `#J(𝔽₅) = 21` and, from the vanishing `T³` coefficient, `#X(𝔽₅) = 5 + 1 − 0 = 6`,
+agreeing with `card_X18_F5` — which is itself kernel-checked by `decide`, so the two
+independent routes to the point count now agree.  Since `J(ℚ)_tors` injects into `J(𝔽₅)`
+at the good prime `5`, TORSION IS ODD is not merely a Magma output: it follows from
+`#J(𝔽₅) = 21`.  **What no CAS check here establishes is `rank = 0`**; that rests on
+`TwoSelmerGroup` (Magma, under GRH class-group bounds) and, independently, on
+`L(f, 1) ≠ 0` with Kolyvagin–Logachev.  So the leaf is TRUE-as-stated with the rank as the
+single unverified-here input, and the statement is not vacuous.
+
+## A RE-CUT INTO "TORSION + NO `2`-TORSION" WAS CONSIDERED AND REJECTED (2026-07-28)
+
+The tempting decomposition is `Pic` is torsion (rank `0`) together with `J(ℚ)[2] = 0`
+(immediate from `f` irreducible of degree `6`, or from `#J(𝔽₅)` odd through
+`exists_reduction`'s torsion-free kernel); the two do give `Pic = 2·Pic`, and the assembly
+is three lines.  **Do not take it.**  The conjunction is STRICTLY STRONGER than this leaf —
+`ℚ` is `2`-divisible and not torsion — so the cut trades one leaf for two harder ones and
+buys nothing.  That is the same reason the section docstring gives for preferring
+`Pic = 2·Pic` over "`Pic` is torsion", and it survives the addition of the `J(ℚ)[2] = 0`
+factor.  The honest decomposition here remains the `2`-descent itself, and the trap in
+stating it is recorded on route 1 below: for an EVEN-degree model the descent map lands in
+`L*/L*²·ℚ*`, not `L*/L*²`, so a leaf written with the odd-degree formula would be false. -/
 theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
@@ -1733,6 +1950,7 @@ theorem exists_jacobianPackage :
            addCommGroup' := inferInstance
            aj := D.aj
            aj_injective := aj_injective_of_separable D (separable_sextPoly (by norm_num))
+             (by norm_num)
            aj' := D'.aj
            red := red
            red_ker_torsionFree := hker
@@ -2046,7 +2264,25 @@ through the zeta numerator: `hyperellcharpoly(Mod(1,3)*f) = T⁴ + 2T³ + T² + 
 
 Refuting checks: `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f))) ≠ 1`; a positive lower
 bound from `RankBound(J)`; a torsion subgroup other than `ℤ/19`;
-`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`. -/
+`#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from `Chabauty0`.
+
+## INDEPENDENT RE-CHECK, 2026-07-28, in PARI/GP rather than Magma
+
+    ? f = x^6 + 2*x^5 + x^4 + 2*x^3 + 6*x^2 + 4*x + 1;
+    ? factor(f)                          \\ irreducible of degree 6
+    ? factor(poldisc(f))                 \\ [-1, 1; 2, 12; 13, 2]  =  −2¹²·13²
+    ? hyperellcharpoly(Mod(1,3)*f)       \\ T⁴ + 2T³ + T² + 6T + 9
+    ? subst(hyperellcharpoly(Mod(1,3)*f), x, 1)      \\ 19  =  #J(𝔽₃)
+    ? subst(hyperellcharpoly(Mod(1,5)*f), x, 1)      \\ 19  =  #J(𝔽₅)  (charpoly T⁴ − 7T² + 25)
+
+reproducing `#J(𝔽₃) = #J(𝔽₅) = 19` at two independent good primes, and `#X(𝔽₃) =
+3 + 1 − (−2) = 6`, which agrees with the `decide`-checked `card_X13_F3`.  Torsion therefore
+injects into a group of order `19` and is ODD without appeal to any CAS's torsion routine.
+As at level `18`, **`rank = 0` is the one input no check here reaches**.
+
+The re-cut into "`Pic` is torsion" plus "`J(ℚ)[2] = 0"` was considered and REJECTED for
+both levels; the reason — the conjunction is strictly stronger than `Pic = 2·Pic`, so it is
+two harder leaves for one — is written out on `X18.two_divisible_pic`. -/
 theorem two_divisible_pic (D : PlaceData 1 4 6 2 1 2 ℚ) (z : D.Pic) :
     ∃ w : D.Pic, z = 2 • w := sorry
 
@@ -2140,6 +2376,7 @@ theorem exists_jacobianPackage :
            addCommGroup' := inferInstance
            aj := D.aj
            aj_injective := aj_injective_of_separable D (separable_sextPoly (by norm_num))
+             (by norm_num)
            aj' := D'.aj
            red := red
            red_ker_torsionFree := hker
