@@ -58772,41 +58772,138 @@ Tate module of rank `2g` over `ℤ_p` with no `𝒪`-structure assumed, and
 that development does not exist here yet.
 -/
 
+/-- **HECKE DUALITY, IN DIMENSIONS: `dim_ℚ 𝕋_ℚ = dim_ℂ S₂(Γ₀(M))`**
+(PROVEN 2026-07-29 by the NINETEENTH decomposition) — the second of the
+two classical identities that
+`smoothOfRelativeDimension_jacobian_x0` below is composed of, and the
+only one of them that is not already a leaf elsewhere in the tree.
+
+Classically this is the perfect `q`-expansion pairing
+`𝕋 × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)` (Diamond–Shurman §5.5, §5.8).
+**Nothing new is needed for it here**: both inequalities are already
+available in this file, and they use DIFFERENT vectors, which is why no
+"same vector is simultaneously cyclic and free" statement is required.
+
+* `dim_ℂ S₂ ≤ dim_ℚ 𝕋_ℚ`. `exists_heckeRealC_apply` (PROVEN) gives a
+  CYCLIC vector `f₀`, i.e. `a ↦ heckeRealC M a f₀` is surjective onto
+  `S₂`; a surjection cannot raise dimension.
+* `dim_ℚ 𝕋_ℚ ≤ dim_ℂ S₂`. `exists_frobeniusForm_modularHeckeAlgebraC`
+  (PROVEN) makes `ℂ ⊗_ℚ 𝕋_ℚ` a commutative Frobenius `ℂ`-algebra and
+  `heckeRealC_injective` (PROVEN) makes `S₂` a FAITHFUL module over it,
+  so `exists_freeElement_of_frobenius`
+  (`Modularity/HeckeFrameForm.lean`, PROVEN) produces a FREE vector `v`
+  — one with `ann(v) = 0` — and `a ↦ heckeRealC M a v` is injective.
+
+The base change is what makes the two sides comparable at all:
+`Module.finrank_baseChange` gives
+`dim_ℂ (ℂ ⊗_ℚ 𝕋_ℚ) = dim_ℚ 𝕋_ℚ`, so both inequalities are between the
+same two numbers and `omega` closes it.
+
+**THE FULL HECKE ALGEBRA IS LOAD-BEARING**, and this is where that shows
+up rather than in the geometry. `modularHeckeAlgebraQ M` is
+`Algebra.adjoin ℚ {heckeOp M q | q prime}` over EVERY prime, `U_q` for
+`q ∣ M` included; the ANEMIC algebra (primes `q ∤ M` only) has strictly
+smaller dimension as soon as `M` is not squarefree, and BOTH steps above
+fail for it — `exists_heckeCyclicVector`'s block generators are the
+degeneracy translates `V_d f`, which are separated precisely by the bad
+`U_q`. A successor must not "simplify" the generating set.
+
+`M = 1` is honest rather than vacuous: `S₂(Γ₀(1)) = 0`, so
+`End_ℂ S₂ = 0`, `𝕋_ℚ = 0` and both sides are `0`. The proof does not
+case-split on it. -/
+theorem finrank_modularHeckeAlgebraQ_eq_finrank_cuspForm {M : ℕ} (hM : 0 < M) :
+    Module.finrank ℚ ↥(modularHeckeAlgebraQ M)
+      = Module.finrank ℂ (CuspForm (Gamma0GL M) 2) := by
+  classical
+  haveI hfd : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  haveI hSfd : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  haveI hAfd : FiniteDimensional ℂ (ℂ ⊗[ℚ] ↥(modularHeckeAlgebraQ M)) :=
+    Module.Finite.of_basis
+      ((Module.finBasis ℚ ↥(modularHeckeAlgebraQ M)).baseChange ℂ)
+  have hAn : Module.finrank ℂ (ℂ ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      = Module.finrank ℚ ↥(modularHeckeAlgebraQ M) :=
+    Module.finrank_baseChange
+  have hle1 : Module.finrank ℂ (CuspForm (Gamma0GL M) 2)
+      ≤ Module.finrank ℚ ↥(modularHeckeAlgebraQ M) := by
+    obtain ⟨f₀, hf₀⟩ := exists_heckeRealC_apply hM
+    have hsurj : Function.Surjective
+        ((LinearMap.applyₗ (R := ℂ) f₀).comp (heckeRealC M).toLinearMap) := by
+      intro f
+      obtain ⟨a, ha⟩ := hf₀ f
+      refine ⟨a, ?_⟩
+      simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.applyₗ_apply_apply,
+        AlgHom.toLinearMap_apply]
+      exact ha
+    have hb := LinearMap.finrank_le_finrank_of_surjective hsurj
+    rw [hAn] at hb
+    exact hb
+  have hle2 : Module.finrank ℚ ↥(modularHeckeAlgebraQ M)
+      ≤ Module.finrank ℂ (CuspForm (Gamma0GL M) 2) := by
+    obtain ⟨Θ, hΘ⟩ := exists_frobeniusForm_modularHeckeAlgebraC hM
+    have hcomm : ∀ x y : ℂ ⊗[ℚ] ↥(modularHeckeAlgebraQ M), x * y = y * x :=
+      mul_comm_tensor fun a b =>
+        Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)
+    obtain ⟨v, hv⟩ := exists_freeElement_of_frobenius hcomm Θ hΘ
+      (heckeRealC M) (heckeRealC_injective hM)
+    have hinj : Function.Injective
+        ((LinearMap.applyₗ (R := ℂ) v).comp (heckeRealC M).toLinearMap) := by
+      rw [injective_iff_map_eq_zero]
+      intro a ha
+      simp only [LinearMap.coe_comp, Function.comp_apply, LinearMap.applyₗ_apply_apply,
+        AlgHom.toLinearMap_apply] at ha
+      exact hv a ha
+    have hb := LinearMap.finrank_le_finrank_of_injective hinj
+    rw [hAn] at hb
+    exact hb
+  omega
+
 section ModularJacobianGeometry
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry
 
-/-- **THE RELATIVE DIMENSION OF `J₀(M)` IS `dim_ℚ 𝕋_ℚ`** (sorry leaf,
-opened by the EIGHTEENTH decomposition 2026-07-28): the Jacobian of
-`X₀(M)` is smooth over `Spec ℚ` of relative dimension
-`dim_ℚ (modularHeckeAlgebraQ M)`.
+/-- **THE RELATIVE DIMENSION OF `J₀(M)` IS `dim_ℚ 𝕋_ℚ`** (opened as a
+sorry leaf by the EIGHTEENTH decomposition 2026-07-28; **PROVEN
+2026-07-29 by the NINETEENTH**): the Jacobian of `X₀(M)` is smooth over
+`Spec ℚ` of relative dimension `dim_ℚ (modularHeckeAlgebraQ M)`.
 
 Two classical identities composed, neither of which involves `p`, Galois
-or Tate modules — which is why this is a separate leaf rather than a
+or Tate modules — which is why this was a separate leaf rather than a
 clause of the geometric one below:
 
-* `dim Jac X = genus X` for a smooth proper geometrically connected curve
-  over a field. `jac : IsJacobianOf strX ab o` pins `J` as the Albanese
-  of `X₀(M)` based at `o`, hence up to unique isomorphism, so the
-  dimension is determined by `h` and `jac` and the statement is about the
-  genuine `J₀(M)` rather than about an arbitrary abelian scheme;
-* `genus X₀(M) = dim_ℂ S₂(Γ₀(M)) = dim_ℚ 𝕋_ℚ`. The first equality is the
-  identification of weight-two cusp forms with holomorphic differentials
-  on `X₀(M)`; the second is the perfect pairing
-  `𝕋_ℚ × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)` (Diamond–Shurman §5.8).
+* `dim J₀(M) = dim_ℂ S₂(Γ₀(M))` — EICHLER–SHIMURA, over an arbitrary
+  base. **This is not open here and never was.** It is
+  `X0GenusOne.smoothOfRelativeDimension_finrank_cuspForm`
+  (`FreyCurve/MazurTorsion.lean`), an existing leaf with its own
+  atomicity audit, in a file this one already `public import`s (line
+  139). `jac : IsJacobianOf strX ab o` pins `J` as the Albanese of
+  `X₀(M)` based at `o`, so both statements are about the genuine
+  `J₀(M)`;
+* `dim_ℂ S₂(Γ₀(M)) = dim_ℚ 𝕋_ℚ` — the perfect `q`-expansion pairing
+  `𝕋_ℚ × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)` (Diamond–Shurman §5.8). This
+  is `finrank_modularHeckeAlgebraQ_eq_finrank_cuspForm` just above, and
+  it is now PROVEN out of material that was already in this file.
 
-**THE FULL HECKE ALGEBRA IS LOAD-BEARING.** `modularHeckeAlgebraQ M` is
-`Algebra.adjoin ℚ {heckeOp M q | q prime}` over EVERY prime, `U_q` for
-`q ∣ M` included. The perfect pairing above is a statement about that
-algebra; the ANEMIC algebra (primes `q ∤ M` only) has strictly smaller
-dimension as soon as `M` is not squarefree, and the leaf would then be
-FALSE. A successor must not "simplify" the generating set.
+**A STALE CLAIM CORRECTED (2026-07-29).** The previous version of this
+docstring listed the first identity as `dim Jac X = genus X` plus
+`genus X₀(M) = dim_ℂ S₂`, i.e. as content this leaf had to supply, and
+its "WHY NOT THROUGH `Fermat.x0Genus`" paragraph searched only the genus
+axis. It missed that the composite of those two — with no genus of a
+scheme mentioned anywhere, which is exactly why that route is the right
+one — is already stated and owned one import away. The check that would
+have caught it is a grep for the CONCLUSION SHAPE
+(`SmoothOfRelativeDimension` together with `IsJacobianOf`) rather than
+for `genus`. So this leaf never carried Eichler–Shimura; it carried
+Hecke duality, and that is what was proven.
 
-WHY NOT THROUGH `Fermat.x0Genus`. That definition (`ModularCurve/X0.lean`)
-records the genus as an integer computed from the level, and nothing in
-the tree connects it to either side of this identity — neither to the
-relative dimension of the Albanese nor to `dim_ℚ 𝕋_ℚ`. Routing through it
-would replace one leaf by two.
+WHY NOT THROUGH `Fermat.x0Genus` (unchanged, and still correct). That
+definition (`ModularCurve/X0.lean`) records the genus as an integer
+computed from the level, and nothing in the tree connects it to either
+side of this identity — neither to the relative dimension of the
+Albanese nor to `dim_ℚ 𝕋_ℚ`. Routing through it would replace one leaf
+by two. `X0GenusOne.smoothOfRelativeDimension_finrank_cuspForm` avoids
+it for the same reason.
 
 NON-VACUITY. `SmoothOfRelativeDimension n jstr` really does pin a number
 here: `J₀(M)` has a zero section, so it is nonempty, and a nonempty
@@ -58821,8 +58918,9 @@ theorem smoothOfRelativeDimension_jacobian_x0 {M : ℕ} (hM : 0 < M)
     {ab : _root_.Fermat.AbelianSchemeStruct jstr}
     {o : _root_.Fermat.RelPoint strX (𝟙 _root_.Fermat.SpecQ)}
     (jac : _root_.Fermat.IsJacobianOf strX ab o) :
-    SmoothOfRelativeDimension (Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) jstr :=
-  sorry
+    SmoothOfRelativeDimension (Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) jstr := by
+  rw [finrank_modularHeckeAlgebraQ_eq_finrank_cuspForm hM]
+  exact _root_.X0GenusOne.smoothOfRelativeDimension_finrank_cuspForm hM h jac
 
 /-- **THE `p`-ADIC REALISATION OF `J₀(M)`** (sorry leaf, opened by the
 EIGHTEENTH decomposition 2026-07-28): given `X₀(M)`, its Jacobian
@@ -58850,15 +58948,83 @@ WHAT IS STILL OPEN HERE, and it is exactly three classical theorems:
    `𝒪`-structure**: `exists_levelwiseTateFrame` in
    `Modularity/TateModule.lean` is the rank-two-over-`𝒪_D` statement and
    is item 7 — see the warning in the section note above.
+
+   **THE OBJECT TO STATE IT ON ALREADY EXISTS, and naming it is what
+   makes this leaf splittable at all** (found 2026-07-29). `TatePt`
+   (`Modularity/TateModule.lean`) is `lim_n A[Iⁿ](F̄)` for a
+   `Mult ab R` with `R = 𝒪_D`; it mentions no frame and no rank. Take
+   `D = ℚ`, so `R = NumberField.RingOfIntegers ℚ`, `I = p·R`, `π = p`,
+   and `TatePt m x I π` IS `T_p(J₀(M))`, PINNED to `ab` rather than
+   merely isomorphic to it. The one missing piece is
+   `m : Mult ab (NumberField.RingOfIntegers ℚ)`, and that is **pure
+   group theory, constructible for EVERY `AbelianSchemeStruct`**: `act`
+   is `zsmul` for `ab.addCommGroup`, `act_add`/`act_mul`/`act_one`/
+   `act_addPt` are the `zsmul` laws, and `pre_act` follows from
+   `pre_add` and `pre_zero` since `RelPoint.pre` is additive.
+
+   **WHY THIS MATTERS FOR THE CUT.** Without a pinned Tate module, the
+   three theorems below are three statements about the SAME
+   unconstructed object, and no sub-leaf that takes an ABSTRACT `Vp`
+   satisfying items 1 and 4 can carry item 6: Eichler–Shimura is FALSE
+   for an arbitrary faithful Hecke module of the right dimension, so
+   such a cut would manufacture a false leaf. That is why this leaf is
+   ATOMIC as it stands, and it is a statement about EXPRESSIBILITY, not
+   about difficulty. With `Mult ab 𝒪_ℚ` in hand it becomes expressible,
+   and the intended split is: (A) `TatePt` is free of rank `2g` over
+   `ℤ_p` with continuous `Γ_ℚ`-action; (B) the Weil pairing, via item 2
+   below; (C) the congruence relation on the `τ` of (A); plus glue that
+   base-changes `Fin (2g) → ℤ_[p]` to `ℚ̄_p` and transports five clauses.
+   A successor should build `Mult ab 𝒪_ℚ` FIRST — but note it must land
+   with a consumer, since a free-floating construction is not allowed
+   here.
 2. **The Weil pairing of the canonical principal polarization** of a
    Jacobian, twisted by Atkin–Lehner: `pair`, `pair_self`,
    `pair_nondeg`, `pair_hecke` (Rosati self-adjointness of `T_q` for the
    twisted pairing) and `pair_frob` (the multiplier is the cyclotomic
-   character, evaluated at `Frob_q` to give `q`). The WORKED PRECEDENT
-   for the multiplier clause is
-   `det_eq_cyclotomicCharacter_of_tateWeilPairing` in
-   `Modularity/TateModule.lean` (PROVEN) — that one IS reusable, since it
-   is about a polarization pairing and not about a rank-two frame.
+   character, evaluated at `Frob_q` to give `q`).
+
+   **CORRECTION (2026-07-29), and it reverses a claim this docstring and
+   the section note above both made.** The previous text named
+   `det_eq_cyclotomicCharacter_of_tateWeilPairing`
+   (`Modularity/TateModule.lean`, PROVEN) as the reusable precedent
+   "since it is about a polarization pairing and not about a rank-two
+   frame". **That is false as stated**: read its signature and it takes
+   `τ : GaloisRep F O (Fin 2 → O)` together with
+   `φ : (Fin 2 → O) → TatePt m x I π` and `hφbij : Function.Bijective φ`
+   — i.e. it ASSUMES the Tate module is free of rank two over `O`, which
+   is item 7 exactly. It cannot be applied to a `2g`-dimensional carrier
+   at all.
+
+   **What IS frame-free in that file, and is the route worth taking.**
+   Three declarations there mention no frame and no relative dimension,
+   and all admit `D = ℚ` (they need only `[NumberField D]`):
+   * `IsTateWeilPairing` (a DEFINITION, on `TatePt`) — its seven clauses
+     are `pair_self`, `pair_nondeg` (the unit clause), the multiplier
+     clause that is `pair_frob`, and biadditivity;
+   * `IsTateWeilSystem` — the LEVELWISE datum, on `A[I^k]`;
+   * `exists_tateWeilPairing_of_tateWeilSystem` (PROVEN) — passage to
+     the inverse limit, no `hdim`, no frame. Reusing this removes the
+     inverse-limit bookkeeping from this leaf's pairing obligation
+     entirely.
+
+   **The one blocker on that route, stated so it can be checked rather
+   than believed.** `exists_tateWeilSystem_of_mult` and, beneath it, the
+   sorry leaf `exists_qAdicWeilSystem_of_mult` both carry
+   `hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f`, which at
+   `D = ℚ` reads `SmoothOfRelativeDimension 1 jstr` — FALSE for `J₀(M)`
+   unless `dim_ℚ 𝕋_ℚ = 1`. So they are NOT usable here as they stand.
+   `exists_qAdicWeilSystem_of_mult`'s own faithfulness note says `hdim`
+   is there "to make the geometric fibre an abelian variety of dimension
+   `[D : ℚ]` with `𝒪_D` acting, hence `A[q^N]` free of rank two over
+   `𝒪_D/q^N` and the induced pairing perfect". At `D = ℚ` that reasoning
+   gives `A[q^N]` free of rank `2g` over `ℤ/q^N` with the pairing still
+   perfect, for every `g ≥ 1`. **HYPOTHESIS, not fact**: generalizing
+   that leaf's `hdim` to `SmoothOfRelativeDimension g f` for an
+   arbitrary `g` should be sound and would open the whole chain
+   `exists_qAdicWeilSystem_of_mult → exists_tateWeilSystem_of_mult →
+   exists_tateWeilPairing_of_tateWeilSystem` at `D = ℚ`. Anyone taking
+   it must re-audit the unit clause at `g = 0` and the `IsTotallyReal`
+   use (trivial at `D = ℚ`) before relying on it.
 3. **The Eichler–Shimura congruence relation** `T_q = F + q·F⁻¹` on
    `J₀(M)_{𝔽_q}` at `q ∤ Mp`, lifted to `Vp` as
    `τJ(Frob_q)² − T_q·τJ(Frob_q) + q = 0` (Igusa; Diamond–Shurman 8.6.1,
@@ -58990,15 +59156,33 @@ second time. The remaining leaf
 classical theorems that are left and for the route that must NOT be
 taken.
 
+**AND THE NINETEENTH (2026-07-29) CLOSED THE OTHER ONE.**
+`smoothOfRelativeDimension_jacobian_x0` is PROVEN: the Eichler–Shimura
+half of it was never open here — it is
+`X0GenusOne.smoothOfRelativeDimension_finrank_cuspForm` in
+`FreyCurve/MazurTorsion.lean`, which this file already `public import`s —
+and the remaining half, Hecke duality
+`dim_ℚ 𝕋_ℚ = dim_ℂ S₂(Γ₀(M))`, is
+`finrank_modularHeckeAlgebraQ_eq_finrank_cuspForm` above, proven out of
+`exists_heckeRealC_apply`, `exists_frobeniusForm_modularHeckeAlgebraC`
+and `exists_freeElement_of_frobenius`, all of which were already in this
+file's cone.
+
 THE ROUTE FROM HERE now lives on that leaf's docstring rather than here.
 The single correction worth repeating: `exists_levelwiseTateFrame`
 (`Modularity/TateModule.lean`, PROVEN, and in this file's import cone) is
 **not** the tool for `Vp`, because it produces a frame free of rank two
 over `𝒪_D` and that is item 7 — the very content the sixteenth cut moved
 out. The needed statement is a Tate module of rank `2g` over `ℤ_p` with
-no `𝒪`-structure. What IS reusable from that file is
-`det_eq_cyclotomicCharacter_of_tateWeilPairing`, which is about a
-polarization pairing and not about a frame.
+no `𝒪`-structure. What IS reusable from that file is **not**
+`det_eq_cyclotomicCharacter_of_tateWeilPairing` — that one takes a
+rank-two frame as a hypothesis, and the claim that it does not was
+corrected on 2026-07-29 — but the frame-free predicates
+`IsTateWeilPairing` / `IsTateWeilSystem` and the PROVEN limit passage
+`exists_tateWeilPairing_of_tateWeilSystem`. See item 2 of that leaf's
+docstring for the exact reading and for the one hypothesis
+(`hdim = [D : ℚ]`, further down the same chain) that blocks it at
+`D = ℚ`.
 
 NOTHING TO VENDOR (checked 2026-07-27): `~/cs/FLT` mentions a Jacobian
 only in `FLT/Assumptions/Mazur.lean` and has no Eichler–Shimura; mathlib
@@ -59305,7 +59489,13 @@ and this declaration is now GLUE.** The two leaves under it are
   `nonempty_modularTateCarrierData_of_jacobian`, with `X₀(M)`, `J₀(M)`
   and the Hecke correspondences SUPPLIED from `ModularCurve/X0.lean`
   rather than demanded, and with the relative-dimension count split off
-  as `smoothOfRelativeDimension_jacobian_x0`.)
+  as `smoothOfRelativeDimension_jacobian_x0`. The NINETEENTH, 2026-07-29,
+  PROVED that split-off count — over
+  `X0GenusOne.smoothOfRelativeDimension_finrank_cuspForm`, which was
+  already a leaf in `FreyCurve/MazurTorsion.lean`, and over the new
+  `finrank_modularHeckeAlgebraQ_eq_finrank_cuspForm` — so
+  `nonempty_modularTateCarrierData_of_jacobian` is the only sorry left
+  in this cluster.)
 * `exists_freeElement_of_frobenius` (`Modularity/HeckeFrameForm.lean`) —
   "a faithful module over a commutative Frobenius algebra contains a free
   rank-one submodule", which was the single deep input of the algebra
