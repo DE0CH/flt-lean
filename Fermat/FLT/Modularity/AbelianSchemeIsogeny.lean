@@ -1754,7 +1754,57 @@ over `Bₙ = B ⧸ Iⁿ` with `J = I·Bₙ` and the `Bₙ`-algebra `Aₙ = A ⧸
   `w - u = 0` by `_htor`.  Hence `z = 0`.
 
 So a prover who closes `lTensor_pow_subtype_injective` closes this one for a few
-dozen further lines, and the two should be dispatched together. -/
+dozen further lines, and the two should be dispatched together.
+
+**STATUS 2026-07-28: the sibling is now PROVEN and this route is SUPERSEDED.**
+`lTensor_pow_subtype_injective` above is closed, and so is
+`Module.Flat.of_flat_quotient_of_pow_eq_bot`, both over the new general induction
+`Module.Flat.NilpotentLocalCriterion.rTensor_subtype_injective_of_pow_smul_top_le`.
+So the route above is *available* — but it is no longer the cheapest one, and its
+expensive half (the third-isomorphism transport of `_hquot` up to `Bₙ = B ⧸ Iⁿ`, copied
+from `flat_quotientMap_pow_of_flat_quotientMap`) can be **skipped entirely**.
+
+**THE BETTER ROUTE, worked out 2026-07-28.  It never quotients the base ring.**
+
+Do not apply the nilpotent criterion over `Bₙ`.  Instead prove flatness directly from
+`Module.Flat.iff_rTensor_injective'` over `Bₙ`, and move every tensor product back down to
+the base `B` with ONE change-of-rings isomorphism, natural in its module argument:
+
+    `P ⊗[Bₙ] Aₙ ≅ P ⊗[B] A`  for every `Bₙ`-module `P`,
+
+which is `TensorProduct.AlgebraTensorModule.cancelBaseChange B Bₙ Bₙ P A` composed with
+`Algebra.TensorProduct.quotIdealMapEquivQuotTensor A (I ^ n) : Aₙ ≃ₐ[Bₙ] Bₙ ⊗[B] A`.  Both
+already exist in mathlib; this is exactly the pair used to prove
+`Module.Flat.NilpotentLocalCriterion.rTensor_injective_of_isTorsionBySet`, so copy that
+proof's shape (including its `TensorProduct.induction_on` naturality square).
+
+With that, an ideal `𝔡` of `Bₙ` is `𝔠 ⧸ Iⁿ` for a unique `𝔠 ⊇ Iⁿ`, and the goal becomes
+
+    `↥(𝔠 ⧸ Iⁿ) ⊗[B] A → (B ⧸ Iⁿ) ⊗[B] A`  injective.
+
+That is a four-term chase needing nothing but right-exactness (`_root_.rTensor_exact`) and
+the sibling leaf.  `Iⁿ ≤ 𝔠` gives surjections `↥𝔠 ↠ ↥(𝔠 ⧸ Iⁿ)` and `B ↠ B ⧸ Iⁿ`, both with
+kernel (the image of) `Iⁿ`.  Given `z` in the kernel of the displayed map, lift it to
+`w ∈ ↥𝔠 ⊗[B] A`; the image of `w` in `A` lies in `IⁿA`, which is the range of
+`Iⁿ ⊗[B] A → A`, so pick `u` there with the same image; then `w - u` dies in `A`, hence
+`w = u` because `rTensor A 𝔠.subtype` is injective (this is
+`rTensor_subtype_injective_of_pow_smul_top_le` at `F := B`, `K := 𝔠`, whose hypothesis
+`Iⁿ • ⊤ ≤ 𝔠` is exactly `Iⁿ ≤ 𝔠`); and `Iⁿ → 𝔠 → 𝔠 ⧸ Iⁿ` is zero, so `z = 0`.
+
+This is the same chase as
+`Module.Flat.NilpotentLocalCriterion.rTensor_subtype_injective_of_flat_presentation`, with
+`Iⁿ` in the role of `ker π`.
+
+**Also check before starting whether this leaf still has a consumer.**  Its only consumer
+is `lTensor_subtype_injective_of_pow_le` immediately below, and that declaration is now
+provable *directly* from the sibling's machinery, by the identical three lines that prove
+`lTensor_pow_subtype_injective` — `rw [LinearMap.lTensor_inj_iff_rTensor_inj]` then
+`rTensor_subtype_injective_of_pow_smul_top_le` at `F := B`, `K := 𝔠`, with
+`Iⁿ • ⊤ ≤ Iⁿ ≤ 𝔠`.  (NOT done here: that declaration is already proven and belongs to
+another owner's region, so rewriting it was out of scope for this task.)  If it is
+rewritten that way, THIS leaf loses its last consumer and becomes free-floating, and the
+right disposition is deletion rather than a proof.  That is a cut-level decision for the
+orchestrator, and it should be made BEFORE anyone is dispatched at the route above. -/
 theorem flat_quotientMap_pow_of_lTensor_pow {B A : Type u}
     [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
     (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
