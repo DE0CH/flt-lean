@@ -24199,7 +24199,73 @@ transitivity of `G` on `Spec S`'s connected components.  No such lemma is in the
 pin — `grep -rn "isRegularRing_of_isInvariant\|isDedekindDomain_of_isInvariant"
 Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` shows both existing ones
 demand `IsDedekindDomain S` — and writing one is a strictly larger job than this
-leaf.  If someone does write it, this leaf can be re-cut onto `A`. -/
+leaf.  If someone does write it, this leaf can be re-cut onto `A`.
+
+## CORRECTION to that audit (2026-07-28), checked against the pin
+
+Its CONCLUSION stands: the `ℚ` route does not transpose, because
+`Algebra.IsInvariant.isRegularRing_of_isInvariant` and
+`isDedekindDomain_of_isInvariant` both demand `[IsDedekindDomain S]` and
+`IsDomain A` is false over `𝔽_p` for exactly the reason given.  But three
+things it does not say change what the next owner should do, and the last one
+makes the job it calls "strictly larger than this leaf" considerably smaller.
+
+**1. `IsRegularRing` in the pin does NOT require a domain.**  It is
+`IsNoetherianRing` together with "the localization at every prime is regular
+local" (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), so the rigidified
+ring `A` — a finite PRODUCT of smooth affine curves over `𝔽_p` — is itself an
+`IsRegularRing` of Krull dimension one.  What fails over `𝔽_p` is therefore not
+"`A` is regular"; it is only the DOMAIN hypotheses of the invariants lemmas.
+The pin supplies exactly one source of `IsRegularRing`, the instance
+`[IsDedekindDomain R] : IsRegularRing R`, which is how the domain hypothesis
+propagates into a statement that does not need it.
+
+**2. The three conjuncts here are not equally blocked, and one is not blocked
+at all.**  `Algebra.FiniteType (ZMod p) B` is
+`Algebra.IsInvariant.finiteType_of_isInvariant`, whose hypotheses are
+`[IsNoetherianRing k]`, `[Algebra.FiniteType k S]` and injectivity of
+`algebraMap R S` — **no domain hypothesis anywhere**.  So that conjunct needs
+only `Algebra.FiniteType (ZMod p) A`, which the `𝔽_p` moduli leaf can supply
+directly.  "The route is unavailable" is true of `IsRegularRing` and of
+`ringKrullDim`, and false of `FiniteType`.
+
+**3. The transitivity input the audit demands is ALREADY an assumed input
+here**, so the missing lemma is smaller than it claims.  Transitivity of `G` on
+the components is what buys `IsDomain B`, and `IsDomain B` is the sibling leaf
+`isDomain_of_gamma0AtlasOver_zmod`.  With `[IsDomain R]` therefore available,
+what is left is to drop `[IsDomain S]` from three lemmas that already exist in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, keeping `[IsDomain R]`
+and replacing it by "`S` normal of dimension one":
+
+* `dimensionLEOne_of_isInvariant` uses `IsDomain S` ONLY to call
+  `Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain`.  The pin already
+  carries the domain-free lying-over theorem
+  `Ideal.exists_ideal_over_prime_of_isIntegral`
+  (`Mathlib/RingTheory/Ideal/GoingUp.lean`), whose only hypotheses are
+  `[Algebra.IsIntegral R S]`, `[IsPrime P]` and `I.comap (algebraMap R S) ≤ P`.
+  This is a substitution, not a new proof.
+* `ringKrullDim_eq_one_of_isInvariant` is the same substitution plus
+  `Ideal.IsIntegral.comap_lt_comap`, which is stated over
+  `[Algebra R A] [Algebra.IsIntegral R A]` with no domain hypothesis.
+* `isIntegrallyClosed_of_isInvariant` is the only one with real content.  Its
+  proof runs inside `Frac S`; for `S` a finite product it must run inside the
+  TOTAL QUOTIENT RING instead.  The argument itself survives verbatim: an
+  `x ∈ Frac B` integral over `B` is integral over `A`, hence lies in `A`
+  because `A` is integrally closed in its total quotient ring, and it is
+  `G`-fixed, hence lies in `A^G = B`.
+
+So the honest cost is three mathlib-facing lemmas over an existing file — two
+of them one-line substitutions — plus one modular leaf asserting that the
+`𝔽_p` rigidified ring `A` is a finite-type `𝔽_p`-algebra, normal, of Krull
+dimension one (the honest `𝔽_p` analogue of
+`exists_gamma0GITPresentation_dedekindModuli`, with `IsDedekindDomain`
+weakened to normal-of-dimension-one precisely because of the audit's
+counterexample).
+
+*The checks that would refute THIS correction*:
+`Algebra.IsInvariant.finiteType_of_isInvariant` acquiring a domain hypothesis;
+`IsRegularRing` in the pin turning out to extend `IsDomain`; or
+`Ideal.exists_ideal_over_prime_of_isIntegral` not resolving. -/
 theorem isRegularRing_coarseRing_of_gamma0AtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ)
     [Fact p.Prime] (_hpN : ¬ p ∣ N)
     (A : Gamma0AtlasOver N (Spec (CommRingCat.of (ZMod p)))) [IsAffine A.Y] :
