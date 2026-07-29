@@ -54452,6 +54452,73 @@ theorem locallyOfFinitePresentation_of_abelianSchemeStruct {A B : Scheme.{0}}
   haveI : LocallyOfFiniteType (u ≫ bf) := by rw [hu]; infer_instance
   exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian u bf
 
+/-- **THE UNDERLYING SPACE OF AN ABELIAN SCHEME OVER `ℚ` IS IRREDUCIBLE**
+(PROVEN 2026-07-29).
+
+Connected plus locally irreducible.  Both inputs were already in the tree
+and neither is in mathlib:
+
+* `GaloisRepresentation.Modularity.exists_isOpen_isIrreducible_of_smooth_over_field`
+  (`Fermat/FLT/Modularity/RegularStalks.lean`) gives every point of a scheme
+  smooth over a field an irreducible OPEN neighbourhood — through regular,
+  hence domain, stalks;
+* `irreducibleSpace_of_isOpen_isIrreducible_nhds`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) turns that,
+  over a connected space, into irreducibility.  Openness of the
+  neighbourhoods is load-bearing there — two lines crossing at the origin
+  refute the version with "irreducible subset".
+
+Connectedness is `mathlib`'s `GeometricallyConnected.connectedSpace_of_subsingleton`,
+applicable because `SpecQ` is a one-point space; `ConnectedSpace` extends
+`Nonempty`, so nonemptiness of `A` comes for free and no zero-section
+argument is needed. -/
+theorem irreducibleSpace_of_abelianSchemeStruct {A : Scheme.{0}} {af : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct af) : IrreducibleSpace A := by
+  haveI : GeometricallyConnected af := abA.connected
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton af
+  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
+    (fun z ↦ GaloisRepresentation.Modularity.exists_isOpen_isIrreducible_of_smooth_over_field
+      af abA.smooth z)
+
+/-- **AN ABELIAN SCHEME OVER `ℚ` IS INTEGRAL** (PROVEN 2026-07-29) —
+irreducible by the statement above, reduced by
+`isReduced_of_smooth_over_field`. -/
+theorem isIntegral_of_abelianSchemeStruct {A : Scheme.{0}} {af : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct af) : IsIntegral A := by
+  haveI := irreducibleSpace_of_abelianSchemeStruct abA
+  haveI : Smooth af := abA.smooth
+  haveI : IsReduced A := isReduced_of_smooth_over_field (K := ℚ) af
+  exact isIntegral_of_irreducibleSpace_of_isReduced A
+
+/-- **THE FUNCTION FIELD OF AN INTEGRAL `ℚ`-SCHEME HAS CHARACTERISTIC ZERO**
+(PROVEN 2026-07-29).
+
+The `ℚ`-algebra structure is the germ at the generic point of the global
+sections map of `bf`, read through `Scheme.ΓSpecIso`; a ring map out of a
+field is injective, and `RingHom.charZero_iff` transports `CharZero` along
+it. -/
+theorem charZero_functionField_of_specQ {B : Scheme.{0}} (bf : B ⟶ SpecQ) [IsIntegral B] :
+    CharZero B.functionField := by
+  let φ : CommRingCat.of ℚ ⟶ B.functionField :=
+    (Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv ≫ bf.appTop ≫
+      B.presheaf.germ ⊤ (genericPoint B) trivial
+  have hinj : Function.Injective φ.hom := (φ.hom : ℚ →+* B.functionField).injective
+  exact (RingHom.charZero_iff hinj).mp inferInstance
+
+/-- **A SURJECTIVE MORPHISM OF IRREDUCIBLE SCHEMES CARRIES THE GENERIC POINT
+TO THE GENERIC POINT** (PROVEN 2026-07-29) — i.e. surjective implies
+dominant in the strong, generic-point form that
+`nonempty_smoothLocus_of_genericPoint_map` consumes.
+
+`closure {u η_A} ⊇ u '' closure {η_A} = u '' univ = univ`, so `u η_A` is a
+generic point of `B`, and generic points are unique in a `T0` space. -/
+theorem genericPoint_map_of_surjective {A B : Scheme.{0}} (u : A ⟶ B)
+    [IrreducibleSpace A] [IrreducibleSpace B]
+    (hsurj : AlgebraicGeometry.Surjective u) : u (genericPoint A) = genericPoint B := by
+  refine IsGenericPoint.eq ?_ (genericPoint_spec B)
+  have h := (genericPoint_spec A).image (f := u.base) u.continuous
+  rwa [Set.image_univ, hsurj.1.range_eq, closure_univ] at h
+
 /-- **GENERIC SMOOTHNESS FOR A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES
 OVER `ℚ`** (sorry leaf, new 2026-07-28) — the first of the two halves of
 `flat_of_surjective_of_isAdditiveOn`.
@@ -54481,14 +54548,26 @@ smooth.  A prover has only to supply that lemma's four hypotheses from the
 
 **`_hsurj` is load-bearing**: without it the closed immersion of the zero
 section into a positive-dimensional abelian scheme is additive with an
-EMPTY smooth locus. -/
+EMPTY smooth locus.
+
+**`_hadd` IS NOT USED** (2026-07-29).  The proof below needs only that `A`
+and `B` are integral — which comes from `abA`/`abB` alone, through
+smoothness and geometric connectedness — and that `u` is dominant, which
+comes from `_hsurj`.  Additivity is genuinely load-bearing for
+`flat_of_surjective_of_isAdditiveOn`, but it enters through the OTHER
+half, `smoothLocus_eq_top_of_nonempty_of_isAdditiveOn`.  The hypothesis is
+kept (under its underscore name) so that the two halves have parallel
+signatures and the consumer needs no edit. -/
 theorem nonempty_smoothLocus_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
     {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
     (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
     (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u)
     [LocallyOfFinitePresentation u] :
-    (u.smoothLocus : Set A).Nonempty :=
-  sorry
+    (u.smoothLocus : Set A).Nonempty := by
+  haveI := isIntegral_of_abelianSchemeStruct abA
+  haveI := isIntegral_of_abelianSchemeStruct abB
+  haveI := charZero_functionField_of_specQ bf
+  exact nonempty_smoothLocus_of_genericPoint_map u (genericPoint_map_of_surjective u _hsurj)
 
 /-- **HOMOGENEITY: A NONEMPTY SMOOTH LOCUS OF AN ADDITIVE MORPHISM OF
 ABELIAN SCHEMES IS EVERYTHING** (sorry leaf, new 2026-07-28) — the second
