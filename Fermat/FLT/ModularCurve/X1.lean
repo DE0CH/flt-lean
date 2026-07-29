@@ -2729,6 +2729,54 @@ returning anything, or a mathlib lemma whose conclusion is
 `IsDomain (F ⊗[k] L)` and whose hypothesis mentions `algebraicClosure`.
 `Mathlib/FieldTheory/SeparablyGenerated.lean` is the handle for half 2.
 
+## HALF OF THIS LEAF IS NOW FREE — the residue is IRREDUCIBILITY alone
+
+**Added 2026-07-28, and each claim below was compiler-checked.**  Since
+`smoothInvariants_of_gamma1GITPresentation` (`Algebra.Smooth K B`) exists,
+the *reducedness* half of "regular extension" costs nothing:
+
+* `Algebra.Smooth.baseChange` (`Mathlib/RingTheory/Smooth/Basic.lean:574`)
+  is an INSTANCE, so `Algebra.Smooth K B` gives `Algebra.Smooth L (L ⊗[K] B)`
+  by typeclass search alone;
+* `Algebra.Smooth.isReduced_of_isField` (project, PROVEN) then gives
+  `IsReduced (L ⊗[K] B)`;
+* `isReduced_of_injective` along `Algebra.TensorProduct.comm` puts it in the
+  order the consumer uses.
+
+Verified 2026-07-28 as exactly this, `EXIT=0`:
+
+    example (K B : Type) [Field K] [CommRing B] [Algebra K B] [Algebra.Smooth K B]
+        (L : Type) [Field L] [Algebra K L] : IsReduced (TensorProduct K B L) := by
+      haveI : IsReduced (TensorProduct K L B) :=
+        Algebra.Smooth.isReduced_of_isField (R := L) (Field.toIsField L)
+      exact isReduced_of_injective (Algebra.TensorProduct.comm K B L).toRingHom
+        (Algebra.TensorProduct.comm K B L).injective
+
+So the genuinely modular content of THIS leaf is not "regular extension" but
+its *primary* half — `K` algebraically closed in `Frac B`, equivalently
+geometric IRREDUCIBILITY — which is the `det`-surjectivity of IV.5.5 and
+nothing else.  Separability, the other half of MacLane's criterion, is
+already paid for by smoothness.
+
+**And the pin supports that split**, which the "what is missing" note below
+did not know: mathlib has `IsGeometricallyReduced`
+(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`) and, at the
+scheme level, `GeometricallyIntegral` with the combining lemma
+`GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible`
+(`Mathlib/AlgebraicGeometry/Geometrically/Integral.lean:61`), plus
+`GeometricallyIntegral.eq_geometricallyReduced_inf_geometricallyIrreducible`.
+What is still absent is only the FIELD-THEORETIC packaging (`IsRegularExtension`
+/ `IsPrimaryExtension`, re-checked absent 2026-07-28), not the decomposition
+itself.
+
+*The recommended cut, for whoever takes this leaf*: replace it by
+geometric irreducibility of `Spec B` over `K` and derive the tensor-domain
+conclusion from that plus the reducedness above.  **Not done here** because
+it restates the leaf and would move the consumer
+`connectedSpace_tensorProduct_of_gamma1GITPresentation` at the same time,
+and this task's owner ran out of budget to re-verify that chain — it is
+recorded rather than half-done deliberately.
+
 The hypotheses are REQUIRED: at `N = 0` or at `char K ∣ N` the moduli
 problem is not representable by a nonempty smooth curve, and `Frac B` is
 then not a regular extension of `K` — indeed `_hB` itself fails. -/
