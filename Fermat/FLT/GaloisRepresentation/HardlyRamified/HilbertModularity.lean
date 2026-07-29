@@ -26371,7 +26371,17 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
-    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
+    -- (`flt-lean-277` added an `hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar` binder
+    -- here at the release-18 merge.  It is UNUSED: this theorem's proof passes only
+    -- `hirrF` to `exists_hilbertPatchedModule`, which takes no `hsplit`.  It was
+    -- withdrawn because `Modularity/KhareWintenberger.lean`'s four-theorem chain
+    -- `exists_heckeTraceAlgebra_of_congruentSeed` ->
+    -- `exists_classifyingHom_hilbertHeckeAlgebra` ->
+    -- `exists_classifyingHom_of_hilbertDeformationDatum` -> `..._of_splitTwo`
+    -- calls this theorem and has no `hsplit` in scope, so the binder broke a module
+    -- that neither branch edited.  277's threading genuinely stops at
+    -- `exists_hilbertPatchedModule`; whoever finishes it must carry `hsplit` through
+    -- that KhareWintenberger chain in the same edit.)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
     (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
@@ -26522,7 +26532,7 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     surjective_classifyingMap_hilbertHeckeDatum ℓ F hirrF 𝒟 𝒟T T e he h𝒟w h𝒟t ψ
       hψalg hψπ hψρ
   have hinj : Function.Injective ψ :=
-    injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F hw2 htr hgal hsplit hirrF 𝒟 𝒟T T e
+    injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e
       h𝒟w h𝒟t ψ hψalg hψπ hψρ
   -- (5) assemble: `R_F ≃ 𝒟T.R ≃ T.T`, and `𝒟` is the datum the conclusion wants.
   refine ⟨T, 𝒟, h𝒟w, h𝒟t, ⟨AlgEquiv.trans ?_ e⟩⟩
