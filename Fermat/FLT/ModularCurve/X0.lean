@@ -56796,6 +56796,73 @@ theorem locallyOfFinitePresentation_of_abelianSchemeStruct {A B : Scheme.{0}}
   haveI : LocallyOfFiniteType (u ≫ bf) := by rw [hu]; infer_instance
   exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian u bf
 
+/-- **THE UNDERLYING SPACE OF AN ABELIAN SCHEME OVER `ℚ` IS IRREDUCIBLE**
+(PROVEN 2026-07-29).
+
+Connected plus locally irreducible.  Both inputs were already in the tree
+and neither is in mathlib:
+
+* `GaloisRepresentation.Modularity.exists_isOpen_isIrreducible_of_smooth_over_field`
+  (`Fermat/FLT/Modularity/RegularStalks.lean`) gives every point of a scheme
+  smooth over a field an irreducible OPEN neighbourhood — through regular,
+  hence domain, stalks;
+* `irreducibleSpace_of_isOpen_isIrreducible_nhds`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) turns that,
+  over a connected space, into irreducibility.  Openness of the
+  neighbourhoods is load-bearing there — two lines crossing at the origin
+  refute the version with "irreducible subset".
+
+Connectedness is `mathlib`'s `GeometricallyConnected.connectedSpace_of_subsingleton`,
+applicable because `SpecQ` is a one-point space; `ConnectedSpace` extends
+`Nonempty`, so nonemptiness of `A` comes for free and no zero-section
+argument is needed. -/
+theorem irreducibleSpace_of_abelianSchemeStruct {A : Scheme.{0}} {af : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct af) : IrreducibleSpace A := by
+  haveI : GeometricallyConnected af := abA.connected
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton af
+  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
+    (fun z ↦ GaloisRepresentation.Modularity.exists_isOpen_isIrreducible_of_smooth_over_field
+      af abA.smooth z)
+
+/-- **AN ABELIAN SCHEME OVER `ℚ` IS INTEGRAL** (PROVEN 2026-07-29) —
+irreducible by the statement above, reduced by
+`isReduced_of_smooth_over_field`. -/
+theorem isIntegral_of_abelianSchemeStruct {A : Scheme.{0}} {af : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct af) : IsIntegral A := by
+  haveI := irreducibleSpace_of_abelianSchemeStruct abA
+  haveI : Smooth af := abA.smooth
+  haveI : IsReduced A := isReduced_of_smooth_over_field (K := ℚ) af
+  exact isIntegral_of_irreducibleSpace_of_isReduced A
+
+/-- **THE FUNCTION FIELD OF AN INTEGRAL `ℚ`-SCHEME HAS CHARACTERISTIC ZERO**
+(PROVEN 2026-07-29).
+
+The `ℚ`-algebra structure is the germ at the generic point of the global
+sections map of `bf`, read through `Scheme.ΓSpecIso`; a ring map out of a
+field is injective, and `RingHom.charZero_iff` transports `CharZero` along
+it. -/
+theorem charZero_functionField_of_specQ {B : Scheme.{0}} (bf : B ⟶ SpecQ) [IsIntegral B] :
+    CharZero B.functionField := by
+  let φ : CommRingCat.of ℚ ⟶ B.functionField :=
+    (Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv ≫ bf.appTop ≫
+      B.presheaf.germ ⊤ (genericPoint B) trivial
+  have hinj : Function.Injective φ.hom := (φ.hom : ℚ →+* B.functionField).injective
+  exact (RingHom.charZero_iff hinj).mp inferInstance
+
+/-- **A SURJECTIVE MORPHISM OF IRREDUCIBLE SCHEMES CARRIES THE GENERIC POINT
+TO THE GENERIC POINT** (PROVEN 2026-07-29) — i.e. surjective implies
+dominant in the strong, generic-point form that
+`nonempty_smoothLocus_of_genericPoint_map` consumes.
+
+`closure {u η_A} ⊇ u '' closure {η_A} = u '' univ = univ`, so `u η_A` is a
+generic point of `B`, and generic points are unique in a `T0` space. -/
+theorem genericPoint_map_of_surjective {A B : Scheme.{0}} (u : A ⟶ B)
+    [IrreducibleSpace A] [IrreducibleSpace B]
+    (hsurj : AlgebraicGeometry.Surjective u) : u (genericPoint A) = genericPoint B := by
+  refine IsGenericPoint.eq ?_ (genericPoint_spec B)
+  have h := (genericPoint_spec A).image (f := u.base) u.continuous
+  rwa [Set.image_univ, hsurj.1.range_eq, closure_univ] at h
+
 /-- **GENERIC SMOOTHNESS FOR A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES
 OVER `ℚ`** (sorry leaf, new 2026-07-28) — the first of the two halves of
 `flat_of_surjective_of_isAdditiveOn`.
@@ -56825,17 +56892,315 @@ smooth.  A prover has only to supply that lemma's four hypotheses from the
 
 **`_hsurj` is load-bearing**: without it the closed immersion of the zero
 section into a positive-dimensional abelian scheme is additive with an
-EMPTY smooth locus. -/
+EMPTY smooth locus.
+
+**`_hadd` IS NOT USED** (2026-07-29).  The proof below needs only that `A`
+and `B` are integral — which comes from `abA`/`abB` alone, through
+smoothness and geometric connectedness — and that `u` is dominant, which
+comes from `_hsurj`.  Additivity is genuinely load-bearing for
+`flat_of_surjective_of_isAdditiveOn`, but it enters through the OTHER
+half, `smoothLocus_eq_top_of_nonempty_of_isAdditiveOn`.  The hypothesis is
+kept (under its underscore name) so that the two halves have parallel
+signatures and the consumer needs no edit. -/
 theorem nonempty_smoothLocus_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
     {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
     (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
     (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u)
     [LocallyOfFinitePresentation u] :
-    (u.smoothLocus : Set A).Nonempty :=
+    (u.smoothLocus : Set A).Nonempty := by
+  haveI := isIntegral_of_abelianSchemeStruct abA
+  haveI := isIntegral_of_abelianSchemeStruct abB
+  haveI := charZero_functionField_of_specQ bf
+  exact nonempty_smoothLocus_of_genericPoint_map u (genericPoint_map_of_surjective u _hsurj)
+
+/-! ### The universal translation (`shearHom`) and the homogeneity cut
+
+Everything from here to `smoothLocus_eq_top_of_nonempty_of_isAdditiveOn` was
+written on 2026-07-29 to cut that leaf.  The design point is repair (ii) of
+its docstring — the SHEAR automorphism
+
+    Σ : A ×_S A ⟶ A ×_S A,   (a, x) ↦ (a, a + x)
+
+which is translation by the UNIVERSAL point and therefore needs no rational
+point anywhere, so the `ℚ̄` descent of repair (i) is avoided entirely.  `Σ` is
+built out of `AbelianSchemeStruct.add` on `RelPoint af (fst ≫ af)` — the group
+law applied to the two projections, read as relative points of the test object
+`A ×_S A` — and it is an isomorphism because `(a, x) ↦ (a, x - a)` inverts it,
+which is `add_assoc`/`neg_add`/`zero_add` and nothing else.
+
+`shear_pairSquareMap` is where `IsAdditiveOn` is consumed, and it is the only
+place: `u ×_S u` intertwines the two shears, `Σ_B ∘ (u ×_S u) = (u ×_S u) ∘ Σ_A`.
+That converts the smoothness question into the two leaves below — one purely
+about how `smoothLocus` behaves for a fibre square of morphisms, one purely
+topological, with no group law and no smoothness in it at all. -/
+
+/-- **The first projection of `A ×_S A`, as a relative point over `fst ≫ af`.** -/
+noncomputable def pairFst {A S : Scheme.{0}} (af : A ⟶ S) :
+    RelPoint af (Limits.pullback.fst af af ≫ af) :=
+  ⟨Limits.pullback.fst af af, rfl⟩
+
+/-- **The second projection of `A ×_S A`, as a relative point over `fst ≫ af`.**
+The base point is `fst ≫ af` rather than `snd ≫ af` — they agree, by
+`Limits.pullback.condition`, and using `fst ≫ af` for both is what makes the two
+projections summable. -/
+noncomputable def pairSnd {A S : Scheme.{0}} (af : A ⟶ S) :
+    RelPoint af (Limits.pullback.fst af af ≫ af) :=
+  ⟨Limits.pullback.snd af af, Limits.pullback.condition.symm⟩
+
+/-- **The universal addition `A ×_S A ⟶ A`, `(a, x) ↦ a + x`.** -/
+noncomputable def addPairHom {A S : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) : Limits.pullback af af ⟶ A :=
+  (abA.add (pairFst af) (pairSnd af)).1
+
+theorem addPairHom_comp {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    addPairHom abA ≫ af = Limits.pullback.fst af af ≫ af :=
+  (abA.add (pairFst af) (pairSnd af)).2
+
+/-- **The universal subtraction `A ×_S A ⟶ A`, `(a, x) ↦ -a + x`.** -/
+noncomputable def subPairHom {A S : Scheme.{0}} {af : A ⟶ S}
+    (abA : AbelianSchemeStruct af) : Limits.pullback af af ⟶ A :=
+  (abA.add (abA.neg (pairFst af)) (pairSnd af)).1
+
+theorem subPairHom_comp {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    subPairHom abA ≫ af = Limits.pullback.fst af af ≫ af :=
+  (abA.add (abA.neg (pairFst af)) (pairSnd af)).2
+
+/-- **THE SHEAR `(a, x) ↦ (a, a + x)`** — translation by the universal point. -/
+noncomputable def shearHom {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    Limits.pullback af af ⟶ Limits.pullback af af :=
+  Limits.pullback.lift (Limits.pullback.fst af af) (addPairHom abA) (addPairHom_comp abA).symm
+
+/-- **The inverse shear `(a, x) ↦ (a, -a + x)`.** -/
+noncomputable def unshearHom {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    Limits.pullback af af ⟶ Limits.pullback af af :=
+  Limits.pullback.lift (Limits.pullback.fst af af) (subPairHom abA) (subPairHom_comp abA).symm
+
+theorem shearHom_fst {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    shearHom abA ≫ Limits.pullback.fst af af = Limits.pullback.fst af af := by
+  rw [shearHom, Limits.pullback.lift_fst]
+
+theorem shearHom_snd {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    shearHom abA ≫ Limits.pullback.snd af af = addPairHom abA := by
+  rw [shearHom, Limits.pullback.lift_snd]
+
+theorem unshearHom_fst {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    unshearHom abA ≫ Limits.pullback.fst af af = Limits.pullback.fst af af := by
+  rw [unshearHom, Limits.pullback.lift_fst]
+
+theorem unshearHom_snd {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    unshearHom abA ≫ Limits.pullback.snd af af = subPairHom abA := by
+  rw [unshearHom, Limits.pullback.lift_snd]
+
+/-- `a + (-a + x) = x`, read on morphisms. -/
+theorem unshear_addPair {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    unshearHom abA ≫ addPairHom abA = Limits.pullback.snd af af := by
+  have hg : unshearHom abA ≫ (Limits.pullback.fst af af ≫ af)
+      = Limits.pullback.fst af af ≫ af := by
+    rw [← Category.assoc, unshearHom_fst]
+  have h1 : RelPoint.pre (unshearHom abA) hg (pairFst af) = pairFst af :=
+    Subtype.ext (unshearHom_fst abA)
+  have h2 : RelPoint.pre (unshearHom abA) hg (pairSnd af)
+      = abA.add (abA.neg (pairFst af)) (pairSnd af) :=
+    Subtype.ext (unshearHom_snd abA)
+  have key := abA.pre_add (unshearHom abA) hg (pairFst af) (pairSnd af)
+  rw [h1, h2] at key
+  have hcancel : abA.add (pairFst af) (abA.add (abA.neg (pairFst af)) (pairSnd af))
+      = pairSnd af := by
+    rw [← abA.add_assoc, abA.add_comm (pairFst af) (abA.neg (pairFst af)), abA.neg_add,
+      abA.zero_add]
+  rw [hcancel] at key
+  exact congrArg Subtype.val key
+
+/-- `-a + (a + x) = x`, read on morphisms. -/
+theorem shear_subPair {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    shearHom abA ≫ subPairHom abA = Limits.pullback.snd af af := by
+  have hg : shearHom abA ≫ (Limits.pullback.fst af af ≫ af)
+      = Limits.pullback.fst af af ≫ af := by
+    rw [← Category.assoc, shearHom_fst]
+  have h1 : RelPoint.pre (shearHom abA) hg (pairFst af) = pairFst af :=
+    Subtype.ext (shearHom_fst abA)
+  have h2 : RelPoint.pre (shearHom abA) hg (pairSnd af)
+      = abA.add (pairFst af) (pairSnd af) :=
+    Subtype.ext (shearHom_snd abA)
+  have key := abA.pre_add (shearHom abA) hg (abA.neg (pairFst af)) (pairSnd af)
+  rw [abA.pre_neg, h1, h2] at key
+  have hcancel : abA.add (abA.neg (pairFst af)) (abA.add (pairFst af) (pairSnd af))
+      = pairSnd af := by
+    rw [← abA.add_assoc, abA.neg_add, abA.zero_add]
+  rw [hcancel] at key
+  exact congrArg Subtype.val key
+
+theorem shear_unshear {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    shearHom abA ≫ unshearHom abA = 𝟙 _ := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, unshearHom_fst, shearHom_fst, Category.id_comp]
+  · rw [Category.assoc, unshearHom_snd, shear_subPair, Category.id_comp]
+
+theorem unshear_shear {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    unshearHom abA ≫ shearHom abA = 𝟙 _ := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, shearHom_fst, unshearHom_fst, Category.id_comp]
+  · rw [Category.assoc, shearHom_snd, unshear_addPair, Category.id_comp]
+
+/-- **THE SHEAR IS AN AUTOMORPHISM** (PROVEN 2026-07-29). -/
+theorem isIso_shearHom {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    IsIso (shearHom abA) :=
+  ⟨⟨unshearHom abA, shear_unshear abA, unshear_shear abA⟩⟩
+
+/-- **`u ×_S u : A ×_S A ⟶ B ×_S B`.** -/
+noncomputable def pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    Limits.pullback af af ⟶ Limits.pullback bf bf :=
+  Limits.pullback.map af af bf bf u u (𝟙 S) (by simp [hu]) (by simp [hu])
+
+theorem pairSquareMap_fst {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    pairSquareMap u hu ≫ Limits.pullback.fst bf bf = Limits.pullback.fst af af ≫ u := by
+  rw [pairSquareMap, Limits.pullback.lift_fst]
+
+theorem pairSquareMap_snd {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    pairSquareMap u hu ≫ Limits.pullback.snd bf bf = Limits.pullback.snd af af ≫ u := by
+  rw [pairSquareMap, Limits.pullback.lift_snd]
+
+/-- **A HOMOMORPHISM COMMUTES WITH THE UNIVERSAL ADDITION** (PROVEN
+2026-07-29) — this is `IsAdditiveOn` read as an equation of morphisms out of
+`A ×_S A`, and it is the only consumer of that hypothesis in the whole
+homogeneity argument. -/
+theorem pairSquareMap_addPair {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    {u : A ⟶ B} {hu : u ≫ bf = af} (hadd : IsAdditiveOn abA abB u hu) :
+    pairSquareMap u hu ≫ addPairHom abB = addPairHom abA ≫ u := by
+  have hg : pairSquareMap u hu ≫ (Limits.pullback.fst bf bf ≫ bf)
+      = Limits.pullback.fst af af ≫ af := by
+    rw [← Category.assoc, pairSquareMap_fst, Category.assoc, hu]
+  have h1 : RelPoint.pre (pairSquareMap u hu) hg (pairFst bf)
+      = RelPoint.post u hu (pairFst af) :=
+    Subtype.ext (pairSquareMap_fst u hu)
+  have h2 : RelPoint.pre (pairSquareMap u hu) hg (pairSnd bf)
+      = RelPoint.post u hu (pairSnd af) :=
+    Subtype.ext (pairSquareMap_snd u hu)
+  have key := abB.pre_add (pairSquareMap u hu) hg (pairFst bf) (pairSnd bf)
+  rw [h1, h2, ← hadd (pairFst af) (pairSnd af)] at key
+  exact congrArg Subtype.val key
+
+/-- **THE TWO SHEARS ARE INTERTWINED BY `u ×_S u`** (PROVEN 2026-07-29):
+`Σ_A ≫ (u ×_S u) = (u ×_S u) ≫ Σ_B`.  On points, `(a, x) ↦ (ua, u(a + x))`
+computed the two ways.  This is the entire mathematical content of "the smooth
+locus is translation-stable", packaged so that no translation by an actual
+point of `A` is ever needed. -/
+theorem shear_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    {u : A ⟶ B} {hu : u ≫ bf = af} (hadd : IsAdditiveOn abA abB u hu) :
+    shearHom abA ≫ pairSquareMap u hu = pairSquareMap u hu ≫ shearHom abB := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, pairSquareMap_fst, Category.assoc, shearHom_fst, ← Category.assoc,
+      shearHom_fst, pairSquareMap_fst]
+  · rw [Category.assoc, pairSquareMap_snd, Category.assoc, shearHom_snd, ← Category.assoc,
+      shearHom_snd, pairSquareMap_addPair abA abB hadd]
+
+/-- **`smoothLocus` does not see which `LocallyOfFinitePresentation` instance it
+was given** — the underlying SET of `Scheme.Hom.smoothLocus` does not mention the
+instance at all, only the openness proof does.  Needed because rewriting a
+morphism underneath `smoothLocus` is a dependent rewrite that `rw` refuses. -/
+theorem smoothLocus_congr {X Y : Scheme.{0}} {f g : X ⟶ Y} (h : f = g)
+    [LocallyOfFinitePresentation f] [LocallyOfFinitePresentation g] :
+    f.smoothLocus = g.smoothLocus := by
+  cases h; rfl
+
+/-- **POSTCOMPOSING WITH AN ISOMORPHISM DOES NOT MOVE THE SMOOTH LOCUS**
+(PROVEN 2026-07-29).  `mathlib` has the precomposition half
+(`Scheme.Hom.preimage_smoothLocus_eq`, for an open immersion) and not this one;
+the proof is the same two lines with `RespectsIso.cancel_left_isIso` in place of
+`cancel_right_isIso`. -/
+theorem smoothLocus_comp_isIso {X Y Z : Scheme.{0}} (f : X ⟶ Y) (e : Y ⟶ Z) [IsIso e]
+    [LocallyOfFinitePresentation f] :
+    (f ≫ e).smoothLocus = f.smoothLocus := by
+  ext x
+  show ((f ≫ e).stalkMap x).hom.FormallySmooth ↔ (f.stalkMap x).hom.FormallySmooth
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply]
+  rw [Scheme.Hom.stalkMap_comp, CommRingCat.hom_comp]
+  exact RingHom.RespectsIso.cancel_left_isIso RingHom.FormallySmooth.respectsIso _ _
+
+/-- **`u ×_S u` is locally of finite presentation** (PROVEN 2026-07-29), which is
+what makes `(pairSquareMap u hu).smoothLocus` well-formed. -/
+theorem locallyOfFinitePresentation_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S}
+    {bf : B ⟶ S} [IsLocallyNoetherian S] (u : A ⟶ B) (hu : u ≫ bf = af)
+    [Smooth af] [Smooth bf] : LocallyOfFinitePresentation (pairSquareMap u hu) := by
+  haveI : LocallyOfFiniteType (pairSquareMap u hu ≫ (Limits.pullback.fst bf bf ≫ bf)) := by
+    rw [← Category.assoc, pairSquareMap_fst, Category.assoc, hu]; infer_instance
+  exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian _
+    (Limits.pullback.fst bf bf ≫ bf)
+
+/-- **THE SMOOTH LOCUS OF A FIBRE SQUARE OF ONE MORPHISM** (sorry leaf, new
+2026-07-29) — the first of the two halves of
+`smoothLocus_eq_top_of_nonempty_of_isAdditiveOn`.  No group law occurs in it.
+
+`u ×_S u` is smooth at `z` exactly when `u` is smooth at both of `z`'s
+coordinates.  Both inclusions are standard and each needs one general fact that
+`mathlib` does not state for `smoothLocus`:
+
+* `⊇` is COMPOSITION.  Writing `V = u.smoothLocus`, the restriction
+  `V.ι ≫ u` is smooth (`smoothLocus (V.ι ≫ u) = V.ι ⁻¹ᵁ V = ⊤` by
+  `Scheme.Hom.preimage_smoothLocus_eq` and `smoothLocus_eq_top_iff`), and
+  `fst ⁻¹ᵁ V ⊓ snd ⁻¹ᵁ V` is `V ×_S V`, over which `u ×_S u` is the fibre square
+  of a smooth morphism, hence smooth by stability of `Smooth` under base change
+  and composition.
+* `⊆` is DESCENT ALONG A SMOOTH SURJECTION.  From
+  `pairSquareMap_fst`, `(u ×_S u) ≫ fst_B = fst_A ≫ u`.  If `u ×_S u` is smooth
+  at `z` then, `fst_B` being smooth (a base change of `bf`), so is the left side;
+  hence `fst_A ≫ u` is smooth at `z`; and `fst_A` is smooth (a base change of
+  `af`) and surjective, so `u` is smooth at `fst_A z` — Stacks 02K5, pointwise.
+
+**`Smooth af` and `Smooth bf` ARE LOAD-BEARING, and only for `⊆`.**  They are
+what make the two projections smooth.  Without them `⊆` has no argument; they
+are supplied at the call site by `abA.smooth` and `abB.smooth`. -/
+theorem smoothLocus_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) [Smooth af] [Smooth bf]
+    [LocallyOfFinitePresentation u] [LocallyOfFinitePresentation (pairSquareMap u hu)] :
+    (pairSquareMap u hu).smoothLocus
+      = Limits.pullback.fst af af ⁻¹ᵁ u.smoothLocus
+        ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus :=
+  sorry
+
+/-- **A NONEMPTY SHEAR-INVARIANT OPEN OF AN ABELIAN SCHEME OVER `ℚ` IS
+EVERYTHING** (sorry leaf, new 2026-07-29) — the second half.  It is PURELY
+TOPOLOGICAL: no smoothness occurs in the statement, and the group law enters
+only through `shearHom`.
+
+The argument.  Write `p, q` for the projections of `A ×_ℚ A` and `W` for
+`p ⁻¹ᵁ V ⊓ q ⁻¹ᵁ V`.  Invariance under `Σ` says, on points, that
+`p z ∈ V ∧ (p z + q z) ∈ V ↔ p z ∈ V ∧ q z ∈ V`; applied to `Σ⁻¹` instead it
+says `p z ∈ V ∧ (q z - p z) ∈ V ↔ p z ∈ V ∧ q z ∈ V`.  Now fix `a : A` and fix
+`v ∈ V`, and work inside the fibre `q ⁻¹ (a) ≅ A ×_ℚ Spec κ(a)`.  On that fibre
+`p` restricts to the projection `π` to `A` and the difference restricts to
+`x ↦ a - x`, so `π ⁻¹ V` and `(a - ·) ⁻¹ V` are two NONEMPTY opens of
+`A ×_ℚ Spec κ(a)` — nonempty because `π` is surjective and `V ≠ ∅`.  That scheme
+is IRREDUCIBLE, so the two opens meet, and any `z` in the intersection has
+`p z ∈ V` and `q z - p z ∈ V`, whence `q z = a ∈ V`.
+
+**THE BASE MUST BE A FIELD — the statement is FALSE over a general base `S`, and
+that is why it is stated at `SpecQ`.**  Take `S = S₁ ⊔ S₂` disconnected and `V`
+the part of `A` lying over `S₁`.  Then `p ⁻¹ᵁ V ⊓ q ⁻¹ᵁ V` is the part of
+`A ×_S A` lying over `S₁`, which is shear-invariant because `Σ` is a morphism
+over `S`; and `V ≠ ⊤`.  `AbelianSchemeStruct` does not exclude this: it demands
+connected geometric FIBRES, not a connected base.
+
+Irreducibility of `A ×_ℚ Spec κ(a)` is available in this tree — it is
+`GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected`
+applied to `af`, whose hypotheses are `abA.smooth` and `abA.connected` — so the
+prover's work is the fibre bookkeeping, not the geometry. -/
+theorem eq_top_of_shearHom_invariant {A : Scheme.{0}} {af : A ⟶ SpecQ}
+    (abA : AbelianSchemeStruct af) (V : A.Opens) (hV : (V : Set A).Nonempty)
+    (hinv : shearHom abA ⁻¹ᵁ (Limits.pullback.fst af af ⁻¹ᵁ V
+        ⊓ Limits.pullback.snd af af ⁻¹ᵁ V)
+      = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V) :
+    V = ⊤ :=
   sorry
 
 /-- **HOMOGENEITY: A NONEMPTY SMOOTH LOCUS OF AN ADDITIVE MORPHISM OF
-ABELIAN SCHEMES IS EVERYTHING** (sorry leaf, new 2026-07-28) — the second
+ABELIAN SCHEMES IS EVERYTHING** (**PROVEN 2026-07-29** over
+`smoothLocus_pairSquareMap` and `eq_top_of_shearHom_invariant`) — the second
 half, and the ONLY place where the group law is used.
 
 `u.smoothLocus` is open (`Scheme.Hom.isOpen_smoothLocus`).  For a point
@@ -56857,14 +57222,27 @@ anywhere.
 
 **`_hsurj` is deliberately NOT a hypothesis** — homogeneity does not use
 it.  The statement stays true for the zero morphism, vacuously: its
-smooth locus is empty whenever the target has positive dimension. -/
+smooth locus is empty whenever the target has positive dimension.
+
+**ROUTE TAKEN (2026-07-29): repair (ii), the universal translation.**
+Repair (i) — base change to `ℚ̄` and descend — is not needed and is not
+used: `shearHom` translates by the universal point, so no rational point,
+no algebraic closure and no faithfully flat descent occurs anywhere. -/
 theorem smoothLocus_eq_top_of_nonempty_of_isAdditiveOn {A B : Scheme.{0}}
     {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
     (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
     (_hadd : IsAdditiveOn abA abB u hu) [LocallyOfFinitePresentation u]
     (_hne : (u.smoothLocus : Set A).Nonempty) :
-    u.smoothLocus = ⊤ :=
-  sorry
+    u.smoothLocus = ⊤ := by
+  haveI := abA.smooth
+  haveI := abB.smooth
+  haveI := locallyOfFinitePresentation_pairSquareMap u hu
+  haveI := isIso_shearHom abA
+  haveI := isIso_shearHom abB
+  refine eq_top_of_shearHom_invariant abA u.smoothLocus _hne ?_
+  rw [← smoothLocus_pairSquareMap u hu, Scheme.Hom.preimage_smoothLocus_eq]
+  exact (smoothLocus_congr (shear_pairSquareMap abA abB _hadd)).trans
+    (smoothLocus_comp_isIso _ _)
 
 /-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS SMOOTH**
 (**PROVEN 2026-07-28** over the two leaves above) — the statement that
