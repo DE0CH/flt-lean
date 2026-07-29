@@ -52182,20 +52182,17 @@ theorem SpecLoc.denseRange_generic (R : Subring ℚ) : DenseRange (SpecLoc.gener
   rw [hker]
   exact bot_le
 
-/-- **A fibre over an OPEN base point is an OPEN SUBSCHEME** (PROVEN, over an
-arbitrary base).
-
-`IsFibreIdent.compareIso` presents `A'` as `A ×_S S'` with `universalPoint.1` as
-the first projection, and the first projection of a pullback along an open
-immersion is an open immersion.  So this is Yoneda plus one mathlib instance,
-and it is what turns `IsReductionBase.isOpenImmersion_generic` into a statement
-about the generic fibre of an arbitrary model. -/
-theorem IsFibreIdent.isOpenImmersion_universalPoint {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
-    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') [IsOpenImmersion s] :
-    IsOpenImmersion e.universalPoint.1 := by
-  haveI : IsIso e.compareHom := e.compareIso.isIso_hom
-  rw [← e.compareHom_fst]
-  infer_instance
+-- **A fibre over an OPEN base point is an OPEN SUBSCHEME.**  `flt-lean-327`
+-- declared `IsFibreIdent.isOpenImmersion_universalPoint` HERE, with
+-- `[IsOpenImmersion s]` as an instance argument.  merger already had that
+-- declaration further down this file with `hs : IsOpenImmersion s` EXPLICIT, and
+-- two declarations of one name in one namespace is a `has already been declared`
+-- error that no textual merge can see.  The explicit-argument copy is the one
+-- kept, because the single call site passes the hypothesis by hand; this one is
+-- withdrawn at the release-18 merge.  (Both proofs are the same three lines:
+-- `compareIso` presents `A'` as `A ×_S S'` with `universalPoint.1` as the first
+-- projection, and the first projection of a pullback along an open immersion is
+-- an open immersion.)
 
 /-- **A fibre over a DENSE base point is DENSE, provided the model is an open
 map** (PROVEN, over an arbitrary base).
@@ -58474,55 +58471,16 @@ theorem axisRestrict_fricke_of_isAtkinLehnerMinusForm (N : ℕ) (hN : N ≠ 0)
   rw [axisRestrict_one_div_eq_frickeSlash N hN f hy, hval]
   ring
 
-/-- **TERMWISE INTEGRATION OF THE `q`-SERIES OVER `[1, ∞)`** (sorry leaf,
-2026-07-28) — LEVEL-FREE, no Atkin–Lehner hypothesis, no reference to `169`.
-
-`hasSum_axisRestrict` (`ModularCurve/WeightTwoEigenform.lean`, PROVEN) gives,
-for every `y > 0`,
-
-> `axisRestrict N f y = ∑_{n ≥ 0} a_{n+1} · exp(-(2π(n+1)/√N)·y)`,
-
-and `∫_1^∞ exp(-c y) dy = e^{-c}/c` for `c > 0`.  This leaf is exactly the
-interchange of the sum with `∫_{(1, ∞)}`.
-
-TRUE, and the interchange is the routine one: with `c_n = 2π(n+1)/√N > 0`,
-`∑_n ∫_1^∞ |a_{n+1}| e^{-c_n y} dy = ∑_n |a_{n+1}| e^{-c_n}/c_n < ∞`
-because `|a_n| = O(n)` for a weight-two cusp form
-(`isBigO_atTop_coeff`, PROVEN in `WeightTwoEigenform.lean`, and Deligne is
-NOT needed) while `e^{-c_n}` decays geometrically — so Tonelli applies and
-the sum is absolutely convergent.  Note this is the step that fails on
-`(0, ∞)`: there the defining integral of `cuspPeriod` is only conditionally
-convergent, which is the whole reason
-`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` moves the seam to `[1, ∞)`
-first.
-
-**`hf` MAY NOT BE DROPPED.**  It is the only thing tying `a` to `f`; without
-it `a` is an arbitrary sequence and the statement is false for any `a` whose
-sum differs from the integral (take `f = 0`, `a = 1`).  **`hN` is kept for
-honesty rather than strength**: at `N = 0` both sides are `0` by junk values
-(`axisRestrict 0 f = 0`, and `2π/√0 = 0` makes every summand `a_{n+1} · 0`),
-so the statement is vacuously true there — it is not a hidden corner.
-
-**This leaf serves TWO consumers and should be hoisted when the second one
-is attacked.**  Besides
-`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine` below,
-the Kenku-level `integral_Ioi_one_axisRestrict_ne_zero` (~23000 lines above,
-whose docstring names this same interchange as "the natural next cut") wants
-it verbatim.  It is stated here rather than there only because that
-declaration is upstream of this point and is owned elsewhere; moving this
-block above it — or, better, next to `hasSum_axisRestrict` in
-`WeightTwoEigenform.lean`, which is where it belongs — is a pure relocation
-and costs nothing.
-
-**The check that refutes it**: any `N`, `f`, `a` with `IsWeightTwoEigenform`
-for which the two sides disagree numerically. -/
-theorem hasSum_integral_Ioi_one_axisRestrict {N : ℕ} (_hN : N ≠ 0)
-    {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ} (_hf : IsWeightTwoEigenform N f a) :
-    HasSum (fun n : ℕ => a (n + 1) *
-        ((Real.exp (-(2 * Real.pi / Real.sqrt N * (n + 1))) /
-          (2 * Real.pi / Real.sqrt N * (n + 1)) : ℝ) : ℂ))
-      (∫ y in Set.Ioi (1 : ℝ), axisRestrict N f y) :=
-  sorry
+-- **THE TAIL INTEGRAL AS A SUM.**  `flt-lean-307` restated
+-- `hasSum_integral_Ioi_one_axisRestrict` here as a sorry leaf, with a docstring
+-- observing that the Kenku-level consumer ~23000 lines above 'wants it verbatim'
+-- and that stating it there was blocked by declaration order.  Both halves of that
+-- were already false: merger PROVES the same theorem, under the same name, further
+-- UP this file (search `theorem hasSum_integral_Ioi_one_axisRestrict {M : ℕ}`), so
+-- it is upstream of both consumers and there is nothing to hoist.  Two copies in
+-- one namespace is a `has already been declared` error that no textual merge can
+-- see, so this one is withdrawn at the release-18 merge; the call below resolves
+-- to the proven copy.
 
 /-- **THE `169` NUMERICS, ON THE COEFFICIENT SEQUENCE** (sorry leaf,
 2026-07-28) — the arithmetic half of
