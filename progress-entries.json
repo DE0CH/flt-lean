@@ -3408,10 +3408,10 @@
   "fullname": "GaloisRepresentation.Modularity.formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero"
  },
  {
-  "name": "exists_bertiniConnectedLocus_algebra",
-  "module": "Fermat.FLT.Modularity.KhareWintenberger",
-  "text": "`GaloisRepresentation.Modularity.exists_bertiniConnectedLocus_algebra` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:2872): **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node, 2026-07-27; cut out of `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is PROVEN over this leaf. **STATEMENT REPAIRED 2026-07-27** \u2014 see the FALSITY AUDIT below; the version first written here was FALSE). The same statement as the scheme-level connectedness leaf, but over a VARIABLE characteristic-zero base field `k` and an ordinary commutative ring `S`, with no `CommRingCat`, no `ULift \u211a`, and no `Spec.preimage` in sight. The scheme-level leaf follows from this by `Spec.map_comp` and `Spec.map_preimage` alone. WHY THE \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_bertiniConnectedLocus_algebra"
+  "name": "exists_bertiniConnectedLocus_algebraicClosure",
+  "module": "Fermat.FLT.Modularity.MoretBailly",
+  "text": "`GaloisRepresentation.Modularity.exists_bertiniConnectedLocus_algebraicClosure` (open leaf, Fermat/FLT/Modularity/MoretBailly.lean). Bertini irreducibility over an algebraically closed field. Promoted 2026-07-29 from an ANONYMOUS `obtain ... := sorry` inside `exists_bertiniConnectedLocus_algebra`, which had been ownerless since it was written and invisible to every frontier scan. That parent is now PROVEN over this leaf, and its `hgi`/`hdim`/`hgen` are genuinely consumed rather than swallowed by the anonymous sorry. This is the only declaration still open in the Bertini branch; it should consume the existing `ProjChart` / `exists_isOpenImmersion_isProper_of_proj` machinery in Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean rather than rebuild it.",
+  "fullname": "GaloisRepresentation.Modularity.exists_bertiniConnectedLocus_algebraicClosure"
  },
  {
   "name": "exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre",
