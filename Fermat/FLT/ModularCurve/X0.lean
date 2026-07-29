@@ -2806,15 +2806,29 @@ be a chart twisted by a nontrivial automorphism of `k`.  So the three
 it when generalised; it cannot be recovered at the assembly step the way it
 is over `ℚ`.
 
-**A stale claim corrected while cutting this (2026-07-28).**  The docstring
-of the leaf below asserted that "the `T = Spec ℚ` case is ALREADY PROVEN".
-It is proven only in the no-direct-`sorry` sense:
-`exists_weierstrassModel_of_ellipticScheme` consumes
-`isElliptic_of_isOpenImmersion_coordinateRing`
-(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), which is still a `sorry`
-leaf, so the whole `ℚ` bridge is transitively open.  The `ℚ` material is a
-route and a set of transport lemmas to reuse; it is not a proved theorem to
-cite. -/
+**A stale claim corrected while cutting this, and then the correction went
+stale too — both on 2026-07-28.**  The docstring of the leaf below asserted
+that "the `T = Spec ℚ` case is ALREADY PROVEN".  It is proven only in the
+no-direct-`sorry` sense: `exists_weierstrassModel_of_ellipticScheme`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is an assembly over leaves,
+so the `ℚ` bridge is transitively open and is a route to reuse, not a
+theorem to cite.
+
+The first version of this paragraph named
+`isElliptic_of_isOpenImmersion_coordinateRing` as the open leaf.  That was
+true when written and FALSE a release later — it was PROVEN in the interim,
+as were `exists_affineComplement_zeroSection` and
+`exists_weierstrassRingEquiv_of_affineComplement`.  Against the build at
+this commit, `EllipticScheme.lean` has exactly TWO open leaves left:
+
+* `exists_surjective_coordinateRingHom_of_affineComplement` — the residue of
+  the Riemann–Roch half, and so the one thing standing under
+  `exists_weierstrassModel_of_ellipticScheme_field` below;
+* `projFibreEndFun_add_sub_zero` — on the group-law side.
+
+Do not trust either list.  Both were read off the compiler's
+`declaration uses 'sorry'` warning set for that file, which is the only
+authority, and both go stale at the next release. -/
 
 /-- **An abelian scheme of relative dimension one over a FIELD has a
 Weierstrass model** (sorry leaf, opened 2026-07-28) — Silverman *AEC*
@@ -2824,12 +2838,16 @@ III.3.1, i.e. Riemann–Roch, and the first half of the geometry that
 This is `EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme`
 with the base `Spec ℚ` replaced by `Spec k` for an arbitrary field `k`,
 conjunct for conjunct.  **Close it by generalising that declaration rather
-than by reproving it**: two of its three leaves
-(`exists_affineComplement_zeroSection`,
-`exists_weierstrassRingEquiv_of_affineComplement`) are already proven over
-`ℚ`, and only the third, `isElliptic_of_isOpenImmersion_coordinateRing`, is
-still open there.  See the subsection docstring for the one conjunct that
-stops being free once `ℚ` is replaced by `k`.
+than by reproving it**: as of this commit its whole chain over `ℚ` —
+`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement` and
+`isElliptic_of_isOpenImmersion_coordinateRing` — is proven, and the single
+leaf left underneath it is
+`exists_surjective_coordinateRingHom_of_affineComplement`.  So the `ℚ` case
+is very nearly closed, and generalising it costs one open leaf rather than
+a development.  See the subsection docstring for the one conjunct that
+stops being free once `ℚ` is replaced by `k`, and for why that list of open
+leaves must be re-read off the compiler rather than believed.
 
 ## Faithfulness
 
@@ -2866,8 +2884,10 @@ to an isomorphism `proj E ≅ A` over `Spec k`, the range condition forces
 the two zero sections to match, and a base-point-preserving morphism of
 abelian schemes is a homomorphism.  That is precisely the route by which
 `EllipticScheme.lean`'s `exists_geomFibreAddEquiv_of_weierstrassModel` is
-proven over `ℚ`, from `exists_isIso_of_affineChart`,
-`hom_specRat_eq_of_range_eq` and `relPointPost_add`.
+built over `ℚ`, from `exists_isIso_of_affineChart`,
+`hom_specRat_eq_of_range_eq` and `relPointPost_add` — all three of which
+carry no `sorry` of their own at this commit, the residue on that side of
+the file being `projFibreEndFun_add_sub_zero`.
 
 ## This is a SIBLING of the `ℚ` declaration, not a generalisation of it
 
