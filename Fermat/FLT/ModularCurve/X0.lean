@@ -32777,6 +32777,16 @@ than a repackaging of its consumers.  That is the whole difference
 between this cut and the refuted one, and it is the only reason the
 three leaves below are worth having.
 
+**The pinning claim in the previous paragraph is now a THEOREM, not
+prose** (2026-07-29).  It was load-bearing for this whole cut and was
+only asserted here; it is proven below as
+`pow_sum_eq_of_isWeilEigenvalues` (two `IsWeilEigenvalues` multisets for
+the same curve have equal power sums of every positive order — the only
+step that touches `card_ext`, instantiated at `GaloisField ℓ n`)
+composed with `multiset_eq_of_forall_pow_sum_eq` (equal positive power
+sums force equal zero-free parts, by Vandermonde).  "Up to zeros" is
+sharp: a positive power sum cannot see a `0` entry at all.
+
 **Why a `Multiset ℂ` and not a polynomial.**  The two things used are
 `Tr(Frob ∣ H¹) = α.sum` and `det(1 − Frob ∣ H¹) = ∏ (1 − αᵢ)`; carrying
 the `L`-polynomial instead would force a splitting field on every
@@ -33076,10 +33086,292 @@ theorem IsEichlerShimuraTransform.prod_one_sub {ℓ : ℕ} {a α : Multiset ℂ}
   rw [Multiset.prod_map_mul]
   simp
 
+/-! #### Splitting the PINNING off the Eichler–Shimura leaf
+
+`isEichlerShimuraTransform_x0` below quantifies over an ARBITRARY `α`
+satisfying `IsWeilEigenvalues ℓ strX α`.  So as stated it silently
+carries two independent things:
+
+* the geometry — that the zeta function of `X_0(N)_{𝔽_ℓ}` is the
+  Eichler–Shimura one, i.e. that SOME Weil eigenvalue multiset of `X`
+  is the `ℓ`-transform of the `T_ℓ`-eigenvalues; and
+* the pinning — that `IsWeilEigenvalues` determines its multiset UP TO
+  ZEROS, so that the property transfers from that particular witness to
+  every other one.
+
+The second is pure algebra with no modular content whatever, and it is
+**PROVEN** here (`multiset_eq_of_forall_pow_sum_eq` and the three lemmas
+built on it), leaving
+`exists_isWeilEigenvalues_isEichlerShimuraTransform_x0` as the geometry
+alone.  This is the same move `flt-lean-223` made when it split the
+characteristic-polynomial linear algebra off
+`isWeilEigenvalues_x0_eichlerShimura`; the statement of
+`isEichlerShimuraTransform_x0` is **byte-for-byte unchanged** and is now
+a three-line assembly.
+
+**Why the pinning is genuinely needed and not bookkeeping.**  The
+section docstring on `IsWeilEigenvalues` asserts that the point counts
+over every `𝔽_{ℓⁿ}` pin `α` up to zeros — that assertion is what makes
+the whole cut non-vacuous, and until now it was only PROSE.  It is now a
+theorem: `pow_sum_eq_of_isWeilEigenvalues` extracts the equality of all
+power sums (instantiating `card_ext` at `GaloisField ℓ n`, which is the
+only place a field of order `ℓⁿ` is actually produced), and
+`multiset_eq_of_forall_pow_sum_eq` turns equal power sums into equal
+multisets by a Vandermonde argument.
+
+**"Up to zeros" is not a wart.**  Power sums of positive order cannot
+see a `0` entry at all (`0ⁿ = 0` for `n ≥ 1`), so `α` is pinned exactly
+up to zeros and no better — which is precisely why
+`IsEichlerShimuraTransform` tolerates a `Multiset.replicate k 0`
+summand.  The two facts are the same fact, and a leaf demanding an exact
+pairing would be FALSE for exactly this reason.  Zeros are also the ONLY
+ambiguity: on the zero-free parts the pinning is an equality of
+multisets. -/
+
+/-- **Zero-free multisets of complex numbers are determined by their
+power sums of every positive order** (PROVEN 2026-07-29) — the pure
+algebra behind the pinning claim made in the `IsWeilEigenvalues` section
+docstring, and completely free of geometry.
+
+The proof is Vandermonde.  Write both multisets as count-weighted sums
+over the finite set `s` of values occurring in either; the hypothesis
+says the vector of count DIFFERENCES `d` is killed by `c ↦ cⁿ` for every
+`n ≥ 1`.  Enumerating `s` as an injective `f : Fin k → ℂ` and shifting
+one power onto the vector (`d c · cⁿ⁺¹ = (d c · c) · cⁿ`) puts this in
+the exact shape of `Matrix.eq_zero_of_forall_pow_sum_mul_pow_eq_zero`,
+whose Vandermonde determinant is nonzero because `f` is injective.  So
+`d c · c = 0`, and `c ≠ 0` — this is where zero-freeness is used, and it
+is the ONLY place — gives `d c = 0`.
+
+The hypothesis is needed for all `n ≥ 1` and cannot be weakened to
+`n ≤ card`: the multisets are not given a common bound, so no finite set
+of power sums suffices uniformly. -/
+theorem multiset_eq_of_forall_pow_sum_eq {u v : Multiset ℂ}
+    (hu : (0 : ℂ) ∉ u) (hv : (0 : ℂ) ∉ v)
+    (h : ∀ n : ℕ, 0 < n → (u.map (fun x => x ^ n)).sum = (v.map (fun x => x ^ n)).sum) :
+    u = v := by
+  classical
+  set s : Finset ℂ := u.toFinset ∪ v.toFinset with hsdef
+  have hs0 : ∀ c ∈ s, c ≠ 0 := by
+    intro c hc
+    rcases Finset.mem_union.mp hc with hc | hc
+    · rintro rfl; exact hu (Multiset.mem_toFinset.mp hc)
+    · rintro rfl; exact hv (Multiset.mem_toFinset.mp hc)
+  have expand : ∀ (w : Multiset ℂ), w.toFinset ⊆ s → ∀ n : ℕ,
+      (w.map (fun x => x ^ n)).sum = ∑ c ∈ s, (w.count c : ℂ) * c ^ n := by
+    intro w hw n
+    rw [Finset.sum_multiset_map_count]
+    rw [← Finset.sum_subset hw]
+    · exact Finset.sum_congr rfl fun c _ => by rw [nsmul_eq_mul]
+    · intro c _ hc
+      rw [Multiset.count_eq_zero_of_notMem (fun hcc => hc (Multiset.mem_toFinset.mpr hcc))]
+      simp
+  have hus : u.toFinset ⊆ s := Finset.subset_union_left
+  have hvs : v.toFinset ⊆ s := Finset.subset_union_right
+  have key : ∀ n : ℕ, 0 < n →
+      ∑ c ∈ s, ((u.count c : ℂ) - (v.count c : ℂ)) * c ^ n = 0 := by
+    intro n hn
+    have hh := h n hn
+    rw [expand u hus n, expand v hvs n] at hh
+    simp only [sub_mul]
+    rw [Finset.sum_sub_distrib, hh, sub_self]
+  set k := s.card with hk
+  let e : Fin k ≃ {x // x ∈ s} := (s.equivFin).symm
+  set f : Fin k → ℂ := fun i => ((e i : ℂ)) with hf
+  have hfinj : Function.Injective f := by
+    intro i j hij
+    exact e.injective (Subtype.ext hij)
+  set d : ℂ → ℂ := fun c => (u.count c : ℂ) - (v.count c : ℂ) with hd
+  have reindex : ∀ g : ℂ → ℂ, ∑ j : Fin k, g (f j) = ∑ c ∈ s, g c := by
+    intro g
+    rw [show (∑ j : Fin k, g (f j)) = ∑ x : {x // x ∈ s}, g (x : ℂ) from
+      Equiv.sum_comp e (fun x : {x // x ∈ s} => g (x : ℂ))]
+    exact Finset.sum_coe_sort s g
+  have hvan : ∀ i : Fin k, ∑ j : Fin k, (fun j => d (f j) * f j) j * f j ^ (i : ℕ) = 0 := by
+    intro i
+    have hshift : ∀ j : Fin k, d (f j) * f j * f j ^ (i : ℕ) = d (f j) * f j ^ ((i : ℕ) + 1) := by
+      intro j; ring
+    simp only [hshift]
+    rw [reindex (fun c => d c * c ^ ((i : ℕ) + 1))]
+    exact key ((i : ℕ) + 1) (Nat.succ_pos _)
+  have hzero := Matrix.eq_zero_of_forall_pow_sum_mul_pow_eq_zero hfinj hvan
+  have hd0 : ∀ c ∈ s, d c = 0 := by
+    intro c hc
+    have hcz := congrFun hzero (e.symm ⟨c, hc⟩)
+    simp only [Pi.zero_apply] at hcz
+    have hfc : f (e.symm ⟨c, hc⟩) = c := by simp [hf, e]
+    rw [hfc] at hcz
+    exact (mul_eq_zero.mp hcz).resolve_right (hs0 c hc)
+  refine Multiset.ext.mpr fun c => ?_
+  by_cases hc : c ∈ s
+  · have hcc := hd0 c hc
+    simp only [hd, sub_eq_zero] at hcc
+    exact_mod_cast hcc
+  · have h1 : u.count c = 0 :=
+      Multiset.count_eq_zero_of_notMem (fun hh => hc (hus (Multiset.mem_toFinset.mpr hh)))
+    have h2 : v.count c = 0 :=
+      Multiset.count_eq_zero_of_notMem (fun hh => hc (hvs (Multiset.mem_toFinset.mpr hh)))
+    rw [h1, h2]
+
+/-- **Every multiset of complex numbers splits as its zeros plus a
+zero-free part** (PROVEN 2026-07-29).  Bookkeeping for
+`exists_eq_replicate_zero_add_of_pow_sum_eq`, in exactly the
+`Multiset.replicate k 0 + _` shape that `IsEichlerShimuraTransform`
+uses. -/
+theorem exists_eq_replicate_zero_add {α : Multiset ℂ} :
+    ∃ (j : ℕ) (γ : Multiset ℂ), (0 : ℂ) ∉ γ ∧ α = Multiset.replicate j 0 + γ := by
+  classical
+  refine ⟨α.count 0, α.filter (fun x => x ≠ 0), ?_, ?_⟩
+  · intro hh
+    exact (Multiset.of_mem_filter hh) rfl
+  · conv_lhs => rw [← Multiset.filter_add_not (fun x => x = 0) α]
+    rw [Multiset.filter_eq']
+
+/-- **A multiset is pinned UP TO ZEROS by its positive power sums**
+(PROVEN 2026-07-29): if `α` has the same power sums of every positive
+order as a zero-free `P`, then `α` is `P` together with some zeros.
+
+This is the exact sense in which `IsWeilEigenvalues` pins its multiset,
+and it is sharp in both directions: adjoining zeros to `α` changes no
+positive power sum (so "up to zeros" cannot be improved to equality),
+and on the zero-free parts the conclusion IS an equality (so nothing
+weaker than zero-freeness of `P` is being assumed away). -/
+theorem exists_eq_replicate_zero_add_of_pow_sum_eq {α P : Multiset ℂ}
+    (hP : (0 : ℂ) ∉ P)
+    (h : ∀ n : ℕ, 0 < n → (α.map (fun x => x ^ n)).sum = (P.map (fun x => x ^ n)).sum) :
+    ∃ j : ℕ, α = Multiset.replicate j 0 + P := by
+  classical
+  obtain ⟨j, γ, hγ0, hγ⟩ := exists_eq_replicate_zero_add (α := α)
+  refine ⟨j, ?_⟩
+  have hγP : γ = P := by
+    refine multiset_eq_of_forall_pow_sum_eq hγ0 hP ?_
+    intro n hn
+    rw [← h n hn, hγ]
+    simp [Multiset.map_replicate, zero_pow hn.ne']
+  rw [hγ, hγP]
+
+/-- **`IsEichlerShimuraTransform` transfers along equality of positive
+power sums** (PROVEN 2026-07-29) — the bridge that lets the geometric
+leaf below produce ONE Weil multiset while
+`isEichlerShimuraTransform_x0` concludes about an arbitrary one.
+
+The pair part `p.map fst + p.map snd` is automatically zero-free, since
+each pair has product `(ℓ : ℂ) ≠ 0`; that is what
+`exists_eq_replicate_zero_add_of_pow_sum_eq` needs, and it is also
+exactly why the `Multiset.replicate k 0` summand in the definition is
+harmless — the zeros carry no information and are simply re-chosen. -/
+theorem IsEichlerShimuraTransform.of_pow_sum_eq {ℓ : ℕ} {a α β : Multiset ℂ}
+    (hℓ : (ℓ : ℂ) ≠ 0) (hβ : IsEichlerShimuraTransform ℓ a β)
+    (h : ∀ n : ℕ, 0 < n → (α.map (fun x => x ^ n)).sum = (β.map (fun x => x ^ n)).sum) :
+    IsEichlerShimuraTransform ℓ a α := by
+  obtain ⟨p, k, hpa, hmul, hβeq⟩ := hβ
+  have hP0 : (0 : ℂ) ∉ p.map Prod.fst + p.map Prod.snd := by
+    intro hmem
+    rcases Multiset.mem_add.mp hmem with hm | hm
+    · obtain ⟨q, hq, hq0⟩ := Multiset.mem_map.mp hm
+      exact hℓ (by rw [← hmul q hq, hq0, zero_mul])
+    · obtain ⟨q, hq, hq0⟩ := Multiset.mem_map.mp hm
+      exact hℓ (by rw [← hmul q hq, hq0, mul_zero])
+  have hpow : ∀ n : ℕ, 0 < n →
+      (α.map (fun x => x ^ n)).sum
+        = (((p.map Prod.fst + p.map Prod.snd).map (fun x => x ^ n)).sum) := by
+    intro n hn
+    rw [h n hn, hβeq]
+    simp [Multiset.map_replicate, zero_pow hn.ne']
+  obtain ⟨j, hj⟩ := exists_eq_replicate_zero_add_of_pow_sum_eq hP0 hpow
+  exact ⟨p, j, hpa, hmul, hj⟩
+
+/-- **Two Weil eigenvalue multisets of the same curve have the same
+power sums of every positive order** (PROVEN 2026-07-29) — the half of
+the pinning claim that touches the geometry, and it touches it only
+through `card_ext`.
+
+This is where a finite field of order `ℓⁿ` is actually produced:
+`card_ext` is stated for an ARBITRARY finite `K` with a ring map from
+`ZMod ℓ` and `Nat.card K = ℓ ^ n` (see the section docstring for why
+that is no more general than `𝔽_{ℓⁿ}`), so to USE it one must exhibit
+such a `K`, and `GaloisField ℓ n` with `algebraMap` is it.  Both
+multisets are then evaluated against the SAME point count, and the
+counts cancel.
+
+Combined with `multiset_eq_of_forall_pow_sum_eq` this makes the section
+docstring's pinning assertion a theorem rather than prose. -/
+theorem pow_sum_eq_of_isWeilEigenvalues {ℓ : ℕ} (hℓ : ℓ.Prime) {X : Scheme.{0}}
+    {strX : X ⟶ SpecF ℓ} {α β : Multiset ℂ}
+    (hα : IsWeilEigenvalues ℓ strX α) (hβ : IsWeilEigenvalues ℓ strX β) :
+    ∀ n : ℕ, 0 < n → (α.map (fun x => x ^ n)).sum = (β.map (fun x => x ^ n)).sum := by
+  intro n hn
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hcard : Nat.card (GaloisField ℓ n) = ℓ ^ n := GaloisField.card ℓ n hn.ne'
+  have h1 := hα.card_ext n hn (GaloisField ℓ n) (algebraMap (ZMod ℓ) (GaloisField ℓ n)) hcard
+  have h2 := hβ.card_ext n hn (GaloisField ℓ n) (algebraMap (ZMod ℓ) (GaloisField ℓ n)) hcard
+  have heq := h1.symm.trans h2
+  linear_combination -heq
+
+/-- **Eichler–Shimura for `X_0(N)` over `𝔽_ℓ`, existential form: SOME
+Weil eigenvalue multiset of the special fibre is the `ℓ`-transform of
+the `T_ℓ`-eigenvalue multiset** (sorry leaf — the geometry of the
+Eichler–Shimura relation, and now the ONLY thing in this cluster that is
+not pure algebra).
+
+TRUE, and it is item 3 of the audit on `exists_isX0EichlerShimura`,
+unchanged in content by this cut.  Deligne–Rapoport gives `X_0(N)` a
+smooth proper model over `ℤ[1/N]`, so at `ℓ ∤ N` the special fibre is a
+smooth proper geometrically connected curve over `𝔽_ℓ`; the
+Eichler–Shimura congruence relation `Frob + ℓ·Frob^∨ = T_ℓ` on
+`J_0(N)_{𝔽_ℓ}` says the characteristic polynomial of Frobenius on `H¹`
+is `∏ᵢ (X² − aᵢ X + ℓ)` with `aᵢ` running through the eigenvalues of
+`T_ℓ` on `S_2(Γ_0(N))`.  The roots of `X² − aᵢ X + ℓ` are a pair
+`(αᵢ, βᵢ)` with `αᵢ + βᵢ = aᵢ` and `αᵢ βᵢ = ℓ`, and the Lefschetz counts
+that multiset is exactly `IsWeilEigenvalues`.  Diamond–Shurman ch. 8
+(8.7.2 for the congruence relation, 8.8 for the consequences);
+Deligne–Rapoport for the model.
+
+**WHY THE EXISTENTIAL IS NOT UNDER-PINNED**, which is the obvious worry
+about this shape.  An adversary choosing `β` must satisfy
+`IsWeilEigenvalues ℓ strX β`, i.e. reproduce the point count of `X` over
+EVERY `𝔽_{ℓⁿ}` — the whole zeta function, not two numbers.  By
+`pow_sum_eq_of_isWeilEigenvalues` and
+`multiset_eq_of_forall_pow_sum_eq` that determines `β` up to zeros, so
+the existential quantifier ranges over ONE multiset up to an ambiguity
+that `IsEichlerShimuraTransform` is provably insensitive to
+(`IsEichlerShimuraTransform.of_pow_sum_eq`).  Nothing here can be
+discharged by a clever choice: this is the difference between this cut
+and the refuted `IsX0EichlerShimura` existence half quoted in the
+section docstring, whose datum was constrained at only two complex
+numbers.
+
+**Non-vacuity of the hypotheses.**  `IsX0Compactification` is inhabited
+at every good prime by `exists_x0Compactification_finiteField`, and `ha`
+is satisfiable unconditionally by `exists_isCharRootMultiset`.  So the
+leaf is not true for the degenerate reason that nothing satisfies it.
+
+**WHAT IS MISSING** is unchanged and is the congruence relation
+`Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, which needs the moduli
+interpretation of Frobenius on the special fibre — that the two
+degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and its
+transpose.  That is downstream of the same Deligne–Rapoport integral
+model as `exists_isCoarseModuliY0_isSmoothCurve_field`.  Note what is NO
+LONGER missing: the splitting of `charpoly(T_ℓ)` over `ℂ`
+(`exists_isCharRootMultiset`), the pairwise identity
+`(1 − α)(1 − β) = ℓ + 1 − (α + β)`
+(`IsEichlerShimuraTransform.prod_one_sub`), and now the pinning of `α`
+by the point counts (`pow_sum_eq_of_isWeilEigenvalues` composed with
+`multiset_eq_of_forall_pow_sum_eq`) are all proven. -/
+theorem exists_isWeilEigenvalues_isEichlerShimuraTransform_x0 (N ℓ : ℕ) (_hN : 0 < N)
+    (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ}
+    {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
+    {a : Multiset ℂ}
+    (_ha : IsCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) a) :
+    ∃ β : Multiset ℂ, IsWeilEigenvalues ℓ strX β ∧ IsEichlerShimuraTransform ℓ a β :=
+  sorry
+
 /-- **Eichler–Shimura for `X_0(N)` over `𝔽_ℓ`: the Frobenius eigenvalue
 multiset is the `ℓ`-Weil transform of the `T_ℓ`-eigenvalue multiset**
-(sorry leaf — the ONLY modular-curve-specific half of the cut, and the
-one that genuinely needs Deligne–Rapoport).
+(**PROVEN 2026-07-29** by decomposition — the geometry is now
+`exists_isWeilEigenvalues_isEichlerShimuraTransform_x0` above, and the
+step from that existential to this universally quantified statement is
+the PINNING, also proven above; this statement is unchanged).
 
 TRUE.  Deligne–Rapoport gives `X_0(N)` a smooth proper model over
 `ℤ[1/N]`, so at `ℓ ∤ N` the special fibre is a smooth proper
@@ -33105,25 +33397,35 @@ leaf is not true for the degenerate reason that nothing satisfies it.
 **Why zeros are tolerated**: `α` is pinned only up to zeros, so a leaf
 demanding an exact pairing would be FALSE; see the section docstring.
 
-**WHAT IS MISSING** (item 3 of the audit on `exists_isX0EichlerShimura`,
-unchanged by either cut): the congruence relation
-`Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, which needs the moduli
-interpretation of Frobenius on the special fibre — that the two
-degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and its
-transpose.  That is downstream of the same Deligne–Rapoport integral
-model as `exists_isCoarseModuliY0_isSmoothCurve_field`.  Note what is NO
-LONGER missing here: the splitting of `charpoly(T_ℓ)` over `ℂ`
-(`exists_isCharRootMultiset`) and the pairwise identity
-`(1 − α)(1 − β) = ℓ + 1 − (α + β)`
-(`IsEichlerShimuraTransform.prod_one_sub`) are both proven above. -/
-theorem isEichlerShimuraTransform_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
-    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
-    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α)
+**WHAT IS MISSING** has moved down to
+`exists_isWeilEigenvalues_isEichlerShimuraTransform_x0`: it is still
+item 3 of the audit on `exists_isX0EichlerShimura`, the congruence
+relation `Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, downstream of the
+Deligne–Rapoport integral model.  Nothing else is.  In particular the
+claim quoted just above — that `hα` pins `α` up to zeros — was PROSE in
+the `IsWeilEigenvalues` section docstring and is now the theorem
+`pow_sum_eq_of_isWeilEigenvalues` composed with
+`multiset_eq_of_forall_pow_sum_eq`; it is what this proof uses, so the
+non-vacuity argument for this leaf is no longer merely asserted.
+
+**THE PROOF** is three steps, all above: the geometric leaf produces
+some `β` with `IsWeilEigenvalues ℓ strX β` and
+`IsEichlerShimuraTransform ℓ a β`; `pow_sum_eq_of_isWeilEigenvalues`
+says `α` and that `β` have the same power sums of every positive order,
+because both compute the same point counts; and
+`IsEichlerShimuraTransform.of_pow_sum_eq` transfers the pairing from `β`
+to `α`, re-choosing only the number of zeros. -/
+theorem isEichlerShimuraTransform_x0 (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (hα : IsWeilEigenvalues ℓ strX α)
     {a : Multiset ℂ}
-    (_ha : IsCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) a) :
-    IsEichlerShimuraTransform ℓ a α :=
-  sorry
+    (ha : IsCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) a) :
+    IsEichlerShimuraTransform ℓ a α := by
+  obtain ⟨β, hβw, hβt⟩ :=
+    exists_isWeilEigenvalues_isEichlerShimuraTransform_x0 N ℓ hN hℓ hℓN h ha
+  exact IsEichlerShimuraTransform.of_pow_sum_eq (Nat.cast_ne_zero.mpr hℓ.ne_zero) hβt
+    (pow_sum_eq_of_isWeilEigenvalues hℓ hα hβw)
 
 /-- **Eichler–Shimura: the Frobenius eigenvalues of `X_0(N)_{𝔽_ℓ}` are
 the `ℓ`-Weil transform of the `T_ℓ`-eigenvalues** (**PROVEN 2026-07-28**
