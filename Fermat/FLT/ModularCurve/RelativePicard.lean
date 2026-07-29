@@ -668,6 +668,35 @@ cost):
   `PresheafOfModules.Monoidal.tensorObj` through
   `PresheafOfModules.sheafificationAdjunction`.
 
+**FOUR MORE AXES SEARCHED AND CLOSED 2026-07-29, on the worker host** (recorded
+so the next prover does not re-run them; each was searched by STATEMENT SHAPE,
+not only by the name one would expect):
+
+* **No `Dual` either.**  `grep -n "def.*[Dd]ual"` over
+  `Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` returns nothing, so the
+  absence is not merely of the *name* `ihom`.
+* **No monoidal structure on `SheafOfModules` at all.**  `MonoidalCategory` and
+  `tensorObj` occur nowhere under `Mathlib/Algebra/Category/ModuleCat/Sheaf/`.
+  `modTensor` above really is the only tensor product available here, and it is
+  built by sheafifying the *presheaf* one.
+* **`Sites/Descent/IsPrestack.lean` does have `Pseudofunctor.presheafHom`** —
+  mathlib's own version of the compatible-families trick, as a presheaf of TYPES
+  on `Over S` — and `IsPrestack J` is exactly "those presheaves are sheaves".
+  It does not help: `grep -i instance` over every `IsPrestack`/`IsStack`
+  occurrence in `Mathlib/` returns **zero instances**, so descent of morphisms is
+  as instance-free as effectivity of descent.  Both halves of the descent
+  machinery are abstract-only at this pin.
+* **The quasi-coherent route exists but is not obviously shorter.**
+  `Sheaf/LocallyFree.lean` has `SheafOfModules.IsLocallyFree` with
+  `instance (priority := 100) [M.IsLocallyFree] : M.IsQuasicoherent`, and
+  `AlgebraicGeometry/Modules/Tilde.lean` has `tilde`, `modulesSpecToSheaf` and
+  `SpecModulesToSheafFullyFaithful`.  So on an AFFINE `Z` one could dualize the
+  module and transport.  Two costs before that is usable: `IsInvertibleSheaf`
+  (this file's own local-triviality predicate) is not mathlib's `IsLocallyFree`
+  (`LocalGeneratorsData` on a site) and the bridge has to be built; and passing
+  from affines back to a general `Z` is again gluing, i.e. the same obstruction.
+  Recorded as OPEN, not as refuted.
+
 **`hL` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT**, with a
 counterexample needing no geometry: take `L := 0`, the zero object of the
 abelian category `Z.Modules`.  Then `modTensor 0 M` is `0` for every `M`,
