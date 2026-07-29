@@ -3923,6 +3923,352 @@ lemma upperRamificationFiltration_of_not_pos
     upperRamificationFiltration v u = localInertiaGroup v :=
   if_neg hu
 
+/-! ### The three arithmetic inputs to the inverse limit, and the
+inhabitation theorem they feed
+
+Cut 2026-07-29 out of the `hexists` step of
+`GaloisRep.exists_isSwanExponentAt` below, where they stood as ANONYMOUS
+`have … := sorry` bindings inside a proof body — invisible to every
+frontier scan we run, so nobody could ever be dispatched at them, and
+counted as ZERO leaves behind the single `declaration uses 'sorry'`
+warning of their host. The fourth input of that block, `hin`, is PROVEN
+here (`localInertiaGroup_le_gp_zero`) rather than cut.
+
+They are also what `nonempty_ramificationFiltration` below now runs on;
+that theorem is the hoist the duplicate in
+`Fermat/FLT/Modularity/Interface.lean` asked for in its own docstring
+("PLACEMENT. It belongs in `ArtinConductor.lean` beside
+`RamificationFiltration` itself"), and the duplicate is gone.
+-/
+
+/-- **THE LOWER FILTRATION TERMINATES AT ITS LEVEL**, `⋂_m G_m = N`
+(SORRY LEAF, cut 2026-07-29). Serre, *Corps Locaux* IV §1.
+
+WHY IT IS TRUE. `≥` is `lvl_le_gp`. For `≤`, an element `σ` of every
+`G_m` moves every `lvl`-fixed `x` by every power of `unif`, i.e.
+`v(σ • x − x) ≥ (m+1) · v(unif)` for all `m`; the ambient integral
+closure is the valuation ring of the unique extension of `v` to
+`Kᵥᵃˡᵍ`, a rank-one valuation ring, so `⋂_n (unif ^ n) = 0` and
+`σ • x = x`. Thus `σ` fixes `𝒪_L` pointwise, hence fixes `L = Frac 𝒪_L`,
+hence lies in `lvl` by the Galois correspondence for the OPEN — so
+closed — subgroup `lvl` of the profinite group `Γ Kᵥ`.
+
+THE TWO INGREDIENTS, and neither is formal, but BOTH have a pin. Names
+below were grepped against this worktree's mathlib on 2026-07-29, not
+recalled.
+
+(a) `⋂_n (unif ^ n) = 0` in `IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ`. The cheapest
+route is ARCHIMEDEAN rather than valuation-theoretic: `spectralNorm Kᵥ
+Kᵥᵃˡᵍ` is already in this cone (`AbsoluteGaloisGroup.lean` uses
+`isIntegral_of_spectralNorm_le_one` and `spectralNorm_inv` to build
+`localValuationSubring`), and `‖unif‖ < 1` because `unif` is a non-unit
+of the integral closure, so `‖y‖ ≤ ‖unif‖ ^ (m+1) → 0` forces `y = 0`.
+Going through a `Valuation` instead would need the value group to be
+archimedean anyway — it is `ℚ`-valued here, the value group of `Kᵥᵃˡᵍ`
+being DIVISIBLE — so the norm is the shorter path.
+
+(b) The infinite Galois correspondence,
+`lvl = fixingSubgroup (fixedField lvl)`. Mathlib has it as
+`InfiniteGalois.fixingSubgroup_fixedField`
+(`Mathlib/FieldTheory/Galois/Infinite.lean`), stated for a
+`ClosedSubgroup Gal(K/k)` under `[IsGalois k K]`; `lvl` is OPEN hence
+closed, and the instance is available as `haveI : IsGalois Kᵥ Kᵥᵃˡᵍ :=
+⟨⟩` (`Kᵥ` has characteristic zero — the pattern is used verbatim at
+`Fermat/FLT/FreyCurve/MazurTorsion.lean:39991`, where the same
+`IsGalois k (AlgebraicClosure k)` does not synthesise directly either).
+ONE STEP IS EASY TO MISS: `mem_gp` only ever sees INTEGRAL `x`, so
+fixing `𝒪_L` pointwise must first be upgraded to fixing `L = Frac 𝒪_L`;
+that is the spectral-norm dichotomy again — for `x ∈ L`, either `x` or
+`x⁻¹` is integral, and either way `σ x = x`.
+Beware also that `Field.absoluteGaloisGroup` is a `def`, not an
+abbreviation, so `Gal(Kᵥᵃˡᵍ/Kᵥ)`-indexed lemmas may need the synonym
+unfolded (noted independently at `KhareWintenberger.lean:8747`).
+
+VACUITY CHECK: not vacuous — `D.lvl ≤ D.gp m` for every `m` is already
+proven (`lvl_le_gp`), so the content is entirely the missing inclusion,
+and it is FALSE for a `D` whose `unif` were a unit (every `gp m` would be
+`⊤`) — which is exactly what `unif_not_isUnit` rules out. -/
+theorem LowerRamificationData.iInf_gp_eq_lvl
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) : (⨅ m : ℕ, D.gp m) = D.lvl := sorry
+
+/-- **THE FINITE LEVELS SEPARATE POINTS**, `⋂_D N_D = 1` (SORRY LEAF, cut
+2026-07-29).
+
+WHY IT IS TRUE. `Γ Kᵥ` is profinite, so its open normal subgroups
+intersect in `1`; and EVERY open normal subgroup `N` carries a
+`LowerRamificationData` — its fixed field `L` is a finite Galois
+extension of the local field `Kᵥ`, so `𝒪_L` is a DVR and any generator
+of `𝔪_L` serves as `unif`, `gp` being then FORCED by `mem_gp` (an
+`iff`), and `lvl_relIndex_ne_zero` holding because `N` is open in a
+compact group.
+
+**THIS IS WHERE INHABITATION OF `LowerRamificationData v` IS
+MECHANICALLY LOAD-BEARING**, and deliberately so: if that type were
+EMPTY the meet would be `⊤` and this statement would be FALSE (for
+`Γ Kᵥ ≠ 1`, which holds). So the emptiness that the SECOND FALSITY AUDIT
+on `RamificationFiltration` asks to be checked cannot hide behind a
+vacuous `gp_herbrand`; it surfaces here as an unprovable leaf.
+
+NOTE THE ASYMMETRY, because it is the reason this leaf and not another is
+the honest place for the check: an empty `LowerRamificationData v` makes
+`gp_herbrand` VACUOUS and hence makes `nonempty_ramificationFiltration`
+EASIER — the junk filtration `I_v` on `(−∞, 0]`, `1` on `(0, ∞)` would
+satisfy all six axioms. So inhabitation cannot be tested by asking
+whether the filtration exists; it has to be tested here.
+
+SUGGESTED DECOMPOSITION for whoever takes it, since it is really two
+statements: (1) every open normal `N ⊴ Γ Kᵥ` carries a
+`LowerRamificationData` with `lvl = N` — its fixed field is a finite
+extension of a local field, so `𝒪_L` is a DVR and `unif` is any
+generator of `𝔪_L`, `gp` being then forced by the `iff` in `mem_gp`;
+(2) the open normal subgroups of the profinite `Γ Kᵥ` meet in `1`. -/
+theorem iInf_lvl_eq_bot (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    (⨅ D : LowerRamificationData v, D.lvl) = ⊥ := sorry
+
+/-- **HERBRAND'S THEOREM**, `G_m ≤ Γ^{φ(m)} · N` at every finite level
+(SORRY LEAF, cut 2026-07-29; Serre, *Corps Locaux* IV §3, Prop. 14).
+
+This is the ENTIRE arithmetic content of `RamificationFiltration.gp_herbrand`:
+the reverse containment `Γ^{φ(m)} · N ≤ G_m` is free from the inverse-limit
+construction (`psiNat_phi` plus `localInertiaGroup_le_gp_zero` at `m = 0`),
+so only the surjectivity of `Γ^{φ(m)} → G_m` is open.
+
+WHY IT IS TRUE. Herbrand: the image of `G_{L'/Kᵥ, ψ_{L'}(u)}` in
+`Gal(L/Kᵥ)` for `L ⊆ L'` is `G_{L/Kᵥ, ψ_L(u)}`, which is what makes the
+upper numbering compatible with quotients and hence passable to the
+limit. Concretely, given `σ ∈ G_m(L/Kᵥ)` one lifts it to
+`Γ^{φ_L(m)} = ⋂_{D'} G_{ψ_{D'}(φ_L(m))}(L_{D'}/Kᵥ)` level by level and
+takes a limit, using compactness of `Γ Kᵥ`; the wild-inertia factor of
+the construction is free for `m ≥ 1` since `G_m ≤ G_1 ≤ P_v`.
+
+NOT A REFUTATION RISK IN THE OTHER DIRECTION: the statement is an
+INEQUALITY into a join, so it is weaker than the equality Herbrand
+supplies, and it is trivially true whenever `D.gp m = D.lvl` (deep
+levels). -/
+theorem LowerRamificationData.gp_le_upperRamificationFiltration_phi_sup_lvl
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) (m : ℕ) :
+    D.gp m ≤ upperRamificationFiltration v (D.phi m) ⊔ D.lvl := sorry
+
+/-- **THE INERTIA LANDS IN `G_0` AT EVERY FINITE LEVEL** (PROVEN
+2026-07-29; it was the fourth sorried `have` of the `hexists` block).
+
+`localInertiaGroup v` is by definition the inertia of the maximal ideal
+of `IntegralClosure 𝒪ᵥ Kᵥᵃˡᵍ`, i.e. `σ • x − x ∈ 𝔪` for EVERY `x` of
+that ring. For `x` fixed by the level `N`, normality of `N` makes
+`σ • x` fixed by `N` too (`τ • σ • x = σ • ((σ⁻¹τσ) • x) = σ • x`),
+hence so is `σ • x − x`; and `𝔪` is exactly the non-units. So
+`unif_spec` — "every `N`-fixed non-unit is divisible by `unif`" —
+applies and gives `unif ^ (0+1) ∣ σ • x − x`, which is `mem_gp` at
+`i = 0`.
+
+Note the step that is NOT available without `unif_spec`: membership in
+`𝔪` alone does not give divisibility by `unif`, because the value group
+of `Kᵥᵃˡᵍ` is DIVISIBLE and `𝔪` is not principal — `y ∈ 𝔪` says
+`v y > 0`, while `unif ∣ y` says `v y ≥ v unif`. The descent to the
+level, where the valuation IS discrete, is the whole content. -/
+theorem localInertiaGroup_le_gp_zero
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (D : LowerRamificationData v) : localInertiaGroup v ≤ D.gp 0 := by
+  intro σ hσ
+  rw [D.mem_gp]
+  intro x hx
+  have hconj : ∀ τ ∈ D.lvl, σ⁻¹ * τ * σ ∈ D.lvl := by
+    intro τ hτ
+    simpa using D.lvl_normal.conj_mem τ hτ σ⁻¹
+  have hfix : ∀ τ ∈ D.lvl, τ • (σ • x - x) = σ • x - x := by
+    intro τ hτ
+    have h1 : τ • (σ • x) = σ • x := by
+      rw [smul_smul]
+      have hrw : τ * σ = σ * (σ⁻¹ * τ * σ) := by group
+      rw [hrw, ← smul_smul, hx _ (hconj τ hτ)]
+    rw [smul_sub, h1, hx τ hτ]
+  have hmem : σ • x - x ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K))) := hσ x
+  have hnu : ¬ IsUnit (σ • x - x) := (IsLocalRing.mem_maximalIdeal _).mp hmem
+  simpa using D.unif_spec _ hfix hnu
+
+/-- **THE UPPER-NUMBERING FILTRATION EXISTS** — `RamificationFiltration v`
+is INHABITED, so nothing above it is vacuous.
+
+HOISTED 2026-07-29 from `Fermat/FLT/Modularity/Interface.lean`, where the
+same statement stood as a bare `sorry` restricted to `K = ℚ` and where
+its own docstring asked for exactly this move ("PLACEMENT. It belongs in
+`ArtinConductor.lean` beside `RamificationFiltration` itself"). The proof
+is the `hexists` block of `GaloisRep.exists_isSwanExponentAt`, moved out
+verbatim; that block now cites this theorem.
+
+WHY THE `Nonempty` MATTERS, and it is not decoration. `IsSwanExponentAt`
+quantifies UNIVERSALLY over `RamificationFiltration v`. Were the type
+empty the specification would be vacuously true of every `s`, so
+`swanExponentAux = sInf ℕ = 0` identically and `conductorExponent` would
+collapse to its tame part, which is `≤ dim V = 2`. Every citation
+asserting a conductor exponent `≥ 3` would then be FALSE rather than
+merely open. So this is a NON-DEGENERACY condition on the whole Swan
+development.
+
+THE CONSTRUCTION is Serre's inverse limit `upperRamificationFiltration v`
+over the finite levels (*Corps Locaux* IV §3, "Passage à la limite"):
+`G^u = P_v ⊓ ⨅_D G_{ψ_D(u)}(L_D/Kᵥ)` for `u > 0`, and `I_v` for `u ≤ 0`.
+Four of the six axioms are proven of it OUTRIGHT — decreasing, `G⁰ = I_v`,
+`G^u ≤ P_v` (free from the `⊓ P_v`), and left continuity (from the
+MINIMALITY of `LowerRamificationData.psiNat`). Separatedness needs
+`iInf_gp_eq_lvl` and `iInf_lvl_eq_bot`; `gp_herbrand` needs
+`localInertiaGroup_le_gp_zero` (PROVEN) in the `≤` direction at `m = 0`,
+`psiNat_phi` in the `≤` direction at `m ≥ 1`, and
+`gp_le_upperRamificationFiltration_phi_sup_lvl` in the `≥` direction.
+
+FAITHFULNESS AUDIT, 2026-07-29 — **TRUE UNDER THE RELEASE-17 AXIOM SET**,
+and the audit is NOT inherited from any earlier one, because the axioms
+were restated in release 17 (`gp_eq_wild` → `gp_le_wild`) and a restated
+leaf voids its predecessor's audit.
+
+* Under the PREVIOUS axioms it was FALSE: `gp_eq_wild` forced `G^u = P_v`
+  on `(0, 1]`, which is Hasse–Arf misapplied — a statement about
+  CHARACTERS of abelian extensions that does not survive induction. The
+  witness is the totally ramified `S₃`-extension `L/ℚ₃` with
+  `|G₀| = 6, |G₁| = 3, G₂ = 1`, where `φ(1) = 1/2` and `φ(2) = 2/3` both
+  lie in `(0,1]`, so `gp_eq_wild` and `gp_herbrand` together forced
+  `G₁ = G₂`. See the SECOND FALSITY AUDIT on `RamificationFiltration`.
+* Under `gp_le_wild` that obstruction is gone, and the SAME witness is
+  now consistent: `G^u = G₁ ≅ C₃` on `(0, 1/2]` and `1` above, which
+  satisfies `G^u ≤ P_v` throughout.
+* The construction above satisfies the six axioms JOINTLY rather than one
+  at a time, which is the check the previous audits did not run: the four
+  free axioms are proved of one and the same `upperRamificationFiltration v`,
+  and the remaining two are reduced to statements about the genuine
+  arithmetic (`⋂_m G_m = N`, `⋂_D N = 1`, Herbrand) that hold of it.
+* The `⨆`-accumulation worry recorded against the cut — that the upper
+  breaks accumulate at `0`, so a `P_v`-closure clause might be needed —
+  does NOT arise. `gp_of_forall_lt` is LEFT continuity, not a closure
+  clause, and the containment in `P_v` is imposed by the explicit
+  `⊓ wildInertiaGroup v` in the construction, which costs nothing since
+  `G^u ≤ P_v` holds for `u > 0` anyway. No extra field is wanted. -/
+theorem nonempty_ramificationFiltration
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    Nonempty (RamificationFiltration v) := by
+  classical
+  -- (i) THE LOWER FILTRATION TERMINATES AT ITS LEVEL, `⋂_m G_m = N`.
+  have hterm : ∀ D : LowerRamificationData v, (⨅ m : ℕ, D.gp m) = D.lvl :=
+    fun D => D.iInf_gp_eq_lvl
+  -- (ii) THE FINITE LEVELS SEPARATE POINTS, `⋂_D N_D = 1`.
+  have hsep : (⨅ D : LowerRamificationData v, D.lvl) = ⊥ := iInf_lvl_eq_bot v
+  -- (iii) THE INERTIA LANDS IN `G_0` AT EVERY LEVEL — PROVEN.
+  have hin : ∀ D : LowerRamificationData v, localInertiaGroup v ≤ D.gp 0 :=
+    fun D => localInertiaGroup_le_gp_zero v D
+  -- (iv) HERBRAND'S THEOREM, the crux.
+  have hherb : ∀ (D : LowerRamificationData v) (m : ℕ),
+      D.gp m ≤ upperRamificationFiltration v (D.phi m) ⊔ D.lvl :=
+    fun D m => D.gp_le_upperRamificationFiltration_phi_sup_lvl m
+  -- `G^u ≤ P_v` for `u > 0` — free from the construction.
+  have hwild : ∀ u : ℚ, 0 < u →
+      upperRamificationFiltration v u ≤ wildInertiaGroup v := by
+    intro u hu
+    rw [upperRamificationFiltration_of_pos v hu]
+    exact inf_le_left
+  -- `G⁰ = I_v` — free from the construction.
+  have hzero : upperRamificationFiltration v 0 = localInertiaGroup v :=
+    upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))
+  -- The filtration DECREASES: `psiNat` is monotone and `D.gp` antitone.
+  have hmono : ∀ u w : ℚ, u ≤ w →
+      upperRamificationFiltration v w ≤ upperRamificationFiltration v u := by
+    intro u w huw
+    by_cases hw : (0 : ℚ) < w
+    · by_cases hu : (0 : ℚ) < u
+      · rw [upperRamificationFiltration_of_pos v hw,
+          upperRamificationFiltration_of_pos v hu]
+        refine inf_le_inf_left _ (le_iInf fun D => ?_)
+        exact le_trans (iInf_le _ D) (D.gp_antitone (D.psiNat_mono huw))
+      · rw [upperRamificationFiltration_of_not_pos v hu]
+        exact le_trans (hwild w hw) (wildInertiaGroup_le_localInertiaGroup v)
+    · have hu : ¬ (0 : ℚ) < u := fun h => hw (lt_of_lt_of_le h huw)
+      rw [upperRamificationFiltration_of_not_pos v hw,
+        upperRamificationFiltration_of_not_pos v hu]
+  -- LEFT CONTINUITY: `psiNat` is constant just below `u`, because
+  -- `φ(psiNat u − 1) < u`.
+  have hcont : ∀ u : ℚ, 0 < u →
+      ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+        (∀ w : ℚ, 0 < w → w < u → σ ∈ upperRamificationFiltration v w) →
+        σ ∈ upperRamificationFiltration v u := by
+    intro u hu σ hσ
+    have hhalf : (0 : ℚ) < u / 2 := by linarith
+    have hhalflt : u / 2 < u := by linarith
+    have hP : σ ∈ wildInertiaGroup v := by
+      have h := hσ (u / 2) hhalf hhalflt
+      rw [upperRamificationFiltration_of_pos v hhalf] at h
+      exact (Subgroup.mem_inf.mp h).1
+    rw [upperRamificationFiltration_of_pos v hu]
+    refine Subgroup.mem_inf.mpr ⟨hP, Subgroup.mem_iInf.mpr fun D => ?_⟩
+    have hm₀pos : 0 < D.psiNat u := D.psiNat_pos hu
+    have hpred : D.phi (D.psiNat u - 1) < u := D.phi_psiNat_pred_lt hu
+    have hw0 : (0 : ℚ) < max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) :=
+      lt_of_lt_of_le hhalf (le_max_left _ _)
+    have hwu : max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) < u :=
+      max_lt hhalflt (by linarith)
+    have hwpred : D.phi (D.psiNat u - 1)
+        < max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) :=
+      lt_of_lt_of_le (by linarith) (le_max_right _ _)
+    have hmem := hσ _ hw0 hwu
+    rw [upperRamificationFiltration_of_pos v hw0] at hmem
+    have hmem' := Subgroup.mem_iInf.mp (Subgroup.mem_inf.mp hmem).2 D
+    have hle : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
+        ≤ D.psiNat u := D.psiNat_le (le_trans hwu.le (D.le_phi_psiNat u))
+    have hge : D.psiNat u
+        ≤ D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2)) := by
+      by_contra hcon
+      have hcon' : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
+          < D.psiNat u := Nat.not_le.mp hcon
+      have hstep : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
+          ≤ D.psiNat u - 1 := by omega
+      have h1 := D.phi_strictMono.monotone hstep
+      have h2 := D.le_phi_psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
+      linarith
+    rwa [le_antisymm hle hge] at hmem'
+  -- SEPARATEDNESS, from (i) and (ii).
+  have hone : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+      (∀ u : ℚ, 0 < u → σ ∈ upperRamificationFiltration v u) → σ = 1 := by
+    intro σ hσ
+    have hlvl : ∀ D : LowerRamificationData v, σ ∈ D.lvl := by
+      intro D
+      rw [← hterm D]
+      refine Subgroup.mem_iInf.mpr fun m => ?_
+      have hmem1 : σ ∈ D.gp (m + 1) := by
+        have hpos : (0 : ℚ) < D.phi (m + 1) := by
+          have h := D.phi_strictMono (Nat.succ_pos m)
+          rwa [D.phi_zero] at h
+        have h := hσ (D.phi (m + 1)) hpos
+        rw [upperRamificationFiltration_of_pos v hpos] at h
+        have hD := Subgroup.mem_iInf.mp (Subgroup.mem_inf.mp h).2 D
+        rwa [D.psiNat_phi] at hD
+      exact D.gp_antitone (Nat.le_succ m) hmem1
+    have hbot : σ ∈ (⨅ D : LowerRamificationData v, D.lvl) :=
+      Subgroup.mem_iInf.mpr hlvl
+    rw [hsep] at hbot
+    simpa using hbot
+  -- HERBRAND COMPATIBILITY: `≤` from `psiNat_phi` and (iii), `≥` is (iv).
+  have hherbrand : ∀ (D : LowerRamificationData v) (m : ℕ),
+      upperRamificationFiltration v (D.phi m) ⊔ D.lvl = D.gp m := by
+    intro D m
+    refine le_antisymm (sup_le ?_ (D.lvl_le_gp m)) (hherb D m)
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · rw [D.phi_zero, upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))]
+      exact hin D
+    · have hpos : (0 : ℚ) < D.phi m := by
+        have h := D.phi_strictMono hm
+        rwa [D.phi_zero] at h
+      rw [upperRamificationFiltration_of_pos v hpos]
+      refine le_trans inf_le_right (le_trans (iInf_le _ D) ?_)
+      rw [D.psiNat_phi]
+  exact ⟨{ gp := upperRamificationFiltration v
+           gp_le_gp := hmono
+           gp_zero := hzero
+           gp_le_wild := hwild
+           gp_of_forall_lt := hcont
+           eq_one_of_forall_mem := hone
+           gp_herbrand := hherbrand }⟩
+
 namespace GaloisRep
 
 /-- **The inertia invariants of a Galois representation at a finite
@@ -4709,29 +5055,37 @@ them.
 THE DECOMPOSITION (glue-first, three named steps).
 
 * `hexists` — **the upper-numbering filtration EXISTS**. It is no longer
-  a bare `sorry`: the filtration is CONSTRUCTED, as Serre's inverse limit
-  `upperRamificationFiltration v` over the finite levels
+  a bare `sorry`, and since 2026-07-29 it is no longer even a step of this
+  proof: it is the top-level theorem `nonempty_ramificationFiltration`
+  above, cited here in one line. The filtration is CONSTRUCTED, as Serre's
+  inverse limit `upperRamificationFiltration v` over the finite levels
   (*Corps Locaux* IV §3, "Passage à la limite"), and four of the six
   axioms — decreasing, `G⁰ = I_v`, `G^u ≤ P_v`, and left continuity —
   are PROVEN of it outright, the last from the minimality of
-  `LowerRamificationData.psiNat`. What remains open are four named
-  arithmetic inputs, stated as sorried `have`s in the proof:
+  `LowerRamificationData.psiNat`. What remains open are three named
+  arithmetic inputs, now TOP-LEVEL declarations beside that theorem rather
+  than anonymous sorried `have`s invisible to every frontier scan:
 
-  - `hterm` — `⋂_m G_m = N` at each finite level: an element moving every
-    `x ∈ 𝒪_L` by every power of the uniformizer fixes `L`. Serre IV §1.
-  - `hsep` — `⋂_D N_D = 1`: profiniteness of `Γ Kᵥ`, together with the
-    fact that every open normal subgroup carries a
-    `LowerRamificationData`. **This is where inhabitation of
+  - `LowerRamificationData.iInf_gp_eq_lvl` (was `hterm`) — `⋂_m G_m = N`
+    at each finite level: an element moving every `x ∈ 𝒪_L` by every power
+    of the uniformizer fixes `L`. Serre IV §1.
+  - `iInf_lvl_eq_bot` (was `hsep`) — `⋂_D N_D = 1`: profiniteness of
+    `Γ Kᵥ`, together with the fact that every open normal subgroup carries
+    a `LowerRamificationData`. **This is where inhabitation of
     `LowerRamificationData v` is now mechanically load-bearing**: if that
-    type were empty the meet would be `⊤` and `hsep` would be false, so
-    the emptiness cannot hide. It is the check the SECOND FALSITY AUDIT
-    asks for, promoted from prose to a leaf.
-  - `hin` — `I_v ≤ G_0` at each level: inertia acts trivially on the
-    residue field of `L`.
-  - `hherb` — **HERBRAND'S THEOREM**, `G_m ≤ Γ^{φ(m)} · N`, i.e. the
+    type were empty the meet would be `⊤` and the statement would be
+    false, so the emptiness cannot hide. It is the check the SECOND
+    FALSITY AUDIT asks for, promoted from prose to a leaf.
+  - `LowerRamificationData.gp_le_upperRamificationFiltration_phi_sup_lvl`
+    (was `hherb`) — **HERBRAND'S THEOREM**, `G_m ≤ Γ^{φ(m)} · N`, i.e. the
     surjectivity of `Γ^{φ(m)} → G_m`. Serre IV §3, Prop. 14. The reverse
     containment is proved from `psiNat_phi`, so this is the entire
     arithmetic content of `gp_herbrand`.
+
+  The fourth input, `hin` (`I_v ≤ G_0` at each level), is PROVEN as
+  `localInertiaGroup_le_gp_zero` — from `unif_spec` and normality of the
+  level, not from the residue-field description, which is not enough
+  because `𝔪` is non-principal over `Kᵥᵃˡᵍ`.
 
   This step discharges the `Nonempty` conjunct, and it is the one that
   keeps the leaf honest: nothing else prevents an over-strong anchor from
@@ -4780,137 +5134,15 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
   -- STEP 1 (`hexists`): the upper-numbering filtration exists. It is
   -- CONSTRUCTED, as Serre's inverse limit `upperRamificationFiltration v`
-  -- over the finite levels; four arithmetic inputs remain open below.
-  have hexists : Nonempty (RamificationFiltration v) := by
-    classical
-    -- (i) THE LOWER FILTRATION TERMINATES AT ITS LEVEL, `⋂_m G_m = N`.
-    -- An element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the
-    -- uniformizer moves none of them, so it fixes `L`, so it lies in `N`
-    -- (Galois correspondence). Serre, *Corps Locaux* IV §1.
-    have hterm : ∀ D : LowerRamificationData v, (⨅ m : ℕ, D.gp m) = D.lvl := sorry
-    -- (ii) THE FINITE LEVELS SEPARATE POINTS, `⋂_D N_D = 1`. This is
-    -- profiniteness of `Γ Kᵥ` together with the fact that EVERY open
-    -- normal subgroup carries a `LowerRamificationData` — so it is also
-    -- the statement that the type is richly INHABITED, and it is FALSE if
-    -- `LowerRamificationData v` is empty (the meet would be `⊤`). That is
-    -- deliberate: it makes the inhabitation check mechanical rather than
-    -- prose. See the SECOND FALSITY AUDIT on `RamificationFiltration`.
-    have hsep : (⨅ D : LowerRamificationData v, D.lvl) = ⊥ := sorry
-    -- (iii) THE INERTIA LANDS IN `G_0` AT EVERY LEVEL: an inertia element
-    -- acts trivially on the residue field of `L`, i.e. `unif ∣ σ • x − x`.
-    have hin : ∀ D : LowerRamificationData v, localInertiaGroup v ≤ D.gp 0 := sorry
-    -- (iv) HERBRAND'S THEOREM, the crux: `Γ^{φ(m)}` SURJECTS onto `G_m` at
-    -- every finite level. The reverse containment is proved below from
-    -- `psiNat_phi`, so this is the whole arithmetic content of
-    -- `gp_herbrand`. Serre, *Corps Locaux* IV §3, Prop. 14.
-    have hherb : ∀ (D : LowerRamificationData v) (m : ℕ),
-        D.gp m ≤ upperRamificationFiltration v (D.phi m) ⊔ D.lvl := sorry
-    -- `G^u ≤ P_v` for `u > 0` — free from the construction.
-    have hwild : ∀ u : ℚ, 0 < u →
-        upperRamificationFiltration v u ≤ wildInertiaGroup v := by
-      intro u hu
-      rw [upperRamificationFiltration_of_pos v hu]
-      exact inf_le_left
-    -- `G⁰ = I_v` — free from the construction.
-    have hzero : upperRamificationFiltration v 0 = localInertiaGroup v :=
-      upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))
-    -- The filtration DECREASES: `psiNat` is monotone and `D.gp` antitone.
-    have hmono : ∀ u w : ℚ, u ≤ w →
-        upperRamificationFiltration v w ≤ upperRamificationFiltration v u := by
-      intro u w huw
-      by_cases hw : (0 : ℚ) < w
-      · by_cases hu : (0 : ℚ) < u
-        · rw [upperRamificationFiltration_of_pos v hw,
-            upperRamificationFiltration_of_pos v hu]
-          refine inf_le_inf_left _ (le_iInf fun D => ?_)
-          exact le_trans (iInf_le _ D) (D.gp_antitone (D.psiNat_mono huw))
-        · rw [upperRamificationFiltration_of_not_pos v hu]
-          exact le_trans (hwild w hw) (wildInertiaGroup_le_localInertiaGroup v)
-      · have hu : ¬ (0 : ℚ) < u := fun h => hw (lt_of_lt_of_le h huw)
-        rw [upperRamificationFiltration_of_not_pos v hw,
-          upperRamificationFiltration_of_not_pos v hu]
-    -- LEFT CONTINUITY: `psiNat` is constant just below `u`, because
-    -- `φ(psiNat u − 1) < u`.
-    have hcont : ∀ u : ℚ, 0 < u →
-        ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
-          (∀ w : ℚ, 0 < w → w < u → σ ∈ upperRamificationFiltration v w) →
-          σ ∈ upperRamificationFiltration v u := by
-      intro u hu σ hσ
-      have hhalf : (0 : ℚ) < u / 2 := by linarith
-      have hhalflt : u / 2 < u := by linarith
-      have hP : σ ∈ wildInertiaGroup v := by
-        have h := hσ (u / 2) hhalf hhalflt
-        rw [upperRamificationFiltration_of_pos v hhalf] at h
-        exact (Subgroup.mem_inf.mp h).1
-      rw [upperRamificationFiltration_of_pos v hu]
-      refine Subgroup.mem_inf.mpr ⟨hP, Subgroup.mem_iInf.mpr fun D => ?_⟩
-      have hm₀pos : 0 < D.psiNat u := D.psiNat_pos hu
-      have hpred : D.phi (D.psiNat u - 1) < u := D.phi_psiNat_pred_lt hu
-      have hw0 : (0 : ℚ) < max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) :=
-        lt_of_lt_of_le hhalf (le_max_left _ _)
-      have hwu : max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) < u :=
-        max_lt hhalflt (by linarith)
-      have hwpred : D.phi (D.psiNat u - 1)
-          < max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2) :=
-        lt_of_lt_of_le (by linarith) (le_max_right _ _)
-      have hmem := hσ _ hw0 hwu
-      rw [upperRamificationFiltration_of_pos v hw0] at hmem
-      have hmem' := Subgroup.mem_iInf.mp (Subgroup.mem_inf.mp hmem).2 D
-      have hle : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
-          ≤ D.psiNat u := D.psiNat_le (le_trans hwu.le (D.le_phi_psiNat u))
-      have hge : D.psiNat u
-          ≤ D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2)) := by
-        by_contra hcon
-        have hcon' : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
-            < D.psiNat u := Nat.not_le.mp hcon
-        have hstep : D.psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
-            ≤ D.psiNat u - 1 := by omega
-        have h1 := D.phi_strictMono.monotone hstep
-        have h2 := D.le_phi_psiNat (max (u / 2) ((D.phi (D.psiNat u - 1) + u) / 2))
-        linarith
-      rwa [le_antisymm hle hge] at hmem'
-    -- SEPARATEDNESS, from (i) and (ii).
-    have hone : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
-        (∀ u : ℚ, 0 < u → σ ∈ upperRamificationFiltration v u) → σ = 1 := by
-      intro σ hσ
-      have hlvl : ∀ D : LowerRamificationData v, σ ∈ D.lvl := by
-        intro D
-        rw [← hterm D]
-        refine Subgroup.mem_iInf.mpr fun m => ?_
-        have hmem1 : σ ∈ D.gp (m + 1) := by
-          have hpos : (0 : ℚ) < D.phi (m + 1) := by
-            have h := D.phi_strictMono (Nat.succ_pos m)
-            rwa [D.phi_zero] at h
-          have h := hσ (D.phi (m + 1)) hpos
-          rw [upperRamificationFiltration_of_pos v hpos] at h
-          have hD := Subgroup.mem_iInf.mp (Subgroup.mem_inf.mp h).2 D
-          rwa [D.psiNat_phi] at hD
-        exact D.gp_antitone (Nat.le_succ m) hmem1
-      have hbot : σ ∈ (⨅ D : LowerRamificationData v, D.lvl) :=
-        Subgroup.mem_iInf.mpr hlvl
-      rw [hsep] at hbot
-      simpa using hbot
-    -- HERBRAND COMPATIBILITY: `≤` from `psiNat_phi` and (iii), `≥` is (iv).
-    have hherbrand : ∀ (D : LowerRamificationData v) (m : ℕ),
-        upperRamificationFiltration v (D.phi m) ⊔ D.lvl = D.gp m := by
-      intro D m
-      refine le_antisymm (sup_le ?_ (D.lvl_le_gp m)) (hherb D m)
-      rcases Nat.eq_zero_or_pos m with rfl | hm
-      · rw [D.phi_zero, upperRamificationFiltration_of_not_pos v (lt_irrefl (0 : ℚ))]
-        exact hin D
-      · have hpos : (0 : ℚ) < D.phi m := by
-          have h := D.phi_strictMono hm
-          rwa [D.phi_zero] at h
-        rw [upperRamificationFiltration_of_pos v hpos]
-        refine le_trans inf_le_right (le_trans (iInf_le _ D) ?_)
-        rw [D.psiNat_phi]
-    exact ⟨{ gp := upperRamificationFiltration v
-             gp_le_gp := hmono
-             gp_zero := hzero
-             gp_le_wild := hwild
-             gp_of_forall_lt := hcont
-             eq_one_of_forall_mem := hone
-             gp_herbrand := hherbrand }⟩
+  -- over the finite levels. HOISTED 2026-07-29 to the top-level theorem
+  -- `nonempty_ramificationFiltration` above, which also replaces the
+  -- duplicate that stood in `Fermat/FLT/Modularity/Interface.lean`. The
+  -- four arithmetic inputs it used to carry as ANONYMOUS sorried `have`s
+  -- are now NAMED leaves beside it (`LowerRamificationData.iInf_gp_eq_lvl`,
+  -- `iInf_lvl_eq_bot`, `LowerRamificationData.gp_le_upperRamificationFiltration_phi_sup_lvl`),
+  -- except `hin`, which is PROVEN there as `localInertiaGroup_le_gp_zero`.
+  have hexists : Nonempty (RamificationFiltration v) :=
+    nonempty_ramificationFiltration v
   -- STEP 2 (`hbreak`): with finite wild monodromy, every admissible
   -- filtration has a finite list of rational breaks.
   have hbreak : ρ.HasFiniteWildMonodromyAt v →
