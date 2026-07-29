@@ -59845,14 +59845,304 @@ theorem exists_monodromy_of_inertia_sq_eq_zero
     rw [← h2]
     abel
 
+/-! ### The `q ∥ M₀` local shape, RE-CUT ALONG THE DETERMINANT (2026-07-28,
+sixteenth owner)
+
+**WHAT CHANGED, AND WHY IT IS NOT A RESTATEMENT.** The two declarations
+below used to be SORRY LEAVES whose docstrings both recorded the same
+terminality verdict: that closing them needed Weil–Deligne parameters and
+local `GL₂` representation theory, neither of which exists on this pin.
+**That verdict was WRONG**, and the counterexample to it was already in
+this file, ~500 lines below, written by the fifteenth owner the same day:
+the DEEP-level cluster (`ord_q M₀ ≥ 2`) had already found that the
+Steinberg shape at a `2`-dimensional `τ` is forced by the DETERMINANT
+plus a fixed vector, with no Weil–Deligne parameter anywhere.
+
+Applying that discovery here turns BOTH leaves into theorems over ONE
+new leaf, `finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one` — the single number `dim V^{I_q} = 1`:
+
+* SQUARE-ZERO UNIPOTENCE is `dim V^{I_q} ≥ 1` (a nonzero inertia-fixed
+  vector) together with `det τ|_{I_q} = 1`, through Cayley–Hamilton in
+  dimension `2` (`sq_sub_one_eq_zero_of_fixed_of_det_eq_one`). An
+  eigenvalue `1` and determinant `1` force the other eigenvalue to be
+  `1`.
+* NONTRIVIALITY OF THE INERTIA ACTION is `dim V^{I_q} ≤ 1`: if every
+  `σ ∈ I_q` acted as the identity then `V^{I_q}` would be all of `V`,
+  of dimension `2`.
+
+So the local classification is not needed to state or to use the
+`q ∥ M₀` shape; it is needed only to produce the NUMBER `1`, which is
+exactly Carayol's conductor identity `a_q(τ) = ord_q M₀` read at
+`ord_q M₀ = 1`. That is what the new leaf cites, and it cites nothing
+else.
+
+**TWO DECLARATIONS ARE HOISTED HERE UNCHANGED** from the deep-level block
+below, because Lean's declaration order was the only thing preventing
+this derivation: `sq_sub_one_eq_zero_of_fixed_of_det_eq_one` (pure linear
+algebra) and `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup`
+(the determinant leaf). Their statements, proofs and docstrings are
+byte-identical to the fifteenth owner's; only their position moved, and
+their deep-level consumers below are unaffected.
+
+**A STALE DOCSTRING CLAIM IS CORRECTED BELOW.** The square-zero leaf said
+"`hqp : q ≠ p` is carried but is NOT consumed by this half". It is
+consumed, and dropping it makes the statement FALSE — see the corrected
+paragraph and its explicit witness in that docstring.
+-/
+
+/-- **A FIXED VECTOR AND DETERMINANT ONE FORCE SQUARE-ZERO UNIPOTENCE IN
+DIMENSION `2`** (PROVEN — pure linear algebra, 2026-07-28, fifteenth
+owner of the deep-level cluster; HOISTED here 2026-07-28 by the
+sixteenth owner, unchanged, so that the `q ∥ M₀` leaves below can consume
+it — it was previously declared after them).
+
+If `u` is an endomorphism of a `2`-dimensional coordinate space with a
+NONZERO fixed vector `w` and `det u = 1`, then `(u − 1)² = 0`.
+
+THE PROOF IS CAYLEY–HAMILTON, USED TWICE. In dimension `2` the
+characteristic polynomial is `X² − (tr u)·X + det u`
+(`Matrix.charpoly_fin_two`), so `u² − (tr u)·u + (det u) = 0`
+(`Matrix.aeval_self_charpoly`, transported along
+`LinearMap.toMatrixAlgEquiv'`). Evaluating THAT identity at `w` and using
+`u w = w`, `det u = 1` gives `(2 − tr u)·w = 0`, whence `tr u = 2`
+because `w ≠ 0` and the ground ring is a FIELD. The identity then reads
+`u² − 2u + 1 = 0`, i.e. `(u − 1)² = 0`.
+
+This is the "an eigenvalue `1` together with determinant `1` makes the
+other eigenvalue `1`" step of the local classification, written without
+ever choosing a basis adapted to the fixed line — which is what keeps it
+free of `Module.Free`/basis-extension bookkeeping. -/
+theorem sq_sub_one_eq_zero_of_fixed_of_det_eq_one
+    {F : Type*} [Field F] {u : Module.End F (Fin 2 → F)}
+    {w : Fin 2 → F} (hw : w ≠ 0) (huw : u w = w)
+    (hdet : LinearMap.det u = 1) : (u - 1) ^ 2 = 0 := by
+  classical
+  set A : Matrix (Fin 2) (Fin 2) F := LinearMap.toMatrixAlgEquiv' u with hA
+  have hAu : Matrix.toLinAlgEquiv' A = u := by
+    rw [hA, Matrix.toLinAlgEquiv'_toMatrixAlgEquiv']
+  have hAdet : A.det = 1 := by
+    rw [hA, show (LinearMap.toMatrixAlgEquiv' u) = LinearMap.toMatrix' u from rfl,
+      LinearMap.det_toMatrix']
+    exact hdet
+  have hCH : A ^ 2 - algebraMap F (Matrix (Fin 2) (Fin 2) F) A.trace * A
+      + algebraMap F (Matrix (Fin 2) (Fin 2) F) A.det = 0 := by
+    have h := Matrix.aeval_self_charpoly A
+    rw [Matrix.charpoly_fin_two] at h
+    simpa using h
+  have hCH' : u ^ 2 - algebraMap F (Module.End F (Fin 2 → F)) A.trace * u
+      + algebraMap F (Module.End F (Fin 2 → F)) A.det = 0 := by
+    have h := congrArg (LinearMap.toMatrixAlgEquiv' (n := Fin 2) (R := F)).symm hCH
+    simpa [hAu, AlgEquiv.commutes] using h
+  have happ : ((2 : F) - A.trace) • w = 0 := by
+    have h := congrArg (fun f : Module.End F (Fin 2 → F) => f w) hCH'
+    simp only [LinearMap.add_apply, LinearMap.sub_apply, LinearMap.zero_apply,
+      Module.End.mul_apply, Module.algebraMap_end_apply, pow_two, huw, hAdet,
+      one_smul] at h
+    rw [sub_smul, two_smul, ← h]
+    abel
+  have htr : A.trace = 2 := by
+    rcases smul_eq_zero.mp happ with h | h
+    · exact (sub_eq_zero.mp h).symm
+    · exact absurd h hw
+  rw [htr, hAdet] at hCH'
+  simp only [map_one, map_ofNat] at hCH'
+  have hexp : (u - 1) ^ 2 = u ^ 2 - 2 * u + 1 := by
+    simp only [pow_two, sub_mul, mul_sub, mul_one, one_mul, two_mul]
+    abel
+  rw [hexp, hCH']
+
+/-- **THE DETERMINANT OF `τ` IS THE CYCLOTOMIC CHARACTER, HENCE TRIVIAL
+ON INERTIA AWAY FROM `p`** (SORRY LEAF, cut 2026-07-28, fifteenth owner;
+Chebotarev density, plus the unramifiedness of the `p`-adic cyclotomic
+character outside `p`. HOISTED here 2026-07-28 by the sixteenth owner,
+statement and docstring unchanged, so that the `q ∥ M₀` leaves below can
+consume it as well as the deep-level ones; it now has FOUR consumers on
+both sides of the `ord_q M₀` split rather than two).
+
+STATEMENT. If `τ`'s Frobenius characteristic polynomials are
+`X² − a_r X + r` off a finite set, then for every prime `q ≠ p` the
+determinant of `τ` is trivial on `localInertiaGroup q`.
+
+WHY IT IS TRUE. For a `2`-dimensional representation the constant term
+of the characteristic polynomial of `τ(Frob_r)` IS `det τ(Frob_r)`, so
+`hτ` says `det τ (Frob_r) = r` for every prime `r ∉ S_τ`. The `p`-adic
+cyclotomic character `ε_p` satisfies the same identity at every
+unramified `r`. Both are CONTINUOUS characters of `Γ ℚ`, and a set of
+Frobenii of density one determines a continuous character (Chebotarev),
+so `det τ = ε_p`. The cyclotomic character is unramified at every place
+away from `p`, i.e. trivial on `localInertiaGroup q` for `q ≠ p`.
+
+**THIS IS WHERE THE TRIVIAL NEBENTYPUS ENTERS, AND IT IS THE ONLY
+PLACE** — now on both sides of the `ord_q M₀` split. The whole content of
+"weight 2 on `Γ₀(M₀)`, so `det = ε_p`" is here; every consumer uses
+nothing else about the newform's character.
+
+`hqp : q ≠ p` IS LOAD-BEARING HERE: `ε_p` is ramified at `p` itself
+(its restriction to `I_p` surjects onto `1 + pℤ_p`), so the conclusion is
+FALSE at `q = p` for every `τ` with cyclotomic determinant.
+
+MINIMALITY. The leaf deliberately does NOT take `hM₀`, `hg₀` or `hirr`:
+neither the positivity of the level, nor newform-ness, nor
+irreducibility is used in the argument above — only `hτ` and the
+continuity built into `GaloisRep`. Stating it with the smaller
+hypothesis bundle keeps it strictly stronger and makes it reusable at
+any `τ` with cyclotomic Frobenius determinants. `g₀` and `κ₀` survive
+only because `hτ` mentions `heckeCoeff M₀ g₀`.
+
+TERMINALITY AT THIS PIN. What is missing is Chebotarev in the form
+"two continuous characters of `Γ K` agreeing on the Frobenii outside a
+finite set are equal". The file has `Chebotarev.lean` and the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` for `2`-dimensional
+representations, but no character-level statement; the neighbouring
+`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p` runs the
+other way (it ASSUMES unramifiedness outside `p`). THE CHECK THAT WOULD
+REFUTE THIS VERDICT: exhibit a statement in this tree deducing equality
+of two continuous `Γ ℚ`-characters from agreement on a density-one set
+of Frobenii. AXIS SEARCHED: the character axis and the
+`exists_linearEquiv_of_charFrob_eq` transport axis. NOT SEARCHED:
+whether `det` of the rigidity isomorphism can be run directly, which
+would need a second representation with known determinant. -/
+theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
+    {M₀ : ℕ} {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 :=
+  sorry
+
+/-- **THE INERTIA INVARIANTS AT `q ∥ M₀` ARE A LINE** (**SORRY LEAF, cut
+2026-07-28 by the sixteenth owner**; this is the ONE residual `q ∥ M₀`
+citation, replacing the PAIR `inertia_sq_eq_zero_...` /
+`exists_mem_localInertiaGroup_toLocal_ne_one_...` below, both of which
+are now THEOREMS over it. Carayol, *Sur les représentations `ℓ`-adiques
+associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986),
+Théorème (A), read at `ord_q M₀ = 1`).
+
+STATEMENT: for a weight-2 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ`
+matching its Hecke polynomials away from a finite set, and a prime
+`q ≠ p` with `ord_q M₀ = 1`, the inertia invariants at `q` form a LINE:
+`dim_{ℚ̄_p} V^{I_q} = 1`.
+
+WHY THIS IS THE RIGHT CUT, and why it is smaller than what it replaces.
+Carayol's identity is `a_q(τ) = ord_q M₀`. At `ord_q M₀ = 1` the Swan
+part vanishes (a conductor exponent of `1` on a `2`-dimensional space
+leaves no room for a wild break) and the identity collapses to its tame
+part, `dim V − dim V^{I_q} = 1`. Since `dim V = 2`, that IS the statement
+above. Everything else the old pair asserted is downstream LINEAR
+ALGEBRA:
+
+* `dim V^{I_q} ≥ 1` gives a nonzero inertia-fixed vector, which with
+  `det τ|_{I_q} = 1` forces `(τσ − 1)² = 0` on all of `I_q`
+  (`sq_sub_one_eq_zero_of_fixed_of_det_eq_one` above). NO Weil–Deligne
+  parameter and NO local `GL₂` classification is used.
+* `dim V^{I_q} ≤ 1` says `V^{I_q} ≠ V`, i.e. inertia acts nontrivially.
+
+EXACTNESS OF THE SPLIT, in both directions, so the cut adds no faith.
+Forwards is the two bullets above. Backwards: the old pair gives, via
+`exists_monodromy_of_inertia_sq_eq_zero`, a nonzero square-zero `N` with
+`V^{I_q} = ker N`, and rank–nullity in dimension `2` returns
+`dim ker N = 1`. So the new leaf and the old pair are EQUIVALENT given
+the determinant leaf, and this is a genuine 2 → 1 reduction rather than a
+reformulation.
+
+`hqp : q ≠ p` IS LOAD-BEARING. At `q = p` the local representation at a
+prime exactly dividing the level is the cyclotomically twisted Steinberg
+parameter and `V^{I_p}` can have dimension `0`. Concrete witness:
+`p = 11`, `M₀ = 11`, `τ` the `11`-adic Tate module of `X₀(11) = 11a`.
+Every other hypothesis holds, `11a` has multiplicative reduction at `11`,
+and on `I_11` the representation is `[[χ, ∗], [0, 1]]` with
+`χ : I_11 ↠ ℤ_11^×` surjective — so `dim V^{I_11} = 1` survives only
+because the extension is nonsplit, while the SQUARE-ZERO conclusion its
+consumer draws fails outright, `(τσ − 1)²` having entry `(χσ − 1)² ≠ 0`.
+
+`hord : ord_q M₀ = 1` IS LOAD-BEARING in BOTH directions. At
+`ord_q M₀ = 0` the representation is unramified at `q` and
+`dim V^{I_q} = 2`; at `ord_q M₀ ≥ 2` the fifteenth owner's
+`inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le` below proves
+`dim V^{I_q} = 0`. So all three ranges are genuinely different numbers
+and this leaf is the middle one, not a bound that happens to hold widely.
+
+NOT VACUOUS: the hypothesis bundle is inhabited by the PROVEN pair
+`exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with its
+exceptional set) and the PROVEN Ribet irreducibility below, at any
+newform of level `M₀ = q M'` with `q ∤ M'`, `q ≠ p`.
+
+TERMINALITY at this pin — **and the previous verdict on this cluster was
+WRONG, so read this one against its refuting check.** The old pair's
+docstrings both said the blocker was the absence of Weil–Deligne
+parameters and local `GL₂` representation theory. That was a correct
+observation about the pin and an INCORRECT diagnosis of the leaves: no
+such theory is needed for either conclusion, as the two theorems below
+now demonstrate in checked Lean. What is genuinely missing is narrower —
+a semistable/Néron model of `X₀(M₀)` at `q ∥ M₀` with the monodromy
+filtration on `V_p(J₀(M₀))` (Deligne–Rapoport V.1; Grothendieck, SGA 7 I
+IX), or the automorphic route through local Langlands — and it is needed
+only to produce the single NUMBER `1`.
+
+**THE CHECK THAT WOULD REFUTE THIS VERDICT**: exhibit anywhere in the
+tree a statement pinning `dim V^{I_q}`, or the conductor exponent
+`a_q(τ)`, for a realisation of the `g₀`-eigensystem at a prime `q`
+exactly dividing `M₀`. As of 2026-07-28 the only such statements in this
+file are downstream of this leaf. In particular
+`nonempty_modularTateModuleData` is PROVEN and carries NO bad-prime local
+data — no field of `ModularTateModuleData` mentions inertia — so
+completing Deligne–Rapoport could never have closed this cluster on its
+own. AXIS SEARCHED: the carrier axis, the transport axis (both by the
+fourteenth owner) and the LINEAR-ALGEBRA axis, which is new here and is
+what produced the 2 → 1 reduction. NOT SEARCHED: whether `hirr` plus the
+level structure can force `dim V^{I_q} ≤ 1` directly by level lowering —
+i.e. "if `τ` were unramified at `q` then `g₀` would live at level
+`M₀/q`, contradicting newness". That is the most promising route to
+SPLITTING this leaf further, and it would use
+`eq_of_isWeightTwoNewform_qCoeff_eq_of_not_dvd`. -/
+theorem finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    Module.finrank (AlgebraicClosure ℚ_[p])
+      (τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat) = 1 :=
+  sorry
+
 /-- **INERTIA ACTS BY SQUARE-ZERO UNIPOTENTS AT `q ∥ M₀`**
-(**SORRY LEAF — half of the residual `q ∥ M₀` citation**, cut 2026-07-27
+(**PROVEN 2026-07-28, SIXTEENTH owner**, over the single leaf
+`finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one` above plus the determinant leaf; cut 2026-07-27
 by the fourteenth owner out of
 `exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` below,
-which is PROVEN over this leaf and its sibling; Carayol, *Sur les
+which is PROVEN over this declaration and its sibling; Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
 Ann. Sci. ÉNS 19 (1986), Théorème (A), plus Casselman's conductor-`1`
 classification and Grothendieck's `ℓ`-adic monodromy theorem).
+
+**THE PROOF NEEDS NO WEIL–DELIGNE THEORY**, contrary to what this
+docstring's own terminality section used to say. `dim V^{I_q} = 1` gives
+a nonzero `w₀` fixed by all of `I_q`; `det τ|_{I_q} = 1` comes from the
+determinant leaf above; and Cayley–Hamilton in dimension `2`
+(`sq_sub_one_eq_zero_of_fixed_of_det_eq_one`) turns the pair into
+`(τσ − 1)² = 0`. Three lines, and the arithmetic input is confined to the
+two leaves cited.
 
 STATEMENT: for a weight-2 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ`
 matching its Hecke polynomials away from a finite set, and a prime
@@ -59887,45 +60177,52 @@ is widened to `Γ ℚ`, which is the standing trap in this file. Widening
 it WOULD be false: Frobenius acts through the unramified twist with
 eigenvalues `±q^{1/2}`-scaled, not unipotently.
 
-`hqp : q ≠ p` is carried but is NOT consumed by this half — at `q = p`
-the local representation of a newform of level exactly divisible by `p`
-is still an unramified twist of Steinberg in the ordinary case, but the
-`p`-adic realisation is no longer given by the tame character and the
-square-zero shape can fail. It is retained so the leaf can be quoted
-alongside its sibling without a hypothesis mismatch.
+**`hqp : q ≠ p` IS LOAD-BEARING — the previous version of this paragraph
+said it "is NOT consumed by this half", and that was WRONG.** It is now
+consumed in checked Lean, twice: the determinant leaf above needs it
+(`ε_p` is ramified at `p`) and the new `dim V^{I_q} = 1` leaf needs it.
+And the statement is FALSE without it. WITNESS: `p = 11`, `M₀ = 11`,
+`g₀` the weight-2 newform of level `11`, `q = p = 11`, `τ` the `11`-adic
+Tate module of `X₀(11) = 11a`. Every other hypothesis holds — `11a` is
+the elliptic curve attached to `g₀`, `τ` is irreducible, and its
+Frobenius polynomials are `X² − a_r X + r` off `{11}` — and
+`ord_11 M₀ = 1`. But `11a` has multiplicative reduction at `11`, so on
+`I_11` the representation is `[[χ, ∗], [0, 1]]` where
+`χ : I_11 ↠ ℤ_11^×` is the restriction of the cyclotomic character, and
+`(τσ − 1)²` has diagonal entry `(χσ − 1)²`, nonzero for any `σ` outside
+`ker χ`. The old paragraph even conceded, two sentences later, that the
+square-zero shape "can fail" at `q = p`; it simply did not draw the
+conclusion. Do not drop `hqp`, and do not "harmonise" it away for
+symmetry with a sibling.
 
 NOT VACUOUS: the hypothesis bundle is inhabited by the PROVEN pair
 `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with its
 exceptional set) and the PROVEN Ribet irreducibility below, at any
 newform of level `M₀ = q M'` with `q ∤ M'`, `q ≠ p`.
 
-TERMINALITY at this pin. What is genuinely missing is a
-semistable/Néron model of `X₀(M₀)` at `q ∥ M₀` together with the
-monodromy filtration on `V_p(J₀(M₀))` (Deligne–Rapoport V.1 for the
-model; Grothendieck, SGA 7 I IX for the monodromy pairing), or
-equivalently the automorphic route through local Langlands — the pin has
-no automorphic representations, no Weil–Deligne parameters, and
-`~/cs/FLT` has nothing vendorable here.
+TERMINALITY — **THE PREVIOUS VERDICT HERE WAS WRONG AND IS WITHDRAWN.**
+It read: "What is genuinely missing is a semistable/Néron model of
+`X₀(M₀)` at `q ∥ M₀` together with the monodromy filtration on
+`V_p(J₀(M₀))` … or equivalently the automorphic route through local
+Langlands — the pin has no automorphic representations, no Weil–Deligne
+parameters". Both halves of that were correct ABOUT THE PIN and wrong
+ABOUT THIS LEAF: none of it is needed to derive this conclusion, as the
+proof below shows. Its own stated refuting check — "exhibit anywhere in
+the tree a statement pinning the action of `localInertiaGroup q`" — was
+answerable within the same file: `sq_sub_one_eq_zero_of_fixed_of_det_eq_
+one` and `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup`, both
+written by the fifteenth owner the following day, ~500 lines below, for
+the DEEP-level cluster. The residual citation is now the single leaf
+`finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one` above; see its docstring for the surviving (and
+much narrower) terminality claim.
 
-**THE CHECK THAT WOULD REFUTE THIS VERDICT**: exhibit anywhere in the
-tree a statement pinning the action of `localInertiaGroup q` on ANY
-realisation of the `g₀`-eigensystem at a prime `q` exactly dividing `M₀`.
-As of 2026-07-27 there is none. In particular
-`nonempty_modularTateModuleData` is PROVEN and carries NO bad-prime local
-data — no field of `ModularTateModuleData` mentions inertia, and its
-`congruence` and `pair_frob` fields are hypothesised only OFF the
-exceptional set `S` — so completing Deligne–Rapoport was necessary for
-the wider programme and could never have closed this cluster. Adding a
-monodromy field to `ModularTateModuleData` (an operator on `Vp` with its
-inertia identity), plus transport along the PROVEN rigidity
-`exists_linearEquiv_of_charFrob_eq`, is the shape of the cut that would
-RETIRE this leaf rather than discharge it.
-AXIS SEARCHED: the carrier axis (does any existing structure in this
-file record bad-prime local data) and the transport axis (is there a
-proven route from `Vp` to `τ` carrying inertia information). NOT
-SEARCHED: any route through `p`-adic Hodge theory at `q ≠ p`, which
-would be perverse; and the automorphic axis, which does not exist on
-this pin. -/
+THE LESSON, since it cost this cluster three owners: the leaf was audited
+along the CARRIER axis and the TRANSPORT axis, and the answer on both was
+"the geometry is missing". Nobody asked what the conclusion follows from
+as LINEAR ALGEBRA, and the answer there was "one number". Two audits
+agreeing is not independent confirmation when they share a search
+space. -/
 theorem inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -59943,40 +60240,58 @@ theorem inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hord : M₀.factorization q = 1) :
     ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2 = 0 :=
-  sorry
+      (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2 = 0 := by
+  -- `dim V^{I_q} = 1`, so the inertia invariants are not the zero submodule.
+  have hdim := finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
+    hM₀ hg₀ κ₀ hτ hirr hq hqp hord
+  have hne : τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat ≠ ⊥ := by
+    intro hbot
+    rw [hbot] at hdim
+    simp at hdim
+  obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hne
+  -- A nonzero fixed vector plus determinant `1` is Cayley–Hamilton in dimension `2`.
+  intro σ hσ
+  exact sq_sub_one_eq_zero_of_fixed_of_det_eq_one hw₀ne (hw₀mem σ hσ)
+    (det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup κ₀ hτ hq hqp σ hσ)
 
-/-- **INERTIA ACTS NONTRIVIALLY AT `q ∥ M₀`** (**SORRY LEAF — the other
-half of the residual `q ∥ M₀` citation**, cut 2026-07-27 by the
-fourteenth owner alongside the leaf above; same references).
+/-- **INERTIA ACTS NONTRIVIALLY AT `q ∥ M₀`** (**PROVEN 2026-07-28,
+SIXTEENTH owner**, over the single leaf
+`finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one` above; cut 2026-07-27 by the fourteenth owner
+alongside the declaration above; same references).
 
 STATEMENT: under the same hypotheses, SOME inertia element at `q` acts
 nontrivially — `∃ σ ∈ I_q, τσ ≠ 1`. Equivalently `τ` is RAMIFIED at `q`.
 
-WHY IT IS TRUE, and why it is a SEPARATE leaf. The conductor exponent of
-an unramified twist of Steinberg is exactly `1`, not `0`: the monodromy
-operator `N` of the special Weil–Deligne parameter is NONZERO, and the
-`p`-adic tame character `t_p : I_q ↠ ℤ_p(1)` is surjective, so
-`σ ↦ 1 + t_p(σ)N` is a nonconstant map on `I_q`. This is the half of the
-old citation that carries the RAMIFIEDNESS, and it is what ultimately
-pins `dim V^{I_q} = 1` rather than `2` in
-`tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one`
-below. It is logically independent of its sibling: the sibling is
-satisfied vacuously by an UNRAMIFIED `τ`, and it is exactly this clause
-that excludes that.
+THE PROOF IS A DIMENSION COUNT, not a local classification. If every
+`σ ∈ I_q` acted as the identity then every vector would be
+inertia-fixed, so `V^{I_q} = V` would have dimension `2`; the leaf above
+says it has dimension `1`. That is the whole argument, and it is the
+reason this is no longer a separate citation: the old docstring derived
+ramifiedness from "the monodromy operator `N` of the special
+Weil–Deligne parameter is NONZERO", which is true but is not available
+on this pin and is not needed.
 
-DO NOT WEAKEN IT. Dropping this leaf would leave the monodromy statement
-inhabitable with `N` arbitrary and `t ≡ 0`, i.e. vacuous, and
-`tameExponent_eq_one_...` would become FALSE (an unramified `τ` has tame
-exponent `0`). The nontriviality clause is precisely what cancels the
-scalar there.
+WHY IT WAS A SEPARATE LEAF, and why that was right at the time. Against
+its sibling ALONE this statement is independent: the square-zero
+condition is satisfied vacuously by an UNRAMIFIED `τ`, and it is exactly
+this clause that excludes that. Against the single `dim V^{I_q} = 1`
+leaf it is not independent — the same number gives both — which is what
+made the 2 → 1 reduction possible.
+
+DO NOT WEAKEN IT. Dropping this conclusion would leave the monodromy
+statement below inhabitable with `N` arbitrary and `t ≡ 0`, i.e.
+vacuous, and `tameExponent_eq_one_...` would become FALSE (an unramified
+`τ` has tame exponent `0`). The nontriviality clause is precisely what
+cancels the scalar there.
 
 FAITHFULNESS: the quantifier stays over `localInertiaGroup q`.
 `hord : ord_q M₀ = 1` is load-bearing — at `ord_q M₀ = 0` the
-representation is unramified at `q` and the statement is FALSE.
-
-TERMINALITY: identical to the sibling above, including the refuting
-check and the searched axes; see its docstring. -/
+representation is unramified at `q` and the statement is FALSE. It is
+consumed through the leaf above, which is false at `ord_q M₀ = 0` for the
+same reason. Note that `hqp : q ≠ p` is likewise consumed only through
+that leaf: unlike its sibling, THIS conclusion does not need the
+determinant. -/
 theorem exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -59994,8 +60309,21 @@ theorem exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_fac
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hord : M₀.factorization q = 1) :
     ∃ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ ≠ 1 :=
-  sorry
+      τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ ≠ 1 := by
+  have hdim := finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
+    hM₀ hg₀ κ₀ hτ hirr hq hqp hord
+  by_contra hcon
+  push Not at hcon
+  -- If all of `I_q` acted trivially the invariants would be everything, of rank `2`.
+  have htop : τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat = ⊤ := by
+    refine eq_top_iff.mpr fun x _ => ?_
+    intro σ hσ
+    rw [hcon σ hσ]
+    rfl
+  have h2 : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  rw [htop, Submodule.topEquiv.finrank_eq, h2] at hdim
+  omega
 
 /-- **THE UNIPOTENT MONODROMY SHAPE AT A PRIME EXACTLY DIVIDING THE
 NEWFORM LEVEL** (**PROVEN 2026-07-27, FOURTEENTH owner**, over the TWO
@@ -60257,9 +60585,14 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one
 (**PROVEN 2026-07-27, thirteenth owner**, over
 `exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above —
 which the FOURTEENTH owner then PROVED that same day, so it is no longer
-a leaf; the residual `q ∥ M₀` citation is the pair
-`inertia_sq_eq_zero_...` / `exists_mem_localInertiaGroup_toLocal_ne_one_...`
-above it.
+a leaf; **and the SIXTEENTH owner proved that pair in turn on
+2026-07-28, so the residual `q ∥ M₀` citation is now the SINGLE leaf
+`finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one`** — which is this declaration's own conclusion
+`dim V^{I_q} = 1` restated, so the chain from it to here is a detour
+that could be shortened to one line. It is left alone deliberately: the
+existing proof is released, correct, and re-routing it would churn it
+for no mathematical gain.
 The proof is the whole classical sentence, in checked Lean: the
 monodromy identity `τ|_{I_q}(σ) = 1 + t(σ)·N` makes the inertia
 invariants EXACTLY `ker N` — one inclusion needs only `N x = 0`, the
@@ -60427,64 +60760,11 @@ different things — with the difference that the split is now visible in the
 STATEMENTS rather than argued in prose.
 -/
 
-/-- **A FIXED VECTOR AND DETERMINANT ONE FORCE SQUARE-ZERO UNIPOTENCE IN
-DIMENSION `2`** (PROVEN — pure linear algebra, 2026-07-28, fifteenth
-owner of the deep-level cluster).
-
-If `u` is an endomorphism of a `2`-dimensional coordinate space with a
-NONZERO fixed vector `w` and `det u = 1`, then `(u − 1)² = 0`.
-
-THE PROOF IS CAYLEY–HAMILTON, USED TWICE. In dimension `2` the
-characteristic polynomial is `X² − (tr u)·X + det u`
-(`Matrix.charpoly_fin_two`), so `u² − (tr u)·u + (det u) = 0`
-(`Matrix.aeval_self_charpoly`, transported along
-`LinearMap.toMatrixAlgEquiv'`). Evaluating THAT identity at `w` and using
-`u w = w`, `det u = 1` gives `(2 − tr u)·w = 0`, whence `tr u = 2`
-because `w ≠ 0` and the ground ring is a FIELD. The identity then reads
-`u² − 2u + 1 = 0`, i.e. `(u − 1)² = 0`.
-
-This is the "an eigenvalue `1` together with determinant `1` makes the
-other eigenvalue `1`" step of the local classification, written without
-ever choosing a basis adapted to the fixed line — which is what keeps it
-free of `Module.Free`/basis-extension bookkeeping. -/
-theorem sq_sub_one_eq_zero_of_fixed_of_det_eq_one
-    {F : Type*} [Field F] {u : Module.End F (Fin 2 → F)}
-    {w : Fin 2 → F} (hw : w ≠ 0) (huw : u w = w)
-    (hdet : LinearMap.det u = 1) : (u - 1) ^ 2 = 0 := by
-  classical
-  set A : Matrix (Fin 2) (Fin 2) F := LinearMap.toMatrixAlgEquiv' u with hA
-  have hAu : Matrix.toLinAlgEquiv' A = u := by
-    rw [hA, Matrix.toLinAlgEquiv'_toMatrixAlgEquiv']
-  have hAdet : A.det = 1 := by
-    rw [hA, show (LinearMap.toMatrixAlgEquiv' u) = LinearMap.toMatrix' u from rfl,
-      LinearMap.det_toMatrix']
-    exact hdet
-  have hCH : A ^ 2 - algebraMap F (Matrix (Fin 2) (Fin 2) F) A.trace * A
-      + algebraMap F (Matrix (Fin 2) (Fin 2) F) A.det = 0 := by
-    have h := Matrix.aeval_self_charpoly A
-    rw [Matrix.charpoly_fin_two] at h
-    simpa using h
-  have hCH' : u ^ 2 - algebraMap F (Module.End F (Fin 2 → F)) A.trace * u
-      + algebraMap F (Module.End F (Fin 2 → F)) A.det = 0 := by
-    have h := congrArg (LinearMap.toMatrixAlgEquiv' (n := Fin 2) (R := F)).symm hCH
-    simpa [hAu, AlgEquiv.commutes] using h
-  have happ : ((2 : F) - A.trace) • w = 0 := by
-    have h := congrArg (fun f : Module.End F (Fin 2 → F) => f w) hCH'
-    simp only [LinearMap.add_apply, LinearMap.sub_apply, LinearMap.zero_apply,
-      Module.End.mul_apply, Module.algebraMap_end_apply, pow_two, huw, hAdet,
-      one_smul] at h
-    rw [sub_smul, two_smul, ← h]
-    abel
-  have htr : A.trace = 2 := by
-    rcases smul_eq_zero.mp happ with h | h
-    · exact (sub_eq_zero.mp h).symm
-    · exact absurd h hw
-  rw [htr, hAdet] at hCH'
-  simp only [map_one, map_ofNat] at hCH'
-  have hexp : (u - 1) ^ 2 = u ^ 2 - 2 * u + 1 := by
-    simp only [pow_two, sub_mul, mul_sub, mul_one, one_mul, two_mul]
-    abel
-  rw [hexp, hCH']
+-- `sq_sub_one_eq_zero_of_fixed_of_det_eq_one` was HOISTED (2026-07-28,
+-- sixteenth owner) to just above
+-- `inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one`,
+-- which now consumes it. Declaration order was the only obstruction; the
+-- statement and proof are unchanged.
 
 /-- **A `2`-DIMENSIONAL REPRESENTATION WITH UNRAMIFIED DETERMINANT AND A
 NONZERO INERTIA-FIXED VECTOR IS TAMELY RAMIFIED** (PROVEN 2026-07-28,
@@ -60708,66 +60988,11 @@ theorem nonempty_ramificationFiltration
     Nonempty (RamificationFiltration v) :=
   sorry
 
-/-- **THE DETERMINANT OF `τ` IS THE CYCLOTOMIC CHARACTER, HENCE TRIVIAL
-ON INERTIA AWAY FROM `p`** (SORRY LEAF, cut 2026-07-28, fifteenth owner;
-Chebotarev density, plus the unramifiedness of the `p`-adic cyclotomic
-character outside `p`).
-
-STATEMENT. If `τ`'s Frobenius characteristic polynomials are
-`X² − a_r X + r` off a finite set, then for every prime `q ≠ p` the
-determinant of `τ` is trivial on `localInertiaGroup q`.
-
-WHY IT IS TRUE. For a `2`-dimensional representation the constant term
-of the characteristic polynomial of `τ(Frob_r)` IS `det τ(Frob_r)`, so
-`hτ` says `det τ (Frob_r) = r` for every prime `r ∉ S_τ`. The `p`-adic
-cyclotomic character `ε_p` satisfies the same identity at every
-unramified `r`. Both are CONTINUOUS characters of `Γ ℚ`, and a set of
-Frobenii of density one determines a continuous character (Chebotarev),
-so `det τ = ε_p`. The cyclotomic character is unramified at every place
-away from `p`, i.e. trivial on `localInertiaGroup q` for `q ≠ p`.
-
-**THIS IS WHERE THE TRIVIAL NEBENTYPUS ENTERS THE DEEP-LEVEL
-DERIVATION, AND IT IS THE ONLY PLACE.** The whole content of "weight 2
-on `Γ₀(M₀)`, so `det = ε_p`" is here; the two consumers use nothing else
-about the newform's character.
-
-MINIMALITY. The leaf deliberately does NOT take `hM₀`, `hg₀` or `hirr`:
-neither the positivity of the level, nor newform-ness, nor
-irreducibility is used in the argument above — only `hτ` and the
-continuity built into `GaloisRep`. Stating it with the smaller
-hypothesis bundle keeps it strictly stronger and makes it reusable at
-any `τ` with cyclotomic Frobenius determinants. `g₀` and `κ₀` survive
-only because `hτ` mentions `heckeCoeff M₀ g₀`.
-
-TERMINALITY AT THIS PIN. What is missing is Chebotarev in the form
-"two continuous characters of `Γ K` agreeing on the Frobenii outside a
-finite set are equal". The file has `Chebotarev.lean` and the PROVEN
-rigidity `exists_linearEquiv_of_charFrob_eq` for `2`-dimensional
-representations, but no character-level statement; the neighbouring
-`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p` runs the
-other way (it ASSUMES unramifiedness outside `p`). THE CHECK THAT WOULD
-REFUTE THIS VERDICT: exhibit a statement in this tree deducing equality
-of two continuous `Γ ℚ`-characters from agreement on a density-one set
-of Frobenii. AXIS SEARCHED: the character axis and the
-`exists_linearEquiv_of_charFrob_eq` transport axis. NOT SEARCHED:
-whether `det` of the rigidity isomorphism can be run directly, which
-would need a second representation with known determinant. -/
-theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
-    {M₀ : ℕ} {g₀ : CuspForm (Gamma0GL M₀) 2}
-    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hτ : ∀ (r : ℕ) (hr : r.Prime),
-      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
-      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
-        Polynomial.X ^ 2
-          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
-          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
-    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 :=
-  sorry
+-- `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` was HOISTED
+-- (2026-07-28, sixteenth owner) to just above
+-- `inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one`,
+-- which now consumes it. Declaration order was the only obstruction; the
+-- statement and its docstring are unchanged.
 
 /-- **CARAYOL AT DEEP LEVEL, LOWER HALF: `2 ≤ a_q(τ)`** (SORRY LEAF, cut
 2026-07-28, fifteenth owner, out of
@@ -61306,10 +61531,15 @@ which are therefore gated on mathematics alone. **Both are now PROVEN
 the FOURTEENTH owner PROVED the same day over the TWO leaves
 `inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one` and
 `exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_
-factorization_eq_one` — where the `q ∥ M₀` citation now lives — plus a
-proven linear-algebra block. So the whole `q ∥ M₀` half of this cluster
-is two citations plus checked Lean, while THIS declaration remains
-gated on the Swan-conductor side. The two cases are
+factorization_eq_one`, plus a proven linear-algebra block. **UPDATE
+2026-07-28, sixteenth owner: those two are now PROVEN as well**, over the
+single leaf `finrank_inertiaInvariants_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one` together with the determinant leaf — so the
+`q ∥ M₀` citation is ONE statement, `dim V^{I_q} = 1`, and no
+Weil–Deligne parameter is involved anywhere in that half. So the whole
+`q ∥ M₀` half of this cluster is one arithmetic citation (plus the
+determinant leaf, which is shared with the deep-level half) and checked
+Lean, while THIS declaration remains gated on the Swan-conductor side. The two cases are
 exhaustive over `q ∣ M₀` and disjoint, and their union is exactly the
 old composite citation — no faith is added by the split.
 
