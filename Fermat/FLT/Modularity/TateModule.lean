@@ -8049,6 +8049,227 @@ def IsQAdicWeilSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct
         z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 ∧
         w N y z ≠ 1)
 
+/-- **`q^N` lies in the ideal it spans** — the `hn` argument of
+`DualStruct.weil` at every level of the `q`-adic tower, isolated so that the
+same proof term is used at every occurrence and the levels are
+syntactically comparable.
+
+`Nat.cast_pow` is what makes this a one-liner: the `ℕ`-cast of `q^N` IS the
+`N`-th power of the `ℕ`-cast of `q`, and the ideal is spanned by exactly
+that. -/
+theorem natCast_pow_mem_span_pow (D : Type u) [Field D] [NumberField D] (q N : ℕ) :
+    ((q ^ N : ℕ) : NumberField.RingOfIntegers D)
+      ∈ Ideal.span {(q : NumberField.RingOfIntegers D) ^ N} := by
+  rw [Nat.cast_pow]
+  exact Ideal.mem_span_singleton_self _
+
+/-- **THE INTEGER-TOWER COMPATIBILITY OF THE CANONICAL WEIL PAIRING** —
+the field that `DualStruct` is missing, written at the `q`-power levels and
+at a single geometric fibre.
+
+  `e_{q^{N+1}}(y, ẑ)^q = e_{q^N}(q y, q ẑ)`   for `y ∈ A[q^{N+1}]`, `ẑ ∈ Â[q^{N+1}]`.
+
+This is Silverman *AEC* III.8.1(e) (`e_{mn}(P,Q) = e_n(mP,Q)`) read
+symmetrically, and it is the CORRECTION recorded in the docstring of
+`exists_tateWeilSystem_of_qAdicWeilSystem`: the compatibility along the
+INTEGER tower is writable in `μ`-vocabulary, is true, and is exactly what
+`DualStruct` does not assert.  What is NOT writable there — and what that
+docstring correctly refutes — is the `π`-indexed compatibility, which only
+exists after the trace refinement.
+
+It is stated in `(F̄)ˣ` rather than in `rootsOfUnity`, for the same reason
+`IsQAdicWeilSystem` is: the two sides live at levels `q^{N+1}` and `q^N`, so
+in the subtype they would not even have the same type.
+
+WHY IT IS NOT A FIELD OF `DualStruct` HERE.  Adding a field to that
+structure would change every existing consumer of it in
+`Modularity/AbelianScheme.lean`; the clause is needed only at the `q`-power
+levels of one fibre, and a `Prop` on an existing `d` costs nothing. -/
+def IsQAdicWeilTower {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) : Prop :=
+  ∀ (N : ℕ) (y : GeomFibrePt f x) (z : GeomFibrePt d.dualMap x),
+    y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+    z ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+    ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)}) (q ^ (N + 1))
+        (natCast_pow_mem_span_pow D q (N + 1)) y z : (AlgebraicClosure F)ˣ)) ^ q
+      = ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N)
+            (m.act (q : NumberField.RingOfIntegers D) y)
+            (d.dualMult.act (q : NumberField.RingOfIntegers D) z) : (AlgebraicClosure F)ˣ))
+
+/-- **AN `𝒪_D`-LINEAR POLARIZATION OF THE GEOMETRIC FIBRE, PERFECT ON
+`q`-POWER TORSION** — the polarization datum of
+`exists_qAdicWeilSystem_of_mult`, cut down to what that leaf actually
+consumes.
+
+`hom` is `λ : A ⟶ A^∨` read on geometric points of the fibre at `x`.  It is
+a BARE FUNCTION and not a `PolarizationStruct`, deliberately, and the
+difference is not cosmetic — see the FAITHFULNESS section of
+`exists_dualPolarization_of_mult`.
+
+The clauses, in order: additivity, `𝒪_D`-linearity, preservation of
+`q^N`-torsion, `Γ_F`-EQUIVARIANCE (i.e. `λ` is defined over `F`, not merely
+over `F̄`), `𝒪_D`-ALTERNATING in the strong form, and PERFECTNESS on
+`A[q^N]`.
+
+TWO CLAUSES CARRY THE WEIGHT, and they are the two that the formal glue
+above `IsQAdicWeilSystem` cannot manufacture.
+
+*`𝒪_D`-alternating in the strong form* (`e(a y, λ y) = 1` for every `a`, not
+merely `e(y, λ y) = 1`).  This is where `[NumberField.IsTotallyReal D]` is
+spent: for totally real `D` the Rosati involution of `λ` is trivial on
+`𝒪_D`, so the induced form is `𝒪_D`-BILINEAR and alternating, whence
+`e(a y, λ y) = ψ(Tr(δ · a · E(y,y))) = 1`.  The weak form is what
+`PolarizationStruct.weil_self` gives, and from it plus adjointness one
+recovers only `e(a y, λ y)^2 = 1` — enough for odd `q`, not for `q = 2`,
+which is exactly the level `IsQAdicWeilSystem`'s third clause of
+`IsTateWeilSystem` would fail at.
+
+*Perfectness on `A[q^N]`* is where `hdim` is spent.  `hdim` puts the fibre in
+the Hilbert–Blumenthal case, where `Hom^sym_{𝒪_D}(A, Â)` is an invertible
+`𝒪_D`-module `𝔞` and `deg λ_a = N(a 𝔞⁻¹)²`; every narrow ideal class
+contains integral ideals prime to `q`, so `a` may be chosen with
+`deg λ_a` prime to `q`, i.e. `ker λ ∩ A[q^N] = 0`.  **This is the line the
+finite-base sibling `exists_qAdicPolarizedSystem_finiteBase` is on the other
+side of**: without `hdim` nothing bounds the polarization module, a
+perfectness clause would be FALSE (an `NS` generated by one polarization of
+degree divisible by `q` makes every radical nonzero), and that leaf pays for
+it with a bounded-radical clause instead.
+
+NON-VACUITY, IN BOTH DIRECTIONS.  The constant zero map `hom ≡ 0` satisfies
+the first five clauses over every fibre — additivity, linearity, torsion,
+equivariance and the alternating clause all hold of it by
+`DualStruct.weil_zero_right` — and satisfies the sixth only when
+`A[q^N] = 0` for every `N`.  Since the fibre is an abelian variety of
+dimension `[D : ℚ] ≥ 1` over a field of characteristic zero, `A[q^N] ≠ 0`,
+so the perfectness clause is the one carrying the content and the predicate
+is not satisfied by junk.  This is the same standing refutation test as
+`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`, re-run against this
+weaker package. -/
+def IsQAdicPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x) : Prop :=
+  (∀ y z : GeomFibrePt f x, hom (ab.add y z) = d.dualAb.add (hom y) (hom z)) ∧
+  (∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      hom (m.act a y) = d.dualMult.act a (hom y)) ∧
+  (∀ (N : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      hom y ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1) ∧
+  (∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
+      hom (ab.galSMul x σ y) = d.dualAb.galSMul x σ (hom y)) ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) (m.act a y) (hom y) = 1) ∧
+  (∀ (N : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      (∀ z : GeomFibrePt f x,
+          z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+          d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z) = 1) →
+      y = ab.zero (specAlgClos F ≫ x))
+
+/-- **THE DUAL ABELIAN SCHEME AND AN `𝒪_D`-LINEAR POLARIZATION PERFECT ON
+`q`-POWER TORSION** (SORRY LEAF, cut 2026-07-29 out of
+`exists_qAdicWeilSystem_of_mult` — Grothendieck representability of `Pic⁰`,
+Mumford *Abelian Varieties* §13, §16, §23, Silverman *AEC* III.8.1).
+
+This is steps 1 and 2 of the classical route recorded on
+`exists_tateWeilSystem_of_mult`, and it is now ALL that is open in the
+`q`-adic half: `exists_qAdicWeilSystem_of_mult` is PROVEN from it, and the
+proof discharges six of that predicate's eight clauses from the axioms of
+`DualStruct` alone.
+
+**WHY THIS CUT IS NOT THE ONE THE OLD DOCSTRING REFUTED.**  The docstring of
+`exists_qAdicWeilSystem_of_mult` records that the leaf is deliberately NOT
+`∃ d : DualStruct ab m, Nonempty (PolarizationStruct d 𝒩)`, and gives two
+reasons.  Both are answered here, and neither is answered by hand-waving:
+
+1. *`DualStruct` carries no cross-level axiom, so `d` and `p` cannot
+   contribute to the tower clause.*  Correct — which is why the tower
+   clause is part of THIS leaf's CONCLUSION, as `IsQAdicWeilTower`.  A
+   successor proving this leaf must produce a `d` whose pairing satisfies
+   `e_{q^{N+1}}(y,ẑ)^q = e_{q^N}(qy,qẑ)`, and that is a real obligation, not
+   a formality.
+2. *`PolarizationStruct.weil_hom_nondegenerate` is false at an `I` ramified
+   over `q`.*  Correct — and `PolarizationStruct` does not appear here at
+   all.  Perfectness is asserted only on `A[q^N]`, where the classical
+   pairing really is perfect; the RAMIFICATION OBSTRUCTION concerns `A[I^k]`
+   for `I` ramified over `q`, which this leaf never mentions.
+
+**AND A THIRD REASON THE OLD SHAPE WAS WRONG, FOUND WHILE CUTTING THIS
+(2026-07-29) — it also constrains how `DualStruct` may be READ.**
+`DualStruct.weil_nondegenerate` is asserted at EVERY pair `(I, n)` with
+`(n : R) ∈ I`, and under the naive reading of `weil x I n hn` as "the
+`n`-Weil pairing `e_n` RESTRICTED to `A[I] × Â[I]`" the structure is
+UNINHABITABLE.  Witness: `R = ℤ`, `I = (2)`, `n = 4` (legal, since
+`(4 : ℤ) ∈ (2)`).  Every `y ∈ A[2]` is `2y'` and every `ẑ ∈ Â[2]` is `2ẑ'`
+with `y' ∈ A[4]`, `ẑ' ∈ Â[4]`, so
+`e_4(y, ẑ) = e_4(2y', 2ẑ') = e_4(y', ẑ')^4 = 1`; the restriction is
+identically `1` while `A[2] ≠ 0`, contradicting `weil_nondegenerate`.
+The structure IS inhabitable, but only under the other reading: `weil x I n`
+is the CANONICAL PERFECT pairing `A[I] × Â[I] ⟶ μ_e`, `e` the exponent of
+`A[I]` (which divides `n`, because `(n : R) ∈ I` forces `A[I] ⊆ A[n]`),
+composed with `μ_e ↪ μ_n`.  At the levels used here — `I = (q^N)`,
+`n = q^N`, where the exponent IS `q^N` — the two readings agree and the
+pairing is `e_{q^N}`, so `IsQAdicWeilTower` says the classical thing.
+Reported as a cut-level finding for `Modularity/AbelianScheme.lean`; nothing
+in this file depends on which reading is intended, but a successor building
+a `DualStruct` must build the second one.
+
+**FAITHFULNESS.**  Every hypothesis of `exists_qAdicWeilSystem_of_mult` is
+kept, and each is spent:
+
+* `hdim` gives the polarization module and hence a `λ` of degree prime to
+  `q` — the PERFECTNESS clause.  See `IsQAdicPolarizationHom`.
+* `[NumberField.IsTotallyReal D]` gives Rosati triviality on `𝒪_D` — the
+  `𝒪_D`-ALTERNATING clause, in its strong form.
+* `[NumberField F]` is what makes `Γ_F`-equivariance of `λ` meaningful and
+  available: `A_F` is an abelian variety over a field, hence PROJECTIVE,
+  hence carries an ample sheaf and a polarization DEFINED OVER `F`;
+  averaging over a `ℤ`-basis of `𝒪_D` keeps it over `F`; and
+  `Hom^sym_{𝒪_D}(A_{F̄}, Â_{F̄})` is a rank-one `𝒪_D`-module on which `Γ_F`
+  acts `𝒪_D`-linearly, so its invariants are either `0` or everything —
+  being nonzero, they are everything, and the degree-adjustment above may be
+  performed over `F`.
+
+**WHAT IS DELIBERATELY NOT DEMANDED, AND WHY — a global polarization would
+have been a FALSE leaf.**  `PolarizationStruct` lives over the BASE `S`, and
+an abelian scheme over an arbitrary base need not be projective (Raynaud),
+hence need not admit ANY global polarization; `lam_surjective` would in
+addition demand that the polarization module be globally constant.  `hom`
+here is a function on `GeomFibrePt f x` only — the fibre at the single point
+`x` the target cares about, over a FIELD, where projectivity is automatic.
+`d` is still global, and that is safe for a different reason: the dual of an
+abelian scheme exists over any base, and its `weil_act` axiom (Rosati
+trivial on `R`) is the DEFINITION of `dualMult` as the transposed
+multiplication, not an extra demand.
+
+REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
+`posElt` in the statement below.  There are none, and `hom` is a bare
+function whose every clause quantifies over `GeomFibrePt f x`. -/
+theorem exists_dualPolarization_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime] :
+    ∃ (d : DualStruct ab m) (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x),
+      IsQAdicWeilTower d x q ∧ IsQAdicPolarizationHom d x q hom :=
+  sorry
+
 /-- **A trace-duality functional for the pin `(O, j, π)`** — the
 `𝒪_D`-module-theoretic half of the refinement of the `q`-adic Weil pairing
 to an `I`-adic one, isolated as a statement of pure algebraic number theory
@@ -8101,10 +8322,30 @@ def IsTraceDualFunctional {D : Type u} [Field D] [NumberField D]
       c ∈ Ideal.span {j π} ^ k)
 
 /-- **The geometric fibre of a Hilbert–Blumenthal abelian scheme carries a
-compatible system of `q`-adic Weil pairings** (SORRY LEAF — steps 1 and 2 of
+compatible system of `q`-adic Weil pairings** (PROVEN 2026-07-29 over the
+single geometric leaf `exists_dualPolarization_of_mult` — steps 1 and 2 of
 the classical route: Grothendieck representability of `Pic⁰`, an
 `𝒪_D`-linear polarization, and the Weil pairing it induces; Mumford
 *Abelian Varieties* §13, §16, §23, Silverman *AEC* III.8.1).
+
+WHAT THE PROOF BELOW DOES, AND WHAT IT LEAVES.  `w N y z` is
+`e_{q^N}(y, λ z)`, and SIX of the eight clauses come out of the axioms of
+`DualStruct` and the linearity of `λ` with no geometry at all: values in
+`μ_{q^N}` from the target of `DualStruct.weil`; bi-multiplicativity from
+`weil_add_left`/`weil_add_right`; `𝒪_D`-adjointness from `weil_act`;
+`Γ_F`-equivariance from `weil_gal`; perfectness from the last clause of
+`IsQAdicPolarizationHom`.  The two that CANNOT be manufactured formally are
+the strong `𝒪_D`-ALTERNATING clause (from it, adjointness and
+bi-multiplicativity give only `w N (a y) y ^ 2 = 1`, which settles odd `q`
+and leaves `q = 2` open) and the TOWER clause (`DualStruct` has no
+cross-level axiom at all); both are therefore part of the geometric leaf's
+conclusion, as `IsQAdicPolarizationHom` and `IsQAdicWeilTower`.  The
+paragraph below explaining why this leaf was NOT stated as
+`∃ d, Nonempty (PolarizationStruct d 𝒩)` is retained because both of its
+reasons are still correct and both are answered — see the corresponding
+paragraph of `exists_dualPolarization_of_mult` for how, and for a THIRD
+reason (an inhabitability constraint on `DualStruct` itself) found while
+making the cut.
 
 This is the purely GEOMETRIC input to `exists_tateWeilSystem_of_mult`, and
 nothing about `I`, `π` or the pin appears in it: the datum is the classical
@@ -8151,8 +8392,76 @@ theorem exists_qAdicWeilSystem_of_mult
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (q : ℕ) [Fact q.Prime] :
     ∃ w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ,
-      IsQAdicWeilSystem m x q w :=
-  sorry
+      IsQAdicWeilSystem m x q w := by
+  obtain ⟨d, hom, htower, hadd, hact, htors, hgal, halt, hnd⟩ :=
+    exists_dualPolarization_of_mult m x hdim q
+  refine ⟨fun N y z =>
+    ((d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z) : (AlgebraicClosure F)ˣ)), ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_⟩
+  · -- values are `q^N`-th roots of unity: the target of `DualStruct.weil` says so
+    intro N y z
+    exact (mem_rootsOfUnity _ _).mp
+      (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z)).2
+  · -- additivity in the first variable: `DualStruct.weil_add_left`
+    intro N y y' z hy hy' hz
+    have h := d.weil_add_left x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+      (natCast_pow_mem_span_pow D q N) y y' (hom z) hy hy' (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- additivity in the second variable: additivity of `hom`, then `weil_add_right`
+    intro N y z z' hy hz hz'
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) y (hom (ab.add z z'))
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z)
+          * d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z') := by
+      rw [hadd z z']
+      exact d.weil_add_right x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) y (hom z) (hom z') hy (htors N z hz) (htors N z' hz')
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `𝒪_D`-alternating: the strong clause of `IsQAdicPolarizationHom`, and the
+    -- one place where no formal argument would do (see its docstring for `q = 2`)
+    intro N a y hy
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) (halt N a y hy)
+  · -- `𝒪_D`-adjointness: `𝒪_D`-linearity of `hom`, then `DualStruct.weil_act`
+    intro N a y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) (m.act a y) (hom z)
+        = d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom (m.act a z)) := by
+      rw [hact a z]
+      exact d.weil_act x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) a y (hom z) hy (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- `Γ_F`-equivariance: `hom` is defined over `F`, then `DualStruct.weil_gal`;
+    -- `galRoot σ` IS `Units.map σ` on the underlying unit, by definition
+    intro N σ y z hy hz
+    have h : d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+          (natCast_pow_mem_span_pow D q N) (ab.galSMul x σ y) (hom (ab.galSMul x σ z))
+        = galRoot σ (d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+            (natCast_pow_mem_span_pow D q N) y (hom z)) := by
+      rw [hgal σ z]
+      exact d.weil_gal x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N}) (q ^ N)
+        (natCast_pow_mem_span_pow D q N) σ y (hom z) hy (htors N z hz)
+    exact congrArg (fun t : rootsOfUnity (q ^ N) (AlgebraicClosure F) =>
+      (t : (AlgebraicClosure F)ˣ)) h
+  · -- level compatibility along the integer tower: `IsQAdicWeilTower`, with
+    -- `𝒪_D`-linearity of `hom` moving `q` across it
+    intro N y z hy hz
+    have h := htower N y (hom z) hy (htors (N + 1) z hz)
+    rw [← hact (q : NumberField.RingOfIntegers D) z] at h
+    exact h
+  · -- perfectness: the contrapositive of the last clause of `IsQAdicPolarizationHom`
+    intro N y hy hy0
+    by_contra hcon
+    push Not at hcon
+    exact hy0 (hnd N y hy (fun z hz => Subtype.ext (hcon z hz)))
 
 /-- **A nonzero element of `𝒪_D` acts surjectively on the geometric points
 of a fibre** (PROVEN 2026-07-28, over the divisibility leaf
