@@ -47186,13 +47186,240 @@ construction over a base of mixed characteristic; the `ℚ` construction
 (`exists_gamma0AtlasOver_isAffine_zmod`) are separate leaves with separate
 obstructions, and neither implies this one — base change out of `SpecLoc R`
 goes the wrong way, and base change INTO it from `ℤ[1/N]` is exactly the
-(8.1.6)-conditioned step this file keeps isolating. -/
+(8.1.6)-conditioned step this file keeps isolating.
+
+**AXIS NOT YET SEARCHED WHEN THE ABOVE WAS WRITTEN, AND IT IS THE ONE A
+SUCCESSOR SHOULD TRY FIRST: base change from `Spec ℤ`, where the (8.1.6)
+condition is SATISFIED** (recorded 2026-07-29; not implemented here — this is a
+route note, not a proof).
+
+The paragraph above is right that base change into `SpecLoc R` is the
+(8.1.6)-conditioned step, and it stops one step short of asking whether the
+condition holds.  For the base `ℤ` it does, unconditionally and for every
+`R : Subring ℚ`:
+
+* every subring of `ℚ` contains `ℤ`, and is a LOCALIZATION of it — if
+  `a/b ∈ R` in lowest terms then `ua + vb = 1` for some `u, v`, so
+  `1/b = u·(a/b) + v ∈ R`; hence `R = ℤ[1/p : 1/p ∈ R]`;
+* a localization is FLAT, so `Spec R ⟶ Spec ℤ` satisfies (8.1.6)(2) — the same
+  criterion, and the same proof obligation, as `bcUniversal_specLocGeneric`
+  below;
+* so an atlas over `Spec ℤ` base-changes to one over `SpecLoc R` through
+  `Gamma0AtlasOver.baseChange` together with
+  `Gamma0AtlasOver.bcQuotient_of_bcUniversal`, both PROVEN.
+
+That would replace this leaf by `Nonempty (Gamma0AtlasOver N (Spec ℤ))` —
+Katz–Mazur (8.1.1) over `ℤ`, the single canonical instance of the citation —
+plus a flat-base-change obligation of the shape this file already isolates.
+**Note the contrast with `ℤ[1/N] → 𝔽_p`, which is NOT flat and is why the
+characteristic-`p` model is built directly**: the objection recorded on
+`exists_gamma0AtlasOver_isAffine_zmod` is specific to that base change and does
+not apply to `ℤ → R` for `R ⊆ ℚ`.
+
+**The unification this suggests, since three leaves now share one shape.**
+`bcUniversal_of_field` (a field extension is flat), `bcUniversal_specLocGeneric`
+(`R ⊆ ℚ` is a localization) and the `ℤ → R` obligation above are three
+instances of ONE statement — `A.BcUniversal q` whenever `q` is flat, which is
+(8.1.6)(2) as Katz–Mazur actually state it.  Collapsing them into a single leaf
+`bcUniversal_of_flat` would take the cluster from four leaves to two.  It is
+NOT done here because `bcUniversal_of_field` and
+`exists_gamma0AtlasOver_isAffine_zmod` have other owners and a duplicate cut is
+worse than a missing one; and because the honest form of the general statement
+needs its base to be affine (Katz–Mazur run (8.1.1) over a RING), so the axis to
+check before stating it is whether an arbitrary-scheme `S` makes it false. -/
 theorem nonempty_gamma0AtlasOver_specLoc (N : ℕ) (R : Subring ℚ) (_hN : 0 < N) :
     Nonempty (Gamma0AtlasOver N (SpecLoc R)) :=
   sorry
 
+/-! #### `BcUniversal` is a property of the BASE, not of the atlas (2026-07-29)
+
+`Gamma0AtlasOver.BcUniversal`'s docstring asserts that, because the predicate
+mentions `A` only through `str` and `classify`, "a prover is free to replace
+`A` by ANY model of `[Γ₀(N)]` over the base and lose nothing", and
+`bcUniversal_of_field`'s route audit *depends* on that freedom — its whole
+argument runs on an affine GIT model whose `𝔐` is unrelated to `A.M`.
+
+**That claim was true and unbacked**: no lemma in this file transported
+`BcUniversal` between two atlases over one base, so the documented route could
+not actually be taken.  The two theorems below supply it, and they are the
+reason the leaf underneath is stated for an ARBITRARY atlas without thereby
+becoming harder than the GIT computation.
+
+Both are pure category theory over `exists_iso_classify_of_isCoarseModuliY0`
+(PROVEN above): no flatness, no field, no hypothesis whatever on `q`. -/
+
+/-- **The canonical iso of coarse spaces base-changes** (PROVEN — initiality
+alone).
+
+`exists_iso_classify_of_isCoarseModuliY0` gives `e : A.Y ≅ A₀.Y` over `S`
+intertwining the two classifying maps; pulling back along `q` gives
+`A.bcY q ≅ A₀.bcY q` over `S'` intertwining the two `bcClassify`s, because
+`bcClassify` is by definition the lift of `(classify (g ≫ q) d).1` and `g`
+against the fibre product, and `e` moves the first component while fixing the
+second.
+
+Note the second conjunct is the one that matters: the BARE iso is useless here
+for exactly the reason `exists_iso_of_isCoarseModuliY0` is useless above — an
+isomorphism over the base which is not known to respect `classify` says nothing
+about moduli, and `BcUniversal` is a statement about `bcClassify`. -/
+theorem Gamma0AtlasOver.exists_bcIso {N : ℕ} {S S' : Scheme.{0}}
+    (A A₀ : Gamma0AtlasOver N S) (q : S' ⟶ S) :
+    ∃ E : A.bcY q ≅ A₀.bcY q, E.hom ≫ A₀.bcStr q = A.bcStr q ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+        (A₀.bcClassify q g d).1 = (A.bcClassify q g d).1 ≫ E.hom := by
+  obtain ⟨e, hestr, hecl⟩ :=
+    exists_iso_classify_of_isCoarseModuliY0 A.toIsCoarseModuliY0 A₀.toIsCoarseModuliY0
+  have hecl' : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+      (A₀.classify g d).1 = (A.classify g d).1 ≫ e.hom := fun g d => hecl g d
+  have hinv : e.inv ≫ A.str = A₀.str := by
+    rw [← hestr, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  have hf : (Limits.pullback.fst A.str q ≫ e.hom) ≫ A₀.str
+      = Limits.pullback.snd A.str q ≫ q := by
+    rw [Category.assoc, hestr]; exact Limits.pullback.condition
+  have hb : (Limits.pullback.fst A₀.str q ≫ e.inv) ≫ A.str
+      = Limits.pullback.snd A₀.str q ≫ q := by
+    rw [Category.assoc, hinv]; exact Limits.pullback.condition
+  -- The two maps, named only by their components against the fibre product.
+  obtain ⟨Eh, hEhf, hEhs⟩ : ∃ Eh : Limits.pullback A.str q ⟶ Limits.pullback A₀.str q,
+      Eh ≫ Limits.pullback.fst A₀.str q = Limits.pullback.fst A.str q ≫ e.hom ∧
+      Eh ≫ Limits.pullback.snd A₀.str q = Limits.pullback.snd A.str q :=
+    ⟨Limits.pullback.lift _ _ hf, Limits.pullback.lift_fst _ _ _, Limits.pullback.lift_snd _ _ _⟩
+  obtain ⟨Ei, hEif, hEis⟩ : ∃ Ei : Limits.pullback A₀.str q ⟶ Limits.pullback A.str q,
+      Ei ≫ Limits.pullback.fst A.str q = Limits.pullback.fst A₀.str q ≫ e.inv ∧
+      Ei ≫ Limits.pullback.snd A.str q = Limits.pullback.snd A₀.str q :=
+    ⟨Limits.pullback.lift _ _ hb, Limits.pullback.lift_fst _ _ _, Limits.pullback.lift_snd _ _ _⟩
+  -- `bcClassify` against the same two components.  The `show` ascriptions pin the
+  -- middle object to `Limits.pullback _ _` rather than `bcY`; without them these are
+  -- the same statements up to unfolding but `rw` cannot see the pattern.
+  have hbcf : ∀ {T : Scheme.{0}} (B : Gamma0AtlasOver N S) (g : T ⟶ S') (d : Gamma0Datum N T),
+      (show T ⟶ Limits.pullback B.str q from (B.bcClassify q g d).1)
+          ≫ Limits.pullback.fst B.str q
+        = (B.classify (g ≫ q) d).1 :=
+    fun _ _ _ => Limits.pullback.lift_fst _ _ _
+  have hbcs : ∀ {T : Scheme.{0}} (B : Gamma0AtlasOver N S) (g : T ⟶ S') (d : Gamma0Datum N T),
+      (show T ⟶ Limits.pullback B.str q from (B.bcClassify q g d).1)
+          ≫ Limits.pullback.snd B.str q = g :=
+    fun _ _ _ => Limits.pullback.lift_snd _ _ _
+  have h1 : Eh ≫ Ei = 𝟙 (Limits.pullback A.str q) := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hEif, ← Category.assoc, hEhf, Category.assoc, e.hom_inv_id,
+        Category.comp_id, Category.id_comp]
+    · rw [Category.assoc, hEis, hEhs, Category.id_comp]
+  have h2 : Ei ≫ Eh = 𝟙 (Limits.pullback A₀.str q) := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hEhf, ← Category.assoc, hEif, Category.assoc, e.inv_hom_id,
+        Category.comp_id, Category.id_comp]
+    · rw [Category.assoc, hEhs, hEis, Category.id_comp]
+  refine ⟨⟨Eh, Ei, h1, h2⟩, hEhs, ?_⟩
+  intro T g d
+  show (show T ⟶ Limits.pullback A₀.str q from (A₀.bcClassify q g d).1)
+      = (show T ⟶ Limits.pullback A.str q from (A.bcClassify q g d).1) ≫ Eh
+  refine Limits.pullback.hom_ext ?_ ?_
+  · rw [hbcf A₀ g d, Category.assoc, hEhf, ← Category.assoc, hbcf A g d]
+    exact hecl' (g ≫ q) d
+  · rw [hbcs A₀ g d, Category.assoc, hEhs, hbcs A g d]
+
+/-- **`BcUniversal` transports between ANY two atlases over the same base**
+(PROVEN — no flatness, no field, no hypothesis on `q`).
+
+This is the lemma `Gamma0AtlasOver.BcUniversal`'s docstring presupposes and
+`bcUniversal_of_field`'s route audit consumes: since the predicate mentions the
+atlas only through `str` and `classify`, and initiality makes any two atlases
+over one base canonically isomorphic COMPATIBLY WITH `classify`, proving it on
+a convenient model proves it for all of them.
+
+Concretely, a prover of either `BcUniversal` leaf in this file may replace the
+given `A` by an affine GIT model `𝔐 = Spec A`, `Y = Spec (A^G)` — whose `M` has
+nothing to do with `A.M` — do the invariants computation there, and transport
+back through this theorem, then through
+`Gamma0AtlasOver.bcQuotient_of_bcUniversal` to reach `BcQuotient`.
+
+`Gamma0AtlasOver.exists_bcIso` does the work; here we only carry the `∃!`
+across the iso, using the two conjuncts in both directions. -/
+theorem Gamma0AtlasOver.bcUniversal_transport {N : ℕ} {S S' : Scheme.{0}}
+    (A A₀ : Gamma0AtlasOver N S) (q : S' ⟶ S) (h₀ : A₀.BcUniversal q) :
+    A.BcUniversal q := by
+  obtain ⟨E, hEstr, hEcl⟩ := Gamma0AtlasOver.exists_bcIso A A₀ q
+  have hEistr : E.inv ≫ A.bcStr q = A₀.bcStr q := by
+    rw [← hEstr, ← Category.assoc, E.inv_hom_id, Category.id_comp]
+  have hEicl : ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+      (A.bcClassify q g d).1 = (A₀.bcClassify q g d).1 ≫ E.inv := by
+    intro T g d
+    rw [hEcl g d, Category.assoc, E.hom_inv_id, Category.comp_id]
+  intro Y' str' c hc
+  obtain ⟨u₀, ⟨hu₀s, hu₀c⟩, huniq⟩ := h₀ str' c hc
+  refine ⟨E.hom ≫ u₀, ⟨?_, ?_⟩, ?_⟩
+  · rw [Category.assoc, hu₀s]; exact hEstr
+  · intro T g d
+    rw [hu₀c g d, hEcl g d, Category.assoc]
+  · rintro v ⟨hvs, hvc⟩
+    have hv₀ : E.inv ≫ v = u₀ := by
+      refine huniq _ ⟨?_, ?_⟩
+      · rw [Category.assoc, hvs]; exact hEistr
+      · intro T g d
+        rw [hvc g d, hEicl g d, Category.assoc]
+    rw [← hv₀, ← Category.assoc, E.hom_inv_id, Category.id_comp]
+
+/-- **The base-changed coarse space over `ℚ` is INITIAL among cocones**
+(sorry leaf — Katz–Mazur (8.1.6)(2) at the flat base change `ℤ_(ℓ) → ℚ`).
+
+This is the exact analogue of `bcUniversal_of_field` at a base which is not a
+field, and it is where the Katz–Mazur content of `bcQuotient_specLocGeneric`
+now lives.  The reduction from the quotient property to this one is
+`Gamma0AtlasOver.bcQuotient_of_bcUniversal`, PROVEN above at an ARBITRARY base
+morphism.
+
+**Why it is stated as `BcUniversal` and not as `BcQuotient`.**  Verbatim the
+reason recorded on `bcUniversal_of_field`: `BcQuotient` quantifies over
+morphisms out of `A.bcM q`, so a proof carried out on an affine GIT model —
+which is the only known route — could not be transported to the given atlas.
+`BcUniversal` mentions `A` only through `str` and `classify`, and
+`Gamma0AtlasOver.bcUniversal_transport` (PROVEN just above) is what makes that
+freedom usable.
+
+**TRUE, and by the flatness criterion rather than by a new argument.**  `ℚ` is
+the fraction field of every subring of `ℚ` — each contains `ℤ`, and if
+`a/b ∈ R` in lowest terms then `ua + vb = 1` gives `1/b = u(a/b) + v ∈ R` — so
+`ℚ` is a LOCALIZATION of `R`, hence flat over it.  (8.1.6)(2) therefore applies
+on the nose and Remark (8.1.7)'s counterexamples, which live at `p = 2, 3` for
+`ℤ[1/N] → 𝔽_p`, do not reach it.  Concretely: `Y ×_R ℚ` is again the
+categorical quotient of `𝔐 ×_R ℚ` by the deck group, because the invariants of
+`A ⊗_R ℚ` are `A^G ⊗_R ℚ` when `ℚ` is flat over `R` — the invariants are the
+kernel of a FINITE diagram (`G = GL₂(ℤ/n)` finite), and flat base change is
+exact.
+
+**Do NOT weaken this to an arbitrary base morphism out of `SpecLoc R`.**  At a
+non-flat base change it is FALSE: the SPECIAL fibre `SpecLoc.special toF` is
+exactly such a base change, which is why this file builds the
+characteristic-`p` model directly (`nonempty_gamma0CurveAtlasOver_zmod`)
+instead of reducing it at the closed point.  The generic side is the licensed
+one; the special side is not.
+
+MACHINERY: the survey on `bcUniversal_of_field` applies here unchanged — the
+`R`-algebra `ℚ` is flat (a localization) rather than free, so
+`Module.Flat.lTensor_exact` is reached through
+`IsLocalization.flat`/`Localization.flat` instead of `Module.Flat.of_free`; the
+missing `MulSemiringAction G (A ⊗[R] ℚ)` instance recorded there is missing
+here too, and building it once serves both leaves.
+
+AXES SEARCHED: the base ring; the flatness criterion of (8.1.6); replacing the
+quotient property by the equivalent initiality (done — that is this statement,
+via `bcQuotient_of_bcUniversal`).  **A stale "NOT SEARCHED" note is corrected
+here**: the previous statement of `bcQuotient_specLocGeneric` recorded that
+fpqc descent along `Spec ℚ ⟶ Spec ℤ_(ℓ)` "does not transpose, because that map
+is not surjective".  That is true of descent along `q`, and it is not the
+descent that was needed — `bcQuotient_of_bcUniversal` descends along the
+RIGIDIFYING COVER of a scheme over the new base, which is fppf by
+`Gamma0AtlasOver.bcCover` for every `q`.  So the reduction that note ruled out
+as unavailable is in fact available and is now taken. -/
+theorem bcUniversal_specLocGeneric {N : ℕ} {R : Subring ℚ}
+    (A : Gamma0AtlasOver N (SpecLoc R)) : A.BcUniversal (SpecLoc.generic R) :=
+  sorry
+
 /-- **The categorical quotient descends along the FLAT base change
-`ℤ_(ℓ) → ℚ`** (sorry leaf — Katz–Mazur (8.1.6)(2)).
+`ℤ_(ℓ) → ℚ`** (PROVEN 2026-07-29 over `bcUniversal_specLocGeneric`, by the
+fpqc-descent reduction `Gamma0AtlasOver.bcQuotient_of_bcUniversal`; a sorry leaf
+until then — Katz–Mazur (8.1.6)(2)).
 
 Word for word `bcQuotient_of_field` with the field extension replaced by the
 inclusion of a subring of `ℚ` into `ℚ`, and TRUE for the same reason: `ℚ` is
@@ -47218,16 +47445,26 @@ such a base change — which is why this file builds the characteristic-`p` mode
 directly (`nonempty_gamma0CurveAtlasOver_zmod`) instead of reducing it at the
 closed point.  The generic side is the licensed one; the special side is not.
 
-AXIS SEARCHED: the base ring, and the flatness criterion of (8.1.6).  NOT
-SEARCHED: whether fpqc descent along `Spec ℚ ⟶ Spec ℤ_(ℓ)` turns this into a
-theorem about the integral quotient.  It does not obviously, because that map
-is not surjective — `Spec ℚ` misses the closed point — so it is not an fpqc
-COVER, and the route `exists_descendClassify` takes over `ℚ` does not
-transpose.  Recording that here because it is the first thing a successor will
-try. -/
+**THE OLD "NOT SEARCHED" NOTE WAS ANSWERED, AND ITS PREMISE WAS THE WRONG
+DESCENT** (2026-07-29).  It read: "NOT SEARCHED: whether fpqc descent along
+`Spec ℚ ⟶ Spec ℤ_(ℓ)` turns this into a theorem about the integral quotient.
+It does not obviously, because that map is not surjective — `Spec ℚ` misses the
+closed point — so it is not an fpqc COVER."  Every word of that is TRUE about
+descent along `q`, and it is not the descent this needed.
+`Gamma0AtlasOver.bcQuotient_of_bcUniversal` descends along the RIGIDIFYING
+COVER `p : T' ⟶ T` of a scheme over the NEW base — flat, surjective and
+quasi-compact by `Gamma0AtlasOver.bcCover` for EVERY `q`, with no surjectivity
+of `q` involved anywhere — and it holds at an arbitrary base morphism.  So the
+route the note ruled out as unavailable is available, and it is the one taken
+below.
+
+This leaf is therefore now a THEOREM over `bcUniversal_specLocGeneric`, exactly
+as `bcQuotient_of_field` is a theorem over `bcUniversal_of_field`, and the
+Katz–Mazur content has moved to the statement where it can be attacked on a
+GIT model. -/
 theorem bcQuotient_specLocGeneric {N : ℕ} {R : Subring ℚ}
     (A : Gamma0AtlasOver N (SpecLoc R)) : A.BcQuotient (SpecLoc.generic R) :=
-  sorry
+  A.bcQuotient_of_bcUniversal _ (bcUniversal_specLocGeneric A)
 
 /-- **`Y_0(N)` exists over `ℤ_(ℓ)`: the `Γ₀(N)`-problem has a coarse
 moduli space over the local base** (PROVEN 2026-07-28 over
