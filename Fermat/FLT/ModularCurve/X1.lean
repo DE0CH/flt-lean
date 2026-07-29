@@ -6252,7 +6252,44 @@ assert `Nonempty`, so they cannot degrade into vacuous truth — while
 every CONSUMER of the structure, `isTorsion_factor_of_heckeIsotypic_gamma1`
 included, only gets a weaker hypothesis to work from.  **Adding this
 field can therefore block the cut, but it cannot make anything
-downstream false.** -/
+downstream false.**
+
+**THE PIN IS VACUOUS AT `N = 0`, AND `X0.lean`'s PIN HAS THE SAME HOLE**
+(found 2026-07-29, while auditing the sharpening this field unblocks).
+Every natural number divides `0`, so `¬ ℓ ∣ N` is FALSE for every `ℓ`
+when `N = 0`, and at level `0` this predicate is the empty conjunction:
+it constrains `T` not at all.  Any consumer that wants the pin's CONTENT
+must therefore carry `N ≠ 0` itself.
+
+That matters for exactly one thing, and it is the thing this field was
+built for.  Sharpening `isTorsion_factor_of_heckeIsotypic_gamma1` below
+from the full `hL` to the single value `L(coeff i, 1) ≠ 0` is sound
+**only under `N ≠ 0`**: at `N = 0` the sharpened hypothesis is very much
+weaker than the full `hL` while `T` is back to being arbitrary, so the
+sharpened leaf would rest on a pin that is not there.  To be exact about
+the strength of this claim, since a docstring that overstates one is
+worse than one that says nothing: no `N = 0` counterexample is exhibited
+here, and the present leaf is safe at `N = 0` for an independent reason
+(the full `hL` quantifies over the level-`0` eigen-systems recorded on
+`exists_heckeAction_isotypicQuotients_gamma1`, including transcendental
+ones, and is correspondingly hard to satisfy).  What is established is
+the gap, not a refutation: the sharpened form would be UNSUPPORTED at
+`N = 0`, and that is enough to require the hypothesis rather than to
+argue about it.  And
+`N ≠ 0` is not free: `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`
+below — the leaf's only consumer — does not carry it, nor does
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` above it.  So
+the sharpening is not a one-line weakening of one statement; it is a
+hypothesis threaded through two further declarations, which is the
+second reason it is not done in the edit that lands the pin.
+
+The identical hole is in `X0.lean`'s `IsModularHeckeAction` — same
+`¬ ℓ ∣ N`, same vacuity at `N = 0` — so the sharpening that file has
+recorded as UNBLOCKED since 2026-07-28 needs the same `N ≠ 0` audit
+before it is carried out.  **Nothing is currently wrong in either file**:
+both Kolyvagin–Logachev leaves still carry the full `hL`, which is strong
+enough at every level including `0`.  This paragraph is a warning to the
+next editor, not a defect report. -/
 def IsModularHeckeActionGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
