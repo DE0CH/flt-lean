@@ -37455,7 +37455,41 @@ independent inputs and can be attacked by different hands.
 
 IRREDUCIBLE at this pin ALONG THE MODULI AXIS, with the same refuting check as
 the atlas leaf and re-run on 2026-07-28: no modular curve, and no compactified
-`Γ₀(N)`-moduli problem, anywhere in mathlib, `~/cs/FLT` or this project. -/
+`Γ₀(N)`-moduli problem, anywhere in mathlib, `~/cs/FLT` or this project.
+
+**RE-CONFIRMED 2026-07-29, and the AXES THAT WERE SEARCHED AND CLOSED.**  The
+survey above was re-run independently: `ModularCurve`, `DeligneRapoport` and
+`GeneralizedEllipticCurve` are absent from mathlib and from `~/cs/FLT`, and the
+sole hit under `Fermat/` outside this file is a quoted `grep` STRING inside a
+docstring of `Modularity/Interface.lean` — not a declaration.  The verdict
+stands.  What follows is what was tried, so that a successor does not repeat it:
+
+* *Initiality*, the axis that closed `exists_x0IntegralJLine` on the same day.
+  It does not transpose.  There the missing object was a map OUT of the coarse
+  space, which initiality supplies for free once the target datum exists; here
+  every missing field (`isProper`, `smooth`, `connected`, `finite_compl`) is a
+  property of a scheme that does not exist yet, and initiality builds no schemes.
+* *General relative curve theory*, i.e. the analogue of the field case.  The
+  blocker the docstring above names is still real and was re-checked directly:
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` proves
+  `exists_isSmoothCompactification` only under `[PerfectField K]`, and its
+  supporting chain (`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`,
+  `finite_compl_range_of_topologicalKrullDim_le_one`) is dimension-`1` on the
+  TOTAL SPACE, which a relative curve over a DVR is not — it has dimension `2`.
+  So the field proof does not merely need porting; its hypotheses are false here.
+* *Reducing to the companion below.*  `exists_isX0Compactification_of_isCoarseModuliY0_loc`
+  is PROVEN over this leaf, so deriving this leaf from it is circular; and
+  `exists_isCoarseModuliY0_loc` supplies `coarse` alone, which is the one field
+  that is NOT missing.
+* *Splitting the conclusion field-wise* (geometry here, cusps there) is a
+  relocation, not a reduction: every part still asks for the same unbuilt `XZ`.
+
+The axis NOT searched, and the one a successor should take, is the honest one:
+construct the compactified moduli problem — `Γ₀(N)`-structures on GENERALISED
+elliptic curves, Deligne–Rapoport II.1 and IV.3 — as a moduli datum in the style
+of `Gamma0AtlasOver`, so that `XZ` is its coarse space and the cusps are the
+finite étale locus of degenerate objects.  That is a theory to write, not a lemma
+to find, which is exactly why the verdict here is IRREDUCIBLE rather than open. -/
 theorem exists_x0IntegralCompactifiedModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R _toF)
@@ -42198,8 +42232,180 @@ structure IsX0IntegralJLine (R : Subring ℚ) {Y YZ : Scheme.{0}} {strY : Y ⟶ 
     jm y = jLineZCoord (RelPoint.post jmap comm
       (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y))
 
+/-! ##### The integral `j`-line datum, and the integral degeneracy map
+
+**Added 2026-07-29, and this block is the CUT of `exists_x0IntegralJLine`.**
+The subsection above reduced the two residues of `IsX0IntegralJ` to that single
+leaf and left the route to it as prose.  What follows carries out the part of
+the route that is FORMAL, so that what remains is named and separately ownable.
+
+The route is the one `exists_jMap` already takes over `ℚ`, transposed to the
+local base: `d ↦ jtZ g (d.ofDvd hN (one_dvd N))` is a natural transformation
+from the `Γ₀(N)`-problem over `Spec ℤ_(q)` to the relative points of the
+integral `j`-line, so INITIALITY of the integral coarse space — which the
+consumer already holds as `cm.model.coarse`, i.e. `IsX0Compactification.coarse`
+of the given curve model — yields a morphism `𝒴 ⟶ 𝔸¹_{ℤ_(q)}` over the base.
+That discharges `IsX0IntegralJLine.jmap` and `.comm` OUTRIGHT, and leaves
+`gen_eq` as the only residue.
+
+**A STALE ROUTE CLAIM, CORRECTED.**  The route was recorded as owing "a
+forgetful `Gamma0Datum N T → Gamma0Datum 1 T` (the trivial subgroup as a flat
+closed subgroup scheme of order `1`)".  It does not, and has not for some time:
+`Gamma0Datum.ofDvd` and `IsBaseChangeOf.ofDvd` are PROVEN far above — they are
+what `y0HasNoRationalPoint_of_dvd` and `exists_jMap` both run on — and level `1`
+is reached as `one_dvd N`, with no new subgroup scheme constructed.  What the
+degeneracy map really owes over a base of MIXED CHARACTERISTIC is the
+`[Etale (d.cyc.ι ≫ d.f)]` instance those two carry as a hypothesis: over
+`Spec ℚ` it is `CyclicSubgroupOfOrder.etale_of_specQBase`, and here it is
+`CyclicSubgroupOfOrder.etale_of_specLocBase` below.  That is a genuinely
+different statement, not a transposition — over `ℚ` it is characteristic `0`
+that makes the level structure étale, and over `ℤ_(q)` it is `q ∤ N`.
+
+**Why `IsJLineZ` carries `jtZ_model`, and the JUNK WITNESS that forces it.**
+The first two fields alone do NOT pin the integral `j`-line: `jLineZStr R` has a
+section, namely `Spec` of the evaluation `R[X] ⟶ R` at `0`, so setting
+`jtZ g d := ` that section precomposed with `g` is total, is natural (both sides
+of `jtZ_natural` become the same composite), and is CONSTANT.  With only two
+fields `IsJLineZ R` would therefore be inhabited with no arithmetic content
+whatever, `nonempty_isJLineZ` would be trivially true, and the whole of Igusa
+would have been pushed silently into the comparison leaf — a fake cut of exactly
+the shape this file has been burned by before.  `jtZ_model` is the
+`IsJLine.jt_model` analogue that rules it out: it forces the coordinate to be
+the honest `WeierstrassCurve.j` on `ℚ`-points, and `W.j` is not constant.
+
+**Why the comparison leaf takes `u` with BOTH its properties as hypotheses.**
+`hu2` is load-bearing and not decoration.  Without it `u` is an arbitrary
+morphism to the affine line and the conclusion is FALSE (post-compose `u` with
+any automorphism of `𝔸¹`); with it, `u` is pinned on every classifying point.
+Stating the leaf over an abstract `u` rather than over a chosen one also keeps
+this block free of `Classical.choose` and leaves no free-floating helper. -/
+
+/-- **The integral `j`-line datum over `ℤ_(q)`**: the level-`1` classifying map
+to `𝔸¹_{ℤ_(q)}`, i.e. the `j`-invariant of an elliptic scheme over an
+`ℤ_(q)`-scheme read as an INTEGRAL point of the `j`-line.
+
+The integral companion of `IsJLine`, field for field, with `jt_weierstrass`
+dropped (it is an existence statement about `ℚ`-data that the consumer here
+never uses) and `jt_model` kept as `jtZ_model`, which is what pins the datum;
+see the subsection comment for the junk witness that makes it necessary. -/
+structure IsJLineZ (R : Subring ℚ) where
+  /-- the `j`-invariant of an elliptic scheme over an `ℤ_(q)`-scheme, as a
+  relative point of the integral `j`-line -/
+  jtZ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R), Gamma0Datum 1 T →
+    RelPoint (jLineZStr R) g
+  /-- it is natural in the base, exactly as `IsJLine.jt_natural` is -/
+  jtZ_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R}
+    {g' : T' ⟶ SpecLoc R} (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'}
+    {d : Gamma0Datum 1 T},
+    IsBaseChangeOf h d' d → jtZ g' d' = RelPoint.pre h hg (jtZ g d)
+  /-- on the generic fibre its coordinate is `WeierstrassCurve.j`: this is
+  `IsJLine.jt_model` verbatim with `jLineVal` replaced by `jLineZCoord` at the
+  generic base point, and it is what stops the constant junk witness -/
+  jtZ_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+    IsWeierstrassModel d.ab W → jLineZCoord (jtZ (SpecLoc.generic R) d) = W.j
+
+/-- **The level structure is ÉTALE over `ℤ_(q)` when `q ∤ N`** (sorry leaf —
+Cartier / Katz–Mazur ch. 1; the mixed-characteristic companion of
+`CyclicSubgroupOfOrder.etale_of_specQBase`).
+
+TRUE for `q ∤ N`, and the hypothesis is load-bearing rather than inherited:
+`N` is a UNIT in `R = ℤ_(q)` exactly when `q ∤ N`, and a finite flat subgroup
+scheme of order `N` over a base on which `N` is invertible is étale (Cartier,
+in the relative form SGA 3 VI_B 1.6.1).  At `q ∣ N` the statement is FALSE —
+that is precisely where `Y_0(N)` acquires bad reduction, and the whole reason
+`_hqN` is carried through this subsection.
+
+**This is NOT a transposition of `etale_of_specQBase`, and its proof will not
+be one.**  That theorem is assembled from `locallyOfFinitePresentation_of_specQBase`
+and `eq_zero_of_liesIn_of_squareZero`, both of which are statements about a
+`ℚ`-base and neither of which holds over `ℤ_(q)` for the reason given there
+(characteristic `0`).  Here the invertibility of `N` replaces characteristic `0`
+and the argument is Cartier's, which is why this is recorded as an independent
+leaf rather than as a generalisation.
+
+`_hbase` is what makes `R` the valuation ring `ℤ_(q)` rather than an arbitrary
+subring of `ℚ`; it is load-bearing in the intended proof, since it is what makes
+"`q ∤ N` implies `N` invertible in `R`" true. -/
+theorem CyclicSubgroupOfOrder.etale_of_specLocBase {N q : ℕ} (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
+    (_hbase : IsReductionBase q R toF) {E T : Scheme.{0}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} (c : CyclicSubgroupOfOrder ab N)
+    (g : T ⟶ SpecLoc R) : AlgebraicGeometry.Etale (c.ι ≫ f) :=
+  sorry
+
+/-- **The integral `j`-line exists over any subring of `ℚ`** (sorry leaf —
+Igusa; `Y_0(1) ≅ 𝔸¹_j` over `ℤ`).
+
+This is the level-`1` half of the integral-model story, and it is the ONLY half
+that is genuinely about the `j`-line: the `j`-invariant of an elliptic scheme
+`E ⟶ T` over an `R`-scheme `T` is a global section of `𝒪_T`, hence a `T`-point
+of `𝔸¹_R` over `R`, and on `ℚ`-points it is `WeierstrassCurve.j` of a
+Weierstrass model.  No hypothesis on `R` beyond being a subring of `ℚ` is
+needed and none is carried — in particular NO `q ∤ N`, because there is no `N`:
+the level is `1`, and `Y_0(1)` has good reduction everywhere.
+
+That is the honest statement of what the classical citation supplies, and it is
+deliberately stated at level `1` alone.  The degeneracy map from level `N` is
+NOT part of this leaf — it is supplied formally by initiality in
+`exists_x0IntegralJLine` below, which is the whole gain of this cut. -/
+theorem nonempty_isJLineZ (R : Subring ℚ) : Nonempty (IsJLineZ R) :=
+  sorry
+
+/-- **The integral degeneracy map restricts to `hj.jm` on the generic fibre**
+(sorry leaf — the SINGLE residue of `exists_x0IntegralJLine` after the cut of
+2026-07-29).
+
+`u` is the morphism `𝒴 ⟶ 𝔸¹_{ℤ_(q)}` that initiality produces from the
+integral `j`-line datum and the degeneracy map, `hu` says it lies over the base,
+and `hu2` is its computation rule: it agrees with `jtZ ∘ ofDvd` at every
+classifying point.  The conclusion is that its coordinate at the generic fibre
+of an integral point is the `j`-map the consumers already hold.
+
+**WHAT THE OBSTRUCTION ACTUALLY IS, and it is NOT the integral model.**  `hu2`
+pins `u` on the image of `hcZ.classify`, and `jtZ_model` pins `jtZ` on
+`ℚ`-points, so the conclusion holds at every `y` that is a classifying point of
+a `ℚ`-rational `Γ₀(N)`-datum.  What is missing is that EVERY `y` is: that
+`hc.classify (𝟙 SpecQ)` is SURJECTIVE onto `RelPoint strY (𝟙 SpecQ)`.  That is
+the classical twisting fact — a non-cuspidal `ℚ`-point of `Y_0(N)` is
+represented by a pair `(E, C)` defined over `ℚ`, obtained by choosing the right
+quadratic twist — and it is exactly the statement this file relies on informally
+whenever it reads a rational point of `Y_0(N)` as an elliptic curve over `ℚ`
+with a rational cyclic `N`-isogeny.  It is NOT available here: the file proves
+surjectivity of `classify` only on `ℚ̄`-points
+(`exists_gamma0Datum_classify_eq`-style results around `Gamma0GITPresentation`),
+and the descent from `ℚ̄` to `ℚ` is the twisting argument.
+
+So a prover of this leaf should expect to prove that surjectivity first, or to
+sharpen `IsJMapOn` upstream — which is what the cut of 2026-07-27 already
+predicted in prose: "`IsJMapOn.jm` is pinned only by `classify_jm`, which is
+existential, so `gen_eq` inherits whatever under-determination `jm` has …
+Sharpening `IsJMapOn` is a separate, upstream repair."  This leaf is where that
+prediction has become a named obligation.
+
+**`hu2` is load-bearing, not decoration.**  Drop it and the statement is FALSE:
+`u` may be post-composed with any automorphism of `𝔸¹_{ℤ_(q)}` over the base —
+`X ↦ X + 1` will do — leaving `hu` intact and changing every coordinate. -/
+theorem jm_eq_jLineZCoord_of_degeneracy (N q : ℕ) (hN : N ≠ 0) (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) {R : Subring ℚ} {toF : R →+* ZMod q}
+    (_hbase : IsReductionBase q R toF)
+    {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {ystr : YZ ⟶ SpecLoc R}
+    {hc : IsCoarseModuliY0 N strY} (hj : IsJMapOn N hc)
+    (hcZ : IsCoarseModuliY0 N ystr) (jz : IsJLineZ R)
+    (het : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f))
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY)
+    (u : YZ ⟶ jLineZ R) (hu : u ≫ jLineZStr R = ystr)
+    (_hu2 : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      haveI := het g d
+      (jz.jtZ g (d.ofDvd hN (one_dvd N))).1 = (hcZ.classify g d).1 ≫ u)
+    (y : RelPoint strY (𝟙 SpecQ)) :
+    hj.jm y = jLineZCoord (RelPoint.post u hu
+      (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)) :=
+  sorry
+
 /-- **The integral model of `Y_0(N)` carries an integral `j`-line**
-(sorry leaf — Igusa, and the SINGLE residue of the integral `j` after
+(PROVEN 2026-07-29 over the three leaves of the block above; was a sorry
+citation — Igusa, and the SINGLE residue of the integral `j` after
 the cut of 2026-07-27).
 
 TRUE for `q ∤ N`.  This is the classical statement: `X_0(N)` has good
@@ -42209,23 +42415,43 @@ degeneracy map `Y_0(N) ⟶ Y_0(1)` extends to a morphism of integral
 models.  `gen_eq` says that morphism restricts on the generic fibre to
 the `j`-map already carried by `hj`.
 
-**IRREDUCIBLE at this pin ALONG THE INTEGRAL-MODEL AXIS, and the CHECK
-THAT WOULD REFUTE THAT**: the survey recorded in
-`exists_x0CurveModel_of_base` found no integral model of a modular curve
-in mathlib, `~/cs/FLT` or this project.  Producing one — even just
-`Y_0(1)` over `ℤ_(q)` together with the degeneracy map from `𝒴` —
-refutes it.  Note the axis: what is missing is the INTEGRAL model, not
-the `j`-invariant itself, which is `exists_jLine`'s business over `ℚ` and
-is a different leaf with a different obstruction.
+**THE CUT OF 2026-07-29, and the IRREDUCIBLE verdict it RETIRES.**  The
+verdict that stood here read: "IRREDUCIBLE at this pin ALONG THE
+INTEGRAL-MODEL AXIS … the survey recorded in `exists_x0CurveModel_of_base`
+found no integral model of a modular curve in mathlib, `~/cs/FLT` or this
+project.  Producing one — even just `Y_0(1)` over `ℤ_(q)` together with the
+degeneracy map from `𝒴` — refutes it."
 
-`_hbase` is load-bearing in the intended proof (it is what makes `R` the
-valuation ring `ℤ_(q)`), and `_hqN` for the usual reason — at `q ∣ N` the
-model is not smooth and `j` acquires a pole, so no such morphism to the
-affine line exists.  Every hypothesis is underscored only because the
-proof is a `sorry`. -/
-theorem exists_x0IntegralJLine (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
-    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
+The survey is correct and is NOT disputed; what the verdict got wrong is that
+the two objects it names are ONE leaf.  They are not.  `Y_0(1)` over `ℤ_(q)` is
+a citation (`nonempty_isJLineZ`); **the degeneracy map from `𝒴` is not a
+citation at all** — it is INITIALITY, and the integral coarse space that makes
+initiality available is already in the consumer's hand as `cm.model.coarse`.
+So the leaf splits, and the three fields of `IsX0IntegralJLine` split with it:
+
+* `jmap` and `comm` are now PROVEN here, by `cm.model.coarse.universal` applied
+  to `d ↦ jtZ g (d.ofDvd hN (one_dvd N))` — verbatim the proof of
+  `exists_jMap` over `ℚ`, with `etale_of_specQBase` replaced by
+  `etale_of_specLocBase`, which is the one place where `q ∤ N` enters;
+* `gen_eq` is `jm_eq_jLineZCoord_of_degeneracy`, whose own docstring identifies
+  the residual obstruction as SURJECTIVITY of `hc.classify (𝟙 SpecQ)` on
+  `ℚ`-points — the twisting fact — and NOT the integral model at all.
+
+Note which way the frontier moved: three leaves replace one, and that is
+disclosure rather than regression, because each of the three is separately
+attackable by a different hand and two of them (`nonempty_isJLineZ`,
+`etale_of_specLocBase`) are standard citations with named sources, where the
+leaf they replace was not attackable in isolation.
+
+`_hbase` is load-bearing (it is what makes `R` the valuation ring `ℤ_(q)`, and
+is consumed by `etale_of_specLocBase`), and `_hqN` for the usual reason — at
+`q ∣ N` the level structure is not étale, the model is not smooth and `j`
+acquires a pole, so no such morphism to the affine line exists.  Both are now
+CONSUMED rather than merely carried, which is why they have lost their
+underscores. -/
+theorem exists_x0IntegralJLine (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
     {Y X X' XZ YZ : Scheme.{0}}
     {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
     {hc : IsCoarseModuliY0 N strY}
@@ -42234,8 +42460,27 @@ theorem exists_x0IntegralJLine (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
     (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
     (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
     (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
-    Nonempty (IsX0IntegralJLine R ystr hj.jm (cm.genericOpen hX ι hι)) :=
-  sorry
+    Nonempty (IsX0IntegralJLine R ystr hj.jm (cm.genericOpen hX ι hι)) := by
+  obtain ⟨jz⟩ := nonempty_isJLineZ R
+  -- the `[Etale (d.cyc.ι ≫ d.f)]` instance that `Gamma0Datum.ofDvd` needs; over
+  -- `Spec ℚ` this is `etale_of_specQBase`, and here it is where `q ∤ N` enters.
+  have het : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (d : Gamma0Datum N T),
+      AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f) :=
+    fun g d => CyclicSubgroupOfOrder.etale_of_specLocBase hq hqN hbase d.cyc g
+  -- initiality of the INTEGRAL coarse space, which the curve model carries
+  obtain ⟨u, ⟨hu, hu2⟩, -⟩ :=
+    cm.model.coarse.universal (jLineZStr R)
+      (fun g d => haveI := het g d; jz.jtZ g (d.ofDvd hN (one_dvd N)))
+      (by
+        intro _ _ h g g' hg d' d hb
+        haveI := het g' d'
+        haveI := het g d
+        exact jz.jtZ_natural h hg (hb.ofDvd hN (one_dvd N)))
+  exact ⟨{ jmap := u
+           comm := hu
+           gen_eq := fun y =>
+             jm_eq_jLineZCoord_of_degeneracy N q hN hq hqN hbase hj cm.model.coarse
+               jz het (cm.genericOpen hX ι hι) u hu hu2 y }⟩
 
 /-- **The `j`-invariant of an integral point is INTEGRAL** (PROVEN
 2026-07-27 over `exists_x0IntegralJLine`; was a sorry leaf — Igusa).
