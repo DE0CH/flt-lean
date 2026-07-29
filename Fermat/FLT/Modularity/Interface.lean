@@ -67732,10 +67732,393 @@ theorem tatePointOfUnit_fixed_iff_exists_zpow
       exact Subgroup.zpow_mem_zpowers _ _
     rw [tatePointOfUnit, tateUnifSepClosure_map, hclass]
 
+/-- **MULTIPLICATION BY `m` ON `E_q` IS `u ↦ u ^ m` ON UNITS** (PROVEN
+2026-07-29 — bookkeeping for the TATE-MODULE CUT below).
+
+Tate's uniformisation is an isomorphism of ADDITIVE groups
+`Additive (Ωˣ ⧸ q ^ ℤ) ≃+ E_q(Ω)`, so it intertwines the `ℕ`-action on
+`E_q(Ω)` with the `ℕ`-action on `Additive (Ωˣ ⧸ q ^ ℤ)`, which is
+`Additive.ofMul x ↦ Additive.ofMul (x ^ m)` by definition of `Additive`.
+That is the whole proof (`map_nsmul` plus `congr`), and it is what turns
+"`P` is a point of `T_p E_q`" — a statement about `p • P (n + 1) = P n`
+in CURVE language — into a statement about `p`-th powers of radicals. -/
+theorem tatePointOfUnit_nsmul
+    {k : Type*} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] [CharZero k]
+    (Ω : Type*) [Field Ω] [Algebra k Ω] [Algebra.IsSeparable k Ω]
+    [DecidableEq Ω]
+    (q : kˣ) (hq : ValuativeRel.valuation k (q : k) < 1) (u : Ωˣ) (m : ℕ) :
+    m • tatePointOfUnit Ω q hq u = tatePointOfUnit Ω q hq (u ^ m) := by
+  rw [tatePointOfUnit, tatePointOfUnit, ← map_nsmul]
+  congr 1
+
+/-- **TWO UNITS GIVE THE SAME POINT OF `E_q` EXACTLY WHEN THEY DIFFER BY
+`q ^ ℤ`** (PROVEN 2026-07-29 — the unindexed companion of
+`tatePointOfUnit_fixed_iff_exists_zpow` above).
+
+Same two facts as that lemma, read without a `σ`: the uniformisation is
+injective, so equal points mean equal classes in `Ωˣ ⧸ q ^ ℤ`, and
+`QuotientGroup.eq` plus `Subgroup.mem_zpowers_iff` name the integer `z`.
+It is stated separately because the TATE-MODULE CUT below compares two
+units NEITHER of which is a Galois translate of the other — the `p`-th
+power of one tower member against the next — so the `σ`-indexed form
+does not apply. -/
+theorem tatePointOfUnit_eq_iff_exists_zpow
+    {k : Type*} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] [CharZero k]
+    (Ω : Type*) [Field Ω] [Algebra k Ω] [Algebra.IsSeparable k Ω]
+    [DecidableEq Ω]
+    (q : kˣ) (hq : ValuativeRel.valuation k (q : k) < 1) (u v : Ωˣ) :
+    tatePointOfUnit Ω q hq u = tatePointOfUnit Ω q hq v ↔
+      ∃ z : ℤ, (u : Ω) = (v : Ω) * (algebraMap k Ω (q : k)) ^ z := by
+  set Qu : Ωˣ := Units.map (algebraMap k Ω).toMonoidHom q with hQu
+  constructor
+  · intro hfix
+    have hclass : ((u : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) =
+        ((v : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) :=
+      Additive.ofMul.injective ((tateUnifSepClosure Ω q hq).injective hfix)
+    obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp hclass)
+    refine ⟨-b, ?_⟩
+    have hmain : u = v * Qu ^ (-b) := by
+      rw [zpow_neg, hb]
+      group
+    have hval := congrArg (Units.val) hmain
+    simpa [hQu] using hval
+  · rintro ⟨z, hz⟩
+    have hmain : u = v * Qu ^ z := by
+      apply Units.ext
+      simpa [hQu] using hz
+    have hclass : ((u : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) =
+        ((v : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) := by
+      refine QuotientGroup.eq.mpr ?_
+      have hrw : (u : Ωˣ)⁻¹ * v = Qu ^ (-z) := by
+        rw [hmain]
+        group
+      rw [hrw]
+      exact Subgroup.zpow_mem_zpowers _ _
+    rw [tatePointOfUnit, tatePointOfUnit, hclass]
+
+/-- **A COHERENT TOWER OF `p`-POWER TORSION POINTS OF `E_q` IN THE
+`q`-DIRECTION IS A COHERENT TOWER OF `p`-POWER RADICALS OF `q`, ON THE
+NOSE** (PROVEN 2026-07-29 — the arithmetic half of the TATE-MODULE CUT
+below, and the step that makes that cut worth taking, since it is a
+THEOREM of this repository rather than part of the citation).
+
+WHAT IT SAYS. Let `u : ℕ → Ωˣ` be units with `u n ^ (p ^ n) = q` for
+every `n` — i.e. `tatePointOfUnit … (u n)` is a `p ^ n`-torsion point of
+`E_q` lying over the CANONICAL GENERATOR of the étale quotient — and
+suppose the attached points form a coherent system in the Tate module,
+`p • tatePointOfUnit … (u (n + 1)) = tatePointOfUnit … (u n)`. Then
+`u (n + 1) ^ p = u n` EXACTLY, not merely modulo `q ^ ℤ`.
+
+WHY, and why the `q ^ ℤ` ambiguity costs nothing here. Multiplication by
+`p` on `E_q` is `u ↦ u ^ p` (`tatePointOfUnit_nsmul`), so the coherence
+hypothesis says `u (n + 1) ^ p = u n · q ^ z` for some `z : ℤ`. Raise
+that to the `p ^ n`: the left side is `u (n + 1) ^ (p ^ (n + 1)) = q` and
+the right side is `u n ^ (p ^ n) · q ^ (z p ^ n) = q · q ^ (z p ^ n)`, so
+`q ^ (z p ^ n) = 1`. Descend along the injective `ℚᵖᵥ → ℚ̄ᵖᵥ` and apply
+`eq_zero_of_zpow_eq_one_of_valued_lt_one` above: `z p ^ n = 0`, hence
+`z = 0` since `p ≠ 0`.
+
+CONTRAST WITH `tateTower_fixed_of_kummerClass_fixed` above, which looks
+similar and is a different statement. That one kills the `q ^ ℤ`
+ambiguity in the GALOIS action on an already-coherent tower, by induction
+on `n`. This one kills it in the TOWER'S OWN COHERENCE, at every level at
+once and with no induction, because each `u n` is pinned to be an exact
+`p ^ n`-th root of `q` rather than merely a `p ^ n`-torsion class. The
+two are the two halves of the passage between `T_p E_q` and radicals, and
+neither implies the other. -/
+theorem tateRootTower_of_tatePointTower
+    (q : (ℚᵖᵥ)ˣ)
+    (hq : (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1)
+    (u : ℕ → (AlgebraicClosure ℚᵖᵥ)ˣ)
+    (hroot : ∀ n : ℕ, (u n : AlgebraicClosure ℚᵖᵥ) ^ p ^ n =
+      algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hcoh : ∀ n : ℕ,
+      (p : ℕ) • tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q
+          (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (u (n + 1)) =
+        tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q
+          (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (u n)) :
+    ∀ n : ℕ, u (n + 1) ^ p = u n := by
+  intro n
+  have hq' := valuativeRel_valuation_lt_one_of_valued_lt_one hq
+  have h1 : tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q hq' (u (n + 1) ^ p) =
+      tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q hq' (u n) := by
+    rw [← tatePointOfUnit_nsmul]
+    exact hcoh n
+  obtain ⟨z, hz⟩ :=
+    (tatePointOfUnit_eq_iff_exists_zpow (AlgebraicClosure ℚᵖᵥ) q hq'
+      (u (n + 1) ^ p) (u n)).mp h1
+  set Q : AlgebraicClosure ℚᵖᵥ :=
+    algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) with hQ
+  have hQ0 : Q ≠ 0 := by
+    rw [hQ, Ne, map_eq_zero]
+    exact q.ne_zero
+  have hkey : Q = Q * Q ^ (z * (p : ℤ) ^ n) := by
+    calc Q = (u (n + 1) : AlgebraicClosure ℚᵖᵥ) ^ p ^ (n + 1) := (hroot (n + 1)).symm
+      _ = (((u (n + 1) ^ p : (AlgebraicClosure ℚᵖᵥ)ˣ) :
+            AlgebraicClosure ℚᵖᵥ)) ^ p ^ n := by
+          push_cast
+          rw [← pow_mul, ← pow_succ']
+      _ = ((u n : AlgebraicClosure ℚᵖᵥ) * Q ^ z) ^ p ^ n := by rw [hz]
+      _ = (u n : AlgebraicClosure ℚᵖᵥ) ^ p ^ n * (Q ^ z) ^ p ^ n := by rw [mul_pow]
+      _ = Q * Q ^ (z * (p : ℤ) ^ n) := by
+          rw [hroot n, ← zpow_natCast (Q ^ z) (p ^ n), ← zpow_mul]
+          push_cast
+          ring_nf
+  have hone : Q ^ (z * (p : ℤ) ^ n) = 1 :=
+    (mul_right_eq_self₀.mp hkey.symm).resolve_right hQ0
+  have hbase : (q : ℚᵖᵥ) ^ (z * (p : ℤ) ^ n) = 1 := by
+    have h2 : algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ)
+        ((q : ℚᵖᵥ) ^ (z * (p : ℤ) ^ n)) =
+        algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) 1 := by
+      rw [map_zpow₀, map_one, ← hQ, hone]
+    exact (algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ)).injective h2
+  have hz0 : z * (p : ℤ) ^ n = 0 :=
+    eq_zero_of_zpow_eq_one_of_valued_lt_one q.ne_zero hq hbase
+  have hzz : z = 0 := by
+    rcases mul_eq_zero.mp hz0 with h | h
+    · exact h
+    · exact absurd (by exact_mod_cast h : (p : ℕ) ^ n = 0)
+        (pow_ne_zero n hp.out.ne_zero)
+  apply Units.ext
+  rw [hz, hzz, zpow_zero, mul_one]
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
+BASIS TOGETHER WITH A POINT OF THE TATE MODULE `T_p E_q`** (sorry leaf —
+THE residual AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-29
+TATE-MODULE CUT; Tilouine, *Hecke algebras and the Gorenstein property*,
+in Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general; Deligne–Rapoport for the
+models of `X₀(Mp)`).
+
+WHAT IT ASSERTS. There are a Tate parameter `q` with `v(q) < 1`, a
+`ℤ_p`-valued function `c` on `G_{ℚ_p}`, a UNIT-valued function `ψ` on
+`G_{ℚ_p}`, an `R`-basis `b` of `V`, and a sequence
+`P : ℕ → E_q(ℚ̄ᵖᵥ)`, such that
+
+1. each `P n` is the point attached to an exact `p ^ n`-th ROOT of `q` —
+   i.e. `P n` is a `p ^ n`-torsion point lying over the CANONICAL
+   GENERATOR of the étale quotient of `E_q[p ^ n]`;
+2. `P` is COHERENT under multiplication by `p`: `p • P (n + 1) = P n`.
+   Clauses 1 and 2 together say exactly that `P` is a point of the Tate
+   module `T_p E_q = lim_n E_q[p ^ n]` lying over `1 ∈ ℤ_p` in
+   `0 → ℤ_p(1) → T_p E_q → ℤ_p → 0`;
+3. `ρ|_{G_p}` moves the second basis vector by
+   `b 1 ↦ ψ(σ) · (b 1 + c(σ) · b 0)` — the TORIC shape UP TO A TWIST;
+   and
+4. whenever `p ^ n ∣ c(σ)`, `σ` FIXES `P n`.
+
+THE TATE-MODULE CUT (2026-07-29 — what changed, and why it is worth
+taking). Its consumer
+`exists_toricTatePointTower_of_weightTwoEigenform_pNew` — now PROVEN,
+just below — carried the tower as a COHERENT SYSTEM OF RADICALS
+`rt : ℕ → (ℚ̄ᵖᵥ)ˣ` with `rt 0 = q` and `rt (n + 1) ^ p = rt n`. That
+coherence is a statement about `p`-th powers in a field; what the cited
+geometry produces is a point of an INVERSE LIMIT, whose coherence is
+`p • P (n + 1) = P n` in the curve. This leaf now demands the latter,
+and the passage between them is the PROVEN
+`tateRootTower_of_tatePointTower` above.
+
+This is the recommended-next-axis of the 2026-07-28 owner ("build
+`T_p E_q` as an object … and state the geometry as an equivariant
+`ρ|_{G_p} ≅ T_p E_q ⊗ ψ`"), executed WITHOUT building a general `T_p`
+functor for Weierstrass curves — which the pin indeed lacks. Clauses 1
+and 2 ARE membership in `T_p E_q` over the étale generator, written out;
+no inverse-limit object is needed to say it, and the provable half the
+2026-07-28 owner predicted is `tateRootTower_of_tatePointTower`.
+
+THE CUT IS EXACT, IN BOTH DIRECTIONS. Forwards is the proof below.
+Backwards: given the radical tower `rt` of the consumer, put
+`P n := tatePointOfUnit … (rt n)`; clause 1 holds with `u := rt n`
+because `rt 0 = q` and `rt (n + 1) ^ p = rt n` give
+`rt n ^ (p ^ n) = q` by induction, and clause 2 is
+`tatePointOfUnit_nsmul` applied to `rt (n + 1) ^ p = rt n`. So the two
+statements are EQUIVALENT and nothing downstream can have moved.
+
+WHY CLAUSE 1 STILL MENTIONS A RADICAL, and why that is not a failure of
+the cut. Pinning `P n` to the `q`-direction is exactly the assertion that
+its image in the étale quotient `ℤ/p ^ n` is a GENERATOR, and the
+repository has that quotient only at level `p`
+(`WeierstrassCurve.exists_tateTorsionQuotient`, and only as an
+existential, hence not canonical). "`P n` is the class of an exact
+`p ^ n`-th root of `q`" is the same condition written without a quotient
+map: a torsion class with étale coordinate `d ≡ 1 mod p ^ n` is
+represented by `u` with `u ^ (p ^ n) = q ^ d`, and `u · q ^ (-e)` with
+`d = 1 + p ^ n e` is then an exact `p ^ n`-th root of `q` in the same
+class. What the cut MOVES is the coherence, which is where the content
+was: clause 2 is free on the geometry side (the Tate module is an
+inverse limit by construction) whereas `rt (n + 1) ^ p = rt n` is not,
+and the 2026-07-28 docstring flagged that gap as "real and not a
+technicality".
+
+WHY CLAUSE 4 IS ABOUT ONE POINT AND NOT ABOUT `E_q[p ^ n]` — INHERITED
+AND STILL GOVERNING. The natural-looking stronger form "`p ^ n ∣ c(σ)`
+implies `σ` fixes ALL of `E_q[p ^ n]`" is **FALSE**: `E_q[p ^ n]` is
+generated by `μ_{p ^ n}` together with the classes of the `p ^ n`-th
+roots of `q`, so fixing it pointwise also demands a CYCLOTOMIC condition
+on `χ_cyc(σ) mod p ^ n`, about which `p ^ n ∣ c(σ)` says nothing. This is
+why clause 4 is pointwise, and why this leaf is NOT an instance of
+`exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew` below —
+that node is PROVEN downstream OF this leaf, so citing it is circular.
+
+FALSITY AUDIT — RE-RUN 2026-07-29 AGAINST THIS STATEMENT, since the leaf
+has been restated and per the standing rule an earlier audit is VOID
+rather than inherited. It passes, and the reason is mechanical: the cut
+is an EQUIVALENCE (both directions above), so no hypothesis has become
+under-determined and no conclusion has changed strength. Both defects
+found in 2026-07-27 still govern and both repairs are kept — `hpM2`
+(`p ∥ M`, refuted at `p = 5`, `M = 275` by the ramified étale quotient of
+the `χ₅`-twist of `X₀(11)`) and the twist `ψ` (refuted at `p = 7`,
+`E = 21a1`, `a₇ = -1`, non-split multiplicative, where no change of basis
+removes the unramified quadratic `ψ`). `ψ` remains a BARE FUNCTION into
+`Rˣ`, not a character: the truth is stronger, but this leaf is an
+OBLIGATION, so the weaker form is the safe one.
+
+VACUITY — RE-RUN 2026-07-29 AGAINST THE POINT-TOWER FORM. Clause 4 alone
+is satisfiable by junk (`c ≡ 1` triggers only `n = 0`, where `P 0` is the
+point of `q` itself, i.e. the ZERO of `E_q`, fixed by everything). Clause
+3 alone is satisfiable by `c ≡ 0` for a `ρ` trivial on `G_p`. Their
+CONJUNCTION carries the arithmetic and is not vacuous: `c ≡ 0` would make
+every `σ` fix every `P n`, hence — by
+`tatePointOfUnit_fixed_iff_exists_zpow` and then
+`tateTower_fixed_of_kummerClass_fixed`, the tower being coherent by
+`tateRootTower_of_tatePointTower` — fix each radical `u n` outright,
+putting `q ∈ (ℚᵖᵥˣ) ^ (p ^ n)` for all `n` and forcing `v(q) = 1`,
+against `v(q) < 1`. The twist `ψ` does not disturb this: it is a unit, so
+`c ≡ 0` is unaffected by it.
+
+WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT — UNCHANGED BY THIS
+CUT. The geometry: Deligne–Rapoport models of `X₀(Mp)`, the
+toric-reduction computation at the `p`-new part of `J₀(Mp)`, and the
+identification of `ρ|_{G_p}` with the Tate module of that toric object.
+Absent from this pin, from `~/cs/FLT` and from this project.
+`nonempty_modularTateGaloisData` above does NOT supply it: that leaf is
+about `J₀(M)` at GOOD primes, whereas what is needed is the fibre at `p`
+itself. `Fermat/FLT/Modularity/TateModule.lean` does not supply it
+either, and this was CHECKED rather than assumed (2026-07-29): it is
+about Tate modules of ABELIAN SCHEMES via geometric fibres, and it is not
+in this file's import cone at all.
+
+THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
+`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — the only hits outside this
+file's own docstrings are the identical note in `ModularCurve/X0.lean`,
+i.e. still zero in signature position.
+
+**THE AXES SEARCHED, AND WHAT IS LEFT.**
+
+*Searched and DEAD (2026-07-27 owner)*: cuts keeping the seam INSIDE the
+local Galois representation — separating the toric shape from the Kummer
+property, separating the shape clause from the fixing clause, and pushing
+`q` out of the leaf to recover it from the cocycle by Kummer theory. The
+last is unavailable because `H ¹(G_p, ℤ_p(1))` is the pro-`p` completion
+`(ℚ_pˣ)^`, whose valuation coordinate is a `ℤ_p` while an honest
+`q ∈ ℚ_pˣ` needs it INTEGRAL; so `q` must stay on the geometry side.
+
+*Searched and DEAD (2026-07-28 owner)*: a `ToricReductionData` STRUCTURE
+merely bundling `q`, `ψ`, `b`, `c` and a Kummer field. Pure repackaging:
+every admissible field is logically equivalent to the fixing clause, and
+each weaker candidate is FALSE for the cyclotomic reason above, so no
+half of it can be proven.
+
+*Searched and PRODUCTIVE (2026-07-29 owner), and the axis this leaf came
+from*: the 2026-07-28 owner's recommended `T_p E_q` axis, realised
+without a `T_p` functor. It is the fourth such move in this chain (after
+the TATE-CURVE CUT, the INTEGRALITY CUT and the RIGID-UNIFORMISATION
+CUT), it is exact, and its provable half is
+`tateRootTower_of_tatePointTower`.
+
+*NOT searched, and the recommended next axis*: the remaining half of the
+2026-07-28 proposal — the EXTENSION CLASS of `T_p E_q`, i.e. that the
+`c` of clause 3 is forced to BE the Kummer cocycle of `q` rather than
+merely to satisfy clause 4. That is Tate's theorem and is provable here;
+what it needs first is the étale quotient `E_q[p ^ n] ↠ ℤ/p ^ n` at
+every level `n` (the repository has it only at level `p`, as the
+existential `WeierstrassCurve.exists_tateTorsionQuotient`) together with
+a canonical choice of it, so that "lies over the generator" becomes a
+statement about a named map rather than clause 1's radical. Generalising
+`exists_tateTorsionQuotient` from `p` to `p ^ n` is a self-contained,
+purely group-theoretic job in `TateSepClosure.lean` and is the concrete
+next piece of infrastructure this chain wants.
+
+SOUNDNESS: `p = 11`, `M = 11`, the weight-2 newform of level `11`,
+`E = X₀(11)`. It satisfies `hpM2` and is SPLIT multiplicative
+(`a₁₁ = 1`), so `ψ ≡ 1` and clause 3 specialises to the untwisted shape;
+`v_p(q) = 1 ≠ 0`, so the `p ^ n`-th roots of `q` generate a genuinely
+ramified extension, `E_q[p ^ n]` is a genuine rank-two module and `P` is
+a genuine point of `T_p E_q`. **One witness certifies non-vacuity, never
+faithfulness** — the two counterexamples in the FALSITY AUDIT above span
+the cases it misses.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat` are
+passed down unchanged: they are exactly what the cited automorphic theory
+assumes about its coefficient ring. -/
+theorem exists_toricTateModulePointTower_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ (q : (ℚᵖᵥ)ˣ) (c : Field.absoluteGaloisGroup ℚᵖᵥ → ℤ_[p])
+        (ψ : Field.absoluteGaloisGroup ℚᵖᵥ → Rˣ)
+        (b : Module.Basis (Fin 2) R V)
+        (hq : (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1)
+        (P : ℕ → (((WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ))⁄
+          (AlgebraicClosure ℚᵖᵥ))).Point),
+      (∀ n : ℕ, ∃ u : (AlgebraicClosure ℚᵖᵥ)ˣ,
+          (u : AlgebraicClosure ℚᵖᵥ) ^ p ^ n =
+            algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+          P n = tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q
+            (valuativeRel_valuation_lt_one_of_valued_lt_one hq) u) ∧
+      (∀ n : ℕ, p • P (n + 1) = P n) ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+        ρ.toLocal 𝔭ᵥ σ (b 1) =
+          (ψ σ : R) • (b 1 + algebraMap ℤ_[p] R (c σ) • b 0)) ∧
+      (∀ (n : ℕ) (σ : Field.absoluteGaloisGroup ℚᵖᵥ), (p : ℤ_[p]) ^ n ∣ c σ →
+        WeierstrassCurve.Affine.Point.map
+            (W' := WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ))
+            (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ).toAlgHom
+            (P n) = P n) :=
+  sorry
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
 BASIS TOGETHER WITH A COHERENT TOWER OF `p`-POWER TORSION POINTS OF
-`E_q`** (sorry leaf — THE residual AUTOMORPHIC-TO-GALOIS BRIDGE after the
+`E_q`** (PROVEN 2026-07-29 by the TATE-MODULE CUT — an assembly over the
+geometric leaf `exists_toricTateModulePointTower_of_weightTwoEigenform_pNew`
+just above and the proven passage `tateRootTower_of_tatePointTower`
+beside it. Formerly THE residual AUTOMORPHIC-TO-GALOIS BRIDGE after the
 2026-07-28 RIGID-UNIFORMISATION CUT; Tilouine, *Hecke algebras and the
 Gorenstein property*, in Cornell–Silverman–Stevens §5 Step 1(a), for
 `p ∥ M`; Saito, *Modular forms and `p`-adic Hodge theory*, Invent. Math.
@@ -67754,6 +68137,31 @@ such that
    and
 3. whenever `p ^ n ∣ c(σ)`, `σ` FIXES THE POINT `tatePointOfUnit … (rt n)`
    OF THE TORIC CURVE `E_q(ℚ̄ᵖᵥ)`.
+
+THE TATE-MODULE CUT (2026-07-29 — what this node now IS). The node is
+PROVEN, as a one-step transport:
+
+1. `exists_toricTateModulePointTower_of_weightTwoEigenform_pNew` (sorry
+   leaf, just above): the same statement with the tower carried as a
+   POINT OF `T_p E_q` — each `P n` the point of an exact `p ^ n`-th root
+   of `q`, and `p • P (n + 1) = P n` — rather than as a coherent system
+   of radicals. An inverse limit is what the cited geometry produces; a
+   coherent system of `p`-th powers in a field is not.
+2. `tateRootTower_of_tatePointTower` (PROVEN, just above): the passage.
+   Coherence in the curve plus the exact-root pinning forces
+   `rt (n + 1) ^ p = rt n` ON THE NOSE, because the residual `q ^ ℤ`
+   ambiguity would make `q ^ (z p ^ n) = 1`, impossible for `v(q) < 1`.
+
+THE CUT IS EXACT, in both directions — see the leaf's docstring for the
+backward construction (`P n := tatePointOfUnit … (rt n)`), so this node's
+statement is unchanged in strength and nothing downstream moved.
+
+WHAT IT BUYS. The tower's coherence — flagged in the 2026-07-28 account
+below as "real and not a technicality" — is no longer an extra demand
+made of the citation in field language; it is membership in `T_p E_q`,
+which the citation supplies by construction. WHAT IT DOES NOT BUY: the
+modular-curve geometry itself is untouched and remains the whole content
+of the leaf above.
 
 THE RIGID-UNIFORMISATION CUT (2026-07-28 — what changed, and why it is
 worth taking). Its consumer
@@ -67996,8 +68404,26 @@ theorem exists_toricTatePointTower_of_weightTwoEigenform_pNew
             (tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q
               (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (rt n)) =
           tatePointOfUnit (AlgebraicClosure ℚᵖᵥ) q
-            (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (rt n)) :=
-  sorry
+            (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (rt n)) := by
+  -- the GEOMETRY, in the language the citation speaks: a point of the
+  -- Tate module `T_p E_q` lying over the étale generator
+  obtain ⟨q, c, ψ, b, hq, P, hpin, hcoh, hbas, hfix⟩ :=
+    exists_toricTateModulePointTower_of_weightTwoEigenform_pNew hpodd hM hpM hpM2
+      hg hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
+  -- name the exact `p ^ n`-th root of `q` under each `P n`
+  choose u hu hPu using hpin
+  -- COHERENCE IN THE CURVE UPGRADES TO COHERENCE ON THE NOSE
+  have hrts : ∀ n : ℕ, u (n + 1) ^ p = u n := by
+    refine tateRootTower_of_tatePointTower q hq u hu ?_
+    intro n
+    rw [← hPu (n + 1), ← hPu n]
+    exact hcoh n
+  refine ⟨q, c, ψ, b, hq, u, ?_, hrts, hbas, ?_⟩
+  · -- `rt 0 = q`: the level-`0` root condition is `u 0 ^ 1 = q`
+    simpa using hu 0
+  · intro n σ hdvd
+    have h := hfix n σ hdvd
+    rwa [hPu n] at h
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
