@@ -2736,14 +2736,40 @@ application discharges it VERBATIM (`isLocalizationDT h := sys.isLocalizationTot
 no transport).  For the fibre system it is the quotient of `isLocalizationTotT`, which
 is the leaf `exists_isLocalization_fibre`.
 
-**WHY THE CORE IS STILL A SORRY, and what specifically is missing.**  10.128.3's
-proof runs `Tor_1^{C_λ}(D_λ, C_λ/𝔪_λ)`, which the source rewrites (Remark 10.75.9) as
-`ker(𝔪_λ ⊗_{C_λ} D_λ → D_λ)` — so the Tor GROUP is expressible in this pin.  What is
-not is the last step: the criterion [Stacks 00MO] is proven from [Stacks 00ML] and
-the base-change comparison maps for `Tor_1`, all of which need the long exact
-sequence.  `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`'s module
-docstring records the same obstruction for the nilpotent local criterion and is the
-place a `Tor_1` theory belongs; that file is this leaf's natural prerequisite.
+**WHY THE CORE IS STILL A SORRY — CORRECTED 2026-07-28, AND THE GATE IS FAR SMALLER
+THAN THIS PARAGRAPH USED TO CLAIM.**  The previous version of this paragraph said
+10.128.3 is blocked until someone builds `Tor_1` and its six-term long exact
+sequence, and named `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` as this
+leaf's natural prerequisite ("one prover closes both").  **That was wrong when it was
+written, and the refuting check is one grep in this very file.**  00MO's proof
+invokes **Lemma 10.99.10**, and 10.99.10 is ALREADY PROVEN here as
+`flat_of_rTensor_injective_of_flat_quotientMap` (over the single leaf
+`lTensor_subtype_injective_of_pow_le`), roughly 1400 lines above.
+
+Reading 00MO's proof line by line against that, the ONLY content it needs beyond
+10.99.10 is:
+
+* `M'/I'M'` is flat over `R'/I'` — base change of the flat `M/IM` along
+  `R/I → R'/I'`, followed by a localization.  **No `Tor` appears anywhere in this
+  step**; and
+* surjectivity of `Tor_1^R(M, R/I) ⊗_R R' → Tor_1^{R'}(M', R'/I')`, which is
+  10.99.13 (`Tor_1^R(M, R'/I') ↠ Tor_1^{R'}(M ⊗_R R', R'/I')`) composed with 10.99.12
+  at `R → R/I → R'/I'`, then localized.
+
+Throughout, `Tor_1(−, R/I) = ker(I ⊗ − → −)` (Remark 10.75.9), so **not one of these
+steps needs a derived functor, a projective resolution, or a long exact sequence** —
+they are all statements about kernels of explicit `TensorProduct.lift`s.  10.128.3 is
+therefore cut below into exactly TWO leaves over the already-proven 10.99.10,
+`exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` and
+`flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem`; read their
+docstrings, which are the specifications.
+
+**The `LocalCriterion.lean` coupling is WITHDRAWN.**
+`Module.Flat.of_flat_quotient_of_pow_eq_bot` there is a genuinely different statement
+— a NILPOTENT ideal and no Noetherian hypothesis, which is exactly the case
+10.99.10's Artin–Rees/Krull proof does not cover and does not need — so it is not a
+prerequisite for this leaf and this leaf is not a prerequisite for it.  Neither
+closes the other.
 
 **FAITHFULNESS OF THE PREDICATE.**  Every field is one of 10.127.13's conclusions or
 one of 10.99.14's hypotheses, so `IsNoetherianFlatDescentSystem` is no stronger than
@@ -2874,8 +2900,150 @@ structure IsNoetherianFlatDescentSystem {Λ : Type u} (le : Λ → Λ → Prop)
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid (C j ⊗[C i] D i), IsLocalization W (D j)
 
-/-- **STACKS 10.128.3** ([Stacks 00R6]; SORRY LEAF, the single shared engine of the two
-applications — read the section note above before touching it).
+/-! #### 10.128.3's TWO LEAVES — cut 2026-07-28 over the ALREADY-PROVEN 10.99.10
+
+The three declarations below are one block and were written together.  The two leaves
+are the two hypotheses of `flat_of_rTensor_injective_of_flat_quotientMap` (Stacks
+10.99.10, PROVEN ~1400 lines above) at the ideal `I' = 𝔪_i C_j`, and the theorem after
+them is 00MO's assembly.  Read the CORRECTED "WHY THE CORE IS STILL A SORRY" paragraph
+in the section note above before touching any of them: the earlier claim that 10.128.3
+is gated on building `Tor_1` and its long exact sequence is WITHDRAWN, and so is its
+pairing with `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`. -/
+
+/-- **THE `Tor_1` VANISHING AT A LARGE STAGE — the colimit half of [Stacks 00R6]**
+(sorry leaf, cut 2026-07-28 out of `exists_flat_index_of_isNoetherianFlatDescentSystem`
+below).
+
+*In a `IsNoetherianFlatDescentSystem` whose colimit `w` is flat, for every `i` there is
+`j ≥ i` with `Tor_1^{C_j}(C_j/𝔪_i C_j, D_j) = 0`.*
+
+The vanishing is written without derived functors, as injectivity of
+`↥(𝔪_i C_j) ⊗_{C_j} D_j → C_j ⊗_{C_j} D_j`, i.e. as
+`Function.Injective (LinearMap.rTensor (D j) I'.subtype)` with `I' = 𝔪_i C_j`.  That is
+exactly the shape `flat_of_rTensor_injective_of_flat_quotientMap` consumes, which is why
+the seam is here and not one step earlier or later.
+
+**THE PROOF, which is 00R6's own, in two independent halves.**
+
+*Half A — the colimit (00R6's body).*  `T_i := ker(𝔪_i ⊗_{C_i} D_i → D_i)` is a finitely
+generated `D_i`-module: `𝔪_i` is f.g. because `C_i` is Noetherian (`isNoetherianC`), so
+`𝔪_i ⊗_{C_i} D_i` is a finite `D_i`-module (`Module.Finite.base_change`), and `D_i` is
+Noetherian (`isNoetherianD`), so the submodule `T_i` is f.g.  Let `ξ_1, …, ξ_n` generate
+it.  Because `w` is flat, `(𝔪_i Cbot) ⊗_{Cbot} Dbot → Dbot` is injective, so each `ξ_k`
+maps to `0` in `(𝔪_i Cbot) ⊗_{Cbot} Dbot`.  Tensor products commute with filtered
+colimits, so — and this is the ONLY place `c_surj`/`c_sep`/`d_surj`/`d_sep` and
+`directed` are spent — a single `j ≥ i` kills all `n` of them at once, i.e. the
+comparison map `T_i → T_j := ker(𝔪_i C_j ⊗_{C_j} D_j → D_j)` is ZERO.
+
+*Half B — the surjectivity (00MO's steps 4–6).*  The `C_j`-linear extension
+`T_i ⊗_{C_i} C_j → T_j` of that same comparison map is SURJECTIVE.  This is Stacks
+10.99.13 (`Tor_1^{C_i}(D_i, C_j/I') ↠ Tor_1^{C_j}(D_i ⊗_{C_i} C_j, C_j/I')`) composed
+with 10.99.12 applied to `C_i → C_i/𝔪_i → C_j/I'`, then localized along
+`isLocalizationDT h` — which is precisely what turns `D_i ⊗_{C_i} C_j` into `D_j`, and is
+the only use of that field here.
+
+Half A and Half B together give `T_j = 0`: `T_j` is spanned by the image of `T_i`, and
+that image is `0`.  Injectivity of `LinearMap.rTensor (D j) I'.subtype` is `T_j = 0`.
+
+**WHAT IS AND IS NOT NEEDED.**  Every object above is the kernel of an explicit
+`TensorProduct.lift`, since `Tor_1(−, C/I) = ker(I ⊗ − → −)` (Remark 10.75.9).  **No
+projective resolution, no derived functor and no long exact sequence occurs in either
+half.**  Half A needs no `Tor` formalism whatsoever.  Half B is the only genuinely
+homological content left anywhere in 10.128.3, and it is two surjectivity statements
+about explicit maps — not a six-term sequence.
+
+**A FURTHER CUT IS AVAILABLE** if this is too large for one owner: introduce the
+comparison map `T_i → T_j` as a named `def` (a `TensorProduct.lift` of
+`x ⊗ₜ m ↦ cT h x ⊗ₜ dT h m`, corestricted to the kernels) and make Halves A and B two
+leaves over it.  That was not done here only because the map is the one new *definition*
+such a cut would need, and both halves can be attacked without it being top-level.
+
+**FAITHFULNESS.**  The ideal is `𝔪_i C_j`, the EXTENSION of the stage-`i` maximal ideal
+along `cT h` — NOT `𝔪_j`.  That is what 00MO's `I' = IR'` says, and what Half B's
+surjectivity is a statement about; replacing it by `𝔪_j` would be a different and
+strictly stronger claim that 00R6's proof does not deliver.
+
+**NON-VACUITY, checked in both directions.**  The `∃ j` is not discharged by `j = i`:
+at `j = i` (available from `le_rfl`) the conclusion reads
+`Tor_1^{C_i}(C_i/𝔪_i, D_i) = 0`, which by 10.99.10 together with the fibre leaf below is
+equivalent to `D_i` being flat over `C_i` — i.e. it is the whole content of 10.128.3 at a
+single stage, true but certainly not free.  Nor is the statement vacuous for lack of
+inhabitants: both `isNoetherianFlatDescentSystem_baseTot` and
+`isNoetherianFlatDescentSystem_fibre` are written out below, so the hypothesis is
+satisfiable. -/
+theorem exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    (_hflat : w.Flat) (i : Λ) :
+    ∃ j : Λ, ∃ h : le i j,
+      letI := hsys.isLocalRingC i
+      letI : Algebra (C j) (D j) := (cd j).toAlgebra
+      Function.Injective (LinearMap.rTensor (D j)
+        ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) :=
+  sorry
+
+/-- **THE FIBRE IS FLAT AT EVERY STAGE — 00MO's step 2, and it involves NO `Tor`**
+(sorry leaf, cut 2026-07-28 out of `exists_flat_index_of_isNoetherianFlatDescentSystem`
+below).
+
+*In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j` the induced map
+`C_j/𝔪_i C_j → D_j/𝔪_i D_j` is flat.*
+
+This is the second hypothesis of the local criterion 10.99.10 at the ideal
+`I' = 𝔪_i C_j`, and it is the one step of [Stacks 00MO] that is pure base change:
+
+* `D_i/𝔪_i D_i` is flat over `C_i/𝔪_i` **for free**, because `C_i/𝔪_i` is a FIELD
+  (`isLocalRingC i` makes `𝔪_i` maximal, and every module over a field is flat).  This
+  is 00MO's hypothesis (2), which in our application is a theorem rather than an
+  assumption because `M = S'`;
+* base change along `C_i/𝔪_i → C_j/I'` (Stacks 10.39.7, `Module.Flat.baseChange`) makes
+  `(D_i/𝔪_i D_i) ⊗_{C_i/𝔪_i} (C_j/I')` flat over `C_j/I'`, and that tensor product is
+  `(C_j ⊗_{C_i} D_i)/I'(C_j ⊗_{C_i} D_i)` because quotients commute with base change;
+* `D_j` is a localization of `C_j ⊗_{C_i} D_i` (`isLocalizationDT h`), so `D_j/I' D_j` is
+  the corresponding localization of that quotient, and a localization of a flat algebra
+  is flat over the base — localization is flat, then `Module.Flat.trans`.
+
+**WHICH FIELDS THIS LEAF SPENDS, and it is a short list.**  Only `isLocalRingC`,
+`isLocalHomCD` and `isLocalizationDT h`.  In particular NONE of `isNoetherianC`,
+`isNoetherianD`, `c_surj`, `d_surj`, `c_sep`, `d_sep`, `directed` is used, and neither is
+flatness of `w` — which is why this leaf carries no `hflat` hypothesis at all.  A prover
+who finds they need a colimit condition or a Noetherian hypothesis here should say so
+rather than adding one: it would mean the seam is in the wrong place.
+
+**FAITHFULNESS.**  The ideal is `𝔪_i C_j`, matching
+`exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` and
+00MO's `I' = IR'`.  With `𝔪_j` in its place the statement would be about the closed
+fibre of stage `j` rather than about the base change of stage `i`'s fibre, and the third
+bullet would no longer apply — so the two leaves must be read as a matched pair, and
+changing the ideal in one without the other breaks the assembly below.
+
+**NON-DEGENERACY.**  At `j = i` the statement is the first bullet alone (flatness over a
+field), so it is TRUE but not vacuous: the whole content sits in the transition `i ≤ j`,
+where the base change and the localization happen. -/
+theorem flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    {i j : Λ} (h : le i j) :
+    letI := hsys.isLocalRingC i
+    letI : Algebra (C j) (D j) := (cd j).toAlgebra
+    (Ideal.quotientMap
+      (((IsLocalRing.maximalIdeal (C i)).map (cT h)).map (algebraMap (C j) (D j)))
+      (algebraMap (C j) (D j)) Ideal.le_comap_map).Flat :=
+  sorry
+
+/-- **STACKS 10.128.3** ([Stacks 00R6]; **PROVEN 2026-07-28** over the two leaves
+immediately above and the already-proven 10.99.10 — read the section note above before
+touching it).
 
 *In a `IsNoetherianFlatDescentSystem` whose colimit `w` is flat, `cd j` is flat cofinally
 in `Λ`.*
@@ -2891,16 +3059,31 @@ commute with filtered colimits, so — using `c_surj`/`c_sep`/`d_surj`/`d_sep` �
 square `C_i → C_j`, `D_i → D_j` — whose hypothesis (1) is `isLocalizationDT` — gives
 `D_j` flat over `C_j`.
 
-**WHAT BLOCKS IT AT THIS PIN.**  Only the last step.  [Stacks 00MO] is proven from
-[Stacks 00ML] plus the two base-change comparison maps for `Tor_1`, and there is no
-`Tor` long exact sequence in this pin — see the module docstring of
-`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, which records the same
-obstruction and is where a `Tor_1` theory belongs.  A prover who builds `Tor_1` and its
-six-term sequence in the first variable closes that leaf and this one together.
+**WHAT BLOCKS IT AT THIS PIN — CORRECTED 2026-07-28.**  The previous version of this
+paragraph said the last step needs a `Tor` long exact sequence, that
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` is where such a theory belongs,
+and that "a prover who builds `Tor_1` and its six-term sequence in the first variable
+closes that leaf and this one together".  **All three clauses are withdrawn**; the
+refuting check was one grep in this file.  [Stacks 00MO]'s proof invokes **Lemma
+10.99.10**, which is PROVEN here as `flat_of_rTensor_injective_of_flat_quotientMap`, and
+everything 00MO needs beyond it is expressible as kernels of explicit
+`TensorProduct.lift`s (Remark 10.75.9: `Tor_1(−, C/I) = ker(I ⊗ − → −)`).  No derived
+functor, projective resolution or long exact sequence occurs anywhere in the cut below.
+See the CORRECTED paragraph in the section note above for the line-by-line reading.
+
+**THIS LEAF IS NOW PROVEN**, over the two leaves immediately above it — the colimit half
+`exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` and the
+fibre half `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` — plus
+10.99.10.  The body is exactly 00MO's shape: the two leaves supply 10.99.10's two
+hypotheses at the ideal `I' = 𝔪_i C_j`, and `IsLocalRing.map_maximalIdeal_le` supplies
+`I' ≤ 𝔪_j` from `isLocalHomCT`.
 
 **FAITHFULNESS.**  The conclusion is 10.128.3's, in the cofinal form its PROOF delivers
 (the proof fixes `λ` and produces `λ' ≥ λ`); restricting the system to `{j | i ≤ j}`
 turns the cofinal form back into 10.128.3's bare `∃ λ`, so this is not a strengthening.
+The statement is UNCHANGED by the 2026-07-28 cut — both applications
+(`exists_flatBase_index_of_noetherianApproxSystem`,
+`exists_flatFibre_index_of_noetherianApproxSystem`) still consume it verbatim.
 
 [Stacks 00R6]: https://stacks.math.columbia.edu/tag/00R6
 [Stacks 00MO]: https://stacks.math.columbia.edu/tag/00MO
@@ -2912,10 +3095,26 @@ theorem exists_flat_index_of_isNoetherianFlatDescentSystem
     {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
     {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
     {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
-    (_hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
-    (_hflat : w.Flat) (i : Λ) :
-    ∃ j : Λ, ∃ _ : le i j, (cd j).Flat :=
-  sorry
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    (hflat : w.Flat) (i : Λ) :
+    ∃ j : Λ, ∃ _ : le i j, (cd j).Flat := by
+  letI := hsys.isLocalRingC i
+  obtain ⟨j, hij, htor⟩ :=
+    exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem
+      hsys hflat i
+  refine ⟨j, hij, ?_⟩
+  haveI := hsys.isLocalRingC j
+  haveI := hsys.isLocalRingD j
+  haveI := hsys.isNoetherianC j
+  haveI := hsys.isNoetherianD j
+  haveI := hsys.isLocalHomCT hij
+  algebraize [cd j]
+  haveI : IsLocalHom (algebraMap (C j) (D j)) := hsys.isLocalHomCD j
+  exact flat_of_rTensor_injective_of_flat_quotientMap
+    (I := (IsLocalRing.maximalIdeal (C i)).map (cT hij))
+    (J := ((IsLocalRing.maximalIdeal (C i)).map (cT hij)).map (algebraMap (C j) (D j)))
+    (IsLocalRing.map_maximalIdeal_le (cT hij)) rfl Ideal.le_comap_map htor
+    (flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem hsys hij)
 
 /-- **THE `R_λ → S'_λ` TOWER OF A `NoetherianApproxSystem` IS A DESCENT SYSTEM**
 (PROVEN).  Every field is a field of the system, a composite of two of them, or a
