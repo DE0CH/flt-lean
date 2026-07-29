@@ -147,7 +147,10 @@ Four are new, and each is strictly smaller than the leaf it came out of:
 
 * `exists_trivialization_of_modTensorPow` — **the mathematical one**: Stacks
   01CV, the semigroup bridge.  It is the only one of the six that is not
-  bookkeeping.
+  bookkeeping.  **PROVEN 2026-07-29** by reduction (one line, since
+  `modTensorPow A (j+1)` IS `modTensor A (modTensorPow A j)`) to the classical
+  TWO-FACTOR statement `exists_trivialization_of_modTensor_trivial`, which is
+  where the mathematics and the corrected route audit now live.
 * `trivializedSection_trivializationOfLE` — **PROVEN 2026-07-28.**  It was never
   mathematics; it was blocked by `modRestrictLEIso` being routed through
   `modPullback`.  Rerouting that through mathlib's `restrictFunctorCongr` +
@@ -1038,17 +1041,107 @@ theorem isInvertibleSheaf_modTensorPow {Z : Scheme.{u}} {L : Z.Modules}
   | 0 => isInvertibleSheaf_modUnit Z
   | (n + 1) => isInvertibleSheaf_modTensor hL (isInvertibleSheaf_modTensorPow hL n)
 
-/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf) —
-Stacks 01CV, Hartshorne II.6.12.  Stated in the form the audit needs: if SOME
-positive tensor power of `A` is trivial on `U`, then `A` itself is trivial on a
-smaller neighbourhood of each point of `U`.
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (sorry leaf,
+cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`) — Stacks 0B8L /
+01CV, Hartshorne II.6.12, in its classical TWO-FACTOR form: if `L ⊗ N` is trivial
+on `U` for SOME `N`, then `L` is trivial near each point of `U`.
 
-**This is the single mathematical leaf of the module** (`nonempty_modTensor_assoc`
-and `nonempty_modPullback_modTensor` aside), and it is the whole content of the
+**This is the single mathematical leaf of the module** (`modLocW_whiskerLeft` and
+`nonempty_modPullback_modTensor` aside), and it is the whole content of the
 numerical-semigroup worry recorded against
 `nonvanishingLocus_modPullback_of_isAmpleSheaf`.
 
-WHY IT IS TRUE, and why it is not formal.  Stalks first: sheafification preserves
+**FAITHFUL, and strictly stronger than the tensor-power form it came from.**
+`modTensorPow A (j+1)` is `modTensor A (modTensorPow A j)` definitionally, so the
+power statement is the special case `N = A^{⊗j}`; the `0 < k` hypothesis of the
+consumer is exactly what produces the `j`.  Nothing else about `N` is used or
+true: `N` is an arbitrary `𝒪_Z`-module, as in Stacks, and the statement holds
+over an arbitrary RINGED SPACE — no quasi-coherence, no scheme hypothesis beyond
+what `Z.Modules` already carries.
+
+WHY IT IS TRUE.  Near a point, `ν⁻¹(1) = Σ_{i≤m} s_i ⊗ t_i` for finitely many
+sections; writing `λ_i(x) := ν(x ⊗ t_i)` one has `Σ_i λ_i(s_i) = ν(ν⁻¹ 1) = 1`,
+so some `λ_i(s_i)` is a unit on a neighbourhood `W` of the given point (a sum of
+sections equal to `1` cannot have every term in the maximal ideal at a point, so
+the basic opens `W_i := basicOpen (λ_i(s_i))` cover).  On that `W`, `s_i`
+generates and `c⁻¹λ_i` is inverse to `r ↦ r·s_i`.
+
+**ROUTE AUDIT 2026-07-29 — this CORRECTS the audit that stood here.**  The old
+note said the blocker is the missing STALK-MODULE structure.  That is true of the
+route it had in mind and it is not the whole story, and naming only stalks sends
+a prover at the wrong subtree.  Re-running the checks:
+
+* **CONFIRMED, and it is the old note's one surviving claim.**
+  `grep -rln stalk Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` is still
+  **EMPTY** at this pin, so `A_y` cannot even be *said* to be invertible over
+  `𝒪_y`.  (`Scheme.Modules.restrictStalkNatIso` exists but is a stalk of the
+  underlying `Ab`-presheaf and carries no `Module` structure.)
+* **NEWLY FOUND, and NOT previously recorded: the LOCAL PRESENTATION half is
+  already available.**  `Mathlib/Algebra/Category/ModuleCat/Presheaf/Sheafify.lean`
+  carries `instance : IsLocallySurjective J (toSheafify α φ)` (line 352 at this
+  pin), and `PresheafOfModules.toPresheaf_map_sheafificationAdjunction_unit_app`
+  identifies `modTensorMk` with `CategoryTheory.toSheafify` on underlying
+  presheaves.  So "`ν⁻¹(1)` is locally a finite sum of pure tensors" needs no new
+  theory — only the unfolding of local surjectivity over the Opens topology into
+  its pointwise form.  Refuting check: the `grep` above on `Sheafify.lean`.
+* **THE OBSTRUCTION IS THE SYMMETRY, NOT THE STALKS.**  The endgame is the
+  generation identity `x = Σ_i λ_i(x)·s_i`, and it is NOT a consequence of
+  `Σ_i λ_i(s_i) = 1` by any amount of bilinearity: the derivation is
+  `x ⊗ 1 = Σ_i x ⊗ s_i ⊗ t_i ↦ Σ_i s_i ⊗ x ⊗ t_i = Σ_i λ_i(x)·s_i ⊗ 1`, which
+  uses the ASSOCIATOR and the BRAIDING of `L ⊗ L ⊗ N`.  (Equivalently: the two
+  maps `L⊗N⊗L⊗N → 𝒪`, `ν₁₄·ν₃₂` and `ν₁₂·ν₃₄`, agree on `ν⁻¹(1) ⊗ x ⊗ u` — a
+  symmetry statement.)  Both structures EXIST here, through
+  `nonempty_modTensor_assoc` and the braiding of `ModLM Z` — but only ABSTRACTLY:
+  `Localization.Monoidal.μ` comes from the localization's universal property, so
+  its effect on `modTensorMk`-image sections does not compute.  This is the same
+  defect, one level up, that forced `exists_trivialization_modTensor` to be cut,
+  and the fix there (build a canonical MORPHISM out of the sheafification instead
+  of reading an abstract iso) does not apply, because here the needed map goes
+  INTO a tensor product.
+* **CONSEQUENCE WORTH ACTING ON: one piece of machinery closes two of this
+  module's four remaining leaves.**  The monoidal stalk functor named as route 3
+  of `modLocW_whiskerLeft` — `colim_{V ∋ y} (X(V) ⊗_{𝒪(V)} Y(V)) ≅ X_y ⊗_{𝒪_y} Y_y`
+  — supplies BOTH: it closes `modLocW_whiskerLeft` (stalkwise `𝟙 ⊗ g_y`), and it
+  reduces this leaf to commutative algebra over the local ring `𝒪_y`, where the
+  symmetry is mathlib's own `TensorProduct.comm` and computes.  A prover sent at
+  the stalk functor is therefore worth two leaves, not one.
+* Unchanged and still useful: `Mathlib/Algebra/Category/ModuleCat/Sheaf/`
+  `LocallyFree.lean` EXISTS, supplying `SheafOfModules.IsLocallyFree`,
+  `LocalGeneratorsData.IsLocallyFreeData` and `GeneratingSections`.  Those are
+  DEFINITIONS, not this theorem — "invertible implies locally free of rank one"
+  is still absent from the pin — but the finite-generation half above is literally
+  a `LocalGeneratorsData`, and `free.generatingSections` gives the rank-one model.
+
+Do NOT weaken this to a hypothesis on the consumers instead: `IsAmpleSheaf` is
+what the consumer `exists_isAmpleSheaf_cube_of_isAlgClosed` produces, and it
+produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
+`IsInvertibleSheaf L` through `nonvanishingLocus_modPullback_of_isAmpleSheaf` and
+`isAmpleSheaf_modPullback`, and stop discarding it at the call site in
+`AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
+costs nothing mathematically.  It is not taken here because the statement as
+given is TRUE, and weakening a true statement to dodge a proof is exactly what
+the faithfulness rule forbids. -/
+theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Modules}
+    {U : Z.Opens}
+    (hν : Nonempty ((modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u})))
+    {z : Z} (hz : z ∈ U) :
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+
+/-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE, in the tensor
+power form the audit needs** (PROVEN 2026-07-29 over
+`exists_trivialization_of_modTensor_trivial`): if SOME positive tensor power of
+`A` is trivial on `U`, then `A` itself is trivial on a smaller neighbourhood of
+each point of `U`.
+
+One line, because `modTensorPow A (j+1)` IS `modTensor A (modTensorPow A j)`
+definitionally; `hk` is used exactly to produce the `j`.  The mathematics, and
+the route audit, are on `exists_trivialization_of_modTensor_trivial` above.
+
+The paragraph below is retained from the previous version of this docstring
+because its analysis of the argument is still exactly right; note only that the
+"stalks are the blocker" reading of it is corrected above.
+
+Stalks first: sheafification preserves
 stalks and `(P ⊗ Q)_y = P_y ⊗_{𝒪_y} Q_y` (filtered colimits commute with `⊗`), so
 `(A^{⊗k})|_U ≅ 𝒪_U` gives `A_y^{⊗k} ≅ 𝒪_y` for every `y ∈ U`, hence `A_y` is an
 invertible module over the LOCAL ring `𝒪_y`, hence free of rank one.  Stalkwise
@@ -1060,41 +1153,19 @@ inverse itself: `A|_U ⊗ (A^{⊗(k-1)})|_U ≅ 𝒪_U` means that near each poi
 `m = Σ_i ⟨t_i, m⟩ s_i` computation then shows `A` is generated by `s_1, …, s_m`
 there.  Finite type plus a free stalk gives local triviality.
 
-Do NOT weaken this to a hypothesis on the consumers instead: `IsAmpleSheaf` is
-what the consumer `exists_isAmpleSheaf_cube_of_isAlgClosed` produces, and it
-produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
-`IsInvertibleSheaf L` through `nonvanishingLocus_modPullback_of_isAmpleSheaf` and
-`isAmpleSheaf_modPullback`, and stop discarding it at the call site in
-`AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
-costs nothing mathematically.  It is not taken here because the statement as
-given is TRUE, and weakening a true statement to dodge a proof is exactly what
-the faithfulness rule forbids.
-
-PIN CHECK 2026-07-28 — one claim re-run and CONFIRMED, one API added that was
-not recorded here.
-
-* The stalk half of the argument above really is blocked, and the module
-  docstring's note about `NonvanishingAt` is the same gap:
-  `grep -rln stalk Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` is
-  **EMPTY** at this pin.  (`Scheme.Modules.restrictStalkNatIso` does exist, but
-  it is a stalk of the underlying `Ab`-presheaf and carries no `Module`
-  structure, so it cannot express "`A_y` is invertible over `𝒪_y`".)
-* NOT recorded here before, and it is the vocabulary this leaf should be phrased
-  against: `Mathlib/Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean` EXISTS at
-  this pin, supplying `SheafOfModules.IsLocallyFree`,
-  `SheafOfModules.LocalGeneratorsData.IsLocallyFreeData` and
-  `GeneratingSections`, on top of `Sheaf/Generators.lean` and
-  `Sheaf/Quasicoherent.lean`.  That is DEFINITIONS, not this theorem —
-  "invertible implies locally free of rank one" is not in the pin, and a grep
-  for it returns nothing — but the finite-generation half of the argument above
-  ("`A` is generated by `s_1, …, s_m` there") is literally a
-  `LocalGeneratorsData`, and `free.generatingSections` already gives the rank-one
-  model.  So the missing input is the STALK-MODULE structure, not the
-  local-freeness vocabulary. -/
+Two amendments to that paragraph, both 2026-07-29 and both recorded in full on
+`exists_trivialization_of_modTensor_trivial`: the "near each point
+`1 = Σ_i s_i ⊗ t_i`" step is NOT missing from the pin (it is local surjectivity
+of the sheafification unit, `Sheafify.lean`'s
+`instance : IsLocallySurjective J (toSheafify α φ)`), and the
+`m = Σ_i ⟨t_i, m⟩ s_i` step needs the BRAIDING, which is what is actually
+blocked here — not merely the stalks. -/
 theorem exists_trivialization_of_modTensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
     {k : ℕ} (hk : 0 < k) (ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}))
     {z : Z} (hz : z ∈ U) :
-    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (A.restrict W.ι ≅ modUnit (W : Scheme.{u})) := sorry
+    ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (A.restrict W.ι ≅ modUnit (W : Scheme.{u})) := by
+  obtain ⟨j, rfl⟩ : ∃ j : ℕ, k = j + 1 := ⟨k - 1, (Nat.succ_pred_eq_of_pos hk).symm⟩
+  exact exists_trivialization_of_modTensor_trivial ⟨ψ⟩ hz
 
 /-- **AMPLE IMPLIES INVERTIBLE** (PROVEN 2026-07-28 over
 `exists_trivialization_of_modTensorPow`) — **and this is the FAITHFULNESS VERDICT
