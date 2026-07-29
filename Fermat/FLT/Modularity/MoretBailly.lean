@@ -35534,6 +35534,81 @@ theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra 
     IsEffectiveQGaloisTwist b fX₀ c :=
   sorry
 
+/-! ##### The CANONICAL BASE for descent (2026-07-29, PROVEN)
+
+The two consumer leaves of the interface above both had to PRODUCE the base
+field `K` together with its `Γ_ℚ`-action, as part of their existential:
+
+    ∃ … (K : Type u) (_ : Field K) (_ : Algebra ℚ K) (_ : IsAlgClosed K)
+      (b : QGaloisBaseAction K) …, Algebra.IsAlgebraic ℚ K ∧ …
+
+That obligation is not geometry and it is not descent — it is the assertion
+that `ℚ` has an algebraic closure IN UNIVERSE `u` carrying its full absolute
+Galois action, which is a theorem of this pin. The three declarations below
+discharge it once and for all, so the leaf statement can PIN `K` and `b`
+rather than quantify over them. Pinning strictly REDUCES what a prover owes:
+the base is concrete, not universally quantified.
+
+WHY `AlgebraicClosure (ULift.{u} ℚ)` AND NOT `AlgebraicClosure ℚ`. The leaves
+live at `Scheme.{u}` over `Spec (CommRingCat.of (ULift.{u} ℚ))`, so the base
+field has to be a `Type u`, while `AlgebraicClosure ℚ : Type 0`. Taking the
+algebraic closure of the ULift keeps every mathlib instance
+(`IsAlgClosed`, `IsAlgClosure`, `CharZero`) automatic, which
+`ULift (AlgebraicClosure ℚ)` would not.
+
+WHY THE `letI` IN `ratULiftAlgClosureEquiv`, since it looks removable and is not.
+In this module's import cone `Algebra ℚ (AlgebraicClosure ℚ)` synthesises as
+`DivisionRing.toRatAlgebra`, NOT as `AlgebraicClosure.instAlgebra` — the two
+are defeq but not syntactically equal — so mathlib's registered
+`instance : IsAlgClosure k (AlgebraicClosure k)` does not fire at `k = ℚ` and
+`IsAlgClosure.equiv` fails to synthesise. Supplying the instance by hand, with
+`AlgebraicClosure.isAlgebraic ℚ` NAMED rather than `inferInstance`, is the
+documented fix for this family. Note the sibling
+`IsAlgClosure ℚ (AlgebraicClosure (ULift.{u} ℚ))` needs no such help: it comes
+from `AlgebraicClosure.instIsAlgClosure` through `Algebra.IsAlgebraic ℚ (ULift ℚ)`.
+
+`ratGaloisBaseAction` is a `QGaloisBaseAction` and not merely an action because
+`gal_bijective` is free here: `AlgEquiv.autCongr` transports the FULL
+automorphism group `Γ_ℚ = Aut_ℚ(AlgebraicClosure ℚ)` isomorphically onto
+`Aut_ℚ(AlgebraicClosure (ULift ℚ))`. That is exactly the field the interface
+docstring records as load-bearing (without it the effectivity leaf is refuted
+by `Spec ℚ ⊔ Spec ℚ`), so it is worth noting that the canonical base satisfies
+it by construction rather than by hypothesis.
+
+The isomorphism `ratULiftAlgClosureEquiv` is `IsAlgClosure.equiv`, i.e. a
+NON-CANONICAL choice; nothing below depends on which one, only on its
+existence and bijectivity.
+
+NAME NOTE: `GaloisRepresentation.ratAlgClosureEquiv` already exists, in
+`GaloisRepresentation/ComplexConjugation.lean`, and is a DIFFERENT object
+(`ℚᵃˡᵍ ≃+* algebraicClosure ℚ ℂ`, the embedding used to build complex
+conjugation). Hence the `ULift` in this name. -/
+
+/-- **A `ℚ`-isomorphism between the two algebraic closures of `ℚ`** (PROVEN
+2026-07-29): the one in `Type 0` that `Field.absoluteGaloisGroup ℚ` is defined
+by, and the one in `Type u` that the scheme-level leaves need. See the
+subsection docstring for why the `letI` is not removable. -/
+noncomputable def ratULiftAlgClosureEquiv :
+    AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure (ULift.{u} ℚ) :=
+  letI : IsAlgClosure ℚ (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, AlgebraicClosure.isAlgebraic ℚ⟩
+  IsAlgClosure.equiv ℚ _ _
+
+/-- **The canonical `Γ_ℚ`-action on the universe-`u` algebraic closure of `ℚ`**
+(PROVEN 2026-07-29): conjugation by `ratULiftAlgClosureEquiv`. `gal_bijective` holds
+because `AlgEquiv.autCongr` is a group ISOMORPHISM, so this action is the full
+automorphism group, which is what the descent interface requires. -/
+noncomputable def ratGaloisBaseAction :
+    QGaloisBaseAction (AlgebraicClosure (ULift.{u} ℚ)) where
+  gal := (AlgEquiv.autCongr ratULiftAlgClosureEquiv).toMonoidHom
+  gal_bijective := (AlgEquiv.autCongr ratULiftAlgClosureEquiv).bijective
+
+/-- **The canonical base is algebraic over `ℚ`** (PROVEN 2026-07-29). Stated as
+a theorem rather than left to `inferInstance` at the use site because
+`isEffectiveQGaloisTwist_of_isOpenKernel` takes `halg` as an EXPLICIT argument. -/
+theorem isAlgebraic_ratAlgClosure :
+    Algebra.IsAlgebraic ℚ (AlgebraicClosure (ULift.{u} ℚ)) := inferInstance
+
 /-! ##### The MODULE/GEOMETRY cut of leaf A (2026-07-27)
 
 Leaf A bundles two things that have nothing to do with each other: the
@@ -36195,6 +36270,30 @@ the Baily–Borel compactification). If a future repair strengthens
 `HasSplitHilbertBlumenthalModuli` to record quasi-projectivity, this clause
 becomes free wherever the space is taken from that hypothesis instead.
 
+THE BASE FIELD AND ITS ACTION ARE NOW PINNED (2026-07-29), which is a
+REDUCTION of this leaf and not a restatement of it. The conclusion used to
+open with `∃ (K : Type u) (_ : Field K) (_ : Algebra ℚ K) (_ : IsAlgClosed K)
+(b : QGaloisBaseAction K) …, Algebra.IsAlgebraic ℚ K ∧ …`, so a prover owed
+the existence of an algebraic closure of `ℚ` in universe `u` carrying its FULL
+absolute Galois action, on top of all the geometry. That is a theorem of the
+pin, it is proven immediately above as `ratGaloisBaseAction` /
+`isAlgebraic_ratAlgClosure`, and `K` and `b` are now the CONCRETE
+`AlgebraicClosure (ULift.{u} ℚ)` and `ratGaloisBaseAction`. Nothing is
+universally quantified that was not before — the base is a fixed object, so
+the prover is handed the canonical choice instead of having to construct one —
+and the two clauses that pinned `K` as an algebraic closure (`IsAlgClosed`,
+`Algebra.IsAlgebraic`) are discharged rather than dropped, so the effectivity
+leaf downstream receives exactly what it did before. The `∃ K` shape survives
+verbatim in `exists_twistedHilbertBlumenthalCocycle_of_split`, the `ρbar`-side
+consumer of the same interface; the same three declarations pin it too
+whenever its owner wants them.
+
+THE REDUNDANT `Smooth fX₁` CLAUSE IS GONE (2026-07-29), for the same reason
+leaf A2's assembly gives above: `SmoothOfRelativeDimension (finrank ℚ D) fX₁`
+is strictly stronger, and `SmoothOfRelativeDimension.smooth` recovers `Smooth`
+in one line, which is now where the assembly does it. One fewer clause to
+prove here, none lost downstream.
+
 THE CHECK THAT WOULD REFUTE THIS CUT: look for `X₀` or `fX₀` from the
 conclusion of `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
 inside this statement. There is none — this leaf re-existentializes its own
@@ -36220,21 +36319,19 @@ theorem exists_splitHilbertBlumenthalCocycle_of_standardLevelModule
       rootsOfUnity p (AlgebraicClosure F))
     (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp) :
     ∃ (X₁ : Scheme.{u}) (fX₁ : X₁ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
-      (K : Type u) (_ : Field K) (_ : Algebra ℚ K) (_ : IsAlgClosed K)
-      (b : QGaloisBaseAction K)
       (c : Field.absoluteGaloisGroup ℚ →
-        (Limits.pullback fX₁ (specRatMap K) ⟶ Limits.pullback fX₁ (specRatMap K))),
-      Algebra.IsAlgebraic ℚ K ∧
-      AlgebraicGeometry.Smooth fX₁ ∧ AlgebraicGeometry.IsSeparated fX₁ ∧
+        (Limits.pullback fX₁ (specRatMap (AlgebraicClosure (ULift.{u} ℚ))) ⟶
+          Limits.pullback fX₁ (specRatMap (AlgebraicClosure (ULift.{u} ℚ))))),
+      AlgebraicGeometry.IsSeparated fX₁ ∧
       AlgebraicGeometry.LocallyOfFiniteType fX₁ ∧ AlgebraicGeometry.QuasiCompact fX₁ ∧
       AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ ∧
       AlgebraicGeometry.GeometricallyConnected fX₁ ∧
       (∀ s : Set X₁, s.Finite → ∃ U : X₁.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
-      IsQGaloisCocycle b fX₁ c ∧
+      IsQGaloisCocycle ratGaloisBaseAction fX₁ c ∧
       (∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
         IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) ∧
       (∀ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
-        IsGaloisTwistForm b fX₀ fX₁ c →
+        IsGaloisTwistForm ratGaloisBaseAction fX₀ fX₁ c →
         AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ →
         AlgebraicGeometry.IsSeparated fX₀ →
         AlgebraicGeometry.LocallyOfFiniteType fX₀ →
@@ -36675,14 +36772,16 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
             (∀ (a : NumberField.RingOfIntegers D) y, φ (mB.act a y) = m₀.act a (φ y)) ∧
             (∀ (σ : Field.absoluteGaloisGroup F) y,
               φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) := by
-  obtain ⟨X₁, fX₁, K, hKfield, hKalg, hKac, b, c, hKalgebraic, hsm₁, hsep₁, hlft₁,
+  obtain ⟨X₁, fX₁, c, hsep₁, hlft₁,
       hqc₁, hsrd₁, hgc₁, horb, hcoc, hopen, hmain⟩ :=
     exists_splitHilbertBlumenthalCocycle_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
       hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd hstdp
-  letI := hKfield
-  letI := hKalg
+  haveI : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ := hsrd₁
+  have hsm₁ : AlgebraicGeometry.Smooth fX₁ :=
+    AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₁)
   obtain ⟨X₀, fX₀, htw, hsm, hsep, hlft, hqc, hsrd, hgc⟩ :=
-    isEffectiveQGaloisTwist_of_isOpenKernel hKac hKalgebraic b fX₁ hsm₁ hsep₁ hlft₁ hqc₁
+    isEffectiveQGaloisTwist_of_isOpenKernel (K := AlgebraicClosure (ULift.{u} ℚ))
+      inferInstance isAlgebraic_ratAlgClosure ratGaloisBaseAction fX₁ hsm₁ hsep₁ hlft₁ hqc₁
       horb c hcoc hopen
   have hsrd₀ : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ :=
     hsrd _ hsrd₁
