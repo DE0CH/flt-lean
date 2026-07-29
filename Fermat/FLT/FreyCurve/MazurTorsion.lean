@@ -4968,7 +4968,7 @@ theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_hasS
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
-/-- **`T₁b₂` — the twist transport, TWISTED branch** (sorry leaf; pure
+/-- **`T₁b₂` — the twist transport, TWISTED branch** (PROVEN 2026-07-28; pure
 plumbing over `quadraticTwistPointEquiv_galois`): the second disjunct of
 `T₁a`, where the quadratic extension `L/Kᵥ` is genuinely needed.
 
@@ -4977,7 +4977,7 @@ whole cluster where an EMBEDDING of `L` into `Ω` has to be chosen — which is
 exactly why it could not be pushed into `T₁a`, whose statement is about
 reduction types over `Kᵥ` alone.
 
-Proof (not formalised).  Fix `ι : L →ₐ[Kᵥ] Ω` by `IsAlgClosed.lift` and
+Proof.  Fix `ι : L →ₐ[Kᵥ] Ω` by `IsAlgClosed.lift` and
 install `Algebra L Ω` / `IsScalarTower Kᵥ L Ω` along it — verbatim the step
 `Semistable.lean` performs in
 `torsionFlatPackage_of_unramified_quadraticTwist`.  Take
@@ -4995,6 +4995,15 @@ with `ψ σ = quadraticCharacter Kᵥ L Ω σ`; the outer two factors contribute
 nothing, by `equivVariableChangeBaseChange_galois` and by the `key` transport
 already carried out in `T₁b₁` above — **both of those are PROVEN there and
 should be copied rather than redone.**
+
+Assembly, in the order the three factors are peeled off `φ`.  `key` moves the
+outer `equivOfEq` past `Point.map` (the `restrictScalars ℚ` on the `E`-side is
+invisible to it, both sides being the same function of `Ω`);
+`equivVariableChangeBaseChange_galois` moves the inner one past `Point.map`
+untwisted, since `C` is `Kᵥ`-rational; and `quadraticTwistPointEquiv_galois`
+supplies the single factor of `χ σ`.  The character then appears TWICE — once
+from the goal's `ψ σ`, once from the middle factor — and `Int.units_coe_mul_self`
+collapses `χ(σ)² = 1`, which is the formal shadow of `ψ` being quadratic.
 
 Note the conclusion is quantified over ALL of `Γ Kᵥ`, not over inertia: that
 is the whole point of carrying `ψ`, and it is what makes `T₂` true in its
@@ -5038,8 +5047,95 @@ theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_quad
         WeierstrassCurve.Affine.Point.map (W' := E)
             ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (φ P) =
           ((ψ σ : ℤ)) • φ (WeierstrassCurve.Affine.Point.map (W' := X)
-            ((σ : _ ≃ₐ[_] _).toAlgHom) P) :=
-  sorry
+            ((σ : _ ≃ₐ[_] _).toAlgHom) P) := by
+  classical
+  obtain ⟨L, hLfield, hLalg, hLquad, hLsep, hsplit⟩ := htwist
+  letI := hLfield
+  letI := hLalg
+  letI := hLquad
+  letI := hLsep
+  -- fix an embedding of `L` into the local algebraic closure, over `Kᵥ`
+  letI algLΩ : Algebra L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) :=
+    (IsAlgClosed.lift (M := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))
+      (R := HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) (S := L)).toAlgebra
+  haveI : IsScalarTower (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IsScalarTower.of_algebraMap_eq (fun x =>
+      ((IsAlgClosed.lift (M := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+        (R := HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)
+        (S := L)).commutes x).symm)
+  set W : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) with hWdef
+  haveI hWell : W.IsElliptic := by
+    rw [hWdef]; exact inferInstanceAs (E.map (algebraMap ℚ _)).IsElliptic
+  set T : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) := W.quadraticTwist L with hTdef
+  haveI hTell : T.IsElliptic := by
+    rw [hTdef]; exact inferInstanceAs (W.quadraticTwist L).IsElliptic
+  set C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    (T.exists_isMinimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat]).choose with hCdef
+  -- `W⁄Ω = E⁄Ω`: the two ring homomorphisms `ℚ → Ω` agree because `ℚ` is initial
+  have hbase : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) =
+      (E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show W.map (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) _) = E.map (algebraMap ℚ _)
+    rw [hWdef, WeierstrassCurve.map_map]
+    congr 1
+  refine ⟨C • T, inferInstanceAs ((C • T).IsElliptic), hsplit,
+    quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)),
+    (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange T C
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).trans
+      ((W.quadraticTwistPointEquiv L (AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat))).trans
+        (WeierstrassCurve.Affine.Point.equivOfEq hbase)), ?_⟩
+  intro σ P
+  -- transporting `Point.map` across the curve identification `W⁄Ω = E⁄Ω`
+  have key : ∀ R : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+          (WeierstrassCurve.Affine.Point.equivOfEq hbase R) =
+        WeierstrassCurve.Affine.Point.equivOfEq hbase
+          (WeierstrassCurve.Affine.Point.map (W' := W) ((σ : _ ≃ₐ[_] _).toAlgHom) R) := by
+    intro R
+    cases R with
+    | zero =>
+      simp only [← WeierstrassCurve.Affine.Point.zero_def, map_zero]
+    | some x y hns =>
+      rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some]
+      rfl
+  have h1 := WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange_galois T C
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (σ : _ ≃ₐ[_] _) P
+  have h2 := W.quadraticTwistPointEquiv_galois L
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (σ : _ ≃ₐ[_] _)
+    (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange T C
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)) P)
+  simp only [AddEquiv.trans_apply]
+  rw [key, h1, h2, map_zsmul, smul_smul, Int.units_coe_mul_self, one_zsmul]
 
 open ValuativeRel IsDedekindDomain in
 /-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (DECOMPOSED and
