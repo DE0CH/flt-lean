@@ -58104,10 +58104,143 @@ theorem exists_quasiSection_heckeIsotypicFactor (N : ℕ) {X Y J : Scheme.{0}}
   exists_quasiSection_of_surjective_isAdditiveOn ab (D.abA i) (D.u i) (D.u_comp i)
     (D.u_add i) (D.u_surj i)
 
+/-- **KOLYVAGIN–LOGACHEV ON ONE ISOTYPIC FACTOR, UNSIGNED: `x − w_{A i} x`
+IS TORSION** (sorry leaf, new 2026-07-29) — the arithmetic residue of
+`isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` below once that
+node's Eichler–Shimura ASSEMBLY has been discharged, which it now is.
+
+TRUE.  `_hnew` makes `S₂(Γ₀(N))` entirely new, so each eigen-system
+occurs in `J₀(N)` with multiplicity one; `A i` is isotypic for
+`D.coeff i` (`D.isotypic`, with `D.T` pinned to the genuine Hecke
+correspondences by `D.heckeModuli`), so `End⁰(A i)` is the Hecke field
+`K_g`, a FIELD.  `F.hecke_comm` puts `w_{A i}` in that field and
+`F.wA_invol` makes it a square root of `1` there, so `w_{A i} = ±1`
+— the sign exists for free, with no `±`-splitting of an abelian variety.
+Then:
+
+* `w_{A i} = +1`: `x − w_{A i} x = 0`, torsion.
+* `w_{A i} = −1`: `A i` is isogenous to a product of `A_g`'s whose
+  newform `g` has Atkin–Lehner eigenvalue `−1` (that is what `_hchar`
+  buys: `w_J` is `w_*` for the Fricke/Atkin–Lehner involution, so the
+  sign on `A_g` IS the eigenvalue of `g ∣[2] W_N`), so `_hL` gives
+  `L(g, 1) ≠ 0` and Kolyvagin–Logachev makes `A i(ℚ)` torsion; a
+  fortiori `x − w_{A i} x = 2x` is.
+
+**WHY THE UNSIGNED DATUM `IsAtkinLehnerFactorwise`, AND NOT
+`IsAtkinLehnerDescent` — this is the whole reason the cut is a cut and
+not a cycle** (audited 2026-07-29).  Stated over the SIGNED datum, the
+residue of the node below is logically EQUIVALENT to
+`isTorsion_minusFactor_of_lFunction_ne_zero` further down: that theorem
+gives it by `descend_minus` (`x − w x = 2x` on a `−1` factor), and it
+gives that theorem back through the node below plus
+`exists_quasiSection_heckeIsotypicFactor`.  But
+`isTorsion_minusFactor_of_lFunction_ne_zero` is PROVEN — through the node
+below — so a signed cut would have introduced a leaf equivalent to an
+already-proven theorem whose proof runs through the very node the leaf was
+cut from.  The unsigned datum breaks that: nothing in this file implies
+`x − w_{A i} x` is torsion for a factor carrying NO sign.
+
+Two further gains from the unsigned datum, both real:
+
+* it is available WITHOUT Poincaré reducibility.
+  `exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` is proven from
+  Eichler–Shimura and flatness alone, whereas producing
+  `IsAtkinLehnerDescent` goes through
+  `exists_atkinLehnerDescent_of_factorwise` and hence
+  `exists_involutionSignSplitting`.  So the node below no longer depends on
+  the `±`-splitting at all;
+* the sign is not *assumed* here, it is *derived* from `_hnew` — which is
+  the honest location for it, multiplicity one being a modular statement
+  and not a statement about abelian varieties.
+
+**`_hnew` MAY NOT BE DROPPED, and the witness is `N = 74`** (re-verified
+in PARI/GP 2.17.4 on 2026-07-29: `mfdim(mfinit([74,2],1)) = 8`,
+`mfdim(mfinit([74,2],0)) = 4`, so the old part is `4`-dimensional, two
+degeneracy copies of `S₂(Γ₀(37))`).  Take the factors to be the
+`w_74`-ORBITS of the degeneracy copies, which is exactly the witness
+`IsAtkinLehnerFactorwise`'s own docstring records: the block containing
+the two copies of `A_{37a}` carries `w_{A i} = ` the swap, an involution
+with no sign, and for `x = (P, 0)` with `P` of infinite order in
+`37a(ℚ)` (`ellrank` of `y² + y = x³ − x` is `1`) one gets
+`x − w_{A i} x = (P, −P)`, of infinite order.  `_hL` holds at `74` —
+all four newforms are Atkin–Lehner-minus
+(`mfatkineigenvalues(mfinit([74,2],0),74) = [[-1,-1],[-1,-1]]`) and all
+four have `L(1) ≠ 0` (`lfunmf`, values `1.130…, 1.243…, 0.964…, 0.757…`,
+computed 2026-07-29) — so the two hypotheses really are separated here.
+
+**`_hL` MAY NOT BE DROPPED, and the witness is `N = 389`**: prime, so
+`_hnew` is vacuous; `389a` (`y² + y = x³ + x² − 2x`, `ellrank = 2`,
+`ellrootno = +1`, hence Atkin–Lehner eigenvalue `−1`, confirmed directly
+by `mfatkineigenvalues(mfinit([389,2],0),389)` whose first orbit is
+`[-1]`) gives a factor with `w_{A i} = −1` and `A_{389a}(ℚ)` of rank `2`,
+so `x − w_{A i} x = 2x` is non-torsion.
+
+**`_hchar` MAY NOT BE DROPPED.**  Without it `w_J` is an arbitrary
+`ℚ`-endomorphism: take `w_J := −1` and `N := 37`.  Then
+`F` is inhabited with `w_{A i} := −1` on every factor (additive,
+involutive, and commuting with every `S i n` because those are
+homomorphisms), `_hnew` holds (`37` is prime) and `_hL` holds (the only
+Atkin–Lehner-minus orbit at `37` is `37b`, of rank `0` —
+`mfatkineigenvalues(mfinit([37,2],0),37) = [[-1],[1]]`, and the `+1`
+orbit is the rank-one `37a`, `ellrootno(37a) = −1`), while
+`x − w_{A i} x = 2x` is non-torsion on the `37a` factor.
+
+**LABEL-FREEDOM, and the one degeneracy that would otherwise spoof it.**
+No hypothesis and no conclusion names `D.form` or `D.coeff`: `_hL` is
+quantified over every Atkin–Lehner-minus eigenform via the slash action,
+and the conclusion is an equation about `w_{A i}`.  That matters because
+`D`'s labelling is NOT pinned on a trivial factor — a junk factor with
+`A i = Spec ℚ` satisfies every field of `IsHeckeIsotypicDecomposition`
+(`u i := jstr`, `isotypic` vacuous, `finite_ker` unchanged) carrying an
+arbitrary label, so any leaf CONCLUDING something about `D.form i` is
+false.  This leaf concludes torsion, which on a trivial factor is true,
+so the degeneracy costs nothing here.  It is also why the multiplicity-one
+step above may not be split off as a separate leaf
+"`¬ Plus i → IsAtkinLehnerMinusForm N (D.form i)`": that statement IS
+refuted by the junk factor.
+
+**What proving it needs**: multiplicity one for newforms (`w_N` acts by a
+scalar on each new isotypic piece) and Kolyvagin–Logachev
+(`L(g, 1) ≠ 0 ⟹ A_g(ℚ)` finite).  Both are absent from mathlib, from
+`~/cs/FLT` and from this development. -/
+theorem isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero (N : ℕ)
+    {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (F : IsAtkinLehnerFactorwise D wJ hwJ)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (_hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
+    (i : D.idx) (x : RelPoint (D.astr i) (𝟙 SpecQ)) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    IsOfFinAddOrder (x - RelPoint.post (F.wA i) (F.wA_comp i) x) :=
+  sorry
+
 /-- **KOLYVAGIN–LOGACHEV ON `J⁻(ℚ)`: `z − w_J z` IS ALWAYS TORSION**
-(sorry leaf, new 2026-07-28) — the whole Eichler–Shimura /
-Kolyvagin–Logachev content of the two nodes below, stated on the JACOBIAN
-alone, with no isotypic decomposition and no factor index anywhere in it.
+(introduced as a sorry leaf 2026-07-28; **PROVEN 2026-07-29** over the
+single leaf `isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero`
+immediately above) — the whole Eichler–Shimura / Kolyvagin–Logachev
+content of the two nodes below, stated on the JACOBIAN alone, with no
+isotypic decomposition and no factor index anywhere in it.
+
+**The Eichler–Shimura ASSEMBLY is now discharged here**, and the residue
+is a statement about a single isotypic factor.  The proof is:
+`exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` produces an
+adapted decomposition `D` together with the UNSIGNED descent `F` of `w_J`
+to its factors; `F.descend` and `D.u_add` turn
+`u i (z − w_J z)` into `u i z − w_{A i}(u i z)`, which the leaf above
+makes torsion for every `i`; and `D.finite_ker` plus
+`isOfFinAddOrder_of_finite_jointKer` assemble that back to `z − w_J z`.
+Note what the route does NOT use: no `±`-splitting, hence no Poincaré
+reducibility — see the leaf's docstring for why the unsigned datum is the
+one that makes this a cut rather than a cycle.
 
 TRUE.  `_hchar` pins `w_J` to be the endomorphism induced by the
 Atkin–Lehner involution `w` (uniqueness in `IsJacobianOf.existsUnique_mapEnd`),
@@ -58172,7 +58305,10 @@ about `w_J`.  The `N = 37` eigen-system swap recorded on
 **What proving it needs**: Eichler–Shimura (`J₀(N) ∼ ∏ A_g` over the
 newform orbits, with `w_N` a scalar on each — multiplicity one) and
 Kolyvagin–Logachev (`L(g, 1) ≠ 0 ⟹ A_g(ℚ)` finite).  Both are absent from
-mathlib, from `~/cs/FLT` and from this development. -/
+mathlib, from `~/cs/FLT` and from this development.  **The first of the
+two is now supplied here** — Eichler–Shimura enters through
+`exists_heckeIsotypicDecomposition_atkinLehnerFactorwise`, and what is
+left on the leaf above is multiplicity one plus Kolyvagin–Logachev. -/
 theorem isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -58188,8 +58324,30 @@ theorem isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero (N : ℕ) {X Y J 
       IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
     (z : RelPoint jstr (𝟙 SpecQ)) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    IsOfFinAddOrder (z - RelPoint.post wJ hwJ z) :=
-  sorry
+    IsOfFinAddOrder (z - RelPoint.post wJ hwJ z) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- Eichler–Shimura: an adapted decomposition together with the UNSIGNED
+  -- descent of `w_J` to its factors.  No `±`-splitting is used.
+  obtain ⟨D, ⟨F⟩⟩ := exists_heckeIsotypicDecomposition_atkinLehnerFactorwise N hX jac w hw
+    _hw2 _hal wJ hwJ _hchar
+  letI := D.fintypeIdx
+  letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+    fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+  -- the optimal quotient maps, as additive maps of the groups of `ℚ`-points
+  let φ : ∀ i, RelPoint jstr (𝟙 SpecQ) →+ RelPoint (D.astr i) (𝟙 SpecQ) :=
+    fun i => AddMonoidHom.mk' (fun y => RelPoint.post (D.u i) (D.u_comp i) y)
+      (fun a b => D.u_add i a b)
+  have hdesc : ∀ i, φ i (RelPoint.post wJ hwJ z)
+      = RelPoint.post (F.wA i) (F.wA_comp i) (φ i z) := fun i => F.descend i z
+  refine isOfFinAddOrder_of_finite_jointKer φ D.finite_ker ?_
+  intro i
+  -- `u i (z − w_J z) = u i z − w_{A i} (u i z)`, which the leaf makes torsion
+  have h1 : φ i (z - RelPoint.post wJ hwJ z)
+      = φ i z - RelPoint.post (F.wA i) (F.wA_comp i) (φ i z) := by
+    rw [map_sub, hdesc i]
+  rw [h1]
+  exact isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero N hX jac w hw _hw2 _hal
+    wJ hwJ _hchar D F _hnew _hL i (φ i z)
 
 /-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, ON THE IMAGE OF `J(ℚ)`**
 (introduced as a sorry leaf 2026-07-28; **PROVEN 2026-07-28** over
@@ -58407,7 +58565,8 @@ one level further down again:
 | node | theory | status |
 |---|---|---|
 | `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | PROVEN over the leaf below |
-| `isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` | the same, on `J` alone: `z − w_J z` is torsion | **sorry leaf** |
+| `isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` | the same, on `J` alone: `z − w_J z` is torsion | PROVEN 2026-07-29 over the row below |
+| `isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` | multiplicity one + Kolyvagin–Logachev, on ONE isotypic factor, UNSIGNED | **sorry leaf** |
 | `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half | PROVEN over the generic form |
 | `exists_quasiSection_of_surjective_isAdditiveOn` | the same, level-generic | PROVEN over the two below |
 | `exists_isogenyComplement_of_surjective_isAdditiveOn` | polarisation + orthogonal complement | **sorry leaf** |
