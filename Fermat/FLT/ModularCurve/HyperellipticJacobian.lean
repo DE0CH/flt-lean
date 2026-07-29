@@ -46,9 +46,12 @@ What replaced it is the classical argument, which is what Magma's `Chabauty0`
 on a rank-`0` Jacobian *is* — the Mazur–Tate decision procedure, involving no
 covering collection.  Each namespace now reads top-down:
 
-    exists_functionFieldData      LEAF: the function field K(x)[y]/(y²−f) exists
-    exists_placeSystem            LEAF: its places, normalised and COMPLETE
-    exists_isPlaceOfPt            LEAF: the evaluation place of a rational point
+    exists_functionFieldData      PROVEN 2026-07-28: K(x)[y]/(y²−f) as an AdjoinRoot
+    finite_isPlaceValuation_ne_zero  LEAF: a nonzero function has finitely many zeros/poles
+      → exists_placeSystem        PROVEN 2026-07-28: Places = the valuations themselves
+    exists_affineValuation        LEAF: the DVR at a smooth affine point
+    exists_infiniteValuation      LEAF: the two places above infinity
+      → exists_isPlaceOfPt        PROVEN 2026-07-28: assembled through ord_complete
       → exists_placeData          PROVEN: assembled, with pt_injective proven
     exists_degreeMap              LEAF: the degree map and deg (div g) = 0
     sub_single_pt_notMem_princ    LEAF: genus ≥ 1, i.e. (Q)−(P) is not principal
@@ -230,6 +233,15 @@ public import Mathlib.Algebra.BigOperators.Finsupp.Basic
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
+-- the CONSTRUCTION of the hyperelliptic function field `K(x)[y]/(y² − f)` in
+-- `exists_functionFieldData`: rational functions, `AdjoinRoot`, the irreducibility of
+-- `X² − C f` over `K(x)` (Kummer), integral closedness of `K[X]` (Gauss), and the degree
+-- computation for the sextic
+public import Mathlib.FieldTheory.RatFunc.AsPolynomial
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.KummerPolynomial
+public import Mathlib.RingTheory.Polynomial.GaussLemma
+public import Mathlib.Tactic.ComputeDegree
 
 @[expose] public section
 
@@ -843,6 +855,48 @@ def IsPlaceOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
   | Sum.inr s => S.ord v E.xx = -1 ∧
       -3 < S.ord v (E.yy - (if s then 1 else -1) * E.xx ^ 3)
 
+/-!
+#### The construction of the function field (added 2026-07-28)
+
+`exists_functionFieldData` is PROVEN below; the three helpers here are the pieces of that
+construction that are statements about `K(x)` and `K[X]` alone.
+-/
+
+/-- **PROVEN**: `algebraMap K[X] K(x)` is evaluation at `RatFunc.X`.  This is what lets a
+polynomial identity in `K[X]` be read inside the function field, where the abscissa arrives
+as the image of `RatFunc.X`. -/
+lemma ratFunc_algebraMap_eq_aeval_X {K : Type} [Field K] (p : K[X]) :
+    algebraMap K[X] (RatFunc K) p = aeval (RatFunc.X : RatFunc K) p := by
+  nth_rw 1 [← Polynomial.aeval_X_left_apply p (R := K)]
+  exact (Polynomial.aeval_algebraMap_apply (RatFunc K) (X : K[X]) p).symm
+
+/-- **PROVEN**: two rational functions can be put over a common POLYNOMIAL denominator.
+This is what turns `AdjoinRoot`'s two-term normal form `a + b·y` over `K(x)` into
+`FunctionFieldData.gen`'s cleared form `(A(x) + B(x)·y)/D(x)`. -/
+lemma ratFunc_exists_common_denom {K : Type} [Field K] (a b : RatFunc K) :
+    ∃ A B D : K[X], D ≠ 0 ∧
+      a * algebraMap K[X] (RatFunc K) D = algebraMap K[X] (RatFunc K) A ∧
+      b * algebraMap K[X] (RatFunc K) D = algebraMap K[X] (RatFunc K) B := by
+  have key : ∀ c : RatFunc K,
+      c * algebraMap K[X] (RatFunc K) c.denom = algebraMap K[X] (RatFunc K) c.num := by
+    intro c
+    calc c * algebraMap K[X] (RatFunc K) c.denom
+        = (algebraMap K[X] (RatFunc K) c.num / algebraMap K[X] (RatFunc K) c.denom) *
+            algebraMap K[X] (RatFunc K) c.denom := by rw [RatFunc.num_div_denom]
+      _ = algebraMap K[X] (RatFunc K) c.num :=
+          div_mul_cancel₀ _ (RatFunc.algebraMap_ne_zero c.denom_ne_zero)
+  refine ⟨a.num * b.denom, b.num * a.denom, a.denom * b.denom,
+    mul_ne_zero a.denom_ne_zero b.denom_ne_zero, ?_, ?_⟩
+  · rw [map_mul, map_mul, ← mul_assoc, key a]
+  · rw [map_mul, map_mul, mul_comm (algebraMap K[X] (RatFunc K) a.denom), ← mul_assoc, key b]
+
+/-- **PROVEN**: the sextic really has degree `6`.  Used only to know it is not a unit, which
+is what makes `y² − f` irreducible over `K(x)`. -/
+lemma natDegree_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).natDegree = 6 := by
+  unfold sextPoly
+  compute_degree!
+
 /-- **LEAF (obligation 1a): the function field of the curve exists.**
 
 `F = K(x)[y]/(y² − f(x))`, as `AdjoinRoot (Y² − C f)` over `RatFunc K`.  It is a field
@@ -855,31 +909,233 @@ Then `xx` is the image of `RatFunc.X` and `yy` is `AdjoinRoot.root`; `eqn` is
 along the injection `K(x) ↪ F`, and `gen` is the two-term normal form `a + b·y` of
 `AdjoinRoot` of a quadratic, with denominators cleared.
 
-Nothing here is specific to genus `2`, and nothing needs the places. -/
+Nothing here is specific to genus `2`, and nothing needs the places.
+
+## PROVEN 2026-07-28, exactly along the route sketched above.
+
+One correction to the sketch, recorded because it makes the leaf strictly weaker than it
+looks: **`2 ≠ 0` is NOT used.**  The field is a field because `f` is squarefree of positive
+degree, and that argument is characteristic-free — `h2` is kept only so that the three
+obligation-1 leaves have a uniform signature.  (Characteristic `2` does break `pt`
+injectivity, but that is `isPlaceOfPt_injective`, not this.)
+
+The non-square step is run through integral closedness rather than through degrees: if
+`b² = f` in `K(x)` then `b` is a root of the monic `Z² − f ∈ K[X][Z]`, so `b ∈ K[X]` because
+`K[X]` is integrally closed in `K(x)`; then `p² = f` contradicts `Squarefree f`, which is
+`hsep.squarefree`, together with `natDegree f = 6 ≠ 0`. -/
 theorem exists_functionFieldData (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K]
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
-    Nonempty (FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) := sorry
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (_h2 : (2 : K) ≠ 0) :
+    Nonempty (FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  set f : K[X] := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hf
+  have hsf : Squarefree f := hsep.squarefree
+  have hdeg : 0 < f.natDegree := by rw [hf, natDegree_sextPoly]; norm_num
+  set L := RatFunc K with hL
+  set g : L := algebraMap K[X] L f with hgdef
+  -- `f` is not a square in `K(x)`: a square root would be integral over `K[X]`, hence a
+  -- polynomial, and a squarefree polynomial of positive degree is not a square
+  have hnsq : ∀ b : L, b ^ 2 ≠ g := by
+    intro b hb
+    have hmon : ((X : K[X][X]) ^ 2 - C f).Monic := monic_X_pow_sub_C f two_ne_zero
+    have hint : IsIntegral K[X] b := by
+      refine ⟨(X : K[X][X]) ^ 2 - C f, hmon, ?_⟩
+      simp only [eval₂_sub, eval₂_X_pow, eval₂_C]
+      rw [hb, hgdef]
+      ring
+    obtain ⟨p, hp⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+    have hp2 : algebraMap K[X] L (p ^ 2) = algebraMap K[X] L f := by
+      rw [map_pow, hp, hb]
+    have hpf : p ^ 2 = f := (IsFractionRing.injective K[X] L) hp2
+    have hu : IsUnit p := hsf p ⟨1, by rw [← hpf]; ring⟩
+    have hfu : IsUnit f := by rw [← hpf]; exact hu.pow 2
+    exact absurd (Polynomial.natDegree_eq_zero_of_isUnit hfu) (by omega)
+  set P : L[X] := X ^ 2 - C g with hPdef
+  have hirr : Irreducible P := X_pow_sub_C_irreducible_of_prime Nat.prime_two hnsq
+  haveI : Fact (Irreducible P) := ⟨hirr⟩
+  set F := AdjoinRoot P with hF
+  set xx : F := algebraMap L F RatFunc.X with hxx
+  -- evaluation at `xx` of a polynomial over `K` is the composite of the two structure maps
+  have haeval : ∀ p : K[X], aeval xx p = algebraMap L F (algebraMap K[X] L p) := by
+    intro p
+    rw [ratFunc_algebraMap_eq_aeval_X, hxx]
+    exact Polynomial.aeval_algebraMap_apply F (RatFunc.X : L) p
+  refine ⟨{ F := F
+            xx := xx
+            yy := AdjoinRoot.root P
+            eqn := ?_
+            transcendental_xx := ?_
+            gen := ?_ }⟩
+  · have h0 : (AdjoinRoot.root P) ^ 2 - algebraMap L F g = 0 := by
+      calc (AdjoinRoot.root P) ^ 2 - algebraMap L F g
+          = AdjoinRoot.mk P ((X : L[X]) ^ 2 - C g) := by
+            rw [map_sub, map_pow, AdjoinRoot.mk_X, AdjoinRoot.mk_C, AdjoinRoot.algebraMap_eq]
+        _ = AdjoinRoot.mk P P := congrArg (AdjoinRoot.mk P) hPdef.symm
+        _ = 0 := AdjoinRoot.mk_self
+    rw [← aeval_sextPoly (K := K) c₀ c₁ c₂ c₃ c₄ c₅ xx, ← hf, haeval f, ← hgdef, ← sub_eq_zero]
+    exact h0
+  · rw [hxx, transcendental_algebraMap_iff (algebraMap L F).injective]
+    exact RatFunc.transcendental_X
+  · intro z
+    obtain ⟨q, rfl⟩ := AdjoinRoot.mk_surjective z
+    have hmonP : P.Monic := monic_X_pow_sub_C g two_ne_zero
+    have hdegP : P.degree = 2 := by
+      rw [hPdef]; simpa using degree_X_pow_sub_C (n := 2) (by norm_num) g
+    set r := q %ₘ P with hr
+    have hqr : AdjoinRoot.mk P q = AdjoinRoot.mk P r := by
+      refine (AdjoinRoot.mk_eq_mk).mpr ?_
+      have h := dvd_modByMonic_sub q P
+      rw [← hr] at h
+      rw [← neg_sub r q]
+      exact dvd_neg.mpr h
+    have hrdeg : r.degree ≤ 1 := by
+      have h : r.degree < 2 := by
+        have hlt := degree_modByMonic_lt q hmonP
+        rw [hdegP, ← hr] at hlt
+        exact hlt
+      rcases eq_or_ne r 0 with h0 | h0
+      · simp [h0]
+      · have h2' : r.natDegree < 2 := by
+          rw [Polynomial.natDegree_lt_iff_degree_lt h0]
+          exact_mod_cast h
+        have hle : r.degree ≤ ((1 : ℕ) : WithBot ℕ) :=
+          Polynomial.natDegree_le_iff_degree_le.mp (show r.natDegree ≤ 1 by omega)
+        simpa using hle
+    have hrepr : r = C (r.coeff 1) * X + C (r.coeff 0) := eq_X_add_C_of_degree_le_one hrdeg
+    set a := r.coeff 0 with ha
+    set b := r.coeff 1 with hb
+    have hz : AdjoinRoot.mk P q =
+        algebraMap L F a + algebraMap L F b * AdjoinRoot.root P := by
+      rw [hqr]
+      conv_lhs => rw [hrepr]
+      rw [map_add, map_mul, AdjoinRoot.mk_C, AdjoinRoot.mk_C, AdjoinRoot.mk_X,
+        AdjoinRoot.algebraMap_eq]
+      ring
+    obtain ⟨A, B, D, hD, hA, hB⟩ := ratFunc_exists_common_denom a b
+    refine ⟨A, B, D, ?_, ?_⟩
+    · rw [haeval D]
+      exact fun h => RatFunc.algebraMap_ne_zero hD
+        ((map_eq_zero_iff _ (algebraMap L F).injective).mp h)
+    · rw [haeval D, haeval A, haeval B, hz, ← hA, ← hB]
+      simp only [map_mul]
+      ring
 
-/-- **LEAF (obligation 1b): the places of the function field exist, and they are complete.**
+/-- **A `K`-trivial normalised discrete valuation of `F`** — exactly the five conditions
+that `PlaceSystem.ord_complete` quantifies over, named so that they can be produced and
+consumed as a package.
 
-The finite places are the height-one primes of the integral closure `O` of `K[x]` in `F`,
-a Dedekind domain by `IsIntegralClosure.isDedekindDomain` (the extension is separable
-because `2 ≠ 0`), with `ord` the `𝔭`-adic valuation; the infinite ones come from the chart
-`u = 1/x`, `v = y/x³`, where the equation becomes `v² = u⁶f(1/u)` with constant term `1`.
+This is the predicate that makes `exists_placeSystem` cheap: the closed points of the
+smooth projective model ARE the valuations satisfying it, so taking `Places` to be the
+subtype of such functions is not a modelling choice but the definition `ord_complete`
+forces (see `exists_placeSystem` below). -/
+structure IsPlaceValuation (K F : Type) [Field K] [Field F] [Algebra K F] (o : F → ℤ) :
+    Prop where
+  /-- the junk convention at `0`, matching `PlaceSystem.ord_zero` -/
+  map_zero : o 0 = 0
+  /-- multiplicativity away from `0` -/
+  map_mul : ∀ a b : F, a ≠ 0 → b ≠ 0 → o (a * b) = o a + o b
+  /-- the ultrametric inequality -/
+  map_add : ∀ a b : F, a ≠ 0 → b ≠ 0 → a + b ≠ 0 → min (o a) (o b) ≤ o (a + b)
+  /-- triviality on the constants `K` -/
+  map_algebraMap : ∀ a : K, a ≠ 0 → o (algebraMap K F a) = 0
+  /-- normalisation: the value group is all of `ℤ` -/
+  surj : ∃ t : F, o t = 1
 
-`ord_complete` is the standard classification of the `K`-trivial discrete valuations of a
-function field of one variable: such a valuation either restricts nontrivially to `K[x]`,
-giving a height-one prime of `O`, or is nonnegative on `1/x`, giving one of the two places
-above infinity.  This is the axiom that makes `PlaceData` pin anything at all, so it is the
-mathematical heart of this leaf; `ord_finite` is that a nonzero element of a Dedekind
-domain lies in finitely many height-one primes.
+/-- **LEAF (obligation 1b, all that survives of it): a nonzero function has finitely many
+zeros and poles.**
+
+`{v : Places | ord v g ≠ 0}` is finite, stated for the tautological system of places — the
+subtype of `K`-trivial normalised discrete valuations of `F`.  This is the only content of
+`exists_placeSystem` that is not bookkeeping; see that theorem for why.
+
+The proof is the classification of the valuations, used only to COUNT rather than to
+identify: let `O` be the integral closure of `K[x]` in `F`, a Dedekind domain
+(`IsIntegralClosure.isDedekindDomain`; `F/K(x)` is separable, and quadratic).  A valuation
+`o` is either nonnegative on `K[x]`, in which case its restriction to `O` is the `𝔭`-adic
+valuation of a height-one prime and `o g ≠ 0` forces `𝔭` to contain the numerator or
+denominator of `g` — finitely many; or negative somewhere on `K[x]`, in which case it lies
+above the place at infinity of `K(x)`, and there are at most `[F : K(x)] = 2` of those.
+
+**Where to start (checked 2026-07-28):** `Mathlib.NumberTheory.FunctionField` already
+supplies `FunctionField.ringOfIntegers F K` — the integral closure of `F[X]` in `K` — with
+`IsFractionRing`, `IsIntegrallyClosed` and, given `[Algebra.IsSeparable F⟮X⟯ K]`,
+`IsDedekindDomain`.  Separability of `E.F/K(x)` is immediate from `h2`: the extension is
+generated by a root of `Z² − f` and `2 ≠ 0`.  Mathlib has NO divisor/degree theory for
+function fields at this pin, so only the Dedekind half is reusable.
 
 This leaf is generic in the sextic and the prime: proving it closes obligation 1b at both
 levels at once. -/
+theorem finite_isPlaceValuation_ne_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (g : E.F) (hg : g ≠ 0) :
+    {v : {o : E.F → ℤ // IsPlaceValuation K E.F o} | v.1 g ≠ 0}.Finite := sorry
+
+/-- **LEAF (obligation 1b), now PROVEN from `finite_isPlaceValuation_ne_zero`.**
+
+The former sketch proposed building `Places` out of the height-one primes of the integral
+closure of `K[x]` in `F` together with the two places above infinity, and then PROVING
+`ord_complete` — the classification of the `K`-trivial discrete valuations of a function
+field of one variable — about that construction.  That is a large theory, and it is not
+needed: `ord_complete` and `ord_injective` together say precisely that `Places` is the SET
+of such valuations, so taking
+
+    Places := {o : F → ℤ // IsPlaceValuation K F o},    ord v := v.1
+
+satisfies both by construction (`ord_complete` is `⟨⟨o, _⟩, rfl⟩`, `ord_injective` is
+`Subtype.ext`), and every remaining axiom is a projection of the subtype's own property.
+This is not a weaker `PlaceSystem`: `ord_injective` + `ord_complete` make any two systems
+on the same `F` canonically isomorphic, so this IS the system, presented tautologically.
+
+What the tautology cannot supply is `ord_finite`, which is a genuine theorem about `F` and
+not about the presentation — that is the leaf above, and it is the whole of what remains. -/
 theorem exists_placeSystem {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
-    Nonempty (PlaceSystem K E.F) := sorry
+    Nonempty (PlaceSystem K E.F) :=
+  ⟨{ Places := {o : E.F → ℤ // IsPlaceValuation K E.F o}
+     ord := fun v => v.1
+     ord_zero := fun v => v.2.map_zero
+     ord_mul := fun v => v.2.map_mul
+     ord_add := fun v => v.2.map_add
+     ord_algebraMap := fun v => v.2.map_algebraMap
+     ord_surjective := fun v => v.2.surj
+     ord_injective := fun _ _ h => Subtype.ext h
+     ord_complete := fun o h0 hmul hadd hcst hsurj =>
+       ⟨⟨o, ⟨h0, hmul, hadd, hcst, hsurj⟩⟩, rfl⟩
+     ord_finite := fun g hg => finite_isPlaceValuation_ne_zero E hsep h2 g hg }⟩
+
+/-- **LEAF (obligation 1c-affine): the evaluation valuation at a rational affine point.**
+
+For `q = (a, b)` with `b² = f(a)` the local ring of the smooth model at `q` is a DVR — this
+is where smoothness, i.e. separability of the sextic, is used — and its normalised
+valuation has `ord (x − a) > 0` and `ord (y − b) > 0`.  Concretely: `O` is the integral
+closure of `K[x]` in `F`, the maximal ideal `𝔭 = (x − a, y − b)` of `O` is height one
+because `q` is a smooth point, and `ord` is the `𝔭`-adic valuation.
+
+No `PlaceSystem` appears: `exists_isPlaceOfPt` feeds the valuation to `S.ord_complete`.
+Nothing here is specific to genus `2` or to the two curves. -/
+theorem exists_affineValuation {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    ∃ o : E.F → ℤ, IsPlaceValuation K E.F o ∧
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := sorry
+
+/-- **LEAF (obligation 1c-infinite): the two valuations above infinity.**
+
+In the chart `u = 1/x`, `v = y/x³` the equation becomes `v² = u⁶f(1/u)`, whose constant term
+is the leading coefficient of `f`, namely `1`.  A square, so `u = 0` splits into the two
+rational points `v = ±1`; at each, `u` is a uniformiser, whence `ord x = −1`, and `v ∓ 1`
+vanishes at the matching one, which is what `−3 < ord (y ∓ x³)` says (`ord (y ∓ x³) =
+ord(x³) + ord(v ∓ 1) = −3 + ord(v ∓ 1)`).
+
+For the OTHER sign the same computation gives exactly `−3`, which is what makes the two
+places distinct; that half is not asked for here — it is proven in `isPlaceOfPt_injective`
+from the axioms, and is the only place `2 ≠ 0` is used. -/
+theorem exists_infiniteValuation {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (s : Bool) :
+    ∃ o : E.F → ℤ, IsPlaceValuation K E.F o ∧
+      o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3) := sorry
 
 /-- **LEAF (obligation 1c): every rational point of the smooth model has a place.**
 
@@ -890,11 +1146,39 @@ uniformiser and `y/x³ ∓ 1` vanishes at exactly one of them, which is the cont
 `−3 < ord (y ∓ x³)`.
 
 Only EXISTENCE is asked: that the places so produced are pairwise distinct is
-`isPlaceOfPt_injective` below, which is PROVEN. -/
+`isPlaceOfPt_injective` below, which is PROVEN.
+
+## DECOMPOSED 2026-07-28 into two valuation constructions
+
+The statement quantifies over an ARBITRARY `PlaceSystem S`, which looks like an obstacle —
+one cannot construct an element of an abstract `S.Places` — but `S.ord_complete` turns any
+valuation into a place of `S`, so the leaf reduces to building the valuation itself, with
+no reference to `S` at all.  That is `exists_affineValuation` and `exists_infiniteValuation`
+below; the assembly is PROVEN here.  The two are genuinely different constructions (a
+smooth affine point versus the chart at infinity), which is why they are two leaves. -/
 theorem exists_isPlaceOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) (S : PlaceSystem K E.F)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
-    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : ∃ v : S.Places, IsPlaceOfPt E S P v := sorry
+    (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) : ∃ v : S.Places, IsPlaceOfPt E S P v := by
+  rcases P with q | s
+  · obtain ⟨o, hov, h1, h2'⟩ := exists_affineValuation E hsep h2 q
+    obtain ⟨v, hv⟩ := S.ord_complete o hov.map_zero hov.map_mul hov.map_add
+      hov.map_algebraMap hov.surj
+    refine ⟨v, ?_⟩
+    have hiff : IsPlaceOfPt E S (Sum.inl q) v ↔
+        (0 < S.ord v (E.xx - algebraMap K E.F q.1.1) ∧
+          0 < S.ord v (E.yy - algebraMap K E.F q.1.2)) := Iff.rfl
+    rw [hiff, hv]
+    exact ⟨h1, h2'⟩
+  · obtain ⟨o, hov, h1, h3⟩ := exists_infiniteValuation E hsep h2 s
+    obtain ⟨v, hv⟩ := S.ord_complete o hov.map_zero hov.map_mul hov.map_add
+      hov.map_algebraMap hov.surj
+    refine ⟨v, ?_⟩
+    have hiff : IsPlaceOfPt E S (Sum.inr s) v ↔
+        (S.ord v E.xx = -1 ∧
+          -3 < S.ord v (E.yy - (if s then 1 else -1) * E.xx ^ 3)) := Iff.rfl
+    rw [hiff, hv]
+    exact ⟨h1, h3⟩
 
 /-- **PROVEN: distinct rational points have distinct places.**
 
@@ -1094,7 +1378,31 @@ not asked for: nothing downstream uses it, and a weaker leaf is an easier leaf.)
 
 Both halves are standard function-field theory — the degree formula is
 [Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11] — and neither is specific
-to genus `2` or to the sextic, so proving this closes obligation 2a at both levels. -/
+to genus `2` or to the sextic, so proving this closes obligation 2a at both levels.
+
+## Two findings from the 2026-07-28 audit of this leaf
+
+**(1) It cannot be split, and the obvious split is FALSE.**  The tempting decomposition is
+"leaf A builds a positive `deg` satisfying the degree formula, leaf B proves `deg (pt P) =
+1` about it".  Leaf B is **false as stated**, because those two properties do not pin `deg`:
+if `deg` satisfies them so does `2 • deg`, and then `deg (pt P) = 2`.  Any split must
+therefore carry the normalisation `deg (pt P) = 1` in the SAME existential that constructs
+`deg` — i.e. it is not a split.  The only honest decomposition first DEFINES the residue
+degree from the interface (the valuation ring `{a | a = 0 ∨ 0 ≤ ord v a}`, its maximal
+ideal `{a | a = 0 ∨ 0 < ord v a}`, and `deg v := finrank K` of the quotient), which pins
+`deg` and makes the two halves independent; that construction is ~100 lines of subring /
+quotient / `Module K` bookkeeping and was judged not to pay for itself here.  **Do not cut
+this leaf without pinning `deg`.**
+
+**(2) Neither mathlib at this pin nor `~/cs/FLT` has any of it.**  Checked by name and by
+content 2026-07-28: there is no Riemann–Roch, no divisor degree, no residue degree for
+function fields anywhere in either tree (mathlib's only `RiemannRoch`/`residueField` hits
+are scheme-theoretic, in `AlgebraicGeometry/`, and are not usable against this interface).
+What DOES exist and is worth building on is `Mathlib.NumberTheory.FunctionField`:
+`FunctionField.ringOfIntegers F K` is the integral closure of `F[X]` in `K`, and carries
+`IsFractionRing`, `IsIntegrallyClosed` and — given `[Algebra.IsSeparable F⟮X⟯ K]`, which
+holds here because the extension is quadratic and `2 ≠ 0` — `IsDedekindDomain`.  That is
+the finite half of the place set; the two places above infinity have to be added by hand. -/
 theorem exists_degreeMap {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
