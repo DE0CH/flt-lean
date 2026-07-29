@@ -9886,8 +9886,99 @@ theorem exists_complexEmbedding_frobRoots_of_charpoly_pow {ℓ : ℕ} [Fact ℓ.
       α * β = (q : ℂ) ∧ α ^ g + β ^ g = φ x ∧ α ^ f + β ^ f = φ' y :=
   sorry
 
+/-! ### Two helpers HOISTED here on 2026-07-29
+
+Both declarations immediately below used to sit some 1200 lines further
+down this module.  They are reproduced here VERBATIM — only their position
+changed — because `exists_finset_forall_exists_place_absNorm_eq_pow` needs
+them and is itself needed by `weilBound_descended_of_heckePackage` above,
+which made the leaf unclosable where it stood.  Nothing else moved, and
+their former sites carry notes pointing here. -/
+
+/-- **Finitely many places of a number field lie over a rational prime**
+(PROVEN, elementary bookkeeping): for a nonzero natural number `n` and a
+number field `M`, all but finitely many finite places `w` of `M` satisfy
+`n ∉ w`.
+
+Proof: the ideal `span {n}` of `𝓞 M` is nonzero, so only finitely many
+height-one primes divide it (`Ideal.finite_factors`), and in the Dedekind
+domain `𝓞 M` "divides" is "contains" (`Ideal.dvd_iff_le`), which for the
+principal ideal `span {n}` is exactly `n ∈ w`.
+
+This is the bookkeeping that turns the POINTWISE determinant lemma
+`charFrob_baseChange_coeff_zero_eq_absNorm` (whose hypothesis is
+`ℓ ∉ w`) into an "away from a finite set of places" statement — the
+shape `HeckeSystemDescendsTo` is written in. -/
+theorem exists_finset_forall_natCast_notMem_asIdeal
+    (M : Type u) [Field M] [NumberField M] (n : ℕ) (hn : n ≠ 0) :
+    ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers M)),
+      ∀ w ∉ S, (n : NumberField.RingOfIntegers M) ∉ w.asIdeal := by
+  classical
+  have hne : (Ideal.span {(n : NumberField.RingOfIntegers M)}) ≠ 0 := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hn
+  refine ⟨(Ideal.finite_factors hne).toFinset, fun w hw hmem => ?_⟩
+  refine hw ?_
+  rw [Set.Finite.mem_toFinset]
+  exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
+
+open scoped NumberField in
+/-- **The residue characteristic of a finite place** (PROVEN helper): every
+finite place `w` of a number field `K` lies over the place of a unique
+rational prime `q`, and its absolute norm is a positive power of `q`.
+
+The prime is `natGenerator` of `w.under (𝓞 ℚ)`, identified with a rational
+prime by the proven classification
+`IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat`;
+the norm formula is mathlib's `Ideal.absNorm_eq_pow_inertiaDeg'`, whose
+`LiesOver (span {(q : ℤ)})` instance is supplied by maximality of `(q)` in
+`ℤ`. The exponent is nonzero because `absNorm I = 1 ↔ I = ⊤`. -/
+theorem exists_prime_place_rat (K : Type u) [Field K] [NumberField K]
+    (w : HeightOneSpectrum (𝓞 K)) :
+    ∃ (q e : ℕ) (hq : q.Prime), 0 < e ∧
+      Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 K)) w.asIdeal =
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal ∧
+      Ideal.absNorm w.asIdeal = q ^ e := by
+  classical
+  -- the place below `w` is the place of a prime number `q`
+  obtain ⟨q, hq, hpq⟩ : ∃ (q : ℕ) (hq : q.Prime),
+      w.under (𝓞 ℚ) = hq.toHeightOneSpectrumRingOfIntegersRat :=
+    IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat (w.under (𝓞 ℚ))
+  have hcomap : Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 K)) w.asIdeal =
+      hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    rw [← hpq]
+    rfl
+  -- `q` lies in `w`
+  have hqw : (q : 𝓞 K) ∈ w.asIdeal := by
+    have h1 : (q : 𝓞 ℚ) ∈ hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat]
+      exact Ideal.mem_span_singleton_self _
+    rw [← hcomap, Ideal.mem_comap] at h1
+    rwa [map_natCast] at h1
+  -- hence `w` lies over `(q)` in `ℤ`
+  have hle : Ideal.span {(q : ℤ)} ≤ w.asIdeal.under ℤ := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    show ((q : ℤ)) ∈ Ideal.comap (algebraMap ℤ (𝓞 K)) w.asIdeal
+    rw [Ideal.mem_comap, map_natCast]
+    exact hqw
+  have hmax : (Ideal.span {(q : ℤ)}).IsMaximal :=
+    Ideal.IsPrime.isMaximal hq.toHeightOneSpectrumInt.isPrime
+      hq.toHeightOneSpectrumInt.ne_bot
+  have hunderZ : Ideal.span {(q : ℤ)} = w.asIdeal.under ℤ :=
+    hmax.eq_of_le (Ideal.IsPrime.under ℤ w.asIdeal).ne_top hle
+  haveI : w.asIdeal.LiesOver (Ideal.span {(q : ℤ)}) := ⟨hunderZ⟩
+  have hnorm : Ideal.absNorm w.asIdeal =
+      q ^ ((Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal) :=
+    Ideal.absNorm_eq_pow_inertiaDeg' w.asIdeal hq
+  refine ⟨q, (Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal, hq, ?_, hcomap, hnorm⟩
+  rcases Nat.eq_zero_or_pos ((Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal) with h0 | h
+  · exfalso
+    rw [h0, pow_zero] at hnorm
+    exact w.isPrime.ne_top (Ideal.absNorm_eq_one_iff.mp hnorm)
+  · exact h
+
 /-- **Away from finitely many places, the residue characteristic of `w` is
-good for `F` as well** (SORRIED LEAF, cut 2026-07-28; ELEMENTARY ALGEBRAIC
+good for `F` as well** (**PROVEN 2026-07-29**; ELEMENTARY ALGEBRAIC
 NUMBER THEORY — no `ρ`, no automorphic datum).
 
 STATEMENT.  For number fields `L`, `F` and a finite set `badF` of places
@@ -9895,31 +9986,39 @@ of `F`, all but finitely many places `w` of `L` have a residue
 characteristic `q ∉ {2, ℓ}` carrying a place `V` of `F` OUTSIDE `badF`,
 with `Nw = q^e` and `NV = q^f`, both exponents positive.
 
-PROOF (the intended one, in full).  Put
-`N := 2·ℓ·∏_{V₀ ∈ badF} NV₀`, nonzero because the absolute norm of a
-height-one prime is positive (`absNorm_asIdeal_pos` above) — in the
-degenerate case `ℓ = 0` use `N := 2·∏ …`, the clause `q ≠ ℓ` being then
-automatic.  Let `S'` be the finitely many places of `L` containing `N`
-(`exists_finset_forall_natCast_notMem_asIdeal`, further down this module).
-For `w ∉ S'`, `exists_prime_place_rat` gives `q` and `e > 0` with
-`Nw = q^e` and `q ∈ w`; hence `q ∤ N`, and so `q ≠ 2` and `q ≠ ℓ`.  Any
-prime of `𝓞 F` over `q` — going-up,
-`Ideal.exists_ideal_over_maximal_of_isIntegral` applied to the maximal
-ideal `(q)` of `𝓞 ℚ` — is a height-one point `V` with `NV = q^f`, `f > 0`;
-and `V ∉ badF`, because `q ∣ NV` while `q ∤ NV₀` for every `V₀ ∈ badF`.
+PROOF (as carried out).  Put
+`N := 2·max(ℓ,1)·∏_{V₀ ∈ badF} NV₀`, nonzero because the absolute norm of
+a height-one prime is positive (`absNorm_asIdeal_pos` above).  `max(ℓ,1)`
+rather than `ℓ` is what handles the degenerate case `ℓ = 0` uniformly: the
+clause `q ≠ ℓ` is then automatic for a prime `q`, and no case split is
+needed anywhere else.  Let `S'` be the finitely many places of `L`
+containing `N` (`exists_finset_forall_natCast_notMem_asIdeal`, hoisted to
+immediately above).  For `w ∉ S'`, `exists_prime_place_rat` gives `q` and
+`e > 0` with `Nw = q^e` and `q ∈ w`; hence `q ∤ N`, and so `q ≠ 2` and
+`q ≠ ℓ`.  A prime of `𝓞 F` over `q` is produced by going up from **`ℤ`**
+(not from `𝓞 ℚ`): `Ideal.exists_ideal_over_maximal_of_isIntegral` applied
+to the maximal ideal `span {(q : ℤ)}`, whose `ker ≤ ·` side condition is
+discharged by injectivity of `ℤ → 𝓞 F`.  Going up from `ℤ` is the better
+route because the resulting `comap` IS the `LiesOver (span {(q : ℤ)})`
+instance that `Ideal.absNorm_eq_pow_inertiaDeg'` wants, so `NV = q^f`
+falls out with the SAME `q` and needs no separate argument matching the
+two rational primes.  `f > 0` because `absNorm I = 1 ↔ I = ⊤`; and
+`V ∉ badF`, because `q ∣ NV` while `q ∤ NV₀` for every `V₀ ∈ badF`.
 
-DECLARATION-ORDER NOTE, and the only reason this is a leaf rather than
-three lines inline: both helpers it wants
+DECLARATION-ORDER NOTE, RESOLVED 2026-07-29.  Both helpers this leaf wants
 (`exists_finset_forall_natCast_notMem_asIdeal`, `exists_prime_place_rat`)
-are declared BELOW this point in the file, while its consumer
+used to be declared BELOW this point, while its consumer
 `weilBound_descended_of_heckePackage` is declared above them and is itself
-consumed above them.  Closing it therefore needs a relocation — of those
-two helpers upward, or of this block downward — which is mechanical but
-is not this owner's to make.
+consumed above them — so closing it needed a relocation, and that
+relocation has now been made: both helpers are hoisted to immediately
+above this docstring, unchanged apart from their position.  Their former
+sites carry a note saying so.
 
 NOT VACUOUS: the existential `V` is genuinely constrained (`V ∉ badF` and
 `NV` a power of the SAME `q`), and the conclusion fails for the finitely
-many `w` that `S'` removes. -/
+many `w` that `S'` removes.  Note also that `S'` cannot be widened to
+swallow the statement: `HeightOneSpectrum (𝓞 L)` is infinite while `S'` is
+a `Finset`, so infinitely many `w` remain subject to the conclusion. -/
 theorem exists_finset_forall_exists_place_absNorm_eq_pow (ℓ : ℕ)
     (L : Type u) [Field L] [NumberField L]
     (F : Type u) [Field F] [NumberField F]
@@ -9928,8 +10027,109 @@ theorem exists_finset_forall_exists_place_absNorm_eq_pow (ℓ : ℕ)
       ∀ w ∉ S', ∃ (q e f : ℕ) (_ : q.Prime)
           (V : HeightOneSpectrum (NumberField.RingOfIntegers F)),
         q ≠ 2 ∧ q ≠ ℓ ∧ 0 < e ∧ 0 < f ∧ V ∉ badF ∧
-        Ideal.absNorm w.asIdeal = q ^ e ∧ Ideal.absNorm V.asIdeal = q ^ f :=
-  sorry
+        Ideal.absNorm w.asIdeal = q ^ e ∧ Ideal.absNorm V.asIdeal = q ^ f := by
+  classical
+  -- PERFORMANCE: keep the residue-cardinality function OPAQUE.  With
+  -- `fun V₀ => Ideal.absNorm V₀.asIdeal` written out, `Finset.dvd_prod_of_mem`
+  -- sends the unifier through `Ideal.absNorm`'s instance stack and blows the
+  -- heartbeat budget (measured in isolation in this cone: >3 min at DOUBLE
+  -- heartbeats and still timing out, against 10 s with `g` opaque).
+  obtain ⟨g, hg⟩ : ∃ g : HeightOneSpectrum (NumberField.RingOfIntegers F) → ℕ,
+      g = fun V₀ => Ideal.absNorm V₀.asIdeal := ⟨_, rfl⟩
+  -- the modulus whose prime divisors are exactly the excluded residue
+  -- characteristics: `2`, `ℓ`, and the residue characteristics of `badF`.
+  -- `max ℓ 1` rather than `ℓ` keeps `N ≠ 0` in the degenerate case `ℓ = 0`,
+  -- where `q ≠ ℓ` is anyway automatic for a prime `q`.
+  obtain ⟨N, hNdef⟩ : ∃ N : ℕ, N = 2 * max ℓ 1 * ∏ V₀ ∈ badF, g V₀ := ⟨_, rfl⟩
+  have hgpos : ∀ V₀, 0 < g V₀ := by
+    intro V₀
+    simp only [hg]
+    exact absNorm_asIdeal_pos V₀
+  have hNpos : 0 < N := by
+    rw [hNdef]
+    exact Nat.mul_pos
+      (Nat.mul_pos (by norm_num) (lt_of_lt_of_le Nat.one_pos (le_max_right ℓ 1)))
+      (Finset.prod_pos fun V₀ _ => hgpos V₀)
+  obtain ⟨S', hS'⟩ := exists_finset_forall_natCast_notMem_asIdeal L N hNpos.ne'
+  refine ⟨S', fun w hw => ?_⟩
+  have hwN : (N : NumberField.RingOfIntegers L) ∉ w.asIdeal := hS' w hw
+  obtain ⟨q, e, hq, he, hcomapw, hnormw⟩ := exists_prime_place_rat L w
+  -- `q` lies in `w`, so `q ∤ N`
+  have hqw : (q : NumberField.RingOfIntegers L) ∈ w.asIdeal := by
+    have h1 : (q : NumberField.RingOfIntegers ℚ) ∈
+        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat]
+      exact Ideal.mem_span_singleton_self _
+    rw [← hcomapw, Ideal.mem_comap] at h1
+    rwa [map_natCast] at h1
+  have hqN : ¬ q ∣ N := by
+    rintro ⟨k, hk⟩
+    refine hwN ?_
+    rw [hk]
+    push_cast
+    exact Ideal.mul_mem_right _ _ hqw
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    refine hqN ?_
+    rw [hNdef]
+    exact Dvd.dvd.mul_right (dvd_mul_right 2 (max ℓ 1)) _
+  have hqℓ : q ≠ ℓ := by
+    rintro rfl
+    refine hqN ?_
+    rw [hNdef]
+    refine Dvd.dvd.mul_right ?_ _
+    rw [max_eq_left hq.one_lt.le]
+    exact dvd_mul_left q 2
+  -- a place `V` of `F` over the SAME rational prime `q`, by going up from `ℤ`
+  haveI hmaxq : (Ideal.span {(q : ℤ)}).IsMaximal :=
+    Ideal.IsPrime.isMaximal hq.toHeightOneSpectrumInt.isPrime
+      hq.toHeightOneSpectrumInt.ne_bot
+  obtain ⟨Q, hQmax, hQcomap⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral
+      (S := NumberField.RingOfIntegers F) (Ideal.span {(q : ℤ)})
+      (by
+        intro x hx
+        have hx0 : x = 0 := by
+          simpa [RingHom.mem_ker, Int.cast_eq_zero] using hx
+        simp [hx0])
+  haveI : Q.LiesOver (Ideal.span {(q : ℤ)}) := ⟨hQcomap.symm⟩
+  have hqQ : (q : NumberField.RingOfIntegers F) ∈ Q := by
+    have h1 : (q : ℤ) ∈ Ideal.span {(q : ℤ)} := Ideal.mem_span_singleton_self _
+    rw [← hQcomap, Ideal.mem_comap] at h1
+    simpa using h1
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot] at hqQ
+    exact hq.ne_zero (by exact_mod_cast hqQ)
+  -- package `Q` as a height-one point, keeping it OPAQUE: unfolding the
+  -- anonymous constructor in `whnf` is what makes this time out
+  obtain ⟨V, hVasIdeal⟩ :
+      ∃ V : HeightOneSpectrum (NumberField.RingOfIntegers F), V.asIdeal = Q :=
+    ⟨⟨Q, hQmax.isPrime, hQne⟩, rfl⟩
+  -- its residue cardinality is a positive power of `q`
+  have hnormV : Ideal.absNorm V.asIdeal
+      = q ^ ((Ideal.span {(q : ℤ)}).inertiaDeg' Q) := by
+    rw [hVasIdeal]
+    exact Ideal.absNorm_eq_pow_inertiaDeg' Q hq
+  have hf : 0 < (Ideal.span {(q : ℤ)}).inertiaDeg' Q := by
+    rcases Nat.eq_zero_or_pos ((Ideal.span {(q : ℤ)}).inertiaDeg' Q) with h0 | h
+    · exfalso
+      rw [h0, pow_zero, hVasIdeal] at hnormV
+      exact hQmax.ne_top (Ideal.absNorm_eq_one_iff.mp hnormV)
+    · exact h
+  -- and `q ∤ N` forces `V ∉ badF`
+  have hVbad : V ∉ badF := by
+    intro hmem
+    have hdvd1 : g V ∣ ∏ V₀ ∈ badF, g V₀ := Finset.dvd_prod_of_mem g hmem
+    have hgV : g V = Ideal.absNorm V.asIdeal := by simp only [hg]
+    have hdvd2 : q ∣ g V := by
+      rw [hgV, hnormV]
+      exact dvd_pow_self q hf.ne'
+    refine hqN ?_
+    rw [hNdef]
+    exact Dvd.dvd.mul_left (hdvd2.trans hdvd1) _
+  exact ⟨q, e, (Ideal.span {(q : ℤ)}).inertiaDeg' Q, hq, V, hq2, hqℓ, he, hf,
+    hVbad, hnormw, hnormV⟩
 
 /-- **Ramanujan–Petersson for the DESCENDED eigensystems, at the inert
 places** (**PROVEN 2026-07-28**, and — since the SECOND cut of that day —
@@ -11094,32 +11294,10 @@ theorem exists_cyclicRefinement_of_isSolvable {G : Type*} [Group G]
           IsCyclic (C (i + 1) ⧸ (C i).subgroupOf (C (i + 1))) :=
   exists_cyclicRefinement_of_isSolvable_of_card_le (Nat.card H) H hH le_rfl
 
-/-- **Finitely many places of a number field lie over a rational prime**
-(PROVEN, elementary bookkeeping): for a nonzero natural number `n` and a
-number field `M`, all but finitely many finite places `w` of `M` satisfy
-`n ∉ w`.
-
-Proof: the ideal `span {n}` of `𝓞 M` is nonzero, so only finitely many
-height-one primes divide it (`Ideal.finite_factors`), and in the Dedekind
-domain `𝓞 M` "divides" is "contains" (`Ideal.dvd_iff_le`), which for the
-principal ideal `span {n}` is exactly `n ∈ w`.
-
-This is the bookkeeping that turns the POINTWISE determinant lemma
-`charFrob_baseChange_coeff_zero_eq_absNorm` (whose hypothesis is
-`ℓ ∉ w`) into an "away from a finite set of places" statement — the
-shape `HeckeSystemDescendsTo` is written in. -/
-theorem exists_finset_forall_natCast_notMem_asIdeal
-    (M : Type u) [Field M] [NumberField M] (n : ℕ) (hn : n ≠ 0) :
-    ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers M)),
-      ∀ w ∉ S, (n : NumberField.RingOfIntegers M) ∉ w.asIdeal := by
-  classical
-  have hne : (Ideal.span {(n : NumberField.RingOfIntegers M)}) ≠ 0 := by
-    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
-    exact Nat.cast_ne_zero.mpr hn
-  refine ⟨(Ideal.finite_factors hne).toFinset, fun w hw hmem => ?_⟩
-  refine hw ?_
-  rw [Set.Finite.mem_toFinset]
-  exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
+/-! `exists_finset_forall_natCast_notMem_asIdeal` used to be declared here.
+It was HOISTED on 2026-07-29 to just above
+`exists_finset_forall_exists_place_absNorm_eq_pow` earlier in this module,
+unchanged apart from its position, so that that leaf could consume it. -/
 
 /-- **A bound at every complex embedding transfers between number fields
 along a shared image in a common overfield** (PROVEN; pure
@@ -11942,7 +12120,7 @@ theorem exists_intermediate_of_isCyclic_quotient {G : Type*} [Group G]
 
 /-! ### Helpers for `charFrob_baseChange_eq_of_absNorm_eq`
 
-The three arithmetic helpers below (and the linear-algebra one) are what
+The arithmetic helpers below (and the linear-algebra one) are what
 makes the residue-cardinality leaf go through, and they are stated for a
 general base number field `Kb` deliberately: at the CONCRETE base `ℚ` the
 elaborator resolves `Algebra ℚ (P.adicCompletion ℚ)` to
@@ -11955,63 +12133,13 @@ can never be `rw`- or `exact`-matched against `toLocal_apply`'s. Keeping
 the base field a VARIABLE removes the ℚ-specific instance path and the two
 spellings coincide on the nose. (Learned expensively, 2026-07-26: the
 symptom is a `rewrite failed` / `isDefEq` timeout on two terms that
-pretty-print identically.) -/
+pretty-print identically.)
 
-open scoped NumberField in
-/-- **The residue characteristic of a finite place** (PROVEN helper): every
-finite place `w` of a number field `K` lies over the place of a unique
-rational prime `q`, and its absolute norm is a positive power of `q`.
-
-The prime is `natGenerator` of `w.under (𝓞 ℚ)`, identified with a rational
-prime by the proven classification
-`IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat`;
-the norm formula is mathlib's `Ideal.absNorm_eq_pow_inertiaDeg'`, whose
-`LiesOver (span {(q : ℤ)})` instance is supplied by maximality of `(q)` in
-`ℤ`. The exponent is nonzero because `absNorm I = 1 ↔ I = ⊤`. -/
-theorem exists_prime_place_rat (K : Type u) [Field K] [NumberField K]
-    (w : HeightOneSpectrum (𝓞 K)) :
-    ∃ (q e : ℕ) (hq : q.Prime), 0 < e ∧
-      Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 K)) w.asIdeal =
-        hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal ∧
-      Ideal.absNorm w.asIdeal = q ^ e := by
-  classical
-  -- the place below `w` is the place of a prime number `q`
-  obtain ⟨q, hq, hpq⟩ : ∃ (q : ℕ) (hq : q.Prime),
-      w.under (𝓞 ℚ) = hq.toHeightOneSpectrumRingOfIntegersRat :=
-    IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat (w.under (𝓞 ℚ))
-  have hcomap : Ideal.comap (algebraMap (𝓞 ℚ) (𝓞 K)) w.asIdeal =
-      hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
-    rw [← hpq]
-    rfl
-  -- `q` lies in `w`
-  have hqw : (q : 𝓞 K) ∈ w.asIdeal := by
-    have h1 : (q : 𝓞 ℚ) ∈ hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
-      rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat]
-      exact Ideal.mem_span_singleton_self _
-    rw [← hcomap, Ideal.mem_comap] at h1
-    rwa [map_natCast] at h1
-  -- hence `w` lies over `(q)` in `ℤ`
-  have hle : Ideal.span {(q : ℤ)} ≤ w.asIdeal.under ℤ := by
-    rw [Ideal.span_le, Set.singleton_subset_iff]
-    show ((q : ℤ)) ∈ Ideal.comap (algebraMap ℤ (𝓞 K)) w.asIdeal
-    rw [Ideal.mem_comap, map_natCast]
-    exact hqw
-  have hmax : (Ideal.span {(q : ℤ)}).IsMaximal :=
-    Ideal.IsPrime.isMaximal hq.toHeightOneSpectrumInt.isPrime
-      hq.toHeightOneSpectrumInt.ne_bot
-  have hunderZ : Ideal.span {(q : ℤ)} = w.asIdeal.under ℤ :=
-    hmax.eq_of_le (Ideal.IsPrime.under ℤ w.asIdeal).ne_top hle
-  haveI : w.asIdeal.LiesOver (Ideal.span {(q : ℤ)}) := ⟨hunderZ⟩
-  have hnorm : Ideal.absNorm w.asIdeal =
-      q ^ ((Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal) :=
-    Ideal.absNorm_eq_pow_inertiaDeg' w.asIdeal hq
-  refine ⟨q, (Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal, hq, ?_, hcomap, hnorm⟩
-  rcases Nat.eq_zero_or_pos ((Ideal.span {(q : ℤ)}).inertiaDeg' w.asIdeal) with h0 | h
-  · exfalso
-    rw [h0, pow_zero] at hnorm
-    exact w.isPrime.ne_top (Ideal.absNorm_eq_one_iff.mp hnorm)
-  · exact h
-
+RELOCATION NOTE (2026-07-29): the first of these helpers,
+`exists_prime_place_rat`, now lives ABOVE
+`exists_finset_forall_exists_place_absNorm_eq_pow` earlier in this module,
+which is what let that leaf be closed; it is unchanged apart from its
+position. The remaining helpers below are untouched. -/
 
 open scoped NumberField in
 /-- **The global Frobenius at `w` is a conjugate of a local one at the place
