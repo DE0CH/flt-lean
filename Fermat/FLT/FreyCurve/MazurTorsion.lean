@@ -9176,8 +9176,8 @@ def WeierstrassCurve.PotentiallyGoodModel.LocalFrame.IsTorsionReduction
       (ψ₀ P).val = WeierstrassCurve.Affine.Point.some _ _ hns'
 
 /-- **THE REDUCTION MAP ON `N`-TORSION EXISTS, AND IS PINNED COORDINATEWISE**
-(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three
-along the coordinatewise characterisation of `ψ₀`).
+(PROVEN 2026-07-28; opened the same day by cutting `exists_torsionFrame` below
+into three along the coordinatewise characterisation of `ψ₀`).
 
 WHAT IT SAYS: there is a `ZMod N`-linear EQUIVALENCE
 `ψ₀ : E[N](ℚ̄) ≃ Ẽ[N](𝔽̄_q)`, `Ẽ := D.redCurve`, which is the honest reduction
@@ -9192,56 +9192,62 @@ of the atom are proven ABOUT this map by the two leaves below, which receive it
 WITH its coordinatewise pinning and therefore cannot be satisfied by a conjugated
 junk witness.
 
-WHAT HAS TO BE PROVEN, in order:
+HOW IT IS PROVEN — and the survey this leaf inherited was pointing at the wrong
+machinery. Steps 2 and 3 of the old plan (well-definedness and additivity of the
+reduction map) do NOT have to be redone: they already exist, sorry-free and fully
+general, as `WeierstrassCurve.IsReductionAlong` and its
+`redHom : W(F) →+ Wred(κ)` in
+`KnownIn1980s/EllipticCurves/PointReduction.lean` (Silverman *AEC* VII.2.1 —
+integrality and reduction of `negY`/`addX`/`addY`, the integral chord–tangent
+slope, and the kernel analysis `addX_notMem_of_res_opposite` /
+`not_isIntegralPoint_add`). **`WeilPairing.exists_frobenius_reduction_model` is
+therefore NOT the pattern to copy**; adapting that ~2800-line monolith would have
+been rebuilding an existing API. The proof is:
 
-1. *Integrality.* `torsion_abscissa_mem` and `torsion_ordinate_mem`
-   (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free)
-   applied with `R := D.R`, `k := D.K`, `E := D.V`,
-   `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`,
-   `𝒪 := globalValuationSubring q`, and `h𝒪` supplied VERBATIM by
-   `Fr.comap_eq` — the frame field was written to match that hypothesis
-   syntactically. `ℚ̄` is a separable closure of `D.K` because the
-   characteristic is zero, `ℚ̄` is algebraically closed, and `ℚ̄/D.K` is
-   algebraic (`D.K/ℚ` is finite).
-2. *Well-definedness.* The residue point is nonsingular on the reduction, which
-   is `Ẽ` transported along `Fr.resIso`; `Fr.resIso_comm` is exactly the
-   compatibility that makes the reduction of `V` over `κ(𝒪)` equal to
-   `Ẽ ⊗ 𝔽̄_q`.
-3. *Additivity*, from the group-law formulae over `𝒪` (the slope of two distinct
-   torsion points is integral because their abscissae have distinct residues,
-   which is step 4).
-4. *Injectivity*: `torsion_abscissa_residue_ne` and
-   `torsion_ordinate_eq_of_residue_eq`, both PROVEN.
-5. *Surjectivity by counting*: `E[N](ℚ̄)` and `Ẽ[N](𝔽̄_q)` both have `N²`
-   elements (`q ≠ N`, and the reduction is elliptic — the instance
-   `instIsEllipticRedCurve` above), so an injective additive map between them is
-   bijective.
+1. *The reduction datum.* Good reduction makes `D.V` integral over `D.R`, so each
+   coefficient is `algebraMap D.R D.K r` (`integralModel_aᵢ_eq`); `Fr.comap_eq`
+   puts its `Fr.emb`-image in `𝒪 = globalValuationSubring q`, and
+   `Fr.resIso_comm` computes its residue as the corresponding coefficient of
+   `D.redCurve ⊗ 𝔽̄_q`. Those ten facts ARE
+   `IsReductionAlong 𝒪 ρ (D.V.map Fr.emb) (D.redCurve ⊗ 𝔽̄_q)` for
+   `ρ := Fr.resIso ∘ IsLocalRing.residue 𝒪`, which is an `IsLocalHom` because
+   `residue` is one and every ring map out of a field is one.
+2. *Well-definedness and additivity*: `hred.redHom hΔ`, with `hΔ` supplied by
+   `instIsEllipticRedCurve` above. Composing with `Fr.modelEquiv` gives an
+   ADDITIVE map on all of `E(ℚ̄)`, not merely on torsion.
+3. *Injectivity on `E[N]` — and this is where the `N = 2` obligation
+   DISAPPEARED.* `IsReductionAlong.redFun_eq_zero_iff` says the kernel of
+   reduction is EXACTLY the affine points with non-integral abscissa, and
+   `torsion_abscissa_mem` (`KnownIn1980s/EllipticCurves/GoodReduction.lean`,
+   PROVEN, applied with `R := D.R`, `k := D.K`, `E := D.V`,
+   `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra` and `h𝒪` supplied
+   VERBATIM by `Fr.comap_eq`) says every `N`-torsion abscissa IS integral. So a
+   nonzero `N`-torsion point cannot reduce to `O`. Note that
+   `torsion_abscissa_mem` needs only `NeZero (N : κ(D.R))`, i.e. `q ≠ N`; the
+   `IsSepClosure` hypothesis of its section is `omit`ted from it, so no
+   separable-closure instance has to be produced for `ℚ̄/D.K` either.
+4. *Surjectivity by counting*: `n_torsion_card` gives `N²` on both sides
+   (`IsSepClosed` on both closures; `N ≠ 0` in `ℚ̄` by characteristic zero and in
+   `𝔽̄_q` because `q ≠ N`), so an injective additive map between them is bijective
+   (`Nat.bijective_iff_injective_and_card`), and `AddMonoidHom.toZModLinearMap`
+   upgrades it to the `ZMod N`-linear equivalence.
 
-The assembly pattern to copy is the PROVEN
-`WeilPairing.exists_frobenius_reduction_model`, a ~2800-line monolith that does
-exactly this at the good primes of a global integral model over `ℚ` — including
-the construction of `redFun`, its additivity, its injectivity on torsion and its
-surjectivity by counting. The only differences here are that the base is `K`
-rather than `ℚ`, and that the model arrives as `D.V` rather than being
-constructed.
+**THE `N = 2` OBLIGATION IS DISCHARGED, NOT INHERITED** (2026-07-28; the note it
+replaces is reproduced almost verbatim in `exists_torsionFrame`'s docstring below
+and has been corrected there too). That note said oddness of `N` was consumed
+through `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`, so
+a prover must either supply their `n = 2` case or restate this leaf with `Odd N`.
+**Neither was necessary: this proof uses neither lemma.** Injectivity of reduction
+on prime-to-`q` torsion does not go through "distinct torsion points have distinct
+residues" at all — only through "torsion points are integral, and the kernel of
+reduction is exactly the non-integral locus" (Silverman VII.3.1's actual
+argument). The statement is unchanged and holds for every prime `N ≠ q`, `N = 2`
+included, and `torsion_unramified_of_good_reduction`'s `Odd n` never enters.
 
-**THE `N = 2` OBLIGATION IS LIVE, AND IT LIVES HERE.** `q ≠ 2` and `q ≠ N` do
-NOT exclude `N = 2`, and the tree's Néron–Ogg–Šafarevič criterion
-`torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used only
-inside `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`,
-through the coprimality of `Ψ₂²` with `preΨ'ₙ`. The statement here is TRUE at
-`N = 2` — good reduction gives an unramified action on `E[ℓ]` for every `ℓ ≠ q`,
-and `q ≠ 2` keeps `2` invertible in the residue field — so this is a
-proving-effort obligation, not a faithfulness defect. A prover must either supply
-the `n = 2` case of those two lemmas in
-`KnownIn1980s/EllipticCurves/GoodReduction.lean` (the `2`-torsion abscissae are
-the roots of the `2`-division polynomial, separable mod `q` exactly because
-`q ≠ 2` and the reduction is elliptic), or restate this leaf with `Odd N` and
-push the restriction up the chain. NOT NARROWED AT THE CUT: the ultimate consumer
-`hasseWeil_trace_frobeniusTorsionEnd_of_jIntegral` carries `23 ≤ N`, so no
-downstream use actually reaches `N = 2`, but every statement between here and
-there is quantified over all primes `N` and narrowing them is another owner's
-edit.
+`_hq2 : q ≠ 2` IS LIKEWISE UNUSED, and is underscore-prefixed so that the fact is
+mechanically visible rather than merely asserted. It is kept in the signature only
+because the consumer `exists_torsionFrame` below already holds it and dropping it
+would churn a proven declaration; nothing in this proof needs `2` invertible.
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: an `N`-torsion point of `E` over `ℚ̄`
 whose image on `D.V` has a coordinate outside `𝒪`, or two distinct `N`-torsion
@@ -9251,12 +9257,155 @@ contradicts `torsion_abscissa_residue_ne`, whose hypotheses (`N` prime, `N`
 invertible in the residue field, good reduction) are all in hand. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_isTorsionReduction
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
-    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (_hq2 : q ≠ 2) (hqN : q ≠ N)
     {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
     ∃ ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
       ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N),
-      Fr.IsTorsionReduction ψ₀ :=
-  sorry
+      Fr.IsTorsionReduction ψ₀ := by
+  classical
+  letI : Algebra D.K (AlgebraicClosure ℚ) := Fr.emb.toAlgebra
+  haveI : CharZero (AlgebraicClosure ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+  set 𝒪 : ValuationSubring (AlgebraicClosure ℚ) :=
+    GaloisRepresentation.globalValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat
+  set ρ : 𝒪 →+* AlgebraicClosure (ZMod q) :=
+    (Fr.resIso : IsLocalRing.ResidueField 𝒪 →+* AlgebraicClosure (ZMod q)).comp
+      (IsLocalRing.residue 𝒪) with hρdef
+  haveI : IsLocalHom ρ := by
+    rw [hρdef]; exact RingHom.isLocalHom_comp _ _
+  -- Step 1: the images of `D.R` are integral, and their residues are computed by
+  -- `Fr.resIso_comm`.
+  have hmem : ∀ r : D.R, Fr.emb (algebraMap D.R D.K r) ∈ 𝒪 := by
+    intro r
+    have hr : algebraMap D.R D.K r ∈ (algebraMap D.R D.K).range := ⟨r, rfl⟩
+    rw [← Fr.comap_eq] at hr
+    exact hr
+  have hcoeff : ∀ (a : D.K) (r : D.R), algebraMap D.R D.K r = a →
+      ∃ h : Fr.emb a ∈ 𝒪, ρ ⟨Fr.emb a, h⟩
+        = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
+            (D.resEquiv (IsLocalRing.residue D.R r)) := by
+    intro a r har
+    subst har
+    exact ⟨hmem r, Fr.resIso_comm r (hmem r)⟩
+  obtain ⟨hm1, he1⟩ := hcoeff D.V.a₁ _ (WeierstrassCurve.integralModel_a₁_eq D.R D.V)
+  obtain ⟨hm2, he2⟩ := hcoeff D.V.a₂ _ (WeierstrassCurve.integralModel_a₂_eq D.R D.V)
+  obtain ⟨hm3, he3⟩ := hcoeff D.V.a₃ _ (WeierstrassCurve.integralModel_a₃_eq D.R D.V)
+  obtain ⟨hm4, he4⟩ := hcoeff D.V.a₄ _ (WeierstrassCurve.integralModel_a₄_eq D.R D.V)
+  obtain ⟨hm6, he6⟩ := hcoeff D.V.a₆ _ (WeierstrassCurve.integralModel_a₆_eq D.R D.V)
+  -- so `D.redCurve ⊗ 𝔽̄_q` IS the reduction of the good model along `ρ`.
+  have hred : WeierstrassCurve.IsReductionAlong 𝒪 ρ (D.V.map Fr.emb)
+      (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) :=
+    ⟨hm1, hm2, hm3, hm4, hm6, he1.symm, he2.symm, he3.symm, he4.symm, he6.symm⟩
+  have hΔ : (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).Δ ≠ 0 :=
+    (inferInstance :
+      (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic).isUnit.ne_zero
+  -- `N` is invertible in the residue field of `D.R` — this is the ONLY arithmetic
+  -- hypothesis the integrality step needs, and it is `q ≠ N`.
+  haveI hNez : NeZero ((N : ℕ) : IsLocalRing.ResidueField D.R) := by
+    refine ⟨fun h0 => ?_⟩
+    have h1 : D.resEquiv ((N : ℕ) : IsLocalRing.ResidueField D.R) = 0 := by
+      rw [h0, map_zero]
+    rw [map_natCast, ZMod.natCast_eq_zero_iff] at h1
+    exact hqN ((Nat.prime_dvd_prime_iff_eq Fact.out hN).mp h1)
+  -- Step 2 (integrality): `N`-torsion points of the good model have integral coordinates.
+  have habs : ∀ {x y : AlgebraicClosure ℚ}
+      (h : (D.V.map Fr.emb).toAffine.Nonsingular x y),
+      (N : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        (D.V.map Fr.emb).toAffine.Point) = 0 → x ∈ 𝒪 :=
+    fun h htor => WeierstrassCurve.torsion_abscissa_mem D.R D.K D.V N
+      (AlgebraicClosure ℚ) 𝒪 Fr.comap_eq h htor
+  have hord : ∀ {x y : AlgebraicClosure ℚ}
+      (h : (D.V.map Fr.emb).toAffine.Nonsingular x y),
+      (N : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        (D.V.map Fr.emb).toAffine.Point) = 0 → y ∈ 𝒪 :=
+    fun h htor => WeierstrassCurve.torsion_ordinate_mem D.R D.K D.V N
+      (AlgebraicClosure ℚ) 𝒪 Fr.comap_eq h htor
+  -- Step 3 (well-definedness and additivity): the reduction homomorphism on ALL points
+  -- of `E` over `ℚ̄`, transported along `D.C` by `Fr.modelEquiv`.
+  set f : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Point →+
+      (D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).toAffine.Point :=
+    (hred.redHom hΔ).comp Fr.modelEquiv.toAddMonoidHom
+  have hfapply : ∀ P, f P = hred.redFun hΔ (Fr.modelEquiv P) := fun _ => rfl
+  -- Step 4 (injectivity): the kernel of reduction is the non-integral locus, and
+  -- torsion abscissae are integral.  No oddness of `N` is consumed.
+  have hker : ∀ P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Point,
+      (N : ℤ) • P = 0 → f P = 0 → P = 0 := by
+    intro P hP hfP
+    have hQ : (N : ℤ) • (Fr.modelEquiv P) = 0 := by
+      rw [← map_zsmul, hP, map_zero]
+    suffices hh : Fr.modelEquiv P = 0 by
+      have h2 := congrArg Fr.modelEquiv.symm hh
+      rwa [AddEquiv.symm_apply_apply, map_zero] at h2
+    rcases hMP : Fr.modelEquiv P with _ | ⟨x, y, hns⟩
+    · rfl
+    · exfalso
+      rw [hMP] at hQ
+      have hx : x ∈ 𝒪 := habs hns hQ
+      have h0 : hred.redFun hΔ (WeierstrassCurve.Affine.Point.some x y hns) = 0 := by
+        rw [← hMP, ← hfapply]; exact hfP
+      exact ((hred.redFun_eq_zero_iff hΔ hns).mp h0) hx
+  have htor : ∀ P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N,
+      (N : ℤ) • P.val = 0 := fun P => (Submodule.mem_torsionBy_iff _ _).mp P.2
+  -- restrict the reduction homomorphism to `N`-torsion
+  let g : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) →+
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) :=
+    { toFun := fun P => ⟨f P.val, (Submodule.mem_torsionBy_iff _ _).mpr
+        ((map_zsmul f (N : ℤ) P.val).symm.trans
+          ((congrArg (⇑f) (htor P)).trans (map_zero f)))⟩
+      map_zero' := Subtype.ext (map_zero f)
+      map_add' := fun P Q => Subtype.ext (map_add f P.val Q.val) }
+  have hgval : ∀ P, (g P).val = f P.val := fun _ => rfl
+  have hginj : Function.Injective g := by
+    refine (injective_iff_map_eq_zero g).mpr ?_
+    intro P hP0
+    apply Subtype.ext
+    rw [ZeroMemClass.coe_zero]
+    refine hker P.val (htor P) ?_
+    have hz := congrArg Subtype.val hP0
+    rwa [hgval, ZeroMemClass.coe_zero] at hz
+  -- Step 5 (surjectivity): both torsion groups have `N²` elements.
+  have hNQ : ((N : ℕ) : AlgebraicClosure ℚ) ≠ 0 := by
+    simpa using hN.ne_zero
+  have hNF : ((N : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    intro h0
+    have h1 : ((N : ℕ) : ZMod q) = 0 := by
+      have := h0
+      rw [← map_natCast (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) N] at this
+      exact (map_eq_zero_iff _ (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective).mp this
+    rw [ZMod.natCast_eq_zero_iff] at h1
+    exact hqN ((Nat.prime_dvd_prime_iff_eq Fact.out hN).mp h1)
+  have hcard1 : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) = N ^ 2 :=
+    WeierstrassCurve.n_torsion_card _ hNQ
+  have hcard2 : Nat.card
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) = N ^ 2 :=
+    WeierstrassCurve.n_torsion_card _ hNF
+  haveI hfin : Finite
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) := by
+    have hpos : 0 < Nat.card
+        ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) := by
+      rw [hcard2]; exact pow_pos hN.pos 2
+    exact (Nat.card_pos_iff.mp hpos).2
+  have hbij : Function.Bijective g :=
+    (Nat.bijective_iff_injective_and_card g).mpr ⟨hginj, by rw [hcard1, hcard2]⟩
+  refine ⟨LinearEquiv.ofBijective (AddMonoidHom.toZModLinearMap N g) hbij, ?_⟩
+  -- and the witness satisfies the coordinatewise pinning BY CONSTRUCTION.
+  intro P X Y hns hPXY
+  have hPtor : (N : ℤ) • P.val = 0 := htor P
+  have hQtor : (N : ℤ) • (WeierstrassCurve.Affine.Point.some X Y hns :
+      (D.V.map Fr.emb).toAffine.Point) = 0 := by
+    rw [← hPXY]
+    exact (map_zsmul Fr.modelEquiv (N : ℤ) P.val).symm.trans
+      ((congrArg (⇑Fr.modelEquiv) hPtor).trans (map_zero Fr.modelEquiv))
+  have hX : X ∈ 𝒪 := habs hns hQtor
+  have hY : Y ∈ 𝒪 := hord hns hQtor
+  refine ⟨hX, hY, ((D.redCurve.map
+    (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.equation_iff_nonsingular_of_Δ_ne_zero
+      hΔ).mp (hred.equation_res hX hY hns.1), ?_⟩
+  show (g P).val = _
+  refine (hgval P).trans ((hfapply P.val).trans ?_)
+  rw [hPXY]
+  exact hred.redFun_some_of_mem hΔ hns hX hY
 
 /-- **A FROBENIUS LIFT ACTS THROUGH THE REDUCTION MAP AS THE `q`-POWER FROBENIUS**
 (sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three;
@@ -9470,40 +9619,42 @@ transport is along the GIVEN `D.C` and the residue identification is the GIVEN
 `D.redCurve`, `ψ₀` is pinned pointwise, and `σ` is still constrained
 valuation-theoretically rather than by any representation-level identity.
 
-**THE `N = 2` OBLIGATION IS LIVE. It now lives on `exists_isTorsionReduction`
-above**, which is the only one of the three leaves that consumes oddness (through
-`torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`); the full
-statement of the obligation is reproduced there. It is kept below as well, since
-it is a fact about THIS statement's quantification: `q ≠ 2` and
-`q ≠ N` do NOT exclude `N = 2`, and the tree's Néron–Ogg–Shafarevich criterion
-`torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used
-only inside `torsion_abscissa_residue_ne` and
-`torsion_ordinate_eq_of_residue_eq`, through the coprimality of `Ψ₂²` with
-`preΨ'ₙ`. The statement here is TRUE at `N = 2` — good reduction gives an
-unramified action on `E[ℓ]` for every `ℓ ≠ q`, and `q ≠ 2` keeps `2` invertible
-in the residue field — so this is a proving-effort obligation, not a
-faithfulness defect. A prover must either supply the `n = 2` case of those two
-lemmas in `KnownIn1980s/EllipticCurves/GoodReduction.lean` (the `2`-torsion
-abscissae are the roots of the `2`-division polynomial, separable mod `q`
-exactly because `q ≠ 2` and the reduction is elliptic), or restate this leaf
-with `Odd N` and push the restriction up the chain. NOT NARROWED AT THE CUT:
-the ultimate consumer `hasseWeil_trace_frobeniusTorsionEnd_of_jIntegral` carries
-`23 ≤ N`, so no downstream use actually reaches `N = 2`, but every statement
-between here and there is quantified over all primes `N` and narrowing them is
-another owner's edit.
+**THE `N = 2` OBLIGATION IS DISCHARGED (2026-07-28), AND THE NOTE THAT STOOD HERE
+WAS WRONG ABOUT WHY IT EXISTED.** It said the obligation had moved onto
+`exists_isTorsionReduction` above, as the only one of the three leaves consuming
+oddness — through `torsion_abscissa_residue_ne` and
+`torsion_ordinate_eq_of_residue_eq` — and that a prover must either supply their
+`n = 2` case in `KnownIn1980s/EllipticCurves/GoodReduction.lean` or restate that
+leaf with `Odd N` and push the restriction up the chain. When that leaf was
+proven it used **neither lemma**: injectivity of reduction on prime-to-`q`
+torsion goes through `IsReductionAlong.redFun_eq_zero_iff` (the kernel of
+reduction is exactly the non-integral locus) together with
+`torsion_abscissa_mem` (torsion abscissae are integral), and neither of those
+consumes `Odd n`. So nothing has to be added to `GoodReduction.lean`, no
+restriction has to be pushed up the chain, and `q ≠ 2` turned out to be unused as
+well (it is underscore-prefixed in that leaf's signature so the fact is
+mechanically visible). Both statements are TRUE and PROVEN at every prime
+`N ≠ q`, `N = 2` included. Recorded at length because the obsolete paragraph was
+exactly the kind of "obligation is live" note that manufactures phantom
+dispatches.
 
 MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
 `.lake/packages/mathlib/`, `~/cs/FLT/`) — **the survey has been REDISTRIBUTED to
 the leaves that consume it, and the copies there are the live ones**:
 
-* the **Néron–Ogg–Šafarevič** half (`torsion_unramified_of_good_reduction` and
-  its companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
-  `torsion_abscissa_residue_ne`, `torsion_ordinate_eq_of_residue_eq`, plus the
-  `R → 𝒪` plumbing `WeierstrassCurve.RtoO` / `isLocalHom_RtoO`, all PROVEN and
-  sorry-free, taking `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra` and
-  `h𝒪 := Fr.comap_eq` verbatim, with
-  `WeilPairing.exists_frobenius_reduction_model` as the assembly pattern to
-  copy) is on `exists_isTorsionReduction` above;
+* the **Néron–Ogg–Šafarevič** half was on `exists_isTorsionReduction` above, which
+  is now PROVEN — and the survey it carried named the WRONG assembly pattern, which
+  is worth recording. It said to copy `WeilPairing.exists_frobenius_reduction_model`,
+  a ~2800-line monolith. **The general, sorry-free API already existed**:
+  `WeierstrassCurve.IsReductionAlong` and `redHom` in
+  `KnownIn1980s/EllipticCurves/PointReduction.lean` do well-definedness, additivity
+  and the kernel analysis once and for all, so only the reduction DATUM had to be
+  assembled here. Of the `GoodReduction.lean` companions only
+  `torsion_abscissa_mem` / `torsion_ordinate_mem` were used (taking
+  `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra` and `h𝒪 := Fr.comap_eq`
+  verbatim, exactly as predicted); `torsion_unramified_of_good_reduction`,
+  `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq` were not
+  needed at all, and neither was the `RtoO` plumbing;
 * the **Serre–Tate** half (Serre–Tate itself ABSENT from all three trees; the
   elementary `Dτ := Cᵗᵃᵘ · C⁻¹` route; the shim
   `Affine.Point.equivVariableChange` / `equivVariableChangeBaseChange_galois`
