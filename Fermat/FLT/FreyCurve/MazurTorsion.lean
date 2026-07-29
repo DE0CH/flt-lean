@@ -26753,7 +26753,8 @@ and reuses every level-GENERIC piece rather than re-deriving it:
 | `isTorsion_minusFactor_x0OneTwentyFive` | — | PROVEN |
 | `isTorsion_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
 | `finite_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
-| `ajMinus_eq_zero_x0OneTwentyFive` | the descent proper | LEAF |
+| `ajMinusTorsion_eq_zero_x0OneTwentyFive` | the sieve residue | LEAF |
+| `ajMinus_eq_zero_x0OneTwentyFive` | — | PROVEN |
 | `atkinLehnerFixed_x0OneTwentyFive` | — | PROVEN |
 
 **What the decomposition BUYS, since the sorry count goes from `1` to `3`.**
@@ -26983,10 +26984,97 @@ theorem Fermat.finite_antiInvariant_jacobian_x0OneTwentyFive {X Y J : Scheme.{0}
     (isTorsion_antiInvariant_jacobian_x0OneTwentyFive hX jac w hw _hw2 _hal wJ hwJ _hchar)
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE SIEVE RESIDUE AT `125`: a TORSION class `[(P) − (w_125 P)]` with
+`P` off the cusps is `0`** (LEAF, cut 2026-07-28 off
+`ajMinus_eq_zero_x0OneTwentyFive` below) — LEVEL-SPECIFIC.
+
+This is the SECOND of the two bullets that `ajMinus_eq_zero_x0OneTwentyFive`
+recorded as owed.  The FIRST — "`[(P) − (w_125 P)]` is anti-invariant, hence
+lands in the finite group `_hfin` names, hence is torsion" — is now PROVEN in
+the consumer below and is no longer part of the frontier.  So the finiteness
+input `_hfin` does not appear here at all: it has already been spent, and what
+survives it is exactly the hypothesis `_htors`.
+
+TRUE, and vacuously so — `Y_0(125)(ℚ) = ∅` (Kenku).  The VACUITY AUDIT on
+`atkinLehnerFixed_x0OneTwentyFive` applies verbatim, **including its
+prohibition**: discharging this by proving `Y_0(125)(ℚ) = ∅` would launder the
+whole cluster's arithmetic and strand the already-PROVEN
+`MazurLevel125.classPoly500_no_rat_root`.
+
+**`_htors` DOES NOT MAKE THE OPEN-PART RESTRICTION REDUNDANT — the statement
+with `y : RelPoint strY` weakened to `x : RelPoint strX` is FALSE, and the
+witness is torsion.**  This is worth stating because it is the trap the
+hypothesis invites.  `rationalCuspDivisors 125 = {1, 125}`, so `w_125` SWAPS
+the two rational cusps `0` and `∞`; the class `[(0) − (∞)]` is therefore
+anti-invariant and NONZERO, and — being in the finite group
+`finite_antiInvariant_jacobian_x0OneTwentyFive` produces — it also satisfies
+`_htors`.  So a cusp refutes the widened statement while meeting every
+hypothesis of it.  Torsion-ness is a consequence of anti-invariance at this
+level, never a substitute for being off the cusps.
+
+**WHAT A PROVER OWES: the reduction/sieve step, and the arithmetic is small.**
+The route is the one `card_le_of_abelianSieve` and `IsX0AbelianNeronDatum`
+already carry in `X0.lean`.  Pick an odd `ℓ ∤ 125` of good reduction; reduction
+`J_0(125)(ℚ) → J_0(125)(𝔽_ℓ)` is INJECTIVE ON TORSION (the kernel of reduction
+on torsion is the group of points of a formal group over `ℤ_ℓ`, torsion-free
+for `ℓ` odd — this is `neronReduction_injective`, already proven, and it is the
+ONLY place `_htors` is consumed).  So it suffices that `[P̄] = [w̄ P̄]` in
+`J_0(125)(𝔽_ℓ)`, which is a finite computation at the chosen `ℓ`.
+
+**PARI/GP RECONNAISSANCE FOR THIS LEAF, RUN 2026-07-28 (PARI 2.17.4), NEW —
+it was not available when the parent was cut.**  With `M = mfinit([125,2],0)`,
+`#J_0(125)(𝔽_ℓ) = det((1+ℓ)·I − T_ℓ)` on the `8`-dimensional `S₂(Γ₀(125))`:
+
+| `ℓ` | `#J_0(125)(𝔽_ℓ)` |
+|---|---|
+| `3` | `22475 = 5² · 29 · 31` |
+| `7` | `9906875 = 5⁴ · 11² · 131` |
+| `11` | `506250000` |
+| `13` | `1073185600` |
+| `17` | `9525851600` |
+
+Their `gcd` is `25`.  Since reduction is injective on torsion at every odd good
+`ℓ`, this BOUNDS the whole rational torsion: `#J_0(125)(ℚ)_tors ∣ 25`, hence
+the anti-invariant torsion — the group this leaf's `_htors` lives in — has
+order dividing `25`, and it is nonzero (the cuspidal class above).  So the
+residue is: `25` classes to eliminate at one prime, not an unbounded search.
+`ℓ = 3` is the cheapest: `#J_0(125)(𝔽_3) = 22475`, whose `5`-part is exactly
+`25`, so the reduction is already sharp on the `5`-primary part there.
+
+**These are CAS outputs, not proofs** (the doctrine's untrusted-searcher rule):
+they say where to look and what would refute the plan, and a Lean proof must
+verify the concrete witness.
+
+**The check that refutes this leaf**: a non-cuspidal rational point of
+`X_0(125)` whose class `[(P) − (w_125 P)]` is nonzero — the same check the
+consumer and `atkinLehnerFixed_x0OneTwentyFive` carry.  **The check that
+refutes the ROUTE above** (weaker, and cheaper to run): `gcd` of
+`#J_0(125)(𝔽_ℓ)` over odd good `ℓ` failing to stabilise at `25`, or
+`mfatkineigenvalues(M, 125)` returning a pattern other than
+`[[-1,-1], [1,1], [-1,-1,-1,-1]]` (re-confirmed for this leaf on 2026-07-28). -/
+theorem Fermat.ajMinusTorsion_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 125 hX w hw)
+    (y : RelPoint strY (𝟙 SpecQ))
+    (_htors : letI := ab.addCommGroup (𝟙 SpecQ)
+      IsOfFinAddOrder (ab.add (jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y))
+        (ab.neg (jac.aj (𝟙 SpecQ)
+          (RelPoint.post w hw (RelPoint.post jY hX.comm y)))))) :
+    ab.add (jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y))
+        (ab.neg (jac.aj (𝟙 SpecQ)
+          (RelPoint.post w hw (RelPoint.post jY hX.comm y))))
+      = ab.zero (𝟙 SpecQ) :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **KENKU'S DESCENT AT `125`, ARITHMETIC RESIDUE: for `P` the image of a
 rational point of the OPEN part `Y_0(125)`, the class `[(P) − (w_125 P)]`
-VANISHES in `J_0(125)(ℚ)`** (LEAF, cut 2026-07-28 off
-`atkinLehnerFixed_x0OneTwentyFive` below) — LEVEL-SPECIFIC.
+VANISHES in `J_0(125)(ℚ)`** (PROVEN 2026-07-28 over the single leaf
+`ajMinusTorsion_eq_zero_x0OneTwentyFive` above; a LEAF earlier the same day,
+cut off `atkinLehnerFixed_x0OneTwentyFive` below) — LEVEL-SPECIFIC.
 
 Stated as `aj (w P) = aj P`, i.e. `[P] − [o] = [w P] − [o]`, which is
 `[(P) − (w_125 P)] = 0` with the base point cancelling.
@@ -27021,7 +27109,7 @@ at this level, so the gap is not hypothetical.
 
 Consequently `_hfin` — `rank J_0(125)⁻(ℚ) = 0`, discharged by
 `finite_antiInvariant_jacobian_x0OneTwentyFive` above — is **necessary and
-NOT sufficient**, and a prover owes the rest:
+NOT sufficient**, and the two things a prover owed were:
 
 * that `[(P) − (w_125 P)]` is anti-invariant, hence lands in the finite group
   `_hfin` names (this half is cheap: `_hchar` pins `wJ`, and `_hw2` makes
@@ -27032,6 +27120,31 @@ NOT sufficient**, and a prover owes the rest:
   that no non-cuspidal `P` hits a nonzero multiple of it is a reduction/sieve
   step at a prime of good reduction — the same shape as
   `card_le_of_abelianSieve`, which this file already carries.
+
+**THE FIRST BULLET IS NOW DISCHARGED HERE, and the second is the single leaf
+`ajMinusTorsion_eq_zero_x0OneTwentyFive` above** (2026-07-28).  The proof
+below is the first bullet written out, and it consumes `_hchar`, `_hw2` and
+`_hfin` — all three, mechanically, so none of them is decoration:
+
+* `_hchar` at the base point `o` gives `w_*(0) = 0` (`aj_base`,
+  `ajTwist_base`), whence `w_*` is ADDITIVE by `isAdditiveOn_of_post_zero` —
+  the relative-rigidity route, so no group-scheme structure on `J` is needed;
+* unfolding `ajTwist` (definitionally `x ↦ [w x] + t` with
+  `t := −[w o]`) turns `_hchar` into `w_*[x] = [w x] + t`, and `_hw2` — which
+  makes `RelPoint.post w hw` an involution — gives `w_*[w P] = [P] + t`.  The
+  constant `t` cancels between the two, which is why the anti-invariance
+  `w_*([P] − [w P]) = [w P] − [P]` needs no fact about `t` beyond its being
+  the SAME constant in both;
+* `_hfin` then applies to the ANTI-INVARIANT SUBGROUP of `J(ℚ)` — built here
+  as an honest `AddSubgroup` (closure under `+` and `−` is `hwJadd` and
+  `IsAdditiveOn.postNeg`), so `Finite` of it plus `isOfFinAddOrder_of_finite`
+  gives `IsOfFinAddOrder` of the class, which is precisely the leaf's
+  `_htors`.
+
+What is NOT used, and deliberately: `_hal` and `hX` enter only by being handed
+to the leaf.  This half of the argument is LEVEL-GENERIC — nothing in it
+mentions `125` — and a successor who wants it at another level should hoist it
+rather than copy it.
 
 **The check that refutes this leaf**: a non-cuspidal rational point of
 `X_0(125)` whose class `[(P) − (w_125 P)]` is nonzero — equivalently, by the
@@ -27048,8 +27161,84 @@ theorem Fermat.ajMinus_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
     (_hfin : Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z})
     (y : RelPoint strY (𝟙 SpecQ)) :
     jac.aj (𝟙 SpecQ) (RelPoint.post w hw (RelPoint.post jY hX.comm y))
-      = jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y) :=
-  sorry
+      = jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y) := by
+  classical
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- `RelPoint.post w hw` is an involution on relative points (`_hw2`).
+  have hwinv : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint strX g),
+      RelPoint.post w hw (RelPoint.post w hw x) = x := by
+    intro T g x
+    refine Subtype.ext ?_
+    show (x.1 ≫ w) ≫ w = x.1
+    rw [Category.assoc, _hw2, Category.comp_id]
+  -- `w_*` kills the origin, by `_hchar` at the base point; hence it is additive.
+  have hwJ0 : RelPoint.post wJ hwJ (ab.zero (𝟙 SpecQ)) = ab.zero (𝟙 SpecQ) := by
+    have h1 := _hchar (𝟙 SpecQ) o
+    rw [jac.aj_base, jac.ajTwist_base] at h1
+    exact h1
+  have hwJadd : IsAdditiveOn ab ab wJ hwJ := isAdditiveOn_of_post_zero ab ab hwJ hwJ0
+  -- the constant `t = −[w o]` through which `ajTwist` unfolds definitionally
+  set t : RelPoint jstr (𝟙 SpecQ) :=
+    RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ))
+      (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o))) with ht
+  have htw : ∀ x : RelPoint strX (𝟙 SpecQ),
+      jac.ajTwist w hw (𝟙 SpecQ) x
+        = jac.aj (𝟙 SpecQ) (RelPoint.post w hw x) + t := fun x => rfl
+  -- the class `c = [P] − [w P]`, for `P` the image of the open-part point `y`
+  set P : RelPoint strX (𝟙 SpecQ) := RelPoint.post jY hX.comm y with hP
+  set c : RelPoint jstr (𝟙 SpecQ) :=
+    jac.aj (𝟙 SpecQ) P - jac.aj (𝟙 SpecQ) (RelPoint.post w hw P) with hc
+  have h1 : RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) P)
+      = jac.aj (𝟙 SpecQ) (RelPoint.post w hw P) + t := by
+    rw [_hchar, htw]
+  have h2 : RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) (RelPoint.post w hw P))
+      = jac.aj (𝟙 SpecQ) P + t := by
+    rw [_hchar, htw, hwinv]
+  -- `c` is ANTI-INVARIANT: the constant `t` cancels between `h1` and `h2`.
+  have hanti : RelPoint.post wJ hwJ c = ab.neg c := by
+    have hsub : RelPoint.post wJ hwJ c
+        = RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) P)
+          - RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) (RelPoint.post w hw P)) := by
+      show RelPoint.post wJ hwJ
+          (ab.add (jac.aj (𝟙 SpecQ) P)
+            (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw P))))
+        = ab.add (RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) P))
+            (ab.neg (RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) (RelPoint.post w hw P))))
+      rw [hwJadd, hwJadd.postNeg]
+    rw [hsub, h1, h2]
+    show _ = -c
+    rw [hc]
+    abel
+  -- the anti-invariant subgroup of `J(ℚ)`, finite by `_hfin`
+  set S : AddSubgroup (RelPoint jstr (𝟙 SpecQ)) :=
+    { carrier := {z | RelPoint.post wJ hwJ z = ab.neg z}
+      zero_mem' := by
+        show RelPoint.post wJ hwJ (0 : RelPoint jstr (𝟙 SpecQ)) = ab.neg 0
+        rw [show (0 : RelPoint jstr (𝟙 SpecQ)) = ab.zero (𝟙 SpecQ) from rfl, hwJ0]
+        show _ = -(ab.zero (𝟙 SpecQ))
+        rw [show ab.zero (𝟙 SpecQ) = (0 : RelPoint jstr (𝟙 SpecQ)) from rfl, neg_zero]
+      add_mem' := by
+        intro a b ha hb
+        show RelPoint.post wJ hwJ (ab.add a b) = ab.neg (ab.add a b)
+        rw [hwJadd, ha, hb]
+        show -a + -b = -(a + b)
+        abel
+      neg_mem' := by
+        intro a ha
+        show RelPoint.post wJ hwJ (ab.neg a) = ab.neg (ab.neg a)
+        rw [hwJadd.postNeg, ha] } with hS
+  haveI : Finite S := _hfin
+  have hcS : c ∈ S := hanti
+  obtain ⟨n, hn, hn0⟩ :=
+    isOfFinAddOrder_iff_nsmul_eq_zero.mp (isOfFinAddOrder_of_finite (⟨c, hcS⟩ : S))
+  have htors : IsOfFinAddOrder c := by
+    refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n, hn, ?_⟩
+    have hval := congrArg (Subtype.val : S → RelPoint jstr (𝟙 SpecQ)) hn0
+    simpa using hval
+  -- the sieve residue: the torsion anti-invariant class vanishes
+  have hzero := ajMinusTorsion_eq_zero_x0OneTwentyFive hX jac w hw _hw2 _hal y htors
+  have hc0 : jac.aj (𝟙 SpecQ) P - jac.aj (𝟙 SpecQ) (RelPoint.post w hw P) = 0 := hzero
+  exact (sub_eq_zero.mp hc0).symm
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **Every rational point of `Y_0(125)` is fixed by the Atkin–Lehner
@@ -27073,8 +27262,11 @@ degree-`0` class `[(P) − (Q)]` on a curve of genus `8 ≥ 1` vanishes only for
 **THE ASSEMBLY, and where each half now lives.**  The two steps are cut apart
 and only the first is still open:
 
-* `[(P) − (w_125 P)] = 0` — `ajMinus_eq_zero_x0OneTwentyFive`, LEAF, over the
-  PROVEN `finite_antiInvariant_jacobian_x0OneTwentyFive`;
+* `[(P) − (w_125 P)] = 0` — `ajMinus_eq_zero_x0OneTwentyFive`, PROVEN since
+  2026-07-28 over the PROVEN `finite_antiInvariant_jacobian_x0OneTwentyFive`
+  and the single remaining leaf `ajMinusTorsion_eq_zero_x0OneTwentyFive`
+  (anti-invariance and the passage to torsion are discharged there; only the
+  reduction/sieve step survives);
 * `[(P) − (Q)] = 0 → P = Q` — `injective_aj_of_one_le_x0Genus` at `N = 125`,
   ALREADY PROVEN in `X0.lean`, with `1 ≤ x0Genus 125` by `decide`
   (`x0Genus 125 = 8`).
@@ -27085,8 +27277,10 @@ Abel–Jacobi injectivity that `injective_ajMinus_x0OneSixtyNine` packages".
 Abel–Jacobi injectivity is the SECOND step above and does not imply the
 first — a nonzero torsion anti-invariant class is exactly what the two
 rational cusps of `X_0(125)` provide.  The gap is recorded, with what a
-prover still owes, on `ajMinus_eq_zero_x0OneTwentyFive`.  Nothing downstream
-changes: the statement here is unaltered.
+prover still owes, on `ajMinusTorsion_eq_zero_x0OneTwentyFive` — the leaf the
+gap was cut into on 2026-07-28, `ajMinus_eq_zero_x0OneTwentyFive` having become
+a PROVEN assembly over it.  Nothing downstream changes: the statement here is
+unaltered.
 
 **Restricted to the OPEN part on purpose — the unrestricted statement is
 FALSE.**  `w_N` exchanges the cusps above `d` and `N/d`, and
