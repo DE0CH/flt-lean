@@ -18908,12 +18908,212 @@ theorem finrank_sha2_le_finrank_sha1Twist
       Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
   sorry
 
+
+/-! #### NOTE (release-18 merge): TWO ROUTES TO THE SAME NODE COEXIST HERE
+
+`merger` decomposed `exists_injective_sha2_dual_sha1Twist` into the dimension
+inequality `finrank_sha2_le_finrank_sha1Twist` plus `finiteDimensional_sha2` and the
+glue `exists_injective_toDual_of_finrank_le` (all immediately above).
+`flt-lean-43` decomposed the SAME node the other way, into
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` (below) fed by a PROVEN
+self-duality of `ad⁰` (the trace form, the section that follows).
+
+The node's proof takes `flt-lean-43`'s route, because that branch additionally
+DISCHARGES the `ad⁰* ≅ ad⁰(1)` identification, which merger's route only assumes.
+The three declarations above are therefore currently UNCONSUMED.  They are kept,
+not deleted, because they are a live alternative decomposition and may have an
+owner: `finrank_sha2_le_finrank_sha1Twist` and
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` are the SAME arithmetic
+(Poitou–Tate), stated once as a dimension inequality and once as a map.  Whoever
+owns that arithmetic should close ONE of them and retire the other.
+-/
+
+/-! ### Self-duality of `ad⁰`: the trace form
+
+Added 2026-07-28 as the CHEAP half of `exists_injective_sha2_dual_sha1Twist`
+below, and it is now PROVEN rather than asserted.
+
+The docstring of that leaf has always said that one of the two identifications
+it folds in — `ad⁰* = Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`, via the nondegeneracy of the
+trace form `(X, Y) ↦ tr(XY)` on `sl₂` — is "cheap ONLY because `ℓ` is odd".
+Cheap it is, but it was not *done*, and a prover of the Poitou–Tate leaf would
+have had to do it before touching any duality. The three declarations below do
+it, and the leaf now RECEIVES the pairing as a hypothesis instead of having to
+manufacture it.
+
+Nothing here is Poitou–Tate, nothing here is cohomological, and nothing here
+uses `hirr` or `hℓ5`: it is linear algebra over `k` about the trace form on
+trace-zero endomorphisms of a rank-`2` module, plus the conjugation-invariance
+of the trace. The one arithmetic input is `char k ≠ 2`, which comes from
+`hℓOdd` through `natCast_self_eq_zero` above.
+
+Why the pairing is exactly what the duality needs: a `Γ ℚ`-EQUIVARIANT perfect
+pairing `ad⁰ × ad⁰ → k` (trivial action on the target) is the same thing as an
+isomorphism `ad⁰ ≅ Hom(ad⁰, k)` of `Γ ℚ`-modules, and twisting by the
+cyclotomic character then gives `Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)` — which is the
+identification that lets Poitou–Tate for the pair `(M, M*)` be read as a
+statement about `(ad⁰, ad⁰(1))`. Equivariance with TRIVIAL action downstairs is
+the load-bearing clause, and it is what `LinearMap.trace_mul_comm` gives:
+conjugation does not move the trace. -/
+
+variable (k V) in
+/-- **The trace form on `ad⁰`**, `(x, y) ↦ tr(x ∘ y)`, as a `k`-bilinear map.
+
+Written through `AdZero.toEnd` (the inclusion of trace-zero endomorphisms into
+`Module.End k V`) rather than on `Module.End` itself, so that it is literally a
+pairing of the object `Sha2` and `Sha1Twist` are built from. -/
+noncomputable def adZeroTraceForm : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k :=
+  LinearMap.mk₂ k
+    (fun x y => LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y))
+    (fun x₁ x₂ y => by simp [add_mul])
+    (fun c x y => by simp)
+    (fun x y₁ y₂ => by simp [mul_add])
+    (fun c x y => by simp)
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma adZeroTraceForm_apply (x y : AdZero k V) :
+    adZeroTraceForm k V x y
+      = LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y) := rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] [Module.Finite k V]
+  [Module.Free k V] in
+/-- Members of `ad⁰` have vanishing trace — the defining property, restated
+through `AdZero.toEnd` so that it is usable as a rewrite. -/
+lemma adZero_trace_toEnd (x : AdZero k V) :
+    LinearMap.trace k V (AdZero.toEnd k V x) = 0 := by
+  have hx : (AdZero.toEnd k V x) ∈ LinearMap.ker (LinearMap.trace k V) :=
+    Submodule.coe_mem (show ↥(LinearMap.ker (LinearMap.trace k V)) from x)
+  exact hx
+
+/-- **The trace form is `Γ ℚ`-equivariant, with TRIVIAL action on the target**
+(PROVEN): `tr((σ·x)(σ·y)) = tr(xy)`.
+
+This is the clause that turns the pairing into an isomorphism
+`ad⁰ ≅ Hom(ad⁰, k)` OF `Γ ℚ`-MODULES, and hence — after twisting — into
+`Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The proof is `(aXb)(aYb) = a(XY)b` using
+`b * a = 1`, followed by `LinearMap.trace_mul_comm` to move `a` past. No
+oddness and no rank hypothesis are needed here; both enter only in
+`adZeroTraceForm_nondegenerate` below. -/
+lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGaloisGroup ℚ)
+    (x y : AdZero k V) :
+    adZeroTraceForm k V (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y)
+      = adZeroTraceForm k V x y := by
+  have hb : (ρbar σ⁻¹ : Module.End k V) * ρbar σ = 1 := by
+    rw [← map_mul, inv_mul_cancel, map_one]
+  simp only [adZeroTraceForm_apply]
+  show LinearMap.trace k V
+      ((AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb x)) *
+        (AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb y))) = _
+  rw [AdZero.toEnd_conjL, AdZero.toEnd_conjL]
+  set a : Module.End k V := ρbar σ
+  set X : Module.End k V := AdZero.toEnd k V x
+  set Y : Module.End k V := AdZero.toEnd k V y
+  set b : Module.End k V := ρbar σ⁻¹
+  have hstep : (a * X * b) * (a * Y * b) = a * (X * Y) * b := by
+    calc (a * X * b) * (a * Y * b) = a * X * (b * a) * Y * b := by noncomm_ring
+      _ = a * X * 1 * Y * b := by rw [hb]
+      _ = a * (X * Y) * b := by noncomm_ring
+  rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
+
+include hℓOdd hdim in
+/-- **The trace form on `ad⁰` is nondegenerate** (PROVEN), for `ℓ` odd and
+`rank_k V = 2`: every nonzero `x` has some `y` with `tr(xy) ≠ 0`.
+
+`hℓOdd` is genuinely load-bearing and this is the ONLY place either hypothesis
+is used. `char k = ℓ` (`natCast_self_eq_zero` above), so `ℓ` odd is exactly
+`(2 : k) ≠ 0`, and `2` is `finrank k V`; the proof splits an arbitrary
+endomorphism `z` as `z₀ + (tr z / 2) · 1` with `z₀` traceless, which is the
+step that divides by `2`. For `ℓ = 2` the statement is FALSE — the trace form
+on `sl₂` in characteristic `2` has the scalars in its radical, since
+`tr(1 · Y) = tr Y = 0` for every traceless `Y` while `1` is itself traceless —
+so this leaf may not be restated for `ℓ = 2`, and neither may the Poitou–Tate
+leaf that consumes it.
+
+The nondegeneracy on all of `Module.End k V` comes from the rank-one
+endomorphism `w ↦ φ(w) • v` (`LinearMap.smulRight`), whose trace is `φ v`
+(`LinearMap.trace_smulRight`); choosing `v` with `x v ≠ 0` and then `φ` with
+`φ (x v) ≠ 0` (`Module.forall_dual_apply_eq_zero_iff`) gives `tr(x z) ≠ 0`, and
+the traceless correction preserves that because `tr x = 0`. -/
+lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
+    ∃ y : AdZero k V, adZeroTraceForm k V x y ≠ 0 := by
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ ℓ := ringChar.dvd natCast_self_eq_zero
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hℓOdd
+    omega
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  set F : Module.End k V := AdZero.toEnd k V x with hFdef
+  have hF0 : F ≠ 0 := by
+    intro h
+    exact hx (AdZero.toEnd_injective (by rw [← hFdef, h, map_zero]))
+  obtain ⟨v, hv⟩ : ∃ v : V, F v ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hF0 (LinearMap.ext hc)
+  obtain ⟨φ, hφ⟩ : ∃ φ : Module.Dual k V, φ (F v) ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hv ((Module.forall_dual_apply_eq_zero_iff k (F v)).mp hc)
+  set z : Module.End k V := LinearMap.smulRight φ v with hzdef
+  have hFz : F * z = LinearMap.smulRight φ (F v) := by
+    ext w
+    simp [hzdef, Module.End.mul_apply]
+  have htr : LinearMap.trace k V (F * z) ≠ 0 := by
+    rw [hFz, LinearMap.trace_smulRight]; exact hφ
+  set c : k := LinearMap.trace k V z with hcdef
+  set z₀ : Module.End k V := z - (c / 2) • (1 : Module.End k V) with hz₀def
+  have htrone : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
+    have hone : LinearMap.trace k V (1 : Module.End k V)
+        = ((Module.finrank k V : ℕ) : k) := by
+      rw [Module.End.one_eq_id, LinearMap.trace_id]
+    rw [hone, hfr]
+    norm_num
+  have hcc : c / 2 * 2 = c := by field_simp
+  have hz₀tr : LinearMap.trace k V z₀ = 0 := by
+    rw [hz₀def, map_sub, map_smul, htrone, ← hcdef, smul_eq_mul, hcc, sub_self]
+  have hFtr : LinearMap.trace k V F = 0 := by rw [hFdef]; exact adZero_trace_toEnd x
+  have hFz₀ : LinearMap.trace k V (F * z₀) = LinearMap.trace k V (F * z) := by
+    rw [hz₀def, mul_sub, mul_smul_comm, mul_one, map_sub, map_smul, hFtr,
+      smul_zero, sub_zero]
+  refine ⟨⟨z₀, LinearMap.mem_ker.mpr hz₀tr⟩, ?_⟩
+  rw [adZeroTraceForm_apply]
+  show LinearMap.trace k V (F * z₀) ≠ 0
+  rw [hFz₀]
+  exact htr
+
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the two leaves
-`finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`
-immediately above, plus `finiteDimensional_h1_adZeroTwistRestricted` — NOT a
-sorry node any more, see STATUS below; cut out 2026-07-27 as the DUALITY half of
-`rank_sha2_le_rank_sha1_twist` below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
+out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
+RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
+STATUS immediately below).
+
+**STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
+`exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
+consumer (`rank_sha2_le_rank_sha1_twist`), and is now PROVEN: it is this leaf
+applied to `adZeroTraceForm` above. What moved is one of the two identifications
+the old docstring folded in — `ad⁰* ≅ ad⁰(1)` via the trace form — which is now
+an actual theorem (`adZeroTraceForm_rep` for the equivariance,
+`adZeroTraceForm_nondegenerate` for the perfectness) instead of a sentence
+saying it is cheap. The frontier count is unchanged; what changed is that a
+prover of the remaining leaf is handed `B` and never has to think about `sl₂`,
+about `char k ≠ 2`, or about why the target of the pairing carries the trivial
+action.
+
+The three hypotheses `B`, `hBrep`, `hBnd` are SATISFIABLE — they are discharged
+immediately below — so this leaf is no weaker a target than the old one, and
+adding them cannot have made it false.
+
+Everything from here down is inherited from the pre-recut docstring and still
+applies verbatim; only the trace-form bullet has been struck, because it is now
+discharged.
 
 **STATUS 2026-07-28: THIS NODE IS NO LONGER A LEAF.**  It is the assembly
 `dim Ш² ≤ dim Ш¹` (duality) `⟹` an injection into the dual, the second step
@@ -18939,16 +19139,14 @@ the INJECTION is asked for here, since that is all the rank comparison consumes
 — a perfect pairing gives it, and so would any nondegenerate one, so the leaf is
 strictly weaker than the theorem and correspondingly easier.
 
-Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
-
-* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
-  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
-  `char k ≠ 2`. `hℓOdd` is what supplies that, and it is why this leaf may not
-  be restated for `ℓ = 2`;
-* the passage to a `k`-linear map (rather than a pairing of finite abelian
-  groups into `ℚ/ℤ`): `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing
-  is `k`-bilinear after the trace-form identification, so the induced map into
-  `Module.Dual k` is `k`-linear.
+`hBrep` and `hBnd` are exactly the input the first of the two folded
+identifications needed: a `Γ ℚ`-equivariant perfect pairing `ad⁰ × ad⁰ → k` IS
+an isomorphism `ad⁰ ≅ Hom(ad⁰, k)` of `Γ ℚ`-modules, and twisting gives
+`ad⁰* = Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The SECOND identification remains inside this
+leaf: the passage to a `k`-linear map (rather than a pairing of finite abelian
+groups into `ℚ/ℤ`) — `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing is
+`k`-bilinear after the trace-form identification, so the induced map into
+`Module.Dual k` is `k`-linear.
 
 Note this leaf does NOT carry finiteness: that is
 `finiteDimensional_h1_adZeroTwistRestricted` above, deliberately separate, and
@@ -19063,21 +19261,48 @@ and for what `hℓ5` is doing.
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
 (the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
 §2.6–2.7. -/
+theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
+    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+      B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
+    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
+        Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
+      Function.Injective f :=
+  sorry
+
+/-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
+`Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` immediately above and the
+trace form `adZeroTraceForm` above — NOT a sorry node any more).
+
+The STATEMENT is unchanged from the 2026-07-27 cut and the consumer
+`rank_sha2_le_rank_sha1_twist` below is unchanged with it; what happened on
+2026-07-28 is that the self-duality of the coefficients, which the old docstring
+folded in as one of two "cheap" identifications, was PROVEN
+(`adZeroTraceForm_rep`, `adZeroTraceForm_nondegenerate`) and handed to the leaf
+as a hypothesis instead of being left for its future prover to redo. See the
+STATUS paragraph on that leaf for what this did and did not buy, and the section
+header above `adZeroTraceForm` for why an equivariant perfect pairing
+`ad⁰ × ad⁰ → k` is exactly the input `ad⁰* ≅ ad⁰(1)` requires.
+
+All the audits — the porting audit for the cup product and the local invariant
+map, the irreducibility verdict with the axes searched, the shared-gate note,
+and the CIRCULARITY GUARD — live on the leaf above, which is where the work
+still is. Do not re-derive any of them here. -/
 theorem exists_injective_sha2_dual_sha1Twist
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f := by
-  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
-    finiteDimensional_sha2 hℓOdd hdim hℓ5 h
-  haveI : FiniteDimensional k
-      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
-    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
-  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
-  exact exists_injective_toDual_of_finrank_le
-    (finrank_sha2_le_finrank_sha1Twist hℓOdd hdim hℓ5 h hirr)
+      Function.Injective f :=
+  exists_injective_sha2_dual_sha1Twist_of_selfDual hℓOdd hdim hℓ5 h hirr
+    (adZeroTraceForm k V) (adZeroTraceForm_rep ρbar)
+    (fun _ hx => adZeroTraceForm_nondegenerate hℓOdd hdim hx)
 
 /-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (**PROVEN
 2026-07-27** over the two leaves `finiteDimensional_h1_adZeroTwistRestricted`
