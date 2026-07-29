@@ -37650,6 +37650,321 @@ theorem isOpen_ker_of_cyclotomicChar
   rw [hχcyc g]
   linear_combination -hy2
 
+/-- **`ℚ̄/ℚ` IS GALOIS** (PROVEN 2026-07-28, and it has to be proven BY HAND).
+
+`inferInstance` FAILS on `IsGalois ℚ (AlgebraicClosure ℚ)` anywhere in this
+import cone — and so do `Normal ℚ (AlgebraicClosure ℚ)`,
+`Algebra.IsSeparable ℚ (AlgebraicClosure ℚ)` and even
+`IsAlgClosure ℚ (AlgebraicClosure ℚ)`. The cause is NOT a missing import
+(adding `Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure` publicly changes
+nothing): over the base `ℚ` typeclass search finds `DivisionRing.toRatAlgebra`
+for `Algebra ℚ (AlgebraicClosure ℚ)`, whereas every mathlib instance in that
+file is stated for `AlgebraicClosure.instAlgebra`. The two are propositionally
+equal (`Subsingleton (Algebra ℚ _)`) but not syntactically, so no instance
+matches. This is the same pin quirk recorded on `IsCyclotomicExtension {p} ℚ
+(CyclotomicField p ℚ)` in the `ClassGroupGaloisAction` section header above.
+
+The fix is to synthesize against `AlgebraicClosure.instAlgebra` explicitly and
+transport along `Subsingleton.elim`. Deliberately a `theorem` and NOT an
+`instance`: it is pulled in with `haveI` exactly where it is needed, so it
+cannot perturb elaboration elsewhere in this 70k-line file. Every consumer of
+the infinite Galois correspondence over `ℚ` in this cluster needs it. -/
+theorem isGalois_rat_algebraicClosure : IsGalois ℚ (AlgebraicClosure ℚ) :=
+  cast (congrArg (fun (i : Algebra ℚ (AlgebraicClosure ℚ)) =>
+      @IsGalois ℚ _ (AlgebraicClosure ℚ) _ i)
+    (Subsingleton.elim (AlgebraicClosure.instAlgebra ℚ (R := ℚ)) inferInstance))
+    (inferInstance :
+      @IsGalois ℚ _ (AlgebraicClosure ℚ) _ (AlgebraicClosure.instAlgebra ℚ (R := ℚ)))
+
+/-- **The concrete model `ℚ(μ_p) ⊆ ℚ̄`**: `ℚ` adjoined the `p`-th roots of
+unity of `AlgebraicClosure ℚ`. This is exactly the intermediate field written
+out inside `isOpen_ker_of_cyclotomicChar`'s proof above, named here because
+the Galois dictionary below has to talk about it in statements and not only
+in proofs. A `def` rather than an `abbrev` so that the two instances below
+are keyed on it rather than on `IntermediateField.adjoin`. -/
+noncomputable def muSubfield (p : ℕ) : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+  IntermediateField.adjoin ℚ
+    (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+      (rootsOfUnity p (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ))
+
+theorem muSubfield_def (p : ℕ) : muSubfield p = IntermediateField.adjoin ℚ
+    (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+      (rootsOfUnity p (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ)) := rfl
+
+instance instFiniteDimensionalMuSubfield : FiniteDimensional ℚ (muSubfield p) := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI : Finite ((rootsOfUnity p (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ)) :=
+    inferInstanceAs (Finite (rootsOfUnity p (AlgebraicClosure ℚ)))
+  have hSfin : (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+      (rootsOfUnity p (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ)).Finite :=
+    Set.Finite.image _ (Set.toFinite _)
+  haveI := hSfin.to_subtype
+  rw [muSubfield_def]
+  exact IntermediateField.finiteDimensional_adjoin fun x _ =>
+    (Algebra.IsAlgebraic.isAlgebraic (R := ℚ) x).isIntegral
+
+instance instNumberFieldMuSubfield : NumberField (muSubfield p) := ⟨⟩
+
+theorem ker_cyclotomicChar_eq_fixingSubgroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) :
+    MonoidHom.ker χ = (muSubfield p).fixingSubgroup := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : Fact (1 < p ^ 1) := ⟨by rw [pow_one]; exact hp.out.one_lt⟩
+  -- the kernel of `ℤ_[p] → kk'` contains only elements divisible by `p`
+  have hdvd : ∀ x : ℤ_[p], algebraMap ℤ_[p] kk' x = 0 → (p : ℤ_[p]) ∣ x := by
+    intro x hx
+    by_contra hnd
+    have hnorm : ¬ ‖x‖ < 1 := fun h => hnd ((PadicInt.norm_lt_one_iff_dvd x).mp h)
+    have hu : IsUnit x := PadicInt.isUnit_iff.mpr (le_antisymm x.norm_le_one (not_lt.mp hnorm))
+    obtain ⟨y, hy⟩ := hu
+    have : (1 : kk') = 0 := by
+      have := congrArg (algebraMap ℤ_[p] kk') (y.val_inv)
+      rw [map_mul, map_one] at this
+      rw [← this, hy, hx, zero_mul]
+    exact one_ne_zero this
+  -- `p` maps to zero in `kk'`
+  have hpz : algebraMap ℤ_[p] kk' (p : ℤ_[p]) = 0 := by
+    rw [map_natCast]; exact CharP.cast_eq_zero kk' p
+  -- the key equivalence, at the level of a single `p`-th root of unity
+  have hkey : ∀ g : Field.absoluteGaloisGroup ℚ,
+      χ g = 1 ↔ ∀ z : AlgebraicClosure ℚ, z ^ p = 1 → g z = z := by
+    intro g
+    set k : ZMod (p ^ 1) :=
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).val.toZModPow 1 with hk
+    constructor
+    · -- `χ g = 1` forces `k = 1`, hence `g` fixes every `p`-th root of unity
+      intro hg z hz
+      have h0 : algebraMap ℤ_[p] kk'
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).val - 1) = 0 := by
+        rw [map_sub, map_one, ← hχcyc g, hg, sub_self]
+      obtain ⟨y, hy⟩ := hdvd _ h0
+      have hk1 : k = 1 := by
+        have hmem : (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).val - 1 ∈
+            RingHom.ker (PadicInt.toZModPow (p := p) 1) := by
+          rw [PadicInt.ker_toZModPow, Ideal.mem_span_singleton]
+          exact ⟨y, by rw [hy, pow_one]⟩
+        rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at hmem
+        exact hmem
+      have hzpow : z ^ p ^ 1 = 1 := by rw [pow_one]; exact hz
+      have hspec :=
+        cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) p (n := 1) g.toRingEquiv z hzpow
+      rw [← hk, hk1, ZMod.val_one, pow_one] at hspec
+      exact hspec
+    · -- conversely, fixing a primitive root forces `k = 1`, hence `χ g = 1`
+      intro hfix
+      obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) p
+      have hζpow : ζ ^ p ^ 1 = 1 := by rw [pow_one]; exact hζ.pow_eq_one
+      have hζfix : g.toRingEquiv ζ = ζ := hfix ζ hζ.pow_eq_one
+      have hspec :=
+        cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) p (n := 1) g.toRingEquiv ζ hζpow
+      rw [hζfix] at hspec
+      have hkval : k.val = 1 := by
+        have hlt : k.val < p := by
+          have hvl := ZMod.val_lt k
+          simpa [pow_one] using hvl
+        have hmod : ζ ^ (1 : ℕ) = ζ ^ k.val := by simpa using hspec
+        have hinj := hζ.pow_inj hp.out.one_lt hlt hmod
+        omega
+      have hk1 : k = 1 := ZMod.val_injective _ (by rw [hkval, ZMod.val_one])
+      have hker : (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).val - 1 ∈
+          Ideal.span {(p : ℤ_[p]) ^ 1} := by
+        rw [← PadicInt.ker_toZModPow 1, RingHom.mem_ker, map_sub, map_one, ← hk, hk1, sub_self]
+      obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hker
+      have hy2 := congrArg (algebraMap ℤ_[p] kk') hy
+      rw [map_mul, map_sub, map_one, pow_one, hpz, mul_zero] at hy2
+      rw [hχcyc g]
+      linear_combination -hy2
+  -- every `p`-th root of unity in `ℚ̄` is a unit, so the generating set of `muSubfield p`
+  -- is exactly the set of `p`-th roots of unity
+  have hgen : ∀ z : AlgebraicClosure ℚ, z ^ p = 1 →
+      z ∈ ((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) : Set (AlgebraicClosure ℚ)ˣ) := by
+    intro z hz
+    have hz0 : z ≠ 0 := by
+      intro h0
+      rw [h0, zero_pow hp.out.ne_zero] at hz
+      exact zero_ne_one hz
+    have hzu : IsUnit z := isUnit_iff_ne_zero.mpr hz0
+    obtain ⟨u, rfl⟩ := hzu
+    refine ⟨u, ?_, rfl⟩
+    rw [SetLike.mem_coe, mem_rootsOfUnity]
+    exact Units.ext (by push_cast; exact_mod_cast hz)
+  rw [muSubfield_def]
+  ext g
+  constructor
+  · intro hg
+    have h := (hkey g).mp (MonoidHom.mem_ker.mp hg)
+    refine (IntermediateField.mem_fixingSubgroup_iff _ g).mpr ?_
+    refine (IntermediateField.forall_mem_adjoin_smul_eq_self_iff ℚ g).mpr ?_
+    rintro _ ⟨u, hu, rfl⟩
+    exact h _ (by
+      have := (mem_rootsOfUnity _ _).mp (SetLike.mem_coe.mp hu)
+      simpa using congrArg (Units.val) this)
+  · intro hg
+    refine MonoidHom.mem_ker.mpr ((hkey g).mpr ?_)
+    have h := (IntermediateField.forall_mem_adjoin_smul_eq_self_iff ℚ g).mp
+      ((IntermediateField.mem_fixingSubgroup_iff _ g).mp hg)
+    intro z hz
+    exact h z (hgen z hz)
+
+
+/-- **INERTIA ⟹ UNRAMIFIED, RELATIVE TO `ℚ(μ_p)`** (SORRY LEAF, cut
+2026-07-28 out of `exists_unramifiedAbelian_finrank_eq_index` below).
+
+This is the ONLY arithmetic input of that leaf; everything else in it is
+infinite Galois bookkeeping and is proven below.
+
+**Why the absolute version does not suffice.**
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`) proves exactly
+this statement with base `ℚ` and conclusion `Algebra.IsUnramifiedAt ℤ Q`. It
+does NOT give what is wanted here, and the gap is precisely the prime `p`:
+`ℚ(μ_p)/ℚ` is totally ramified at `p`, so `L₀/ℚ` is ramified there however
+large `M` is, and the hypothesis available at `p` is only about the inertia
+elements that LIE IN `Γ_{ℚ(μ_p)}` — i.e. the inertia of `ℚ(μ_p)` at the place
+above `p`, not the inertia of `ℚ`. At every `ℓ ≠ p` the absolute statement
+does apply (the image of `I_ℓ` is inside `ker χ` because `ℚ(μ_p)/ℚ` is
+unramified at `ℓ`), and unramifiedness over `ℤ` descends to unramifiedness
+over `𝓞 (ℚ(μ_p))` by multiplicativity of `e`. So a prover may split on
+`ℓ = p` and reuse the absolute node at every other place; only the place
+above `p` needs the genuinely relative argument.
+
+**The hypothesis is inertia-only and that is deliberate**: nothing here
+constrains an infinite place, matching the group-side hypothesis `D ≤ M` of
+the consumer, which constrains none either. Putting archimedean
+unramifiedness on this leaf would make it unprovable at `p = 2`.
+
+**The check that would refute it**: an `L₀ ⊇ ℚ(μ_p)`, fixed by every
+conjugated local inertia element lying in `Γ_{ℚ(μ_p)}`, with a prime of
+`𝓞 L₀` ramified over `𝓞 (ℚ(μ_p))`. -/
+theorem isUnramifiedAt_of_localInertia_le_fixingSubgroup_muSubfield
+    (L₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L₀]
+    (hEle : muSubfield p ≤ L₀)
+    (hinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ (muSubfield p).fixingSubgroup →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ L₀.fixingSubgroup)
+    (Q : Ideal (𝓞 (IntermediateField.extendScalars hEle))) (_ : Q.IsPrime) (hQ : Q ≠ ⊥) :
+    Algebra.IsUnramifiedAt (𝓞 (muSubfield p)) Q :=
+  sorry
+
+/-- **UNRAMIFIED ⟹ INERTIA TRIVIAL, RELATIVE TO `ℚ(μ_p)`** (SORRY LEAF, cut
+2026-07-28 out of `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank`
+below). The CONVERSE of the leaf immediately above, and the one piece of the
+reverse Galois dictionary that `MinkowskiUnramified.lean` does not already
+supply in some form: that file proves "inertia trivial ⟹ unramified" and
+nothing in the direction wanted here.
+
+**Route.** With `ι : ℚ̄ → (ℚ_ℓ)ᵃˡᵍ` the embedding underlying
+`Field.absoluteGaloisGroup.map`, let `Q₀ := ι⁻¹(𝔪)` be the prime of `𝓞 L₀`
+determined by it (the same prime
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` constructs). A local
+inertia element acts trivially on the residue field of the integral closure
+of `𝒪_ℓ` in `(ℚ_ℓ)ᵃˡᵍ`, so by `lift_map` its image in `Γℚ` preserves `Q₀`
+and acts trivially modulo it — i.e. its restriction to `L₀` lies in
+`Q₀.inertia`. Unramifiedness of `Q₀` over `𝓞 (ℚ(μ_p))` makes that inertia
+group trivial (`Ideal.card_inertia_eq_ramificationIdxIn` again), so the
+restriction is the identity, which is what membership in `L₀.fixingSubgroup`
+says. Conjugation by `σ` moves `Q₀` along the Galois orbit and is handled by
+`inertia_eq_bot_of_exists_prime_over`'s transitivity argument run backwards.
+
+The hypothesis `hmem` — that the conjugated element already lies in
+`Γ_{ℚ(μ_p)}` — is what makes the statement relative to `ℚ(μ_p)`; without it
+the conclusion is FALSE at `ℓ = p`, since `ℚ(μ_p)/ℚ` is ramified there.
+
+**The check that would refute it**: a finite `L₀ ⊇ ℚ(μ_p)`, unramified over
+`𝓞 (ℚ(μ_p))` at every nonzero prime, and a conjugated local inertia element
+of `Γ_{ℚ(μ_p)}` moving some element of `L₀`. -/
+theorem localInertia_le_fixingSubgroup_of_isUnramifiedAt_muSubfield
+    (L₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ L₀]
+    (hEle : muSubfield p ≤ L₀)
+    (hunr : ∀ (Q : Ideal (𝓞 (IntermediateField.extendScalars hEle))) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (muSubfield p)) Q)
+    (ℓ : ℕ) (hℓ : ℓ.Prime)
+    (n : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hℓ.toHeightOneSpectrumRingOfIntegersRat))
+    (σ : Field.absoluteGaloisGroup ℚ)
+    (hn : n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat)
+    (hmem : σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ (muSubfield p).fixingSubgroup) :
+    σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ L₀.fixingSubgroup :=
+  sorry
+
+/-- **MODEL TRANSPORT, `ℚ(μ_p) ⊆ ℚ̄` TO AN ABSTRACT `CF`** (SORRY LEAF, cut
+2026-07-28 out of `exists_unramifiedAbelian_finrank_eq_index` below).
+
+`CF` is an abstract model of `ℚ(μ_p)` (`IsCyclotomicExtension {p} ℚ CF`) with
+its own algebraic closure; the Galois dictionary below is run inside the
+CONCRETE model `muSubfield p ⊆ AlgebraicClosure ℚ`, because that is where
+`Γℚ`, `ker χ` and `localInertiaGroup` live. This leaf carries a finite
+abelian everywhere-finite-unramified extension across.
+
+**Content.** (i) `muSubfield p` is itself an `IsCyclotomicExtension {p} ℚ`,
+so there is an `e : CF ≃ₐ[ℚ] muSubfield p`; (ii) `e` lifts to an isomorphism
+of algebraic closures; (iii) transporting an intermediate field along it
+preserves `Module.finrank`, `IsGalois`, commutativity of the Galois group,
+and `Algebra.IsUnramifiedAt` at every nonzero prime (rings of integers are
+carried isomorphically, and ramification indices are preserved). No class
+field theory and no arithmetic beyond that occurs.
+
+**Not vacuous**, and note it is genuinely two-sided: the mirror statement
+`exists_transport_unramifiedAbelian_to_muSubfield` below is what the reverse
+dictionary needs, and neither implies the other without redoing the work. -/
+theorem exists_transport_unramifiedAbelian_of_muSubfield
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (L₁ : IntermediateField (muSubfield p) (AlgebraicClosure ℚ)) [FiniteDimensional (muSubfield p) L₁]
+    [IsGalois (muSubfield p) L₁]
+    (habel : ∀ a b : L₁ ≃ₐ[muSubfield p] L₁, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (muSubfield p)) Q) :
+    ∃ (L : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF L) (_ : IsGalois CF L),
+      (∀ a b : L ≃ₐ[CF] L, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      Module.finrank CF L = Module.finrank (muSubfield p) L₁ :=
+  sorry
+
+/-- **MODEL TRANSPORT, AN ABSTRACT `CF` TO `ℚ(μ_p) ⊆ ℚ̄`** (SORRY LEAF, cut
+2026-07-28 out of `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank`
+below). The mirror of `exists_transport_unramifiedAbelian_of_muSubfield`
+above; see its docstring for the route. The output is phrased as an
+`L₀ : IntermediateField ℚ ℚ̄` together with `muSubfield p ≤ L₀`, rather than
+as an `IntermediateField (muSubfield p) ℚ̄` directly, because the consumer
+needs `L₀.fixingSubgroup` as a subgroup of `Γℚ` in order to intersect it with
+`ker χ`. -/
+theorem exists_transport_unramifiedAbelian_to_muSubfield
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (L : IntermediateField CF (AlgebraicClosure CF)) [FiniteDimensional CF L] [IsGalois CF L]
+    (habel : ∀ a b : L ≃ₐ[CF] L, a * b = b * a)
+    (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 CF) Q) :
+    ∃ (L₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : FiniteDimensional ℚ L₀)
+      (hEle : muSubfield p ≤ L₀) (_ : IsGalois (muSubfield p) (IntermediateField.extendScalars hEle)),
+      (∀ a b : (IntermediateField.extendScalars hEle) ≃ₐ[muSubfield p]
+          (IntermediateField.extendScalars hEle), a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 (IntermediateField.extendScalars hEle))) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 (muSubfield p)) Q) ∧
+      Module.finrank (muSubfield p) (IntermediateField.extendScalars hEle) = Module.finrank CF L :=
+  sorry
+
 /-- **MINKOWSKI AT A DEGREE-ONE BASE: a finite extension of a number field
 `K` with `[K : ℚ] = 1`, unramified at every finite prime, is trivial**
 (PROVEN 2026-07-28; this is the `p = 2` half of
@@ -37945,6 +38260,16 @@ archimedean input the pair needs is supplied on the arithmetic leaf by
 `IsCyclotomicExtension`, and putting it here instead would make THIS leaf
 unprovable at `p = 2` for want of Minkowski.
 
+**DECOMPOSED 2026-07-28 — the proof below is COMPLETE**, over exactly two
+sorry leaves stated above and nothing else:
+`isUnramifiedAt_of_localInertia_le_fixingSubgroup_muSubfield` (the arithmetic
+input of step 3, relative to `ℚ(μ_p)`) and
+`exists_transport_unramifiedAbelian_of_muSubfield` (step 4). Everything else
+described above — `ker χ = Γ_{ℚ(μ_p)}`
+(`ker_cyclotomicChar_eq_fixingSubgroup` above, PROVEN), openness of the
+pushforward, the fixed field, `[Γ_E : M'] = [L₀ : E] = M.index`, normality and
+commutativity of `Gal(L₀/E)` — is proven inline.
+
 **The check that would refute it**: an open `M` above `D` whose fixed field
 is ramified at some finite place of `ℚ(μ_p)`, or of degree `≠ M.index`. -/
 theorem exists_unramifiedAbelian_finrank_eq_index
@@ -37974,8 +38299,135 @@ theorem exists_unramifiedAbelian_finrank_eq_index
       (∀ a b : L ≃ₐ[CF] L, a * b = b * a) ∧
       (∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
-      Module.finrank CF L = M.index :=
-  sorry
+      Module.finrank CF L = M.index := by
+  classical
+  haveI := isGalois_rat_algebraicClosure
+  have hker := ker_cyclotomicChar_eq_fixingSubgroup χ hχcyc
+  have hkeropen := isOpen_ker_of_cyclotomicChar χ hχcyc
+  -- the generating set lies in `M`
+  have hgenle := le_trans (Subgroup.le_topologicalClosure _) hMle
+  have hcomm : ∀ a b : MonoidHom.ker χ, a * b * a⁻¹ * b⁻¹ ∈ M := fun a b =>
+    hgenle (Subgroup.subset_closure (Or.inr ⟨a, b, rfl⟩))
+  -- push `M` forward into `Γℚ`
+  set M' : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    Subgroup.map (MonoidHom.ker χ).subtype M with hM'def
+  have hmemM : ∀ x : MonoidHom.ker χ,
+      x ∈ M ↔ (x : Field.absoluteGaloisGroup ℚ) ∈ M' := by
+    intro x
+    constructor
+    · intro h; exact ⟨x, h, rfl⟩
+    · rintro ⟨y, hy, hxy⟩
+      exact (Subtype.ext hxy : y = x) ▸ hy
+  have hM'le : M' ≤ MonoidHom.ker χ := Subgroup.map_subtype_le M
+  have hM'open : IsOpen (M' : Set (Field.absoluteGaloisGroup ℚ)) := by
+    rw [hM'def, Subgroup.coe_map]
+    exact hkeropen.isOpenMap_subtype_val _ hMopen
+  have hM'closed : IsClosed (M' : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isClosed_of_isOpen _ hM'open
+  -- the fixed field
+  set L₀ : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField M' with hL₀def
+  have hfix : L₀.fixingSubgroup = M' :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨M', hM'closed⟩
+  haveI hfd0 : FiniteDimensional ℚ L₀ :=
+    (InfiniteGalois.isOpen_iff_finite L₀).mp (by rw [hfix]; exact hM'open)
+  have hEle : muSubfield p ≤ L₀ := by
+    have h1 : IntermediateField.fixedField (MonoidHom.ker χ) ≤ L₀ :=
+      IntermediateField.fixedField_le hM'le
+    rw [hker] at h1
+    exact le_trans (le_of_eq (InfiniteGalois.fixedField_fixingSubgroup (muSubfield p)).symm) h1
+  set L₁ : IntermediateField (muSubfield p) (AlgebraicClosure ℚ) :=
+    IntermediateField.extendScalars hEle with hL₁def
+  -- the group isomorphism `ker χ ≃* Gal(ℚ̄/ℚ(μ_p))`
+  set φ : (MonoidHom.ker χ) ≃* (AlgebraicClosure ℚ ≃ₐ[muSubfield p] AlgebraicClosure ℚ) :=
+    (MulEquiv.subgroupCongr hker).trans (IntermediateField.fixingSubgroupEquiv (muSubfield p)) with hφdef
+  have hφapp : ∀ (x : MonoidHom.ker χ) (y : AlgebraicClosure ℚ),
+      φ x y = (x : Field.absoluteGaloisGroup ℚ) y := fun _ _ => rfl
+  have hφsymm : ∀ (τ : AlgebraicClosure ℚ ≃ₐ[muSubfield p] AlgebraicClosure ℚ) (y : AlgebraicClosure ℚ),
+      ((φ.symm τ : MonoidHom.ker χ) : Field.absoluteGaloisGroup ℚ) y = τ y := by
+    intro τ y
+    rw [← hφapp (φ.symm τ) y, MulEquiv.apply_symm_apply]
+  -- the fixing subgroup of `L₁` is the image of `M`
+  have hfixmap : L₁.fixingSubgroup = Subgroup.map φ.toMonoidHom M := by
+    ext τ
+    rw [IntermediateField.mem_fixingSubgroup_iff]
+    constructor
+    · intro hτ
+      refine ⟨φ.symm τ, ?_, by simp⟩
+      show φ.symm τ ∈ M
+      rw [hmemM, ← hfix]
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr ?_
+      intro y hy
+      exact (hφsymm τ y).trans (hτ y hy)
+    · rintro ⟨x, hx, rfl⟩
+      intro y hy
+      rw [MulEquiv.coe_toMonoidHom, hφapp]
+      have : (x : Field.absoluteGaloisGroup ℚ) ∈ L₀.fixingSubgroup := by
+        rw [hfix]; exact (hmemM x).mp hx
+      exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp this y hy
+  -- `M` is normal, hence so is the fixing subgroup of `L₁`
+  have hMnormal : M.Normal := by
+    refine ⟨fun n hn g => ?_⟩
+    have : g * n * g⁻¹ = (g * n * g⁻¹ * n⁻¹) * n := by group
+    rw [this]
+    exact M.mul_mem (hcomm g n) hn
+  haveI : (L₁.fixingSubgroup).Normal := by
+    rw [hfixmap]
+    exact hMnormal.map φ.toMonoidHom φ.surjective
+  haveI hgalL₁ : IsGalois (muSubfield p) L₁ := (InfiniteGalois.normal_iff_isGalois L₁).mp inferInstance
+  haveI hfdQ1 : FiniteDimensional ℚ L₁ := hfd0
+  haveI hfd1 : FiniteDimensional (muSubfield p) L₁ := FiniteDimensional.right ℚ (muSubfield p) L₁
+  -- degree bookkeeping
+  have hidx : Module.finrank (muSubfield p) L₁ = M.index := by
+    have h1 : M'.index = Module.finrank ℚ L₀ := by
+      rw [← hfix]
+      exact (IntermediateField.finrank_eq_fixingSubgroup_index L₀).symm
+    have h2 : (MonoidHom.ker χ).index = Module.finrank ℚ (muSubfield p) := by
+      rw [hker]
+      exact (IntermediateField.finrank_eq_fixingSubgroup_index (muSubfield p)).symm
+    have h3 : M'.relIndex (MonoidHom.ker χ) = M.index := by
+      rw [Subgroup.relIndex, Subgroup.subgroupOf, hM'def,
+        Subgroup.comap_map_eq_self_of_injective (MonoidHom.ker χ).subtype_injective]
+    have h4 := Subgroup.relIndex_mul_index hM'le
+    have h5 : Module.finrank ℚ (muSubfield p) * Module.finrank (muSubfield p) L₁ = Module.finrank ℚ L₀ :=
+      Module.finrank_mul_finrank ℚ (muSubfield p) L₁
+    have hne : Module.finrank ℚ (muSubfield p) ≠ 0 := Module.finrank_pos.ne'
+    rw [h3, h2, h1] at h4
+    have : Module.finrank ℚ (muSubfield p) * Module.finrank (muSubfield p) L₁ =
+        Module.finrank ℚ (muSubfield p) * M.index := by
+      rw [h5, ← h4]; ring
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hne) this
+  -- abelianness of `Gal(L₁ / ℚ(μ_p))`
+  have habel : ∀ a b : L₁ ≃ₐ[muSubfield p] L₁, a * b = b * a := by
+    intro a b
+    obtain ⟨α, hα⟩ := AlgEquiv.restrictNormalHom_surjective
+      (F := muSubfield p) (K₁ := L₁) (AlgebraicClosure ℚ) a
+    obtain ⟨β, hβ⟩ := AlgEquiv.restrictNormalHom_surjective
+      (F := muSubfield p) (K₁ := L₁) (AlgebraicClosure ℚ) b
+    have hcm : α * β * α⁻¹ * β⁻¹ ∈ L₁.fixingSubgroup := by
+      rw [hfixmap]
+      refine ⟨φ.symm α * φ.symm β * (φ.symm α)⁻¹ * (φ.symm β)⁻¹, hcomm _ _, ?_⟩
+      simp
+    rw [← IntermediateField.restrictNormalHom_ker L₁, MonoidHom.mem_ker] at hcm
+    simp only [map_mul, map_inv, hα, hβ] at hcm
+    exact commutatorElement_eq_one_iff_mul_comm.mp hcm
+  -- unramifiedness, from the sorried inertia leaf
+  have hunr : ∀ (Q : Ideal (𝓞 L₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 (muSubfield p)) Q := by
+    intro Q hQp hQ
+    refine isUnramifiedAt_of_localInertia_le_fixingSubgroup_muSubfield L₀ hEle ?_ Q hQp hQ
+    intro ℓ hℓ n σ hn hmemE
+    rw [hfix]
+    have hx : σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ MonoidHom.ker χ := by
+      rw [hker]; exact hmemE
+    have : (⟨_, hx⟩ : MonoidHom.ker χ) ∈ M :=
+      hgenle (Subgroup.subset_closure (Or.inl ⟨ℓ, hℓ, n, σ, hn, rfl⟩))
+    exact (hmemM _).mp this
+  obtain ⟨L, hfdL, hgalL, habelL, hunrL, hrankL⟩ :=
+    exists_transport_unramifiedAbelian_of_muSubfield (p := p) CF L₁ habel hunr
+  exact ⟨L, hfdL, hgalL, habelL, hunrL, by rw [hrankL, hidx]⟩
 
 /-- **UNRAMIFIED CFT, THE UPPER BOUND, AT FINITE LEVEL: an everywhere
 unramified abelian extension of `ℚ(μ_p)` has degree at most `h_K`** (E3c
@@ -38419,6 +38871,15 @@ written exactly as the arithmetic leaf's conclusion so the two compose
 verbatim. Nothing is assumed at the infinite places, and nothing is needed:
 this direction only discards archimedean information.
 
+**DECOMPOSED 2026-07-28 — the proof below is COMPLETE**, over exactly two
+sorry leaves stated above and nothing else:
+`localInertia_le_fixingSubgroup_of_isUnramifiedAt_muSubfield` (the converse of
+the inertia dictionary — the piece `MinkowskiUnramified.lean` does not supply)
+and `exists_transport_unramifiedAbelian_to_muSubfield` (model transport).
+Step 1 is `ker_cyclotomicChar_eq_fixingSubgroup` above, PROVEN and shared with
+the forward direction; the subgroup `M := Γ_{L₀} ∩ ker χ`, its index, its
+closedness and the commutator half of `D ≤ M` are all proven inline.
+
 **The check that would refute it**: such an `H` whose associated subgroup
 either fails to contain some conjugated local inertia element of `ker χ`,
 or has index `≠ [H : ℚ(μ_p)]`. -/
@@ -38448,8 +38909,77 @@ theorem exists_localInertiaCommutatorSubgroup_le_index_eq_finrank
                 hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
          {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
             a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure ≤ M ∧
-      M.index = Module.finrank CF H :=
-  sorry
+      M.index = Module.finrank CF H := by
+  classical
+  haveI := isGalois_rat_algebraicClosure
+  have hker := ker_cyclotomicChar_eq_fixingSubgroup χ hχcyc
+  obtain ⟨L₀, hfd0, hEle, hgal1, habel1, hunr1, hrank⟩ :=
+    exists_transport_unramifiedAbelian_to_muSubfield (p := p) CF H habel hunr
+  haveI := hfd0
+  haveI := hgal1
+  set L₁ : IntermediateField (muSubfield p) (AlgebraicClosure ℚ) :=
+    IntermediateField.extendScalars hEle with hL₁def
+  haveI hfdQ1 : FiniteDimensional ℚ L₁ := hfd0
+  haveI hfd1 : FiniteDimensional (muSubfield p) L₁ := FiniteDimensional.right ℚ (muSubfield p) L₁
+  -- the group isomorphism `ker χ ≃* Gal(ℚ̄/ℚ(μ_p))`
+  set φ : (MonoidHom.ker χ) ≃* (AlgebraicClosure ℚ ≃ₐ[muSubfield p] AlgebraicClosure ℚ) :=
+    (MulEquiv.subgroupCongr hker).trans (IntermediateField.fixingSubgroupEquiv (muSubfield p)) with hφdef
+  have hφapp : ∀ (x : MonoidHom.ker χ) (y : AlgebraicClosure ℚ),
+      φ x y = (x : Field.absoluteGaloisGroup ℚ) y := fun _ _ => rfl
+  -- the subgroup cut out by `L₀`
+  have hfixle : L₀.fixingSubgroup ≤ MonoidHom.ker χ := by
+    rw [hker]; exact IntermediateField.fixingSubgroup_le hEle
+  set M : Subgroup (MonoidHom.ker χ) :=
+    Subgroup.comap (MonoidHom.ker χ).subtype L₀.fixingSubgroup with hMdef
+  have hmemM : ∀ x : MonoidHom.ker χ,
+      x ∈ M ↔ (x : Field.absoluteGaloisGroup ℚ) ∈ L₀.fixingSubgroup := fun _ => Iff.rfl
+  have hmemfix : ∀ x : MonoidHom.ker χ,
+      φ x ∈ L₁.fixingSubgroup ↔ x ∈ M := by
+    intro x
+    rw [IntermediateField.mem_fixingSubgroup_iff, hmemM]
+    constructor
+    · intro h
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr ?_
+      intro y hy
+      exact (hφapp x y).symm.trans (h y hy)
+    · intro h y hy
+      exact (hφapp x y).trans ((IntermediateField.mem_fixingSubgroup_iff _ _).mp h y hy)
+  refine ⟨M, ?_, ?_⟩
+  · -- `D ≤ M`
+    refine Subgroup.topologicalClosure_minimal _ (Subgroup.closure_le _ |>.mpr ?_) ?_
+    · rintro x (⟨ℓ, hℓ, n, σ, hn, hxeq⟩ | ⟨a, b, rfl⟩)
+      · show x ∈ M
+        rw [hmemM, hxeq]
+        refine localInertia_le_fixingSubgroup_of_isUnramifiedAt_muSubfield L₀ hEle hunr1 ℓ hℓ n σ hn ?_
+        rw [← hker, ← hxeq]
+        exact x.2
+      · show a * b * a⁻¹ * b⁻¹ ∈ M
+        rw [← hmemfix]
+        have hcm : (φ a) * (φ b) * (φ a)⁻¹ * (φ b)⁻¹ ∈ L₁.fixingSubgroup := by
+          rw [← IntermediateField.restrictNormalHom_ker L₁, MonoidHom.mem_ker]
+          simp only [map_mul, map_inv]
+          exact commutatorElement_eq_one_iff_mul_comm.mpr
+            (habel1 (AlgEquiv.restrictNormalHom L₁ (φ a)) (AlgEquiv.restrictNormalHom L₁ (φ b)))
+        simpa using hcm
+    · -- `M` is closed
+      exact IsClosed.preimage continuous_subtype_val L₀.fixingSubgroup_isClosed
+  · -- the index
+    have h1 : L₀.fixingSubgroup.index = Module.finrank ℚ L₀ :=
+      (IntermediateField.finrank_eq_fixingSubgroup_index L₀).symm
+    have h2 : (MonoidHom.ker χ).index = Module.finrank ℚ (muSubfield p) := by
+      rw [hker]
+      exact (IntermediateField.finrank_eq_fixingSubgroup_index (muSubfield p)).symm
+    have h4 : M.index * (MonoidHom.ker χ).index = L₀.fixingSubgroup.index :=
+      Subgroup.relIndex_mul_index hfixle
+    have h5 : Module.finrank ℚ (muSubfield p) * Module.finrank (muSubfield p) L₁ = Module.finrank ℚ L₀ :=
+      Module.finrank_mul_finrank ℚ (muSubfield p) L₁
+    have hne : Module.finrank ℚ (muSubfield p) ≠ 0 := Module.finrank_pos.ne'
+    rw [h2, h1] at h4
+    have h6 : Module.finrank ℚ (muSubfield p) * Module.finrank (muSubfield p) L₁ =
+        Module.finrank ℚ (muSubfield p) * M.index := by
+      rw [h5, ← h4]; ring
+    rw [← hrank]
+    exact (Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hne) h6).symm
 
 /-- **UNRAMIFIED CFT, THE EXISTENCE HALF: `h_K` DIVIDES the degree of the
 maximal everywhere-unramified abelian extension of `ℚ(μ_p)`** (E3c support

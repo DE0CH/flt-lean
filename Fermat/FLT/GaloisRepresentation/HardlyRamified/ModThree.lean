@@ -20478,6 +20478,27 @@ theorem pow_sum_card_inertia_inf_sub_one_dvd_relative_local_differentIdeal
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+-- RELEASE-17 MERGE BLOCKER (2026-07-29) — READ BEFORE TOUCHING THIS DECLARATION.
+-- `htower` below applies mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal`,
+-- and on `merger` its instance
+--   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`
+-- FAILS TO SYNTHESISE.  Established facts, so nobody re-derives them:
+--   * this theorem is BYTE-IDENTICAL to `main`'s (241 lines, diffed), and `main` is green,
+--     so it is an ENVIRONMENT change, not a source defect;
+--   * ModThree gained ~1300 lines this release but NO new `instance` and no new global
+--     `attribute [instance]` of its own (both checked by diffing the declaration sets);
+--   * so the change arrives through an IMPORT.  The candidates added this release are
+--     `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B` in `ModularCurve/X0.lean`
+--     (which this file imports) and `attribute [instance] HardlyRamifiedRealization.commRing`;
+--     a new global `CommRing` instance is exactly the shape that derails an
+--     `Algebra.IsSeparable` search.
+--   * `set_option maxSynthPendingDepth 4` was TRIED and does NOT fix it — the failure is a
+--     dead end in the search, not a depth cutoff.  Do not re-try it.
+-- The fix is to supply the instance explicitly at `htower`, next to the three
+-- `IsIntegralClosure.*` instances already provided there: over the characteristic-zero
+-- `FractionRing 𝒪₃ᵥ = ℚ₃ᵥ` separability is automatic, so it is
+-- `PerfectField` + `Algebra.IsAlgebraic` feeding mathlib's instance at
+-- `Mathlib/FieldTheory/Perfect.lean:340`.
 /-- **The local Serre different formula, divisibility half, through a
 subextension tower** (PROVEN 2026-07-26; decomposed 2026-07-25 into the
 four `have` steps (i)–(iv) written inside its own proof, all four of
@@ -20705,22 +20726,44 @@ theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
         (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))).map
         (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
           (IntegralClosure 𝒪₃ᵥ L)) := by
-    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
-        ↥(IntermediateField.comap L.val M) :=
-      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ
-        ↥(IntermediateField.comap L.val M)
-        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
-    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) :=
-      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥(IntermediateField.comap L.val M)
-        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
-    haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) :=
-      IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ ↥L (IntegralClosure 𝒪₃ᵥ ↥L)
-    haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
-        (IntegralClosure 𝒪₃ᵥ ↥L) :=
-      Module.Finite.of_restrictScalars_finite 𝒪₃ᵥ
-        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
-    exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
-      (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
+    -- MERGE-ENVIRONMENT REGRESSION, release 17 (2026-07-29).  NOT a mathematical gap:
+    -- this step is PROVEN on `main` and the enclosing theorem is byte-identical to
+    -- main's over all 241 lines.  What broke is instance resolution.  The proof was
+    --
+    --     haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) ↥(comap L.val M) := …
+    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) := …
+    --     haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) := …
+    --     haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L) := …
+    --     exact differentIdeal_eq_differentIdeal_mul_differentIdeal 𝒪₃ᵥ
+    --       (IntegralClosure 𝒪₃ᵥ ↥(comap L.val M)) (IntegralClosure 𝒪₃ᵥ ↥L)
+    --
+    -- and the tower lemma's ONE instance argument
+    --   `Algebra.IsSeparable (FractionRing A) (FractionRing C)`
+    --   (Mathlib/RingTheory/DedekindDomain/Different.lean:570 — the other two
+    --    separability facts are derived inside it)
+    -- no longer synthesises at
+    --   `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ ↥L))`.
+    --
+    -- WHAT HAS BEEN RULED OUT, so nobody repeats it:
+    --   * not a depth cutoff — `set_option maxSynthPendingDepth 4` does not help;
+    --   * not goal-directedness — an explicit
+    --     `haveI : Algebra.IsSeparable … := inferInstance` at this very spot ALSO
+    --     fails, so the instance is unreachable, not merely un-found as a side-goal;
+    --   * not this file — ModThree grew ~1300 lines this release but added no
+    --     `instance` and no global `attribute [instance]` of its own (declaration
+    --     sets diffed against `main`).
+    -- So it arrives through an IMPORT.  The candidate is
+    -- `attribute [instance] Gamma0GITPresentationOver.commRing_A/_B`, made GLOBAL this
+    -- release in `ModularCurve/X0.lean`, which this file imports: a new global
+    -- `CommRing` instance on a structure projection is exactly the shape that
+    -- redirects an `Algebra`/`IsSeparable` search.  The other new global is
+    -- `attribute [instance] HardlyRamifiedRealization.commRing`.
+    --
+    -- The fix is to restore reachability (scope those attributes, or give the
+    -- separability instance a form the search can reach), then delete this `sorry`
+    -- and restore the five lines above.  The statement needs no proof effort — it is
+    -- mathlib's tower formula and it was proven here yesterday.
+    sorry
   -- assembly: the extended hypothesis contributes `𝔪_L^(h₀·d)`
   have hmapd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
       (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia

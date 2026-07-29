@@ -4376,9 +4376,8 @@ theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (
     ρ.fixedSubmodule v (F.gp (D.phi m))
       = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by
   haveI := D.lvl_normal
-  have hle : F.gp (D.phi m) ≤ wildInertiaGroup v := by
-    have h := F.gp_le_gp 1 (D.phi m) hm
-    rwa [F.gp_eq_wild 1 one_pos le_rfl] at h
+  have hle : F.gp (D.phi m) ≤ wildInertiaGroup v :=
+    (F.gp_le_gp 1 (D.phi m) hm).trans (F.gp_le_wild 1 one_pos)
   calc ρ.fixedSubmodule v (F.gp (D.phi m))
       = ρ.fixedSubmodule v (F.gp (D.phi m) ⊔ (D.lvl ⊓ wildInertiaGroup v)) :=
         (ρ.fixedSubmodule_sup_eq v _ _ hD).symm
@@ -4386,33 +4385,34 @@ theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (
         rw [sup_inf_eq_of_le_of_normal hle]
     _ = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by rw [F.gp_herbrand D m]
 
-/-- **EVERY BREAK IS `≥ 1`** — the upper-numbering normalisation, read off
-the counting clause at `u = 1`.
+/-! ### WITHDRAWN 2026-07-29: `one_le_break` was FALSE
 
-`RamificationFiltration.gp_eq_wild` gives `G^1 = P_v`, so the left side of
-the counting clause at `u = 1` is `ρ.wildCodim v` by definition, i.e. the
-filter is all of `Finset.range (ρ.wildCodim v)`. This is what makes the
-break sum at least `ρ.wildCodim v` (the classical bound
-`Sw_v(V) ≥ dim V − dim V^{P_v}`) and it is what lets the two steps below
-work on `[1, ∞)` rather than on `(0, ∞)`. -/
-theorem one_le_break (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
-    (F : RamificationFiltration v) (μ : ℕ → ℚ)
-    (hμ : ∀ u : ℚ, 0 < u →
-      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card)
-    {k : ℕ} (hk : k < ρ.wildCodim v) : 1 ≤ μ k := by
-  have h1 := hμ 1 one_pos
-  rw [F.gp_eq_wild 1 one_pos le_rfl] at h1
-  have hcard : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k).card
-      = (Finset.range (ρ.wildCodim v)).card := by
-    rw [Finset.card_range, ← h1]
-    rfl
-  have hfe : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
-      = Finset.range (ρ.wildCodim v) :=
-    Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) (le_of_eq hcard.symm)
-  have hmem : k ∈ (Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k := by
-    rw [hfe]; exact Finset.mem_range.mpr hk
-  exact (Finset.mem_filter.mp hmem).2
+Until the release-17 merge this file carried
+
+  `theorem one_le_break … {k} (hk : k < ρ.wildCodim v) : 1 ≤ μ k`
+
+proved by reading `G¹ = P_v` off the axiom `gp_eq_wild` at `u = 1`, so that the
+counting clause made every break `≥ 1`.
+
+**THE AXIOM WAS FALSE AND SO IS THE THEOREM**, and the counterexample is the one
+already written in the SECOND FALSITY AUDIT above.  For `L/ℚ₃` the `S₃`-closure of
+the totally ramified non-Galois cubic `ℚ₃[x]/(x³ + 12x + 3)`, the `2`-dimensional
+irreducible `ρ₂` has `V^{I_v} = V^{P_v} = 0`, so `wildCodim = 2`, while
+conductor–discriminant gives `a(ρ₂) = 3` and hence `Sw(ρ₂) = 3 − 2 + 0 = 1` —
+**both breaks being `1/2`**.  In the Swan normalisation breaks are positive
+RATIONALS; `≥ 1` is Hasse–Arf for a CHARACTER and does not survive induction to
+higher dimension.
+
+It is deleted rather than sorried: a `sorry` on a refuted statement can never be
+closed, and everything above it would rest on a falsehood.  This is the same
+treatment `wildCodim_le_swanExponentAux` received in
+`Fermat/FLT/Modularity/Interface.lean`, for the same reason and by the same
+witness — see the WITHDRAWN note there.
+
+**Do not reintroduce it, and do not reintroduce a weakened `μ k ≥ c > 0` variant
+as a THEOREM**: positivity of the breaks is true but is not available from the
+repaired axioms either, which is exactly why the consumer below is now a leaf. -/
+
 
 /-- A finite multiset of rationals has a GAP above any point: some `ε > 0`
 separates `a` from every element of the multiset that exceeds it. This is
@@ -4932,26 +4932,24 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) →
       (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
-    obtain ⟨N, hNopen, hNtriv⟩ := id hfin
-    obtain ⟨F₀⟩ := hexists
-    obtain ⟨μ₀, hμ₀⟩ := hbreak hfin F₀
-    obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_breaks v hfin F₀ μ₀ hμ₀
-    refine ⟨s, fun F μ hμ => ?_⟩
-    rw [hs]
-    refine sum_eq_of_card_filter_eq_of_dense _ μ₀ μ
-      (fun k hk => ρ.one_le_break v F₀ μ₀ hμ₀ hk)
-      (fun k hk => ρ.one_le_break v F μ hμ hk) (fun w u hw hwu => ?_)
-    obtain ⟨D, m, hDN, hwD, hDu⟩ :=
-      exists_lowerRamificationData_phi_mem_Ioc v N hNopen w u hw hwu
-    have h1 : (1 : ℚ) ≤ D.phi m := le_of_lt (lt_of_le_of_lt hw hwD)
-    have hpos : (0 : ℚ) < D.phi m := lt_of_lt_of_le zero_lt_one h1
-    have hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x := by
-      intro σ hσ x
-      exact hNtriv σ (Subgroup.mem_inf.mpr
-        ⟨hDN (Subgroup.mem_inf.mp hσ).1, (Subgroup.mem_inf.mp hσ).2⟩) x
-    refine ⟨D.phi m, hwD, hDu, ?_⟩
-    rw [← hμ₀ (D.phi m) hpos, ← hμ (D.phi m) hpos,
-      ρ.fixedSubmodule_gp_phi_eq v F₀ D hD m h1, ρ.fixedSubmodule_gp_phi_eq v F D hD m h1]
+    -- REOPENED 2026-07-29 (release-17 merge).  The proof that stood here derived
+    -- the independence of the break sum from `one_le_break`, which was WITHDRAWN as
+    -- FALSE — see the withdrawal note above.  Its route was:
+    --   pick `F₀`, make its break sum a natural number by Hasse-Arf
+    --   (`exists_nat_eq_sum_breaks`), then transport to every other admissible `F`
+    --   with `sum_eq_of_card_filter_eq_of_dense`, whose two `1 ≤ μ k` hypotheses
+    --   were exactly `one_le_break`.
+    -- The TRANSPORT half survives untouched: `fixedSubmodule_gp_phi_eq` (which is
+    -- `gp_herbrand` plus Dedekind's modular law) still makes the two codimension
+    -- functions agree at every Herbrand value, and those are dense
+    -- (`exists_lowerRamificationData_phi_mem_Ioc`).  What died is only the claim
+    -- that the breaks are bounded below by `1`, which is what let the counting
+    -- functions be compared BELOW the first break.
+    -- The repair is to restate `sum_eq_of_card_filter_eq_of_dense` over `0 < μ k`
+    -- with the density hypothesis starting at `0 < w` rather than `1 ≤ w`.  That is
+    -- true (breaks are positive rationals) but is a cut-level edit to a general
+    -- lemma about `ℚ`-valued functions, and is deliberately not made at merge time.
+    sorry
   obtain ⟨s, hs⟩ := hsum
   refine ⟨s, hexists, fun F => ?_⟩
   obtain ⟨μ, hμ⟩ := hbreak hfin F

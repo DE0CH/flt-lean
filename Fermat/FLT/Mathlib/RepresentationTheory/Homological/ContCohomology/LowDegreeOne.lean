@@ -11,6 +11,8 @@ public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology
 -- class to a subgroup is `ContinuousCohomology.map`, and reading it off on
 -- cocycles is what every "the class dies on `N`" argument needs.  `public`
 -- because `cocyclesMapKer` appears in signature position below.
+-- It is also what `eval₁_mem_range_sub_of_map_cocycleClass_eq_zero` at the end of the
+-- file needs; that module is already in the cone of every consumer of this file.
 public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functoriality
 
 /-!
@@ -472,6 +474,26 @@ lemma eval₁_cocyclesMapKer (φ : H →ₜ* G) (f : TopRep.res (φ : H →* G) 
     (z : ↥(TopModuleCat.ker ((homogeneousCochains X).d 1 (1 + 1)))) (h : H) :
     eval₁ Y (cocyclesMapKer φ f 1 z).1 h = f.hom (eval₁ X z.1 (φ h)) :=
   eval₁_cochainsMap φ f z.1 h
+
+/-- **A class killed by restriction has a coboundary cochain on the source group**
+(the consumer-facing form, added at the 2026-07-28 merge).
+
+This is `flt-lean-4`'s statement, reproved over the functoriality API above rather than
+over its own rival copy of it: `Modularity/Patching.lean` calls exactly this shape at the
+decomposition group, with `f` the identity and `φ` the inclusion `D_q ↪ Γ_ℚ`.  It is the
+`Set.range` packaging of "`res [z] = 0` makes `eval₁ z ∘ φ` a principal crossed
+homomorphism", which is what a surviving-locus argument tests against. -/
+lemma eval₁_mem_range_sub_of_map_cocycleClass_eq_zero (φ : H →ₜ* G)
+    (f : TopRep.res (φ : H →* G) X ⟶ Y) (z : cocycles₁ X)
+    (hz : map φ f 1 (cocycleClass X 1 z) = 0) (σ : H) :
+    f (eval₁ X z.1 (φ σ)) ∈ Set.range fun m : ↥Y => Y.ρ σ m - m := by
+  have hzero : cocycleClass Y 1 (cocyclesMapKer φ f 1 z) = 0 := by
+    rw [← map_cocycleClass_cocyclesMapKer]
+    exact hz
+  obtain ⟨m, hm⟩ := exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hzero
+  have h1 := hm σ
+  rw [eval₁_cocyclesMapKer] at h1
+  exact ⟨m, h1.symm⟩
 
 end functoriality
 
