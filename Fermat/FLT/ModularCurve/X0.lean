@@ -23128,6 +23128,276 @@ noncomputable def Gamma0AtlasOver.baseChange {N : ℕ} {S S' : Scheme.{0}}
   cover := A.bcCover q
   quotient := hq
 
+/-! ### Reduction of the field base change to a GIT model
+
+(2026-07-28.)  `bcUniversal_of_field` far below is PROVEN over the single leaf
+`exists_gamma0AtlasOver_bcQuotient_of_field`, by the three formal steps in this
+block.  What the reduction buys is exactly what the docstring of
+`Gamma0AtlasOver.BcUniversal` asks for, and a little more:
+
+* the leaf may be discharged on **any** atlas over the base field — in
+  particular on the affine GIT model that Katz–Mazur (8.1.1) actually build,
+  whose `M` is unrelated to the given `A.M`; and
+* it may be discharged in the **`BcQuotient`** form, which is the form GIT
+  proves (a morphism *out of* `Spec (A ⊗_k K)` factoring through
+  `Spec ((A ⊗_k K)^G)`), rather than in the initiality form.
+
+The second point corrects, in a strictly weakening direction, the reason
+recorded on `BcUniversal` for preferring initiality.  That reason is sound as
+far as it goes — `A.BcQuotient q` quantifies over morphisms out of `A.bcM q`
+and so cannot be proven on a foreign model — but it does not follow that the
+leaf must be *stated* as initiality.  Existentially quantifying the atlas
+gives the prover the concrete affine handle back, and step 3 does the
+transport once and for all.
+
+The three steps:
+
+1. `exists_isIso_classify_of_isCoarseModuliY0_base` — two coarse moduli spaces
+   over one base are isomorphic over it **compatibly with their classifying
+   maps**.  This is `exists_isIso_of_isCoarseModuliY0_base` above with the
+   third conjunct kept instead of discarded: that proof already produces it as
+   `huc`, and the transport in step 3 cannot be stated without it.  The weaker
+   lemma follows from this one by dropping a conjunct, so the two should be
+   merged when this file is next tidied; they are separate here only because
+   the weaker one has two call sites that belong to other owners.
+2. `Gamma0AtlasOver.bcUniversal_of_bcQuotient` — the converse of
+   `bcQuotient_of_bcUniversal`, one line through `baseChange` and
+   `toIsCoarseModuliY0`.  With both directions in hand the two predicates are
+   PROVEN equivalent, which is what licenses stating the leaf in whichever
+   form the prover wants.
+3. `Gamma0AtlasOver.bcUniversal_transport` — `BcUniversal` moves along an
+   isomorphism of coarse spaces over the base that is compatible with
+   `classify`.  This is the step that consumes the observation recorded on
+   `BcUniversal`: the predicate mentions the atlas only through `str` and
+   `classify`, so base-changing the isomorphism along `q` carries it.
+
+**A Lean trap this block ran into, worth recording.**  `A.bcY q` and
+`pullback A.str q` are definitionally equal but not syntactically equal, and a
+composition stores its source, middle and target objects.  So `rw
+[Category.assoc]` FAILS on `(m ≫ m') ≫ pullback.fst A.str q` whenever the
+inner composition's target was elaborated as `A.bcY q` while the outer's
+middle came from `pullback.fst` — `rw` matches only up to instance
+transparency, which does not unfold `bcY`.  The symptom is a `rewrite failed:
+did not find an occurrence of the pattern (?f ≫ ?g) ≫ ?h` against a target
+that visibly has that shape.  The fix used below is to `show` every goal in
+fibre-product language once, so that all three object slots agree
+syntactically; after that the ordinary rewrites go through. -/
+
+/-- **Two coarse moduli spaces over one base are canonically isomorphic over
+it, COMPATIBLY WITH THEIR CLASSIFYING MAPS** (PROVEN — pure initiality).
+
+`exists_isIso_of_isCoarseModuliY0_base` with the classifying-map clause kept.
+The proof is the same one: feed `hc'`'s classifying map to `hc`'s universal
+property to get `a`, and symmetrically `b`; both `a ≫ b` and `𝟙 Y` solve the
+initiality problem of `hc` against itself, so `∃!` identifies them.  The extra
+conjunct is the second half of the `∃!`'s property, which the weaker statement
+simply drops. -/
+theorem exists_isIso_classify_of_isCoarseModuliY0_base {N : ℕ} {Y Y' S : Scheme.{u}}
+    {strY : Y ⟶ S} {strY' : Y' ⟶ S}
+    (hc : IsCoarseModuliY0 N strY) (hc' : IsCoarseModuliY0 N strY') :
+    ∃ a : Y ⟶ Y', IsIso a ∧ a ≫ strY' = strY ∧
+      ∀ {T : Scheme.{u}} (g : T ⟶ S) (d : Gamma0Datum N T),
+        (hc'.classify g d).1 = (hc.classify g d).1 ≫ a := by
+  obtain ⟨a, ⟨has, hac⟩, -⟩ := hc.universal strY' hc'.classify hc'.classify_natural
+  obtain ⟨b, ⟨hbs, hbc⟩, -⟩ := hc'.universal strY hc.classify hc.classify_natural
+  obtain ⟨w, -, hYuniq⟩ := hc.universal strY hc.classify hc.classify_natural
+  have hab : a ≫ b = 𝟙 Y :=
+    (hYuniq (a ≫ b) ⟨by rw [Category.assoc, hbs, has],
+        fun {_T} g d => by rw [← Category.assoc, ← hac g d, ← hbc g d]⟩).trans
+      (hYuniq (𝟙 Y) ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  obtain ⟨w', -, hY'uniq⟩ := hc'.universal strY' hc'.classify hc'.classify_natural
+  have hba : b ≫ a = 𝟙 Y' :=
+    (hY'uniq (b ≫ a) ⟨by rw [Category.assoc, has, hbs],
+        fun {_T} g d => by rw [← Category.assoc, ← hbc g d, ← hac g d]⟩).trans
+      (hY'uniq (𝟙 Y') ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  exact ⟨a, ⟨b, hab, hba⟩, has, fun {_T} g d => hac g d⟩
+
+/-- **The categorical-quotient property of the base change gives initiality**
+(PROVEN 2026-07-28) — the converse of
+`Gamma0AtlasOver.bcQuotient_of_bcUniversal`, and hence the second half of the
+equivalence that its docstring asserts.
+
+It is immediate once `baseChange` exists: granted `BcQuotient`, the base change
+IS an atlas over `S'`, and an atlas is a coarse moduli space
+(`toIsCoarseModuliY0`), whose `universal` field is `BcUniversal` on the nose —
+`baseChange` defines `Y`, `str` and `classify` to be `bcY`, `bcStr` and
+`bcClassify`, so no transport is needed, only `intro`.
+
+Note it is the *equivalence*, not this direction alone, that matters: it is
+what lets `exists_gamma0AtlasOver_bcQuotient_of_field` be stated in the
+GIT-friendly `BcQuotient` form while the consumer needs the initiality
+form. -/
+theorem Gamma0AtlasOver.bcUniversal_of_bcQuotient {N : ℕ} {S S' : Scheme.{0}}
+    (A : Gamma0AtlasOver N S) (q : S' ⟶ S) (hq : A.BcQuotient q) :
+    A.BcUniversal q := by
+  intro Y' str' c hc
+  exact (A.baseChange q hq).toIsCoarseModuliY0.universal str' c hc
+
+/-- **`BcUniversal` transports along an isomorphism of coarse spaces over the
+base** (PROVEN 2026-07-28).
+
+This is the formal content of the remark on `Gamma0AtlasOver.BcUniversal` that
+the predicate mentions its atlas only through `str` and `classify`: given a
+second atlas `A'` over the same base `S` and an isomorphism `a : A.Y ⟶ A'.Y`
+over `S` intertwining the two classifying maps, base-changing `a` along `q`
+gives an isomorphism `A.bcY q ⟶ A'.bcY q` over `S'` intertwining `bcClassify`,
+and initiality is invariant under such an isomorphism.
+
+`a` is supplied by `exists_isIso_classify_of_isCoarseModuliY0_base` applied to
+`A.toIsCoarseModuliY0` and `A'.toIsCoarseModuliY0`, so no choice is involved:
+the isomorphism between two coarse spaces of one moduli problem is canonical,
+and its compatibility with `classify` is not an extra hypothesis but part of
+what initiality produces.
+
+**Both hypotheses on `a` are load-bearing.**  Without `hastr` the base change
+of `a` does not exist (there is nothing to lift to the fibre product); without
+`hacl` it exists but need not carry `bcClassify` to `bcClassify`, and then a
+cocone can be matched by `A'` and not by `A` — compose any classify-compatible
+`a` with a nontrivial `S`-automorphism of `A'.Y` to get a witness that
+satisfies `hastr` alone. -/
+theorem Gamma0AtlasOver.bcUniversal_transport {N : ℕ} {S S' : Scheme.{0}}
+    (A A' : Gamma0AtlasOver N S) (q : S' ⟶ S)
+    (a : A.Y ⟶ A'.Y) [IsIso a] (hastr : a ≫ A'.str = A.str)
+    (hacl : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+      (A'.classify g d).1 = (A.classify g d).1 ≫ a)
+    (h : A'.BcUniversal q) : A.BcUniversal q := by
+  have hfwd : (pullback.fst A.str q ≫ a) ≫ A'.str = pullback.snd A.str q ≫ q := by
+    rw [Category.assoc, hastr]; exact pullback.condition
+  have hbwd : (pullback.fst A'.str q ≫ inv a) ≫ A.str = pullback.snd A'.str q ≫ q := by
+    rw [← hastr]
+    simp only [Category.assoc, IsIso.inv_hom_id_assoc]
+    exact pullback.condition
+  -- the base change of `a` and of its inverse, with the three equations used below
+  obtain ⟨m, m', hmm', hmfst, hmsnd, hm'snd⟩ :
+      ∃ (m : pullback A.str q ⟶ pullback A'.str q) (m' : pullback A'.str q ⟶ pullback A.str q),
+        m ≫ m' = 𝟙 (pullback A.str q) ∧
+        m ≫ pullback.fst A'.str q = pullback.fst A.str q ≫ a ∧
+        m ≫ pullback.snd A'.str q = pullback.snd A.str q ∧
+        m' ≫ pullback.snd A.str q = pullback.snd A'.str q := by
+    refine ⟨pullback.lift _ _ hfwd, pullback.lift _ _ hbwd, ?_, pullback.lift_fst _ _ _,
+      pullback.lift_snd _ _ _, pullback.lift_snd _ _ _⟩
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, pullback.lift_fst, ← Category.assoc, pullback.lift_fst,
+        Category.assoc, IsIso.hom_inv_id, Category.comp_id, Category.id_comp]
+    · rw [Category.assoc, pullback.lift_snd, pullback.lift_snd, Category.id_comp]
+  -- `m` intertwines the two base-changed classifying maps, and `m'` does so back
+  have hcl : ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+      pullback.lift (A.classify (g ≫ q) d).1 g (A.classify (g ≫ q) d).2 ≫ m
+        = pullback.lift (A'.classify (g ≫ q) d).1 g (A'.classify (g ≫ q) d).2 := by
+    intro T g d
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hmfst, ← Category.assoc, pullback.lift_fst, pullback.lift_fst]
+      exact (hacl (g ≫ q) d).symm
+    · rw [Category.assoc, hmsnd, pullback.lift_snd, pullback.lift_snd]
+  have hcl' : ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+      pullback.lift (A'.classify (g ≫ q) d).1 g (A'.classify (g ≫ q) d).2 ≫ m'
+        = pullback.lift (A.classify (g ≫ q) d).1 g (A.classify (g ≫ q) d).2 := by
+    intro T g d
+    rw [← hcl g d, Category.assoc, hmm', Category.comp_id]
+  intro Y' str' c hc
+  -- restate hypothesis and goal in fibre-product language; see the trap above
+  have h' : ∃! u : pullback A'.str q ⟶ Y', u ≫ str' = pullback.snd A'.str q ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T), (c g d).1
+        = pullback.lift (A'.classify (g ≫ q) d).1 g (A'.classify (g ≫ q) d).2 ≫ u :=
+    h str' c hc
+  show ∃! u : pullback A.str q ⟶ Y', u ≫ str' = pullback.snd A.str q ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T), (c g d).1
+        = pullback.lift (A.classify (g ≫ q) d).1 g (A.classify (g ≫ q) d).2 ≫ u
+  obtain ⟨v, ⟨hv1, hv2⟩, huniq⟩ := h'
+  refine ⟨m ≫ v, ⟨?_, ?_⟩, ?_⟩
+  · rw [Category.assoc, hv1]; exact hmsnd
+  · intro T g d
+    rw [← Category.assoc, hcl g d]
+    exact hv2 g d
+  · rintro w ⟨hw1, hw2⟩
+    have hkey : m' ≫ w = v := by
+      refine huniq _ ⟨?_, ?_⟩
+      · rw [Category.assoc, hw1]; exact hm'snd
+      · intro T g d
+        rw [← Category.assoc, hcl' g d]
+        exact hw2 g d
+    rw [← hkey, ← Category.assoc, hmm', Category.id_comp]
+
+/-- **Some atlas over `k` has the categorical-quotient property along a given
+field extension** (sorry leaf — Katz–Mazur (8.1.6)(2), and the whole
+base-change content of this section).
+
+TRUE and classical; `bcUniversal_of_field` below is PROVEN over this leaf and
+nothing else, by `bcUniversal_of_bcQuotient` and `bcUniversal_transport`.
+
+## What is owed, and what is NOT
+
+`A` is a **hypothesis**, not something to be produced, and that is what keeps
+this leaf strictly weaker than the existence leaves it sits beside: an atlas
+over `k` is already in hand, and only a model of it convenient for GIT is
+owed.  Dropping `A` would turn the statement into
+`∃ A' : Gamma0AtlasOver N (Spec k)` over an arbitrary field, which subsumes
+`nonempty_gamma0CurveAtlasOver_zmod` and makes this whole section pointless.
+
+Also NOT owed: the four geometric properties (affine, smooth, connected,
+domain).  Those ride along the pullback square in
+`nonempty_gamma0CurveAtlasOver_of_ringHom`; this leaf is about the quotient
+property alone.
+
+## The route
+
+Katz–Mazur (8.1.1): over a field some `n ≥ 3` (or `n = 4` in characteristic
+`3`) is invertible, so the moduli problem has an AFFINE GIT model
+`𝔐 = Spec R`, `Y = Spec (R^G)` with `G = GL₂(ℤ/n)` finite — `Gamma0GITPresentation`
+above is this over `ℚ`.  Exhibit that model as the `A'`, and prove `BcQuotient`
+for it: after base change `A'.bcM q = Spec (R ⊗_k K)` and
+`A'.bcY q = Spec (R^G ⊗_k K)`, and since `K` is free — hence flat — over the
+field `k`, and the invariants are the kernel of the FINITE diagram
+`R → ∏_{σ ∈ G} R`, `a ↦ (σ • a - a)_σ`, flat base change gives
+`R^G ⊗_k K = (R ⊗_k K)^G`.  Then `specInvariants_universal` (PROVEN ~21000
+lines above) supplies the factorisation, with non-separation turned into
+`G`-invariance by the base change of `dM_equivariant` exactly as in
+`Gamma0GITPresentation.toGamma0Atlas`.
+
+**Why the existential is safe.**  A lazy witness cannot weaken the consumer:
+`bcUniversal_transport` derives `A.BcUniversal q` for the GIVEN `A` from
+whatever `A'` is supplied, through the canonical classify-compatible
+isomorphism of coarse spaces, so no choice of `A'` can make the conclusion
+cheaper than it is.  `A' := A` is always admissible and leaves the whole
+content still to prove; that is the intended shape, not a loophole.
+
+## MACHINERY SURVEY (re-run 2026-07-28 against THIS pin; all three confirmed)
+
+* `AlgebraicGeometry.pullbackSpecIso R S T` is present,
+  `Mathlib/AlgebraicGeometry/Pullbacks.lean:719`, with `pullbackSpecIso_inv_fst`
+  and `_inv_snd` (`:733`) naming both legs as `Spec.map` of the inclusions.
+  This is the identification `A'.bcY q ≅ Spec (R^G ⊗_k K)` the route needs.
+* `Mathlib/RingTheory/Invariant/` (`Basic`, `Defs`, `Galois`, `Profinite`)
+  contains **no** base-change lemma: grepped for `baseChange`, `TensorProduct`
+  and `Flat`, zero hits.  So `Algebra.IsInvariant (B ⊗_k K) (R ⊗_k K) G` is
+  genuinely owed.  `Module.Flat.lTensor_exact` / `rTensor_exact`
+  (`Mathlib/RingTheory/Flat/Basic.lean`) plus `Module.Flat.of_free` are what
+  prove it.
+* **MISSING and must be built (small):** `MulSemiringAction G (R ⊗[k] K)` —
+  grepped `Mathlib/RingTheory/TensorProduct/` and
+  `Mathlib/LinearAlgebra/TensorProduct/`, zero hits.  The map is
+  `Algebra.TensorProduct.map (σ : R ≃ₐ[k] R) (AlgHom.id k K)`, which needs
+  `SMulCommClass G k R` to see `σ` as a `k`-algebra map; so whatever presentation
+  structure is used must carry the `k`-algebra structure on `R` and that
+  commutation, which `Gamma0GITPresentation` (stated over `ℚ`, where it is
+  automatic) does not.
+
+**Do NOT weaken this to an arbitrary base morphism.**  At a non-flat base change
+it is FALSE: Katz–Mazur Remark (8.1.7) gives explicit counterexamples at `p = 2`
+and `p = 3` for `ℤ[1/N] → 𝔽_p`.  The flatness is used only in the invariants
+step; nothing else in this section consumes it.
+
+**Coordination note (2026-07-28).**  A concurrent owner is introducing
+`Gamma0GITPresentationOver` / `exists_gamma0GITPresentationOver_zmod` in this
+file.  This leaf deliberately does NOT define such a structure — when that one
+lands, this leaf should be attacked on it rather than on a second, rival
+presentation type. -/
+theorem exists_gamma0AtlasOver_bcQuotient_of_field {N : ℕ} {k K : Type} [Field k] [Field K]
+    (f : k →+* K) (_A : Gamma0AtlasOver N (Spec (CommRingCat.of k))) :
+    ∃ A' : Gamma0AtlasOver N (Spec (CommRingCat.of k)),
+      A'.BcQuotient (Spec.map (CommRingCat.ofHom f)) :=
+  sorry
+
 end Gamma0AtlasOverBaseChange
 
 /-- **A smooth geometrically connected scheme over a field is geometrically
@@ -23213,10 +23483,17 @@ theorem geometricallyIntegral_of_gamma0CurveAtlasOver {N : ℕ} {k : Type} [Fiel
     geometricallyIrreducible_of_smooth_of_geometricallyConnected A.str
   exact GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible A.str
 
-/-- **The COARSE MODULI SPACE base-changes along a FIELD EXTENSION** (sorry leaf
-— Katz–Mazur (8.1.6)(2)).  This is all that remains of `bcQuotient_of_field`
-after the fpqc-descent reduction of 2026-07-28, and it is the whole
-base-change content of this section.
+/-- **The COARSE MODULI SPACE base-changes along a FIELD EXTENSION** (PROVEN
+2026-07-28 over `exists_gamma0AtlasOver_bcQuotient_of_field`, which now carries
+the whole base-change content of this section; a sorry leaf until then).
+
+Katz–Mazur (8.1.6)(2).  The reduction is in the block headed *Reduction of the
+field base change to a GIT model*, just above `end Gamma0AtlasOverBaseChange`:
+`bcUniversal_of_bcQuotient` turns the leaf's quotient property into initiality,
+and `bcUniversal_transport` carries that from the leaf's model to the given `A`
+along the canonical classify-compatible isomorphism of coarse spaces
+(`exists_isIso_classify_of_isCoarseModuliY0_base`).  Everything below still
+describes what the LEAF owes; nothing below is discharged by the reduction.
 
 TRUE and classical.  A ring map out of a field is flat (`K` is a free
 `k`-module), so (8.1.6)(2) applies and the canonical map
@@ -23331,11 +23608,40 @@ whether mathlib's `Algebra.IsInvariant` has, or can cheaply be given, the flat
 base change `Algebra.IsInvariant (B ⊗_k K) (A ⊗_k K) G` — at this pin
 `Mathlib/RingTheory/Invariant/` contains no base-change lemma at all, so that
 is a genuine (small) piece of missing algebra, and it is the only part of the
-route that is not modular. -/
+route that is not modular.
+
+## UPDATE 2026-07-28 — the model-transport half is now DONE, and the leaf moved
+
+Everything above is still owed, but it is owed by
+`exists_gamma0AtlasOver_bcQuotient_of_field`, not here.  Two corrections to the
+text above, both in the direction of making the leaf EASIER:
+
+* the surviving leaf need not be stated as initiality.  The reason given above
+  for preferring `BcUniversal` — that `A.BcQuotient q` quantifies over
+  morphisms out of `A.bcM q`, so a proof on a foreign GIT model cannot be
+  transported to it — is correct, but it argues against proving `BcQuotient`
+  **for the given `A`**, not against stating the leaf as `BcQuotient` for an
+  EXISTENTIALLY QUANTIFIED model.  With the atlas quantified, the prover keeps
+  the concrete affine handle (`Spec (R ⊗_k K) ⟶ Y'` factoring through
+  `Spec ((R ⊗_k K)^G)`), which is the shape `specInvariants_universal` consumes,
+  and `bcUniversal_transport` moves the conclusion to `A` afterwards.
+* the machinery survey above was re-run against this pin on 2026-07-28 and all
+  three of its claims still hold; they are restated on the leaf.
+
+The "THERE IS NO FORMAL PROOF" section remains accurate about the base-change
+CONTENT: nothing here derives the quotient property from the seven formal
+fields, and the right-adjoint obstruction and both dead routes are unaffected.
+What changed is only where the content is asked for. -/
 theorem bcUniversal_of_field {N : ℕ} {k K : Type} [Field k] [Field K] (f : k →+* K)
     (A : Gamma0AtlasOver N (Spec (CommRingCat.of k))) :
-    A.BcUniversal (Spec.map (CommRingCat.ofHom f)) :=
-  sorry
+    A.BcUniversal (Spec.map (CommRingCat.ofHom f)) := by
+  obtain ⟨A', hq'⟩ := exists_gamma0AtlasOver_bcQuotient_of_field f A
+  obtain ⟨a, ha, hastr, hacl⟩ :=
+    exists_isIso_classify_of_isCoarseModuliY0_base A.toIsCoarseModuliY0 A'.toIsCoarseModuliY0
+  haveI := ha
+  intro Y' str' c hc
+  exact A.bcUniversal_transport A' _ a hastr hacl
+    (A'.bcUniversal_of_bcQuotient _ hq') str' c hc
 
 /-- **The categorical quotient descends along a FIELD EXTENSION** (PROVEN
 2026-07-28 over `bcUniversal_of_field`, by the fpqc-descent reduction
