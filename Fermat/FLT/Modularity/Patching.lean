@@ -10975,6 +10975,12 @@ defects become assumptions rather than burdens:
 So the automorphic content below is the genuine remaining obligation of the cut,
 and the two audits above are cut-level repairs that do not change this statement.
 
+**SUPERSEDED IN PART, 2026-07-29** — that conclusion is right about `𝒪` and
+about `Runiv` and WRONG about `diamond`; see FAITHFULNESS AUDIT #2 below.  The
+sentence "here the same objects arrive as hypotheses, so the defects become
+assumptions rather than burdens" holds of an object the CONCLUSION says nothing
+about.  Clause 1 of the conclusion is a statement about `RingHom.ker diamond`.
+
 The reduction that WOULD split them is the one the parent's "WHAT IS STILL
 MISSING" section names and declines: state the `ℚ` analogue of
 `HilbertAuxHeckeAlgebra` — a raised-level Hecke algebra CARRYING its module —
@@ -10985,6 +10991,126 @@ and the Hilbert twin's own FORMAL-CONTENT AUDIT records that the existence leaf
 for that structure was discharged **without any level raising happening**.  The
 decision not to take it is deliberate and is restated here so that it is not
 mistaken for an oversight.
+
+# FAITHFULNESS AUDIT #2 (2026-07-29): `diamond` IS HANDED ACROSS THE SEAM AND
+
+# THE CONCLUSION ASSERTS A PROPERTY OF IT.  DO NOT DISPATCH A PROVER HERE YET.
+
+**The mechanical fact, verified with `lake env lean` over `PatchingCore` on
+2026-07-29** (four lines, and it is the whole of this audit):
+
+    theorem ker_le (hd : 0 < d) {A : Type*} [CommRing A]
+        (diamond : MvPowerSeries (Fin q) ℤ_[p] →+* A)
+        [Module A (taylorWilesCoordModel p q d n)]
+        (hlam : ∀ x m, x • m = diamond x • m) :
+        RingHom.ker diamond ≤ taylorWilesLevelIdeal p (fun _ : Fin q => n) := by
+      intro x hx
+      have h := hlam x (Pi.single ⟨0, hd⟩ (Ideal.Quotient.mk _ 1))
+      rw [(hx : diamond x = 0), zero_smul] at h
+      have hi := congrFun h ⟨0, hd⟩
+      rw [Pi.smul_apply, Pi.single_eq_same, Pi.zero_apply] at hi
+      exact Ideal.Quotient.eq_zero_iff_mem.mp (by rw [← hi]; show _ = _; rw [mul_one])
+
+`Ann_Λ (Λ/𝔟_(n))^d = 𝔟_(n)` for `d > 0`, and clause 1 says the `Λ`-action on the
+coordinate model factors through `diamond`.  `0 < d` is not an extra hypothesis:
+`hbot` and `hM0` force it, by the three lines
+`nonempty_taylorWilesLevel_of_raw` already runs for its `hMnt` (`d = 0` makes
+`L.M` subsingleton through `coordM`, while `L.projM` surjects onto a nontrivial
+`M0`).  So, with `hbn`, the conclusion entails
+
+    RingHom.ker diamond = taylorWilesLevelIdeal p (fun _ : Fin q => n)     (★)
+
+EXACTLY.  Nothing bounds `ker diamond` from ABOVE: `hbn` bounds it from below and
+`hker` mentions only `(taylorWilesAug p q).map diamond`.  Two consequences, and
+they close from opposite sides.
+
+**(1) The junk diamond is excluded only by an arithmetic fact nobody states.**
+Take `diamond := (algebraMap ℤ_[p] _).comp MvPowerSeries.constantCoeff`, the map
+`exists_auxDeformationDiamondControl`'s own vacuity check is built from.  It
+satisfies `hbn`, and it satisfies `hker` precisely when `toRuniv` is INJECTIVE.
+That leaf dismisses this as "the level was never raised" — but no hypothesis of
+either package says the level WAS raised.  Contrapositive, which is the sharp
+form: for `0 < q` and `0 < n` this leaf PROVES `RingHom.ker toRuniv ≠ ⊥`, i.e.
+`𝒟Q.R ≇ Runiv`.  Indeed (★) gives `ker diamond = 𝔟_(n)`, and
+`X i ∈ 𝔫 \ 𝔟_(n)` for every `n ≥ 1` (verified 2026-07-29: every element of
+`taylorWilesLevelIdeal p (fun _ => n)` has vanishing constant term and its
+degree-one coefficients in `(p ^ n)` — the degree-one coefficient of the
+generator `(1 + X i)^(p^n) − 1` is the binomial `p ^ n` — by
+`Submodule.span_induction` over the degree-one product rule
+`coeff_{e_i}(fg) = f(0)·coeff_{e_i}(g) + coeff_{e_i}(f)·g(0)`, while `X i` has
+degree-one coefficient `1`), so some
+`diamond (X i) ≠ 0` and `ker toRuniv = (𝔫).map diamond ≠ ⊥`.  A leaf whose
+conclusion DECIDES an arithmetic question about its own hypotheses is asking for
+something those hypotheses do not contain.
+
+**(2) The intended witness fails `hbn`, for the opposite reason.**  `hQ` forces
+`q ≡ 1 [MOD p^(n+1)]` for EVERY `q ∈ Q`, so `Δ_q = (ℤ/q)ˣ(p)` has order `p^(e_q)`
+with `e_q ≥ n + 1`; `isSplitTorusAt` — `𝒟Q`'s own local condition — permits
+`χ|_{I_q}` of that full order, and `IsRaisedLevelHardlyRamified`'s docstring says
+in as many words that "the diamond structure map `Λ → R_Q` … is nothing but this
+action".  On the universal `𝒟Q.R` the diamond action therefore has exponent
+`p^E`, `E ≥ n + 1`, so `ker diamond ⊆ 𝔟_(e) ⊊ 𝔟_(n)` — the opposite inclusion to
+`hbn`.  (Strictness verified the same day: `(1 + X i)^(p^n) − 1 ∉ 𝔟_(e)` for
+`n < e`, by the same degree-one coefficient argument — `p ^ n` against
+`(p ^ e)`, and `p ^ e ∤ p ^ n` in `ℤ_[p]` by `PadicInt.norm_p_pow`.)  What the
+classical construction truncates to level `n` is
+`R_Q/𝔟_(n)R_Q` and `M_Q/𝔟_(n)M_Q`, BY HAND; `φ` identifies `Λ_𝒪 ⧸ I` with the
+UNtruncated `𝒟Q.R`, and `hbn` then silently asks for the truncation anyway.
+
+Together: either the `Δ_Q`-action on `𝒟Q.R` is faithful — which is exactly what
+Diamond's freeness delivers, since `Λ` acts on `M_Q` THROUGH `diamond` and a free
+`Λ/𝔟_(e)`-module has annihilator `𝔟_(e)` — and then `hbn` is false; or it is
+degenerate, and then (★) is.  No third case, and no object the construction
+produces satisfies the package as it stands.
+
+**The EXPONENT AUDIT of `exists_taylorWilesAuxLevelPresentedDatum` is NOT what is
+wrong.**  Pushing the MODULE down to the constant exponent is sound, and clause 1
+survives it (`ker diamond ⊆ 𝔟_(e) ⊆ 𝔟_(n)`).  What does not push down is the
+RING.
+
+# THE REPAIR
+
+* **Necessary, and cheap: UNPIN THE EXPONENT VECTOR.**  This kills defect (2)
+  outright and the machinery for it is already in place.  `TaylorWilesLevelRaw`
+  carries an ABSTRACT `bIdeal`; `exists_taylorWilesLevelRaw` builds its level at
+  a general vector `e` with `he : ∀ i, n ≤ e i`, discharging the two bounds by
+  `taylorWilesLevelIdeal_le_maximalIdeal_pow` and `taylorWilesLevelIdeal_le_aug`
+  (so `hbn` is consumed by NOTHING except this leaf); and
+  `exists_taylorWilesAuxLevelData` still quantifies `e` existentially.  Only
+  `exists_taylorWilesAuxLevelPresentedDatum` pins `e ≡ n`, for the reason its
+  EXPONENT AUDIT gives — which is sound for the MODULE and, as (2) shows, not for
+  the RING.  Let the RING leaf return `e` alongside `diamond` (it knows it:
+  `e_i = v_p(q_i − 1)`, and `𝔟_(e) ≤ ker diamond` is then the honest statement
+  that the action factors through `Δ_Q`, provable there), thread `e` through this
+  leaf and put the module on `(Λ/𝔟_(e))^d`.  Every `𝔟_(n)` above becomes `𝔟_(e)`,
+  (★) becomes `ker diamond = 𝔟_(e)` — which is TRUE of the intended witness and
+  is exactly Diamond's freeness — and `hbn` stops being a clause no witness can
+  satisfy.  The algebraic half costs nothing: `nonempty_augQuotEquiv_of_taylorWilesBottom`
+  above already proves its `key` step for EVERY ideal `a ≤ 𝔫`, so it generalises
+  from `𝔟_(n)` to `𝔟_(e)` by substitution.  (The cheap alternative, deleting
+  `hbn` and its ring-side clause outright, also removes the inconsistency, but
+  throws away information the freeness proof wants.)
+* **Not sufficient**: unpinning `e` does not touch defect (1).  Clause 1 still
+  asserts `ker diamond ≤ 𝔟_(e)` of a map this leaf did not make, and a prover who
+  builds the honest `M_Q` has no way to know the handed-in `diamond` is the one
+  its `Λ`-action goes through.  Handing THAT inclusion in as a hypothesis merely
+  relocates the obligation onto a Galois-cohomology leaf that cannot discharge
+  it, since the inclusion IS Diamond's freeness (`Λ` acts on `M_Q` through
+  `diamond`, and a free `Λ/𝔟_(e)`-module has annihilator exactly `𝔟_(e)`).
+* **Correct**: `diamond` must be PRODUCED where the freeness is proven.  That is
+  the reduction named and declined four paragraphs above — the `ℚ` analogue of
+  `HilbertAuxHeckeAlgebra`, a raised-level Hecke algebra CARRYING its module,
+  with the `R_Q`-action derived from weak universality.  The governing principle
+  is this file's own, from the INTERFACE REPAIR section of
+  `exists_taylorWilesAuxLevelPresentedDatum`: *a datum handed across a seam can
+  only be constrained by what already saw it*.  `Q` was repaired that way on
+  2026-07-27; `diamond` has the identical defect and wants the identical repair.
+
+The `sorry` below is therefore NOT vouched as provable in its present form.  It
+is left in place rather than deleted because the whole chain above it
+(`exists_auxHeckeModuleData`, `exists_taylorWilesAuxLevelPresentedDatum`) is
+PROVEN GLUE over it and the re-cut touches the RING half, which was under repair
+elsewhere on 2026-07-29.  Diamond 1997 Thm. 2.1 and Ihara are not what blocks it.
 
 References: Diamond, Invent. Math. 128 (1997), Thm. 2.1; Taylor-Wiles, Ann. of
 Math. 141 (1995), §2; Wiles, ibid. ch. 3; Darmon-Diamond-Taylor §3 (Ihara's
@@ -11083,6 +11209,15 @@ automorphic content).  `projM` is then `θ` after the quotient map, and its
 surjectivity and control clauses are surjectivity and injectivity of that
 composite.  The two forms are equivalent — see the sub-leaf's docstring for the
 converse direction, which uses only the `Λ`-compatibility clause and `hker`.
+
+**BUT THE CUT ITSELF IS DEFECTIVE — read FAITHFULNESS AUDIT #2 on
+`exists_auxHeckeCoordModuleData` above before dispatching anyone at that
+sub-leaf** (2026-07-29).  In one line: `diamond` is handed across the RING/HECKE
+seam, and the `Λ`-compatibility clause is a statement ABOUT it — it forces
+`RingHom.ker diamond = taylorWilesLevelIdeal p (fun _ => n)` exactly, which
+`hbn` bounds only from below and which no intended witness satisfies, since `hQ`
+forces the `Δ_Q` exponent to be at least `p^(n+1)`.  The repair is on the RING
+side and is spelled out there.
 
 Everything about the RING has already happened: `𝒟Q` is the weakly universal
 raised-level deformation datum, `φ` records that the presented ring `Λ_𝒪 ⧸ I`
