@@ -13230,7 +13230,11 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N �
           AddSubgroup.zmultiples g' := by
   haveI : CharZero (AlgebraicClosure ℚ) :=
     charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
-  exact WeierstrassCurve.exists_stableCyclic_quarticTwist hN E hj g hg haut ι hι hmove hu
+  -- `Algebra.IsAlgebraic ℚ ℚ̄` must be supplied BY HAND: at the literal base field `ℚ` the two
+  -- `Algebra ℚ ℚ̄` instances form a diamond and it does not synthesise.  Same workaround as
+  -- `mem_range_of_fixed` below and `Patching.lean`'s `halgQ`.
+  exact WeierstrassCurve.exists_stableCyclic_quarticTwist (AlgebraicClosure.isAlgebraic ℚ)
+    hN E hj g hg haut ι hι hmove hu
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (sorry leaf, opened 2026-07-28 by
 decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`; the FIRST of its

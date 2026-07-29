@@ -32,7 +32,8 @@ Material for `Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point` together wit
   a cyclic subgroup that is Galois-stable only up to an automorphism becomes genuinely stable
   on a quartic twist.
 
-**`Ω` must be an ALGEBRAIC CLOSURE of `K`** (`[IsAlgClosed Ω] [Algebra.IsAlgebraic K Ω]`).
+**`Ω` must be an ALGEBRAIC CLOSURE of `K`** (`[IsAlgClosed Ω]` plus an EXPLICIT
+`halg : Algebra.IsAlgebraic K Ω`; see below for why that one is not an instance argument).
 Without that, `exists_quarticTwistParameter` is FALSE — its conclusion asks for a fourth root
 in `Ω` that need not be there.  The witness (`K = ℚ`, `Ω = ℚ(ζ₈)`, `y² = x³ - 2x`, `g = (√2,0)`
 of order `2`) is written out in that theorem's docstring; the instances were added on
@@ -83,7 +84,7 @@ to the owner of that file rather than done here, since it changes a released sig
 cochains, and a character of `Gal(Ω/K)` with no finite level need not be `σ ↦ σ(s)/s` for any
 `s`.  `hmul` is load-bearing too — a mere `±1`-valued *function* is not a coboundary. -/
 theorem exists_sq_eq_algebraMap_of_quadraticChar [PerfectField K] [IsAlgClosed Ω]
-    [Algebra.IsAlgebraic K Ω]
+    (halg : Algebra.IsAlgebraic K Ω)
     (χ : (Ω ≃ₐ[K] Ω) → K) (hval : ∀ σ, χ σ = 1 ∨ χ σ = -1)
     (hmul : ∀ σ τ, χ (σ * τ) = χ σ * χ τ)
     (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
@@ -725,8 +726,8 @@ are used.  Everything needed is in the pin: `IntermediateField.adjoin`,
 `Algebra.IsAlgebraic K Ω`), `normalClosure.is_finiteDimensional` and
 `normalClosure.isGalois`.  What must be written is the bookkeeping that turns the finite point
 set into a finite generating set — the mathematics is not the obstacle here, the plumbing is. -/
-theorem exists_finiteLevel_quarticTwistChar [Algebra.IsAlgebraic K Ω] {N : ℕ} (hN : N ≠ 0)
-    (E : WeierstrassCurve K) [E.IsElliptic]
+theorem exists_finiteLevel_quarticTwistChar (halg : Algebra.IsAlgebraic K Ω) {N : ℕ}
+    (hN : N ≠ 0) (E : WeierstrassCurve K) [E.IsElliptic]
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N) :
     ∃ (L : IntermediateField K Ω) (_ : FiniteDimensional K L) (_ : IsGalois K L),
       ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) →
@@ -772,14 +773,26 @@ work here: `δ = 2^{3/4}`, `d = 8`, `E' : y² = x³ - 16x`, `ψ g = (4, 0)` — 
 
 #### The repair, and why it costs the consumers nothing
 
-Two instance hypotheses, `[IsAlgClosed Ω]` and `[Algebra.IsAlgebraic K Ω]`, i.e. `Ω` is an
-ALGEBRAIC CLOSURE of `K`.  That is exactly the setting of the only consumer —
-`exists_stableCyclic_twist_of_autStable_of_j_eq_1728` in `Fermat/FLT/ModularCurve/X0.lean`
-instantiates `K := ℚ`, `Ω := AlgebraicClosure ℚ`, and both instances are found by synthesis —
-so no call site changed.  `Algebra.IsAlgebraic` is not redundant decoration next to
-`IsAlgClosed`: it is what makes `Gal(Ω/K)` an honest absolute Galois group with fixed field `K`,
-which Hilbert 90 needs.  The two downstream theorems in this file carry the same two instances,
-and their proofs are unchanged.
+`Ω` must be an ALGEBRAIC CLOSURE of `K`: `[IsAlgClosed Ω]` together with
+`halg : Algebra.IsAlgebraic K Ω`.  `Algebra.IsAlgebraic` is not redundant decoration next to
+`IsAlgClosed`: it is what makes `Gal(Ω/K)` an honest absolute Galois group with fixed field
+`K`, which Hilbert 90 needs.  The two downstream theorems in this file carry the same two
+hypotheses and their proofs are otherwise unchanged.
+
+**Why `halg` is an EXPLICIT argument and not an instance** — this is not a style choice, it is
+forced.  `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` is NOT SYNTHESIZABLE anywhere in this
+tree: at the literal base field `ℚ` the two `Algebra ℚ ℚ̄` instances form a DIAMOND, a condition
+already documented in `X0.lean`'s own `mem_range_of_fixed` ("at the literal `F = ℚ` the two
+`Algebra ℚ ℚ̄` instances form a diamond and `IsAlgClosure ℚ ℚ̄` fails to synthesise") and worked
+around by hand in `Fermat/FLT/Modularity/Patching.lean` with
+`haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ`.
+Verified here rather than assumed: under X0's exact import surface, `IsAlgClosed ℚ̄` synthesises
+but `Algebra.IsAlgebraic ℚ ℚ̄` and `IsAlgClosure ℚ ℚ̄` both fail, and RE-DECLARING the mathlib
+instance in this file does **not** fix it — the diamond is in the `Algebra` instance itself, so
+no re-export can reach it.  Making it an instance argument would therefore hand every consumer
+an unsatisfiable obligation.  As an explicit argument it costs the one call site a single extra
+token, `AlgebraicClosure.isAlgebraic ℚ`, and it puts the requirement where a consumer must
+confront it.  `[IsAlgClosed Ω]` stays an instance because it does synthesise.
 
 #### The route, now that it is proven
 
@@ -809,7 +822,7 @@ hypothesis of the conclusion with values of `(C.u)²` differing by a sign, and n
 satisfy both.  `hN` and `hg` are consumed twice over — once for the finiteness of `⟨g⟩` that
 upgrades "maps into" to "maps onto" in `algebraMap_quarticTwistChar_eq`, and once for the
 finite level of `χ`. -/
-theorem exists_quarticTwistParameter [IsAlgClosed Ω] [Algebra.IsAlgebraic K Ω]
+theorem exists_quarticTwistParameter [IsAlgClosed Ω] (halg : Algebra.IsAlgebraic K Ω)
     {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
     (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
@@ -825,9 +838,9 @@ theorem exists_quarticTwistParameter [IsAlgClosed Ω] [Algebra.IsAlgebraic K Ω]
         (∀ x ∈ AddSubgroup.zmultiples g,
           autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g) →
         σ (δ : Ω) ^ 2 = (δ : Ω) ^ 2 * (C.u : Ω) ^ 2 := by
-  obtain ⟨L, hLfin, hLgal, hLinfl⟩ := exists_finiteLevel_quarticTwistChar hN E g hg
+  obtain ⟨L, hLfin, hLgal, hLinfl⟩ := exists_finiteLevel_quarticTwistChar halg hN E g hg
   obtain ⟨d, s, hd0, hs2, hs⟩ :=
-    Field.exists_sq_eq_algebraMap_of_quadraticChar (quarticTwistChar g)
+    Field.exists_sq_eq_algebraMap_of_quadraticChar halg (quarticTwistChar g)
       (quarticTwistChar_eq_one_or g)
       (quarticTwistChar_mul hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu) L hLinfl
   have hs0 : s ≠ 0 := by
@@ -858,8 +871,8 @@ Given the twisting parameter `d` and a fourth root `δ` of it, the twist is
 `autMap_twist_comm` moves `[ζ_σ]` back across `ψ`, so the goal reduces to
 `[ζ_σ](σ z) ∈ ⟨g⟩`.  The leaf says `ζ_σ² = u_σ²`, hence `ζ_σ = ±u_σ`, and `autMap_diag_neg` turns
 the `−` case into a negation, which `⟨g⟩` absorbs.  `haut` supplies `[u_σ](σ z) ∈ ⟨g⟩`. -/
-theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω] [Algebra.IsAlgebraic K Ω]
-    {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω]
+    (halg : Algebra.IsAlgebraic K Ω) {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
     (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
@@ -874,7 +887,7 @@ theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω] [Algebra.Is
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   obtain ⟨d, hd, δ, hδ4, hrel⟩ :=
-    exists_quarticTwistParameter hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu
+    exists_quarticTwistParameter halg hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu
   have hδ0 : (δ : Ω) ≠ 0 := δ.ne_zero
   have hEa₄ : (E⁄Ω).a₄ = algebraMap K Ω E.a₄ := rfl
   have hEa₄K : E.a₄ ≠ 0 := fun h0 => ha₄ (by rw [hEa₄, h0, _root_.map_zero])
@@ -973,7 +986,7 @@ isomorphism — `exists_conj_autMap_baseChange` conjugates the automorphisms and
 `equivVariableChangeBaseChange_galois` says the isomorphism is `Gal(Ω/K)`-equivariant, since
 `C₀` has coefficients in `K` — and then applies
 `exists_stableCyclic_quarticTwist_of_quartic`. -/
-theorem exists_stableCyclic_quarticTwist [IsAlgClosed Ω] [Algebra.IsAlgebraic K Ω]
+theorem exists_stableCyclic_quarticTwist [IsAlgClosed Ω] (halg : Algebra.IsAlgebraic K Ω)
     {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (hj : E.j = 1728)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
@@ -1039,7 +1052,8 @@ theorem exists_stableCyclic_quarticTwist [IsAlgClosed Ω] [Algebra.IsAlgebraic K
     exact hx' (by
       have := (hmemΘ _).mp hcon
       rwa [hιconj, Θ.apply_symm_apply] at this)
-  exact exists_stableCyclic_quarticTwist_of_quartic hN (C₀ • E) h₁ h₂ h₃ h₆ ha₄ g₁ hg₁ haut₁ _
+  exact exists_stableCyclic_quarticTwist_of_quartic halg hN (C₀ • E) h₁ h₂ h₃ h₆ ha₄ g₁ hg₁
+    haut₁ _
     hι₁ hmove₁ hu₁
 
 end BaseChange
