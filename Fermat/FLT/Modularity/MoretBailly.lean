@@ -16647,7 +16647,11 @@ theorem exists_directions_irreducible_familyPlaneSection {K : Type*} [Field K]
 `exists_irreducibilityFormsInt_two` below — and with it its sibling
 `exists_absolutelyIrreducibleForms_two`, which is derived from it in a dozen lines
 — is now PROVEN over exactly ONE input: `exists_productLocusFormsInt`, the
-closedness of the image of multiplication. That is step 3 of the four-step route
+closedness of the image of multiplication. **UPDATE 2026-07-28: that input is now
+PROVEN too**, over the single general leaf `exists_projectiveEliminationFormsInt`
+(the fundamental theorem of elimination theory, stated over `ℤ`), so the one open
+statement in this whole cluster is that general leaf and nothing else. It is step 3
+of the four-step route
 recorded on `exists_absolutelyIrreducibleForms_two`, and the only step that is
 genuine elimination theory. Steps 1, 2 and 4 are the proven material in this
 block:
@@ -16889,9 +16893,530 @@ theorem exists_unionForms.{uu, vv} {ι : Type vv} {n : ℕ} (kk : Fin n → ℕ)
     rw [map_prod, MvPolynomial.eval_prod]
     exact Finset.prod_eq_zero (Finset.mem_univ j) (hj _)
 
-/-- **STEP 3 OF NOETHER'S ROUTE (SORRY LEAF, cut 2026-07-28)** — CLOSEDNESS OF THE
-IMAGE OF MULTIPLICATION, and after this cut the ONLY thing still open in the whole
-Noether half of `exists_bertiniNoetherWitness_of_three_le`.
+namespace ProductLocusForms
+
+open _root_.MvPolynomial
+
+/-- The exponent vector of `X₀ ^ p.1 * X₁ ^ p.2`. -/
+noncomputable def plMon (p : ℕ × ℕ) : Fin 2 →₀ ℕ := Finsupp.single 0 p.1 + Finsupp.single 1 p.2
+
+@[simp] lemma plMon_apply_zero (p : ℕ × ℕ) : plMon p 0 = p.1 := by
+  simp [plMon]
+
+@[simp] lemma plMon_apply_one (p : ℕ × ℕ) : plMon p 1 = p.2 := by
+  simp [plMon]
+
+lemma plMon_self (m : Fin 2 →₀ ℕ) : plMon (m 0, m 1) = m := by
+  ext i
+  fin_cases i <;> simp
+
+lemma plMon_injective : Function.Injective plMon := by
+  intro p q h
+  have h0 := congrArg (fun f => f 0) h
+  have h1 := congrArg (fun f => f 1) h
+  simp only [plMon_apply_zero, plMon_apply_one] at h0 h1
+  exact Prod.ext h0 h1
+
+lemma plMon_sum (p : ℕ × ℕ) : (plMon p).sum (fun _ e => e) = p.1 + p.2 := by
+  rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+  simp [Fin.sum_univ_two]
+
+lemma coeff_eq_zero_of_apply_zero_gt {K : Type*} [CommRing K] {D : ℕ}
+    {g : MvPolynomial (Fin 2) K} (hg : g.totalDegree ≤ D) {m : Fin 2 →₀ ℕ} (hm : D < m 0) :
+    coeff m g = 0 := by
+  apply coeff_eq_zero_of_totalDegree_lt
+  refine lt_of_le_of_lt hg ?_
+  calc D < m 0 := hm
+    _ ≤ ∑ i ∈ m.support, m i := by
+        refine Finset.single_le_sum (f := fun i => m i) (fun _ _ => Nat.zero_le _) ?_
+        simp only [Finsupp.mem_support_iff]
+        omega
+
+lemma coeff_eq_zero_of_apply_one_gt {K : Type*} [CommRing K] {D : ℕ}
+    {g : MvPolynomial (Fin 2) K} (hg : g.totalDegree ≤ D) {m : Fin 2 →₀ ℕ} (hm : D < m 1) :
+    coeff m g = 0 := by
+  apply coeff_eq_zero_of_totalDegree_lt
+  refine lt_of_le_of_lt hg ?_
+  calc D < m 1 := hm
+    _ ≤ ∑ i ∈ m.support, m i := by
+        refine Finset.single_le_sum (f := fun i => m i) (fun _ _ => Nat.zero_le _) ?_
+        simp only [Finsupp.mem_support_iff]
+        omega
+
+/-- The coefficient index box: bidegree `≤ D` in each of the two variables. -/
+abbrev Box (D : ℕ) : Type := Fin (D + 1) × Fin (D + 1)
+
+noncomputable def boxMon {D : ℕ} (p : Box D) : Fin 2 →₀ ℕ := plMon ((p.1 : ℕ), (p.2 : ℕ))
+
+lemma boxMon_injective {D : ℕ} : Function.Injective (boxMon (D := D)) := by
+  intro p q h
+  have h' := plMon_injective h
+  exact Prod.ext (Fin.ext (congrArg Prod.fst h')) (Fin.ext (congrArg Prod.snd h'))
+
+@[simp] lemma boxMon_apply_zero {D : ℕ} (p : Box D) : boxMon p 0 = (p.1 : ℕ) := by
+  simp [boxMon]
+
+@[simp] lemma boxMon_apply_one {D : ℕ} (p : Box D) : boxMon p 1 = (p.2 : ℕ) := by
+  simp [boxMon]
+
+lemma exists_boxMon_eq {D : ℕ} {m : Fin 2 →₀ ℕ} (h0 : m 0 ≤ D) (h1 : m 1 ≤ D) :
+    ∃ p : Box D, boxMon p = m :=
+  ⟨(⟨m 0, by omega⟩, ⟨m 1, by omega⟩), by simpa [boxMon] using plMon_self m⟩
+
+/-- The plane polynomial with box coefficient vector `u`. -/
+noncomputable def plPoly {K : Type*} [CommRing K] {D : ℕ} (u : Box D → K) :
+    MvPolynomial (Fin 2) K :=
+  ∑ p : Box D, monomial (boxMon p) (u p)
+
+lemma coeff_plPoly {K : Type*} [CommRing K] {D : ℕ} (u : Box D → K) (m : Fin 2 →₀ ℕ) :
+    coeff m (plPoly u) = ∑ p : Box D, if boxMon p = m then u p else 0 := by
+  simp [plPoly, MvPolynomial.coeff_sum, MvPolynomial.coeff_monomial]
+
+@[simp] lemma coeff_plPoly_boxMon {K : Type*} [CommRing K] {D : ℕ} (u : Box D → K) (p : Box D) :
+    coeff (boxMon p) (plPoly u) = u p := by
+  rw [coeff_plPoly, Finset.sum_eq_single p]
+  · simp
+  · intro b _ hb
+    exact if_neg fun h => hb (boxMon_injective h)
+  · intro h; exact absurd (Finset.mem_univ p) h
+
+lemma coeff_plPoly_of_forall_ne {K : Type*} [CommRing K] {D : ℕ} (u : Box D → K)
+    {m : Fin 2 →₀ ℕ} (hm : ∀ p : Box D, boxMon p ≠ m) : coeff m (plPoly u) = 0 := by
+  rw [coeff_plPoly]
+  exact Finset.sum_eq_zero fun p _ => if_neg (hm p)
+
+lemma plPoly_coeff {K : Type*} [CommRing K] {D : ℕ} {g : MvPolynomial (Fin 2) K}
+    (hg : g.totalDegree ≤ D) : plPoly (fun p : Box D => coeff (boxMon p) g) = g := by
+  ext m
+  rw [coeff_plPoly]
+  by_cases h0 : m 0 ≤ D
+  · by_cases h1 : m 1 ≤ D
+    · obtain ⟨p, hp⟩ := exists_boxMon_eq (D := D) h0 h1
+      rw [Finset.sum_eq_single p]
+      · simp [hp]
+      · intro b _ hb
+        exact if_neg fun h => hb (boxMon_injective (h.trans hp.symm))
+      · intro h; exact absurd (Finset.mem_univ p) h
+    · rw [coeff_eq_zero_of_apply_one_gt hg (by omega)]
+      refine Finset.sum_eq_zero fun p _ => if_neg fun h => ?_
+      have hlt := p.2.isLt
+      have := congrArg (fun f => f 1) h
+      simp only [boxMon_apply_one] at this
+      omega
+  · rw [coeff_eq_zero_of_apply_zero_gt hg (by omega)]
+    refine Finset.sum_eq_zero fun p _ => if_neg fun h => ?_
+    have hlt := p.1.isLt
+    have := congrArg (fun f => f 0) h
+    simp only [boxMon_apply_zero] at this
+    omega
+
+lemma plPoly_ne_zero {K : Type*} [CommRing K] {D : ℕ} {u : Box D → K} (hu : u ≠ 0) :
+    plPoly u ≠ 0 := by
+  obtain ⟨p, hp⟩ := Function.ne_iff.mp hu
+  intro h
+  exact hp (by simpa [h] using (coeff_plPoly_boxMon u p).symm)
+
+lemma totalDegree_plPoly_le {K : Type*} [CommRing K] {D d : ℕ} {u : Box D → K}
+    (hu : ∀ p : Box D, u p ≠ 0 → (p.1 : ℕ) + (p.2 : ℕ) ≤ d) : (plPoly u).totalDegree ≤ d := by
+  refine le_trans (totalDegree_finsetSum _ _) (Finset.sup_le ?_)
+  intro p _
+  by_cases h : u p = 0
+  · simp [h]
+  · refine le_trans (totalDegree_monomial_le _ _) ?_
+    simp only [Function.id_def]
+    rw [boxMon, plMon_sum]
+    exact hu p h
+
+lemma plPoly_mul {K : Type*} [CommRing K] {D₁ D₂ : ℕ} (u : Box D₁ → K) (v : Box D₂ → K) :
+    plPoly u * plPoly v =
+      ∑ p : Box D₁, ∑ q : Box D₂, monomial (boxMon p + boxMon q) (u p * v q) := by
+  simp only [plPoly, Finset.sum_mul_sum, monomial_mul]
+
+lemma coeff_plPoly_mul {K : Type*} [CommRing K] {D₁ D₂ : ℕ} (u : Box D₁ → K) (v : Box D₂ → K)
+    (m : Fin 2 →₀ ℕ) :
+    coeff m (plPoly u * plPoly v)
+      = ∑ p : Box D₁, ∑ q : Box D₂, if boxMon p + boxMon q = m then u p * v q else 0 := by
+  rw [plPoly_mul]
+  simp only [MvPolynomial.coeff_sum, MvPolynomial.coeff_monomial]
+
+/-- A nonzero matrix over a field all of whose `2 × 2` minors vanish is an outer product of
+two nonzero vectors. -/
+lemma exists_rankOne {K : Type*} [Field K] {α β : Type*} {z : α × β → K} (hz : z ≠ 0)
+    (h : ∀ (p r : α) (q s : β), z (p, q) * z (r, s) = z (p, s) * z (r, q)) :
+    ∃ (u : α → K) (v : β → K), u ≠ 0 ∧ v ≠ 0 ∧ ∀ p q, z (p, q) = u p * v q := by
+  obtain ⟨⟨p₀, q₀⟩, hw⟩ := Function.ne_iff.mp hz
+  simp only [Pi.zero_apply] at hw
+  refine ⟨fun p => z (p, q₀), fun q => z (p₀, q) / z (p₀, q₀), ?_, ?_, ?_⟩
+  · exact fun hcon => hw (by simpa using congrFun hcon p₀)
+  · intro hcon
+    have h1 : z (p₀, q₀) / z (p₀, q₀) = 0 := by simpa using congrFun hcon q₀
+    rw [div_self hw] at h1
+    exact one_ne_zero h1
+  · intro p q
+    have hh := h p p₀ q q₀
+    field_simp
+    linear_combination hh
+
+lemma coeff_boxMon_eq_zero_of_totalDegree_lt {K : Type*} [CommRing K] {D : ℕ}
+    {g : MvPolynomial (Fin 2) K} {p : Box D} (h : g.totalDegree < (p.1 : ℕ) + (p.2 : ℕ)) :
+    coeff (boxMon p) g = 0 := by
+  refine coeff_eq_zero_of_totalDegree_lt ?_
+  have hs : ∑ i ∈ (boxMon p).support, (boxMon p) i = (p.1 : ℕ) + (p.2 : ℕ) := by
+    have h2 := plMon_sum ((p.1 : ℕ), (p.2 : ℕ))
+    simpa [boxMon, Finsupp.sum] using h2
+  rw [hs]
+  exact h
+
+/-! ### The elimination leaf -/
+
+/-- **THE FUNDAMENTAL THEOREM OF ELIMINATION THEORY, ℤ-RATIONALLY** (sorry leaf, cut
+2026-07-28 out of `exists_productLocusFormsInt`, which is now PROVEN over this and
+nothing else).
+
+WHAT IT SAYS. Fix finitely many "projective" variables `τ`, arbitrary "parameter"
+variables `σ`, and finitely many equations `P i` with INTEGER coefficients, each
+homogeneous of degree `e i` in the `τ`-variables (their `σ`-coefficients arbitrary).
+Then there are finitely many ℤ-forms `Q j` in the parameters ALONE such that, over
+EVERY algebraically closed field `K` and every parameter point `a : σ → K`, the
+system `P i = 0` has a NONZERO `τ`-solution over `K` iff every `Q j` vanishes at `a`.
+Geometrically: the image in `Spec ℤ[σ]` of the closed subscheme of `ℙ^τ_{ℤ[σ]}` cut
+out by the `P i` is CLOSED, and the SAME integral forms cut it out in every
+characteristic.
+
+WHY IT IS TRUE. `ℙ^τ` is proper over its base, so the image of a closed subscheme is
+closed; being closed in `Spec ℤ[σ]` it is `V(I)`, with `I` finitely generated because
+`ℤ[σ']` is Noetherian in the finitely many `σ`-variables that actually occur.
+`IsAlgClosed K` is what turns "the fibre is a nonempty scheme" into "the fibre has a
+`K`-point".
+
+TWO ROUTES, AND BOTH OF THEIR INPUTS ARE ALREADY IN THE PIN (checked 2026-07-28;
+this CORRECTS the parent's older note, which understated what mathlib proves):
+
+* SCHEME-THEORETIC. `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean`
+  PROVES `instance : IsProper (Proj.toSpecZero 𝒜)` at our pin, on top of
+  `IsSeparated`, `UniversallyClosed` and the valuative criterion. Properness of
+  projective space over an arbitrary base is therefore NOT missing; the only missing
+  step is the dictionary from the closed image to a finite family of forms.
+* ELEMENTARY, AND PROBABLY CHEAPER IN LEAN. Over a field, homogeneous `f₁ … f_r`
+  have no common nonzero zero iff `(y)^N ⊆ (f₁ … f_r)` for some `N` — the graded
+  Nullstellensatz, whose input `MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`
+  (`Mathlib/RingTheory/Nullstellensatz.lean`, `[IsAlgClosed K] [Finite σ]`) is in the
+  pin. For FIXED `N` that containment is surjectivity of a matrix whose entries are
+  ℤ-polynomials in the parameters, i.e. non-vanishing of some maximal minor: an OPEN
+  condition, ℤ-rationally. The complement of the image is the increasing union over
+  `N` of those opens; `Spec ℤ[σ']` is a Noetherian space, so the chain stabilises at
+  some `N₀` and the union IS that one open. Its complement is `V(minors at level
+  N₀)` — the required finite family, with no Macaulay bound needed explicitly.
+
+WHY `IsAlgClosed K` MUST NOT BE DROPPED. Take `σ` empty, `τ = Fin 2`, one equation
+`y₀ ^ 2 + y₁ ^ 2`, homogeneous of degree `2`. Over EVERY algebraically closed field a
+nonzero solution exists (`(1, i)`; in characteristic `2`, `(1, 1)`), so the only
+admissible family is one cutting out everything, e.g. `k = 0`. Over `ℝ` the only
+solution is `y = 0`, so the equivalence fails. Same phenomenon as the parent's
+`s ^ 2 + t ^ 2` witness, and this is why the parent carries `IsAlgClosed` too.
+
+WHY THE HOMOGENEITY HYPOTHESIS MUST NOT BE DROPPED — this one makes the statement
+FALSE, not merely unprovable. Take `σ = Unit`, `τ = Unit`, one equation
+`MvPolynomial.C (X ()) * X () - 1`, i.e. `a * y = 1`, which is not homogeneous in `y`. A nonzero
+`y` exists iff `a ≠ 0`, and over an infinite field the punctured line is not the zero
+set of ANY family of polynomials in `a`, since a proper Zariski-closed subset of `𝔸¹`
+is finite. `∃ y ≠ 0` is a projective condition only because of homogeneity.
+
+DEGENERATE CASES ARE COVERED, AND THE PARENT REACHES THEM. If `τ` is empty then
+`y : τ → K` is the unique (zero) function, `y ≠ 0` is false, and `k := 1`,
+`Q := ![1]` discharges it. If `ι` is empty the condition is "`τ` is nonempty", closed
+either way. The parent hits these at `d₁ = 0` or `d₂ = 0`.
+
+`Fintype ι` IS CONVENIENCE; `Fintype τ` IS ESSENTIAL. An infinite family of equations
+reduces to the finite case by Noetherianity of the ideal it generates, so `Fintype ι`
+could be dropped by a prover who wants to. With infinitely many PROJECTIVE variables
+there is neither properness nor a stabilising Macaulay bound, and the statement
+should not be expected to hold.
+
+REFUTING CHECK, if you suspect this leaf: exhibit an algebraically closed `K`, a
+homogeneous family, and a parameter point at which the solution locus is not closed
+— equivalently, a family whose image in the parameter space is constructible but not
+closed. Any such witness refutes properness of `ℙ^τ`, so it would have to break
+mathlib's `IsProper` instance too; that is the reason to believe the statement.
+
+CIRCULARITY GUARD: inherited from the parent. Stated over `ℤ` and over an arbitrary
+algebraically closed field, so it is independent of everything in the Frey-curve
+development. -/
+theorem exists_projectiveEliminationFormsInt.{uu, plv, plw, plx}
+    {σ : Type plv} {τ : Type plw} {ι : Type plx} [Fintype τ] [Fintype ι]
+    (P : ι → MvPolynomial τ (MvPolynomial σ ℤ)) (e : ι → ℕ)
+    (hhom : ∀ i, (P i).IsHomogeneous (e i)) :
+    ∃ (k : ℕ) (Q : Fin k → MvPolynomial σ ℤ),
+      ∀ (K : Type uu) [Field K] [IsAlgClosed K] (a : σ → K),
+        ((∃ y : τ → K, y ≠ 0 ∧ ∀ i,
+            eval₂Hom (eval₂Hom (Int.castRingHom K) a) y (P i) = 0)
+          ↔ ∀ j, eval a (map (Int.castRingHom K) (Q j)) = 0) :=
+  sorry
+
+/-! ### The equation family cutting out the product locus -/
+
+/-- Index type of the equations: Segre minors, simplex cuts, proportionality minors. -/
+abbrev PLIdx (d₁ d₂ : ℕ) : Type :=
+  ((Box d₁ × Box d₂) × (Box d₁ × Box d₂)) ⊕ (Box d₁ × Box d₂) ⊕
+    (Box (d₁ + d₂) × Box (d₁ + d₂))
+
+/-- The generic coefficient of the product at the monomial `boxMon b`. -/
+noncomputable def plNu (d₁ d₂ : ℕ) (b : Box (d₁ + d₂)) :
+    MvPolynomial (Box d₁ × Box d₂) (MvPolynomial (Fin 2 →₀ ℕ) ℤ) :=
+  ∑ pq ∈ Finset.univ.filter
+    (fun pq : Box d₁ × Box d₂ => boxMon pq.1 + boxMon pq.2 = boxMon b), X pq
+
+/-- The equations. -/
+noncomputable def plEq (d₁ d₂ : ℕ) :
+    PLIdx d₁ d₂ → MvPolynomial (Box d₁ × Box d₂) (MvPolynomial (Fin 2 →₀ ℕ) ℤ)
+  | Sum.inl (w, w') => X w * X w' - X (w.1, w'.2) * X (w'.1, w.2)
+  | Sum.inr (Sum.inl pq) =>
+      if (pq.1.1 : ℕ) + (pq.1.2 : ℕ) ≤ d₁ ∧ (pq.2.1 : ℕ) + (pq.2.2 : ℕ) ≤ d₂ then 0 else X pq
+  | Sum.inr (Sum.inr (b, b')) =>
+      MvPolynomial.C (MvPolynomial.X (boxMon b)) * plNu d₁ d₂ b' -
+        MvPolynomial.C (MvPolynomial.X (boxMon b')) * plNu d₁ d₂ b
+
+/-- Degrees of the equations. -/
+def plEqDeg (d₁ d₂ : ℕ) : PLIdx d₁ d₂ → ℕ
+  | Sum.inl _ => 2
+  | Sum.inr _ => 1
+
+lemma plNu_isHomogeneous (d₁ d₂ : ℕ) (b : Box (d₁ + d₂)) :
+    (plNu d₁ d₂ b).IsHomogeneous 1 := by
+  refine IsHomogeneous.sum _ _ _ fun pq _ => isHomogeneous_X _ _
+
+lemma plEq_isHomogeneous (d₁ d₂ : ℕ) (i : PLIdx d₁ d₂) :
+    (plEq d₁ d₂ i).IsHomogeneous (plEqDeg d₁ d₂ i) := by
+  have hsub : ∀ {φ ψ : MvPolynomial (Box d₁ × Box d₂) (MvPolynomial (Fin 2 →₀ ℕ) ℤ)} {n : ℕ},
+      φ.IsHomogeneous n → ψ.IsHomogeneous n → (φ - ψ).IsHomogeneous n := by
+    intro φ ψ n hφ hψ
+    simpa only [mem_homogeneousSubmodule] using
+      Submodule.sub_mem _ ((mem_homogeneousSubmodule _ _).2 hφ)
+        ((mem_homogeneousSubmodule _ _).2 hψ)
+  match i with
+  | Sum.inl (w, w') =>
+      exact hsub ((isHomogeneous_X _ _).mul (isHomogeneous_X _ _))
+        ((isHomogeneous_X _ _).mul (isHomogeneous_X _ _))
+  | Sum.inr (Sum.inl pq) =>
+      show MvPolynomial.IsHomogeneous
+        (if (pq.1.1 : ℕ) + (pq.1.2 : ℕ) ≤ d₁ ∧ (pq.2.1 : ℕ) + (pq.2.2 : ℕ) ≤ d₂ then
+          (0 : MvPolynomial (Box d₁ × Box d₂) (MvPolynomial (Fin 2 →₀ ℕ) ℤ)) else X pq) 1
+      split
+      · exact isHomogeneous_zero _ _ _
+      · exact isHomogeneous_X _ _
+  | Sum.inr (Sum.inr (b, b')) =>
+      have h1 : (MvPolynomial.C (MvPolynomial.X (boxMon b)) * plNu d₁ d₂ b').IsHomogeneous 1 := by
+        simpa using (isHomogeneous_C _ _).mul (plNu_isHomogeneous d₁ d₂ b')
+      have h2 : (MvPolynomial.C (MvPolynomial.X (boxMon b')) * plNu d₁ d₂ b).IsHomogeneous 1 := by
+        simpa using (isHomogeneous_C _ _).mul (plNu_isHomogeneous d₁ d₂ b)
+      exact hsub h1 h2
+
+/-! ### Evaluating the equations -/
+
+lemma eval_plEq_segre (d₁ d₂ : ℕ) {K : Type*} [CommRing K] (a : (Fin 2 →₀ ℕ) → K)
+    (z : Box d₁ × Box d₂ → K) (w w' : Box d₁ × Box d₂) :
+    eval₂Hom (eval₂Hom (Int.castRingHom K) a) z (plEq d₁ d₂ (Sum.inl (w, w')))
+      = z w * z w' - z (w.1, w'.2) * z (w'.1, w.2) := by
+  simp [plEq]
+
+lemma eval_plEq_cut (d₁ d₂ : ℕ) {K : Type*} [CommRing K] (a : (Fin 2 →₀ ℕ) → K)
+    (z : Box d₁ × Box d₂ → K) (pq : Box d₁ × Box d₂) :
+    eval₂Hom (eval₂Hom (Int.castRingHom K) a) z (plEq d₁ d₂ (Sum.inr (Sum.inl pq)))
+      = if (pq.1.1 : ℕ) + (pq.1.2 : ℕ) ≤ d₁ ∧ (pq.2.1 : ℕ) + (pq.2.2 : ℕ) ≤ d₂ then 0
+        else z pq := by
+  show eval₂Hom _ z (if _ then _ else _) = _
+  split <;> simp
+
+lemma eval_plNu (d₁ d₂ : ℕ) {K : Type*} [CommRing K] (a : (Fin 2 →₀ ℕ) → K)
+    (z : Box d₁ × Box d₂ → K) (b : Box (d₁ + d₂)) :
+    eval₂Hom (eval₂Hom (Int.castRingHom K) a) z (plNu d₁ d₂ b)
+      = ∑ pq ∈ Finset.univ.filter
+          (fun pq : Box d₁ × Box d₂ => boxMon pq.1 + boxMon pq.2 = boxMon b), z pq := by
+  simp [plNu, map_sum]
+
+lemma eval_plEq_prop (d₁ d₂ : ℕ) {K : Type*} [CommRing K] (a : (Fin 2 →₀ ℕ) → K)
+    (z : Box d₁ × Box d₂ → K) (b b' : Box (d₁ + d₂)) :
+    eval₂Hom (eval₂Hom (Int.castRingHom K) a) z (plEq d₁ d₂ (Sum.inr (Sum.inr (b, b'))))
+      = a (boxMon b) * (∑ pq ∈ Finset.univ.filter
+            (fun pq : Box d₁ × Box d₂ => boxMon pq.1 + boxMon pq.2 = boxMon b'), z pq)
+        - a (boxMon b') * (∑ pq ∈ Finset.univ.filter
+            (fun pq : Box d₁ × Box d₂ => boxMon pq.1 + boxMon pq.2 = boxMon b), z pq) := by
+  show eval₂Hom _ z (MvPolynomial.C _ * plNu d₁ d₂ b' - MvPolynomial.C _ * plNu d₁ d₂ b) = _
+  rw [map_sub, map_mul, map_mul, eval_plNu, eval_plNu]
+  simp
+
+lemma plNuVal_outer (d₁ d₂ : ℕ) {K : Type*} [CommRing K] (u : Box d₁ → K) (v : Box d₂ → K)
+    (b : Box (d₁ + d₂)) :
+    (∑ pq ∈ Finset.univ.filter
+      (fun pq : Box d₁ × Box d₂ => boxMon pq.1 + boxMon pq.2 = boxMon b), u pq.1 * v pq.2)
+      = coeff (boxMon b) (plPoly u * plPoly v) := by
+  rw [coeff_plPoly_mul, Finset.sum_filter, Fintype.sum_prod_type]
+
+lemma plEq_eval_outer (d₁ d₂ : ℕ) {K : Type*} [Field K] {g : MvPolynomial (Fin 2) K}
+    (u : Box d₁ → K) (v : Box d₂ → K)
+    (hu : ∀ p : Box d₁, u p ≠ 0 → (p.1 : ℕ) + (p.2 : ℕ) ≤ d₁)
+    (hv : ∀ q : Box d₂, v q ≠ 0 → (q.1 : ℕ) + (q.2 : ℕ) ≤ d₂)
+    (hpr : ∀ b b' : Box (d₁ + d₂),
+      coeff (boxMon b) g * coeff (boxMon b') (plPoly u * plPoly v)
+        = coeff (boxMon b') g * coeff (boxMon b) (plPoly u * plPoly v)) :
+    ∀ i, eval₂Hom (eval₂Hom (Int.castRingHom K) (fun m => coeff m g))
+      (fun pq : Box d₁ × Box d₂ => u pq.1 * v pq.2) (plEq d₁ d₂ i) = 0 := by
+  rintro (⟨w, w'⟩ | pq | ⟨b, b'⟩)
+  · rw [eval_plEq_segre]; ring
+  · rw [eval_plEq_cut]
+    split
+    · rfl
+    · rename_i hcon
+      by_cases hp : (pq.1.1 : ℕ) + (pq.1.2 : ℕ) ≤ d₁
+      · have hq : ¬ ((pq.2.1 : ℕ) + (pq.2.2 : ℕ) ≤ d₂) := fun h => hcon ⟨hp, h⟩
+        have hv0 : v pq.2 = 0 := by by_contra hc; exact hq (hv _ hc)
+        simp [hv0]
+      · have hu0 : u pq.1 = 0 := by by_contra hc; exact hp (hu _ hc)
+        simp [hu0]
+  · rw [eval_plEq_prop, plNuVal_outer, plNuVal_outer, sub_eq_zero]
+    exact hpr b b'
+
+/-! ### The main equivalence -/
+
+lemma plEq_exists_iff (d₁ d₂ : ℕ) {K : Type*} [Field K] {g : MvPolynomial (Fin 2) K}
+    (hg : g.totalDegree ≤ d₁ + d₂) :
+    (∃ z : Box d₁ × Box d₂ → K, z ≠ 0 ∧ ∀ i,
+        eval₂Hom (eval₂Hom (Int.castRingHom K) (fun m => coeff m g)) z (plEq d₁ d₂ i) = 0)
+      ↔ ∃ g₁ g₂ : MvPolynomial (Fin 2) K,
+          g₁.totalDegree ≤ d₁ ∧ g₂.totalDegree ≤ d₂ ∧ g = g₁ * g₂ := by
+  constructor
+  · rintro ⟨z, hz, hall⟩
+    have hseg : ∀ (p r : Box d₁) (q s : Box d₂), z (p, q) * z (r, s) = z (p, s) * z (r, q) := by
+      intro p r q s
+      have h := hall (Sum.inl ((p, q), (r, s)))
+      rw [eval_plEq_segre] at h
+      simpa [sub_eq_zero] using h
+    obtain ⟨u, v, hu0, hv0, huv⟩ := exists_rankOne hz hseg
+    obtain ⟨p₀, hp₀⟩ := Function.ne_iff.mp hu0
+    obtain ⟨q₀, hq₀⟩ := Function.ne_iff.mp hv0
+    simp only [Pi.zero_apply] at hp₀ hq₀
+    have hcut : ∀ (p : Box d₁) (q : Box d₂),
+        ¬ ((p.1 : ℕ) + (p.2 : ℕ) ≤ d₁ ∧ (q.1 : ℕ) + (q.2 : ℕ) ≤ d₂) → u p * v q = 0 := by
+      intro p q hpq
+      have h := hall (Sum.inr (Sum.inl (p, q)))
+      rw [eval_plEq_cut, if_neg hpq] at h
+      rw [← huv p q]; exact h
+    have hu : ∀ p : Box d₁, u p ≠ 0 → (p.1 : ℕ) + (p.2 : ℕ) ≤ d₁ := by
+      intro p hp
+      by_contra hcon
+      exact (mul_ne_zero hp hq₀) (hcut p q₀ (fun h => hcon h.1))
+    have hv : ∀ q : Box d₂, v q ≠ 0 → (q.1 : ℕ) + (q.2 : ℕ) ≤ d₂ := by
+      intro q hq
+      by_contra hcon
+      exact (mul_ne_zero hp₀ hq) (hcut p₀ q (fun h => hcon h.2))
+    have hd1 : (plPoly u).totalDegree ≤ d₁ := totalDegree_plPoly_le hu
+    have hd2 : (plPoly v).totalDegree ≤ d₂ := totalDegree_plPoly_le hv
+    have hprop : ∀ b b' : Box (d₁ + d₂),
+        coeff (boxMon b) g * coeff (boxMon b') (plPoly u * plPoly v)
+          = coeff (boxMon b') g * coeff (boxMon b) (plPoly u * plPoly v) := by
+      intro b b'
+      have h := hall (Sum.inr (Sum.inr (b, b')))
+      rw [eval_plEq_prop] at h
+      simp only [huv] at h
+      rw [plNuVal_outer, plNuVal_outer, sub_eq_zero] at h
+      exact h
+    by_cases hgz : g = 0
+    · exact ⟨0, 0, by simp, by simp, by simp [hgz]⟩
+    · obtain ⟨m, hm⟩ := MvPolynomial.ne_zero_iff.mp hgz
+      have hm0 : m 0 ≤ d₁ + d₂ := by
+        by_contra hcon
+        exact hm (coeff_eq_zero_of_apply_zero_gt hg (by omega))
+      have hm1 : m 1 ≤ d₁ + d₂ := by
+        by_contra hcon
+        exact hm (coeff_eq_zero_of_apply_one_gt hg (by omega))
+      obtain ⟨b₀, hb₀⟩ := exists_boxMon_eq (D := d₁ + d₂) hm0 hm1
+      rw [← hb₀] at hm
+      set c : K := coeff (boxMon b₀) (plPoly u * plPoly v) / coeff (boxMon b₀) g with hc
+      have hmul : (plPoly u * plPoly v).totalDegree ≤ d₁ + d₂ :=
+        le_trans (totalDegree_mul _ _) (Nat.add_le_add hd1 hd2)
+      have hprod : plPoly u * plPoly v = MvPolynomial.C c * g := by
+        ext m'
+        rw [MvPolynomial.coeff_C_mul]
+        by_cases hz0 : m' 0 ≤ d₁ + d₂
+        · by_cases hz1 : m' 1 ≤ d₁ + d₂
+          · obtain ⟨b', hb'⟩ := exists_boxMon_eq (D := d₁ + d₂) hz0 hz1
+            rw [← hb']
+            have h := hprop b₀ b'
+            rw [hc]
+            field_simp
+            linear_combination h
+          · rw [coeff_eq_zero_of_apply_one_gt hmul (by omega),
+              coeff_eq_zero_of_apply_one_gt hg (by omega), mul_zero]
+        · rw [coeff_eq_zero_of_apply_zero_gt hmul (by omega),
+            coeff_eq_zero_of_apply_zero_gt hg (by omega), mul_zero]
+      have hcne : c ≠ 0 := by
+        intro h0
+        rw [h0, map_zero, zero_mul] at hprod
+        exact mul_ne_zero (plPoly_ne_zero hu0) (plPoly_ne_zero hv0) hprod
+      refine ⟨MvPolynomial.C c⁻¹ * plPoly u, plPoly v, ?_, hd2, ?_⟩
+      · refine le_trans (totalDegree_mul _ _) ?_
+        simpa using hd1
+      · rw [mul_assoc, hprod, ← mul_assoc, ← MvPolynomial.C_mul, inv_mul_cancel₀ hcne, MvPolynomial.C_1, one_mul]
+  · rintro ⟨g₁, g₂, hd1, hd2, rfl⟩
+    by_cases hz : g₁ = 0 ∨ g₂ = 0
+    · have hzero : g₁ * g₂ = 0 := by rcases hz with h | h <;> simp [h]
+      refine ⟨fun pq => (if pq.1 = (0, 0) then (1 : K) else 0) *
+        (if pq.2 = (0, 0) then (1 : K) else 0), ?_, ?_⟩
+      · intro hcon
+        have := congrFun hcon ((0, 0), (0, 0))
+        simp at this
+      · refine plEq_eval_outer d₁ d₂ (fun p => if p = (0, 0) then (1 : K) else 0)
+          (fun q => if q = (0, 0) then (1 : K) else 0) ?_ ?_ ?_
+        · intro p hp
+          by_cases h : p = (0, 0)
+          · subst h; simp
+          · simp [h] at hp
+        · intro q hq
+          by_cases h : q = (0, 0)
+          · subst h; simp
+          · simp [h] at hq
+        · intro b b'
+          rw [hzero]
+          simp
+    · push Not at hz
+      obtain ⟨h1, h2⟩ := hz
+      have hpu : plPoly (fun p : Box d₁ => coeff (boxMon p) g₁) = g₁ := plPoly_coeff hd1
+      have hpv : plPoly (fun q : Box d₂ => coeff (boxMon q) g₂) = g₂ := plPoly_coeff hd2
+      have hune : (fun p : Box d₁ => coeff (boxMon p) g₁) ≠ 0 := by
+        intro hcon
+        rw [hcon] at hpu
+        simp [plPoly] at hpu
+        exact h1 hpu.symm
+      have hvne : (fun q : Box d₂ => coeff (boxMon q) g₂) ≠ 0 := by
+        intro hcon
+        rw [hcon] at hpv
+        simp [plPoly] at hpv
+        exact h2 hpv.symm
+      obtain ⟨p₀, hp₀⟩ := Function.ne_iff.mp hune
+      obtain ⟨q₀, hq₀⟩ := Function.ne_iff.mp hvne
+      simp only [Pi.zero_apply] at hp₀ hq₀
+      refine ⟨fun pq => coeff (boxMon pq.1) g₁ * coeff (boxMon pq.2) g₂, ?_, ?_⟩
+      · intro hcon
+        exact (mul_ne_zero hp₀ hq₀) (congrFun hcon (p₀, q₀))
+      · refine plEq_eval_outer d₁ d₂ (fun p : Box d₁ => coeff (boxMon p) g₁)
+          (fun q : Box d₂ => coeff (boxMon q) g₂) ?_ ?_ ?_
+        · intro p hp
+          by_contra hcon
+          exact hp (coeff_boxMon_eq_zero_of_totalDegree_lt (by omega))
+        · intro q hq
+          by_contra hcon
+          exact hq (coeff_boxMon_eq_zero_of_totalDegree_lt (by omega))
+        · intro b b'
+          rw [hpu, hpv]
+          ring
+
+end ProductLocusForms
+
+/-- **STEP 3 OF NOETHER'S ROUTE (PROVEN 2026-07-28 over one general leaf)** —
+CLOSEDNESS OF THE IMAGE OF MULTIPLICATION. What is still open in the Noether half of
+`exists_bertiniNoetherWitness_of_three_le` is now the single general statement
+`exists_projectiveEliminationFormsInt` (elimination theory over ℤ), proved above to
+be all this leaf needs.
 
 WHAT IT SAYS. For each pair `(d₁, d₂)` there are finitely many forms with INTEGER
 coefficients such that, over EVERY algebraically closed field `K`, a plane
@@ -16947,16 +17472,27 @@ will therefore FAIL to give a `ℤ`-rational family valid in every characteristi
 The scheme-theoretic argument above delivers integrality directly and is the
 reason it is the recommended route.
 
-WHAT IS MISSING FROM THE PIN (checked 2026-07-28 against `Fermat/`,
-`.lake/packages/mathlib` and `~/cs/FLT`): the fundamental theorem of elimination
-theory in usable form — that the image of a projective scheme under a morphism is
-closed — and with it any statement that the image of `Proj`-valued morphisms is
-cut out by explicit forms. Mathlib has `AlgebraicGeometry.Proj` and the properness
-API (`AlgebraicGeometry.Morphisms.Proper`, imported by this file) but no bridge
-from a closed subset of `Proj` to a finite family of defining forms in the
-coefficient ring. Building that bridge is the substance of this leaf; it would
-also be reusable, since "the image of a base-point-free bilinear map with no zero
-divisors is closed" is a statement of independent value.
+WHAT IS MISSING FROM THE PIN — CORRECTED 2026-07-28. The paragraph replaced here
+said mathlib "has `AlgebraicGeometry.Proj` and the properness API … but no bridge",
+which understated the pin. `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean`
+**proves** `instance : IsProper (Proj.toSpecZero 𝒜)`, and
+`Mathlib/RingTheory/Nullstellensatz.lean` **proves**
+`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical` for `[IsAlgClosed K] [Finite σ]`.
+Properness of projective space over a base and the Nullstellensatz are therefore
+BOTH already available. What is genuinely absent is only the dictionary taking the
+closed image to a finite family of defining forms in the coefficient ring — which is
+exactly, and only, what `exists_projectiveEliminationFormsInt` below asks for.
+
+STATUS 2026-07-28: **PROVEN, over that single leaf.** The whole reduction of
+"factors with degree bounds" to a projective elimination problem is discharged
+sorry-free by the `ProductLocusForms` block below. The step that keeps it to ONE
+projective space — rather than the bi-projective `ℙ(V_{d₁}) × ℙ(V_{d₂})` elimination
+the geometric sketch above suggests — is the Segre rank-one criterion
+(`ProductLocusForms.exists_rankOne`): a nonzero coefficient TENSOR all of whose
+`2 × 2` minors vanish is an outer product of two NONZERO vectors, which is precisely
+the "`g₁ ≠ 0` and `g₂ ≠ 0`" that a single `y ≠ 0` cannot otherwise express. So the
+leaf needed is the ordinary single-space elimination theorem, not a multigraded
+refinement of it.
 
 CIRCULARITY GUARD: inherited from the parent. Stated over `ℤ` and over an
 arbitrary algebraically closed field, so it is independent of everything in the
@@ -16968,8 +17504,14 @@ theorem exists_productLocusFormsInt.{uu} (d₁ d₂ : ℕ) :
         ((∃ g₁ g₂ : MvPolynomial (Fin 2) K,
             g₁.totalDegree ≤ d₁ ∧ g₂.totalDegree ≤ d₂ ∧ g = g₁ * g₂) ↔
           ∀ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
-                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) :=
-  sorry
+                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) := by
+  obtain ⟨k, Q, hQ⟩ := ProductLocusForms.exists_projectiveEliminationFormsInt.{uu, 0, 0, 0}
+    (ProductLocusForms.plEq d₁ d₂) (ProductLocusForms.plEqDeg d₁ d₂)
+    (ProductLocusForms.plEq_isHomogeneous d₁ d₂)
+  refine ⟨k, Q, ?_⟩
+  intro K _ _ g hg
+  rw [← ProductLocusForms.plEq_exists_iff d₁ d₂ hg]
+  exact hQ K (fun m => MvPolynomial.coeff m g)
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, ℤ-RATIONAL (PROVEN 2026-07-28 over one
 named sub-leaf)** -- the classical statement, with ONE family of forms with INTEGER
@@ -17681,7 +18223,8 @@ theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [Comm
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (PROVEN 2026-07-28
 over one named sub-leaf)** — the whole `p`-uniformity content of
 `exists_noetherBadLocusForms`, and after this cut the ONLY thing still open in the
-Noether half is `exists_productLocusFormsInt`.
+Noether half is `exists_projectiveEliminationFormsInt` — elimination theory over `ℤ`
+— to which `exists_productLocusFormsInt` was reduced, sorry-free, on 2026-07-28.
 
 WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
 that, for every prime `p`, the locus of plane polynomials `g` of total degree
@@ -17709,9 +18252,10 @@ form does not vanish". Both directions are consumed by
 THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
 Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). This is elimination
 theory, not scheme theory. THE CUT WAS MADE ON 2026-07-28 ALONG EXACTLY THE FOUR
-STEPS BELOW; steps 1, 2 and 4 are now PROVEN and only step 3 remains open, as
-`exists_productLocusFormsInt`. The four steps, with the declarations that realise
-them:
+STEPS BELOW; steps 1, 2 and 4 are now PROVEN, and step 3
+(`exists_productLocusFormsInt`) was PROVEN on 2026-07-28 over the single general
+leaf `exists_projectiveEliminationFormsInt`, which is all that remains open. The
+four steps, with the declarations that realise them:
 
 1. **The algebraic characterisation** (`not_irreducible_iff_exists_badPiece`,
    PROVEN). For `d ≥ 1` and `g.totalDegree ≤ d`,
@@ -17727,7 +18271,8 @@ them:
    all vanish. Those are the coordinate forms `X (single 0 a + single 1 (d - a))`,
    of degree `1`.
 3. **The product piece is the elimination content**
-   (`exists_productLocusFormsInt`, THE ONE REMAINING SORRY). For each splitting
+   (`exists_productLocusFormsInt`, PROVEN 2026-07-28 over the single general leaf
+   `exists_projectiveEliminationFormsInt`). For each splitting
    `d₁ + d₂ = d` with `dᵢ ≥ 1`, the set of `g` of degree `≤ d` admitting a
    factorisation `g = g₁ · g₂` with `gᵢ.totalDegree ≤ dᵢ` is Zariski CLOSED, cut
    out by forms of degree bounded in terms of `d` alone. Closedness is the
