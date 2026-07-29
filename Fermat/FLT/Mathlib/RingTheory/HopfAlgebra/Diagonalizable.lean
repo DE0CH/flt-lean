@@ -9,6 +9,7 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.Corner
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
+public import Fermat.FLT.Mathlib.RingTheory.Henselian.FiniteSplit
 public import Mathlib.LinearAlgebra.Dual.BaseChange
 public import Mathlib.RingTheory.HopfAlgebra.GroupLike
 public import Mathlib.RingTheory.HopfAlgebra.TensorProduct
@@ -38,9 +39,10 @@ infrastructure the argument needs.
 * `HopfAlgebra.isMultiplicativeType_baseChange` — multiplicative type is stable under base
   change. PROVEN, from `baseChangeAlgEquiv` and `Algebra.Etale.baseChange`.
 * `Algebra.IsFiniteSplit.of_henselianLocalRing` — **(E1)**, a finite étale algebra over a
-  strictly henselian local ring is split. OPEN. Pure commutative algebra; a genuine gap in the
-  mathlib pin, which has the statement only over a FIELD
-  (`Algebra.FormallyEtale.equivPiOfIsSepClosed`).
+  strictly henselian local ring is split. **PROVEN**, over the general commutative algebra in
+  `Fermat/FLT/Mathlib/RingTheory/Henselian/FiniteSplit.lean`. It was a genuine gap in the mathlib
+  pin, which has the statement only over a FIELD
+  (`Algebra.FormallyEtale.equivPiOfIsSepClosed`) — confirmed by grep, see that file.
 * `HopfAlgebra.exists_bialgEquiv_groupFunctions_of_isFiniteSplit` — **(E2)**, a split
   cocommutative group scheme over a LOCAL base is the constant one. OPEN.
 * `HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType` — the theorem above. PROVEN
@@ -255,8 +257,19 @@ end BaseChange
 
 /-! ## The two remaining leaves, and the assembly over them -/
 
-/-- **(E1) A FINITE ÉTALE ALGEBRA OVER A STRICTLY HENSELIAN LOCAL RING IS SPLIT** (SORRY LEAF —
-pure commutative algebra, no Hopf structure, no group schemes; a genuine gap in the mathlib pin).
+/-- **(E1) A FINITE ÉTALE ALGEBRA OVER A STRICTLY HENSELIAN LOCAL RING IS SPLIT** (**PROVEN** —
+pure commutative algebra, no Hopf structure, no group schemes; it was a genuine gap in the
+mathlib pin, and the supporting development now lives in
+`Fermat/FLT/Mathlib/RingTheory/Henselian/FiniteSplit.lean`).
+
+**THE ARGUMENT BELOW IS NOT THE ONE USED, AND CANNOT BE — read the design note in
+`FiniteSplit.lean`.** Its idempotent-lifting step is unavailable over this pin: `Henselian`
+occurs in exactly ONE mathlib file, which offers only polynomial root-lifting, and mathlib's
+idempotent lifting (`CompleteOrthogonalIdempotents.lift_of_isNilpotent_ker`) is along NIL ideals
+only — the maximal ideal of a henselian local ring is not nil. The route actually taken lifts a
+GENERATOR by Nakayama instead of idempotents, splits the minimal polynomial by Hensel in its
+mathlib-definitional (polynomial) form, and concludes with an invertible VANDERMONDE matrix.
+The sketch is kept because it is the standard textbook argument and records the mathematics.
 
 Stacks [04GG](https://stacks.math.columbia.edu/tag/04GG)/[04GH]: if `S` is henselian local with
 SEPARABLY CLOSED residue field and `E` is a finite étale `S`-algebra, then `E ≅ Πⁿ S`.
@@ -281,10 +294,17 @@ extension of `k` — hence `= k`, as `k` is separably closed. So `S → Eᵢ` is
 inducing an isomorphism on residue fields, therefore an isomorphism (Nakayama on the rank-one
 free module `Eᵢ`).
 
-FAITHFULNESS. `Module.Finite S E` is not implied by `Algebra.Etale S E` (which gives only finite
-PRESENTATION as an algebra) and cannot be dropped: a localization `S_f` is étale over `S`
-(mathlib's `Algebra.Etale (Localization.Away s)` instance) without being finite, and
-`E = Localization.Away p = ℚ_p` over the henselian `S = ℤ_p` is not `Πⁿ ℤ_p` for any `n`.
+FAITHFULNESS (settled: the statement is now PROVEN, so it is true; what follows is only about
+whether each hypothesis is NECESSARY). `Module.Finite S E` is not implied by `Algebra.Etale S E`
+(which gives only finite PRESENTATION as an algebra) and cannot be dropped: a localization `S_f`
+is étale over `S` (mathlib's `Algebra.Etale (Localization.Away s)` instance) without being finite.
+
+CORRECTION (2026-07-29): the witness previously recorded here for that — `E = ℚ_p` over
+`S = ℤ_p` — is INADMISSIBLE, because `ℤ_p` has residue field `𝔽_p`, which is not separably
+closed, so it fails the OTHER hypothesis and tests nothing about this statement. A valid witness
+must keep the base strictly henselian: take `S` the strict henselization of `ℤ_p` (residue field
+`𝔽̄_p`, separably closed) and `E = Frac S`. Then `E` is étale over `S` and not `Πⁿ S`, since `E`
+is a field while `Πⁿ S` is local only for `n = 1`, and `E ≠ S`.
 Separable closedness of the RESIDUE FIELD is what forces
 each factor to be `S` rather than a nontrivial unramified extension; over `ℤ_p` with its residue
 field `𝔽_p` the statement is false for `E = 𝒪_{ℚ_p(ζ_ℓ)}`, `ℓ ≠ p`. Both hypotheses are therefore
@@ -293,8 +313,43 @@ theorem _root_.Algebra.IsFiniteSplit.of_henselianLocalRing
     (S E : Type u) [CommRing S] [CommRing E] [Algebra S E]
     [HenselianLocalRing S] [IsSepClosed (IsLocalRing.ResidueField S)]
     [Module.Finite S E] [Algebra.Etale S E] :
-    Algebra.IsFiniteSplit S E :=
-  sorry
+    Algebra.IsFiniteSplit S E := by
+  classical
+  haveI : Infinite (IsLocalRing.ResidueField S) := IsSepClosed.infinite _
+  haveI : Module.Free S E := Module.free_of_flat_of_isLocalRing
+  haveI : Algebra.Etale (IsLocalRing.ResidueField S) (IsLocalRing.ResidueField S ⊗[S] E) :=
+    Algebra.Etale.baseChange S E (IsLocalRing.ResidueField S)
+  obtain ⟨n, β₀, a, ha, hgen₀, hmin₀⟩ := Algebra.IsFiniteSplit.exists_minpoly_eq_prod
+    (k := IsLocalRing.ResidueField S) (A := IsLocalRing.ResidueField S ⊗[S] E)
+  obtain ⟨β, hβ⟩ := TensorProduct.mk_surjective S E (IsLocalRing.ResidueField S)
+    Ideal.Quotient.mk_surjective β₀
+  rw [TensorProduct.mk_apply] at hβ
+  have hgen : Algebra.adjoin S {β} = ⊤ :=
+    IsLocalRing.adjoin_eq_top_of_residue β (by rw [hβ]; exact hgen₀)
+  have hfmonic : (minpoly S β).Monic := minpoly.monic (Algebra.IsIntegral.isIntegral β)
+  have H := IsAdjoinRootMonic.mkOfAdjoinEqTop' hgen
+  have hn₀ : (minpoly (IsLocalRing.ResidueField S) β₀).natDegree = n := by
+    rw [hmin₀, Polynomial.natDegree_prod_of_monic _ _ (fun i _ => Polynomial.monic_X_sub_C _)]
+    simp
+  have hfinbc : Module.finrank (IsLocalRing.ResidueField S)
+      (IsLocalRing.ResidueField S ⊗[S] E) = Module.finrank S E := Module.finrank_baseChange
+  have hdeg : (minpoly S β).natDegree = n := by
+    have h1 := H.finrank
+    have h2 := (IsAdjoinRootMonic.mkOfAdjoinEqTop' hgen₀).finrank
+    rw [hfinbc, hn₀] at h2
+    omega
+  have hmap : (minpoly S β).map (IsLocalRing.residue S)
+      = ∏ i, (Polynomial.X - Polynomial.C (a i)) := by
+    rw [← hmin₀]
+    refine Polynomial.eq_of_monic_of_dvd_of_natDegree_le
+      (minpoly.monic (Algebra.IsIntegral.isIntegral β₀)) (hfmonic.map _) (minpoly.dvd _ _ ?_) ?_
+    · rw [← hβ, ← IsLocalRing.one_tmul_aeval, minpoly.aeval, TensorProduct.tmul_zero]
+    · rw [hfmonic.natDegree_map, hdeg, hn₀]
+  obtain ⟨b, hb1, hb2⟩ := HenselianLocalRing.exists_roots_of_map_eq_prod hfmonic a ha hmap
+  refine Algebra.IsFiniteSplit.of_isAdjoinRootMonic_of_roots H hdeg b hb1 (fun i j hij => ?_)
+  rw [← IsLocalRing.notMem_maximalIdeal, ← IsLocalRing.residue_eq_zero_iff,
+    map_sub, hb2 i, hb2 j, sub_eq_zero]
+  exact fun h => hij (ha h).symm
 
 /-- **(E2) A SPLIT COCOMMUTATIVE GROUP SCHEME OVER A LOCAL BASE IS THE CONSTANT ONE** (SORRY
 LEAF — the group-scheme half of SGA 3, Exp. VIII; formal, no arithmetic).
