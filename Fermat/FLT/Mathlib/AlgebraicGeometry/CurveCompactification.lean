@@ -1405,7 +1405,16 @@ closedness across the embedding.  All of that is avoided by CLEARING DENOMINATOR
 
 The second simplification is that `k₁` needs no fieldness argument: **every subring of `k`
 containing `k ^ q` is already a field**, by `x⁻¹ = x^(q-1) · (x^q)⁻¹`.  See the section
-comment above the three helpers. -/
+comment above the three helpers.
+
+**AXIOM AUDIT, 2026-07-29** (run because this proof uses `simp` in several closing steps, and
+the project simp set contains sorried lemmas).  `#print axioms` returns exactly
+`[propext, Classical.choice, Quot.sound]` for this leaf, for all five helpers above it, and —
+the point of the audit — for the whole consumer chain it was the last residue of:
+`module_finite_integralClosure_of_isPurelyInseparable`,
+`module_finite_integralClosure_of_isFractionRing`, `finiteType_integralClosure_sections` and
+`locallyOfFiniteType_fromNormalization`.  So E. Noether's finiteness theorem is sorry-free
+here in the strong sense, not merely warning-free. -/
 theorem exists_finset_span_powSubalgebra_of_mem_span
     (k : Type*) [Field k] (d p n : ℕ) [ExpChar k p]
     (Kf : Type*) [Field Kf] [Algebra (MvPolynomial (Fin d) k) Kf]
