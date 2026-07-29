@@ -1205,8 +1205,9 @@ theorem exists_unique_extension_of_isSmoothProperCurve
 /-! ### The converse direction, for `CurveCompactification.lean` -/
 
 /-- **A DISCRETE VALUATION RING ESSENTIALLY OF FINITE TYPE OVER A PERFECT FIELD IS FORMALLY
-SMOOTH** (cut as a sorry leaf 2026-07-27; **PROVEN** — the geometric heart of Stacks
-`056S`, and pure commutative algebra: no schemes, no curves, no relative dimension).
+SMOOTH** (**PROVEN 2026-07-28**, no sorry — cut as a leaf 2026-07-27, closed over
+`Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField`; the geometric heart of
+Stacks `056S`, and pure commutative algebra: no schemes, no curves, no relative dimension).
 
 TRUE and classical.  Over a perfect field, regular ⟺ smooth (Stacks `056S`, `00TT`); this is
 the local, algebra-level form of the direction that is missing from the pin.  The dimension
@@ -1277,7 +1278,11 @@ version of this counterexample, with the same correction, is on
 **THIS IS THE SAME GAP THAT `SmoothConnectedCriteria.lean` NAMES, AND IT SHOULD BE PROVEN
 ONCE** (noticed at the release-7 merge, 2026-07-27).  That module's
 `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` (same directory, different
-owner; **PROVEN 2026-07-28**) says "regular + finite type over a perfect field ⟹ smooth of relative
+owner; **it too is PROVEN as of 2026-07-28**, over the very theorem named below, and its
+then-residue, the unrelated
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`, is PROVEN as well since
+2026-07-28, leaving `SmoothConnectedCriteria.lean` SORRY-FREE) says "regular + finite type
+over a perfect field ⟹ smooth of relative
 dimension `ringKrullDim`", and its own docstring identifies the residue in exactly these
 words: *"the missing step is therefore smoothness at the CLOSED points, i.e. formal
 smoothness of a regular local ring essentially of finite type over a perfect field"*.  That
