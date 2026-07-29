@@ -5956,9 +5956,162 @@ theorem nonempty_carayolPackage_of_carayolJacobianPackage
            rank_eigenspace := hrank
            det_frob := hdet }⟩
 
+/-- **STEP 2a″-α₀ — MINIMALITY OF THE JACQUET–LANGLANDS LEVEL: the
+quaternionic eigenform may be taken with `𝒮.S ⊆ badF`** (sorry leaf; CUT
+2026-07-28, ROUND-9, out of
+`exists_totallyDefinite_heckeCharacter_level_subset_badF` immediately below,
+which is a PROVEN ASSEMBLY over this leaf together with three declarations
+that already existed: `exists_eigenform_of_totallyDefinite_quaternionAlgebra`
+(STEP 1b's Jacquet–Langlands citation),
+`exists_prime_two_lt_finrank_cyclotomicField` (PROVEN) and
+`exists_algHom_of_smul_eq_smul` (PROVEN)).
+
+**WHAT THIS LEAF IS, AND WHY IT IS THE WHOLE OF THE ROUND-8 CONTENT.** The
+ROUND-8 cut owed two clauses, `∀ w ∈ 𝒮.S, w ∈ badF` and `∀ w ∈ 𝒮.Q, w ∈ badF`.
+The SECOND IS ALREADY FREE and no leaf is needed for it:
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` returns `𝒮.Q = ∅`
+outright, so the `Q`-clause is vacuous. What is genuinely owed is the first,
+and that is exactly this statement — hence a leaf stating the DELTA over the
+eigenform citation rather than a second copy of the citation itself.
+
+**WHY IT IS STATED AS A DELTA (an eigenform in, an eigenform out) rather
+than as a strengthened Jacquet–Langlands.** The obvious alternative — add
+`∀ w ∈ 𝒮.S, w ∈ badF` to
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`'s conclusion — is
+mathematically identical and would keep the frontier count fixed instead of
+raising it by one. It is deliberately NOT taken: that declaration is a
+separate leaf under a separate owner, and silently restating another owner's
+leaf is how two agents cut one node two incompatible ways. Composing with it
+costs one extra `obtain` and leaves its statement byte-identical. A
+successor who finds both leaves in one hand SHOULD merge them; until then
+they compose.
+
+Content, i.e. what a prover of this leaf owes — the ROUND-5 argument, and
+NOTE THAT IT IS AN ARGUMENT ABOUT THE EIGENSYSTEM, NOT ABOUT THE FORM, which
+is why an arbitrary input level `𝒮₀` is harmless. `hirrF` gives
+`ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}` irreducible; the compatible
+system `{σ_λ}` of the `π` underlying `heckeF` has `σ_ℓ^{ss} ≅
+(ρ|_{G_F})^{ss}` by Chebotarev and Brauer–Nesbitt against `hmod` (a set of
+places of density `1`), hence `σ_ℓ ≅ ρ|_{G_F}` by irreducibility. `hρ` makes
+`ρ` hardly ramified, so `σ_ℓ` is unramified outside the places over `2` and
+`ℓ`, and local–global compatibility at `w ∤ ℓ` makes `π_w` unramified there.
+By strong multiplicity one the input datum `(𝒮₀, a₀, f₀)` and the minimal-level
+datum have the same eigensystem, so the conductor of `π` — hence the minimal
+level of the quaternionic transfer, `D` being split at every finite place by
+`WithRigidification` — is supported over `2` and `ℓ`. `hbad2` and `hbadℓ`
+place those inside `badF`.
+
+**PINNING.** `𝒮`, `a` and `f` are all outputs, and the reader should check
+they cannot be filled by junk. They cannot: `f ≠ 0` and the `T`-eigenvalue
+clause together force `f` to be a genuine simultaneous eigenvector, and the
+last clause pins its eigenvalues to `heckeF` at every `w ∉ 𝒮.S ∪ badF`. In
+particular the CONSTANT function — the Eisenstein eigensystem `a_w = Nw + 1`
+noted in `exists_eigenform_of_totallyDefinite_quaternionAlgebra`'s docstring,
+and the standing junk witness for this space — does NOT satisfy the last
+clause, so the trivial choice `𝒮.S = 𝒮.Q = ∅` (which `U₁Data` does permit,
+its `S` and `Q` carrying no nonemptiness condition) is not a way out.
+
+`a` IS ONLY PINNED OUTSIDE `badF ∪ 𝒮.S`, inherited verbatim from the input
+leaf and for its reason: the eigenvalue at `w ∈ badF \ 𝒮.S` is not determined
+by the data and must not be asserted.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_eigenform_minimalLevel_subset_badF
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ)
+    (𝒮₀ : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+    (a₀ : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+    (f₀ : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮₀).toStruct.form D E)
+    (hQ₀ : 𝒮₀.Q = ∅) (hf₀ : f₀ ≠ 0)
+    (hT₀ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (hwS : w ∉ 𝒮₀.S),
+      _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮₀ w hwS f₀ =
+        a₀ w • f₀)
+    (hmatch₀ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      w ∉ 𝒮₀.S → w ∉ badF → (heckeF w).coeff 1 = - a₀ w) :
+    ∃ (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+      (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
+      𝒮.Q = ∅ ∧ (∀ w ∈ 𝒮.S, w ∈ badF) ∧ f ≠ 0 ∧
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hwS : w ∉ 𝒮.S),
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f) ∧
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
+        (heckeF w).coeff 1 = - a w) := by
+  sorry
+
 /-- **STEP 2a″-α — the JACQUET–LANGLANDS DATUM, WITH ITS LEVEL INSIDE
-`badF`** (sorry leaf; CUT 2026-07-28, ROUND-8, out of
-`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` below).
+`badF`** (PROVEN ASSEMBLY since 2026-07-28, ROUND-9; CUT 2026-07-28, ROUND-8,
+out of `exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter`
+below).
+
+**HOW IT IS PROVEN, and what was actually owed.** The body is the ROUND-9
+assembly. `hJL` is consumed for ONE thing — the quaternion algebra `D`
+together with its four instances — and its own `p`, `𝒮`, `θ` are discarded,
+because the level of that `𝒮` is precisely what is not controlled. The datum
+is then rebuilt at a level that IS controlled:
+`exists_prime_two_lt_finrank_cyclotomicField` (PROVEN) supplies the auxiliary
+prime, `exists_eigenform_of_totallyDefinite_quaternionAlgebra` supplies the
+Jacquet–Langlands eigenform `f` at level `U₁(S, ∅)`,
+`exists_eigenform_minimalLevel_subset_badF` (the ROUND-9 leaf immediately
+above) confines `𝒮.S` to `badF`, and `exists_algHom_of_smul_eq_smul` (PROVEN)
+turns the eigenvector into the character `θ` — the `U`-generators of the Hecke
+algebra being vacuous because `𝒮.Q = ∅`, which also discharges the second
+clause outright. So of the two clauses ROUND-8 owed, ONE WAS ALREADY FREE and
+only the `𝒮.S` one needed a leaf.
+
+**WHY THE TWO CLAUSES ARE OWED, and this is the sharp point of the ROUND-8
+cut.** `hJL` constrains `heckeF` only at places `w` that avoid `badF` AND
+`𝒮.S` AND `𝒮.Q` — the Hecke operator `T D 𝒮 w hwS hwQ` does not even EXIST
+at a place of the level. The consumer's conclusion, by contrast, quantifies
+over every `w ∉ badF`: at such a `w` the package must satisfy `congruence`,
+`pair_frob` and the `θ`-eigenvalue clause of `eigen_idempotent`, and
+`(P w).map ι = (heckeF w).map ψ₃` must hold. So at a place of
+`(𝒮.S ∪ 𝒮.Q) \ badF` the automorphic input says NOTHING while the
+conclusion still says everything. No route through the Hecke algebra can
+close that hole — it is not a matter of working harder, the datum is simply
+absent — and every conclusion-side rearrangement is blocked by the ROUND-7
+EQUIVALENCE AUDIT. Hence this leaf.
 
 The conclusion is the body of that leaf's `hJL` hypothesis with two clauses
 added: the level datum `𝒮` of the quaternionic eigenform may be taken with
@@ -5999,19 +6152,21 @@ the level datum with no relation to `π` at all, so as a hypothesis on an
 arbitrary `𝒮` it would genuinely delete instances. Putting both clauses
 into an existential, where `𝒮` is produced, avoids both objections.
 
-Content, i.e. what a prover of this leaf owes: the ROUND-5 argument, plus
-the observation that `𝒮.Q` may be taken empty. `hirrF` gives
-`ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}` irreducible; the compatible
-system `{σ_λ}` of the `π` underlying `heckeF` has `σ_ℓ^{ss} ≅
-(ρ|_{G_F})^{ss}` by Chebotarev and Brauer–Nesbitt against `hmod` (a set of
-places of density `1`), hence `σ_ℓ ≅ ρ|_{G_F}` by irreducibility; `ρ` is
-hardly ramified, so `σ_ℓ` is unramified outside the places over `2` and
-`ℓ`, and local–global compatibility at `w ∤ ℓ` makes `π_w` unramified
-there. The minimal level of the quaternionic transfer is therefore
-supported over `2` and `ℓ`, which `hbad2` and `hbadℓ` place inside `badF`.
+The ROUND-5 argument that used to be quoted here as "what a prover of this
+leaf owes" has MOVED, unchanged, to `exists_eigenform_minimalLevel_subset_badF`
+above, which is where it is now owed. Half of what this paragraph asked for —
+"plus the observation that `𝒮.Q` may be taken empty" — turned out not to be
+owed at all: `exists_eigenform_of_totallyDefinite_quaternionAlgebra` already
+returns `𝒮.Q = ∅`, so the `Q`-clause is discharged by `simp` in the body
+below rather than by any leaf.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The
+assembly below respects it: it goes through
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`,
+`exists_eigenform_minimalLevel_subset_badF`,
+`exists_prime_two_lt_finrank_cyclotomicField` and
+`exists_algHom_of_smul_eq_smul`, all in this module. -/
 theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -6071,7 +6226,58 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
-  sorry
+  haveI : NumberField.IsTotallyReal F := hFtr
+  -- `hJL` is consumed for the QUATERNION ALGEBRA ONLY: its own level datum and
+  -- character are discarded, since the level of that datum is exactly what is
+  -- not controlled. The four instances come with it.
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, _p, _𝒮, _θ, _hθ⟩ := hJL
+  -- The auxiliary prime of the level datum: not part of the correspondence.
+  obtain ⟨p, hp, hcyc⟩ := exists_prime_two_lt_finrank_cyclotomicField F
+  -- Jacquet–Langlands proper, as an eigenform at level `U₁(S, ∅)`.
+  obtain ⟨𝒮₀, a₀, f₀, hQ₀, hf₀, hT₀, hmatch₀⟩ :=
+    exists_eigenform_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
+      p hp hcyc
+  -- Minimality of the level: `𝒮.S` may be confined to `badF`, `𝒮.Q` still empty.
+  obtain ⟨𝒮, a, f, hQ, hSbad, hf0, hTa, hmatch⟩ :=
+    exists_eigenform_minimalLevel_subset_badF hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
+      p 𝒮₀ a₀ f₀ hQ₀ hf₀ hT₀ hmatch₀
+  -- `f` is scaled by every element of the Hecke algebra, not merely by the
+  -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
+  -- `𝒮.Q = ∅`.
+  have hall : ∀ T : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮,
+      ∃ e : E, T • f = e • f := by
+    intro T
+    induction (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.adjoin_T_U_eq_top ..).ge
+      (Set.mem_univ T) using Algebra.adjoin_induction with
+    | mem x hx =>
+        obtain ⟨v, hvS, hvQ, rfl⟩ | ⟨v, hvQ, α, hα, rfl⟩ := hx
+        · exact ⟨a v, by
+            rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
+            exact hTa v hvS⟩
+        · rw [hQ] at hvQ; simp at hvQ
+    | algebraMap s => exact ⟨s, algebraMap_smul _ _ _⟩
+    | add x y _ _ hx hy =>
+        obtain ⟨ex, hx⟩ := hx; obtain ⟨ey, hy⟩ := hy
+        exact ⟨ex + ey, by rw [add_smul, hx, hy, add_smul]⟩
+    | mul x y _ _ hx hy =>
+        obtain ⟨ex, hx⟩ := hx; obtain ⟨ey, hy⟩ := hy
+        exact ⟨ex * ey, by rw [mul_smul, hy, smul_comm, hx, smul_smul, mul_comm]⟩
+  -- The scaling factor is an `E`-algebra character.
+  obtain ⟨θ, hθ⟩ := exists_algHom_of_smul_eq_smul hf0 hall
+  refine ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, ?_, ?_⟩
+  · -- the `Q`-clause is vacuous: `𝒮.Q = ∅`
+    intro w hw
+    rw [hQ] at hw
+    simp at hw
+  · intro w hwS hwQ hwbad
+    have h1 : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
+        = a w • f := by
+      rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
+      exact hTa w hwS
+    rw [hθ _ _ h1]
+    exact hmatch w hwS hwbad
 
 /-- **STEP 2a″-β — CARAYOL'S THÉORÈME (A), STATED WITHOUT THE `ℓ`-ADIC
 APPARATUS** (sorry leaf; CUT 2026-07-28, ROUND-8, out of
