@@ -83,8 +83,13 @@ them without a human. Do not re-wrap it.
   not the hidden input the cut recorded)
 - `finrank_sha2_le_finrank_sha1Twist` (cut out 2026-07-28; the Poitou–Tate
   content of `exists_injective_sha2_dual_sha1Twist`, now PROVEN over these two)
-- `finrank_sha1Twist_le_cotangentFinrank` (re-cut 2026-07-28 in `ℕ` and over
-  `D.IsUniversal`; `rank_sha1Twist_le_cotangentFinrank` is now PROVEN over it)
+- `card_sha1Twist_le_card_dualNumberPoints` (re-cut 2026-07-28 in `ℕ` and over
+  `D.IsUniversal`, then re-cut again the same day as a COUNT of `k[ε]`-points;
+  `finrank_sha1Twist_le_cotangentFinrank` and `rank_sha1Twist_le_cotangentFinrank`
+  are now both PROVEN over it)
+- `card_dualNumberPoints_eq_pow_cotangentFinrankModL` (cut out 2026-07-28: the
+  COMMUTATIVE-ALGEBRA half of the tangent identification — no Galois theory, and
+  behind none of the gates that block its arithmetic sibling)
 
 Both former strata above them were narrowed on 2026-07-25 into those
 leaves, and every statement they replace is now PROVEN here — including
@@ -19931,13 +19936,117 @@ theorem cotangentFinrankModL_le (ℓ : ℕ) (g : ℕ) (ts : Fin g → R)
 
 end CotangentModL
 
-/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ (mod-`ℓ` tangent dimension of
-`D.R`)`** (sorry leaf, cut out 2026-07-27 as the ARITHMETIC half of
+/-- **The `k[ε]`-points of a local `ℤ_ℓ`-algebra `R` above a residue map
+`π : R →+* k`** — the `ℤ_ℓ`-algebra maps `R → k[ε]` whose composite with
+`k[ε] ↠ k` is `π`.
+
+This is the SET underlying the tangent space of a deformation functor
+pro-represented by `R`, written with no `k`-module structure on it.  That
+omission is the whole point: see the CUT paragraph on
+`card_dualNumberPoints_eq_pow_cotangentFinrankModL` below for why counting
+`k[ε]`-points, rather than adding them, is what makes the deformation-functor
+seam usable here.
+
+The two conditions are exactly the two that `HardlyRamifiedDeformation.IsUniversal`
+imposes on its comparison map `D.R →+* D'.R`, specialised to
+`D'.R = DualNumber k` with `D'.π = TrivSqZeroExt.fst`, which is what makes this
+set the right target for `card_sha1Twist_le_card_dualNumberPoints` below.
+
+Note there is no locality hypothesis and none is wanted: `(f x).fst = π x`
+already forces `f (𝔪) ⊆ (ε)`, since `π` kills `𝔪`.
+
+The `ℤ_ℓ`-compatibility is spelled `f ∘ algebraMap = inl ∘ algebraMap` rather
+than `f ∘ algebraMap = algebraMap` to avoid asking for an
+`Algebra ℤ_[ℓ] (DualNumber k)` instance; the two agree wherever that instance
+exists, since the structure map of `k[ε]` over `ℤ_ℓ` is `inl` composed with the
+structure map of `k`. -/
+def dualNumberPoints (R : Type w) [CommRing R] [Algebra ℤ_[ℓ] R] (π : R →+* k) : Type _ :=
+  {f : R →+* DualNumber k //
+    (∀ a : ℤ_[ℓ], f (algebraMap ℤ_[ℓ] R a) = TrivSqZeroExt.inl (algebraMap ℤ_[ℓ] k a)) ∧
+      ∀ x, (f x).fst = π x}
+
+/-- **The tangent-space count: `#R(k[ε]) = #k ^ dim_k 𝔪/(𝔪²+(ℓ))`** (sorry leaf,
+cut out 2026-07-28 as the COMMUTATIVE-ALGEBRA half of
+`finrank_sha1Twist_le_cotangentFinrank` below; the other half is
+`card_sha1Twist_le_card_dualNumberPoints` below, which is the arithmetic).
+
+**There is no Galois theory in this statement and that is the point of the
+cut.**  The third bullet of the route recorded on
+`finrank_sha1Twist_le_cotangentFinrank` below — "the tangent identification
+`dim_k H¹_L = cotangentFinrankModL D.R ℓ`" — is two facts glued together: that
+the deformation functor's `k[ε]`-points are `H¹_L`, and that the `k[ε]`-points
+of a pro-representing ring are the dual of its mod-`ℓ` cotangent space.  Only
+the FIRST is arithmetic.  This leaf is the second, and it is dispatchable
+today: it needs no Selmer group, no local condition at `ℓ`, no cup product and
+no local class field theory, so it does not sit behind the gate that blocks its
+sibling.
+
+**THE ROUTE.**  Write `f x = π x + ε · d x`.  Being a ring hom makes `d` a
+`π`-derivation, `d (x*y) = π x * d y + π y * d x`; so `d` kills `𝔪²`, and it
+kills `(ℓ)` because `π ℓ = 0` in `k` (characteristic `ℓ`), whence `d` restricted
+to `𝔪` factors through `CotangentModL R ℓ` and is `R/𝔪`-linear.  Conversely
+`f` is RECOVERED from `d|𝔪`: `f` kills `𝔪² + (ℓ)`, so it factors through
+`A := R ⧸ (𝔪² + (ℓ))`, which is local artinian with `𝔪_A² = 0` and `ℓ = 0`,
+hence equicharacteristic; `k` is finite, so `A` carries a coefficient field by
+Hensel-lifting the `(#k − 1)`-st roots of unity — which this module already
+does, `exists_mem_teichmullerRoots_map_eq` above — and `A ≅ k ⊕ CotangentModL R ℓ`
+as a square-zero extension.  The ε-part of `f` on the coefficient field is
+forced to vanish, because a finite field admits no nonzero derivation.  So the
+`k[ε]`-points biject with `Hom_k(CotangentModL R ℓ, k)`, of which there are
+`#k ^ dim`.
+
+**WHY `IsNoetherianRing` IS LOAD-BEARING, AND THE COUNTEREXAMPLE IF IT IS
+DROPPED.**  `cotangentFinrankModL` is a `Module.finrank`, which is `0` by
+convention on an infinite-dimensional space.  Without Noetherianness `𝔪` need
+not be finitely generated, `CotangentModL R ℓ` can be infinite-dimensional, and
+the right-hand side collapses to `#k ^ 0 = 1` while the left-hand side is
+infinite (so `Nat.card` returns `0`) — the two sides are then `0` and `1`.  A
+concrete instance: `R = k[x₁, x₂, …]` localised at `(x₁, x₂, …)`, whose
+cotangent space is countably infinite-dimensional.  This is also the reason the
+CONSUMER's right-hand side is not junk, a point its docstring asserts and this
+leaf is where it is actually used.
+
+`hπ` (surjectivity of `π`) is what pins `π` to BE the residue map: `k` is a
+field, so `ker π` is then maximal, hence `= 𝔪` in the local ring `R`.  Without
+it `π` could be a map onto a proper subfield and the count would be wrong. -/
+theorem card_dualNumberPoints_eq_pow_cotangentFinrankModL
+    (R : Type w) [CommRing R] [IsLocalRing R] [IsNoetherianRing R] [Algebra ℤ_[ℓ] R]
+    (π : R →+* k) (hπ : Function.Surjective π) :
+    Nat.card (dualNumberPoints (ℓ := ℓ) R π) = Nat.card k ^ cotangentFinrankModL R ℓ :=
+  sorry
+
+/-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{k[ε]-points of D.R}`** (sorry leaf,
+cut out 2026-07-27 as the ARITHMETIC half of
 `rank_sha1_twist_le_of_tangent_span` below; the other half is
-`cotangentFinrankModL_le` above, which is PROVEN.  **RE-CUT 2026-07-28**: this
-is now the `ℕ`-valued, `IsUniversal`-hypothesised leaf, and
-`rank_sha1Twist_le_cotangentFinrank` below is a three-line assembly over it —
-see the RE-CUT paragraph).
+`cotangentFinrankModL_le` above, which is PROVEN.  **RE-CUT 2026-07-28**: made
+`ℕ`-valued and `IsUniversal`-hypothesised — see the RE-CUT paragraph.
+**RE-CUT AGAIN the same day**: restated as a count of `k[ε]`-points, so that
+the commutative algebra of the tangent identification could leave with
+`card_dualNumberPoints_eq_pow_cotangentFinrankModL` above — see the CUT
+paragraph on `finrank_sha1Twist_le_cotangentFinrank` below, which is now a
+short assembly over the two).
+
+**WHAT THE SECOND RE-CUT DID TO THIS STATEMENT, AND WHY IT IS THE SAME
+MATHEMATICS.**  The conclusion `dim_k Ш¹ ≤ cotangentFinrankModL D.R ℓ` became
+`#Ш¹ ≤ #{k[ε]-points}`.  These are interchangeable because `k` is FINITE:
+`#W = #k ^ dim_k W` for a finite-dimensional `W`, `#{k[ε]-points} = #k ^
+cotangentFinrankModL D.R ℓ` (the commutative-algebra leaf above), and `#k ≥ 2`
+makes `n ↦ #k ^ n` strictly monotone.  What the reformulation removes from THIS
+leaf is the passage from `Hom_k(𝔪/(𝔪²+(ℓ)), k)` back to a dimension — pure
+commutative algebra with no Galois input, which is now a separate owner's
+problem.  What it leaves here is exactly the arithmetic: Greenberg–Wiles, the
+dual Selmer group, and the identification of the functor's `k[ε]`-points with
+`H¹_L(ad⁰)` (this is where `hu` is consumed).  Every paragraph below was
+written for the previous phrasing and none of it is affected, since none of it
+concerned the right-hand side's bookkeeping.
+
+**THE STATEMENT REMAINS FAITHFUL UNDER THE SECOND RE-CUT, AND THE DEGENERATE
+CASE IS DIFFERENT NOW.**  Under the old phrasing the risk was
+`cotangentFinrankModL D.R ℓ = 0` read as junk; here the analogous degenerate
+value is `#{k[ε]-points} = 1` (only the trivial point, `d = 0`), which says
+`#Ш¹ ≤ 1`, i.e. `Ш¹ = 0` — the same rigid-deformation situation the audit below
+analyses, with the same verdict.  There is no NEW vacuity: the point set is
+never empty, because `f = TrivSqZeroExt.inl ∘ π` is always a point.
 
 **RE-CUT 2026-07-28 — two pieces of pure bookkeeping were peeled off this leaf,
 and the leaf count did not move.**  The node used to be stated with
@@ -20188,6 +20297,69 @@ a defence — and that reasoning transfers here unchanged, since
 References: Washington's article in Cornell–Silverman–Stevens (the
 Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
 Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII. -/
+theorem card_sha1Twist_le_card_dualNumberPoints
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hu : D.IsUniversal) :
+    letI := D.commRing; letI := D.algebra
+    Nat.card ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) :=
+  sorry
+
+/-- **Greenberg–Wiles, assembled** (**PROVEN 2026-07-28** over the arithmetic
+leaf `card_sha1Twist_le_card_dualNumberPoints` immediately above and the
+commutative-algebra leaf `card_dualNumberPoints_eq_pow_cotangentFinrankModL`
+above — NOT a sorry node any more; the mathematical record for this node is the
+long docstring on the arithmetic leaf above, which is where it belongs).
+
+**THE CUT, 2026-07-28, AND WHY IT IS NOT THE DEAD END THE PREVIOUS AUDIT
+RECORDED.**  The irreducibility verdict above rejected the axis "insert the
+deformation functor's tangent space" with the reason: *"giving that set its
+`Module k` structure IS the cocycle addition, i.e. it needs the inverse
+direction of the degree-`1` dictionary, so it does not dodge the
+infrastructure, it renames it."*  That reason is **wrong here, and the way it
+fails is worth stating**, because the same escape is available at every leaf in
+this file that compares two `k`-dimensions.
+
+**`k` is FINITE** — it is a section variable with `[Finite k]`, being the
+residue field of a `ℤ_ℓ`-algebra with finite residue field.  So a
+finite-dimensional `k`-vector space is DETERMINED UP TO CARDINALITY by its
+dimension, `#W = #k ^ dim_k W`, and an inequality of dimensions is EQUIVALENT to
+an inequality of cardinalities (`#k ≥ 2`, so `n ↦ #k ^ n` is strictly
+monotone).  Counting therefore replaces comparing dimensions, and **the
+`Module k` structure on the tangent set is never needed** — only its
+cardinality.  That is exactly the objection that killed the axis, and it costs
+nothing to remove: `dualNumberPoints` above is a bare subtype of ring
+homomorphisms with no algebraic structure on it at all.
+
+What the cut buys, concretely: the third bullet of the route above (the tangent
+identification) splits into an arithmetic half — the functor's `k[ε]`-points
+are `H¹_L`, still behind the local-Tate-pairing gate — and a
+commutative-algebra half, `#R(k[ε]) = #k ^ dim 𝔪/(𝔪²+(ℓ))`, which is behind NO
+gate and is dispatchable today.  It also relocates the "is the right-hand side
+junk?" question: `cotangentFinrankModL` is a `Module.finrank` and is `0` on an
+infinite-dimensional space, and the `IsNoetherianRing` that rules that out is
+now CONSUMED, by the commutative-algebra leaf, rather than asserted in prose.
+
+**ORDERING NOTE FOR WHOEVER ATTACKS THE GATE.**  The plan recorded above says
+"(a) vendor the cup product from `~/cs/FLT`, (b) build the local invariant map,
+(c) then both leaves".  Step (a) as stated conflicts with this project's
+free-floating rule: the ≈1160 lines it names have no consumer until (c) lands,
+so vendoring them first puts 1160 free-floating declarations into the tree,
+which the Stop hook blocks on and a sweep would propose deleting.  Vendor
+top-down instead — write the statement that consumes the pairing FIRST (a
+sorried leaf naming `cup` in its statement is a consumer), then vendor beneath
+it.
+
+The `hu`/`ht` question raised by the RE-CUT paragraph above is not resolved by
+this cut and is not resolvable without a proof of the arithmetic leaf: `hu` is
+consumed there, and `ht` appears nowhere.  The commutative-algebra leaf uses
+NEITHER, which is a small piece of evidence for the re-cut being right — the
+half of the tangent identification that could plausibly have wanted
+"topologically generated by `charFrob` coefficients" is the half that turns out
+to need no deformation-theoretic hypothesis at all. -/
 theorem finrank_sha1Twist_le_cotangentFinrank
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -20196,8 +20368,30 @@ theorem finrank_sha1Twist_le_cotangentFinrank
     (hu : D.IsUniversal) :
     letI := D.commRing; letI := D.isLocalRing
     Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      cotangentFinrankModL D.R ℓ :=
-  sorry
+      cotangentFinrankModL D.R ℓ := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.algebra
+  letI := D.isNoetherianRing
+  show Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
+    cotangentFinrankModL D.R ℓ
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  haveI : Finite ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := Module.finite_of_finite k
+  haveI := Fintype.ofFinite k
+  haveI := Fintype.ofFinite ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ))
+  have hcard : Nat.card ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) =
+      Nat.card k ^ Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := by
+    rw [Nat.card_eq_fintype_card, Nat.card_eq_fintype_card]
+    exact Module.card_eq_pow_finrank
+  have hq : 1 < Nat.card k := by
+    rw [Nat.card_eq_fintype_card]; exact Fintype.one_lt_card
+  have hle : Nat.card k ^ Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Nat.card k ^ cotangentFinrankModL D.R ℓ := by
+    rw [← hcard, ← card_dualNumberPoints_eq_pow_cotangentFinrankModL (ℓ := ℓ) D.R D.π
+      D.π_surjective]
+    exact card_sha1Twist_le_card_dualNumberPoints hℓOdd hdim hℓ5 h hirr D hu
+  exact (Nat.pow_le_pow_iff_right hq).mp hle
 
 /-- **Greenberg–Wiles, in the `Cardinal` form the consumers below want**
 (**PROVEN 2026-07-28** over `finrank_sha1Twist_le_cotangentFinrank` above and
