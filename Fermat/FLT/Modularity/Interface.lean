@@ -60621,9 +60621,397 @@ theorem one_le_swanExponentAux_of_not_isTamelyRamifiedAt
       (τ.fixedSubmodule v (wildInertiaGroup v)) := by omega
   simpa [GaloisRep.wildCodim, hV] using hgoal
 
-/-- **THE WILD INERTIA AT `q ≠ p` HAS FINITE IMAGE** (SORRY LEAF, cut at
-the release-13 integration): the `p`-adic representation `τ` kills an open
-subgroup of the wild inertia at every prime `q ≠ p`.
+/-!
+### GROTHENDIECK'S `ℓ`-ADIC MONODROMY THEOREM AT `q ≠ p`, WILD PART
+
+(PROVEN 2026-07-29, sixteenth owner. This block replaces the sorry leaf
+`hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform`, whose name was a
+MISNOMER — flagged by `flt-lean-193` on 2026-07-28 — since the statement
+contains no newform, no `g₀` and no `h_τ`. It is renamed here to
+`hasFiniteWildMonodromyAt_of_residueChar_ne`, and its sole consumer
+`isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two` updated.)
+
+**WHAT IS ACTUALLY BEING PROVED.** `τ` is a CONTINUOUS representation
+`Γ_ℚ → GL₂(ℚ̄_p)`, `ℚ̄_p` carrying the spectral-norm valuation topology
+(`PadicAlgCl.normedField`; `#synth` confirms this is the ambient instance,
+not the discrete one — see the FAITHFULNESS CHECK further up this file).
+`P_q` is pro-`q`, so its image in the pro-`p`-ish group `1 + 𝔪·M₂(𝒪)` must
+be trivial. The classical argument is Grothendieck's; the form used here
+avoids the `p`-adic logarithm entirely.
+
+**THE ARGUMENT, in four steps.**
+
+1. `supNorm` — the entrywise sup-norm on `M₂(ℚ̄_p)` — is submultiplicative
+   and ultrametric (`supNorm_mul_le`, `supNorm_add_le`), and "isosceles":
+   a strictly smaller perturbation does not move it (`supNorm_add_of_lt`).
+2. **The norm-preservation step** `supNorm_pow_sub_one`: if
+   `‖A − 1‖ < 1` and `‖q‖ = 1` in `ℚ̄_p` (which is exactly `q ≠ p`), then
+   `‖A�q − 1‖ = ‖A − 1‖`. Proof: `(1 + X)ᵏ = 1 + k·X + Y` with `‖Y‖ ≤ ‖X‖²`,
+   by a two-line induction (`exists_pow_one_add_eq`) that needs NO binomial
+   theorem; then `‖q·X‖ = ‖X‖` while `‖Y‖ ≤ ‖X‖² < ‖X‖`.
+3. **`P_v` is pro-`q`** (`exists_pow_pow_mem_of_mem_wildInertiaGroup`): for
+   `U ⊴ Γ ℚᵥ` open, `#(P_v / (U ∩ P_v))` is coprime to every integer prime
+   to `q` (`coprime_card_quotient_wildInertiaGroup`, `ArtinConductor.lean`),
+   so its prime-to-`q` part is `1` and it is a `q`-power; hence `σ^(qᵏ) ∈ U`.
+4. **Assembly.** Take `N ⊴ Γ ℚᵥ` open with `‖τ(σ) − 1‖ < 1` on `N` (step 4's
+   `exists_openNormal_supNorm_lt`, from continuity plus the fact that open
+   subgroups are a neighbourhood basis of `1`). For `σ ∈ N ⊓ P_v` put
+   `a := ‖τ(σ) − 1‖ < 1`. If `a ≠ 0`, take `U` open with `‖τ(·) − 1‖ < a`;
+   step 3 puts some `σ^(qᵏ)` in `U`, while step 2 iterated gives
+   `‖τ(σ^(qᵏ)) − 1‖ = a`. Contradiction, so `τ(σ) = 1`.
+
+**AXIOM STATUS.** Steps 1, 2 and 4 are axiom-clean (`propext`,
+`Classical.choice`, `Quot.sound` only). The theorem as a whole is
+`sorryAx`-tainted through step 3's single input
+`coprime_card_quotient_wildInertiaGroup`, which rests on the already-open,
+already-owned leaf `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` of
+`ArtinConductor.lean` ("`P_v` is pro-`ℓ`"). That is the SAME leaf
+`toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero` above already
+depends on, so this closes a direct leaf without adding a new one.
+
+**THE `q ≠ p` HYPOTHESIS IS LOAD-BEARING** and enters exactly once, in
+`nnnorm_natCast_eq_one_of_ne`: at `q = p` we have `‖p‖ = 1/p < 1`, step 2
+fails, and the statement is FALSE — the binder was written `_hqp`, which in
+this file is a documented convention for "carries no content", and that was
+backwards. The witness recorded on 2026-07-28 stands: every weight-2 newform
+representation has `det = χ_cyc`, whose wild-inertia image at `v = p` is
+`1 + pℤ_p`; an open `N` has finite index, so `N ∩ P_p` still has infinite
+`χ_cyc`-image and cannot act trivially.
+-/
+
+section WildMonodromy
+
+open scoped NNReal
+
+namespace WildMonodromyAux
+
+section SupNorm
+
+variable {F : Type*} [NormedField F] [IsUltrametricDist F]
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- The entrywise sup-norm of a square matrix over an ultrametric normed field. -/
+noncomputable def supNorm (M : Matrix n n F) : ℝ≥0 :=
+  Finset.univ.sup fun ij : n × n => ‖M ij.1 ij.2‖₊
+
+omit [IsUltrametricDist F] [DecidableEq n] in
+lemma supNorm_le_iff {M : Matrix n n F} {c : ℝ≥0} :
+    supNorm M ≤ c ↔ ∀ i j, ‖M i j‖₊ ≤ c := by
+  simp [supNorm, Finset.sup_le_iff, Prod.forall]
+
+omit [IsUltrametricDist F] [DecidableEq n] in
+lemma supNorm_lt_iff {M : Matrix n n F} {c : ℝ≥0} (hc : 0 < c) :
+    supNorm M < c ↔ ∀ i j, ‖M i j‖₊ < c := by
+  rw [supNorm, Finset.sup_lt_iff (by simpa using hc)]
+  simp [Prod.forall]
+
+omit [IsUltrametricDist F] [DecidableEq n] in
+lemma nnnorm_le_supNorm (M : Matrix n n F) (i j : n) : ‖M i j‖₊ ≤ supNorm M :=
+  Finset.le_sup (f := fun ij : n × n => ‖M ij.1 ij.2‖₊) (Finset.mem_univ (i, j))
+
+lemma supNorm_eq_zero_iff {M : Matrix n n F} : supNorm M = 0 ↔ M = 0 := by
+  constructor
+  · intro h
+    ext i j
+    have := nnnorm_le_supNorm M i j
+    rw [h, le_zero_iff, nnnorm_eq_zero] at this
+    simpa using this
+  · rintro rfl
+    simp [supNorm]
+
+lemma supNorm_zero : supNorm (0 : Matrix n n F) = 0 := supNorm_eq_zero_iff.mpr rfl
+
+lemma supNorm_add_le (M N : Matrix n n F) :
+    supNorm (M + N) ≤ max (supNorm M) (supNorm N) := by
+  rw [supNorm_le_iff]
+  intro i j
+  refine le_trans ?_ (max_le_max (nnnorm_le_supNorm M i j) (nnnorm_le_supNorm N i j))
+  simpa using IsUltrametricDist.nnnorm_add_le_max (M i j) (N i j)
+
+omit [IsUltrametricDist F] [DecidableEq n] in
+lemma supNorm_neg (M : Matrix n n F) : supNorm (-M) = supNorm M := by
+  simp [supNorm]
+
+lemma supNorm_mul_le (M N : Matrix n n F) :
+    supNorm (M * N) ≤ supNorm M * supNorm N := by
+  rw [supNorm_le_iff]
+  intro i j
+  rw [Matrix.mul_apply]
+  refine IsUltrametricDist.nnnorm_sum_le_of_forall_le ?_
+  intro k _
+  rw [nnnorm_mul]
+  exact mul_le_mul' (nnnorm_le_supNorm M i k) (nnnorm_le_supNorm N k j)
+
+lemma supNorm_nsmul_le (k : ℕ) (M : Matrix n n F) : supNorm (k • M) ≤ supNorm M := by
+  rw [supNorm_le_iff]
+  intro i j
+  rw [← Nat.cast_smul_eq_nsmul F, Matrix.smul_apply, smul_eq_mul, nnnorm_mul]
+  refine le_trans (mul_le_mul_right' (IsUltrametricDist.nnnorm_natCast_le_one F k) _) ?_
+  simpa using nnnorm_le_supNorm M i j
+
+omit [IsUltrametricDist F] [DecidableEq n] in
+lemma supNorm_nsmul_of_nnnorm_eq_one {k : ℕ} (hk : ‖(k : F)‖₊ = 1) (M : Matrix n n F) :
+    supNorm (k • M) = supNorm M := by
+  have hsm : (k • M) = (k : F) • M := (Nat.cast_smul_eq_nsmul F k M).symm
+  rw [hsm]
+  unfold supNorm
+  have hent : ∀ ij : n × n, ‖((k : F) • M) ij.1 ij.2‖₊ = ‖M ij.1 ij.2‖₊ := by
+    intro ij; rw [Matrix.smul_apply, smul_eq_mul, nnnorm_mul, hk, one_mul]
+  simp only [hent]
+
+/-- Isosceles: a strictly smaller perturbation does not move the sup-norm. -/
+lemma supNorm_add_of_lt {M N : Matrix n n F} (h : supNorm N < supNorm M) :
+    supNorm (M + N) = supNorm M := by
+  refine le_antisymm ((supNorm_add_le M N).trans (max_le le_rfl h.le)) ?_
+  have h2 : supNorm M ≤ max (supNorm (M + N)) (supNorm N) := by
+    have hb := supNorm_add_le (M + N) (-N)
+    rw [supNorm_neg] at hb
+    simpa using hb
+  rcases max_cases (supNorm (M + N)) (supNorm N) with ⟨he, _⟩ | ⟨he, _⟩
+  · rwa [he] at h2
+  · rw [he] at h2; exact absurd (lt_of_le_of_lt h2 h) (lt_irrefl _)
+
+/-- `(1 + X) ^ k = 1 + k • X + Y` with `‖Y‖ ≤ ‖X‖²` — the binomial estimate,
+by induction rather than by the binomial theorem. -/
+lemma exists_pow_one_add_eq (X : Matrix n n F) (hX : supNorm X ≤ 1) (k : ℕ) :
+    ∃ Y : Matrix n n F, (1 + X) ^ k = 1 + k • X + Y ∧ supNorm Y ≤ supNorm X ^ 2 := by
+  induction k with
+  | zero => exact ⟨0, by simp, by simp [supNorm_zero]⟩
+  | succ k ih =>
+    obtain ⟨Y, hY, hYle⟩ := ih
+    refine ⟨k • (X * X) + (Y + Y * X), ?_, ?_⟩
+    · rw [pow_succ, hY]
+      simp only [add_mul, mul_add, one_mul, mul_one, succ_nsmul, smul_mul_assoc]
+      abel
+    · refine le_trans (supNorm_add_le _ _) (max_le ?_ ?_)
+      · exact (supNorm_nsmul_le k _).trans (by simpa [pow_two] using supNorm_mul_le X X)
+      · refine le_trans (supNorm_add_le _ _) (max_le hYle ?_)
+        refine le_trans (supNorm_mul_le Y X) ?_
+        calc supNorm Y * supNorm X ≤ supNorm X ^ 2 * 1 := mul_le_mul' hYle hX
+          _ = supNorm X ^ 2 := mul_one _
+
+/-- **THE NORM-PRESERVATION STEP**: at a `q` of norm one, raising to the
+`q`-th power does not move `‖A − 1‖` inside the open unit ball. -/
+theorem supNorm_pow_sub_one {q : ℕ} (hqF : ‖(q : F)‖₊ = 1) {A : Matrix n n F}
+    (hA : supNorm (A - 1) < 1) :
+    supNorm (A ^ q - 1) = supNorm (A - 1) := by
+  set X : Matrix n n F := A - 1 with hXdef
+  have hA1 : A = 1 + X := by rw [hXdef]; abel
+  obtain ⟨Y, hY, hYle⟩ := exists_pow_one_add_eq X hA.le q
+  rw [hA1, hY]
+  have hgoal : (1 + q • X + Y) - 1 = q • X + Y := by abel
+  rw [hgoal]
+  rcases eq_zero_or_pos (supNorm X) with h0 | h0
+  · have hX0 : X = 0 := supNorm_eq_zero_iff.mp h0
+    rw [hX0, supNorm_zero] at hYle
+    simp only [pow_two, mul_zero] at hYle
+    have hY0 : Y = 0 := supNorm_eq_zero_iff.mp (le_zero_iff.mp hYle)
+    rw [hX0, hY0, supNorm_zero]
+    simp [supNorm_zero]
+  · have hq : supNorm (q • X) = supNorm X := supNorm_nsmul_of_nnnorm_eq_one hqF X
+    have hlt : supNorm Y < supNorm (q • X) := by
+      rw [hq]
+      refine lt_of_le_of_lt hYle ?_
+      calc supNorm X ^ 2 = supNorm X * supNorm X := sq _
+        _ < 1 * supNorm X := mul_lt_mul_of_pos_right hA h0
+        _ = supNorm X := one_mul _
+    rw [supNorm_add_of_lt hlt, hq]
+
+end SupNorm
+
+/-- The matrix of an endomorphism of `ℚ̄_p²` in the standard basis. -/
+noncomputable def endMat :
+    Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₐ[AlgebraicClosure ℚ_[p]]
+      Matrix (Fin 2) (Fin 2) (AlgebraicClosure ℚ_[p]) :=
+  LinearMap.toMatrixAlgEquiv (Pi.basisFun (AlgebraicClosure ℚ_[p]) (Fin 2))
+
+lemma endMat_apply (f : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    (i j : Fin 2) : endMat f i j = f (Pi.single j 1) i := by
+  simp [endMat, LinearMap.toMatrixAlgEquiv_apply]
+
+/-- `‖q‖ = 1` in `ℚ̄_p` for a prime `q ≠ p`. This is the ONLY place `q ≠ p`
+is consumed, and it is what makes the norm-preservation step true. -/
+lemma nnnorm_natCast_eq_one_of_ne {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
+    ‖((q : ℕ) : AlgebraicClosure ℚ_[p])‖₊ = 1 := by
+  have hcop : p.Coprime q := (Nat.coprime_primes hp.out hq).mpr (fun h => hqp h.symm)
+  have hQ : ‖((q : ℕ) : ℚ_[p])‖ = 1 := Padic.norm_natCast_eq_one_iff.mpr hcop
+  have hcast : ((q : ℕ) : AlgebraicClosure ℚ_[p])
+      = algebraMap ℚ_[p] (PadicAlgCl p) ((q : ℕ) : ℚ_[p]) := (map_natCast _ q).symm
+  have hnorm : ‖((q : ℕ) : AlgebraicClosure ℚ_[p])‖ = 1 := by
+    rw [hcast, PadicAlgCl.norm_extends, hQ]
+  rw [← NNReal.coe_inj, coe_nnnorm, hnorm, NNReal.coe_one]
+
+/-- **`P_v` IS PRO-`q`** when `q` is the residue characteristic of `v`: for `σ` in
+the wild inertia at `v` and any open normal `U ≤ Γ ℚᵥ`, some `q`-power of `σ` lies
+in `U`.
+
+The residue-characteristic hypothesis is spelled `hqv`: every natural number prime
+to `q` is a unit at `v`. Stated that way rather than through
+`Nat.Prime.toHeightOneSpectrumRingOfIntegersRat` so that `v` is a genuine parameter
+— with `v` introduced by `set` instead, the module system's unexposed
+`HeightOneSpectrum.valuation` blocks the instance defeq for `U.Normal`. -/
+theorem exists_pow_pow_mem_of_mem_wildInertiaGroup
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {q : ℕ} (hq : q.Prime)
+    (hqv : ∀ m : ℕ, ¬ q ∣ m → ((m : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal)
+    (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion ℚ))) [U.Normal]
+    (hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion ℚ))))
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hσ : σ ∈ wildInertiaGroup v) :
+    ∃ k : ℕ, σ ^ q ^ k ∈ U := by
+  classical
+  -- the quotient is FINITE: `U` is open in the compact group `Γ Kᵥ`.
+  haveI hfinΓ : Finite (Field.absoluteGaloisGroup (v.adicCompletion ℚ) ⧸ U) :=
+    Subgroup.quotient_finite_of_isOpen U hU
+  have hdvd : U.relIndex (wildInertiaGroup v) ∣ U.index :=
+    Subgroup.relIndex_dvd_index_of_normal _ _
+  have hidx : U.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  have hcard : Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))
+      = U.relIndex (wildInertiaGroup v) := rfl
+  have hN0 : Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) ≠ 0 := by
+    rw [hcard]
+    exact fun h => hidx (Nat.eq_zero_of_zero_dvd (h ▸ hdvd))
+  haveI : Finite (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) :=
+    Nat.finite_of_card_ne_zero hN0
+  -- its order is a `q`-power: the prime-to-`q` part divides it and is coprime to it.
+  have hcop := coprime_card_quotient_wildInertiaGroup v
+    (hqv _ (Nat.not_dvd_ordCompl hq hN0)) U hU
+  have hone : ordCompl[q] (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) = 1 :=
+    hcop.symm.eq_one_of_dvd (Nat.ordCompl_dvd _ q)
+  have hNq : Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))
+      = q ^ (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))).factorization q := by
+    have hsplit := Nat.ordProj_mul_ordCompl_eq_self
+      (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) q
+    rw [hone, mul_one] at hsplit
+    exact hsplit.symm
+  refine ⟨(Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))).factorization q, ?_⟩
+  rw [← hNq]
+  have hpow : ((⟨σ, hσ⟩ : wildInertiaGroup v) ^
+      Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) :
+        wildInertiaGroup v) ∈ U.subgroupOf (wildInertiaGroup v) := by
+    have h1 : (QuotientGroup.mk ((⟨σ, hσ⟩ : wildInertiaGroup v) ^
+        Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) :
+          wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) = 1 := by
+      rw [QuotientGroup.mk_pow]
+      exact pow_card_eq_one'
+    rwa [QuotientGroup.eq_one_iff] at h1
+  rw [Subgroup.mem_subgroupOf] at hpow
+  simpa using hpow
+
+/-- For every `c > 0` there is an OPEN NORMAL `U ≤ Γ ℚᵥ` with `‖τ(σ) − 1‖ < c` for
+every `σ ∈ U`: the entry functionals are linear out of a module topology, hence
+continuous, and open subgroups are a neighbourhood basis of `1` in `Γ ℚᵥ`. -/
+theorem exists_openNormal_supNorm_lt
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    {c : ℝ≥0} (hc : 0 < c) :
+    ∃ U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion ℚ)), U.Normal ∧
+      IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion ℚ))) ∧
+      ∀ σ ∈ U, supNorm (endMat (τ.toLocal v σ) - 1) < c := by
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    moduleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
+  have hcont : ∀ i j : Fin 2, Continuous fun f : Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) => endMat f i j := by
+    intro i j
+    let ev : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])
+        →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] :=
+      { toFun := fun f => f (Pi.single j 1) i
+        map_add' := fun _ _ => rfl
+        map_smul' := fun _ _ => rfl }
+    have hlin : Continuous fun f : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) => ev f :=
+      IsModuleTopology.continuous_of_linearMap ev
+    simpa [ev, endMat_apply] using hlin
+  set S : Set (Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    {f | ∀ i j : Fin 2,
+      ‖endMat f i j - (1 : Matrix (Fin 2) (Fin 2) (AlgebraicClosure ℚ_[p])) i j‖ < (c : ℝ)}
+    with hS
+  have hSopen : IsOpen S := by
+    have hEq : S = ⋂ i : Fin 2, ⋂ j : Fin 2,
+        {f | ‖endMat f i j -
+          (1 : Matrix (Fin 2) (Fin 2) (AlgebraicClosure ℚ_[p])) i j‖ < (c : ℝ)} := by
+      ext f; simp [hS]
+    rw [hEq]
+    exact isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j =>
+      isOpen_lt (continuous_norm.comp ((hcont i j).sub continuous_const)) continuous_const
+  have h1S : (1 : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])) ∈ S := by
+    intro i j
+    rw [map_one]
+    simpa using hc
+  have hpre : (τ.toLocal v) ⁻¹' S ∈ nhds (1 : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) := by
+    refine IsOpen.mem_nhds (hSopen.preimage (ContinuousMonoidHom.continuous_toFun (τ.toLocal v))) ?_
+    simpa [Set.mem_preimage, map_one] using h1S
+  obtain ⟨U, hUn, hUo, hUsub⟩ := exists_openNormal_subset_of_mem_nhds_one v _ hpre
+  refine ⟨U, hUn, hUo, fun σ hσ => ?_⟩
+  rw [supNorm_lt_iff hc]
+  intro i j
+  have hmem := hUsub hσ
+  rw [Set.mem_preimage, hS] at hmem
+  have hij := hmem i j
+  rw [← NNReal.coe_lt_coe, coe_nnnorm]
+  simpa using hij
+
+/-- **GROTHENDIECK'S `ℓ`-ADIC MONODROMY THEOREM, WILD PART**, in the form with
+`v` a genuine parameter and the residue characteristic given by `hqv`. -/
+theorem hasFiniteWildMonodromyAt_of_forall_not_dvd
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hqv : ∀ m : ℕ, ¬ q ∣ m → ((m : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal) :
+    τ.HasFiniteWildMonodromyAt v := by
+  classical
+  have hqF : ‖((q : ℕ) : AlgebraicClosure ℚ_[p])‖₊ = 1 := nnnorm_natCast_eq_one_of_ne hq hqp
+  obtain ⟨N, hNn, hNo, hN⟩ := exists_openNormal_supNorm_lt (v := v) τ (c := 1) one_pos
+  refine ⟨N, hNo, ?_⟩
+  intro σ hσ
+  obtain ⟨hσN, hσP⟩ := Subgroup.mem_inf.mp hσ
+  have key : τ.toLocal v σ = 1 := by
+    by_contra hne
+    set a := supNorm (endMat (τ.toLocal v σ) - 1) with ha
+    have haone : a < 1 := hN σ hσN
+    have hapos : 0 < a := by
+      rcases eq_zero_or_pos a with h0 | h0
+      · refine absurd ?_ hne
+        have hz : endMat (τ.toLocal v σ) - 1 = 0 := supNorm_eq_zero_iff.mp (ha ▸ h0)
+        have h2 : endMat (τ.toLocal v σ) = endMat 1 := by
+          rw [map_one]; exact sub_eq_zero.mp hz
+        exact endMat.injective h2
+      · exact h0
+    obtain ⟨U, hUn, hUo, hU⟩ := exists_openNormal_supNorm_lt (v := v) τ (c := a) hapos
+    haveI := hUn
+    obtain ⟨k, hk⟩ := exists_pow_pow_mem_of_mem_wildInertiaGroup hq hqv U hUo hσP
+    have hpow : ∀ m : ℕ, supNorm (endMat (τ.toLocal v (σ ^ q ^ m)) - 1) = a := by
+      intro m
+      induction m with
+      | zero => simp only [pow_zero, pow_one]; exact ha.symm
+      | succ m ih =>
+        have hstep : σ ^ q ^ (m + 1) = (σ ^ q ^ m) ^ q := by
+          rw [← pow_mul, pow_succ]
+        rw [hstep, map_pow (τ.toLocal v), map_pow]
+        rw [supNorm_pow_sub_one hqF (by rw [ih]; exact haone), ih]
+    have hlt := hU _ hk
+    rw [hpow k] at hlt
+    exact lt_irrefl a hlt
+  intro x
+  rw [key]
+  rfl
+
+end WildMonodromyAux
+
+/-- **THE WILD INERTIA AT `q ≠ p` HAS FINITE IMAGE** (PROVEN 2026-07-29,
+sixteenth owner, over `coprime_card_quotient_wildInertiaGroup`; formerly the
+sorry leaf `hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform`): the
+`p`-adic representation `τ` kills an open subgroup of the wild inertia at
+every prime `q ≠ p`.
+
+See the section header above for the proof and for the axiom status. The old
+docstring's framing is retained below because it is still accurate about WHY
+the statement is wanted.
 
 **Why this leaf exists, and it is an integration seam rather than a new
 mathematical demand.**  `GaloisRep.HasFiniteWildMonodromyAt` was added to
@@ -60648,11 +61036,15 @@ tame/wild analysis in this section already carries.
 THE CHECK THAT WOULD REFUTE IT: a prime `q ≠ p` and a two-dimensional
 `p`-adic representation of `Γ_ℚ` whose restriction to `P_q` has infinite
 image.  There is none; at `q = p` the cyclotomic character is one. -/
-theorem hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform
+theorem hasFiniteWildMonodromyAt_of_residueChar_ne
     (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) :
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
     τ.HasFiniteWildMonodromyAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+  WildMonodromyAux.hasFiniteWildMonodromyAt_of_forall_not_dvd τ hq hqp (fun m hm hmem => by
+    rw [Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast] at hmem
+    exact hm (by exact_mod_cast hmem))
+
+end WildMonodromy
 
 /-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** (SORRY LEAF,
 cut 2026-07-28, fifteenth owner; Serre, *Corps Locaux* IV §3 for the
@@ -61121,7 +61513,7 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
     rw [GaloisRep.swanExponent, if_neg hnt]
     exact one_le_swanExponentAux_of_not_isTamelyRamifiedAt τ
       (nonempty_ramificationFiltration _).some
-      (hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform τ hq hqp) hnt
+      (hasFiniteWildMonodromyAt_of_residueChar_ne τ hq hqp) hnt
   -- so `a_q(τ) ≥ 3`, against Carayol's upper bound at the boundary.
   have hle := conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
     hM₀ hg₀ κ₀ hτ hirr hq hqp hord
