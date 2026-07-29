@@ -88,7 +88,12 @@ two class-field leaves below.)
 PROVEN, over three new analytic leaves:
 
 * `Heegner.eta_pow_24_add_eta_two_pow_24` — `η²⁴ + 256η(2z)²⁴ = E₄·(η·η(2z))⁸`, the single
-  modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra;
+  modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra.
+  **Now PROVEN** (2026-07-29), over ONE new leaf, `Heegner.eta_two_torsion_key`
+  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`). Everything else is proven here: `η(z+1)`,
+  the `S`-transformation of `F = (η²⁴+256η(2z)²⁴)/(ηη(2z))⁸` from the key identity, the
+  packaging of `F` as a `ModularForm 𝒮ℒ 4`, its value `1` at the cusp, and
+  `F = E₄` from `ModularForm.levelOne_weight_four_rank_one`;
 * `Heegner.exists_E₄_heegnerPoint_approx`, `Heegner.exists_E₆_heegnerPoint_approx` — the
   values of `E₄` and `E₆` at `τ₀` to second order in `Q = exp(−π√p)`, with an explicit `Q³`
   error bound. Both follow the same mathlib lemma
@@ -98,15 +103,18 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has SIX open leaves — regenerated from the MERGED source at release 19, not
-inherited from either side: `exists_intCubic_weberAlpha`,
-`intCast_indep_weberAlpha_pow_four`, `isIntegral_gammaTwo_heegnerPoint`, the two
-class-field leaves `exists_quadratic_jInvariant_heegnerPoint` and
-`exists_quadratic_gammaTwo_of_jInvariant` that replaced
-`exists_rat_gammaTwo_heegnerPoint`, and the single modular-form identity
-`Heegner.eta_pow_24_add_eta_two_pow_24`.  The Diophantine
-`eq_of_two_mul_mul_cube_add_one_eq_sq` and `exists_rat_gammaTwo_heegnerPoint` itself are
-PROVEN. -/
+So this file has SIX open leaves (checked against the compiler's `declaration uses 'sorry'`
+warning set; the `sorry` token count with comments stripped agrees, so there are no anonymous
+inner sorries): `exists_intCubic_weberAlpha`, `intCast_indep_weberAlpha_pow_four`,
+`isIntegral_gammaTwo_heegnerPoint`, the two class-field leaves
+`exists_quadratic_jInvariant_heegnerPoint` and `exists_quadratic_gammaTwo_of_jInvariant` that
+replaced `exists_rat_gammaTwo_heegnerPoint` at release 19, and the single `η`-product identity
+`Heegner.eta_two_torsion_key`.
+
+TWO STALE CLAIMS CORRECTED (2026-07-29). This paragraph used to list the Diophantine
+`eq_of_two_mul_mul_cube_add_one_eq_sq` as open: it was PROVEN in `1b07f83f` and the header was
+never updated. It also listed `Heegner.eta_pow_24_add_eta_two_pow_24`, which is now proven; the
+leaf that replaces it is `eta_two_torsion_key`, so the count is unchanged. -/
 module
 
 public import Mathlib.Tactic
@@ -115,6 +123,7 @@ public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.Real.Pi.Bounds
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+public import Mathlib.Analysis.Normed.Ring.InfiniteProd
 public import Mathlib.NumberTheory.ModularForms.DedekindEta
 public import Mathlib.NumberTheory.ModularForms.Discriminant
 public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.Basic
@@ -1533,9 +1542,14 @@ theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 =
 /-! ### Reduction of LEAVES 5 and 6 to their analytic cores
 
 Everything from here to `exp_pi_sqrt_le_of_jInvariant_eq` was added when LEAVES 5 and 6 were
-closed over three new named sub-leaves. Both targets are now PROVEN; what is left open is
-`eta_pow_24_add_eta_two_pow_24` (one modular-form identity) and the two `q`-expansion value
-estimates `exists_E₄_heegnerPoint_approx` / `exists_E₆_heegnerPoint_approx`.
+closed over three new named sub-leaves. Both targets are now PROVEN.
+
+STATUS UPDATE (2026-07-29): all three of those sub-leaves are now closed too.
+`exists_E₄_heegnerPoint_approx` and `exists_E₆_heegnerPoint_approx` were proven on
+2026-07-28; `eta_pow_24_add_eta_two_pow_24` is proven below over the single new leaf
+`eta_two_torsion_key`. So nothing in the LEAF 5 / LEAF 6 reduction is open except that one
+`η`-product identity. The sentence that used to stand here, listing the two `E`-estimates as
+open, was stale.
 
 CORRECTION TO THE NAMESPACE DOCSTRING ABOVE (checked 2026-07-28, `grep` over
 `.lake/packages/mathlib`). The claim that "nothing of the modular theory used below is in
@@ -1558,6 +1572,404 @@ this pin ALSO has, and all of it is used or usable here:
 What is genuinely absent is still absent: no `j`-invariant, no Weber functions, no complex
 multiplication, no ring class fields. Re-run the greps; they are a dated measurement. -/
 
+/-! ### SUB-LEAF 5a: the level-two `η`-identity, and its reduction to ONE `η`-product identity
+
+`eta_pow_24_add_eta_two_pow_24` — `η(z)²⁴ + 256 η(2z)²⁴ = E₄(z)·(η(z)η(2z))⁸` — is now PROVEN
+below, over the single remaining leaf `eta_two_torsion_key`.  Everything between here and it is
+new and proven: the `η`-transformation bookkeeping, the packaging of
+
+  `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`
+
+as an honest `ModularForm 𝒮ℒ 4`, and the identification `F = E₄` from
+`ModularForm.levelOne_weight_four_rank_one`.
+
+**CORRECTION (2026-07-29) TO THE ROUTE THIS NODE WAS CUT ALONG.**  The previous docstring said
+the remaining work was "`S`-invariance of weight 4, after which `levelOne_weight_four_rank_one`
+plus a single `q`-coefficient comparison finishes; `sturm_bound_levelOne` is the packaged form
+of that last step".  The first clause is right and the last is a red herring — no Sturm bound is
+used or needed below; `sturm_bound_levelOne` never enters, because rank-one plus the constant
+term is already enough.  The `S`-invariance really is the whole theorem, exactly as the
+2026-07-28 correction said, and the honest cut is NOT the two Weber relations
+`f·f₁·f₂ = √2` and `f⁸ = f₁⁸+f₂⁸` separately but their COMBINATION, which is a single identity
+in `η` alone — see `eta_two_torsion_key`.  Concretely, write `E = η(z)²⁴`, `B = η(z/2)⁸`,
+`C = η(2z)⁸`.  Applying `eta_comp_eq_csqrt_I_inv` at `z` and (via `−2/z = −1/(z/2)`) at `z/2`
+turns `F(−1/z) = z⁴F(z)` into `C·(16E + B³) = B·(E + 256C³)`, and the difference of the two
+sides factors exactly as
+
+  `C·(16E + B³) − B·(E + 256C³) = (16C − B)·(E − B·C·(B + 16C))`.
+
+So the `S`-transformation is implied by `B·C·(B + 16C) = E`, which is `eta_two_torsion_key`.
+In the Weber variables `b = B/η(z)⁸`, `c = 16C/η(z)⁸` that identity is `bc(b+c) = 16`; the two
+`f`-relations imply it (`a = b+c` substituted into `abc = 16`), but it does not need `f` — so
+`η((z+1)/2)` and the 48-th root of unity never appear.  `etaWeightFour_S_algebra` is that one
+factorisation, discharged by `rw` on the key identity followed by `field_simp; ring`.
+
+Also corrected: `T`-invariance is NOT the "24-th power argument" the old docstring described
+(that argument is about `Δ`, not about `F`).  What is actually true and proven here is
+`eta_add_one : η(z+1) = e^{πi/12}η(z)`, whence `η(2z+2) = e^{πi/6}η(2z)`, and both numerator
+and denominator of `F` are multiplied by `(e^{πi/12})²⁴ = 1`.
+
+Still true and re-checked at this pin: `discriminant_eq_E₄_cube_sub_E₆_sq`,
+`levelOne_weight_four_rank_one`, `dimension_level_one`, `EisensteinSeries.q_expansion_bernoulli`,
+`discriminant_eq_q_prod`, `discriminant_S_invariant`, `eta_comp_eq_csqrt_I_inv` are all in
+mathlib and are used below.  Genuinely absent, re-grepped 2026-07-29: `j`, Weber functions, CM,
+ring class fields, and any Jacobi triple product. -/
+
+section EtaWeightFour
+
+open Complex UpperHalfPlane ModularForm Filter Function
+open scoped Real MatrixGroups Topology Manifold
+
+
+/-! ### `Complex.sqrt` helpers -/
+
+lemma csqrt_sq {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 2 = z := by
+  rw [sqrt_eq_exp hz, ← Complex.exp_nat_mul,
+    show ((2 : ℕ) : ℂ) * (Complex.log z / 2) = Complex.log z by push_cast; ring,
+    Complex.exp_log hz]
+
+lemma csqrt_pow_eight {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 8 = z ^ 4 := by
+  rw [show (8 : ℕ) = 2 * 4 from rfl, pow_mul, csqrt_sq hz]
+
+lemma csqrt_pow_twentyFour {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 24 = z ^ 12 := by
+  rw [show (24 : ℕ) = 2 * 12 from rfl, pow_mul, csqrt_sq hz]
+
+lemma csqrtI_pow_eight : Complex.sqrt Complex.I ^ 8 = 1 := by
+  rw [csqrt_pow_eight Complex.I_ne_zero, Complex.I_pow_four]
+
+/-! ### `η(z+1)` -/
+
+lemma eta_add_one (z : ℂ) :
+    ModularForm.eta (z + 1) = Complex.exp (↑Real.pi * Complex.I / 12) * ModularForm.eta z := by
+  have hq1 : Periodic.qParam 1 (z + 1) = Periodic.qParam 1 z := by
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one]
+    rw [show 2 * (↑Real.pi : ℂ) * Complex.I * (z + 1)
+        = 2 * ↑Real.pi * Complex.I * z + 2 * ↑Real.pi * Complex.I by ring]
+    exact Complex.exp_periodic _
+  have hq24 : Periodic.qParam 24 (z + 1)
+      = Complex.exp (↑Real.pi * Complex.I / 12) * Periodic.qParam 24 z := by
+    simp only [Periodic.qParam]
+    rw [show 2 * (↑Real.pi : ℂ) * Complex.I * (z + 1) / ((24 : ℝ) : ℂ)
+        = ↑Real.pi * Complex.I / 12 + 2 * ↑Real.pi * Complex.I * z / ((24 : ℝ) : ℂ) by
+      push_cast; ring, Complex.exp_add]
+  simp only [ModularForm.eta, ModularForm.eta_q, hq1, hq24, mul_assoc]
+
+lemma zeta24_pow_24 : Complex.exp (↑Real.pi * Complex.I / 12) ^ 24 = 1 := by
+  rw [← Complex.exp_nat_mul,
+    show ((24 : ℕ) : ℂ) * (↑Real.pi * Complex.I / 12) = 2 * ↑Real.pi * Complex.I by
+      push_cast; ring]
+  exact Complex.exp_two_pi_mul_I
+
+/-! ### The weight-four eta quotient -/
+
+/-- **SUB-LEAF 5a-i — THE ONE REMAINING ANALYTIC INPUT.**
+
+  `η(z/2)⁸ · η(2z)⁸ · (η(z/2)⁸ + 16 η(2z)⁸) = η(z)²⁴`.
+
+Everything else in `eta_pow_24_add_eta_two_pow_24` is PROVEN below from this single identity;
+see the section prose above for the derivation and for why this is a strictly cleaner cut than
+the two Weber relations the previous plan named.
+
+WHERE IT COMES FROM. In Weber's notation `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, `f₁ = η(z/2)/η(z)`,
+`f₂ = √2·η(2z)/η(z)`, put `a = f⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`, `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`.
+The two classical Weber relations are
+
+  `f·f₁·f₂ = √2`  (equivalently `abc = 16`)   and   `f⁸ = f₁⁸ + f₂⁸`  (equivalently `a = b + c`),
+
+the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`.  Substituting `a = b + c` into `abc = 16`
+ELIMINATES `f` (and with it `η((z+1)/2)` and the 48-th root of unity) and leaves exactly
+`bc(b+c) = 16`, which cleared of denominators is the statement above.  So this one identity
+carries the full content of both Weber relations that the `S`-transformation actually needs,
+and it is stated purely in `ModularForm.eta` — no Weber function, no root of unity, no theta
+constant appears.
+
+MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, `eta(z,1)`, 60 digits, 2026-07-29): the relative
+residual of `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) − η(z)²⁴` is `< 9·10⁻⁷⁶` at all NINE of
+`z = 0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`, `0.05+i`, `3i`, `0.3i`, `0.49+0.05i`, `−0.25+0.1i`,
+`i/√2`.  The last five were chosen to probe the places where such an identity most often
+degenerates: deep in the cusp (`3i`), close to the real axis (`0.3i`, `0.49+0.05i`,
+`−0.25+0.1i`), and at the fixed point `i/√2` of the Fricke involution, which is exactly where
+the factor `16η(2z)⁸ − η(z/2)⁸` in the `S`-transformation vanishes.  The two Weber relations
+and the final target were checked at the first four points with the same residual, so the
+reduction above is not a mis-derivation.  The points are generic, not CM points: this is an
+identity on all of `ℍ`.
+
+WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ.  Note the constant `16` is
+forced twice over and is not a normalisation — it is `(√2)⁸` on one side and the `2⁴` inside
+`f₂⁸ = 2⁴η(2z)⁸/η(z)⁸` on the other — and the exponent `8` is forced by `f₂⁸` being the
+smallest power of `f₂` that is a modular FUNCTION.
+
+ROUTE FOR THE NEXT OWNER.  Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-29):
+there are no Weber functions, `ModularForms/JacobiTheta/` has no product formula tying `θ` to
+`η`, and there is no Jacobi triple product anywhere.  So neither Weber relation can be quoted
+and this really is new theory.  Two routes, both classical:
+
+* prove the Jacobi triple product for `jacobiTheta₂` and read off `θ₂θ₃θ₄ = 2η³` together with
+  `θ₂⁴+θ₄⁴ = θ₃⁴`; or
+* prove it as a level-2 modular identity: `b` and `c` are holomorphic and non-vanishing on `ℍ`,
+  `bc(b+c) − 16` is invariant under `Γ(2)` (the group is generated by `T²` and `ST²S`, and both
+  act on the pair `(b, c)` by the `η`-transformation formulas already in
+  `ModularForms/Discriminant.lean`), and it vanishes at all three cusps by the `q`-expansions
+  `b = q^{1/3}(1 + O(q^{1/2}))`, `c = 16q^{1/3}·q^{1/2}(1 + O(q))`.
+
+An equivalent purely `q`-series form, with `x = e^{πiz}`, is
+`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`. -/
+theorem eta_two_torsion_key (z : ℍ) :
+    ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
+        (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
+      = ModularForm.eta (z : ℂ) ^ 24 := sorry
+
+/-- `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`. -/
+noncomputable def etaWeightFour (z : ℍ) : ℂ :=
+  (ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24) /
+    (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8
+
+lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
+  show 0 < (2 * (z : ℂ)).im
+  simpa using z.im_pos
+
+lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
+  show 0 < ((z : ℂ) / 2).im
+  simpa using z.im_pos
+
+lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
+
+lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
+
+/-- The pure field algebra behind the `S`-transformation. -/
+lemma etaWeightFour_S_algebra (Z e h f : ℂ) (hZ : Z ≠ 0) (he : e ≠ 0) (hh : h ≠ 0) (hf : f ≠ 0)
+    (key : h ^ 8 * f ^ 8 * (h ^ 8 + 16 * f ^ 8) = e ^ 24) :
+    (Z ^ 12 * e ^ 24 + 256 * ((Z / 2) ^ 12 * h ^ 24)) / (Z ^ 4 * (Z / 2) ^ 4 * (e * h) ^ 8)
+      = Z ^ 4 * ((e ^ 24 + 256 * f ^ 24) / (e * f) ^ 8) := by
+  rw [← key]
+  field_simp
+  ring
+
+/-- `F(z + 1) = F(z)`. -/
+lemma etaWeightFour_of_eq_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    etaWeightFour w = etaWeightFour z := by
+  set ζ : ℂ := Complex.exp (↑Real.pi * Complex.I / 12) with hζ
+  have hz24 : ζ ^ 24 = 1 := zeta24_pow_24
+  have h1 : ModularForm.eta (w : ℂ) = ζ * ModularForm.eta (z : ℂ) := by
+    rw [hw]; exact eta_add_one _
+  have h2 : ModularForm.eta (2 * (w : ℂ)) = ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)) := by
+    rw [hw, show 2 * ((z : ℂ) + 1) = (2 * (z : ℂ) + 1) + 1 by ring, eta_add_one, eta_add_one]
+    ring
+  have hA : (ζ * ModularForm.eta (z : ℂ)) ^ 24 = ModularForm.eta (z : ℂ) ^ 24 := by
+    rw [mul_pow, hz24, one_mul]
+  have hB : (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ))) ^ 24
+      = ModularForm.eta (2 * (z : ℂ)) ^ 24 := by
+    rw [mul_pow, ← pow_mul, show 2 * 24 = 24 * 2 from rfl, pow_mul, hz24, one_pow, one_mul]
+  have hC : (ζ * ModularForm.eta (z : ℂ) * (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)))) ^ 8
+      = (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 := by
+    rw [show ζ * ModularForm.eta (z : ℂ) * (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)))
+        = ζ ^ 3 * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) by ring,
+      mul_pow, ← pow_mul, show 3 * 8 = 24 from rfl, hz24, one_mul]
+  rw [etaWeightFour, etaWeightFour, h1, h2, hA, hB, hC]
+
+/-- The `S`-transformation, reduced to the root-of-unity bookkeeping. -/
+lemma etaWeightFour_S_reduce (S sz sh e h : ℂ) (hS : S ^ 8 = 1) :
+    ((S * (sz * e)) ^ 24 + 256 * (S * (sh * h)) ^ 24) / (S * (sz * e) * (S * (sh * h))) ^ 8
+      = (sz ^ 24 * e ^ 24 + 256 * (sh ^ 24 * h ^ 24)) / (sz ^ 8 * sh ^ 8 * (e * h) ^ 8) := by
+  have h24 : S ^ 24 = 1 := by rw [show (24 : ℕ) = 8 * 3 from rfl, pow_mul, hS, one_pow]
+  have h16 : S ^ 16 = 1 := by rw [show (16 : ℕ) = 8 * 2 from rfl, pow_mul, hS, one_pow]
+  rw [show (S * (sz * e)) ^ 24 + 256 * (S * (sh * h)) ^ 24
+      = S ^ 24 * (sz ^ 24 * e ^ 24) + 256 * (S ^ 24 * (sh ^ 24 * h ^ 24)) by ring,
+    show (S * (sz * e) * (S * (sh * h))) ^ 8
+      = S ^ 16 * (sz ^ 8 * sh ^ 8 * (e * h) ^ 8) by ring, h24, h16]
+  simp only [one_mul]
+
+/-- `F(-1/z) = z⁴ F(z)`.  This is the `S`-transformation, and it is exactly where the
+KEY leaf `eta_two_torsion_key` is consumed. -/
+lemma etaWeightFour_of_eq_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    etaWeightFour w = (z : ℂ) ^ 4 * etaWeightFour z := by
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  have hh0 : (z : ℂ) / 2 ≠ 0 := div_ne_zero hz0 two_ne_zero
+  have hS8 : ((Complex.sqrt Complex.I)⁻¹) ^ 8 = 1 := by
+    rw [inv_pow, csqrtI_pow_eight, inv_one]
+  have he1 : ModularForm.eta (w : ℂ)
+      = (Complex.sqrt Complex.I)⁻¹ * (Complex.sqrt (z : ℂ) * ModularForm.eta (z : ℂ)) := by
+    rw [hw]
+    simpa [neg_div] using ModularForm.eta_comp_eq_csqrt_I_inv z.2
+  have he2 : ModularForm.eta (2 * (w : ℂ))
+      = (Complex.sqrt Complex.I)⁻¹ *
+        (Complex.sqrt ((z : ℂ) / 2) * ModularForm.eta ((z : ℂ) / 2)) := by
+    have h := ModularForm.eta_comp_eq_csqrt_I_inv (mem_upperHalfPlaneSet_div_two z)
+    rw [hw, show 2 * -(z : ℂ)⁻¹ = -1 / ((z : ℂ) / 2) by field_simp]
+    simpa using h
+  rw [etaWeightFour, he1, he2, etaWeightFour_S_reduce _ _ _ _ _ hS8,
+    csqrt_pow_twentyFour hz0, csqrt_pow_eight hz0, csqrt_pow_twentyFour hh0, csqrt_pow_eight hh0]
+  exact etaWeightFour_S_algebra _ _ _ _ hz0 (ModularForm.eta_ne_zero z.2)
+    (eta_ne_zero_div_two z) (eta_ne_zero_two_mul z) (eta_two_torsion_key z)
+
+/-! ### Slash invariance -/
+
+lemma etaWeightFour_T_invariant :
+    (etaWeightFour ∣[(4 : ℤ)] ModularGroup.T) = etaWeightFour := by
+  ext z
+  rw [SL_slash_apply, UpperHalfPlane.modular_T_smul,
+    etaWeightFour_of_eq_add_one (z := z) (w := (1 : ℝ) +ᵥ z)
+      (by rw [UpperHalfPlane.coe_vadd]; push_cast; ring)]
+  simp [denom, ModularGroup.T]
+
+lemma etaWeightFour_S_invariant :
+    (etaWeightFour ∣[(4 : ℤ)] ModularGroup.S) = etaWeightFour := by
+  ext z
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  rw [SlashInvariantForm.slash_S_apply,
+    etaWeightFour_of_eq_neg_inv (z := z) (w := .mk _ z.im_inv_neg_coe_pos) (by simp)]
+  rw [zpow_neg, show (4 : ℤ) = ((4 : ℕ) : ℤ) from rfl, zpow_natCast]
+  field_simp
+
+lemma etaWeightFour_slash (γ : SL(2, ℤ)) :
+    (etaWeightFour ∣[(4 : ℤ)] γ) = etaWeightFour :=
+  SlashInvariantForm.slash_action_generators_SL2Z etaWeightFour_S_invariant
+    etaWeightFour_T_invariant γ
+
+/-! ### Holomorphy -/
+
+lemma differentiableAt_etaQuot {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    DifferentiableAt ℂ (fun x : ℂ => (ModularForm.eta x ^ 24 + 256 * ModularForm.eta (2 * x) ^ 24)
+      / (ModularForm.eta x * ModularForm.eta (2 * x)) ^ 8) x := by
+  have h2 : (2 : ℂ) * x ∈ upperHalfPlaneSet := by
+    show 0 < (2 * x).im
+    simpa using hx
+  have d1 : DifferentiableAt ℂ ModularForm.eta x :=
+    ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hx
+  have d2 : DifferentiableAt ℂ (fun x : ℂ => ModularForm.eta (2 * x)) x :=
+    (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet h2).comp x (by fun_prop)
+  exact ((d1.pow 24).add ((d2.pow 24).const_mul _)).div ((d1.mul d2).pow 8)
+    (pow_ne_zero _ (mul_ne_zero (ModularForm.eta_ne_zero hx) (ModularForm.eta_ne_zero h2)))
+
+lemma etaWeightFour_mdifferentiable : MDiff etaWeightFour := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  refine .congr (fun z hz ↦ (differentiableAt_etaQuot hz).differentiableWithinAt) fun z hz ↦ ?_
+  simp [etaWeightFour, UpperHalfPlane.ofComplex_apply_of_im_pos hz]
+
+
+/-! ### Behaviour at the cusp -/
+
+/-- `G q = ∏' n, (1 - q^(n+1))`, the `q`-series factor of `η`. -/
+noncomputable def etaProd (q : ℂ) : ℂ := ∏' n : ℕ, (1 - q ^ (n + 1))
+
+lemma eta_eq_qParam_mul_etaProd (z : ℂ) :
+    ModularForm.eta z = Periodic.qParam 24 z * etaProd (Periodic.qParam 1 z) := rfl
+
+lemma tendsto_etaProd : Filter.Tendsto etaProd (𝓝 0) (𝓝 1) := by
+  have h := tendsto_tprod_one_add_of_dominated_convergence (𝓕 := 𝓝 (0 : ℂ)) (g := 0)
+    (f := fun (q : ℂ) (n : ℕ) ↦ -q ^ (n + 1)) (bound := fun n ↦ (1 / 2 : ℝ) ^ (n + 1))
+  simp only [Pi.zero_apply, norm_neg, norm_pow, add_zero, tprod_one] at h
+  have : etaProd = fun q : ℂ ↦ ∏' n : ℕ, (1 + -q ^ (n + 1)) := by
+    funext q; simp [etaProd, sub_eq_add_neg]
+  rw [this]
+  refine h
+    (by simpa only [pow_succ'] using (summable_geometric_of_abs_lt_one (by norm_num)).mul_left _)
+    (fun k ↦ by simpa using ((continuous_pow (M := ℂ) (k + 1)).tendsto 0).neg) ?_
+  filter_upwards [Metric.ball_mem_nhds (0 : ℂ) (by norm_num : (0 : ℝ) < 1 / 2)] with q hq k
+  exact pow_le_pow_left₀ (norm_nonneg _) (mem_ball_zero_iff.mp hq).le _
+
+/-- The cusp expression `(G(q)²⁴ + 256 q G(q²)²⁴)/(G(q)⁸ G(q²)⁸)`. -/
+noncomputable def cuspExpr (q : ℂ) : ℂ :=
+  (etaProd q ^ 24 + 256 * q * etaProd (q ^ 2) ^ 24) / (etaProd q ^ 8 * etaProd (q ^ 2) ^ 8)
+
+lemma tendsto_cuspExpr : Filter.Tendsto cuspExpr (𝓝 0) (𝓝 1) := by
+  have h2 : Filter.Tendsto (fun q : ℂ ↦ etaProd (q ^ 2)) (𝓝 0) (𝓝 1) := by
+    refine tendsto_etaProd.comp ?_
+    simpa using ((continuous_pow (M := ℂ) 2).tendsto 0)
+  have hnum : Filter.Tendsto (fun q : ℂ ↦ etaProd q ^ 24 + 256 * q * etaProd (q ^ 2) ^ 24)
+      (𝓝 0) (𝓝 1) := by
+    have := ((tendsto_etaProd.pow 24).add
+      (((tendsto_const_nhds (x := (256 : ℂ)) (f := 𝓝 (0:ℂ))).mul tendsto_id).mul (h2.pow 24)))
+    simpa using this
+  have hden : Filter.Tendsto (fun q : ℂ ↦ etaProd q ^ 8 * etaProd (q ^ 2) ^ 8)
+      (𝓝 0) (𝓝 1) := by simpa using (tendsto_etaProd.pow 8).mul (h2.pow 8)
+  have h := hnum.div hden one_ne_zero
+  rw [div_one] at h
+  exact Filter.Tendsto.congr (fun q ↦ rfl) h
+
+lemma cusp_algebra (u g1 g2 : ℂ) (hu : u ≠ 0) (h1 : g1 ≠ 0) (h2 : g2 ≠ 0) :
+    ((u * g1) ^ 24 + 256 * (u ^ 2 * g2) ^ 24) / (u * g1 * (u ^ 2 * g2)) ^ 8
+      = (g1 ^ 24 + 256 * u ^ 24 * g2 ^ 24) / (g1 ^ 8 * g2 ^ 8) := by
+  field_simp
+
+lemma etaWeightFour_eq_cuspExpr (z : ℍ) :
+    etaWeightFour z = cuspExpr (Periodic.qParam 1 (z : ℂ)) := by
+  set u : ℂ := Periodic.qParam 24 (z : ℂ) with hu
+  have hu0 : u ≠ 0 := by simp only [hu, Periodic.qParam]; exact Complex.exp_ne_zero _
+  have hq : Periodic.qParam 1 (z : ℂ) = u ^ 24 := by
+    simp only [hu, Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have hq2 : Periodic.qParam 1 (2 * (z : ℂ)) = (Periodic.qParam 1 (z : ℂ)) ^ 2 := by
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have hu2 : Periodic.qParam 24 (2 * (z : ℂ)) = u ^ 2 := by
+    simp only [hu, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have he1 : ModularForm.eta (z : ℂ) = u * etaProd (Periodic.qParam 1 (z : ℂ)) :=
+    eta_eq_qParam_mul_etaProd _
+  have he2 : ModularForm.eta (2 * (z : ℂ))
+      = u ^ 2 * etaProd ((Periodic.qParam 1 (z : ℂ)) ^ 2) := by
+    rw [eta_eq_qParam_mul_etaProd, hu2, hq2]
+  have hg1 : etaProd (Periodic.qParam 1 (z : ℂ)) ≠ 0 := by
+    intro h; exact ModularForm.eta_ne_zero z.2 (by rw [he1, h, mul_zero])
+  have hg2 : etaProd ((Periodic.qParam 1 (z : ℂ)) ^ 2) ≠ 0 := by
+    intro h; exact eta_ne_zero_two_mul z (by rw [he2, h, mul_zero])
+  rw [etaWeightFour, he1, he2, cusp_algebra _ _ _ hu0 hg1 hg2, cuspExpr, ← hq]
+
+lemma etaWeightFour_tendsto_one :
+    Filter.Tendsto etaWeightFour UpperHalfPlane.atImInfty (𝓝 1) :=
+  Filter.Tendsto.congr (fun z ↦ (etaWeightFour_eq_cuspExpr z).symm)
+    (tendsto_cuspExpr.comp (UpperHalfPlane.qParam_tendsto_atImInfty one_pos))
+
+lemma etaWeightFour_isBoundedAtImInfty : UpperHalfPlane.IsBoundedAtImInfty etaWeightFour :=
+  etaWeightFour_tendsto_one.isBigO_one ℝ
+
+/-! ### Identification with `E₄` -/
+
+noncomputable def etaWeightFourForm : ModularForm 𝒮ℒ 4 where
+  toFun := etaWeightFour
+  slash_action_eq' A hA := by
+    obtain ⟨A, rfl⟩ := hA
+    exact etaWeightFour_slash A
+  holo' := etaWeightFour_mdifferentiable
+  bdd_at_cusps' hc := by
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isBoundedAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [etaWeightFour_slash]
+    exact etaWeightFour_isBoundedAtImInfty
+
+theorem etaWeightFour_eq_E₄ (z : ℍ) : etaWeightFour z = ModularForm.E₄ z := by
+  obtain ⟨c, hc⟩ : ∃ c : ℂ, c • ModularForm.E₄ = etaWeightFourForm :=
+    (finrank_eq_one_iff_of_nonzero' ModularForm.E₄
+        (EisensteinSeries.E_ne_zero _ ⟨2, rfl⟩)).mp
+      (Module.rank_eq_one_iff_finrank_eq_one.mp ModularForm.levelOne_weight_four_rank_one) _
+  have hcoe : (c • (ModularForm.E₄ : ℍ → ℂ)) = etaWeightFour := congrArg DFunLike.coe hc
+  have hc1 : c = 1 := by
+    have h1 : (qExpansion 1 (c • (ModularForm.E₄ : ℍ → ℂ))).coeff 0 = c := by
+      rw [ModularForm.qExpansion_smul one_pos one_mem_strictPeriods_SL c ModularForm.E₄]
+      simp [EisensteinSeries.E_qExpansion_coeff_zero (k := 4) (by norm_num) ⟨2, rfl⟩]
+    rw [hcoe] at h1
+    rw [← h1, show (etaWeightFour : ℍ → ℂ) = (etaWeightFourForm : ℍ → ℂ) from rfl,
+      UpperHalfPlane.qExpansion_coeff_zero one_pos
+        (ModularFormClass.analyticAt_cuspFunction_zero (f := etaWeightFourForm) one_pos
+          one_mem_strictPeriods_SL)
+        (SlashInvariantFormClass.periodic_comp_ofComplex (f := etaWeightFourForm)
+          one_mem_strictPeriods_SL)]
+    exact etaWeightFour_tendsto_one.limUnder_eq
+  rw [← congrFun hcoe z, hc1]
+  simp
+
+end EtaWeightFour
+
 /-- **SUB-LEAF 5a — the level-two `η`-identity**
 
   `η(z)²⁴ + 256 η(2z)²⁴ = E₄(z) · (η(z)η(2z))⁸`.
@@ -1574,59 +1986,20 @@ discriminant. No branch of a cube root is ever chosen, which is why the statemen
 identity rather than an identity-up-to-`ζ₃`.
 
 MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, 60 digits, `eta(z,1)` against the `σ₃` series for
-`E₄`): at `z = 0.3+0.7i`, `0.1+1.3i`, `-0.4+0.55i` the two sides agree to `10⁻⁷⁷`, with ratio
-`1` to every printed digit. The three points are generic — not Heegner points — because this
-is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it from
-a weaker statement.
+`E₄`): at `z = 0.3+0.7i`, `0.1+1.3i`, `-0.4+0.55i`, `0.05+i` the two sides agree to `10⁻⁷⁶`,
+with ratio `1` to every printed digit. The points are generic — not Heegner points — because
+this is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it
+from a weaker statement.
 
-ROUTE. Divide through: the claim is that `F(z) = (Δ(z) + 256Δ(2z))/(η(z)η(2z))⁸` equals `E₄`.
-`F` is holomorphic and free of poles on `ℍ` (`ModularForm.eta_ne_zero`), and is `T`-invariant
-by the `24`-th-power argument — `η(z+1)²⁴ = η(z)²⁴` and `η(2z+2)²⁴ = η(2z)²⁴`, while the
-denominator picks up `(e^{πi/12}·e^{πi/6})⁸ = e^{2πi} = 1`. What remains is `S`-invariance of
-weight `4`, after which `ModularForm.levelOne_weight_four_rank_one` plus a single
-`q`-coefficient comparison (constant term `1`) finishes; `sturm_bound_levelOne` is the packaged
-form of that last step. `discriminant_S_invariant` and `eta_comp_eq_csqrt_I_inv` in
-`ModularForms/Discriminant.lean` are the transformation inputs.
-
-**CORRECTION (2026-07-28): "the remaining work is `S`-invariance" is true but was priced as
-cheap, and it is not — it is the whole theorem.** Carrying out the substitution with mathlib's
-`ModularForm.eta_comp_eq_csqrt_I_inv : η(−1/z) = (√I)⁻¹·√z·η(z)` (applied at `z` and, via
-`−2/z = −1/(z/2)`, at `z/2`), together with `csqrt_I_pow_24 : (√I)²⁴ = 1` and `(√I)⁻¹⁶ = 1`:
-
-  numerator`(−1/z) = z¹²·(η(z)²⁴ + η(z/2)²⁴/16)`,
-  denominator`(−1/z) = (z⁸/16)·η(z)⁸η(z/2)⁸`,
-
-so `F(−1/z) = z⁴·(16η(z)²⁴ + η(z/2)²⁴)/(η(z)⁸η(z/2)⁸)`, and `F(−1/z) = z⁴F(z)` is EQUIVALENT to
-
-  `(16η(z)²⁴ + η(z/2)²⁴)·η(2z)⁸ = (η(z)²⁴ + 256η(2z)²⁴)·η(z/2)⁸`.   (★)
-
-(★) is not bookkeeping. In Weber's notation `f₁ = η(z/2)/η(z)`, `f₂ = √2·η(2z)/η(z)` it says
-`(f₁²⁴+16)/f₁⁸ = (f₂²⁴+16)/f₂⁸`, i.e. that `γ₂` computed from `f₁` agrees with `γ₂` computed
-from `f₂` — the `S`-symmetry of `γ₂` itself. The classical proof runs through the two Weber
-relations
-
-  `f·f₁·f₂ = √2`   and   `f⁸ = f₁⁸ + f₂⁸`   (`f = ζ₄₈⁻¹η((z+1)/2)/η(z)`),
-
-the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`. Given those two it IS pure algebra: with
-`a = f⁸`, `b = f₁⁸`, `c = f₂⁸` one has `a = b + c` and `abc = 16`, whence
-`c(b³+16) − b(c³+16) = bc(b+c)(b−c) − 16(b−c) = (b−c)(abc − 16) = 0`, and likewise
-`(a³−16)/a = (b³+16)/b`. So the honest cut for the next owner is those two `η`-identities plus
-the packaging of `F` as a `ModularForm 𝒮ℒ 4` — NOT a Sturm bound applied to something already
-known to be level one.
-
-Re-grepped 2026-07-28 over `.lake/packages/mathlib`: no Weber functions, and
-`ModularForms/JacobiTheta/` has no product formula tying `θ` to `η` (no Jacobi triple product
-anywhere in the pin), so neither Weber relation can be quoted. `(★)` itself was checked in
-`PARI/GP` at the same three generic points `0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`: residual
-`< 5·10⁻⁷⁷`, so the equivalence above is not a mis-derivation.
-
-WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ. There is none — but note the
-`256` and the exponent `8` are both forced, and neither is a normalisation choice: `256`
-comes from `2¹²/16` in `f₂²⁴/f₂⁸` and `8` from `f₂⁸ = 16 η(2z)⁸/η(z)⁸`. -/
+PROVEN (2026-07-29) from `etaWeightFour_eq_E₄`, i.e. from the single leaf
+`eta_two_torsion_key` together with the modular-form packaging in the section above. -/
 theorem eta_pow_24_add_eta_two_pow_24 (z : UpperHalfPlane) :
     ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24
-      = ModularForm.E₄ z * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 :=
-  sorry
+      = ModularForm.E₄ z * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 := by
+  have h := etaWeightFour_eq_E₄ z
+  rw [etaWeightFour, div_eq_iff (pow_ne_zero _ (mul_ne_zero (eta_ne_zero' z)
+    (eta_two_ne_zero z)))] at h
+  exact h
 
 /-- The field algebra behind `γ₂ = E₄/η⁸`, isolated over plain variables of `ℂ` so that `ring`
 sees genuine atoms rather than `η` applied to two different-looking arguments. -/
