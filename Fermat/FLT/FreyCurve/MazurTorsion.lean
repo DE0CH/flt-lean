@@ -26748,8 +26748,13 @@ and reuses every level-GENERIC piece rather than re-deriving it:
 
 | declaration | theory | status |
 |---|---|---|
-| `not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive` | `S₂(Γ₀(M)) = 0` for `M ∣ 125`, `M ≠ 125` | LEAF |
-| `lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive` | numerics: six `L`-values | LEAF |
+| `cuspForm_coe_eq_zero_of_x0Genus_eq_zero` | `dim S₂(Γ₀(M)) = genus X_0(M)` — level-GENERIC | LEAF |
+| `not_isWeightTwoEigenform_of_x0Genus_eq_zero` | — level-GENERIC | PROVEN |
+| `not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive` | `S₂(Γ₀(M)) = 0` for `M ∣ 125`, `M ≠ 125` | PROVEN |
+| `frickeRep_eq_frickeMatrix`, `axisRestrict_frickeSlash` | — level-GENERIC | PROVEN |
+| `frickeFE_of_isAtkinLehnerMinusForm` | `w_N f = −f` ⟹ `ε = −1` — level-GENERIC | PROVEN |
+| `integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneTwentyFive` | numerics: one real integral | LEAF |
+| `lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive` | numerics: six `L`-values | PROVEN |
 | `isTorsion_minusFactor_x0OneTwentyFive` | — | PROVEN |
 | `isTorsion_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
 | `finite_antiInvariant_jacobian_x0OneTwentyFive` | — | PROVEN |
@@ -26799,35 +26804,123 @@ caught a swapped eigenvalue pattern:
   downstream.  The whole cluster is one argument, and this is the seam. -/
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
-/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `125`** (LEAF,
-2026-07-28), stated as "no weight-two eigenform of level `M`" because that
-is the shape `isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew` takes.
-It is what says that `S₂(Γ₀(125))` is entirely NEW, and it is the exact
-level-`125` analogue of
-`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine`.
+/-- **`S₂(Γ₀(M)) = 0` WHENEVER `genus X_0(M) = 0`** (LEAF, level-GENERIC,
+2026-07-28) — the single leaf that the level-`125` and the level-`169`
+"nothing at this level is old" statements both reduce to.  It is written
+here INSTEAD of a third level-specific copy, which is what the previous
+docstring of `not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive`
+asked its successor to do.
 
-TRUE: the proper divisors of `125` are `1, 5, 25`, and
-`genus X_0(1) = genus X_0(5) = genus X_0(25) = 0`.
+TRUE, and it is exactly `dim S₂(Γ₀(M)) = genus X_0(M)` read at genus `0`:
+weight-two cusp forms on `Γ₀(M)` are the global sections of `Ω¹` on the
+compactified modular curve (Eichler–Shimura / Riemann–Roch), so a rational
+`X_0(M)` carries none.
 
-**The check that refutes this leaf**: `mfdim(mfinit([M,2],1))` returning
-anything other than `0` for `M ∈ {1, 5, 25}`.  Run 2026-07-28: all three
-return `0`.
+**`_hM` IS THE ENTIRE CONTENT and may not be dropped.**  At `x0Genus M = 1`
+— `M = 11` is the smallest instance — `S₂(Γ₀(11))` is one-dimensional,
+spanned by the conductor-`11` newform, and the conclusion is false.
 
-**What proving it needs** is what the `169` sibling needs — a valence /
-genus bound for `Γ₀(M)` at weight `2`, which mathlib lacks at `a3364fa`
+**`M = 0` does not leak, and no `0 < M` hypothesis is needed**: `x0Genus 0 = 1`
+by `decide` (see the VALIDITY RANGE note on `x0Genus` in `ModularCurve/X0.lean`),
+so `_hM` already excludes the degenerate level at which `Gamma0GL 0` fails to
+be discrete.  This leaf is therefore one of the few `x0Genus`-in-hypothesis
+sites that needs no plug.
+
+**What proving it needs.**  A weight-two dimension formula for `Γ₀(M)` — the
+valence formula plus Riemann–Roch — which mathlib lacks at `a3364fa`
 (`grep -rn "valence\|genus" .lake/packages/mathlib/Mathlib/NumberTheory/ModularForms/`).
-A prover who closes either sibling closes both, since neither uses anything
-about its own level beyond `genus X_0(M) = 0`; the honest repair is a single
-level-generic leaf `¬ IsWeightTwoEigenform M g b` from `x0Genus M = 0`, and
-a successor should write THAT rather than a third copy. -/
-theorem Fermat.not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive (M : ℕ) (_hM : M ∣ 125)
-    (_hMne : M ≠ 125) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) :
-    ¬ IsWeightTwoEigenform M g b :=
+
+**Two special cases are ALREADY PROVEN in this tree and cannot be cited here**:
+`cuspForm_level_one_coe_eq_zero` and `cuspForm_level_two_coe_eq_zero` live in
+`Modularity/Interface.lean`, which `public import`s THIS file, so reaching for
+them would be circular.  They go by the norm/Sturm route — the norm of `f` to
+level `1` is a weight-`2·[SL₂(ℤ) : Γ₀(M)]` level-one form, killed once its
+`q`-order exceeds the Sturm bound `2·index/12`.
+
+**AS IMPLEMENTED that route stops at `M = 2`**, because the only order input it
+uses is `a₀ = 0`, i.e. order `≥ 1`, which beats the bound only for `index ≤ 5`.
+**SHARPENED it would cover every proper divisor of `125` but NOT the `169`
+sibling**, which is worth knowing before choosing where to attack: each cusp of
+width `h` contributes `h` cosets of `q`-order `≥ 1/h`, so the norm has order
+`≥ numCusps M`, and `numCusps M > 2 · gammaZeroIndex M / 12` reads
+
+    M = 1  : 1 > 0     M = 5  : 2 > 1     M = 25 : 6 > 5     (all true)
+    M = 13 : 2 > 2                                           (FALSE)
+
+so `S₂(Γ₀(13)) = 0` is genuinely out of reach of this argument while the three
+levels needed at `125` are not.  That asymmetry is a claim about the ROUTE, not
+about the statement; both levels are true. -/
+theorem Fermat.cuspForm_coe_eq_zero_of_x0Genus_eq_zero {M : ℕ} (_hM : x0Genus M = 0)
+    (f : CuspForm (Gamma0GL M) 2) : ⇑f = 0 :=
   sorry
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
-/-- **THE NUMERICS AT `125`: every Atkin–Lehner-MINUS eigenform of level
-`125` has `L(f, 1) ≠ 0`** (LEAF, 2026-07-28) — the exact analogue of
+/-- **NO NORMALIZED WEIGHT-TWO EIGENFORM AT A GENUS-`0` LEVEL** (PROVEN
+2026-07-28, level-GENERIC, over the leaf immediately above).
+
+`IsWeightTwoEigenform` is normalized (`one : a 1 = 1`) and a zero form cannot
+carry a normalized coefficient sequence.  Mechanically:
+`coeff_eq_qExpansion_coeff` identifies `b 1` with mathlib's
+`(qExpansion 1 ⇑g).coeff 1`, and `ModularFormClass.qExpansion_coeff_unique`
+applied to the ZERO sequence — which also sums to `⇑g`, since `⇑g = 0` —
+identifies that same coefficient with `0`.
+
+This is the shape `isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew`
+argument takes, and it is what the level instances consume. -/
+theorem Fermat.not_isWeightTwoEigenform_of_x0Genus_eq_zero {M : ℕ} (hM : x0Genus M = 0)
+    (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) : ¬ IsWeightTwoEigenform M g b := by
+  intro hg
+  have hz : ⇑g = 0 := cuspForm_coe_eq_zero_of_x0Genus_eq_zero hM g
+  have hzero : (0 : ℂ) = (UpperHalfPlane.qExpansion 1 ⇑g).coeff 1 :=
+    ModularFormClass.qExpansion_coeff_unique (c := fun _ => (0 : ℂ)) (k := 2) one_pos
+      (one_mem_strictPeriods M) (fun τ => by simp [hz]) 1
+  have h1 := coeff_eq_qExpansion_coeff hg 1
+  rw [hg.one, ← hzero] at h1
+  exact one_ne_zero h1
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `125`** (PROVEN
+2026-07-28 over `not_isWeightTwoEigenform_of_x0Genus_eq_zero`; a LEAF until
+then), stated as "no weight-two eigenform of level `M`" because that is the
+shape `isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew` takes.  It is
+what says that `S₂(Γ₀(125))` is entirely NEW.
+
+`125 = 5³`, so `Nat.dvd_prime_pow` reduces `M ∣ 125` to `M = 5 ^ i` with
+`i ≤ 3`, and `hMne` deletes `i = 3`.  At the three surviving levels `decide`
+evaluates the genus formula in the kernel:
+
+    x0Genus 1 = x0Genus 5 = x0Genus 25 = 0
+
+**That `decide` is an independent, kernel-checked confirmation of the PARI/GP
+reconnaissance** recorded in the section note above (`mfdim(mfinit([M,2],1)) = 0`
+for `M ∈ {1, 5, 25}`): two different computations, one of them now inside the
+Lean kernel, agreeing.
+
+**Both hypotheses are now LOAD-BEARING** — they were `_`-prefixed while this
+was a leaf.  Drop `hMne` and `M = 125` survives, where `x0Genus 125 = 8`.
+
+**The level-`169` sibling is the same statement and is NOT rewired here.**
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine`
+(`ModularCurve/X0.lean`) is this statement at `169 = 13²` and closes the same
+way, over `x0Genus 1 = x0Genus 13 = 0`.  It was left alone only because
+another worktree owns it.  The generic leaf above belongs beside `x0Genus` in
+`X0.lean` — from there BOTH levels can consume it, whereas from here only this
+one can, `X0.lean` being upstream.  Hoisting it is a pure relocation. -/
+theorem Fermat.not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive (M : ℕ) (hM : M ∣ 125)
+    (hMne : M ≠ 125) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) :
+    ¬ IsWeightTwoEigenform M g b := by
+  have hM' : M ∣ 5 ^ 3 := by rw [show (5 : ℕ) ^ 3 = 125 from by norm_num]; exact hM
+  obtain ⟨i, hi, rfl⟩ := (Nat.dvd_prime_pow Nat.prime_five).mp hM'
+  interval_cases i
+  · exact not_isWeightTwoEigenform_of_x0Genus_eq_zero (by decide) g b
+  · exact not_isWeightTwoEigenform_of_x0Genus_eq_zero (by decide) g b
+  · exact not_isWeightTwoEigenform_of_x0Genus_eq_zero (by decide) g b
+  · exact absurd (by norm_num) hMne
+
+/-! #### The analytic block at level `125`
+
+**THE NUMERICS AT `125`: every Atkin–Lehner-MINUS eigenform of level
+`125` has `L(f, 1) ≠ 0`** — the exact analogue of
 `lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine`, and the ONLY
 analytic input under `isTorsion_minusFactor_x0OneTwentyFive`.
 
@@ -26849,12 +26942,177 @@ any embedding of orbit `1` or `3`, or `mfatkineigenvalues(mfinit([125,2],0),
 **What proving it needs**: Hecke's analytic continuation
 (`exists_isLFunctionOf_of_isWeightTwoEigenform`, PROVEN) and then a certified
 evaluation of six real numbers.  Identical in kind to the `169` sibling, and
-a prover who builds the certified-evaluation machinery closes both. -/
-theorem Fermat.lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive
+a prover who builds the certified-evaluation machinery closes both.
+
+**DECOMPOSED 2026-07-28** (this paragraph replaces the leaf's own status
+line): the analytic continuation and the functional-equation folding are now
+both PROVEN below, and what is left is the bare tail integral
+`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneTwentyFive` — the
+same carrier the Kenku numerics leaf `integral_Ioi_one_axisRestrict_ne_zero`
+sits on. -/
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **`frickeRep N = frickeMatrix N hN` at `N ≠ 0`** (PROVEN 2026-07-28) —
+the two names this development gives to `!![0, -1; N, 0]`.
+
+`frickeRep` (`ModularCurve/X0.lean`) is total, with junk value `1` at `N = 0`;
+`frickeMatrix` (`ModularCurve/WeightTwoEigenform.lean`) takes `hN` as an
+argument.  Off the junk branch they are the same matrix and the two
+determinant-nonvanishing proofs are irrelevant, so this is `dif_pos` followed
+by `rfl`.  It is what lets an `IsAtkinLehnerMinusForm` hypothesis, stated with
+`frickeRep`, feed the analytic machinery, stated with `frickeMatrix`. -/
+theorem Fermat.frickeRep_eq_frickeMatrix {N : ℕ} (hN : N ≠ 0) :
+    frickeRep N = frickeMatrix N hN := by
+  have h : ((N : ℝ) ≠ 0) := Nat.cast_ne_zero.mpr hN
+  simp only [frickeRep, dif_pos h]
+  rfl
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE FRICKE RELATION WITH THE WITNESS PINNED** (PROVEN 2026-07-28) —
+`exists_frickeInvolution` with `∃ g` replaced by the canonical witness
+`frickeSlash N hN f`.
+
+**Why this restatement is needed at all, and it is a genuine under-pinning
+in `WeightTwoEigenform.lean`.**  `exists_frickeInvolution` delivers the
+partner form existentially, so a consumer who KNOWS what `f ∣[2] W_N` is —
+which is exactly what an Atkin–Lehner eigenvalue hypothesis tells you —
+cannot connect the two: nothing in the `∃` says the witness is `f ∣ W_N`
+rather than some other form satisfying the same identity.  The witness IS
+canonical (it is `frickeSlash N hN f`, and that is literally what the proof
+supplies), so the honest fix upstream is to state it that way and let
+`exists_frickeInvolution` be the corollary.  The proof script here is that
+theorem's own, unchanged; only the statement differs. -/
+theorem Fermat.axisRestrict_frickeSlash (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2)
+    {y : ℝ} (hy : 0 < y) :
+    axisRestrict N f (1 / y)
+      = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N (frickeSlash N hN f) y := by
+  have hy' : (0 : ℝ) < 1 / y := by positivity
+  rw [axisRestrict_of_pos hN f hy', axisRestrict_of_pos hN _ hy]
+  simp only [coe_frickeSlash, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
+    UpperHalfPlane.σ, UpperHalfPlane.denom, frickeMatrix_coe, frickeMatrix_det, coe_axisPoint]
+  norm_num
+  rw [if_pos (Nat.pos_of_ne_zero hN), ContinuousAlgEquiv.refl_apply]
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  rw [Complex.I_sq]
+  ring
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **AN ATKIN–LEHNER-MINUS FORM SATISFIES THE `ε = −1` FUNCTIONAL EQUATION**
+(PROVEN 2026-07-28, LEVEL-GENERIC) — `w_N f = −f` turns the Fricke relation
+into `F(1/y) = y² F(y)` for `F = axisRestrict N f`.
+
+This is the exact hypothesis shape that
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and the Kenku numerics leaf
+`integral_Ioi_one_axisRestrict_ne_zero` take, so it is the bridge from the
+SLASH-ACTION statement `IsAtkinLehnerMinusForm` to the analytic machinery.
+`frickeRep` (the Atkin–Lehner side, `ModularCurve/X0.lean`) and `frickeMatrix`
+(the analytic side, `ModularCurve/WeightTwoEigenform.lean`) are two names for
+`!![0, -1; N, 0]`; `frickeRep_eq_frickeMatrix` above identifies them.
+
+**THE SIGN IS THE WHOLE POINT, and it self-checks.**  With `w_N f = +f` the
+same computation gives `F(1/y) = −y² F(y)`, i.e. `ε = +1`, and
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` then returns `(1 − ε) = 0` — the
+period, hence `L(f, 1)`, is IDENTICALLY zero.  That is precisely the PLUS
+orbit at level `125` (orbit `2`, `ord_{s=1} L = 1` at both embeddings, where
+`rank J_0(125)(ℚ) = 2` lives), so a sign error here would not merely fail to
+prove the leaf below — it would make it FALSE.  It reproduces the released
+Kenku chain, where the root number `−1` likewise yields the factor `2`. -/
+theorem Fermat.frickeFE_of_isAtkinLehnerMinusForm {N : ℕ} (hN : N ≠ 0)
+    {f : CuspForm (Gamma0GL N) 2} (hw : IsAtkinLehnerMinusForm N f) (y : ℝ) (hy : 0 < y) :
+    axisRestrict N f (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N f y := by
+  have hcoe : ⇑(frickeSlash N hN f) = -⇑f := by
+    rw [coe_frickeSlash, ← frickeRep_eq_frickeMatrix hN]
+    exact hw
+  have hax : axisRestrict N (frickeSlash N hN f) y = -axisRestrict N f y := by
+    rw [axisRestrict_of_pos hN _ hy, axisRestrict_of_pos hN f hy]
+    simpa using congrFun hcoe (axisPoint N y ⟨hy, hN⟩)
+  rw [axisRestrict_frickeSlash N hN f hy, hax]
+  ring
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat _root_.MeasureTheory in
+/-- **THE NUMERICS AT `125`, ON THE TAIL-INTEGRAL CARRIER** (LEAF,
+2026-07-28) — all that survives of
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive` once Hecke's
+continuation and the functional equation are discharged.
+
+TRUE, and it is EQUIVALENT to the `L`-value statement rather than weaker:
+`cuspPeriod a = (√125)⁻¹ · 2 · ∫₁^∞ axisRestrict 125 f` and
+`L(f, 1) = 2π · cuspPeriod a`, both PROVEN, so the integral vanishes exactly
+when `L(f, 1)` does.  The six values are tabulated in the section note above
+(`lfunorderzero = 0` at every embedding of orbits `1` and `3`, smallest value
+`0.49408575…`).
+
+**This is deliberately the SAME statement as the Kenku leaf
+`integral_Ioi_one_axisRestrict_ne_zero`** (`ModularCurve/X0.lean`), whose
+hypotheses are `M ∣ N` with `N ∈ kenkuLevels`, `IsNewEigenformAt M b`, and the
+same `ε = −1` functional equation.  `125 ∉ kenkuLevels` — that is exactly what
+the PLUS orbit forces — so that leaf cannot be cited here, but **whoever builds
+the certified-evaluation machinery for it closes this one at the same time**,
+and the two should be merged into one statement once the `kenkuLevels`
+hypothesis is replaced by the functional equation it is really being used for.
+
+**Both hypotheses are load-bearing for TRUTH** even though the assembly below
+consumes them through the chain rather than directly: without `_hw` the
+statement is FALSE at the plus orbit, where the integral is `0` because the
+`ε = +1` functional equation forces `∫₀^∞ = 0`.
+
+**The check that refutes it**: `lfunorderzero` returning a nonzero value at any
+embedding of orbit `1` or `3`, or `mfatkineigenvalues(mfinit([125,2],0), 125)`
+returning a pattern other than `[[-1,-1], [1,1], [-1,-1,-1,-1]]`. -/
+theorem Fermat.integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneTwentyFive
     (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 125 f a)
-    (_hw : IsAtkinLehnerMinusForm 125 f) (L : ℂ → ℂ) (_hL : IsLFunctionOf a L) :
-    L 1 ≠ 0 :=
+    (_hw : IsAtkinLehnerMinusForm 125 f) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict 125 f y ≠ 0 :=
   sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat _root_.MeasureTheory in
+/-- **THE NUMERICS AT `125`: every Atkin–Lehner-MINUS eigenform of level `125`
+has `L(f, 1) ≠ 0`** (PROVEN 2026-07-28 over the tail-integral leaf above; a
+bare LEAF until then).
+
+The assembly is the released Kenku chain with `frickeSign_eq_neg_one_of_...`
+replaced by the hypothesis `hw` itself, which is stronger and needs no leaf:
+
+* `frickeFE_of_isAtkinLehnerMinusForm` turns `w_125 f = −f` into the `ε = −1`
+  functional equation for `axisRestrict 125 f`;
+* `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` (PROVEN) folds `∫₀^∞` into
+  `(1 − ε) ∫₁^∞ = 2 ∫₁^∞`, rescaled by `(√125)⁻¹`;
+* `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` (PROVEN — Hecke's Mellin
+  transform and analytic continuation) gives `L 1 = 2π · cuspPeriod a`.
+
+`hf` and `hw` are consumed, not decorative; `hL` is what makes `L` *the*
+`L`-function (`isLFunctionOf_apply_eq`), so `L 1` is a function of `a` alone.
+
+**What this buys over the previous bare leaf.**  The whole analytic half —
+continuation, the Fricke involution, the functional equation — is gone from the
+frontier, and the residue is a single real integral that a certified evaluation
+can attack directly, on the same carrier as the Kenku levels' numerics. -/
+theorem Fermat.lFunction_apply_one_ne_zero_atkinLehnerMinus_oneTwentyFive
+    (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform 125 f a)
+    (hw : IsAtkinLehnerMinusForm 125 f) (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 ≠ 0 := by
+  have hN : (125 : ℕ) ≠ 0 := by norm_num
+  have hFE := frickeFE_of_isAtkinLehnerMinusForm hN hw
+  have hper : cuspPeriod a
+      = ((Real.sqrt 125)⁻¹ : ℝ) •
+        ((1 - (-1 : ℂ)) * ∫ y in Set.Ioi (1 : ℝ), axisRestrict 125 f y) :=
+    cuspPeriod_eq_one_sub_mul_integral_Ioi_one hN hf (ε := -1) (by norm_num)
+      (fun y hy => by rw [hFE y hy]; ring)
+  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod 125 hN f a hf L hL, hper]
+  simp only [Complex.real_smul]
+  refine mul_ne_zero (mul_ne_zero (by norm_num)
+    (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero)) ?_
+  refine mul_ne_zero (Complex.ofReal_ne_zero.mpr (inv_ne_zero
+    (Real.sqrt_ne_zero'.mpr (by norm_num)))) ?_
+  exact mul_ne_zero (by norm_num)
+    (integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneTwentyFive f a hf hw)
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **KOLYVAGIN–LOGACHEV AT `125`: every `w_125 = −1` isogeny factor of
