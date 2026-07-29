@@ -31,6 +31,11 @@ public import Fermat.FLT.EllipticCurve.Velu
 public import Fermat.FLT.EllipticCurve.Isogeny
 public import Fermat.FLT.EllipticCurve.IsogenyTrace
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- `Ring.HasFiniteQuotients.finiteQuotient`: finiteness of `𝓞 K ⧸ I` for `I ≠ ⊥`,
+-- consumed by `exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class` below.  It is
+-- already in this file's cone through `InertiaCardTransport`, but only NON-publicly,
+-- so the name is unavailable in proof bodies without this edge.
+public import Mathlib.RingTheory.Ideal.Quotient.HasFiniteQuotients
 public import Fermat.FLT.EllipticCurve.WeilPairing
 public import Fermat.FLT.EllipticCurve.HasseBound
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
@@ -51456,9 +51461,241 @@ theorem exists_heightOneSpectrum_under_ray_class
   exact ⟨⟨W.asIdeal.under (NumberField.RingOfIntegers F), Ideal.IsPrime.under _ _,
     Ideal.under_ne_bot _ W.ne_bot⟩, rfl⟩
 
+/-- **A FINITE FIELD EXTENSION ON WHICH THE `#k`-POWER MAP IS THE IDENTITY IS
+TRIVIAL** (PROVEN 2026-07-29, flt-lean-134). If every `x : K` satisfies
+`x ^ #k = x` then every element of `K` is a root of `X ^ q - X` (`q = #k ≥ 2`),
+a polynomial of degree `q`, so `#K ≤ q`; but `#K = q ^ [K : k]`, whence
+`[K : k] ≤ 1`, and `Module.finrank_pos` gives the reverse.
+
+This is the residue-field half of
+`exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class` below: `f(W/v) = 1` is
+exactly the statement that `κ(W)/κ(v)` is trivial, and what the Frobenius
+hypothesis delivers is precisely that the `#κ(v)`-power map is the identity on
+`κ(W)`. -/
+theorem finrank_eq_one_of_forall_pow_natCard_eq_self
+    (k K : Type*) [Field k] [Field K] [Algebra k K] [Finite k] [Finite K]
+    (h : ∀ x : K, x ^ Nat.card k = x) : Module.finrank k K = 1 := by
+  classical
+  have hk := Fintype.ofFinite k
+  have hK := Fintype.ofFinite K
+  set q : ℕ := Nat.card k with hq
+  have hq2 : 2 ≤ q := by
+    have h1 := Fintype.one_lt_card (α := k)
+    rw [hq, Nat.card_eq_fintype_card]
+    omega
+  have hne : (Polynomial.X ^ q - Polynomial.X : Polynomial K) ≠ 0 := by
+    intro hzero
+    have hc := congrArg (fun p => Polynomial.coeff p 1) hzero
+    simp only [Polynomial.coeff_sub, Polynomial.coeff_X_pow, Polynomial.coeff_X_one,
+      Polynomial.coeff_zero] at hc
+    rw [if_neg (by omega)] at hc
+    simp at hc
+  have hsub : (Finset.univ : Finset K).val ⊆
+      (Polynomial.X ^ q - Polynomial.X : Polynomial K).roots := by
+    intro x _
+    rw [Polynomial.mem_roots hne]
+    simp [Polynomial.IsRoot, h x]
+  have hcard := Polynomial.card_le_degree_of_subset_roots hsub
+  have hdeg : (Polynomial.X ^ q - Polynomial.X : Polynomial K).natDegree = q := by
+    have hlt : (Polynomial.X : Polynomial K).natDegree <
+        (Polynomial.X ^ q : Polynomial K).natDegree := by
+      simp only [Polynomial.natDegree_X, Polynomial.natDegree_X_pow]
+      omega
+    rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt hlt, Polynomial.natDegree_X_pow]
+  rw [hdeg, Finset.card_univ] at hcard
+  have hpow : Fintype.card K = q ^ Module.finrank k K := by
+    simpa [hq, Nat.card_eq_fintype_card] using
+      (Module.natCard_eq_pow_finrank (K := k) (V := K))
+  have hle : q ^ Module.finrank k K ≤ q ^ 1 := by
+    rw [← hpow, pow_one]; exact hcard
+  have h1 : Module.finrank k K ≤ 1 := (Nat.pow_le_pow_iff_right (by omega)).mp hle
+  have h2 : 0 < Module.finrank k K := Module.finrank_pos
+  omega
+
+section LocalFrobeniusInertia
+
+variable (F : Type u) [Field F] [NumberField F]
+  (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+
+local notation "ICw" => IntegralClosure (w.adicCompletionIntegers F)
+  (AlgebraicClosure (w.adicCompletion F))
+
+/-- **THE LOCAL GALOIS ACTION PRESERVES THE MAXIMAL IDEAL** (PROVEN 2026-07-29,
+flt-lean-134): each `g : Γ Fᵥ` acts on the local integral closure by a ring
+automorphism, so it permutes the units, and the maximal ideal of a local ring is
+the set of nonunits. -/
+theorem smul_mem_maximalIdeal_iff (g : Γ (w.adicCompletion F)) (x : ICw) :
+    g • x ∈ IsLocalRing.maximalIdeal ICw ↔ x ∈ IsLocalRing.maximalIdeal ICw := by
+  have hunit : ∀ (h : Γ (w.adicCompletion F)) (y : ICw), IsUnit y → IsUnit (h • y) := by
+    intro h y hy
+    exact hy.map (MulSemiringAction.toRingHom (Γ (w.adicCompletion F)) ICw h)
+  simp only [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  constructor
+  · intro h hx; exact h (hunit g x hx)
+  · intro h hx
+    refine h ?_
+    have := hunit g⁻¹ _ hx
+    rwa [inv_smul_smul] at this
+
+/-- **THE TWO SPELLINGS OF `#κ(w)` AGREE** (PROVEN 2026-07-29, flt-lean-134):
+the contraction to `𝒪_w` of the maximal ideal of the local integral closure is
+the maximal ideal of `𝒪_w` (it is maximal, and `𝒪_w` is local), whose residue
+field is the residue field of `w`
+(`HeightOneSpectrum.ResidueFieldEquivCompletionResidueField`). -/
+theorem natCard_maximalIdeal_under_eq :
+    Nat.card (w.adicCompletionIntegers F ⧸
+      (IsLocalRing.maximalIdeal ICw).under (w.adicCompletionIntegers F))
+      = Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) := by
+  rw [IsLocalRing.eq_maximalIdeal
+    (Ideal.IsMaximal.under _ (IsLocalRing.maximalIdeal ICw))]
+  exact (Nat.card_congr
+    (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+      F w).toEquiv).symm
+
+/-- **ITERATING THE LOCAL ARITHMETIC FROBENIUS** (PROVEN 2026-07-29,
+flt-lean-134): `Frob_w ^ n` acts on the residue field of the local integral
+closure as the `q ^ n`-th power map, `q = #κ(w)`. Induction on `n`: the
+successor step composes the defining congruence of `Frob_w`
+(`isArithFrobAt_adicArithFrob`) at `Frob_w ^ k • z` with the `q`-th power of the
+inductive hypothesis, using `a - b ∣ a ^ q - b ^ q`. -/
+theorem adicArithFrob_pow_sub_pow_mem (n : ℕ) (z : ICw) :
+    (Field.AbsoluteGaloisGroup.adicArithFrob w ^ n) • z -
+      z ^ (Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) ^ n) ∈
+      IsLocalRing.maximalIdeal ICw := by
+  rw [← natCard_maximalIdeal_under_eq F w]
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := w)
+  induction n generalizing z with
+  | zero => simp
+  | succ k ih =>
+      have h1 := harith ((Field.AbsoluteGaloisGroup.adicArithFrob w ^ k) • z)
+      have h2 := ih z
+      have h3 : ((Field.AbsoluteGaloisGroup.adicArithFrob w ^ k) • z) ^
+          (Nat.card (w.adicCompletionIntegers F ⧸
+            (IsLocalRing.maximalIdeal ICw).under (w.adicCompletionIntegers F))) -
+          (z ^ (Nat.card (w.adicCompletionIntegers F ⧸
+            (IsLocalRing.maximalIdeal ICw).under (w.adicCompletionIntegers F)) ^ k)) ^
+          (Nat.card (w.adicCompletionIntegers F ⧸
+            (IsLocalRing.maximalIdeal ICw).under (w.adicCompletionIntegers F))) ∈
+          IsLocalRing.maximalIdeal ICw :=
+        Ideal.mem_of_dvd _ (sub_dvd_pow_sub_pow _ _ _) h2
+      have h4 := Ideal.add_mem _ h1 h3
+      rw [sub_add_sub_cancel] at h4
+      rw [← pow_mul, ← pow_succ] at h4
+      rw [pow_succ']
+      rw [mul_smul]
+      exact h4
+
+/-- **FROBENIUS MODULO INERTIA** (PROVEN 2026-07-29, flt-lean-134): an element
+`τ` of the local Galois group whose residue action is the `q ^ n`-th power map
+differs from `Frob_w ^ n` by an element of `localInertiaGroup w`. Apply
+`Frob_w ^ n` to `((Frob_w ^ n)⁻¹ τ) • z - z` — legitimate because the action
+preserves the maximal ideal (`smul_mem_maximalIdeal_iff`) — to turn it into
+`τ • z - (Frob_w ^ n) • z`, which is the difference of the two `q ^ n`-power
+congruences. -/
+theorem inv_mul_mem_localInertiaGroup_of_forall_sub_pow_mem (n : ℕ)
+    (τ : Γ (w.adicCompletion F))
+    (hτ : ∀ z : ICw, τ • z -
+      z ^ (Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) ^ n) ∈
+      IsLocalRing.maximalIdeal ICw) :
+    (Field.AbsoluteGaloisGroup.adicArithFrob w ^ n)⁻¹ * τ ∈ localInertiaGroup w := by
+  intro z
+  show ((Field.AbsoluteGaloisGroup.adicArithFrob w ^ n)⁻¹ * τ) • z - z ∈
+    IsLocalRing.maximalIdeal ICw
+  rw [← smul_mem_maximalIdeal_iff F w (Field.AbsoluteGaloisGroup.adicArithFrob w ^ n)]
+  have hsm : (Field.AbsoluteGaloisGroup.adicArithFrob w ^ n) •
+      (((Field.AbsoluteGaloisGroup.adicArithFrob w ^ n)⁻¹ * τ) • z - z) =
+      τ • z - (Field.AbsoluteGaloisGroup.adicArithFrob w ^ n) • z := by
+    rw [smul_sub, ← mul_smul, mul_inv_cancel_left]
+  rw [hsm]
+  have h1 := hτ z
+  have h2 := adicArithFrob_pow_sub_pow_mem F w n z
+  have := Ideal.sub_mem _ h1 h2
+  rwa [sub_sub_sub_cancel_right] at this
+
+end LocalFrobeniusInertia
+
+/-- **CONJUGATING `ι (Frob_W)` INTO THE DECOMPOSITION GROUP AT `w`** (SORRY
+LEAF, created 2026-07-29 (flt-lean-134) as the single remaining arithmetic core
+of `exists_conj_globalFrob_pow_inertiaDeg_ray_class` below, which is now PROVEN
+from it).
+
+This is the local–global compatibility that the development does not yet have.
+It says exactly two things, and both are needed:
+
+* *(conjugacy)* `ι (globalFrob W)` lies in a `Γ F`-conjugate of the image of
+  `Φ := Field.absoluteGaloisGroup.map (algebraMap F F_w) : Γ F_w → Γ F`, i.e. of
+  the decomposition group at the place of `F̄` that `Φ` singles out;
+* *(residue degree)* the corresponding `τ : Γ F_w` acts on the residue field of
+  the local integral closure as the `q ^ f(W/w)`-th power map, `q = #κ(w)`.
+
+**Why the two clauses must be packaged TOGETHER and not split.** The pair
+`(a, τ)` is not unique: if `a * Φ τ * a⁻¹ = a' * Φ τ' * a'⁻¹` then
+`Φ τ' = c (Φ τ) c⁻¹` with `c = a'⁻¹ a`, which is only constrained to normalise
+the decomposition group. A standalone "any `τ` satisfying the conjugacy clause
+has residue action `q ^ f`" is therefore NOT obviously true, and must not be cut
+out as a separate leaf; the existential has to deliver both clauses of the SAME
+`τ`. (This is the "pin your existentials" trap: the conjugacy clause alone does
+not pin `τ` beyond conjugacy by the normaliser.)
+
+**Route.** `globalFrob W` is characterised by
+`ι_W (globalFrob W y) = Frob_W (ι_W y)` for
+`ι_W = AlgebraicClosure.map (algebraMap E E_W)` (`absoluteGaloisGroup.lift_map`),
+and likewise for `globalFrob w` with `ι_w = AlgebraicClosure.map (algebraMap F F_w)`.
+So `ι (globalFrob W) = j ∘ globalFrob W ∘ j⁻¹` stabilises the place `j P_W` of
+`F̄` over `w`, while the image of `Φ` is the stabiliser of the place
+`P_w := ι_w⁻¹ (𝔪 (IntegralClosure 𝒪_w F̄_w))`. The pieces still missing are:
+
+1. *Transitivity of `Γ F` on the places of `F̄` over `w`.* Formally: the primes
+   of `A_F := integralClosure (𝓞 F) (AlgebraicClosure F)` over `w.asIdeal`, on
+   which `Γ F` acts; `Algebra.IsInvariant.exists_smul_of_under_eq` is the mathlib
+   statement, and `Algebra.IsInvariant (𝓞 F) A_F (Γ F)` should come from
+   `InfiniteGalois.fixedField_fixingSubgroup` the same way the instance
+   `Algebra.IsInvariant K L (L ≃ₐ[K] L)` in `AbsoluteGaloisGroup.lean` does. That
+   `a` is the conjugator.
+2. *The image of `Φ` is exactly the decomposition group at `P_w`* (and `Φ` is
+   injective, so `τ` is determined). Injectivity is `F̄_w = ι_w(F̄) · F_w`
+   (Krasner); surjectivity onto the stabiliser is the standard
+   `Gal(F̄_w/F_w) ≅ D_{P_w}`.
+3. *The residue computation*: `Frob_W` acts on `κ(W̄)` as `x ↦ x ^ #κ(W)` and
+   `#κ(W) = q ^ f(W/w)` by `Ideal.inertiaDeg_eq_of_isMaximal` plus
+   `Module.natCard_eq_pow_finrank`.
+
+Everything DOWNSTREAM of this leaf is already proven here: the passage from this
+statement to `exists_conj_globalFrob_pow_inertiaDeg_ray_class` is
+`inv_mul_mem_localInertiaGroup_of_forall_sub_pow_mem` above plus one
+`map_pow`/`map_mul` rearrangement.
+
+**Check that would refute it**: a `W ∣ w` and a `τ` for which no `a : Γ F` makes
+the displayed conjugacy hold — equivalently, an `ι (globalFrob W)` fixing no
+place of `F̄` over `w`. -/
+theorem exists_conj_map_adicCompletion_globalFrob_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (ι : Γ E →* Γ F) (hinj : Function.Injective ι)
+    (jE : E →ₐ[F] AlgebraicClosure F)
+    (j : AlgebraicClosure E ≃+* AlgebraicClosure F)
+    (hjE : ∀ x : E, j (algebraMap E (AlgebraicClosure E) x) = jE x)
+    (hιapp : ∀ (σ : Γ E) (x : AlgebraicClosure E), ι σ (j x) = j (σ x))
+    (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hW : W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal) :
+    ∃ a : Γ F, ∃ τ : Γ (w.adicCompletion F),
+      ι (globalFrob W)
+          = a * Field.absoluteGaloisGroup.map
+              (algebraMap F (w.adicCompletion F)) τ * a⁻¹ ∧
+      ∀ z : IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)),
+        τ • z - z ^ (Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) ^
+            (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F))) ∈
+          IsLocalRing.maximalIdeal _ :=
+  sorry
+
 /-- **FROBENIUS RESTRICTION: `Frob_W` RESTRICTS TO `Frob_w ^ f(W/w)` MODULO
-INERTIA AND CONJUGACY** (SORRY LEAF, created 2026-07-28 (flt-lean-182) as
-sub-leaf (α) of `exists_relNormDivisorHom_ray_class` below).
+INERTIA AND CONJUGACY** (DERIVED 2026-07-29 (flt-lean-134) from the single
+arithmetic core `exists_conj_map_adicCompletion_globalFrob_ray_class` above;
+created 2026-07-28 (flt-lean-182) as sub-leaf (α) of
+`exists_relNormDivisorHom_ray_class` below).
 
 This is the ONLY arithmetic input to the Consistency Property `φ ∘ 𝔑 = φ'` of
 Childress ch. 5: the Artin symbol of a norm is the Artin symbol upstairs.
@@ -51499,12 +51736,49 @@ theorem exists_conj_globalFrob_pow_inertiaDeg_ray_class
       ι (globalFrob W)
         = a * (globalFrob w ^ (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F))
             * Field.absoluteGaloisGroup.map
-                (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ) * a⁻¹ :=
-  sorry
+                (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ) * a⁻¹ := by
+  obtain ⟨a, τ, heq, hres⟩ :=
+    exists_conj_map_adicCompletion_globalFrob_ray_class F E hfin ι hinj jE j hjE hιapp W w hW
+  refine ⟨a, (Field.AbsoluteGaloisGroup.adicArithFrob w ^
+      (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)))⁻¹ * τ,
+    inv_mul_mem_localInertiaGroup_of_forall_sub_pow_mem F w _ τ hres, ?_⟩
+  have hmul : globalFrob w ^ (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) *
+      Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+        ((Field.AbsoluteGaloisGroup.adicArithFrob w ^
+          (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)))⁻¹ * τ)
+      = Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) τ := by
+    rw [show globalFrob w = Field.absoluteGaloisGroup.map
+        (algebraMap F (w.adicCompletion F))
+        (Field.AbsoluteGaloisGroup.adicArithFrob w) from rfl,
+      ← map_pow, ← map_mul, mul_inv_cancel_left]
+  rw [heq, hmul]
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedVariables false in
 /-- **A PRIME WHOSE GLOBAL FROBENIUS LIES IN `Gal(F̄/E)` HAS A PRIME ABOVE IT OF
-RESIDUE DEGREE ONE** (SORRY LEAF, created 2026-07-28 (flt-lean-182) as sub-leaf
-(γ) of `exists_relNormDivisorHom_ray_class` below).
+RESIDUE DEGREE ONE** (PROVEN 2026-07-29, flt-lean-134; created 2026-07-28
+(flt-lean-182) as sub-leaf (γ) of `exists_relNormDivisorHom_ray_class` below).
+
+**PROOF (and why no normal closure is needed).** `hvsplit` says
+`globalFrob v = ι σ`, and `hιapp`/`hjE` turn that into: `globalFrob v` fixes
+`jE E ⊆ F̄` POINTWISE. Push `jE E` into `F̄ᵥ` along
+`ιv := AlgebraicClosure.map (algebraMap F Fᵥ)`; integral elements land in
+`IntegralClosure 𝒪ᵥ F̄ᵥ`, giving a ring map `ρ : 𝓞 E → IntegralClosure 𝒪ᵥ F̄ᵥ`,
+and `W := ρ⁻¹ (𝔪)`. `absoluteGaloisGroup.lift_map` transports the pointwise
+fixing to `Frobᵥ (ρ y) = ρ y`, so the defining congruence of `Frobᵥ`
+(`isArithFrobAt_adicArithFrob`) reads `y - y ^ q ∈ W` for every `y : 𝓞 E`,
+`q = #κ(v)`. Hence the `q`-power map is the identity on `κ(W)`, and
+`finrank_eq_one_of_forall_pow_natCard_eq_self` above gives `f(W/v) = 1`. That
+`W` lies over `v` is the same contraction computation as in
+`exists_isArithFrobAt_restrictNormalHom_globalFrob` (`Chebotarev.lean`), and
+`W ≠ ⊥` then follows from `Ideal.ne_bot_of_liesOver_of_ne_bot`.
+
+Note this route goes DIRECTLY through the big local integral closure and needs
+neither a normal closure nor `AlgEquiv.restrictNormalHom`; `hfin` and `hinj` are
+consequently unused (they are kept because the whole cluster passes the same
+argument list, and `hfin` is what makes `E/F` a finite extension for the
+consumers).
 
 This is Artin's splitting criterion in the only form the cluster needs, and it
 is what `hvsplit` — clause (iv) of `hartin`, `globalFrob v ∈ H` — is FOR: the
@@ -51533,8 +51807,129 @@ theorem exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
     (hvsplit : ∃ σ : Γ E, ι σ = globalFrob v) :
     ∃ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
       W.asIdeal.under (NumberField.RingOfIntegers F) = v.asIdeal ∧
-      W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) = 1 :=
-  sorry
+      W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) = 1 := by
+  classical
+  obtain ⟨σ₀, hσ₀⟩ := hvsplit
+  -- (1) `globalFrob v` fixes the image `jE E` pointwise
+  have hfixE : ∀ x : E, globalFrob v (jE x) = jE x := by
+    intro x
+    have h1 := hιapp σ₀ (algebraMap E (AlgebraicClosure E) x)
+    rw [hσ₀, σ₀.commutes x, hjE x] at h1
+    exact h1
+  -- (2) the chosen embedding of algebraic closures at `v`
+  set ιv : AlgebraicClosure F →+* AlgebraicClosure (v.adicCompletion F) :=
+    AlgebraicClosure.map (algebraMap F (v.adicCompletion F)) with hιvdef
+  have hint : ∀ x : NumberField.RingOfIntegers E, ιv (jE (x : E)) ∈
+      integralClosure (v.adicCompletionIntegers F)
+        (AlgebraicClosure (v.adicCompletion F)) := by
+    intro x
+    exact IsIntegral.map_of_comp_eq
+      (algebraMap ℤ (v.adicCompletionIntegers F))
+      (ιv.comp (jE : E →ₐ[F] AlgebraicClosure F).toRingHom)
+      (Subsingleton.elim _ _) (x.2 : IsIntegral ℤ (x : E))
+  set ρ : NumberField.RingOfIntegers E →+* IntegralClosure (v.adicCompletionIntegers F)
+      (AlgebraicClosure (v.adicCompletion F)) :=
+    RingHom.codRestrict
+      ((ιv.comp (jE : E →ₐ[F] AlgebraicClosure F).toRingHom).comp
+        (algebraMap (NumberField.RingOfIntegers E) E))
+      (integralClosure (v.adicCompletionIntegers F)
+        (AlgebraicClosure (v.adicCompletion F))).toSubring
+      (fun x => hint x) with hρdef
+  set M : Ideal (IntegralClosure (v.adicCompletionIntegers F)
+      (AlgebraicClosure (v.adicCompletion F))) := IsLocalRing.maximalIdeal _ with hMdef
+  set W₀ : Ideal (NumberField.RingOfIntegers E) := M.comap ρ with hW₀def
+  haveI hW₀prime : W₀.IsPrime := Ideal.IsPrime.comap ρ
+  have hMunder : M.under (v.adicCompletionIntegers F) =
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers F) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under _ M)
+  -- (3) `ρ` intertwines the two algebra maps out of `NumberField.RingOfIntegers F`
+  have hcomm : ∀ a : NumberField.RingOfIntegers F, ρ (algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E) a) =
+      algebraMap (v.adicCompletionIntegers F)
+        (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))
+        (algebraMap (NumberField.RingOfIntegers F) (v.adicCompletionIntegers F) a) := by
+    intro a
+    apply Subtype.ext
+    show ιv (jE (algebraMap F E (algebraMap (NumberField.RingOfIntegers F) F a))) =
+      algebraMap (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))
+        (AlgebraicClosure (v.adicCompletion F))
+        (algebraMap (v.adicCompletionIntegers F)
+          (IntegralClosure (v.adicCompletionIntegers F)
+            (AlgebraicClosure (v.adicCompletion F)))
+          (algebraMap (NumberField.RingOfIntegers F) (v.adicCompletionIntegers F) a))
+    rw [show jE (algebraMap F E (algebraMap (NumberField.RingOfIntegers F) F a)) =
+        algebraMap F (AlgebraicClosure F) (algebraMap (NumberField.RingOfIntegers F) F a) from jE.commutes _,
+      hιvdef, AlgebraicClosure.map_algebraMap,
+      ← IsScalarTower.algebraMap_apply (v.adicCompletionIntegers F)
+        (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))
+        (AlgebraicClosure (v.adicCompletion F)),
+      IsScalarTower.algebraMap_apply (v.adicCompletionIntegers F)
+        (v.adicCompletion F) (AlgebraicClosure (v.adicCompletion F)),
+      show algebraMap (v.adicCompletionIntegers F) (v.adicCompletion F)
+          (algebraMap (NumberField.RingOfIntegers F) (v.adicCompletionIntegers F) a) =
+        ((algebraMap (NumberField.RingOfIntegers F) (v.adicCompletionIntegers F) a :
+          v.adicCompletionIntegers F) : v.adicCompletion F) from rfl,
+      IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers F v a,
+      IsScalarTower.algebraMap_apply (NumberField.RingOfIntegers F) F (v.adicCompletion F)]
+  have hover : v.asIdeal = (v.completionIdeal F).under (NumberField.RingOfIntegers F) := Ideal.LiesOver.over
+  have hW₀under : W₀.under (NumberField.RingOfIntegers F) = v.asIdeal := by
+    ext a
+    rw [Ideal.under_def, Ideal.mem_comap, hW₀def, Ideal.mem_comap, hcomm a,
+      ← Ideal.mem_comap (f := algebraMap (v.adicCompletionIntegers F)
+        (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))),
+      show M.comap (algebraMap (v.adicCompletionIntegers F)
+        (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))) = M.under _ from rfl,
+      hMunder, hover, Ideal.under_def, Ideal.mem_comap]
+  haveI hW₀lies : W₀.LiesOver v.asIdeal := ⟨hW₀under.symm⟩
+  have hW₀bot : W₀ ≠ ⊥ := Ideal.ne_bot_of_liesOver_of_ne_bot v.ne_bot W₀
+  -- (4) the residue congruence at `W₀`
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+  have hfixloc : ∀ y : NumberField.RingOfIntegers E,
+      MulSemiringAction.toAlgHom (v.adicCompletionIntegers F)
+        (IntegralClosure (v.adicCompletionIntegers F)
+          (AlgebraicClosure (v.adicCompletion F)))
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) (ρ y) = ρ y := by
+    intro y
+    apply Subtype.ext
+    show Field.AbsoluteGaloisGroup.adicArithFrob v (ιv (jE (y : E))) = ιv (jE (y : E))
+    have hlift := Field.absoluteGaloisGroup.lift_map
+      (algebraMap F (v.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob v) (jE (y : E))
+    rw [← hlift]
+    exact congrArg ιv (hfixE (y : E))
+  set q : ℕ := Nat.card (v.adicCompletionIntegers F ⧸
+    M.under (v.adicCompletionIntegers F)) with hqdef
+  have hcong : ∀ y : NumberField.RingOfIntegers E, y - y ^ q ∈ W₀ := by
+    intro y
+    have h1 := harith (ρ y)
+    rw [hfixloc y] at h1
+    have h2 : ρ (y - y ^ q) ∈ M := by
+      rw [map_sub, map_pow]; exact h1
+    exact h2
+  have hqcard : q = Nat.card (NumberField.RingOfIntegers F ⧸ v.asIdeal) := by
+    rw [hqdef, hMunder]
+    exact (Nat.card_congr
+      (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+        F v).toEquiv).symm
+  -- (5) conclude
+  haveI hW₀max : W₀.IsMaximal := Ideal.IsPrime.isMaximal hW₀prime hW₀bot
+  haveI hvmax : v.asIdeal.IsMaximal := v.isMaximal
+  refine ⟨⟨W₀, hW₀prime, hW₀bot⟩, hW₀under, ?_⟩
+  show W₀.inertiaDeg (NumberField.RingOfIntegers F) = 1
+  rw [Ideal.inertiaDeg_eq_of_isMaximal v.asIdeal W₀]
+  haveI : Finite (NumberField.RingOfIntegers F ⧸ v.asIdeal) := Ring.HasFiniteQuotients.finiteQuotient v.ne_bot
+  haveI : Finite (NumberField.RingOfIntegers E ⧸ W₀) := Ring.HasFiniteQuotients.finiteQuotient hW₀bot
+  letI : Field (NumberField.RingOfIntegers F ⧸ v.asIdeal) := Ideal.Quotient.field _
+  letI : Field (NumberField.RingOfIntegers E ⧸ W₀) := Ideal.Quotient.field _
+  refine finrank_eq_one_of_forall_pow_natCard_eq_self (NumberField.RingOfIntegers F ⧸ v.asIdeal) (NumberField.RingOfIntegers E ⧸ W₀) ?_
+  intro x
+  obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+  rw [← map_pow, Ideal.Quotient.eq, ← neg_sub, ← hqcard]
+  exact neg_mem (hcong y)
 
 /-- **THE DIVISOR OF A NORM IS THE NORM OF THE DIVISOR** (SORRY LEAF, created
 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
