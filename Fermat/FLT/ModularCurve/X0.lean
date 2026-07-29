@@ -30831,10 +30831,12 @@ is analysis-on-the-period any more:
 * `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
   divisor of a Kenku level (the analytic-rank-`0` statement, and the one
   that PARI's `mfatkineigenvalues` checks directly);
-* `frickeTailSum_ne_zero` — the `L`-value numerics, now a nonvanishing
-  statement about the COEFFICIENT SERIES `∑ (bₙ/n) e^{-2πn/√M}` rather
-  than about any integral (`integral_Ioi_one_axisRestrict_ne_zero`, which
-  used to stand here, is PROVEN over it since the third round below).
+* `frickeTailSum_tail_lt_head` — the `L`-value numerics, now a REAL
+  inequality `∑_{n ≥ 2} ‖bₙ‖/n e^{-2πn/√M} < e^{-2π/√M}` with no
+  cancellation in it, let alone an integral
+  (`integral_Ioi_one_axisRestrict_ne_zero`, which used to stand here, and
+  `frickeTailSum_ne_zero`, which stood here after the third round below,
+  are both PROVEN over it since the fourth).
 
 The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
 is the whole reason the Fricke hypothesis is worth having — is PROVEN
@@ -30873,11 +30875,23 @@ names were dispatched at, twice.
 PROVEN too.**  `integral_Ioi_one_axisRestrict_ne_zero` is an assembly
 over `hasSum_integral_Ioi_one_axisRestrict` (termwise integration of the
 `q`-expansion on `[1, ∞)`, dominated by `qExpansionSummable` at `y = 1` —
-no Deligne bound is used or available) and the single remaining
-arithmetic leaf `frickeTailSum_ne_zero`, whose conclusion
-`∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0` mentions no integral and no measure
-theory.  The gate is unchanged and is stated there: a certified basis of
-`S₂(Γ₀(M))^{new}`.
+no Deligne bound is used or available) and `frickeTailSum_ne_zero`, whose
+conclusion `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0` mentions no integral and no
+measure theory.
+
+**Fourth round (2026-07-28): the gate is NOT a certified basis, and
+`frickeTailSum_ne_zero` is PROVEN too.**  The third round's docstring
+said the remaining obligation needed "a certified basis of
+`S₂(Γ₀(M))^{new}` — dimension formulas plus certified `q`-expansions".
+That is measurably false.  Truncating the series at `K = 1` and
+dominating the tail in norm (`tsum_ne_zero_of_tail_lt_norm_sum`, proven)
+leaves the real inequality `frickeTailSum_tail_lt_head`, and replacing
+every coefficient there by the multiplicative bound built from THIS
+FILE'S OWN `norm_coeff_le_two_mul_sqrt_of_not_dvd` plus the Atkin–Lehner
+local values at `p ∣ M` makes it hold at all seventeen divisor levels,
+the worst ratio being `0.965` at `M = 75`.  The one input beyond what the
+file already states is `‖a_p‖ = 1` for `p ∥ M` at a NEWFORM; the full
+accounting, with per-level numbers, is on `frickeTailSum_tail_lt_head`.
 
 The newform predicate is `IsNewEigenformAt`, and it is only *stated*.
 It is deliberately NOT `Modularity/Interface.lean`'s `IsWeightTwoNewform`
@@ -31868,72 +31882,225 @@ theorem integral_Ioi_one_axisRestrict_eq_tsum {M : ℕ} (hM : M ≠ 0)
     simpa only [hcongr] using h
   rw [← h'.tsum_eq, tsum_mul_left]
 
-/-- **THE `L`-VALUE NUMERICS: the coefficient series does not vanish**
-(sorry leaf) — all that is left of the arithmetic gate once the root
-number is split off and the analysis is discharged.  It is the ONLY
-remaining statement in this cluster that is a numerical inequality, and
-its conclusion mentions no integral, no `CuspForm` and no measure theory:
+/-- **TRUNCATION CRITERION: a series whose head outweighs its tail
+cannot vanish** (PROVEN 2026-07-28) — the analysis that used to sit,
+unnamed and undischarged, inside the arithmetic gate below.
 
-> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`.
+`∑' t = ∑_{n < K} t n + ∑_{n ≥ K} t n` (`Summable.sum_add_tsum_nat_add`)
+and `‖∑_{n ≥ K} t n‖ ≤ ∑_{n ≥ K} ‖t n‖` (`norm_tsum_le_tsum_norm`); if
+the latter is strictly below `‖∑_{n < K} t n‖` the two summands cannot
+cancel, so the total is nonzero.
 
-TRUE, by the PARI/GP reconnaissance recorded on
-`cuspPeriod_ne_zero_of_kenkuLevel` below, re-run at rational-arithmetic
-grade on 2026-07-28: for each of the **fourteen** `kenkuLevels`, EVERY
-newform of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`,
-newspace) and `|L(f, 1)|` computed at EVERY complex embedding — **28
-forms/embeddings over the 17 divisor levels `14, 15, 20, 21, 24, 26, 27,
-30, 35, 36, 39, 42, 45, 50, 54, 63, 75`, all nonzero, smallest
-`0.33022…` at `M = 14`**; in particular every one has `ε = -1`.  The
-controls `37`, `65`, `91` vanish as they must, which is exactly why they
-are not in `kenkuLevels`.  Given the sign leaf above, `L(f, 1) ≠ 0` and
-this sum being nonzero are the same statement, by
-`integral_Ioi_one_axisRestrict_eq_tsum`,
-`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
-`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.  PARI/GP is an untrusted
-searcher: this establishes that the statement is not false, and is not a
-proof.
+**Absolute summability is LOAD-BEARING, not decoration.**  With only
+`Summable t` the tail `∑' ‖t (n + K)‖` would be mathlib's junk `0`
+whenever the norms fail to be summable, and the hypothesis would
+degenerate to `0 < ‖head‖` — which says nothing whatever about the whole
+sum.  In `ℂ` this costs nothing, since summability *is* absolute
+summability there, but the hypothesis has to be written.
 
-**DELIGNE ALONE IS NOT ENOUGH, and this is measured.**  `|bₙ| ≤ d(n)√n`
-does not close the gap: at `M = 75` the crude Deligne tail already
-exceeds the `n = 1` term by `n = 4` (`n = 1` term `0.0771`;
-`∑_{n=2}^{4} d(n) √n e^{-2πn/√75}/(2πn) = 0.0867`).  So genuine
-coefficients are needed, not merely bounds — which is why the gate below
-is a certified BASIS and not a certified inequality.
+Stated for a general `t : ℕ → ℂ` because that is all the proof uses; the
+only consumer is `frickeTailSum_ne_zero` below, at `K = 1`. -/
+theorem tsum_ne_zero_of_tail_lt_norm_sum {t : ℕ → ℂ} (ht : Summable fun n => ‖t n‖) (K : ℕ)
+    (hlt : ∑' n : ℕ, ‖t (n + K)‖ < ‖∑ n ∈ Finset.range K, t n‖) :
+    ∑' n : ℕ, t n ≠ 0 := by
+  intro h0
+  have hts : Summable t := ht.of_norm
+  have hshift : Summable fun n : ℕ => ‖t (n + K)‖ := (summable_nat_add_iff K).mpr ht
+  have hsplit : (∑ n ∈ Finset.range K, t n) + ∑' n : ℕ, t (n + K) = ∑' n : ℕ, t n :=
+    hts.sum_add_tsum_nat_add K
+  rw [h0] at hsplit
+  have heq : (∑ n ∈ Finset.range K, t n) = -∑' n : ℕ, t (n + K) :=
+    eq_neg_of_add_eq_zero_left hsplit
+  have hle : ‖∑' n : ℕ, t (n + K)‖ ≤ ∑' n : ℕ, ‖t (n + K)‖ := norm_tsum_le_tsum_norm hshift
+  rw [heq, norm_neg] at hlt
+  exact absurd hlt (not_lt.mpr hle)
 
-**What this leaf still needs, and the check that would refute it**: an
-explicit certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus
-certified `q`-expansions — which is what would make the PARI computation
-replayable inside Lean.  Refute with
-`grep -rn "newform\|Newform\|dimension.*cusp\|CuspFormBasis" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`.  It is the real gate on the whole
-cluster, and **the cut on 2026-07-28 did not remove it** — what the cut
-removed is everything AROUND it.
+/-- **THE `L`-VALUE NUMERICS, AT `K = 1`: the head of the coefficient
+series outweighs the WHOLE of its tail** (sorry leaf, RECUT 2026-07-28):
 
-**NON-VACUITY.**  `bₙ` is pinned: `IsWeightTwoEigenform` carries
-`one : b 1 = 1`, so the `n = 1` term is `e^{-2π/√M} > 0` and the sum is
-not junk-satisfiable by `b = 0`; and `qExpansionSummable` makes the
-series absolutely convergent (`hasSum_integral_Ioi_one_axisRestrict`),
-so the `tsum` is a genuine limit rather than mathlib's junk `0`.
+> `∑_{n ≥ 2} ‖bₙ‖/n · e^{-2πn/√M}  <  e^{-2π/√M}`.
 
-`hFE` is stated with the sign already resolved to `-1`
-(`F(1/y) = y² F(y)`) because that is what the consumer has after the sign
-leaf; carrying `ε` would only mean re-deriving it.  It is retained rather
-than dropped because without it the leaf would assert nonvanishing for a
-`W_M`-eigenvalue `+1` newform too, where the argument is a different one
-(there `∫₀^∞ = 0`, so the tail equals `-∫₀¹` and the reconnaissance above
-says nothing).
+This REPLACES the leaf that stood here, `frickeTailSum_ne_zero`
+(`∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`), which is PROVEN over it and
+`tsum_ne_zero_of_tail_lt_norm_sum` above — `hb.one : b 1 = 1` evaluates
+the head, and the criterion does the rest.  Note the conclusion is an
+inequality between REAL numbers with no cancellation in it: every
+`‖bₙ‖` enters positively, so a prover never has to control a sign.
+
+## STRICTLY STRONGER THAN ITS CONSUMER, DELIBERATELY
+
+`tail < head` implies `∑ ≠ 0` and not conversely, so this is not a
+relocation of the old leaf; it is a genuinely stronger demand, made
+because it is (a) TRUE with room and (b) reachable from BOUNDS, which
+the old shape was not.  Both halves were measured on 2026-07-28 with
+PARI/GP over all **28 newform/embedding pairs of the 17 divisor levels**
+`14, 15, 20, 21, 24, 26, 27, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75`
+(the divisors of the fourteen `kenkuLevels` carrying a nonempty
+newspace; `28` is a divisor of a Kenku level whose newspace is EMPTY,
+its `S₂` being entirely old from `14`).
+
+*With the true coefficients*, `tail/head` is at most **`0.634`**, at
+`M = 75`; the next largest are `0.559` (`35`, second embedding), `0.547`
+(`39`), `0.448` (`63`); it is `0.118` at `M = 14` and `0.0011` at
+`M = 36`.  So the inequality holds everywhere with a factor of at least
+`1.58` to spare.
+
+## THE "CERTIFIED BASIS" GATE IS NOT REAL — CORRECTION OF 2026-07-28
+
+The docstring this replaces asserted that the leaf needs "an explicit
+certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus certified
+`q`-expansions", and called that "the real gate on the whole cluster".
+**Measurement says otherwise: no basis, no dimension formula and no
+certified `q`-expansion is needed.**  Replacing every `‖bₙ‖` by a BOUND
+built multiplicatively out of the prime bounds already stated in this
+file gives `tail/head` equal to
+
+* `0.14` (`14`), `0.30` (`15`), `0.070` (`20`), `0.41` (`21`),
+  `0.031` (`24`), `0.26` (`26`), `0.47` (`27`), `0.20` (`30`),
+  `0.70` (`35`), `0.015` (`36`), `0.66` (`39`), `0.27` (`42`),
+  `0.65` (`45`), `0.43` (`50`), `0.27` (`54`), `0.826` (`63`),
+  `0.965` (`75`),
+
+all `< 1`.  The bound used is `‖a_{p^e}‖ ≤ (e + 1) p^{e/2}` for `p ∤ M`
+(`norm_coeff_le_two_mul_sqrt_of_not_dvd` plus the `hecke` recursion) and
+the Atkin–Lehner local values at `p ∣ M` — `a_p = 0` when `p² ∣ M`,
+`‖a_p‖ = 1` when `p ∥ M` — together with multiplicativity, which the
+`hecke`/`atkin` fields give.
+
+## WHICH INPUT IS ACTUALLY MISSING, AND WHERE IT BITES
+
+The file's OWN pair of bound leaves is *nearly* enough and misses by one
+level.  Using `norm_coeff_le_sqrt_of_dvd`'s `‖a_p‖ ≤ √p` at `p ∣ M`
+instead of the Atkin–Lehner values, `tail/head < 1` at **sixteen** of the
+seventeen levels and fails at exactly one: `M = 75`, where it is
+`1.058`.  Weakening only the `p ∥ M` case (keeping `a_p = 0` for
+`p² ∣ M`) still fails there, at `1.032`.  So the single missing
+arithmetic input is
+
+> `‖a_p‖ = 1` for `p ∥ M` and a NEWFORM `b` — at `M = 75`, `p = 3`.
+
+That is Atkin–Lehner's `U_p`-eigenvalue theorem in the direction
+`norm_coeff_le_sqrt_of_dvd` deliberately does not state (it is quantified
+over ALL eigenforms, including the stabilizations the descent needs,
+where `‖a_p‖ = √p` genuinely occurs — so it cannot be strengthened in
+place; the newform statement is a SEPARATE declaration, and `hnew` is
+what would license it).  This is the cheapest known route and it is why
+`hnew` must stay.
+
+## FAITHFULNESS
+
+`hnew` is load-bearing twice over: it restricts `b` to the 28 forms the
+reconnaissance covers, and it is what makes the Atkin–Lehner local values
+available.  `hb` pins `b` to the `q`-expansion of a genuine cusp form
+(`qExpansion` **and** `qExpansionSummable`; see the `SOUNDNESS AUDIT` in
+`WeightTwoEigenform.lean` for the junk sequence the first alone admits).
+`hM : M ≠ 0` is needed for `√M > 0` and for `axisRestrict` to be `g` at
+all.
+
+**`hFE` is NOT load-bearing here** and is retained only because the
+consumer holds it: this inequality is about `‖bₙ‖` alone and is blind to
+the Fricke sign.  Dropping it would not enlarge the instance set either,
+since `hb` and `hnew` already cut it down to the newforms of the divisor
+levels, every one of which has `ε = -1`.  It is kept so that the leaf is
+as WEAK as it can be, a false-leaf hedge, not because the argument wants
+it.
+
+**NON-VACUITY, in both directions.**  The hypotheses are satisfiable —
+they hold of all 28 forms — and the conclusion is not junk: the head
+`e^{-2π/√M}` is a positive real, and `qExpansionSummable` makes the tail
+a genuine convergent sum rather than mathlib's `0`
+(`hasSum_integral_Ioi_one_axisRestrict` uses the same summability).  At
+levels `M` with an empty newspace the hypotheses are contradictory
+(`b 1 = 1` against `g = 0` when `S₂(Γ₀(M)) = 0`; `hnew` against
+Atkin–Lehner when `S₂` is nonzero but entirely old, as at `M = 28`), so
+those cases are vacuous, as they must be.
+
+PARI/GP is an untrusted searcher: the tables above establish that the
+statement is not false, and are not a proof.
 
 The *axis not searched*: `fin_cases hN`, mechanically available and not a
 decomposition (it multiplies the frontier by fourteen and moves no
 theory). -/
+theorem frickeTailSum_tail_lt_head (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    ∑' n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+      < Real.exp (-(2 * Real.pi / Real.sqrt M)) :=
+  sorry
+
+/-- **THE `L`-VALUE NUMERICS: the coefficient series does not vanish**
+(PROVEN 2026-07-28, from `frickeTailSum_tail_lt_head` and
+`tsum_ne_zero_of_tail_lt_norm_sum`) — the shape
+`integral_Ioi_one_axisRestrict_ne_zero` consumes:
+
+> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`.
+
+Its conclusion mentions no integral, no `CuspForm` and no measure theory,
+and it is now no longer a leaf: the analysis in front of the arithmetic
+(splitting the series at `n = 1` and dominating the tail in norm) is
+discharged by the criterion above, and what remains open is the real
+inequality `frickeTailSum_tail_lt_head`.
+
+Given the sign leaf above, this being nonzero and `L(f, 1) ≠ 0` are the
+same statement, by `integral_Ioi_one_axisRestrict_eq_tsum`,
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`; the PARI/GP
+reconnaissance on `cuspPeriod_ne_zero_of_kenkuLevel` below records
+`|L(f, 1)|` for all 28 forms, smallest `0.33022…` at `M = 14` (which is
+twice the `0.16511…` this sum has there, `L(f, 1) = 2 ∑`).  The controls
+`37`, `65`, `91` vanish as they must, which is exactly why they are not
+in `kenkuLevels`.
+
+The absolute summability the criterion needs is `qExpansionSummable` at
+`y = 1`, through `hasSum_axisRestrict`, plus the bounded factor `1/n` —
+the same domination `hasSum_integral_Ioi_one_axisRestrict` uses, and
+again with no Deligne input. -/
 theorem frickeTailSum_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
     (hFE : ∀ y : ℝ, 0 < y →
       axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
     ∑' n : ℕ, b (n + 1) / ((n : ℂ) + 1) *
-        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ) ≠ 0 :=
-  sorry
+        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ) ≠ 0 := by
+  set t : ℕ → ℂ := fun n : ℕ => b (n + 1) / ((n : ℂ) + 1) *
+    ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ) with htdef
+  have hnormt : ∀ m : ℕ, ‖t m‖ = ‖b (m + 1)‖ / ((m : ℝ) + 1) *
+      Real.exp (-(2 * Real.pi * ((m : ℝ) + 1) / Real.sqrt M)) := by
+    intro m
+    have hm : ((m : ℂ) + 1) = ((((m : ℝ) + 1 : ℝ)) : ℂ) := by push_cast; ring
+    simp only [htdef, hm, norm_mul, norm_div, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_pos (Real.exp_pos _)]
+    rw [abs_of_pos (by positivity : (0 : ℝ) < (m : ℝ) + 1)]
+  have habs : Summable fun n : ℕ => ‖b (n + 1)‖ *
+      Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) := by
+    have h := (hasSum_axisRestrict hM hb (by norm_num : (0 : ℝ) < 1)).summable
+    have h2 := summable_norm_iff.mpr h
+    refine h2.congr fun n => ?_
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    congr 2
+    ring
+  have ht : Summable fun n : ℕ => ‖t n‖ := by
+    refine Summable.of_nonneg_of_le (fun n => norm_nonneg _) (fun n => ?_) habs
+    rw [hnormt n]
+    have h1 : (1 : ℝ) ≤ (n : ℝ) + 1 := by
+      have : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+      linarith
+    exact mul_le_mul_of_nonneg_right (div_le_self (norm_nonneg _) h1) (Real.exp_pos _).le
+  refine tsum_ne_zero_of_tail_lt_norm_sum ht 1 ?_
+  have hhead : ‖∑ n ∈ Finset.range 1, t n‖ = Real.exp (-(2 * Real.pi / Real.sqrt M)) := by
+    rw [Finset.sum_range_one, hnormt 0, hb.one]
+    norm_num
+  have hcongr : ∀ n : ℕ, ‖t (n + 1)‖ = ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+      Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M)) := by
+    intro n
+    rw [hnormt (n + 1)]
+    push_cast
+    ring_nf
+  rw [hhead, tsum_congr hcongr]
+  exact frickeTailSum_tail_lt_head N hN M hMN hM g b hb hnew hFE
 
 /-- **THE `L`-VALUE NUMERICS, ON THE INTEGRAL** (PROVEN 2026-07-28, from
 `frickeTailSum_ne_zero` over `integral_Ioi_one_axisRestrict_eq_tsum`) —
@@ -31948,7 +32115,11 @@ Deligne input — the domination is `qExpansionSummable` at `y = 1` plus
 the bounded factor `1/n`), and the arithmetic sits on
 `frickeTailSum_ne_zero`, whose conclusion is an inequality about `b`
 alone.  The frontier count is unchanged by the cut; what changed is that
-no analysis is left in front of the arithmetic. -/
+no analysis is left in front of the arithmetic.
+
+**And `frickeTailSum_ne_zero` is itself PROVEN since the fourth round**
+(`tsum_ne_zero_of_tail_lt_norm_sum` at `K = 1`), so the whole chain from
+here down to `frickeTailSum_tail_lt_head` is closed. -/
 theorem integral_Ioi_one_axisRestrict_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
@@ -36879,9 +37050,10 @@ and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
 (a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
 (its sign is `-1`, which the identity shows IS the analytic-rank-`0`
 statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
-Kenku level), and `frickeTailSum_ne_zero` (the numerics — reached through the
-PROVEN `integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration
-turns the tail integral into `∑ (bₙ/n) e^{-2πn/√M}`).
+Kenku level), and `frickeTailSum_tail_lt_head` (the numerics — reached through
+the PROVEN `integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration
+turns the tail integral into `∑ (bₙ/n) e^{-2πn/√M}`, and the PROVEN
+`frickeTailSum_ne_zero`, which truncates that series at `K = 1`).
 The sign leaf was verified independently and DIRECTLY with PARI/GP's
 `mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
 fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
@@ -36933,7 +37105,7 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
-| `frickeTailSum_ne_zero` | `L`-value numerics (`integral_Ioi_one_axisRestrict_ne_zero` is PROVEN over it) | **yes** |
+| `frickeTailSum_tail_lt_head` | `L`-value numerics, as a real inequality (`frickeTailSum_ne_zero` and `integral_Ioi_one_axisRestrict_ne_zero` are both PROVEN over it) | **yes** |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
