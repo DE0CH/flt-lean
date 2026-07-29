@@ -405,7 +405,8 @@ open in them has been split along the theories it needed:
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  Also owns the `N = 0` case, which — unlike its `Γ₀` sibling — is NOT discharged by an emptiness lemma; see its docstring | `ℚ` |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
@@ -8302,10 +8303,313 @@ theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
       χ f a hf⟩
 
+/-! ### The level-`0` degeneracy of `Γ₁` Eichler–Shimura
+
+**SETTLED 2026-07-28, and the answer is the unwelcome one.**  The leaf
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` below was
+cut carrying the whole `N = 0` obligation, with a heading recording that
+— unlike its `Γ₀` sibling — the obligation is NOT discharged by an
+emptiness lemma, and naming the check that would settle it: *is
+`IsCoarseModuliY1 0 strY` strong enough to contradict `X` being a
+curve?*
+
+The check was run.  **It is not.**  `IsCoarseModuliY1` has exactly three
+fields — `classify`, `classify_natural`, `universal` — and its own
+docstring says so in terms: "bijectivity on geometric points is
+deliberately omitted".  There is no clause that can see that the
+`ℚ̄`-points of `[Γ₁(0)]` are pairs `(E, P)` with `P` of infinite order;
+initiality alone constrains nothing about cardinality.  So the `Γ₀`
+route (`isEmpty_of_isCoarseModuliY0_zero`, which needs `Y_0(0) = ∅`) has
+no `Γ₁` analogue, and none is reachable from this structure.
+
+**What IS provable is the opposite, and it is what forces the repair
+below**: `IsHeckeIsotypicDecompositionGamma1 0 h jac` is EMPTY, for every
+`h` and `jac` — `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`.  So at
+`N = 0` the leaf's conclusion is `Nonempty ∅`, and the leaf is provable
+there ONLY by refuting its geometric hypotheses, which the paragraph
+above says cannot be done inside this vocabulary.  A statement in that
+position is not "open"; it is a statement no prover can honestly close.
+Hence `hN : N ≠ 0` on the leaf, on
+`exists_heckeIsotypicDecomposition_gamma1`, and NOT one step further —
+see below.
+
+**THE REFUTATION, and note it needs no transcendence.**  The obstruction
+is a COUNTING one, which is why it is robust.  `Gamma1 0` is
+`{[[1, b], [0, 1]] : b ∈ ℤ} = ⟨T⟩` (mathlib's `Gamma1_mem` at `N = 0`
+reads the congruences in `ZMod 0 = ℤ`, i.e. as equations — and note it
+does NOT contain `−I`).  For a level-`0` eigen-system:
+
+* `hecke` is VACUOUS, since its hypothesis is `¬ p ∣ 0` and every `p`
+  divides `0`.  The nebentypus is therefore unconstrained too, and `1`
+  serves.
+* `atkin` is NOT vacuous and is the only surviving constraint: `p ∣ 0`
+  holds for every prime, so `atkin` says `a (n * p) = a p * a n` at EVERY
+  prime — i.e. `a` is completely multiplicative, with the values `a p`
+  free.
+
+So `lacunaryTwoCoeff c` below — `c ^ k` at `n = 2 ^ k`, `0` off the
+powers of `2` — is admissible for EVERY `c : ℂ`, and these are pairwise
+distinct (they differ at `n = 2`, where the value is `c`).  `cover`
+demands a factor for each, `fintypeIdx` says there are finitely many
+factors, and `ℂ` is infinite.  That is the whole proof.
+
+**Why the counting argument and not the integrality one.**  The sibling
+`exists_heckeAction_isotypicQuotients_gamma1`'s `hN` is justified by a
+transcendental system breaking `IsIsotypicQuotient.integral`, and that
+argument would work here too against `integral`.  It is not used, for two
+reasons: mathlib at this pin has no transcendence of `π` (checked
+2026-07-28 — `Real.transcendental_pi` does not exist), and the counting
+argument does not care, since it never evaluates a coefficient beyond
+`n = 2`.  Robustness: the refutation survives DELETING the `integral`
+field, and survives replacing `ℂ` by any infinite coefficient ring.
+
+**WHERE THE `N = 0` CASE ACTUALLY GOES, and why the cascade stops.**  It
+is discharged one level up, at
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, whose analytic
+hypothesis `hL` is CONTRADICTORY at `N = 0` —
+`not_lFunctionHypothesis_gamma1GL_zero`.  Take `c = 8`: the Dirichlet
+series `∑ a n n^{-s}` is `∑_k 8^k 2^{-ks}`, whose terms have modulus
+`2^{k(3 − re s)} ≥ 1` throughout the strip `2 < re s < 3`, so it is not
+summable there and `LSeries` takes its junk value `0`.  `IsLFunctionOf`
+then forces the entire `L` to vanish on a nonempty open set, hence
+identically (the same identity-theorem step as
+`isLFunctionOf_apply_eq`), hence `L 1 = 0` against `L 1 ≠ 0`.
+
+That is why `hN` is added to exactly two statements and stops there:
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1` keeps its signature, and
+so the SHAPE-FREE wrapper
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` — shared with
+`Γ₀`, and with consumers outside this file — is untouched.
+
+**COROLLARY WORTH RECORDING FOR THE `Γ₀` SIDE.**  Nothing in the counting
+argument is `Γ₁`-specific except which group carries the cusp form.  The
+same `atkin`-at-every-prime degeneracy holds for `Gamma0GL 0`, so
+`IsHeckeIsotypicDecomposition 0 h jac` is presumably empty too; there it
+does no damage only because `isEmpty_of_isCoarseModuliY0_zero`
+independently kills the hypotheses.  A `Γ₀` reader should not read that
+lemma as evidence that the `Γ₀` structure is inhabited at `N = 0`. -/
+
+/-- **The completely multiplicative eigen-system supported on the powers
+of `2`**: `lacunaryTwoCoeff c (2 ^ k) = c ^ k`, and `0` at every `n` that
+is not a power of `2`.
+
+`2 ^ Nat.log 2 n = n` is the power-of-two test (`Nat.log 2 0 = 0` and
+`2 ^ 0 = 1 ≠ 0`, so `n = 0` is correctly sent to `0`), and `Nat.log 2 n`
+is then the exponent.
+
+Used ONLY as the level-`0` witness of the section docstring above: at
+`N = 0` the `hecke` field of `IsWeightTwoEigenformOn` is vacuous and
+`atkin` reduces to complete multiplicativity, which this satisfies for
+every `c`. -/
+noncomputable def lacunaryTwoCoeff (c : ℂ) (n : ℕ) : ℂ :=
+  if 2 ^ Nat.log 2 n = n then c ^ Nat.log 2 n else 0
+
+theorem lacunaryTwoCoeff_zero (c : ℂ) : lacunaryTwoCoeff c 0 = 0 := by
+  simp [lacunaryTwoCoeff]
+
+theorem lacunaryTwoCoeff_one (c : ℂ) : lacunaryTwoCoeff c 1 = 1 := by
+  simp [lacunaryTwoCoeff]
+
+theorem lacunaryTwoCoeff_pow (c : ℂ) (k : ℕ) : lacunaryTwoCoeff c (2 ^ k) = c ^ k := by
+  simp [lacunaryTwoCoeff, Nat.log_pow (b := 2) (by norm_num)]
+
+/-- The value at `n = 2` is `c`; this is what makes the family
+`c ↦ lacunaryTwoCoeff c` injective, and so what the counting refutation
+runs on. -/
+theorem lacunaryTwoCoeff_two (c : ℂ) : lacunaryTwoCoeff c 2 = c := by
+  simpa using lacunaryTwoCoeff_pow c 1
+
+theorem lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd {c : ℂ} {m : ℕ} {p : ℕ}
+    (hp : p.Prime) (hp2 : p ≠ 2) (hdvd : p ∣ m) : lacunaryTwoCoeff c m = 0 := by
+  rw [lacunaryTwoCoeff, if_neg]
+  intro hpow
+  have hd : p ∣ 2 ^ Nat.log 2 m := by rw [hpow]; exact hdvd
+  exact hp2 ((Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).1
+    (Nat.Prime.dvd_of_dvd_pow hp hd))
+
+/-- **Complete multiplicativity at every prime** — which is exactly the
+`atkin` field of `IsWeightTwoEigenformOn` at level `0`, since `p ∣ 0`
+holds for every `p`. -/
+theorem lacunaryTwoCoeff_atkin (c : ℂ) (p : ℕ) (hp : p.Prime) (n : ℕ) (hn : 0 < n) :
+    lacunaryTwoCoeff c (n * p) = lacunaryTwoCoeff c p * lacunaryTwoCoeff c n := by
+  rcases eq_or_ne p 2 with rfl | hp2
+  · have hlog : Nat.log 2 (n * 2) = Nat.log 2 n + 1 :=
+      Nat.log_mul_base (by norm_num) hn.ne'
+    rw [lacunaryTwoCoeff_two]
+    simp only [lacunaryTwoCoeff, hlog]
+    by_cases hcond : 2 ^ Nat.log 2 n = n
+    · rw [if_pos hcond, if_pos (by rw [pow_succ, hcond]), pow_succ]
+      ring
+    · rw [if_neg hcond, if_neg ?_, mul_zero]
+      intro hpow
+      rw [pow_succ] at hpow
+      exact hcond (Nat.eq_of_mul_eq_mul_right (by norm_num) hpow)
+  · rw [lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 ⟨n, mul_comm n p⟩,
+      lacunaryTwoCoeff_eq_zero_of_odd_prime_dvd hp hp2 dvd_rfl, zero_mul]
+
+/-- **A weight-two cusp form for `Γ₁(0) = ⟨T⟩` with the lacunary
+`q`-expansion `∑_{k ≥ 0} c^k q^{2^k}`** (sorry leaf, NEW 2026-07-28) —
+the one analytic input of the level-`0` refutation above, and the ONLY
+new sorry this repair introduces.
+
+TRUE, and the argument is short enough to state completely.  `Gamma1 0`
+is `⟨T⟩` (see the section docstring), so mathlib's
+`CuspForm (Gamma1GL 0) 2` asks for exactly three things.
+
+* **Slash-invariance under `Gamma1GL 0`.**  Every element is
+  `[[1, b], [0, 1]]` with determinant `1`, so `f ∣[2] T^b (τ) = f (τ + b)`,
+  and a `q`-series in `q = exp (2πiτ)` is `1`-periodic.
+* **Holomorphy on `ℍ`.**  `‖c ^ k q ^ (2 ^ k)‖ = |c| ^ k e ^ (−2π 2^k y)`,
+  and `2 ^ k` in the exponent outruns `|c| ^ k` for EVERY `c`, uniformly
+  on `y ≥ y₀ > 0`.  So the series converges locally uniformly and the sum
+  is holomorphic; this also gives the `qExpansionSummable` clause.
+* **Vanishing at the cusps.**  Mathlib's cusp condition is
+  `zero_at_cusps' : ∀ {c}, IsCusp c Γ → c.IsZeroAt f k`, and
+  `IsCusp c 𝒢 := ∃ g ∈ 𝒢, g.IsParabolic ∧ g • c = c` — the fixed points
+  of the PARABOLIC elements of `𝒢`, and of `𝒢` only.  The parabolics of
+  `⟨T⟩` are the `T ^ b` with `b ≠ 0`, acting on `OnePoint ℝ` by
+  `x ↦ x + b`, whose only fixed point is `∞`.  **So `∞` is the one and
+  only cusp of `Gamma1GL 0`**, and the condition there is `f → 0` as
+  `im τ → ∞`, which the leading term `q` gives.
+
+**THE TRAP THIS TURNS ON, and it is why the leaf is TRUE rather than
+false.**  For a congruence subgroup of finite index the cusp set is all
+of `ℙ¹(ℚ)`, and this `f` would then have to vanish at `0` as well — which
+it does NOT: along the imaginary axis `τ → 0` one has `q → 1` and
+`∑ c ^ k q ^ (2 ^ k)` diverges for `|c| ≥ 1` (the series has the real line
+as a natural boundary).  `⟨T⟩` has INFINITE index in `SL(2, ℤ)`, is not a
+congruence subgroup in the finite-index sense, and mathlib's `IsCusp` is
+stated for a general `Subgroup (GL (Fin 2) ℝ)` precisely so that it does
+not quantify over a larger group.  A prover who reaches for
+`∀ A : SL(2, ℤ), IsZeroAtImInfty (f ∣[k] A)` — the shape mathlib's
+`CuspForm` had before it was generalised — will refute this leaf rather
+than prove it, and the refutation will be of the wrong statement.
+
+**WHAT IS MISSING** is only mathlib plumbing: locally-uniform convergence
+of a lacunary `q`-series and the resulting `MDiff`, plus the
+identification of the parabolic elements of `⟨T⟩`.  No theory. -/
+theorem exists_cuspForm_gamma1GL_zero_lacunary (c : ℂ) :
+    ∃ f : CuspForm (Gamma1GL 0) 2,
+      (∀ τ : UpperHalfPlane, f τ = ∑' n : ℕ, lacunaryTwoCoeff c (n + 1) *
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))) ∧
+        ∀ τ : UpperHalfPlane, Summable fun n : ℕ => lacunaryTwoCoeff c (n + 1) *
+          Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) :=
+  sorry
+
+/-- **Every `c : ℂ` is the second coefficient of a level-`0` eigenform**
+(PROVEN 2026-07-28, over `exists_cuspForm_gamma1GL_zero_lacunary`) — the
+degeneracy of `IsWeightTwoEigenformOn` at `N = 0`, in the form the two
+refutations below consume.
+
+`hecke` is discharged by `absurd (dvd_zero p)`: its hypothesis is
+`¬ p ∣ 0`.  `atkin` is discharged by `lacunaryTwoCoeff_atkin`.  The
+nebentypus is `1`, and any other would serve equally — at `N = 0` no
+field mentions `χ`. -/
+theorem exists_isWeightTwoEigenformOn_gamma1GL_zero (c : ℂ) :
+    ∃ (χ : DirichletCharacter ℂ 0) (f : CuspForm (Gamma1GL 0) 2),
+      IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f (lacunaryTwoCoeff c) := by
+  obtain ⟨f, hq, hs⟩ := exists_cuspForm_gamma1GL_zero_lacunary c
+  exact ⟨1, f,
+    { qExpansion := hq
+      qExpansionSummable := hs
+      zero := lacunaryTwoCoeff_zero c
+      one := lacunaryTwoCoeff_one c
+      hecke := fun p _ hpd _ _ => absurd (dvd_zero p) hpd
+      atkin := fun p hp _ n hn => lacunaryTwoCoeff_atkin c p hp n hn }⟩
+
+/-- **THE `Γ₁` HECKE-ISOTYPIC DECOMPOSITION IS EMPTY AT LEVEL `0`**
+(PROVEN 2026-07-28) — the settling check the assembly leaf below asked
+for, with the answer that forces its `hN`.
+
+Pure counting, as the section docstring explains: `cover` demands an
+index for each of the pairwise-distinct systems `lacunaryTwoCoeff c`,
+`c : ℂ`, and `fintypeIdx` says the index type is finite.  No field beyond
+`cover`, `coeff` and `fintypeIdx` is touched, so the emptiness is not an
+artefact of `integral`, `isotypic` or `finite_ker`. -/
+theorem isEmpty_isHeckeIsotypicDecompositionGamma1_zero
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 0 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    IsEmpty (IsHeckeIsotypicDecompositionGamma1 0 h jac) := by
+  constructor
+  intro D
+  letI := D.fintypeIdx
+  have hcov : ∀ c : ℂ, ∃ i : D.idx, D.coeff i 2 = c := by
+    intro c
+    obtain ⟨χ, f, hf⟩ := exists_isWeightTwoEigenformOn_gamma1GL_zero c
+    obtain ⟨i, hi⟩ := D.cover χ f (lacunaryTwoCoeff c) hf
+    exact ⟨i, by rw [hi]; exact lacunaryTwoCoeff_two c⟩
+  choose g hg using hcov
+  exact _root_.not_injective_infinite_finite g
+    (fun c₁ c₂ hc => by rw [← hg c₁, ← hg c₂, hc])
+
+/-- **THE LEVEL-`0` ANALYTIC HYPOTHESIS IS CONTRADICTORY** (PROVEN
+2026-07-28) — what lets `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`
+keep its signature while the two Eichler–Shimura statements below gain
+`hN : N ≠ 0`, so that the shape-free wrapper is untouched.
+
+At `c = 8` the Dirichlet series of `lacunaryTwoCoeff 8` is
+`∑_k 8^k 2^{-ks}`, whose `n = 2^k` terms have modulus
+`8^k / (2^k)^{re s} = 2^{k(3 − re s)} ≥ 1` on the whole strip
+`2 < re s < 3`.  A summable family tends to `0`, so the family is not
+summable and `LSeries` — a `tsum` — takes its junk value `0` there.
+`IsLFunctionOf.eq_lseries` then pins the entire `L` to `0` on a nonempty
+open set, and the identity theorem (the step
+`isLFunctionOf_apply_eq` runs) propagates that to all of `ℂ`. -/
+theorem not_lFunctionHypothesis_gamma1GL_zero
+    (hL : ∀ χ : DirichletCharacter ℂ 0,
+      ∀ (f : CuspForm (Gamma1GL 0) 2) (a : ℕ → ℂ),
+        IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a →
+        ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) : False := by
+  have hterm : ∀ (s : ℂ), s.re ≤ 3 → ∀ k : ℕ,
+      (1 : ℝ) ≤ ‖LSeries.term (lacunaryTwoCoeff 8) s (2 ^ k)‖ := by
+    intro s hs k
+    have hne : (2 : ℕ) ^ k ≠ 0 := by positivity
+    rw [LSeries.term_of_ne_zero hne, lacunaryTwoCoeff_pow, norm_div,
+      Complex.norm_natCast_cpow_of_pos (by positivity)]
+    have h8 : ‖(8 : ℂ) ^ k‖ = (8 : ℝ) ^ k := by rw [norm_pow]; norm_num
+    rw [h8, le_div_iff₀ (Real.rpow_pos_of_pos (by positivity) _), one_mul]
+    have hx : (1 : ℝ) ≤ ((2 ^ k : ℕ) : ℝ) := by
+      push_cast; exact one_le_pow₀ (by norm_num)
+    have h3 : ((2 ^ k : ℕ) : ℝ) ^ (3 : ℝ) = (8 : ℝ) ^ k := by
+      rw [show (3 : ℝ) = ((3 : ℕ) : ℝ) by norm_num, Real.rpow_natCast]
+      push_cast
+      rw [← pow_mul, show (8 : ℝ) = 2 ^ 3 by norm_num, ← pow_mul]
+      ring_nf
+    exact (Real.rpow_le_rpow_of_exponent_le hx hs).trans_eq h3
+  have hzero : ∀ s : ℂ, s.re ≤ 3 → LSeries (lacunaryTwoCoeff 8) s = 0 := by
+    intro s hs
+    refine tsum_eq_zero_of_not_summable ?_
+    intro hsum
+    have h0 : Filter.Tendsto (fun n => ‖LSeries.term (lacunaryTwoCoeff 8) s n‖)
+        Filter.atTop (nhds 0) := by simpa using hsum.tendsto_atTop_zero.norm
+    have hev : ∀ᶠ n in Filter.atTop, ‖LSeries.term (lacunaryTwoCoeff 8) s n‖ < 1 :=
+      h0.eventually_lt_const (by norm_num)
+    obtain ⟨M, hM⟩ := Filter.eventually_atTop.1 hev
+    exact absurd (hM (2 ^ M) (Nat.le_of_lt Nat.lt_two_pow_self)) (not_lt.2 (hterm s hs M))
+  obtain ⟨χ, f, hf⟩ := exists_isWeightTwoEigenformOn_gamma1GL_zero 8
+  obtain ⟨L, hLof, hne⟩ := hL χ f (lacunaryTwoCoeff 8) hf
+  refine hne ?_
+  have hopen : IsOpen {z : ℂ | 2 < z.re ∧ z.re < 3} :=
+    (isOpen_lt continuous_const Complex.continuous_re).inter
+      (isOpen_lt Complex.continuous_re continuous_const)
+  have hmem : (((5 / 2 : ℝ) : ℂ)) ∈ {z : ℂ | 2 < z.re ∧ z.re < 3} := by
+    constructor <;> · simp only [Complex.ofReal_re]; norm_num
+  have key : Set.EqOn L (fun _ => (0 : ℂ)) Set.univ := by
+    refine hLof.entire.eqOn_of_preconnected_of_eventuallyEq
+      analyticOnNhd_const isPreconnected_univ (Set.mem_univ (((5 / 2 : ℝ) : ℂ))) ?_
+    filter_upwards [hopen.mem_nhds hmem] with z hz
+    rw [hLof.eq_lseries z hz.1, hzero z (le_of_lt hz.2)]
+  exact key (Set.mem_univ 1)
+
 /-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
-new 2026-07-28) — the "ASSEMBLE the factors" half of the cut of
-`exists_heckeIsotypicDecomposition_gamma1` below, and the `Γ₁` transport
-of `X0.lean`'s `exists_heckeIsotypicDecomposition_of_isotypicQuotients`.
+new 2026-07-28; **`hN : N ≠ 0` ADDED 2026-07-28 after the level-`0` case
+was REFUTED** — see the section docstring above and
+`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) — the "ASSEMBLE the
+factors" half of the cut of `exists_heckeIsotypicDecomposition_gamma1`
+below, and the `Γ₁` transport of `X0.lean`'s
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients`.
 
 TRUE, and it is what is left of Eichler–Shimura once Shimura's `A_f` is
 granted.  The three things this leaf owns are exactly the ones a single
@@ -8333,29 +8637,40 @@ factor cannot see, and they are the `Γ₀` list plus one:
   this leaf receives the labels rather than having to produce the
   decomposition — it only has to keep them attached to the right factor.
 
-**THE `N = 0` OBLIGATION IS THIS LEAF'S, AND — UNLIKE ON THE `Γ₀` SIDE —
-IT IS NOT KNOWN TO BE DISCHARGEABLE.  Do not copy `X0.lean`'s argument.**
-There the sibling obligation is discharged by
-`isEmpty_of_isCoarseModuliY0_zero`: a cyclic subgroup of order `0` does
-not exist, so `Y_0(0) = ∅` and the hypotheses are contradictory.  **That
-route is unavailable here and the difference is mathematical, not
-notational**: `PointOfExactOrder ab 0` asks for a section whose geometric
-fibres have `addOrderOf = 0`, i.e. a point of INFINITE order, and those
-exist in abundance over an algebraically closed field of characteristic
-`0`.  So `Gamma1Datum 0` is inhabited, there is no
-`isEmpty_of_isCoarseModuliY1_zero` in this file (checked 2026-07-28), and
-a prover here must either produce a decomposition at `N = 0` or refute
-`IsX1Compactification 0 strX strY jY` by some other route.
+**THE `N = 0` OBLIGATION WAS THIS LEAF'S, IT WAS REFUTED, AND `hN` IS THE
+REPAIR** (2026-07-28).  The heading this replaces said the obligation was
+"not known to be dischargeable" and named the settling check.  Both
+halves are now resolved, and in opposite directions:
 
-**The check that would settle it, and it is worth running first**:
-`IsCoarseModuliY1 0 strY` still demands a coarse space for `[Γ₁(0)]`,
-whose `ℚ̄`-points are pairs `(E, P)` with `P` of infinite order modulo
-isomorphism — a set that is not the `ℚ̄`-points of a finite-type
-`ℚ`-scheme of dimension `1`, since already a single `E` contributes
-uncountably many classes.  If `IsCoarseModuliY1`'s bijection clause is
-strong enough to see that, the hypotheses are contradictory after all and
-the case is `False.elim`; if it only asks for a map, they are not.  Read
-`IsCoarseModuliY1` before assuming either.
+* **The proposed rescue does not exist.**  The check was: is
+  `IsCoarseModuliY1 0 strY` strong enough to contradict `X` being a
+  curve?  It is not.  `IsCoarseModuliY1` has exactly three fields —
+  `classify`, `classify_natural`, `universal` — and its own docstring
+  records that "bijectivity on geometric points is deliberately
+  omitted".  Initiality constrains no cardinality, so nothing in it can
+  see that a single `E` contributes uncountably many pairs `(E, P)`.
+  The `Γ₀` route (`isEmpty_of_isCoarseModuliY0_zero`) has no analogue
+  here, exactly as the old heading warned.
+* **And the conclusion is EMPTY at `N = 0`**, which the old heading did
+  not suspect: `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`, by the
+  counting argument of the section docstring above (`atkin` degenerates
+  to complete multiplicativity at level `0`, so `lacunaryTwoCoeff c` is
+  admissible for every `c : ℂ`; `cover` demands an index for each and
+  `fintypeIdx` says there are finitely many).
+
+Together: at `N = 0` the conclusion is `Nonempty` of an empty type, so
+the leaf was provable there only by refuting its own hypotheses, and the
+first bullet says that cannot be done in this vocabulary.  That is a
+statement no prover can honestly close, which is worse than an open one —
+so `hN : N ≠ 0` is now a hypothesis, and `hquot` is correspondingly
+UNCONDITIONAL rather than guarded by `N ≠ 0`.
+
+The `N = 0` case did not vanish; it moved to where it is genuinely
+dischargeable, `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, whose
+analytic hypothesis is contradictory at level `0`
+(`not_lFunctionHypothesis_gamma1GL_zero`).  The shape-free wrapper
+`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` is therefore
+untouched and the `Γ₀` side is unaffected.
 
 **WHY THIS IS A CUT AND NOT A RESTATEMENT.**  `hquot` is consumed three
 times — one factor per system for `cover`, the factors themselves for
@@ -8372,12 +8687,12 @@ witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
 axis. -/
-theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ)
+theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o)
-    (hquot : N ≠ 0 → ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+    (hquot : ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
@@ -8435,6 +8750,19 @@ must quantify `T` existentially and thereby absorbs
 `IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
 shape-free — so this transport adds no structure.
 
+**`hN : N ≠ 0` ADDED 2026-07-28, and it is a SOUNDNESS repair, not a
+convenience.**  Without it this statement is FALSE at `N = 0`: the
+conclusion is `Nonempty (IsHeckeIsotypicDecompositionGamma1 0 h jac)` and
+that type is EMPTY (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`),
+while the hypotheses `h` and `jac` are not refutable at level `0` —
+`IsCoarseModuliY1` carries no bijectivity clause, so the `Γ₀` rescue
+`isEmpty_of_isCoarseModuliY0_zero` has no analogue.  See the section
+docstring "The level-`0` degeneracy of `Γ₁` Eichler–Shimura" above for
+the witness.  The sole consumer,
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1`, absorbs the `N = 0`
+case through `not_lFunctionHypothesis_gamma1GL_zero` and so keeps its own
+signature; nothing above it changes.
+
 **THE `Γ₀` CHAIN NAMED ABOVE IS A MAP OF THE TERRITORY, NOT A MODEL TO
 COPY** (2026-07-28).  Two of its links —
 `exists_isotypicQuotient_of_isWeightTwoEigenform` and
@@ -8446,14 +8774,14 @@ cut below is unaffected because it quantifies `T` existentially, with the
 `exists_heckeAction_isotypicQuotients_gamma1`.  Anyone tempted to bring
 the two cuts into line should move the `Γ₀` one toward this shape, not
 this one toward the `Γ₀` shape. -/
-theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ)
+theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) :
     Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
-  exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N h jac
-    fun hN => exists_heckeAction_isotypicQuotients_gamma1 N hN h jac
+  exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 N hN h jac
+    (exists_heckeAction_isotypicQuotients_gamma1 N hN h jac)
 
 /-- **KOLYVAGIN–LOGACHEV for `Γ₁(N)`: a Hecke-isotypic factor of `J_1(N)`
 has torsion Mordell–Weil group** (sorry node, new 2026-07-28) — the second
@@ -8651,6 +8979,15 @@ which also gives rank `0` from `L(f, 1) ≠ 0` and applies verbatim to
 `Γ₁`), and Mazur's Eisenstein-ideal argument, which is `Γ₀`-specific and
 so could not have been shared even if it applied.
 
+**THE `N = 0` BRANCH (2026-07-28).**  `exists_heckeIsotypicDecomposition_gamma1`
+gained `hN : N ≠ 0` when its level-`0` case was refuted, so this proof now
+splits.  At `N = 0` the hypothesis `hL` is itself CONTRADICTORY
+(`not_lFunctionHypothesis_gamma1GL_zero`): the level-`0` eigen-system
+`lacunaryTwoCoeff 8` has a Dirichlet series that diverges throughout
+`2 < re s < 3`, so no ENTIRE `L` can agree with it there and be nonzero at
+`1`.  This is what keeps `hN` out of the present signature, and hence out
+of the shape-free wrapper below, which `Γ₀` shares.
+
 **THE ASSEMBLY.**  `hL` supplies an `L`-function it CHOSE and the leaves
 want "*the* `L`-function does not vanish"; `isLFunctionOf_apply_eq`
 (uniqueness, by the identity theorem) is the bridge, exactly as in
@@ -8670,6 +9007,8 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_gamma1 (N : ℕ)
     letI := ab.addCommGroup (𝟙 SpecQ)
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) := by
   letI := ab.addCommGroup (𝟙 SpecQ)
+  rcases eq_or_ne N 0 with rfl | hN
+  · exact (not_lFunctionHypothesis_gamma1GL_zero hL).elim
   have hL' : ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
       IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
       ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0 := by
@@ -8677,7 +9016,7 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_gamma1 (N : ℕ)
     obtain ⟨L₀, hL₀, hne⟩ := hL χ f a hf
     rw [isLFunctionOf_apply_eq hLf hL₀ 1]
     exact hne
-  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition_gamma1 N h jac
+  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition_gamma1 N hN h jac
   letI := D.fintypeIdx
   letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
     fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
@@ -9446,8 +9785,9 @@ disappearing:
 | `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here, **PROVEN 2026-07-28** |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
-| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` | no | here |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **FALSE as stated — see its FALSITY AUDIT** |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
+| `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, NEW 2026-07-28 |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
