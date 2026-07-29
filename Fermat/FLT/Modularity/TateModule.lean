@@ -3257,7 +3257,52 @@ and a prover need not track which one needs what.
 below `card_torsion_span_singleton_of_isAlgClosed` is proven over it, so
 citing any of it here closes the loop.  The honest inputs are all OUTSIDE
 this file: the theorem of the cube, singular/étale homology, or the
-rational Tate module. -/
+rational Tate module.
+
+**A THIRD AXIS SEARCHED AND REFUTED — MULTIPLICATIVITY IN `a`** (2026-07-28;
+the two axes recorded on the consumer below are at the level of the ℤ-module
+structure, this one is at the level of `deg` itself, so it is genuinely a
+different search).  The obvious reduction is to make `deg` a multiplicative
+function of `a` and prove it on generators: `[a·b] = [b] ≫ [a]`
+(`Mult.mulByElt_mul`) and `N(ab) = N(a)·N(b)`, while `[u]` is an ISOMORPHISM for
+a unit `u`, so both sides depend only on the principal ideal `(a)`.  It fails
+twice over, and each failure is worth recording because each looks repairable:
+
+* **There are no generators to reduce to: `𝒪_D` need not be a UFD.**  Both sides
+  depend only on `(a)`, and in a Dedekind domain every ideal factors — but not
+  into PRINCIPAL primes.  `D = ℚ(√10)` has class number `2` (PARI/GP,
+  2026-07-28), so a principal `(a)` can be a product of non-principal primes
+  with no useful factorisation of `a` itself.  This is not a corner case.
+* **Even granted multiplicativity, `deg` is NOT PINNED by it.**  Let `p` SPLIT
+  in a real quadratic `D` (so `g = 2` and `deg[n] = n⁴`), and write `p = π π̄`.
+  Multiplicativity plus the integer case give only `deg[π] · deg[π̄] = p⁴`, which
+  `deg[π] = p`, `deg[π̄] = p³` satisfies exactly as well as the truth
+  `deg[π] = deg[π̄] = p²`.  So this is the SAME obstruction as the split-prime
+  refutation recorded on the consumer, seen one level up: what is missing is a
+  constraint that sees each prime SEPARATELY, and no amount of multiplicativity
+  is such a constraint.
+
+**AND THAT AXIS' INFRASTRUCTURE IS ABSENT TOO** (re-verified 2026-07-28 against
+this worktree's own pin, so it is checkable in one `grep`): `Scheme.Hom.finrank`
+has NO multiplicativity lemma under composition.
+`Mathlib/AlgebraicGeometry/Morphisms/FlatRank.lean` carries exactly
+`finrank_SpecMap_eq_finrank`, `finrank_SpecMap_algebraMap`,
+`finrank_comp_left_of_isIso`, `finrank_pullback_snd`, `finrank_of_isPullback`,
+`finrank_pullback_fst`, `finrank_eq_one_of_isIso`, local constancy, and the
+surjectivity / `IsIso` characterisations — nothing of the shape
+`finrank (f ≫ g) = finrank f * finrank g`.  So even the step
+`deg[a] · deg[b] = deg[N]` is not available.  Anyone taking this axis must write
+that lemma first, and should read the two bullets above before assuming it pays.
+
+**FAITHFULNESS RE-CHECKED 2026-07-28**, numerically (PARI/GP) and then read back
+against the statement.  `Nat.card (𝒪_D ⧸ (a)) = |N_{D/ℚ}(a)|` in every case
+tried, so the right-hand side really is the classical `N(a)²`; at `a = n` a
+rational integer the claim degenerates to `deg[n] = n^(2g)` exactly, since
+`#(𝒪_D/(n)) = n^g`; and at a UNIT `u` it degenerates to `deg[u] = 1`, which is
+forced independently because `[u]` is an isomorphism (`Mult.mulByElt_one` and
+`mulByElt_mul`).  Both degenerate cases come out right and no counterexample
+appeared: the leaf is FAITHFUL as stated, and what it needs is theory, not
+repair. -/
 theorem finrank_mulByElt_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
     [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
     {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
@@ -12877,7 +12922,143 @@ theorem exists_absFrobScheme_comp_eq_of_forall_exists_pow
     ∃ V : X ⟶ Y, absFrobScheme X p a hp hchar ≫ V = g :=
   ⟨absFrobRootScheme p a g H hp hchar, absFrobScheme_comp_absFrobRootScheme p a g H hp hchar⟩
 
-/-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (sorry leaf, CUT 2026-07-28 —
+/-! #### Landing in `p`-th powers is MULTIPLICATIVE in the exponent
+
+The three lemmas here are what reduce the Verschiebung leaf below from the
+exponent `p ^ a` to the exponent `p`.  They are about arbitrary morphisms of
+schemes and contain no abelian-variety input at all; the content is the single
+observation that `g^{\#}` is a RING map, so it carries `r`-th powers to `r`-th
+powers and the two exponents multiply across a composite. -/
+
+/-- **A power-factorisation of a sheaf map transports along an EQUALITY of
+morphisms** (PROVEN 2026-07-28).  Pure bookkeeping, but it cannot be done with
+`rw`: the statement's TYPE mentions the morphism (through `g ⁻¹ᵁ U` and through
+the type of `t`), so rewriting under the binder hits a motive problem.  `subst`
+does not. -/
+theorem exists_pow_eq_app_of_eq {X Y : Scheme.{u}} {g g' : X ⟶ Y} (hgg : g = g') (q : ℕ)
+    (H : ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g ⁻¹ᵁ U), t ^ q = (g.app U).hom s) :
+    ∀ (U : Y.Opens) (s : Γ(Y, U)), ∃ t : Γ(X, g' ⁻¹ᵁ U), t ^ q = (g'.app U).hom s := by
+  subst hgg; exact H
+
+/-- **The identity's sheaf map lands in FIRST powers** (PROVEN 2026-07-28) — the
+base case `a = 0` of the induction below, where `[p ^ 0] = [1] = 𝟙`. -/
+theorem exists_pow_eq_app_id {X : Scheme.{u}} (U : X.Opens) (s : Γ(X, U)) :
+    ∃ t : Γ(X, (𝟙 X :) ⁻¹ᵁ U), t ^ 1 = ((𝟙 X :).app U).hom s :=
+  ⟨s, by rw [pow_one]; rfl⟩
+
+/-- **LANDING IN POWERS COMPOSES, AND THE EXPONENTS MULTIPLY** (PROVEN
+2026-07-28): if `g^{\#}` lands in `q`-th powers and `h^{\#}` lands in `r`-th
+powers, then `(g ≫ h)^{\#}` lands in `q · r`-th powers.
+
+`(g ≫ h)^{\#} s = g^{\#}(h^{\#} s) = g^{\#}(u ^ r) = (g^{\#} u) ^ r = (v ^ q) ^ r`,
+the middle step being only that `g^{\#}` is a ring map.  `Scheme.comp_app` and
+`Scheme.Hom.comp_preimage` are both `rfl`, so no transport is needed.
+
+**This is the whole reason the leaf below is not `a` separate theorems.**  It
+turns `[p ^ a] = [p] ≫ [p ^ (a-1)]` (`mulByNat_mul`) into an induction whose
+only input is the single-prime case. -/
+theorem exists_pow_eq_app_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z) (q r : ℕ)
+    (Hg : ∀ (V : Y.Opens) (s : Γ(Y, V)), ∃ t : Γ(X, g ⁻¹ᵁ V), t ^ q = (g.app V).hom s)
+    (Hh : ∀ (W : Z.Opens) (s : Γ(Z, W)), ∃ t : Γ(Y, h ⁻¹ᵁ W), t ^ r = (h.app W).hom s)
+    (W : Z.Opens) (s : Γ(Z, W)) :
+    ∃ t : Γ(X, (g ≫ h) ⁻¹ᵁ W), t ^ (q * r) = ((g ≫ h).app W).hom s := by
+  obtain ⟨u, hu⟩ := Hh W s
+  obtain ⟨v, hv⟩ := Hg (h ⁻¹ᵁ W) u
+  refine ⟨v, ?_⟩
+  calc v ^ (q * r) = (v ^ q) ^ r := pow_mul v q r
+    _ = ((g.app (h ⁻¹ᵁ W)).hom u) ^ r := by rw [hv]
+    _ = (g.app (h ⁻¹ᵁ W)).hom (u ^ r) := (map_pow _ _ _).symm
+    _ = (g.app (h ⁻¹ᵁ W)).hom ((h.app W).hom s) := by rw [hu]
+    _ = ((g ≫ h).app W).hom s := rfl
+
+/-- **`[p]^{\#}` LANDS IN `p`-th POWERS** (sorry leaf, CUT 2026-07-28 out of
+`exists_pow_eq_app_mulByNat` below, which is PROVEN over it — Mumford *AV* §15,
+Milne *AV* §I.5).  This is all that is left of the Verschiebung, at the SINGLE
+prime `p` rather than at `p ^ a`.
+
+For `A'` an abelian variety over a field `k` of characteristic `p`, every
+section in the image of `([p])^{\#}` is a `p`-th power — equivalently, by
+`exists_absFrobScheme_comp_eq_of_forall_exists_pow` above, `[p]` factors
+through the absolute `p`-Frobenius.
+
+**THE CLASSICAL PROOF, and where perfectness enters.**  `[p] = V ∘ F` with
+`F = F_{A'/k} : A' → A'^{(p)}` the RELATIVE Frobenius and `V` Cartier's
+Verschiebung.  The ABSOLUTE Frobenius is `Fr = W ∘ F`, where
+`W : A'^{(p)} = A' ×_{k, φ} k ⟶ A'` is the projection and `φ` is the `p`-power
+map of `k`.  `W` is the base change of `Spec φ` along `A' ⟶ Spec k`, so **`W`
+is an isomorphism exactly when `φ` is, i.e. exactly when `k` is PERFECT** —
+and then `[p] = (V ∘ W⁻¹) ∘ Fr`, which is this statement.
+
+**WHAT IS LOAD-BEARING — and this CORRECTS the note the leaf was cut from**
+(see the correction recorded on `exists_pow_eq_app_mulByNat` below).  The
+statement needs exactly that `k` is **PERFECT**.  It needs neither finiteness,
+nor `p ^ a = #k`, nor any tie between an exponent and the size of `k`.  `hfin`
+is kept here only because it is what the caller holds and `PerfectField.ofFinite`
+is an INSTANCE, so a prover gets `PerfectField k` by synthesis alone; a successor
+may weaken `hfin` to `[PerfectField k]` together with `(p : k) = 0` without
+touching any consumer.
+
+**PERFECTNESS IS ALSO NECESSARY, with an explicit witness.**  Let `k` be
+IMPERFECT of characteristic `p` — say `k = 𝔽_p(u)` — and let `U` be nonempty.
+`[p]` is a `k`-morphism, so `([p])^{\#}` is a `k`-algebra map and fixes `u`.
+Were `u` a `p`-th power in `Γ(A', [p] ⁻¹ᵁ U)`, it would be a `p`-th power in the
+function field `k(A')`; but `A'` is geometrically integral, so `k(A')/k` is
+separable and `k` is algebraically closed in it, whence `u^{1/p} ∉ k(A')`.  So
+the leaf is FALSE over every imperfect base — and TRUE over `𝔽̄_p`, which is
+infinite.  Imperfection, not infinitude, is the obstruction.
+
+**THE NEXT CUT, and the check that decides whether it is available.**  The route
+that avoids constructing `V` is the differential criterion: `d[p] = p · id = 0`
+on invariant differentials, and for `B` smooth over a PERFECT field `k` one has
+`{b : d b = 0 in Ω_{B/k}} = B^p`, so a morphism whose differential vanishes has
+`p`-th powers in the image of its sheaf map.  That needs Kähler differentials at
+the SCHEME level, and **they are absent from this pin** (re-verified 2026-07-28:
+`Mathlib/AlgebraicGeometry/` contains no `Cotangent`/`Kaehler`/`Omega` module,
+and `Morphisms/FormallyUnramified.lean` is the only file there that so much as
+mentions them).  So that cut requires writing the interface first; do not record
+it as available without re-running that check. -/
+theorem exists_pow_eq_app_mulByNat_prime
+    {k : Type u} [Field k] (hfin : Finite k) (p : ℕ) (hp : p.Prime)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
+    (U : A'.Opens) (s : Γ(A', U)) :
+    ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s :=
+  sorry
+
+/-- **FROM THE PRIME TO THE PRIME POWER** (PROVEN 2026-07-28): if `[p]^{\#}`
+lands in `p`-th powers then `[p ^ a]^{\#}` lands in `p ^ a`-th powers, for every
+`a`.  Induction on `a` over `mulByNat_mul` (`[p ^ (n+1)] = [p] ≫ [p ^ n]`) and
+`exists_pow_eq_app_comp`.
+
+Stated with the single-prime clause as a HYPOTHESIS rather than by citing the
+leaf, so that this half is a self-contained theorem about `mulByNat` and stays
+true however that leaf is later restated or weakened. -/
+theorem exists_pow_eq_app_mulByNat_primePow
+    {k : Type u} [Field k] (p : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (H1 : ∀ (U : A'.Opens) (s : Γ(A', U)),
+      ∃ t : Γ(A', ab'.mulByNat p ⁻¹ᵁ U), t ^ p = ((ab'.mulByNat p).app U).hom s)
+    (a : ℕ) :
+    ∀ (U : A'.Opens) (s : Γ(A', U)),
+      ∃ t : Γ(A', ab'.mulByNat (p ^ a) ⁻¹ᵁ U),
+        t ^ p ^ a = ((ab'.mulByNat (p ^ a)).app U).hom s := by
+  induction a with
+  | zero =>
+      refine exists_pow_eq_app_of_eq (g := 𝟙 A') ?_ 1 exists_pow_eq_app_id
+      rw [pow_zero, ab'.mulByNat_one]
+  | succ n ih =>
+      have hstep := exists_pow_eq_app_comp (ab'.mulByNat p) (ab'.mulByNat (p ^ n)) p (p ^ n) H1 ih
+      have heq : ab'.mulByNat p ≫ ab'.mulByNat (p ^ n) = ab'.mulByNat (p ^ (n + 1)) := by
+        rw [← ab'.mulByNat_mul, ← pow_succ]
+      have hres := exists_pow_eq_app_of_eq heq (p * p ^ n) hstep
+      rw [← pow_succ'] at hres
+      exact hres
+
+/-- **`[N]^{\#}` LANDS IN `p ^ a`-th POWERS** (**PROVEN 2026-07-28** over the
+single leaf `exists_pow_eq_app_mulByNat_prime` above; it was a sorry leaf from
+2026-07-28 until then —
 Mumford *AV* §15, Milne *AV* §I.5).  This is the DEEP HALF of the Verschiebung,
 and after `exists_absFrobScheme_comp_eq_of_forall_exists_pow` above it is all
 that is left of it: an affine-local statement about the sheaf map of `[N]`,
@@ -12910,11 +13091,32 @@ bijection, so `V y := N · (σ⁻¹ · y)` satisfies it by `Mult.galSMul_act` al
 What is true only for a morphism — and what the Weil leaf needs — is that `V`
 is ALGEBRAIC.
 
-`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`, and they are
-essential: over an infinite base of characteristic `p`, or for `p ^ a ≠ #k`,
-the statement is FALSE (the `N`-power Frobenius is then not even a
-`k`-morphism, and `[N]` does not factor through it).  `ab'` enters through the
-group law, which is where `ker Fr ⊆ ker [N]` lives.
+**HYPOTHESIS AUDIT — CORRECTED 2026-07-28, the previous note here was WRONG.**
+It read: "`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`, and
+they are essential: over an infinite base of characteristic `p`, or for
+`p ^ a ≠ #k`, the statement is FALSE (the `N`-power Frobenius is then not even
+a `k`-morphism, and `[N]` does not factor through it)."  Three corrections, and
+they are why this theorem now reduces to a leaf carrying none of that:
+
+* **Infinitude is not the obstruction; IMPERFECTION is.**  Over `𝔽̄_p` — infinite,
+  of characteristic `p` — the statement is TRUE, because the projection
+  `A'^{(p)} ⟶ A'` is an isomorphism over any perfect base.  What genuinely fails
+  is the imperfect case, with the witness recorded on
+  `exists_pow_eq_app_mulByNat_prime` above (`u ∈ 𝔽_p(u)` is fixed by the
+  `k`-algebra map `([p])^{\#}` and is not a `p`-th power in `k(A')`, which is
+  separable over `k`).
+* **`hN` is not consumed at all.**  Nothing here needs `N` to be the size of `k`;
+  only `hpa : p ^ a = N` is used, to identify `N` as a power of the characteristic.
+  It is retained because the consumer supplies it and removing it would change
+  that consumer's statement for no gain.
+* **The stated REASON was about the wrong object.**  "The `N`-power Frobenius is
+  not a `k`-morphism" bears on the downstream Frobenius-ENDOMORPHISM consumer
+  `exists_verschiebung_of_frobEndomorphism_finiteBase`, where finiteness of `k`
+  really is essential (`Frob_q = id` on `𝔽_q` is what makes `Fr` a `k`-morphism).
+  It bears on nothing here: this conclusion carries no `k`-linearity clause at
+  all, and the sibling below records that `V ≫ f' = f'` was dropped as FREE.
+
+`ab'` does enter through the group law, and that part of the old note stands.
 
 WHERE THIS BELONGS: `Modularity/AbelianSchemeIsogeny.lean`, beside `mulByNat`,
 `isProper_mulByNat` and `isFinite_ker_mulByNat_of_field_char`; it is stated
@@ -12926,8 +13128,10 @@ theorem exists_pow_eq_app_mulByNat
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (U : A'.Opens) (s : Γ(A', U)) :
-    ∃ t : Γ(A', ab'.mulByNat N ⁻¹ᵁ U), t ^ p ^ a = ((ab'.mulByNat N).app U).hom s :=
-  sorry
+    ∃ t : Γ(A', ab'.mulByNat N ⁻¹ᵁ U), t ^ p ^ a = ((ab'.mulByNat N).app U).hom s := by
+  subst hpa
+  exact exists_pow_eq_app_mulByNat_primePow p ab'
+    (exists_pow_eq_app_mulByNat_prime hfin p hp ab' hchar) a U s
 
 /-- **`[N]` FACTORS THROUGH THE ABSOLUTE `p ^ a`-POWER FROBENIUS**
 (**PROVEN 2026-07-28** over the single sheaf-local leaf
@@ -13001,10 +13205,17 @@ above: `y ↦ σ · y` is a bijection there, with inverse `y ↦ σ⁻¹ · y`, 
 true only for a morphism — and what the Weil leaf needs — is that `V` is
 ALGEBRAIC.
 
-`hfin`, `hN` and `hpa` are what tie `p ^ a` to the size of `k`; they are
-passed straight through to `exists_pow_eq_app_mulByNat`, which is where they
-are consumed, and are what make the statement about an abelian variety over a
-FINITE field rather than about an arbitrary characteristic-`p` base. -/
+`hfin`, `hN` and `hpa` are passed straight through to
+`exists_pow_eq_app_mulByNat`.  **CORRECTED 2026-07-28**: this used to say they
+are "what make the statement about an abelian variety over a FINITE field
+rather than about an arbitrary characteristic-`p` base", and that is not right.
+`hN` is consumed nowhere; `hpa` only identifies `N` as a power of the
+characteristic; and of `hfin` all that is used is that a finite field is
+PERFECT.  See the HYPOTHESIS AUDIT on `exists_pow_eq_app_mulByNat` above for
+the corrected account and for the imperfect-base counterexample.  Finiteness of
+`k` is genuinely essential further down, at
+`exists_verschiebung_of_frobEndomorphism_finiteBase`, where `Frob_q = id` on
+`𝔽_q` is what makes `Fr` a `k`-morphism — but not here. -/
 theorem exists_comp_eq_mulByNat_absFrobScheme
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     (p a : ℕ) (hp : p.Prime) (hpa : p ^ a = N)
