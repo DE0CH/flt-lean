@@ -380,6 +380,17 @@ public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functorial
 -- `exists_obstructionCocycle_relationSpace_sha2` below mention `bdryKer` and `cocycleClass`
 -- in their SIGNATURES.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
+-- The degree-`1` inhomogeneous dictionary (`eval₁`, `eval₁_mul`, `cocycles₁`,
+-- `exists_cocycleClass_eq`): the two SORRY LEAVES
+-- `exists_openNormal_index_le_res_eq_zero` and
+-- `finite_ker_resSubgroupTwistRestricted1` below are stated against it and their
+-- routes are written in its vocabulary. Imported here (rather than left for
+-- their owner to add) because it is SORRY-FREE, its only project import is
+-- `ContCohomology/Basic.lean` immediately above, so it adds exactly one module
+-- to the cone and cannot create a cycle. Correcting a three-times-repeated
+-- claim that this material is missing — see item 3 of the COST AUDIT on
+-- `finiteDimensional_h1_adZeroTwistRestricted` below.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.LowDegreeOne
 -- `IsSmallExtension` and its constructor `isSmallExtension_quotientLift`: the
 -- small-extension API of deformation theory, absent from mathlib and from
 -- `~/cs/FLT` (written 2026-07-27, see that file's header). `public` because
@@ -18467,7 +18478,267 @@ noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
     Submodule k (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)) :=
   ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar S v).hom.toLinearMap
 
-/-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (sorry leaf, cut
+/-! #### Restriction to open subgroups of `G_{ℚ,S}`, and the finiteness of `H¹`
+
+Added 2026-07-28 by the decomposition of
+`finiteDimensional_h1_adZeroTwistRestricted` below.  Everything in this
+subsection is NEW and self-contained; it is deliberately kept in one block so
+that the concurrent owners of the `Ш` leaves further down never touch it.
+
+The cut is the one `Modularity/Patching.lean` uses for its `Γ ℚ`-with-an-
+unramifiedness-condition twin `finite_h1TwistUnramified`, but it splits
+*better* here, and the improvement is the point of this note.  Patching's three
+inputs are all entangled with the arithmetic, because over `Γ ℚ` the
+unramifiedness condition has to be carried through the cocycle bookkeeping.
+Over `G_{ℚ,S}` the ramification has already been quotiented out, so the cut
+separates cleanly into
+
+* ONE arithmetic statement — `finite_restrictedOpenNormalSubgroups` below,
+  **PROVEN** here — that `G_{ℚ,S}` has only finitely many open normal subgroups
+  of index at most `n`; and
+* TWO statements of pure continuous group cohomology, valid for ANY `S`, that
+  mention no arithmetic at all: `exists_openNormal_index_le_res_eq_zero` and
+  `finite_ker_resSubgroupTwistRestricted1`.
+
+That the second pair is generic in `S` is not cosmetic: it means neither of
+them can be discharged by anything about `ρbar`, and it is what makes them
+attackable with the continuous-cochain API alone. -/
+
+/-- The inclusion `N ↪ G_{ℚ,S}` of a subgroup, as a continuous group
+homomorphism — the restriction datum of `resSubgroupTwistRestricted1` below.
+The exact analogue of `Modularity/Patching.lean`'s `subgroupToGlobalHom`, one
+level down the quotient. -/
+noncomputable def restrictedSubgroupHom
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    ↥N →ₜ* restrictedGaloisGroup S :=
+  ⟨N.subtype, continuous_subtype_val⟩
+
+variable (ℓ) in
+/-- `ad⁰(1)` restricted to a subgroup `N ≤ G_{ℚ,S}` — the analogue of
+`adZeroTwistLocal` above along `restrictedSubgroupHom S N`. -/
+noncomputable def adZeroTwistRestrictedSubgroup (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    TopRep k ↥N :=
+  TopRep.res (restrictedSubgroupHom S N).toMonoidHom (adZeroTwistRestricted ℓ ρbar S)
+
+variable (ℓ) in
+/-- The restriction `H¹(G_{ℚ,S}, ad⁰(1)) → H¹(N, ad⁰(1))` along the inclusion
+of a subgroup `N ≤ G_{ℚ,S}`.  Its KERNEL is the inflation image from
+`G_{ℚ,S} ⧸ N` whenever `N` is closed normal, which is why it is finite for
+open `N` of finite index (`finite_ker_resSubgroupTwistRestricted1` below). -/
+noncomputable def resSubgroupTwistRestricted1 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S) ⟶
+      continuousCohomology 1 (adZeroTwistRestrictedSubgroup ℓ ρbar S N) :=
+  ContinuousCohomology.map (restrictedSubgroupHom S N)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistRestrictedSubgroup ℓ ρbar S N)) 1
+
+variable (ℓ) in
+/-- The open normal subgroups of `G_{ℚ,{2,ℓ}}` of index at most `n` — the
+finite index set over which `finiteDimensional_h1_adZeroTwistRestricted` below
+covers `H¹`.  `FiniteIndex` is carried as a separate conjunct rather than
+derived from `index ≤ n`, because `Subgroup.index` is `0` for an infinite
+index and `0 ≤ n` holds; the two conjuncts together say what is meant. -/
+def restrictedOpenNormalSubgroups (n : ℕ) :
+    Set (Subgroup (restrictedGaloisGroup (hardlyRamifiedPlaces ℓ))) :=
+  {N | N.Normal ∧
+    IsOpen (N : Set (restrictedGaloisGroup (hardlyRamifiedPlaces ℓ))) ∧
+    N.FiniteIndex ∧ N.index ≤ n}
+
+/-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
+the definition of `ramificationKernel S` as the topological closure of the
+normal closure of the union of the `globalInertia v` over `v ∉ S`.  Stated
+separately because it is the one place where the DEFINITION of `G_{ℚ,S}` meets
+the Hermite–Minkowski input. -/
+theorem globalInertia_le_ramificationKernel
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v ∉ S) :
+    globalInertia v ≤ ramificationKernel S := by
+  intro σ hσ
+  refine Subgroup.le_topologicalClosure _ ?_
+  exact Subgroup.subset_normalClosure (Set.mem_biUnion hv hσ)
+
+/-- **A prime `q ∉ {2, ℓ}` gives a place outside `hardlyRamifiedPlaces ℓ`**
+(PROVEN): the place of `q` has ideal `(q)`
+(`asIdeal_toHeightOneSpectrumRingOfIntegersRat`), and distinct primes give
+distinct places (`toHeightOneSpectrumRingOfIntegersRat_injective`). -/
+theorem toHeightOneSpectrum_notMem_hardlyRamifiedPlaces {q : ℕ} (hq : q.Prime)
+    (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ) :
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces ℓ := by
+  rintro (h | h)
+  · exact hq2 (toHeightOneSpectrumRingOfIntegersRat_injective hq Nat.prime_two
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat Nat.prime_two]; norm_num)))
+  · exact hqℓ (toHeightOneSpectrumRingOfIntegersRat_injective hq (Fact.out)
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)])))
+
+/-- **`G_{ℚ,{2,ℓ}}` has only finitely many open normal subgroups of index at
+most `n`** (PROVEN 2026-07-28 — this is the whole arithmetic content of
+`finiteDimensional_h1_adZeroTwistRestricted` below, and it is the item that
+three successive cost audits of that leaf priced as its hardest input).
+
+The proof is a transport, not a new theorem.  `Subgroup.comap` along the
+surjection `Γ ℚ ↠ G_{ℚ,S}` is injective on subgroups, preserves normality,
+openness and index, and lands inside the set that
+`HardlyRamified/HermiteMinkowski.lean`'s **PROVEN**
+`finite_setOf_subgroup_inertiaAt_le` shows is finite: the extra clause of that
+set — inertia at every `q ∉ {2, ℓ}` is trivial — is automatic for a pullback,
+because such inertia already lies in `N_S` (`globalInertia_le_ramificationKernel`
+above) and therefore dies in the quotient.
+
+So the `{2, p}` hard-wiring of `finite_setOf_subgroup_inertiaAt_le`, recorded on
+the leaf below as a possible obstruction needing the generalisation
+`finite_inertiaOutsideSubgroups` (which lives DOWNSTREAM in
+`Modularity/Patching.lean` and is therefore unusable here), **does not bite**:
+`S = hardlyRamifiedPlaces ℓ` is exactly `{2, ℓ}`, so the hard-wired statement is
+the statement wanted.  That is the parenthetical the audit itself flagged, now
+confirmed.
+
+`hℓ2` is load-bearing and cannot be dropped: `finite_setOf_subgroup_inertiaAt_le`
+requires `p ≠ 2`, and at `ℓ = 2` the set `S` degenerates to the single place
+above `2`, for which the `{2, p}` statement says nothing.  It is supplied at the
+call site below from `hℓ5 : 5 ≤ ℓ`. -/
+theorem finite_restrictedOpenNormalSubgroups (hℓ2 : ℓ ≠ 2) (n : ℕ) :
+    (restrictedOpenNormalSubgroups ℓ n).Finite := by
+  classical
+  have hsurj : Function.Surjective
+      (QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))) :=
+    QuotientGroup.mk'_surjective _
+  refine Set.Finite.of_finite_image
+    (f := fun N => Subgroup.comap
+      (QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))) N) ?_
+    (Set.injOn_of_injective (Subgroup.comap_injective hsurj))
+  refine Set.Finite.subset
+    (finite_setOf_subgroup_inertiaAt_le ℓ n (Fact.out) hℓ2) ?_
+  rintro _ ⟨N, hN, rfl⟩
+  obtain ⟨hnorm, hopen, hFI, hidx⟩ := hN
+  refine ⟨hnorm.comap _, ?_, ?_, ?_, ?_⟩
+  · exact hopen.preimage continuous_quotient_mk'
+  · exact ⟨by rw [Subgroup.index_comap_of_surjective _ hsurj]; exact hFI.index_ne_zero⟩
+  · rw [Subgroup.index_comap_of_surjective _ hsurj]; exact hidx
+  · intro q hq hq2 hqℓ σ hσ
+    have hmem : (decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ ∈
+        ramificationKernel (hardlyRamifiedPlaces ℓ) :=
+      globalInertia_le_ramificationKernel _
+        (toHeightOneSpectrum_notMem_hardlyRamifiedPlaces hq hq2 hqℓ)
+        (Subgroup.mem_map_of_mem _ hσ)
+    have h1 : QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))
+        ((decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ) = 1 :=
+      (QuotientGroup.eq_one_iff _).mpr hmem
+    show QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))
+        ((decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ) ∈ N
+    rw [h1]
+    exact one_mem N
+
+variable (ℓ) in
+/-- **Every class of `H¹(G_{ℚ,S}, ad⁰(1))` is killed by restriction to some
+open normal subgroup of UNIFORMLY bounded index** (SORRY LEAF, cut out
+2026-07-28 as the first of the two cohomological inputs of
+`finiteDimensional_h1_adZeroTwistRestricted` below).
+
+# ROUTE, and what it actually costs
+
+Take a cocycle representative `f` of the class
+(`ContinuousCohomology.exists_cocycleClass_eq`, PROVEN in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`),
+and put `z := ContinuousCohomology.eval₁ _ f`, the associated inhomogeneous
+cochain.  It is continuous (`continuous_eval₁`) and satisfies the
+crossed-homomorphism identity `z (g * h) = z g + ρ g (z h)` (`eval₁_mul`).
+Then:
+
+1. `M := ad⁰(1)^{N_S}` is FINITE (`k` is `Finite`, `dim_k ad⁰ = 3`) and carries
+   the discrete topology, so `N₀ :=` the kernel of the action of `G_{ℚ,S}` on
+   `M` is OPEN and normal, of index at most `#(M ≃ M)` — a bound depending only
+   on `M`, hence only on `k` and `V`, and NOT on the class.
+2. On `N₀` the crossed-homomorphism identity degenerates to
+   `z (g * h) = z g + z h`, so `z|_{N₀}` is a continuous homomorphism into the
+   finite discrete `M`; put `N := ker (z|_{N₀})`, which is open of index at most
+   `[G : N₀] · #M`, again a bound independent of the class.  Normality of `N` in
+   the whole of `G_{ℚ,S}` is `eval₁_conj`.
+3. On `N` the homogeneous cocycle `f` is not merely a coboundary but literally
+   ZERO: the cocycle relation `(d f) g h l = f h l - f g l + f g h`
+   (`homogeneousCochains_d_one_two_apply`) at `g = 1` gives `f h l = z l - z h`,
+   which vanishes for `h, l ∈ N`.
+
+**So the INVERSE dictionary — crossed homomorphism back to homogeneous cocycle —
+is NOT needed for this leaf**, contrary to what the cost audit on
+`finiteDimensional_h1_adZeroTwistRestricted` below used to say.  Step 3 goes in
+the homogeneous model directly.  What IS needed, and is the only genuinely
+missing piece, is the compatibility of `ContinuousCohomology.map` with
+`ContinuousCohomology.cocycleClass` — i.e. that restricting the CLASS of `f` is
+the class of the restricted cochain.  The ingredients are all present
+(`ContinuousCohomology.π_map` in our pin's `ContCohomology/Functoriality.lean`,
+`cocycleClass_apply` and `cohomologyIsoQuot` in the vendored
+`ContCohomology/Basic.lean`); assembling them is homological plumbing with no
+arithmetic in it, and it is SHARED with
+`finite_ker_resSubgroupTwistRestricted1` below.  The two leaves are best given
+to ONE owner, and its natural home is `LowDegreeOne.lean`.
+
+Both-ways audit.  The quantifier ORDER `∃ n, ∀ c` is load-bearing and is the
+entire content: with `∀ c, ∃ n` the statement is trivially true (take `N` the
+kernel just constructed and `n` its index) and USELESS, since the consumer needs
+ONE finite index set covering ALL classes.  `IsOpen`, `Normal` and `FiniteIndex`
+are all consumed by the assembly below — `Normal` and `FiniteIndex` by
+`finite_ker_resSubgroupTwistRestricted1`, `IsOpen` and `index ≤ n` by
+`finite_restrictedOpenNormalSubgroups` above.  Not vacuous: `c = 0` is witnessed
+by `N = ⊤`.  No hypothesis on `ρbar` beyond its type and no hypothesis on `S`,
+so nothing about the hardly ramified package can discharge it — the circularity
+guard below is satisfied trivially. -/
+theorem exists_openNormal_index_le_res_eq_zero (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    ∃ n : ℕ, ∀ c : continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S),
+      ∃ N : Subgroup (restrictedGaloisGroup S),
+        N.Normal ∧ IsOpen (N : Set (restrictedGaloisGroup S)) ∧ N.FiniteIndex ∧
+          N.index ≤ n ∧
+          c ∈ LinearMap.ker
+            (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap := sorry
+
+variable (ℓ) in
+/-- **Inflation–restriction: the kernel of restriction to an open normal
+subgroup of `G_{ℚ,S}` is finite** (SORRY LEAF, cut out 2026-07-28 as the second
+of the two cohomological inputs of
+`finiteDimensional_h1_adZeroTwistRestricted` below).
+
+The degree-`1` inflation–restriction sequence
+`0 → H¹(G_{ℚ,S} ⧸ N, M^N) → H¹(G_{ℚ,S}, M) → H¹(N, M)` identifies the kernel
+with `H¹(G_{ℚ,S} ⧸ N, M^N)`; `G_{ℚ,S} ⧸ N` is a FINITE discrete group (`N` open
+of finite index) and `M^N ⊆ M` is finite, so that group is a subquotient of the
+finite set of functions `G_{ℚ,S} ⧸ N → M` and hence finite.
+
+Only INJECTIVITY of inflation is needed, and it can be had without the exact
+sequence: a class in the kernel has a cocycle representative whose `eval₁`
+vanishes on `N` (this is where `cocycleClass_eq_zero_iff` of the vendored
+`ContCohomology/Basic.lean` is used, transported through `eval₁`), and such a
+cochain is constant on left cosets `gN` by the crossed-homomorphism identity
+`z (g * x) = z g + ρ g (z x) = z g`.  So "kernel → functions `G_{ℚ,S} ⧸ N → M`"
+is well defined and injective modulo the finite coboundary group.
+
+Needs the SAME missing plumbing as
+`exists_openNormal_index_le_res_eq_zero` above — the compatibility of
+`ContinuousCohomology.map` with `cocycleClass` — which is why the two are
+companions and are best given to one owner.
+
+Both-ways audit, inherited from the `Γ ℚ` twin
+`Modularity/Patching.lean`'s `finite_ker_resSubgroupTwist1` and re-checked
+here: `hnorm`, `hopen` and `hFI` are all load-bearing.  Dropping `hopen` leaves
+no inflation–restriction sequence in continuous cohomology; dropping `hFI`
+makes the quotient infinite and the kernel infinite-dimensional, which at
+`N = 1` is exactly the `dim_k H¹ = ℵ₀` computation recorded on `Sha1Twist`
+above.  Generic in `S`, hence untouched by anything about ramification. -/
+theorem finite_ker_resSubgroupTwistRestricted1 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) (hnorm : N.Normal)
+    (hopen : IsOpen (N : Set (restrictedGaloisGroup S))) (hFI : N.FiniteIndex) :
+    Finite ↥(LinearMap.ker
+      (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap) := sorry
+
+/-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (PROVEN 2026-07-28
+over the subsection immediately above; cut
 out 2026-07-27 as the FINITENESS half of `rank_sha2_le_rank_sha1_twist` below;
 it is also the FINITENESS half of `rank_sha1_twist_le_of_tangent_span` further
 below, and the two leaves SHARE it — see the cut note there).
@@ -18529,37 +18800,47 @@ degree `1`, by inflation), and which was decomposed the same day. Itemised:
    only imports are the vendored `ContCohomology/Basic.lean` and mathlib's
    `ContCohomology/Functoriality.lean`), so it is available here for the cost of
    one `public import` line — **this module does not currently import it**, and
-   adding that import is the first step of any attack on this leaf.
+   adding that import is the first step of any attack on this leaf. (Done: this
+   module now `public import`s it.)
 
-**STATUS 2026-07-28, replacing the paragraph that used to stand here.** The old
-text said this leaf was blocked on item 3 and should be given to ONE owner
-together with `Modularity/Patching.lean`'s
+   Why the false claim survived three audits: **the refuting check grepped
+   mathlib only, and for the mathlib spelling.** The material lives under
+   `Fermat/FLT/Mathlib/` and is not spelled `oneCocycles`. Grep all three trees
+   (`Fermat/`, `.lake/packages/mathlib/`, `~/cs/FLT/`) and grep for the CONCEPT.
+
+   What was genuinely missing is much narrower: the INVERSE direction (crossed
+   homomorphism back to a homogeneous cocycle), and the compatibility of
+   `ContinuousCohomology.map` with `cocycleClass`. Only the second was needed
+   below, and it is now supplied by `LowDegreeOne.lean`'s functoriality block
+   (`cocyclesMapKer`, `map_cocycleClass_cocyclesMapKer`, `eval₁_cocyclesMapKer`
+   — i.e. exactly `res^G_N [z] = [z|_N]` read on inhomogeneous cochains). The
+   inverse direction is needed by NEITHER of the two leaves this one rests on —
+   see the route recorded on `exists_openNormal_index_le_res_eq_zero` above.
+
+**STATUS 2026-07-29 — THIS LEAF AND BOTH ITS LEAVES ARE NOW PROVEN.** It is
+proven above over the three declarations in the "Restriction to open subgroups
+of `G_{ℚ,S}`" subsection: `finite_restrictedOpenNormalSubgroups` (PROVEN, and it
+is item 1 of this audit discharged — the `{2, p}` hard-wiring of item 2 does NOT
+bite, since `S` is exactly `{2, ℓ}`), plus
+`exists_openNormal_index_le_res_eq_zero` and
+`finite_ker_resSubgroupTwistRestricted1`, both PROVEN 2026-07-29. Both of those
+are generic in `S` and contain no arithmetic whatever.
+
+For the record, the sibling cut in `Modularity/Patching.lean` —
 `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
-`finite_ker_resSubgroupTwist1`. That was done, and those two are now PROVEN —
-the second outright, the first over a single new arithmetic leaf
-`exists_openNormal_trivial_adZeroTwist` (an open normal subgroup of finite index
-acting trivially on `ad⁰ρbar(1)` and containing the inertia away from a finite
-`T`; what it still costs is continuity and inertia-triviality of the mod-`p`
-cyclotomic character, the `ρbar` half being immediate from
-`GaloisRep.IsUnramifiedAt`'s definition).
+`finite_ker_resSubgroupTwist1` — is also proven, the second outright, the first
+over a single arithmetic leaf `exists_openNormal_trivial_adZeroTwist`. Item 2's
+generalisation `finite_inertiaOutsideSubgroups` still lives DOWNSTREAM in
+`Modularity/Patching.lean`; hoisting it into `HermiteMinkowski.lean` remains the
+enabling move should a consumer ever need `S` beyond `{2, ℓ}`, but nothing here
+needs it.
 
-So what blocks THIS leaf is now items 1–2 plus one transfer, and it is worth
-being precise, because the three obligations differ in kind:
-
-* the cochain dictionary is DONE and upstream (item 3), needing only an import;
-* the Hermite–Minkowski GENERALISATION (item 2) exists as
-  `finite_inertiaOutsideSubgroups` but lives DOWNSTREAM, in
-  `Modularity/Patching.lean`. Hoisting it into `HermiteMinkowski.lean` — which
-  is upstream of both — is the enabling move, and it is a pure relocation of a
-  proven declaration;
-* the remaining mathematical work is that this leaf's group is
-  `restrictedGaloisGroup S = Γ ℚ ⧸ N_S`, a QUOTIENT, whereas the two proven
-  leaves work over `Γ ℚ` itself with an unramifiedness condition on classes.
-  The bookkeeping there — open subgroups of the quotient correspond to open
-  subgroups of `Γ ℚ` containing `N_S`, and Hermite–Minkowski has to be applied
-  through that correspondence — is what a successor actually has to write. It
-  is NOT a repeat of the two proven leaves, and estimating it as one would be a
-  mistake.
+`_h` is underscored because the proof does not use it: finiteness of
+`H¹(G_{ℚ,S}, M)` for finite `M` is true for EVERY continuous `ρbar`, hardly
+ramified or not. That is not a weakness of the leaf — it is the circularity
+guard below being satisfied mechanically rather than by assertion, since a
+proof that cannot see `IsHardlyRamified` cannot be discharged by refuting it.
+`hℓ5` IS used, and only to supply `ℓ ≠ 2`.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -18569,10 +18850,36 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.3
 (finiteness of `Hⁱ(G_S, M)`); Darmon–Diamond–Taylor, §2.6. -/
 theorem finiteDimensional_h1_adZeroTwistRestricted
     (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    {ρbar : GaloisRep ℚ k V} (_h : IsHardlyRamified hℓOdd hdim ρbar) :
     FiniteDimensional k
-      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
-  sorry
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) := by
+  classical
+  obtain ⟨n, hcov⟩ :=
+    exists_openNormal_index_le_res_eq_zero ℓ ρbar (hardlyRamifiedPlaces ℓ)
+  have hfin : (⋃ N ∈ restrictedOpenNormalSubgroups ℓ n,
+      (LinearMap.ker (resSubgroupTwistRestricted1 ℓ ρbar
+          (hardlyRamifiedPlaces ℓ) N).hom.toLinearMap :
+        Set (continuousCohomology 1
+          (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))))).Finite := by
+    refine (finite_restrictedOpenNormalSubgroups (by omega) n).biUnion fun N hN => ?_
+    haveI := finite_ker_resSubgroupTwistRestricted1 ℓ ρbar (hardlyRamifiedPlaces ℓ)
+      N hN.1 hN.2.1 hN.2.2.1
+    exact Set.toFinite _
+  have hsub : (Set.univ : Set (continuousCohomology 1
+      (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ)))) ⊆
+      ⋃ N ∈ restrictedOpenNormalSubgroups ℓ n,
+        (LinearMap.ker (resSubgroupTwistRestricted1 ℓ ρbar
+            (hardlyRamifiedPlaces ℓ) N).hom.toLinearMap :
+          Set (continuousCohomology 1
+            (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ)))) := by
+    intro c _
+    obtain ⟨N, hnorm, hopen, hFI, hidx, hker⟩ := hcov c
+    exact Set.mem_biUnion (show N ∈ restrictedOpenNormalSubgroups ℓ n from
+      ⟨hnorm, hopen, hFI, hidx⟩) hker
+  haveI : Finite (continuousCohomology 1
+      (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    Set.finite_univ_iff.mp (hfin.subset hsub)
+  exact Module.Finite.of_finite
 
 /-! ### Poitou–Tate, decomposed: linear-algebra glue and the two arithmetic halves
 
