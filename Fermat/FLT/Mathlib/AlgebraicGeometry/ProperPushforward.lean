@@ -2070,9 +2070,19 @@ geometrically connected and geometrically reduced over the field `κ(s)`, so
 `isIso_appTop_of_isIso_appTop_fiber`.
 
 This is the missing classical input behind the whole Jacobian half of this development:
-`isAdditiveOn_of_post_zero` (relative rigidity), `exists_albaneseOfCurve` and
-`universal_jacobianBaseChangeAj` all reduce to it, which is why it is stated here, once,
-in the shim tree rather than inside a modular-curve file.
+`isAdditiveOn_of_post_zero` (relative rigidity) and `exists_albaneseOfCurve` reduce to it,
+which is why it is stated here, once, in the shim tree rather than inside a modular-curve
+file.
+
+**CORRECTION 2026-07-29 — this paragraph used to name
+`universal_jacobianBaseChangeAj` here as well, and that was FALSE.**  `X0.lean`'s own
+"GATE VERDICT" already recorded the refutation: coherent pushforward buys RIGIDITY
+(Mumford *AV* §4), and rigidity is not what the base-change direction needs.  What it
+needs is REPRESENTABILITY of the rigidified relative Picard functor and compatibility of
+`Pic⁰` with base change (FGA 232 / Artin), a strictly larger theory that `f_*𝒪_X = 𝒪_S`
+does not deliver.  `universal_jacobianBaseChangeAj` is in any case PROVEN as of
+2026-07-29, over the single leaf `isIso_jacobianBaseChangeComparison` in `X0.lean` — and
+that leaf is gated on representability, NOT on this file.  Do not dispatch it here.
 
 **The instance plumbing, for the record.**  `f.fiberToSpecResidueField s` is by definition
 `pullback.snd f (S.fromSpecResidueField s)`, and mathlib already carries
