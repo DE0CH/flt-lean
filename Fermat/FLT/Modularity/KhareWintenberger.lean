@@ -571,6 +571,10 @@ import Mathlib.NumberTheory.NumberField.Ideal.Basic
 -- `Mathlib.Algebra.Field.ULift` is already `public import`ed far above.
 import Mathlib.Algebra.Module.ULift
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+-- proof-only (2026-07-29, `exists_padicCoefficientField`): the primitive element
+-- theorem for the number field `E`, used to exhibit its image in
+-- `AlgebraicClosure ℚ_[p]` inside a FINITE extension of `ℚ_[p]`.
+import Mathlib.FieldTheory.PrimitiveElement
 -- proof-only (2026-07-26, `finite_heightOneSpectrum_mem_of_ne_zero`): only
 -- finitely many height-one primes of a Dedekind domain divide a fixed nonzero
 -- ideal (`Ideal.finite_factors`). This is what makes "the places of `F` over
@@ -8820,11 +8824,141 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
   sorry
 
+/-- **THE COEFFICIENT FIELD OF THE `p`-ADIC REALISATION** (PROVEN, 2026-07-29,
+ROUND-9). A number field `E` embeds into `AlgebraicClosure ℚ_[p]`, and its
+image is contained in a FINITE extension `L` of `ℚ_[p]`, through which the
+embedding factors.
+
+This is the constructible half of STEP 2a″-β's existential, pulled out so that
+`exists_carayolJacobianPackage_of_heckeAlgebraCharacter` can be a real
+skeleton rather than a bare `sorry`: the choices `L`, `ψ₃`, `ι` and `P` are
+CODE, and only `Nonempty (CarayolJacobianPackage …)` is cited.
+
+Construction: `E = ℚ⟮α⟯` by the primitive element theorem (characteristic
+zero), `ψ := IsAlgClosed.lift` is any `ℚ`-embedding, `L₀ := ℚ_[p]⟮ψ α⟯` is
+finite over `ℚ_[p]` because `ψ α` is integral over `ℚ` hence over `ℚ_[p]`, and
+`ψ E ⊆ L₀` by induction over `ℚ⟮α⟯` (the `algebraMap` case is the scalar tower
+`ℚ → ℚ_[p] → AlgebraicClosure ℚ_[p]`). `L := ULift L₀` lands the field in the
+universe `u` that the citation's existential demands. -/
+theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
+    (E : Type u) [Field E] [NumberField E] :
+    ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[p] L) (_ : Module.Finite ℚ_[p] L)
+      (ψ : E →+* AlgebraicClosure ℚ_[p]) (ι : L →+* AlgebraicClosure ℚ_[p])
+      (ψL : E →+* L), ι.comp ψL = ψ := by
+  classical
+  obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ E
+  let ψ : E →ₐ[ℚ] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
+  have hint : IsIntegral ℚ_[p] (ψ α) :=
+    ((Algebra.IsIntegral.isIntegral (R := ℚ) α).map ψ).tower_top
+  set L₀ := IntermediateField.adjoin ℚ_[p] ({ψ α} : Set (AlgebraicClosure ℚ_[p]))
+  haveI : FiniteDimensional ℚ_[p] L₀ := IntermediateField.adjoin.finiteDimensional hint
+  have hmemα : ψ α ∈ L₀ := IntermediateField.subset_adjoin _ _ rfl
+  have hrange : ∀ x : E, ψ x ∈ L₀ := by
+    intro x
+    have hx : x ∈ IntermediateField.adjoin ℚ ({α} : Set E) := by rw [hα]; trivial
+    induction hx using IntermediateField.adjoin_induction with
+    | mem y hy => obtain rfl := hy; exact hmemα
+    | algebraMap q =>
+        have : ψ (algebraMap ℚ E q) = algebraMap ℚ_[p] _ (algebraMap ℚ ℚ_[p] q) := by
+          rw [AlgHom.commutes]
+          exact IsScalarTower.algebraMap_apply ℚ ℚ_[p] (AlgebraicClosure ℚ_[p]) q
+        rw [this]
+        exact L₀.algebraMap_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact L₀.add_mem hy hz
+    | inv y _ hy => rw [map_inv₀]; exact L₀.inv_mem hy
+    | mul y z _ _ hy hz => rw [map_mul]; exact L₀.mul_mem hy hz
+  refine ⟨ULift.{u} L₀, inferInstance, inferInstance,
+    Module.Finite.equiv (ULift.moduleEquiv (R := ℚ_[p]) (M := L₀)).symm,
+    (ψ : E →+* AlgebraicClosure ℚ_[p]),
+    (L₀.subtype : L₀ →+* _).comp (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).toRingHom,
+    (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).symm.toRingHom.comp
+      (RingHom.codRestrict (ψ : E →+* AlgebraicClosure ℚ_[p]) L₀.toSubfield hrange), ?_⟩
+  ext x
+  rfl
+
+/-- **STEP 2a″-β, THE CITED CORE** (sorry leaf; CUT 2026-07-29, ROUND-9, out of
+`exists_carayolJacobianPackage_of_heckeAlgebraCharacter` below, which is now a
+PROVEN assembly over this leaf and `exists_padicCoefficientField`).
+
+Everything constructible has been removed from the citation. The coefficient
+field `L`, the embeddings `ψ₃`/`ι` and the polynomial family `P` are no longer
+existentially asserted here — they are RECEIVED, together with the only
+property tying them together, `hP`. What is cited is exactly the one thing the
+literature owes: that the eigensystem of `θ` is realised by a `3`-adic
+package.
+
+**WHY QUANTIFYING OVER `L` IS SAFE, i.e. why this is not stronger than the
+existential it replaces.** `hP` forces `ι (P w).coeff i = ψ₃ (heckeF w).coeff i`,
+so `ι L` contains `ψ₃` of every Hecke eigenvalue, hence contains the
+completion of the eigenvalue field at the place determined by `ψ₃` — which is
+the field over which Carayol's (or Taylor's) `σ_λ` is already defined. So the
+representation BASE-CHANGES to `L` for every admissible `L`, and no choice of
+`L` can make the statement false that the existential form would have
+permitted. **The topology is NOT quantified over**: it is pinned to
+`moduleTopology ℚ_[3] L` in the conclusion. That is load-bearing — over a
+DISCRETE `L` a continuous `GaloisRep` has finite image and the leaf would be
+FALSE, so do not relax the `letI`s into instance binders.
+
+READ THE ROUND-9 AUDIT on the assembly below before working here: it records
+that a prover owes only a two-dimensional Galois representation (no Shimura
+curve, by the ROUND-7 reverse witness), that `[F : ℚ]` is forced EVEN, and
+that in the case the chain uses the citation is TAYLOR 1989 rather than
+Carayol.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hmonic : ∀ w ∉ badF, (heckeF w).Monic)
+    (hdeg : ∀ w ∉ badF, (heckeF w).natDegree = 2)
+    (hnorm : ∀ w ∉ badF,
+      (heckeF w).coeff 0 = (Ideal.absNorm w.asIdeal : E))
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+    (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E)
+    (hSbad : ∀ w ∈ 𝒮.S, w ∈ badF) (hQbad : ∀ w ∈ 𝒮.Q, w ∈ badF)
+    (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ))
+    (L : Type u) [Field L] [Algebra ℚ_[3] L] [Module.Finite ℚ_[3] L]
+    (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+    (ι : L →+* AlgebraicClosure ℚ_[3])
+    (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L)
+    (hP : ∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) :
+    letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+    letI : IsTopologicalRing L :=
+      isTopologicalRing_moduleTopology_of_finite_padic 3 L
+    Nonempty (CarayolJacobianPackage F L badF P) := by
+  sorry
+
 /-- **STEP 2a″-β — CARAYOL'S THÉORÈME (A), STATED WITHOUT THE `ℓ`-ADIC
-APPARATUS** (sorry leaf; CUT 2026-07-28, ROUND-8, out of
+APPARATUS** (PROVEN assembly since 2026-07-29, ROUND-9; CUT 2026-07-28,
+ROUND-8, out of
 `exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` below,
 which is now a PROVEN assembly over this leaf and its sibling
 `exists_totallyDefinite_heckeCharacter_level_subset_badF`).
+
+**ROUND-9 (2026-07-29) — THIS DECLARATION IS NOW A PROVEN ASSEMBLY, AND ITS
+SIGNATURE IS UNCHANGED.** The existential asserted four things — a
+coefficient field `L`, two embeddings, and a polynomial family `P` — of
+which only the last conjunct was ever a citation. All four are now CODE:
+`exists_padicCoefficientField` above builds `L` as `ULift ℚ_[3]⟮ψ₃ α⟯` for a
+primitive element `α` of `E`, and `P w := (heckeF w).map ψL` makes the
+compatibility conjunct `Polynomial.map_map`. What is left is the single leaf
+`nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`. Frontier
+unchanged (one leaf in, one leaf out); what moved is that the citation no
+longer asks the literature to produce a field it can be handed.
 
 This is the geometry, and NOTHING ELSE. The parent carries twenty-three
 hypotheses about an `ℓ`-adic representation `ρ`, its residual `ρbar`, the
@@ -8925,6 +9059,82 @@ READ THE ROUND-7 EQUIVALENCE AUDIT on `CarayolJacobianPackage` before
 looking for a conclusion-side weakening of this leaf: there is none, and
 the reverse witness is written out there.
 
+**ROUND-9 AUDIT (2026-07-28) — STATEMENT RE-VERIFIED, NO CUT AVAILABLE,
+and the MISSING MACHINERY list above is NOT what a prover owes.** The
+ROUND-8 cut and its faithfulness audit are confirmed correct; three things
+they leave unsaid change what the next owner should do.
+
+1. SATISFIABILITY AND PARITY — `[F : ℚ]` IS FORCED EVEN. This is the
+   satisfiability fact the hypothesis bundle never states, and it is not
+   recorded anywhere else at this pin. `WithRigidification F D`
+   (`Fermat/FLT/QuaternionAlgebra/NumberField.lean`) is a BIJECTIVE
+   `D ⊗[F] 𝔸ᶠ ≃ M₂(𝔸ᶠ)`, i.e. `D` is SPLIT AT EVERY FINITE PLACE
+   (discriminant `1`), while `IsTotallyDefinite` ramifies `D` at every
+   infinite place. So the ramification set of `D` is EXACTLY the `[F : ℚ]`
+   archimedean places, and the parity theorem for quaternion algebras — a
+   quaternion algebra ramifies at an even number of places — forces
+   `[F : ℚ]` EVEN. Two consequences. For ODD `[F : ℚ]` the hypotheses are
+   UNSATISFIABLE and this leaf is VACUOUSLY TRUE, so no odd-degree witness
+   can ever refute it — do not spend a cycle looking for one. For EVEN
+   `[F : ℚ]` the bundle IS satisfiable (maximal level, `θ` the Eisenstein
+   character of the constant function on the finite double-coset set), so
+   the leaf is NOT vacuous and genuinely has to be proven. The burden this
+   creates falls on the SUPPLIER of `hJL` upstream, not here.
+
+2. WHAT A PROVER OWES IS A GALOIS REPRESENTATION, NOT A CURVE. The
+   five-item list above is what CARAYOL'S PROOF consumes; it is not the
+   formal obligation, and reading it as one sends the next owner off to
+   build the wrong object — the expensive wrong object. By the ROUND-7
+   EQUIVALENCE AUDIT's own reverse witness,
+   `Nonempty (CarayolJacobianPackage F L badF P)` follows FORMALLY from a
+   single `τ : GaloisRep F L (Fin 2 → L)` with `τ.charFrob w = P w` off
+   `badF`: `Vlam := Fin 2 → L`, `hecke` a family of SCALARS, `e := 1`,
+   `congruence` by Cayley–Hamilton. So this leaf is discharged by THE
+   EXISTENCE OF THE `3`-ADIC REPRESENTATION ATTACHED TO THE EIGENSYSTEM
+   and by nothing else; no Shimura curve, no étale cohomology, no Poincaré
+   duality and no Eichler–Shimura relation has to be formalised to close
+   it. **This is a fact about the DIFFICULTY, not a licence to recut the
+   statement**: `nonempty_carayolPackage_of_carayolJacobianPackage` is
+   PROVEN code whose only consumer is this package, so restating the leaf
+   over a bare `τ` would make it free-floating and force its deletion.
+   Leave the statement alone; use the observation to aim the proof effort.
+
+3. THE CITATION IS TAYLOR 1989, NOT CARAYOL, IN THE CASE THE CHAIN USES.
+   The last sentence of MISSING MACHINERY states this obstruction but not
+   that it is the GENERIC case, which is the part that matters. Because
+   `D` is split at every finite place (finding 1), the automorphic
+   representation underlying `θ` is a PRINCIPAL SERIES at every finite
+   place outside `𝒮.S ∪ 𝒮.Q`, and nothing in the hypotheses forces it to
+   be discrete series at a place inside them either. Carayol's `D'` must
+   ramify at an odd number of FINITE places (parity again: it ramifies at
+   `[F : ℚ] − 1` infinite places, and `[F : ℚ]` is even), hence at least
+   one; and Jacquet–Langlands transfers to `D'` only a representation that
+   is discrete series at every finite ramified place of `D'`. So for a
+   GENERIC `θ` satisfying these hypotheses NO admissible `D'` exists and
+   Carayol's Théorème (A) does not apply at all. An owner who formalises
+   Carayol's construction faithfully will still not close this leaf; the
+   theorem that does close it is Taylor's, via congruences to forms that
+   are discrete series somewhere.
+
+SEARCHED AND CLOSED AT THIS NODE, so that round 10 does not repeat the
+sweep: conclusion-side weakening (ROUND-6 and ROUND-7 — none exists, and
+the equivalence is proven by the reverse witness); hypothesis-side
+addition (ROUND-8 — done, and adding `hirrF` back would buy a prover
+NOTHING, since its non-Eisenstein job is empty over a FIELD `L` and its
+level-bounding job is now the explicit `hSbad`/`hQbad`); the `R = 𝕋`
+strengthening (ROUND-6 — asserts strictly more); and, new in ROUND-9, the
+JACQUET–LANGLANDS CASE-SPLIT — cutting into an Eisenstein branch provable
+from class field theory (`χ² = 1`, `τ := χ̃ ⊕ χ̃·χ_cyc`) plus a cuspidal
+branch. That split is NOT EXPRESSIBLE at this pin, for two independent
+reasons, both checked by grep rather than assumed: the dichotomy itself IS
+Jacquet–Langlands, and there is no `JacquetLanglands` declaration anywhere
+under `Fermat/`; and the Eisenstein branch needs a global-CFT map from a
+finite-order Hecke character of `F` to a character of
+`Field.absoluteGaloisGroup F`, of which the only trace in the tree is the
+`exists_artinMap_*` family in `Modularity/Interface.lean` — which the
+CIRCULARITY GUARD below forbids this leaf from using. Reopen this axis
+only if global CFT lands OUTSIDE `Interface.lean`.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
@@ -8961,7 +9171,17 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
         (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
         (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
           Nonempty (CarayolJacobianPackage F L badF P) := by
-  sorry
+  obtain ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, ψL, hcomp⟩ := exists_padicCoefficientField 3 E
+  letI := hLfield
+  letI := hLalg
+  letI := hLfin
+  have hmap : ∀ w ∉ badF, ((heckeF w).map ψL).map ι = (heckeF w).map ψ₃ := by
+    intro w _
+    rw [Polynomial.map_map, hcomp]
+  exact ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, fun w => (heckeF w).map ψL, hmap,
+    nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF heckeF
+      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι
+      (fun w => (heckeF w).map ψL) hmap⟩
 
 /-- **STEP 2a″ — INHABITATION of the quaternionic Shimura-curve JACOBIAN
 package** (PROVEN assembly since 2026-07-28, ROUND-8; CUT 2026-07-27 out of
