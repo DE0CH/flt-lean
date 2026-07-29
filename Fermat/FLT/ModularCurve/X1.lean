@@ -394,7 +394,8 @@ open in them has been split along the theories it needed:
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
-| `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
+| `exists_x1CurveReductionModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)`.  NO moduli in the conclusion — the modular input is the hypothesis `hX` | `ℚ → 𝔽_ℓ` |
+| `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler-Shimura for `J_1(N)`, as a datum | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
@@ -4693,9 +4694,142 @@ theorem nonempty_relPointEquiv_of_isX1Compactification {N ℓ : ℕ} (hℓ : ℓ
       h₁.finite_compl h₂.finite_compl hu hv huv hvu
   exact ⟨relPointEquivOfInverse hw hw' hww' hw'w⟩
 
+/-! #### Deligne–Rapoport and Igusa, separated
+
+The node below cited TWO classical theorems and asked for both at once: a
+smooth proper model over `ℤ_(ℓ)` (Deligne–Rapoport, *Les schémas de
+modules de courbes elliptiques*, Thm. VI.6.9) and the identification of its
+special fibre with the `Γ₁(N)`-moduli curve in characteristic `ℓ` (Igusa
+1959; Katz–Mazur 5.1.1, 6.7.2).  They are separated here (2026-07-28), and
+the node is PROVEN over the two leaves.
+
+**The recorded reason for bundling them is answered by the `Γ₀` layer
+itself.**  That reason was: "bundled in rather than split off because a
+producer builds the model and recognises its special fibre in one
+construction; splitting them would require naming the model twice."
+Naming the model twice is exactly what `X0.lean`'s
+`exists_isX0Compactification_specialFibre` does — it takes the
+`IsX0NeronDatum` as a hypothesis and produces the compactification of the
+special fibre — and that file has had the two split all along.  So the
+objection is a style preference that the sibling layer does not honour,
+not an obstruction; and the node's own docstring lists the `Γ₀` trio it
+mirrors with these two as separate members of it.
+
+What the split buys: the first leaf's conclusion mentions no moduli at all
+(only `IsCurveReductionModel`, i.e. a smooth proper relative curve with the
+two fibre identifications and the valuative criterion), so a prover of it
+needs no modular geometry in the conclusion — the moduli input is confined
+to the hypothesis `hX`.  All of the moduli content is in the second.
+-/
+
+/-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
+(sorry leaf, NEW 2026-07-28) — the GEOMETRIC half of the node below.
+
+TRUE, and classical: Deligne–Rapoport Thm. VI.6.9, or Katz–Mazur Thm. 5.1.1
+plus Cor. 6.7.2.  For `ℓ ∤ N` the level structure is étale over the base,
+which is exactly what makes the model SMOOTH rather than merely
+semistable; at `ℓ ∣ N` the special fibre acquires the Deligne–Rapoport
+singularities and no smooth model exists.
+
+**No moduli appears in the conclusion.**  `IsCurveReductionModel` asks only
+for a smooth proper geometrically connected curve over `SpecLoc R`, the two
+fibre identifications as functors of points, their naturality, and the
+valuative criterion.  The modular input enters solely through `_hX`, which
+is what says the generic fibre is `X_1(N)` rather than an arbitrary curve.
+So a successor working here is proving good reduction of a *given* curve,
+and can leave the moduli interpretation of the special fibre entirely to
+`exists_isX1Compactification_specialFibre` below.
+
+**Each hypothesis is load-bearing** (the underscores record only that a
+`sorry` consumes nothing): `_hℓ` makes `ZMod ℓ` a field, without which
+`IsReductionBase` is unsatisfiable; `_hℓN` is good reduction itself,
+refuted at `ℓ ∣ N`; `_hbase` pins `(R, toF)` as `ℤ_(ℓ)` with reduction mod
+`ℓ`, and since the conclusion is existential a junk base would make the
+leaf true and worthless; `_hX` is what makes the statement about `X_1(N)`.
+
+**WHAT IS NOT A ROUTE**, inherited from the node below: discharging the
+model with an `IsX0Compactification` at some other level `N'` is dead —
+`X_1(N)` is not `X_0(N')` for any `N'` in the range that matters (at
+`N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s `12`), and `N' = 0`
+is refuted by `isEmpty_of_gamma0Datum_zero`. -/
+theorem exists_x1CurveReductionModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX1Compactification N strX strY jY) :
+    ∃ (X' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R),
+      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :=
+  sorry
+
+/-- **Igusa: the special fibre of a good model of `X_1(N)` IS `X_1(N)` over
+`𝔽_ℓ`** (sorry leaf, NEW 2026-07-28) — the MODULI half of the node below,
+and the `Γ₁` analogue of `X0.lean`'s
+`exists_isX0Compactification_specialFibre`, which is stated the same way:
+the model comes in as a hypothesis.
+
+TRUE, and it is Igusa's theorem (Katz–Mazur 5.1.1, 6.7.2): the reduction
+mod `ℓ` of the `Γ₁(N)`-moduli curve is the `Γ₁(N)`-moduli curve mod `ℓ`,
+for `ℓ ∤ N`.
+
+## FAITHFULNESS AUDIT — why the `∀ model` shape is safe here
+
+This leaf quantifies over an ARBITRARY `IsCurveReductionModel`, not only
+over the one `exists_x1CurveReductionModel` produces.  That is the shape
+that made `nonempty_relPoint_atlas_of_relPoint` false (see the FALSITY
+AUDIT above), so it is checked rather than assumed.  It is safe because a
+smooth proper model over a DVR is DETERMINED by its generic fibre, so
+there is only one model to quantify over:
+
+* `_hbase` pins `R` as `ℤ_(ℓ)`, a discrete valuation ring — this is where
+  that hypothesis is load-bearing, and dropping it breaks the argument
+  rather than merely the packaging;
+* at `genus ≥ 1` two smooth proper models of one curve over a DVR are
+  isomorphic (Lichtenbaum–Shafarevich: the minimal regular model is
+  unique, and a smooth proper model is it);
+* at `genus 0` — which happens for `N ≤ 10` and `N = 12`, so it is not an
+  empty corner — uniqueness still holds, but by a different argument that
+  is worth writing down because it is the one a prover has to supply:
+  `X_1(N)` has a rational cusp, `properX` extends it to an integral point,
+  so the model has a section and is therefore `ℙ¹` over `R`, whence the
+  special fibre is `ℙ¹` over `𝔽_ℓ`.
+
+So the special fibre of an arbitrary model is isomorphic over `𝔽_ℓ` to the
+one `exists_x1Compactification_finiteField` builds, and the leaf reduces to
+TRANSPORTING an `IsX1Compactification` along an isomorphism of the ambient
+curve.  That transport is not in this file yet and is part of the leaf;
+`IsCoarseModuliY1` is an initiality property, so it moves along an
+isomorphism with no content, and the remaining fields are geometric.
+
+**Refuting check.**  If a successor finds that uniqueness of the smooth
+proper model fails in some range of `N` — the place to look is genus `0`
+without a rational point, which cannot occur here because the cusps are
+rational, so a refutation would have to attack `properX` or the rationality
+of a cusp — then the repair is to UN-SPLIT: have
+`exists_x1CurveReductionModel` produce the identification too, i.e. restore
+the bundled node.  Nothing else downstream would change, the node below
+being the only consumer of either leaf.
+
+**Note this leaf does NOT need `4 ≤ N`.**  It might look as though it
+could cite `exists_x1Compactification_finiteField` and be done; it cannot,
+both because that theorem carries `4 ≤ N` (which the node below does not
+have, and which cannot be threaded in without changing the signatures of
+`exists_x1ReductionAt` and its consumers) and because the compactification
+it produces sits on an unrelated `X''`, whereas `strX'` here is pinned by
+the model.  Supplying the isomorphism is exactly the work. -/
+theorem exists_isX1Compactification_specialFibre {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
+    {X Y X' XZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    {strX' : X' ⟶ SpecF ℓ} {xstr : XZ ⟶ SpecLoc R}
+    (_hX : IsX1Compactification N strX strY jY)
+    (_cm : IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) :
+    ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecF ℓ) (jY' : Y' ⟶ X'),
+      Nonempty (IsX1Compactification N strX' strY' jY') :=
+  sorry
+
 /-- **Deligne–Rapoport / Igusa for `Γ₁(N)`: `X_1(N)` has good reduction at
-every `ℓ ∤ N`** (sorry leaf — and after the hoist below this is ALL that is
-left of the rank-`0` criterion's geometry).
+every `ℓ ∤ N`** (**PROVEN 2026-07-28** over the two leaves above, which
+separate the two classical theorems it cited; formerly a single `sorry`
+leaf, and after the hoist below this node is ALL that is left of the
+rank-`0` criterion's geometry).
 
 TRUE, and classical.  For `ℓ ∤ N` the coarse space `X_1(N)` over `ℚ`
 extends to a smooth proper model `𝒳` over `ℤ_(ℓ)` whose special fibre is
@@ -4720,9 +4854,13 @@ and the second is what makes the first `Γ₁`-specific rather than generic:
   model, which is precisely the observation that made the hoist mechanical.
 * `IsX1Compactification N strX' strY' jY'` — the special fibre really is
   `X_1(N)` over `𝔽_ℓ`.  This is the `Γ₁` analogue of `X0.lean`'s
-  `exists_isX0Compactification_specialFibre`, bundled in rather than split
-  off because a producer builds the model and recognises its special fibre
-  in one construction; splitting them would require naming the model twice.
+  `exists_isX0Compactification_specialFibre`.  **It is now SPLIT OFF, as
+  `exists_isX1Compactification_specialFibre` above** (2026-07-28); the
+  sentence that stood here — "bundled in rather than split off because a
+  producer builds the model and recognises its special fibre in one
+  construction; splitting them would require naming the model twice" — is
+  withdrawn, for the reason the subsection comment gives: the `Γ₀` sibling
+  names the model twice and has been split all along.
 
 Everything downstream — the relative Jacobian, its two fibres, additivity,
 Abel–Jacobi over the base, the Néron mapping property, injectivity of
@@ -4747,15 +4885,19 @@ discharging the model with an `IsX0Compactification` at some other level
 `N'` fails, because `X_1(N)` is not `X_0(N')` for any `N'` in the range
 that matters (at `N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s
 genus `12`), and `N' = 0` is refuted by `isEmpty_of_gamma0Datum_zero`. -/
-theorem exists_x1CurveModel_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+theorem exists_x1CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX1Compactification N strX strY jY) :
+    (hX : IsX1Compactification N strX strY jY) :
     ∃ (X' Y' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (strY' : Y' ⟶ SpecF ℓ)
       (jY' : Y' ⟶ X') (xstr : XZ ⟶ SpecLoc R),
       Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) ∧
-        Nonempty (IsX1Compactification N strX' strY' jY') :=
-  sorry
+        Nonempty (IsX1Compactification N strX' strY' jY') := by
+  obtain ⟨X', XZ, strX', xstr, ⟨cm⟩⟩ :=
+    exists_x1CurveReductionModel N ℓ hℓ hℓN R toF hbase hX
+  obtain ⟨Y', strY', jY', hX'⟩ :=
+    exists_isX1Compactification_specialFibre hℓ hℓN hbase hX cm
+  exact ⟨X', Y', XZ, strX', strY', jY', xstr, ⟨cm⟩, hX'⟩
 
 /-- **The Néron reduction datum for `X_1(N)` at a good odd prime**
 (**PROVEN 2026-07-28**; formerly a single `sorry`.  The hoist described in
