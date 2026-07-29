@@ -55061,9 +55061,189 @@ theorem qCoeff_eq_zero_of_mem_heckeGoodEigenspace_of_qCoeff_one_eq_zero {M : ℕ
   rw [hu1, zero_mul] at h
   exact h
 
-/-- **STRONG MULTIPLICITY ONE ACROSS LEVELS** (sorry leaf, the SIXTEENTH
-decomposition, 2026-07-27; Atkin–Lehner 1970 Theorem 5, Miyake Theorem 4.6.19,
-Casselman): two NEWFORMS `f`, `f'`, of levels `N`, `N'` both dividing `M`, whose
+/-! ### Strong multiplicity one, cut into its two classical halves
+
+(2026-07-28, `flt-lean-183`.)  `eq_of_isWeightTwoNewform_qCoeff_eq_of_not_dvd`
+below used to be a bare leaf carrying ALL of strong multiplicity one.  It is now
+PROVEN, over two strictly weaker named leaves plus one theorem that turns out to
+be provable outright here, and the split runs along a real mathematical line.
+
+* `eq_of_isWeightTwoNewform_of_qCoeff_prime_eq` — SAME-LEVEL multiplicity one,
+  exceptional set exactly the level.  **PROVEN outright**, in a handful of lines,
+  off `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` (itself already proven
+  here over the Atkin–Lehner leaf).  Nothing was missing for this piece; the old
+  docstring's "two routes are classical, Rankin–Selberg or Casselman" was aimed
+  at the whole leaf and is accurate only for the FIRST of the two leaves below.
+* `qCoeff_prime_eq_of_isWeightTwoNewform_of_not_dvd_mul` (LEAF, deep) — SHRINK
+  THE EXCEPTIONAL SET from `q ∤ M` down to `q ∤ N·N'`.  The entire "almost all
+  primes" content, i.e. strong multiplicity one proper.
+* `dvd_of_isWeightTwoNewform_qCoeff_prime_eq_of_not_dvd_mul` (LEAF) —
+  Atkin–Lehner 1970 Theorem 5, LEVEL half: agreement at every `q ∤ N·N'` forces
+  `N ∣ N'`.
+
+WHY THE SPLIT IS WORTH HAVING.  The two leaves want different machinery and are
+of different depth.  The second is inside the classical Atkin–Lehner theory this
+file is already deep into building: classically it comes from the
+Petersson-orthogonal decomposition `S₂(Γ₀(L)) = old ⊕ new` at `L = lcm(N, N')`,
+distinct newform blocks being orthogonal.  This file HAS the Petersson product
+with its definiteness and good-prime self-adjointness
+(`exists_peterssonProduct_selfAdjoint_heckeOp`) and it HAS the old subspace
+(`mem_oldSubspace_of_qCoeff_coprime_eq_zero`); what it has never assembled is
+the direct sum itself.  The first leaf wants an input this pin lacks entirely.
+
+CIRCULARITY WARNING for whoever attacks the second leaf.  Do NOT derive it from
+`exists_degeneracyBlock_heckeGoodEigenspace` or from
+`heckeGoodEigenspace_le_span_degeneracyOp` below: those are this leaf's own
+transitive CONSUMERS — they are Diamond–Shurman Theorem 5.8.3, whose textbook
+proof imports strong multiplicity one outright (the quotation is in the section
+header above).  The non-circular route is Atkin–Lehner's own, through old ⊕ new,
+which uses the Main Lemma and the Petersson product and nothing about
+`L`-functions.
+
+WHAT THE LITERATURE ACTUALLY DOES, read on disk 2026-07-28 rather than recalled.
+Diamond–Shurman GTM 228 p. 198: *"We do not prove Strong Multiplicity One.  See
+for example [Miy89], where the argument cites a result beyond the scope of that
+book as well."*  Miyake's Theorem 4.6.19 (`miyake1989modularforms.txt` ≈ line
+7988) is the statement in exactly the shape of the first leaf — `aₙ = bₙ for all
+n prime to some integer L` — and its proof is ANALYTIC throughout: the functional
+equations of `Λ(s; f)`, `Λ(s; g)` (Corollary 4.3.7), the Euler products (Theorem
+4.5.16), and Theorem 4.6.15(2).  Miyake also derives `M ∣ N` FIRST, by comparing
+`p`-components of the two levels, which is why the second leaf is stated as a
+DIVISIBILITY: that is the shape the classical argument delivers, and promoting it
+to an equality is carrier bookkeeping, done in the glue below off
+`IsWeightTwoNewform.eigensystem_minimal`. -/
+
+/-- **SAME-LEVEL MULTIPLICITY ONE** (PROVEN 2026-07-28): two weight-2 NEWFORMS of
+the SAME level `N` whose `q`-coefficients agree at every prime `q ∤ N` are equal —
+as forms, hence at every index, bad primes included.
+
+This is the cheap half of strong multiplicity one and it needed no new input:
+`f'` is an honest eigenvector of every good `T_q` at `f`'s eigenvalue, so
+`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` (which consumes `f`'s
+`eigensystem_minimal`) puts `f'` on the line `ℂ·f`, and normalization `a₁ = 1` on
+both sides pins the scalar to `1`.  Note `hf'` is used ONLY for the eigenvector
+property and the normalization — `IsWeightTwoEigenform` would do — while `hf`'s
+minimality is genuinely consumed downstream. -/
+theorem eq_of_isWeightTwoNewform_of_qCoeff_prime_eq {N : ℕ} (hN : 0 < N)
+    {f f' : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoNewform N f)
+    (hf' : IsWeightTwoNewform N f')
+    (hagree : ∀ q : ℕ, q.Prime → ¬ q ∣ N → qCoeff N f q = qCoeff N f' q) :
+    f' = f := by
+  have hv : ∀ q : ℕ, q.Prime → ¬ q ∣ N → heckeOp N q f' = qCoeff N f q • f' := by
+    intro q hq hqN
+    rw [hagree q hq hqN]
+    exact heckeOp_apply_eq_smul_of_isWeightTwoEigenform hN hf'.toIsWeightTwoEigenform hq
+  obtain ⟨c, hc⟩ := exists_smul_of_heckeOp_eq_smul_of_not_dvd_level hN hf hv
+  have hc1 : c = 1 := by
+    have h : qCoeff N f' 1 = qCoeff N (c • f) 1 := by rw [hc]
+    rw [qCoeff_smul, hf.toIsWeightTwoEigenform.qCoeff_one,
+      hf'.toIsWeightTwoEigenform.qCoeff_one, mul_one] at h
+    exact h.symm
+  rw [hc, hc1, one_smul]
+
+/-- **STRONG MULTIPLICITY ONE, THE ANALYTIC CORE: the exceptional set shrinks to
+the two levels** (sorry leaf, cut 2026-07-28): two newforms of levels `N`, `N'`
+dividing `M` which agree at every prime `q ∤ M` already agree at every prime
+`q ∤ N·N'`.
+
+This is the whole "almost all primes" content of the parent, and the part the
+classical literature does not prove elementarily.  The hypothesis set
+`{q : q ∤ M}` is SMALLER than `{q : q ∤ N·N'}` — both levels divide `M`, so a
+prime dividing `M` but neither level is a GOOD prime at both levels whose
+eigenvalue the hypothesis does not constrain at all.  Every such prime is a
+genuine gap and no amount of Hecke recursion closes it: the recursion propagates
+agreement from primes to prime POWERS and to composite indices, never to a new
+prime.  (Checked, 2026-07-28: this is why the obvious "multiplicativity upgrade"
+is not a partial result — it buys all composite indices coprime to `M` and not
+one new prime.)
+
+TWO CLASSICAL ROUTES, neither present on this pin:
+
+* Rankin–Selberg: `L(f × f̄', s)` has a pole at `s = 1` exactly when `f = f'`, and
+  the Euler factors outside any finite set decide whether it does.  Miyake's
+  route (Theorem 4.6.19), which his own text notes cites a result beyond the
+  book.
+* Representation theory (Casselman): the automorphic representations attached to
+  `f` and `f'` are isomorphic at almost every place, hence isomorphic.  Needs the
+  adelic dictionary and local `GL₂` representation theory, of which this pin has
+  NONE — every `Steinberg`/`principalSeries`/`supercuspidal` occurrence in the
+  tree is prose in a docstring.
+
+A THIRD ROUTE, and the one to cost first, because this tree is much closer to it
+than to either of those — but read the blocker before starting.
+`exists_galoisRep_charFrob_of_weightTwoNewform` below is PROVEN and attaches to a
+weight-2 newform a Galois representation with prescribed Frobenius characteristic
+polynomials `X² − a_q·X + q`; `Fermat/FLT/GaloisRepresentation/Chebotarev.lean` is
+SORRY-FREE and ends in `dense_conjClasses_globalFrob`, density of the Frobenius
+conjugacy classes away from ANY finite set; and `BrauerNesbitt.lean` supplies the
+semisimple-trace rigidity.  Chebotarev plus Brauer–Nesbitt therefore makes the two
+representations isomorphic from agreement on a density-one set of primes.
+
+THE BLOCKER ON THAT ROUTE IS A PINNING DEFECT, NOT A MISSING THEOREM (found
+2026-07-28).  `exists_galoisRep_charFrob_of_weightTwoNewform` delivers an
+UNPINNED `∃ S : Finset (HeightOneSpectrum …)`, and upstream
+`EichlerShimuraPackage` carries `S` as a bare FIELD with nothing relating it to
+the level.  So the isomorphism yields agreement outside `S_f ∪ S_{f'}` — a finite
+set nobody controls, which is exactly the hypothesis we started from, hence no
+progress whatsoever.  To use this route one must FIRST sharpen the package so
+that `S` is pinned to the primes dividing `M·p` (the classical fact: `ρ_{g,p}` is
+unramified outside `Np`, and Eichler–Shimura computes `charFrob` at every
+`q ∤ Np`).  That is a well-defined follow-on task and strictly smaller than
+Rankin–Selberg.  This is a worked instance of the standing "pin your
+existentials" rule: an unpinned `∃ S` made a proven theorem unusable for the one
+purpose that needed it.
+
+FAITHFULNESS.  True, as a consequence of the parent (classical): if `N = N'` and
+`f = f'` the two agree at every prime whatsoever.  Not vacuous: `N = N'`,
+`f = f'` inhabits every hypothesis.  `hM` is load-bearing for the same reason as
+in the parent — at `M = 0` the hypothesis is vacuous while the conclusion is
+not. -/
+theorem qCoeff_prime_eq_of_isWeightTwoNewform_of_not_dvd_mul {M : ℕ} (hM : 0 < M)
+    {N : ℕ} (hNM : N ∣ M) {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoNewform N f)
+    {N' : ℕ} (hN'M : N' ∣ M) {f' : CuspForm (Gamma0GL N') 2} (hf' : IsWeightTwoNewform N' f')
+    (hagree : ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff N f q = qCoeff N' f' q) :
+    ∀ q : ℕ, q.Prime → ¬ q ∣ N * N' → qCoeff N f q = qCoeff N' f' q :=
+  sorry
+
+/-- **ATKIN–LEHNER 1970 THEOREM 5, THE LEVEL HALF** (sorry leaf, cut 2026-07-28):
+two newforms of levels `N`, `N'` agreeing at every prime `q ∤ N·N'` have
+`N ∣ N'`.
+
+Divisibility rather than equality is deliberate: it is the shape the classical
+argument delivers (Miyake proves `M ∣ N` first and gets equality by symmetry),
+and the promotion to `N = N'` is pure carrier bookkeeping done in the parent's
+glue off `IsWeightTwoNewform.eigensystem_minimal` — so this leaf never has to
+know what a minimal level is.
+
+THE CLASSICAL ROUTE, and it is ELEMENTARY — this is the leaf of the pair that
+this file could plausibly close without new analysis.  At `L = lcm(N, N')` the
+difference `V₁f − V₁f'` has vanishing coefficients at every index coprime to `L`
+(multiplicativity plus the good-prime recursion carry prime agreement to all
+coprime indices), so the Main Lemma `mem_oldSubspace_of_qCoeff_coprime_eq_zero` —
+PROVEN here — puts it in the old subspace at level `L`.  What is missing is the
+complementary half: that the blocks of DISTINCT newforms are independent, i.e.
+`S₂(Γ₀(L)) = old ⊕ new` with multiplicity one on the new part.
+
+CIRCULARITY WARNING.  `exists_degeneracyBlock_heckeGoodEigenspace` and
+`heckeGoodEigenspace_le_span_degeneracyOp` are this leaf's transitive CONSUMERS,
+so neither may be used to prove it.
+
+FAITHFULNESS.  True as a consequence of the classical theorem (which gives
+`N = N'`).  Not vacuous: `N = N'`, `f = f'`.  `hN`, `hN'` exclude the degenerate
+level `0`, where `¬ q ∣ 0` is unsatisfiable and `hagree` collapses. -/
+theorem dvd_of_isWeightTwoNewform_qCoeff_prime_eq_of_not_dvd_mul {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoNewform N f)
+    {N' : ℕ} (hN' : 0 < N') {f' : CuspForm (Gamma0GL N') 2} (hf' : IsWeightTwoNewform N' f')
+    (hagree : ∀ q : ℕ, q.Prime → ¬ q ∣ N * N' → qCoeff N f q = qCoeff N' f' q) :
+    N ∣ N' :=
+  sorry
+
+/-- **STRONG MULTIPLICITY ONE ACROSS LEVELS** (PROVEN 2026-07-28 over the two
+leaves `qCoeff_prime_eq_of_isWeightTwoNewform_of_not_dvd_mul` and
+`dvd_of_isWeightTwoNewform_qCoeff_prime_eq_of_not_dvd_mul` above; formerly the
+SIXTEENTH decomposition's single leaf, cut 2026-07-27; Atkin–Lehner 1970
+Theorem 5, Miyake Theorem 4.6.19, Casselman): two NEWFORMS `f`, `f'`, of levels
+`N`, `N'` both dividing `M`, whose
 `q`-expansion coefficients agree at every prime `q ∤ M`, have the same level and
 the same coefficients — hence are the same form.
 
@@ -55099,17 +55279,56 @@ agreement at `q ∤ N·N'` instead would close the leaf against the weaker class
 theorem — but that theorem is not in this tree either, so the saving is only in
 difficulty, not in work already done.
 
-FAITHFULNESS.  Both `hNM` and `hN'M` are load-bearing: without them `N` and `N'`
-share no prime constraint with `M`, `hagree` can be vacuous (take `M` divisible by
-every prime below any bound), and the conclusion is then plainly false.  `hM` rules
-out `M = 0`, where `¬ q ∣ 0` is never satisfied and `hagree` is vacuous.  The
-statement is NOT vacuous: `N = N'`, `f = f'` satisfies every hypothesis. -/
+FAITHFULNESS, RE-AUDITED 2026-07-28 — AND THE PREVIOUS AUDIT'S JUSTIFICATION WAS
+FALSE.  It read: "Both `hNM` and `hN'M` are load-bearing: without them `N` and
+`N'` share no prime constraint with `M`, `hagree` can be vacuous (take `M`
+divisible by every prime below any bound), and the conclusion is then plainly
+false."  The parenthesis is impossible.  `M` is a FIXED natural number, so it has
+finitely many prime divisors and `{q : q ∤ M}` is COFINITE; `hagree` is therefore
+never vacuous once `0 < M`, whatever `M` is, and no choice of `M` can make it so.
+The statement is in fact TRUE without `hNM`/`hN'M` (strong multiplicity one needs
+only a cofinite agreement set).  They are kept because the consumer supplies them
+for free and the glue below uses them — only to produce `0 < N` and `0 < N'`, and
+to feed the first leaf.
+
+`hM` IS load-bearing, and for the reason the old note gave: at `M = 0` every
+prime divides `M`, so `¬ q ∣ 0` is unsatisfiable, `hagree` is vacuous, and
+`N = 11`, `N' = 17` with the level-11 and level-17 newforms (both levels divide
+`0`) refutes the conclusion outright.
+
+The statement is NOT vacuous: `N = N'`, `f = f'` satisfies every hypothesis. -/
 theorem eq_of_isWeightTwoNewform_qCoeff_eq_of_not_dvd {M : ℕ} (hM : 0 < M)
     {N : ℕ} (hNM : N ∣ M) {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoNewform N f)
     {N' : ℕ} (hN'M : N' ∣ M) {f' : CuspForm (Gamma0GL N') 2} (hf' : IsWeightTwoNewform N' f')
     (hagree : ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff N f q = qCoeff N' f' q) :
-    N = N' ∧ ∀ n : ℕ, qCoeff N f n = qCoeff N' f' n :=
-  sorry
+    N = N' ∧ ∀ n : ℕ, qCoeff N f n = qCoeff N' f' n := by
+  have hN : 0 < N := Nat.pos_of_dvd_of_pos hNM hM
+  have hN' : 0 < N' := Nat.pos_of_dvd_of_pos hN'M hM
+  -- FIRST LEAF: the exceptional set shrinks from `M` to the two levels.
+  have hmul : ∀ q : ℕ, q.Prime → ¬ q ∣ N * N' → qCoeff N f q = qCoeff N' f' q :=
+    qCoeff_prime_eq_of_isWeightTwoNewform_of_not_dvd_mul hM hNM hf hN'M hf' hagree
+  -- SECOND LEAF: Atkin–Lehner level rigidity, in its divisibility form.
+  have hdvd : N ∣ N' :=
+    dvd_of_isWeightTwoNewform_qCoeff_prime_eq_of_not_dvd_mul hN hf hN' hf' hmul
+  -- With `N ∣ N'`, a prime away from `N'` is away from `N·N'`, so the first leaf
+  -- already gives agreement on the whole index set of `N'`-minimality.
+  have hN'agree : ∀ q : ℕ, q.Prime → ¬ q ∣ N' → qCoeff N f q = qCoeff N' f' q := by
+    intro q hq hqN'
+    refine hmul q hq fun hqNN' => ?_
+    rcases (Nat.Prime.dvd_mul hq).mp hqNN' with h | h
+    · exact hqN' (h.trans hdvd)
+    · exact hqN' h
+  -- `f` is then an eigenform of a divisor level realizing `f'`'s away-from-`N'`
+  -- eigensystem, which `f'`'s minimality forbids unless the levels coincide.
+  have hNN' : N = N' := by
+    by_contra hne
+    exact hf'.eigensystem_minimal N hdvd hne f hf.toIsWeightTwoEigenform hN'agree
+  subst hNN'
+  refine ⟨rfl, ?_⟩
+  have hfeq : f' = f :=
+    eq_of_isWeightTwoNewform_of_qCoeff_prime_eq hN hf hf' hN'agree
+  intro n
+  rw [hfeq]
 
 /-- **THE BLOCK CONTAINMENT** (PROVEN over the single leaf
 `eq_of_isWeightTwoNewform_qCoeff_eq_of_not_dvd`): for a NEWFORM `f` of level
