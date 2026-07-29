@@ -10,8 +10,10 @@ public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import Mathlib.AlgebraicGeometry.Morphisms.Affine
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Properties
+public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
@@ -34,35 +36,65 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   singleton, `K` a field.  PROVEN.  (`Spec K` is a one-point space.)
 * `isClosed_singleton_of_section` — the two combined: the image of a section of a
   separated morphism from the spectrum of a field is a closed point.  PROVEN.
-* `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **the sorry leaf**, and it is
-  the whole content: ampleness / the Serre criterion.
+* `affineLineOver` — the structure morphism `𝔸¹_K ⟶ Spec K`, used only to say "over `K`".
+* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: RIEMANN–ROCH,
+  a nonconstant regular function on `X ∖ {z}`.
+* `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: the
+  compactification step, that any such function's morphism to `𝔸¹_K` is proper.
+* `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
+  two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
 * `exists_isOpenImmersion_range_eq_compl_of_section` — the packaged existential a consumer
   actually wants: a ring `R` and an open immersion `Spec R ⟶ X` onto the complement of the
-  image of a `K`-point.  PROVEN over the leaf.
+  image of a `K`-point.  PROVEN over the two leaves.
+* `exists_surjective_coordinateRingHom_of_generators` — two elements plus a Weierstrass
+  relation plus `Subring.closure … = ⊤` give a SURJECTION out of the coordinate ring.
+  PROVEN, no sorry.
 * `injective_of_surjective_coordinateRing` — a surjection from a Weierstrass coordinate
   ring onto a domain that is not a field is injective.  PROVEN, no sorry.  This is the
   algebraic half of "the affine chart IS a Weierstrass coordinate ring"; it means the
   geometric side has to construct only a SURJECTION, never an isomorphism.
 
-## Why the leaf is not further decomposable here
+## The affineness leaf is now DECOMPOSED — the ampleness-free route, glue proven
 
-The only cut available is "the complement is open" plus "the complement is affine", and
-everything except the second is proven in this file.  The second needs ampleness of
-divisors, which **the pin does not have**: verified 2026-07-28 by
-`grep -rl 'Ample' Mathlib/AlgebraicGeometry/`, which returns only files where the word
-occurs inside `example`/`sample`.  There is no `IsAmple`, no `VeryAmple`, no Serre
-criterion for affineness and no coherent-sheaf cohomology anywhere under
-`Mathlib/AlgebraicGeometry/`, and `~/cs/FLT` has none either.
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve` is no longer a bare `sorry`.  It is
+proven here over exactly two named sub-leaves, along the Zariski's-main-theorem route:
 
-The classical route, for whoever picks the leaf up: `[z]` has positive degree on the
-integral projective curve `X`, hence is ample, hence `X ∖ {z}` is affine.  A route that
-avoids ampleness and stays closer to what this project already owns: Riemann–Roch supplies
-a nonconstant `x` regular away from `z`; `x` extends to a morphism `X ⟶ ℙ¹` by the
-valuative criterion (`exists_unique_extension_of_isSmoothProperCurve`, PROVEN in
-`CurveExtension.lean`); that morphism is proper and quasi-finite, hence finite by Zariski's
-main theorem (`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`); and the preimage of
-the affine `𝔸¹` under a finite — hence affine — morphism is affine.  That route pays for
-Riemann–Roch, which the sibling leaf needs anyway.
+* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **RIEMANN–ROCH**, and the only
+  place it enters: a nonconstant regular function on `X ∖ {z}`, packaged as a
+  `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` that is `LocallyQuasiFinite`.
+* `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **the compactification
+  step**: any such morphism is proper.
+
+and the glue between them, which is what this file newly PROVES:
+`IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
+proper + quasi-finite into finite; `IsFinite ⟹ IsIntegralHom ⟹ IsAffineHom`; and
+`isAffine_of_isAffineHom` against the affine target `Spec K[T]` gives `IsAffine` of the
+open subscheme, which is definitionally `IsAffineOpen`.
+
+**Ampleness is still absent from the pin, and the corrected refuting command is stronger
+than the one previously recorded here.**  This file used to say that
+`grep -rl 'Ample' Mathlib/AlgebraicGeometry/` "returns only files where the word occurs
+inside `example`/`sample`".  Re-run 2026-07-28: it returns **nothing at all** — the only
+`Ample` in the whole of mathlib is `Mathlib/Analysis/Convex/AmpleSet.lean`, which is convex
+geometry and unrelated.  So:
+
+    grep -rn 'Ample' .lake/packages/mathlib/Mathlib/ --include=*.lean | grep -v Convex
+
+settles it.  There is no `IsAmple`, no `VeryAmple`, no Serre criterion for affineness, no
+genus, no Riemann–Roch and no coherent-sheaf cohomology; `~/cs/FLT` has none either.
+
+**What the previous note got wrong is the conclusion drawn from that absence**, not the
+absence: it treated the leaf as atomic because ampleness is missing.  But the pin *does*
+carry `Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`, and that is the whole of the
+affineness step — so the ampleness gap never had to be paid at all.  Only the two sub-leaves
+above remain, and neither of them mentions a divisor.
+
+Note for whoever takes `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton`:
+`ℙ¹` is *not* needed to state it, but the intended proof does go through the projective
+model, using `exists_unique_extension_of_valuationRing_stalk` (PROVEN, no sorry, in
+`CurveExtension.lean`) for the extension across `z`.  See that declaration's own docstring
+for the route and for the step that has to be paid: a `K`-morphism `X ⟶ 𝔸¹_K` out of a
+proper `X` cannot be quasi-finite, so `g` genuinely fails to extend and `z` is a pole.
 -/
 
 @[expose] public section
@@ -117,10 +149,131 @@ theorem isClosed_singleton_of_section {K : Type u} [Field K] {X : Scheme.{u}}
     IsClosed ({z} : Set X) :=
   hz ▸ isClosed_range_of_section hs
 
-/-! ### The affineness leaf -/
+/-! ### The affineness leaf, and the two sub-leaves it is proven over -/
+
+/-- **The affine line over `K`**, as its structure morphism `𝔸¹_K ⟶ Spec K`.
+
+Only used to say "over `K`" in the two sub-leaves below.  Without it the sub-leaves would
+quantify over *ring* maps `K[T] → Γ(X ∖ {z})`, which need not respect the `K`-algebra
+structures at all — an adversary could compose with a wild endomorphism of `K` and satisfy
+every other clause while breaking properness.  Pinning the triangle over `Spec K` is what
+forbids that. -/
+noncomputable def affineLineOver (K : Type u) [Field K] :
+    Spec (CommRingCat.of (Polynomial K)) ⟶ Spec (CommRingCat.of K) :=
+  Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))
+
+/-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (sorry leaf, cut
+2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
+
+This is the ONLY place Riemann–Roch enters the affineness statement.  Concretely it asks
+for a `K`-morphism `g : X ∖ {z} ⟶ 𝔸¹_K` with finite fibres — equivalently, for a
+nonconstant `f ∈ Γ(X, X ∖ {z})`, i.e. a rational function on `X` regular away from `z`.
+
+TRUE and classical.  `X` is a smooth proper geometrically connected curve over `K`, so it
+has a genus `g`, and Riemann–Roch gives `dim_K L(n·[z]) = n·deg[z] − g + 1` for
+`n·deg[z] > 2g − 2`.  In particular `L(n·[z]) ⊋ L(0) ⊇ K` for `n` large, and any element of
+the difference is a nonconstant function regular on `X ∖ {z}`.  Its fibres over `𝔸¹` are
+proper closed subsets of the integral curve `X ∖ {z}`, hence finite, which is
+`LocallyQuasiFinite`.
+
+**Why `LocallyQuasiFinite` rather than "nonconstant".**  The pin has no notion of a
+nonconstant morphism, and quasi-finiteness is the form Zariski's main theorem consumes
+directly.  On an integral curve the two agree: a constant morphism has a one-point image
+with infinite fibre, and `X ∖ {z}` is infinite by
+`infinite_of_smoothOfRelativeDimension_one`.
+
+**`hconn` IS LOAD-BEARING** — see the counterexample in
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve`'s docstring: on a disjoint union of
+two copies of a curve, punctured in the first copy only, any regular function is constant on
+the whole second copy, so no quasi-finite `g` exists.
+
+**`SmoothOfRelativeDimension 1` IS LOAD-BEARING**: at relative dimension two, `X ∖ {z}` has
+the same global sections as the proper `X` (a finite extension of `K`), so every `g` is
+constant and none is quasi-finite.
+
+**The `≫`-clause IS LOAD-BEARING**: without it `g` is only a morphism of schemes over `ℤ`,
+and its restriction `K → Γ(X ∖ {z})` need not be the structure map, which breaks the
+finite-type hypotheses of the sibling leaf.  See `affineLineOver`.
+
+NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
+infinity, `x` (the first Weierstrass coordinate) is such a function.
+
+WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: a Riemann–Roch theorem, a genus, or
+a theory of linear systems, anywhere in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
+Re-searched 2026-07-28: absent from all three. -/
+theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X)) :
+    ∃ g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)),
+      LocallyQuasiFinite g ∧
+        g ≫ affineLineOver K =
+          Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX :=
+  sorry
+
+/-- **The compactification step: a quasi-finite `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` is proper**
+(sorry leaf, cut 2026-07-28 out of
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve`).
+
+TRUE.  Write `U = X ∖ {z}` and let `f ∈ Γ(X, U)` be the function `g` classifies.  The
+intended proof is the valuative criterion, in two steps:
+
+1. **`g` does not extend across `z`.**  If it did, the extension `ĝ : X ⟶ 𝔸¹_K` would be a
+   `K`-morphism out of a proper `X`, hence proper (`IsProper.of_comp`, which cancels
+   `IsProper` on the right
+   against the separated `𝔸¹_K ⟶ Spec K`), and still quasi-finite, hence FINITE by
+   `IsFinite.of_isProper_of_locallyQuasiFinite`.  A finite surjection onto `𝔸¹_K` from a
+   universally closed `X` would make `𝔸¹_K ⟶ Spec K` universally closed, which it is not.
+   So `f` has a genuine pole at `z`.
+2. **The valuative criterion.**  Given a valuation ring `R` with fraction field `L` and a
+   square `Spec L ⟶ U`, `Spec R ⟶ 𝔸¹_K`, properness of `X` over `K` lifts it to
+   `Spec R ⟶ X`.  That lift cannot send the closed point of `Spec R` to `z`: the induced
+   map on stalks `𝒪_{X,z} ⟶ R` is local, while `f` has negative valuation at `z` and its
+   image in `L` lies in `R`.  So the lift factors through `U`, which is the required
+   filler.
+
+`exists_unique_extension_of_valuationRing_stalk` in `CurveExtension.lean` is PROVEN with no
+sorry and supplies the extension machinery for step 1; the DVR-stalk hypothesis it needs is
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, also PROVEN there.
+
+**`hqf` IS LOAD-BEARING and the statement is FALSE without it**: take `g` the constant
+morphism `X ∖ {z} ⟶ 𝔸¹_K` at `0` (i.e. `f = 0`).  It is a `K`-morphism, and it is not
+proper — it factors through the closed immersion `Spec K ↪ 𝔸¹_K`, so if it were proper then
+`X ∖ {z} ⟶ Spec K` would be proper too (`IsProper` cancels on the right against a separated
+morphism), making the affine-by-conclusion `X ∖ {z}` a proper positive-dimensional
+`K`-scheme.  It is not: it is infinite and affine.
+
+**`hover` IS LOAD-BEARING**: see `affineLineOver`.  Without it `g` need not be of finite
+type over the base at all.
+
+**`hz` IS LOAD-BEARING for a trivial reason**: `{z}ᶜ` must be open for `U` to be a scheme.
+
+**`IsProper strX` IS LOAD-BEARING**: it is exactly what step 1 and step 2 both consume.  On
+a non-proper curve the statement fails — remove two points instead of one and `g` extends
+over the second puncture's neighbourhood without being proper.
+
+NOT VACUOUS: `exists_locallyQuasiFinite_toAffineLine_compl_singleton` supplies a `g`
+satisfying every hypothesis, and the projective model of an elliptic curve over `ℚ`
+punctured at infinity, with `f = x`, witnesses the conclusion (there `g` is finite of
+degree two). -/
+theorem isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX) :
+    IsProper g :=
+  sorry
 
 /-- **The complement of a closed point of a smooth proper geometrically connected curve
-over a field is affine** (sorry leaf, cut 2026-07-28).
+over a field is affine** (**PROVEN 2026-07-28** over the two sub-leaves immediately above —
+this declaration has no `sorry` of its own any more).
 
 TRUE and classical: `[z]` is a nonempty effective divisor on the integral projective curve
 `X`, hence ample, hence the complement of its support is affine (Hartshorne IV.1, or the
@@ -160,14 +313,33 @@ WHAT WOULD REFUTE THE "MISSING FROM THE PIN" DIAGNOSIS: any declaration under
 `Mathlib/AlgebraicGeometry/` concluding `IsAffineOpen` (or `IsAffine`) for an open
 subscheme from a condition on its complement, or any ampleness of divisors.  Searched
 2026-07-28 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: absent from all
-three. -/
+three.
+
+## PROOF (2026-07-28): Zariski's main theorem, not ampleness
+
+The ampleness gap recorded above is real and is still open in the pin, but it never had to
+be paid: `Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean` supplies the whole affineness
+step.  Given the two sub-leaves — a quasi-finite `K`-morphism `g : X ∖ {z} ⟶ 𝔸¹_K`, and its
+properness — `IsFinite.of_isProper_of_locallyQuasiFinite` (stacks `02LS`) makes `g` finite,
+`IsFinite` extends `IsIntegralHom` which extends `IsAffineHom`, and `isAffine_of_isAffineHom`
+against the affine target `Spec K[T]` gives `IsAffine` of the open subscheme — which is
+what `IsAffineOpen` unfolds to.
+
+The hypothesis analysis above is unchanged and still describes where each hypothesis is
+consumed; all four are now consumed through the two sub-leaves rather than directly. -/
 theorem isAffineOpen_compl_singleton_of_isSmoothProperCurve
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
     (hconn : GeometricallyConnected strX)
     {z : X} (hz : IsClosed ({z} : Set X)) :
-    IsAffineOpen (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
-  sorry
+    IsAffineOpen (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) := by
+  obtain ⟨g, hqf, hover⟩ :=
+    exists_locallyQuasiFinite_toAffineLine_compl_singleton strX hconn hz
+  haveI := hqf
+  haveI : IsProper g :=
+    isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton strX hconn hz g hqf hover
+  haveI : IsFinite g := IsFinite.of_isProper_of_locallyQuasiFinite g
+  exact isAffine_of_isAffineHom g
 
 /-- **The complement of the image of a `K`-point of a smooth proper geometrically connected
 curve is the range of an open immersion from an affine scheme** (PROVEN over the leaf
@@ -204,6 +376,14 @@ statement splits cleanly in two, and only the FIRST half is Riemann–Roch:
    `L(3[O])` and the seven-monomials-in-a-six-dimensional-space count live.
 2. any such surjection is automatically INJECTIVE.  This half is pure commutative algebra
    and is proven below, so a prover at the chart need only produce the surjection.
+
+And the *word* "equivalently" in item 1 is itself now discharged, by
+`exists_surjective_coordinateRingHom_of_generators` below: two elements plus a relation plus
+`Subring.closure … = ⊤` really do assemble into a surjection out of
+`E.toAffine.CoordinateRing`, via `AdjoinRoot.lift`.  PROVEN 2026-07-28, no sorry.  So a
+Riemann–Roch prover never has to touch `AdjoinRoot` or mathlib's coordinate-ring API at all:
+it produces `x`, `y` and the relation, and everything else on both sides — surjectivity here,
+injectivity below — is already paid for.
 -/
 
 /-- **A surjection from a Weierstrass coordinate ring onto a domain that is not a field is
@@ -307,3 +487,54 @@ theorem injective_of_surjective_coordinateRing {k : Type u} [Field k]
   haveI : IsScalarTower k[X] (k[X] ⧸ P) R := IsScalarTower.of_algebraMap_eq (fun _ => rfl)
   haveI : Algebra.IsIntegral (k[X] ⧸ P) R := Algebra.IsIntegral.tower_top (R := k[X])
   exact hR (isField_of_isIntegral_of_isField' (R := k[X] ⧸ P) (Field.toIsField _))
+
+/-- **Two generators satisfying a Weierstrass relation give a SURJECTION out of the
+Weierstrass coordinate ring** (PROVEN 2026-07-28, no sorry) — the exact converse packaging
+of `injective_of_surjective_coordinateRing` above.
+
+Together the two mean that a Riemann–Roch prover at a pointed genus-one curve owes *only*
+the elements: produce `x`, `y` and the relation, and the ring isomorphism
+`R ≃+* E.toAffine.CoordinateRing` follows with no further work on either the kernel or the
+image.
+
+The proof is `AdjoinRoot.lift` applied to the two-stage evaluation
+`ℚ[X][Y] → R`, `X ↦ x`, `Y ↦ y`, `C ↦ c`; `hrel` is exactly the statement that
+`E.toAffine.polynomial` evaluates to `0` there, and `hgen` says the image subring is
+everything.
+
+**`c` NEEDS NO COMPATIBILITY CLAUSE, and that is not an oversight.**  A ring homomorphism
+out of `ℚ` is unique when it exists — `1 ↦ 1` determines it on `ℤ` and then on inverses — so
+there is no freedom for an adversary to supply a "wrong" `c` and satisfy the other clauses
+vacuously.  Contrast the geometric sub-leaves earlier in this file, where the analogous
+`K`-linearity clause IS load-bearing because `K` is arbitrary.
+
+**`hgen` IS LOAD-BEARING and the statement is FALSE without it**: take `R` any ℚ-algebra
+strictly larger than the subring generated by some Weierstrass pair — e.g.
+`R = E.toAffine.CoordinateRing[t]`, with `x`, `y` the images of the coordinates.  The
+relation still holds and no surjection exists, since `φ` would then have to hit `t`.
+
+**`hrel` IS LOAD-BEARING** trivially: without it there is no reason for any map out of
+`AdjoinRoot E.toAffine.polynomial` to exist at all.
+
+NOT VACUOUS: `R = E.toAffine.CoordinateRing` itself, with `c = algebraMap`, `x = X`,
+`y = Y`, satisfies both hypotheses and the conclusion holds with the identity. -/
+theorem exists_surjective_coordinateRingHom_of_generators {R : Type u} [CommRing R]
+    (E : WeierstrassCurve ℚ) (c : ℚ →+* R) (x y : R)
+    (hrel : y ^ 2 + (c E.a₁ * x + c E.a₃) * y
+      = x ^ 3 + c E.a₂ * x ^ 2 + c E.a₄ * x + c E.a₆)
+    (hgen : Subring.closure (Set.range c ∪ {x, y}) = ⊤) :
+    ∃ φ : E.toAffine.CoordinateRing →+* R, Function.Surjective φ := by
+  classical
+  set i : ℚ[X] →+* R := Polynomial.eval₂RingHom c x with hi
+  have hroot : (E.toAffine.polynomial).eval₂ i y = 0 := by
+    simp only [WeierstrassCurve.Affine.polynomial, hi, Polynomial.eval₂_add,
+      Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_pow, Polynomial.eval₂_C,
+      Polynomial.eval₂_X, Polynomial.coe_eval₂RingHom]
+    linear_combination hrel
+  refine ⟨AdjoinRoot.lift i y hroot, ?_⟩
+  rw [← RingHom.range_eq_top, eq_top_iff, ← hgen]
+  refine Subring.closure_le.mpr ?_
+  rintro r (⟨q, rfl⟩ | rfl | rfl)
+  · exact ⟨AdjoinRoot.of _ (Polynomial.C q), by simp [hi]⟩
+  · exact ⟨AdjoinRoot.of _ Polynomial.X, by simp [hi]⟩
+  · exact ⟨AdjoinRoot.root _, by simp⟩
