@@ -5844,6 +5844,146 @@ lemma mem_taylorWilesLocus_mul.{uK, uW}
   · rw [map_mul, hτ1, mul_one]
     exact hpoly
 
+/-- **`ρ σ` always has a NONZERO FIXED VECTOR on `ad⁰ρbar(1)` when `σ`
+fixes `μ_p`** (PROVEN 2026-07-28) — step 2 of the nonemptiness route,
+discharged here rather than left to the leaf.
+
+Fixing `μ_p` makes the cyclotomic twist trivial
+(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`), so `ρ σ` is plain
+conjugation by `A = ρbar σ`, and conjugation by `A` fixes anything
+commuting with `A`.  Writing `c = tr A / 2` — legitimate because `p` is
+odd and `k` has characteristic `p`, so `(2 : k) ≠ 0` — the traceless part
+`E = A - c · 1` has `tr E = tr A - c · 2 = 0` and commutes with `A`.
+
+The two cases are genuinely different and BOTH are needed:
+
+* `E ≠ 0`: take `E` itself.
+* `E = 0`, i.e. `A` is the scalar `c`: then conjugation by `A` is the
+  IDENTITY on everything, so any nonzero trace-zero endomorphism will do,
+  and one exists because `LinearMap.trace k W` cannot be injective —
+  `finrank_k (W →ₗ[k] W) = 4 > 1 = finrank_k k`.
+
+Note what is NOT used: the charpoly clause of `taylorWilesLocus`, hence
+`α ≠ β`.  The eigenvalue `1` of the adjoint action is present for EVERY
+`A`; distinctness of the eigenvalues is what pins the fixed space to be
+exactly one-dimensional, and mere properness of `(ρ σ - 1) · M` does not
+need that.  So this lemma is stated with the roots-of-unity hypothesis
+alone, which is also why it can be applied at `max n 1` in the assembly
+before any charpoly information is extracted. -/
+lemma exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity.{uK, uW}
+    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
+    {σ : Field.absoluteGaloisGroup ℚ}
+    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
+    ∃ m : ↥(adZeroTwist p ρbar), m ≠ 0 ∧ (adZeroTwist p ρbar).ρ σ m = m := by
+  classical
+  haveI : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have htr1 : LinearMap.trace k W (1 : Module.End k W) = (2 : k) := by
+    rw [show (1 : Module.End k W) = LinearMap.id from rfl, LinearMap.trace_id, hfr]
+    norm_num
+  have hcomm : ∃ e : Module.End k W, e ≠ 0 ∧ LinearMap.trace k W e = 0 ∧
+      ρbar σ * e = e * ρbar σ := by
+    set c : k := (LinearMap.trace k W (ρbar σ)) / 2 with hc
+    by_cases hE : ρbar σ - c • (1 : Module.End k W) = 0
+    · have hA : ρbar σ = c • (1 : Module.End k W) := by rwa [sub_eq_zero] at hE
+      have hker : LinearMap.ker (LinearMap.trace k W) ≠ ⊥ := by
+        intro hb
+        have hinj : Function.Injective (LinearMap.trace k W) := LinearMap.ker_eq_bot.mp hb
+        have hle := LinearMap.finrank_le_finrank_of_injective hinj
+        rw [Module.finrank_self] at hle
+        have h4 : Module.finrank k (W →ₗ[k] W) = 4 := by
+          rw [Module.finrank_linearMap, hfr]
+        rw [h4] at hle
+        omega
+      obtain ⟨e, he, hene⟩ := (Submodule.ne_bot_iff _).mp hker
+      refine ⟨e, hene, LinearMap.mem_ker.mp he, ?_⟩
+      rw [hA, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+    · refine ⟨ρbar σ - c • 1, hE, ?_, ?_⟩
+      · rw [map_sub, map_smul, htr1, smul_eq_mul, hc, div_mul_cancel₀ _ h2, sub_self]
+      · rw [mul_sub, sub_mul, mul_smul_comm, smul_mul_assoc, mul_one, one_mul]
+  obtain ⟨e, hene, hetr, hecomm⟩ := hcomm
+  have hχ : adZeroCycloChar p k σ = 1 := adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hσ
+  refine ⟨(⟨e, LinearMap.mem_ker.mpr hetr⟩ :
+    ↥(LinearMap.ker (LinearMap.trace k W))), ?_, ?_⟩
+  · intro h0
+    exact hene ((congrArg (AdZero.toEnd k W) h0).trans (map_zero (AdZero.toEnd k W)))
+  · refine AdZero.ext ?_
+    have hval : (adZeroTwist p ρbar).ρ σ
+        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
+        = (adZeroCycloChar p k σ : k) • ((AdZero.rep ρbar) σ
+            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
+              ↥(LinearMap.ker (LinearMap.trace k W)))) := rfl
+    have hrep : (AdZero.rep ρbar) σ
+        (⟨e, LinearMap.mem_ker.mpr hetr⟩ : ↥(LinearMap.ker (LinearMap.trace k W)))
+        = AdZero.conjL (ρbar σ) (ρbar σ⁻¹)
+            (by rw [← map_mul, inv_mul_cancel, map_one])
+            (⟨e, LinearMap.mem_ker.mpr hetr⟩ :
+              ↥(LinearMap.ker (LinearMap.trace k W))) := rfl
+    rw [hval, hχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL]
+    show ρbar σ * e * ρbar σ⁻¹ = e
+    have hinv : ρbar σ * ρbar σ⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    rw [hecomm, mul_assoc, hinv, mul_one]
+
+/-- **`(ρ σ - 1) · ad⁰ρbar(1)` is a PROPER subset** (PROVEN 2026-07-28) —
+step 2 of the nonemptiness route in the form the surviving locus consumes,
+and the hypothesis `hproper` of the leaf below.
+
+`ad⁰ρbar(1)` is finite-dimensional over `k` (a submodule of
+`W →ₗ[k] W`), so on it a `k`-linear endomorphism is injective iff
+surjective.  `ρ σ - 1` kills the nonzero vector produced by
+`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`, hence is not
+injective, hence not surjective; and its range as a `Set` is exactly the
+set `survivingLocus` tests membership against.
+
+This is what makes the leaf's remaining task purely the ARITHMETIC one:
+without it, a proof of the leaf would have to redo the linear algebra
+before it could even start. -/
+lemma range_rho_sub_ne_univ_of_fixes_rootsOfUnity.{uK, uW}
+    (p : ℕ) [Fact p.Prime] (hpodd : Odd p)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
+    {σ : Field.absoluteGaloisGroup ℚ}
+    (hσ : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ) :
+    Set.range (fun m : ↥(adZeroTwist p ρbar) =>
+      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ := by
+  classical
+  obtain ⟨m0, hm0ne, hm0fix⟩ :=
+    exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity p hpodd hW ρbar hσ
+  haveI : FiniteDimensional k ↥(adZeroTwist p ρbar) :=
+    inferInstanceAs (FiniteDimensional k ↥(LinearMap.ker (LinearMap.trace k W)))
+  set f : ↥(adZeroTwist p ρbar) →ₗ[k] ↥(adZeroTwist p ρbar) :=
+    ((adZeroTwist p ρbar).ρ σ).toLinearMap - LinearMap.id with hf
+  have hfm0 : f m0 = 0 := by
+    rw [hf]
+    simp [hm0fix]
+  have hnotinj : ¬ Function.Injective f := by
+    intro hinj
+    exact hm0ne (hinj (by rw [hfm0, map_zero]))
+  have hnotsurj : ¬ Function.Surjective f := fun hs =>
+    hnotinj (LinearMap.injective_iff_surjective.mpr hs)
+  intro hcon
+  refine hnotsurj fun y => ?_
+  have hy : y ∈ Set.range (fun m : ↥(adZeroTwist p ρbar) =>
+      (adZeroTwist p ρbar).ρ σ m - m) := by rw [hcon]; trivial
+  obtain ⟨m, hm⟩ := hy
+  refine ⟨m, ?_⟩
+  rw [hf]
+  simpa using hm
+
 /-- **The arithmetic core of the nonemptiness half of DDT Lemma 2.48**
 (SORRY LEAF, cut out 2026-07-28 from
 `isOpen_survivingLocus_and_meets_taylorWilesLocus`): given a Taylor–Wiles
@@ -5855,8 +5995,11 @@ returns `σ τ` to the Taylor–Wiles locus and the intersection is nonempty.
 Everything else in DDT 2.48's global half is now PROVEN around this leaf:
 openness is `isOpen_survivingLocus`, the supply of `σ` is
 `nonempty_taylorWilesLocus`, the return to the Taylor–Wiles locus is
-`mem_taylorWilesLocus_mul`, and the `n = 0` case is reduced to `n = 1` by
-`taylorWilesLocus_subset_of_le`.  What is left is exactly the arithmetic.
+`mem_taylorWilesLocus_mul`, the `n = 0` case is reduced to `n = 1` by
+`taylorWilesLocus_subset_of_le`, and STEP 2 BELOW — that `(ρ σ - 1) · M`
+is a proper subset — is handed in as the hypothesis `hproper`, discharged
+by `range_rho_sub_ne_univ_of_fixes_rootsOfUnity`.  What is left is exactly
+the arithmetic of Steps 1 and 3.
 
 # ROUTE
 
@@ -5879,15 +6022,14 @@ by `ker ρbar` rather than by `ker ad⁰ρbar` is harmless: the intermediate
 group acts trivially on `M` and has order prime to `p`, so its `Hom` into
 the `p`-group `M` vanishes and the two `H¹`'s agree.)
 
-*Step 2 — `(ρ σ - 1) · M` is a PROPER subspace.*  Since `n ≥ 1`, `σ`
-fixes `μ_p`, so `χ(σ) = 1`
-(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`) and `ρ σ` is plain
-conjugation by `ρbar σ`.  The charpoly clause of `hσ` gives `ρbar σ` two
-DISTINCT eigenvalues, so `ρbar σ` is not a scalar and its traceless part
-`ρbar σ - (tr ρbar σ / 2) · 1` — legitimate because `p` is odd, so
-`(2 : k) ≠ 0` — is a NONZERO element of `M` commuting with `ρbar σ`,
-i.e. a nonzero fixed vector of `ρ σ`.  Hence `ρ σ - 1` is not injective
-on the finite-dimensional `M`, hence not surjective.
+*Step 2 — `(ρ σ - 1) · M` is a PROPER subset.*  **PROVEN and supplied as
+`hproper`**; see `range_rho_sub_ne_univ_of_fixes_rootsOfUnity` and
+`exists_ne_zero_rho_eq_self_of_fixes_rootsOfUnity`.  (Since `n ≥ 1`, `σ`
+fixes `μ_p`, so `χ(σ) = 1` and `ρ σ` is plain conjugation by `ρbar σ`,
+which always fixes the traceless part of `ρbar σ` — or everything, when
+`ρbar σ` is scalar.  Note this needs neither the charpoly clause nor
+`α ≠ β`; distinctness pins the fixed space to a LINE, which mere
+properness does not require.)
 
 *Step 3 — move out.*  If `z σ ∉ (ρ σ - 1) · M` take `τ = 1`.  Otherwise
 apply Step 1 inside the `Γ`-stable subgroup `z(N) ⊆ M` and use
@@ -5919,7 +6061,9 @@ theorem exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus.{uK, uW}
     {c : continuousCohomology 1 (adZeroTwist p ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = c)
     (hcunr : c ∈ h1TwistUnramified p ρbar) (hc0 : c ≠ 0)
-    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n) :
+    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ taylorWilesLocus p ρbar n)
+    (hproper : Set.range (fun m : ↥(adZeroTwist p ρbar) =>
+      (adZeroTwist p ρbar).ρ σ m - m) ≠ Set.univ) :
     ∃ τ : Field.absoluteGaloisGroup ℚ, ρbar τ = 1 ∧
       (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → τ ζ = ζ) ∧
       σ * τ ∈ survivingLocus p ρbar z := sorry
@@ -5980,9 +6124,16 @@ theorem isOpen_survivingLocus_and_meets_taylorWilesLocus.{uK, uW}
       (survivingLocus p ρbar z ∩ taylorWilesLocus p ρbar n).Nonempty := by
   refine ⟨isOpen_survivingLocus p ρbar z, ?_⟩
   obtain ⟨σ, hσ⟩ := nonempty_taylorWilesLocus hpodd hW hρbar hirr (max n 1)
+  -- `σ` fixes `μ_{p^(max n 1)}` and `1 ≤ max n 1`, so it fixes `μ_p`
+  have hσp : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → σ ζ = ζ := by
+    intro ζ hζ
+    refine hσ.1 ζ ?_
+    obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le (le_max_right n 1)
+    rw [hd, pow_add, pow_one, pow_mul, hζ, one_pow]
   obtain ⟨τ, hτ1, hτζ, hmem⟩ :=
     exists_mul_mem_survivingLocus_of_mem_taylorWilesLocus hpodd hW hρbar hirr
       (le_max_right n 1) z hzc hcunr hc0 hσ
+      (range_rho_sub_ne_univ_of_fixes_rootsOfUnity p hpodd hW ρbar hσp)
   exact ⟨σ * τ, hmem,
     taylorWilesLocus_subset_of_le p ρbar (le_max_left n 1)
       (mem_taylorWilesLocus_mul p ρbar (max n 1) hτ1 hτζ hσ)⟩
