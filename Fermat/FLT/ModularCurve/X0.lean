@@ -56114,6 +56114,192 @@ theorem finite_preimage_of_finite_ker {G H : Type*} [AddCommGroup G] [AddCommGro
     rw [hempty]
     exact Set.finite_empty
 
+/-! #### Poincaré reducibility, QUOTIENT HALF: a surjection of abelian
+varieties admits a quasi-section
+
+**Cut 2026-07-28 into the two steps the classical proof actually has**, so
+that the elementary one is not held hostage to the deep one.  The theorem
+wanted downstream — `exists_quasiSection_of_surjective_isAdditiveOn`
+below, and through it `exists_quasiSection_heckeIsotypicFactor` — is that
+a surjective homomorphism `u : J ↠ A` of abelian varieties over `ℚ`
+admits `v : A ⟶ J` with `u ∘ v = [m]`, `m > 0`, on `ℚ`-points.  Mumford,
+*Abelian Varieties* §19 Thm 1; Milne, *Abelian Varieties* I.12.1.  The
+proof is:
+
+1. **the complement** — choose a polarisation of `J`; the orthogonal
+   complement `B` of `(ker u)⁰` is an abelian subvariety with
+   `B ∩ ker u` finite, so `u|_B : B ⟶ A` is an ISOGENY.  This is where
+   the polarisation, hence the whole theory of abelian varieties over a
+   field, is used;
+2. **the quasi-inverse of an isogeny** — `ker(u|_B)` is a finite group
+   scheme, killed by its order `m`, so `[m]_B` factors as `ψ ∘ u|_B`, and
+   cancelling the (faithfully flat, hence epi) `u|_B` on the right of
+   `u|_B ∘ ψ ∘ u|_B = [m]_A ∘ u|_B` gives `u|_B ∘ ψ = [m]_A`.  This step
+   needs no polarisation and no complement.
+
+Then `v := ψ ≫ b`.  The composition is discharged below; the two steps
+are the two leaves.
+
+**Why this is a decomposition and not a relocation.**  Step 2 with the
+finiteness hypothesis DELETED is step 1 + step 2, i.e. the whole theorem
+again — so `_hfin` on the second leaf is what makes the cut pay, and a
+reviewer who "generalises" it away has re-created the original node.  It
+is recorded on that leaf as an explicitly non-load-bearing hypothesis for
+exactly this reason. -/
+
+/-- **THE ISOGENY COMPLEMENT OF THE KERNEL OF A SURJECTION** (sorry leaf,
+new 2026-07-28) — step 1 of the quotient half of Poincaré reducibility:
+a surjective homomorphism `u : J ⟶ A` of abelian varieties over `ℚ`
+restricts to an ISOGENY on an abelian subvariety `B ⊆ J`.
+
+TRUE and classical (Mumford, *Abelian Varieties* §19 Thm 1; Milne,
+*Abelian Varieties* I.12.1).  Over a field of characteristic `0` fix a
+polarisation `λ` of `J` and put `B := ((ker u)⁰)^⊥`, the orthogonal
+complement taken inside `J` with respect to `λ`.  Then `B` is an abelian
+subvariety, `B ∩ (ker u)⁰` is finite, and `u|_B : B ⟶ A` is surjective
+with finite kernel — i.e. proper and quasi-finite, hence FINITE.
+
+**`IsFinite (b ≫ u)` is the isogeny condition, and it is stated as a
+property of the MORPHISM on purpose.**  "Finite kernel on `ℚ`-points" is
+the trap this file records elsewhere: it is strictly weaker than
+finiteness of the map, and is satisfied by maps that are not isogenies
+whenever the source has few rational points.  `IsFinite` is a condition
+on schemes over every base and carries the content.
+
+**Not junk-satisfiable.**  `B := Spec ℚ` (the trivial abelian scheme)
+with `b` the zero section fails `Surjective (b ≫ u)` unless `A` is a
+point; `B := J`, `b := 𝟙` fails `IsFinite (b ≫ u)` unless `u` is itself
+an isogeny, which a quotient map of abelian varieties is not in general
+(`J = A × A'`, `u = pr₁`).
+
+**`_hsurj` MAY NOT BE DROPPED.**  Witness `J := E`, `A := E × E`,
+`u := (𝟙, 0)`: a homomorphism, not surjective, and no abelian subvariety
+of a curve maps ONTO a surface, so no `B` exists.
+
+**`_hadd` is NOT load-bearing for truth, and saying so is the honest
+audit.**  By the rigidity theorem every morphism of abelian varieties is
+a translate `t_c ∘ h` of a homomorphism, and translations are
+isomorphisms, changing neither `Surjective` nor `IsFinite`; so the
+statement survives dropping `_hadd`.  It is kept because the intended
+construction (a complement of `ker u`) needs a kernel, and because every
+consumer has it for free — `IsHeckeIsotypicDecomposition.u_add`.  It is
+NOT derivable inside this file from `isAdditiveOn_of_post_zero`, which
+additionally needs `u` to fix the origin.
+
+**What proving it needs**: abelian varieties over a field, absent from
+mathlib by the absence table on `exists_heckeIsotypicDecomposition` —
+specifically polarisations (`PolarizationStruct` in
+`Modularity/AbelianScheme.lean` is the datum, not the existence theorem),
+the connected component of a closed subgroup scheme, and
+"proper + quasi-finite ⟹ finite". -/
+theorem exists_isogenyComplement_of_surjective_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (_hadd : IsAdditiveOn abJ abA u hu)
+    (_hsurj : AlgebraicGeometry.Surjective u) :
+    ∃ (B : Scheme.{0}) (bstr : B ⟶ SpecQ) (abB : AbelianSchemeStruct bstr)
+      (b : B ⟶ J) (hb : b ≫ jstr = bstr),
+      IsAdditiveOn abB abJ b hb ∧
+        AlgebraicGeometry.Surjective (b ≫ u) ∧ IsFinite (b ≫ u) :=
+  sorry
+
+/-- **AN ISOGENY ADMITS A QUASI-INVERSE** (sorry leaf, new 2026-07-28) —
+step 2 of the quotient half of Poincaré reducibility, and the half that
+needs no polarisation: a finite surjective homomorphism `φ : B ⟶ A` of
+abelian varieties over `ℚ` admits `ψ : A ⟶ B` with `φ ∘ ψ = [m]` on
+`ℚ`-points for some `m > 0`.
+
+TRUE.  `K := ker φ` is a finite flat commutative group scheme over `ℚ`
+(finite because `φ` is, flat because `φ` is faithfully flat), so it is
+killed by its order `m > 0` (Deligne; in characteristic `0` it is even
+étale, hence `K(ℚ̄)` a finite abelian group killed by its exponent).
+Then `[m]_B` kills `K`, so it factors through the fppf quotient
+`B / K ≅ A`: there is a unique homomorphism `ψ : A ⟶ B` with
+`ψ ∘ φ = [m]_B`.  Composing with `φ` and using `φ ∘ [m]_B = [m]_A ∘ φ`
+gives `(φ ∘ ψ) ∘ φ = [m]_A ∘ φ`, and `φ` is faithfully flat and
+quasi-compact, hence an epimorphism of schemes (Stacks 023Q/02VW), so
+`φ ∘ ψ = [m]_A`.  Read on `ℚ`-points that is the conclusion.
+
+**`_hfin` IS NOT LOAD-BEARING FOR TRUTH — AND THAT IS EXACTLY WHY IT IS
+THERE.**  Deleting it turns this statement into the FULL quotient half of
+Poincaré reducibility (which is true, and is
+`exists_quasiSection_of_surjective_isAdditiveOn` below), i.e. it undoes
+the cut and re-creates the node this leaf was split off from.  A reviewer
+tempted to "generalise" it away should read the section docstring above
+first.
+
+**`_hsurj` MAY NOT BE DROPPED, and here is the witness.**  Take
+`A := E`, the elliptic curve `y² + y = x³ − x` (conductor `37`, Mordell–
+Weil rank `1`, PARI/GP `ellrank` recomputed for this leaf on 2026-07-28),
+`B := Spec ℚ` the trivial abelian scheme and `φ` its zero section — a
+closed immersion, hence FINITE, and a homomorphism, but not surjective.
+Any `ψ : A ⟶ B` is the structure map, so `φ(ψ x) = 0` for every `x`, and
+the conclusion would assert `m • x = 0` for every `x ∈ E(ℚ)` with
+`m > 0`, which fails for a point of infinite order.
+
+**Under-pinning audit.**  The only cheap witness is `ψ` the zero map,
+which satisfies the conclusion exactly when `A(ℚ)` is killed by `m` —
+and in that case the consumer's conclusion (that `A(ℚ)` is torsion) is
+true anyway, so a spoofed witness can make the consumer uninformative but
+never false.  This is the same audit the deleted single-node version of
+`exists_quasiSection_heckeIsotypicFactor` carried, and it survives the
+cut unchanged.
+
+**What proving it needs**: kernels of homomorphisms of abelian schemes as
+finite flat group schemes, "a finite commutative group scheme is killed
+by its order", and the factorisation of `[m]` through an fppf quotient.
+All three are absent from mathlib at this pin. -/
+theorem exists_quasiInverse_of_isogeny {B A : Scheme.{0}}
+    {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (_hadd : IsAdditiveOn abB abA φ hφ)
+    (_hsurj : AlgebraicGeometry.Surjective φ) (_hfin : IsFinite φ) :
+    letI := abA.addCommGroup (𝟙 SpecQ)
+    ∃ (ψ : A ⟶ B) (hψ : ψ ≫ bstr = astr) (m : ℕ), 0 < m ∧
+      ∀ x : RelPoint astr (𝟙 SpecQ),
+        RelPoint.post φ hφ (RelPoint.post ψ hψ x) = m • x :=
+  sorry
+
+/-- **POINCARÉ REDUCIBILITY, QUOTIENT HALF, LEVEL-GENERIC** (PROVEN
+2026-07-28 over the two leaves above) — a surjective homomorphism of
+abelian varieties over `ℚ` admits a quasi-section.
+
+Nothing modular appears: no modular curve, no Jacobian, no level, no
+Hecke operator.  That is what makes it usable at the THREE places this
+file needs Poincaré reducibility, and the reason the recommendation on
+`exists_quasiSection_heckeIsotypicFactor` (state it once, not three
+times inside proofs) is followed here rather than there.
+
+The proof is pure glue: the complement leaf gives `b : B ⟶ J` with
+`b ≫ u` an isogeny, the quasi-inverse leaf gives `ψ` with
+`(b ≫ u) ∘ ψ = [m]`, and `v := ψ ≫ b` works because postcomposition is
+functorial (`RelPoint.post_comp`). -/
+theorem exists_quasiSection_of_surjective_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu)
+    (hsurj : AlgebraicGeometry.Surjective u) :
+    letI := abA.addCommGroup (𝟙 SpecQ)
+    ∃ (v : A ⟶ J) (hv : v ≫ jstr = astr) (m : ℕ), 0 < m ∧
+      ∀ x : RelPoint astr (𝟙 SpecQ),
+        RelPoint.post u hu (RelPoint.post v hv x) = m • x := by
+  letI := abA.addCommGroup (𝟙 SpecQ)
+  obtain ⟨B, bstr, abB, b, hb, hbadd, hbusurj, hbufin⟩ :=
+    exists_isogenyComplement_of_surjective_isAdditiveOn abJ abA u hu hadd hsurj
+  have hbu : (b ≫ u) ≫ astr = bstr := by rw [Category.assoc, hu, hb]
+  have hbuadd : IsAdditiveOn abB abA (b ≫ u) hbu := by
+    intro T g x y
+    rw [RelPoint.post_comp b hb u hu, RelPoint.post_comp b hb u hu,
+      RelPoint.post_comp b hb u hu, hbadd, hadd]
+  obtain ⟨ψ, hψ, m, hm, hmspec⟩ :=
+    exists_quasiInverse_of_isogeny abB abA (b ≫ u) hbu hbuadd hbusurj hbufin
+  have hv : (ψ ≫ b) ≫ jstr = astr := by rw [Category.assoc, hb, hψ]
+  refine ⟨ψ ≫ b, hv, m, hm, fun x => ?_⟩
+  have hx := hmspec x
+  rw [RelPoint.post_comp b hb u hu] at hx
+  rw [RelPoint.post_comp ψ hψ b hb]
+  exact hx
+
 /-- **THE `±`-SPLITTING OF AN ABELIAN SCHEME UNDER AN INVOLUTION, AS A
 DATUM** (new 2026-07-28) — Poincaré reducibility for an involution `ι` of
 an abelian scheme `A/ℚ`, packaged as the two quotients on which `ι` acts
@@ -56733,9 +56919,10 @@ def IsAtkinLehnerMinusForm (N : ℕ) (f : CuspForm (Gamma0GL N) 2) : Prop :=
   (⇑f) ∣[(2 : ℤ)] frickeRep N = -⇑f
 
 /-- **POINCARÉ REDUCIBILITY, QUOTIENT HALF, ON THE ISOTYPIC FACTORS**
-(sorry leaf, 2026-07-28) — a quasi-section of the optimal quotient map
-`u i : J ⟶ A i`: some `v : A i ⟶ J` with `u i ∘ v = [m]` on `ℚ`-points,
-`m ≠ 0`.
+(introduced as a sorry leaf 2026-07-28; **PROVEN 2026-07-28** by
+specialising `exists_quasiSection_of_surjective_isAdditiveOn` above) — a
+quasi-section of the optimal quotient map `u i : J ⟶ A i`: some
+`v : A i ⟶ J` with `u i ∘ v = [m]` on `ℚ`-points, `m ≠ 0`.
 
 TRUE and classical (Mumford, *Abelian Varieties* §19; Milne, *Abelian
 Varieties* I.12.1).  `u i` is a SURJECTIVE homomorphism of abelian
@@ -56745,6 +56932,19 @@ orthogonal complement `B` of `(ker u i)⁰` gives an abelian subvariety with
 `B ∩ ker u i` finite, so `u i|_B : B ⟶ A i` is an isogeny; composing
 `A i ⟶ B ⟶ J` with a quasi-inverse of that isogeny gives `v` with
 `u i ∘ v = [m]` where `m = deg(u i|_B)`.
+
+**THE RECOMMENDATION IN THE PARAGRAPH BELOW WAS TAKEN, AND THIS NODE IS
+NOW ONE LINE.**  Poincaré reducibility is stated once, LEVEL-GENERICALLY,
+as `exists_quasiSection_of_surjective_isAdditiveOn` — which is itself
+proven over the two steps of the classical argument,
+`exists_isogenyComplement_of_surjective_isAdditiveOn` (the polarisation
+step) and `exists_quasiInverse_of_isogeny` (the elementary step).  All
+three live ~800 lines above, beside `IsInvolutionSignSplitting`, so that
+`exists_atkinLehnerDescent_of_factorwise` — the second of the three
+consumers named below — can reach them too.  `isTorsion_factor_of_heckeIsotypic`,
+the third, sits ABOVE that block and cannot; hoisting the generic block
+further up is the natural follow-up, and is blocked only by
+`RelPoint.post_comp`'s position.
 
 **STATED ON RATIONAL POINTS, NOT ON MORPHISMS, AND THAT IS DELIBERATE.**
 The classical theorem gives `v ≫ u i = [m]` as a morphism identity; the
@@ -56763,9 +56963,10 @@ uninformative in a case where it was already free.
 **WHY IT IS WORTH STATING SEPARATELY**, and this is the recommendation
 the consumer's own docstring already made: Poincaré reducibility is
 absent from mathlib, from `~/cs/FLT` and from this development
-(`grep -rin "poincar"` finds only prose), and it is needed at THREE
-places in this file — here, on `isTorsion_factor_of_heckeIsotypic`, and
-inside `exists_atkinLehnerDescent_of_factorwise`, whose docstring says
+(`grep -rin "poincar"` finds only prose; re-checked 2026-07-28), and it is
+needed at THREE places in this file — here, on
+`isTorsion_factor_of_heckeIsotypic`, and inside
+`exists_atkinLehnerDescent_of_factorwise`, whose docstring says
 "passing from here to a sign is Poincaré reducibility and nothing else".
 Proving it once is strictly cheaper than proving it three times inside
 proofs.
@@ -56783,10 +56984,100 @@ theorem exists_quasiSection_heckeIsotypicFactor (N : ℕ) {X Y J : Scheme.{0}}
     ∃ (v : D.A i ⟶ J) (hv : v ≫ jstr = D.astr i) (m : ℕ), 0 < m ∧
       ∀ x : RelPoint (D.astr i) (𝟙 SpecQ),
         RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post v hv x) = m • x :=
+  exists_quasiSection_of_surjective_isAdditiveOn ab (D.abA i) (D.u i) (D.u_comp i)
+    (D.u_add i) (D.u_surj i)
+
+/-- **KOLYVAGIN–LOGACHEV ON `J⁻(ℚ)`: `z − w_J z` IS ALWAYS TORSION**
+(sorry leaf, new 2026-07-28) — the whole Eichler–Shimura /
+Kolyvagin–Logachev content of the two nodes below, stated on the JACOBIAN
+alone, with no isotypic decomposition and no factor index anywhere in it.
+
+TRUE.  `_hchar` pins `w_J` to be the endomorphism induced by the
+Atkin–Lehner involution `w` (uniqueness in `IsJacobianOf.existsUnique_mapEnd`),
+and taking `_hchar` at the base point `o` gives `w_J 0 = 0`, so `w_J` is a
+homomorphism by relative rigidity (`isAdditiveOn_of_post_zero`) — this is
+the four-line idiom already used twice above, at
+`exists_prym_of_involution` and at
+`exists_heckeIsotypicDecomposition_atkinLehnerFactorwise`.  Then
+`(1 + w_J)(1 − w_J) = 1 − w_J²  = 0`, so the image of `1 − w_J` is
+contained in `ker(1 + w_J)`, whose identity component is `J⁻`.  Now
+`_hnew` makes `S₂(Γ₀(N))` entirely new, so `J₀(N) ∼ ∏_g A_g` over the
+newform orbits with no repeated factors and `w_N` acting on each by a
+scalar `ε_g = ±1` (multiplicity one); hence `J⁻ ∼ ∏_{ε_g = −1} A_g`.
+Each such `g` satisfies `g ∣[2] W_N = −g`, so `_hL` gives `L(g, 1) ≠ 0`
+and Kolyvagin–Logachev makes `A_g(ℚ)` torsion.  Therefore `J⁻(ℚ)` is
+torsion, and so is `z − w_J z` for every `z`.
+
+**WHY THE IMAGE OF `1 − w_J` AND NOT THE ANTI-INVARIANT SUBGROUP.**  The
+two statements are equivalent given that `w_J` is an involution on
+`ℚ`-points, but the involution is NOT among the hypotheses in the form
+needed: `_hw2` is an equation about `w` on `X`, and transporting it to
+`w_J ≫ w_J = 𝟙 J` goes through `_hchar` plus the uniqueness half of
+`IsJacobianOf.existsUnique_mapEnd`.  Stated on the image, the CONSUMERS
+need neither that transport nor the additivity of `w_J`: they need only
+`E.descend_minus`, so all the `w_J`-bookkeeping stays inside this leaf,
+where the prover is deriving additivity anyway.  The anti-invariant form
+follows: if `w_J z = −z` then `z − w_J z = 2z`, whose finite order forces
+`z`'s.
+
+**`_hnew` MAY NOT BE DROPPED, and the witness is `N = 74`** — the one
+recorded in full on `isTorsion_minusFactor_of_lFunction_ne_zero` below and
+recomputed in PARI/GP for THIS leaf on 2026-07-28
+(`mfdim(mfinit([74,2],0)) = 4`, `mfatkineigenvalues(mfinit([74,2],0),74)
+= [[-1,-1],[-1,-1]]`, so `_hL` holds at `74`).  The old part of
+`S₂(Γ₀(74))` contains a `w_74`-minus vector spanning a factor isogenous to
+the RANK-ONE curve `37a`; for `z` mapping onto it, `w_J z = −z` and
+`z − w_J z = 2z` is non-torsion.
+
+**`_hL` MAY NOT BE DROPPED, and the witness is `N = 389`** (new
+2026-07-28; the `N = 37` claim in the consumer's "not vacuous" paragraph
+was WRONG and is corrected there).  `389` is prime, so `_hnew` holds
+vacuously.  The newform `389a` — the curve `y² + y = x³ + x² − 2x`,
+`ellrank = 2`, `ellrootno = +1` in PARI/GP 2.17.4, hence Atkin–Lehner
+eigenvalue `−ellrootno = −1` at weight two — is an Atkin–Lehner-MINUS
+eigenform with `L(389a, 1) = 0`, so `_hL` fails; and `A_{389a}` is a
+rank-`2` factor of `J₀(389)⁻`, so for `z` mapping onto it `z − w_J z = 2z`
+is again non-torsion.  (The convention `ε = −w_N` was validated against
+`mfatkineigenvalues` at `N = 37`, where it reproduces `[[-1],[1]]` with
+the `+1` orbit `37a` the rank-one one.)
+
+**`_hchar` MAY NOT BE DROPPED.**  Without it `w_J` is an arbitrary
+`ℚ`-morphism: take `w_J := −𝟙`, `N := 37` (where `_hnew` and `_hL` both
+hold, see the correction below).  Then `z − w_J z = 2z`, which is
+non-torsion for `z` generating the rank-one part of `J₀(37)(ℚ)`.
+
+**LABEL-FREEDOM.**  No hypothesis names an eigenform LABEL: `_hL` is
+quantified over EVERY Atkin–Lehner-minus eigenform of level `N` via the
+slash action (`IsAtkinLehnerMinusForm`), and the conclusion is an equation
+about `w_J`.  The `N = 37` eigen-system swap recorded on
+`isTorsion_factor_of_heckeIsotypic` therefore cannot touch it.
+
+**What proving it needs**: Eichler–Shimura (`J₀(N) ∼ ∏ A_g` over the
+newform orbits, with `w_N` a scalar on each — multiplicity one) and
+Kolyvagin–Logachev (`L(g, 1) ≠ 0 ⟹ A_g(ℚ)` finite).  Both are absent from
+mathlib, from `~/cs/FLT` and from this development. -/
+theorem isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (_hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
+    (z : RelPoint jstr (𝟙 SpecQ)) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    IsOfFinAddOrder (z - RelPoint.post wJ hwJ z) :=
   sorry
 
 /-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, ON THE IMAGE OF `J(ℚ)`**
-(sorry leaf, 2026-07-28) — the ARITHMETIC half of
+(introduced as a sorry leaf 2026-07-28; **PROVEN 2026-07-28** over
+`isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` immediately
+above) — the ARITHMETIC half of
 `isTorsion_minusFactor_of_lFunction_ne_zero` below, with Poincaré
 reducibility removed.
 
@@ -56798,20 +57089,25 @@ Poincaré reducibility and nothing else — that is
 `exists_quasiSection_heckeIsotypicFactor` above, and the two are combined
 below.
 
-The route, unchanged from the consumer's docstring except that it now
-stops one step earlier:
+**The proof is now PURE GLUE**, all the arithmetic having moved to the
+leaf above: `E.descend_minus i _hi z` gives `u i (w_J z) = − u i z`, so
+`u i (z − w_J z) = u i z − (− u i z) = 2 • u i z` by additivity of `u i`
+(`D.u_add i`, packaged as an `AddMonoidHom`); the leaf makes
+`z − w_J z` of finite order `n`; hence `(n · 2) • u i z = 0` with
+`n · 2 > 0`.  Note what is NOT needed: neither the additivity of `w_J`
+nor its involutivity, both of which the leaf's own statement absorbs —
+see the paragraph "why the image of `1 − w_J`" there.
 
-* `E.descend_minus i _hi` gives `u i ∘ w_J = − u i`, so for `z ∈ J(ℚ)`
-  the point `z' := z − w_J z` is `w_J`-ANTI-INVARIANT (`_hw2` and
-  `_hchar` make `w_J` an involution, by the uniqueness half of
-  `IsJacobianOf.existsUnique_mapEnd`) and satisfies
-  `u i z' = 2 • u i z`.
+The route the arithmetic leaf discharges, unchanged from the consumer's
+docstring except that it stops one step earlier:
+
 * `_hnew` makes `S₂(Γ₀(N))` entirely new, so `J₀(N) ∼ ∏_g A_g` over the
   newform orbits with no repeated factors and `w_N` acting on each by a
   scalar `ε_g = ±1` (multiplicity one); hence `J⁻ ∼ ∏_{ε_g = −1} A_g`.
 * Each such `g` has `g ∣[2] W_N = −g`, so `_hL` gives `L(g, 1) ≠ 0` and
-  Kolyvagin–Logachev makes `A_g(ℚ)` torsion; so `z'`, being
-  anti-invariant, is torsion, hence so is `2 • u i z` and hence `u i z`.
+  Kolyvagin–Logachev makes `A_g(ℚ)` torsion; so `z − w_J z`, lying in
+  `J⁻` up to a finite group, is torsion, hence so is `2 • u i z` and
+  hence `u i z`.
 
 **Why this is NOT a relocation of the consumer.**  The two differ by
 exactly the surjectivity input: `u i` is surjective as a MORPHISM
@@ -56849,8 +57145,27 @@ theorem isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J 
       IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
     (i : D.idx) (_hi : ¬ E.Plus i) (z : RelPoint jstr (𝟙 SpecQ)) :
     letI := (D.abA i).addCommGroup (𝟙 SpecQ)
-    IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) z) :=
-  sorry
+    IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) z) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+  -- `u i` as an additive map of the two groups of `ℚ`-points
+  let φ : RelPoint jstr (𝟙 SpecQ) →+ RelPoint (D.astr i) (𝟙 SpecQ) :=
+    AddMonoidHom.mk' (fun y => RelPoint.post (D.u i) (D.u_comp i) y)
+      (fun x y => D.u_add i x y)
+  have hφ : ∀ y, φ y = RelPoint.post (D.u i) (D.u_comp i) y := fun _ => rfl
+  -- `u i (w_J z) = − u i z`, the defining equation of a `−1` factor
+  have hmin : φ (RelPoint.post wJ hwJ z) = -φ z := by
+    rw [hφ, hφ]; exact E.descend_minus i _hi z
+  -- hence `u i (z − w_J z) = 2 • u i z`
+  have hdouble : φ (z - RelPoint.post wJ hwJ z) = 2 • φ z := by
+    rw [map_sub, hmin, sub_neg_eq_add, two_nsmul]
+  obtain ⟨n, hn, hnz⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp
+    (isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero N hX jac w hw _hw2 _hal wJ hwJ
+      _hchar _hnew _hL z)
+  have hkey : (n * 2) • φ z = φ (n • (z - RelPoint.post wJ hwJ z)) := by
+    rw [map_nsmul, hdouble, smul_smul]
+  refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n * 2, Nat.mul_pos hn (by norm_num), ?_⟩
+  rw [← hφ, hkey, hnz, map_zero]
 
 /-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (PROVEN
 2026-07-28 over the two leaves immediately above; a single `sorry` when it
@@ -56925,9 +57240,27 @@ oldforms, a `W_N`-eigenvector in an old space that is also a
 (`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` and
 `lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine` below), where
 the minus part is `5`-dimensional; and trivially at every `N` with
-`S₂(Γ₀(N)) = 0`.  They are NOT jointly trivial: at `N = 37`, `_hnew` holds
-while `_hL` fails, which is correct — `J₀(37)` has rank `1`, in the PLUS
-part, `37a` having `w_37 = +1`.
+`S₂(Γ₀(N)) = 0`.
+
+**CORRECTED 2026-07-28 — the `N = 37` claim that stood here was FALSE.**
+This paragraph used to read "they are NOT jointly trivial: at `N = 37`,
+`_hnew` holds while `_hL` fails".  It does not fail there.  `_hL` is
+quantified over Atkin–Lehner-MINUS eigenforms only, and at `37` the single
+minus orbit is `37b`, of rank `0`
+(`mfatkineigenvalues(mfinit([37,2],0),37) = [[-1],[1]]`, PARI/GP 2.17.4,
+recomputed 2026-07-28; the `+1` orbit is the rank-one `37a`), so
+`L(37b, 1) ≠ 0` and **`_hL` HOLDS at `37`**.  What `37` really shows is the
+next paragraph's point in reverse: both hypotheses hold, the conclusion
+holds, and `J₀(37)`'s rank `1` is untouched because it sits in the PLUS
+part, which `_hi` excludes.
+
+The level that separates them is **`N = 389`**: prime, so `_hnew` holds
+vacuously, while `389a` (`y² + y = x³ + x² − 2x`, `ellrank = 2`,
+`ellrootno = +1` hence Atkin–Lehner eigenvalue `−1`) is a minus eigenform
+with `L(389a, 1) = 0`.  So `_hL` fails at `389` — and so does the
+conclusion, `A_{389a}` being a rank-`2` minus factor.  That is the witness
+for `_hL`'s necessity, and it is recorded in full on
+`isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` above.
 
 **Not degenerate in the other direction either.**  If `N` has no
 Atkin–Lehner-minus eigenform at all then `w_J = 1` up to isogeny, `_hi`
@@ -56950,12 +57283,18 @@ twice inside proofs.
 
 **DECOMPOSED 2026-07-28 ALONG POINCARÉ REDUCIBILITY, taking that
 recommendation; this was a single `sorry` until then.**  The two theories
-the node carried are now on two named leaves immediately above:
+the node carried went onto two named nodes immediately above, and LATER
+THE SAME DAY both of those were themselves proven, so the sorries now sit
+one level further down again:
 
-| leaf | theory |
-|---|---|
-| `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev |
-| `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half |
+| node | theory | status |
+|---|---|---|
+| `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | PROVEN over the leaf below |
+| `isOfFinAddOrder_antiInvariantPart_of_lFunction_ne_zero` | the same, on `J` alone: `z − w_J z` is torsion | **sorry leaf** |
+| `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half | PROVEN over the generic form |
+| `exists_quasiSection_of_surjective_isAdditiveOn` | the same, level-generic | PROVEN over the two below |
+| `exists_isogenyComplement_of_surjective_isAdditiveOn` | polarisation + orthogonal complement | **sorry leaf** |
+| `exists_quasiInverse_of_isogeny` | `[m]` factors through an isogeny | **sorry leaf** |
 
 and this declaration is their composition: given `x : A i(ℚ)`, the
 quasi-section gives `v` and `m > 0` with `u i (v x) = m • x`, the
