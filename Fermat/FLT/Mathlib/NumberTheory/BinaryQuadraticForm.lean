@@ -61,9 +61,12 @@ SEVEN leaves remain, each stated so that it can be worked on alone:
 
 * `eq_of_two_mul_mul_cube_add_one_eq_sq` — `2x(x³+1) = y²`, elementary and
   self-contained;
-* `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
-  — `α` is an algebraic integer generating a cubic field (Weber's theory of the
-  ring class field of the order of discriminant `−4p`, whose class number is `3`);
+* `Heegner.isIntegral_weberAlpha`, `Heegner.natDegree_minpoly_weberAlpha`
+  — `α` is an algebraic integer, and its degree over `ℚ` is exactly `3` (Weber's
+  theory of the ring class field of the order of discriminant `−4p`, whose class
+  number is `3`). These two REPLACE `Heegner.exists_intCubic_weberAlpha` and
+  `Heegner.intCast_indep_weberAlpha_pow_four`, which are now PROVEN from them by
+  elementary field theory;
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
   (`q`-expansion combinatorics, no class field theory);
 * `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ`; **this is the main
@@ -84,6 +87,8 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 public import Mathlib.NumberTheory.ModularForms.DedekindEta
 public import Mathlib.NumberTheory.ModularForms.Discriminant
 public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.Basic
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+public import Mathlib.FieldTheory.Minpoly.IsIntegrallyClosed
 
 @[expose] public section
 
@@ -768,14 +773,212 @@ lemma cube_of_sq {R : Type*} [CommRing R] (x a b c : R)
     (x ^ 2) ^ 3 + (2 * b - a ^ 2) * (x ^ 2) ^ 2 + (b ^ 2 - 2 * a * c) * x ^ 2 + -c ^ 2 = 0 := by
   linear_combination (x ^ 3 - a * x ^ 2 + b * x - c) * h
 
-/-- **LEAF 1 — `α` is an algebraic integer of degree at most `3`.**
+/-! #### The cubic field of `α`: field theory, then the two CM inputs
+
+The two leaves `exists_intCubic_weberAlpha` and `intCast_indep_weberAlpha_pow_four` are both
+consequences of the SINGLE statement "`α` is an algebraic integer of degree exactly `3`", and
+that is how they are proven below. The field-theoretic passage from that statement to each of
+them is elementary and is PROVEN here; what is left open is the CM input itself, cut into the
+two named leaves `isIntegral_weberAlpha` and `natDegree_minpoly_weberAlpha`.
+
+This is a strict improvement on stating the two conclusions directly, because the second of
+them (`ℤ`-independence of `1, α⁴, α⁸`) is NOT an independent fact: it follows from
+`[ℚ(α) : ℚ] = 3` with no further modular input, by the degree argument in
+`intCast_indep_of_natDegree_minpoly` below. Leaving it as a separate assumption invited a
+future owner to attack a statement that was never open. -/
+
+open _root_.Polynomial _root_.IntermediateField in
+/-- In a cubic extension `L/ℚ`, any `x` of degree `≤ 2` is already rational.
+
+`3` is prime, so `[ℚ(x) : ℚ]` divides `3` by the tower law and is `≤ 2` by hypothesis, hence
+`1`; and a degree-one simple extension is `⊥`. -/
+theorem mem_range_algebraMap_of_finrank_three {L : Type*} [Field L] [Algebra ℚ L]
+    (h3 : Module.finrank ℚ L = 3) (x : L) (hx : (minpoly ℚ x).natDegree ≤ 2) :
+    ∃ r : ℚ, algebraMap ℚ L r = x := by
+  have hfd : FiniteDimensional ℚ L := by
+    apply FiniteDimensional.of_finrank_pos (K := ℚ); rw [h3]; norm_num
+  have hxi : IsIntegral ℚ x := IsIntegral.of_finite ℚ x
+  have hrank : Module.finrank ℚ ℚ⟮x⟯ = (minpoly ℚ x).natDegree :=
+    _root_.IntermediateField.adjoin.finrank hxi
+  have htower : Module.finrank ℚ ℚ⟮x⟯ * Module.finrank ℚ⟮x⟯ L = Module.finrank ℚ L :=
+    Module.finrank_mul_finrank ℚ _ L
+  rw [h3, hrank] at htower
+  have hd1 : (minpoly ℚ x).natDegree = 1 := by
+    set d := (minpoly ℚ x).natDegree with hdd
+    clear_value d
+    interval_cases d <;> omega
+  have hbot : ℚ⟮x⟯ = ⊥ := _root_.IntermediateField.finrank_eq_one_iff.mp (by rw [hrank, hd1])
+  have hmem : x ∈ ℚ⟮x⟯ := _root_.IntermediateField.mem_adjoin_simple_self ℚ x
+  rw [hbot] at hmem
+  exact _root_.IntermediateField.mem_bot.mp hmem
+
+open _root_.Polynomial in
+/-- If `x²` is rational then `x` has degree at most `2`, being a root of `X² − r`. -/
+theorem natDegree_minpoly_le_two_of_sq_mem_range {L : Type*} [Field L] [Algebra ℚ L] (x : L)
+    (r : ℚ) (h : algebraMap ℚ L r = x ^ 2) : (minpoly ℚ x).natDegree ≤ 2 := by
+  have hne : (X ^ 2 - C r : ℚ[X]) ≠ 0 := by
+    intro hc
+    have h2 : (X ^ 2 - C r : ℚ[X]).coeff 2 = 1 := by simp
+    rw [hc] at h2
+    simp at h2
+  have hae : aeval x (X ^ 2 - C r : ℚ[X]) = 0 := by simp [h]
+  have hdle := minpoly.degree_le_of_ne_zero ℚ x hne hae
+  have hdeg2 : (X ^ 2 - C r : ℚ[X]).degree = 2 := by
+    have := Polynomial.degree_X_pow_sub_C (n := 2) (by norm_num) r
+    simpa using this
+  rw [hdeg2] at hdle
+  exact Polynomial.natDegree_le_iff_degree_le.mpr hdle
+
+open _root_.Polynomial in
+/-- An algebraic integer of degree `3` over `ℚ` satisfies a MONIC cubic with coefficients in
+`ℤ` — namely its minimal polynomial over `ℤ`, which maps to the one over `ℚ` because `ℤ` is
+integrally closed with fraction field `ℚ`. -/
+theorem exists_intCubic_of_natDegree_minpoly {α : ℂ} (hint : IsIntegral ℤ α)
+    (hdeg : (minpoly ℚ α).natDegree = 3) :
+    ∃ a b c : ℤ, α ^ 3 + (a : ℂ) * α ^ 2 + (b : ℂ) * α + (c : ℂ) = 0 := by
+  have hmonic : (minpoly ℤ α).Monic := minpoly.monic hint
+  have hmap : minpoly ℚ α = (minpoly ℤ α).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hint
+  have hPdeg : (minpoly ℤ α).natDegree = 3 := by
+    rw [hmap, hmonic.natDegree_map] at hdeg
+    exact hdeg
+  have haev : aeval α (minpoly ℤ α) = 0 := minpoly.aeval ℤ α
+  have hlt : (minpoly ℤ α).natDegree < 4 := by rw [hPdeg]; norm_num
+  have hsum := Polynomial.aeval_eq_sum_range' hlt α
+  rw [haev] at hsum
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+    Finset.sum_range_succ, Finset.sum_range_zero] at hsum
+  have hc3 : (minpoly ℤ α).coeff 3 = 1 := by
+    have := hmonic.coeff_natDegree
+    rwa [hPdeg] at this
+  rw [hc3] at hsum
+  refine ⟨(minpoly ℤ α).coeff 2, (minpoly ℤ α).coeff 1, (minpoly ℤ α).coeff 0, ?_⟩
+  simp only [zsmul_eq_mul, Int.cast_one, one_mul, pow_zero, pow_one, mul_one, zero_add] at hsum
+  linear_combination -hsum
+
+open _root_.Polynomial _root_.IntermediateField in
+/-- **`1, α⁴, α⁸` are `ℤ`-independent as soon as `α` has degree `3`** — no modular input.
+
+The mechanism is the prime degree, applied TWICE. A nontrivial relation
+`uα⁸ + vα⁴ + w = 0` makes `α⁴` a root of a nonzero rational polynomial of degree `≤ 2`, so
+`α⁴` is rational by `mem_range_algebraMap_of_finrank_three`; then `α²` is a root of `X² − α⁴`,
+so `α²` is rational by the same lemma; then `α` is a root of `X² − α²`, giving
+`deg α ≤ 2 < 3`.
+
+This is why no "`α⁴` has degree `3`" hypothesis is needed anywhere: it is a THEOREM about any
+degree-three `α`, not an extra fact about this particular one. -/
+theorem intCast_indep_of_natDegree_minpoly {α : ℂ} (hdeg : (minpoly ℚ α).natDegree = 3) :
+    ∀ u v w : ℤ, (u : ℂ) * α ^ 8 + (v : ℂ) * α ^ 4 + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 := by
+  have hint : IsIntegral ℚ α := by
+    by_contra hc
+    rw [minpoly.eq_zero hc] at hdeg
+    simp at hdeg
+  have h3 : Module.finrank ℚ ℚ⟮α⟯ = 3 := by
+    rw [_root_.IntermediateField.adjoin.finrank hint, hdeg]
+  set a : ℚ⟮α⟯ := _root_.IntermediateField.AdjoinSimple.gen ℚ α with ha
+  have hamap : (algebraMap ℚ⟮α⟯ ℂ) a = α :=
+    _root_.IntermediateField.AdjoinSimple.algebraMap_gen ℚ α
+  have hmp : minpoly ℚ a = minpoly ℚ α := _root_.IntermediateField.minpoly_gen ℚ α
+  intro u v w h
+  by_contra hcon
+  have hinj : Function.Injective (algebraMap ℚ⟮α⟯ ℂ) := (algebraMap ℚ⟮α⟯ ℂ).injective
+  have hL0 : (u : ℚ⟮α⟯) * a ^ 8 + (v : ℚ⟮α⟯) * a ^ 4 + (w : ℚ⟮α⟯) = 0 := by
+    apply hinj
+    simp only [map_add, map_mul, map_pow, map_intCast, map_zero, hamap]
+    exact h
+  set q : ℚ[X] := C (u : ℚ) * X ^ 2 + C (v : ℚ) * X + C (w : ℚ) with hq
+  have hqne : q ≠ 0 := by
+    intro hc
+    apply hcon
+    have e2 : q.coeff 2 = (u : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    have e1 : q.coeff 1 = (v : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    have e0 : q.coeff 0 = (w : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    rw [hc] at e2 e1 e0
+    simp only [Polynomial.coeff_zero] at e2 e1 e0
+    exact ⟨by exact_mod_cast e2.symm, by exact_mod_cast e1.symm, by exact_mod_cast e0.symm⟩
+  have hae : aeval (a ^ 4) q = 0 := by
+    simp only [hq, map_add, map_mul, aeval_X, map_pow, map_intCast]
+    linear_combination hL0
+  have hdle : (minpoly ℚ (a ^ 4)).natDegree ≤ 2 := by
+    have hd := minpoly.degree_le_of_ne_zero ℚ (a ^ 4) hqne hae
+    have hdq : q.degree ≤ 2 := by rw [hq]; compute_degree
+    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
+  obtain ⟨r, hr⟩ := mem_range_algebraMap_of_finrank_three h3 (a ^ 4) hdle
+  have hstep1 : (minpoly ℚ (a ^ 2)).natDegree ≤ 2 :=
+    natDegree_minpoly_le_two_of_sq_mem_range (a ^ 2) r (by rw [hr]; ring)
+  obtain ⟨s, hs⟩ := mem_range_algebraMap_of_finrank_three h3 (a ^ 2) hstep1
+  have hstep2 : (minpoly ℚ a).natDegree ≤ 2 :=
+    natDegree_minpoly_le_two_of_sq_mem_range a s hs
+  rw [hmp, hdeg] at hstep2
+  omega
+
+/-- **LEAF 1a — `α` IS AN ALGEBRAIC INTEGER** (Weber; Booher §6, Theorem 37).
+
+`α = ζ₈⁻¹f₂(τ₀)²`, and Weber's theory shows `f(√−p)⁶` lies in the ring class field of the
+order `[1, 8√−p]`, from which `f₂(τ₀)²` is integral by descent. This is the integrality half
+of the old `exists_intCubic_weberAlpha`; the degree half is `natDegree_minpoly_weberAlpha`.
+
+MACHINE-CHECKED FAITHFULNESS, re-run for this cut rather than inherited (`PARI/GP`,
+`realprecision 80`, `α = exp(−πi/4)·(√2·η(2τ₀)/η(τ₀))²` with `η` the full Dedekind eta
+`eta(·,1)`): `algdep(α,3)` returns a MONIC polynomial with integer coefficients at every
+admissible `p`, so `α` is an algebraic integer in all five cases:
+
+| `p`   | `minpoly α`          | monic | irreducible |
+|-------|----------------------|-------|-------------|
+| `11`  | `x³ + 2x² − 2`       | yes   | yes         |
+| `19`  | `x³ − 2x² + 4x − 2`  | yes   | yes         |
+| `43`  | `x³ + 4x² + 4x − 2`  | yes   | yes         |
+| `67`  | `x³ + 2x² + 8x − 2`  | yes   | yes         |
+| `163` | `x³ + 4x² + 28x − 2` | yes   | yes         |
+
+The same run confirms `α` is REAL (imaginary part `< 10⁻⁹⁶` at all five), which is what the
+`ζ₈⁻¹` twist is for.
+
+WHAT IS MISSING, AND THE CHECK THAT WOULD REFUTE IT. Ring class field theory is absent from
+this pin: `grep -rn` for `ComplexMultiplication`, `HilbertClassField`, `ringClassField` over
+`.lake/packages/mathlib`, `Fermat/` and `~/cs/FLT/` returns nothing relevant. Refute by
+exhibiting any of those; the leaf would then reduce to specialising them. -/
+theorem isIntegral_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    IsIntegral ℤ (weberAlpha p hp.pos) :=
+  sorry
+
+/-- **LEAF 1b — `α` HAS DEGREE EXACTLY `3` OVER `ℚ`.**
+
+This is the class-number computation, and it is the ONLY place the deep input enters: `α`
+lies in the ring class field of the order `[1, √−p]` of discriminant `−4p`, and for
+`p ≡ 3 mod 8` the class number formula for a conductor-`2` order gives
+
+  `h(−4p) = 2·h(−p)·(1 − (−p|2)/2) = 3·h(−p)`,
+
+using `(−p|2) = −1` because `−p ≡ 5 mod 8`. With `h(−p) = 1` — which is exactly what `hcl`
+says — this is `3`, so `ℚ(α)` is a cubic field.
+
+`hcl` IS LOAD-BEARING and does not appear in the conclusion: drop it and `h(−p)` may exceed
+`1`, making `h(−4p) = 3h(−p) > 3` and the degree larger than `3`. It is not decorative.
+
+MACHINE-CHECKED FAITHFULNESS: `polisirreducible(algdep(α,3)) = 1` at all five admissible `p`
+(table in `isIntegral_weberAlpha`), so the degree is exactly `3` — not `1` or `2` — in every
+case where the hypotheses are satisfiable. Refute by exhibiting an admissible `p` at which
+`α` satisfies a rational polynomial of degree `< 3`. -/
+theorem natDegree_minpoly_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree = 3 :=
+  sorry
+
+/-- **LEAF 1 — `α` is an algebraic integer of degree at most `3` — PROVEN** from
+`isIntegral_weberAlpha` and `natDegree_minpoly_weberAlpha`.
 
 `α = ζ₈⁻¹f₂(τ₀)²` satisfies a MONIC cubic with rational-integer coefficients. This is the
-"one hand" of Heegner's insight (Booher §6): `α` lies in the ring class field of the order
-`[1, √−p]` of discriminant `−4p`, whose class number is
-`h(−4p) = 2h(−p)(1 + ½) = 3h(−p) = 3` when `p ≡ 3 mod 8` — so `ℚ(α)` is a cubic field, and
-`α` is an algebraic integer because `f₂(τ₀)²` is (Weber; Booher Theorem 37, whose proof
-shows `f(√−p)⁶` lies in the ring class field by descending from the order `[1, 8√−p]`).
+"one hand" of Heegner's insight (Booher §6). Given that `α` is integral over `ℤ` and has
+degree `3` over `ℚ`, the cubic is just its minimal polynomial over `ℤ`, which is monic and
+maps onto the one over `ℚ` because `ℤ` is integrally closed with fraction field `ℚ`; see
+`exists_intCubic_of_natDegree_minpoly`. The CM content sits entirely in the two sub-leaves.
 
 MACHINE-CHECKED FAITHFULNESS. `PARI/GP`'s `algdep(α, 3)` at the five admissible `p` returns
 exactly a monic integral cubic, with integer coefficients:
@@ -790,19 +993,14 @@ exactly a monic integral cubic, with integer coefficients:
 
 Note `c = −2` in every case, matching the `c² = 4` that `exists_heegnerRelation_aux` DERIVES
 (so the derivation is not vacuous — it recovers a fact the numerics independently show).
-
-WHAT IS MISSING, AND THE CHECK THAT WOULD REFUTE THIS. The claim "ring class field theory is
-absent" was re-verified for this decomposition rather than inherited: `grep -rn` for
-`ComplexMultiplication`, `HilbertClassField`, `ringClassField`, `jInvariant` over
-`.lake/packages/mathlib`, over `Fermat/`, and over `~/cs/FLT/` returns nothing relevant, and
-`Mathlib/NumberTheory/ModularForms/` contains no `j`-invariant at all. Refute by exhibiting
-any of those names; the leaf would then reduce to specialising them. -/
+This table was re-computed independently when this proof was written, and reproduced exactly. -/
 theorem exists_intCubic_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
     ∃ a b c : ℤ, weberAlpha p hp.pos ^ 3 + (a : ℂ) * weberAlpha p hp.pos ^ 2
       + (b : ℂ) * weberAlpha p hp.pos + (c : ℂ) = 0 :=
-  sorry
+  exists_intCubic_of_natDegree_minpoly (isIntegral_weberAlpha hp hp8 h3 hcl)
+    (natDegree_minpoly_weberAlpha hp hp8 h3 hcl)
 
 /-- **LEAF 2 — `α⁴` has degree at least `3`**, stated as `ℤ`-linear independence of
 `1, α⁴, α⁸`.
@@ -822,13 +1020,22 @@ and `α⁴` is a root of the cubic `x³ − γ₂x − 16`, which is irreducible
 DROPPING `hcl` MAKES THIS FALSE, and that is the interesting failure mode: without class
 number one there is no reason for the ring class field of `[1, √−p]` to be cubic, `γ₂(τ₀)`
 need not be rational, and `x³ − γ₂x − 16` need not be the minimal polynomial. So `hcl` is
-load-bearing here even though it does not appear in the conclusion. -/
+load-bearing here even though it does not appear in the conclusion — it enters through
+`natDegree_minpoly_weberAlpha`.
+
+**PROVEN**, from `natDegree_minpoly_weberAlpha` ALONE — integrality is not needed here.
+A CORRECTION to the framing above: this leaf was cut as if "`α⁴` has degree at least `3`"
+were a second, independent piece of Weber's theory to be supplied alongside LEAF 1. It is
+not. Once `α` has degree `3`, independence is FORCED by the primality of that degree, applied
+twice (`intCast_indep_of_natDegree_minpoly`): a nontrivial relation makes `α⁴` rational,
+hence `α²` rational, hence `deg α ≤ 2 < 3`. No modular input is consumed, and in particular
+the claim "`ℚ(α) = ℚ(α⁴)`" quoted above need never be established separately. -/
 theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
     ∀ u v w : ℤ, (u : ℂ) * weberAlpha p hp.pos ^ 8 + (v : ℂ) * weberAlpha p hp.pos ^ 4
       + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 :=
-  sorry
+  intCast_indep_of_natDegree_minpoly (natDegree_minpoly_weberAlpha hp hp8 h3 hcl)
 
 /-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER.**
 
@@ -1083,8 +1290,12 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 (`Heegner.exists_heegnerRelation_aux`), as is the passage from "algebraic integer" plus
 "rational" to `γ₂(τ₀) ∈ ℤ` (`Heegner.exists_int_gammaTwo`). What remains open is:
 
-* `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
-* `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
+* `Heegner.isIntegral_weberAlpha` — `α` is an algebraic integer;
+* `Heegner.natDegree_minpoly_weberAlpha` — `α` has degree exactly `3` over `ℚ`;
+  (these two REPLACE `Heegner.exists_intCubic_weberAlpha` and
+  `Heegner.intCast_indep_weberAlpha_pow_four`, both now PROVEN from them — the
+  independence of `1, α⁴, α⁸` needed no modular input at all, only the primality
+  of the degree);
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
 * `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ` (**the main theorem of CM**);
 * `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
