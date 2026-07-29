@@ -24209,7 +24209,92 @@ in both, so a successor should not "fix" the statement:
 So across `ℚ` (`ρ₀ = 1/2`), `ℚ(i)` (`1/4`), `ℚ(√-5)` (`1/2`) and `ℚ(√2)`
 (`Reg`), the constant is `2^{r−1}·Reg(K)/w(K)` with `Reg = 1` in the
 unit-rank-`0` cases.  A successor's construction must reproduce THAT
-value. -/
+value.
+
+INDEPENDENT RE-AUDIT (2026-07-28, second owner, PARI/GP written from
+scratch rather than inherited — every figure above is CONFIRMED, so the
+statement is FAITHFUL and must not be "repaired"):
+
+* `K = ℚ`, `ρ₀ = 1/2`: residual `0` and `-1.7e-77` at `x = 0.7, 2.3`.
+* `K = ℚ(i)`, `ρ₀ = 1/4`: residual `2.2e-77` and `-8.2e-77`; with
+  `ρ₀ = 1/2` the residual is `0.0408…`, so the constant is PINNED by
+  the identity, not fitted to it.
+* `K = ℚ(√-5)`, `ρ₀ = 1/2`: residual `1.3e-76` on the PRINCIPAL class
+  and `7.8e-77` on the NON-principal class, ideals enumerated to norm
+  `400` via `bnfisprincipal`.  This is the shared-`ρ₀` per-class form
+  of the statement, checked class by class.
+* `K = ℚ(√2)`: solving for `ρ₀` at `x = 0.31, 0.7, 1.7, 2.3` returns
+  `0.88137358701954302523260932497979230902816032826164` at ALL four,
+  agreeing with `K.reg` to the full 50 working digits.
+
+RECONNAISSANCE RE-CHECKED AGAINST OUR PIN (2026-07-28, own greps —
+recorded so a successor need not repeat it):
+
+* The hypothesis `hθ` is NOT a gap.  `zlattice_theta_transform` is
+  PROVEN (`ZLatticePoisson.lean`, ~780 lines), re-exported in this file,
+  and the top consumer `heckeClassZeta_of_zlattice_theta` already
+  discharges it by `exact zlattice_theta_transform L t ht`.  Passing it
+  as a hypothesis is a convenience, not an open dependency — so THIS
+  leaf is the last open link in the geometric chain.
+* The "one genuinely new algebraic input" claim is TRUE: grepping
+  `Mathlib/NumberTheory/NumberField/CanonicalEmbedding/` for
+  `traceForm`/`Algebra.trace` returns NOTHING, and mathlib carries no
+  `InfinitePlace`-indexed trace formula at all.  `FractionalIdeal.dual`,
+  `differentIdeal`, `NumberField.absNorm_differentIdeal`,
+  `mixedEmbedding.idealLattice` (with its `DiscreteTopology`/`IsZLattice`
+  instances), `covolume_idealLattice`, `fundamentalCone.idealSetEquivNorm`,
+  `euclidean.toMixed` and `volumePreserving_toMixed` all DO exist as named.
+* The metric gap is concrete: `euclidean.mixedSpace K` is
+  `WithLp 2 (EuclideanSpace ℝ {w // IsReal w} × EuclideanSpace ℂ {w // IsComplex w})`
+  with `Complex.orthonormalBasisOneI`, i.e. the form
+  `Σ_real x_w² + Σ_complex |x_w|²`.  The TRACE form is that with the
+  complex block DOUBLED, and it pairs an element with the CONJUGATE of
+  the other: `Tr_{K/ℚ}(αβ) = Σ_real σ_w(α)σ_w(β) + 2·Σ_complex Re(σ_w(α)σ_w(β))`,
+  which is `⟪σα, conj(σβ)⟫` for `⟪x,y⟫ = Σ_real x y + 2Σ_complex Re(x ȳ)`.
+  That conjugation is the "invisible to theta sums" isometry of step 3.
+* UNIVERSE OBSTRUCTION, confirmed: `euclidean.mixedSpace K` lives in
+  `K`'s universe, while `hθ` quantifies over `E : Type`.  `hθ` therefore
+  CANNOT be applied to the mixed space directly; a successor must
+  transport along an isometry to `EuclideanSpace ℝ (Fin (finrank ℚ K))`.
+
+CUT GUIDANCE — why no cheap decomposition exists, and what a
+NON-relocating one must contain (2026-07-28).  The passage from the
+class sum to a lattice theta is, once the unit rank is positive, an
+equality with an INTEGRAL of lattice thetas and not with a single one:
+unfolding the `𝒪ˣ`-orbits gives
+
+`Σ_{𝔟 ∈ C} G(N𝔟²x/|d|) = (1/w)·∫_𝔉 Σ_{0 ≠ α ∈ J} exp(-π‖y·σ(α)‖²c(x)) dy`,
+
+with the `α = 0` term contributing `(1/w)∫_𝔉 1 = 2^{r−1}vol(𝔉)/w = ρ₀`.
+So any sub-leaf list that never mentions `𝔉` (or mathlib's
+`fundamentalCone` / `NormLeOne` coordinates `expMapBasis`,
+`setLIntegral_expMapBasis_image`) is packaging the conclusion rather
+than cutting it: a cut is genuine only if the ASSEMBLY is what applies
+`hθ`, which forces the assembly to hold an `E` and an `L` in its hands.
+Concretely the three honest sub-leaves are (A) that integral
+representation, (B) the trace-dual/covolume-`1` identification above,
+and (C) invariance of `𝔉` under `y ↦ y⁻¹`; (B) is the only one with no
+analysis in it and is the right place to start.
+
+FIRST BRICK OF (B), ALREADY PROVEN AND VERIFIED — but NOT committed to
+the build, because nothing consumes it yet and it would be free-floating.
+It is preserved as the git blob tag `flt-lean-272-trace-over-places`
+(recover with `git cat-file blob flt-lean-272-trace-over-places`), and it
+compiles clean against our pin (`lake env lean`, `EXIT=0`, no warnings).
+It supplies the additive analogue of `prod_eq_abs_norm` that mathlib
+lacks, proved on the template of that lemma (`trace_eq_sum_embeddings`,
+`RingHom.equivRatAlgHom`, `Finset.sum_fiberwise`, `card_filter_mk_eq`):
+
+* `filter_mk_eq` — the fibre of `InfinitePlace.mk` over `w` is exactly
+  `{embedding w, ComplexEmbedding.conjugate (embedding w)}`;
+* `sum_fiber_eq` — `∑_{φ ↦ w} φ x = mult w · Re(σ_w x)`;
+* `trace_eq_sum_mult_re` — `Tr_{K/ℚ}(x) = ∑_w mult(w)·Re(σ_w x)`;
+* `trace_eq_sum_real_add_two_sum_complex` — the split
+  `Tr(x) = ∑_{w real} σ_w x + 2·∑_{w complex} Re(σ_w x)`, which is
+  literally the mixed-space form `Σ_real + 2Σ_complex Re` that has to be
+  matched against `⟪·,·⟫` to identify the trace-dual with the lattice
+  dual.  A successor building (B) should lift these four verbatim and
+  commit them TOGETHER with the assembly that consumes them. -/
 theorem heckeIdealTheta_functionalEquation (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
