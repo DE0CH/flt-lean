@@ -51046,9 +51046,181 @@ theorem artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class
       globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
     c hcmul hcfrob δ hδ0 hδpos hδcong
 
+/-- **DIRICHLET'S THEOREM FOR THE NARROW RAY CLASS GROUP, IN ITS
+CLASSICAL FRACTIONAL-IDEAL FORM: EVERY CLASS OF `I_F(mm)/P⁺_{F,mm}`
+CONTAINS A PRIME** (sorry node, created 2026-07-28 as the single
+mathematical sub-leaf of
+`exists_prime_narrowRayEquiv_divisor_ray_class` just below, which is now
+PROVEN AS GLUE over it and the divisor dictionary
+`toAdd_divisorMap_eq_count_ray_class` just above).
+
+Given a nonzero fractional ideal `X` of `𝓞_F` whose valuation vanishes at
+every prime dividing the modulus `mm ≠ ⊥`, there are a prime `w ∤ mm` and
+two integral `δ₁, δ₂ ≫ 0` with `δᵢ ≡ 1 (mod mm)` such that
+
+    (δ₂) · X = (δ₁) · w      i.e.   X · w⁻¹ = (δ₁/δ₂) ∈ P⁺_{F,mm}.
+
+**WHY THE STATEMENT IS THE CLASSICAL ONE, VERBATIM.** `δᵢ ≡ 1 (mod mm)`
+forces `(δᵢ)` coprime to `mm` (a prime containing `δᵢ` and `mm` contains
+`1 = δᵢ - (δᵢ - 1)`), so `δ₁/δ₂` is totally positive and `≡ 1 mod^× mm`
+in Neukirch's sense: `v(δ₁/δ₂ - 1) = v(δ₁ - δ₂) ≥ v(mm)` at every
+`v ∣ mm`, because `v(δ₂) = 0` there. The conclusion therefore says
+exactly that `X` and the prime `w` lie in the same class of
+`I_F(mm) / P⁺_{F,mm}`, and asserting it for every `X` is the surjectivity
+of `{primes w ∤ mm} → I_F(mm)/P⁺_{F,mm}`. Lang *ANT* VIII §2, Neukirch
+*ANT* VII §13, Childress ch. 4; in the form usually stated every ray
+class contains infinitely many primes, of which surjectivity is the
+weakest useful consequence and the only one needed here.
+
+**NO CIRCULARITY.** Proved analytically, by Hecke/Weber `L`-functions of
+ray class characters — the pole of the ray class zeta function factored
+as `∏_ψ L(s, ψ)`, plus `L(1, ψ) ≠ 0` for `ψ ≠ 1`. That is Dirichlet's
+argument, generalised; it uses no class field theory and in particular
+NOT the norm index inequalities, so it does not re-import what this
+cluster is proving.
+
+**WHAT IS IN TREE TO BUILD ON** (inventory re-confirmed against the
+source 2026-07-28; all six names below exist at the recorded places and
+`Chebotarev.lean` is sorry-free). That file carries the whole analytic
+apparatus for the narrow ray classes of modulus `ℓ·∞`, `ℓ` a RATIONAL
+prime: `IsNarrowRayEquiv` (`:3033`) with `symm`/`trans`, class
+representative finiteness `exists_finset_forall_isNarrowRayEquiv`
+(`:3207`), the per-class Weber count
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (`:5981`),
+the ideal Euler product
+`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` (`:2295`),
+the twisted `L`-series bounds
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (`:10554`), the
+minimal nonvanishing statement
+`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (`:10701`),
+and the divergence over primes in a cyclotomic congruence class
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow`
+(`:11770`).
+
+Two things are missing, and — CORRECTING the estimate this leaf carried
+until 2026-07-28, which priced them equally — they are of very different
+sizes.
+
+* *(a) a general modulus.* Generalising the FINITENESS of the narrow ray
+  class group from `(ℓ)` to a general ideal `mm` is a mechanical
+  substitution: `exists_pow_isNarrowRayEquiv_top` (`Chebotarev.lean:6507`)
+  and `finite_quotient_narrowRaySetoid` (`:6587`) consume `hℓ : ℓ.Prime`
+  in exactly one place each — `hspan_ne`, through `hℓ.ne_zero` — which a
+  hypothesis `mm ≠ ⊥` supplies directly, and the `Fact ℓ.Prime` set up at
+  `:6513` is never used. The counting half is a genuine re-run, because
+  `IsNarrowRayEquiv` is written against `Ideal.span {(ℓ : 𝓞 F)}` and the
+  Weber geometric core is stated for that ideal too; and the
+  `DirichletCharacter`/`ZMod ℓ` linkage of the `ℓ`-specific development
+  must be replaced by characters of the ray class group itself.
+* *(b) the ideals-to-primes push, which is the real work.* The divergence
+  statement must be reproved with the cyclotomic congruence class
+  replaced by a narrow ray class.
+
+**A DELIBERATE NON-CONTRIBUTION, recorded so it is not re-attempted as a
+"quick win".** Landing (a) on its own is blocked by the FREE-FLOATING
+rule, not by difficulty: a generalised `IsNarrowRayEquivMod` together
+with its finiteness has no consumer while this leaf is sorried — a
+sorried body contributes no dependency edges — so it would be floating
+code the moment it was committed. It belongs in the same commit as the
+analytic proof. For the same reason the two-way cut
+"finiteness + analytic-with-finiteness-as-hypothesis" is REJECTED: the
+second leaf would be this statement verbatim plus one hypothesis. The cut
+that would move content is three-way — Dedekind-zeta divergence /
+`L(1,ψ) ≠ 0` for ray class characters / orthogonality assembly, the third
+consuming finiteness — and it should be taken only together with enough
+of the analysis to consume it.
+
+**FAITHFULNESS (audited 2026-07-28): TRUE as stated, non-vacuous, and
+every hypothesis load-bearing.**
+
+* *True*: the route above.
+* *Not vacuous*: already at `X = 1` the conclusion asks for a prime
+  `w ∤ mm` lying in the PRINCIPAL narrow ray class, which is Dirichlet
+  and not a bookkeeping identity; no junk witness discharges it, since
+  `w`, `δ₁`, `δ₂` are pinned by an equation of fractional ideals.
+* *`hmm : mm ≠ ⊥`*: at `mm = ⊥` every ideal divides `⊥`, so
+  `¬ w.asIdeal ∣ mm` is unsatisfiable and the statement is FALSE (it also
+  collapses `δᵢ ≡ 1` to `δᵢ = 1`).
+* *`hX0 : X ≠ 0`*: at `X = 0` the left side is `0` and the right side is
+  a product of nonzero fractional ideals; FALSE.
+* *`hXco`*: taking `FractionalIdeal.count F v` of the conclusion at a
+  `v ∣ mm` gives `count v X = 0`, because `w ≠ v` and both `(δᵢ)` are
+  coprime to `mm`. So the hypothesis is exactly the obstruction and
+  cannot be dropped.
+
+**Check that would refute it**: a number field `F`, a nonzero `mm`, and a
+fractional ideal `X` prime to `mm` such that no prime `w ∤ mm` has
+`X · w⁻¹` of the form `(δ₁/δ₂)` with `δᵢ ≫ 0` integral and
+`≡ 1 (mod mm)` — equivalently, a narrow ray class of `F` mod `mm·∞`
+containing no prime ideal. -/
+theorem exists_prime_narrowRay_fractionalIdeal_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (X : FractionalIdeal
+      (nonZeroDivisors (NumberField.RingOfIntegers F)) F) (hX0 : X ≠ 0)
+    (hXco : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      v.asIdeal ∣ mm → FractionalIdeal.count F v X = 0) :
+    ∃ (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (δ₁ δ₂ : NumberField.RingOfIntegers F),
+      ¬ w.asIdeal ∣ mm ∧ δ₁ ≠ 0 ∧ δ₂ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ₁)) ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ₂)) ∧
+      δ₁ - 1 ∈ mm ∧ δ₂ - 1 ∈ mm ∧
+      (Ideal.span {δ₂} : Ideal (NumberField.RingOfIntegers F)) * X
+        = (Ideal.span {δ₁} : Ideal (NumberField.RingOfIntegers F)) *
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F) :=
+  sorry
+
+/-- **THE DIVISOR MAP IS THE VALUATION OF THE PRINCIPAL IDEAL** (PROVEN
+2026-07-28). The clause `hd' : v ^ n ∣ (δ) ↔ n ≤ (d' δ) v` that every
+statement in this cluster carries pins `(d' δ) v` to be
+`FractionalIdeal.count F v (δ)`, mathlib's exponent of `v` in the
+factorisation. This is the dictionary that lets a divisor-group statement
+be discharged by a fractional-ideal one, and it is the same two-sided
+squeeze (`n` works, `n + 1` does not) used inside
+`artinDivisorMap_apply_span_generic_ray_class` above — extracted here as
+a named lemma because the consumer below needs it at two different
+elements. -/
+theorem toAdd_divisorMap_eq_count_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (d' : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (hd' : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+          (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w))
+    (δ : NumberField.RingOfIntegers F) (hδ : δ ≠ 0)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    Multiplicative.toAdd (d' δ) v =
+      FractionalIdeal.count F v
+        (Ideal.span {δ} : Ideal (NumberField.RingOfIntegers F)) := by
+  classical
+  have hspan0 : (Ideal.span {δ} : Ideal (NumberField.RingOfIntegers F)) ≠ 0 := fun h =>
+    hδ (Ideal.span_singleton_eq_bot.mp h)
+  set n : ℕ := (Associates.mk v.asIdeal).count
+    (Associates.mk (Ideal.span {δ} : Ideal (NumberField.RingOfIntegers F))).factors with hndef
+  have hdvd : ∀ m : ℕ, (v.asIdeal ^ m ∣ Ideal.span {δ} ↔ m ≤ n) := by
+    intro m
+    rw [hndef, ← Associates.mk_le_mk_iff_dvd, Associates.mk_pow,
+      Associates.prime_pow_dvd_iff_le (Associates.mk_ne_zero.mpr hspan0)
+        v.associates_irreducible]
+  have h1 : ((n : ℕ) : ℤ) ≤ Multiplicative.toAdd (d' δ) v :=
+    (hd' δ hδ v n).mp ((hdvd n).mpr le_rfl)
+  have h2 : ¬ (((n + 1 : ℕ) : ℤ) ≤ Multiplicative.toAdd (d' δ) v) := by
+    intro h
+    have := (hdvd (n + 1)).mp ((hd' δ hδ v (n + 1)).mpr h)
+    omega
+  push_cast at h1 h2
+  rw [FractionalIdeal.count_coe F v hspan0, ← hndef]
+  omega
+
 set_option maxHeartbeats 1000000 in
 /-- **DIRICHLET'S THEOREM FOR THE NARROW RAY CLASS GROUP: EVERY CLASS
-CONTAINS A PRIME** (sorry node, created 2026-07-27 as the single
+CONTAINS A PRIME** (**PROVEN AS GLUE 2026-07-28** over the classical
+fractional-ideal form `exists_prime_narrowRay_fractionalIdeal_ray_class`
+and the dictionary `toAdd_divisorMap_eq_count_ray_class` just above; the
+head label read "sorry node" until then. Created 2026-07-27 as the single
 mathematical sub-leaf (A3b-3-c) of
 `artinDivisorKernel_le_sup_of_cyclotomic_ray_class` below, which is now
 GLUE over it and the two PROVEN leaves just above): for a nonzero modulus
@@ -51084,23 +51256,37 @@ rather than at the "norm index at every `E`" shape recorded as REJECTED
 in the parent's docstring: that shape needs the First Inequality at every
 auxiliary field, which is genuinely absent everywhere.
 
-**WHAT IS IN TREE TO BUILD ON.** `Chebotarev.lean` already carries the
-whole analytic apparatus for the narrow ray classes of modulus `ℓ·∞`,
-`ℓ` prime, and it is SORRY-FREE: `IsNarrowRayEquiv` with its
-`symm`/`trans`, class-representative finiteness
-(`exists_finset_forall_isNarrowRayEquiv`), the per-class Weber count
-`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`, the ideal
-Euler product `tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`,
-the twisted `L`-series bounds
-`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le`, and the
-minimal nonvanishing statement
-`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le`. Two things
-are missing and they are the leaf's real work: (a) the modulus must be a
-general ideal `mmE` rather than `(ℓ)`, and (b) the counts must be pushed
-from IDEALS to PRIMES in a class, i.e. the divergence statement
-`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow` must
-be reproved with the cyclotomic congruence class replaced by a narrow ray
-class. Both are re-runs of arguments that exist in that file.
+**WHAT IS IN TREE TO BUILD ON** — moved, together with the analysis that
+remains to be done, to
+`exists_prime_narrowRay_fractionalIdeal_ray_class` above, which is where
+it is now consumed. It is no longer restated here, so that there is one
+copy of the inventory to keep current rather than two.
+
+**HOW THE GLUE WORKS, and why the fractional-ideal cut is not a
+relocation.** Everything this statement says about `d'`, `ImE` and `PE`
+is bookkeeping that the dictionary discharges completely, leaving a
+statement about number fields with no hypothesis-pinned data in it at
+all:
+
+* `X := ∏_v v^{x_v}` (mathlib's `Finsupp.prod` of `zpow`s of the
+  height-one primes) is the fractional ideal with divisor `x`;
+  `FractionalIdeal.count_finsuppProd` gives `count_v X = x_v` on the
+  nose, and `X ≠ 0` because each factor is a `zpow` of a nonzero
+  fractional ideal;
+* `hImE` becomes `count_v X = 0` at every `v ∣ mmE`, which is the
+  sub-leaf's coprimality hypothesis;
+* `hd'` becomes `(d' δ)_v = count_v (δ)` by
+  `toAdd_divisorMap_eq_count_ray_class`;
+* taking `count_v` of the sub-leaf's conclusion
+  `(δ₂) · X = (δ₁) · w` — `count_mul` twice, plus
+  `count_maximal` for `count_v w = [v = w]` — yields
+  `(d' δ₂)_v + x_v = (d' δ₁)_v + [v = w]` at every `v`, i.e. exactly
+  `x · w^{-1} = d' δ₁ · (d' δ₂)^{-1}` in `Multiplicative (· →₀ ℤ)`;
+* both generators lie in `PE` by `hPE`, so the ratio does.
+
+The one place a subgroup is used as a SUBGROUP rather than as a set of
+generators is that last step, and that is precisely the point recorded in
+the note on `PE` below.
 
 **FAITHFULNESS: TRUE as stated, and NOT vacuous.** `d'`, `ImE` and `PE`
 are pinned by intrinsic clauses (`hd'`, the support condition, the named
@@ -51148,8 +51334,64 @@ theorem exists_prime_narrowRayEquiv_divisor_ray_class
       (NumberField.RingOfIntegers E) →₀ ℤ)) (hx : x ∈ ImE) :
     ∃ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
       ¬ w.asIdeal ∣ mmE ∧
-      x * (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))⁻¹ ∈ PE :=
-  sorry
+      x * (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))⁻¹ ∈ PE := by
+  classical
+  -- the fractional ideal whose divisor is `x`
+  set X : FractionalIdeal (nonZeroDivisors (NumberField.RingOfIntegers E)) E :=
+    (Multiplicative.toAdd x).prod (IsDedekindDomain.HeightOneSpectrum.asIdeal · ^ ·) with hXdef
+  have hXcount : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      FractionalIdeal.count E v X = Multiplicative.toAdd x v := fun v =>
+    FractionalIdeal.count_finsuppProd E v _
+  have hX0 : X ≠ 0 := by
+    rw [hXdef, Finsupp.prod]
+    exact Finset.prod_ne_zero_iff.mpr fun v _ =>
+      zpow_ne_zero _ (FractionalIdeal.coeIdeal_ne_zero.mpr v.ne_bot)
+  have hXco : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      v.asIdeal ∣ mmE → FractionalIdeal.count E v X = 0 := by
+    intro v hv
+    rw [hXcount v]
+    exact (hImE x).mp hx v hv
+  obtain ⟨w, δ₁, δ₂, hwmm, hδ₁0, hδ₂0, hδ₁pos, hδ₂pos, hδ₁c, hδ₂c, hEq⟩ :=
+    exists_prime_narrowRay_fractionalIdeal_ray_class E mmE hmmE X hX0 hXco
+  refine ⟨w, hwmm, ?_⟩
+  have hs₁ : (Ideal.span {δ₁} : Ideal (NumberField.RingOfIntegers E)) ≠ 0 := fun h =>
+    hδ₁0 (Ideal.span_singleton_eq_bot.mp h)
+  have hs₂ : (Ideal.span {δ₂} : Ideal (NumberField.RingOfIntegers E)) ≠ 0 := fun h =>
+    hδ₂0 (Ideal.span_singleton_eq_bot.mp h)
+  have hc₁ : ((Ideal.span {δ₁} : Ideal (NumberField.RingOfIntegers E)) :
+      FractionalIdeal (nonZeroDivisors (NumberField.RingOfIntegers E)) E) ≠ 0 :=
+    FractionalIdeal.coeIdeal_ne_zero.mpr hs₁
+  have hc₂ : ((Ideal.span {δ₂} : Ideal (NumberField.RingOfIntegers E)) :
+      FractionalIdeal (nonZeroDivisors (NumberField.RingOfIntegers E)) E) ≠ 0 :=
+    FractionalIdeal.coeIdeal_ne_zero.mpr hs₂
+  have hcw : ((w.asIdeal : Ideal (NumberField.RingOfIntegers E)) :
+      FractionalIdeal (nonZeroDivisors (NumberField.RingOfIntegers E)) E) ≠ 0 :=
+    FractionalIdeal.coeIdeal_ne_zero.mpr w.ne_bot
+  -- read the ideal identity off at each height-one prime
+  have hcnt : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      Multiplicative.toAdd (d' δ₂) v + Multiplicative.toAdd x v =
+        Multiplicative.toAdd (d' δ₁) v + (if w = v then (1 : ℤ) else 0) := by
+    intro v
+    have h := congrArg (FractionalIdeal.count E v) hEq
+    rw [FractionalIdeal.count_mul E v hc₂ hX0, FractionalIdeal.count_mul E v hc₁ hcw,
+      FractionalIdeal.count_maximal E v w, hXcount v,
+      ← toAdd_divisorMap_eq_count_ray_class E d' hd' δ₁ hδ₁0 v,
+      ← toAdd_divisorMap_eq_count_ray_class E d' hd' δ₂ hδ₂0 v] at h
+    exact h
+  have hmem₁ : d' δ₁ ∈ PE := by
+    rw [hPE]; exact Subgroup.subset_closure ⟨δ₁, hδ₁0, hδ₁pos, hδ₁c, rfl⟩
+  have hmem₂ : d' δ₂ ∈ PE := by
+    rw [hPE]; exact Subgroup.subset_closure ⟨δ₂, hδ₂0, hδ₂pos, hδ₂c, rfl⟩
+  have hrw : x * (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))⁻¹
+      = d' δ₁ * (d' δ₂)⁻¹ := by
+    refine Multiplicative.toAdd.injective ?_
+    ext v
+    simp only [_root_.toAdd_mul, _root_.toAdd_inv, _root_.toAdd_ofAdd,
+      Finsupp.add_apply, Finsupp.neg_apply, Finsupp.single_apply]
+    have := hcnt v
+    omega
+  rw [hrw]
+  exact Subgroup.mul_mem _ hmem₁ (Subgroup.inv_mem _ hmem₂)
 
 set_option maxHeartbeats 1000000 in
 /-- **ARTIN RECIPROCITY FOR A CYCLOTOMIC EXTENSION, IN THE DIRECTION
@@ -51241,8 +51483,11 @@ makes the reciprocity itself a three-line computation:
   ideals to divisors. **This is what makes keeping clause (i) load-bearing
   rather than merely historical**: the `ker ⊆ ray·norms` direction is
   proved THROUGH the `ray ⊆ ker` direction, not instead of it;
-* `exists_prime_narrowRayEquiv_divisor_ray_class` (SORRY) — Dirichlet for
-  the narrow ray class group: every class contains a prime.
+* `exists_prime_narrowRayEquiv_divisor_ray_class` (**PROVEN AS GLUE
+  2026-07-28**, over the fractional-ideal form
+  `exists_prime_narrowRay_fractionalIdeal_ray_class`, which carries the
+  remaining SORRY) — Dirichlet for the narrow ray class group: every
+  class contains a prime.
 
 **And the whole reciprocity content collapses to one sentence.** Let `x`
 be a divisor prime to `mmE` with `φ' x = 1`, and let `w ∤ mmE` be a prime
