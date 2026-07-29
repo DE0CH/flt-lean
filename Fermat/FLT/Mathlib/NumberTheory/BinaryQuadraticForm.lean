@@ -79,10 +79,15 @@ PROVEN, over three new analytic leaves:
   error bound. Both follow the same mathlib lemma
   (`EisensteinSeries.q_expansion_bernoulli`), and between them they eliminate `Δ` via
   `Δ = (E₄³ − E₆²)/1728` — so LEAF 6 needs no infinite products and, notably, no positivity
-  of the `j`-coefficients `c_k`.
+  of the `j`-coefficients `c_k`. **Both are now PROVEN** (2026-07-28), over
+  `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
+  `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has EIGHT open leaves, not seven; the count rose because two leaves closed over
-three smaller ones. -/
+So this file has SIX open leaves: the four class-field-theoretic ones
+(`exists_intCubic_weberAlpha`, `intCast_indep_weberAlpha_pow_four`,
+`isIntegral_gammaTwo_heegnerPoint`, `exists_rat_gammaTwo_heegnerPoint`), the Diophantine
+`eq_of_two_mul_mul_cube_add_one_eq_sq`, and the single modular-form identity
+`Heegner.eta_pow_24_add_eta_two_pow_24`. -/
 module
 
 public import Mathlib.Tactic
@@ -934,15 +939,46 @@ MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, 60 digits, `eta(z,1)` against the `σ�
 is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it from
 a weaker statement.
 
-ROUTE, AND WHAT MAKES IT CHEAP AT THIS PIN. Divide through: the claim is that
-`F(z) = (Δ(z) + 256Δ(2z))/(η(z)η(2z))⁸` equals `E₄`. `F` is holomorphic and nonvanishing-free
-of poles on `ℍ` (`ModularForm.eta_ne_zero`), and is `T`-invariant by the `24`-th-power
-argument — `η(z+1)²⁴ = η(z)²⁴` and `η(2z+2)²⁴ = η(2z)²⁴`, while the denominator picks up
-`(e^{πi/12}·e^{πi/6})⁸ = e^{2πi} = 1`. The remaining work is `S`-invariance of weight `4`,
-after which `ModularForm.levelOne_weight_four_rank_one` plus a single `q`-coefficient
-comparison (constant term `1`) finishes; `sturm_bound_levelOne` is the packaged form of that
-last step. `discriminant_S_invariant` and `eta_comp_eqOn_const_mul_csqrt_eta` in
+ROUTE. Divide through: the claim is that `F(z) = (Δ(z) + 256Δ(2z))/(η(z)η(2z))⁸` equals `E₄`.
+`F` is holomorphic and free of poles on `ℍ` (`ModularForm.eta_ne_zero`), and is `T`-invariant
+by the `24`-th-power argument — `η(z+1)²⁴ = η(z)²⁴` and `η(2z+2)²⁴ = η(2z)²⁴`, while the
+denominator picks up `(e^{πi/12}·e^{πi/6})⁸ = e^{2πi} = 1`. What remains is `S`-invariance of
+weight `4`, after which `ModularForm.levelOne_weight_four_rank_one` plus a single
+`q`-coefficient comparison (constant term `1`) finishes; `sturm_bound_levelOne` is the packaged
+form of that last step. `discriminant_S_invariant` and `eta_comp_eq_csqrt_I_inv` in
 `ModularForms/Discriminant.lean` are the transformation inputs.
+
+**CORRECTION (2026-07-28): "the remaining work is `S`-invariance" is true but was priced as
+cheap, and it is not — it is the whole theorem.** Carrying out the substitution with mathlib's
+`ModularForm.eta_comp_eq_csqrt_I_inv : η(−1/z) = (√I)⁻¹·√z·η(z)` (applied at `z` and, via
+`−2/z = −1/(z/2)`, at `z/2`), together with `csqrt_I_pow_24 : (√I)²⁴ = 1` and `(√I)⁻¹⁶ = 1`:
+
+  numerator`(−1/z) = z¹²·(η(z)²⁴ + η(z/2)²⁴/16)`,
+  denominator`(−1/z) = (z⁸/16)·η(z)⁸η(z/2)⁸`,
+
+so `F(−1/z) = z⁴·(16η(z)²⁴ + η(z/2)²⁴)/(η(z)⁸η(z/2)⁸)`, and `F(−1/z) = z⁴F(z)` is EQUIVALENT to
+
+  `(16η(z)²⁴ + η(z/2)²⁴)·η(2z)⁸ = (η(z)²⁴ + 256η(2z)²⁴)·η(z/2)⁸`.   (★)
+
+(★) is not bookkeeping. In Weber's notation `f₁ = η(z/2)/η(z)`, `f₂ = √2·η(2z)/η(z)` it says
+`(f₁²⁴+16)/f₁⁸ = (f₂²⁴+16)/f₂⁸`, i.e. that `γ₂` computed from `f₁` agrees with `γ₂` computed
+from `f₂` — the `S`-symmetry of `γ₂` itself. The classical proof runs through the two Weber
+relations
+
+  `f·f₁·f₂ = √2`   and   `f⁸ = f₁⁸ + f₂⁸`   (`f = ζ₄₈⁻¹η((z+1)/2)/η(z)`),
+
+the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`. Given those two it IS pure algebra: with
+`a = f⁸`, `b = f₁⁸`, `c = f₂⁸` one has `a = b + c` and `abc = 16`, whence
+`c(b³+16) − b(c³+16) = bc(b+c)(b−c) − 16(b−c) = (b−c)(abc − 16) = 0`, and likewise
+`(a³−16)/a = (b³+16)/b`. So the honest cut for the next owner is those two `η`-identities plus
+the packaging of `F` as a `ModularForm 𝒮ℒ 4` — NOT a Sturm bound applied to something already
+known to be level one.
+
+Re-grepped 2026-07-28 over `.lake/packages/mathlib`: no Weber functions, and
+`ModularForms/JacobiTheta/` has no product formula tying `θ` to `η` (no Jacobi triple product
+anywhere in the pin), so neither Weber relation can be quoted. `(★)` itself was checked in
+`PARI/GP` at the same three generic points `0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`: residual
+`< 5·10⁻⁷⁷`, so the equivalence above is not a mis-derivation.
 
 WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ. There is none — but note the
 `256` and the exponent `8` are both forced, and neither is a normalisation choice: `256`
@@ -1015,6 +1051,166 @@ lemma heegnerQ_le {p : ℕ} (hp : 11 ≤ p) : heegnerQ p ≤ 1 / 10000 := by
   rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos _) (by norm_num)]
   simpa using hexp
 
+/-- **The `q`-parameter at the Heegner point is `−Q`, real and negative.**
+
+`2πiτ₀ = 3πi − π√p`, so `q = exp(2πiτ₀) = exp(3πi)·exp(−π√p) = −Q`. The `exp(3πi) = −1` is where
+the `3` in `τ₀ = (3+√−p)/2` is spent; with `τ = (1+√−p)/2` one would get the same value, and with
+an even numerator one would get `q = +Q` and the signs below would all flip (which is what makes
+`745` unattainable — see `heegner_tail_nonneg`). -/
+lemma cexp_heegnerPoint (p : ℕ) (hp : 0 < p) :
+    Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ))
+      = ((-heegnerQ p : ℝ) : ℂ) := by
+  have hz : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+      = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := rfl
+  have harg : 2 * (Real.pi : ℂ) * Complex.I * ((3 + Complex.I * (Real.sqrt p : ℂ)) / 2)
+      = 3 * ((Real.pi : ℂ) * Complex.I) + ((-(Real.pi * Real.sqrt p) : ℝ) : ℂ) := by
+    push_cast
+    linear_combination ((Real.pi : ℂ) * ((Real.sqrt p : ℝ) : ℂ)) * Complex.I_mul_I
+  rw [hz, harg, Complex.exp_add]
+  rw [show (3 : ℂ) * ((Real.pi : ℂ) * Complex.I) = ((3 : ℕ) : ℂ) * ((Real.pi : ℂ) * Complex.I) by
+    norm_num, Complex.exp_nat_mul, Complex.exp_pi_mul_I, ← Complex.ofReal_exp]
+  rw [heegnerQ]
+  push_cast
+  ring
+
+/-- **The `n ≥ 3` tail of a `q`-series with polynomially bounded coefficients is `O(Q³)`.**
+
+If `a n ≤ n ^ K` and `(n+3)^K ≤ C·bⁿ`, then `|Σ_{n≥3} a(n)(−Q)ⁿ| ≤ C Q³/(1 − bQ)`. Both Eisenstein
+tails below are instances: `K = 4, C = 81, b = 4` for `σ₃`, and `K = 6, C = 729, b = 8` for `σ₅`
+(`ArithmeticFunction.sigma_le_pow_succ` supplies the hypothesis `ha`). The geometric majorant is
+what keeps this free of any `Σ nᴷ xⁿ` closed form. -/
+lemma abs_tsum_shift_le {a : ℕ → ℕ} {K : ℕ} {C b Q : ℝ}
+    (ha : ∀ n : ℕ, (a n : ℝ) ≤ (n : ℝ) ^ K)
+    (hQ0 : 0 < Q) (hb0 : 0 < b) (hbQ : b * Q < 1)
+    (hC : ∀ n : ℕ, ((n : ℝ) + 3) ^ K ≤ C * b ^ n) :
+    |∑' n : ℕ, (a (n + 3) : ℝ) * (-Q) ^ (n + 3)| ≤ C * Q ^ 3 / (1 - b * Q) := by
+  have hCnn : 0 ≤ C := by
+    have h0 := hC 0
+    simp only [Nat.cast_zero, zero_add, pow_zero, mul_one] at h0
+    nlinarith [pow_nonneg (by norm_num : (0:ℝ) ≤ (3:ℝ)) K]
+  have hbQ0 : 0 ≤ b * Q := by positivity
+  have hpt : ∀ n : ℕ, |(a (n + 3) : ℝ) * (-Q) ^ (n + 3)| ≤ (C * Q ^ 3) * (b * Q) ^ n := by
+    intro n
+    have h1 : |(a (n + 3) : ℝ) * (-Q) ^ (n + 3)| = (a (n + 3) : ℝ) * Q ^ (n + 3) := by
+      rw [abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ (a (n+3) : ℝ)), abs_pow,
+        abs_neg, abs_of_pos hQ0]
+    rw [h1]
+    have h2 : (a (n + 3) : ℝ) ≤ ((n : ℝ) + 3) ^ K := by
+      have h := ha (n + 3)
+      push_cast at h
+      exact h
+    have h3 : (a (n + 3) : ℝ) ≤ C * b ^ n := h2.trans (hC n)
+    have h4 : (0:ℝ) < Q ^ (n + 3) := by positivity
+    calc (a (n + 3) : ℝ) * Q ^ (n + 3) ≤ (C * b ^ n) * Q ^ (n + 3) :=
+          mul_le_mul_of_nonneg_right h3 h4.le
+      _ = (C * Q ^ 3) * (b * Q) ^ n := by rw [mul_pow]; ring
+  have hgeom : Summable (fun n : ℕ => (C * Q ^ 3) * (b * Q) ^ n) :=
+    (summable_geometric_of_lt_one hbQ0 hbQ).mul_left _
+  have habs : Summable (fun n : ℕ => |(a (n + 3) : ℝ) * (-Q) ^ (n + 3)|) :=
+    Summable.of_nonneg_of_le (fun n => abs_nonneg _) hpt hgeom
+  have hnorm : Summable (fun n : ℕ => ‖(a (n + 3) : ℝ) * (-Q) ^ (n + 3)‖) := by
+    simpa only [Real.norm_eq_abs] using habs
+  have hstep1 : |∑' n : ℕ, (a (n + 3) : ℝ) * (-Q) ^ (n + 3)|
+      ≤ ∑' n : ℕ, |(a (n + 3) : ℝ) * (-Q) ^ (n + 3)| := by
+    simpa only [Real.norm_eq_abs] using norm_tsum_le_tsum_norm hnorm
+  calc |∑' n : ℕ, (a (n + 3) : ℝ) * (-Q) ^ (n + 3)|
+      ≤ ∑' n : ℕ, |(a (n + 3) : ℝ) * (-Q) ^ (n + 3)| := hstep1
+    _ ≤ ∑' n : ℕ, (C * Q ^ 3) * (b * Q) ^ n := Summable.tsum_le_tsum hpt habs hgeom
+    _ = C * Q ^ 3 / (1 - b * Q) := by
+        rw [tsum_mul_left, tsum_geometric_of_lt_one hbQ0 hbQ, div_eq_mul_inv]
+
+/-- `(n+3)⁴ ≤ 81·4ⁿ`; the base `4` beats `((n+4)/(n+3))⁴ ≤ (4/3)⁴ = 256/81`. -/
+lemma pow_four_bound (n : ℕ) : ((n : ℝ) + 3) ^ 4 ≤ 81 * 4 ^ n := by
+  induction n with
+  | zero => norm_num
+  | succ n ih =>
+      have hn : (0:ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+      have h1 : 3 * ((n : ℝ) + 4) ≤ 4 * ((n : ℝ) + 3) := by linarith
+      have h2 : (3 * ((n : ℝ) + 4)) ^ 4 ≤ (4 * ((n : ℝ) + 3)) ^ 4 :=
+        pow_le_pow_left₀ (by positivity) h1 4
+      have h3 : (81 : ℝ) * ((n : ℝ) + 4) ^ 4 ≤ 256 * ((n : ℝ) + 3) ^ 4 := by nlinarith [h2]
+      have h4 : (0:ℝ) < (4:ℝ) ^ n := by positivity
+      have h5 : ((n : ℝ) + 4) ^ 4 ≤ 256 * 4 ^ n := by nlinarith [h3, ih]
+      push_cast
+      rw [pow_succ (4:ℝ) n]
+      linarith [h5, h4]
+
+/-- `(n+3)⁶ ≤ 729·8ⁿ`; here `(4/3)⁶ = 4096/729 ≈ 5.62`, so the base must be `8`, not `4`. -/
+lemma pow_six_bound (n : ℕ) : ((n : ℝ) + 3) ^ 6 ≤ 729 * 8 ^ n := by
+  induction n with
+  | zero => norm_num
+  | succ n ih =>
+      have hn : (0:ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+      have h1 : 3 * ((n : ℝ) + 4) ≤ 4 * ((n : ℝ) + 3) := by linarith
+      have h2 : (3 * ((n : ℝ) + 4)) ^ 6 ≤ (4 * ((n : ℝ) + 3)) ^ 6 :=
+        pow_le_pow_left₀ (by positivity) h1 6
+      have h3 : (729 : ℝ) * ((n : ℝ) + 4) ^ 6 ≤ 4096 * ((n : ℝ) + 3) ^ 6 := by nlinarith [h2]
+      have h4 : (0:ℝ) < (8:ℝ) ^ n := by positivity
+      have h5 : ((n : ℝ) + 4) ^ 6 ≤ 4096 * 8 ^ n := by nlinarith [h3, ih]
+      push_cast
+      rw [pow_succ (8:ℝ) n]
+      linarith [h5, h4]
+
+/-- **Second-order `q`-expansion of `E k` at the Heegner point**, tail left explicit.
+
+From `EisensteinSeries.q_expansion_bernoulli`: `E k z = 1 − (2k/B_k) Σ_{n≥1} σ_{k−1}(n) qⁿ`.
+At `τ₀` one has `q = −Q` (`cexp_heegnerPoint`), so with `c` the real number `2k/B_k`,
+
+  `E k τ₀ = 1 + cQ − c σ_{k−1}(2) Q² − c Σ_{n≥3} σ_{k−1}(n)(−Q)ⁿ`,
+
+the `n = 1` term contributing `+cQ` because `σ_{k−1}(1) = 1` and `q = −Q`. Everything on the right
+is REAL, which is the point of stating it through a `Complex.ofReal`: the two consumers then work
+entirely in `ℝ`. Instantiated at `k = 4` (`c = −240`, `B₄ = −1/30`) and `k = 6`
+(`c = 504`, `B₆ = 1/42`). -/
+lemma E_second_order {k : ℕ} (hk : 3 ≤ k) (hk2 : Even k) {p : ℕ} (hp : 0 < p) (c : ℝ)
+    (hc : (2 * (k : ℂ) / ((bernoulli k : ℚ) : ℂ)) = ((c : ℝ) : ℂ)) :
+    ModularForm.E hk (heegnerPoint p hp) =
+      ((1 + c * heegnerQ p
+          - c * ((ArithmeticFunction.sigma (k - 1) 2 : ℕ) : ℝ) * heegnerQ p ^ 2
+          - c * (∑' n : ℕ, ((ArithmeticFunction.sigma (k - 1) (n + 3) : ℕ) : ℝ)
+                  * (-heegnerQ p) ^ (n + 3)) : ℝ) : ℂ) := by
+  have hq := cexp_heegnerPoint p hp
+  have hsum : Summable (fun n : ℕ => ((ArithmeticFunction.sigma (k - 1) n : ℕ) : ℂ)
+      * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ)) ^ n) :=
+    EisensteinSeries.summable_sigma_mul_cexp_pow (by omega) _
+  have hb : ModularForm.E hk (heegnerPoint p hp)
+      = 1 - (c : ℂ) * ∑' n : ℕ+, ((ArithmeticFunction.sigma (k - 1) (n : ℕ) : ℕ) : ℂ)
+          * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ))
+            ^ ((n : ℕ) : ℤ) := by
+    rw [← hc]
+    exact EisensteinSeries.q_expansion_bernoulli hk hk2 _
+  have hpnat : (∑' n : ℕ+, ((ArithmeticFunction.sigma (k - 1) (n : ℕ) : ℕ) : ℂ)
+        * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ)) ^ ((n : ℕ) : ℤ))
+      = ∑' n : ℕ, ((ArithmeticFunction.sigma (k - 1) n : ℕ) : ℂ)
+        * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ)) ^ n := by
+    simp_rw [zpow_natCast]
+    exact tsum_pnat_eq_tsum_of_eq_zero
+      (f := fun n : ℕ => ((ArithmeticFunction.sigma (k - 1) n : ℕ) : ℂ)
+        * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ)) ^ n) (by simp)
+  have hsplit := hsum.sum_add_tsum_nat_add 3
+  have htail : (∑' n : ℕ, ((ArithmeticFunction.sigma (k - 1) (n + 3) : ℕ) : ℂ)
+        * Complex.exp (2 * (Real.pi : ℂ) * Complex.I * (heegnerPoint p hp : ℂ)) ^ (n + 3))
+      = ((∑' n : ℕ, ((ArithmeticFunction.sigma (k - 1) (n + 3) : ℕ) : ℝ)
+          * (-heegnerQ p) ^ (n + 3) : ℝ) : ℂ) := by
+    rw [Complex.ofReal_tsum]
+    refine tsum_congr fun n => ?_
+    rw [hq]
+    push_cast
+    ring
+  rw [hb, hpnat, ← hsplit, htail, hq]
+  have h0 : ((ArithmeticFunction.sigma (k - 1) 0 : ℕ) : ℂ) = 0 := by simp
+  have h1 : ((ArithmeticFunction.sigma (k - 1) 1 : ℕ) : ℂ) = 1 := by simp
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, h0, h1, zero_add, pow_zero, pow_one,
+    zero_mul]
+  push_cast
+  ring
+
+/-- `σ₃(2) = 1 + 8 = 9`. -/
+lemma sigma_three_two : (ArithmeticFunction.sigma 3 2 : ℕ) = 9 := by decide
+
+/-- `σ₅(2) = 1 + 32 = 33`. -/
+lemma sigma_five_two : (ArithmeticFunction.sigma 5 2 : ℕ) = 33 := by decide
+
 /-- **SUB-LEAF 6a — the value of `E₄` at the Heegner point, to second order in `Q`.**
 
   `E₄(τ₀) = 1 − 240Q + 2160Q² + r`  with  `|r| ≤ 20000 Q³`,  `Q = exp(−π√p)`.
@@ -1036,12 +1232,42 @@ Summability for the split is `EisensteinSeries.summable_sigma_mul_cexp_pow`.
 The stated constant `20000` is therefore not tight — it has ~1.6% slack over the true bound,
 and the consumer has a further factor of ~12 of room — so it may be freely rounded up to any
 value below `10⁷` without breaking `heegner_tail_nonneg`. What may NOT change is the exponent
-`Q³` or the coefficients `240` and `2160`. -/
+`Q³` or the coefficients `240` and `2160`.
+
+PROVEN, along exactly the route described: `E_second_order` at `k = 4` supplies the identity with
+`r = 240·Σ_{n≥3} σ₃(n)(−Q)ⁿ`, and `abs_tsum_shift_le` with `pow_four_bound` bounds that tail by
+`240·81·Q³/(1−4Q) ≤ 240·82·Q³ = 19680 Q³`. The geometric majorant `(n+3)⁴ ≤ 81·4ⁿ` replaces the
+`Σ n⁴Qⁿ ≤ 82Q³` of the prose above; the resulting constant is the same. -/
 theorem exists_E₄_heegnerPoint_approx {p : ℕ} (hp : 11 ≤ p) :
     ∃ r : ℝ, |r| ≤ 20000 * heegnerQ p ^ 3 ∧
       ModularForm.E₄ (heegnerPoint p (by omega)) =
-        ((1 - 240 * heegnerQ p + 2160 * heegnerQ p ^ 2 + r : ℝ) : ℂ) :=
-  sorry
+        ((1 - 240 * heegnerQ p + 2160 * heegnerQ p ^ 2 + r : ℝ) : ℂ) := by
+  have hQ0 := heegnerQ_pos p
+  have hQle := heegnerQ_le hp
+  have hQ3 : (0:ℝ) < heegnerQ p ^ 3 := by positivity
+  refine ⟨240 * ∑' n : ℕ, ((ArithmeticFunction.sigma 3 (n + 3) : ℕ) : ℝ)
+    * (-heegnerQ p) ^ (n + 3), ?_, ?_⟩
+  · have hbd : |∑' n : ℕ, ((ArithmeticFunction.sigma 3 (n + 3) : ℕ) : ℝ) * (-heegnerQ p) ^ (n + 3)|
+        ≤ 81 * heegnerQ p ^ 3 / (1 - 4 * heegnerQ p) := by
+      refine abs_tsum_shift_le (K := 4) (fun n => ?_) hQ0 (by norm_num) (by linarith)
+        pow_four_bound
+      exact_mod_cast (ArithmeticFunction.sigma_le_pow_succ 3 n).trans_eq (by norm_num)
+    have hden : (0:ℝ) < 1 - 4 * heegnerQ p := by linarith
+    have hrhs : 81 * heegnerQ p ^ 3 / (1 - 4 * heegnerQ p) ≤ 82 * heegnerQ p ^ 3 := by
+      rw [div_le_iff₀ hden]
+      nlinarith [hQ3, hQ0, hQle]
+    rw [abs_mul, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 240)]
+    linarith [hbd.trans hrhs, hQ3]
+  · have hc : (2 * ((4:ℕ) : ℂ) / ((bernoulli 4 : ℚ) : ℂ)) = (((-240 : ℝ)) : ℂ) := by
+      rw [show (bernoulli 4 : ℚ) = -1/30 by decide +kernel]
+      push_cast
+      norm_num
+    have h := E_second_order (k := 4) (by norm_num) (by decide) (p := p) (by omega) (-240) hc
+    rw [show (4 - 1 : ℕ) = 3 from rfl, sigma_three_two] at h
+    rw [show (ModularForm.E₄ : ModularForm _ 4) = ModularForm.E (by norm_num : 3 ≤ 4) from rfl]
+    rw [h]
+    push_cast
+    ring
 
 /-- **SUB-LEAF 6b — the value of `E₆` at the Heegner point, to second order in `Q`.**
 
@@ -1055,12 +1281,42 @@ uses `σ₅(n) ≤ n⁶`: `|s| ≤ 504 Σ_{n≥3} n⁶Qⁿ ≤ 504 · 730 Q³ = 
 `E₆` enters only through `Δ = (E₄³ − E₆²)/1728`
 (`ModularForm.discriminant_eq_E₄_cube_sub_E₆_sq`). Using that identity rather than the
 `η`-product `Δ = q∏(1−qⁿ)²⁴` is what keeps this leaf-set free of infinite-product estimates:
-both `E₄` and `E₆` are handled by one and the same mathlib lemma. -/
+both `E₄` and `E₆` are handled by one and the same mathlib lemma.
+
+PROVEN, exactly as for `exists_E₄_heegnerPoint_approx`, with `s = −504·Σ_{n≥3} σ₅(n)(−Q)ⁿ`
+bounded by `504·729·Q³/(1−8Q) ≤ 504·730·Q³ = 367920 Q³`. The geometric majorant is
+`pow_six_bound`, `(n+3)⁶ ≤ 729·8ⁿ`; note the base must be `8` rather than the `4` that suffices
+at weight `4`, since `(4/3)⁶ = 5.62 > 4`. -/
 theorem exists_E₆_heegnerPoint_approx {p : ℕ} (hp : 11 ≤ p) :
     ∃ s : ℝ, |s| ≤ 400000 * heegnerQ p ^ 3 ∧
       ModularForm.E₆ (heegnerPoint p (by omega)) =
-        ((1 + 504 * heegnerQ p - 16632 * heegnerQ p ^ 2 + s : ℝ) : ℂ) :=
-  sorry
+        ((1 + 504 * heegnerQ p - 16632 * heegnerQ p ^ 2 + s : ℝ) : ℂ) := by
+  have hQ0 := heegnerQ_pos p
+  have hQle := heegnerQ_le hp
+  have hQ3 : (0:ℝ) < heegnerQ p ^ 3 := by positivity
+  refine ⟨-(504 * ∑' n : ℕ, ((ArithmeticFunction.sigma 5 (n + 3) : ℕ) : ℝ)
+    * (-heegnerQ p) ^ (n + 3)), ?_, ?_⟩
+  · have hbd : |∑' n : ℕ, ((ArithmeticFunction.sigma 5 (n + 3) : ℕ) : ℝ) * (-heegnerQ p) ^ (n + 3)|
+        ≤ 729 * heegnerQ p ^ 3 / (1 - 8 * heegnerQ p) := by
+      refine abs_tsum_shift_le (K := 6) (fun n => ?_) hQ0 (by norm_num) (by linarith)
+        pow_six_bound
+      exact_mod_cast (ArithmeticFunction.sigma_le_pow_succ 5 n).trans_eq (by norm_num)
+    have hden : (0:ℝ) < 1 - 8 * heegnerQ p := by linarith
+    have hrhs : 729 * heegnerQ p ^ 3 / (1 - 8 * heegnerQ p) ≤ 730 * heegnerQ p ^ 3 := by
+      rw [div_le_iff₀ hden]
+      nlinarith [hQ3, hQ0, hQle]
+    rw [abs_neg, abs_mul, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 504)]
+    linarith [hbd.trans hrhs, hQ3]
+  · have hc : (2 * ((6:ℕ) : ℂ) / ((bernoulli 6 : ℚ) : ℂ)) = (((504 : ℝ)) : ℂ) := by
+      rw [show (bernoulli 6 : ℚ) = 1/42 by decide +kernel]
+      push_cast
+      norm_num
+    have h := E_second_order (k := 6) (by norm_num) (by decide) (p := p) (by omega) 504 hc
+    rw [show (6 - 1 : ℕ) = 5 from rfl, sigma_five_two] at h
+    rw [show (ModularForm.E₆ : ModularForm _ 6) = ModularForm.E (by norm_num : 3 ≤ 6) from rfl]
+    rw [h]
+    push_cast
+    ring
 
 /-- Product of two bounded nonnegative reals. Stated separately to keep the `nlinarith` calls
 in `heegner_tail_nonneg` out of a twenty-hypothesis context, where they time out. -/
