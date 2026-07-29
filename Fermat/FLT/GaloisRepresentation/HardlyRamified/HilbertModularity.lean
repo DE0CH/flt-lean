@@ -26681,8 +26681,9 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   -- Weak universality turns `M_Q` into an `R_Q`-module through the classifying
   -- map `f : R_Q → T_Q`.  THIS is the field `TaylorWilesLevelRaw.moduleRM`,
   -- obtained as a consequence instead of demanded of an abstract ring.
-  obtain ⟨f, -, -, hfalg, hfπ, hfρ⟩ :=
+  obtain ⟨f, instRM, hfsmul, hfalg, hfπ, hfρ⟩ :=
     exists_module_of_hilbertAuxHeckeAlgebra 𝒟Q h𝒟Q H
+  letI := instRM
   -- The coefficient ring is the right one.  `hbot` already presents `𝒟.R` over
   -- `Λ_coeff`, and that is what pins `coeff`'s residue field to `k`.  Without
   -- it the RING half is FALSE, not merely open — see the FALSITY AUDIT on

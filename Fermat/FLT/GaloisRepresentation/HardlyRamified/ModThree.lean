@@ -18607,7 +18607,12 @@ theorem exists_generators_succ_span_range_eq_ker_of_span_range_le_ker
       (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring)) :
     ∃ (Q : Algebra.Generators R S (Fin (n + 1))) (f : Fin (n + 1) → Q.Ring),
       Ideal.span (Set.range f) = Q.ker := by
-  obtain ⟨-, -, -, -, r, hr1, hrker⟩ :=
+  -- FIVE discarded components, not four: `merger` strengthened this lemma's conclusion
+  -- with the idempotency clause `μ * μ - μ ∈ span (range g)` (7ba33e89) after
+  -- `flt-lean-126` was cut, so the flattened existential has one more conjunct than the
+  -- pattern this proof was written against.  The extra clause is unused here — this route
+  -- needs only `r` — but the pattern has to account for it.
+  obtain ⟨-, -, -, -, -, r, hr1, hrker⟩ :=
     exists_mem_ker_span_range_sup_span_singleton_eq_ker P g hgle hgmod
   classical
   have hjac : IsLocalRing.maximalIdeal R ≤ (⊥ : Ideal R).jacobson := by
