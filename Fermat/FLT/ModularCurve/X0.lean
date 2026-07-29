@@ -451,6 +451,11 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EtaleOfGeometricFibres
 -- commutative Hopf algebra over a field of characteristic zero, which is what
 -- `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` below consumes.
 public import Fermat.FLT.GroupScheme.Cartier
+-- `mem_smoothLocus_of_isField_stalk`, `nonempty_smoothLocus_of_genericPoint_map` and
+-- `locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian`: the general-target form of
+-- mathlib's generic smoothness (which is stated only for a morphism to `Spec K`), consumed by
+-- the `flat_of_surjective_of_isAdditiveOn` block far below.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothLocusPerfect
 -- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
 -- torsion-subscheme section below.  It is what repairs the FALSE leaf
 -- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
@@ -54352,13 +54357,25 @@ structure IsAtkinLehnerFactorwise {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
   hecke_comm : ∀ (i : D.idx) (n : ℕ), Nat.Coprime n N →
     D.S i n ≫ wA i = wA i ≫ D.S i n
 
-/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS FLAT**
-(sorry leaf, new 2026-07-28; NARROWED 2026-07-28 from a `Flat ∧
-QuasiCompact` conclusion, whose second conjunct is now PROVEN by
-`isProper_of_abelianSchemeStruct` below) — the geometric half of the
-bridge from `IsHeckeIsotypicDecomposition.u_surj`, which is a condition
-on TOPOLOGICAL SPACES and lifts no `T`-point, to the categorical
-cancellation that every consumer of that field actually wants.
+/-- **A MORPHISM OVER `Spec ℚ` BETWEEN THE UNDERLYING SCHEMES OF TWO
+ABELIAN SCHEMES IS LOCALLY OF FINITE PRESENTATION** (**PROVEN
+2026-07-28**) — the entry ticket to the whole smooth-locus route below,
+since `Scheme.Hom.smoothLocus` takes `[LocallyOfFinitePresentation f]` as
+an instance argument and is not even well-formed without it.
+
+`Spec ℚ` is locally Noetherian and both structure morphisms are smooth,
+hence locally of finite type; finite type is right-cancellable and agrees
+with finite presentation over a Noetherian base.  Neither additivity nor
+surjectivity is used.
+
+The block that follows this one carries the leaf
+`flat_of_surjective_of_isAdditiveOn` (**now PROVEN**, over two new leaves)
+— the geometric half of the bridge from
+`IsHeckeIsotypicDecomposition.u_surj`, which is a condition on
+TOPOLOGICAL SPACES and lifts no `T`-point, to the categorical
+cancellation that every consumer of that field actually wants.  The rest
+of this docstring records the route and the audit correction for that
+block, because it is where a reader of the old leaf will look.
 
 TRUE, and classical: a surjective homomorphism of abelian varieties over
 a field is faithfully flat (Milne, *Abelian Varieties* I.8; Mumford,
@@ -54378,51 +54395,157 @@ base changes, compositions) and `AbelianSchemeStruct` over `SpecQ` is
 constructed in this file — so the statement is neither trivially true
 nor trivially unsatisfiable.
 
-**ROUTE AUDIT, and what it needs that does not exist (checked at the
-pin, 2026-07-28 — every claim below is one grep).**  The two classical
-routes are:
+**THE ROUTE AUDIT THAT USED TO STAND HERE IS REFUTED** (2026-07-28).  It
+said the two classical routes are *miracle flatness* (needing
+Cohen–Macaulay rings and the local flatness criterion) and *generic
+flatness*, that mathlib has neither, and therefore that "a worker sent at
+this leaf is being sent at commutative-algebra infrastructure".  Its
+individual greps are still accurate — `CohenMacaulay`, `localCriterion`,
+`miracle`, `genericFreeness`, `flatLocus` all return EMPTY at this pin,
+re-run 2026-07-28, and `~/cs/FLT` has none of it either — but the
+conclusion does not follow, because **flatness here is reached through
+SMOOTHNESS, and mathlib has that whole chain**:
 
-* *Miracle flatness.*  `Flat.of_stalkMap` (`Morphisms/Flat.lean`)
-  reduces to flatness of every stalk map, and then the local criterion
-  — `R → S` local, `R` regular, `S` Cohen–Macaulay, `dim S = dim R +
-  dim (S/𝔪S)` implies flat — finishes, the fibre dimension being
-  constant by homogeneity.  Mathlib has `IsRegularLocalRing`
-  (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`) and **nothing
-  else** of this chain: `grep -rl "CohenMacaulay" Mathlib/` is EMPTY,
-  there is no miracle-flatness statement (`grep -rn
-  "localCriterion\|miracle" Mathlib/` is empty), and nothing connects
-  `AlgebraicGeometry.Smooth` to regular stalks (`grep -n regular
-  Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` is empty).
-* *Generic flatness plus translation.*  Grothendieck's generic flatness
-  gives a nonempty open of the target over which `u` is flat; the flat
-  locus is then translation-stable, and translations by `ℚ̄`-points act
-  transitively, so it is everything.  Mathlib has neither generic
-  flatness nor generic freeness (`grep -rn
-  "genericFreeness\|generic_flat" Mathlib/` is empty) nor openness of
-  the flat locus (`grep -rn "flatLocus" Mathlib/` is empty).  Note also
-  that this route CANNOT be run over `ℚ` directly: `B(ℚ)` need not be
-  Zariski dense in `B` (an abelian variety over `ℚ` can have finite
-  Mordell–Weil group), so it needs base change to `ℚ̄` and descent of
-  flatness along it.
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` carries
+  `instance (priority := low) [Smooth f] : Flat f`.  So it suffices to
+  prove `Smooth u`, and no flatness criterion is needed at all.  The old
+  audit grepped that very file for `regular` (correctly finding nothing)
+  and did not look for `Flat`.
+* `Mathlib/RingTheory/Smooth/Fiber.lean` carries
+  `Algebra.Smooth.of_formallySmooth_fiber` (`@[stacks 00TF]`), which
+  concludes smoothness from finite presentation and formally smooth
+  FIBRES with **no flatness hypothesis** — flatness is an output.  That
+  is precisely the role miracle flatness was being asked to play.
+* `Mathlib/RingTheory/Smooth/Field.lean` carries
+  `Algebra.FormallySmooth.of_perfectField`, and `Morphisms/Smooth.lean`
+  carries `Scheme.Hom.smoothLocus` with `isOpen_smoothLocus`,
+  `smoothLocus_eq_top_iff`, and generic smoothness itself
+  (`genericPoint_mem_smoothLocus_of_perfectField`,
+  `dense_smoothLocus_of_perfectField`).  Generic smoothness is therefore
+  NOT missing; it is only stated for a morphism to `Spec K`, and
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean`
+  now carries the general-target form.
 
-So this leaf is gated on a genuinely missing theory, and the honest
-statement of what is missing is "Cohen–Macaulay rings and the local
-flatness criterion", or "generic flatness and openness of the flat
-locus" — not "a flatness criterion for group schemes".  **That
-correction matters for dispatch**: a worker sent at this leaf is being
-sent at commutative-algebra infrastructure, not at anything modular and
-not at anything about abelian varieties specifically.
+**THE ROUTE, and what is actually left.**  `u.smoothLocus` is an OPEN
+subset of `A`, and `Smooth u ↔ u.smoothLocus = ⊤`.  So the leaf splits
+into two genuinely different theorems, neither of which is commutative
+algebra:
 
-**The check that would refute this audit**: any of the greps above
-returning a hit on a future pin, or `grep -rn "CohenMacaulay\|Flat.of_dim"
-~/cs/FLT/` finding the criterion already vendored there (it did not on
-2026-07-28). -/
+1. *Generic smoothness* — `u.smoothLocus` is NONEMPTY.  In characteristic
+   zero the stalk map of `u` at the generic point of `A` is an extension
+   of FIELDS `K(B) ⟶ K(A)`, hence separable, hence formally smooth; this
+   is `nonempty_smoothLocus_of_genericPoint_map`, already PROVEN in
+   `SmoothLocusPerfect.lean`.  What remains is only to feed it its
+   hypotheses: `IsIntegral A`, `IsIntegral B`, `CharZero B.functionField`
+   and dominance.
+2. *Homogeneity* — a nonempty translation-stable open is everything.
+   This is where the group law is used, and it is the only place.
+
+Both are stated as separate leaves below, and everything else in the
+chain is proven. -/
+theorem locallyOfFinitePresentation_of_abelianSchemeStruct {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af) :
+    LocallyOfFinitePresentation u := by
+  haveI := abA.smooth
+  haveI := abB.smooth
+  haveI : LocallyOfFiniteType (u ≫ bf) := by rw [hu]; infer_instance
+  exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian u bf
+
+/-- **GENERIC SMOOTHNESS FOR A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES
+OVER `ℚ`** (sorry leaf, new 2026-07-28) — the first of the two halves of
+`flat_of_surjective_of_isAdditiveOn`.
+
+**The mathematics is already proven**, in
+`nonempty_smoothLocus_of_genericPoint_map`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean`):
+for integral `A` and `B` the stalks at the generic points are the function
+fields, the stalk map of `u` is then an extension of fields, and in
+characteristic zero every field extension is separable hence formally
+smooth.  A prover has only to supply that lemma's four hypotheses from the
+`AbelianSchemeStruct`s:
+
+* `IsIntegral A` and `IsIntegral B`.  The REDUCED half is already proven
+  in this tree — `isReduced_of_smooth_over_field`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`) —
+  so what is open is IRREDUCIBILITY of a smooth geometrically connected
+  `ℚ`-scheme with a rational point (the zero section `ab.zero`, which is
+  what makes it nonempty).  Connected plus locally irreducible gives
+  irreducible, and locally irreducible is regularity of the stalks; that
+  last step is the one thing the old audit named that is genuinely still
+  absent (`grep -n regular Morphisms/Smooth.lean` is empty).
+* `CharZero B.functionField`, from `bf : B ⟶ SpecQ` making the function
+  field a `ℚ`-algebra.
+* `u (genericPoint A) = genericPoint B`, which is dominance and follows
+  from `_hsurj`.
+
+**`_hsurj` is load-bearing**: without it the closed immersion of the zero
+section into a positive-dimensional abelian scheme is additive with an
+EMPTY smooth locus. -/
+theorem nonempty_smoothLocus_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
+    (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u)
+    [LocallyOfFinitePresentation u] :
+    (u.smoothLocus : Set A).Nonempty :=
+  sorry
+
+/-- **HOMOGENEITY: A NONEMPTY SMOOTH LOCUS OF AN ADDITIVE MORPHISM OF
+ABELIAN SCHEMES IS EVERYTHING** (sorry leaf, new 2026-07-28) — the second
+half, and the ONLY place where the group law is used.
+
+`u.smoothLocus` is open (`Scheme.Hom.isOpen_smoothLocus`).  For a point
+`a` of `A` over any test object, translation `τ_a` is an automorphism and
+`u ∘ τ_a = τ_{u(a)} ∘ u`, so the smooth locus is translation-stable
+because `Smooth` is stable under isomorphism and base change.  A nonempty
+translation-stable open of a group scheme is the whole of it.
+
+**THE ARGUMENT MUST GO THROUGH `ℚ̄`, OR THROUGH A UNIVERSAL TRANSLATION,
+AND THIS IS THE TRAP.**  Translating by a single rational point is NOT
+enough: `A(ℚ)` need not be Zariski dense (an abelian variety over `ℚ` may
+have finite Mordell–Weil group), and the smooth locus may have no
+`ℚ`-point at all.  The two repairs are (i) base change to `ℚ̄`, where
+closed points are dense and translations by `ℚ̄`-points act transitively,
+followed by descent of smoothness along the faithfully flat `ℚ ⟶ ℚ̄`; or
+(ii) the shear automorphism `A ×_ℚ A ⟶ A ×_ℚ A`, `(a, x) ↦ (a, a + x)`,
+which is a translation by the UNIVERSAL point and needs no rational point
+anywhere.
+
+**`_hsurj` is deliberately NOT a hypothesis** — homogeneity does not use
+it.  The statement stays true for the zero morphism, vacuously: its
+smooth locus is empty whenever the target has positive dimension. -/
+theorem smoothLocus_eq_top_of_nonempty_of_isAdditiveOn {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
+    (_hadd : IsAdditiveOn abA abB u hu) [LocallyOfFinitePresentation u]
+    (_hne : (u.smoothLocus : Set A).Nonempty) :
+    u.smoothLocus = ⊤ :=
+  sorry
+
+/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS SMOOTH**
+(**PROVEN 2026-07-28** over the two leaves above) — the statement that
+replaces the flatness leaf, because smoothness is what the available
+mathlib machinery actually reaches, and flatness falls out of it. -/
+theorem smooth_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
+    (hadd : IsAdditiveOn abA abB u hu) (hsurj : AlgebraicGeometry.Surjective u) :
+    Smooth u := by
+  haveI := locallyOfFinitePresentation_of_abelianSchemeStruct abA abB hu
+  refine Scheme.Hom.smoothLocus_eq_top_iff.mp ?_
+  exact smoothLocus_eq_top_of_nonempty_of_isAdditiveOn abA abB hu hadd
+    (nonempty_smoothLocus_of_surjective_of_isAdditiveOn abA abB hu hadd hsurj)
+
+/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS FLAT**
+(**PROVEN 2026-07-28** over `smooth_of_surjective_of_isAdditiveOn`) — one
+mathlib instance away from smoothness, see the audit correction above. -/
 theorem flat_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
     {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
     (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
-    (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u) :
-    AlgebraicGeometry.Flat u :=
-  sorry
+    (hadd : IsAdditiveOn abA abB u hu) (hsurj : AlgebraicGeometry.Surjective u) :
+    AlgebraicGeometry.Flat u := by
+  haveI := smooth_of_surjective_of_isAdditiveOn abA abB hu hadd hsurj
+  infer_instance
 
 /-- **A MORPHISM OVER `Spec ℚ` BETWEEN THE UNDERLYING SCHEMES OF TWO
 ABELIAN SCHEMES IS ITSELF PROPER** (**PROVEN 2026-07-28**) — pure
