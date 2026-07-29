@@ -8202,10 +8202,451 @@ theorem exists_preimage_act_of_mult
     ∃ z : GeomFibrePt f x, m.act a z = y :=
   sorry
 
-/-- **The pin `(O, j, π)` admits a trace-duality functional** (SORRY LEAF —
-step 3 of the classical route, in its pure-algebra half; the inverse
-different of a complete discrete valuation ring is principal and the trace
-form against a generator is perfect).
+/-! ### The trace-duality functional of the pin — decomposition (2026-07-29)
+
+`exists_traceDualFunctional_of_adicPin` is PROVEN below, over two open
+statements of pure commutative algebra.  The mathematics is recorded here
+once rather than repeated in each docstring.
+
+Under the pin, `O` is the `I`-adic completion `𝒪_{D,I}`: `hdense` and
+`hker` make `𝒪_D ⟶ O/(jπ)^n` surjective with kernel `I^n`, so
+`O/(jπ)^n ≅ 𝒪_D/I^n` for every `n`, and `hcplt` makes `O` the limit.  Two
+consequences are cheap and are PROVEN here:
+
+* `span_uniformizer_eq_maximalIdeal_of_adicPin` — `O/(jπ) ≅ 𝒪_D/I` is a
+  FIELD, so `(jπ)` is a maximal ideal of the local ring `O`, hence THE
+  maximal ideal.  This is what turns "not in `(jπ)`" into "is a unit", and
+  it is the only place locality of `O` is used.
+* `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` — `(jπ)^e = (q)`,
+  for `e` the largest exponent with `q ∈ I^e` (it exists by Krull's
+  intersection theorem in `𝒪_D`, and `hqI` makes it positive).  So the
+  `(jπ)`-adic and `q`-adic filtrations of `O` are cofinal, which is what
+  lets a `(jπ)`-adic approximation be read as a `q`-adic congruence.
+
+The whole content of the leaf is then ONE statement,
+`exists_generatingFunctional_of_adicPin`: the `O`-module `Hom_{ℤ_q}(O, ℤ_q)`
+is FREE OF RANK ONE, i.e. some `θ` generates it.  That is exactly
+principality of the inverse different, whose classical witness is
+`θ = Tr_{D_I/ℚ_q}(δ · )` for a generator `δ` of `𝔡_I⁻¹`.  The intended
+proof needs no trace: `Hom_{ℤ_q}(O, ℤ_q)` is a finitely generated
+torsion-free `O`-module of rank one and `O` is a DVR, hence a PID, so it is
+free (`Module.free_of_finite_type_torsion_free'`), of rank one by comparing
+`ℤ_q`-ranks (`n = r · n`).
+
+WHY ONE GENERATOR GIVES BOTH DIRECTIONS OF PERFECTNESS, and why a
+cardinality argument would have been the wrong route.  Write `Π = jπ`.  For
+a generating `θ` the map `c ↦ θ(· c)` from `O` to `ℤ_q`-functionals has
+kernel exactly `q^k O`, NOT `Π^k O`: `θ(bc) ∈ (q^k)` for all `b` says
+`θ(c ·) ∈ q^k · Hom`, and `Hom ≅ O` via `θ`.  So the fourth clause of
+`IsTraceDualFunctional` (`c ∈ (jπ)^k`) is STRICTLY WEAKER than what comes
+out (`c ∈ (q)^k ⊆ (jπ)^k`), and the third clause is not the inverse of an
+isomorphism `O/Π^k ≅ Hom(𝒪_D/I^k, ℤ/q^k)` — the representing `c` produced
+for a level-`k` functional lies in `Π^{(e-1)k}`, and only on that ideal is
+the pairing `𝒪_D/I^k × O/Π^k ⟶ ℤ/q^k` well defined in the right variable.
+None of that is needed below, because surjectivity is obtained by LIFTING
+rather than by counting:
+
+* `exists_linearMap_congr_of_adicPin` (PROVEN) — a `φ` that is additive
+  modulo `q^k` and kills `I^k` modulo `q^k` is the reduction of an honest
+  `ℤ_q`-LINEAR `Ψ : O → ℤ_q`.  The functional it induces on `O` is
+  `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}`; well-definedness
+  is `hker` plus additivity modulo `q^k`; `ℤ_q`-linearity is automatic
+  because `ℤ ↠ ℤ_q/q^k`, which is where `PadicInt.appr` enters; and the
+  lift along `ℤ_q ↠ ℤ_q/q^k` is projectivity of `O`.
+* `moduleFinite_moduleFree_padicInt_of_adicPin` (SORRY LEAF) — `O` is
+  finite and free over `ℤ_q`.  This is the only reason the lifting carries
+  a `Module.Free` hypothesis instead of deriving it.  The ENGINE is already
+  in this file and PROVEN: `finite_free_moduleTopology_of_approx`.  What a
+  successor must supply is what
+  `module_finite_free_moduleTopology_padicIntAlgebra` gets for free from
+  the concrete `𝒪_v` — `IsDomain O`, a `(q)`-adic topology on the abstract
+  `O` of the pin, and the reconciliation of `(algebraMap ℤ_q O).toAlgebra`
+  with the given `Algebra ℤ_[q] O` instance (`Algebra.algebra_ext`).
+  `IsDomain O` is within reach from what is proven here: every nonzero `x`
+  is `Π^a · unit` (take `a` maximal with `x ∈ Π^a`, which exists by
+  `hcplt.toIsHausdorff`, and use maximality of `(jπ)`), and `Π^m ≠ 0`
+  because `j (π^m) = 0` would put `π^m` in every `I^n`, forcing `π = 0`
+  against `hπ2`.
+-/
+
+/-- **`(j π)` is the maximal ideal of `O`** (PROVEN 2026-07-29).
+
+`hdense` at `n = 1` makes `𝒪_D ⟶ O/(jπ)` surjective and `hker` at `n = 1`
+makes its kernel `I`, so `O/(jπ) ≅ 𝒪_D/I`, a field because `I` is maximal.
+Hence `(jπ)` is maximal, and in a local ring that identifies it with the
+maximal ideal.  `hcplt` is not needed: this is a statement about one
+level. -/
+theorem span_uniformizer_eq_maximalIdeal_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    Ideal.span {j π} = IsLocalRing.maximalIdeal O := by
+  classical
+  have hmem : ∀ a : NumberField.RingOfIntegers D,
+      j a ∈ Ideal.span {j π} ↔ a ∈ I := by
+    intro a
+    have h1 := hker 1 a
+    rwa [pow_one, pow_one] at h1
+  set P : Ideal O := Ideal.span {j π} with hPdef
+  set g : NumberField.RingOfIntegers D →+* O ⧸ P := (Ideal.Quotient.mk P).comp j with hgdef
+  have hsurj : Function.Surjective g := by
+    intro y
+    obtain ⟨z, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨a, ha⟩ := hdense 1 z
+    rw [pow_one] at ha
+    refine ⟨a, ?_⟩
+    rw [hgdef]
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    exact Ideal.Quotient.eq.mpr (by simpa using neg_mem ha)
+  have hkerg : RingHom.ker g = I := by
+    ext a
+    rw [RingHom.mem_ker, hgdef]
+    simp only [RingHom.coe_comp, Function.comp_apply, Ideal.Quotient.eq_zero_iff_mem]
+    exact hmem a
+  have hkermax : (RingHom.ker g).IsMaximal := by rw [hkerg]; exact hI
+  have hfield0 : IsField (NumberField.RingOfIntegers D ⧸ RingHom.ker g) :=
+    (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hkermax
+  have hfield : IsField (O ⧸ P) :=
+    (g.quotientKerEquivOfSurjective hsurj).symm.toMulEquiv.isField hfield0
+  exact IsLocalRing.eq_maximalIdeal (Ideal.Quotient.maximal_of_isField P hfield)
+
+/-- **The `(j π)`-adic and `q`-adic filtrations of `O` are cofinal**
+(PROVEN 2026-07-29): `(j π)^e = (q)` where `e` is the ramification index of
+`I` over `q`, i.e. the largest exponent with `q ∈ I^e`.
+
+That exponent exists because `⋂ₙ Iⁿ = ⊥` in the Noetherian domain `𝒪_D`
+(`Ideal.iInf_pow_eq_bot_of_isDomain`) while `q ≠ 0`, and it is positive
+because `hqI` puts `q` in `I`.  Then `hker` transports `q ∈ I^e ∖ I^{e+1}`
+to `j q ∈ (jπ)^e ∖ (jπ)^{e+1}`, so `j q = u · (jπ)^e` with `u` outside the
+maximal ideal — that is, a unit — by
+`span_uniformizer_eq_maximalIdeal_of_adicPin`. -/
+theorem exists_pow_span_uniformizer_eq_span_natCast_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D}
+    {O : Type u} [CommRing O] [IsLocalRing O]
+    {j : NumberField.RingOfIntegers D →+* O}
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ e : ℕ, 0 < e ∧ Ideal.span {j π} ^ e = Ideal.span {(q : O)} := by
+  classical
+  have hmax := span_uniformizer_eq_maximalIdeal_of_adicPin hI hdense hker
+  have hq0 : (q : NumberField.RingOfIntegers D) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  have hex : ∃ n : ℕ, (q : NumberField.RingOfIntegers D) ∉ I ^ n := by
+    by_contra hcon
+    have hall : ∀ n : ℕ, (q : NumberField.RingOfIntegers D) ∈ I ^ n :=
+      fun n => not_not.mp fun h => hcon ⟨n, h⟩
+    have hbot : (⨅ n : ℕ, I ^ n) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top
+    have hmemi : (q : NumberField.RingOfIntegers D) ∈ (⨅ n : ℕ, I ^ n) := by
+      simp only [Submodule.mem_iInf]
+      exact hall
+    rw [hbot, Ideal.mem_bot] at hmemi
+    exact hq0 hmemi
+  have hfpos : 0 < Nat.find hex := by
+    rcases Nat.eq_zero_or_pos (Nat.find hex) with h | h
+    · exact absurd (by rw [h, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top)
+        (Nat.find_spec hex)
+    · exact h
+  refine ⟨Nat.find hex - 1, ?_, ?_⟩
+  · rcases Nat.eq_zero_or_pos (Nat.find hex - 1) with h | h
+    · exfalso
+      have h1 : Nat.find hex = 1 := by omega
+      exact (h1 ▸ Nat.find_spec hex) (by rwa [pow_one])
+    · exact h
+  · set e := Nat.find hex - 1 with hedef
+    have hfe : Nat.find hex = e + 1 := by omega
+    have hqe : (q : NumberField.RingOfIntegers D) ∈ I ^ e :=
+      not_not.mp (Nat.find_min hex (by omega))
+    have hqe1 : (q : NumberField.RingOfIntegers D) ∉ I ^ (e + 1) := by
+      rw [← hfe]; exact Nat.find_spec hex
+    have hjq : (q : O) = j (q : NumberField.RingOfIntegers D) := (map_natCast j q).symm
+    have hmemP : (q : O) ∈ Ideal.span {j π} ^ e := by
+      rw [hjq]; exact (hker e _).mpr hqe
+    have hnotP : (q : O) ∉ Ideal.span {j π} ^ (e + 1) := by
+      rw [hjq]; exact fun h => hqe1 ((hker (e + 1) _).mp h)
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton'] at hmemP
+    obtain ⟨u, hu⟩ := hmemP
+    have hunit : IsUnit u := by
+      rw [← IsLocalRing.notMem_maximalIdeal, ← hmax]
+      intro hmem
+      apply hnotP
+      rw [← hu, pow_succ']
+      exact Ideal.mul_mem_mul hmem (by
+        rw [Ideal.span_singleton_pow]
+        exact Ideal.mem_span_singleton_self _)
+    rw [← hu, Ideal.span_singleton_mul_left_unit hunit, Ideal.span_singleton_pow]
+
+/-- **A `ℤ_q`-functional all of whose values lie in `(q^k)` is `q^k` times a
+`ℤ_q`-functional** (PROVEN 2026-07-29).
+
+Division is legitimate because `ℤ_q` is a domain and `q^k ≠ 0`, so the
+quotient is unique and additivity and `ℤ_q`-linearity of the quotient
+follow by cancellation.  This is what converts the fourth clause of
+`IsTraceDualFunctional` from a statement about VALUES into a statement
+about the representing element. -/
+theorem exists_linearMap_of_forall_mem_span_natCast_pow
+    {q : ℕ} [Fact q.Prime] {M : Type*} [AddCommGroup M] [Module ℤ_[q] M]
+    (k : ℕ) (Ψ : M →ₗ[ℤ_[q]] ℤ_[q])
+    (h : ∀ z : M, Ψ z ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    ∃ Ψ' : M →ₗ[ℤ_[q]] ℤ_[q], ∀ z : M, Ψ z = (q : ℤ_[q]) ^ k * Ψ' z := by
+  classical
+  have hq : ((q : ℤ_[q])) ^ k ≠ 0 :=
+    pow_ne_zero _ (Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero)
+  have hex : ∀ z : M, ∃ y : ℤ_[q], Ψ z = (q : ℤ_[q]) ^ k * y := by
+    intro z
+    have hz := h z
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hz
+    exact hz
+  choose y hy using hex
+  refine ⟨{ toFun := y, map_add' := ?_, map_smul' := ?_ }, hy⟩
+  · intro a b
+    apply mul_left_cancel₀ hq
+    rw [← hy, map_add, hy, hy, mul_add]
+  · intro r a
+    apply mul_left_cancel₀ hq
+    rw [← hy, map_smul, hy]
+    simp only [RingHom.id_apply, smul_eq_mul]
+    ring
+
+/-- **`O` is a finite free `ℤ_q`-module** (SORRY LEAF).
+
+This is the standard fact that the completion `𝒪_{D,I}` is finite free of
+rank `e · f` over `ℤ_q`, stated for the abstract `O` of the pin.  See the
+section header above for the route: the engine
+`finite_free_moduleTopology_of_approx` is already PROVEN in this file, and
+what remains is to feed it the abstract `O` — `IsDomain O`, the `(q)`-adic
+topology (Hausdorff by `hcplt.toIsHausdorff` transported along
+`exists_pow_span_uniformizer_eq_span_natCast_of_adicPin`), the
+approximation family (a `ℤ`-basis of `𝒪_D` pushed along `j`, using
+`hdense` at precision `e · n`), and an `Algebra.algebra_ext` reconciliation
+of the two `ℤ_q`-algebra structures.
+
+`hπ2` is carried because it is what makes `π ≠ 0`, hence `(j π)^m ≠ 0`,
+hence `O` a domain; `hcplt` is carried for the Hausdorff half. -/
+theorem moduleFinite_moduleFree_padicInt_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D} (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    Module.Finite ℤ_[q] O ∧ Module.Free ℤ_[q] O :=
+  sorry
+
+/-- **The inverse different of the pin is principal**, in the form actually
+used: `Hom_{ℤ_q}(O, ℤ_q)` is free of rank one over `O` (SORRY LEAF).
+
+`θ` is a generator, and the `∃!` says precisely that `c ↦ θ(c · )` is a
+BIJECTION `O ⟶ Hom_{ℤ_q}(O, ℤ_q)` — surjectivity is generation, injectivity
+is torsion-freeness.  The classical witness is `θ = Tr_{D_I/ℚ_q}(δ · )` for
+`δ` a generator of `𝔡_I⁻¹`; the route that avoids the trace entirely is in
+the section header above (finitely generated torsion-free of rank one over
+a DVR is free of rank one).
+
+WHY THE `∃!` AND NOT A WEAKER CLAUSE.  Uniqueness of `c` is what discharges
+the fourth clause of `IsTraceDualFunctional`; without it a `θ` killing a
+nonzero ideal would satisfy the surjectivity half and make the consumer
+false.  Existence for EVERY `Ψ`, not just for those arising at some level,
+is what lets the third clause be proven by lifting rather than by counting.
+
+This leaf is the entire mathematical content of
+`exists_traceDualFunctional_of_adicPin`. -/
+theorem exists_generatingFunctional_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ θ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∃! c : O, ∀ z : O, Ψ z = θ (c * z) :=
+  sorry
+
+/-- **A level-`k` functional on `𝒪_D` is the reduction of a `ℤ_q`-linear
+functional on `O`** (PROVEN 2026-07-29).
+
+This is the surjectivity half of trace duality done by LIFTING rather than
+by counting, and it is why no cardinality argument appears anywhere in this
+cluster.  `φ` is only additive modulo `q^k` and only kills `I^k` modulo
+`q^k` — which is what the applications supply, since they arise as
+`b ↦ L k (w k (b y) z)` — and the conclusion is an honest `ℤ_q`-LINEAR map
+agreeing with it modulo `q^k` on `j 𝒪_D`.
+
+Three steps, each of which is where one hypothesis is consumed.
+
+1. `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}` is well defined:
+   two such `a` differ by an element of `I^{ek} ⊆ I^k` (`hker`, and `e ≥ 1`),
+   which `φ` kills modulo `q^k`.  This is where
+   `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` is used, to make
+   `(jπ)^{ek} = (q)^k`.
+2. The resulting map is automatically `ℤ_q`-LINEAR, not merely additive,
+   because `ℤ ↠ ℤ_q/q^k`: approximate `r : ℤ_q` by `PadicInt.appr r k` and
+   the difference acts by zero on `ℤ_q/q^k` and lands in `(q)^k ⊆ (jπ)^{ek}`
+   on `O`.  Additivity modulo `q^k` upgrades to `ℕ`-homogeneity modulo
+   `q^k` by induction.
+3. The lift along `ℤ_q ↠ ℤ_q/q^k` is projectivity of `O`, which is `hfree`.
+   That is the ONLY use of freeness, and the only reason this statement
+   takes it as a hypothesis rather than deriving it from the pin — see
+   `moduleFinite_moduleFree_padicInt_of_adicPin`. -/
+theorem exists_linearMap_congr_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    {q : ℕ} [Fact q.Prime]
+    {I : Ideal (NumberField.RingOfIntegers D)} (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {π : NumberField.RingOfIntegers D}
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (hfree : Module.Free ℤ_[q] O)
+    (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q])
+    (hadd : ∀ a b : NumberField.RingOfIntegers D,
+      φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hann : ∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    ∃ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ b : NumberField.RingOfIntegers D,
+      Ψ (j b) - φ b ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+  classical
+  haveI := hfree
+  obtain ⟨e, he0, hespan⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  set Q : Ideal ℤ_[q] := Ideal.span {(q : ℤ_[q])} ^ k with hQdef
+  set N : ℕ := e * k with hNdef
+  have hNk : k ≤ N := by
+    rw [hNdef]
+    calc k = 1 * k := (one_mul k).symm
+      _ ≤ e * k := Nat.mul_le_mul_right k he0
+  have hspanN : Ideal.span {j π} ^ N = Ideal.span {(q : O)} ^ k := by
+    rw [hNdef, pow_mul, hespan]
+  have hφadd' : ∀ a b : NumberField.RingOfIntegers D, φ (a + b) - φ a - φ b ∈ Q := by
+    intro a b
+    have h1 := hadd a b
+    have h2 : φ (a + b) - (φ a + φ b) = φ (a + b) - φ a - φ b := by ring
+    rwa [h2] at h1
+  have hφ0 : φ 0 ∈ Q := by
+    have h1 := hφadd' 0 0
+    rw [add_zero] at h1
+    have h2 : φ 0 - φ 0 - φ 0 = -φ 0 := by ring
+    rw [h2] at h1
+    simpa using neg_mem h1
+  have hφnsmul : ∀ (m : ℕ) (a : NumberField.RingOfIntegers D), φ (m • a) - m • φ a ∈ Q := by
+    intro m a
+    induction m with
+    | zero => simpa using hφ0
+    | succ n ih =>
+      have h1 := hφadd' (n • a) a
+      have h2 : φ ((n + 1) • a) - (n + 1) • φ a
+          = (φ (n • a + a) - φ (n • a) - φ a) + (φ (n • a) - n • φ a) := by
+        rw [succ_nsmul, succ_nsmul]
+        abel
+      rw [h2]
+      exact add_mem h1 ih
+  choose apx hapx using hdense N
+  have hwd : ∀ (z : O) (b : NumberField.RingOfIntegers D), z - j b ∈ Ideal.span {j π} ^ N →
+      (Submodule.Quotient.mk (p := Q) (φ b)) = Submodule.Quotient.mk (p := Q) (φ (apx z)) := by
+    intro z b hb
+    have hsub : b - apx z ∈ I ^ N := by
+      refine (hker N _).mp ?_
+      have h1 : j (b - apx z) = (z - j (apx z)) - (z - j b) := by
+        rw [map_sub]; ring
+      rw [h1]
+      exact sub_mem (hapx z) hb
+    have hval : φ (b - apx z) ∈ Q := hann _ (Ideal.pow_le_pow_right hNk hsub)
+    have h2 := hφadd' (apx z) (b - apx z)
+    rw [add_sub_cancel] at h2
+    have h3 : φ b - φ (apx z) = (φ b - φ (apx z) - φ (b - apx z)) + φ (b - apx z) := by ring
+    refine (Submodule.Quotient.eq Q).mpr ?_
+    rw [h3]
+    exact add_mem h2 hval
+  have hsmul0 : ∀ (r : ℤ_[q]) (z : O), ∃ m : ℕ, (r - (m : ℤ_[q]) ∈ Q) ∧
+      r • z - j ((m : NumberField.RingOfIntegers D) * apx z) ∈ Ideal.span {j π} ^ N := by
+    intro r z
+    have hrm : r - ((r.appr k : ℕ) : ℤ_[q]) ∈ Q := by
+      rw [hQdef, Ideal.span_singleton_pow]
+      exact PadicInt.appr_spec k r
+    refine ⟨r.appr k, hrm, ?_⟩
+    rw [hQdef, Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hrm
+    obtain ⟨s, hs⟩ := hrm
+    have hsplit : r • z - j ((((r.appr k : ℕ)) : NumberField.RingOfIntegers D) * apx z)
+        = (r - ((r.appr k : ℕ) : ℤ_[q])) • z
+          + ((r.appr k : ℕ) : O) * (z - j (apx z)) := by
+      rw [map_mul, map_natCast, sub_smul, Algebra.smul_def, Algebra.smul_def, map_natCast]
+      ring
+    rw [hsplit, hspanN]
+    refine add_mem ?_ ?_
+    · have h1 : (r - ((r.appr k : ℕ) : ℤ_[q])) • z = (q : O) ^ k * ((s : ℤ_[q]) • z) := by
+        rw [hs, Algebra.smul_def, Algebra.smul_def, map_mul, map_pow, map_natCast]
+        ring
+      rw [h1]
+      exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow (Ideal.mem_span_singleton_self _) k)
+    · exact Ideal.mul_mem_left _ _ (by rw [← hspanN]; exact hapx z)
+  set ψ : O →ₗ[ℤ_[q]] (ℤ_[q] ⧸ Q) :=
+    { toFun := fun z => Submodule.Quotient.mk (p := Q) (φ (apx z))
+      map_add' := by
+        intro z z'
+        have h1 : (z + z') - j (apx z + apx z') ∈ Ideal.span {j π} ^ N := by
+          have h2 : (z + z') - j (apx z + apx z') = (z - j (apx z)) + (z' - j (apx z')) := by
+            rw [map_add]; ring
+          rw [h2]
+          exact add_mem (hapx z) (hapx z')
+        rw [← hwd _ _ h1]
+        refine (Submodule.Quotient.eq Q).mpr ?_
+        exact hadd (apx z) (apx z')
+      map_smul' := by
+        intro r z
+        obtain ⟨m, h3, hm⟩ := hsmul0 r z
+        simp only [RingHom.id_apply]
+        rw [← hwd _ _ hm]
+        have h1 : ((m : NumberField.RingOfIntegers D) * apx z) = m • apx z := by
+          rw [nsmul_eq_mul]
+        rw [h1]
+        refine (Submodule.Quotient.eq Q).mpr ?_
+        have h2 : φ (m • apx z) - r • φ (apx z)
+            = (φ (m • apx z) - m • φ (apx z))
+              + (((m : ℤ_[q])) - r) * φ (apx z) := by
+          rw [nsmul_eq_mul, smul_eq_mul]
+          ring
+        rw [h2]
+        refine add_mem (hφnsmul m (apx z)) (Ideal.mul_mem_right _ _ ?_)
+        have h4 := neg_mem h3
+        rwa [neg_sub] at h4 } with hψdef
+  obtain ⟨Ψ, hΨ⟩ := Module.projective_lifting_property Q.mkQ ψ Q.mkQ_surjective
+  refine ⟨Ψ, fun b => ?_⟩
+  have h1 : Q.mkQ (Ψ (j b)) = ψ (j b) := LinearMap.congr_fun hΨ (j b)
+  have h2 : ψ (j b) = Submodule.Quotient.mk (p := Q) (φ b) := by
+    rw [hψdef]
+    exact (hwd (j b) b (by simp)).symm
+  rw [h2] at h1
+  exact (Submodule.Quotient.eq Q).mp h1
+
+/-- **The pin `(O, j, π)` admits a trace-duality functional** (PROVEN
+2026-07-29 over `exists_generatingFunctional_of_adicPin`,
+`moduleFinite_moduleFree_padicInt_of_adicPin` and
+`exists_linearMap_congr_of_adicPin` — step 3 of the classical route, in its
+pure-algebra half).
 
 No geometry occurs here.  Under `hcplt`/`hdense`/`hker` the ring `O` is the
 `I`-adic completion of `𝒪_D`; `hI` and `hπ`/`hπ2` make `I` a maximal ideal
@@ -8217,8 +8658,21 @@ single `δ`.  Take `θ = Tr(δ · )`.
 already implied by the pin, and is listed rather than derived so that a
 successor does not have to re-derive it before starting.
 
-See `IsTraceDualFunctional` for what the four clauses say and for the
-mathlib ingredients. -/
+HOW THE FOUR CLAUSES COME OUT.  Take for `θ` a generator of
+`Hom_{ℤ_q}(O, ℤ_q)` as an `O`-module.  The first two clauses are then its
+additivity and `ℤ_q`-linearity, with `algebraMap r * c = r • c`.  The third
+is `exists_linearMap_congr_of_adicPin` — lift `φ` to a `ℤ_q`-linear `Ψ`,
+then write `Ψ = θ(c · )` — and note it produces the representing `c` with
+no cardinality argument at all.  The fourth divides: if `θ(j b · c)` lies in
+`(q^k)` for every `b ∈ 𝒪_D` then, `j 𝒪_D` being dense and `(q)^k` being a
+neighbourhood of `0` for the `(jπ)`-adic filtration, `θ(c · )` has all its
+values in `(q^k)`; dividing by `q^k`
+(`exists_linearMap_of_forall_mem_span_natCast_pow`) and using UNIQUENESS of
+the representing element gives `c ∈ (q)^k`, which is contained in `(jπ)^k`
+because `q ∈ I`.  That is strictly stronger than the clause asks.
+
+See `IsTraceDualFunctional` for what the four clauses say, and the section
+header above for the mathematics and for what remains open. -/
 theorem exists_traceDualFunctional_of_adicPin
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
@@ -8232,8 +8686,64 @@ theorem exists_traceDualFunctional_of_adicPin
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ :=
-  sorry
+    ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ := by
+  classical
+  obtain ⟨e, _he0, hespan⟩ :=
+    exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
+  obtain ⟨_hfin, hfree⟩ :=
+    moduleFinite_moduleFree_padicInt_of_adicPin hI hqI hπ2 O j hcplt hdense hker
+  obtain ⟨θ, hθ⟩ :=
+    exists_generatingFunctional_of_adicPin hI hqI hπ hπ2 O j hcplt hdense hker
+  have hqmem : (q : O) ∈ Ideal.span {j π} := by
+    have hqj : (q : O) = j (q : NumberField.RingOfIntegers D) := (map_natCast j q).symm
+    have hmem := (hker 1 (q : NumberField.RingOfIntegers D)).mpr (by rwa [pow_one])
+    rw [pow_one] at hmem
+    rwa [hqj]
+  refine ⟨⇑θ, fun c c' => map_add θ c c', ?_, ?_, ?_⟩
+  · intro r c
+    rw [← Algebra.smul_def, map_smul, smul_eq_mul]
+  · intro k φ hadd hann
+    obtain ⟨Ψ, hΨ⟩ :=
+      exists_linearMap_congr_of_adicPin hI hqI O j hdense hker hfree k φ hadd hann
+    obtain ⟨c, hc, -⟩ := hθ Ψ
+    refine ⟨c, fun b => ?_⟩
+    have h1 : θ (j b * c) = Ψ (j b) := by rw [hc (j b), mul_comm]
+    rw [h1]
+    have h2 := neg_mem (hΨ b)
+    rwa [neg_sub] at h2
+  · intro k c hc
+    set Ψ : O →ₗ[ℤ_[q]] ℤ_[q] := θ.comp (LinearMap.mulLeft ℤ_[q] c) with hΨdef
+    have hΨapp : ∀ z : O, Ψ z = θ (c * z) := fun z => rfl
+    have hqpow : ((q : O)) ^ k = algebraMap ℤ_[q] O ((q : ℤ_[q]) ^ k) := by
+      rw [map_pow, map_natCast]
+    have hall : ∀ z : O, Ψ z ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
+      intro z
+      obtain ⟨a, ha⟩ := hdense (e * k) z
+      have hmem : z - j a ∈ Ideal.span {(q : O)} ^ k := by
+        rw [← hespan, ← pow_mul]; exact ha
+      rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hmem
+      obtain ⟨w, hw⟩ := hmem
+      have hz : z = (q : O) ^ k * w + j a := sub_eq_iff_eq_add.mp hw
+      rw [hΨapp, hz, mul_add, map_add]
+      refine add_mem ?_ ?_
+      · have hrw : c * ((q : O) ^ k * w) = ((q : ℤ_[q]) ^ k) • (c * w) := by
+          rw [Algebra.smul_def, hqpow]; ring
+        rw [hrw, map_smul, smul_eq_mul, Ideal.span_singleton_pow]
+        exact Ideal.mem_span_singleton.mpr ⟨θ (c * w), rfl⟩
+      · rw [mul_comm]
+        exact hc a
+    obtain ⟨Ψ', hΨ'⟩ := exists_linearMap_of_forall_mem_span_natCast_pow k Ψ hall
+    obtain ⟨d, hd, -⟩ := hθ Ψ'
+    have hkey : ∀ z : O, Ψ z = θ (((q : O) ^ k * d) * z) := by
+      intro z
+      rw [hΨ' z, hd z]
+      have hrw : ((q : O) ^ k * d) * z = ((q : ℤ_[q]) ^ k) • (d * z) := by
+        rw [Algebra.smul_def, hqpow]; ring
+      rw [hrw, map_smul, smul_eq_mul]
+    obtain ⟨c₀, _hc₀, huniq⟩ := hθ Ψ
+    have hc2 : c = (q : O) ^ k * d := (huniq c hΨapp).trans (huniq _ hkey).symm
+    rw [hc2]
+    exact Ideal.mul_mem_right d _ (Ideal.pow_mem_pow hqmem k)
 
 /-- **A compatible system of discrete logarithms on the `q`-power roots of
 unity of `F̄`, intertwining the Galois action with the cyclotomic
