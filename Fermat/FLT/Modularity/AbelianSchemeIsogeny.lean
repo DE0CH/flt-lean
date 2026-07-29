@@ -67,34 +67,38 @@ on `F̄`-points" is proven here once and for all.
 
 ## The open leaves
 
-**Regenerated at release 8 from a comment-stripped scan of this file, not
-merged as prose.**  `flat_mulByNat` and `isDominant_of_isFinite_endo` and
-`irreducibleSpace_of_smooth_geometricallyConnected` are PROVEN; what is left
-is six pieces of commutative algebra and one sheaf-theoretic statement, none
-of them about abelian schemes:
+**Regenerated 2026-07-29 from a comment-stripped `sorry`-token scan of this
+file, not merged as prose.**  The scan reports FIVE `sorry` tokens in five
+named top-level declarations — no anonymous inner `have … := sorry`, so the
+direct count and the `declaration uses 'sorry'` warning count agree at 5.
 
-* `lTensor_subtype_injective_of_pow_le` — the local flatness criterion's
-  tensor step;
-* `nonempty_flatNoetherianStage_of_essFinitePresentation` — descent of
-  flatness to a noetherian stage.  **PROVEN 2026-07-28** over four new leaves:
-  `nonempty_noetherianApproxSystem_of_essFinitePresentation` (Stacks 10.127.11 +
-  10.127.13), `exists_flatBase_index_of_noetherianApproxSystem` and
-  `exists_flatFibre_index_of_noetherianApproxSystem` (Stacks 10.128.3, twice),
-  and `exists_isLocalization_tensor_of_noetherianApproxSystem` (the localization
-  seam at the colimit).  See the section note "THE CUT OF THE APPROXIMATION
-  LEAF, TAKEN 2026-07-28".  **The two 10.128.3 leaves are themselves PROVEN
-  (2026-07-28)**, over the shared two-tower engine
-  `exists_flat_index_of_isNoetherianFlatDescentSystem` (the one statement of
-  10.128.3, consumed twice) plus the fibre-system verification
-  `isNoetherianFlatDescentSystem_fibre`, which is PROVEN over
-  `exists_mem_fibreIdealMid`, `exists_mem_fibreIdealTot` and
-  `exists_isLocalization_fibre`.  See the section note "10.128.3 IS ONE LEMMA
-  APPLIED TWICE";
-* `topologicalKrullDim_lt_top_of_isProper` — Noether normalisation;
-* `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
-* `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
-* `exists_isAmpleSheaf_cube_of_isAlgClosed` — the theorem of the cube's
-  ample-sheaf output.
+The whole local-criterion-of-flatness block is now CLOSED.  In particular
+`lTensor_subtype_injective_of_pow_le`, `flat_of_rTensor_injective_of_flat_quotientMap`
+(Stacks 10.99.10), `flat_quotientMap_pow_of_flat_quotientMap` and
+`nonempty_flatNoetherianStage_of_essFinitePresentation` are all PROVEN, as are
+`topologicalKrullDim_lt_top_of_isProper` (Noether normalisation),
+`height_map_le_of_isFinite` (Cohen–Seidenberg, `@[stacks 00OK]`),
+`isIntegrallyClosed_of_isRegularRing`, `exists_isAmpleSheaf_cube_of_isAlgClosed`,
+`flat_mulByNat`, `isDominant_of_isFinite_endo` and
+`irreducibleSpace_of_smooth_geometricallyConnected`.  Every one of those was
+listed here as OPEN until 2026-07-29; the list had gone stale by five bullets,
+which is exactly the phantom-dispatch failure mode.  Do not trust this list —
+re-run the scan.
+
+What is genuinely open (declaration, and what it is):
+
+* `nonempty_noetherianApproxSystem_of_baseSystem` — the noetherian
+  approximation system built from a base system;
+* `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`
+  and `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` — the
+  two remaining steps of the 10.128.3 two-tower engine
+  `exists_flat_index_of_isNoetherianFlatDescentSystem`.  See the section note
+  "10.128.3 IS ONE LEMMA APPLIED TWICE";
+* `exists_isAmpleSheaf_symmetric_cube` — the two-variable symmetric cube, the
+  primitive under BOTH `exists_isAmpleSheaf_cube_of_isAlgClosed` here and
+  `exists_cubeModel_of_abelianScheme` in `ModularCurve/X0.lean`;
+* `nonempty_modPullback_mulByNat_of_cube` — the theorem-of-the-cube pullback
+  identity.
 -/
 module
 
@@ -1456,8 +1460,10 @@ STARTING — it is the SAME theorem at a principal ideal, and it already carries
 worked Lean attack.**  `flat_quotientMap_pow_of_flat_quotientMap` there is
 precisely this leaf specialised to `I = (t)` with `t` a nonzerodivisor on both
 rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly regularity of `φ t` on
-`A`, which is why it appears as a hypothesis rather than as a `Tor` statement),
-and it is open with the same owner-less status.  More usefully,
+`A`, which is why it appears as a hypothesis rather than as a `Tor` statement).
+It is **PROVEN** (see the paragraph below); this sentence used to say it was
+"open with the same owner-less status", which went stale on 2026-07-27 and was
+corrected 2026-07-29.  More usefully,
 `mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring works out the
 change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
 and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
@@ -1546,10 +1552,11 @@ theorem ker_lTensor_subtype_le_range_lTensor_comap_pow {B A : Type u}
       (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L))) x = 0
   rw [LinearMap.lTensor_comp, LinearMap.comp_apply, h1, map_zero]
 
-/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN**
-2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; the
-section note "10.99.10 CUT" above is the design decision that produced it.  Cut
-out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
+/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN
+SORRY-FREE**.  Cut out of `flat_of_flat_of_flat_quotientMap_noetherian` on
+2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; that leaf
+was itself closed the same day, so nothing under this theorem is open.  The
+section note "10.99.10 CUT" above is the design decision that produced it.)
 
 *Let `B → A` be a local homomorphism of NOETHERIAN local rings and `I ⊆ 𝔪_B`
 an ideal, `J = I·A`.  If `Tor₁^B(B/I, A) = 0` and `A/J` is flat over `B/I`,
@@ -2810,10 +2817,10 @@ written, and the refuting check is one grep in this very file.**  00MO's proof
 invokes **Lemma 10.99.10**, and 10.99.10 is ALREADY PROVEN here as
 `flat_of_rTensor_injective_of_flat_quotientMap`, roughly 1400 lines above — and as of
 the 2026-07-29 release it is proven **sorry-free**, because its former leaf
-`lTensor_subtype_injective_of_pow_le` has since been closed too.  (Note the docstring
-on 10.99.10 itself still says "PROVEN over the single leaf
-`lTensor_subtype_injective_of_pow_le`"; that parenthetical is now stale, and it is not
-this block's region to edit.)
+`lTensor_subtype_injective_of_pow_le` has since been closed too.  (10.99.10's own
+docstring used to say only "PROVEN over the single leaf
+`lTensor_subtype_injective_of_pow_le`", which read as though that leaf were still
+open; corrected 2026-07-29 to say **PROVEN SORRY-FREE**.)
 
 Reading 00MO's proof line by line against that, the ONLY content it needs beyond
 10.99.10 is:
