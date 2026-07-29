@@ -51046,10 +51046,285 @@ theorem artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class
       globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
     c hcmul hcfrob δ hδ0 hδpos hδcong
 
+/-- **NARROW RAY EQUIVALENCE OF FRACTIONAL IDEALS MODULO A GENERAL
+MODULUS** (created 2026-07-29). `X ∼ Y` iff `(δ₂)·X = (δ₁)·Y` for some
+nonzero integral `δ₁, δ₂` that are totally positive and `≡ 1 (mod mm)`.
+
+This is `Chebotarev.lean`'s `IsNarrowRayEquiv` — which is written against
+the modulus `Ideal.span {(ℓ : 𝓞 F)}` for a RATIONAL prime `ℓ`, for
+integral ideals, and with the multipliers merely congruent to EACH OTHER
+and coprime to `ℓ` — recut here for a general modulus `mm` and for
+fractional ideals, with the multipliers normalised at `1`.
+
+Two deliberate differences from `IsNarrowRayEquiv`, both of which pay for
+themselves:
+
+* *Normalising at `1` rather than `α ≡ β`* makes the coprimality clauses
+  unnecessary: `δ ≡ 1 (mod mm)` already forces `(δ)` coprime to `mm` (a
+  prime containing `δ` and `mm` contains `1 = δ - (δ - 1)`). Symmetry is
+  then the swap `δ₁ ↔ δ₂` and transitivity is the product of the witness
+  pairs, with no congruence-combining identity. It also matches the
+  conclusion of `exists_prime_narrowRay_fractionalIdeal_ray_class` below
+  literally, so no translation layer is needed.
+* *Carrying `δᵢ ≠ 0` explicitly* is REQUIRED, not decorative. Over a
+  totally complex `F` there is no ring homomorphism `F →+* ℝ` at all, so
+  the two total-positivity clauses are VACUOUS and `δ₁ = δ₂ = 0` would
+  satisfy every other clause when `mm = ⊤` (`0 - 1 ∈ ⊤`), collapsing the
+  relation to `True`. This is the same vacuity that made
+  `norm_totallyPositive_ray_class` unfaithful; it is closed here at the
+  definition rather than at each use. -/
+def IsNarrowRayEquivMod {F : Type*} [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F))
+    (X Y : FractionalIdeal (nonZeroDivisors (NumberField.RingOfIntegers F)) F) : Prop :=
+  ∃ δ₁ δ₂ : NumberField.RingOfIntegers F, δ₁ ≠ 0 ∧ δ₂ ≠ 0 ∧
+    (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ₁)) ∧
+    (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ₂)) ∧
+    δ₁ - 1 ∈ mm ∧ δ₂ - 1 ∈ mm ∧
+    (Ideal.span {δ₂} : Ideal (NumberField.RingOfIntegers F)) * X
+      = (Ideal.span {δ₁} : Ideal (NumberField.RingOfIntegers F)) * Y
+
+/-- **DIVERGENCE OF THE DEGREE-ONE PRIME SUM AWAY FROM THE MODULUS**
+(**PROVEN 2026-07-29**) — the Dedekind-zeta half of Deuring's route for a
+general modulus: for `mm ≠ ⊥`, the `ℝ≥0∞`-valued sum
+`∑ #(𝓞 F / P) ^ (-s)` over the finite places `P` of `F` of prime residue
+cardinality (degree one over `ℚ`) that do NOT divide `mm` exceeds any
+given `C ≠ ⊤` for some `s > 1`.
+
+DERIVED, in the shape the ray class assembly needs, from the PROVEN
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` of
+`Chebotarev.lean` — instantiated at the vacuous exclusion `ℓ = 0`
+(`Nat.card (𝓞 F ⧸ P.asIdeal)` is the cardinality of a nonzero finite
+residue ring, hence never `0`) — plus the observation that the primes
+this statement drops relative to that one are exactly the DIVISORS of
+`mm`, of which there are finitely many (`Ideal.finite_factors`, which
+needs `mm ≠ ⊥`), each contributing a term `≤ 1` because
+`#(𝓞 F / P) ≥ 1` and `-s < 0`. So the two sums differ by at most the
+NUMBER of such divisors, and that constant is absorbed by running the
+`Chebotarev.lean` statement at `C + #{P : P ∣ mm}` and cancelling on the
+right (`ENNReal.add_lt_add_iff_right`, legitimate since the constant is
+finite — no `ℝ≥0∞` subtraction anywhere).
+
+`hmm : mm ≠ ⊥` is load-bearing twice over: at `mm = ⊥` every prime
+divides `mm`, so the index set is EMPTY and the sum is `0`, which
+exceeds no `C`; and `Ideal.finite_factors` is false for `⊥`. -/
+theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (C : ENNReal) (hC : C ≠ ⊤) :
+    ∃ s : ℝ, 1 < s ∧ C <
+      ∑' P : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+          (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧ ¬ P.asIdeal ∣ mm},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s) := by
+  classical
+  -- every residue field is nontrivial
+  have hone : ∀ P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      1 ≤ (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) : ENNReal) := by
+    intro P
+    have h0 : Ideal.absNorm P.asIdeal ≠ 0 := fun h =>
+      P.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply] at h0
+    exact_mod_cast Nat.one_le_iff_ne_zero.mpr h0
+  -- the primes dividing `mm` are finitely many
+  have hfin : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      P.asIdeal ∣ mm}.Finite := Ideal.finite_factors hmm
+  haveI : Finite ↥{P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      P.asIdeal ∣ mm} := hfin.to_subtype
+  haveI := Fintype.ofFinite ↥{P : IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm}
+  set D : ENNReal := (Fintype.card ↥{P : IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm} : ENNReal) with hD
+  obtain ⟨s, hs1, hgt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne F 0 (C + D)
+      (ENNReal.add_ne_top.mpr ⟨hC, ENNReal.natCast_ne_top _⟩)
+  refine ⟨s, hs1, ?_⟩
+  -- the tail over the divisors of `mm` is at most `D`
+  have htail : (∑' P : ↥{P : IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm},
+      (Nat.card (NumberField.RingOfIntegers F ⧸
+        (P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) ≤ D := by
+    rw [tsum_fintype, hD]
+    calc ∑ P : ↥{P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)
+        ≤ ∑ _P : ↥{P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm}, (1 : ENNReal) :=
+          Finset.sum_le_sum fun P _ =>
+            ENNReal.rpow_le_one_of_one_le_of_neg (hone _) (by linarith)
+      _ = _ := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
+  -- split the degree-one primes into those prime to `mm` and those dividing it
+  have hsub : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+        (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+          Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) ≠ 0} ⊆
+      {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+        (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧ ¬ P.asIdeal ∣ mm} ∪
+      {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+        P.asIdeal ∣ mm} := by
+    rintro P ⟨hP, -⟩
+    by_cases hdvd : P.asIdeal ∣ mm
+    · exact Or.inr hdvd
+    · exact Or.inl ⟨hP, hdvd⟩
+  have hsplit := calc
+    (∑' P : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+        (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+          Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) ≠ 0},
+      (Nat.card (NumberField.RingOfIntegers F ⧸
+        (P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s))
+      ≤ ∑' P : ↥({P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+          (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+            ¬ P.asIdeal ∣ mm} ∪
+        {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+          P.asIdeal ∣ mm}),
+      (Nat.card (NumberField.RingOfIntegers F ⧸
+        (P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s) :=
+        ENNReal.tsum_mono_subtype
+          (fun P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) =>
+            (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) : ENNReal) ^ (-s)) hsub
+    _ ≤ (∑' P : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+          (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+            ¬ P.asIdeal ∣ mm},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) +
+        ∑' P : ↥{P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) | P.asIdeal ∣ mm},
+          (Nat.card (NumberField.RingOfIntegers F ⧸
+            (P : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s) :=
+        ENNReal.tsum_union_le
+          (fun P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) =>
+            (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) : ENNReal) ^ (-s)) _ _
+  have hDne : D ≠ ⊤ := by rw [hD]; exact ENNReal.natCast_ne_top _
+  have hfinal := hgt.trans_le (hsplit.trans (add_le_add le_rfl htail))
+  exact (ENNReal.add_lt_add_iff_right hDne).mp hfinal
+
+/-- **THE `L`-FUNCTION HALF OF DEURING'S ROUTE FOR THE NARROW RAY CLASS
+GROUP** (sorry node, created 2026-07-29 as the single remaining
+mathematical sub-leaf of
+`exists_prime_narrowRay_fractionalIdeal_ray_class` just below, which is
+now PROVEN AS GLUE over it and the divergence statement
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class`
+just above): the FULL degree-one prime sum away from `mm` is at most a
+CONSTANT MULTIPLE of the sub-sum over the primes lying in the narrow ray
+class of a fixed `X ∈ I_F(mm)`, plus a uniformly bounded error.
+
+This is the exact analogue, for the narrow ray classes of modulus
+`mm·∞`, of `Chebotarev.lean`'s PROVEN
+`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add`, whose
+congruence class `{P : τ ζ = ζ ^ #(𝓞 F / P)}` is replaced by the class
+`{w ∤ mm : w ∼ X}` of `IsNarrowRayEquivMod`. Everything is `ℝ≥0∞`-valued
+and the comparison is stated multiplicatively, so no `ENNReal`
+subtraction and no summability side conditions occur.
+
+**INTENDED PROOF** (Dirichlet's argument for ray classes; Lang *ANT*
+VIII §2, Neukirch *ANT* VII §13, Childress ch. 4). Take `N = h`, the
+order of the narrow ray class group `H = I_F(mm)/P⁺_{F,mm}`. Then
+`∑_ψ conj(ψ(c)) · L(s, ψ) = h · ∑_{w ∈ c} N(w)^{-s} + O(1)` by
+orthogonality of the characters of `H`; the trivial character
+contributes the pole of the ray class zeta function, and `L(1, ψ) ≠ 0`
+for `ψ ≠ 1` keeps every other term bounded near `s = 1`. Away from
+`s = 1` the whole comparison is trivial because each side is decreasing
+in `s`, so a single finite `B` serves all `s > 1`. No class field theory
+is used, and in particular NOT the norm index inequalities, so this does
+not re-import what this cluster is proving.
+
+**THE CUT THAT WOULD MOVE THIS FORWARD IS THREE-WAY**, and the two
+outer pieces are already discharged or specified:
+
+* the Dedekind-zeta divergence is DONE, above;
+* `L(1, ψ) ≠ 0` for ray class characters `ψ ≠ 1` — the genuinely hard
+  piece, and the one with no analogue in tree, since `Chebotarev.lean`'s
+  nonvanishing input `exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le`
+  (`Chebotarev.lean:10701`) is stated for `DirichletCharacter`s of
+  `ZMod ℓ`, not for characters of a ray class group;
+* the orthogonality assembly, which is what consumes FINITENESS of the
+  narrow ray class group.
+
+**WHAT IS IN TREE TO BUILD ON** (inventory re-confirmed against the
+source 2026-07-29; all names below exist at the recorded places and
+`Chebotarev.lean` is sorry-free): `IsNarrowRayEquiv` (`:3033`) with
+`symm`/`trans`/`mul_mul`/`of_mul_right_cancel`/`isCoprime_left`, class
+representative finiteness `exists_finset_forall_isNarrowRayEquiv`
+(`:3207`), the auxiliary totally-positive generator
+`exists_ideal_forall_pos_span_singleton_eq_mul` (`:3134`), the per-class
+Weber count `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+(`:5981`), the uniform class-killing exponent
+`exists_pow_isNarrowRayEquiv_top` (`:6507`) and
+`finite_quotient_narrowRaySetoid` (`:6587`), the ideal Euler product
+`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` (`:2295`),
+and the twisted `L`-series bounds
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (`:10554`).
+
+Generalising the FINITENESS half from `Ideal.span {(ℓ : 𝓞 F)}` to a
+general `mm` is mechanical — `exists_pow_isNarrowRayEquiv_top` and
+`finite_quotient_narrowRaySetoid` consume `hℓ : ℓ.Prime` in exactly one
+place each (`hspan_ne`, through `hℓ.ne_zero`), which `mm ≠ ⊥` supplies
+directly, and the `Fact ℓ.Prime` set up at `Chebotarev.lean:6513` is
+never used. The COUNTING half is not: `IsNarrowRayEquiv` and the Weber
+geometric core are written against `Ideal.span {(ℓ : 𝓞 F)}`, and the
+`DirichletCharacter`/`ZMod ℓ` linkage must be replaced by characters of
+the ray class group itself. **Do not land the finiteness generalisation
+on its own**: with this leaf sorried it has no consumer — a sorried body
+contributes no dependency edges — so it would be free-floating the
+moment it was committed. It belongs in the same commit as whichever
+analytic piece consumes it.
+
+**FAITHFULNESS (audited 2026-07-29): TRUE as stated, and each of `hmm`,
+`hX0`, `hXco` is load-bearing.**
+
+* *True*: the route above; the `s`-uniformity is free because both sides
+  are antitone in `s`, so the near-`s = 1` asymptotic plus the value at
+  any fixed `s₀ > 1` bound the whole range.
+* *`hX0 : X ≠ 0`*: at `X = 0` no `w` satisfies
+  `(δ₂)·0 = (δ₁)·w` (the right side is a nonzero fractional ideal), so
+  the class sum is `0` and the inequality would assert that the full
+  degree-one sum is bounded uniformly in `s > 1`, which is FALSE by the
+  divergence statement above.
+* *`hXco`*: at a `v ∣ mm` with `count v X ≠ 0` the same collapse occurs
+  — taking `FractionalIdeal.count F v` of `(δ₂)·X = (δ₁)·w` gives
+  `count v X = 0`, because `w ≠ v` and both `(δᵢ)` are coprime to `mm`.
+* *`hmm : mm ≠ ⊥`*: the intended proof needs the narrow ray class group
+  mod `mm·∞` to be FINITE, which fails at `mm = ⊥`. (The statement
+  itself is vacuously true there, since no `P` satisfies `¬ P ∣ ⊥` and
+  the left side is `0`; it is the proof, and the `N` it must produce,
+  that needs the hypothesis.)
+
+Note the class sum on the right is over ALL primes in the class, not
+only the degree-one ones: that makes the right side larger and the
+statement WEAKER, which is all the consumer needs. -/
+theorem tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (X : FractionalIdeal
+      (nonZeroDivisors (NumberField.RingOfIntegers F)) F) (hX0 : X ≠ 0)
+    (hXco : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      v.asIdeal ∣ mm → FractionalIdeal.count F v X = 0) :
+    ∃ (N : ℕ) (B : ENNReal), B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' P : {P : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+          (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧ ¬ P.asIdeal ∣ mm},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s))
+        ≤ (N : ENNReal) *
+          (∑' w : {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+              ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+                (w.asIdeal : FractionalIdeal
+                  (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+            (Nat.card (NumberField.RingOfIntegers F ⧸
+              (w : IsDedekindDomain.HeightOneSpectrum
+                (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + B :=
+  sorry
+
 /-- **DIRICHLET'S THEOREM FOR THE NARROW RAY CLASS GROUP, IN ITS
 CLASSICAL FRACTIONAL-IDEAL FORM: EVERY CLASS OF `I_F(mm)/P⁺_{F,mm}`
-CONTAINS A PRIME** (sorry node, created 2026-07-28 as the single
-mathematical sub-leaf of
+CONTAINS A PRIME** (**PROVEN AS GLUE 2026-07-29**; created 2026-07-28 as
+the single mathematical sub-leaf of
 `exists_prime_narrowRayEquiv_divisor_ray_class` just below, which is now
 PROVEN AS GLUE over it and the divisor dictionary
 `toAdd_divisorMap_eq_count_ray_class` just above).
@@ -51079,56 +51354,40 @@ argument, generalised; it uses no class field theory and in particular
 NOT the norm index inequalities, so it does not re-import what this
 cluster is proving.
 
-**WHAT IS IN TREE TO BUILD ON** (inventory re-confirmed against the
-source 2026-07-28; all six names below exist at the recorded places and
-`Chebotarev.lean` is sorry-free). That file carries the whole analytic
-apparatus for the narrow ray classes of modulus `ℓ·∞`, `ℓ` a RATIONAL
-prime: `IsNarrowRayEquiv` (`:3033`) with `symm`/`trans`, class
-representative finiteness `exists_finset_forall_isNarrowRayEquiv`
-(`:3207`), the per-class Weber count
-`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (`:5981`),
-the ideal Euler product
-`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` (`:2295`),
-the twisted `L`-series bounds
-`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (`:10554`), the
-minimal nonvanishing statement
-`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (`:10701`),
-and the divergence over primes in a cyclotomic congruence class
-`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow`
-(`:11770`).
+**HOW IT IS PROVED HERE (2026-07-29): DEURING'S ROUTE, `ℝ≥0∞`-VALUED,
+NO ANALYTIC CONTINUATION.** The two inputs sit immediately above:
 
-Two things are missing, and — CORRECTING the estimate this leaf carried
-until 2026-07-28, which priced them equally — they are of very different
-sizes.
+* `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class`
+  (**PROVEN**): the degree-one prime sum away from `mm` exceeds any
+  finite `C` for some `s > 1`;
+* `tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class`
+  (the one remaining sorry of this cluster): that full sum is at most
+  `N` times the sub-sum over the primes in the narrow ray class of `X`,
+  plus a finite `B`.
 
-* *(a) a general modulus.* Generalising the FINITENESS of the narrow ray
-  class group from `(ℓ)` to a general ideal `mm` is a mechanical
-  substitution: `exists_pow_isNarrowRayEquiv_top` (`Chebotarev.lean:6507`)
-  and `finite_quotient_narrowRaySetoid` (`:6587`) consume `hℓ : ℓ.Prime`
-  in exactly one place each — `hspan_ne`, through `hℓ.ne_zero` — which a
-  hypothesis `mm ≠ ⊥` supplies directly, and the `Fact ℓ.Prime` set up at
-  `:6513` is never used. The counting half is a genuine re-run, because
-  `IsNarrowRayEquiv` is written against `Ideal.span {(ℓ : 𝓞 F)}` and the
-  Weber geometric core is stated for that ideal too; and the
-  `DirichletCharacter`/`ZMod ℓ` linkage of the `ℓ`-specific development
-  must be replaced by characters of the ray class group itself.
-* *(b) the ideals-to-primes push, which is the real work.* The divergence
-  statement must be reproved with the cyclotomic congruence class
-  replaced by a narrow ray class.
+The assembly is three lines of `ℝ≥0∞` bookkeeping with NO subtraction:
+if NO prime `w ∤ mm` lay in the class of `X`, the indexing subtype of the
+class sum would be EMPTY, so that sum would be `0` (`tsum_empty`) and the
+comparison would bound the full degree-one sum by `B` uniformly in
+`s > 1` — contradicting the divergence statement run at `C = B`. Note
+this proves only NON-EMPTINESS of the class, which is exactly the
+surjectivity the consumer needs; infinitude would follow the same way
+from the finite-set bound `∑ ≤ #class`.
 
-**A DELIBERATE NON-CONTRIBUTION, recorded so it is not re-attempted as a
-"quick win".** Landing (a) on its own is blocked by the FREE-FLOATING
-rule, not by difficulty: a generalised `IsNarrowRayEquivMod` together
-with its finiteness has no consumer while this leaf is sorried — a
-sorried body contributes no dependency edges — so it would be floating
-code the moment it was committed. It belongs in the same commit as the
-analytic proof. For the same reason the two-way cut
-"finiteness + analytic-with-finiteness-as-hypothesis" is REJECTED: the
-second leaf would be this statement verbatim plus one hypothesis. The cut
-that would move content is three-way — Dedekind-zeta divergence /
-`L(1,ψ) ≠ 0` for ray class characters / orthogonality assembly, the third
-consuming finiteness — and it should be taken only together with enough
-of the analysis to consume it.
+The `ℝ≥0∞` shape is what makes this cheap: every sum is unconditionally
+defined, so no summability side conditions and no `ENNReal` subtraction
+appear anywhere, and the whole argument runs on real `s > 1`.
+
+**WHAT IS IN TREE TO BUILD ON**: see the inventory in the docstring of
+`tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class`
+above, where it is now consumed. It is re-confirmed against the source
+2026-07-29: every name exists at the recorded place and
+`Chebotarev.lean` is sorry-free. The three-way cut recorded here until
+2026-07-28 — Dedekind-zeta divergence / `L(1,ψ) ≠ 0` for ray class
+characters / orthogonality assembly — has had its FIRST piece discharged
+and its THIRD piece absorbed into the assembly above; what is left in the
+sorried leaf is the second piece together with the orthogonality that
+consumes the (still `ℓ`-specific) finiteness of the narrow ray classes.
 
 **FAITHFULNESS (audited 2026-07-28): TRUE as stated, non-vacuous, and
 every hypothesis load-bearing.**
@@ -51169,8 +51428,33 @@ theorem exists_prime_narrowRay_fractionalIdeal_ray_class
       (Ideal.span {δ₂} : Ideal (NumberField.RingOfIntegers F)) * X
         = (Ideal.span {δ₁} : Ideal (NumberField.RingOfIntegers F)) *
           (w.asIdeal : FractionalIdeal
-            (nonZeroDivisors (NumberField.RingOfIntegers F)) F) :=
-  sorry
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F) := by
+  by_contra hcon
+  obtain ⟨N, B, hBne, hB⟩ :=
+    tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class
+      F mm hmm X hX0 hXco
+  obtain ⟨s, hs1, hgt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class F mm hmm B hBne
+  -- no prime lies in the narrow ray class of `X`, so the class sum is empty
+  haveI hempty : IsEmpty
+      {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) //
+        ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)} := by
+    refine ⟨fun w => ?_⟩
+    obtain ⟨hnd, δ₁, δ₂, h1, h2, h3, h4, h5, h6, h7⟩ := w.2
+    exact hcon ⟨w.1, δ₁, δ₂, hnd, h1, h2, h3, h4, h5, h6, h7⟩
+  have hz : (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) //
+        ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+      (Nat.card (NumberField.RingOfIntegers F ⧸
+        (w : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) = 0 := tsum_empty
+  have hle := hB s hs1
+  rw [hz, mul_zero, zero_add] at hle
+  exact absurd hgt (not_lt.mpr hle)
 
 /-- **THE DIVISOR MAP IS THE VALUATION OF THE PRINCIPAL IDEAL** (PROVEN
 2026-07-28). The clause `hd' : v ^ n ∣ (δ) ↔ n ≤ (d' δ) v` that every
