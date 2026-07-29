@@ -14307,7 +14307,11 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N �
           AddSubgroup.zmultiples g' := by
   haveI : CharZero (AlgebraicClosure ℚ) :=
     charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
-  exact WeierstrassCurve.exists_stableCyclic_quarticTwist hN E hj g hg haut ι hι hmove hu
+  -- `Algebra.IsAlgebraic ℚ ℚ̄` must be supplied BY HAND: at the literal base field `ℚ` the two
+  -- `Algebra ℚ ℚ̄` instances form a diamond and it does not synthesise.  Same workaround as
+  -- `mem_range_of_fixed` below and `Patching.lean`'s `halgQ`.
+  exact WeierstrassCurve.exists_stableCyclic_quarticTwist (AlgebraicClosure.isAlgebraic ℚ)
+    hN E hj g hg haut ι hι hmove hu
 
 /-- **THE `μ₃`-VALUED DESCENT COCYCLE AT `j = 0`** (opened as a sorry leaf 2026-07-28 by
 decomposing `exists_stableCyclic_twist_of_autStable_of_j_eq_zero`; the FIRST of its
@@ -52178,20 +52182,17 @@ theorem SpecLoc.denseRange_generic (R : Subring ℚ) : DenseRange (SpecLoc.gener
   rw [hker]
   exact bot_le
 
-/-- **A fibre over an OPEN base point is an OPEN SUBSCHEME** (PROVEN, over an
-arbitrary base).
-
-`IsFibreIdent.compareIso` presents `A'` as `A ×_S S'` with `universalPoint.1` as
-the first projection, and the first projection of a pullback along an open
-immersion is an open immersion.  So this is Yoneda plus one mathlib instance,
-and it is what turns `IsReductionBase.isOpenImmersion_generic` into a statement
-about the generic fibre of an arbitrary model. -/
-theorem IsFibreIdent.isOpenImmersion_universalPoint {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
-    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') [IsOpenImmersion s] :
-    IsOpenImmersion e.universalPoint.1 := by
-  haveI : IsIso e.compareHom := e.compareIso.isIso_hom
-  rw [← e.compareHom_fst]
-  infer_instance
+-- **A fibre over an OPEN base point is an OPEN SUBSCHEME.**  `flt-lean-327`
+-- declared `IsFibreIdent.isOpenImmersion_universalPoint` HERE, with
+-- `[IsOpenImmersion s]` as an instance argument.  merger already had that
+-- declaration further down this file with `hs : IsOpenImmersion s` EXPLICIT, and
+-- two declarations of one name in one namespace is a `has already been declared`
+-- error that no textual merge can see.  The explicit-argument copy is the one
+-- kept, because the single call site passes the hypothesis by hand; this one is
+-- withdrawn at the release-18 merge.  (Both proofs are the same three lines:
+-- `compareIso` presents `A'` as `A ×_S S'` with `universalPoint.1` as the first
+-- projection, and the first projection of a pullback along an open immersion is
+-- an open immersion.)
 
 /-- **A fibre over a DENSE base point is DENSE, provided the model is an open
 map** (PROVEN, over an arbitrary base).
@@ -56176,8 +56177,14 @@ theorem epi_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
 /-! ### The `w_N`-stability cut (new 2026-07-28)
 
 `exists_heckeIsotypicDecomposition_atkinLehnerStable` below is PROVEN over the
-def and the two leaves in this block; nothing else in the file refers to them,
-so the block is self-contained. -/
+def and the two theorems in this block; nothing else in the file refers to them,
+so the block is self-contained.
+
+UPDATED 2026-07-28: the Atkin–Lehner one of those two,
+`exists_modularHeckeAction_atkinLehnerCommuting`, is no longer a leaf — it is
+PROVEN over `exists_heckeCorrespondenceFamily_atkinLehnerCommuting`, one level
+further down.  The block's open leaves are now that one and
+`exists_heckeIsotypicDecomposition_universalFactors`. -/
 
 -- `IsUniversalIsotypicFactor` was HOISTED from here on 2026-07-28 to just above
 -- `exists_heckeIsotypicDecomposition_of_isotypicQuotients` (~16 500 lines up),
@@ -56188,8 +56195,128 @@ so the block is self-contained. -/
 -- `of_modularHeckeAction` theorem verbatim.  See the RECOMMENDED CONSOLIDATION
 -- paragraph that leaf carried, which prescribed exactly this move.
 
-/-- **ATKIN–LEHNER: SOME MODULAR HECKE ACTION COMMUTES WITH `w_N`** (sorry
-leaf, new 2026-07-28) — the first half of the cut of
+/-! #### The Atkin–Lehner cut: the commutation happens on POINTS
+
+`exists_modularHeckeAction_atkinLehnerCommuting` below is PROVEN over the single
+leaf in this block; nothing else in the file refers to it, so the block is
+self-contained and can be moved or renamed freely. -/
+
+/-- **THE HECKE CORRESPONDENCE FAMILY IS `w_N`-EQUIVARIANT** (sorry leaf, new
+2026-07-28) — the point-level residue of
+`exists_modularHeckeAction_atkinLehnerCommuting` below, which is PROVEN over it
+and over nothing else.
+
+It is `exists_heckeCorrespondenceFamily` above with ONE extra clause: writing
+`c` for the correspondence family `x ↦ ∑_D aj [x_D]` at a prime `ℓ ∤ N`,
+
+    w_J (c x) = c (w x) − c (w o)
+
+at every test object and every base point, the constant being transported by
+`RelPoint.pre` exactly as in `IsJacobianOf.ajTwist`.  Read through
+`c = T_ℓ ∘ aj` and `w_J ∘ aj = ajTwist` that clause says `w_J T_ℓ = T_ℓ w_J` on
+Abel–Jacobi images, which is the classical fact that `w_N` normalises `Γ₀(N)`
+and commutes with `T_n` for `(n, N) = 1` (Atkin–Lehner, *Hecke operators on
+`Γ_0(m)`*, Math. Ann. 185 (1970), §2; Diamond–Shurman §5.6, Thm 6.6.6).
+
+**WHY THE CUT IS HERE and not one level up.**  Everything the consumer needs
+beyond this clause is FORMAL, and is discharged below:
+
+* `IsJacobianOf.universal` turns `c` into the endomorphism `T ℓ`, exactly as in
+  `exists_modularHeckeAction`;
+* `isAdditiveOn_of_post_zero` (relative rigidity) makes it a homomorphism, and
+  two three-line calculations from the `AbelianSchemeStruct` axioms then give
+  `post (T ℓ) 0 = 0` and `post (T ℓ) ∘ neg = neg ∘ post (T ℓ)`, which is all
+  that is needed to push `T ℓ` through the `ajTwist` correction constant;
+* the UNIQUENESS half of `IsJacobianOf.universal` converts the clause above —
+  an equation between FAMILIES — into the equation `T ℓ ≫ w_J = w_J ≫ T ℓ`
+  between MORPHISMS, by exhibiting both composites as factorisations of the
+  single pointed natural family `x ↦ w_J (c x)`.  This is the step that makes
+  the point-level statement sufficient, and it is why the leaf does not have to
+  mention morphisms at all;
+* the arity bookkeeping — composite `n` coprime to `N`, `n` not coprime to `N`,
+  `n = 1` — is `𝟙 J`, which commutes with everything.
+
+**THE EXISTENTIAL FORM IS FORCED, for the same reason as its parent.**  One
+cannot state this as "every family satisfying the recipe is `w_N`-equivariant":
+naturality and pointedness pin `c` to be `post u ∘ aj` for a unique `u`, but the
+recipe pins `u` only on `aj`-images of the `ℚ̄`-points of `Y₀(N)` in the image of
+`IsCoarseModuliY0.classify`, and that those generate `J(ℚ̄)` is true for the
+Jacobian of a curve and is NOT proven here (the caveat is already recorded on
+`IsModularHeckeAction`).  So a `∀`-form has counterexamples off that locus.
+
+**WHAT IT PINS, and how it degrades.**  The pinning is exactly the recipe's — no
+more, no less — so this leaf inherits its parent's degradation and does not
+deepen it: if `IsGamma0Isogeny` should turn out formally uninhabited the recipe
+is vacuous and `c := fun g _ => ab.zero g` satisfies all four clauses (the
+equivariance one because `RelPoint.post wJ hwJ (ab.zero g) = ab.zero g`, which
+follows from `hchar` at `g = 𝟙` through `aj_base`/`ajTwist_base` and then at
+every `g` by `pre_zero` and `RelPoint.post_pre`).  In that world this leaf is
+cheap and so is everything above it, exactly as
+`exists_heckeCorrespondenceFamily`'s docstring predicts for itself.
+
+**IT SUBSUMES `exists_heckeCorrespondenceFamily` AT THIS `ℓ`** — drop the last
+conjunct and the statements coincide, the `w`-hypotheses being extra INPUT.  So
+a prover should build ONE family and satisfy both; these are not two independent
+constructions.  The converse fails: `exists_heckeCorrespondenceFamily` has no
+`w` in scope and cannot deliver the clause.
+
+**WHAT REMAINS GENUINELY MISSING** is what its parent's docstring already names
+— the correspondence scheme `X₀(N, ℓ)` with its two degeneracy maps and the
+trace of a finite flat correspondence on the functor of points — plus, for the
+new clause alone, the moduli identity behind it: `w_N` sends the `Γ₀(N)`-datum
+`(E, C)` to `(E/C, E[N]/C)`, and quotienting by an order-`ℓ` subgroup `D` with
+`ℓ ∤ N` commutes with that because `D` meets `C` trivially, so
+`D ↦ (D + C)/C` is a bijection between the order-`ℓ` subgroups of `E` and of
+`E/C`.  That is the content `_hal` carries, and it is a statement about
+`IsAtkinLehnerPair`/`IsGamma0Isogeny` rather than about the Jacobian.
+
+**AXIS NOT SEARCHED**, recorded so the next owner does not assume it was: the
+CENTRALITY route sketched on the consumer below (once Eichler–Shimura is
+available the anemic operators act by scalars on each isotypic block, hence are
+central in `End(J₀(N)) ⊗ ℚ`), which would not use `_hal` at all.  That route
+attacks the consumer directly and would make this leaf unnecessary rather than
+easier; the check that settles whether it is available is whether the centrality
+argument can be run BEFORE the decomposition it depends on. -/
+theorem exists_heckeCorrespondenceFamily_atkinLehnerCommuting (N ℓ : ℕ)
+    (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    ∃ c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g,
+      (∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+          (hg : p ≫ g = g') (x : RelPoint strX g),
+          c g' (RelPoint.pre p hg x) = RelPoint.pre p hg (c g x)) ∧
+        c (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ) ∧
+        (∀ (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma0Isogeny N ℓ d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          c (specAlgClos ℚ)
+              (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) d))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) (dq k)))) ∧
+        ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post wJ hwJ (c g x)
+            = ab.add (c g (RelPoint.post w hw x))
+                (RelPoint.pre g (Category.comp_id g)
+                  (ab.neg (c (𝟙 SpecQ) (RelPoint.post w hw o)))) :=
+  sorry
+
+/-- **ATKIN–LEHNER: SOME MODULAR HECKE ACTION COMMUTES WITH `w_N`**
+(**PROVEN 2026-07-28** over the single leaf
+`exists_heckeCorrespondenceFamily_atkinLehnerCommuting` above; a bare
+`sorry` from earlier the same day until then) — the first half of the cut of
 `exists_heckeIsotypicDecomposition_atkinLehnerStable` below, and the half
 that is Atkin–Lehner theory rather than Eichler–Shimura.
 
@@ -56197,8 +56324,36 @@ TRUE, and it is the classical statement that `w_N` normalises `Γ₀(N)` and
 commutes with `T_n` for `(n, N) = 1` (Atkin–Lehner, *Hecke operators on
 `Γ_0(m)`*, Math. Ann. 185 (1970), §2; Diamond–Shurman §5.6, Thm 6.6.6).  On
 the Jacobian it is the induced statement for the correspondences, which is
-what `_hchar` makes available: `w_J` is the Albanese image of `w`, so the two
+what `hchar` makes available: `w_J` is the Albanese image of `w`, so the two
 correspondences may be compared on `X₀(N)` rather than on `J₀(N)`.
+
+**THE PROOF, and what it removes from the frontier.**  Four formal steps, none
+of them geometry, mirroring `exists_modularHeckeAction` above with the
+commutation carried along:
+
+* at a prime `n ∤ N`, `exists_heckeCorrespondenceFamily_atkinLehnerCommuting`
+  supplies the correspondence family `c` together with its `w_N`-equivariance,
+  and `IsJacobianOf.universal` turns `c` into `T n` with `T n ≫ jstr = jstr`
+  and the Albanese equation `post (T n) ∘ aj = c`;
+* `isAdditiveOn_of_post_zero` — relative RIGIDITY, PROVEN in this file —
+  upgrades `T n` to a homomorphism from the base-point clause alone;
+* `post (T n) 0 = 0` and `post (T n) ∘ neg = neg ∘ post (T n)` follow from that
+  additivity by two short calculations in the `AbelianSchemeStruct` axioms, and
+  they are what lets `T n` be pushed through the correction constant of
+  `IsJacobianOf.ajTwist`.  With them, the leaf's equivariance clause becomes
+  `post (T n) ∘ ajTwist = post w_J ∘ c`;
+* the UNIQUENESS half of `IsJacobianOf.universal`, applied to the pointed
+  natural family `x ↦ w_J (c x)`, then forces `T n ≫ w_J = w_J ≫ T n`: the
+  composite `T n ≫ w_J` factors it through `aj` by the Albanese equation, and
+  `w_J ≫ T n` factors it by `hchar` together with the previous bullet.  This is
+  the step that converts an equation between FAMILIES into an equation between
+  MORPHISMS, and it is the whole reason the leaf can be stated on points.
+
+At every other arity `T n := 𝟙 J`, which satisfies `T_comp`, `T_add` and
+commutes with `w_J` on the nose; that covers composite `n` coprime to `N`,
+`n = 1`, and every `n` sharing a factor with `N`.  So the operator-level layer
+of the Atkin–Lehner half is now formal, and the open work is exactly the
+`w_N`-equivariance of the correspondence ON POINTS.
 
 **THE EXISTENTIAL FORM IS FORCED — the `∀ T` form is FALSE.**  It is
 tempting to state this as "every modular Hecke action commutes with `w_J`",
@@ -56215,26 +56370,140 @@ the residual content is exactly the commutation at primes `ℓ ∤ N`.
 Once Eichler–Shimura is available, the anemic operators act on each isotypic
 block by a SCALAR, so they are central in `End(J₀(N)) ⊗ ℚ` and commute with
 *every* endomorphism of `J₀(N)` over `ℚ` — `w_J` included, and without using
-that `w` is an Atkin–Lehner involution at all.  The hypotheses `_hw2`, `_hal`
-and `_hchar` are kept because the CLASSICAL route (comparison of
+that `w` is an Atkin–Lehner involution at all.  The hypotheses `hw2`, `hal`
+and `hchar` are kept because the CLASSICAL route (comparison of
 correspondences on `X₀(N)`) uses them and is much the cheaper one; a prover
 who takes the centrality route may find them unnecessary, and that would be a
 strengthening rather than a defect.  *The check that would settle it*: whether
-the centrality argument can be run before the decomposition it depends on. -/
+the centrality argument can be run before the decomposition it depends on.
+
+**THE THREE HYPOTHESES ARE NOW USED RATHER THAN MERELY KEPT**, which is why
+their names lost the `_` prefix on 2026-07-28: `hchar` is what identifies
+`w_J ∘ aj` with `ajTwist` in the uniqueness step, and `hw2`/`hal` are handed to
+the leaf, where the Atkin–Lehner moduli identity lives.  Nothing about the
+statement changed — the consumer below calls this positionally and is
+unaffected. -/
 theorem exists_modularHeckeAction_atkinLehnerCommuting (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
-    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (hw2 : w ≫ w = 𝟙 X) (hal : IsAtkinLehner N hX w hw)
     (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
-    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+    (hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
       RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
     ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         IsModularHeckeAction N hX jac T T_comp ∧
-        ∀ n, Nat.Coprime n N → T n ≫ wJ = wJ ≫ T n :=
-  sorry
+        ∀ n, Nat.Coprime n N → T n ≫ wJ = wJ ≫ T n := by
+  classical
+  -- One endomorphism per natural number: at the arities `IsModularHeckeAction`
+  -- constrains, the Albanese image of the `w_N`-equivariant correspondence
+  -- family; at every other arity, `𝟙 J`.  Both commute with `w_J`.
+  have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      IsAdditiveOn ab ab u hu ∧ u ≫ wJ = wJ ≫ u ∧
+      (n.Prime → ¬ n ∣ N →
+        ∀ (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma0Isogeny N n d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab n, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          RelPoint.post u hu
+              (jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) d)))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+    intro n
+    by_cases hn : n.Prime ∧ ¬ n ∣ N
+    · obtain ⟨c, hnat, hzero, hrec, hequiv⟩ :=
+        exists_heckeCorrespondenceFamily_atkinLehnerCommuting N n hn.1 hn.2 hX jac w hw hw2 hal
+          wJ hwJ hchar
+      obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
+      -- the Albanese equation, read as an equation of relative points
+      have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post u hu (jac.aj g x) = c g x := fun g x => Subtype.ext (hueq g x).symm
+      -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
+      have hadd : IsAdditiveOn ab ab u hu :=
+        isAdditiveOn_of_post_zero ab ab hu (by
+          rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base])
+      -- `x + 0 = x`, from `zero_add` and commutativity
+      have hz0 : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint jstr g),
+          ab.add x (ab.zero g) = x := fun x => by rw [ab.add_comm, ab.zero_add]
+      -- `post u` kills the origin …
+      have hpz : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ),
+          RelPoint.post u hu (ab.zero g) = ab.zero g := by
+        intro T g
+        have h2 := hadd (ab.zero g) (ab.zero g)
+        rw [ab.zero_add] at h2
+        calc RelPoint.post u hu (ab.zero g)
+            = ab.add (ab.zero g) (RelPoint.post u hu (ab.zero g)) := (ab.zero_add _).symm
+          _ = ab.add (ab.add (ab.neg (RelPoint.post u hu (ab.zero g)))
+                (RelPoint.post u hu (ab.zero g))) (RelPoint.post u hu (ab.zero g)) := by
+              rw [ab.neg_add]
+          _ = ab.add (ab.neg (RelPoint.post u hu (ab.zero g)))
+                (ab.add (RelPoint.post u hu (ab.zero g)) (RelPoint.post u hu (ab.zero g))) :=
+              ab.add_assoc _ _ _
+          _ = ab.add (ab.neg (RelPoint.post u hu (ab.zero g)))
+                (RelPoint.post u hu (ab.zero g)) := by rw [← h2]
+          _ = ab.zero g := ab.neg_add _
+      -- … and therefore commutes with negation
+      have hpn : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (y : RelPoint jstr g),
+          RelPoint.post u hu (ab.neg y) = ab.neg (RelPoint.post u hu y) := by
+        intro T g y
+        have h2 := hadd (ab.neg y) y
+        rw [ab.neg_add, hpz] at h2
+        calc RelPoint.post u hu (ab.neg y)
+            = ab.add (ab.zero g) (RelPoint.post u hu (ab.neg y)) := (ab.zero_add _).symm
+          _ = ab.add (ab.add (ab.neg (RelPoint.post u hu y)) (RelPoint.post u hu y))
+                (RelPoint.post u hu (ab.neg y)) := by rw [ab.neg_add]
+          _ = ab.add (ab.neg (RelPoint.post u hu y))
+                (ab.add (RelPoint.post u hu y) (RelPoint.post u hu (ab.neg y))) :=
+              ab.add_assoc _ _ _
+          _ = ab.neg (RelPoint.post u hu y) := by
+              rw [ab.add_comm (RelPoint.post u hu y), ← h2, hz0]
+      refine ⟨u, hu, hadd, ?_, ?_⟩
+      · -- `u ≫ wJ` and `wJ ≫ u` factor the SAME pointed natural family through `aj`
+        have hkey : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+            RelPoint.post u hu (jac.ajTwist w hw g x) = RelPoint.post wJ hwJ (c g x) := by
+          intro T g x
+          rw [hequiv g x]
+          show RelPoint.post u hu (ab.add _ _) = _
+          rw [hadd, hpost, RelPoint.post_pre, hpn, hpost]
+        have hfnat : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+            (hg : p ≫ g = g') (x : RelPoint strX g),
+            RelPoint.post wJ hwJ (c g' (RelPoint.pre p hg x))
+              = RelPoint.pre p hg (RelPoint.post wJ hwJ (c g x)) := by
+          intro T' T p g g' hg x
+          rw [hnat p hg x, RelPoint.post_pre]
+        have hfzero : RelPoint.post wJ hwJ (c (𝟙 SpecQ) o) = ab.zero (𝟙 SpecQ) := by
+          rw [hzero, ← jac.aj_base, hchar, jac.ajTwist_base, jac.aj_base]
+        obtain ⟨v, -, hvuniq⟩ :=
+          jac.universal ab (fun g x => RelPoint.post wJ hwJ (c g x)) hfnat hfzero
+        have e1 : u ≫ wJ = v :=
+          hvuniq _ ⟨by rw [Category.assoc, hwJ, hu], fun g x => by
+            show (c g x).1 ≫ wJ = (jac.aj g x).1 ≫ (u ≫ wJ)
+            rw [hueq g x, Category.assoc]⟩
+        have e2 : wJ ≫ u = v :=
+          hvuniq _ ⟨by rw [Category.assoc, hu, hwJ], fun g x => by
+            show (RelPoint.post wJ hwJ (c g x)).1 = (jac.aj g x).1 ≫ (wJ ≫ u)
+            rw [← hkey g x, ← hchar g x]
+            show ((jac.aj g x).1 ≫ wJ) ≫ u = (jac.aj g x).1 ≫ (wJ ≫ u)
+            rw [Category.assoc]⟩
+        rw [e1, e2]
+      · intro _ _ d m dq iso hinj hsurj
+        rw [hpost (specAlgClos ℚ) _]
+        exact hrec d m dq iso hinj hsurj
+    · exact ⟨𝟙 J, Category.id_comp jstr,
+        (fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]),
+        by rw [Category.id_comp, Category.comp_id],
+        fun hp hd => absurd ⟨hp, hd⟩ hn⟩
+  choose T T_comp T_add T_comm T_pin using key
+  exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN, fun n _ => T_comm n⟩
 
 -- `exists_heckeIsotypicDecomposition_universalFactors` was DELETED here on
 -- 2026-07-28.  It was `exists_heckeIsotypicDecomposition_of_modularHeckeAction` with
@@ -58202,55 +58471,16 @@ theorem axisRestrict_fricke_of_isAtkinLehnerMinusForm (N : ℕ) (hN : N ≠ 0)
   rw [axisRestrict_one_div_eq_frickeSlash N hN f hy, hval]
   ring
 
-/-- **TERMWISE INTEGRATION OF THE `q`-SERIES OVER `[1, ∞)`** (sorry leaf,
-2026-07-28) — LEVEL-FREE, no Atkin–Lehner hypothesis, no reference to `169`.
-
-`hasSum_axisRestrict` (`ModularCurve/WeightTwoEigenform.lean`, PROVEN) gives,
-for every `y > 0`,
-
-> `axisRestrict N f y = ∑_{n ≥ 0} a_{n+1} · exp(-(2π(n+1)/√N)·y)`,
-
-and `∫_1^∞ exp(-c y) dy = e^{-c}/c` for `c > 0`.  This leaf is exactly the
-interchange of the sum with `∫_{(1, ∞)}`.
-
-TRUE, and the interchange is the routine one: with `c_n = 2π(n+1)/√N > 0`,
-`∑_n ∫_1^∞ |a_{n+1}| e^{-c_n y} dy = ∑_n |a_{n+1}| e^{-c_n}/c_n < ∞`
-because `|a_n| = O(n)` for a weight-two cusp form
-(`isBigO_atTop_coeff`, PROVEN in `WeightTwoEigenform.lean`, and Deligne is
-NOT needed) while `e^{-c_n}` decays geometrically — so Tonelli applies and
-the sum is absolutely convergent.  Note this is the step that fails on
-`(0, ∞)`: there the defining integral of `cuspPeriod` is only conditionally
-convergent, which is the whole reason
-`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` moves the seam to `[1, ∞)`
-first.
-
-**`hf` MAY NOT BE DROPPED.**  It is the only thing tying `a` to `f`; without
-it `a` is an arbitrary sequence and the statement is false for any `a` whose
-sum differs from the integral (take `f = 0`, `a = 1`).  **`hN` is kept for
-honesty rather than strength**: at `N = 0` both sides are `0` by junk values
-(`axisRestrict 0 f = 0`, and `2π/√0 = 0` makes every summand `a_{n+1} · 0`),
-so the statement is vacuously true there — it is not a hidden corner.
-
-**This leaf serves TWO consumers and should be hoisted when the second one
-is attacked.**  Besides
-`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine` below,
-the Kenku-level `integral_Ioi_one_axisRestrict_ne_zero` (~23000 lines above,
-whose docstring names this same interchange as "the natural next cut") wants
-it verbatim.  It is stated here rather than there only because that
-declaration is upstream of this point and is owned elsewhere; moving this
-block above it — or, better, next to `hasSum_axisRestrict` in
-`WeightTwoEigenform.lean`, which is where it belongs — is a pure relocation
-and costs nothing.
-
-**The check that refutes it**: any `N`, `f`, `a` with `IsWeightTwoEigenform`
-for which the two sides disagree numerically. -/
-theorem hasSum_integral_Ioi_one_axisRestrict {N : ℕ} (_hN : N ≠ 0)
-    {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ} (_hf : IsWeightTwoEigenform N f a) :
-    HasSum (fun n : ℕ => a (n + 1) *
-        ((Real.exp (-(2 * Real.pi / Real.sqrt N * (n + 1))) /
-          (2 * Real.pi / Real.sqrt N * (n + 1)) : ℝ) : ℂ))
-      (∫ y in Set.Ioi (1 : ℝ), axisRestrict N f y) :=
-  sorry
+-- **THE TAIL INTEGRAL AS A SUM.**  `flt-lean-307` restated
+-- `hasSum_integral_Ioi_one_axisRestrict` here as a sorry leaf, with a docstring
+-- observing that the Kenku-level consumer ~23000 lines above 'wants it verbatim'
+-- and that stating it there was blocked by declaration order.  Both halves of that
+-- were already false: merger PROVES the same theorem, under the same name, further
+-- UP this file (search `theorem hasSum_integral_Ioi_one_axisRestrict {M : ℕ}`), so
+-- it is upstream of both consumers and there is nothing to hoist.  Two copies in
+-- one namespace is a `has already been declared` error that no textual merge can
+-- see, so this one is withdrawn at the release-18 merge; the call below resolves
+-- to the proven copy.
 
 /-- **THE `169` NUMERICS, ON THE COEFFICIENT SEQUENCE** (sorry leaf,
 2026-07-28) — the arithmetic half of

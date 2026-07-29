@@ -1060,8 +1060,18 @@ theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
     (AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth strX)
     (fun g => relPicEquiv_equivalence strX g)
 
-/-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** —
-Bosch–Lütkebohmert–Raynaud, *Néron Models*, 9.4/4 (sorry node).
+/-! ### BLR 9.4/4 — the audit written while this was ONE node
+
+Everything down to the `DECOMPOSED 2026-07-29` paragraph was the
+docstring of `exists_relPicZeroOf_of_relPicGroupLaw` while that theorem
+was a `sorry`.  It is kept verbatim, demoted to a section comment,
+because the survey it records — what pins `Pic⁰`, which further cuts are
+vacuous, and which axes were searched and rejected, each with its price —
+is exactly what a reader of the two leaves below needs, and none of it is
+restated there.
+
+**`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** —
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 9.4/4.
 
 Assuming the relative Picard scheme `P` of `strX` has been constructed
 (`IsRelPicOf`), cut out its identity component and show that it is an
@@ -1159,7 +1169,195 @@ the tensor-calculus section, one of which
 this pin and is PROVEN.  What remains gated is the associator and the
 pullback/tensor interchange — both instances of "sheafification is
 monoidal" — plus invertibility of a tensor product and the existence of
-inverses. -/
+inverses.
+
+**DECOMPOSED 2026-07-29, and the leaf is now PROVEN.**  Everything above
+this paragraph is the audit written while it was a sorry; it is left
+intact because the survey it records is still what a reader needs.  What
+changed is that the leaf is no longer atomic: see the section heading
+immediately below for the two halves it split into and why they are
+independent.  `_hproper`, `_hsmooth`, `_hconn`, `_hpush` and `_hequiv`
+are passed on to `exists_relPicZeroSubgroup`; `_hzero` and `_hadd` are
+consumed HERE, in the `sheaf_zero` and `sheaf_add` fields, which is the
+concrete sense in which "the group law is already supplied". -/
+
+/-! ### BLR 9.4/4: the `𝒪(D)` dictionary and the identity component
+
+`exists_relPicZeroOf_of_relPicGroupLaw` receives `Pic` together with the
+group law on its points, so what it still owes is exactly the two halves
+BLR 9.4/4 is made of.  They are **independent of each other**, which is
+why they are cut apart rather than left as one node:
+
+* the **`𝒪(D)` dictionary** — `exists_abelJacobiPoint` — the Abel–Jacobi
+  map `x ↦ [x] − [o]` as a map into the points of `Pic`.  No identity
+  component enters it: it is a statement about `sectionIdeal` on a smooth
+  relative curve, plus `surj`;
+* the **geometry** — `exists_relPicZeroSubgroup` — cutting `Pic⁰` out of
+  `Pic` and showing it is proper, smooth and geometrically connected over
+  `S`.  It takes the Abel–Jacobi map as an INPUT, because "contains the
+  Abel–Jacobi image" is one of the three things that pin `Pic⁰` inside
+  `Pic` (the audit above records the other two).
+
+The assembly of `IsRelPicZeroOf` out of the two is written below and is
+PROVEN; it is pure functor-of-points bookkeeping, and every field of the
+structure is discharged by one rewrite along a clause of
+`exists_relPicZeroSubgroup` followed by the corresponding fact about
+`Pic`.
+
+**Why `incl` rather than a subscheme.**  `exists_relPicZeroSubgroup`
+delivers `Pic⁰ ⊆ Pic` as a natural INJECTION ON POINTS rather than as a
+monomorphism of schemes.  By Yoneda the two are equivalent, and the
+point-level form is what the assembly consumes; stating it as an open
+immersion would force the caller to convert, and would add an `IsIso`/
+`IsOpenImmersion` obligation that no field of `IsRelPicZeroOf` reads. -/
+
+/-- **THE ABEL–JACOBI MAP INTO `Pic`** (sorry leaf, cut 2026-07-29) — the
+`𝒪(D)` dictionary for section divisors on a relative curve, which is BLR
+9.4/4's first input and the only place `sectionIdeal` is consumed.
+
+Classically: for `x` a `T`-point of the curve, `𝒪(x − o)` is an
+invertible sheaf on `X_T`, so `surj` classifies it, and the resulting
+point of `Pic` is natural in `T` and sends `o` to the origin.
+
+**What this owes, and it is NOT the tensor calculus.**  Written out, the
+construction is `M := 𝒪(−o) ⊗ 𝒪(−x)⁻¹`, then `surj M`.  The tensor
+bookkeeping (`exists_modTensor_inv`, `nonempty_modTensor_assocPic`, the
+unitors) is all already stated above.  The two genuinely NEW obligations
+are geometric, and both are about `sectionIdeal` alone:
+
+* **`𝒪(−σ)` is invertible** for `σ` a section of a smooth relative curve.
+  This is the regular-immersion statement: a section of a smooth curve is
+  an effective Cartier divisor.  Nothing in the pin says so — there is no
+  divisor theory at `a3364fa` — so it has to be proven from
+  `sectionIdeal`'s definition as a kernel;
+* **`𝒪(−σ)` commutes with base change**:
+  `(X_{T'} ⟶ X_T)^* 𝒪(−x) ≅ 𝒪(−x_{T'})`.  Flat base change for the
+  kernel defining `sectionIdeal`.  This is what `aj_pre` needs, via
+  `hP.sheaf_pre` and `inj`.
+
+`aj_base` needs neither: it is `inj` applied to `𝒪(o − o) ∼ 𝒪`.
+
+**Pinned.**  The `∃` looks under-pinned — an adversary might try to
+replace `aj` by any other family of points — but `hP.inj` makes the point
+satisfying the first clause UNIQUE, so the clause determines `aj`
+pointwise and the other two clauses are then theorems about it rather
+than extra freedom.  This is the same argument that makes
+`IsRelPicOf.addPoint` well defined.
+
+**Not vacuous.**  At `g ≥ 1` the map is non-constant (already at `T = X`,
+`g = strX`, comparing the diagonal with the constant section `o_X`), and
+at `g = 0` it is constant with value the origin; both are consistent with
+the three clauses, and neither is excluded, because this leaf does not
+claim injectivity of `aj` — that is false at `g = 0` and is not needed
+anywhere. -/
+theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (o : RelPoint strX (𝟙 S)) (hP : IsRelPicOf strX pstr) :
+    ∃ aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g,
+      (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+          RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+            (sectionIdeal (relSection (relBasePoint o g)))) ∧
+        (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+            (x : RelPoint strX g),
+            aj T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj T g x)) ∧
+        aj S (𝟙 S) o = hP.zeroPoint (𝟙 S) :=
+  sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
+2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
+theorem is usually cited for.
+
+Given `Pic` and the Abel–Jacobi map into it, cut out the identity
+component and show it is an abelian scheme over `S`.  Concretely the
+three classical steps:
+
+* `Pic ⟶ S` is **smooth and separated** — this is where `_hpush`
+  (`f_*𝒪 = 𝒪` universally) and the vanishing of `H²` on a relative curve
+  are spent;
+* the **identity component** `Pic⁰ ⊆ Pic` exists as an open subgroup
+  scheme.  Genuinely absent from the pin: there is no identity-component
+  construction for group schemes at `a3364fa`;
+* `Pic⁰ ⟶ S` is **proper**, the valuative criterion for line bundles on a
+  relative curve.  Together with smoothness and connected fibres this is
+  the `AbelianSchemeStruct`.
+
+**The conclusion is stated on POINTS**, as a natural injection `incl`
+that is a group homomorphism and whose image contains the Abel–Jacobi
+points; by Yoneda that is the same as an open immersion of group schemes,
+and it is what the assembly consumes.
+
+**The three clauses that pin `Pic⁰`, and none may be dropped.**  The
+audit on the parent records that what pins `Pic⁰` inside `Pic` is
+*proper + open + contains the Abel–Jacobi image*.  Here:
+
+* drop the **properness** in `ab` (a field of `AbelianSchemeStruct`) and
+  `J = P` with `incl = id` satisfies everything else — `Pic` itself is
+  the junk witness, exactly as recorded on `exists_relPicZero`;
+* drop the **Abel–Jacobi clause** and `J = S`, `jstr = 𝟙 S` survives:
+  `RelPoint (𝟙 S) g` is a singleton, so the injectivity, homomorphism and
+  naturality clauses are all free and `𝟙 S` is proper, smooth and has
+  connected (point) fibres.  This is the junk witness the parent's
+  atomicity audit names, and the Abel–Jacobi clause is what kills it: at
+  `T = X`, `g = strX` the classes of `𝒪(Δ − o_X)` and `𝒪` are distinct
+  for `g ≥ 1`, so `aj` takes two values there and cannot factor through a
+  singleton;
+* drop **injectivity** of `incl` and `J` may be any abelian scheme
+  mapping onto `Pic⁰`, e.g. `Pic⁰ × E` for an elliptic curve `E`, which
+  makes `IsRelPicZeroOf.inj` false downstream.
+
+**TRUE at genus 0 as well**, where `Pic⁰ = S` IS the junk witness above:
+the Abel–Jacobi clause is then satisfiable by it, because every
+`𝒪(x − o)` is trivial.  So the clause is a genuine constraint rather than
+a hypothesis that only positive genus can meet.
+
+`hequiv` is derivable in this file (`relPicEquiv_equivalence`) and is
+passed in anyway, matching the parent's own hypothesis list: the
+subfunctor of degree-zero classes is only well defined once
+`Pic(X_T)/Pic(T)` is a quotient set. -/
+theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g)))) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr)
+      (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g),
+      (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+          incl T g p = incl T g q → p = q) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S), incl T g (ab.zero g) = hP.zeroPoint g) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+            incl T g (ab.add p q) = hP.addPoint (incl T g p) (incl T g q)) ∧
+        (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+            (p : RelPoint jstr g),
+            incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
+        (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+            ∃ p : RelPoint jstr g, incl T g p = aj T g x) :=
+  sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** — BLR 9.4/4 (PROVEN
+2026-07-29, over `exists_abelJacobiPoint` and `exists_relPicZeroSubgroup`).
+
+The audit written while this was one node is the section comment above;
+the split is described in the heading immediately before
+`exists_abelJacobiPoint`.  What is left here is functor-of-points
+bookkeeping, and it is worth reading once, because it is what makes the
+split legitimate rather than a relocation: **every field of
+`IsRelPicZeroOf` is discharged by ONE rewrite along a clause of
+`exists_relPicZeroSubgroup`, followed by the corresponding fact about
+`Pic`** — `hP.invertible`, `hP.inj`, `hP.sheaf_pre`, and the two supplied
+hypotheses `_hzero`, `_hadd`.  Nothing is proven here that either leaf
+could have been asked for instead.
+
+The one step that is not a rewrite is `aj`, which is obtained by choice
+from the Abel–Jacobi clause of `exists_relPicZeroSubgroup` — "the image
+of `incl` contains every `aj x`".  Its two laws (`aj_pre`, `aj_base`)
+then come from `hinj`: the point of `Pic⁰` above a given point of `Pic`
+is unique, so an identity between Abel–Jacobi points of `Pic` transports
+back up. -/
 theorem exists_relPicZeroOf_of_relPicGroupLaw {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
@@ -1172,8 +1370,32 @@ theorem exists_relPicZeroOf_of_relPicGroupLaw {X P S : Scheme.{u}} {strX : X ⟶
       RelPicEquiv strX g (hP.sheaf (hP.addPoint p q))
         (modTensor (hP.sheaf p) (hP.sheaf q))) :
     ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
-      Nonempty (IsRelPicZeroOf strX ab o) :=
-  sorry
+      Nonempty (IsRelPicZeroOf strX ab o) := by
+  obtain ⟨aj, hajSpec, hajPre, hajBase⟩ :=
+    exists_abelJacobiPoint _hproper _hsmooth o hP
+  obtain ⟨J, jstr, ab, incl, hinj, hzero, hadd, hpre, himg⟩ :=
+    exists_relPicZeroSubgroup _hproper _hsmooth _hconn o hP _hpush _hequiv aj hajSpec
+  choose aj' haj' using himg
+  refine ⟨J, jstr, ab, ⟨?_⟩⟩
+  exact
+    { sheaf := fun {T} {g} p => hP.sheaf (incl T g p)
+      invertible := fun {T} {g} p => hP.invertible (incl T g p)
+      inj := fun {T} {g} p q hpq => hinj T g p q (hP.inj _ _ hpq)
+      sheaf_zero := fun {T} g => by rw [hzero T g]; exact _hzero g
+      sheaf_add := fun {T} {g} p q => by rw [hadd T g p q]; exact _hadd _ _
+      sheaf_pre := fun {T'} {T} h {g} {g'} hg p => by
+        rw [hpre T' T h g g' hg p]; exact hP.sheaf_pre h hg (incl T g p)
+      aj := fun {T} {g} x => aj' T g x
+      aj_spec := fun {T} {g} x => by rw [haj' T g x]; exact hajSpec T g x
+      aj_pre := fun {T'} {T} h {g} {g'} hg x => by
+        refine hinj T' g' _ _ ?_
+        rw [haj' T' g' (RelPoint.pre h hg x), hpre T' T h g g' hg (aj' T g x),
+          haj' T g x]
+        exact hajPre T' T h g g' hg x
+      aj_base := by
+        refine hinj S (𝟙 S) _ _ ?_
+        rw [haj' S (𝟙 S) o, hzero S (𝟙 S)]
+        exact hajBase }
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** (PROVEN 2026-07-28 over
 `exists_relPicZeroOf_of_relPicGroupLaw`, discharging all four of that
