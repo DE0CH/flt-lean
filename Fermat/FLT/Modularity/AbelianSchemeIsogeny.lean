@@ -2808,8 +2808,12 @@ sequence, and named `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` as 
 leaf's natural prerequisite ("one prover closes both").  **That was wrong when it was
 written, and the refuting check is one grep in this very file.**  00MO's proof
 invokes **Lemma 10.99.10**, and 10.99.10 is ALREADY PROVEN here as
-`flat_of_rTensor_injective_of_flat_quotientMap` (over the single leaf
-`lTensor_subtype_injective_of_pow_le`), roughly 1400 lines above.
+`flat_of_rTensor_injective_of_flat_quotientMap`, roughly 1400 lines above — and as of
+the 2026-07-29 release it is proven **sorry-free**, because its former leaf
+`lTensor_subtype_injective_of_pow_le` has since been closed too.  (Note the docstring
+on 10.99.10 itself still says "PROVEN over the single leaf
+`lTensor_subtype_injective_of_pow_le`"; that parenthetical is now stale, and it is not
+this block's region to edit.)
 
 Reading 00MO's proof line by line against that, the ONLY content it needs beyond
 10.99.10 is:
