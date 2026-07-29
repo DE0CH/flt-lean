@@ -10413,59 +10413,651 @@ theorem exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet.{a, uK, uW}
     hπR q hq]
   exact hfact
 
-set_option linter.checkUnivs false in
-/-- **The split torus at a raised prime, GIVEN residual distinctness** (SORRY LEAF,
-cut out 2026-07-28 by flt-lean-397 from
-`raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient` below, which is now an
-ASSEMBLY over it).
+/-- **Coordinates of an endomorphism of `Fin 2 -> R`** (PROVEN): the value at `x` is
+read off the two columns.  A convenience lemma for the explicit `2 x 2` computations
+of `exists_linearEquiv_prod_of_charpoly_eq_mul` below. -/
+theorem end_apply_finTwo {R : Type*} [CommRing R]
+    (f : Module.End R (Fin 2 → R)) (x : Fin 2 → R) (i : Fin 2) :
+    f x i = x 0 * f (Pi.single 0 1) i + x 1 * f (Pi.single 1 1) i := by
+  have hx : x = x 0 • (Pi.single 0 1 : Fin 2 → R) + x 1 • (Pi.single 1 1 : Fin 2 → R) := by
+    funext j
+    fin_cases j <;> simp
+  conv_lhs => rw [hx]
+  simp [smul_eq_mul]
 
-Everything in the ambient leaf that mentions `ρbar` — `hW`, `hirr`, `hQ`, `S` and
-the pinning `hπR` — is spent producing exactly ONE fact, and it is `hdist`: the
-residual `charFrob` of `ρ` at `q` splits with DISTINCT roots.  This leaf is the
-remainder, and it mentions `ρbar` nowhere.
+/-- **The trace of an endomorphism of `Fin 2 -> R` in coordinates** (PROVEN): the sum
+of the two diagonal entries, through `Pi.basisFun`. -/
+theorem trace_finTwo {R : Type*} [CommRing R] (f : Module.End R (Fin 2 → R)) :
+    LinearMap.trace R (Fin 2 → R) f =
+      f (Pi.single 0 1) 0 + f (Pi.single 1 1) 1 := by
+  classical
+  rw [LinearMap.trace_eq_matrix_trace R (Pi.basisFun R (Fin 2)) f]
+  simp [Matrix.trace, Matrix.diag, Fin.sum_univ_two]
+
+/-- **An eigenbasis with UNIMODULAR transition matrix diagonalises** (PROVEN
+2026-07-29): if `M w1 = a * w1`, `M w2 = b * w2` and the `2 x 2` determinant
+`w1 0 * w2 1 - w2 0 * w1 1` is a UNIT, then `w1, w2` is a basis carrying `M` to
+`(x, y) -> (a * x, b * y)`.
+
+The inverse equivalence is written down explicitly by Cramer's rule rather than
+obtained from `Matrix.toLinearEquiv'`, so nothing beyond `IsUnit` of the determinant
+is needed - in particular no localness and no freeness argument for the two
+eigen-summands.  That is the point: over a local ring one would otherwise have to
+argue that the image of the idempotent is projective of rank one, which is a much
+longer detour. -/
+theorem exists_linearEquiv_prod_of_eigenbasis {R : Type*} [CommRing R]
+    (M : Module.End R (Fin 2 → R)) (a b : R) (w₁ w₂ : Fin 2 → R)
+    (h₁ : M w₁ = a • w₁) (h₂ : M w₂ = b • w₂)
+    (hd : IsUnit (w₁ 0 * w₂ 1 - w₂ 0 * w₁ 1)) :
+    ∃ e : (Fin 2 → R) ≃ₗ[R] R × R,
+      ∀ x, e (M x) = (a * (e x).1, b * (e x).2) := by
+  classical
+  obtain ⟨u, hu⟩ := hd
+  obtain ⟨c, hc⟩ : ∃ c : R, (w₁ 0 * w₂ 1 - w₂ 0 * w₁ 1) * c = 1 :=
+    ⟨((u⁻¹ : Rˣ) : R), by rw [← hu]; exact u.mul_inv⟩
+  let φ : (R × R) →ₗ[R] (Fin 2 → R) :=
+    { toFun := fun y => y.1 • w₁ + y.2 • w₂
+      map_add' := by
+        intro y z
+        funext i
+        simp [add_smul]
+        ring
+      map_smul' := by
+        intro r y
+        funext i
+        simp [mul_add]
+        ring }
+  let ψ : (Fin 2 → R) →ₗ[R] (R × R) :=
+    { toFun := fun x =>
+        (c * (w₂ 1 * x 0 - w₂ 0 * x 1), c * (w₁ 0 * x 1 - w₁ 1 * x 0))
+      map_add' := by
+        intro x y
+        simp only [Pi.add_apply, Prod.mk_add_mk, Prod.mk.injEq]
+        constructor <;> ring
+      map_smul' := by
+        intro r x
+        simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply, Prod.smul_mk,
+          Prod.mk.injEq]
+        constructor <;> ring }
+  have hφapp : ∀ (y : R × R) (i : Fin 2), φ y i = y.1 * w₁ i + y.2 * w₂ i := by
+    intro y i; simp [φ]
+  have hψφ : ∀ y : R × R, ψ (φ y) = y := by
+    intro y
+    have h0 := hφapp y 0
+    have h1 := hφapp y 1
+    show (c * (w₂ 1 * φ y 0 - w₂ 0 * φ y 1),
+      c * (w₁ 0 * φ y 1 - w₁ 1 * φ y 0)) = y
+    rw [h0, h1]
+    refine Prod.ext ?_ ?_
+    · show c * (w₂ 1 * (y.1 * w₁ 0 + y.2 * w₂ 0) -
+        w₂ 0 * (y.1 * w₁ 1 + y.2 * w₂ 1)) = y.1
+      linear_combination y.1 * hc
+    · show c * (w₁ 0 * (y.1 * w₁ 1 + y.2 * w₂ 1) -
+        w₁ 1 * (y.1 * w₁ 0 + y.2 * w₂ 0)) = y.2
+      linear_combination y.2 * hc
+  have hφψ : ∀ x : Fin 2 → R, φ (ψ x) = x := by
+    intro x
+    funext i
+    rw [hφapp]
+    show c * (w₂ 1 * x 0 - w₂ 0 * x 1) * w₁ i +
+      c * (w₁ 0 * x 1 - w₁ 1 * x 0) * w₂ i = x i
+    fin_cases i <;> simp only [Fin.zero_eta, Fin.mk_one]
+    · linear_combination (x 0) * hc
+    · linear_combination (x 1) * hc
+  refine ⟨LinearEquiv.ofLinear ψ φ (LinearMap.ext hψφ) (LinearMap.ext hφψ), ?_⟩
+  intro x
+  have hx : φ (ψ x) = x := hφψ x
+  set y := ψ x with hy
+  have hMφ : M (φ y) = φ (a * y.1, b * y.2) := by
+    have : M (φ y) = y.1 • M w₁ + y.2 • M w₂ := by
+      simp [φ, map_add, map_smul]
+    rw [this, h₁, h₂]
+    funext i
+    rw [hφapp]
+    simp [smul_smul]
+    ring
+  show ψ (M x) = (a * (ψ x).1, b * (ψ x).2)
+  rw [← hx, hMφ, hψφ, hψφ]
+
+/-- **DIAGONALISATION over a local ring from a split characteristic polynomial with
+unit root difference** (PROVEN 2026-07-29): if `charpoly M = (X - a)(X - b)` on a free
+rank-two module over a LOCAL ring and `a - b` is a unit, then `M` is diagonal in some
+basis, with eigenvalues `a` and `b` in that order.
 
 # ROUTE
 
-Let `v` be the place of `q` and `σ` the arithmetic Frobenius of `Γ ℚ_v`, so that
-`M := ρ.toLocal v σ` has `charpoly = ρ.charFrob v`, whose reduction has distinct
-roots by `hdist`.  `R` is `𝔪`-adically complete, so Hensel's lemma factors that
-charpoly as `(X - C a) * (X - C b)` over `R` with `a - b` a UNIT (its residue is
-`α - β ≠ 0`, and a non-unit of a local ring is exactly an element of `𝔪`).  By
-Cayley–Hamilton `(M - a)(M - b) = 0`, so
-
-    ε := (a - b)⁻¹ • (M - b)
-
-is an IDEMPOTENT of `End R (Fin 2 → R)` — `(M - b)² = (a - b) * (M - b)` — with
-`ε` and `1 - ε` each cutting out a free rank-one direct summand.  What remains is
-that `ε` COMMUTES with the whole local action, and that is where `hlev` and
-`hcomplete` enter: at each open `I` the level datum splits `ρ ⊗ (R ⧸ I)` at `q`
-into `χ_I ⊕ δ_I`, in which basis the image of `M` is diagonal with residually
-distinct entries, so the image of `ε` is the projection onto the `χ_I`-line and
-commutes with everything; hence every entry of `ε * ρ.toLocal v g - ρ.toLocal v g * ε`
-lies in `𝔪^(n+1)` for every `n`, and adic SEPARATEDNESS makes it zero — the same
-separation argument written out in full in
-`raisedLevelDet_of_forall_isOpen_quotient` above.  `δ` is unramified for the same
-reason, one level at a time.
-
-Note this route builds the splitting DIRECTLY over `R` and never forms an inverse
-limit of level-wise decompositions: uniqueness of the idempotent is used only to
-identify the level-wise splittings with the reduction of `ε`, not to construct a
-compatible system.  The cofiltered-system alternative recorded on
-`IsAuxProLimitClause` remains available and still needs `Finite (R ⧸ I)`, which is
-not given.
+Cayley-Hamilton (`LinearMap.aeval_self_charpoly`) in BOTH factor orders - the two
+factors commute because the polynomials do - gives
+`(M - a)(M - b) = 0 = (M - b)(M - a)`.  Writing `N := M - b` and `N' := a - M`, every
+column of `N` is an `a`-eigenvector and every column of `N'` a `b`-eigenvector.
+`charpoly` also pins the trace, so `n 0 0 + n 1 1 = a - b` is a unit, and in a LOCAL
+ring one of the two diagonal entries of `N` is therefore a unit.  In the case `n 0 0`
+is a unit the pair `(N e0, N' e1)` has determinant
+`n 0 0 ^ 2 + n 0 1 * n 1 0 = (a - b) * n 0 0` - the `(0,0)` entry of
+`N ^ 2 = (a - b) * N` - hence unimodular; the case `n 1 1` a unit is the mirror image
+with `(N e1, N' e0)` and determinant `-((a - b) * n 1 1)`.
 
 # BOTH-WAYS AUDIT
 
-`hdist` is load-bearing and is the ONLY thing the ambient arithmetic supplies: with
-`α = β` the level-wise decompositions need not be compatible (the section
-preamble's `k[u,v]/(u,v)²` counterexample), the idempotent is not determined by its
-residue, and Hensel gives no factorization with a unit difference.  `hcomplete` is
-load-bearing twice — for Hensel and for separatedness — and `hadic` is what makes
-`𝔪^n` open so that `hlev` can be applied to it at all.  `hqQ` is load-bearing:
-`hlev` says nothing about `q ∉ Q`.  No hypothesis on `ρbar` is used or needed, so
-the circularity guard of `exists_auxDeformationDatum` is satisfied structurally
-here: `hirr` is not even in scope, and a proof of this leaf CANNOT end in
-`exfalso` against it. -/
+`IsUnit (a - b)` is load-bearing twice (for the trace dichotomy and for the
+determinant), and localness is load-bearing exactly once, for the dichotomy.  The FULL
+`charpoly` hypothesis cannot be weakened to `(M - a)(M - b) = 0`: `M = b * 1` satisfies
+that for every `a` and is not conjugate to `diag (a, b)`; the trace is what excludes
+it. -/
+theorem exists_linearEquiv_prod_of_charpoly_eq_mul {R : Type*} [CommRing R] [IsLocalRing R]
+    (M : Module.End R (Fin 2 → R)) (a b : R) (hu : IsUnit (a - b))
+    (hM : LinearMap.charpoly M =
+      (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b)) :
+    ∃ e : (Fin 2 → R) ≃ₗ[R] R × R,
+      ∀ x, e (M x) = (a * (e x).1, b * (e x).2) := by
+  classical
+  -- Cayley-Hamilton, in both factor orders
+  have hCH : (M - algebraMap R (Module.End R (Fin 2 → R)) a) *
+      (M - algebraMap R (Module.End R (Fin 2 → R)) b) = 0 := by
+    have h := LinearMap.aeval_self_charpoly M
+    rw [hM] at h
+    simpa [map_mul, map_sub] using h
+  have hCH' : (M - algebraMap R (Module.End R (Fin 2 → R)) b) *
+      (M - algebraMap R (Module.End R (Fin 2 → R)) a) = 0 := by
+    have h := LinearMap.aeval_self_charpoly M
+    rw [hM, mul_comm] at h
+    simpa [map_mul, map_sub] using h
+  -- the trace
+  have htr : LinearMap.trace R (Fin 2 → R) M = a + b := by
+    have hfr : Module.finrank R (Fin 2 → R) = 2 := Module.finrank_fin_fun R
+    have h := charpoly_eq_quadratic_of_finrank_two hfr M
+    rw [hM] at h
+    have h1 := congrArg (fun P : Polynomial R => P.coeff 1) h
+    simp [Polynomial.mul_coeff_one] at h1
+    linear_combination h1
+  have hNe0 : ∀ x : Fin 2 → R, M (M x - b • x) = a • (M x - b • x) := by
+    intro x
+    have h := congrArg (fun f : Module.End R (Fin 2 → R) => f x) hCH
+    simp only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.zero_apply,
+      Module.algebraMap_end_apply] at h
+    exact sub_eq_zero.mp h
+  have hN'e0 : ∀ x : Fin 2 → R, M (M x - a • x) = b • (M x - a • x) := by
+    intro x
+    have h := congrArg (fun f : Module.End R (Fin 2 → R) => f x) hCH'
+    simp only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.zero_apply,
+      Module.algebraMap_end_apply] at h
+    exact sub_eq_zero.mp h
+  set N : Module.End R (Fin 2 → R) :=
+    M - algebraMap R (Module.End R (Fin 2 → R)) b with hNdef
+  set N' : Module.End R (Fin 2 → R) :=
+    algebraMap R (Module.End R (Fin 2 → R)) a - M with hN'def
+  have hNapp : ∀ x : Fin 2 → R, N x = M x - b • x := by
+    intro x; simp [hNdef, Module.algebraMap_end_apply]
+  have hN'app : ∀ x : Fin 2 → R, N' x = a • x - M x := by
+    intro x; simp [hN'def, Module.algebraMap_end_apply]
+  have hNe : ∀ x : Fin 2 → R, M (N x) = a • N x := by
+    intro x; rw [hNapp]; exact hNe0 x
+  have hN'e : ∀ x : Fin 2 → R, M (N' x) = b • N' x := by
+    intro x
+    rw [hN'app]
+    have hx : a • x - M x = -(M x - a • x) := by abel
+    rw [hx, map_neg, hN'e0 x, smul_neg]
+  -- entries
+  set n : Fin 2 → Fin 2 → R := fun i j => N (Pi.single j 1) i with hndef
+  have hNcoord : ∀ (y : Fin 2 → R) (i : Fin 2),
+      N y i = y 0 * n i 0 + y 1 * n i 1 := by
+    intro y i
+    exact end_apply_finTwo N y i
+  have hNN : ∀ x : Fin 2 → R, N (N x) = (a - b) • N x := by
+    intro x
+    rw [hNapp (N x), hNe x, sub_smul]
+  have htrn : n 0 0 + n 1 1 = a - b := by
+    have h := trace_finTwo M
+    rw [htr] at h
+    have h0 : n 0 0 = M (Pi.single 0 1) 0 - b := by
+      simp [hndef, hNapp, Pi.single_apply]
+    have h1 : n 1 1 = M (Pi.single 1 1) 1 - b := by
+      simp [hndef, hNapp, Pi.single_apply]
+    rw [h0, h1]
+    linear_combination -h
+  have hsq0 : n 0 0 * n 0 0 + n 1 0 * n 0 1 = (a - b) * n 0 0 := by
+    have h := congrFun (hNN (Pi.single 0 1)) 0
+    rw [hNcoord (N (Pi.single 0 1)) 0] at h
+    simpa [hndef, smul_eq_mul, mul_comm] using h
+  have hsq1 : n 0 1 * n 1 0 + n 1 1 * n 1 1 = (a - b) * n 1 1 := by
+    have h := congrFun (hNN (Pi.single 1 1)) 1
+    rw [hNcoord (N (Pi.single 1 1)) 1] at h
+    simpa [hndef, smul_eq_mul, mul_comm] using h
+  have hdich : IsUnit (n 0 0) ∨ IsUnit (n 1 1) := by
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨h0, h1⟩ := hcon
+    have hm0 : n 0 0 ∈ _root_.IsLocalRing.maximalIdeal R := by
+      by_contra hc; exact h0 (_root_.IsLocalRing.notMem_maximalIdeal.mp hc)
+    have hm1 : n 1 1 ∈ _root_.IsLocalRing.maximalIdeal R := by
+      by_contra hc; exact h1 (_root_.IsLocalRing.notMem_maximalIdeal.mp hc)
+    have hmem : (a - b) ∈ _root_.IsLocalRing.maximalIdeal R := by
+      rw [← htrn]; exact Ideal.add_mem _ hm0 hm1
+    exact (_root_.IsLocalRing.notMem_maximalIdeal.mpr hu) hmem
+  have hN'coord : ∀ (j i : Fin 2),
+      N' (Pi.single j 1) i = (a - b) * (Pi.single j 1 : Fin 2 → R) i - n i j := by
+    intro j i
+    have : N' (Pi.single j 1) = (a - b) • (Pi.single j 1 : Fin 2 → R) - N (Pi.single j 1) := by
+      rw [hN'app, hNapp]
+      module
+    rw [this]
+    simp [hndef]
+  rcases hdich with h00 | h11
+  · refine exists_linearEquiv_prod_of_eigenbasis M a b
+      (N (Pi.single 0 1)) (N' (Pi.single 1 1)) (hNe _) (hN'e _) ?_
+    have e1 : N (Pi.single 0 1) 0 = n 0 0 := rfl
+    have e2 : N (Pi.single 0 1) 1 = n 1 0 := rfl
+    have e3 : N' (Pi.single 1 1) 0 = -n 0 1 := by
+      rw [hN'coord 1 0]; simp
+    have e4 : N' (Pi.single 1 1) 1 = (a - b) - n 1 1 := by
+      rw [hN'coord 1 1]; simp
+    rw [e1, e2, e3, e4]
+    have : n 0 0 * ((a - b) - n 1 1) - -n 0 1 * n 1 0 = (a - b) * n 0 0 := by
+      linear_combination hsq0 - n 0 0 * htrn
+    rw [this]
+    exact hu.mul h00
+  · refine exists_linearEquiv_prod_of_eigenbasis M a b
+      (N (Pi.single 1 1)) (N' (Pi.single 0 1)) (hNe _) (hN'e _) ?_
+    have e1 : N (Pi.single 1 1) 0 = n 0 1 := rfl
+    have e2 : N (Pi.single 1 1) 1 = n 1 1 := rfl
+    have e3 : N' (Pi.single 0 1) 0 = (a - b) - n 0 0 := by
+      rw [hN'coord 0 0]; simp
+    have e4 : N' (Pi.single 0 1) 1 = -n 1 0 := by
+      rw [hN'coord 0 1]; simp
+    rw [e1, e2, e3, e4]
+    have : n 0 1 * -n 1 0 - ((a - b) - n 0 0) * n 1 1 = -((a - b) * n 1 1) := by
+      linear_combination -hsq1 + n 1 1 * htrn
+    rw [this]
+    exact (hu.mul h11).neg
+
+/-- **Anything commuting with a diagonal endomorphism with UNIT eigenvalue gap is
+itself diagonal**, in the same coordinates (PROVEN 2026-07-29), and its two
+eigenvalues are read off `(1, 0)` and `(0, 1)`.
+
+`(a - b) * s = 0` with `a - b` a unit forces the off-diagonal entries `s` to vanish;
+this is the only place the gap is used, and it is exactly why residual distinctness
+at a Taylor-Wiles prime is indispensable. -/
+theorem eq_diag_of_commute_diagProd {R : Type*} [CommRing R] (a b : R)
+    (hu : IsUnit (a - b)) (T : (R × R) → (R × R))
+    (hadd : ∀ x y, T (x + y) = T x + T y)
+    (hsmul : ∀ (r : R) (x : R × R), T (r • x) = r • T x)
+    (hcomm : ∀ x : R × R, T (a * x.1, b * x.2) = (a * (T x).1, b * (T x).2)) :
+    ∀ x : R × R, T x = ((T (1, 0)).1 * x.1, (T (0, 1)).2 * x.2) := by
+  have hs : (T (1, 0)).2 = 0 := by
+    have h1 : T (a, 0) = (a * (T (1, 0)).1, b * (T (1, 0)).2) := by
+      have h := hcomm (1, 0); simp only [mul_one, mul_zero] at h; exact h
+    have h2 : T ((a : R) • ((1 : R), (0 : R))) = (a : R) • T (1, 0) := hsmul a (1, 0)
+    simp only [Prod.smul_mk, smul_eq_mul, mul_one, mul_zero] at h2
+    rw [h2] at h1
+    have h3 : a * (T (1, 0)).2 = b * (T (1, 0)).2 := by
+      simpa using congrArg Prod.snd h1
+    refine (hu.mul_right_eq_zero).mp ?_
+    linear_combination h3
+  have ht : (T (0, 1)).1 = 0 := by
+    have h1 : T (0, b) = (a * (T (0, 1)).1, b * (T (0, 1)).2) := by
+      have h := hcomm (0, 1); simp only [mul_one, mul_zero] at h; exact h
+    have h2 : T ((b : R) • ((0 : R), (1 : R))) = (b : R) • T (0, 1) := hsmul b (0, 1)
+    simp only [Prod.smul_mk, smul_eq_mul, mul_one, mul_zero] at h2
+    rw [h2] at h1
+    have h3 : b * (T (0, 1)).1 = a * (T (0, 1)).1 := by
+      simpa using congrArg Prod.fst h1
+    refine (hu.mul_right_eq_zero).mp ?_
+    linear_combination -h3
+  intro x
+  have hx : x = x.1 • ((1 : R), (0 : R)) + x.2 • ((0 : R), (1 : R)) := by
+    refine Prod.ext ?_ ?_ <;> simp
+  rw [hx, hadd, hsmul, hsmul]
+  refine Prod.ext ?_ ?_
+  · simp [ht, mul_comm]
+  · simp [hs, mul_comm]
+
+/-- **A family of endomorphisms simultaneously diagonalised by ONE linear equivalence
+onto `A x A` commutes** (PROVEN 2026-07-29).
+
+`Module.End A A` is commutative for commutative `A` (`f z = z * f 1`), so a family
+carried into the diagonal by a single `e` has commuting image.  This is the abstract
+content of the level-wise split-torus datum, isolated from all the arithmetic. -/
+theorem commute_of_forall_linearEquiv_prod {A : Type*} [CommRing A]
+    {V : Type*} [AddCommGroup V] [Module A V] {G : Type*}
+    (eA : V ≃ₗ[A] A × A) (χA δA : G → Module.End A A) (τ : G → Module.End A V)
+    (hdA : ∀ (g : G) (z : V), eA (τ g z) = (χA g (eA z).1, δA g (eA z).2)) :
+    ∀ (g h : G) (z : V), τ g (τ h z) = τ h (τ g z) := by
+  have hEndComm : ∀ (f f' : Module.End A A) (y : A), f (f' y) = f' (f y) := by
+    intro f f' y
+    have hf : ∀ (φ : Module.End A A) (z : A), φ z = z * φ 1 := by
+      intro φ z
+      have hz : φ (z • (1 : A)) = z • φ 1 := map_smul φ z 1
+      simpa [smul_eq_mul] using hz
+    rw [hf f (f' y), hf f' y, hf f' (f y), hf f y]
+    ring
+  intro g h z
+  apply eA.injective
+  rw [hdA g (τ h z), hdA h z, hdA h (τ g z), hdA g z]
+  exact Prod.ext (hEndComm _ _ _) (hEndComm _ _ _)
+
+set_option linter.checkUnivs false in
+/-- **THE LOCAL IMAGE AT `q` IN `Q` IS COMMUTATIVE** (PROVEN 2026-07-29; sub-leaf (A)
+of `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
+
+# ROUTE
+
+At each open ideal `I` the level datum splits `rho` tensor `R / I` at `q` as a sum of
+two characters (`IsRaisedLevelHardlyRamified.isSplitTorusAt`), so the whole local
+image is DIAGONAL in the basis `e_I`, hence commutative
+(`commute_of_forall_linearEquiv_prod` above).  Applying that at `I = m ^ (n+1)` and
+reading the tensor `1 tmul x` through `TensorProduct.piScalarRight` puts every entry
+of the commutator in `m ^ (n+1)` for every `n`; adic SEPARATEDNESS (`hcomplete`) makes
+it zero.  This is the separation argument of
+`raisedLevelDet_of_forall_isOpen_quotient` above, applied to a commutator instead of
+to a determinant.
+
+**This replaces the idempotent-uniqueness step of the route recorded at the cut.**
+The parent leaf's docstring proposed identifying the reduction of the global
+idempotent with the level-wise projection, which needs uniqueness of the idempotent at
+each level and a root count in `R / m ^ (n+1)`.  None of that is necessary:
+commutativity of the image is a strictly weaker consequence of the same level data, it
+separates just as well, and once the image commutes the splitting is pure linear
+algebra over `R` (`exists_linearEquiv_prod_of_charpoly_eq_mul` above).
+
+# BOTH-WAYS AUDIT
+
+`hcomplete` is load-bearing (separatedness) and `hadic` is what makes `m ^ n` open, so
+that `hlev` applies to it at all.  `hqQ` is load-bearing: `hlev` says nothing about the
+local behaviour at `q` outside `Q`.  Nothing about `rhobar`, the pinning, or `hdist` is
+used - in particular NO residual distinctness: commutativity of the image holds at
+every raised prime, distinct residual eigenvalues or not. -/
+theorem commute_toLocal_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime) :
+    ∀ (g h : Field.absoluteGaloisGroup
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+      (x : Fin 2 → R),
+      ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g
+          (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h x) =
+        ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h
+          (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g x) := by
+  classical
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hnetop : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro n htop
+    have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (Nat.succ_ne_zero n)
+    rw [htop, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  have hlocal : ∀ J : Ideal R, J ≠ ⊤ → IsLocalRing (R ⧸ J) := by
+    intro J hJt
+    haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJt
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+  have hrk : ∀ (J : Ideal R) [IsLocalRing (R ⧸ J)],
+      Module.rank (R ⧸ J) ((R ⧸ J) ⊗[R] (Fin 2 → R)) = 2 := by
+    intro J _
+    simp
+  have hsep : ∀ y : R,
+      (∀ n : ℕ, y ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → y = 0 := by
+    intro y hy
+    refine IsHausdorff.haus (hcomplete.toIsHausdorff) _ fun n => ?_
+    rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+    cases n with
+    | zero => simp
+    | succ m => exact hy m
+  intro g h x
+  have hlevelcomm : ∀ n : ℕ, ∀ i : Fin 2,
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g
+          (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h x) -
+        ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h
+          (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g x)) i ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) := by
+    intro n i
+    haveI := hlocal _ (hnetop n)
+    obtain ⟨eA, χA, δA, hdA, -⟩ :=
+      (hlev (IsLocalRing.maximalIdeal R ^ (n + 1)) (hpow (n + 1)) (hrk _)).isSplitTorusAt
+        q hqQ hq
+    have hcomm0 := commute_of_forall_linearEquiv_prod eA (fun γ => χA γ) (fun γ => δA γ)
+      (fun γ => (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))).toLocal
+        hq.toHeightOneSpectrumRingOfIntegersRat γ) hdA
+    have hbc : ∀ (γ : Field.absoluteGaloisGroup
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+        (y : Fin 2 → R),
+        (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))).toLocal
+            hq.toHeightOneSpectrumRingOfIntegersRat γ
+            ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) ⊗ₜ[R] y) =
+          (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) ⊗ₜ[R]
+            (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat γ y) := by
+      intro γ y
+      show LinearMap.baseChange _
+        (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat γ) (_ ⊗ₜ[R] y) = _
+      simp
+    have hz := hcomm0 g h
+      ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) ⊗ₜ[R] x)
+    rw [hbc, hbc, hbc, hbc] at hz
+    have hz0 : (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) ⊗ₜ[R]
+        (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g
+            (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h x) -
+          ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h
+            (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g x)) = 0 := by
+      rw [TensorProduct.tmul_sub, hz, sub_self]
+    have hz1 := congrArg (fun w =>
+      TensorProduct.piScalarRight R (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R))
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) (Fin 2) w i) hz0
+    have hz2 : (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 1))
+        ((ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g
+            (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h x) -
+          ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat h
+            (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g x)) i)) = 0 := by
+      simpa [Pi.sub_apply, map_sub, Algebra.smul_def,
+        Ideal.Quotient.algebraMap_eq] using hz1
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hz2
+  funext i
+  have hzero := hsep _ (fun n => hlevelcomm n i)
+  simpa [sub_eq_zero] using hzero
+
+set_option linter.checkUnivs false in
+/-- **HENSEL: the local Frobenius characteristic polynomial splits over `R` with unit
+root difference** (SORRY LEAF, cut 2026-07-29; sub-leaf (B) of
+`raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
+
+# ROUTE
+
+Three steps, in this order - the order matters.
+
+1. **Residual splitting comes from `hlev`, NOT from `hdist`.**  At `I = m` the level
+   datum diagonalises the residual representation at `q`, so the reduction mod `m` of
+   `charpoly (rho.toLocal v Frob)` is a product of two linear factors with both roots
+   IN THE RESIDUE FIELD.  This step cannot be skipped: `hdist` only splits the
+   polynomial over `k`, and the residue field need not map onto `k`, so `hdist` alone
+   leaves open the case of an irreducible quadratic over the residue field splitting
+   in a quadratic extension - exactly the nonsplit torus, for which the conclusion is
+   FALSE.  (`Mathlib.LinearAlgebra.Charpoly.BaseChange` is imported and carries the
+   `charpoly` / base-change compatibility.)
+2. **Distinctness comes from `hdist` together with `hpiRker`.**  `ker piR = m` makes
+   `piR` factor as an EMBEDDING of the residue field into `k`, so `alpha` distinct from
+   `beta` in `k` forces the two residual eigenvalues to differ, i.e. any lifts
+   `a0, b0` in `R` have `a0 - b0` outside `m`, a UNIT.
+3. **Hensel.**  `IsAdicComplete m R` gives `HenselianRing R m`
+   (`IsAdicComplete.henselianRing`), and the charpoly is monic with a simple root `a0`
+   mod `m` (its derivative at `a0` is `a0 - b0`, a unit), so it has a root `a` in `R`
+   congruent to `a0`.  Dividing, `charpoly = (X - a)(X - b)` with `b = trace - a`
+   congruent to `b0`, and `a - b` is a unit.
+
+# WHY `hpiRker` IS CARRIED (statement CORRECTED 2026-07-29)
+
+The parent leaf as originally cut carried `piR : R -> k` with `k` an arbitrary FIELD
+and no locality datum.  `ker piR` is then merely a prime ideal contained in `m`, and
+`hdist` says only that the discriminant avoids it - i.e. that it is not nilpotent -
+NOT that it is a unit.  With `R = Z_p`, kernel zero, `k = Q_p`, a Frobenius charpoly
+with distinct `p`-adic roots congruent mod `p` satisfies `hdist` and admits no Hensel
+factorisation with unit root difference, so the documented route is unavailable.
+Locality is exactly what closes the gap, it costs the consumer NOTHING - the assembly
+`raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient` below already proves
+`ker piR = m` from `Finite k` via `ker_eq_maximalIdeal_of_ringHom_finiteField` and was
+DISCARDING it - and it is the minimal such hypothesis: what the proof needs is
+`m` contained in `ker piR`, and `ker piR` proper gives the converse inclusion for free.
+
+# BOTH-WAYS AUDIT
+
+`hlev` is load-bearing (step 1) and so is `hdist` (step 2); neither implies the other.
+`hcomplete` is load-bearing for Hensel.  `hqQ` is load-bearing, since `hlev` constrains
+the local behaviour only at primes of `Q`.  No hypothesis on `rhobar` appears. -/
+theorem exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient.{a, uK} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
+    {k : Type uK} [Field k]
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)} (πR : R →+* k)
+    (hπRker : RingHom.ker πR = IsLocalRing.maximalIdeal R)
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime)
+    (hdist : ∃ α β : k, α ≠ β ∧
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) :
+    ∃ a b : R, LinearMap.charpoly
+        (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) =
+      (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C b) ∧
+      IsUnit (a - b) := sorry
+
+set_option linter.checkUnivs false in
+/-- **ONE OF THE TWO CHARACTERS KILLS INERTIA** (SORRY LEAF, cut 2026-07-29; sub-leaf
+(C) of `raisedLevelSplitTorusAt_of_charFrob_residually_distinct` below).
+
+# ROUTE - a pigeonhole, and the reason the conclusion is a DISJUNCTION
+
+Fix `n` and put `A := R / m ^ (n+1)`.  The level datum at `A` splits the local
+representation at `q` as `chi_A` plus `delta_A` with `delta_A` UNRAMIFIED.  Reducing
+the given global splitting mod `m ^ (n+1)` gives a second splitting into the
+eigenlines of `rho.toLocal v Frob`, whose eigenvalues `chi Frob`, `delta Frob` differ
+by a unit; since the maximal ideal of `A` is nilpotent, a root `r` of
+`(X - chi Frob)(X - delta Frob)` with `r - chi Frob` in that ideal satisfies
+`r = chi Frob` exactly (iterate `x ^ 2 = -u x`), so the two splittings agree up to the
+ORDER of the factors.  Hence at each level EITHER `chi` is congruent to `1` on inertia
+mod `m ^ (n+1)` OR `delta` is.
+
+**The order can a priori depend on `n`, and that is why the conclusion is a
+disjunction rather than a statement about `delta` alone.**  The two sets of levels
+cover the naturals, so one of them is infinite, hence cofinal; the corresponding
+congruence is antitone in `n`, so it then holds at EVERY level, and adic separatedness
+upgrades it to an identity in `R`.  The consumer discharges the remaining ambiguity by
+composing `e` with `LinearEquiv.prodComm` - the goal asks only that SOME factor be
+unramified, not which.
+
+# BOTH-WAYS AUDIT
+
+`hud` is load-bearing: with `chi Frob = delta Frob` the level-wise eigenlines are not
+determined and the two splittings need not agree even up to order (the section
+preamble's `k[u,v]/(u,v)^2` counterexample).  `hcomplete` is load-bearing twice, for
+nilpotence of the maximal ideal of `A` and for the final separation.  `hqQ` is
+load-bearing.  Nothing about `rhobar` is used, so no circular discharge against `hirr`
+is possible here. -/
+theorem forall_localInertia_eq_one_of_forall_isOpen_quotient.{a} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)}
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime)
+    (e : (Fin 2 → R) ≃ₗ[R] R × R)
+    (χ δ : Field.absoluteGaloisGroup
+      ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) → R)
+    (he : ∀ g y, e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g y) =
+      (χ g * (e y).1, δ g * (e y).2))
+    (hud : IsUnit (χ (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) -
+      δ (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))) :
+    (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, χ σ = 1) ∨
+      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat, δ σ = 1) :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The split torus at a raised prime, GIVEN residual distinctness** (PROVEN
+2026-07-29 over the two named leaves
+`exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient` (Hensel) and
+`forall_localInertia_eq_one_of_forall_isOpen_quotient` (unramifiedness) above; cut out
+2026-07-28 by flt-lean-397 from `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`
+below, which is an ASSEMBLY over it).
+
+Everything in the ambient leaf that mentions `rhobar` - `hW`, `hirr`, `hQ`, `S` and the
+pinning `hpiR` - is spent producing exactly ONE fact, and it is `hdist`: the residual
+`charFrob` of `rho` at `q` splits with DISTINCT roots.  This leaf is the remainder, and
+it mentions `rhobar` nowhere.
+
+# ROUTE AS ACTUALLY TAKEN (2026-07-29)
+
+The cut prescribed: Hensel-factor the Frobenius charpoly, form the idempotent
+`(a - b)^{-1} (M - b)`, and prove that it commutes with the local action by IDENTIFYING
+its reduction with the level-wise projection - which needs uniqueness of the idempotent
+at each level.  **That identification is unnecessary.**  The level data give something
+strictly weaker and enough:
+
+1. `commute_toLocal_of_forall_isOpen_quotient` (PROVEN above) - at each level the local
+   image is diagonal, hence commutative; adic separatedness makes the COMMUTATOR itself
+   zero over `R`.  No idempotent, no root counting in `R / m ^ (n+1)`;
+2. `exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient` - Hensel, giving
+   `charpoly (rho.toLocal v Frob) = (X - a)(X - b)` with `a - b` a unit;
+3. `exists_linearEquiv_prod_of_charpoly_eq_mul` (PROVEN above) - diagonalise the local
+   Frobenius over `R` by an explicit unimodular eigenbasis;
+4. `eq_diag_of_commute_diagProd` (PROVEN above) - everything commuting with a diagonal
+   matrix with unit eigenvalue gap is diagonal, so the whole local action is diagonal in
+   that ONE basis, and the two diagonal entries are the characters `chi`, `delta`.  Their
+   multiplicativity and continuity are read off the same formula, the latter through
+   `IsModuleTopology.continuous_of_linearMap` exactly as in
+   `isTameAtTwo_of_forall_isOpen_quotient`;
+5. `forall_localInertia_eq_one_of_forall_isOpen_quotient` - one of `chi`, `delta` kills
+   inertia.  **Which one is not determined by the data**, and the residual eigenvalue
+   attached to the unramified character may in principle differ from level to level; a
+   pigeonhole over the levels is what produces a single global answer.  The goal asks
+   only that SOME factor be unramified, so the remaining ambiguity is discharged here by
+   composing `e` with `LinearEquiv.prodComm`.
+
+Note this route builds the splitting DIRECTLY over `R` and never forms an inverse limit
+of level-wise decompositions.  The cofiltered-system alternative recorded on
+`IsAuxProLimitClause` remains available and still needs `Finite (R / I)`, which is not
+given.
+
+# STATEMENT CORRECTED 2026-07-29: `hpiRker` ADDED
+
+The leaf as cut carried `piR : R -> k` with `k` an arbitrary field and no locality
+datum, and `hdist` was then STRICTLY WEAKER than residual distinctness: `ker piR` is
+only a prime ideal contained in `m`, so `hdist` says the discriminant of the Frobenius
+charpoly avoids it - equivalently, that it is not nilpotent - and not that it is a unit.
+Witness that the two differ: `R = Z_p`, kernel zero, `k = Q_p`, a charpoly whose two
+`p`-adic roots are distinct but congruent mod `p`.  Hensel then gives no factorisation
+with unit root difference, and the documented route is unavailable.  The repair is the
+one hypothesis `hpiRker : ker piR = m`, which the consumer
+`raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient` below ALREADY PROVES from
+`Finite k` (`ker_eq_maximalIdeal_of_ringHom_finiteField`) and was discarding - so the
+consumer's own statement is unchanged.  This is the usual shape: the missing hypothesis
+was already in the caller's hand.
+
+# BOTH-WAYS AUDIT
+
+`hdist` together with `hpiRker` is load-bearing and is the ONLY thing the ambient
+arithmetic supplies: with the two residual roots equal the level-wise decompositions
+need not be compatible (the section preamble's `k[u,v]/(u,v)^2` counterexample), and
+Hensel gives no factorization with a unit difference.  `hcomplete` is load-bearing twice
+- for Hensel and for separatedness - and `hadic` is what makes `m ^ n` open so that
+`hlev` can be applied to it at all.  `hqQ` is load-bearing: `hlev` says nothing about
+`q` outside `Q`.  No hypothesis on `rhobar` is used or needed, so the circularity guard
+of `exists_auxDeformationDatum` is satisfied structurally here: `hirr` is not even in
+scope, and a proof of this leaf CANNOT end in `exfalso` against it. -/
 theorem raisedLevelSplitTorusAt_of_charFrob_residually_distinct.{a, uK} {p : ℕ}
     (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
     {k : Type uK} [Field k]
@@ -10474,6 +11066,7 @@ theorem raisedLevelSplitTorusAt_of_charFrob_residually_distinct.{a, uK} {p : ℕ
     (hadic : IsAdic (IsLocalRing.maximalIdeal R))
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
     {ρ : GaloisRep ℚ R (Fin 2 → R)} (πR : R →+* k)
+    (hπRker : RingHom.ker πR = IsLocalRing.maximalIdeal R)
     (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
       (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
       IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
@@ -10489,7 +11082,176 @@ theorem raisedLevelSplitTorusAt_of_charFrob_residually_distinct.{a, uK} {p : ℕ
           (v : Fin 2 → R),
         e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
           (χ g (e v).1, δ g (e v).2)) ∧
-      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := sorry
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+  classical
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hvdef
+  set F := Field.AbsoluteGaloisGroup.adicArithFrob v with hFdef
+  -- STEP 1: the local Frobenius has a split characteristic polynomial with unit gap
+  obtain ⟨a, b, hab, hu⟩ :=
+    exists_charpoly_toLocal_eq_mul_of_forall_isOpen_quotient hpodd Q hadic hcomplete
+      πR hπRker hlev q hqQ hq hdist
+  -- STEP 2: diagonalise the local Frobenius over `R`
+  obtain ⟨e, he⟩ :=
+    exists_linearEquiv_prod_of_charpoly_eq_mul (ρ.toLocal v F) a b hu hab
+  -- STEP 3: the whole local image commutes, hence is diagonal in the same basis
+  have hcomm := commute_toLocal_of_forall_isOpen_quotient hpodd Q hadic hcomplete hlev
+    q hqQ hq
+  have hone : ∀ y : Fin 2 → R,
+      ρ.toLocal v (1 : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) y = y := by
+    intro y; rw [map_one]; rfl
+  have hmulapp : ∀ (g h : Field.absoluteGaloisGroup (v.adicCompletion ℚ))
+      (y : Fin 2 → R),
+      ρ.toLocal v (g * h) y = ρ.toLocal v g (ρ.toLocal v h y) := by
+    intro g h y; rw [map_mul]; rfl
+  have hT : ∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (x : R × R),
+      e (ρ.toLocal v g (e.symm x)) =
+        ((e (ρ.toLocal v g (e.symm (1, 0)))).1 * x.1,
+         (e (ρ.toLocal v g (e.symm (0, 1)))).2 * x.2) := by
+    intro g
+    refine eq_diag_of_commute_diagProd a b hu
+      (fun x => e (ρ.toLocal v g (e.symm x))) ?_ ?_ ?_
+    · intro x y; simp
+    · intro r x; simp
+    · intro x
+      have h1 : e.symm (a * x.1, b * x.2) = ρ.toLocal v F (e.symm x) := by
+        have h := he (e.symm x)
+        rw [e.apply_symm_apply] at h
+        rw [← h, e.symm_apply_apply]
+      rw [h1, hcomm g F (e.symm x)]
+      exact he _
+  set χ : Field.absoluteGaloisGroup (v.adicCompletion ℚ) → R :=
+    fun g => (e (ρ.toLocal v g (e.symm (1, 0)))).1 with hχdef
+  set δ : Field.absoluteGaloisGroup (v.adicCompletion ℚ) → R :=
+    fun g => (e (ρ.toLocal v g (e.symm (0, 1)))).2 with hδdef
+  have hdiag : ∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (y : Fin 2 → R),
+      e (ρ.toLocal v g y) = (χ g * (e y).1, δ g * (e y).2) := by
+    intro g y
+    have h := hT g (e y)
+    rwa [e.symm_apply_apply] at h
+  -- the Frobenius values ARE `a` and `b`
+  have hχF : χ F = a := by
+    have h1 := hdiag F (e.symm (1, 0))
+    have h2 := he (e.symm (1, 0))
+    rw [e.apply_symm_apply] at h1 h2
+    have := congrArg Prod.fst (h1.symm.trans h2)
+    simpa using this
+  have hδF : δ F = b := by
+    have h1 := hdiag F (e.symm (0, 1))
+    have h2 := he (e.symm (0, 1))
+    rw [e.apply_symm_apply] at h1 h2
+    have := congrArg Prod.snd (h1.symm.trans h2)
+    simpa using this
+  have hud : IsUnit (χ F - δ F) := by rw [hχF, hδF]; exact hu
+  -- STEP 4: one of the two characters kills inertia
+  have hinert := forall_localInertia_eq_one_of_forall_isOpen_quotient hpodd Q hadic
+    hcomplete hlev q hqQ hq e χ δ hdiag hud
+  -- STEP 5: package a diagonal pair into the required existential
+  suffices H : ∀ (e' : (Fin 2 → R) ≃ₗ[R] R × R)
+      (χ' δ' : Field.absoluteGaloisGroup (v.adicCompletion ℚ) → R),
+      (∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (y : Fin 2 → R),
+        e' (ρ.toLocal v g y) = (χ' g * (e' y).1, δ' g * (e' y).2)) →
+      (∀ σ ∈ localInertiaGroup v, δ' σ = 1) →
+      ∃ (e : (Fin 2 → R) ≃ₗ[R] R × R)
+        (χ δ : GaloisRep (v.adicCompletion ℚ) R R),
+        (∀ (g : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (y : Fin 2 → R),
+          e (ρ.toLocal v g y) = (χ g (e y).1, δ g (e y).2)) ∧
+        localInertiaGroup v ≤ δ.ker by
+    rcases hinert with hcase | hcase
+    · refine H (e.trans (LinearEquiv.prodComm R R R)) δ χ ?_ hcase
+      intro g y
+      have h := hdiag g y
+      simp only [LinearEquiv.trans_apply, LinearEquiv.prodComm_apply, h]
+      rfl
+    · exact H e χ δ hdiag hcase
+  intro e' χ' δ' hd hI
+  have hχ'eq : ∀ g, χ' g = (e' (ρ.toLocal v g (e'.symm (1, 0)))).1 := by
+    intro g
+    have h := hd g (e'.symm (1, 0))
+    rw [e'.apply_symm_apply] at h
+    rw [h]; simp
+  have hδ'eq : ∀ g, δ' g = (e' (ρ.toLocal v g (e'.symm (0, 1)))).2 := by
+    intro g
+    have h := hd g (e'.symm (0, 1))
+    rw [e'.apply_symm_apply] at h
+    rw [h]; simp
+  have hχ'one : χ' 1 = 1 := by
+    have h := hd 1 (e'.symm (1, 0))
+    rw [hone, e'.apply_symm_apply] at h
+    have := congrArg Prod.fst h
+    simpa using this.symm
+  have hδ'one : δ' 1 = 1 := by
+    have h := hd 1 (e'.symm (0, 1))
+    rw [hone, e'.apply_symm_apply] at h
+    have := congrArg Prod.snd h
+    simpa using this.symm
+  have hχ'mul : ∀ g h, χ' (g * h) = χ' g * χ' h := by
+    intro g h
+    have h1 := hd (g * h) (e'.symm (1, 0))
+    rw [hmulapp, e'.apply_symm_apply] at h1
+    have h2 := hd h (e'.symm (1, 0))
+    rw [e'.apply_symm_apply] at h2
+    have h3 := hd g (ρ.toLocal v h (e'.symm (1, 0)))
+    rw [h2] at h3
+    rw [h3] at h1
+    have := congrArg Prod.fst h1
+    simpa using this.symm
+  have hδ'mul : ∀ g h, δ' (g * h) = δ' g * δ' h := by
+    intro g h
+    have h1 := hd (g * h) (e'.symm (0, 1))
+    rw [hmulapp, e'.apply_symm_apply] at h1
+    have h2 := hd h (e'.symm (0, 1))
+    rw [e'.apply_symm_apply] at h2
+    have h3 := hd g (ρ.toLocal v h (e'.symm (0, 1)))
+    rw [h2] at h3
+    rw [h3] at h1
+    have := congrArg Prod.snd h1
+    simpa using this.symm
+  letI := moduleTopology R (Module.End R (Fin 2 → R))
+  letI := IsModuleTopology.toContinuousAdd R (Module.End R (Fin 2 → R))
+  have hρcont : Continuous (fun g : Field.absoluteGaloisGroup (v.adicCompletion ℚ) =>
+      (ρ.toLocal v g : Module.End R (Fin 2 → R))) :=
+    ContinuousMonoidHom.continuous_toFun _
+  have hχ'cont : Continuous χ' := by
+    have h1 : Continuous
+        (fun f : Module.End R (Fin 2 → R) => (e' (f (e'.symm (1, 0)))).1) :=
+      IsModuleTopology.continuous_of_linearMap
+        ({ toFun := fun f : Module.End R (Fin 2 → R) => (e' (f (e'.symm (1, 0)))).1
+           map_add' := by intro f₁ f₂; simp
+           map_smul' := by intro r f; simp } : Module.End R (Fin 2 → R) →ₗ[R] R)
+    exact (h1.comp hρcont).congr fun g => (hχ'eq g).symm
+  have hδ'cont : Continuous δ' := by
+    have h1 : Continuous
+        (fun f : Module.End R (Fin 2 → R) => (e' (f (e'.symm (0, 1)))).2) :=
+      IsModuleTopology.continuous_of_linearMap
+        ({ toFun := fun f : Module.End R (Fin 2 → R) => (e' (f (e'.symm (0, 1)))).2
+           map_add' := by intro f₁ f₂; simp
+           map_smul' := by intro r f; simp } : Module.End R (Fin 2 → R) →ₗ[R] R)
+    exact (h1.comp hρcont).congr fun g => (hδ'eq g).symm
+  letI := moduleTopology R (Module.End R R)
+  letI := IsModuleTopology.toContinuousAdd R (Module.End R R)
+  refine ⟨e',
+    { toMonoidHom :=
+        { toFun := fun g => algebraMap R (Module.End R R) (χ' g)
+          map_one' := by rw [hχ'one, map_one]
+          map_mul' := fun g h => by rw [hχ'mul, map_mul] }
+      continuous_toFun := (IsModuleTopology.continuous_of_linearMap
+        (Algebra.linearMap R (Module.End R R))).comp hχ'cont },
+    { toMonoidHom :=
+        { toFun := fun g => algebraMap R (Module.End R R) (δ' g)
+          map_one' := by rw [hδ'one, map_one]
+          map_mul' := fun g h => by rw [hδ'mul, map_mul] }
+      continuous_toFun := (IsModuleTopology.continuous_of_linearMap
+        (Algebra.linearMap R (Module.End R R))).comp hδ'cont }, ?_, ?_⟩
+  · intro g y
+    rw [hd g y]
+    show ((χ' g) * (e' y).1, (δ' g) * (e' y).2) =
+      (algebraMap R (Module.End R R) (χ' g) ((e' y).1),
+        algebraMap R (Module.End R R) (δ' g) ((e' y).2))
+    simp [Module.algebraMap_end_apply, smul_eq_mul]
+  · intro σ hσ
+    show algebraMap R (Module.End R R) (δ' σ) = 1
+    rw [hI σ hσ, map_one]
+
 
 set_option linter.checkUnivs false in
 /-- **The split torus at the raised primes passes to the adic limit** (ASSEMBLY —
@@ -10607,7 +11369,7 @@ theorem raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient.{a, uK, uW} {p : ℕ
   -- stated for an arbitrary free rank-two module so that the fibre-product
   -- clause can consume the same brick.
   exact raisedLevelSplitTorusAt_of_charFrob_residually_distinct
-    hpodd Q hadic hcomplete πR hlev q hqQ hq
+    hpodd Q hadic hcomplete πR hker hlev q hqQ hq
     (exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet hpodd hW hirr n Q
       hQ (rank_finTwoFun R) πR hπcont S hπR q hqQ hq)
 
