@@ -38685,9 +38685,13 @@ and (ii) tensor algebra enough to cancel `sheaf (P.aj x)`.  Both are wrong:
   grep that reported "not one lemma" must have been run before that module
   landed, or against a stale tree.
 
-**WHAT WAS ACTUALLY MISSING IS ONE STATEMENT**, now cut as a named leaf in
-that module: `exists_modTensor_inverse` — an invertible sheaf has a tensor
-inverse, i.e. `Pic Z` is a GROUP.  From it, together with the braiding
+**WHAT WAS ACTUALLY MISSING IS ONE STATEMENT**, now cut as a named leaf —
+`exists_modTensor_inv`, in `ModularCurve/RelativePicard.lean` (it was first
+written in `AmpleSheaf.lean` as `exists_modTensor_inverse` and HOISTED there on
+2026-07-29, because `RelativePicard.lean` is upstream and needed the same
+theorem) — an invertible sheaf has a tensor inverse, i.e. `Pic Z` is a GROUP.
+It is PROVEN over the dual-sheaf leaf `exists_modDual`, which is the one thing
+in this cone that is still open.  From it, together with the braiding
 `modTensorComm` and the right unitor `modTensorUnitRightIso` (both PROVEN
 there; `modTensor` is SYMMETRIC, because mathlib's
 `PresheafOfModules.Monoidal.symmetricCategory` lives on exactly the category
@@ -38712,7 +38716,7 @@ is legitimate by `P.invertible`, leaves `𝒪(−x) ~ 𝒪(−y)`.
 is uniform in the genus, and on `ℙ¹` it simply proves the (true, and
 vacuous-looking) statement that all the ideal sheaves are equivalent.  This
 leaf is now transitively sorried only through `exists_relPicZero`,
-`exists_modTensor_inverse`, `nonempty_modPullback_modTensor` and
+`exists_modDual`, `nonempty_modPullback_modTensor` and
 `modLocW_whiskerLeft` — none of which mentions a Jacobian. -/
 theorem relPicEquiv_sectionIdeal_of_aj_eq {X J S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
@@ -38778,9 +38782,10 @@ LEAF'S DIFFICULTY; WHAT IS LEFT IS RIEMANN–ROCH AND NOTHING ELSE.**
 
 `RelPicEquiv` is now an EQUIVALENCE RELATION with cancellation —
 `RelPicEquiv.symm`, `RelPicEquiv.trans`, `RelPicEquiv.cancel_left` in
-`Fermat/FLT/Modularity/AmpleSheaf.lean`, all PROVEN over the single new
-leaf `exists_modTensor_inverse` ("an invertible sheaf has a tensor
-inverse") — and `modTensor` is SYMMETRIC (`modTensorComm`, PROVEN).  All
+`Fermat/FLT/Modularity/AmpleSheaf.lean`, all PROVEN over
+`exists_modTensor_inv` ("an invertible sheaf has a tensor inverse",
+`ModularCurve/RelativePicard.lean`, itself proven over the single new leaf
+`exists_modDual`) — and `modTensor` is SYMMETRIC (`modTensorComm`, PROVEN).  All
 of it reaches this file through `public import`s: `X0` ⟶
 `AbelianSchemeIsogeny` ⟶ `AmpleSheaf`.
 
