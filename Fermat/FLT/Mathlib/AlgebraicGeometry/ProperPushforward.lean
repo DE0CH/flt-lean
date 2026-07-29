@@ -1065,7 +1065,105 @@ has `Γ = R[x]`, which *is* of finite type — so the counterexample to the fini
 statement is not one to this one.  The right witness that properness is doing work here is
 the non-quasi-compact / non-separated side: `Γ` of an infinite disjoint union of copies of
 `S` is `R^ℕ`, not a finite-type `R`-algebra, and quasi-compactness (a consequence of
-universal closedness) is what excludes it. -/
+universal closedness) is what excludes it.
+
+---
+
+**AUDIT BLOCK (2026-07-29).**  Three findings, kept separate from the paragraphs above so
+that the concurrent rewrite of them merges cleanly.  Nothing here is proven in Lean; all of
+it is evidence about *where* the leaf stands.
+
+**(A) FAITHFULNESS CONCERN, UNRESOLVED: this leaf is not known to be TRUE over a
+NON-NOETHERIAN base, and the standard references do not assert it there.**  This is the
+first thing a prover should settle, because if it is false the leaf must be restated before
+any theory is built against it.
+
+The classical finiteness theorem (EGA III 3.2.1, Stacks 02O5) is stated for a **locally
+noetherian** base.  The non-noetherian statement that *is* in the literature is Stacks 0B91:
+for `f` proper, flat and of finite presentation and `F` finitely presented and `S`-flat,
+`Rf_*F` is a **perfect** object of `D(𝒪_S)` whose formation commutes with base change.
+Perfect means locally a bounded complex of finite free modules — it does **not** say the
+individual cohomology modules are finite, and in general they are not: `H⁰` of a two-term
+complex `[Rᵃ ⟶ Rᵇ]` is a kernel, and a kernel of a matrix over a non-noetherian ring need
+not be finitely generated.
+
+The obstruction is locatable exactly.  Write `S = Spec R` with `R` an `R₀`-algebra, `R₀`
+noetherian, and let `K` be a bounded complex of finite free `R₀`-modules computing
+`Rf₀_*𝒪_{X₀}` for a model `X₀ ⟶ Spec R₀` (this is the standard "Mumford complex", EGA III
+6.10.5).  Base change plus universal coefficients give
+
+  `0 ⟶ H⁰(X₀, 𝒪) ⊗_{R₀} R ⟶ Γ(X, 𝒪_X) ⟶ Tor₁^{R₀}(H¹(X₀, 𝒪), R) ⟶ 0`.
+
+So `Γ(X, 𝒪_X)` is a finite `R`-module **iff** `Tor₁^{R₀}(H¹(X₀, 𝒪), R)` is, and that group
+is `ann_R(a)` when `H¹(X₀, 𝒪)` has a torsion class killed by `a ∈ R₀`.  Taking
+`R = R₀[x₁, x₂, …]/(a·x₁, a·x₂, …)` makes `ann_R(a) ⊇ (x₁, x₂, …)` **not finitely
+generated**, and `R` is a perfectly good base: base change preserves `IsProper`, `Flat` and
+`LocallyOfFinitePresentation`, so the hypotheses of this leaf survive intact.
+
+**What is missing to turn this into a refutation** — and it is a single, self-contained
+question: exhibit a proper flat finitely-presented `X₀ ⟶ Spec R₀` over a *noetherian* `R₀`
+with a **torsion class in `H¹(X₀, 𝒪_{X₀})`**.  Torsion there is equivalent to `h⁰(𝒪)`
+jumping on a special fibre, which is why the usual families do not supply it: for a flat
+family of curves `χ(𝒪)` is constant and `h⁰` is forced to `1` as soon as the fibres stay
+connected and reduced (Zariski connectedness via the Stein factorization), and for families
+of plane curves or of conics degenerating to line pairs `h⁰ ≡ 1`, so `R¹f_*𝒪` is locally
+free and there is no torsion.  Candidates that are *believed* to work but were **not**
+verified here: an elliptic fibration with a **wild** multiple fibre (torsion in `R¹f_*𝒪`
+exists exactly at wild fibres, so char `p`; in char `0` all multiple fibres are tame and
+`R¹f_*𝒪` is locally free — the char-`0` Dolgachev-surface version of this example does
+**not** work, which is the trap), and non-reduced degenerations with an extra global
+function.  Do not repeat the char-`0` elliptic-surface attempt; it was checked and fails.
+
+**The repair, if the concern is confirmed, is cheap and needs no new theory.**  Both
+consumers of `module_finite_appTop_of_isProper` — `module_flat_appTop_of_isIso_appTop_fiber`
+and `isIso_appTop_of_isIso_appTop_fiber` — already carry the fibrewise hypothesis
+`h : ∀ s, IsIso (f.fiberToSpecResidueField s).appTop`, and neither passes it here.  With `h`
+the statement becomes the **constant-`h⁰`** case of cohomology and base change (III.12.11 /
+Grauert), which is true over an arbitrary base and is what the consumers actually need.
+Note this is *not* a circular cut: `h` plus `A/𝔪A ≅ R/𝔪` yields `A = R` only through
+Nakayama, which needs the finiteness this leaf supplies, so a finiteness proof from `h` must
+still run a genuine base-change argument.  Adding `h` to this leaf is therefore the
+conservative move, and it costs the two call sites one extra argument each.
+
+**(B) CORRECTION — "limits / approximation of schemes are absent from the pin" is FALSE.**
+Re-checked at pin `a3364faec4` on 2026-07-29.  `Mathlib/AlgebraicGeometry/
+AffineTransitionLimit.lean` is a **1371-line development of EGA IV 8 / Stacks 01YT**:
+inverse limits of schemes with affine transition maps, `Scheme.nonempty_of_isLimit`,
+`Scheme.compactSpace_of_isLimit`, `Scheme.exists_isAffine_of_isLimit`,
+`Scheme.exists_isOpenCover_and_isAffine`, `nonempty_isColimit_Γ_mapCocone` (`Γ` of a limit
+is the colimit of the `Γ`s), and `Scheme.preservesColimit_yoneda`
+(`Hom_S(lim Dᵢ, X) = colim Hom_S(Dᵢ, X)` for `X` locally of finite presentation over `S` —
+EGA IV 8.14.2).  The claim that `SpreadingOut.lean` "spreads out stalk morphisms only" is
+true of `SpreadingOut.lean` but was used to conclude that scheme-level approximation is
+absent, and that conclusion is wrong.
+
+What is genuinely absent is narrower and should be named as such: **object descent**, i.e.
+EGA IV 8.8.2 / Stacks 01ZM — given `X` locally of finite presentation over `S = lim Sᵢ`,
+produce an index `i` and `Xᵢ ⟶ Sᵢ` with `X ≅ Xᵢ ×_{Sᵢ} S` — together with **descent of the
+properties** `IsProper` and `Flat` to a finite stage (EGA IV 8.10.5, 11.2.6).  Mathlib has
+the morphism half and not the object half.  So the noetherian reduction is a much smaller
+build than the earlier note implies, and it sits on top of substantial existing machinery.
+
+**(C) NEGATIVE RESULT — the "flat base change to the generic fibre" shortcut cannot prove
+the consumer, and should not be attempted as stated.**  The proposal was: over a normal
+noetherian domain base, `A ⊗_R Frac R ≅ Γ(X_η) = Frac R` by flat base change and `h` at the
+generic point; `A` is `R`-torsion-free because it embeds by the sheaf axiom in `∏ᵢ Γ(X, Uᵢ)`
+and each factor is `R`-flat; `A` is integral over `R`; hence `A ↪ Frac R` with image integral
+over the normal `R`, so `A = R` — bypassing *both* open leaves in this file.  The
+mathematics of that argument is correct as far as it goes.
+
+It nevertheless does not discharge what this file must prove, because
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` establishes
+`hasTrivialPushforwardProperty.universally f`, which quantifies over **every** pullback
+square — the base `S'` of the base-changed morphism is an arbitrary scheme, not one inherited
+from the top-level call site.  So even though the outermost consumers instantiate the base at
+`Spec ℚ` (`Fermat/FLT/ModularCurve/EllipticScheme.lean` around line 9756 and
+`Fermat/FLT/ModularCurve/X0.lean` around line 28036), normality of `R` is not available where
+the work happens.  Making the shortcut usable would mean weakening
+`HasUniversallyTrivialPushforward` to quantify only over base changes along morphisms from
+normal (or smooth-over-`ℚ`) schemes and re-checking every use in the rigidity lemma — an
+architectural change with a real chance of success, since the base changes the rigidity proof
+performs are to products of smooth `ℚ`-schemes, but not one to make from inside this leaf. -/
 theorem finiteType_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f] :
     f.appTop.hom.FiniteType :=
