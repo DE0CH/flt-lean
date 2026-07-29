@@ -2849,16 +2849,24 @@ hypotheses: `A = M_A⁻¹T_A` with `R →+* T_A` of finite presentation, and
    (elements of `M_B` become units in `B`, and ring maps preserve units), so
    inverting `M_B` before `M` changes nothing: `A = M⁻¹T = (image of M)⁻¹D`.
 
-**FAITHFULNESS.**  Degenerate corners are all TRUE rather than vacuous, so there is
-nothing hiding here: `A = 0` gives `A = M⁻¹A` with `M = {0}`; `v` bijective gives
-`RingHom.FinitePresentation.of_bijective`; and if `B` is Noetherian the statement
-is `RingHom.FinitePresentation.of_finiteType` plus `EssFiniteType.of_comp`, which
-is in the pin.  The hypothesis `_hB` is load-bearing and cannot be dropped: without
-it take `R = B` a non-Noetherian local ring, `A = R/I` for a non-finitely-generated
-ideal `I` — then `R → A` is *not* essentially of finite presentation either, so for
-a real counterexample take `R` a field, `B` any `R`-algebra that is not essentially
-of finite type, and `A = B`; `R → A` is then not essentially of finite presentation,
-which is why the hypothesis must be phrased on `v.comp g` and `g` together. -/
+**FAITHFULNESS.**  The degenerate corners are TRUE rather than vacuous, so nothing
+is hiding in them: `A = 0` is witnessed by `T = B` with `M = B` itself (`0 ∈ M`, and
+`M⁻¹B = 0`); `v` bijective by `RingHom.FinitePresentation.of_bijective`; and when
+`B` is Noetherian the statement collapses to `EssFiniteType.of_comp` plus
+`RingHom.FinitePresentation.of_finiteType`, both in the pin.
+
+**`_hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
+worth recording because it is the first thing a prover will try to drop.  Take
+`R = ℤ`, `B = ℚ[x₁, x₂, x₃, …]` on countably many variables, `A = ℚ`, with
+`g : ℤ → B` the structure map and `v : B → ℚ` sending every `xᵢ` to `0`.  Then
+`v.comp g : ℤ → ℚ` IS essentially of finite presentation (`ℚ` is the localization
+of `ℤ` at `ℤ ∖ {0}`, so take `T = ℤ`), while `ℚ = B ⧸ (x₁, x₂, …)` is a quotient of
+`B` by an ideal that is not finitely generated and is a filtered colimit of the
+finitely presented `B ⧸ (x₁, …, xₙ)` rather than a localization of any one of them.
+`_hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
+*(This counterexample is asserted, not machine-checked; a prover who needs it
+should verify the middle clause before relying on it.  The POSITIVE direction — the
+four-step route above — is what this leaf actually asks for.)* -/
 theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
     (_hA : EssFinitePresentation (v.comp g)) (_hB : EssFinitePresentation g) :
@@ -2905,6 +2913,25 @@ spelled here will break that match even if it stays defeq on paper.
 4. `IsLocalization.localization_localization_isLocalization`
    (`Mathlib/RingTheory/Localization/LocalizationLocalization.lean`) composes that
    with the second hypothesis, at `localizationLocalizationSubmodule`.
+
+**TWO THINGS CHECKED AT THE CUT, so the next owner does not pay for them again.**
+Step 3's lemma really does fire in the shape wanted — `IsLocalization.tensor A W`
+takes exactly two explicit arguments and yields
+`IsLocalization (Algebra.algebraMapSubmonoid Q W) (Q ⊗[P] A)`, verified against the
+pin in a scratch on 2026-07-28.  And the `S₀`-algebra structure on `R₁ ⊗[R₀] S₀`
+that steps 1–3 all need is NOT a global instance: it is
+`Algebra.TensorProduct.rightAlgebra`, which mathlib deliberately keeps scoped, so
+the proof will need `attribute [local instance] Algebra.TensorProduct.rightAlgebra`.
+Missing that is the first thing that will look like a missing theory and is not one.
+
+**WHY IT IS STILL OPEN.**  The four steps above are each one lemma, but the
+`≃ₐ`-transports between them are not: the chain
+`Q ⊗[P] S₁ ≅ S₁ ⊗[P] Q ≅ S₁ ⊗[P] (P ⊗[S₀] T₀) ≅ S₁ ⊗[S₀] T₀` needs
+`Algebra.TensorProduct.comm` twice and `cancelBaseChange` once, and then the
+resulting `IsLocalization` has to be shown compatible with the *specific*
+`Algebra (R₁ ⊗[R₀] T₀) T₁` instance the goal names (the `Algebra.TensorProduct.lift`
+one), not merely with some algebra structure.  That compatibility, not the four
+steps, is the work.
 
 **FAITHFULNESS.**  The conclusion is one of 10.127.11's own conclusions applied to
 `R → S'` and is implied by the two hypotheses, so it cannot be stronger than them;
