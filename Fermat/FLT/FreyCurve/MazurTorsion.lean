@@ -24137,6 +24137,17 @@ RECONNAISSANCE FOR WHOEVER TAKES THE TWO QUARTICS.
      `k = (S − e)/2`, `l = (S + e)/2`, `l − k = e`, `l + k = S`, and the
      same split applies to `k² + 4e²`, `l² + 4e²`.
 
+     **CORRECTED 2026-07-28.**  The both-odd half is NOT a second
+     concordant-forms system.  `k + l = S` is odd, so one of `k`, `l` is
+     odd, and `odd² + 4·odd² ≡ 5 (mod 8)` is never a square: the branch
+     is a one-line congruence once the coprime split is made, and it is
+     PROVEN as `quartic_one_both_odd` (it does not even need `0 < S`).
+     Only the mixed-parity half survives, and it is cheaper through the
+     SINGLE primitive Pythagorean triple `Q² = (S² + 15e²)² + (8e²)²`
+     than through the two triples above — that is what
+     `quartic_one_mixed` does, leaving the one leaf
+     `quartic_one_residual`.
+
 2. **`quartic_seventeen` does NOT factor over `ℤ`** (`17x⁴ + 30x² + 17`
    is irreducible over `ℚ`; its roots satisfy `x² = (1 + 4i)²/17`).
    Completing the square instead: `17Q² = (17S² + 15e²)² + (8e²)²`,
@@ -24278,11 +24289,365 @@ theorem exists_int_model {T V : ℚ} (hT : 0 < T) (h : V ^ 2 = T ^ 3 + 30 * T ^ 
   · exact_mod_cast h1
   · linarith
 
+/-- A positive factor of a square, coprime to its cofactor, is a square.
+(Same statement as `MazurLevel15.sq_of_isCoprime_pos` further down this file;
+restated here because that one is declared thousands of lines below.) -/
+theorem sq_of_coprime_pos {A B C : ℤ} (hcop : IsCoprime A B) (hA : 0 < A)
+    (h : A * B = C ^ 2) : ∃ a : ℤ, A = a ^ 2 := by
+  obtain ⟨a0, ha | ha⟩ := Int.sq_of_isCoprime hcop h
+  · exact ⟨a0, ha⟩
+  · exfalso; nlinarith [sq_nonneg a0]
+
+/-- **`u² + 4e²` with `u`, `e` both odd is `≡ 5 (mod 8)`, hence never a
+square.**  This is what kills the both-odd branch of `quartic_one`, and it is
+sharper than the section docstring's reconnaissance, which expected the branch
+to need a further concordant-forms split.
+
+Written without a `ZMod 8` cast: `u = 2a + 1`, `e = 2b + 1` force `w` odd, and
+then `w² = u² + 4e²` reads `4·c(c+1) + 1 = 4·a(a+1) + 16·b(b+1) + 5`, i.e.
+`c(c+1) = a(a+1) + 4b(b+1) + 1` — even `=` even `+` even `+ 1`. -/
+theorem not_sq_odd_add_four_sq {u e w : ℤ} (hu : Odd u) (he : Odd e)
+    (h : w ^ 2 = u ^ 2 + 4 * e ^ 2) : False := by
+  obtain ⟨a, rfl⟩ := hu
+  obtain ⟨b, rfl⟩ := he
+  have hwodd : Odd w := by
+    have hsq : Odd (w ^ 2) := ⟨2 * a ^ 2 + 2 * a + 8 * b ^ 2 + 8 * b + 2, by rw [h]; ring⟩
+    exact (Int.odd_pow' two_ne_zero).mp hsq
+  obtain ⟨c, rfl⟩ := hwodd
+  have key : 4 * (c * (c + 1)) = 4 * (a * (a + 1) + 4 * (b * (b + 1)) + 1) := by
+    linear_combination h
+  have key2 : c * (c + 1) = a * (a + 1) + 4 * (b * (b + 1)) + 1 := by linarith
+  obtain ⟨k1, hk1⟩ := Int.even_mul_succ_self c
+  obtain ⟨k2, hk2⟩ := Int.even_mul_succ_self a
+  obtain ⟨k3, hk3⟩ := Int.even_mul_succ_self b
+  rw [hk1, hk2, hk3] at key2
+  omega
+
+/-- **The two halved factors of `quartic_one` are coprime once `17 ∤ S`.**
+
+With `S`, `e` both odd and `2u = S − e`, `2v = S + e`, the two factors of the
+section docstring's factorisation are `A = 4(u² + 4e²)` and `B = 4(v² + 4e²)`.
+A prime `p` dividing both divides `v² − u² = eS`; if `p ∣ e` it divides `u`,
+hence `S`, contradicting coprimality, and if `p ∣ S` then the identity
+
+    17e² = 4(u² + 4e²) − S(S − 2e)
+
+forces `p ∣ 17e²`, so `p = 17` — which is exactly the branch `17 ∣ S` that
+`quartic_one_aux` has already peeled off. -/
+theorem coprime_halves {S e u v : ℤ} (hcop : IsCoprime S e) (h17 : ¬ (17 : ℤ) ∣ S)
+    (hu : 2 * u = S - e) (hv : 2 * v = S + e) :
+    IsCoprime (u ^ 2 + 4 * e ^ 2) (v ^ 2 + 4 * e ^ 2) := by
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  by_contra hg
+  obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hg
+  have hpZ : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+  have hpg : ((p : ℤ)) ∣ ((Int.gcd (u ^ 2 + 4 * e ^ 2) (v ^ 2 + 4 * e ^ 2) : ℕ) : ℤ) :=
+    Int.natCast_dvd_natCast.mpr hpd
+  have hW : ((p : ℤ)) ∣ u ^ 2 + 4 * e ^ 2 := hpg.trans (Int.gcd_dvd_left _ _)
+  have hZ : ((p : ℤ)) ∣ v ^ 2 + 4 * e ^ 2 := hpg.trans (Int.gcd_dvd_right _ _)
+  have hvu : v ^ 2 - u ^ 2 = e * S := by
+    have h4 : 4 * (v ^ 2 - u ^ 2) = 4 * (e * S) := by
+      linear_combination (2 * v + S + e) * hv - (2 * u + S - e) * hu
+    linarith
+  have hdiff : ((p : ℤ)) ∣ e * S := by
+    rw [← hvu]
+    have hsub : v ^ 2 - u ^ 2 = (v ^ 2 + 4 * e ^ 2) - (u ^ 2 + 4 * e ^ 2) := by ring
+    rw [hsub]
+    exact dvd_sub hZ hW
+  have hunit : ∀ _ : ((p : ℤ)) ∣ S, ((p : ℤ)) ∣ e → False := by
+    intro hS' he'
+    exact hpZ.not_unit (hcop.isUnit_of_dvd' hS' he')
+  rcases hpZ.dvd_mul.mp hdiff with hpe | hpS
+  · have hpu2 : ((p : ℤ)) ∣ u ^ 2 := by
+      have hrw : u ^ 2 = (u ^ 2 + 4 * e ^ 2) - 4 * e * e := by ring
+      rw [hrw]
+      exact dvd_sub hW ((hpe.mul_left 4).mul_right e)
+    have hpu : ((p : ℤ)) ∣ u := hpZ.dvd_of_dvd_pow hpu2
+    have hpS : ((p : ℤ)) ∣ S := by
+      have hrw : S = 2 * u + e := by linarith
+      rw [hrw]
+      exact dvd_add (hpu.mul_left 2) hpe
+    exact hunit hpS hpe
+  · have hid : (17 : ℤ) * e ^ 2 = 4 * (u ^ 2 + 4 * e ^ 2) - S * (S - 2 * e) := by
+      linear_combination (-(2 * u + S - e)) * hu
+    have hp17e : ((p : ℤ)) ∣ 17 * e ^ 2 := by
+      rw [hid]
+      exact dvd_sub (hW.mul_left 4) (hpS.mul_right _)
+    rcases hpZ.dvd_mul.mp hp17e with hp17 | hpe2
+    · have hp17n : p ∣ 17 := by exact_mod_cast hp17
+      have hpeq : p = 17 := (Nat.prime_dvd_prime_iff_eq hp (by decide)).mp hp17n
+      subst hpeq
+      exact h17 (by exact_mod_cast hpS)
+    · exact hunit hpS (hpZ.dvd_of_dvd_pow hpe2)
+
+/-- **The both-odd branch of `quartic_one` dies mod `8`** (PROVEN 2026-07-28).
+
+`A = 4(u² + 4e²)`, `B = 4(v² + 4e²)` with `2u = S − e`, `2v = S + e`, so
+`Q² = 16(u² + 4e²)(v² + 4e²)`; the two inner factors are coprime
+(`coprime_halves`, using `17 ∤ S`) and positive, hence both squares.  But
+`u + v = S` is odd, so one of `u`, `v` is odd, and `odd² + 4·odd² ≡ 5 (mod 8)`
+is not a square (`not_sq_odd_add_four_sq`).
+
+**This CORRECTS the section docstring's reconnaissance**, which said "the same
+split applies to `k² + 4e²`, `l² + 4e²`" and left the branch looking like a
+second concordant-forms system.  It is not: it is a one-line congruence once
+the split is made, and `0 < S` is not needed for it. -/
+theorem quartic_one_both_odd {S e Q : ℤ} (he : 0 < e) (hcop : IsCoprime S e)
+    (h17 : ¬ (17 : ℤ) ∣ S) (hSo : Odd S) (heo : Odd e)
+    (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False := by
+  obtain ⟨u, hu⟩ : ∃ u, 2 * u = S - e := by
+    obtain ⟨a, ha⟩ := hSo; obtain ⟨b, hb⟩ := heo; exact ⟨a - b, by omega⟩
+  obtain ⟨v, hv⟩ : ∃ v, 2 * v = S + e := by
+    obtain ⟨a, ha⟩ := hSo; obtain ⟨b, hb⟩ := heo; exact ⟨a + b + 1, by omega⟩
+  have hA : 4 * (u ^ 2 + 4 * e ^ 2) = (S - e) ^ 2 + 16 * e ^ 2 := by
+    linear_combination (2 * u + S - e) * hu
+  have hB : 4 * (v ^ 2 + 4 * e ^ 2) = (S + e) ^ 2 + 16 * e ^ 2 := by
+    linear_combination (2 * v + S + e) * hv
+  have hkey : 16 * ((u ^ 2 + 4 * e ^ 2) * (v ^ 2 + 4 * e ^ 2)) = Q ^ 2 := by
+    linear_combination (4 * (v ^ 2 + 4 * e ^ 2)) * hA + ((S - e) ^ 2 + 16 * e ^ 2) * hB + h
+  have h4Q : (4 : ℤ) ∣ Q := by
+    have hd : (4 : ℤ) ^ 2 ∣ Q ^ 2 := ⟨(u ^ 2 + 4 * e ^ 2) * (v ^ 2 + 4 * e ^ 2), by linarith⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp hd
+  obtain ⟨q, rfl⟩ := h4Q
+  have hprod : (u ^ 2 + 4 * e ^ 2) * (v ^ 2 + 4 * e ^ 2) = q ^ 2 :=
+    mul_left_cancel₀ (show (16 : ℤ) ≠ 0 by norm_num) (by linear_combination hkey)
+  have hcopWZ := coprime_halves hcop h17 hu hv
+  have hWpos : (0 : ℤ) < u ^ 2 + 4 * e ^ 2 := by nlinarith [sq_nonneg u, sq_nonneg e]
+  have hZpos : (0 : ℤ) < v ^ 2 + 4 * e ^ 2 := by nlinarith [sq_nonneg v, sq_nonneg e]
+  have huv : u + v = S := by linarith
+  rcases Int.even_or_odd u with hue | huo
+  · have hvo : Odd v := by
+      obtain ⟨k, hk⟩ := hue; obtain ⟨m, hm⟩ := hSo; exact ⟨m - k, by omega⟩
+    obtain ⟨z, hz⟩ := sq_of_coprime_pos hcopWZ.symm hZpos (by rw [mul_comm]; exact hprod)
+    exact not_sq_odd_add_four_sq hvo heo hz.symm
+  · obtain ⟨w, hw⟩ := sq_of_coprime_pos hcopWZ hWpos hprod
+    exact not_sq_odd_add_four_sq huo heo hw.symm
+
+/-- **THE ONE SURVIVING LEAF OF `quartic_one`** (sorry leaf, cut 2026-07-28):
+after the `17 ∣ S` self-reduction and the both-odd congruence, the mixed-parity
+branch reduces — by the Pythagorean parametrisation of
+`Q² = (S² + 15e²)² + (8e²)²` — to
+
+    4S² = (4G² + H²)(G² − 4H²),   gcd(G, H) = 1,   G, H of opposite parity,
+
+with `S > 0` and `17 ∤ S` (and `GH = 2e`, so `G, H > 0`).
+
+TRUE, and STRONGER than it needs to be: an exhaustive PARI/GP search over
+`1 ≤ G, H ≤ 1200` with `gcd(G, H) = 1` and `G + H` odd finds **no** `S` at all
+with `4S² = (4G² + H²)(G² − 4H²)` — not even one violating `S > 0` or `17 ∤ S`.
+(Both hypotheses are nevertheless kept, because the intended proof below needs
+`17 ∤ S` for its coprime split and `S > 0` to force `G > 2H`.)
+
+WHERE IT COMES FROM.  `S⁴ + 30S²e² + 289e⁴ = (S² + 15e²)² + (8e²)²`, and in the
+mixed-parity branch `S² + 15e²` is odd and coprime to `8e²`, so
+`(S² + 15e², 8e², Q)` is a PRIMITIVE Pythagorean triple:
+`S² + 15e² = m² − n²`, `8e² = 2mn`, `gcd(m, n) = 1`.  Then `mn = (2e)²` with
+`m, n` coprime and (after fixing signs) positive, so `m = G²`, `n = H²` with
+`GH = 2e`, and eliminating `e` from `S² + 15e² = G⁴ − H⁴` gives the display
+above.  All of that is PROVEN in `quartic_one_mixed_pos` / `quartic_one_mixed`.
+
+THE ROUTE FROM HERE, and the reason this leaf must NOT be attacked alone.
+`gcd(4G² + H², G² − 4H²)` divides `17` (from `17H² = (4G² + H²) − 4(G² − 4H²)`
+and `17G² = 4(4G² + H²) + (G² − 4H²)`), and `17 ∤ S` rules `17` out, so the two
+factors are coprime.  Splitting on the parity of `G`:
+
+* `G = 2G₁` even, `H` odd:  `S² = (16G₁² + H²)(G₁² − H²)`;
+* `H = 2H₁` even, `G` odd:  `S² = (G² + H₁²)(G² − 16H₁²)`.
+
+**These are exactly the two surviving `d' = ±1` homogeneous spaces of the
+`2`-isogenous curve `V₁² = U₁(U₁ + 1)(U₁ − 16)` that the section docstring
+predicts** (`Z² = (X² + 16Y²)(Y² − X²)` and `Z² = (X² + Y²)(X² − 16Y²)`), which
+is an independent confirmation of the algebra above.  Continuing the first one:
+`G₁² − H² = d²` is a primitive triple `H = M² − N²`, `d = 2MN`,
+`G₁ = M² + N²`, and then
+
+    16G₁² + H² = 17M⁴ + 30M²N² + 17N⁴ = c² ,
+
+**which is `quartic_seventeen`'s own quartic**.  So `quartic_one` and
+`quartic_seventeen` are MUTUALLY RECURSIVE, exactly as the section docstring
+anticipated: the right shape is ONE strong induction carrying both (and both
+`d' = ±1` spaces) at once, in the style of `MazurLevel15.concordant_both_aux` —
+NOT a proof of this leaf in isolation followed by a proof of
+`quartic_seventeen`.  Whoever takes either should take both.
+
+(For the record, the `17M⁴ + 30M²N² + 17N⁴` step also closes the first bullet
+outright once `quartic_seventeen` is available: its only positive coprime
+solution is `(M, N) = (1, 1)`, which is not of opposite parity, while `M`, `N`
+here come from a primitive triple and so must be.) -/
+theorem quartic_one_residual {G H S : ℤ} (hG : 0 < G) (hH : 0 < H) (hcop : IsCoprime G H)
+    (hpar : G % 2 = 0 ∧ H % 2 = 1 ∨ G % 2 = 1 ∧ H % 2 = 0) (hS : 0 < S)
+    (h17 : ¬ (17 : ℤ) ∣ S)
+    (heq : 4 * S ^ 2 = (4 * G ^ 2 + H ^ 2) * (G ^ 2 - 4 * H ^ 2)) : False :=
+  sorry
+
+/-- The sign-normalised half of `quartic_one_mixed`: with the Pythagorean
+parameters `m`, `n` already known to be positive, `mn = (2e)²` splits as
+`m = G²`, `n = H²` and eliminating `e` gives `quartic_one_residual`. -/
+theorem quartic_one_mixed_pos {S e m n : ℤ} (hS : 0 < S) (he : 0 < e) (h17 : ¬ (17 : ℤ) ∣ S)
+    (hm : 0 < m) (hn : 0 < n) (hmn : IsCoprime m n)
+    (hpar : m % 2 = 0 ∧ n % 2 = 1 ∨ m % 2 = 1 ∧ n % 2 = 0)
+    (hP : S ^ 2 + 15 * e ^ 2 = m ^ 2 - n ^ 2) (hT : 8 * e ^ 2 = 2 * m * n) : False := by
+  have hmn4 : m * n = (2 * e) ^ 2 := by linarith
+  obtain ⟨g0, hg0⟩ := sq_of_coprime_pos hmn hm hmn4
+  obtain ⟨h0, hh0⟩ := sq_of_coprime_pos hmn.symm hn (by rw [mul_comm]; exact hmn4)
+  have hgG : m = |g0| ^ 2 := by rw [sq_abs]; exact hg0
+  have hhH : n = |h0| ^ 2 := by rw [sq_abs]; exact hh0
+  set G := |g0| with hGdef
+  set H := |h0| with hHdef
+  have hGpos : 0 < G := by
+    rcases (abs_nonneg g0).lt_or_eq with h1 | h1
+    · exact h1
+    · exfalso; rw [hGdef, ← h1] at hgG; simp at hgG; omega
+  have hHpos : 0 < H := by
+    rcases (abs_nonneg h0).lt_or_eq with h1 | h1
+    · exact h1
+    · exfalso; rw [hHdef, ← h1] at hhH; simp at hhH; omega
+  have hGH : G * H = 2 * e := by
+    have hsq : (G * H) ^ 2 = (2 * e) ^ 2 := by rw [mul_pow, ← hgG, ← hhH]; exact hmn4
+    have h1 : (G * H - 2 * e) * (G * H + 2 * e) = 0 := by linear_combination hsq
+    rcases mul_eq_zero.mp h1 with h2 | h2
+    · linarith
+    · nlinarith [mul_pos hGpos hHpos]
+  have he4 : 4 * e ^ 2 = G ^ 2 * H ^ 2 := by nlinarith [hGH]
+  have hP' : S ^ 2 + 15 * e ^ 2 = G ^ 4 - H ^ 4 := by rw [hP, hgG, hhH]; ring
+  have hcopGH : IsCoprime G H := by
+    rw [hgG, hhH] at hmn
+    exact (hmn.of_isCoprime_of_dvd_left (dvd_pow_self G two_ne_zero)).of_isCoprime_of_dvd_right
+      (dvd_pow_self H two_ne_zero)
+  have hGm : G % 2 = m % 2 := by
+    rcases Int.even_or_odd G with ⟨t, ht⟩ | ⟨t, ht⟩
+    · obtain ⟨k, hk⟩ : ∃ k, t ^ 2 = k := ⟨_, rfl⟩
+      have h1 : m = 4 * k := by rw [hgG, ht, ← hk]; ring
+      omega
+    · obtain ⟨k, hk⟩ : ∃ k, t ^ 2 + t = k := ⟨_, rfl⟩
+      have h1 : m = 4 * k + 1 := by rw [hgG, ht, ← hk]; ring
+      omega
+  have hHm : H % 2 = n % 2 := by
+    rcases Int.even_or_odd H with ⟨t, ht⟩ | ⟨t, ht⟩
+    · obtain ⟨k, hk⟩ : ∃ k, t ^ 2 = k := ⟨_, rfl⟩
+      have h1 : n = 4 * k := by rw [hhH, ht, ← hk]; ring
+      omega
+    · obtain ⟨k, hk⟩ : ∃ k, t ^ 2 + t = k := ⟨_, rfl⟩
+      have h1 : n = 4 * k + 1 := by rw [hhH, ht, ← hk]; ring
+      omega
+  have hparGH : G % 2 = 0 ∧ H % 2 = 1 ∨ G % 2 = 1 ∧ H % 2 = 0 := by
+    rcases hpar with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · left; omega
+    · right; omega
+  exact quartic_one_residual hGpos hHpos hcopGH hparGH hS h17
+    (by linear_combination 4 * hP' - 15 * he4)
+
+/-- **The mixed-parity branch of `quartic_one`, reduced to
+`quartic_one_residual`** (PROVEN 2026-07-28).
+
+`S⁴ + 30S²e² + 289e⁴ = (S² + 15e²)² + (8e²)²`; with `S`, `e` of opposite parity
+the first leg is ODD and coprime to `8e²`, so
+`PythagoreanTriple.coprime_classification` applies and — the even leg being
+`8e²` — must put the odd leg in the `m² − n²` slot. -/
+theorem quartic_one_mixed {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
+    (h17 : ¬ (17 : ℤ) ∣ S) (hpar : Even (S * e))
+    (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False := by
+  have hPodd : Odd (S ^ 2 + 15 * e ^ 2) := by
+    rcases Int.even_or_odd S with ⟨a, ha⟩ | ⟨a, ha⟩ <;>
+      rcases Int.even_or_odd e with ⟨b, hb⟩ | ⟨b, hb⟩
+    · exact absurd (hcop.isUnit_of_dvd' (show (2 : ℤ) ∣ S from ⟨a, by omega⟩)
+        (show (2 : ℤ) ∣ e from ⟨b, by omega⟩)) (by norm_num [Int.isUnit_iff])
+    · exact ⟨2 * a ^ 2 + 30 * b ^ 2 + 30 * b + 7, by rw [ha, hb]; ring⟩
+    · exact ⟨2 * a ^ 2 + 2 * a + 30 * b ^ 2, by rw [ha, hb]; ring⟩
+    · exfalso
+      obtain ⟨r, hr⟩ := hpar
+      obtain ⟨k, hk⟩ : ∃ k, a * b = k := ⟨_, rfl⟩
+      have hkey : 2 * (2 * k + a + b) + 1 = r + r := by rw [← hr, ha, hb, ← hk]; ring
+      omega
+  have hTri : PythagoreanTriple (S ^ 2 + 15 * e ^ 2) (8 * e ^ 2) Q := by
+    show _ * _ + _ * _ = _ * _
+    linear_combination h
+  have hgcd : Int.gcd (S ^ 2 + 15 * e ^ 2) (8 * e ^ 2) = 1 := by
+    rw [← Int.isCoprime_iff_gcd_eq_one, Int.isCoprime_iff_gcd_eq_one]
+    by_contra hg
+    obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hg
+    have hpZ : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+    have hpg : ((p : ℤ)) ∣ ((Int.gcd (S ^ 2 + 15 * e ^ 2) (8 * e ^ 2) : ℕ) : ℤ) :=
+      Int.natCast_dvd_natCast.mpr hpd
+    have hPd : ((p : ℤ)) ∣ S ^ 2 + 15 * e ^ 2 := hpg.trans (Int.gcd_dvd_left _ _)
+    have hTd : ((p : ℤ)) ∣ 8 * e ^ 2 := hpg.trans (Int.gcd_dvd_right _ _)
+    rcases hpZ.dvd_mul.mp hTd with h8 | he2
+    · have h8n : p ∣ 8 := by exact_mod_cast h8
+      have hp2 : p = 2 := by
+        have hpow : p ∣ 2 ^ 3 := by simpa using h8n
+        exact (Nat.prime_dvd_prime_iff_eq hp (by decide)).mp (hp.dvd_of_dvd_pow hpow)
+      subst hp2
+      obtain ⟨t, ht⟩ := hPodd
+      obtain ⟨s, hs⟩ := hPd
+      push_cast at hs
+      omega
+    · have hpe : ((p : ℤ)) ∣ e := hpZ.dvd_of_dvd_pow he2
+      have hpS2 : ((p : ℤ)) ∣ S ^ 2 := by
+        have hrw : S ^ 2 = (S ^ 2 + 15 * e ^ 2) - 15 * e * e := by ring
+        rw [hrw]
+        exact dvd_sub hPd ((hpe.mul_left 15).mul_right e)
+      exact hpZ.not_unit (hcop.isUnit_of_dvd' (hpZ.dvd_of_dvd_pow hpS2) hpe)
+  obtain ⟨m, n, hcase, _hz, hmncop, hmnpar⟩ :=
+    (PythagoreanTriple.coprime_classification
+      (x := S ^ 2 + 15 * e ^ 2) (y := 8 * e ^ 2) (z := Q)).mp ⟨hTri, hgcd⟩
+  have hmnZ : IsCoprime m n := Int.isCoprime_iff_gcd_eq_one.mpr hmncop
+  rcases hcase with ⟨hP, hT⟩ | ⟨hP, _hT⟩
+  · have hmnpos : 0 < m * n := by nlinarith [sq_nonneg e, he]
+    rcases lt_trichotomy m 0 with hmneg | hm0 | hmpos
+    · have hnneg : n < 0 := by nlinarith
+      have hnegpar : (-m) % 2 = 0 ∧ (-n) % 2 = 1 ∨ (-m) % 2 = 1 ∧ (-n) % 2 = 0 := by
+        rcases hmnpar with ⟨h1, h2⟩ | ⟨h1, h2⟩
+        · left; omega
+        · right; omega
+      exact quartic_one_mixed_pos hS he h17 (by linarith : (0:ℤ) < -m)
+        (by linarith : (0:ℤ) < -n) hmnZ.neg_neg hnegpar (by rw [hP]; ring) (by rw [hT]; ring)
+    · exfalso; rw [hm0] at hmnpos; simp at hmnpos
+    · have hnpos : 0 < n := by nlinarith
+      exact quartic_one_mixed_pos hS he h17 hmpos hnpos hmnZ hmnpar hP hT
+  · exfalso
+    obtain ⟨t, ht⟩ := hPodd
+    obtain ⟨k, hk⟩ : ∃ k, m * n = k := ⟨_, rfl⟩
+    have hcon : 2 * t + 1 = 2 * k := by rw [← ht, hP, ← hk]; ring
+    omega
+
+/-- **The infinite descent carrying the `17 ∣ S` self-reduction** (PROVEN
+2026-07-28), by strong induction on `|S + e|`.
+
+At each step either `17 ∣ S`, and then `S = 17S₁`, `17 ∣ Q` and
+`(Q/17)² = e⁴ + 30e²S₁² + 289S₁⁴` is this same statement at the strictly
+smaller pair `(e, S₁)`; or `17 ∤ S`, and coprimality leaves exactly the two
+parities, handled by `quartic_one_both_odd` and `quartic_one_mixed`. -/
+theorem quartic_one_aux : ∀ N : ℕ, ∀ S e Q : ℤ, (S + e).natAbs ≤ N →
+    0 < S → 0 < e → IsCoprime S e →
+    S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2 → False := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro S e Q hN hS he hcop h
+    by_cases h17 : (17 : ℤ) ∣ S
+    · obtain ⟨S1, rfl⟩ := h17
+      have hS1 : 0 < S1 := by omega
+      have hQ : (17 : ℤ) ∣ Q := by
+        have hd : (17 : ℤ) ^ 2 ∣ Q ^ 2 :=
+          ⟨e ^ 4 + 30 * e ^ 2 * S1 ^ 2 + 289 * S1 ^ 4, by linear_combination -h⟩
+        exact (Int.pow_dvd_pow_iff two_ne_zero).mp hd
+      obtain ⟨Q1, rfl⟩ := hQ
+      have hnew : e ^ 4 + 30 * e ^ 2 * S1 ^ 2 + 289 * S1 ^ 4 = Q1 ^ 2 :=
+        mul_left_cancel₀ (show (289 : ℤ) ≠ 0 by norm_num) (by linear_combination h)
+      have hcop' : IsCoprime e S1 := hcop.symm.of_isCoprime_of_dvd_right ⟨17, by ring⟩
+      exact ih (e + S1).natAbs (by omega) e S1 Q1 le_rfl he hS1 hcop' hnew
+    · rcases Int.even_or_odd S with hSe | hSo
+      · exact quartic_one_mixed hS he hcop h17 (hSe.mul_right e) h
+      · rcases Int.even_or_odd e with hee | heo
+        · exact quartic_one_mixed hS he hcop h17 (hee.mul_left S) h
+        · exact quartic_one_both_odd he hcop h17 hSo heo h
+
 /-- **`d = 1`: the trivial `2`-isogeny homogeneous space of `17a1` is
-EMPTY** (sorry leaf, introduced 2026-07-28).
+EMPTY** (DECOMPOSED 2026-07-28 — no longer a leaf: it is `quartic_one_aux`
+over the single leaf `quartic_one_residual`).
 
 TRUE: `S⁴ + 30S²e² + 289e⁴ = Q²` has NO solution with `S, e > 0` coprime
-(PARI/GP, exhaustive over `1 ≤ S, e ≤ 400`).  The reason is that the only
+(PARI/GP, exhaustive over `1 ≤ S, e ≤ 600`).  The reason is that the only
 rational `u`-values on `v² = u(u² + 30u + 289)` are `0` and `17`, and
 neither is a nonzero rational square.
 
@@ -24293,13 +24658,17 @@ prove this and a genuine infinite descent is required.  `IsCoprime S e` is
 equally load-bearing (`(S, e) = (17k, k)` scaled solutions would otherwise
 have to be excluded by hand).
 
-See the section docstring above for the reconnaissance: this quartic
-FACTORS as `((S − e)² + 16e²)((S + e)² + 16e²)`, the `17 ∣ S` branch
-self-reduces to this same statement at `(e, S/17)`, and the residue is a
-concordant-forms system. -/
+WHAT IS PROVEN AND WHAT IS LEFT.  The `17 ∣ S` branch self-reduces to this
+statement at `(e, S/17)` (`quartic_one_aux`); the both-odd branch dies mod `8`
+after the coprime split (`quartic_one_both_odd` — cheaper than the section
+docstring's reconnaissance expected); and the mixed-parity branch reduces, by
+the primitive Pythagorean triple `(S² + 15e², 8e², Q)`, to the single open leaf
+`quartic_one_residual`.  That leaf is where `quartic_one` meets
+`quartic_seventeen`: see its docstring for why the two must be closed by ONE
+joint induction rather than in sequence. -/
 theorem quartic_one {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
     (h : S ^ 4 + 30 * S ^ 2 * e ^ 2 + 289 * e ^ 4 = Q ^ 2) : False :=
-  sorry
+  quartic_one_aux (S + e).natAbs S e Q le_rfl hS he hcop h
 
 /-- **`d = 17`: the second `2`-isogeny homogeneous space of `17a1`**
 (sorry leaf, introduced 2026-07-28).
