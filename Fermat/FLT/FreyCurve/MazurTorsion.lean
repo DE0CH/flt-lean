@@ -4953,7 +4953,31 @@ theorem one_lt_valuation_algebraMap_adicCompletionRat_of_padicValRat_neg
     Int.natCast_dvd_natCast]
   exact hden
 
-/-- **`T₁a₂` — the twist classification at a fixed `j`** (sorry leaf; Silverman
+/-- **Twisting commutes with a change of variables** (PROVEN 2026-07-28): the
+quadratic twist by `(t, n)` of a curve moved by `C = ⟨u, r, s, t₀⟩` is the twist
+of the original moved by the explicit change `⟨u, D·r, t·s, D·t·t₀⟩`, where
+`D = t² - 4n`.
+
+This is the companion of `exists_smul_quadraticTwistOf_eq`
+(`QuadraticTwists.lean:263`), which instead varies the parameters `(t, n)`; it
+belongs beside it and should be moved there when that file is next touched (it
+is stated here only to keep this task inside its own file).
+
+The witness is forced by the coordinates: over the quadratic extension the twist
+is cut out by `X = D·x`, `Y = D·((t - 2θ)y - θ·(a₁x + a₃))`, so substituting
+`x = u²x' + r`, `y = u³y' + u²s·x' + t₀` gives `X = u²X' + D·r` and
+`Y = u³Y' + u²·(t·s)·X' + D·t·t₀` — note the `s`-entry picks up only `t`, not
+`D·t`, because `X' = D·x'` already carries one factor of `D`. -/
+theorem WeierstrassCurve.exists_smul_quadraticTwistOf_smul_eq {k : Type u} [Field k]
+    (W : WeierstrassCurve k) (C : WeierstrassCurve.VariableChange k) (t n : k) :
+    ∃ C' : WeierstrassCurve.VariableChange k,
+      C' • W.quadraticTwistOf t n = (C • W).quadraticTwistOf t n := by
+  refine ⟨⟨C.u, (t ^ 2 - 4 * n) * C.r, t * C.s, (t ^ 2 - 4 * n) * t * C.t⟩, ?_⟩
+  simp only [WeierstrassCurve.variableChange_def]
+  ext <;> simp only [WeierstrassCurve.quadraticTwistOf] <;> ring
+
+/-- **`T₁a₂` — the twist classification at a fixed `j`** (PROVEN 2026-07-28;
+Silverman
 *AEC* X.5.4 and III.10.1(c), Prop. X.5.4 in the `j ≠ 0, 1728` case): over a
 field of characteristic zero, two elliptic curves with the same `j`-invariant,
 that `j` being neither `0` nor `1728`, are quadratic twists of one another —
@@ -4994,19 +5018,38 @@ disjuncts are the two cases of "is `w` a square in `k`":
   `isSquare_of_scaled_split` (which is where that theorem uses splitness, and
   is exactly what is NOT available here) replaced by the case hypothesis.
 * `w` not a square: take `L := AdjoinRoot (X² - C w)`, a separable quadratic
-  extension in characteristic zero, and `θ := AdjoinRoot.root`, so
-  `Algebra.trace k L θ = 0` and `Algebra.norm k L θ = -w`; then
-  `W₂.quadraticTwistBy θ = W₂.quadraticTwistOf 0 (-w)` has `D = 4w`, and
-  twisting the `w`-twist by `4w` gives the twist by `4w² = (2w)²`, a square,
-  hence a curve isomorphic to `W₁` over `k`.  Convert `quadraticTwistBy θ` to
-  `quadraticTwist L` by `exists_smul_quadraticTwist_eq_quadraticTwistBy`.
+  extension in characteristic zero (irreducibility from
+  `X_pow_sub_C_irreducible_of_prime` at `p = 2`; separability is then FREE —
+  `k` is perfect by `PerfectField.ofCharZero` and `L/k` is finite, so mathlib's
+  `Algebra.IsSeparable` instance fires, and no `Separable` computation is
+  needed), and `θ := AdjoinRoot.root`,
+  whose minimal polynomial is `X² - w`, so `Algebra.trace k L θ = 0` and
+  `Algebra.norm k L θ = -w` by `PowerBasis.trace_gen_eq_nextCoeff_minpoly` and
+  `Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly`.  Hence
+  `W₂.quadraticTwistBy θ = W₂.quadraticTwistOf 0 (-w)`, with `D = t² - 4n = 4w`.
+  Applying that twist to the SHORT model `S₂ = ⟨0,0,0, w²A₁, w³B₁⟩` gives
+  `⟨0,0,0, D²·w²A₁, D³·w³B₁⟩ = ⟨0,0,0, 16w⁴A₁, 64w⁶B₁⟩`, which is exactly the
+  `u⁻¹ = 2w` rescaling of `S₁ = ⟨0,0,0,A₁,B₁⟩` — one twist, no second one.
+  Convert `quadraticTwistBy θ` to `quadraticTwist L` by
+  `exists_smul_quadraticTwist_eq_quadraticTwistBy`, and move the twist between
+  `W₂` and its short model by `exists_smul_quadraticTwistOf_smul_eq` above.
 
-The one piece of glue this project does not yet have is the commutation of
-`quadraticTwistOf` with a change of variables — `∃ C', C' • ((C • W).quadraticTwistOf t n)
-= W.quadraticTwistOf t n` — needed to move between `W₂` and its short model.
-`exists_smul_quadraticTwistOf_eq` (`QuadraticTwists.lean:263`) is the
-companion statement for changing `(t, n)` and is the model to imitate; both
-are one explicit `VariableChange` plus `field_simp`/`ring`. -/
+(The earlier plan recorded here — twist the `w`-twist again by `4w` to reach the
+square `4w²` — also works, but is a detour: the `(2w)`-rescaling above lands on
+`S₁` directly.  Note also that the SQUARE case must be handled first and
+separately: if `w` were a square then `X² - w` is reducible and `L` is not a
+field at all.)
+
+IMPORT TRAP, cost one build cycle on 2026-07-28: this project's own `AdjoinRoot`
+helpers — `AdjoinRoot.finrank_eq_natDegree`,
+`AdjoinRoot.isSeparable_of_separable`, `AdjoinRoot.root_notMem_range_algebraMap`
+— are NOT visible from this module.  `Fermat.FLT.Mathlib.RingTheory.AdjoinRoot`
+is in this file's textual import closure but only through NON-`public` imports,
+and under the module system a plain `import` does not re-export, so the
+constants are genuinely unknown here.  A source-level BFS over `import` lines
+will say they are available and be wrong; only `public import` chains carry
+visibility.  All three are inlined above from mathlib (`PowerBasis.finrank`,
+the `PerfectField` instance, `minpoly.eq_X_sub_C`) rather than imported. -/
 theorem WeierstrassCurve.exists_variableChange_or_exists_quadraticTwist_of_j_eq
     {k : Type u} [Field k] [CharZero k]
     (W₁ W₂ : WeierstrassCurve k) [W₁.IsElliptic] [W₂.IsElliptic]
@@ -5014,8 +5057,163 @@ theorem WeierstrassCurve.exists_variableChange_or_exists_quadraticTwist_of_j_eq
     (∃ C : WeierstrassCurve.VariableChange k, C • W₁ = W₂) ∨
       ∃ (L : Type u) (_ : Field L) (_ : Algebra k L)
         (_ : Algebra.IsQuadraticExtension k L) (_ : Algebra.IsSeparable k L)
-        (C : WeierstrassCurve.VariableChange k), C • W₁ = W₂.quadraticTwist L :=
-  sorry
+        (C : WeierstrassCurve.VariableChange k), C • W₁ = W₂.quadraticTwist L := by
+  haveI h2 : Invertible (2 : k) := invertibleOfNonzero two_ne_zero
+  haveI h3 : Invertible (3 : k) := invertibleOfNonzero (by norm_num : (3 : k) ≠ 0)
+  obtain ⟨C₁, hC₁⟩ := W₁.exists_variableChange_isShortNF
+  obtain ⟨C₂, hC₂⟩ := W₂.exists_variableChange_isShortNF
+  -- the short models have the same `j`, still avoiding `0` and `1728`
+  have hj' : (C₁ • W₁).j = (C₂ • W₂).j := by
+    rw [WeierstrassCurve.variableChange_j, WeierstrassCurve.variableChange_j, hj]
+  have hj₁0 : (C₁ • W₁).j ≠ 0 := by rw [WeierstrassCurve.variableChange_j]; exact hj0
+  have hj₁1728 : (C₁ • W₁).j ≠ 1728 := by rw [WeierstrassCurve.variableChange_j]; exact hj1728
+  have hj₂0 : (C₂ • W₂).j ≠ 0 := by rw [← hj']; exact hj₁0
+  have hj₂1728 : (C₂ • W₂).j ≠ 1728 := by rw [← hj']; exact hj₁1728
+  set A₁ := (C₁ • W₁).a₄ with hA₁def
+  set B₁ := (C₁ • W₁).a₆ with hB₁def
+  set A₂ := (C₂ • W₂).a₄ with hA₂def
+  set B₂ := (C₂ • W₂).a₆ with hB₂def
+  have hΔ : ∀ (W : WeierstrassCurve k) [W.IsElliptic], W.Δ ≠ 0 := fun W _ ↦ W.isUnit_Δ.ne_zero
+  have hjeq : ∀ (W : WeierstrassCurve k) [W.IsElliptic],
+      W.j = (W.Δ)⁻¹ * W.c₄ ^ 3 := by
+    intro W _
+    rw [show W.j = (↑(W.Δ'⁻¹) : k) * W.c₄ ^ 3 from rfl,
+      Units.val_inv_eq_inv_val, W.coe_Δ']
+  -- `Aᵢ ≠ 0`: otherwise `c₄ = -48Aᵢ = 0`, so `j = 0`
+  have hA0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      W.j ≠ 0 → W.a₄ ≠ 0 := by
+    intro W _ _ hjne h0
+    exact hjne (by
+      rw [hjeq W, W.c₄_of_isShortNF, h0, mul_zero, zero_pow (by norm_num), mul_zero])
+  have hA₁0 : A₁ ≠ 0 := hA0 (C₁ • W₁) hj₁0
+  have hA₂0 : A₂ ≠ 0 := hA0 (C₂ • W₂) hj₂0
+  -- `Bᵢ ≠ 0`: otherwise `j = 1728`
+  have hB0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      W.j ≠ 1728 → W.a₄ ≠ 0 → W.a₆ ≠ 0 := by
+    intro W _ _ hjne hA h0
+    refine hjne ?_
+    have hΔW : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
+    rw [hjeq W, W.c₄_of_isShortNF, hΔW, h0]
+    field_simp
+    ring
+  have hB₁0 : B₁ ≠ 0 := hB0 (C₁ • W₁) hj₁1728 hA₁0
+  have hB₂0 : B₂ ≠ 0 := hB0 (C₂ • W₂) hj₂1728 hA₂0
+  -- the cross-multiplied `j`-equation
+  have hcross : (C₁ • W₁).c₄ ^ 3 * (C₂ • W₂).Δ =
+      (C₂ • W₂).c₄ ^ 3 * (C₁ • W₁).Δ := by
+    have h1 := hjeq (C₁ • W₁)
+    have h2 := hjeq (C₂ • W₂)
+    rw [h1, h2, inv_mul_eq_div, inv_mul_eq_div,
+      div_eq_div_iff (hΔ (C₁ • W₁)) (hΔ (C₂ • W₂))] at hj'
+    exact hj'
+  -- the fundamental relation `A₁³B₂² = A₂³B₁²`
+  have hkey : A₁ ^ 3 * B₂ ^ 2 = A₂ ^ 3 * B₁ ^ 2 := by
+    rw [(C₁ • W₁).c₄_of_isShortNF, (C₂ • W₂).c₄_of_isShortNF,
+      (C₁ • W₁).Δ_of_isShortNF, (C₂ • W₂).Δ_of_isShortNF,
+      ← hA₁def, ← hB₁def, ← hA₂def, ← hB₂def] at hcross
+    have h27 : ((27 : k) * ((-48 : k) ^ 3 * (-16 : k))) ≠ 0 := by norm_num
+    apply mul_left_cancel₀ h27
+    linear_combination hcross
+  -- the twisting scalar
+  set w := (B₂ * A₁) / (B₁ * A₂) with hwdef
+  have hw0 : w ≠ 0 :=
+    div_ne_zero (mul_ne_zero hB₂0 hA₁0) (mul_ne_zero hB₁0 hA₂0)
+  have hA₂w : A₂ = w ^ 2 * A₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 2 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -hkey
+  have hB₂w : B₂ = w ^ 3 * B₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 3 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -B₁ * B₂ * hkey
+  -- identify the two short models with explicit quintuples
+  have hS₁eq : (C₁ • W₁) = (⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₁ • W₁).a₁_of_isShortNF
+    · exact (C₁ • W₁).a₂_of_isShortNF
+    · exact (C₁ • W₁).a₃_of_isShortNF
+    · rfl
+    · rfl
+  have hS₂eq : (C₂ • W₂) =
+      (⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₂ • W₂).a₁_of_isShortNF
+    · exact (C₂ • W₂).a₂_of_isShortNF
+    · exact (C₂ • W₂).a₃_of_isShortNF
+    · exact hA₂w
+    · exact hB₂w
+  by_cases hsq : IsSquare w
+  · -- `w = v²`: scaling by `v⁻¹` is a change of variables over `k` itself
+    left
+    obtain ⟨v, hv⟩ := hsq
+    have hv0 : v ≠ 0 := by
+      rintro rfl
+      exact hw0 (by rw [hv, mul_zero])
+    set Cv : WeierstrassCurve.VariableChange k := ⟨(Units.mk0 v hv0)⁻¹, 0, 0, 0⟩ with hCvdef
+    have hCv : Cv • (C₁ • W₁) = C₂ • W₂ := by
+      rw [hS₁eq, hS₂eq]
+      refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_ <;>
+        simp only [WeierstrassCurve.variableChange_def, hCvdef, hv, inv_inv,
+          Units.val_mk0] <;>
+        field_simp <;>
+        ring
+    exact ⟨C₂⁻¹ * (Cv * C₁), by rw [mul_smul, mul_smul, hCv, inv_smul_smul]⟩
+  · -- `w` is not a square: `W₁` is the twist of `W₂` by `L = k(√w)`
+    right
+    have hnr : ∀ b : k, b ^ 2 ≠ w := fun b hb ↦ hsq ⟨b, by rw [← hb]; ring⟩
+    have hirr : Irreducible (Polynomial.X ^ 2 - Polynomial.C w) :=
+      X_pow_sub_C_irreducible_of_prime Nat.prime_two hnr
+    haveI : Fact (Irreducible (Polynomial.X ^ 2 - Polynomial.C w)) := ⟨hirr⟩
+    have hmon : (Polynomial.X ^ 2 - Polynomial.C w).Monic :=
+      Polynomial.monic_X_pow_sub_C w two_ne_zero
+    have hne0 : (Polynomial.X ^ 2 - Polynomial.C w) ≠ 0 := hmon.ne_zero
+    have hdeg : (Polynomial.X ^ 2 - Polynomial.C w).natDegree = 2 :=
+      Polynomial.natDegree_X_pow_sub_C
+    haveI hfin : Module.Finite k (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) :=
+      (AdjoinRoot.powerBasis hne0).finite
+    haveI hquad : Algebra.IsQuadraticExtension k
+        (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) :=
+      ⟨by rw [PowerBasis.finrank (AdjoinRoot.powerBasis hne0), AdjoinRoot.powerBasis_dim, hdeg]⟩
+    -- separability is free in characteristic zero: `k` is perfect and `L/k` is finite
+    haveI hsep : Algebra.IsSeparable k
+        (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) := inferInstance
+    set L := AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w) with hLdef
+    set θ : L := AdjoinRoot.root (Polynomial.X ^ 2 - Polynomial.C w) with hθdef
+    -- the minimal polynomial of `θ` is `X² - w`, so `tr θ = 0` and `N θ = -w`
+    have hpbgen : (AdjoinRoot.powerBasis hne0).gen = θ := AdjoinRoot.powerBasis_gen hne0
+    have hminp : minpoly k θ = Polynomial.X ^ 2 - Polynomial.C w := by
+      rw [← hpbgen]
+      exact AdjoinRoot.minpoly_powerBasis_gen_of_monic hmon
+    have hθ : θ ∉ Set.range (algebraMap k L) := by
+      rintro ⟨c, hc⟩
+      have h : (minpoly k θ).natDegree = 2 := by rw [hminp, hdeg]
+      rw [← hc, minpoly.eq_X_sub_C, Polynomial.natDegree_X_sub_C] at h
+      omega
+    have htr : Algebra.trace k L θ = 0 := by
+      rw [← hpbgen, PowerBasis.trace_gen_eq_nextCoeff_minpoly, hpbgen, hminp]
+      simp [Polynomial.nextCoeff, hdeg]
+    have hnm : Algebra.norm k θ = -w := by
+      rw [← hpbgen, Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly, hpbgen, hminp,
+        AdjoinRoot.powerBasis_dim, hdeg]
+      simp
+    have htwistBy : W₂.quadraticTwistBy θ = W₂.quadraticTwistOf 0 (-w) := by
+      rw [WeierstrassCurve.quadraticTwistBy, htr, hnm]
+    obtain ⟨C'', hC''⟩ := W₂.exists_smul_quadraticTwist_eq_quadraticTwistBy L hθ
+    obtain ⟨C', hC'⟩ := W₂.exists_smul_quadraticTwistOf_smul_eq C₂ 0 (-w)
+    -- the twist of `S₂` by `(0, -w)` is the `(2w)`-rescaling of `S₁`
+    have hw2 : (2 : k) * w ≠ 0 := mul_ne_zero two_ne_zero hw0
+    set Cu : WeierstrassCurve.VariableChange k := ⟨(Units.mk0 (2 * w) hw2)⁻¹, 0, 0, 0⟩ with hCudef
+    have hCu : Cu • (C₁ • W₁) = (C₂ • W₂).quadraticTwistOf 0 (-w) := by
+      rw [hS₁eq, hS₂eq]
+      refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_ <;>
+        simp only [WeierstrassCurve.variableChange_def, WeierstrassCurve.quadraticTwistOf,
+          hCudef, inv_inv, Units.val_mk0] <;>
+        ring
+    refine ⟨L, inferInstance, inferInstance, inferInstance, inferInstance,
+      (C' * C'')⁻¹ * (Cu * C₁), ?_⟩
+    have hchain : (C' * C'') • W₂.quadraticTwist L = (Cu * C₁) • W₁ := by
+      rw [mul_smul, hC'', htwistBy, hC', ← hCu, mul_smul]
+    rw [mul_smul, ← hchain, inv_smul_smul]
 
 open ValuativeRel in
 set_option backward.isDefEq.respectTransparency false in
