@@ -38628,6 +38628,10 @@ at different skills:
   the only affine rational point of `V² = u⁴ + 4u³ − 44u² + 52u − 16` is
   `(4, 0)`.  It is `rank 37b(ℚ) = 0` in elementary clothing, and it is the
   single deep input the audit above names.
+  **Update, flt-lean-269, 2026-07-28: this half is now PROVEN**, by an
+  explicit birational transport onto the `3`-isogeny normal form of `37b1`;
+  the deep input has moved, unchanged in substance, to the new leaf
+  `no_nonzero_point_thirtySevenB` (`y·(y + 20x + 296) = x³ → x = 0`).
 
 **RECONNAISSANCE for the arithmetic leaf** (PARI/GP 2.17.4, 2026-07-28,
 untrusted searcher — statement check only):
@@ -38672,10 +38676,98 @@ theorem sq_ne_oneFortyEight (r : ℚ) : r ^ 2 ≠ 148 := fun h =>
     (Rat.isSquare_natCast_iff.mp
       ⟨r, by rw [show ((148 : ℕ) : ℚ) = (148 : ℚ) by norm_num, ← h]; ring⟩)
 
+/-!
+### The arithmetic of level `37`, in `3`-isogeny normal form
+
+(flt-lean-269, 2026-07-28.)  Everything between here and
+`rational_point_quartic_thirtySevenB` is one block: the quartic leaf is
+reduced, by an explicit and fully proven birational change of variable, to
+the single statement `no_nonzero_point_thirtySevenB` about the Weierstrass
+model of `37b1` in which its rational `3`-torsion point sits at the origin.
+-/
+
+/-- **The affine rational points of `E : y² + 20xy + 296y = x³` all have
+`x = 0`** (SORRY LEAF, introduced 2026-07-28 by flt-lean-269 as the sole
+remaining content of `rational_point_quartic_thirtySevenB`, which is
+PROVEN over it below).
+
+**This is `rank 37b(ℚ) = 0`**, and it is the single deep input of the
+whole of level `37`.  It is stated here in the `3`-ISOGENY NORMAL FORM
+`y² + a₁xy + a₃y = x³` rather than on the quartic, because that is the
+form the available descent actually runs on — see the route below.  Note
+the hypothesis is written in the FACTORED shape `y·(y + 20x + 296) = x³`,
+which is the same equation and is exactly the product whose two factors
+the descent splits.
+
+**Identification** (PARI/GP 2.17.4, 2026-07-28, untrusted searcher —
+statement check only).  `ellinit([20,0,296,0,0])` has conductor `37`,
+minimal model `[0, 1, 1, −23, −50]` — i.e. `37b1` — with
+`elltors = ℤ/3`, `ellrank = [0,0,0,[]]` and `ellanalyticrank = 0`.  The
+point `(0,0)` has order `3`.  So `E(ℚ) = {O, (0,0), (0,−296)}`, three
+points, and every AFFINE one has `x = 0`: that is precisely this
+statement.  An exhaustive search over `x = a/b` with `|a| ≤ 400`,
+`b ≤ 40` finds `x = 0` and nothing else.
+
+**Not vacuous, and sharp in both directions.**  The hypothesis is
+satisfiable — `(x, y) = (0, 0)` gives `0 = 0` — and the conclusion holds
+there, so the leaf is neither empty nor a disguised falsehood; and it
+cannot be strengthened to `y = 0`, since `(0, −296)` is a second rational
+point with `x = 0`.
+
+**Why `3`-isogeny descent and NOT the `2`-descent this leaf's consumer
+used to prescribe.**  The earlier docstring here proposed a `2`-descent
+over `ℚ(θ)`, `θ` a root of the `2`-division cubic, on the ground that
+`37b` has trivial rational `2`-torsion.  That is true but is the
+EXPENSIVE route: `37b1` has a rational point of order `3`, hence a
+rational `3`-isogeny, and descent by that isogeny needs no field
+extension at all — it runs entirely over `ℚ`.  The `2`-descent needs the
+class group and units of a cubic field; the `3`-descent needs neither.
+
+**The route, worked out far enough to be checkable.**  Write a rational
+point as `x = p/r²`, `y = q/r³` with `gcd(p, r) = gcd(q, r) = 1`,
+`r > 0` (the standard denominator normal form for an integral
+Weierstrass model).  Clearing denominators turns the equation into the
+integral product
+
+    p³ = q · (q + 20pr + 296r³) ,
+
+a product of two integers equal to a cube.  Put `α = q` and
+`β = q + 20pr + 296r³`.  Then `β − α = 4r(5p + 74r²)`, and if a prime
+`ℓ` divides both `α` and `β` it divides `αβ = p³`, hence `p`, hence
+`4·74·r² = 296r²`; but `ℓ ∤ r` because `gcd(q, r) = 1`, so
+
+    gcd(α, β) is supported on `{2, 37}` — indeed `ℓ ∣ 296 = 2³ · 37`.
+
+Consequently every prime outside `{2, 37}` occurs in `α` to a multiple
+of `3`, so `α = d·m³` and `β = d'·n³` with `d`, `d'` of the form
+`±2^a 37^b`; signs are absorbed because `−1` is a cube, so `d` and `d'`
+range over the NINE cube classes `2^a 37^b`, `a, b ∈ {0,1,2}`, subject to
+`dd' = c³` a cube (which pins `d'` from `d` and gives `p = c·m·n`).  Each
+class then presents one homogeneous space
+
+    d'·n³ − d·m³ = 20·c·m·n·r + 296·r³ ,
+
+a plane cubic, and the descent is finished by showing that all classes
+except the two coming from `O` and `(0,0)` fail to have points — for a
+curve of rank `0` with trivial `Ш` (which `37b1` has) local obstructions
+at `3` and `37` suffice, and those are congruence checks of exactly the
+elementary kind `Fermat/FLT/FreyCurve/QuarticDescent.lean` already
+carries out.
+
+**The check that would refute this**: any `ellrank` call returning a
+positive rank for `[0, 1, 1, −23, −50]`, or an explicit rational
+`(x, y)` with `x ≠ 0` and `y·(y + 20x + 296) = x³`.  Equivalently (see
+the transport below) a rational `u ≠ 4` making
+`u⁴ + 4u³ − 44u² + 52u − 16` a square. -/
+theorem no_nonzero_point_thirtySevenB (x y : ℚ)
+    (h : y * (y + 20 * x + 296) = x ^ 3) : x = 0 :=
+  sorry
+
 /-- **The affine rational points of `C : V² = u⁴ + 4u³ − 44u² + 52u − 16`
-number exactly one, namely `(4, 0)`** (SORRY LEAF, introduced 2026-07-28
-by flt-lean-42 as the ARITHMETIC half of
-`exists_x0Compactification_thirtySeven_cardLe`).
+number exactly one, namely `(4, 0)`** (PROVEN 2026-07-28 by flt-lean-269
+over the single leaf `no_nonzero_point_thirtySevenB`; a sorry leaf from
+2026-07-28, when flt-lean-42 cut it out as the ARITHMETIC half of
+`exists_x0Compactification_thirtySeven_cardLe`, until then).
 
 **This is `rank 37b(ℚ) = 0` in elementary clothing**, and it is the single
 deep input of the whole of level `37` — the "only (iii) is deep" of the
@@ -38701,24 +38793,60 @@ halves are used: the consumer needs `u = 4` to pin `x = 2`, and stating
 while making the statement say what it means — that the affine locus is a
 single POINT rather than a single fibre.
 
-**The shape of a proof.**  `u⁴ + 4u³ − 44u² + 52u − 16 = (u − 4)(u³ + 8u²
-− 12u + 4)`, and the cubic factor has no rational root (`±1, ±2, ±4` give
-`1, 23, 20, 52, 148, 116`), hence is irreducible over `ℚ`; so a descent
-here runs over the cubic field `ℚ[u]/(u³ + 8u² − 12u + 4)`.  The
-alternative, and probably the cheaper one in this development, is to
-transport to the Weierstrass model `[0, 1, 1, −23, −50]` and prove
-`rank 37b(ℚ) = 0` by a `2`-descent there — `37b` has trivial `2`-torsion
-over `ℚ`, so the descent is over `ℚ(θ)` with `θ` a root of the
-`2`-division cubic.
+**How it is proved here: an explicit birational transport onto the
+`3`-isogeny normal form.**  Write `s = u − 4`.  Because `u = 4` is a root
+of the quartic, `q(4 + s) = s⁴ + 20s³ + 100s² + 148s`, and the first
+three terms are a square: `q(4 + s) = (s² + 10s)² + 148s`.  So the
+hypothesis is exactly
+
+    (V − s² − 10s)·(V + s² + 10s) = 148 s ,
+
+which is a conic-times-line factorisation of the affine curve.  Setting
+
+    x = 148 / s ,      y = 148·(V − s² − 10s) / s²
+
+turns it into `y·(y + 20x + 296) = x³`, since
+`y + 20x + 296 = 148·(V + s² + 10s)/s²` and therefore
+`y·(y + 20x + 296) = 148²·(V² − (s² + 10s)²)/s⁴ = 148³/s³ = x³`.  That is
+`no_nonzero_point_thirtySevenB`, which forces `x = 148/s = 0` — impossible
+for `s ≠ 0`.  Hence `s = 0`, i.e. `u = 4`; and then `V² = q(4) = 0`, so
+`V = 0`.
+
+This is a genuine reduction rather than a restatement: the target curve
+is `ellinit([20,0,296,0,0])`, minimal model `[0, 1, 1, −23, −50]`,
+conductor `37`, with its rational `3`-torsion point at the origin — the
+form on which descent by the rational `3`-isogeny runs over `ℚ` with no
+field extension.  The route the old docstring here prescribed (a
+`2`-descent over the cubic field `ℚ[u]/(u³ + 8u² − 12u + 4)`, or over
+`ℚ(θ)` for `θ` a root of the `2`-division polynomial) is correct but
+strictly more expensive, and has been superseded; see
+`no_nonzero_point_thirtySevenB` for the descent that is actually intended.
 
 **The check that would refute this**: any `ellrank` call returning a
 positive rank for `[0, 1, 1, −23, −50]`, or an explicit rational `u ≠ 4`
-with `u⁴ + 4u³ − 44u² + 52u − 16` a square.  An exhaustive search over
-`u = a/b` with `|a|, b ≤ 60` found none. -/
+with `u⁴ + 4u³ − 44u² + 52u − 16` a square.  Exhaustive searches over
+`u = a/b` with `|a|, b ≤ 60` and with `|a| ≤ 3600`, `b ≤ 60` both return
+`u = 4` and nothing else. -/
 theorem rational_point_quartic_thirtySevenB (u V : ℚ)
-    (_h : V ^ 2 = u ^ 4 + 4 * u ^ 3 - 44 * u ^ 2 + 52 * u - 16) :
-    u = 4 ∧ V = 0 :=
-  sorry
+    (h : V ^ 2 = u ^ 4 + 4 * u ^ 3 - 44 * u ^ 2 + 52 * u - 16) :
+    u = 4 ∧ V = 0 := by
+  have hu : u = 4 := by
+    by_contra hne
+    have hs : u - 4 ≠ 0 := sub_ne_zero.mpr hne
+    have key : (148 * (V - (u - 4) ^ 2 - 10 * (u - 4)) / (u - 4) ^ 2)
+        * ((148 * (V - (u - 4) ^ 2 - 10 * (u - 4)) / (u - 4) ^ 2)
+            + 20 * (148 / (u - 4)) + 296)
+        = (148 / (u - 4)) ^ 3 := by
+      field_simp
+      linear_combination (148 : ℚ) * h
+    have hx : (148 : ℚ) / (u - 4) = 0 := no_nonzero_point_thirtySevenB _ _ key
+    rcases div_eq_zero_iff.mp hx with h1 | h1
+    · norm_num at h1
+    · exact hs h1
+  subst hu
+  refine ⟨rfl, ?_⟩
+  have hV : V ^ 2 = 0 := by rw [h]; norm_num
+  exact pow_eq_zero_iff two_ne_zero |>.mp hV
 
 /-- **The only rational points of the genus-`2` model
 `S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` are `(1, ±1)`**
@@ -38821,7 +38949,9 @@ theorem exists_planeModel_x0ThirtySeven :
 /-- **SOME compactification of `Y_0(37)` has at most `4` rational points**
 (PROVEN 2026-07-28, flt-lean-42, over the two leaves
 `exists_planeModel_x0ThirtySeven` (the model) and
-`rational_point_quartic_thirtySevenB` (the arithmetic), through the
+`rational_point_quartic_thirtySevenB` (the arithmetic — itself PROVEN
+2026-07-28 by flt-lean-269, so the arithmetic leaf underneath is now
+`no_nonzero_point_thirtySevenB`), through the
 fully-proven fibre analysis `rational_point_sextic_thirtySeven`; a sorry
 leaf from 2026-07-27, when flt-lean-55 introduced it, until then.  The
 COMPACT form, and the leaf that carries all of level `37`'s arithmetic).
@@ -38899,7 +39029,9 @@ single arithmetic input of the whole level.
 
 *ACTED ON 2026-07-28 (flt-lean-42): this paragraph is now the CUT, and the
 declaration is PROVEN over it.*  (i) is `exists_planeModel_x0ThirtySeven`,
-(iii) is `rational_point_quartic_thirtySevenB`, and (ii) — which the
+(iii) is `rational_point_quartic_thirtySevenB` — since PROVEN in turn
+(flt-lean-269, 2026-07-28) over `no_nonzero_point_thirtySevenB`, which is
+where the deep arithmetic now sits — and (ii) — which the
 paragraph priced as a piece needing work — turned out to be a single
 `linear_combination` and is PROVEN, as `rational_point_sextic_thirtySeven`.
 See the section docstring above those declarations for the cancellation
