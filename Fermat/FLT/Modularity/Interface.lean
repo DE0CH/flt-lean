@@ -60404,10 +60404,11 @@ THE FOUR LEAVES, and why each is smaller than what it replaces:
    junk `sInf ∅ = 0`**: with `RamificationFiltration v` empty,
    `IsSwanExponentAt` is vacuous, `swanExponentAux = 0` identically, and every
    `conductorExponent` collapses to its tame part — which would make the
-   `3 ≤ ord_q M₀` sibling FALSE, since a tame exponent is `≤ dim V = 2`. It
-   belongs in `ArtinConductor.lean` beside `RamificationFiltration` and is
-   stated here only to avoid rebuilding that module's whole cone; hoisting it
-   is a free follow-up.
+   `3 ≤ ord_q M₀` sibling FALSE, since a tame exponent is `≤ dim V = 2`.
+   **HOISTED 2026-07-28** to `ArtinConductor.lean` beside
+   `RamificationFiltration`, and generalised there from `ℚ` to an arbitrary
+   number field; it is no longer a leaf OF THIS FILE, only a leaf this file
+   consumes.
 2. `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` — `det τ` is the
    `p`-adic cyclotomic character (Chebotarev on the Frobenius data in `hτ`),
    hence trivial on inertia at every `q ≠ p`. It carries NO newform, NO
@@ -60654,59 +60655,31 @@ theorem hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform
     τ.HasFiniteWildMonodromyAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **THE UPPER-NUMBERING RAMIFICATION FILTRATION EXISTS** (SORRY LEAF,
-cut 2026-07-28, fifteenth owner; Serre, *Corps Locaux* IV §3 for the
-lower numbering and Herbrand's `ψ`, IV §3 / VI §2 for the upper
-numbering; Neukirch, *Algebraic Number Theory* II.10).
+/-! **`nonempty_ramificationFiltration` HAS MOVED (2026-07-28).**
 
-`RamificationFiltration v` (`ArtinConductor.lean`) is the family
-`G^u ≤ Γ Kᵥ` with five axioms: decreasing, `G⁰ = I_v`, `G^u = P_v` on
-`(0, 1]`, left continuity, and separatedness `⋂_{u>0} G^u = 1`. This leaf
-says the type is INHABITED.
+A `K = ℚ` copy of that leaf stood here, and its own docstring said it
+belonged in `ArtinConductor.lean` beside `RamificationFiltration`,
+"stated here only because moving it there rebuilds that module's entire
+downstream cone", and that "hoisting it is a free follow-up for whoever
+next edits that file". The owner of `GaloisRep.exists_isSwanExponentAt`
+was next to edit that file and did the hoist: the leaf now lives in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`,
+generalised from `ℚ` to an arbitrary number field, and the call site
+below (`(nonempty_ramificationFiltration _).some`) is UNCHANGED — this
+file sits inside `namespace GaloisRepresentation.Modularity` and the
+hoisted root-level name resolves there.
 
-WHY IT IS TRUE. The lower-numbering filtration `G_i` of each finite
-Galois subextension is defined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`;
-Herbrand's function `ψ_{L/K}` renumbers it so that the result is
-compatible with quotients, and the upper numbering therefore passes to
-the inverse limit and defines `G^u` on the absolute Galois group. The
-five axioms are then the standard facts: `G^0 = G_0 = I_v` because
-`ψ(0) = 0`; `G^u = G_1 = P_v` for `0 < u ≤ 1` because `ψ(u) = u` there;
-left continuity is the standard convention `G^u = ⋂_{w<u} G^w`; and
-separatedness is that every element of the inertia has finite image in
-some finite level, where the filtration reaches `1`. For `u < 0` any
-group containing `I_v` will do — the axioms constrain nothing there —
-so the whole content is at `u ≥ 0`.
-
-WHY THIS LEAF MATTERS BEYOND ITS CONSUMER, and this is the sharpest
-thing this cut records. `GaloisRep.IsSwanExponentAt` quantifies
-UNIVERSALLY over `RamificationFiltration v`. If the type were EMPTY the
-specification would be vacuously true of every `s`, so
-`swanExponentAux = sInf ℕ = 0` identically, and `conductorExponent`
-would collapse to its tame part — which is `≤ dim V = 2`. Every citation
-asserting a conductor exponent `≥ 3` would then be FALSE rather than
-merely open, including
-`swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le` below at
-`ord_q M₀ ≥ 3`. So this leaf is a NON-DEGENERACY condition on the whole
-Swan development, not merely a convenience for the present proof.
-
-PLACEMENT. It belongs in `ArtinConductor.lean` beside
-`RamificationFiltration` itself, and is stated here only because moving
-it there rebuilds that module's entire downstream cone. Hoisting it is a
-free follow-up for whoever next edits that file.
-
-THE CHECK THAT WOULD REFUTE IT: exhibit an axiom of
-`RamificationFiltration` that the genuine upper-numbering filtration of
-`Γ Kᵥ` fails. The candidate is separatedness, and it holds because the
-absolute Galois group of a local field is the inverse limit of finite
-Galois groups in each of which the ramification filtration terminates at
-`1`. AXIS SEARCHED: the five axioms individually. NOT SEARCHED: whether
-the axioms are strong enough to make the filtration UNIQUE — they are
-not known to be, which is deliberate and is why
-`GaloisRep.exists_isSwanExponentAt` is a separate leaf. -/
-theorem nonempty_ramificationFiltration
-    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    Nonempty (RamificationFiltration v) :=
-  sorry
+TWO CLAIMS OF THE RETIRED DOCSTRING WERE STALE AND ARE CORRECTED AT THE
+NEW SITE. It described `RamificationFiltration` as having FIVE axioms
+and recorded "NOT SEARCHED: whether the axioms are strong enough to make
+the filtration UNIQUE — they are not known to be, which is deliberate".
+Both were overtaken the same day: those five shape axioms are
+SCALE-INVARIANT — which is exactly why they do not pin the filtration,
+and which made `GaloisRep.exists_isSwanExponentAt` FALSE — and the
+repair added a SIXTH axiom, `RamificationFiltration.gp_herbrand`. So the
+type to be inhabited is strictly stronger than the one that audit
+certified, and the audit was re-run against six axioms at the new site.
+-/
 
 /-- **THE DETERMINANT OF `τ` IS THE CYCLOTOMIC CHARACTER, HENCE TRIVIAL
 ON INERTIA AWAY FROM `p`** (SORRY LEAF, cut 2026-07-28, fifteenth owner;
@@ -61021,7 +60994,8 @@ theorem inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le
 /-- **TAMENESS AT A PRIME EXACTLY SQUARE-DIVIDING THE NEWFORM LEVEL**
 (**PROVEN 2026-07-28, fifteenth owner**, over
 `conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two`
-and `nonempty_ramificationFiltration` above together with the sibling
+and `nonempty_ramificationFiltration` (hoisted 2026-07-28 to
+`ArtinConductor.lean`) together with the sibling
 leaf below it; opened as a sorry leaf 2026-07-27, fourteenth owner, from
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
 below; Carayol, Théorème (A), plus the depth-zero classification of the
@@ -61089,9 +61063,10 @@ The third bullet is the step that the `if`-branch packaging of
 `GaloisRep.swanExponent` makes necessary and that nothing in the tree
 supplied before: without a lower bound on `swanExponentAux` at a wild
 place, `swanExponent = 0` carries no information at all. It is also why
-`nonempty_ramificationFiltration` had to be cut — see its docstring for
-why an EMPTY `RamificationFiltration` would make the whole Swan
-development degenerate rather than merely unproven. -/
+`nonempty_ramificationFiltration` had to be cut — see its docstring in
+`ArtinConductor.lean`, where it was hoisted on 2026-07-28, for why an
+EMPTY `RamificationFiltration` would make the whole Swan development
+degenerate rather than merely unproven. -/
 theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
