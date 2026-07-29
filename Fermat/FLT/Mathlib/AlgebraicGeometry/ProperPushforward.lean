@@ -17,6 +17,13 @@ public import Mathlib.AlgebraicGeometry.Gluing
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
+public import Mathlib.RingTheory.LocalRing.Module
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.LocalProperties.Projective
+public import Mathlib.Algebra.Module.LocalizedModule.Exact
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+public import Mathlib.LinearAlgebra.TensorProduct.Basis
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -118,7 +125,7 @@ run is for `pushoutSection`, not for `directImage`.
     finite affine cover and flatness of `f` — **no cohomology theory at all**; what does use
     Grothendieck coherence is replacing the Čech complex by a FINITE FREE one, and that
     finiteness is load-bearing for the next leaf.
-  * `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` — **LEAF** (2026-07-28), pure
+  * `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` — **PROVEN** (2026-07-28), pure
     commutative algebra with no geometry in it at all: for `d : R^{n₀} ⟶ R^{n₁}` between
     finite free modules, if `K/𝔪K ⟶ ker(d mod 𝔪)` is surjective at every maximal ideal then
     it is injective.  Tor-theoretically: the hypothesis is `Tor₁(R^{n₁}/range d, R/𝔪) = 0`,
@@ -1500,7 +1507,223 @@ proven bridge `rank_quotient_le_one_of_fibre_span` between them.  The two paragr
 describing that cut are what got carried out; read them as the plan and the declarations
 below as its realisation. -/
 
-/-- **LEAF 3a-CA — THE COMMUTATIVE ALGEBRA OF DEGREE-ZERO BASE CHANGE** (LEAF, 2026-07-28).
+/-- Over a field, a linear map out of a finite-dimensional space admits a finite family of
+vectors whose images form a basis of its range.  This is the only place linear algebra over
+the residue field is used in `free_of_isLocalRing_of_comap_smul_le`, and it is stated
+separately because keeping the field abstract is what stops `whnf` from unfolding
+`IsLocalRing.ResidueField R = R ⧸ maximalIdeal R` during instance search. -/
+theorem exists_linearIndependent_image_of_field
+    {k V W : Type*} [Field k] [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [AddCommGroup W] [Module k W] (T : V →ₗ[k] W) :
+    ∃ (m : ℕ) (v : Fin m → V), LinearIndependent k (fun i => T (v i)) ∧
+      LinearMap.range T ≤ Submodule.span k (Set.range fun i => T (v i)) := by
+  classical
+  haveI : Module.Free k (LinearMap.range T) := Module.Free.of_divisionRing k (LinearMap.range T)
+  set m := Module.finrank k (LinearMap.range T) with hm
+  set bb : Module.Basis (Fin m) k (LinearMap.range T) :=
+    Module.finBasis k (LinearMap.range T) with hbb
+  choose v hv using fun i : Fin m => (bb i).2
+  have hcomp : (fun i => T (v i)) = (LinearMap.range T).subtype ∘ (bb : Fin m → _) := by
+    funext i; rw [hv i]; rfl
+  refine ⟨m, v, ?_, ?_⟩
+  · rw [hcomp]
+    exact bb.linearIndependent.map' _ (Submodule.ker_subtype _)
+  · rw [hcomp, Set.range_comp, ← Submodule.map_span, bb.span_eq, Submodule.map_top,
+      Submodule.range_subtype]
+
+open TensorProduct in
+/-- The base change of `Finsupp.linearCombination R w` along `R ⟶ A` is injective as soon as the
+base-changed family `1 ⊗ w i` is `A`-linearly independent. -/
+theorem injective_lTensor_linearCombination
+    {R : Type*} [CommRing R] {A : Type*} [CommRing A] [Algebra R A]
+    {N : Type*} [AddCommGroup N] [Module R N] {m : ℕ} (w : Fin m → N)
+    (hw : LinearIndependent A (fun i => (1 : A) ⊗ₜ[R] w i)) :
+    Function.Injective ((Finsupp.linearCombination R w).lTensor A) := by
+  classical
+  set bb : Module.Basis (Fin m) A (A ⊗[R] (Fin m →₀ R)) :=
+    (Finsupp.basisSingleOne).baseChange A with hbb
+  have key : ((Finsupp.linearCombination R w).baseChange A) =
+      (Finsupp.linearCombination A (fun i => (1 : A) ⊗ₜ[R] w i)) ∘ₗ bb.repr.toLinearMap := by
+    refine bb.ext fun i => ?_
+    have h1 : bb i = (1 : A) ⊗ₜ[R] (Finsupp.single i (1 : R)) := by
+      rw [hbb, Module.Basis.baseChange_apply]
+      simp
+    have h2 : bb.repr (bb i) = Finsupp.single i (1 : A) := Module.Basis.repr_self bb i
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, h2, Finsupp.linearCombination_single,
+      one_smul]
+    rw [h1, LinearMap.baseChange_tmul]
+    simp
+  have hinj : Function.Injective ((Finsupp.linearCombination R w).baseChange A) := by
+    rw [key]
+    exact hw.finsuppLinearCombination_injective.comp bb.repr.injective
+  rwa [LinearMap.baseChange_eq_ltensor] at hinj
+
+set_option maxHeartbeats 1000000 in
+open IsLocalRing TensorProduct in
+/-- **THE LOCAL HALF of `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le`** (PROVEN,
+2026-07-28).  Over a LOCAL ring `(R, 𝔪, k)`, if `F₀ ⟶ F₁ ⟶ P ⟶ 0` is exact with `F₀` finite
+and `F₁` finite free, and if `d⁻¹(𝔪F₁) ≤ K + 𝔪F₀` for some `K ≤ ker d`, then `P` is FREE.
+
+**The proof, and why it needs no Tor.**  Choose `e i : F₀` whose images `d(e i)` reduce to a
+`k`-basis of `range (d ⊗ k)`.  The hypothesis says exactly that `ker (d ⊗ k)` is hit by
+`K ⊗ k`, so `F₀ = span{e i} + K + 𝔪F₀`, and Nakayama (`F₀` finite, `𝔪 ≤ jacobson ⊥`) upgrades
+this to `F₀ = span{e i} + ker d`.  Hence `range d = span{d (e i)}` is the range of
+`φ : Rⁿ ⟶ F₁`, `φ` has `k ⊗ φ` injective by construction, and mathlib's
+`Module.free_of_lTensor_residueField_injective` applied to `Rⁿ ⟶ F₁ ⟶ P ⟶ 0` gives `P` free.
+
+`K` is a parameter rather than `ker d` itself because the caller feeds in the LOCALIZATION of
+a kernel, which is contained in — and in fact equal to, though that is not needed — the kernel
+of the localized map. -/
+theorem free_of_isLocalRing_of_comap_smul_le
+    {R F₀ F₁ P : Type*} [CommRing R] [IsLocalRing R]
+    [AddCommGroup F₀] [Module R F₀] [Module.Finite R F₀]
+    [AddCommGroup F₁] [Module R F₁] [Module.Finite R F₁] [Module.Free R F₁]
+    [AddCommGroup P] [Module R P]
+    (d : F₀ →ₗ[R] F₁) (g : F₁ →ₗ[R] P) (hg : Function.Surjective g)
+    (hex : Function.Exact d g)
+    (K : Submodule R F₀) (hK : K ≤ LinearMap.ker d)
+    (h : Submodule.comap d (maximalIdeal R • (⊤ : Submodule R F₁)) ≤
+      K ⊔ maximalIdeal R • (⊤ : Submodule R F₀)) :
+    Module.Free R P := by
+  classical
+  obtain ⟨m, v, hvli, hvsp⟩ :=
+    exists_linearIndependent_image_of_field (d.baseChange (ResidueField R))
+  choose e he using fun i : Fin m => TensorProduct.mk_surjective R F₀ (ResidueField R)
+    Ideal.Quotient.mk_surjective (v i)
+  simp only [TensorProduct.mk_apply] at he
+  have hDe : ∀ i : Fin m, (d.baseChange (ResidueField R)) (v i)
+      = (1 : ResidueField R) ⊗ₜ[R] d (e i) := by
+    intro i; rw [← he i, LinearMap.baseChange_tmul]
+  set φ : (Fin m →₀ R) →ₗ[R] F₁ := Finsupp.linearCombination R (fun i => d (e i)) with hφ
+  have hsm : ∀ (r : R) (z : F₀), (1 : ResidueField R) ⊗ₜ[R] (r • z) =
+      (IsLocalRing.residue R r) • ((1 : ResidueField R) ⊗ₜ[R] z) := by
+    intro r z
+    rw [← TensorProduct.smul_tmul, TensorProduct.smul_tmul']
+    congr 1
+  -- (1) `k ⊗ φ` is injective.
+  have hφinj : Function.Injective (φ.lTensor (ResidueField R)) := by
+    refine injective_lTensor_linearCombination (fun i => d (e i)) ?_
+    have : (fun i => (1 : ResidueField R) ⊗ₜ[R] d (e i))
+        = fun i => (d.baseChange (ResidueField R)) (v i) := by
+      funext i; rw [hDe i]
+    rw [this]
+    exact hvli
+  -- (2) Nakayama: `F₀ = span {e i} + ker d`.
+  have hjac : maximalIdeal R ≤ Ideal.jacobson (⊥ : Ideal R) := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal R) bot_ne_top]
+  have hspan : (⊤ : Submodule R F₀) ≤
+      Submodule.span R (Set.range e) ⊔ LinearMap.ker d := by
+    refine Submodule.le_of_le_smul_of_le_jacobson_bot Module.Finite.fg_top hjac ?_
+    intro x _
+    have hxW : (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] x)
+        ∈ Submodule.span (ResidueField R)
+          (Set.range fun i => (d.baseChange (ResidueField R)) (v i)) :=
+      hvsp (LinearMap.mem_range_self _ _)
+    rw [Submodule.mem_span_range_iff_exists_fun] at hxW
+    obtain ⟨c, hc⟩ := hxW
+    choose a ha using fun i : Fin m => IsLocalRing.residue_surjective (c i)
+    have hsum : (d.baseChange (ResidueField R))
+        ((1 : ResidueField R) ⊗ₜ[R] (∑ i, a i • e i))
+        = (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] x) := by
+      rw [TensorProduct.tmul_sum]
+      simp only [map_sum]
+      rw [Finset.sum_congr rfl (fun i _ =>
+        show (d.baseChange (ResidueField R)) ((1 : ResidueField R) ⊗ₜ[R] (a i • e i))
+            = c i • (d.baseChange (ResidueField R)) (v i) by
+          rw [hsm, map_smul, ha i, ← he i])]
+      exact hc
+    have hdy : (1 : ResidueField R) ⊗ₜ[R] (d (x - ∑ i, a i • e i)) = 0 := by
+      have hz : (d.baseChange (ResidueField R))
+          ((1 : ResidueField R) ⊗ₜ[R] (x - ∑ i, a i • e i)) = 0 := by
+        rw [TensorProduct.tmul_sub, map_sub, hsum, sub_self]
+      rwa [LinearMap.baseChange_tmul] at hz
+    have hmem : (x - ∑ i, a i • e i) ∈ Submodule.comap d
+        (maximalIdeal R • (⊤ : Submodule R F₁)) := by
+      rw [Submodule.mem_comap, ← LinearMap.ker_tensorProductMk (R := R) (Q := F₁)
+        (I := maximalIdeal R)]
+      exact hdy
+    have hmem2 := h hmem
+    have hxe : (∑ i, a i • e i) ∈ Submodule.span R (Set.range e) :=
+      Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _
+        (Submodule.subset_span ⟨i, rfl⟩)
+    have hfin : x = (∑ i, a i • e i) + (x - ∑ i, a i • e i) := by abel
+    rw [hfin]
+    refine Submodule.add_mem _ ?_ ?_
+    · exact Submodule.mem_sup_left (Submodule.mem_sup_left hxe)
+    · rcases Submodule.mem_sup.mp hmem2 with ⟨u, hu, y, hy, huy⟩
+      rw [← huy]
+      exact Submodule.add_mem _ (Submodule.mem_sup_left (Submodule.mem_sup_right (hK hu)))
+        (Submodule.mem_sup_right hy)
+  -- (3) `range φ = range d`.
+  have hrange : LinearMap.range φ = LinearMap.range d := by
+    have h1 : LinearMap.range φ = Submodule.map d (Submodule.span R (Set.range e)) := by
+      rw [hφ, Finsupp.range_linearCombination, Submodule.map_span, ← Set.range_comp]
+      rfl
+    have h2 : Submodule.map d (LinearMap.ker d) = ⊥ := by
+      rw [eq_bot_iff]
+      rintro _ ⟨z, hz, rfl⟩
+      simpa using hz
+    rw [h1]
+    refine le_antisymm LinearMap.map_le_range ?_
+    calc LinearMap.range d = Submodule.map d ⊤ := (Submodule.map_top d).symm
+      _ ≤ Submodule.map d (Submodule.span R (Set.range e) ⊔ LinearMap.ker d) :=
+          Submodule.map_mono hspan
+      _ = Submodule.map d (Submodule.span R (Set.range e)) ⊔ Submodule.map d (LinearMap.ker d) :=
+          Submodule.map_sup _ _ _
+      _ = Submodule.map d (Submodule.span R (Set.range e)) := by rw [h2, sup_bot_eq]
+  have hexφ : Function.Exact φ g := by
+    rw [LinearMap.exact_iff] at hex ⊢
+    rw [hrange]; exact hex
+  exact Module.free_of_lTensor_residueField_injective φ g hg hexφ hφinj
+
+/-- If `mk' f y s` lies in the localization of a submodule `N`, then some `t` in the localizing
+submonoid pushes `y` itself into `N`. -/
+theorem exists_smul_mem_of_mk'_mem_localized' {R : Type*} [CommRing R] (S : Submonoid R)
+    {M M' : Type*} [AddCommGroup M] [Module R M] [AddCommGroup M'] [Module R M']
+    (A : Type*) [CommRing A] [Algebra R A] [IsLocalization S A] [Module A M']
+    [IsScalarTower R A M']
+    (f : M →ₗ[R] M') [IsLocalizedModule S f] (N : Submodule R M) (y : M) (s : S)
+    (hy : IsLocalizedModule.mk' f y s ∈ N.localized' A S f) :
+    ∃ t : S, (t : R) • y ∈ N := by
+  obtain ⟨n, hn, u, hu⟩ := hy
+  rw [IsLocalizedModule.mk'_eq_mk'_iff] at hu
+  obtain ⟨w, hw⟩ := hu
+  refine ⟨w * u, ?_⟩
+  have hcalc : ((w * u : S) : R) • y = ((w * s : S) : R) • n := by
+    simp only [Submonoid.coe_mul, mul_smul]
+    exact hw
+  rw [hcalc]
+  exact N.smul_mem _ hn
+
+/-- The localization at a maximal ideal `I` carries `I • ⊤` to `𝔪 • ⊤`. -/
+theorem localized'_smul_top_eq {R : Type*} [CommRing R] (I : Ideal R) [hI : I.IsMaximal]
+    {M : Type*} [AddCommGroup M] [Module R M] :
+    (I • (⊤ : Submodule R M)).localized' (Localization.AtPrime I) I.primeCompl
+        (LocalizedModule.mkLinearMap I.primeCompl M)
+      = IsLocalRing.maximalIdeal (Localization.AtPrime I) •
+        (⊤ : Submodule (Localization.AtPrime I) (LocalizedModule I.primeCompl M)) := by
+  apply le_antisymm
+  · rw [Submodule.localized'_eq_span, Submodule.span_le]
+    rintro _ ⟨y, hy, rfl⟩
+    refine Submodule.smul_induction_on hy (fun r hr z _ => ?_) (fun z z' hz hz' => ?_)
+    · rw [map_smul, ← IsScalarTower.algebraMap_smul (Localization.AtPrime I) r]
+      refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+      rw [← Localization.AtPrime.map_eq_maximalIdeal]
+      exact Ideal.mem_map_of_mem _ hr
+    · rw [map_add]; exact Submodule.add_mem _ hz hz'
+  · rw [Submodule.smul_le]
+    intro a ha z _
+    obtain ⟨⟨c, s⟩, rfl⟩ := IsLocalization.mk'_surjective I.primeCompl a
+    obtain ⟨⟨y, t⟩, rfl⟩ := IsLocalizedModule.mk'_surjective I.primeCompl
+      (LocalizedModule.mkLinearMap I.primeCompl M) z
+    simp only [Function.uncurry_apply_pair] at ha ⊢
+    rw [IsLocalization.AtPrime.mk'_mem_maximal_iff (Localization.AtPrime I) I] at ha
+    rw [IsLocalizedModule.mk'_smul_mk']
+    exact ⟨c • y, Submodule.smul_mem_smul ha Submodule.mem_top, s * t, rfl⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **LEAF 3a-CA — THE COMMUTATIVE ALGEBRA OF DEGREE-ZERO BASE CHANGE** — **PROVEN**
+(2026-07-28).
 Self-contained, no geometry, and stated entirely in `RingTheory` vocabulary: it could be
 hoisted to a shim file or upstreamed unchanged.
 
@@ -1530,16 +1753,142 @@ reader is likely to try to weaken: the conclusion is false for a general flat `F
 forces flatness.  That is exactly why the geometric leaf below must produce Grothendieck's
 finite free complex rather than the Čech complex it starts from.  Quantifying the hypothesis
 over ALL maximal ideals while concluding at ONE is also not an oversight: flatness of `M` is
-a global statement and the local criterion consumes every maximal ideal. -/
+a global statement and the local criterion consumes every maximal ideal.
+
+**THE PROOF ACTUALLY CARRIED OUT (2026-07-28), and it is Tor-free.**  `Tor` is never named;
+every Tor-vanishing statement above is replaced by a SPLITTING, which is what makes the
+argument fit `Mathlib` at this pin (there is no `Tor` of modules here, only the abstract
+monoidal one).
+
+1. `M = Rⁿ¹ / range d` is finitely presented, `Module.finitePresentation_of_free_of_surjective`.
+2. `M` is PROJECTIVE, by `Module.projective_of_localization_maximal` — projectivity of a
+   finitely presented module may be checked on stalks.  At a maximal `I` the local statement
+   is `free_of_isLocalRing_of_comap_smul_le` above, applied to the localized presentation
+   `(Rⁿ⁰)_I ⟶ (Rⁿ¹)_I ⟶ M_I ⟶ 0` (exact because localization is exact) with
+   `K = (ker d)_I`.  Transporting the hypothesis at `I` is `localized'_smul_top_eq` plus
+   `exists_smul_mem_of_mk'_mem_localized'`: clear denominators, apply `hsurj I`, put the
+   denominator back.
+3. `0 ⟶ range d ⟶ Rⁿ¹ ⟶ M ⟶ 0` therefore splits, so `range d` is projective;
+4. hence `0 ⟶ ker d ⟶ Rⁿ⁰ ⟶ range d ⟶ 0` splits, giving a retraction `p : Rⁿ⁰ ⟶ ker d`;
+5. and then `x ∈ ker d ⊓ 𝔪Rⁿ⁰` gives `x = p x ∈ p(𝔪Rⁿ⁰) = 𝔪·p(Rⁿ⁰) ≤ 𝔪·ker d`.
+
+**TWO OBSERVATIONS ON THE STATEMENT, recorded rather than acted on.**  (a) `hm` is not used:
+step 5 works for an ARBITRARY ideal `m` once `ker d` is a direct summand, so maximality of
+the *conclusion's* ideal is redundant (maximality of the *hypothesis's* ideals is not — step 2
+consumes `hsurj` at every maximal ideal).  (b) The faithfulness note above is right that the
+proof given consumes every maximal ideal, but the hypothesis at `m` ALONE would in fact
+suffice: `ker d ⊓ 𝔪Rⁿ⁰ ≤ 𝔪·ker d` is a local condition at `m` (at any other maximal `𝔫` the
+ideal `m` becomes the unit ideal and the inclusion is vacuous), and only `M_m` needs to be
+free.  Both are hypothesis-strengthenings, harmless for the consumer, and the statement is
+left exactly as the consumer
+`rank_quotient_appTop_le_one_of_isIso_appTop_fiber` supplies it. -/
 theorem inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le
     {R : Type*} [CommRing R] {n₀ n₁ : ℕ}
     (d : (Fin n₀ → R) →ₗ[R] (Fin n₁ → R))
     (hsurj : ∀ mm : Ideal R, mm.IsMaximal →
       Submodule.comap d (mm • (⊤ : Submodule R (Fin n₁ → R))) ≤
         LinearMap.ker d ⊔ mm • (⊤ : Submodule R (Fin n₀ → R)))
-    (m : Ideal R) (hm : m.IsMaximal) :
-    LinearMap.ker d ⊓ (m • (⊤ : Submodule R (Fin n₀ → R))) ≤ m • LinearMap.ker d :=
-  sorry
+    (m : Ideal R) (_hm : m.IsMaximal) :
+    LinearMap.ker d ⊓ (m • (⊤ : Submodule R (Fin n₀ → R))) ≤ m • LinearMap.ker d := by
+  classical
+  -- `M := coker d` is finitely presented *by construction*.
+  have hfg : (LinearMap.range d).FG := by
+    rw [← Submodule.map_top]
+    exact Module.Finite.fg_top.map d
+  haveI : Module.FinitePresentation R ((Fin n₁ → R) ⧸ LinearMap.range d) :=
+    Module.finitePresentation_of_free_of_surjective (LinearMap.range d).mkQ
+      (Submodule.mkQ_surjective _) (by rw [Submodule.ker_mkQ]; exact hfg)
+  -- `M` is projective, checked on stalks.
+  haveI : Module.Projective R ((Fin n₁ → R) ⧸ LinearMap.range d) := by
+    apply Module.projective_of_localization_maximal
+    intro I hI
+    haveI : Module.Free (Localization.AtPrime I)
+        (LocalizedModule I.primeCompl (Fin n₁ → R)) :=
+      Module.free_of_isLocalizedModule (Rₛ := Localization.AtPrime I) I.primeCompl
+        (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R))
+    haveI : Module.Free (Localization.AtPrime I)
+        (LocalizedModule I.primeCompl ((Fin n₁ → R) ⧸ LinearMap.range d)) := by
+      refine free_of_isLocalRing_of_comap_smul_le
+        (LocalizedModule.map I.primeCompl d)
+        (LocalizedModule.map I.primeCompl (LinearMap.range d).mkQ)
+        (LocalizedModule.map_surjective _ _ (Submodule.mkQ_surjective _))
+        ?_
+        ((LinearMap.ker d).localized' (Localization.AtPrime I) I.primeCompl
+          (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)))
+        ?_ ?_
+      · -- localization is exact, so the presentation localizes
+        exact LocalizedModule.map_exact I.primeCompl d (LinearMap.range d).mkQ
+          (LinearMap.exact_map_mkQ_range d)
+      · -- the localized kernel sits inside the kernel of the localized map
+        rintro _ ⟨y, hy, s, rfl⟩
+        simp only [LinearMap.mem_ker, ← IsLocalizedModule.mk_eq_mk', LocalizedModule.map_mk,
+          LinearMap.mem_ker.mp hy, LocalizedModule.zero_mk]
+      · -- the hypothesis at `I`, transported to `R_I`
+        rw [← localized'_smul_top_eq I (M := Fin n₁ → R),
+          ← localized'_smul_top_eq I (M := Fin n₀ → R)]
+        intro z hz
+        obtain ⟨⟨x, s⟩, rfl⟩ := IsLocalizedModule.mk'_surjective I.primeCompl
+          (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) z
+        simp only [Function.uncurry_apply_pair] at hz ⊢
+        rw [Submodule.mem_comap] at hz
+        have hdz : IsLocalizedModule.mk' (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R))
+            (d x) s ∈ (I • (⊤ : Submodule R (Fin n₁ → R))).localized'
+              (Localization.AtPrime I) I.primeCompl
+              (LocalizedModule.mkLinearMap I.primeCompl (Fin n₁ → R)) := by
+          rw [← IsLocalizedModule.mk_eq_mk'] at hz ⊢
+          rwa [LocalizedModule.map_mk] at hz
+        obtain ⟨t, ht⟩ := exists_smul_mem_of_mk'_mem_localized' I.primeCompl
+          (Localization.AtPrime I) _ _ _ _ hdz
+        have hx : ((t : R) • x) ∈ LinearMap.ker d ⊔ I • (⊤ : Submodule R (Fin n₀ → R)) := by
+          refine hsurj I hI ?_
+          rw [Submodule.mem_comap, map_smul]
+          exact ht
+        obtain ⟨u, hu, w, hw, huw⟩ := Submodule.mem_sup.mp hx
+        have hsplit : IsLocalizedModule.mk'
+            (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) x s
+            = IsLocalizedModule.mk'
+                (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) u (t * s)
+              + IsLocalizedModule.mk'
+                (LocalizedModule.mkLinearMap I.primeCompl (Fin n₀ → R)) w (t * s) := by
+          rw [← IsLocalizedModule.mk'_add, huw, ← Submonoid.smul_def,
+            IsLocalizedModule.mk'_cancel_left]
+        rw [hsplit]
+        refine Submodule.add_mem _ (Submodule.mem_sup_left ?_) (Submodule.mem_sup_right ?_)
+        · exact (Submodule.mem_localized' _ _ _ _ _).mpr ⟨u, hu, t * s, rfl⟩
+        · exact (Submodule.mem_localized' _ _ _ _ _).mpr ⟨w, hw, t * s, rfl⟩
+    infer_instance
+  -- `0 ⟶ range d ⟶ Rⁿ¹ ⟶ M ⟶ 0` splits, so `range d` is projective.
+  haveI : Module.Projective R (LinearMap.range d) := by
+    have hsplit := (Function.Exact.split_tfae (LinearMap.exact_subtype_mkQ (LinearMap.range d))
+      Subtype.val_injective (Submodule.mkQ_surjective _)).out 0 1
+    obtain ⟨l', hl'⟩ := hsplit.mp
+      (Module.projective_lifting_property _ _ (Submodule.mkQ_surjective _))
+    exact Module.Projective.of_split _ _ hl'
+  -- hence `0 ⟶ ker d ⟶ Rⁿ⁰ ⟶ range d ⟶ 0` splits too: `ker d` is a direct summand.
+  obtain ⟨p, hp⟩ : ∃ p : (Fin n₀ → R) →ₗ[R] LinearMap.ker d,
+      p ∘ₗ (LinearMap.ker d).subtype = LinearMap.id := by
+    have hexact : Function.Exact (LinearMap.ker d).subtype
+        (d.codRestrict (LinearMap.range d) (LinearMap.mem_range_self d)) := by
+      rw [LinearMap.exact_iff, LinearMap.ker_rangeRestrict, Submodule.range_subtype]
+    have hsplit := (Function.Exact.split_tfae hexact Subtype.val_injective
+      (fun ⟨_, y, e⟩ => ⟨y, Subtype.ext e⟩)).out 0 1
+    exact hsplit.mp (Module.projective_lifting_property _ _ (fun ⟨_, y, e⟩ => ⟨y, Subtype.ext e⟩))
+  -- a retraction `p` onto `ker d` sends `𝔪·Rⁿ⁰` into `𝔪·ker d` and fixes `ker d`.
+  intro x hx
+  have hx1 : x ∈ LinearMap.ker d := hx.1
+  have hx2 : x ∈ m • (⊤ : Submodule R (Fin n₀ → R)) := hx.2
+  have hpx : p x ∈ m • (⊤ : Submodule R (LinearMap.ker d)) := by
+    have h0 : p x ∈ Submodule.map p (m • (⊤ : Submodule R (Fin n₀ → R))) := ⟨x, hx2, rfl⟩
+    rw [Submodule.map_smul''] at h0
+    exact (Submodule.smul_mono (le_refl m) le_top) h0
+  have hpxeq : p x = ⟨x, hx1⟩ := by
+    have hid := LinearMap.congr_fun hp ⟨x, hx1⟩
+    simpa using hid
+  have hfinal : ((LinearMap.ker d).subtype) (p x) ∈
+      Submodule.map (LinearMap.ker d).subtype (m • (⊤ : Submodule R (LinearMap.ker d))) :=
+    ⟨p x, hpx, rfl⟩
+  rw [Submodule.map_smul'', Submodule.map_top, Submodule.range_subtype, hpxeq] at hfinal
+  exact hfinal
 
 /-- **THE BRIDGE** (PROVEN): the fibre statement plus the commutative-algebra leaf give the
 rank bound.
