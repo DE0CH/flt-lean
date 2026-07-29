@@ -296,6 +296,11 @@ public import Mathlib.FieldTheory.Minpoly.IsConjRoot
 -- of a primitive `n`-th root of unity (this is where the irreducibility of `Φ₂₈`
 -- enters the same leaf).
 public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
+-- `MvPolynomial` and `Ideal.Quotient.liftₐ`: the affine plane curve
+-- `V(F) = Spec (ℚ[x,y]/(F))` and the dictionary between its `ℚ`-points and the
+-- solutions of `F = 0`, used by the level-`37` plane model
+-- (`relPointEquivZeroLocusQ` and the block around it).
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 @[expose] public section
 
@@ -38771,10 +38776,336 @@ theorem rational_point_sextic_thirtySeven (x y : ℚ)
   · exact Or.inl (by linarith)
   · exact Or.inr (by linarith)
 
+/-! #### The plane model of `X_0(37)`: the AFFINE DICTIONARY over `ℚ`, the
+generic bridge, and the residual MODULAR leaf
+
+(2026-07-29, flt-lean-275.)  `exists_planeModel_x0ThirtySeven` below stood as a
+bare sorry leaf whose own docstring said only *"a successor must build the
+model"*.  This block cuts it along the line the mathematics actually has:
+
+* everything CURVE-INDEPENDENT is PROVEN here, over an arbitrary
+  `F ∈ ℚ[x, y]` and an arbitrary curve — that a `ℚ`-point of the affine plane
+  curve `V(F) = Spec (ℚ[x,y]/(F))` IS a solution of `F = 0` in `ℚ²`
+  (`relPointEquivZeroLocusQ`), that a rational point of `X` whose image lies in
+  an open `U` lifts to `U` and that an open immersion is injective on rational
+  points (`affineCoord`, `affineCoord_injective`), and the `Fin 2` bookkeeping
+  that puts the points outside `U` into `Bool`
+  (`exists_ptInjection_of_affinePlaneOpen`);
+* what is LEFT, `exists_affinePlaneOpen_x0ThirtySeven`, is the pure MODULAR
+  input: an open immersion of an open of `X_0(37)` into the affine sextic,
+  compatible over `ℚ`, plus the bound `2` on the rational points outside it.
+
+**Why this is not a relabelling.**  The leaf as it stood asked a successor for a
+FUNCTION into `(ℚ × ℚ) ⊕ Bool` together with its injectivity and a proof that
+its values satisfy the sextic — i.e. for the coordinate extraction and the
+two-points-at-infinity bookkeeping as well as for the geometry.  What is left
+asks for morphisms of schemes and nothing else.  Level `32`'s analogous split
+(`MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` plus the tautological
+`planeCoords` dictionary) is the precedent; this one additionally supplies the
+affine plane curve AS A SCHEME, which level `32` did not have — its docstring
+records that "no construction producing a `Scheme` from a `WeierstrassCurve`"
+existed — and worked around with a cardinality bound.
+
+**Level `32`'s route stays UNAVAILABLE and is not smuggled in.**  There the
+plane model was obtained from `card_le_four_x0ThirtyTwo`; here the cardinality
+bound is `exists_x0Compactification_thirtySeven_cardLe`, which is proven FROM
+this leaf, so citing it would close a cycle.  Nothing below cites any level-`37`
+cardinality statement.  In particular the `2` in the `hcusp` clause is NOT the
+arithmetic of `37b`: it is the count of rational points of the smooth model over
+`x = ∞`, which is `2` because the leading coefficient `1` of the sextic is a
+square — the same sentence the leaf's own docstring already used to justify the
+`Bool` summand.
+
+**The `𝔽_q` sibling.**  `Fermat.planeCurveScheme` / `planeCurveStr` and
+`pointCount_planeCurveScheme_eq_card_zeroLocus` (`Modularity/Interface.lean`)
+are the same three declarations over a finite field, written there for the
+Weil-bound count.  The `ℚ` copies below are independent — `Interface.lean` is
+not in this file's import cone — and the dictionary proof is the same four
+`Equiv`s (`Spec.homEquiv`, `Ideal.Quotient.liftₐ`, `MvPolynomial.aeval_unique`)
+transported to the base `ℚ`, where `algebraMap ℚ ℚ` is the identity and the
+`MvPolynomial.map` of the `𝔽_q` statement disappears. -/
+
+/-- **The affine plane curve `V(F) ⊆ 𝔸²_ℚ`, as a scheme**: `Spec (ℚ[x,y]/(F))`. -/
+noncomputable abbrev planeCurveSchemeQ (F : MvPolynomial (Fin 2) ℚ) : Scheme.{0} :=
+  Spec (CommRingCat.of (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F}))
+
+/-- **The structure morphism `V(F) ⟶ Spec ℚ`.** -/
+noncomputable def planeCurveStrQ (F : MvPolynomial (Fin 2) ℚ) :
+    planeCurveSchemeQ F ⟶ SpecQ :=
+  Spec.map (CommRingCat.ofHom (algebraMap ℚ (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F})))
+
+/-- **THE AFFINE DICTIONARY OVER `ℚ`** (PROVEN): the `ℚ`-points of `V(F)` are
+exactly the zeros of `F` in `ℚ²`.
+
+Four `Equiv`s composed, as in the `𝔽_q` sibling
+`Fermat.pointCount_planeCurveScheme_eq_card_zeroLocus`: `Spec.homEquiv` and
+full faithfulness of `Spec` turn a relative point into a ring map under `ℚ`;
+that map is automatically a `ℚ`-algebra map; `Ideal.Quotient.liftₐ` turns
+algebra maps out of `ℚ[x,y]/(F)` into algebra maps out of `ℚ[x,y]` killing `F`;
+and `MvPolynomial.aeval_unique` turns THOSE into pairs of values.  Over `ℚ` the
+last step is cheaper than over `𝔽_q`, because `aeval` and `eval` agree
+definitionally when the algebra is the base itself. -/
+noncomputable def relPointEquivZeroLocusQ (F : MvPolynomial (Fin 2) ℚ) :
+    RelPoint (planeCurveStrQ F) (𝟙 SpecQ) ≃
+      {a : Fin 2 → ℚ // MvPolynomial.eval a F = 0} := by
+  classical
+  -- A: morphisms of affine schemes over `Spec ℚ` are ring maps under `ℚ`
+  have eA : RelPoint (planeCurveStrQ F) (𝟙 SpecQ) ≃
+      {φ : CommRingCat.of (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F}) ⟶
+             CommRingCat.of ℚ //
+        CommRingCat.ofHom
+              (algebraMap ℚ (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F})) ≫ φ
+          = 𝟙 (CommRingCat.of ℚ)} := by
+    refine Spec.homEquiv.subtypeEquiv fun x => ?_
+    constructor
+    · intro h
+      have h2 := congrArg Spec.preimage h
+      simpa [planeCurveStrQ] using h2
+    · intro h
+      have h2 := congrArg Spec.map h
+      simpa [planeCurveStrQ] using h2
+  -- B: such ring maps are `ℚ`-algebra maps
+  have eB : {φ : CommRingCat.of (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F}) ⟶
+             CommRingCat.of ℚ //
+        CommRingCat.ofHom
+              (algebraMap ℚ (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F})) ≫ φ
+          = 𝟙 (CommRingCat.of ℚ)} ≃
+      ((MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F}) →ₐ[ℚ] ℚ) :=
+    { toFun := fun φ =>
+        { toRingHom := φ.1.hom
+          commutes' := fun r => by
+            have h := congrArg (fun f : CommRingCat.of ℚ ⟶
+              CommRingCat.of ℚ => f.hom r) φ.2
+            simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply,
+              CommRingCat.hom_ofHom, CommRingCat.hom_id, RingHom.id_apply] at h
+            exact h }
+      invFun := fun ψ => ⟨CommRingCat.ofHom ψ.toRingHom, by ext r; simp⟩
+      left_inv := fun φ => Subtype.ext rfl
+      right_inv := fun _ => rfl }
+  -- C: algebra maps out of `R/(F)` are algebra maps out of `R` killing `F`
+  have eC : ((MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {F}) →ₐ[ℚ] ℚ) ≃
+      {ψ : MvPolynomial (Fin 2) ℚ →ₐ[ℚ] ℚ // ψ F = 0} :=
+    { toFun := fun χ => ⟨χ.comp (Ideal.Quotient.mkₐ ℚ (Ideal.span {F})), by simp⟩
+      invFun := fun ψ => Ideal.Quotient.liftₐ (Ideal.span {F}) ψ.1 (by
+        intro a ha
+        obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp ha
+        simp [ψ.2])
+      left_inv := fun χ => by
+        apply AlgHom.ext
+        intro a
+        obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
+        rfl
+      right_inv := fun ψ => by
+        apply Subtype.ext
+        apply AlgHom.ext
+        intro a
+        rfl }
+  -- D: algebra maps out of a polynomial ring are tuples of values
+  have eD : {ψ : MvPolynomial (Fin 2) ℚ →ₐ[ℚ] ℚ // ψ F = 0} ≃
+      {a : Fin 2 → ℚ // MvPolynomial.eval a F = 0} :=
+    { toFun := fun ψ => ⟨fun i => ψ.1 (MvPolynomial.X i), by
+        have h0 := ψ.2
+        rw [MvPolynomial.aeval_unique ψ.1] at h0
+        exact h0⟩
+      invFun := fun a => ⟨MvPolynomial.aeval a.1, a.2⟩
+      left_inv := fun ψ => by
+        apply Subtype.ext
+        exact (MvPolynomial.aeval_unique ψ.1).symm
+      right_inv := fun a => by
+        apply Subtype.ext
+        funext i
+        simp }
+  exact eA.trans (eB.trans (eC.trans eD))
+
+/-- **The affine coordinates of a rational point lying in the plane-model open**
+(PROVEN): lift the point along the open immersion `uX`, push it into `V(F)`
+along `uV`, and read its coordinates through the dictionary. -/
+noncomputable def affineCoord {X U : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {F : MvPolynomial (Fin 2) ℚ} (uX : U ⟶ X) (uV : U ⟶ planeCurveSchemeQ F)
+    [IsOpenImmersion uX] (hcompat : uX ≫ strX = uV ≫ planeCurveStrQ F)
+    (P : RelPoint strX (𝟙 SpecQ)) (h : Set.range P.1.base ⊆ Set.range uX.base) :
+    {a : Fin 2 → ℚ // MvPolynomial.eval a F = 0} :=
+  relPointEquivZeroLocusQ F ⟨IsOpenImmersion.lift uX P.1 h ≫ uV, by
+    rw [Category.assoc, ← hcompat, ← Category.assoc, IsOpenImmersion.lift_fac, P.2]⟩
+
+/-- **The affine coordinates SEPARATE rational points** (PROVEN): `uV` is a
+mono, so the lift is determined, and `IsOpenImmersion.lift_fac` recovers the
+point of `X`. -/
+theorem affineCoord_injective {X U : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {F : MvPolynomial (Fin 2) ℚ} (uX : U ⟶ X) (uV : U ⟶ planeCurveSchemeQ F)
+    [IsOpenImmersion uX] [IsOpenImmersion uV]
+    (hcompat : uX ≫ strX = uV ≫ planeCurveStrQ F)
+    (P₁ P₂ : RelPoint strX (𝟙 SpecQ))
+    (h₁ : Set.range P₁.1.base ⊆ Set.range uX.base)
+    (h₂ : Set.range P₂.1.base ⊆ Set.range uX.base)
+    (heq : affineCoord uX uV hcompat P₁ h₁ = affineCoord uX uV hcompat P₂ h₂) :
+    P₁ = P₂ := by
+  have h3 : IsOpenImmersion.lift uX P₁.1 h₁ ≫ uV
+      = IsOpenImmersion.lift uX P₂.1 h₂ ≫ uV := by
+    have := (relPointEquivZeroLocusQ F).injective heq
+    exact congrArg Subtype.val this
+  have h4 : IsOpenImmersion.lift uX P₁.1 h₁ = IsOpenImmersion.lift uX P₂.1 h₂ :=
+    (cancel_mono uV).mp h3
+  refine Subtype.ext ?_
+  have h5 := congrArg (fun t => t ≫ uX) h4
+  simpa [IsOpenImmersion.lift_fac] using h5
+
+/-- **THE GENERIC BRIDGE** (PROVEN, and free of every level-`37` input): an
+open immersion of an open `U ⊆ X` into the affine plane curve `V(F)`,
+compatible over `ℚ`, together with the bound `2` on the rational points of `X`
+OUTSIDE `U`, produces an injection `X(ℚ) ↪ (ℚ × ℚ) ⊕ Bool` whose `Sum.inl`
+values solve `F = 0`.
+
+The `Bool` summand is built exactly as `MazurLevel32.fourPoints` builds its
+four: the complement points form a subtype every `Finset` of which has card
+`≤ 2`, hence a `Fintype` of card `≤ 2`, hence `Fin 2 ≃ Bool` after
+`Fin.castLE`.  No properness, smoothness or connectedness is used, and no
+modular hypothesis at all — those enter only through the caller's `U`. -/
+theorem exists_ptInjection_of_affinePlaneOpen {X U : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {F : MvPolynomial (Fin 2) ℚ} (uX : U ⟶ X) (uV : U ⟶ planeCurveSchemeQ F)
+    [IsOpenImmersion uX] [IsOpenImmersion uV]
+    (hcompat : uX ≫ strX = uV ≫ planeCurveStrQ F)
+    (hcusp : ∀ s : Finset (RelPoint strX (𝟙 SpecQ)),
+      (∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) → s.card ≤ 2) :
+    ∃ f : RelPoint strX (𝟙 SpecQ) → (ℚ × ℚ) ⊕ Bool,
+      Function.Injective f ∧
+        ∀ (P : RelPoint strX (𝟙 SpecQ)) (p : ℚ × ℚ), f P = Sum.inl p →
+          MvPolynomial.eval ![p.1, p.2] F = 0 := by
+  classical
+  have hval : ∀ s : Finset {P : RelPoint strX (𝟙 SpecQ) //
+      ¬ Set.range P.1.base ⊆ Set.range uX.base}, s.card ≤ 2 := by
+    intro s
+    have h := hcusp (s.image Subtype.val) (by
+      intro P hP
+      obtain ⟨Q, -, rfl⟩ := Finset.mem_image.mp hP
+      exact Q.2)
+    rwa [Finset.card_image_of_injective _ Subtype.val_injective] at h
+  have hfin : Finite {P : RelPoint strX (𝟙 SpecQ) //
+      ¬ Set.range P.1.base ⊆ Set.range uX.base} := by
+    rw [← not_infinite_iff_finite]
+    intro hinf
+    obtain ⟨s, hs⟩ := Infinite.exists_subset_card_eq
+      {P : RelPoint strX (𝟙 SpecQ) // ¬ Set.range P.1.base ⊆ Set.range uX.base} 3
+    have := hval s
+    omega
+  haveI : Fintype {P : RelPoint strX (𝟙 SpecQ) //
+      ¬ Set.range P.1.base ⊆ Set.range uX.base} := Fintype.ofFinite _
+  have hcard : Fintype.card {P : RelPoint strX (𝟙 SpecQ) //
+      ¬ Set.range P.1.base ⊆ Set.range uX.base} ≤ 2 := by
+    have := hval Finset.univ
+    rwa [Finset.card_univ] at this
+  refine ⟨fun P =>
+    if h : Set.range P.1.base ⊆ Set.range uX.base then
+      Sum.inl ((affineCoord uX uV hcompat P h).1 0, (affineCoord uX uV hcompat P h).1 1)
+    else Sum.inr (finTwoEquiv (Fin.castLE hcard (Fintype.equivFin _ ⟨P, h⟩))), ?_, ?_⟩
+  · intro P₁ P₂ hf
+    dsimp only at hf
+    by_cases h₁ : Set.range P₁.1.base ⊆ Set.range uX.base <;>
+      by_cases h₂ : Set.range P₂.1.base ⊆ Set.range uX.base
+    · rw [dif_pos h₁, dif_pos h₂] at hf
+      refine affineCoord_injective uX uV hcompat P₁ P₂ h₁ h₂ (Subtype.ext ?_)
+      funext i
+      have h0 := congrArg Prod.fst (Sum.inl.inj hf)
+      have h1 := congrArg Prod.snd (Sum.inl.inj hf)
+      fin_cases i
+      · exact h0
+      · exact h1
+    · rw [dif_pos h₁, dif_neg h₂] at hf; exact absurd hf (by simp)
+    · rw [dif_neg h₁, dif_pos h₂] at hf; exact absurd hf (by simp)
+    · rw [dif_neg h₁, dif_neg h₂] at hf
+      have := finTwoEquiv.injective (Sum.inr.inj hf)
+      have h5 := (Fin.castLE_injective hcard) this
+      have h6 := (Fintype.equivFin _).injective h5
+      exact congrArg Subtype.val h6
+  · intro P p hp
+    dsimp only at hp
+    by_cases h : Set.range P.1.base ⊆ Set.range uX.base
+    · rw [dif_pos h] at hp
+      have hpe := Sum.inl.inj hp
+      have hz := (affineCoord uX uV hcompat P h).2
+      have hcoord : (![p.1, p.2] : Fin 2 → ℚ) = (affineCoord uX uV hcompat P h).1 := by
+        funext i
+        fin_cases i
+        · simpa using congrArg Prod.fst hpe.symm
+        · simpa using congrArg Prod.snd hpe.symm
+      rw [hcoord]
+      exact hz
+    · rw [dif_neg h] at hp
+      exact absurd hp (by simp)
+
+/-- **The level-`37` sextic as a plane curve**:
+`y² − (x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4)`. -/
+noncomputable def sexticThirtySevenPoly : MvPolynomial (Fin 2) ℚ :=
+  MvPolynomial.X 1 ^ 2 - (MvPolynomial.X 0 ^ 6 + 8 * MvPolynomial.X 0 ^ 5
+    - 20 * MvPolynomial.X 0 ^ 4 + 28 * MvPolynomial.X 0 ^ 3
+    - 24 * MvPolynomial.X 0 ^ 2 + 12 * MvPolynomial.X 0 - 4)
+
+/-- **The zero locus of `sexticThirtySevenPoly` is the sextic `S`** (PROVEN). -/
+theorem eval_sexticThirtySevenPoly (p : ℚ × ℚ) :
+    MvPolynomial.eval ![p.1, p.2] sexticThirtySevenPoly = 0 ↔
+      p.2 ^ 2 = p.1 ^ 6 + 8 * p.1 ^ 5 - 20 * p.1 ^ 4 + 28 * p.1 ^ 3
+        - 24 * p.1 ^ 2 + 12 * p.1 - 4 := by
+  simp only [sexticThirtySevenPoly, map_sub, map_add, map_mul, map_pow, map_ofNat,
+    MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one, sub_eq_zero]
+
+/-- **THE MODULAR LEAF: an open of `X_0(37)` is an open of the affine sextic**
+(SORRY LEAF, introduced 2026-07-29 by flt-lean-275 as the residue of
+`exists_planeModel_x0ThirtySeven`, which is PROVEN over it).
+
+This is the *entire* remaining content of the MODULI half of level `37`, with
+every curve-independent step already discharged above.  What a successor must
+produce is four morphisms of schemes and one count:
+
+1. a compactification `X ⊇ Y` of the `Γ₀(37)`-problem (`exists_x0Compactification
+   37` supplies one, so the leaf is SATISFIABLE and not vacuous);
+2. an open `U` of `X` with an open immersion `uX : U ⟶ X`;
+3. an open immersion `uV : U ⟶ V(sexticThirtySevenPoly)` realising `U` as an
+   open of the affine sextic, compatible with the two structure morphisms over
+   `ℚ` (`hcompat`);
+4. the bound `2` on the rational points of `X` OUTSIDE `U`.
+
+**The model** is Magma's `SmallModularCurve(37)`, simplified:
+`S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`, the smooth model of which
+is `X_0(37)`.  The four rational points and the action of the three involutions
+on them are recorded in the reconnaissance on `card_y0Le_thirtySeven`.
+
+**Clause 4 is GEOMETRY, not arithmetic, and this is what keeps the cut
+non-circular.**  Taking `U` to be the affine part, the complement is the fibre
+over `x = ∞`, which carries exactly `2` rational points because the leading
+coefficient `1` of the sextic is a square — the same sentence that justified
+the `Bool` summand of the statement below before this cut.  It is NOT
+`#X_0(37)(ℚ) ≤ 4`, and it is not `card_y0Le_thirtySeven`: those are proven FROM
+this leaf (through `exists_x0Compactification_thirtySeven_cardLe`) and citing
+either would close a cycle.  That cycle is exactly why level `32`'s route —
+`exists_weierstrassModel_x0ThirtyTwo` from `card_le_four_x0ThirtyTwo` — is
+unavailable at `37`.
+
+**Not vacuous in the other direction either.**  Clause 3 constrains `U`
+genuinely: `uV` an open immersion forces `U(ℚ)` to inject into the solutions of
+the sextic, so a degenerate choice (`U` empty, `uV` constant) is not available
+while clause 4 must also hold — with `U = ∅` clause 4 would assert
+`#X_0(37)(ℚ) ≤ 2`, which is FALSE, the four points `A, B, C, D` of the
+reconnaissance being distinct.  So the two clauses pull against each other and
+neither can be satisfied cheaply.
+
+**The check that would refute this**: a fifth rational point on `S`, or a proof
+that `X_0(37)` is not the smooth model of `S`. -/
+theorem exists_affinePlaneOpen_x0ThirtySeven :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X)
+      (_hX : IsX0Compactification 37 strX strY jY)
+      (U : Scheme.{0}) (uX : U ⟶ X) (uV : U ⟶ planeCurveSchemeQ sexticThirtySevenPoly)
+      (_huX : IsOpenImmersion uX) (_huV : IsOpenImmersion uV),
+      uX ≫ strX = uV ≫ planeCurveStrQ sexticThirtySevenPoly ∧
+        ∀ s : Finset (RelPoint strX (𝟙 SpecQ)),
+          (∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) → s.card ≤ 2 :=
+  sorry
+
 /-- **`X_0(37)(ℚ)` injects into the points of the genus-`2` model
-`S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`** (SORRY LEAF,
-introduced 2026-07-28 by flt-lean-42 as the MODULI half of
-`exists_x0Compactification_thirtySeven_cardLe`).
+`S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`** (PROVEN 2026-07-29 by
+flt-lean-275 over the single leaf `exists_affinePlaneOpen_x0ThirtySeven`;
+a bare sorry leaf from 2026-07-28, when flt-lean-42 introduced it as the
+MODULI half of `exists_x0Compactification_thirtySeven_cardLe`, until then.
+See the section docstring above for what the cut does and does not buy).
 
 Step (i) of the prescription, and it carries NO arithmetic: it is the
 comparison between the abstract coarse space and the explicit plane model,
@@ -38791,6 +39122,14 @@ bound `card_le_four_x0ThirtyTwo` — a finite type of size `≤ 4` injects into
 any four named points.  Here the cardinality bound is the very thing being
 proved from this leaf, so that argument would be circular.  A successor
 must build the model.
+
+*ACTED ON 2026-07-29 (flt-lean-275), and the sentence above still stands —
+nothing below cites a level-`37` cardinality bound.*  "Build the model" is
+now `exists_affinePlaneOpen_x0ThirtySeven`, which asks for the four
+morphisms of schemes and the ONE geometric count, and everything else — the
+coordinate extraction, the injectivity, the two points at infinity — is
+discharged by `exists_ptInjection_of_affinePlaneOpen` over an arbitrary
+plane curve.  See the section docstring above.
 
 **What it needs.** An integral/Weierstrass model of `X_0(37)` over `ℚ` in
 the weighted-projective coordinates `(x : y : z)` of weights `(1, 3, 1)`,
@@ -38815,8 +39154,14 @@ theorem exists_planeModel_x0ThirtySeven :
       Function.Injective f ∧
         ∀ (P : RelPoint strX (𝟙 SpecQ)) (p : ℚ × ℚ), f P = Sum.inl p →
           p.2 ^ 2 = p.1 ^ 6 + 8 * p.1 ^ 5 - 20 * p.1 ^ 4 + 28 * p.1 ^ 3
-            - 24 * p.1 ^ 2 + 12 * p.1 - 4 :=
-  sorry
+            - 24 * p.1 ^ 2 + 12 * p.1 - 4 := by
+  obtain ⟨X, Y, strX, strY, jY, hX, U, uX, uV, huX, huV, hcompat, hcusp⟩ :=
+    exists_affinePlaneOpen_x0ThirtySeven
+  haveI := huX
+  haveI := huV
+  obtain ⟨f, hinj, hf⟩ := exists_ptInjection_of_affinePlaneOpen uX uV hcompat hcusp
+  exact ⟨X, Y, strX, strY, jY, hX, f, hinj,
+    fun P p hp => (eval_sexticThirtySevenPoly p).mp (hf P p hp)⟩
 
 /-- **SOME compactification of `Y_0(37)` has at most `4` rational points**
 (PROVEN 2026-07-28, flt-lean-42, over the two leaves
