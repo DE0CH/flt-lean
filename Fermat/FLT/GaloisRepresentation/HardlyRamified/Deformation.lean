@@ -74,9 +74,13 @@ them without a human. Do not re-wrap it.
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 - `exists_obstructionCocycle_smallExtension_section`
 - `finiteDimensional_h1_adZeroTwistRestricted`
-- `finiteDimensional_h2_adZeroRestricted` (cut out 2026-07-28 from
-  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN: it was that
-  leaf's hidden and ownerless finiteness input)
+- `finiteDimensional_sha2` (the finiteness half of
+  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN.  Cut out
+  2026-07-28 as `finiteDimensional_h2_adZeroRestricted`, about the AMBIENT
+  `H²(G_{ℚ,S}, ad⁰)`; WEAKENED to `Ш²` and renamed the same day — see the
+  OBLIGATION AUDIT on it, which shows the ambient form was strictly stronger
+  than anything the tree consumes and that its finiteness was a DERIVATION,
+  not the hidden input the cut recorded)
 - `finrank_sha2_le_finrank_sha1Twist` (cut out 2026-07-28; the Poitou–Tate
   content of `exists_injective_sha2_dual_sha1Twist`, now PROVEN over these two)
 - `finrank_sha1Twist_le_cotangentFinrank` (re-cut 2026-07-28 in `ℕ` and over
@@ -18285,25 +18289,38 @@ finite-dimensional `A`, `B` over a field, `∃ f : A →ₗ[k] Bᵛ` injective i
 EQUIVALENT to `dim A ≤ dim B` (`exists_injective_toDual_of_finrank_le` below is
 one direction; `LinearMap.finrank_le_finrank_of_injective` with
 `Subspace.dual_finrank_eq` is the other).  So the leaf never had map-level
-content, and it carried exactly two independent classical inputs:
+content, and it splits into:
 
-* the FINITENESS of `H²(G_{ℚ,S}, ad⁰)` — NSW VIII.3 in degree `2`, the exact
-  degree-`2` twin of `finiteDimensional_h1_adZeroTwistRestricted` above.  This
-  was a HIDDEN input with no owner: the proof of `rank_sha2_le_rank_sha1_twist`
-  below derives `FiniteDimensional k ↥(Sha2 …)` by
-  `FiniteDimensional.of_injective` **from the very injection this leaf
-  supplies**, so an owner of the leaf had to establish it silently on the way
-  to producing the map, and no frontier scan could see it.  It is now
-  `finiteDimensional_h2_adZeroRestricted` below;
+* the FINITENESS of `Ш²_S(ad⁰)`, now `finiteDimensional_sha2` below.  **Note
+  the load-bearing word `finite-dimensional` in the equivalence quoted above:
+  it is an equivalence only once BOTH sides are known finite-dimensional, and
+  for `A = Ш²_S(ad⁰)` that is exactly what was at issue — which is why the
+  finrank form needs this half restored alongside it;**
 * the duality DIMENSION COUNT, now `finrank_sha2_le_finrank_sha1Twist` below,
   which is the Poitou–Tate content and nothing else.
 
-Net leaf count goes `1 → 2`; that is disclosure, not regression — the second
-leaf existed all along, inside the first, unnamed.  The porting audit for the
+Net leaf count goes `1 → 2`, and the pair is EXACTLY equivalent to the single
+statement it replaces (given `finiteDimensional_h1_adZeroTwistRestricted`); it
+buys the arithmetic owner `ℕ`-valued statements and an explicit name for the
+finiteness, at the cost of one extra frontier entry.  The porting audit for the
 cup product and the local invariant map (re-checked 2026-07-28, see below) is
 inherited by `finrank_sha2_le_finrank_sha1Twist`, which is the half that owes
-it; `finiteDimensional_h2_adZeroRestricted` owes the same cochain dictionary as
-its degree-`1` twin and NOT the pairing.
+it.
+
+**CORRECTION 2026-07-28, LATER THE SAME DAY — read the OBLIGATION AUDIT on
+`finiteDimensional_sha2` below before trusting any earlier wording of this
+paragraph.**  As first cut, the finiteness half was stated for the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)` (as `finiteDimensional_h2_adZeroRestricted`) and was
+described as a HIDDEN input with no owner, on the grounds that
+`rank_sha2_le_rank_sha1_twist` below obtained `FiniteDimensional k ↥(Sha2 …)`
+by `FiniteDimensional.of_injective` from the injection the leaf supplied.  Both
+halves of that are wrong.  It was a DERIVATION, not a hidden assumption — the
+codomain `Module.Dual k ↥(Sha1Twist …)` is finite-dimensional outright from the
+degree-`1` leaf, so the injection *gives* the finiteness with no arithmetic
+input — and the ambient statement is STRICTLY STRONGER than anything this tree
+consumes, since NSW gets degree-`2` finiteness only from degree `1` plus the
+local terms of the Poitou–Tate sequence.  The leaf is therefore now the `Ш²`
+statement, which restores exact equivalence with what it decomposes.
 
 **Both new leaves are stated in `ℕ` (`Module.finrank`), not in `Cardinal`.**
 That is deliberate: `Cardinal`-valued bookkeeping is pure noise for the
@@ -18345,58 +18362,108 @@ theorem exists_injective_toDual_of_finrank_le {K : Type*} [Field K]
     ∃ f : A →ₗ[K] Module.Dual K B, Function.Injective f :=
   exists_injective_of_finrank_le (by rwa [Subspace.dual_finrank_eq])
 
-/-- **`H²(G_{ℚ,S}, ad⁰)` is finite-dimensional over `k`** (sorry leaf, cut out
-2026-07-28 as the FINITENESS half of `exists_injective_sha2_dual_sha1Twist`
-below, where it had been a hidden and ownerless input — see the subsection
-header immediately above for how it was hiding).
+/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (sorry leaf; the FINITENESS
+half of `exists_injective_sha2_dual_sha1Twist` below.  Cut out 2026-07-28 as
+`finiteDimensional_h2_adZeroRestricted`, a statement about the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)`; **WEAKENED to `Ш²` and renamed 2026-07-28 — see the
+OBLIGATION AUDIT below, which is the reason this declaration exists in its
+present form**).
 
-This is NSW VIII.3 in degree `2`, the exact twin of
-`finiteDimensional_h1_adZeroTwistRestricted` above with `1` replaced by `2` and
-`ad⁰(1)` by `ad⁰`: for a FINITE set `S` of places and a FINITE
-`G_{ℚ,S}`-module `M`, every `Hⁱ(G_{ℚ,S}, M)` is finite.  Here
-`S = hardlyRamifiedPlaces ℓ` has two elements and `ad⁰` is finite (`k` is
-`Finite` and `dim_k ad⁰ = 3`).  It is stated for the AMBIENT `H²` rather than
-for `Ш²` because that is the form the reference proves, and because the
-consumer obtains its `Ш` statement from it by `Submodule.finiteDimensional`.
+**OBLIGATION AUDIT, 2026-07-28 — the ambient form was a STRICTLY STRONGER
+obligation than anything this tree consumes, and two of the claims that
+justified it were wrong.**
+
+The cut that created this leaf recorded that the finiteness of `H²(G_{ℚ,S},ad⁰)`
+"had been a HIDDEN input with no owner", because the released proof of
+`rank_sha2_le_rank_sha1_twist` below obtained `FiniteDimensional k ↥(Sha2 …)`
+by `FiniteDimensional.of_injective` from the injection that the then-leaf
+`exists_injective_sha2_dual_sha1Twist` supplied.  Checked against the compiler
+rather than against the prose: **that was a DERIVATION, not an assumption.**
+The codomain `Module.Dual k ↥(Sha1Twist …)` is finite-dimensional outright,
+from `finiteDimensional_h1_adZeroTwistRestricted` above plus
+`Submodule.finiteDimensional` plus `Subspace.dual_finrank_eq`; so an injection
+into it *gives* `FiniteDimensional k ↥(Sha2 …)` for free, with no arithmetic
+input beyond the degree-`1` leaf.  Nothing was hidden and nothing was
+ownerless — the fact was a consequence, and it still is, of the very half that
+was left behind.
+
+**The refuting check is in this file and is checked by the compiler, not by
+prose**: `rank_sha2_le_rank_sha1_twist` below still contains, verbatim,
+
+  `haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=`
+  `  FiniteDimensional.of_injective f hf`
+
+with `f` the injection `exists_injective_sha2_dual_sha1Twist` supplies and no
+other finiteness hypothesis in scope beyond
+`finiteDimensional_h1_adZeroTwistRestricted`.  If that derivation ever stops
+compiling, this audit is stale and the ambient form should be reconsidered;
+while it compiles, the ambient `H²` statement is provably surplus.
+
+What the ambient form then did was replace that free consequence by a genuinely
+harder theorem.  Write `F₂` for the old ambient statement, `S₂` for this one,
+`P` for `finrank_sha2_le_finrank_sha1Twist` below, `M` for the injection form
+of the consumer, and `F₁` for the degree-`1` leaf.  Under `F₁`:
+
+* `{F₂, P} ⟹ M` (that is the released assembly), and `M ⟹ {S₂, P}`;
+* `{S₂, P} ⟺ M` — this is an EQUIVALENCE, since `S₂` is exactly the
+  finite-dimensionality that turns `finrank ≤ finrank` back into a map through
+  `exists_injective_toDual_of_finrank_le` above;
+* but `M ⇏ F₂`: an injection `Ш² ↪ (Ш¹)^∨` says nothing whatever about the
+  ambient `H²(G_{ℚ,S}, ad⁰)`, of which `Ш²` is the kernel of localisation at
+  two places.
+
+So `{F₂, P}` was strictly stronger than the leaf it decomposed, while `{S₂, P}`
+is exactly equivalent to it.  The strengthening was not free: the same cut's
+own docstring conceded that `F₂` "is genuinely harder than its degree-`1` twin
+and should not be assumed to fall out of it", because NSW deduces degree-`2`
+finiteness from the degree-`1` statement **plus the local terms of the
+Poitou–Tate sequence** — i.e. `F₂` costs everything `P` costs and then the
+local finiteness and the nine-term sequence on top.  The tree needs none of
+that.  Hence the weakening recorded here: **one hard classical theorem removed
+from the frontier, with no consumer's statement changed.**
+
+The second wrong claim was the ambient form's own justification, that it was
+stated for `H²` "because that is the form the reference proves, and because the
+consumer obtains its `Ш` statement from it by `Submodule.finiteDimensional`".
+The second clause is true and is precisely the leak: the consumer wants only
+the `Ш` statement, so deriving it *from* the ambient one throws away the
+difference for nothing.
+
+**WHAT IS LEFT, AND WHAT IT COSTS.** Poitou–Tate gives a perfect pairing
+`Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
+`Ш¹_S(ad⁰(1))` is finite-dimensional by `finiteDimensional_h1_adZeroTwistRestricted`
+above.  That is the intended proof, and it shows this leaf and
+`finrank_sha2_le_finrank_sha1Twist` below are the two shadows of ONE input and
+are best given to ONE owner: whoever produces the pairing discharges both in
+the same breath, and neither is reachable without it.  **They are not
+circular** — `finrank_sha2_le_finrank_sha1Twist` does not consume this leaf,
+and this leaf does not consume it.
+
+A cheaper discharge is legitimate and would be a better outcome: any
+NONDEGENERATE `k`-bilinear pairing into `k`, or any injection of `Ш²_S(ad⁰)`
+into a space already known finite-dimensional, suffices.  The porting audit for
+the pairing itself lives on `finrank_sha2_le_finrank_sha1Twist` below; this
+leaf does **not** independently owe the cup product or the local invariant map.
 
 **Over the full `Γ ℚ` this statement is FALSE**, exactly as in degree `1`: the
 computation on `rank_sha2_le_rank_sha1_twist` below shows
-`dim_k H²(Γ ℚ, ad⁰) = ℵ₀`.  So this is the precise place where the choice of
-`G_{ℚ,S}` does its work in degree `2`, and a future owner who "simplifies" the
-group back to `Γ ℚ` makes it false.
-
-**WHAT IT COSTS, and what it does NOT.** It owes the SAME degree-`1`/degree-`2`
-inhomogeneous cochain dictionary itemised as item 3 on
-`finiteDimensional_h1_adZeroTwistRestricted` above — but see the STALE-CLAIM
-CORRECTION on `finrank_sha1Twist_le_cotangentFinrank` below before pricing that
-item: the DEGREE-`1` half of it already exists here, sorry-free, as
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
-and item 3 (whose "`~/cs/FLT` does not have it either" was checked against
-`Mathlib/` and `~/cs/FLT` but not against `Fermat/`) overstates the remaining
-cost accordingly. Degree `2` is genuinely not covered by that file. It owes the
-SAME
-Hermite–Minkowski input, which is **PROVEN and in this module's import cone**
-(`finite_setOf_subgroup_inertiaAt_le`, `HardlyRamified/HermiteMinkowski.lean`;
-the refuting check is `grep -n HermiteMinkowski` on this file's header).  It
-does **not** owe the cup product and it does **not** owe the local invariant
-map — those belong to `finrank_sha2_le_finrank_sha1Twist` below, and confusing
-the two is what made the old bundled leaf look like a single monolithic cost.
-Note degree `2` needs the finiteness of `H²(G_S, M)`, which in NSW is deduced
-from the degree-`1` statement plus the local terms of the Poitou–Tate sequence,
-so this leaf is genuinely harder than its degree-`1` twin and should not be
-assumed to fall out of it.
+`dim_k H²(Γ ℚ, ad⁰) = ℵ₀`, and `Ш²` has finite codimension in it (the
+localisation map goes into a product over just two places, each term finite).
+So this is the precise place where the choice of `G_{ℚ,S}` does its work in
+degree `2`, and a future owner who "simplifies" the group back to `Γ ℚ` makes
+it false.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
 and for what `hℓ5` is doing.
 
-References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.3;
-Darmon–Diamond–Taylor, §2.6. -/
-theorem finiteDimensional_h2_adZeroRestricted
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence, which is where the finiteness of `Ш²` comes from) and
+VIII.3; Darmon–Diamond–Taylor, §2.6. -/
+theorem finiteDimensional_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
-    FiniteDimensional k
-      (continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))) :=
+    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
   sorry
 
 /-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
@@ -18405,11 +18472,20 @@ below — it IS the whole Poitou–Tate content of that leaf, with the finitenes
 and the map-building removed).
 
 Stated in `ℕ` on purpose.  Both sides are finite-dimensional — the left by
-`finiteDimensional_h2_adZeroRestricted` above, the right by
+`finiteDimensional_sha2` above, the right by
 `finiteDimensional_h1_adZeroTwistRestricted` above — so a `finrank` comparison
 loses nothing, and it keeps `Cardinal` arithmetic off the arithmetic owner's
 plate.  An owner may freely assume both finiteness facts by consuming those two
 leaves; doing so is NOT circular, since neither of them consumes this one.
+
+**BEWARE THE DEGENERATE DISCHARGE.**  `Module.finrank k X = 0` when `X` is not
+finite-dimensional, so this statement is *vacuously true* of an
+infinite-dimensional `Ш²_S(ad⁰)`.  A proof that establishes it by exhibiting
+the left side as infinite-dimensional is worthless and is also inconsistent
+with `finiteDimensional_sha2` above; the two leaves are a package and an owner
+should discharge them together, from the same pairing.  This is the reason the
+finiteness half may not simply be dropped in favour of the `ℕ`-valued
+inequality.
 
 The nine-term Poitou–Tate sequence gives a PERFECT pairing
 `Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
@@ -18492,7 +18568,7 @@ theorem finrank_sha2_le_finrank_sha1Twist
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the two leaves
-`finiteDimensional_h2_adZeroRestricted` and `finrank_sha2_le_finrank_sha1Twist`
+`finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`
 immediately above, plus `finiteDimensional_h1_adZeroTwistRestricted` — NOT a
 sorry node any more, see STATUS below; cut out 2026-07-27 as the DUALITY half of
 `rank_sha2_le_rank_sha1_twist` below).
@@ -18500,10 +18576,16 @@ sorry node any more, see STATUS below; cut out 2026-07-27 as the DUALITY half of
 **STATUS 2026-07-28: THIS NODE IS NO LONGER A LEAF.**  It is the assembly
 `dim Ш² ≤ dim Ш¹` (duality) `⟹` an injection into the dual, the second step
 being `exists_injective_toDual_of_finrank_le` above under the two finiteness
-facts.  The subsection header above records WHY the decomposition is disclosure
-rather than bookkeeping — in short, this statement never pinned the
-Poitou–Tate pairing, and it silently owed the finiteness of `H²(G_{ℚ,S}, ad⁰)`
-which now has a name and an owner.  Everything below this STATUS paragraph is
+facts.  The subsection header above records what the decomposition buys — in
+short, this statement never pinned the Poitou–Tate pairing, and the finiteness
+of `Ш²_S(ad⁰)` that it needs now has a name and an owner.  **It was never a
+hidden obligation**: it is a CONSEQUENCE of this statement (via
+`FiniteDimensional.of_injective`, the codomain being finite-dimensional from
+`finiteDimensional_h1_adZeroTwistRestricted`), and the pair of leaves below is
+exactly equivalent to this statement rather than stronger than it — see the
+OBLIGATION AUDIT on `finiteDimensional_sha2` above, which corrects the first
+cut's contrary claim and the ambient `H²` statement it motivated.  Everything
+below this STATUS paragraph is
 the mathematical record; the PORTING AUDIT that used to live here has moved
 onto `finrank_sha2_le_finrank_sha1Twist`, which is the leaf that actually owes
 it.
@@ -18588,10 +18670,8 @@ theorem exists_injective_sha2_dual_sha1Twist
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
       Function.Injective f := by
-  haveI : FiniteDimensional k
-      (continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))) :=
-    finiteDimensional_h2_adZeroRestricted hℓOdd hdim hℓ5 h
-  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
+    finiteDimensional_sha2 hℓOdd hdim hℓ5 h
   haveI : FiniteDimensional k
       (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
     finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
