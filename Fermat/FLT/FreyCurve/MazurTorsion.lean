@@ -47455,11 +47455,135 @@ theorem exists_two_mul_sub_one_eq_of_endSq_eq_neg
       push_cast
       noncomm_ring
 
+/-! ### The Atkin–Lehner descent at the Mazur levels `43, 67, 163`
+
+Cut 2026-07-28 by `flt-lean-262` off `atkinLehnerFixed_x0MazurLevel`, which is
+PROVEN below over the single leaf that opens this block.  Nothing outside this
+block changed. -/
+
+/-- **The Atkin–Lehner ANTI-INVARIANT DIVISOR CLASS of a rational point of the
+OPEN part `Y_0(N)` VANISHES, at `N ∈ {43, 67, 163}`** (LEAF, cut 2026-07-28 off
+`atkinLehnerFixed_x0MazurLevel` immediately below) — in Prym vocabulary,
+`c(P) = [P] − [w_N P] = 0` in the anti-invariant part of `J_0(N)(ℚ)`.
+
+**THE VANISHING IS HERE; THE INJECTIVITY IS NOW DISCHARGED BELOW, AND THAT
+SEPARATION IS THE WHOLE POINT OF THE CUT.**  The consumer derives `P = w_N P`
+from this leaf by `Fermat.injective_aj_of_one_le_x0Genus` — Abel–Jacobi
+injectivity on a curve of positive genus, and `x0Genus 43 = 3`,
+`x0Genus 67 = 5`, `x0Genus 163 = 13`, all three verified here by
+`decide +kernel` on the classical genus formula.  Writing the two steps as two
+declarations is a CORRECTION rather than bookkeeping, because the tempting
+one-line argument
+
+> the anti-invariant subgroup of `J_0(N)(ℚ)` is finite, and a torsion
+> anti-invariant class on a curve of genus `> 0` is `0` by Abel–Jacobi
+> injectivity
+
+is INVALID.  Injectivity of `aj` says nothing whatever about a class being
+zero — it is the step AFTER the vanishing, not a substitute for it — and the
+anti-invariant group is finite but emphatically NOT trivial.  `w_N` swaps the
+two rational cusps `0` and `∞` (`rationalCuspDivisors N = {1, N}` at prime
+level), so `[(0)] − [(∞)]` is a NONZERO torsion anti-invariant class, of order
+`num((N−1)/12)` — that is `7, 11, 27` at `43, 67, 163` (Mazur, the Eisenstein
+ideal).  **So finiteness of the anti-invariant part is NECESSARY BUT NOT
+SUFFICIENT, and this leaf is exactly the content that finiteness does not
+give.**
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Thm 1 and the table following it.  At each of `43, 67, 163` the non-cuspidal
+rational points of `X_0(N)` number exactly ONE, and it is the CM point of
+discriminant `−N`: the curve of `j`-invariant `−884736000`, `−147197952000`,
+`−262537412640768000`, with CM by the MAXIMAL order `O_{−N}` (`h(−N) = 1`,
+PARI/GP `qfbclassno`), carrying `C = E[𝔭]` where `𝔭 = (√−N)` is the ramified
+prime above `N`.  That point is `w_N`-fixed outright, for a reason visible
+without any descent — `𝔭² = (N)` and `𝔭` is principal, so `E/C ≅ E` and
+`φ(E[N]) = φ(E[𝔭²]) = E[𝔭] = C` — so its anti-invariant class is `0` a
+fortiori, which is what this leaf asserts.
+
+**NOT VACUOUS, and that is what separates these three levels from their `125`,
+`169` and `25` siblings.**  `Y_0(125)(ℚ) = ∅` (Kenku), so
+`Fermat.atkinLehnerFixed_x0OneTwentyFive` is vacuously true and no candidate
+proof of it can ever be tested; here `Y_0(N)(ℚ)` is a ONE-point set at each of
+the three levels.  A wrong proof can therefore fail, and a proof must NOT
+proceed by showing the point set is empty.
+
+**Restricted to the OPEN part on purpose — over `RelPoint strX (𝟙 SpecQ)` the
+statement would be FALSE**, and the refuting witness is the computation quoted
+two paragraphs up: at either rational cusp `c` is the nonzero class
+`[(0)] − [(∞)]`.  This is the same reason the level-`125` sibling quantifies
+over `strY`.
+
+**WHAT PROVING IT NEEDS, and four fifths of that is LEVEL-GENERIC and already
+in the tree** (checked by name 2026-07-28, not quoted): `J_0(N)` with its
+Abel–Jacobi map (`Fermat.exists_jacobianOf_x0`, PROVEN), the Prym of `w_N`
+(`Fermat.exists_prym_of_involution` in `X0.lean`, LEVEL-GENERIC and PROVEN over
+the single image-of-a-homomorphism leaf `exists_abelianImage_of_isAdditiveOn`),
+and the Atkin–Lehner isotypic decomposition
+(`Fermat.exists_heckeIsotypicDecomposition_atkinLehnerDescent`, LEVEL-GENERIC).
+What is genuinely NEW is the rank table recorded on
+`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` below — analytic ranks
+`1, 2, 6` for the FULL Jacobian at `43, 67, 163`, so unlike at `125` the minus
+part must be isolated before any rank-`0` input is available — and then Mazur's
+Eisenstein-ideal descent on `J_0(N)⁻`, which is what forces the VANISHING
+rather than merely bounding the group.
+
+**A WARNING ABOUT THE `169` TEMPLATE, so the next owner does not transpose the
+wrong half.**  The chain `isTorsion_minusFactor_of_lFunction_ne_zero` →
+`isTorsion_antiInvariant_jacobian_x0OneSixtyNine` →
+`finite_antiInvariant_jacobian_x0OneSixtyNine` →
+`exists_atkinLehnerPrym_x0OneSixtyNine` is a template for the FINITENESS half
+ONLY.  Its endpoint at `169` is `noFixedRationalPoint_atkinLehner_…`, i.e.
+fixed-point-FREENESS obtained from a CM count, which is the OPPOSITE conclusion
+to this one and does not transpose; and `injective_ajMinus_x0OneSixtyNine`
+consumes fixed-point-freeness as a HYPOTHESIS (`hfix`), which is false here —
+the CM point of discriminant `−N` is a fixed point.  Copying that chain to these
+levels will produce a finiteness statement and stop.
+
+**The check that refutes this leaf**: a non-cuspidal rational point of `X_0(N)`
+at one of these three levels that is not `w_N`-fixed, or a second CM point (a
+class-number-one discriminant `D ≠ −N` in which `N` ramifies). -/
+theorem ajFixed_x0MazurLevel {N : ℕ} (_hN : N ∈ ({43, 67, 163} : Finset ℕ))
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
+    (_hal : IsAtkinLehner N hX w hw) :
+    ∀ y : RelPoint strY (𝟙 SpecQ),
+      jac.aj (𝟙 SpecQ) (RelPoint.post w hw (RelPoint.post jY hX.comm y))
+        = jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y) :=
+  sorry
+
 /-- **Every rational point of `Y_0(N)` is fixed by the Atkin–Lehner involution
-`w_N`, at `N ∈ {43, 67, 163}`** (LEAF, cut 2026-07-28 off
-`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` below) — LEVEL-SPECIFIC, and
-the exact sibling of `Fermat.atkinLehnerFixed_x0OneTwentyFive`, whose statement
-this is with `125` replaced by the membership hypothesis.
+`w_N`, at `N ∈ {43, 67, 163}`** (opened 2026-07-28 as a bare `sorry`; **PROVEN
+the same day** over the single new leaf `ajFixed_x0MazurLevel` immediately
+above) — LEVEL-SPECIFIC, and the exact sibling of
+`Fermat.atkinLehnerFixed_x0OneTwentyFive`, whose statement this is with `125`
+replaced by the membership hypothesis.
+
+**THE CUT, in one line**: `P = w_N P` splits as *the anti-invariant divisor
+class `[P] − [w_N P]` vanishes* (the leaf above, where every bit of the
+arithmetic lives) followed by *Abel–Jacobi is injective on a curve of positive
+genus* (discharged here).  The second step needs only `1 ≤ x0Genus N`, which is
+`decide +kernel` on the classical genus formula — `3, 5, 13` at `43, 67, 163` —
+plus a rational cusp for a base point (`Fermat.exists_rationalCusps` with
+`numRationalCusps_pos`) and the Jacobian over it
+(`Fermat.exists_jacobianOf_x0`); all four are PROVEN and all four are
+LEVEL-GENERIC.  So the frontier is one leaf for one leaf and the survivor is
+strictly narrower: it is an equation in the abelian group `J_0(N)(ℚ)`, where
+the Prym and rank-`0` apparatus applies, rather than an equation of scheme
+points.
+
+**Read the leaf's docstring before attacking it** — in particular the reason
+finiteness of the anti-invariant subgroup is necessary but NOT sufficient, and
+the reason the `169` chain transposes only halfway.
+
+**NOTE ON `decide +kernel`, which is not a resource bump.**  Plain `decide`
+closes `1 ≤ x0Genus N` at `43` and `67` and hits `maximum recursion depth` at
+`163` (the elaborator's `whnf` unfolding `Finset.range 163`).  The fix is the
+KERNEL evaluator, not `set_option maxRecDepth`: same decision procedure, no
+widened search space for the next real failure to hide in.
+
 
 TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
 Thm 1 and the table following it.  At each of `43, 67, 163` the non-cuspidal
@@ -47490,30 +47614,36 @@ only RAMIFIED `N` contributes, and among the thirteen class-number-one
 discriminants `N` ramifies only in `ℚ(√−N)` itself.  Mazur's Thm 1 supplies the
 other half — that there are no non-CM points at these levels.
 
-**WHAT PROVING IT NEEDS** is the `125` list with the levels changed, and the
-level-generic four fifths of it are literally shared: `J_0(N)`, its
-Atkin–Lehner decomposition, the Prym of `w_N` (`exists_prym_of_involution`,
-LEVEL-GENERIC and already in `X0.lean`), Kolyvagin–Logachev on the `w_N = −1`
-factors, and Abel–Jacobi injectivity on the minus part.  Only the rank table is
-new, and it is the one recorded on
-`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` below: analytic ranks
-`1, 2, 6` for the FULL Jacobian at `43, 67, 163`, so — unlike at `125` — the
-minus part must be isolated before any rank-`0` input is available.  Mazur's own
-route is the Eisenstein-ideal descent on `J_0(N)⁻`, and `rank J_0(N)⁻(ℚ) = 0` is
-the same missing predicate that the level-`125` cluster records.
+**WHAT REMAINS TO PROVE NOW LIVES ENTIRELY IN `ajFixed_x0MazurLevel` above**,
+whose docstring carries the requirement list, the `169`-template warning and the
+refuting check.  One item of the list the previous version of this docstring
+carried is now GONE rather than moved: "Abel–Jacobi injectivity on the minus
+part" is not needed at all: what discharges the last step is injectivity of `aj`
+on the WHOLE Jacobian, which follows from `1 ≤ x0Genus N` alone
+(`Fermat.injective_aj_of_one_le_x0Genus`, PROVEN and level-generic) and knows
+nothing about `w_N`.
 
-**The check that refutes this leaf**: a non-cuspidal rational point of `X_0(N)`
-at one of these three levels that is not `w_N`-fixed, or a second CM point (a
-class-number-one discriminant `D ≠ −N` in which `N` ramifies). -/
-theorem atkinLehnerFixed_x0MazurLevel {N : ℕ} (_hN : N ∈ ({43, 67, 163} : Finset ℕ))
+**The check that refutes this statement**: a non-cuspidal rational point of
+`X_0(N)` at one of these three levels that is not `w_N`-fixed, or a second CM
+point (a class-number-one discriminant `D ≠ −N` in which `N` ramifies). -/
+theorem atkinLehnerFixed_x0MazurLevel {N : ℕ} (hN : N ∈ ({43, 67, 163} : Finset ℕ))
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY)
-    (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
-    (_hal : IsAtkinLehner N hX w hw) :
+    (w : X ⟶ X) (hw : w ≫ strX = strX) (hw2 : w ≫ w = 𝟙 X)
+    (hal : IsAtkinLehner N hX w hw) :
     ∀ y : RelPoint strY (𝟙 SpecQ),
       RelPoint.post w hw (RelPoint.post jY hX.comm y)
-        = RelPoint.post jY hX.comm y :=
-  sorry
+        = RelPoint.post jY hX.comm y := by
+  classical
+  have hN0 : N ≠ 0 := by fin_cases hN <;> norm_num
+  have hg : 1 ≤ x0Genus N := by fin_cases hN <;> decide +kernel
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps N hX
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos hN0)
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N hX o
+  intro y
+  exact injective_aj_of_one_le_x0Genus N hg hX jac
+    (ajFixed_x0MazurLevel hN hX jac w hw hw2 hal y)
 
 /-- **THE MODULAR HALF: at `N ∈ {43, 67, 163}` a Galois-stable cyclic subgroup of
 order `N` is a fixed point of the Atkin–Lehner involution `w_N`** (opened
