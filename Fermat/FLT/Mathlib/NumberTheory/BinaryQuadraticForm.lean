@@ -57,7 +57,11 @@ point `τ₀ = (3+√−p)/2` and `α = ζ₈⁻¹f₂(τ₀)²` over mathlib's 
 double-squaring match (`Heegner.exists_heegnerRelation_aux`, the step Weber
 missed) together with `Heegner.exists_int_gammaTwo`.
 
-SEVEN leaves remain, each stated so that it can be worked on alone:
+`Heegner.exists_rat_gammaTwo_heegnerPoint` has since been decomposed and PROVEN in turn, over
+`Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ` — PROVEN here, by conjugation
+through `η`'s infinite product) and the two class-field leaves listed below.
+
+EIGHT leaves remain, each stated so that it can be worked on alone:
 
 * `eq_of_two_mul_mul_cube_add_one_eq_sq` — `2x(x³+1) = y²`, elementary and
   self-contained;
@@ -66,8 +70,11 @@ SEVEN leaves remain, each stated so that it can be worked on alone:
   ring class field of the order of discriminant `−4p`, whose class number is `3`);
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
   (`q`-expansion combinatorics, no class field theory);
-* `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ`; **this is the main
-  theorem of complex multiplication and is the only leaf here that needs it**;
+* `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`; **this is the
+  main theorem of complex multiplication and is the only leaf here that needs it**, and the
+  only one that consumes `hcl`;
+* `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
+  level-`3` descent; needs only `3 ∤ p`);
 * `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j` (classical
   elliptic-function theory over machinery mathlib already has);
 * `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound
@@ -847,6 +854,220 @@ theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 =
     IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) :=
   sorry
 
+/-! #### `LEAF 4` DECOMPOSED — the real-analytic half is PROVEN here (2026-07-28)
+
+`γ₂(τ₀) ∈ ℚ` splits into a REAL-ANALYTIC half and a CLASS-FIELD half, and the first of the
+two costs no arithmetic at all:
+
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone.
+* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`. The first main theorem
+  of complex multiplication; the ONLY place `hcl` is consumed.
+* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K`. Weber's
+  level-`3` descent, which needs only `3 ∤ p`.
+
+The assembly is then arithmetic: `K ∩ ℝ = ℚ`, i.e. `x = u + v√−p` real forces `v = 0`.
+That IS the classical argument's shape — CM puts `j` in the ring class field, `h(−p) = 1`
+collapses that field to `K`, and REALITY is what cuts `K` down to `ℚ`. Separating reality out
+matters because reality is elementary and everything else here is not.
+
+WHY `γ₂(τ₀)` IS REAL, and why it is provable at this pin. `q = 𝕢₁(τ₀) = −e^{−π√p}` is a
+NEGATIVE REAL — this is exactly what the `3` in `τ₀ = (3+√−p)/2` buys — so every factor of
+`η`'s product `∏(1 − qⁿ⁺¹)` is real; and the prefactors satisfy `𝕢₂₄(τ₀)⁸ = −e^{−π√p/3}`,
+`𝕢₂₄(2τ₀)⁸ = e^{−2π√p/3}`, both real. Hence `η(τ₀)⁸` and `η(2τ₀)⁸` are real, so
+`f₂(τ₀)⁸ = 16·η(2τ₀)⁸/η(τ₀)⁸` is real and `γ₂ = ((f₂⁸)³ + 16)/f₂⁸` is real. Note `f₂(τ₀)` and
+`f₂(τ₀)²` are NOT real — only the EIGHTH power is, which is the same phenomenon the `ζ₈⁻¹`
+twist in `weberAlpha` records. Reality is expressed here as `conj`-invariance and transported
+through the infinite product by `Multipliable.map_tprod` applied to `starRingEnd ℂ`; that is
+the whole trick, and it needs nothing from mathlib beyond `ModularForm.eta`'s definition.
+
+ABSENCE RE-VERIFIED 2026-07-28, not inherited. `grep -rn` for `ComplexMultiplication`,
+`HilbertClassField`, `ringClassField` returns, over `.lake/packages/mathlib`: NOTHING; over
+`~/cs/FLT`: NOTHING; over `Fermat/`: four hits, every one of them prose inside a docstring
+(`Modularity/MoretBailly.lean`, `FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean`, and
+this file) asserting the same absence. The two mathlib files that match `jInvariant`
+(`Analysis/Fourier/AddCircle.lean`, `Topology/ContinuousMap/StoneWeierstrass.lean`) match on
+the substring inside `conjInvariantSubalgebra` and have nothing to do with `j`. So there is
+still no `j`-invariant and no class field theory anywhere reachable. Refute by exhibiting any
+of those names as an actual declaration.
+
+MACHINE-CHECKED (`PARI/GP`, 80 digits, via `ellj` — computed independently of the `η`-product
+that defines `γ₂` here): at EVERY prime `p ≡ 3 mod 8` with `3 < p ≤ 200` and `h(−p) = 1`,
+i.e. `p = 11, 19, 43, 67, 163`, `j(τ₀)` has `|Im j| = 0` to 80 digits and is the integer
+`−32768, −884736, −884736000, −147197952000, −262537412640768000`, each an EXACT cube of
+`−32, −96, −960, −5280, −640320`. So all three leaves below hold at every admissible `p`,
+with `v = 0` in the two `K`-valued ones. -/
+
+/-- `τ₀` written out: `(3 + i√p)/2`. -/
+lemma coe_heegnerPoint (p : ℕ) (hp : 0 < p) :
+    (heegnerPoint p hp : ℂ) = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := rfl
+
+/-- `exp(n·πi + r)` with `n : ℕ` and `r` REAL is the real number `(−1)ⁿeʳ`. All four
+`q`-parameter evaluations below are instances of this. -/
+lemma cexp_eq_ofReal_of_natPiI {w : ℂ} {n : ℕ} {r : ℝ}
+    (h : w = (n : ℂ) * ((Real.pi : ℂ) * Complex.I) + (r : ℂ)) :
+    Complex.exp w = (((-1 : ℝ) ^ n * Real.exp r : ℝ) : ℂ) := by
+  rw [h, Complex.exp_add, Complex.exp_nat_mul, Complex.exp_pi_mul_I]
+  push_cast [Complex.ofReal_exp]
+  ring
+
+/-- **The conjugation trick.** If `𝕢₁(z)` and `𝕢₂₄(z)⁸` are both real, then `η(z)⁸` is real.
+
+`η(z) = 𝕢₂₄(z)·∏(1 − 𝕢₁(z)ⁿ⁺¹)`, so reality of `𝕢₁(z)` makes every factor of the product
+`conj`-invariant, and `Multipliable.map_tprod` carries `conj` through the infinite product.
+The eighth power is what makes the `𝕢₂₄` prefactor real at the Heegner point; no smaller
+power works. -/
+lemma conj_eta_pow_eight {z : ℂ} (hz : 0 < z.im) {a b : ℝ}
+    (hq : Function.Periodic.qParam 1 z = (a : ℂ))
+    (h24 : Function.Periodic.qParam 24 z ^ 8 = (b : ℂ)) :
+    (starRingEnd ℂ) (ModularForm.eta z ^ 8) = ModularForm.eta z ^ 8 := by
+  have hnorm : ‖Function.Periodic.qParam 1 z‖ < 1 :=
+    Function.Periodic.norm_qParam_lt_one (by norm_num) hz
+  have hm : Multipliable fun n : ℕ ↦ (1 - ModularForm.eta_q n z) :=
+    ModularForm.multipliable_one_sub_pow hnorm
+  have hq' : (starRingEnd ℂ) (Function.Periodic.qParam 1 z) = Function.Periodic.qParam 1 z := by
+    rw [hq, Complex.conj_ofReal]
+  have hP : (starRingEnd ℂ) (∏' n : ℕ, (1 - ModularForm.eta_q n z))
+      = ∏' n : ℕ, (1 - ModularForm.eta_q n z) := by
+    rw [hm.map_tprod (starRingEnd ℂ) Complex.continuous_conj]
+    refine tprod_congr fun n => ?_
+    show (starRingEnd ℂ) (1 - Function.Periodic.qParam 1 z ^ (n + 1))
+      = 1 - Function.Periodic.qParam 1 z ^ (n + 1)
+    rw [map_sub, map_one, map_pow, hq']
+  have h24' : (starRingEnd ℂ) (Function.Periodic.qParam 24 z ^ 8)
+      = Function.Periodic.qParam 24 z ^ 8 := by rw [h24, Complex.conj_ofReal]
+  rw [ModularForm.eta, mul_pow, map_mul, h24', map_pow, hP]
+
+lemma im_heegnerPoint_pos (p : ℕ) (hp : 0 < p) : 0 < ((heegnerPoint p hp : ℂ)).im :=
+  (heegnerPoint p hp).2
+
+lemma im_two_heegnerPoint_pos (p : ℕ) (hp : 0 < p) : 0 < (2 * (heegnerPoint p hp : ℂ)).im := by
+  have := im_heegnerPoint_pos p hp
+  simp only [Complex.mul_im, Complex.re_ofNat, Complex.im_ofNat]
+  linarith
+
+/-- `η(τ₀)⁸` is REAL: `𝕢₁(τ₀) = −e^{−π√p}` and `𝕢₂₄(τ₀)⁸ = −e^{−π√p/3}`. -/
+lemma conj_eta_heegnerPoint_pow_eight (p : ℕ) (hp : 0 < p) :
+    (starRingEnd ℂ) (ModularForm.eta (heegnerPoint p hp : ℂ) ^ 8)
+      = ModularForm.eta (heegnerPoint p hp : ℂ) ^ 8 := by
+  refine conj_eta_pow_eight (im_heegnerPoint_pos p hp)
+    (a := (-1 : ℝ) ^ 3 * Real.exp (-(Real.pi * Real.sqrt p)))
+    (b := (-1 : ℝ) ^ 1 * Real.exp (-(Real.pi * Real.sqrt p) / 3)) ?_ ?_
+  · refine cexp_eq_ofReal_of_natPiI ?_
+    rw [coe_heegnerPoint]
+    push_cast
+    linear_combination (Real.pi * (Real.sqrt p : ℂ)) * Complex.I_sq
+  · rw [Function.Periodic.qParam, ← Complex.exp_nat_mul]
+    refine cexp_eq_ofReal_of_natPiI ?_
+    rw [coe_heegnerPoint]
+    push_cast
+    linear_combination ((Real.pi : ℂ) * (Real.sqrt p : ℂ) / 3) * Complex.I_sq
+
+/-- `η(2τ₀)⁸` is REAL: `𝕢₁(2τ₀) = e^{−2π√p}` and `𝕢₂₄(2τ₀)⁸ = e^{−2π√p/3}`. -/
+lemma conj_eta_two_heegnerPoint_pow_eight (p : ℕ) (hp : 0 < p) :
+    (starRingEnd ℂ) (ModularForm.eta (2 * (heegnerPoint p hp : ℂ)) ^ 8)
+      = ModularForm.eta (2 * (heegnerPoint p hp : ℂ)) ^ 8 := by
+  refine conj_eta_pow_eight (im_two_heegnerPoint_pos p hp)
+    (a := (-1 : ℝ) ^ 6 * Real.exp (-(2 * Real.pi * Real.sqrt p)))
+    (b := (-1 : ℝ) ^ 2 * Real.exp (-(2 * Real.pi * Real.sqrt p) / 3)) ?_ ?_
+  · refine cexp_eq_ofReal_of_natPiI ?_
+    rw [coe_heegnerPoint]
+    push_cast
+    linear_combination (2 * Real.pi * (Real.sqrt p : ℂ)) * Complex.I_sq
+  · rw [Function.Periodic.qParam, ← Complex.exp_nat_mul]
+    refine cexp_eq_ofReal_of_natPiI ?_
+    rw [coe_heegnerPoint]
+    push_cast
+    linear_combination (2 * (Real.pi : ℂ) * (Real.sqrt p : ℂ) / 3) * Complex.I_sq
+
+/-- **`f₂(τ₀)⁸` is REAL.** Note `f₂(τ₀)` and `f₂(τ₀)²` are not — only the eighth power. -/
+lemma conj_weberF2_heegnerPoint_pow_eight (p : ℕ) (hp : 0 < p) :
+    (starRingEnd ℂ) (weberF2 (heegnerPoint p hp) ^ 8) = weberF2 (heegnerPoint p hp) ^ 8 := by
+  rw [weberF2, div_pow, mul_pow, map_div₀, map_mul, conj_eta_two_heegnerPoint_pow_eight,
+    conj_eta_heegnerPoint_pow_eight, map_pow, Complex.conj_ofReal]
+
+/-- **LEAF 4a — `γ₂(τ₀)` is REAL. PROVEN.**
+
+No arithmetic hypothesis is used: `0 < p` is all it takes, because reality is a statement
+about the `q`-expansion at the specific point `τ₀ = (3+√−p)/2` and nothing else. This is the
+half of `LEAF 4` that cuts `K = ℚ(√−p)` down to `ℚ`; see the section note above. -/
+theorem exists_real_gammaTwo_heegnerPoint (p : ℕ) (hp : 0 < p) :
+    ∃ x : ℝ, (x : ℂ) = gammaTwo (heegnerPoint p hp) := by
+  have hrw : gammaTwo (heegnerPoint p hp)
+      = ((weberF2 (heegnerPoint p hp) ^ 8) ^ 3 + 16) / (weberF2 (heegnerPoint p hp) ^ 8) := by
+    rw [gammaTwo, ← pow_mul]
+  have hconj : (starRingEnd ℂ) (gammaTwo (heegnerPoint p hp)) = gammaTwo (heegnerPoint p hp) := by
+    rw [hrw, map_div₀, map_add, map_pow, conj_weberF2_heegnerPoint_pow_eight, map_ofNat]
+  exact ⟨_, Complex.conj_eq_iff_re.mp hconj⟩
+
+/-- **LEAF 4b — `j(τ₀) ∈ K = ℚ(√−p)`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+
+`τ₀ = (3+√−p)/2 = 1 + (1+√−p)/2`, so `ℤ + ℤτ₀ = ℤ[(1+√−p)/2] = 𝒪_K`, the MAXIMAL order (here
+`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`). By the first main theorem of CM (Booher Theorem
+34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K` and `[K(j(𝒪_K)) : K] = h(−p)`.
+`hcl` says every positive definite form of discriminant `−p` is properly equivalent to every
+other, i.e. `h(−p) = 1`, so that field is `K` itself and `j(τ₀) ∈ K`.
+
+`hcl` IS LOAD-BEARING AND IS CONSUMED ONLY HERE. Drop it and the statement is FALSE, with an
+explicit witness that satisfies every OTHER hypothesis (`PARI/GP`-checked 2026-07-28):
+`p = 59` is prime, `59 ≡ 3 mod 8`, `3 < 59`, and `h(−59) = 3`. There `j(τ₀) = −30197682742.99…`
+is a root of the IRREDUCIBLE cubic
+
+  `x³ + 30197678080x² − 140811576541184x + 374643194001883136`
+
+(`polclass(-59)`, `polisirreducible` = 1), so `[ℚ(j(τ₀)) : ℚ] = 3` and `j(τ₀)` lies in no
+quadratic field, let alone `K`. Note that `j(τ₀)` is still REAL there — which is precisely
+why `LEAF 4a` needs no `hcl` and is strictly weaker than this leaf.
+
+WHAT IT WOULD TAKE. Complex multiplication, ring class fields and the Galois action
+`σ_𝔞(j(𝔟)) = j(𝔞𝔟)` are absent from mathlib at this pin, from `~/cs/FLT` and from this
+project — re-verified 2026-07-28, see the section note above for the exact greps. The route
+is Cox §11: the modular polynomial `Φ_N ∈ ℤ[X, Y]`, then that `Gal(ℚ̄/ℚ)` permutes the finite
+set `{j(τ_f) : f of discriminant −p}`, then `h = 1` makes that set a singleton, so `j(τ₀)` is
+fixed by every automorphism. Building `Φ_N` is the bulk of it and is a project in its own
+right; **that** is where the next cut belongs, not here.
+
+CHEAPER ALTERNATIVE WORTH CHECKING FIRST: Stark's remark (quoted at the end of Booher) that
+"nothing more modern is required" — Weber's own computations replace the class field theory.
+Nobody in this development has yet costed that route; doing so is a legitimate outcome for
+whoever owns this leaf. -/
+theorem exists_quadratic_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
+  sorry
+
+/-- **LEAF 4c — `γ₂(τ₀)` descends with `j(τ₀)`.** Weber's level-`3` result (Booher §3.2 and
+Theorem 36): for `3 ∤ D`, `K(γ₂(τ)) = K(j(τ))`.
+
+`γ₂³ = j` gives `ℚ(j) ⊆ ℚ(γ₂)` for free; ALL the content is the reverse inclusion, i.e. that
+the cube root does not enlarge the field. `γ₂` is a modular function for a level-`3` group,
+so `[K(γ₂(τ)) : K(j(τ))]` divides `3`, and `3 ∤ D` forces it to be `1`.
+
+WHAT A PROVER MAY USE, and it collapses this leaf considerably. `exists_real_gammaTwo_heegnerPoint`
+(PROVEN above) plus `gammaTwo_pow_three_eq_jInvariant` (`LEAF 5`) turn `hj` into `j(τ₀) ∈ ℚ`
+— reality kills the `√−p` component — and reduce the conclusion to the single arithmetic
+statement **`j(τ₀)` is a perfect cube in `ℚ`**, with `γ₂(τ₀)` its real cube root. That is the
+honest residue of this leaf and is how it should be attacked.
+
+ONLY `3 ∤ p` IS EXPECTED TO BE LOAD-BEARING, and it comes from `hp` with `h3`; `hp8` is
+passed for uniformity with its siblings and is not expected to be needed. `3 ∤ p` genuinely
+cannot be dropped: at `D` divisible by `3` the cube root does enlarge the field, which is
+exactly why Booher's Theorem 36 carries the hypothesis.
+
+NOT VACUOUS, and note `hj` is not idle: without it the conclusion is a statement about an
+unconstrained transcendental-looking quantity, and with it the leaf is the `[K(γ₂):K(j)] = 1`
+step alone. Machine-checked at all five admissible `p`: `j(τ₀)` is an exact rational cube
+(see the section note). -/
+theorem exists_quadratic_gammaTwo_of_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
+    ∃ u v : ℚ, gammaTwo (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
+  sorry
+
 /-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
 
 By the first main theorem of CM (Booher Theorem 34/36; Cox §11), `K(j(τ₀))` is the Hilbert
@@ -866,12 +1087,39 @@ Galois action `σ_a(j(b)) = j(ab)` are absent from mathlib at this pin, from `~/
 from this project; building them is a project in its own right and this is where a further
 decomposition should cut. The elementary route Stark points out (Booher's closing remark:
 "nothing more modern is required") replaces the class field theory by Weber's own
-computations, and is the cheaper target if this is ever attacked directly. -/
+computations, and is the cheaper target if this is ever attacked directly.
+
+**DECOMPOSED 2026-07-28 (`flt-lean-329`), and this declaration is now PROVEN** over the three
+leaves in the section above — the first of which is itself PROVEN here:
+
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone;
+* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (the CM half, and the
+  only consumer of `hcl`);
+* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K` (Weber's
+  level-`3` descent, needing only `3 ∤ p`).
+
+The assembly below is the step "`K ∩ ℝ = ℚ`": reality forces the `√−p` coefficient `v` to
+vanish, since `√p > 0`. No complex multiplication is used HERE — all of it is in the second
+leaf, which is now the only place in this cluster that needs class field theory. -/
 theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) :=
-  sorry
+    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  obtain ⟨u, v, huv⟩ := exists_quadratic_gammaTwo_of_jInvariant hp hp8 h3
+    (exists_quadratic_jInvariant_heegnerPoint hp hp8 h3 hcl)
+  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
+  have him := congrArg Complex.im (hx.trans huv)
+  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
+    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
+  have hv : v = 0 := by
+    have hv' : (v : ℝ) = 0 := by
+      rcases mul_eq_zero.mp him.symm with h | h
+      · exact h
+      · exact absurd h (ne_of_gt hsqrt)
+    exact_mod_cast hv'
+  exact ⟨u, by rw [huv, hv]; simp⟩
 
 /-- **LEAF 5 — Weber's identity: `γ₂³ = j`**, i.e. `((f₂²⁴+16)/f₂⁸)³ = E₄³/Δ` on all of `ℍ`.
 
@@ -1086,14 +1334,23 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 * `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
 * `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
 * `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
-* `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ` (**the main theorem of CM**);
+* `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
+  theorem of CM**);
+* `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
+  level-`3` descent);
 * `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
 * `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound.
 
-Of these only the fourth needs class field theory. The fifth is classical elliptic-function
-theory over machinery mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`,
-`qExpansion`), and the sixth is a real-analytic estimate on the `q`-expansion of `j`; both
-are the cheap targets. -/
+`Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
+PROVEN on 2026-07-28 over the fourth and fifth items together with
+`Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ`, PROVEN outright — the reality that
+cuts `K` down to `ℚ`).
+
+Of these only the fourth needs class field theory; the fifth needs Weber's level-`3` modular
+theory but no class field theory. The sixth is classical elliptic-function theory over
+machinery mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`, `qExpansion`), and
+the seventh is a real-analytic estimate on the `q`-expansion of `j`; both are the cheap
+targets. -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
