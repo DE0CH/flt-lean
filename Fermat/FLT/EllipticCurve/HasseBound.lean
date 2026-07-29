@@ -74,13 +74,21 @@ docstring recommended.  What closed, and it is the reusable part:
 * `natCard_ker_mul_natCard_ker_conj` — `#ker ψ · #ker ψ' = d²` for
   `q ∤ d`, from `Isogeny.card_ker_comp` and `TorsionCard.card_torsionBy`.
 
+FOURTH CUT, 2026-07-28: `natCard_ker_degreeFormEnd_of_dvd` — the `q`-primary
+case — is PROVEN, over the peeling machinery below (`F` is bijective;
+`degreeFormEnd_peel`; `exists_natCard_ker_mul_pow`), and the reduction its
+docstring proposed is carried out.  What that leaf bottoms out at is the
+SINGLE ordinary `q`-torsion count `#ker([c] − F) = q` for `q ∤ c`, which is
+its own `(m, n) = (c, 1)` instance and is now the named leaf
+`natCard_ker_frobeniusConj`.  Half of that leaf is already free —
+`natCard_ker_degreeFormEnd_le` at `(c, 1)` gives `≤ q`, and `E[q]` has order a
+power of `q` — so only the LOWER bound `E[q] ≠ 0` is genuinely missing.
+
 What remains open, and each is strictly smaller than what it replaced:
 `exists_sq_frobeniusPointEnd` (the Frobenius characteristic equation on
 points, `F² = c·F − q`), `natCard_ker_degreeFormEnd_le` (separable degree
-≤ degree, one-sided, no hypothesis on `m`), and
-`natCard_ker_degreeFormEnd_of_dvd` (the `q`-primary case `q ∣ d`, reduced
-in its docstring to the single ordinary `q`-torsion count
-`#ker([c] − F) = q`).
+≤ degree, one-sided, no hypothesis on `m`), and `natCard_ker_frobeniusConj`
+(the ordinary `q`-torsion count `#ker([c] − F) = q` for `q ∤ c`).
 
 A NOTE FOR WHOEVER OWNS THE CHARACTERISTIC EQUATION.  The 2026-07-27 plan
 placed it in `FreyCurve/MazurTorsion.lean` as
@@ -88,6 +96,30 @@ placed it in `FreyCurve/MazurTorsion.lean` as
 direction: `MazurTorsion.lean` `public import`s this module, so anything
 stated there is downstream of every consumer here.  It is stated here
 instead, as `exists_sq_frobeniusPointEnd`.
+
+FOURTH CUT, 2026-07-28: `exists_sq_frobeniusPointEnd` is PROVEN, over the
+TORSION-PRIMARY split.  What closed:
+
+* `exists_pos_nsmul_eq_zero` — `Wbar(𝔽̄_q)` is a TORSION group.  Proven from
+  scratch (finite-subfield closure of the coordinates, plus finiteness of the
+  points over a finite field); this development had not recorded it before, and
+  it is what makes any primary-by-primary argument possible.
+* the assembly itself — Bézout on `q^k · m`, additivity of `F`.
+
+What remains open in its place, and the two are genuinely different mathematics
+rather than two halves of one argument:
+
+* `exists_sq_frobeniusPointEnd_prime_to_char` — one integer `c` works on all
+  torsion of order prime to `q`.  Cayley–Hamilton on `Wbar[n] ≅ (ℤ/n)²` with
+  `det(F) = q`, PLUS the integrality of the trace, which is the archimedean
+  half and is where the difficulty of Hasse's bound actually sits.
+* `sq_frobeniusPointEnd_qPrimary` — the same `c` works on the `q`-power
+  torsion.  The ordinary/supersingular dichotomy; `F` acts on the ordinary
+  `q`-divisible group by the unit root.
+
+Both leaves want `F` bijective on `Wbar(𝔽̄_q)`, as does
+`natCard_ker_degreeFormEnd_of_dvd`; that is not yet a declaration here and is
+the obvious shared next brick.
 -/
 module
 
@@ -288,6 +320,181 @@ theorem ker_zsmul_one {M : Type*} [AddCommGroup M] (d : ℤ) :
   simp only [LinearMap.mem_ker, LinearMap.smul_apply, Module.End.one_apply,
     Submodule.mem_torsionBy_iff]
 
+/-! ### `Wbar(𝔽̄_q)` is a torsion group, and the two primary halves of `F² = c·F − q`
+
+The characteristic equation is an identity of `ℤ`-endomorphisms of
+`Wbar(𝔽̄_q)`, and that group is a TORSION group: every point has coordinates in
+a finite subfield of `𝔽̄_q`, hence lies in the (finite) group of points of the
+curve over that subfield.  So the identity may be checked one torsion-primary
+piece at a time — and the two pieces carry genuinely different mathematics:
+
+* away from `q`, `Wbar(𝔽̄_q)[n] ≅ (ℤ/n)²` and the identity is Cayley–Hamilton for
+  a `2 × 2` matrix whose determinant is `q` (the Weil pairing), together with the
+  INTEGRALITY of the resulting trace;
+* at `q`, `Wbar(𝔽̄_q)[q^∞]` is `ℚ_q/ℤ_q` (ordinary) or `0` (supersingular), and
+  the identity is the statement that `F` acts there by the *unit root* of the
+  same quadratic.
+
+`exists_pos_nsmul_eq_zero` below is the torsion statement, PROVEN; the two halves
+are the two leaves `exists_sq_frobeniusPointEnd_prime_to_char` and
+`sq_frobeniusPointEnd_qPrimary`; and `exists_sq_frobeniusPointEnd` is their
+assembly, PROVEN.
+-/
+
+/-- **`Wbar(𝔽̄_q)` is a torsion group** (PROVEN 2026-07-28): every point is
+killed by some positive integer.
+
+This is the fact that makes a torsion-primary proof of the characteristic
+equation possible at all, and it is the first place this development records it.
+The proof is the standard one: a point `(x, y)` has both coordinates algebraic
+over `𝔽_q`, so `L = 𝔽_q(x, y)` is a finite extension (`IntermediateField`'s
+`finiteDimensional_adjoin`, over `Algebra.IsIntegral`); the point is then the
+base change of an `L`-rational point (`Affine.baseChange_nonsingular` transports
+nonsingularity back down); `(Wbar⁄L).Point` is finite because `L` is; and
+`Affine.Point.baseChange` is an injective group homomorphism, so the order of the
+`L`-rational point kills the original point.
+
+NOT SPECIFIC TO ELLIPTIC CURVES: no `IsElliptic` hypothesis is needed, because
+finiteness of `(Wbar⁄L).Point` is read off the coordinates directly rather than
+from any group structure. -/
+theorem exists_pos_nsmul_eq_zero (q : ℕ) [Fact q.Prime] (Wbar : WeierstrassCurve (ZMod q))
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    ∃ n : ℕ, 0 < n ∧ (n : ℤ) • P = 0 := by
+  classical
+  cases P with
+  | zero => exact ⟨1, one_pos, by rw [Nat.cast_one, one_smul]; rfl⟩
+  | some x y h =>
+    set L := IntermediateField.adjoin (ZMod q) ({x, y} : Set (AlgebraicClosure (ZMod q)))
+      with hL
+    haveI : FiniteDimensional (ZMod q) L :=
+      IntermediateField.finiteDimensional_adjoin
+        (fun z _ => Algebra.IsIntegral.isIntegral z)
+    haveI : Finite L := Module.finite_of_finite (ZMod q)
+    have hx : x ∈ L := IntermediateField.subset_adjoin _ _ (by simp)
+    have hy : y ∈ L := IntermediateField.subset_adjoin _ _ (by simp)
+    have h' : (Wbar⁄L).Nonsingular (⟨x, hx⟩ : L) (⟨y, hy⟩ : L) :=
+      (WeierstrassCurve.Affine.baseChange_nonsingular (W := Wbar)
+        (f := Algebra.ofId L (AlgebraicClosure (ZMod q)))
+        (Algebra.ofId L (AlgebraicClosure (ZMod q))).injective
+        (⟨x, hx⟩ : L) (⟨y, hy⟩ : L)).mp h
+    set P' : (Wbar⁄L).Point := WeierstrassCurve.Affine.Point.some _ _ h' with hP'
+    haveI : Finite (Wbar⁄L).Point := by
+      have hinj : Function.Injective
+          (fun Q : (Wbar⁄L).Point =>
+            match Q with
+            | 0 => (none : Option (L × L))
+            | WeierstrassCurve.Affine.Point.some x y _ => some (x, y)) := by
+        rintro (_ | ⟨x₁, y₁, h₁⟩) (_ | ⟨x₂, y₂, h₂⟩) hh <;> simp_all
+      exact Finite.of_injective _ hinj
+    refine ⟨addOrderOf P', addOrderOf_pos_iff.mpr (isOfFinAddOrder_of_finite P'), ?_⟩
+    have hmap : WeierstrassCurve.Affine.Point.baseChange (W' := Wbar) L
+        (AlgebraicClosure (ZMod q)) P' = WeierstrassCurve.Affine.Point.some x y h := rfl
+    rw [← hmap, ← map_zsmul, natCast_zsmul, addOrderOf_nsmul_eq_zero, map_zero]
+
+/-- **The characteristic equation away from `q`** (sorry leaf, opened 2026-07-28;
+Silverman *AEC* V.2.3.1, prime-to-`q` half): there is ONE rational integer `c`
+with `F(F P) = c·F P − q·P` for every point `P` whose order is prime to `q`.
+
+WHAT IS IN THIS LEAF, and it is two things that classical treatments prove
+together but that are separately identifiable here.
+
+* *Cayley–Hamilton at level `n`.*  For `q ∤ n` the group `Wbar(𝔽̄_q)[n]` is free
+  of rank `2` over `ZMod n` — `TorsionCard.card_torsionBy` (PROVEN) already
+  counts it as `n²` — the Frobenius acts `ZMod n`-linearly on it, and
+  `det(F | Wbar[n]) = q`.  That determinant is PROVEN from the Weil pairing as
+  `WeilPairing.det_frobeniusTorsionEnd`, but **only for PRIME `n`**, over
+  `WeierstrassCurve.p_torsion_rank`, which is likewise stated for prime `n`.  So
+  a successor's first task is the prime-power/composite generalisation of those
+  two, after which `F² = t_n·F − q` holds on `Wbar[n]` with
+  `t_n = tr(F | Wbar[n]) ∈ ZMod n`.
+* *Integrality of the trace.*  The residues `t_n` are compatible (each is the
+  reduction of the next, because `Wbar[n] ⊆ Wbar[nm]` and `F` is injective), so
+  they assemble to an element of `Ẑ`; the content of this leaf is that that
+  element is a rational INTEGER.  That is the archimedean half, and it is where
+  the difficulty of Hasse's bound actually lives: an element of `Ẑ` is an integer
+  exactly when it is bounded, and no purely `ℓ`-adic argument supplies a bound.
+
+The classical supply of the bound is the DEGREE: `deg(1 − F) = #ker(1 − F)` is a
+cardinality, and `#ker(1 − F) = #Wbar(𝔽_q)` is PROVEN here as
+`natCard_ker_one_sub_frobeniusPointEnd`, so `c = q + 1 − #Wbar(𝔽_q)` is visibly
+an integer once one knows `det(1 − F | Wbar[n]) ≡ #Wbar(𝔽_q) (mod n)` — the
+LEFSCHETZ CONGRUENCE.  That congruence is exactly the shape
+`FreyCurve/MazurTorsion.lean`'s
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` states, and it is
+DOWNSTREAM of this module, so it cannot be cited here; a successor that proves
+the congruence should prove it HERE and let `MazurTorsion.lean` consume it.
+
+THE COEFFICIENT IS EXISTENTIAL ON PURPOSE, for the same reason as in
+`exists_sq_frobeniusPointEnd`: naming `c = frobeniusTrace` would fold the
+`(m, n) = (1, 1)` evaluation into this leaf, and that evaluation is already
+proven separately.
+
+NON-VACUITY.  `c = 0` is not a free choice — see the non-vacuity note on
+`exists_sq_frobeniusPointEnd` below, which applies verbatim, since that
+statement's `c` is produced by this one.  The hypothesis `q ∤ n` is
+LOAD-BEARING: at `n = q` the conclusion would be the `q`-primary half, which is
+a different theorem (`sq_frobeniusPointEnd_qPrimary`).
+
+THE CHECK THAT WOULD REFUTE the claim that the trace integrality is the hard
+half: an `ℓ`-adic-only proof that the compatible system `(t_n)` is bounded. -/
+theorem exists_sq_frobeniusPointEnd_prime_to_char (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    ∃ c : ℤ, ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
+/-- **The characteristic equation on the `q`-primary torsion** (sorry leaf,
+opened 2026-07-28; Silverman *AEC* V.3.1, the ordinary/supersingular
+dichotomy): the SAME coefficient `c` that works away from `q` also works on the
+`q`-power torsion.
+
+WHY THIS IS A SEPARATE LEAF AND NOT AN ARTEFACT.  `Wbar(𝔽̄_q)[q^∞]` is invisible
+to the prime-to-`q` argument: it is `0` in the supersingular case, and
+`ℚ_q/ℤ_q` in the ordinary case, never `(ℚ_q/ℤ_q)²`, so no `2 × 2`
+Cayley–Hamilton is available there and the Weil pairing determinant
+(`WeilPairing.det_frobeniusTorsionEnd`) explicitly excludes `n = q`.  What has to
+be shown is that `F` acts on the ordinary `q`-divisible group by the UNIT ROOT
+of `X² − cX + q`, i.e. by the root that is a `q`-adic unit — the other root has
+valuation `1` and cannot act invertibly on `ℚ_q/ℤ_q`.
+
+`hc` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.  Dropping `hc` leaves `c`
+a free integer, and the conclusion at `k = 1` would then assert
+`F² = c·F − q` on `Wbar[q]` for EVERY `c`, which fails already for an ordinary
+curve (take `c` and `c + 1`, whose difference forces `F P = 0` for all
+`P ∈ Wbar[q]`, contradicting injectivity of `F`).  It is the prime-to-`q`
+identity that pins `c`, and this leaf is precisely the assertion that the SAME
+pinned `c` survives at `q`.
+
+WHAT A SUCCESSOR NEEDS.  Only the ordinary case is real work: in the
+supersingular case `Wbar(𝔽̄_q)[q^∞] = 0`, so the hypothesis
+`(q^k) • P = 0` forces `P = 0` for `k ≥ 1` and the conclusion is trivial.  The
+`k = 0` case is trivial for the same reason (`1 • P = 0` gives `P = 0`).  The
+route note of `natCard_ker_degreeFormEnd_of_dvd` below reduces its own
+`q`-primary case to the single count `#ker([c] − F) = q` for `q ∤ c`; that count
+and this leaf are the same piece of mathematics seen from two sides, so
+whichever is proven first should be stated so the other can consume it.  Both
+want `F` BIJECTIVE on `Wbar(𝔽̄_q)` (injective because `x ↦ x^q` is; surjective
+because `𝔽̄_q` is algebraically closed and perfect), which is not yet a
+declaration in this file.
+
+THE CHECK THAT WOULD REFUTE the claim that this case is not covered by the leaf
+above: a torsion point of `q`-power order that is also killed by an integer
+prime to `q`.  There is none other than `0`, which is exactly why the split is
+exhaustive and why this leaf is needed. -/
+theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P)
+    (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
+    (hP : ((q : ℤ) ^ k) • P = 0) :
+    frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
 /-! ### The conjugate endomorphism
 
 `ψ = [m] − [n]∘F` has a CONJUGATE `ψ' = [m − n·c] + [n]∘F` inside the
@@ -300,8 +507,10 @@ applies with no rationality input, and it identifies `ker (ψ ∘ ψ')` with the
 -/
 
 /-- **The characteristic equation of the `q`-power Frobenius, on points**
-(sorry leaf, opened 2026-07-28; Silverman *AEC* V.2.3.1): there is an integer
-`c` with `F² = c·F − q` in `Module.End ℤ (Wbar(𝔽̄_q))`.
+(PROVEN 2026-07-28 over `exists_pos_nsmul_eq_zero`,
+`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`;
+Silverman *AEC* V.2.3.1): there is an integer `c` with `F² = c·F − q` in
+`Module.End ℤ (Wbar(𝔽̄_q))`.
 
 WHERE THIS LEAF HAD TO LIVE, and it is not where it was planned.  The cut of
 2026-07-27 recorded this step as belonging in `FreyCurve/MazurTorsion.lean`
@@ -323,24 +532,75 @@ WHY IT IS NOT VACUOUS.  `c = 0` is *not* a free choice: `F² = −q` would give
 `𝔽₅` has `#E(𝔽₅) = 8`).  Any `c` satisfying this leaf is forced to be
 `q + 1 − #Wbar(𝔽_q)`, by `natCard_ker_degreeFormEnd`'s own argument.
 
-ROUTE.  `Wbar(𝔽̄_q)` is a TORSION group — every point is defined over some
-finite subfield — so an identity in `End` may be checked on each `E[ℓ^k]`
-separately.  For `ℓ ≠ q` the module `E[ℓ^k]` is free of rank `2` over
-`ZMod (ℓ^k)` (`WeierstrassCurve.p_torsion_rank`, `Torsion.lean`, which needs
-only `(ℓ : 𝔽̄_q) ≠ 0` and *no* characteristic-zero hypothesis), and
-Cayley–Hamilton for a `2 × 2` matrix gives `F² = tr(F)·F − det(F)` there; the
-arithmetic input is `det(F | E[ℓ^k]) = q` and the compatibility of `tr` across
-`ℓ` and `k`.  THE CHECK THAT WOULD REFUTE the claim that this is the cheapest
-route: a proof of `F² − cF + q = 0` that does not pass through a torsion
-representation — the classical alternative is the dual isogeny, and the dual
-is machine-refuted in characteristic `p` in `Isogeny.lean`
-(`Isogeny.NotIsRationalMapDualHom`), so it is unavailable. -/
+ROUTE, AND IT IS THE ONE TAKEN (the cut of 2026-07-28).  `Wbar(𝔽̄_q)` is a
+TORSION group — every point is defined over some finite subfield — so an
+identity in `End` may be checked one torsion-primary piece at a time.  That is
+`exists_pos_nsmul_eq_zero`, now PROVEN, and it is what this declaration's proof
+runs on: writing the order of `P` as `q^k · m` with `q ∤ m` and using a Bézout
+relation splits `P = P₂ + P₁` with `m • P₂ = 0` and `q^k • P₁ = 0`, and the two
+summands are handled by the two leaves.  The identity is additive in `P`, so
+that is the whole assembly.
+
+The prime-to-`q` half is the `ℓ`-adic one: for `ℓ ≠ q` the module `E[ℓ^k]` is
+free of rank `2` over `ZMod (ℓ^k)` (`WeierstrassCurve.p_torsion_rank`,
+`Torsion.lean`, which needs only `(ℓ : 𝔽̄_q) ≠ 0` and *no* characteristic-zero
+hypothesis), and Cayley–Hamilton for a `2 × 2` matrix gives
+`F² = tr(F)·F − det(F)` there; the arithmetic input is `det(F | E[ℓ^k]) = q`
+(the Weil pairing) and the INTEGRALITY of `tr`.  The `q`-primary half is
+separate and is the ordinary/supersingular dichotomy.  See the two leaves for
+what each of them still owes.
+
+THE CHECK THAT WOULD REFUTE the claim that this is the cheapest route: a proof
+of `F² − cF + q = 0` that does not pass through a torsion representation — the
+classical alternative is the dual isogeny, and the dual is machine-refuted in
+characteristic `p` in `Isogeny.lean` (`Isogeny.NotIsRationalMapDualHom`), so it
+is unavailable. -/
 theorem exists_sq_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
     ∃ c : ℤ, frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
       = c • frobeniusPointEnd q Wbar
-        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) :=
-  sorry
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
+  obtain ⟨c, hc⟩ := exists_sq_frobeniusPointEnd_prime_to_char q Wbar
+  refine ⟨c, ?_⟩
+  have key : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+    intro P
+    obtain ⟨n, hnpos, hn⟩ := exists_pos_nsmul_eq_zero q Wbar P
+    obtain ⟨k, m, hmq, hnk⟩ :=
+      Nat.exists_eq_pow_mul_and_not_dvd hnpos.ne' q (Fact.out : q.Prime).ne_one
+    have hcop : Nat.Coprime (q ^ k) m :=
+      Nat.Coprime.pow_left k (((Fact.out : q.Prime).coprime_iff_not_dvd).mpr hmq)
+    obtain ⟨a, b, hab⟩ : IsCoprime ((q ^ k : ℕ) : ℤ) ((m : ℕ) : ℤ) :=
+      Nat.isCoprime_iff_coprime.mpr hcop
+    set P₁ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point := (b * (m : ℤ)) • P with hP₁
+    set P₂ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point := (a * ((q ^ k : ℕ) : ℤ)) • P with hP₂
+    have hnz : ((q ^ k : ℕ) : ℤ) * ((m : ℕ) : ℤ) = (n : ℤ) := by
+      rw [← Nat.cast_mul, ← hnk]
+    have h1 : ((q : ℤ) ^ k) • P₁ = 0 := by
+      rw [hP₁, smul_smul]
+      have hb : (q : ℤ) ^ k * (b * (m : ℤ)) = b * ((n : ℤ)) := by
+        rw [← hnz]; push_cast; ring
+      rw [hb, ← smul_smul, hn]
+      exact zsmul_zero _
+    have h2 : ((m : ℕ) : ℤ) • P₂ = 0 := by
+      rw [hP₂, smul_smul]
+      have ha : ((m : ℕ) : ℤ) * (a * ((q ^ k : ℕ) : ℤ)) = a * ((n : ℤ)) := by
+        rw [← hnz]; ring
+      rw [ha, ← smul_smul, hn]
+      exact zsmul_zero _
+    have hsplit : P = P₂ + P₁ := by
+      rw [hP₁, hP₂]
+      match_scalars
+      push_cast at hab ⊢
+      linarith
+    have e1 := hc m hmq P₂ h2
+    have e2 := sq_frobeniusPointEnd_qPrimary q Wbar hc k P₁ h1
+    rw [hsplit, map_add, map_add, e1, e2]
+    module
+  refine LinearMap.ext fun P => ?_
+  simpa only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.smul_apply,
+    Module.End.one_apply] using key P
 
 /-- **`ψ ∘ ψ' = [m² − c·m·n + n²q]`** (PROVEN over `exists_sq_frobeniusPointEnd`):
 the conjugate of `ψ = [m] − [n]∘F` is `ψ' = [m − n·c] + [n]∘F`, which is
@@ -503,7 +763,37 @@ NON-VACUITY.  At `n = 0` the bound reads `#ker [m] ≤ m²`, which
 `TorsionCard.card_torsionBy` meets with equality for `q ∤ m`; at
 `(m, n) = (1, 1)` it reads `#Wbar(𝔽_q) ≤ 1 − c + q`
 (`natCard_ker_one_sub_frobeniusPointEnd`), which is an equality, so the bound
-is sharp exactly where it is used and carries the arithmetic. -/
+is sharp exactly where it is used and carries the arithmetic.
+
+ROUTE UPDATE, 2026-07-28, and it is a possible RE-CUT of this leaf rather than
+a proof of it.  The peeling machinery below (`degreeFormEnd_peel`,
+`exists_natCard_ker_mul_pow`) is now PROVEN, and it makes this leaf derivable
+from the strictly weaker-looking `natCard_ker_degreeFormEnd_of_not_dvd`
+(the `q ∤ d` case, currently proven FROM this leaf, so the dependency would
+have to be reversed).  The derivation, for `d ≠ 0`, is a three-way split on
+the invariant `M − c·N`:
+
+* `q ∤ M − c·N`: `exists_natCard_ker_mul_pow` gives `d = #ker ψ · q^v`, and
+  `q^v ≥ 1` with `#ker ψ ≥ 0` gives `#ker ψ ≤ d` — with equality iff `v = 0`;
+* `q ∣ M − c·N` and `q ∤ M`: then `q ∣ d ≡ M·(M − c·N)`, so
+  `natCard_ker_degreeFormEnd_of_dvd` applies and gives EQUALITY;
+* `q ∣ M − c·N` and `q ∣ M`: peel one `F` and recurse on `|d|`, which drops by
+  a factor of `q`.
+
+WHY THAT IS NOT DONE HERE.  The degenerate case `d = 0` is not covered by it:
+there one must show `Nat.card (ker ψ) = 0`, i.e. that `ker ψ` is INFINITE, and
+the present proof of `natCard_ker_degreeFormEnd_of_dvd` discharges `d = 0` by
+citing THIS leaf.  Reversing the dependency therefore also needs the `d = 0`
+analysis: `d = 0` with `(m, n) ≠ (0, 0)` forces `m/n ∈ ℤ` to be a root of
+`X² − cX + q` dividing `q`, hence `±1` (as `q ∤ m` in the cases that matter),
+so `(F ∓ 1)(F ∓ q) = 0` with both factors of finite kernel — a contradiction,
+since `Wbar(𝔽̄_q)` is infinite.  That argument is elementary but is a second
+piece of work, and it is what a re-cut would have to write.
+
+THE CHECK THAT WOULD REFUTE this route: a `(M, N)` with `d ≠ 0` falling into
+none of the three cases, or a proof that the third case fails to terminate.
+Neither exists — the split is exhaustive and `|d|` is a strictly decreasing
+`ℕ`-valued measure on the third branch. -/
 theorem natCard_ker_degreeFormEnd_le (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
@@ -514,9 +804,362 @@ theorem natCard_ker_degreeFormEnd_le (q : ℕ) [Fact q.Prime]
       ≤ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) :=
   sorry
 
-/-- **The `q`-primary case** (sorry leaf, opened 2026-07-28; the second half of
-step 4): when `q ∤ m` but `q ∣ d = m² − c·m·n + n²q`, the kernel count is still
-the value of the form.
+/-! ### The `q`-primary machinery: `F` is bijective, and `F` peels off
+
+Everything in this section exists to prove `natCard_ker_degreeFormEnd_of_dvd`
+below, and it reduces that leaf — a two-parameter family — to the SINGLE
+classical fact `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for `q ∤ c`.
+
+The mechanism is that `F` is BIJECTIVE on `Wbar(𝔽̄_q)`, so composing with it
+does not change a kernel count, while it divides the value of the degree form
+by `q`.  Iterating that on the conjugate `ψ'` — which is where the `q`s live,
+since `q ∣ d` with `q ∤ m` forces `q ∣ m − n·c` — writes `ψ' = F^k ∘ β` with
+`β` prime to `q`, and the `q ∤ d` case evaluates `#ker β`.
+-/
+
+/-- **`F` is injective** (PROVEN): `Affine.Point.map` along an injective
+algebra map is injective, and `frobAlgHom q` is a ring homomorphism of a
+field. -/
+theorem injective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    Function.Injective (frobeniusPointEnd q Wbar) :=
+  WeierstrassCurve.Affine.Point.map_injective (W' := Wbar) (WeilPairing.frobAlgHom q)
+
+/-- **`#ker F = 1`** (PROVEN): the Frobenius is purely inseparable, so its
+kernel is trivial.  This is what makes peeling `F` off a composite free. -/
+theorem natCard_ker_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    Nat.card (LinearMap.ker (frobeniusPointEnd q Wbar)) = 1 := by
+  rw [LinearMap.ker_eq_bot.mpr (injective_frobeniusPointEnd q Wbar)]
+  exact Nat.card_unique
+
+/-- `[0] − [−1]∘F` is `F` (PROVEN, definitional): the conjugate of the
+`(m, n) = (c, 1)` pair `[c] − F` is `F` itself, which is what makes
+`F ∘ ([c] − F) = ([c] − F) ∘ F = [q]` an instance of
+`degreeFormEnd_mul_conj`. -/
+theorem degreeFormEnd_zero_neg_one (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    degreeFormEnd q Wbar 0 (-1) = frobeniusPointEnd q Wbar := by
+  simp [degreeFormEnd]
+
+/-- **`([c] − F) ∘ F = [q]`** (PROVEN): the characteristic equation, read as
+the factorisation of `[q]` through the Frobenius.  `[c] − F` is the
+Verschiebung; here it is just `degreeFormEnd q Wbar c 1`, and this identity is
+`degreeFormEnd_mul_conj` at `(m, n) = (c, 1)`, whose form value is
+`c² − c·c + q = q`. -/
+theorem frobeniusConj_mul_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
+    degreeFormEnd q Wbar c 1 * frobeniusPointEnd q Wbar
+      = (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
+  have h := degreeFormEnd_mul_conj q Wbar hc c 1
+  rw [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one,
+    show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring] at h
+  exact h
+
+/-- **`F` is surjective** (PROVEN): it is the conjugate factor at
+`(m, n) = (c, 1)`, hence a left factor of the surjective `[q]`.  With
+`injective_frobeniusPointEnd` this makes `F` BIJECTIVE, which is the whole
+reason the peeling below preserves kernel counts. -/
+theorem surjective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
+    Function.Surjective (frobeniusPointEnd q Wbar) := by
+  have hq : (0 : ℤ) < (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).pos
+  have hd : c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) ≠ 0 := by
+    rw [show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring]; omega
+  have h := (surjective_degreeFormEnd q Wbar hc (m := c) (n := 1) hd).2
+  rwa [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one] at h
+
+/-- **The `q`-torsion count of an ORDINARY curve** (sorry leaf, opened
+2026-07-28; Silverman *AEC* V.3.1): `#ker([c] − F) = q` when `q ∤ c`.
+
+WHAT THIS IS.  `[c] − F` is the Verschiebung `V`, and `V ∘ F = F ∘ V = [q]`
+(`frobeniusConj_mul_frobeniusPointEnd`).  Since `#ker F = 1`
+(`natCard_ker_frobeniusPointEnd`), the statement is equivalent to
+`#Wbar(𝔽̄_q)[q] = q`, i.e. to `E[q] ≅ ℤ/q` — the ORDINARY case of the
+ordinary/supersingular dichotomy.  The supersingular case is `q ∣ c`, where
+`E[q] = 0`; that is why the hypothesis `q ∤ c` is exactly the dichotomy and is
+LOAD-BEARING: without it the statement is false for every supersingular curve
+(e.g. `y² = x³ + 1` over `𝔽₅`, where `c = 0` and `#E[5] = 1`).
+
+WHY IT SURVIVED THE CUT.  One half of it is already free: the proven
+`natCard_ker_degreeFormEnd_le` at `(m, n) = (c, 1)` reads `#ker([c] − F) ≤ q`,
+and `E[q]` is a group killed by the prime `q`, so its order is a power of `q`
+and therefore `1` or `q`.  What is missing is only the LOWER bound
+`E[q] ≠ 0`.  Classically that is the invariant-differential criterion —
+`V = [c] − F` is separable iff its differential `c` is nonzero in `𝔽_q` — and
+this development has no differentials, which is the same absence that blocks
+`natCard_ker_degreeFormEnd_le` itself.
+
+THE CHECK THAT WOULD REFUTE the claim that this is now the minimal atom on
+this axis: a proof of `E[q] ≠ 0` for `q ∤ c` that does not pass through
+separability of `[m] − [n]∘F` — for instance a Hasse-invariant or
+Deuring-lift argument, or an `E[q^∞]` structure theorem.  A name-level grep of
+`Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT` found none.
+
+NOTE ON CIRCULARITY, for whoever picks this up.  This leaf is *exactly* the
+instance `(m, n) = (c, 1)` of `natCard_ker_degreeFormEnd_of_dvd` below (there
+`d = q`, so `q ∣ d`, and `q ∤ m` is `q ∤ c`).  So it must NOT be proven by
+citing that theorem or `natCard_ker_degreeFormEnd_of_sq`: the reduction below
+runs the other way, from the whole two-parameter family down to this single
+instance.  That reduction is the content of the cut of 2026-07-28. -/
+theorem natCard_ker_frobeniusConj (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    Nat.card (LinearMap.ker (degreeFormEnd q Wbar c 1)) = q :=
+  sorry
+
+/-- `[d]` as a `Module.End` is surjective for `d ≠ 0` (PROVEN): the
+`Module.End` repackaging of `WeierstrassCurve.zsmul_surjective_algClosed`. -/
+theorem surjective_zsmul_one (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {d : ℤ} (hd : d ≠ 0) :
+    Function.Surjective
+      (d • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) := by
+  haveI : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  exact _root_.WeierstrassCurve.zsmul_surjective_algClosed
+    (Wbar⁄(AlgebraicClosure (ZMod q))).toAffine hd
+
+/-- `[a] ∘ [b] = [a·b]` (PROVEN, `ring`-level). -/
+theorem zsmul_one_mul_zsmul_one (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) (a b : ℤ) :
+    (a • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+        * (b • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+      = (a * b) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
+  rw [smul_mul_assoc, one_mul, smul_smul]
+
+/-- **`#E[q] = q` in the ordinary case** (PROVEN over
+`natCard_ker_frobeniusConj`): `[q] = ([c] − F) ∘ F`, the right factor has
+trivial kernel and the left one has kernel of order `q`. -/
+theorem natCard_ker_zsmul_q (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    Nat.card (LinearMap.ker
+      ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) = q := by
+  have h := natCard_ker_mul (degreeFormEnd q Wbar c 1) (frobeniusPointEnd q Wbar)
+    (surjective_frobeniusPointEnd q Wbar hc)
+  rw [frobeniusConj_mul_frobeniusPointEnd q Wbar hc,
+    natCard_ker_frobeniusConj q Wbar hc hqc, natCard_ker_frobeniusPointEnd] at h
+  simpa using h
+
+/-- **`#E[q^v] = q^v` in the ordinary case** (PROVEN over
+`natCard_ker_zsmul_q`): `[q^v] = [q] ∘ [q^{v−1}]` and `[q^{v−1}]` is
+surjective, so the counts multiply.  This is the only place the `q`-primary
+part of `#E[d]` is evaluated, and it is where the `q ∤ c` hypothesis is
+consumed. -/
+theorem natCard_ker_zsmul_q_pow (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    ∀ v : ℕ, Nat.card (LinearMap.ker
+      (((q : ℤ) ^ v) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))))
+        = q ^ v := by
+  have hqpos : (0 : ℤ) < (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).pos
+  intro v
+  induction v with
+  | zero => simp
+  | succ v ih =>
+    have hq0 : (q : ℤ) ^ v ≠ 0 := by positivity
+    have hmul : ((q : ℤ) ^ (v + 1))
+          • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))
+        = ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+          * (((q : ℤ) ^ v)
+            • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) := by
+      rw [zsmul_one_mul_zsmul_one]
+      congr 1
+      ring
+    rw [hmul, natCard_ker_mul _ _ (surjective_zsmul_one q Wbar hq0),
+      natCard_ker_zsmul_q q Wbar hc hqc, ih, pow_succ]
+    ring
+
+/-- **`#E[d] = d²` for `q ∤ d`, in `Module.End` form** (PROVEN): `ker_zsmul_one`
+followed by `TorsionCard.card_torsionBy`, with the `|d|`-for-`d` normalisation
+that `torsionBy` needs.  This is the block that
+`natCard_ker_mul_natCard_ker_conj` runs inline; it is factored out here because
+the `q ∣ d` argument needs it at a DIFFERENT integer (the prime-to-`q` part of
+`d`) than the one the degree form supplies. -/
+theorem natCard_ker_zsmul_one_of_not_dvd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {d : ℤ}
+    (hd : ¬ ((q : ℤ) ∣ d)) :
+    (Nat.card (LinearMap.ker
+      (d • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) : ℤ) = d ^ 2 := by
+  classical
+  rw [ker_zsmul_one]
+  have habs : Submodule.torsionBy ℤ (Wbar⁄(AlgebraicClosure (ZMod q))).Point d
+      = Submodule.torsionBy ℤ (Wbar⁄(AlgebraicClosure (ZMod q))).Point (d.natAbs : ℤ) := by
+    rcases Int.natAbs_eq d with h | h
+    · rw [← h]
+    · ext P
+      simp only [Submodule.mem_torsionBy_iff]
+      constructor
+      · intro hP
+        rw [h, neg_smul, neg_eq_zero] at hP
+        exact hP
+      · intro hP
+        rw [h, neg_smul, hP, neg_zero]
+  have hqdvd : ¬ (q ∣ d.natAbs) := by
+    intro h
+    exact hd (Int.natAbs_dvd_natAbs.mp (by simpa using h))
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hqd : ((d.natAbs : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    intro h0
+    exact hqdvd ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q _).mp h0)
+  have hcard : Nat.card (Submodule.torsionBy ℤ
+      (Wbar⁄(AlgebraicClosure (ZMod q))).Point (d.natAbs : ℤ)) = d.natAbs ^ 2 :=
+    TorsionCard.card_torsionBy
+      (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) d.natAbs hqd
+  rw [habs, hcard]
+  push_cast
+  exact sq_abs d
+
+/-- **The `q ∤ d` case of the degree form** (PROVEN over
+`natCard_ker_degreeFormEnd_le`): `#ker ψ = d` whenever `q ∤ d`, with NO
+hypothesis on `m`.
+
+This is the separation argument that `exists_natCard_ker_degreeFormEnd` runs
+inline, factored out so that the `q ∣ d` case can call it at the prime-to-`q`
+tail `β` of the peeling.  `#ker ψ · #ker ψ' = d²` and both factors are at most
+`d` (the form is conjugation-invariant, `degreeForm_conj`), so both equal
+`d`. -/
+theorem natCard_ker_degreeFormEnd_of_not_dvd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    {m n : ℤ} (hd : ¬ ((q : ℤ) ∣ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ))) :
+    (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+      = m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) := by
+  have hmul := natCard_ker_mul_natCard_ker_conj q Wbar hc (m := m) (n := n) hd
+  have hle := natCard_ker_degreeFormEnd_le q Wbar hc m n
+  have hle' := natCard_ker_degreeFormEnd_le q Wbar hc (m - n * c) (-n)
+  rw [degreeForm_conj c m n (q : ℤ)] at hle'
+  have hg0 : (0 : ℤ) ≤ (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ) :=
+    Int.natCast_nonneg _
+  have hg0' : (0 : ℤ)
+      ≤ (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ) :=
+    Int.natCast_nonneg _
+  refine le_antisymm hle ?_
+  nlinarith [hmul, hle, hle', hg0, hg0']
+
+/-- **Peeling one `F` off** (PROVEN, pure ring algebra over the characteristic
+equation): `[q·M₀] − [N]∘F = F ∘ ([c·M₀ − N] − [M₀]∘F)`.
+
+Expanding the right-hand side and rewriting `F²` by `hc` gives
+`(c·M₀ − N)·F − M₀·(c·F − q) = −N·F + q·M₀`, which is the left-hand side.
+Since `F` is bijective this identity says that a degree form whose FIRST
+coordinate is divisible by `q` has the same kernel count as one whose form
+value is `q` times smaller. -/
+theorem degreeFormEnd_peel (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (M₀ N : ℤ) :
+    degreeFormEnd q Wbar ((q : ℤ) * M₀) N
+      = frobeniusPointEnd q Wbar * degreeFormEnd q Wbar (c * M₀ - N) M₀ := by
+  simp only [degreeFormEnd, mul_sub, mul_smul_comm, mul_one, smul_smul, hc, smul_sub]
+  module
+
+/-- **The peeling, iterated** (PROVEN over `natCard_ker_degreeFormEnd_of_not_dvd`):
+if the CONJUGATE invariant `M − c·N` is prime to `q`, then the kernel count of
+`[M] − [N]∘F` is prime to `q` and the form value is that count times a power
+of `q`.
+
+WHY THE INVARIANT IS `M − c·N` AND WHY IT IS PRESERVED.  The recursion sends
+`(M, N) ↦ (c·M/q − N, M/q)` when `q ∣ M`, and then the new invariant is
+`(c·M/q − N) − c·(M/q) = −N`.  It is nonzero mod `q` because `q ∣ M` and
+`q ∤ M − c·N` force `q ∤ c·N`.  So the invariant seeds itself, and the
+recursion TERMINATES with `q ∤ d`: at a step with `q ∤ M`, the identity
+`d ≡ M·(M − c·N) (mod q)` has both factors prime to `q`.  That is the whole
+reason no `ℤ_q` unit-root analysis is needed here, and it is what replaces the
+`v_q(d) = v_q(m − n·u)` computation the 2026-07-27 route note proposed.
+
+The recursion is bounded by `|d|`, which drops by a factor of at least `2` at
+each step, and `k` is that bound. -/
+theorem exists_natCard_ker_mul_pow (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
+    ∀ (k : ℕ) (M N : ℤ), (M ^ 2 - c * M * N + N ^ 2 * (q : ℤ)).natAbs ≤ k →
+      ¬ ((q : ℤ) ∣ M - c * N) → M ^ 2 - c * M * N + N ^ 2 * (q : ℤ) ≠ 0 →
+      ∃ v : ℕ, ¬ ((q : ℤ) ∣ (Nat.card (LinearMap.ker (degreeFormEnd q Wbar M N)) : ℤ)) ∧
+        M ^ 2 - c * M * N + N ^ 2 * (q : ℤ)
+          = (Nat.card (LinearMap.ker (degreeFormEnd q Wbar M N)) : ℤ) * (q : ℤ) ^ v := by
+  have hq2 : 2 ≤ q := (Fact.out : q.Prime).two_le
+  have hqprime : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp (Fact.out : q.Prime)
+  intro k
+  induction k with
+  | zero =>
+    intro M N hk _ hne
+    exact absurd (Int.natAbs_eq_zero.mp (Nat.le_zero.mp hk)) hne
+  | succ k ih =>
+    intro M N hk hMN hne
+    by_cases hdvd : ((q : ℤ) ∣ M ^ 2 - c * M * N + N ^ 2 * (q : ℤ))
+    · -- `q ∣ d` forces `q ∣ M`, so one `F` peels off
+      have hqM : (q : ℤ) ∣ M := by
+        have hsplit : M ^ 2 - c * M * N + N ^ 2 * (q : ℤ)
+            = M * (M - c * N) + N ^ 2 * (q : ℤ) := by ring
+        rw [hsplit] at hdvd
+        have hmul : (q : ℤ) ∣ M * (M - c * N) := by
+          have h2 : (q : ℤ) ∣ N ^ 2 * (q : ℤ) := dvd_mul_left _ _
+          simpa using dvd_sub hdvd h2
+        rcases hqprime.dvd_mul.mp hmul with h | h
+        · exact h
+        · exact absurd h hMN
+      obtain ⟨M₀, rfl⟩ := hqM
+      have hqe : ((q : ℤ) * M₀) ^ 2 - c * ((q : ℤ) * M₀) * N + N ^ 2 * (q : ℤ)
+          = (q : ℤ) * ((c * M₀ - N) ^ 2 - c * (c * M₀ - N) * M₀ + M₀ ^ 2 * (q : ℤ)) := by
+        ring
+      have hene : (c * M₀ - N) ^ 2 - c * (c * M₀ - N) * M₀ + M₀ ^ 2 * (q : ℤ) ≠ 0 := by
+        intro h0
+        rw [h0, mul_zero] at hqe
+        exact hne hqe
+      have hMN' : ¬ ((q : ℤ) ∣ (c * M₀ - N) - c * M₀) := by
+        rw [show (c * M₀ - N) - c * M₀ = -N by ring]
+        intro h
+        exact hMN (dvd_sub (dvd_mul_right _ _) (((dvd_neg).mp h).mul_left c))
+      have hk' : ((c * M₀ - N) ^ 2 - c * (c * M₀ - N) * M₀ + M₀ ^ 2 * (q : ℤ)).natAbs ≤ k := by
+        have hnat := congrArg Int.natAbs hqe
+        rw [Int.natAbs_mul, Int.natAbs_natCast] at hnat
+        rw [hnat] at hk
+        have hpos : ((c * M₀ - N) ^ 2 - c * (c * M₀ - N) * M₀ + M₀ ^ 2 * (q : ℤ)).natAbs ≠ 0 :=
+          Int.natAbs_ne_zero.mpr hene
+        have h3 : 2 * ((c * M₀ - N) ^ 2 - c * (c * M₀ - N) * M₀ + M₀ ^ 2 * (q : ℤ)).natAbs
+            ≤ k + 1 := le_trans (Nat.mul_le_mul_right _ hq2) hk
+        omega
+      have hsurj : Function.Surjective (degreeFormEnd q Wbar (c * M₀ - N) M₀) :=
+        (surjective_degreeFormEnd q Wbar hc (m := c * M₀ - N) (n := M₀) hene).1
+      have hcard : Nat.card (LinearMap.ker (degreeFormEnd q Wbar ((q : ℤ) * M₀) N))
+          = Nat.card (LinearMap.ker (degreeFormEnd q Wbar (c * M₀ - N) M₀)) := by
+        rw [degreeFormEnd_peel q Wbar hc M₀ N, natCard_ker_mul _ _ hsurj,
+          natCard_ker_frobeniusPointEnd, one_mul]
+      obtain ⟨v, hnd, hval⟩ := ih (c * M₀ - N) M₀ hk' hMN' hene
+      refine ⟨v + 1, ?_, ?_⟩
+      · rw [hcard]; exact hnd
+      · rw [hqe, hcard, hval, pow_succ]; ring
+    · exact ⟨0, by rw [natCard_ker_degreeFormEnd_of_not_dvd q Wbar hc hdvd]; exact hdvd,
+        by rw [natCard_ker_degreeFormEnd_of_not_dvd q Wbar hc hdvd, pow_zero, mul_one]⟩
+
+/-- **The `q`-primary case** (PROVEN 2026-07-28 over
+`natCard_ker_degreeFormEnd_le` and `natCard_ker_frobeniusConj`): when `q ∤ m`
+but `q ∣ d = m² − c·m·n + n²q`, the kernel count is still the value of the
+form.
 
 WHY THIS CASE IS SEPARATE, and it is not an artefact of the proof.  The proven
 `natCard_ker_mul_natCard_ker_conj` evaluates `#ker ψ · #ker ψ'` as `#E[d]`,
@@ -525,31 +1168,43 @@ and `TorsionCard.card_torsionBy` computes `#E[d] = d²` only for `q ∤ d`.  For
 and an ordinary curve over `𝔽₅` has `#E[5] = 5`, not `25`.  So the whole
 `q ∤ d` argument is unavailable here and something new is needed.
 
-WHAT IS NEEDED, reduced as far as it goes (route note, 2026-07-28; the axis
-searched was the factorisation of `ℤ[F]` by powers of `F`).  Note first that
-`q ∣ d` and `q ∤ m` FORCE `q ∤ c`: modulo `q`, `d ≡ m·(m − c·n)`, so `q ∣ d`
-with `q ∤ m` gives `m ≡ c·n`, which needs both `q ∤ c` and `q ∤ n`.  That is
-the ORDINARY case; the supersingular case (`q ∣ c`) never reaches this leaf,
-because there `d ≡ m² ≢ 0`.
+THE PROOF, and it is the route note of 2026-07-28 carried out.  First, `q ∣ d`
+and `q ∤ m` FORCE `q ∤ c`: modulo `q`, `d ≡ m·(m − c·n)`, so `q ∣ d` with
+`q ∤ m` gives `m ≡ c·n`, which needs both `q ∤ c` and `q ∤ n`.  That is the
+ORDINARY case; the supersingular case (`q ∣ c`) never reaches this leaf,
+because there `d ≡ m² ≢ 0`.  This is the ONE place `q ∤ c` is produced, and it
+is what licenses `natCard_ker_zsmul_q_pow`.
 
-Now write `F̄ = [c] − F`, so that `F ∘ F̄ = [q]` — this is the characteristic
-equation again, and it is `degreeFormEnd_mul_conj` at `(m, n) = (0, −1)`.  Any
-`α = [M] − [N]∘F` with `q ∣ M`, say `M = q·M₀`, factors as
-`α = F ∘ ([c·M₀ − N] − [M₀]∘F)`, and `F` is BIJECTIVE on `Wbar(𝔽̄_q)`
-(injective because `x ↦ x^q` is; surjective because `𝔽̄_q` is algebraically
-closed), so `#ker α` is unchanged by peeling `F` off.  Peeling until the first
-coordinate is prime to `q` writes `ψ' = F^k ∘ β` with `q ∤` the first
-coordinate of `β` and `N(β) = d / q^k`, whence
-`#ker ψ · #ker β = #E[d] = #E[q^k] · (d/q^k)²`.  The `q ∤ d` case of this very
-theorem gives `#ker β = d / q^k`, so the leaf collapses to
+Then `F` is BIJECTIVE (`injective_frobeniusPointEnd`,
+`surjective_frobeniusPointEnd`), so peeling it off a composite leaves the
+kernel count alone while dividing the form value by `q`
+(`degreeFormEnd_peel`).  Applying that to the CONJUGATE
+`ψ' = [m − n·c] + [n]∘F` — which is where the `q`s are, since `q ∣ d` with
+`q ∤ m` gives `q ∣ m − n·c` — writes `d = A·q^v` with `A = #ker ψ'` prime to
+`q` (`exists_natCard_ker_mul_pow`).  Finally `ψ ∘ ψ' = [d]` gives
 
-    #E[q^k] = q^k   for  q ∤ c,   equivalently   #ker([c] − F) = q,
+    #ker ψ · A  =  #E[d]  =  #E[A] · #E[q^v]  =  A² · q^v,
 
-the `q`-torsion count of an ORDINARY curve.  THE CHECK THAT WOULD REFUTE this
-reduction: a proof of `#ker([c] − F) = q` for `q ∤ c` that does not go through
-`F` being bijective — or, in the other direction, an `#E[q^∞]` structure
-theorem already in this tree, which a name-level grep of `Fermat/`,
-`.lake/packages/mathlib/` and `~/cs/FLT` did not find. -/
+by `natCard_ker_zsmul_one_of_not_dvd` and `natCard_ker_zsmul_q_pow`, whence
+`#ker ψ = A·q^v = d`.
+
+WHAT THE PROOF ACTUALLY USES, and it is worth recording because it is LESS
+than the statement offers.  `hd` is consumed only to produce `q ∤ c`; the
+argument above never needs `q ∣ d` again, and it therefore proves the `q ∤ d`
+case as well (there `v = 0` and `A = d`).  It does need `hm`, which seeds the
+peeling invariant: the invariant of the conjugate pair `(m − n·c, −n)` is
+`(m − n·c) − c·(−n) = m`.
+
+The DEGENERATE case `d = 0` is discharged by
+`natCard_ker_degreeFormEnd_le` alone: it gives `#ker ψ ≤ 0`, and a `Nat.card`
+is nonnegative, so both sides are `0` — which is correct, the kernel being all
+of the infinite `Wbar(𝔽̄_q)`.
+
+WHAT SURVIVED.  The reduction bottoms out at `natCard_ker_frobeniusConj`,
+`#ker([c] − F) = q` for `q ∤ c` — the ordinary `q`-torsion count, which is
+exactly the `(m, n) = (c, 1)` INSTANCE of this theorem.  So this declaration
+is now a statement about a two-parameter family proven from a single instance
+of itself, and that instance is the leaf. -/
 theorem natCard_ker_degreeFormEnd_of_dvd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
@@ -558,8 +1213,77 @@ theorem natCard_ker_degreeFormEnd_of_dvd (q : ℕ) [Fact q.Prime]
     {m n : ℤ} (hm : ¬ ((q : ℤ) ∣ m))
     (hd : (q : ℤ) ∣ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)) :
     (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
-      = m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) :=
-  sorry
+      = m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) := by
+  classical
+  have hqprime : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp (Fact.out : q.Prime)
+  rcases eq_or_ne (m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)) 0 with hd0 | hd0
+  · -- `d = 0`: the kernel is all of the infinite `Wbar(𝔽̄_q)`, so `Nat.card` is `0`
+    have hle := natCard_ker_degreeFormEnd_le q Wbar hc m n
+    rw [hd0] at hle ⊢
+    exact le_antisymm hle (Int.natCast_nonneg _)
+  -- `q ∣ d` and `q ∤ m` force `q ∣ m − c·n`, hence `q ∤ c`: the ORDINARY case
+  have hmc : (q : ℤ) ∣ m - c * n := by
+    have hsplit : m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)
+        = m * (m - c * n) + n ^ 2 * (q : ℤ) := by ring
+    rw [hsplit] at hd
+    have hmul : (q : ℤ) ∣ m * (m - c * n) := by
+      have h2 : (q : ℤ) ∣ n ^ 2 * (q : ℤ) := dvd_mul_left _ _
+      simpa using dvd_sub hd h2
+    rcases hqprime.dvd_mul.mp hmul with h | h
+    · exact absurd h hm
+    · exact h
+  have hqc : ¬ ((q : ℤ) ∣ c) := by
+    intro h
+    exact hm (by simpa using dvd_add hmc (h.mul_right n))
+  -- peel the conjugate: `d = A · q^v` with `A = #ker ψ'` prime to `q`
+  have hconj := degreeForm_conj c m n (q : ℤ)
+  obtain ⟨v, hnd, hval⟩ := exists_natCard_ker_mul_pow q Wbar hc
+    ((m - n * c) ^ 2 - c * (m - n * c) * (-n) + (-n) ^ 2 * (q : ℤ)).natAbs
+    (m - n * c) (-n) le_rfl
+    (by rw [show (m - n * c) - c * (-n) = m by ring]; exact hm)
+    (by rw [hconj]; exact hd0)
+  rw [hconj] at hval
+  have hA0 : (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ) ≠ 0 := by
+    intro h0
+    exact hnd (by rw [h0]; exact dvd_zero _)
+  have hsurj' : Function.Surjective (degreeFormEnd q Wbar (m - n * c) (-n)) :=
+    (surjective_degreeFormEnd q Wbar hc (m := m) (n := n) hd0).2
+  have hprod := natCard_ker_mul (degreeFormEnd q Wbar m n)
+    (degreeFormEnd q Wbar (m - n * c) (-n)) hsurj'
+  rw [degreeFormEnd_mul_conj q Wbar hc m n] at hprod
+  have hqv : ((q : ℤ) ^ v) ≠ 0 := by
+    have : (0 : ℤ) < (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).pos
+    positivity
+  -- `#E[d] = A² · q^v`, the prime-to-`q` and `q`-primary parts separately
+  have hsplit2 : (m ^ 2 - c * m * n + n ^ 2 * (q : ℤ))
+        • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))
+      = ((Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ)
+          • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+        * (((q : ℤ) ^ v)
+          • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) := by
+    rw [zsmul_one_mul_zsmul_one, hval]
+  have htors : (Nat.card (LinearMap.ker ((m ^ 2 - c * m * n + n ^ 2 * (q : ℤ))
+      • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) : ℤ)
+      = (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ) ^ 2
+        * (q : ℤ) ^ v := by
+    rw [hsplit2, natCard_ker_mul _ _ (surjective_zsmul_one q Wbar hqv),
+      natCard_ker_zsmul_q_pow q Wbar hc hqc v]
+    push_cast
+    rw [natCard_ker_zsmul_one_of_not_dvd q Wbar hnd]
+  have hprodZ : (Nat.card (LinearMap.ker ((m ^ 2 - c * m * n + n ^ 2 * (q : ℤ))
+      • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) : ℤ)
+      = (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+        * (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ) := by
+    exact_mod_cast congrArg (fun k : ℕ => (k : ℤ)) hprod
+  rw [htors] at hprodZ
+  have hX : (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+      = (Nat.card (LinearMap.ker (degreeFormEnd q Wbar (m - n * c) (-n))) : ℤ)
+        * (q : ℤ) ^ v := by
+    refine mul_right_cancel₀ hA0 ?_
+    rw [← hprodZ]
+    ring
+  rw [hX]
+  exact hval.symm
 
 /-- **The degree of `[m] − [n]∘F` is a binary quadratic form of
 discriminant `c² − 4q`, counted by its kernel** (sorry leaf, opened
@@ -692,7 +1416,9 @@ survives is exactly step 1 and step 4, as three named leaves:
   with no hypothesis on `m`.  Half of step 4.
 * `natCard_ker_degreeFormEnd_of_dvd` — the `q`-primary case `q ∣ d`.  The
   other half of step 4, and the only place the ordinary/supersingular
-  dichotomy is used.
+  dichotomy is used.  **PROVEN 2026-07-28**; what survives of it is the
+  single instance `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for
+  `q ∤ c`.
 
 One correction to the route note above.  It records `card_ker_comp`'s side
 condition as "surjectivity of `ψ'` on `𝔽̄_q`-points", to be supplied
