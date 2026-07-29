@@ -683,6 +683,7 @@ public import Mathlib.RingTheory.Polynomial.Basic
 -- Public because `MoretBaillySeed`, `PotentialModularityWitness` and
 -- `HilbertBlumenthalPoint` all appear in SIGNATURE position below.
 public import Fermat.FLT.Modularity.MoretBailly
+public import Fermat.FLT.Mathlib.Analysis.WeilBoundDescent
 
 @[expose] public section
 
@@ -14041,8 +14042,97 @@ theorem charFrob_baseChange_eq_of_absNorm_eq {ℓ : ℕ}
   exact charFrob_eq_of_conj_of_inertia ρ w v hq'.toHeightOneSpectrumRingOfIntegersRat
     (hρ.isUnramified q' hq' ⟨hq2, hqℓ⟩) μM μL XM XL h2 hMeq hLeq
 
+/-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE ALGEBRAIC
+HALF** (sorry LEAF; cut 2026-07-29, NINTH OWNER, out of
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` below).
+
+This is the old citation with its ARCHIMEDEAN clause removed and the DICKSON
+RELATION that produces it put in instead.  The trade is exact and it is a
+reduction: the fourth conjunct used to ASSERT the Ramanujan–Petersson bound
+`‖φ (a w)‖ ≤ 2 √(N w)` on the descended eigenvalue — a genuine piece of
+Blasius/Brylinski–Labesse/Carayol — and now asserts only that the UPSTAIRS
+eigensystem's coefficient at the place above `w` is the `p`-th Dickson value
+of the descended one.  The bound is then DERIVED, in Lean, by
+`Fermat.norm_le_two_mul_sqrt_of_dickson_of_norm_le`
+(`Mathlib/Analysis/WeilBoundDescent.lean`), from the bound UPSTAIRS, which the
+sole call site already holds and used to discard.
+
+**WHY THIS IS A REAL REDUCTION AND NOT A RELOCATION.**  The Dickson clause is
+pure Galois theory: at an inert `w` the unique place `W` of `L` above it has
+`Frob_W = Frob_w ^ p`, so the Satake parameters upstairs are the `p`-th powers
+of those downstairs and `tr_W = D_p(tr_w, N w)`.  Nothing automorphic enters.
+The archimedean bound, by contrast, is Ramanujan–Petersson, and it is exactly
+what has been removed from the citation.  See the NINTH-OWNER AUDIT on the
+consumer below for the check that the clause is faithful for every `ζ`, not
+only for the untwisted `ζ w = 1`.
+
+The residual citation here is therefore Arthur–Clozel Ch. 3 Thm 4.2(d) TOGETHER
+WITH the `p`-th-power Frobenius comparison at inert places — the two things
+findings (1) and (4) of the consumer's docstring identify — and no longer the
+archimedean estimate on top of them. -/
+theorem exists_baseChangeDickson_of_prime_cyclic_step_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (EL : Type u) [Field EL] [NumberField EL]
+    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
+    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (PL : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → Polynomial EL)
+    (hPL : ∀ v ∉ SL,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+        v).map Wit.ιO = (PL v).map ψL) :
+    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
+      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
+      (∀ x : EL, ψM (ιM x) = ψL x) ∧
+      ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D))))
+        (a δ : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → EM)
+        (ζ : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → AlgebraicClosure ℚ_[ℓ]),
+        ∀ w ∉ S,
+          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
+          ζ w ^ p = 1 ∧
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 1) = ζ w * ψM (a w) ∧
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 0) = ζ w ^ 2 * ψM (δ w) ∧
+          ∃ v, v ∉ SL ∧
+            Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal ^ p ∧
+            ιM ((PL v).coeff 1) =
+              - Fermat.traceSum (-(a w))
+                ((Ideal.absNorm w.asIdeal : ℕ) : EM) p :=
+  sorry
+
 /-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE
-LITERATURE CITATION ITSELF** (sorry LEAF, cut 2026-07-26, THIRD OWNER):
+LITERATURE CITATION ITSELF** (**PROVEN 2026-07-29, NINTH OWNER**, as an
+assembly over `exists_baseChangeDickson_of_prime_cyclic_step_of_inert`
+immediately above, which is the same statement with the archimedean clause
+traded for the Dickson relation; the rest of this docstring is the citation's
+history and is retained because the residual citation is still Thm 4.2(d)):
 Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced Theory of
 the Trace Formula*, Ann. of Math. Studies 120 (1989), **Ch. 3 Thm 4.2(d)**
 (WEAK LIFTING, descent half), with **Ch. 3 Thm 3.1** (fibres of global
@@ -14578,6 +14668,76 @@ weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
 verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
 
+(9) NINTH-OWNER AUDIT (2026-07-29), run because this leaf has now been
+RESTATED A SECOND TIME (a binder added, the archimedean clause moved from
+asserted to derived), which VOIDS the earlier audits rather than inheriting
+them.  Four corrections; three of them retire obstructions that no longer
+exist, and none of them overturns the residual citation.
+
+*What changed.*  The leaf gains one binder,
+`hPLcusp : ∀ v ∉ SL, ∀ φ : EL →+* ℂ, ‖φ ((PL v).coeff 1)‖ ≤ 2 √(N v)` — the
+Ramanujan bound on the INPUT eigensystem — and is now PROVEN over
+`exists_baseChangeDickson_of_prime_cyclic_step_of_inert`, which carries the
+Dickson relation in place of the archimedean conclusion.  The binder cost the
+consumer NOTHING: `exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`
+already bound exactly this as `_hcusp` and discarded it, which is finding (8)'s
+own observation.  This is the standard shape here — the missing hypothesis was
+already in the caller's hand.
+
+*Correction to (7), and it is the load-bearing one.*  Finding (7) refuted "an
+a-priori bound pinning an element of `E_λ` that is algebraic of degree `≤ p`
+over `ψℓ(E)` INTO `ψℓ(E)`", with the witness `E = ℚ`, `p = 3`, `ℓ = 11`,
+`N w = 9`, `x = 3√3`.  That refutation is CORRECT and now OBSOLETE: it is aimed
+at a conclusion demanding `ψℓ(E)`-rationality, and since the 2026-07-27
+existential-coefficient-field restatement the conclusion demands only that the
+eigenvalue lie in SOME number field `EM ⊇ EL`.  (7)'s own witness `3√3` is
+algebraic of degree `2` over `ℚ` and so lies in the number field `ℚ(√3)` — it
+satisfies the restated conclusion instead of refuting it.  Consequently the
+"ENTIRE residual content is the gap between `E_λ` and the number field
+`ψℓ(E)`" of finding (4)(a) is ALSO obsolete: algebraicity is all the restated
+leaf needs, and algebraicity is exactly what the Dickson relation supplies.
+CHECK THAT REFUTES this correction: exhibit a clause of the conclusion below
+demanding `a w ∈ Set.range (ψℓ ∘ ‹EL → Wit.E›)` rather than membership in the
+existentially bound `EM`.  There is none.
+
+*Correction to (8).*  Finding (8) concludes that a future owner "must add BOTH
+binders together", `hPLcusp` AND the `Gal(L/M)`-invariance, and that adding
+only `hPLcusp` is "a half-repair that reads like a whole one".  That is right
+FOR ROUTE (i) — Thm 4.2(d) does need an invariant cuspidal `Π` — and it does
+NOT apply to the archimedean clause, because the DESCENT OF THAT CLAUSE IS NOT
+THM 4.2(d).  It is the Dickson relation (Galois theory: `Frob_W = Frob_w ^ p`
+at an inert `w`) followed by elementary analysis.  So `hPLcusp` alone is
+exactly sufficient for the clause it was introduced for, `_hinv` remains
+unused, and (8)'s warning stands undisturbed for the rest of route (i).
+
+*Correction to the PIN AUDIT below.*  Its claim that the reference project's
+`cyclic_base_change` is phrased "through an `IsAutomorphic` predicate on
+quaternionic forms — vocabulary this project does not have" is half wrong.
+`WeightTwoAutomorphicForm.HeckeAlgebra D 𝒮`
+(`AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`) IS present,
+is `public import`ed by this module, and its subtree carries two direct
+sorries.  Only the PREDICATE is absent (`grep -rn IsAutomorphic Fermat/`
+returns nothing).  The verdict is unaffected — asserting automorphy of an
+existentially bound object is the citation under another name — but the price
+was overstated by a whole theory.
+
+*Faithfulness of the Dickson clause, checked for every `ζ`, not only `ζ w = 1`.*
+The clause says `ιM ((PL v).coeff 1) = - traceSum (-(a w)) (N w) p` at the place
+`v` above `w`.  Write `π` for the untwisted member of the base-change fibre, so
+that `ρ|_{G_M} ≅ ρ_π ⊗ χ` and `ζ w = χ(Frob_w)`.  Then clause (2) forces
+`ψM (a w) = -tr ρ_π(Frob_w)`, i.e. `-(a w)` IS `π`'s trace at `w`.  On the `L`
+side `ρ|_{G_L} = ρ_π|_{G_L}`, so the twist is INVISIBLE upstairs and
+`tr_v = D_p(tr_w(π), N w)`, whence `(PL v).coeff 1 = -tr_v` gives the clause on
+the nose.  So the clause is true for every `ζ`, and in particular the cut does
+not secretly force `ζ w = 1`.  CHECK THAT REFUTES: exhibit a place where
+`ρ|_{G_L}` sees the character `χ` — impossible, `χ` is a character of
+`Gal(L/M)` and is trivial on `G_L` by construction.
+
+*One scope note.*  The elementary descent used here is valid at `p = 2` as well
+as at odd `p`, unlike the Skolem–Noether route of finding (4), which is
+odd-`p`-only because `λ^2, λ^p ∈ K^×` stop being coprime conditions.  The two
+routes are independent and this one has no parity restriction.
+
 PIN AUDIT (2026-07-24/25, inherited): no automorphic-representation
 vocabulary exists on this pin, and the reference project's
 `cyclic_base_change` (`~/cs/FLT`,
@@ -14660,7 +14820,9 @@ theorem exists_baseChangeDescentData_of_prime_cyclic_step_of_inert
       (IntermediateField.fixedField C)) → Polynomial EL)
     (hPL : ∀ v ∉ SL,
       ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
-        v).map Wit.ιO = (PL v).map ψL) :
+        v).map Wit.ιO = (PL v).map ψL)
+    (hPLcusp : ∀ v ∉ SL, ∀ φ : EL →+* ℂ,
+      ‖φ ((PL v).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm v.asIdeal)) :
     ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
       (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
       (∀ x : EL, ψM (ιM x) = ψL x) ∧
@@ -14678,8 +14840,21 @@ theorem exists_baseChangeDescentData_of_prime_cyclic_step_of_inert
           Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
             w).coeff 0) = ζ w ^ 2 * ψM (δ w) ∧
           (∀ φ : EM →+* ℂ,
-            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) :=
-  sorry
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) := by
+  obtain ⟨EM, hfieldEM, hnfEM, ψM, ιM, hψι, S, a, δ, ζ, hdata⟩ :=
+    exists_baseChangeDickson_of_prime_cyclic_step_of_inert hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard EL ψL SL PL hPL
+  refine ⟨EM, hfieldEM, hnfEM, ψM, ιM, hψι, S, a, δ, ζ, ?_⟩
+  intro w hwS hinert
+  obtain ⟨hζ, hcoeff1, hcoeff0, v, hvSL, hNv, hdick⟩ := hdata w hwS hinert
+  refine ⟨hζ, hcoeff1, hcoeff0, fun φ => ?_⟩
+  -- the archimedean bound DESCENDS: it is the Dickson relation plus the
+  -- elementary `p |sinh s| ≤ |sinh (p s)|` / `|sin (p θ)| ≤ p |sin θ|` pair.
+  refine Fermat.norm_le_two_mul_sqrt_of_dickson_of_norm_le ιM
+    (absNorm_asIdeal_pos w) hp.one_lt.le (a w) ((PL v).coeff 1) hdick ?_ φ
+  intro ψ
+  have hb := hPLcusp v hvSL ψ
+  rwa [hNv] at hb
 
 /-- **Cyclic descent of a CUSPIDAL Hilbert eigensystem, prime degree, at the
 NON-SPLIT places** — Arthur–Clozel, *Simple Algebras, Base Change, and the
@@ -14917,6 +15092,16 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
       EL ψL SL
       (fun v => Polynomial.X ^ 2 - Polynomial.C (aL v) * Polynomial.X +
         Polynomial.C ((Ideal.absNorm v.asIdeal : ℕ) : EL)) hSL
+      (by
+        -- the archimedean bound the caller already holds, threaded on at last:
+        -- `(PL v).coeff 1 = - aL v`, and negation does not move a norm
+        intro v hv φ
+        have hc : (Polynomial.X ^ 2 - Polynomial.C (aL v) * Polynomial.X +
+            Polynomial.C ((Ideal.absNorm v.asIdeal : ℕ) : EL)).coeff 1 = - aL v := by
+          simp [Polynomial.coeff_add, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
+            Polynomial.coeff_C]
+        rw [hc, map_neg, norm_neg]
+        exact _hcusp v hv φ)
   -- the finitely many places over `ℓ`, where `ρ` is ramified and the
   -- cyclotomic-determinant lemma does not apply
   obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
