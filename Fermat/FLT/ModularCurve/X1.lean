@@ -8036,8 +8036,8 @@ this development before.
 SHARPER.**  A `Γ₀`-structure is a subgroup and `IsGamma0Isogeny.level`
 can only ask that it be carried INTO the quotient's subgroup, recovering
 equality from an `ℓ ∤ N` counting argument written out in that
-docstring.  A `Γ₁`-structure is a SECTION, so `IsGamma1Isogeny.level` is
-a single equation between morphisms `T ⟶ d'.E`,
+docstring.  A `Γ₁`-structure is a SECTION, so `IsGamma1Isogeny.map_sec`
+is a single equation between morphisms `T ⟶ d'.E`,
 `d.pt.sec ≫ map = d'.pt.sec`.  That is the same simplification
 `IsBaseChangeOfGamma1.map_sec` enjoys over `IsBaseChangeOf.liesIn_iff`,
 and for the same reason: a section is transported by one equation where
@@ -8059,36 +8059,44 @@ here, and the reason is structural rather than lucky:
 speaks only about `T n`.  So the diamonds are not part of the data this
 pin exists to constrain. -/
 
-/-- **An `ℓ`-ISOGENY OF `Γ₁(N)`-DATA** (new 2026-07-29) — a morphism of
+/-- **An `ℓ`-ISOGENY OF `Γ₁(N)`-DATA** (new 2026-07-28) — a morphism of
 elliptic schemes with cyclic kernel of order `ℓ`, carrying the level
-structure to the level structure.  This is the witness type
-`IsModularHeckeActionGamma1` quantifies over: `d'` is `d/D` with its
-induced `Γ₁(N)`-structure `P + D`.
+POINT to the level POINT.  The `Γ₁` analogue of `X0.lean`'s
+`IsGamma0Isogeny`, and `d'` is `d/D = (E/D, φ_D P)`.
 
-**Why the quotient is quantified over rather than constructed** —
-verbatim the `Γ₀` reason.  Constructing `E/D` as an elliptic SCHEME over
-an arbitrary base needs fppf quotients of abelian schemes by finite flat
-subgroup schemes (Raynaud, SGA 3), which is not available here; what IS
-available is the `ℚ̄`-fibrewise statement, and the pin is only ever
-evaluated over `Spec ℚ̄`.  Quantifying over witnesses therefore costs
-nothing and lets the pin be written today.
+**THE ONE FIELD THAT DIFFERS FROM THE `Γ₀` VERSION, AND IT IS SIMPLER.**
+`IsGamma0Isogeny.level` is a biconditional-free *inclusion* clause at
+every base, because a cyclic subgroup scheme has to be compared as a
+subfunctor.  A `Γ₁`-structure is a SECTION, so the whole clause collapses
+to one equation between morphisms, `map_sec : d.pt.sec ≫ map = d'.pt.sec`
+— and it implies the point-level statement at every base by
+precomposition, since `RelPoint.ofSection` is literally `g ↦ g ≫ sec`.
+This is the same simplification `IsBaseChangeOfGamma1.map_sec` records
+against `IsBaseChangeOf.liesIn_iff`, and for the same reason.
 
-**Why `level` is an EQUATION where the `Γ₀` clause is an inclusion.**
-`d.pt.sec` is a section, so its image under `map` is the single morphism
-`d.pt.sec ≫ map`, and "the level structure of `d'` IS the image of the
-level structure of `d`" is literally `d.pt.sec ≫ map = d'.pt.sec`.  No
-side condition is needed to recover equality from it, which is the one
-place the `Γ₁` tower is easier than the `Γ₀` one rather than merely
-parallel to it.
+**WHY THE QUOTIENT IS QUANTIFIED OVER RATHER THAN CONSTRUCTED**, verbatim
+from the `Γ₀` version: constructing `E/D` as an elliptic SCHEME over an
+arbitrary base needs fppf quotients by finite flat subgroup schemes
+(Raynaud, SGA 3), which is not available at this pin; the `ℚ̄`-fibrewise
+statement is, and the pin below is only ever evaluated over `Spec ℚ̄`.
 
-**Why this pins `d'` up to isomorphism, which is what the pin needs.**
-Two quotients of `d` by the same `D` are isomorphic as `Γ₁(N)`-data over
-the same base — `ker_eq` makes the two surjections have the same kernel,
-and `level` makes the comparison isomorphism carry the one level
-structure to the other — hence are related by an
-`IsBaseChangeOfGamma1 (𝟙 _)`, hence sent to the SAME point of `Y_1(N)`
-by `IsCoarseModuliY1.classify_natural`.  That is exactly what makes the
-`∀`-over-witnesses form of the pin satisfiable rather than
+**WHY `¬ ℓ ∣ N` MATTERS FOR SATISFIABILITY, and it is a `Γ₁`-specific
+remark.**  `d'.pt` is a field of `Gamma1Datum`, so it carries exact order
+`N` by assumption.  That is consistent with `map_sec` precisely because
+`ℓ ∤ N` at every use site: `map` has kernel of order `ℓ`, hence is
+injective on the `N`-torsion, hence `φ_D P` really does have exact order
+`N`.  If `ℓ ∣ N` and `D ⊆ ⟨P⟩`, no `Γ₁`-datum `d'` satisfies `map_sec` at
+all — so the pin below would become VACUOUS at such an `ℓ`, not false.
+The pin quantifies only over primes `ℓ ∤ N`, so the case never arises.
+
+**WHY THIS PINS `d'` UP TO ISOMORPHISM**, which is what the pin needs, and
+the `Γ₀` argument transfers with the level structure carried along: two
+quotients of `d` by the same `D` are related by a unique isomorphism `ψ`
+of elliptic schemes with `ψ ∘ map = map'`, and then `map_sec` for both
+gives `ψ (φ_D P) = φ_D' P`, so `ψ` is an isomorphism of `Γ₁(N)`-DATA over
+the same base, hence an `IsBaseChangeOfGamma1 (𝟙 _)`, hence sent to the
+SAME point of `Y_1(N)` by `IsCoarseModuliY1.classify_natural`.  That is
+what makes the `∀`-over-witnesses form of the pin satisfiable rather than
 contradictory. -/
 structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T) where
   /-- the morphism of elliptic schemes -/
@@ -8104,130 +8112,63 @@ structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T
   /-- `ker` really is the kernel, at every base point -/
   ker_eq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
     RelPoint.post map comm x = d'.ab.zero g ↔ RelPoint.LiesIn ker.ι x
-  /-- the level structure is carried ONTO the level structure: `P + D` -/
-  level : d.pt.sec ≫ map = d'.pt.sec
+  /-- **the level point is carried to the level point**: `φ_D P = P'`.
+  One equation of morphisms, which is the whole `Γ₁` level clause -/
+  map_sec : d.pt.sec ≫ map = d'.pt.sec
 
-/-- **THE MODULI PIN FOR THE HECKE OPERATORS ON `Y_1(N)`** (new
-2026-07-29): `T ℓ` acts on Abel–Jacobi images by the
-`Γ₁(N)`-correspondence.
+/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28):
+`T ℓ` acts on Abel–Jacobi images by the `Γ₁(N)`-correspondence.
 
 For a prime `ℓ ∤ N` and a `Γ₁(N)`-datum `d = (E, P)` over `ℚ̄`, let
 `D₁, …, D_{ℓ+1}` be the cyclic subgroups of `E` of order `ℓ` and
-`d/D_k = (E/D_k, P + D_k)` the quotient data.  Then
+`d/D_k = (E/D_k, φ_{D_k} P)` the quotient data.  Then
 
     T ℓ (aj [d]) = ∑_k aj [d/D_k]
 
 where `[·]` is `IsCoarseModuliY1.classify` followed by the open immersion
-`Y_1(N) ↪ X_1(N)`.  This is the classical moduli description of `T_ℓ` on
-`Div⁰(X_1(N))` — Diamond–Shurman §5.2–5.3, and §6.3 for the
-moduli-theoretic form, `Γ₁(N)` being their default level structure so
-that this is the case the source states first — read through
-`aj : x ↦ [x] − [o]`: the correspondence sends `[x]` to `∑_k [x_k]`, so
-it sends `[x] − [o]` to `∑_k ([x_k] − [o])`.
+`Y_1(N) ↪ X_1(N)`.  This is the classical `T_ℓ` on `Div⁰(X_1(N))` read
+through `aj : x ↦ [x] − [o]`.  Diamond–Shurman §5.2–5.3 state the
+correspondence at `Γ₁(N)` directly — `Γ₁` being their default level — so
+this is if anything the better-documented of the two.
 
-**The `ℓ + 1` subgroups are not counted**, verbatim the `Γ₀` treatment.
+**THE `ℓ + 1` SUBGROUPS ARE NOT COUNTED**, exactly as on the `Γ₀` side:
 `m` is an arbitrary arity and the two hypotheses say the kernels are
-pairwise distinct (the first) and exhaust the order-`ℓ` cyclic subgroups
-(the second); over `ℚ̄` that forces `m = ℓ + 1` without this file having
-to prove it.  Distinctness and exhaustion are compared on `ℚ̄`-POINTS,
-which is faithful because a finite subgroup scheme of an elliptic curve
-over an algebraically closed field of characteristic `0` is étale and
-hence determined by its points.
+pairwise distinct and exhaust the order-`ℓ` cyclic subgroups, which over
+`ℚ̄` forces `m = ℓ + 1` without this file proving it.  Distinctness and
+exhaustion are compared on `ℚ̄`-POINTS, which is faithful because a finite
+subgroup scheme of an elliptic curve over an algebraically closed field of
+characteristic `0` is étale, hence determined by its points.
 
-**WHY `ℓ ∤ N`, precisely — it is needed for CONTENT, not for soundness.**
-At `ℓ ∣ N` the classical correspondence is `U_ℓ` rather than `T_ℓ`, and
-the reason is visible in this statement: exactly one of the `ℓ + 1`
-subgroups, namely `D = ⟨(N/ℓ)·P⟩`, lies inside `⟨P⟩`, so `φ_D(P)` has
-order `N/ℓ` and `d/D` is not a `Γ₁(N)`-datum at all.  No
-`IsGamma1Isogeny N ℓ d ·` witness with that kernel then exists, the
-exhaustion hypothesis becomes unsatisfiable, and the pin says NOTHING at
-such a prime rather than something false.  So dropping `¬ ℓ ∣ N` would
-not make this predicate false; it would leave it silent where it looks
-informative, which is worse.  `ℓ ∤ N` is also exactly the anemic range
-`IsHeckeIsotypicDecompositionGamma1.isotypic` is restricted to, for the
-independent reason recorded there.
+**WHY `H` IS TAKEN AS DATA AND NOT AS
+`ModularLevelShape.IsCompactification`.**  The latter is
+`Nonempty (IsX1Compactification …)`, a `Prop`, and this pin needs
+`H.coarse.classify`, which is DATA.  Consumers holding only the truncated
+form recover `H` by `Nonempty` elimination, which is legitimate because
+every statement they are proving is a `Prop` — that is exactly what the
+proof of `exists_heckeAction_isotypicQuotients_gamma1` below does, and it
+is why no `∀ H` quantification is needed anywhere.
 
-**FAITHFULNESS.**  The predicate is *true* of the genuine Hecke
-operators; the last paragraph of `IsGamma1Isogeny` is why the
-`∀`-over-witnesses form does not overconstrain them.  It is *false* of
-the `N = 37` eigen-system swap, which is the whole reason it exists:
-`J_0(37) ∼ E_{37a} × E_{37b}` is an isogeny factor of `J_1(37)` through
-the degeneracy map, the swapped `T 2` differs from the genuine one there
-already (`a₂(37a) = −2`, `a₂(37b) = 0`), and the right-hand side above is
-computed from the moduli and admits no such permutation.
-
-**`h.some` RATHER THAN A QUANTIFIER OVER COMPACTIFICATION DATA**, and the
-two rejected alternatives.  `IsHeckeIsotypicDecompositionGamma1` carries
-`ModularLevelShape.IsCompactification`, a `Prop`-truncation, where
-`X0.lean`'s structure carries the `IsX0Compactification` DATUM; so the
-field below must choose one, exactly as
-`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` already does at
-`.gamma0`.  Quantifying UNIVERSALLY over the datum was considered and
-rejected as an emptiness risk: two coarse structures on the same `strY`
-differ by an automorphism `u` of `Y` over `ℚ` (`IsCoarseModuliY1.universal`
-applied to each against the other), the pin for one is the pin for the
-other conjugated by `u`, and demanding both would force `T ℓ` to commute
-with every such `u` — not something the genuine Hecke operators are known
-here to do.  Quantifying EXISTENTIALLY is strictly weaker than the form
-below and would still exclude the `N = 37` swap, since the conjugating
-automorphisms of `X_1(37)` are diamonds and Atkin–Lehner, all of which
-commute with `T 2`; it is not used only because the choice form is what
-the file already does elsewhere.
-
-**NON-VACUITY, and the honest gap.**  Informally the witnesses are
-Vélu's formulas (`exists_velu_quotient_isogeny` in
-`Fermat/FLT/EllipticCurve/Velu.lean`); **that `IsGamma1Isogeny` is
-inhabited at the SCHEME level is NOT proven here**, and `X0.lean` records
-that the obvious check does not close, because Vélu produces a map of
-POINT GROUPS while `map` is a morphism of SCHEMES.  The consequence is
-the same in both shapes and it is graceful: if the pin were formally
-over-constrained, the leaves that PRODUCE
-`IsHeckeIsotypicDecompositionGamma1` would become unprovable — they
-assert `Nonempty`, so they cannot degrade into vacuous truth — while
-every CONSUMER of the structure, `isTorsion_factor_of_heckeIsotypic_gamma1`
-included, only gets a weaker hypothesis to work from.  **Adding this
-field can therefore block the cut, but it cannot make anything
-downstream false.**
-
-**THE PIN IS VACUOUS AT `N = 0`, AND `X0.lean`'s PIN HAS THE SAME HOLE**
-(found 2026-07-29, while auditing the sharpening this field unblocks).
-Every natural number divides `0`, so `¬ ℓ ∣ N` is FALSE for every `ℓ`
-when `N = 0`, and at level `0` this predicate is the empty conjunction:
-it constrains `T` not at all.  Any consumer that wants the pin's CONTENT
-must therefore carry `N ≠ 0` itself.
-
-That matters for exactly one thing, and it is the thing this field was
-built for.  Sharpening `isTorsion_factor_of_heckeIsotypic_gamma1` below
-from the full `hL` to the single value `L(coeff i, 1) ≠ 0` is sound
-**only under `N ≠ 0`**: at `N = 0` the sharpened hypothesis is very much
-weaker than the full `hL` while `T` is back to being arbitrary, so the
-sharpened leaf would rest on a pin that is not there.  To be exact about
-the strength of this claim, since a docstring that overstates one is
-worse than one that says nothing: no `N = 0` counterexample is exhibited
-here, and the present leaf is safe at `N = 0` for an independent reason
-(the full `hL` quantifies over the level-`0` eigen-systems recorded on
-`exists_heckeAction_isotypicQuotients_gamma1`, including transcendental
-ones, and is correspondingly hard to satisfy).  What is established is
-the gap, not a refutation: the sharpened form would be UNSUPPORTED at
-`N = 0`, and that is enough to require the hypothesis rather than to
-argue about it.  And
-`N ≠ 0` is not free: `isTorsion_jacobian_of_lFunction_ne_zero_gamma1`
-below — the leaf's only consumer — does not carry it, nor does
-`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` above it.  So
-the sharpening is not a one-line weakening of one statement; it is a
-hypothesis threaded through two further declarations, which is the
-second reason it is not done in the edit that lands the pin.
-
-The identical hole is in `X0.lean`'s `IsModularHeckeAction` — same
-`¬ ℓ ∣ N`, same vacuity at `N = 0` — so the sharpening that file has
-recorded as UNBLOCKED since 2026-07-28 needs the same `N ≠ 0` audit
-before it is carried out.  **Nothing is currently wrong in either file**:
-both Kolyvagin–Logachev leaves still carry the full `hL`, which is strong
-enough at every level including `0`.  This paragraph is a warning to the
-next editor, not a defect report. -/
+**FAITHFULNESS, and the honest caveat is the `Γ₀` one.**  The predicate is
+*true* of the genuine Hecke operators (the previous paragraph of
+`IsGamma1Isogeny` is why the `∀`-over-witnesses form does not
+overconstrain them), and it is *false* of `T n := 𝟙 J` and of the `N = 37`
+eigen-system swap, which is the entire reason it exists.  **But its
+non-vacuity AS A LEAN STATEMENT — that `IsGamma1Isogeny` is inhabited at
+the scheme level — is NOT proven here**, exactly as `IsGamma0Isogeny`'s is
+not.  The consequence is recorded on the leaf that consumes it below and
+it is a graceful degradation, not a soundness problem: were the pin
+formally vacuous, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+would be precisely as hard as the undecomposed node and no harder, and
+nothing false would have been asserted.  **The check that settles it**:
+produce one `IsGamma1Isogeny` over `Spec ℚ̄`.  Note that `X0.lean` records
+that check as RUN and NOT closing from `exists_velu_quotient_isogeny` plus
+`exists_ellipticScheme_of_weierstrass`, because those produce maps of
+POINT GROUPS while `map` is a morphism of SCHEMES; the obstruction is
+level-structure-free, so it transfers here verbatim and should not be
+re-run from those two inputs. -/
 def IsModularHeckeActionGamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (h : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o)
     (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr) : Prop :=
@@ -8246,9 +8187,9 @@ def IsModularHeckeActionGamma1 (N : ℕ)
       letI := ab.addCommGroup (specAlgClos ℚ)
       RelPoint.post (T ℓ) (T_comp ℓ)
           (jac.aj (specAlgClos ℚ)
-            (RelPoint.post jY h.comm (h.coarse.classify (specAlgClos ℚ) d)))
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
         = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
-            (RelPoint.post jY h.comm (h.coarse.classify (specAlgClos ℚ) (dq k)))
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
 
 /-- **EICHLER–SHIMURA for `Γ₁(N)`, as a datum: the Hecke-isotypic
 decomposition of `J_1(N)`** (new 2026-07-28) — the `Γ₁` counterpart of
@@ -8415,161 +8356,26 @@ structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
   finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
       ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
 
-/-! #### The `Γ₁` moduli pin for the Hecke operators
+/-! #### The `Γ₁` moduli pin for the Hecke operators — HOISTED ABOVE
 
-**NEW 2026-07-28.**  This subsection is the `Γ₁` transport of `X0.lean`'s
-"moduli pin" subsection, and it is written because
-`exists_heckeAction_isotypicQuotients_gamma1` below cannot be cut without
-it.  Three docstrings in this file — the one on
-`isTorsion_factor_of_heckeIsotypic_gamma1`, the one on the leaf below, and
-`IsHeckeIsotypicDecompositionGamma1`'s "WHAT IS NOT PINNED, and it is the
-crux" — all name the same missing object and prescribe it in the same
-words: *"a `ModularLevelShape`-shaped or `Γ₁`-specific analogue of
-`IsGamma0Isogeny` with `(E, P) ↦ ∑_D (E/D, P + D)`"*.  That is
-`IsGamma1Isogeny` and `IsModularHeckeActionGamma1` below.
+**RELEASE-19 MERGE NOTE.**  `IsGamma1Isogeny` and `IsModularHeckeActionGamma1`
+were written TWICE, independently, a day apart and in two different places in
+this file: on 2026-07-28 here, and on 2026-07-29 in the
+`#### The moduli pin for the Hecke operators on `Y_1(N)`` subsection above.  The
+two definitions are the same object — they differ only in the name of the level
+field (`level` vs `map_sec`) and in a binder name — but two declarations of one
+name in one namespace is a `has already been declared` error, and no textual
+merge can see it because the regions do not overlap.
 
-**WHAT THIS SUBSECTION DOES AND DOES NOT CHANGE.**  It changes NO existing
-statement.  `IsHeckeIsotypicDecompositionGamma1` does **not** acquire a
-`heckeModuli` field here, and `isTorsion_factor_of_heckeIsotypic_gamma1`
-is untouched — both of those are the "cut-level repair of the structure"
-that the leaf below explicitly warns must not be combined with anything
-else in one edit, and neither is done here.  What the pin is used for is
-strictly local: it lets the leaf below be PROVEN from two sub-leaves
-instead of being a bare `sorry`, exactly as on the `Γ₀` side.  Sharpening
-the structure remains open and is now UNBLOCKED, since the object it
-needs exists. -/
+The 2026-07-28 pair (the released one, with the fuller docstrings) is kept and
+now stands ABOVE, at the earlier subsection's position, because
+`IsHeckeIsotypicDecompositionGamma1.heckeModuli` — added on 2026-07-29 — refers
+to `IsModularHeckeActionGamma1` and is declared between the two sites.  Nothing
+is left here.
 
-/-- **An `ℓ`-ISOGENY OF `Γ₁(N)`-DATA** (new 2026-07-28) — a morphism of
-elliptic schemes with cyclic kernel of order `ℓ`, carrying the level
-POINT to the level POINT.  The `Γ₁` analogue of `X0.lean`'s
-`IsGamma0Isogeny`, and `d'` is `d/D = (E/D, φ_D P)`.
-
-**THE ONE FIELD THAT DIFFERS FROM THE `Γ₀` VERSION, AND IT IS SIMPLER.**
-`IsGamma0Isogeny.level` is a biconditional-free *inclusion* clause at
-every base, because a cyclic subgroup scheme has to be compared as a
-subfunctor.  A `Γ₁`-structure is a SECTION, so the whole clause collapses
-to one equation between morphisms, `map_sec : d.pt.sec ≫ map = d'.pt.sec`
-— and it implies the point-level statement at every base by
-precomposition, since `RelPoint.ofSection` is literally `g ↦ g ≫ sec`.
-This is the same simplification `IsBaseChangeOfGamma1.map_sec` records
-against `IsBaseChangeOf.liesIn_iff`, and for the same reason.
-
-**WHY THE QUOTIENT IS QUANTIFIED OVER RATHER THAN CONSTRUCTED**, verbatim
-from the `Γ₀` version: constructing `E/D` as an elliptic SCHEME over an
-arbitrary base needs fppf quotients by finite flat subgroup schemes
-(Raynaud, SGA 3), which is not available at this pin; the `ℚ̄`-fibrewise
-statement is, and the pin below is only ever evaluated over `Spec ℚ̄`.
-
-**WHY `¬ ℓ ∣ N` MATTERS FOR SATISFIABILITY, and it is a `Γ₁`-specific
-remark.**  `d'.pt` is a field of `Gamma1Datum`, so it carries exact order
-`N` by assumption.  That is consistent with `map_sec` precisely because
-`ℓ ∤ N` at every use site: `map` has kernel of order `ℓ`, hence is
-injective on the `N`-torsion, hence `φ_D P` really does have exact order
-`N`.  If `ℓ ∣ N` and `D ⊆ ⟨P⟩`, no `Γ₁`-datum `d'` satisfies `map_sec` at
-all — so the pin below would become VACUOUS at such an `ℓ`, not false.
-The pin quantifies only over primes `ℓ ∤ N`, so the case never arises.
-
-**WHY THIS PINS `d'` UP TO ISOMORPHISM**, which is what the pin needs, and
-the `Γ₀` argument transfers with the level structure carried along: two
-quotients of `d` by the same `D` are related by a unique isomorphism `ψ`
-of elliptic schemes with `ψ ∘ map = map'`, and then `map_sec` for both
-gives `ψ (φ_D P) = φ_D' P`, so `ψ` is an isomorphism of `Γ₁(N)`-DATA over
-the same base, hence an `IsBaseChangeOfGamma1 (𝟙 _)`, hence sent to the
-SAME point of `Y_1(N)` by `IsCoarseModuliY1.classify_natural`.  That is
-what makes the `∀`-over-witnesses form of the pin satisfiable rather than
-contradictory. -/
-structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T) where
-  /-- the morphism of elliptic schemes -/
-  map : d.E ⟶ d'.E
-  /-- it lies over the base -/
-  comm : map ≫ d'.f = d.f
-  /-- it is a homomorphism -/
-  add : IsAdditiveOn d.ab d'.ab map comm
-  /-- it is surjective -/
-  surj : AlgebraicGeometry.Surjective map
-  /-- its kernel, a cyclic subgroup scheme of order `ℓ` -/
-  ker : CyclicSubgroupOfOrder d.ab ℓ
-  /-- `ker` really is the kernel, at every base point -/
-  ker_eq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
-    RelPoint.post map comm x = d'.ab.zero g ↔ RelPoint.LiesIn ker.ι x
-  /-- **the level point is carried to the level point**: `φ_D P = P'`.
-  One equation of morphisms, which is the whole `Γ₁` level clause -/
-  map_sec : d.pt.sec ≫ map = d'.pt.sec
-
-/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28):
-`T ℓ` acts on Abel–Jacobi images by the `Γ₁(N)`-correspondence.
-
-For a prime `ℓ ∤ N` and a `Γ₁(N)`-datum `d = (E, P)` over `ℚ̄`, let
-`D₁, …, D_{ℓ+1}` be the cyclic subgroups of `E` of order `ℓ` and
-`d/D_k = (E/D_k, φ_{D_k} P)` the quotient data.  Then
-
-    T ℓ (aj [d]) = ∑_k aj [d/D_k]
-
-where `[·]` is `IsCoarseModuliY1.classify` followed by the open immersion
-`Y_1(N) ↪ X_1(N)`.  This is the classical `T_ℓ` on `Div⁰(X_1(N))` read
-through `aj : x ↦ [x] − [o]`.  Diamond–Shurman §5.2–5.3 state the
-correspondence at `Γ₁(N)` directly — `Γ₁` being their default level — so
-this is if anything the better-documented of the two.
-
-**THE `ℓ + 1` SUBGROUPS ARE NOT COUNTED**, exactly as on the `Γ₀` side:
-`m` is an arbitrary arity and the two hypotheses say the kernels are
-pairwise distinct and exhaust the order-`ℓ` cyclic subgroups, which over
-`ℚ̄` forces `m = ℓ + 1` without this file proving it.  Distinctness and
-exhaustion are compared on `ℚ̄`-POINTS, which is faithful because a finite
-subgroup scheme of an elliptic curve over an algebraically closed field of
-characteristic `0` is étale, hence determined by its points.
-
-**WHY `H` IS TAKEN AS DATA AND NOT AS
-`ModularLevelShape.IsCompactification`.**  The latter is
-`Nonempty (IsX1Compactification …)`, a `Prop`, and this pin needs
-`H.coarse.classify`, which is DATA.  Consumers holding only the truncated
-form recover `H` by `Nonempty` elimination, which is legitimate because
-every statement they are proving is a `Prop` — that is exactly what the
-proof of `exists_heckeAction_isotypicQuotients_gamma1` below does, and it
-is why no `∀ H` quantification is needed anywhere.
-
-**FAITHFULNESS, and the honest caveat is the `Γ₀` one.**  The predicate is
-*true* of the genuine Hecke operators (the previous paragraph of
-`IsGamma1Isogeny` is why the `∀`-over-witnesses form does not
-overconstrain them), and it is *false* of `T n := 𝟙 J` and of the `N = 37`
-eigen-system swap, which is the entire reason it exists.  **But its
-non-vacuity AS A LEAN STATEMENT — that `IsGamma1Isogeny` is inhabited at
-the scheme level — is NOT proven here**, exactly as `IsGamma0Isogeny`'s is
-not.  The consequence is recorded on the leaf that consumes it below and
-it is a graceful degradation, not a soundness problem: were the pin
-formally vacuous, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
-would be precisely as hard as the undecomposed node and no harder, and
-nothing false would have been asserted.  **The check that settles it**:
-produce one `IsGamma1Isogeny` over `Spec ℚ̄`.  Note that `X0.lean` records
-that check as RUN and NOT closing from `exists_velu_quotient_isogeny` plus
-`exists_ellipticScheme_of_weierstrass`, because those produce maps of
-POINT GROUPS while `map` is a morphism of SCHEMES; the obstruction is
-level-structure-free, so it transfers here verbatim and should not be
-re-run from those two inputs. -/
-def IsModularHeckeActionGamma1 (N : ℕ)
-    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
-    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (jac : IsJacobianOf strX ab o)
-    (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr) : Prop :=
-  ∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
-    ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
-      (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-      (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
-      -- the kernels are pairwise distinct on `ℚ̄`-points
-      (∀ k k' : Fin m,
-        (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
-          RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
-      -- and they exhaust the cyclic subgroups of order `ℓ`
-      (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
-        ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
-          RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
-      letI := ab.addCommGroup (specAlgClos ℚ)
-      RelPoint.post (T ℓ) (T_comp ℓ)
-          (jac.aj (specAlgClos ℚ)
-            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
-        = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
-            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+The paragraph this subsection used to carry, that
+`IsHeckeIsotypicDecompositionGamma1` "does **not** acquire a `heckeModuli` field
+here", was true when written and is now STALE: that field exists. -/
 
 /-- **THE `Γ₁` HECKE CORRESPONDENCE, AS A NATURAL FAMILY ON POINTS**
 (sorry leaf, new 2026-07-28) — the geometric half of
