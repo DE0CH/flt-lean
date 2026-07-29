@@ -24747,13 +24747,250 @@ hypothesis already threaded through the `R_F = T_F` section of this file.
 handed in from `exists_hilbertTaylorWilesBottomLevel`, where the correct value
 is `max(Cohen's q, the Taylor–Wiles number)`. -/
 
-/-- **The diamond operators at `Q` and the control map down to `R_∅`** (LEAF —
-the LOCAL half of the 2026-07-28 CONTROL/GENERATORS cut of
+/-! ### The CONTROL/GENERATORS cut, decomposed further (2026-07-28, second pass)
+
+The three declarations below decompose `exists_hilbertAuxDiamondControl` into
+one bridge (`HilbertDeformationDatum.toAux`, PROVEN) and three named leaves.
+The assembly is then proven glue.
+
+**WHY THE FINER CUT IS SAFE HERE THOUGH THE DOCUMENTED ONE WAS NOT.** The
+docstring of `exists_hilbertAuxDiamondControl` records — correctly — that the
+split "produce `ex`, `diamond`" then "given those, produce `toRuniv`" is FALSE,
+witnessed by the junk `diamond` sending every `S_i` to `0`: it satisfies
+`taylorWilesLevelIdeal ℓ ex ≤ ker diamond` (indeed
+`taylorWilesLevelIdeal_le_aug` makes that automatic) while forcing
+`(taylorWilesAug ℓ q).map diamond = ⊥` and hence `ker toRuniv = ⊥`, i.e.
+`R_Q = R_∅`.
+
+That refutation depends on `toRuniv` being EXISTENTIALLY QUANTIFIED in the
+second half, so that a prover may choose it to match a degenerate `diamond`.
+The cut below inverts the order: `toRuniv` is CONSTRUCTED FIRST, as the
+classifying map that `h𝒟Q` produces against `𝒟` viewed at raised level, and is
+then handed to the diamond leaf as a FIXED hypothesis together with its three
+compatibilities. A prover of `exists_hilbertAuxDiamondQuotient` cannot choose
+it, so the junk `diamond` is excluded exactly as it is in the undivided leaf:
+`ker toRuniv` is whatever the classifying map's kernel actually is, and the
+degenerate `diamond` is admissible only in the case the original statement also
+permits it. So the hazard the parent records is real and is not inherited here.
+-/
+
+/-- **A base-level deformation IS a raised-level deformation at a Taylor–Wiles
+prime set** (LEAF — the split-torus clause at the places of `Q`).
+
+Everything but the split-torus clause is `IsHilbertHardlyRamified`'s own fields:
+`isUnramified` only WEAKENS (it is asked at fewer places, `w ∉ Q`), and `det`,
+`isFlat`, `isTameAtTwo` are verbatim. So the whole content is
+`isSplitTorusAt`: at each `w ∈ Q` the restriction `ρ|_{G_{F_w}}` is diagonal in
+some `R`-basis with unramified second character.
+
+**THE ARGUMENT.** `hQ` puts `w` away from `2` and `ℓ`, so `𝒟`'s own
+`isUnramified` makes `ρ|_{G_{F_w}}` UNRAMIFIED — it factors through the
+procyclic unramified quotient, hence is determined by the single matrix
+`ρ(Frob_w)`. `hQ` also gives `α ≠ β` in `k` with
+`(ρbar|_{G_F}).charFrob w = (X − α)(X − β)`, and `𝒟.resid` transports that to
+say the residual char poly of `ρ(Frob_w)` has two DISTINCT roots. A matrix over
+a complete local ring whose char poly factors into coprime monic factors modulo
+the maximal ideal splits by Hensel: the factorisation lifts, the two eigen-lines
+are free of rank one and split `M`, and the resulting `e : M ≃ₗ[R] R × R`
+carries the (unramified) action to a diagonal pair `(χ, δ)`. Both characters
+are unramified because the whole restriction is, which is more than the clause
+asks (`δ` unramified only).
+
+**THIS IS THE `Q = ∅` LEMMA'S GENERAL FORM.**
+`isHilbertRaisedLevelHardlyRamified_empty_iff` above is the case `Q = ∅`, where
+the split-torus clause is vacuous and no hypothesis on `Q` is needed; this leaf
+is what the case `Q ≠ ∅` costs, and `hQ` is exactly the price.
+
+**FAITHFULNESS.** The converse is FALSE and is not claimed: a raised-level
+deformation is genuinely allowed to ramify at `Q`, which is the whole point of
+level raising. Only this direction holds, and it is the one the control map
+needs.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
+§5.3 (the local condition at a Taylor–Wiles prime); Fujiwara §3. -/
+theorem isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
+    (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ :=
+  sorry
+
+/-- **A base-level datum IS a raised-level datum at `Q`** (PROVEN — the general
+form of `HilbertDeformationDatum.toAuxEmpty` above, which is the case `Q = ∅`).
+
+Field for field the transport is the identity; the only field whose TYPE
+differs is the local condition, and that is exactly the hypothesis `hr`. This
+is what lets `h𝒟Q` be applied to `𝒟` and so produce the control map
+`R_Q → R_∅` without any arithmetic. -/
+def HilbertDeformationDatum.toAux {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (hr : IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi 𝒟.R) 𝒟.ρ) :
+    HilbertAuxDeformationDatum ℓ F Q ρbar where
+  R := 𝒟.R
+  commRing := 𝒟.commRing
+  topologicalSpace := 𝒟.topologicalSpace
+  isTopologicalRing := 𝒟.isTopologicalRing
+  isLocalRing := 𝒟.isLocalRing
+  algebra := 𝒟.algebra
+  isNoetherianRing := 𝒟.isNoetherianRing
+  isAdic := 𝒟.isAdic
+  isAdicComplete := 𝒟.isAdicComplete
+  ρ := 𝒟.ρ
+  isHilbertRaisedLevelHardlyRamified := hr
+  π := 𝒟.π
+  π_surjective := 𝒟.π_surjective
+  resid := 𝒟.resid
+
+/-- **The classifying map onto a TRACE-GENERATED datum is surjective** (LEAF —
+the surjectivity clause of `exists_hilbertAuxDiamondControl`).
+
+`f` is the map weak universality of `𝒟Q` produces; the three hypotheses are
+verbatim the three conjuncts of `HilbertAuxDeformationDatum.IsWeaklyUniversal`
+at the test object `𝒟.toAux`. The conclusion is that it is onto.
+
+**THE ARGUMENT, and why `h𝒟t` is the whole content.**
+`HilbertDeformationDatum.IsTraceGenerated` says the topological closure of the
+subring of `𝒟.R` generated by `range (algebraMap ℤ_[ℓ] 𝒟.R)`, the Teichmüller
+roots, and every `charpoly` coefficient of `𝒟.ρ` is `⊤`. The IMAGE of `f` is a
+subring, and it contains all three families: the `ℤ_ℓ`-image by `halg`; every
+`charpoly` coefficient of `𝒟.ρ` by `hρ`, since `((𝒟Q.ρ g).charpoly).map f` has
+those coefficients as `f`-images; and each Teichmüller root because `hπ` makes
+`f` a LOCAL homomorphism, so it carries the Teichmüller root of a residue to
+the Teichmüller root of that residue, and `𝒟Q.π` is onto `k`. So the image
+contains the generating set, and being a subring it contains the subring they
+generate. It remains to know the image is CLOSED, which is where completeness
+enters: `f` is local between maximal-adically complete Noetherian local rings,
+hence continuous, and the image of a complete ring under a continuous local map
+is complete and therefore closed. Then the image contains the topological
+closure, which is `⊤`.
+
+**WHY THIS IS NOT AUTOMATIC.** Weak universality alone gives a map and says
+NOTHING about its image; `𝒟.R` could be far larger. Trace generation is exactly
+the hypothesis that `𝒟.R` has no more in it than the invariants `f` is forced
+to hit, and it is why `h𝒟t` is threaded through this whole section rather than
+only `h𝒟w`. Dropping `h𝒟t` makes the statement FALSE, not merely open: take
+`𝒟.R` replaced by `𝒟.R⟦T⟧` with the deformation constant in `T` — every
+compatibility still holds and the image misses `T`.
+
+References: Mazur, *Deforming Galois representations*, §1.2; Carayol,
+*Formes modulaires et représentations galoisiennes*, §1. -/
+theorem surjective_of_hilbertAux_classifying
+    (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟t : 𝒟.IsTraceGenerated)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (f : 𝒟Q.R →+* 𝒟.R)
+    (halg : f.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
+    (hπ : 𝒟.π.comp f = 𝒟Q.π)
+    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (𝒟.ρ g).charpoly) :
+    Function.Surjective f :=
+  sorry
+
+/-- **The diamonds and the control identification, at a GIVEN control map**
+(LEAF — the arithmetic core of `exists_hilbertAuxDiamondControl`).
+
+This is local class field theory at the places of `Q` together with the control
+theorem, stated against the control map `toRuniv` that the assembly has already
+CONSTRUCTED from `h𝒟Q`. See the section note above for why fixing `toRuniv`
+first is what makes this cut safe where the documented one was not.
+
+**`diamond`.** The split-torus clause of `IsHilbertRaisedLevelHardlyRamified`
+gives at each `w ∈ Q` a character `χ_w` whose restriction to `I_w` factors
+through the tame quotient `(𝓞_F/w)ˣ`; `ex i` is the `ℓ`-valuation of
+`N w_i − 1`, so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its `ℓ`-Sylow, and `n ≤ ex i` is
+precisely the congruence clause `N w_i ≡ 1 mod ℓ^n` of `hQ`. The conclusion
+`taylorWilesLevelIdeal ℓ ex ≤ ker diamond` says `diamond` factors through
+`Λ ⧸ 𝔟_ex = ℤ_ℓ[Δ_Q]`.
+
+**The control clause.** `ker toRuniv = 𝔫 · R_Q` for
+`𝔫 = Modularity.taylorWilesAug ℓ q`: killing the diamonds is killing the level
+raising, so `R_Q ⧸ 𝔫 ≅ R_∅`. The three compatibilities of `toRuniv` are what
+identify it as the classifying map and so make this the control theorem rather
+than a statement about an arbitrary surjection.
+
+**TWO WEAKNESSES OF `isSplitTorusAt` THAT A PROVER MUST DERIVE, NOT READ OFF**
+(recorded at the predicate and repeated here because this is the half that
+needs them): the clause does NOT pin `χ`/`δ` to reduce to the two residual
+eigenvalues in a prescribed order, and does NOT pin `χ|_{I_w}` to factor
+through the `ℓ`-Sylow `Δ_w`. Both are properties of the CONSTRUCTION, derivable
+from `𝒟Q.resid` together with the distinct-eigenvalue clause of `hQ`.
+
+No cohomology is used here, and `coeff` is deliberately absent: the coefficient
+ring belongs to the generator bound, not to the diamonds.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
+Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
+theorem exists_hilbertAuxDiamondQuotient
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
+    (q : ℕ)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (toRuniv : 𝒟Q.R →+* 𝒟.R)
+    (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
+    (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
+    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map toRuniv = (𝒟.ρ g).charpoly) :
+    ∃ (ex : Fin q → ℕ)
+      (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R),
+      (∀ i, n ≤ ex i) ∧
+      RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
+      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
+  sorry
+
+/-- **The diamond operators at `Q` and the control map down to `R_∅`**
+(**PROVEN GLUE since 2026-07-28 (second pass)** over the three sub-leaves
+immediately above; formerly the LOCAL half of the CONTROL/GENERATORS cut of
 `exists_hilbertAuxDeformationRingPresentation` below).
 
-Items 2 and 3 of that declaration's docstring, produced TOGETHER because they
-cannot honestly be separated: see "WHY THE CUT IS NOT THE OTHER ONE" there for
-the junk `diamond` that refutes the finer split.
+Items 2 and 3 of that declaration's docstring.
+
+**CORRECTION 2026-07-28 (second pass): "produced TOGETHER because they cannot
+honestly be separated" was TOO STRONG, and this declaration no longer relies on
+it.** What the junk `diamond` refutes — see "WHY THE CUT IS NOT THE OTHER ONE"
+below, whose witness is correct — is the split in which the SECOND half still
+gets to CHOOSE `toRuniv`. It does not refute separating them in the other
+order. `toRuniv` is not arithmetic at all: it is the classifying map that
+`h𝒟Q` hands over once `𝒟` is exhibited as a raised-level datum, which costs
+only the split-torus clause at the places of `Q`. Constructing it FIRST and
+passing it as a fixed hypothesis leaves the junk `diamond` no room, because a
+prover of the arithmetic half can no longer pick a `toRuniv` with trivial
+kernel to match it. The section note above states this in full.
+
+So the three leaves this is now glue over are: the split-torus clause
+(`isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet`),
+surjectivity from trace generation (`surjective_of_hilbertAux_classifying`),
+and the diamonds with the control identification
+(`exists_hilbertAuxDiamondQuotient`). Only the last is Taylor–Wiles arithmetic;
+the other two are a local-condition check and a Carayol-style generation
+argument, both far more tractable than the undivided statement.
 
 **`diamond`** is local class field theory at the places of `Q`. The split-torus
 clause of `IsHilbertRaisedLevelHardlyRamified` gives at each `w ∈ Q` a character
@@ -24812,8 +25049,25 @@ theorem exists_hilbertAuxDiamondControl
       (∀ i, n ≤ ex i) ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
-      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
-  sorry
+      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
+  -- The base-level datum `𝒟`, viewed at raised level `Q`.  Only the
+  -- split-torus clause at the places of `Q` is new, and that is the leaf
+  -- `isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet`;
+  -- every other field of the raised-level condition is one of `𝒟`'s own.
+  have hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
+    ℓ F n Q hQ 𝒟
+  -- Weak universality of `R_Q`, applied to that datum, IS the control map:
+  -- no arithmetic is needed to PRODUCE `toRuniv`, only to identify its kernel.
+  obtain ⟨toRuniv, halg, hπ, hρ⟩ := h𝒟Q (𝒟.toAux hr)
+  -- Surjectivity is exactly trace generation of the base ring.
+  have hsurj : Function.Surjective toRuniv :=
+    surjective_of_hilbertAux_classifying ℓ F 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
+  -- The diamonds and the control identification, at this now-FIXED `toRuniv`
+  -- — which is what excludes the junk `diamond` that refutes the naive cut.
+  obtain ⟨ex, diamond, hex, hker, hbex⟩ :=
+    exists_hilbertAuxDiamondQuotient ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
+      hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ
+  exact ⟨ex, diamond, toRuniv, hex, hsurj, hker, hbex⟩
 
 /-- **The `q`-generator bound for `R_Q`** (LEAF — the GLOBAL half of the
 2026-07-28 CONTROL/GENERATORS cut of
@@ -24844,8 +25098,121 @@ and that this bound was therefore false as stated. The predicate does have the
 clause; the audit was stale on the day it was written. Nothing about this leaf
 is blocked on a predicate repair.
 
-`𝒟`, `h𝒟w`, `h𝒟e` and the diamonds are deliberately ABSENT: the generator bound
-is a statement about `R_Q` alone.
+# FALSITY AUDIT (2026-07-28, second pass) — THE LEAF WAS FALSE AS FIRST CUT, AND `hcoeff` IS THE REPAIR
+
+As first cut, this leaf carried `coeff : TaylorWilesCoefficients` as a bare
+parameter appearing in **no hypothesis at all**. It was therefore universally
+quantified over coefficient rings with the WRONG RESIDUE FIELD, and it is
+FALSE — not merely open — in that form.
+
+**The witness.** Take `coeff.carrier := ℤ_[ℓ]` (a complete DVR, compact,
+totally disconnected, residue field `𝔽_ℓ`, topologically finitely generated
+over `ℤ`, maximal ideal `(ℓ)` generated by one regular element — every field of
+`TaylorWilesCoefficients` holds), and take `k := 𝔽_{ℓ²}`. Then no surjection
+`pres` exists, for a reason that has nothing to do with Taylor–Wiles theory:
+
+* `MvPowerSeries (Fin q) 𝒪` is local for `𝒪` local, with maximal ideal
+  `𝔪_𝒪 + (X_1, …, X_q)` and residue field `𝒪/𝔪_𝒪`.
+* A surjective ring homomorphism out of a local ring onto a nonzero ring has
+  kernel contained in the maximal ideal, so it identifies the target's residue
+  field with the source's. Here `𝒟Q.π : 𝒟Q.R ↠ k` onto a FIELD together with
+  `IsLocalRing 𝒟Q.R` makes `k` the residue field of `𝒟Q.R`.
+* So `pres` would force `k ≅ 𝒪/𝔪_𝒪 = 𝔽_ℓ`, i.e. `Nat.card k = ℓ`, against
+  `Nat.card k = ℓ²`.
+
+**It is not vacuously true.** The rest of the hypothesis package is satisfiable
+at `k = 𝔽_{ℓ²}`: `exists_isWeaklyUniversal_hilbertAuxDeformationDatum` above
+produces a weakly universal `𝒟Q` for ANY finite `k` carrying `Algebra ℤ_[ℓ] k`
+once the category is nonempty, and residual representations with coefficients
+in `𝔽_{ℓ²}` are the generic case of the theory rather than an exotic one. The
+counterexample is also insensitive to `q`: at `q = 0`, `Q = ∅` the prime-set
+clause's local half is vacuous and the leaf reads `𝒪 ↠ R_∅`, refuted the same
+way.
+
+**THIS IS THE SAME DEFECT THE `ℚ` SIDE FOUND AND REPAIRED ON THE SAME DAY**,
+and the repair here is its mirror. See the section "FAITHFULNESS REPAIR
+(2026-07-28) — `hcoeff` WAS MISSING AND THE LEAF WAS UNPROVABLE WITHOUT IT" on
+`Modularity.exists_auxDeformationRingPresentation`, whose counterexample is
+`coeff := TaylorWilesCoefficients.padicInt p` against any `k` with more than
+`p` elements — the same one. The `ℚ`-level twin
+`Modularity.exists_auxDeformationPresSurjection` has carried
+
+    hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* Runiv,
+      Function.Surjective c
+
+ever since; this leaf now carries it against `𝒟.R`, which is that statement's
+`Runiv`. **This is why `𝒟` is a hypothesis** — the previous version of this
+paragraph said `𝒟` was "deliberately ABSENT" because "the generator bound is a
+statement about `R_Q` alone", and that decision is precisely what made the leaf
+false: with `𝒟` out of scope there is no ring in scope other than `𝒟Q.R`
+itself against which `coeff` can be pinned, and pinning it against `𝒟Q.R` is
+the conclusion.
+
+**WHAT `hcoeff` DOES AND DOES NOT BUY, stated so the next prover does not have
+to rediscover it.** It is exactly the NECESSARY condition above: it supplies a
+ring map `coeff.carrier → 𝒟.R` and so forces `coeff`'s residue field to be `k`,
+killing the counterexample. It is **not** obviously sufficient, and the gap is
+worth naming: what the Greenberg–Wiles argument needs is a `coeff.carrier`
+-algebra structure on `𝒟Q.R`, and `hcoeff` gives one on `𝒟.R` while
+`toRuniv : 𝒟Q.R ↠ 𝒟.R` runs the WRONG WAY to transport it. Classically the gap
+is closed because `coeff.carrier = W(k)` is absolutely unramified, hence
+formally smooth over `ℤ_ℓ`, so the map lifts along the surjection with
+nilpotent-by-completeness kernel; but `TaylorWilesCoefficients` does not demand
+absolute unramifiedness, and for a RAMIFIED `𝒪` with residue field `k` (say
+`ℤ_ℓ[ζ_ℓ]`) no lift need exist. The `ℚ`-level twin has exactly the same gap in
+exactly the same place. Closing it is an interface decision — either add
+absolute unramifiedness to `TaylorWilesCoefficients`, or hypothesise the lift —
+and it is deliberately NOT made here, because it would change a structure
+shared with the `ℚ` side. A prover who finds the lift unavailable has found
+this, not a gap in the mathematics.
+
+`h𝒟w`, `h𝒟e` and the diamonds remain absent: beyond the coefficient pin, the
+generator bound is a statement about `R_Q` alone.
+
+# THE ROUTE, IN THREE PIECES — not yet cut, and stated so it can be
+
+Left undivided on purpose: the statement was FALSE until the repair above, and
+decomposing a statement in the same pass that repairs it is how two
+individually-correct edits combine into a third wrong one. The cut below is
+what a successor should write, and each piece is a genuine named leaf:
+
+1. **The coefficient structure.** `∃ c : coeff.carrier →+* 𝒟Q.R` compatible
+   with the residue maps (`𝒟Q.π ∘ c` is the residue map of `coeff.carrier`
+   followed by the identification of its residue field with `k`). This is the
+   step `hcoeff` does NOT supply — see the previous section — and it is where
+   absolute unramifiedness of `coeff.carrier` is really used. Everything
+   downstream is a statement about `𝒟Q.R` as a `coeff.carrier`-algebra.
+2. **The tangent-space bound (the arithmetic).** With `c` in hand, the
+   cotangent space `𝔪_{R_Q} ⧸ (𝔪_{R_Q}² + c(𝔪_𝒪)·R_Q)` is spanned by `q`
+   elements. This is Greenberg–Wiles over `F` plus Mazur's identification of
+   that space with `H¹_Q(F, ad⁰ρbar)ᵛ`: the formula's archimedean terms consume
+   `htr`, the dual Selmer group `H¹_{Q*}(F, ad⁰ρbar(1))` vanishes by the second
+   conjunct of `hQ`, and the formula collapses to
+   `dim_k H¹_Q(F, ad⁰ρbar) = #Q = q`. `hirrF` is what makes `ad⁰` the right
+   adjoint module and the space finite-dimensional. This is the ONLY piece that
+   is Taylor–Wiles mathematics.
+3. **Complete-local generation (pure commutative algebra).** A complete
+   Noetherian local `𝒪`-algebra whose cotangent space over `𝒪` is spanned by
+   `q` elements receives a surjection from `𝒪⟦x_1, …, x_q⟧`: send `x_i` to
+   lifts of the spanning set, then Nakayama plus `isAdicComplete` upgrades
+   "generates the cotangent space" to "generates topologically" to "onto".
+
+**PIECE 3 EXISTS ALREADY BUT IS UNREACHABLE FROM HERE, AND THAT IS A STANDING
+STRUCTURAL FACT, NOT AN OVERSIGHT.** `Deformation.lean` has exactly this
+machinery — `surjective_of_mvPowerSeries_ringHom`,
+`exists_minimal_mvPowerSeries_presentation`,
+`exists_tangent_family_of_mvPowerSeries_presentation`. It cannot be used here:
+`Deformation.lean` `public import`s THIS module, so importing it back is a
+cycle, which is the same CIRCULARITY GUARD that already forced
+`exists_unit_smul_of_vecMul_eq_row` above to be a verbatim re-proof of that
+file's `exists_unit_smul_of_vecMul_eq` under a different name. So piece 3 is
+either re-proved here under a fresh name (the precedent), or — better, since it
+is pure commutative algebra with no deformation theory in it — HOISTED out of
+`Deformation.lean` into a module upstream of both, for which
+`HardlyRamified/CompleteLocalNoetherian.lean` (already imported here, and
+already the home of the adic-completeness lemmas) is the natural target.
+Hoisting is the recommended option: it removes a duplication rather than adding
+one, and `Deformation.lean` keeps seeing the names through this file.
 
 References: Greenberg, *Iwasawa theory and p-adic deformations*; Wiles, Ann. of
 Math. 141 (1995), ch. 2 (the Selmer-group formula); Darmon–Diamond–Taylor §2.7;
@@ -24861,7 +25228,10 @@ theorem exists_hilbertAuxDeformationRingGenerators
     {ρbar : GaloisRep ℚ k V}
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
+      Function.Surjective c)
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
@@ -25019,6 +25389,8 @@ theorem exists_hilbertAuxDeformationRingPresentation
     (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
     (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
     (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
+    (hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
+      Function.Surjective c)
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
@@ -25036,8 +25408,8 @@ theorem exists_hilbertAuxDeformationRingPresentation
     exists_hilbertAuxDiamondControl ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
       hQcard hQ 𝒟Q h𝒟Q
   obtain ⟨pres, hpres⟩ :=
-    exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF q coeff n Q
-      hQcard hQ 𝒟Q h𝒟Q
+    exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 q coeff
+      hcoeff n Q hQcard hQ 𝒟Q h𝒟Q
   exact ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩
 
 /-- **The auxiliary Hecke module at raised level, with its bottom control**
@@ -25402,10 +25774,22 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   -- obtained as a consequence instead of demanded of an abstract ring.
   obtain ⟨f, -, -, hfalg, hfπ, hfρ⟩ :=
     exists_module_of_hilbertAuxHeckeAlgebra 𝒟Q h𝒟Q H
+  -- The coefficient ring is the right one.  `hbot` already presents `𝒟.R` over
+  -- `Λ_coeff`, and that is what pins `coeff`'s residue field to `k`.  Without
+  -- it the RING half is FALSE, not merely open — see the FALSITY AUDIT on
+  -- `exists_hilbertAuxDeformationRingGenerators`; `hbot` was simply never
+  -- threaded into the RING half of the cut, exactly as on the `ℚ` side.
+  have hcoeff : ∃ c : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R,
+      Function.Surjective c := by
+    obtain ⟨L⟩ := hbot
+    letI := L.commRingR
+    exact ⟨L.toRuniv.comp L.pres,
+      L.toRuniv_surjective.comp L.pres_surjective⟩
   -- The RING half.
   obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
-      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff n Q hQcard hQ 𝒟Q h𝒟Q
+      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff n Q hQcard hQ 𝒟Q
+      h𝒟Q
   -- The HECKE half.  Since the FREENESS/COMPARISON refutation of 2026-07-28 it
   -- PRODUCES the auxiliary Hecke module rather than asserting freeness of the
   -- unpinned `H.M`; classically the `M` it hands back IS `H.M`.
