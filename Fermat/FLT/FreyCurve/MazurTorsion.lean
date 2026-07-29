@@ -182,6 +182,10 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- bare `import` is not re-exported, and this file is itself publicly
 -- imported.
 public import Mathlib.AlgebraicGeometry.Morphisms.FlatMono
+-- `Fermat.locallyOfFinitePresentation_of_comp` (Stacks 02FV), consumed by
+-- `X0GenusOne.etale_of_mono_of_relCurve` below.  Hoisted 2026-07-28 out of
+-- `Modularity/AbelianSchemeIsogeny.lean`, which is not in this file's cone.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.FinitePresentationCancel
 -- Minkowski's discriminant theorem (`exists_not_isUnramifiedAt_int_of_isGalois`)
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
@@ -1974,7 +1978,38 @@ pinned `T`, i.e. exactly the input
 that axis is therefore unchanged by this cut, and the check that would
 refute THIS paragraph is: exhibit a statement of "`A` is cut out by the
 Eisenstein ideal" that does not quantify over an unpinned family of
-endomorphisms.** -/
+endomorphisms.**
+
+**UPDATE 2026-07-28 — THAT REFUTING CHECK IS NOW MET; the Thm 4 / §II.4
+split is no longer blocked for the reason given above.**  On the same day
+`IsHeckeIsotypicDecomposition` (`X0.lean`) gained the field
+`heckeModuli : IsModularHeckeAction N h jac T T_comp` — "`T ℓ` acts on
+Abel–Jacobi images by `(E, C) ↦ ∑_D (E/D, (C+D)/D)` at every prime
+`ℓ ∤ N`" — so its `T` IS pinned to the genuine Hecke correspondence (its
+own docstring records that this is what excludes the `N = 37` eigen-system
+swap), and `exists_heckeIsotypicDecomposition` produces such a `D` for the
+Jacobian of any `IsX0Compactification` over `ℚ`.  Against that `D.T`, "`u`
+kills the Eisenstein ideal" is expressible outright and without
+quantifying over endomorphisms: for every prime `ℓ ∤ N`, every base `g` and
+every `x : RelPoint jstr g`,
+`RelPoint.post u hu (RelPoint.post (D.T ℓ) (D.T_comp ℓ) x)
+  = (ℓ + 1) • RelPoint.post u hu x`.
+Per the doctrine's "STATING a theory is not PROVING it": the cut needs
+`T` only stated and pinned, so the fact that `exists_modularHeckeAction`
+is itself still a sorry leaf does not block it.
+
+**WHAT THE SPLIT WOULD STILL COST, and this is the check that would refute
+THIS paragraph in turn.**  `exists_heckeIsotypicDecomposition` wants an
+`IsX0Compactification N strX strY j` over `SpecQ`, and `IsX0JNeronDatum`
+does not carry one.  It carries `hX : IsCompactificationY0 strY strX`
+(fields `j`, `over`, `isOpenImmersion`, `isDominant`, `proper`,
+`Smooth strX`) and `d.model : IsX0Compactification N xstr ystr jZ` over
+`Spec ℤ_(q)`.  The `ℚ`-side fields that are therefore missing are exactly
+`SmoothOfRelativeDimension 1 strX`, `GeometricallyConnected strX` and
+`finite_compl`; the first two are base changes of `d.model`'s own along
+`SpecLoc.generic R`.  Refute this paragraph by producing that
+`IsX0Compactification` over `ℚ` from `d` — it is bookkeeping, not
+mathematics, and it is the whole remaining cost of the split. -/
 
 /-- `Spec 𝔽_q[ε]`, `ε² = 0` — the base over which a tangent vector to the
 special fibre is a relative point. -/
@@ -2172,7 +2207,29 @@ discharged by an empty hypothesis.  Nor is it trivially true: drop
 `hcert` and the conclusion is FALSE, since `A := Spec ℚ` with `u := ` the
 structure map makes the second hypothesis vacuous and the conclusion
 would assert that `X_0(N)` has at most one rational point in each residue
-disc, which is Mazur's theorem itself. -/
+disc, which is Mazur's theorem itself.
+
+**ROUTE CHECK, 2026-07-28.**  Every input the three-step proof above names
+was checked to EXIST in the tree, by grep, rather than assumed:
+`IsX0JNeronDatum.properX` and `IsX0JNeronDatum.intX` (`X0.lean`),
+`exists_x0JacobianModel_of_curveModel` (`X0.lean`),
+`bijective_pre_generic_of_isProper` (`X0.lean`),
+`x0CurveModel_of_jNeronDatum` (this file) and
+`exists_abelianGoodReductionModel` (this file, PROVEN).  So steps 1 and 2
+— spread out, and "the images agree integrally" — are assembly over an
+existing API, and step 3 is the only one that is mathematics.
+
+That is where the natural cut of this leaf is, and it has NOT been taken
+here: split off *"a morphism of `ℤ_(q)`-schemes whose induced map on
+`𝔽_q`-tangent vectors at a point of the special fibre is injective is
+injective on the `ℤ_(q)`-points reducing to that point"* — Nakayama on
+completed local rings plus the valuative criterion, mentioning no modular
+curve, no `N`, and no Eisenstein ideal, and reusable verbatim by
+`X1.lean`.  What stops it being done in the same pass as the correction
+above is that it needs the `RelPoint`/`IsAbelianGoodReductionModel`
+plumbing of steps 1–2 written out, which is a day's work in an API this
+docstring can only name.  Whoever takes this leaf should take that cut
+first rather than proving the whole three steps at once. -/
 theorem formalImmersion_of_cuspFormalImmersionCert (N q : ℕ)
     (_hq : q.Prime) (_hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
@@ -6323,11 +6380,22 @@ CHARACTERISTIC, because that is where the AVAILABLE machinery splits:
   says so: the tame route needs `q ≠ 2`, and the `2`-adic case is where
   `Q₈` and `SL₂(𝔽₃)` occur), so the `2`-adic case is a separate leaf.
 
-THE HOIST THAT THIS CUT NEEDS, AND WHICH HAS NOT BEEN DONE.
+**SUPERSEDED 2026-07-28 FOR `B₀¹` ITSELF, THOUGH NOT FOR `B₀²ᵃ`.**  `B₀¹` is
+now PROVEN, and its declaration has MOVED out of this section down to just
+above `B₀`, where `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg`
+(`B₀²ᵃ`) is already in scope: `C¹² = 1` from
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq` gives
+`C²⁴ = 1`, and the Serre–Tate transport carries that to `λ(σ)²⁴ = 1`.  So
+the three-leaf split described above was never needed for `B₀¹`, and the
+only hoist the cut ever required was of `B₀¹`'s own one-line declaration.
+The reduction theory the paragraphs below are about is now demanded only by
+`B₀²ᵃ`, where they still apply verbatim.
+
+THE HOIST THAT `B₀²ᵃ` STILL NEEDS, AND WHICH HAS NOT BEEN DONE.
 `PotentiallyGoodModel` and its producers sit ~1100 lines BELOW this point
 IN THIS FILE, so Lean's lack of forward references puts them out of reach
 here, and the three-leaf split described above therefore does NOT exist in
-the tree: `B₀¹` below is still the single leaf it always was.
+the tree.
 
 The branch that wrote this paragraph moved the cluster VERBATIM into a new
 `Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean` (the Minkowski precedent).
@@ -6349,63 +6417,9 @@ kept because it is the design, and the design is right. -/
 -- `WeierstrassCurve.PotentiallyGoodModel`, which is declared ~1100 lines BELOW this
 -- point, and Lean has no forward references; 341 made that work by hoisting the whole
 -- PotentiallyGoodModel cluster out into a new module, which is not applicable to this
--- tree (see the release-12 notes).  The cut is worth re-landing: it needs the hoist
--- done IN-FILE against the current declaration order, not a new module.)
-
-/-- **`B₀¹` — Néron–Ogg–Shafarevich: the isogeny character has order
-dividing `24` on inertia at `q`** (sorry leaf; Serre–Tate, *Ann. of Math.*
-88 (1968), Cor. 2 and 3; Silverman *AEC* VII.7; Kraus, *Manuscripta Math.*
-69 (1990), for the two wild primes): at a prime `q ≠ N` with `v_q(j) ≥ 0`,
-the twenty-fourth power of the isogeny character kills the inertia group
-at `q`.
-
-Proof (not formalised).  `v_q(j) ≥ 0` is potentially good reduction
-(Silverman *AEC* VII.5.5), so `E` acquires good reduction over a finite
-extension `K/ℚ_q`.  Since `N ≠ q`, the criterion of
-Néron–Ogg–Shafarevich makes `I_K` act trivially on `E[N]`, so the action of
-`I_q` on `E[N]` — and with it `λ|_{I_q}`, which is that action read on the
-stable line `⟨g⟩` — factors through the semistability defect
-`Φ = Gal(K^{nr}/ℚ_q^{nr})`.  Every `|Φ|` in the classification divides
-`24`: `|Φ| ∈ {1,2,3,4,6}` at residue characteristic `≥ 5` (Serre–Tate),
-with the extra possibilities `Q₈` (order `8`) and `SL₂(𝔽₃)` (order `24`)
-at `q = 2` and the dicyclic group of order `12` at `q = 3` (Kraus).  So
-`orderOf (λ σ) ∣ |Φ| ∣ 24` for every `σ ∈ I_q`.
-
-`hlam` IS LOAD-BEARING, not decoration: without it `lam` is an arbitrary
-character of `Γ ℚ` and the statement is FALSE.  Everything the proof knows
-about `lam` at `q` comes from its being the Galois action on the
-`N`-torsion point `g`.  `hN19` is not needed for this leaf (only `q ≠ N`
-is), and is carried so that the two halves of the cut have one signature.
-
-WHERE THE MACHINERY ALREADY IS, AND THE DECLARATION-ORDER OBSTRUCTION.
-`WeierstrassCurve.PotentiallyGoodModel` — below IN THIS FILE, ~700 lines
-down — is precisely the "acquires good reduction over a number field, with
-residue degree one at `q`" datum this proof wants, and
-`WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral` produces it
-from this leaf's own hypothesis `0 ≤ v_q(j)` (for `q ≠ 2`; the `q = 2` case
-of that producer is not stated there).  Lean has no forward references, so
-none of it is usable at this point of the file as it stands.  The
-precedent for the repair is the Minkowski block and
-`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`: hoist the
-`PotentiallyGoodModel` block VERBATIM into an upstream module and
-`public import` it.  Whoever closes this leaf should do that rather than
-reprove the reduction theory. -/
-theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN19 : 19 < N)
-    (hg : addOrderOf g = N)
-    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
-        ((lam σ : ZMod N).val) • g)
-    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
-    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 :=
-  sorry
+-- tree (see the release-12 notes).  It is no longer worth re-landing FOR `B₀¹`, which
+-- was PROVEN on 2026-07-28 through `B₀²ᵃ` with no reduction theory of its own; the
+-- hoist it describes is now wanted only by `B₀²ᵃ`, `exists_inertiaAut_of_padicValRat_j_nonneg`.)
 
 /-- **`B₀²ᵃ` — SERRE–TATE TRANSPORT: on inertia at a prime of potentially good
 reduction, the isogeny character is a character of an AUTOMORPHISM of the
@@ -6587,6 +6601,89 @@ theorem WeierstrassCurve.not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j
   intro h8
   -- `8 ∣ orderOf (λ σ) ∣ 12` is impossible
   exact absurd (h8.trans (orderOf_dvd_of_pow_eq_one h12)) (by norm_num)
+
+/-- **`B₀¹` — Néron–Ogg–Shafarevich: the isogeny character has order
+dividing `24` on inertia at `q`** (was a sorry leaf; **PROVEN 2026-07-28**
+over `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg` and
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq`; Serre–Tate,
+*Ann. of Math.* 88 (1968), Cor. 2 and 3; Silverman *AEC* VII.7; Kraus,
+*Manuscripta Math.* 69 (1990), for the two wild primes): at a prime
+`q ≠ N` with `v_q(j) ≥ 0`, the twenty-fourth power of the isogeny character
+kills the inertia group at `q`.
+
+**THIS DECLARATION MOVED on 2026-07-28**, from ~200 lines above (just under
+the "Galois-module core of `B₀¹`" section note) to here, immediately above
+`B₀`.  It had to: the whole proof is one application of `B₀²ᵃ`, which is
+declared between the two positions, and Lean has no forward references.
+Nothing between the old and the new position consumed it — its only
+consumer in the tree is `B₀` immediately below — so the move is inert.
+
+Proof, and it is the derivation `B₀²`'s docstring already predicted ("closing
+`exists_inertiaAut_of_padicValRat_j_nonneg` also closes `B₀¹`").  The
+Serre–Tate transport gives, for each `σ ∈ I_q`, an elliptic curve `W/𝔽̄_q`
+and a stabilising change of variables `C` with `Cⁿ = 1 ⟹ λ(σ)ⁿ = 1`;
+`pow_twelve_eq_one_of_smul_eq` gives `C¹² = 1`, hence `C²⁴ = (C¹²)² = 1`,
+hence `λ(σ)²⁴ = 1`.  **No `PotentiallyGoodModel` hoist is needed**, contrary
+to the section note above and to the paragraph that used to close this
+docstring; the reduction theory is entirely inside `B₀²ᵃ`.
+
+The mathematics behind `B₀²ᵃ`, restated here because it is what this
+statement means.  `v_q(j) ≥ 0` is potentially good reduction
+(Silverman *AEC* VII.5.5), so `E` acquires good reduction over a finite
+extension `K/ℚ_q`.  Since `N ≠ q`, the criterion of
+Néron–Ogg–Shafarevich makes `I_K` act trivially on `E[N]`, so the action of
+`I_q` on `E[N]` — and with it `λ|_{I_q}`, which is that action read on the
+stable line `⟨g⟩` — factors through the semistability defect
+`Φ = Gal(K^{nr}/ℚ_q^{nr})`.  Every `|Φ|` in the classification divides
+`24`: `|Φ| ∈ {1,2,3,4,6}` at residue characteristic `≥ 5` (Serre–Tate),
+with the extra possibilities `Q₈` (order `8`) and `SL₂(𝔽₃)` (order `24`)
+at `q = 2` and the dicyclic group of order `12` at `q = 3` (Kraus).  So
+`orderOf (λ σ) ∣ |Φ| ∣ 24` for every `σ ∈ I_q`.
+
+`hlam` IS LOAD-BEARING, not decoration: without it `lam` is an arbitrary
+character of `Γ ℚ` and the statement is FALSE.  Everything the proof knows
+about `lam` at `q` comes from its being the Galois action on the
+`N`-torsion point `g`.  `hN19` is not needed for this leaf (only `q ≠ N`
+is), and is carried so that the two halves of the cut have one signature.
+
+WHAT IS LEFT OPEN, AND WHERE.  Nothing here: the reduction theory this leaf
+used to be blamed for now lives entirely in
+`WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg` above, and the
+classification of the semistability defect entirely in
+`WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq`
+(`Fermat/FLT/EllipticCurve/AutomorphismExponent.lean`).  The old paragraph
+here — "hoist the `PotentiallyGoodModel` block into an upstream module,
+whoever closes this leaf should do that rather than reprove the reduction
+theory" — described a repair for a route that is no longer the route; it is
+recorded in the section note above, where it still applies to `B₀²ᵃ`. -/
+theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  intro σ hσ
+  -- the Serre–Tate transport: `λ(σ)` inherits every relation of an
+  -- automorphism `C` of the good reduction over `𝔽̄_q`
+  obtain ⟨W, hW, C, hC, htrans⟩ :=
+    E.exists_inertiaAut_of_padicValRat_j_nonneg g hN hN19 hg lam hlam hq hqN hj σ hσ
+  haveI : W.IsElliptic := hW
+  refine htrans 24 ?_
+  -- the classification input: `Aut(W)` has exponent dividing `12`, so `C²⁴ = 1`
+  have h12 : C ^ 12 = 1 :=
+    WeierstrassCurve.VariableChange.pow_twelve_eq_one_of_smul_eq hC
+  have h24 : (24 : ℕ) = 12 * 2 := by norm_num
+  rw [h24, pow_mul, h12, one_pow]
 
 /-- **`B₀` — the potentially GOOD half of leaf `B`** (DECOMPOSED and PROVEN
 2026-07-27 from `B₀¹` and `B₀²` above;
@@ -22851,9 +22948,11 @@ and `etale_of_mono_of_relCurve` is now the only open leaf of this
 subsection. -/
 
 /-- **A MONOMORPHISM BETWEEN TWO SMOOTH RELATIVE CURVES OVER THE SAME BASE
-IS ÉTALE** (sorry leaf, 2026-07-28) — the entire geometric content of
-`isIso_of_mono_of_relCurve` below, isolated from its point-set half, and
-the only thing that leaf still needs.
+IS FLAT — MIRACLE FLATNESS** (sorry leaf, 2026-07-28; RECUT the same day
+from `Etale u` to `Flat u`, see the CORRECTION below) — the entire
+geometric content of `isIso_of_mono_of_relCurve` below, isolated from its
+point-set half and now from its bookkeeping half as well, and the only
+mathematics that leaf still needs.
 
 **LOCAL, and free of every global hypothesis**: no properness, no
 connectedness, no condition on the base.  `u` being a monomorphism makes it
@@ -22870,20 +22969,30 @@ local with `R` regular, `S` Cohen–Macaulay and
 locally of finite presentation is exactly `Etale`
 (`AlgebraicGeometry.Etale.of_formallyUnramified_of_flat`).
 
-**WHY THE CONCLUSION IS `Etale u` AND NOT THE SHARPER `Flat u`.**  `Flat u`
-is the whole mathematical content, but it does not suffice downstream at
-this pin: `IsOpenImmersion.of_flat_of_mono` also wants
-`LocallyOfFinitePresentation u`, which here is EGA IV 1.6.2(v) / Stacks
-`02FV` (`g ∘ f` locally of finite presentation and `g` locally of finite
-type ⟹ `f` locally of finite presentation), and that is ABSENT from the
-pin.  Checked with the compiler rather than assumed: neither
+**CORRECTION 2026-07-28 — `02FV` WAS NOT ABSENT, AND THE SHARPER CUT HAS
+NOW BEEN TAKEN.**  This leaf used to conclude `Etale u`.  The reason given
+was that `Flat u` "does not suffice downstream at this pin", because
+`IsOpenImmersion.of_flat_of_mono` also wants `LocallyOfFinitePresentation u`,
+which here is EGA IV 1.6.2(v) / Stacks `02FV` (`f ≫ g` locally of finite
+presentation and `g` locally of finite type ⟹ `f` locally of finite
+presentation), "and that is ABSENT from the pin".
+
+The compiler check behind that sentence was right about MATHLIB — neither
 `MorphismProperty.HasOfPostcompProperty @LocallyOfFinitePresentation
 @LocallyOfFiniteType` nor `LocallyOfFinitePresentation
-(pullback.diagonal g)` for `g` locally of finite type synthesizes — and the
-second is the diagonal reduction that would produce the first.  Stating
-this leaf as `Etale` keeps a missing bookkeeping lemma out of the frontier.
-A successor who wants the sharper cut should land `02FV` first, and then
-`Flat u` splits off cleanly.
+(pullback.diagonal g)` for `g` locally of finite type synthesizes — and
+WRONG about THIS PROJECT, which is the third place the doctrine says to
+grep: `02FV` had been PROVEN on 2026-07-26 as
+`Fermat.locallyOfFinitePresentation_of_comp`, in
+`Modularity/AbelianSchemeIsogeny.lean`, a module that is not in this file's
+import cone and cannot be.  It is now hoisted VERBATIM into
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/FinitePresentationCancel.lean`
+and `public import`ed here, so `Etale u` is a THEOREM (immediately below,
+proven from this leaf) and the frontier carries only the mathematics.
+
+So the residue is exactly `Flat u`, which is what the paragraphs above and
+below are about; nothing else changed, and every hypothesis is used for the
+same reason as before.
 
 **BOTH SMOOTHNESS HYPOTHESES ARE LOAD-BEARING**, over `S = Spec ℚ`:
 
@@ -22920,11 +23029,51 @@ is a nonzerodivisor in every fibre then `A/fA` is flat over `R`) then gives
 `Flat u` directly.  Its cost is the input "a section of a smooth
 relative-dimension-`1` morphism is an effective Cartier divisor", which is
 also absent from the pin. -/
+theorem flat_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    (hXsmooth : SmoothOfRelativeDimension 1 strX)
+    (hJsmooth : SmoothOfRelativeDimension 1 jstr)
+    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : Flat u :=
+  sorry
+
+/-- **A MONOMORPHISM BETWEEN TWO SMOOTH RELATIVE CURVES OVER THE SAME BASE
+IS ÉTALE** (was the sorry leaf of this subsection when cut 2026-07-28;
+**PROVEN the same day** over `flat_of_mono_of_relCurve` above) — the form
+`isIso_of_mono_of_relCurve` below actually consumes.
+
+Everything here is bookkeeping, and it is worth listing because it is
+exactly what used to be bundled into the leaf:
+
+* `Mono u` gives `IsIso (pullback.diagonal u)`, hence
+  `IsOpenImmersion (pullback.diagonal u)`, which is mathlib's criterion for
+  `FormallyUnramified u`;
+* `u ≫ jstr = strX` with `strX` smooth gives
+  `LocallyOfFinitePresentation (u ≫ jstr)`, and `jstr` smooth gives
+  `LocallyOfFiniteType jstr`, so Stacks `02FV`
+  (`Fermat.locallyOfFinitePresentation_of_comp`) gives
+  `LocallyOfFinitePresentation u`;
+* `Flat` + `FormallyUnramified` + `LocallyOfFinitePresentation` is
+  `AlgebraicGeometry.Etale.of_formallyUnramified_of_flat`.
+
+Note that `hJsmooth` is consumed here only through `LocallyOfFiniteType
+jstr`; its real work — the EQUAL relative dimension, without which the
+statement is false — is done inside `flat_of_mono_of_relCurve`. -/
 theorem etale_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
     (hXsmooth : SmoothOfRelativeDimension 1 strX)
     (hJsmooth : SmoothOfRelativeDimension 1 jstr)
-    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : Etale u :=
-  sorry
+    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : Etale u := by
+  haveI := hmono
+  haveI := flat_of_mono_of_relCurve hXsmooth hJsmooth u hu hmono
+  haveI : Smooth strX := SmoothOfRelativeDimension.smooth 1 strX
+  haveI : Smooth jstr := SmoothOfRelativeDimension.smooth 1 jstr
+  haveI : FormallyUnramified u := by
+    haveI : IsIso (Limits.pullback.diagonal u) := inferInstance
+    haveI : IsOpenImmersion (Limits.pullback.diagonal u) := inferInstance
+    infer_instance
+  haveI : LocallyOfFinitePresentation (u ≫ jstr) :=
+    hu ▸ (inferInstance : LocallyOfFinitePresentation strX)
+  haveI : LocallyOfFinitePresentation u :=
+    _root_.Fermat.locallyOfFinitePresentation_of_comp (q := jstr) inferInstance inferInstance
+  exact Etale.of_formallyUnramified_of_flat u
 
 /-- **A MONOMORPHISM BETWEEN TWO RELATIVE CURVES OVER THE SAME BASE IS AN
 ISOMORPHISM** (PROVEN 2026-07-28 by decomposition over
