@@ -74,9 +74,13 @@ them without a human. Do not re-wrap it.
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 - `exists_obstructionCocycle_smallExtension_deformation`
 - `finiteDimensional_h1_adZeroTwistRestricted`
-- `finiteDimensional_h2_adZeroRestricted` (cut out 2026-07-28 from
-  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN: it was that
-  leaf's hidden and ownerless finiteness input)
+- `finiteDimensional_sha2` (the finiteness half of
+  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN.  Cut out
+  2026-07-28 as `finiteDimensional_h2_adZeroRestricted`, about the AMBIENT
+  `H²(G_{ℚ,S}, ad⁰)`; WEAKENED to `Ш²` and renamed the same day — see the
+  OBLIGATION AUDIT on it, which shows the ambient form was strictly stronger
+  than anything the tree consumes and that its finiteness was a DERIVATION,
+  not the hidden input the cut recorded)
 - `finrank_sha2_le_finrank_sha1Twist` (cut out 2026-07-28; the Poitou–Tate
   content of `exists_injective_sha2_dual_sha1Twist`, now PROVEN over these two)
 - `card_sha1Twist_le_card_dualNumberPoints` (re-cut 2026-07-28 in `ℕ` and over
@@ -388,6 +392,17 @@ public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functorial
 -- `exists_obstructionCocycle_relationSpace_sha2` below mention `bdryKer` and `cocycleClass`
 -- in their SIGNATURES.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
+-- The degree-`1` inhomogeneous dictionary (`eval₁`, `eval₁_mul`, `cocycles₁`,
+-- `exists_cocycleClass_eq`): the two SORRY LEAVES
+-- `exists_openNormal_index_le_res_eq_zero` and
+-- `finite_ker_resSubgroupTwistRestricted1` below are stated against it and their
+-- routes are written in its vocabulary. Imported here (rather than left for
+-- their owner to add) because it is SORRY-FREE, its only project import is
+-- `ContCohomology/Basic.lean` immediately above, so it adds exactly one module
+-- to the cone and cannot create a cycle. Correcting a three-times-repeated
+-- claim that this material is missing — see item 3 of the COST AUDIT on
+-- `finiteDimensional_h1_adZeroTwistRestricted` below.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.LowDegreeOne
 -- `IsSmallExtension` and its constructor `isSmallExtension_quotientLift`: the
 -- small-extension API of deformation theory, absent from mathlib and from
 -- `~/cs/FLT` (written 2026-07-27, see that file's header). `public` because
@@ -4453,15 +4468,36 @@ end MittagLeffler
 
 /-! ### Extraction of the sign character at one finite level -/
 
-/-- **The tame-at-two datum at one finite level, in coordinates.** -/
+include hℓOdd in
+/-- **The tame-at-two datum at one finite level, in coordinates.**
+
+**HYPOTHESIS WEAKENED 2026-07-29, no mathematical change.** `h` used to supply
+the whole bundled `IsHardlyRamified` at the level `J`; the proof consumes
+exactly ONE field of it, `isTameAtTwo`, and now asks for that field alone. This
+is the `ℚ`-side mirror of the weakening already carried out on the Hilbert twin
+`exists_hilbertSignChar_of_isHilbertTameAtTwo` (2026-07-27), and it is forced by
+the same consumer: the RAISED-LEVEL pro-limit clause of `Modularity/Patching.lean`
+(`raisedLevelIsTameAtTwo_of_forall_isOpen_quotient`) has the tame datum at every
+finite level but NOT the bundled base-level predicate — `IsRaisedLevelHardlyRamified`
+exempts the raised primes `Q` from unramifiedness, so it does not imply
+`IsHardlyRamified` and cannot be handed over. Without the weakening these ~900
+lines would have to be transcribed a second time. The only call site,
+`isTameAtTwo_of_forall_isOpen_quotient` below, passes `….isTameAtTwo`. -/
 lemma exists_signChar_of_quotient_isTameAtTwo
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     {ρ : FramedGaloisRep ℚ R (Fin 2)}
     {J : Ideal R} (hJm : J ≤ IsLocalRing.maximalIdeal R)
     [IsLocalRing (R ⧸ J)] (hmk : Continuous (Ideal.Quotient.mk J))
-    (h : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ J))
-      (pushforwardFrame (Ideal.Quotient.mk J) hmk ρ)) :
+    (h : ∃ (π : (Fin 2 → (R ⧸ J)) →ₗ[R ⧸ J] (R ⧸ J))
+        (_ : Function.Surjective π) (δ : GaloisRep ℚ_[2] (R ⧸ J) (R ⧸ J)),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → (R ⧸ J),
+        π ((pushforwardFrame (Ideal.Quotient.mk J) hmk ρ).map
+            (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1)) :
     ∃ ε : Field.absoluteGaloisGroup ℚ_[2] → R,
       (∀ g, ε g = 1 ∨ ε g = -1) ∧
       (∀ g₁ g₂, ε (g₁ * g₂) = ε g₁ * ε g₂) ∧
@@ -4480,7 +4516,7 @@ lemma exists_signChar_of_quotient_isTameAtTwo
   have h2Q : IsUnit (2 : R ⧸ J) := by
     have hh := h2R.map (Ideal.Quotient.mk J)
     rwa [map_ofNat] at hh
-  obtain ⟨π', hπ'surj, δ', hδ'⟩ := h.isTameAtTwo
+  obtain ⟨π', hπ'surj, δ', hδ'⟩ := h
   -- `π'` in coordinates
   obtain ⟨b, hb⟩ : ∃ b : Fin 2 → (R ⧸ J), ∀ i, b i = π' (Pi.single i 1) :=
     ⟨_, fun _ => rfl⟩
@@ -4586,6 +4622,7 @@ lemma exists_signChar_of_quotient_isTameAtTwo
   rw [heq, hb]
   ring
 
+include hℓOdd in
 /-- **The tame quotient at `2` is detected on the finite levels** (PROVEN
 2026-07-25/26 — the ONE clause of `isHardlyRamified_of_forall_isOpen_quotient`
 below that is a genuine pro-limit statement rather than a congruence).
@@ -4678,7 +4715,13 @@ References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
 Conrad–Diamond–Taylor, JAMS 12 (1999), §2 (the deformation-condition
 axioms); Grothendieck, EGA III 5.4.1 (the same statement read
 geometrically: sections of a proper `R`-scheme over a complete local `R`
-are the compatible systems of sections over the Artinian truncations). -/
+are the compatible systems of sections over the Artinian truncations).
+
+**HYPOTHESIS WEAKENED 2026-07-29, no mathematical change.** `hq` used to supply
+the whole bundled `IsHardlyRamified` at every open level; the proof consumes
+exactly ONE field of it, `isTameAtTwo`, and now asks for that field alone —
+see `exists_signChar_of_quotient_isTameAtTwo` above for the full rationale and
+for the Hilbert-side precedent. Every call site passes `….isTameAtTwo`. -/
 theorem isTameAtTwo_of_forall_isOpen_quotient
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
@@ -4687,8 +4730,15 @@ theorem isTameAtTwo_of_forall_isOpen_quotient
     {ρ : FramedGaloisRep ℚ R (Fin 2)}
     (hq : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
       (hmk : Continuous (Ideal.Quotient.mk I)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
-        (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
+      ∃ (π : (Fin 2 → (R ⧸ I)) →ₗ[R ⧸ I] (R ⧸ I))
+          (_ : Function.Surjective π) (δ : GaloisRep ℚ_[2] (R ⧸ I) (R ⧸ I)),
+        ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → (R ⧸ I),
+          π ((pushforwardFrame (Ideal.Quotient.mk I) hmk ρ).map
+              (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+          (AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+          (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1)) :
     ∃ (π : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective π)
       (δ : GaloisRep ℚ_[2] R R),
       ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → R,
@@ -5095,7 +5145,8 @@ theorem isHardlyRamified_of_forall_isOpen_quotient
       exact hasFlatProlongationAt_of_conj _
         (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2)) _ h2
   · -- the tame quotient at `2`: the one genuine pro-limit clause
-    exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete hq
+    exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete
+      (fun I hI _ hmk => (hq I hI hmk).isTameAtTwo)
 
 /-! ### Generic subring-descent engine (RELOCATED 2026-07-26)
 
@@ -18475,7 +18526,267 @@ noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
     Submodule k (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)) :=
   ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar S v).hom.toLinearMap
 
-/-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (sorry leaf, cut
+/-! #### Restriction to open subgroups of `G_{ℚ,S}`, and the finiteness of `H¹`
+
+Added 2026-07-28 by the decomposition of
+`finiteDimensional_h1_adZeroTwistRestricted` below.  Everything in this
+subsection is NEW and self-contained; it is deliberately kept in one block so
+that the concurrent owners of the `Ш` leaves further down never touch it.
+
+The cut is the one `Modularity/Patching.lean` uses for its `Γ ℚ`-with-an-
+unramifiedness-condition twin `finite_h1TwistUnramified`, but it splits
+*better* here, and the improvement is the point of this note.  Patching's three
+inputs are all entangled with the arithmetic, because over `Γ ℚ` the
+unramifiedness condition has to be carried through the cocycle bookkeeping.
+Over `G_{ℚ,S}` the ramification has already been quotiented out, so the cut
+separates cleanly into
+
+* ONE arithmetic statement — `finite_restrictedOpenNormalSubgroups` below,
+  **PROVEN** here — that `G_{ℚ,S}` has only finitely many open normal subgroups
+  of index at most `n`; and
+* TWO statements of pure continuous group cohomology, valid for ANY `S`, that
+  mention no arithmetic at all: `exists_openNormal_index_le_res_eq_zero` and
+  `finite_ker_resSubgroupTwistRestricted1`.
+
+That the second pair is generic in `S` is not cosmetic: it means neither of
+them can be discharged by anything about `ρbar`, and it is what makes them
+attackable with the continuous-cochain API alone. -/
+
+/-- The inclusion `N ↪ G_{ℚ,S}` of a subgroup, as a continuous group
+homomorphism — the restriction datum of `resSubgroupTwistRestricted1` below.
+The exact analogue of `Modularity/Patching.lean`'s `subgroupToGlobalHom`, one
+level down the quotient. -/
+noncomputable def restrictedSubgroupHom
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    ↥N →ₜ* restrictedGaloisGroup S :=
+  ⟨N.subtype, continuous_subtype_val⟩
+
+variable (ℓ) in
+/-- `ad⁰(1)` restricted to a subgroup `N ≤ G_{ℚ,S}` — the analogue of
+`adZeroTwistLocal` above along `restrictedSubgroupHom S N`. -/
+noncomputable def adZeroTwistRestrictedSubgroup (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    TopRep k ↥N :=
+  TopRep.res (restrictedSubgroupHom S N).toMonoidHom (adZeroTwistRestricted ℓ ρbar S)
+
+variable (ℓ) in
+/-- The restriction `H¹(G_{ℚ,S}, ad⁰(1)) → H¹(N, ad⁰(1))` along the inclusion
+of a subgroup `N ≤ G_{ℚ,S}`.  Its KERNEL is the inflation image from
+`G_{ℚ,S} ⧸ N` whenever `N` is closed normal, which is why it is finite for
+open `N` of finite index (`finite_ker_resSubgroupTwistRestricted1` below). -/
+noncomputable def resSubgroupTwistRestricted1 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) :
+    continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S) ⟶
+      continuousCohomology 1 (adZeroTwistRestrictedSubgroup ℓ ρbar S N) :=
+  ContinuousCohomology.map (restrictedSubgroupHom S N)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistRestrictedSubgroup ℓ ρbar S N)) 1
+
+variable (ℓ) in
+/-- The open normal subgroups of `G_{ℚ,{2,ℓ}}` of index at most `n` — the
+finite index set over which `finiteDimensional_h1_adZeroTwistRestricted` below
+covers `H¹`.  `FiniteIndex` is carried as a separate conjunct rather than
+derived from `index ≤ n`, because `Subgroup.index` is `0` for an infinite
+index and `0 ≤ n` holds; the two conjuncts together say what is meant. -/
+def restrictedOpenNormalSubgroups (n : ℕ) :
+    Set (Subgroup (restrictedGaloisGroup (hardlyRamifiedPlaces ℓ))) :=
+  {N | N.Normal ∧
+    IsOpen (N : Set (restrictedGaloisGroup (hardlyRamifiedPlaces ℓ))) ∧
+    N.FiniteIndex ∧ N.index ≤ n}
+
+/-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
+the definition of `ramificationKernel S` as the topological closure of the
+normal closure of the union of the `globalInertia v` over `v ∉ S`.  Stated
+separately because it is the one place where the DEFINITION of `G_{ℚ,S}` meets
+the Hermite–Minkowski input. -/
+theorem globalInertia_le_ramificationKernel
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v ∉ S) :
+    globalInertia v ≤ ramificationKernel S := by
+  intro σ hσ
+  refine Subgroup.le_topologicalClosure _ ?_
+  exact Subgroup.subset_normalClosure (Set.mem_biUnion hv hσ)
+
+/-- **A prime `q ∉ {2, ℓ}` gives a place outside `hardlyRamifiedPlaces ℓ`**
+(PROVEN): the place of `q` has ideal `(q)`
+(`asIdeal_toHeightOneSpectrumRingOfIntegersRat`), and distinct primes give
+distinct places (`toHeightOneSpectrumRingOfIntegersRat_injective`). -/
+theorem toHeightOneSpectrum_notMem_hardlyRamifiedPlaces {q : ℕ} (hq : q.Prime)
+    (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ) :
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces ℓ := by
+  rintro (h | h)
+  · exact hq2 (toHeightOneSpectrumRingOfIntegersRat_injective hq Nat.prime_two
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat Nat.prime_two]; norm_num)))
+  · exact hqℓ (toHeightOneSpectrumRingOfIntegersRat_injective hq (Fact.out)
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)])))
+
+/-- **`G_{ℚ,{2,ℓ}}` has only finitely many open normal subgroups of index at
+most `n`** (PROVEN 2026-07-28 — this is the whole arithmetic content of
+`finiteDimensional_h1_adZeroTwistRestricted` below, and it is the item that
+three successive cost audits of that leaf priced as its hardest input).
+
+The proof is a transport, not a new theorem.  `Subgroup.comap` along the
+surjection `Γ ℚ ↠ G_{ℚ,S}` is injective on subgroups, preserves normality,
+openness and index, and lands inside the set that
+`HardlyRamified/HermiteMinkowski.lean`'s **PROVEN**
+`finite_setOf_subgroup_inertiaAt_le` shows is finite: the extra clause of that
+set — inertia at every `q ∉ {2, ℓ}` is trivial — is automatic for a pullback,
+because such inertia already lies in `N_S` (`globalInertia_le_ramificationKernel`
+above) and therefore dies in the quotient.
+
+So the `{2, p}` hard-wiring of `finite_setOf_subgroup_inertiaAt_le`, recorded on
+the leaf below as a possible obstruction needing the generalisation
+`finite_inertiaOutsideSubgroups` (which lives DOWNSTREAM in
+`Modularity/Patching.lean` and is therefore unusable here), **does not bite**:
+`S = hardlyRamifiedPlaces ℓ` is exactly `{2, ℓ}`, so the hard-wired statement is
+the statement wanted.  That is the parenthetical the audit itself flagged, now
+confirmed.
+
+`hℓ2` is load-bearing and cannot be dropped: `finite_setOf_subgroup_inertiaAt_le`
+requires `p ≠ 2`, and at `ℓ = 2` the set `S` degenerates to the single place
+above `2`, for which the `{2, p}` statement says nothing.  It is supplied at the
+call site below from `hℓ5 : 5 ≤ ℓ`. -/
+theorem finite_restrictedOpenNormalSubgroups (hℓ2 : ℓ ≠ 2) (n : ℕ) :
+    (restrictedOpenNormalSubgroups ℓ n).Finite := by
+  classical
+  have hsurj : Function.Surjective
+      (QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))) :=
+    QuotientGroup.mk'_surjective _
+  refine Set.Finite.of_finite_image
+    (f := fun N => Subgroup.comap
+      (QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))) N) ?_
+    (Set.injOn_of_injective (Subgroup.comap_injective hsurj))
+  refine Set.Finite.subset
+    (finite_setOf_subgroup_inertiaAt_le ℓ n (Fact.out) hℓ2) ?_
+  rintro _ ⟨N, hN, rfl⟩
+  obtain ⟨hnorm, hopen, hFI, hidx⟩ := hN
+  refine ⟨hnorm.comap _, ?_, ?_, ?_, ?_⟩
+  · exact hopen.preimage continuous_quotient_mk'
+  · exact ⟨by rw [Subgroup.index_comap_of_surjective _ hsurj]; exact hFI.index_ne_zero⟩
+  · rw [Subgroup.index_comap_of_surjective _ hsurj]; exact hidx
+  · intro q hq hq2 hqℓ σ hσ
+    have hmem : (decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ ∈
+        ramificationKernel (hardlyRamifiedPlaces ℓ) :=
+      globalInertia_le_ramificationKernel _
+        (toHeightOneSpectrum_notMem_hardlyRamifiedPlaces hq hq2 hqℓ)
+        (Subgroup.mem_map_of_mem _ hσ)
+    have h1 : QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))
+        ((decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ) = 1 :=
+      (QuotientGroup.eq_one_iff _).mpr hmem
+    show QuotientGroup.mk' (ramificationKernel (hardlyRamifiedPlaces ℓ))
+        ((decompHom hq.toHeightOneSpectrumRingOfIntegersRat) σ) ∈ N
+    rw [h1]
+    exact one_mem N
+
+variable (ℓ) in
+/-- **Every class of `H¹(G_{ℚ,S}, ad⁰(1))` is killed by restriction to some
+open normal subgroup of UNIFORMLY bounded index** (SORRY LEAF, cut out
+2026-07-28 as the first of the two cohomological inputs of
+`finiteDimensional_h1_adZeroTwistRestricted` below).
+
+# ROUTE, and what it actually costs
+
+Take a cocycle representative `f` of the class
+(`ContinuousCohomology.exists_cocycleClass_eq`, PROVEN in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`),
+and put `z := ContinuousCohomology.eval₁ _ f`, the associated inhomogeneous
+cochain.  It is continuous (`continuous_eval₁`) and satisfies the
+crossed-homomorphism identity `z (g * h) = z g + ρ g (z h)` (`eval₁_mul`).
+Then:
+
+1. `M := ad⁰(1)^{N_S}` is FINITE (`k` is `Finite`, `dim_k ad⁰ = 3`) and carries
+   the discrete topology, so `N₀ :=` the kernel of the action of `G_{ℚ,S}` on
+   `M` is OPEN and normal, of index at most `#(M ≃ M)` — a bound depending only
+   on `M`, hence only on `k` and `V`, and NOT on the class.
+2. On `N₀` the crossed-homomorphism identity degenerates to
+   `z (g * h) = z g + z h`, so `z|_{N₀}` is a continuous homomorphism into the
+   finite discrete `M`; put `N := ker (z|_{N₀})`, which is open of index at most
+   `[G : N₀] · #M`, again a bound independent of the class.  Normality of `N` in
+   the whole of `G_{ℚ,S}` is `eval₁_conj`.
+3. On `N` the homogeneous cocycle `f` is not merely a coboundary but literally
+   ZERO: the cocycle relation `(d f) g h l = f h l - f g l + f g h`
+   (`homogeneousCochains_d_one_two_apply`) at `g = 1` gives `f h l = z l - z h`,
+   which vanishes for `h, l ∈ N`.
+
+**So the INVERSE dictionary — crossed homomorphism back to homogeneous cocycle —
+is NOT needed for this leaf**, contrary to what the cost audit on
+`finiteDimensional_h1_adZeroTwistRestricted` below used to say.  Step 3 goes in
+the homogeneous model directly.  What IS needed, and is the only genuinely
+missing piece, is the compatibility of `ContinuousCohomology.map` with
+`ContinuousCohomology.cocycleClass` — i.e. that restricting the CLASS of `f` is
+the class of the restricted cochain.  The ingredients are all present
+(`ContinuousCohomology.π_map` in our pin's `ContCohomology/Functoriality.lean`,
+`cocycleClass_apply` and `cohomologyIsoQuot` in the vendored
+`ContCohomology/Basic.lean`); assembling them is homological plumbing with no
+arithmetic in it, and it is SHARED with
+`finite_ker_resSubgroupTwistRestricted1` below.  The two leaves are best given
+to ONE owner, and its natural home is `LowDegreeOne.lean`.
+
+Both-ways audit.  The quantifier ORDER `∃ n, ∀ c` is load-bearing and is the
+entire content: with `∀ c, ∃ n` the statement is trivially true (take `N` the
+kernel just constructed and `n` its index) and USELESS, since the consumer needs
+ONE finite index set covering ALL classes.  `IsOpen`, `Normal` and `FiniteIndex`
+are all consumed by the assembly below — `Normal` and `FiniteIndex` by
+`finite_ker_resSubgroupTwistRestricted1`, `IsOpen` and `index ≤ n` by
+`finite_restrictedOpenNormalSubgroups` above.  Not vacuous: `c = 0` is witnessed
+by `N = ⊤`.  No hypothesis on `ρbar` beyond its type and no hypothesis on `S`,
+so nothing about the hardly ramified package can discharge it — the circularity
+guard below is satisfied trivially. -/
+theorem exists_openNormal_index_le_res_eq_zero (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    ∃ n : ℕ, ∀ c : continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S),
+      ∃ N : Subgroup (restrictedGaloisGroup S),
+        N.Normal ∧ IsOpen (N : Set (restrictedGaloisGroup S)) ∧ N.FiniteIndex ∧
+          N.index ≤ n ∧
+          c ∈ LinearMap.ker
+            (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap := sorry
+
+variable (ℓ) in
+/-- **Inflation–restriction: the kernel of restriction to an open normal
+subgroup of `G_{ℚ,S}` is finite** (SORRY LEAF, cut out 2026-07-28 as the second
+of the two cohomological inputs of
+`finiteDimensional_h1_adZeroTwistRestricted` below).
+
+The degree-`1` inflation–restriction sequence
+`0 → H¹(G_{ℚ,S} ⧸ N, M^N) → H¹(G_{ℚ,S}, M) → H¹(N, M)` identifies the kernel
+with `H¹(G_{ℚ,S} ⧸ N, M^N)`; `G_{ℚ,S} ⧸ N` is a FINITE discrete group (`N` open
+of finite index) and `M^N ⊆ M` is finite, so that group is a subquotient of the
+finite set of functions `G_{ℚ,S} ⧸ N → M` and hence finite.
+
+Only INJECTIVITY of inflation is needed, and it can be had without the exact
+sequence: a class in the kernel has a cocycle representative whose `eval₁`
+vanishes on `N` (this is where `cocycleClass_eq_zero_iff` of the vendored
+`ContCohomology/Basic.lean` is used, transported through `eval₁`), and such a
+cochain is constant on left cosets `gN` by the crossed-homomorphism identity
+`z (g * x) = z g + ρ g (z x) = z g`.  So "kernel → functions `G_{ℚ,S} ⧸ N → M`"
+is well defined and injective modulo the finite coboundary group.
+
+Needs the SAME missing plumbing as
+`exists_openNormal_index_le_res_eq_zero` above — the compatibility of
+`ContinuousCohomology.map` with `cocycleClass` — which is why the two are
+companions and are best given to one owner.
+
+Both-ways audit, inherited from the `Γ ℚ` twin
+`Modularity/Patching.lean`'s `finite_ker_resSubgroupTwist1` and re-checked
+here: `hnorm`, `hopen` and `hFI` are all load-bearing.  Dropping `hopen` leaves
+no inflation–restriction sequence in continuous cohomology; dropping `hFI`
+makes the quotient infinite and the kernel infinite-dimensional, which at
+`N = 1` is exactly the `dim_k H¹ = ℵ₀` computation recorded on `Sha1Twist`
+above.  Generic in `S`, hence untouched by anything about ramification. -/
+theorem finite_ker_resSubgroupTwistRestricted1 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (N : Subgroup (restrictedGaloisGroup S)) (hnorm : N.Normal)
+    (hopen : IsOpen (N : Set (restrictedGaloisGroup S))) (hFI : N.FiniteIndex) :
+    Finite ↥(LinearMap.ker
+      (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap) := sorry
+
+/-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (PROVEN 2026-07-28
+over the subsection immediately above; cut
 out 2026-07-27 as the FINITENESS half of `rank_sha2_le_rank_sha1_twist` below;
 it is also the FINITENESS half of `rank_sha1_twist_le_of_tangent_span` further
 below, and the two leaves SHARE it — see the cut note there).
@@ -18523,51 +18834,47 @@ degree `1`, by inflation), and which was decomposed the same day. Itemised:
    upstream of both, is what would make it shared. (For THIS leaf, whose `ρbar`
    IS hardly ramified, item 2 may be avoidable: `{2, ℓ}` then really does
    contain the ramification.)
-3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — **THIS ITEM IS NOW DONE
-   (2026-07-28) AND THE PARAGRAPH THAT FOLLOWED IT IS RETIRED.** It is
-   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
-   sorry-free: `eval₁` and the crossed-homomorphism identity, the COBOUNDARY
-   CRITERION (`eval₁_bdryKer`, `exists_eval₁_eq_sub_of_cocycleClass_eq_zero`,
-   `cocycleClass_eq_zero_of_eval₁_eq_sub`) and the FUNCTORIALITY
-   (`cocyclesMapKer`, `map_cocycleClass_cocyclesMapKer`,
-   `eval₁_cocyclesMapKer`) — i.e. exactly `res^G_N [z] = [z|_N]` read on
-   inhomogeneous cochains. Only the forward map `F ↦ (y ↦ F 1 y)` was built;
-   the inverse `z ↦ (x, y) ↦ x · z (x⁻¹ y)` needs continuity of the orbit maps
-   and no consumer has needed it. That module is UPSTREAM of everything (its
-   only imports are the vendored `ContCohomology/Basic.lean` and mathlib's
-   `ContCohomology/Functoriality.lean`), so it is available here for the cost of
-   one `public import` line — **this module does not currently import it**, and
-   adding that import is the first step of any attack on this leaf.
+3. *The degree-`1` INHOMOGENEOUS cochain dictionary* — **THIS ITEM IS STALE AND
+   WAS WRONG WHEN WRITTEN; CORRECTED 2026-07-28.** It claimed the dictionary was
+   "genuinely missing, and it is the real cost". It is not missing.
+   `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`
+   is SORRY-FREE and supplies exactly the forward half this leaf needs —
+   `eval₁`, `continuous_eval₁`, `eval₁_mul` (the crossed-homomorphism identity),
+   `eval₁_one` / `eval₁_inv` / `eval₁_conj`, `cocycles₁`,
+   `homogeneousCochains_d_one_two_apply` and `exists_cocycleClass_eq`. Its only
+   project import is `ContCohomology/Basic.lean`, which this module already
+   `public import`s, so wiring it in is one import line and adds one module to
+   the cone. `Modularity/Patching.lean` already consumes it in some twenty
+   places.
 
-**STATUS 2026-07-28, replacing the paragraph that used to stand here.** The old
-text said this leaf was blocked on item 3 and should be given to ONE owner
-together with `Modularity/Patching.lean`'s
-`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
-`finite_ker_resSubgroupTwist1`. That was done, and those two are now PROVEN —
-the second outright, the first over a single new arithmetic leaf
-`exists_openNormal_trivial_adZeroTwist` (an open normal subgroup of finite index
-acting trivially on `ad⁰ρbar(1)` and containing the inertia away from a finite
-`T`; what it still costs is continuity and inertia-triviality of the mod-`p`
-cyclotomic character, the `ρbar` half being immediate from
-`GaloisRep.IsUnramifiedAt`'s definition).
+   Why the false claim survived three audits: **the refuting check grepped
+   mathlib only, and for the mathlib spelling.** The material lives under
+   `Fermat/FLT/Mathlib/` and is not spelled `oneCocycles`. Grep all three trees
+   (`Fermat/`, `.lake/packages/mathlib/`, `~/cs/FLT/`) and grep for the CONCEPT.
 
-So what blocks THIS leaf is now items 1–2 plus one transfer, and it is worth
-being precise, because the three obligations differ in kind:
+   What is genuinely missing is much narrower: the INVERSE direction (crossed
+   homomorphism back to a homogeneous cocycle), and the compatibility of
+   `ContinuousCohomology.map` with `cocycleClass`. Only the second is needed
+   below, and the inverse direction is needed by NEITHER of the two leaves this
+   one now rests on — see the route recorded on
+   `exists_openNormal_index_le_res_eq_zero` above.
 
-* the cochain dictionary is DONE and upstream (item 3), needing only an import;
-* the Hermite–Minkowski GENERALISATION (item 2) exists as
-  `finite_inertiaOutsideSubgroups` but lives DOWNSTREAM, in
-  `Modularity/Patching.lean`. Hoisting it into `HermiteMinkowski.lean` — which
-  is upstream of both — is the enabling move, and it is a pure relocation of a
-  proven declaration;
-* the remaining mathematical work is that this leaf's group is
-  `restrictedGaloisGroup S = Γ ℚ ⧸ N_S`, a QUOTIENT, whereas the two proven
-  leaves work over `Γ ℚ` itself with an unramifiedness condition on classes.
-  The bookkeeping there — open subgroups of the quotient correspond to open
-  subgroups of `Γ ℚ` containing `N_S`, and Hermite–Minkowski has to be applied
-  through that correspondence — is what a successor actually has to write. It
-  is NOT a repeat of the two proven leaves, and estimating it as one would be a
-  mistake.
+**STATUS 2026-07-28 — THIS LEAF IS NO LONGER SORRIED.** It is proven above over
+the three declarations in the "Restriction to open subgroups of `G_{ℚ,S}`"
+subsection: `finite_restrictedOpenNormalSubgroups` (PROVEN, and it is item 1 of
+this audit discharged — the `{2, p}` hard-wiring of item 2 does NOT bite, since
+`S` is exactly `{2, ℓ}`), plus the two SORRY LEAVES
+`exists_openNormal_index_le_res_eq_zero` and
+`finite_ker_resSubgroupTwistRestricted1`. Both of those are generic in `S` and
+contain no arithmetic whatever; both need only the one piece of homological
+plumbing named in item 3, and they are best given to ONE owner.
+
+`_h` is underscored because the proof does not use it: finiteness of
+`H¹(G_{ℚ,S}, M)` for finite `M` is true for EVERY continuous `ρbar`, hardly
+ramified or not. That is not a weakness of the leaf — it is the circularity
+guard below being satisfied mechanically rather than by assertion, since a
+proof that cannot see `IsHardlyRamified` cannot be discharged by refuting it.
+`hℓ5` IS used, and only to supply `ℓ ≠ 2`.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -18577,10 +18884,36 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.3
 (finiteness of `Hⁱ(G_S, M)`); Darmon–Diamond–Taylor, §2.6. -/
 theorem finiteDimensional_h1_adZeroTwistRestricted
     (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    {ρbar : GaloisRep ℚ k V} (_h : IsHardlyRamified hℓOdd hdim ρbar) :
     FiniteDimensional k
-      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
-  sorry
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) := by
+  classical
+  obtain ⟨n, hcov⟩ :=
+    exists_openNormal_index_le_res_eq_zero ℓ ρbar (hardlyRamifiedPlaces ℓ)
+  have hfin : (⋃ N ∈ restrictedOpenNormalSubgroups ℓ n,
+      (LinearMap.ker (resSubgroupTwistRestricted1 ℓ ρbar
+          (hardlyRamifiedPlaces ℓ) N).hom.toLinearMap :
+        Set (continuousCohomology 1
+          (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))))).Finite := by
+    refine (finite_restrictedOpenNormalSubgroups (by omega) n).biUnion fun N hN => ?_
+    haveI := finite_ker_resSubgroupTwistRestricted1 ℓ ρbar (hardlyRamifiedPlaces ℓ)
+      N hN.1 hN.2.1 hN.2.2.1
+    exact Set.toFinite _
+  have hsub : (Set.univ : Set (continuousCohomology 1
+      (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ)))) ⊆
+      ⋃ N ∈ restrictedOpenNormalSubgroups ℓ n,
+        (LinearMap.ker (resSubgroupTwistRestricted1 ℓ ρbar
+            (hardlyRamifiedPlaces ℓ) N).hom.toLinearMap :
+          Set (continuousCohomology 1
+            (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ)))) := by
+    intro c _
+    obtain ⟨N, hnorm, hopen, hFI, hidx, hker⟩ := hcov c
+    exact Set.mem_biUnion (show N ∈ restrictedOpenNormalSubgroups ℓ n from
+      ⟨hnorm, hopen, hFI, hidx⟩) hker
+  haveI : Finite (continuousCohomology 1
+      (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    Set.finite_univ_iff.mp (hfin.subset hsub)
+  exact Module.Finite.of_finite
 
 /-! ### Poitou–Tate, decomposed: linear-algebra glue and the two arithmetic halves
 
@@ -18599,25 +18932,38 @@ finite-dimensional `A`, `B` over a field, `∃ f : A →ₗ[k] Bᵛ` injective i
 EQUIVALENT to `dim A ≤ dim B` (`exists_injective_toDual_of_finrank_le` below is
 one direction; `LinearMap.finrank_le_finrank_of_injective` with
 `Subspace.dual_finrank_eq` is the other).  So the leaf never had map-level
-content, and it carried exactly two independent classical inputs:
+content, and it splits into:
 
-* the FINITENESS of `H²(G_{ℚ,S}, ad⁰)` — NSW VIII.3 in degree `2`, the exact
-  degree-`2` twin of `finiteDimensional_h1_adZeroTwistRestricted` above.  This
-  was a HIDDEN input with no owner: the proof of `rank_sha2_le_rank_sha1_twist`
-  below derives `FiniteDimensional k ↥(Sha2 …)` by
-  `FiniteDimensional.of_injective` **from the very injection this leaf
-  supplies**, so an owner of the leaf had to establish it silently on the way
-  to producing the map, and no frontier scan could see it.  It is now
-  `finiteDimensional_h2_adZeroRestricted` below;
+* the FINITENESS of `Ш²_S(ad⁰)`, now `finiteDimensional_sha2` below.  **Note
+  the load-bearing word `finite-dimensional` in the equivalence quoted above:
+  it is an equivalence only once BOTH sides are known finite-dimensional, and
+  for `A = Ш²_S(ad⁰)` that is exactly what was at issue — which is why the
+  finrank form needs this half restored alongside it;**
 * the duality DIMENSION COUNT, now `finrank_sha2_le_finrank_sha1Twist` below,
   which is the Poitou–Tate content and nothing else.
 
-Net leaf count goes `1 → 2`; that is disclosure, not regression — the second
-leaf existed all along, inside the first, unnamed.  The porting audit for the
+Net leaf count goes `1 → 2`, and the pair is EXACTLY equivalent to the single
+statement it replaces (given `finiteDimensional_h1_adZeroTwistRestricted`); it
+buys the arithmetic owner `ℕ`-valued statements and an explicit name for the
+finiteness, at the cost of one extra frontier entry.  The porting audit for the
 cup product and the local invariant map (re-checked 2026-07-28, see below) is
 inherited by `finrank_sha2_le_finrank_sha1Twist`, which is the half that owes
-it; `finiteDimensional_h2_adZeroRestricted` owes the same cochain dictionary as
-its degree-`1` twin and NOT the pairing.
+it.
+
+**CORRECTION 2026-07-28, LATER THE SAME DAY — read the OBLIGATION AUDIT on
+`finiteDimensional_sha2` below before trusting any earlier wording of this
+paragraph.**  As first cut, the finiteness half was stated for the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)` (as `finiteDimensional_h2_adZeroRestricted`) and was
+described as a HIDDEN input with no owner, on the grounds that
+`rank_sha2_le_rank_sha1_twist` below obtained `FiniteDimensional k ↥(Sha2 …)`
+by `FiniteDimensional.of_injective` from the injection the leaf supplied.  Both
+halves of that are wrong.  It was a DERIVATION, not a hidden assumption — the
+codomain `Module.Dual k ↥(Sha1Twist …)` is finite-dimensional outright from the
+degree-`1` leaf, so the injection *gives* the finiteness with no arithmetic
+input — and the ambient statement is STRICTLY STRONGER than anything this tree
+consumes, since NSW gets degree-`2` finiteness only from degree `1` plus the
+local terms of the Poitou–Tate sequence.  The leaf is therefore now the `Ш²`
+statement, which restores exact equivalence with what it decomposes.
 
 **Both new leaves are stated in `ℕ` (`Module.finrank`), not in `Cardinal`.**
 That is deliberate: `Cardinal`-valued bookkeeping is pure noise for the
@@ -18659,58 +19005,108 @@ theorem exists_injective_toDual_of_finrank_le {K : Type*} [Field K]
     ∃ f : A →ₗ[K] Module.Dual K B, Function.Injective f :=
   exists_injective_of_finrank_le (by rwa [Subspace.dual_finrank_eq])
 
-/-- **`H²(G_{ℚ,S}, ad⁰)` is finite-dimensional over `k`** (sorry leaf, cut out
-2026-07-28 as the FINITENESS half of `exists_injective_sha2_dual_sha1Twist`
-below, where it had been a hidden and ownerless input — see the subsection
-header immediately above for how it was hiding).
+/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (sorry leaf; the FINITENESS
+half of `exists_injective_sha2_dual_sha1Twist` below.  Cut out 2026-07-28 as
+`finiteDimensional_h2_adZeroRestricted`, a statement about the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)`; **WEAKENED to `Ш²` and renamed 2026-07-28 — see the
+OBLIGATION AUDIT below, which is the reason this declaration exists in its
+present form**).
 
-This is NSW VIII.3 in degree `2`, the exact twin of
-`finiteDimensional_h1_adZeroTwistRestricted` above with `1` replaced by `2` and
-`ad⁰(1)` by `ad⁰`: for a FINITE set `S` of places and a FINITE
-`G_{ℚ,S}`-module `M`, every `Hⁱ(G_{ℚ,S}, M)` is finite.  Here
-`S = hardlyRamifiedPlaces ℓ` has two elements and `ad⁰` is finite (`k` is
-`Finite` and `dim_k ad⁰ = 3`).  It is stated for the AMBIENT `H²` rather than
-for `Ш²` because that is the form the reference proves, and because the
-consumer obtains its `Ш` statement from it by `Submodule.finiteDimensional`.
+**OBLIGATION AUDIT, 2026-07-28 — the ambient form was a STRICTLY STRONGER
+obligation than anything this tree consumes, and two of the claims that
+justified it were wrong.**
+
+The cut that created this leaf recorded that the finiteness of `H²(G_{ℚ,S},ad⁰)`
+"had been a HIDDEN input with no owner", because the released proof of
+`rank_sha2_le_rank_sha1_twist` below obtained `FiniteDimensional k ↥(Sha2 …)`
+by `FiniteDimensional.of_injective` from the injection that the then-leaf
+`exists_injective_sha2_dual_sha1Twist` supplied.  Checked against the compiler
+rather than against the prose: **that was a DERIVATION, not an assumption.**
+The codomain `Module.Dual k ↥(Sha1Twist …)` is finite-dimensional outright,
+from `finiteDimensional_h1_adZeroTwistRestricted` above plus
+`Submodule.finiteDimensional` plus `Subspace.dual_finrank_eq`; so an injection
+into it *gives* `FiniteDimensional k ↥(Sha2 …)` for free, with no arithmetic
+input beyond the degree-`1` leaf.  Nothing was hidden and nothing was
+ownerless — the fact was a consequence, and it still is, of the very half that
+was left behind.
+
+**The refuting check is in this file and is checked by the compiler, not by
+prose**: `rank_sha2_le_rank_sha1_twist` below still contains, verbatim,
+
+  `haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=`
+  `  FiniteDimensional.of_injective f hf`
+
+with `f` the injection `exists_injective_sha2_dual_sha1Twist` supplies and no
+other finiteness hypothesis in scope beyond
+`finiteDimensional_h1_adZeroTwistRestricted`.  If that derivation ever stops
+compiling, this audit is stale and the ambient form should be reconsidered;
+while it compiles, the ambient `H²` statement is provably surplus.
+
+What the ambient form then did was replace that free consequence by a genuinely
+harder theorem.  Write `F₂` for the old ambient statement, `S₂` for this one,
+`P` for `finrank_sha2_le_finrank_sha1Twist` below, `M` for the injection form
+of the consumer, and `F₁` for the degree-`1` leaf.  Under `F₁`:
+
+* `{F₂, P} ⟹ M` (that is the released assembly), and `M ⟹ {S₂, P}`;
+* `{S₂, P} ⟺ M` — this is an EQUIVALENCE, since `S₂` is exactly the
+  finite-dimensionality that turns `finrank ≤ finrank` back into a map through
+  `exists_injective_toDual_of_finrank_le` above;
+* but `M ⇏ F₂`: an injection `Ш² ↪ (Ш¹)^∨` says nothing whatever about the
+  ambient `H²(G_{ℚ,S}, ad⁰)`, of which `Ш²` is the kernel of localisation at
+  two places.
+
+So `{F₂, P}` was strictly stronger than the leaf it decomposed, while `{S₂, P}`
+is exactly equivalent to it.  The strengthening was not free: the same cut's
+own docstring conceded that `F₂` "is genuinely harder than its degree-`1` twin
+and should not be assumed to fall out of it", because NSW deduces degree-`2`
+finiteness from the degree-`1` statement **plus the local terms of the
+Poitou–Tate sequence** — i.e. `F₂` costs everything `P` costs and then the
+local finiteness and the nine-term sequence on top.  The tree needs none of
+that.  Hence the weakening recorded here: **one hard classical theorem removed
+from the frontier, with no consumer's statement changed.**
+
+The second wrong claim was the ambient form's own justification, that it was
+stated for `H²` "because that is the form the reference proves, and because the
+consumer obtains its `Ш` statement from it by `Submodule.finiteDimensional`".
+The second clause is true and is precisely the leak: the consumer wants only
+the `Ш` statement, so deriving it *from* the ambient one throws away the
+difference for nothing.
+
+**WHAT IS LEFT, AND WHAT IT COSTS.** Poitou–Tate gives a perfect pairing
+`Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
+`Ш¹_S(ad⁰(1))` is finite-dimensional by `finiteDimensional_h1_adZeroTwistRestricted`
+above.  That is the intended proof, and it shows this leaf and
+`finrank_sha2_le_finrank_sha1Twist` below are the two shadows of ONE input and
+are best given to ONE owner: whoever produces the pairing discharges both in
+the same breath, and neither is reachable without it.  **They are not
+circular** — `finrank_sha2_le_finrank_sha1Twist` does not consume this leaf,
+and this leaf does not consume it.
+
+A cheaper discharge is legitimate and would be a better outcome: any
+NONDEGENERATE `k`-bilinear pairing into `k`, or any injection of `Ш²_S(ad⁰)`
+into a space already known finite-dimensional, suffices.  The porting audit for
+the pairing itself lives on `finrank_sha2_le_finrank_sha1Twist` below; this
+leaf does **not** independently owe the cup product or the local invariant map.
 
 **Over the full `Γ ℚ` this statement is FALSE**, exactly as in degree `1`: the
 computation on `rank_sha2_le_rank_sha1_twist` below shows
-`dim_k H²(Γ ℚ, ad⁰) = ℵ₀`.  So this is the precise place where the choice of
-`G_{ℚ,S}` does its work in degree `2`, and a future owner who "simplifies" the
-group back to `Γ ℚ` makes it false.
-
-**WHAT IT COSTS, and what it does NOT.** It owes the SAME degree-`1`/degree-`2`
-inhomogeneous cochain dictionary itemised as item 3 on
-`finiteDimensional_h1_adZeroTwistRestricted` above — but see the STALE-CLAIM
-CORRECTION on `finrank_sha1Twist_le_cotangentFinrank` below before pricing that
-item: the DEGREE-`1` half of it already exists here, sorry-free, as
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
-and item 3 (whose "`~/cs/FLT` does not have it either" was checked against
-`Mathlib/` and `~/cs/FLT` but not against `Fermat/`) overstates the remaining
-cost accordingly. Degree `2` is genuinely not covered by that file. It owes the
-SAME
-Hermite–Minkowski input, which is **PROVEN and in this module's import cone**
-(`finite_setOf_subgroup_inertiaAt_le`, `HardlyRamified/HermiteMinkowski.lean`;
-the refuting check is `grep -n HermiteMinkowski` on this file's header).  It
-does **not** owe the cup product and it does **not** owe the local invariant
-map — those belong to `finrank_sha2_le_finrank_sha1Twist` below, and confusing
-the two is what made the old bundled leaf look like a single monolithic cost.
-Note degree `2` needs the finiteness of `H²(G_S, M)`, which in NSW is deduced
-from the degree-`1` statement plus the local terms of the Poitou–Tate sequence,
-so this leaf is genuinely harder than its degree-`1` twin and should not be
-assumed to fall out of it.
+`dim_k H²(Γ ℚ, ad⁰) = ℵ₀`, and `Ш²` has finite codimension in it (the
+localisation map goes into a product over just two places, each term finite).
+So this is the precise place where the choice of `G_{ℚ,S}` does its work in
+degree `2`, and a future owner who "simplifies" the group back to `Γ ℚ` makes
+it false.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
 and for what `hℓ5` is doing.
 
-References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.3;
-Darmon–Diamond–Taylor, §2.6. -/
-theorem finiteDimensional_h2_adZeroRestricted
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence, which is where the finiteness of `Ш²` comes from) and
+VIII.3; Darmon–Diamond–Taylor, §2.6. -/
+theorem finiteDimensional_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
-    FiniteDimensional k
-      (continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))) :=
+    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
   sorry
 
 /-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
@@ -18719,11 +19115,20 @@ below — it IS the whole Poitou–Tate content of that leaf, with the finitenes
 and the map-building removed).
 
 Stated in `ℕ` on purpose.  Both sides are finite-dimensional — the left by
-`finiteDimensional_h2_adZeroRestricted` above, the right by
+`finiteDimensional_sha2` above, the right by
 `finiteDimensional_h1_adZeroTwistRestricted` above — so a `finrank` comparison
 loses nothing, and it keeps `Cardinal` arithmetic off the arithmetic owner's
 plate.  An owner may freely assume both finiteness facts by consuming those two
 leaves; doing so is NOT circular, since neither of them consumes this one.
+
+**BEWARE THE DEGENERATE DISCHARGE.**  `Module.finrank k X = 0` when `X` is not
+finite-dimensional, so this statement is *vacuously true* of an
+infinite-dimensional `Ш²_S(ad⁰)`.  A proof that establishes it by exhibiting
+the left side as infinite-dimensional is worthless and is also inconsistent
+with `finiteDimensional_sha2` above; the two leaves are a package and an owner
+should discharge them together, from the same pairing.  This is the reason the
+finiteness half may not simply be dropped in favour of the `ℕ`-valued
+inequality.
 
 The nine-term Poitou–Tate sequence gives a PERFECT pairing
 `Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
@@ -18804,20 +19209,226 @@ theorem finrank_sha2_le_finrank_sha1Twist
       Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
   sorry
 
+
+/-! #### NOTE (release-18 merge): TWO ROUTES TO THE SAME NODE COEXIST HERE
+
+`merger` decomposed `exists_injective_sha2_dual_sha1Twist` into the dimension
+inequality `finrank_sha2_le_finrank_sha1Twist` plus `finiteDimensional_sha2` and the
+glue `exists_injective_toDual_of_finrank_le` (all immediately above).
+`flt-lean-43` decomposed the SAME node the other way, into
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` (below) fed by a PROVEN
+self-duality of `ad⁰` (the trace form, the section that follows).
+
+The node's proof takes `flt-lean-43`'s route, because that branch additionally
+DISCHARGES the `ad⁰* ≅ ad⁰(1)` identification, which merger's route only assumes.
+The three declarations above are therefore currently UNCONSUMED.  They are kept,
+not deleted, because they are a live alternative decomposition and may have an
+owner: `finrank_sha2_le_finrank_sha1Twist` and
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` are the SAME arithmetic
+(Poitou–Tate), stated once as a dimension inequality and once as a map.  Whoever
+owns that arithmetic should close ONE of them and retire the other.
+-/
+
+/-! ### Self-duality of `ad⁰`: the trace form
+
+Added 2026-07-28 as the CHEAP half of `exists_injective_sha2_dual_sha1Twist`
+below, and it is now PROVEN rather than asserted.
+
+The docstring of that leaf has always said that one of the two identifications
+it folds in — `ad⁰* = Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`, via the nondegeneracy of the
+trace form `(X, Y) ↦ tr(XY)` on `sl₂` — is "cheap ONLY because `ℓ` is odd".
+Cheap it is, but it was not *done*, and a prover of the Poitou–Tate leaf would
+have had to do it before touching any duality. The three declarations below do
+it, and the leaf now RECEIVES the pairing as a hypothesis instead of having to
+manufacture it.
+
+Nothing here is Poitou–Tate, nothing here is cohomological, and nothing here
+uses `hirr` or `hℓ5`: it is linear algebra over `k` about the trace form on
+trace-zero endomorphisms of a rank-`2` module, plus the conjugation-invariance
+of the trace. The one arithmetic input is `char k ≠ 2`, which comes from
+`hℓOdd` through `natCast_self_eq_zero` above.
+
+Why the pairing is exactly what the duality needs: a `Γ ℚ`-EQUIVARIANT perfect
+pairing `ad⁰ × ad⁰ → k` (trivial action on the target) is the same thing as an
+isomorphism `ad⁰ ≅ Hom(ad⁰, k)` of `Γ ℚ`-modules, and twisting by the
+cyclotomic character then gives `Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)` — which is the
+identification that lets Poitou–Tate for the pair `(M, M*)` be read as a
+statement about `(ad⁰, ad⁰(1))`. Equivariance with TRIVIAL action downstairs is
+the load-bearing clause, and it is what `LinearMap.trace_mul_comm` gives:
+conjugation does not move the trace. -/
+
+variable (k V) in
+/-- **The trace form on `ad⁰`**, `(x, y) ↦ tr(x ∘ y)`, as a `k`-bilinear map.
+
+Written through `AdZero.toEnd` (the inclusion of trace-zero endomorphisms into
+`Module.End k V`) rather than on `Module.End` itself, so that it is literally a
+pairing of the object `Sha2` and `Sha1Twist` are built from. -/
+noncomputable def adZeroTraceForm : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k :=
+  LinearMap.mk₂ k
+    (fun x y => LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y))
+    (fun x₁ x₂ y => by simp [add_mul])
+    (fun c x y => by simp)
+    (fun x y₁ y₂ => by simp [mul_add])
+    (fun c x y => by simp)
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma adZeroTraceForm_apply (x y : AdZero k V) :
+    adZeroTraceForm k V x y
+      = LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y) := rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] [Module.Finite k V]
+  [Module.Free k V] in
+/-- Members of `ad⁰` have vanishing trace — the defining property, restated
+through `AdZero.toEnd` so that it is usable as a rewrite. -/
+lemma adZero_trace_toEnd (x : AdZero k V) :
+    LinearMap.trace k V (AdZero.toEnd k V x) = 0 := by
+  have hx : (AdZero.toEnd k V x) ∈ LinearMap.ker (LinearMap.trace k V) :=
+    Submodule.coe_mem (show ↥(LinearMap.ker (LinearMap.trace k V)) from x)
+  exact hx
+
+/-- **The trace form is `Γ ℚ`-equivariant, with TRIVIAL action on the target**
+(PROVEN): `tr((σ·x)(σ·y)) = tr(xy)`.
+
+This is the clause that turns the pairing into an isomorphism
+`ad⁰ ≅ Hom(ad⁰, k)` OF `Γ ℚ`-MODULES, and hence — after twisting — into
+`Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The proof is `(aXb)(aYb) = a(XY)b` using
+`b * a = 1`, followed by `LinearMap.trace_mul_comm` to move `a` past. No
+oddness and no rank hypothesis are needed here; both enter only in
+`adZeroTraceForm_nondegenerate` below. -/
+lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGaloisGroup ℚ)
+    (x y : AdZero k V) :
+    adZeroTraceForm k V (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y)
+      = adZeroTraceForm k V x y := by
+  have hb : (ρbar σ⁻¹ : Module.End k V) * ρbar σ = 1 := by
+    rw [← map_mul, inv_mul_cancel, map_one]
+  simp only [adZeroTraceForm_apply]
+  show LinearMap.trace k V
+      ((AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb x)) *
+        (AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb y))) = _
+  rw [AdZero.toEnd_conjL, AdZero.toEnd_conjL]
+  set a : Module.End k V := ρbar σ
+  set X : Module.End k V := AdZero.toEnd k V x
+  set Y : Module.End k V := AdZero.toEnd k V y
+  set b : Module.End k V := ρbar σ⁻¹
+  have hstep : (a * X * b) * (a * Y * b) = a * (X * Y) * b := by
+    calc (a * X * b) * (a * Y * b) = a * X * (b * a) * Y * b := by noncomm_ring
+      _ = a * X * 1 * Y * b := by rw [hb]
+      _ = a * (X * Y) * b := by noncomm_ring
+  rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
+
+include hℓOdd hdim in
+/-- **The trace form on `ad⁰` is nondegenerate** (PROVEN), for `ℓ` odd and
+`rank_k V = 2`: every nonzero `x` has some `y` with `tr(xy) ≠ 0`.
+
+`hℓOdd` is genuinely load-bearing and this is the ONLY place either hypothesis
+is used. `char k = ℓ` (`natCast_self_eq_zero` above), so `ℓ` odd is exactly
+`(2 : k) ≠ 0`, and `2` is `finrank k V`; the proof splits an arbitrary
+endomorphism `z` as `z₀ + (tr z / 2) · 1` with `z₀` traceless, which is the
+step that divides by `2`. For `ℓ = 2` the statement is FALSE — the trace form
+on `sl₂` in characteristic `2` has the scalars in its radical, since
+`tr(1 · Y) = tr Y = 0` for every traceless `Y` while `1` is itself traceless —
+so this leaf may not be restated for `ℓ = 2`, and neither may the Poitou–Tate
+leaf that consumes it.
+
+The nondegeneracy on all of `Module.End k V` comes from the rank-one
+endomorphism `w ↦ φ(w) • v` (`LinearMap.smulRight`), whose trace is `φ v`
+(`LinearMap.trace_smulRight`); choosing `v` with `x v ≠ 0` and then `φ` with
+`φ (x v) ≠ 0` (`Module.forall_dual_apply_eq_zero_iff`) gives `tr(x z) ≠ 0`, and
+the traceless correction preserves that because `tr x = 0`. -/
+lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
+    ∃ y : AdZero k V, adZeroTraceForm k V x y ≠ 0 := by
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ ℓ := ringChar.dvd natCast_self_eq_zero
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hℓOdd
+    omega
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  set F : Module.End k V := AdZero.toEnd k V x with hFdef
+  have hF0 : F ≠ 0 := by
+    intro h
+    exact hx (AdZero.toEnd_injective (by rw [← hFdef, h, map_zero]))
+  obtain ⟨v, hv⟩ : ∃ v : V, F v ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hF0 (LinearMap.ext hc)
+  obtain ⟨φ, hφ⟩ : ∃ φ : Module.Dual k V, φ (F v) ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hv ((Module.forall_dual_apply_eq_zero_iff k (F v)).mp hc)
+  set z : Module.End k V := LinearMap.smulRight φ v with hzdef
+  have hFz : F * z = LinearMap.smulRight φ (F v) := by
+    ext w
+    simp [hzdef, Module.End.mul_apply]
+  have htr : LinearMap.trace k V (F * z) ≠ 0 := by
+    rw [hFz, LinearMap.trace_smulRight]; exact hφ
+  set c : k := LinearMap.trace k V z with hcdef
+  set z₀ : Module.End k V := z - (c / 2) • (1 : Module.End k V) with hz₀def
+  have htrone : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
+    have hone : LinearMap.trace k V (1 : Module.End k V)
+        = ((Module.finrank k V : ℕ) : k) := by
+      rw [Module.End.one_eq_id, LinearMap.trace_id]
+    rw [hone, hfr]
+    norm_num
+  have hcc : c / 2 * 2 = c := by field_simp
+  have hz₀tr : LinearMap.trace k V z₀ = 0 := by
+    rw [hz₀def, map_sub, map_smul, htrone, ← hcdef, smul_eq_mul, hcc, sub_self]
+  have hFtr : LinearMap.trace k V F = 0 := by rw [hFdef]; exact adZero_trace_toEnd x
+  have hFz₀ : LinearMap.trace k V (F * z₀) = LinearMap.trace k V (F * z) := by
+    rw [hz₀def, mul_sub, mul_smul_comm, mul_one, map_sub, map_smul, hFtr,
+      smul_zero, sub_zero]
+  refine ⟨⟨z₀, LinearMap.mem_ker.mpr hz₀tr⟩, ?_⟩
+  rw [adZeroTraceForm_apply]
+  show LinearMap.trace k V (F * z₀) ≠ 0
+  rw [hFz₀]
+  exact htr
+
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
-`Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the two leaves
-`finiteDimensional_h2_adZeroRestricted` and `finrank_sha2_le_finrank_sha1Twist`
-immediately above, plus `finiteDimensional_h1_adZeroTwistRestricted` — NOT a
-sorry node any more, see STATUS below; cut out 2026-07-27 as the DUALITY half of
-`rank_sha2_le_rank_sha1_twist` below).
+`Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (sorry leaf; cut
+out 2026-07-27 as the DUALITY half of `rank_sha2_le_rank_sha1_twist` below, and
+RECUT 2026-07-28 to receive the trace pairing rather than manufacture it — see
+STATUS immediately below).
+
+**STATUS 2026-07-28 — WHAT THIS RECUT DID AND DID NOT DO.** The statement
+`exists_injective_sha2_dual_sha1Twist` below is UNCHANGED, still has the same
+consumer (`rank_sha2_le_rank_sha1_twist`), and is now PROVEN: it is this leaf
+applied to `adZeroTraceForm` above. What moved is one of the two identifications
+the old docstring folded in — `ad⁰* ≅ ad⁰(1)` via the trace form — which is now
+an actual theorem (`adZeroTraceForm_rep` for the equivariance,
+`adZeroTraceForm_nondegenerate` for the perfectness) instead of a sentence
+saying it is cheap. The frontier count is unchanged; what changed is that a
+prover of the remaining leaf is handed `B` and never has to think about `sl₂`,
+about `char k ≠ 2`, or about why the target of the pairing carries the trivial
+action.
+
+The three hypotheses `B`, `hBrep`, `hBnd` are SATISFIABLE — they are discharged
+immediately below — so this leaf is no weaker a target than the old one, and
+adding them cannot have made it false.
+
+Everything from here down is inherited from the pre-recut docstring and still
+applies verbatim; only the trace-form bullet has been struck, because it is now
+discharged.
 
 **STATUS 2026-07-28: THIS NODE IS NO LONGER A LEAF.**  It is the assembly
 `dim Ш² ≤ dim Ш¹` (duality) `⟹` an injection into the dual, the second step
 being `exists_injective_toDual_of_finrank_le` above under the two finiteness
-facts.  The subsection header above records WHY the decomposition is disclosure
-rather than bookkeeping — in short, this statement never pinned the
-Poitou–Tate pairing, and it silently owed the finiteness of `H²(G_{ℚ,S}, ad⁰)`
-which now has a name and an owner.  Everything below this STATUS paragraph is
+facts.  The subsection header above records what the decomposition buys — in
+short, this statement never pinned the Poitou–Tate pairing, and the finiteness
+of `Ш²_S(ad⁰)` that it needs now has a name and an owner.  **It was never a
+hidden obligation**: it is a CONSEQUENCE of this statement (via
+`FiniteDimensional.of_injective`, the codomain being finite-dimensional from
+`finiteDimensional_h1_adZeroTwistRestricted`), and the pair of leaves below is
+exactly equivalent to this statement rather than stronger than it — see the
+OBLIGATION AUDIT on `finiteDimensional_sha2` above, which corrects the first
+cut's contrary claim and the ambient `H²` statement it motivated.  Everything
+below this STATUS paragraph is
 the mathematical record; the PORTING AUDIT that used to live here has moved
 onto `finrank_sha2_le_finrank_sha1Twist`, which is the leaf that actually owes
 it.
@@ -18829,16 +19440,14 @@ the INJECTION is asked for here, since that is all the rank comparison consumes
 — a perfect pairing gives it, and so would any nondegenerate one, so the leaf is
 strictly weaker than the theorem and correspondingly easier.
 
-Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
-
-* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
-  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
-  `char k ≠ 2`. `hℓOdd` is what supplies that, and it is why this leaf may not
-  be restated for `ℓ = 2`;
-* the passage to a `k`-linear map (rather than a pairing of finite abelian
-  groups into `ℚ/ℤ`): `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing
-  is `k`-bilinear after the trace-form identification, so the induced map into
-  `Module.Dual k` is `k`-linear.
+`hBrep` and `hBnd` are exactly the input the first of the two folded
+identifications needed: a `Γ ℚ`-equivariant perfect pairing `ad⁰ × ad⁰ → k` IS
+an isomorphism `ad⁰ ≅ Hom(ad⁰, k)` of `Γ ℚ`-modules, and twisting gives
+`ad⁰* = Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The SECOND identification remains inside this
+leaf: the passage to a `k`-linear map (rather than a pairing of finite abelian
+groups into `ℚ/ℤ`) — `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing is
+`k`-bilinear after the trace-form identification, so the induced map into
+`Module.Dual k` is `k`-linear.
 
 Note this leaf does NOT carry finiteness: that is
 `finiteDimensional_h1_adZeroTwistRestricted` above, deliberately separate, and
@@ -18953,23 +19562,48 @@ and for what `hℓ5` is doing.
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
 (the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
 §2.6–2.7. -/
+theorem exists_injective_sha2_dual_sha1Twist_of_selfDual
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (B : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k)
+    (hBrep : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x y : AdZero k V),
+      B (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y) = B x y)
+    (hBnd : ∀ x : AdZero k V, x ≠ 0 → ∃ y : AdZero k V, B x y ≠ 0) :
+    ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
+        Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
+      Function.Injective f :=
+  sorry
+
+/-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
+`Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the leaf
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` immediately above and the
+trace form `adZeroTraceForm` above — NOT a sorry node any more).
+
+The STATEMENT is unchanged from the 2026-07-27 cut and the consumer
+`rank_sha2_le_rank_sha1_twist` below is unchanged with it; what happened on
+2026-07-28 is that the self-duality of the coefficients, which the old docstring
+folded in as one of two "cheap" identifications, was PROVEN
+(`adZeroTraceForm_rep`, `adZeroTraceForm_nondegenerate`) and handed to the leaf
+as a hypothesis instead of being left for its future prover to redo. See the
+STATUS paragraph on that leaf for what this did and did not buy, and the section
+header above `adZeroTraceForm` for why an equivariant perfect pairing
+`ad⁰ × ad⁰ → k` is exactly the input `ad⁰* ≅ ad⁰(1)` requires.
+
+All the audits — the porting audit for the cup product and the local invariant
+map, the irreducibility verdict with the axes searched, the shared-gate note,
+and the CIRCULARITY GUARD — live on the leaf above, which is where the work
+still is. Do not re-derive any of them here. -/
 theorem exists_injective_sha2_dual_sha1Twist
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
     ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
         Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
-      Function.Injective f := by
-  haveI : FiniteDimensional k
-      (continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))) :=
-    finiteDimensional_h2_adZeroRestricted hℓOdd hdim hℓ5 h
-  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
-  haveI : FiniteDimensional k
-      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
-    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
-  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
-  exact exists_injective_toDual_of_finrank_le
-    (finrank_sha2_le_finrank_sha1Twist hℓOdd hdim hℓ5 h hirr)
+      Function.Injective f :=
+  exists_injective_sha2_dual_sha1Twist_of_selfDual hℓOdd hdim hℓ5 h hirr
+    (adZeroTraceForm k V) (adZeroTraceForm_rep ρbar)
+    (fun _ hx => adZeroTraceForm_nondegenerate hℓOdd hdim hx)
 
 /-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (**PROVEN
 2026-07-27** over the two leaves `finiteDimensional_h1_adZeroTwistRestricted`

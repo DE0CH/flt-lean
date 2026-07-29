@@ -25015,162 +25015,126 @@ theorem exists_hilbertAuxDeformationRingPresentation
       hQcard hQ 𝒟Q h𝒟Q
   exact ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩
 
-/-- **Fujiwara's freeness lemma over `F`: `M_Q` is free over `ℤ_ℓ[Δ_Q]` of the
-depth-independent rank `d`** (LEAF — the FREENESS half of the 2026-07-28
-FREENESS/COMPARISON cut of `exists_hilbertAuxHeckeModuleData` below).
-
-Item 1 of that declaration's docstring. Classically `M_Q` is the
-`𝔪`-localised cohomology of the Shimura variety attached to a quaternion
-algebra over `F`, at level raised by `Q`; Fujiwara's form of the Taylor–Wiles
-freeness lemma says it is finite free over `ℤ_ℓ[Δ_Q] = Λ ⧸ 𝔟_ex` of rank `d`,
-and `d` is INDEPENDENT of the depth `n` — which is why it is the SAME `d` that
-`hbot` fixes at depth `0`.
-
-**THE `Λ`-ACTION IS PINNED, NOT CHOSEN.** `instΛM` arrives with `hdsmul`,
-`x • m = diamond x • m`, so it is transport along `diamond` and nothing else;
-the assembly below supplies `Module.compHom H.M diamond`, for which `hdsmul` is
-`rfl`. This is what stops the statement being satisfiable by a junk action.
-`hbex` is what makes that action factor through `Λ ⧸ 𝔟_ex`, so the conclusion is
-not vacuous.
-
-**WHY `hbot`, `ψ` AND `M0` ARE HYPOTHESES OF THIS HALF TOO.** The rank `d` is
-not this statement's to choose — it is the bottom-level rank, and the assertion
-that the raised-level module has that same rank is precisely the
-depth-independence. So the bottom datum has to be in scope even though the
-projection itself belongs to the sibling leaf.
-
-References: Fujiwara, *Deformation rings and Hecke algebras in the totally real
-case*, §3; Taylor–Wiles, Ann. of Math. 141 (1995), §2; Diamond, Invent. Math.
-128 (1997), Thm. 2.1. -/
-theorem exists_hilbertAuxHeckeModuleFreeness
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
-    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
-    (ψ : 𝒟.R →+* 𝒟T.R)
-    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
-    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
-    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
-    [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
-    (hbot : Nonempty
-      (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
-    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
-    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
-    (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
-    (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
-    (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
-    (toRuniv : 𝒟Q.R →+* 𝒟.R) (htoRuniv : Function.Surjective toRuniv)
-    (hker : RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond)
-    (hbex : Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond)
-    (f : 𝒟Q.R →+* H.T)
-    (hfalg : f.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] H.T)
-    (hfπ : H.πT.comp f = 𝒟Q.π)
-    (hfρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (H.ρT g).charpoly)
-    [instRM : Module 𝒟Q.R H.M]
-    (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m)
-    [instΛM : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M]
-    (hdsmul : ∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : H.M),
-      x • m = diamond x • m) :
-    Nonempty (H.M ≃ₗ[MvPowerSeries (Fin q) ℤ_[ℓ]]
-      (Fin d → MvPowerSeries (Fin q) ℤ_[ℓ] ⧸
-        Modularity.taylorWilesLevelIdeal ℓ ex)) :=
-  sorry
-
-/-- **The Ihara/level-raising comparison of `M_Q` with the bottom module `M₀`**
-(LEAF — the COMPARISON half of the 2026-07-28 FREENESS/COMPARISON cut of
-`exists_hilbertAuxHeckeModuleData` below).
-
-Item 2 of that declaration's docstring: the projection `projM : M_Q ↠ M₀`, onto
-the depth-`0` module handed in by `hbot`, killed exactly on `𝔫 · M_Q` and
-intertwining the `R_Q`-action with the `𝒟T.R`-action through `ψ ∘ toRuniv`.
-`hbad : T.bad ⊆ H.bad` is the record that `H` is the SAME Hecke algebra with
-the level RAISED, never lowered, which is what makes such a comparison exist at
-all.
-
-**`M0` IS ALREADY PINNED BY `hbot`**, exactly as at the `ℚ` level: writing
-`L := hbot.some`, `L.projM_eq_zero` gives `ker L.projM ⊆ 𝔫 • ⊤`, the reverse
-inclusion follows from `L.diamond_smul`, `L.projM_smul` and `L.ker_toRuniv`,
-and with `L.coordM` and `L.bIdeal_le_aug` one gets `M₀ ≅ (Λ ⧸ 𝔫)^d ≅ ℤ_ℓ^d`.
-So the genuine content of the three clauses below is the INTERTWINING, not the
-identification of `M₀`. The `ψ`-compatibilities `hψalg`, `hψπ`, `hψρ` are
-load-bearing for exactly that reason: without them `ψ` is an arbitrary ring
-homomorphism and the intertwining clause has no reason to hold.
-
-`hfree` — the sibling leaf's conclusion — is a hypothesis here because the
-identification `M_Q ⧸ 𝔫 M_Q ≅ M₀` is what the comparison rests on, and that
-needs the coordinate description of `M_Q`.
-
-References: Ihara's lemma and level raising: Ribet, Invent. Math. 100 (1990);
-Jarvis, Math. Ann. 313 (1999); Taylor–Wiles, Ann. of Math. 141 (1995), §2;
-Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
-Skinner–Wiles, Duke 107 (2001). -/
-theorem exists_hilbertAuxHeckeModuleProjection
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
-    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
-    (ψ : 𝒟.R →+* 𝒟T.R)
-    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
-    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
-    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
-    (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
-    [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
-    (hbot : Nonempty
-      (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
-    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
-    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
-    (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
-    (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
-    (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
-    (toRuniv : 𝒟Q.R →+* 𝒟.R) (htoRuniv : Function.Surjective toRuniv)
-    (hker : RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond)
-    (hbex : Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond)
-    (f : 𝒟Q.R →+* H.T)
-    (hfalg : f.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] H.T)
-    (hfπ : H.πT.comp f = 𝒟Q.π)
-    (hfρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (H.ρT g).charpoly)
-    [instRM : Module 𝒟Q.R H.M]
-    (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m)
-    [instΛM : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M]
-    (hdsmul : ∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : H.M),
-      x • m = diamond x • m)
-    (hfree : Nonempty (H.M ≃ₗ[MvPowerSeries (Fin q) ℤ_[ℓ]]
-      (Fin d → MvPowerSeries (Fin q) ℤ_[ℓ] ⧸
-        Modularity.taylorWilesLevelIdeal ℓ ex))) :
-    ∃ projM : H.M →+ M0,
-      Function.Surjective projM ∧
-      (∀ (x : 𝒟Q.R) (m : H.M), projM (x • m) = ψ (toRuniv x) • projM m) ∧
-      (∀ m : H.M, projM m = 0 →
-        m ∈ (Modularity.taylorWilesAug ℓ q • ⊤ :
-          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M)) :=
-  sorry
-
 /-- **The auxiliary Hecke module at raised level, with its bottom control**
-(PROVEN GLUE since 2026-07-28 over the FREENESS/COMPARISON cut above; formerly
-the HECKE half of the 2026-07-27 RING/HECKE cut of
+(LEAF — the HECKE half of the 2026-07-27 RING/HECKE cut of
 `exists_hilbertTaylorWilesAuxLevelData` below).
 
-**WHAT THE 2026-07-28 GLUE ADDS.** The `Λ`-module structure the conclusion
-existentially quantifies over is no longer anybody's to choose: it is
-`Module.compHom H.M diamond`, transport of the `R_Q`-action along `diamond`,
-for which the first clause `x • m = diamond x • m` is `rfl`. That clause is
-therefore PROVEN here, and both sub-leaves receive the action pinned rather than
-free — which is what keeps them from being satisfiable by a junk action.
+# THE 2026-07-28 FREENESS/COMPARISON CUT IS REFUTED AND WITHDRAWN
+
+From 2026-07-28 until this commit this declaration was PROVEN GLUE over two
+sub-leaves, `exists_hilbertAuxHeckeModuleFreeness` and
+`exists_hilbertAuxHeckeModuleProjection`, both of which asserted their
+conclusions **about the module `H.M` handed in with `H`**. That is what has
+been withdrawn; the two sub-leaves are deleted and this declaration is again a
+leaf, restated so that the module is **PRODUCED, not received**.
+
+## 1. The refutation, with its witness
+
+`HilbertAuxHeckeAlgebra` constrains its field `M` by exactly one thing,
+`nontrivialM : Nontrivial M`. So from any `H` satisfying the hypotheses below
+one builds `H'`, identical field for field except
+
+    M := H.M × H.M
+
+(a `Nontrivial` `H.T`-module), with `instRM' := Module.compHom (H.M × H.M) f`
+and `instΛM' := Module.compHom (H.M × H.M) (f.comp diamond)`, for which
+`hfsmul` and `hdsmul` are `rfl`. Every hypothesis of the old freeness leaf
+holds of `H'` verbatim — `bad`, `T`, `f`, `ex`, `diamond`, `toRuniv`, `hbot`
+and `d` are untouched — so a proof of it would give BOTH
+
+    H.M ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d    and    H.M × H.M ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d ,
+
+and those two force `H.M` to be trivial, contradicting
+`HilbertAuxHeckeAlgebra.nontrivialM`. The incompatibility was MACHINE-CHECKED
+(scratch module, 2026-07-28) in the form
+
+    theorem subsingleton_of_doubling {Λ : Type} [CommRing Λ] (𝔟 : Ideal Λ)
+        [Nontrivial (Λ ⧸ 𝔟)] (d : ℕ) {M : Type} [AddCommGroup M] [Module Λ M]
+        (e1 : M ≃ₗ[Λ] (Fin d → Λ ⧸ 𝔟))
+        (e2 : (M × M) ≃ₗ[Λ] (Fin d → Λ ⧸ 𝔟)) : Subsingleton M
+
+— proved by transporting the `Λ`-linear equivalence
+`(Λ ⧸ 𝔟)^d × (Λ ⧸ 𝔟)^d ≃ₗ[Λ] (Λ ⧸ 𝔟)^d` into a `Λ ⧸ 𝔟`-linear one (the
+`Λ`-action factors through the surjection `Λ ↠ Λ ⧸ 𝔟`, so `Λ`-linearity IS
+`Λ ⧸ 𝔟`-linearity) and then `Module.finrank_prod` + `Module.finrank_fin_fun`
+over the nontrivial commutative ring `Λ ⧸ 𝔟`, giving `d + d = d`. The lemma is
+not committed: it would be free-floating.
+
+So the old freeness leaf was FALSE AS STATED unless its hypothesis set is
+empty, in which case the whole subtree above it is vacuous. Either way it could
+not stand.
+
+## 2. This was predicted, at the producer
+
+`exists_hilbertAuxHeckeAlgebra`'s own FORMAL-CONTENT AUDIT says it: that leaf
+is PROVEN by taking `M := T.T`, i.e. **with no level raising happening at
+all**, and the audit lists "the freeness of `M_Q` over the diamond algebra" as
+"exactly the fields this statement omits", closing with
+
+> Whoever takes the RING/HECKE cut must strengthen this statement (or state a
+> sibling) to demand the level-raising content.
+
+The FREENESS/COMPARISON cut did not strengthen it; it asserted the missing
+content of the unstrengthened `H.M`. Note that the `H` the assembly below
+actually receives IS that junk one — `M = T.T`, the BOTTOM Hecke algebra — so
+this is not a remote adversary but the literal witness in the call chain.
+
+## 3. Why the cut cannot be repaired as a TWO-leaf cut
+
+Making the freeness half PRODUCE the module and the comparison half receive it
+does not work either: the comparison half would then receive an adversarial
+`𝒟Q.R`-action on a free `Λ ⧸ 𝔟_ex`-module of rank `d`, and `projM` must be
+`R_Q`-equivariant onto `M₀` through `ψ ∘ toRuniv`, so `M ⧸ 𝔫M ≅ ℤ_ℓ^d` and
+`M₀` have to agree AS `𝒟.R`-MODULES — which the freeness clauses do not force.
+The two halves are coupled through the ring action, not merely through the
+carrier, so they must be produced together. The `ℚ` level reaches the same
+conclusion structurally: `Modularity.exists_taylorWilesAuxLevelPresentedDatum`
+produces ring, module, `diamond`, `projM` and the coordinate model in ONE leaf,
+and `Modularity.exists_taylorWilesAuxLevelData` is glue over it.
+
+## 4. What changed in the statement, and what did NOT
+
+Hypotheses: unchanged, all of them, so the assembly below is unchanged up to
+its final `obtain`/`exact`. Conclusion: the module is now existentially
+quantified, exactly as in the conclusion of
+`exists_hilbertTaylorWilesAuxLevelData` below (which has always produced its
+`M`), instead of being `H.M`.
+
+`H`, `hbad`, `f`, `hfalg`, `hfπ`, `hfρ`, `instRM` and `hfsmul` are kept as
+hypotheses on purpose. They are the CUT AUDIT's protection — they say the
+weakly universal `R_Q` really does have attached Hilbert modular forms, with a
+classifying map into their Hecke algebra — and classically the module produced
+here IS `H.M` for the genuine raised-level `H`. What may not be done is to
+STATE that identification, because `HilbertAuxHeckeAlgebra` does not pin `M`.
+
+## 5. The residual hazard, INHERITED from the RING/HECKE cut, not introduced here
+
+`diamond` arrives from `exists_hilbertAuxDiamondControl` constrained only by
+`hker` and by `hbex : 𝔟_ex ≤ ker diamond`. A DEGENERATE `diamond` — one
+factoring through `Λ ↠ ℤ_ℓ`, i.e. with `𝔫 ≤ ker diamond` — satisfies `hbex`,
+and then `Λ` acts on every `𝒟Q.R`-module through `ℤ_ℓ`, i.e. each `X_i` acts as
+`0`; but `X_i` acts nontrivially on `(Λ ⧸ 𝔟_ex)^d` whenever `d > 0` and
+`ex i ≥ 1` (`X_i ∉ 𝔟_ex`, which `hex` forces as soon as `n ≥ 1`), and `d = 0`
+is excluded because `projM` must be onto the nontrivial `M₀`. So for `n ≥ 1`
+and `q ≥ 1` this leaf would be false. Such a `diamond`
+forces `𝔫.map diamond = ⊥`, hence by `hker` that `toRuniv` is injective, i.e.
+`R_Q ≅ R_∅`; whether that is compatible with `h𝒟Q` and `hQ` has NOT been
+checked here, so this is recorded as an open check rather than as a refutation.
+
+THE ONE-LINE REPAIR, if the check comes out badly: strengthen
+`exists_hilbertAuxDiamondControl`'s last clause from
+`taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond` to
+`RingHom.ker diamond = taylorWilesLevelIdeal ℓ ex`, thread it through
+`exists_hilbertAuxDeformationRingPresentation` and the assembly, and take it
+here. The equality is classically true — `ℤ_ℓ[Δ_Q] ↪ R_Q` because `Δ_Q` acts
+faithfully on the free module `M_Q` — and it is exactly what excludes the
+degenerate `diamond`. It is recorded rather than done because it weakens
+another owner's leaf.
+
+THE CHECK THAT WOULD REFUTE §1: exhibit a field of `HilbertAuxHeckeAlgebra`,
+or a hypothesis below, that fails for `M := H.M × H.M`.
+
+# WHAT THIS LEAF OWES
 
 Everything about the RING has already happened: `𝒟Q` is the weakly universal
 raised-level datum, `H` is the raised-level Hecke algebra CARRYING the module
@@ -25179,17 +25143,17 @@ raised-level datum, `H` is the raised-level Hecke algebra CARRYING the module
 `R_Q`-action on `M_Q` is the transport along `f`), and `ex`, `diamond`,
 `toRuniv` are the ring leaf's output. What is left is the automorphic side:
 
-1. **Fujiwara's form of the Taylor–Wiles freeness lemma** — the `Λ`-module
-   structure on `M_Q` (through `diamond`, which is the `diamond_smul` clause)
-   together with the coordinate equivalence
-   `M_Q ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d`. Classically `M_Q` is the `𝔪`-localised
+1. **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`
+   itself, its `R_Q`-action, its `Λ`-action through `diamond` (the
+   `diamond_smul` clause) and the coordinate equivalence
+   `M ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d`. Classically `M = M_Q` is the `𝔪`-localised
    cohomology of the Shimura variety attached to a quaternion algebra over `F`
    at level raised by `Q`, and it is finite free of the DEPTH-INDEPENDENT rank
    `d` over `ℤ_ℓ[Δ_Q] = Λ ⧸ 𝔟_ex`. `hbex` is what makes the `Λ`-action factor
    through that quotient, so the statement is not vacuous.
 2. **The Ihara/level-raising comparison with the bottom level** — `projM`
    onto the depth-`0` module `M₀` handed in by `hbot`, surjective, killed
-   exactly on `𝔫 · M_Q`, and intertwining the `R_Q`-action with the
+   exactly on `𝔫 · M`, and intertwining the `R_Q`-action with the
    `𝒟T.R`-action through `ψ ∘ toRuniv`. `hbad : T.bad ⊆ H.bad` is the record
    that `H` is the SAME Hecke algebra with the level RAISED, never lowered,
    which is what makes such a comparison exist at all.
@@ -25201,9 +25165,9 @@ no attached Hilbert modular forms and hence no such `M`. That cannot happen
 here: the ring arrives as `𝒟Q`, a `HilbertAuxDeformationDatum` — a genuine
 raised-level deformation of `ρbar|_{G_F}` with the local conditions and the
 residual identification — and it arrives WEAKLY UNIVERSAL, so the classifying
-map `f` into the Hecke algebra `H` exists and is supplied. The module whose
-existence is asked for is `H.M`, i.e. the automorphic object itself, not an
-unknown.
+map `f` into the Hecke algebra `H` exists and is supplied. What the audit does
+NOT license, and what §1 above refutes, is going one step further and asserting
+the freeness OF `H.M`: the structure pins `H.M` only up to `Nontrivial`.
 
 **`M0` IS ALREADY PINNED BY `hbot`**, exactly as at the `ℚ` level: writing
 `L := hbot.some`, `L.projM_eq_zero` gives `ker L.projM ⊆ 𝔫 • ⊤`, the reverse
@@ -25249,28 +25213,18 @@ theorem exists_hilbertAuxHeckeModuleData
     (hfρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (H.ρT g).charpoly)
     [instRM : Module 𝒟Q.R H.M]
     (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m) :
-    ∃ (_ : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M) (projM : H.M →+ M0),
-      (∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : H.M), x • m = diamond x • m) ∧
-      Nonempty (H.M ≃ₗ[MvPowerSeries (Fin q) ℤ_[ℓ]]
+    ∃ (M : Type u) (_ : AddCommGroup M) (_ : Module 𝒟Q.R M)
+      (_ : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) M) (projM : M →+ M0),
+      (∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : M), x • m = diamond x • m) ∧
+      Nonempty (M ≃ₗ[MvPowerSeries (Fin q) ℤ_[ℓ]]
         (Fin d → MvPowerSeries (Fin q) ℤ_[ℓ] ⧸
           Modularity.taylorWilesLevelIdeal ℓ ex)) ∧
       Function.Surjective projM ∧
-      (∀ (x : 𝒟Q.R) (m : H.M), projM (x • m) = ψ (toRuniv x) • projM m) ∧
-      (∀ m : H.M, projM m = 0 →
+      (∀ (x : 𝒟Q.R) (m : M), projM (x • m) = ψ (toRuniv x) • projM m) ∧
+      (∀ m : M, projM m = 0 →
         m ∈ (Modularity.taylorWilesAug ℓ q • ⊤ :
-          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M)) := by
-  letI instΛM : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) H.M :=
-    Module.compHom H.M diamond
-  have hdsmul : ∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : H.M),
-      x • m = diamond x • m := fun _ _ => rfl
-  have hfree := exists_hilbertAuxHeckeModuleFreeness ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T
-    T e ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex
-    diamond toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul hdsmul
-  obtain ⟨projM, hsurj, hint, hkerM⟩ :=
-    exists_hilbertAuxHeckeModuleProjection ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e ψ
-      hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex
-      diamond toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul hdsmul hfree
-  exact ⟨instΛM, projM, hdsmul, hfree, hsurj, hint, hkerM⟩
+          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) M)) :=
+  sorry
 
 /-- **The auxiliary Hilbert Taylor–Wiles level at a GIVEN prime set** (PROVEN
 GLUE since 2026-07-27 over the RING/HECKE cut above; formerly the arithmetic
@@ -25282,9 +25236,14 @@ weakly universal raised-level deformation datum `𝒟Q`
 (`exists_isWeaklyUniversal_hilbertAuxDeformationDatum`, whose non-emptiness
 hypothesis `𝒟₀` is discharged by `H.datum`); obtain the classifying map and
 with it the `R_Q`-action on `M_Q` (`exists_module_of_hilbertAuxHeckeAlgebra`);
-run the RING leaf; run the HECKE leaf. The witnesses handed back are
-`R := 𝒟Q.R` and `M := H.M` — the universal ring and the automorphic module
-themselves, not anonymous carriers.
+run the RING leaf; run the HECKE leaf. The ring witness handed back is
+`R := 𝒟Q.R`, the universal raised-level ring itself, not an anonymous carrier.
+The MODULE witness is the one the HECKE leaf produces: it used to be `H.M`, and
+that is withdrawn — read the refutation in §1 of
+`exists_hilbertAuxHeckeModuleData` above. `HilbertAuxHeckeAlgebra` pins its
+field `M` only by `Nontrivial`, so no statement may assert freeness of `H.M`;
+classically the produced module IS `H.M`, but only for the genuine raised-level
+`H`, which the interface does not identify.
 
 What was stripped off relative to the PARENT leaf
 (`exists_hilbertTaylorWilesLevelRaw`), and where it went:
@@ -25335,7 +25294,9 @@ only STATED — and all three landed on 2026-07-27
 HECKE leaf now receives a ring that is a raised-level deformation datum, weakly
 universal, together with the classifying map into a Hecke algebra that
 genuinely acts on Hilbert modular forms. The junk ring is excluded by
-construction, and the module asked for is `H.M` itself.
+construction. (The stronger reading — that the module ASKED FOR may then be
+`H.M` itself — is what the 2026-07-28 refutation withdrew; `H.M` is pinned only
+by `Nontrivial`, so the HECKE leaf produces its module instead.)
 
 The level IDEAL was already separable for a different reason, and that has not
 changed: `Modularity.taylorWilesLevelIdeal` pins it completely, whereas an
@@ -25421,13 +25382,16 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
       h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff n Q hQcard hQ 𝒟Q h𝒟Q
-  -- The HECKE half.
-  obtain ⟨instLM, projM, hdsmul, hcoord, hprojsurj, hprojsmul, hprojzero⟩ :=
+  -- The HECKE half.  Since the FREENESS/COMPARISON refutation of 2026-07-28 it
+  -- PRODUCES the auxiliary Hecke module rather than asserting freeness of the
+  -- unpinned `H.M`; classically the `M` it hands back IS `H.M`.
+  obtain ⟨M, instMadd, instMR, instLM, projM, hdsmul, hcoord, hprojsurj,
+      hprojsmul, hprojzero⟩ :=
     exists_hilbertAuxHeckeModuleData ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e ψ hψalg
       hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex diamond
       toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
-  exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, H.M,
-    inferInstance, instRM, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
+  exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, M,
+    instMadd, instMR, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
     hprojsurj, hprojsmul, hprojzero⟩
 
 /-- **The AUXILIARY Taylor–Wiles levels over `F`** (LEAF — new 2026-07-27, the
@@ -25850,6 +25814,16 @@ by `exists_module_of_hilbertAuxHeckeAlgebra`. The cut itself is
 paragraph is a worked instance of the standing rule that STATING a theory is
 not PROVING it: the obstruction was discharged by writing three interfaces, and
 none of the three had to be inhabited to make the split safe.
+
+**PARTIAL CORRECTION 2026-07-28.** "The field whose absence was the falsity" is
+right about the RING and wrong if read as a licence to state theorems ABOUT
+`H.M`. `HilbertAuxHeckeAlgebra` constrains `M` by `Nontrivial` and nothing
+else, so `M` may be replaced by `M × M` in any witness; the FREENESS/COMPARISON
+cut of 2026-07-28, which asserted `H.M ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d`, was refuted by that
+substitution and withdrawn the same day. Carrying `M` makes the RING/HECKE
+split safe — the Hecke leaf receives a ring with attached forms — but the Hecke
+leaf must still PRODUCE its module, which is what it now does. See §1 of
+`exists_hilbertAuxHeckeModuleData` above.
 
 The one price paid is recorded at the cut: `hw2`, `[Finite k]`,
 `[DiscreteTopology k]` and `[Algebra ℤ_[ℓ] k]` are now hypotheses of this
