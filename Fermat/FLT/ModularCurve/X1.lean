@@ -1120,7 +1120,73 @@ that field is this one.
 Note `dM_equivariant` is NOT derivable from `coequalises` and vice versa:
 the first says `σ^*dM ≅ dM`, the second is the converse direction, and
 `Gamma1GITPresentation.toGamma1Atlas` consumes only the first while
-`exists_descendClassifyGamma1` consumes only the second. -/
+`exists_descendClassifyGamma1` consumes only the second.
+
+## FALSITY AUDIT (2026-07-29): `coequalises` was UNSATISFIABLE over a general base, and is now repaired
+
+**The defect.**  `coequalises` was transcribed from `X0.lean`'s
+`exists_deckAction` clause (b) with no change.  Over `X0.lean`'s base
+`SpecQ` that is harmless, because `Subsingleton (Z ⟶ SpecQ)` holds for
+every scheme `Z` (a morphism to `Spec ℚ` is a ring map `ℚ →+* Γ(Z, ⊤)`,
+and there is at most one).  Over a general `S` — and `Spec K` for a
+number field `K` is general — the missing clause is REAL CONTENT, and
+without it the field is not merely too strong: **no inhabitant of
+`Gamma1Rigidification N (Spec K)` can satisfy it** for suitable `K`, so
+`exists_gamma1Rigidification` was FALSE as stated, and with it
+`exists_gamma1DeckAction`, which is what fills the field.
+
+**Why `coequalises` forces `a ≫ strM = b ≫ strM`.**  `S = Spec K` is
+affine and so is `Spec A`, and `Spec` is fully faithful on affines, so
+`strM = Spec φ` for a unique `φ : K →+* A`.  `strM_invariant` says
+`Spec (σ •) ≫ Spec φ = Spec φ`, i.e. `σ • ∘ φ = φ` for every `σ : G`,
+i.e. `φ` lands in `A^G`.  Hence `strM = specInvariantsQuotient G A ≫ str'`
+with `str' = Spec (φ : K →+* A^G)`, and therefore
+`a ≫ π = b ≫ π` IMPLIES `a ≫ strM = b ≫ strM`.  So any pair `a, b`
+rigidifying one datum with DIFFERENT structure morphisms to `S` refutes
+the old field.
+
+**The witness, and it needs nothing but `cover`.**  Take `N = 5` and an
+elliptic curve `E/ℚ` with a rational point `P` of exact order `5` (e.g.
+`11a3 = X₁(11)`), let `K = ℚ(E[3])` — a nontrivial Galois extension of
+`ℚ`, since it contains `ζ₃` — and let `σ ∈ Gal(K/ℚ)`, `σ ≠ 1`.  Put
+`d₁ := (E_K, P_K)`, a `Gamma1Datum 5 (Spec K)`.  Because `E` and `P` are
+defined over `ℚ`, the `σ`-conjugate datum is canonically `d₁` again:
+`(Spec σ)^* d₁ ≅ d₁`.  Now let `R : Gamma1Rigidification 5 (Spec K)` be
+ANY inhabitant and apply `R.cover` twice to the same datum `d₁` with two
+different structure morphisms:
+
+* at `g := 𝟙`, giving `p₁ : T₁ ⟶ Spec K` fppf, `d'₁` on `T₁` and
+  `m₁ : T₁ ⟶ Spec A` with `m₁ ≫ strM = p₁`;
+* at `g := Spec σ`, giving `p₂ : T₂ ⟶ Spec K` fppf, `d'₂` on `T₂` and
+  `m₂ : T₂ ⟶ Spec A` with `m₂ ≫ strM = p₂ ≫ Spec σ`.
+
+Set `Z := T₁ ×_{Spec K} T₂` with projections `q₁, q₂`, so
+`q₁ ≫ p₁ = q₂ ≫ p₂ =: w`, and set `a := q₁ ≫ m₁`, `b := q₂ ≫ m₂`.  Both
+`a` and `b` exhibit the SAME datum `d_Z := w^* d₁` as a base change of
+`dM` — for `b` this uses `(Spec σ)^* d₁ ≅ d₁` — so the old `coequalises`
+applies and gives `a ≫ π = b ≫ π`, hence `a ≫ strM = b ≫ strM`, i.e.
+`w = w ≫ Spec σ`.  But `w` is a composite of two fppf morphisms, hence an
+epimorphism, so `Spec σ = 𝟙` and `σ = 1`.  Contradiction.
+
+**The repair, and why it costs nothing.**  The Katz–Mazur torsor
+statement is about two level structures on one datum *of `S`-schemes*:
+`𝔐([Γ₁(N)], [Γ(n)]) → 𝔐([Γ₁(N)])` is a `GL₂(ℤ/n)`-torsor over `S`, and
+"the same point of `𝔐([Γ₁(N)])`" includes the `S`-structure.  So the
+field gains the hypothesis `a ≫ strM = b ≫ strM`, which is exactly what
+was silently free over `SpecQ`.  Every consumer already holds it:
+`exists_descendClassifyGamma1` uses `hcoeq` twice and both times the
+equation is available from `hcov`'s `p ≫ g = m ≫ strM` clause (the first
+was being discarded as `-`), at the price of the same hypothesis on that
+theorem's own second conclusion clause — where all three call sites in
+`nonempty_gamma1GITPresentation_of_rigidification` supply it, again from
+`R.cover`.  **`Gamma1GITPresentation` is unchanged**, so nothing below
+this cluster moves.
+
+*The check that would refute this audit*: exhibit
+`R : Gamma1Rigidification N (Spec K)` and `a, b, d₁` as above with
+`a ≫ strM ≠ b ≫ strM` and `a ≫ π = b ≫ π` — impossible by the
+factorisation paragraph — or show that `(Spec σ)^* d₁ ≇ d₁` for a datum
+defined over the prime field, which is false by base-change transitivity. -/
 
 /-- **The Katz–Mazur rigidified moduli scheme for `[Γ₁(N)]`, over an
 arbitrary base scheme `S`** — the output of (8.1.1), with the descended
@@ -1169,11 +1235,18 @@ structure Gamma1Rigidification (N : ℕ) (S : Scheme.{0}) where
     Nonempty (IsBaseChangeOfGamma1
       (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
   /-- **the torsor property**: the quotient map coequalises ANY two
-  rigidifications of one datum, not merely `𝟙` and `Spec σ` for a global
-  `σ : G`.  Without this field the descent below is FALSE — see the
-  section comment. -/
+  rigidifications of one datum **over `S`**, not merely `𝟙` and `Spec σ`
+  for a global `σ : G`.  Without this field the descent below is FALSE —
+  see the section comment.
+
+  `hab` was MISSING until 2026-07-29 and its absence made the field
+  unsatisfiable over a general base — see the FALSITY AUDIT in the
+  section comment for the witness.  It is free over `Spec ℚ`, which is
+  why `X0.lean` does not carry it, and every consumer here already holds
+  it. -/
   coequalises : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A))
-    (d₁ : Gamma1Datum N Z), IsBaseChangeOfGamma1 a d₁ dM →
+    (d₁ : Gamma1Datum N Z), a ≫ strM = b ≫ strM →
+    IsBaseChangeOfGamma1 a d₁ dM →
     IsBaseChangeOfGamma1 b d₁ dM →
     a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
 
@@ -1234,7 +1307,8 @@ theorem exists_descendClassifyGamma1 (N : ℕ) (G : Type) [Group G] [Finite G]
         p ≫ g = m ≫ strM ∧
         Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM))
     (hcoeq : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A))
-      (d₁ : Gamma1Datum N Z), IsBaseChangeOfGamma1 a d₁ dM →
+      (d₁ : Gamma1Datum N Z), a ≫ strM = b ≫ strM →
+      IsBaseChangeOfGamma1 a d₁ dM →
       IsBaseChangeOfGamma1 b d₁ dM →
       a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A)
     (T : Scheme.{0}) (g : T ⟶ S) (d : Gamma1Datum N T) :
@@ -1242,7 +1316,8 @@ theorem exists_descendClassifyGamma1 (N : ℕ) (G : Type) [Group G] [Finite G]
       c ≫ str = g ∧
       ∀ (Z : Scheme.{0}) (k : Z ⟶ T) (dZ : Gamma1Datum N Z),
         IsBaseChangeOfGamma1 k dZ d →
-        ∀ m : Z ⟶ Spec (CommRingCat.of A), IsBaseChangeOfGamma1 m dZ dM →
+        ∀ m : Z ⟶ Spec (CommRingCat.of A), m ≫ strM = k ≫ g →
+          IsBaseChangeOfGamma1 m dZ dM →
           k ≫ c = m ≫ specInvariantsQuotient G A := by
   classical
   -- the rigidifying cover of `d`, and the rigidification `m₀` it carries
@@ -1255,22 +1330,38 @@ theorem exists_descendClassifyGamma1 (N : ℕ) (G : Type) [Group G] [Finite G]
     intro Z g₁ g₂ he
     obtain ⟨d₁, ⟨b₁⟩⟩ := exists_gamma1Datum_baseChange g₁ d'
     have hb : IsBaseChangeOfGamma1 (g₂ ≫ p) d₁ d := by rw [← he]; exact b₁.comp bp
+    -- the two rigidifications are rigidifications OVER `S`; this is the clause
+    -- `hcoeq` gained on 2026-07-29, and `hst` is exactly what supplies it
+    have hab : (g₁ ≫ m₀) ≫ strM = (g₂ ≫ m₀) ≫ strM := by
+      calc (g₁ ≫ m₀) ≫ strM = (g₁ ≫ p) ≫ g := by
+            rw [Category.assoc, ← hst, ← Category.assoc]
+        _ = (g₂ ≫ p) ≫ g := by rw [he]
+        _ = (g₂ ≫ m₀) ≫ strM := by rw [Category.assoc, hst, ← Category.assoc]
     rw [← Category.assoc, ← Category.assoc]
-    exact hcoeq (g₁ ≫ m₀) (g₂ ≫ m₀) d₁ (b₁.comp bm) ((hb.cancel bp).comp bm)
+    exact hcoeq (g₁ ≫ m₀) (g₂ ≫ m₀) d₁ hab (b₁.comp bm) ((hb.cancel bp).comp bm)
   refine ⟨EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key, ?_, ?_⟩
   · -- the descended map is a morphism over `S`: check it after the epimorphism `p`
     refine (cancel_epi p).mp ?_
     rw [← Category.assoc, EffectiveEpi.fac, Category.assoc, hstr, hst]
   · -- independence of the cover: compare on `Z ×_T T'`
-    intro Z k dZ bk m bmZ
+    intro Z k dZ bk m hm bmZ
     have hcond : Limits.pullback.fst k p ≫ k = Limits.pullback.snd k p ≫ p :=
       Limits.pullback.condition
     obtain ⟨dW, ⟨bq⟩⟩ := exists_gamma1Datum_baseChange (Limits.pullback.fst k p) dZ
     have hb : IsBaseChangeOfGamma1 (Limits.pullback.snd k p ≫ p) dW d := by
       rw [← hcond]; exact bq.comp bk
+    -- again the over-`S` clause of `hcoeq`, this time from `hm` and `hst`
+    have hab : (Limits.pullback.fst k p ≫ m) ≫ strM
+        = (Limits.pullback.snd k p ≫ m₀) ≫ strM := by
+      calc (Limits.pullback.fst k p ≫ m) ≫ strM
+          = (Limits.pullback.fst k p ≫ k) ≫ g := by
+            rw [Category.assoc, hm, ← Category.assoc]
+        _ = (Limits.pullback.snd k p ≫ p) ≫ g := by rw [hcond]
+        _ = (Limits.pullback.snd k p ≫ m₀) ≫ strM := by
+            rw [Category.assoc, hst, ← Category.assoc]
     have h1 : (Limits.pullback.fst k p ≫ m) ≫ specInvariantsQuotient G A
         = (Limits.pullback.snd k p ≫ m₀) ≫ specInvariantsQuotient G A :=
-      hcoeq _ _ dW (bq.comp bmZ) ((hb.cancel bp).comp bm)
+      hcoeq _ _ dW hab (bq.comp bmZ) ((hb.cancel bp).comp bm)
     refine (cancel_epi (Limits.pullback.fst k p)).mp ?_
     calc Limits.pullback.fst k p
           ≫ k ≫ EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key
@@ -1337,7 +1428,7 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
   choose c hc1 hc2 using fun (T : Scheme.{0}) (g : T ⟶ S) (d : Gamma1Datum N T) =>
     exists_descendClassifyGamma1 N R.G R.strM str hstr' R.dM
       (fun {_T} g₀ d₀ => R.cover g₀ d₀)
-      (fun {_Z} a b d₁ h₁ h₂ => R.coequalises a b d₁ h₁ h₂) T g d
+      (fun {_Z} a b d₁ hab h₁ h₂ => R.coequalises a b d₁ hab h₁ h₂) T g d
   refine ⟨{ A := R.A
             B := ↥(FixedPoints.subring R.A R.G)
             G := R.G
@@ -1357,10 +1448,12 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
     intro T' T h g g' hg d' d bch
     refine Subtype.ext ?_
     show c T' g' d' = h ≫ c T g d
-    obtain ⟨Z, p, dZ, m, hf, hs, hq, -, ⟨bp⟩, ⟨bm⟩⟩ := R.cover g' d'
+    obtain ⟨Z, p, dZ, m, hf, hs, hq, hst, ⟨bp⟩, ⟨bm⟩⟩ := R.cover g' d'
     haveI := hf; haveI := hs; haveI := hq
-    have h1 := hc2 T' g' d' Z p dZ bp m bm
-    have h2 := hc2 T g d Z (p ≫ h) dZ (bp.comp bch) m bm
+    -- the over-`S` clause `hc2` gained on 2026-07-29; `R.cover` supplies it
+    have hm2 : m ≫ R.strM = (p ≫ h) ≫ g := by rw [Category.assoc, hg, ← hst]
+    have h1 := hc2 T' g' d' Z p dZ bp m hst.symm bm
+    have h2 := hc2 T g d Z (p ≫ h) dZ (bp.comp bch) m hm2 bm
     refine (cancel_epi p).mp ?_
     rw [h1, ← Category.assoc, h2]
   · -- the classifying map of the universal family is the quotient map: read
@@ -1368,7 +1461,7 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
     show c _ R.strM R.dM = Spec.map (CommRingCat.ofHom
       (algebraMap ↥(FixedPoints.subring R.A R.G) R.A))
     have h1 := hc2 _ R.strM R.dM _ (𝟙 _) R.dM (IsBaseChangeOfGamma1.refl R.dM) (𝟙 _)
-      (IsBaseChangeOfGamma1.refl R.dM)
+      rfl (IsBaseChangeOfGamma1.refl R.dM)
     rw [Category.id_comp, Category.id_comp] at h1
     exact h1
 
@@ -2008,7 +2101,32 @@ false.  A leaf carrying only (a) and (b), consumed by a second leaf
 quantifying over the resulting `MulSemiringAction`, would therefore be
 the junk-witness trap.  Conversely `R` itself is pinned, because
 `universal` is a fine moduli property — so quantifying over `R` is
-safe. -/
+safe.
+
+## FALSITY AUDIT (2026-07-29): clause (c) was FALSE without `hab`
+
+As released this leaf was **false**, and provably so: clause (c) had no
+`a ≫ R.strM = b ≫ R.strM` hypothesis, and clauses (a)+(c) together imply
+it.  Indeed with `S = Spec K` affine, clause (a) forces `R.strM` to
+factor through `specInvariantsQuotient` (both schemes are affine and
+`Spec` is fully faithful there, so `R.strM = Spec φ` and (a) says
+`σ • ∘ φ = φ`, i.e. `φ` lands in `A^G`), whence
+`a ≫ π = b ≫ π → a ≫ R.strM = b ≫ R.strM`.  The witness is written out
+in full in the FALSITY AUDIT in the section comment before
+`Gamma1Rigidification`: `N = 5`, `E/ℚ` with a rational point of exact
+order `5`, `K = ℚ(E[3])`, `σ ∈ Gal(K/ℚ)` nontrivial, and the two
+rigidifications of the ONE datum `(E_K, P_K)` obtained from `R.cover` at
+`g := 𝟙` and at `g := Spec σ`; they differ over `S` precisely by `σ`,
+which the old clause (c) forbids.  The same witness refutes the released
+field `Gamma1Rigidification.coequalises`, and both are repaired the same
+way.
+
+`hab` is therefore load-bearing for TRUTH.  It is not load-bearing on
+the `Γ₀` side, which is why `X0.lean`'s `exists_deckAction_of_torsion`
+does not carry it: there `S = SpecQ` and `Subsingleton (Z ⟶ SpecQ)`
+gives it for free.  It costs the consumer nothing —
+`exists_descendClassifyGamma1` derives it at both of its uses from
+`hcov`'s `p ≫ g = m ≫ strM` clause. -/
 theorem exists_gamma1DeckAction (N n : ℕ) (hn : 3 ≤ n) {S : Scheme.{0}}
     (R : Gamma1RigidifiedModuli N n S) :
     letI := R.commRing_A
@@ -2023,6 +2141,7 @@ theorem exists_gamma1DeckAction (N n : ℕ) (hn : 3 ≤ n) {S : Scheme.{0}}
             (Spec.map (CommRingCat.ofHom
               (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) ∧
       ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma1Datum N Z),
+        a ≫ R.strM = b ≫ R.strM →
         IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
         a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
@@ -2073,7 +2192,7 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
             cover := ?_
             strM_invariant := hstrinv
             dM_equivariant := hequiv
-            coequalises := fun {Z} a b d₁ ha hb => hcoeq a b d₁ ha hb }⟩
+            coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb }⟩
   intro T g d
   obtain ⟨T', p, d', hf, hs, hq, ⟨bp⟩, ⟨L⟩⟩ := hcov g d
   obtain ⟨m, ⟨hmg, bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
