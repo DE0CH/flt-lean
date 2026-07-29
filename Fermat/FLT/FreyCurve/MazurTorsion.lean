@@ -6409,9 +6409,20 @@ of `A₀`'s five conclusion clauses from assumptions into theorems.
   lines below — is needed to state either half:
   * `A₀-3a` = `exists_semistabilityDefect_of_padicValRat_j_nonneg` —
     Serre's `e = [I_N : J] ∈ {1,2,3,4,6}` at residue characteristic `≥ 5`;
+    **DECOMPOSED and PROVEN 2026-07-29**: `J` is now CONSTRUCTED as the
+    pointwise stabiliser of `E[5]` in `I_N` and `e` as its relative index, so
+    all clauses but the bound hold by construction; the bound is the leaf
+    `A₀-3a-i` =
+    `exists_relIndex_dvd_reductionAutOrder_of_padicValRat_j_nonneg`
+    (`[I_N : J] ∣ #Aut(Ẽ)`, and `#Aut(Ẽ) ∈ {2,4,6}` in char `≥ 5`).
   * `A₀-3b` = `exists_raynaudExponent_modEq_of_semistabilityDefect` —
     Raynaud's exponent, delivered as the congruence `a·e ≡ r (mod N−1)`
-    rather than as a character identity.
+    rather than as a character identity.  **DECOMPOSED and PROVEN
+    2026-07-29** over the leaf `A₀-3b-i` =
+    `exists_fundamentalCharacter_of_semistabilityDefect`, which produces the
+    level-one fundamental character `ψ_L : J ↠ 𝔽_N^×` with `λ|_J = ψ_L^r`
+    (`r ≤ e`) and `χ|_J = ψ_L^e`; what is left in `A₀-3b` is reading both at
+    a `σ` with `ψ_L(σ)` a generator.
 
 **FINDING (2026-07-27): two of `A₀`'s clauses are ARITHMETIC CONSEQUENCES of
 the tame congruence, not extra inputs from Raynaud.**  Reading `λ^e = χ^r`
@@ -7113,9 +7124,106 @@ theorem WeierstrassCurve.exists_isogenyTameExponentAt
     _ = (χ (res (σ₀ : _)) ^ k) ^ a := by rw [← pow_mul, ← pow_mul, Nat.mul_comm]
     _ = χ (res σ) ^ a := by rw [h2]
 
+/-- **`A₀-3a-i` — Serre–Kraus: the semistability defect embeds in the
+automorphism group of the reduction** (sorry leaf; Serre–Tate, Ann. of Math.
+88 (1968), Thm. 2 and its Cor. 3; Serre, Invent. Math. 15 (1972), §5.6 and
+§1.12; Kraus, Manuscripta Math. 69 (1990), Thm. 2): the index `[I_N : J]` of
+the pointwise stabiliser of `E[5]` in the inertia group at `N` DIVIDES the
+order of the automorphism group of the reduced curve, which in residue
+characteristic `≥ 5` is `2`, `4` or `6`.
+
+This is the whole mathematical content of `A₀-3a`; what that leaf adds on top
+is four lines of divisor arithmetic (`{d : d ∣ 2} ∪ {d : d ∣ 4} ∪ {d : d ∣ 6}
+= {1,2,3,4,6}`), already written.
+
+**Why the DIVISIBILITY form rather than the `{1,2,3,4,6}` list.**  What the
+geometry produces is an EMBEDDING `Φ ↪ Aut(Ẽ)`, not an isomorphism, so the
+index divides `#Aut(Ẽ)` and nothing sharper is available; and `#Aut(Ẽ)` is
+`2` for `j̃ ∉ {0, 1728}`, `4` for `j̃ = 1728` and `6` for `j̃ = 0` (char `≥ 5`,
+where the three cases are exactly the CM-by-`ℤ`, `ℤ[i]`, `ℤ[ζ₃]` cases).
+Stating the leaf as "`∃ n ∈ {2,4,6}` with `[I_N : J] ∣ n`" keeps the trichotomy
+of the `j`-invariant of the reduction visible to whoever proves it, and hands
+the consumer a statement it can no longer weaken by accident.
+
+**The route.**  `J` is pinned by `hJmem` to be exactly `{σ ∈ I_N : σ` acts
+trivially on `E[5]}`; it is the kernel of a Galois action on a FINITE set, so
+it is open in `I_N` and `e := [I_N : J]` is finite.  Put `L = (ℚ̄_N)^J`.  Since
+`J ≤ I_N = Gal(ℚ̄_N/ℚ_N^{nr})` we get `L ⊇ ℚ_N^{nr}`, and `I_L = I_N ∩ J = J`,
+so `[L : ℚ_N^{nr}] = [I_N : J] = e` and `L/ℚ_N^{nr}` is totally ramified (the
+residue field of `ℚ_N^{nr}` is already algebraically closed).  By Serre–Tate's
+criterion — this is where `0 ≤ v_N(j)` and `5 ≥ 3` prime to `N` enter — `L` is
+the MINIMAL extension of `ℚ_N^{nr}` over which `E` acquires good reduction, so
+`Φ := Gal(L/ℚ_N^{nr}) ≅ I_N/J` is the semistability defect; and `Φ` acts
+faithfully on the reduction `Ẽ/𝔽̄_N`, i.e. `Φ ↪ Aut(Ẽ)`.
+
+**`hj` IS LOAD-BEARING, and this leaf is FALSE without it — with an EXPLICIT
+CURVE.**  Take `N = 23` and `E : y² = x³ − 2x² − 7x + 6`, which has
+`v₂₃(Δ) = 1`, Kodaira type `I₁` at `23`, and `j = 40000/23`, so
+`v₂₃(j) = −1 < 0` and `hj` fails (checked with PARI/GP: `elllocalred` returns
+`kod = 5`, i.e. `I₁`; the witness was then read off by hand, the CAS being a
+searcher and not a prover here).  Over `ℚ₂₃^{nr}` this is the Tate curve `E_q`
+with `v₂₃(q) = v₂₃(1/j) = 1`.  Now `μ₅ ⊂ ℚ₂₃^{nr}` (the residue field is
+`𝔽̄₂₃` and `5 ≠ 23`), so `ℚ₂₃^{nr}(E[5]) = ℚ₂₃^{nr}(q^{1/5})`, and since
+`𝒪^×` is `5`-divisible there while `5 ∤ v₂₃(q) = 1`, that extension is cyclic
+of degree exactly `5`.  Hence `J = I₂₃ ∩ ker(E[5])` has `[I₂₃ : J] = 5`, and
+`5` divides none of `2`, `4`, `6`.  So the conclusion FAILS, not merely the
+argument.
+
+**CORRECTION (2026-07-29) to the counterexample recorded in `A₀-3a` below.**
+That docstring offers a Tate curve with `5 ∣ v_N(q)` and says the leaf is
+"FALSE without `hj`".  The example is real but it does NOT refute anything:
+there `E[5]` is unramified, so `J = I_N`, `e = 1`, and `1 ∈ {1,2,3,4,6}` —
+the conclusion HOLDS on that instance and only the identification of `J` with
+the inertia of a good-reduction extension fails.  The refuting witness needs
+`5 ∤ v_N(q)`, which is the curve above.  Both notes have been kept: the
+`5 ∣ v_N(q)` curve is the right example for "the `E[m]` criterion has no
+unconditional converse", and the `5 ∤ v_N(q)` curve is the right one for
+"the statement is false".
+
+**`hN19` IS LOAD-BEARING, and this leaf IS FALSE without it.**  At `N = 2` the
+defect can be `Q₈` or `SL₂(𝔽₃)` (`#Aut(Ẽ) = 24`) and at `N = 3` dicyclic of
+order `12`, so `e ∈ {8, 12, 24}` occurs and divides no element of `{2,4,6}`.
+**This leaf may not be restated for a general prime.**
+
+**Still needed to prove it, and a WARNING about the obvious route.**  The
+Serre–Tate step wants a good MODEL over `𝒪_L`, i.e. the interface
+`WeierstrassCurve.PotentiallyGoodModel`, which is declared ~1500 lines BELOW
+this point.  **Do not plan on hoisting it**: that hoist was performed once, on
+the 2026-07-28 branch `b23bab50` (which created
+`Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean`), and the release-12
+integration REJECTED it and deleted the file — see the note on the
+`Mathlib.AlgebraicGeometry.EllipticCurve.Reduction` import at the top of this
+file, which records the rejection.  The earlier advice in `A₀-3`'s docstring
+to "redo the hoist" is therefore STALE and was corrected on 2026-07-29.  A
+prover should instead build the good-model input in an UPSTREAM module (which
+is what the inertia-subgroup presentation of this cut was designed to leave
+possible), or state and consume a local good-model existence lemma above this
+point. -/
+theorem WeierstrassCurve.exists_relIndex_dvd_reductionAutOrder_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hj : 0 ≤ padicValRat N E.j)
+    {J : Subgroup (Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat))}
+    (hJle : J ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)
+    (hJmem : ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+        (σ ∈ J ↔ ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+          Affine.Point.map
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P)) :
+    ∃ n : ℕ, (n = 2 ∨ n = 4 ∨ n = 6) ∧
+      J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) ∣ n :=
+  sorry
+
 /-- **`A₀-3a` — Serre's semistability defect at residue characteristic `≥ 5`**
-(sorry leaf; Serre, Invent. Math. 15 (1972), §5.6, and Serre–Tate, Ann. of
-Math. 88 (1968), §2, Cor. 3; Kraus, Manuscripta Math. 69 (1990)): at
+(DECOMPOSED 2026-07-29 over `A₀-3a-i`
+`exists_relIndex_dvd_reductionAutOrder_of_padicValRat_j_nonneg`, which now
+carries all of its mathematics; Serre, Invent. Math. 15 (1972), §5.6, and
+Serre–Tate, Ann. of Math. 88 (1968), §2, Cor. 3; Kraus, Manuscripta Math. 69
+(1990)): at
 potentially good reduction the inertia group at `N` acts on the `5`-torsion
 through a cyclic quotient of order `e ∈ {1,2,3,4,6}`.
 
@@ -7131,14 +7239,26 @@ semistability defect.  Presenting the extension this way is what lets this
 leaf and `A₀-3b` be stated ABOVE `WeierstrassCurve.PotentiallyGoodModel`,
 which is declared ~1500 lines below in this file.
 
-**`hj` IS LOAD-BEARING, and the leaf is FALSE without it.**  The `E[m]`
-criterion has no unconditional converse: a Tate curve `E_q/ℚ_N^{nr}` with
-`5 ∣ v_N(q)` has `E[5]` UNRAMIFIED — `μ_5 ⊂ ℚ_N^{nr}` because `5 ≠ N`, and
-`q^{1/5} ∈ ℚ_N^{nr}` because the residue field is algebraically closed, so
-every unit is a fifth power — while `E` has multiplicative, not good,
-reduction.  There `J = I_N` and `e = 1`, and `E` acquires good reduction over
-no finite extension at all.  So "trivial action on `E[5]`" identifies the
-good-reduction extension only once `0 ≤ v_N(j)` is known.  Likewise `19 < N`
+**`hj` IS LOAD-BEARING, and the leaf is FALSE without it.**  Two different
+Tate curves are needed to say this precisely, and an earlier version of this
+paragraph conflated them (corrected 2026-07-29; the full discussion is in
+`A₀-3a-i`'s docstring above).
+
+* *The `E[m]` criterion has no unconditional converse*: a Tate curve
+  `E_q/ℚ_N^{nr}` with `5 ∣ v_N(q)` has `E[5]` UNRAMIFIED — `μ_5 ⊂ ℚ_N^{nr}`
+  because `5 ≠ N`, and `q^{1/5} ∈ ℚ_N^{nr}` because the residue field is
+  algebraically closed, so every unit is a fifth power — while `E` has
+  multiplicative, not good, reduction.  There `J = I_N` and `e = 1`, and `E`
+  acquires good reduction over no finite extension at all.  So "trivial action
+  on `E[5]`" identifies the good-reduction extension only once `0 ≤ v_N(j)` is
+  known.  **This instance does NOT refute the statement**: `e = 1` lies in
+  `{1,2,3,4,6}`, so the conclusion holds there and only the ARGUMENT fails.
+* *The statement itself is false without `hj`*: take `5 ∤ v_N(q)` instead.
+  Concretely `N = 23` and `E : y² = x³ − 2x² − 7x + 6` (type `I₁` at `23`,
+  `j = 40000/23`, so `v₂₃(q) = 1`); then `ℚ₂₃^{nr}(E[5]) = ℚ₂₃^{nr}(q^{1/5})`
+  is cyclic of degree `5`, giving `e = 5 ∉ {1,2,3,4,6}`.
+
+Likewise `19 < N`
 is used for `N ≥ 5`: at `q = 2` the defect can be `Q₈` (`e = 8`) or
 `SL₂(𝔽₃)` (`e = 24`) and at `q = 3` dicyclic of order `12`, so **this leaf
 may not be restated for a general prime**.
@@ -7147,7 +7267,18 @@ may not be restated for a general prime**.
 potentially good reduction `ℚ_N^{nr}(E[m])` is independent of such an `m`
 (Serre–Tate, Cor. 3 to Thm. 2).  A prover may substitute `3` freely.  What
 `m ≥ 3` buys is that `Aut(E)` acts faithfully on `E[m]`, which is what makes
-`Φ ↪ Aut(E[m])` and hence pins `e`. -/
+`Φ ↪ Aut(E[m])` and hence pins `e`.
+
+**WHAT IS LEFT HERE (2026-07-29).**  The existential is now WITNESSED: `J` is
+built as the honest pointwise stabiliser
+`{σ | ∀ P ∈ E[5], (ρ σ) • P = P} ⊓ I_N` — a subgroup because the Galois action
+on `(E⁄ℚ̄).Point` is a `DistribMulAction`
+(`WeierstrassCurve.galoisRepresentation`) and `ρ` is a monoid hom — and `e` is
+taken to be `J.relIndex I_N`, so `hJle`, `hJmem` and `hindex` hold by
+construction.  The only remaining input is the bound, isolated as `A₀-3a-i`
+above.  Two consequences worth recording: nothing below may read `J` as
+anything other than that stabiliser, and the `hindex` clause is now `rfl`, so
+it can never be satisfied by a different `e`. -/
 theorem WeierstrassCurve.exists_semistabilityDefect_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (hN : N.Prime) (hN19 : 19 < N)
@@ -7164,14 +7295,177 @@ theorem WeierstrassCurve.exists_semistabilityDefect_of_padicValRat_j_nonneg
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
                 hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
               AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P)) ∧
-      J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e :=
+      J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e := by
+  classical
+  -- the decomposition-group map into `Γ ℚ`, with its target written as an
+  -- explicit `AlgEquiv` type so that the Galois action on points is FOUND by
+  -- instance search (`Field.absoluteGaloisGroup` is reducible, but typeclass
+  -- resolution does not unfold it)
+  set ρ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hN.toHeightOneSpectrumRingOfIntegersRat) →*
+      (AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) :=
+    (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hN.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+  -- the pointwise stabiliser of `E[5]`, a subgroup of the LOCAL Galois group
+  set Stab : Subgroup (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hN.toHeightOneSpectrumRingOfIntegersRat)) :=
+    { carrier := {σ | ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+        ρ σ • P = P}
+      one_mem' := by
+        intro P _
+        rw [map_one]
+        exact one_smul _ _
+      mul_mem' := by
+        intro x y hx hy P hP
+        rw [map_mul, mul_smul, hy P hP, hx P hP]
+      inv_mem' := by
+        intro x hx P hP
+        rw [map_inv]
+        exact inv_smul_eq_iff.mpr (hx P hP).symm }
+  -- the `DistribMulAction` smul IS `Affine.Point.map` of the coerced `AlgHom`
+  have hsmul : ∀ (σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hN.toHeightOneSpectrumRingOfIntegersRat))
+      (P : (E⁄(AlgebraicClosure ℚ)).Point),
+      ρ σ • P =
+        Affine.Point.map
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P :=
+    fun _ _ => rfl
+  have hmem : ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+      (σ ∈ Stab ⊓ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat ↔
+        ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+          Affine.Point.map
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P) := by
+    intro σ hσ
+    constructor
+    · intro hσJ P hP
+      exact (hsmul σ P) ▸ hσJ.1 P hP
+    · intro h
+      exact ⟨fun P hP => (hsmul σ P).trans (h P hP), hσ⟩
+  -- `A₀-3a-i`: the index divides `#Aut(Ẽ) ∈ {2,4,6}`
+  obtain ⟨n, hn, hdvd⟩ :=
+    E.exists_relIndex_dvd_reductionAutOrder_of_padicValRat_j_nonneg hN hN19 hj
+      (J := Stab ⊓ _) inf_le_right hmem
+  -- `{d : d ∣ 2} ∪ {d : d ∣ 4} ∪ {d : d ∣ 6} = {1,2,3,4,6}`
+  have key : ∀ m k : ℕ, (k = 2 ∨ k = 4 ∨ k = 6) → m ∣ k →
+      (m = 1 ∨ m = 2 ∨ m = 3 ∨ m = 4 ∨ m = 6) := by
+    intro m k hk hd
+    rcases hk with rfl | rfl | rfl <;>
+      · have hle := Nat.le_of_dvd (by norm_num) hd
+        interval_cases m <;> revert hd <;> decide
+  exact ⟨_, Stab ⊓ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+    key _ n hn hdvd, inf_le_right, hmem, rfl⟩
+
+/-- **`A₀-3b-i` — the level-one fundamental character of the good-reduction
+extension, with Raynaud's exponent attached** (sorry leaf; Raynaud, Bull. SMF
+102 (1974), Cor. 3.4.4 and §1.2; Serre, Invent. Math. 15 (1972), §1.7 and
+Prop. 9): over `L = (ℚ̄_N)^J` — whose inertia group is `J` and whose absolute
+ramification index is `e` — there is a SURJECTIVE character
+`ψ : J → 𝔽_N^×` (the level-one fundamental character `ψ_L`) with
+`χ|_J = ψ^e` and `λ|_J = ψ^r` for some `r ≤ e`.
+
+This is the whole of the local input of `A₀-3b`; what that leaf adds on top is
+the exponent arithmetic that converts the two identities into the congruence
+`a·e ≡ r (mod N−1)`, already written.
+
+**The two clauses, and why the argument needs each.**
+
+* `χ|_J = ψ^e`.  The mod-`N` cyclotomic character restricted to `I_{ℚ_N}` IS
+  the level-one fundamental character `ψ_{ℚ_N}` (the extension
+  `ℚ_N(μ_N)/ℚ_N` is totally tamely ramified of degree `N − 1`), and for a
+  subextension of ramification index `e` one has `ψ_{ℚ_N}|_{I_L} = ψ_L^e`.
+  Here `e(L/ℚ_N) = e(L/ℚ_N^{nr}) = [I_N : J] = e` because `ℚ_N^{nr}/ℚ_N` is
+  unramified — this is exactly what `hJle` and `hindex` are for.  No curve
+  data is used in this clause.
+* `λ|_J = ψ^r` with `r ≤ e`.  This is Raynaud.  `E` acquires good reduction
+  over `L` (`hj` makes it potentially good, `hJmem` says `J` acts trivially on
+  `E[5]`, `5 ≥ 3` is prime to `N`); the Galois-stable order-`N` subgroup
+  `⟨g⟩ ⊆ E[N]` (which is what `hg` and `hlam` say) has a schematic closure in
+  the Néron model over `𝒪_L`, a finite flat group scheme of order `N`; and
+  `e ≤ 6 < N − 1` (from `he` and `hN19`) puts that group scheme in the range
+  of Raynaud's classification, whose conclusion is precisely that the
+  character of its generic fibre is `ψ_L^r` with `0 ≤ r ≤ e`.
+
+**Surjectivity of `ψ` is not decoration — it is the whole force of the leaf.**
+`ψ_L` is surjective onto `𝔽_N^×` because the residue field of `L` is
+algebraically closed, so the tame quotient of `I_L` surjects onto `μ_{N−1}`.
+Without it the pair `(ψ, r)` could be taken trivial and the leaf would be
+satisfied by `ψ = 1, r = 0` whenever `λ|_J = χ|_J = 1`, and the consumer's
+congruence would not follow.
+
+**AXIS SEARCHED AND CLOSED: `(ψ, r)` MUST STAY IN ONE EXISTENTIAL.**  The
+tempting split — one leaf producing `ψ` surjective with `χ|_J = ψ^e` (pure
+tame-character theory, no curve), a second taking such a `ψ` as a HYPOTHESIS
+and producing `r ≤ e` with `λ|_J = ψ^r` (Raynaud) — does not work, because
+those two hypotheses do NOT pin `ψ` to `ψ_L`.  Witness: `N = 29`, `e = 4`,
+`ψ' = ψ_L^15`.  Then `gcd(15, 28) = 1` so `ψ'` is surjective, and
+`ψ'^4 = ψ_L^{60} = ψ_L^4 = χ|_J` since `60 ≡ 4 (mod 28)`; but `ψ'^r` for
+`r ≤ 4` runs through `ψ_L^0, ψ_L^{15}, ψ_L^2, ψ_L^{17}, ψ_L^4` only, so if
+`λ|_J = ψ_L^1` or `ψ_L^3` the second leaf is unsatisfiable.  Those two values
+of `r` are excluded only by the parity clause ("`e` even ⟹ `r` even"), which
+this cut deliberately does not assert at this level (it is derived downstream,
+in `exists_isogenyLocalRamificationDataAt_of_padicValRat_j_nonneg`).  Keeping
+both clauses under one `∃ ψ` lets the prover choose `ψ = ψ_L` and removes the
+dependency entirely. -/
+theorem WeierstrassCurve.exists_fundamentalCharacter_of_semistabilityDefect
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hj : 0 ≤ padicValRat N E.j)
+    {e : ℕ}
+    {J : Subgroup (Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat))}
+    (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6)
+    (hJle : J ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)
+    (hJmem : ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+        (σ ∈ J ↔ ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+          Affine.Point.map
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P))
+    (hindex : J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e) :
+    ∃ (ψ : J →* (ZMod N)ˣ) (r : ℕ), r ≤ e ∧ Function.Surjective ψ ∧
+      (∀ σ : J, lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _)) = ψ σ ^ r) ∧
+      (∀ σ : J, (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _))) = ψ σ ^ e) :=
   sorry
 
 /-- **`A₀-3b` — Raynaud's exponent, as a congruence between tame exponents**
-(sorry leaf; Raynaud, Bull. SMF 102 (1974), Cor. 3.4.4; Serre, Invent. Math.
-15 (1972), §1.7 and Prop. 5): given the semistability-defect datum `(e, J)`
-of `A₀-3a` and the tame exponent `a` of `A₀-2`, there is `r ≤ e` with
+(DECOMPOSED 2026-07-29 over `A₀-3b-i`
+`exists_fundamentalCharacter_of_semistabilityDefect`, which now carries all of
+its mathematics; Raynaud, Bull. SMF 102 (1974), Cor. 3.4.4; Serre, Invent.
+Math. 15 (1972), §1.7 and Prop. 5): given the semistability-defect datum
+`(e, J)` of `A₀-3a` and the tame exponent `a` of `A₀-2`, there is `r ≤ e` with
 `a·e ≡ r (mod N−1)`.
+
+**WHAT IS LEFT HERE (2026-07-29): steps 1–3 below are `A₀-3b-i`; step 4 is the
+proof written here.**  `A₀-3b-i` delivers `ψ = ψ_L` surjective with
+`λ|_J = ψ^r` (`r ≤ e`) and `χ|_J = ψ^e`.  Evaluating both at a `σ ∈ J` with
+`ψ(σ)` a GENERATOR of `(ZMod N)ˣ` — which surjectivity supplies — turns
+`λ(σ) = χ(σ)^a` into `ψ(σ)^r = ψ(σ)^{e·a}`, and `orderOf ψ(σ) = N − 1` gives
+the congruence.  Note it is `hJle` that lets `ha` (a statement about `I_N`) be
+read at `σ ∈ J` at all.
 
 **Why the conclusion is a CONGRUENCE and not a character identity.**  This is
 the whole of Raynaud's input, transported once and for all into arithmetic.
@@ -7236,8 +7530,30 @@ theorem WeierstrassCurve.exists_raynaudExponent_modEq_of_semistabilityDefect
                 hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
               AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P))
     (hindex : J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e) :
-    ∃ r : ℕ, r ≤ e ∧ a * e ≡ r [MOD N - 1] :=
-  sorry
+    ∃ r : ℕ, r ≤ e ∧ a * e ≡ r [MOD N - 1] := by
+  classical
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  -- `A₀-3b-i`: the level-one fundamental character of `L = (ℚ̄_N)^J`
+  obtain ⟨ψ, r, hre, hsurj, hψlam, hψχ⟩ :=
+    E.exists_fundamentalCharacter_of_semistabilityDefect g hN hN19 hg lam hlam hj
+      he hJle hJmem hindex
+  refine ⟨r, hre, ?_⟩
+  -- read the two identities at a `σ ∈ J` on which `ψ` takes a GENERATOR of
+  -- `(ZMod N)ˣ`; this is where surjectivity of `ψ` is consumed
+  obtain ⟨u, hu⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := (ZMod N)ˣ)
+  have hcard : Nat.card (ZMod N)ˣ = N - 1 := by
+    rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient, Nat.totient_prime hN]
+  rw [hcard] at hu
+  obtain ⟨σ, hσ⟩ := hsurj u
+  -- `u ^ r = λ(σ) = χ(σ) ^ a = u ^ (e * a)`
+  have h3 := ha (σ : _) (hJle σ.2)
+  rw [hψlam σ, hψχ σ, hσ, ← pow_mul] at h3
+  have h4 : r ≡ e * a [MOD N - 1] := by
+    have h5 := pow_eq_pow_iff_modEq.mp h3
+    rwa [hu] at h5
+  rw [Nat.mul_comm a e]
+  exact h4.symm
 
 /-- **`A₀-3` — the semistability defect and Raynaud's exponent at `N`**
 (DECOMPOSED and PROVEN 2026-07-28 from `A₀-2`, `A₀-3a` and `A₀-3b`; Serre,
@@ -7287,25 +7603,39 @@ possible exponents in `λ¹² = χ^{12r/e}` at potentially good reduction.  That
 the cut reproduces the classical list is the evidence that no clause was lost
 in it.
 
-THE NEXT CUTS, for whoever takes `A₀-3a` or `A₀-3b` on.  Neither Raynaud's
-classification nor the `{1,2,3,4,6}` bound is in mathlib, in `~/cs/FLT`, or
-in this project, so both leaves are theory builds.
+THE NEXT CUTS (updated 2026-07-29: `A₀-3a` and `A₀-3b` are themselves now
+DECOMPOSED and PROVEN over `A₀-3a-i`
+`exists_relIndex_dvd_reductionAutOrder_of_padicValRat_j_nonneg` and `A₀-3b-i`
+`exists_fundamentalCharacter_of_semistabilityDefect`; those two are the live
+leaves of this cluster and their docstrings are the specifications).  Neither
+Raynaud's classification nor the `{1,2,3,4,6}` bound is in mathlib, in
+`~/cs/FLT`, or in this project — RE-VERIFIED by grep on 2026-07-29, the
+mathlib hits for "Raynaud" are all fibered-category/étale-descent material —
+so both remain theory builds.
 
-* `A₀-3a` factors through `WeierstrassCurve.PotentiallyGoodModel` (declared
+* `A₀-3a-i` factors through `WeierstrassCurve.PotentiallyGoodModel` (declared
   ~1500 lines BELOW in this file; its producer from `0 ≤ v_N(j)` is the
   already-open leaf `exists_potentiallyGoodModel_of_jIntegral`, stated for
-  `q ≠ 2`).  Using it here needs that block hoisted into an upstream module
-  first — **and note that hoist was already done once, in `b23bab50`, and
-  LOST in a later merge**: `Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean`
-  exists in that commit and in no branch head.  Redo the hoist rather than
-  re-deriving the material.  What remains after the hoist is Serre §5.6 /
-  Kraus: `Φ ↪ Aut(Ẽ)` over the residue field, and `Aut` of an elliptic curve
-  in characteristic `≥ 5` is cyclic of order `2`, `4` or `6`, whence
-  `e ∈ {1,2,3,4,6}`.
-* `A₀-3b` needs finite flat group schemes of order `N` over a base of
-  absolute ramification `e < N − 1`, which is a genuinely new theory here.
-  The `Fermat/FLT/HopfAlgebra` cluster (Cartier duality) is the nearest
-  existing material. -/
+  `q ≠ 2`).  **CORRECTION (2026-07-29): the previous advice here — "that hoist
+  was done once in `b23bab50` and lost in a later merge; redo it" — is STALE
+  and was wrong to follow.**  `b23bab50` is an ancestor of `main` and did
+  create `Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean`, but the hoist was
+  not "lost": the release-12 integration REJECTED it and deleted the file
+  deliberately, as the note on the
+  `Mathlib.AlgebraicGeometry.EllipticCurve.Reduction` import at the top of
+  this file records.  No branch head carries the file.  Build the good-model
+  input in an UPSTREAM module instead — which is what the inertia-subgroup
+  presentation of this cut exists to make possible.  What remains after that
+  is Serre §5.6 / Kraus: `Φ ↪ Aut(Ẽ)` over the residue field, and `Aut` of an
+  elliptic curve in characteristic `≥ 5` is cyclic of order `2`, `4` or `6`,
+  whence `[I_N : J] ∣ #Aut(Ẽ) ∈ {2,4,6}` and so `e ∈ {1,2,3,4,6}`.
+* `A₀-3b-i` needs two independent things: tame-character theory over `L`
+  (`χ|_{I_L} = ψ_L^{e(L)}` with `ψ_L` surjective), and finite flat group
+  schemes of order `N` over a base of absolute ramification `e < N − 1`, which
+  is a genuinely new theory here.  The `Fermat/FLT/HopfAlgebra` cluster
+  (Cartier duality) is the nearest existing material.  They may NOT be split
+  into two leaves — see the counterexample recorded in `A₀-3b-i`'s
+  docstring. -/
 theorem WeierstrassCurve.exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
