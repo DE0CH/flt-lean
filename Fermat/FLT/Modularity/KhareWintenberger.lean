@@ -8542,8 +8542,29 @@ not by itself dispose of it).
 
 (7) EXCLUDING THE LEVEL — adding `hbadlevel`, i.e. demanding that
 `badF` also contain the places where the Hilbert newform underlying
-`heckeF` is ramified — REJECTED as REDUNDANT. The hypotheses already
-force that level to be supported over `2` and `ℓ`:
+`heckeF` is ramified — REJECTED as REDUNDANT.
+
+**THIS VERDICT WAS CORRECTED IN ROUND 8, AND ROUND 9 THEN LOCATED THE
+OBLIGATION IT NAMES. Read those before relying on the paragraph below.**
+The rejection is right about the question it literally asks — adding
+`hbadlevel` as a HYPOTHESIS deletes no instance — but it was read as "the
+level clause is not needed", and that reading is wrong twice over. First,
+the chain below (Chebotarev + Brauer–Nesbitt + local–global compatibility)
+is a chain of theorems NONE of which is in this tree, so it cannot be
+invoked inside any proof, however sound it is on paper. Second, it covers
+only `𝒮.S` and says nothing about the Taylor–Wiles set `𝒮.Q`, which has no
+relation to `π` at all.
+
+The clause is therefore owed, and as of ROUND 9 it is owed in exactly one
+named place: `exists_eigenform_minimalLevel_subset_badF`, whose docstring
+carries the argument below as its content. Its consumer
+`exists_totallyDefinite_heckeCharacter_level_subset_badF` is a PROVEN
+assembly. The `𝒮.Q` half turned out to cost nothing —
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` returns `𝒮.Q = ∅`
+outright — so only the `𝒮.S` half is still open. Do NOT re-derive the
+argument here; it has a home.
+
+The hypotheses do force that level to be supported over `2` and `ℓ`:
 
 * `hirrF` gives `ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}`
   irreducible (a reducible representation has reducible reduction);
