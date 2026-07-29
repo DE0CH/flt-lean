@@ -61865,6 +61865,442 @@ theorem isUnramifiedAt_of_linearEquiv
   apply e.injective
   rw [Module.End.one_apply, he, hx, Module.End.one_apply]
 
+/-!
+### The Artin conductor exponent is an ISOMORPHISM INVARIANT
+
+**PROVEN 2026-07-29, seventeenth owner of the deep-level Carayol
+cluster.** Everything in this block exists to answer a question that the
+sixteenth owner's re-audit of
+`two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` recorded as
+the ONE unsearched axis and could not act on: *is
+`GaloisRep.conductorExponent` invariant under a `Γ ℚ`-equivariant linear
+equivalence?* Nothing in the tree stated it, and without it the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` above transports charpoly
+and inertia data but NOT the conductor — which is why every Carayol
+citation in this file had to be stated about an abstract `τ` pinned only
+by its Frobenius characteristic polynomials, instead of about the
+representation actually attached to the newform.
+
+It is invariant, and the proof is elementary: every one of
+`inertiaInvariants`, `fixedSubmodule`, `wildCodim`,
+`IsTamelyRamifiedAt`, `IsSwanExponentAt`, `swanExponentAux`,
+`swanExponent` and `conductorExponent` depends on `ρ` ONLY through
+`ρ.toLocal v`, and `GaloisRep.toLocal_apply` makes `ρ.toLocal v σ` a
+value of `ρ` itself (at the image of `σ` under
+`Field.absoluteGaloisGroup.map`). So global equivariance of `e` IS local
+equivariance at every place, on the nose — `toLocal_equivariant_of_linearEquiv`
+below is `he _ _` and nothing more — and each invariant then transports
+by a one-step argument: the fixed submodules correspond under `e`, hence
+have equal `finrank`; the ambient ranks are equal by
+`LinearEquiv.finrank_eq`; and the Swan specification is a statement about
+those two numbers alone.
+
+WHAT THIS BUYS, AND IT IS THE POINT OF THE BLOCK. The literature
+citation can now sit on the ATTACHED representation — an existential
+whose witness is the object Carayol's theorem is actually about — and
+reach an abstract `τ` by PROVEN transport rather than by being restated
+about `τ`. That is the trade
+`exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform`
+below executes: two abstract-`τ` citation leaves are replaced by one
+carrier-level citation.
+
+The `IsUnramifiedAt` analogue is `isUnramifiedAt_of_linearEquiv` above,
+which this block generalises but does not subsume (it is stated with an
+instance argument and is used through instance synthesis). -/
+
+section ConductorInvariance
+
+variable {A : Type*} [CommRing A] [TopologicalSpace A]
+variable {W₁ W₂ : Type*} [AddCommGroup W₁] [Module A W₁]
+  [AddCommGroup W₂] [Module A W₂]
+
+/-- **Global equivariance IS local equivariance** (PROVEN): `toLocal` is
+evaluation of `ρ` at the image of `σ` in `Γ ℚ`
+(`GaloisRep.toLocal_apply`, a `rfl`-lemma), so an intertwiner for the
+global action intertwines the local action at every place with no
+argument at all. -/
+theorem toLocal_equivariant_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)) (w : W₁) :
+    e (τ₁.toLocal v σ w) = τ₂.toLocal v σ (e w) :=
+  he _ w
+
+/-- **The `H`-fixed submodules correspond under an intertwiner** (PROVEN):
+`w` is fixed by `H` through `τ₁` iff `e w` is fixed by `H` through `τ₂`.
+Both directions are the previous lemma plus injectivity of `e`. -/
+theorem mem_fixedSubmodule_iff_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (H : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion ℚ))) (w : W₁) :
+    w ∈ τ₁.fixedSubmodule v H ↔ e w ∈ τ₂.fixedSubmodule v H := by
+  constructor
+  · intro hw σ hσ
+    rw [← toLocal_equivariant_of_linearEquiv e he v σ w, hw σ hσ]
+  · intro hw σ hσ
+    apply e.injective
+    rw [toLocal_equivariant_of_linearEquiv e he v σ w]
+    exact hw σ hσ
+
+/-- **The image of `V₁^H` is `V₂^H`** (PROVEN), the submodule form of the
+previous lemma; surjectivity of `e` supplies the missing inclusion. -/
+theorem fixedSubmodule_map_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (H : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion ℚ))) :
+    (τ₁.fixedSubmodule v H).map (e : W₁ →ₗ[A] W₂) = τ₂.fixedSubmodule v H := by
+  ext y
+  simp only [Submodule.mem_map]
+  constructor
+  · rintro ⟨w, hw, rfl⟩
+    exact (mem_fixedSubmodule_iff_of_linearEquiv e he v H w).1 hw
+  · intro hy
+    refine ⟨e.symm y, ?_, by simp⟩
+    rw [mem_fixedSubmodule_iff_of_linearEquiv e he v H]
+    simpa using hy
+
+/-- **`dim V₁^H = dim V₂^H`** (PROVEN): `e` restricts to a linear
+equivalence of the two fixed submodules. -/
+theorem finrank_fixedSubmodule_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (H : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion ℚ))) :
+    Module.finrank A (τ₁.fixedSubmodule v H) =
+      Module.finrank A (τ₂.fixedSubmodule v H) := by
+  have h := Submodule.equivMapOfInjective (e : W₁ →ₗ[A] W₂) e.injective
+    (τ₁.fixedSubmodule v H)
+  rw [fixedSubmodule_map_of_linearEquiv e he v H] at h
+  exact h.finrank_eq
+
+/-- **The TAME part of the conductor exponent is an isomorphism
+invariant** (PROVEN): both summands of
+`dim V − dim V^{I_v}` are. -/
+theorem tameExponent_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.tameExponent v = τ₂.tameExponent v := by
+  rw [GaloisRep.tameExponent, GaloisRep.tameExponent, e.finrank_eq]
+  congr 1
+  exact finrank_fixedSubmodule_eq_of_linearEquiv e he v _
+
+/-- **The number of ramification breaks is an isomorphism invariant**
+(PROVEN): the same statement at `H = P_v`. -/
+theorem wildCodim_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.wildCodim v = τ₂.wildCodim v := by
+  rw [GaloisRep.wildCodim, GaloisRep.wildCodim, e.finrank_eq]
+  congr 1
+  exact finrank_fixedSubmodule_eq_of_linearEquiv e he v _
+
+/-- **Tameness is an isomorphism invariant** (PROVEN). Note this is NOT
+the same shape as the fixed-submodule lemmas: `IsTamelyRamifiedAt` asks
+that the wild inertia fix EVERY vector, so the forward direction runs
+through `e.symm` rather than through membership. -/
+theorem isTamelyRamifiedAt_iff_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.IsTamelyRamifiedAt v ↔ τ₂.IsTamelyRamifiedAt v := by
+  constructor
+  · intro h σ hσ y
+    calc τ₂.toLocal v σ y
+        = τ₂.toLocal v σ (e (e.symm y)) := by rw [e.apply_symm_apply]
+      _ = e (τ₁.toLocal v σ (e.symm y)) :=
+          (toLocal_equivariant_of_linearEquiv e he v σ _).symm
+      _ = e (e.symm y) := by rw [h σ hσ]
+      _ = y := e.apply_symm_apply y
+  · intro h σ hσ w
+    apply e.injective
+    rw [toLocal_equivariant_of_linearEquiv e he v σ w]
+    exact h σ hσ (e w)
+
+/-- **Serre's Swan specification is an isomorphism invariant** (PROVEN).
+`GaloisRep.IsSwanExponentAt ρ v s` mentions `ρ` only through the two
+numbers `dim V − dim V^{G^u}` and `ρ.wildCodim v`, both of which are
+invariant, so the SAME break list `μ` witnesses the specification on
+both sides for every filtration `F`. -/
+theorem isSwanExponentAt_iff_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) (s : ℕ) :
+    τ₁.IsSwanExponentAt v s ↔ τ₂.IsSwanExponentAt v s := by
+  classical
+  have hrk : Module.finrank A W₁ = Module.finrank A W₂ := e.finrank_eq
+  have hwc : τ₁.wildCodim v = τ₂.wildCodim v := wildCodim_eq_of_linearEquiv e he v
+  constructor
+  · rintro ⟨hne, h⟩
+    refine ⟨hne, fun F => ?_⟩
+    obtain ⟨μ, hμ, hsum⟩ := h F
+    refine ⟨μ, fun u hu => ?_, by rw [← hwc]; exact hsum⟩
+    rw [← hrk, ← finrank_fixedSubmodule_eq_of_linearEquiv e he v (F.gp u), ← hwc]
+    exact hμ u hu
+  · rintro ⟨hne, h⟩
+    refine ⟨hne, fun F => ?_⟩
+    obtain ⟨μ, hμ, hsum⟩ := h F
+    refine ⟨μ, fun u hu => ?_, by rw [hwc]; exact hsum⟩
+    rw [hrk, finrank_fixedSubmodule_eq_of_linearEquiv e he v (F.gp u), hwc]
+    exact hμ u hu
+
+/-- **The Swan conductor is an isomorphism invariant** (PROVEN): the two
+specifications cut out the SAME subset of `ℕ`, so their infima agree.
+This holds unconditionally — in particular it survives the degenerate
+case in which the specification is unsatisfiable and both sides take the
+junk value `sInf ∅ = 0`. -/
+theorem swanExponentAux_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.swanExponentAux v = τ₂.swanExponentAux v := by
+  rw [GaloisRep.swanExponentAux, GaloisRep.swanExponentAux]
+  congr 1
+  ext s
+  exact isSwanExponentAt_iff_of_linearEquiv e he v s
+
+/-- **The wild part of the conductor exponent is an isomorphism
+invariant** (PROVEN): the `if` in `GaloisRep.swanExponent` branches on
+`IsTamelyRamifiedAt`, which is invariant, and its `else` branch is
+`swanExponentAux`, which is invariant. -/
+theorem swanExponent_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.swanExponent v = τ₂.swanExponent v := by
+  classical
+  by_cases h : τ₁.IsTamelyRamifiedAt v
+  · rw [τ₁.swanExponent_eq_zero_of_isTamelyRamifiedAt v h,
+      τ₂.swanExponent_eq_zero_of_isTamelyRamifiedAt v
+        ((isTamelyRamifiedAt_iff_of_linearEquiv e he v).mp h)]
+  · have h₂ : ¬ τ₂.IsTamelyRamifiedAt v := fun hc =>
+      h ((isTamelyRamifiedAt_iff_of_linearEquiv e he v).mpr hc)
+    rw [GaloisRep.swanExponent, GaloisRep.swanExponent, if_neg h, if_neg h₂]
+    exact swanExponentAux_eq_of_linearEquiv e he v
+
+/-- **THE ARTIN CONDUCTOR EXPONENT IS AN ISOMORPHISM INVARIANT**
+(PROVEN 2026-07-29): if `e` intertwines `τ₁` with `τ₂` then
+`a_v(τ₁) = a_v(τ₂)` at every finite place `v`, by invariance of each
+summand of `a_v = tameExponent + swanExponent`.
+
+This is the statement the sixteenth owner of the deep-level Carayol
+cluster recorded as missing — "it additionally needs invariance of
+`conductorExponent` under a `GaloisRep` isomorphism, which nothing in
+the tree states today". It does now, and it is what lets the Carayol
+citation move onto the attached representation; see the section
+docstring above. -/
+theorem conductorExponent_eq_of_linearEquiv
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁), e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    τ₁.conductorExponent v = τ₂.conductorExponent v := by
+  rw [GaloisRep.conductorExponent, GaloisRep.conductorExponent,
+    tameExponent_eq_of_linearEquiv e he v, swanExponent_eq_of_linearEquiv e he v]
+
+end ConductorInvariance
+
+/-- **CARAYOL'S CONDUCTOR THEOREM, ON THE ATTACHED REPRESENTATION**
+(SORRY LEAF, cut 2026-07-29, seventeenth owner of the deep-level Carayol
+cluster; Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS **19** (1986), Théorème (A),
+together with Casselman's newvector theory and Deligne's compatibility of
+the local Langlands correspondence with conductors).
+
+STATEMENT. For a weight-`2` newform `g` of level `M` and a `p`-adic
+embedding `κ` of its Hecke field there is a representation `τ` with the
+Eichler–Shimura Frobenius characteristic polynomials away from a finite
+set AND with `a_q(τ) = ord_q M` at EVERY prime `q ≠ p`.
+
+**WHY IT IS CUT HERE, AS AN EXISTENTIAL, AND NOT AS A STATEMENT ABOUT AN
+ABSTRACT `τ`.** This is the axis the sixteenth owner of
+`two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` below recorded
+as unsearched, and the reason it could not be taken then was the absence
+of `conductorExponent_eq_of_linearEquiv` above. The two shapes are NOT
+interchangeable:
+
+* A leaf about an abstract `τ` pinned only by `hτ` asserts something at
+  the bad prime `q` about a representation whose ONLY link to `g` is a
+  hypothesis quantified over primes OUTSIDE an arbitrary finite set
+  `S_τ` — a set that may contain `q`. Such a leaf cannot be checked
+  against the literature statement without silently invoking rigidity.
+* This leaf asserts the literature statement about the object the
+  literature is about: the representation ATTACHED to `g`. Transport to
+  an abstract `τ` is then PROVEN mathematics —
+  `exists_linearEquiv_of_charFrob_eq` (Chebotarev plus Brauer–Nesbitt)
+  followed by `conductorExponent_eq_of_linearEquiv` — carried out in
+  `conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob`
+  immediately below.
+
+WHAT IT REPLACES. The two abstract-`τ` Carayol halves below,
+`two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` and
+`conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two`,
+are now PROVEN over it. That is the "trade several citations for one
+larger one" the sixteenth owner asked the next dispatcher to weigh, and
+the accounting is: sorry count DOWN by one, faith surface reduced from
+two hand-tailored bounds to one named published theorem, and the
+transport step promoted from prose to Lean.
+
+FAITHFULNESS. TRUE AS STATED. Carayol's identity is `cond(ρ_{g,λ}) = M`
+away from `λ`, i.e. `a_q(ρ_{g,λ}) = ord_q M` at every `q ≠ p` — including
+the primes `q ∤ M`, where both sides are `0` because `ρ_{g,λ}` is
+unramified there (Eichler–Shimura plus Néron–Ogg–Shafarevich). No
+residue-characteristic restriction is needed: the semistability-defect
+trap (`a_q ≤ 2` only for `q ≥ 5`) is about an inequality bounding `a_q`
+by a TAME quantity, whereas this is an EQUALITY whose wild ramification
+at `q ∈ {2, 3}` is carried by the Swan summand. `M = 27, q = 3`
+(`ord₃ = 3`, `Sw₃ = 1`) and `M = 32, q = 2` (`ord₂ = 5`, `Sw₂ = 3`) are
+inhabitants, not counterexamples. NOT VACUOUS: inhabited by every
+weight-2 newform, e.g. `M = 49`, `q = 7`, `p ≠ 7`.
+
+**THE ONE CONDITIONAL IN ITS TRUTH, STATED PLAINLY BECAUSE IT IS NOT
+VISIBLE FROM THE STATEMENT.** At a prime with `ord_q M ≥ 3` the asserted
+value exceeds the tame bound `dim V = 2`, so the equality forces
+`swanExponent = ord_q M − 2 > 0`, which forces
+`GaloisRep.swanExponentAux` to be the genuine Swan conductor rather than
+the junk value `sInf ∅ = 0`. That is exactly
+`GaloisRep.exists_isSwanExponentAt` (`ArtinConductor.lean`), an open leaf.
+So this leaf is true in the completed tree and would be FALSE at
+`ord_q M ≥ 3` if that leaf were refuted. This is NOT a new exposure: the
+sibling `swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le`
+below already asserts `swanExponent = ord_q M₀ − 2` and its own docstring
+records the same dependency ("it is downstream of
+`GaloisRep.exists_isSwanExponentAt` …, which must be closed FIRST or its
+`sInf ∅ = 0` makes that leaf false"). The two CONSUMERS added below are
+free of it: at `2 ≤ ord_q M₀` the lower bound `2 ≤ a_q` needs only the
+tame summand, and at `ord_q M₀ = 2` the upper bound `a_q ≤ 2` is at the
+tame bound itself.
+
+TERMINALITY. The prerequisites are the ones recorded throughout this
+cluster and none is on this pin: Casselman's newvector theory computing
+`cond(π_q) = ord_q M`, Deligne's conductor compatibility, and
+geometrically the Deligne–Rapoport model of `X₀(M)` at `q` with
+Néron–Ogg–Shafarevich. `~/cs/FLT` has nothing vendorable. What has
+CHANGED with this cut is where a future geometric proof must attach: it
+now attaches to the attached representation — i.e. to the Tate module of
+`J₀(M)` through `nonempty_modularTateGaloisData` — rather than to an
+abstract `τ`, which is where Deligne–Rapoport can actually be applied.
+
+WHY THE CITATION IS NOT PUT ON `ModularTateGaloisData` ITSELF. That was
+the other half of the sixteenth owner's suggestion, and it is deliberately
+NOT taken: adding a bad-prime conductor FIELD to that structure changes a
+declaration owned elsewhere and every construction site of it, for no
+change in faith surface — the field would be discharged by the same
+citation. Stating it here as a standalone existential over the same
+newform data is the same trade at zero coordination cost, and a later
+owner who does grow the structure can prove THIS leaf from that field in
+a few lines.
+
+THE CHECK THAT WOULD REFUTE IT: exhibit a weight-2 newform `g` of level
+`M` and a prime `q ≠ p` at which the conductor exponent of every
+representation with `g`'s Frobenius data differs from `ord_q M`. By
+Carayol there is none.
+
+DELIBERATE OVERLAP WITH `exists_galoisRep_charFrob_of_weightTwoNewform`
+(PROVEN, above): the first conjunct here repeats that theorem's
+conclusion, because an existential citation must identify its own
+witness. The overlap is not removable without naming the attached
+representation, and naming it is what growing the carrier would do. -/
+theorem exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    ∃ (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          Polynomial.X ^ 2
+            - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
+            + Polynomial.C ((q : AlgebraicClosure ℚ_[p]))) ∧
+      ∀ (q : ℕ) (hq : q.Prime), q ≠ p →
+        τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat =
+          M.factorization q :=
+  sorry
+
+/-- **CARAYOL'S IDENTITY TRANSPORTED TO AN ABSTRACT `τ`** (**PROVEN
+2026-07-29**, over the carrier-level citation above, the PROVEN rigidity
+`exists_linearEquiv_of_charFrob_eq` and the PROVEN
+`conductorExponent_eq_of_linearEquiv`): an irreducible `τ` carrying the
+Frobenius data of the weight-2 newform `g₀` of level `M₀` has
+`a_q(τ) = ord_q M₀` at every `q ≠ p`.
+
+THE ARGUMENT, in three steps and no literature input of its own. The
+carrier leaf supplies a `τ₀` with `g₀`'s Frobenius data off `S₀` and the
+conductor identity; `τ₀` and `τ` then agree off `S₀ ∪ S_τ`, so rigidity
+(Chebotarev density plus Brauer–Nesbitt at dimension `2`, using `hirr`
+on the TARGET side only) produces a `Γ ℚ`-equivariant linear equivalence
+`τ₀ ≃ τ`; and the conductor exponent is invariant under such an
+equivalence.
+
+`hirr` is genuinely load-bearing and is where the pinning lives: WITHOUT
+it a non-semisimple `τ` can share every Frobenius characteristic
+polynomial with `τ₀` while having a strictly larger space of inertia
+invariants, hence a smaller tame exponent — the split and the non-split
+extension of one character by another are the standard witness pair. So
+the conclusion is FALSE for an arbitrary `τ` satisfying `hτ` alone; it is
+the irreducibility that forces `τ ≅ τ₀` rather than merely
+`τ^{ss} ≅ τ₀^{ss}`.
+
+RELATION TO `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+BELOW, which is PROVEN and asserts the same identity at `2 ≤ ord_q M₀`.
+This lemma does NOT supersede it and its proof is NOT rewired: that
+declaration is derived through the finer tame/wild split
+(`inertiaInvariants = ⊥`, then tameness at `ord_q M₀ = 2` and
+`swanExponent = ord_q M₀ − 2` at `3 ≤ ord_q M₀`), which pins
+`tameExponent = 2` — strictly more than the conductor identity alone —
+and that strengthening has its own consumers. The two accounts are
+independent and are both kept on purpose; see the SPLIT BY `ord_q M₀`
+discussion in that declaration's docstring. -/
+theorem conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
+    τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat =
+      M₀.factorization q := by
+  classical
+  obtain ⟨τ₀, S₀, hcf, hcond⟩ :=
+    exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform hM₀ hg₀ κ₀
+  have hrk : Module.rank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  have hmatch : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ ∪ S_τ →
+      τ₀.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat := by
+    intro r hr hrn
+    rw [Finset.mem_union, not_or] at hrn
+    rw [hcf r hr hrn.1, hτ r hr hrn.2]
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charFrob_eq hrk hrk hirr hmatch
+  rw [← conductorExponent_eq_of_linearEquiv e he
+    hq.toHeightOneSpectrumRingOfIntegersRat]
+  exact hcond q hq hqp
+
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 include hpodd in
@@ -63210,10 +63646,25 @@ THE FOUR LEAVES, and why each is smaller than what it replaces:
    irreducibility and NO level: only `hτ` and continuity.
 3. `two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` — Carayol's
    identity, LOWER half only, and only the bound `2 ≤ a_q`.
+   **PROVEN 2026-07-29; no longer a leaf** — see item (3–4) below.
 4. `conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two` —
    Carayol's identity, UPPER half, only at the boundary `ord_q M₀ = 2`.
+   **PROVEN 2026-07-29; no longer a leaf** — see item (3–4) below.
 
-Leaves 3 and 4 are jointly equivalent to the parent AT `ord_q M₀ = 2` and to
+**UPDATE 2026-07-29 (seventeenth owner) — ITEMS 3 AND 4 ARE NO LONGER LEAVES.**
+Both are now PROVEN over a SINGLE carrier-level citation,
+`exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform` (Carayol's
+Théorème (A) stated about the representation ATTACHED to the newform, rather
+than about an abstract `τ`), reached by the PROVEN rigidity
+`exists_linearEquiv_of_charFrob_eq` and the newly PROVEN
+`conductorExponent_eq_of_linearEquiv` (the Artin conductor exponent is an
+isomorphism invariant — the axis the sixteenth owner recorded as unsearched
+and as blocked on exactly that invariance). So this section's leaf count at
+the deep level is `1 + 1 + 1 = 3`, not four: items 1, 2 and the new carrier
+citation. The trade is one fewer sorry and one fewer hand-tailored citation
+about an abstract representation.
+
+Leaves 3 and 4 were jointly equivalent to the parent AT `ord_q M₀ = 2` and to
 nothing more; in particular they do NOT discharge
 `swanExponent_eq_sub_two_of_isWeightTwoNewform_of_three_le`, which still needs
 the equality at `3 ≤ ord_q M₀` and `GaloisRep.exists_isSwanExponentAt`. The
@@ -63602,11 +64053,41 @@ theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
       LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 :=
   sorry
 
-/-- **CARAYOL AT DEEP LEVEL, LOWER HALF: `2 ≤ a_q(τ)`** (SORRY LEAF, cut
-2026-07-28, fifteenth owner, out of
+/-- **CARAYOL AT DEEP LEVEL, LOWER HALF: `2 ≤ a_q(τ)`** (**PROVEN
+2026-07-29, seventeenth owner**, in one step over
+`conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob`
+above; opened as a sorry leaf 2026-07-28, fifteenth owner, out of
 `inertiaInvariants_eq_bot_of_isWeightTwoNewform_of_two_le` below;
 Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
 modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)).
+
+**HOW THE CITATION MOVED, since the paragraphs below still describe this
+declaration as terminal and were CORRECT when written.** The binding
+obstruction they record is real and is unchanged: `hτ` is quantified over
+primes outside an arbitrary `S_τ` that may contain `q`, so no route to a
+local statement at `q` exists without (i) rigidity and (ii) some object's
+known behaviour AT `q`. What changed is (ii). The sixteenth owner's
+re-audit named the one unsearched axis — put the citation on the carrier
+and transport it by rigidity, which "additionally needs invariance of
+`conductorExponent` under a `GaloisRep` isomorphism, which nothing in the
+tree states today". That invariance is now PROVEN
+(`conductorExponent_eq_of_linearEquiv`), the citation now sits on the
+attached representation
+(`exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform`),
+and this declaration and its sibling below are consequences. **No faith
+was added and none was removed by restating: the sorry count went DOWN by
+one.** The terminality analysis below is retained verbatim because it is
+the record of why the citation cannot be dispensed with, and it transfers
+to the carrier leaf; read it as being ABOUT that leaf now.
+
+**THIS HALF IS FREE OF THE SWAN JUNK-VALUE EXPOSURE.** The carrier leaf
+asserts an equality at every `q ≠ p`, and at `ord_q M₀ ≥ 3` that equality
+depends on `GaloisRep.exists_isSwanExponentAt` (see its docstring). THIS
+conclusion does not: `2 ≤ a_q` is carried by the tame summand alone, so
+it survives even a degenerate `RamificationFiltration`. The check
+recorded by the sixteenth owner still applies to any future direct proof
+offered here — a proof mentioning `IsTamelyRamifiedAt` has assumed its
+consumer's conclusion — and the proof below does not mention it.
 
 Carayol's identity is `a_q(τ) = ord_q M₀` at every `q ≠ p`. This leaf
 asserts only the LOWER bound at `2 ≤ ord_q M₀`, and only the numeric
@@ -63652,13 +64133,42 @@ theorem two_le_conductorExponent_of_isWeightTwoNewform_of_two_le
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord₂ : 2 ≤ M₀.factorization q) :
-    2 ≤ τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    2 ≤ τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat := by
+  rw [conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob
+    hM₀ hg₀ κ₀ hτ hirr hq hqp]
+  exact hord₂
 
 /-- **CARAYOL AT THE DEEP-LEVEL BOUNDARY, UPPER HALF: `a_q(τ) ≤ 2` WHEN
-`ord_q M₀ = 2`** (SORRY LEAF, cut 2026-07-28, fifteenth owner, out of
+`ord_q M₀ = 2`** (**PROVEN 2026-07-29, seventeenth owner**, in one step
+over `conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob`
+above; opened as a sorry leaf 2026-07-28, fifteenth owner, out of
 `isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two`
 below; Carayol, Théorème (A), plus Casselman's newvector theory).
+
+**HOW THE CITATION MOVED:** as on the lower half above, and for the same
+reason — the sixteenth owner's unsearched carrier axis became available
+once `conductorExponent_eq_of_linearEquiv` was proven. The two paragraphs
+specific to this half, marked below, remain accurate and are the reason
+this half is worth keeping as a separate declaration rather than being
+inlined into its consumer.
+
+**FREE OF THE SWAN JUNK-VALUE EXPOSURE**, for a reason opposite to the
+lower half's: the conclusion is at the tame bound `dim V = 2` itself, so
+`a_q ≤ 2` is implied by the carrier leaf at a place where the carrier
+leaf's own value is `2`. The `ord_q M₀ ≥ 3` range, where the carrier leaf
+does depend on `GaloisRep.exists_isSwanExponentAt`, is excluded by `hord`.
+
+**THE NON-CIRCULARITY CHECK RECORDED BELOW STILL PASSES, and it is worth
+re-stating because the proof changed.**
+`isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two` derives
+tameness FROM this bound, so a proof of this bound must not establish
+`τ.IsTamelyRamifiedAt v_q`. The proof below does not mention
+`IsTamelyRamifiedAt` anywhere, nor does its chain
+(`conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob` →
+`exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform`,
+`exists_linearEquiv_of_charFrob_eq`, `conductorExponent_eq_of_linearEquiv`)
+establish tameness of `τ`: `conductorExponent_eq_of_linearEquiv` TRANSPORTS
+tameness between two representations but never proves it of either.
 
 The complement of the leaf above, and deliberately confined to the
 BOUNDARY `ord_q M₀ = 2`. The two together pin `a_q(τ) = 2` there — which
@@ -63699,8 +64209,9 @@ theorem conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hord : M₀.factorization q = 2) :
-    τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat ≤ 2 :=
-  sorry
+    τ.conductorExponent hq.toHeightOneSpectrumRingOfIntegersRat ≤ 2 := by
+  rw [conductorExponent_eq_factorization_of_isWeightTwoNewform_of_charFrob
+    hM₀ hg₀ κ₀ hτ hirr hq hqp, hord]
 
 /-- **NO INERTIA INVARIANTS AT DEEP LEVEL** (**PROVEN 2026-07-28,
 fifteenth owner**, over
