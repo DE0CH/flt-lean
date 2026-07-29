@@ -11531,7 +11531,20 @@ a spanning family that is not a basis.
 
 This is the "BACKWARDS/forwards equivalence" that
 `exists_smul_mem_integralCuspForms` below records in prose; it is now
-MACHINE-CHECKED in the direction that leaf consumes. -/
+MACHINE-CHECKED in the direction that leaf consumes.
+
+**CONSUMERLESS AS OF 2026-07-29** (with `exists_nat_mul_int_of_finset_rat`
+above, its only user). `exists_smul_mem_integralCuspForms` below was
+PROVEN that day along the NEWFORM route, whose bridge is
+`exists_smul_mem_integralCuspForms_of_algInt_span_eq_top` — the same
+retraction argument with `ℚ` weakened to `ℚ̄`, because a full lattice of
+ALGEBRAIC-INTEGER forms is reachable from the eigenform spanning theorem
+while a full lattice of `ℤ`-integral forms is the node itself. Kept, not
+deleted: the statement is correct, elementary, and is the natural tool
+the moment anyone does obtain the `ℤ`-lattice directly (e.g. from the
+`q`-expansion principle), and it is the readable model for the `ℚ̄`
+version. Whoever runs the next free-floating sweep should read this note
+before treating either declaration as dead. -/
 theorem exists_smul_mem_integralCuspForms_of_span_eq_top {N : ℕ}
     (hspan : Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤)
     {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
@@ -11592,9 +11605,393 @@ theorem exists_smul_mem_integralCuspForms_of_span_eq_top {N : ℕ}
   rw [hsm, hr m]
   exact_mod_cast hQ
 
+/-- **`S₂(Γ₀(N); 𝒪)`**: the weight-2 level-`N` cusp forms all of whose
+`q`-expansion coefficients are ALGEBRAIC INTEGERS, as a `ℤ`-submodule of
+`S₂(Γ₀(N))`.
+
+Sits strictly between `integralCuspForms N` (coefficients in `ℤ`) and
+`rationalCuspForms N` in usefulness rather than in size: it is the
+carrier along which the eigenform spanning theorem
+`eigenform_span_sup_oldCuspSpace_eq_top` above becomes usable for
+BOUNDED DENOMINATORS, because eigenform coefficients are algebraic
+integers but essentially never rational. Introduced 2026-07-29 as the
+intermediate object of the decomposition recorded on
+`exists_smul_mem_integralCuspForms` below. The submodule axioms are the
+`ℂ`-linearity of the coefficient functionals (`qCoeffL`) together with
+`integralClosure ℤ ℂ` being a subring. -/
+noncomputable def algIntCuspForms (N : ℕ) :
+    Submodule ℤ (CuspForm (Gamma0GL N) 2) where
+  carrier := {f | ∀ m : ℕ, IsIntegral ℤ (qCoeff N f m)}
+  add_mem' := by
+    rintro f g hf hg m
+    have h : qCoeff N (f + g) m = qCoeff N f m + qCoeff N g m := by
+      rw [← qCoeffL_apply, map_add, qCoeffL_apply, qCoeffL_apply]
+    rw [h]
+    exact (hf m).add (hg m)
+  zero_mem' := by
+    intro m
+    rw [qCoeff_zero_cuspForm]
+    exact isIntegral_zero
+  smul_mem' := by
+    rintro c f hf m
+    have h : qCoeff N (c • f) m = ((c : ℤ) : ℂ) * qCoeff N f m := by
+      rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, zsmul_eq_mul]
+    have hc : IsIntegral ℤ ((c : ℤ) : ℂ) := by
+      simpa using isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := c)
+    rw [h]
+    exact hc.mul (hf m)
+
+theorem mem_algIntCuspForms_iff {N : ℕ} {f : CuspForm (Gamma0GL N) 2} :
+    f ∈ algIntCuspForms N ↔ ∀ m : ℕ, IsIntegral ℤ (qCoeff N f m) := Iff.rfl
+
+/-- **HECKE EIGENVALUES AT PRIMES ARE ALGEBRAIC INTEGERS** (sorry leaf,
+cut 2026-07-29 as the ENTIRE arithmetic residue of
+`exists_smul_mem_integralCuspForms` below — see that declaration's
+docstring for the decomposition and for the three PROVEN steps that now
+carry everything else).
+
+Diamond–Shurman, *A First Course in Modular Forms*, Prop. 6.6.4 (the
+coefficients of a normalized eigenform are algebraic integers generating
+a number field); Shimura, *Introduction to the Arithmetic Theory of
+Automorphic Functions*, Thm. 3.52. The statement is asked only at PRIME
+index because the two Hecke recursions and coprime multiplicativity —
+which are literally the fields of `IsWeightTwoEigenform` — propagate it
+to every index, and that propagation is the PROVEN
+`isIntegral_qCoeff_of_isWeightTwoEigenform` immediately below. Both
+prime cases are covered and both are true: at `q ∤ N` the number
+`a_q(f)` is a root of `X² − a_q X + q` over the Hecke field, at `q ∣ N`
+it is a `U_q`-eigenvalue; algebraic integrality holds in both.
+
+**HOW IT REACHES A HECKE OPERATOR, and where the arithmetic really
+sits.** `exists_ringHom_heckeSubring_of_isWeightTwoEigenform` above turns
+`hf` into a ring homomorphism `lam : 𝕋 → ℂ` with `T f = lam T • f` for
+every `T ∈ 𝕋`, and `a_q(f) = lam (heckeEndo N q)` — so `a_q(f)` is an
+EIGENVALUE of `heckeEndo N q`, with the nonzero eigenvector `f` (nonzero
+because `a₁(f) = 1`). Hence this leaf follows at once from
+`IsIntegral ℤ (heckeEndo N q)` by `Module.End.aeval_apply_of_hasEigenvector`.
+That is exactly the statement of `isIntegral_heckeEndo` FAR BELOW — and
+that declaration **MAY NOT BE CITED HERE**, not merely because of
+declaration order but because it is CIRCULAR against this cluster: its
+chain is
+
+    isIntegral_heckeEndo → exists_trace_heckeSubring_int
+      → isIntegral_trace_heckeOpN → exists_heckeOpN_sturm_span
+      → exists_smul_mem_integralCuspForms
+
+and the last arrow is the very node this leaf serves. (The note in
+`exists_smul_mem_integralCuspForms`'s docstring claiming
+`isIntegral_heckeEndo` is INDEPENDENT of that node was true when written
+and became stale when `isIntegral_trace_heckeOpN` was reproven from
+`exists_heckeOpN_sturm_span`; it is corrected there as of 2026-07-29.)
+Lean's declaration order makes the circle a hard error rather than a
+silent cycle, which is why this leaf is stated in the EIGENVALUE form
+and placed here.
+
+**THE ROUTE THAT IS NOT CIRCULAR** is therefore: prove
+`isIntegral_trace_heckeOpN` DIRECTLY from the Eichler–Selberg trace
+formula — `Tr(T_m)` as an explicit finite sum of class numbers — rather
+than from a stable lattice. Everything downstream then goes through
+unchanged and this leaf falls out. The other classical routes to it are
+the integral structure itself (Deligne–Rapoport / the `q`-expansion
+principle on `X₀(N)/ℤ`, or Eichler–Shimura on `H₁(X₀(N), ℤ)`), which are
+what the pre-2026-07-29 framing of the node named. So the decomposition
+below has not made the arithmetic disappear; it has moved it onto a
+statement about a single complex number, where the trace formula
+applies directly.
+
+SOUNDNESS. `0 < N` is inherited from the consumer. At every genus-zero
+level `S₂(Γ₀(N)) = 0`, so `IsWeightTwoEigenform N f` is uninhabited
+(`a₁(f) = 1` forces `f ≠ 0`) and the statement is vacuously true — that
+is honest vacuity, not a hidden hypothesis: the consumer's use of this
+leaf is guarded by exactly the same emptiness. Nothing is existentially
+quantified here, so there is nothing to under-pin. -/
+theorem isIntegral_qCoeff_prime_of_isWeightTwoEigenform {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) {q : ℕ} (hq : q.Prime) :
+    IsIntegral ℤ (qCoeff N f q) := sorry
+
+/-- **ALL prime-power coefficients of an eigenform are algebraic
+integers** (PROVEN, 2026-07-29, over the single leaf above): strong
+induction on the exponent through the two Hecke recursions carried by
+`IsWeightTwoEigenform` — `a_{q^{r+1}} = a_q a_{q^r}` at bad primes and
+`a_{q^{r+2}} = a_q a_{q^{r+1}} − q a_{q^r}` at good ones. -/
+theorem isIntegral_qCoeff_prime_pow_of_isWeightTwoEigenform {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) {p : ℕ} (hp : p.Prime)
+    (k : ℕ) : IsIntegral ℤ (qCoeff N f (p ^ k)) := by
+  have hpc : IsIntegral ℤ ((p : ℂ)) := by
+    simpa using isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := (p : ℤ))
+  have hq := isIntegral_qCoeff_prime_of_isWeightTwoEigenform hN hf hp
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    match k with
+    | 0 => rw [pow_zero, hf.qCoeff_one]; exact isIntegral_one
+    | 1 => rw [pow_one]; exact hq
+    | (r + 2) =>
+      by_cases hd : p ∣ N
+      · rw [hf.qCoeff_prime_pow_of_dvd p hp hd (r + 1)]
+        exact hq.mul (ih (r + 1) (by omega))
+      · rw [hf.qCoeff_prime_pow_of_not_dvd p hp hd r]
+        exact (hq.mul (ih (r + 1) (by omega))).sub (hpc.mul (ih r (by omega)))
+
+/-- **EVERY coefficient of an eigenform is an algebraic integer**
+(PROVEN, 2026-07-29, over the same single leaf): `Nat.recOnPosPrimePosCoprime`
+against the prime-power step above and `qCoeff_mul_coprime`, with
+`a₀ = 0` and `a₁ = 1`. -/
+theorem isIntegral_qCoeff_of_isWeightTwoEigenform {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) (m : ℕ) :
+    IsIntegral ℤ (qCoeff N f m) := by
+  induction m using Nat.recOnPosPrimePosCoprime with
+  | prime_pow p n hp _ =>
+    exact isIntegral_qCoeff_prime_pow_of_isWeightTwoEigenform hN hf hp n
+  | zero => rw [qCoeff_zero]; exact isIntegral_zero
+  | one => rw [hf.qCoeff_one]; exact isIntegral_one
+  | coprime a b _ _ hab ha hb =>
+    rw [hf.qCoeff_mul_coprime a b hab]
+    exact ha.mul hb
+
+/-- Normalized eigenforms inhabit `S₂(Γ₀(N); 𝒪)` (PROVEN, 2026-07-29). -/
+theorem isWeightTwoEigenform_mem_algIntCuspForms {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) :
+    f ∈ algIntCuspForms N :=
+  fun m => isIntegral_qCoeff_of_isWeightTwoEigenform hN hf m
+
+/-- **`V_d` PRESERVES ALGEBRAIC INTEGRALITY** (PROVEN, 2026-07-29): one
+`rw` on `qCoeff_degeneracyOp` and a `split_ifs`, exactly as for
+`degeneracyOp_mem_rationalCuspForms` above. -/
+theorem degeneracyOp_mem_algIntCuspForms {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ algIntCuspForms N) :
+    degeneracyOp N M d f ∈ algIntCuspForms M := by
+  intro m
+  rw [qCoeff_degeneracyOp hd hdvd f m]
+  split_ifs
+  · exact hf (m / d)
+  · exact isIntegral_zero
+
+/-- The image of a degeneracy operator is spanned by algebraic-integer
+forms as soon as the source level is (PROVEN, 2026-07-29). -/
+theorem range_degeneracyOp_le_span_algIntCuspForms {N M d : ℕ} (hd : 0 < d)
+    (hdvd : d * N ∣ M)
+    (h : Submodule.span ℂ ((algIntCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤) :
+    LinearMap.range (degeneracyOp N M d) ≤
+      Submodule.span ℂ ((algIntCuspForms M : Set (CuspForm (Gamma0GL M) 2))) := by
+  rw [LinearMap.range_eq_map, ← h, Submodule.map_span]
+  refine Submodule.span_mono ?_
+  rintro _ ⟨g, hg, rfl⟩
+  exact degeneracyOp_mem_algIntCuspForms hd hdvd hg
+
+/-- **`S₂(Γ₀(N); 𝒪)` IS A FULL `ℂ`-LATTICE** (PROVEN, 2026-07-29, over
+the single leaf `isIntegral_qCoeff_prime_of_isWeightTwoEigenform`
+above).
+
+The strong induction on the level of `rationalCuspForms_span_eq_top`
+above, run over `algIntCuspForms` instead — and it is STRICTLY SIMPLER
+there, because the Galois-descent step
+(`ringEquivStable_le_span_rationalCuspForms` plus
+`exists_eigenform_ringEquiv_conj`) is not needed: eigenforms are
+themselves algebraic-integer forms, so `eigenform_span_sup_oldCuspSpace_eq_top`
+lands in the span directly. The old subspace is handled exactly as
+there, by `V_d`-preservation and the inductive hypothesis at `N/p`.
+
+NOT AN ALTERNATIVE PROOF OF THE RATIONAL SPANNING THEOREM: the two are
+incomparable, since `⊆ 𝒪` and `⊆ ℚ` are incomparable conditions. It is
+the conjunction of the two that gives `⊆ ℤ`, and that conjunction is
+performed in the bridge below. -/
+theorem algIntCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
+    Submodule.span ℂ ((algIntCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ := by
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    have hold : oldCuspSpace N ≤
+        Submodule.span ℂ ((algIntCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := by
+      refine iSup_le fun p => iSup_le fun hp => sup_le ?_ ?_
+      all_goals
+        have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+        have hpd : p ∣ N := Nat.dvd_of_mem_primeFactors hp
+        have hsub : Submodule.span ℂ
+            ((algIntCuspForms (N / p) : Set (CuspForm (Gamma0GL (N / p)) 2))) = ⊤ :=
+          ih (N / p) (Nat.div_lt_self hN hpp.one_lt)
+            (Nat.div_pos (Nat.le_of_dvd hN hpd) hpp.pos)
+      · refine range_degeneracyOp_le_span_algIntCuspForms one_pos ?_ hsub
+        rw [one_mul]
+        exact Nat.div_dvd_of_dvd hpd
+      · refine range_degeneracyOp_le_span_algIntCuspForms hpp.pos ?_ hsub
+        rw [Nat.mul_div_cancel' hpd]
+    refine le_antisymm le_top ?_
+    rw [← eigenform_span_sup_oldCuspSpace_eq_top hN]
+    refine sup_le ?_ hold
+    rw [Submodule.span_le]
+    intro g hg
+    exact Submodule.subset_span (isWeightTwoEigenform_mem_algIntCuspForms hN hg)
+
+/-- A RATIONAL number that is an ALGEBRAIC INTEGER is a rational integer
+(PROVEN, 2026-07-29): `ℤ` is integrally closed in `ℚ`, transported along
+the injection `ℚ ↪ ℂ`. -/
+theorem exists_int_of_isIntegral_ratCast {r : ℚ} (h : IsIntegral ℤ ((r : ℂ))) :
+    ∃ n : ℤ, r = (n : ℚ) := by
+  have h1 : IsIntegral ℤ r := by
+    rw [show ((r : ℂ)) = algebraMap ℚ ℂ r from rfl] at h
+    exact h.tower_bot (FaithfulSMul.algebraMap_injective ℚ ℂ)
+  obtain ⟨n, hn⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+  exact ⟨n, by rw [← hn]; simp⟩
+
+/-- **THE BRIDGE: A FULL `𝒪`-LATTICE GIVES BOUNDED DENOMINATORS**
+(PROVEN, 2026-07-29). If the ALGEBRAIC-INTEGER forms `ℂ`-span
+`S₂(Γ₀(N))`, then every form with RATIONAL `q`-expansion has a single
+positive integer clearing all of its coefficients at once.
+
+This is `exists_smul_mem_integralCuspForms_of_span_eq_top` above with
+`ℤ` weakened to `𝒪 = integralClosure ℤ ℂ`, and the weakening is what
+makes the hypothesis REACHABLE: the integral forms spanning is the whole
+node, whereas the algebraic-integer forms spanning is
+`algIntCuspForms_span_eq_top` above, proven from eigenforms.
+
+The proof is the same retraction trick with `ℚ` replaced by the field
+`ℚ̄ = algebraicClosure ℚ ℂ`, plus one arithmetic step:
+
+1. `ℚ̄ ↪ ℂ` is an injection of `ℚ̄`-VECTOR SPACES, so it has a
+   `ℚ̄`-LINEAR retraction `ρ : ℂ →ₗ[ℚ̄] ℚ̄`. `ℚ̄`-linearity — not merely
+   `ℚ`-linearity — is the point: the coefficients `z_{x,m}` of the
+   spanning forms are algebraic, so they pull OUT of `ρ`.
+2. Writing `f = ∑_{x ∈ t} c_x · x` and applying `ρ` to
+   `a_m(f) = ∑_x c_x z_{x,m}` gives, for EVERY `m`,
+
+       a_m(f) = ∑_{x ∈ t} ρ(c_x) · z_{x,m},   ρ(c_x) ∈ ℚ̄,
+
+   using `ρ(a_m(f)) = a_m(f)` since `a_m(f)` is rational.
+3. Each `ρ(c_x)` is ALGEBRAIC, so some positive integer `d_x` makes
+   `d_x ρ(c_x)` an algebraic INTEGER (`IsAlgebraic.exists_integral_multiple`,
+   through `IsFractionRing.isAlgebraic_iff ℤ ℚ ℂ`). With
+   `d = ∏_{x ∈ t} d_x` — one integer, independent of `m` — every
+   `d·a_m(f)` is an algebraic integer.
+4. `d·a_m(f)` is also RATIONAL, and `𝒪 ∩ ℚ = ℤ`
+   (`exists_int_of_isIntegral_ratCast`), so it is a rational integer.
+
+NO DETERMINANTS, NO NUMBER FIELDS, NO GALOIS TRACES, NO STURM BOUND. The
+classical form of this step (Diamond–Shurman §6.5) picks a `ℚ`-basis of
+the Hecke field inside its ring of integers and takes traces
+`∑_σ σ(α) f^σ`, which needs the finiteness of the `Aut(ℂ)`-orbit and the
+nondegeneracy of the trace form; the `ℚ̄`-linear retraction replaces all
+of that, exactly as the `ℚ`-linear retraction replaced Cramer's rule in
+the sibling above. -/
+theorem exists_smul_mem_integralCuspForms_of_algInt_span_eq_top {N : ℕ}
+    (hspan : Submodule.span ℂ ((algIntCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
+    ∃ d : ℕ, 0 < d ∧ (d : ℤ) • f ∈ integralCuspForms N := by
+  classical
+  -- the field of algebraic numbers inside `ℂ`
+  set F := algebraicClosure ℚ ℂ
+  -- an `F`-linear retraction `ρ : ℂ → F` of the inclusion `F ↪ ℂ`
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap F ℂ).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap F ℂ).injective)
+  have hρ1 : ∀ w : F, ρ ((w : ℂ)) = w := fun w =>
+    congrArg (fun g : F →ₗ[F] F => g w) hρ
+  have hρz : ∀ (w : ℂ) (k : F), ρ ((k : ℂ) * w) = k * ρ w := by
+    intro w k
+    have hsm : (k : ℂ) * w = k • w := (Algebra.smul_def k w).symm
+    rw [hsm, map_smul]
+    rfl
+  -- `f` lies in the `ℂ`-span of a FINITE set of algebraic-integer forms
+  have hfmem : f ∈ Submodule.span ℂ ((algIntCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := by
+    rw [hspan]; trivial
+  obtain ⟨t, htsub, hft⟩ := Submodule.mem_span_finite_of_mem_span hfmem
+  obtain ⟨c, hc⟩ := Submodule.mem_span_finset.mp hft
+  -- the coefficients of the members of `t`, as elements of `F`
+  have hzex : ∀ x : CuspForm (Gamma0GL N) 2, ∀ m : ℕ,
+      ∃ w : F, x ∈ t → ((w : ℂ) = qCoeff N x m ∧ IsIntegral ℤ ((w : ℂ))) := by
+    intro x m
+    by_cases hx : x ∈ t
+    · have hint : IsIntegral ℤ (qCoeff N x m) := htsub hx m
+      have halg : IsAlgebraic ℚ (qCoeff N x m) :=
+        (IsFractionRing.isAlgebraic_iff ℤ ℚ ℂ).mp hint.isAlgebraic
+      exact ⟨⟨qCoeff N x m, mem_algebraicClosure_iff.mpr halg⟩, fun _ => ⟨rfl, hint⟩⟩
+    · exact ⟨0, fun h => absurd h hx⟩
+  choose z hz using hzex
+  -- rational coefficients of `f`
+  choose r hr using hf
+  -- the coordinates `ρ (c x)` are ALGEBRAIC numbers; clear their denominators
+  have hden : ∀ x : CuspForm (Gamma0GL N) 2, ∃ d : ℕ, 0 < d ∧
+      IsIntegral ℤ ((d : ℂ) * ((ρ (c x) : F) : ℂ)) := by
+    intro x
+    have halg : IsAlgebraic ℤ (((ρ (c x) : F) : ℂ)) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ ℂ).mpr (mem_algebraicClosure_iff.mp (ρ (c x)).2)
+    obtain ⟨e, he, hint⟩ := halg.exists_integral_multiple
+    rw [zsmul_eq_mul] at hint
+    refine ⟨e.natAbs, Int.natAbs_pos.mpr he, ?_⟩
+    rcases Int.natAbs_eq e with hE | hE
+    · have hcast : ((e.natAbs : ℕ) : ℂ) = ((e : ℤ) : ℂ) := by
+        conv_rhs => rw [hE]
+        simp
+      rw [hcast]
+      exact hint
+    · have hcast : ((e.natAbs : ℕ) : ℂ) = -((e : ℤ) : ℂ) := by
+        conv_rhs => rw [hE]
+        simp
+      rw [hcast, neg_mul]
+      exact hint.neg
+  choose d hdpos hdint using hden
+  -- the coefficient identity, pushed through `ρ`: the coordinates are ALGEBRAIC
+  have hcoeff : ∀ m : ℕ, ((r m : ℚ) : ℂ) = ∑ x ∈ t, ((ρ (c x) : F) : ℂ) * ((z x m : F) : ℂ) := by
+    intro m
+    have hfm : qCoeff N f m = ∑ x ∈ t, c x * ((z x m : F) : ℂ) := by
+      rw [← qCoeffL_apply, ← hc.2, map_sum]
+      refine Finset.sum_congr rfl fun x hx => ?_
+      rw [map_smul, qCoeffL_apply, (hz x m hx).1, smul_eq_mul]
+    have hrmem : ((r m : ℚ) : ℂ) ∈ F := by
+      refine mem_algebraicClosure_iff.mpr ?_
+      exact isAlgebraic_algebraMap (R := ℚ) (A := ℂ) (r m)
+    have hρf : ρ (qCoeff N f m) = ∑ x ∈ t, (ρ (c x)) * (z x m) := by
+      rw [hfm, map_sum]
+      refine Finset.sum_congr rfl fun x _ => ?_
+      rw [mul_comm (c x) _, hρz (c x) (z x m)]
+      exact mul_comm _ _
+    have hval : ρ (qCoeff N f m) = (⟨((r m : ℚ) : ℂ), hrmem⟩ : F) := by
+      rw [hr m]
+      exact hρ1 ⟨((r m : ℚ) : ℂ), hrmem⟩
+    have := hval.symm.trans hρf
+    have h2 := congrArg (fun w : F => (w : ℂ)) this
+    simpa using h2
+  -- ONE common denominator, independent of `m`
+  refine ⟨(∏ x ∈ t, d x), Finset.prod_pos fun x _ => hdpos x, ?_⟩
+  set D : ℕ := ∏ x ∈ t, d x with hD
+  intro m
+  have hsum : ∀ (s : Finset (CuspForm (Gamma0GL N) 2)) (g : CuspForm (Gamma0GL N) 2 → ℂ),
+      (∀ x ∈ s, IsIntegral ℤ (g x)) → IsIntegral ℤ (∑ x ∈ s, g x) := by
+    intro s g hg
+    exact Subalgebra.sum_mem (integralClosure ℤ ℂ) hg
+  have hDint : IsIntegral ℤ ((D : ℂ) * ((r m : ℚ) : ℂ)) := by
+    rw [hcoeff m, Finset.mul_sum]
+    refine hsum t _ fun x hx => ?_
+    obtain ⟨K, hK⟩ := Finset.dvd_prod_of_mem d hx
+    have hDx : ((D : ℕ) : ℂ) * ((ρ (c x) : F) : ℂ)
+        = (K : ℂ) * (((d x : ℕ) : ℂ) * ((ρ (c x) : F) : ℂ)) := by
+      rw [hD, hK]
+      push_cast
+      ring
+    have hKint : IsIntegral ℤ ((K : ℂ)) := by
+      simpa using isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := (K : ℤ))
+    have h1 : IsIntegral ℤ ((D : ℂ) * ((ρ (c x) : F) : ℂ)) := by
+      rw [hDx]
+      exact hKint.mul (hdint x)
+    have h2 : IsIntegral ℤ (((z x m : F) : ℂ)) := (hz x m hx).2
+    have hassoc : (D : ℂ) * (((ρ (c x) : F) : ℂ) * ((z x m : F) : ℂ))
+        = ((D : ℂ) * ((ρ (c x) : F) : ℂ)) * ((z x m : F) : ℂ) := by ring
+    rw [hassoc]
+    exact h1.mul h2
+  have hcast : (D : ℂ) * ((r m : ℚ) : ℂ) = (((D : ℚ) * r m : ℚ) : ℂ) := by push_cast; ring
+  rw [hcast] at hDint
+  obtain ⟨n, hn⟩ := exists_int_of_isIntegral_ratCast hDint
+  refine ⟨n, ?_⟩
+  have hsm : qCoeff N ((D : ℤ) • f) m = ((D : ℤ) : ℂ) * qCoeff N f m := by
+    rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, zsmul_eq_mul]
+  rw [hsm, hr m]
+  have hfin : ((D : ℚ) * r m : ℚ) = (n : ℚ) := hn
+  exact_mod_cast congrArg (fun q : ℚ => (q : ℂ)) hfin
+
 /-- **BOUNDED DENOMINATORS: a RATIONAL cusp form has an INTEGRAL
-multiple** (sorry leaf, cut 2026-07-27 out of
-`exists_heckeOpN_sturm_span` below as its entire arithmetic residue).
+multiple** (PROVEN 2026-07-29 over the single leaf
+`isIntegral_qCoeff_prime_of_isWeightTwoEigenform` above — see "THIS NODE
+IS PROVEN AS OF 2026-07-29" below, which also corrects two stale claims
+in the older sections of this docstring; formerly a sorry leaf, cut
+2026-07-27 out of `exists_heckeOpN_sturm_span` below as its entire
+arithmetic residue).
 
 If every `q`-expansion coefficient of `f ∈ S₂(Γ₀(N))` is rational then
 ONE positive integer `d` clears all of them at once. The content is
@@ -11737,6 +12134,65 @@ integral spanning set) is no longer a prose claim: it is a checked
 theorem, and it needs neither Sturm nor Cramer, only a `ℚ`-linear
 retraction `ℂ →ₗ[ℚ] ℚ`.
 
+## THIS NODE IS PROVEN AS OF 2026-07-29 — THE NEWFORM ROUTE WENT THROUGH
+
+The residue recorded immediately above is GONE, and with it the appeal
+to Deligne–Rapoport. The body below is now a one-line citation of
+`exists_smul_mem_integralCuspForms_of_algInt_span_eq_top` above, and the
+whole node rests on the single new leaf
+
+    isIntegral_qCoeff_prime_of_isWeightTwoEigenform
+
+— "the prime coefficients of a normalized eigenform are ALGEBRAIC
+INTEGERS" (Diamond–Shurman Prop. 6.6.4). Three PROVEN steps carry
+everything else, all of them declared just above:
+
+1. `isIntegral_qCoeff_of_isWeightTwoEigenform` — the leaf propagates
+   from primes to every index through the fields of
+   `IsWeightTwoEigenform` (coprime multiplicativity and the two Hecke
+   recursions), so eigenforms inhabit `algIntCuspForms`;
+2. `algIntCuspForms_span_eq_top` — the level induction of
+   `rationalCuspForms_span_eq_top` above run over `algIntCuspForms`,
+   and SIMPLER there, because eigenforms are algebraic-integer forms
+   outright and no Galois descent is needed: it consumes only the
+   already-PROVEN `eigenform_span_sup_oldCuspSpace_eq_top`;
+3. `exists_smul_mem_integralCuspForms_of_algInt_span_eq_top` — a
+   `ℚ̄`-LINEAR retraction `ℂ →ₗ[ℚ̄] ℚ̄` in place of the `ℚ`-linear one of
+   the sibling bridge, which lets the algebraic coefficients pull out of
+   `ρ`; then one common denominator for the finitely many algebraic
+   coordinates, and `𝒪 ∩ ℚ = ℤ`.
+
+**THE ROUTE AUDIT BELOW IS THEREFORE SUPERSEDED IN ONE RESPECT, AND WAS
+STALE WHEN WRITTEN.** It records the newform route as blocked because
+"its missing half is Atkin–Lehner (a newform basis), which this file
+does not have". That was true on 2026-07-27 and false by 2026-07-28:
+`eigenform_span_sup_oldCuspSpace_eq_top` was PROVEN that day, which is
+exactly the missing half. The knot the audit describes is real — the
+three statements it names remain pairwise equivalent — but the newform
+route was never inside the knot, and it is the one that went through.
+What it costs is that the arithmetic reappears as leaf 1: algebraic
+integrality of Hecke eigenvalues is not free. It is, however, a
+statement about a SINGLE COMPLEX NUMBER, and the Eichler–Selberg trace
+formula attacks it directly (see the leaf's own docstring for why the
+existing `isIntegral_heckeEndo` may NOT be used for it).
+
+**A STALE CLAIM CORRECTED, 2026-07-29.** The paragraph below headed
+"A VERIFIED CORRECTION to the retirement note" states that
+`isIntegral_heckeEndo` does NOT depend on this node, reaching
+`heckeSubring_moduleFinite_int` "via `exists_trace_heckeSubring_int` and
+the open leaf `isIntegral_trace_heckeOpN` (Eichler–Selberg)". That was
+true when written and is now FALSE: `isIntegral_trace_heckeOpN` is no
+longer an Eichler–Selberg leaf, it is PROVEN from
+`exists_heckeOpN_sturm_span`, which consumes THIS node. So the chain
+
+    isIntegral_heckeEndo → exists_trace_heckeSubring_int
+      → isIntegral_trace_heckeOpN → exists_heckeOpN_sturm_span
+      → exists_smul_mem_integralCuspForms
+
+is a genuine dependence, and `isIntegral_heckeEndo` is NOT usable in any
+attack on this node or on its new leaf. Verified by reading the four
+proof bodies on `main` at `ac2547ef`, not by reading the notes.
+
 ## ROUTE AUDIT (2026-07-28) — state which axis was searched
 
 Searched: every cut expressible in the machinery ABOVE this declaration
@@ -11791,15 +12247,12 @@ this leaf (that is exactly what the newform route would need). -/
 theorem exists_smul_mem_integralCuspForms {N : ℕ} (hN : 0 < N)
     {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
     ∃ d : ℕ, 0 < d ∧ (d : ℤ) • f ∈ integralCuspForms N := by
-  -- THE ENTIRE ARITHMETIC RESIDUE OF THIS LEAF, and the only `sorry` left in it:
-  -- `S₂(Γ₀(N); ℤ)` is a FULL lattice in `S₂(Γ₀(N))`. This is the `q`-expansion
-  -- principle on the integral model `X₀(N)/ℤ` (Deligne–Rapoport), equivalently
-  -- that `H⁰(X₀(N)_ℤ, Ω)` base-changes to `H⁰(X₀(N)_ℚ, Ω)`; see the ROUTE AUDIT
-  -- in the docstring for the axes already searched and refuted.
-  have hspan : 0 < N →
-      Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
-    sorry
-  exact exists_smul_mem_integralCuspForms_of_span_eq_top (hspan hN) hf
+  -- PROVEN 2026-07-29 over the single leaf
+  -- `isIntegral_qCoeff_prime_of_isWeightTwoEigenform` above, by way of the full
+  -- ALGEBRAIC-INTEGER lattice `algIntCuspForms_span_eq_top` and the `ℚ̄`-linear
+  -- retraction bridge; see THE DECOMPOSITION in the docstring.
+  exact exists_smul_mem_integralCuspForms_of_algInt_span_eq_top
+    (algIntCuspForms_span_eq_top hN) hf
 
 /-- **STURM'S BOUND OVER `ℤ`: the `T_n` with `n ≤ B` `ℤ`-SPAN `𝕋`**
 (PROVEN 2026-07-27 over the single citation
