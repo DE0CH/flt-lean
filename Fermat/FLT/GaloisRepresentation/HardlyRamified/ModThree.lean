@@ -50855,8 +50855,153 @@ theorem exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
       W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) = 1 :=
   sorry
 
-/-- **THE DIVISOR OF A NORM IS THE NORM OF THE DIVISOR** (SORRY LEAF, created
-2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
+/-! ### Divisor bookkeeping for the relative norm (flt-lean-368, 2026-07-29)
+
+The four lemmas below are the whole content of
+`relNormDivisorHom_apply_divisorMap_ray_class`, kept in one block so that merges
+against the rest of this cluster stay clean.  Nothing here is specific to the ray
+class setup: they are statements about Dedekind domains and about `Ideal.relNorm`.
+-/
+
+/-- **PINNING BY IDEAL DIVISIBILITY DETERMINES A DIVISOR** (PROVEN 2026-07-29,
+flt-lean-368).
+
+This is what makes the whole `d`/`d'` design work: the divisor maps of this
+cluster are specified only by the clause `v ^ n ∣ I ↔ n ≤ (d δ) v`, never by a
+formula, and this lemma says that clause has at most one solution.  The proof
+needs no factorisation API — `n = 0` forces `0 ≤ y v` (as `v ^ 0 = 1` divides
+everything), and then `n = (y v + 1).toNat` separates any two distinct
+nonnegative values. -/
+theorem divisor_pinned_unique_ray_class {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (I : Ideal R) (y z : IsDedekindDomain.HeightOneSpectrum R →₀ ℤ)
+    (hy : ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ),
+      v.asIdeal ^ n ∣ I ↔ (n : ℤ) ≤ y v)
+    (hz : ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ),
+      v.asIdeal ^ n ∣ I ↔ (n : ℤ) ≤ z v) :
+    y = z := by
+  ext v
+  have h0y : (0 : ℤ) ≤ y v := by
+    have := (hy v 0).mp (by simp); simpa using this
+  have h0z : (0 : ℤ) ≤ z v := by
+    have := (hz v 0).mp (by simp); simpa using this
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with h | h
+  · have hcast : (((y v + 1).toNat : ℕ) : ℤ) = y v + 1 := Int.toNat_of_nonneg (by omega)
+    have hdvd : v.asIdeal ^ ((y v + 1).toNat) ∣ I := (hz v _).mpr (by omega)
+    have := (hy v _).mp hdvd
+    omega
+  · have hcast : (((z v + 1).toNat : ℕ) : ℤ) = z v + 1 := Int.toNat_of_nonneg (by omega)
+    have hdvd : v.asIdeal ^ ((z v + 1).toNat) ∣ I := (hy v _).mpr (by omega)
+    have := (hz v _).mp hdvd
+    omega
+
+/-- **THE `Associates`-COUNT OF A PRIME IN A FINITE PRODUCT OF PRIME POWERS**
+(PROVEN 2026-07-29, flt-lean-368).
+
+The right-hand side is written as the value at `w` of a formal sum of
+`Finsupp.single`s rather than as a `Finset.sum` of `if`s, because that is exactly
+the shape the divisor side of
+`relNormDivisorHom_apply_divisorMap_ray_class` produces, and it dodges the
+`Decidable (p i = w)` obligation a bare `if` would impose on the statement.
+
+Note the index type `ι` is arbitrary and `p` need NOT be injective — which is the
+whole point here, since several primes `W` of `𝓞 E` lie over one prime `w` of
+`𝓞 F` and their contributions must add up. -/
+theorem count_mk_finsetProd_pow_ray_class {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {ι : Type*} (s : Finset ι) (p : ι → IsDedekindDomain.HeightOneSpectrum R) (e : ι → ℕ)
+    (w : IsDedekindDomain.HeightOneSpectrum R) :
+    (((Associates.mk w.asIdeal).count
+        (Associates.mk (∏ i ∈ s, (p i).asIdeal ^ e i)).factors : ℕ) : ℤ)
+      = (∑ i ∈ s, Finsupp.single (p i) ((e i : ℕ) : ℤ)) w := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+      rw [Finset.prod_empty, Associates.mk_one, Associates.factors_one,
+        Associates.count_zero w.associates_irreducible, Finset.sum_empty]
+      simp
+  | insert a s ha ih =>
+      have hprodne : (Associates.mk (∏ i ∈ s, (p i).asIdeal ^ e i)) ≠ 0 :=
+        Associates.mk_ne_zero.mpr
+          (Finset.prod_ne_zero_iff.mpr fun i _ => pow_ne_zero _ (p i).ne_bot)
+      have hane : (Associates.mk ((p a).asIdeal ^ e a)) ≠ 0 :=
+        Associates.mk_ne_zero.mpr (pow_ne_zero _ (p a).ne_bot)
+      rw [Finset.prod_insert ha, Finset.sum_insert ha, ← Associates.mk_mul_mk,
+        Associates.count_mul hane hprodne w.associates_irreducible, Finsupp.add_apply,
+        Nat.cast_add, ih]
+      congr 1
+      rw [Associates.mk_pow,
+        Associates.count_pow (Associates.mk_ne_zero.mpr (p a).ne_bot) w.associates_irreducible]
+      by_cases h : p a = w
+      · subst h
+        rw [Associates.count_self (p a).associates_irreducible, Finsupp.single_eq_same]
+        push_cast
+        ring
+      · have hne : (Associates.mk w.asIdeal) ≠ (Associates.mk (p a).asIdeal) := by
+          intro hh
+          rw [Associates.mk_eq_mk_iff_associated, associated_iff_eq,
+            ← IsDedekindDomain.HeightOneSpectrum.ext_iff] at hh
+          exact h hh.symm
+        rw [Associates.count_eq_zero_of_ne w.associates_irreducible
+          (p a).associates_irreducible hne, Finsupp.single_apply, if_neg h]
+        simp
+
+/-- **DIVISIBILITY OF A FINITE PRODUCT OF PRIME POWERS BY A PRIME POWER** (PROVEN
+2026-07-29, flt-lean-368).  The divisibility form of
+`count_mk_finsetProd_pow_ray_class`, which is what
+`divisor_pinned_unique_ray_class` consumes. -/
+theorem pow_dvd_finsetProd_pow_iff_ray_class {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {ι : Type*} (s : Finset ι) (p : ι → IsDedekindDomain.HeightOneSpectrum R) (e : ι → ℕ)
+    (w : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ) :
+    w.asIdeal ^ n ∣ ∏ i ∈ s, (p i).asIdeal ^ e i ↔
+      (n : ℤ) ≤ (∑ i ∈ s, Finsupp.single (p i) ((e i : ℕ) : ℤ)) w := by
+  classical
+  have hprodne : (∏ i ∈ s, (p i).asIdeal ^ e i) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr fun i _ => pow_ne_zero _ (p i).ne_bot
+  rw [← Associates.mk_le_mk_iff_dvd, Associates.mk_pow,
+    Associates.prime_pow_dvd_iff_le (Associates.mk_ne_zero.mpr hprodne)
+      w.associates_irreducible, ← count_mk_finsetProd_pow_ray_class]
+  exact Nat.cast_le.symm
+
+/-- **THE RELATIVE NORM OF A HEIGHT-ONE PRIME IS THE PRIME BELOW TO THE INERTIA
+DEGREE** (PROVEN 2026-07-29, flt-lean-368).  `Ideal.relNorm_eq_pow_of_isMaximal`
+IS in the pin and needs no Galois hypothesis, only `PerfectField (FractionRing R)`
+— which here is free, `FractionRing (𝓞 F)` having characteristic zero.
+
+Both maximality instances are automatic: `IsDedekindDomain.HeightOneSpectrum.isMaximal`
+is an instance in the pin. -/
+theorem relNorm_asIdeal_pow_inertiaDeg_ray_class (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hW : W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal) :
+    Ideal.relNorm (NumberField.RingOfIntegers F) W.asIdeal
+      = w.asIdeal ^ (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) := by
+  haveI : CharZero (FractionRing (NumberField.RingOfIntegers F)) :=
+    charZero_of_injective_algebraMap (IsFractionRing.injective
+      (NumberField.RingOfIntegers F) (FractionRing (NumberField.RingOfIntegers F)))
+  haveI : W.asIdeal.LiesOver w.asIdeal := ⟨hW.symm⟩
+  exact Ideal.relNorm_eq_pow_of_isMaximal W.asIdeal w.asIdeal
+
+/-- **THE IDEAL GENERATED BY A RELATIVE NORM IS THE RELATIVE NORM OF THE IDEAL**
+(PROVEN 2026-07-29, flt-lean-368).  `Ideal.relNorm_singleton` states this with
+`Algebra.intNorm`; the identification of `_root_.RingOfIntegers.norm F` with
+`Algebra.intNorm (𝓞 F) (𝓞 E)` is `Algebra.algebraMap_intNorm` against
+`RingOfIntegers.coe_norm`, both sides being compared in `F` where
+`algebraMap (𝓞 F) F` is injective. -/
+theorem span_relNorm_norm_ray_class (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (δ : NumberField.RingOfIntegers E) :
+    Ideal.span {_root_.RingOfIntegers.norm F δ}
+      = Ideal.relNorm (NumberField.RingOfIntegers F) (Ideal.span {δ}) := by
+  rw [Ideal.relNorm_singleton]
+  congr 1
+  refine Set.singleton_eq_singleton_iff.mpr ?_
+  apply IsFractionRing.injective (NumberField.RingOfIntegers F) F
+  rw [Algebra.algebraMap_intNorm (L := E)]
+  exact _root_.RingOfIntegers.coe_norm F δ
+
+/-- **THE DIVISOR OF A NORM IS THE NORM OF THE DIVISOR** (PROVEN 2026-07-29,
+flt-lean-368; created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
 `exists_relNormDivisorHom_ray_class` below).
 
 `𝔑 (d' δ) = d (N_{E/F} δ)`: the relative norm on divisors, prescribed on the
@@ -50868,11 +51013,35 @@ alone (`hd`, `hd'`), so the proof is a comparison of exponents at each `w`:
 `ord_w (N δ) = Σ_{W ∣ w} f(W/w) · ord_W (δ)`.
 
 **Check that would refute it**: a `δ ≠ 0` and a `w` with
-`ord_w (N_{E/F} δ) ≠ Σ_{W ∣ w} f(W/w) · ord_W δ`. -/
+`ord_w (N_{E/F} δ) ≠ Σ_{W ∣ w} f(W/w) · ord_W δ`.
+
+**THE PROOF, and one correction to the route above.** The route as sketched is
+right, and it is what is carried out: `span {N δ} = relNorm (span {δ})`
+(`span_relNorm_norm_ray_class`), then `relNorm` is multiplicative over the
+factorisation `(δ) = ∏ W ^ ord_W δ` and `relNorm 𝔓 = 𝔭 ^ f`
+(`relNorm_asIdeal_pow_inertiaDeg_ray_class`), giving
+`(N δ) = ∏_W (W ∩ 𝓞_F) ^ (f(W/w) · ord_W δ)`.  The comparison of exponents is
+then NOT carried out by hand: `𝔑 (d' δ)` is computed to be the matching formal
+sum of `Finsupp.single`s, both sides are seen to satisfy the SAME divisibility
+pinning against `(N δ)`, and `divisor_pinned_unique_ray_class` finishes.  That is
+what makes the `f`-weighted sum over `W ∣ w` come out right without ever indexing
+a sum by the primes above `w`: the non-injective map `W ↦ W ∩ 𝓞_F` is absorbed by
+`count_mk_finsetProd_pow_ray_class`, whose `p` is deliberately not assumed
+injective.
+
+The correction: the prime-power identity needs `PerfectField (FractionRing 𝓞_F)`,
+NOT a Galois hypothesis — `Ideal.relNorm_eq_pow_of_isMaximal` is the Galois-free
+form in the pin — and `Ideal.relNorm` in this pin requires no `Module.Free`.
+**`hfin` is in fact REDUNDANT**: every instance the proof uses
+(`Module.Finite (𝓞 F) (𝓞 E)`, `IsTorsionFree`, `Algebra.IsIntegral`) is already
+available from `NumberField F` and `NumberField E` alone, through
+`RingOfIntegers.extension_isNoetherian`.  It is kept in the signature, renamed
+`_hfin`, because the consumer `exists_relNormDivisorHom_ray_class` supplies it
+positionally. -/
 theorem relNormDivisorHom_apply_divisorMap_ray_class
     (F : Type u) [Field F] [NumberField F]
     (E : Type u) [Field E] [NumberField E] [Algebra F E]
-    (hfin : Module.Finite F E)
+    (_hfin : Module.Finite F E)
     (d : NumberField.RingOfIntegers F → Multiplicative
       (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
     (d' : NumberField.RingOfIntegers E → Multiplicative
@@ -50894,8 +51063,101 @@ theorem relNormDivisorHom_apply_divisorMap_ray_class
           = Multiplicative.ofAdd (Finsupp.single w
               (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ)))
     (δ : NumberField.RingOfIntegers E) (hδ : δ ≠ 0) :
-    𝔑 (d' δ) = d (_root_.RingOfIntegers.norm F δ) :=
-  sorry
+    𝔑 (d' δ) = d (_root_.RingOfIntegers.norm F δ) := by
+  classical
+  have hspan : (Ideal.span {δ} : Ideal (NumberField.RingOfIntegers E)) ≠ 0 := fun h =>
+    hδ (Ideal.span_singleton_eq_bot.mp h)
+  -- The exponents upstairs, as an opaque function with a rewriting equation.
+  obtain ⟨nE, hnE⟩ : ∃ nE : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E) → ℕ, ∀ W,
+      nE W = (Associates.mk W.asIdeal).count (Associates.mk (Ideal.span {δ})).factors :=
+    ⟨_, fun _ => rfl⟩
+  have hdvdE : ∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E)) (m : ℕ),
+      (W.asIdeal ^ m ∣ Ideal.span {δ} ↔ m ≤ nE W) := by
+    intro W m
+    rw [hnE, ← Associates.mk_le_mk_iff_dvd, Associates.mk_pow,
+      Associates.prime_pow_dvd_iff_le (Associates.mk_ne_zero.mpr hspan)
+        W.associates_irreducible]
+  have hvalE : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      Multiplicative.toAdd (d' δ) W = (nE W : ℤ) := by
+    intro W
+    have h1 : ((nE W : ℕ) : ℤ) ≤ Multiplicative.toAdd (d' δ) W :=
+      (hd' δ hδ W (nE W)).mp ((hdvdE W (nE W)).mpr le_rfl)
+    have h2 : ¬ (((nE W + 1 : ℕ) : ℤ) ≤ Multiplicative.toAdd (d' δ) W) := by
+      intro h
+      have := (hdvdE W (nE W + 1)).mp ((hd' δ hδ W (nE W + 1)).mpr h)
+      omega
+    push_cast at h1 h2
+    omega
+  set s : Finset (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E)) :=
+    (Multiplicative.toAdd (d' δ)).support with hsdef
+  have hsupp : ∀ W ∉ s, nE W = 0 := by
+    intro W hW
+    have h0 : Multiplicative.toAdd (d' δ) W = 0 := Finsupp.notMem_support_iff.mp hW
+    have := hvalE W
+    omega
+  have hmax : ∀ W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      IsDedekindDomain.HeightOneSpectrum.maxPowDividing W (Ideal.span {δ})
+        = W.asIdeal ^ nE W := by
+    intro W
+    rw [IsDedekindDomain.HeightOneSpectrum.maxPowDividing, hnE]
+  have hfac : Ideal.span {δ} = ∏ W ∈ s, W.asIdeal ^ nE W := by
+    conv_lhs => rw [← Ideal.finprod_heightOneSpectrum_factorization hspan]
+    rw [finprod_congr hmax]
+    refine finprod_eq_prod_of_mulSupport_subset _ ?_
+    intro W hW
+    by_contra hWs
+    apply hW
+    show W.asIdeal ^ nE W = 1
+    rw [hsupp W hWs, pow_zero]
+  -- The primes of `𝓞 F` below, and the ideal identity `(N δ) = ∏ w ^ (f · ord)`.
+  choose pw hpw using fun W : IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers E) => exists_heightOneSpectrum_under_ray_class F E W
+  have hrel : Ideal.span {_root_.RingOfIntegers.norm F δ}
+      = ∏ W ∈ s, (pw W).asIdeal ^
+          ((W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) * nE W) := by
+    rw [span_relNorm_norm_ray_class F E δ, hfac, map_prod]
+    refine Finset.prod_congr rfl fun W _ => ?_
+    rw [map_pow, relNorm_asIdeal_pow_inertiaDeg_ray_class F E W (pw W) (hpw W), ← pow_mul]
+  have hspanN : (Ideal.span {_root_.RingOfIntegers.norm F δ} :
+      Ideal (NumberField.RingOfIntegers F)) ≠ 0 := by
+    rw [span_relNorm_norm_ray_class F E δ]
+    simpa using hspan
+  have hNnz : _root_.RingOfIntegers.norm F δ ≠ 0 := by
+    intro h
+    apply hspanN
+    rw [h]
+    simp
+  -- The divisor identity `𝔑 (d' δ) = ofAdd (∑ single (w below W) (f · ord))`.
+  have hD : d' δ = ∏ W ∈ s, Multiplicative.ofAdd
+      (Finsupp.single W (Multiplicative.toAdd (d' δ) W)) := by
+    rw [← _root_.ofAdd_sum]
+    exact congrArg Multiplicative.ofAdd
+      (Finsupp.sum_single (Multiplicative.toAdd (d' δ))).symm
+  have hNdiv : 𝔑 (d' δ) = Multiplicative.ofAdd
+      (∑ W ∈ s, Finsupp.single (pw W)
+        (((W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) * nE W : ℕ) : ℤ)) := by
+    rw [hD, map_prod, _root_.ofAdd_sum]
+    refine Finset.prod_congr rfl fun W _ => ?_
+    have hsingle : Finsupp.single W (Multiplicative.toAdd (d' δ) W)
+        = (Multiplicative.toAdd (d' δ) W) • Finsupp.single W (1 : ℤ) := by
+      rw [Finsupp.smul_single, smul_eq_mul, mul_one]
+    rw [hsingle, _root_.ofAdd_zsmul, map_zpow, h𝔑 W (pw W) (hpw W), ← _root_.ofAdd_zsmul,
+      Finsupp.smul_single, smul_eq_mul, hvalE W]
+    push_cast
+    ring_nf
+  -- Both divisors are pinned by divisibility against the same ideal, so they agree.
+  have key : ∀ (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) (n : ℕ),
+      (w.asIdeal ^ n ∣ Ideal.span {_root_.RingOfIntegers.norm F δ} ↔
+        (n : ℤ) ≤ Multiplicative.toAdd (𝔑 (d' δ)) w) := by
+    intro w n
+    rw [hrel, hNdiv, toAdd_ofAdd]
+    exact pow_dvd_finsetProd_pow_iff_ray_class s pw
+      (fun W => (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F)) * nE W) w n
+  exact Multiplicative.toAdd.injective
+    (divisor_pinned_unique_ray_class (Ideal.span {_root_.RingOfIntegers.norm F δ})
+      (Multiplicative.toAdd (𝔑 (d' δ)))
+      (Multiplicative.toAdd (d (_root_.RingOfIntegers.norm F δ))) key (hd _ hNnz))
 
 /-- **THE NORM OF A TOTALLY POSITIVE INTEGER IS TOTALLY POSITIVE** (SORRY LEAF,
 created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
