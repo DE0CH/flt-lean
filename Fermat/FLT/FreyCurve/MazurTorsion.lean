@@ -25152,8 +25152,31 @@ equivalently a Riemann–Roch basis of `L(2·∞)` and `L(3·∞)` on `X_0(N)`.
 Neither exists at this pin.  The `Scheme` ↔ `WeierstrassCurve` bridge is
 NOT among the missing pieces on the point-set level any more —
 `Fermat.exists_ellipticScheme_of_weierstrass` builds the projective
-Weierstrass model as a scheme, though only over `Spec ℚ`; what is missing
-over `𝔽_ℓ` is that construction's base-field generality.
+Weierstrass model as a scheme, though only over `Spec ℚ` (re-verified
+2026-07-28: `X0.lean`'s statement really does read `E : WeierstrassCurve ℚ`,
+so that restriction is real and not a docstring artefact).
+
+**CORRECTED 2026-07-28 (flt-lean-274): "what is missing over `𝔽_ℓ` is that
+construction's base-field generality" is right about the PROPERTIES and
+wrong about the CONSTRUCTION**, and a successor who reads it as written
+will rebuild something that exists.  The projective Weierstrass SCHEME is
+already base-generic: `WeierstrassCurve.Projective.proj` and `projToSpec`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`)
+are declared under `variable {R : Type u} [CommRing R]`, so `proj
+(modelCurve ℓ a₁ a₂ a₃ a₄ a₆)` is available over `ZMod ℓ` today, with no
+new construction.  What is genuinely `ℚ`-only is every PROPERTY of it —
+`isProper_projToSpec`, `smoothOfRelativeDimension_projToSpec`,
+`geometricallyConnected_projToSpec`, `geometricallyReduced_projToSpec`
+(all `EllipticScheme.lean`, all stated for `E : WeierstrassCurve ℚ`) — and
+those are what a producer of `IsX0Compactification` needs for its
+`isProper`, `smooth` and `connected` fields.  Generalising their proofs to
+a base field of characteristic prime to the discriminant is a real but
+bounded task, and it is a strictly smaller one than "build the projective
+model over `𝔽_ℓ`".
+
+Note this does NOT shrink the leaf's mathematical core, which is the
+`coarse : IsCoarseModuliY0 N strY` field — the identification of the plane
+model with the modular curve — and is untouched by any of the above.
 
 AXES SEARCHED, and this leaf is what is left of all of them: the
 Eichler–Shimura/Hecke axis (blocked by the module cycle recorded in the
@@ -40084,6 +40107,76 @@ vocabulary rather than as a bare additive map.  `phi_add` and `phi_sq` then
 descend from the ring identity in `WeierstrassCurve.End`, and `liesIn_iff` from
 `hliesIn`, since `phi x + phi x = x` is `(2φ − 1) x = 0`.
 
+**CORRECTION 2026-07-28 (flt-lean-274): THE `Proj` GATE RECORDED ABOVE IS STALE,
+AND SO IS THE "SECOND CHART" FRAMING.**  The paragraph just above, and
+`IsWeierstrassModel`'s own docstring in `X0.lean` ("`Proj` of a graded quotient
+ring, and hence the projective Weierstrass scheme itself, cannot yet be
+formed"), are both out of date.  Three checks, each one grep:
+
+* **`Proj` IS formed.**  `WeierstrassCurve.Projective.proj` is
+  `AlgebraicGeometry.Proj` of `R[X, Y, Z] ⧸ (W)`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`),
+  and it is stated over an ARBITRARY `[CommRing R]`, not over `ℚ`.  Its
+  structure morphism `projToSpec` is there too.
+* **The scheme-level reading of `IsWeierstrassModel` EXISTS and is an
+  ISOMORPHISM.**  `Fermat.exists_isIso_of_affineChart`
+  (`Fermat/FLT/ModularCurve/EllipticScheme.lean`) turns exactly the data of
+  `IsWeierstrassModel ab E` — an open immersion of `Spec ℚ[E]` whose range is
+  the complement of the zero section — into `u : proj E ⟶ A` with `IsIso u`
+  and `u ≫ f = projToSpec E`.  Its one extra hypothesis, a chart on `proj E`
+  with the matching range, is `exists_affineChart_projModel`, PROVEN in the
+  same file; and `exists_geomFibreAddEquiv_of_weierstrassModel` there already
+  runs precisely that composition.  So "the transport needs the
+  `IsWeierstrassModel` identification at the SCHEME level" names something
+  that is built, not something that is missing.  COMPILER-CHECKED 2026-07-28
+  in a scratch module importing `EllipticScheme` and `X0`: the derivation
+  `obtain ⟨ι, …⟩ := hmodel;`
+  `obtain ⟨ι₀, …⟩ := exists_affineChart_projModel E (projGroupLaw E);`
+  `exact exists_isIso_of_affineChart E ab ι₀ ι …` elaborates with no error.
+  **And the one sorry under it need not bind for a `Gamma0Datum`**: the only
+  open leaf in that cone is `smoothOfRelativeDimension_one_of_affineChart`,
+  whose conclusion `SmoothOfRelativeDimension 1 f` is *literally* the field
+  `Gamma0Datum.relativeDimensionOne`.  The check that would settle it is
+  small: restate `exists_hom_symm_of_affineChart` taking that instance as a
+  hypothesis instead of deriving it, and the route becomes sorry-free for
+  datum-shaped inputs.
+* **No gluing is needed for the bad locus of the `IsRationalMap` certificate
+  either.**  `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN, no
+  sorry, and already consumed by `X0.lean`, `X1.lean` and `EllipticScheme.lean`)
+  extends a morphism out of an open with FINITE complement of a smooth proper
+  geometrically connected curve into any PROPER target.  Its three hypotheses
+  are `d₀.ab.proper`, `d₀.relativeDimensionOne` and `d₀.ab.connected`, field
+  for field; and `(Set.range ι.base)ᶜ` is the range of `ab.zero`, i.e. the
+  image of the one-point space `Spec ℚ`, hence finite.  So a certificate valid
+  only off `Z(B) ∪ Z(E)` is not an obstruction at all: that locus is finite on
+  a curve, and the extension is unique.
+
+**WHAT IS ACTUALLY LEFT**, therefore, in the order a successor meets it:
+(i) NAMEABILITY — `X0.lean` imports `EllipticScheme` non-publicly, so
+`exists_isIso_of_affineChart` cannot be cited here; what is needed is a
+re-export in `X0.lean` written in `Gamma0Datum`/`IsWeierstrassModel`
+vocabulary, exactly like the existing
+`exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`, and that is a
+mechanical addition, not a theorem;  (ii) the base change from `d₀` over
+`Spec ℚ` to `d` over `Spec ℚ̄`, which is what `_bc` is for;  (iii) turning
+`φ`'s certificate into a morphism `proj E ⟶ proj E`;  (iv) additivity and
+naturality of the induced map at EVERY test scheme.
+
+**AND (iv), NOT (iii), IS THE REAL CONTENT — with a FALSITY WARNING attached.**
+It is tempting to cut the residue at "an additive endomorphism `ψ` of the
+`ℚ̄`-points of `d.E` satisfying `ψ² + (p+1)/4 = ψ` and cutting out the level
+structure extends to a natural one".  **That leaf would be FALSE.**  As an
+abstract group `E(ℚ̄) ≅ (ℚ/ℤ)² ⊕ ⊕_𝔠 ℚ`, so its free part is a `ℚ`-vector
+space of continuum dimension and carries `ℚ`-linear endomorphisms with ANY
+prescribed minimal polynomial over `ℚ` — in particular `X² − X + (p+1)/4`,
+which is irreducible since its discriminant is `−p < 0`.  Such a `ψ` is
+nowhere near algebraic.  So the ALGEBRAICITY has to be carried by the
+statement, and that is precisely what `hmodel` and the `IsRationalMap`
+certificate inside `WeierstrassCurve.End` do.  This strengthens, rather than
+replaces, the `α`-ambiguity objection in the next section: pinning `e` is
+necessary, and it is not sufficient.
+
 **WHY THE RESIDUE IS NOT SPLIT OFF AS A NAMED TOP-LEVEL LEAF, and the check
 that would license doing so.**  The obvious cut — a lemma taking `bc`, `E`,
 `hmodel : IsWeierstrassModel d₀.ab E`, an arbitrary Galois-equivariant `≃+` `e`,
@@ -40200,11 +40293,15 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly (p :
       rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]
   -- **5.** THE RESIDUE, and the only step left: transport `φ` across `hmodel`
   -- to a NATURAL endomorphism of `d`'s functor of points.  See the docstring's
-  -- last two sections for what this needs (a scheme-level reading of
-  -- `IsWeierstrassModel`, i.e. `φ`'s `IsRationalMap` certificate turned into a
-  -- morphism `d.E ⟶ d.E` over `Spec ℚ̄`) and for why it is deliberately NOT a
-  -- named top-level leaf yet.  In scope here: `hmodel`, `e`, `he`, `φ`, `hsq`,
-  -- `hliesIn`, and `_bc`.
+  -- CORRECTION section (2026-07-28) for the route: the scheme-level reading of
+  -- `IsWeierstrassModel` is NOT missing — `Fermat.exists_isIso_of_affineChart`
+  -- makes it an ISOMORPHISM `proj E ≅ d₀.E`, and
+  -- `exists_unique_extension_of_isSmoothProperCurve` extends across the
+  -- certificate's finite bad locus — so what remains is nameability of
+  -- `EllipticScheme.lean` from here, the base change to `Spec ℚ̄`, and the
+  -- naturality/additivity at every test scheme, which is the half that carries
+  -- the content.  In scope here: `hmodel`, `e`, `he`, `φ`, `hsq`, `hliesIn`,
+  -- and `_bc`.
   sorry
 
 /-- **MAZUR'S ISOGENY THEOREM at `43, 67, 163`: a `Γ₀(p)`-structure defined
