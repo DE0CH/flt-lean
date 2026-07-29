@@ -8601,31 +8601,40 @@ theorem nonempty_carayolPackage_of_carayolJacobianPackage
 quaternionic eigenform may be taken with `𝒮.S ⊆ badF`** (sorry leaf; CUT
 2026-07-28, ROUND-9, out of
 `exists_totallyDefinite_heckeCharacter_level_subset_badF` immediately below,
-which is a PROVEN ASSEMBLY over this leaf together with three declarations
-that already existed: `exists_eigenform_of_totallyDefinite_quaternionAlgebra`
-(STEP 1b's Jacquet–Langlands citation),
-`exists_prime_two_lt_finrank_cyclotomicField` (PROVEN) and
-`exists_algHom_of_smul_eq_smul` (PROVEN)).
+which is a PROVEN ASSEMBLY over this leaf together with two declarations
+that already existed: `exists_prime_two_lt_finrank_cyclotomicField` (PROVEN)
+and `exists_algHom_of_smul_eq_smul` (PROVEN)).
 
-**WHAT THIS LEAF IS, AND WHY IT IS THE WHOLE OF THE ROUND-8 CONTENT.** The
-ROUND-8 cut owed two clauses, `∀ w ∈ 𝒮.S, w ∈ badF` and `∀ w ∈ 𝒮.Q, w ∈ badF`.
-The SECOND IS ALREADY FREE and no leaf is needed for it:
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra` returns `𝒮.Q = ∅`
-outright, so the `Q`-clause is vacuous. What is genuinely owed is the first,
-and that is exactly this statement — hence a leaf stating the DELTA over the
-eigenform citation rather than a second copy of the citation itself.
+**WHAT THIS LEAF IS.** The ROUND-8 cut owed two clauses on the level datum,
+`∀ w ∈ 𝒮.S, w ∈ badF` and `∀ w ∈ 𝒮.Q, w ∈ badF`. Both are delivered here, the
+second in the sharper form `𝒮.Q = ∅` (the Taylor–Wiles set is an auxiliary
+choice of the patching argument downstream, not of the transfer, so the form
+Jacquet–Langlands produces has no tame-`p` condition at all). What is
+genuinely hard is the first, and it is the ROUND-5 argument below.
 
-**WHY IT IS STATED AS A DELTA (an eigenform in, an eigenform out) rather
-than as a strengthened Jacquet–Langlands.** The obvious alternative — add
-`∀ w ∈ 𝒮.S, w ∈ badF` to
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra`'s conclusion — is
-mathematically identical and would keep the frontier count fixed instead of
-raising it by one. It is deliberately NOT taken: that declaration is a
-separate leaf under a separate owner, and silently restating another owner's
-leaf is how two agents cut one node two incompatible ways. Composing with it
-costs one extra `obtain` and leaves its statement byte-identical. A
-successor who finds both leaves in one hand SHOULD merge them; until then
-they compose.
+**WHY THIS IS NOT STATED AS A DELTA OVER
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`, WHICH IS WHAT
+ROUND 9 FIRST TRIED.** That declaration produces exactly this datum minus
+the `𝒮.S ⊆ badF` clause, so the economical cut is "an eigenform in, an
+eigenform out", composing with it and leaving its statement byte-identical.
+That version was written and then WITHDRAWN, because a `main` merged
+afterwards had given that declaration a new hypothesis
+`hauto : IsQuaternionicEigensystem F E badF (fun w => -(heckeF w).coeff 1)`
+— and `hauto` is not available here. It cannot be derived from `hJL` either:
+`hJL` supplies a Hecke CHARACTER for ONE algebra `D` and ONE auxiliary prime
+`p`, whereas `IsQuaternionicEigensystem` quantifies over EVERY `D` and every
+admissible `p` and yields an EIGENFORM. It is strictly the stronger
+statement, and threading it down to here would mean adding it to
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` and to its
+consumers — a cut-level change across declarations under other owners, which
+ROUND 9 deliberately did not make.
+
+CONSEQUENCE, and a successor should weigh it: this leaf and
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` now OVERLAP in
+content, the latter being nearly trivial given its `hauto`. The clean repair
+is to thread `hauto` into this branch of the chain and restate this leaf as
+the delta it wanted to be. That is a cut-level change and is REPORTED rather
+than made.
 
 Content, i.e. what a prover of this leaf owes — the ROUND-5 argument, and
 NOTE THAT IT IS AN ARGUMENT ABOUT THE EIGENSYSTEM, NOT ABOUT THE FORM, which
@@ -8700,17 +8709,8 @@ theorem exists_eigenform_minimalLevel_subset_badF
     [_root_.IsQuaternionAlgebra F D]
     [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
     [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
-    (p : ℕ)
-    (𝒮₀ : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
-    (a₀ : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
-    (f₀ : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮₀).toStruct.form D E)
-    (hQ₀ : 𝒮₀.Q = ∅) (hf₀ : f₀ ≠ 0)
-    (hT₀ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
-      (hwS : w ∉ 𝒮₀.S),
-      _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮₀ w hwS f₀ =
-        a₀ w • f₀)
-    (hmatch₀ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      w ∉ 𝒮₀.S → w ∉ badF → (heckeF w).coeff 1 = - a₀ w) :
+    (p : ℕ) (hp : p.Prime)
+    (hcyc : 2 < Module.finrank F (CyclotomicField p F)) :
     ∃ (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
       (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
       (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
@@ -8732,14 +8732,17 @@ together with its four instances — and its own `p`, `𝒮`, `θ` are discarded
 because the level of that `𝒮` is precisely what is not controlled. The datum
 is then rebuilt at a level that IS controlled:
 `exists_prime_two_lt_finrank_cyclotomicField` (PROVEN) supplies the auxiliary
-prime, `exists_eigenform_of_totallyDefinite_quaternionAlgebra` supplies the
-Jacquet–Langlands eigenform `f` at level `U₁(S, ∅)`,
-`exists_eigenform_minimalLevel_subset_badF` (the ROUND-9 leaf immediately
-above) confines `𝒮.S` to `badF`, and `exists_algHom_of_smul_eq_smul` (PROVEN)
-turns the eigenvector into the character `θ` — the `U`-generators of the Hecke
-algebra being vacuous because `𝒮.Q = ∅`, which also discharges the second
-clause outright. So of the two clauses ROUND-8 owed, ONE WAS ALREADY FREE and
-only the `𝒮.S` one needed a leaf.
+prime, `exists_eigenform_minimalLevel_subset_badF` (the ROUND-9 leaf
+immediately above) supplies the Jacquet–Langlands eigenform `f` at a level
+`U₁(S, ∅)` with `S ⊆ badF`, and `exists_algHom_of_smul_eq_smul` (PROVEN)
+turns that eigenvector into the character `θ` — the `U`-generators of the
+Hecke algebra being vacuous because `𝒮.Q = ∅`, which is also what discharges
+the second of the two clauses outright, by `simp`.
+
+So the ONLY thing this assembly still cites is the automorphic transfer with
+its level, in one leaf. Everything ROUND 8 described as owed beyond that —
+the passage from eigenvector to character, the auxiliary prime, and the
+`𝒮.Q` clause — is discharged here in-tree.
 
 **WHY THE TWO CLAUSES ARE OWED, and this is the sharp point of the ROUND-8
 cut.** `hJL` constrains `heckeF` only at places `w` that avoid `badF` AND
@@ -8795,16 +8798,15 @@ into an existential, where `𝒮` is produced, avoids both objections.
 
 The ROUND-5 argument that used to be quoted here as "what a prover of this
 leaf owes" has MOVED, unchanged, to `exists_eigenform_minimalLevel_subset_badF`
-above, which is where it is now owed. Half of what this paragraph asked for —
-"plus the observation that `𝒮.Q` may be taken empty" — turned out not to be
-owed at all: `exists_eigenform_of_totallyDefinite_quaternionAlgebra` already
-returns `𝒮.Q = ∅`, so the `Q`-clause is discharged by `simp` in the body
-below rather than by any leaf.
+above, which is where it is now owed. The other half of what this paragraph
+asked for — "plus the observation that `𝒮.Q` may be taken empty" — is not a
+separate obligation: that leaf returns `𝒮.Q = ∅` as part of the datum, so the
+`Q`-clause is discharged by `simp` in the body below rather than by any
+citation of its own.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The
 assembly below respects it: it goes through
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra`,
 `exists_eigenform_minimalLevel_subset_badF`,
 `exists_prime_two_lt_finrank_cyclotomicField` and
 `exists_algHom_of_smul_eq_smul`, all in this module. -/
@@ -8874,16 +8876,12 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
   obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, _p, _𝒮, _θ, _hθ⟩ := hJL
   -- The auxiliary prime of the level datum: not part of the correspondence.
   obtain ⟨p, hp, hcyc⟩ := exists_prime_two_lt_finrank_cyclotomicField F
-  -- Jacquet–Langlands proper, as an eigenform at level `U₁(S, ∅)`.
-  obtain ⟨𝒮₀, a₀, f₀, hQ₀, hf₀, hT₀, hmatch₀⟩ :=
-    exists_eigenform_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
-      p hp hcyc
-  -- Minimality of the level: `𝒮.S` may be confined to `badF`, `𝒮.Q` still empty.
+  -- Jacquet–Langlands proper, as an eigenform at a level `U₁(S, ∅)` with
+  -- `S ⊆ badF`: the transfer and the minimality of its level together.
   obtain ⟨𝒮, a, f, hQ, hSbad, hf0, hTa, hmatch⟩ :=
     exists_eigenform_minimalLevel_subset_badF hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
-      p 𝒮₀ a₀ f₀ hQ₀ hf₀ hT₀ hmatch₀
+      p hp hcyc
   -- `f` is scaled by every element of the Hecke algebra, not merely by the
   -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
   -- `𝒮.Q = ∅`.
