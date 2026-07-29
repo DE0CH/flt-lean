@@ -8288,10 +8288,286 @@ theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
         ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) :=
   sorry
 
+/-! ### The Tate-module cut of the trace-duality refinement
+
+Added 2026-07-29 while proving `exists_tateWeilSystem_of_qAdicWeilSystem`.
+The two declarations below are what that leaf now rests on: the level-`k`
+surjectivity of the reduction `T ↠ A[Iᵏ]` (PROVEN here), and the
+construction of the `I`-adic Weil pairing ON THE TATE MODULE
+(`exists_tateWeilPairing_of_qAdicWeilSystem`, the residual open leaf).
+Splitting there is not a matter of taste — see the two CORRECTIONS in that
+leaf's docstring for why no levelwise construction can work. -/
+
+/-- **The reduction `T ↠ A[Iᵏ]` is surjective at every level** (PROVEN
+2026-07-29): every `Iᵏ`-torsion geometric point is the level-`k` component
+of a Tate point.
+
+This is the level-`k` form of `exists_tatePt_val_one_eq`, which is the case
+`k = 1` (modulo `pow_one`); that declaration is left as it stands rather
+than re-derived from this one, since it is released and its own proof is
+self-contained.
+
+THE ARGUMENT, which is the `k = 1` one with a two-sided indexing.  Choice
+on the proven transition surjectivity
+`exists_mem_torsion_act_uniformizer_eq` — `·π` carries `A[Iⁿ⁺¹]` onto
+`A[Iⁿ]` — gives a tower `U : ℕ → A(F̄)` with `U n ∈ A[I^{k+n}]`,
+`U 0 = y` and `π · U (n+1) = U n`, i.e. the part of the Tate point ABOVE
+level `k`.  Below level `k` there is nothing to choose: the components are
+forced to be `π^{k-n} · y`.  Both halves are written by ONE formula,
+
+  `t.1 n = π^(k - n) · U (n - k)`,
+
+using truncated subtraction: for `n ≤ k` the second factor is `U 0 = y` and
+the first is the forced power, and for `n ≥ k` the first factor is `π⁰ = 1`
+and the second is the chosen lift.  The torsion condition at level `n` is
+then the single ideal computation `Iⁿ · (π^{k-n}) ⊆ I^{n + (k-n)} =
+I^{k + (n-k)}` — the two exponents are both `max n k`, which is the only
+place the truncated subtraction has to be reasoned about — and the
+transition condition splits into `π · π^{k-n-1} = π^{k-n}` below `k` and
+the defining relation of `U` above it.
+
+`hI`, `hπ` and `hπ2` are consumed entirely inside
+`exists_mem_torsion_act_uniformizer_eq`, where they are what make `π` a
+uniformizer at `I`; with `π ∈ I²` the transition maps are not surjective
+and the statement is false already at `k = 1`. -/
+theorem exists_tatePt_val_eq
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (k : ℕ) (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x (I ^ k)).1) :
+    ∃ t : TatePt m x I π, t.1 k = y := by
+  classical
+  -- one step up the tower, on the torsion subtypes
+  have key : ∀ (n : ℕ) (v : {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1}),
+      ∃ z : {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n + 1))).1},
+        m.act π z.1 = v.1 := by
+    intro n v
+    obtain ⟨z, hz, hzeq⟩ :=
+      exists_mem_torsion_act_uniformizer_eq m x I hI π hπ hπ2 (k + n) v.1 v.2
+    exact ⟨⟨z, hz⟩, hzeq⟩
+  choose step hstep using key
+  obtain ⟨u, hu0, hurec⟩ :
+      ∃ u : (n : ℕ) → {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1},
+        (u 0).1 = y ∧ ∀ n, m.act π (u (n + 1)).1 = (u n).1 :=
+    ⟨fun n => Nat.rec
+      (motive := fun n => {v : GeomFibrePt f x // v ∈ (m.torsion x (I ^ (k + n))).1})
+      ⟨y, hy⟩ step n, rfl, fun n => hstep n _⟩
+  -- forget the dependent typing: the indices below have to be rewritten
+  obtain ⟨U, hUmem, hU0, hUrec⟩ : ∃ U : ℕ → GeomFibrePt f x,
+      (∀ n, U n ∈ (m.torsion x (I ^ (k + n))).1) ∧ U 0 = y ∧
+        ∀ n, m.act π (U (n + 1)) = U n :=
+    ⟨fun n => (u n).1, fun n => (u n).2, hu0, hurec⟩
+  clear hu0 hurec hstep
+  refine ⟨⟨fun n => m.act (π ^ (k - n)) (U (n - k)), ?_, ?_⟩, ?_⟩
+  · -- torsion condition at every level
+    intro n
+    refine (mem_torsion_iff m x (I ^ n) _).mpr fun a ha => ?_
+    rw [← m.act_mul a (π ^ (k - n)) (U (n - k))]
+    refine (mem_torsion_iff m x (I ^ (k + (n - k))) _).mp (hUmem (n - k)) _ ?_
+    have hpow : (π ^ (k - n) : NumberField.RingOfIntegers D) ∈ I ^ (k - n) :=
+      Ideal.pow_mem_pow hπ _
+    have hmul : a * π ^ (k - n) ∈ I ^ n * I ^ (k - n) := Ideal.mul_mem_mul ha hpow
+    have hidx : n + (k - n) = k + (n - k) := by omega
+    rw [← pow_add, hidx] at hmul
+    exact hmul
+  · -- compatibility along `π`
+    intro n
+    show m.act π (m.act (π ^ (k - (n + 1))) (U (n + 1 - k)))
+      = m.act (π ^ (k - n)) (U (n - k))
+    rcases lt_or_ge n k with h | h
+    · have h1 : n - k = 0 := by omega
+      have h2 : n + 1 - k = 0 := by omega
+      have h3 : k - n = (k - (n + 1)) + 1 := by omega
+      rw [h1, h2, h3, pow_succ, mul_comm, m.act_mul]
+    · have h1 : k - n = 0 := by omega
+      have h2 : k - (n + 1) = 0 := by omega
+      have h3 : n + 1 - k = (n - k) + 1 := by omega
+      rw [h1, h2, h3, pow_zero, m.act_one, m.act_one]
+      exact hUrec (n - k)
+  · show m.act (π ^ (k - k)) (U (k - k)) = y
+    rw [Nat.sub_self, pow_zero, m.act_one]
+    exact hU0
+
+/-- **The `q`-adic Weil system refines to an `I`-adic Weil pairing ON THE
+TATE MODULE** (SORRY LEAF, cut 2026-07-29 out of
+`exists_tateWeilSystem_of_qAdicWeilSystem` — the whole mathematical content
+of that leaf, relocated to the object the classical construction actually
+produces).
+
+The consumer's LEVELWISE system is recovered from this by choosing lifts,
+which is what `exists_tatePt_val_eq` is for; that assembly is proven and no
+part of it is left here.  What is left is the construction of the form
+itself, and the two corrections below are the reason it cannot be done one
+level at a time.
+
+NOTATION for both corrections.  Write `T = T_I A`, `E : T × T → O` for the
+true `O`-valued alternating form, `𝔡_I⁻¹ = (δ)`, `θ = Tr(δ ·)`, `e` for the
+ramification index of `I` over `q`, so `q = π^e u` with `u ∈ Oˣ`, and for
+`y ∈ A[Iᵏ]` let `ỹ ∈ T` be a level-`k` lift (`ỹ.1 k = y`).  Since
+`A[Iᵏ] ⊆ A[qᵏ]` and `y = ỹ/πᵏ = ((qᵏ/πᵏ)·ỹ)/qᵏ`, the classical formula
+`L N (w N (û/q^N) (v̂/q^N)) ≡ θ(E(û, v̂)) mod q^N` gives every computation
+below.
+
+**CORRECTION 1 — the levelwise construction is not merely "not obviously
+tower-compatible", it is quantifiably wrong, and in TWO different ways.**
+The level-`k` functional named in the docstring of
+`exists_tateWeilSystem_of_qAdicWeilSystem`,
+
+  `φ_{y,z}(b) = L k (w k (b·y) z)`,
+
+is `θ(j b · (qᵏ/πᵏ)² E(ỹ, z̃))` modulo `qᵏ`, so the constant that trace
+duality returns for it is
+
+  `c_k(y,z) = (qᵏ/πᵏ)² · E(ỹ, z̃)   mod Iᵏ`,   `(qᵏ/πᵏ)² = π^{2(e-1)k} u^{2k}`.
+
+* If `e ≥ 2` then `π^{2(e-1)k} ∈ I^{2(e-1)k} ⊆ Iᵏ`, so `c_k ≡ 0`
+  IDENTICALLY, for every `k`.  This is the RAMIFICATION OBSTRUCTION already
+  recorded on that leaf, in its sharpest form: it is not confined to
+  `k = 1`, and it is not repaired by raising the Weil level.
+* If `e = 1` the factor is the unit `u^{2k}`, `c_k` is nonzero, and it is
+  exactly the TOWER clause that fails: `c_{k+1} ≡ c_k (mod Iᵏ)` demands
+  `u² ≡ 1 (mod Iᵏ)`, which is false in general.
+
+**CORRECTION 2 — the limit prescribed on that leaf is NOT CAUCHY, and this
+is not a ramification phenomenon.**  That docstring says to recover the
+`ℤ_q`-bilinear form "as the limit over `N` of `L N (w N (·) (·))` evaluated
+at the level-`N` components of Tate points".  The same computation gives
+
+  `L N (w N (t.1 N) (s.1 N)) ≡ θ((q^N/π^N)² E(t,s))   mod q^N`,
+
+which is the constant `θ(E(t,s))` only when `q = π` on the nose.
+
+WITNESS, in the simplest UNRAMIFIED case, so that the failure cannot be
+blamed on ramification: `D = ℚ`, `q = 5`, `I = (5)`, `π = 10`.  These
+satisfy every hypothesis (`10 ∈ (5) ∖ (25)`, so `π` is a uniformizer).
+Here `q/π = 1/2 ∈ ℤ₅ˣ`, and `(q^N/π^N)² = 4^{-N} ≡ (-1)^N (mod 5)`, which
+oscillates: the prescribed sequence has no limit.  For `e ≥ 2` the sequence
+does converge — to `0`, which is the same obstruction again.
+
+**THE CORRECTED NORMALISATION.**  Read `t` at level `eN` rather than at
+level `N`, which replaces the factor by `u^{2N}` for every `e`, and then
+take `N` along the multiples of the ORDER OF `u²` modulo `(j π)ᵏ`, so that
+`u^{2N} ≡ 1 mod (j π)ᵏ`.  The constants `c_k` are then Cauchy and `hcplt`
+produces `E(t,s)`.  Both ingredients are available, and the second needs
+care:
+
+* `e` is the `I`-adic valuation of `q` in `𝒪_D` — the largest `e` with
+  `q ∈ Iᵉ` — which is finite because `q ≠ 0` and `𝒪_D` is Dedekind, and is
+  `≥ 1` by `hqI`;
+* `u = q/π^e` lies in `𝒪_{D,I}ˣ` rather than in `𝒪_D`, but it still has an
+  image in `O`: `𝒪_D` is `I`-adically dense in `𝒪_{D,I}`, so `u` is a limit
+  of elements `j a_n`, and `hcplt` supplies the limit.  Its order modulo
+  `(j π)ᵏ` is finite because that class lies in the image of the FINITE
+  group `(𝒪_D / Iᵏ)ˣ`.  **It is NOT enough to say `(O / (j π)ᵏ)ˣ` is
+  finite — it need not be.**  Without `hdense` the residue ring `O/(j π)`
+  can be infinite (see the `𝒪_{D,I}⟦X⟧` example below, whose residue ring
+  is `𝔽⟦X⟧`), even though `hker` embeds `𝒪_D/I` in it.  The finiteness that
+  the argument actually uses is the finiteness of `𝒪_D/Iᵏ`.
+
+**A FURTHER SPLIT, NOT TAKEN, AND WHY.**  The natural two-way cut is
+(a) build the `ℤ_q`-valued form on `T` from `w` and `L` — the limit above,
+where all the difficulty is — and (b) refine it to `O` by trace duality,
+which is formal.  It was not cut here because of the PERFECTNESS clause:
+`IsTateWeilPairing` demands a value of `E` that is a UNIT of `O`, and the
+natural nondegeneracy of the `ℤ_q`-form (`∃ t s, IsUnit (θ (E t s))`) does
+NOT deliver one.  The fourth clause of `IsTraceDualFunctional` pins the
+representing constant only modulo `Ideal.span {j π}`, and under the
+hypotheses available here that ideal need not be the maximal ideal of `O`:
+`hdense` is deliberately absent from this leaf, and without it
+`O = 𝒪_{D,I}⟦X⟧` with `j` landing in the constants satisfies
+`[IsLocalRing O]`, `hcplt` and `hker` while `span {j π} ⊊ 𝔪`.  A successor
+who wants the split must therefore either carry `hdense`, or state the
+intermediate leaf's nondegeneracy already in the `O`-vocabulary it will be
+refined into.  Stating it as `∃ t s, IsUnit (θ (E t s))` and calling the
+refinement formal would make (b) FALSE.
+
+MATHLIB / PROJECT INGREDIENTS: `IsAdicComplete.limit`-style assembly as in
+`exists_tateWeilPairing_of_tateWeilSystem` (which does the analogous Cauchy
+argument and is PROVEN), `IsTraceDualFunctional`'s third and fourth clauses
+for the refinement, and the seventh clause of `IsQAdicWeilSystem` (the
+INTEGER-tower compatibility) for the limit. -/
+theorem exists_tateWeilPairing_of_qAdicWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q])
+    (hLadd : ∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+      L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLgal : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ),
+      ζ ^ q ^ k = 1 →
+      L k (Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLtower : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+      L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLinj : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+      (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1))
+    (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+      ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E :=
+  sorry
+
 /-- **Trace duality refines the `q`-adic Weil system to the `I`-adic one**
-(SORRY LEAF — step 3 of the classical route, in its geometric half: the
-passage from `μ_{q^N}`-valued pairings on `A[q^N]` to `𝒪_D/I^k`-valued
-pairings on `A[I^k]`, along the inverse different).
+(PROVEN 2026-07-29 over `exists_tateWeilPairing_of_qAdicWeilSystem` and
+`exists_tatePt_val_eq` — step 3 of the classical route, in its geometric
+half: the passage from `μ_{q^N}`-valued pairings on `A[q^N]` to
+`𝒪_D/I^k`-valued pairings on `A[I^k]`, along the inverse different).
+
+WHAT IS PROVEN HERE is exactly the passage from the TATE-MODULE form to
+the LEVELWISE system — the step the analysis below identifies as the trap,
+and the one the naive route gets wrong.  Given the `O`-valued alternating
+form `E` on `TatePt m x I π` of `IsTateWeilPairing`, put
+
+  `e k y z := E (lift k y) (lift k z)`,
+
+`lift k` being any section of the reduction `T ↠ A[Iᵏ]`, which exists by
+`exists_tatePt_val_eq`.  Then EVERY clause of `IsTateWeilSystem` is a
+one-line consequence of a structural clause of `IsTateWeilPairing` together
+with its CONTINUITY clause (`E` is determined modulo `(j π)ᵏ` by the
+level-`k` components), because the structural clauses hold on the nose for
+Tate points whose components realise the operation, and continuity moves
+the answer to whichever lift `lift k` happened to choose.  The TOWER clause
+needs no structural input at all: if `t.1 (k+1) = y` then
+`t.1 k = π · y` by the defining relation of `TatePt`, so
+`e (k+1) y z` and `e k (π y) (π z)` are values of `E` at Tate points with
+the SAME level-`k` components, and continuity alone gives the congruence.
+That is the formal content of the docstring's observation that "a lift of
+`y ∈ A[I^{k+1}]` is also a lift of `π y ∈ A[Iᵏ]`".
+
+Perfectness transports because `Ideal.span {j π} ≤ IsLocalRing.maximalIdeal
+O`: `j π` is a nonunit, since `Ideal.span {j π} = ⊤` would make `hker` at
+`n = 1` say that every element of `𝒪_D` lies in `I`, contradicting
+`hI.ne_top`.
+
+The residue — the construction of `E` itself — is
+`exists_tateWeilPairing_of_qAdicWeilSystem`, whose docstring carries TWO
+CORRECTIONS to the route recorded below: the levelwise constant is off by
+`(qᵏ/πᵏ)²` (which vanishes mod `Iᵏ` when `I` is ramified over `q` and
+breaks the tower clause when it is not), and the limit prescribed below is
+NOT CAUCHY even in the unramified case — `D = ℚ`, `q = 5`, `I = (5)`,
+`π = 10` is a legal witness.  Read those before acting on this one.
 
 Every hypothesis is consumed, and the shape of the intended proof is fixed
 by two facts that took some work to establish and that a successor should
@@ -8407,8 +8683,141 @@ theorem exists_tateWeilSystem_of_qAdicWeilSystem
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
       ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
-    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e :=
-  sorry
+    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e := by
+  classical
+  obtain ⟨E, hEadd1, hEadd2, hEalt, hEbil, hEgal, hEcont, t₀, s₀, hunit⟩ :=
+    exists_tateWeilPairing_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
+      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+  -- ### torsion bookkeeping
+  have hadd_mem : ∀ (k : ℕ) (y y' : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
+      y' ∈ (m.torsion x (I ^ k)).1 → ab.add y y' ∈ (m.torsion x (I ^ k)).1 := by
+    intro k y y' hy hy'
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun a ha => ?_
+    rw [m.act_addPt a y y', (mem_torsion_iff m x (I ^ k) y).mp hy a ha,
+      (mem_torsion_iff m x (I ^ k) y').mp hy' a ha]
+    exact ab.zero_add _
+  have hact_mem : ∀ (k : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (I ^ k)).1 → m.act a y ∈ (m.torsion x (I ^ k)).1 := by
+    intro k a y hy
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun b hb => ?_
+    rw [← m.act_mul b a y]
+    exact (mem_torsion_iff m x (I ^ k) y).mp hy _ (Ideal.mul_mem_right a _ hb)
+  have hpi_mem : ∀ (k : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ (k + 1))).1 →
+      m.act π y ∈ (m.torsion x (I ^ k)).1 := by
+    intro k y hy
+    refine (mem_torsion_iff m x (I ^ k) _).mpr fun a ha => ?_
+    rw [← m.act_mul a π y]
+    refine (mem_torsion_iff m x (I ^ (k + 1)) y).mp hy _ ?_
+    rw [pow_succ]
+    exact Ideal.mul_mem_mul ha hπ
+  -- ### the three Tate-point constructions the structural clauses quantify over
+  have hsum : ∀ t t' : TatePt m x I π, ∃ t'' : TatePt m x I π,
+      ∀ n, t''.1 n = ab.add (t.1 n) (t'.1 n) := by
+    intro t t'
+    refine ⟨⟨fun n => ab.add (t.1 n) (t'.1 n), fun n => hadd_mem n _ _ (t.2.1 n) (t'.2.1 n),
+      fun n => ?_⟩, fun n => rfl⟩
+    rw [m.act_addPt π (t.1 (n + 1)) (t'.1 (n + 1)), t.2.2 n, t'.2.2 n]
+  have hactT : ∀ (a : NumberField.RingOfIntegers D) (t : TatePt m x I π),
+      ∃ t' : TatePt m x I π, ∀ n, t'.1 n = m.act a (t.1 n) := by
+    intro a t
+    refine ⟨⟨fun n => m.act a (t.1 n), fun n => hact_mem n a _ (t.2.1 n), fun n => ?_⟩,
+      fun n => rfl⟩
+    rw [← m.act_mul π a, mul_comm, m.act_mul, t.2.2 n]
+  have hgalT : ∀ (σ : Field.absoluteGaloisGroup F) (t : TatePt m x I π),
+      ∃ t' : TatePt m x I π, ∀ n, t'.1 n = ab.galSMul x σ (t.1 n) := by
+    intro σ t
+    refine ⟨⟨fun n => ab.galSMul x σ (t.1 n),
+      fun n => (m.torsion x (I ^ n)).2 σ _ (t.2.1 n), fun n => ?_⟩, fun n => rfl⟩
+    rw [← m.galSMul_act x σ π (t.1 (n + 1)), t.2.2 n]
+  -- ### a section of the reduction `T ↠ A[Iᵏ]`
+  obtain ⟨lf, hlfval⟩ : ∃ lf : ℕ → GeomFibrePt f x → TatePt m x I π,
+      ∀ (k : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 → (lf k y).1 k = y := by
+    refine ⟨fun k y => if h : ∃ t : TatePt m x I π, t.1 k = y then h.choose else t₀, ?_⟩
+    intro k y hy
+    have h : ∃ t : TatePt m x I π, t.1 k = y := exists_tatePt_val_eq m x I hI π hπ hπ2 k y hy
+    show (if h' : ∃ t : TatePt m x I π, t.1 k = y then h'.choose else t₀).1 k = y
+    rw [dif_pos h]
+    exact h.choose_spec
+  -- ### `(j π)` sits in the maximal ideal, which is what transports perfectness
+  have hjπ : ¬ IsUnit (j π) := by
+    intro hu
+    have htop : Ideal.span {j π} = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+    have h1 : (1 : NumberField.RingOfIntegers D) ∈ I ^ 1 := by
+      refine (hker 1 1).mp ?_
+      rw [pow_one, htop]
+      trivial
+    rw [pow_one] at h1
+    exact hI.ne_top (Ideal.eq_top_of_isUnit_mem I h1 isUnit_one)
+  have hspan_le : Ideal.span {j π} ≤ IsLocalRing.maximalIdeal O :=
+    Ideal.span_le.mpr (Set.singleton_subset_iff.mpr
+      (IsLocalRing.mem_maximalIdeal _ |>.mpr hjπ))
+  refine ⟨fun k y z => E (lf k y) (lf k z), ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity in the first variable
+    intro k y y' z hy hy' hz
+    obtain ⟨t'', ht''⟩ := hsum (lf k y) (lf k y')
+    have h1 : E t'' (lf k z) = E (lf k y) (lf k z) + E (lf k y') (lf k z) :=
+      hEadd1 (lf k y) (lf k y') t'' (lf k z) ht''
+    have h2 : E (lf k (ab.add y y')) (lf k z) - E t'' (lf k z) ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t'' _ _ ?_ rfl
+      rw [hlfval k _ (hadd_mem k y y' hy hy'), ht'' k, hlfval k y hy, hlfval k y' hy']
+    rwa [h1] at h2
+  · -- additivity in the second variable
+    intro k y z z' hy hz hz'
+    obtain ⟨s'', hs''⟩ := hsum (lf k z) (lf k z')
+    have h1 : E (lf k y) s'' = E (lf k y) (lf k z) + E (lf k y) (lf k z') :=
+      hEadd2 (lf k y) (lf k z) (lf k z') s'' hs''
+    have h2 : E (lf k y) (lf k (ab.add z z')) - E (lf k y) s'' ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ _ _ s'' rfl ?_
+      rw [hlfval k _ (hadd_mem k z z' hz hz'), hs'' k, hlfval k z hz, hlfval k z' hz']
+    rwa [h1] at h2
+  · -- alternating
+    intro k y _
+    show E (lf k y) (lf k y) ∈ Ideal.span {j π} ^ k
+    rw [hEalt (lf k y)]
+    exact Ideal.zero_mem _
+  · -- `𝒪_D`-bilinearity
+    intro k a y z hy hz
+    obtain ⟨t', ht'⟩ := hactT a (lf k y)
+    have h1 : E t' (lf k z) = j a * E (lf k y) (lf k z) := hEbil a (lf k y) t' (lf k z) ht'
+    have h2 : E (lf k (m.act a y)) (lf k z) - E t' (lf k z) ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t' _ _ ?_ rfl
+      rw [hlfval k _ (hact_mem k a y hy), ht' k, hlfval k y hy]
+    rwa [h1] at h2
+  · -- `Γ_F`-equivariance
+    intro k σ y z hy hz
+    obtain ⟨t', ht'⟩ := hgalT σ (lf k y)
+    obtain ⟨s', hs'⟩ := hgalT σ (lf k z)
+    have h1 : E t' s' = algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+        * E (lf k y) (lf k z) := hEgal σ (lf k y) t' (lf k z) s' ht' hs'
+    have h2 : E (lf k (ab.galSMul x σ y)) (lf k (ab.galSMul x σ z)) - E t' s'
+        ∈ Ideal.span {j π} ^ k := by
+      refine hEcont k _ t' _ s' ?_ ?_
+      · rw [hlfval k _ ((m.torsion x (I ^ k)).2 σ y hy), ht' k, hlfval k y hy]
+      · rw [hlfval k _ ((m.torsion x (I ^ k)).2 σ z hz), hs' k, hlfval k z hz]
+    rwa [h1] at h2
+  · -- tower compatibility: continuity alone, at the SAME level-`k` components
+    intro k y z hy hz
+    show E (lf (k + 1) y) (lf (k + 1) z) - E (lf k (m.act π y)) (lf k (m.act π z))
+      ∈ Ideal.span {j π} ^ k
+    refine hEcont k (lf (k + 1) y) (lf k (m.act π y)) (lf (k + 1) z) (lf k (m.act π z)) ?_ ?_
+    · rw [hlfval k _ (hpi_mem k y hy), ← (lf (k + 1) y).2.2 k, hlfval (k + 1) y hy]
+    · rw [hlfval k _ (hpi_mem k z hz), ← (lf (k + 1) z).2.2 k, hlfval (k + 1) z hz]
+  · -- perfectness
+    refine ⟨t₀, s₀, ?_⟩
+    have h2 : E t₀ s₀ - E (lf 1 (t₀.1 1)) (lf 1 (s₀.1 1)) ∈ Ideal.span {j π} ^ 1 := by
+      refine hEcont 1 t₀ (lf 1 (t₀.1 1)) s₀ (lf 1 (s₀.1 1)) ?_ ?_
+      · exact (hlfval 1 (t₀.1 1) (t₀.2.1 1)).symm
+      · exact (hlfval 1 (s₀.1 1) (s₀.2.1 1)).symm
+    rw [pow_one] at h2
+    by_contra hcon
+    have hmem : E (lf 1 (t₀.1 1)) (lf 1 (s₀.1 1)) ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hcon
+    have : E t₀ s₀ ∈ IsLocalRing.maximalIdeal O := by
+      have := Ideal.add_mem _ (hspan_le h2) hmem
+      simpa using this
+    exact (IsLocalRing.mem_maximalIdeal _).mp this hunit
 
 /-- **The torsion of a Hilbert–Blumenthal abelian scheme carries a
 compatible system of `I`-adic Weil pairings** (DECOMPOSED 2026-07-27 into
