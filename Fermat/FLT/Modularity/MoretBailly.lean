@@ -3862,6 +3862,243 @@ theorem geometricallyConnected_of_connectedSpace_baseChange
       (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k T))) := by
   sorry
 
+/-! ### The base-change plumbing for the Bertini connectedness leaf
+
+**ADDED 2026-07-29** while cutting `exists_bertiniConnectedLocus_algebraicClosure`
+(below) into its two ledger items.  Everything in this namespace is PROVEN; it is
+the machinery that lets that leaf be stated over an ALGEBRAICALLY CLOSED base,
+which is where every classical proof of Bertini irreducibility lives.
+
+It is deliberately kept in its own namespace: `irreducibleSpace_primeSpectrum_of_ringEquiv`
+already exists ~4600 lines BELOW (line ~8544 at the time of writing), and declaration
+order forbids reuse, so a same-named copy here would be a hard collision.  The version
+here is a one-liner over `PrimeSpectrum.homeomorphOfRingEquiv`, which is cheaper than
+the `Ideal.comap` argument used down there; if this file is ever reorganised the three
+copies should be merged. -/
+
+namespace BertiniBaseChange
+
+open CategoryTheory AlgebraicGeometry _root_.TensorProduct
+
+/-- Connectedness of a prime spectrum transports along a ring isomorphism. -/
+theorem connectedSpace_primeSpectrum_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
+    (e : R ≃+* S) (h : ConnectedSpace (PrimeSpectrum R)) : ConnectedSpace (PrimeSpectrum S) :=
+  (PrimeSpectrum.homeomorphOfRingEquiv e).connectedSpace_iff.mp h
+
+/-- Irreducibility of a prime spectrum transports along a ring isomorphism. -/
+theorem irreducibleSpace_primeSpectrum_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
+    (e : R ≃+* S) (h : IrreducibleSpace (PrimeSpectrum R)) : IrreducibleSpace (PrimeSpectrum S) :=
+  (PrimeSpectrum.homeomorphOfRingEquiv e).irreducibleSpace_iff.mp h
+
+/-- The image of `k` in `K ⊗[k] S` computed on the right-hand factor is the image of `K`
+computed on the left-hand one.  This is the one identity the whole base change needs, and
+both `subring_closure_baseChange` and the ideal identification in the glue consume it. -/
+theorem one_tmul_algebraMap {k : Type u} [Field k] {S : Type u} [CommRing S] [Algebra k S]
+    (K : Type u) [Field K] [Algebra k K] (c : k) :
+    (1 : K) ⊗ₜ[k] (algebraMap k S c) = algebraMap K (K ⊗[k] S) (algebraMap k K c) := by
+  rw [← Algebra.TensorProduct.algebraMap_apply' (A := K) (B := S) c,
+    ← IsScalarTower.algebraMap_apply k K (K ⊗[k] S) c]
+
+/-- **Generation passes to the base change.**  If the `xᵢ` generate `S` as a ring over `k`,
+then the `1 ⊗ xᵢ` generate `K ⊗[k] S` as a ring over `K`.
+
+This is what keeps the FALSITY AUDIT's hypothesis `hgen` alive across the reduction to `k̄`:
+`hgen` is exactly what makes `Spec S ↪ 𝔸ⁿ` a closed embedding, and the leaf below is FALSE
+without it, so it may not be dropped when changing base. -/
+theorem subring_closure_baseChange {k : Type u} [Field k] {S : Type u} [CommRing S] [Algebra k S]
+    (K : Type u) [Field K] [Algebra k K] {n : ℕ} (x : Fin n → S)
+    (hgen : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) = ⊤) :
+    Subring.closure (Set.range (algebraMap K (K ⊗[k] S)) ∪
+      Set.range (fun i => (1 : K) ⊗ₜ[k] x i)) = ⊤ := by
+  classical
+  set T : Subring (K ⊗[k] S) := Subring.closure (Set.range (algebraMap K (K ⊗[k] S)) ∪
+      Set.range (fun i => (1 : K) ⊗ₜ[k] x i)) with hT
+  have hincl : ∀ s : S, (1 : K) ⊗ₜ[k] s ∈ T := by
+    intro s
+    have hsub : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) ≤
+        T.comap (Algebra.TensorProduct.includeRight :
+          S →ₐ[k] K ⊗[k] S).toRingHom := by
+      refine Subring.closure_le.mpr ?_
+      rintro a (⟨c, rfl⟩ | ⟨i, rfl⟩)
+      · show ((1 : K) ⊗ₜ[k] (algebraMap k S c)) ∈ T
+        rw [one_tmul_algebraMap K c]
+        exact Subring.subset_closure (Or.inl ⟨_, rfl⟩)
+      · show ((1 : K) ⊗ₜ[k] (x i)) ∈ T
+        exact Subring.subset_closure (Or.inr ⟨i, rfl⟩)
+    have := hgen ▸ hsub
+    exact this (Subring.mem_top s)
+  refine top_unique fun z _ => ?_
+  induction z using TensorProduct.induction_on with
+  | zero => exact zero_mem _
+  | tmul a s =>
+      have hprod : a ⊗ₜ[k] s = (algebraMap K (K ⊗[k] S) a) * ((1 : K) ⊗ₜ[k] s) := by
+        simp [Algebra.TensorProduct.algebraMap_apply, Algebra.TensorProduct.tmul_mul_tmul]
+      rw [hprod]
+      exact mul_mem (Subring.subset_closure (Or.inl ⟨a, rfl⟩)) (hincl s)
+  | add p q hp hq => exact add_mem (hp trivial) (hq trivial)
+
+/-- **BASE CHANGE COMMUTES WITH THE HYPERPLANE QUOTIENT**:
+`(K ⊗[k] S) ⧸ I(K ⊗[k] S) ≃+* K ⊗[k] (S ⧸ I)`.
+
+This is the bridge the PREREQUISITE LEDGER below calls for.  A 2026-07-28 correction to
+that ledger points at `Algebra.TensorProduct.quotIdealMapEquivTensorQuot` composed with
+`Algebra.TensorProduct.cancelBaseChange`; that route is real but needs the LOCAL instance
+`Algebra.TensorProduct.rightAlgebra` (`Algebra B (A ⊗[R] B)` is deliberately not global)
+and then a side-swap, i.e. exactly the `Module`-versus-`Algebra` instance ambiguity that
+`nonempty_ringEquiv_tensor_of_baseRingEquiv`'s docstring records as expensive here.  The
+explicit two-sided inverse below avoids all of it and is self-contained. -/
+noncomputable def baseChangeQuotientEquiv {k : Type u} [Field k] {S : Type u} [CommRing S]
+    [Algebra k S] (K : Type u) [Field K] [Algebra k K] (I : Ideal S) :
+    ((K ⊗[k] S) ⧸ (I.map (Algebra.TensorProduct.includeRight :
+        S →ₐ[k] K ⊗[k] S).toRingHom)) ≃+* (K ⊗[k] (S ⧸ I)) := by
+  set ι : S →ₐ[k] K ⊗[k] S := Algebra.TensorProduct.includeRight with hι
+  set J : Ideal (K ⊗[k] S) := I.map ι.toRingHom with hJ
+  have hker : J ≤ RingHom.ker (Algebra.TensorProduct.map (AlgHom.id k K)
+      (Ideal.Quotient.mkₐ k I) : (K ⊗[k] S) →ₐ[k] K ⊗[k] (S ⧸ I)).toRingHom := by
+    rw [hJ]
+    refine Ideal.map_le_iff_le_comap.mpr fun s hs => ?_
+    simp only [Ideal.mem_comap, RingHom.mem_ker, AlgHom.toRingHom_eq_coe,
+      RingHom.coe_coe, hι, Algebra.TensorProduct.includeRight_apply,
+      Algebra.TensorProduct.map_tmul, AlgHom.coe_id, id_eq, Ideal.Quotient.mkₐ_eq_mk]
+    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hs, TensorProduct.tmul_zero]
+  let fwd : ((K ⊗[k] S) ⧸ J) →+* (K ⊗[k] (S ⧸ I)) :=
+    Ideal.Quotient.lift J _ hker
+  have hI : ∀ s ∈ I, (Ideal.Quotient.mkₐ k J).comp ι s = 0 := by
+    intro s hs
+    show Ideal.Quotient.mk J (ι s) = 0
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_map_of_mem _ hs)
+  let g : (S ⧸ I) →ₐ[k] ((K ⊗[k] S) ⧸ J) :=
+    Ideal.Quotient.liftₐ I ((Ideal.Quotient.mkₐ k J).comp ι) hI
+  let bwd : (K ⊗[k] (S ⧸ I)) →ₐ[k] ((K ⊗[k] S) ⧸ J) :=
+    Algebra.TensorProduct.lift ((Ideal.Quotient.mkₐ k J).comp Algebra.TensorProduct.includeLeft) g
+      (fun _ _ => mul_comm _ _)
+  have hfwd : ∀ (a : K) (s : S),
+      fwd (Ideal.Quotient.mk J (a ⊗ₜ[k] s)) = a ⊗ₜ[k] (Ideal.Quotient.mk I s) := fun _ _ => rfl
+  have hbwd : ∀ (a : K) (s : S),
+      bwd (a ⊗ₜ[k] (Ideal.Quotient.mk I s)) = Ideal.Quotient.mk J (a ⊗ₜ[k] s) := by
+    intro a s
+    show (Ideal.Quotient.mk J (a ⊗ₜ[k] (1 : S))) * (Ideal.Quotient.mk J ((1 : K) ⊗ₜ[k] s)) = _
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  refine RingEquiv.ofRingHom fwd bwd.toRingHom (RingHom.ext fun z => ?_) (RingHom.ext fun z => ?_)
+  · show fwd (bwd z) = z
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a s =>
+        obtain ⟨s, rfl⟩ := Ideal.Quotient.mk_surjective s
+        rw [hbwd a s, hfwd a s]
+    | add p q hp hq => rw [map_add, map_add, hp, hq]
+  · show bwd (fwd z) = z
+    obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective z
+    induction w using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a s => rw [hfwd a s, hbwd a s]
+    | add p q hp hq => rw [map_add, map_add, map_add, hp, hq]
+
+end BertiniBaseChange
+
+open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
+/-- **LEDGER ITEM 4, THE MATHEMATICAL FRONTIER: BERTINI IRREDUCIBILITY OVER AN
+ALGEBRAICALLY CLOSED FIELD** (sorry leaf, CUT 2026-07-29 out of
+`exists_bertiniConnectedLocus_algebraicClosure` below, which is now GLUE ONLY over this
+leaf and `topologicalKrullDim_le_baseChange`).
+
+For `K` algebraically closed of characteristic zero and `A` a smooth `K`-algebra with
+`Spec A` IRREDUCIBLE of dimension `≥ 2`, presented in coordinates `y : Fin n → A`: there
+is a nonzero `G ∈ K[X₀,…,X_n]` such that for every `K`-rational `w` off `G = 0` the
+hyperplane section `Spec (A ⧸ (ℓ_w))` is CONNECTED.
+
+WHY THIS IS THE RIGHT PLACE TO CUT.  The leaf below carries two separable obligations:
+transporting the dimension hypothesis across `k ↝ k̄` (ledger item 2), and Bertini itself
+(ledger item 4).  Everything else in that leaf — the descent of geometric irreducibility to
+plain irreducibility over `k̄`, the passage of `hgen` to the base change, and the
+identification `k̄ ⊗[k] (S ⧸ ℓ_v) ≅ (k̄ ⊗[k] S) ⧸ ℓ_w` — is PROVEN plumbing, and lives in
+`BertiniBaseChange` above.  What remains here is stated over an algebraically closed base,
+which is where every classical proof of Bertini lives, and it carries no `⊗`, no
+`GeometricallyIrreducible` and no `AlgebraicClosure`.
+
+HYPOTHESES, ALL LOAD-BEARING, AND THE COUNTEREXAMPLE FOR EACH.  These are inherited from
+the FALSITY AUDIT in `exists_bertiniConnectedLocus_algebra`'s docstring below, which
+established both with explicit witnesses; the audit applies verbatim here because this
+leaf's hypotheses are the images of that leaf's under the base change.
+
+* `hgen` (the `yᵢ` generate `A` over `K`, i.e. `Spec A ↪ 𝔸ⁿ` is a closed embedding).
+  Without it, take `n = 0` and `y` empty: `ℓ_w` degenerates to the constant `−w₀`, the
+  ideal is the unit ideal for every `w₀ ≠ 0`, `A ⧸ (ℓ_w)` is the ZERO ring and its `Spec`
+  is EMPTY — and mathlib's `ConnectedSpace` extends `Nonempty`, so the empty scheme is not
+  connected.  `K` is infinite, so a nonzero `G` misses only finitely many `w₀`; no `G` works.
+* `hdim`.  Without it, `A = K[s,t]/(s²+t²−1)`, `y = (s,t)`, is smooth, irreducible and of
+  dimension `1`, and a general line meets the conic in two distinct points, so the section
+  is nonempty but DISCONNECTED.  This one satisfies `hgen`, so the two are independent.
+
+THE ROUTE (from the ledger below, with its 2026-07-27 correction).  Take the projective
+closure `X̄ ⊆ ℙⁿ` of `Spec A`; for general `H`, `X̄ ∩ H` is IRREDUCIBLE (Bertini
+irreducibility, valid because `dim X̄ ≥ 2`), and `X̄ ∩ H ∩ H_∞` has dimension `dim X − 2`,
+so `X̄ ∩ H ⊄ H_∞` and the affine part `X ∩ H` is a nonempty open of an IRREDUCIBLE space,
+hence irreducible, hence connected.  Note the correction: it must be IRREDUCIBILITY of the
+general section, not merely connectedness — a nonempty open of a merely CONNECTED space
+need not be connected, so the Enriques–Severi–Zariski / Grothendieck connectedness theorem
+alone does not close the last step.
+
+WHAT IS AVAILABLE, RE-CHECKED 2026-07-29.  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`
+carries the projective-closure interface (`ProjChart`, `nonempty_projChart`,
+`exists_isOpenImmersion_isProper_of_proj`, and `exists_isOpenImmersion_isProper` — the
+last of these is PROVEN and still present, contrary to a report that it had been deleted
+as free-floating).  **This module still does not import that file**; the import would be
+acyclic (its own imports are `Mathlib`-only) but its cone cost should be measured first.
+Bertini itself is absent from `Mathlib` and from `~/cs/FLT` (`grep -rlni bertini`
+returns nothing in either), so item 4 remains genuinely open. -/
+theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
+    [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A]
+    (hirr : IrreducibleSpace (PrimeSpectrum A))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of A)))
+    {n : ℕ} (y : Fin n → A)
+    (hgen : Subring.closure (Set.range (algebraMap K A) ∪ Set.range y) = ⊤) :
+    ∃ G : MvPolynomial (Fin (n + 1)) K, G ≠ 0 ∧
+      ∀ w : Fin (n + 1) → K, MvPolynomial.eval w G ≠ 0 →
+        ConnectedSpace ↥(AlgebraicGeometry.Spec (CommRingCat.of
+          (A ⧸ Ideal.span {(∑ i : Fin n, algebraMap K A (w i.castSucc) * y i)
+            - algebraMap K A (w (Fin.last n))}))) := by
+  sorry
+
+open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
+/-- **LEDGER ITEM 2: THE KRULL DIMENSION DOES NOT DROP UNDER A BASE FIELD EXTENSION**
+(sorry leaf, CUT 2026-07-29 out of `exists_bertiniConnectedLocus_algebraicClosure` below).
+
+This is what transports `hdim` across the reduction to `k̄`.  Only the `≤` direction is
+stated, because only that direction is consumed: the leaf below has `1 < dim (Spec S)` and
+needs `1 < dim (Spec (k̄ ⊗[k] S))`.  Equality is true and is the textbook statement, but
+the extra direction would be an unconsumed obligation.
+
+TRUE FOR AN ARBITRARY commutative `k`-algebra `S` — no finiteness, no smoothness.  `K` is
+free as a `k`-module (a field extension has a basis), so `K ⊗[k] S` is a free, hence
+FAITHFULLY FLAT, `S`-module.  Faithful flatness gives both halves of the standard argument:
+`Spec (K ⊗[k] S) → Spec S` is SURJECTIVE, and flatness gives GOING-DOWN, so any chain of
+primes of `S` lifts to a chain of the same length upstairs.
+
+THE PIECES, ALL PRESENT ON THIS PIN (checked 2026-07-29) — this leaf is assembly, not new
+theory, and it is the cheaper of the two leaves cut here:
+
+* `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim` reduces the statement to
+  `ringKrullDim S ≤ ringKrullDim (K ⊗[k] S)`;
+* `Algebra.HasGoingDown.of_flat` is an instance, so going-down is free from flatness;
+* `Ideal.exists_ltSeries_of_hasGoingDown` lifts an `LTSeries` of `PrimeSpectrum S` to one
+  of the SAME LENGTH in `PrimeSpectrum (K ⊗[k] S)`, given a prime lying over its top;
+* `Module.Flat.baseChange` supplies flatness.
+
+THE ONE FRICTION POINT, recorded so the next owner does not rediscover it.
+`Algebra B (A ⊗[R] B)` is NOT a global instance — `Algebra.TensorProduct.rightAlgebra` is
+an `abbrev` carrying `attribute [local instance]` — so the `S`-algebra structure on
+`K ⊗[k] S` must be introduced with `letI`, and `Module.Flat.baseChange` delivers
+`Flat S (S ⊗[k] K)` with the OTHER factor order, so a side-swap is needed.  That is the
+same instance ambiguity `nonempty_ringEquiv_tensor_of_baseRingEquiv`'s docstring below
+records as expensive in this file, which is why this was left as a leaf rather than
+proven inline while cutting. -/
+theorem topologicalKrullDim_le_baseChange {k : Type u} [Field k] {S : Type u} [CommRing S]
+    [Algebra k S] (K : Type u) [Field K] [Algebra k K] :
+    topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)) ≤
+      topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of (K ⊗[k] S))) := by
+  sorry
+
 open _root_.TensorProduct in
 /-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (sorry leaf, NAMED
 2026-07-28 — the other half of the anonymous `obtain … := sorry` that used to sit
@@ -3915,7 +4152,31 @@ change what a prover here should do:
    `public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification`
    here; it is upstream of everything in this file (its own imports are
    `Mathlib`-only) so the import is acyclic, and its cone cost should be
-   measured before adopting the route. -/
+   measured before adopting the route.
+
+**PROVEN 2026-07-29 OVER TWO NAMED LEAVES — this is now GLUE ONLY.** The body below
+consumes exactly `exists_bertiniConnectedLocus_isAlgClosed` (ledger item 4, the Bertini
+frontier, stated over an algebraically closed base) and `topologicalKrullDim_le_baseChange`
+(ledger item 2), both stated ABOVE, plus the PROVEN `BertiniBaseChange` plumbing.  What the
+glue establishes on its own, and what therefore no longer needs an owner:
+
+* `hgi` (a statement about a morphism of `Scheme.{u}`) becomes plain
+  `IrreducibleSpace (PrimeSpectrum (k̄ ⊗[k] S))`, via
+  `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` and `pullbackSpecIso` — the
+  same idiom `isPrime_radical_integralSystemIdeal_algClosureRat` runs further down, but
+  without its `ULift` layer, since `k` and `AlgebraicClosure k` share a universe here;
+* `hgen` passes to the base change (`subring_closure_baseChange`), which is what keeps the
+  FALSITY AUDIT's counterexample excluded on the far side of the reduction;
+* `k̄ ⊗[k] (S ⧸ ℓ_v) ≅ (k̄ ⊗[k] S) ⧸ ℓ_w` (`baseChangeQuotientEquiv`), the bridge the
+  ledger's 2026-07-28 correction identified, built here as an explicit two-sided inverse
+  rather than through `quotIdealMapEquivTensorQuot` — see that definition's docstring for
+  why the advertised route is more expensive than it looks.
+
+`Algebra.Smooth K (K ⊗[k] S)` needs no work at all: `Algebra.Smooth.baseChange` is an
+instance.  The ledger's judgement that cutting into all four items "would buy nothing"
+was right about items 1 and 3 and wrong about 2 and 4 — those two are genuinely
+independent, and separating them means the Bertini frontier is now stated with no `⊗`,
+no `GeometricallyIrreducible` and no `AlgebraicClosure` in sight. -/
 theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [CharZero k]
     {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
     (hgi : AlgebraicGeometry.GeometricallyIrreducible
@@ -3930,7 +4191,60 @@ theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [Ch
             (AlgebraicClosure k ⊗[k]
               (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
                 - algebraMap k S (v (Fin.last n))})))) := by
-  sorry
+  classical
+  set K := AlgebraicClosure k
+  set A := K ⊗[k] S with hA
+  -- LEDGER ITEM 1's DUAL, but for IRREDUCIBILITY and in the easy direction: `hgi` read at
+  -- the algebraic closure gives plain topological irreducibility of the base change.  This
+  -- is the idiom `isPrime_radical_integralSystemIdeal_algClosureRat` below already runs,
+  -- minus its `ULift` gymnastics — `k` and `AlgebraicClosure k` are both in `Type u` here.
+  have hgeo : AlgebraicGeometry.geometrically (fun X => IrreducibleSpace ↥X)
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k S))) :=
+    AlgebraicGeometry.GeometricallyIrreducible.eq_geometrically ▸ hgi
+  have hpb := (AlgebraicGeometry.geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms
+      (P := fun X => IrreducibleSpace ↥X) (R := k)).mp hgeo K
+  have h1 := CategoryTheory.ObjectProperty.prop_of_iso
+      (P := (fun X : AlgebraicGeometry.Scheme.{u} => IrreducibleSpace ↥X))
+      (AlgebraicGeometry.pullbackSpecIso k S K) hpb
+  have h2 : IrreducibleSpace (PrimeSpectrum (S ⊗[k] K)) := h1
+  have hirr : IrreducibleSpace (PrimeSpectrum A) :=
+    BertiniBaseChange.irreducibleSpace_primeSpectrum_of_ringEquiv
+      (Algebra.TensorProduct.comm k S K).toRingEquiv h2
+  -- LEDGER ITEM 2: transport `hdim` across the base change.
+  have hdimA : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of A)) :=
+    lt_of_lt_of_le hdim (topologicalKrullDim_le_baseChange K)
+  -- `hgen` passes to the base change; the FALSITY AUDIT below is why it may not be dropped.
+  have hgenA : Subring.closure (Set.range (algebraMap K A) ∪
+      Set.range (fun i => (1 : K) ⊗ₜ[k] x i)) = ⊤ :=
+    BertiniBaseChange.subring_closure_baseChange K x hgen
+  -- LEDGER ITEM 4: Bertini itself, over the algebraically closed base.
+  obtain ⟨G, hG0, hG⟩ :=
+    exists_bertiniConnectedLocus_isAlgClosed hirr hdimA (fun i => (1 : K) ⊗ₜ[k] x i) hgenA
+  refine ⟨G, hG0, fun v hv => ?_⟩
+  have hGv := hG ((algebraMap k K) ∘ v) hv
+  set ℓ : S := (∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+      - algebraMap k S (v (Fin.last n)) with hℓ
+  -- The hyperplane cut upstairs is the extension of the hyperplane cut downstairs.
+  have hmap : (Ideal.span {ℓ}).map
+      (Algebra.TensorProduct.includeRight : S →ₐ[k] K ⊗[k] S).toRingHom =
+      Ideal.span {(∑ i : Fin n, algebraMap K A (((algebraMap k K) ∘ v) i.castSucc) *
+        ((1 : K) ⊗ₜ[k] x i)) - algebraMap K A (((algebraMap k K) ∘ v) (Fin.last n))} := by
+    have helt : (Algebra.TensorProduct.includeRight :
+        S →ₐ[k] K ⊗[k] S).toRingHom ℓ =
+        (∑ i : Fin n, algebraMap K A (((algebraMap k K) ∘ v) i.castSucc) *
+          ((1 : K) ⊗ₜ[k] x i)) - algebraMap K A (((algebraMap k K) ∘ v) (Fin.last n)) := by
+      rw [hℓ]
+      simp only [map_sub, map_sum, map_mul, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
+        Algebra.TensorProduct.includeRight_apply, Function.comp_apply]
+      rw [BertiniBaseChange.one_tmul_algebraMap (S := S) K (v (Fin.last n))]
+      refine congrArg (fun t => t - algebraMap K A (algebraMap k K (v (Fin.last n)))) ?_
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [BertiniBaseChange.one_tmul_algebraMap (S := S) K (v i.castSucc)]
+    rw [Ideal.map_span, Set.image_singleton, helt]
+  rw [← hmap] at hGv
+  -- Base change commutes with the hyperplane quotient.
+  exact BertiniBaseChange.connectedSpace_primeSpectrum_of_ringEquiv
+    (BertiniBaseChange.baseChangeQuotientEquiv (S := S) K (Ideal.span {ℓ})) hGv
 
 /-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
 2026-07-27; cut out of
