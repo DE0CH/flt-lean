@@ -57762,18 +57762,431 @@ proof is:
    `u|_B ∘ ψ ∘ u|_B = [m]_A ∘ u|_B` gives `u|_B ∘ ψ = [m]_A`.  This step
    needs no polarisation and no complement.
 
-Then `v := ψ ≫ b`.  The composition is discharged below; the two steps
-are the two leaves.
+Then `v := ψ ≫ b`.  The composition is discharged below.
 
 **Why this is a decomposition and not a relocation.**  Step 2 with the
 finiteness hypothesis DELETED is step 1 + step 2, i.e. the whole theorem
 again — so `_hfin` on the second leaf is what makes the cut pay, and a
 reviewer who "generalises" it away has re-created the original node.  It
 is recorded on that leaf as an explicitly non-load-bearing hypothesis for
-exactly this reason. -/
+exactly this reason.
 
-/-- **THE ISOGENY COMPLEMENT OF THE KERNEL OF A SURJECTION** (sorry leaf,
-new 2026-07-28) — step 1 of the quotient half of Poincaré reducibility:
+**SECOND CUT, 2026-07-29: both steps are now PROVEN, and the two surviving
+leaves are strictly smaller than the ones this header described.**
+
+* Step 1 keeps only its geometry.  `isFinite_of_isFinite_kerHom` (proven in
+  the block below: shearing plus Zariski's main theorem) says a homomorphism
+  with FINITE KERNEL is a FINITE MORPHISM, so the leaf
+  `exists_finiteKernelComplement_of_surjective_isAdditiveOn` has to produce
+  only what Mumford's argument produces — `B ∩ ker u` finite — and
+  "proper + quasi-finite ⟹ finite" is off the list.
+* Step 2 splits at its own seam.  The descent
+  `exists_comp_eq_mulByNat_of_kernel_killed` is PROVEN, because the fppf
+  quotient was already in this file: the `EffectiveEpi` that
+  `epi_of_surjective_of_isAdditiveOn` discards after extracting an `Epi` is
+  exactly the universal property `[m]` needs.  What is left of step 2 is the
+  group-scheme fact alone — `exists_exponent_kernel_of_isFinite_isAdditiveOn`,
+  "the kernel of a finite homomorphism is killed by some `m > 0`" (Cartier +
+  Lagrange), where `_hfin` is load-bearing for TRUTH and has a witness. -/
+
+/-! #### Homomorphisms, the `ℕ`-action, and the kernel-shearing bridge
+
+New on 2026-07-29, and the reason the two leaves below ask for strictly less
+than they did when they were cut.  Nothing here is modular, and nothing but the
+last declaration is even about `ℚ` — `isFinite_of_isFinite_kerHom` needs
+`SpecQ` only to reach `isProper_of_abelianSchemeStruct`.
+
+The block delivers one theorem: **a homomorphism of abelian schemes whose
+KERNEL is a finite scheme is a FINITE MORPHISM**.  That is Zariski's main
+theorem applied after the classical shearing
+`A ×_{v, B, v} A ⟶ A ×_S ker v`, `(x, y) ↦ (x, y - x)`, and it is a
+`v`-generic rerun of the `[n]`-specific argument already in
+`Modularity/AbelianSchemeIsogeny.lean` (`finite_preimage_mulByNat_of_isFinite_ker`),
+whose section header records in terms that the route is `n`-generic.  Only the
+`[n]`-specific input changes: `nsmul_val`, which turned
+`[n] ∘ q₂ = [n] ∘ q₁` into `n • (q₂ - q₁) = 0`, becomes
+`IsAdditiveOn.post_sub` applied to `pullback.condition`.
+
+The three `IsAdditiveOn` lemmas that open the block are used both here and by
+the descent lemma below; `IsAdditiveOn.mulByNat_comp_eq` — a homomorphism
+intertwines the two multiplications by `n` — is the Yoneda reading of
+`post_nsmul` at the tautological point `RelPoint.self`, and it is what lets an
+identity between relative points be cancelled against an epimorphism. -/
+
+/-- **A homomorphism commutes with the `ℕ`-action on relative points**
+(PROVEN 2026-07-29) — induction on `n` over `IsAdditiveOn` and
+`IsAdditiveOn.post_zero`. -/
+theorem IsAdditiveOn.post_nsmul {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) (n : ℕ)
+    {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    letI := abA.addCommGroup g
+    letI := abB.addCommGroup g
+    RelPoint.post u hu (n • x) = n • RelPoint.post u hu x := by
+  letI := abA.addCommGroup g
+  letI := abB.addCommGroup g
+  induction n with
+  | zero =>
+      show RelPoint.post u hu (0 • x) = 0 • RelPoint.post u hu x
+      rw [zero_nsmul, zero_nsmul]
+      exact h.post_zero g
+  | succ n ih =>
+      rw [succ_nsmul, succ_nsmul]
+      show RelPoint.post u hu (abA.add (n • x) x) = _
+      rw [h, ih]
+      rfl
+
+set_option maxHeartbeats 1000000 in
+/-- **A homomorphism carries differences to differences** (PROVEN
+2026-07-29) — `map_sub` for the `AddMonoidHom` that `IsAdditiveOn` is.
+
+The `maxHeartbeats` bump is for the one `isDefEq` that identifies `IsAdditiveOn`
+— stated with `abA.add`, so that it needs no `letI` — with the `map_add` field
+of `AddMonoidHom.mk'`, stated with `+` for the `addCommGroup` instance.  The
+two are definitionally equal by construction of `addCommGroup`; unfolding
+`AddGroup.ofLeftAxioms` to see it is what costs.  (The `set_option` sits ABOVE
+this docstring, not between it and the `theorem`, where it is a parse error.) -/
+theorem IsAdditiveOn.post_sub {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu)
+    {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g) :
+    letI := abA.addCommGroup g
+    letI := abB.addCommGroup g
+    RelPoint.post u hu (x - y) = RelPoint.post u hu x - RelPoint.post u hu y := by
+  letI := abA.addCommGroup g
+  letI := abB.addCommGroup g
+  have hm : ∀ a b : RelPoint af g,
+      RelPoint.post u hu (a + b) = RelPoint.post u hu a + RelPoint.post u hu b :=
+    fun a b => h a b
+  exact map_sub (AddMonoidHom.mk' (RelPoint.post u hu) hm) x y
+
+/-- **A homomorphism intertwines the two multiplication-by-`n` morphisms**
+(PROVEN 2026-07-29): `[n]_A ≫ u = u ≫ [n]_B`.
+
+This is `post_nsmul` read at the tautological relative point
+`RelPoint.self af` — whose underlying morphism is `𝟙 A`, so that both sides of
+`post_nsmul` become the displayed composites through `nsmul_val`.  It is the
+standard way this file turns a statement about relative points into an
+equation of morphisms (compare `hmor` in
+`exists_heckeIsotypicDecomposition_atkinLehnerStable`). -/
+theorem IsAdditiveOn.mulByNat_comp_eq {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) (n : ℕ) :
+    abA.mulByNat n ≫ u = u ≫ abB.mulByNat n := by
+  letI := abA.addCommGroup af
+  letI := abB.addCommGroup af
+  have key := h.post_nsmul n (RelPoint.self af)
+  have h1 := congrArg Subtype.val key
+  rw [show (RelPoint.post u hu (n • RelPoint.self af)).1
+      = (n • RelPoint.self af).1 ≫ u from rfl,
+    abA.nsmul_val n (RelPoint.self af),
+    abB.nsmul_val n (RelPoint.post u hu (RelPoint.self af)),
+    show (RelPoint.post u hu (RelPoint.self af)).1 = (RelPoint.self af).1 ≫ u from rfl,
+    show (RelPoint.self af).1 = 𝟙 A from rfl] at h1
+  simpa using h1
+
+section KerHomShear
+
+open CategoryTheory.Limits
+
+/-- The first projection of `A ×_{v, B, v} A`, as a relative point of `af`. -/
+noncomputable def homShearFst {A B S : Scheme.{0}} {af : A ⟶ S} (v : A ⟶ B) :
+    RelPoint af (pullback.fst v v ≫ af) :=
+  ⟨pullback.fst v v, rfl⟩
+
+/-- The second projection of `A ×_{v, B, v} A`, as a relative point of `af`:
+it lies over the same base point as the first, because `v` is a morphism over
+`S`. -/
+noncomputable def homShearSnd {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (v : A ⟶ B)
+    (hv : v ≫ bf = af) : RelPoint af (pullback.fst v v ≫ af) :=
+  ⟨pullback.snd v v, by
+    calc pullback.snd v v ≫ af = pullback.snd v v ≫ (v ≫ bf) := by rw [hv]
+      _ = (pullback.snd v v ≫ v) ≫ bf := (Category.assoc _ _ _).symm
+      _ = (pullback.fst v v ≫ v) ≫ bf := by rw [pullback.condition]
+      _ = pullback.fst v v ≫ (v ≫ bf) := Category.assoc _ _ _
+      _ = pullback.fst v v ≫ af := by rw [hv]⟩
+
+/-- The difference `q₂ - q₁` of the two projections of `A ×_{v, B, v} A`, as a
+relative point.  Written with `add`/`neg` rather than `-` so that the
+definition carries no `letI`. -/
+noncomputable def homShearDiff {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (v : A ⟶ B) (hv : v ≫ bf = af) :
+    RelPoint af (pullback.fst v v ≫ af) :=
+  abA.add (homShearSnd v hv) (abA.neg (homShearFst v))
+
+/-- **`v ∘ (q₂ - q₁) = 0`** (PROVEN) — `pullback.condition` read through
+`IsAdditiveOn.post_sub`, and the whole reason the shearing lands in `ker v`.
+This is where the group structure enters; everything else in the block is
+formal. -/
+theorem post_homShearDiff_eq_zero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    RelPoint.post v hv (homShearDiff abA v hv) = abB.zero (pullback.fst v v ≫ af) := by
+  letI := abA.addCommGroup (pullback.fst v v ≫ af)
+  letI := abB.addCommGroup (pullback.fst v v ≫ af)
+  show RelPoint.post v hv (homShearSnd v hv - homShearFst v)
+      = (0 : RelPoint bf (pullback.fst v v ≫ af))
+  rw [hadd.post_sub, sub_eq_zero]
+  exact Subtype.ext pullback.condition.symm
+
+/-- `(q₂ - q₁) ≫ v` is the zero section: the difference factors through
+`ker v` (PROVEN). -/
+theorem homShearDiff_comp {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    (homShearDiff abA v hv).1 ≫ v = (pullback.fst v v ≫ af) ≫ abB.zeroSection := by
+  have h := congrArg Subtype.val (post_homShearDiff_eq_zero hadd)
+  rw [abB.zero_val] at h
+  exact h
+
+/-- **The structure morphism of `ker v = A ×_{v, B, e} S`** (PROVEN): the
+inclusion `ker v ⟶ A` followed by `af` is the second projection.  The
+`v`-generic form of `kerι_comp_structure`. -/
+theorem kerHomι_comp_structure {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abB : AbelianSchemeStruct bf) (v : A ⟶ B) (hv : v ≫ bf = af) :
+    pullback.fst v abB.zeroSection ≫ af = pullback.snd v abB.zeroSection := by
+  calc pullback.fst v abB.zeroSection ≫ af
+      = pullback.fst v abB.zeroSection ≫ (v ≫ bf) := by rw [hv]
+    _ = (pullback.fst v abB.zeroSection ≫ v) ≫ bf := (Category.assoc _ _ _).symm
+    _ = (pullback.snd v abB.zeroSection ≫ abB.zeroSection) ≫ bf := by rw [pullback.condition]
+    _ = pullback.snd v abB.zeroSection ≫ (abB.zeroSection ≫ bf) := Category.assoc _ _ _
+    _ = pullback.snd v abB.zeroSection := by rw [abB.zeroSection_comp, Category.comp_id]
+
+/-- **The shearing morphism** `A ×_{v, B, v} A ⟶ A ×_S ker v`,
+`(x, y) ↦ (x, y - x)`. -/
+noncomputable def kerHomShear {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    pullback v v ⟶ pullback af (pullback.snd v abB.zeroSection) :=
+  pullback.lift (pullback.fst v v)
+    (pullback.lift (homShearDiff abA v hv).1 (pullback.fst v v ≫ af) (homShearDiff_comp hadd))
+    (pullback.lift_snd _ _ _).symm
+
+/-- The shearing is the identity in the `A`-coordinate — the fact that makes it
+useful for comparing fibres of the two first projections (PROVEN). -/
+theorem kerHomShear_fst {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    kerHomShear hadd ≫ pullback.fst af (pullback.snd v abB.zeroSection) = pullback.fst v v := by
+  simp only [kerHomShear]
+  exact pullback.lift_fst _ _ _
+
+/-- The `ker v`-coordinate of the shearing is the difference (PROVEN). -/
+theorem kerHomShear_snd_fst {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    kerHomShear hadd ≫ pullback.snd af (pullback.snd v abB.zeroSection)
+        ≫ pullback.fst v abB.zeroSection = (homShearDiff abA v hv).1 := by
+  rw [← Category.assoc]
+  simp only [kerHomShear]
+  rw [pullback.lift_snd]
+  exact pullback.lift_fst _ _ _
+
+/-- The first projection of `A ×_S ker v`, as a relative point. -/
+noncomputable def homUnshearFst {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abB : AbelianSchemeStruct bf) (v : A ⟶ B) :
+    RelPoint af (pullback.fst af (pullback.snd v abB.zeroSection) ≫ af) :=
+  ⟨pullback.fst af (pullback.snd v abB.zeroSection), rfl⟩
+
+/-- The `ker v`-component of `A ×_S ker v`, read as a relative point of `A`. -/
+noncomputable def homUnshearSnd {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abB : AbelianSchemeStruct bf) (v : A ⟶ B) (hv : v ≫ bf = af) :
+    RelPoint af (pullback.fst af (pullback.snd v abB.zeroSection) ≫ af) :=
+  ⟨pullback.snd af (pullback.snd v abB.zeroSection) ≫ pullback.fst v abB.zeroSection, by
+    rw [Category.assoc, kerHomι_comp_structure abB v hv]
+    exact pullback.condition.symm⟩
+
+/-- **A point of `ker v` is killed by `v`** — by construction, but this is the
+form the shearing needs (PROVEN). -/
+theorem post_homUnshearSnd_eq_zero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abB : AbelianSchemeStruct bf) (v : A ⟶ B) (hv : v ≫ bf = af) :
+    RelPoint.post v hv (homUnshearSnd abB v hv)
+      = abB.zero (pullback.fst af (pullback.snd v abB.zeroSection) ≫ af) := by
+  refine Subtype.ext ?_
+  rw [abB.zero_val]
+  show (pullback.snd af (pullback.snd v abB.zeroSection) ≫ pullback.fst v abB.zeroSection)
+      ≫ v = _
+  rw [Category.assoc, pullback.condition (f := v) (g := abB.zeroSection), ← Category.assoc,
+    ← pullback.condition, Category.assoc]
+
+/-- **The inverse shearing** `A ×_S ker v ⟶ A ×_{v, B, v} A`,
+`(x, k) ↦ (x, x + k)`.  It lands in the fibre product because `v` kills `k`. -/
+noncomputable def kerHomUnshear {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    pullback af (pullback.snd v abB.zeroSection) ⟶ pullback v v :=
+  pullback.lift (homUnshearFst abB v).1
+    (abA.add (homUnshearFst abB v) (homUnshearSnd abB v hv)).1 (by
+      letI := abB.addCommGroup (pullback.fst af (pullback.snd v abB.zeroSection) ≫ af)
+      have h2 := hadd (homUnshearFst abB v) (homUnshearSnd abB v hv)
+      rw [post_homUnshearSnd_eq_zero abB v hv] at h2
+      have h3 : RelPoint.post v hv (abA.add (homUnshearFst abB v) (homUnshearSnd abB v hv))
+          = RelPoint.post v hv (homUnshearFst abB v) := by
+        rw [h2]
+        show RelPoint.post v hv (homUnshearFst abB v) + (0 : RelPoint bf _) = _
+        rw [add_zero]
+      exact (congrArg Subtype.val h3).symm)
+
+theorem kerHomUnshear_fst {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    kerHomUnshear hadd ≫ pullback.fst v v = (homUnshearFst abB v).1 := by
+  simp only [kerHomUnshear]
+  exact pullback.lift_fst _ _ _
+
+theorem kerHomUnshear_snd {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    kerHomUnshear hadd ≫ pullback.snd v v
+      = (abA.add (homUnshearFst abB v) (homUnshearSnd abB v hv)).1 := by
+  simp only [kerHomUnshear]
+  exact pullback.lift_snd _ _ _
+
+/-- **`kerHomShear` is a split monomorphism** (PROVEN):
+`(x, y) ↦ (x, y - x) ↦ (x, x + (y - x))` is the identity.  Only this round
+trip is proven — injectivity on points is all the fibre comparison needs — and
+the naturality axiom `pre_add` is what turns the computation into the group
+identity `x + (y - x) = y`. -/
+theorem kerHomShear_kerHomUnshear {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv) :
+    kerHomShear hadd ≫ kerHomUnshear hadd = 𝟙 _ := by
+  letI := abA.addCommGroup (pullback.fst v v ≫ af)
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, kerHomUnshear_fst hadd, Category.id_comp]
+    show kerHomShear hadd ≫ pullback.fst af _ = _
+    exact kerHomShear_fst hadd
+  · rw [Category.assoc, kerHomUnshear_snd hadd, Category.id_comp]
+    have hg : kerHomShear hadd ≫ (pullback.fst af (pullback.snd v abB.zeroSection) ≫ af)
+        = pullback.fst v v ≫ af := by
+      rw [← Category.assoc, kerHomShear_fst hadd]
+    have key := abA.pre_add (kerHomShear hadd) hg (homUnshearFst abB v) (homUnshearSnd abB v hv)
+    have h1 : RelPoint.pre (kerHomShear hadd) hg (homUnshearFst abB v) = homShearFst v :=
+      Subtype.ext (kerHomShear_fst hadd)
+    have h2 : RelPoint.pre (kerHomShear hadd) hg (homUnshearSnd abB v hv)
+        = homShearDiff abA v hv :=
+      Subtype.ext (by
+        show kerHomShear hadd ≫ (pullback.snd af (pullback.snd v abB.zeroSection)
+            ≫ pullback.fst v abB.zeroSection) = _
+        exact kerHomShear_snd_fst hadd)
+    rw [h1, h2] at key
+    have h3 : abA.add (homShearFst v) (homShearDiff abA v hv) = homShearSnd v hv := by
+      show homShearFst v + homShearDiff abA v hv = homShearSnd v hv
+      show homShearFst v + (homShearSnd v hv - homShearFst v) = homShearSnd v hv
+      rw [add_sub_cancel]
+    exact congrArg Subtype.val (key.trans h3)
+
+/-- **EVERY FIBRE OF A HOMOMORPHISM WITH FINITE KERNEL IS FINITE** (PROVEN
+2026-07-29) — over an arbitrary base `S`, no properness and no
+characteristic hypothesis.
+
+Shear `A ×_{v, B, v} A` into `A ×_S ker v`, whose first projection is a base
+change of the finite `ker v ⟶ S` and so has finite fibres; the shearing is
+injective on points by `kerHomShear_kerHomUnshear`, so the fibres of
+`pullback.fst v v` are finite too, and
+`finite_preimage_of_finite_preimage_pullback_fst` descends that to `v`. -/
+theorem finite_preimage_of_isFinite_kerHom {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv)
+    (hker : IsFinite (pullback.snd v abB.zeroSection)) (b : B) :
+    (⇑v ⁻¹' {b}).Finite := by
+  haveI := hker
+  refine finite_preimage_of_finite_preimage_pullback_fst v (fun x => ?_) b
+  have hQ : (⇑(pullback.fst af (pullback.snd v abB.zeroSection)) ⁻¹' {x}).Finite :=
+    Scheme.Hom.finite_preimage_singleton _ x
+  have hinj : Function.Injective ⇑(kerHomShear hadd) := by
+    intro c d hcd
+    have h1 : (kerHomShear hadd ≫ kerHomUnshear hadd) c
+        = (kerHomShear hadd ≫ kerHomUnshear hadd) d := by
+      rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hcd]
+    rw [kerHomShear_kerHomUnshear hadd] at h1
+    simpa using h1
+  have hset : (⇑(pullback.fst v v) ⁻¹' {x})
+      = ⇑(kerHomShear hadd) ⁻¹'
+        (⇑(pullback.fst af (pullback.snd v abB.zeroSection)) ⁻¹' {x}) := by
+    ext z
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    rw [← kerHomShear_fst hadd, Scheme.Hom.comp_apply]
+  rw [hset]
+  exact hQ.preimage hinj.injOn
+
+/-- **A HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` WITH FINITE KERNEL IS A FINITE
+MORPHISM** (PROVEN 2026-07-29) — i.e. "an isogeny in the naive sense IS an
+isogeny", which is exactly the gap the docstring of
+`exists_isogenyComplement_of_surjective_isAdditiveOn` warns about, closed once
+and for all.
+
+Properness is free (`isProper_of_abelianSchemeStruct`), hence so is local
+finite type; the fibres are finite by `finite_preimage_of_isFinite_kerHom`,
+which gives `LocallyQuasiFinite`; Zariski's main theorem
+(`IsFinite.of_isProper_of_locallyQuasiFinite`) upgrades that to `IsFinite`.
+
+Note what is NOT assumed: no surjectivity, no flatness, no characteristic. -/
+theorem isFinite_of_isFinite_kerHom {A B : Scheme.{0}} {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {v : A ⟶ B}
+    {hv : v ≫ bf = af} (hadd : IsAdditiveOn abA abB v hv)
+    (hker : IsFinite (pullback.snd v abB.zeroSection)) :
+    IsFinite v := by
+  haveI : AlgebraicGeometry.IsProper v := isProper_of_abelianSchemeStruct abA abB hv
+  haveI : LocallyQuasiFinite v :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _
+      (finite_preimage_of_isFinite_kerHom hadd hker)
+  exact IsFinite.of_isProper_of_locallyQuasiFinite _
+
+/-- **THE ISOGENY COMPLEMENT, WITH THE FINITENESS ASKED FOR ON THE KERNEL**
+(sorry leaf, new 2026-07-29) — all that is left of
+`exists_isogenyComplement_of_surjective_isAdditiveOn` below now that
+`isFinite_of_isFinite_kerHom` is available, and the form in which the
+classical construction actually delivers its output.
+
+The only difference from the theorem below is that `IsFinite (b ≫ u)` — a
+condition on the MORPHISM — has become `IsFinite` of the structure morphism of
+`ker (b ≫ u) = B ×_{b ≫ u, A, e} Spec ℚ`, i.e. "the kernel is a finite
+`ℚ`-scheme".  Mumford's proof gives exactly that: `B ∩ ker u` is finite
+because `B` is the orthogonal complement of `(ker u)⁰`.  The passage from
+there to finiteness of the morphism is no longer part of this leaf, so
+"proper + quasi-finite ⟹ finite" has left the list of things a prover must
+supply.
+
+TRUE and classical (Mumford, *Abelian Varieties* §19 Thm 1; Milne, *Abelian
+Varieties* I.12.1): over a field of characteristic `0` fix a polarisation `λ`
+of `J` and put `B := ((ker u)⁰)^⊥`, the orthogonal complement inside `J`.
+
+**Not junk-satisfiable** — the audit of the theorem below transfers unchanged.
+`B := Spec ℚ` with `b` the zero section fails `Surjective (b ≫ u)` unless `A`
+is a point; `B := J`, `b := 𝟙` fails the kernel-finiteness unless `u` is
+itself an isogeny, which a quotient map of abelian varieties is not in general
+(`J = A × A'`, `u = pr₁`).
+
+**`_hsurj` MAY NOT BE DROPPED.**  Witness `J := E`, `A := E × E`,
+`u := (𝟙, 0)`: a homomorphism, not surjective, and no abelian subvariety of a
+curve maps ONTO a surface, so no `B` exists.
+
+**`_hadd` is NOT load-bearing for truth** (rigidity: every morphism of abelian
+varieties is a translate of a homomorphism, and translations change neither
+`Surjective` nor finiteness) **but the CONSUMER cannot do without it**: the
+theorem below feeds `hbadd.comp hadd` to `isFinite_of_isFinite_kerHom`, which
+is a statement about homomorphisms.  Dropping it here would strand that step.
+
+**What proving it needs**: polarisations (`PolarizationStruct` in
+`Modularity/AbelianScheme.lean` is the datum, not the existence theorem) and
+the connected component of a closed subgroup scheme.  Nothing else. -/
+theorem exists_finiteKernelComplement_of_surjective_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (_hadd : IsAdditiveOn abJ abA u hu)
+    (_hsurj : AlgebraicGeometry.Surjective u) :
+    ∃ (B : Scheme.{0}) (bstr : B ⟶ SpecQ) (abB : AbelianSchemeStruct bstr)
+      (b : B ⟶ J) (hb : b ≫ jstr = bstr),
+      IsAdditiveOn abB abJ b hb ∧ AlgebraicGeometry.Surjective (b ≫ u) ∧
+        IsFinite (pullback.snd (b ≫ u) abA.zeroSection) :=
+  sorry
+
+end KerHomShear
+
+/-- **THE ISOGENY COMPLEMENT OF THE KERNEL OF A SURJECTION**
+(**PROVEN 2026-07-29** over `exists_finiteKernelComplement_of_surjective_isAdditiveOn`
+above) — step 1 of the quotient half of Poincaré reducibility:
 a surjective homomorphism `u : J ⟶ A` of abelian varieties over `ℚ`
 restricts to an ISOGENY on an abelian subvariety `B ⊆ J`.
 
@@ -57797,38 +58210,171 @@ point; `B := J`, `b := 𝟙` fails `IsFinite (b ≫ u)` unless `u` is itself
 an isogeny, which a quotient map of abelian varieties is not in general
 (`J = A × A'`, `u = pr₁`).
 
-**`_hsurj` MAY NOT BE DROPPED.**  Witness `J := E`, `A := E × E`,
+**`hsurj` MAY NOT BE DROPPED.**  Witness `J := E`, `A := E × E`,
 `u := (𝟙, 0)`: a homomorphism, not surjective, and no abelian subvariety
 of a curve maps ONTO a surface, so no `B` exists.
 
-**`_hadd` is NOT load-bearing for truth, and saying so is the honest
+**`hadd` is NOT load-bearing for truth, and saying so is the honest
 audit.**  By the rigidity theorem every morphism of abelian varieties is
 a translate `t_c ∘ h` of a homomorphism, and translations are
 isomorphisms, changing neither `Surjective` nor `IsFinite`; so the
-statement survives dropping `_hadd`.  It is kept because the intended
+statement survives dropping `hadd`.  It is kept because the intended
 construction (a complement of `ker u`) needs a kernel, and because every
 consumer has it for free — `IsHeckeIsotypicDecomposition.u_add`.  It is
 NOT derivable inside this file from `isAdditiveOn_of_post_zero`, which
-additionally needs `u` to fix the origin.
+additionally needs `u` to fix the origin.  Since 2026-07-29 it is also
+CONSUMED by the proof (it is what makes `b ≫ u` a homomorphism, hence a
+legal input to `isFinite_of_isFinite_kerHom`) — non-load-bearing for
+TRUTH is not the same as unused.
 
-**What proving it needs**: abelian varieties over a field, absent from
-mathlib by the absence table on `exists_heckeIsotypicDecomposition` —
-specifically polarisations (`PolarizationStruct` in
-`Modularity/AbelianScheme.lean` is the datum, not the existence theorem),
-the connected component of a closed subgroup scheme, and
-"proper + quasi-finite ⟹ finite". -/
+**What remains to be proven** is now confined to
+`exists_finiteKernelComplement_of_surjective_isAdditiveOn` above: abelian
+varieties over a field, absent from mathlib by the absence table on
+`exists_heckeIsotypicDecomposition` — specifically polarisations
+(`PolarizationStruct` in `Modularity/AbelianScheme.lean` is the datum, not
+the existence theorem) and the connected component of a closed subgroup
+scheme.  The third item of the old list, "proper + quasi-finite ⟹ finite",
+is DISCHARGED (2026-07-29): it is `isFinite_of_isFinite_kerHom` above, and
+this theorem is now the one line that applies it. -/
 theorem exists_isogenyComplement_of_surjective_isAdditiveOn {J A : Scheme.{0}}
     {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
     (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
-    (u : J ⟶ A) (hu : u ≫ astr = jstr) (_hadd : IsAdditiveOn abJ abA u hu)
-    (_hsurj : AlgebraicGeometry.Surjective u) :
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu)
+    (hsurj : AlgebraicGeometry.Surjective u) :
     ∃ (B : Scheme.{0}) (bstr : B ⟶ SpecQ) (abB : AbelianSchemeStruct bstr)
       (b : B ⟶ J) (hb : b ≫ jstr = bstr),
       IsAdditiveOn abB abJ b hb ∧
-        AlgebraicGeometry.Surjective (b ≫ u) ∧ IsFinite (b ≫ u) :=
+        AlgebraicGeometry.Surjective (b ≫ u) ∧ IsFinite (b ≫ u) := by
+  obtain ⟨B, bstr, abB, b, hb, hbadd, hbsurj, hbker⟩ :=
+    exists_finiteKernelComplement_of_surjective_isAdditiveOn abJ abA u hu hadd hsurj
+  refine ⟨B, bstr, abB, b, hb, hbadd, hbsurj, ?_⟩
+  have hbu : (b ≫ u) ≫ astr = bstr := by rw [Category.assoc, hu, hb]
+  exact isFinite_of_isFinite_kerHom (hv := hbu) (hbadd.comp (hvw := hbu) hadd) hbker
+
+/-- **THE KERNEL OF A FINITE HOMOMORPHISM IS KILLED BY SOME `m > 0`**
+(sorry leaf, new 2026-07-29) — step 2a of the quotient half of Poincaré
+reducibility, and after the cut below the ONLY open mathematics left in
+`exists_quasiInverse_of_isogeny`.
+
+Read on points: the relative points `x` of `B` with `φ ∘ x = 0` are exactly
+the points of `ker φ`, at every test scheme `T` and every base point; the
+conclusion says `[m] ∘ x = 0` for all of them, which by Yoneda is "the
+subgroup scheme `ker φ` is killed by `[m]`" — the hypothesis the descent
+lemma below consumes.  It is stated with `RelPoint.post (abB.mulByNat m)`
+rather than with `m • x` only so that the statement needs no `letI` under the
+binders; the two are the same thing by `nsmul_val`.
+
+TRUE.  `ker φ = B ×_{φ, A, e} Spec ℚ` is finite over `ℚ`, being the base
+change of the finite `φ` along the zero section, so it is a finite
+commutative group scheme over a field of characteristic `0`; by Cartier's
+theorem it is étale, hence reduced, and `(ker φ)(ℚ̄)` is a finite abelian
+group killed by its order `m ≥ 1` (Lagrange).  Two morphisms out of a reduced
+finite `ℚ`-scheme that agree on `ℚ̄`-points are equal, so `[m] ∘ ι = 0` as
+morphisms, which is the displayed statement.
+
+**`_hfin` IS LOAD-BEARING FOR TRUTH HERE, and that is what makes the
+2026-07-28 cut pay.**  Witness: `B := E × E'`, `A := E` with `E'` any
+nonzero abelian variety over `ℚ`, `φ := pr₁` — a surjective homomorphism that
+is not finite.  Its kernel is `E'`, and at `T := Spec ℚ̄` the group `E'(ℚ̄)`
+contains points of order `n` for every `n`, so no single `m` kills it.
+(Contrast `exists_quasiInverse_of_isogeny` below, where `_hfin` is
+deliberately NOT load-bearing for truth: deleting it there re-creates the
+whole node.  Deleting it HERE makes the statement false.)
+
+**`_hadd` IS LOAD-BEARING FOR TRUTH.**  Without it the hypothesis
+`φ ∘ x = 0` cuts out a mere fibre of a finite morphism, whose points need not
+be torsion.  Witness: `B = A := E`, the elliptic curve `y² + y = x³ − x`
+(conductor `37`, Mordell–Weil rank `1`) with `P ∈ E(ℚ)` of infinite order,
+and `φ := t_P` translation by `P` — an isomorphism, hence finite and
+surjective, but not a homomorphism.  Then `φ ∘ x = 0` says `x = −P`, and
+`m • (−P) ≠ 0` for every `m > 0`.
+
+**`Surjective φ` IS NOT NEEDED and is deliberately absent**: the kernel of a
+finite homomorphism is finite whether or not the map is onto.  The consumer
+has surjectivity in hand and passes it only to the descent lemma below.
+
+**What proving it needs**: the kernel as a finite group scheme (the scheme
+itself is already writable — it is `Limits.pullback φ abA.zeroSection`, and
+`isFinite_of_isFinite_kerHom` above is the converse direction), Cartier's
+theorem that a finite group scheme in characteristic `0` is étale, and
+Lagrange.  Absent from mathlib at this pin. -/
+theorem exists_exponent_kernel_of_isFinite_isAdditiveOn {B A : Scheme.{0}}
+    {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (_hadd : IsAdditiveOn abB abA φ hφ)
+    (_hfin : IsFinite φ) :
+    ∃ m : ℕ, 0 < m ∧
+      ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint bstr g),
+        RelPoint.post φ hφ x = abA.zero g →
+          RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g :=
   sorry
 
-/-- **AN ISOGENY ADMITS A QUASI-INVERSE** (sorry leaf, new 2026-07-28) —
+/-- **`[m]` DESCENDS ALONG A SURJECTIVE HOMOMORPHISM WHOSE KERNEL IT KILLS**
+(**PROVEN 2026-07-29**) — step 2b of the quotient half of Poincaré
+reducibility.  It turned out to need no new mathematics at all: the fppf
+quotient is already in the file, hidden inside the proof of
+`epi_of_surjective_of_isAdditiveOn`.
+
+`φ` is faithfully flat and quasi-compact
+(`flat_quasiCompact_of_surjective_of_isAdditiveOn`), hence an EFFECTIVE
+epimorphism of schemes — which is exactly what that lemma extracts its `Epi`
+from, through the subcanonicity of the fpqc topology
+(`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`).  `EffectiveEpi.desc` then
+produces `ψ` from a single condition: any two morphisms `g₁, g₂` into `B`
+that `φ` coequalizes are coequalized by `[m]`.  That is the hypothesis, read
+at the relative point `g₂ - g₁` over the base point `g₁ ≫ bstr`: `φ` kills it
+by `IsAdditiveOn.post_sub`, so `[m]` kills it, so `m • g₂ = m • g₁`, i.e.
+`g₁ ≫ [m] = g₂ ≫ [m]` by `nsmul_val`.
+
+**`0 < m` is NOT needed and is deliberately absent**: `m = 0` gives the true
+and useless `φ ≫ ψ = 0`.  Positivity is where the content of the exponent
+leaf above lies, and it is consumed by
+`exists_quasiInverse_of_isogeny` below, where it is what stops `ψ := 0` from
+spoofing the conclusion.
+
+**Finiteness of `φ` is not needed either.**  The hypothesis is about any
+subgroup scheme killed by `[m]`; it is simply unsatisfiable when `ker φ` is
+positive-dimensional, which is where the finiteness of the isogeny really
+bites — one leaf up. -/
+theorem exists_comp_eq_mulByNat_of_kernel_killed {B A : Scheme.{0}}
+    {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (hadd : IsAdditiveOn abB abA φ hφ)
+    (hsurj : AlgebraicGeometry.Surjective φ) (m : ℕ)
+    (hker : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint bstr g),
+      RelPoint.post φ hφ x = abA.zero g →
+        RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) x = abB.zero g) :
+    ∃ ψ : A ⟶ B, φ ≫ ψ = abB.mulByNat m := by
+  obtain ⟨hflat, hqc⟩ := flat_quasiCompact_of_surjective_of_isAdditiveOn abB abA hφ hadd hsurj
+  haveI := hflat
+  haveI := hqc
+  haveI := hsurj
+  have hcond : ∀ {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ B), g₁ ≫ φ = g₂ ≫ φ →
+      g₁ ≫ abB.mulByNat m = g₂ ≫ abB.mulByNat m := by
+    intro Z g₁ g₂ hg
+    have hbase : g₂ ≫ bstr = g₁ ≫ bstr := by
+      rw [← hφ, ← Category.assoc, ← hg, Category.assoc, hφ]
+    letI := abB.addCommGroup (g₁ ≫ bstr)
+    letI := abA.addCommGroup (g₁ ≫ bstr)
+    let x₁ : RelPoint bstr (g₁ ≫ bstr) := ⟨g₁, rfl⟩
+    let x₂ : RelPoint bstr (g₁ ≫ bstr) := ⟨g₂, hbase⟩
+    have hd : RelPoint.post φ hφ (x₂ - x₁) = abA.zero (g₁ ≫ bstr) := by
+      rw [hadd.post_sub]
+      show RelPoint.post φ hφ x₂ - RelPoint.post φ hφ x₁ = (0 : RelPoint astr (g₁ ≫ bstr))
+      rw [sub_eq_zero]
+      exact Subtype.ext hg.symm
+    have hkill := hker (x₂ - x₁) hd
+    rw [show RelPoint.post (abB.mulByNat m) (abB.mulByNat_comp m) (x₂ - x₁)
+        = m • (x₂ - x₁) from Subtype.ext (abB.nsmul_val m (x₂ - x₁)).symm] at hkill
+    have h0 : (m • (x₂ - x₁) : RelPoint bstr (g₁ ≫ bstr)) = 0 := hkill
+    rw [smul_sub, sub_eq_zero] at h0
+    have h1 := congrArg Subtype.val h0
+    rw [abB.nsmul_val, abB.nsmul_val] at h1
+    exact h1.symm
+  exact ⟨EffectiveEpi.desc φ (abB.mulByNat m) hcond, EffectiveEpi.fac φ _ _⟩
+
+/-- **AN ISOGENY ADMITS A QUASI-INVERSE** (**PROVEN 2026-07-29** over the
+exponent leaf and the descent lemma above) —
 step 2 of the quotient half of Poincaré reducibility, and the half that
 needs no polarisation: a finite surjective homomorphism `φ : B ⟶ A` of
 abelian varieties over `ℚ` admits `ψ : A ⟶ B` with `φ ∘ ψ = [m]` on
@@ -57845,15 +58391,18 @@ gives `(φ ∘ ψ) ∘ φ = [m]_A ∘ φ`, and `φ` is faithfully flat and
 quasi-compact, hence an epimorphism of schemes (Stacks 023Q/02VW), so
 `φ ∘ ψ = [m]_A`.  Read on `ℚ`-points that is the conclusion.
 
-**`_hfin` IS NOT LOAD-BEARING FOR TRUTH — AND THAT IS EXACTLY WHY IT IS
+**`hfin` IS NOT LOAD-BEARING FOR TRUTH — AND THAT IS EXACTLY WHY IT IS
 THERE.**  Deleting it turns this statement into the FULL quotient half of
 Poincaré reducibility (which is true, and is
 `exists_quasiSection_of_surjective_isAdditiveOn` below), i.e. it undoes
 the cut and re-creates the node this leaf was split off from.  A reviewer
 tempted to "generalise" it away should read the section docstring above
-first.
+first.  Since 2026-07-29 it is also CONSUMED: it is the hypothesis of
+`exists_exponent_kernel_of_isFinite_isAdditiveOn` above, where — unlike
+here — it IS load-bearing for truth, with an explicit witness.  So the
+underscore is gone, and the warning is not.
 
-**`_hsurj` MAY NOT BE DROPPED, and here is the witness.**  Take
+**`hsurj` MAY NOT BE DROPPED, and here is the witness.**  Take
 `A := E`, the elliptic curve `y² + y = x³ − x` (conductor `37`, Mordell–
 Weil rank `1`, PARI/GP `ellrank` recomputed for this leaf on 2026-07-28),
 `B := Spec ℚ` the trivial abelian scheme and `φ` its zero section — a
@@ -57870,20 +58419,49 @@ never false.  This is the same audit the deleted single-node version of
 `exists_quasiSection_heckeIsotypicFactor` carried, and it survives the
 cut unchanged.
 
-**What proving it needs**: kernels of homomorphisms of abelian schemes as
-finite flat group schemes, "a finite commutative group scheme is killed
-by its order", and the factorisation of `[m]` through an fppf quotient.
-All three are absent from mathlib at this pin. -/
+**What is left to prove** is one of the three items of the old list:
+"a finite commutative group scheme is killed by its order", now stated as
+`exists_exponent_kernel_of_isFinite_isAdditiveOn` above.  The other two are
+DISCHARGED (2026-07-29): the factorisation of `[m]` through the fppf quotient
+is `exists_comp_eq_mulByNat_of_kernel_killed` above (fpqc subcanonicity, which
+the file already had), and the kernel is needed only as the *hypothesis* of
+the exponent leaf, not as a constructed object.
+
+The assembly here is the last two sentences of the proof sketch: `ψ` from the
+descent, `hψ` and `ψ ≫ φ = [m]_A` by cancelling the epimorphism `φ`, using
+`IsAdditiveOn.mulByNat_comp_eq` for `[m]_B ≫ φ = φ ≫ [m]_A`, and
+`RelPoint.post_comp` / `nsmul_val` to read the result on `ℚ`-points. -/
 theorem exists_quasiInverse_of_isogeny {B A : Scheme.{0}}
     {bstr : B ⟶ SpecQ} {astr : A ⟶ SpecQ}
     (abB : AbelianSchemeStruct bstr) (abA : AbelianSchemeStruct astr)
-    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (_hadd : IsAdditiveOn abB abA φ hφ)
-    (_hsurj : AlgebraicGeometry.Surjective φ) (_hfin : IsFinite φ) :
+    (φ : B ⟶ A) (hφ : φ ≫ astr = bstr) (hadd : IsAdditiveOn abB abA φ hφ)
+    (hsurj : AlgebraicGeometry.Surjective φ) (hfin : IsFinite φ) :
     letI := abA.addCommGroup (𝟙 SpecQ)
     ∃ (ψ : A ⟶ B) (hψ : ψ ≫ bstr = astr) (m : ℕ), 0 < m ∧
       ∀ x : RelPoint astr (𝟙 SpecQ),
-        RelPoint.post φ hφ (RelPoint.post ψ hψ x) = m • x :=
-  sorry
+        RelPoint.post φ hφ (RelPoint.post ψ hψ x) = m • x := by
+  letI := abA.addCommGroup (𝟙 SpecQ)
+  obtain ⟨m, hm, hker⟩ :=
+    exists_exponent_kernel_of_isFinite_isAdditiveOn abB abA φ hφ hadd hfin
+  obtain ⟨ψ, hcomp⟩ :=
+    exists_comp_eq_mulByNat_of_kernel_killed abB abA φ hφ hadd hsurj m hker
+  haveI : Epi φ := epi_of_surjective_of_isAdditiveOn abB abA hφ hadd hsurj
+  have hψ : ψ ≫ bstr = astr := by
+    refine (cancel_epi φ).mp ?_
+    rw [← Category.assoc, hcomp, abB.mulByNat_comp, hφ]
+  have hkey : ψ ≫ φ = abA.mulByNat m := by
+    refine (cancel_epi φ).mp ?_
+    rw [← Category.assoc, hcomp]
+    exact hadd.mulByNat_comp_eq m
+  refine ⟨ψ, hψ, m, hm, fun x => ?_⟩
+  have hassoc : (ψ ≫ φ) ≫ astr = astr := by rw [Category.assoc, hφ, hψ]
+  have h1 : RelPoint.post φ hφ (RelPoint.post ψ hψ x)
+      = RelPoint.post (ψ ≫ φ) hassoc x := (RelPoint.post_comp ψ hψ φ hφ x).symm
+  have h2 : RelPoint.post (ψ ≫ φ) hassoc x
+      = RelPoint.post (abA.mulByNat m) (abA.mulByNat_comp m) x :=
+    RelPoint.post_congr hkey x
+  rw [h1, h2]
+  exact Subtype.ext (abA.nsmul_val m x).symm
 
 /-- **POINCARÉ REDUCIBILITY, QUOTIENT HALF, LEVEL-GENERIC** (PROVEN
 2026-07-28 over the two leaves above) — a surjective homomorphism of
@@ -58861,8 +59439,10 @@ one level further down again:
 | `isOfFinAddOrder_sub_atkinLehnerFactor_of_lFunction_ne_zero` | multiplicity one + Kolyvagin–Logachev, on ONE isotypic factor, UNSIGNED | **sorry leaf** |
 | `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half | PROVEN over the generic form |
 | `exists_quasiSection_of_surjective_isAdditiveOn` | the same, level-generic | PROVEN over the two below |
-| `exists_isogenyComplement_of_surjective_isAdditiveOn` | polarisation + orthogonal complement | **sorry leaf** |
-| `exists_quasiInverse_of_isogeny` | `[m]` factors through an isogeny | **sorry leaf** |
+| `exists_isogenyComplement_of_surjective_isAdditiveOn` | polarisation + orthogonal complement | PROVEN (2026-07-29) over the leaf below |
+| `exists_finiteKernelComplement_of_surjective_isAdditiveOn` | the same, asked for on the KERNEL | **sorry leaf** |
+| `exists_quasiInverse_of_isogeny` | `[m]` factors through an isogeny | PROVEN (2026-07-29) over the leaf below |
+| `exists_exponent_kernel_of_isFinite_isAdditiveOn` | a finite group scheme is killed by an `m > 0` | **sorry leaf** |
 
 and this declaration is their composition: given `x : A i(ℚ)`, the
 quasi-section gives `v` and `m > 0` with `u i (v x) = m • x`, the
