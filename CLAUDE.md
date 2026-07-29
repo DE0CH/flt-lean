@@ -491,6 +491,98 @@ immediately; (c) scratch axiom-audit files must `import Fermat.Basic`
 and specific leaf modules, never the root `Fermat`; (d) warnings are
 not errors — keep the tree warning-clean by ordinary discipline.
 
+**Fifth invisibility class, and by volume the worst: THE RELEASE WINDOW.
+`main` IS NOT THE FRONTIER — it is the frontier as of the last release.**
+
+Between an agent finishing and its branch reaching `main` there are hours. In
+that window every ownership check this file prescribes gives the WRONG answer,
+and they all agree with each other, which is what makes it convincing:
+
+- `main`'s `declaration uses 'sorry'` warning set still lists the leaf;
+- a freshly repointed worktree's source still shows the `sorry`;
+- the three-part ownership test correctly says nobody is working on it —
+  **because that agent already stopped.**
+
+On 2026-07-28 this fired at least eight times in one cycle. Agents were
+dispatched at leaves that were already proven (`exists_isDiffChar`,
+`comap_le_range_units_integers_of_isCompact`, `isCompact_normOne_infiniteAdele`,
+`finiteDimensional_h1_adZeroTwistRestricted`, two in `Patching.lean`), and — the
+mirror image — at leaves that **did not exist on `main` at all** because they
+had been *cut* on an unmerged branch (`map_pow_twentyFour_eq_self_of_potentiallyGoodModel`,
+`exists_ringEquiv_quaternion_of_isTotallyDefinite`, the whole STEP 1a-i′ block in
+`KhareWintenberger.lean`, `flat_of_surjective_of_isAdditiveOn`). One agent
+produced a complete, green, duplicated degree-1 cochain API before discovering
+the same dictionary already existed on the branch it had been told about, and
+correctly discarded it.
+
+**`~/.flt-inflight.jsonl` cannot see any of this, because it is PRUNED when a
+worktree goes `batched`** — measured 158/158 `claimed` worktrees have a record,
+**0/201 `batched` ones do**. So "no record names this leaf" matches *both*
+"nobody has worked on it" and "its owner finished and the proof is queued".
+
+The check that resolves it is one command, and it subsumes most of the batch,
+because the merge worker merges branches into `merger` continuously:
+
+    git show merger:<the file> | grep -n <name>
+
+An agent that scanned all 54 branches carrying a modified `Patching.lean` found
+three of its four candidates already proven — **all three were visible on
+`merger` alone.** Then check the handful of `~/.flt-merge-batch` branches that
+touch your file, since `merger` lags the batch.
+
+And **a branch is not the whole picture either: check UNCOMMITTED work in the
+other worktrees.** Two workers were sent at `henselianLocalRing_adicCompletionIntegers`,
+and the decisive evidence was neither a record nor a branch — it was an
+**untracked new file** in the incumbent's worktree holding that declaration,
+relocated to a different generality under a new module path. That is a conflict
+at *file* granularity, which no branch diff shows until merge time.
+
+    for d in ~/flt-lean-*; do
+      git -C "$d" status --short 2>/dev/null | grep -q . && echo "== $d" && git -C "$d" status --short
+    done
+
+Corollary for dispatch: **name the branch as an INSTRUCTION, not as attribution.**
+"`flt-lean-311` proved X" in a credit line is not read as "merge `flt-lean-311`";
+three successors fast-forwarded to a `main` without X and found nothing.
+
+## A `sorry` is a PROMISE that the statement is provable
+
+(2026-07-29, orchestrator error, caught only because an agent quoted the file's
+own audit back at me.)
+
+A build was red at a call site of `one_le_break`. To unblock a release I told the
+merge worker to `sorry` its body. **The statement had already been refuted 700
+lines above in the same file** — the audit gave the witness (the 2-dimensional
+irreducible of `S₃ = Gal(L/ℚ₃)`, both breaks `1/2`, against a claimed `≥ 1`,
+because in the Swan normalisation breaks are positive RATIONALS and `≥ 1` is
+Hasse–Arf for a *character* only) and ended "That theorem has been WITHDRAWN".
+
+`sorry`ing it manufactured a **false leaf with two live consumers**, which is
+strictly worse than the build error it fixed: a false leaf can never be closed,
+and everything above it is worthless. The repair was to DELETE the declaration
+and fix its consumers, which is what the audit had already prescribed.
+
+So, before writing `sorry` to unblock anything:
+
+- **Read the file's FALSITY AUDIT sections.** They outrank any instruction,
+  including one from the orchestrator. This file's own rules are not a substitute
+  for what a module has already established about itself.
+- `sorry` is honest only when you can VOUCH the statement is provable. The clean
+  case, from the same release: a tower step whose instance argument the merge made
+  unreachable — proven on `main` across 241 diffed lines, so the statement is
+  vouched and the regression is environmental. That one was `sorry`d correctly,
+  with the deleted lines quoted verbatim in the comment so the repair is
+  *restore reachability → delete the `sorry` → paste them back*.
+- If you cannot vouch for it, **delete the declaration and repair its consumers.**
+
+**Corollary — one `declaration uses 'sorry'` warning can hide SEVERAL sorries.**
+`exists_isSwanExponentAt` carries FIVE inner `have … := sorry` behind a single
+warning (verified on `main`: lines 4790 `hterm`, 4798 `hsep`, 4801 `hin`, 4807,
+4952). The warning set counts DECLARATIONS. Three separate agents reported that
+count as "three", under names that do not exist. Strip comments, grep `sorry`
+tokens, compare against the warning count; a mismatch is anonymous inner sorries
+that no frontier scan will ever surface and nobody will ever be dispatched at.
+
 ## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
 (Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
