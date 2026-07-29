@@ -9259,8 +9259,8 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_isTorsionReducti
   sorry
 
 /-- **A FROBENIUS LIFT ACTS THROUGH THE REDUCTION MAP AS THE `q`-POWER FROBENIUS**
-(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three;
-this is the SMALL half of that cut).
+(**PROVEN 2026-07-28**; opened the same day by cutting `exists_torsionFrame`
+below into three — this is the SMALL half of that cut).
 
 WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above, and
 `σ` fixes `emb K` pointwise, lies in the decomposition group of `𝒪` and induces
@@ -9270,12 +9270,18 @@ WHY IT IS TRUE, AND WHY IT IS SMALL. Everything is a computation on coordinates
 once the pinning `hψ₀` is available:
 
 * `σ` fixes `emb K` pointwise, hence fixes the four coefficients of
-  `D.C.map Fr.emb`, hence COMMUTES with `modelEquiv`. This is the same
-  computation as `Affine.Point.equivVariableChangeBaseChange_galois` in the
-  project shim, which cannot be cited verbatim only because `σ` is a
-  `ℚ`-automorphism rather than a `K`-algebra map — but `hσK` says exactly that it
-  becomes one, so `Fr.emb.toAlgebra` turns `σ` into a `D.K`-algebra map and the
-  shim lemma applies;
+  `D.C.map Fr.emb`, hence COMMUTES with `modelEquiv`. HOW THE PROOF BELOW DOES
+  IT, and this differs from the route this docstring originally proposed: rather
+  than installing `Fr.emb.toAlgebra` to make `σ` a `D.K`-algebra map and citing
+  `Affine.Point.equivVariableChangeBaseChange_galois`, it reads the commutation
+  off `LocalFrame.modelEquiv.symm` IN COORDINATES. `modelEquiv.symm` is
+  `equivVariableChange` composed with an `equivOfEq`, so on `some X Y` it is
+  literally `(u²X + r, u³Y + u²sX + t)` with `u, r, s, t` the components of
+  `D.C.map Fr.emb` — each of them `Fr.emb` of an element of `D.K`, hence fixed
+  by `σ` by `hσK`. Applying `σ` to that formula and cancelling `u²`/`u³` (a unit)
+  identifies the model coordinates of `ρ(σ) P` as `(σX, σY)`. This avoids the
+  non-canonical `Algebra D.K ℚ̄` instance and the `IsScalarTower` plumbing the
+  shim route would need; the shim lemma is never cited;
 * so if the model point of `P` is `(X, Y)`, that of `ρ(σ) P` is `(σX, σY)`;
 * `IsLocalRing.ResidueField.residue_smul` turns `residue 𝒪 (σ • z)` into
   `⟨σ, hdecS⟩ • residue 𝒪 z`, and `hσres` turns that into `(residue 𝒪 z) ^ q`;
@@ -9291,7 +9297,13 @@ what makes the leaf faithful: a cut handing `ψ₀` over constrained ONLY by
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: a torsion point whose model coordinates
 are integral but whose `σ`-image has a non-integral coordinate. Impossible: `σ`
-lies in the decomposition group of `𝒪`, so it preserves `𝒪` setwise. -/
+lies in the decomposition group of `𝒪`, so it preserves `𝒪` setwise.
+
+NOTE ON `hqN`: the proof does not use it. `q ≠ N` is what
+`exists_isTorsionReduction` needs to PRODUCE `ψ₀`; once `ψ₀` arrives with its
+coordinatewise pinning, the equivariance is a pure computation. The hypothesis is
+kept so the two halves of the cut have parallel signatures and the consumer
+`exists_torsionFrame` can pass its own `hqN` positionally. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionReduction
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
     {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hqN : q ≠ N)
@@ -9309,8 +9321,166 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionR
           hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
         IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :
     ∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
-      WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) :=
-  sorry
+      WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) := by
+  classical
+  -- The Galois action on `N`-torsion, in coordinates.
+  have hgalS : ∀ (y : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)
+      (a b : AlgebraicClosure ℚ)
+      (h : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Nonsingular a b),
+      y.val = WeierstrassCurve.Affine.Point.some a b h →
+      ∃ h', (E.galoisRep N hN.pos σ y).val
+        = WeierstrassCurve.Affine.Point.some (σ a) (σ b) h' := by
+    intro y a b h hy
+    exact ⟨_, by
+      show WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+        (AlgEquiv.toAlgHom σ) y.val = _
+      rw [hy]
+      rfl⟩
+  -- The `q`-power Frobenius on the reduced curve's `N`-torsion, in coordinates.
+  have hfrobS : ∀ (w : (D.redCurve.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)
+      (a b : AlgebraicClosure (ZMod q))
+      (h : (D.redCurve.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular a b),
+      w.val = WeierstrassCurve.Affine.Point.some a b h →
+      ∃ h', (WeilPairing.frobeniusTorsionEnd q D.redCurve N w).val
+        = WeierstrassCurve.Affine.Point.some (a ^ q) (b ^ q) h' := by
+    intro w a b h hw
+    exact ⟨_, by
+      show WeierstrassCurve.Affine.Point.map (W' := D.redCurve) (S := ZMod q)
+        (WeilPairing.frobAlgHom q) w.val = _
+      rw [hw]
+      rfl⟩
+  -- `equivOfEq` inverts to `equivOfEq`.
+  have hEq : ∀ {V₁ V₂ : WeierstrassCurve (AlgebraicClosure ℚ)} (h : V₁ = V₂),
+      (WeierstrassCurve.Affine.Point.equivOfEq h).symm
+        = WeierstrassCurve.Affine.Point.equivOfEq h.symm := by
+    intro V₁ V₂ h
+    subst h
+    rfl
+  -- `modelEquiv.symm`, in coordinates.
+  have hcoord : ∀ (X Y : AlgebraicClosure ℚ)
+      (hns : (D.V.map Fr.emb).toAffine.Nonsingular X Y),
+      ∃ h', Fr.modelEquiv.symm (WeierstrassCurve.Affine.Point.some X Y hns)
+        = WeierstrassCurve.Affine.Point.some
+            (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X + (D.C.map Fr.emb).r)
+            (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y
+              + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X
+              + (D.C.map Fr.emb).t) h' := by
+    intro X Y hns
+    exact ⟨_, by
+      show WeierstrassCurve.Affine.Point.equivVariableChange
+          (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (D.C.map Fr.emb)
+          ((WeierstrassCurve.Affine.Point.equivOfEq Fr.model_eq.symm).symm
+            (WeierstrassCurve.Affine.Point.some X Y hns)) = _
+      rw [hEq, WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.equivVariableChange_some]⟩
+  -- `σ` fixes the coefficients of the frame's variable change.
+  have hσu : σ ((D.C.map Fr.emb).u : AlgebraicClosure ℚ)
+      = ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) := hσK _
+  have hσr : σ (D.C.map Fr.emb).r = (D.C.map Fr.emb).r := hσK _
+  have hσs : σ (D.C.map Fr.emb).s = (D.C.map Fr.emb).s := hσK _
+  have hσt : σ (D.C.map Fr.emb).t = (D.C.map Fr.emb).t := hσK _
+  have hune : ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ≠ 0 := (D.C.map Fr.emb).u.ne_zero
+  -- Residues of `σ`-images are `q`-th powers.
+  have hres : ∀ (z : AlgebraicClosure ℚ)
+      (hz : z ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hz' : σ z ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat),
+      Fr.resIso (IsLocalRing.residue _ (⟨σ z, hz'⟩ :
+          GaloisRepresentation.globalValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+        = (Fr.resIso (IsLocalRing.residue _ (⟨z, hz⟩ :
+            GaloisRepresentation.globalValuationSubring
+              hq.toHeightOneSpectrumRingOfIntegersRat))) ^ q := by
+    intro z hz hz'
+    have h1 : (⟨σ z, hz'⟩ : GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        = (⟨σ, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
+          (⟨z, hz⟩ : GaloisRepresentation.globalValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat) := Subtype.ext rfl
+    rw [h1, IsLocalRing.ResidueField.residue_smul, hσres, map_pow]
+  intro x
+  rcases hQ : Fr.modelEquiv x.val with _ | ⟨X, Y, hns⟩
+  · -- the point is the origin
+    have hxv : x.val = 0 :=
+      Fr.modelEquiv.injective (by rw [hQ]; exact (map_zero Fr.modelEquiv).symm)
+    have hx0 : x = 0 := Subtype.ext hxv
+    have hgz : E.galoisRep N hN.pos σ x = 0 := by rw [hx0]; exact map_zero _
+    have hψz : ψ₀ x = 0 := by rw [hx0]; exact map_zero _
+    calc ψ₀ (E.galoisRep N hN.pos σ x) = ψ₀ 0 := congrArg (fun z => ψ₀ z) hgz
+      _ = 0 := map_zero ψ₀
+      _ = WeilPairing.frobeniusTorsionEnd q D.redCurve N 0 :=
+          (map_zero (WeilPairing.frobeniusTorsionEnd q D.redCurve N)).symm
+      _ = WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) :=
+          congrArg (fun z => WeilPairing.frobeniusTorsionEnd q D.redCurve N z) hψz.symm
+  · obtain ⟨hX, hY, hns', hval⟩ := hψ₀ x X Y hns hQ
+    rcases hQ' : Fr.modelEquiv (E.galoisRep N hN.pos σ x).val with _ | ⟨X', Y', hns2⟩
+    · exfalso
+      have h1 : (E.galoisRep N hN.pos σ x).val = 0 :=
+        Fr.modelEquiv.injective (by rw [hQ']; exact (map_zero Fr.modelEquiv).symm)
+      have h1' : WeierstrassCurve.Affine.Point.map (W' := E) (S := ℚ)
+          (AlgEquiv.toAlgHom σ) x.val = 0 := h1
+      have h2 : x.val = 0 := by
+        refine WeierstrassCurve.Affine.Point.map_injective (W' := E) (S := ℚ)
+          (AlgEquiv.toAlgHom σ) ?_
+        rw [h1']
+        exact (WeierstrassCurve.Affine.Point.map_zero _).symm
+      have hz : (WeierstrassCurve.Affine.Point.some X Y hns :
+          (D.V.map Fr.emb).toAffine.Point) = 0 := by
+        rw [← hQ, h2]
+        exact map_zero Fr.modelEquiv
+      first
+        | exact WeierstrassCurve.Affine.Point.noConfusion hz
+        | simp at hz
+    · -- identify `X'`, `Y'` with the `σ`-images of `X`, `Y`
+      obtain ⟨hc1, hcoord1⟩ := hcoord X Y hns
+      obtain ⟨hc2, hcoord2⟩ := hcoord X' Y' hns2
+      have hx : x.val
+          = WeierstrassCurve.Affine.Point.some
+              (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X + (D.C.map Fr.emb).r)
+              (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y
+                + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X
+                + (D.C.map Fr.emb).t) hc1 := by
+        rw [← hcoord1, ← hQ, Fr.modelEquiv.symm_apply_apply]
+      have hxσ2 : (E.galoisRep N hN.pos σ x).val
+          = WeierstrassCurve.Affine.Point.some
+              (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X' + (D.C.map Fr.emb).r)
+              (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y'
+                + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X'
+                + (D.C.map Fr.emb).t) hc2 := by
+        rw [← hcoord2, ← hQ', Fr.modelEquiv.symm_apply_apply]
+      obtain ⟨hh, hxσ1⟩ := hgalS x _ _ hc1 hx
+      have hcomb := hxσ1.symm.trans hxσ2
+      have hXX : X' = σ X := by
+        have e1 : σ (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X + (D.C.map Fr.emb).r)
+            = ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * X' + (D.C.map Fr.emb).r := by
+          injection hcomb with e1 e2
+          try exact e1
+        simp only [map_add, map_mul, map_pow, hσu, hσr] at e1
+        exact (mul_left_cancel₀ (pow_ne_zero 2 hune) (add_right_cancel e1)).symm
+      have hYY : Y' = σ Y := by
+        have e2 : σ (((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y
+              + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X
+              + (D.C.map Fr.emb).t)
+            = ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 3 * Y'
+              + ((D.C.map Fr.emb).u : AlgebraicClosure ℚ) ^ 2 * (D.C.map Fr.emb).s * X'
+              + (D.C.map Fr.emb).t := by
+          injection hcomb with e1 e2
+          try exact e2
+        simp only [map_add, map_mul, map_pow, hσu, hσs, hσt, hXX] at e2
+        exact (mul_left_cancel₀ (pow_ne_zero 3 hune)
+          (add_right_cancel (add_right_cancel e2))).symm
+      subst hXX
+      subst hYY
+      obtain ⟨hX2, hY2, hns3, hval2⟩ :=
+        hψ₀ (E.galoisRep N hN.pos σ x) (σ X) (σ Y) hns2 hQ'
+      obtain ⟨hh2, hfr⟩ := hfrobS (ψ₀ x) _ _ hns' hval
+      refine Subtype.ext ?_
+      rw [hval2, hfr]
+      exact WeierstrassCurve.Affine.Point.some_eq_some _ (hres X hX hX2) (hres Y hY hY2)
 
 /-- **INERTIA ACTS THROUGH THE REDUCTION MAP AS AN AUTOMORPHISM OF THE REDUCED
 CURVE — SERRE–TATE** (sorry leaf, opened 2026-07-28 by cutting
