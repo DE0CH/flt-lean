@@ -97,8 +97,11 @@ theorem was never a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ` supplies it via
   the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file) is CLOSED,
   leaving `norm_infiniteAdele_apply` (the norm is componentwise) and
   `continuous_infiniteAdeleTensorPiEquiv_symm` (the decomposition is a homeomorphism).
-  Those two are definiteness-free, so NO sorried leaf in this file carries total
-  definiteness any more. The place-local half
+  Those two are definiteness-free and were both PROVEN 2026-07-28
+  (`flt-lean-293`), so ALL THREE of the leaves under
+  `isCompact_normOne_infiniteAdele` are now closed and no sorried leaf in this
+  file carries total definiteness — indeed this file is now SORRY-FREE. The
+  place-local half
   `isCompact_normOne_completion` is PROVEN, on the way proving
   `norm_quaternion_eq_normSq_sq` (`Nm_{ℍ/ℝ} = normSq²`, absent from the pin) and
   `isCompact_normOne_quaternion`.
@@ -1022,12 +1025,22 @@ continuity proof runs on — while here `D` is only a `[Ring D]`. (Verified by p
 `[Ring D] [IsQuaternionAlgebra F D]` the `v.Completion`- and `𝔸^∞`-module topologies on
 `D ⊗[F] v.Completion` and `D ⊗[F] 𝔸^∞` DO resolve, but every `ℝ`-structure on them fails
 to synthesize.) This is the same `[DivisionRing D]`-vs-`[Ring D]` obstruction that
-`finite_setOf_tmul_mem_of_isCompact` records below. Two ways out, both open:
-relax `Finiteness.lean` to `[Ring D]` (it only ever uses `Module.Finite F D`), or derive
-`DivisionRing D` here from total definiteness via
-`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit` — the second is available
-to `continuous_infiniteAdeleTensorPiEquiv_symm` (which is stated with definiteness in
-scope) but costs a `Ring D` instance-diamond check. -/
+`finite_setOf_tmul_mem_of_isCompact` records below.
+
+**RESOLVED 2026-07-28 (`flt-lean-293`) by a THIRD way out that this paragraph missed, and
+that is cheaper than either it names.** The two routes recorded here were: relax
+`Finiteness.lean` to `[Ring D]`, or derive `DivisionRing D` from total definiteness via
+`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`. Neither was needed. The whole
+`ℝ`-scaffolding of `Finiteness.lean` exists only because `DinfTensorPiEquivPiTensor` is stated
+as a `≃L[ℝ]`; but nothing here has to go through `ℝ`.
+`Fermat/FLT/Hacks/RightActionInstances.lean` already provides, under
+`[AddCommMonoid M] [Module R M] [Module.Finite R M]` and nothing else, BOTH
+`TensorProduct.RightActions.Algebra.TensorProduct.basis` (an `A`-basis of `M ⊗[R] A`) AND the
+scoped instance `IsModuleTopology A (M ⊗[R] A)`. Working over `𝔸_F^∞` and `F_v` as the base
+rings rather than `ℝ`, both leaves go through at `[Ring D]` with no relaxation and no
+instance-diamond check. See the helper block below. (The probe result quoted just above is
+CORRECT and is exactly what makes the third route work: it is the `ℝ`-structures that fail and
+the `v.Completion`/`𝔸^∞` ones that resolve.) -/
 
 variable (F D) in
 /-- The decomposition `D ⊗_F 𝔸_F^∞ ≃ ∏_v (D ⊗_F F_v)` over the infinite places, as an
@@ -1041,6 +1054,246 @@ def infiniteAdeleTensorPiEquiv [IsQuaternionAlgebra F D] :
     (D ⊗[F] (NumberField.InfiniteAdeleRing F)) ≃ₗ[F]
       Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion :=
   tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion
+
+/-! #### Helpers for `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm`
+
+**NEW BLOCK (2026-07-28, `flt-lean-293`).** Everything between here and
+`norm_infiniteAdele_apply` is new and is deliberately kept contiguous and separate from the
+surrounding material so that concurrent edits to this file merge cleanly.
+
+Nothing here uses total definiteness or total reality, and nothing uses `IsQuaternionAlgebra`
+beyond the `Module.Finite F D` instance it supplies: these are statements about an arbitrary
+finite free `F`-algebra base-changed along `𝔸_F^∞ = ∏_v F_v`.
+
+**The `[DivisionRing D]` obstruction recorded in the subsection docstring above is real but
+AVOIDABLE.** `Fermat/FLT/DivisionAlgebra/Finiteness.lean` is indeed still under
+`variable (D) [DivisionRing D]` as of this commit (checked, not assumed), so
+`DinfTensorPiEquivPiTensor` and `tensorPi_equiv_piTensor_map_mul` are genuinely inapplicable
+here. But the route below never mentions `ℝ` at all, and so needs neither that relaxation nor
+a `DivisionRing D` instance manufactured from definiteness.
+`Fermat/FLT/Hacks/RightActionInstances.lean` already provides — at
+`[AddCommMonoid M] [Module R M] [Module.Finite R M]` and nothing more — both the right-handed
+basis `TensorProduct.RightActions.Algebra.TensorProduct.basis` giving an `A`-basis of
+`M ⊗[R] A`, and the scoped instance `IsModuleTopology A (M ⊗[R] A)`. Those are exactly the
+two inputs the whole argument runs on. -/
+
+section InfiniteAdeleDecompositionHelpers
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+
+variable (F D) in
+/-- The `𝔸_F^∞`-basis `(b i) ⊗ₜ 1` of `D ⊗_F 𝔸_F^∞` attached to an `F`-basis `b` of `D`. -/
+noncomputable def infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) :
+    Module.Basis ι (NumberField.InfiniteAdeleRing F)
+      (D ⊗[F] (NumberField.InfiniteAdeleRing F)) :=
+  TensorProduct.RightActions.Algebra.TensorProduct.basis _ b
+
+variable (F D) in
+/-- The `F_v`-basis `(b i) ⊗ₜ 1` of `D ⊗_F F_v` attached to an `F`-basis `b` of `D`. -/
+noncomputable def completionBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) :
+    Module.Basis ι v.Completion (D ⊗[F] v.Completion) :=
+  TensorProduct.RightActions.Algebra.TensorProduct.basis _ b
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+@[simp] lemma infiniteAdeleBasis_apply [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) (i : ι) :
+    infiniteAdeleBasis F D b i = b i ⊗ₜ 1 := by
+  simp [infiniteAdeleBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+@[simp] lemma completionBasis_apply [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) (v : NumberField.InfinitePlace F) (i : ι) :
+    completionBasis F D b v i = b i ⊗ₜ 1 := by
+  simp [completionBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma infiniteAdeleBasis_repr_tmul [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (d : D) (a : NumberField.InfiniteAdeleRing F) (i : ι) :
+    (infiniteAdeleBasis F D b).repr (d ⊗ₜ a) i
+      = a * algebraMap F (NumberField.InfiniteAdeleRing F) (b.repr d i) := by
+  simp [infiniteAdeleBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma completionBasis_repr_tmul [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) (d : D) (a : v.Completion) (i : ι) :
+    (completionBasis F D b v).repr (d ⊗ₜ a) i = a * algebraMap F v.Completion (b.repr d i) := by
+  simp [completionBasis, TensorProduct.RightActions.Algebra.TensorProduct.basis]
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] in
+/-- `infiniteAdeleTensorPiEquiv` is multiplicative. This is
+`tensorPi_equiv_piTensor_map_mul` of `Fermat/FLT/DivisionAlgebra/Finiteness.lean`, which is
+stated there under `variable (D) [DivisionRing D]` and hence unusable at `[Ring D]`; the proof
+uses nothing about `D` beyond its ring structure, so it is simply restated here. -/
+lemma infiniteAdeleTensorPiEquiv_map_mul [IsQuaternionAlgebra F D]
+    (x y : D ⊗[F] (NumberField.InfiniteAdeleRing F)) :
+    infiniteAdeleTensorPiEquiv F D (x * y)
+      = infiniteAdeleTensorPiEquiv F D x * infiniteAdeleTensorPiEquiv F D y := by
+  refine TensorProduct.induction_on x
+    (by simp only [LinearEquiv.map_zero, zero_mul])
+    (fun x₁ x₂ ↦ ?_) (fun x₁ x₂ hx₁ hx₂ ↦ by
+      simp_all only [LinearEquiv.map_add, add_mul])
+  refine TensorProduct.induction_on y
+    (by simp only [LinearEquiv.map_zero, mul_zero])
+    (fun y₁ y₂ ↦ ?_) (fun y₁ y₂ hy₁ hy₂ ↦ by
+      simp_all only [LinearEquiv.map_add, mul_add])
+  funext vi
+  simp [infiniteAdeleTensorPiEquiv, NumberField.InfiniteAdeleRing,
+    tensorPi_equiv_piTensor_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+/-- The adelic coordinates of `z` are, placewise, the local coordinates of its components:
+this is the whole content of "the decomposition respects the basis `b ⊗ₜ 1`". -/
+lemma repr_infiniteAdeleTensorPiEquiv [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (z : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (i : ι)
+    (v : NumberField.InfinitePlace F) :
+    (infiniteAdeleBasis F D b).repr z i v
+      = (completionBasis F D b v).repr (infiniteAdeleTensorPiEquiv F D z v) i := by
+  induction z using TensorProduct.induction_on with
+  | zero => simp; rfl
+  | tmul d a =>
+      rw [infiniteAdeleBasis_repr_tmul]
+      show _ = (completionBasis F D b v).repr
+        (tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion (d ⊗ₜ a) v) i
+      rw [tensorPi_equiv_piTensor_apply]
+      rw [completionBasis_repr_tmul]
+      rfl
+  | add p q hp hq =>
+      simp only [map_add, Finsupp.add_apply, Pi.add_apply]
+      rw [show ((infiniteAdeleBasis F D b).repr p i + (infiniteAdeleBasis F D b).repr q i) v
+            = ((infiniteAdeleBasis F D b).repr p) i v
+              + ((infiniteAdeleBasis F D b).repr q) i v from rfl, hp, hq]
+
+variable (F D) in
+/-- Evaluation at `v`, as a ring homomorphism `𝔸_F^∞ →+* F_v`. This is `Pi.evalRingHom`; it
+needs a name only because `NumberField.InfiniteAdeleRing F` is a `def` for the `Pi` type, so
+the `Pi` lemmas do not fire against it syntactically. -/
+noncomputable def infiniteAdeleEvalHom (v : NumberField.InfinitePlace F) :
+    NumberField.InfiniteAdeleRing F →+* v.Completion :=
+  Pi.evalRingHom _ v
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma infiniteAdeleTensorPiEquiv_basis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (j : ι) (v : NumberField.InfinitePlace F) :
+    infiniteAdeleTensorPiEquiv F D (infiniteAdeleBasis F D b j) v = completionBasis F D b v j := by
+  rw [infiniteAdeleBasis_apply, completionBasis_apply]
+  show tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion (b j ⊗ₜ 1) v = _
+  rw [tensorPi_equiv_piTensor_apply]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] in
+/-- `norm_infiniteAdele_apply`, relative to an arbitrary `F`-basis of `D`. -/
+theorem norm_infiniteAdele_apply_of_basis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (x : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (v : NumberField.InfinitePlace F) :
+    Algebra.norm (NumberField.InfiniteAdeleRing F) x v =
+      Algebra.norm v.Completion (infiniteAdeleTensorPiEquiv F D x v) := by
+  rw [Algebra.norm_eq_matrix_det (infiniteAdeleBasis F D b),
+    Algebra.norm_eq_matrix_det (completionBasis F D b v)]
+  have hdet : (Algebra.leftMulMatrix (infiniteAdeleBasis F D b) x).det v
+      = ((Algebra.leftMulMatrix (infiniteAdeleBasis F D b) x).map
+          (infiniteAdeleEvalHom F v)).det :=
+    RingHom.map_det (infiniteAdeleEvalHom F v) _
+  rw [hdet]
+  congr 1
+  -- NOTE: `ext i j` overshoots here — it keeps going past the matrix entries and applies an
+  -- `ext` lemma inside `v.Completion`, leaving a `.toCompletion = .toCompletion` goal that
+  -- the rewrite below cannot see through. `Matrix.ext` stops at the entries.
+  refine Matrix.ext fun i j => ?_
+  simp only [Matrix.map_apply, Algebra.leftMulMatrix_eq_repr_mul]
+  have hre : infiniteAdeleEvalHom F v
+        ((infiniteAdeleBasis F D b).repr (x * infiniteAdeleBasis F D b j) i)
+      = (completionBasis F D b v).repr
+          (infiniteAdeleTensorPiEquiv F D (x * infiniteAdeleBasis F D b j) v) i :=
+    repr_infiniteAdeleTensorPiEquiv b _ i v
+  rw [hre, infiniteAdeleTensorPiEquiv_map_mul]
+  show (completionBasis F D b v).repr (infiniteAdeleTensorPiEquiv F D x v
+    * infiniteAdeleTensorPiEquiv F D (infiniteAdeleBasis F D b j) v) i = _
+  rw [infiniteAdeleTensorPiEquiv_basis]
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma smul_infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (a : NumberField.InfiniteAdeleRing F) (i : ι) :
+    a • infiniteAdeleBasis F D b i = b i ⊗ₜ a := by
+  rw [infiniteAdeleBasis_apply]
+  simp [TensorProduct.RightActions.smul_def, TensorProduct.smul_tmul']
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma smul_completionBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (v : NumberField.InfinitePlace F) (a : v.Completion) (i : ι) :
+    a • completionBasis F D b v i = b i ⊗ₜ a := by
+  rw [completionBasis_apply]
+  simp [TensorProduct.RightActions.smul_def, TensorProduct.smul_tmul']
+
+variable (F D) in
+/-- The `i`-th adelic coordinate of a place-indexed family, packaged AT THE TYPE
+`NumberField.InfiniteAdeleRing F`. The ascription is load-bearing: written as a bare lambda
+its type is the unfolded `(v : InfinitePlace F) → v.Completion`, and the scoped right-action
+`SMul (𝔸_F^∞) (D ⊗[F] 𝔸_F^∞)` instance is then not found. -/
+noncomputable def infiniteAdeleCoord [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) (i : ι)
+    (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) :
+    NumberField.InfiniteAdeleRing F :=
+  fun v => (completionBasis F D b v).repr (y v) i
+
+set_option backward.isDefEq.respectTransparency false in
+omit [NumberField F] [WithRigidification F D] [DecidableEq ι] in
+/-- The inverse decomposition, written out in coordinates against `b ⊗ₜ 1`. -/
+lemma infiniteAdeleTensorPiEquiv_symm_eq [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) :
+    (infiniteAdeleTensorPiEquiv F D).symm y
+      = ∑ i : ι, infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i := by
+  refine (infiniteAdeleTensorPiEquiv F D).injective ?_
+  rw [LinearEquiv.apply_symm_apply, map_sum]
+  funext v
+  rw [Finset.sum_apply]
+  have hterm : ∀ i : ι, infiniteAdeleTensorPiEquiv F D
+      (infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i) v
+      = (completionBasis F D b v).repr (y v) i • completionBasis F D b v i := by
+    intro i
+    rw [smul_infiniteAdeleBasis]
+    show tensorPiEquivPiTensor F D NumberField.InfinitePlace.Completion
+      (b i ⊗ₜ infiniteAdeleCoord F D b i y) v = _
+    rw [tensorPi_equiv_piTensor_apply]
+    show b i ⊗ₜ ((completionBasis F D b v).repr (y v) i) = _
+    rw [smul_completionBasis]
+  simp only [hterm]
+  exact ((completionBasis F D b v).sum_repr (y v)).symm
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+/-- Each adelic coordinate function is continuous. This is where the module topology enters:
+`D ⊗[F] F_v` carries the `F_v`-module topology (the scoped instance of
+`Fermat/FLT/Hacks/RightActionInstances.lean`, which needs only `Module.Finite F D`), so every
+`F_v`-linear map out of it — in particular `Module.Basis.coord` — is continuous. -/
+lemma continuous_infiniteAdeleCoord [IsQuaternionAlgebra F D] (b : Module.Basis ι F D) (i : ι) :
+    Continuous (infiniteAdeleCoord F D b i) := by
+  show Continuous (fun (y : Π v : NumberField.InfinitePlace F, D ⊗[F] v.Completion) =>
+      (fun v => (completionBasis F D b v).repr (y v) i) :
+        _ → NumberField.InfiniteAdeleRing F)
+  refine continuous_pi fun v => ?_
+  exact (IsModuleTopology.continuous_of_linearMap ((completionBasis F D b v).coord i)).comp
+    (continuous_apply v)
+
+omit [NumberField F] [WithRigidification F D] [Fintype ι] [DecidableEq ι] in
+lemma continuous_smul_infiniteAdeleBasis [IsQuaternionAlgebra F D] (b : Module.Basis ι F D)
+    (i : ι) :
+    Continuous (fun a : NumberField.InfiniteAdeleRing F => a • infiniteAdeleBasis F D b i) :=
+  IsModuleTopology.continuous_of_linearMap
+    (LinearMap.toSpanSingleton (NumberField.InfiniteAdeleRing F) _ (infiniteAdeleBasis F D b i))
+
+omit [NumberField F] [WithRigidification F D] [DecidableEq ι] in
+/-- `continuous_infiniteAdeleTensorPiEquiv_symm`, relative to an arbitrary `F`-basis of `D`. -/
+theorem continuous_infiniteAdeleTensorPiEquiv_symm_of_basis [IsQuaternionAlgebra F D]
+    (b : Module.Basis ι F D) : Continuous (infiniteAdeleTensorPiEquiv F D).symm := by
+  have h : ⇑(infiniteAdeleTensorPiEquiv F D).symm
+      = fun y => ∑ i : ι, infiniteAdeleCoord F D b i y • infiniteAdeleBasis F D b i := by
+    funext y; exact infiniteAdeleTensorPiEquiv_symm_eq b y
+  rw [h]
+  exact continuous_finsetSum _ fun i _ =>
+    (continuous_smul_infiniteAdeleBasis b i).comp (continuous_infiniteAdeleCoord b i)
+
+end InfiniteAdeleDecompositionHelpers
 
 variable (F D) in
 /--
@@ -1283,8 +1536,20 @@ theorem isCompact_normOne_completion [NumberField.IsTotallyReal F] [IsQuaternion
   exact isCompact_normOne_quaternion.image hes
 
 variable (F D) in
+-- DELIBERATELY `set_option`, NOT `omit`. Now that this leaf has a real proof (it delegates,
+-- so it mentions neither variable) the linter correctly reports `[NumberField F]` and
+-- `[WithRigidification F D]` as unused and suggests `omit`. Taking that suggestion would
+-- CHANGE THIS DECLARATION'S SIGNATURE — source-compatible, since both are instance-implicit,
+-- but NOT olean-compatible: every worktree holding a `.olean` built against the old arity
+-- would start reporting kernel/type errors in downstream files that are nothing to do with
+-- their sources. That exact failure mode is documented in `CLAUDE.md` (the
+-- `Field.absoluteGaloisGroup.map` incident, which cost several agents a cycle each).
+-- Silencing the linter keeps the type fixed, which is the cheaper of the two trades.
+set_option linter.unusedSectionVars false in
 /--
-**(sorry leaf — the algebra norm is computed componentwise along the decomposition.)**
+**PROVEN** (2026-07-28, `flt-lean-293`) from `norm_infiniteAdele_apply_of_basis` in the helper
+block above, at the basis `Module.finBasis F D`. The algebra norm is computed componentwise
+along the decomposition.
 
 **Why it is true.** Pick an `F`-basis `b` of `D`. Then `b ⊗ₜ 1` is an `𝔸^∞`-basis of
 `D ⊗_F 𝔸^∞` and simultaneously a `F_v`-basis of `D ⊗_F F_v` for every `v`, and
@@ -1297,21 +1562,39 @@ RING HOM `Pi.evalRingHom _ v : 𝔸^∞ →+* F_v`, so it commutes with `det` by
 `RingHom.map_det`. No definiteness and no total reality: this is pure base-change
 bookkeeping, true for any finite free `D`.
 
-**One input has to be re-proven here.** `tensorPiEquivPiTensor` is multiplicative on
-`Dinf` — that is `tensorPi_equiv_piTensor_map_mul` in `Fermat/FLT/DivisionAlgebra/Finiteness.lean`
-— but that lemma is stated under `variable (D) [DivisionRing D]`, so it is not applicable
-at `[Ring D]`. Its proof is four lines (`TensorProduct.induction_on` twice, then `funext`
-and `simp [tensorPi_equiv_piTensor_apply]`) and uses nothing about `D` beyond its ring
-structure, so restating it here (or relaxing it there) is the cheap fix. -/
+**One input had to be re-proven here, and this prediction was exactly right.**
+`tensorPiEquivPiTensor` is multiplicative on `Dinf` — that is
+`tensorPi_equiv_piTensor_map_mul` in `Fermat/FLT/DivisionAlgebra/Finiteness.lean` — but that
+lemma is stated under `variable (D) [DivisionRing D]`, so it is not applicable at `[Ring D]`.
+Its proof uses nothing about `D` beyond its ring structure, and it is restated above as
+`infiniteAdeleTensorPiEquiv_map_mul`, verbatim apart from the names.
+
+**As proved.** `Algebra.norm_eq_matrix_det` against `infiniteAdeleBasis`/`completionBasis`
+(the right-handed base-changed basis of `Fermat/FLT/Hacks/RightActionInstances.lean`), then
+`RingHom.map_det` along `Pi.evalRingHom` at `v`; the entrywise identity is
+`repr_infiniteAdeleTensorPiEquiv` together with multiplicativity. -/
 theorem norm_infiniteAdele_apply [IsQuaternionAlgebra F D]
     (x : D ⊗[F] (NumberField.InfiniteAdeleRing F)) (v : NumberField.InfinitePlace F) :
     Algebra.norm (NumberField.InfiniteAdeleRing F) x v =
       Algebra.norm v.Completion (infiniteAdeleTensorPiEquiv F D x v) :=
-  sorry
+  norm_infiniteAdele_apply_of_basis (Module.finBasis F D) x v
 
 variable (F D) in
+-- `set_option`, not `omit` — same reasoning as on `norm_infiniteAdele_apply` above: taking the
+-- linter's `omit` suggestion would change this declaration's arity and break every stale olean
+-- in the fleet.
+set_option linter.unusedSectionVars false in
 /--
-**(sorry leaf — the decomposition is a homeomorphism.)**
+**PROVEN** (2026-07-28, `flt-lean-293`) from
+`continuous_infiniteAdeleTensorPiEquiv_symm_of_basis` in the helper block above, at the basis
+`Module.finBasis F D`.
+
+**Neither `[NumberField.IsTotallyReal F]` nor `[IsQuaternionAlgebra.IsTotallyDefinite F D]` is
+used by the proof** — the helper is stated at `[IsQuaternionAlgebra F D]` alone, and in fact
+needs only `Module.Finite F D` and `Module.Free F D`. The two hypotheses are retained on this
+declaration purely so the statement its consumer `isCompact_normOne_infiniteAdele` was written
+against does not change; they are harmless but inert. Anyone needing the more general
+statement should call the `_of_basis` form directly rather than weakening this one.
 
 `(infiniteAdeleTensorPiEquiv F D).symm` is CONTINUOUS. (Only this direction is used;
 the forward direction is not needed, because the target set is exhibited as an IMAGE.)
@@ -1328,21 +1611,22 @@ continuous into `𝔸^∞` by `continuous_pi` composed with the projections, and
 `a ↦ b i ⊗ₜ a : 𝔸^∞ → D ⊗_F 𝔸^∞` is continuous for the same reason applied to
 `IsModuleTopology.self`. A finite sum of continuous maps is continuous.
 
-**Alternative, cheaper if the diamond is benign:** this is literally
-`DinfTensorPiEquivPiTensor`'s `continuous_invFun` field, already proven in
-`Fermat/FLT/DivisionAlgebra/Finiteness.lean` — but only for `[DivisionRing D]`. Total
-definiteness IS in scope on this declaration, and it does give `DivisionRing D` (via
-`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`: the matrix alternative is
-killed because `ℝ ⊗ M₂(F) ≃ M₂(ℝ)` has zero divisors and `ℍ` does not). The cost is that
-`letI : DivisionRing D := .ofIsUnitOrEqZero …` must have its `toRing` field DEFEQ to the
-ambient `Ring D`, or the `TopologicalSpace (D ⊗[F] v.Completion)` in the goal is a
-different instance from the one that lemma is about. `DivisionRing.ofIsUnitOrEqZero`
-elaborates fine here (verified by probe); the defeq of the derived topology is the part
-that has not been checked. -/
+**The `DivisionRing D` alternative was NOT needed, and neither was relaxing
+`Finiteness.lean`.** The route sketched above is what was carried out, and it is the one that
+avoids `ℝ` entirely. The previous docstring proposed instead reusing
+`DinfTensorPiEquivPiTensor`'s `continuous_invFun` field by manufacturing a `DivisionRing D`
+instance from total definiteness (via
+`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit`), at the cost of an unchecked
+defeq between the `letI`-derived `TopologicalSpace (D ⊗[F] v.Completion)` and the ambient one.
+That gamble is unnecessary: `Fermat/FLT/Hacks/RightActionInstances.lean` already supplies
+`IsModuleTopology A (M ⊗[R] A)` as a scoped instance requiring only `[Module.Finite R M]`, so
+the `F_v`-module topology is available at `[Ring D]` directly and
+`IsModuleTopology.continuous_of_linearMap` applies with no diamond to check. The `ℝ`-structures
+of `Finiteness.lean` are simply never mentioned. -/
 theorem continuous_infiniteAdeleTensorPiEquiv_symm [NumberField.IsTotallyReal F]
     [IsQuaternionAlgebra F D] [IsQuaternionAlgebra.IsTotallyDefinite F D] :
     Continuous (infiniteAdeleTensorPiEquiv F D).symm :=
-  sorry
+  continuous_infiniteAdeleTensorPiEquiv_symm_of_basis (Module.finBasis F D)
 
 /--
 **PROVEN** (assembly) from `isCompact_normOne_completion`, `norm_infiniteAdele_apply` and
@@ -1860,9 +2144,11 @@ then PROVEN 2026-07-28. TWO sorried leaves remain beneath them:
   2026-07-28 by decomposition over the infinite places, as is its place-local half
   `isCompact_normOne_completion`. Of the three leaves beneath them,
   `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
-  where total definiteness was consumed, there and nowhere else) is now PROVEN
-  (2026-07-28), leaving `norm_infiniteAdele_apply` and
-  `continuous_infiniteAdeleTensorPiEquiv_symm`, both definiteness-free.
+  where total definiteness was consumed, there and nowhere else),
+  `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm` (both
+  definiteness-free) are ALL THREE PROVEN as of 2026-07-28 — the first by
+  `flt-lean-298`'s lineage, the other two by `flt-lean-293`. This module has no
+  sorried declaration left.
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
 
 `index_ray_ne_zero` — finiteness of a ray class group of `F`, which does not
