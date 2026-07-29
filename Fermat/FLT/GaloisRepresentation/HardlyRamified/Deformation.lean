@@ -1877,8 +1877,13 @@ cannot yet be phrased on a bundled deformation.
 
 Bundled as a definition rather than written inline so that the instance
 `letI`s live under plain parameters — the same elaborator constraint
-recorded on `IsResidualIdentified` and `IsTraceDescent`. -/
-def IsResidualIdentifiedFrame {R : Type u} [CommRing R] [TopologicalSpace R]
+recorded on `IsResidualIdentified` and `IsTraceDescent`.
+
+UNIVERSE GENERALIZATION (2026-07-29, `flt-lean-39`): `R` was `Type u`,
+the universe of the residual field `k`; it is now the independent `w`.
+Nothing here needs them equal, and the raised-level `ℚ`-side statements
+of `Modularity/Patching.lean` keep them independent. -/
+def IsResidualIdentifiedFrame {R : Type w} [CommRing R] [TopologicalSpace R]
     [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     (ρbar : GaloisRep ℚ k V) (ρuniv : FramedGaloisRep ℚ R (Fin 2))
     (πuniv : R →+* k) (hπcont : Continuous πuniv) : Prop :=
@@ -1902,15 +1907,27 @@ it into an object of the category.
 
 Carries the same `[DiscreteTopology A]` clause on its test objects as
 `HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, and for
-the same reason — see that definition's docstring. -/
-def IsStrictlyUniversalOnFrames
-    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+the same reason — see that definition's docstring.
+
+PREDICATE-GENERIC AND UNIVERSE-INDEPENDENT FORM (2026-07-29,
+`flt-lean-39`): the deformation condition is now a PARAMETER `Cond`, and
+the coefficient universe `w` is independent of the residual field's `u`.
+`IsStrictlyUniversalOnFrames` below is the instantiation at
+`IsHardlyRamified`, definitionally — so every existing consumer is
+unaffected — and `IsRaisedLevelHardlyRamified` of
+`Modularity/Patching.lean` is the other intended instantiation. See the
+audit note on `exists_universalFrame_profinite_of_levelIdealSystem`. -/
+def IsStrictlyUniversalOnFramesFor
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    {R : Type w} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] (ρbar : GaloisRep ℚ k V)
     (ρuniv : FramedGaloisRep ℚ R (Fin 2)) (πuniv : R →+* k) : Prop :=
-  ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+  ∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (ρA : FramedGaloisRep ℚ A (Fin 2)),
-    IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+    Cond A ρA →
     ∀ πA : A →+* k, Function.Surjective πA → ∀ hπA : Continuous πA,
     (letI : Algebra A k := πA.toAlgebra
      letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
@@ -1924,6 +1941,22 @@ def IsStrictlyUniversalOnFrames
          (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
        ∃ e : (A ⊗[R] (Fin 2 → R)) ≃ₗ[A] (Fin 2 → A),
          (ρuniv.baseChange A).conj e = ρA)
+
+open scoped TensorProduct in
+/-- **Strict universality on finite frames, on a RAW package**, for the
+BASE-LEVEL hardly ramified condition — the instantiation of
+`IsStrictlyUniversalOnFramesFor` at `IsHardlyRamified`. Unfolds to the
+literal proposition it always was, so all existing consumers are
+unchanged. -/
+def IsStrictlyUniversalOnFrames
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] (ρbar : GaloisRep ℚ k V)
+    (ρuniv : FramedGaloisRep ℚ R (Fin 2)) (πuniv : R →+* k) : Prop :=
+  IsStrictlyUniversalOnFramesFor (ℓ := ℓ)
+    (fun A iCR iTS iTR iLR iAlg ρA =>
+      letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA)
+    ρbar ρuniv πuniv
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -2259,9 +2292,20 @@ hypotheses of its core leaf by name.
 This is the CANONICAL pushforward, carrying no framing ambiguity; the
 universality predicates deliberately quantify over an arbitrary framing
 `e` instead, because a classifying map only ever determines the
-pushforward up to the choice of frame. -/
+pushforward up to the choice of frame.
+
+UNIVERSE GENERALIZATION (2026-07-29, `flt-lean-39`). `A` used to share
+`B`'s universe `u`. Nothing in the definition needs that — the base
+change `A ⊗[B] (Fin 2 → B)` lands in `Type (max u v)` and
+`TensorProduct.piScalarRight` moves it back into `Type v` — and the
+restriction is what forced the RESIDUAL FIELD and the COEFFICIENT RING
+of the deformation machine below into a single universe, which is
+precisely the obstruction the raised-level `ℚ`-side statements in
+`Modularity/Patching.lean` (`k : Type uK`, `R : Type uR` independent)
+cannot live with. See the audit note on
+`exists_universalFrame_profinite_of_levelIdealSystem` below. -/
 noncomputable def pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
     FramedGaloisRep ℚ A (Fin 2) :=
@@ -2617,7 +2661,7 @@ This is the handle that lets a fibre-product argument compare `ρ g` with
 `1` ENTRYWISE — which is the shape the injectivity of `b ↦ (p₁ b, p₂ b)`
 can act on. -/
 lemma pushforwardFrame_apply_map {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) (v : Fin 2 → B) (i : Fin 2) :
@@ -2653,7 +2697,7 @@ consume — a second, identical copy of this lemma sat next to
 `pushforwardFrame_apply` for their sake until 2026-07-26, when the
 duplicate declaration was found to be breaking the module's build. -/
 lemma det_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
@@ -3914,7 +3958,7 @@ dictionary that lets a statement about `pushforwardFrame` over `R ⧸ I` be
 read back as a congruence in `R`, and it is what the descent clauses of
 `isHardlyRamified_of_forall_isOpen_quotient` below run on. -/
 lemma pushforwardFrame_apply {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
     (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ)
     (x : Fin 2 → B) :
@@ -6088,7 +6132,7 @@ standard basis vector `Pi.single j 1`, whose `ψ`-image is again
 `Pi.single j 1`; so the framing identification `A ⊗_B B² ≅ A²` never has
 to be inverted, and `piScalarRight_baseChange_apply` is not needed. -/
 lemma toMatrix'_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
@@ -6645,7 +6689,7 @@ therefore unusable here; the entry form is a two-line consequence of
 `pushforwardFrame_apply_map`, which is proven above, applied to the basis vector
 `Pi.single j 1`. -/
 lemma entry_pushforwardFrame {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
     (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2) :
     LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) i j =
@@ -7808,7 +7852,7 @@ theorem exists_levelIdealSystem_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
 /-! #### Matrix bookkeeping for the strict-universality bridge
 
 The five lemmas below are the elementary linear algebra that
-`isStrictlyUniversalOnFrames_of_levelSystem` runs on. They are stated
+`isStrictlyUniversalOnFramesFor_of_levelSystem` runs on. They are stated
 here, immediately above their only consumer, rather than in the
 `FrameRing` section, because they mention neither `ρbar` nor the level
 system — they are statements about `Matrix (Fin 2) (Fin 2) R` and
@@ -7871,7 +7915,7 @@ theorem toMatrix'_symm_mul {R : Type*} [CommRing R]
 
 /-- **A matrix lifts entrywise along a surjective ring map** (PROVEN):
 choice on each of the four entries. -/
-theorem exists_matrix_map_eq {A : Type u} [CommRing A] {kk : Type u}
+theorem exists_matrix_map_eq {A : Type u} [CommRing A] {kk : Type v}
     [CommRing kk] (f : A →+* kk) (hf : Function.Surjective f)
     (C : Matrix (Fin 2) (Fin 2) kk) :
     ∃ L : Matrix (Fin 2) (Fin 2) A, L.map ⇑f = C := by
@@ -7928,9 +7972,27 @@ rather than over the inverse limit, so that it is provable without reopening
 the limit construction: everything it needs from the limit is `hdense` (the
 image of `P` is dense) and `hlift` (a map out of `P` killing a level ideal
 extends continuously to `R`). -/
-theorem isStrictlyUniversalOnFrames_of_levelSystem
+theorem isStrictlyUniversalOnFramesFor_of_levelSystem
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    -- CONJUGATION INVARIANCE (added 2026-07-29, `flt-lean-39`): step (3)
+    -- of the bridge below conjugates the test object by a lift of the
+    -- residual change of frame, and needs the conjugate to still satisfy
+    -- the condition before it may be fed to `hclass`.  At the base level
+    -- this was `isHardlyRamified_conj`; the 2026-07-28 ROUTE AUDIT on
+    -- `exists_universalFrame_auxDeformation_of_clauses` in
+    -- `Modularity/Patching.lean` asserted that "nowhere does either proof
+    -- use a PROPERTY of the predicate", and THAT IS FALSE — this is the
+    -- one property used, and it must travel with `Cond`.  The raised-level
+    -- instantiation has it: `isRaisedLevelHardlyRamified_conj`, proven in
+    -- that file.
+    (hCondConj : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A]
+      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      Cond A ρA → ∀ e : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A), Cond A (ρA.conj e))
     {ρbar : GaloisRep ℚ k V} (e0 : V ≃ₗ[k] (Fin 2 → k))
-    {P : Type u} [CommRing P] [Algebra ℤ_[ℓ] P] (evbar : P →+* k)
+    {P : Type w} [CommRing P] [Algebra ℤ_[ℓ] P] (evbar : P →+* k)
     (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
     (𝒥 : Set (Ideal P))
     (hres : ∀ g : Field.absoluteGaloisGroup ℚ,
@@ -7944,12 +8006,12 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
     -- lost: `IsStrictlyUniversalOnFrames` itself quantifies over test objects
     -- with `Function.Surjective πA`, so the eventual proof of this leaf has the
     -- witness in hand at every point where it needs to invoke `hclass`.
-    (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+    (hclass : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
       [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
       Function.Surjective πA →
       ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+      Cond A ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
       ∃ f : P →+* A, f.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] A ∧
@@ -7957,12 +8019,12 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
         (∀ g : Field.absoluteGaloisGroup ℚ,
           (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
         ∃ J ∈ 𝒥, J ≤ RingHom.ker f)
-    (hsep : ∀ (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+    (hsep : ∀ (A : Type w) [CommRing A] [IsLocalRing A] [Finite A]
       (πA : A →+* k) (f₁ f₂ : P →+* A),
       πA.comp f₁ = evbar → πA.comp f₂ = evbar →
       (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
       f₁ = f₂)
-    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {R : Type w} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     (ι : P →+* R) (hdense : Dense (Set.range (ι : P → R)))
     (πuniv : R →+* k) (hπι : ∀ p : P, πuniv (ι p) = evbar p)
@@ -7972,11 +8034,11 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
     (ρuniv : FramedGaloisRep ℚ R (Fin 2))
     (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
       LinearMap.toMatrix' (ρuniv g) = (M g).map ⇑ι)
-    (hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+    (hlift : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
       (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
       ∃ ψ : R →+* A, Continuous ψ ∧ ∀ p : P, ψ (ι p) = f p) :
-    IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+    IsStrictlyUniversalOnFramesFor Cond ρbar ρuniv πuniv := by
   classical
   intro A iCR iTS iTR iLR iAlg iFin iDisc ρA hρA πA hπAsurj hπA hid
   -- (0) the `ℤ_ℓ`-compatibility of the TEST reduction, which `hclass` demands
@@ -8026,7 +8088,8 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
       exact Matrix.isUnit_det_of_right_inverse hCC')
   haveI iL : Invertible L := Matrix.invertibleOfIsUnitDet L hLdet
   -- (4) conjugating the test object by that lift makes it STRICTLY identified,
-  -- and `isHardlyRamified_conj` keeps it hardly ramified.
+  -- and `hCondConj` keeps it in the deformation condition (at the base level
+  -- that hypothesis is discharged by `isHardlyRamified_conj`).
   have hu : LinearMap.toMatrix'
       ((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)) :
         (Fin 2 → A) →ₗ[A] (Fin 2 → A)) = L := by
@@ -8057,9 +8120,8 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
           rw [mul_assoc]
       _ = LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) * 1 := by rw [h1]
       _ = _ := mul_one _
-  have hρA'hr : IsHardlyRamified hℓOdd (rank_finTwoFun A)
-      (ρA.conj (L.toLinearEquiv' iL)) :=
-    isHardlyRamified_conj hℓOdd (rank_finTwoFun A) hρA _
+  have hρA'hr : Cond A (ρA.conj (L.toLinearEquiv' iL)) :=
+    hCondConj A ρA hρA _
   have hstrict : pushforwardFrame πA hπA (ρA.conj (L.toLinearEquiv' iL)) =
       ρbar.conj e0 := by
     rw [← hpfc]
@@ -8102,7 +8164,7 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
       LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
 
 /-- **The profinite limit of a level system** (PROVEN 2026-07-26 over the
-single leaf `isStrictlyUniversalOnFrames_of_levelSystem` above — the
+single leaf `isStrictlyUniversalOnFramesFor_of_levelSystem` above — the
 ARITHMETIC-FREE half of the 2026-07-26 construction cut; see the section
 docstring above).
 
@@ -8180,19 +8242,63 @@ assembly's docstring for the full argument): without it both clauses are
 statements about the ALGEBRAIC cotangent space of `R`, which for a merely
 profinite `R` is strictly larger than the continuous one, and the
 construction cannot deliver them — they would silently require the very
-Noetherian input this cut defers to `ProfiniteLocalNoetherian.lean`. -/
+Noetherian input this cut defers to `ProfiniteLocalNoetherian.lean`.
+
+PREDICATE-GENERIC AND UNIVERSE-INDEPENDENT (2026-07-29, `flt-lean-39`).
+This node and `isStrictlyUniversalOnFramesFor_of_levelSystem` above no
+longer mention `IsHardlyRamified`: the deformation condition is the
+parameter `Cond`, so the same construction serves the RAISED-LEVEL
+`ℚ`-side problem of `Modularity/Patching.lean`
+(`IsRaisedLevelHardlyRamified hpodd Q`), which is what
+`exists_universalFrame_profinite_auxDeformation_of_clauses` there needs.
+The base-level instantiation is
+`exists_universalFrame_profinite_of_deformationCondition` below.
+
+TWO CORRECTIONS TO THE 2026-07-28 ROUTE AUDIT recorded on
+`exists_universalFrame_auxDeformation_of_clauses` in
+`Modularity/Patching.lean`, both found by carrying the refactor out:
+
+1. That audit states "Nowhere does either proof use a PROPERTY of the
+   predicate", and concludes the abstraction is a pure signature edit.
+   **It is not.**  Step (4) of the strict-universality bridge conjugates
+   the test object by a lift of the residual change of frame and must
+   know the conjugate still satisfies the condition; at the base level
+   that step was `isHardlyRamified_conj`.  So the generalized statements
+   carry `hCondConj`, conjugation invariance, as a hypothesis.  (The
+   raised-level predicate has it: `isRaisedLevelHardlyRamified_conj`.)
+
+2. The audit prices the refactor at "exactly three declarations", and
+   that count omits the UNIVERSE axis, which is the axis that actually
+   blocks the raised level.  The `ℚ`-side raised-level statements keep
+   the residual field `k : Type uK` and the coefficient ring
+   `R : Type uR` INDEPENDENT, while this chain bound both to the section
+   universe `u` — the same binding the audit attributes only to Mazur's
+   `Φ_ℓ` criterion, and it sat here too.  Coefficient rings therefore now
+   live in `w`; `pushforwardFrame`, `toMatrix'_pushforwardFrame`,
+   `exists_matrix_map_eq`, `IsResidualIdentifiedFrame` and
+   `IsStrictlyUniversalOnFramesFor` were universe-generalized to match.
+   Nothing mathematical changes and every consumer is unaffected — a
+   universe generalization is backward compatible — but the edit is five
+   declarations wider than the audit's estimate. -/
 theorem exists_universalFrame_profinite_of_levelIdealSystem
     {ρbar : GaloisRep ℚ k V}
-    (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
+    (Cond : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A],
+      FramedGaloisRep ℚ A (Fin 2) → Prop)
+    (hCondConj : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A]
+      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      Cond A ρA → ∀ e : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A), Cond A (ρA.conj e))
+    (hbase : ∀ {B : Type w} [CommRing B] [TopologicalSpace B]
       [IsTopologicalRing B] [IsLocalRing B] [Algebra ℤ_[ℓ] B]
-      {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      {A : Type w} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
       [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
       (ψ : B →+* A) (hψ : Continuous ψ),
       ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A →
       ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
-      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ →
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) (pushforwardFrame ψ hψ ρ))
-    (e0 : V ≃ₗ[k] (Fin 2 → k)) {P : Type u} [CommRing P] [Algebra ℤ_[ℓ] P]
+      Cond B ρ →
+      Cond A (pushforwardFrame ψ hψ ρ))
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) {P : Type w} [CommRing P] [Algebra ℤ_[ℓ] P]
     (evbar : P →+* k) (hevsurj : Function.Surjective evbar)
     (hevalg : evbar.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] k)
     (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
@@ -8208,13 +8314,13 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
       ∃ ρJ : FramedGaloisRep ℚ (P ⧸ J) (Fin 2),
         (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
           (M g).map ⇑(Ideal.Quotient.mk J)) ∧
-        IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ J)) ρJ)
-    (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+        Cond (P ⧸ J) ρJ)
+    (hclass : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
       [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
       Function.Surjective πA →
       ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+      Cond A ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
       ∃ f : P →+* A, f.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] A ∧
@@ -8222,12 +8328,12 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
         (∀ g : Field.absoluteGaloisGroup ℚ,
           (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
         ∃ J ∈ 𝒥, J ≤ RingHom.ker f)
-    (hsep : ∀ (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+    (hsep : ∀ (A : Type w) [CommRing A] [IsLocalRing A] [Finite A]
       (πA : A →+* k) (f₁ f₂ : P →+* A),
       πA.comp f₁ = evbar → πA.comp f₂ = evbar →
       (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
       f₁ = f₂) :
-    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
+    ∃ (R : Type w) (_ : CommRing R) (_ : TopologicalSpace R)
       (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
       (_ : CompactSpace R) (_ : T2Space R)
       (ρuniv : FramedGaloisRep ℚ R (Fin 2))
@@ -8236,20 +8342,20 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
       (∀ U ∈ nhds (0 : R), ∃ I : Ideal R, IsOpen (I : Set R) ∧
         (I : Set R) ⊆ U) ∧
       IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
-      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      (∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
         [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
         (φ : R →+* A) (hφ : Continuous φ),
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A →
-        IsHardlyRamified hℓOdd (rank_finTwoFun A)
+        Cond A
           (pushforwardFrame φ hφ ρuniv)) ∧
-      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      (∀ (A : Type w) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
         [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
         (πA : A →+* k)
         (φ₁ φ₂ : R →+* A) (hφ₁ : Continuous φ₁) (hφ₂ : Continuous φ₂),
         πA.comp φ₁ = πuniv → πA.comp φ₂ = πuniv →
         pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
         φ₁ = φ₂) ∧
-      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+      IsStrictlyUniversalOnFramesFor Cond ρbar ρuniv πuniv := by
   classical
   -- ## the levels, with their discrete topologies
   letI ltop : ∀ J : 𝒥, TopologicalSpace (P ⧸ (J : Ideal P)) := fun _ => ⊥
@@ -8360,7 +8466,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
   have hrepJex : ∀ J : 𝒥, ∃ ρJ : FramedGaloisRep ℚ (P ⧸ (J : Ideal P)) (Fin 2),
       (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
         (M g).map ⇑(Ideal.Quotient.mk (J : Ideal P))) ∧
-      IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ (J : Ideal P))) ρJ :=
+      Cond (P ⧸ (J : Ideal P)) ρJ :=
     fun J => hrep (J : Ideal P) J.2
   choose ρJ hρJmat hρJhr using hrepJex
   set mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) (LevelLimit.Limit 𝒥) :=
@@ -8415,7 +8521,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     intro g
     rw [hρunivdef]
     exact LevelLimit.toMatrix'_framedOfMatrices mat hone hmul hcont g
-  have hpush : ∀ {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+  have hpush : ∀ {A : Type w} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
       (ψ : (LevelLimit.Limit 𝒥) →+* A) (hψ : Continuous ψ)
       (g : Field.absoluteGaloisGroup ℚ),
       LinearMap.toMatrix' (pushforwardFrame ψ hψ ρuniv g) =
@@ -8423,7 +8529,7 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     intro A _ _ _ ψ hψ g
     rw [toMatrix'_pushforwardFrame, hρmat, Matrix.map_map]
   -- ## a map out of `P` killing a level ideal extends continuously to the limit
-  have hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+  have hlift : ∀ (A : Type w) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
       (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
       ∃ ψ : (LevelLimit.Limit 𝒥) →+* A, Continuous ψ ∧
@@ -8451,7 +8557,10 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
   · -- residual identification: the STRICT reduction, read through `e0`
     have hpf : pushforwardFrame πuniv hπcont ρuniv = ρbar.conj e0 := by
       refine GaloisRep.ext fun g => LinearMap.toMatrix'.injective ?_
-      rw [hpush πuniv hπcont g,
+      -- `hpush` below is a local `have`, hence monomorphic in the TEST
+      -- universe `w`; `πuniv` lands in the residual field `k : Type u`, so
+      -- its proof is inlined here (2026-07-29, `flt-lean-39`).
+      rw [toMatrix'_pushforwardFrame, hρmat, Matrix.map_map,
         show (⇑πuniv ∘ ⇑(LevelLimit.ofP 𝒥)) = ⇑evbar from funext hπι]
       exact hres g
     letI : Algebra (LevelLimit.Limit 𝒥) k := πuniv.toAlgebra
@@ -8507,7 +8616,8 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
     rintro x ⟨p, rfl⟩
     exact RingHom.congr_fun hg p
   · -- strict universality: the one clause with content, cut out above
-    exact isStrictlyUniversalOnFrames_of_levelSystem (hℓOdd := hℓOdd) (e0 := e0)
+    exact isStrictlyUniversalOnFramesFor_of_levelSystem
+      (Cond := Cond) (hCondConj := hCondConj) (e0 := e0)
       (evbar := evbar) (M := M) (𝒥 := 𝒥) (hres := hres) (hclass := hclass)
       (hsep := hsep) (ι := LevelLimit.ofP 𝒥)
       (hdense := LevelLimit.dense_range_ofP 𝒥 hne hdir) (πuniv := πuniv)
@@ -8690,7 +8800,16 @@ theorem exists_universalFrame_profinite_of_deformationCondition (hℓ5 : 5 ≤ �
       hschur hfin hbase hglue
   letI := iP
   letI := iPalg
-  exact exists_universalFrame_profinite_of_levelIdealSystem hℓOdd hbase
+  -- the deformation condition, as the predicate parameter of the now
+  -- predicate-generic construction (2026-07-29, `flt-lean-39`), together with
+  -- its conjugation invariance
+  exact exists_universalFrame_profinite_of_levelIdealSystem (ℓ := ℓ)
+    (fun A iCR iTS iTR iLR iAlg ρA =>
+      letI := iCR; letI := iTS; letI := iTR; letI := iLR; letI := iAlg
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA)
+    (fun A iCR iTS iTR iLR iAlg ρA hρA e =>
+      isHardlyRamified_conj hℓOdd (rank_finTwoFun A) hρA e)
+    hbase
     e0 evbar hevsurj hevalg M 𝒥 hne hdir hker hlev hresM hrep hclass hsep
 
 open scoped TensorProduct in
@@ -9491,7 +9610,7 @@ Needed because `pushforwardFrame` takes its continuity proof as an
 explicit argument, which makes the map argument occur in a
 dependently-typed position and blocks a plain `rw`. -/
 theorem pushforwardFrame_congr {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
     [IsTopologicalRing A] {ψ χ : B →+* A} (hψ : Continuous ψ)
     (hχ : Continuous χ) (h : ψ = χ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
     pushforwardFrame ψ hψ ρ = pushforwardFrame χ hχ ρ := by
@@ -9503,8 +9622,8 @@ along `ψ` and then along `χ` is pushing forward along `χ ∘ ψ`. Read on
 matrices (`toMatrix'_pushforwardFrame`) this is just
 `Matrix.map_map`. -/
 theorem pushforwardFrame_comp {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
-    [IsTopologicalRing A] {C : Type u} [CommRing C] [TopologicalSpace C]
+    [IsTopologicalRing B] {A : Type v} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {C : Type w} [CommRing C] [TopologicalSpace C]
     [IsTopologicalRing C] (ψ : B →+* A) (hψ : Continuous ψ) (χ : A →+* C)
     (hχ : Continuous χ) (hcomp : Continuous ⇑(χ.comp ψ))
     (ρ : FramedGaloisRep ℚ B (Fin 2)) :
@@ -9540,7 +9659,7 @@ theorem GaloisRep.conj_trans {A : Type*} [CommRing A] [TopologicalSpace A]
 (PROVEN 2026-07-25): the `pushforwardFrame` specialization of
 `charpoly_baseChange_conj`, with the algebra map read back as `ψ`. -/
 theorem charpoly_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type v} [CommRing A]
     [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
     (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
     (g : Field.absoluteGaloisGroup ℚ) :
