@@ -87,6 +87,8 @@ module
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.AlgebraicGeometry.Sites.Fpqc
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.FieldTheory.AbsoluteGaloisGroup
 public import Mathlib.Algebra.Group.MinimalAxioms
 public import Mathlib.Algebra.Module.Torsion.Basic
@@ -1580,10 +1582,49 @@ polarization module:
 
 `PolarizationStruct.baseChangeOfIsPullback` therefore takes those two clauses
 as HYPOTHESES, `hinj` and `hsurj`, stated verbatim as the fields they become.
-That is the honest shape: a caller who has a reason for descent — `q`
-faithfully flat and quasi-compact, so that `Hom` is an fppf sheaf; or a
-normalization pinned by hand across the family — supplies it, and everything
-else is free. Writing them as a sorried leaf would be writing a FALSE leaf.
+That is the honest shape: a caller who has a reason for descent supplies it,
+and everything else is free. Writing them as an unconditional sorried leaf
+would be writing a FALSE leaf.
+
+**THE TWO CLAUSES ARE NOT SYMMETRIC UNDER fppf** (correction, 2026-07-28 — an
+earlier version of this paragraph offered "`q` faithfully flat and
+quasi-compact, so that `Hom` is an fppf sheaf" as a reason discharging BOTH,
+and that is wrong for the second one). The fppf sheaf condition on `Hom` is an
+EQUALIZER
+
+    Hom_S(A, A^∨)  ↪  Hom_{S'}(A', A'^∨)  ⇉  Hom_{S''}(A'', A''^∨),
+
+`S'' = S' ×_S S'`. Its two halves say different things:
+
+* SEPARATEDNESS — the first map is INJECTIVE — is unconditional in `s` and is
+  exactly what `lam_injective` needs. It is PROVEN below as
+  `SymHomStruct.hom_eq_of_baseChange_hom_eq`, and it discharges `hinj`
+  (`PolarizationStruct.lam_injective_baseChange`), so
+  `PolarizationStruct.baseChangeOfFppf` asks only for `hsurj`.
+* EFFECTIVITY — an `s` over `S'` comes from `S` — holds only for those `s`
+  that satisfy the COCYCLE CONDITION, i.e. whose two pullbacks to `S''` agree.
+  `lam_surjective` quantifies over ALL `s : SymHomStruct d'`, so it needs
+  every such `s` to be a descent datum, which is false.
+
+**FALSITY AUDIT of the fppf claim for `lam_surjective`.** The witness is the
+one already recorded above, and the point is that it IS an fppf base change.
+Let `K/ℚ` be real quadratic, `E/K` an elliptic curve without CM, and
+`A = Res_{K/ℚ} E` over `S = Spec ℚ`, with `R = 𝒪_K` acting. `A` is a simple
+abelian surface and `Hom^sym_{𝒪_K}(A, A^∨)` has rank `1`, so it can be
+`𝔞`. Take `q = Spec K ⟶ Spec ℚ`. That `q` is finite étale, hence **flat**,
+**surjective** and **quasi-compact** — an fppf (indeed fpqc) covering, and
+mathlib's `EffectiveEpi` instance applies to it verbatim. But
+`A ×_ℚ K ≅ E × E^σ` and `Hom^sym_{𝒪_K}` there has rank `2`: the extra class
+is the graph of the identification, which is defined over `K` and not over
+`ℚ`. So `lam` cannot be onto over `S'` for ANY `𝔞` that worked over `S`,
+while `q` satisfies every fppf hypothesis. Néron–Severi jumping at a field
+extension is precisely a failure of effectivity for an fppf `q`, not a
+failure of the fppf hypothesis.
+
+Consequence for consumers: `hsurj` must come from something OTHER than
+flatness of `q` — a cocycle condition checked by hand, a normalization pinned
+across the family, or a moduli-theoretic reason why no new symmetric
+homomorphisms appear.
 
 ## Cone status
 
@@ -2111,6 +2152,235 @@ noncomputable def baseChangeOfIsPullback (pol : PolarizationStruct d 𝒩 𝔞 �
     apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
     simp only [SymHomStruct.ofBaseChange_hom, RelPoint.ofBaseChange_baseChangeMap]
     exact pol.hom_eq_lam _
+
+end PolarizationStruct
+
+/-!
+### fppf descent for symmetric homomorphisms
+
+The two clauses that `PolarizationStruct.baseChangeOfIsPullback` cannot
+transport are `lam_injective` and `lam_surjective`. This section proves the
+half of fppf descent that discharges the FIRST of them, and records — with a
+counterexample, in the section docstring above — that no amount of flatness
+discharges the second.
+
+**What is proven.** `Hom` is a sheaf for the fpqc topology, and the
+separatedness half of the sheaf condition is that a homomorphism is determined
+by its base change along a covering. Concretely, `q : S' ⟶ S` faithfully flat
+and quasi-compact is a UNIVERSAL EPIMORPHISM: mathlib's
+`AlgebraicGeometry.Scheme` instance makes any surjective, quasi-compact, flat
+morphism an `EffectiveEpi`, and `Flat`, `Surjective` and `QuasiCompact` are
+each stable under base change, so every projection `T ×_S S' ⟶ T` is an
+epimorphism too. Two natural transformations of functors of points over `S`
+whose base changes to `S'` agree therefore agree already over `S`: evaluate at
+a relative point `y` over `g : T ⟶ S`, pull `y` back to `T ×_S S'`, and cancel
+the epimorphism. That is `RelPoint.eq_of_baseChangeMap_eq`, and
+`SymHomStruct.hom_eq_of_baseChange_hom_eq` is its specialization to symmetric
+homomorphisms.
+
+**Why the hypothesis is `Flat` + `Surjective` + `QuasiCompact` rather than
+`LocallyOfFinitePresentation`.** Both are available: mathlib carries an
+`EffectiveEpi` instance for each. The fpqc form is used here because it is the
+weaker of the two on the flat side and because `QuasiCompact` is what the rest
+of this development already carries. A caller holding an fppf covering in the
+finite-presentation form supplies `RelPoint.eq_of_baseChangeMap_eq`'s explicit
+`hq` argument directly — that is exactly why `hq` is an ordinary hypothesis
+there and instances appear only in the wrappers below.
+
+**What is NOT proven, and is FALSE.** That `lam_surjective` descends. See the
+FALSITY AUDIT in the section docstring above: `Res_{K/ℚ} E` base changed along
+the finite étale `Spec K ⟶ Spec ℚ` has `Hom^sym_{𝒪_K}` of rank `2` where the
+source has rank `1`. Effectivity of fppf descent is conditional on the cocycle
+condition, and `lam_surjective` quantifies over symmetric homomorphisms that
+need not satisfy it. `PolarizationStruct.baseChangeOfFppf` therefore still
+takes `hsurj` as a hypothesis, and only `hinj` has been discharged.
+
+Everything in this section is PROVEN; it contains no `sorry`.
+-/
+
+namespace RelPoint
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+
+/-- **A faithfully flat quasi-compact morphism is a UNIVERSAL epimorphism.**
+
+`Flat`, `Surjective` and `QuasiCompact` are each stable under base change, and
+mathlib makes a morphism with all three an `EffectiveEpi`, hence an `Epi`. So
+every base change `t` of such a `q` — in particular every projection
+`T ×_S S' ⟶ T` — may be cancelled on the left. This is the only input the
+descent theorems below take from the geometry of `q`. -/
+theorem epi_of_isPullback_of_flat [Flat q] [Surjective q] [QuasiCompact q]
+    {T T' : Scheme.{u}} {t : T' ⟶ T} {g : T ⟶ S} {g' : T' ⟶ S'} (ht : IsPullback t g' g q) :
+    Epi t := by
+  haveI : Flat t := MorphismProperty.IsStableUnderBaseChange.of_isPullback ht.flip ‹Flat q›
+  haveI : Surjective t :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback ht.flip ‹Surjective q›
+  haveI : QuasiCompact t :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback ht.flip ‹QuasiCompact q›
+  infer_instance
+
+/-- **Relative points are separated by an epimorphic change of test object**:
+if two `T`-points of `e` become equal after precomposition with an
+epimorphism `t : T' ⟶ T`, they were equal. A `RelPoint` is a subtype of
+morphisms, so this is `cancel_epi` plus `Subtype.ext`. -/
+theorem eq_of_pre_eq_of_epi {D T T' : Scheme.{u}} {e : D ⟶ S} {g : T ⟶ S} {t : T' ⟶ T} [Epi t]
+    {u v : RelPoint e g}
+    (h : RelPoint.pre t (rfl : t ≫ g = t ≫ g) u = RelPoint.pre t rfl v) : u = v := by
+  have h' : t ≫ u.1 = t ≫ v.1 := congrArg Subtype.val h
+  exact Subtype.ext ((cancel_epi t).mp h')
+
+/-- **fppf DESCENT FOR HOMOMORPHISMS, SEPARATEDNESS HALF.**
+
+A natural transformation of functors of points over `S` is determined by its
+base change along `q`, as soon as `q` is a universal epimorphism (`hq`; supply
+`epi_of_isPullback_of_flat` when `q` is faithfully flat and quasi-compact).
+
+This is the separatedness half of the statement that `Hom` is an fppf sheaf,
+and it is the reusable form: `H` and `K` are arbitrary transformations with
+their naturality, so the theorem applies to homomorphisms of abelian schemes,
+to the zero section, and to anything else `RelPoint.baseChangeMap` transports.
+The EFFECTIVITY half — that a transformation over `S'` DESCENDS — is a strictly
+further statement, true only under the cocycle condition, and is deliberately
+not asserted here; see the FALSITY AUDIT in the section docstring.
+
+The proof is the standard one. Given `y` over `g : T ⟶ S`, form `T ×_S S'`;
+its first projection `t` is a base change of `q`, hence an epimorphism, and its
+second projection makes `RelPoint.pre t rfl y` come from a relative point of
+`f'`. The hypothesis at that point, read back through
+`RelPoint.ofBaseChange_baseChangeMap`, gives `H (pre t rfl y) = K (pre t rfl y)`;
+naturality moves `pre t rfl` outside, and `t` cancels. -/
+theorem eq_of_baseChangeMap_eq {D D' : Scheme.{u}} {e : D ⟶ S} {e' : D' ⟶ S'} {pd : D' ⟶ D}
+    (hp : IsPullback p f' f q) (hpd : IsPullback pd e' e q)
+    (hq : ∀ {T T' : Scheme.{u}} {t : T' ⟶ T} {g : T ⟶ S} {g' : T' ⟶ S'},
+      IsPullback t g' g q → Epi t)
+    (H K : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint e g)
+    (Hpre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+      (y : RelPoint f g), RelPoint.pre h hg (H y) = H (RelPoint.pre h hg y))
+    (Kpre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+      (y : RelPoint f g), RelPoint.pre h hg (K y) = K (RelPoint.pre h hg y))
+    (hHK : ∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+      baseChangeMap hp hpd (fun {_} {_} => H) y = baseChangeMap hp hpd (fun {_} {_} => K) y)
+    {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) : H y = K y := by
+  have ht : IsPullback (pullback.fst g q) (pullback.snd g q) g q := IsPullback.of_hasPullback g q
+  have hg : pullback.snd g q ≫ q = pullback.fst g q ≫ g := ht.w.symm
+  haveI : Epi (pullback.fst g q) := hq ht
+  refine eq_of_pre_eq_of_epi (t := pullback.fst g q) ?_
+  rw [Hpre, Kpre]
+  have h1 := hHK (toBaseChange hp hg
+    (RelPoint.pre (pullback.fst g q) (rfl : pullback.fst g q ≫ g = pullback.fst g q ≫ g) y))
+  have h2 := congrArg (ofBaseChange hpd hg) h1
+  rwa [ofBaseChange_baseChangeMap, ofBaseChange_baseChangeMap, ofBaseChange_toBaseChange] at h2
+
+/-- **The base change of the constant zero transformation is the zero
+section of the base-changed abelian scheme.** This is what lets
+`eq_of_baseChangeMap_eq` be applied against "`λ_a` is zero after base change",
+whose right-hand side is written with the base-changed `zero` rather than as a
+transported transformation. -/
+theorem baseChangeMap_zero {D D' : Scheme.{u}} {e : D ⟶ S} {e' : D' ⟶ S'} {pd : D' ⟶ D}
+    (hp : IsPullback p f' f q) (hpd : IsPullback pd e' e q) (ab₂ : AbelianSchemeStruct e)
+    {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g) :
+    baseChangeMap hp hpd (fun {_} {g₀} (_ : RelPoint f g₀) => ab₂.zero g₀) y =
+      (ab₂.baseChangeOfIsPullback hpd).zero g := by
+  apply ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+  rw [ofBaseChange_baseChangeMap, AbelianSchemeStruct.ofBaseChange_zero]
+
+end RelPoint
+
+namespace SymHomStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R] {m : Mult ab R}
+variable {d : DualStruct ab m}
+
+/-- **fppf DESCENT FOR SYMMETRIC HOMOMORPHISMS.**
+
+Two symmetric `R`-linear homomorphisms `A ⟶ A^∨` whose base changes along a
+faithfully flat quasi-compact `q` agree, agree. Equivalently:
+`SymHomStruct.baseChangeOfIsPullback` is injective on the underlying
+homomorphism, which is the separatedness half of the fppf sheaf condition for
+`Hom^sym_R(A, A^∨)`.
+
+`SymHomStruct` bundles proofs (`hom_add`, `weil_self`, …) along with the map,
+so the conclusion is stated on `hom` rather than as `s = s₂`: two structures
+with equal `hom` fields carry propositionally equal but not syntactically
+identical proof fields, and every consumer here compares `hom`s.
+
+Note that the EFFECTIVITY half fails: `Hom^sym` genuinely grows under fppf
+base change (`Res_{K/ℚ} E` along `Spec K ⟶ Spec ℚ`), so there is no companion
+surjectivity statement to be had. -/
+theorem hom_eq_of_baseChange_hom_eq (s s₂ : SymHomStruct d) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) [Flat q] [Surjective q] [QuasiCompact q]
+    (h : ∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+      (s.baseChangeOfIsPullback hp hpd).hom y = (s₂.baseChangeOfIsPullback hp hpd).hom y)
+    {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) : s.hom y = s₂.hom y :=
+  RelPoint.eq_of_baseChangeMap_eq hp hpd (fun ht => RelPoint.epi_of_isPullback_of_flat ht)
+    (fun {_} {_} => s.hom) (fun {_} {_} => s₂.hom)
+    (@SymHomStruct.pre_hom _ _ _ _ _ _ _ _ s) (@SymHomStruct.pre_hom _ _ _ _ _ _ _ _ s₂)
+    (fun y => h y) y
+
+end SymHomStruct
+
+namespace PolarizationStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R] {m : Mult ab R}
+variable {d : DualStruct ab m} {𝒩 : Set (Ideal R)} {𝔞 : Ideal R} {𝔞pos : Set R}
+
+/-- **`lam_injective` DESCENDS along a faithfully flat quasi-compact `q`** —
+the first of the two clauses that `baseChangeOfIsPullback` takes as a
+hypothesis, discharged.
+
+This is `SymHomStruct.hom_eq_of_baseChange_hom_eq` against the constant zero
+transformation rather than against a second `SymHomStruct`: `λ_a` being zero
+after base change forces `λ_a` to be zero, and `pol.lam_injective` then gives
+`a = 0`. The zero transformation is natural by `AbelianSchemeStruct.pre_zero`,
+and `RelPoint.baseChangeMap_zero` identifies its base change with the zero
+section of the base-changed dual. -/
+theorem lam_injective_baseChange (pol : PolarizationStruct d 𝒩 𝔞 𝔞pos)
+    (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) [Flat q] [Surjective q] [QuasiCompact q]
+    (a : ↥𝔞)
+    (h : ∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+      ((pol.lam a).baseChangeOfIsPullback hp hpd).hom y =
+        (d.baseChangeOfIsPullback hp hpd).dualAb.zero g) : a = 0 := by
+  refine pol.lam_injective a ?_
+  intro T g y
+  refine RelPoint.eq_of_baseChangeMap_eq hp hpd
+      (fun ht => RelPoint.epi_of_isPullback_of_flat ht) (fun {_} {_} => (pol.lam a).hom)
+      (fun {_} {g₀} (_ : RelPoint f g₀) => d.dualAb.zero g₀) ?_ ?_ ?_ y
+  · intro T' T h' g' g'' hg y
+    exact (pol.lam a).pre_hom h' hg y
+  · intro T' T h' g' g'' hg y
+    exact d.dualAb.pre_zero h' hg
+  · intro T g y
+    rw [RelPoint.baseChangeMap_zero hp hpd d.dualAb]
+    exact h y
+
+/-- **Base change of a polarization along a faithfully flat quasi-compact
+`q`** — `baseChangeOfIsPullback` with `hinj` discharged by fppf descent.
+
+Only `hsurj` remains, and it remains BY NECESSITY rather than by omission:
+`Hom^sym_R(A, A^∨)` grows under fppf base change, so no flatness hypothesis can
+supply it. The witness is `A = Res_{K/ℚ} E` over `Spec ℚ` with `R = 𝒪_K`, base
+changed along the finite étale — hence flat, surjective and quasi-compact —
+morphism `Spec K ⟶ Spec ℚ`: rank `1` becomes rank `2`. See the FALSITY AUDIT
+in this section's docstring.
+
+A caller must therefore still have a reason of its own for `hsurj` — a cocycle
+condition verified by hand, or a moduli-theoretic reason why the base change
+acquires no new symmetric homomorphisms. -/
+noncomputable def baseChangeOfFppf (pol : PolarizationStruct d 𝒩 𝔞 𝔞pos)
+    (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) [Flat q] [Surjective q] [QuasiCompact q]
+    (hsurj : ∀ s : SymHomStruct (d.baseChangeOfIsPullback hp hpd), ∃ a : ↥𝔞,
+        ∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+          ((pol.lam a).baseChangeOfIsPullback hp hpd).hom y = s.hom y) :
+    PolarizationStruct (d.baseChangeOfIsPullback hp hpd) 𝒩 𝔞 𝔞pos :=
+  pol.baseChangeOfIsPullback hp hpd
+    (fun a h => pol.lam_injective_baseChange hp hpd a (fun y => h y)) hsurj
 
 end PolarizationStruct
 
