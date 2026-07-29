@@ -17616,7 +17616,7 @@ theorem exists_ringHom_charFrob_eq_of_heckeDeformation
   -- Hecke side) and `v` (the abstract module `V` carrying `ρ`)
   obtain ⟨Runiv, iCR, iTop, iTR, iLoc, iAlg, iNoeth, hadic, hcomplete,
     ρuniv, hranku, hρuniv, πuniv, hπuniv, Suniv, hunivred, hfactU,
-    hfactV⟩ :=
+    hfactV, hgen⟩ :=
     exists_weaklyUniversal_hardlyRamifiedDeformation.{u, v, u, max u v}
       hpodd hVbar hρbar hirrbar
   letI := iCR
@@ -17665,7 +17665,7 @@ theorem exists_ringHom_charFrob_eq_of_heckeDeformation
       hψTalg' hψTπ' hψT'
   have hinjT : Function.Injective ψT :=
     injective_ringHom_of_isWeaklyUniversal hpodd hVbar hρbar hirrbar
-      hadic hcomplete hranku hρuniv hπuniv hunivred hfactU hrankT hρT hπ
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfactU hgen hrankT hρT hπ
       hred ψT hψTalg' hψTπ' hψT'
   -- assemble `Φ := ψR ∘ ψT⁻¹` and chase the traces through `Runiv`
   have hbijT : Function.Bijective ψT := ⟨hinjT, hsurjT⟩
@@ -17931,7 +17931,7 @@ theorem exists_weightTwoEigenform_of_heckeDeformation_order_point
   -- package classifying both hardly ramified deformations of `ρbar`
   obtain ⟨Runiv, iuCR, iuTop, iuTR, iuLoc, iuAlg, iuNoeth, hadic, hcomplete,
     ρuniv, hranku, hρuniv, πuniv, hπuniv, Suniv, hunivred, hfactU,
-    hfactV⟩ :=
+    hfactV, hgen⟩ :=
     exists_weaklyUniversal_hardlyRamifiedDeformation hℓodd hW hρbar hirr
   letI := iuCR
   letI := iuTop
@@ -17969,7 +17969,7 @@ theorem exists_weightTwoEigenform_of_heckeDeformation_order_point
       hψ₀π' hψ₀'
   have hinjψ₀ : Function.Injective ψ₀ :=
     injective_ringHom_of_isWeaklyUniversal hℓodd hW hρbar hirr hadic
-      hcomplete hranku hρuniv hπuniv hunivred hfactV hrankT₀ hρT₀ hπ₀
+      hcomplete hranku hρuniv hπuniv hunivred hfactV hgen hrankT₀ hρT₀ hπ₀
       hred₀' ψ₀ hψ₀alg' hψ₀π' hψ₀'
   have hbij₀ : Function.Bijective ψ₀ := ⟨hinjψ₀, hsurj₀⟩
   -- transport the order point `j ∘ φ` of `T` along `ψ ∘ ψ₀⁻¹` to a
