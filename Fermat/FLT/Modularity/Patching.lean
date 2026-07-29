@@ -9566,13 +9566,54 @@ by `exfalso` from the odd-prime dichotomy against an irreducible hardly ramified
 is banned by the circularity guard.  A proof ending in `exfalso` must be
 rejected.
 
-The recommended discharge is the one the Hilbert twin also records: make the
-base-level chain (`exists_universalFrame_profinite_of_deformationCondition` and
-the level-ideal system beneath it, in
-`HardlyRamified/Deformation.lean`) PREDICATE-GENERIC in the local condition and
-instantiate it twice, rather than transcribing it.  That refactor edits proven
-declarations belonging to other owners, which is why it was not attempted at
-this cut.
+# ROUTE AUDIT 2026-07-28 (flt-lean-151, at the cut) — THE REFACTOR IS SMALL
+
+Both this file and the Hilbert twin recommend "make the base-level chain
+PREDICATE-GENERIC and instantiate it twice", and both then wave at the cost.
+The cost was MEASURED here rather than guessed, because the guess ("~1300 lines
+to transcribe", "several dozen proven declarations to edit") is what has kept
+this route unattempted, and it is wrong by an order of magnitude.
+
+`HardlyRamified/Deformation.lean` already cuts the base-level construction along
+the ARITHMETIC / PURE-ALGEBRA seam, at a level-ideal system `(P, evbar, M, 𝒥)`:
+
+* `exists_levelIdealSystem_of_deformationCondition` — all of the arithmetic;
+* `exists_universalFrame_profinite_of_levelIdealSystem` — no arithmetic at all
+  beyond the functoriality clause it is handed.
+
+**Only the SECOND half needs generalizing, and it is three declarations.**
+`IsHardlyRamified` occurs in `exists_universalFrame_profinite_of_levelIdealSystem`
+exactly six times in its signature (the `hbase`, `hrep`, `hclass` hypotheses and
+the quotient clause of its conclusion) and ONCE in its body — a `have` that
+merely restates `hrep`'s output before `choose`.  In
+`isStrictlyUniversalOnFrames_of_levelSystem`, which discharges its last clause,
+it occurs twice, again once in a hypothesis and once in a transporting `have`.
+Nowhere does either proof use a PROPERTY of the predicate.  So abstracting
+`fun A ρ => IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ` into a parameter
+touches exactly `IsStrictlyUniversalOnFrames` (the def),
+`isStrictlyUniversalOnFrames_of_levelSystem` and
+`exists_universalFrame_profinite_of_levelIdealSystem` — three declarations,
+mechanically.
+
+*The refuting check for this section, so the next reader need not redo it:*
+`awk 'NR>=8120 && NR<=8460' Fermat/FLT/GaloisRepresentation/HardlyRamified/Deformation.lean`
+`  | grep -n 'IsHardlyRamified'` — and read whether any hit is a proof step
+rather than a signature or a restatement.  (Line numbers drift; locate the two
+theorems by name.)
+
+**What that refactor does NOT buy, and this is the part to plan around.** The
+arithmetic leaf `exists_levelIdealSystem_of_deformationCondition` cannot be
+reused: it is exactly where the local condition enters, so the raised level
+needs its OWN level-ideal system, and that is where `hglue`, `hfin`, `hirr` and
+`𝒟₀` are actually spent.  So the honest shape of the remaining work is
+
+1. generalize the three declarations above (mechanical, in another owner's file),
+2. state and prove a raised-level `exists_levelIdealSystem_aux_of_clauses`,
+
+and this leaf is then their assembly.  Step 2 is the real content; step 1 is
+bookkeeping that has been mistaken for the obstruction.  Neither step was taken
+at this cut: step 1 edits proven declarations belonging to another owner, and
+step 2 is a full leaf's worth of arithmetic in its own right.
 
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
 
@@ -9936,12 +9977,16 @@ signature reads `{k : Type u_1} … {R : Type u_1}`.
 
 **The right way to discharge the remaining leaf is still to make the base-level
 chain PREDICATE-GENERIC and instantiate it twice**, rather than to transcribe
-~1300 lines a second time.  That refactor was not attempted here because it
-edits proven declarations belonging to other owners
-(`HardlyRamified/Deformation.lean`'s level-ideal system in particular); a
-successor holding the whole chain should consider it before transcribing.  The
-Hilbert twin records the same recommendation, and a single predicate-generic
-machine serving both sides is the outcome worth aiming at.
+~1300 lines a second time.  It was not attempted here because it edits proven
+declarations belonging to another owner — but see the ROUTE AUDIT on
+`exists_universalFrame_auxDeformation_of_clauses` above, which MEASURES that
+edit rather than guessing at it: it is three declarations in
+`HardlyRamified/Deformation.lean`, not several dozen, and the arithmetic leaf
+beneath them needs no change at all.  What the refactor does not buy is the
+raised-level level-ideal system itself, which is where the local condition
+genuinely enters and is the real remaining content.  The Hilbert twin records
+the same recommendation, and a single predicate-generic machine serving both
+sides is the outcome worth aiming at.
 
 **WHAT THE REMAINING LEAF MAY NOT DO.**  The base-level `ℚ` chain bottoms out in
 `exists_framedStrictlyUniversal_hardlyRamified_finiteTests`, which is
