@@ -72,13 +72,57 @@ open IsDedekindDomain MeasureTheory NumberField
 open scoped TensorProduct
 
 variable (K : Type*) [Field K] [NumberField K]
-variable (D : Type*) [DivisionRing D] [Algebra K D]
+
+/-
+## How general is `D` here? (variable-block relaxation, 2026-07-28)
+
+This file used to sit entirely under `variable (D) [DivisionRing D]`, which made
+none of it citable from `Fermat/FLT/AutomorphicForm/QuaternionAlgebra/Basic.lean`,
+where `D` is only a `Ring` carrying `[IsQuaternionAlgebra F D]` (a quaternion
+algebra may be split, i.e. `≃ₐ M₂(F)`, so it is *not* a division ring in general).
+
+The file is now split into two sibling sections.
+
+* `section RingD` — `[Ring D] [Algebra K D]`, everything through `Aux.T_finite`,
+  `Aux.C_compact` and `InfiniteAdeleRing.DinfTensorPiEquivPiTensor`. Two extra
+  hypotheses are named where they are actually used rather than blanket-assumed:
+  - `[IsSimpleRing D]` on the four Haar-character lemmas, which is what
+    `IsSimpleRing.ringHaarChar_eq_addEquivAddHaarChar_mulRight` really consumes;
+    `DivisionRing D` only ever reached it through `DivisionRing → IsSimpleRing`.
+  - `[Nontrivial D]`, introduced by a `variable` line immediately before
+    `ringHaarChar_D𝔸_real_surjective` (and again before `E_family_unbounded`,
+    the first consumer in the second `Aux` block). It is consumed exactly once,
+    by `Module.finrank_pos` on `Dinf K D`. Everything before those two points —
+    discreteness of `D` in `D_𝔸`, cocompactness, `D𝔸ProdRight`, `Efamily`,
+    `Uf`/`Ui` — holds for a possibly-trivial `D`.
+* `section DivisionRingD` at the bottom — `[DivisionRing D] [Algebra K D]`, holding
+  the seven declarations that genuinely need every nonzero element of `D` to be a
+  unit, together with Fujisaki's lemma itself.
+
+The dividing line was located by compiler probe, not by reading: relaxing the
+whole block to `[Ring D]` left exactly five errors, and only two of them
+(`X_meets_kernel`, `X_meets_kernel'`, both at `isUnit_iff_ne_zero`) were real.
+The other three were `IsSimpleRing` synthesis failures, discharged by naming that
+hypothesis.
+
+`IsQuaternionAlgebra F D` supplies `Nontrivial D`, `Module.Finite F D`,
+`IsSimpleRing D` and `Algebra.IsCentral F D` as instances, so every `RingD`
+declaration below is citable at a quaternion algebra with no side conditions.
+-/
+section RingD
+
+variable (D : Type*) [Ring D] [Algebra K D]
 
 -- notation for this file
 
 set_option quotPrecheck false in
-/-- `D_𝔸` is notation for `D ⊗[K] 𝔸_K`. -/
-notation "D_𝔸" => (D ⊗[K] AdeleRing (𝓞 K) K)
+/-- `D_𝔸` is notation for `D ⊗[K] 𝔸_K`.
+
+`local`, and repeated verbatim in `section DivisionRingD` below, because the
+notation captures the section variable `D` at its declaration site: a single
+global `notation` declared here expands to *this* section's `D` and becomes an
+unresolvable `D✝` once the section closes. -/
+local notation "D_𝔸" => (D ⊗[K] AdeleRing (𝓞 K) K)
 
 -- abbrevs for this file, in an Aux namespace (as is most of this file;
 -- it is local definitions and lemmas which we don't need. All we need
@@ -387,6 +431,11 @@ lemma ringHaarChar_D𝔸 (a : Dinfx K D) (b : Dfx K D) :
     (D𝔸ProdRight'' K D)
   simp [MulEquivClass.map_mul]
 
+-- `Nontrivial D` enters here and nowhere earlier: it is what makes
+-- `Module.finrank ℝ (Dinf K D)` positive, i.e. what stops the exponent
+-- `1 / finrank ℝ (Dinf K D)` below from being `1 / 0`.
+variable [Nontrivial D]
+
 /-- For any positive real `r`, there's some `ρ ∈ ℝˣ` such that the haar character of
 `(ρ, 1) ∈ D_f × D_∞` is `r`. -/
 lemma ringHaarChar_D𝔸_real_surjective (r : ℝ) (h : r > 0) :
@@ -428,7 +477,8 @@ variable
 /-- Left and right Haar characters agree for
 `u : (Π vi : InfinitePlace K, (D ⊗[K] vi.Completion))ˣ`. -/
 lemma isCentralSimple_infinite_addHaarScalarFactor_left_mul_eq_right_mul_aux
-    [Algebra.IsCentral K D] (u : (Π vi : InfinitePlace K, (D ⊗[K] vi.Completion))ˣ) :
+    [Algebra.IsCentral K D] [IsSimpleRing D]
+    (u : (Π vi : InfinitePlace K, (D ⊗[K] vi.Completion))ˣ) :
     addEquivAddHaarChar (ContinuousAddEquiv.mulLeft u) =
     addEquivAddHaarChar (ContinuousAddEquiv.mulRight u) := by
   open MeasureTheory in
@@ -603,7 +653,7 @@ def DinfTensorPiEquivPiTensorMulEquiv :
 
 open scoped NumberField.AdeleRing in
 lemma isCentralSimple_infinite_addHaarScalarFactor_left_mul_eq_right_mul
-    [Algebra.IsCentral K D] (u : (Dinf K D)ˣ) :
+    [Algebra.IsCentral K D] [IsSimpleRing D] (u : (Dinf K D)ˣ) :
     addEquivAddHaarChar (ContinuousAddEquiv.mulLeft u) =
     addEquivAddHaarChar (ContinuousAddEquiv.mulRight u) := by
   -- infinite places
@@ -648,7 +698,7 @@ local instance : BorelSpace ((FiniteAdeleRing (𝓞 K) K) ⊗[K] D) := ⟨rfl⟩
 
 open scoped TensorProduct.RightActions in
 lemma isCentralSimple_addHaarScalarFactor_left_mul_eq_right_mul
-    [Algebra.IsCentral K D] (u : D_𝔸ˣ) :
+    [Algebra.IsCentral K D] [IsSimpleRing D] (u : D_𝔸ˣ) :
     addEquivAddHaarChar (ContinuousAddEquiv.mulLeft u) =
     addEquivAddHaarChar (ContinuousAddEquiv.mulRight u) := by
   open IsDedekindDomain MeasureTheory in
@@ -722,6 +772,10 @@ lemma E_family_nonempty_interior : (interior (Efamily K D 1)).Nonempty := by
   use 0
   rw [mem_interior_iff_mem_nhds, Prod.zero_eq_mk, mem_nhds_prod_iff]
   exact ⟨Ui K D, (Ui.spec K D).2, Uf K D, (Uf.spec K D).2, subset_rfl⟩
+
+-- `Nontrivial D` enters here, via `ringHaarChar_D𝔸_real_surjective`, and is
+-- inherited by everything below (`existsE`, `E`, `X`, `Y`, `T`, `T_finite`, `C`).
+variable [Nontrivial D]
 
 open NNReal ENNReal in
 lemma E_family_unbounded (B : ℝ≥0) :
@@ -820,7 +874,8 @@ lemma E_noninjective_left {x : D_𝔸ˣ} (h : x ∈ ringHaarCharKer D_𝔸) :
     x * e₁ - x * e₂ ∈ Set.range (Algebra.TensorProduct.includeLeft : D →ₐ[K] D_𝔸) :=
   (existsE K D).choose_spec.2 (ContinuousAddEquiv.mulLeft x) h
 
-lemma E_noninjective_right [Algebra.IsCentral K D] {x : D_𝔸ˣ} (h : x ∈ ringHaarCharKer D_𝔸) :
+lemma E_noninjective_right [Algebra.IsCentral K D] [IsSimpleRing D]
+    {x : D_𝔸ˣ} (h : x ∈ ringHaarCharKer D_𝔸) :
     ∃ e₁ ∈ E K D, ∃ e₂ ∈ E K D, e₁ ≠ e₂ ∧
     e₁ * x⁻¹ - e₂ * x⁻¹  ∈ Set.range (Algebra.TensorProduct.includeLeft : D →ₐ[K] D_𝔸) := by
   let φ : D_𝔸 ≃ₜ+ D_𝔸 := ContinuousAddEquiv.mulRight x⁻¹
@@ -846,31 +901,8 @@ lemma Y_compact : IsCompact (Y K D) := by
   simpa only [Pi.mul_def, Set.image_prod, Set.image2_mul, Y] using (IsCompact.image_of_continuousOn
     ((X_compact K D).prod (X_compact K D)) ((continuous_fst.mul continuous_snd).continuousOn))
 
-lemma X_meets_kernel {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
-    ∃ x ∈ X K D, ∃ d ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ), β * x = d := by
-  obtain ⟨e1, he1, e2, he2, noteq, b, hb⟩ := E_noninjective_left K D hβ
-  refine ⟨e1 - e2, by simpa only using! (Set.sub_mem_sub he1 he2), ?_⟩
-  obtain ⟨b1, rfl⟩ : IsUnit b := by
-    simp_rw [← mul_sub_left_distrib, Algebra.TensorProduct.includeLeft_apply] at hb
-    have h1 : ↑β * (e1 - e2) ≠ 0 := by
-      simpa only [ne_eq, not_not, Units.mul_right_eq_zero] using (sub_ne_zero_of_ne noteq)
-    simp only [isUnit_iff_ne_zero, ne_eq]
-    rintro rfl
-    simp only [← hb, TensorProduct.zero_tmul, ne_eq, not_true_eq_false] at h1
-  exact ⟨incl K D b1, ⟨b1, rfl⟩, by simpa [mul_sub] using hb.symm⟩
-
-lemma X_meets_kernel' [Algebra.IsCentral K D] {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
-    ∃ x ∈ X K D, ∃ d ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ), x * β⁻¹ = d := by
-  obtain ⟨e1, he1, e2, he2, noteq, b, hb⟩ := E_noninjective_right K D hβ
-  refine ⟨e1 - e2, by simpa only using! (Set.sub_mem_sub he1 he2), ?_⟩
-  obtain ⟨b1, rfl⟩ : IsUnit b := by
-    simp_rw [← mul_sub_right_distrib, Algebra.TensorProduct.includeLeft_apply] at hb
-    have h1 : (e1 - e2) * ↑β⁻¹ ≠ 0 := by
-      simpa only [ne_eq, Units.mul_left_eq_zero] using (sub_ne_zero_of_ne noteq)
-    simp only [isUnit_iff_ne_zero, ne_eq]
-    rintro rfl
-    simp only [← hb, TensorProduct.zero_tmul, ne_eq, not_true_eq_false] at h1
-  exact ⟨incl K D b1, ⟨b1, rfl⟩, by simpa [sub_mul] using hb.symm⟩
+-- `X_meets_kernel` and `X_meets_kernel'` need every nonzero element of `D` to be a
+-- unit, so they live in `section DivisionRingD` at the bottom of this file.
 
 /-- An auxiliary set T used in the proof of Fukisaki's lemma. Defined as Y ∩ Dˣ. -/
 def T : Set D_𝔸ˣ := ((↑) : D_𝔸ˣ → D_𝔸) ⁻¹' (Y K D) ∩ Set.range ((incl K D : Dˣ → D_𝔸ˣ))
@@ -905,26 +937,8 @@ lemma C_compact : IsCompact (C K D) := by
     (Units.continuous_val) (continuousOn_id' (T K D)⁻¹)))
     (X_compact K D)) ((continuous_fst.mul continuous_snd).continuousOn))
 
-lemma antidiag_mem_C [Algebra.IsCentral K D] {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
-    ∃ b ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ),
-    ∃ ν ∈ ringHaarCharKer D_𝔸,
-    β = b * ν ∧ ((ν : D_𝔸), ((ν⁻¹ : D_𝔸ˣ) : D_𝔸)) ∈ C K D := by
-  obtain ⟨x1, hx1, b1, ⟨b1, rfl⟩, eq1⟩ := X_meets_kernel K D hβ
-  obtain ⟨x2, hx2, b2, ⟨b2, rfl⟩, eq2⟩ := X_meets_kernel' K D hβ
-  obtain ⟨x1, rfl⟩ : IsUnit x1 := ⟨↑β⁻¹ * incl K D b1,
-    ((Units.eq_inv_mul_iff_mul_eq β).mpr eq1).symm⟩
-  obtain ⟨x2, rfl⟩ : IsUnit x2 := ⟨incl K D b2 * β, ((Units.mul_inv_eq_iff_eq_mul β).mp eq2).symm⟩
-  have h : x2 * x1 ∈ T K D := ⟨by simpa only [Y] using! Set.mul_mem_mul hx2 hx1,
-    b2 * b1, by norm_cast at eq1 eq2; rw [map_mul, ← eq2, ← eq1]; group⟩
-  refine ⟨incl K D b1, by simp only [Set.mem_range, exists_apply_eq_apply],  x1⁻¹, ?_,
-    eq_mul_inv_of_mul_eq (Units.val_inj.mp eq1), ?_, hx1⟩
-  · rw [(Eq.symm (inv_mul_eq_of_eq_mul (eq_mul_inv_of_mul_eq (Units.val_inj.mp eq1))))]
-    exact (Subgroup.mul_mem_cancel_right (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K)) hβ).mpr
-      ((Subgroup.inv_mem_iff (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K))).mpr
-      (NumberField.AdeleRing.units_mem_ringHaarCharacter_ker K D b1))
-  · obtain ⟨t, ht, ht1⟩ := exists_eq_right'.mpr h
-    simp_rw [(Eq.symm (inv_mul_eq_of_eq_mul (eq_mul_inv_of_mul_eq ht1)))]
-    exact Set.mem_mul.mpr ⟨↑t⁻¹, Set.mem_image_of_mem Units.val ht, x2, hx2, rfl⟩
+-- `antidiag_mem_C` consumes `X_meets_kernel`, so it lives in `section DivisionRingD`
+-- at the bottom of this file.
 
 /-- The inclusion of `ringHaarCharKer D_𝔸` into the product space `D_𝔸 × D_𝔸ᵐᵒᵖ`. -/
 def incl₂ : ringHaarCharKer D_𝔸 → Prod D_𝔸 D_𝔸ᵐᵒᵖ :=
@@ -940,32 +954,14 @@ abbrev toQuot (a : ringHaarCharKer D_𝔸) : (_root_.Quotient (QuotientGroup.rig
   (Quotient.mk (QuotientGroup.rightRel ((MonoidHom.range (incl K D)).comap
   (ringHaarCharKer D_𝔸).subtype)) a)
 
+omit [Nontrivial D] in
 lemma toQuot_cont : Continuous (toQuot K D) where
   isOpen_preimage := fun _ a ↦ a
 
-set_option backward.isDefEq.respectTransparency false in
-lemma toQuot_surjective [Algebra.IsCentral K D] : (toQuot K D) '' (M K D) = Set.univ := by
-  rw [Set.eq_univ_iff_forall]
-  rintro ⟨a, ha⟩
-  obtain ⟨c, hc, ν, hν, rfl, h31⟩ := Aux.antidiag_mem_C K D ha
-  simp only [toQuot, Subgroup.comap_subtype, Set.mem_image, Subtype.exists]
-  refine ⟨ν, hν, ?_, ?_ ⟩
-  · simp only [M, Set.mem_preimage, Set.mem_image, Prod.exists]
-    exact ⟨ν, Units.val (ν⁻¹), h31, rfl⟩
-  · have : Quot.mk ⇑(QuotientGroup.rightRel ((incl K D).range.subgroupOf
-        (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K)))) ⟨c * ν, ha⟩ =
-        Quot.mk ⇑(QuotientGroup.rightRel ((incl K D).range.subgroupOf
-        (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K))))
-        ⟨ν, hν⟩ := by
-      refine Quot.sound ?_
-      rw [@QuotientGroup.rightRel_apply]
-      refine Subgroup.mem_subgroupOf.mpr ?_
-      simp only [@Subgroup.coe_mul, InvMemClass.coe_inv, mul_inv_rev, mul_inv_cancel_left,
-        inv_mem_iff, MonoidHom.mem_range]
-      exact hc
-    rw [this]
-    rfl
+-- `toQuot_surjective` consumes `antidiag_mem_C`, so it lives in `section DivisionRingD`
+-- at the bottom of this file.
 
+omit [Nontrivial D] in
 lemma incl₂_isClosedEmbedding : Topology.IsClosedEmbedding (incl₂ K D) := by
   apply Units.isClosedEmbedding_embedProduct.comp
   refine Topology.IsClosedEmbedding.of_continuous_injective_isClosedMap
@@ -987,6 +983,7 @@ lemma M_compact : IsCompact (M K D) := Topology.IsClosedEmbedding.isCompact_prei
 abbrev rest₁ : ringHaarCharKer D_𝔸 → Dfx K D :=
   fun a => (D𝔸ProdRightUnits K D) a.val |>.2
 
+omit [Nontrivial D] in
 lemma rest₁_continuous : Continuous (rest₁ K D) :=
   Continuous.comp continuous_snd
   (Continuous.comp (D𝔸_prodRight_units_cont K D) continuous_subtype_val)
@@ -1020,6 +1017,7 @@ lemma rest₁_surjective : Function.Surjective (rest₁ K D) := by
 
 -- the goal that comes up when you define the map `Dˣ \ D_𝔸^(1) to Dˣ \ (Dfx K D)`
 -- below using Quot.lift
+omit [Nontrivial D] in
 lemma incl_D𝔸quot_equivariant : ∀ (a b : ↥(ringHaarCharKer D_𝔸)),
     (QuotientGroup.rightRel (Subgroup.comap (ringHaarCharKer D_𝔸).subtype
     (AdeleRing.DivisionAlgebra.Aux.incl K D).range)) a b →
@@ -1046,6 +1044,7 @@ abbrev inclD𝔸quot : Quotient (QuotientGroup.rightRel
     (fun a => Quotient.mk (QuotientGroup.rightRel (incl₁ K D).range) (rest₁ K D a))
     (incl_D𝔸quot_equivariant K D)
 
+omit [Nontrivial D] in
 lemma incl_D𝔸quot_continuous : Continuous (inclD𝔸quot K D) := by
   refine Continuous.quotient_lift ?_ (incl_D𝔸quot_equivariant K D)
   exact Continuous.comp' ({isOpen_preimage := fun s a ↦ a}) (rest₁_continuous K D)
@@ -1063,11 +1062,112 @@ lemma incl_D𝔸quot_surjective : Function.Surjective (inclD𝔸quot K D) := by
 
 end Aux
 
-open Aux
+end DivisionAlgebra
+
+end AdeleRing
+
+end NumberField
+
+end RingD
+
+/-!
+## The genuinely division-algebra part
+
+Everything below needs every nonzero element of `D` to be a unit — this is where
+Fujisaki's argument actually uses that `D` is a division algebra, via
+`isUnit_iff_ne_zero` in `Aux.X_meets_kernel` / `Aux.X_meets_kernel'`. Nothing else
+in the file does, which is why `D` is re-declared here rather than above.
+-/
+
+section DivisionRingD
+
+variable (D : Type*) [DivisionRing D] [Algebra K D]
+
+set_option quotPrecheck false in
+/-- `D_𝔸` is notation for `D ⊗[K] 𝔸_K` — see the note on the `RingD` copy. -/
+local notation "D_𝔸" => (D ⊗[K] AdeleRing (𝓞 K) K)
+
+namespace NumberField.AdeleRing.DivisionAlgebra
+
+open scoped TensorProduct.RightActions
 
 variable [FiniteDimensional K D]
 
-open scoped TensorProduct.RightActions
+namespace Aux
+
+lemma X_meets_kernel {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
+    ∃ x ∈ X K D, ∃ d ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ), β * x = d := by
+  obtain ⟨e1, he1, e2, he2, noteq, b, hb⟩ := E_noninjective_left K D hβ
+  refine ⟨e1 - e2, by simpa only using! (Set.sub_mem_sub he1 he2), ?_⟩
+  obtain ⟨b1, rfl⟩ : IsUnit b := by
+    simp_rw [← mul_sub_left_distrib, Algebra.TensorProduct.includeLeft_apply] at hb
+    have h1 : ↑β * (e1 - e2) ≠ 0 := by
+      simpa only [ne_eq, not_not, Units.mul_right_eq_zero] using (sub_ne_zero_of_ne noteq)
+    simp only [isUnit_iff_ne_zero, ne_eq]
+    rintro rfl
+    simp only [← hb, TensorProduct.zero_tmul, ne_eq, not_true_eq_false] at h1
+  exact ⟨incl K D b1, ⟨b1, rfl⟩, by simpa [mul_sub] using hb.symm⟩
+
+lemma X_meets_kernel' [Algebra.IsCentral K D] {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
+    ∃ x ∈ X K D, ∃ d ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ), x * β⁻¹ = d := by
+  obtain ⟨e1, he1, e2, he2, noteq, b, hb⟩ := E_noninjective_right K D hβ
+  refine ⟨e1 - e2, by simpa only using! (Set.sub_mem_sub he1 he2), ?_⟩
+  obtain ⟨b1, rfl⟩ : IsUnit b := by
+    simp_rw [← mul_sub_right_distrib, Algebra.TensorProduct.includeLeft_apply] at hb
+    have h1 : (e1 - e2) * ↑β⁻¹ ≠ 0 := by
+      simpa only [ne_eq, Units.mul_left_eq_zero] using (sub_ne_zero_of_ne noteq)
+    simp only [isUnit_iff_ne_zero, ne_eq]
+    rintro rfl
+    simp only [← hb, TensorProduct.zero_tmul, ne_eq, not_true_eq_false] at h1
+  exact ⟨incl K D b1, ⟨b1, rfl⟩, by simpa [sub_mul] using hb.symm⟩
+
+lemma antidiag_mem_C [Algebra.IsCentral K D] {β : D_𝔸ˣ} (hβ : β ∈ ringHaarCharKer D_𝔸) :
+    ∃ b ∈ Set.range (incl K D : Dˣ → D_𝔸ˣ),
+    ∃ ν ∈ ringHaarCharKer D_𝔸,
+    β = b * ν ∧ ((ν : D_𝔸), ((ν⁻¹ : D_𝔸ˣ) : D_𝔸)) ∈ C K D := by
+  obtain ⟨x1, hx1, b1, ⟨b1, rfl⟩, eq1⟩ := X_meets_kernel K D hβ
+  obtain ⟨x2, hx2, b2, ⟨b2, rfl⟩, eq2⟩ := X_meets_kernel' K D hβ
+  obtain ⟨x1, rfl⟩ : IsUnit x1 := ⟨↑β⁻¹ * incl K D b1,
+    ((Units.eq_inv_mul_iff_mul_eq β).mpr eq1).symm⟩
+  obtain ⟨x2, rfl⟩ : IsUnit x2 := ⟨incl K D b2 * β, ((Units.mul_inv_eq_iff_eq_mul β).mp eq2).symm⟩
+  have h : x2 * x1 ∈ T K D := ⟨by simpa only [Y] using! Set.mul_mem_mul hx2 hx1,
+    b2 * b1, by norm_cast at eq1 eq2; rw [map_mul, ← eq2, ← eq1]; group⟩
+  refine ⟨incl K D b1, by simp only [Set.mem_range, exists_apply_eq_apply],  x1⁻¹, ?_,
+    eq_mul_inv_of_mul_eq (Units.val_inj.mp eq1), ?_, hx1⟩
+  · rw [(Eq.symm (inv_mul_eq_of_eq_mul (eq_mul_inv_of_mul_eq (Units.val_inj.mp eq1))))]
+    exact (Subgroup.mul_mem_cancel_right (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K)) hβ).mpr
+      ((Subgroup.inv_mem_iff (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K))).mpr
+      (NumberField.AdeleRing.units_mem_ringHaarCharacter_ker K D b1))
+  · obtain ⟨t, ht, ht1⟩ := exists_eq_right'.mpr h
+    simp_rw [(Eq.symm (inv_mul_eq_of_eq_mul (eq_mul_inv_of_mul_eq ht1)))]
+    exact Set.mem_mul.mpr ⟨↑t⁻¹, Set.mem_image_of_mem Units.val ht, x2, hx2, rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+lemma toQuot_surjective [Algebra.IsCentral K D] : (toQuot K D) '' (M K D) = Set.univ := by
+  rw [Set.eq_univ_iff_forall]
+  rintro ⟨a, ha⟩
+  obtain ⟨c, hc, ν, hν, rfl, h31⟩ := Aux.antidiag_mem_C K D ha
+  simp only [toQuot, Subgroup.comap_subtype, Set.mem_image, Subtype.exists]
+  refine ⟨ν, hν, ?_, ?_ ⟩
+  · simp only [M, Set.mem_preimage, Set.mem_image, Prod.exists]
+    exact ⟨ν, Units.val (ν⁻¹), h31, rfl⟩
+  · have : Quot.mk ⇑(QuotientGroup.rightRel ((incl K D).range.subgroupOf
+        (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K)))) ⟨c * ν, ha⟩ =
+        Quot.mk ⇑(QuotientGroup.rightRel ((incl K D).range.subgroupOf
+        (ringHaarCharKer (D ⊗[K] AdeleRing (𝓞 K) K))))
+        ⟨ν, hν⟩ := by
+      refine Quot.sound ?_
+      rw [@QuotientGroup.rightRel_apply]
+      refine Subgroup.mem_subgroupOf.mpr ?_
+      simp only [@Subgroup.coe_mul, InvMemClass.coe_inv, mul_inv_rev, mul_inv_cancel_left,
+        inv_mem_iff, MonoidHom.mem_range]
+      exact hc
+    rw [this]
+    rfl
+
+end Aux
+
+open Aux
 
 /-- Dˣ \ D_𝔸^{(1)} is compact. -/
 lemma compact_quotient [Algebra.IsCentral K D] :
@@ -1113,3 +1213,5 @@ end DivisionAlgebra
 end AdeleRing
 
 end NumberField
+
+end DivisionRingD
