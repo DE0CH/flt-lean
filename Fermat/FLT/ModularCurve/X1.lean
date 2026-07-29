@@ -403,7 +403,8 @@ open in them has been split along the theories it needed:
 | `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
-| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` on `Γ₁(N)`, with the Hecke action it acts through — the "build the factors" half of Eichler-Shimura.  (`exists_heckeIsotypicDecomposition_gamma1` is PROVEN over this and the next row, 2026-07-28.  `IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
+| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  Also owns the `N = 0` case, which — unlike its `Γ₀` sibling — is NOT discharged by an emptiness lemma; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
@@ -7734,8 +7735,417 @@ structure IsHeckeIsotypicDecompositionGamma1 (N : ℕ)
   finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
       ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
 
+/-! #### The `Γ₁` moduli pin for the Hecke operators
+
+**NEW 2026-07-28.**  This subsection is the `Γ₁` transport of `X0.lean`'s
+"moduli pin" subsection, and it is written because
+`exists_heckeAction_isotypicQuotients_gamma1` below cannot be cut without
+it.  Three docstrings in this file — the one on
+`isTorsion_factor_of_heckeIsotypic_gamma1`, the one on the leaf below, and
+`IsHeckeIsotypicDecompositionGamma1`'s "WHAT IS NOT PINNED, and it is the
+crux" — all name the same missing object and prescribe it in the same
+words: *"a `ModularLevelShape`-shaped or `Γ₁`-specific analogue of
+`IsGamma0Isogeny` with `(E, P) ↦ ∑_D (E/D, P + D)`"*.  That is
+`IsGamma1Isogeny` and `IsModularHeckeActionGamma1` below.
+
+**WHAT THIS SUBSECTION DOES AND DOES NOT CHANGE.**  It changes NO existing
+statement.  `IsHeckeIsotypicDecompositionGamma1` does **not** acquire a
+`heckeModuli` field here, and `isTorsion_factor_of_heckeIsotypic_gamma1`
+is untouched — both of those are the "cut-level repair of the structure"
+that the leaf below explicitly warns must not be combined with anything
+else in one edit, and neither is done here.  What the pin is used for is
+strictly local: it lets the leaf below be PROVEN from two sub-leaves
+instead of being a bare `sorry`, exactly as on the `Γ₀` side.  Sharpening
+the structure remains open and is now UNBLOCKED, since the object it
+needs exists. -/
+
+/-- **An `ℓ`-ISOGENY OF `Γ₁(N)`-DATA** (new 2026-07-28) — a morphism of
+elliptic schemes with cyclic kernel of order `ℓ`, carrying the level
+POINT to the level POINT.  The `Γ₁` analogue of `X0.lean`'s
+`IsGamma0Isogeny`, and `d'` is `d/D = (E/D, φ_D P)`.
+
+**THE ONE FIELD THAT DIFFERS FROM THE `Γ₀` VERSION, AND IT IS SIMPLER.**
+`IsGamma0Isogeny.level` is a biconditional-free *inclusion* clause at
+every base, because a cyclic subgroup scheme has to be compared as a
+subfunctor.  A `Γ₁`-structure is a SECTION, so the whole clause collapses
+to one equation between morphisms, `map_sec : d.pt.sec ≫ map = d'.pt.sec`
+— and it implies the point-level statement at every base by
+precomposition, since `RelPoint.ofSection` is literally `g ↦ g ≫ sec`.
+This is the same simplification `IsBaseChangeOfGamma1.map_sec` records
+against `IsBaseChangeOf.liesIn_iff`, and for the same reason.
+
+**WHY THE QUOTIENT IS QUANTIFIED OVER RATHER THAN CONSTRUCTED**, verbatim
+from the `Γ₀` version: constructing `E/D` as an elliptic SCHEME over an
+arbitrary base needs fppf quotients by finite flat subgroup schemes
+(Raynaud, SGA 3), which is not available at this pin; the `ℚ̄`-fibrewise
+statement is, and the pin below is only ever evaluated over `Spec ℚ̄`.
+
+**WHY `¬ ℓ ∣ N` MATTERS FOR SATISFIABILITY, and it is a `Γ₁`-specific
+remark.**  `d'.pt` is a field of `Gamma1Datum`, so it carries exact order
+`N` by assumption.  That is consistent with `map_sec` precisely because
+`ℓ ∤ N` at every use site: `map` has kernel of order `ℓ`, hence is
+injective on the `N`-torsion, hence `φ_D P` really does have exact order
+`N`.  If `ℓ ∣ N` and `D ⊆ ⟨P⟩`, no `Γ₁`-datum `d'` satisfies `map_sec` at
+all — so the pin below would become VACUOUS at such an `ℓ`, not false.
+The pin quantifies only over primes `ℓ ∤ N`, so the case never arises.
+
+**WHY THIS PINS `d'` UP TO ISOMORPHISM**, which is what the pin needs, and
+the `Γ₀` argument transfers with the level structure carried along: two
+quotients of `d` by the same `D` are related by a unique isomorphism `ψ`
+of elliptic schemes with `ψ ∘ map = map'`, and then `map_sec` for both
+gives `ψ (φ_D P) = φ_D' P`, so `ψ` is an isomorphism of `Γ₁(N)`-DATA over
+the same base, hence an `IsBaseChangeOfGamma1 (𝟙 _)`, hence sent to the
+SAME point of `Y_1(N)` by `IsCoarseModuliY1.classify_natural`.  That is
+what makes the `∀`-over-witnesses form of the pin satisfiable rather than
+contradictory. -/
+structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T) where
+  /-- the morphism of elliptic schemes -/
+  map : d.E ⟶ d'.E
+  /-- it lies over the base -/
+  comm : map ≫ d'.f = d.f
+  /-- it is a homomorphism -/
+  add : IsAdditiveOn d.ab d'.ab map comm
+  /-- it is surjective -/
+  surj : AlgebraicGeometry.Surjective map
+  /-- its kernel, a cyclic subgroup scheme of order `ℓ` -/
+  ker : CyclicSubgroupOfOrder d.ab ℓ
+  /-- `ker` really is the kernel, at every base point -/
+  ker_eq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    RelPoint.post map comm x = d'.ab.zero g ↔ RelPoint.LiesIn ker.ι x
+  /-- **the level point is carried to the level point**: `φ_D P = P'`.
+  One equation of morphisms, which is the whole `Γ₁` level clause -/
+  map_sec : d.pt.sec ≫ map = d'.pt.sec
+
+/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28):
+`T ℓ` acts on Abel–Jacobi images by the `Γ₁(N)`-correspondence.
+
+For a prime `ℓ ∤ N` and a `Γ₁(N)`-datum `d = (E, P)` over `ℚ̄`, let
+`D₁, …, D_{ℓ+1}` be the cyclic subgroups of `E` of order `ℓ` and
+`d/D_k = (E/D_k, φ_{D_k} P)` the quotient data.  Then
+
+    T ℓ (aj [d]) = ∑_k aj [d/D_k]
+
+where `[·]` is `IsCoarseModuliY1.classify` followed by the open immersion
+`Y_1(N) ↪ X_1(N)`.  This is the classical `T_ℓ` on `Div⁰(X_1(N))` read
+through `aj : x ↦ [x] − [o]`.  Diamond–Shurman §5.2–5.3 state the
+correspondence at `Γ₁(N)` directly — `Γ₁` being their default level — so
+this is if anything the better-documented of the two.
+
+**THE `ℓ + 1` SUBGROUPS ARE NOT COUNTED**, exactly as on the `Γ₀` side:
+`m` is an arbitrary arity and the two hypotheses say the kernels are
+pairwise distinct and exhaust the order-`ℓ` cyclic subgroups, which over
+`ℚ̄` forces `m = ℓ + 1` without this file proving it.  Distinctness and
+exhaustion are compared on `ℚ̄`-POINTS, which is faithful because a finite
+subgroup scheme of an elliptic curve over an algebraically closed field of
+characteristic `0` is étale, hence determined by its points.
+
+**WHY `H` IS TAKEN AS DATA AND NOT AS
+`ModularLevelShape.IsCompactification`.**  The latter is
+`Nonempty (IsX1Compactification …)`, a `Prop`, and this pin needs
+`H.coarse.classify`, which is DATA.  Consumers holding only the truncated
+form recover `H` by `Nonempty` elimination, which is legitimate because
+every statement they are proving is a `Prop` — that is exactly what the
+proof of `exists_heckeAction_isotypicQuotients_gamma1` below does, and it
+is why no `∀ H` quantification is needed anywhere.
+
+**FAITHFULNESS, and the honest caveat is the `Γ₀` one.**  The predicate is
+*true* of the genuine Hecke operators (the previous paragraph of
+`IsGamma1Isogeny` is why the `∀`-over-witnesses form does not
+overconstrain them), and it is *false* of `T n := 𝟙 J` and of the `N = 37`
+eigen-system swap, which is the entire reason it exists.  **But its
+non-vacuity AS A LEAN STATEMENT — that `IsGamma1Isogeny` is inhabited at
+the scheme level — is NOT proven here**, exactly as `IsGamma0Isogeny`'s is
+not.  The consequence is recorded on the leaf that consumes it below and
+it is a graceful degradation, not a soundness problem: were the pin
+formally vacuous, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+would be precisely as hard as the undecomposed node and no harder, and
+nothing false would have been asserted.  **The check that settles it**:
+produce one `IsGamma1Isogeny` over `Spec ℚ̄`.  Note that `X0.lean` records
+that check as RUN and NOT closing from `exists_velu_quotient_isogeny` plus
+`exists_ellipticScheme_of_weierstrass`, because those produce maps of
+POINT GROUPS while `map` is a morphism of SCHEMES; the obstruction is
+level-structure-free, so it transfers here verbatim and should not be
+re-run from those two inputs. -/
+def IsModularHeckeActionGamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr) : Prop :=
+  ∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
+    ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+      (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+      -- the kernels are pairwise distinct on `ℚ̄`-points
+      (∀ k k' : Fin m,
+        (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+          RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+      -- and they exhaust the cyclic subgroups of order `ℓ`
+      (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+        ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+          RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+      letI := ab.addCommGroup (specAlgClos ℚ)
+      RelPoint.post (T ℓ) (T_comp ℓ)
+          (jac.aj (specAlgClos ℚ)
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
+        = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+
+/-- **THE `Γ₁` HECKE CORRESPONDENCE, AS A NATURAL FAMILY ON POINTS**
+(sorry leaf, new 2026-07-28) — the geometric half of
+`exists_modularHeckeAction_gamma1` below, and the `Γ₁` transport of
+`X0.lean`'s `exists_heckeCorrespondenceFamily`.
+
+TRUE, and the witness is `c := RelPoint.post (T_ℓ) _ ∘ jac.aj` for the
+genuine `T_ℓ`: that family is natural because `aj` is and `RelPoint.post`
+commutes with `RelPoint.pre`, it sends `o` to `0` because `aj o = 0` and
+`T_ℓ` is a homomorphism, and the recursion clause is the classical
+description of `T_ℓ` on divisor classes.
+
+**WHY THE STATEMENT IS ON POINTS AND NOT ON A CORRESPONDENCE SCHEME**,
+inherited verbatim from the `Γ₀` leaf: the correspondence `X_1(N, ℓ)` with
+its two degeneracy maps, and the trace of a finite flat correspondence on
+the functor of points, exist neither here, nor in mathlib at this pin, nor
+in `~/cs/FLT`.  The point-level form is writable today and is the exact
+input `IsJacobianOf.universal` consumes — which is what makes
+`exists_modularHeckeAction_gamma1` below a PROOF rather than a second
+leaf.
+
+**WHAT IS `Γ₁`-SPECIFIC HERE, AND IT IS ONLY THE LEVEL STRUCTURE.**  The
+`Γ₀` leaf's own "WHAT REMAINS GENUINELY MISSING" paragraph — the quotient
+datum over a general base — transfers unchanged, because the obstruction
+is the quotient of the CURVE and not of the level structure: once `E/D`
+exists as an elliptic scheme, the `Γ₁`-structure on it is `d.pt.sec ≫ map`,
+which needs nothing further.  So this leaf is, if anything, marginally
+easier than its `Γ₀` sibling, and the two should be taken together by
+whoever builds the correspondence.
+
+**AXIS NOT SEARCHED**, recorded so the next owner does not assume it was:
+the complex-analytic route, where `c` comes from the action of
+`Γ₁(N)`-double cosets on `H₁(Γ₁(N)\ℍ*, ℤ)`.  Everything above is the
+algebraic-moduli axis. -/
+theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g,
+      (∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+          (hg : p ≫ g = g') (x : RelPoint strX g),
+          c g' (RelPoint.pre p hg x) = RelPoint.pre p hg (c g x)) ∧
+        c (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ) ∧
+        ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          c (specAlgClos ℚ)
+              (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
+  sorry
+
+/-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
+over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
+`Γ₁` transport of `X0.lean`'s PROVEN `exists_modularHeckeAction`, and the
+half of `exists_heckeAction_isotypicQuotients_gamma1` that carries the
+*construction* of `T_ℓ`.
+
+**THE PROOF is the `Γ₀` one line for line, and none of it is geometry** —
+which is the point, and the reason this transport is worth making rather
+than leaving the operator layer inside the leaf below:
+
+* `IsJacobianOf.universal`, applied to the natural family `c` supplied by
+  the leaf, returns `u : J ⟶ J` with `u ≫ jstr = jstr` and the Albanese
+  equation `RelPoint.post u _ ∘ aj = c`;
+* `isAdditiveOn_of_post_zero` — relative RIGIDITY, PROVEN in `X0.lean` —
+  upgrades `u` to a homomorphism from the single equation
+  `RelPoint.post u _ 0 = 0`, which is the leaf's base-point clause read
+  through `aj_base` and the Albanese equation.  This is why the leaf does
+  not have to say anything about additivity;
+* the family `T : ℕ → (J ⟶ J)` is assembled pointwise, taking `u` at the
+  primes `ℓ ∤ N` — the only arity `IsModularHeckeActionGamma1` constrains
+  — and `𝟙 J` at every other `n`.  `𝟙 J` satisfies `T_comp` and `T_add`,
+  and using it at the UNCONSTRAINED arities is legitimate precisely
+  because the pin is a statement about primes `ℓ ∤ N` only.
+
+So on the `Γ₁` side too the whole operator-level layer is now formal, and
+the open geometric work is exactly the correspondence on points. -/
+theorem exists_modularHeckeAction_gamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        IsModularHeckeActionGamma1 N H jac T T_comp := by
+  classical
+  -- One endomorphism per natural number, with the pin attached at exactly the
+  -- arities `IsModularHeckeActionGamma1` constrains: the Albanese image of the
+  -- correspondence family at a prime `n ∤ N`, and `𝟙 J` at every other `n`.
+  have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      IsAdditiveOn ab ab u hu ∧
+      (n.Prime → ¬ n ∣ N →
+        ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma1Isogeny N n d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab n, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          RelPoint.post u hu
+              (jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY H.comm
+                  (H.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+    intro n
+    by_cases hn : n.Prime ∧ ¬ n ∣ N
+    · obtain ⟨c, hnat, hzero, hrec⟩ :=
+        exists_heckeCorrespondenceFamilyGamma1 N n hn.1 hn.2 H jac
+      obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
+      -- the Albanese equation, read as an equation of relative points
+      have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post u hu (jac.aj g x) = c g x := fun g x =>
+        Subtype.ext (hueq g x).symm
+      refine ⟨u, hu, ?_, ?_⟩
+      · -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
+        refine isAdditiveOn_of_post_zero ab ab hu ?_
+        rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base]
+      · intro _ _ d m dq iso hinj hsurj
+        rw [hpost (specAlgClos ℚ) _]
+        exact hrec d m dq iso hinj hsurj
+    · exact ⟨𝟙 J, Category.id_comp jstr, fun x y => by
+        simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
+        fun hp hd => absurd ⟨hp, hd⟩ hn⟩
+  choose T T_comp T_add T_pin using key
+  exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN⟩
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N`
+AND ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (sorry leaf,
+new 2026-07-28) — the "BUILD one factor" half of
+`exists_heckeAction_isotypicQuotients_gamma1` below, and the `Γ₁` transport
+of `X0.lean`'s `exists_isotypicQuotient_of_isWeightTwoEigenform`.
+
+TRUE.  For a NEWFORM `g` of level `M ∣ N` and nebentypus `χ` this is
+Shimura §7.5: `I_g := ker(𝕋 → O_g)` is the annihilator ideal of the
+eigen-system and `A_g := J_1(M)/I_g J_1(M)` is an abelian variety over `ℚ`
+of dimension `[K_g : ℚ]` receiving a surjection from `J_1(M)`, on which
+`T_n` acts as multiplication by `a_n(g)`; composing with a degeneracy map
+`J_1(N) ↠ J_1(M)` gives the surjection from `J_1(N)`.  For a general
+eigenform — a stabilization or an oldform — the ANEMIC system equals that
+of its underlying newform, and `isotypic` quantifies only over `n` coprime
+to `N`, so the same `A_g` serves.  Diamond–Shurman §6.6 (stated for
+`X_1(N)` in the source); Cornell–Silverman–Stevens Ch. V.
+
+* `integral` is Shimura's theorem that the `a_n` are algebraic integers,
+  and it is the one field with a purely geometric proof available here:
+  `a_n` is an eigenvalue of an endomorphism of an abelian variety.
+* `nontriv` is `dim A_g = [K_g : ℚ] ≥ 1`.
+
+**`hmod` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and this is the
+whole reason the pin above had to be built before the cut could be made.
+Take `T n := 𝟙 J`.  Every other hypothesis still holds and the conclusion
+fails: `equivariant` forces `S n = 𝟙 A` on the image of the surjection
+`u`, hence `S n = 𝟙 A`; `isotypic` then demands that `minpoly ℤ (a n)`
+annihilate the IDENTITY on `A`, i.e. `P(1) • x = 0` at every point, which
+for `nontriv`-nontrivial `A` forces `minpoly ℤ (a n) (1) = 0`, i.e.
+`a n = 1` for every `n` coprime to `N` — false already at `N = 11`,
+`a₂ = −2`.  This is exactly the refutation
+`IsHeckeIsotypicDecompositionGamma1`'s docstring records, and it is why
+the leaf below quantifies `T` existentially: this leaf may take `T` as a
+hypothesis ONLY because `hmod` accompanies it.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
+witness is `X0.lean`'s, transferred a fortiori.  At level `0` every prime
+divides `N`, so `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a`'s `hecke`
+recursion is VACUOUS and the nebentypus is unconstrained; the
+transcendental system `a (2 ^ k) = π ^ k`, `a n = 0` otherwise, carried by
+`g τ = ∑_{k ≥ 1} π ^ k q ^ (2 ^ k)` (convergent on all of `ℍ` because
+`2 ^ k` outruns `π ^ k`), is an admissible eigen-system, and
+`IsIsotypicQuotient.integral` fails outright for it.  `Gamma1GL 0` is
+smaller than `Gamma0GL 0` — it is `⟨T⟩` without `−I` — so the witness
+transfers a fortiori.
+
+**THE HONEST CAVEAT ON `hmod`, and it is a graceful degradation.**  The
+non-vacuity of `IsModularHeckeActionGamma1` as a Lean statement is not
+proven (see its docstring: `IsGamma1Isogeny` is not yet known to be
+inhabited at the scheme level).  Were it formally vacuous, `hmod` would
+carry no information and this leaf would be exactly as hard as the
+undecomposed node `exists_heckeAction_isotypicQuotients_gamma1` and no
+harder.  So the cut cannot make anything worse, and nothing false is
+asserted either way.
+
+**WHAT REMAINS GENUINELY MISSING**, re-checked 2026-07-28 and identical to
+the `Γ₀` list plus one: no Hecke algebra acting on a Jacobian, no `A_g`,
+no old/new decomposition of `S₂(Γ₁(N))`, and no isogeny theory for
+abelian SCHEMES here (`Modularity/AbelianSchemeIsogeny.lean` supplies
+`[n]` and its flatness, nothing more) — in this project, in mathlib at
+this pin, or in `~/cs/FLT`.  The `Γ₁`-specific extra is only the
+nebentypus decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`, and this leaf
+receives `χ` rather than having to produce that decomposition.
+
+## ⚠ FALSITY AUDIT — THIS LEAF IS FALSE AS STATED (recorded at the release-18 merge)
+
+The caveat above ("nothing false is asserted either way") is **wrong**, and it is
+wrong for a reason discovered on the `Γ₀` side *after* this cut was written.  The
+`Γ₁` transport inherited the `Γ₀` defect verbatim.
+
+**The defect is an ARITY GAP.**  `IsModularHeckeActionGamma1` is
+`∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N → …` — it constrains `T` at **primes `ℓ ∤ N` only**.
+`IsIsotypicQuotient.isotypic` and `.equivariant` constrain `T n` at **every `n`
+coprime to `N`**.  `T` is an INPUT here, so a caller may hand over a family that
+is genuine where `hmod` can see and junk where it cannot — and
+`exists_modularHeckeAction_gamma1` **constructs exactly such a family**: its own
+proof takes `𝟙 J` at every non-prime arity.
+
+**Witness** (the `Γ₀` one, which transfers because nothing in it mentions the
+level structure).  At `n = 1`: `1` is not prime, so `hmod` says nothing about
+`T 1`; take `T 1 := 0`.  `minpoly ℤ (1 : ℂ) = X − 1`, so `isotypic` at `n = 1`
+forces the quotient map `u` to satisfy `S 1 = id` on its image while
+`equivariant` forces `u = 0`, contradicting `nontriv`.  So `IsIsotypicQuotient`
+is uninhabited at that `T` and the conclusion `Nonempty …` is false.  A
+level-dependent witness is `N = 37`, `n = 4`, using the family
+`exists_modularHeckeAction_gamma1` itself produces.
+
+**Do NOT prove this leaf, and do not build on it.**  The repair is the one
+prescribed for the `Γ₀` cluster and must be made on BOTH sides by ONE owner: add
+to `IsModularHeckeAction` and `IsModularHeckeActionGamma1` the relations that
+determine an anemic system from its primes —
+`T 1 = 𝟙 J`, `Nat.Coprime m n → T (m * n) = T m ≫ T n`, and
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)`.  All the affected statements
+then become true and no consumer's statement changes; the honest cost is that
+`exists_modularHeckeAction` and `exists_modularHeckeAction_gamma1` revert to
+leaves, since `𝟙 J` off the pinned arities no longer satisfies the pin.  The
+cheaper alternative — restricting `IsIsotypicQuotient.isotypic`/`.equivariant`
+to primes `ℓ ∤ N` — is a change to a structure shared with `X0.lean` and must
+likewise be made once, for both sides. -/
+theorem exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, TOGETHER WITH THE HECKE ACTION IT ACTS
-THROUGH** (sorry leaf, new 2026-07-28) — the "BUILD the factors" half of
+THROUGH** (**PROVEN 2026-07-28**, over the two leaves
+`exists_modularHeckeAction_gamma1` and
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` immediately
+above; a bare sorry leaf from earlier the same day until then) — the
+"BUILD the factors" half of
 the cut of `exists_heckeIsotypicDecomposition_gamma1` below, and the
 `Γ₁` transport of `X0.lean`'s pair
 `exists_modularHeckeAction` / `exists_isotypicQuotient_of_isWeightTwoEigenform`.
@@ -7749,23 +8159,22 @@ is nothing `Γ₀`-specific in it to mirror.  `N` enters only through
 the `Γ₁` structure above uses.  This is why the `Γ₁` side of the cut costs
 one theorem rather than one theorem plus a 15-field structure.
 
-**WHY THE HECKE ACTION IS PRODUCED HERE AND NOT SEPARATELY — the one
-place this cut MUST differ from `X0.lean`'s.**  On the `Γ₀` side the two
-halves are separable because `IsHeckeIsotypicDecomposition.T` is PINNED by
-its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28): the
-factor-building leaf may therefore take `T` as a HYPOTHESIS, and that
-hypothesis is not vacuous because `hmod` fails for `T n := 𝟙 J`.
+**WHY THE HECKE ACTION IS PRODUCED IN THIS STATEMENT AND NOT IN A
+SEPARATE ONE — the one place this STATEMENT must differ from
+`X0.lean`'s.**  On the `Γ₀` side the two halves are separable at the level
+of the parent structure because `IsHeckeIsotypicDecomposition.T` is PINNED
+by its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28).
 `IsHeckeIsotypicDecompositionGamma1` carries no such field — see its
 docstring, "WHAT IS NOT PINNED, and it is the crux" — so a `Γ₁` leaf
-taking `T` as an input would be **FALSE**, by exactly the refutation
-recorded on the `Γ₀` factor leaf: with `T n := 𝟙 J`, `equivariant` forces
-`S n = 𝟙 A` on the image of the surjection `u`, `isotypic` then demands
-`minpoly ℤ (a n)` to annihilate the identity, and for `nontriv`-nontrivial
-`A` that forces `a n = 1` for every `n` coprime to `N`, which already
-fails at `N = 11`, `a₂ = −2`.  Quantifying `T` existentially — one action
-serving every factor — is what keeps the statement true, and it is the
-whole reason this leaf is the pair of `X0.lean`'s two rather than one of
-them.
+taking a BARE `T` as an input would be **FALSE**, by exactly the
+refutation recorded on the `Γ₀` factor leaf: with `T n := 𝟙 J`,
+`equivariant` forces `S n = 𝟙 A` on the image of the surjection `u`,
+`isotypic` then demands `minpoly ℤ (a n)` to annihilate the identity, and
+for `nontriv`-nontrivial `A` that forces `a n = 1` for every `n` coprime
+to `N`, which already fails at `N = 11`, `a₂ = −2`.  **Quantifying `T`
+existentially is what keeps THIS statement true, and it is why this
+statement is the pair of `X0.lean`'s two rather than one of them.  That
+has not changed and the statement below is untouched.**
 
 Consequence worth stating, because it is the price of the missing pin:
 this leaf is strictly harder than `exists_isotypicQuotient_of_isWeightTwoEigenform`
@@ -7809,6 +8218,46 @@ these statements in the same edit: two individually-correct edits to one
 leaf have made a statement false in this development before, which is
 precisely what happened on the `Γ₀` side here.
 
+**WHAT CHANGED 2026-07-28 (`flt-lean-333`): THE PROOF, VIA A `Γ₁` PIN
+BUILT IN THIS FILE.**  The paragraph that used to stand here concluded
+that the `Γ₁` side could not be cut the way the `Γ₀` side is, and
+prescribed as the repair "a moduli description of `T_ℓ` on `Y_1(N)` in
+terms of `(E, P) ↦ ∑_D (E/D, P + D)`".  That prescription was carried out
+— `IsGamma1Isogeny` and `IsModularHeckeActionGamma1` above — so the cut is
+now the `Γ₀` one: `exists_modularHeckeAction_gamma1` (PROVEN over the
+geometric leaf `exists_heckeCorrespondenceFamilyGamma1`) supplies `T`
+together with the pin, `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+consumes both, and the assembly below is two `obtain`s.  THIS statement's
+own `T` stays existentially quantified and its text is unchanged, so this
+statement remains immune.
+
+**⚠ MERGE-TIME FALSITY WARNING, RELEASE 18 — AND IT APPLIES TO THE NEW
+SUB-LEAF, NOT TO THIS STATEMENT.**  Making the `Γ₁` cut identical to the
+`Γ₀` one also imported the `Γ₀` cut's DEFECT, which was refuted after that
+branch was written.  `IsModularHeckeActionGamma1` constrains `T` only at
+**primes `ℓ ∤ N`** — its body is `∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N → …`, and
+`exists_modularHeckeAction_gamma1`'s proof deliberately takes `𝟙 J` at
+every other arity — while `IsIsotypicQuotient`'s `isotypic` and
+`equivariant` constrain **every `n` coprime to `N`**.  So
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`, which takes
+`T` and `hmod` as INPUTS, is FALSE for exactly the reason
+`exists_isotypicQuotient_of_isWeightTwoEigenform` is: see that leaf's own
+FALSITY AUDIT and the `N = 37` / `n = 4` witness.  **Repair the two sides
+together, under ONE owner** — add to both pins the relations that
+determine an anemic system from its primes (`T 1 = 𝟙 J`,
+`Nat.Coprime m n → T (m * n) = T m ≫ T n`,
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)`), at the honest cost that
+`exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` revert to
+leaves.  Do NOT repair one side alone.
+
+**WHAT IS DELIBERATELY STILL NOT DONE:**
+`IsHeckeIsotypicDecompositionGamma1` has **not** gained a `heckeModuli`
+field, and `isTorsion_factor_of_heckeIsotypic_gamma1` is untouched.  That
+sharpening is a cut-level repair of the STRUCTURE, it needs its own
+faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
+eigen-system swap therefore still inhabits
+`IsHeckeIsotypicDecompositionGamma1`.
+
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
 so `IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a`'s `hecke` recursion is
@@ -7844,8 +8293,14 @@ theorem exists_heckeAction_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
-            Nonempty (IsIsotypicQuotient ab T N a) :=
-  sorry
+            Nonempty (IsIsotypicQuotient ab T N a) := by
+  -- `h` is `Nonempty (IsX1Compactification …)` and the goal is a `Prop`, so the
+  -- classifying DATUM the pin needs is recovered by `Nonempty` elimination.
+  obtain ⟨H⟩ := h
+  obtain ⟨T, T_comp, T_add, hmod⟩ := exists_modularHeckeAction_gamma1 N H jac
+  exact ⟨T, T_comp, T_add, fun χ f a hf =>
+    exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
+      χ f a hf⟩
 
 /-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
 new 2026-07-28) — the "ASSEMBLE the factors" half of the cut of
@@ -8988,7 +9443,10 @@ disappearing:
 | `isBigO_atTop_coeffOn` | Hecke's coefficient bound | no | here, **PROVEN 2026-07-28** |
 | `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here, **PROVEN** |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here, **PROVEN 2026-07-28** |
-| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here |
+| `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here, **PROVEN 2026-07-28** |
+| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
+| `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
+| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` | no | here |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
