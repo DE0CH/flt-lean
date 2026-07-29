@@ -1827,8 +1827,200 @@ theorem forall_charpoly_map_eq_of_charFrob_map_eq_over_base
   intro σ
   rw [← hbc σ, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
 
-/-- **`R_F = T_F`, in its bare classifying-map form** (SORRY leaf, cut
-2026-07-28 out of `exists_classifyingHom_hilbertHeckeAlgebra` below): a Hilbert
+/-! #### The `R_F = T_F` citation, SPLIT ON THE BEHAVIOUR OF `2` (2026-07-29)
+
+`exists_classifyingHom_of_hilbertDeformationDatum` below is **no longer a bare
+citation**: it is a two-case assembly over the two declarations in this block.
+
+The case split is on the hypothesis its own docstring already identified as the
+one and only obstruction to the in-tree route,
+
+    hw2 : ∀ w ∣ 2, ℓ ∤ N(w)² − 1
+
+* **`…_of_splitTwo`** — WITH `hw2` — is now **PROVEN**, as exactly the
+  composition that docstring mapped out (`φ = f ∘ ψ⁻¹ ∘ e⁻¹`), over four
+  in-tree bricks and nothing else.  Its verification also CORRECTS that
+  docstring on one point: the route needs `𝒟u` to be **trace-generated** as
+  well as weakly universal, which `exists_isWeaklyUniversal_hilbertDeformationDatum`
+  does not deliver — the upgrade is a second, separate brick
+  (`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`), and it
+  costs `((ℓ : ℕ) : k) = 0`, discharged by `natCast_eq_zero_of_finite_algebra`.
+* **`…_of_not_splitTwo`** — with `¬ hw2` — is the residual LEAF.
+
+So the citation that remains is strictly the NON-split-at-`2` corner, and the
+generic case is Lean.  **Where the residue really belongs** (this is the fix, and
+it is a signature change, not a proof): `PotentialHeckeDatum.residueCardTwo`
+(`HardlyRamified/HilbertModularity.lean:12444`) is exactly `hw2` in stronger
+form, and `exists_moretBaillySeed_residueCardTwo_of_five_le` PRODUCES `F`
+together with it.  The `ℚ`-level chain in THIS file drops it: compare
+
+    HardlyRamified/HilbertModularity.lean:12645  nonempty_hilbertHeckeAlgebra_of_moretBaillySeed  -- HAS hres2
+    Modularity/KhareWintenberger.lean:1591       nonempty_hilbertHeckeAlgebra_of_moretBaillySeed  -- LACKS hres2
+
+— two distinct same-named leaves, the local one strictly stronger.  Threading
+`hres2` through `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`,
+`exists_classifyingHom_hilbertHeckeAlgebra` and
+`exists_heckeTraceAlgebra_of_congruentSeed` would let the `by_cases` below be
+deleted and would close `…_of_not_splitTwo` by vacuity.  That crosses
+declarations owned elsewhere and is left to the orchestrator. -/
+theorem exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hw2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣
+        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    {ρbar : GaloisRep ℚ k W}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (H : HilbertHeckeAlgebra ℓ F ρbar) :
+    ∃ φ : H.T →+* 𝒟.R, ∀ g : Field.absoluteGaloisGroup F,
+      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly := by
+  classical
+  -- (1) `H` itself as an `F`-level deformation datum, with ring `H.T` ON THE
+  -- NOSE.  This is `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` inlined:
+  -- that theorem's existential would hand back a Hecke algebra of the machine's
+  -- choosing, and the conclusion here is about the GIVEN `H`.  Inlining is what
+  -- keeps `e = AlgEquiv.refl`, so no transport appears anywhere below.
+  haveI hnoeth : IsNoetherianRing H.T := IsNoetherianRing.of_finite ℤ_[ℓ] H.T
+  let 𝒟H : HilbertDeformationDatum ℓ F ρbar :=
+    { R := H.T
+      isNoetherianRing := hnoeth
+      isAdic := H.isAdic
+      isAdicComplete := H.isAdicComplete
+      ρ := H.ρT
+      isHilbertHardlyRamified := H.isHilbertHardlyRamified
+      π := H.πT
+      π_surjective := H.πT_surjective
+      resid := H.residT }
+  -- `e = refl`, so the Hecke-side compatibility is `Polynomial.map_id`.  Written
+  -- as an explicit rewrite rather than by `simp`: the project simp set contains
+  -- sorried lemmas and would taint this proof term for no mathematical reason.
+  have he : ∀ g : Field.absoluteGaloisGroup F, ((𝒟H.ρ g).charpoly).map
+      (AlgEquiv.refl (R := ℤ_[ℓ]) (A₁ := H.T)).toAlgHom.toRingHom
+      = (H.ρT g).charpoly := by
+    intro g
+    rw [show (AlgEquiv.refl (R := ℤ_[ℓ]) (A₁ := H.T)).toAlgHom.toRingHom
+        = RingHom.id H.T from rfl]
+    exact Polynomial.map_id
+  -- (2) the universal `F`-level datum, then upgraded to a TRACE-GENERATED one.
+  -- `𝒟H` is the nonemptiness witness the representability leaf demands after its
+  -- 2026-07-26 faithfulness repair — the Hecke algebra supplies it for free,
+  -- which is why no separate `𝒟₀` hypothesis appears on this theorem.
+  obtain ⟨𝒟₁, h𝒟₁⟩ :=
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 F hw2 hirrF 𝒟H
+  obtain ⟨𝒟u, hwu, htg⟩ :=
+    exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 F
+      (natCast_eq_zero_of_finite_algebra ℓ k) hirrF 𝒟₁ h𝒟₁
+  -- (3) the classifying map onto the Hecke datum, and its BIJECTIVITY — the two
+  -- halves of `R_F = T_F`.  Only the injective half consumes `hw2` a second
+  -- time (Taylor–Wiles patching); the surjective half is Hecke generation.
+  obtain ⟨ψ, hψalg, hψπ, hψρ⟩ := hwu 𝒟H
+  have hψsurj : Function.Surjective ψ :=
+    surjective_classifyingMap_hilbertHeckeDatum ℓ F hirrF 𝒟u 𝒟H H
+      (AlgEquiv.refl) he hwu htg ψ hψalg hψπ hψρ
+  have hψinj : Function.Injective ψ :=
+    injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F hw2 hFtr hFgal hirrF
+      𝒟u 𝒟H H (AlgEquiv.refl) hwu htg ψ hψalg hψπ hψρ
+  -- (4) the classifying map onto the GIVEN datum
+  obtain ⟨f, hfalg, hfπ, hfρ⟩ := hwu 𝒟
+  -- (5) `φ = f ∘ ψ⁻¹`
+  let ψe : 𝒟u.R ≃+* 𝒟H.R := RingEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩
+  refine ⟨f.comp (ψe.symm : 𝒟H.R ≃+* 𝒟u.R).toRingHom, fun g => ?_⟩
+  have hcomp : ((ψe.symm : 𝒟H.R ≃+* 𝒟u.R).toRingHom).comp ψ = RingHom.id 𝒟u.R := by
+    ext x
+    exact ψe.symm_apply_apply x
+  calc ((H.ρT g).charpoly).map (f.comp (ψe.symm : 𝒟H.R ≃+* 𝒟u.R).toRingHom)
+      = (((𝒟u.ρ g).charpoly).map ψ).map
+          (f.comp (ψe.symm : 𝒟H.R ≃+* 𝒟u.R).toRingHom) := by rw [hψρ g]
+    _ = ((𝒟u.ρ g).charpoly).map
+          ((f.comp (ψe.symm : 𝒟H.R ≃+* 𝒟u.R).toRingHom).comp ψ) := by
+          rw [Polynomial.map_map]
+    _ = ((𝒟u.ρ g).charpoly).map f := by
+          rw [RingHom.comp_assoc, hcomp, RingHom.comp_id]
+    _ = (𝒟.ρ g).charpoly := hfρ g
+
+/-- **`R_F = T_F` in the NON-split-at-`2` case** (SORRY leaf, cut 2026-07-29 out
+of `exists_classifyingHom_of_hilbertDeformationDatum` below, which is now the
+two-case assembly of this and `…_of_splitTwo` above).
+
+This is the whole residue of the `R_F = T_F` citation.  It is the SAME
+arithmetic statement as its split-at-`2` sibling; what it lacks is the input
+that makes the sibling's route run, namely
+
+    hw2 : ∀ w ∣ 2, ℓ ∤ N(w)² − 1
+
+consumed twice there — once by
+`exists_isWeaklyUniversal_hilbertDeformationDatum` (the `F`-level deformation
+problem is representable: the tame-at-`2` local condition must be closed under
+fibre products, and `isHilbertTameAtTwo_of_fibreProduct` is refuted without it,
+machine-verified at `ℓ = 5`, `F = ℚ(μ₅)`, `N(w) = 16`) and once by
+`injective_classifyingMap_hilbertHeckeDatum` (Taylor–Wiles patching).
+
+**DO NOT attempt this by weakening either brick** — the counterexample above is
+against the brick, not against the route.  `¬ hw2` is satisfiable and NOT
+vacuous: `F = ℚ(√5)`, `ℓ = 5`, `2` inert, `N(w) = 4`, `N(w)² − 1 = 15`, and
+`5 ∣ 15`; `F = ℚ(√5)` is totally real and Galois over `ℚ`, so it satisfies every
+other hypothesis here.  Hence this leaf has real content and cannot be closed by
+deriving a contradiction from its own hypotheses.
+
+THE TWO HONEST WAYS TO CLOSE IT.
+
+1. **Make it vacuous from above** — the recommended one, and a signature change
+   rather than a proof.  Thread `PotentialHeckeDatum.residueCardTwo` (which is
+   `hw2` in the stronger form `N(w) = 2`, and which
+   `exists_moretBaillySeed_residueCardTwo_of_five_le` already produces alongside
+   `F`) down through `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`,
+   `exists_classifyingHom_hilbertHeckeAlgebra` and
+   `exists_heckeTraceAlgebra_of_congruentSeed`.  Then the parent below never
+   reaches this branch.  Note the upstream twin of that first declaration
+   ALREADY carries the hypothesis and the copy in this file does not; see the
+   section docstring above `…_of_splitTwo`.
+2. **Cite the theorem in this generality.**  Fujiwara / Kisin `R = T` over a
+   totally real base does not in fact require the residue field at `2` to be
+   `𝔽₂` — that is an artefact of how the tame-at-`2` condition is formalised
+   here, not of the mathematics.  Closing it this way means reformulating the
+   local condition at `2` so that representability survives, which is a change
+   to `IsHilbertHardlyRamified` and hence to the whole module.
+
+Literature as for the sibling: Kisin, *Moduli of finite flat group schemes, and
+modularity*, Ann. of Math. 170 (2009), Thm (0.1); Fujiwara, *Deformation rings
+and Hecke algebras in the totally real case*; Taylor, Doc. Math. Extra Vol.
+(2006), Thm 5.4.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hnw2 : ¬ ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣
+        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    {ρbar : GaloisRep ℚ k W}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (H : HilbertHeckeAlgebra ℓ F ρbar) :
+    ∃ φ : H.T →+* 𝒟.R, ∀ g : Field.absoluteGaloisGroup F,
+      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly :=
+  sorry
+
+/-- **`R_F = T_F`, in its bare classifying-map form** (PROVEN 2026-07-29 as the
+two-case assembly over `…_of_splitTwo` and `…_of_not_splitTwo` above — it was a
+SORRY leaf from its cut on 2026-07-28 until then, and the audit below is kept
+because it is what the surviving `…_of_not_splitTwo` inherits; the paragraph
+"THE IN-TREE ROUTE, AND THE ONE THING THAT BLOCKS IT" is CORRECTED in place):
+a Hilbert
 Hecke algebra of `ρbar` over `F` CLASSIFIES every `F`-level deformation datum —
 there is a ring homomorphism `φ : H.T → 𝒟.R` carrying the characteristic
 polynomial of `ρT` to that of `𝒟.ρ`, at every element of `G_F`.
@@ -1851,7 +2043,19 @@ eigensystem and a LARGER level is a different ring — does not apply, because s
 an algebra does not satisfy the structure's local conditions.  Dropping
 `isHilbertHardlyRamified` from `HilbertHeckeAlgebra` would make this leaf FALSE.
 
-THE IN-TREE ROUTE, AND THE ONE THING THAT BLOCKS IT.  With `𝒟T` the datum of `H`
+THE IN-TREE ROUTE, AND THE ONE THING THAT BLOCKS IT.  **CORRECTED 2026-07-29:
+the route below is now WRITTEN AND VERIFIED, as `…_of_splitTwo` above, and `hw2`
+blocks only the case `¬ hw2`, which is what `…_of_not_splitTwo` above now
+carries.  Two details of the sketch that follows were wrong in a way that
+mattered: (a) `𝒟u` must be TRACE-GENERATED as well as weakly universal —
+`exists_isWeaklyUniversal_hilbertDeformationDatum` does not deliver that, and the
+separate upgrade brick
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum` is required,
+costing `((ℓ : ℕ) : k) = 0`; (b) `e` is not an extra input to be inverted —
+inlining `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` for the GIVEN `H`
+makes `e = AlgEquiv.refl`, so `φ = f ∘ ψ⁻¹` with no transport at all.  Reading
+the sketch as written costs a cycle; read `…_of_splitTwo` instead.**  With `𝒟T`
+the datum of `H`
 and `𝒟u` a weakly universal trace-generated datum, `𝒟u.IsWeaklyUniversal`
 supplies both `f : 𝒟u.R → 𝒟.R` and `ψ : 𝒟u.R → 𝒟T.R`, each carrying the charpoly
 clause; `ψ` is bijective by `surjective_classifyingMap_hilbertHeckeDatum` and
@@ -1917,8 +2121,15 @@ theorem exists_classifyingHom_of_hilbertDeformationDatum
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (H : HilbertHeckeAlgebra ℓ F ρbar) :
     ∃ φ : H.T →+* 𝒟.R, ∀ g : Field.absoluteGaloisGroup F,
-      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly :=
-  sorry
+      ((H.ρT g).charpoly).map φ = (𝒟.ρ g).charpoly := by
+  by_cases hw2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((2 : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣
+        ((Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ℤ) ^ 2 - 1))
+  · exact exists_classifyingHom_of_hilbertDeformationDatum_of_splitTwo
+      ℓ hℓ5 F hFtr hFgal hw2 hirrF 𝒟 H
+  · exact exists_classifyingHom_of_hilbertDeformationDatum_of_not_splitTwo
+      ℓ hℓ5 F hFtr hFgal hw2 hirrF 𝒟 H
 
 set_option linter.unusedVariables false in
 /-- **`R_F = T_F` at the given `F`, in classifying-map form** (PROVEN
