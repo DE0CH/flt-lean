@@ -5562,8 +5562,14 @@ the first disjunct is what covers it.
 
 **Where the remaining depth is.**  `T₁a` is Tate's criterion (Silverman
 *ATAEC* V.5.3, and *AEC* VII.5.5 for the `v(j) < 0` ⟺ potentially
-multiplicative half); it is the genuinely new mathematics of this cluster and
-is in neither mathlib nor `~/cs/FLT` nor this project.  `T₁b₁` and `T₁b₂` are
+multiplicative half); it was the genuinely new mathematics of this cluster.
+**UPDATE 2026-07-28: `T₁a` is now DECOMPOSED and PROVEN** over the three-way
+cut documented in the next section — `T₁a₁` (the `padicValRat`-to-valuation
+bridge, PROVEN), `T₁a₂` (the twist classification at a fixed `j`, OPEN) and
+`T₁a₃` (the Tate curve at a prescribed `j`, PROVEN).  Contrary to what this
+paragraph used to say, most of what was needed WAS already in this project,
+in `KnownIn1980s/EllipticCurves/TateCurve.lean`; only the twist
+classification is genuinely new.  `T₁b₁` and `T₁b₂` are
 transport, one per disjunct: no new mathematical content, but not one-liners
 either.  **`T₁b₁` (the untwisted disjunct) is PROVEN.**  `T₁b₂` remains open
 because the quadratic extension `L` produced by `T₁a` arrives as an abstract
@@ -5578,8 +5584,570 @@ which does not exist yet at `T₁a`'s level.  Pushing `ψ` down into `T₁a` wou
 force that choice into the reduction-type statement, where it does not belong.
 -/
 
+/-! ##### The three-way cut of `T₁a` (CARRIED OUT 2026-07-28)
+
+`T₁a` — Tate's criterion — was one sorry carrying three things that live in
+different worlds, and none of the three mentions the other two:
+
+* `T₁a₁`, **a valuation-theoretic fact about `ℚ` with no elliptic curves in
+  it**: `padicValRat v x < 0` says exactly that `x` has valuation `> 1` in
+  `Kᵥ = ℚ_v`.  This is the only place where `padicValRat` — the shape the
+  whole `FreyCurve` tree phrases local hypotheses in — meets the
+  `ValuativeRel` valuation the Tate-curve framework is written against.
+* `T₁a₂`, **the twist classification of elliptic curves with a given
+  `j`-invariant** (Silverman *AEC* X.5.4): over any field of characteristic
+  zero, two elliptic curves with the same `j ∉ {0, 1728}` are quadratic twists
+  of one another.  Pure algebra: no valuation, no reduction, no local field.
+* `T₁a₃`, **the Tate curve at a prescribed `j`** (Silverman *ATAEC* V.5.2/V.5.3):
+  for `|j| > 1` over a nonarchimedean local field, `E_{q(j)}` is elliptic with
+  `j`-invariant `j`, and it has SPLIT MULTIPLICATIVE reduction.
+
+**Why the cut is at THIS seam, and why it is not the reduction-type case
+split the old docstring proposed.**  The obvious route — split on the
+reduction type of `(E⁄Kᵥ).minimal` and dispatch the multiplicative case to
+`exists_quadraticTwist_hasSplitMultiplicativeReduction` — needs *three*
+separate arguments (good reduction excluded by `v(j) ≥ 0`; multiplicative
+handled by the twist theorem; additive genuinely needing *ATAEC* V.5.3) and
+still leaves the additive case as deep as the whole leaf.  The Tate route
+handles all three cases at once, because `E_{q(j)}` is available from `v(j) < 0`
+alone and knows nothing about the reduction type of `E`: `E` is a quadratic
+twist of `E_{q(j)}` in every case, and the dichotomy "the twisting class is
+trivial or it is not" IS the disjunction `T₁a` asserts.  Concretely, the
+nonsplit-multiplicative case and the additive potentially-multiplicative case
+are the unramified and the ramified twist respectively, and neither needs its
+own argument.
+
+**`T₁a₁` and `T₁a₃` are PROVEN below**, and `T₁a` itself is PROVEN glue over
+the three.  `T₁a₂` — the twist classification — is the ONE remaining leaf of
+this cut, and it is the only piece that is genuinely new mathematics.
+
+**The disjunction is still not collapsible** — see the FAITHFULNESS NOTE on
+`T₁a` — and the same warning now applies one level down, to `T₁a₂`: if `W₁ ≅ W₂`
+over `k` then NO nontrivial quadratic twist of `W₂` is isomorphic to `W₁`
+(`j ∉ {0, 1728}` makes `Aut = {±1}`, so the twists by distinct square classes
+are pairwise non-isomorphic over `k`), and conversely.  Each disjunct of
+`T₁a₂` is false exactly where the other one holds.
+-/
+
 open ValuativeRel IsDedekindDomain in
-/-- **`T₁a` — Tate's criterion, in reduction-type form** (sorry leaf;
+/-- **`T₁a₁` — `v(j) < 0` in valuation form** (PROVEN 2026-07-28; pure valuation
+theory on `ℚ`, no elliptic curves): a rational number of negative `v`-adic
+valuation has valuation `> 1` in the completion `Kᵥ`, for the `ValuativeRel`
+valuation that the Tate-curve framework
+(`Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve`) is written against.
+
+This is the *only* impedance mismatch in the `T₁` cluster: the `FreyCurve`
+tree states its local hypotheses with `padicValRat`, while everything
+downstream of `TateParameter.lean` is phrased with `ValuativeRel.valuation`.
+Isolating it here keeps that translation out of the geometry.
+
+Proof, and the point of it is that BOTH sides are `≤ 1`-conditions on the
+DENOMINATOR, so no valuation is ever computed.
+
+* Arithmetic side.  `padicValRat v x = padicValInt v x.num - padicValNat v x.den`
+  by definition, and `padicValInt` is a `ℕ` cast; so if `v ∤ x.den` then
+  `padicValNat v x.den = 0` (`padicValNat.eq_zero_of_not_dvd`) and the
+  difference is `≥ 0`.  Contrapositive: `padicValRat v x < 0` forces
+  `v ∣ x.den`.
+* Valuation side.  The `ValuativeRel` valuation of `Kᵥ` is equivalent to
+  `Valued.v` (`ValuativeRel.isEquiv`, with the `Compatible` instance
+  `AdicCompletionRat.compatibleValuedAdicCompletionRat` from
+  `Fermat/FLT/Mathlib/NumberTheory/Padics/LocalField.lean`), so
+  `Valuation.IsEquiv.one_lt_iff_one_lt` moves the goal to `Valued.v`;
+  `IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation'`
+  moves it down to `v.valuation ℚ x` on `ℚ` itself; and `Rat.valuation_le_one_iff_den`
+  (mathlib, `RingTheory/DedekindDomain/AdicValuation.lean`) says
+  `v.valuation ℚ x ≤ 1 ↔ (x.den : 𝓞 ℚ) ∉ v.asIdeal`.  Negating,
+  `1 < v.valuation ℚ x ↔ (x.den : 𝓞 ℚ) ∈ v.asIdeal`, which
+  `Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal` (PROVEN in
+  `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`) turns into
+  `(v : ℤ) ∣ x.den`.
+
+THE TRAP, and it cost a whole build cycle — worth recording because it will bite
+anything else that mixes this project's adic machinery with mathlib's.  There
+are TWO `Algebra ℚ (adicCompletion ℚ v)` instances in scope here.  This project
+carries its own `Field` instance on the adic completion
+(`HeightOneSpectrum.instFieldAdicCompletion_fermat`, in
+`Fermat/FLT/DedekindDomain/AdicValuation.lean`), and through it
+`DivisionRing.toRatAlgebra` wins typeclass search over mathlib's
+`IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion`.  Which one a
+given `algebraMap ℚ Kᵥ` elaborates to therefore depends on the IMPORT
+ENVIRONMENT, and a proof that works in a small scratch can fail in a large
+module for that reason alone.  The two are of course propositionally equal —
+there is only one ring homomorphism `ℚ → Kᵥ` — but they are NOT defeq, and
+unifying them drags the elaborator into trying to unfold
+`HeightOneSpectrum.valuation`, which is `@[no_expose]` in mathlib and therefore
+cannot be unfolded by anyone.  The symptom is a type mismatch whose two sides
+pretty-print IDENTICALLY, with the tell-tale note
+`definitions were not unfolded because their definition is not exposed:
+HeightOneSpectrum.valuation`.
+
+The fix is to stop relying on which instance is found: pin mathlib's instance
+explicitly on the lemma's side, and bridge to whatever the ambient one is with
+`Subsingleton.elim` on `ℚ →+* Kᵥ` (the same `ℚ`-initiality argument as
+`algebraRatAlgClosureAdic_eq_inst` above).  That is what the `h2` block does,
+and it is robust to the instance search changing again.
+
+Second, smaller trap: `Rat.valuation_le_one_iff_den` lives in the `Rat`
+namespace, not in `IsDedekindDomain.HeightOneSpectrum` where the neighbouring
+lemmas are.
+
+The obvious alternative route — through `Rat.HeightOneSpectrum.valuation_equiv_padicValuation`
+and `Rat.padicValuation` — also works but is strictly longer, because it ends
+up owing `(Rat.HeightOneSpectrum.primesEquiv hv.toHeightOneSpectrumRingOfIntegersRat : ℕ) = v`,
+a `natGenerator` computation through `Rat.IsIntegralClosure.intEquiv`. -/
+theorem one_lt_valuation_algebraMap_adicCompletionRat_of_padicValRat_neg
+    {v : ℕ} (hv : v.Prime) {x : ℚ} (hx : padicValRat v x < 0) :
+    1 < valuation (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) x) := by
+  haveI : Fact v.Prime := ⟨hv⟩
+  have hden : v ∣ x.den := by
+    by_contra hnd
+    rw [padicValRat_def, padicValNat.eq_zero_of_not_dvd hnd] at hx
+    omega
+  have h1 : (valuation (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)).IsEquiv
+      (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) (WithZero (Multiplicative ℤ))) :=
+    ValuativeRel.isEquiv _ _
+  have h2 : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) (WithZero (Multiplicative ℤ)))
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) x)
+      = hv.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x := by
+    have hml : (Valued.v : Valuation (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) (WithZero (Multiplicative ℤ)))
+        (@algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat) _ _
+          (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+            (NumberField.RingOfIntegers ℚ) ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat) x)
+        = hv.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ x :=
+      HeightOneSpectrum.valuedAdicCompletion_eq_valuation'
+        hv.toHeightOneSpectrumRingOfIntegersRat x
+    rw [show (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)) x
+        = (@algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat) _ _
+            (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+              (NumberField.RingOfIntegers ℚ) ℚ
+              hv.toHeightOneSpectrumRingOfIntegersRat)) x from
+      congrArg (fun f : ℚ →+* HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat => f x) (Subsingleton.elim _ _)]
+    exact hml
+  rw [h1.one_lt_iff_one_lt, h2,
+    ← not_le, Rat.valuation_le_one_iff_den, not_not,
+    hv.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast,
+    Int.natCast_dvd_natCast]
+  exact hden
+
+/-- **Twisting commutes with a change of variables** (PROVEN 2026-07-28): the
+quadratic twist by `(t, n)` of a curve moved by `C = ⟨u, r, s, t₀⟩` is the twist
+of the original moved by the explicit change `⟨u, D·r, t·s, D·t·t₀⟩`, where
+`D = t² - 4n`.
+
+This is the companion of `exists_smul_quadraticTwistOf_eq`
+(`QuadraticTwists.lean:263`), which instead varies the parameters `(t, n)`; it
+belongs beside it and should be moved there when that file is next touched (it
+is stated here only to keep this task inside its own file).
+
+The witness is forced by the coordinates: over the quadratic extension the twist
+is cut out by `X = D·x`, `Y = D·((t - 2θ)y - θ·(a₁x + a₃))`, so substituting
+`x = u²x' + r`, `y = u³y' + u²s·x' + t₀` gives `X = u²X' + D·r` and
+`Y = u³Y' + u²·(t·s)·X' + D·t·t₀` — note the `s`-entry picks up only `t`, not
+`D·t`, because `X' = D·x'` already carries one factor of `D`. -/
+theorem WeierstrassCurve.exists_smul_quadraticTwistOf_smul_eq {k : Type u} [Field k]
+    (W : WeierstrassCurve k) (C : WeierstrassCurve.VariableChange k) (t n : k) :
+    ∃ C' : WeierstrassCurve.VariableChange k,
+      C' • W.quadraticTwistOf t n = (C • W).quadraticTwistOf t n := by
+  refine ⟨⟨C.u, (t ^ 2 - 4 * n) * C.r, t * C.s, (t ^ 2 - 4 * n) * t * C.t⟩, ?_⟩
+  simp only [WeierstrassCurve.variableChange_def]
+  ext <;> simp only [WeierstrassCurve.quadraticTwistOf] <;> ring
+
+/-- **`T₁a₂` — the twist classification at a fixed `j`** (PROVEN 2026-07-28;
+Silverman
+*AEC* X.5.4 and III.10.1(c), Prop. X.5.4 in the `j ≠ 0, 1728` case): over a
+field of characteristic zero, two elliptic curves with the same `j`-invariant,
+that `j` being neither `0` nor `1728`, are quadratic twists of one another —
+either they are isomorphic over `k` outright, or there is a separable
+quadratic extension `L/k` with `W₁ ≅ W₂ ⊗ L`.
+
+FAITHFULNESS NOTE, and the reason for the disjunction — it is the same
+phenomenon as in `T₁a` one level up, and a prover must not "simplify" either
+one.  When `j ∉ {0, 1728}` the automorphism group of the curve is `{±1}`, so
+the `k`-forms of `W₂` are classified by `H¹(Γ k, {±1}) = kˣ/(kˣ)²`; distinct
+square classes give NON-isomorphic curves.  So the second disjunct is FALSE
+exactly when the first one holds (a nontrivial twist is never isomorphic to
+the curve itself), and the first is false whenever the twisting class is
+nontrivial.  Neither disjunct alone is a theorem.
+
+The hypotheses `hj0`/`hj1728` are not decoration: at `j = 0` the automorphism
+group is `μ₆` and at `j = 1728` it is `μ₄`, so the forms are sextic resp.
+quartic twists and the conclusion is false as stated (over `ℚ`, `y² = x³ + 1`
+and `y² = x³ + 2` both have `j = 0` and are not quadratic twists).
+
+ROUTE, and it is largely already written down in this project.
+`WeierstrassCurve.exists_variableChange_of_j_eq_of_split`
+(`Fermat/FLT/KnownIn1980s/EllipticCurves/TateCurve.lean:1172`) proves the
+SPLIT-multiplicative special case, and everything in it up to its last five
+lines is exactly this lemma's argument with `1 < valuation k j` in place of
+`hj0`/`hj1728`: put both curves in short normal form `y² = x³ + Aᵢx + Bᵢ`
+(characteristic zero, `exists_variableChange_isShortNF`), note `Aᵢ ≠ 0`
+(else `j = 0`) and `Bᵢ ≠ 0` (else `j = 1728`), and read off from `j₁ = j₂`
+the relation `A₁³B₂² = A₂³B₁²`, so that `w := B₂A₁/(B₁A₂)` satisfies
+`A₂ = w²A₁` and `B₂ = w³B₁`.  That says precisely that the second short model
+is the quadratic twist of the first by `w`
+(`quadraticTwistOf 0 (-w/4)`, whose `D = t² - 4n` is `w`).  From there the two
+disjuncts are the two cases of "is `w` a square in `k`":
+
+* `w = e²`: the change of variables `⟨(Units.mk0 e _)⁻¹, 0, 0, 0⟩` carries the
+  first short model to the second — this is verbatim the last five lines of
+  `exists_variableChange_of_j_eq_of_split`, with its appeal to
+  `isSquare_of_scaled_split` (which is where that theorem uses splitness, and
+  is exactly what is NOT available here) replaced by the case hypothesis.
+* `w` not a square: take `L := AdjoinRoot (X² - C w)`, a separable quadratic
+  extension in characteristic zero (irreducibility from
+  `X_pow_sub_C_irreducible_of_prime` at `p = 2`; separability is then FREE —
+  `k` is perfect by `PerfectField.ofCharZero` and `L/k` is finite, so mathlib's
+  `Algebra.IsSeparable` instance fires, and no `Separable` computation is
+  needed), and `θ := AdjoinRoot.root`,
+  whose minimal polynomial is `X² - w`, so `Algebra.trace k L θ = 0` and
+  `Algebra.norm k L θ = -w` by `PowerBasis.trace_gen_eq_nextCoeff_minpoly` and
+  `Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly`.  Hence
+  `W₂.quadraticTwistBy θ = W₂.quadraticTwistOf 0 (-w)`, with `D = t² - 4n = 4w`.
+  Applying that twist to the SHORT model `S₂ = ⟨0,0,0, w²A₁, w³B₁⟩` gives
+  `⟨0,0,0, D²·w²A₁, D³·w³B₁⟩ = ⟨0,0,0, 16w⁴A₁, 64w⁶B₁⟩`, which is exactly the
+  `u⁻¹ = 2w` rescaling of `S₁ = ⟨0,0,0,A₁,B₁⟩` — one twist, no second one.
+  Convert `quadraticTwistBy θ` to `quadraticTwist L` by
+  `exists_smul_quadraticTwist_eq_quadraticTwistBy`, and move the twist between
+  `W₂` and its short model by `exists_smul_quadraticTwistOf_smul_eq` above.
+
+(The earlier plan recorded here — twist the `w`-twist again by `4w` to reach the
+square `4w²` — also works, but is a detour: the `(2w)`-rescaling above lands on
+`S₁` directly.  Note also that the SQUARE case must be handled first and
+separately: if `w` were a square then `X² - w` is reducible and `L` is not a
+field at all.)
+
+IMPORT TRAP, cost one build cycle on 2026-07-28: this project's own `AdjoinRoot`
+helpers — `AdjoinRoot.finrank_eq_natDegree`,
+`AdjoinRoot.isSeparable_of_separable`, `AdjoinRoot.root_notMem_range_algebraMap`
+— are NOT visible from this module.  `Fermat.FLT.Mathlib.RingTheory.AdjoinRoot`
+is in this file's textual import closure but only through NON-`public` imports,
+and under the module system a plain `import` does not re-export, so the
+constants are genuinely unknown here.  A source-level BFS over `import` lines
+will say they are available and be wrong; only `public import` chains carry
+visibility.  All three are inlined above from mathlib (`PowerBasis.finrank`,
+the `PerfectField` instance, `minpoly.eq_X_sub_C`) rather than imported. -/
+theorem WeierstrassCurve.exists_variableChange_or_exists_quadraticTwist_of_j_eq
+    {k : Type u} [Field k] [CharZero k]
+    (W₁ W₂ : WeierstrassCurve k) [W₁.IsElliptic] [W₂.IsElliptic]
+    (hj : W₁.j = W₂.j) (hj0 : W₁.j ≠ 0) (hj1728 : W₁.j ≠ 1728) :
+    (∃ C : WeierstrassCurve.VariableChange k, C • W₁ = W₂) ∨
+      ∃ (L : Type u) (_ : Field L) (_ : Algebra k L)
+        (_ : Algebra.IsQuadraticExtension k L) (_ : Algebra.IsSeparable k L)
+        (C : WeierstrassCurve.VariableChange k), C • W₁ = W₂.quadraticTwist L := by
+  haveI h2 : Invertible (2 : k) := invertibleOfNonzero two_ne_zero
+  haveI h3 : Invertible (3 : k) := invertibleOfNonzero (by norm_num : (3 : k) ≠ 0)
+  obtain ⟨C₁, hC₁⟩ := W₁.exists_variableChange_isShortNF
+  obtain ⟨C₂, hC₂⟩ := W₂.exists_variableChange_isShortNF
+  -- the short models have the same `j`, still avoiding `0` and `1728`
+  have hj' : (C₁ • W₁).j = (C₂ • W₂).j := by
+    rw [WeierstrassCurve.variableChange_j, WeierstrassCurve.variableChange_j, hj]
+  have hj₁0 : (C₁ • W₁).j ≠ 0 := by rw [WeierstrassCurve.variableChange_j]; exact hj0
+  have hj₁1728 : (C₁ • W₁).j ≠ 1728 := by rw [WeierstrassCurve.variableChange_j]; exact hj1728
+  have hj₂0 : (C₂ • W₂).j ≠ 0 := by rw [← hj']; exact hj₁0
+  have hj₂1728 : (C₂ • W₂).j ≠ 1728 := by rw [← hj']; exact hj₁1728
+  set A₁ := (C₁ • W₁).a₄ with hA₁def
+  set B₁ := (C₁ • W₁).a₆ with hB₁def
+  set A₂ := (C₂ • W₂).a₄ with hA₂def
+  set B₂ := (C₂ • W₂).a₆ with hB₂def
+  have hΔ : ∀ (W : WeierstrassCurve k) [W.IsElliptic], W.Δ ≠ 0 := fun W _ ↦ W.isUnit_Δ.ne_zero
+  have hjeq : ∀ (W : WeierstrassCurve k) [W.IsElliptic],
+      W.j = (W.Δ)⁻¹ * W.c₄ ^ 3 := by
+    intro W _
+    rw [show W.j = (↑(W.Δ'⁻¹) : k) * W.c₄ ^ 3 from rfl,
+      Units.val_inv_eq_inv_val, W.coe_Δ']
+  -- `Aᵢ ≠ 0`: otherwise `c₄ = -48Aᵢ = 0`, so `j = 0`
+  have hA0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      W.j ≠ 0 → W.a₄ ≠ 0 := by
+    intro W _ _ hjne h0
+    exact hjne (by
+      rw [hjeq W, W.c₄_of_isShortNF, h0, mul_zero, zero_pow (by norm_num), mul_zero])
+  have hA₁0 : A₁ ≠ 0 := hA0 (C₁ • W₁) hj₁0
+  have hA₂0 : A₂ ≠ 0 := hA0 (C₂ • W₂) hj₂0
+  -- `Bᵢ ≠ 0`: otherwise `j = 1728`
+  have hB0 : ∀ (W : WeierstrassCurve k) [W.IsElliptic] [W.IsShortNF],
+      W.j ≠ 1728 → W.a₄ ≠ 0 → W.a₆ ≠ 0 := by
+    intro W _ _ hjne hA h0
+    refine hjne ?_
+    have hΔW : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
+    rw [hjeq W, W.c₄_of_isShortNF, hΔW, h0]
+    field_simp
+    ring
+  have hB₁0 : B₁ ≠ 0 := hB0 (C₁ • W₁) hj₁1728 hA₁0
+  have hB₂0 : B₂ ≠ 0 := hB0 (C₂ • W₂) hj₂1728 hA₂0
+  -- the cross-multiplied `j`-equation
+  have hcross : (C₁ • W₁).c₄ ^ 3 * (C₂ • W₂).Δ =
+      (C₂ • W₂).c₄ ^ 3 * (C₁ • W₁).Δ := by
+    have h1 := hjeq (C₁ • W₁)
+    have h2 := hjeq (C₂ • W₂)
+    rw [h1, h2, inv_mul_eq_div, inv_mul_eq_div,
+      div_eq_div_iff (hΔ (C₁ • W₁)) (hΔ (C₂ • W₂))] at hj'
+    exact hj'
+  -- the fundamental relation `A₁³B₂² = A₂³B₁²`
+  have hkey : A₁ ^ 3 * B₂ ^ 2 = A₂ ^ 3 * B₁ ^ 2 := by
+    rw [(C₁ • W₁).c₄_of_isShortNF, (C₂ • W₂).c₄_of_isShortNF,
+      (C₁ • W₁).Δ_of_isShortNF, (C₂ • W₂).Δ_of_isShortNF,
+      ← hA₁def, ← hB₁def, ← hA₂def, ← hB₂def] at hcross
+    have h27 : ((27 : k) * ((-48 : k) ^ 3 * (-16 : k))) ≠ 0 := by norm_num
+    apply mul_left_cancel₀ h27
+    linear_combination hcross
+  -- the twisting scalar
+  set w := (B₂ * A₁) / (B₁ * A₂) with hwdef
+  have hw0 : w ≠ 0 :=
+    div_ne_zero (mul_ne_zero hB₂0 hA₁0) (mul_ne_zero hB₁0 hA₂0)
+  have hA₂w : A₂ = w ^ 2 * A₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 2 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -hkey
+  have hB₂w : B₂ = w ^ 3 * B₁ := by
+    rw [hwdef, div_pow, div_mul_eq_mul_div,
+      eq_div_iff (pow_ne_zero 3 (mul_ne_zero hB₁0 hA₂0))]
+    linear_combination -B₁ * B₂ * hkey
+  -- identify the two short models with explicit quintuples
+  have hS₁eq : (C₁ • W₁) = (⟨0, 0, 0, A₁, B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₁ • W₁).a₁_of_isShortNF
+    · exact (C₁ • W₁).a₂_of_isShortNF
+    · exact (C₁ • W₁).a₃_of_isShortNF
+    · rfl
+    · rfl
+  have hS₂eq : (C₂ • W₂) =
+      (⟨0, 0, 0, w ^ 2 * A₁, w ^ 3 * B₁⟩ : WeierstrassCurve k) := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · exact (C₂ • W₂).a₁_of_isShortNF
+    · exact (C₂ • W₂).a₂_of_isShortNF
+    · exact (C₂ • W₂).a₃_of_isShortNF
+    · exact hA₂w
+    · exact hB₂w
+  by_cases hsq : IsSquare w
+  · -- `w = v²`: scaling by `v⁻¹` is a change of variables over `k` itself
+    left
+    obtain ⟨v, hv⟩ := hsq
+    have hv0 : v ≠ 0 := by
+      rintro rfl
+      exact hw0 (by rw [hv, mul_zero])
+    set Cv : WeierstrassCurve.VariableChange k := ⟨(Units.mk0 v hv0)⁻¹, 0, 0, 0⟩ with hCvdef
+    have hCv : Cv • (C₁ • W₁) = C₂ • W₂ := by
+      rw [hS₁eq, hS₂eq]
+      refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_ <;>
+        simp only [WeierstrassCurve.variableChange_def, hCvdef, hv, inv_inv,
+          Units.val_mk0] <;>
+        field_simp <;>
+        ring
+    exact ⟨C₂⁻¹ * (Cv * C₁), by rw [mul_smul, mul_smul, hCv, inv_smul_smul]⟩
+  · -- `w` is not a square: `W₁` is the twist of `W₂` by `L = k(√w)`
+    right
+    have hnr : ∀ b : k, b ^ 2 ≠ w := fun b hb ↦ hsq ⟨b, by rw [← hb]; ring⟩
+    have hirr : Irreducible (Polynomial.X ^ 2 - Polynomial.C w) :=
+      X_pow_sub_C_irreducible_of_prime Nat.prime_two hnr
+    haveI : Fact (Irreducible (Polynomial.X ^ 2 - Polynomial.C w)) := ⟨hirr⟩
+    have hmon : (Polynomial.X ^ 2 - Polynomial.C w).Monic :=
+      Polynomial.monic_X_pow_sub_C w two_ne_zero
+    have hne0 : (Polynomial.X ^ 2 - Polynomial.C w) ≠ 0 := hmon.ne_zero
+    have hdeg : (Polynomial.X ^ 2 - Polynomial.C w).natDegree = 2 :=
+      Polynomial.natDegree_X_pow_sub_C
+    haveI hfin : Module.Finite k (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) :=
+      (AdjoinRoot.powerBasis hne0).finite
+    haveI hquad : Algebra.IsQuadraticExtension k
+        (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) :=
+      ⟨by rw [PowerBasis.finrank (AdjoinRoot.powerBasis hne0), AdjoinRoot.powerBasis_dim, hdeg]⟩
+    -- separability is free in characteristic zero: `k` is perfect and `L/k` is finite
+    haveI hsep : Algebra.IsSeparable k
+        (AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w)) := inferInstance
+    set L := AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C w) with hLdef
+    set θ : L := AdjoinRoot.root (Polynomial.X ^ 2 - Polynomial.C w) with hθdef
+    -- the minimal polynomial of `θ` is `X² - w`, so `tr θ = 0` and `N θ = -w`
+    have hpbgen : (AdjoinRoot.powerBasis hne0).gen = θ := AdjoinRoot.powerBasis_gen hne0
+    have hminp : minpoly k θ = Polynomial.X ^ 2 - Polynomial.C w := by
+      rw [← hpbgen]
+      exact AdjoinRoot.minpoly_powerBasis_gen_of_monic hmon
+    have hθ : θ ∉ Set.range (algebraMap k L) := by
+      rintro ⟨c, hc⟩
+      have h : (minpoly k θ).natDegree = 2 := by rw [hminp, hdeg]
+      rw [← hc, minpoly.eq_X_sub_C, Polynomial.natDegree_X_sub_C] at h
+      omega
+    have htr : Algebra.trace k L θ = 0 := by
+      rw [← hpbgen, PowerBasis.trace_gen_eq_nextCoeff_minpoly, hpbgen, hminp]
+      simp [Polynomial.nextCoeff, hdeg]
+    have hnm : Algebra.norm k θ = -w := by
+      rw [← hpbgen, Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly, hpbgen, hminp,
+        AdjoinRoot.powerBasis_dim, hdeg]
+      simp
+    have htwistBy : W₂.quadraticTwistBy θ = W₂.quadraticTwistOf 0 (-w) := by
+      rw [WeierstrassCurve.quadraticTwistBy, htr, hnm]
+    obtain ⟨C'', hC''⟩ := W₂.exists_smul_quadraticTwist_eq_quadraticTwistBy L hθ
+    obtain ⟨C', hC'⟩ := W₂.exists_smul_quadraticTwistOf_smul_eq C₂ 0 (-w)
+    -- the twist of `S₂` by `(0, -w)` is the `(2w)`-rescaling of `S₁`
+    have hw2 : (2 : k) * w ≠ 0 := mul_ne_zero two_ne_zero hw0
+    set Cu : WeierstrassCurve.VariableChange k := ⟨(Units.mk0 (2 * w) hw2)⁻¹, 0, 0, 0⟩ with hCudef
+    have hCu : Cu • (C₁ • W₁) = (C₂ • W₂).quadraticTwistOf 0 (-w) := by
+      rw [hS₁eq, hS₂eq]
+      refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_ <;>
+        simp only [WeierstrassCurve.variableChange_def, WeierstrassCurve.quadraticTwistOf,
+          hCudef, inv_inv, Units.val_mk0] <;>
+        ring
+    refine ⟨L, inferInstance, inferInstance, inferInstance, inferInstance,
+      (C' * C'')⁻¹ * (Cu * C₁), ?_⟩
+    have hchain : (C' * C'') • W₂.quadraticTwist L = (Cu * C₁) • W₁ := by
+      rw [mul_smul, hC'', htwistBy, hC', ← hCu, mul_smul]
+    rw [mul_smul, ← hchain, inv_smul_smul]
+
+open ValuativeRel in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **`T₁a₃` — the Tate curve at a prescribed `j`** (PROVEN 2026-07-28;
+Silverman *ATAEC* V.5.2): over a nonarchimedean local field, if `|j| > 1` then
+the Tate curve of the Tate parameter `q(j)` is elliptic with `j`-invariant
+exactly `j`.
+
+This is `WeierstrassCurve.isElliptic_tateCurve_and_j`
+(`TateCurve.lean:770`) with its hypotheses weakened to what its proof actually
+uses.  That statement is about `E.q = tateParameter E.j` for a curve `E` which
+is ASSUMED to have split multiplicative reduction, and the assumption enters
+its proof at exactly one point, through `E.one_lt_valuation_j`; every other
+step is about the bare element `E.j`.  Here the curve is gone and `1 < |j|` is
+the hypothesis, which is what the `T₁a` assembly can supply — it knows
+`v(j) < 0` and has no curve with split multiplicative reduction in hand (that
+is what it is trying to produce).
+
+Proof (transcribed from `isElliptic_tateCurve_and_j`, whose two `set_option`s
+are carried across with it because the same series computations need them):
+`Δ(E_q) = Δ̂(q)` has valuation `|q| ≠ 0` by the leading-coefficient lemma
+`TateCurve.valuation_evalInt_eq`, so `E_q` is elliptic; then
+`ĵ⁻¹(q) = j(E_q)⁻¹` by the `c₄`- and `Δ`-evaluations, while
+`ĵ⁻¹(q) = ĵ⁻¹(ĵ⁻¹⁻¹(j⁻¹)) = j⁻¹` because `tateParameter j` is by definition
+the evaluation at `j⁻¹` of the compositional inverse of `ĵ⁻¹`
+(`TateCurve.jInv_subst_jInvReverse`, `TateCurve.evalInt_subst`).  Inverting
+gives `j(E_q) = j`.
+
+FOLLOW-UP (not done here, to keep this task inside its own file): once this
+lands, `TateCurve.lean`'s `isElliptic_tateCurve_and_j` should be re-derived
+from it in one line, `fun => this E.one_lt_valuation_j`, and the duplicated
+proof deleted. -/
+theorem WeierstrassCurve.isElliptic_tateCurve_tateParameter_and_j
+    {k : Type*} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] {j : k} (hj : 1 < valuation k j) :
+    ∃ _ : (WeierstrassCurve.tateCurve (WeierstrassCurve.tateParameter j)).IsElliptic,
+      (WeierstrassCurve.tateCurve (WeierstrassCurve.tateParameter j)).j = j := by
+  set q : k := WeierstrassCurve.tateParameter j with hqdef0
+  have hq0 : q ≠ 0 := WeierstrassCurve.tateParameter_ne_zero hj
+  have hq : valuation k q < 1 := WeierstrassCurve.valuation_tateParameter_lt_one hj
+  have hΔ : (WeierstrassCurve.tateCurve q).Δ = TateCurve.evalInt q TateCurve.ΔFormal :=
+    WeierstrassCurve.Δ_tateCurve_eq_evalInt q hq
+  have hvΔ : valuation k ((WeierstrassCurve.tateCurve q).Δ) = valuation k q := by
+    rw [hΔ]
+    exact TateCurve.valuation_evalInt_eq q hq0 hq
+      TateCurve.constantCoeff_ΔFormal TateCurve.coeff_one_ΔFormal
+  have hΔne : (WeierstrassCurve.tateCurve q).Δ ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hvΔ
+    exact hq0 ((valuation k).zero_iff.mp hvΔ.symm)
+  haveI hell : (WeierstrassCurve.tateCurve q).IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔne⟩
+  refine ⟨hell, ?_⟩
+  have hcc₄3 : PowerSeries.constantCoeff (TateCurve.c₄Formal ^ 3) = 1 := by
+    rw [map_pow, TateCurve.constantCoeff_c₄Formal, one_pow]
+  have hjinv : TateCurve.evalInt q TateCurve.jInv =
+      ((WeierstrassCurve.tateCurve q).j)⁻¹ := by
+    rw [TateCurve.jInv, TateCurve.evalInt_mul q hq,
+      TateCurve.evalInt_invOfUnit q hq _ hcc₄3,
+      TateCurve.evalInt_pow q hq, ← WeierstrassCurve.c₄_tateCurve_eq_evalInt q hq, ← hΔ]
+    rw [WeierstrassCurve.j, Units.val_inv_eq_inv_val,
+      (WeierstrassCurve.tateCurve q).coe_Δ']
+    rw [mul_inv, inv_inv]
+  have hvjinv : valuation k j⁻¹ < 1 := by
+    rw [map_inv₀]
+    exact inv_lt_one_of_one_lt₀ hj
+  have hcomp : TateCurve.evalInt q TateCurve.jInv = j⁻¹ := by
+    have hqdef : q = TateCurve.evalInt j⁻¹ TateCurve.jInvReverse :=
+      hqdef0.trans WeierstrassCurve.tateParameter_eq
+    rw [hqdef, ← TateCurve.evalInt_subst j⁻¹ hvjinv _ _
+      TateCurve.constantCoeff_jInvReverse,
+      TateCurve.jInv_subst_jInvReverse, TateCurve.evalInt_X]
+  exact inv_injective (by rw [← hjinv, hcomp])
+
+open ValuativeRel in
+/-- **`T₁a` over a general nonarchimedean local field** (PROVEN 2026-07-28
+from `T₁a₂` and `T₁a₃`; Silverman *ATAEC* V.5.3): over a nonarchimedean local
+field `k` of characteristic zero, an elliptic curve whose `j`-invariant has
+`|j| > 1` acquires SPLIT MULTIPLICATIVE reduction after at most one quadratic
+twist.  This is `T₁a` with the arithmetic of `ℚ` stripped out; `T₁a` itself is
+this statement at `k = Kᵥ` together with `T₁a₁`.
+
+FAITHFULNESS NOTE: the disjunction is the one `T₁a` carries and is not
+collapsible in either direction — see `T₁a`'s own note and `T₁a₂`'s.
+
+Proof.  Let `T := E_{q(j(W))}` be the Tate curve of the Tate parameter of
+`j(W)`.  `T₁a₃` says `T` is elliptic with `j(T) = j(W)`, and
+`hasSplitMultiplicativeReduction_tateCurve` (PROVEN in `TateCurve.lean`) says
+`T` has split multiplicative reduction, since
+`valuation_tateParameter_lt_one` puts `q(j(W))` in the punctured open unit
+disc.  Now `j(T) = j(W)` has valuation `> 1`, so it is neither `0` nor `1728`
+— both of those have valuation `≤ 1`, the second by `valuation_intCast_le_one`
+— and `T₁a₂` applies to the pair `(T, W)`.  Its two cases are the two
+disjuncts: in each, `W` (respectively `W ⊗ L`) is `C • T` for a change of
+variables `C` over `k`, and
+`WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul` (PROVEN in
+`TateCurve.lean`, Silverman VII.1.3(b)) transports split multiplicativity from
+`T` to the minimal model of `C • T`.
+
+Note where the twist actually comes from: `T₁a₂` produces `L` from the square
+class of a scalar attached to `W`, and NOT from the reduction type of `W`.  So
+the nonsplit-multiplicative case (unramified `L`) and the additive
+potentially-multiplicative case (ramified `L`) are handled by one and the same
+line, which is what makes this route shorter than the reduction-type case
+split. -/
+theorem WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_or_exists_quadraticTwist_of_one_lt_valuation_j
+    {k : Type} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] [CharZero k]
+    (W : WeierstrassCurve k) [W.IsElliptic] (hj : 1 < valuation k W.j) :
+    (W.minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] ∨
+      ∃ (L : Type) (_ : Field L) (_ : Algebra k L)
+        (_ : Algebra.IsQuadraticExtension k L) (_ : Algebra.IsSeparable k L),
+        ((W.quadraticTwist L).minimal 𝒪[k]).HasSplitMultiplicativeReduction 𝒪[k] := by
+  set T : WeierstrassCurve k :=
+    WeierstrassCurve.tateCurve (WeierstrassCurve.tateParameter W.j) with hTdef
+  obtain ⟨hTell, hTj⟩ :=
+    WeierstrassCurve.isElliptic_tateCurve_tateParameter_and_j (j := W.j) hj
+  haveI : T.IsElliptic := hTell
+  haveI hTsplit : T.HasSplitMultiplicativeReduction 𝒪[k] :=
+    WeierstrassCurve.hasSplitMultiplicativeReduction_tateCurve _
+      (WeierstrassCurve.valuation_tateParameter_lt_one hj)
+  have hj0 : T.j ≠ 0 := by
+    rw [hTj]
+    intro h0
+    rw [h0, map_zero] at hj
+    exact absurd hj (not_lt.mpr zero_le_one)
+  have hj1728 : T.j ≠ 1728 := by
+    rw [hTj]
+    intro h0
+    rw [h0, show ((1728 : k)) = ((1728 : ℤ) : k) by norm_num] at hj
+    exact absurd (lt_of_lt_of_le hj (valuation_intCast_le_one 1728)) (lt_irrefl _)
+  rcases WeierstrassCurve.exists_variableChange_or_exists_quadraticTwist_of_j_eq
+      T W hTj hj0 hj1728 with
+    ⟨C, hC⟩ | ⟨L, hLfield, hLalg, hLquad, hLsep, C, hC⟩
+  · refine Or.inl ?_
+    rw [← hC]
+    exact WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul T C
+  · refine Or.inr ⟨L, hLfield, hLalg, hLquad, hLsep, ?_⟩
+    rw [← hC]
+    exact WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_smul T C
+
+open ValuativeRel IsDedekindDomain in
+/-- **`T₁a` — Tate's criterion, in reduction-type form** (DECOMPOSED and PROVEN
+2026-07-28 from `T₁a₁`, `T₁a₂` and `T₁a₃` above;
 Silverman *ATAEC* V.5.3 and *AEC* VII.5.5; Tate's 1959 notes): at a prime `v`
 with `v(j) < 0` the base change of `E` to `Kᵥ = ℚ_vˆ` has SPLIT MULTIPLICATIVE
 reduction after AT MOST ONE quadratic twist — either its own minimal model
@@ -5606,16 +6174,26 @@ any `E` with additive potentially-multiplicative reduction (a ramified twist
 is then genuinely needed), which is exactly the case that makes `ψ` ramified
 downstream and is why `T₁`'s twist cannot be discarded.
 
-Proof (not formalised).  The available route: `hasGoodReduction_or_hasMultiplicativeReduction_or_hasAdditiveReduction`
-splits on the reduction type of the minimal model; `v(j) < 0` excludes good
-reduction (`j` is integral there) and, in the multiplicative case,
-`exists_quadraticTwist_hasSplitMultiplicativeReduction` finishes (split
-already, or twist by the unramified quadratic extension).  The additive case
-is the one needing *ATAEC* V.5.3 proper: build the Tate parameter `Q` with
-`j(Q) = j(E)` from `v(j) < 0` (the `q`-expansion of `j` is invertible on
-`v(q) > 0`, which is `TateCurve.lean`'s `exists_variableChange_tateCurve`
-input), compare `E` with `E_Q` over `Kᵥ` and read off the quadratic character
-from `c₄`/`c₆`. -/
+Proof, now formalised, and it is three lines over the cut above.
+`WeierstrassCurve.map_j` turns the `j`-invariant of the base change into the
+image of `j(E)`; `T₁a₁` turns `padicValRat v (j E) < 0` into
+`1 < |j(E⁄Kᵥ)|`; and the general local statement
+`hasSplitMultiplicativeReduction_minimal_or_exists_quadraticTwist_of_one_lt_valuation_j`
+(PROVEN above from `T₁a₂` and `T₁a₃`) is the conclusion.  `CharZero Kᵥ` comes
+from injectivity of `algebraMap ℚ Kᵥ`.
+
+A NOTE ON THE ROUTE, because the paragraph this replaces recommended a
+different one and it is worth saying why it was not taken.  The old plan was
+to case on the reduction type of `(E⁄Kᵥ).minimal` — good reduction excluded by
+integrality of `j`, multiplicative reduction handled by
+`exists_quadraticTwist_hasSplitMultiplicativeReduction`, additive reduction
+left to *ATAEC* V.5.3.  That plan is correct, but it pays for the split: the
+additive branch still needs the whole Tate comparison, and the other two
+branches need their own arguments on top.  The route actually taken builds the
+Tate curve `E_{q(j)}` from `v(j) < 0` alone — which is all *ATAEC* V.5.2 needs —
+and gets all three reduction types from the single observation that `E⁄Kᵥ` and
+`E_{q(j)}` have the same `j`-invariant, hence are quadratic twists.  The
+reduction type of `E` never has to be named. -/
 theorem WeierstrassCurve.hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
@@ -5637,8 +6215,16 @@ theorem WeierstrassCurve.hasSplitMultiplicativeReduction_or_exists_quadraticTwis
         𝒪[HeightOneSpectrum.adicCompletion ℚ
           hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
         𝒪[HeightOneSpectrum.adicCompletion ℚ
-          hv.toHeightOneSpectrumRingOfIntegersRat] :=
-  sorry
+          hv.toHeightOneSpectrumRingOfIntegersRat] := by
+  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    charZero_of_injective_algebraMap
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat)).injective
+  refine WeierstrassCurve.hasSplitMultiplicativeReduction_minimal_or_exists_quadraticTwist_of_one_lt_valuation_j
+    _ ?_
+  rw [WeierstrassCurve.map_j]
+  exact one_lt_valuation_algebraMap_adicCompletionRat_of_padicValRat_neg hv hj
 
 set_option maxHeartbeats 1000000 in
 open ValuativeRel IsDedekindDomain in
