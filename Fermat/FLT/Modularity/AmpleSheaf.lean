@@ -291,69 +291,17 @@ def IsAmpleSheaf {Z : Scheme.{u}} (L : Z.Modules) : Prop :=
   ∀ z : Z, ∃ (n : ℕ) (_ : 0 < n) (s : Γ(modTensorPow L n, ⊤)) (V : Z.Opens),
     z ∈ V ∧ IsAffineOpen V ∧ nonvanishingLocus (modTensorPow L n) s = (V : Set Z)
 
-/-! ### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
+/-! ### HOISTED to `ModularCurve/RelativePicard.lean` (2026-07-28)
 
-/-- **`f^*(g^* L) ≅ (f ≫ g)^* L`** — `Scheme.Modules.pullbackComp`, read on an
-object. -/
-noncomputable def modPullbackCompIso {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z) (L : Z.Modules) :
-    modPullback f (modPullback g L) ≅ modPullback (f ≫ g) L :=
-  (Scheme.Modules.pullbackComp f g).app L
-
-/-- **Pullbacks along equal morphisms agree** — `Scheme.Modules.pullbackCongr`,
-read on an object.  Needed because `pullback.condition` is an equality of
-morphisms, not a definitional identity. -/
-noncomputable def modPullbackCongrIso {X Y : Scheme.{u}} {f g : X ⟶ Y} (h : f = g) (L : Y.Modules) :
-    modPullback f L ≅ modPullback g L :=
-  (Scheme.Modules.pullbackCongr h).app L
-
-/-- **`f^*` carries isomorphisms to isomorphisms** — it is a functor. -/
-noncomputable def modPullbackMapIso {X Y : Scheme.{u}} (f : X ⟶ Y) {L M : Y.Modules} (e : L ≅ M) :
-    modPullback f L ≅ modPullback f M :=
-  (Scheme.Modules.pullback f).mapIso e
-
-/-! ### The monoidal structure that `modTensor` inherits from presheaves
-
-`RelativePicard.lean` built only the object part of `⊗` because "building the
-monoidal category would require knowing that sheafification is monoidal".  That
-is true of the ASSOCIATOR and false of everything else: functoriality and both
-unitors come for free from the presheaf-level monoidal category together with
-the fact that the sheafification adjunction has invertible counit. -/
-
-/-- The presheaf-level monoidal structure, re-keyed on `Z.ringCatSheaf.obj`.
-
-`Mathlib`'s instance is stated for `PresheafOfModules (R ⋙ forget₂ CommRingCat
-RingCat)` with `R` a presheaf of *commutative* rings; typeclass search cannot
-invert that composition against `Z.ringCatSheaf.obj`, which is definitionally
-`Z.presheaf ⋙ forget₂ CommRingCat RingCat`.  This instance supplies it. -/
-noncomputable instance presheafOfModulesMonoidal (Z : Scheme.{u}) :
-    MonoidalCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
-  inferInstanceAs (MonoidalCategory
-    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
-
-/-- **Sheafifying a sheaf changes nothing**: `a(M.val) ≅ M`.
-
-The counit of `PresheafOfModules.sheafificationAdjunction`, which mathlib
-already knows is an isomorphism. -/
-noncomputable def modSheafifyValIso {Z : Scheme.{u}} (M : Z.Modules) :
-    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj M.val ≅ M :=
-  (asIso (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).counit).app M
-
-/-- **`modTensor` is functorial** (on isomorphisms, which is all that is used).
-
-The morphism part that `RelativePicard.lean` declined to define: sheafify
-`PresheafOfModules.Monoidal.tensorHom`. -/
-noncomputable def modTensorMapIso {Z : Scheme.{u}} {L L' M M' : Z.Modules}
-    (e : L ≅ L') (e' : M ≅ M') : modTensor L M ≅ modTensor L' M' :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso
-    (MonoidalCategory.tensorIso
-      ((SheafOfModules.forget _).mapIso e) ((SheafOfModules.forget _).mapIso e'))
-
-/-- **The LEFT UNITOR**, `𝒪_Z ⊗ M ≅ M`.  Sheafify the presheaf-level unitor,
-then use that `M` is already a sheaf. -/
-noncomputable def modTensorUnitLeftIso {Z : Scheme.{u}} (M : Z.Modules) :
-    modTensor (modUnit Z) M ≅ M :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (λ_ M.val) ≪≫
-    modSheafifyValIso M
+The pseudo-functoriality of `modPullback`, the presheaf monoidal structure,
+`modSheafifyValIso`, `modTensorMapIso`, `modTensorUnitLeftIso`, `opensMapFinal`,
+`modPullbackUnitIso`, `modRestrictPullbackIso`, `modRestrictLEIso`,
+`trivializationOfLE` and `isInvertibleSheaf_modUnit`
+were declared HERE and are now declared in `RelativePicard.lean`, unchanged, and
+inherited by import.  They had to move because `RelativePicard.lean`'s two
+representability leaves consume them and it is UPSTREAM of this module; the
+collision that revealed it was `Fermat.isInvertibleSheaf_modUnit` being declared
+twice.  Nothing about them changed, so every use below still resolves. -/
 
 /-- **Tensor powers transport along an isomorphism**: `L ≅ M` gives
 `L^{⊗n} ≅ M^{⊗n}`. -/
@@ -401,36 +349,6 @@ definitional. -/
 noncomputable def modPullbackSection {X Y : Scheme.{u}} (f : X ⟶ Y) (A : Y.Modules)
     (s : Γ(A, ⊤)) : Γ(modPullback f A, ⊤) :=
   ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app A).val.app (op ⊤) s
-
-/-- **`Opens.map g` is a FINAL functor**, for every continuous `g : X ⟶ Y`.
-
-This refutes the note recorded against `nonempty_modPullback_modUnit`, which
-said finality of the site functor "is not automatic for `Opens.map f`".  It is:
-`StructuredArrow U (Opens.map g)` has the TERMINAL object `⊤` — every `U` obeys
-`U ≤ g ⁻¹ᵁ ⊤` — and a category with a terminal object is connected. -/
-instance opensMapFinal {X Y : TopCat.{u}} (g : X ⟶ Y) : (Opens.map g).Final := by
-  constructor
-  intro U
-  have hterm : ∀ A : StructuredArrow U (Opens.map g),
-      Nonempty (A ⟶ StructuredArrow.mk (Y := (⊤ : Opens Y)) (homOfLE le_top)) :=
-    fun _ => ⟨StructuredArrow.homMk (homOfLE le_top) (Subsingleton.elim _ _)⟩
-  have : Nonempty (StructuredArrow U (Opens.map g)) :=
-    ⟨StructuredArrow.mk (Y := ⊤) (homOfLE le_top)⟩
-  apply zigzag_isConnected
-  intro j₁ j₂
-  exact Relation.ReflTransGen.head (Or.inl (hterm j₁))
-    (Relation.ReflTransGen.single (Or.inr (hterm j₂)))
-
-/-- **`f^* 𝒪_Y ≅ 𝒪_X`** — mathlib's `SheafOfModules.pullbackObjUnitToUnit`,
-which is an isomorphism because `Opens.map f.base` is final (`opensMapFinal`).
-
-The `IsIso` instance is supplied by name rather than by `inferInstance`: the
-two occurrences of `pullbackObjUnitToUnit` otherwise pick up different (but
-defeq) `IsRightAdjoint` instance arguments and unification stalls. -/
-noncomputable def modPullbackUnitIso {X Y : Scheme.{u}} (f : X ⟶ Y) :
-    modPullback f (modUnit Y) ≅ modUnit X :=
-  @asIso _ _ _ _ (SheafOfModules.pullbackObjUnitToUnit.{u} (Scheme.Hom.toRingCatSheafHom f))
-    (SheafOfModules.instIsIsoPullbackObjUnitToUnitOfFinal _)
 
 /-! ### Transport of the non-vanishing locus along an isomorphism
 
@@ -968,14 +886,6 @@ and read `A.presheaf.map (eqToHom _).op`.  So the calculus is now written off
 those two, everything on sections is an honest presheaf map, and the leaf is
 proven. -/
 
-/-- **Restriction along an open immersion IS the pullback** —
-`Scheme.Modules.restrictFunctorIsoPullback`, read on an object.  This is what
-makes the whole calculus below depend on `nonempty_modPullback_modTensor` and on
-nothing else. -/
-noncomputable def modRestrictPullbackIso {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
-    (A : Y.Modules) : A.restrict f ≅ modPullback f A :=
-  (Scheme.Modules.restrictFunctorIsoPullback f).app A
-
 /-- **Restriction commutes with `modTensor`** (PROVEN 2026-07-28 over
 `nonempty_modPullback_modTensor`, in three lines).
 
@@ -989,27 +899,11 @@ theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImme
   exact ⟨modRestrictPullbackIso f _ ≪≫ e ≪≫
     modTensorMapIso (modRestrictPullbackIso f L).symm (modRestrictPullbackIso f M).symm⟩
 
-/-- **`A|_W ≅ (A|_U)|_W` for `W ≤ U`** (PROVEN — `Scheme.homOfLE_ι` transported by
-`Scheme.Modules.restrictFunctorCongr`, then `restrictFunctorComp`).
-
-Both factors have `rfl` `_app_app` lemmas reading `A.presheaf.map (eqToHom _).op`,
-which is what makes `trivializedSection_trivializationOfLE` provable. -/
-noncomputable def modRestrictLEIso {Z : Scheme.{u}} (A : Z.Modules) {W U : Z.Opens} (h : W ≤ U) :
-    A.restrict W.ι ≅ (A.restrict U.ι).restrict (Z.homOfLE h) :=
-  (Scheme.Modules.restrictFunctorCongr (Z.homOfLE_ι h).symm).app A ≪≫
-    (Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι).app A
-
-/-- **A trivialization over `U` restricts to one over any `W ≤ U`** (PROVEN). -/
-noncomputable def trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens} (h : W ≤ U)
-    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
-    A.restrict W.ι ≅ modUnit (W : Scheme.{u}) :=
-  modRestrictLEIso A h ≪≫ (Scheme.Modules.restrictFunctor (Z.homOfLE h)).mapIso φ ≪≫
-    Scheme.Modules.restrictUnitIso (Z.homOfLE h)
-
-/-- **Restricting a trivialization restricts the trivialized section** (PROVEN
-2026-07-28).  Pure plumbing — no mathematics — but it took three attempts, and
-the thing that unlocked it was changing `modRestrictLEIso` (above) rather than
-changing the proof.
+/-- **Restricting a trivialization restricts the trivialized section** (sorry
+leaf).  Pure plumbing — no mathematics — and the only reason it is not proven
+here is that `modRestrictLEIso` is routed through `modPullback`, whose component
+isomorphisms come from `Adjunction.leftAdjointUniq` and are therefore not
+definitional.
 
 The skeleton, since the same shape recurs everywhere in this file:
 
@@ -1158,14 +1052,18 @@ This section is the FAITHFULNESS AUDIT that
 `nonvanishingLocus_modPullback_of_isAmpleSheaf` was flagged as needing.  See
 `isInvertibleSheaf_of_isAmpleSheaf` for the verdict and its proof sketch. -/
 
-/-- `𝒪_Z` is invertible.  (Recorded as a one-liner in `RelativePicard.lean`'s
-docstring for `IsInvertibleSheaf`; it has a consumer now, so it is a
-declaration.) -/
-theorem isInvertibleSheaf_modUnit (Z : Scheme.{u}) : IsInvertibleSheaf (modUnit Z) :=
-  fun _ => ⟨⊤, trivial, ⟨Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι⟩⟩
-
 /-- **A tensor product of invertible sheaves is invertible** (PROVEN over
-`nonempty_restrict_modTensor`): trivialize both over `U ⊓ V`. -/
+`nonempty_restrict_modTensor`): trivialize both over `U ⊓ V`.
+
+Deliberately NOT hoisted to `RelativePicard.lean` with the rest of the free
+calculus (2026-07-28), and the reason is worth recording: this declaration is
+the ONLY consumer of `nonempty_restrict_modTensor`, which in turn is the only
+consumer of `nonempty_modPullback_modTensor`.  Moving it up would have left
+both of those free-floating and silently orphaned that leaf's owner's work.
+`RelativePicard.lean` therefore carries its own
+`isInvertibleSheaf_modTensorPic`, over its own twin of the pullback leaf; the
+two collapse into one when `nonempty_modPullback_modTensor` is settled and the
+hoist described there is carried out. -/
 theorem isInvertibleSheaf_modTensor {Z : Scheme.{u}} {L M : Z.Modules}
     (hL : IsInvertibleSheaf L) (hM : IsInvertibleSheaf M) : IsInvertibleSheaf (modTensor L M) := by
   intro z
@@ -1893,11 +1791,13 @@ noncomputable def modTensorComm {Z : Scheme.{u}} (L M : Z.Modules) :
     modTensor L M ≅ modTensor M L :=
   (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
 
-/-- **THE RIGHT UNITOR**, `M ⊗ 𝒪_Z ≅ M` (PROVEN) — the mirror of
-`modTensorUnitLeftIso`, obtained from it through `modTensorComm`. -/
-noncomputable def modTensorUnitRightIso {Z : Scheme.{u}} (M : Z.Modules) :
-    modTensor M (modUnit Z) ≅ M :=
-  modTensorComm M (modUnit Z) ≪≫ modTensorUnitLeftIso M
+-- **THE RIGHT UNITOR**, `M ⊗ 𝒪_Z ≅ M`, is NOT declared here.  It was added to this
+-- file and to `ModularCurve/RelativePicard.lean` independently on the same day, under
+-- the same name and in the same namespace; since this file imports that one, keeping
+-- both is a `Fermat.modTensorUnitRightIso has already been declared` error.  The
+-- upstream copy wins (release-18 merge).  It is constructed there from mathlib's
+-- `ρ_` directly rather than from `modTensorComm` here; the two are propositionally
+-- equal and every use below resolves to the imported one.
 
 /-- **ISOMORPHY IS LOCAL ON THE BASE** (PROVEN 2026-07-28) — a morphism of
 `𝒪_Z`-modules whose restriction to each member of an open cover is an
