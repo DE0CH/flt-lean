@@ -30831,12 +30831,14 @@ is analysis-on-the-period any more:
 * `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
   divisor of a Kenku level (the analytic-rank-`0` statement, and the one
   that PARI's `mfatkineigenvalues` checks directly);
-* `frickeTailSum_tail_lt_head` — the `L`-value numerics, now a REAL
-  inequality `∑_{n ≥ 2} ‖bₙ‖/n e^{-2πn/√M} < e^{-2π/√M}` with no
-  cancellation in it, let alone an integral
-  (`integral_Ioi_one_axisRestrict_ne_zero`, which used to stand here, and
-  `frickeTailSum_ne_zero`, which stood here after the third round below,
-  are both PROVEN over it since the fourth).
+* `frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors` — the `L`-value
+  numerics, now a REAL inequality
+  `∑_{n ≥ 2} ‖bₙ‖/n e^{-2πn/√M} < e^{-2π/√M}` with no cancellation in it,
+  let alone an integral, and restricted to the NINE divisors of Kenku
+  levels that exceed `30` (`integral_Ioi_one_axisRestrict_ne_zero`, which
+  used to stand here, `frickeTailSum_ne_zero`, which stood here after the
+  third round below, and `frickeTailSum_tail_lt_head`, which stood here
+  after the fourth, are all PROVEN over it since the fifth).
 
 The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
 is the whole reason the Fricke hypothesis is worth having — is PROVEN
@@ -30892,6 +30894,23 @@ local values at `p ∣ M` makes it hold at all seventeen divisor levels,
 the worst ratio being `0.965` at `M = 75`.  The one input beyond what the
 file already states is `‖a_p‖ = 1` for `p ∥ M` at a NEWFORM; the full
 accounting, with per-level numbers, is on `frickeTailSum_tail_lt_head`.
+
+**Fifth round (2026-07-29): the level split, and the coefficient theory.**
+`frickeTailSum_tail_lt_head` is PROVEN too, along the DIVISOR SET.  The
+fourteen Kenku levels have thirty-two divisors between them and those
+skip from `30` to `35`; the twenty-three divisors `≤ 30` fall to one
+geometric estimate (`frickeTailSum_tail_lt_head_of_le_thirty`) with no
+level information and no dimension formula, because `3e^{-2π/√30} < 1`
+and `‖bₙ‖ ≤ 2n`.  That last bound is now proven in this file too, over
+the Deligne leaf alone: `coeff_mul_of_coprime` and `coeff_prime_pow_mul`
+(multiplicativity out of the `hecke`/`atkin` fields),
+`norm_coeff_prime_pow_le` (`‖a_{p^k}‖ ≤ (k+1)p^{k/2}`, via the Satake
+power sum — the naive triangle-inequality induction gives only
+`(1+√2)^k` and is useless) and `norm_coeff_le_card_divisors_mul_sqrt`
+(`‖aₙ‖ ≤ d(n)√n`).  What is left open is the NINE remaining divisors,
+`frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors`, and the missing
+arithmetic there is still exactly `‖a_p‖ = 1` for `p ∥ M` at a newform,
+at `M = 75`, `p = 3`.
 
 The newform predicate is `IsNewEigenformAt`, and it is only *stated*.
 It is deliberately NOT `Modularity/Interface.lean`'s `IsWeightTwoNewform`
@@ -31361,6 +31380,323 @@ theorem norm_coeff_le_sqrt_of_dvd {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0
     exact hβ
   · rw [← hsum, h, add_zero]
     exact hα
+
+/-! ### The multiplicative theory of the coefficients, and the bound `‖aₙ‖ ≤ d(n)√n`
+
+Everything in this block is PROVEN (2026-07-29) over the single Deligne
+leaf `exists_satakeParams_of_isWeightTwoEigenform` above.  It is the
+arithmetic input to `frickeTailSum_tail_lt_head` far below, and nothing
+in it is level-specific.
+
+The chain is the textbook one: the `hecke`/`atkin` fields of
+`IsWeightTwoEigenform` give multiplicativity and the two-term recursion
+at a prime; the Satake parameters turn the recursion into the power sum
+`a_{p^k} = ∑_{i ≤ k} α^i β^{k-i}`, whose triangle inequality is the
+sharp `(k+1)p^{k/2}`.  **The naive induction does NOT give that bound**
+— from `‖a_p‖ ≤ 2√p` and `‖a_{p^{k+2}}‖ ≤ ‖a_p‖‖a_{p^{k+1}}‖ +
+p‖a_{p^k}‖` one only gets `(3k+5)p^{(k+2)/2}`, which grows like
+`(1+√2)^k` and is useless.  The closed form is what makes `‖α‖ = ‖β‖`
+usable, and it is why `exists_satakeParams_of_isWeightTwoEigenform` is
+stated with the parameters rather than with the bound on `a_p` alone. -/
+
+/-- **The coefficients are multiplicative at a prime power** (PROVEN
+2026-07-29): `a_{p^k n} = a_{p^k} a_n` when `p ∤ n`.
+
+Both cases of the eigenform structure are used: `atkin` at `p ∣ M`,
+where `a` is completely multiplicative in `p` and a one-step induction
+suffices, and `hecke` at `p ∤ M`, where the recursion is two-term and
+the induction carries the pair `(k, k+1)`. -/
+theorem coeff_prime_pow_mul {M : ℕ} {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenform M g a) {p : ℕ} (hp : p.Prime)
+    (k n : ℕ) (hn : 0 < n) (hpn : ¬ p ∣ n) : a (p ^ k * n) = a (p ^ k) * a n := by
+  by_cases hpM : p ∣ M
+  · have key : ∀ j : ℕ, ∀ m : ℕ, 0 < m → a (p ^ j * m) = a p ^ j * a m := by
+      intro j
+      induction j with
+      | zero => intro m _; simp
+      | succ j ih =>
+        intro m hm
+        have h1 := ha.atkin p hp hpM (p ^ j * m) (Nat.mul_pos (pow_pos hp.pos j) hm)
+        rw [show p ^ (j + 1) * m = p ^ j * m * p by ring, h1, ih m hm]
+        ring
+    have h2 : a (p ^ k) = a p ^ k := by
+      have h := key k 1 one_pos
+      rwa [mul_one, ha.one, mul_one] at h
+    rw [key k n hn, h2]
+  · have hstep : ∀ (j : ℕ) (m : ℕ), 0 < m →
+        a (p ^ (j + 2) * m) = a p * a (p ^ (j + 1) * m) - p * a (p ^ j * m) := by
+      intro j m hm
+      have hpos : 0 < p ^ (j + 1) * m := Nat.mul_pos (pow_pos hp.pos (j + 1)) hm
+      have h1 := ha.hecke p hp hpM (p ^ (j + 1) * m) hpos
+      have hdvd : p ∣ p ^ (j + 1) * m := (dvd_pow_self p (Nat.succ_ne_zero j)).mul_right m
+      rw [if_pos hdvd] at h1
+      have hdiv : p ^ (j + 1) * m / p = p ^ j * m := by
+        rw [show p ^ (j + 1) * m = p * (p ^ j * m) by ring, Nat.mul_div_cancel_left _ hp.pos]
+      rw [hdiv] at h1
+      rw [show p ^ (j + 2) * m = p ^ (j + 1) * m * p by ring]
+      linear_combination h1
+    have hbase : ∀ m : ℕ, 0 < m → ¬ p ∣ m → a (p ^ 1 * m) = a (p ^ 1) * a m := by
+      intro m hm hpm
+      have h1 := ha.hecke p hp hpM m hm
+      rw [if_neg hpm] at h1
+      rw [show p ^ 1 * m = m * p by ring, pow_one]
+      linear_combination h1
+    have key : ∀ j : ℕ, a (p ^ j * n) = a (p ^ j) * a n ∧
+        a (p ^ (j + 1) * n) = a (p ^ (j + 1)) * a n := by
+      intro j
+      induction j with
+      | zero => exact ⟨by simp [ha.one], hbase n hn hpn⟩
+      | succ j ih =>
+        refine ⟨ih.2, ?_⟩
+        have h1 := hstep j n hn
+        have h2 := hstep j 1 one_pos
+        rw [mul_one, mul_one, mul_one] at h2
+        rw [h1, ih.1, ih.2, h2]
+        ring
+    exact (key k).1
+
+/-- **The coefficients are multiplicative** (PROVEN 2026-07-29):
+`a_{mn} = a_m a_n` for coprime `m, n`.
+
+`hn : 0 < n` is load-bearing only through `hecke`/`atkin`, which are
+stated for positive index; at `n = 0` the statement is still true
+(`a 0 = 0`) but is not what the recursion gives, so it is assumed rather
+than derived.  Note `m = 0` needs no hypothesis: `Nat.recOnPrimePow`'s
+zero case is `a 0 = a 0 * a n`, which holds because `a 0 = 0`. -/
+theorem coeff_mul_of_coprime {M : ℕ} {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenform M g a) :
+    ∀ m n : ℕ, 0 < n → Nat.Coprime m n → a (m * n) = a m * a n := by
+  intro m
+  induction m using Nat.recOnPrimePow with
+  | zero => intro n _ _; simp [ha.zero]
+  | one => intro n _ _; simp [ha.one]
+  | prime_pow_mul q p k hp hpq hk ih =>
+    intro n hn hcop
+    have hq0 : 0 < q := Nat.pos_of_ne_zero (by rintro rfl; exact hpq (dvd_zero p))
+    have hpn : ¬ p ∣ n := by
+      intro hdvd
+      have hpdvd : p ∣ p ^ k * q := (dvd_pow_self p hk.ne').mul_right q
+      have hg : p ∣ Nat.gcd (p ^ k * q) n := Nat.dvd_gcd hpdvd hdvd
+      rw [Nat.Coprime] at hcop
+      rw [hcop] at hg
+      exact hp.ne_one (Nat.dvd_one.mp hg)
+    have hcopq : Nat.Coprime q n := Nat.Coprime.coprime_dvd_left (dvd_mul_left q (p ^ k)) hcop
+    have hqn : 0 < q * n := by positivity
+    have hpqn : ¬ p ∣ q * n := by
+      intro h
+      rcases (Nat.Prime.dvd_mul hp).mp h with h | h
+      · exact hpq h
+      · exact hpn h
+    calc a (p ^ k * q * n) = a (p ^ k * (q * n)) := by rw [mul_assoc]
+      _ = a (p ^ k) * a (q * n) := coeff_prime_pow_mul ha hp k (q * n) hqn hpqn
+      _ = a (p ^ k) * (a q * a n) := by rw [ih n hn hcopq]
+      _ = a (p ^ k) * a q * a n := by ring
+      _ = a (p ^ k * q) * a n := by rw [coeff_prime_pow_mul ha hp k q hq0 hpq]
+
+/-- **RAMANUJAN–PETERSSON AT A PRIME POWER** (PROVEN 2026-07-29):
+`‖a_{p^k}‖ ≤ (k + 1) √p ^ k`, for EVERY prime `p`, dividing the level or
+not.
+
+The proof is the closed form `a_{p^k} = ∑_{i ≤ k} α^i β^{k-i}` in the
+Satake parameters, which satisfies the same two-term recursion
+`S_{k+2} = (α+β) S_{k+1} - αβ S_k` as the coefficients do — with
+`α + β = a_p` and `αβ = 0` or `p` according as `p ∣ M` or not, which is
+exactly what `exists_satakeParams_of_isWeightTwoEigenform` delivers, so
+the two cases of the level are handled uniformly.  See the block comment
+above for why no induction using only `‖a_p‖ ≤ 2√p` can prove this. -/
+theorem norm_coeff_prime_pow_le {M : ℕ} (hM : M ≠ 0) {g : CuspForm (Gamma0GL M) 2}
+    {a : ℕ → ℂ} (ha : IsWeightTwoEigenform M g a) {p : ℕ}
+    (hp : p.Prime) (k : ℕ) : ‖a (p ^ k)‖ ≤ (k + 1) * Real.sqrt p ^ k := by
+  obtain ⟨α, β, hsum, hprod, hα, hβ⟩ := exists_satakeParams_of_isWeightTwoEigenform hM ha hp
+  set S : ℕ → ℂ := fun j => ∑ i ∈ Finset.range (j + 1), α ^ i * β ^ (j - i) with hSdef
+  have hS1 : ∀ j : ℕ, S (j + 1) = α * S j + β ^ (j + 1) := by
+    intro j
+    show (∑ i ∈ Finset.range (j + 1 + 1), α ^ i * β ^ (j + 1 - i))
+        = α * (∑ i ∈ Finset.range (j + 1), α ^ i * β ^ (j - i)) + β ^ (j + 1)
+    rw [Finset.sum_range_succ' (fun i => α ^ i * β ^ (j + 1 - i)) (j + 1)]
+    have hcongr : ∀ i ∈ Finset.range (j + 1),
+        α ^ (i + 1) * β ^ (j + 1 - (i + 1)) = α * (α ^ i * β ^ (j - i)) := by
+      intro i _
+      rw [Nat.succ_sub_succ]
+      ring
+    rw [Finset.sum_congr rfl hcongr, ← Finset.mul_sum]
+    simp
+  have hSrec : ∀ j : ℕ, S (j + 2) = (α + β) * S (j + 1) - α * β * S j := by
+    intro j
+    rw [show j + 2 = j + 1 + 1 from rfl, hS1 (j + 1), hS1 j]
+    ring
+  have hrec : ∀ j : ℕ, a (p ^ (j + 2)) = a p * a (p ^ (j + 1)) - α * β * a (p ^ j) := by
+    intro j
+    by_cases hpM : p ∣ M
+    · rw [hprod, if_pos hpM]
+      have h1 := ha.atkin p hp hpM (p ^ (j + 1)) (pow_pos hp.pos _)
+      rw [show p ^ (j + 2) = p ^ (j + 1) * p by ring, h1]
+      ring
+    · rw [hprod, if_neg hpM]
+      have h1 := ha.hecke p hp hpM (p ^ (j + 1)) (pow_pos hp.pos _)
+      rw [if_pos (dvd_pow_self p (Nat.succ_ne_zero j))] at h1
+      rw [show p ^ (j + 1) / p = p ^ j by
+        rw [show p ^ (j + 1) = p * p ^ j by ring, Nat.mul_div_cancel_left _ hp.pos]] at h1
+      rw [show p ^ (j + 2) = p ^ (j + 1) * p by ring]
+      linear_combination h1
+  have hval : ∀ j : ℕ, a (p ^ j) = S j := by
+    have hbase0 : a (p ^ 0) = S 0 := by
+      show a 1 = ∑ i ∈ Finset.range 1, α ^ i * β ^ (0 - i)
+      simp [ha.one]
+    have hbase1 : a (p ^ 1) = S 1 := by
+      show a (p ^ 1) = ∑ i ∈ Finset.range 2, α ^ i * β ^ (1 - i)
+      rw [pow_one, ← hsum]
+      simp [Finset.sum_range_succ]
+      ring
+    have key : ∀ j : ℕ, a (p ^ j) = S j ∧ a (p ^ (j + 1)) = S (j + 1) := by
+      intro j
+      induction j with
+      | zero => exact ⟨hbase0, hbase1⟩
+      | succ j ih =>
+        refine ⟨ih.2, ?_⟩
+        show a (p ^ (j + 2)) = S (j + 2)
+        rw [hrec j, ih.1, ih.2, hSrec j, hsum]
+    exact fun j => (key j).1
+  rw [hval k]
+  have hsp : (0 : ℝ) ≤ Real.sqrt p := Real.sqrt_nonneg _
+  calc ‖S k‖ ≤ ∑ i ∈ Finset.range (k + 1), ‖α ^ i * β ^ (k - i)‖ := norm_sum_le _ _
+    _ ≤ ∑ _i ∈ Finset.range (k + 1), Real.sqrt p ^ k := by
+        refine Finset.sum_le_sum fun i hi => ?_
+        have hik : i ≤ k := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+        rw [norm_mul, norm_pow, norm_pow]
+        calc ‖α‖ ^ i * ‖β‖ ^ (k - i) ≤ Real.sqrt p ^ i * Real.sqrt p ^ (k - i) :=
+              mul_le_mul (pow_le_pow_left₀ (norm_nonneg _) hα i)
+                (pow_le_pow_left₀ (norm_nonneg _) hβ _) (by positivity) (by positivity)
+          _ = Real.sqrt p ^ k := by rw [← pow_add]; congr 1; omega
+    _ = (k + 1) * Real.sqrt p ^ k := by
+        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+        push_cast
+        ring
+
+/-- `√(x^k) = (√x)^k` for `0 ≤ x` (PROVEN — mathlib has `Real.sqrt_mul`
+but not this). -/
+theorem sqrt_pow_of_nonneg {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
+    Real.sqrt (x ^ k) = Real.sqrt x ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih => rw [pow_succ, Real.sqrt_mul (by positivity), ih, pow_succ]
+
+/-- `d(p^k) = k + 1` (PROVEN). -/
+theorem card_divisors_prime_pow {p : ℕ} (hp : p.Prime) (k : ℕ) :
+    (p ^ k).divisors.card = k + 1 := by
+  rw [Nat.divisors_prime_pow hp, Finset.card_map, Finset.card_range]
+
+/-- **THE DIVISOR BOUND ON THE COEFFICIENTS** (PROVEN 2026-07-29):
+`‖a_n‖ ≤ d(n) √n`, where `d(n) = #n.divisors`.
+
+Multiplicativity (`coeff_mul_of_coprime`) plus the prime-power bound
+(`norm_coeff_prime_pow_le`), assembled along `Nat.recOnPosPrimePosCoprime`
+against the multiplicativity of `d` (`Nat.Coprime.card_divisors_mul`) and
+of `√`.
+
+**`hM : M ≠ 0` IS LOAD-BEARING, and here is the witness.**  At `M = 0`
+the sequence `b n = n` satisfies every field of `IsWeightTwoEigenform 0 g b`
+(see the FALSITY AUDIT on `norm_coeff_le_sqrt_of_dvd` above, which
+records the same witness), and for a prime `p ≥ 5` it has
+`‖b p‖ = p > 2√p = d(p) √p`.  So the conclusion genuinely fails at level
+`0`; it is not merely unprovable there.
+
+`n = 0` needs no hypothesis: `d(0) = 0`, `√0 = 0` and `a 0 = 0`, so the
+statement reads `0 ≤ 0`. -/
+theorem norm_coeff_le_card_divisors_mul_sqrt {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ} (ha : IsWeightTwoEigenform M g a)
+    (n : ℕ) : ‖a n‖ ≤ n.divisors.card * Real.sqrt n := by
+  induction n using Nat.recOnPosPrimePosCoprime with
+  | zero => simp [ha.zero]
+  | one => simp [ha.one]
+  | prime_pow p k hp hk =>
+      have h := norm_coeff_prime_pow_le hM ha hp k
+      rw [card_divisors_prime_pow hp, Nat.cast_pow,
+        sqrt_pow_of_nonneg (Nat.cast_nonneg p) k]
+      push_cast
+      linarith
+  | coprime m n hm hn hcop ihm ihn =>
+      have hn0 : 0 < n := by omega
+      have hmul := coeff_mul_of_coprime ha m n hn0 hcop
+      have hcard := Nat.Coprime.card_divisors_mul hcop
+      have hsqrt : Real.sqrt ((m : ℝ) * n) = Real.sqrt m * Real.sqrt n :=
+        Real.sqrt_mul (Nat.cast_nonneg m) _
+      rw [hmul, norm_mul, hcard]
+      push_cast
+      rw [hsqrt]
+      have h1 : (0 : ℝ) ≤ ‖a m‖ := norm_nonneg _
+      have h2 : (0 : ℝ) ≤ ‖a n‖ := norm_nonneg _
+      have h3 : (0 : ℝ) ≤ (m.divisors.card : ℝ) * Real.sqrt m := by positivity
+      have h4 : (0 : ℝ) ≤ (n.divisors.card : ℝ) * Real.sqrt n := by positivity
+      nlinarith
+
+/-- **`d(n) ≤ 2 √n`**, in `ℕ` (PROVEN — absent from mathlib, which has
+only `Nat.card_divisors_le_self`).
+
+The divisors are at most two-to-one over `Icc 1 (Nat.sqrt n)` under
+`d ↦ min(d, n/d)`: a divisor `d` with `d² ≤ n` maps to itself, one with
+`d² > n` maps to `n/d < d`, and the fibre over `b` is contained in
+`{b, n/b}`. -/
+theorem card_divisors_le_two_mul_nat_sqrt (n : ℕ) : n.divisors.card ≤ 2 * Nat.sqrt n := by
+  classical
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  have hmaps : ∀ d ∈ n.divisors,
+      (if d * d ≤ n then d else n / d) ∈ Finset.Icc 1 (Nat.sqrt n) := by
+    intro d hd
+    rw [Nat.mem_divisors] at hd
+    obtain ⟨hdvd, hn0⟩ := hd
+    have hd0 : 0 < d := Nat.pos_of_ne_zero fun h => by simp [h] at hdvd; omega
+    have hmul : d * (n / d) = n := Nat.mul_div_cancel' hdvd
+    by_cases h : d * d ≤ n
+    · rw [if_pos h, Finset.mem_Icc]
+      exact ⟨hd0, Nat.le_sqrt.mpr h⟩
+    · have h' : n < d * d := Nat.lt_of_not_le h
+      have hlt : n / d < d := by nlinarith [hmul]
+      have hq0 : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdvd) hd0
+      rw [if_neg h, Finset.mem_Icc]
+      refine ⟨hq0, Nat.le_sqrt.mpr ?_⟩
+      nlinarith [hmul]
+  have hfib : ∀ b ∈ Finset.Icc 1 (Nat.sqrt n),
+      (n.divisors.filter fun d => (if d * d ≤ n then d else n / d) = b).card ≤ 2 := by
+    intro b _
+    refine le_trans (Finset.card_le_card (t := ({b, n / b} : Finset ℕ)) ?_) ?_
+    · intro d hd
+      simp only [Finset.mem_filter, Nat.mem_divisors] at hd
+      obtain ⟨⟨hdvd, -⟩, hfd⟩ := hd
+      by_cases h : d * d ≤ n
+      · rw [if_pos h] at hfd
+        simp [hfd]
+      · rw [if_neg h] at hfd
+        have hdd : n / (n / d) = d := Nat.div_div_self hdvd hn.ne'
+        rw [← hfd, hdd]
+        simp
+    · exact (Finset.card_insert_le _ _).trans (by simp)
+  simpa using Finset.card_le_mul_card_image_of_maps_to hmaps 2 hfib
+
+/-- **`d(n) ≤ 2 √n`**, over `ℝ` (PROVEN). -/
+theorem card_divisors_le_two_mul_sqrt (n : ℕ) :
+    (n.divisors.card : ℝ) ≤ 2 * Real.sqrt n := by
+  have h1 : (n.divisors.card : ℝ) ≤ 2 * (Nat.sqrt n : ℝ) := by
+    exact_mod_cast card_divisors_le_two_mul_nat_sqrt n
+  have h2 : (Nat.sqrt n : ℝ) ≤ Real.sqrt n := Real.nat_sqrt_le_real_sqrt
+  linarith
+
+/-- **`‖a_n‖ ≤ 2n`** (PROVEN 2026-07-29) — the crude, entirely
+level-free form of the divisor bound, and all that the small-level half
+of `frickeTailSum_tail_lt_head` needs.
+
+`d(n) √n ≤ 2√n · √n = 2n`.  The statement itself is TRUE at `M = 0` (the
+witness `b n = n` there satisfies `n ≤ 2n`), so `hM` is an artefact of
+the route through `norm_coeff_le_card_divisors_mul_sqrt`, which does
+need it; it is not a hypothesis the conclusion requires. -/
+theorem norm_coeff_le_two_mul_self {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {a : ℕ → ℂ} (ha : IsWeightTwoEigenform M g a) (n : ℕ) :
+    ‖a n‖ ≤ 2 * n := by
+  have h1 := norm_coeff_le_card_divisors_mul_sqrt hM ha n
+  have h2 := card_divisors_le_two_mul_sqrt n
+  have hs : Real.sqrt n * Real.sqrt n = (n : ℝ) := Real.mul_self_sqrt (by positivity)
+  nlinarith [Real.sqrt_nonneg (n : ℝ), Nat.cast_nonneg (α := ℝ) n.divisors.card]
 
 /-- **A stabilization root is never `p`** (PROVEN 2026-07-28, and
 RESTATED — it acquired `hM0 : M ≠ 0`) — the ONLY place the reduction
@@ -31915,8 +32251,238 @@ theorem tsum_ne_zero_of_tail_lt_norm_sum {t : ℕ → ℂ} (ht : Summable fun n 
   rw [heq, norm_neg] at hlt
   exact absurd hlt (not_lt.mpr hle)
 
+/-- **GEOMETRIC DOMINATION OF A SHIFTED TAIL** (PROVEN 2026-07-29):
+`∑_{n ≥ 0} cₙ x^{n+2} < x` whenever `0 < x`, `3x < 1` and `0 ≤ cₙ ≤ 2`.
+
+`∑ cₙ x^{n+2} ≤ 2x²/(1-x)`, and `2x²/(1-x) < x ⟺ 2x < 1 - x ⟺ 3x < 1`.
+The constant `2` is exactly the bound `‖bₙ‖/n ≤ 2` coming from
+`norm_coeff_le_two_mul_self`, and `3x < 1` is exactly `M ≤ 30`; see the
+two lemmas below. -/
+theorem tsum_two_mul_tail_lt {x : ℝ} (hx0 : 0 < x) (hx : 3 * x < 1) {c : ℕ → ℝ}
+    (hc0 : ∀ n, 0 ≤ c n) (hc2 : ∀ n, c n ≤ 2) :
+    ∑' n : ℕ, c n * x ^ (n + 2) < x := by
+  have hx1 : x < 1 := by linarith
+  have hgeo : Summable fun n : ℕ => x ^ n := summable_geometric_of_lt_one hx0.le hx1
+  have hmaj : Summable fun n : ℕ => 2 * x ^ (n + 2) :=
+    (hgeo.mul_left (2 * x ^ 2)).congr fun n => by ring
+  have hterm : ∀ n : ℕ, c n * x ^ (n + 2) ≤ 2 * x ^ (n + 2) := fun n =>
+    mul_le_mul_of_nonneg_right (hc2 n) (by positivity)
+  have hsummable : Summable fun n : ℕ => c n * x ^ (n + 2) :=
+    hmaj.of_nonneg_of_le (fun n => mul_nonneg (hc0 n) (by positivity)) hterm
+  have hval : ∑' n : ℕ, 2 * x ^ (n + 2) = 2 * x ^ 2 * (1 - x)⁻¹ := by
+    have h : (fun n : ℕ => 2 * x ^ (n + 2)) = fun n : ℕ => 2 * x ^ 2 * x ^ n := by
+      funext n; ring
+    rw [h, tsum_mul_left, tsum_geometric_of_lt_one hx0.le hx1]
+  have hpos : (0 : ℝ) < 1 - x := by linarith
+  calc ∑' n : ℕ, c n * x ^ (n + 2) ≤ ∑' n : ℕ, 2 * x ^ (n + 2) :=
+        hsummable.tsum_le_tsum hterm hmaj
+    _ = 2 * x ^ 2 * (1 - x)⁻¹ := hval
+    _ < x := by
+        rw [mul_inv_lt_iff₀ hpos]
+        nlinarith
+
+/-- **`3 e^{-2π/√M} < 1` for `1 ≤ M ≤ 30`** (PROVEN 2026-07-29).
+
+`2π/√30 = 1.1471… > 1.14`, and `e^{1.14} > 1 + 1.14 + 1.14²/2 + 1.14³/6
+= 3.0367 > 3`.  The cubic Taylor term is NOT optional: the quadratic one
+gives only `2.805`.  The threshold `M ≤ 30` is not arbitrary — the
+criterion is `x < 1/3`, i.e. `M < (2π/log 3)² = 32.70…`, and `30` is the
+largest divisor of a Kenku level below that (`le_thirty_or_mem_kenkuLargeDivisors`
+records that the divisors skip from `30` to `35`). -/
+theorem three_mul_exp_lt_one_of_le_thirty {M : ℕ} (hM : M ≠ 0) (hM30 : M ≤ 30) :
+    3 * Real.exp (-(2 * Real.pi / Real.sqrt M)) < 1 := by
+  have hMpos : (0 : ℝ) < (M : ℝ) := by
+    have : 0 < M := Nat.pos_of_ne_zero hM
+    exact_mod_cast this
+  have hspos : 0 < Real.sqrt M := Real.sqrt_pos.mpr hMpos
+  have hs30 : Real.sqrt M < 5.478 := by
+    have h1 : Real.sqrt M ≤ Real.sqrt 30 := Real.sqrt_le_sqrt (by exact_mod_cast hM30)
+    have h2 : Real.sqrt 30 < 5.478 := (Real.sqrt_lt' (by norm_num)).mpr (by norm_num)
+    linarith
+  set y : ℝ := 2 * Real.pi / Real.sqrt M with hydef
+  have hy : 1.14 < y := by
+    rw [hydef, lt_div_iff₀ hspos]
+    nlinarith [Real.pi_gt_d2]
+  have hsum := Real.sum_le_exp_of_nonneg (x := y) (by linarith) 4
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+    Finset.sum_range_one] at hsum
+  norm_num [Nat.factorial] at hsum
+  have hexp3 : (3 : ℝ) < Real.exp y := by nlinarith
+  have hepos : 0 < Real.exp y := Real.exp_pos y
+  rw [Real.exp_neg, mul_inv_lt_iff₀ hepos]
+  linarith
+
+/-- **THE SMALL-LEVEL HALF OF THE `L`-VALUE NUMERICS** (PROVEN
+2026-07-29): the tail beats the head at every level `M ≤ 30`, with NO
+arithmetic input beyond the level-free `‖bₙ‖ ≤ 2n`.
+
+Neither `hnew` nor `hFE` appears: at these levels the crude bound
+`‖bₙ‖/n ≤ 2` and the geometric series already close the inequality, with
+`2x/(1-x) = 0.93` at the worst case `M = 30`.  In particular **no
+dimension formula and no "empty newspace" vacuity argument is needed**
+for the small divisors — a route the leaf's own docstring used to
+contemplate for the levels where `S₂(Γ₀(M)) = 0`.  Twenty-three of the
+thirty-two divisors of Kenku levels are disposed of here. -/
+theorem frickeTailSum_tail_lt_head_of_le_thirty {M : ℕ} (hM : M ≠ 0) (hM30 : M ≤ 30)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) :
+    ∑' n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+      < Real.exp (-(2 * Real.pi / Real.sqrt M)) := by
+  set x : ℝ := Real.exp (-(2 * Real.pi / Real.sqrt M)) with hxdef
+  have hx0 : 0 < x := Real.exp_pos _
+  have hx : 3 * x < 1 := three_mul_exp_lt_one_of_le_thirty hM hM30
+  have hrw : ∀ n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+      Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+      = (‖b (n + 2)‖ / ((n : ℝ) + 2)) * x ^ (n + 2) := by
+    intro n
+    congr 1
+    rw [hxdef, ← Real.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  rw [tsum_congr hrw]
+  refine tsum_two_mul_tail_lt hx0 hx (fun n => by positivity) fun n => ?_
+  have hbound := norm_coeff_le_two_mul_self hM hb (n + 2)
+  push_cast at hbound
+  rw [div_le_iff₀ (by positivity)]
+  linarith
+
+/-- **The nine divisors of Kenku levels that exceed `30`.**
+
+Every divisor of a member of `kenkuLevels` is either `≤ 30` or one of
+these; and each of these is a Kenku level itself (they have no proper
+divisors above `30`).  See `le_thirty_or_mem_kenkuLargeDivisors`. -/
+def kenkuLargeDivisors : List ℕ := [35, 36, 39, 42, 45, 50, 54, 63, 75]
+
+/-- **THE LARGE-LEVEL HALF OF THE `L`-VALUE NUMERICS** (sorry leaf, CUT
+2026-07-29) — nine explicit levels, and the WHOLE remaining content of
+`frickeTailSum_tail_lt_head`.
+
+> `∑_{n ≥ 2} ‖bₙ‖/n · e^{-2πn/√M} < e^{-2π/√M}` for
+> `M ∈ {35, 36, 39, 42, 45, 50, 54, 63, 75}`.
+
+## WHAT THIS LEAF NEEDS, MEASURED
+
+Write `x = e^{-2π/√M}` and let `β` be any multiplicative majorant of
+`‖bₙ‖`.  The quantity to keep below `1` is
+`R(M) = ∑_{n ≥ 2} β(n)/n · x^{n-1}`.  Re-measured in PARI/GP on
+2026-07-29 (independently of the 2026-07-28 run recorded above, and
+agreeing with it to every printed digit):
+
+| `M` | `x` | `‖a_p‖ ≤ 2√p` everywhere | `+ ‖a_p‖ ≤ √p` at `p ∣ M` | `+ ‖a_p‖ = 1` at `p ∥ M`, `a_p = 0` at `p² ∣ M` |
+|---|---|---|---|---|
+| 35 | 0.3457 | 0.712 | 0.705 | 0.701 |
+| 36 | 0.3509 | 0.728 | 0.358 | 0.015 |
+| 39 | 0.3656 | 0.775 | 0.692 | 0.657 |
+| 42 | 0.3793 | 0.820 | 0.402 | 0.272 |
+| 45 | 0.3919 | 0.864 | 0.757 | 0.654 |
+| 50 | 0.4112 | 0.934 | 0.549 | 0.430 |
+| 54 | 0.4253 | 0.988 | 0.485 | 0.266 |
+| 63 | 0.4531 | **1.102** | 0.963 | 0.826 |
+| 75 | 0.4841 | **1.242** | **1.058** | 0.965 |
+
+so the columns are, left to right: the file's `norm_coeff_le_two_mul_sqrt_of_not_dvd`
+alone (fails at `63` and `75`), plus its sibling `norm_coeff_le_sqrt_of_dvd`
+(fails at `75` only), plus the Atkin–Lehner local values at `p ∣ M` (holds
+everywhere, worst `0.965`).  With the TRUE coefficients the worst ratio is
+`0.634`, also at `M = 75`.
+
+**So the single missing arithmetic input is `‖a_p‖ = 1` for `p ∥ M` at a
+NEWFORM — concretely `M = 75`, `p = 3`.**  Everything else this leaf
+needs is already proven in this file: `norm_coeff_le_card_divisors_mul_sqrt`
+supplies `‖aₙ‖ ≤ d(n)√n`, and `coeff_mul_of_coprime` /
+`coeff_prime_pow_mul` supply the multiplicativity needed to sharpen it
+level by level.  That input CANNOT be a strengthening of
+`norm_coeff_le_sqrt_of_dvd` in place — that leaf is quantified over all
+eigenforms, including the `p`-stabilizations where `‖a_p‖ = √p` genuinely
+occurs — so it wants a SEPARATE declaration, in the same Atkin–Lehner
+family as `isFrickeEigenform_of_isNewEigenformAt`, and `hnew` is what
+licenses it.  Weakening only the `p ∥ M` case while keeping `a_p = 0` for
+`p² ∣ M` still fails at `75`, at `1.032`; that was checked too.
+
+## THE SHAPE OF THE REMAINING PROOF
+
+`fin_cases hM` gives the nine levels.  At each, `x` is a rational
+interval and the sum is finite plus a geometric remainder: `‖bₙ‖/n ≤ 2`
+(`norm_coeff_le_two_mul_self`) makes the tail from `n = N₀ + 1` at most
+`2x^{N₀+1}/(1-x)`.  **Fourteen explicit terms suffice at every level**,
+and ten at three of them.  Measured 2026-07-29, with `β` the
+multiplicative majorant of the last column above:
+
+| `M` | `N₀` | `∑_{2 ≤ n ≤ N₀} β(n)/n · x^{n-1}` | crude tail `2x^{N₀+1}/((1-x)x)` | total |
+|---|---|---|---|---|
+| 35 | 10 | 0.70122 | 7.5e-5 | 0.70129 |
+| 36 | 10 | 0.01498 | 8.7e-5 | 0.01506 |
+| 39 | 10 | 0.65727 | 1.3e-4 | 0.65740 |
+| 42 | 11 | 0.27176 | 7.5e-5 | 0.27183 |
+| 45 | 11 | 0.65419 | 1.1e-4 | 0.65430 |
+| 50 | 11 | 0.42989 | 1.9e-4 | 0.43008 |
+| 54 | 12 | 0.26622 | 1.2e-4 | 0.26635 |
+| 63 | 13 | 0.82612 | 1.2e-4 | 0.82624 |
+| 75 | 14 | 0.96501 | 1.5e-4 | 0.96516 |
+
+So the truncation costs nothing — the crude remainder is under `2·10⁻⁴`
+of the head everywhere — and the whole difficulty is in the finitely many
+terms.  The margins are the thing to watch there: `0.965` at `M = 75` and
+`0.826` at `M = 63` (`0.963` at `63` if the Atkin–Lehner value at `p = 7`
+is not used), so the rational approximation of `x` and of `√p` must be
+carried to a few digits rather than to one.
+
+## FAITHFULNESS
+
+`hnew` is load-bearing exactly once, at `M = 75`, `p = 3`.
+
+**Two hypotheses of the parent were DROPPED here, and neither costs
+anything.**  `hFE` is documented on the parent as not load-bearing —
+this inequality is about `‖bₙ‖` alone and is blind to the Fricke sign —
+and the parent's 2026-07-29 proof confirms it by never touching the
+binder.  `hN : N ∈ kenkuLevels` together with `hMN : M ∣ N` is subsumed:
+**every one of these nine numbers is itself a member of `kenkuLevels`**
+(they are the elements of that list exceeding `30`, and none of them has
+a proper divisor above `30`), so `∃ N ∈ kenkuLevels, M ∣ N` is automatic
+from `hM` and re-assuming it would only restate it.  Dropping hypotheses
+makes a leaf STRONGER, so this is recorded rather than done silently;
+the strengthening is empty in both cases.
+
+Everything else is inherited unchanged from the parent's audit: `hb`
+pins `b` to the `q`-expansion of a genuine cusp form (`qExpansion` AND
+`qExpansionSummable` — see the `SOUNDNESS AUDIT` in
+`WeightTwoEigenform.lean`), the head `e^{-2π/√M}` is a positive real,
+and the nine levels all carry a nonempty newspace, so the hypotheses are
+satisfiable and the statement is not vacuous.
+
+PARI/GP is an untrusted searcher: the table establishes that the
+statement is not false, and is not a proof. -/
+theorem frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors {M : ℕ}
+    (hM : M ∈ kenkuLargeDivisors)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b)
+    (hnew : IsNewEigenformAt M b) :
+    ∑' n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
+      < Real.exp (-(2 * Real.pi / Real.sqrt M)) :=
+  sorry
+
+/-- **The divisors of the Kenku levels skip from `30` to `35`** (PROVEN
+2026-07-29): every `M ∣ N` with `N ∈ kenkuLevels` is `≤ 30` or lies in
+`kenkuLargeDivisors`.
+
+The union of `Nat.divisors N` over the fourteen Kenku levels is
+`{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 18, 20, 21, 24, 25, 26,
+27, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75}` — thirty-two values, of
+which twenty-three are `≤ 30`.  There is nothing between `30` and `35`,
+which is why the geometric branch can afford the threshold `M ≤ 30`
+rather than the true criterion `M ≤ 32`. -/
+theorem le_thirty_or_mem_kenkuLargeDivisors {N M : ℕ} (hN : N ∈ kenkuLevels) (hMN : M ∣ N) :
+    M ≤ 30 ∨ M ∈ kenkuLargeDivisors := by
+  have hN0 : N ≠ 0 := by fin_cases hN <;> decide
+  have hmem : M ∈ N.divisors := Nat.mem_divisors.mpr ⟨hMN, hN0⟩
+  rw [kenkuLargeDivisors]
+  fin_cases hN <;> fin_cases hmem <;> simp
+
 /-- **THE `L`-VALUE NUMERICS, AT `K = 1`: the head of the coefficient
-series outweighs the WHOLE of its tail** (sorry leaf, RECUT 2026-07-28):
+series outweighs the WHOLE of its tail** (**PROVEN 2026-07-29** over the
+nine-level leaf `frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors`;
+a bare sorry leaf when RECUT 2026-07-28):
 
 > `∑_{n ≥ 2} ‖bₙ‖/n · e^{-2πn/√M}  <  e^{-2π/√M}`.
 
@@ -31967,6 +32533,43 @@ the Atkin–Lehner local values at `p ∣ M` — `a_p = 0` when `p² ∣ M`,
 `‖a_p‖ = 1` when `p ∥ M` — together with multiplicativity, which the
 `hecke`/`atkin` fields give.
 
+## WHAT THE 2026-07-29 ROUND DID: THE LEVEL SPLIT, AND THE COEFFICIENT
+## THEORY BEHIND IT
+
+The leaf is no longer a leaf.  It is now assembled from
+
+* `le_thirty_or_mem_kenkuLargeDivisors` — the divisors of the fourteen
+  Kenku levels are thirty-two numbers, and they skip from `30` straight
+  to `35`;
+* `frickeTailSum_tail_lt_head_of_le_thirty` (PROVEN) — the twenty-three
+  divisors `≤ 30`, by geometric domination alone;
+* `frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors` (the remaining
+  sorry) — the nine divisors `35, 36, 39, 42, 45, 50, 54, 63, 75`, which
+  carry the whole arithmetic content and where the per-level table now
+  lives.
+
+The small half needs no level information whatever: `‖bₙ‖/n ≤ 2` and
+`3e^{-2π/√M} < 1` give it, and `2x/(1-x) = 0.93` at the worst case
+`M = 30`.  That crude bound is proven here, in this file, as
+`norm_coeff_le_two_mul_self`, over the new and entirely level-free
+coefficient theory installed above `stabilizationRoot_ne_natCast`:
+`coeff_prime_pow_mul`, `coeff_mul_of_coprime` (multiplicativity from the
+`hecke`/`atkin` fields), `norm_coeff_prime_pow_le`
+(`‖a_{p^k}‖ ≤ (k+1)p^{k/2}`, via the Satake power sum) and
+`norm_coeff_le_card_divisors_mul_sqrt` (`‖aₙ‖ ≤ d(n)√n`).  All of that is
+PROVEN over the single Deligne leaf
+`exists_satakeParams_of_isWeightTwoEigenform`; none of it is new
+mathematics, and it is what the 2026-07-28 measurement had assumed
+without having.
+
+**A stale claim corrected while doing so.**  The NON-VACUITY note below
+used to be load-bearing in the intended proof: at levels with
+`S₂(Γ₀(M)) = 0` one was to argue that `b 1 = 1` contradicts `g = 0`, and
+that needs a dimension formula.  **It is not needed.**  Every such level
+is a divisor `≤ 30` and is settled by the geometric branch without
+looking at the newspace at all.  The note is retained below only as a
+faithfulness check on the STATEMENT, not as a step of any proof.
+
 ## WHICH INPUT IS ACTUALLY MISSING, AND WHERE IT BITES
 
 The file's OWN pair of bound leaves is *nearly* enough and misses by one
@@ -31985,7 +32588,8 @@ over ALL eigenforms, including the stabilizations the descent needs,
 where `‖a_p‖ = √p` genuinely occurs — so it cannot be strengthened in
 place; the newform statement is a SEPARATE declaration, and `hnew` is
 what would license it).  This is the cheapest known route and it is why
-`hnew` must stay.
+`hnew` must stay.  It is now demanded by the nine-level leaf, whose
+docstring carries the re-measured table.
 
 ## FAITHFULNESS
 
@@ -32003,7 +32607,9 @@ the Fricke sign.  Dropping it would not enlarge the instance set either,
 since `hb` and `hnew` already cut it down to the newforms of the divisor
 levels, every one of which has `ε = -1`.  It is kept so that the leaf is
 as WEAK as it can be, a false-leaf hedge, not because the argument wants
-it.
+it.  The 2026-07-29 proof CONFIRMS this: the binder is named `_hFE` and
+neither branch of the assembly touches it.  `hnew` likewise is not used
+below `M = 30`; it survives into the nine-level leaf only.
 
 **NON-VACUITY, in both directions.**  The hypotheses are satisfiable —
 they hold of all 28 forms — and the conclusion is not junk: the head
@@ -32018,18 +32624,27 @@ those cases are vacuous, as they must be.
 PARI/GP is an untrusted searcher: the tables above establish that the
 statement is not false, and are not a proof.
 
-The *axis not searched*: `fin_cases hN`, mechanically available and not a
-decomposition (it multiplies the frontier by fourteen and moves no
-theory). -/
+**The "axis not searched" note that stood here is now WRONG and is
+recorded as such.**  It read: "`fin_cases hN`, mechanically available and
+not a decomposition (it multiplies the frontier by fourteen and moves no
+theory)."  Both halves of that are false.  The split to make is on `M`,
+not on `N` — the fourteen levels have only thirty-two divisors between
+them — and it does not multiply the frontier at all: twenty-three of the
+thirty-two fall to ONE geometric estimate with no case analysis, and the
+remaining nine stay in a single declaration.  The frontier went from one
+leaf to one leaf, and the theory moved from "unknown" to "one named
+Atkin–Lehner statement at `M = 75`, `p = 3`". -/
 theorem frickeTailSum_tail_lt_head (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
-    (hFE : ∀ y : ℝ, 0 < y →
+    (_hFE : ∀ y : ℝ, 0 < y →
       axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
     ∑' n : ℕ, ‖b (n + 2)‖ / ((n : ℝ) + 2) *
         Real.exp (-(2 * Real.pi * ((n : ℝ) + 2) / Real.sqrt M))
-      < Real.exp (-(2 * Real.pi / Real.sqrt M)) :=
-  sorry
+      < Real.exp (-(2 * Real.pi / Real.sqrt M)) := by
+  rcases le_thirty_or_mem_kenkuLargeDivisors hN hMN with h | h
+  · exact frickeTailSum_tail_lt_head_of_le_thirty hM h hb
+  · exact frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors h hb hnew
 
 /-- **THE `L`-VALUE NUMERICS: the coefficient series does not vanish**
 (PROVEN 2026-07-28, from `frickeTailSum_tail_lt_head` and
@@ -37050,10 +37665,12 @@ and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
 (a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
 (its sign is `-1`, which the identity shows IS the analytic-rank-`0`
 statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
-Kenku level), and `frickeTailSum_tail_lt_head` (the numerics — reached through
-the PROVEN `integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration
-turns the tail integral into `∑ (bₙ/n) e^{-2πn/√M}`, and the PROVEN
-`frickeTailSum_ne_zero`, which truncates that series at `K = 1`).
+Kenku level), and `frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors` (the
+numerics — reached through the PROVEN `integral_Ioi_one_axisRestrict_ne_zero`,
+whose termwise integration turns the tail integral into
+`∑ (bₙ/n) e^{-2πn/√M}`, the PROVEN `frickeTailSum_ne_zero`, which truncates
+that series at `K = 1`, and the PROVEN `frickeTailSum_tail_lt_head`, which
+splits the divisor set at `30`).
 The sign leaf was verified independently and DIRECTLY with PARI/GP's
 `mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
 fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
@@ -37105,7 +37722,7 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
-| `frickeTailSum_tail_lt_head` | `L`-value numerics, as a real inequality (`frickeTailSum_ne_zero` and `integral_Ioi_one_axisRestrict_ne_zero` are both PROVEN over it) | **yes** |
+| `frickeTailSum_tail_lt_head_of_mem_kenkuLargeDivisors` | `L`-value numerics, as a real inequality, at the NINE divisors of Kenku levels above `30` (`frickeTailSum_tail_lt_head`, `frickeTailSum_ne_zero` and `integral_Ioi_one_axisRestrict_ne_zero` are all PROVEN over it) | **yes** |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
