@@ -48316,8 +48316,255 @@ theorem hasGoodAbelianReductionAtBase_of_goodAbelianModel (ℓ : ℕ) (R : Subri
       (RelPoint.baseChangeDown (SpecLoc.special toF) y)
   rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
 
+/-! ### The NÉRON MODEL of an abelian variety over a subring of `ℚ`
+
+(New block, 2026-07-28, introduced by decomposing
+`hasGoodAbelianModelAtBase_of_surjective` below along
+Bosch–Lütkebohmert–Raynaud's own two-step route.  Everything from here to
+that theorem is one owner's region.)
+
+The decomposition separates the two literatures the theorem mixes:
+
+* **BLR ch. 1–4 — Néron models EXIST** (`exists_isNeronModelAtBase`).  This
+  is the smoothening/weak-Néron-model machinery, it knows nothing about
+  quotients, and it is what THREE other open leaves in this tree are
+  really asking for (see the reuse note on `IsNeronModelAtBase`).
+* **BLR 7.4/5 — a Néron model DOMINATED BY AN ABELIAN SCHEME is an abelian
+  scheme** (`exists_abelianSchemeStruct_of_neronModelSpread`).  This is the
+  Néron–Ogg–Šafarevič content proper, and it is where surjectivity enters.
+
+The step BETWEEN them — extending `π` across the special fibre — is not a
+leaf: it is the Néron mapping property applied to the smooth `R`-scheme
+`𝒥`, and it is discharged in the assembly below.  That is also what makes
+`IsNeronModelAtBase.extend` manifestly load-bearing rather than decoration.
+-/
+
+/-- **A NÉRON MODEL of `B/ℚ` over `R`** — Bosch–Lütkebohmert–Raynaud,
+*Néron Models*, 1.2/1, written in this development's functor-of-points
+idiom.
+
+`BZ ⟶ Spec R` is a smooth separated model of `B` — `gen` identifies its
+generic fibre with `B` naturally, so by Yoneda `B ≅ BZ ×_R ℚ` — and
+`extend` is the **Néron mapping property**: every `ℚ`-morphism into `B`
+from the generic fibre of a SMOOTH `R`-scheme extends uniquely over `R`.
+
+**THE `∃!` IS LOAD-BEARING, AND IT IS WHAT PINS THE MODEL.**  With bare
+existence this structure would be UNDER-PINNED, and
+`exists_abelianSchemeStruct_of_neronModelSpread` — which quantifies over
+an arbitrary inhabitant — could be false against a junk one.  With
+uniqueness the four fields characterise `BZ` up to a UNIQUE isomorphism,
+by the usual universal-property argument, which is writable here because
+a Néron model is itself smooth and so may be plugged into its own
+mapping property: given `nB` and `nB'`, apply `nB'.extend` at
+`Z := nB.BZ`, `genZ := nB.gen`, `u := 𝟙 B` to get `φ : nB.BZ ⟶ nB'.BZ`
+and symmetrically `ψ`; then `ψ ≫ φ` and `𝟙` both solve `nB.extend`'s
+problem for `𝟙 B`, so they are equal.  Hence any two inhabitants are
+canonically isomorphic and no junk model exists to falsify the leaf
+below.
+
+**Why `extend` is phrased with `universalPoint` and not with an equality
+of relative-point families.**  It is deliberately the SAME shape as
+`exists_neronExtension_of_abelianScheme`'s conclusion above — an equation
+between two composites of scheme morphisms, with all naturality
+bookkeeping already discharged by `IsFibreIdent.apply_eq_comp`.  A prover
+who closes one can read the other off.
+
+**What is deliberately NOT a field: FINITE TYPE.**  BLR's definition asks
+for smooth, separated AND of finite type.  It is omitted because it is
+load-bearing for neither leaf: the `∃!` mapping property already pins
+`BZ` up to unique isomorphism (above), so any inhabitant is isomorphic to
+the genuine Néron model and therefore IS of finite type; adding the field
+would only add an obligation to `exists_isNeronModelAtBase` and remove
+nothing from the other leaf.  If a prover of that leaf finds finite type
+easier to carry than to recover, adding it is a safe strengthening — it
+cannot falsify `exists_abelianSchemeStruct_of_neronModelSpread`, which
+only ever consumes fields.
+
+**REUSE — this interface is what three other open leaves are asking
+for**, and they are in two different files:
+
+* `exists_neronExtension_of_abelianScheme` (above, open): it is
+  `extend` for the model `𝒜`, once one knows an abelian scheme IS a Néron
+  model of its generic fibre (BLR 1.2/8 with 7.4/3).  That last statement
+  is not stated anywhere yet; it is the natural companion leaf to
+  `exists_isNeronModelAtBase`, and it is deliberately NOT added here
+  because nothing in this block would consume it and it would be
+  free-floating.
+* `exists_neronExtension` and `exists_goodReductionModel_of_surjective`
+  in `Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean` (both open).
+  That module `public import`s THIS one, so both are downstream and can
+  consume this structure directly; see the DUPLICATE-CUT note on
+  `hasGoodAbelianModelAtBase_of_surjective` below. -/
+structure IsNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} (bstr : B ⟶ SpecQ) where
+  /-- the integral model of `B` over `R` -/
+  BZ : Scheme.{0}
+  /-- its structure morphism to `Spec R` -/
+  bstrZ : BZ ⟶ SpecLoc R
+  /-- a Néron model is smooth over the base -/
+  smooth : Smooth bstrZ
+  /-- a Néron model is separated over the base -/
+  separated : IsSeparated bstrZ
+  /-- the generic fibre of the model is `B`, functorially and naturally -/
+  gen : IsFibreIdent (SpecLoc.generic R) bstrZ bstr
+  /-- **the NÉRON MAPPING PROPERTY**: a `ℚ`-morphism into `B` from the generic
+  fibre of a SMOOTH `R`-scheme extends across the base, uniquely -/
+  extend : ∀ {Z ZQ : Scheme.{0}} {zstr : Z ⟶ SpecLoc R} {zqstr : ZQ ⟶ SpecQ},
+    Smooth zstr → ∀ (genZ : IsFibreIdent (SpecLoc.generic R) zstr zqstr)
+      (u : ZQ ⟶ B), u ≫ bstr = zqstr →
+      ∃! uZ : Z ⟶ BZ, uZ ≫ bstrZ = zstr ∧
+        u ≫ gen.universalPoint.1 = genZ.universalPoint.1 ≫ uZ
+
+/-- **NÉRON MODELS EXIST: every abelian variety over `ℚ` has one over any
+subring `R ⊆ ℚ`** (sorry leaf, new 2026-07-28) —
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 1.4/3.
+
+TRUE, and this is the classical statement, not a weakening of it: BLR
+1.4/3 gives a Néron model for every abelian variety over the fraction
+field of a DEDEKIND domain, and `↥R` is one — every subring of `ℚ` is
+`ℤ[1/S]` for `S` the set of primes it inverts, hence a localization of
+`ℤ`, hence a PID (or `ℚ` itself, where the statement is trivial with
+`BZ := B` and `gen := IsFibreIdent` of the identity).  **A prover will
+have to say that**: nothing in this file currently records
+`IsDedekindDomain ↥R` or `IsPrincipalIdealRing ↥R` for a general
+`R : Subring ℚ` — `IsReductionBase` supplies `ValuationRing ↥R`, which is
+the LOCAL case only.  Establishing it from `IsLocalization` of `ℤ` is a
+small, self-contained first step and is not part of the geometry.
+
+**WHERE THE HYPOTHESIS ENTERS.**  `abB` is what makes `B` an abelian
+VARIETY — proper, smooth, geometrically connected over `ℚ`, with a group
+law.  **Drop it and the statement is FALSE**: a Néron model in the sense
+of `IsNeronModelAtBase` need not exist for an arbitrary `ℚ`-scheme, the
+standard witness being a smooth affine curve such as
+`𝔾_m`-minus-a-point, or more simply any `B` whose functor of points is
+not left exact enough for the mapping property; BLR construct Néron
+models only for smooth separated GROUP schemes of finite type, and the
+abelian case is the one they prove in 1.4/3.  It is not underscored,
+because a prover will consume it.
+
+**NON-VACUITY, in both directions.**  The structure is inhabited whenever
+`B` already has good reduction — take `BZ` the abelian scheme, whose
+`extend` is BLR 1.2/8 — so it is not empty by construction; and the
+conclusion is a bare `Nonempty`, so it cannot be discharged by
+contradicting the hypothesis.  Note this leaf is NOT the same as "`B` has
+good reduction": a Néron model is smooth and separated but in general
+NEITHER proper NOR with connected fibres, and that gap is exactly the
+content of `exists_abelianSchemeStruct_of_neronModelSpread` below.
+
+**The check that refutes it**: an abelian variety `B/ℚ` and a subring
+`R ⊆ ℚ` admitting no smooth separated `R`-model with the unique-extension
+property — which would contradict BLR 1.4/3. -/
+theorem exists_isNeronModelAtBase (R : Subring ℚ) {B : Scheme.{0}} {bstr : B ⟶ SpecQ}
+    (abB : AbelianSchemeStruct bstr) : Nonempty (IsNeronModelAtBase R bstr) :=
+  sorry
+
+/-- **A NÉRON MODEL DOMINATED BY AN ABELIAN SCHEME IS AN ABELIAN SCHEME**
+(sorry leaf, new 2026-07-28) — Bosch–Lütkebohmert–Raynaud, *Néron
+Models*, 7.4/5.  This is the Néron–Ogg–Šafarevič content proper, with the
+existence of the Néron model already supplied and the mapping property
+already applied.
+
+TRUE.  `spread` is the extension of `π` over `R`, so `hsq` says it
+restricts to `π` on generic fibres.  The scheme-theoretic image of
+`spread` is closed and PROPER over `R`, because `𝒥` is proper and `𝔅` is
+separated (`nB.separated`); it is ALL of `𝔅`, because `𝔅` is `R`-flat
+(`nB.smooth`) so its generic fibre is schematically dense in it, and on
+the generic fibre the image is all of `B` by `hsurj`.  So `𝔅` is a smooth
+proper `R`-scheme.  Its special fibres are images of the geometrically
+connected fibres of `𝒥`, hence geometrically connected.  The group law
+transports by the mapping property, and a smooth proper group scheme with
+geometrically connected fibres is an abelian scheme.
+
+**THE CONCLUSION IS PINNED TO `nB`'s MODEL, deliberately.**  It is not
+`∃ BZ, …` but an `AbelianSchemeStruct` on `nB.bstrZ` itself, together with
+additivity of `nB.gen` for the GIVEN `abB`.  An unpinned version would be
+satisfiable by an unrelated abelian scheme with an abstractly isomorphic
+generic fibre — the same trap `HasGoodAbelianModelAtBase`'s own docstring
+records — and the assembly below needs the pinned form anyway, since it
+hands `nB.gen` on to the existential.
+
+**WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hsurj` is what
+makes the image all of `B` — **drop it and the statement is FALSE**, since
+the ZERO homomorphism `J ⟶ B` satisfies every other hypothesis for every
+`B`, including ones with bad reduction, and then `spread` is the zero
+section whose image is not `𝔅`; `hadd` and `hgenJ` are what make `spread`
+a HOMOMORPHISM rather than a bare morphism, which is what transports the
+group law; `abZJ` is properness and connectedness of the source fibres,
+the two properties actually pushed forward; `nB.separated` is what makes
+the image closed; `nB.smooth` is `R`-flatness, i.e. schematic density of
+the generic fibre. `abJ` is consumed through `hgenJ` and `hadd`.
+
+## AXIS SEARCHED — the further split, and why it is NOT taken here
+
+The residue divides along literature lines into (a) *`nB.bstrZ` is proper
+with geometrically connected fibres* and (b) *an `AbelianSchemeStruct`
+transports onto a smooth proper model with connected fibres whose generic
+fibre is `B`*.  (b) is the writable half — `AbelianSchemeStruct.ofMorphisms`
+(`Modularity/AbelianScheme.lean`) takes the group law as EQUATIONS OF
+MORPHISMS `m : 𝔅 ×_R 𝔅 ⟶ 𝔅`, `e`, `i`, and each of `m`, `e`, `i` is
+produced by `nB.extend` (`𝔅 ×_R 𝔅` is smooth over `R`, being a product of
+smooths), while each group AXIOM is an equation of morphisms out of a
+smooth `R`-scheme that holds on the generic fibre and therefore
+everywhere.
+
+**It is not cut here because that last step is a THIRD statement this
+tree does not have**: *two `R`-morphisms from an `R`-flat scheme to a
+separated `R`-scheme agreeing on generic fibres are equal* (schematic
+density of the generic fibre). Cutting (a)/(b) without it would leave (b)
+holding an unstated obligation, which is the shape CLAUDE.md records as
+producing a leaf that looks weaker than it is.  **The check that refutes
+this verdict** is `grep -rn "schematicallyDense\|SchematicallyDense"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — if a density lemma of that
+shape is
+present at our pin, the three-way split (a)/(b)/density becomes writable
+and is strictly better than this two-way one, because (a) is then the only
+piece carrying geometry.  **RUN 2026-07-28, and the verdict stands**: zero
+hits in all three trees, the only match anywhere being this paragraph.  It
+is recorded as run rather than merely prescribed, because an audit that
+names its own check but does not perform it leaves the next reader to redo
+the whole survey.  Note also that `nB.extend`'s `∃!` already gives
+the density statement for morphisms INTO `𝔅` specifically, which is the
+only case (b) needs — so a prover of (b) may not need the general lemma at
+all, and whoever re-runs this audit should check that first.
+
+**NON-VACUITY, in both directions.**  Take `J := B`, `π := 𝟙`,
+`abJ := abB`, `B` with good reduction, `nB` its Néron model (an abelian
+scheme is one, BLR 1.2/8), `genJ := nB.gen` and `spread := 𝟙`: every
+hypothesis holds, so no proof can discharge this by contradicting them;
+and the conclusion holds too, witnessed by the model's own structure, so
+the hypotheses are consistent WITH the conclusion and the leaf is not
+secretly asking for the impossible.  The `hsq` clause is `Category.id_comp`
+against `Category.comp_id` in that instance, which is the sanity check
+that its two sides are oriented correctly.
+
+**The check that refutes the LEAF**: a surjective homomorphism `J ↠ B` of
+abelian varieties over `ℚ` with `J` of good reduction at a prime `p` and
+`B` of bad reduction at `p`. -/
+theorem exists_abelianSchemeStruct_of_neronModelSpread (R : Subring ℚ)
+    {J B JZ : Scheme.{0}} {jstr : J ⟶ SpecQ} {bstr : B ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R}
+    (abJ : AbelianSchemeStruct jstr) (abB : AbelianSchemeStruct bstr)
+    (abZJ : AbelianSchemeStruct jstrZ)
+    (genJ : IsFibreIdent (SpecLoc.generic R) jstrZ jstr)
+    (hgenJ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+      (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint jstr g),
+      genJ.toEquiv g g₀ h (abJ.add x y)
+        = abZJ.add (genJ.toEquiv g g₀ h x) (genJ.toEquiv g g₀ h y))
+    (π : J ⟶ B) (hπ : π ≫ bstr = jstr) (hadd : IsAdditiveOn abJ abB π hπ)
+    (hsurj : AlgebraicGeometry.Surjective π)
+    (nB : IsNeronModelAtBase R bstr)
+    (spread : JZ ⟶ nB.BZ) (hspread : spread ≫ nB.bstrZ = jstrZ)
+    (hsq : π ≫ nB.gen.universalPoint.1 = genJ.universalPoint.1 ≫ spread) :
+    ∃ abZ : AbelianSchemeStruct nB.bstrZ,
+      ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+        (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint bstr g),
+        nB.gen.toEquiv g g₀ h (abB.add x y)
+          = abZ.add (nB.gen.toEquiv g g₀ h x) (nB.gen.toEquiv g g₀ h y) :=
+  sorry
+
 /-- **NÉRON–OGG–ŠAFAREVIČ, quotient form: GOOD REDUCTION DESCENDS ALONG A
-SURJECTIVE HOMOMORPHISM of abelian varieties** (sorry leaf, 2026-07-28) —
+SURJECTIVE HOMOMORPHISM of abelian varieties** (PROVEN by decomposition
+2026-07-28, over `exists_isNeronModelAtBase` and
+`exists_abelianSchemeStruct_of_neronModelSpread` above; a sorry leaf
+earlier the same day) —
 level-free, curve-free, and free of `ℓ`, of the residue map and of
 `IsReductionBase`.
 
@@ -48373,6 +48620,46 @@ to ADD the hypothesis `IsReductionBase ℓ R toF` — which
 `exists_goodAbelianReduction_of_abelianQuotient` already holds and
 currently discards — and NOT to weaken the conclusion.
 
+## HOW THE ASSEMBLY RUNS (2026-07-28)
+
+The BLR route described above is the one taken, and its three steps are
+now three declarations rather than prose:
+
+* `exists_isNeronModelAtBase` gives `𝔅`, the Néron model of `B` over `R`
+  — BLR 1.4/3, and the only place the Dedekindness of `↥R` is needed;
+* `IsNeronModelAtBase.extend`, applied to the smooth `R`-scheme `𝒥`
+  (smoothness is `abZJ.smooth`, straight out of `hJ`), spreads `π` out to
+  `spread : 𝒥 ⟶ 𝔅`.  This step is NOT a leaf — it is four tokens in the
+  proof below, and it is what makes the mapping property load-bearing
+  rather than decorative;
+* `exists_abelianSchemeStruct_of_neronModelSpread` is BLR 7.4/5: the
+  image argument that turns `𝔅` from smooth-and-separated into proper
+  with connected fibres, hence into an abelian scheme.
+
+`hJ` is destructured rather than passed on, because the sub-leaf wants the
+abelian scheme `𝒥` and its generic identification separately.
+
+**Generality of `R` is unchanged by the cut** — see the discussion above.
+It survives into `exists_isNeronModelAtBase` alone, since BLR 1.4/3 is
+already stated over a Dedekind base; the second leaf never looks at `R`.
+
+## DUPLICATE CUT DOWNSTREAM — coordinate before proving
+
+`Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean` carries
+`exists_goodReductionModel_of_surjective`, which is THIS theorem again
+(same day, different file, `IsGoodReductionModel` in place of
+`HasGoodAbelianModelAtBase`), and `exists_neronExtension`, which is the
+mapping property for a general smooth `𝒳`.  That module `public import`s
+this one, so both are strictly downstream and both are corollaries of the
+two leaves above: `IsNeronModelAtBase` is exactly the interface they are
+each re-deriving in weaker form.  **Whoever closes either should consume
+this block rather than repeat it.**  (Its own docstrings state that
+`grep -rn "NeronModel\|neronModel"` over this project returns no hits;
+that was already false when written — `exists_abelianSpread_of_neronModel`
+and `exists_neronExtension_of_abelianScheme` are in this file, which it
+imports.  The claim's SUBSTANCE — that no Néron model is *defined*
+anywhere — was true then and is false now.)
+
 **The check that refutes it**: a surjective homomorphism `J ↠ B` of
 abelian varieties over `ℚ` with `J` of good reduction at a prime `p` and
 `B` of bad reduction at `p` — which would contradict `V_q B` being a
@@ -48383,8 +48670,15 @@ theorem hasGoodAbelianModelAtBase_of_surjective (R : Subring ℚ)
     (hJ : HasGoodAbelianModelAtBase R abJ)
     (π : J ⟶ B) (hπ : π ≫ bstr = jstr) (hadd : IsAdditiveOn abJ abB π hπ)
     (hsurj : AlgebraicGeometry.Surjective π) :
-    HasGoodAbelianModelAtBase R abB :=
-  sorry
+    HasGoodAbelianModelAtBase R abB := by
+  obtain ⟨nB⟩ := exists_isNeronModelAtBase R abB
+  obtain ⟨JZ, jstrZ, abZJ, genJ, hgenJ⟩ := hJ
+  -- the Néron mapping property applied to the smooth `R`-scheme `𝒥` spreads `π` out
+  obtain ⟨spread, ⟨hspread, hsq⟩, -⟩ := nB.extend abZJ.smooth genJ π hπ
+  obtain ⟨abZ, hgen⟩ :=
+    exists_abelianSchemeStruct_of_neronModelSpread R abJ abB abZJ genJ hgenJ π hπ hadd
+      hsurj nB spread hspread hsq
+  exact ⟨nB.BZ, nB.bstrZ, abZ, nB.gen, fun T g g₀ h x y => hgen T g g₀ h x y⟩
 
 /-- **NÉRON–OGG–ŠAFAREVIČ, quotient form: a quotient of an abelian
 variety with good reduction has good reduction** (PROVEN by decomposition
@@ -48868,7 +49162,82 @@ MEET, which is a density statement about their complements and not
 something either leaf can carry alone.  A `Set.Infinite`-valued version of
 either clause is not enough either: an infinite set of primes can sit
 entirely inside the other clause's failure set.  Hence the arithmetic
-stays in one existential.  **AXIS NOT SEARCHED**: pinning `(A, c)` as the
+stays in one existential.
+
+## SECOND AXIS SEARCHED AND CLOSED (2026-07-28): the CUSPIDALITY split is CIRCULAR
+
+The most natural remaining cut, and the one a reader meets first, is to
+split the conclusion along its own conjunction — the survivor is a
+reduction, and what it is a reduction of is a cusp:
+
+* (a) *every survivor `x'` is `d.redX x` for some `x : X_0(169)(ℚ)`* — the
+  Mordell–Weil sieve, still carrying the prime and the datum;
+* (b) *every rational point of `X_0(169)` is a cusp* — no `ℓ`, no datum,
+  no sieve, and by far the more quotable statement.
+
+**Do not take it.**  (b) is not a sub-leaf of this node, it is the
+CONCLUSION of the chain this node exists to feed: with
+`nonempty_cuspLocus` and
+`IsX0Compactification.CuspLocus.card_le_numRationalCusps` — both PROVEN
+above and both already used by the consumer — (b) gives
+`card_le_numRationalCusps_x0OneSixtyNine` immediately, three steps
+downstream.  So the "decomposition" would assume what the whole
+Néron-datum/sieve apparatus is built to prove, and would strand that
+apparatus as free-floating in the sense CLAUDE.md forbids.  The
+docstring's non-circularity paragraph above asserts that this node does
+not presuppose the point count; this paragraph records WHICH cut would
+make it do so, because the assertion alone does not stop anyone taking
+it.
+
+Note the asymmetry that makes this trap convincing: (a) alone is a
+perfectly good statement and would be a fine leaf — it is (b) that is
+poisoned, and (a) without (b) does not imply the conclusion.
+
+## RECONNAISSANCE INDEPENDENTLY RE-VERIFIED (2026-07-28, PARI/GP 2.17.4)
+
+Re-run from scratch by a second agent rather than inherited, since a
+stale audit is this development's commonest blocker.  Every load-bearing
+figure below reproduced exactly: `dim S_2(Γ_0(169)) = 8` and the space is
+entirely NEW (`dim S_2(Γ_0(13)) = 0`); **three** Galois orbits, of
+dimensions **`2, 3, 3`**, so there is no orbit of dimension `1` and
+`J_0(169)` has NO elliptic-curve factor — which is what rules out the
+cheapest potential counterexample to this leaf; `w_169` eigenvalues
+`−1, −1, +1` on the three orbits, so the minus part is `5`-dimensional
+and the plus part `3`-dimensional; and `#X_0(169)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ)`
+has minimum `4`, attained at `ℓ = 3`, over odd `ℓ ∤ 169`.  In particular
+no prime makes the naive count `≤ 2`, so the sieve is not optional.  The
+analytic ranks were NOT re-checked and remain as recorded below.
+
+## OPEN FAITHFULNESS QUESTION: the `∀ (A, c)` quantification
+
+Flagged rather than resolved, because settling it is a research
+computation and not a proof step.  `(A, c)` is universally quantified and
+constrained only by `hfin` and `hcinj`, so this leaf is strictly stronger
+than Kenku's theorem, which is about ONE pair.  By
+`exists_hom_of_relPointNatural` (PROVEN above) `c` is post-composition
+with a single `u : X_0(169) ⟶ A` over `ℚ`, so the question is concrete:
+
+> is there an abelian variety `A/ℚ` with `A(ℚ)` finite and a morphism
+> `u : X_0(169) ⟶ A` injective on `X_0(169)(ℚ)`, for which NO odd
+> `ℓ ∤ 169` is a sieve prime?
+
+The mechanism that would produce one is named in the bullets above and is
+not hypothetical: a point `x ∈ X_0(169)(K)`, `K ≠ ℚ`, whose class `u(x)`
+lies in `A(ℚ)` survives at every `ℓ` split in `K`.  One such `K` leaves a
+density-`1/2` set of primes, which is harmless.  **Three of them can
+leave none**: for `K₁ = ℚ(√a)`, `K₂ = ℚ(√b)`, `K₃ = ℚ(√ab)` every odd `ℓ`
+splits in at least one, since the three Legendre symbols multiply to `1`.
+So the leaf is refuted by any `(A, u)` admitting such a triple, and is
+NOT refuted by any bounded search that finds only one or two.
+
+Settling it needs the quadratic points of `X_0(169)` (genus `8`; the
+degree-`2` quotient by `w_169` has genus `3`, which is where a
+pullback family would come from) — a Magma-scale computation, not
+attempted here.  Until it is done, treat the `∀ (A, c)` form as
+UNVERIFIED rather than as established, and note that the repair if it
+falls is exactly the AXIS NOT SEARCHED below: pin `(A, c)`.
+
+**AXIS NOT SEARCHED**: pinning `(A, c)` as the
 Atkin–Lehner Prym (the repair the parent's audit describes), under which
 the `∀` over `(A, c)` collapses to a single pair and the sieve becomes a
 finite computation in `A(𝔽_ℓ)` — that is the direction that would close
