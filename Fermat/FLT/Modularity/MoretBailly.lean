@@ -546,9 +546,6 @@ public import Mathlib.GroupTheory.FiniteAbelian.Duality
 public import Mathlib.NumberTheory.Padics.PadicNorm
 public import Mathlib.RingTheory.EssentialFiniteness
 public import Mathlib.RingTheory.Flat.TorsionFree
-public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
-public import Mathlib.RingTheory.Ideal.GoingDown
-public import Mathlib.RingTheory.TensorProduct.Free
 public import Mathlib.RingTheory.Polynomial.Basic
 public import Mathlib.RingTheory.Smooth.Field
 public import Mathlib.RingTheory.Smooth.Fiber
@@ -3863,243 +3860,10 @@ theorem geometricallyConnected_of_connectedSpace_baseChange
       (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k T))) := by
   sorry
 
-/-- **KRULL DIMENSION DOES NOT DROP ALONG A FAITHFULLY FLAT ALGEBRA** (PROVEN
-2026-07-29). Mathlib-facing, and absent from the pin: the survey in
-`ringKrullDim`'s own file lists only `ringKrullDim_le_of_surjective`,
-`ringKrullDim_quotient_le` and the polynomial/regular-sequence bounds — nothing
-comparing a ring with a flat extension of it. The refuting grep is
-
-    grep -rn "ringKrullDim" .lake/packages/mathlib/Mathlib | grep -i "faithful\|goingdown"
-
-which returns nothing at `a3364fa`.
-
-The proof is two mathlib lemmas glued: `Ideal.exists_isPrime_liesOver_of_faithfullyFlat`
-lifts the TOP of a chain, and `Ideal.exists_ltSeries_of_hasGoingDown` (available
-because `Module.Flat` gives `Algebra.HasGoingDown` by `Algebra.HasGoingDown.of_flat`)
-lifts the rest of the chain underneath it, LENGTH PRESERVED. -/
-theorem ringKrullDim_le_of_faithfullyFlat (R T : Type*) [CommRing R] [CommRing T]
-    [Algebra R T] [Module.FaithfullyFlat R T] : ringKrullDim R ≤ ringKrullDim T := by
-  rw [ringKrullDim, ringKrullDim, Order.krullDim]
-  refine iSup_le fun l => ?_
-  obtain ⟨P, hP, hlo⟩ :=
-    Ideal.exists_isPrime_liesOver_of_faithfullyFlat (A := R) (B := T) l.last.asIdeal
-  haveI := hP
-  haveI := hlo
-  obtain ⟨L, hlen, -, -⟩ := Ideal.exists_ltSeries_of_hasGoingDown (R := R) (S := T) l P
-  exact hlen ▸ Order.LTSeries.length_le_krullDim L
-
 open _root_.TensorProduct in
-/-- `S ⊗[k] L` is faithfully flat over `S` whenever `L` is an extension field of `k`
-(PROVEN 2026-07-29): a `k`-basis of `L` becomes an `S`-basis of `S ⊗[k] L` by
-`Algebra.TensorProduct.basis`, and a free nontrivial module is faithfully flat. -/
-theorem faithfullyFlat_tensorProduct_field (k : Type u) [Field k] (S : Type u) [CommRing S]
-    [Algebra k S] (L : Type u) [Field L] [Algebra k L] :
-    Module.FaithfullyFlat S (S ⊗[k] L) := by
-  haveI : Module.Free S (S ⊗[k] L) :=
-    Module.Free.of_basis (Algebra.TensorProduct.basis S (Module.Free.chooseBasis k L))
-  infer_instance
-
-open _root_.TensorProduct in
-/-- **LEDGER ITEM 2, CLOSED 2026-07-29 — AND THE LEDGER ASKED FOR TOO MUCH.**
-
-The `PREREQUISITE LEDGER` in `exists_bertiniConnectedLocus_algebra` below records
-item 2 as "DIMENSION IS INSENSITIVE TO BASE FIELD EXTENSION", i.e. an EQUALITY,
-and prices it as absent from the pin. The equality really is absent (it needs
-finite-typeness and the dimension formula for fibres). **But the transport of
-`hdim` across the base change only ever uses the `≤` direction**, and that
-direction is pure faithful flatness — no finiteness hypothesis on `S` at all,
-and no `CharZero`. So the item is closed at a fraction of the advertised cost;
-a future reader should not go and build the equality. -/
-theorem le_ringKrullDim_tensorProduct_field (k : Type u) [Field k] (S : Type u) [CommRing S]
-    [Algebra k S] (L : Type u) [Field L] [Algebra k L] :
-    ringKrullDim S ≤ ringKrullDim (L ⊗[k] S) := by
-  haveI := faithfullyFlat_tensorProduct_field k S L
-  have h1 : ringKrullDim S ≤ ringKrullDim (S ⊗[k] L) :=
-    ringKrullDim_le_of_faithfullyFlat S (S ⊗[k] L)
-  have h2 : ringKrullDim (S ⊗[k] L) = ringKrullDim (L ⊗[k] S) :=
-    ringKrullDim_eq_of_ringEquiv (Algebra.TensorProduct.comm k S L).toRingEquiv
-  exact h2 ▸ h1
-
-open CategoryTheory AlgebraicGeometry Limits _root_.TensorProduct in
-/-- **THE BASE CHANGE OF A GEOMETRICALLY IRREDUCIBLE AFFINE `k`-SCHEME IS
-IRREDUCIBLE** (PROVEN 2026-07-29).
-
-This is the "unfolding" half of `GeometricallyIrreducible` at an affine source
-and an affine field extension. It is NOT free, because `geometrically P` is
-phrased through an arbitrary `IsPullback` square rather than through a tensor
-product: the bridge is `AlgebraicGeometry.pullbackSpecIso`, which identifies
-`Spec S ×[Spec k] Spec L` with `Spec (S ⊗[k] L)`, fed to
-`IsPullback.of_iso_pullback`. The `comm` at the end is only bookkeeping — the
-consumers below want `L ⊗[k] S`, mathlib's pullback iso produces `S ⊗[k] L`. -/
-theorem irreducibleSpace_tensorProduct_of_geometricallyIrreducible
-    {k : Type u} [Field k] {S : Type u} [CommRing S] [Algebra k S]
-    (L : Type u) [Field L] [Algebra k L]
-    (hgi : GeometricallyIrreducible (Spec.map (CommRingCat.ofHom (algebraMap k S)))) :
-    IrreducibleSpace (PrimeSpectrum (L ⊗[k] S)) := by
-  have hpb : IsPullback ((pullbackSpecIso k S L).inv ≫ pullback.fst _ _)
-      ((pullbackSpecIso k S L).inv ≫ pullback.snd _ _)
-      (Spec.map (CommRingCat.ofHom (algebraMap k S)))
-      (Spec.map (CommRingCat.ofHom (algebraMap k L))) := by
-    refine IsPullback.of_iso_pullback ⟨?_⟩ (pullbackSpecIso k S L).symm rfl rfl
-    rw [Category.assoc, Category.assoc, pullback.condition]
-  haveI : IrreducibleSpace (PrimeSpectrum (S ⊗[k] L)) :=
-    hgi.geometrically_irreducibleSpace (K := L)
-      (Spec.map (CommRingCat.ofHom (algebraMap k L))) _ _ hpb
-  exact Function.Surjective.irreducibleSpace
-    (PrimeSpectrum.homeomorphOfRingEquiv
-      (Algebra.TensorProduct.comm k S L).toRingEquiv).continuous
-    (PrimeSpectrum.homeomorphOfRingEquiv
-      (Algebra.TensorProduct.comm k S L).toRingEquiv).surjective
-
-open _root_.TensorProduct in
-/-- **THE CLOSED EMBEDDING HYPOTHESIS SURVIVES BASE CHANGE** (PROVEN 2026-07-29).
-
-`hgen` — the hypothesis whose absence made the connectedness leaf FALSE, see the
-FALSITY AUDIT in `exists_bertiniConnectedLocus_algebra` below — says
-`Spec S ↪ 𝔸ⁿ_k` is a closed embedding. This says the same of
-`Spec (K ⊗[k] S) ↪ 𝔸ⁿ_K` with the coordinates `1 ⊗ xᵢ`, which is what lets the
-Bertini leaf be stated over `K` alone.
-
-The proof is the standard two-step: the set of `s` with `1 ⊗ s` in the closure is
-a subring of `S` containing `algebraMap k S` and every `xᵢ`, hence all of `S` by
-`hgen`; and then every pure tensor `c ⊗ s` factors as
-`(algebraMap K _ c) * (1 ⊗ s)`. -/
-theorem subring_closure_tensor_eq_top {k : Type u} [Field k] {S : Type u} [CommRing S]
-    [Algebra k S] (K : Type u) [Field K] [Algebra k K] {n : ℕ} (x : Fin n → S)
-    (hgen : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) = ⊤) :
-    Subring.closure (Set.range (algebraMap K (K ⊗[k] S)) ∪
-      Set.range fun i => (1 : K) ⊗ₜ[k] x i) = ⊤ := by
-  set T : Subring (K ⊗[k] S) :=
-    Subring.closure (Set.range (algebraMap K (K ⊗[k] S)) ∪
-      Set.range fun i => (1 : K) ⊗ₜ[k] x i)
-  have hright : ∀ s : S, (1 : K) ⊗ₜ[k] s ∈ T := by
-    have hle : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) ≤
-        T.comap (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)).toRingHom := by
-      rw [Subring.closure_le]
-      rintro s (⟨a, rfl⟩ | ⟨i, rfl⟩)
-      · have h1 : (1 : K) ⊗ₜ[k] (algebraMap k S a)
-            = algebraMap K (K ⊗[k] S) (algebraMap k K a) := by
-          rw [← IsScalarTower.algebraMap_apply k K (K ⊗[k] S)]
-          exact (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)).commutes a
-        simp only [SetLike.mem_coe, Subring.mem_comap, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
-          Algebra.TensorProduct.includeRight_apply, h1]
-        exact Subring.subset_closure (Or.inl ⟨_, rfl⟩)
-      · simp only [SetLike.mem_coe, Subring.mem_comap, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
-          Algebra.TensorProduct.includeRight_apply]
-        exact Subring.subset_closure (Or.inr ⟨i, rfl⟩)
-    rw [hgen] at hle
-    intro s
-    exact hle (Subring.mem_top s)
-  rw [eq_top_iff]
-  rintro z -
-  induction z with
-  | zero => exact zero_mem T
-  | tmul c s =>
-      have hcs : c ⊗ₜ[k] s = algebraMap K (K ⊗[k] S) c * ((1 : K) ⊗ₜ[k] s) := by
-        rw [Algebra.TensorProduct.algebraMap_apply, Algebra.TensorProduct.tmul_mul_tmul]
-        simp
-      rw [hcs]
-      exact mul_mem (Subring.subset_closure (Or.inl ⟨c, rfl⟩)) (hright s)
-  | add a b ha hb => exact add_mem ha hb
-
-/-- **LEDGER ITEM 4 ALONE: BERTINI CONNECTEDNESS OVER AN ALGEBRAICALLY CLOSED
-FIELD** (sorry leaf, CUT 2026-07-29 out of
-`exists_bertiniConnectedLocus_algebraicClosure` below, which is now PROVEN over
-this leaf plus the four base-change lemmas immediately above).
-
-`Spec B` is a smooth irreducible affine `K`-variety of dimension `≥ 2` over an
-algebraically closed field of characteristic zero, closed-embedded in `𝔸ⁿ_K` by
-the coordinates `y`. The claim is that the AFFINE HYPERPLANE SECTION
-`ℓ_w = ∑ᵢ wᵢ yᵢ − w_last` is CONNECTED for all `w` outside the zero locus of some
-nonzero `F' ∈ K[X₀,…,Xₙ]`.
-
-WHAT THE CUT BOUGHT, and why it is not cosmetic. The statement it replaces
-carried, on top of the mathematics, four pieces of transport that had nothing to
-do with Bertini: the `GeometricallyIrreducible`-to-`IrreducibleSpace` unfolding
-through an `IsPullback` square, the dimension comparison across `k ⊆ k̄`, the
-transport of the closed-embedding hypothesis, and the identification
-`k̄ ⊗[k] (S ⧸ ℓ) ≅ (k̄ ⊗[k] S) ⧸ (1 ⊗ ℓ)`. All four are now PROVEN above and in
-mathlib; what is left is one statement about varieties over one field, with no
-tensor product, no `CommRingCat` and no `Spec` in it.
-
-THE ROUTE (unchanged, and see the ELIMINATION AUDIT in
-`exists_bertiniConnectedLocus_algebra` below for why the Sard-style trick that
-closed the SMOOTHNESS half provably does not transfer): take the projective
-closure `X̄ ⊆ ℙⁿ_K` of `Spec B`; for general `H`, `X̄ ∩ H` is IRREDUCIBLE (Bertini
-irreducibility, valid because `dim X̄ ≥ 2`), and `X̄ ∩ H ∩ H_∞` has dimension
-`dim B − 2 < dim B − 1`, so `X̄ ∩ H ⊄ H_∞` and `Spec B ∩ H = (X̄ ∩ H) ∖ H_∞` is a
-NONEMPTY OPEN of an IRREDUCIBLE space, hence irreducible, hence connected.
-IRREDUCIBILITY of the general section — not the connectedness that
-Enriques–Severi–Zariski / Grothendieck gives for EVERY `H` — is what survives the
-affine restriction; a prover who weakens it will find the last step unprovable.
-
-For the projective closure do NOT build one from scratch:
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` carries
-`ProjChart`, `nonempty_projChart`, `exists_isOpenImmersion_isProper_of_proj` and
-`exists_isOpenImmersion_isProper`. That module is NOT imported here; its own
-imports are `Mathlib`-only, so adding
-`public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification` is
-acyclic. Measure its cone cost before adopting the route.
-
-**FAITHFULNESS AUDIT 2026-07-29 (this is a FIRST audit of a NEW statement, not
-an inherited one; the parent's audits do not carry over to a restatement).**
-
-* NON-VACUITY. `K` is algebraically closed of characteristic zero, hence
-  infinite, so a nonzero `F' ∈ K[X₀,…,Xₙ]` has a non-root in `Kⁿ⁺¹`; the
-  conclusion is therefore asserted about at least one `w`, and in fact about a
-  Zariski-dense set of them. Conversely the good locus really is of this shape:
-  Bertini gives a nonempty OPEN `U` of good `w`, and any nonempty open in
-  `𝔸ⁿ⁺¹_K` contains a basic open `D(F')` for some `F' ≠ 0` (pick a nonzero
-  element of the ideal cutting out the complement). So the `∃ F'` form neither
-  over- nor under-states the theorem.
-* `hgen` IS LOAD-BEARING, same counterexample as the parent, restated over `K`:
-  `B = K[a,b]`, `n = 0`, `y` empty. Smooth, irreducible, `ringKrullDim = 2 > 1`;
-  but `ℓ_w` degenerates to the constant `−w₀`, so for every `w₀ ≠ 0` the ideal is
-  the UNIT ideal, `B ⧸ (ℓ_w)` is the ZERO ring and `PrimeSpectrum` of it is
-  EMPTY — and `ConnectedSpace` extends `Nonempty`. `K` infinite ⟹ some `w₀ ≠ 0`
-  survives any `F'`. With `hgen` present this cannot happen: at `n = 0` it forces
-  `B` to be generated by the image of `K`, so `ringKrullDim B ≤ 0`, refuting
-  `hdim`.
-* `hdim` IS LOAD-BEARING, and independent of `hgen`: `B = K[s,t] ⧸ (s² + t² − 1)`,
-  `y = (s,t)`, is smooth, irreducible, satisfies `hgen`, and has dimension `1`; a
-  general line meets the conic in TWO distinct `K`-points, so the section is
-  nonempty but DISCONNECTED.
-* `Algebra.Smooth K B` is NOT needed for the mathematics — Bertini irreducibility
-  holds for any irreducible variety of dimension `≥ 2` over an algebraically
-  closed field of characteristic zero. It is carried because the caller has it
-  and a prover may want it (e.g. to invoke normality). It is a hypothesis, not a
-  claim, so keeping it cannot make the leaf false; dropping it would merely
-  strengthen the leaf.
-* `hirr` is stated as `IrreducibleSpace (PrimeSpectrum B)`, i.e. `Spec B` is
-  irreducible AND NONEMPTY (mathlib's `IrreducibleSpace` extends `Nonempty`), so
-  `B` is not the zero ring and the degenerate `B = 0` reading is excluded. -/
-theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
-    [CharZero K] {B : Type u} [CommRing B] [Algebra K B] [Algebra.Smooth K B]
-    (hirr : IrreducibleSpace (PrimeSpectrum B)) (hdim : 1 < ringKrullDim B)
-    {n : ℕ} (y : Fin n → B)
-    (hgen : Subring.closure (Set.range (algebraMap K B) ∪ Set.range y) = ⊤) :
-    ∃ F' : MvPolynomial (Fin (n + 1)) K, F' ≠ 0 ∧
-      ∀ w : Fin (n + 1) → K, MvPolynomial.eval w F' ≠ 0 →
-        ConnectedSpace (PrimeSpectrum (B ⧸ Ideal.span
-          {(∑ i : Fin n, algebraMap K B (w i.castSucc) * y i)
-            - algebraMap K B (w (Fin.last n))})) := by
-  sorry
-
-open _root_.TensorProduct in
-/-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (**PROVEN
-2026-07-29** over the single leaf `exists_bertiniConnectedLocus_isAlgClosed`
-above — ledger item 4, Bertini itself — together with the four base-change
-lemmas above it, all four of which are PROVEN. NAMED 2026-07-28 as the other
-half of the anonymous `obtain … := sorry` that used to sit inside
-`exists_bertiniConnectedLocus_algebra` below).
-
-**LEDGER ITEM 2 IS CLOSED, AND WAS OVERPRICED.** The `PREREQUISITE LEDGER` below
-lists it as "dimension is insensitive to base field extension", an EQUALITY, and
-records it as absent from the pin. The equality is indeed absent, but the
-transport of `hdim` across the base change only ever uses `≤`, and that is pure
-faithful flatness: `le_ringKrullDim_tensorProduct_field` above, over
-`ringKrullDim_le_of_faithfullyFlat`. No finiteness on `S`, no `CharZero`. Do not
-go and build the equality.
+/-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (sorry leaf, NAMED
+2026-07-28 — the other half of the anonymous `obtain … := sorry` that used to sit
+inside `exists_bertiniConnectedLocus_algebra` below).
 
 Same hypotheses as `exists_bertiniConnectedLocus_algebra`, and the same
 hyperplane pencil `ℓ_v = ∑ᵢ vᵢ xᵢ − v_last` indexed by `k`-RATIONAL `v`; but the
@@ -4116,13 +3880,12 @@ separates this leaf from the two PROVEN pieces that surround it:
   1).
 
 So `exists_bertiniConnectedLocus_algebra` is now GLUE ONLY over those three, and
-this node carries the base-change bookkeeping only: since 2026-07-29 the whole
-mathematical frontier sits one level down, in
-`exists_bertiniConnectedLocus_isAlgClosed` (ledger item 4 — Bertini
+this leaf carries the whole mathematical frontier: ledger item 4 (Bertini
 irreducibility of the general hyperplane section of an irreducible variety of
-dimension `≥ 2` over an algebraically closed field). Ledger item 2 is closed, see
-the header above. Item 4 is in neither `Mathlib`,
-`~/cs/FLT`, nor this project; see the PREREQUISITE LEDGER in the docstring of
+dimension `≥ 2` over an algebraically closed field) together with ledger item 2
+(insensitivity of `topologicalKrullDim` to base field extension, which is what
+transports `hdim` across the base change). Neither is in `Mathlib`, in
+`~/cs/FLT`, or in this project; see the PREREQUISITE LEDGER in the docstring of
 `exists_bertiniConnectedLocus_algebra` below for the measured survey, the ROUTE
 paragraph (projective closure, `X̄ ∩ H` irreducible, `X̄ ∩ H ⊄ H_∞`), and the
 ELIMINATION AUDIT explaining why the Sard-style trick that closed the SMOOTHNESS
@@ -4142,16 +3905,6 @@ change what a prover here should do:
    `Algebra.TensorProduct.cancelBaseChange` gives
    `k̄ ⊗[k] (S ⧸ I) ≃ₐ (k̄ ⊗[k] S) ⧸ I.map (…)`, which is the bridge. Do not
    write a second one.
-
-   **AMENDED 2026-07-29: even that composition is unnecessary.** The SAME FILE
-   carries the bridge as a single declaration,
-   `Algebra.TensorProduct.tensorQuotientEquiv (R := k) k S k̄ I :`
-   `k̄ ⊗[k] (T ⧸ I) ≃ₐ[k] (k̄ ⊗[k] T) ⧸ I.map includeRight`, and that is what the
-   proof below uses. (Its sibling `quotientTensorEquiv` does the other side.)
-   The `quotIdealMapEquivTensorQuot` route additionally needs the RIGHT algebra
-   structure `Algebra S (k̄ ⊗[k] S)`, which is `Algebra.TensorProduct.rightAlgebra`
-   and is NOT a global instance at this pin — a real obstacle that the correction
-   above did not mention, and which `tensorQuotientEquiv` sidesteps entirely.
 2. `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` really does
    carry the projective-closure interface the ledger correction below advertises
    (`ProjChart`, `nonempty_projChart`, `exists_isOpenImmersion_isProper_of_proj`,
@@ -4175,57 +3928,7 @@ theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [Ch
             (AlgebraicClosure k ⊗[k]
               (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
                 - algebraMap k S (v (Fin.last n))})))) := by
-  set K := AlgebraicClosure k
-  set B := K ⊗[k] S
-  haveI hirr : IrreducibleSpace (PrimeSpectrum B) :=
-    irreducibleSpace_tensorProduct_of_geometricallyIrreducible K hgi
-  have hdimB : 1 < ringKrullDim B := by
-    refine lt_of_lt_of_le ?_ (le_ringKrullDim_tensorProduct_field k S K)
-    rwa [← PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim]
-  have hgenB : Subring.closure (Set.range (algebraMap K B) ∪
-      Set.range fun i => (1 : K) ⊗ₜ[k] x i) = ⊤ := subring_closure_tensor_eq_top K x hgen
-  obtain ⟨F', hF'0, hF'⟩ :=
-    exists_bertiniConnectedLocus_isAlgClosed (K := K) (B := B) hirr hdimB
-      (fun i => (1 : K) ⊗ₜ[k] x i) hgenB
-  refine ⟨F', hF'0, fun v hv => ?_⟩
-  set ℓ : S := (∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
-    - algebraMap k S (v (Fin.last n)) with hℓ
-  have hkey : ∀ a : k, algebraMap K B (algebraMap k K a) = (1 : K) ⊗ₜ[k] algebraMap k S a := by
-    intro a
-    rw [← IsScalarTower.algebraMap_apply k K B]
-    exact ((Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)).commutes a).symm
-  have helt : (∑ i : Fin n, algebraMap K B ((algebraMap k K ∘ v) i.castSucc) *
-      ((1 : K) ⊗ₜ[k] x i)) - algebraMap K B ((algebraMap k K ∘ v) (Fin.last n))
-      = (1 : K) ⊗ₜ[k] ℓ := by
-    simp only [Function.comp_apply, hkey, hℓ]
-    rw [_root_.TensorProduct.tmul_sub, _root_.TensorProduct.tmul_sum]
-    congr 1
-    exact Finset.sum_congr rfl fun i _ => by
-      rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul]
-  have hconn := hF' ((algebraMap k K) ∘ v) hv
-  rw [helt] at hconn
-  -- transport along `K ⊗[k] (S ⧸ (ℓ)) ≃ₐ (K ⊗[k] S) ⧸ (1 ⊗ ℓ)`
-  have hmap : (Ideal.span {ℓ}).map
-      (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)).toRingHom
-      = Ideal.span {(1 : K) ⊗ₜ[k] ℓ} := by
-    rw [Ideal.map_span]
-    congr 1
-    simp
-  let e : (K ⊗[k] (S ⧸ Ideal.span {ℓ})) ≃ₐ[k]
-      ((K ⊗[k] S) ⧸ (Ideal.span {ℓ}).map
-        (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S))) :=
-    Algebra.TensorProduct.tensorQuotientEquiv (R := k) k S K (Ideal.span {ℓ})
-  have hfinal : ConnectedSpace (PrimeSpectrum (K ⊗[k] (S ⧸ Ideal.span {ℓ}))) := by
-    haveI : ConnectedSpace (PrimeSpectrum ((K ⊗[k] S) ⧸
-        (Ideal.span {ℓ}).map
-          (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)))) := by
-      rw [show ((Ideal.span {ℓ}).map
-          (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := S)) :
-          Ideal (K ⊗[k] S)) = Ideal.span {(1 : K) ⊗ₜ[k] ℓ} from hmap]
-      exact hconn
-    exact (PrimeSpectrum.homeomorphOfRingEquiv e.toRingEquiv).symm.surjective.connectedSpace
-      (PrimeSpectrum.homeomorphOfRingEquiv e.toRingEquiv).symm.continuous
-  exact hfinal
+  sorry
 
 /-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
 2026-07-27; cut out of
