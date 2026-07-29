@@ -2790,10 +2790,140 @@ theorem exists_localInertia_generator_of_wildInertia_trivial
         rw [pow_succ, Equiv.Perm.mul_apply, ih, Function.iterate_succ_apply, hφ]
   rw [← hφ τ x, ← hk', hiter]
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RAYNAUD AT `e = 1 < p − 1`, UNIPOTENT-PAIR FORM: LOCAL INERTIA
+CARRIES NO NONTRIVIAL UNIPOTENT ON THE CONNECTED `3`-TORSION** (SORRY
+LEAF, cut 2026-07-28 out of
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion`
+immediately below, which is now PROVEN over it and over nothing else —
+the cut is exactly STEP (a) of that leaf's own ROUTE AUDIT, which
+became stateable when `hcomm` was threaded in on 2026-07-28).
+
+Content: there is NO `σ ∈ I₃` and no pair `ψ, χ` of CONNECTED geometric
+points of the generic fibre killed by `3` with
+
+    σ • χ = χ,    σ • ψ = ψ ⋆ χ,    χ ≠ 1.
+
+Equivalently, and this is the reading to keep in mind: write
+`S := {φ | φ ^ 3 = 1 ∧ φ (1 ⊗ e₀) = 1}` for the connected socle. By
+`hcomm` the convolution monoid is COMMUTATIVE, so `S` is a commutative
+monoid in which every element cubes to `1` — an `𝔽₃`-vector space — and
+in `Additive S` the hypotheses read
+
+    (σ − 1) ψ = χ ≠ 0,    (σ − 1) χ = 0,
+
+i.e. `σ` acts on the plane `⟨ψ, χ⟩` by a single size-`2` JORDAN BLOCK.
+The plane has order EXACTLY `9`: `ψ ∉ ⟨χ⟩`, because `σ` fixes `⟨χ⟩`
+pointwise while moving `ψ`. So the leaf says: **the image of `I₃` in
+`Aut S` contains no nontrivial unipotent**, and by the reduction below
+that is the whole of the `∃ n` tameness statement.
+
+WHAT THE CUT DISCHARGED, AND WHY IT IS FREE. The parent's proof is now
+pure `𝔽₃`-linear algebra with no arithmetic in it, and it is worth
+recording because it also shows the two forms are EQUIVALENT rather
+than merely sufficient. Suppose `σ ∈ I₃` satisfies the parent's `hcube`
+(`σ ^ 3` fixes all of `S`) and moves some `φ ∈ S`. Put
+
+    y := σ • φ,   z := σ ^ 2 • φ,   b := y ⋆ φ ⋆ φ,   c := z ⋆ y ⋆ φ,
+
+so that `b` and `c` are the first and second DISPLACEMENTS of `φ` —
+`b = (σ − 1) φ` and `c = (σ − 1) ^ 2 φ` additively, since `φ ⋆ φ` is
+`φ⁻¹`. All four lie in `S` (`convMul_apply_one_of_comul_absorbs` for
+the connectedness, `smul_pow'` for the cube, `hcomm` for the products),
+`σ • z = φ` is exactly `hcube`, and then:
+
+* if `c = 1`, the pair `(ψ, χ) := (φ, b)` satisfies the leaf's
+  hypotheses — `σ • φ = φ ⋆ b` by definition of `b`, `σ • b = b` from
+  `c = 1`, and `b ≠ 1` because `b = 1` would give `y = φ`;
+* if `c ≠ 1`, the pair `(ψ, χ) := (b, c)` does — `σ • b = b ⋆ c` and
+  `σ • c = c`, the latter being the additive `(σ − 1) ^ 3 = σ ^ 3 − 1 =
+  0` of characteristic `3` written multiplicatively.
+
+Either way the leaf forbids the configuration. Conversely the parent
+implies this leaf (`σ` restricted to `⟨ψ, χ⟩` has order exactly `3`, so
+some power of `σ` has order exactly `3` on the finite set `S` and the
+parent applied to that power is contradicted), so **nothing was
+strengthened by the cut**: what was removed is the orbit bookkeeping,
+what remains is the finite-flat content.
+
+THE ROUTE THAT IS LEFT, from the parent's ROUTE AUDIT §(4), steps
+(b)–(d) — this leaf is precisely their residue:
+
+  b. push a `Γ`-stable filtration of the plane through
+     `IsFlatPointsGroupAt.of_injective` / `.of_surjective`
+     (`Deformations/RepresentationTheory/FlatPointsGroup.lean`, all
+     PROVEN) to a short exact sequence of finite flat Hopf orders;
+  c. graded pieces of multiplicative type make the extension of
+     multiplicative type (`isMultiplicativeType_of_isShortExact` in
+     `Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, PROVEN), so its
+     Cartier dual is étale hence UNRAMIFIED and inertia acts by a
+     SCALAR — never a nontrivial unipotent, contradiction;
+  d. graded pieces of order `3` ARE of multiplicative type: a connected
+     finite flat group scheme of order `3` over `ℤ₃` is `μ₃` up to
+     unramified twist (Oort–Tate at `v(a) + v(b) = 1`, `v(a) > 0`), and
+     the dual of such a twist is a twist of `ℤ/3`, which is étale.
+
+**STEP (c) IS THE ONE THING STILL MISSING, and it is a SEPARATE
+UPSTREAM CUT — do not widen this leaf to reach it.** `ShortExact.lean`
+carries `[IsCocomm R A]` throughout, i.e. COALGEBRA-level
+cocommutativity of the Hopf orders, which is strictly more than the
+point-level `hcomm` here. Threading `[IsCocomm 𝒪₃ᵥ G]` was measured on
+2026-07-28: it reaches **15** declarations in this file (every
+`_of_hopf_package` statement with `G` universally quantified) and then
+arrives at `exists_connectedEtale_line_of_hopf_package`, where `G` is
+PRODUCED by unpacking `HasFlatProlongationAt` / `IsFlatPointsGroupAt`
+— neither of which records cocommutativity — so it lands as a genuine
+new obligation on `FlatPointsGroup.lean` and `FlatProlongation.lean`,
+not as a free pass-through. The point-level `hcomm` suffices for steps
+(a) and (b) and is what is threaded here.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup 𝔭₃` and is NOT
+widened to `Γ ℚ₃ᵥ`; the conclusion is a VALUE-level identity between
+geometric points, with no element of `G`, no coordinate and no normal
+form demanded. So the statement is on the true side of the
+development's `𝒪ᵥ`-descent rule and is blind to the `p − 1` unramified
+twists `μ₃ ⊗ ψ` that refuted `exists_muType_closure`. Connectedness
+cannot be dropped: without `hprim₀`/`hcomul₀` the constant group scheme
+`ℤ/3 × ℤ/3` over `ℤ₃`, on which inertia can act through a nontrivial
+unipotent in `GL₂(𝔽₃)`, satisfies everything else. The statement is
+also NOT vacuous: `hcomul₀` is what makes `S` a submonoid, so the
+configuration it forbids is expressible, and it does occur for group
+schemes over bases with `e ≥ p − 1`.
+
+Every hypothesis is underscore-prefixed because the body is `sorry`;
+they are all genuinely needed and a real proof must consume them.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3; Tate, *Finite flat group schemes*, §4,
+in Cornell–Silverman–Stevens; Oort–Tate, *Group schemes of prime
+order*, Ann. Sci. ÉNS 3 (1970). -/
+theorem eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (_he₀ : IsIdempotentElem e₀)
+    (_hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (_hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (_hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    {σ : Γ ℚ₃ᵥ} (_hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (ψ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
+    (_hψ3 : ψ ^ (3 : ℕ) = 1) (_hψe : ψ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
+    (_hχ3 : χ ^ (3 : ℕ) = 1) (_hχe : χ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
+    (_hχfix : σ • χ = χ) (_hψσ : σ • ψ = ψ * χ) :
+    χ = 1 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **RAYNAUD AT `e = 1 < p − 1`, ELEMENT FORM: NO LOCAL-INERTIA ELEMENT
-ACTS WITH ORDER `3` ON THE CONNECTED `3`-TORSION** (SORRY LEAF, cut
+ACTS WITH ORDER `3` ON THE CONNECTED `3`-TORSION** (PROVEN 2026-07-28
+over the single leaf
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` immediately
+above, into which STEP (a) of the ROUTE AUDIT below was discharged; it
+was itself a SORRY LEAF, cut
 2026-07-27 out of
 `exists_coprime_three_exponent_localInertia_connected_threeTorsion`
 immediately below, which is now PROVEN over it and over nothing else).
@@ -2804,8 +2934,11 @@ one of them itself. Equivalently: the image of `I₃` in the permutation
 group of the (finite) connected `3`-torsion socle has NO ELEMENT OF
 ORDER `3`.
 
-**THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified
-cluster, and it is now the only declaration in it that spends
+**THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified cluster
+sits under this declaration — since 2026-07-28 one step further down,
+in the UNIPOTENT-PAIR leaf
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` above,
+which is now the only declaration in the cluster that spends
 `e = 1 < p − 1 = 2`.** The mathematics — Raynaud's classification, the
 two PARI/GP computations that bracket the statement, the `n = 2` trap,
 the inventory of `OortTate` machinery already available, and the check
@@ -2847,16 +2980,19 @@ genuinely does own — that it is the shape Raynaud's theorem produces,
 the image of tame inertia landing in `μ_{3^r − 1}` — is preserved,
 because the parent still STATES it and consumers still see it.
 
-Every hypothesis is underscore-prefixed because the body is `sorry`;
-they are all genuinely needed and a real proof must consume them. In
-particular `hprim₀`/`hcomul₀` (the connectedness of `e₀`) cannot be
-dropped: the good-ORDINARY-reduction computation on `11a1` recorded
-below refutes the `e₀`-free statement.
+Every hypothesis is consumed. `hcomm` opens the commutative structure
+on the convolution monoid, `hcomul₀` closes the connected locus under
+convolution, and `hcube` closes the `σ`-orbit of a point after three
+steps; the rest travel to the leaf above, where `hprim₀`/`hcomul₀` (the
+connectedness of `e₀`) carry the arithmetic. They cannot be dropped:
+the good-ORDINARY-reduction computation on `11a1` recorded below
+refutes the `e₀`-free statement.
 
 ---
 
-**ROUTE AUDIT, 2026-07-27 (this leaf's owner; the leaf is still OPEN
-and nothing below is proven here).** The parent's inventory ends with
+**ROUTE AUDIT, 2026-07-27 (this leaf's owner; STEP (a) of §(4) below is
+PROVEN as of 2026-07-28 — it is the cut to the leaf above — and
+everything else below is still open).** The parent's inventory ends with
 "what is genuinely missing is the higher-rank case", which reads as
 "all of Raynaud" and sent this owner at the whole classification.
 That is too coarse. Five findings, each refutable by a named check.
@@ -2927,11 +3063,16 @@ ONE module; `ShortExact.lean` adds two and `CartierDual.lean` one.
 **(4) THE ROUTE, and exactly how far it reaches.** With (1)–(3) the
 attack is Cartier duality, not the Raynaud normal form:
 
-  a. `_hcube` plus `σ • φ ≠ φ` gives a UNIPOTENT configuration: in
-     `char 3`, `(σ - 1) ^ 3 = σ ^ 3 - 1 = 0` on the socle, so `σ` acts
+  a. **DONE, 2026-07-28 — this is the body of this declaration, and the
+     residue is the leaf above.** `hcube` plus `σ • φ ≠ φ` gives a
+     UNIPOTENT configuration: in `char 3`,
+     `(σ - 1) ^ 3 = σ ^ 3 - 1 = 0` on the socle, so `σ` acts
      unipotently and nontrivially, and `φ`, `(σ - 1) φ` span a
-     `σ`-stable subgroup of order exactly `9` (if `(σ - 1) φ = c φ`
-     then `(1 + c) ^ 3 = 1` in `𝔽₃` forces `c = 0`).
+     `σ`-stable subgroup of order exactly `9`. The Lean form takes the
+     first and second displacements `b = (σ - 1) φ`,
+     `c = (σ - 1) ^ 2 φ` and splits on `c = 1`; see the leaf's
+     docstring for the two-line case analysis. No arithmetic is spent
+     here — only `hcomm`, `hcomul₀` and `hcube`.
   b. Take a `Γ ℚ₃ᵥ`-stable filtration of the socle and push it through
      `IsFlatPointsGroupAt.of_injective` / `.of_surjective` to a short
      exact sequence of finite flat Hopf orders.
@@ -2988,9 +3129,11 @@ attack is Cartier duality, not the Raynaud normal form:
   convolution monoid of geometric points is COMMUTATIVE, hence `S` — a
   finite commutative monoid in which every element satisfies `φ ^ 3 = 1`
   — is an `𝔽₃`-vector space, and `Additive S` is where step (a)'s
-  `(σ - 1) ^ 3 = 0` lives. A prover should open it as
-  `letI : CommMonoid _ := { (inferInstance : Monoid _) with mul_comm := _hcomm }`
-  rather than trying to install a global instance.
+  `(σ - 1) ^ 3 = 0` lives. It is opened in the proof below as
+  `letI : CommMonoid _ := { (inferInstance : Monoid _) with mul_comm := hcomm }`
+  rather than as a global instance; that idiom is verified — `mul_pow`,
+  the AC `simp` set and `smul_mul'` all fire through it without an
+  instance-diamond mismatch.
 
   **It costs the caller nothing.** The `∃ n` parent below carries it as
   `hcomm` and passes it straight through; and
@@ -3038,17 +3181,112 @@ Cornell–Silverman–Stevens. -/
 theorem smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
     [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
-    (e₀ : G) (_he₀ : IsIdempotentElem e₀)
-    (_hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
-    (_hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
-    (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
-    (_hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ)
-    {σ : Γ ℚ₃ᵥ} (_hσ : σ ∈ localInertiaGroup 𝔭₃)
-    (_hcube : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    {σ : Γ ℚ₃ᵥ} (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (hcube : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
       φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ (3 : ℕ)) • φ = φ) :
     ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
-      φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → σ • φ = φ :=
-  sorry
+      φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → σ • φ = φ := by
+  classical
+  -- the convolution monoid of geometric points is COMMUTATIVE (`hcomm`);
+  -- open that structure LOCALLY rather than installing a global instance
+  letI : CommMonoid (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) :=
+    { (inferInstance : Monoid (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) with mul_comm := hcomm }
+  -- the connected locus is closed under convolution: this is the comultiplication
+  -- absorption `Δ e₀ · (e₀ ⊗ e₀) = e₀ ⊗ e₀` of a connected counit idempotent
+  have hmulconn : ∀ ψ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ,
+      ψ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → χ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ψ * χ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro ψ χ hψ hχ
+    have hψ' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm ψ e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hψ
+    have hχ' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm χ e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hχ
+    show (ψ * χ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    rw [← AlgHom.liftEquiv_symm_apply, vendored_mul_eq_convMul,
+      liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hψ' hχ'
+  -- the Galois action is POSTCOMPOSITION, so it preserves the connected locus
+  have hsmulconn : ∀ (τ : Γ ℚ₃ᵥ) (ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ),
+      ψ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (τ • ψ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro τ ψ h
+    have h1 : (τ • ψ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = τ (ψ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀)) := rfl
+    rw [h1, h, map_one]
+  intro φ hφ3 hφe
+  by_contra hne
+  -- the `σ`-orbit of `φ`, which closes up after three steps by `hcube`
+  obtain ⟨y, hy⟩ : ∃ y : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, y = σ • φ := ⟨_, rfl⟩
+  obtain ⟨z, hz⟩ : ∃ z : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, z = (σ * σ) • φ := ⟨_, rfl⟩
+  have hsφ : σ • φ = y := hy.symm
+  have hsy : σ • y = z := by rw [hy, hz, smul_smul]
+  have hsz : σ • z = φ := by
+    have h3 : σ * (σ * σ) = σ ^ (3 : ℕ) := by rw [pow_succ, pow_succ, pow_one, mul_assoc]
+    rw [hz, smul_smul, h3]
+    exact hcube φ hφ3 hφe
+  have hy3 : y ^ (3 : ℕ) = 1 := by rw [hy, ← smul_pow', hφ3, smul_one]
+  have hz3 : z ^ (3 : ℕ) = 1 := by rw [hz, ← smul_pow', hφ3, smul_one]
+  have hye : y ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by rw [hy]; exact hsmulconn σ φ hφe
+  have hze : z ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by rw [hz]; exact hsmulconn _ φ hφe
+  have hφφφ : φ * φ * φ = 1 := by
+    have h : φ * φ * φ = φ ^ (3 : ℕ) := by rw [pow_succ, pow_succ, pow_one]
+    rw [h, hφ3]
+  -- the FIRST and SECOND displacements of `φ`: additively `(σ - 1) φ` and
+  -- `(σ - 1) ^ 2 φ`, since `φ ⋆ φ` is the convolution inverse of `φ`
+  obtain ⟨b, hb⟩ : ∃ b : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, b = y * φ * φ := ⟨_, rfl⟩
+  obtain ⟨c, hc⟩ : ∃ c : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, c = z * y * φ := ⟨_, rfl⟩
+  have hb3 : b ^ (3 : ℕ) = 1 := by
+    rw [hb, mul_pow, mul_pow, hφ3, hy3, one_mul, one_mul]
+  have hc3 : c ^ (3 : ℕ) = 1 := by
+    rw [hc, mul_pow, mul_pow, hφ3, hy3, hz3, one_mul, one_mul]
+  have hbe : b ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    rw [hb]; exact hmulconn _ _ (hmulconn _ _ hye hφe) hφe
+  have hce : c ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    rw [hc]; exact hmulconn _ _ (hmulconn _ _ hze hye) hφe
+  have hsb : σ • b = z * y * y := by rw [hb, smul_mul', smul_mul', hsφ, hsy]
+  -- the third displacement is trivial: `(σ - 1) ^ 3 = σ ^ 3 - 1 = 0` in `char 3`
+  have hsc : σ • c = c := by
+    rw [hc, smul_mul', smul_mul', hsφ, hsy, hsz]
+    simp only [mul_comm, mul_left_comm]
+  by_cases hc1 : c = 1
+  · -- the second displacement is trivial: `(φ, b)` is the unipotent pair
+    have hzy : z * y = φ * φ := by
+      have h : z * y * φ = 1 := by rw [← hc]; exact hc1
+      calc z * y = z * y * (φ * φ * φ) := by rw [hφφφ, mul_one]
+        _ = (z * y * φ) * (φ * φ) := by simp only [mul_assoc]
+        _ = φ * φ := by rw [h, one_mul]
+    have hbfix : σ • b = b := by
+      rw [hsb, hb, hzy]
+      simp only [mul_comm, mul_left_comm]
+    have hbne : b ≠ 1 := by
+      intro h
+      refine hne ?_
+      have h1 : b * φ = 1 * φ := by rw [h]
+      have h2 : b * φ = y := by
+        rw [hb]
+        calc y * φ * φ * φ = y * (φ * φ * φ) := by simp only [mul_assoc]
+          _ = y * 1 := by rw [hφφφ]
+          _ = y := mul_one y
+      rw [h2, one_mul] at h1
+      rw [hsφ, h1]
+    have hφb : σ • φ = φ * b := by
+      rw [hsφ, hb]
+      calc y = y * 1 := (mul_one y).symm
+        _ = y * (φ * φ * φ) := by rw [hφφφ]
+        _ = φ * (y * φ * φ) := by simp only [mul_comm, mul_left_comm]
+    exact hbne (eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion
+      G e₀ he₀ hε₀ hprim₀ hcomul₀ hcomm hσ φ b hφ3 hφe hb3 hbe hbfix hφb)
+  · -- the second displacement is nontrivial: `(b, c)` is the unipotent pair
+    have hbc : σ • b = b * c := by
+      rw [hsb, hb, hc]
+      calc z * y * y = (z * y * y) * 1 := (mul_one _).symm
+        _ = (z * y * y) * (φ * φ * φ) := by rw [hφφφ]
+        _ = (y * φ * φ) * (z * y * φ) := by simp only [mul_comm, mul_left_comm]
+    exact hc1 (eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion
+      G e₀ he₀ hε₀ hprim₀ hcomul₀ hcomm hσ b c hb3 hbe hc3 hce hsc hbc)
 
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
@@ -3059,7 +3297,11 @@ SORRY LEAF cut 2026-07-27 out of
 which is PROVEN over it; PROVEN in turn the same day over the single
 element-form leaf
 `smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion`
-immediately above, which now carries all of the finite-flat input).
+immediately above, which is itself PROVEN since 2026-07-28 over the
+single UNIPOTENT-PAIR leaf
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` — the one
+declaration in this cluster that now carries all of the finite-flat
+input).
 
 Content: there is ONE exponent `n`, PRIME TO `3`, such that `σ ^ n`
 fixes EVERY connected `3`-torsion geometric point of the generic fibre,
@@ -3070,8 +3312,10 @@ to `3`, i.e. **the action is TAME**.
 
 THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified
 cluster: `e = 1 < p − 1 = 2` is spent HERE and nowhere else in it —
-since 2026-07-27, one declaration further down, in the element-form
-leaf above. Nothing else above and nothing below does.
+since 2026-07-27 one declaration further down, in the element-form leaf
+above, and since 2026-07-28 one further still, in the unipotent-pair
+leaf `eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`.
+Nothing else above and nothing below does.
 
 **THE PROOF, in four moves, none of which touches the classification.**
 
@@ -3671,10 +3915,30 @@ cluster is now IN THE ROOT IMPORT CONE (wired in at `1492cecb` through
 compiled at all, so nothing in this paragraph had ever been checked by
 the compiler.
 
+WHY THAT STALENESS WAS INVISIBLE, AND IT WAS STRUCTURAL RATHER THAN A
+FORGOTTEN IMPORT.  Those five `HopfAlgebra` modules were an UNREACHABLE
+ISLAND: nothing in `Fermat.lean`'s import closure imported them, and
+`lake build` builds only that closure, so they were never compiled —
+hence invisible to the `declaration uses 'sorry'` warning set AND to the
+census, the two counts every dispatch is built from.  Nobody had
+forgotten an import; the import was NOT EXPRESSIBLE, because the files
+carried no `module` header and a `module` file cannot import a
+non-`module` one (`cannot import non-module … from module`).  So when a
+module here looks orphaned, check its HEADER before hunting for a
+missing consumer.  Repaired at `1492cecb` with the header treatment its
+already-wired siblings use (`module`, `public import`,
+`@[expose] public section`); the tree is now 296 modules, 296 reachable,
+0 unreachable.  Note that wiring an island in RAISES the reported
+frontier, because its leaves become countable for the first time — that
+is disclosure, not regression.
+
 RE-CHECKED 2026-07-27 AFTER THE WIRING, and the "ONE named open leaf"
 count above is STALE in two ways.  `HopfAlgebra.IsShortExact.cartierDual`
-is itself **PROVEN** (`ShortExact.lean:669`), as a four-field assembly;
-what is open is THREE sub-leaves it consumes, none of them owned:
+is itself **PROVEN** (`ShortExact.lean:669`), as a four-field assembly,
+and so is `etale_of_isShortExact` (`ShortExact.lean:916`); neither is
+owned, because neither is open.  What IS open is THREE sub-leaves
+`cartierDual` consumes — all of them separately QUEUED as of 2026-07-27,
+so check `~/.flt-inflight.jsonl` for a live owner before starting on one:
 
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`)
   — the normal-basis splitting; `surjective_cartierDual_map` is proven from it;
@@ -3684,8 +3948,10 @@ what is open is THREE sub-leaves it consumes, none of them owned:
   — the deepest, classically `Ext¹(G'', 𝔾ₘ) = 0`.
 
 Plus `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-(`ShortExact.lean:238`), which `etale_of_isShortExact` consumes.  If they land
-it would most likely close
+(`ShortExact.lean:238`), also queued, which `etale_of_isShortExact` consumes.
+Four leaves, then — a DIFFERENT obstruction from the Raynaud one recorded
+above, but do not read it as a cheap one: `faithfullyFlat_cartierDual` is
+classically `Ext¹(G'', 𝔾ₘ) = 0`.  If all four land it would most likely close
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
 since the duality argument for the connected case is written out there.
 Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
@@ -3948,20 +4214,40 @@ in the ROOT IMPORT CONE, wired in through `HardlyRamified/Family.lean` — befor
 that those five modules were never compiled, so no claim made about them here
 had ever been checked by the compiler.
 
+WHY THAT STALENESS WAS INVISIBLE, AND IT WAS STRUCTURAL RATHER THAN A FORGOTTEN
+IMPORT.  Those five `HopfAlgebra` modules were an UNREACHABLE ISLAND: nothing in
+`Fermat.lean`'s import closure imported them, and `lake build` builds only that
+closure, so they were never compiled — hence invisible to the
+`declaration uses 'sorry'` warning set AND to the census, which are the two
+counts every dispatch is built from.  Nobody had forgotten an import; the import
+was NOT EXPRESSIBLE, because the files carried no `module` header and a `module`
+file cannot import a non-`module` one.  So when a module here looks orphaned,
+check its HEADER before hunting for a missing consumer.  Repaired at `1492cecb`
+with the header treatment its already-wired siblings use (`module`,
+`public import`, `@[expose] public section`); the tree is now 296 modules, 296
+reachable, 0 unreachable.  Wiring an island in RAISES the reported frontier,
+because its leaves become countable for the first time — disclosure, not
+regression.
+
 RE-CHECKED 2026-07-27 AFTER THE WIRING: the "ONE named open leaf" count this
-paragraph used to carry is STALE.  `HopfAlgebra.IsShortExact.cartierDual` is
-itself PROVEN (`ShortExact.lean:669`) as a four-field assembly; what is open
-is three unowned sub-leaves it consumes —
+paragraph used to carry is STALE, and so was its verdict.
+`HopfAlgebra.IsShortExact.cartierDual` is itself PROVEN
+(`ShortExact.lean:669`) as a four-field assembly, and so is
+`etale_of_isShortExact` (`:916`); neither is owned, because neither is open.
+What IS open is three sub-leaves `cartierDual` consumes —
 `IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`),
 `IsShortExact.ker_cartierDual_le` (`:628`) and
 `IsShortExact.faithfullyFlat_cartierDual` (`:648`) — together with
 `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-(`:238`), which `etale_of_isShortExact` consumes.  That is still a different —
-and much smaller — obstruction than the one recorded here, and the next owner
-of this leaf should weigh it afresh rather than treating the duality route as
-nonexistent.  Re-run
-`python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before believing
-the list; it is a dated claim like every other one here.
+(`:238`), which `etale_of_isShortExact` consumes.  All four are separately
+QUEUED as of 2026-07-27, so check `~/.flt-inflight.jsonl` for a live owner
+before starting on one.  That is a DIFFERENT obstruction from the one recorded
+here, and — correcting the sentence this replaces — NOT a "much smaller" one:
+`faithfullyFlat_cartierDual` is classically `Ext¹(G'', 𝔾ₘ) = 0`, the deepest
+of the four.  So the duality route is available in principle rather than cheap;
+do not treat it as nonexistent, and do not treat it as a shortcut either.
+Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
+believing the list; it is a dated claim like every other one here.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
@@ -4727,11 +5013,254 @@ theorem connected_locus_mem_of_displacement_stable_of_hopf_package
   rw [hsplit]
   exact W.add_mem hzw hw
 
+/-- **EVERY VECTOR AN EIGENVECTOR ⟹ A SINGLE SCALAR, on a `3`-torsion
+locus** (PROVEN 2026-07-28; PURE ALGEBRA — no finite-flat input, no
+Galois theory, no finiteness, no topology).
+
+Setting: `P` a subset of an `AddCommGroup M` that is closed under
+addition and consists of `3`-torsion elements, and `f : M → M` an
+ADDITIVE map (only `hfadd` is used — `f` need not be `M`-linear, and
+need not preserve `P`) such that every `z ∈ P` is an EIGENVECTOR of `f`
+with an integer eigenvalue: `f z = k • z` for some `k : ℕ` depending on
+`z`. The conclusion is that ONE `k` works for all of `P`.
+
+This is step 3 of the Raynaud dévissage below, in its elementary half:
+`hstab₃` is exactly a pointwise-eigenvector hypothesis, and the leaf
+`exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`
+below wants it in UNIFORM form. Because `P` is `3`-torsion, `P` is an
+`𝔽₃`-vector space and the classical linear-algebra fact applies; the
+statement is deliberately phrased with a bare predicate and a bare
+additive map so that no module structure over the coefficient ring `A`
+of the ambient representation is needed.
+
+PROOF. If every `z ∈ P` is `0` take `m = 0`. Otherwise fix `z₀ ∈ P`
+with `z₀ ≠ 0`; then `addOrderOf z₀ = 3` (its order divides the prime
+`3` and is not `1`), and `m := k_{z₀}` is the answer. Let `z ∈ P`,
+`z ≠ 0`, so `addOrderOf z = 3` too; it suffices to prove
+`3 ∣ k_z − m` in `ℤ`.
+
+* If `z = c • z₀` lies in `⟨z₀⟩`, additivity gives
+  `f z = c • f z₀ = c • (m • z₀) = m • z` directly, with no congruence
+  needed.
+* Otherwise apply the hypothesis to `z + z₀ ∈ P` and expand:
+  `a • z = b • z₀` with `a := k_{z+z₀} − k_z` and `b := m − k_{z+z₀}`.
+  If `3 ∤ a` then `a² ≡ 1 mod 3`, so `z = (a·a) • z = (a·b) • z₀` would
+  put `z` in `⟨z₀⟩` — excluded. Hence `3 ∣ a`, so `a • z = 0`, so
+  `b • z₀ = 0`, so `3 ∣ b` (order `3`), and `k_z − m = −(a + b)` is
+  divisible by `3`.
+
+Note the argument is exactly "an endomorphism of an `𝔽₃`-vector space
+all of whose vectors are eigenvectors is a scalar", written without
+choosing a basis: the case split is on whether `z` is in the line
+`⟨z₀⟩`, and `⟨z⟩ ∩ ⟨z₀⟩ = 0` off that line is what the invertibility of
+`a mod 3` encodes. -/
+theorem exists_uniform_nsmul_of_forall_nsmul_three_torsion
+    {M : Type*} [AddCommGroup M] (P : M → Prop)
+    (hPadd : ∀ x y : M, P x → P y → P (x + y))
+    (hP3 : ∀ z : M, P z → (3 : ℕ) • z = 0)
+    (f : M → M) (hfadd : ∀ x y : M, f (x + y) = f x + f y)
+    (hf : ∀ z : M, P z → ∃ k : ℕ, f z = k • z) :
+    ∃ m : ℕ, ∀ z : M, P z → f z = m • z := by
+  classical
+  have hf0 : f 0 = 0 := by simpa using (hfadd 0 0)
+  have hfneg : ∀ x : M, f (-x) = -f x := by
+    intro x
+    have h := hfadd x (-x)
+    rw [add_neg_cancel, hf0] at h
+    exact (eq_neg_of_add_eq_zero_right h.symm)
+  have hfnsmul : ∀ (c : ℕ) (x : M), f (c • x) = c • f x := by
+    intro c x
+    induction c with
+    | zero => simpa using hf0
+    | succ c ih => rw [succ_nsmul, hfadd, ih, succ_nsmul]
+  have hfzsmul : ∀ (c : ℤ) (x : M), f (c • x) = c • f x := by
+    intro c x
+    obtain ⟨n, rfl | rfl⟩ := c.eq_nat_or_neg
+    · rw [natCast_zsmul, hfnsmul, natCast_zsmul]
+    · rw [neg_zsmul, natCast_zsmul, hfneg, hfnsmul, neg_zsmul, natCast_zsmul]
+  -- a nonzero element of the locus has additive order exactly `3`
+  have hord : ∀ z : M, P z → z ≠ 0 → addOrderOf z = 3 := by
+    intro z hz hz0
+    have hdvd : addOrderOf z ∣ 3 := addOrderOf_dvd_of_nsmul_eq_zero (hP3 z hz)
+    rcases (Nat.Prime.eq_one_or_self_of_dvd (by norm_num) _ hdvd) with h | h
+    · exfalso
+      apply hz0
+      have h1 := addOrderOf_nsmul_eq_zero z
+      rw [h, one_smul] at h1
+      exact h1
+    · exact h
+  by_cases hall : ∀ z : M, P z → z = 0
+  · refine ⟨0, fun z hz => ?_⟩
+    rw [hall z hz, hf0, smul_zero]
+  · push Not at hall
+    obtain ⟨z₀, hz₀P, hz₀⟩ := hall
+    obtain ⟨m, hm⟩ := hf z₀ hz₀P
+    have hord₀ : addOrderOf z₀ = 3 := hord z₀ hz₀P hz₀
+    have hz₀zero : ∀ n : ℤ, n • z₀ = 0 ↔ (3 : ℤ) ∣ n := by
+      intro n
+      rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hord₀]
+      norm_num
+    refine ⟨m, fun z hz => ?_⟩
+    by_cases hz0 : z = 0
+    · rw [hz0, hf0, smul_zero]
+    have hordz : addOrderOf z = 3 := hord z hz hz0
+    have hzzero : ∀ n : ℤ, n • z = 0 ↔ (3 : ℤ) ∣ n := by
+      intro n
+      rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hordz]
+      norm_num
+    obtain ⟨k, hk⟩ := hf z hz
+    -- it suffices to show `((k : ℤ) - m) • z = 0`
+    have hsuff : ((k : ℤ) - (m : ℤ)) • z = 0 → f z = m • z := by
+      intro h
+      rw [sub_smul, natCast_zsmul, natCast_zsmul, sub_eq_zero] at h
+      rw [hk]
+      exact h
+    apply hsuff
+    by_cases hcyc : ∃ c : ℤ, z = c • z₀
+    · obtain ⟨c, rfl⟩ := hcyc
+      have h1 : f (c • z₀) = (m : ℤ) • (c • z₀) := by
+        rw [hfzsmul, hm, ← natCast_zsmul]
+        exact smul_comm c (m : ℤ) z₀
+      rw [sub_smul, natCast_zsmul, ← hk, h1, sub_self]
+    · push Not at hcyc
+      obtain ⟨kw, hkw⟩ := hf (z + z₀) (hPadd _ _ hz hz₀P)
+      rw [hfadd, hk, hm, smul_add] at hkw
+      have hab : ((kw : ℤ) - (k : ℤ)) • z = ((m : ℤ) - (kw : ℤ)) • z₀ := by
+        simp only [sub_smul, natCast_zsmul]
+        rw [sub_eq_sub_iff_add_eq_add, ← hkw]
+        abel
+      by_cases hda : (3 : ℤ) ∣ ((kw : ℤ) - (k : ℤ))
+      · have hbz : ((m : ℤ) - (kw : ℤ)) • z₀ = 0 := by
+          rw [← hab]
+          exact (hzzero _).mpr hda
+        have hdb : (3 : ℤ) ∣ ((m : ℤ) - (kw : ℤ)) := (hz₀zero _).mp hbz
+        refine (hzzero _).mpr ?_
+        omega
+      · exfalso
+        have h12 : ((kw : ℤ) - (k : ℤ)) % 3 = 1 ∨ ((kw : ℤ) - (k : ℤ)) % 3 = 2 := by
+          omega
+        obtain ⟨t, htdef⟩ : ∃ t : ℤ, t = ((kw : ℤ) - (k : ℤ)) * ((kw : ℤ) - (k : ℤ)) :=
+          ⟨_, rfl⟩
+        have hsq : t % 3 = 1 := by
+          rw [htdef]
+          rcases h12 with h | h <;> rw [Int.mul_emod, h] <;> norm_num
+        have hdvd1 : (3 : ℤ) ∣ t - 1 := by omega
+        have hz1 : (((kw : ℤ) - (k : ℤ)) * ((kw : ℤ) - (k : ℤ))) • z = z := by
+          have h0 : (t - 1) • z = 0 := (hzzero _).mpr hdvd1
+          rw [sub_smul, one_smul, sub_eq_zero, htdef] at h0
+          exact h0
+        refine hcyc (((kw : ℤ) - (k : ℤ)) * ((m : ℤ) - (kw : ℤ))) ?_
+        rw [← hz1, mul_smul, hab, ← mul_smul]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RAYNAUD DÉVISSAGE: multiplicative `3`-torsion ⟹ multiplicative**
+(SORRY LEAF — cut 2026-07-28 out of
+`exists_uniform_pow_localInertia_smul_connected_of_hopf_package` just
+below, which is now PROVEN over it together with the pure-algebra
+uniformiser `exists_uniform_nsmul_of_forall_nsmul_three_torsion` above.
+This is ALL that remains of the dévissage: steps 1 and 3 of the route
+recorded there are discharged, step 2 is this leaf.)
+
+Setting: `G` a finite flat `𝒪₃ᵥ ≅ ℤ₃`-Hopf order with étale generic
+fibre, `e₀` its connected counit idempotent, `fG` a `Γ ℚ₃ᵥ`-equivariant
+bijection from the geometric points of the generic fibre onto `N`, and
+`N⁰` the connected locus (the `z : N` whose point takes the value `1`
+on `e₀`).
+
+The two numerical inputs are exactly what the consumer has already
+established and what this leaf may therefore assume:
+
+* `hK` — `N⁰` is killed by the SINGLE `3`-power `3 ^ K`. (Proved in the
+  consumer from finiteness of the geometric point set,
+  `finite_points_of_hopf_order`, together with
+  `connected_vector_threePow_torsion_of_hopf_package`.) This is what
+  turns "inertia acts by `χ_cyc(σ) ∈ ℤ₃ˣ`" into "inertia acts by a
+  NATURAL number": any `m ≡ χ_cyc(σ) mod 3 ^ K` works simultaneously
+  for every `z ∈ N⁰`, and such an `m` exists because `ℕ` is dense in
+  `ℤ₃`.
+* `h₃` — `σ` already acts on the `3`-TORSION of `N⁰` by the single
+  natural number `m₃`, i.e. `𝒢⁰[3]` is of MULTIPLICATIVE type. (Proved
+  in the consumer from the `hstab₃` of the consumer's statement by the
+  pure-algebra uniformiser above; and `hstab₃` itself is the shape in
+  which `OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+  — Raynaud's dichotomy at `e = 1 < p − 1 = 2`, plus
+  `not_inertia_character_trivial_of_connected` killing the unramified
+  branch — delivers step 1.)
+
+WHAT REMAINS, and it is the whole finite-flat content: a finite flat
+group scheme over `ℤ₃` whose `3`-torsion is of multiplicative type is
+ITSELF of multiplicative type. Dévissage up the `3`-power filtration:
+the multiplicative part `𝒢ᵐ ⊆ 𝒢⁰` is the largest multiplicative
+subgroup scheme, and if `𝒢ᵐ ≠ 𝒢⁰` the quotient `𝒢⁰/𝒢ᵐ` is a nonzero
+finite flat group scheme whose `3`-torsion is a subquotient of `𝒢⁰[3]`,
+hence multiplicative — contradicting maximality of `𝒢ᵐ`. At `e = 1 <
+p − 1` Raynaud's classification makes the multiplicative part
+functorial and the filtration split enough for this to run. References:
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.6; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens; Oort–Tate.
+
+WHY `h₃` MAY NOT BE DROPPED. Without it the statement is FALSE, by the
+supersingular counterexample recorded in the FALSITY AUDIT of
+`exists_inertia_scalar_on_connected_locus_of_hopf_package` below: for
+`E ⧸ ℚ` with good SUPERSINGULAR reduction at `3` and `G = 𝒪(E[9])` the
+scheme is connected, `e₀ = 1`, the connected locus is everything, and
+`I₃` acts on `E[3]` through the level-`2` fundamental characters of
+`𝔽₉ˣ` (Serre, Invent. Math. 15 (1972), §1.11 prop. 12) — a nonsplit
+Cartan, on which no vector is moved to a multiple of itself, so no `m₃`
+exists and the hypothesis excludes exactly that `G`.
+
+FAITHFULNESS. Both quantifiers are over `localInertiaGroup 𝔭₃` and
+never over `Γ ℚ₃ᵥ`. Over the full decomposition group the connected
+character is `χ_cyc · ψ` with `ψ` an UNRAMIFIED twist and no single
+power works, so the inertia-only form is the true one — inertia-only
+conclusions are twist-blind. The conclusion is a VALUE-level identity
+in `N`; no element of `G`, no coordinate and no `Γ`-wide rationality is
+produced, so the leaf is on the true side of the development's
+`𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
+that killed `exists_muType_closure`.
+
+**The check that would refute it**: exhibit a connected finite flat
+`ℤ₃`-group scheme with étale generic fibre whose `3`-torsion is of
+multiplicative type but which is not itself of multiplicative type.
+Raynaud at `e = 1 < p − 1` says there is none. -/
+theorem exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (K m₃ : ℕ)
+    (hK : ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (3 ^ K : ℕ) • z = 0)
+    (h₃ : ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (3 : ℕ) • z = 0 →
+      (ρ'.toLocal 𝔭₃) σ z = m₃ • z) :
+    ∃ m : ℕ, ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ρ'.toLocal 𝔭₃) σ z = m • z :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **MULTIPLICATIVE TYPE: local inertia acts on the WHOLE connected
-locus by a single power** (SORRY LEAF — cut 2026-07-28 out of
+locus by a single power** (PROVEN 2026-07-28 over the single leaf
+`exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`
+above — was itself a SORRY LEAF, cut 2026-07-28 out of
 `exists_ordinary_line_of_flat_hopf_package` below, which is now PROVEN
 over it together with
 `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` just
@@ -4767,14 +5296,35 @@ ROUTE (Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.6; Oort–Tate; Tate,
    multiplicative — the multiplicative part is the largest
    multiplicative subgroup and its quotient would have non-multiplicative
    `3`-torsion. Hence local inertia acts on ALL of `𝒢⁰` by `χ_cyc`.
-   THIS STEP IS THE WHOLE REMAINING CONTENT; step 1 is already proven
-   and step 3 is bookkeeping.
+   THIS STEP IS THE WHOLE REMAINING CONTENT, and it is now the ONLY
+   remaining one: it is the leaf
+   `exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`
+   above, which is handed steps 1 and 3 as its hypotheses `h₃` and `hK`.
 3. UNIFORMITY of `m`. `χ_cyc(σ) ∈ ℤ₃ˣ` is one scalar, but the
    conclusion asks for a NATURAL number. The connected locus is finite
    (`finite_points_of_hopf_order` above) and `3`-power torsion
    (`connected_vector_threePow_torsion_of_hopf_package` above), so it is
    killed by a single `3 ^ K`, and any `m ≡ χ_cyc(σ) mod 3 ^ K` — which
    exists by density of `ℕ` in `ℤ₃` — works for every `z` at once.
+
+WHAT THE PROOF BELOW DISCHARGES, so that the leaf carries only the
+finite-flat content.
+
+* The connected locus is closed under addition
+  (`convMul_apply_one_of_comul_absorbs` against `hcomul₀`, the same
+  block used by `connected_vector_threePow_torsion_of_hopf_package`
+  above), so it is an additive submonoid — and being `3`-torsion on the
+  `3`-torsion part, a subgroup there.
+* `Finite N` transports across `fG` from `finite_points_of_hopf_order`,
+  so `Finset.univ.sup` of the per-vector exponents supplied by
+  `connected_vector_threePow_torsion_of_hopf_package` is a SINGLE `K`
+  with `3 ^ K • z = 0` for every connected `z`. That is step 3's
+  bookkeeping, in full.
+* `hstab₃` is a pointwise-eigenvector hypothesis on the `3`-torsion
+  connected locus, which is an `𝔽₃`-vector space; the pure-algebra
+  `exists_uniform_nsmul_of_forall_nsmul_three_torsion` above turns it
+  into a SINGLE `m₃`. That is the elementary half of step 3, and it is
+  what makes the leaf's `h₃` available.
 
 WHY `hstab₃` MAY NOT BE DROPPED. Without it the statement is FALSE, by
 the supersingular counterexample recorded in the FALSITY AUDIT of
@@ -4824,14 +5374,302 @@ theorem exists_uniform_pow_localInertia_smul_connected_of_hopf_package
     ∃ m : ℕ, ∀ z : N,
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
-      (ρ'.toLocal 𝔭₃) σ z = m • z :=
-  sorry
+      (ρ'.toLocal 𝔭₃) σ z = m • z := by
+  classical
+  have hfs : ∀ x : N, fG ((Equiv.ofBijective fG hfG).symm x) = x :=
+    fun x => (Equiv.ofBijective fG hfG).apply_symm_apply x
+  have hgs_add : ∀ x y : N, (Equiv.ofBijective fG hfG).symm (x + y) =
+      (Equiv.ofBijective fG hfG).symm x + (Equiv.ofBijective fG hfG).symm y := by
+    intro x y
+    apply (Equiv.ofBijective fG hfG).injective
+    show fG ((Equiv.ofBijective fG hfG).symm (x + y)) =
+      fG ((Equiv.ofBijective fG hfG).symm x + (Equiv.ofBijective fG hfG).symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  -- the connected locus is closed under addition (comultiplication absorption)
+  have hPadd : ∀ x y : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm x))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm y))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm (x + y)))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul ((Equiv.ofBijective fG hfG).symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul ((Equiv.ofBijective fG hfG).symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  -- the geometric point group is FINITE, so a single `3`-power kills the locus
+  haveI : Finite (Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) :=
+    finite_points_of_hopf_order G
+  haveI : Finite N := Finite.of_equiv _ (Equiv.ofBijective fG hfG)
+  haveI : Fintype N := Fintype.ofFinite N
+  have hpow : ∀ z : N, ∃ j : ℕ,
+      ((Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) → (3 ^ j : ℕ) • z = 0 := by
+    intro z
+    by_cases hz : (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    · obtain ⟨j, hj⟩ := connected_vector_threePow_torsion_of_hopf_package
+        ρ' G e₀ he₀ hε₀ hprim₀ hcomul₀ fG hfG z hz
+      exact ⟨j, fun _ => hj⟩
+    · exact ⟨0, fun h => absurd h hz⟩
+  choose kf hkf using hpow
+  have hK : ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (3 ^ (Finset.univ.sup kf) : ℕ) • z = 0 := by
+    intro z hz
+    have hle : kf z ≤ Finset.univ.sup kf := Finset.le_sup (Finset.mem_univ z)
+    obtain ⟨d, hd⟩ := Nat.le.dest hle
+    rw [← hd, pow_add, mul_comm, mul_smul, hkf z hz, smul_zero]
+  -- `hstab₃` is pointwise; the `3`-torsion connected locus is an `𝔽₃`-space,
+  -- so the eigenvalues glue into a SINGLE `m₃`
+  obtain ⟨m₃, hm₃⟩ := exists_uniform_nsmul_of_forall_nsmul_three_torsion
+    (fun z : N => (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 ∧ (3 : ℕ) • z = 0)
+    (fun x y hx hy => ⟨hPadd x y hx.1 hy.1, by rw [smul_add, hx.2, hy.2, add_zero]⟩)
+    (fun z hz => hz.2)
+    (fun z => (ρ'.toLocal 𝔭₃) σ z)
+    (fun x y => map_add ((ρ'.toLocal 𝔭₃) σ) x y)
+    (fun z hz => hstab₃ σ hσ z hz.2 hz.1)
+  exact exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform
+    ρ' G e₀ he₀ hε₀ hprim₀ hcomul₀ fG hfG σ hσ (Finset.univ.sup kf) m₃ hK
+    (fun z hz h3 => hm₃ z ⟨hz, h3⟩)
+
+/-- **A UNIPOTENT endomorphism whose ORDER IS PRIME TO `3` fixes every
+`3`-torsion vector** (helper, PROVEN 2026-07-28; pure algebra, no
+arithmetic input whatever).
+
+If `u` is an `A`-endomorphism of `M`, `z : M` is killed by `3`, some
+`u ^ K` with `3 ∤ K` fixes `z`, and `(u − 1) ^ m` kills `z` for some `m`,
+then `u z = z`.
+
+PROOF, and it deliberately avoids characteristic-`3` Frobenius identities
+in `End A M` (which is not an `𝔽₃`-algebra). The two-step case is the
+whole content: if `(u − 1) ² y = 0` then `w := (u − 1) y` is `u`-fixed, so
+`u ^ j y = y + j • w` by induction, and `u ^ K y = y` gives `K • w = 0`;
+also `3 • w = 0` since `3 • y = 0`. So `addOrderOf w` divides
+`gcd 3 K = 1`, i.e. `w = 0`. The general case peels the exponent one step
+at a time: `(u − 1) ^ (j + 2) z = 0` says `(u − 1) ² ((u − 1) ^ j z) = 0`,
+and `(u − 1) ^ j z` is still `3`-torsion and still fixed by `u ^ K`
+(because `u` commutes with `u − 1`), so the two-step case lowers the
+exponent to `j + 1`.
+
+This is where the TAMENESS of the connected `3`-torsion is converted into
+a fixed-point statement, and it is the only place `3 ∤ K` is used. -/
+theorem eq_of_unipotent_of_pow_coprime_three {A : Type*} [CommRing A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (u : Module.End A M) (z : M) (h3 : (3 : ℕ) • z = 0)
+    (K : ℕ) (hK : ¬ (3 ∣ K)) (hKz : (u ^ K) z = z)
+    (m : ℕ) (hnil : ((u - 1) ^ m) z = 0) :
+    u z = z := by
+  classical
+  -- STEP 1. the two-step case: `(u − 1)² y = 0` already forces `(u − 1) y = 0`
+  have key : ∀ y : M, (3 : ℕ) • y = 0 → (u ^ K) y = y →
+      (((u - 1) ^ 2 : Module.End A M)) y = 0 → (u - 1) y = 0 := by
+    intro y hy3 hyK hy2
+    set w : M := (u - 1) y with hw
+    have hu2 : (u - 1) w = 0 := by
+      have h : (((u - 1) ^ 2 : Module.End A M)) y = (u - 1) ((u - 1) y) := by
+        rw [pow_two, Module.End.mul_apply]
+      rw [h] at hy2
+      exact hy2
+    have huw : u w = w := by
+      have h := hu2
+      rw [LinearMap.sub_apply, Module.End.one_apply, sub_eq_zero] at h
+      exact h
+    have huy : u y = y + w := by
+      rw [hw, LinearMap.sub_apply, Module.End.one_apply]
+      abel
+    have hpow : ∀ j : ℕ, (u ^ j) y = y + j • w := by
+      intro j
+      induction j with
+      | zero => simp
+      | succ j ih =>
+          have h1 : (u ^ (j + 1)) y = u ((u ^ j) y) := by
+            rw [pow_succ', Module.End.mul_apply]
+          rw [h1, ih, map_add, map_nsmul, huw, huy, succ_nsmul]
+          abel
+    have hKw : (K : ℕ) • w = 0 := by
+      have h := hpow K
+      rw [hyK] at h
+      simpa using h.symm
+    have h3w : (3 : ℕ) • w = 0 := by
+      rw [hw, ← map_nsmul, hy3, map_zero]
+    have hdvd : addOrderOf w ∣ Nat.gcd 3 K :=
+      Nat.dvd_gcd (addOrderOf_dvd_of_nsmul_eq_zero h3w)
+        (addOrderOf_dvd_of_nsmul_eq_zero hKw)
+    have hgcd : Nat.gcd 3 K = 1 :=
+      (Nat.Prime.coprime_iff_not_dvd Nat.prime_three).mpr hK
+    rw [hgcd, Nat.dvd_one] at hdvd
+    exact AddMonoid.addOrderOf_eq_one_iff.mp hdvd
+  -- STEP 2. peel the unipotency exponent down to `1`
+  have hcomm : ∀ j : ℕ, Commute (u ^ K) ((u - 1) ^ j) := fun j =>
+    (((Commute.refl u).sub_right (Commute.one_right u)).pow_pow K j)
+  have main : ∀ j : ℕ, ((u - 1) ^ (j + 1)) z = 0 → (u - 1) z = 0 := by
+    intro j
+    induction j with
+    | zero => intro h; simpa using h
+    | succ j ih =>
+        intro h
+        have hy2 : (((u - 1) ^ 2 : Module.End A M))
+            (((u - 1) ^ j : Module.End A M) z) = 0 := by
+          have h1 : (((u - 1) ^ 2 * (u - 1) ^ j : Module.End A M)) z = 0 := by
+            rw [← pow_add]
+            have h2 : 2 + j = j + 1 + 1 := by ring
+            rw [h2]
+            exact h
+          rwa [Module.End.mul_apply] at h1
+        have hy3 : (3 : ℕ) • (((u - 1) ^ j : Module.End A M) z) = 0 := by
+          rw [← map_nsmul, h3, map_zero]
+        have hyK : (u ^ K) (((u - 1) ^ j : Module.End A M) z)
+            = ((u - 1) ^ j : Module.End A M) z := by
+          have h1 : ((u ^ K * (u - 1) ^ j : Module.End A M)) z
+              = ((u - 1) ^ j * u ^ K : Module.End A M) z := by
+            rw [(hcomm j).eq]
+          rw [Module.End.mul_apply, Module.End.mul_apply, hKz] at h1
+          exact h1
+        have hstep := key _ hy3 hyK hy2
+        refine ih ?_
+        rw [pow_succ', Module.End.mul_apply]
+        exact hstep
+  match m, hnil with
+  | 0, hnil =>
+      have hz : z = 0 := by simpa using hnil
+      rw [hz, map_zero]
+  | (j + 1), hnil =>
+      have h := main j hnil
+      rw [LinearMap.sub_apply, Module.End.one_apply, sub_eq_zero] at h
+      exact h
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RESIDUAL UNIPOTENCE along the kernel of `ω`** (helper, PROVEN
+2026-07-28): for `g` in the kernel of the mod-`3` cyclotomic character,
+`(ρ g − 1) ^ (2 k)` maps `V` into `𝔪ᵏ V`.
+
+This is the only place the RESIDUAL PACKAGE (`hV`, `hρ`, `kk`, `π`, `v₀`)
+is spent in the one-dimensionality leaf below, and it is exactly the
+`3`-DISTINGUISHED ORDINARY input in its usable form: `hπequiv` makes `ρ̄`
+an extension of the TRIVIAL character by a character `a`, `hV` with `hρ`
+forces `det ρ̄ = ω` hence `a = ω`
+(`residual_twist_eq_cyclotomicCharacterModL` above), so `ω g = 1` gives
+`a g ≡ 1 mod 𝔪` and `ρ̄ g` is UNIPOTENT — upper triangular with both
+diagonal entries `1` in the adapted basis
+(`exists_residual_adapted_basis` / `exists_residual_matrix_entries`
+above). Hence `(ρ g − 1) ² V ⊆ 𝔪 V`, and `R`-linearity iterates that to
+`(ρ g − 1) ^ (2 k) V ⊆ 𝔪ᵏ V`.
+
+NOTE the quantifier is over ALL of `Γ ℚ` and this is not a widening of an
+inertia-only statement: residual triangularity along `ker π` holds for the
+whole Galois group by `hπequiv`, which is itself stated over `Γ ℚ`. The
+inertia restriction enters only in the consumer, through tameness. -/
+theorem pow_sub_one_apply_mem_maximalIdeal_pow_smul_top
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (g : Γ ℚ) (hgω : cyclotomicCharacterModL 3 g = 1) (k : ℕ) (x : V) :
+    ((ρ g - 1) ^ (2 * k)) x ∈
+      (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V) := by
+  classical
+  obtain ⟨b, hb0π, hb0ne, hb1⟩ :=
+    exists_residual_adapted_basis V hV kk hsurj π hπsurj v₀ hv₀
+  obtain ⟨a, c, hac⟩ :=
+    exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv (b 0) v₀ hb0π hb0ne
+  have ha1 : a g - 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ (b 0) hb0π hb0ne a (fun h => (hac h).1) g).1 hgω
+  set T : Module.End R V := ρ g - 1 with hT
+  have hTb0 : T (b 0) ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h1 : T (b 0) = (ρ g (b 0) - a g • b 0) + (a g - 1) • b 0 := by
+      rw [hT, LinearMap.sub_apply, Module.End.one_apply, sub_smul, one_smul]
+      abel
+    rw [h1]
+    exact Submodule.add_mem _ (hac g).1 (Submodule.smul_mem_smul ha1 trivial)
+  have hTb1 : T (b 1) - c g • b 0 ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h1 : T (b 1) - c g • b 0 = ρ g v₀ - (v₀ + c g • b 0) := by
+      rw [hT, LinearMap.sub_apply, Module.End.one_apply, hb1]
+      abel
+    rw [h1]
+    exact (hac g).2
+  have hTT : ∀ y : V, ((T ^ 2 : Module.End R V)) y = T (T y) := fun y => by
+    rw [pow_two, Module.End.mul_apply]
+  have hD2b : ∀ i : Fin 2,
+      ((T ^ 2 : Module.End R V)) (b i) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro i
+    fin_cases i
+    · show ((T ^ 2 : Module.End R V)) (b 0) ∈ _
+      rw [hTT]
+      exact apply_mem_smul_top T hTb0
+    · show ((T ^ 2 : Module.End R V)) (b 1) ∈ _
+      rw [hTT]
+      have h2 : T (b 1) = (T (b 1) - c g • b 0) + c g • b 0 := by abel
+      rw [h2, map_add, map_smul]
+      exact Submodule.add_mem _ (apply_mem_smul_top T hTb1)
+        (Submodule.smul_mem _ _ hTb0)
+  have hD2 : ∀ y : V,
+      ((T ^ 2 : Module.End R V)) y ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro y
+    have hsum : y = ∑ i, b.repr y i • b i := (b.sum_repr y).symm
+    rw [hsum, map_sum]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    rw [map_smul]
+    exact Submodule.smul_mem _ _ (hD2b i)
+  have hstep : ∀ (J : Ideal R) (y : V), y ∈ J • (⊤ : Submodule R V) →
+      ((T ^ 2 : Module.End R V)) y ∈
+        (J * IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro J y hy
+    refine Submodule.smul_induction_on hy (fun r hr w _ => ?_) (fun p q hp hq => ?_)
+    · rw [map_smul]
+      refine Submodule.smul_induction_on (hD2 w) (fun s hs w' _ => ?_)
+        (fun p q hp hq => ?_)
+      · rw [smul_smul]
+        exact Submodule.smul_mem_smul (Ideal.mul_mem_mul hr hs) trivial
+      · rw [smul_add]
+        exact Submodule.add_mem _ hp hq
+    · rw [map_add]
+      exact Submodule.add_mem _ hp hq
+  revert x
+  induction k with
+  | zero =>
+      intro x
+      rw [Nat.mul_zero, pow_zero, pow_zero, Ideal.one_eq_top, Submodule.top_smul,
+        Module.End.one_apply]
+      exact Submodule.mem_top
+  | succ k ih =>
+      intro x
+      have hk : 2 * (k + 1) = 2 + 2 * k := by ring
+      rw [hk, pow_add T 2 (2 * k), Module.End.mul_apply,
+        pow_succ (IsLocalRing.maximalIdeal R) k]
+      exact hstep _ _ (ih x)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **ONE-DIMENSIONALITY OF THE CONNECTED `3`-TORSION out of the
-residual package** (SORRY LEAF — cut 2026-07-28 out of
+residual package** (**PROVEN 2026-07-28** — cut the same day out of
 `exists_ordinary_line_of_flat_hopf_package` just below, which is PROVEN
 over it together with the dévissage
 `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` above.
@@ -4845,29 +5683,55 @@ That is exactly `OortTate.exists_muType_coordinate`'s `hstab`,
 transported through the equivariant bijection `fG`, and it is the ONLY
 thing the dévissage above still needs.
 
-ROUTE (Wiles, Ann. of Math. 141 (1995), ch. 1 §1 prop. 1.1;
-Ramakrishna, Compositio 87 (1993); Darmon–Diamond–Taylor §3).
+THE PROOF AS GIVEN (2026-07-28). It is NOT the route that was recorded
+here when the leaf was cut — that route went through "the residual
+connected part is exactly the `ω`-line", which needs the connected-étale
+sequence as a sequence of finite flat group schemes. The proof below
+avoids that entirely and spends the residual package only through
+UNIPOTENCE. Reference for the mathematics is still Wiles, Ann. of
+Math. 141 (1995), ch. 1 §1 prop. 1.1; Ramakrishna, Compositio 87 (1993);
+Darmon–Diamond–Taylor §3.
 
-1. THE CONNECTED LOCUS IS RESIDUALLY INSIDE `ker π`. Every inertia
-   displacement is killed by `π` (that is `hπequiv`), and
-   `connected_locus_mem_of_displacement_stable_of_hopf_package` above
-   says a connected vector lies in ANY submodule containing `𝔪ⁿ⁺² • ⊤`
-   and all the inertia displacements — apply it to
-   `W := ker (x ↦ π ((1 : kk) ⊗ₜ x))`, whose `𝔪ⁿ⁺² • ⊤ ≤ W` is
-   `one_tmul_eq_zero_of_mem_maximalIdeal_smul_top` above. So the
-   connected locus reduces into the `w₀`-line.
-2. `3`-DISTINGUISHEDNESS. `hπequiv` makes `ρ̄` an extension of the
-   TRIVIAL character by a character `a`; `hV` and `hρ` force
-   `det ρ̄ = ω`, hence `a = ω`
-   (`residual_twist_eq_cyclotomicCharacterModL` above); and `hσω` says
-   `ω ≠ 1` on `I₃`. So `ρ̄|_{D₃}` is reducible with DISTINCT characters.
-3. Hence the residual connected part is EXACTLY the `ω`-line: it cannot
-   be `0` (inertia displacements are connected and `ω ≠ 1` makes one of
-   them residually nonzero) and it cannot be everything (the étale
-   quotient would then vanish, forcing inertia to act trivially on
-   `ρ̄`, against `hσω`). A line is inertia-stable, so inertia moves each
-   connected `3`-torsion vector into its own span, which is the
-   conclusion.
+Write `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` and `S := {z : M | 3 z = 0, z connected}`.
+
+1. `ker ω` ACTS TRIVIALLY ON `S`. For `τ ∈ I₃` with `ω(τ̃) = 1`,
+   `pow_sub_one_apply_mem_maximalIdeal_pow_smul_top` above (this is where
+   `hV`, `hρ`, `kk`, `π`, `v₀` go) gives
+   `(ρ(τ̃) − 1) ^ (2 (n+2)) V ⊆ 𝔪ⁿ⁺² V`, hence
+   `(ρ_M(τ) − 1) ^ (2 (n+2)) = 0` on `M`; and
+   `exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+   above gives ONE `K` prime to `3` with `ρ_M(τ) ^ K` fixing every
+   element of `S` (this is the Raynaud/finite-flat input, and the ONLY
+   one used). `eq_of_unipotent_of_pow_coprime_three` above — unipotent
+   plus order prime to `3` implies trivial — then gives `ρ_M(τ) z = z`.
+2. `exists_localInertia_no_fixed_connected_vector_of_hopf_package` above
+   supplies `σ₀ ∈ I₃` fixing no nonzero connected vector. If `σ₀` fixes
+   the given `z` then `z = 0` and `k := 0` works. Otherwise (1) forces
+   `ω(σ̃₀) ≠ 1`.
+3. `σ₀` ACTS AS `−1` ON `S`. `ω(σ̃₀ ²) = ω(σ̃₀) ² = 1` since `(ℤ⧸3)ˣ` has
+   exponent `2`, so (1) applied to `σ₀ σ₀` gives `ρ_M(σ₀) ² z = z`. Then
+   `s := z + ρ_M(σ₀) z` is connected (the connected locus is a subgroup,
+   `convMul_apply_one_of_comul_absorbs`, and inertia-stable by
+   `inertia_displacement_apply_connected_idempotent_eq_one`) and `σ₀`-fixed,
+   so `s = 0` and `ρ_M(σ₀) z = −z`.
+4. AN ARBITRARY `τ ∈ I₃`. If `ω(τ̃) = 1` then `k := 1` by (1). Otherwise
+   `ω(τ̃) ≠ 1 ≠ ω(σ̃₀)` in the two-element group `(ℤ⧸3)ˣ`, so
+   `ω(τ̃⁻¹ σ̃₀) = 1` and (1) gives `ρ_M(τ)⁻¹ ρ_M(σ₀) z = z`, i.e.
+   `ρ_M(τ) z = ρ_M(σ₀) z = −z = 2 • z` (the last step because `3 z = 0`),
+   so `k := 2`.
+
+WHY `σ`, `hσ`, `hσω` ARE UNDERSCORED, and why that is not a warning sign.
+The proof does not use them: the supersingular configuration is excluded
+by the residual package through step (1) — a supersingular `ρ̄|_{I₃}` is
+irreducible, so it admits no `π` with `hπequiv` at all — and the
+`ω`-nontriviality that `hσω` asserts is RE-DERIVED in step (2) from
+`exists_localInertia_no_fixed_connected_vector_of_hopf_package` (and is in
+any case already PROVEN unconditionally, one declaration being
+`exists_localInertia_cyclotomicCharacterModL_three_ne_one` above). They are
+kept in the signature because the consumer passes them positionally and
+because they document the intended exclusion; the cut could be tightened by
+dropping them, together with `w₀`/`hw₀π`/`hw₀ne`, which the adapted basis
+`exists_residual_adapted_basis` reproduces from `v₀`/`hv₀` alone.
 
 WHAT IS *NOT* ENOUGH, and why flatness is genuinely used. Residual
 one-dimensionality plus Nakayama does NOT give this: over `A = ℤ⧸9` the
@@ -4921,8 +5785,8 @@ theorem exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
     (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
       π ((ρ.baseChange kk) g w) = π w)
     (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
-    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
-    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (_w₀ : V) (_hw₀π : π ((1 : kk) ⊗ₜ[R] _w₀) = 0)
+    (_hw₀ne : (1 : kk) ⊗ₜ[R] _w₀ ≠ 0)
     (n : ℕ)
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
     [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
@@ -4935,17 +5799,217 @@ theorem exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
     (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
       Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
     (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
-    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
-    (hσω : cyclotomicCharacterModL 3
-      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) ≠ 1) :
+    (_σ : Γ ℚ₃ᵥ) (_hσ : _σ ∈ localInertiaGroup 𝔭₃)
+    (_hσω : cyclotomicCharacterModL 3
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) _σ) ≠ 1) :
     ∀ τ ∈ localInertiaGroup 𝔭₃,
       ∀ z : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V,
       (3 : ℕ) • z = 0 →
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       ∃ k : ℕ, ((ρ.baseChange
-        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = k • z :=
-  sorry
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = k • z := by
+  classical
+  have hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀ :=
+    fun y hy => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ y hy
+  have hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  set gE := Equiv.ofBijective fG hfG
+  have hfs : ∀ x, fG (gE.symm x) = x := fun x => gE.apply_symm_apply x
+  have hgs_add : ∀ x y, gE.symm (x + y) = gE.symm x + gE.symm y := by
+    intro x y
+    apply gE.injective
+    show fG (gE.symm (x + y)) = fG (gE.symm x + gE.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : gE.symm 0 = 0 := by
+    apply gE.injective
+    show fG (gE.symm 0) = fG 0
+    rw [map_zero fG, hfs]
+  have hgs_nsmul : ∀ (j : ℕ) x, gE.symm (j • x) = j • gE.symm x := by
+    intro j x
+    induction j with
+    | zero => rw [zero_nsmul, zero_nsmul, hgs_zero]
+    | succ j ih => rw [succ_nsmul, succ_nsmul, hgs_add, ih]
+  -- ## the connected locus: a subgroup of `M`, stable under local inertia
+  set C : Set ((R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V) :=
+    {x | (Additive.toMul (gE.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1}
+  have hCadd : ∀ x y, x ∈ C → y ∈ C → x + y ∈ C := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (gE.symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (gE.symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    show (Additive.toMul (gE.symm (x + y))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  have hCstab : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ x, x ∈ C →
+      ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ x
+        ∈ C := by
+    intro τ hτ x hx
+    have hd : ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃) τ x - x ∈ C :=
+      inertia_displacement_apply_connected_idempotent_eq_one
+        (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+        fG hfG τ hτ x
+    have h := hCadd _ _ hd hx
+    rwa [sub_add_cancel] at h
+  -- ## TAMENESS of the connected `3`-torsion (the finite-flat input)
+  have hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ := by
+    intro φ ψ
+    have h : Additive.ofMul (φ * ψ) = Additive.ofMul (ψ * φ) := by
+      refine hfG.1 ?_
+      rw [_root_.ofMul_mul, _root_.ofMul_mul, map_add fG, map_add fG]
+      exact add_comm _ _
+    exact congrArg Additive.toMul h
+  obtain ⟨Nn, hNn3, hfixφ⟩ :=
+    exists_coprime_three_exponent_localInertia_connected_threeTorsion G e₀ he₀ hε₀
+      hprim₀ hcomul₀ hcomm
+  have htame : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ z, (3 : ℕ) • z = 0 → z ∈ C →
+      ((((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+        τ) ^ Nn) z = z := by
+    intro τ hτ z hz3 hzC
+    have hord : (Additive.toMul (gE.symm z)) ^ (3 : ℕ) = 1 := by
+      have h0 : (3 : ℕ) • gE.symm z = 0 := by rw [← hgs_nsmul, hz3, hgs_zero]
+      have h1 := congrArg Additive.toMul h0
+      rwa [toMul_nsmul, toMul_zero] at h1
+    have h := hfixφ τ hτ (Additive.toMul (gE.symm z)) hord hzC
+    have h1 : (τ ^ Nn) • gE.symm z = gE.symm z := by
+      apply Additive.toMul.injective
+      show Additive.toMul ((τ ^ Nn) • gE.symm z) = Additive.toMul (gE.symm z)
+      have h2 : Additive.toMul ((τ ^ Nn) • gE.symm z)
+          = (τ ^ Nn) • Additive.toMul (gE.symm z) := rfl
+      rw [h2, h]
+    have h3 : fG ((τ ^ Nn) • gE.symm z) = fG (gE.symm z) := congrArg fG h1
+    rw [map_smul fG, hfs] at h3
+    have h4 : ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃) (τ ^ Nn) z = z := h3
+    rwa [map_pow] at h4
+  -- ## (1) an inertia element in `ker ω` fixes the connected `3`-torsion
+  have hclaim : ∀ τ ∈ localInertiaGroup 𝔭₃,
+      cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) = 1 →
+      ∀ z, (3 : ℕ) • z = 0 → z ∈ C →
+      ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+        τ z = z := by
+    intro τ hτ hτω z hz3 hzC
+    have hnil : (((((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1)
+          ^ (2 * (n + 2))) z = 0 := by
+      obtain ⟨x, rfl⟩ := exists_one_tmul_quotient
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) z
+      have hone : ∀ w : V,
+          (((((ρ.baseChange
+            (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1))
+              ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w)
+            = (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+                ((ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) - 1) w) := by
+        intro w
+        rw [LinearMap.sub_apply, LinearMap.sub_apply, Module.End.one_apply,
+          Module.End.one_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+          ← TensorProduct.tmul_sub]
+      have htrans : ∀ (j : ℕ) (y : V),
+          (((((ρ.baseChange
+            (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1) ^ j)
+              ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] y)
+            = (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+                (((ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) - 1) ^ j) y) := by
+        intro j
+        induction j with
+        | zero =>
+            intro y
+            rw [pow_zero, pow_zero, Module.End.one_apply, Module.End.one_apply]
+        | succ j ih =>
+            intro y
+            rw [pow_succ' _ j, pow_succ' _ j, Module.End.mul_apply,
+              Module.End.mul_apply, ih, hone]
+      rw [htrans]
+      exact one_tmul_quotient_eq_zero_of_mem_smul_top _
+        (pow_sub_one_apply_mem_maximalIdeal_pow_smul_top V hV hρ kk hsurj π hπsurj
+          hπequiv v₀ hv₀ _ hτω (n + 2) x)
+    exact eq_of_unipotent_of_pow_coprime_three _ z hz3 Nn hNn3
+      (htame τ hτ z hz3 hzC) _ hnil
+  -- ## (2) the inertia element with no nonzero fixed connected vector
+  obtain ⟨σ₀, hσ₀I, hσ₀fix⟩ :=
+    exists_localInertia_no_fixed_connected_vector_of_hopf_package
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      hprim₀ hcomul₀ fG hfG
+  have hunit2 : ∀ x : (ZMod 3)ˣ, x * x = 1 := by decide
+  have hunitne : ∀ x y : (ZMod 3)ˣ, x ≠ 1 → y ≠ 1 → x⁻¹ * y = 1 := by decide
+  intro τ hτ z hz3 hzC
+  by_cases hfixz : ((ρ.baseChange
+      (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z = z
+  · refine ⟨0, ?_⟩
+    have hz0 : z = 0 := hσ₀fix z hzC hfixz
+    rw [hz0, map_zero, zero_nsmul]
+  · have hσ₀ω : cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ₀) ≠ 1 := fun h =>
+      hfixz (hclaim σ₀ hσ₀I h z hz3 hzC)
+    -- ## (3) `σ₀ ²` lies in `ker ω`, so it fixes `z`
+    have hsq : ((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) (σ₀ * σ₀) z = z := by
+      refine hclaim _ (mul_mem hσ₀I hσ₀I) ?_ z hz3 hzC
+      rw [map_mul, map_mul]
+      exact hunit2 _
+    -- ## hence `σ₀` acts as `−1` on the connected `3`-torsion
+    have hneg : ((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z = -z := by
+      have hyC : (((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) ∈ C :=
+        hCstab σ₀ hσ₀I z hzC
+      have hsq' : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) = z := by
+        rw [← Module.End.mul_apply, ← map_mul]
+        exact hsq
+      have hfix2 : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀
+            (z + ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z)
+          = z + ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z := by
+        rw [map_add, hsq']
+        abel
+      have hzero := hσ₀fix _ (hCadd _ _ hzC hyC) hfix2
+      exact eq_neg_of_add_eq_zero_right hzero
+    -- ## (4) an arbitrary `τ ∈ I₃`
+    by_cases hτω : cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) = 1
+    · exact ⟨1, by rw [hclaim τ hτ hτω z hz3 hzC, one_nsmul]⟩
+    · refine ⟨2, ?_⟩
+      have hker : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+            (τ⁻¹ * σ₀) z = z := by
+        refine hclaim _ (mul_mem (inv_mem hτ) hσ₀I) ?_ z hz3 hzC
+        rw [map_mul, map_mul, map_inv, map_inv]
+        exact hunitne _ _ hτω hσ₀ω
+      have hsplit : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ⁻¹
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) = z := by
+        rw [← Module.End.mul_apply, ← map_mul]
+        exact hker
+      have h5 : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ⁻¹
+                (((ρ.baseChange
+                  (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z))
+          = ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z := by
+        rw [hsplit]
+      have hτz : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = -z := by
+        rw [← h5, ← Module.End.mul_apply, ← map_mul, mul_inv_cancel, map_one,
+          Module.End.one_apply, hneg]
+      rw [hτz]
+      have h3 : (3 : ℕ) • z = 0 := hz3
+      rw [show (3 : ℕ) = 2 + 1 from rfl, succ_nsmul] at h3
+      exact (eq_neg_of_add_eq_zero_left h3).symm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -4966,7 +6030,9 @@ now separate top-level leaves and this node consumes both:
 * `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` —
   ONE-DIMENSIONALITY of the connected `3`-torsion, the half where the
   RESIDUAL PACKAGE is spent (`hV`, `hρ`, `kk`, `π`, `v₀`, `w₀`, `hσω`
-  are passed to it verbatim, and `hσω` is consumed only there);
+  are passed to it verbatim). **PROVEN 2026-07-28**; note its proof turned
+  out to need neither `w₀` nor `hσω`, both of which are now underscored
+  there — see its docstring for why that is not a vacuity signal;
 * `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` —
   the RAYNAUD DÉVISSAGE, which upgrades that `3`-torsion,
   vector-by-vector statement to a single power `m : ℕ` acting on the
@@ -5168,7 +6234,11 @@ pure glue over them:
   `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` (the
   residual/one-dimensionality half) and
   `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` (the
-  Raynaud dévissage), which are now this cluster's remaining leaves;
+  Raynaud dévissage). The dévissage half is itself **PROVEN 2026-07-28**
+  over the single leaf
+  `exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`,
+  so this cluster's remaining leaves are that one and the
+  residual/one-dimensionality half;
 * `connected_locus_mem_of_displacement_stable_of_hopf_package` —
   **PROVEN**, the `V`-level transport of
   `connected_locus_mem_displacement_closure_of_hopf_package`, together
