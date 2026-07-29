@@ -27247,14 +27247,192 @@ theorem natCard_quot_eq_pow_orderOf (CF : Type) [Field CF]
   rw [h0, h1, Ideal.inertiaDeg'_eq_inertiaDeg,
     IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd ℓ CF q hnd]
 
+/-- **THE `q`-ADIC VALUATION EXTENDS TO `AlgebraicClosure CF`,
+NORMALISED AT A UNIFORMISER OF `CF(ζ_ℓ)` ABOVE `q`** (SORRY LEAF;
+SIXTEENTH decomposition 2026-07-29, cut out of
+`gaussSumPow_pow_sub_one_mem_pow_digitsSum` below — which is now PROVEN
+over this together with `val_gaussSum_eq_digitsSum` below. This is the
+BOOKKEEPING half of that cut; the mathematics is in the other one.)
+
+Asserts the existence of an additive valuation
+`v : AlgebraicClosure CF → ℚ ∪ {∞}` (spelled `WithTop ℚ`) with
+
+* the valuation axioms `v 0 = ⊤`, `v 1 = 0`, `v (x·y) = v x + v y`,
+  `min (v x) (v y) ≤ v (x + y)`;
+* NORMALISATION AND TRANSFER in a single clause: for `z : 𝓞 CF` and
+  `N : ℕ`,  `z ∈ q^N  ↔  (ℓ−1)·N ≤ v z`.
+
+**WHY THAT ONE CLAUSE PINS `v` ON `𝓞 CF`, NORMALISATION INCLUDED.**
+Read literally it only gives `(ℓ−1)·v_q(z) ≤ v(z) < (ℓ−1)·(v_q(z)+1)`,
+which is not an equality. But applied to `z^n` and combined with
+multiplicativity it gives `(ℓ−1)·n·v_q(z) ≤ n·v(z) < (ℓ−1)·(n·v_q(z)+1)`
+for every `n`, and dividing by `n` forces `v(z) = (ℓ−1)·v_q(z)` exactly.
+In particular `v(ℓ) = ℓ−1` — `ℓ` is unramified in `CF` because `ℓ ∤ p` —
+and since `ℓ = (ζ_ℓ−1)^{ℓ−1}·unit` this forces `v(ζ_ℓ − 1) = 1`. So `v`
+is exactly the extension of `v_q` normalised at a uniformiser of
+`CF(ζ_ℓ)` above `q`, which is the normalisation Stickelberger's
+congruence is stated in, and NO separate hypothesis about `ζ_ℓ` is
+needed anywhere in the cut. That is why `ζ_ℓ` occurs in this docstring
+and in no statement.
+
+**WHY `WithTop ℚ` AND NOT `ℕ∞`.** The value group of any extension of
+`v_q` to a FULL algebraic closure is divisible — `v(x^{1/n}) = v(x)/n` —
+so no `ℕ`- or `ℤ`-valued function can be multiplicative on all of
+`AlgebraicClosure CF`, and an `ℕ∞`-valued version of this leaf would be
+FALSE. Integrality is recovered exactly where it is used: both consumers
+evaluate `v` only at integral points, where its value is a nonnegative
+integer.
+
+**EXISTENCE** is standard: extend `v_q` from `CF` to `CF(ζ_ℓ)`, which is
+totally ramified of degree `ℓ−1` at `q` (again because `ℓ ≠ p`), rescale
+so the uniformiser gets value `1`, and extend to the algebraic closure
+along the norm, `v(x) = v(N_{L/CF(ζ_ℓ)} x)/[L : CF(ζ_ℓ)]` on each finite
+subextension `L` — equivalently, compose with a fixed embedding into
+`ℚ̄_ℓ`, where the extension of a valuation to an algebraic extension of a
+complete field is unique. Nothing of this shape was found on the pin
+under the spellings searched on 2026-07-29 (`Valuation.extend`,
+`ValuationSubring`, `IsValExtension`, `Valuation.integers`), nor in
+`~/cs/FLT`; a small theory build is expected here, but an entirely
+standard one with no Gauss sums in it. -/
+theorem exists_valuationExtension_of_liesOver (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    [q.LiesOver (Ideal.span {(ℓ : ℤ)})] (hnd : ¬ ℓ ∣ p) :
+    ∃ v : AlgebraicClosure CF → WithTop ℚ,
+      v 0 = ⊤ ∧ v 1 = 0 ∧
+      (∀ x y : AlgebraicClosure CF, v (x * y) = v x + v y) ∧
+      (∀ x y : AlgebraicClosure CF, min (v x) (v y) ≤ v (x + y)) ∧
+      (∀ (z : 𝓞 CF) (N : ℕ), z ∈ q ^ N ↔
+        ((((ℓ - 1) * N : ℕ) : ℚ) : WithTop ℚ)
+          ≤ v (ringOfIntegersToAlgebraicClosure CF z)) :=
+  sorry
+
+/-- **STICKELBERGER'S CONGRUENCE: THE EXACT VALUATION OF THE GAUSS SUM
+OF A TEICHMÜLLER POWER** (SORRY LEAF; SIXTEENTH decomposition
+2026-07-29 — **this is the deep half**, and now the ONLY genuinely deep
+node on the whole Gauss-sum route. Consumed by
+`gaussSumPow_pow_sub_one_mem_pow_digitsSum` below, which is PROVEN over
+it and `exists_valuationExtension_of_liesOver` above.)
+
+Let `v` be a valuation as delivered by
+`exists_valuationExtension_of_liesOver` above (so normalised at a
+uniformiser of `CF(ζ_ℓ)` above `q`), `θ` a multiplicative character of
+`F = 𝓞 CF ⧸ q` valued in `AlgebraicClosure CF`, and `ψ` any primitive
+additive character. Then, for `k < #F − 1`,
+
+  `v (g(θ)) = s_ℓ(k)`,   `s_ℓ(n) := (Nat.digits ℓ n).sum`,
+
+whenever `θ` reduces to `x ↦ x^{−k}` — which is what `hθ` says, in the
+only form available without naming a residue field: `θ(x̄)·x^k − 1` has
+POSITIVE valuation for every `x ∈ 𝓞 CF` outside `q`.
+
+**NO TEICHMÜLLER CHARACTER OCCURS IN THE STATEMENT, AND THAT IS THE
+POINT OF THIS PACKAGING.** The classical statement is
+`v_𝒬(g(ω^{−k})) = s_ℓ(k)` for `ω` THE Teichmüller character of `F`.
+Constructing `ω` needs the `(#F−1)`-st roots of unity together with a
+residue map identifying them with `Fˣ` — neither is on the pin, and the
+docstring of the consumer below (2026-07-27) budgeted exactly that as
+the theory build this node would cost. **It is not needed.** Among
+multiplicative characters of `F`, `ω^{−k}` is CHARACTERISED by the
+congruence `hθ`: the values of any `MulChar F (AlgebraicClosure CF)` are
+`(#F−1)`-st roots of unity, `#F − 1` is prime to `ℓ`, so distinct such
+roots stay distinct modulo the maximal ideal of `v`, and `hθ` pins `θ`
+uniquely. The statement is therefore EQUIVALENT to the classical one and
+costs no construction to APPLY — the consumer below discharges `hθ`
+straight from `hχcong` in a dozen lines, with no `ω` anywhere.
+
+**BOTH DIRECTIONS ARE ASSERTED** although only `≥` is consumed, because
+the standard proof produces them together and the `≤` half is what makes
+the induction close. The route, with the pin's own inputs named:
+
+* `v(g(θ)) ≤ s_ℓ(k)` by SUBADDITIVITY. `jacobiSum_mul_nontrivial`
+  (`Mathlib/NumberTheory/JacobiSum/Basic.lean`) gives
+  `g(θ₁)·g(θ₂) = J(θ₁,θ₂)·g(θ₁θ₂)` whenever `θ₁θ₂ ≠ 1`, and `J` is a sum
+  of roots of unity, hence integral, hence `v J ≥ 0`; so
+  `k ↦ v(g(ω^{−k}))` is subadditive. Write `k` as a sum of `s_ℓ(k)`
+  powers of `ℓ` and use the single base case `v(g(ω^{−ℓ^i})) = 1`. That
+  base case is `g(ω^{−1}) ≡ −π (mod π²)` with `π := ζ_ℓ − 1` — expand
+  `ψ(x) = (1+π)^{Tr x} ≡ 1 + π·Tr x` and use `∑_{x ∈ Fˣ} x^{j−1} = −1`
+  exactly when `(#F−1) ∣ (j−1)` — transported along Frobenius by
+  mathlib's `gaussSum_frob`.
+* Equality by REFLECTION. `gaussSum_mul_gaussSum_eq_card`
+  (`Mathlib/NumberTheory/GaussSum.lean`) gives
+  `g(θ)·g(θ⁻¹) = θ(−1)·#F` for `θ ≠ 1`, so
+  `v(g(ω^{−k})) + v(g(ω^{−(#F−1−k)})) = f·(ℓ−1)`, while the elementary
+  digit identity gives `s_ℓ(k) + s_ℓ(#F−1−k) = f·(ℓ−1)`. Two `≤`s whose
+  sum is an equality are two equalities.
+
+So the ONE thing this leaf needs that the pin does not have is the base
+case; everything else is assembled from mathlib's Gauss/Jacobi sum API.
+
+**`ψ`-INDEPENDENCE IS AUTOMATIC** and needs no hypothesis: another
+primitive `ψ'` is `AddChar.mulShift ψ c` for a unit `c`, which
+multiplies `g(θ)` by `θ(c)⁻¹`, a root of unity, of valuation `0`.
+
+**NOT VACUOUS AT EITHER END OF THE RANGE.** At `k = 0` the hypothesis
+forces `θ = 1`, and the claim is `v(g(1)) = 0`; indeed
+`g(1) = ∑_{x ≠ 0} ψ x = −1` for primitive `ψ`, of valuation `0`, and
+`s_ℓ(0) = 0`. At the top, `k = #F − 2` gives the reflection partner of
+`k = 1`.
+
+**REFERENCES**: Ireland–Rosen, *A Classical Introduction to Modern
+Number Theory*, ch. 14 §3; Washington, *Introduction to Cyclotomic
+Fields* §6.1–6.2; Lang, *Cyclotomic Fields* I §1. -/
+theorem val_gaussSum_eq_digitsSum (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    [q.LiesOver (Ideal.span {(ℓ : ℤ)})] (hnd : ¬ ℓ ∣ p) (hpq : (p : 𝓞 CF) ∉ q)
+    (v : AlgebraicClosure CF → WithTop ℚ)
+    (hv0 : v 0 = ⊤) (hv1 : v 1 = 0)
+    (hvmul : ∀ x y : AlgebraicClosure CF, v (x * y) = v x + v y)
+    (hvadd : ∀ x y : AlgebraicClosure CF, min (v x) (v y) ≤ v (x + y))
+    (hvq : ∀ (z : 𝓞 CF) (N : ℕ), z ∈ q ^ N ↔
+      ((((ℓ - 1) * N : ℕ) : ℚ) : WithTop ℚ)
+        ≤ v (ringOfIntegersToAlgebraicClosure CF z))
+    (θ : MulChar (𝓞 CF ⧸ q) (AlgebraicClosure CF))
+    (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive)
+    (k : ℕ) (hk : k < Nat.card (𝓞 CF ⧸ q) - 1)
+    (hθ : ∀ z : 𝓞 CF, z ∉ q →
+      0 < v (θ (Ideal.Quotient.mk q z) *
+        ringOfIntegersToAlgebraicClosure CF z ^ k - 1)) :
+    v (gaussSum θ ψ) = (((Nat.digits ℓ k).sum : ℚ) : WithTop ℚ) :=
+  sorry
+
 /-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND, IN
-THE LITERATURE'S OWN DIGIT-SUM FORM** (SORRY LEAF; FIFTEENTH
-decomposition 2026-07-28, cut out of `gaussSumPow_mem_pow_sumRange`
-below — which is now PROVEN over it together with
-`digitsSum_mul_div_eq`, `natCard_quot_eq_pow_orderOf` and
-`mem_pow_of_pow_mem_pow_mul` above. **This is the one genuinely deep
-node of the whole Gauss-sum route**, and it is now the ONLY thing left
-on it: every piece of bookkeeping around it has been discharged.)
+THE LITERATURE'S OWN DIGIT-SUM FORM** (**PROVEN** 2026-07-29 over
+`exists_valuationExtension_of_liesOver` and `val_gaussSum_eq_digitsSum`
+above — the SIXTEENTH decomposition; cut 2026-07-28 out of
+`gaussSumPow_mem_pow_sumRange` below, which is in turn PROVEN over it
+together with `digitsSum_mul_div_eq`, `natCard_quot_eq_pow_orderOf` and
+`mem_pow_of_pow_mem_pow_mul` above.)
+
+**WHAT THE SIXTEENTH DECOMPOSITION DID, AND WHAT IT COST.** The cut is
+`valuation setup` + `the congruence`, and the surprise is how little the
+first half has to carry. `exists_valuationExtension_of_liesOver` above
+delivers a single function `v : AlgebraicClosure CF → WithTop ℚ` whose
+only arithmetic hypothesis is `z ∈ q^N ↔ (ℓ−1)·N ≤ v z` on `𝓞 CF`; that
+one clause already forces `v = (ℓ−1)·v_q` on `𝓞 CF` and hence
+`v(ζ_ℓ − 1) = 1`, so the ramified extension `CF(ζ_ℓ)`, the prime `𝒬`,
+the ramification index `e = ℓ−1` and the uniformiser `π` all vanish from
+every statement in the cut and survive only in the docstrings. And
+`val_gaussSum_eq_digitsSum` above needs no Teichmüller character `ω`:
+`ω^{−k}` is characterised among multiplicative characters by a
+congruence, and that congruence — `θ(x̄)·x^k ≡ 1 mod 𝒬` — is what the
+proof below discharges from `hχcong` directly. So the "theory build"
+this docstring budgeted on 2026-07-27 (construct `ω`, construct `𝓞 L`,
+construct a `𝒬`-adic valuation on the subring generated by the values of
+`ψ`) is NOT needed; see the CORRECTION note at the end of the REFERENCES
+paragraph below.
+
+**`_hχ1` AND `_hχp` ARE UNUSED, AND THAT IS A FACT ABOUT THE STATEMENT,
+NOT ABOUT THE PROOF.** Both are subsumed by `hχcong`. `hχp` (`χ` is
+`p`-torsion) is automatic for a `MulChar` out of a finite field — the
+values are `(#F−1)`-st roots of unity because `χ(x)^{#F−1} = χ(x^{#F−1})
+= χ 1 = 1` — and `hχ1` (`χ ≠ 1`) follows from `hχcong` whenever
+`d = (#F−1)/p ≢ 0`. They are underscore-prefixed so the non-use is
+mechanically visible; they are kept in the signature because the
+consumer `gaussSumPow_mem_pow_sumRange` below passes them positionally
+and holds them anyway.
 
 Given `y ∈ 𝓞 CF` with `y = g(χᵃ)^p`, and with `d := (#F − 1)/p`,
 
@@ -27366,6 +27544,23 @@ of `ψ`. Note that `χ` itself needs no such extension: it already takes
 values in `𝓞 CF` (`hχcong` identifies its reduction), so only the
 ADDITIVE character forces the ramified extension into the argument.
 
+**CORRECTION 2026-07-29 — `ω` IS NOT THE OBJECT TO BUILD, AND NOTHING
+HAS TO BE CONSTRUCTED IN THIS LEAF AT ALL.** The paragraph above is
+right that the pin has no Teichmüller character, and right that a theory
+build is needed *somewhere*; it is wrong about where. `ω^{−k}` is
+CHARACTERISED among multiplicative characters of `F` by the congruence
+`ω^{−k}(x̄)·x^k ≡ 1 (mod 𝒬)`, because the values of any
+`MulChar F (AlgebraicClosure CF)` are automatically `(#F−1)`-st roots of
+unity and those stay distinct mod `𝒬` (as `ℓ ∤ #F − 1`). So
+`val_gaussSum_eq_digitsSum` above states the congruence with the
+character as a PARAMETER carrying that hypothesis, and this leaf
+discharges the hypothesis for `χᵃ` straight out of `hχcong` — no `ω`,
+no `(ℓ^f−1)`-st roots of unity, no `𝓞 L`, and no subring generated by
+the values of `ψ` is ever named. What genuinely remains to be built is
+one valuation (`exists_valuationExtension_of_liesOver` above) and one
+base case (`g(ω^{−1}) ≡ −π mod π²`); the rest is mathlib's Gauss/Jacobi
+sum API.
+
 **INDEPENDENCE OF `ψ`.** The statement quantifies over EVERY primitive
 `ψ`, which is not a strengthening: a different primitive character is
 `AddChar.mulShift ψ c` for a unit `c`, which multiplies `g(χᵃ)` by
@@ -27389,8 +27584,8 @@ theorem gaussSumPow_pow_sub_one_mem_pow_digitsSum (CF : Type) [Field CF] [Number
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
     [q.LiesOver (Ideal.span {(ℓ : ℤ)})] (hnd : ¬ ℓ ∣ p)
     (hpq : (p : 𝓞 CF) ∉ q)
-    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
-    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (_hχ1 : χ ≠ 1)
+    (_hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
     (hχcong : ∀ x : 𝓞 CF ⧸ q,
       Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
     (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive)
@@ -27398,8 +27593,109 @@ theorem gaussSumPow_pow_sub_one_mem_pow_digitsSum (CF : Type) [Field CF] [Number
     (hy : ringOfIntegersToAlgebraicClosure CF y
       = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p) :
     y ^ (ℓ - 1) ∈ q ^ (p * (Nat.digits ℓ
-      ((-(a : ZMod p)).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p))).sum) :=
-  sorry
+      ((-(a : ZMod p)).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p))).sum) := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  -- `letI`, not `haveI`: the statement's `MulChar` carries the
+  -- `CommRing`-derived instance, and only an unfolded `Field` lets the
+  -- defeq check see through to it (the elaboration trap recorded in this
+  -- file's Gauss-sum cluster; `haveI` here fails on the `Zero` instance).
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hl2 : 2 ≤ ℓ := Nat.Prime.two_le (Fact.out (p := Nat.Prime ℓ))
+  have ha0 : a ≠ 0 := by rintro rfl; exact ha (dvd_zero p)
+  have hpdvd : p ∣ Nat.card (𝓞 CF ⧸ q) - 1 :=
+    prime_dvd_card_residueField_sub_one CF hq hq0 hpq
+  set d : ℕ := (Nat.card (𝓞 CF ⧸ q) - 1) / p with hddef
+  have hpd : p * d = Nat.card (𝓞 CF ⧸ q) - 1 := by
+    rw [hddef]; exact Nat.mul_div_cancel' hpdvd
+  set r : ℕ := (-(a : ZMod p)).val with hrdef
+  -- Degenerate case `d = 0`: the exponent is `0` and `q ^ 0 = ⊤`.
+  rcases Nat.eq_zero_or_pos d with hd0 | hdpos
+  · simp [hd0]
+  -- The valuation, normalised so that `v = (ℓ−1)·v_q` on `𝓞 CF`.
+  obtain ⟨v, hv0, hv1, hvmul, hvadd, hvq⟩ :=
+    exists_valuationExtension_of_liesOver CF ℓ hq hq0 hnd
+  have hvpow : ∀ (x : AlgebraicClosure CF) (n : ℕ) (t : ℚ),
+      v x = ((t : ℚ) : WithTop ℚ) → v (x ^ n) = (((n : ℚ) * t : ℚ) : WithTop ℚ) := by
+    intro x n t hx
+    induction n with
+    | zero => simpa using hv1
+    | succ m ih =>
+        rw [pow_succ, hvmul, ih, hx, ← WithTop.coe_add]
+        congr 1
+        push_cast
+        ring
+  -- The Teichmüller exponent `k = ⟨−a⟩·d`, and `k < #F − 1`.
+  set k : ℕ := r * d with hkdef
+  have hrlt : r < p := ZMod.val_lt _
+  have hklt : k < Nat.card (𝓞 CF ⧸ q) - 1 := by
+    rw [hkdef, ← hpd]
+    exact Nat.mul_lt_mul_of_lt_of_le hrlt le_rfl hdpos
+  set θ : MulChar (𝓞 CF ⧸ q) (AlgebraicClosure CF) :=
+    (χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF) with hθdef
+  -- `d·a + k = d·(a + ⟨−a⟩)` and `p ∣ a + ⟨−a⟩`, so `(#F − 1) ∣ d·a + k`.
+  have hQ1dvd : (Nat.card (𝓞 CF ⧸ q) - 1) ∣ d * a + k := by
+    have hpa : p ∣ a + r := by
+      have hz : ((a + r : ℕ) : ZMod p) = 0 := by
+        push_cast
+        rw [hrdef, ZMod.natCast_val, ZMod.cast_id]
+        ring
+      exact (ZMod.natCast_eq_zero_iff _ _).1 hz
+    obtain ⟨m, hm⟩ := hpa
+    refine ⟨m, ?_⟩
+    have hrw : d * a + k = d * (a + r) := by rw [hkdef]; ring
+    rw [hrw, hm, ← hpd]
+    ring
+  -- `θ = χᵃ` reduces to `x ↦ x^{−k}`: this is Stickelberger's hypothesis.
+  have hθred : ∀ z : 𝓞 CF, z ∉ q →
+      0 < v (θ (Ideal.Quotient.mk q z) *
+        ringOfIntegersToAlgebraicClosure CF z ^ k - 1) := by
+    intro z hz
+    have hmap : ringOfIntegersToAlgebraicClosure CF
+          ((χ ^ a) (Ideal.Quotient.mk q z) * z ^ k - 1)
+        = θ (Ideal.Quotient.mk q z) *
+            ringOfIntegersToAlgebraicClosure CF z ^ k - 1 := by
+      rw [hθdef]
+      simp [MulChar.ringHomComp_apply]
+    have hwq : (χ ^ a) (Ideal.Quotient.mk q z) * z ^ k - 1 ∈ q := by
+      have hzne : (Ideal.Quotient.mk q z : 𝓞 CF ⧸ q) ≠ 0 := by
+        simpa [Ideal.Quotient.eq_zero_iff_mem] using hz
+      have hcard : Fintype.card (𝓞 CF ⧸ q) = Nat.card (𝓞 CF ⧸ q) :=
+        (Nat.card_eq_fintype_card).symm
+      have hpow1 : (Ideal.Quotient.mk q z) ^ (Nat.card (𝓞 CF ⧸ q) - 1) = 1 := by
+        have h := FiniteField.pow_card_sub_one_eq_one (Ideal.Quotient.mk q z) hzne
+        rwa [hcard] at h
+      have hpa : (χ ^ a) (Ideal.Quotient.mk q z)
+          = (χ (Ideal.Quotient.mk q z)) ^ a := MulChar.pow_apply' _ ha0 _
+      rw [← Ideal.Quotient.eq_zero_iff_mem]
+      simp only [map_sub, map_mul, map_one, map_pow, hpa, hχcong]
+      rw [← pow_mul, ← pow_add]
+      obtain ⟨m, hm⟩ := hQ1dvd
+      rw [hm, pow_mul, hpow1, one_pow, sub_self]
+    have hle := (hvq ((χ ^ a) (Ideal.Quotient.mk q z) * z ^ k - 1) 1).1
+      (by simpa using hwq)
+    rw [← hmap]
+    refine lt_of_lt_of_le ?_ hle
+    have h0 : (0 : ℚ) < (((ℓ - 1) * 1 : ℕ) : ℚ) := by
+      have : 0 < (ℓ - 1) * 1 := by omega
+      exact_mod_cast this
+    simpa using WithTop.coe_lt_coe.2 h0
+  -- Stickelberger: `v(g(χᵃ)) = s_ℓ(k)`.
+  have hval : v (gaussSum θ ψ) = (((Nat.digits ℓ k).sum : ℚ) : WithTop ℚ) :=
+    val_gaussSum_eq_digitsSum CF ℓ hq hq0 hnd hpq v hv0 hv1 hvmul hvadd hvq
+      θ ψ hψ k hklt hθred
+  set s : ℕ := (Nat.digits ℓ k).sum with hsdef
+  have hvy : v (ringOfIntegersToAlgebraicClosure CF y)
+      = (((p : ℚ) * (s : ℚ) : ℚ) : WithTop ℚ) := by
+    rw [hy]; exact hvpow _ p _ hval
+  -- Transfer back: `v(y^{ℓ−1}) = (ℓ−1)·p·s_ℓ(k)`, which is the membership.
+  rw [hvq (y ^ (ℓ - 1)) (p * s), map_pow, hvpow _ (ℓ - 1) _ hvy]
+  have hcast : ((((ℓ - 1) * (p * s) : ℕ) : ℚ))
+      = (((ℓ - 1 : ℕ) : ℚ) * ((p : ℚ) * (s : ℚ))) := by
+    rw [Nat.cast_mul, Nat.cast_mul]
+  rw [hcast]
 
 /-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND, IN
 FROBENIUS-POWER FORM** (**PROVEN** 2026-07-28 over
