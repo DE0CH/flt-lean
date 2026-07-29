@@ -12553,6 +12553,58 @@ lemma HilbertHeckeAlgebra.residualT {ℓ : ℕ} [Fact ℓ.Prime]
     rw [H.charFrobT w hw, neg_neg]
   rw [hh, map_neg, hc]
 
+/-- **The `F`-level SPLIT-REGULAR INPUT at `μ_ℓ`** (ADDED 2026-07-28 by the
+FAITHFULNESS REPAIR of `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`
+below, which was FALSE without it):
+
+> `ρbar|_{G_{F(ζ_ℓ)}}` already contains an element whose residual
+> characteristic polynomial has DISCRIMINANT a nonzero square in `k`.
+
+Over a `k` with `2 ≠ 0` that is *equivalent* to "an element with two DISTINCT
+`k`-RATIONAL eigenvalues" — `exists_split_of_sq_eq_discrim` below is one
+direction and `δ = α − β` the other — so this is exactly repair option 2 of the
+2026-07-27 falsity audit on that leaf, and it is the discriminant-idiom form of
+repair option 1 ("the quadratic enlargement of `k` has already been performed").
+It is stated as a hypothesis rather than by literally enlarging `k` because the
+enlargement would have to change the COEFFICIENT FIELD of every statement
+downstream — including the `∃ α β : k` clause of `IsHilbertTaylorWilesPrimeSet`,
+which the patching argument genuinely needs to be `k`-rational — whereas as a
+hypothesis it threads through with every downstream statement's shape unchanged.
+
+**IT IS NOT IMPLIED BY IRREDUCIBILITY, AND THAT IS THE WHOLE POINT.** The
+machine-checked witness recorded on that leaf — `E = 54b1`, `ℓ = 7`, `F` cut out
+so that `ρ̄_{E,7}(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)` — has `ρbar|_{Γ F}` irreducible,
+satisfies every clause of `IsHilbertHardlyRamified`, and has
+`{tr² − 4·det} = {0, 3, 5}` with `3, 5` NON-squares mod `7`. So this predicate
+FAILS there. That is precisely why it is the hypothesis that repairs the leaf.
+
+**WHERE IT IS DISCHARGED.** It threads up the whole `F`-level pillar and lands
+on `PotentialHeckeDatum.splitRegularAtMuEll` just below, i.e. on
+`nonempty_potentialHeckeDatum_of_five_le`, which is where `F` is CHOSEN. That is
+the right place: Moret–Bailly lets one take `F` linearly disjoint from the field
+cut out by `ρbar` (which is already what `PotentialHeckeDatum.irreducibleF`
+rests on), so `ρbar(Γ F) = ρbar(Γ ℚ)` and the question becomes the `ℚ`-level one
+about the image of `ρbar|_{Γ ℚ(ζ_ℓ)}`; for the intended instantiation — the
+mod-`ℓ` representation of the Frey curve, whose image is FULL — it holds with
+`k = 𝔽_ℓ`, no enlargement needed. See that field's docstring.
+
+**IT IS DECLARED HERE, 6000 lines before its consumers**, only because
+`PotentialHeckeDatum` immediately below must mention it; mathematically it
+belongs beside the leaf it repairs.
+
+`ζ ^ ℓ = 1` rather than `ζ ^ ℓ ^ n = 1`: the level is `μ_ℓ`, and lifting from
+`μ_ℓ` to `μ_{ℓⁿ}` is exactly the content left in the repaired leaf. -/
+def HilbertSplitRegularAtMuEll (ℓ : ℕ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) : Prop :=
+  ∃ σ : Γ F,
+    (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ = 1 →
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
+    ∃ δ : k, δ ≠ 0 ∧
+      δ ^ 2 = ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
+        - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0
+
 /-- **The potential-modularity package**: the totally real field `F`
 produced by Taylor's Moret–Bailly argument, together with the Hecke
 algebra of the Hilbert newform over `F` attached to `ρbar|_{G_F}`.
@@ -12590,6 +12642,33 @@ structure PotentialHeckeDatum (ℓ : ℕ) [Fact ℓ.Prime]
   galoisF : IsGalois ℚ F
   /-- Restriction preserves irreducibility (linear disjointness). -/
   irreducibleF : (ρbar.map (algebraMap ℚ F)).IsIrreducible
+  /-- **`ρbar|_{G_{F(ζ_ℓ)}}` contains a `k`-SPLIT REGULAR element.**
+
+  ADDED 2026-07-28, AND LOAD-BEARING, by the FAITHFULNESS REPAIR of
+  `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`. That leaf — and with it
+  `exists_hilbertTaylorWilesPrime`, `exists_hilbertTaylorWilesPrimeSet` and the
+  whole `R_F = T_F` chain — was FALSE without this input, refuted by a
+  machine-checked witness (`E = 54b1`, `ℓ = 7`, `F` cut out so that
+  `ρ̄_{E,7}(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)`, whose sixteen elements have
+  `tr² − 4·det ∈ {0, 3, 5}` while the squares mod `7` are `{0, 1, 2, 4}`).
+  Irreducibility of `ρbar|_{G_F}` does NOT imply it: that witness is
+  irreducible. See `HilbertSplitRegularAtMuEll` above.
+
+  **WHY IT BELONGS HERE RATHER THAN ANYWHERE ELSE.** It is a condition on the
+  pair `(F, k)`, and this is the structure where `F` is CHOSEN. Taylor's
+  Moret–Bailly argument already chooses `F` linearly disjoint from the field cut
+  out by `ρbar` — that is exactly what `irreducibleF` above rests on — so
+  `ρbar(Γ F) = ρbar(Γ ℚ)` and this field reduces to the `ℚ`-level question about
+  the image of `ρbar|_{Γ ℚ(ζ_ℓ)}`. For the intended instantiation, the mod-`ℓ`
+  representation of a Frey curve at `ℓ ≥ 5`, that image is FULL `SL₂(𝔽_ℓ)`,
+  which contains `diag(x, x⁻¹)` with `x ≠ ±1`; so it holds over `k = 𝔽_ℓ` with
+  NO enlargement of the coefficient field. The classical alternative — enlarging
+  `𝔽` quadratically at the outset, which is what Wiles and DDT do — is available
+  as a fallback and is the same mathematical content.
+
+  It is INDEPENDENT of `irreducibleF`: the `54b1` witness satisfies the latter
+  and fails this one, which is the whole reason it is a separate field. -/
+  splitRegularAtMuEll : HilbertSplitRegularAtMuEll ℓ F ρbar
   /-- **Every place of `F` over `2` has residue field `𝔽₂`** — i.e. `2`
   has residue degree `1` in `F` at every place above it.
 
@@ -12833,6 +12912,31 @@ its `Nonempty (F →+* ℚ_[2])` conjunct alone — BREAK B, the nonemptiness of
   together with the `residueCardTwo` supply, and should be closed rather than
   proven.
 
+# THE `HilbertSplitRegularAtMuEll` CONJUNCT (ADDED 2026-07-28)
+
+The third conjunct is NEW, and it is where the FAITHFULNESS REPAIR of
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` comes to rest. That leaf,
+and the whole `R_F = T_F` chain over it, was FALSE without the hypothesis that
+`ρbar|_{G_{F(ζ_ℓ)}}` contains an element with two distinct `k`-rational
+eigenvalues; the witness is `E = 54b1` at `ℓ = 7` over an `F` with
+`ρ̄_{E,7}(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)`. **The obligation belongs HERE and nowhere
+further down, because this is the declaration that CHOOSES `F`**, and because
+the falsity was created precisely by letting `F` range over arbitrary number
+fields while the eigenvalues stayed in a fixed `k`.
+
+It costs this leaf nothing beyond what `irreducibleF` already costs it. Both
+conjuncts come from the SAME feature of the Moret–Bailly construction: `F` may
+be taken linearly disjoint from the field cut out by `ρbar`, whence
+`ρbar(Γ F) = ρbar(Γ ℚ)` and — because `F ∩ ℚ(ζ_ℓ) = ℚ` may be demanded in the
+same breath — `ρbar(Γ F(ζ_ℓ)) = ρbar(Γ ℚ(ζ_ℓ))`. So the conjunct reduces to the
+`ℚ`-LEVEL statement that `ρbar|_{Γ ℚ(ζ_ℓ)}` has a `k`-split regular element,
+which is where it should be: the audit on the repaired leaf records that over
+`ℚ` the counterexample provably cannot be built (it would need an elliptic curve
+of conductor `2`), and the `ℚ`-level twin
+`Modularity/Patching.lean`'s `exists_fixing_rootsOfUnity_charpoly_split` is
+carried there as an accepted leaf. **Do NOT push this conjunct any further down
+than `ℚ`: at the `F` level it is FALSE.**
+
 CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
 independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
@@ -12876,13 +12980,29 @@ theorem exists_moretBaillySeed_residueCardTwo_of_five_le
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
           Nat.card (𝓞 F ⧸ w.asIdeal) = 2) ∧
-      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hemb, hseed⟩ :=
-    exists_moretBaillySeed_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
-      (hdim := hdim) ℓ hℓ5 hbar hirr
-  exact ⟨F, hF, hNF, hFtr, hFgal, hirrF,
-    fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
-      hFgal.to_normal 2 hemb w hw, hseed⟩
+      HilbertSplitRegularAtMuEll ℓ F ρbar ∧
+      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  -- RELEASE-18 MERGE NOTE.  Two correct changes met here and only one survived.
+  -- `flt-lean-277` ADDED the `HilbertSplitRegularAtMuEll` conjunct, which the
+  -- consumer `nonempty_potentialHeckeDatum_of_five_le` below now destructures and
+  -- feeds to `PotentialHeckeDatum.splitRegularAtMuEll` -- so the conjunct is not
+  -- optional.  Concurrently merger had PROVEN the statement WITHOUT that conjunct:
+  --
+  --     obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hemb, hseed⟩ :=
+  --       exists_moretBaillySeed_padicEmbedding_of_five_le (hℓOdd := hℓOdd)
+  --         (hdim := hdim) ℓ hℓ5 hbar hirr
+  --     exact ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+  --       fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
+  --         hFgal.to_normal 2 hemb w hw, hseed⟩
+  --
+  -- That proof still discharges EVERY conjunct except the new one, and it is kept
+  -- here verbatim rather than in git history because it is what a successor should
+  -- start from: the only open obligation is
+  -- `HilbertSplitRegularAtMuEll ℓ F ρbar` for the `F` that
+  -- `exists_moretBaillySeed_padicEmbedding_of_five_le` produces.  It is deliberately
+  -- NOT re-inserted with an anonymous `sorry` in that slot, since an anonymous sorry
+  -- has no owner and is invisible to every frontier scan.
+  sorry
 
 /-- **Carayol/Taylor plus level lowering, applied to a GIVEN modular seed**
 (LEAF — the (C) + (LL) half of `nonempty_potentialHeckeDatum_of_five_le`, cut
@@ -13808,7 +13928,7 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     Nonempty (PotentialHeckeDatum ℓ ρbar) := by
   -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
   -- `2` split completely and with an automorphic witness over it.
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, ⟨seed⟩⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, hsplitF, ⟨seed⟩⟩ :=
     exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
   letI := hF
@@ -13818,7 +13938,8 @@ theorem nonempty_potentialHeckeDatum_of_five_le
   obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
     (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF hres2 seed
   exact ⟨{ F := F, fieldF := hF, numberFieldF := hNF, totallyReal := hFtr,
-           galoisF := hFgal, irreducibleF := hirrF, residueCardTwo := hres2,
+           galoisF := hFgal, irreducibleF := hirrF,
+           splitRegularAtMuEll := hsplitF, residueCardTwo := hres2,
            hecke := H }⟩
 
 /-! ### Item 4 — `R_F = T_F`
@@ -19006,44 +19127,52 @@ theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
   rw [← Module.finrank_eq_rank] at h
   exact_mod_cast h
 
-/-- ### ⚠ THIS LEAF IS **FALSE AS STATED**. DO NOT DISPATCH A PROVER AT IT.
+/-- ### REPAIRED 2026-07-28 — this leaf WAS false as stated, and is no longer.
 
-**(Banner added 2026-07-27 by flt-lean-182, which was dispatched to prove it,
-re-ran the FALSITY AUDIT's load-bearing computation, and confirmed it
-MACHINE-CHECKED. The audit itself sits ~200 lines below, under
-"FALSITY AUDIT (2026-07-27)"; the banner is here because a dispatcher reads
-the head of a docstring and this one is 180 lines long.)**
-
-The counterexample is `E = 54b1` at `ℓ = 7`, over a field `F` cut out so that
-`ρ̄_{E,7}(Γ F) = H := N(T_ns) ∩ SL₂(𝔽₇)`. Re-verified by exhaustive enumeration
-over all `7⁴` matrices: `|T_ns| = 48`, `|N(T_ns)| = 96`, `|H| = 16`, `H` has no
-common eigenline in `P¹(𝔽₇)` (so `hirrF` holds), `det N(T_ns) = 𝔽₇ˣ` in full
-(so no determinant-size argument helps), and
-
-    {tr(g)² − 4·det(g) : g ∈ H} = {0, 3, 5},   squares mod 7 = {1, 2, 4},
-
-so NO `σ` whatsoever — a fortiori none fixing `μ_{7ⁿ}` — has nonzero square
-discriminant. The `μ_{ℓⁿ}`-fixing clause is not even used.
-
-**What is required is a CUT-LEVEL repair, not a proof.** The falsity is created
-by `F` ranging over ARBITRARY number fields while the eigenvalues are demanded
-in a FIXED `k`; over `F = ℚ` the counterexample cannot be built. The honest fix
-is the quadratic ENLARGEMENT of `k` threaded through `IsTaylorWilesPrimeSet`,
-or the added hypothesis that `ρbar|_{Γ F(ζ_ℓ)}` already contains an element
-with two distinct `k`-rational eigenvalues. That change propagates through
-`exists_hilbertFixing_rootsOfUnity_charpoly_split` (EQUIVALENT to this leaf,
-hence equally false), `exists_hilbertTaylorWilesPrime`,
-`exists_hilbertTaylorWilesPrimeSet` and their consumers, so it belongs to an
-author adjudicating the cut, not to a prover working this leaf in isolation.
+**The statement that stood here until 2026-07-28 was FALSE**, refuted by a
+machine-checked witness (reproduced verbatim below, under "THE REFUTED
+STATEMENT"). The repair adds the two hypotheses the refutation demands —
+`hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar` and `hlk : ((ℓ : ℕ) : k) = 0` —
+and changes nothing else. **The FRESH FALSITY AUDIT is at the bottom of this
+docstring**; per the standing rule, the earlier audit is VOID as an audit of the
+present statement and survives only as the record of what was wrong.
 
 **The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
-new 2026-07-27; this is the whole mathematical content of
+new 2026-07-27, REPAIRED 2026-07-28; this is the whole mathematical content of
 `exists_hilbertFixing_rootsOfUnity_charpoly_split` below, which is now PROVEN
 over it).
 
-In `G_F` there is an element `σ` acting trivially on all `ℓⁿ`-th roots of unity
-whose residual characteristic polynomial has DISCRIMINANT a nonzero square in
-`k`.
+Given ONE element of `G_{F(ζ_ℓ)}` with a nonzero-square residual discriminant
+(`hsplit`), there is, at EVERY level `n`, an element `σ` of `G_F` acting
+trivially on all `ℓⁿ`-th roots of unity whose residual characteristic polynomial
+has DISCRIMINANT a nonzero square in `k`.
+
+# THE ROUTE — an ℓ-power ascent along the cyclotomic tower, then Frobenius
+
+This is short, and it is what makes the repaired leaf non-vacuous: `hsplit` is a
+statement at level `μ_ℓ` and the conclusion is at level `μ_{ℓⁿ}`, so the leaf
+still has to climb the tower.
+
+1. Let `σ₀` and `δ₀ ≠ 0` be as in `hsplit`, and put `q = ℓ ^ (n - 1)`. Since
+   `2 ≠ 0` in `k` (`two_ne_zero_of_hilbertDeformationDatum`),
+   `exists_split_of_sq_eq_discrim` turns `δ₀` into two DISTINCT `k`-rational
+   eigenvalues `α ≠ β` of `ρbar|_{G_F}(σ₀)`, with `δ₀ = α − β` up to sign.
+2. `σ₀` acts on the cyclic group `μ_{ℓⁿ}` by `ζ ↦ ζ ^ c` for a single
+   `c ∈ (ℤ/ℓⁿ)ˣ`, and fixing `μ_ℓ` says `c ≡ 1 mod ℓ`. For ODD `ℓ` — which is
+   `hℓ5` — `(1 + ℓt) ^ (ℓ ^ m) ≡ 1 mod ℓ ^ (m + 1)`, so `c ^ q ≡ 1 mod ℓⁿ`:
+   **`σ := σ₀ ^ q` fixes `μ_{ℓⁿ}` pointwise.** (`n = 0` is separate and trivial,
+   and `n = 1` is `hsplit` itself.)
+3. `ρbar|_{G_F}(σ) = ρbar|_{G_F}(σ₀) ^ q` has eigenvalues `α ^ q` and `β ^ q`,
+   so its discriminant is `(α ^ q − β ^ q) ^ 2`. **`hlk` is consumed exactly
+   here**: in characteristic `ℓ` the `q`-power map is the `(n−1)`-fold Frobenius,
+   an injective ring endomorphism, so `α ^ q − β ^ q = (α − β) ^ q = δ₀ ^ q`,
+   which is nonzero because `δ₀` is. Take `δ := δ₀ ^ q`.
+
+So the route consumes `hℓ5` (twice: `ℓ` odd in step 2, `2 ≠ 0` in step 1),
+`hsplit` and `hlk`. `hirrF` and `𝒟₀` are retained in the signature because
+every consumer supplies them, because `𝒟₀` is what step 1 gets `2 ≠ 0` from, and
+because they are what a Kolchin-flavoured alternative route would use; a prover
+who closes this leaf without `hirrF` should say so rather than quietly leave it.
 
 **EQUIVALENCE AUDIT — this cut plants no falsity.** Over a field with `2 ≠ 0`,
 a monic quadratic `X² + bX + c` splits as `(X − α)(X − β)` with `α ≠ β` if and
@@ -19070,8 +19199,24 @@ discards no hypothesis at all — `hirrF`, `𝒟₀`, `hℓ5` and the μ_{ℓⁿ
 clause all survive verbatim — and only rewrites the CONCLUSION through a proven
 equivalence of algebra. It moves no mathematics; it removes bookkeeping.
 
-**SHARPENED FALSITY AUDIT (2026-07-27), machine-checked, and it CORRECTS the
-correction.** The docstring below records that the "determinant image is large"
+# THE REFUTED STATEMENT — everything from here to the CIRCULARITY GUARD is HISTORY
+
+**Read the two audits below as the record of WHY `hsplit` and `hlk` are in the
+signature, not as audits of the statement that is actually declared.** They were
+written against the 2026-07-27 statement, which carried neither hypothesis:
+
+```
+theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    …  (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) : …
+```
+
+Every word of them is still true OF THAT STATEMENT. The FRESH FALSITY AUDIT of
+the statement that is declared is at the very bottom.
+
+**SHARPENED FALSITY AUDIT (2026-07-27) [OF THE REFUTED STATEMENT],
+machine-checked, and it CORRECTS the correction.** The docstring below records that the "determinant image is large"
 hint is wrong because `σ` fixing `μ_{ℓⁿ}` forces `det ρbar|_{G_F}(σ) = 1` in
 residue characteristic `ℓ`. That is right, but it is not the end of the story,
 and the natural next attempt — *the determinant still constrains the AMBIENT
@@ -19212,6 +19357,55 @@ as above exists, i.e. that `E` cannot acquire good reduction over `3` in a field
 linearly disjoint from `ℚ(E[7])`; or exhibit a clause of
 `IsHilbertHardlyRamified` that `T₇(E)|_{Γ F}` violates.
 
+# FRESH FALSITY AUDIT (2026-07-28) — OF THE STATEMENT ACTUALLY DECLARED BELOW
+
+The audits above are VOID as audits of this statement: they certify a statement
+that no longer exists. Re-run against the repaired one, the result is:
+
+**1. The `54b1` witness NO LONGER APPLIES, and the clause that kills it is
+`hsplit`.** Re-enumerated 2026-07-28 over all `7⁴` matrices (independent
+reimplementation, not a re-reading of the numbers above): `|T_ns| = 48`,
+`|N(T_ns)| = 96`, `|H| = |N(T_ns) ∩ SL₂(𝔽₇)| = 16`, `H` has no common eigenline
+in `P¹(𝔽₇)`, `det N(T_ns) = 𝔽₇ˣ`, and
+
+    {tr(g)² − 4·det(g) : g ∈ H} = {0, 3, 5},   squares mod 7 = {0, 1, 2, 4}.
+
+In that witness `F ⊇ F₀` with `ρ̄(Γ F₀) = H`, so `ρbar(Γ F) ⊆ H` and a fortiori
+`ρbar(Γ F(ζ_7)) ⊆ H`. Since no element of `H` has a nonzero SQUARE discriminant,
+`HilbertSplitRegularAtMuEll 7 F ρbar` is FALSE there — the witness fails a
+hypothesis and refutes nothing. (Note it does NOT fail `hlk`: `k = 𝔽₇` and
+`ℓ = 7`. `hlk` is not what excludes it; `hsplit` is.)
+
+**2. The repaired statement is TRUE**, by the four-step route above, which uses
+nothing beyond `hℓ5`, `hsplit`, `hlk` and — for `2 ≠ 0` — `𝒟₀`. There is no
+group-theoretic gap left to hide a counterexample in: the ascent is a
+computation in `(ℤ/ℓⁿ)ˣ` and an application of Frobenius.
+
+**3. It is NOT VACUOUS.** `hsplit` is the case `n = 1` of the conclusion, so at
+`n ≤ 1` this leaf is bookkeeping — but at `n ≥ 2` it is not, and `n` is
+universally quantified precisely because the Taylor–Wiles tower consumes every
+level. Steps 2 and 3 are both live there, and step 3 is FALSE without `hlk`:
+in residue characteristic `≠ ℓ` the ratio `α/β` may be a primitive `ℓ^j`-th root
+of unity, `α ^ q = β ^ q`, and the produced element degenerates. `hlk` is
+therefore load-bearing and not decoration.
+
+**4. WHY `hlk` COSTS NOTHING.** Every consumer of this leaf ends at
+`injective_classifyingMap_hilbertHeckeDatum` /
+`exists_heckeDatum_isWeaklyUniversal_isTraceGenerated`, which carry `[Finite k]`
+and `[Algebra ℤ_[ℓ] k]`, and `natCast_eq_zero_of_finite_algebra ℓ k` discharges
+`hlk` there outright. So `hlk` propagates no obligation at all; only `hsplit`
+does, and it stops at `PotentialHeckeDatum.splitRegularAtMuEll`.
+
+**CHECKS THAT WOULD REFUTE THIS AUDIT**, in increasing cost: exhibit an element
+of `N(T_ns) ∩ SL₂(𝔽₇)` whose `tr² − 4` is a nonzero square mod `7` (this would
+break claim 1 by making the old witness satisfy `hsplit` again); or exhibit a
+`k` of characteristic `ℓ`, an `F`, and a `ρbar` satisfying `hsplit` at `μ_ℓ` for
+which some level `n` admits no such `σ` (this would break claim 2, and by the
+route it would have to break either the congruence `c ^ (ℓ ^ (n−1)) ≡ 1 mod ℓⁿ`
+or the injectivity of Frobenius); or show that `PotentialHeckeDatum` cannot be
+built carrying the new field, which would mean the repair has relocated the
+falsity rather than removed it.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
@@ -19222,6 +19416,8 @@ theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
     ∃ σ : Γ F,
@@ -19300,6 +19496,14 @@ References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
 Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
 Skinner–Wiles, Duke 107 (2001), §2.
 
+**STATUS 2026-07-28: this statement WAS FALSE and is REPAIRED.** It is
+EQUIVALENT to the leaf above (audit in this docstring), so it inherited that
+leaf's falsity verbatim, and the repair is the same two hypotheses, threaded:
+`hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar` and `hlk : ((ℓ : ℕ) : k) = 0`.
+The `54b1` witness fails `hsplit` — see the FRESH FALSITY AUDIT on the leaf —
+so it no longer refutes this statement either. The proof below is unchanged
+except for passing the two new arguments through.
+
 **STATUS 2026-07-27: PROVEN, over the discriminant-form leaf
 `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above.** The mathematical
 content is untouched — the two statements are EQUIVALENT (audit on that leaf) —
@@ -19326,6 +19530,8 @@ theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
     ∃ σ : Γ F,
@@ -19335,7 +19541,7 @@ theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
         ((ρbar.map (algebraMap ℚ F)) σ).charpoly =
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
   obtain ⟨σ, hfix, δ, hδ, hδ2⟩ :=
-    exists_hilbertFixing_rootsOfUnity_discrim_isSquare ℓ hℓ5 F hirrF 𝒟₀ n
+    exists_hilbertFixing_rootsOfUnity_discrim_isSquare ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n
   exact ⟨σ, hfix,
     exists_split_of_sq_eq_discrim (two_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀)
       _ (LinearMap.charpoly_monic _)
@@ -19395,6 +19601,8 @@ theorem exists_hilbertTaylorWilesPrime
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (n : ℕ) (S : Finset (HeightOneSpectrum (𝓞 F))) :
@@ -19406,7 +19614,7 @@ theorem exists_hilbertTaylorWilesPrime
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
   classical
   obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
-    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
+    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n
   set φ := Field.absoluteGaloisGroup.map (algebraMap ℚ F)
   -- FIRST OPEN CONDITION: the residual eigenvalue locus, open by the datum
   have hU1open : IsOpen {x : Γ F | ((ρbar.map (algebraMap ℚ F)) x).charpoly =
@@ -19566,6 +19774,8 @@ theorem IsHilbertTaylorWilesPrimeSet.exists_insert
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (n : ℕ) {Q : Finset (HeightOneSpectrum (𝓞 F))}
@@ -19574,7 +19784,7 @@ theorem IsHilbertTaylorWilesPrimeSet.exists_insert
       IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q' := by
   classical
   obtain ⟨w, hwQ, hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩ :=
-    exists_hilbertTaylorWilesPrime ℓ hℓ5 F hirrF 𝒟₀ n Q
+    exists_hilbertTaylorWilesPrime ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n Q
   refine ⟨insert w Q, Finset.card_insert_of_notMem hwQ, ?_, ?_⟩
   · intro w' hw'
     rcases Finset.mem_insert.mp hw' with rfl | hmem
@@ -19603,6 +19813,8 @@ theorem IsHilbertTaylorWilesPrimeSet.exists_card_eq
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
     ∀ (r : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))),
@@ -19618,7 +19830,7 @@ theorem IsHilbertTaylorWilesPrimeSet.exists_card_eq
     · exact ⟨Q, h, hQ⟩
     · obtain ⟨Q'', hcard'', hQ''⟩ := ih Q hQ (Nat.lt_succ_iff.mp h)
       obtain ⟨Q', hcard', hQ'⟩ :=
-        IsHilbertTaylorWilesPrimeSet.exists_insert ℓ hℓ5 F hirrF 𝒟₀ n hQ''
+        IsHilbertTaylorWilesPrimeSet.exists_insert ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n hQ''
       exact ⟨Q', by rw [hcard', hcard''], hQ'⟩
 
 /-! #### The subgroup-restriction apparatus of `finite_hilbertH1TwistUnramified`
@@ -20623,6 +20835,21 @@ statement into "a separation class exists" plus "a nonabelian irreducible
 subgroup of `GL₂(k)` has a `k`-split element" would plant a FALSE leaf at the
 second half.
 
+**FALSITY REPAIR 2026-07-28 — THIS LEAF WAS FALSE AS STATED, by the SAME
+witness as `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above, and for
+the same reason.** Clause (ii) of its conclusion demands `α ≠ β` IN `k`, so the
+`54b1` / `ℓ = 7` / `ρ̄(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)` witness — which satisfies
+`hirrF` and every clause of `IsHilbertHardlyRamified`, and in which NO group
+element has two distinct `𝔽₇`-rational eigenvalues — refuted this statement
+outright, whatever the cohomological clause does. The repair is the same and is
+threaded here: `hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar` (which that
+witness FAILS) and `hlk : ((ℓ : ℕ) : k) = 0`. Both are genuinely needed by the
+route: the Chebotarev locus of the route above is the intersection of the
+separation condition with the locus of
+`exists_hilbertTaylorWilesPrime`, and NONEMPTINESS of the latter is exactly what
+the repaired leaf above supplies — so this leaf should take its (i) + (ii)
+witness FROM that theorem rather than rebuilding it.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`. In particular the `ℚ`-level escape —
 discharging by `exfalso` through the odd-prime dichotomy
@@ -20635,6 +20862,8 @@ theorem exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
     {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
@@ -20747,6 +20976,8 @@ theorem exists_hilbertTaylorWilesPrimeSet_core
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
     ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
@@ -20802,7 +21033,8 @@ theorem exists_hilbertTaylorWilesPrimeSet_core
     · obtain ⟨c, hcmem, hc0⟩ := (Submodule.ne_bot_iff _).mp hbot
       obtain ⟨hcU, hcQ⟩ := Submodule.mem_inf.mp hcmem
       obtain ⟨w, hwℓ, hw2, hwmod, hwsplit, hwne⟩ :=
-        exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero ℓ hℓ5 F hirrF 𝒟₀ n hcU hc0
+        exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n
+          hcU hc0
       -- `w ∉ Q` for free: `c` dies at every place of `Q` and not at `w`
       have hwQ : w ∉ Q := fun hmem =>
         hwne ((mem_hilbertH1TwistLocalKer ρbar Q).mp hcQ w hmem)
@@ -20921,6 +21153,8 @@ theorem exists_hilbertTaylorWilesPrimeSet
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
@@ -20930,9 +21164,10 @@ theorem exists_hilbertTaylorWilesPrimeSet
   -- `q0` is the TAYLOR–WILES NUMBER of `F`, level-independent by construction.
   refine ⟨Module.finrank k ↥(hilbertH1TwistUnramified ℓ F ρbar), fun n r hr => ?_⟩
   -- the dual-Selmer-killing CORE, of size at most `q0` (DDT Thm. 2.49) …
-  obtain ⟨Q, hcard, hQ⟩ := exists_hilbertTaylorWilesPrimeSet_core ℓ hℓ5 F hirrF 𝒟₀ n
+  obtain ⟨Q, hcard, hQ⟩ :=
+    exists_hilbertTaylorWilesPrimeSet_core ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n
   -- … padded up to the exact size `r ≥ q0 ≥ #Q`.
-  exact IsHilbertTaylorWilesPrimeSet.exists_card_eq ℓ hℓ5 F hirrF 𝒟₀ n r Q hQ
+  exact IsHilbertTaylorWilesPrimeSet.exists_card_eq ℓ hℓ5 F hlk hsplit hirrF 𝒟₀ n r Q hQ
     (hcard.trans hr)
 
 /-! ### The Taylor–Wiles tower over `F`: no `F`-level interface any more
@@ -26136,6 +26371,7 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
     (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
@@ -26145,7 +26381,8 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
     Function.Injective ψ :=
-  (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟).elim fun q0 hTW =>
+  (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F (natCast_eq_zero_of_finite_algebra ℓ k)
+      hsplit hirrF 𝒟).elim fun q0 hTW =>
     (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
         hψalg hψπ hψρ q0 hTW).elim
       Modularity.PatchedModule.injective
@@ -26256,6 +26493,7 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
@@ -26284,7 +26522,7 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     surjective_classifyingMap_hilbertHeckeDatum ℓ F hirrF 𝒟 𝒟T T e he h𝒟w h𝒟t ψ
       hψalg hψπ hψρ
   have hinj : Function.Injective ψ :=
-    injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e
+    injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F hw2 htr hgal hsplit hirrF 𝒟 𝒟T T e
       h𝒟w h𝒟t ψ hψalg hψπ hψρ
   -- (5) assemble: `R_F ≃ 𝒟T.R ≃ T.T`, and `𝒟` is the datum the conclusion wants.
   refine ⟨T, 𝒟, h𝒟w, h𝒟t, ⟨AlgEquiv.trans ?_ e⟩⟩
@@ -26358,6 +26596,7 @@ theorem exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
     (ht𝒟 : 𝒟.IsTraceGenerated)
@@ -26365,7 +26604,7 @@ theorem exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal
     ∃ T : HilbertHeckeAlgebra ℓ F ρbar, Nonempty (𝒟.R ≃ₐ[ℤ_[ℓ]] T.T) := by
   obtain ⟨T, 𝒟T, hwT, htT, ⟨e⟩⟩ :=
     exists_heckeDatum_isWeaklyUniversal_isTraceGenerated ℓ hℓ5 F htr hgal hw2
-      hirrF 𝒟 T₀
+      hsplit hirrF 𝒟 T₀
   obtain ⟨φ, hφ⟩ :=
     HilbertDeformationDatum.exists_ringEquiv_of_isUniversal 𝒟 𝒟T
       (HilbertDeformationDatum.isUniversal_of_isWeaklyUniversal_isTraceGenerated
@@ -26400,6 +26639,7 @@ theorem moduleFinite_hilbertDeformation_of_isWeaklyUniversal
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
     (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    (hsplit : HilbertSplitRegularAtMuEll ℓ F ρbar)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
     (ht𝒟 : 𝒟.IsTraceGenerated)
@@ -26407,7 +26647,7 @@ theorem moduleFinite_hilbertDeformation_of_isWeaklyUniversal
     Module.Finite ℤ_[ℓ] 𝒟.R := by
   obtain ⟨T, ⟨e⟩⟩ :=
     exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal ℓ hℓ5 F hlk htr hgal hw2
-      hirrF 𝒟 h𝒟 ht𝒟 T₀
+      hsplit hirrF 𝒟 h𝒟 ht𝒟 T₀
   exact Module.Finite.equiv e.symm.toLinearEquiv
 
 /-! ### The assembly: integrality of the traces on a finite-index subgroup -/
@@ -26517,7 +26757,7 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
   haveI : Module.Finite ℤ_[ℓ] 𝒟.R :=
     moduleFinite_hilbertDeformation_of_isWeaklyUniversal ℓ hℓ5 P.F
       (natCast_eq_zero_of_finite_algebra ℓ k) P.totallyReal P.galoisF hw2
-      P.irreducibleF 𝒟 h𝒟 ht𝒟 P.hecke
+      P.splitRegularAtMuEll P.irreducibleF 𝒟 h𝒟 ht𝒟 P.hecke
   -- (5) `H = G_F`
   refine ⟨galoisSubgroup P.F, finiteIndex_galoisSubgroup P.F, ?_⟩
   intro g hg
