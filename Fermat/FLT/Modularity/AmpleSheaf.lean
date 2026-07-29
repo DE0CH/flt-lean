@@ -902,7 +902,8 @@ theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImme
 /-- **Restricting a trivialization restricts the trivialized section** (PROVEN
 2026-07-28).  Pure plumbing — no mathematics — but it took three attempts, and
 the thing that unlocked it was changing `modRestrictLEIso` (now hoisted to
-`RelativePicard`) rather than changing the proof.
+`ModularCurve/RelativePicard.lean`, along with `trivializationOfLE`) rather than
+changing the proof.
 
 The skeleton, since the same shape recurs everywhere in this file:
 
