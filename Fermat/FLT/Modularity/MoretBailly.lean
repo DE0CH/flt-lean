@@ -17904,8 +17904,12 @@ theorem exists_directions_irreducible_familyPlaneSection {K : Type*} [Field K]
 
 `exists_irreducibilityFormsInt_two` below — and with it its sibling
 `exists_absolutelyIrreducibleForms_two`, which is derived from it in a dozen lines
-— is now PROVEN over exactly ONE input: `exists_productLocusFormsInt`, the
-closedness of the image of multiplication. That is step 3 of the four-step route
+— is now PROVEN over exactly ONE input. That input was `exists_productLocusFormsInt`,
+the closedness of the image of multiplication; since 2026-07-28 that leaf is itself
+PROVEN, over the single sub-leaf `exists_eliminationFormsInt` (the main theorem of
+elimination theory over `ℤ`), by the Segre encoding in namespace
+`ProductLocusForms`. So the one open input of this whole block is now
+`exists_eliminationFormsInt`. Multiplication-closedness is step 3 of the four-step route
 recorded on `exists_absolutelyIrreducibleForms_two`, and the only step that is
 genuine elimination theory. Steps 1, 2 and 4 are the proven material in this
 block:
@@ -18147,9 +18151,431 @@ theorem exists_unionForms.{uu, vv} {ι : Type vv} {n : ℕ} (kk : Fin n → ℕ)
     rw [map_prod, MvPolynomial.eval_prod]
     exact Finset.prod_eq_zero (Finset.mem_univ j) (hj _)
 
-/-- **STEP 3 OF NOETHER'S ROUTE (SORRY LEAF, cut 2026-07-28)** — CLOSEDNESS OF THE
-IMAGE OF MULTIPLICATION, and after this cut the ONLY thing still open in the whole
-Noether half of `exists_bertiniNoetherWitness_of_three_le`.
+/-! ### The Segre encoding of `exists_productLocusFormsInt`
+
+This block realises, IN LEAN, the "concrete attack" recorded in the docstring of
+`exists_productLocusFormsInt` below: it reduces that leaf to the MAIN THEOREM OF
+ELIMINATION THEORY over `ℤ` (`exists_eliminationFormsInt`) and nothing else. The
+whole of the reduction — the Segre relations, the rank-one factorisation, the
+coefficient bookkeeping, the degree bounds — is PROVEN here, and uses only that
+the base is a DOMAIN. All use of algebraic closure is concentrated in the one
+sub-leaf, exactly as that docstring predicted.
+-/
+
+namespace ProductLocusForms
+
+/-- `monOf (a, b)` is the exponent vector of the plane monomial `sᵃ tᵇ`. -/
+noncomputable def monOf (p : ℕ × ℕ) : Fin 2 →₀ ℕ := Finsupp.single 0 p.1 + Finsupp.single 1 p.2
+
+@[simp] lemma monOf_apply_zero (p : ℕ × ℕ) : monOf p 0 = p.1 := by
+  simp [monOf]
+
+@[simp] lemma monOf_apply_one (p : ℕ × ℕ) : monOf p 1 = p.2 := by
+  simp [monOf]
+
+/-- **PROVEN**: the degree of an exponent vector in two variables is the sum of its
+two entries. Stated separately because `MvPolynomial.totalDegree` is phrased with
+`Finsupp.sum`, which is a sum over the SUPPORT and therefore not definitionally the
+two-term sum. -/
+lemma fin2_sum (m : Fin 2 →₀ ℕ) : (m.sum fun _ e => e) = m 0 + m 1 := by
+  rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+  simp [Fin.sum_univ_two]
+
+lemma monOf_self (m : Fin 2 →₀ ℕ) : monOf (m 0, m 1) = m := by
+  ext i
+  fin_cases i <;> simp
+
+lemma monOf_sum (p : ℕ × ℕ) : ((monOf p).sum fun _ e => e) = p.1 + p.2 := by
+  rw [fin2_sum]; simp
+
+lemma monOf_injective : Function.Injective monOf := by
+  intro p q h
+  have h0 := congrArg (fun m : Fin 2 →₀ ℕ => m 0) h
+  have h1 := congrArg (fun m : Fin 2 →₀ ℕ => m 1) h
+  simp only [monOf_apply_zero, monOf_apply_one] at h0 h1
+  exact Prod.ext h0 h1
+
+/-- Index type for the plane monomials of degree at most `e` in EACH variable
+separately. Deliberately a plain product of `Fin`s rather than the subtype cut out
+by `a + b ≤ e`: the extra indices are harmless (their unknowns are forced to zero
+by an explicit family of linear equations) and a product of `Fin`s carries its
+`Fintype` instance for free, which the subtype does not. -/
+abbrev Idx (e : ℕ) := Fin (e + 1) × Fin (e + 1)
+
+/-- The plane monomial attached to an index. -/
+noncomputable def idxMon {e : ℕ} (p : Idx e) : Fin 2 →₀ ℕ := monOf ((p.1 : ℕ), (p.2 : ℕ))
+
+lemma idxMon_injective {e : ℕ} : Function.Injective (idxMon (e := e)) := by
+  intro p q h
+  have := monOf_injective h
+  exact Prod.ext (Fin.ext (congrArg Prod.fst this)) (Fin.ext (congrArg Prod.snd this))
+
+lemma idxMon_sum {e : ℕ} (p : Idx e) : ((idxMon p).sum fun _ n => n) = (p.1 : ℕ) + (p.2 : ℕ) :=
+  monOf_sum _
+
+/-- **PROVEN — THE RANK-ONE FACTORISATION**, i.e. the content of the Segre
+relations. A matrix all of whose `2 × 2` minors vanish and which is not identically
+zero is an outer product `x ⊗ y` of two NONZERO vectors. The witness is explicit:
+pick an entry `z a₀ b₀ ≠ 0` and take `x a = z a b₀`, `y b = z a₀ b / z a₀ b₀`.
+
+Index types are arbitrary — no finiteness is used — and the only hypothesis on the
+scalars is that they form a field (division by the pivot). -/
+lemma exists_outerProduct {A B K : Type*} [Field K]
+    (z : A → B → K) (hz : ∃ a b, z a b ≠ 0)
+    (hminor : ∀ a a' b b', z a b * z a' b' = z a b' * z a' b) :
+    ∃ (x : A → K) (y : B → K), (∃ a, x a ≠ 0) ∧ (∃ b, y b ≠ 0) ∧ ∀ a b, z a b = x a * y b := by
+  obtain ⟨a₀, b₀, h₀⟩ := hz
+  refine ⟨fun a => z a b₀, fun b => z a₀ b / z a₀ b₀, ⟨a₀, h₀⟩, ⟨b₀, ?_⟩, ?_⟩
+  · simpa using h₀
+  · intro a b
+    show z a b = z a b₀ * (z a₀ b / z a₀ b₀)
+    have hm := hminor a a₀ b b₀
+    field_simp
+    linear_combination hm
+
+/-- The index attached to a monomial. Clamped with `min`, so that it is TOTAL —
+`Finset.sum_nbij'` needs a non-dependent inverse, and a dependent one indexed by
+membership proofs would have to be threaded through every rewrite. -/
+def idxOf (e : ℕ) (a : Fin 2 →₀ ℕ) : Idx e :=
+  (⟨min (a 0) e, Nat.lt_succ_of_le (min_le_right _ _)⟩,
+    ⟨min (a 1) e, Nat.lt_succ_of_le (min_le_right _ _)⟩)
+
+lemma idxMon_idxOf {e : ℕ} (a : Fin 2 →₀ ℕ) (h : a 0 + a 1 ≤ e) : idxMon (idxOf e a) = a := by
+  simp only [idxMon, idxOf, min_eq_left (show a 0 ≤ e by omega), min_eq_left (show a 1 ≤ e by omega)]
+  exact monOf_self a
+
+lemma idxOf_idxMon {e : ℕ} (p : Idx e) : idxOf e (idxMon p) = p := by
+  have h1 : (p.1 : ℕ) ≤ e := Nat.lt_succ_iff.mp p.1.isLt
+  have h2 : (p.2 : ℕ) ≤ e := Nat.lt_succ_iff.mp p.2.isLt
+  simp only [idxOf, idxMon, monOf_apply_zero, monOf_apply_one, min_eq_left h1, min_eq_left h2]
+
+/-- **PROVEN**: the coefficients of a PRODUCT, read off the finite index sets. This
+is `MvPolynomial.coeff_mul` transported from `Finset.antidiagonal` (an index set
+depending on `m`) to a fixed filtered subset of `Idx e₁ × Idx e₂`. Both degree
+hypotheses are load-bearing in the same way: they are what kills the terms of the
+antidiagonal that no index pair reaches. -/
+lemma coeff_mul_idx {K : Type*} [CommRing K] {e₁ e₂ : ℕ}
+    (g₁ g₂ : MvPolynomial (Fin 2) K) (h₁ : g₁.totalDegree ≤ e₁) (h₂ : g₂.totalDegree ≤ e₂)
+    (m : Fin 2 →₀ ℕ) :
+    MvPolynomial.coeff m (g₁ * g₂)
+      = ∑ p ∈ Finset.univ.filter (fun p : Idx e₁ × Idx e₂ => idxMon p.1 + idxMon p.2 = m),
+          MvPolynomial.coeff (idxMon p.1) g₁ * MvPolynomial.coeff (idxMon p.2) g₂ := by
+  classical
+  have hdeg₁ : ∀ a : Fin 2 →₀ ℕ, MvPolynomial.coeff a g₁ ≠ 0 → a 0 + a 1 ≤ e₁ := by
+    intro a ha
+    have := le_trans (MvPolynomial.le_totalDegree (MvPolynomial.mem_support_iff.mpr ha)) h₁
+    rwa [fin2_sum] at this
+  have hdeg₂ : ∀ a : Fin 2 →₀ ℕ, MvPolynomial.coeff a g₂ ≠ 0 → a 0 + a 1 ≤ e₂ := by
+    intro a ha
+    have := le_trans (MvPolynomial.le_totalDegree (MvPolynomial.mem_support_iff.mpr ha)) h₂
+    rwa [fin2_sum] at this
+  have step1 : ∑ x ∈ Finset.antidiagonal m,
+        MvPolynomial.coeff x.1 g₁ * MvPolynomial.coeff x.2 g₂
+      = ∑ x ∈ (Finset.antidiagonal m).filter
+          (fun x : (Fin 2 →₀ ℕ) × (Fin 2 →₀ ℕ) => x.1 0 + x.1 1 ≤ e₁ ∧ x.2 0 + x.2 1 ≤ e₂),
+          MvPolynomial.coeff x.1 g₁ * MvPolynomial.coeff x.2 g₂ :=
+    (Finset.sum_filter_of_ne (fun x _ hx =>
+      ⟨hdeg₁ _ (left_ne_zero_of_mul hx), hdeg₂ _ (right_ne_zero_of_mul hx)⟩)).symm
+  have step2 : ∑ p ∈ Finset.univ.filter (fun p : Idx e₁ × Idx e₂ => idxMon p.1 + idxMon p.2 = m),
+        MvPolynomial.coeff (idxMon p.1) g₁ * MvPolynomial.coeff (idxMon p.2) g₂
+      = ∑ p ∈ (Finset.univ.filter (fun p : Idx e₁ × Idx e₂ => idxMon p.1 + idxMon p.2 = m)).filter
+          (fun p => (p.1.1 : ℕ) + (p.1.2 : ℕ) ≤ e₁ ∧ (p.2.1 : ℕ) + (p.2.2 : ℕ) ≤ e₂),
+          MvPolynomial.coeff (idxMon p.1) g₁ * MvPolynomial.coeff (idxMon p.2) g₂ := by
+    refine (Finset.sum_filter_of_ne (fun p _ hp => ⟨?_, ?_⟩)).symm
+    · have := hdeg₁ _ (left_ne_zero_of_mul hp)
+      simpa [idxMon] using this
+    · have := hdeg₂ _ (right_ne_zero_of_mul hp)
+      simpa [idxMon] using this
+  have step3 : ∑ x ∈ (Finset.antidiagonal m).filter
+          (fun x : (Fin 2 →₀ ℕ) × (Fin 2 →₀ ℕ) => x.1 0 + x.1 1 ≤ e₁ ∧ x.2 0 + x.2 1 ≤ e₂),
+          MvPolynomial.coeff x.1 g₁ * MvPolynomial.coeff x.2 g₂
+      = ∑ p ∈ (Finset.univ.filter (fun p : Idx e₁ × Idx e₂ => idxMon p.1 + idxMon p.2 = m)).filter
+          (fun p => (p.1.1 : ℕ) + (p.1.2 : ℕ) ≤ e₁ ∧ (p.2.1 : ℕ) + (p.2.2 : ℕ) ≤ e₂),
+          MvPolynomial.coeff (idxMon p.1) g₁ * MvPolynomial.coeff (idxMon p.2) g₂ := by
+    refine Finset.sum_nbij' (i := fun x => (idxOf e₁ x.1, idxOf e₂ x.2))
+      (j := fun p => (idxMon p.1, idxMon p.2)) ?_ ?_ ?_ ?_ ?_
+    · rintro x hx
+      simp only [Finset.mem_filter, Finset.mem_antidiagonal] at hx
+      obtain ⟨hsum, hd₁, hd₂⟩ := hx
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      rw [idxMon_idxOf x.1 hd₁, idxMon_idxOf x.2 hd₂]
+      refine ⟨hsum, ?_, ?_⟩ <;> simp only [idxOf] <;> omega
+    · rintro p hp
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hp
+      obtain ⟨hsum, hd₁, hd₂⟩ := hp
+      simp only [Finset.mem_filter, Finset.mem_antidiagonal]
+      exact ⟨hsum, by simpa [idxMon] using hd₁, by simpa [idxMon] using hd₂⟩
+    · rintro x hx
+      simp only [Finset.mem_filter, Finset.mem_antidiagonal] at hx
+      obtain ⟨-, hd₁, hd₂⟩ := hx
+      exact Prod.ext (idxMon_idxOf x.1 hd₁) (idxMon_idxOf x.2 hd₂)
+    · rintro p -
+      exact Prod.ext (idxOf_idxMon p.1) (idxOf_idxMon p.2)
+    · rintro x hx
+      simp only [Finset.mem_filter, Finset.mem_antidiagonal] at hx
+      obtain ⟨-, hd₁, hd₂⟩ := hx
+      rw [idxMon_idxOf x.1 hd₁, idxMon_idxOf x.2 hd₂]
+  rw [MvPolynomial.coeff_mul, step1, step3, ← step2]
+
+/-- **PROVEN**: the coefficients of the polynomial rebuilt from an `Idx`-indexed
+coefficient vector are that vector. -/
+lemma coeff_idxSum {K : Type*} [CommRing K] {e : ℕ} (x : Idx e → K) (q : Idx e) :
+    MvPolynomial.coeff (idxMon q) (∑ r : Idx e, MvPolynomial.monomial (idxMon r) (x r)) = x q := by
+  classical
+  rw [MvPolynomial.coeff_sum]
+  rw [Finset.sum_eq_single q]
+  · simp
+  · intro r _ hr
+    rw [MvPolynomial.coeff_monomial, if_neg (fun h => hr (idxMon_injective h))]
+  · intro h; exact absurd (Finset.mem_univ q) h
+
+/-- **PROVEN**: the polynomial rebuilt from an `Idx`-indexed coefficient vector that
+vanishes above degree `t` has total degree at most `t`. Note `t` is INDEPENDENT of
+the index bound `e`: that is exactly what lets the Segre unknowns be indexed by the
+full product `Idx d₁` while the polynomial they rebuild is forced into degree
+`≤ d₁`. -/
+lemma totalDegree_idxSum_le {K : Type*} [CommRing K] {e t : ℕ} (x : Idx e → K)
+    (hx : ∀ q : Idx e, t < (q.1 : ℕ) + (q.2 : ℕ) → x q = 0) :
+    (∑ r : Idx e, MvPolynomial.monomial (idxMon r) (x r)).totalDegree ≤ t := by
+  refine MvPolynomial.totalDegree_finsetSum_le (fun r _ => ?_)
+  by_cases hr : t < (r.1 : ℕ) + (r.2 : ℕ)
+  · simp [hx r hr]
+  · refine le_trans (MvPolynomial.totalDegree_monomial_le _ _) ?_
+    simpa [Function.id_def, idxMon_sum r] using Nat.le_of_not_lt hr
+
+/-- **PROVEN**: two plane polynomials of total degree at most `d` agreeing on every
+`Idx d` coefficient are equal. -/
+lemma eq_of_coeff_idx {K : Type*} [CommRing K] {d : ℕ} (g h : MvPolynomial (Fin 2) K)
+    (hg : g.totalDegree ≤ d) (hh : h.totalDegree ≤ d)
+    (hc : ∀ q : Idx d, MvPolynomial.coeff (idxMon q) g = MvPolynomial.coeff (idxMon q) h) :
+    g = h := by
+  ext m
+  by_cases hm : m 0 + m 1 ≤ d
+  · have := hc (idxOf d m)
+    rwa [idxMon_idxOf m hm] at this
+  · have z₁ : MvPolynomial.coeff m g = 0 := by
+      by_contra hcon
+      have := le_trans (MvPolynomial.le_totalDegree
+        (MvPolynomial.mem_support_iff.mpr hcon)) hg
+      rw [fin2_sum] at this
+      omega
+    have z₂ : MvPolynomial.coeff m h = 0 := by
+      by_contra hcon
+      have := le_trans (MvPolynomial.le_totalDegree
+        (MvPolynomial.mem_support_iff.mpr hcon)) hh
+      rw [fin2_sum] at this
+      omega
+    rw [z₁, z₂]
+
+/-- **THE SEGRE EQUIVALENCE (PROVEN 2026-07-28)** — the whole of
+`exists_productLocusFormsInt` that is NOT elimination theory.
+
+`g` of total degree `≤ d₁ + d₂` factors as `g₁ · g₂` with `totalDegree gᵢ ≤ dᵢ` if
+and only if the following system in the unknowns `w`, HOMOGENEOUS in `w` and with
+the coefficients of `g` as parameters, has a nonzero solution:
+
+* the SEGRE relations `w_{ab} w_{a'b'} = w_{ab'} w_{a'b}` (degree 2), saying that
+  the matrix `w` has rank at most one;
+* the DEGREE relations `w_a = 0` whenever `a` overshoots `d₁` or `d₂` (degree 1) —
+  these are what confine the two factors to their degree bounds, and they are the
+  price of indexing by the full product `Idx d₁ × Idx d₂` rather than by a subtype;
+* the PRODUCT relations `∑_{m₁·m₂ = m} w_{m₁m₂} = w_∗ · g_m` (degree 1), where `w_∗`
+  is the extra unknown that makes the system homogeneous.
+
+WHY THE EXTRA UNKNOWN `w_∗` IS NECESSARY AND NOT DECORATION. Without it the system
+would read `∑ w = g_m`, which is INHOMOGENEOUS, and an inhomogeneous system's
+solvability is not a closed condition on the parameters — the projection would not
+be proper. With it, `w = 0` is always a solution of the homogeneous system, which is
+why the conclusion is about a solution `w ≠ 0` and why `w_∗ = 0` has to be ruled out
+by hand (it is: the two rebuilt factors are nonzero, and a domain has no zero
+divisors).
+
+WHY THE DEGENERATE CASE IS NOT A CORNER CASE. If every `w_a` vanishes then `w_∗ ≠ 0`
+and the product relations force `g = 0`, which does factor, as `0 · 0`. So the
+"spurious" solutions of the Segre system are exactly the ones certifying `g = 0`.
+
+WHAT THE PROOF USES: that `K` is a field, for the division in
+`exists_outerProduct` and for `g₁ g₂ ≠ 0`. NO algebraic closure, NO geometry, NO
+finiteness beyond the finiteness of the index sets. -/
+lemma segre_iff {K : Type*} [Field K] (d₁ d₂ : ℕ) (g : MvPolynomial (Fin 2) K)
+    (hg : g.totalDegree ≤ d₁ + d₂) :
+    (∃ g₁ g₂ : MvPolynomial (Fin 2) K,
+        g₁.totalDegree ≤ d₁ ∧ g₂.totalDegree ≤ d₂ ∧ g = g₁ * g₂)
+      ↔ (∃ w : (Idx d₁ × Idx d₂) ⊕ Unit → K, w ≠ 0 ∧
+          (∀ a a' : Idx d₁ × Idx d₂,
+             w (.inl a) * w (.inl a') = w (.inl (a.1, a'.2)) * w (.inl (a'.1, a.2))) ∧
+          (∀ a : Idx d₁ × Idx d₂, (d₁ < (a.1.1 : ℕ) + (a.1.2 : ℕ) ∨
+              d₂ < (a.2.1 : ℕ) + (a.2.2 : ℕ)) → w (.inl a) = 0) ∧
+          (∀ m : Idx (d₁ + d₂),
+             (∑ p ∈ Finset.univ.filter
+                (fun p : Idx d₁ × Idx d₂ => idxMon p.1 + idxMon p.2 = idxMon m), w (.inl p))
+               = w (.inr ()) * MvPolynomial.coeff (idxMon m) g)) := by
+  classical
+  constructor
+  · rintro ⟨g₁, g₂, hd₁, hd₂, rfl⟩
+    refine ⟨Sum.elim (fun a => MvPolynomial.coeff (idxMon a.1) g₁ *
+      MvPolynomial.coeff (idxMon a.2) g₂) (fun _ => 1), ?_, ?_, ?_, ?_⟩
+    · intro hcon
+      have := congrFun hcon (.inr ())
+      simp at this
+    · intro a a'; simp only [Sum.elim_inl]; ring
+    · rintro a (ha | ha) <;> simp only [Sum.elim_inl]
+      · have : MvPolynomial.coeff (idxMon a.1) g₁ = 0 := by
+          by_contra hcon
+          have := le_trans (MvPolynomial.le_totalDegree
+            (MvPolynomial.mem_support_iff.mpr hcon)) hd₁
+          rw [idxMon_sum] at this
+          omega
+        rw [this, zero_mul]
+      · have : MvPolynomial.coeff (idxMon a.2) g₂ = 0 := by
+          by_contra hcon
+          have := le_trans (MvPolynomial.le_totalDegree
+            (MvPolynomial.mem_support_iff.mpr hcon)) hd₂
+          rw [idxMon_sum] at this
+          omega
+        rw [this, mul_zero]
+    · intro m
+      simp only [Sum.elim_inl, Sum.elim_inr, one_mul]
+      exact (coeff_mul_idx g₁ g₂ hd₁ hd₂ (idxMon m)).symm
+  · rintro ⟨w, hw, hsegre, hdeg, hP⟩
+    by_cases hz : ∀ a : Idx d₁ × Idx d₂, w (.inl a) = 0
+    · have hu : w (.inr ()) ≠ 0 := by
+        intro hcon
+        refine hw (funext ?_)
+        rintro (a | ⟨⟩)
+        · simpa using hz a
+        · simpa using hcon
+      have hgz : g = 0 := by
+        refine eq_of_coeff_idx (d := d₁ + d₂) g 0 hg (by simp) (fun q => ?_)
+        have := hP q
+        rw [Finset.sum_eq_zero (fun p _ => hz p)] at this
+        simp only [MvPolynomial.coeff_zero]
+        exact (mul_eq_zero.mp this.symm).resolve_left hu
+      exact ⟨0, 0, by simp, by simp, by simp [hgz]⟩
+    · push Not at hz
+      obtain ⟨a₀, ha₀⟩ := hz
+      obtain ⟨x, y, ⟨q₀, hq₀⟩, ⟨r₀, hr₀⟩, hxy⟩ :=
+        exists_outerProduct (fun q r => w (.inl (q, r))) ⟨a₀.1, a₀.2, ha₀⟩
+          (fun q q' r r' => hsegre (q, r) (q', r'))
+      have hx0 : ∀ q : Idx d₁, d₁ < (q.1 : ℕ) + (q.2 : ℕ) → x q = 0 := by
+        intro q hq
+        have := hdeg (q, r₀) (Or.inl hq)
+        rw [hxy q r₀] at this
+        exact (mul_eq_zero.mp this).resolve_right hr₀
+      have hy0 : ∀ r : Idx d₂, d₂ < (r.1 : ℕ) + (r.2 : ℕ) → y r = 0 := by
+        intro r hr
+        have := hdeg (q₀, r) (Or.inr hr)
+        rw [hxy q₀ r] at this
+        exact (mul_eq_zero.mp this).resolve_left hq₀
+      set g₁ : MvPolynomial (Fin 2) K :=
+        ∑ q : Idx d₁, MvPolynomial.monomial (idxMon q) (x q) with hg₁
+      set g₂ : MvPolynomial (Fin 2) K :=
+        ∑ r : Idx d₂, MvPolynomial.monomial (idxMon r) (y r) with hg₂
+      have hdg₁ : g₁.totalDegree ≤ d₁ := totalDegree_idxSum_le x hx0
+      have hdg₂ : g₂.totalDegree ≤ d₂ := totalDegree_idxSum_le y hy0
+      have hc₁ : ∀ q : Idx d₁, MvPolynomial.coeff (idxMon q) g₁ = x q := coeff_idxSum x
+      have hc₂ : ∀ r : Idx d₂, MvPolynomial.coeff (idxMon r) g₂ = y r := coeff_idxSum y
+      have hmul : g₁ * g₂ = MvPolynomial.C (w (.inr ())) * g := by
+        refine eq_of_coeff_idx (d := d₁ + d₂) _ _
+          (le_trans (MvPolynomial.totalDegree_mul _ _) (Nat.add_le_add hdg₁ hdg₂))
+          (le_trans (MvPolynomial.totalDegree_mul _ _) (by simpa using hg)) (fun m => ?_)
+        rw [MvPolynomial.coeff_C_mul, ← hP m, coeff_mul_idx g₁ g₂ hdg₁ hdg₂ (idxMon m)]
+        exact Finset.sum_congr rfl (fun p _ => by rw [hc₁, hc₂, hxy])
+      have hg₁ne : g₁ ≠ 0 := by
+        intro hcon
+        exact hq₀ (by rw [← hc₁ q₀, hcon, MvPolynomial.coeff_zero])
+      have hg₂ne : g₂ ≠ 0 := by
+        intro hcon
+        exact hr₀ (by rw [← hc₂ r₀, hcon, MvPolynomial.coeff_zero])
+      have hune : w (.inr ()) ≠ 0 := by
+        intro hcon
+        rw [hcon, map_zero, zero_mul] at hmul
+        exact (mul_ne_zero hg₁ne hg₂ne) hmul
+      refine ⟨MvPolynomial.C (w (.inr ()))⁻¹ * g₁, g₂, ?_, hdg₂, ?_⟩
+      · exact le_trans (MvPolynomial.totalDegree_mul _ _) (by simpa using hdg₁)
+      · rw [mul_assoc, hmul, ← mul_assoc, ← map_mul, inv_mul_cancel₀ hune, map_one, one_mul]
+
+end ProductLocusForms
+
+/-- **THE MAIN THEOREM OF ELIMINATION THEORY, OVER `ℤ` (SORRY LEAF, cut 2026-07-28)**
+— the projection of a projective scheme to its base is closed, in the elementary
+coefficient language, over the ABSOLUTE base `Spec ℤ` so that the forms it produces
+serve every field in every characteristic at once.
+
+WHAT IT SAYS. Given finitely many polynomials `f i` in unknowns `κ` whose
+coefficients are polynomials with INTEGER coefficients in parameters `ι`, each
+HOMOGENEOUS of some degree `e i` in the unknowns, there are finitely many forms
+`E j ∈ ℤ[ι]` such that over every algebraically closed field `K` and every parameter
+vector `a : ι → K`, the specialised system has a NONZERO solution `z : κ → K` if and
+only if every `E j` vanishes at `a`.
+
+WHY HOMOGENEITY IS NECESSARY AND MUST NOT BE DROPPED. With one unknown `z`, one
+parameter `a` and the inhomogeneous equation `z − a = 0`, a nonzero solution exists
+iff `a ≠ 0` — an OPEN condition, cut out by no family of forms. Homogeneity is
+exactly what makes the source `ℙ(κ) × 𝔸(ι)` proper over `𝔸(ι)`.
+
+WHY `IsAlgClosed K` IS NECESSARY. `E j` cut out the image as a SET of points of the
+scheme; the `K`-points of that image agree with the actual `K`-solutions only when
+`K` is algebraically closed. Over `ℝ`, `z₀² + z₁² = 0` in two unknowns has no
+nonzero real solution while lying in the image.
+
+BOTH DEGENERATE CASES ARE COVERED, and are why the statement is uniform. If `κ` is
+EMPTY the only `z` is the empty function, which IS `0`, so no nonzero solution ever
+exists and the family `E = ![1]` cuts out the empty set. If there are NO equations
+the condition is that `κ` be nonempty, again cut out by `![1]` or by `![]`.
+
+THE ROUTE (Mumford, *Red Book* I §8; Eisenbud, *Commutative Algebra* Thm 14.1;
+Schmidt, *Equations over Finite Fields* V §2). For each `D`, let `M_D` be the
+`ℤ[ι]`-linear map `⨁ᵢ S_{D − e i} → S_D` on the graded pieces of `S = ℤ[ι][κ]`,
+`(h i) ↦ ∑ h i · f i`, written as a matrix in the monomial bases. Then:
+
+* `M_D ⊗ K` is SURJECTIVE ⟹ every `z j ^ D` lies in the specialised ideal ⟹ no
+  nonzero solution — over any field;
+* conversely, if there is no nonzero solution then the projective Nullstellensatz
+  (which needs `K` algebraically closed) puts `(z₀ … z_n)^D` in the ideal for some
+  `D`, i.e. `M_D ⊗ K` is surjective.
+
+So the locus with a nonzero solution is `⋂_D {all maximal minors of M_D vanish}`,
+an intersection of closed sets defined over `ℤ`; `ℤ[ι]` is NOETHERIAN, so the ideal
+generated by all those minors is generated by finitely many of them, and that finite
+set is `E`. Nothing in this argument is special to the Segre system below — it is
+the reason to state and prove it once, in this generality.
+
+WHAT IS IN THE PIN (re-checked against `.lake/packages/mathlib` on 2026-07-28).
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean` carries the
+scheme-theoretic form of this theorem, as TWO ANONYMOUS INSTANCES at the end of
+namespace `AlgebraicGeometry.Proj`, both under `[Algebra.FiniteType (𝒜 0) A]`:
+`instance : UniversallyClosed (Proj.toSpecZero 𝒜)` (proven through the valuative
+criterion) and `instance : IsProper (Proj.toSpecZero 𝒜)`. NOTE they are anonymous:
+an earlier audit cited them as `AlgebraicGeometry.Proj.instIsProper`, and NO
+declaration of that name exists — grep for the instance, not for the name.
+`Mathlib/RingTheory/Polynomial/UniversalFactorizationRing.lean` is the univariate
+analogue done universally over an arbitrary base
+(`Polynomial.UniversalFactorizationRing.homEquiv`, with `Module.Finite R 𝓡`).
+What is missing, and is all this leaf asks for, is the BRIDGE from either of those
+to an explicit finite family of forms in the parameter ring.
+
+CIRCULARITY GUARD: stated over `ℤ` and over an arbitrary algebraically closed field;
+it mentions nothing from the Frey-curve development. -/
+theorem exists_eliminationFormsInt.{uu} {ι κ ρ : Type} [Fintype ι] [Fintype κ] [Fintype ρ]
+    (e : ρ → ℕ) (f : ρ → MvPolynomial κ (MvPolynomial ι ℤ))
+    (hf : ∀ i, (f i).IsHomogeneous (e i)) :
+    ∃ (k : ℕ) (E : Fin k → MvPolynomial ι ℤ),
+      ∀ (K : Type uu) [Field K] [IsAlgClosed K] (a : ι → K),
+        ((∃ z : κ → K, z ≠ 0 ∧ ∀ i,
+            MvPolynomial.eval z (MvPolynomial.map
+              (MvPolynomial.eval₂Hom (Int.castRingHom K) a) (f i)) = 0)
+          ↔ ∀ j, MvPolynomial.eval a (MvPolynomial.map (Int.castRingHom K) (E j)) = 0) :=
+  sorry
+
+/-- **STEP 3 OF NOETHER'S ROUTE (PROVEN 2026-07-28 over one named sub-leaf)** —
+CLOSEDNESS OF THE IMAGE OF MULTIPLICATION.
+
+The whole of this leaf is now reduced, by the Segre encoding written out in
+`ProductLocusForms` above and PROVEN there (`ProductLocusForms.segre_iff`), to the
+single sub-leaf `exists_eliminationFormsInt` — the main theorem of elimination
+theory over `ℤ`. Nothing else in the Noether half of
+`exists_bertiniNoetherWitness_of_three_le` is open.
 
 WHAT IT SAYS. For each pair `(d₁, d₂)` there are finitely many forms with INTEGER
 coefficients such that, over EVERY algebraically closed field `K`, a plane
@@ -18280,8 +18706,78 @@ theorem exists_productLocusFormsInt.{uu} (d₁ d₂ : ℕ) :
         ((∃ g₁ g₂ : MvPolynomial (Fin 2) K,
             g₁.totalDegree ≤ d₁ ∧ g₂.totalDegree ≤ d₂ ∧ g = g₁ * g₂) ↔
           ∀ i, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
-                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) :=
-  sorry
+                (MvPolynomial.map (Int.castRingHom K) (Gs i)) = 0) := by
+  classical
+  set V : Type := (ProductLocusForms.Idx d₁ × ProductLocusForms.Idx d₂) ⊕ Unit with hV
+  set P : Type := ProductLocusForms.Idx (d₁ + d₂) with hP
+  set eqn : ((ProductLocusForms.Idx d₁ × ProductLocusForms.Idx d₂) ×
+        (ProductLocusForms.Idx d₁ × ProductLocusForms.Idx d₂)) ⊕
+      ((ProductLocusForms.Idx d₁ × ProductLocusForms.Idx d₂) ⊕
+        ProductLocusForms.Idx (d₁ + d₂)) →
+      MvPolynomial V (MvPolynomial P ℤ) :=
+    Sum.elim
+      (fun aa => MvPolynomial.X (Sum.inl aa.1) * MvPolynomial.X (Sum.inl aa.2)
+        - MvPolynomial.X (Sum.inl (aa.1.1, aa.2.2)) * MvPolynomial.X (Sum.inl (aa.2.1, aa.1.2)))
+      (Sum.elim
+        (fun a => if d₁ < (a.1.1 : ℕ) + (a.1.2 : ℕ) ∨ d₂ < (a.2.1 : ℕ) + (a.2.2 : ℕ)
+          then MvPolynomial.X (Sum.inl a) else 0)
+        (fun m => (∑ p ∈ Finset.univ.filter
+              (fun p : ProductLocusForms.Idx d₁ × ProductLocusForms.Idx d₂ =>
+                ProductLocusForms.idxMon p.1 + ProductLocusForms.idxMon p.2 =
+                  ProductLocusForms.idxMon m),
+            MvPolynomial.X (Sum.inl p))
+          - MvPolynomial.X (Sum.inr ()) * MvPolynomial.C (MvPolynomial.X m))) with heqn
+  have hhom : ∀ i, (eqn i).IsHomogeneous (Sum.elim (fun _ => 2) (fun _ => 1) i) := by
+    rintro (aa | (a | m))
+    · exact ((MvPolynomial.isHomogeneous_X _ _).mul (MvPolynomial.isHomogeneous_X _ _)).sub
+        ((MvPolynomial.isHomogeneous_X _ _).mul (MvPolynomial.isHomogeneous_X _ _))
+    · by_cases ha : d₁ < (a.1.1 : ℕ) + (a.1.2 : ℕ) ∨ d₂ < (a.2.1 : ℕ) + (a.2.2 : ℕ)
+      · simpa [heqn, ha] using MvPolynomial.isHomogeneous_X (MvPolynomial P ℤ) (Sum.inl a : V)
+      · simpa [heqn, ha] using MvPolynomial.isHomogeneous_zero (σ := V) (R := MvPolynomial P ℤ) 1
+    · refine MvPolynomial.IsHomogeneous.sub ?_ ?_
+      · rw [← MvPolynomial.mem_homogeneousSubmodule]
+        refine Submodule.sum_mem _ (fun p _ => ?_)
+        rw [MvPolynomial.mem_homogeneousSubmodule]
+        exact MvPolynomial.isHomogeneous_X _ _
+      · have h1 : (MvPolynomial.X (Sum.inr () : V) :
+            MvPolynomial V (MvPolynomial P ℤ)).IsHomogeneous 1 :=
+          MvPolynomial.isHomogeneous_X _ _
+        have h2 : (MvPolynomial.C (MvPolynomial.X m) :
+            MvPolynomial V (MvPolynomial P ℤ)).IsHomogeneous 0 :=
+          MvPolynomial.isHomogeneous_C _ _
+        simpa using h1.mul h2
+  obtain ⟨k, E, hE⟩ := exists_eliminationFormsInt.{uu}
+    (Sum.elim (fun _ => 2) (fun _ => 1)) eqn hhom
+  refine ⟨k, fun j => MvPolynomial.rename ProductLocusForms.idxMon (E j), ?_⟩
+  intro K _ _ g hg
+  have hrename : ∀ j, MvPolynomial.eval (fun m => MvPolynomial.coeff m g)
+      (MvPolynomial.map (Int.castRingHom K)
+        (MvPolynomial.rename ProductLocusForms.idxMon (E j)))
+      = MvPolynomial.eval (fun q : P => MvPolynomial.coeff (ProductLocusForms.idxMon q) g)
+        (MvPolynomial.map (Int.castRingHom K) (E j)) := by
+    intro j
+    rw [MvPolynomial.map_rename, MvPolynomial.eval_rename]
+    rfl
+  simp only [hrename]
+  rw [← hE K (fun q : P => MvPolynomial.coeff (ProductLocusForms.idxMon q) g),
+    ProductLocusForms.segre_iff d₁ d₂ g hg]
+  refine exists_congr (fun w => and_congr_right (fun _ => ?_))
+  constructor
+  · rintro ⟨hsegre, hdeg, hPeq⟩
+    rintro (aa | (a | m))
+    · simpa [heqn] using sub_eq_zero_of_eq (hsegre aa.1 aa.2)
+    · by_cases ha : d₁ < (a.1.1 : ℕ) + (a.1.2 : ℕ) ∨ d₂ < (a.2.1 : ℕ) + (a.2.2 : ℕ)
+      · simpa [heqn, ha] using hdeg a ha
+      · simp [heqn, ha]
+    · simpa [heqn] using sub_eq_zero_of_eq (hPeq m)
+  · intro hall
+    refine ⟨fun a a' => ?_, fun a ha => ?_, fun m => ?_⟩
+    · have := hall (Sum.inl (a, a'))
+      simpa [heqn, sub_eq_zero] using this
+    · have := hall (Sum.inr (Sum.inl a))
+      simpa [heqn, ha] using this
+    · have := hall (Sum.inr (Sum.inr m))
+      simpa [heqn, sub_eq_zero] using this
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, ℤ-RATIONAL (PROVEN 2026-07-28 over one
 named sub-leaf)** -- the classical statement, with ONE family of forms with INTEGER
@@ -18321,9 +18817,10 @@ already characteristic-free and defined over `ℤ`; performing it over `Spec ℤ
 where the projective-image argument is a proper morphism and so survives base
 change to any field, is what produces the ℤ-rational forms directly.
 
-WHAT IS OPEN AFTER THE 2026-07-28 CUT: exactly step 3,
+WHAT IS OPEN AFTER THE 2026-07-28 CUTS: `exists_eliminationFormsInt` alone. Step 3,
 `exists_productLocusFormsInt` -- the closedness of the image of multiplication,
-stated `ℤ`-rationally over an arbitrary algebraically closed field. Steps 1, 2
+stated `ℤ`-rationally over an arbitrary algebraically closed field -- is PROVEN over
+that one sub-leaf by the Segre encoding (`ProductLocusForms.segre_iff`). Steps 1, 2
 and 4 are `not_irreducible_iff_exists_badPiece`,
 `totalDegree_lt_iff_forall_coeff_eq_zero` and `exists_unionForms`, all PROVEN
 immediately above.
@@ -18993,7 +19490,8 @@ theorem exists_planeSectionCoeffPolys {N : ℕ} {R S : Type*} [CommRing R] [Comm
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS IN COEFFICIENT SPACE (PROVEN 2026-07-28
 over one named sub-leaf)** — the whole `p`-uniformity content of
 `exists_noetherBadLocusForms`, and after this cut the ONLY thing still open in the
-Noether half is `exists_productLocusFormsInt`.
+Noether half is `exists_eliminationFormsInt` (reached through
+`exists_productLocusFormsInt`, which is itself proven over it).
 
 WHAT IT SAYS. For each `d` there is a degree bound `E` depending only on `d` such
 that, for every prime `p`, the locus of plane polynomials `g` of total degree
@@ -19021,9 +19519,9 @@ form does not vanish". Both directions are consumed by
 THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
 Fried–Jarden, *Field Arithmetic*, Proposition 10.4.2). This is elimination
 theory, not scheme theory. THE CUT WAS MADE ON 2026-07-28 ALONG EXACTLY THE FOUR
-STEPS BELOW; steps 1, 2 and 4 are now PROVEN and only step 3 remains open, as
-`exists_productLocusFormsInt`. The four steps, with the declarations that realise
-them:
+STEPS BELOW; all four steps are now PROVEN; step 3 (`exists_productLocusFormsInt`) rests on the
+single further sub-leaf `exists_eliminationFormsInt`, which is the only thing open
+in this cluster. The four steps, with the declarations that realise them:
 
 1. **The algebraic characterisation** (`not_irreducible_iff_exists_badPiece`,
    PROVEN). For `d ≥ 1` and `g.totalDegree ≤ d`,
@@ -19039,7 +19537,8 @@ them:
    all vanish. Those are the coordinate forms `X (single 0 a + single 1 (d - a))`,
    of degree `1`.
 3. **The product piece is the elimination content**
-   (`exists_productLocusFormsInt`, THE ONE REMAINING SORRY). For each splitting
+   (`exists_productLocusFormsInt`, PROVEN 2026-07-28 over `exists_eliminationFormsInt`,
+   which is THE ONE REMAINING SORRY). For each splitting
    `d₁ + d₂ = d` with `dᵢ ≥ 1`, the set of `g` of degree `≤ d` admitting a
    factorisation `g = g₁ · g₂` with `gᵢ.totalDegree ≤ dᵢ` is Zariski CLOSED, cut
    out by forms of degree bounded in terms of `d` alone. Closedness is the
