@@ -56298,42 +56298,98 @@ theorem isTorsion_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}
   rw [← smul_smul]
   exact hnx
 
-/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`, ON FUNCTIONS**
-(sorry leaf, 2026-07-28) — the whole arithmetic content of
-`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` below, with the
-normalization bookkeeping stripped off.
+/-- **`S₂(Γ₀(13)) = 0`, ON FUNCTIONS** (sorry leaf, 2026-07-28) — after the
+cut below this is ALL that is left of
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine`.
 
-TRUE.  The proper divisors of `169 = 13²` are `1` and `13`, and `X₀(1)`,
-`X₀(13)` both have genus `0` (`mfdim(mfinit([13,2],1)) = 0` and
-`mfdim(mfinit([1,2],1)) = 0`, recomputed in PARI/GP for this leaf on
-2026-07-28), so the only cusp form at either level is `0`.
+TRUE.  `X₀(13)` has genus `0` (`mfdim(mfinit([13,2],1)) = 0`, PARI/GP,
+recomputed for this leaf on 2026-07-28), so the only cusp form there is `0`.
 
-**Stated on `⇑g`, not on `g`.**  The two are equivalent
-(`CuspForm` is `FunLike`-injective), and the function form is what the
-consumer's proof feeds to `ModularFormClass.qExpansion_coeff_unique`; a
-statement `g = 0` would only have to be coerced back.
+**Stated on `⇑g`, not on `g`.**  The two are equivalent (`CuspForm` is
+`FunLike`-injective), and the function form is what the consumer's proof
+feeds to `ModularFormClass.qExpansion_coeff_unique`.
 
-**Where the content is.**  Not in the normalization step — that is
-`not_isWeightTwoEigenform_of_coe_eq_zero` below and is PROVEN — but in
-`S₂(Γ₀(13)) = 0`.  Two routes at this pin: the valence formula for
-`Γ₀(13)` (index `14`, `ν₂ = 2`, `ν₃ = 2`, `ν_∞ = 2`, giving `g = 0`), or
-the weight-two cusp-form dimension formula.  Mathlib has neither at
-`a3364fa` — `grep -rn "valence\|genus"
-.lake/packages/mathlib/Mathlib/NumberTheory/ModularForms/` — so this is a
-genuine, if small, piece of missing theory; `~/cs/FLT` is worth checking
-first.
+**WHY THIS IS THE ONLY SURVIVING CASE, and a correction** (2026-07-28).  The
+previous docstring, on the two-case leaf, priced `M = 1` and `M = 13` as
+equally missing — "Mathlib has neither at `a3364fa` … so this is a genuine,
+if small, piece of missing theory".  Half of that was already false when it
+was written:
 
-**`M = 1` is NOT a degenerate corner here.**  `Gamma0GL 1` is the whole of
-`SL(2, ℤ)` inside `GL(2, ℝ)` and `S₂(SL(2, ℤ)) = 0` is the classical
-genus-`0` statement for the `j`-line, so both divisors are honest
-instances of the same fact rather than one real case and one vacuous one.
-Note that `M = 0` cannot occur: `M ∣ 169` forces `M ∈ {1, 13, 169}`.
+* `S₂(Γ₀(1)) = 0` is PROVEN IN THIS TREE, and has been since 2026-07-24, as
+  `GaloisRepresentation.Modularity.cuspForm_level_one_coe_eq_zero`.  It was
+  invisible from here only because it sat in `Modularity/Interface.lean`,
+  DOWNSTREAM of this file; it has been hoisted to
+  `Modularity/HeckeOperator.lean` (upstream) and the consumer below now
+  cites it.  The sibling `cuspForm_level_two_coe_eq_zero` (`S₂(Γ₀(2)) = 0`)
+  is proven too.
+* Mathlib does supply the level-1 half outright:
+  `CuspForm.rank_eq_zero_of_weight_lt_twelve` in
+  `Mathlib/NumberTheory/ModularForms/LevelOne/DimensionFormula.lean` gives
+  `S_k(SL(2, ℤ)) = 0` for every `k < 12`.  What mathlib has at `a3364fa` is
+  the LEVEL-ONE dimension formula only; `ModularForms/DimensionFormulas/`
+  is a one-line deprecated alias for it, and there is no `Γ₀(N)` valence or
+  genus formula anywhere in the pin.
+
+**Why the norm/Sturm route that proves levels `1` and `2` does NOT reach
+`13`** — this is the actual shape of the gap, and it is worth knowing before
+attacking the leaf.  That route sends `f ∈ S₂(Γ₀(M))` to
+`ModularForm.norm 𝒮ℒ f`, of weight `2·[SL(2,ℤ) : Γ₀(M)]` at level `1`, and
+supplies just `order ≥ 1` (the constant term vanishes because every
+translate vanishes at `i∞`).  The level-1 Sturm bound needs
+`order > ⌊weight/12⌋`, so the argument closes exactly when the index is
+`≤ 11`: index `1` at `M = 1`, index `3` at `M = 2` — and index `14` at
+`M = 13`, where the weight is `28` and the threshold is `2`.
+
+Nor does a sharper cusp count rescue it.  `Γ₀(13)` has two cusps, of widths
+`1` and `13`, and a cusp form vanishing to order `1` at each gives the norm
+`ord_∞ = 1·1 + 13·(1/13) = 2` exactly — still short of `3`, and consistent:
+by the valence formula a hypothetical nonzero `f` would have total zero
+order `2·14/12 = 7/3`, i.e. `2` at the cusps plus `1/3` at an elliptic point
+of order `3`.  What actually kills it is the local congruence at such a
+point (for weight `k` the order there is `≡ -k/2 mod 3`, so `≡ 2`, and `1`
+is impossible), and that is precisely the ingredient a valence formula for
+`Γ₀(13)` would supply.  Powers of `f` do not help: `ord/weight = 1/14` is
+scale-invariant and `1/14 < 1/12`.
+
+So the missing theory is the valence (equivalently genus, equivalently
+weight-two dimension) formula for `Γ₀(N)` — the SAME theory
+`finrank_cuspForm_of_x0HeckeCharpolyTable` above needs, and the same one
+`X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+(`FreyCurve/MazurTorsion.lean`) needs.  A prover should build it once, for
+general `N`, rather than for `13` alone.
 
 **The check that refutes this leaf**: `mfdim(mfinit([13,2],1))` returning
 anything other than `0`. -/
-theorem cuspForm_eq_zero_of_properDivisor_oneSixtyNine (M : ℕ) (_hM : M ∣ 169)
-    (_hMne : M ≠ 169) (g : CuspForm (Gamma0GL M) 2) : ⇑g = 0 :=
+theorem cuspForm_eq_zero_level_thirteen (g : CuspForm (Gamma0GL 13) 2) : ⇑g = 0 :=
   sorry
+
+/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`, ON FUNCTIONS**
+(PROVEN 2026-07-28; a single `sorry` earlier the same day) — the whole
+arithmetic content of
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` below, with the
+normalization bookkeeping stripped off.
+
+`M ∣ 169 = 13²` and `M ≠ 169` leave exactly `M ∈ {1, 13}`
+(`Nat.dvd_prime_pow`), so `M = 0` cannot occur.  The two branches are NOT
+symmetric, which is the point of doing the split here:
+
+* `M = 1` is `S₂(SL(2, ℤ)) = 0`, PROVEN — `cuspForm_level_one_coe_eq_zero`,
+  hoisted to `Modularity/HeckeOperator.lean` on 2026-07-28 so that it is
+  citable from this file.  (`Fermat.Gamma0GL` and
+  `GaloisRepresentation.Modularity.Gamma0GL` are the same term — see the
+  `WeightTwoEigenform.lean` module docstring — so no bridge is needed and
+  none should be written.)
+* `M = 13` is the leaf `cuspForm_eq_zero_level_thirteen` above, where the
+  whole remaining content sits. -/
+theorem cuspForm_eq_zero_of_properDivisor_oneSixtyNine (M : ℕ) (hM : M ∣ 169)
+    (hMne : M ≠ 169) (g : CuspForm (Gamma0GL M) 2) : ⇑g = 0 := by
+  have h13 : Nat.Prime 13 := by decide
+  have hM2 : M ∣ 13 ^ 2 := by norm_num at hM ⊢; exact hM
+  obtain ⟨m, hm, rfl⟩ := (Nat.dvd_prime_pow h13).mp hM2
+  interval_cases m
+  · exact _root_.GaloisRepresentation.Modularity.cuspForm_level_one_coe_eq_zero g
+  · exact cuspForm_eq_zero_level_thirteen g
+  · exact absurd (by norm_num) hMne
 
 /-- **A VANISHING CUSP FORM CARRIES NO NORMALIZED EIGENFORM** (PROVEN
 2026-07-28) — LEVEL-FREE, and the bookkeeping half of
@@ -56482,6 +56538,96 @@ theorem axisRestrict_fricke_of_isAtkinLehnerMinusForm (N : ℕ) (hN : N ≠ 0)
   rw [axisRestrict_one_div_eq_frickeSlash N hN f hy, hval]
   ring
 
+/-- **TERMWISE INTEGRATION OF THE `q`-SERIES OVER `[1, ∞)`** (sorry leaf,
+2026-07-28) — LEVEL-FREE, no Atkin–Lehner hypothesis, no reference to `169`.
+
+`hasSum_axisRestrict` (`ModularCurve/WeightTwoEigenform.lean`, PROVEN) gives,
+for every `y > 0`,
+
+> `axisRestrict N f y = ∑_{n ≥ 0} a_{n+1} · exp(-(2π(n+1)/√N)·y)`,
+
+and `∫_1^∞ exp(-c y) dy = e^{-c}/c` for `c > 0`.  This leaf is exactly the
+interchange of the sum with `∫_{(1, ∞)}`.
+
+TRUE, and the interchange is the routine one: with `c_n = 2π(n+1)/√N > 0`,
+`∑_n ∫_1^∞ |a_{n+1}| e^{-c_n y} dy = ∑_n |a_{n+1}| e^{-c_n}/c_n < ∞`
+because `|a_n| = O(n)` for a weight-two cusp form
+(`isBigO_atTop_coeff`, PROVEN in `WeightTwoEigenform.lean`, and Deligne is
+NOT needed) while `e^{-c_n}` decays geometrically — so Tonelli applies and
+the sum is absolutely convergent.  Note this is the step that fails on
+`(0, ∞)`: there the defining integral of `cuspPeriod` is only conditionally
+convergent, which is the whole reason
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` moves the seam to `[1, ∞)`
+first.
+
+**`hf` MAY NOT BE DROPPED.**  It is the only thing tying `a` to `f`; without
+it `a` is an arbitrary sequence and the statement is false for any `a` whose
+sum differs from the integral (take `f = 0`, `a = 1`).  **`hN` is kept for
+honesty rather than strength**: at `N = 0` both sides are `0` by junk values
+(`axisRestrict 0 f = 0`, and `2π/√0 = 0` makes every summand `a_{n+1} · 0`),
+so the statement is vacuously true there — it is not a hidden corner.
+
+**This leaf serves TWO consumers and should be hoisted when the second one
+is attacked.**  Besides
+`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine` below,
+the Kenku-level `integral_Ioi_one_axisRestrict_ne_zero` (~23000 lines above,
+whose docstring names this same interchange as "the natural next cut") wants
+it verbatim.  It is stated here rather than there only because that
+declaration is upstream of this point and is owned elsewhere; moving this
+block above it — or, better, next to `hasSum_axisRestrict` in
+`WeightTwoEigenform.lean`, which is where it belongs — is a pure relocation
+and costs nothing.
+
+**The check that refutes it**: any `N`, `f`, `a` with `IsWeightTwoEigenform`
+for which the two sides disagree numerically. -/
+theorem hasSum_integral_Ioi_one_axisRestrict {N : ℕ} (_hN : N ≠ 0)
+    {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ} (_hf : IsWeightTwoEigenform N f a) :
+    HasSum (fun n : ℕ => a (n + 1) *
+        ((Real.exp (-(2 * Real.pi / Real.sqrt N * (n + 1))) /
+          (2 * Real.pi / Real.sqrt N * (n + 1)) : ℝ) : ℂ))
+      (∫ y in Set.Ioi (1 : ℝ), axisRestrict N f y) :=
+  sorry
+
+/-- **THE `169` NUMERICS, ON THE COEFFICIENT SEQUENCE** (sorry leaf,
+2026-07-28) — the arithmetic half of
+`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine` below,
+with the analysis discharged into `hasSum_integral_Ioi_one_axisRestrict`
+above.  Since `√169 = 13` the sum is
+`∑_{n ≥ 1} a_n · (13/(2πn)) · e^{-2πn/13}`, geometrically convergent, so
+this is a finite numerical check with an effective truncation error from
+`|aₙ| ≤ d(n)√n`.
+
+TRUE, by the PARI/GP reconnaissance recorded on the consumer:
+`S₂(Γ₀(169))` is `8`-dimensional and entirely new, splitting into newform
+orbits of dimensions `2, 3, 3` with `w_169`-eigenvalues `-1, -1, +1`, and
+every embedding of the two MINUS orbits has `L(f, 1) ≠ 0` (values
+`0.96638630…, 2.26861060…` and `2.24086248…, 1.56775113…, 0.55137215…`).
+
+**`hw` MAY NOT BE DROPPED, and the witness is orbit `3`** — an eigenform of
+level `169` with `w_169 = +1` and `L(f, 1) = 0` to `58` digits, which is
+exactly why `169 ∉ kenkuLevels`.  **`hf` may not be dropped either**: it is
+what makes `a` the coefficient sequence of `f` rather than an arbitrary one,
+and `hw` constrains `f` alone.
+
+**`f` has NOT been eliminated from the statement, deliberately.**  The cut
+removes the ANALYSIS, not the modular form: `IsAtkinLehnerMinusForm` is a
+condition on `f` (the slash action by `W_169`) with no known expression in
+terms of `a` alone at this pin, so a leaf phrased purely on `a` would have to
+invent one.  Whoever proves the functional equation for the `L`-series can
+then re-cut this.
+
+**What this leaf still needs** is unchanged by the decomposition: an explicit
+certified basis of `S₂(Γ₀(169))^{new}` with its Atkin–Lehner decomposition.
+That is the real gate, shared with `integral_Ioi_one_axisRestrict_ne_zero`
+and with `finrank_cuspForm_of_x0HeckeCharpolyTable`. -/
+theorem tsum_coeff_ne_zero_atkinLehnerMinus_oneSixtyNine
+    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 169 f a)
+    (_hw : IsAtkinLehnerMinusForm 169 f) :
+    ∑' n : ℕ, a (n + 1) *
+        ((Real.exp (-(2 * Real.pi / Real.sqrt 169 * (n + 1))) /
+          (2 * Real.pi / Real.sqrt 169 * (n + 1)) : ℝ) : ℂ) ≠ 0 :=
+  sorry
+
 /-- **THE `L`-VALUE NUMERICS AT `169`, ON THE MINUS EIGENSPACE: the tail
 integral does not vanish** (sorry leaf, 2026-07-28) — the exact analogue
 of `integral_Ioi_one_axisRestrict_ne_zero` at the Kenku levels, and after
@@ -56520,12 +56666,21 @@ same missing theory as `integral_Ioi_one_axisRestrict_ne_zero`, and the
 real gate on both clusters.  **The check that refutes it**:
 `lfunorderzero` returning a nonzero value at any embedding of the two
 `w_169 = -1` orbits, or `mfatkineigenvalues(mfinit([169,2],0), 169)`
-returning a pattern other than `[[-1,-1], [-1,-1,-1], [1,1,1]]`. -/
+returning a pattern other than `[[-1,-1], [-1,-1,-1], [1,1,1]]`.
+
+**DECOMPOSED 2026-07-28 ALONG THE TERMWISE INTEGRATION** — the cut both
+this docstring and `integral_Ioi_one_axisRestrict_ne_zero`'s named as "the
+natural next cut", now taken.  The two theories it was carrying are on the
+two named leaves below,
+`hasSum_integral_Ioi_one_axisRestrict` (analysis, LEVEL-FREE) and
+`tsum_coeff_ne_zero_atkinLehnerMinus_oneSixtyNine` (the arithmetic), and
+this declaration is their composition. -/
 theorem integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine
-    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 169 f a)
-    (_hw : IsAtkinLehnerMinusForm 169 f) :
-    ∫ y in Set.Ioi (1 : ℝ), axisRestrict 169 f y ≠ 0 :=
-  sorry
+    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform 169 f a)
+    (hw : IsAtkinLehnerMinusForm 169 f) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict 169 f y ≠ 0 := by
+  rw [← (hasSum_integral_Ioi_one_axisRestrict (by norm_num) hf).tsum_eq]
+  exact tsum_coeff_ne_zero_atkinLehnerMinus_oneSixtyNine f a hf hw
 
 /-- **THE PERIOD OF AN ATKIN–LEHNER-MINUS EIGENFORM OF LEVEL `169` IS
 NONZERO** (PROVEN 2026-07-28 from the leaf above).
@@ -56673,7 +56828,24 @@ and it is the same three-way split
 (`geometry` / `level is new` / `numerics`) that
 `isTorsion_jacobian_of_kenkuLevel` sits on one level up.  What is
 LEVEL-SPECIFIC has shrunk to two statements, neither of which mentions a
-scheme. -/
+scheme.
+
+**UPDATE 2026-07-28, LATER: rows two and three are no longer leaves.**
+Both were cut, and the table above is retained only as the record of the
+split.  The live leaves under them are
+
+| leaf | theory | level |
+|---|---|---|
+| `cuspForm_eq_zero_level_thirteen` | `S₂(Γ₀(13)) = 0` — valence/genus formula for `Γ₀(N)` | `13` |
+| `hasSum_integral_Ioi_one_axisRestrict` | termwise integration of the `q`-series over `[1, ∞)` | generic |
+| `tsum_coeff_ne_zero_atkinLehnerMinus_oneSixtyNine` | numerics: five `L`-values | `169` |
+
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` is PROVEN over
+`cuspForm_eq_zero_of_properDivisor_oneSixtyNine` (itself PROVEN: the
+`M = 1` branch is `cuspForm_level_one_coe_eq_zero`) and
+`not_isWeightTwoEigenform_of_coe_eq_zero`;
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine` is PROVEN over
+`cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine` and the Fricke block. -/
 theorem isTorsion_minusFactor_x0OneSixtyNine {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY) {jstr : J ⟶ SpecQ}
@@ -56920,6 +57092,15 @@ the classical flatness of a surjective homomorphism of abelian schemes;
 the additivity, involutivity and Hecke-commutation of the descended
 `w_{A i}` are formal, by relative rigidity and epi-cancellation along
 `u i`.
+
+**UPDATE 2026-07-28, LATER STILL**: the last two rows are not leaves
+either.  `not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` and
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine` are both
+PROVEN; the live leaves under them are `cuspForm_eq_zero_level_thirteen`
+(`S₂(Γ₀(13)) = 0` — the `M = 1` half of the divisor statement is discharged
+by the PROVEN `cuspForm_level_one_coe_eq_zero`),
+`hasSum_integral_Ioi_one_axisRestrict` (termwise integration, LEVEL-FREE)
+and `tsum_coeff_ne_zero_atkinLehnerMinus_oneSixtyNine` (the numerics).
 
 together with three PROVEN assemblies —
 `isTorsion_minusFactor_x0OneSixtyNine`,
