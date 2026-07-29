@@ -548,6 +548,12 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.AutCocycle
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `WeierstrassCurve.pointAbscissa` (the `x`-coordinate of an affine point, junk
+-- value `0` at infinity) and `WeierstrassCurve.eq_of_intCast_sub_dvd`.  This is
+-- the file holding `exists_point_of_isKernelPolynomial`, of which
+-- `exists_monic_dvd_preΨ_of_twoStableLines` below is the converse, so the two
+-- directions of the kernel-polynomial dictionary now share one import cone.
+public import Fermat.FLT.EllipticCurve.KernelPolynomial
 -- `WeierstrassCurve.IsIsogeny`, the GEOMETRIC hypothesis (rational map,
 -- surjective, finite kernel) that separates a genuine endomorphism of
 -- `E_ℚ̄` from an arbitrary endomorphism of the abstract group `E(ℚ̄)`.  It
@@ -17604,10 +17610,244 @@ theorem exists_monic_map_eq_of_fixed {F : Type} [Field F] [CharZero F]
     Polynomial.lifts_and_natDegree_eq_and_monic hlifts hP
   exact ⟨Q, hQmonic, hQdeg, hQmap⟩
 
+/-! ### Abscissae of a punctured line
+
+The point-side half of `exists_monic_dvd_preΨ_of_twoStableLines`.  Everything
+here is stated over a general extension `L/F` of fields, because that is the
+shape in which `Fermat/FLT/EllipticCurve/TorsionCard.lean` and
+`Fermat/FLT/EllipticCurve/KernelPolynomial.lean` supply the two inputs — the
+`x`-collision dichotomy `TorsionCard.eq_or_add_eq_zero_of_X_eq` and the junk-
+valued abscissa `WeierstrassCurve.pointAbscissa`.
+
+`exists_point_of_isKernelPolynomial` needs only the "at most `2`-to-`1`" half
+of the abscissa fibre count; `exists_abscissaSet_of_stableLine` below needs the
+sharp count, which is where `p` odd is consumed a second time (a point of odd
+order is never its own negative). -/
+
+namespace StableAbscissae
+
+open _root_.WeierstrassCurve
+
+variable {F L : Type} [Field F] [Field L] [Algebra F L] [DecidableEq L]
+
+omit [DecidableEq L] in
+/-- The abscissa is insensitive to negation: `x(−P) = x(P)`. -/
+theorem pointAbscissa_neg {E : WeierstrassCurve F} (Q : (E⁄L).Point) :
+    pointAbscissa (-Q) = pointAbscissa Q := by
+  rcases Q with _ | ⟨x, y, h⟩
+  · rfl
+  · rw [Affine.Point.neg_some]; rfl
+
+/-- The abscissa commutes with the map on points induced by an algebra
+homomorphism: `x(σ · P) = σ(x(P))`. -/
+theorem pointAbscissa_map {E : WeierstrassCurve F} (f : L →ₐ[F] L) (Q : (E⁄L).Point) :
+    pointAbscissa (Affine.Point.map f Q) = f (pointAbscissa Q) := by
+  rcases Q with _ | ⟨x, y, h⟩
+  · exact (map_zero f).symm
+  · rw [Affine.Point.map_some]; rfl
+
+omit [DecidableEq L] in
+/-- A nonzero point of `(E⁄L)` is affine. -/
+theorem exists_some_of_ne_zero {E : WeierstrassCurve F} {Q : (E⁄L).Point} (hQ : Q ≠ 0) :
+    ∃ (x y : L) (h : (E⁄L).toAffine.Nonsingular x y), Q = Affine.Point.some x y h := by
+  rcases Q with _ | ⟨x, y, h⟩
+  · exact absurd rfl hQ
+  · exact ⟨x, y, h, rfl⟩
+
+/-- **The `x`-collision dichotomy, phrased on points**: two nonzero points with
+the same abscissa are equal or opposite.  This is
+`TorsionCard.eq_or_add_eq_zero_of_X_eq` with the affine destructuring done
+once and for all. -/
+theorem eq_or_eq_neg_of_pointAbscissa_eq {E : WeierstrassCurve F} [E.IsElliptic]
+    {P Q : (E⁄L).Point} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (h : pointAbscissa P = pointAbscissa Q) : P = Q ∨ P = -Q := by
+  haveI : (E⁄L).IsElliptic := inferInstanceAs ((E.map (algebraMap F L)).IsElliptic)
+  obtain ⟨x₁, y₁, h₁, rfl⟩ := exists_some_of_ne_zero hP
+  obtain ⟨x₂, y₂, h₂, rfl⟩ := exists_some_of_ne_zero hQ
+  rw [pointAbscissa_some, pointAbscissa_some] at h
+  rcases (TorsionCard.eq_or_add_eq_zero_of_X_eq (E⁄L) h₁ h₂ h :
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄L).Point) = Affine.Point.some x₂ y₂ h₂ ∨
+        (Affine.Point.some x₁ y₁ h₁ : (E⁄L).Point) +
+          Affine.Point.some x₂ y₂ h₂ = 0) with hc | hc
+  · exact Or.inl hc
+  · exact Or.inr (eq_neg_of_add_eq_zero_left hc)
+
+/-- **The abscissa of a nonzero `p`-torsion point kills `preΨ' p`**, for `p`
+odd: `TorsionCard.smul_some_eq_zero_iff` puts it in the zero set of `ΨSq p`,
+and `WeierstrassCurve.ΨSq_ofNat` makes `ΨSq p = (preΨ' p)²` there. -/
+theorem eval_preΨ'_eq_zero {E : WeierstrassCurve F} [E.IsElliptic]
+    {p : ℕ} (hodd : Odd p) {Q : (E⁄L).Point} (hQ : Q ≠ 0) (hQt : (p : ℤ) • Q = 0) :
+    ((E⁄L).preΨ' p).eval (pointAbscissa Q) = 0 := by
+  haveI : (E⁄L).IsElliptic := inferInstanceAs ((E.map (algebraMap F L)).IsElliptic)
+  have hp0 : p ≠ 0 := by rintro rfl; simp [Nat.odd_iff] at hodd
+  have hpZ : ((p : ℤ)) ≠ 0 := by exact_mod_cast hp0
+  obtain ⟨x, y, h, rfl⟩ := exists_some_of_ne_zero hQ
+  rw [pointAbscissa_some]
+  have hΨ : ((E⁄L).ΨSq (p : ℤ)).eval x = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E⁄L) hpZ h :
+      ((p : ℤ) • (Affine.Point.some x y h : (E⁄L).Point) = 0) ↔
+        ((E⁄L).ΨSq (p : ℤ)).eval x = 0).mp hQt
+  rw [WeierstrassCurve.ΨSq_ofNat, if_neg (Nat.not_even_iff_odd.mpr hodd), mul_one,
+    Polynomial.eval_pow] at hΨ
+  exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hΨ
+
+/-- **Two lines of order `p` meeting nontrivially coincide**: if `a • g₁` lies
+in `⟨g₂⟩` with `a` prime to `p`, then `⟨g₁⟩ = ⟨g₂⟩`.  The Bézout inverse of `a`
+modulo `p` pulls `g₁` itself into `⟨g₂⟩`, and equal cardinality upgrades the
+inclusion to an equality.  This is the ONLY place `hne` is consumed in
+`exists_stableAbscissaSet_of_twoStableLines`, and it is what makes the two
+lines' abscissa sets disjoint. -/
+theorem zmultiples_eq_of_zsmul_mem {A : Type*} [AddCommGroup A] {p : ℕ} (hp : p.Prime)
+    {g₁ g₂ : A} (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    {a : ℤ} (ha : ¬ ((p : ℤ) ∣ a)) (h : a • g₁ ∈ AddSubgroup.zmultiples g₂) :
+    AddSubgroup.zmultiples g₁ = AddSubgroup.zmultiples g₂ := by
+  obtain ⟨u, v, huv⟩ : IsCoprime (p : ℤ) a :=
+    ((Nat.prime_iff_prime_int.mp hp).coprime_iff_not_dvd).mpr ha
+  have hz : (a * v - 1) • g₁ = 0 := by
+    rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hg₁]
+    exact ⟨-u, by linear_combination huv⟩
+  have h1 : (a * v) • g₁ = g₁ := by
+    rw [sub_smul, one_zsmul, sub_eq_zero] at hz; exact hz
+  have hg : g₁ = v • (a • g₁) := by
+    rw [smul_smul, mul_comm v a, h1]
+  have hmem : g₁ ∈ AddSubgroup.zmultiples g₂ := by
+    rw [hg]; exact AddSubgroup.zsmul_mem _ h v
+  have hsub : AddSubgroup.zmultiples g₁ ≤ AddSubgroup.zmultiples g₂ :=
+    AddSubgroup.zmultiples_le.mpr hmem
+  haveI : Finite (AddSubgroup.zmultiples g₂) := by
+    have hc : Nat.card (AddSubgroup.zmultiples g₂) = p := by rw [Nat.card_zmultiples, hg₂]
+    exact (Nat.card_pos_iff.mp (by rw [hc]; exact hp.pos)).2
+  refine SetLike.coe_injective (Set.eq_of_subset_of_ncard_le hsub ?_ (Set.toFinite _))
+  have e1 : (AddSubgroup.zmultiples g₂ : Set A).ncard = p := by
+    rw [← Nat.card_coe_set_eq, SetLike.coe_sort_coe, Nat.card_zmultiples, hg₂]
+  have e2 : (AddSubgroup.zmultiples g₁ : Set A).ncard = p := by
+    rw [← Nat.card_coe_set_eq, SetLike.coe_sort_coe, Nat.card_zmultiples, hg₁]
+  rw [e1, e2]
+
+/-- **The abscissae of ONE punctured stable line of order an odd prime `p`**
+(PROVEN 2026-07-29): exactly `(p − 1)/2` of them, permuted by `Gal(L/F)`, and
+they are exactly the abscissae of the nonzero multiples of `g`.
+
+The witness is `S = {x(k · g) : 1 ≤ k ≤ (p − 1)/2}`, indexed by naturals rather
+than cut out of the line as a subgroup: injectivity on that range and closure
+of the whole punctured line's abscissa set under folding `k ↦ p − k` are then
+both `omega`-level once `eq_or_eq_neg_of_pointAbscissa_eq` has turned an
+abscissa collision into `p ∣ k ∓ l`.
+
+The last two clauses are a `↔` in disguise (`S` is exactly the abscissa set of
+`⟨g⟩ ∖ 0`) and are what the two-line statement needs: the third gives the
+disjointness of the two lines' contributions, the fourth their Galois
+stability. -/
+theorem exists_abscissaSet_of_stableLine {E : WeierstrassCurve F} [E.IsElliptic]
+    {p : ℕ} (hp : p.Prime) (hodd : Odd p) {g : (E⁄L).Point} (hg : addOrderOf g = p)
+    (hs : ∀ σ : L ≃ₐ[F] L, ∀ x ∈ AddSubgroup.zmultiples g,
+      Affine.Point.map (σ : L ≃ₐ[F] L).toAlgHom x ∈ AddSubgroup.zmultiples g) :
+    ∃ S : Finset L, S.card = (p - 1) / 2 ∧
+      (∀ σ : L ≃ₐ[F] L, S.image σ = S) ∧
+      (∀ α ∈ S, ∃ k : ℤ, ¬ ((p : ℤ) ∣ k) ∧ pointAbscissa (k • g) = α) ∧
+      (∀ k : ℤ, ¬ ((p : ℤ) ∣ k) → pointAbscissa (k • g) ∈ S) := by
+  obtain ⟨t, ht⟩ := hodd
+  have hp2 := hp.two_le
+  have hzero_iff : ∀ n : ℤ, n • g = 0 ↔ (p : ℤ) ∣ n := by
+    intro n; rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hg]
+  have hgne : g ≠ 0 := by
+    intro hc; rw [hc, addOrderOf_zero] at hg; omega
+  have hnd : ∀ k : ℕ, 1 ≤ k → k < p → ¬ ((p : ℤ) ∣ (k : ℤ)) := by
+    intro k hk1 hk2 hc
+    have := Nat.le_of_dvd (by omega) (Int.natCast_dvd_natCast.mp hc)
+    omega
+  have hcoll : ∀ a b : ℤ, ¬ ((p : ℤ) ∣ a) → ¬ ((p : ℤ) ∣ b) →
+      pointAbscissa (a • g) = pointAbscissa (b • g) →
+      (p : ℤ) ∣ a - b ∨ (p : ℤ) ∣ a + b := by
+    intro a b ha hb hab
+    rcases eq_or_eq_neg_of_pointAbscissa_eq (fun hc => ha ((hzero_iff a).mp hc))
+        (fun hc => hb ((hzero_iff b).mp hc)) hab with hc | hc
+    · exact Or.inl ((hzero_iff _).mp (by rw [sub_smul, hc, sub_self]))
+    · exact Or.inr ((hzero_iff _).mp (by rw [add_smul, hc, neg_add_cancel]))
+  set S : Finset L := (Finset.Ico 1 (t + 1)).image (fun k : ℕ => pointAbscissa ((k : ℤ) • g))
+    with hSdef
+  have hwit : ∀ α ∈ S, ∃ k : ℤ, ¬ ((p : ℤ) ∣ k) ∧ pointAbscissa (k • g) = α := by
+    intro α hα
+    rw [hSdef, Finset.mem_image] at hα
+    obtain ⟨k, hk, rfl⟩ := hα
+    rw [Finset.mem_Ico] at hk
+    exact ⟨(k : ℤ), hnd k (by omega) (by omega), rfl⟩
+  have hsurj : ∀ m : ℤ, ¬ ((p : ℤ) ∣ m) → pointAbscissa (m • g) ∈ S := by
+    intro m hm
+    have hpZ : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+    have hr0 : 0 ≤ m % (p : ℤ) := Int.emod_nonneg m (by omega)
+    have hrlt : m % (p : ℤ) < (p : ℤ) := Int.emod_lt_of_pos m hpZ
+    set r : ℕ := (m % (p : ℤ)).toNat with hrdef
+    have hrZ : ((r : ℤ)) = m % (p : ℤ) := Int.toNat_of_nonneg hr0
+    have hrne : r ≠ 0 := by
+      intro hc
+      exact hm (Int.dvd_of_emod_eq_zero (by rw [← hrZ, hc]; simp))
+    have hrp : r < p := by
+      have h' : (r : ℤ) < (p : ℤ) := by rw [hrZ]; exact hrlt
+      exact_mod_cast h'
+    have hsm : m • g = (r : ℤ) • g := by
+      have hd : (p : ℤ) ∣ m - (r : ℤ) := by
+        rw [hrZ]; exact ⟨m / (p : ℤ), by rw [Int.emod_def]; ring⟩
+      have h0 : (m - (r : ℤ)) • g = 0 := (hzero_iff _).mpr hd
+      rw [sub_smul, sub_eq_zero] at h0; exact h0
+    rw [hsm]
+    rcases Nat.lt_or_ge t r with hrt | hrt
+    · have hcast : ((p - r : ℕ) : ℤ) = (p : ℤ) - (r : ℤ) := by omega
+      have h0 : ((r : ℤ) + ((p - r : ℕ) : ℤ)) • g = 0 := by
+        refine (hzero_iff _).mpr ?_
+        rw [hcast]; ring_nf; exact ⟨1, by ring⟩
+      rw [add_smul] at h0
+      have hneg : (r : ℤ) • g = -(((p - r : ℕ) : ℤ) • g) := eq_neg_of_add_eq_zero_left h0
+      rw [hneg, pointAbscissa_neg]
+      exact Finset.mem_image.mpr ⟨p - r, Finset.mem_Ico.mpr ⟨by omega, by omega⟩, rfl⟩
+    · exact Finset.mem_image.mpr ⟨r, Finset.mem_Ico.mpr ⟨by omega, by omega⟩, rfl⟩
+  have hcard : S.card = (p - 1) / 2 := by
+    rw [hSdef, Finset.card_image_of_injOn, Nat.card_Ico]
+    · omega
+    · intro k hk l hl hkl
+      simp only [Finset.coe_Ico, Set.mem_Ico] at hk hl
+      rcases hcoll _ _ (hnd k (by omega) (by omega)) (hnd l (by omega) (by omega)) hkl with hc | hc
+      · exact WeierstrassCurve.eq_of_intCast_sub_dvd (p := p) (by omega) (by omega) hc
+      · exfalso
+        have hdn : p ∣ k + l := by
+          have h' : (p : ℤ) ∣ ((k + l : ℕ) : ℤ) := by push_cast; exact hc
+          exact Int.natCast_dvd_natCast.mp h'
+        have := Nat.le_of_dvd (by omega) hdn
+        omega
+  refine ⟨S, hcard, ?_, hwit, hsurj⟩
+  intro σ
+  refine Finset.eq_of_subset_of_card_le ?_
+    (le_of_eq (Finset.card_image_of_injective S σ.injective).symm)
+  intro α hα
+  rw [Finset.mem_image] at hα
+  obtain ⟨β, hβ, rfl⟩ := hα
+  obtain ⟨k, hk, rfl⟩ := hwit β hβ
+  obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp (hs σ g (AddSubgroup.mem_zmultiples g))
+  have hnnd : ¬ ((p : ℤ) ∣ n) := by
+    intro hc
+    have h0 : Affine.Point.map (σ : L ≃ₐ[F] L).toAlgHom g = 0 := by
+      rw [← hn]; exact (hzero_iff n).mpr hc
+    exact hgne (Affine.Point.map_injective _ (h0.trans (Affine.Point.map_zero _).symm))
+  have hkey : σ (pointAbscissa (k • g)) = pointAbscissa ((k * n) • g) := by
+    have hmapeq : Affine.Point.map (σ : L ≃ₐ[F] L).toAlgHom (k • g) = (k * n) • g := by
+      rw [map_zsmul, ← hn, smul_smul]
+    calc σ (pointAbscissa (k • g))
+        = pointAbscissa (Affine.Point.map (σ : L ≃ₐ[F] L).toAlgHom (k • g)) :=
+          (pointAbscissa_map (σ : L ≃ₐ[F] L).toAlgHom (k • g)).symm
+      _ = pointAbscissa ((k * n) • g) := by rw [hmapeq]
+  rw [hkey]
+  refine hsurj _ (fun hc => ?_)
+  rcases ((Nat.prime_iff_prime_int.mp hp).dvd_mul).mp hc with h' | h'
+  · exact hk h'
+  · exact hnnd h'
+
+end StableAbscissae
+
 /-- **Two independent stable lines of order `p` contribute `p − 1` distinct
-`Γ_ℚ`-permuted abscissae of `p`-torsion points** (sorry leaf, cut 2026-07-28
-out of `exists_monic_dvd_preΨ_of_twoStableLines`; ALL of that leaf's remaining
-content, and it mentions no polynomial at all).
+`Γ_ℚ`-permuted abscissae of `p`-torsion points** (PROVEN 2026-07-29 over the
+`StableAbscissae` section above; cut 2026-07-28 out of
+`exists_monic_dvd_preΨ_of_twoStableLines`, whose ALL remaining content it was,
+and it mentions no polynomial at all).
 
 This is the whole of the "stable subgroup ⟹ kernel polynomial" descent that is
 not already discharged by `exists_monic_map_eq_of_fixed` and
@@ -17632,38 +17872,90 @@ POINTS and their `x`-coordinates:
    (`TorsionCard.smul_some_eq_zero_iff`), and `ΨSq p = (preΨ' p)²` for odd `p`
    (`WeierstrassCurve.ΨSq_ofNat`), so `preΨ' p` vanishes there too.
 
-**A note for whoever proves it: the natural construction is
-`S := (Finset.Ico 1 p).image (fun i => x (i • g₁)) ∪ (… g₂)`**, and then (1)
-and (2) are injectivity statements about `i ↦ x(i • g)` on `1 ≤ i ≤ (p−1)/2`
-and about the two images, while (3) is closure of that image under `σ`.
-`MazurGenusZero.zsmul_cases` is the `p ∈ {2, 3}` analogue of the arithmetic in
-(1) and generalises to `k • g ∈ {±(k mod p) • g}`.
+**HOW IT WAS ACTUALLY DONE** (2026-07-29).  Both halves of (1)–(4) are pushed
+into `StableAbscissae.exists_abscissaSet_of_stableLine`, which does ONE line
+and returns, besides the count and the `σ`-invariance, the two clauses saying
+that its `S` is *exactly* the abscissa set of `⟨g⟩ ∖ 0` — a witness clause and
+a surjectivity clause.  Those two are what makes the two-line assembly here
+three lines of `Finset` bookkeeping: disjointness is the surjectivity clause of
+one side against the witness clause of the other, run through
+`StableAbscissae.zmultiples_eq_of_zsmul_mem`.
+
+The per-line set is `{x(k · g) : 1 ≤ k ≤ (p − 1)/2}` indexed by NATURALS, not
+carved out of the subgroup: the `2`-to-`1` fibre count of (1) never has to be
+formed, because injectivity on `1 ≤ k ≤ (p − 1)/2` and the fold `k ↦ p − k`
+between `(p − 1)/2 < k < p` and the indexed range replace it, and both are
+`omega` once `eq_or_eq_neg_of_pointAbscissa_eq` has converted an abscissa
+collision into `p ∣ k − l ∨ p ∣ k + l`.
+
+The route note above suggesting `Finset.Ico 1 p` (the WHOLE punctured line,
+then a fibre count) is superseded by that; `MazurGenusZero.zsmul_cases` was not
+needed either, since `Int.emod` does the reduction uniformly in `p`.
 
 **NOT VACUOUS.**  The conclusion pins `S.card = p − 1`, which is the entire
 arithmetic content; with `S = ∅` the other two clauses are trivially true, so
 the cardinality clause must not be weakened to `≤`.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` with two
-distinct `Γ_ℚ`-stable lines of odd prime order `p` whose `p`-torsion points
-supply fewer than `p − 1` distinct abscissae. -/
+**THE CHECK THAT WOULD HAVE REFUTED THIS LEAF**: an elliptic curve over `ℚ`
+with two distinct `Γ_ℚ`-stable lines of odd prime order `p` whose `p`-torsion
+points supply fewer than `p − 1` distinct abscissae.  There is none: `hne` and
+`hp.Prime` force `⟨g₁⟩ ∩ ⟨g₂⟩ = 0`, which is exactly `zmultiples_eq_of_zsmul_mem`
+read contrapositively. -/
 theorem exists_stableAbscissaSet_of_twoStableLines {p : ℕ}
-    (_hp : p.Prime) (_hodd : Odd p)
+    (hp : p.Prime) (hodd : Odd p)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
-    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₁)
-    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₂) :
     ∃ S : Finset (AlgebraicClosure ℚ), S.card = p - 1 ∧
       (∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, S.image σ = S) ∧
-      (∀ α ∈ S, ((E⁄(AlgebraicClosure ℚ)).preΨ' p).eval α = 0) :=
-  sorry
+      (∀ α ∈ S, ((E⁄(AlgebraicClosure ℚ)).preΨ' p).eval α = 0) := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  obtain ⟨S₁, hc₁, hi₁, hw₁, -⟩ :=
+    StableAbscissae.exists_abscissaSet_of_stableLine hp hodd hg₁ hs₁
+  obtain ⟨S₂, hc₂, hi₂, hw₂, -⟩ :=
+    StableAbscissae.exists_abscissaSet_of_stableLine hp hodd hg₂ hs₂
+  obtain ⟨t, ht⟩ := id hodd
+  have hz₁ : ∀ n : ℤ, n • g₁ = 0 ↔ (p : ℤ) ∣ n := by
+    intro n; rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hg₁]
+  have hz₂ : ∀ n : ℤ, n • g₂ = 0 ↔ (p : ℤ) ∣ n := by
+    intro n; rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hg₂]
+  have hdisj : Disjoint S₁ S₂ := by
+    rw [Finset.disjoint_left]
+    intro α hα₁ hα₂
+    obtain ⟨a, ha, hae⟩ := hw₁ α hα₁
+    obtain ⟨b, hb, hbe⟩ := hw₂ α hα₂
+    have habs : WeierstrassCurve.pointAbscissa (a • g₁) =
+        WeierstrassCurve.pointAbscissa (b • g₂) := by rw [hae, hbe]
+    have hmem : a • g₁ ∈ AddSubgroup.zmultiples g₂ := by
+      rcases StableAbscissae.eq_or_eq_neg_of_pointAbscissa_eq
+          (fun hc => ha ((hz₁ a).mp hc)) (fun hc => hb ((hz₂ b).mp hc)) habs with hc | hc
+      · rw [hc]; exact AddSubgroup.zsmul_mem_zmultiples _ _
+      · rw [hc, ← neg_smul]; exact AddSubgroup.zsmul_mem_zmultiples _ _
+    exact hne (StableAbscissae.zmultiples_eq_of_zsmul_mem hp hg₁ hg₂ ha hmem)
+  refine ⟨S₁ ∪ S₂, ?_, ?_, ?_⟩
+  · rw [Finset.card_union_of_disjoint hdisj, hc₁, hc₂]; omega
+  · intro σ
+    rw [Finset.image_union, hi₁ σ, hi₂ σ]
+  · intro α hα
+    rcases Finset.mem_union.mp hα with h | h
+    · obtain ⟨a, ha, rfl⟩ := hw₁ α h
+      refine StableAbscissae.eval_preΨ'_eq_zero hodd (fun hc => ha ((hz₁ a).mp hc)) ?_
+      rw [smul_smul]
+      exact (hz₁ _).mpr ⟨a, rfl⟩
+    · obtain ⟨b, hb, rfl⟩ := hw₂ α h
+      refine StableAbscissae.eval_preΨ'_eq_zero hodd (fun hc => hb ((hz₂ b).mp hc)) ?_
+      rw [smul_smul]
+      exact (hz₂ _).mpr ⟨b, rfl⟩
 
 /-- **Two independent stable lines multiply into a rational factor of `Ψ_p`
 of degree `p − 1`** (PROVEN 2026-07-28 over
@@ -17672,15 +17964,15 @@ of degree `p − 1`** (PROVEN 2026-07-28 over
 a bare sorry leaf earlier the same day, as the UNIFORM half of
 `not_twoStableLines_of_mem_isolatedNonCMJInvariants`).
 
-**WHAT IS NOW DONE, and what the residue is.**  Everything about POLYNOMIALS
-is discharged here: the monic product over the abscissa set, its degree, its
+**NOTHING IS LEFT** (updated 2026-07-29).  Everything about POLYNOMIALS is
+discharged here: the monic product over the abscissa set, its degree, its
 Galois invariance, the descent to `ℚ[X]`, the divisibility by `preΨ' p` over
 `ℚ̄`, and the descent of that divisibility back to `ℚ[X]` (which needs `f`
-monic — `Polynomial.map_dvd_map`).  What is left is
-`exists_stableAbscissaSet_of_twoStableLines`, which mentions no polynomial:
-it asks only that the two lines supply `p − 1` distinct `Γ_ℚ`-permuted
-abscissae of `p`-torsion points.  So the leaf that remains is strictly about
-points, and the `p − 1` in it is where `hne` and the primality of `p` live.
+monic — `Polynomial.map_dvd_map`).  The point-side residue, which mentions no
+polynomial at all — that the two lines supply `p − 1` distinct `Γ_ℚ`-permuted
+abscissae of `p`-torsion points, and where `hne` and the primality of `p` live
+— was `exists_stableAbscissaSet_of_twoStableLines`, and that is now PROVEN
+above over the `StableAbscissae` section.  This whole cluster is sorry-free.
 
 This is the CONVERSE of `WeierstrassCurve.exists_point_of_isKernelPolynomial`
 (`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN), taken twice and
@@ -17756,7 +18048,7 @@ theorem exists_monic_dvd_preΨ_of_twoStableLines {p : ℕ}
         AddSubgroup.zmultiples g₂) :
     ∃ f : Polynomial ℚ, f.Monic ∧ f.natDegree = p - 1 ∧ f ∣ E.preΨ' p := by
   classical
-  -- STEP 1 — the only elliptic-curve step, and the only one still open.
+  -- STEP 1 — the only elliptic-curve step (PROVEN above).
   obtain ⟨S, hScard, hSfix, hSroot⟩ :=
     exists_stableAbscissaSet_of_twoStableLines hp hodd E g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
   -- STEP 2 — the monic polynomial with that root set, over `ℚ̄`.
