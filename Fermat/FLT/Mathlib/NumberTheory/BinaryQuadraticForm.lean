@@ -64,8 +64,12 @@ SEVEN leaves remain, each stated so that it can be worked on alone:
 * `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
   — `α` is an algebraic integer generating a cubic field (Weber's theory of the
   ring class field of the order of discriminant `−4p`, whose class number is `3`);
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
-  (`q`-expansion combinatorics, no class field theory);
+* `Heegner.isIntegral_jInvariant_of_quadratic` — `j(z)` is an algebraic integer at every
+  imaginary quadratic `z` (the integrality of the class equation, via the modular polynomial
+  `Φ_N`; no class field theory and no class-number hypothesis). This REPLACES the former leaf
+  `Heegner.isIntegral_gammaTwo_heegnerPoint`, which is now PROVEN from it: a cube root of an
+  algebraic integer is an algebraic integer, so Weber's `3 ∤ p` and level-`3` theory — which
+  the old docstring claimed were needed here — are not;
 * `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ`; **this is the main
   theorem of complex multiplication and is the only leaf here that needs it**;
 * `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j` (classical
@@ -830,22 +834,9 @@ theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 
       + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 :=
   sorry
 
-/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER.**
-
-Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory: `j(τ₀)`
-is an algebraic integer for any imaginary quadratic `τ₀` (the classical integrality of the
-class equation, provable by `q`-expansions and the modular equation `Φ_N`, Booher §2), and
-since `3 ∤ p` the cube root `γ₂` is again an algebraic integer (Booher §3.1: `γ₂` is a
-modular function for the group `H` of level `3`, and its `q`-expansion has integral
-coefficients).
-
-NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
-other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half is
-Weber/`q`-expansion combinatorics, the other half (LEAF 4) is the main theorem of complex
-multiplication. They are independently attackable and belong to different theories. -/
-theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) :
-    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) :=
-  sorry
+/- **LEAF 3 (`isIntegral_gammaTwo_heegnerPoint`) HAS MOVED** — it is now PROVEN, and lives
+just below `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), which its proof consumes. Lean's
+declaration order is the only reason for the move; nothing about the statement changed. -/
 
 /-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
 
@@ -894,6 +885,116 @@ FAITHFULNESS: verified numerically at the five Heegner points, where both sides 
 product and the right from `PARI/GP`'s independent `ellj`. -/
 theorem gammaTwo_pow_three_eq_jInvariant (z : UpperHalfPlane) : gammaTwo z ^ 3 = jInvariant z :=
   sorry
+
+/-! ### LEAF 3 — `γ₂(τ₀)` is an algebraic integer
+
+This block replaces the former LEAF 3 (which sat above, between LEAF 2 and LEAF 4). It is
+here rather than there only because its proof consumes `gammaTwo_pow_three_eq_jInvariant`,
+which Lean requires to be declared first.
+
+**The old LEAF 3 docstring's route was more expensive than necessary, and one of its claims
+is retracted below**: it asserted that `3 ∤ p` and Weber's level-`3` group `H` are needed to
+pass from "`j(τ₀)` is an algebraic integer" to "`γ₂(τ₀)` is an algebraic integer". They are
+not. `γ₂` is a root of the MONIC polynomial `X³ − j(τ₀)`, so integrality of the cube root is
+free from integral closedness alone (`IsIntegral.of_pow`), with no modular theory, no
+`q`-expansion combinatorics and no hypothesis on `p mod 3`. Weber's `3 ∤ p` is needed for
+`γ₂(τ₀)` to lie in the same *field* as `j(τ₀)` — i.e. for LEAF 4, rationality — not for
+integrality. -/
+
+/-- **LEAF 3a — integrality of the `j`-invariant at an imaginary quadratic point.**
+
+If `z ∈ ℍ` satisfies a nontrivial integral quadratic relation `a z² + b z + c = 0` with
+`a ≠ 0`, then `j(z)` is an algebraic integer. This is the classical integrality of the class
+equation (Cox, *Primes of the form x²+ny²*, §11, Theorem 11.1; Booher §2; Serre,
+*Cours d'arithmétique*, VII).
+
+THE ROUTE. Pick `N > 1` NOT a perfect square admitting an integral matrix `A` with `A z = z`
+as a Möbius transformation and `det A = N`. Then `j(z)` is a root of `Φ_N(X, X) ∈ ℤ[X]`,
+where `Φ_N` is the modular polynomial; `Φ_N(X, X)` has leading coefficient `±1` when `N` is
+not a square (Kronecker), so `j(z)` is an algebraic integer. The three ingredients are:
+`Φ_N ∈ ℤ[X, Y]` monic of degree `ψ(N)` in `X`; `Φ_N(j(z), j(A z)) = 0`; and the
+leading-coefficient computation.
+
+SUCH AN `N` ALWAYS EXISTS, and the elementary reason is worth recording because the obvious
+attempt fails. Multiplication by `β = m + a z` on the lattice `[1, z]` is integral and fixes
+`z`, with `det = N(β) = m² − b m + a c` (using `a(z + z̄) = −b` and `a² z z̄ = a c`); the
+choice `m = 0` gives `A = [[−b, −c], [a, 0]]` of determinant `a c`. One may NOT repair a
+square `a c` by rescaling `(a, b, c) ↦ (t a, t b, t c)`, which multiplies the determinant by
+`t²` and so preserves square-ness — that was an error in an earlier draft of this note.
+Vary `m` instead: `m² − b m + a c` is a quadratic in `m` of discriminant `b² − 4 a c < 0`, and
+a quadratic taking perfect-square values at every integer must be the square of a linear
+polynomial, hence have discriminant `0`. So some `m` gives a non-square `N`.
+
+`ha : a ≠ 0` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT. Take `a = b = c = 0`:
+the hypothesis reads `0 = 0` and holds for EVERY `z : ℍ`, while `j` is transcendental at
+almost every point (`j(i · t)` is transcendental for all but countably many `t > 0`, since
+`j` is nonconstant holomorphic and `ℚ̄` is countable). So dropping `ha` turns a theorem into
+a refuted statement. Note `a ≠ 0` alone suffices — no primitivity, no `gcd(a,b,c) = 1`, and
+no sign condition on the discriminant: `z ∈ ℍ` is not real, so `b² − 4ac < 0` automatically.
+
+ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, this worktree, all three trees):
+`grep -rn 'jInvariant\|modularPolynomial\|classEquation\|ComplexMultiplication' Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` finds the `j`-invariant nowhere outside this file —
+`Mathlib/NumberTheory/ModularForms/` has `DedekindEta`, `Discriminant`, `LevelOne/GradedRing`
+and `QExpansion` and no `j` at all, and `~/cs/FLT` has zero hits. Refute this note by
+exhibiting any of those names; the leaf would then reduce to specialising them.
+
+WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
+class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
+at every imaginary quadratic point regardless of the class number. That is exactly why the
+CM content of this cluster sits in LEAF 4 and not here. -/
+theorem isIntegral_jInvariant_of_quadratic (z : UpperHalfPlane) {a b c : ℤ} (ha : a ≠ 0)
+    (h : (a : ℂ) * (z : ℂ) ^ 2 + (b : ℂ) * (z : ℂ) + (c : ℂ) = 0) :
+    IsIntegral ℤ (jInvariant z) :=
+  sorry
+
+/-- **`j(τ₀)` is an algebraic integer** — LEAF 3a specialised to the Heegner point, PROVEN.
+
+`τ₀ = (3 + √−p)/2` satisfies `x² − 3x + (9+p)/4 = 0`, and `(9+p)/4` is an INTEGER exactly
+because `p ≡ 3 mod 4`: writing `p = 4k + 3` it equals `k + 3`. So the integral quadratic
+relation demanded by LEAF 3a is `⟨a, b, c⟩ = ⟨1, −3, k+3⟩`, with `a = 1 ≠ 0`.
+
+This is where the `3` in `τ₀ = (3+√−p)/2` and the congruence `p ≡ 3 mod 4` are spent; the
+stronger `p ≡ 3 mod 8` and the primality of `p` are NOT needed for integrality. -/
+theorem isIntegral_jInvariant_heegnerPoint {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
+    IsIntegral ℤ (jInvariant (heegnerPoint p hp)) := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, p = 4 * k + 3 := ⟨p / 4, by omega⟩
+  refine isIntegral_jInvariant_of_quadratic _ (a := 1) (b := -3) (c := (k : ℤ) + 3)
+    one_ne_zero ?_
+  have hcoe : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+      = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := UpperHalfPlane.coe_mk _ _
+  have hs : ((Real.sqrt p : ℂ)) ^ 2 = (p : ℂ) := by
+    rw [← Complex.ofReal_pow, Real.sq_sqrt (by positivity)]
+    norm_num
+  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+  have hp' : (p : ℂ) = 4 * (k : ℂ) + 3 := by exact_mod_cast congrArg (fun n : ℕ => (n : ℂ)) hk
+  rw [hcoe]
+  push_cast
+  linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
+
+/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER. Now PROVEN**, over LEAF 3a
+(`isIntegral_jInvariant_of_quadratic`) and LEAF 5 (`gammaTwo_pow_three_eq_jInvariant`).
+
+Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory. The proof
+is two steps: `γ₂(τ₀)³ = j(τ₀)` is an algebraic integer by LEAF 3a, and a cube root of an
+algebraic integer is an algebraic integer, because `X³ − j(τ₀)` is MONIC over `ℤ[j(τ₀)]` and
+integrality is transitive (`IsIntegral.of_pow`).
+
+THE HYPOTHESES ARE STRONGER THAN THE PROOF NEEDS, and the signature is left unchanged only
+because `exists_int_gammaTwo` and the released statement call it positionally. What is
+actually consumed is `0 < p` (already forced by the statement, which mentions
+`heegnerPoint p hp.pos`) and `p ≡ 3 mod 4` — derived here from `hp8`. `_h3` is unused and
+underscored to make that mechanically visible; primality is used only for `hp.pos`.
+
+NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
+other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half
+is integrality of the class equation, the other half (LEAF 4) is the main theorem of complex
+multiplication. They are independently attackable and belong to different theories. -/
+theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (_h3 : 3 < p) :
+    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) := by
+  refine IsIntegral.of_pow (n := 3) (by norm_num) ?_
+  rw [gammaTwo_pow_three_eq_jInvariant]
+  exact isIntegral_jInvariant_heegnerPoint hp.pos (by omega)
 
 /-- **LEAF 6 — the `q`-expansion bound.** If `j(τ₀)` is the integer `n`, then
 `exp(π√p) ≤ 745 − n`.
@@ -1085,7 +1186,9 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 
 * `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
 * `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
+* `Heegner.isIntegral_jInvariant_of_quadratic` — `j(z)` is an algebraic integer at every
+  imaginary quadratic `z` (integrality of the class equation; `Heegner.isIntegral_gammaTwo_heegnerPoint`
+  is now PROVEN from it, the cube root being free);
 * `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ` (**the main theorem of CM**);
 * `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
 * `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound.
