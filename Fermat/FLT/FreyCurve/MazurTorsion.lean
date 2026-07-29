@@ -7294,14 +7294,18 @@ in this project, so both leaves are theory builds.
 * `A₀-3a` factors through `WeierstrassCurve.PotentiallyGoodModel` (declared
   ~1500 lines BELOW in this file; its producer from `0 ≤ v_N(j)` is the
   already-open leaf `exists_potentiallyGoodModel_of_jIntegral`, stated for
-  `q ≠ 2`).  Using it here needs that block hoisted into an upstream module
-  first — **and note that hoist was already done once, in `b23bab50`, and
-  LOST in a later merge**: `Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean`
-  exists in that commit and in no branch head.  Redo the hoist rather than
-  re-deriving the material.  What remains after the hoist is Serre §5.6 /
-  Kraus: `Φ ↪ Aut(Ẽ)` over the residue field, and `Aut` of an elliptic curve
-  in characteristic `≥ 5` is cyclic of order `2`, `4` or `6`, whence
-  `e ∈ {1,2,3,4,6}`.
+  `q ≠ 2`).  **DO NOT reach for it by hoisting that block upstream.**  That
+  hoist was attempted in `b23bab50` and REJECTED by the merger in
+  `50a73c66` for a recorded, still-current reason: two other branches had
+  restructured the same region concurrently, so applying the deletion side
+  lost twenty declarations that had grown inside it and produced seven
+  duplicates against `EllipticCurve/TorsionReduction.lean`, into which part
+  of the block had been relocated.  A relocation is mergeable only while its
+  region is quiet, and this region is not.  Presenting the extension by its
+  inertia subgroup — what `A₀-3a` does — exists precisely to avoid needing
+  it.  What remains to prove is Serre §5.6 / Kraus: `Φ ↪ Aut(Ẽ)` over the
+  residue field, and `Aut` of an elliptic curve in characteristic `≥ 5` is
+  cyclic of order `2`, `4` or `6`, whence `e ∈ {1,2,3,4,6}`.
 * `A₀-3b` needs finite flat group schemes of order `N` over a base of
   absolute ramification `e < N − 1`, which is a genuinely new theory here.
   The `Fermat/FLT/HopfAlgebra` cluster (Cartier duality) is the nearest
