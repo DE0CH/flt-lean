@@ -545,6 +545,38 @@ Corollary for dispatch: **name the branch as an INSTRUCTION, not as attribution.
 "`flt-lean-311` proved X" in a credit line is not read as "merge `flt-lean-311`";
 three successors fast-forwarded to a `main` without X and found nothing.
 
+**The checks are TWO SCRIPTS answering DIFFERENT questions, and both must run**
+(2026-07-29). `own.py` answers *is somebody working on it*; `leafstat.py` answers
+*is it already done*. A dispatch this day named two leaves as "genuinely UNOWNED
+— zero hits each in `~/.flt-inflight.jsonl`" and **both clauses were wrong in
+different ways**: leaf 1 had five hits, one of them a `TARGET:` line
+(`flt-lean-261`, dispatched 21 h earlier); leaf 2 had been PROVEN on `main` for
+42 hours, at a commit that was an ancestor of the successor's own dispatch HEAD.
+
+Re-run afterwards, `own.py` reported `flt-lean-261` correctly and instantly. The
+tool was right; it had not been run — a hand `grep` was substituted for it. So
+the failure was not a gap in the test but the orchestrator improvising around a
+script written to stop exactly this. **Run the scripts.**
+
+**`own.py` grew a FOURTH check the same day, and it is the one nothing else
+covers: UNCOMMITTED work in the other worktrees.** The three-part test is about
+RECORDS. An incumbent's proof can exist only as uncommitted work — invisible to
+`merger`, to the batch, and to every branch diff, so `leafstat.py` cannot see it
+either. `flt-lean-261` held 399 uncommitted lines of `Interface.lean` proving
+its leaf *and renaming it* to `hasFiniteWildMonodromyAt_of_residueChar_ne`; a
+successor sent at the old name would have raced a rename it could not observe.
+`Interface.lean` had **nine** concurrent uncommitted editors at that moment.
+`own.py` now greps every `claimed` worktree's diff plus its untracked `.lean`
+files (a relocation lands as a new module, which is a conflict at *file*
+granularity) and flags a name that appears in WIP with no record claiming it.
+
+Unrelated but found while fixing it, and it had been corrupting every scripted
+check run from the scratchpad: a scratch file named **`grp.py` shadowed the
+stdlib `grp` module**, which `shutil`/`subprocess` import on POSIX — so every
+python script run from that directory executed an unrelated group-theory
+computation at import time and printed its output ahead of the real answer.
+Renamed. Watch for scratch filenames that collide with stdlib modules.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
