@@ -159,6 +159,19 @@ leaves it moved to are, in dependency order:
   `f_*𝒪 = 𝒪` and the equivalence relation supplied;
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
+  **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
+  BLR 9.4/4 into its `𝒪(D)` half and its geometric half, which are
+  independent of each other:
+
+  * `exists_abelJacobiPoint` — the Abel–Jacobi map `x ↦ [x] − [o]` into
+    the POINTS of `Pic`.  Owes two facts about `sectionIdeal` (that
+    `𝒪(−σ)` is invertible, and that it commutes with base change) plus
+    one tensor-calculus statement its docstring names precisely;
+  * `exists_relPicZeroSubgroup` — the geometry: cut `Pic⁰` out of `Pic`
+    and show it is proper, smooth and geometrically connected.  This is
+    what BLR 9.4/4 is usually cited FOR, and it is the leaf with real
+    content: the identity component of a group scheme does not exist at
+    this pin in any form.
 
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
@@ -323,6 +336,38 @@ statements the audit listed as missing are FREE at this pin**:
 functor — `opensMapFinal` — so mathlib's
 `SheafOfModules.pullbackObjUnitToUnit` is an isomorphism), and both
 unitors.
+
+**And so is the SYMMETRY — a third one, found and compiler-checked
+2026-07-29.**  Every audit in this file that lists the missing pieces
+puts "symmetry" beside "associativity"; that is wrong, and it is wrong
+for the same reason the unitors were.  Mathlib carries
+`SymmetricCategory (PresheafOfModules.{u} (R ⋙ forget₂ _ _))`
+(`Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean`, line 146),
+so the braiding needs only the same re-keying `presheafOfModulesMonoidal`
+already does, and then sheafifying it is the same three lines as
+`modTensorUnitLeftIso`.  Verified to elaborate against this module's
+oleans, in full:
+
+    noncomputable instance presheafOfModulesSymm (Z : Scheme.{u}) :
+        SymmetricCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+      inferInstanceAs (SymmetricCategory
+        (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
+
+    noncomputable def modTensorSymmIso {Z : Scheme.{u}} (L M : Z.Modules) :
+        modTensor L M ≅ modTensor M L :=
+      (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (β_ L.val M.val)
+
+Neither is a declaration here, because nothing in the module consumes one
+yet and this project forbids free-floating declarations — the same reason
+`isInvertibleSheaf_modUnit` spent a day as a docstring one-liner.  **Paste
+them in as soon as you have a consumer**; `exists_abelJacobiPoint` below
+is the first, and its docstring says where each use falls.
+
+The immediate consequences, so that nobody prices them as leaves:
+`modTensor L M ≅ 𝒪 → modTensor M L ≅ 𝒪` is one line, and the
+middle-four interchange `(L ⊗ N) ⊗ M ≅ (L ⊗ M) ⊗ N` is
+`nonempty_modTensor_assocPic` twice plus one braiding.  **`ASSOCIATIVITY`
+is the only genuinely missing coherence isomorphism** at this pin.
 
 **What is genuinely still open** is exactly the part needing
 *sheafification to be monoidal*.  Two leaves are stated below,
@@ -648,10 +693,20 @@ though the direction conventions there were chosen while it was true and
 are left alone, since they cost nothing.
 
 Note which leaf does what.  Reflexivity needs the unit isomorphisms
-only; transitivity needs associativity and the pullback/tensor
-interchange; symmetry is the only one that needs inverses.  So a prover
-reflexivity is already UNCONDITIONAL, since `modPullbackUnitIso` and
-`modTensorUnitRightIso` are both proven. -/
+only, and is therefore already UNCONDITIONAL, since `modPullbackUnitIso`
+and `modTensorUnitRightIso` are both proven; transitivity needs
+associativity and the pullback/tensor interchange; symmetry is the only
+one that needs inverses.
+
+**Corrected 2026-07-29.**  "The module docstring's claim was false in its
+second half" understates it: the SYMMETRY isomorphism is free at this pin
+too, not merely the unit one — see the tensor-calculus section header for
+the two declarations, compiler-checked, that produce it.  So of the three
+coherence isomorphisms named in the superseded sentence, exactly ONE —
+associativity — is genuinely missing.  Nothing in this section changes as
+a result (`relPicEquiv_symm` needs `exists_modTensor_inv` either way);
+the correction matters downstream, where `exists_abelJacobiPoint` would
+otherwise be priced as needing a braiding leaf. -/
 
 section RelPicEquivIsEquivalence
 
@@ -1219,23 +1274,57 @@ Classically: for `x` a `T`-point of the curve, `𝒪(x − o)` is an
 invertible sheaf on `X_T`, so `surj` classifies it, and the resulting
 point of `Pic` is natural in `T` and sends `o` to the origin.
 
-**What this owes, and it is NOT the tensor calculus.**  Written out, the
-construction is `M := 𝒪(−o) ⊗ 𝒪(−x)⁻¹`, then `surj M`.  The tensor
-bookkeeping (`exists_modTensor_inv`, `nonempty_modTensor_assocPic`, the
-unitors) is all already stated above.  The two genuinely NEW obligations
-are geometric, and both are about `sectionIdeal` alone:
+**ROUTE, worked out 2026-07-29 far enough to price it; do not re-derive
+the survey.**  Written out, the construction at one `(T, g)` is
+`M := 𝒪(−o) ⊗ 𝒪(−x)⁻¹`, then `hP.surj M`, and `aj` is `choose` over
+`(T, g, x)`.  So the route is fixed; what follows is what it costs.
 
-* **`𝒪(−σ)` is invertible** for `σ` a section of a smooth relative curve.
-  This is the regular-immersion statement: a section of a smooth curve is
-  an effective Cartier divisor.  Nothing in the pin says so — there is no
-  divisor theory at `a3364fa` — so it has to be proven from
-  `sectionIdeal`'s definition as a kernel;
-* **`𝒪(−σ)` commutes with base change**:
-  `(X_{T'} ⟶ X_T)^* 𝒪(−x) ≅ 𝒪(−x_{T'})`.  Flat base change for the
-  kernel defining `sectionIdeal`.  This is what `aj_pre` needs, via
-  `hP.sheaf_pre` and `inj`.
+*Two genuinely NEW geometric obligations, both about `sectionIdeal`
+alone, and both small enough to dispatch on their own once there is a
+consumer for them:*
 
-`aj_base` needs neither: it is `inj` applied to `𝒪(o − o) ∼ 𝒪`.
+* **`𝒪(−σ)` is invertible** for `σ` a section of a smooth relative curve
+  — the regular-immersion statement, i.e. a section of a smooth curve is
+  an effective Cartier divisor.  Nothing in the pin says so (there is no
+  divisor theory at `a3364fa`), so it has to come out of `sectionIdeal`'s
+  definition as a kernel.  Consumed for `Ix := 𝒪(−x)` and for
+  `Io := 𝒪(−o_T)`;
+* **`𝒪(−σ)` commutes with base change**,
+  `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for `φ = curveBaseChangeMap strX h hg`.  Flat
+  base change for that kernel.  Needed only by `aj_pre`.
+
+*And the tensor bookkeeping, which is NOT free and is the reason this
+leaf was left atomic rather than cut a third time.*  `aj_spec` is cheap:
+`hP.sheaf (aj x) ∼ Io ⊗ Jx` (where `Ix ⊗ Jx ≅ 𝒪` from
+`exists_modTensor_inv`), tensor on the right by `Ix`, then
+`(Io ⊗ Jx) ⊗ Ix ≅ Io ⊗ (Jx ⊗ Ix) ≅ Io ⊗ 𝒪 ≅ Io` — associativity, one
+braiding (see the tensor-calculus header: the braiding is FREE at this
+pin), and the right unitor.  It needs two helpers that do not exist yet
+and are each a few lines: `RelPicEquiv` is preserved by an isomorphism,
+and `RelPicEquiv` is a congruence for `⊗` on the right (proof:
+`(L' ⊗ π^*N) ⊗ M ≅ (L' ⊗ M) ⊗ π^*N`, the middle-four interchange).
+
+`aj_pre` is where the cost is, and the blocking piece is neither of the
+two geometric obligations above.  It needs `RelPicEquiv` to be preserved
+by `φ^*` — and *that* needs **`IsInvertibleSheaf (modPullback h N)`**,
+which is absent from this module.  (`RelPicEquiv` twists by `π^*N` with
+`N` invertible on the BASE, and pushing the relation through `φ^*`
+rewrites the twist as `π_{g'}^*(h^* N)` — via `pullback.lift_snd` for
+`φ ≫ π_g = π_{g'} ≫ h`, then `modPullbackCompIso` and
+`modPullbackCongrIso` — so the new twist is invertible only if pullback
+preserves invertibility.)  That statement is about the tensor-calculus
+section rather than about Picard theory, and `AmpleSheaf.lean` already
+carries the restriction/`morphismRestrict` machinery a proof of it would
+use.  **Whoever takes this leaf should state and prove it in the
+tensor-calculus section above, next to `isInvertibleSheaf_modTensorPic`,
+before touching `aj_pre`.**
+
+`aj_base` needs none of it: it is `hP.inj` applied to `𝒪(o − o) ∼ 𝒪`.
+
+One identity that looks like nothing and is not `rfl`:
+`RelPoint.pre h hg (relBasePoint o g) = relBasePoint o g'`.  Both sides
+are `⟨h ≫ (g ≫ o.1), _⟩` and `⟨(h ≫ g) ≫ o.1, _⟩`; it is `Subtype.ext`
+plus `Category.assoc`, and `aj_pre` cannot start without it.
 
 **Pinned.**  The `∃` looks under-pinned — an adversary might try to
 replace `aj` by any other family of points — but `hP.inj` makes the point
