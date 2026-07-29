@@ -31632,12 +31632,211 @@ theorem exists_unramifiedAbelian_lcm_dvd_finrank
         Module.finrank CF H :=
   sorry
 
+/-- **THE TRIVIAL EXTENSION QUALIFIES: every number field has a finite abelian
+extension of degree `1`, unramified at every finite place** (**PROVEN
+2026-07-28**).
+
+Pure plumbing, and it is here because two different places in this cluster
+were paying for it with a call into the deep class-field-theory leaf. It
+discharges
+
+* the `ℓ ∤ h_K` case of `exists_unramifiedAbelian_primePow_dvd_finrank` below
+  — there the exponent is `0`, so the divisibility reads `1 ∣ [H : K]`, but the
+  statement is EXISTENTIAL and an extension must still be exhibited; and
+* the empty base case of the `Finset.induction_on` in
+  `exists_unramifiedAbelian_card_classGroup_dvd_finrank` below, which
+  previously reached for the `ℓ`-primary leaf at `ℓ = 2` for no reason other
+  than to obtain *some* extension.
+
+Both of those are now independent of the class field theory, which is what the
+name is for: a `sorry`-free base case is worth more than a short one.
+
+**The proof, and the one point that is not bookkeeping.** Take `H = ⊥`.
+`FiniteDimensional`, `IsGalois` (`IsGalois.isGalois_bot`) and
+`Module.finrank K ⊥ = 1` (`IntermediateField.finrank_bot`) are instances or
+one-liners, and commutativity of `⊥ ≃ₐ[K] ⊥` holds because every element of
+`⊥` is `algebraMap K ⊥ y` and an `AlgEquiv` fixes the image of the base field,
+so every such automorphism is the identity.
+
+Unramifiedness is the only clause with content. `algebraMap (𝓞 K) (𝓞 ⊥)` is
+SURJECTIVE — its inverse is `RingOfIntegers.mapRingEquiv` applied to
+`IntermediateField.botEquiv K (AlgebraicClosure K)` — hence
+`Algebra.FormallyUnramified (𝓞 K) (𝓞 ⊥)` by
+`Algebra.FormallyUnramified.of_surjective`, and formal unramifiedness passes to
+every localization by the `Localization` instance in
+`Mathlib.RingTheory.Unramified.Basic`. So `Algebra.IsUnramifiedAt (𝓞 K) Q`
+holds for EVERY prime `Q`, and neither `Q.IsPrime` nor `Q ≠ ⊥` is used; the
+two hypotheses are retained only so the conclusion matches the shape the rest
+of the cluster consumes.
+
+**Faithfulness.** `Module.finrank K H = 1` rather than `H = ⊥` is deliberate:
+the consumers need the degree, and pinning the field would force them to
+transport along `⊥` for nothing. It is not under-pinned either — an
+intermediate field of degree `1` over `K` IS `⊥`. -/
+theorem exists_unramifiedAbelian_finrank_eq_one
+    (K : Type) [Field K] [NumberField K] :
+    ∃ (H : IntermediateField K (AlgebraicClosure K))
+      (_ : FiniteDimensional K H) (_ : IsGalois K H),
+      (∀ a b : H ≃ₐ[K] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
+      Module.finrank K H = 1 := by
+  classical
+  -- Every `K`-automorphism of `⊥` is the identity: every element of `⊥` is in
+  -- the image of `algebraMap K ⊥`, and an `AlgEquiv` fixes that image.
+  have hid : ∀ (f : (⊥ : IntermediateField K (AlgebraicClosure K)) ≃ₐ[K]
+      (⊥ : IntermediateField K (AlgebraicClosure K)))
+      (x : (⊥ : IntermediateField K (AlgebraicClosure K))), f x = x := by
+    intro f x
+    have hx : x = algebraMap K (⊥ : IntermediateField K (AlgebraicClosure K))
+        (IntermediateField.botEquiv K (AlgebraicClosure K) x) := by
+      rw [← IntermediateField.botEquiv_symm]
+      simp
+    rw [hx, AlgEquiv.commutes]
+  -- `𝓞 K → 𝓞 ⊥` is surjective, so `𝓞 ⊥` is formally unramified over `𝓞 K`.
+  have hsurj : Function.Surjective
+      (algebraMap (𝓞 K) (𝓞 (⊥ : IntermediateField K (AlgebraicClosure K)))) := by
+    intro y
+    refine ⟨NumberField.RingOfIntegers.mapRingEquiv
+      (IntermediateField.botEquiv K (AlgebraicClosure K)).toRingEquiv y, ?_⟩
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap K (⊥ : IntermediateField K (AlgebraicClosure K))
+        (IntermediateField.botEquiv K (AlgebraicClosure K) (y : _)) = (y : _)
+    rw [← IntermediateField.botEquiv_symm]
+    simp
+  haveI : Algebra.FormallyUnramified (𝓞 K)
+      (𝓞 (⊥ : IntermediateField K (AlgebraicClosure K))) :=
+    Algebra.FormallyUnramified.of_surjective
+      (Algebra.ofId (𝓞 K) (𝓞 (⊥ : IntermediateField K (AlgebraicClosure K)))) hsurj
+  refine ⟨⊥, inferInstance, inferInstance, ?_, ?_, IntermediateField.finrank_bot⟩
+  · intro a b
+    exact AlgEquiv.ext fun x => by simp only [hid]
+  · intro Q hQ _
+    haveI := hQ
+    infer_instance
+
+/-- **THE `ℓ`-PRIMARY HILBERT CLASS FIELD OVER AN ARBITRARY NUMBER FIELD, WITH
+THE TRIVIAL CASE REMOVED: for a prime `ℓ` DIVIDING `h_K`, `K` has a finite
+abelian extension, unramified at every finite place, whose degree is divisible
+by `ℓ ^ v_ℓ(h_K)`** (SORRY LEAF, cut 2026-07-28 out of
+`exists_unramifiedAbelian_primePow_dvd_finrank` below).
+
+**THIS IS WHERE ALL THE CLASS FIELD THEORY IN THIS CLUSTER NOW LIVES.**
+Everything else in the divisibility half of the Hilbert-class-field cluster —
+the `ℓ`-primary leaf below, the recombination
+`exists_unramifiedAbelian_card_classGroup_dvd_finrank`, and the base cases of
+both — is proven over this statement and
+`exists_unramifiedAbelian_finrank_eq_one` above.
+
+**Two changes from the leaf below, both of them weakenings.** `hdvd` removes
+the `ℓ ∤ h_K` case, which is pure plumbing and is discharged above; and the
+base field is an ARBITRARY number field rather than `ℚ(μ_p)`, which its own
+docstring already records as sound (`IsCyclotomicExtension {p} ℚ CF` is not
+used by the existence direction — the wide Hilbert class field exists over
+every number field). The generalization is deliberate: the ray-class-field
+material wanted by `exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` in
+`KhareWintenberger.lean` is over a general base too, so whoever builds the
+class field theory should be able to cite this rather than a cyclotomic
+special case. **Do NOT generalize the `≤` direction the same way** — its
+docstring's PARI/GP counterexample (`ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`) refutes
+it over a general number field.
+
+**Soundness — the intended inhabitant.** `H` = the Hilbert class field of `K`
+(or its `ℓ`-part), which is abelian over `K`, unramified at every place, and of
+degree exactly `h_K` (resp. `ℓ ^ v_ℓ(h_K)`). Either witnesses the
+divisibility.
+
+**Non-vacuity, re-checked 2026-07-28 with PARI/GP.** `h(ℚ(μ_23)) = 3`, so at
+`ℓ = 3` over `CF = ℚ(μ_23)` a genuine cubic everywhere-finite-unramified
+abelian extension is demanded. Smaller and cheaper to reason about:
+`h(ℚ(√29, √-3)) = 3` with class group cyclic of order `3`.
+
+**THE ROUTE, and one dead end that is now closed.** The classical existence
+theorem at modulus `1` does not come in one step. It reduces to a congruence
+subgroup of prime exponent, adjoins `ζ_ℓ`, runs Kummer theory over `K(ζ_ℓ)`,
+and descends by the translation theorem (Verschiebungssatz); the recombination
+of the layers is `exists_unramifiedAbelian_lcm_dvd_finrank` above. References:
+Neukirch VI (6.9) and the sections before it; Childress ch. 4–5; Lang *ANT*
+ch. X; Cassels–Fröhlich ch. VII–VIII.
+
+**The dead end — do NOT cut a "descend from `K(ζ_ℓ)`" sub-leaf.** The tempting
+shape is
+
+> if `M/K(ζ_ℓ)` is finite abelian, unramified at every finite place, with
+> `ℓ^a ∣ [M : K(ζ_ℓ)]`, then `K` has such an extension with `ℓ^a ∣ [H : K]`
+
+on the grounds that `[K(ζ_ℓ) : K] ∣ ℓ - 1` is coprime to `ℓ`. **That statement
+is FALSE**, and here is the witness, computed with PARI/GP on 2026-07-28.
+Take `ℓ = 3` and `K = ℚ(√29)`: `h_K = 1` and the NARROW class group of `K` is
+trivial as well (`bnfnarrow` returns `[1, [], []]`), so by the upper bound
+`finrank_le_card_classGroup_of_unramified_abelian` the only finite abelian
+extension of `K` unramified at every finite place is `K` itself. But
+`F = K(ζ_3) = ℚ(√29, √-3)` has `h_F = 3` with class group cyclic of order `3`,
+so `F` does have a cyclic cubic everywhere-unramified extension. Hence `a = 1`
+is realizable over `F` and `ℓ^1 ∤ [H : K]` for every admissible `H`.
+(`K = ℚ(√43)` refutes it identically: `h = 1`, narrow `h⁺ = 2`, and
+`h(ℚ(√43, √-3)) = 6`.)
+
+The moral, and the reason the translation theorem is stated the way it is in
+the books: what descends from `K(ζ_ℓ)` to `K` is a NORM GROUP, not an
+extension. Any faithful decomposition along the Kummer axis must therefore
+carry the ideal-group/norm-group formalism through the cut, and a sub-leaf
+phrased purely in terms of extensions and degrees — as this leaf and its
+consumers are — cannot express the descent step. That is why this node is left
+whole rather than split further: the honest next step is to BUILD the norm-group
+formalism, not to guess a shorter statement.
+
+**What is and is not available in this tree, checked 2026-07-28.**
+
+* Chebotarev is present and PROVEN in
+  `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`; do not rebuild it. It does
+  not help here — Chebotarev bounds a norm index from above, i.e. it feeds the
+  `≤` direction, not existence.
+* The `*_ray_class` development in `ModThree.lean` (116 declarations) is
+  RECIPROCITY, and `exists_artinIdealMap_of_unramifiedAbelianSubgroup` below
+  consumes it with the subgroup `N` and its index `h_K` supplied as
+  HYPOTHESES. So that whole chain presupposes the extension this leaf must
+  produce, and cannot be turned around to produce it.
+* mathlib at the current pin has `ClassGroup`, its finiteness for number
+  fields, `Algebra.IsUnramifiedAt`, `Mathlib.FieldTheory.KummerExtension`, and
+  Dirichlet's unit theorem — but no Hilbert class field, no ray class group, no
+  Artin map, no `S`-unit theorem and no Dedekind zeta / Dirichlet density
+  material. The gap is the whole existence theorem.
+
+**Coordinate before building.** A sibling leaf,
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` in
+`KhareWintenberger.lean`, is separately owned and needs ray class groups, ray
+class fields, their Artin map and the quadratic Hilbert symbol. Whoever builds
+class field theory for either leaf should build it once, under
+`Fermat/FLT/Mathlib/`, and both should cite it.
+
+**The check that would refute this leaf**: a prime `ℓ` dividing `h_K` for which
+every finite abelian extension of `K` unramified at every finite place has
+degree not divisible by `ℓ ^ v_ℓ(h_K)`. -/
+theorem exists_unramifiedAbelian_primePow_dvd_finrank_of_dvd
+    (K : Type) [Field K] [NumberField K] (ℓ : ℕ) (hℓ : ℓ.Prime)
+    (hdvd : ℓ ∣ Nat.card (ClassGroup (𝓞 K))) :
+    ∃ (H : IntermediateField K (AlgebraicClosure K))
+      (_ : FiniteDimensional K H) (_ : IsGalois K H),
+      (∀ a b : H ≃ₐ[K] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
+      ℓ ^ (Nat.card (ClassGroup (𝓞 K))).factorization ℓ ∣ Module.finrank K H :=
+  sorry
+
 /-- **THE `ℓ`-PRIMARY HILBERT CLASS FIELD: for every prime `ℓ`, `ℚ(μ_p)`
 has a finite ABELIAN extension, unramified at every finite place, whose
-degree is divisible by the `ℓ`-part of `h_K`** (SORRY LEAF, cut 2026-07-28
-out of `exists_unramifiedAbelian_finrank_eq_card_classGroup` below).
+degree is divisible by the `ℓ`-part of `h_K`** (cut 2026-07-28 out of
+`exists_unramifiedAbelian_finrank_eq_card_classGroup` below; **DECOMPOSED
+2026-07-28 — the assembly below is PROVEN**, over
+`exists_unramifiedAbelian_primePow_dvd_finrank_of_dvd` and
+`exists_unramifiedAbelian_finrank_eq_one` above and nothing else).
 
-**THIS IS WHERE THE CLASS FIELD THEORY IS.** It is the `ℓ`-primary form of
+**THE CLASS FIELD THEORY HAS MOVED ONE STEP UP, to
+`exists_unramifiedAbelian_primePow_dvd_finrank_of_dvd` above** — read that
+docstring, not this one, before attacking the mathematics. What is left here
+is the `by_cases` on `ℓ ∣ h_K`: the `ℓ ∤ h_K` branch is the trivial extension
+and is now proven, the other branch is the leaf. It is the `ℓ`-primary form of
 the existence theorem at modulus `1`, and it is the leaf the ANALYTIC route
 should be run at: Dirichlet density for `ζ_K` and the ray-class
 `L`-functions (Childress ch. 4–5, Lang *ANT* ch. X, Cassels–Fröhlich
@@ -31663,13 +31862,15 @@ class field of `K = ℚ(μ_p)`, i.e. the subfield of the Hilbert class field
 `𝐇` fixed by the `ℓ`-complement of `Gal(𝐇/K) ≃ Cl(𝓞 K)`. It is abelian
 over `K`, unramified at every place, and `[H : K] = ℓ ^ v_ℓ(h_K)` exactly.
 
-**The `ℓ ∤ h_K` case still has content, and it is pure plumbing.** There the
+**The `ℓ ∤ h_K` case still had content, and it is now CLOSED.** There the
 exponent is `0` and the divisibility reads `1 ∣ [H : K]`, but the statement
-is EXISTENTIAL, so an extension must still be produced: take `H = ⊥`, for
-which `FiniteDimensional`, `IsGalois`, commutativity of the (trivial)
-automorphism group, and `Algebra.IsUnramifiedAt (𝓞 CF)` at every nonzero
-prime of `𝓞 ⊥ ≃ 𝓞 CF` all hold. This is also the whole content at `p = 2`
-(`CF = ℚ`, `h_K = 1`), where the leaf is Minkowski-free and trivial.
+is EXISTENTIAL, so an extension must still be produced: `H = ⊥`, for which
+`FiniteDimensional`, `IsGalois`, commutativity of the (trivial) automorphism
+group, and `Algebra.IsUnramifiedAt (𝓞 CF)` at every nonzero prime of
+`𝓞 ⊥ ≃ 𝓞 CF` all hold. That is `exists_unramifiedAbelian_finrank_eq_one`
+above, proven 2026-07-28. In particular **this node is now fully proven at
+`p = 2`** (`CF = ℚ`, `h_K = 1`, so `ℓ ∤ h_K` for every `ℓ`), Minkowski-free
+and with no appeal to the class field theory.
 
 **Not vacuous.** For `p = 23`, `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), so
 at `ℓ = 3` the leaf demands a cubic everywhere-finite-unramified abelian
@@ -31701,8 +31902,13 @@ theorem exists_unramifiedAbelian_primePow_dvd_finrank
       (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
       (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
-      ℓ ^ (Nat.card (ClassGroup (𝓞 CF))).factorization ℓ ∣ Module.finrank CF H :=
-  sorry
+      ℓ ^ (Nat.card (ClassGroup (𝓞 CF))).factorization ℓ ∣ Module.finrank CF H := by
+  by_cases hdvd : ℓ ∣ Nat.card (ClassGroup (𝓞 CF))
+  · exact exists_unramifiedAbelian_primePow_dvd_finrank_of_dvd CF ℓ hℓ hdvd
+  · obtain ⟨H, hfd, hgal, hab, hunr, -⟩ := exists_unramifiedAbelian_finrank_eq_one CF
+    refine ⟨H, hfd, hgal, hab, hunr, ?_⟩
+    rw [Nat.factorization_eq_zero_of_not_dvd hdvd]
+    simp
 
 /-- **THE EXISTENCE THEOREM AT MODULUS `1`, DIVISIBILITY FORM: `ℚ(μ_p)` has
 a finite ABELIAN extension, unramified at every finite place, of degree
@@ -31719,10 +31925,13 @@ primes), so `Nat.Coprime.mul_dvd_of_dvd_of_dvd` upgrades the two separate
 divisibilities into one, and `Nat.prod_factorization_pow_eq_self` closes
 the induction at `S = primeFactors`.
 
-**The empty base case is seeded from the `ℓ`-primary leaf itself**, at
-`ℓ = 2`: the conclusion there is only `1 ∣ [H : K]`, but an extension must
-still be exhibited, and the `ℓ`-primary leaf already exhibits one. That is
-why no separate "the trivial extension qualifies" leaf is cut here.
+**The empty base case is `exists_unramifiedAbelian_finrank_eq_one` above**
+(PROVEN 2026-07-28): the conclusion there is only `1 ∣ [H : K]`, but an
+extension must still be exhibited, and the trivial one does it. It was
+originally seeded from the `ℓ`-primary leaf at `ℓ = 2` — which worked, but
+made this induction's base case depend on the class field theory for no
+mathematical reason. The plumbing lemma removes that edge; it is PROVEN, not
+a leaf, so nothing is added to the frontier by using it.
 
 `h_K` is nonzero (`Nat.card_pos`, the class group of a number field being
 finite and nonempty), which is what makes the factorization identity
@@ -31748,8 +31957,7 @@ theorem exists_unramifiedAbelian_card_classGroup_dvd_finrank
     induction S using Finset.induction_on with
     | empty =>
       intro _
-      obtain ⟨H, hfd, hgal, ha, hu, -⟩ :=
-        exists_unramifiedAbelian_primePow_dvd_finrank (p := p) CF 2 Nat.prime_two
+      obtain ⟨H, hfd, hgal, ha, hu, -⟩ := exists_unramifiedAbelian_finrank_eq_one CF
       exact ⟨H, hfd, hgal, ha, hu, by simp⟩
     | insert ℓ S hℓS ih =>
       intro hsub
