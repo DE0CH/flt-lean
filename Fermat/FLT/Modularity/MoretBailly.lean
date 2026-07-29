@@ -11210,44 +11210,244 @@ theorem exists_inverted_ker_localizationAway_le_nilradical_integralSystemModel
   exact ker_localizationAway_le_nilradical_integralSystemModel_of_extension f a (ZMod p)
     (AlgebraicClosure (ZMod p)) hzmod
 
+/-- **A RETRACTION MODULO NILPOTENTS FORCES AN ELEMENTWISE NILPOTENT KERNEL**
+(**PROVEN 2026-07-28**): general commutative algebra about a NOETHERIAN ring `A`
+and an element `α`, with no polynomial system, no prime and no base field in
+sight.
+
+WHAT IT SAYS. If a ring map `ψ` out of the localisation `A[1/α]` admits a map
+`lam` back into the REDUCTION `A[1/α] ⧸ nilradical` which undoes it on the image
+of `A`, then ONE exponent `s` kills every element of `ker ψ`.
+
+WHY THE HYPOTHESIS ONLY MENTIONS THE IMAGE OF `A`, AND WHY THAT IS THE WHOLE
+POINT. Two ring maps out of a localisation that agree on `algebraMap A A[1/α]`
+are equal (`IsLocalization.ringHom_ext`) — the image of an inverted element is
+forced. So `hcomp`, a statement about the COORDINATES of the model and nothing
+else, already gives `lam ∘ ψ = Ideal.Quotient.mk (nilradical A[1/α])` on the
+nose, hence `ker ψ ≤ nilradical A[1/α]`. Noetherianity then makes the nilradical
+NILPOTENT (`IsNoetherianRing.isNilpotent_nilradical`), and that is where the
+single uniform `s` comes from: `s` depends on the ring, not on `z`. A
+denominator-clearing argument only ever produces statements about coordinates, so
+this is exactly the shape the spreading-out leaf below can deliver.
+
+`lam` is asked to be neither surjective nor injective nor a section in any
+stronger sense, and no ideal of the target ring appears anywhere. -/
+theorem exists_pow_eq_zero_of_ker_of_retraction_localizationAway
+    {A : Type*} [CommRing A] [IsNoetherianRing A] (α : A)
+    {Sb : Type*} [CommRing Sb]
+    (ψ : Localization.Away α →+* Sb)
+    (lam : Sb →+* Localization.Away α ⧸ nilradical (Localization.Away α))
+    (hcomp : ∀ y : A, lam (ψ (algebraMap A (Localization.Away α) y)) =
+      Ideal.Quotient.mk _ (algebraMap A (Localization.Away α) y)) :
+    ∃ s : ℕ, ∀ z ∈ RingHom.ker ψ, z ^ s = 0 := by
+  classical
+  obtain ⟨s, hs⟩ := IsNoetherianRing.isNilpotent_nilradical (Localization.Away α)
+  refine ⟨s, ?_⟩
+  have hker : lam.comp ψ = Ideal.Quotient.mk (nilradical (Localization.Away α)) := by
+    refine IsLocalization.ringHom_ext (Submonoid.powers α) ?_
+    ext y
+    simpa using hcomp y
+  intro z hz
+  have h0 : Ideal.Quotient.mk (nilradical (Localization.Away α)) z = 0 := by
+    rw [← hker]
+    simp [RingHom.mem_ker.mp hz]
+  have hz' : z ∈ nilradical (Localization.Away α) := by
+    rwa [← Ideal.Quotient.eq_zero_iff_mem]
+  have hpow := Ideal.pow_mem_pow hz' s
+  rw [hs] at hpow
+  simpa using hpow
+
+/-- **NON-MEMBERSHIP IN A PRINCIPAL IDEAL OF A POLYNOMIAL RING SPREADS OUT**
+(SORRY LEAF, cut 2026-07-28 out of
+`exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
+below): if the integral polynomial `b` is NOT divisible by `g` over `ℚ`, then it
+is not divisible by `g` over `𝔽̄_p` either, for every `p` outside one explicit
+finite set.
+
+WHY IT IS A SEPARATE LEAF. It is the ONLY part of the `b ≠ 0` conjunct of the
+consumer's conclusion, and it is completely independent of the model `f`, of `a`,
+and of the birational diagram: it is a statement about two polynomials. Splitting
+it off is what lets the spreading-out leaf below carry a purely ℚ-side
+non-vanishing hypothesis on its `b` and never mention a prime in that conjunct.
+
+`N` IS GENUINELY NEEDED — the statement is false without it. Take `k = 1`,
+`g = y`, `b = y + q` for a prime `q`. Over `ℚ`, `y ∤ y + q`; over `𝔽̄_q`,
+`b = y` is divisible by `g`. So one bad prime per constant term, and the leaf is
+not vacuous.
+
+ROUTE (all four ingredients are PROVEN in this file, ~1500 lines above; only
+step 3 is new).
+
+1. If `g = 0` the ideal is `⊥`, so `hb` says `b ≠ 0`; take `N` to be the
+   absolute value of any nonzero coefficient of `b`, which then survives mod `p`.
+2. Otherwise `hb` forces `g` to be a NON-UNIT — a nonzero integer constant would
+   make the ideal `⊤` over `ℚ` — hence `d := g.totalDegree ≥ 1`, and `b ≠ 0`;
+   put `D := b.totalDegree`. Enlarge `N` by one nonzero degree-`d` coefficient of
+   `g` and one nonzero degree-`D` coefficient of `b`, so that both total degrees
+   are unchanged in characteristic `p`. In a polynomial ring over a FIELD total
+   degree is additive (`MvPolynomial.totalDegree_mul_of_isDomain`, used the same
+   way by `exists_reducibilityCertificates` above), so `h * g = b` forces
+   `h.totalDegree = D - d`; hence over any such field
+   `b ∈ Ideal.span {g} ↔ ∃ h with every exponent ≤ D and h * g = b`.
+3. That right-hand side is a system of LINEAR equations with INTEGER
+   coefficients in the coefficients of `h`, indexed by the FINITE set
+   `Fin k → Fin (D + 1)` through `boundedExpo` / `coeffPoly` (PROVEN above,
+   and used in exactly this way by `exists_reducibilityCertificates`). By `hb`
+   it has no solution over `ℚ`; a LINEAR system over `ℚ` solvable over an
+   extension field is solvable over `ℚ` (rank criterion — equivalently
+   `Ideal.span {g} ` over `ℚ̄` contracts to `Ideal.span {g}` over `ℚ` by faithful
+   flatness), so it has no solution over `ℚ̄` either. THIS IS THE ONLY NEW
+   INGREDIENT.
+4. `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` (PROVEN above — the
+   Nullstellensatz plus an integral Bézout certificate) turns "no `ℚ̄`-solution"
+   into "no `𝔽̄_p`-solution for `p ∤ N`", and step 2 converts that back into
+   non-membership.
+
+CIRCULARITY GUARD: pure commutative algebra about `MvPolynomial (Fin k)`; no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
+    {k : ℕ} (g b : MvPolynomial (Fin k) ℤ)
+    (hb : MvPolynomial.map (Int.castRingHom ℚ) b ∉
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b ∉
+        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} :=
+  sorry
+
+/-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM: THE MAP AND ITS RETRACTION
+MODULO NILPOTENTS** (SORRY LEAF, cut 2026-07-28 out of
+`exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
+immediately below, which is now PROVEN over this leaf, over
+`exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` above and over the
+general `exists_pow_eq_zero_of_ker_of_retraction_localizationAway` above).
+
+WHAT THE CUT REMOVES FROM THE CONSUMER, AND WHY. The consumer still speaks of a
+KERNEL and of a nilpotency exponent `s`. Neither survives here. What a
+denominator-clearing argument actually produces is a pair of ring maps and a
+statement about COORDINATES:
+
+  `ψ : A_p[1/a] → B_p[1/b]`   and   `lam : B_p[1/b] → (A_p[1/a])_red`
+
+with `lam ∘ ψ` the reduction map on the image of `A_p`. The passage from that to
+"`ker ψ` is elementwise `s`-nilpotent" is
+`exists_pow_eq_zero_of_ker_of_retraction_localizationAway` above and is done ONCE
+— `IsLocalization.ringHom_ext` upgrades the coordinate statement to
+`lam ∘ ψ = mk`, and Noetherianity of `A_p[1/a]` supplies the exponent. So a
+prover here never has to name an ideal, a kernel or an exponent.
+
+`b` IS AN INTEGER POLYNOMIAL, AND THAT COSTS NOTHING. The spread-out `b` lives
+over `ℤ[1/N]`, so a power of `N` clears its denominators; `N` is a unit mod `p`,
+and `nonempty_ringEquiv_localizationAway_isUnit_mul` (PROVEN ~1000 lines above)
+identifies `Localization.Away (u * b)` with `Localization.Away b` for a unit `u`.
+Taking `b` over `ℤ` is what makes ONE `b` serve every fibre at once — the same
+device as `integralSystemClass` — and it is what lets the `b ≠ 0` conjunct be
+discharged by the separate, model-free leaf above from the `ℚ`-side
+non-membership asserted here.
+
+WHY IT IS TRUE. Verbatim the argument in the consumer's docstring below. Over
+`ℚ`, `hQ` gives an isomorphism `θ` from `(A_ℚ[1/a])_red` to `B_ℚ[1/b₀]`; take
+`ψ_ℚ := θ ∘ mk` and `lam_ℚ := θ.symm`, so that `lam_ℚ ∘ ψ_ℚ = mk` by
+construction — the `ℚ`-side of this leaf is therefore FREE, and all the work is
+the descent. All the data — the finitely many coefficients of `a`, of `b`, of
+`θ` and of `θ.symm`, the finitely many relations they satisfy, and the
+nilpotency exponents of a chosen finite generating set of
+`nilradical (A_ℚ[1/a])` — involve finitely many rational numbers. Invert their
+denominators and one nonzero integer more: the whole diagram is defined over
+`ℤ[1/N]`, and `isLocalization_integralSystemModel` (PROVEN ~2300 lines above)
+identifies the `ℤ[1/N]`-model with the basic open `D(N)` of the `ℤ`-model, which
+is what lets the base change to `𝔽̄_p` be taken at all. Reducing the two maps and
+the one identity mod `p` is then functorial.
+
+FAITHFULNESS. Not dischargeable by a junk `ψ`. The zero map into the zero ring
+forces `lam 0 = 1`, hence `1 = 0` in `(A_p[1/a])_red`, hence `A_p[1/a] = 0` — so
+the escape is available only where the consumer's conclusion is itself vacuous.
+Conversely the leaf is strictly WEAKER than a mod-`p` isomorphism: `ψ` is not
+asked to be surjective, `lam` is not asked to be injective, and `lam` lands in
+the REDUCTION rather than in `A_p[1/a]` itself — which matters, since
+`A_ℚ[1/a] → (A_ℚ[1/a])_red` has no ring-theoretic section in general and the
+statement would be FALSE if `lam` were asked to provide one. Note, as the
+consumer's docstring already warns, that domain-ness of the mod-`p` hypersurface
+is NOT available inside this leaf (it needs `g mod p` irreducible, which is not a
+hypothesis), so a prover must produce an honest `ψ` from the spread-out
+isomorphism rather than argue about the target of `b`.
+
+`hsm` IS ABSENT ON PURPOSE: smoothness plays no part in spreading out a diagram.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_inverted_intLift_retraction_localizationAway_integralSystemModel
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ)
+    (hQ : ∃ b : MvPolynomial (Fin k) ℚ ⧸
+              Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g},
+        b ≠ 0 ∧
+        Nonempty ((Localization.Away (integralSystemClass f ℚ a) ⧸
+            nilradical (Localization.Away (integralSystemClass f ℚ a))) ≃+*
+          Localization.Away b)) :
+    ∃ (N : ℕ) (b : MvPolynomial (Fin k) ℤ), 0 < N ∧
+      MvPolynomial.map (Int.castRingHom ℚ) b ∉
+        Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} ∧
+      ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+        ∃ (ψ : Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) →+*
+              Localization.Away (Ideal.Quotient.mk
+                (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+                (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)))
+          (lam : Localization.Away (Ideal.Quotient.mk
+                (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+                (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)) →+*
+              Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) ⧸
+                nilradical (Localization.Away
+                  (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
+          ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
+            lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) :=
+  sorry
+
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM, WITH THE KERNEL CONDITION
-REPLACED BY A NILPOTENCY EXPONENT** (SORRY LEAF, cut 2026-07-28 out of
+REPLACED BY A NILPOTENCY EXPONENT** (**PROVEN 2026-07-28**, having been cut on
+the same day out of
 `exists_inverted_ringHom_localizationAway_integralSystemModel` immediately
-below, which is now PROVEN over it).
+below, which is PROVEN over it).
 
-WHAT THE CUT REMOVES, AND WHY. The consumer's conclusion contains a `∀` over the
-whole mod-`p` fibre — `RingHom.ker φ ≤ √(a-torsion)` — and that shape invites the
-prover to reason about ideals of a ring it has just constructed. It does not have
-to. What the spreading-out actually produces is a ring map ON THE LOCALISATION,
+WHAT THE PROOF BELOW DISCHARGES ON ITS OWN, AND WHAT IT DELEGATES. It is proven
+over exactly three declarations immediately above, and it contributes nothing
+mathematical of its own beyond gluing them:
 
-  `ψ : A_p[1/a] → 𝔽̄_p[x] ⧸ (g mod p) [1/b]`,
+* `exists_inverted_intLift_retraction_localizationAway_integralSystemModel`
+  (SORRY LEAF) — the spreading-out proper, which produces for `p ∤ N₁` the ring
+  map `ψ : A_p[1/a] → B_p[1/b]` TOGETHER with a retraction
+  `lam : B_p[1/b] → (A_p[1/a])_red` undoing it on the image of `A_p`, and an
+  INTEGER polynomial `b` whose class is nonzero over `ℚ`. No kernel, no
+  exponent, no ideal: pure denominator clearing.
+* `exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` (SORRY LEAF) —
+  the `ℚ`-side non-membership of that same `b` spreads to `𝔽̄_p` for `p ∤ N₂`,
+  which is exactly the `b ≠ 0` conjunct. Independent of the model.
+* `exists_pow_eq_zero_of_ker_of_retraction_localizationAway` (PROVEN) — the
+  passage from the retraction to the exponent: `IsLocalization.ringHom_ext`
+  upgrades the coordinate identity to `lam ∘ ψ = mk`, so
+  `ker ψ ≤ nilradical (A_p[1/a])`, and Noetherianity of that ring makes the
+  nilradical nilpotent, which is where the uniform `s` comes from.
 
-together with a single natural number `s` bounding the nilpotency of `ker ψ`
-elementwise. Over `ℚ` that `ψ` is the composite
-`A_ℚ[1/a] ↠ (A_ℚ[1/a])_red ≅ B_ℚ[1/b]`, whose kernel is the NILRADICAL; the ring
-is Noetherian, so the nilradical is nilpotent and `s` exists. Both the map and
-the exponent are FINITE DATA — finitely many coefficients and finitely many
-identities `νᵢ^{mᵢ} = 0` — which is exactly the claim the docstring below makes
-about why this half needs no constructibility argument. Stating the leaf this way
-means the only thing a prover ever has to do is clear denominators; the passage
-from `s` to the consumer's radical bound is three lines of glue and is done
-below, once.
+`N = N₁ * N₂`.
 
-Precisely: for `z` in the fibre with `φ z = 0`, where `φ = ψ ∘ (A_p → A_p[1/a])`,
-the image of `z` in `A_p[1/a]` lies in `ker ψ`, hence its `s`-th power vanishes,
-hence `z^s` lies in the `a`-torsion — which is membership in its radical, with a
-witness. No ideal-theoretic reasoning and no colon ideal appears.
+WHY THIS SHAPE. The conclusion here contains a KERNEL and an EXPONENT, and that
+shape invites a prover to reason about ideals of a ring it has just constructed.
+It does not have to. What a spreading-out argument actually produces is a pair of
+ring maps and one identity about COORDINATES; everything ideal-theoretic is
+downstream of that and is now done once, in the general lemma above, at a
+variable Noetherian ring.
 
-WHY IT IS TRUE. Verbatim the argument in the consumer's docstring below: all the
-data — the finitely many coefficients of `a`, of `b`, of the isomorphism and of
-its inverse, the finitely many relations they satisfy, and the nilpotency
-exponents of a chosen finite generating set of `nilradical (A_ℚ[1/a])` — involve
-finitely many rational numbers. Invert their denominators and one nonzero integer
-more: the whole diagram is then defined over `ℤ[1/N]`, and
-`isLocalization_integralSystemModel` (PROVEN ~1600 lines above) identifies the
-`ℤ[1/N]`-model with the basic open `D(N)` of the `ℤ`-model, which is what lets
-the base change to `𝔽̄_p` be taken at all. `b ≠ 0` mod `p` costs one further
-enlargement of `N`.
+The exponent is not itself spread out — it could not be, since it is not finite
+data about the diagram. It is manufactured on each fibre from Noetherianity, and
+`s` may perfectly well grow with `p`; the statement quantifies it INSIDE `∀ p`,
+so nothing is lost.
+
+Precisely, for the consumer: for `z` in the fibre with `φ z = 0`, where
+`φ = ψ ∘ (A_p → A_p[1/a])`, the image of `z` in `A_p[1/a]` lies in `ker ψ`, hence
+its `s`-th power vanishes, hence `z^s` lies in the `a`-torsion — which is
+membership in its radical, with a witness. No ideal-theoretic reasoning and no
+colon ideal appears there either.
 
 FAITHFULNESS. Not dischargeable by a junk `ψ`. The zero map has `ker ψ = ⊤`, so
 it satisfies the conclusion only if EVERY element of `A_p[1/a]` is `s`-nilpotent,
@@ -11280,8 +11480,22 @@ theorem exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemMode
         (s : ℕ)
         (ψ : Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) →+*
               Localization.Away b),
-        b ≠ 0 ∧ ∀ z ∈ RingHom.ker ψ, z ^ s = 0 :=
-  sorry
+        b ≠ 0 ∧ ∀ z ∈ RingHom.ker ψ, z ^ s = 0 := by
+  classical
+  obtain ⟨N₁, b, hN₁, hbQ, h1⟩ :=
+    exists_inverted_intLift_retraction_localizationAway_integralSystemModel f g a hQ
+  obtain ⟨N₂, hN₂, h2⟩ := exists_pos_forall_prime_not_dvd_notMem_span_singleton_map g b hbQ
+  refine ⟨N₁ * N₂, Nat.mul_pos hN₁ hN₂, ?_⟩
+  intro p hp hpN
+  obtain ⟨ψ, lam, hcomp⟩ := h1 p (fun h => hpN (dvd_mul_of_dvd_left h _))
+  obtain ⟨s, hs⟩ :=
+    exists_pow_eq_zero_of_ker_of_retraction_localizationAway
+      (integralSystemClass f (AlgebraicClosure (ZMod p)) a) ψ lam hcomp
+  refine ⟨Ideal.Quotient.mk _
+      (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b), s, ψ, ?_, hs⟩
+  intro hzero
+  exact h2 p (fun h => hpN (dvd_mul_of_dvd_right h _))
+    (Ideal.Quotient.eq_zero_iff_mem.mp hzero)
 
 /-- **THE COEFFICIENT-CLEARING HALF OF THE SPREADING-OUT: ONE RING MAP AND ITS
 INVERSE SURVIVE REDUCTION** (**PROVEN 2026-07-28** over the single leaf
