@@ -46933,8 +46933,172 @@ theorem exists_badPrimes_natCast_notMem_ray_class (F : Type u) [Field F] [Number
   have hdvd : z.natAbs ∣ m := by exact_mod_cast hdvd'
   exact hT z.natAbs (Finset.mem_singleton_self _) hq hdvd
 
+/-- **ONE MINKOWSKI LEAF FOR THE WHOLE CLUSTER: AN OPEN SUBGROUP OF
+`Γ F` ALREADY REALISES EVERY EXPONENT ON `μ_m`, FOR ALMOST EVERY `m`**
+(SORRY LEAF, created 2026-07-28 (flt-lean-266) by UNIFYING the two leaves
+`exists_badPrimes_cyclotomicChar_surjective_ray_class` and
+`exists_badPrimes_charKernel_mul_muFixer_ray_class` just below, both of
+which are now GLUE over it — a net **−1** on the open frontier, and the
+"recommended next cut" those two docstrings asked for, executed at the
+level of `Γ F` rather than of `Γ ℚ` for the reason in THE SHAPE OF THE
+CUT below).
+
+For every OPEN subgroup `H ≤ Γ F` there is a finite bad set `T` of
+rational primes such that for every modulus `m > 0` prime to `T` and
+every exponent `k` coprime to `m`, some element **of `H`** acts on `μ_m`
+by the `k`-th power.
+
+**THE TWO CONSUMERS, AND WHY ONE STATEMENT SERVES BOTH.**
+
+* At `H = ⊤` this IS
+  `exists_badPrimes_cyclotomicChar_surjective_ray_class`: the mod-`m`
+  cyclotomic character `Γ F → (ZMod m)ˣ` is surjective.
+* At `H = charKernelRayClass χ hmul h1` — open because it contains the
+  open `V` (`Subgroup.isOpen_mono`, exactly as in
+  `isOpen_charKernel_inter_muFixer_ray_class` above) — it gives
+  `exists_badPrimes_charKernel_mul_muFixer_ray_class`: given `σ`, let
+  `k := (c σ).val` for the cyclotomic character `c` of
+  `exists_cyclotomicChar_ray_class` above, take `τ ∈ ker χ` realising
+  `k`, and put `ρ := τ⁻¹ σ`, which then fixes `μ_m` pointwise. That
+  factorisation is the whole glue, and it needs no Galois theory at
+  all — only that `k` is coprime to `m` (`ZMod.val_coe_unit_coprime`).
+
+So the SPLITTING form `Γ F = ker χ · Γ_{F(ζ_m)}` and the SURJECTIVITY
+form are not two facts: surjectivity **relative to `H`** implies both,
+and the cyclotomic character is what converts one into the other.
+
+**WHY IT IS TRUE.** `H` is open, hence closed, so by the infinite Galois
+correspondence `H = Γ_{L}` for `L := IntermediateField.fixedField H`,
+which is FINITE over `F` (`InfiniteGalois.isOpen_iff_finite`) — a number
+field. Take
+
+    T := (primes ramifying in `F/ℚ`) ∪ (primes ramifying in `L/ℚ`).
+
+`Γ_{F(ζ_m)}` is normal in `Γ F` (`muFixerRayClass_normal` above), so
+`H · Γ_{F(ζ_m)}` is an open, hence closed, subgroup whose fixed field is
+`M := L ∩ F(ζ_m)`; and the conclusion is exactly `M = F` together with
+surjectivity of the cyclotomic character of `F`. Both come from ONE
+Minkowski input applied twice, and **the argument must go through `ℚ`** —
+"`M/F` is everywhere unramified, hence trivial" is FALSE for a general
+number field `F`, which has a Hilbert class field:
+
+* `m` prime to the primes ramifying in `F/ℚ` makes `F ∩ ℚ(ζ_m)`
+  unramified over `ℚ` at EVERY prime (it sits in `ℚ(ζ_m)`, ramified only
+  above `m`, and in `F`), hence `= ℚ` by MINKOWSKI. That is
+  surjectivity, and it also makes restriction
+  `Gal(F(ζ_m)/F) ≅ Gal(ℚ(ζ_m)/ℚ)` an ISOMORPHISM, so the intermediate
+  fields of `F(ζ_m)/F` are exactly the composita `F·L'` with `L'`
+  intermediate in `ℚ(ζ_m)/ℚ`, and `F·L' ∩ ℚ(ζ_m) = L'`.
+* Applying that to `M` gives `M = F·(M ∩ ℚ(ζ_m))` with
+  `M ∩ ℚ(ζ_m) ⊆ L ∩ ℚ(ζ_m)`, which is unramified over `ℚ` everywhere by
+  the same disjointness (`m` prime to the primes ramifying in `L/ℚ`),
+  hence `= ℚ` by MINKOWSKI again. So `M = F`.
+
+Note `H` is NOT assumed normal and must not be: `Γ_{F(ζ_m)}` supplies all
+the normality the product needs, and `L/F` is not Galois in general.
+
+**MINKOWSKI IS ALREADY IN THIS FILE'S IMPORT CONE, DO NOT REBUILD IT**:
+`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, PROVEN) says
+an OPEN NORMAL subgroup of `Γ ℚ` containing the image of the local
+inertia group at every rational prime is `⊤`. Its inertia hypothesis is
+stated through
+`Field.absoluteGaloisGroup.map (algebraMap ℚ (adicCompletion ℚ q))`, so
+what a prover must supply is "`q` unramified in the fixed field ⟹ inertia
+image lands in the subgroup" — the CONVERSE of
+`MinkowskiUnramified.inertia_eq_bot_of_le_fixingSubgroup`, and the one
+genuinely missing step. `MinkowskiUnramified.lean` is only 606 lines and
+is already imported here, so it is the natural home for it.
+
+**THE SHAPE OF THE CUT: why `Γ F` and not `Γ ℚ`.** The two docstrings
+below recommended cutting the `ℚ`-SIDE statement out and transporting
+both leaves down to it along `Field.absoluteGaloisGroup.map`. That is
+still the right PROOF, but it is the wrong STATEMENT to leave open,
+because the transport is a second, separable obligation that would have
+to be discharged twice (once per consumer) if it sat in the leaf's
+interface. Stated over `Γ F`, the transport is entirely inside this one
+leaf and the two consumers are five lines each.
+
+**THE TRANSPORT MACHINERY, INVENTORIED 2026-07-28 — ALL OF IT EXISTS.**
+
+* `Field.absoluteGaloisGroup.map (f : K →+* L) : Γ L →ₜ* Γ K`
+  (`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`, in this
+  file's cone). Instantiate at `f := algebraMap ℚ F` for `ρ : Γ F →ₜ* Γ ℚ`.
+  **CORRECTION TO A STALE CLAIM**: the docstrings below assert that this
+  "carries an UNNAMED `[NumberField K]` binder that `#check` does not
+  print". It does NOT, and has not since it was moved: the declaration
+  sits at line 77 of that file, ABOVE `variable [NumberField K]` at line
+  113, and its own docstring says the placement is deliberate. Its only
+  binders are `[Field K] [Field L]`.
+* `Field.absoluteGaloisGroup.lift_map (f) (σ : Γ L) (x : Kᵃˡᵍ) :
+  AlgebraicClosure.map f (map f σ x) = σ (AlgebraicClosure.map f x)` —
+  same file. This is the ONE compatibility a `μ_m`-clause needs.
+* `AlgebraicClosure.map (algebraMap ℚ F) : ℚᵃˡᵍ →+* Fᵃˡᵍ` is
+  **BIJECTIVE** (`F/ℚ` algebraic makes `Fᵃˡᵍ/ℚᵃˡᵍ` algebraic, and
+  `IsAlgClosed.algebraMap_bijective_of_isIntegral` finishes). That is
+  what makes the `μ_m`-clause transport an IFF in both directions and
+  makes `ρ` injective. The argument is currently INLINE inside
+  `MoretBailly.exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
+  and has no name of its own; give it one when you write this.
+* `isOpen_range_absoluteGaloisGroup_map_numberField` (PROVEN, in
+  `Fermat/FLT/Modularity/MoretBailly.lean`): `Γ F ≤ Γ ℚ` is OPEN. With
+  `ρ` injective, `Γ F` compact (mathlib's `CompactSpace Gal(K/k)`,
+  `Mathlib/FieldTheory/Galois/Profinite.lean`) and `Γ ℚ` Hausdorff
+  (`T2Space Gal(L/K)`, `Mathlib/FieldTheory/KrullTopology.lean`),
+  `Continuous.isClosedMap` gives that `ρ` maps clopen sets to closed
+  sets, and `Subgroup.map ρ H = range ρ \ ρ (Hᶜ)` is then OPEN — which is
+  the hypothesis the `ℚ`-side Minkowski step needs.
+  **DO NOT IMPORT `MoretBailly.lean` TO GET THIS**: it is 41 997 lines
+  and would be a serious wall-clock regression here (the fleet was
+  CUTTING edges of this kind as recently as `a929bb45`). Both that file
+  and this one already import
+  `Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean` (282
+  lines), so HOIST `isOpen_range_absoluteGaloisGroup_map_numberField`
+  and its input
+  `exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map` into
+  that module and delete them from `MoretBailly.lean`. Do not copy them:
+  a second copy visible to a module importing both is a name collision.
+* For the `ℚ`-side surjectivity, mathlib has
+  `IsCyclotomicExtension.autEquivPow` (`Mathlib/NumberTheory/Cyclotomic/Gal.lean`)
+  over `Polynomial.cyclotomic.irreducible_rat`, and
+  `modularCyclotomicCharacter` — the latter is already what
+  `exists_cyclotomicChar_ray_class` above is built from.
+
+Ray class groups and their Artin map are a known gap in this tree;
+`exists_unramifiedAbelian_primePow_dvd_finrank` (`Modularity/Interface.lean`)
+and `exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`
+(`Modularity/KhareWintenberger.lean`) want the same Minkowski/ramification
+dictionary. CHEBOTAREV IS ALREADY PROVEN in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` — do not rebuild it.
+
+**FAITHFULNESS: TRUE as stated, and NOT vacuous.** The conclusion pins
+the ACTION of `τ` on ALL of `μ_m`, so no junk witness discharges it: at
+`F = ℚ(ζ₅)`, `H = ⊤`, `m = 5`, `k = 2` it asserts an element of `Γ F`
+inducing a generator of `(ℤ/5)ˣ`, which is FALSE — and that is exactly
+why `T` must contain the primes ramifying in `F/ℚ` (here `5`). `0 < m` is
+carried because the cyclotomic dictionary above needs `NeZero m`; at
+`m = 1` the statement is true but degenerate (`ζ ^ 1 = 1` forces
+`ζ = 1`). `IsOpen H` is load-bearing at both ends: it is what makes
+`L/F` finite, so that "the primes ramifying in `L/ℚ`" is a FINITE set and
+`T` exists at all; and it is what keeps `H` nonempty of useful elements —
+a non-open `H` such as `Γ_{F^{ab}}` has `L/F` infinite and no such `T`.
+
+**Check that would refute it**: an open `H ≤ Γ F` together with an
+infinite set of `m` — one prime to every candidate `T` — for which
+`L ∩ F(ζ_m) ≠ F`, equivalently a prime `q` unramified in `L/ℚ` and in
+`F/ℚ` yet ramified in `L ∩ F(ζ_q)/ℚ`. -/
+theorem exists_badPrimes_openSubgroup_realizes_pow_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (H : Subgroup (Γ F)) (hHopen : IsOpen (H : Set (Γ F))) :
+    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+      ∀ k : ℕ, Nat.Coprime k m →
+        ∃ τ ∈ H, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → τ ζ = ζ ^ k :=
+  sorry
+
 /-- **THE MOD-`m` CYCLOTOMIC CHARACTER OF `F` IS SURJECTIVE FOR ALMOST
-EVERY `m`** (sorry node, created 2026-07-27 as sub-leaf
+EVERY `m`** (**PROVEN 2026-07-28** (flt-lean-266) as GLUE over
+`exists_badPrimes_openSubgroup_realizes_pow_ray_class` just above, at
+`H = ⊤`; it was a sorry node from its creation 2026-07-27 as sub-leaf
 (A3a-1-1-b-2-B-2) of `exists_cyclotomicRealization_ray_class` just
 below).
 
@@ -46950,66 +47114,31 @@ is SURJECTIVE. (The two are interchangeable through
 is stated here because it is what the glue below and
 `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` already speak.)
 
-WHY IT IS TRUE, AND THE ROUTE. Surjectivity is exactly
-`[F(ζ_m) : F] = φ(m)`, i.e. `F ∩ ℚ(ζ_m) = ℚ`. Since `m` is prime to every
-prime ramifying in `F/ℚ`, and `ℚ(ζ_m)/ℚ` ramifies only at primes dividing
-`m`, the field `F ∩ ℚ(ζ_m)` is unramified over `ℚ` at EVERY prime, hence
-equals `ℚ` by MINKOWSKI. **The argument must go through `ℚ`** — "`E/F` is
-everywhere unramified, hence trivial" is false for a general number field
-`F`, which has a Hilbert class field.
+WHY IT IS TRUE. Surjectivity is exactly `[F(ζ_m) : F] = φ(m)`, i.e.
+`F ∩ ℚ(ζ_m) = ℚ`, which is MINKOWSKI over `ℚ`. That argument now lives
+ONCE, in `exists_badPrimes_openSubgroup_realizes_pow_ray_class` above,
+whose docstring carries the full route, the machinery inventory and the
+faithfulness audit; this statement is the `H = ⊤` instance of it, and
+`(⊤ : Subgroup (Γ F))` is open because its carrier is `Set.univ`
+(`Subgroup.coe_top`).
 
-**MINKOWSKI IS ALREADY IN THIS FILE'S IMPORT CONE, DO NOT REBUILD IT**:
-`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`
-(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, PROVEN) says
-that an OPEN NORMAL subgroup of `Γ ℚ` containing the image of the local
-inertia group at every rational prime is `⊤`. Applied to
-`H := Γ_F · Γ_{ℚ(ζ_m)}` — a subgroup because the second factor is normal,
-open because the first is, and normal because its fixed field
-`F ∩ ℚ(ζ_m)` is abelian over `ℚ` hence Galois — it gives `H = ⊤`, which
-is `F ∩ ℚ(ζ_m) = ℚ`, which is the surjectivity wanted.
+**THE OLD "RECOMMENDED NEXT CUT" HAS BEEN TAKEN, IN A DIFFERENT SHAPE.**
+This docstring used to propose cutting out the `ℚ`-SIDE statement and
+transporting both this leaf and
+`exists_badPrimes_charKernel_mul_muFixer_ray_class` below down to it
+along `Field.absoluteGaloisGroup.map`. The unified leaf above is that
+cut, executed at the level of `Γ F` instead — which keeps the transport
+inside a single leaf rather than in the interface of two. See THE SHAPE
+OF THE CUT there for why.
 
-**Recommended next cut.** The `ℚ`-side statement is common to this leaf
-and to `exists_badPrimes_charKernel_mul_muFixer_ray_class` just below,
-and it is the only place Minkowski enters either of them:
-
-    ∀ (H : Subgroup (Γ ℚ)), IsOpen (H : Set (Γ ℚ)) →
-      ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
-        ∀ σ : Γ ℚ, ∃ τ ρ : Γ ℚ, τ ∈ H ∧
-          (∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ
-
-It was NOT cut out here because doing so honestly requires also writing
-the transport of both leaves along `Field.absoluteGaloisGroup.map` from
-`Γ F` (resp. the fixed field of `ker χ`) to `Γ ℚ`, and a sorried lemma
-with no written consumer is floating. Whoever takes this leaf should
-write that transport first and then the `ℚ`-side statement becomes a
-second named leaf consumed by both.
-
-**THE TRANSPORT MACHINERY EXISTS — DO NOT REBUILD IT** (checked
-2026-07-27, in this file's import cone through
-`Deformations.RepresentationTheory.AbsoluteGaloisGroup`):
-
-* `Field.absoluteGaloisGroup.map (f : K →+* L) : Γ L →ₜ* Γ K` — the
-  restriction homomorphism along an arbitrarily chosen embedding of
-  algebraic closures. Instantiate at `f := algebraMap ℚ F` to get
-  `Γ F →ₜ* Γ ℚ`. **It carries an UNNAMED `[NumberField K]` binder that
-  `#check` does not print** — read the `variable` block, or use
-  `set_option pp.explicit true`, before assuming it applies at your
-  generality.
-* `Field.absoluteGaloisGroup.lift_map (f) (σ : Γ L) (x : Kᵃˡᵍ) :
-  AlgebraicClosure.map f (map f σ x) = σ (AlgebraicClosure.map f x)` —
-  this is the ONE compatibility a `μ_m`-clause needs: `AlgebraicClosure.map f`
-  is an injective ring hom, so it carries `μ_m ⊆ ℚᵃˡᵍ` into `μ_m ⊆ Fᵃˡᵍ`
-  and turns "`σ` acts by the `k`-th power on `μ_m ⊆ Fᵃˡᵍ`" into the same
-  statement downstairs. Every `μ_m`-clause in both leaves crosses the
-  seam through this single lemma.
-
-Also worth knowing, though NOT currently imported here:
-`normal_range_absoluteGaloisGroup_map` and
-`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
-(`Fermat/FLT/Modularity/MoretBailly.lean`) compute the range of that map.
-Check whether you need them before adding the import edge — this file's
-header records that import edges to the largest modules are a wall-clock
-regression the merger will want to know about.
+**AND ONE CLAIM THAT WAS IN THIS DOCSTRING IS FALSE** (found 2026-07-28,
+recorded here because leaf tables get harvested from these paragraphs):
+it asserted that `Field.absoluteGaloisGroup.map` "carries an UNNAMED
+`[NumberField K]` binder that `#check` does not print". It does not. The
+declaration sits above `variable [NumberField K]` in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean` and its own
+docstring says that placement is deliberate; its binders are `[Field K]`
+and `[Field L]` only.
 
 FAITHFULNESS. Non-vacuous: the conclusion pins the ACTION of `g` on all
 of `μ_m`, so a junk witness does not discharge it — at `m = 5`, `k = 2`
@@ -47021,14 +47150,21 @@ theorem exists_badPrimes_cyclotomicChar_surjective_ray_class
     (F : Type u) [Field F] [NumberField F] :
     ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
       ∀ k : ℕ, Nat.Coprime k m →
-        ∃ g : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → g ζ = ζ ^ k :=
-  sorry
+        ∃ g : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → g ζ = ζ ^ k := by
+  obtain ⟨T, hT⟩ := exists_badPrimes_openSubgroup_realizes_pow_ray_class F ⊤
+    (by rw [Subgroup.coe_top]; exact isOpen_univ)
+  refine ⟨T, fun m hm hq k hk => ?_⟩
+  obtain ⟨g, -, hg⟩ := hT m hm hq k hk
+  exact ⟨g, hg⟩
 
 /-- **CHILDRESS'S CLAUSE (iii): `Γ F = ker χ · Γ_{F(ζ_m)}` FOR ALMOST
-EVERY `m`** (sorry node, created 2026-07-27 as sub-leaf
-(A3a-1-1-b-2-B-3) of `exists_cyclotomicRealization_ray_class` just
-below). This is Artin's Lemma 2.8(iii), i.e. `K ∩ F(ζ_m) = F` for `K` the
-fixed field of `ker χ`.
+EVERY `m`** (**PROVEN 2026-07-28** (flt-lean-266) as GLUE over
+`exists_badPrimes_openSubgroup_realizes_pow_ray_class` above, at
+`H = charKernelRayClass χ hmul h1`; it was a sorry node from its creation
+2026-07-27 as sub-leaf (A3a-1-1-b-2-B-3) of
+`exists_cyclotomicRealization_ray_class` just below). This is Artin's
+Lemma 2.8(iii), i.e. `K ∩ F(ζ_m) = F` for `K` the fixed field of
+`ker χ`.
 
 There is a finite bad set `T` — the primes dividing `discr F` and those
 dividing `discr K` — such that every modulus `m > 0` prime to `T` already
@@ -47054,10 +47190,29 @@ inputs, both over `ℚ` and both as in the leaf above:
 Applying the first bullet to `E := K ∩ F(ζ_m)` gives `E = F·(E ∩ ℚ(ζ_m))`
 with `E ∩ ℚ(ζ_m) ⊆ K ∩ ℚ(ζ_m) = ℚ` by the second, so `E = F`.
 
-The Minkowski input itself is PROVEN and in this file's cone:
-`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`. See the
-"recommended next cut" paragraph in the leaf above — the `ℚ`-side
-statement it names is shared with this one.
+**ALL OF THAT NOW LIVES IN ONE PLACE** (2026-07-28): it is the route of
+`exists_badPrimes_openSubgroup_realizes_pow_ray_class` above, whose `H`
+is instantiated here at `ker χ` and in the surjectivity leaf at `⊤`. The
+Minkowski input itself is PROVEN and in this file's cone,
+`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`.
+
+**WHAT THE GLUE BELOW ACTUALLY DOES, and it is not what this docstring
+originally predicted.** The two clauses of the old cut were "`ker χ`
+meets `Γ_{F(ζ_m)}` trivially enough" and "the cyclotomic character is
+surjective", and they look like two facts. They are one: the unified leaf
+says an open `H` realises EVERY exponent, and the FACTORISATION `σ = τ ρ`
+is recovered from it by taking `k := (c σ).val` for the cyclotomic
+character `c` of `exists_cyclotomicChar_ray_class` above, choosing
+`τ ∈ ker χ` that realises that same `k`, and setting `ρ := τ⁻¹ σ`, which
+then fixes `μ_m` pointwise because `τ` and `σ` act identically on it. No
+Galois theory is used at this level — only `ZMod.val_coe_unit_coprime`,
+to know `(c σ).val` is coprime to `m`.
+
+`hVopen` and `hVker` remain load-bearing, and their role is unchanged:
+they are what makes `charKernelRayClass χ hmul h1` OPEN
+(`Subgroup.isOpen_mono` against `V`, exactly as in
+`isOpen_charKernel_inter_muFixer_ray_class` above), and openness is the
+unified leaf's only hypothesis on `H`.
 
 FAITHFULNESS. Non-vacuous and `0 < m` IS load-bearing: at `m = 0` the
 only `ζ` with `ζ ^ 0 = 1` is every `ζ`, so `muFixerRayClass F 0` is
@@ -47074,8 +47229,27 @@ theorem exists_badPrimes_charKernel_mul_muFixer_ray_class
     (hVker : ∀ a ∈ V, χ a = 1) :
     ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
       ∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ :=
-  sorry
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ := by
+  classical
+  have h1 : χ 1 = 1 := hVker 1 V.one_mem
+  have hWopen : IsOpen ((charKernelRayClass χ hmul h1 : Subgroup (Γ F)) : Set (Γ F)) :=
+    Subgroup.isOpen_mono (H₁ := V) (fun a ha => hVker a ha) hVopen
+  obtain ⟨T, hT⟩ := exists_badPrimes_openSubgroup_realizes_pow_ray_class F
+    (charKernelRayClass χ hmul h1) hWopen
+  refine ⟨T, ?_⟩
+  intro m hm hq σ
+  haveI : NeZero m := ⟨hm.ne'⟩
+  obtain ⟨c, hcspec, -⟩ := exists_cyclotomicChar_ray_class F m hm
+  obtain ⟨τ, hτW, hτact⟩ :=
+    hT m hm hq ((c σ : ZMod m)).val (ZMod.val_coe_unit_coprime (c σ))
+  refine ⟨τ, τ⁻¹ * σ, hτW, ?_, by rw [← mul_assoc, mul_inv_cancel, one_mul]⟩
+  intro ζ hζ
+  have hτζ : τ ζ = σ ζ := by rw [hτact ζ hζ, hcspec σ ζ hζ]
+  show τ⁻¹ (σ ζ) = ζ
+  rw [← hτζ]
+  show (τ⁻¹ * τ) ζ = ζ
+  rw [inv_mul_cancel]
+  rfl
 
 /-- **CHILDRESS 2.7 AND MINKOWSKI: THE GALOIS SIDE OF THE ARTIN MODULUS**
 (**DECOMPOSED AND ITS GLUE PROVEN 2026-07-27**; created the same day as
@@ -47145,10 +47319,11 @@ three clauses have been cut into the three named leaves just above:
 * (1) `exists_badPrimes_natCast_notMem_ray_class` — **PROVEN**,
   axiom-clean; the bad set is the singleton `{ℓ}` for `ℓ` the residue
   characteristic of `p`.
-* (2) `exists_badPrimes_charKernel_mul_muFixer_ray_class` (sorry) —
-  clause (iii), `K ∩ F(ζ_m) = F`. Clause (2) here IS this leaf verbatim.
-* (3) `exists_badPrimes_cyclotomicChar_surjective_ray_class` (sorry) —
-  surjectivity of the mod-`m` cyclotomic character of `F`.
+* (2) `exists_badPrimes_charKernel_mul_muFixer_ray_class` — **PROVEN
+  2026-07-28**; clause (iii), `K ∩ F(ζ_m) = F`. Clause (2) here IS this
+  leaf verbatim.
+* (3) `exists_badPrimes_cyclotomicChar_surjective_ray_class` — **PROVEN
+  2026-07-28**; surjectivity of the mod-`m` cyclotomic character of `F`.
 
 **Clause (3) needs NO further Galois input beyond (2) and the
 surjectivity leaf**, and that is the content the glue below supplies: it
@@ -47161,10 +47336,14 @@ splits `g = τ ρ` with `χ τ = 1` and `ρ` fixing `μ_m` (leaf (2)), observes
 along the units homomorphism `χ' : Γ F →* (Dickson.K 3)ˣ` built exactly
 as in `exists_cyclicGenerator_ray_class` above.
 
-So both remaining leaves are pure MINKOWSKI statements with no
-generator bookkeeping left in them, and both reduce to one and the same
-`ℚ`-side statement — see the "recommended next cut" paragraph in the
-surjectivity leaf's docstring. -/
+Both of those leaves were pure MINKOWSKI statements with no generator
+bookkeeping left in them, and on 2026-07-28 they were UNIFIED into the
+single leaf `exists_badPrimes_openSubgroup_realizes_pow_ray_class` above
+— "an open subgroup of `Γ F` realises every exponent on `μ_m`, for almost
+every `m`" — of which (2) is the `H = ker χ` instance and (3) the `H = ⊤`
+instance. **That leaf is now the ONLY open node of this whole
+sub-cluster**, and its docstring carries the route, the inventory of the
+existing transport machinery, and the faithfulness audit. -/
 theorem exists_cyclotomicRealization_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -51024,6 +51203,42 @@ TWO anonymous sorried `have`s (`hnorm₁`, `hnorm₂`) carrying identical
 mathematics, so hoisting it was a net **−1** on the open frontier as well as
 making it dispatchable. Step 2 — the common norm base `β` from the compositum
 — is the ONE remaining sorried `have` (`hbase`) in the body below.
+
+**IF YOU HOIST `hbase`, DO NOT HOIST ITS ARGUMENT LIST — THAT LEAF IS FALSE**
+(checked 2026-07-28, flt-lean-266, with an explicit witness). `hbase` is
+written as an implication taking seven hypotheses — `hi₁`, `hi₂`, `hH₁open`,
+`hH₂open`, `hm₂cop`, `hbasis₁`, `hbasis₂` — and it is tempting to read that
+list as the leaf's interface, because it is the only thing the `have` names.
+It is not: the `have` also sees `φ`, `φ₁`, `φ₂`, `Im₁`, `Im₂`, `mm`, `mmE₁`,
+`mmE₂`, `ι₁`, `ι₂` and their defining clauses through the enclosing proof, and
+**`φ` is completely unconstrained by those seven**. So the naive top-level
+hoist is refuted by taking `φ` to be the TRIVIAL homomorphism together with
+any `χ` and `v₀` with `χ (globalFrob v₀) ≠ 1`: every one of the seven
+hypotheses still holds (`hbasis₁`/`hbasis₂` constrain only `𝔑₁`, `𝔑₂`, and the
+rest are statements about `H₁`, `H₂`, `m₁`, `m₂`), while the conclusion's first
+clause `φ (ofAdd β) = χ (globalFrob v₀)` reads `1 = χ (globalFrob v₀)`, false.
+
+The MINIMAL sufficient interface, read off the route, is the seven above plus,
+at each index `i ∈ {1,2}`: `hconsᵢ` (`φ ∘ 𝔑ᵢ = φᵢ`), `hφv` and `hφvᵢ` (the
+Artin maps pinned on the basis, downstairs and up), `hImᵢ` (the modulus
+subgroup), `hsurHᵢ` (`Hᵢ` is the range of `ιᵢ`) with `hinjᵢ`, and the
+auxiliary-field pinning data `jEᵢ`, `jᵢ`, `hjEᵢ`, `hιappᵢ`, `hfinᵢ` that makes
+`ιᵢ` the RESTRICTION map — the same clauses, and for the same reason, that
+`exists_relNormDivisorHom_ray_class` above had to take once
+`exists_artinAuxiliaryNumberField_ray_class` started exporting them. Together
+these are what make `χ (globalFrob v₀)` attainable: `hiᵢ` gives
+`χ (Hᵢ) = χ (Γ F)`, so `χ ∘ ιᵢ` has full image, and Chebotarev at `Eᵢ`
+(PROVEN, `Fermat/FLT/GaloisRepresentation/Chebotarev.lean` — do not rebuild
+it) then puts `χ (globalFrob v₀)` in `φᵢ (Imᵢ)`, which `hconsᵢ` transports to
+`φ (Subgroup.map 𝔑ᵢ Imᵢ)`.
+
+That is roughly forty-five binders, none of which the compiler can check for
+SUFFICIENCY — an under-hypothesised leaf elaborates perfectly and is simply
+false. Hence the sorry is deliberately left inside this theorem for now: it is
+already visible to the frontier scan under this theorem's own name, so nothing
+is lost by not naming it, whereas a wrong hoist would manufacture exactly the
+"honest audit, false statement" failure this cluster has already produced once
+(see the SECOND FALSITY AUDIT on `exists_artinDivisorNormIndex_le_ray_class`).
 
 **AND THE CUT-LEVEL DEFECT RECORDED AGAINST STEP 3 IS REPAIRED.** The caveat
 below used to read that `exists_artinAuxiliaryNumberField_ray_class` pins `ι`
