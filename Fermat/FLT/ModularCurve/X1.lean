@@ -390,7 +390,7 @@ open in them has been split along the theories it needed:
 | `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
 | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
-| `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
+| `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
@@ -402,7 +402,7 @@ open in them has been split along the theories it needed:
 | `isBigO_atTop_axisRestrictOn` | a cusp form decays faster than every power at `i∞` | `ℚ` |
 | `locallyIntegrableOn_axisRestrictOn` | continuity of `y ↦ f(iy/√N)` on `(0, ∞)` | `ℚ` |
 | `isBigO_atTop_coeffOn` | Hecke's bound `\|aₙ\| = O(n)` | `ℚ` |
-| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
+| `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`.) | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
@@ -3493,9 +3493,177 @@ theorem nonempty_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{0}}
     ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
   exists_gamma1Datum_baseChange h d
 
+/-! #### Representability of `[Γ₁(N)]`, and the atlas it produces
+
+The three declarations below decompose `exists_fineGamma1Atlas` (2026-07-28)
+along the one axis its own docstring names as what has to be built —
+"representability of `[Γ₁(N)]` over `𝔽_ℓ` for `N ≥ 4`, packaged as a
+`Gamma1Atlas` with `π` an isomorphism".  The cut separates the two halves
+of that sentence: `IsFineGamma1Moduli` and `exists_isFineGamma1Moduli` are
+the representability, with no atlas bookkeeping in them at all, and
+`Gamma1Atlas.ofFineModuli` is the packaging, which turns out to be formal
+— four fields, no geometry, no arithmetic, and no use of `N`, `ℓ` or the
+base.
+-/
+
+/-- **`dM` over `M` is a FINE moduli scheme for `[Γ₁(N)]` over `S`**:
+every `Γ₁(N)`-datum over an `S`-scheme is a base change of `dM` along a
+morphism of `S`-schemes, and that morphism is UNIQUE.
+
+This is representability of the moduli problem, written with the data this
+file already carries rather than as a functor on `Sch/S`.
+`exists_classify` says `Hom(-, M)` covers the moduli functor;
+`eq_of_isBaseChange` says it covers it injectively; together they say that
+`Hom(T, M)` *is* the set of isomorphism classes of `Γ₁(N)`-data over `T`,
+because `IsBaseChangeOfGamma1 m d dM` asserts exactly that `d` sits in the
+class of `m^* dM`.  That is axis 4 of the AXES SEARCHED list above, whose
+objection — that a faithful statement of representability needs the moduli
+functor written out — is answered here by `Gamma1Datum` and
+`IsBaseChangeOfGamma1`, which are that functor's data in the form this
+file already uses.
+
+**Why only `exists_classify` carries an "over `S`" clause.**  Uniqueness
+is a statement about `M` alone and the structure morphism plays no part in
+it; existence has to produce a morphism *of `S`-schemes*, which is what
+`m ≫ strM = g` says.  Over `SpecF ℓ` that clause is in fact automatic —
+`ZMod ℓ` is a quotient of the initial ring `ℤ`, so `Hom(T, SpecF ℓ)` is a
+subsingleton, which is the `𝔽_ℓ` analogue of `subsingleton_hom_specQ` — but
+it is stated so that the notion is the right one over a general base.
+
+**NOT VACUOUS, and in particular `M` cannot be empty.**  `exists_classify`
+demands a morphism `T ⟶ M` for every `T` carrying a datum, and data do
+exist over nonempty bases: for `ℓ ∤ N` every elliptic curve over `𝔽̄_ℓ`
+has full `N`-torsion, hence a point of exact order `N`.  So the degenerate
+witness `M = ∅` — the one thing a `∃`-shaped moduli statement has to be
+checked against — is excluded by the structure itself rather than by a
+side condition. -/
+structure IsFineGamma1Moduli (N : ℕ) {M S : Scheme.{0}} (strM : M ⟶ S)
+    (dM : Gamma1Datum N M) : Prop where
+  /-- every datum over an `S`-scheme is a base change of `dM`, along a
+  morphism over `S` -/
+  exists_classify : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    ∃ m : T ⟶ M, m ≫ strM = g ∧ Nonempty (IsBaseChangeOfGamma1 m d dM)
+  /-- and the classifying morphism is determined by the datum -/
+  eq_of_isBaseChange : ∀ {T : Scheme.{0}} {d : Gamma1Datum N T} {m₁ m₂ : T ⟶ M},
+    Nonempty (IsBaseChangeOfGamma1 m₁ d dM) → Nonempty (IsBaseChangeOfGamma1 m₂ d dM) →
+    m₁ = m₂
+
+/-- **`[Γ₁(N)]` is REPRESENTABLE over `𝔽_ℓ` for `N ≥ 4`, `ℓ ∤ N`** (sorry
+leaf, NEW 2026-07-28) — the whole mathematical content of
+`exists_fineGamma1Atlas` below, with the atlas bookkeeping removed.
+
+TRUE, and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
+Cor. 4.7.1 (the moduli problem `[Γ₁(N)]` is RIGID for `N ≥ 4`, and a rigid
+representable-relatively-representable problem is representable), together
+with 2.7.4 for relative representability of `[Γ₁(N)]` over the modular
+stack.  Deligne–Rapoport IV.2 and Diamond–Im §8 state the same fact as
+"`Y_1(N)` is a fine moduli scheme for `N ≥ 4`".  The universal family is
+the restriction of the universal elliptic curve, and the statement here is
+its defining property.
+
+**Each hypothesis is load-bearing, and each fails the conclusion on its
+own** (the underscores record only that a `sorry` consumes nothing):
+
+* `_hN` is RIGIDITY, and it is sharp.  At `N ≤ 3` the pair `(E, P)` has a
+  nontrivial automorphism — `[-1]` fixes `P` when `2P = 0`, i.e. at
+  `N ≤ 2`, and at `N = 3` the curve `j = 0` carries `ζ₃` fixing a chosen
+  `3`-torsion point — so a datum can be a base change of `dM` along a
+  morphism in more than one way after an étale cover, `eq_of_isBaseChange`
+  fails, and no fine moduli scheme exists.  This is the same rigidity that
+  `IsCoarseModuliY1`'s own docstring records as the reason `Y_1(N)` is
+  fine for `N ≥ 4`.
+* `_hℓN` is invertibility of `N` on the base.  At `ℓ ∣ N` the naive
+  problem is not even flat and the representable object is the *Drinfeld*
+  `[Γ₁(N)]`, whose universal object is a different scheme; the section
+  form of `PointOfExactOrder` used here is then not the right moduli
+  problem at all.
+* `_hℓ` is what makes `ZMod ℓ` a FIELD, hence `SpecF ℓ` the spectrum of a
+  residue field.  At composite `ℓ` the base is not reduced-and-regular in
+  the way the representability theorem wants; see the FAITHFULNESS AUDIT
+  on the parent leaf, where the `ℓ = 0` and composite regimes are worked
+  out.
+
+**WHAT THIS DOES NOT CLAIM.**  Nothing about the coarse space `Y_1(N)`
+being smooth, affine or geometrically connected, nothing about its
+compactification, and nothing about `𝔽_ℓ`-points existing — those are
+`exists_isCoarseModuliY1_isSmoothCurve` and its neighbours, and they are
+separate leaves.  This is the bare universal property and no more.
+
+**Refuting check** (in the sense the doctrine asks for): the leaf becomes
+cheap the moment a functor-valued form of `Gamma1Datum` and a
+representability theorem for rigid moduli problems exist in this tree.
+`grep -rn "Rigid\|representable\|IsRepresentable" Fermat/FLT/ModularCurve/`
+is what would refute the claim that neither exists here today. -/
+theorem exists_isFineGamma1Moduli (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) :
+    ∃ (M : Scheme.{0}) (strM : M ⟶ SpecF ℓ) (dM : Gamma1Datum N M),
+      IsFineGamma1Moduli N strM dM :=
+  sorry
+
+/-- **A fine moduli scheme IS an atlas, with `M = Y` and `π = 𝟙`**
+(PROVEN 2026-07-28) — the packaging half of the atlas cut, and it is
+formal: no arithmetic, no geometry, no hypothesis on `N` or on the base.
+
+This is the construction the FALSITY AUDIT below describes in words ("take
+`M = Y`, `dM` the universal family, `cover` with `p = 𝟙` … and the trivial
+deck group"), carried out.  Field by field:
+
+* `classify` is the classifying morphism supplied by `exists_classify`,
+  chosen with `Exists.choose`; the "over `S`" clause is its second
+  component, so the value really is a `RelPoint`.
+* `classify_natural` is `eq_of_isBaseChange` applied to the two
+  presentations of `d'` as a base change of `dM`: directly, and through
+  `IsBaseChangeOfGamma1.comp` of the given square with the classifying one.
+  This is the only place the composition of base changes is used.
+* `cover` is trivial with `p = 𝟙`: no fpqc extension is needed, and *that
+  is exactly what representability means*.  The three descent properties
+  of `𝟙` are instances.
+* `quotient` is `φ` itself, because `classify strM dM = 𝟙` — by
+  `eq_of_isBaseChange` against `IsBaseChangeOfGamma1.refl dM` — so the
+  factorisation condition reads `𝟙 ≫ ψ = φ`.  The separation hypothesis is
+  therefore unused, which is the formal shadow of "the deck group is
+  trivial".
+
+Note that `Y` and `M` are the same scheme here but remain *different
+fields* of `Gamma1Atlas`, so the two are only definitionally equal; the
+consumer below is written to respect that. -/
+noncomputable def Gamma1Atlas.ofFineModuli {N : ℕ} {M S : Scheme.{0}} {strM : M ⟶ S}
+    {dM : Gamma1Datum N M} (h : IsFineGamma1Moduli N strM dM) : Gamma1Atlas N S where
+  Y := M
+  str := strM
+  classify g d := ⟨(h.exists_classify g d).choose, (h.exists_classify g d).choose_spec.1⟩
+  classify_natural := by
+    intro T' T hmap g g' hg d' d bc
+    refine Subtype.ext ?_
+    refine h.eq_of_isBaseChange (h.exists_classify g' d').choose_spec.2 ?_
+    exact ⟨bc.comp (h.exists_classify g d).choose_spec.2.some⟩
+  M := M
+  strM := strM
+  dM := dM
+  cover := by
+    intro T g d
+    obtain ⟨m, hm, ⟨bc⟩⟩ := h.exists_classify g d
+    exact ⟨T, 𝟙 T, d, m, inferInstance, inferInstance, inferInstance,
+      by rw [Category.id_comp, hm], ⟨IsBaseChangeOfGamma1.refl d⟩, ⟨bc⟩⟩
+  quotient := by
+    intro Y' str' φ hφ _
+    have hid : (h.exists_classify strM dM).choose = 𝟙 M :=
+      h.eq_of_isBaseChange (h.exists_classify strM dM).choose_spec.2
+        ⟨IsBaseChangeOfGamma1.refl dM⟩
+    refine ⟨φ, ⟨hφ, ?_⟩, ?_⟩
+    · show (h.exists_classify strM dM).choose ≫ φ = φ
+      rw [hid, Category.id_comp]
+    · rintro ψ ⟨-, hψ⟩
+      rw [← hψ]
+      show ψ = (h.exists_classify strM dM).choose ≫ ψ
+      rw [hid]
+      exact (Category.id_comp _).symm
+
 /-- **There is a FINE Katz–Mazur atlas over `𝔽_ℓ`: one whose atlas map
-`M ⟶ Y` lifts every `𝔽_ℓ`-point of `Y`** (sorry leaf — this is where the
-whole fineness content of the `Γ₁` point count now sits).
+`M ⟶ Y` lifts every `𝔽_ℓ`-point of `Y`** (**PROVEN 2026-07-28 by the
+representability cut** — over the single leaf `exists_isFineGamma1Moduli`
+above and the formal packaging `Gamma1Atlas.ofFineModuli`; formerly a
+`sorry` leaf, and before that the REFUTED `nonempty_relPoint_atlas_of_relPoint`).
 
 **RESTATED 2026-07-28, after the FALSITY AUDIT below refuted the previous
 form.**  This leaf used to read
@@ -3596,14 +3764,42 @@ representable, and no fine atlas exists); `_hℓ` is what makes the base a FIELD
 — see the FAITHFULNESS AUDIT on the parent leaf, where the `ℓ = 0` and `ℓ`
 composite regimes are worked out — and `_hℓN` is invertibility of `N`, without
 which `[Γ₁(N)]` is the Drinfeld problem and the atlas is a different
-scheme. -/
-theorem exists_fineGamma1Atlas (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) :
+scheme.
+
+## THE CUT (2026-07-28): the three hypotheses are now consumed ELSEWHERE
+
+All three are passed straight to `exists_isFineGamma1Moduli` and consumed
+there, which is the point of the cut: they are hypotheses of
+REPRESENTABILITY, and they had nothing to do with the atlas packaging.
+That the packaging needs none of them — `Gamma1Atlas.ofFineModuli` is
+stated over an arbitrary base with no condition on `N` — is the evidence
+that the seam is in the right place, and it is checked by the compiler
+rather than asserted here.
+
+The lift itself is then `y` unchanged: on the fine atlas `Y = M` and the
+classifying map of the universal family is the identity
+(`eq_of_isBaseChange` against `IsBaseChangeOfGamma1.refl dM`), so the
+`∀ y ∃ m` clause — the clause that carried "all of the fineness content" —
+is discharged by `m := y` and `Category.comp_id`.  That is not a weakening
+of the leaf: it is what representability *says*, and the `∃ atlas` form was
+restated precisely so that this would be the true statement.  What remains
+genuinely open is `exists_isFineGamma1Moduli`, and nothing else. -/
+theorem exists_fineGamma1Atlas (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) :
     ∃ A : Gamma1Atlas N (SpecF ℓ),
       ∀ y : RelPoint A.str (𝟙 (SpecF ℓ)),
         ∃ m : RelPoint A.strM (𝟙 (SpecF ℓ)),
-          m.1 ≫ (A.classify A.strM A.dM).1 = y.1 :=
-  sorry
+          m.1 ≫ (A.classify A.strM A.dM).1 = y.1 := by
+  obtain ⟨M, strM, dM, h⟩ := exists_isFineGamma1Moduli N ℓ hN hℓ hℓN
+  refine ⟨Gamma1Atlas.ofFineModuli h, fun y => ⟨y, ?_⟩⟩
+  have hid : (((Gamma1Atlas.ofFineModuli h).classify (Gamma1Atlas.ofFineModuli h).strM
+        (Gamma1Atlas.ofFineModuli h).dM) :
+      RelPoint (Gamma1Atlas.ofFineModuli h).strM (Gamma1Atlas.ofFineModuli h).strM).1
+      = 𝟙 (Gamma1Atlas.ofFineModuli h).Y :=
+    h.eq_of_isBaseChange (h.exists_classify strM dM).choose_spec.2
+      ⟨IsBaseChangeOfGamma1.refl dM⟩
+  rw [hid]
+  exact Category.comp_id _
 
 /-- **An `𝔽_ℓ`-point of `Y_1(N)_{𝔽_ℓ}` comes from a `Γ₁(N)`-datum**
 (**PROVEN 2026-07-27 by the atlas cut**, over `exists_fineGamma1Atlas` and
@@ -6451,8 +6647,146 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape
     exact isTorsion_jacobian_of_lFunction_ne_zero_gamma1 N h jac
       fun χ f a hf => hL χ trivial f a hf
 
+section CuspPeriodOn
+
+open Filter Asymptotics MeasureTheory
+
+/-- **Hecke's Mellin transform at `s = 1`, for every group between `Γ₁(N)`
+and `Γ₀(N)`: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (PROVEN 2026-07-28) — the
+group-generic form of `X0.lean`'s `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`,
+and the statement of which BOTH that theorem and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` below are instances.
+
+The proof is `X0.lean`'s, with the group left free.  It is a transposition
+and not new mathematics, and that is exactly the claim being made: every
+step of the `Γ₀` argument goes through `cuspFEPairOn`,
+`isStrongFEPair_cuspFEPairOn`, `mellin_axisRestrictOn` and
+`hasSum_axisRestrictOn` — the `HeckeOn` subsection above — none of which
+mentions which congruence subgroup `f` lives on.  Writing
+`c = 2π/√N` and `Λ = (cuspFEPairOn …).Λ`:
+
+1. `Λ` is ENTIRE (`IsStrongFEPair.differentiable_Λ`); this is where the
+   Fricke involution is consumed, through `cuspFEPairOn`;
+2. `Λ s = Γ(s) c^{-s} · LSeries a s` on `Re s > 2` (`mellin_axisRestrictOn`),
+   so `s ↦ c^s Λ(s)/Γ(s)` is entire — `1/Γ` is entire, so no pole has to be
+   dodged — and agrees with `L` there;
+3. the identity theorem on `ℂ` gives `L 1 = c · Λ 1`, since `Γ(1) = 1`;
+4. `Λ 1 = ∫₀^∞ f(iy/√N) dy` (the Mellin weight is `1` at `s = 1`), and
+   `y ↦ y/√N` scales it by `√N` (`integral_comp_mul_left_Ioi`), so
+   `Λ 1 = √N · cuspPeriod a` and `L 1 = (2π/√N)·√N·cuspPeriod a`.
+
+**A STALE ROUTE NOTE IS CORRECTED HERE** (2026-07-28).  The leaf below was
+dispatched with the instruction "in `ModularCurve/WeightTwoEigenform.lean`,
+replace `Gamma0GL N` by a variable `G` in `axisRestrict`, `cuspFEPair`, and
+the four analytic leaves" — a real route, but one that had already been
+taken, in THIS file rather than that one, by the `HeckeOn` subsection
+above.  No edit to `WeightTwoEigenform.lean` was needed or made.  The same
+note called those four declarations "leaves"; in `WeightTwoEigenform.lean`
+they are PROVEN theorems, and that file contains no `sorry` at all.  What
+is open is their group-generic restatements here.
+
+`hN : N ≠ 0` is load-bearing for the reason recorded on the `Γ₀`
+statement — at `N = 0` the Fricke matrix is singular and `axisPoint`
+divides by `√N`, so the route does not exist; `χ` is inert, the analysis
+never looking at the nebentypus, and the eigenform fields `hecke`/`atkin`
+are unused, `hf` entering only through `qExpansion`, `qExpansionSummable`
+and `isBigO_atTop_coeffOn`. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn (N : ℕ) (hN : N ≠ 0)
+    (G : Subgroup (GL (Fin 2) ℝ)) (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N)
+    {χ : DirichletCharacter ℂ N}
+    (f : CuspForm G 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenformOn G N χ f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hcpos : (0 : ℝ) < 2 * Real.pi / Real.sqrt N := by positivity
+  have hcC : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr hcpos.ne'
+  have hstrong : IsStrongFEPair (cuspFEPairOn N hN G h1 h0 f) :=
+    isStrongFEPair_cuspFEPairOn N hN G h1 h0 f
+  -- `s ↦ c^s Λ(s) / Γ(s)` is entire: `Λ` is entire and `1/Γ` is entire.
+  have hFentire : AnalyticOnNhd ℂ
+      (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+    rw [Complex.analyticOnNhd_univ_iff_differentiable]
+    exact ((differentiable_id.const_cpow (Or.inl hcC)).mul
+      hstrong.differentiable_Λ).mul Complex.differentiable_one_div_Gamma
+  -- and it is the Dirichlet series on `Re s > 2`
+  have hFeq : ∀ s : ℂ, 2 < s.re →
+      ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s * (cuspFEPairOn N hN G h1 h0 f).Λ s *
+        (Complex.Gamma s)⁻¹ = LSeries a s := by
+    intro s hs
+    have hΛ : (cuspFEPairOn N hN G h1 h0 f).Λ s =
+        Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s := by
+      rw [congr_fun hstrong.Λ_eq s]
+      exact mellin_axisRestrictOn hN h1 hf hs
+    have hΓ : Complex.Gamma s ≠ 0 := Complex.Gamma_ne_zero_of_re_pos (by linarith)
+    have hcancel : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) = 1 := by
+      rw [← Complex.cpow_add _ _ hcC, add_neg_cancel, Complex.cpow_zero]
+    rw [hΛ, show ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s) *
+        (Complex.Gamma s)⁻¹
+      = (((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+          ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s)) *
+        (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
+      hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
+  -- identity theorem: two entire functions agreeing on `Re s > 2` agree at `s = 1`
+  have hL1 : L 1 =
+      ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) * (cuspFEPairOn N hN G h1 h0 f).Λ 1 := by
+    have hopen : IsOpen {z : ℂ | 2 < z.re} := isOpen_lt continuous_const Complex.continuous_re
+    have hmem : (3 : ℂ) ∈ {z : ℂ | 2 < z.re} := by norm_num
+    have key : Set.EqOn L (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPairOn N hN G h1 h0 f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+      refine hL.entire.eqOn_of_preconnected_of_eventuallyEq hFentire isPreconnected_univ
+        (Set.mem_univ (3 : ℂ)) ?_
+      filter_upwards [hopen.mem_nhds hmem] with z hz
+      rw [hL.eq_lseries z hz, hFeq z hz]
+    have := key (Set.mem_univ (1 : ℂ))
+    simpa [Complex.cpow_one, Complex.Gamma_one] using this
+  -- the completed transform at `s = 1` is `√N` times the period
+  have hΛ1 : (cuspFEPairOn N hN G h1 h0 f).Λ 1 = ((Real.sqrt N : ℝ) : ℂ) * cuspPeriod a := by
+    have hmel : (cuspFEPairOn N hN G h1 h0 f).Λ 1 =
+        ∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y := by
+      rw [congr_fun hstrong.Λ_eq 1]
+      simp only [mellin, sub_self, Complex.cpow_zero, one_smul]
+      rfl
+    have hpt : ∀ y ∈ Set.Ioi (0 : ℝ), axisRestrictOn G N f y =
+        (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) := by
+      intro y hy
+      have hy' : (0 : ℝ) < y := hy
+      have h := (hasSum_axisRestrictOn hN hf hy').tsum_eq
+      rw [← h]
+      refine tsum_congr fun n => ?_
+      congr 1
+      rw [Complex.ofReal_exp]
+      congr 1
+      push_cast
+      ring
+    have hint : (∫ y in Set.Ioi (0 : ℝ), axisRestrictOn G N f y)
+        = ∫ y in Set.Ioi (0 : ℝ), (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) :=
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioi hpt
+    rw [hmel, hint,
+      MeasureTheory.integral_comp_mul_left_Ioi (fun u : ℝ => ∑' n : ℕ,
+        a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ)))) 0
+        (inv_pos.mpr hsq)]
+    rw [cuspPeriod]
+    rw [mul_zero, inv_inv, Complex.real_smul]
+  rw [hL1, hΛ1]
+  have hsqC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
+  push_cast
+  field_simp
+
+end CuspPeriodOn
+
 /-- **Hecke's Mellin transform at `s = 1` on `Γ₁(N)`:
-`L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (sorry leaf, NEW 2026-07-28) — the `Γ₁`
+`L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (**PROVEN 2026-07-28**, as the instance
+`G = Γ₁(N)` of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn` above;
+formerly a `sorry` leaf) — the `Γ₁`
 transposition of `X0.lean`'s **PROVEN**
 `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.  LEVEL-FREE and
 NEBENTYPUS-FREE: it is the whole of the *analysis* under
@@ -6484,6 +6818,20 @@ purely because that is the type it was first needed at.  So the two
 statements cannot be shared TODAY (a `Γ₁(N)` cusp form is not a `Γ₀(N)`
 cusp form unless `χ = 1`), and they will be ONE statement the moment the
 machinery upstream is group-generic.
+
+**THE ROUTE BELOW WAS ALREADY TAKEN, IN THIS FILE, AND THE PARAGRAPH IS
+KEPT ONLY BECAUSE ITS MATRIX COMPUTATION IS STILL WANTED** (2026-07-28).
+The generalisation it prescribes is the `HeckeOn` subsection above —
+`axisRestrictOn`, `cuspFEPairOn`, `mellin_axisRestrictOn` and the
+group-generic quartet — so this leaf closed by citing
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn` and **no edit to
+`WeightTwoEigenform.lean` was made**.  Two corrections to the text that
+follows: that file's four declarations are called "leaves" here but are
+PROVEN theorems there (`WeightTwoEigenform.lean` contains no `sorry` at
+all — what is open is their group-generic restatements above); and the
+`W_N` normalisation computation written out below is the justification of
+`exists_frickeInvolutionOn`'s upper bound `G ≤ Γ₀(N)`, which is where it
+is now consumed.
 
 **The route, and it is a small mechanical diff, not a theory.**  In
 `ModularCurve/WeightTwoEigenform.lean`, replace `Gamma0GL N` by a
@@ -6540,7 +6888,8 @@ theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1 (N : ℕ) (hN : N �
     (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
     (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
     L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
-  sorry
+  lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn N hN (Gamma1GL N) le_rfl
+    (gamma1GL_le_gamma0GL N) f a hf L hL
 
 /-- **The period `∫₀^∞ f(iy) dy` of a weight-two eigenform of
 `S₂(Γ_1(25))` is nonzero** (sorry leaf, NEW 2026-07-28) — the ARITHMETIC
@@ -6601,11 +6950,47 @@ quantifies over EVERY `(χ, f, a)` satisfying `hf`, so a proof must first
 know that `hf` pins `a` to one of the twelve tabulated sequences.  That
 needs an explicit certified basis of `S₂(Γ_1(25))` — dimension formulas
 per nebentypus, the eigenbasis, and proven `q`-expansion coefficients —
-and none of that exists at this pin: `grep -rn "newform\|Newform\|
-oldform\|degeneracy\|eigenbasis" Fermat/ .lake/packages/mathlib/
-~/cs/FLT/` is the check that would refute it, and it returned nothing on
-2026-07-28.  This is the same missing theory that `X0.lean` names as "the
-axis not searched" on its own period leaf, and closing it closes both.
+and none of that exists at this pin.  This is the same missing theory that
+`X0.lean` names as "the axis not searched" on its own period leaf, and
+closing it closes both.
+
+**THE GREP CLAIM ABOVE WAS WRONG, AND IS CORRECTED HERE** (2026-07-28, by
+running it).  The recorded check —
+`grep -rn "newform\|Newform\|oldform\|degeneracy\|eigenbasis" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` — was said to have "returned nothing".
+It returns nothing on **mathlib** and on **`~/cs/FLT`**, and that half is
+right.  It returns a great deal on `Fermat/`, and the following are real
+declarations, not prose:
+
+* `X0.lean`: `IsOldEigenformAt`, `IsNewEigenformAt`, `IsFrickeEigenform`,
+  and a whole `CuspPeriodReduction` section culminating in
+  `cuspPeriod_ne_zero_of_isNewEigenformAt`;
+* `Modularity/Interface.lean`: `degeneracyTransform`, `degeneracyOp`,
+  `degeneracyOp_injective`, `qCoeff_degeneracyOp`, `IsWeightTwoNewform`,
+  `exists_weightTwoNewform_of_weightTwoEigenform`.
+
+**What that changes, and what it does not.**  It does *not* discharge this
+leaf, and the "gate that remains" above still stands: none of the above is
+a certified `q`-expansion basis of `S₂(Γ_1(25))`, which is what pins `a`.
+Two specific reasons the `Γ₀` machinery does not transpose, both checked:
+
+1. **`25 ∉ kenkuLevels`** (`= [20, 24, 26, 28, 30, 35, 36, 39, 42, 45, 50,
+   54, 63, 75]`), and every theorem in `CuspPeriodReduction` carries
+   `hN : N ∈ kenkuLevels`.
+2. `IsFrickeEigenform` is stated over `CuspForm (Gamma0GL M) 2`, and — more
+   fundamentally — **no eigenform of `S₂(Γ_1(25))` is a Fricke eigenform at
+   all**.  `W_25` sends `S₂(25, χ)` to `S₂(25, χ̄)`, so `f ∣ W_25` is a
+   multiple of `f` only when `χ² = 1`; the eight characters carrying the
+   space are `ψ^k` for `k = 2, 4, 6, 8, 12, 14, 16, 18`, and `ψ^k` is real
+   only for `k = 0, 10`, at which the space is ZERO.  So the `Γ₀` identity
+   `cuspPeriod b = (1 - ε)·(√M)⁻¹·∫₁^∞ …` has no `Γ₁(25)` instance: the
+   correct relation couples `a` with the coefficients of the partner form
+   of conjugate nebentypus, which is the two-tail formula displayed above.
+
+This is why the axis note below — "a cut that isolates the Fricke sign `ε`
+is a real decomposition but is worth nothing on its own" — survives the
+correction: the Fricke cut is not merely low-value here, its `Γ₀` form is
+not even available.
 
 **The axis searched, so the next reader need not redo it.**  A cut on the
 character `χ` (eight cases) is mechanically available and is *not* a
