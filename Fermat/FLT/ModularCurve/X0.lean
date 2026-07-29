@@ -31256,9 +31256,107 @@ theorem birationalOver_affineLine_of_not_exists_section {K : Type} [Field K] {P 
   birationalOver_affineLine_of_isDominant hcurve hconn u hu
     (isDominant_of_not_exists_section hcurve hconn u hu hnc)
 
+/-- **THE LOCAL RINGS OF `𝔸¹_K` ARE VALUATION RINGS** (sorry leaf, 2026-07-28)
+— the first of the two leaves that
+`exists_section_of_denseOpen_affineLine_toAbelianScheme` below decomposes into,
+and the one that carries NO abelian-variety content.  It mentions neither `N`,
+nor `x0Genus`, nor `IsX0Compactification`, nor an abelian scheme; it is a
+`Mathlib`-shaped statement about affine space over a field.
+
+TRUE and elementary.  `𝔸(Unit; Spec K) ≅ Spec (K[X])` by
+`AlgebraicGeometry.AffineSpace.SpecIso`, the stalk of `Spec R` at a prime is
+`Localization.AtPrime R p`, and `K[X]` is a PID — so every stalk is a
+localisation of a PID at a prime, i.e. a field or a DVR, and in either case a
+valuation ring.
+
+THIS IS THE COMPILER-CHECKED GAP the previous version of the docstring below
+named, and its claims were RE-CHECKED on 2026-07-28 and are ACCURATE:
+
+* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available** by
+  `infer_instance` (through `AffineSpace`'s `[IsIntegral S] : IsIntegral 𝔸(n; S)`);
+* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
+  instance**, `infer_instance` fails;
+* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an instance**
+  either (`GeometricallyIrreducible` and `GeometricallyIntegral` ARE instances
+  on affine space, but neither is registered as giving connectedness);
+* and, additionally, plain `Smooth (𝔸(Unit; Spec K) ↘ Spec K)` is **NOT an
+  instance** — so the smoothness route needs the affine line's smoothness
+  proved from scratch, not merely its relative dimension pinned.
+
+TWO ROUTES, and a successor should price both.  (i) Prove
+`SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` and quote
+`valuationRing_stalk_of_smoothOfRelativeDimension_one`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN,
+`public import`ed above).  Through `HasRingHomProperty` this reduces to
+`Algebra.IsStandardSmoothOfRelativeDimension 1 K (MvPolynomial Unit K)`, for
+which the pin has **no** instance — `Mathlib/RingTheory/Smooth/StandardSmooth.lean`
+registers only `id`, `baseChange`, `Subsingleton` and the localization-away
+case, so a `SubmersivePresentation` of the polynomial algebra has to be
+written.  Note this route would generalise: `SmoothOfRelativeDimension` is
+stable under base change and `𝔸(n; S) ↘ S` is a base change of
+`𝔸(n; Spec ℤ) ↘ Spec ℤ`, so the `ℤ` case implies every base.  (ii) Give the
+stalks directly, transporting along `SpecIso` and the `Spec` stalk iso; the
+final algebra step is available as
+`instance [IsLocalRing R] [IsBezout R] : ValuationRing R`
+(`Mathlib/RingTheory/Valuation/ValuationRing.lean`), so what has to be supplied
+is that `Localization.AtPrime (MvPolynomial Unit K) p` is Bezout. -/
+theorem valuationRing_stalk_affineLine (K : Type) [Field K]
+    (x : 𝔸(Unit; Spec (CommRingCat.of K))) :
+    ValuationRing ((𝔸(Unit; Spec (CommRingCat.of K))).presheaf.stalk x) :=
+  sorry
+
+/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY, from the WHOLE affine line: a
+`K`-morphism `𝔸¹_K ⟶ A` into an abelian scheme is CONSTANT** (sorry leaf,
+2026-07-28) — the second of the two leaves that
+`exists_section_of_denseOpen_affineLine_toAbelianScheme` below decomposes into,
+and the one that carries ALL of its mathematics.  The dense-open bookkeeping
+has been removed; what is left is the classical statement (Milne, *Abelian
+Varieties* I.3; Mumford, *Abelian Varieties* §4).
+
+**WHY THE SPLIT IS WORTH MAKING.**  The parent leaf mixed two unrelated
+obligations — an extension across the finitely many missing points of a dense
+open, and constancy — and the first is pure `Mathlib` bookkeeping that this
+file already owns machinery for
+(`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`), gated on
+one instance about affine space.  Splitting lets that gate be attacked without
+touching abelian varieties, and leaves this leaf stated over a source that is a
+whole scheme rather than an `Opens`.
+
+**WHAT IS ACTUALLY MISSING, and it is NOT the extension theorem.**  The
+classical proof extends once more to `ℙ¹_K` and applies the RIGIDITY LEMMA.
+`ℙ¹` as a scheme is **absent from this pin**: checked 2026-07-28, `Mathlib`
+carries `ProjectiveSpectrum` and `EllipticCurve/Projective`, and a
+`Topology/Compactification/OnePoint/ProjectiveLine.lean` that is topological
+only — there is no `AlgebraicGeometry.ProjectiveSpace`.  So a successor must
+either build `ℙ¹_K` (and then the rigidity input is already here, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, whose
+`HasTrivialPushforward.existsUnique_comp_eq` and
+`eq_of_comp_eq_of_hasTrivialPushforward` are exactly the shape needed once
+`Γ(ℙ¹, 𝒪) = K` is available), or take the group-theoretic route: translate `Φ`
+so that `Φ(0) = 0`, note `𝔸¹_K = 𝔾_a` is a connected group variety, and use
+that a pointed morphism from a connected group variety to an abelian variety is
+a homomorphism, together with `Hom(𝔾_a, A) = 0`.  Neither route is available
+off the shelf; the second avoids `ℙ¹` entirely and is the cheaper one to price.
+
+`abA` is load-bearing twice over: properness is what any extension argument
+consumes, and the group structure is what makes constancy TRUE.  The statement
+is FALSE for a non-proper target (`A = 𝔸¹_K`, `Φ = 𝟙`) and FALSE for a proper
+non-group target (`A` a genus-`0` conic with `Φ` a parametrisation).  The image
+point is `K`-rational because `𝔸¹_K` has `K`-points, which is why the
+conclusion is a SECTION `s` rather than a point of the underlying space. -/
+theorem exists_section_of_affineLine_toAbelianScheme {K : Type} [Field K]
+    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (abA : AbelianSchemeStruct astr)
+    (Φ : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ A)
+    (hΦ : Φ ≫ astr = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
+      Φ = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s :=
+  sorry
+
 /-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
-DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (sorry
-leaf, 2026-07-28) — the level-free, base-free geometric core of
+DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (PROVEN
+2026-07-28 by decomposition over the two leaves above; formerly a bare sorry
+leaf) — the level-free, base-free geometric core of
 `not_birationalOver_affineLine_of_one_le_x0Genus` below.  It mentions
 neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor the base `S`,
 and it is the ONLY new mathematics that half of the genus formula needs.
@@ -31281,26 +31379,18 @@ steps, in this order:
   which is why the conclusion can be stated as a SECTION `s` rather than
   as a point of the underlying space.
 
-**THE EXTENSION MACHINERY IS ALREADY HERE, AND ITS EXACT GAP IS
-COMPILER-CHECKED.**  `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
+**BOTH STEPS ARE NOW NAMED LEAVES, AND THE FIRST ONE IS DISCHARGED HERE.**
+The extension is `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
 (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN,
-`public import`ed above) is precisely the first step and, unlike the
-packaged `exists_unique_extension_of_isSmoothProperCurve`, it does NOT
-require the SOURCE to be proper — so `𝔸¹_K` is an admissible source.  It
-wants `[IsIntegral 𝔸(Unit; Spec K)]` and `ValuationRing` stalks.  Checked
-against this pin on 2026-07-28, by `infer_instance`:
-
-* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available**;
-* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
-  instance**, and it is what `valuationRing_stalk_of_smoothOfRelativeDimension_one`
-  (PROVEN, same file) needs to supply the stalk hypothesis;
-* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
-  instance** either.
-
-So the cheapest route for a successor is to prove smoothness of the
-affine line, or to give the `ValuationRing` stalks of `𝔸¹_K = Spec K[t]`
-directly (localisations of a PID).  That is a `Mathlib`-shaped statement
-about affine space, not about modular curves.
+`public import`ed above) — which, unlike the packaged
+`exists_unique_extension_of_isSmoothProperCurve`, does NOT require the SOURCE
+to be proper, so `𝔸¹_K` is an admissible source.  It wants
+`[IsIntegral 𝔸(Unit; Spec K)]` (an instance, checked) and `ValuationRing`
+stalks; the latter is now `valuationRing_stalk_affineLine` above, where the
+full instance audit and the two routes to it are recorded.  Constancy is
+`exists_section_of_affineLine_toAbelianScheme` above, which is where the
+`ℙ¹`-or-`𝔾_a` question now lives.  The proof below is the three-line assembly:
+extend, apply constancy, restrict.
 
 **`hV` IS LOAD-BEARING and the statement is FALSE without it**: for
 `V = ⊥` the empty scheme maps to `A` in exactly one way, and taking `A`
@@ -31325,8 +31415,18 @@ theorem exists_section_of_denseOpen_affineLine_toAbelianScheme {K : Type} [Field
     (hd : d ≫ astr =
       V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) :
     ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
-      d = (V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) ≫ s :=
-  sorry
+      d = (V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) ≫ s := by
+  haveI : IsProper astr := abA.proper
+  haveI : IsDominant V.ι := _root_.AlgebraicGeometry.Opens.isDominant_ι hV
+  -- Extend `d` across the finitely many missing points of the dense open `V`.
+  obtain ⟨Φ, ⟨hΦ1, hΦ2⟩, -⟩ :=
+    exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
+      (strX := 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+      (strZ := astr) (valuationRing_stalk_affineLine K) (j := V.ι) d hd
+  -- The extension is constant, and `d` is its restriction.
+  obtain ⟨s, hs1, hs2⟩ := exists_section_of_affineLine_toAbelianScheme abA Φ hΦ1
+  refine ⟨s, hs1, ?_⟩
+  rw [← hΦ2, hs2, Category.assoc]
 
 /-- **A RATIONAL curve over `K` maps CONSTANTLY to every abelian scheme
 over `K`** (PROVEN 2026-07-28 over
@@ -31401,12 +31501,80 @@ theorem eq_comp_of_birationalOver_affineLine_toAbelianScheme {K : Type} [Field K
     simp only [Category.assoc] at h2 ⊢
     rw [h2, reassoc_of% hf0]
 
+/-- **The underlying space of an `X_0(N)`-compactification over a base with a
+FIELD-VALUED POINT is INFINITE** (PROVEN 2026-07-28) — the base-change
+bookkeeping step that `pos_of_isX0Compactification_of_fieldPoint` below needs,
+split off because it mentions neither `N` nor the cusp locus.
+
+The `Spec ℚ` argument moved to a general base.  `k` is used ONLY to name a
+point `s := k.base pt` of `S` (`Spec K` is nonempty, `K` being a field), so
+`Nonempty S` would do just as well; the field-valued form is kept because it
+is what the consumers hold.
+
+The step the previous docstring recorded as remaining — *"move
+`infinite_of_smoothOfRelativeDimension_one` to the fibre"* — is discharged by
+`Scheme.Hom.fiber`: the fibre `strX.fiber s` is a scheme over `Spec κ(s)`,
+`SmoothOfRelativeDimension 1` base-changes to it along
+`S.fromSpecResidueField s` (`fiberToSpecResidueField` is `pullback.snd`), and
+`GeometricallyConnected strX` supplies `ConnectedSpace (strX.fiber s)`, hence
+its nonemptiness — both are `Mathlib` instances.  So the fibre is infinite, and
+`Scheme.Hom.fiberHomeo` identifies it with the subspace `strX ⁻¹' {s} ⊆ X`.
+
+Note `IsProper` is NOT used: infinitude of a smooth curve over a field is a
+statement about the affine charts alone. -/
+theorem infinite_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
+    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    Infinite X := by
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI : GeometricallyConnected strX := hmodel.connected
+  obtain ⟨pt⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
+  set s : S := k.base pt
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  haveI : SmoothOfRelativeDimension 1 (strX.fiberToSpecResidueField s) :=
+    MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  haveI : ConnectedSpace (strX.fiber s) := inferInstance
+  haveI : Nonempty (strX.fiber s) := inferInstance
+  have hinf : Infinite (strX.fiber s) :=
+    @infinite_of_smoothOfRelativeDimension_one (S.residueField s) _ _
+      (strX.fiberToSpecResidueField s) ‹_› ‹_›
+  haveI : Infinite (strX.base ⁻¹' {s}) :=
+    Infinite.of_injective _ (strX.fiberHomeo s).injective
+  exact Infinite.of_injective (fun x : strX.base ⁻¹' {s} => (x : X)) Subtype.val_injective
+
 /-- **A `Γ₀(N)`-compactification whose base has a FIELD-VALUED POINT forces
-`0 < N`** (sorry leaf, 2026-07-28) — the base-general analogue of
-`pos_of_isX0Compactification`, and, exactly as there, NOT bookkeeping:
-without it the leaf below is FALSE at `N = 0`, because `x0Genus 0 = 1`
-(compiler-verified by `decide`; see `pos_of_isX0Compactification`'s
-docstring for the full degeneration).
+`0 < N`** (PROVEN 2026-07-28, over the base-change step above and
+`isEmpty_of_gamma0Datum_zero`).  NOT bookkeeping: without it
+`not_birationalOver_affineLine_of_one_le_x0Genus` below is FALSE at `N = 0`,
+because `x0Genus 0 = 1`.
+
+**A STALE CITATION, CORRECTED (2026-07-28).**  The previous version of this
+docstring called this leaf "the base-general analogue of
+`pos_of_isX0Compactification`" and referred the reader to that declaration's
+docstring three times, for the `decide` check and for the empty-base
+counterexample.  **`Fermat.pos_of_isX0Compactification` does not exist**, and
+`grep` finds no declaration of that name anywhere under `Fermat/` — only
+docstring mentions, here, at `card_compl_range_le_card_divisors`'s subsection
+note, and five times in `FreyCurve/MazurTorsion.lean`.  The nearest real
+declaration is `pos_of_isX0Compactification_of_nonempty`
+(`FreyCurve/MazurTorsion.lean`), which is itself still a sorry leaf, is
+DOWNSTREAM of this file, and whose own docstring says it "subsumes
+`Fermat.pos_of_isX0Compactification`, which … lives in `ModularCurve/X0.lean`".
+It does not.  With this leaf proven, that one is a one-line corollary in the
+other direction: the proof below uses `k` only to name a point of `S`, so
+`Nonempty S` is the honest hypothesis and the two statements have the same
+content.
+
+THE ARGUMENT.  At `N = 0`, `isEmpty_of_gamma0Datum_zero` makes every base
+carrying a `Γ₀(0)`-datum initial, so the EMPTY scheme carries the moduli
+problem; the `universal` clause of `hmodel.coarse` then produces a morphism
+`Y ⟶ ∅` and hence `IsEmpty Y`.  The cusp locus is therefore all of `X`, which
+`finite_compl` makes finite — contradicting the infinitude above.  Note this
+needs no point of `Y` and no `Gamma0Datum` to be produced: the previous
+docstring's route ("a point of `Y` produces a `Gamma0Datum 0` through
+`hmodel.coarse`") is not available, since `IsCoarseModuliY0` maps data TO
+points and never back.  Initiality is what replaces it.
 
 TRUE, by the same argument as the `Spec ℚ` version, with `k` supplying
 the nonemptiness that the `Spec ℚ` version got from its base.
@@ -31428,17 +31596,37 @@ statement is to move it to the fibre — `SmoothOfRelativeDimension 1` and
 `IsProper` are stable under base change, so that is a base-change
 bookkeeping step, not a new theory.
 
-**`k` IS LOAD-BEARING and the statement is FALSE without it**, for exactly
-the reason `pos_of_isX0Compactification` records: over an EMPTY base
-`S = X = Y = ∅` satisfies every field of `IsX0Compactification 0`
+**`k` IS LOAD-BEARING and the statement is FALSE without it**: over an EMPTY
+base `S = X = Y = ∅` satisfies every field of `IsX0Compactification 0`
 vacuously.  A field-valued point of `S` is the weakest nonemptiness
 hypothesis that excludes it, and it is the one the consumer has in
 hand. -/
 theorem pos_of_isX0Compactification_of_fieldPoint {N : ℕ} {X Y S : Scheme.{0}}
     {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY)
-    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) : 0 < N :=
-  sorry
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) : 0 < N := by
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · exfalso
+    subst hN
+    -- Every base carrying a `Γ₀(0)`-datum is INITIAL, by `isEmpty_of_gamma0Datum_zero`.
+    have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+      intro T d
+      have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+      exact isInitialOfIsEmpty
+    -- So the EMPTY scheme receives the moduli problem, and initiality of `Y`
+    -- (the `universal` clause of `coarse`) produces a morphism `Y ⟶ ∅`.
+    obtain ⟨u, -, -⟩ := hmodel.coarse.universal (Y' := (∅ : Scheme.{0}))
+      (emptyIsInitial.to S)
+      (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
+      (fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc => Subtype.ext ((hinit d').hom_ext _ _))
+    haveI : IsEmpty Y := Function.isEmpty u.base
+    -- Then the cusp locus is ALL of `X`, which `finite_compl` makes finite …
+    have hfin := hmodel.finite_compl
+    rw [Set.range_eq_empty jY.base, Set.compl_empty] at hfin
+    -- … contradicting infinitude of `X`.
+    haveI : Infinite X := infinite_of_isX0Compactification_of_fieldPoint hmodel K k
+    exact Set.infinite_univ hfin
+  · exact hN
 
 /-- **EICHLER–SHIMURA, FIBREWISE: `genus X_0(N) ≥ 1` gives EVERY fibre of
 `X_0(N)` a nonconstant map to an abelian variety** (sorry leaf,
@@ -31466,20 +31654,66 @@ needing no rational point.  It is nonconstant for genus `≥ 1` because
 `[n]` is an isogeny of `Pic⁰` and Abel–Jacobi is a closed immersion, so
 the composite is finite onto its image.
 
+**CIRCULARITY AUDIT (2026-07-28) — READ THIS BEFORE PICKING A ROUTE.  THE
+ABEL–JACOBI ROUTE ABOVE IS CIRCULAR IN THIS FILE, AND THE MODULAR ROUTE IS THE
+ONLY ONE AVAILABLE.**  The dependency chain below this leaf is, all four links
+verified by reading the proof bodies:
+
+    exists_nonconstant_toAbelianScheme_of_one_le_x0Genus   (THIS leaf)
+      → not_birationalOver_affineLine_of_one_le_x0Genus    (proven, consumes it)
+      → hasNoFibreAffineLine_of_one_le_x0Genus             (proven, consumes that)
+      → mono_ajHom_of_one_le_x0Genus                       (proven, consumes that)
+      → hasNonconstantAbelianMap_of_one_le_x0Genus         (proven, consumes that)
+
+So everything that could supply "Abel–Jacobi is injective / a closed immersion
+at genus `≥ 1`" in this development is DOWNSTREAM of this leaf.  The
+nonconstancy step of the Abel–Jacobi route above — *"`[n]` is an isogeny of
+`Pic⁰` and Abel–Jacobi is a closed immersion"* — is exactly the content of
+`mono_ajHom_of_one_le_x0Genus`, so discharging this leaf through it, or through
+`IsJacobianOf.injective_aj_of_mono`, or through
+`hasNonconstantAbelianMap_of_one_le_x0Genus`, closes a loop.  A prover taking
+the Abel–Jacobi route must supply injectivity independently, which is the same
+genus input this leaf is being asked for.
+
+**AND THE `ℚ`-SIBLING'S WITHDRAWAL OF THE MODULAR ROUTE MUST NOT BE CARRIED
+OVER HERE.**  `hasNonconstantAbelianMap_of_one_le_x0Genus`'s docstring records
+"**PROVEN 2026-07-27, AND NOT ALONG EITHER AXIS THIS DOCSTRING NAMED**" and
+explicitly **withdraws** its own recommendation of the modular axis, on the
+ground that it "would have duplicated a leaf that already exists".  That
+reasoning is correct THERE — the leaf it would have duplicated is precisely
+this one — and it is exactly backwards HERE.  This leaf IS the existing leaf,
+and it has nothing upstream to consume.
+
 **THE MODULAR ROUTE, which is the axis this file prefers.**  The other
 way is to base-change the modular parametrisation: `1 ≤ x0Genus N` gives
-`S_2(Γ_0(N)) ≠ 0` (`exists_ne_zero_cuspForm_of_one_le_x0Genus`, already a
-named leaf above, which is why `hN` is a hypothesis here rather than an
-internal obligation), Eichler–Shimura gives a newform quotient `A_f/ℚ`
+`S_2(Γ_0(N)) ≠ 0`, Eichler–Shimura gives a newform quotient `A_f/ℚ`
 and a nonconstant `X_0(N) ↠ A_f`, and both spread out over the base and
 base-change to `K`.  Nonconstancy is geometric, so it survives.  Note
 `hmodel` asserts `strX` is SMOOTH over the whole of `S`, which is what
 keeps `k` out of the bad-reduction locus where the argument would fail.
 
+**A STALE CITATION IN THAT ROUTE, CORRECTED (2026-07-28), AND IT HIDES A
+PREREQUISITE.**  The previous version of this paragraph attributed
+`1 ≤ x0Genus N ⟹ S_2(Γ_0(N)) ≠ 0` to
+"`exists_ne_zero_cuspForm_of_one_le_x0Genus`, already a named leaf above, which
+is why `hN` is a hypothesis here rather than an internal obligation".  **No
+declaration of that name exists** — `grep` over `Fermat/` finds it only in
+docstrings, twice here and three times in `FreyCurve/MazurTorsion.lean`, never
+as a `theorem`.  So the modular route's FIRST step is not a leaf someone else
+owns; it is an unstated prerequisite of this one, and a decomposition along
+this axis has to state it (the dimension formula
+`dim_ℂ S_2(Γ_0(N)) = genus X_0(N)` for `N ≥ 1`, Diamond–Shurman Thm 3.5.1)
+rather than cite it.  `MazurTorsion.lean`'s
+`exists_ne_zero_cuspForm_of_one_le_x0Genus`-citing sibling one genus up is in
+the same position.
+
 **`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
 `N = 1`, `X_0(1) = ℙ¹` and every morphism from `ℙ¹` to an abelian variety
-is constant, so no such `c` exists at any `K`.  `hN` is load-bearing for
-the reason its own leaf records (`x0Genus 0 = 1`).  `hmodel` is
+is constant, so no such `c` exists at any `K`.  `hN` is load-bearing
+because `x0Genus 0 = 1`, so `hg` alone does not exclude `N = 0`; note that
+`hN` is now supplied by the consumer from
+`pos_of_isX0Compactification_of_fieldPoint` above, which is PROVEN as of
+2026-07-28.  `hmodel` is
 load-bearing twice over — it supplies the curve conditions AND it is the
 only thing tying the arithmetic `x0Genus N` to the geometry of `strX`.
 `N` enters only through `hg`, `hN` and `hmodel`.
@@ -43654,6 +43888,30 @@ searched: the plane-model/divisor-class-group construction of `p`
 itself.  That is the direction that would actually close it, and it is
 now a statement one can aim at, namely
 `IsX0SieveFibrePresentation d G` for a `G` one can write down.
+
+**A FOURTH AXIS, SEARCHED AND CLOSED (2026-07-28): the SUBGROUP STRUCTURE of
+`redPts`.**  The axis list above did not name it, and the leaf's own text
+invites it by observing that `map_add` makes `redPts` a subgroup rather than an
+arbitrary subset.  It gives nothing.  `redPts` is a subgroup `H ≤ G` of order
+`21, 32, 81, 96, 80` inside `G` of order `63, 512, 972, 6144, 28160`, and
+`ajPts` is a set of size `m = 10, 8, 6, 8, 8` containing `0` (the Abel–Jacobi
+class of the base point).  Nothing forces `|ajPts ∩ H|` below `min(m, |H|) = m`:
+the differences of elements of `ajPts ∩ H` lie in `H` automatically, so the
+closure property is vacuous here, and a set of size `m` may meet a subgroup of
+index `3` in all `m` of its elements.  So the subgroup structure adds no
+constraint beyond the cardinality bound, and the recorded verdict
+(`|A ∩ B| ≤ min(|A|,|B|) = m`, never `4`) stands unchanged.
+
+**FALSITY RE-CHECK AGAINST THE TABLE'S OWN REFUTING PRIME (2026-07-28).**  The
+subsection above records that at `N = 26` the prime `ℓ = 3` **refutes** the
+conclusion — reduction is injective out of `J_0(26)(ℚ) ≅ ℤ/21` into
+`#J_0(26)(𝔽_3) = 21`, hence surjective, so all `6` points of `X_0(26)(𝔽_3)`
+survive against `numRationalCusps 26 = 4`.  `x0SieveTable`'s `26` row is
+`(26, 5, 10, 63)`, i.e. `ℓ = 5`, so the refuting prime is NOT in the table and
+this leaf is not falsified by it.  `numRationalCusps N = 4` was recomputed by
+hand from the definition at all five levels (`26, 45, 54, 63, 75`) and agrees;
+the `m` column `10, 8, 6, 8, 8` agrees with the banked Magma counts.  The
+statement is consistent with every number this file records about it.
 
 The hypotheses carry underscores only because the body is `sorry`. -/
 theorem card_inter_ajPts_redPts_le_of_x0SieveTable {m n : ℕ} {G : Type}
