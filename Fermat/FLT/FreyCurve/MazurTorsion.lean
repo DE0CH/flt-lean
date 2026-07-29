@@ -27180,12 +27180,12 @@ theorem Fermat.ajMinus_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
   -- the constant `t = −[w o]` through which `ajTwist` unfolds definitionally
   set t : RelPoint jstr (𝟙 SpecQ) :=
     RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ))
-      (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o))) with ht
+      (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o)))
   have htw : ∀ x : RelPoint strX (𝟙 SpecQ),
       jac.ajTwist w hw (𝟙 SpecQ) x
         = jac.aj (𝟙 SpecQ) (RelPoint.post w hw x) + t := fun x => rfl
   -- the class `c = [P] − [w P]`, for `P` the image of the open-part point `y`
-  set P : RelPoint strX (𝟙 SpecQ) := RelPoint.post jY hX.comm y with hP
+  set P : RelPoint strX (𝟙 SpecQ) := RelPoint.post jY hX.comm y
   set c : RelPoint jstr (𝟙 SpecQ) :=
     jac.aj (𝟙 SpecQ) P - jac.aj (𝟙 SpecQ) (RelPoint.post w hw P) with hc
   have h1 : RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) P)
@@ -27226,7 +27226,7 @@ theorem Fermat.ajMinus_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
       neg_mem' := by
         intro a ha
         show RelPoint.post wJ hwJ (ab.neg a) = ab.neg (ab.neg a)
-        rw [hwJadd.postNeg, ha] } with hS
+        rw [hwJadd.postNeg, ha] }
   haveI : Finite S := _hfin
   have hcS : c ∈ S := hanti
   obtain ⟨n, hn, hn0⟩ :=
