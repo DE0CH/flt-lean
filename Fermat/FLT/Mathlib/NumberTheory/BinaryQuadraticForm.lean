@@ -46,6 +46,11 @@ number one problem*, §6). The elementary half is proved here:
 * `heegnerRelation_solutions` — the six solutions of Heegner's coefficient
   relation `2(b²−4a) = (2b−a²)²`, over the Diophantine leaf below.
 
+* `eq_of_two_mul_mul_cube_add_one_eq_sq` — **PROVEN**: `2x(x³+1) = y²` has exactly
+  the six solutions `(0,0), (−1,0), (1,±2), (2,±6)`. Elementary and self-contained;
+  see the section header above it for the argument, which needs none of the three
+  quadratic rings an earlier plan called for.
+
 `lt_exp_pi_sqrt`, the numeric bound `exp(π√p) > 640320³ + 745` for `p ≥ 164`, is
 also proved here.
 
@@ -61,10 +66,12 @@ missed) together with `Heegner.exists_int_gammaTwo`.
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ` — PROVEN here, by conjugation
 through `η`'s infinite product) and the two class-field leaves listed below.
 
-EIGHT leaves remain, each stated so that it can be worked on alone:
+SEVEN leaves remain, each stated so that it can be worked on alone.  (The
+Diophantine leaf `eq_of_two_mul_mul_cube_add_one_eq_sq`, which an earlier version
+of this list counted, was PROVEN concurrently — see its bullet above; and
+`exists_rat_gammaTwo_heegnerPoint`, which it also counted, was replaced by the
+two class-field leaves below.)
 
-* `eq_of_two_mul_mul_cube_add_one_eq_sq` — `2x(x³+1) = y²`, elementary and
-  self-contained;
 * `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
   — `α` is an algebraic integer generating a cubic field (Weber's theory of the
   ring class field of the order of discriminant `−4p`, whose class number is `3`);
@@ -558,31 +565,411 @@ theorem mod_eight_eq_three_of_classNumberOne {p : ℕ} (hp4 : p % 4 = 3) (h8 : 8
     exact not_dvd_sq_sub_of_classNumberOne (d := -(p : ℤ)) (by omega) (by omega) hcl
       (a := 2) (by norm_num) (by omega) 1 ⟨(q : ℤ), by linear_combination hqZ⟩
 
-/-- **DIOPHANTINE LEAF.** The only integer solutions of `2x(x³ + 1) = y²` are
+/-! ### The Diophantine equation `2x(x³+1) = y²`
+
+Everything from here to `eq_of_two_mul_mul_cube_add_one_eq_sq` is elementary integer
+arithmetic — no quadratic ring, no class number, nothing else from this file.
+
+THE ROUTE ACTUALLY TAKEN, which is NOT the one the older plan in this docstring
+recorded (that plan called for factoring in `ℤ[i]`, `ℤ[ω]` and `ℤ[√−2]`, and for
+Euler's descent on `x³+1 = z²`). None of the three quadratic rings is needed, and
+neither is Euler's descent. The reason is that the equation carries **more** than
+`x³ + 1 = εz²`: the companion factor pins `±2x` (or `±x`) to be a square as well, and
+that extra square turns every cube that shows up into a **sixth power**. Sixth powers
+factor as `t³ ± 1 = (t ± 1)(t² ∓ t + 1)` with `t` a square, and both pieces are then
+squares by coprimality — which reduces everything to the single finite statement
+`eq_zero_or_one_of_sq_sub_self_add_one_eq_sq`.
+
+Concretely: `x` and `x³+1` are coprime, so splitting on the parity of `x` gives
+`2x = ±a²` with `x³+1 = ±b²` (`x` even), or `x = ±a²` with `x³+1 = ±2c²` (`x` odd).
+
+* `x` odd, `x = a²`: `a⁶ + 1 = 2c²`, killed by `sq_eq_one_of_pow_six_add_one_eq_two_mul_sq`,
+  giving `x = 1`.
+* `x` odd, `x = −a²`: `a⁶ − 1 = 2c²`, killed by `sq_eq_one_of_pow_six_sub_one_eq_two_mul_sq`,
+  giving `x = −1`.
+* `x` even, negative sign: `b² + 1 = 8m⁶` is impossible mod `8`.
+* `x` even, positive sign: `2x = a²` forces `x = 2k²`, and `b² − 1 = x³ = 8k⁶` splits into
+  two consecutive coprime integers whose product is `2k⁶`. Each is then `±` a **sixth**
+  power, and the four sign patterns land on `B⁶ ± 1 = 2A⁶`, i.e. on the same two lemmas
+  again. Only `x = 2` survives.
+
+(These are Mordell equations; `y² = x³ + 1` is the elliptic curve `27a3`, rank `0`, and a
+CAS finds its integral points in under a second — useful as a check, never as the proof.
+`gp` was used to confirm the six solutions over `|x| ≤ 2000` before the proof was built.) -/
+
+/-- **Bézout boost.** If `a x + b y = k` and `k` is coprime to `y`, then so is `x`.
+
+This is how every coprimality below is obtained: exhibit an explicit integer combination
+of the two factors equal to a small constant (`3` or `4`), then remove that constant from
+a divisibility fact. It avoids any `Int.gcd` manipulation. -/
+theorem isCoprime_of_bezout {x y k a b : ℤ} (hk : IsCoprime k y)
+    (h : a * x + b * y = k) : IsCoprime x y := by
+  obtain ⟨p, q, hpq⟩ := hk
+  exact ⟨p * a, p * b + q, by linear_combination p * h + hpq⟩
+
+/-- A coprime factorisation of a **sixth** power has sixth-power factors, up to sign —
+the exponent-`6` analogue of `Int.sq_of_isCoprime`. The sign is genuinely needed: `6` is
+even, so `-d ^ 6` is not itself a sixth power. -/
+theorem pow_six_of_isCoprime {a b c : ℤ} (h : IsCoprime a b) (heq : a * b = c ^ 6) :
+    ∃ a0 : ℤ, a = a0 ^ 6 ∨ a = -a0 ^ 6 := by
+  obtain ⟨d, hd⟩ := exists_associated_pow_of_mul_eq_pow' h heq
+  rcases Int.associated_iff.mp hd with h' | h'
+  · exact ⟨d, Or.inl h'.symm⟩
+  · exact ⟨d, Or.inr (by linarith)⟩
+
+/-- `B² + 1` is never divisible by `3`, since `B² ≡ 0, 1 (mod 3)`. This is exactly what
+makes `t + 1` and `t² − t + 1` coprime when `t` is a square. -/
+theorem not_three_dvd_sq_add_one (B : ℤ) : ¬ (3 : ℤ) ∣ (B ^ 2 + 1) := by
+  rintro ⟨k, hk⟩
+  have h3 : B % 3 = 0 ∨ B % 3 = 1 ∨ B % 3 = 2 := by omega
+  obtain ⟨c, hc⟩ : ∃ c, B = 3 * c + B % 3 := ⟨B / 3, by omega⟩
+  rcases h3 with h3 | h3 | h3 <;> rw [h3] at hc <;> subst hc
+  · exact absurd (⟨k - 3 * c ^ 2, by linear_combination hk⟩ : (3 : ℤ) ∣ 1) (by omega)
+  · exact absurd (⟨k - 3 * c ^ 2 - 2 * c, by linear_combination hk⟩ : (3 : ℤ) ∣ 2) (by omega)
+  · exact absurd (⟨k - 3 * c ^ 2 - 4 * c, by linear_combination hk⟩ : (3 : ℤ) ∣ 5) (by omega)
+
+/-- **The workhorse.** `n² − n + 1` is a perfect square only at `n = 0` and `n = 1`.
+
+`(2s − 2n + 1)(2s + 2n − 1) = 4s² − (2n−1)² = 3`, so both factors divide `3`; that bounds
+`n` to `[−1, 2]` and `s` to `[−1, 1]`, a finite check. -/
+theorem eq_zero_or_one_of_sq_sub_self_add_one_eq_sq {n s : ℤ} (h : n ^ 2 - n + 1 = s ^ 2) :
+    n = 0 ∨ n = 1 := by
+  have key : (2 * s - 2 * n + 1) * (2 * s + 2 * n - 1) = 3 := by linear_combination (-4 : ℤ) * h
+  have hA : (2 * s - 2 * n + 1) ∣ 3 := ⟨_, key.symm⟩
+  have hB : (2 * s + 2 * n - 1) ∣ 3 := Dvd.intro_left _ key
+  have hA' : |2 * s - 2 * n + 1| ≤ 3 := Int.le_of_dvd (by norm_num) ((abs_dvd _ _).mpr hA)
+  have hB' : |2 * s + 2 * n - 1| ≤ 3 := Int.le_of_dvd (by norm_num) ((abs_dvd _ _).mpr hB)
+  rw [abs_le] at hA' hB'
+  obtain ⟨hn1, hn2⟩ : -1 ≤ n ∧ n ≤ 2 := by omega
+  obtain ⟨hs1, hs2⟩ : -1 ≤ s ∧ s ≤ 1 := by omega
+  interval_cases n
+  · exfalso; interval_cases s <;> norm_num at h
+  · norm_num
+  · norm_num
+  · exfalso; interval_cases s <;> norm_num at h
+
+/-- `n² + n + 1` is a perfect square only at `n = 0` and `n = −1`; the reflection
+`n ↦ −n` of `eq_zero_or_one_of_sq_sub_self_add_one_eq_sq`. -/
+theorem eq_zero_or_neg_one_of_sq_add_self_add_one_eq_sq {n s : ℤ} (h : n ^ 2 + n + 1 = s ^ 2) :
+    n = 0 ∨ n = -1 := by
+  have := eq_zero_or_one_of_sq_sub_self_add_one_eq_sq (n := -n) (s := s) (by linear_combination h)
+  omega
+
+/-- **`B⁶ + 1 = 2M²` forces `B² = 1`.**
+
+`B` must be odd, so with `t = B²` the factorisation `t³ + 1 = (t+1)(t² − t + 1)` has an
+even first factor and an odd second one, and they are coprime because `3 ∤ t + 1` for `t`
+a square (`not_three_dvd_sq_add_one`). Cancelling the `2` leaves a coprime product equal
+to `M²`, so `t² − t + 1` is a square — and then `t ∈ {0, 1}` with `t` odd. -/
+theorem sq_eq_one_of_pow_six_add_one_eq_two_mul_sq {B M : ℤ} (h : B ^ 6 + 1 = 2 * M ^ 2) :
+    B ^ 2 = 1 := by
+  have hBodd : Odd B := by
+    rcases Int.even_or_odd B with ⟨c, hc⟩ | ho
+    · exact absurd (⟨M ^ 2 - 32 * c ^ 6, by rw [hc] at h; linear_combination h⟩ : (2 : ℤ) ∣ 1)
+        (by omega)
+    · exact ho
+  obtain ⟨T, hT⟩ : ∃ T : ℤ, B ^ 2 + 1 = 2 * T := by
+    obtain ⟨u, hu⟩ := hBodd
+    exact ⟨2 * u ^ 2 + 2 * u + 1, by rw [hu]; ring⟩
+  have hprod : (B ^ 4 - B ^ 2 + 1) * T = M ^ 2 :=
+    mul_left_cancel₀ two_ne_zero (by linear_combination h - (B ^ 4 - B ^ 2 + 1) * hT)
+  have h3T : ¬ (3 : ℤ) ∣ T := by
+    intro hd
+    exact not_three_dvd_sq_add_one B (by rw [hT]; exact Dvd.dvd.mul_left hd 2)
+  have hcop : IsCoprime (B ^ 4 - B ^ 2 + 1) T :=
+    isCoprime_of_bezout (Int.prime_three.coprime_iff_not_dvd.mpr h3T)
+      (a := 1) (b := -2 * (B ^ 2 - 2)) (by linear_combination (B ^ 2 - 2) * hT)
+  obtain ⟨s, hs⟩ := Int.sq_of_isCoprime hcop hprod
+  have hpos : 0 < B ^ 4 - B ^ 2 + 1 := by nlinarith [sq_nonneg (B ^ 2 - 1), sq_nonneg B]
+  have hn : B ^ 4 - B ^ 2 + 1 = s ^ 2 := by
+    rcases hs with hs | hs
+    · exact hs
+    · nlinarith [sq_nonneg s]
+  rcases eq_zero_or_one_of_sq_sub_self_add_one_eq_sq (n := B ^ 2) (s := s)
+    (by linear_combination hn) with h0 | h1
+  · exfalso
+    have hB0 : B = 0 := by
+      have := pow_eq_zero_iff (M₀ := ℤ) (n := 2) (a := B) (by norm_num)
+      exact this.mp h0
+    rw [hB0] at hBodd
+    simp at hBodd
+  · exact h1
+
+/-- **`B⁶ − 1 = 2M²` forces `B² = 1`.**
+
+Here `B⁶ − 1 = (B² − 1)(B² + B + 1)(B² − B + 1)`, with the first factor even and the last
+two odd and coprime to each other. Each of the last two is coprime to `B² − 1` up to a
+possible factor `3`, and `3` cannot divide both — so at least one of `B² ± B + 1` is
+coprime to the rest, hence (being positive) a perfect square. `n² ± n + 1` a square then
+pins `B = ±1`.
+
+Note this needs **no** case analysis on `B mod 3`: coprimality of the two odd factors
+already excludes `3` dividing both. -/
+theorem sq_eq_one_of_pow_six_sub_one_eq_two_mul_sq {B M : ℤ} (h : B ^ 6 - 1 = 2 * M ^ 2) :
+    B ^ 2 = 1 := by
+  have hBodd : Odd B := by
+    rcases Int.even_or_odd B with ⟨c, hc⟩ | ho
+    · exact absurd (⟨32 * c ^ 6 - M ^ 2, by rw [hc] at h; linear_combination -h⟩ : (2 : ℤ) ∣ 1)
+        (by omega)
+    · exact ho
+  obtain ⟨u, hu⟩ := hBodd
+  obtain ⟨P, hP⟩ : ∃ P : ℤ, B ^ 2 - 1 = 2 * P := ⟨2 * u ^ 2 + 2 * u, by rw [hu]; ring⟩
+  have hprod : P * ((B ^ 2 + B + 1) * (B ^ 2 - B + 1)) = M ^ 2 :=
+    mul_left_cancel₀ two_ne_zero
+      (by linear_combination h - ((B ^ 2 + B + 1) * (B ^ 2 - B + 1)) * hP)
+  have hqpos : 0 < B ^ 2 + B + 1 := by nlinarith [sq_nonneg (2 * B + 1)]
+  have hrpos : 0 < B ^ 2 - B + 1 := by nlinarith [sq_nonneg (2 * B - 1)]
+  have hqr : IsCoprime (B ^ 2 + B + 1) (B ^ 2 - B + 1) := by
+    refine isCoprime_of_bezout (k := 4) ?_
+      (a := 2 - (B ^ 2 + B + 1) + 2 * (B ^ 2 - B + 1)) (b := 2 - (B ^ 2 - B + 1)) (by ring)
+    exact ⟨-((2 * u ^ 2 + u) ^ 2 + (2 * u ^ 2 + u)), B ^ 2 - B + 1, by rw [hu]; ring⟩
+  by_cases hr3 : (3 : ℤ) ∣ (B ^ 2 - B + 1)
+  · -- then `3 ∤ B² + B + 1`, so that factor is coprime to `P` and to `B² − B + 1`
+    have hq3 : ¬ (3 : ℤ) ∣ (B ^ 2 + B + 1) := by
+      intro hh
+      have := hqr.isUnit_of_dvd' hh hr3
+      rw [Int.isUnit_iff] at this
+      omega
+    have hPq : IsCoprime P (B ^ 2 + B + 1) :=
+      isCoprime_of_bezout (Int.prime_three.coprime_iff_not_dvd.mpr hq3)
+        (a := 2 * (B - 1)) (b := -(B - 2)) (by linear_combination (-(B - 1)) * hP)
+    obtain ⟨s, hs⟩ := Int.sq_of_isCoprime (hPq.symm.mul_right hqr)
+      (show (B ^ 2 + B + 1) * (P * (B ^ 2 - B + 1)) = M ^ 2 by linear_combination hprod)
+    have hqsq : B ^ 2 + B + 1 = s ^ 2 := by
+      rcases hs with hs | hs
+      · exact hs
+      · nlinarith [sq_nonneg s]
+    rcases eq_zero_or_neg_one_of_sq_add_self_add_one_eq_sq hqsq with h0 | h1
+    · rw [h0] at hu; omega
+    · rw [h1]; norm_num
+  · -- `3 ∤ B² − B + 1`, so that factor is coprime to `P` and to `B² + B + 1`
+    have hPr : IsCoprime P (B ^ 2 - B + 1) :=
+      isCoprime_of_bezout (Int.prime_three.coprime_iff_not_dvd.mpr hr3)
+        (a := -2 * (B + 1)) (b := B + 2) (by linear_combination (B + 1) * hP)
+    obtain ⟨s, hs⟩ := Int.sq_of_isCoprime (hPr.symm.mul_right hqr.symm)
+      (show (B ^ 2 - B + 1) * (P * (B ^ 2 + B + 1)) = M ^ 2 by linear_combination hprod)
+    have hrsq : B ^ 2 - B + 1 = s ^ 2 := by
+      rcases hs with hs | hs
+      · exact hs
+      · nlinarith [sq_nonneg s]
+    rcases eq_zero_or_one_of_sq_sub_self_add_one_eq_sq hrsq with h0 | h1
+    · rw [h0] at hu; omega
+    · rw [h1]; norm_num
+
+/-- **Sign matching.** In a coprime factorisation `u v = y²` with both factors nonzero,
+`Int.sq_of_isCoprime` gives `u = ±a²` and `v = ±b²` independently; the two signs must
+agree, since a mixed pair would make `y² = −(ab)²` with `ab ≠ 0`. -/
+theorem sq_and_sq_of_mul_eq_sq {u v a b y : ℤ} (hprod : u * v = y ^ 2)
+    (hu : u = a ^ 2 ∨ u = -a ^ 2) (hv : v = b ^ 2 ∨ v = -b ^ 2)
+    (hu0 : u ≠ 0) (hv0 : v ≠ 0) :
+    (u = a ^ 2 ∧ v = b ^ 2) ∨ (u = -a ^ 2 ∧ v = -b ^ 2) := by
+  rcases hu with hu | hu <;> rcases hv with hv | hv
+  · exact Or.inl ⟨hu, hv⟩
+  · exfalso
+    have hz : a ^ 2 * b ^ 2 = 0 := by nlinarith [sq_nonneg y, sq_nonneg (a * b)]
+    rcases mul_eq_zero.mp hz with h0 | h0
+    · exact hu0 (by rw [hu, h0])
+    · exact hv0 (by rw [hv, h0]; ring)
+  · exfalso
+    have hz : a ^ 2 * b ^ 2 = 0 := by nlinarith [sq_nonneg y, sq_nonneg (a * b)]
+    rcases mul_eq_zero.mp hz with h0 | h0
+    · exact hu0 (by rw [hu, h0]; ring)
+    · exact hv0 (by rw [hv, h0])
+  · exact Or.inr ⟨hu, hv⟩
+
+/-- **The `x`-coordinates of `2x(x³+1) = y²` are `0, −1, 1, 2`.**
+
+The whole content of the Diophantine leaf; `eq_of_two_mul_mul_cube_add_one_eq_sq` only
+solves for `y` afterwards. See the section header above for the argument. -/
+theorem eq_zero_or_neg_one_or_one_or_two_of_two_mul_mul_cube_add_one_eq_sq
+    {x y : ℤ} (h : 2 * x * (x ^ 3 + 1) = y ^ 2) : x = 0 ∨ x = -1 ∨ x = 1 ∨ x = 2 := by
+  by_cases hx0 : x = 0
+  · exact Or.inl hx0
+  by_cases hx1 : x = -1
+  · exact Or.inr (Or.inl hx1)
+  have hcube : x ^ 3 + 1 ≠ 0 := by
+    intro hc
+    refine hx1 ?_
+    have h2 : (x + 1) * (x ^ 2 - x + 1) = 0 := by linear_combination hc
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · linarith
+    · nlinarith [sq_nonneg (2 * x - 1)]
+  have hcopx : IsCoprime x (x ^ 3 + 1) := ⟨-x ^ 2, 1, by ring⟩
+  rcases Int.even_or_odd x with hev | hod
+  · -- `x` even, so `2x` and `x³+1` are coprime
+    obtain ⟨m, hm⟩ := hev
+    have hodd1 : Odd (x ^ 3 + 1) := ⟨4 * m ^ 3, by rw [hm]; ring⟩
+    have hcop : IsCoprime (2 * x) (x ^ 3 + 1) :=
+      (Int.isCoprime_two_left.mpr hodd1).mul_left hcopx
+    have h2x : 2 * x ≠ 0 := by omega
+    have h' : 2 * x * (x ^ 3 + 1) = y ^ 2 := h
+    obtain ⟨a, ha⟩ := Int.sq_of_isCoprime hcop h'
+    obtain ⟨b, hb⟩ := Int.sq_of_isCoprime (c := y) hcop.symm (by linear_combination h)
+    rcases sq_and_sq_of_mul_eq_sq h' ha hb h2x hcube with ⟨ha, hb⟩ | ⟨ha, hb⟩
+    · -- `2x = a²` and `x³+1 = b²`, so `x = 2k²` and `(b−1)(b+1) = 8k⁶`
+      have haeven : Even a := (Int.even_pow' (n := 2) (by norm_num)).mp ⟨x, by linarith⟩
+      obtain ⟨k, hk⟩ := haeven
+      have hxk : x = 2 * k ^ 2 :=
+        mul_left_cancel₀ two_ne_zero (by rw [hk] at ha; linear_combination ha)
+      have hk0 : k ≠ 0 := by rintro rfl; simp at hxk; exact hx0 hxk
+      have hk6 : 0 < k ^ 6 := by
+        have h2 : (k ^ 3) ^ 2 ≠ 0 := pow_ne_zero 2 (pow_ne_zero 3 hk0)
+        have h3 : k ^ 6 = (k ^ 3) ^ 2 := by ring
+        rw [h3]; exact lt_of_le_of_ne (sq_nonneg _) (Ne.symm h2)
+      have hbodd : Odd b := by
+        rcases Int.even_or_odd b with ⟨c, hc⟩ | ho
+        · exact absurd (⟨2 * c ^ 2 - 4 * k ^ 6, by rw [hxk, hc] at hb; linear_combination hb⟩ :
+            (2 : ℤ) ∣ 1) (by omega)
+        · exact ho
+      obtain ⟨c, hc⟩ := hbodd
+      have hcc : c * (c + 1) = 2 * k ^ 6 :=
+        mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+          (by rw [hxk, hc] at hb; linear_combination -hb)
+      have hcop2 : IsCoprime c (c + 1) := ⟨-1, 1, by ring⟩
+      rcases Int.even_or_odd c with ⟨d, hd⟩ | ⟨d, hd⟩
+      · -- `c = 2d`, so `d (2d+1) = k⁶` with both factors sixth powers up to sign
+        subst hd
+        have hdc : d * (d + d + 1) = k ^ 6 :=
+          mul_left_cancel₀ two_ne_zero (by linear_combination hcc)
+        have hcop3 : IsCoprime d (d + d + 1) :=
+          IsCoprime.of_isCoprime_of_dvd_left hcop2 ⟨2, by ring⟩
+        have hd0 : d ≠ 0 := by rintro rfl; linarith [hdc, hk6]
+        obtain ⟨A, hA⟩ := pow_six_of_isCoprime hcop3 hdc
+        obtain ⟨B, hB⟩ := pow_six_of_isCoprime (c := k) hcop3.symm (by linear_combination hdc)
+        have hA6 : (0 : ℤ) ≤ A ^ 6 := by positivity
+        have hB6 : (0 : ℤ) ≤ B ^ 6 := by positivity
+        rcases hA with hA | hA <;> rcases hB with hB | hB
+        · -- `B⁶ − 2A⁶ = 1`
+          exfalso
+          have hL : B ^ 6 - 1 = 2 * (A ^ 3) ^ 2 := by linear_combination -hB + 2 * hA
+          have hB2 := sq_eq_one_of_pow_six_sub_one_eq_two_mul_sq hL
+          have hB61 : B ^ 6 = 1 := by linear_combination (B ^ 4 + B ^ 2 + 1) * hB2
+          rw [hB61] at hB
+          exact hd0 (by omega)
+        · exfalso; linarith
+        · exfalso
+          have hle : d ≤ 0 := by linarith
+          have hge : 0 ≤ d + d + 1 := by linarith
+          exact hd0 (by omega)
+        · -- `2A⁶ − B⁶ = 1`, the branch that produces `x = 2`
+          have hL : B ^ 6 + 1 = 2 * (A ^ 3) ^ 2 := by linear_combination hB - 2 * hA
+          have hB2 := sq_eq_one_of_pow_six_add_one_eq_two_mul_sq hL
+          have hB61 : B ^ 6 = 1 := by linear_combination (B ^ 4 + B ^ 2 + 1) * hB2
+          rw [hB61] at hB
+          have hd1 : d = -1 := by omega
+          subst hd1
+          have hk61 : k ^ 6 = 1 := by linarith [hdc]
+          have hfac : (k ^ 2 - 1) * ((k ^ 2) ^ 2 + k ^ 2 + 1) = 0 := by linear_combination hk61
+          have hpos2 : 0 < (k ^ 2) ^ 2 + k ^ 2 + 1 := by positivity
+          have hk2 : k ^ 2 = 1 := by
+            rcases mul_eq_zero.mp hfac with h0 | h0
+            · linarith
+            · linarith
+          exact Or.inr (Or.inr (Or.inr (by rw [hxk, hk2]; norm_num)))
+      · -- `c = 2d+1`, so `(2d+1)(d+1) = k⁶`
+        subst hd
+        have hdc : (2 * d + 1) * (d + 1) = k ^ 6 :=
+          mul_left_cancel₀ two_ne_zero (by linear_combination hcc)
+        have hcop3 : IsCoprime (2 * d + 1) (d + 1) := ⟨-1, 2, by ring⟩
+        have hd0 : d + 1 ≠ 0 := by
+          intro hz
+          rw [show (2 : ℤ) * d + 1 = 2 * (d + 1) - 1 by ring, hz] at hdc
+          linarith [hdc, hk6]
+        obtain ⟨A, hA⟩ := pow_six_of_isCoprime hcop3 hdc
+        obtain ⟨B, hB⟩ := pow_six_of_isCoprime (c := k) hcop3.symm (by linear_combination hdc)
+        have hA6 : (0 : ℤ) ≤ A ^ 6 := by positivity
+        have hB6 : (0 : ℤ) ≤ B ^ 6 := by positivity
+        rcases hA with hA | hA <;> rcases hB with hB | hB
+        · -- `2B⁶ − A⁶ = 1`, the second branch producing `x = 2`
+          have hL : A ^ 6 + 1 = 2 * (B ^ 3) ^ 2 := by linear_combination -hA + 2 * hB
+          have hA2 := sq_eq_one_of_pow_six_add_one_eq_two_mul_sq hL
+          have hA61 : A ^ 6 = 1 := by linear_combination (A ^ 4 + A ^ 2 + 1) * hA2
+          rw [hA61] at hA
+          have hd1 : d = 0 := by omega
+          subst hd1
+          have hk61 : k ^ 6 = 1 := by linarith [hdc]
+          have hfac : (k ^ 2 - 1) * ((k ^ 2) ^ 2 + k ^ 2 + 1) = 0 := by linear_combination hk61
+          have hpos2 : 0 < (k ^ 2) ^ 2 + k ^ 2 + 1 := by positivity
+          have hk2 : k ^ 2 = 1 := by
+            rcases mul_eq_zero.mp hfac with h0 | h0
+            · linarith
+            · linarith
+          exact Or.inr (Or.inr (Or.inr (by rw [hxk, hk2]; norm_num)))
+        · exfalso
+          have hkk : k ^ 6 = -(A ^ 6 * B ^ 6) := by rw [← hdc, hA, hB]; ring
+          nlinarith [mul_nonneg hA6 hB6]
+        · exfalso
+          have hkk : k ^ 6 = -(A ^ 6 * B ^ 6) := by rw [← hdc, hA, hB]; ring
+          nlinarith [mul_nonneg hA6 hB6]
+        · exfalso
+          have hL : A ^ 6 - 1 = 2 * (B ^ 3) ^ 2 := by linear_combination hA - 2 * hB
+          have hA2 := sq_eq_one_of_pow_six_sub_one_eq_two_mul_sq hL
+          have hA61 : A ^ 6 = 1 := by linear_combination (A ^ 4 + A ^ 2 + 1) * hA2
+          rw [hA61] at hA
+          exact hd0 (by omega)
+    · -- `2x = −a²` and `x³+1 = −b²`: then `b² + 1 = 8m⁶`, impossible mod `8`
+      exfalso
+      have haeven : Even a := (Int.even_pow' (n := 2) (by norm_num)).mp ⟨-x, by linarith⟩
+      obtain ⟨m, hm⟩ := haeven
+      have hxm : x = -2 * m ^ 2 :=
+        mul_left_cancel₀ two_ne_zero (by rw [hm] at ha; linear_combination ha)
+      have hb8 : b ^ 2 + 1 = 8 * m ^ 6 := by rw [hxm] at hb; linear_combination hb
+      rcases Int.even_or_odd b with ⟨c, hc⟩ | ⟨c, hc⟩
+      · exact absurd (⟨4 * m ^ 6 - 2 * c ^ 2, by rw [hc] at hb8; linear_combination hb8⟩ :
+          (2 : ℤ) ∣ 1) (by omega)
+      · exact absurd (⟨2 * m ^ 6 - c ^ 2 - c, by rw [hc] at hb8; linear_combination hb8⟩ :
+          (4 : ℤ) ∣ 2) (by omega)
+  · -- `x` odd, so `x` and `2(x³+1)` are coprime
+    have hcop : IsCoprime x (2 * (x ^ 3 + 1)) :=
+      (Int.isCoprime_two_right.mpr hod).mul_right hcopx
+    have h' : x * (2 * (x ^ 3 + 1)) = y ^ 2 := by linear_combination h
+    have h2c : 2 * (x ^ 3 + 1) ≠ 0 := fun hz => hcube (by linarith)
+    obtain ⟨a, ha⟩ := Int.sq_of_isCoprime hcop h'
+    obtain ⟨b, hb⟩ := Int.sq_of_isCoprime (c := y) hcop.symm (by linear_combination h)
+    rcases sq_and_sq_of_mul_eq_sq h' ha hb hx0 h2c with ⟨ha, hb⟩ | ⟨ha, hb⟩
+    · -- `x = a²` and `x³+1 = 2e²`, i.e. `a⁶ + 1 = 2e²`
+      have hbeven : Even b := (Int.even_pow' (n := 2) (by norm_num)).mp ⟨x ^ 3 + 1, by linarith⟩
+      obtain ⟨e, he⟩ := hbeven
+      have hcube2 : x ^ 3 + 1 = 2 * e ^ 2 :=
+        mul_left_cancel₀ two_ne_zero (by rw [he] at hb; linear_combination hb)
+      have hL : a ^ 6 + 1 = 2 * e ^ 2 := by rw [ha] at hcube2; linear_combination hcube2
+      exact Or.inr (Or.inr (Or.inl (by
+        rw [ha, sq_eq_one_of_pow_six_add_one_eq_two_mul_sq hL])))
+    · -- `x = −a²` and `x³+1 = −2e²`, i.e. `a⁶ − 1 = 2e²`
+      have hbeven : Even b :=
+        (Int.even_pow' (n := 2) (by norm_num)).mp ⟨-(x ^ 3 + 1), by linarith⟩
+      obtain ⟨e, he⟩ := hbeven
+      have hcube2 : x ^ 3 + 1 = -(2 * e ^ 2) :=
+        mul_left_cancel₀ two_ne_zero (by rw [he] at hb; linear_combination hb)
+      have hL : a ^ 6 - 1 = 2 * e ^ 2 := by rw [ha] at hcube2; linear_combination -hcube2
+      exact Or.inr (Or.inl (by
+        rw [ha, sq_eq_one_of_pow_six_sub_one_eq_two_mul_sq hL]))
+
+/-- **DIOPHANTINE LEAF, PROVEN.** The only integer solutions of `2x(x³ + 1) = y²` are
 `(0, 0)`, `(−1, 0)`, `(1, ±2)` and `(2, ±6)`.
 
 This is Booher's Proposition 39 / Cox, *Primes of the form x²+ny²*, end of §12. It is
-elementary and self-contained: **nothing else in this file is needed to attack it.**
+elementary and self-contained: nothing else in this file is used.
 
-PROOF PLAN (Booher, Prop. 39 and Lemma 40). Handle `x = 0, −1` directly. Otherwise `x` and
-`x³+1` are coprime, so `±(x³+1)` is a square or twice a square, i.e.
-`x³ + 1 = ε z²` or `x³ + 1 = 2ε z²` with `ε = ±1`. In the case `x³ + 1 = 2z²`, substituting back
-gives `4xz² = y²`, so `x` is itself a square, `x = w²`. This leaves four subsidiary equations:
-
-1. `x³ + 1 = z²` — solutions `(−1, 0)`, `(0, ±1)`, `(2, ±3)`. Euler's descent: there are no
-   positive integers `b ≠ c` with `3 ∤ c` and `bc(c² − 3bc + 3b²)` a perfect square; apply it
-   to `x = a/b`, `c = a + b`, noting `b(a³+b³) = bc(c² − 3bc + 3b²)`. This is the hard one.
-2. `x³ + 1 = −z²` — only `(−1, 0)`; factor `x³ = −(z² + 1)` over `ℤ[i]`.
-3. `w⁶ + 1 = 2z²` — only `w² = 1`, `z = ±1`; factor over `ℤ[ω]`.
-4. `x³ + 1 = −2z²` — only `(−1, 0)`; factor over `ℤ[√−2]`.
-
-All three quadratic rings have class number one, which is what makes the factorisations work.
-(These are Mordell equations; `y² = x³ + 1` is the elliptic curve `27a3`, rank `0`, and a CAS
-finds its integral points in under a second — useful as a check, never as the proof.) -/
+`eq_zero_or_neg_one_or_one_or_two_of_two_mul_mul_cube_add_one_eq_sq` does the work and
+pins `x`; substituting each value leaves `y² = 0, 0, 4, 36`, whose solutions are read off
+by factoring `y² − c²`. -/
 theorem eq_of_two_mul_mul_cube_add_one_eq_sq {x y : ℤ} (h : 2 * x * (x ^ 3 + 1) = y ^ 2) :
     (x = 0 ∧ y = 0) ∨ (x = -1 ∧ y = 0) ∨ (x = 1 ∧ y = 2) ∨ (x = 1 ∧ y = -2) ∨
-      (x = 2 ∧ y = 6) ∨ (x = 2 ∧ y = -6) :=
-  sorry
+      (x = 2 ∧ y = 6) ∨ (x = 2 ∧ y = -6) := by
+  rcases eq_zero_or_neg_one_or_one_or_two_of_two_mul_mul_cube_add_one_eq_sq h with
+    rfl | rfl | rfl | rfl
+  · exact Or.inl ⟨rfl, pow_eq_zero_iff (M₀ := ℤ) (n := 2) (by norm_num) |>.mp (by linarith)⟩
+  · exact Or.inr (Or.inl ⟨rfl,
+      pow_eq_zero_iff (M₀ := ℤ) (n := 2) (by norm_num) |>.mp (by linarith)⟩)
+  · have hy : (y - 2) * (y + 2) = 0 := by linear_combination -h
+    rcases mul_eq_zero.mp hy with h0 | h0
+    · exact Or.inr (Or.inr (Or.inl ⟨rfl, by linarith⟩))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, by linarith⟩)))
+  · have hy : (y - 6) * (y + 6) = 0 := by linear_combination -h
+    rcases mul_eq_zero.mp hy with h0 | h0
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨rfl, by linarith⟩))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, by linarith⟩))))
 
 /-- **Heegner's coefficient relation has exactly six solutions.**
 
@@ -1414,7 +1801,7 @@ PROVEN here, along the Heegner–Stark route, over three leaves:
    multiplication, Weber's functions and the `q`-expansion of `j` produce
    integers `a, b` with `2(b² − 4a) = (2b − a²)²` and
    `exp(π√p) ≤ |γ|³ + 745`, `γ = −(b² − 4a)² − 8(2b − a²)`.
-3. `heegnerRelation_solutions` — proven over the DIOPHANTINE leaf
+3. `heegnerRelation_solutions` — PROVEN, over the now also proven
    `eq_of_two_mul_mul_cube_add_one_eq_sq` (`2x(x³+1) = y²`): the relation has
    exactly six solutions, so `|γ| ≤ 640320` and `|γ|³ + 745 ≤ 640320³ + 745`.
 4. `lt_exp_pi_sqrt` — PROVEN: `exp(π√p) > 640320³ + 745` for `p ≥ 164`.

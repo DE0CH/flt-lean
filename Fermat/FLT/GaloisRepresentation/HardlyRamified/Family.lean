@@ -52,11 +52,15 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- requirement `exists_unramified_grouplike_family_generating_corner` below
 -- consumes, and which `ShortExact.lean` states and assembles as
 -- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
--- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
--- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
--- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
--- of étale by étale is étale — the elementary half, whose henselian route this
--- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- ("the Cartier dual is étale"). The assembly is written and compiles. CORRECTED
+-- 2026-07-27: this comment used to say it rests on "two open leaves in that
+-- module, `HopfAlgebra.IsShortExact.cartierDual` and
+-- `HopfAlgebra.etale_of_isShortExact`". BOTH ARE PROVEN (`ShortExact.lean:669`
+-- and `:916`); what is open there are the four leaves they consume
+-- (`IsShortExact.exists_linearRetraction`, `.ker_cartierDual_le`,
+-- `.faithfullyFlat_cartierDual`, and
+-- `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`),
+-- separately queued. `CartierDualExamples` supplies the dictionary
 -- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
 -- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
 -- which is exactly what turns the étaleness of `GroupFunctions` proved in this
@@ -65,6 +69,17 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- because the consuming statements are the ones named above.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
+-- SGA 3, Exp. VIII/X: multiplicative type over a strictly henselian local base is
+-- DIAGONALIZABLE (`HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType`), together
+-- with base change of the Cartier dual (`CartierDual.baseChangeAlgEquiv`, proven) and of
+-- multiplicative type (`HopfAlgebra.isMultiplicativeType_baseChange`, proven). These two are
+-- the whole proof of `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType`
+-- below, whose STATEMENT mentions neither, so a non-public import would do — but the module
+-- also carries the two leaves that theorem now rests on (`(E1)`
+-- `Algebra.IsFiniteSplit.of_henselianLocalRing` and `(E2)`
+-- `HopfAlgebra.exists_bialgEquiv_groupFunctions_of_isFiniteSplit`), and those are named in
+-- docstrings here, so it is public to keep them reachable by dot notation from consumers.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.Diagonalizable
 -- the CONNECTED COMPONENT of the identity as a Hopf algebra: `HopfAlgebra.cornerIdeal e₀`
 -- is a Hopf ideal (`HopfAlgebra.isHopfIdeal_cornerIdeal`, sorry-free), so
 -- `G ⧸ HopfAlgebra.cornerIdeal e₀` is `𝒪(G°)`. This is the object that makes the Raynaud
@@ -3461,7 +3476,21 @@ self-contained representation-theoretic leaf that this tree has the machinery to
 Refuting check on THIS cut, and it is cheap: exhibit a proof of
 `isMultiplicativeType_corner_of_hopf_package` that uses `hchar` or `fG` for something other
 than producing an inertia-stable flag — i.e. a use of the coefficient ring `R` that survives
-into the group-scheme argument. -/
+into the group-scheme argument.
+
+**UPDATE 2026-07-28 (later the same day): BOTH halves have since been cut again**, so
+neither of the two names above is a leaf any more. The four open statements under this
+section are now
+
+* `exists_levelOneFlag_space_of_charpoly` — the arithmetic, with `G` and `fG` removed
+  entirely: an inertia-stable `𝔽_p`-flag on the `Γ ℚᵖᵥ`-module
+  `((ρ.baseChange (R ⧸ I)).toLocal p).Space`. Its transport back to the points of `G` is
+  `exists_levelOneFlag_of_bijective_equivariant`, PROVEN.
+* `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` — Raynaud, with
+  connectedness in the intrinsic form (`hconn`) that route (a) of the dévissage needs. The
+  bridge `hprim₀ → hconn` is `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one`, PROVEN.
+* `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType` and the `(D2)`
+  transport below, unchanged by this pass. -/
 
 set_option synthInstance.maxHeartbeats 1000000 in
 variable (p) in
@@ -3509,13 +3538,99 @@ def HasInertiaLevelOneFlag (G : Type) [CommRing G]
     (∀ i < n, ∃ x ∈ M (i + 1), p • x ∈ M i ∧
       M (i + 1) = M i ⊔ AddSubmonoid.closure {x})
 
-set_option synthInstance.maxHeartbeats 1000000 in
-/-- **THE ARITHMETIC HALF OF `(R1)`: the hardly-ramified Hopf package has level one**
-(SORRY LEAF — no group-scheme theory, no Raynaud, and NO `hpodd`).
+/-- **Transport of a level-one flag along a bijective equivariant additive map** (PROVEN
+2026-07-28; pure lattice theory of `AddSubmonoid`s, no arithmetic and no Hopf algebras).
 
-This is the whole contribution of `hchar`, `fG`/`hfG`, `hmul₁`/`hmul₂`, `hZinj`/`hRinj` and
-the open ideal `I` to the Raynaud citation. After it, the coefficient ring `R`, the
-representation `ρ` and the characters `χ₁`, `χ₂` never appear again.
+`HasInertiaLevelOneFlag p G` is a condition on the geometric points of `G` *as a
+`Γ ℚᵖᵥ`-module and nothing else*, so it transports verbatim along any bijective
+`Γ`-equivariant additive map. This lemma is what lets the arithmetic half of `(R1)` be
+stated on the representation space — where it belongs — rather than on the points of a
+Hopf order.
+
+The flag is pulled back by `AddSubmonoid.comap f`, which is a lattice isomorphism because
+`f` is bijective:
+
+* `comap f ⊥ = ⊥` needs injectivity, `comap f ⊤ = ⊤` is free, monotonicity is functorial;
+* stability under `σ` is `f (σ • x) = σ • f x`, i.e. `map_smul`;
+* the one-step-generation clause is `AddSubmonoid.map_sup_comap_of_surjective` (which turns
+  `comap` of a `⊔` into a `⊔` of `comap`s, given surjectivity) together with
+  `AddMonoidHom.map_mclosure` and `AddSubmonoid.comap_map_eq_of_injective` (which identify
+  `comap f (closure {f y})` with `closure {y}`).
+
+Stated over bare `AddMonoid`s — NOT `AddCommMonoid` — deliberately: the point "group" of a
+Hopf order reaches this file only through the project's `Monoid` instance on the bare hom
+type (the `Group`/`CommGroup` structure lives on the `WithConv` synonym), so an
+`AddCommMonoid` hypothesis would not be discharged at the call site. Nothing in the proof
+needs commutativity, since the `⊔` clause is handled through the Galois connection rather
+than through `AddSubmonoid.mem_sup`.
+
+`S` is a bare predicate rather than a `Set`/`Subgroup` so that the call site's
+`∀ σ ∈ localInertiaGroup …` binder unifies with it by pattern unification. -/
+theorem exists_levelOneFlag_of_bijective_equivariant
+    {Grp : Type*} [Monoid Grp] {M₀ N₀ : Type*} [AddMonoid M₀] [AddMonoid N₀]
+    [DistribMulAction Grp M₀] [DistribMulAction Grp N₀]
+    (f : M₀ →+[Grp] N₀) (hf : Function.Bijective f)
+    (S : Grp → Prop) (q : ℕ) (n : ℕ) (Q : ℕ → AddSubmonoid N₀)
+    (h0 : Q 0 = ⊥) (hn : Q n = ⊤) (hmono : ∀ i, Q i ≤ Q (i + 1))
+    (hstab : ∀ i, ∀ σ, S σ → ∀ x ∈ Q i, σ • x ∈ Q i)
+    (hstep : ∀ i < n, ∃ x ∈ Q (i + 1), q • x ∈ Q i ∧
+      Q (i + 1) = Q i ⊔ AddSubmonoid.closure {x}) :
+    ∃ (m : ℕ) (P : ℕ → AddSubmonoid M₀), P 0 = ⊥ ∧ P m = ⊤ ∧ (∀ i, P i ≤ P (i + 1)) ∧
+      (∀ i, ∀ σ, S σ → ∀ x ∈ P i, σ • x ∈ P i) ∧
+      (∀ i < m, ∃ x ∈ P (i + 1), q • x ∈ P i ∧
+        P (i + 1) = P i ⊔ AddSubmonoid.closure {x}) := by
+  classical
+  refine ⟨n, fun i => (Q i).comap f, ?_, ?_, ?_, ?_, ?_⟩
+  · show (Q 0).comap f = ⊥
+    rw [h0]
+    ext x
+    simp only [AddSubmonoid.mem_comap, AddSubmonoid.mem_bot]
+    exact ⟨fun hx => hf.1 (by simpa using hx), fun hx => by simp [hx]⟩
+  · show (Q n).comap f = ⊤
+    rw [hn]; ext x; simp
+  · intro i x hx
+    exact hmono i hx
+  · intro i σ hσ x hx
+    simp only [AddSubmonoid.mem_comap] at hx ⊢
+    rw [map_smul f σ x]
+    exact hstab i σ hσ _ hx
+  · intro i hi
+    obtain ⟨x, hxmem, hxq, hxsup⟩ := hstep i hi
+    obtain ⟨y, rfl⟩ := hf.2 x
+    refine ⟨y, hxmem, ?_, ?_⟩
+    · simp only [AddSubmonoid.mem_comap, map_nsmul]
+      exact hxq
+    · show (Q (i + 1)).comap f = (Q i).comap f ⊔ AddSubmonoid.closure {y}
+      have hmapclos : (AddSubmonoid.closure ({y} : Set M₀)).map f =
+          AddSubmonoid.closure ({f y} : Set N₀) := by
+        rw [AddMonoidHom.map_mclosure]; simp
+      have hclos : (AddSubmonoid.closure ({f y} : Set N₀)).comap f =
+          AddSubmonoid.closure ({y} : Set M₀) := by
+        rw [← hmapclos, AddSubmonoid.comap_map_eq_of_injective hf.1]
+      have key := congrArg (AddSubmonoid.comap f)
+        (AddSubmonoid.map_sup_comap_of_surjective hf.2 (Q i)
+          (AddSubmonoid.closure ({f y} : Set N₀)))
+      rw [AddSubmonoid.comap_map_eq_of_injective hf.1] at key
+      rw [hxsup, ← key, hclos]
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
+representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
+`hasInertiaLevelOneFlag_of_hopf_package` on 2026-07-28).
+
+`G`, `fG`/`hfG`, the flatness/finiteness of the Hopf order and the étaleness of its generic
+fibre have all DISAPPEARED: this is a statement about the `Γ ℚᵖᵥ`-module
+`((ρ.baseChange (R ⧸ I)).toLocal p).Space = (R ⧸ I) ⊗[R] V` and nothing else.
+`exists_levelOneFlag_of_bijective_equivariant` above carries it back to the points of `G`.
+
+WHY DROPPING `G` IS SAFE, i.e. why this is not a weakening into falsity. Every step of the
+argument recorded below spends only `hchar`, `hmul₁`/`hmul₂`, `hRinj`/`hZinj` and the
+openness of `I`; `fG` was used for exactly one thing, namely to *identify* the geometric
+points with this module, and the identification is a bijection, so the two statements are
+equivalent whenever a `G` exists. Nothing in the four steps is an argument about flat
+prolongations, and no step consults the special fibre of `G`. (Refuting check on this
+paragraph: a proof of the old leaf that inspects `G` — its rank, its idempotents, its
+special fibre — for something other than transporting the flag.)
 
 THE ARGUMENT, in four steps; each is ordinary representation theory over a finite field.
 
@@ -3537,27 +3652,84 @@ THE ARGUMENT, in four steps; each is ordinary representation theory over a finit
    trivial. So `χ̄ᵢ|_{I_p}` is `𝔽_p^×`-valued. **This step is exactly item (iv) of the
    audit history below, and it is why the conclusion is coefficient-free: no matter how
    large the residue field of `R`, only level one occurs.**
-4. *From `𝔽_p`-valued characters to the flag.* `fG`/`hfG` identify the geometric points
-   with `(R ⧸ I) ⊗ V` as `Γ ℚᵖᵥ`-modules. Filtering `R ⧸ I` by the powers of its maximal
-   ideal reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of `V̄|_{I_p}`
-   are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already over the
-   residue field `k`, and each `k`-line — on which inertia acts by a scalar IN `𝔽_p` — is
-   an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the `k`-flag
-   to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p` quotients.
+4. *From `𝔽_p`-valued characters to the flag.* Filtering `R ⧸ I` by the powers of its
+   maximal ideal (`hI` makes `R ⧸ I` a FINITE local artinian ring, so the filtration
+   terminates) reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of
+   `V̄|_{I_p}` are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already
+   over the residue field `k`, and each `k`-line — on which inertia acts by a scalar IN
+   `𝔽_p` — is an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the
+   `k`-flag to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p`
+   quotients.
+
+WHERE EACH HYPOTHESIS GOES, so a prover can tell a load-bearing one from decoration:
+`hchar` is step 2 and is the only source of the two characters; `hmul₁`/`hmul₂` are what
+make `χ̄ᵢ` a CHARACTER, without which step 3's `χ̄(τ)^p = χ̄(τ^p)` is not even a statement;
+`hRinj` is what makes `hchar` a statement about `ρ` rather than about a degenerate image;
+`hZinj` is step 1's integrality; `hI` is step 4's finiteness. `hpodd` is NOT here — it is
+spent entirely in `isMultiplicativeType_corner_of_inertiaLevelOneFlag`.
 
 NON-VACUITY. On the witness of item (C2) below — `R = ℤ_[p]`, `I = (p)`,
-`ρ = χ_cyc ⊕ 1`, `G = 𝒪(μ_p × ℤ/p)` — the point group is `𝔽_p(1) ⊕ 𝔽_p`, and the chain
-`⊥ ≤ 𝔽_p(1) ≤ ⊤` is inertia-stable with both quotients cyclic of order `p`. The condition
-FAILS, as it must, for the supersingular witness of item (iii): there the point group is a
-simple `𝔽_p[I_p]`-module of dimension `2` (tame inertia acts through the level-`2`
-fundamental characters), so no chain with cyclic order-`p` quotients is inertia-stable.
-That contrast is the evidence that this leaf carries the content it is supposed to carry:
-it is exactly what separates the two cases the citation must distinguish.
+`ρ = χ_cyc ⊕ 1` — the module is `𝔽_p(1) ⊕ 𝔽_p`, and the chain `⊥ ≤ 𝔽_p(1) ≤ ⊤` is
+inertia-stable with both quotients cyclic of order `p`. The conclusion FAILS, as it must,
+for the supersingular witness of item (iii): there the module is a simple `𝔽_p[I_p]`-module
+of dimension `2` (tame inertia acts through the level-`2` fundamental characters), so no
+chain with cyclic order-`p` quotients is inertia-stable. That contrast is the evidence that
+this leaf carries the content it is supposed to carry: it is exactly what separates the two
+cases the citation must distinguish. Note the supersingular witness also satisfies every
+HYPOTHESIS except `hchar` — which is precisely the hypothesis it must fail, since its
+residual representation is irreducible over `𝔽̄_p` and so has no such charpoly
+factorisation.
 
-FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the geometric
-points; it asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind
-to unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action
-at all). It sits on the safe side of the rule that killed `exists_muType_closure`. -/
+DEGENERATE CASES (checked, both true rather than vacuous). At `I = ⊤` the module is `0`,
+and `n = 0` with `M 0 = ⊥ = ⊤` discharges the conclusion. At `V = 0` the same. Neither is
+excluded by a hypothesis, so a proof must handle them; neither is a counterexample.
+
+FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the module; it
+asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind to
+unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action at
+all). It sits on the safe side of the rule that killed `exists_muType_closure`. -/
+theorem exists_levelOneFlag_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R)) :
+    ∃ (n : ℕ) (M : ℕ → AddSubmonoid (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space)),
+      M 0 = ⊥ ∧ M n = ⊤ ∧
+      (∀ i, M i ≤ M (i + 1)) ∧
+      (∀ i, ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ x ∈ M i, σ • x ∈ M i) ∧
+      (∀ i < n, ∃ x ∈ M (i + 1), p • x ∈ M i ∧
+        M (i + 1) = M i ⊔ AddSubmonoid.closure {x}) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`: the hardly-ramified Hopf package has level one**.
+
+**STATUS 2026-07-28 — NO LONGER A SORRY LEAF. It is a two-line ASSEMBLY** over
+
+* `exists_levelOneFlag_space_of_charpoly` — the arithmetic, stated on the
+  `Γ ℚᵖᵥ`-module `((ρ.baseChange (R ⧸ I)).toLocal p).Space` with no group scheme in sight;
+* `exists_levelOneFlag_of_bijective_equivariant` — PROVEN transport of a level-one flag
+  along the bijective equivariant `fG`.
+
+That cut is possible because `HasInertiaLevelOneFlag p G` is by construction a condition on
+the geometric points *as a `Γ ℚᵖᵥ`-module only*: it mentions no ring structure on the
+points, no comultiplication, no coordinate. So the whole Hopf-order half of the old
+hypothesis list (`G`, its flatness, finiteness and étale generic fibre) was there to name
+the module and for nothing else, and `hfG` is what makes naming it removable. This is the
+same disclaimer the surrounding cuts carry: it makes no progress on the arithmetic, it
+localises it.
+
+Refuting check on THIS cut, and it is cheap: exhibit a proof of the conclusion that
+inspects `G` — its rank, its idempotents, its special fibre — for anything other than
+transporting the flag. -/
 theorem hasInertiaLevelOneFlag_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3576,15 +3748,98 @@ theorem hasInertiaLevelOneFlag_of_hopf_package
       (((ρ.baseChange (R ⧸ I)).toLocal
         hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
     (hfG : Function.Bijective fG) :
-    HasInertiaLevelOneFlag p G :=
-  sorry
+    HasInertiaLevelOneFlag p G := by
+  obtain ⟨n, Q, h0, hn, hmono, hstab, hstep⟩ :=
+    exists_levelOneFlag_space_of_charpoly hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI
+  exact exists_levelOneFlag_of_bijective_equivariant fG hfG
+    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    p n Q h0 hn hmono hstab hstep
+
+/-- **`hprim₀` IS connectedness of the corner Hopf algebra** (PROVEN 2026-07-28; pure
+commutative algebra, no Hopf structure used — only `[CommRing A]`).
+
+If `e₀` is idempotent and every idempotent of `A` either kills or fixes it (`hprim₀`, i.e.
+`e₀` is a MINIMAL idempotent), then the corner `A ⧸ (1 - e₀)` has NO nontrivial
+idempotents.
+
+This is the bridge the docstring of `isMultiplicativeType_corner_of_inertiaLevelOneFlag`
+names under "what a further cut would need": route (a) — a single dévissage step assembled
+by strong induction on `Module.finrank 𝒪ᵖᵥ` — requires connectedness stated INTRINSICALLY on
+the abstract Hopf algebra, "which is what `hprim₀` gives for the corner". This lemma is
+that sentence, proven, so route (a) no longer has to re-derive it.
+
+PROOF. `x ∈ (1 - e₀)` iff `e₀ * x = 0` (take `c = x` in `∃ c, c * (1 - e₀) = x` for one
+direction; expand `e₀ * (c * (1 - e₀)) = c * (e₀ - e₀ * e₀)` for the other). So an
+idempotent `mk a` of the quotient gives `e₀ * (a * a - a) = 0`, whence `e₀ * a` is an
+idempotent OF `A`: `(e₀ a)(e₀ a) = e₀² (a a) = e₀ (a a) = e₀ a`. It also absorbs `e₀` on the
+right, `(e₀ a) e₀ = e₀² a = e₀ a`, so `hprim₀` applied to it reads `e₀ * a = 0` or
+`e₀ * a = e₀` — which are exactly `mk a = 0` and `mk a = 1`.
+
+The converse holds too (an idempotent `x` of `A` maps to an idempotent of the corner, and
+`mk x = 0`/`mk x = 1` unwind to `x * e₀ = 0`/`x * e₀ = e₀`), so nothing is lost: `hprim₀`
+and corner-connectedness are EQUIVALENT, and the leaf below is not weakened by taking the
+intrinsic form. -/
+theorem isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one
+    {A : Type*} [CommRing A] {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hprim₀ : ∀ x : A, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (z : A ⧸ HopfAlgebra.cornerIdeal e₀) (hz : IsIdempotentElem z) : z = 0 ∨ z = 1 := by
+  classical
+  have hmem : ∀ x : A, e₀ * x = 0 →
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) x : A ⧸ HopfAlgebra.cornerIdeal e₀) = 0 := by
+    intro x hx
+    rw [Ideal.Quotient.eq_zero_iff_mem, HopfAlgebra.mem_cornerIdeal_iff]
+    refine ⟨x, ?_⟩
+    rw [mul_sub, mul_one, mul_comm x e₀, hx, sub_zero]
+  have hmem' : ∀ x : A,
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) x : A ⧸ HopfAlgebra.cornerIdeal e₀) = 0 →
+      e₀ * x = 0 := by
+    intro x hx
+    rw [Ideal.Quotient.eq_zero_iff_mem, HopfAlgebra.mem_cornerIdeal_iff] at hx
+    obtain ⟨c, rfl⟩ := hx
+    have h : e₀ * (c * (1 - e₀)) = c * (e₀ - e₀ * e₀) := by ring
+    rw [h, he₀, sub_self, mul_zero]
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+  have ha : e₀ * (a * a - a) = 0 := by
+    refine hmem' _ ?_
+    rw [map_sub, map_mul]
+    rw [show (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) a) *
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) a) = _ from hz, sub_self]
+  have hx : IsIdempotentElem (e₀ * a) := by
+    show (e₀ * a) * (e₀ * a) = e₀ * a
+    have h1 : (e₀ * a) * (e₀ * a) = (e₀ * e₀) * (a * a) := by ring
+    have h2 : e₀ * (a * a) = e₀ * a := by
+      have h3 : e₀ * (a * a) - e₀ * a = e₀ * (a * a - a) := by ring
+      rw [← sub_eq_zero, h3, ha]
+    rw [h1, he₀, h2]
+  have hfix : (e₀ * a) * e₀ = e₀ * a := by
+    have h1 : (e₀ * a) * e₀ = (e₀ * e₀) * a := by ring
+    rw [h1, he₀]
+  rcases hprim₀ (e₀ * a) hx with h | h
+  · left
+    exact hmem a (by rw [← hfix, h])
+  · right
+    have h5 : e₀ * (a - 1) = 0 := by
+      have h6 : e₀ * (a - 1) = (e₀ * a) * e₀ - e₀ := by rw [hfix]; ring
+      rw [h6, h, sub_self]
+    have h7 := hmem _ h5
+    rw [map_sub, map_one, sub_eq_zero] at h7
+    exact h7
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
-/-- **THE CITATION ITSELF, COEFFICIENT-FREE: a connected finite flat Hopf order over `𝒪ᵖᵥ`
-of LEVEL ONE is of multiplicative type** (SORRY LEAF — this is Raynaud, and after this cut
-it is the only statement in the cluster that is not either commutative algebra or
-representation theory).
+/-- **THE CITATION ITSELF, COEFFICIENT-FREE AND WITH CONNECTEDNESS INTRINSIC: a connected
+finite flat Hopf order over `𝒪ᵖᵥ` of LEVEL ONE is of multiplicative type** (SORRY LEAF —
+this is Raynaud, and after this cut it is the only statement in the cluster that is not
+either commutative algebra or representation theory).
+
+**CHANGE 2026-07-28**: the `e₀`-specific minimality hypothesis `hprim₀` has been replaced by
+the INTRINSIC `hconn`, "the corner Hopf algebra has no nontrivial idempotents". The two are
+EQUIVALENT (`isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above proves the
+direction this file needs, and its docstring records the converse), so this is not a
+weakening; what it buys is the first of the two restatements that route (a) below requires,
+namely connectedness in a form an abstract sub-quotient `A''` can inherit. The second —
+`hflag` restated on the corner rather than on `G` — is NOT done here and is the one
+remaining obstruction to route (a); see the closing paragraph.
 
 Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
 §1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
@@ -3601,7 +3856,7 @@ WHAT IS LEFT, and it is the whole of `(R1)`:
    Hopf algebras.
 2. *The order-`p` dichotomy `(R2)`, in its GROUP-SCHEME form.* Each graded piece is
    classified by `X^p = δ X` with `0 ≤ v(δ) ≤ e = 1`, hence is étale (`v(δ) = 0`) or of
-   `μ`-type (`v(δ) = 1`); connectedness (`hprim₀`) excludes étale. The POINT-LEVEL form of
+   `μ`-type (`v(δ) = 1`); connectedness (`hconn`) excludes étale. The POINT-LEVEL form of
    this is already formalized and sorry-free in
    `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
    (`OortTate.inertia_character_trivial_or_cyclotomic`,
@@ -3630,7 +3885,7 @@ explicit counterexample:
   fundamental characters, so it is not of multiplicative type — indeed the Weil pairing
   makes `E[p]` self-dual, so its Cartier dual carries the same ramified action and is not
   étale. This is item (iii) of the audit history below, unchanged.
-* WITHOUT connectedness (`hε₀`, `hprim₀`) the statement is FALSE. The constant group scheme
+* WITHOUT connectedness (`hε₀`, `hconn`) the statement is FALSE. The constant group scheme
   `ℤ/p` over `ℤ_p` has trivial inertia action on its points, so it satisfies `hflag`
   trivially; its Cartier dual is `μ_p`, which is NOT étale over `ℤ_p`. Connectedness is
   what forbids the `v(δ) = 0` branch of the order-`p` dichotomy. (Note this hypothesis is
@@ -3655,11 +3910,61 @@ tree has no idiom for. The two shapes that avoid it are (a) a single dévissage 
 "either `𝒪(G°)` has rank `1`, or there are `A''`, `A'` with `IsShortExact i π`, `A'` of
 `μ`-type and `rank A'' < rank A`" — assembled by strong induction on
 `Module.finrank 𝒪ᵖᵥ`, which needs the hypotheses of this statement restated INTRINSICALLY
-on an abstract `A` so that `A''` inherits them (`hflag` already is intrinsic; connectedness
-would have to become "`A` has no nontrivial idempotents", which is what `hprim₀` gives for
-the corner); or (b) an inductive predicate `IsIteratedMultiplicativeExtension`. Route (a)
-is the smaller of the two and is the recommended one. Refuting check on this paragraph: a
-route to multiplicative type of `G°` that never produces a composition series. -/
+on an abstract `A` so that `A''` inherits them; or (b) an inductive predicate
+`IsIteratedMultiplicativeExtension`. Route (a) is the smaller of the two and is the
+recommended one. Refuting check on this paragraph: a route to multiplicative type of `G°`
+that never produces a composition series.
+
+**STATE OF ROUTE (a), UPDATED 2026-07-28.** The paragraph above used to say "`hflag`
+already is intrinsic; connectedness would have to become '`A` has no nontrivial
+idempotents'". Half of that was correct and half was backwards, and both halves have now
+moved:
+
+* CONNECTEDNESS IS DONE. It is `hconn` on this statement, proven equivalent to `hprim₀` by
+  `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above. An abstract `A''` inherits
+  it (a quotient/sub of a ring with no nontrivial idempotents that is again a corner of it
+  has none either — which is the shape the dévissage produces).
+* `hflag` IS **NOT** ALREADY INTRINSIC HERE, and that is now the single remaining
+  obstruction to route (a). It is `HasInertiaLevelOneFlag p G` — a condition on the points
+  of the AMBIENT `G`, not of the corner. What route (a) needs is
+  `HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀)`, and the bridge is TRUE but
+  unwritten: `cornerIdeal e₀` is a Hopf ideal, so precomposition with the quotient map
+  `G → G ⧸ (1 - e₀)` is an INJECTIVE convolution-monoid map on `ℚᵖᵥᵃˡᵍ`-points (it is a
+  coalgebra map, so it distributes over the convolution) commuting with the `Γ ℚᵖᵥ`-action;
+  intersecting the ambient flag with the image gives an inertia-stable chain whose
+  successive quotients embed in cyclic groups of order dividing `p`, hence are themselves
+  cyclic of order dividing `p` (take the generator `x = 0` at a step where the intersection
+  does not grow — the clause permits it, since `closure {0} = ⊥`). The missing formal piece
+  is the "precomposition with a surjective bialgebra map is a monoid hom on points" lemma;
+  `AlgHom.comp_convMul_distrib` in `FlatProlongation.lean` is the POST-composition analogue
+  and is the model to copy. Whoever writes it should state it as its own named leaf. -/
+theorem isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (hflag : HasInertiaLevelOneFlag p G)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    (hconn : ∀ z : G ⧸ HopfAlgebra.cornerIdeal e₀, IsIdempotentElem z → z = 0 ∨ z = 1) :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
+/-- **`(R1)`'s group-scheme half, as the consumer states it** — same signature as before,
+now a ONE-LINE ASSEMBLY (2026-07-28) over
+
+* `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` — PROVEN: `hprim₀` says exactly
+  that the corner Hopf algebra has no nontrivial idempotents;
+* `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` — the Raynaud citation,
+  with connectedness in the intrinsic form route (a) needs.
+
+The signature is unchanged so that `isMultiplicativeType_corner_of_hopf_package`, which
+passes its arguments positionally, is untouched. -/
 theorem isMultiplicativeType_corner_of_inertiaLevelOneFlag
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
@@ -3673,7 +3978,8 @@ theorem isMultiplicativeType_corner_of_inertiaLevelOneFlag
     [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+  isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag hpodd G hflag e₀ he₀ hε₀
+    (isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one he₀ hprim₀)
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
@@ -3784,9 +4090,36 @@ theorem isMultiplicativeType_corner_of_hopf_package
     e₀ he₀ hε₀ hprim₀
 
 set_option synthInstance.maxHeartbeats 1000000 in
-/-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (SORRY
-LEAF, the ARITHMETIC/GEOMETRIC half — cut out of
+/-- **(D1) MULTIPLICATIVE TYPE OVER A STRICTLY HENSELIAN BASE IS DIAGONALIZABLE** (cut out of
 `exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28).
+
+**STATUS, 2026-07-28 — NO LONGER A SORRY NODE. It is a one-line ASSEMBLY** over
+`HopfAlgebra.isMultiplicativeType_baseChange` and
+`HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType`, both in the new
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean`, which also carries the two
+leaves the SGA 3 argument really rests on:
+
+* `Algebra.IsFiniteSplit.of_henselianLocalRing` — **(E1)**, a finite étale algebra over a
+  strictly henselian local ring is split. OPEN, and the only genuinely hard one; it is pure
+  commutative algebra with no Hopf structure in it, and it is a gap in the mathlib pin rather
+  than in this development.
+* `HopfAlgebra.exists_bialgEquiv_groupFunctions_of_isFiniteSplit` — **(E2)**, a split
+  cocommutative group scheme over a LOCAL base is the constant group scheme
+  `GroupFunctions S Γ`. OPEN, formal.
+
+**Two of the three "missing machinery" items recorded below were WRONG, and the corrections
+are worth more than the leaf.** Item 1 (Cartier biduality) was never missing: it is
+`CartierDual.bidualityBialgEquiv`, proven unconditionally in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` since that file was written. The
+survey's refuting `grep` was for the lowercase string `cartierDual`, which cannot match it —
+a reminder that a recorded grep is only as good as its pattern. Item 2 (base change of the
+Cartier dual) was genuinely absent and is now PROVEN, as
+`CartierDual.baseChangeAlgEquiv : S ⊗[R] A^D ≃ₐ[S] (S ⊗[R] A)^D`, over mathlib's
+`IsBaseChange.toDualBaseChange`. Only item 3 survives, as `(E1)`.
+
+Everything below this paragraph is the audit history of the node while it was a leaf. Its
+mathematics is unchanged and is now the mathematics of `(E1)` + `(E2)`; read the "MISSING
+MACHINERY" list as DATED and superseded by the paragraph above.
 
 Stated over an ABSTRACT finite free cocommutative Hopf algebra `A` over `𝒪ᵖᵥ`, because
 nothing in it is about `G`, about `e₀`, or about the corner: it is SGA 3, Exp. VIII/X, in the
@@ -3842,45 +4175,499 @@ theorem exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType
         (1 : unramifiedIntegers p)) ∧
       (∀ i, Coalgebra.comul (R := unramifiedIntegers p) (x i) =
         x i ⊗ₜ[unramifiedIntegers p] x i) ∧
-      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ :=
-  sorry
+      Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ := by
+  haveI := hhens
+  haveI := hsep
+  -- NOTE the shape: the base-changed COROLLARY, not the abstract theorem composed with
+  -- `isMultiplicativeType_baseChange` here. Writing the composition out at this call site makes
+  -- Lean re-synthesize every tensor-product instance against the concrete `unramifiedIntegers p`
+  -- (a reducible `abbrev` for an `IntegralClosure` over a `fixedField`), and that took this file
+  -- from 1288 s to 3537 s — measured 2026-07-28, against a 105 s control in which this one
+  -- declaration's proof aborted at an unknown constant. See the performance note on the corollary.
+  exact HopfAlgebra.exists_spanning_groupLike_baseChange_of_isMultiplicativeType 𝒪ᵖᵥ
+    (unramifiedIntegers p) A hmult
+
+/-! ### Base-change of the corner group-likes: the machinery of `(D2)`
+
+The three blocks below are the whole of `(D2)`
+(`exists_unramified_grouplike_family_of_diagonalizable_corner`, PROVEN 2026-07-28), factored
+out because none of it is about `G`, about `ρ`, or about `p`.
+
+The one step that is not formally free is the change of BASE RING. A group-like of the
+`𝒪ᵘⁿʳ`-coalgebra `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` is an identity in `(𝒪ᵘⁿʳ ⊗ 𝒪(G°)) ⊗[𝒪ᵘⁿʳ] (𝒪ᵘⁿʳ ⊗ 𝒪(G°))`,
+and there is no `TensorProduct.map` from that into a tensor square over `ℚᵖᵥᵃˡᵍ` — the two
+squares are taken over different rings. `baseChangeSqEquiv` is what repairs this: the tensor
+square of a base-changed algebra is CANONICALLY `U ⊗[B] (H ⊗[B] H)`, a tensor product over the
+*fixed* base `B`, and in that presentation the transport is an ordinary `TensorProduct.map`.
+`Coalgebra.baseChangeTensorSquare` (in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean`) is its restriction to `1 ⊗ₜ ·`, and
+`baseChangeSqEquiv_one_tmul` records that. -/
+
+section BaseChangeSquare
+
+variable (B U H : Type*) [CommRing B] [CommRing U] [Algebra B U] [CommRing H] [Bialgebra B H]
+
+/-- `U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H)`. -/
+noncomputable def baseChangeSqEquiv :
+    U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H) :=
+  (Algebra.TensorProduct.congr (Algebra.TensorProduct.lid U U).symm
+      (AlgEquiv.refl (R := B) (A₁ := H ⊗[B] H))).trans
+    (Algebra.TensorProduct.tensorTensorTensorComm B U B U U U H H)
+
+variable {B U H}
+
+/-- The base-change square equivalence on a pure tensor. -/
+theorem baseChangeSqEquiv_tmul (u : U) (a b : H) :
+    baseChangeSqEquiv B U H (u ⊗ₜ[B] (a ⊗ₜ[B] b)) =
+      ((1 : U) ⊗ₜ[B] a) ⊗ₜ[U] (u ⊗ₜ[B] b) := by
+  simp [baseChangeSqEquiv]
+
+/-- `baseChangeSqEquiv` restricted to `1 ⊗ₜ ·` is `Coalgebra.baseChangeTensorSquare`, which is
+where its compatibility with comultiplication comes from. -/
+theorem baseChangeSqEquiv_one_tmul (t : H ⊗[B] H) :
+    baseChangeSqEquiv B U H ((1 : U) ⊗ₜ[B] t) = Coalgebra.baseChangeTensorSquare B U H t := by
+  show Algebra.TensorProduct.tensorTensorTensorComm B U B U U U H H
+      (((Algebra.TensorProduct.lid U U).symm 1) ⊗ₜ[B] t) = _
+  rw [Coalgebra.baseChangeTensorSquare]
+  congr 1
+
+/-- **The comultiplication of a base-changed bialgebra on a general pure tensor** (PROVEN
+2026-07-28): `u ⊗ₜ h = u • (1 ⊗ₜ h)` and `comul` is `U`-linear, so this is
+`Coalgebra.comul_one_tmul` with a scalar carried through `baseChangeSqEquiv`. -/
+theorem comul_baseChange_tmul (u : U) (h : H) :
+    Coalgebra.comul (R := U) (u ⊗ₜ[B] h) =
+      baseChangeSqEquiv B U H (u ⊗ₜ[B] Coalgebra.comul (R := B) h) := by
+  have h1 : (u ⊗ₜ[B] h : U ⊗[B] H) = u • ((1 : U) ⊗ₜ[B] h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have h2 : (u ⊗ₜ[B] Coalgebra.comul (R := B) h : U ⊗[B] (H ⊗[B] H)) =
+      u • ((1 : U) ⊗ₜ[B] Coalgebra.comul (R := B) h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  rw [h1, h2, map_smul, map_smul, baseChangeSqEquiv_one_tmul,
+    Coalgebra.baseChangeTensorSquare_comul (R := B) (S := U) (H := H)]
+
+/-- **The counit of a base-changed bialgebra on a general pure tensor** (PROVEN 2026-07-28):
+`counit_one_tmul` with a scalar carried through. -/
+theorem counit_baseChange_tmul (u : U) (h : H) :
+    Coalgebra.counit (R := U) (u ⊗ₜ[B] h) = u * algebraMap B U (Coalgebra.counit (R := B) h) := by
+  have h1 : (u ⊗ₜ[B] h : U ⊗[B] H) = u • ((1 : U) ⊗ₜ[B] h) := by
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  rw [h1, map_smul, GaloisRepresentation.IsHardlyRamified.counit_one_tmul, smul_eq_mul]
+
+end BaseChangeSquare
+
+/-! ### The corner section
+
+The corner quotient `C ⧸ (1 − e)` has a canonical `B`-linear SECTION `mk a ↦ e a`, whose image
+is the direct summand `e C`. It is not an algebra map — it sends `1` to `e` — which is exactly
+why the group-like condition it transports is the `e`-RELATIVE one
+`comul y · (e ⊗ e) = y ⊗ y` rather than `comul y = y ⊗ y`. -/
+
+section CornerSection
+
+variable {B C : Type*} [CommRing B] [CommRing C] [Bialgebra B C] {e : C}
+
+/-- The section `C ⧸ (1 - e) → C`, `mk a ↦ e * a`, of the corner quotient. -/
+noncomputable def cornerSection (he : IsIdempotentElem e) :
+    (C ⧸ HopfAlgebra.cornerIdeal e) →ₗ[B] C :=
+  LinearMap.restrictScalars B
+    (Submodule.liftQ (HopfAlgebra.cornerIdeal e) (LinearMap.mulLeft C e)
+      (fun x hx => by
+        simp only [LinearMap.mem_ker, LinearMap.mulLeft_apply]
+        exact (HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero he).mp hx))
+
+/-- The defining equation of the corner section. -/
+@[simp] theorem cornerSection_mk (he : IsIdempotentElem e) (a : C) :
+    cornerSection (B := B) he (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a) = e * a := rfl
+
+/-- **The section, tensored with itself, is multiplication by `e ⊗ e` after the quotient**
+(PROVEN 2026-07-28): on a pure tensor both sides are `(e a) ⊗ (e b)`. This is the identity
+that turns a group-like of the corner into an `e`-relative group-like upstairs. -/
+theorem map_cornerSection_map_mk (he : IsIdempotentElem e) (t : C ⊗[B] C) :
+    TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)
+        (TensorProduct.map
+          (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap
+          (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap t) =
+      (e ⊗ₜ[B] e) * t := by
+  induction t with
+  | zero => simp
+  | tmul a b =>
+      rw [TensorProduct.map_tmul, TensorProduct.map_tmul, Algebra.TensorProduct.tmul_mul_tmul]
+      rfl
+  | add u v hu hv => rw [map_add, map_add, hu, hv, mul_add]
+
+variable [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal]
+
+/-- **THE MATHEMATICAL CONTENT OF `(D2)`** (PROVEN 2026-07-28):
+`comul (e a) · (e ⊗ e) = (comul e · (e ⊗ e)) · comul a = (e ⊗ e) · comul a`, using `hcomul`
+— which says the group law restricts to the corner — and then
+`map_cornerSection_map_mk` identifies `(e ⊗ e) · comul a` with the section applied to the
+corner's own comultiplication of `mk a`. -/
+theorem comul_mul_cornerSection (he : IsIdempotentElem e)
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e) (a : C) :
+    Coalgebra.comul (R := B) (e * a) * (e ⊗ₜ[B] e) =
+      TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)
+        (Coalgebra.comul (R := B) (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a)) := by
+  rw [Bialgebra.Quotient.comul_mk, map_cornerSection_map_mk he, Bialgebra.comul_mul,
+    mul_right_comm, hcomul]
+
+/-- The counit does not see the section: `counit (e a) = counit e · counit a = counit a`, and
+the corner's counit of `mk a` is `counit a` definitionally. -/
+theorem counit_mul_cornerSection (hε : Coalgebra.counit (R := B) e = (1 : B)) (a : C) :
+    Coalgebra.counit (R := B) (e * a) =
+      Coalgebra.counit (R := B) (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) a) := by
+  rw [Bialgebra.Quotient.counit_mk, Bialgebra.counit_mul, hε, one_mul]
+
+end CornerSection
+
+/-! ### Transport of a corner group-like along a change of base ring
+
+Given an algebra map `κ : S →ₐ[B] T`, `cornerTransport` is the single map
+`S ⊗[B] (C ⧸ (1 − e)) → T ⊗[B] C`, `s ⊗ mk a ↦ κ s ⊗ e a`, and `cornerTransportSq` is the
+corresponding map of tensor squares — the one that has to cross from `⊗[S]` to `⊗[T]`, and can
+only be written because `baseChangeSqEquiv` presents both squares over the fixed base `B`.
+`grouplike_cornerTransport` is the conclusion: a group-like of `S ⊗[B] (C ⧸ (1 − e))` is
+carried to an `(1 ⊗ e)`-relative group-like of `T ⊗[B] C`. -/
+
+section Transport
+
+variable {B S T C : Type*} [CommRing B] [CommRing S] [CommRing T]
+  [Algebra B S] [Algebra B T] [CommRing C] [Bialgebra B C] {e : C}
+  [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal]
+
+variable (κ : S →ₐ[B] T) (he : IsIdempotentElem e)
+
+/-- Transport of the corner along `κ`: `s ⊗ mk a ↦ κ s ⊗ (e * a)`. -/
+noncomputable def cornerTransport :
+    S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e) →ₗ[B] T ⊗[B] C :=
+  TensorProduct.map κ.toLinearMap (cornerSection (B := B) he)
+
+omit [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal] in
+/-- The defining equation of the transport. -/
+@[simp] theorem cornerTransport_tmul (s : S) (a : C ⧸ HopfAlgebra.cornerIdeal e) :
+    cornerTransport κ he (s ⊗ₜ[B] a) = κ s ⊗ₜ[B] cornerSection (B := B) he a := rfl
+
+/-- The same transport on tensor squares. -/
+noncomputable def cornerTransportSq :
+    (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗[S]
+        (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) → (T ⊗[B] C) ⊗[T] (T ⊗[B] C) := fun ξ =>
+  baseChangeSqEquiv B T C
+    (TensorProduct.map κ.toLinearMap
+      (TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he))
+      ((baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e)).symm ξ))
+
+/-- `cornerTransportSq` is additive: it is a composite of linear maps. -/
+theorem cornerTransportSq_zero : cornerTransportSq κ he (0 : _) = 0 := by
+  simp [cornerTransportSq]
+
+/-- `cornerTransportSq` is additive: it is a composite of linear maps. -/
+theorem cornerTransportSq_add (ξ η : (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗[S]
+    (S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e))) :
+    cornerTransportSq κ he (ξ + η) = cornerTransportSq κ he ξ + cornerTransportSq κ he η := by
+  simp [cornerTransportSq, map_add]
+
+/-- On the `baseChangeSqEquiv` presentation of the tensor square, the transport IS an ordinary
+`TensorProduct.map` over the fixed base `B`. This is the defining property. -/
+theorem cornerTransportSq_sq (ξ : S ⊗[B] ((C ⧸ HopfAlgebra.cornerIdeal e) ⊗[B]
+    (C ⧸ HopfAlgebra.cornerIdeal e))) :
+    cornerTransportSq κ he (baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e) ξ) =
+      baseChangeSqEquiv B T C
+        (TensorProduct.map κ.toLinearMap
+          (TensorProduct.map (cornerSection (B := B) he) (cornerSection (B := B) he)) ξ) := by
+  simp [cornerTransportSq]
+
+/-- **`cornerTransportSq` really is the tensor square of `cornerTransport`** (PROVEN
+2026-07-28), which is the step that crosses from `⊗[S]` to `⊗[T]`. On pure tensors,
+`(s ⊗ a) ⊗[S] (t ⊗ b) = ((s t) ⊗ a) ⊗[S] (1 ⊗ b)` moves the `S`-scalar across the middle bar,
+and the image `(κ (s t) ⊗ e a) ⊗[T] (1 ⊗ e b)` moves `κ t` back across the `T`-bar. -/
+theorem cornerTransportSq_tmul (u v : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    cornerTransportSq κ he (u ⊗ₜ[S] v) =
+      cornerTransport κ he u ⊗ₜ[T] cornerTransport κ he v := by
+  induction u with
+  | zero =>
+      rw [TensorProduct.zero_tmul, cornerTransportSq_zero, map_zero, TensorProduct.zero_tmul]
+  | tmul s a =>
+      induction v with
+      | zero =>
+          rw [TensorProduct.tmul_zero, cornerTransportSq_zero, map_zero, TensorProduct.tmul_zero]
+      | tmul t b =>
+          have h1 : (s ⊗ₜ[B] a : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              s • ((1 : S) ⊗ₜ[B] a) := by rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          have h2 : ((s * t) ⊗ₜ[B] b : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              s • (t ⊗ₜ[B] b) := by rw [TensorProduct.smul_tmul', smul_eq_mul]
+          have hkey : (s ⊗ₜ[B] a : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) ⊗ₜ[S]
+              (t ⊗ₜ[B] b : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+              baseChangeSqEquiv B S (C ⧸ HopfAlgebra.cornerIdeal e)
+                ((s * t) ⊗ₜ[B] (a ⊗ₜ[B] b)) := by
+            rw [baseChangeSqEquiv_tmul, h1, h2, TensorProduct.smul_tmul]
+          rw [hkey, cornerTransportSq_sq, TensorProduct.map_tmul, TensorProduct.map_tmul,
+            baseChangeSqEquiv_tmul, cornerTransport_tmul, cornerTransport_tmul]
+          have h3 : (κ s ⊗ₜ[B] cornerSection (B := B) he a : T ⊗[B] C) =
+              κ s • ((1 : T) ⊗ₜ[B] cornerSection (B := B) he a) := by
+            rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          have h4 : (κ (s * t) ⊗ₜ[B] cornerSection (B := B) he b : T ⊗[B] C) =
+              κ s • (κ t ⊗ₜ[B] cornerSection (B := B) he b) := by
+            rw [TensorProduct.smul_tmul', smul_eq_mul, map_mul]
+          simp only [AlgHom.toLinearMap_apply]
+          rw [h3, h4, TensorProduct.smul_tmul]
+      | add v₁ v₂ hv₁ hv₂ =>
+          rw [TensorProduct.tmul_add, cornerTransportSq_add, hv₁, hv₂, map_add,
+            TensorProduct.tmul_add]
+  | add u₁ u₂ hu₁ hu₂ =>
+      rw [TensorProduct.add_tmul, cornerTransportSq_add, hu₁, hu₂, map_add,
+        TensorProduct.add_tmul]
+
+/-- **The transport intertwines comultiplication, up to the corner unit** (PROVEN
+2026-07-28): `comul (transport w) · (ē ⊗ ē) = transportSq (comul w)`. Checked on pure tensors
+via `comul_baseChange_tmul` and `comul_mul_cornerSection`, with the multiplicativity of
+`baseChangeSqEquiv` doing the rest. -/
+theorem comul_cornerTransport
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e)
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    Coalgebra.comul (R := T) (cornerTransport κ he w) *
+        (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+      cornerTransportSq κ he (Coalgebra.comul (R := S) w) := by
+  induction w with
+  | zero => rw [map_zero, map_zero, map_zero, zero_mul, cornerTransportSq_zero]
+  | tmul s ā =>
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective ā
+      have he₂ : (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+          baseChangeSqEquiv B T C ((1 : T) ⊗ₜ[B] (e ⊗ₜ[B] e)) :=
+        (baseChangeSqEquiv_tmul _ _ _).symm
+      rw [cornerTransport_tmul, comul_baseChange_tmul, he₂, ← map_mul,
+        Algebra.TensorProduct.tmul_mul_tmul, mul_one, cornerSection_mk,
+        comul_mul_cornerSection (B := B) he hcomul a, comul_baseChange_tmul, cornerTransportSq_sq,
+        TensorProduct.map_tmul]
+      rfl
+  | add u v hu hv =>
+      rw [map_add, map_add, map_add, add_mul, hu, hv, cornerTransportSq_add]
+
+/-- **The transport intertwines the counits along `κ`** (PROVEN 2026-07-28). -/
+theorem counit_cornerTransport (hε : Coalgebra.counit (R := B) e = (1 : B))
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) :
+    Coalgebra.counit (R := T) (cornerTransport κ he w) = κ (Coalgebra.counit (R := S) w) := by
+  induction w with
+  | zero => rw [map_zero, map_zero, map_zero, map_zero]
+  | tmul s ā =>
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective ā
+      rw [cornerTransport_tmul, counit_baseChange_tmul, counit_baseChange_tmul, cornerSection_mk,
+        counit_mul_cornerSection hε a, map_mul, AlgHom.commutes]
+  | add u v hu hv => rw [map_add, map_add, map_add, hu, hv, map_add]
+
+/-- **The transport of a group-like of the corner is a corner group-like.** -/
+theorem grouplike_cornerTransport
+    (hε : Coalgebra.counit (R := B) e = (1 : B))
+    (hcomul : Coalgebra.comul (R := B) e * (e ⊗ₜ[B] e) = e ⊗ₜ[B] e)
+    (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e))
+    (hwε : Coalgebra.counit (R := S) w = (1 : S))
+    (hwΔ : Coalgebra.comul (R := S) w = w ⊗ₜ[S] w) :
+    Coalgebra.counit (R := T) (cornerTransport κ he w) = (1 : T) ∧
+      Coalgebra.comul (R := T) (cornerTransport κ he w) *
+          (((1 : T) ⊗ₜ[B] e) ⊗ₜ[T] ((1 : T) ⊗ₜ[B] e)) =
+        cornerTransport κ he w ⊗ₜ[T] cornerTransport κ he w := by
+  refine ⟨?_, ?_⟩
+  · rw [counit_cornerTransport κ he hε w, hwε, map_one]
+  · rw [comul_cornerTransport κ he hcomul w, hwΔ, cornerTransportSq_tmul]
+
+omit [((HopfAlgebra.cornerIdeal e).restrictScalars B).IsCoideal] in
+/-- **The transported family GENERATES the corner** (PROVEN 2026-07-28), stated generically
+because none of it is about `G` or about `p` — and stated generically for a REASON: with `B`,
+`S`, `T`, `C` abstract, instance synthesis resolves against local hypotheses instead of
+searching the `adicCompletionIntegers`/`AlgebraicClosure` tower, and this proof costs seconds
+here where it cost half an hour in the concrete instance.
+
+`z · ē = secT (πT z)`, where `πT` and `secT` are the base changes to `T` of the corner
+projection and of `cornerSection`; the scalar extension of the `x i` spans `T ⊗[B] (C ⧸ (1−e))`
+over `T` (`hxspan` plus semilinearity of the extension along `κ`); and `secT` carries that span
+into the algebra generated by the transported family.  So the conclusion is really obtained in
+the stronger `Submodule.span` form and then weakened to `Algebra.adjoin`. -/
+theorem cornerTransport_mul_mem_adjoin
+    {ι : Type*} (x : ι → S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e))
+    (hxspan : Submodule.span S (Set.range x) = ⊤)
+    (z : T ⊗[B] C) :
+    z * ((1 : T) ⊗ₜ[B] e) ∈
+      Algebra.adjoin T (Set.range (fun i => cornerTransport κ he (x i))) := by
+  classical
+  -- (a) the base-changed section is a retraction of the corner projection, and
+  -- `secT ∘ πT` is multiplication by `1 ⊗ e`.
+  have hsecπ : ∀ w : T ⊗[B] C,
+      LinearMap.baseChange T (cornerSection (B := B) he)
+        (LinearMap.baseChange T
+          (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap w) =
+      w * ((1 : T) ⊗ₜ[B] e) := by
+    intro w
+    induction w with
+    | zero => rw [map_zero, map_zero, zero_mul]
+    | tmul c g =>
+        rw [LinearMap.baseChange_tmul, LinearMap.baseChange_tmul,
+          Algebra.TensorProduct.tmul_mul_tmul, mul_one]
+        show (c ⊗ₜ[B] (cornerSection (B := B) he
+          (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e) g)) : T ⊗[B] C) = _
+        rw [cornerSection_mk, mul_comm]
+    | add u v hu hv => rw [map_add, map_add, hu, hv, add_mul]
+  -- (b) the transport factors through the scalar extension `κ`
+  have hfac : ∀ w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e),
+      cornerTransport κ he w =
+        LinearMap.baseChange T (cornerSection (B := B) he)
+          (TensorProduct.map κ.toLinearMap LinearMap.id w) := by
+    intro w
+    induction w with
+    | zero => rw [map_zero, map_zero, map_zero]
+    | tmul s a =>
+        rw [cornerTransport_tmul, TensorProduct.map_tmul, LinearMap.baseChange_tmul]
+        rfl
+    | add u v hu hv => rw [map_add, map_add, map_add, hu, hv]
+  -- (c) the scalar extension is semilinear over `κ`
+  have hextsmul : ∀ (s : S) (w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)),
+      TensorProduct.map κ.toLinearMap LinearMap.id (s • w) =
+        κ s • TensorProduct.map κ.toLinearMap LinearMap.id w := by
+    intro s w
+    induction w with
+    | zero => rw [smul_zero, map_zero, smul_zero]
+    | tmul t a =>
+        rw [TensorProduct.smul_tmul', TensorProduct.map_tmul, TensorProduct.map_tmul,
+          TensorProduct.smul_tmul', smul_eq_mul, smul_eq_mul]
+        show (κ (s * t)) ⊗ₜ[B] _ = _
+        rw [map_mul]
+        rfl
+    | add u v hu hv => rw [smul_add, map_add, map_add, hu, hv, smul_add]
+  -- (d) the scalar-extended family spans `T ⊗[B] (C ⧸ (1 - e))` over `T`
+  have hspanT : ∀ v : T ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e),
+      v ∈ Submodule.span T (Set.range (fun i =>
+        TensorProduct.map κ.toLinearMap LinearMap.id (x i))) := by
+    have hstep : ∀ w : S ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e),
+        TensorProduct.map κ.toLinearMap LinearMap.id w ∈
+          Submodule.span T (Set.range (fun i =>
+            TensorProduct.map κ.toLinearMap LinearMap.id (x i))) := by
+      intro w
+      have hw : w ∈ Submodule.span S (Set.range x) := by
+        rw [hxspan]; exact Submodule.mem_top
+      induction hw using Submodule.span_induction with
+      | mem u hu => obtain ⟨i, rfl⟩ := hu; exact Submodule.subset_span ⟨i, rfl⟩
+      | zero => rw [map_zero]; exact Submodule.zero_mem _
+      | add u v _ _ hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+      | smul s u _ hu => rw [hextsmul]; exact Submodule.smul_mem _ _ hu
+    intro v
+    induction v with
+    | zero => exact Submodule.zero_mem _
+    | tmul c a =>
+        have h1 : (c ⊗ₜ[B] a : T ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+            c • ((1 : T) ⊗ₜ[B] a) := by rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        have h2 : ((1 : T) ⊗ₜ[B] a : T ⊗[B] (C ⧸ HopfAlgebra.cornerIdeal e)) =
+            TensorProduct.map κ.toLinearMap LinearMap.id ((1 : S) ⊗ₜ[B] a) := by
+          rw [TensorProduct.map_tmul]
+          show _ = (κ 1) ⊗ₜ[B] a
+          rw [map_one]
+        rw [h1, h2]
+        exact Submodule.smul_mem _ _ (hstep _)
+    | add u v hu hv => exact Submodule.add_mem _ hu hv
+  -- (e) the section carries that span into the algebra generated by the transported family
+  have hgoal : ∀ v ∈ Submodule.span T (Set.range (fun i =>
+        TensorProduct.map κ.toLinearMap LinearMap.id (x i))),
+      LinearMap.baseChange T (cornerSection (B := B) he) v ∈
+        Subalgebra.toSubmodule (Algebra.adjoin T (Set.range (fun i =>
+          cornerTransport κ he (x i)))) := by
+    intro v hv
+    induction hv using Submodule.span_induction with
+    | mem u hu =>
+        obtain ⟨i, rfl⟩ := hu
+        rw [← hfac]
+        exact Algebra.subset_adjoin ⟨i, rfl⟩
+    | zero => rw [map_zero]; exact Submodule.zero_mem _
+    | add u v _ _ hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+    | smul c u _ hu => rw [map_smul]; exact Submodule.smul_mem _ _ hu
+  have hz := hgoal _ (hspanT (LinearMap.baseChange T
+    (Ideal.Quotient.mkₐ B (HopfAlgebra.cornerIdeal e)).toLinearMap z))
+  rw [hsecπ] at hz
+  exact hz
+
+end Transport
+
+variable (p) in
+/-- The embedding of the strict henselisation into the algebraic closure. -/
+noncomputable def unramifiedToBig : unramifiedIntegers p →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ :=
+  (IsScalarTower.toAlgHom 𝒪ᵖᵥ ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ).comp
+    (IsScalarTower.toAlgHom 𝒪ᵖᵥ (unramifiedIntegers p) ↥(unramifiedSubfield p))
+
+/-- **The values of `unramifiedToBig` lie in the inertia fixed field** — which is exactly the
+generating set of `unramifiedTensorSubmodule G`, and is the only place inertia enters `(D2)`.
+This is the `unramifiedIntegers`-avatar of `toBig_val`. -/
+theorem unramifiedToBig_mem (a : unramifiedIntegers p) :
+    unramifiedToBig p a ∈ unramifiedSubfield p := by
+  have h : unramifiedToBig p a =
+      ((algebraMap (unramifiedIntegers p) ↥(unramifiedSubfield p) a :
+        ↥(unramifiedSubfield p)) : ℚᵖᵥᵃˡᵍ) := rfl
+  rw [h]
+  exact (algebraMap (unramifiedIntegers p) ↥(unramifiedSubfield p) a).2
+
+
 
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
 /-- **(D2) TRANSPORT of a diagonalizing family from the corner Hopf algebra to the corner
-SUBMODULE of the geometric fibre** (SORRY LEAF, FORMAL — cut out of
-`exists_unramified_grouplike_family_of_isMultiplicativeType` on 2026-07-28; no arithmetic
-input, no Raynaud, no henselian base).
+SUBMODULE of the geometric fibre** (**PROVEN 2026-07-28**; cut out of
+`exists_unramified_grouplike_family_of_isMultiplicativeType` the same day. No arithmetic
+input, no Raynaud, no henselian base — it is formal transport, and that is exactly what the
+proof turned out to be).
 
-`hdiag` supplies group-likes `x i` of `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` spanning it over `𝒪ᵘⁿʳ`. What has to be
-done is bookkeeping along two maps, and all of it is available:
+`hdiag` supplies group-likes `x i` of `𝒪ᵘⁿʳ ⊗ 𝒪(G°)` spanning it over `𝒪ᵘⁿʳ`, and the whole
+statement is bookkeeping along two maps:
 
-* the SECTION of the corner quotient, `G ⧸ (1 − e₀) → G`, `mk a ↦ e₀ a`, which is injective
-  with image the direct summand `e₀ G` (`HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero` in
-  `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` is the whole of that); base-changed
-  it carries `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` isomorphically onto the corner `(ℚᵖᵥᵃˡᵍ ⊗ G) · ē₀`;
-* the scalar extension `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`, which is `toBig` followed by the inclusion of
-  `unramifiedSubfield p` — and `toBig_val` says its values lie in that fixed field, which is
-  EXACTLY the generating set of `unramifiedTensorSubmodule G`. That is where clause (3) of
-  the conclusion comes from, and it is the only clause that mentions inertia.
+* the SECTION of the corner quotient, `cornerSection : G ⧸ (1 − e₀) → G`, `mk a ↦ e₀ a`
+  (well defined by `HopfAlgebra.mem_cornerIdeal_iff_mul_eq_zero`, and a `𝒪ᵖᵥ`-linear map by
+  `Submodule.liftQ` for the `G`-module structure followed by `LinearMap.restrictScalars`);
+* the scalar extension `unramifiedToBig : 𝒪ᵘⁿʳ →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ`, whose values lie in the
+  inertia fixed field `unramifiedSubfield p` by `unramifiedToBig_mem` — which is EXACTLY the
+  generating set of `unramifiedTensorSubmodule G`. That is where clause (3) comes from, and
+  it is the only clause that mentions inertia.
 
-Under the section, a genuine group-like `comul (x i) = x i ⊗ x i` of the corner Hopf algebra
-becomes an `ē₀`-RELATIVE group-like `comul (y i) · (ē₀ ⊗ ē₀) = y i ⊗ y i` of `ℚᵖᵥᵃˡᵍ ⊗ G`,
-because the quotient's comultiplication is `(mk ⊗ mk) ∘ comul` and `mk` is the section's
-retraction; and `counit (e₀ a) = counit e₀ · counit a = counit a` by `hε₀`. Spanning over
-`𝒪ᵘⁿʳ` becomes spanning over `ℚᵖᵥᵃˡᵍ` after the field extension, which is stronger than the
-`Algebra.adjoin` clause asked for.
+The family is `y i = cornerTransport (unramifiedToBig p) he₀ (x i)`, i.e. the single map
+`TensorProduct.map unramifiedToBig cornerSection`, `s ⊗ mk a ↦ (s : ℚᵖᵥᵃˡᵍ) ⊗ e₀ a`.
 
-`habel`, `he₀`, `hprim₀` and `hcomul₀` are carried because the intended proof runs through the
-corner-quotient identification, which is stated in their presence; a prover who finds any of
-them unused should underscore it and say so. -/
+THE FOUR CLAUSES, and where each is proven.
+
+1. *Counit* (`counit_cornerTransport`): `counit (e₀ a) = counit e₀ · counit a = counit a` by
+   `hε₀`, and `counit_A (mk a) = counit_G a` definitionally, so `counit_T ∘ transport =
+   κ ∘ counit_S`, whence `counit (y i) = κ 1 = 1`.
+2. *Relative group-likeness* (`comul_cornerTransport` + `cornerTransportSq_tmul`). Over the
+   base ring, `comul (e₀ a) · (e₀ ⊗ e₀) = (comul e₀ · (e₀ ⊗ e₀)) · comul a = (e₀ ⊗ e₀) · comul a`
+   by `hcomul₀`, and `(e₀ ⊗ e₀) · t` is precisely `(cornerSection ⊗ cornerSection)` applied to
+   `(mk ⊗ mk) t` — that is `comul_mul_cornerSection`, and it is the whole mathematical content.
+   Base-changing it needs the comultiplication of `U ⊗[𝒪ᵖᵥ] H` on a general pure tensor, which
+   is `comul_baseChange_tmul` over the algebra equivalence
+   `baseChangeSqEquiv : U ⊗[B] (H ⊗[B] H) ≃ₐ[U] (U ⊗[B] H) ⊗[U] (U ⊗[B] H)`. That equivalence
+   is what lets a *single* map `cornerTransportSq` do the transport on tensor SQUARES across
+   the change of base ring `𝒪ᵘⁿʳ → ℚᵖᵥᵃˡᵍ`, which is the one step that is not formally free
+   (there is no `TensorProduct.map` between `⊗[𝒪ᵘⁿʳ]` and `⊗[ℚᵖᵥᵃˡᵍ]`).
+3. *Unramifiedness*: `TensorProduct.induction_on`, with the pure tensor `κ s ⊗ e₀ a` a
+   generator of `unramifiedTensorSubmodule G` by `unramifiedToBig_mem`.
+4. *Generation* (`cornerTransport_mul_mem_adjoin`): `z · ē₀ = secT (πT z)` where `πT`, `secT`
+   are the base changes to `ℚᵖᵥᵃˡᵍ` of the corner projection and of `cornerSection`; the scalar
+   extension of the `x i` spans `ℚᵖᵥᵃˡᵍ ⊗ 𝒪(G°)` over `ℚᵖᵥᵃˡᵍ` (`hxspan` plus semilinearity of
+   the extension), and `secT` carries that span into `Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)`. So
+   the conclusion is obtained in the stronger `Submodule.span` form and then weakened.
+
+PERFORMANCE. Everything above is stated over ABSTRACT `B`, `S`, `T`, `C` and only APPLIED here,
+and that is not merely tidiness: with the concrete `𝒪ᵖᵥ`/`ℚᵖᵥᵃˡᵍ`/`G` in place, every `rw` in
+those inductions re-runs instance synthesis against the
+`adicCompletionIntegers → adicCompletion → AlgebraicClosure` tower. Written inline, this proof
+took Family.lean from 2 minutes to 36; factored out, it is seconds. The `maxHeartbeats` bump
+below is headroom for the two `grouplike_cornerTransport` applications, which are the only
+steps left that carry the concrete tower.
+
+`_habel` and `_hprim₀` are UNUSED and underscored, as the leaf's own instruction asked: they
+were carried in case the proof had to run through the corner-quotient identification, and it
+does not — the section plus `hcomul₀` suffice. They are kept in the signature because the
+consumer `exists_unramified_grouplike_family_of_isMultiplicativeType` supplies them
+positionally, and because dropping them would make this statement diverge from `(D1)`'s
+sibling shape for no gain. -/
 theorem exists_unramified_grouplike_family_of_diagonalizable_corner
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
-    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (_habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
-    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (_hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
     (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
       e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
@@ -3901,8 +4688,28 @@ theorem exists_unramified_grouplike_family_of_diagonalizable_corner
         y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
       (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
       (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
-        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
-  sorry
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) := by
+  classical
+  obtain ⟨ι, x, hxε, hxΔ, hxspan⟩ := hdiag
+  refine ⟨ι, fun i => cornerTransport (unramifiedToBig p) he₀ (x i), fun i => ?_, fun i => ?_,
+    fun i => ?_, fun z => ?_⟩
+  · exact (grouplike_cornerTransport (unramifiedToBig p) he₀ hε₀ hcomul₀ (x i)
+      (hxε i) (hxΔ i)).1
+  · exact (grouplike_cornerTransport (unramifiedToBig p) he₀ hε₀ hcomul₀ (x i)
+      (hxε i) (hxΔ i)).2
+  · -- the transported family is unramified: its scalars are the values of `unramifiedToBig`
+    have hmem : ∀ w : unramifiedIntegers p ⊗[𝒪ᵖᵥ] (G ⧸ HopfAlgebra.cornerIdeal e₀),
+        cornerTransport (unramifiedToBig p) he₀ w ∈ unramifiedTensorSubmodule G := by
+      intro w
+      induction w with
+      | zero => rw [map_zero]; exact Submodule.zero_mem _
+      | tmul s a =>
+          rw [cornerTransport_tmul]
+          exact Submodule.subset_span
+            ⟨unramifiedToBig p s, unramifiedToBig_mem s, cornerSection (B := 𝒪ᵖᵥ) he₀ a, rfl⟩
+      | add u v hu hv => rw [map_add]; exact Submodule.add_mem _ hu hv
+    exact hmem (x i)
+  · exact cornerTransport_mul_mem_adjoin (unramifiedToBig p) he₀ x hxspan z
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **Multiplicative type over the STRICTLY HENSELIAN base is DIAGONALIZABLE: the corner
@@ -3915,6 +4722,12 @@ machinery it is gated on) and
 `exists_unramified_grouplike_family_of_diagonalizable_corner` (`(D2)`, the formal transport).**
 The cut separates an arithmetic-geometric leaf from a bookkeeping one; the frontier count goes
 up by one, which is disclosure rather than regression.
+
+**UPDATE, later on 2026-07-28: `(D2)` IS NOW PROVEN**, so the ONLY open leaf under this node
+is `(D1)`, and the cut paid for itself — the bookkeeping half turned out to be a genuine
+(if long) formal transport, and it is now discharged. `(D1)`'s three missing pieces (Cartier
+biduality, base change of the Cartier dual, and "finite étale over a strictly henselian local
+ring is split") are what the whole subtree is gated on.
 
 Everything below is the audit history of the node while it was a leaf, and it is still the
 mathematics of `(D1)` + `(D2)`.
@@ -4220,8 +5033,10 @@ leaf is (R1), the Raynaud dévissage.
      leaves "with their own owners", and both halves of that were wrong;
      see the corrected inventory in the docstring of
      `exists_unramified_grouplike_family_generating_corner` below for
-     what is actually open beneath them (four leaves in `ShortExact.lean`)
-     and for why ownership must never be asserted in prose here.
+     what is actually open beneath them (ONE leaf in `ShortExact.lean`
+     as of 2026-07-28) and for why ownership must never be asserted in
+     prose here.
+
      Consuming (R3) here is still blocked on `IsShortExact` being
      established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
@@ -4568,21 +5383,24 @@ that would unblock it. Nothing here changes the statement.
        `declaration uses 'sorry'` warning set, which is regenerable,
        whereas this paragraph is not.
 
-     * WHAT IS ACTUALLY OPEN — four leaves, all in `ShortExact.lean`,
-       all downstream of the two theorems above (so `cartierDual` is
-       PROVEN but transitively sorried, and may be USED freely as a
-       stated theorem by anything above it):
-       - `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-         (`:238`) — flat + unramified + finitely presented ⇒ formally
-         étale; the only remaining gap under `etale_of_isShortExact`.
-       - `HopfAlgebra.IsShortExact.exists_linearRetraction` (`:564`) —
-         `i(A'')` is an `R`-module direct summand of `A`. Pure module
-         theory, no Hopf structure left in the statement.
-       - `HopfAlgebra.IsShortExact.ker_cartierDual_le` (`:628`) — the
-         hard half: a character trivial on `Spec A'` descends. Gated on
-         fppf descent / Takeuchi's Hopf-ideal correspondence.
-       - `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` (`:648`) —
-         the deepest field: `(Spec A)^D → (Spec A')^D` faithfully flat.
+     * WHAT IS ACTUALLY OPEN — **ONE leaf, and this list has now been
+       rewritten three times by three owners, each of whom found the
+       previous version stale.  Read the warning above and regenerate it
+       rather than trusting it.**  As of 2026-07-28 the only sorry
+       anywhere in `ShortExact.lean` is
+
+       - `HopfAlgebra.IsShortExact.exists_basis_cartierDual` — a basis
+         for the Cartier dual of the quotient.
+
+       The four leaves that BOTH of the previous versions of this bullet
+       named as open — `exists_linearRetraction`, `ker_cartierDual_le`,
+       `faithfullyFlat_cartierDual` and
+       `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+       — are ALL PROVEN.  Two concurrent branches each corrected this
+       paragraph to that same four-leaf list, and both were already wrong
+       when they were written.  That is the third instance here of the
+       same failure, and it is why the sentence above says the authority
+       is the warning set and not this file.
 
        Two PIN findings that make the last two cheaper than the (C4)
        audit priced them (that audit grepped `fppf|CartierDual|
