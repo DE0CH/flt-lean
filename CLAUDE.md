@@ -577,6 +577,37 @@ python script run from that directory executed an unrelated group-theory
 computation at import time and printed its output ahead of the real answer.
 Renamed. Watch for scratch filenames that collide with stdlib modules.
 
+## SIXTH invisibility class: a merge that fails, records success, and drops the payload
+
+(2026-07-29.) `git merge flt-lean-243` printed `error: Unable to write index` and **still
+produced a merge commit whose tree was byte-identical to the pre-merge tree** — none of the
+branch's changes, while recording that branch as an ancestor. `git status` then reported "All
+conflicts fixed but you are still merging", and `git commit --no-edit` sealed it without
+complaint. Suspected trigger: the background `git gc` git itself starts ("Auto packing the
+repository in the background") during a preceding merge, so the risk concentrates exactly where
+branches are merged back to back.
+
+This is worse than every failure class above it, because **the result compiles.** A green build
+is not evidence; a dropped payload builds perfectly. The merged branch is then marked merged and
+dropped from the batch, so the work is not merely missing — it is unrecoverable through the
+normal flow, and the frontier looks like it regressed with no cause anyone can name.
+
+It was caught only because a declaration the merge was supposed to prove was still `sorry`
+afterwards. The check is one command per merge:
+
+    git diff --stat HEAD^1 HEAD     # MUST be non-empty if that branch changed files
+
+Empty for a branch that should have changed something → `git reset --hard HEAD^` and re-merge.
+`git config --local gc.auto 0` in the staging worktree prevents background packing from firing
+mid-merge; it is local and affects nothing else. This matters most for the merge worker, which
+merges a hundred-odd branches in one run.
+
+**Corollary, and the reason this belongs beside the other five: "the branch is an ancestor" is
+NOT evidence that its content is present.** Every ownership and integration check in this file
+that reasons from ancestry — subsumption claims, "X carries Y's commit", the merge-base test in
+the three-part ownership rule — inherits this hole. Ancestry is a claim about the commit graph;
+content is a claim about trees. Verify the tree when it matters.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
