@@ -155,6 +155,16 @@ leaves it moved to are, in dependency order:
   and owned there, and the action on them is a hoist rather than a
   proof — see their docstrings.
 
+  **Amended 2026-07-29 (second amendment): `nonempty_modTensor_assocPic`
+  is GONE.**  Its hoist was performed — the `modLocW` / `ModLM` /
+  `modTensorLocIso` / `nonempty_modTensor_assoc` block was moved out of
+  `AmpleSheaf.lean` into the "SHEAFIFICATION IS MONOIDAL" section of this
+  module and the duplicate leaf deleted, its two uses redirected to
+  `nonempty_modTensor_assoc`.  `nonempty_modPullback_modTensorPic` is NOT
+  similarly ready: its twin is proven only over the still-open
+  `isIso_modPullbackTensorComparison` in `AmpleSheaf.lean`, so hoisting it
+  would move a leaf rather than remove one.
+
   **Amended 2026-07-29: `exists_modTensor_inv` is now PROVEN**, and the
   leaf under it is `exists_modDual` — the dual sheaf `L^∨` with its
   evaluation pairing `L ⊗ L^∨ ⟶ 𝒪_Z`, asked for only up to LOCAL
@@ -235,8 +245,10 @@ public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Monoidal
 public import Mathlib.AlgebraicGeometry.Pullbacks
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafification
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackFree
+public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
+public import Fermat.FLT.Mathlib.Algebra.Category.ModuleCat.Presheaf.MonoidalW
 
 @[expose] public section
 
@@ -381,18 +393,25 @@ is the first, and its docstring says where each use falls.
 The immediate consequences, so that nobody prices them as leaves:
 `modTensor L M ≅ 𝒪 → modTensor M L ≅ 𝒪` is one line, and the
 middle-four interchange `(L ⊗ N) ⊗ M ≅ (L ⊗ M) ⊗ N` is
-`nonempty_modTensor_assocPic` twice plus one braiding.  **`ASSOCIATIVITY`
-is the only genuinely missing coherence isomorphism** at this pin.
+`nonempty_modTensor_assoc` twice plus one braiding.
+
+**Amended 2026-07-29: ASSOCIATIVITY IS NO LONGER MISSING EITHER.**  The
+`modLocW` / `ModLM` / `modTensorLocIso` / `nonempty_modTensor_assoc` block
+that used to live in `AmpleSheaf.lean` is now declared HERE, in the
+"SHEAFIFICATION IS MONOIDAL" section below, and the duplicate leaf that
+stood in its place (`nonempty_modTensor_assocPic`) is DELETED with its two
+uses in `relPicEquiv_symm` / `relPicEquiv_trans` redirected — exactly the
+hoist its own docstring prescribed, made possible by
+`modLocW_whiskerLeft`/`Right` having been proven.  `AmpleSheaf.lean`
+inherits the whole block by import and is otherwise untouched.
 
 **What is genuinely still open** is exactly the part needing
-*sheafification to be monoidal*.  Two leaves are stated below,
-`nonempty_modTensor_assocPic` and `nonempty_modPullback_modTensorPic`,
-and **both already have proofs or owners in `AmpleSheaf.lean`** — see
-their docstrings.  They are duplicated here only because the declarations
-that discharge them sit below this module in the import order and could
-not be hoisted without colliding with live work.  **They must not be
-dispatched at independently**; the correct action on either is a hoist,
-not a proof. -/
+*sheafification to commute with PULLBACK*: one leaf,
+`nonempty_modPullback_modTensorPic`, whose twin
+`nonempty_modPullback_modTensor` in `AmpleSheaf.lean` is proven only over
+the still-open `isIso_modPullbackTensorComparison` there.  **It must not be
+dispatched at independently** — hoisting it would drag that leaf up rather
+than remove one; the correct action is the hoist, once it is settled. -/
 
 /-! #### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
 
@@ -530,33 +549,227 @@ docstring above; it has consumers now, so it is a declaration.) -/
 theorem isInvertibleSheaf_modUnit (Z : Scheme.{u}) : IsInvertibleSheaf (modUnit Z) :=
   fun _ => ⟨⊤, trivial, ⟨Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι⟩⟩
 
-/-! #### The two leaves that remain, and their downstream twins -/
+/-! #### Sheafification is monoidal, and the one leaf that remains
 
-/-- **ASSOCIATIVITY OF `modTensor`** (sorry leaf — **BUT SEE THE WARNING**).
+**Amended 2026-07-29.**  This used to read "the two leaves that remain, and
+their downstream twins".  One of the two — `nonempty_modTensor_assocPic` —
+is gone: the block that discharges it was hoisted here out of
+`AmpleSheaf.lean` (next section) and the duplicate deleted.  What remains
+is `nonempty_modPullback_modTensorPic`, whose twin is itself still open
+downstream. -/
 
-`modTensor` sheafifies after each tensor, so this compares
-`sheafify (sheafify (L ⊗ M) ⊗ N)` with `sheafify (L ⊗ sheafify (M ⊗ N))`.
-Both are `sheafify (L ⊗ M ⊗ N)`, and proving so is exactly the statement
-that **sheafification is monoidal**.
+/-! ### SHEAFIFICATION IS MONOIDAL, via `CategoryTheory.LocalizedMonoidal`
 
-**DO NOT DISPATCH A PROVER AT THIS.**  It is the verbatim twin of
-`Fermat.nonempty_modTensor_assoc` in
-`Fermat/FLT/Modularity/AmpleSheaf.lean`, which is **PROVEN** there
-(2026-07-28) by localizing the presheaf monoidal category at the class
-`modLocW` of local isomorphisms and transporting — over two leaves of its
-own, `modLocW_whiskerLeft` and `modLocW_whiskerRight`, which have their
-own owners.
+The route recorded (and untried) in the old docstring of `nonempty_modTensor_assoc`:
+pair `Mathlib/CategoryTheory/Localization/Monoidal/Basic.lean` with
+`Mathlib/Algebra/Category/ModuleCat/Sheaf/Localization.lean`.  It works, and it
+reduces the WHOLE associativity question to a single statement about local
+isomorphisms, `modLocW_whiskerLeft` below.
 
-It is restated here only because that proof and its ~150 lines of
-localization machinery sit BELOW this module in the import order, in a
-region of `AmpleSheaf.lean` with live owners, so it could not be hoisted
-the way everything above it was.  **The correct action is the hoist**:
-once `modLocW_whiskerLeft`/`Right` are settled, move the
-`modLocW`/`ModLM`/`modTensorLocIso`/`nonempty_modTensor_assoc` block up
-here and delete this declaration, redirecting its two uses in
-`relPicEquiv_symm` and `relPicEquiv_trans`. -/
-theorem nonempty_modTensor_assocPic {Z : Scheme.{u}} (L M N : Z.Modules) :
-    Nonempty (modTensor (modTensor L M) N ≅ modTensor L (modTensor M N)) := sorry
+The chain is:
+
+* `PresheafOfModules.sheafification` is a LOCALIZATION functor, for the class
+  `modLocW Z` of morphisms it inverts (mathlib:
+  `PresheafOfModules.instIsLocalization`, or directly
+  `Adjunction.isLocalization` applied to `sheafificationAdjunction`, which is
+  what is used here since it avoids naming the Grothendieck topology);
+* `PresheafOfModules Z.ringCatSheaf.obj` is symmetric monoidal at this pin;
+* IF `modLocW Z` is compatible with `⊗` (`MorphismProperty.IsMonoidal`), then
+  `CategoryTheory.LocalizedMonoidal` puts a monoidal structure on the localized
+  category — which IS `Z.Modules`, as a type synonym — and makes sheafification
+  a monoidal functor, with comparison isomorphism
+  `Localization.Monoidal.μ : a(P) ⊗ a(Q) ≅ a(P ⊗ Q)`;
+* `modTensor L M` is `a(L.val ⊗ M.val)`, and `a(M.val) ≅ M`
+  (`modSheafifyValIso`), so `μ` identifies `modTensor` with the localized
+  tensor product (`modTensorLocIso`), and the associator transports.
+
+`MorphismProperty.IsMonoidal` asks for stability under BOTH whiskerings; the
+right one follows from the left one by the braiding, so exactly one genuine
+statement is left. -/
+
+/-- **Local isomorphisms of presheaves of `𝒪_Z`-modules**: the morphisms that
+become isomorphisms after sheafification.
+
+Equal to `J.W.inverseImage (PresheafOfModules.toPresheaf _)` — mathlib's
+`PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms` —
+i.e. to the locally bijective morphisms of underlying abelian presheaves; this
+formulation is used because it names no Grothendieck topology. -/
+def modLocW (Z : Scheme.{u}) : MorphismProperty (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+  (MorphismProperty.isomorphisms _).inverseImage
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj))
+
+/-- Sheafification is the localization of presheaves of modules at `modLocW`. -/
+instance modLocW_isLocalization (Z : Scheme.{u}) :
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).IsLocalization (modLocW Z) :=
+  (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).isLocalization
+
+instance modLocW_isMultiplicative (Z : Scheme.{u}) : (modLocW Z).IsMultiplicative := by
+  unfold modLocW; infer_instance
+
+instance modLocW_respectsIso (Z : Scheme.{u}) : (modLocW Z).RespectsIso := by
+  unfold modLocW; infer_instance
+
+/-- Presheaves of modules over a presheaf of COMMUTATIVE rings form a symmetric
+monoidal category; as with `presheafOfModulesMonoidal`, typeclass search cannot
+invert the composition `Z.presheaf ⋙ forget₂ _ _` against `Z.ringCatSheaf.obj`
+on its own. -/
+noncomputable instance presheafOfModulesSymmetric (Z : Scheme.{u}) :
+    SymmetricCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+  inferInstanceAs (SymmetricCategory
+    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
+
+/-- **TENSORING PRESERVES LOCAL ISOMORPHISMS** — PROVEN (2026-07-28).  This is
+the entire mathematical content of "sheafification is monoidal" for
+`𝒪_Z`-modules: with it, `MorphismProperty.IsMonoidal (modLocW Z)` holds, and
+every associativity and unit statement about `modTensor` follows formally.
+
+Concretely: if `g` becomes an isomorphism after sheafification, so does
+`X ◁ g : X ⊗ Y₁ ⟶ X ⊗ Y₂`.  Unfolded through
+`PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms` and
+`GrothendieckTopology.WEqualsLocallyBijective`, it says that `X ⊗ -` preserves
+LOCAL BIJECTIVITY of maps of abelian presheaves.
+
+TRUE, and standard (Stacks 01LA; Mac Lane VII).  It is NOT a formal consequence
+of right exactness alone: local surjectivity of `X ◁ g` is the easy half (a
+section of `X ⊗ Y₂` is a finite sum of tensors, each of whose right factors
+lifts locally, and finitely many covering sieves may be intersected), while
+local INJECTIVITY has to rule out a `Tor`-type contribution.
+
+The proof lives in
+`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`
+(`Fermat.SheafificationMonoidal.W_whiskerLeft`), stated for an ARBITRARY site
+and an arbitrary presheaf of commutative rings, so nothing here is special to
+`Z.Opens`.
+
+ROUTE ACTUALLY TAKEN, and a correction to the three routes this docstring used
+to record as the only candidates.  Routes 1 and 3 were both real but both cost
+a missing theory:
+
+* the *internal hom* route (mathlib's own proof of
+  `CategoryTheory.GrothendieckTopology.W.whiskerLeft` in
+  `Mathlib/CategoryTheory/Sites/Monoidal.lean`) needs `MonoidalClosed
+  (PresheafOfModules R)`, which is still absent from this pin — re-checked
+  2026-07-28 by `grep -rn MonoidalClosed
+  Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/`, which is EMPTY;
+* the *stalk* route (`Mathlib/CategoryTheory/Sites/Point/IsMonoidalW.lean`
+  plus `Mathlib/Topology/Sheaves/Points.lean`) needs a MONOIDAL stalk functor
+  for presheaves of modules, i.e.
+  `colim_{U ∋ z} (X(U) ⊗_{𝒪(U)} Y(U)) ≅ X_z ⊗_{𝒪_{Z,z}} Y_z` — a filtered
+  colimit of tensor products over a filtered system of base rings, which the pin
+  does not have either.
+
+Neither is needed.  The statement is ELEMENTARY, and the one non-formal input is
+the EQUATIONAL CRITERION FOR VANISHING (Stacks 00HK; Altman–Kleiman Lemma 8.16):
+if `∑ᵢ xᵢ ⊗ g(yᵢ) = 0` in `X(U) ⊗_{𝒪(U)} Y₂(U)`, the vanishing is witnessed by a
+finite system of relations `g(qₛ) = ∑ⱼ aₛⱼ wⱼ`, `∑ₛ aₛⱼ pₛ = 0`.  Cover `U` so
+that every `wⱼ` lifts to some `vⱼ` (local surjectivity of `g`), refine so that
+`qₛ − ∑ⱼ aₛⱼ vⱼ` dies (local injectivity of `g`), and on that cover
+`∑ₛ pₛ ⊗ qₛ = ∑ⱼ (∑ₛ aₛⱼ pₛ) ⊗ vⱼ = 0`.
+
+Mathlib's `TensorProduct.vanishesTrivially_of_sum_tmul_eq_zero` states the
+criterion only when the `xᵢ` GENERATE the module, which is exactly what is
+unavailable here (and the hypothesis is not removable: `2 ⊗ 1 = 0` in
+`ℤ ⊗ ℤ/2` while `2 ⊗ 1 ≠ 0` in `2ℤ ⊗ ℤ/2`).  `SheafificationMonoidal
+.exists_relations` is the general form, obtained by the same argument over a
+free presentation indexed by `Fin k ⊕ M` — the `⊕` is what keeps the original
+family from being identified when two `xᵢ` coincide. -/
+theorem modLocW_whiskerLeft {Z : Scheme.{u}} (X : PresheafOfModules.{u} Z.ringCatSheaf.obj)
+    {Y₁ Y₂ : PresheafOfModules.{u} Z.ringCatSheaf.obj} {g : Y₁ ⟶ Y₂}
+    (hg : modLocW Z g) : modLocW Z (X ◁ g) := by
+  have key : modLocW Z = _ :=
+    (PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms
+      (𝟙 Z.ringCatSheaf.obj)).symm
+  rw [key] at hg ⊢
+  exact SheafificationMonoidal.W_whiskerLeft (R := Z.presheaf) X hg
+
+/-- The right-hand whiskering, from the left-hand one by the braiding. -/
+theorem modLocW_whiskerRight {Z : Scheme.{u}}
+    {X₁ X₂ : PresheafOfModules.{u} Z.ringCatSheaf.obj} {f : X₁ ⟶ X₂}
+    (hf : modLocW Z f) (Y : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    modLocW Z (f ▷ Y) :=
+  ((modLocW Z).arrow_mk_iso_iff (Arrow.isoMk (β_ X₁ Y) (β_ X₂ Y)
+    (BraidedCategory.braiding_naturality_left f Y).symm)).2 (modLocW_whiskerLeft Y hf)
+
+instance modLocW_isMonoidal (Z : Scheme.{u}) : (modLocW Z).IsMonoidal where
+  whiskerLeft X _ _ _ hg := modLocW_whiskerLeft X hg
+  whiskerRight _ hf Y := modLocW_whiskerRight hf Y
+
+/-- The unit isomorphism required by `LocalizedMonoidal`.  Nothing here consumes
+the monoidal unit of the localized structure, so the tautological choice is
+taken and no identification with `modUnit Z` is needed. -/
+noncomputable abbrev modLocEps (Z : Scheme.{u}) :
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj
+        (𝟙_ (PresheafOfModules.{u} Z.ringCatSheaf.obj)) ≅
+      (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).obj
+        (𝟙_ (PresheafOfModules.{u} Z.ringCatSheaf.obj)) := Iso.refl _
+
+/-- `Z.Modules`, carrying the localized monoidal structure.  This is a TYPE
+SYNONYM for `Z.Modules`, which is why `toModLM` below is the identity. -/
+noncomputable abbrev ModLM (Z : Scheme.{u}) : Type (u + 1) :=
+  LocalizedMonoidal (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj))
+    (modLocW Z) (modLocEps Z)
+
+/-- Sheafification, seen as a monoidal functor into `ModLM Z`. -/
+noncomputable abbrev modLocA (Z : Scheme.{u}) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ ModLM Z :=
+  Localization.Monoidal.toMonoidalCategory
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)) (modLocW Z) (modLocEps Z)
+
+/-- An `𝒪_Z`-module, seen as an object of `ModLM Z`.  The identity; it exists
+only to stop the elaborator from immediately unfolding the type synonym and
+losing the monoidal instance. -/
+def toModLM {Z : Scheme.{u}} (M : Z.Modules) : ModLM Z := M
+
+/-- `modSheafifyValIso`, read in `ModLM Z`. -/
+noncomputable def modSheafifyValIsoLM {Z : Scheme.{u}} (M : Z.Modules) :
+    (modLocA Z).obj M.val ≅ toModLM M where
+  hom := (modSheafifyValIso M).hom
+  inv := (modSheafifyValIso M).inv
+  hom_inv_id := (modSheafifyValIso M).hom_inv_id
+  inv_hom_id := (modSheafifyValIso M).inv_hom_id
+
+/-- **`modTensor` IS the localized monoidal product**: `a(L.val ⊗ M.val)` is
+identified with `L ⊗ M` in `ModLM Z` by the monoidal-functor comparison `μ`
+together with `a(M.val) ≅ M`. -/
+noncomputable def modTensorLocIso {Z : Scheme.{u}} (L M : Z.Modules) :
+    toModLM (modTensor L M) ≅ toModLM L ⊗ toModLM M :=
+  (Localization.Monoidal.μ _ (modLocW Z) (modLocEps Z) L.val M.val).symm ≪≫
+    MonoidalCategory.tensorIso (modSheafifyValIsoLM L) (modSheafifyValIsoLM M)
+
+/-- **THE ASSOCIATOR** — PROVEN (2026-07-28): `(L ⊗ M) ⊗ N ≅ L ⊗ (M ⊗ N)` for
+`𝒪_Z`-modules.
+
+The route recorded in the previous version of this docstring — pair
+`Mathlib/CategoryTheory/Localization/Monoidal/Basic.lean` with
+`Mathlib/Algebra/Category/ModuleCat/Sheaf/Localization.lean` — is the one that
+works; see the section above.  The whole associativity question reduces to
+`modLocW_whiskerLeft` ("tensoring preserves local isomorphisms") — itself PROVEN
+since 2026-07-28 — from which the localized monoidal structure, and with it this
+associator, both unitors and the braiding, are formal.
+
+Everything about tensor powers in `Modularity/AmpleSheaf.lean`
+(`nonempty_modTensorPow_add`, `nonempty_modTensorPow_mul`, and hence
+`isAmpleSheaf_modTensorPow`) is DERIVED from this statement, as are
+`relPicEquiv_symm` and `relPicEquiv_trans` below, so NO open associativity
+obligation is left anywhere in the tree.
+
+**HOISTED here from `Modularity/AmpleSheaf.lean` on 2026-07-29**, together
+with the whole `modLocW` / `ModLM` / `modTensorLocIso` section above, and
+byte-identical to what stood there.  The point of the move is that
+`AmpleSheaf.lean` `public import`s THIS module, so its copy could not serve
+the relative-Picard calculus here and the duplicate leaf
+`nonempty_modTensor_assocPic` could only ever have stayed open.  That leaf
+is now deleted and its two uses point at this declaration; `AmpleSheaf.lean`
+inherits everything by import and is otherwise untouched. -/
+theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
+    Nonempty (modTensor (modTensor L M) N ≅ modTensor L (modTensor M N)) := by
+  have e : toModLM (modTensor (modTensor L M) N) ≅ toModLM (modTensor L (modTensor M N)) :=
+    modTensorLocIso (modTensor L M) N ≪≫
+      MonoidalCategory.tensorIso (modTensorLocIso L M) (Iso.refl (toModLM N)) ≪≫
+      α_ (toModLM L) (toModLM M) (toModLM N) ≪≫
+      MonoidalCategory.tensorIso (Iso.refl (toModLM L)) (modTensorLocIso M N).symm ≪≫
+      (modTensorLocIso L (modTensor M N)).symm
+  exact ⟨{ hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }⟩
 
 /-- **PULLBACK COMMUTES WITH `modTensor`** (sorry leaf — **BUT SEE THE
 WARNING**).
@@ -929,7 +1142,7 @@ theorem relPicEquiv_symm {L L' : (curveBaseChange strX g).Modules}
     modTensorMapIso e (Iso.refl _)
   refine ?_ ≪≫ step.symm
   refine (modTensorUnitRightIso L').symm ≪≫ ?_ ≪≫
-    (nonempty_modTensor_assocPic L' (modPullback (curveBaseChangeProj strX g) N)
+    (nonempty_modTensor_assoc L' (modPullback (curveBaseChangeProj strX g) N)
       (modPullback (curveBaseChangeProj strX g) N')).some.symm
   refine modTensorMapIso (Iso.refl L') ?_
   refine (modPullbackUnitIso (curveBaseChangeProj strX g)).symm ≪≫ ?_
@@ -944,7 +1157,7 @@ theorem relPicEquiv_trans {L L' L'' : (curveBaseChange strX g).Modules}
   obtain ⟨N', hN', ⟨e'⟩⟩ := h'
   refine ⟨Fermat.modTensor N' N, isInvertibleSheaf_modTensorPic hN' hN, ⟨?_⟩⟩
   refine e ≪≫ modTensorMapIso e' (Iso.refl _) ≪≫ ?_
-  refine (nonempty_modTensor_assocPic L'' (modPullback (curveBaseChangeProj strX g) N')
+  refine (nonempty_modTensor_assoc L'' (modPullback (curveBaseChangeProj strX g) N')
     (modPullback (curveBaseChangeProj strX g) N)).some ≪≫ ?_
   exact modTensorMapIso (Iso.refl L'')
     (nonempty_modPullback_modTensorPic (curveBaseChangeProj strX g) N' N).some.symm
@@ -1404,9 +1617,11 @@ name the wrong gate.**
   `{749, 1121, 1210}`, and neither `nonempty_modTensor_assoc` (`:600`) nor
   `nonempty_modPullback_modTensor` (`:764`) is in it.  So the monoidality
   gate no longer costs a theory anywhere in the tree — it costs a HOIST,
-  which is what the twins `nonempty_modTensor_assocPic` /
-  `nonempty_modPullback_modTensorPic` above are waiting on.  Do not price
-  it as missing machinery again.
+  which is what the twins above were waiting on.  **Half of that hoist was
+  done on 2026-07-29**: `nonempty_modTensor_assocPic` is gone and
+  `nonempty_modTensor_assoc` is declared in this module; only
+  `nonempty_modPullback_modTensorPic` still waits.  Do not price it as
+  missing machinery again.
 * **A UNIVERSE OBSTRUCTION on the `isRepresentable` route, recorded
   2026-07-29 so the next reader does not walk into it.**  The bullet above
   is right that `AlgebraicGeometry.Scheme.LocalRepresentability.isRepresentable`
