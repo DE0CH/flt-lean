@@ -18022,8 +18022,11 @@ theorem exists_bound_not_isPrime_radical_of_eq_top {n m : ℕ}
 The block below replaces the constructibility route that leaf (A) was originally
 cut against. See the CORRECTION section of that leaf's docstring for why the
 route recorded there was a non sequitur; these are the five pieces the
-replacement proof consumes, four of them PROVEN here and one left as the single
-named sub-leaf `exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure`. -/
+replacement proof consumes, ALL FIVE PROVEN here — the last of them,
+`exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure`, was closed on
+2026-07-28 over one new proven helper
+(`nonempty_ringHom_algClosureZMod_of_isIntegral_away`), so this block and its
+consumer leaf (A) are now sorry-free. -/
 
 /-- **A polynomial whose coefficients lie in a subring is the image of one over
 that subring** (PROVEN). Assemble it monomial by monomial over the support; the
@@ -18077,9 +18080,95 @@ theorem map_map_intCastRingHom {σ : Type*} {A L : Type*} [CommRing A] [CommRing
   rw [MvPolynomial.map_map]
   exact congrArg (fun ψ => MvPolynomial.map ψ g) (Subsingleton.elim _ _)
 
-/-- **SUB-LEAF: A FINITELY GENERATED SUBRING OF `ℚ̄` SPREADS OUT** (SORRY LEAF,
-cut 2026-07-28 out of `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`,
-and the ONLY thing that leaf still needs).
+/-- **SPREADING A `ℤ[1/d]`-INTEGRAL RING OUT TO CHARACTERISTIC `p`** (PROVEN
+2026-07-28). If `A` is integral over the localization `ℤ[1/d]`, faithfully (the
+structure map `ℤ[1/d] → A` is injective), then for EVERY prime `p ∤ d` there is
+a ring homomorphism `A →+* 𝔽̄_p`.
+
+This is the engine of `exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure`
+immediately below; it mentions neither `ℚ̄` nor any finite generation, only the
+base `ℤ[1/d]` and integrality over it.
+
+THE PROOF, in four steps.
+
+1. `p ∤ d` makes `d` invertible in `𝔽_p`, so the UNIVERSAL PROPERTY of the
+   localization gives `g : ℤ[1/d] →+* 𝔽_p` over `ℤ`. This is the step the
+   sub-leaf's originally recorded route performed by hand with Bézout
+   (`x N + y p = 1`, to see that `1/N` is already in the image of `ℤ` modulo a
+   maximal ideal): `IsLocalization.Away.lift` does it in one line and hands
+   back the residue field as `𝔽_p` on the nose instead of leaving it to be
+   identified.
+2. `g` is surjective, because its source contains `ℤ`, which already surjects
+   onto `𝔽_p`. Hence `M₀ := ker g` is a MAXIMAL ideal, and `p ∈ M₀`.
+3. Lying over (`Ideal.exists_ideal_over_maximal_of_isIntegral`, whose kernel
+   hypothesis is discharged by `hinj`) gives a maximal `M ◁ A` with
+   `M ∩ ℤ[1/d] = M₀`; so `A ⧸ M` is a field, and `p ∈ M` makes its
+   characteristic `p`.
+4. `A ⧸ M` is ALGEBRAIC over `𝔽_p`: any `a : A` satisfies a monic `q` over
+   `ℤ[1/d]`, and `q.map g` is a monic polynomial over `𝔽_p` killing the class
+   of `a`. The two ways round the square commute because two ring maps out of
+   a localization of `ℤ` that agree on `ℤ` are equal
+   (`IsLocalization.ringHom_ext`, its hypothesis supplied by
+   `Subsingleton (ℤ →+* _)`) — that identity is the whole content of "the
+   image of `ℤ[1/d]` in the residue field is the prime field". So
+   `IsAlgClosed.lift` embeds `A ⧸ M` into `𝔽̄_p`, and composing with
+   `A ↠ A ⧸ M` finishes. -/
+theorem nonempty_ringHom_algClosureZMod_of_isIntegral_away
+    {d : ℤ} {A : Type*} [CommRing A]
+    [Algebra (Localization.Away d) A] [Algebra.IsIntegral (Localization.Away d) A]
+    (hinj : Function.Injective (algebraMap (Localization.Away d) A))
+    (p : ℕ) [Fact p.Prime] (hpd : ¬ ((p : ℤ) ∣ d)) :
+    Nonempty (A →+* AlgebraicClosure (ZMod p)) := by
+  classical
+  have hdu : IsUnit ((Int.castRingHom (ZMod p)) d) := by
+    rw [isUnit_iff_ne_zero]
+    intro h
+    exact hpd ((ZMod.intCast_zmod_eq_zero_iff_dvd d p).mp (by simpa using h))
+  let g : Localization.Away d →+* ZMod p :=
+    IsLocalization.Away.lift (S := Localization.Away d) d hdu
+  have hgsurj : Function.Surjective g := by
+    intro y
+    obtain ⟨n, rfl⟩ := ZMod.natCast_zmod_surjective y
+    exact ⟨(n : Localization.Away d), map_natCast g n⟩
+  haveI hM₀ : (RingHom.ker g).IsMaximal := RingHom.ker_isMaximal_of_surjective g hgsurj
+  obtain ⟨M, hMmax, hMcomap⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral (S := A) (RingHom.ker g)
+      (by rw [(RingHom.injective_iff_ker_eq_bot _).mp hinj]; exact bot_le)
+  haveI := hMmax
+  have hpM : (p : A) ∈ M := by
+    have h1 : ((p : ℕ) : Localization.Away d) ∈ RingHom.ker g := by
+      simp [RingHom.mem_ker, map_natCast g p]
+    rw [← hMcomap] at h1
+    have := (Ideal.mem_comap).mp h1
+    rwa [map_natCast] at this
+  have hpq : ((p : ℕ) : A ⧸ M) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk M) p]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hpM
+  haveI : CharP (A ⧸ M) p := by
+    refine ringChar.of_eq ?_
+    have hdvd : ringChar (A ⧸ M) ∣ p := ringChar.dvd hpq
+    rcases (Fact.out : p.Prime).eq_one_or_self_of_dvd _ hdvd with h1 | hqp
+    · exact absurd (ringChar.ringChar_eq_one.mp h1) (not_subsingleton _)
+    · exact hqp
+  letI : Algebra (ZMod p) (A ⧸ M) := (ZMod.castHom (dvd_refl p) (A ⧸ M)).toAlgebra
+  haveI : Algebra.IsAlgebraic (ZMod p) (A ⧸ M) := by
+    constructor
+    intro x
+    obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨q, hqm, hq0⟩ := Algebra.IsIntegral.isIntegral (R := Localization.Away d) c
+    have hcomm : (algebraMap (ZMod p) (A ⧸ M)).comp g
+        = (Ideal.Quotient.mk M).comp (algebraMap (Localization.Away d) A) :=
+      IsLocalization.ringHom_ext (Submonoid.powers d) (Subsingleton.elim _ _)
+    refine IsIntegral.isAlgebraic (R := ZMod p) ⟨q.map g, hqm.map g, ?_⟩
+    rw [Polynomial.eval₂_map, hcomm, ← Polynomial.hom_eval₂, hq0, map_zero]
+  exact ⟨(IsAlgClosed.lift (R := ZMod p) (S := A ⧸ M)
+    (M := AlgebraicClosure (ZMod p))).toRingHom.comp (Ideal.Quotient.mk M)⟩
+
+/-- **SUB-LEAF: A FINITELY GENERATED SUBRING OF `ℚ̄` SPREADS OUT** (**PROVEN
+2026-07-28**, over the single helper
+`nonempty_ringHom_algClosureZMod_of_isIntegral_away` immediately above; cut
+2026-07-28 out of `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`,
+which it was the ONLY thing still needing).
 
 WHAT IT SAYS. For a finite set `S` of algebraic numbers there is a single
 positive integer `N` — a common denominator — such that for every prime `p ∤ N`
@@ -18091,30 +18180,51 @@ NOTHING ELSE IS ASSUMED, and in particular no `Nontrivial` hypothesis is needed:
 `ℤ[S]` is a subring of a field of characteristic zero, so it is automatically a
 nonzero domain, which is exactly why the conclusion can be unconditional.
 
-THE INTENDED PROOF, which uses only pieces PRESENT in the pin (each checked
-2026-07-28 by grep over `.lake/packages/mathlib`):
+THE PROOF AS EXECUTED, against the five-step route this docstring recorded when
+the leaf was cut. Steps 4 and 5 are as recorded; steps 1–3 were each replaced by
+something shorter, and the replacements are recorded here because they are the
+reusable part.
 
-1. Every `s ∈ S` is algebraic over `ℚ` (`AlgebraicClosure` is algebraic over its
-   base), so after clearing denominators it is a root of a nonzero `q_s ∈ ℤ[X]`.
-   Put `N := ∏_{s ∈ S} |lc q_s|`, which is positive because each `q_s ≠ 0`.
-2. Over `R := ℤ[1/N] ⊆ ℚ̄` each `s` is INTEGRAL: `lc q_s` divides `N` and is
-   therefore a unit in `R`, so `C (lc q_s)⁻¹ * q_s` is monic over `R` (the
-   leading coefficient of a product is the product of leading coefficients here,
-   because `R` is a domain). Hence `B := R[S]` is integral over `R`
-   (`Algebra.IsIntegral.adjoin`,
-   `Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean:141`).
-3. For `p ∤ N` the element `p` is not a unit in `R = ℤ[1/N]` — otherwise
-   `p ∣ N^d` for some `d`, hence `p ∣ N` — so `p` lies in some maximal ideal
-   `M₀ ◁ R`, and `R ⧸ M₀ ≅ 𝔽_p`: writing `x N + y p = 1` (possible since
-   `gcd (p, N) = 1`) shows `N` is invertible modulo `M₀` with inverse the image
-   of the INTEGER `x`, so the generator `1/N` of `R` is already in the image of
-   `ℤ`.
+1. RECORDED: minimal polynomials, `N := ∏ |lc q_s|`. EXECUTED:
+   `Algebra.IsAlgebraic.exists_integral_multiples` returns, in one call, a
+   single `d ≠ 0` with `d • s` integral over `ℤ` for EVERY `s ∈ S`; put
+   `N := |d|`. Its hypothesis `Algebra.IsAlgebraic ℤ ℚ̄` is not an instance but
+   is one rewrite away — `IsFractionRing.comap_isAlgebraic_iff` turns it into
+   `Algebra.IsAlgebraic ℚ ℚ̄`. (`ℚ̄` is algebraic over `ℤ` in the ALGEBRAIC, not
+   integral, sense: `a/b` is a root of `b X - a`.)
+   TRAP, and the one thing here that a scratch module CANNOT catch: in THIS
+   file's import cone `Algebra ℚ (AlgebraicClosure ℚ)` synthesises as
+   `DivisionRing.toRatAlgebra`, NOT as `AlgebraicClosure.instAlgebra`, so
+   `inferInstance` for `Algebra.IsAlgebraic ℚ ℚ̄` FAILS here while succeeding in
+   a small file — the recorded failure mode of this module (see the import-order
+   note above the `@[expose] public section`). The instance must be NAMED:
+   `AlgebraicClosure.isAlgebraic ℚ` elaborates against either structure, the two
+   being defeq.
+2. RECORDED: `B := R[S]` finitely generated, integral by
+   `Algebra.IsIntegral.adjoin`. EXECUTED: take `C := integralClosure R ℚ̄`
+   outright — nothing here needs `B` finitely generated, and `C` is integral
+   over `R` by instance, so `Algebra.IsIntegral.adjoin` is not needed at all.
+   Each `s ∈ S` lies in `C` because `s = (1/d) * (d • s)` is a product of the
+   image of an element of `R` (`IsLocalization.Away.invSelf`) with something
+   integral over `ℤ`, hence over `R` (`IsIntegral.tower_top`).
+   NOTE `R` is the ABSTRACT `Localization.Away d`, mapped into `ℚ̄` by
+   `IsLocalization.Away.lift`, not the subring `ℤ[1/N] ⊆ ℚ̄` the route named.
+   That is what makes step 3's universal property available; the map is
+   injective (`mk' a s ↦ 0` forces `(a : ℚ̄) = 0`, so `a = 0` in characteristic
+   zero), which is what the lying-over kernel hypothesis wants.
+3. RECORDED: `p` is not a unit in `ℤ[1/N]`, so it sits in some maximal `M₀`,
+   and a Bézout identity `x N + y p = 1` identifies `R ⧸ M₀` with `𝔽_p`.
+   EXECUTED: none of that. `p ∤ N` makes `d` a unit in `𝔽_p`, so the universal
+   property gives `g : R →+* 𝔽_p` directly; `M₀ := ker g` is maximal because
+   `g` is surjective, and it contains `p`. See
+   `nonempty_ringHom_algClosureZMod_of_isIntegral_away` above, which carries
+   steps 3–5 in the generality of an arbitrary `R`-integral `A`.
 4. Lying over (`Ideal.exists_ideal_over_maximal_of_isIntegral`,
-   `Mathlib/RingTheory/Ideal/GoingUp.lean:344`; the kernel hypothesis is
-   vacuous because `R ↪ B ⊆ ℚ̄`) gives a maximal `M ◁ B` with `M ∩ R = M₀`.
-   Then `B ⧸ M` is a field, integral over `R ⧸ M₀ = 𝔽_p`, hence algebraic over
+   `Mathlib/RingTheory/Ideal/GoingUp.lean:344`) gives a maximal `M ◁ C` with
+   `M ∩ R = M₀`; `C ⧸ M` is then a field of characteristic `p`, algebraic over
    `𝔽_p`, so `IsAlgClosed.lift` embeds it into `𝔽̄_p`.
-5. Compose `ℤ[S] ↪ B ↠ B ⧸ M ↪ 𝔽̄_p`.
+5. Compose `ℤ[S] ↪ C ↠ C ⧸ M ↪ 𝔽̄_p`, the first arrow being
+   `Subring.inclusion` applied to `Subring.closure S ≤ C.toSubring`.
 
 THE CHECK THAT WOULD REFUTE THIS CUT: look for a hypothesis of the consumer
 inside this statement. There is none — `S` is an arbitrary finite set of
@@ -18131,13 +18241,83 @@ theorem exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure
     (S : Finset (AlgebraicClosure ℚ)) :
     ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
       Nonempty (Subring.closure (S : Set (AlgebraicClosure ℚ)) →+*
-        AlgebraicClosure (ZMod p)) :=
-  sorry
+        AlgebraicClosure (ZMod p)) := by
+  classical
+  -- NOTE the explicit `AlgebraicClosure.isAlgebraic ℚ`: in THIS file's import
+  -- cone `Algebra ℚ (AlgebraicClosure ℚ)` synthesises as `DivisionRing.toRatAlgebra`,
+  -- not as `AlgebraicClosure.instAlgebra`, so a bare `inferInstance` for
+  -- `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` FAILS here (it succeeds in a small
+  -- file). The two algebra structures are defeq, so naming the instance works.
+  haveI : Algebra.IsAlgebraic ℤ (AlgebraicClosure ℚ) :=
+    (IsFractionRing.comap_isAlgebraic_iff (A := ℤ) (K := ℚ)
+      (C := AlgebraicClosure ℚ)).mpr (AlgebraicClosure.isAlgebraic ℚ)
+  obtain ⟨d, hd0, hint⟩ :=
+    Algebra.IsAlgebraic.exists_integral_multiples ℤ (A := AlgebraicClosure ℚ) S
+  refine ⟨d.natAbs, Int.natAbs_pos.mpr hd0, ?_⟩
+  intro p _ hpN
+  have hpd : ¬ ((p : ℤ) ∣ d) := by
+    intro h
+    exact hpN (by simpa using Int.natAbs_dvd_natAbs.mpr h)
+  have hdK : IsUnit (algebraMap ℤ (AlgebraicClosure ℚ) d) := by
+    rw [isUnit_iff_ne_zero]
+    simpa using hd0
+  letI : Algebra (Localization.Away d) (AlgebraicClosure ℚ) :=
+    (IsLocalization.Away.lift (S := Localization.Away d) d hdK).toAlgebra
+  have hlift : ∀ a : ℤ, (algebraMap (Localization.Away d) (AlgebraicClosure ℚ))
+      (algebraMap ℤ (Localization.Away d) a) = algebraMap ℤ (AlgebraicClosure ℚ) a :=
+    IsLocalization.Away.lift_eq d hdK
+  haveI htower := IsScalarTower.of_algebraMap_eq' (R := ℤ) (S := Localization.Away d)
+    (A := AlgebraicClosure ℚ) (by ext a; exact (hlift a).symm)
+  set C := integralClosure (Localization.Away d) (AlgebraicClosure ℚ)
+  -- the image of `1/d` in `ℚ̄`
+  have hinvd : (algebraMap (Localization.Away d) (AlgebraicClosure ℚ))
+      (IsLocalization.Away.invSelf (S := Localization.Away d) d)
+        * (algebraMap ℤ (AlgebraicClosure ℚ) d) = 1 := by
+    have h := congrArg (algebraMap (Localization.Away d) (AlgebraicClosure ℚ))
+      (IsLocalization.Away.mul_invSelf (S := Localization.Away d) d)
+    rw [map_mul, map_one, hlift] at h
+    rw [mul_comm]
+    exact h
+  have hSC : ∀ s ∈ S, s ∈ C := by
+    intro s hs
+    have h1 : IsIntegral (Localization.Away d)
+        ((algebraMap ℤ (AlgebraicClosure ℚ) d) * s) := by
+      have h := hint s hs
+      rw [Algebra.smul_def] at h
+      exact h.tower_top
+    have h2 : IsIntegral (Localization.Away d)
+        ((algebraMap (Localization.Away d) (AlgebraicClosure ℚ))
+          (IsLocalization.Away.invSelf (S := Localization.Away d) d)) :=
+      isIntegral_algebraMap
+    have h3 := h2.mul h1
+    rwa [← mul_assoc, hinvd, one_mul] at h3
+  have hinjK : Function.Injective
+      (algebraMap (Localization.Away d) (AlgebraicClosure ℚ)) := by
+    rw [injective_iff_map_eq_zero]
+    intro x hx
+    obtain ⟨⟨a, s⟩, rfl⟩ :=
+      IsLocalization.mk'_surjective (S := Localization.Away d) (Submonoid.powers d) x
+    have hs := congrArg (algebraMap (Localization.Away d) (AlgebraicClosure ℚ))
+      (IsLocalization.mk'_spec (Localization.Away d) a s)
+    rw [map_mul, hx, zero_mul, hlift] at hs
+    have ha : a = 0 := by
+      have : ((a : ℤ) : AlgebraicClosure ℚ) = 0 := by simpa using hs.symm
+      exact_mod_cast this
+    subst ha
+    simp
+  have hinjC : Function.Injective (algebraMap (Localization.Away d) C) := fun x y hxy =>
+    hinjK (congrArg Subtype.val hxy)
+  obtain ⟨ψ⟩ := nonempty_ringHom_algClosureZMod_of_isIntegral_away (d := d) (A := C) hinjC p hpd
+  have hAC : Subring.closure (S : Set (AlgebraicClosure ℚ)) ≤ C.toSubring :=
+    Subring.closure_le.mpr (fun s hs => hSC s (by simpa using hs))
+  exact ⟨ψ.comp (Subring.inclusion hAC)⟩
 
 /-- **LEAF (A): THE DEGENERATE HALF OF EGA IV 9.7.7 OVER `Spec ℤ`**
-(**PROVEN 2026-07-28** over the single sub-leaf
-`exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure` immediately above;
-cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+(**PROVEN 2026-07-28**, and UNCONDITIONALLY so since later the same day: it was
+proven over the single sub-leaf
+`exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure` immediately above,
+and that sub-leaf is itself now proven. Cut 2026-07-27 out of
+`exists_integralHypersurfaceCertificate` below.)
 
 WHAT IT SAYS. If the geometric generic fibre of an integral system is NONEMPTY
 but NOT irreducible, then for all but finitely many `p` the geometric fibre mod
