@@ -53166,67 +53166,283 @@ theorem relNormDivisorHom_apply_divisorMap_ray_class
     𝔑 (d' δ) = d (_root_.RingOfIntegers.norm F δ) :=
   sorry
 
-/-- **THE NORM OF A NONZERO TOTALLY POSITIVE INTEGER IS TOTALLY POSITIVE**
-(SORRY LEAF, created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
-`exists_relNormDivisorHom_ray_class` below).
+/-- **A PRODUCT OVER A CONJUGATION-STABLE INDEX SET IS A POSITIVE REAL** (PROVEN
+2026-07-29, flt-lean-290).  The combinatorial core of
+`norm_totallyPositive_ray_class` below, isolated so the archimedean argument is
+a single strong induction on the `Finset` rather than an orbit decomposition.
 
-**ROUTE.** Give `ℂ` the `F`-algebra structure `Complex.ofRealHom.comp ψ`. Then
-`Algebra.norm_eq_prod_embeddings F E ℂ` (in the pin,
-`Mathlib/RingTheory/Norm/Transitivity.lean`; needs `IsAlgClosed ℂ`,
-`Algebra.IsSeparable F E` — free in characteristic zero — and
-`FiniteDimensional F E`) gives
-`algebraMap F ℂ (N_{E/F} δ) = ∏ σ : E →ₐ[F] ℂ, σ δ`. Complex conjugation acts on
-`E →ₐ[F] ℂ` (it fixes `algebraMap F ℂ`, whose image lies in `ℝ`); its fixed
-points are the real embeddings of `E` over `ψ`, each contributing a factor `> 0`
-by `hδpos`, and its free orbits are two-element, each contributing
-`σ δ · conj (σ δ) = ‖σ δ‖² > 0` since `δ ≠ 0`. So the product is a positive
-real. `NumberField.ComplexEmbedding.IsReal` is the pin's name for the fixed-point
-condition.
+`c` is an involution of `s`; `f` is nonvanishing on `s`; `f (c a) = conj (f a)`;
+and at each FIXED point of `c` the value has positive real part (it is
+automatically real there, by `hconj`).  Peeling off a fixed point contributes
+`(f a).re > 0`; peeling off a 2-element orbit `{a, c a}` contributes
+`f a * conj (f a) = ‖f a‖² > 0`.  Both steps land in a proper subset, which is
+why the induction is `Finset.strongInduction` rather than `Finset.induction`. -/
+theorem prod_pos_of_conj_involution_ray_class {ι : Type*} [DecidableEq ι]
+    (c : ι → ι) (f : ι → ℂ) (s : Finset ι)
+    (hmem : ∀ a ∈ s, c a ∈ s)
+    (hinv : ∀ a ∈ s, c (c a) = a)
+    (hne : ∀ a ∈ s, f a ≠ 0)
+    (hconj : ∀ a ∈ s, f (c a) = (starRingEnd ℂ) (f a))
+    (hfix : ∀ a ∈ s, c a = a → 0 < (f a).re) :
+    ∃ r : ℝ, 0 < r ∧ ∏ a ∈ s, f a = (r : ℂ) := by
+  classical
+  revert hmem hinv hne hconj hfix
+  induction s using Finset.strongInduction with
+  | _ s ih =>
+    intro hmem hinv hne hconj hfix
+    rcases s.eq_empty_or_nonempty with rfl | ⟨a, ha⟩
+    · exact ⟨1, one_pos, by simp⟩
+    by_cases hca : c a = a
+    · -- `a` is a fixed point: `f a` is a positive real, peel it off
+      have htss : s.erase a ⊂ s := Finset.erase_ssubset ha
+      have hmem' : ∀ b ∈ s.erase a, c b ∈ s.erase a := by
+        intro b hb
+        have hbs : b ∈ s := Finset.mem_of_mem_erase hb
+        have hba : b ≠ a := Finset.ne_of_mem_erase hb
+        refine Finset.mem_erase.mpr ⟨?_, hmem b hbs⟩
+        intro hcb
+        exact hba (by rw [← hinv b hbs, hcb, hca])
+      obtain ⟨r, hr, hrp⟩ := ih (s.erase a) htss hmem'
+        (fun b hb => hinv b (Finset.mem_of_mem_erase hb))
+        (fun b hb => hne b (Finset.mem_of_mem_erase hb))
+        (fun b hb => hconj b (Finset.mem_of_mem_erase hb))
+        (fun b hb => hfix b (Finset.mem_of_mem_erase hb))
+      have hfa : ((f a).re : ℂ) = f a := by
+        refine Complex.conj_eq_iff_re.mp ?_
+        have h := hconj a ha
+        rw [hca] at h
+        exact h.symm
+      refine ⟨(f a).re * r, mul_pos (hfix a ha hca) hr, ?_⟩
+      rw [← Finset.mul_prod_erase s f ha, hrp, Complex.ofReal_mul, hfa]
+    · -- `a` and `c a` are distinct: they contribute `f a * conj (f a) = ‖f a‖²`
+      have hcas : c a ∈ s := hmem a ha
+      have hcae : c a ∈ s.erase a := Finset.mem_erase.mpr ⟨hca, hcas⟩
+      have htss : (s.erase a).erase (c a) ⊂ s :=
+        lt_of_le_of_lt (Finset.erase_subset _ _) (Finset.erase_ssubset ha)
+      have hsub : ∀ b ∈ (s.erase a).erase (c a), b ∈ s := by
+        intro b hb
+        exact Finset.mem_of_mem_erase (Finset.mem_of_mem_erase hb)
+      have hmem' : ∀ b ∈ (s.erase a).erase (c a), c b ∈ (s.erase a).erase (c a) := by
+        intro b hb
+        have hbs : b ∈ s := hsub b hb
+        have hbca : b ≠ c a := Finset.ne_of_mem_erase hb
+        have hba : b ≠ a := Finset.ne_of_mem_erase (Finset.mem_of_mem_erase hb)
+        refine Finset.mem_erase.mpr ⟨?_, Finset.mem_erase.mpr ⟨?_, hmem b hbs⟩⟩
+        · -- `c b ≠ c a`, else `b = a`
+          intro hcb
+          apply hba
+          have hcc := congrArg c hcb
+          rwa [hinv b hbs, hinv a ha] at hcc
+        · -- `c b ≠ a`, else `b = c a`
+          intro hcb
+          apply hbca
+          have hcc := congrArg c hcb
+          rwa [hinv b hbs] at hcc
+      obtain ⟨r, hr, hrp⟩ := ih ((s.erase a).erase (c a)) htss hmem'
+        (fun b hb => hinv b (hsub b hb))
+        (fun b hb => hne b (hsub b hb))
+        (fun b hb => hconj b (hsub b hb))
+        (fun b hb => hfix b (hsub b hb))
+      refine ⟨Complex.normSq (f a) * r,
+        mul_pos ((Complex.normSq_pos).mpr (hne a ha)) hr, ?_⟩
+      rw [← Finset.mul_prod_erase s f ha, ← Finset.mul_prod_erase _ f hcae, hrp,
+        hconj a ha, ← mul_assoc, Complex.mul_conj, Complex.ofReal_mul]
 
-**FALSITY AUDIT — `hδ : δ ≠ 0` IS LOAD-BEARING, and this leaf was FALSE without
-it for about an hour on 2026-07-28** (flt-lean-182, caught by its own author
-while auditing the sub-leaves it had just created). If `E` is TOTALLY COMPLEX
-there is no ring hom `E →+* ℝ` at all, so `hδpos` is VACUOUS and `δ = 0`
-satisfies it; then `N_{E/F} 0 = 0` and `ψ 0 = 0` is not `> 0`. Witness:
-`E = ℚ(i)`, `F = ℚ`, `ψ` the inclusion, `δ = 0`. The consumer always has
-`δ ≠ 0` in hand — it is the first component of the generator of `P'` — so the
-repair costs nothing; the hypothesis was simply dropped when the sub-leaf was
-split off. The lesson is the standing one: a hypothesis quantifying over a
-possibly-EMPTY family constrains nothing, and a leaf whose only positivity input
-has that shape must carry the non-degeneracy separately.
+/-- **THE NORM OF A TOTALLY POSITIVE NONZERO INTEGER IS TOTALLY POSITIVE**
+(PROVEN 2026-07-29, flt-lean-290; **REFUTED AND RESTATED** the same day — see
+below).
 
-**Check that would refute the repaired form**: a `δ ≠ 0`, totally positive over
-`E`, and a real `ψ` of `F` with `ψ (N_{E/F} δ) ≤ 0`. -/
+For a real embedding `ψ` of `F`, `ψ (N_{E/F} δ)` is the product of `δ`'s images
+under the embeddings of `E` into `ℂ` extending `ψ`; the non-real ones occur in
+complex-conjugate pairs, each contributing `|·|² > 0`, and each real one
+contributes a positive number by hypothesis.  Formally: `ℂ` is made an
+`F`-algebra through `ψ`, `Algebra.norm_eq_prod_embeddings` turns the norm into
+`∏ σ : E →ₐ[F] ℂ, σ δ`, complex conjugation acts on that index set as an
+involution (it fixes `algebraMap F ℂ` precisely because `ψ` is REAL), and
+`prod_pos_of_conj_involution_ray_class` above finishes.  At a FIXED point `σ`
+the values `σ y` are all real, so `y ↦ (σ y).re` is a genuine ring
+homomorphism `E →+* ℝ` and `hδpos` applies to it — that is the only place the
+hypothesis is used.
+
+**FALSITY AUDIT (2026-07-29): the form this leaf was cut in, WITHOUT `hδ0`, is
+FALSE, and `hδ0` is the whole repair.**  Take `δ = 0` and any `E` with no real
+embedding at all: `hδpos` then quantifies over an EMPTY type and is vacuously
+true, while the conclusion asserts `0 < ψ 0`.  Concrete witness: `F = ℚ`,
+`E = ℚ(i)`, `δ = 0`, `ψ` the unique embedding `ℚ →+* ℝ`.  `E →+* ℝ` is empty
+because a ring homomorphism out of a field is injective and `x ^ 2 = -1` has no
+real solution — that is
+`isEmpty_ringHom_real_of_sq_eq_neg_one_ray_class` below — and
+`N_{ℚ(i)/ℚ} 0 = 0`, so the conclusion reads `0 < 0`.  The refutation is
+mechanised as `norm_totallyPositive_ray_class_needs_ne_zero` below.
+
+Note the failure is invisible whenever `E` HAS a real embedding, since then
+`hδpos` itself forces `δ ≠ 0`; it is exactly the totally complex case that
+escapes.  **The repair costs the consumer nothing**:
+`exists_relNormDivisorHom_ray_class` destructures `hδ0 : δ ≠ 0` out of its
+generator description one line before it calls this lemma, and already passes
+the same `hδ0` to `norm_ne_zero_ray_class`. -/
 theorem norm_totallyPositive_ray_class
     (F : Type u) [Field F] [NumberField F]
     (E : Type u) [Field E] [NumberField E] [Algebra F E]
     (hfin : Module.Finite F E)
-    (δ : NumberField.RingOfIntegers E) (hδ : δ ≠ 0)
+    (δ : NumberField.RingOfIntegers E) (hδ0 : δ ≠ 0)
     (hδpos : ∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) :
     ∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F
-      (_root_.RingOfIntegers.norm F δ)) :=
-  sorry
+      (_root_.RingOfIntegers.norm F δ)) := by
+  classical
+  intro ψ
+  haveI : FiniteDimensional F E := hfin
+  letI : Algebra F ℂ := (Complex.ofRealHom.comp ψ).toAlgebra
+  have halg : ∀ a : F, algebraMap F ℂ a = ((ψ a : ℝ) : ℂ) := fun _ => rfl
+  have hxne : algebraMap (NumberField.RingOfIntegers E) E δ ≠ 0 := by
+    intro h
+    exact hδ0 ((FaithfulSMul.algebraMap_injective (NumberField.RingOfIntegers E) E)
+      (by simpa using h))
+  have hconjcomm : ∀ a : F, (starRingEnd ℂ) (algebraMap F ℂ a) = algebraMap F ℂ a := by
+    intro a; rw [halg]; exact Complex.conj_ofReal _
+  let conjA : ℂ →ₐ[F] ℂ := ⟨starRingEnd ℂ, hconjcomm⟩
+  let c : (E →ₐ[F] ℂ) → (E →ₐ[F] ℂ) := fun σ => conjA.comp σ
+  have hcapp : ∀ (σ : E →ₐ[F] ℂ) (y : E), c σ y = (starRingEnd ℂ) (σ y) := fun _ _ => rfl
+  have hinv : ∀ σ : E →ₐ[F] ℂ, c (c σ) = σ := by
+    intro σ; ext y; simp [hcapp]
+  have hne : ∀ σ : E →ₐ[F] ℂ, σ (algebraMap (NumberField.RingOfIntegers E) E δ) ≠ 0 := by
+    intro σ h
+    exact hxne (σ.toRingHom.injective (by simpa using h))
+  have hfixpos : ∀ σ : E →ₐ[F] ℂ, c σ = σ →
+      0 < (σ (algebraMap (NumberField.RingOfIntegers E) E δ)).re := by
+    intro σ hσ
+    have hre : ∀ y : E, ((σ y).re : ℂ) = σ y := by
+      intro y
+      refine Complex.conj_eq_iff_re.mp ?_
+      have h := congrArg (fun (τ : E →ₐ[F] ℂ) => τ y) hσ
+      simpa [hcapp] using h
+    have him : ∀ y : E, (σ y).im = 0 := by
+      intro y; rw [← hre y]; simp
+    let ψ' : E →+* ℝ :=
+      { toFun := fun y => (σ y).re
+        map_one' := by simp
+        map_mul' := by intro y z; simp [Complex.mul_re, him]
+        map_zero' := by simp
+        map_add' := by intro y z; simp }
+    exact hδpos ψ'
+  have hprod : algebraMap F ℂ
+      (Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E δ))
+      = ∏ σ : E →ₐ[F] ℂ, σ (algebraMap (NumberField.RingOfIntegers E) E δ) :=
+    Algebra.norm_eq_prod_embeddings (K := F) (L := E) (E := ℂ) _
+  obtain ⟨r, hr, hrp⟩ :=
+    prod_pos_of_conj_involution_ray_class c
+      (fun σ => σ (algebraMap (NumberField.RingOfIntegers E) E δ)) Finset.univ
+      (fun σ _ => Finset.mem_univ _) (fun σ _ => hinv σ) (fun σ _ => hne σ)
+      (fun σ _ => by rw [hcapp]) (fun σ _ h => hfixpos σ h)
+  have hcoe : ((ψ (Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E δ)) : ℝ) : ℂ)
+      = (r : ℂ) := by rw [← halg, hprod, hrp]
+  have hval : ψ (Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E δ)) = r := by
+    exact_mod_cast hcoe
+  have hnorm : algebraMap (NumberField.RingOfIntegers F) F
+      (_root_.RingOfIntegers.norm F δ)
+      = Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E δ) := rfl
+  rw [hnorm, hval]
+  exact hr
 
-/-- **CONGRUENCE DESCENDS ALONG THE NORM** (SORRY LEAF, created 2026-07-28
-(flt-lean-182) as sub-leaf (β-ray) of `exists_relNormDivisorHom_ray_class`
-below).
+/-- **A FIELD CONTAINING A SQUARE ROOT OF `-1` HAS NO REAL EMBEDDING** (PROVEN
+2026-07-29, flt-lean-290).  A ring homomorphism out of a field is injective, so
+it would carry `u ^ 2 = -1` to a real square equal to `-1`.  This is what makes
+the counterexample of `norm_totallyPositive_ray_class_needs_ne_zero` below
+concrete at `E = ℚ(i)`. -/
+theorem isEmpty_ringHom_real_of_sq_eq_neg_one_ray_class
+    (E : Type u) [Field E] (u : E) (hu : u ^ 2 = -1) : IsEmpty (E →+* ℝ) := by
+  refine ⟨fun ψ => ?_⟩
+  have h : (ψ u) ^ 2 = -1 := by rw [← map_pow, hu, map_neg, map_one]
+  nlinarith [sq_nonneg (ψ u)]
+
+/-- **THE `hδ0`-FREE FORM OF `norm_totallyPositive_ray_class` IS FALSE** (PROVEN
+2026-07-29, flt-lean-290): the mechanised refutation referred to in that
+lemma's FALSITY AUDIT.
+
+Over any `E` with no real embedding — equivalently, `E` totally complex, e.g.
+`E = ℚ(i)` over `F = ℚ` by
+`isEmpty_ringHom_real_of_sq_eq_neg_one_ray_class` — the total-positivity
+hypothesis is a quantifier over an EMPTY type, hence vacuous, so it holds of
+`δ = 0`; but `N_{E/F} 0 = 0` and no real embedding of `F` makes `0` positive.
+
+This is stated with `IsEmpty (E →+* ℝ)` and `ψ₀ : F →+* ℝ` as hypotheses rather
+than at a hard-coded pair, so that it refutes the ORIGINAL statement as a
+statement — no construction of `ℚ(i)` as a Lean number field is needed, and the
+witness pair `(ℚ, ℚ(i))` satisfies both hypotheses. -/
+theorem norm_totallyPositive_ray_class_needs_ne_zero
+    (F : Type u) [Field F] [NumberField F]
+    (E : Type u) [Field E] [NumberField E] [Algebra F E]
+    (hfin : Module.Finite F E)
+    (hE : IsEmpty (E →+* ℝ)) (ψ₀ : F →+* ℝ) :
+    ¬ (∀ δ : NumberField.RingOfIntegers E,
+        (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        ∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F
+          (_root_.RingOfIntegers.norm F δ))) := by
+  intro h
+  haveI : FiniteDimensional F E := hfin
+  have hvac : ∀ ψ : E →+* ℝ,
+      0 < ψ (algebraMap (NumberField.RingOfIntegers E) E (0 : NumberField.RingOfIntegers E)) :=
+    fun ψ => (hE.false ψ).elim
+  have hlt := h 0 hvac ψ₀
+  have hz : algebraMap (NumberField.RingOfIntegers F) F
+      (_root_.RingOfIntegers.norm F (0 : NumberField.RingOfIntegers E)) = 0 := by
+    show Algebra.norm F (algebraMap (NumberField.RingOfIntegers E) E
+      (0 : NumberField.RingOfIntegers E)) = 0
+    simp
+  rw [hz, map_zero] at hlt
+  exact lt_irrefl 0 hlt
+
+/-- **CONGRUENCE DESCENDS ALONG THE NORM** (PROVEN 2026-07-29, flt-lean-290;
+created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
+`exists_relNormDivisorHom_ray_class` below).
 
 If `δ ≡ 1 (mod mmE)` and `mmE` is divisible by the EXTENDED ideal `mm 𝓞_E`,
-then `N_{E/F} δ ≡ 1 (mod mm)`: write `N δ = ∏ σ δ` over the embeddings of `E`
-into a normal closure, each `σ δ ≡ 1` modulo the extension of `mm` there, so the
-product is `≡ 1` modulo it, and the congruence descends to `𝓞 F` because
-`mm 𝓞_L ∩ 𝓞_F = mm`.
+then `N_{E/F} δ ≡ 1 (mod mm)`: write `N δ = ∏ σ δ` over the embeddings of `E`,
+each `σ δ ≡ 1` modulo the extension of `mm`, so the product is `≡ 1` modulo it,
+and the congruence descends to `𝓞 F`.
 
 **This hypothesis is `hmmEext`, and it REPLACES the old `hmmEabs`**
 (`span {absNorm mm} ∣ mmE`), which was strong enough for this step but made
-clause (γ) of the consumer FALSE — see the FALSITY AUDIT there.
+clause (γ) of the consumer FALSE — see the FALSITY AUDIT there.  Note the
+DIRECTION: `mm 𝓞_E ∣ mmE` means `mmE ≤ mm 𝓞_E` (`Ideal.dvd_iff_le`), so the
+congruence `δ ≡ 1 (mod mmE)` is the STRONGER one and implies
+`δ ≡ 1 (mod mm 𝓞_E)`, which is what the argument consumes.
+
+**THE ROUTE ACTUALLY TAKEN IS NOT A NORMAL CLOSURE** (correcting this
+docstring's original prose, which named one).  The conjugates are taken in
+`Ω = AlgebraicClosure F` and the descent happens over
+`R = integralClosure (𝓞 F) Ω`, the ring of ALL algebraic integers over `𝓞 F`.
+That is strictly cheaper, and the reason is worth recording because three other
+leaves in this cluster want the same step:
+
+* `Algebra.norm_eq_prod_embeddings` already delivers
+  `algebraMap F Ω (Algebra.norm F δ) = ∏ σ : E →ₐ[F] Ω, σ δ` over an
+  ALGEBRAICALLY CLOSED target, so no finite normal `L` has to be built,
+  no `IsGalois` instance is needed, and the `[L : E]`-th power that
+  `Algebra.norm_norm` would have introduced (and which is NOT invertible for
+  this purpose — `N ^ e ≡ 1` does not give `N ≡ 1`) never appears.
+* The descent `mm R ∩ 𝓞 F = mm` is `Ideal.comap_map_eq_self_of_faithfullyFlat`,
+  and `Module.FaithfullyFlat (𝓞 F) R` is INFERRED: `R` is torsion-free over the
+  Dedekind domain `𝓞 F`, hence flat
+  (`Module.Flat`, from `IsDedekindDomain.flat_iff_torsion_eq_bot`), and flat +
+  integral + domain + faithful gives faithfully flat
+  (`Module.FaithfullyFlat.of_isIntegral_of_isDomain`).  **Flatness here comes
+  from torsion-freeness, which needs no finiteness** — that is exactly why the
+  infinite `R` is admissible and why no normal closure is required.
+
+Each conjugate is handled by `AlgHom.codRestrict`ing `σ ∘ algebraMap (𝓞 E) E`
+to `R` (its values are integral over `𝓞 F` because `𝓞 E` is, by
+`Algebra.IsIntegral.tower_top (R := ℤ)`), which makes it an `𝓞 F`-algebra map,
+so `Ideal.map_map` sends `mm 𝓞_E` into `mm R` and every factor is `≡ 1` there.
+A product of units-mod-`I` is `≡ 1` by passing to `𝓞/I`.
 
 **NON-DEGENERACY, checked 2026-07-28** (the sibling `norm_totallyPositive_ray_class`
 WAS false for want of exactly this kind of check, so it is recorded rather than
 assumed). No `δ ≠ 0` hypothesis is needed here, and the `δ = 0` case is not a
 hole: `0 - 1 = -1 ∈ mmE` forces `mmE = ⊤`, hence `mm 𝓞_E = ⊤` by `hmmEext`,
 hence `mm = ⊤` (a proper `mm` sits inside a maximal ideal, which has a prime of
-`𝓞 E` above it by integrality), and `N 0 - 1 = -1 ∈ ⊤`. -/
+`𝓞 E` above it by integrality), and `N 0 - 1 = -1 ∈ ⊤`.
+-/
 theorem norm_sub_one_mem_ray_class
     (F : Type u) [Field F] [NumberField F]
     (E : Type u) [Field E] [NumberField E] [Algebra F E]
@@ -53236,8 +53452,105 @@ theorem norm_sub_one_mem_ray_class
     (hmmEext : mm.map (algebraMap (NumberField.RingOfIntegers F)
       (NumberField.RingOfIntegers E)) ∣ mmE)
     (δ : NumberField.RingOfIntegers E) (hδ : δ - 1 ∈ mmE) :
-    _root_.RingOfIntegers.norm F δ - 1 ∈ mm :=
-  sorry
+    _root_.RingOfIntegers.norm F δ - 1 ∈ mm := by
+  classical
+  haveI : FiniteDimensional F E := hfin
+  -- (1) the descent `mm R ∩ 𝓞 F = mm`, from faithful flatness of the algebraic integers
+  have hdesc : (mm.map (algebraMap (NumberField.RingOfIntegers F)
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)))).comap
+      (algebraMap (NumberField.RingOfIntegers F)
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))) = mm :=
+    Ideal.comap_map_eq_self_of_faithfullyFlat mm
+  haveI : Algebra.IsIntegral (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E) := Algebra.IsIntegral.tower_top (R := ℤ)
+  -- (2) `δ ≡ 1` modulo the EXTENDED ideal
+  have hδext : δ - 1 ∈ mm.map (algebraMap (NumberField.RingOfIntegers F)
+      (NumberField.RingOfIntegers E)) := (Ideal.dvd_iff_le.mp hmmEext) hδ
+  -- (3) every embedding of `E` carries `𝓞 E` into the algebraic integers
+  have hint : ∀ (σ : E →ₐ[F] AlgebraicClosure F) (y : NumberField.RingOfIntegers E),
+      σ (algebraMap (NumberField.RingOfIntegers E) E y)
+        ∈ integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F) := by
+    intro σ y
+    have h1 : IsIntegral (NumberField.RingOfIntegers F) y :=
+      Algebra.IsIntegral.isIntegral y
+    have h2 : IsIntegral (NumberField.RingOfIntegers F)
+        (algebraMap (NumberField.RingOfIntegers E) E y) :=
+      h1.map (IsScalarTower.toAlgHom (NumberField.RingOfIntegers F)
+        (NumberField.RingOfIntegers E) E)
+    exact h2.map (σ.restrictScalars (NumberField.RingOfIntegers F))
+  let g : (E →ₐ[F] AlgebraicClosure F) →
+      (NumberField.RingOfIntegers E →ₐ[NumberField.RingOfIntegers F]
+        integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :=
+    fun σ => AlgHom.codRestrict
+      ((σ.restrictScalars (NumberField.RingOfIntegers F)).comp
+        (IsScalarTower.toAlgHom (NumberField.RingOfIntegers F)
+          (NumberField.RingOfIntegers E) E))
+      (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) (hint σ)
+  have hgcoe : ∀ (σ : E →ₐ[F] AlgebraicClosure F) (y : NumberField.RingOfIntegers E),
+      ((g σ y : integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :
+        AlgebraicClosure F) = σ (algebraMap (NumberField.RingOfIntegers E) E y) :=
+    fun _ _ => rfl
+  -- (4) each conjugate is `≡ 1` modulo `mm R`
+  have hfac : ∀ σ : E →ₐ[F] AlgebraicClosure F, g σ δ - 1 ∈
+      mm.map (algebraMap (NumberField.RingOfIntegers F)
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))) := by
+    intro σ
+    have hmap : (mm.map (algebraMap (NumberField.RingOfIntegers F)
+        (NumberField.RingOfIntegers E))).map (g σ).toRingHom
+        = mm.map (algebraMap (NumberField.RingOfIntegers F)
+            (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))) := by
+      rw [Ideal.map_map]
+      congr 1
+      exact (g σ).comp_algebraMap
+    have hm := Ideal.mem_map_of_mem (g σ).toRingHom hδext
+    rw [hmap] at hm
+    simpa using hm
+  -- (5) the product formula, transported into `R`
+  have hnormprod : algebraMap (NumberField.RingOfIntegers F)
+      (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))
+      (_root_.RingOfIntegers.norm F δ) = ∏ σ : E →ₐ[F] AlgebraicClosure F, g σ δ := by
+    apply Subtype.ext
+    have hcp : ((∏ σ : E →ₐ[F] AlgebraicClosure F, g σ δ :
+          integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :
+          AlgebraicClosure F)
+        = ∏ σ : E →ₐ[F] AlgebraicClosure F,
+            ((g σ δ : integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :
+              AlgebraicClosure F) :=
+      map_prod (Subalgebra.val
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))) _ _
+    rw [hcp]
+    have hL : ((algebraMap (NumberField.RingOfIntegers F)
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))
+        (_root_.RingOfIntegers.norm F δ) :
+          integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :
+          AlgebraicClosure F)
+        = algebraMap F (AlgebraicClosure F) (Algebra.norm F
+            (algebraMap (NumberField.RingOfIntegers E) E δ)) := by
+      have h1 : ((algebraMap (NumberField.RingOfIntegers F)
+            (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))
+            (_root_.RingOfIntegers.norm F δ) :
+            integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F)) :
+            AlgebraicClosure F)
+          = algebraMap (NumberField.RingOfIntegers F) (AlgebraicClosure F)
+              (_root_.RingOfIntegers.norm F δ) :=
+        (Subalgebra.val (integralClosure (NumberField.RingOfIntegers F)
+          (AlgebraicClosure F))).commutes (_root_.RingOfIntegers.norm F δ)
+      rw [h1, IsScalarTower.algebraMap_apply (NumberField.RingOfIntegers F) F
+        (AlgebraicClosure F)]
+      rfl
+    rw [hL, Algebra.norm_eq_prod_embeddings (K := F) (L := E) (E := AlgebraicClosure F)]
+    exact Finset.prod_congr rfl fun σ _ => (hgcoe σ δ).symm
+  -- (6) a product of things `≡ 1` is `≡ 1`, read off in `R / mm R`
+  have hprodone : (∏ σ : E →ₐ[F] AlgebraicClosure F, g σ δ) - 1 ∈
+      mm.map (algebraMap (NumberField.RingOfIntegers F)
+        (integralClosure (NumberField.RingOfIntegers F) (AlgebraicClosure F))) := by
+    refine Ideal.Quotient.eq.mp ?_
+    rw [map_prod, map_one]
+    refine Finset.prod_eq_one fun σ _ => ?_
+    exact Ideal.Quotient.eq.mpr (by simpa using hfac σ)
+  -- (7) descend
+  rw [← hdesc, Ideal.mem_comap, map_sub, map_one, hnormprod]
+  exact hprodone
 
 /-- **THE NORM OF A NONZERO INTEGER IS NONZERO** (PROVEN 2026-07-28,
 flt-lean-182), over `Algebra.norm_ne_zero_iff` and injectivity of
@@ -53629,6 +53942,8 @@ theorem exists_relNormDivisorHom_ray_class
     rw [hP]
     refine Subgroup.subset_closure ⟨_root_.RingOfIntegers.norm F δ,
       norm_ne_zero_ray_class F E hfin δ hδ0,
+      -- `hδ0` is the hypothesis added when `norm_totallyPositive_ray_class` was
+      -- refuted-and-restated on 2026-07-29; it was already in hand here.
       norm_totallyPositive_ray_class F E hfin δ hδ0 hδpos,
       norm_sub_one_mem_ray_class F E hfin mm mmE hmmEext δ hδcong, ?_⟩
     exact relNormDivisorHom_apply_divisorMap_ray_class F E hfin d d' hd hd' 𝔑 hbasis δ hδ0
