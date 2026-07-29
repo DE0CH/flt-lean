@@ -26640,14 +26640,20 @@ is analysis-on-the-period any more:
   (Deligne: Eichler–Shimura plus Weil);
 * `norm_coeff_le_sqrt_of_dvd` — `|a_p| ≤ √p` for `p ∣ M`
   (Atkin–Lehner's `U_p`, plus Deligne);
-* `isFrickeEigenform_of_isNewEigenformAt` — a newform is a
-  `W_M`-eigenvector (old/new theory and multiplicity one);
+* `exists_smul_of_frickeInvolution_of_isNewEigenformAt` — the Fricke
+  partner of a newform is a scalar multiple of it (old/new theory and
+  multiplicity one).  This replaced `isFrickeEigenform_of_isNewEigenformAt`
+  in the leaf set on 2026-07-28: that declaration is now PROVEN over this
+  one, the `ε = ±1` half having been earned from the involution on the
+  axis rather than assumed;
 * `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
   divisor of a Kenku level (the analytic-rank-`0` statement, and the one
   that PARI's `mfatkineigenvalues` checks directly);
-* `integral_Ioi_one_axisRestrict_ne_zero` — the `L`-value numerics, now a
-  lower bound on an ABSOLUTELY convergent tail integral rather than on a
-  conditionally convergent one.
+* `tsum_coeff_expDecay_ne_zero` — the `L`-value numerics, now a lower
+  bound on an ABSOLUTELY and GEOMETRICALLY convergent explicit sum.  This
+  replaced `integral_Ioi_one_axisRestrict_ne_zero` in the leaf set on
+  2026-07-28: that declaration is now PROVEN over this one, through the
+  termwise integration `integral_Ioi_one_axisRestrict_eq_tsum`.
 
 The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
 is the whole reason the Fricke hypothesis is worth having — is PROVEN
@@ -27406,48 +27412,203 @@ theorem frickeSign_eq_neg_one_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLev
     ε = -1 :=
   sorry
 
-/-- **THE `L`-VALUE NUMERICS: the tail integral does not vanish** (sorry
-leaf) — all that is left of the arithmetic gate once the root number is
-split off, and the ONLY remaining statement in this cluster that is a
-numerical inequality.
+open MeasureTheory Set Filter Asymptotics in
+/-- **THE TAIL INTEGRAL *IS* THE EXPLICIT `q`-SERIES** (PROVEN
+2026-07-28) — the termwise integration that
+`integral_Ioi_one_axisRestrict_ne_zero` below used to record as "not
+performed here … a free-standing analytic step":
+
+> `∫₁^∞ axisRestrict M g = ∑_{n ≥ 1} bₙ e^{-2πn/√M} / (2πn/√M)`.
+
+Nothing modular is used beyond two facts `WeightTwoEigenform.lean` already
+proves: `hasSum_axisRestrict` (on the rescaled axis the `q`-expansion is a
+convergent sum of real exponentials) and `isBigO_atTop_coeff` (Hecke's
+`|aₙ| = O(n)`).  The interchange is mathlib's
+`integral_tsum_of_summable_integral_norm`, whose two obligations are
+integrability of each term on `[1, ∞)` (`exp_neg_integrableOn_Ioi`) and
+summability of
+
+> `∫₁^∞ ‖bₙ e^{-2πny/√M}‖ dy = ‖bₙ‖ e^{-2πn/√M}/(2πn/√M)`,
+
+which the `O(n)` bound turns into a constant times `∑ (e^{-2π/√M})^{n}`.
+**Deligne's `|aₙ| ≤ d(n)√n` is NOT needed** — the docstring below used to
+name it as what bounds the tail, and Hecke's bound is already enough.
+
+**WHY `[1, ∞)` AND NOT `(0, ∞)`.**  Over `(0, ∞)` the same interchange
+fails: `∫₀^∞ ‖bₙ e^{-2πny/√M}‖ dy = ‖bₙ‖/(2πn/√M)` and `∑ ‖bₙ‖/n` need not
+converge for a weight-two form — which is the analytic content of the
+statement that `cuspPeriod`'s defining integral is only conditionally
+convergent at `0`.  So this lemma is available only AFTER the Fricke fold
+(`integral_Ioi_zero_eq_of_fricke`) has moved the problem onto `[1, ∞)`,
+and that is exactly what the cut recorded on
+`cuspPeriod_ne_zero_of_isFrickeEigenform` bought. -/
+theorem integral_Ioi_one_axisRestrict_eq_tsum {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y
+      = ∑' n : ℕ, b (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1))) /
+            (2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)) : ℝ) : ℂ) := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  set c : ℝ := 2 * Real.pi / Real.sqrt M with hcdef
+  have hc : (0 : ℝ) < c := by rw [hcdef]; positivity
+  have hd : ∀ n : ℕ, (0 : ℝ) < c * ((n : ℝ) + 1) := fun n => by positivity
+  set F : ℕ → ℝ → ℂ := fun n y =>
+    b (n + 1) * ((Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ) with hFdef
+  have hRint : ∀ n : ℕ, (∫ y in Ioi (1 : ℝ), Real.exp (-(c * ((n : ℝ) + 1)) * y))
+      = Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)) := by
+    intro n
+    have h := integral_comp_mul_left_Ioi (fun x : ℝ => Real.exp (-x)) 1 (hd n)
+    simp only [mul_one, smul_eq_mul] at h
+    have he : (fun y : ℝ => Real.exp (-(c * ((n : ℝ) + 1)) * y))
+        = fun y : ℝ => (fun x : ℝ => Real.exp (-x)) ((c * ((n : ℝ) + 1)) * y) := by
+      funext y; simp [neg_mul]
+    rw [he, h, integral_exp_neg_Ioi, div_eq_inv_mul]
+  have hFint : ∀ n, IntegrableOn (F n) (Ioi (1 : ℝ)) := by
+    intro n
+    exact ((exp_neg_integrableOn_Ioi 1 (hd n)).ofReal).const_mul _
+  have hFval : ∀ n : ℕ, (∫ y in Ioi (1 : ℝ), F n y)
+      = b (n + 1) *
+        ((Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)) : ℝ) : ℂ) := by
+    intro n
+    simp only [hFdef]
+    rw [integral_const_mul, integral_complex_ofReal, hRint n]
+  have hNval : ∀ n : ℕ, (∫ y in Ioi (1 : ℝ), ‖F n y‖)
+      = ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))) := by
+    intro n
+    have hpt : ∀ y : ℝ, ‖F n y‖
+        = ‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1)) * y) := by
+      intro y
+      simp only [hFdef]
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+        abs_of_pos (Real.exp_pos (-(c * ((n : ℝ) + 1)) * y))]
+    simp only [hpt]
+    rw [integral_const_mul, hRint n]
+  have hbound : Summable fun n : ℕ =>
+      ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))) := by
+    obtain ⟨C, hC⟩ := (isBigO_atTop_coeff hM hb).isBigOWith
+    have hshift : ∀ᶠ n : ℕ in atTop,
+        ‖b (n + 1)‖ ≤ C * ‖((n : ℝ) + 1) ^ (2 - 1 : ℝ)‖ := by
+      filter_upwards [(tendsto_add_atTop_nat 1).eventually hC.bound] with n hn
+      simpa using hn
+    have hr0 : (0 : ℝ) < Real.exp (-c) := Real.exp_pos _
+    have hr1 : Real.exp (-c) < 1 := by
+      rw [Real.exp_lt_one_iff]; linarith
+    have hgeo : Summable fun n : ℕ => (C / c) * Real.exp (-c) ^ (n + 1) := by
+      have : Summable fun n : ℕ => Real.exp (-c) ^ (n + 1) := by
+        simpa [pow_succ] using
+          (summable_geometric_of_lt_one hr0.le hr1).mul_right (Real.exp (-c))
+      exact this.mul_left _
+    refine hgeo.of_norm_bounded_eventually_nat ?_
+    filter_upwards [hshift] with n hn
+    have hexp : Real.exp (-(c * ((n : ℝ) + 1))) = Real.exp (-c) ^ (n + 1) := by
+      rw [← Real.exp_nat_mul]
+      congr 1
+      push_cast
+      ring
+    have hn' : ‖b (n + 1)‖ ≤ C * ((n : ℝ) + 1) := by
+      have hone : ((n : ℝ) + 1) ^ (2 - 1 : ℝ) = (n : ℝ) + 1 := by
+        rw [show (2 - 1 : ℝ) = 1 by norm_num, Real.rpow_one]
+      rw [hone] at hn
+      simpa [Real.norm_eq_abs, abs_of_pos (by positivity : (0 : ℝ) < (n : ℝ) + 1)] using hn
+    have hpos : (0 : ℝ) ≤ Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)) := by
+      positivity
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    calc ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)))
+        ≤ (C * ((n : ℝ) + 1)) * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))) :=
+          mul_le_mul_of_nonneg_right hn' hpos
+      _ = (C / c) * Real.exp (-c) ^ (n + 1) := by rw [hexp]; field_simp
+  have hstep : (∑' n : ℕ, ∫ y in Ioi (1 : ℝ), F n y) = ∫ y in Ioi (1 : ℝ), ∑' n : ℕ, F n y :=
+    integral_tsum_of_summable_integral_norm hFint (by simpa only [hNval] using hbound)
+  have hptsum : ∀ y ∈ Ioi (1 : ℝ), axisRestrict M g y = ∑' n : ℕ, F n y := by
+    intro y hy
+    have hy0 : (0 : ℝ) < y := lt_trans one_pos hy
+    have hsum := (hasSum_axisRestrict hM hb hy0).tsum_eq
+    rw [← hsum]
+  rw [setIntegral_congr_fun measurableSet_Ioi hptsum, ← hstep]
+  exact tsum_congr fun n => hFval n
+
+/-- **THE `L`-VALUE NUMERICS, AS AN ABSOLUTELY CONVERGENT EXPLICIT SUM**
+(sorry leaf, new 2026-07-28) — everything that is left of
+`integral_Ioi_one_axisRestrict_ne_zero` once the termwise integration
+above is performed, and the ONLY remaining statement in this cluster that
+is a numerical inequality.
 
 TRUE, by the PARI/GP reconnaissance recorded on
 `cuspPeriod_ne_zero_of_kenkuLevel` below: for each of the fourteen levels,
 EVERY newform of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`,
 newspace) and `|L(f, 1)|` computed at every complex embedding —
 `vanishing = 0` in all fourteen cases, smallest `0.3302`.  Given the sign
-leaf above, `L(f, 1) ≠ 0` and this integral being nonzero are the same
-statement, by `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
+leaf above, `L(f, 1) ≠ 0`, this sum being nonzero, and the integral of
+`integral_Ioi_one_axisRestrict_ne_zero` being nonzero are all the same
+statement, by `integral_Ioi_one_axisRestrict_eq_tsum`,
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
 `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.
 
-**What the cut BOUGHT, and it is why this leaf is strictly better off
-than the node it replaced.**  The integral runs over `[1, ∞)`, not
-`(0, ∞)`.  There `hasSum_axisRestrict` gives
-`axisRestrict M g y = ∑_{n ≥ 1} bₙ e^{-2πny/√M}` with terms decaying
-geometrically, so termwise integration (not performed here — it is a
-free-standing analytic step, and stating the leaf on the integral avoids
-carrying its summability side conditions) turns the goal into
+**WHY THIS IS THE BETTER PLACE TO STAND.**  The sum converges
+ABSOLUTELY and GEOMETRICALLY — that is proven, not asserted: it is the
+`hbound` step of `integral_Ioi_one_axisRestrict_eq_tsum`, over Hecke's
+`|aₙ| = O(n)`.  So a numerical attack has an explicit truncation error
+`∑_{n > K} ‖bₙ‖ e^{-2πn/√M}/(2πn/√M) ≤ (C/(2π/√M)) · r^{K+1}/(1-r)` with
+`r = e^{-2π/√M}`, and needs only finitely many `bₙ`.  No such truncation
+exists for `cuspPeriod`'s defining integral over `(0, ∞)`, which is only
+conditionally convergent at `0`.
 
-> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`,
+**EVERY HYPOTHESIS IS LOAD-BEARING, and `hb` is the one that is easy to
+mistake for bookkeeping.**  Without `hb : IsWeightTwoEigenform M g b` the
+sequence `b` is arbitrary and the statement is FALSE (take `b = 0`); it is
+`hb` that makes `b` the `q`-expansion of a genuine form.  So this cut does
+**not** eliminate `CuspForm` from the statement — a prediction the previous
+docstring of `integral_Ioi_one_axisRestrict_ne_zero` made and that doing
+the cut refuted.  What it eliminates is the integral.  `hFE` is retained
+so that this leaf is exactly as weak as the node it replaces; it is in
+fact derivable here from `hN`, `hMN` and `hnew` through
+`frickeSign_eq_neg_one_of_isNewEigenformAt`, so a prover may ignore it.
 
-an ABSOLUTELY convergent explicit sum whose tail is effectively bounded by
-`|bₙ| ≤ d(n)√n` (Deligne) — i.e. a finite numerical check with an explicit
-truncation error.  The defining integral of `cuspPeriod` admits no such
-truncation, because it is only conditionally convergent at `0`.
-
-**What this leaf still needs**: an explicit certified basis of
-`S₂(Γ₀(M))^{new}` — dimension formulas plus certified `q`-expansions —
-which is what would make the PARI computation replayable inside Lean.
-That is a large missing theory: refute with
+**What this leaf needs** (the real gate on the whole cluster, unchanged):
+an explicit certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus
+certified `q`-expansions — which is what would make the PARI computation
+replayable inside Lean.  Refute with
 `grep -rn "newform\|Newform\|dimension.*cusp\|CuspFormBasis" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`.  It is the real gate on the whole
-cluster.
+.lake/packages/mathlib/ ~/cs/FLT/`.
 
 The *axis not searched*: `fin_cases hN`, mechanically available and not a
-decomposition (it multiplies the frontier by fourteen and moves no
-theory); and the termwise integration above, which IS a decomposition and
-is the natural next cut — it would remove `CuspForm` from the statement
-entirely, leaving a leaf about the coefficient sequence alone.
+decomposition — it multiplies the frontier by fourteen and moves no
+theory. -/
+theorem tsum_coeff_expDecay_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    ∑' n : ℕ, b (n + 1) *
+        ((Real.exp (-(2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1))) /
+          (2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)) : ℝ) : ℂ) ≠ 0 :=
+  sorry
+
+/-- **THE `L`-VALUE NUMERICS: the tail integral does not vanish**
+(**PROVEN 2026-07-28** over the two declarations above; it was a sorry
+leaf until then) — all that is left of the arithmetic gate once the root
+number is split off.
+
+**DECOMPOSED 2026-07-28 ALONG THE TERMWISE INTEGRATION**, which this
+docstring itself named as "the natural next cut" while recording the
+integration as "not performed here — a free-standing analytic step".  It
+is performed now (`integral_Ioi_one_axisRestrict_eq_tsum`, PROVEN), and
+this declaration is a two-line assembly over the single remaining leaf
+`tsum_coeff_expDecay_ne_zero`.  **Two predictions of the old text were
+refuted by doing it**, and both are corrected above rather than left to
+mislead:
+
+* the "summability side conditions" that stating the leaf on the integral
+  was supposed to avoid cost nothing, and **Deligne's `|aₙ| ≤ d(n)√n` is
+  not needed** — Hecke's `|aₙ| = O(n)` (`isBigO_atTop_coeff`, already
+  PROVEN upstream) dominates the family by a geometric series;
+* the cut does **not** "remove `CuspForm` from the statement entirely,
+  leaving a leaf about the coefficient sequence alone".  Dropping
+  `hb : IsWeightTwoEigenform M g b` makes the sum-leaf FALSE for arbitrary
+  `b` (take `b = 0`), so `g` and `hb` stay.  What the cut removes is the
+  integral, and with it the only conditionally-convergent object in the
+  cluster.
 
 `hFE` is stated with the sign already resolved to `-1` (`F(1/y) = y² F(y)`)
 because that is what the consumer has after the sign leaf; carrying `ε`
@@ -27457,8 +27618,9 @@ theorem integral_Ioi_one_axisRestrict_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
     (hFE : ∀ y : ℝ, 0 < y →
       axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
-    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y ≠ 0 :=
-  sorry
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y ≠ 0 := by
+  rw [integral_Ioi_one_axisRestrict_eq_tsum hM hb]
+  exact tsum_coeff_expDecay_ne_zero N hN M hMN hM g b hb hnew hFE
 
 /-- **The period of a FRICKE eigenform is nonzero at every divisor of a
 Kenku level** (PROVEN 2026-07-28, from the two leaves above).
@@ -27503,26 +27665,90 @@ theorem cuspPeriod_ne_zero_of_isFrickeEigenform (N : ℕ) (hN : N ∈ kenkuLevel
   refine mul_ne_zero (Complex.ofReal_ne_zero.mpr (inv_ne_zero hsq.ne')) ?_
   exact mul_ne_zero (by norm_num) htail
 
-/-- **A NEWFORM IS A FRICKE EIGENVECTOR** (sorry leaf) — the modular
-half of the cut, and the only place old/new theory is still needed.
+/-- **MULTIPLICITY ONE: THE FRICKE PARTNER OF A NEWFORM IS A SCALAR
+MULTIPLE OF IT** (sorry leaf, new 2026-07-28) — the modular half of the
+Fricke cut, and the only place old/new theory is still needed.
 
 TRUE, and classical (Atkin–Lehner 1970; Diamond–Shurman §5.6–5.8).
-`W_M` is an involution of `S₂(Γ₀(M))` commuting with `T_n` for
-`(n, M) = 1`, so it preserves each newform eigenspace; multiplicity one
-says that eigenspace is a line; hence `g ∣ W_M = ε g` with `ε² = 1`, i.e.
-`ε = ±1`.
+`W_M` normalises `Γ₀(M)` and commutes with `T_n` for `(n, M) = 1`, so it
+preserves each newform eigenspace of the anemic Hecke algebra;
+multiplicity one says that eigenspace is a LINE; hence `g ∣ W_M = c g`.
 
-LEVEL-FREE: `kenkuLevels` does not appear, and the statement says nothing
-about the value of `ε` — that is
-`frickeSign_eq_neg_one_of_isNewEigenformAt`, which is where the
-arithmetic lives.
+**WHY `w` IS TAKEN AS A HYPOTHESIS RATHER THAN AS `frickeSlash M hM g`.**
+`hw` is exactly the conclusion of `exists_frickeInvolution`, whose witness
+is `frickeSlash M hM g` but which does not expose it.  Taking `w` with
+`hw` costs nothing in strength: `hw` determines `axisRestrict M w y` for
+every `y > 0` from `axisRestrict M g (1/y)`, so any two Fricke partners
+have the same axis restriction and the statement is equivalent to one
+about `g` alone.  It also keeps this cut inside `X0.lean`, with no edit to
+`WeightTwoEigenform.lean` — which two other worktrees are working in.
+
+**WHAT THE SIGN IS *NOT* DOING HERE.**  This leaf claims only
+proportionality; `c = ±1` is **proven**, in the assembly below, from `hw`
+applied twice (at `y` and at `1/y`, where the Jacobians `y²·(1/y)² = 1`
+cancel).  That is the half of "`ε² = 1`" that used to be folded into this
+leaf's prose, and it is the whole content of `W_M` being an involution as
+far as the axis is concerned — no matrix identity `W_M² = -M·I` and no
+slash-action computation is needed.  The VALUE of the sign is a different
+statement again, `frickeSign_eq_neg_one_of_isNewEigenformAt`, which is
+where the arithmetic lives.
+
+LEVEL-FREE: `kenkuLevels` does not appear.
 
 **What this leaf needs**: `W_M` as an operator on `S₂(Γ₀(M))` (which
 `frickeSlash` already supplies — see `exists_frickeInvolution`), the
 commutation with the Hecke operators, and multiplicity one for the
 newspace.  Only the last is genuinely missing; the first is proven in
-`ModularCurve/WeightTwoEigenform.lean` and the second is a computation
-with double cosets.
+`ModularCurve/WeightTwoEigenform.lean`, and the Hecke operator `T_q` on
+`S₂(Γ₀(M))` is available here too — `heckeOp` in
+`Fermat/FLT/Modularity/HeckeOperator.lean`, which this module already
+imports — so the commutation is a computation with double cosets against
+an operator that EXISTS, not against one that has to be built.
+
+`hnew` is load-bearing: for a `p`-stabilization the anemic eigenspace is
+not a line (it contains the whole `g`-old space), so the conclusion fails.
+
+`hM : M ≠ 0` is load-bearing for the same reason as everywhere else in
+this cluster: at `M = 0` there is no Atkin–Lehner theory, `Γ₀(0)` has
+infinite index in `SL(2, ℤ)`, and `axisRestrict 0 g` is identically zero
+(see the VACUITY AUDIT on `IsFrickeEigenform`). -/
+theorem exists_smul_of_frickeInvolution_of_isNewEigenformAt (M : ℕ) (hM : M ≠ 0)
+    (g w : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (hw : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M w y) :
+    ∃ c : ℂ, ∀ y : ℝ, 0 < y → axisRestrict M w y = c * axisRestrict M g y :=
+  sorry
+
+/-- **A NEWFORM IS A FRICKE EIGENVECTOR** (**PROVEN 2026-07-28** over
+`exists_smul_of_frickeInvolution_of_isNewEigenformAt` above; it was a
+sorry leaf until then).
+
+The assembly, and it is where "`ε = ±1`" is actually earned.  Write
+`A := axisRestrict M g`.  `exists_frickeInvolution` gives a partner `w`
+with `A(1/y) = -y² · axisRestrict M w y`; the leaf above gives
+`axisRestrict M w = c · A` on `(0, ∞)`; so
+
+> `A(1/y) = -c y² A(y)` for every `y > 0`.
+
+Apply that at `y₀` and again at `1/y₀`: the two Jacobians multiply to
+`(1/y₀)² · y₀² = 1`, so `A(y₀) = c² A(y₀)`.  Either `A` vanishes
+identically on `(0, ∞)` — in which case the functional equation holds with
+`ε := 1` and there is nothing to prove — or some `A(y₀) ≠ 0` and `c² = 1`,
+i.e. `c = ±1` by `mul_self_eq_one_iff`.
+
+**The case split is not a dodge and the vacuous branch is not vacuous
+mathematics.**  `IsFrickeEigenform` asks for SOME `ε ∈ {±1}` making the
+relation hold; when `axisRestrict M g ≡ 0` on `(0, ∞)` every `ε` does, so
+the branch is discharged honestly rather than by excluding `g = 0` with a
+hypothesis this leaf's consumers would then have to supply.  (`b 1 = 1`
+does force `g ≠ 0`, but only through the identity theorem for the
+`q`-expansion, which is a strictly larger obligation than the branch.)
+
+LEVEL-FREE: `kenkuLevels` does not appear, and the statement says nothing
+about the VALUE of `ε` — that is
+`frickeSign_eq_neg_one_of_isNewEigenformAt`, which is where the
+arithmetic lives.
 
 `hM : M ≠ 0` is load-bearing for the same reason as everywhere else in
 this cluster: at `M = 0` there is no Atkin–Lehner theory, `Γ₀(0)` has
@@ -27531,8 +27757,41 @@ infinite index in `SL(2, ℤ)`, and `axisRestrict 0 g` is identically zero
 theorem isFrickeEigenform_of_isNewEigenformAt (M : ℕ) (hM : M ≠ 0)
     (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) (hb : IsWeightTwoEigenform M g b)
     (hnew : IsNewEigenformAt M b) :
-    IsFrickeEigenform M b :=
-  sorry
+    IsFrickeEigenform M b := by
+  refine ⟨hM, g, hb, ?_⟩
+  obtain ⟨w, hw⟩ := exists_frickeInvolution M hM g
+  obtain ⟨c, hc⟩ := exists_smul_of_frickeInvolution_of_isNewEigenformAt M hM g w b hb hnew hw
+  have key : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -c * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y := by
+    intro y hy
+    rw [hw y hy, hc y hy]; ring
+  by_cases hz : ∀ y : ℝ, 0 < y → axisRestrict M g y = 0
+  · refine ⟨1, Or.inl rfl, fun y hy => ?_⟩
+    rw [hz _ (one_div_pos.mpr hy), hz y hy]
+    ring
+  · push Not at hz
+    obtain ⟨y₀, hy₀, hne⟩ := hz
+    have hy₀' : (0 : ℝ) < 1 / y₀ := one_div_pos.mpr hy₀
+    have h1 := key y₀ hy₀
+    have h2 := key (1 / y₀) hy₀'
+    rw [one_div_one_div] at h2
+    have hrp : ((1 / y₀ : ℝ) ^ (2 : ℝ)) * (y₀ ^ (2 : ℝ)) = 1 := by
+      rw [← Real.mul_rpow (le_of_lt hy₀') (le_of_lt hy₀), one_div, inv_mul_cancel₀ hy₀.ne',
+        Real.one_rpow]
+    have hPQ : ((((1 / y₀ : ℝ) ^ (2 : ℝ)) : ℝ) : ℂ) * (((y₀ ^ (2 : ℝ)) : ℝ) : ℂ) = 1 := by
+      rw [← Complex.ofReal_mul, hrp, Complex.ofReal_one]
+    have h3 : axisRestrict M g y₀ = (c * c) * axisRestrict M g y₀ := by
+      calc axisRestrict M g y₀
+          = -c * ((((1 / y₀ : ℝ) ^ (2 : ℝ)) : ℝ) : ℂ) * axisRestrict M g (1 / y₀) := h2
+        _ = -c * ((((1 / y₀ : ℝ) ^ (2 : ℝ)) : ℝ) : ℂ) *
+              (-c * (((y₀ ^ (2 : ℝ)) : ℝ) : ℂ) * axisRestrict M g y₀) := by rw [h1]
+        _ = (c * c) * (((((1 / y₀ : ℝ) ^ (2 : ℝ)) : ℝ) : ℂ) * (((y₀ ^ (2 : ℝ)) : ℝ) : ℂ)) *
+              axisRestrict M g y₀ := by ring
+        _ = (c * c) * axisRestrict M g y₀ := by rw [hPQ, mul_one]
+    have hzero : (c * c - 1) * axisRestrict M g y₀ = 0 := by linear_combination -h3
+    rcases mul_eq_zero.mp hzero with h | h
+    · exact ⟨c, mul_self_eq_one_iff.mp (by linear_combination h), key⟩
+    · exact absurd h hne
 
 /-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
 nonzero period** (PROVEN 2026-07-28, from the Fricke cut above).  This is
@@ -29211,8 +29470,50 @@ structure IsIsotypicQuotient {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
         (minpoly ℤ (a n)).coeff k •
           ((fun y : RelPoint astr g => RelPoint.post (S n) (S_comp n) y)^[k] x) = 0
 
+/-- **SHIMURA'S ALGEBRAICITY THEOREM: the Hecke eigenvalues of a
+weight-two eigenform of POSITIVE level are algebraic integers** (sorry
+leaf, new 2026-07-28) — split out of
+`exists_isotypicQuotient_of_isWeightTwoEigenform` below, whose output
+structure carries it as the field `IsIsotypicQuotient.integral`.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §3.5 and §7.5; Diamond–Shurman §6.5).  `T_n`
+preserves the integral homology `H₁(X₀(N), ℤ)`, a lattice on which the
+anemic Hecke algebra therefore acts by integer matrices, and `a n` is an
+eigenvalue of one of them — so it is a root of a monic integer
+characteristic polynomial.
+
+**WHY THIS IS WORTH A DECLARATION OF ITS OWN.**  It is the only obligation
+of `IsIsotypicQuotient` that mentions no scheme.  Standing alone it can be
+attacked from either side — the integral-homology argument above, or the
+Hecke recursions plus a bound — without owning any of the `A_g`
+construction; and the geometric leaf
+`exists_isotypicQuotient_of_isIntegral` gets it as a hypothesis.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, with the
+witness already recorded on the parent below: at level `0` the eigenform
+conditions collapse (`hecke` is vacuous because `p ∣ 0` for every `p`,
+`atkin` becomes plain complete multiplicativity), and
+`a (2 ^ k) := π ^ k`, `a n := 0` for `n` not a power of `2`, carried by
+`g τ = ∑_{k ≥ 1} π^k q^{2^k}`, satisfies every field of
+`IsWeightTwoEigenform 0 g a`.  `π` is transcendental, so `IsIntegral ℤ (a 2)`
+fails outright.  This is the same level-`0` pathology that forced `M ≠ 0`
+onto `integrableOn_qSeriesAt` and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`; the check that refutes any
+claim it has gone away is `grep -n "Gamma0 0" Fermat/FLT/ModularCurve/X0.lean`.
+
+**`hf` is load-bearing in both of its `q`-expansion parts** for the reason
+recorded on `IsWeightTwoEigenform` itself: without `qExpansion` *and*
+`qExpansionSummable` the sequence `a` is junk-satisfiable and nothing ties
+it to `f` at all, so no growth or integrality statement about it can hold. -/
+theorem isIntegral_coeff_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) (n : ℕ) :
+    IsIntegral ℤ (a n) :=
+  sorry
+
 /-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
-ISOTYPIC QUOTIENT OF `J₀(N)`** (sorry leaf, new 2026-07-28) — the "BUILD one
+ISOTYPIC QUOTIENT OF `J₀(N)`, GIVEN ALGEBRAICITY OF ITS EIGENVALUES**
+(sorry leaf, new 2026-07-28) — the "BUILD one
 factor" half of the cut of
 `exists_heckeIsotypicDecomposition_of_modularHeckeAction` below.
 
@@ -29267,7 +29568,42 @@ in mathlib at this pin, or in `~/cs/FLT`; no `A_g`; no old/new decomposition
 of `S₂(Γ₀(N))`; and no isogeny theory for abelian SCHEMES here
 (`Modularity/AbelianSchemeIsogeny.lean` gives `[n] : A ⟶ A` and its flatness,
 nothing more).  What this leaf does NOT need, and the parent did, is the
-multiplicity bookkeeping — that is the sibling's, below. -/
+multiplicity bookkeeping — that is the sibling's, below.
+
+**DECOMPOSED 2026-07-28 ALONG `integral`**, which is the one obligation in
+the list of fields above that is not geometry at all.
+`isIntegral_coeff_of_isWeightTwoEigenform` (immediately above) now owns
+Shimura's algebraicity theorem as a free-standing statement about the
+coefficient SEQUENCE, and this leaf receives it as `hint`.  The cut is
+cheap and it is not cosmetic: a prover of the algebraicity half needs no
+scheme, no Jacobian and no `IsModularHeckeAction`, and this half no longer
+has to produce a field about `ℂ`-valued eigenvalues in the middle of
+building an abelian variety.  `hN` remains load-bearing on BOTH halves,
+and for the same level-`0` witness.
+
+`hint` is stated for EVERY `n`, not merely for `n` coprime to `N`,
+because `IsIsotypicQuotient.integral` is: `minpoly ℤ (a n) = 0` for a
+non-integral `a n` would make `isotypic` degenerate to `(0 : ℤ) • x = 0`
+at that `n`, and `isotypic`'s own restriction to `Nat.Coprime n N` is a
+statement about which `T n` are controlled, not about which `a n` are
+algebraic. -/
+theorem exists_isotypicQuotient_of_isIntegral (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeAction N h jac T T_comp)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
+    (hint : ∀ n, IsIntegral ℤ (a n)) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
+/-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
+ISOTYPIC QUOTIENT OF `J₀(N)`** (**PROVEN 2026-07-28** over the two leaves
+above; it was a sorry leaf until then).  See those two docstrings and the
+sections above for the mathematics — this declaration is now the one-line
+assembly that hands Shimura's algebraicity theorem to the geometry. -/
 theorem exists_isotypicQuotient_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -29277,7 +29613,8 @@ theorem exists_isotypicQuotient_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
     (hmod : IsModularHeckeAction N h jac T T_comp)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
     Nonempty (IsIsotypicQuotient ab T N a) :=
-  sorry
+  exists_isotypicQuotient_of_isIntegral N hN h jac T T_comp T_add hmod f a hf
+    (fun n => isIntegral_coeff_of_isWeightTwoEigenform N hN f a hf n)
 
 /-- **THE ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf, new
 2026-07-28) — the "ASSEMBLE the factors" half of the cut of
@@ -32108,11 +32445,16 @@ proven glue is `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`: substituting
 `y ↦ 1/y` on `(0, 1)` folds the period onto `√M · cuspPeriod b =
 (1 - ε) ∫₁^∞ axisRestrict M g`, an ABSOLUTELY convergent tail integral where
 the defining one is only conditionally convergent.  Three leaves replace it,
-and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
-(a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
+and they are three different theories:
+`exists_smul_of_frickeInvolution_of_isNewEigenformAt` (multiplicity one: the
+Fricke partner of a newform is a scalar multiple of it),
+`frickeSign_eq_neg_one_of_isNewEigenformAt`
 (its sign is `-1`, which the identity shows IS the analytic-rank-`0`
 statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
-Kenku level), and `integral_Ioi_one_axisRestrict_ne_zero` (the numerics).
+Kenku level), and `tsum_coeff_expDecay_ne_zero` (the numerics, now an
+absolutely and geometrically convergent explicit sum).  The two nodes those
+first and third leaves were cut out of — `isFrickeEigenform_of_isNewEigenformAt`
+and `integral_Ioi_one_axisRestrict_ne_zero` — are PROVEN since 2026-07-28.
 The sign leaf was verified independently and DIRECTLY with PARI/GP's
 `mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
 fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
@@ -32155,9 +32497,9 @@ docstring).
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_cubeModel_of_abelianScheme` | symmetric very ample bundle + theorem of the cube | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
+| `exists_smul_of_frickeInvolution_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
-| `integral_Ioi_one_axisRestrict_ne_zero` | `L`-value numerics | **yes** |
+| `tsum_coeff_expDecay_ne_zero` | `L`-value numerics | **yes** |
 | `exists_segreCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
 | `nonempty_integralCoordinates_of_segreCoordinates` (in `SegreHeight.lean`) | the height machine over mathlib's `Height` | no |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
