@@ -7828,13 +7828,67 @@ are inequivalent, `hm` and `hm'` both compute the composite and they agree.
 
 **What has to be supplied is DENSITY of that locus**, and that is a statement about the
 topology of `proj E ×_ℚ proj E`: the diagonal is a proper closed subset (closed because
-`proj E` is separated over `Spec ℚ`; proper because the square is two-dimensional), so its
-complement is dense provided the square is IRREDUCIBLE.  Irreducibility of the square is
-the piece this file does not yet have: `geometricallyConnected_projToSpec` and
-`geometricallyReduced_projToSpec` are both available and give integrality of each FACTOR,
-and what is needed is that a product of two geometrically integral `ℚ`-schemes is
-integral.  `IsReduced (proj E ×_ℚ proj E)` is already derived in `exists_projMulOfCoords`
-above and can be reused verbatim; only irreducibility is open.
+`proj E` is separated over `Spec ℚ`), so its complement is dense provided the square is
+IRREDUCIBLE.
+
+## IRREDUCIBILITY OF THE SQUARE IS *NOT* MISSING — it is about twenty lines
+
+An earlier version of this docstring (written the same day, and this correction is the
+whole reason it is being rewritten rather than quietly amended) said irreducibility of
+`proj E ×_ℚ proj E` "is the piece this file does not yet have", and guessed that it would
+need a product theorem for geometrically integral schemes to be developed.  **That is
+wrong, and it would have sent a prover at a theory build that does not exist.**  The pin
+already has the product theorem, as an INSTANCE, and every input to it is already proven
+here.  The following three steps were written out and verified by the compiler (green, no
+`sorry`) against the built olean of this module before this note was written:
+
+1. `IrreducibleSpace (proj W)` for `W` a Weierstrass curve over ANY field — the exact
+   mirror of `preconnectedSpace_proj` above, which already goes through
+   `irreducibleSpace_projectiveSpectrum`; it merely stops one weakening earlier.
+   `haveI := isDomain_projCoordinateRing W`, then `show IrreducibleSpace
+   (ProjectiveSpectrum (projGrading W))`, then `irreducibleSpace_projectiveSpectrum
+   (projGrading W) (pointAtInfinity W)`.  No ellipticity is used, exactly as for
+   `prime_projPolynomial`.
+2. `GeometricallyIrreducible (projToSpec E)` — the exact mirror of
+   `geometricallyConnected_projToSpec` above, line for line: `constructor`,
+   `rw [geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms]`, `intro K _ _`,
+   `nonempty_projPullbackIso E K`, step 1 at `E.baseChange K`, and
+   `ObjectProperty.prop_of_iso`.
+3. `IrreducibleSpace ↥(pullback (projToSpec E) (projToSpec E))` — then `infer_instance`,
+   over mathlib's `instance [GeometricallyIrreducible f] [UniversallyOpen f]
+   [IrreducibleSpace Y] : IrreducibleSpace ↥(pullback f g)`
+   (`Mathlib/AlgebraicGeometry/Geometrically/Irreducible.lean`).  `IrreducibleSpace
+   (proj E)` comes from `GeometricallyIrreducible.irreducibleSpace_of_subsingleton`
+   (`Spec ℚ` is a one-point space), and `UniversallyOpen (projToSpec E)` is found by
+   instance search from `Smooth (projToSpec E)` — it does not even have to be stated.
+
+**The one thing this costs is an IMPORT**: `Mathlib.AlgebraicGeometry.Geometrically.Irreducible`
+is not currently in this file's cone (only `Geometrically.Connected` and
+`Geometrically.Reduced` are).  It is deliberately NOT added by this commit, because
+nothing here consumes it yet and an unused import is not free; whoever proves this leaf
+adds it.  `Geometrically/Integral.lean` carries the same instances one level up
+(`IsIntegral (pullback f g)` from `GeometricallyIntegral` + `Flat` + `UniversallyOpen`),
+if integrality rather than irreducibility turns out to be the more convenient input.
+
+## SO WHAT IS ACTUALLY LEFT, after the above
+
+Two things, and neither is a theory build:
+
+* **Nonemptiness of the off-diagonal locus.**  Density needs the diagonal's image to be a
+  PROPER closed subset, and properness is the half that irreducibility does not give.  The
+  clean route is contrapositive: if `Δ.base` were surjective then `Δ` — a closed immersion
+  into a reduced scheme, `IsReduced (proj E ×_ℚ proj E)` being already derived in
+  `exists_projMulOfCoords` above and reusable verbatim — would be an isomorphism, whence
+  `pullback.fst = pullback.snd`, whence `a = b` for every pair of points; and two distinct
+  `ℚ̄`-points exist (`projInfty` and any affine point, which the dictionary
+  `ProjCoords.specPointEquiv` supplies from a root of `Y² + a₃Y = a₆` over `ℚ̄`).
+* **The residue-field step.**  At `t` off the diagonal, `ProjCoords.exists_of_specField`
+  (a leaf of this file, line ~1233, someone else's — consuming it here is fine, it only
+  makes this leaf transitively sorried) gives coordinate data `c, d` over `κ(t)`, and
+  `ProjCoords.toHom_eq_of_addXYZ_not_span` says in contrapositive that inequivalent data
+  span the unit ideal — which is exactly the hypothesis `hm` and `hm'` need.  That
+  contrapositive is the same step `specPointEquiv_symm_add_eq_projMulPt` below already
+  performs.
 
 **Refuting check.**  Any proof of this leaf that never uses separatedness of `proj E`, or
 never uses that the off-diagonal locus is dense, is wrong: for a NON-separated target two
