@@ -2289,7 +2289,10 @@ is bare hand-work: `Γ(U, J𝒪_X) = J·Γ(U)` for `U` affine, and gluing is the
 *Step 2 — artinian base.*  If `R` is artinian local, take a composition series
 `R = J_0 ⊋ J_1 ⊋ ⋯ ⊋ J_ℓ = 0` with `J_i = J_{i+1} + R·t_i` and `𝔪t_i ⊆ J_{i+1}`.  Step 1
 telescopes to `length_R A = length_R I_R ≤ ℓ = length_R R`; with `R ↪ A` this forces `A = R`.
-This is the ONLY place `h` is used, and it is used exactly as `Γ(X_{R/𝔪}, ⊤) = R/𝔪`.
+`h` enters the whole route in exactly TWO places, both of them here: as
+`Γ(X_{R/𝔪}, ⊤) = R/𝔪` inside Step 1, and — through
+`surjective_of_isIso_appTop_fiber` feeding `injective_appTop_of_flat_of_surjective` — as the
+injection `R ↪ A` used in Steps 0, 2, 3 and 4.  It appears nowhere else.
 
 *Step 3 — a nonzerodivisor.*  Let `R` be noetherian local and `t ∈ 𝔪` a nonzerodivisor.  Then
 `(t) ≅ R` as an `R`-module, so `I_{(t)} = Γ(X, t𝒪_X) = tA` — this is the one case where the
