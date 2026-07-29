@@ -5391,60 +5391,14 @@ Nothing here changes `exists_taylorWilesPrime` above; it keeps its own
 inline copies of the openness arguments so that the two declarations stay
 independently owned. -/
 
-set_option backward.isDefEq.respectTransparency false in
-/-- **Fixing the `m`-th roots of unity is an open condition** (PROVEN):
-the set of absolute Galois elements of `ℚ` acting trivially on every
-`m`-th root of unity is open, being the fixing subgroup of the FINITE
-extension `ℚ(μ_m)/ℚ`.
-
-This is the second of the two open loci of `exists_taylorWilesPrime`'s
-proof, hoisted so that `isOpen_taylorWilesLocus` below can reuse it.
-The `set_option` is not decoration: without it the
-`IntermediateField.adjoin ℚ {ζ | ζ ^ m = 1}` in the statement of the
-auxiliary `FiniteDimensional` instance elaborates against
-`DivisionRing.toRatAlgebra` rather than `AlgebraicClosure.instAlgebra ℚ`,
-and the two are not defeq at `instances` transparency. -/
-lemma isOpen_setOf_fixes_rootsOfUnity (m : ℕ) (hm : 0 < m) :
-    IsOpen {x : Field.absoluteGaloisGroup ℚ |
-      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} := by
-  classical
-  -- the `m`-th roots of unity are finite …
-  have hSfin : {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}.Finite := by
-    refine Set.Finite.subset
-      (Polynomial.nthRoots m (1 : AlgebraicClosure ℚ)).toFinset.finite_toSet fun ζ hζ => ?_
-    rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_nthRoots hm]
-    exact hζ
-  haveI := hSfin.to_subtype
-  haveI : FiniteDimensional ℚ
-      (IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}) :=
-    IntermediateField.finiteDimensional_adjoin fun x _ =>
-      (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
-  -- … so fixing them pointwise is exactly the fixing subgroup of `ℚ(μ_m)`
-  have hfixset : {x : Field.absoluteGaloisGroup ℚ |
-      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} =
-      ((IntermediateField.adjoin ℚ
-        {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}).fixingSubgroup :
-        Set (Field.absoluteGaloisGroup ℚ)) := by
-    ext x
-    constructor
-    · intro hx
-      have hle : IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1} ≤
-          IntermediateField.fixedField (Subgroup.zpowers x) := by
-        rw [IntermediateField.adjoin_le_iff]
-        intro ζ hζ
-        rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
-        intro f hf
-        have hst : Subgroup.zpowers x ≤
-            MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) ζ :=
-          Subgroup.zpowers_le.mpr (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
-        exact hst hf
-      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
-      exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x (Subgroup.mem_zpowers x)
-    · intro hx ζ hζ
-      exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
-        (IntermediateField.subset_adjoin ℚ _ hζ)
-  rw [hfixset]
-  exact (IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen
+-- `isOpen_setOf_fixes_rootsOfUnity` USED TO BE DECLARED HERE.  It was HOISTED
+-- to `HardlyRamified/Deformation.lean` on 2026-07-29 — same full name (that
+-- module's namespace is `GaloisRepresentation`, of which this file's
+-- `GaloisRepresentation.Modularity` is a sub-namespace, so every unqualified
+-- use below resolves unchanged), same statement, same proof — because the
+-- `G_{ℚ,S}` leaves `exists_openNormal_index_le_res_eq_zero` and
+-- `finite_ker_resSubgroupTwistRestricted1` there need it and this module is
+-- DOWNSTREAM of that one.
 
 /-- **The Taylor–Wiles locus at level `n`** (ADDED 2026-07-28): the set of
 absolute Galois elements of `ℚ` satisfying the two LOCAL Taylor–Wiles
@@ -5639,74 +5593,15 @@ cyclotomic twist, because `k` has characteristic `p`
 `≡ 1 mod p` at such a `g`, maps to `1` in `k`.  The surviving locus is
 then a union of left cosets `x · K`, hence open. -/
 
-/-- **The `k`-valued cyclotomic character is trivial on elements fixing
-`μ_p`** (PROVEN 2026-07-28).  `adZeroCycloChar p k` is mathlib's `p`-adic
-`cyclotomicCharacter` pushed into `k` along `algebraMap ℤ_[p] k`.  If `g`
-fixes every `p`-th root of unity in `ℚᵃˡᵍ` then, by
-`cyclotomicCharacter.spec` at a primitive `p`-th root, its value is
-`≡ 1 mod p` in `ℤ_[p]`; and `k` receives `ℤ_[p]` and is a finite field,
-so `(p : k) = 0` (`natCast_self_eq_zero`) and the residue of that value
-is `1`.
-
-This is what makes the twisted adjoint action `ad⁰ρbar(1)` trivial on
-`ker ρbar ∩ Fix(μ_p)`, hence what makes `isOpen_survivingLocus` below
-work with an OPEN subgroup rather than needing continuity of the twist. -/
-lemma adZeroCycloChar_eq_one_of_fixes_rootsOfUnity.{uK}
-    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {g : Field.absoluteGaloisGroup ℚ}
-    (hg : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 → g ζ = ζ) :
-    adZeroCycloChar p k g = 1 := by
-  classical
-  haveI : NeZero (p ^ 1) := ⟨pow_ne_zero 1 (Fact.out : p.Prime).ne_zero⟩
-  set u : ℤ_[p] := ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) : ℤ_[p]) with hu
-  have hone : u.toZModPow 1 = 1 := by
-    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) (p ^ 1)
-    have hspec := cyclotomicCharacter.spec p g.toRingEquiv ζ hζ.pow_eq_one
-    have hgz : g ζ = ζ := hg ζ (by simpa using hζ.pow_eq_one)
-    have h1lt : 1 < p ^ 1 := by simpa using (Fact.out : p.Prime).one_lt
-    have hz : ζ ^ ((u.toZModPow 1)).val = ζ ^ 1 :=
-      hspec.symm.trans (by rw [pow_one]; exact hgz)
-    have hval : ((u.toZModPow 1)).val = 1 := hζ.pow_inj (ZMod.val_lt _) h1lt hz
-    have h2 := congrArg (fun t : ℕ => (t : ZMod (p ^ 1))) hval
-    simpa [ZMod.natCast_val, ZMod.cast_id] using h2
-  have hdvd : ((p : ℤ_[p]) ^ 1) ∣ u - 1 := by
-    have hker : u - 1 ∈ RingHom.ker (PadicInt.toZModPow 1 : ℤ_[p] →+* ZMod (p ^ 1)) := by
-      rw [RingHom.mem_ker, map_sub, hone, map_one, sub_self]
-    rw [PadicInt.ker_toZModPow, Ideal.mem_span_singleton] at hker
-    exact hker
-  obtain ⟨w, hw⟩ := hdvd
-  have hk : algebraMap ℤ_[p] k u = 1 := by
-    have huw : u = 1 + (p : ℤ_[p]) ^ 1 * w := by rw [← hw]; ring
-    rw [huw, map_add, map_one, map_mul, map_pow, map_natCast,
-      (natCast_self_eq_zero : ((p : ℕ) : k) = 0)]
-    simp
-  refine Units.ext ?_
-  simpa [adZeroCycloChar, hu] using hk
-
-/-- **`ad⁰ρbar(1)` is acted on trivially by `ker ρbar ∩ Fix(μ_p)`**
-(PROVEN 2026-07-28): the twisted adjoint action is
-`σ ↦ χ(σ) · (f ↦ ρbar σ ∘ f ∘ ρbar σ⁻¹)`, so it is the identity as soon as
-both factors are — `ρbar g = 1` (which forces `ρbar g⁻¹ = 1`) and
-`χ(g) = 1` (`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`). -/
-lemma adZeroTwist_rho_apply_eq_self.{uK, uW}
-    (p : ℕ) [Fact p.Prime] {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
-    (ρbar : GaloisRep ℚ k W) {g : Field.absoluteGaloisGroup ℚ}
-    (hg1 : ρbar g = 1) (hgχ : adZeroCycloChar p k g = 1)
-    (m : ↥(adZeroTwist p ρbar)) :
-    (adZeroTwist p ρbar).ρ g m = m := by
-  have hginv : ρbar g⁻¹ = 1 := by
-    have h : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
-    rwa [hg1, mul_one] at h
-  refine AdZero.ext ?_
-  have hval : (adZeroTwist p ρbar).ρ g m
-      = (adZeroCycloChar p k g : k) • ((AdZero.rep ρbar) g m) := rfl
-  have hrep : (AdZero.rep ρbar) g m = AdZero.conjL (ρbar g) (ρbar g⁻¹)
-      (by rw [← map_mul, inv_mul_cancel, map_one]) m := rfl
-  rw [hval, hgχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL, hg1, hginv,
-    one_mul, mul_one]
+-- `adZeroCycloChar_eq_one_of_fixes_rootsOfUnity` and
+-- `adZeroTwist_rho_apply_eq_self` USED TO BE DECLARED HERE.  Both were HOISTED
+-- to `HardlyRamified/Deformation.lean` on 2026-07-29, for the same reason as
+-- `isOpen_setOf_fixes_rootsOfUnity` above and with the same name resolution.
+-- They are statements about `adZeroCycloChar` and `adZeroTwist`, which are
+-- DEFINED there, so that is where they belonged.  Their binder shapes were kept
+-- EXACTLY as they were here (prime explicit, `k`/`W` implicit) so that every
+-- call site in this file — and in the branches concurrently editing it — is
+-- unchanged; that is why `ℓ` alone is made explicit there rather than `ℓ k`.
 
 /-- **The surviving locus is a union of left cosets of the trivialising
 subgroup** (PROVEN 2026-07-28): if `g` acts trivially on `ad⁰ρbar(1)` and

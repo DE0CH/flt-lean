@@ -381,11 +381,11 @@ public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functorial
 -- in their SIGNATURES.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
 -- The degree-`1` inhomogeneous dictionary (`eval₁`, `eval₁_mul`, `cocycles₁`,
--- `exists_cocycleClass_eq`): the two SORRY LEAVES
--- `exists_openNormal_index_le_res_eq_zero` and
--- `finite_ker_resSubgroupTwistRestricted1` below are stated against it and their
--- routes are written in its vocabulary. Imported here (rather than left for
--- their owner to add) because it is SORRY-FREE, its only project import is
+-- `exists_cocycleClass_eq`, the coboundary criterion and the FUNCTORIALITY
+-- block): `exists_openNormal_index_le_res_eq_zero` and
+-- `finite_ker_resSubgroupTwistRestricted1` below — PROVEN 2026-07-29 — are
+-- stated against it and their proofs are written in its vocabulary. Imported
+-- here because it is SORRY-FREE, its only project import is
 -- `ContCohomology/Basic.lean` immediately above, so it adds exactly one module
 -- to the cone and cannot create a cycle. Correcting a three-times-repeated
 -- claim that this material is missing — see item 3 of the COST AUDIT on
@@ -18391,6 +18391,146 @@ noncomputable def adZeroTwist (ρbar : GaloisRep ℚ k V) :
     TopRep k (Field.absoluteGaloisGroup ℚ) :=
   TopRep.of (adZeroTwistRep ℓ ρbar)
 
+/-! #### Where the twisted adjoint action is trivial
+
+The three lemmas below were HOISTED here from `Modularity/Patching.lean` on
+2026-07-29 (same names, same statements up to `ℓ`/`k` now coming from this
+module's `variable` block; `Patching.lean` `public import`s this module and its
+uses are unchanged).  They were written there for the `Γ ℚ`-with-an-
+unramifiedness-condition twin of `finiteDimensional_h1_adZeroTwistRestricted`
+below, but they are statements about `adZeroCycloChar` and `adZeroTwist`, both
+of which are defined HERE — so they belonged here, and the `G_{ℚ,S}` leaves
+below could not reach them where they were.
+
+They are what supplies the ONE genuinely arithmetic ingredient of
+`exists_openNormal_index_le_res_eq_zero` below: an OPEN set of group elements
+acting trivially on `ad⁰(1)`.  Continuity of `ρbar` is free (`GaloisRep` is a
+`ContinuousMonoidHom` into a discrete endomorphism ring), but continuity of the
+mod-`ℓ` cyclotomic character is NOT part of any datum here; it is replaced by
+the observation that `χ` is trivial on the open subgroup fixing `μ_ℓ`, which is
+strictly weaker and entirely sufficient. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Fixing the `m`-th roots of unity is an open condition** (PROVEN;
+hoisted from `Modularity/Patching.lean` 2026-07-29): the set of absolute
+Galois elements of `ℚ` acting trivially on every `m`-th root of unity is
+open, being the fixing subgroup of the FINITE extension `ℚ(μ_m)/ℚ`.
+
+The `set_option` is not decoration: without it the
+`IntermediateField.adjoin ℚ {ζ | ζ ^ m = 1}` in the statement of the auxiliary
+`FiniteDimensional` instance elaborates against `DivisionRing.toRatAlgebra`
+rather than `AlgebraicClosure.instAlgebra ℚ`, and the two are not defeq at
+`instances` transparency. -/
+lemma isOpen_setOf_fixes_rootsOfUnity (m : ℕ) (hm : 0 < m) :
+    IsOpen {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} := by
+  classical
+  -- the `m`-th roots of unity are finite …
+  have hSfin : {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}.Finite := by
+    refine Set.Finite.subset
+      (Polynomial.nthRoots m (1 : AlgebraicClosure ℚ)).toFinset.finite_toSet fun ζ hζ => ?_
+    rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_nthRoots hm]
+    exact hζ
+  haveI := hSfin.to_subtype
+  haveI : FiniteDimensional ℚ
+      (IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}) :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
+  -- … so fixing them pointwise is exactly the fixing subgroup of `ℚ(μ_m)`
+  have hfixset : {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ} =
+      ((IntermediateField.adjoin ℚ
+        {ζ : AlgebraicClosure ℚ | ζ ^ m = 1}).fixingSubgroup :
+        Set (Field.absoluteGaloisGroup ℚ)) := by
+    ext x
+    constructor
+    · intro hx
+      have hle : IntermediateField.adjoin ℚ {ζ : AlgebraicClosure ℚ | ζ ^ m = 1} ≤
+          IntermediateField.fixedField (Subgroup.zpowers x) := by
+        rw [IntermediateField.adjoin_le_iff]
+        intro ζ hζ
+        rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+        intro f hf
+        have hst : Subgroup.zpowers x ≤
+            MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) ζ :=
+          Subgroup.zpowers_le.mpr (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
+        exact hst hf
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
+      exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x (Subgroup.mem_zpowers x)
+    · intro hx ζ hζ
+      exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
+        (IntermediateField.subset_adjoin ℚ _ hζ)
+  rw [hfixset]
+  exact (IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen
+
+variable (ℓ) in
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- **The `k`-valued cyclotomic character is trivial on elements fixing
+`μ_ℓ`** (PROVEN 2026-07-28; hoisted from `Modularity/Patching.lean`
+2026-07-29).  `adZeroCycloChar ℓ k` is mathlib's `ℓ`-adic
+`cyclotomicCharacter` pushed into `k` along `algebraMap ℤ_[ℓ] k`.  If `g`
+fixes every `ℓ`-th root of unity in `ℚᵃˡᵍ` then, by `cyclotomicCharacter.spec`
+at a primitive `ℓ`-th root, its value is `≡ 1 mod ℓ` in `ℤ_[ℓ]`; and `k`
+receives `ℤ_[ℓ]` and is a finite field, so `(ℓ : k) = 0`
+(`natCast_self_eq_zero`) and the residue of that value is `1`.
+
+This is what makes the twisted adjoint action `ad⁰ρbar(1)` trivial on
+`ker ρbar ∩ Fix(μ_ℓ)`, hence what lets the leaves below work with an OPEN set
+rather than needing continuity of the twist. -/
+lemma adZeroCycloChar_eq_one_of_fixes_rootsOfUnity
+    {g : Field.absoluteGaloisGroup ℚ}
+    (hg : ∀ ζ : AlgebraicClosure ℚ, ζ ^ ℓ = 1 → g ζ = ζ) :
+    adZeroCycloChar ℓ k g = 1 := by
+  classical
+  haveI : NeZero (ℓ ^ 1) := ⟨pow_ne_zero 1 (Fact.out : ℓ.Prime).ne_zero⟩
+  set u : ℤ_[ℓ] := ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv) : ℤ_[ℓ]) with hu
+  have hone : u.toZModPow 1 = 1 := by
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) (ℓ ^ 1)
+    have hspec := cyclotomicCharacter.spec ℓ g.toRingEquiv ζ hζ.pow_eq_one
+    have hgz : g ζ = ζ := hg ζ (by simpa using hζ.pow_eq_one)
+    have h1lt : 1 < ℓ ^ 1 := by simpa using (Fact.out : ℓ.Prime).one_lt
+    have hz : ζ ^ ((u.toZModPow 1)).val = ζ ^ 1 :=
+      hspec.symm.trans (by rw [pow_one]; exact hgz)
+    have hval : ((u.toZModPow 1)).val = 1 := hζ.pow_inj (ZMod.val_lt _) h1lt hz
+    have h2 := congrArg (fun t : ℕ => (t : ZMod (ℓ ^ 1))) hval
+    simpa [ZMod.natCast_val, ZMod.cast_id] using h2
+  have hdvd : ((ℓ : ℤ_[ℓ]) ^ 1) ∣ u - 1 := by
+    have hker : u - 1 ∈ RingHom.ker (PadicInt.toZModPow 1 : ℤ_[ℓ] →+* ZMod (ℓ ^ 1)) := by
+      rw [RingHom.mem_ker, map_sub, hone, map_one, sub_self]
+    rw [PadicInt.ker_toZModPow, Ideal.mem_span_singleton] at hker
+    exact hker
+  obtain ⟨w, hw⟩ := hdvd
+  have hk : algebraMap ℤ_[ℓ] k u = 1 := by
+    have huw : u = 1 + (ℓ : ℤ_[ℓ]) ^ 1 * w := by rw [← hw]; ring
+    rw [huw, map_add, map_one, map_mul, map_pow, map_natCast,
+      (natCast_self_eq_zero : ((ℓ : ℕ) : k) = 0)]
+    simp
+  refine Units.ext ?_
+  simpa [adZeroCycloChar, hu] using hk
+
+variable (ℓ) in
+/-- **`ad⁰ρbar(1)` is acted on trivially by `ker ρbar ∩ Fix(μ_ℓ)`** (PROVEN
+2026-07-28; hoisted from `Modularity/Patching.lean` 2026-07-29): the twisted
+adjoint action is `σ ↦ χ(σ) · (f ↦ ρbar σ ∘ f ∘ ρbar σ⁻¹)`, so it is the
+identity as soon as both factors are — `ρbar g = 1` (which forces
+`ρbar g⁻¹ = 1`) and `χ(g) = 1`
+(`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`). -/
+lemma adZeroTwist_rho_apply_eq_self (ρbar : GaloisRep ℚ k V)
+    {g : Field.absoluteGaloisGroup ℚ}
+    (hg1 : ρbar g = 1) (hgχ : adZeroCycloChar ℓ k g = 1)
+    (m : ↥(adZeroTwist ℓ ρbar)) :
+    (adZeroTwist ℓ ρbar).ρ g m = m := by
+  have hginv : ρbar g⁻¹ = 1 := by
+    have h : ρbar g⁻¹ * ρbar g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    rwa [hg1, mul_one] at h
+  refine AdZero.ext ?_
+  have hval : (adZeroTwist ℓ ρbar).ρ g m
+      = (adZeroCycloChar ℓ k g : k) • ((AdZero.rep ρbar) g m) := rfl
+  have hrep : (AdZero.rep ρbar) g m = AdZero.conjL (ρbar g) (ρbar g⁻¹)
+      (by rw [← map_mul, inv_mul_cancel, map_one]) m := rfl
+  rw [hval, hgχ, Units.val_one, one_smul, hrep, AdZero.toEnd_conjL, hg1, hginv,
+    one_mul, mul_one]
+
 variable (ℓ) in
 /-- **`ad⁰(1)` as a `G_{ℚ,S}`-representation** — the exact analogue of
 `adZeroRestricted` above, reusing the same generic `unramTopRep`. -/
@@ -18496,13 +18636,27 @@ separates cleanly into
 * ONE arithmetic statement — `finite_restrictedOpenNormalSubgroups` below,
   **PROVEN** here — that `G_{ℚ,S}` has only finitely many open normal subgroups
   of index at most `n`; and
-* TWO statements of pure continuous group cohomology, valid for ANY `S`, that
-  mention no arithmetic at all: `exists_openNormal_index_le_res_eq_zero` and
-  `finite_ker_resSubgroupTwistRestricted1`.
+* TWO statements of continuous group cohomology, valid for ANY `S`:
+  `exists_openNormal_index_le_res_eq_zero` and
+  `finite_ker_resSubgroupTwistRestricted1`.  **Both PROVEN 2026-07-29**, so this
+  whole subsection is now sorry-free.
 
 That the second pair is generic in `S` is not cosmetic: it means neither of
 them can be discharged by anything about `ρbar`, and it is what makes them
-attackable with the continuous-cochain API alone. -/
+attackable with the continuous-cochain API alone.
+
+**CORRECTION 2026-07-29 — this note used to say the second pair "mentions no
+arithmetic at all", and that was one word too strong.**  The COHOMOLOGY in both
+is arithmetic-free, and `finite_ker_resSubgroupTwistRestricted1` really does use
+nothing but the cochain API.  But `exists_openNormal_index_le_res_eq_zero` needs
+ONE arithmetic fact, and it is invisible in the statement: a
+`ContRepresentation` carries continuity of each `ρ g` and NOTHING about
+continuity in `g`, so "the stabiliser of the module is open" is not available
+for free and has to be exhibited.  It is exhibited by
+`exists_isOpen_adZeroTwistRestricted_rho_eq_self` below, over
+`ker ρbar ∩ Fix(μ_ℓ)`.  So the honest count is TWO arithmetic inputs, not one —
+and the second is genuinely cheap, needing triviality of the cyclotomic
+character on an open set rather than its continuity. -/
 
 /-- The inclusion `N ↪ G_{ℚ,S}` of a subgroup, as a continuous group
 homomorphism — the restriction datum of `resSubgroupTwistRestricted1` below.
@@ -18636,8 +18790,56 @@ theorem finite_restrictedOpenNormalSubgroups (hℓ2 : ℓ ≠ 2) (n : ℕ) :
     exact one_mem N
 
 variable (ℓ) in
+/-- **An OPEN neighbourhood of `1` in `G_{ℚ,S}` acting trivially on
+`ad⁰(1)^{N_S}`** (PROVEN 2026-07-29) — the whole arithmetic content of
+`exists_openNormal_index_le_res_eq_zero` below, isolated.
+
+It is the image in `G_{ℚ,S}` of `ker ρbar ∩ Fix(μ_ℓ) ⊆ Γ ℚ`, which is open
+because `ρbar` is continuous into the DISCRETE `Module.End k V`
+(`discreteTopology_moduleTopology`, `k` being finite and discrete) and because
+`isOpen_setOf_fixes_rootsOfUnity` above is open; the quotient map is open
+(`QuotientGroup.isOpenMap_coe`), and triviality of the action descends because
+`unramRep` is `unramRepAux` — i.e. the restriction of `adZeroTwist.ρ` to the
+`N_S`-invariants — pushed through `QuotientGroup.lift`.
+
+**Why a SET and not a subgroup, and why no index bound.**  Both would be true
+and both would cost extra work (normality of `Fix(μ_ℓ)` in `Γ ℚ`; finiteness of
+`[Γ ℚ : ker ρbar ∩ Fix(μ_ℓ)]`), and NEITHER is used: the consumer's subgroup is
+`{g | g acts trivially ∧ z g = 0}`, whose normality and index bound come from
+the cocycle identities directly, and this set enters only through
+`Subgroup.isOpen_of_mem_nhds` — a subgroup containing a neighbourhood of `1` is
+open.  Cutting at the weakest sufficient statement is what keeps the arithmetic
+here down to two lemmas.
+
+Note in particular that continuity of the mod-`ℓ` cyclotomic character is NOT
+needed and is not proven anywhere in this development; triviality on the open
+`Fix(μ_ℓ)` is strictly weaker and does the same job. -/
+theorem exists_isOpen_adZeroTwistRestricted_rho_eq_self (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    ∃ U : Set (restrictedGaloisGroup S), IsOpen U ∧ (1 : restrictedGaloisGroup S) ∈ U ∧
+      ∀ g ∈ U, ∀ m : ↥(adZeroTwistRestricted ℓ ρbar S),
+        (adZeroTwistRestricted ℓ ρbar S).ρ g m = m := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) := discreteTopology_moduleTopology _ _
+  have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hKopen : IsOpen ({g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} ∩
+      {g : Field.absoluteGaloisGroup ℚ | ∀ ζ : AlgebraicClosure ℚ, ζ ^ ℓ = 1 → g ζ = ζ}) :=
+    ((isOpen_discrete {(1 : Module.End k V)}).preimage hρcont).inter
+      (isOpen_setOf_fixes_rootsOfUnity ℓ (Fact.out : ℓ.Prime).pos)
+  refine ⟨((↑) : Field.absoluteGaloisGroup ℚ → restrictedGaloisGroup S) ''
+      ({g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} ∩
+        {g : Field.absoluteGaloisGroup ℚ | ∀ ζ : AlgebraicClosure ℚ, ζ ^ ℓ = 1 → g ζ = ζ}),
+    QuotientGroup.isOpenMap_coe _ hKopen, ⟨1, ⟨map_one _, fun _ _ => rfl⟩, rfl⟩, ?_⟩
+  rintro g ⟨h, hh, rfl⟩ m
+  refine Subtype.ext ?_
+  exact adZeroTwist_rho_apply_eq_self ℓ ρbar hh.1
+    (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity ℓ hh.2) _
+
+variable (ℓ) in
 /-- **Every class of `H¹(G_{ℚ,S}, ad⁰(1))` is killed by restriction to some
-open normal subgroup of UNIFORMLY bounded index** (SORRY LEAF, cut out
+open normal subgroup of UNIFORMLY bounded index** (PROVEN 2026-07-29; cut out
 2026-07-28 as the first of the two cohomological inputs of
 `finiteDimensional_h1_adZeroTwistRestricted` below).
 
@@ -18652,14 +18854,11 @@ crossed-homomorphism identity `z (g * h) = z g + ρ g (z h)` (`eval₁_mul`).
 Then:
 
 1. `M := ad⁰(1)^{N_S}` is FINITE (`k` is `Finite`, `dim_k ad⁰ = 3`) and carries
-   the discrete topology, so `N₀ :=` the kernel of the action of `G_{ℚ,S}` on
-   `M` is OPEN and normal, of index at most `#(M ≃ M)` — a bound depending only
-   on `M`, hence only on `k` and `V`, and NOT on the class.
-2. On `N₀` the crossed-homomorphism identity degenerates to
-   `z (g * h) = z g + z h`, so `z|_{N₀}` is a continuous homomorphism into the
-   finite discrete `M`; put `N := ker (z|_{N₀})`, which is open of index at most
-   `[G : N₀] · #M`, again a bound independent of the class.  Normality of `N` in
-   the whole of `G_{ℚ,S}` is `eval₁_conj`.
+   the discrete topology.
+2. Put `N := {g | g acts trivially on M ∧ z g = 0}`.  It is a SUBGROUP by the
+   crossed-homomorphism identity, NORMAL by `eval₁_conj`, and of index at most
+   `#(M → M) · #M` — a bound depending only on `M`, hence only on `k` and `V`,
+   and NOT on the class — because `g ↦ (ρ g, z g)` is injective on cosets.
 3. On `N` the homogeneous cocycle `f` is not merely a coboundary but literally
    ZERO: the cocycle relation `(d f) g h l = f h l - f g l + f g h`
    (`homogeneousCochains_d_one_two_apply`) at `g = 1` gives `f h l = z l - z h`,
@@ -18668,16 +18867,24 @@ Then:
 **So the INVERSE dictionary — crossed homomorphism back to homogeneous cocycle —
 is NOT needed for this leaf**, contrary to what the cost audit on
 `finiteDimensional_h1_adZeroTwistRestricted` below used to say.  Step 3 goes in
-the homogeneous model directly.  What IS needed, and is the only genuinely
-missing piece, is the compatibility of `ContinuousCohomology.map` with
-`ContinuousCohomology.cocycleClass` — i.e. that restricting the CLASS of `f` is
-the class of the restricted cochain.  The ingredients are all present
-(`ContinuousCohomology.π_map` in our pin's `ContCohomology/Functoriality.lean`,
-`cocycleClass_apply` and `cohomologyIsoQuot` in the vendored
-`ContCohomology/Basic.lean`); assembling them is homological plumbing with no
-arithmetic in it, and it is SHARED with
-`finite_ker_resSubgroupTwistRestricted1` below.  The two leaves are best given
-to ONE owner, and its natural home is `LowDegreeOne.lean`.
+the homogeneous model directly (concretely: `cocycleClass_eq_zero_of_eval₁_eq_sub`
+at `m = 0`, where the continuity side condition is free).
+
+**CORRECTION 2026-07-29.  This docstring used to end step 3 by saying the only
+genuinely missing piece was "the compatibility of `ContinuousCohomology.map`
+with `ContinuousCohomology.cocycleClass`", to be built in `LowDegreeOne.lean`.
+That was already FALSE when the leaf was cut**: `LowDegreeOne.lean`'s
+`functoriality` section — `cocycleClass_cyclesIsoKer_hom`, `map_cocycleClass`,
+`cocyclesMapKer`, `map_cocycleClass_cocyclesMapKer`, `eval₁_cocyclesMapKer` —
+is exactly that compatibility, is sorry-free, and landed in the same commit that
+added the coboundary criterion this docstring already cited by name.  The
+refuting check is one `grep -n cocyclesMapKer` on that file.
+
+What was ACTUALLY missing was the arithmetic of step 1–2's word "trivially":
+nothing in `ContRepresentation` makes `g ↦ ρ g` continuous, so the trivialising
+set had to be exhibited by hand.  That is
+`exists_isOpen_adZeroTwistRestricted_rho_eq_self` immediately above, and it is
+the only ingredient here that is not pure cochain bookkeeping.
 
 Both-ways audit.  The quantifier ORDER `∃ n, ∀ c` is load-bearing and is the
 entire content: with `∀ c, ∃ n` the statement is trivially true (take `N` the
@@ -18696,12 +18903,137 @@ theorem exists_openNormal_index_le_res_eq_zero (ρbar : GaloisRep ℚ k V)
         N.Normal ∧ IsOpen (N : Set (restrictedGaloisGroup S)) ∧ N.FiniteIndex ∧
           N.index ≤ n ∧
           c ∈ LinearMap.ker
-            (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap := sorry
+            (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap := by
+  classical
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  haveI hfinEnd : Finite (Module.End k V) :=
+    Finite.of_injective (fun f : Module.End k V => (f : V → V)) DFunLike.coe_injective
+  haveI hfinA : Finite ↥(adZeroTwist ℓ ρbar) :=
+    Finite.of_injective (AdZero.toEnd k V) AdZero.toEnd_injective
+  haveI hdiscA : DiscreteTopology ↥(adZeroTwist ℓ ρbar) :=
+    inferInstanceAs (DiscreteTopology (AdZero k V))
+  haveI hfinX : Finite ↥(adZeroTwistRestricted ℓ ρbar S) :=
+    Finite.of_injective
+      (fun m : ↥(unramInvariants (adZeroTwist ℓ ρbar) S) => m.1) Subtype.val_injective
+  haveI hdiscX : DiscreteTopology ↥(adZeroTwistRestricted ℓ ρbar S) :=
+    inferInstanceAs (DiscreteTopology
+      {m : ↥(adZeroTwist ℓ ρbar) // m ∈ unramInvariants (adZeroTwist ℓ ρbar) S})
+  obtain ⟨U, hUopen, hU1, hUtriv⟩ :=
+    exists_isOpen_adZeroTwistRestricted_rho_eq_self ℓ ρbar S
+  set X := adZeroTwistRestricted ℓ ρbar S with hXdef
+  refine ⟨Nat.card (↥X → ↥X) * Nat.card ↥X, ?_⟩
+  intro c
+  obtain ⟨z, hz⟩ := ContinuousCohomology.exists_cocycleClass_eq (X := X) 1 c
+  set e : restrictedGaloisGroup S → ↥X :=
+    fun g => ContinuousCohomology.eval₁ X z.1 g with hedef
+  have hmul : ∀ g h : restrictedGaloisGroup S, e (g * h) = e g + X.ρ g (e h) :=
+    fun g h => ContinuousCohomology.cocycles₁_eval₁_mul z g h
+  have hone : e 1 = 0 :=
+    ContinuousCohomology.eval₁_one (ContinuousCohomology.cocycles₁_d_eq_zero z)
+  have hinvv : ∀ g : restrictedGaloisGroup S, e g⁻¹ = - X.ρ g⁻¹ (e g) :=
+    fun g => ContinuousCohomology.eval₁_inv (ContinuousCohomology.cocycles₁_d_eq_zero z) g
+  -- the subgroup: acts trivially AND kills the cocycle
+  set Nsub : Subgroup (restrictedGaloisGroup S) :=
+    { carrier := {g | (∀ m : ↥X, X.ρ g m = m) ∧ e g = 0}
+      one_mem' := ⟨fun m => by simp, hone⟩
+      mul_mem' := fun {a b} ha hb =>
+        ⟨fun m => by rw [ContinuousCohomology.rho_mul_apply, hb.1, ha.1],
+         by rw [hmul, ha.2, hb.2, map_zero, add_zero]⟩
+      inv_mem' := fun {a} ha =>
+        ⟨fun m => by
+          have h := ContinuousCohomology.rho_inv_apply X a m
+          rwa [ha.1 m] at h,
+         by rw [hinvv, ha.2, map_zero, neg_zero]⟩ } with hNsubdef
+  have hNnorm : Nsub.Normal := by
+    refine ⟨fun x hx g => ?_⟩
+    have hc1 : ∀ m : ↥X, X.ρ (g * x * g⁻¹) m = m := by
+      intro m
+      rw [ContinuousCohomology.rho_mul_apply, ContinuousCohomology.rho_mul_apply, hx.1,
+        ContinuousCohomology.rho_apply_inv]
+    refine ⟨hc1, ?_⟩
+    have hconj := ContinuousCohomology.eval₁_conj
+      (ContinuousCohomology.cocycles₁_d_eq_zero z) g x
+    show e (g * x * g⁻¹) = 0
+    rw [hedef]
+    show ContinuousCohomology.eval₁ X z.1 (g * x * g⁻¹) = 0
+    rw [hconj, show ContinuousCohomology.eval₁ X z.1 x = e x from rfl, hx.2, map_zero,
+      zero_add, hc1 (ContinuousCohomology.eval₁ X z.1 g), sub_self]
+  have hecont : Continuous e := ContinuousCohomology.continuous_eval₁ X z.1
+  -- open, because it contains a neighbourhood of `1`
+  have hNopen : IsOpen (Nsub : Set (restrictedGaloisGroup S)) := by
+    refine Subgroup.isOpen_of_mem_nhds Nsub (g := 1) (mem_nhds_iff.mpr ?_)
+    refine ⟨U ∩ (e ⁻¹' {0}), ?_,
+      hUopen.inter ((isOpen_discrete ({0} : Set ↥X)).preimage hecont), ⟨hU1, hone⟩⟩
+    rintro y ⟨hy1, hy2⟩
+    exact ⟨hUtriv y hy1, hy2⟩
+  -- the index bound, uniform in `c`: `g ↦ (ρ g, z g)` is injective on cosets
+  have hwd : ∀ a b : restrictedGaloisGroup S, a⁻¹ * b ∈ Nsub →
+      ((fun m : ↥X => X.ρ a m), e a) = ((fun m : ↥X => X.ρ b m), e b) := by
+    intro a b hab
+    have hb : b = a * (a⁻¹ * b) := by group
+    have hrho : ∀ m : ↥X, X.ρ b m = X.ρ a m := by
+      intro m
+      have h1 : X.ρ b m = X.ρ (a * (a⁻¹ * b)) m := by rw [← hb]
+      rw [h1, ContinuousCohomology.rho_mul_apply, hab.1]
+    have he : e b = e a := by
+      have h1 : e b = e (a * (a⁻¹ * b)) := by rw [← hb]
+      rw [h1, hmul, hab.2, map_zero, add_zero]
+    exact Prod.ext (funext fun m => (hrho m).symm) he.symm
+  set F : restrictedGaloisGroup S ⧸ Nsub → ((↥X → ↥X) × ↥X) :=
+    Quotient.lift (fun g => ((fun m : ↥X => X.ρ g m), e g))
+      (fun a b hab => hwd a b (QuotientGroup.leftRel_apply.mp hab)) with hFdef
+  have hFinj : Function.Injective F := by
+    refine fun x y => Quotient.inductionOn₂ x y ?_
+    intro a b hEq
+    have h1 : (fun m : ↥X => X.ρ a m) = (fun m : ↥X => X.ρ b m) := congrArg Prod.fst hEq
+    have h2 : e a = e b := congrArg Prod.snd hEq
+    have hab1 : ∀ m : ↥X, X.ρ (a⁻¹ * b) m = m := by
+      intro m
+      rw [ContinuousCohomology.rho_mul_apply, ← congrFun h1 m,
+        ContinuousCohomology.rho_inv_apply]
+    have hab2 : e (a⁻¹ * b) = 0 := by
+      have hb : b = a * (a⁻¹ * b) := by group
+      have h3 : e b = e a + X.ρ a (e (a⁻¹ * b)) := by rw [← hmul, ← hb]
+      rw [h2] at h3
+      have h4 : X.ρ a (e (a⁻¹ * b)) = 0 := by
+        have := h3.symm
+        rwa [add_eq_left] at this
+      have h5 := congrArg (fun t => X.ρ a⁻¹ t) h4
+      simpa [ContinuousCohomology.rho_inv_apply] using h5
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr ⟨hab1, hab2⟩)
+  haveI hfinQ : Finite (restrictedGaloisGroup S ⧸ Nsub) := Finite.of_injective F hFinj
+  have hidx : Nsub.index ≤ Nat.card (↥X → ↥X) * Nat.card ↥X := by
+    have h1 : Nsub.index = Nat.card (restrictedGaloisGroup S ⧸ Nsub) := rfl
+    rw [h1, ← Nat.card_prod]
+    exact Nat.card_le_card_of_injective F hFinj
+  haveI hNFI : Nsub.FiniteIndex := by
+    refine ⟨?_⟩
+    show Nat.card (restrictedGaloisGroup S ⧸ Nsub) ≠ 0
+    exact Nat.card_pos.ne'
+  -- the class dies on `Nsub`, because its cocycle is literally zero there
+  have hkerc : c ∈ LinearMap.ker
+      (resSubgroupTwistRestricted1 ℓ ρbar S Nsub).hom.toLinearMap := by
+    have hzero : ContinuousCohomology.cocycleClass
+        (adZeroTwistRestrictedSubgroup ℓ ρbar S Nsub) 1
+        (ContinuousCohomology.cocyclesMapKer (restrictedSubgroupHom S Nsub)
+          (CategoryTheory.CategoryStruct.id
+            (adZeroTwistRestrictedSubgroup ℓ ρbar S Nsub)) 1 z) = 0 := by
+      refine ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub _ 0
+        (by simpa using continuous_const) ?_
+      intro h
+      rw [ContinuousCohomology.eval₁_cocyclesMapKer, map_zero, sub_zero]
+      exact h.2.2
+    have hmc := ContinuousCohomology.map_cocycleClass_cocyclesMapKer
+      (restrictedSubgroupHom S Nsub)
+      (CategoryTheory.CategoryStruct.id (adZeroTwistRestrictedSubgroup ℓ ρbar S Nsub)) 1 z
+    rw [hzero, hz] at hmc
+    exact hmc
+  exact ⟨Nsub, hNnorm, hNopen, hNFI, hidx, hkerc⟩
 
 variable (ℓ) in
 /-- **Inflation–restriction: the kernel of restriction to an open normal
-subgroup of `G_{ℚ,S}` is finite** (SORRY LEAF, cut out 2026-07-28 as the second
-of the two cohomological inputs of
+subgroup of `G_{ℚ,S}` is finite** (PROVEN 2026-07-29; cut out 2026-07-28 as the
+second of the two cohomological inputs of
 `finiteDimensional_h1_adZeroTwistRestricted` below).
 
 The degree-`1` inflation–restriction sequence
@@ -18711,31 +19043,112 @@ of finite index) and `M^N ⊆ M` is finite, so that group is a subquotient of th
 finite set of functions `G_{ℚ,S} ⧸ N → M` and hence finite.
 
 Only INJECTIVITY of inflation is needed, and it can be had without the exact
-sequence: a class in the kernel has a cocycle representative whose `eval₁`
-vanishes on `N` (this is where `cocycleClass_eq_zero_iff` of the vendored
-`ContCohomology/Basic.lean` is used, transported through `eval₁`), and such a
-cochain is constant on left cosets `gN` by the crossed-homomorphism identity
-`z (g * x) = z g + ρ g (z x) = z g`.  So "kernel → functions `G_{ℚ,S} ⧸ N → M`"
-is well defined and injective modulo the finite coboundary group.
+sequence.  **That is what is done below, and the exact sequence is never
+built.**  The proof exhibits a SURJECTION onto the kernel from the parameter set
 
-Needs the SAME missing plumbing as
-`exists_openNormal_index_le_res_eq_zero` above — the compatibility of
-`ContinuousCohomology.map` with `cocycleClass` — which is why the two are
-companions and are best given to one owner.
+    T = { z ∈ Z¹(G_{ℚ,S}, M) | ∃ m, ∀ x ∈ N, z x = ρ x m − m } ,
 
-Both-ways audit, inherited from the `Γ ℚ` twin
-`Modularity/Patching.lean`'s `finite_ker_resSubgroupTwist1` and re-checked
-here: `hnorm`, `hopen` and `hFI` are all load-bearing.  Dropping `hopen` leaves
-no inflation–restriction sequence in continuous cohomology; dropping `hFI`
-makes the quotient infinite and the kernel infinite-dimensional, which at
-`N = 1` is exactly the `dim_k H¹ = ℵ₀` computation recorded on `Sha1Twist`
-above.  Generic in `S`, hence untouched by anything about ramification. -/
+and shows `T` finite.  Surjectivity is `res_N [z] = 0 ⟹ z|_N` is a coboundary,
+which is the FORWARD half of the coboundary criterion
+(`exists_eval₁_eq_sub_of_cocycleClass_eq_zero`, unconditional) composed with
+functoriality (`map_cocycleClass_cocyclesMapKer`, `eval₁_cocyclesMapKer`);
+finiteness is because such a `z` is determined by `m` together with its values
+on coset representatives — `z (r x) = z r + ρ r (ρ x m − m)` — so `T` injects
+into `M × (G_{ℚ,S} ⧸ N → M)`, and a cocycle is determined by its inhomogeneous
+cochain (`cocycle_apply`).
+
+This is the `G_{ℚ,S}` transcription of `Modularity/Patching.lean`'s PROVEN
+`finite_ker_resSubgroupTwist1`; the two arguments are line-for-line the same,
+which is unsurprising since neither uses anything about the group.
+
+**CORRECTION 2026-07-29.**  This docstring used to say the leaf "needs the SAME
+missing plumbing as `exists_openNormal_index_le_res_eq_zero` above — the
+compatibility of `ContinuousCohomology.map` with `cocycleClass`".  That
+compatibility was NOT missing when the claim was written: it is the
+`functoriality` section of `LowDegreeOne.lean`, sorry-free, which this module
+already `public import`ed.
+
+Both-ways audit, CORRECTED 2026-07-29 by the proof.  `hFI` is load-bearing —
+dropping it makes `G_{ℚ,S} ⧸ N` infinite and the kernel infinite-dimensional,
+which at `N = 1` is exactly the `dim_k H¹ = ℵ₀` computation recorded on
+`Sha1Twist` above.  **`_hnorm` and `_hopen` turn out NOT to be needed**, and the
+earlier claim here that dropping `hopen` makes the statement false was an
+artefact of routing through inflation–restriction: a non-closed `N` of finite
+index indeed has no such sequence, but the direct argument above never uses one
+— it needs `G_{ℚ,S} ⧸ N` finite as a SET and nothing else.  (The identical
+correction was made independently on the `Γ ℚ` twin.)  Both hypotheses are kept
+because the consumer `finiteDimensional_h1_adZeroTwistRestricted` has them in
+hand from `restrictedOpenNormalSubgroups` and removing them would change the
+call site for no gain; they are underscore-prefixed so the redundancy is
+mechanically visible.  Generic in `S`, hence untouched by anything about
+ramification. -/
 theorem finite_ker_resSubgroupTwistRestricted1 (ρbar : GaloisRep ℚ k V)
     (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    (N : Subgroup (restrictedGaloisGroup S)) (hnorm : N.Normal)
-    (hopen : IsOpen (N : Set (restrictedGaloisGroup S))) (hFI : N.FiniteIndex) :
+    (N : Subgroup (restrictedGaloisGroup S)) (_hnorm : N.Normal)
+    (_hopen : IsOpen (N : Set (restrictedGaloisGroup S))) (hFI : N.FiniteIndex) :
     Finite ↥(LinearMap.ker
-      (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap) := sorry
+      (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap) := by
+  classical
+  haveI := hFI
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  haveI hfinEnd : Finite (Module.End k V) :=
+    Finite.of_injective (fun f : Module.End k V => (f : V → V)) DFunLike.coe_injective
+  haveI hfinA : Finite ↥(adZeroTwist ℓ ρbar) :=
+    Finite.of_injective (AdZero.toEnd k V) AdZero.toEnd_injective
+  haveI hfinX : Finite ↥(adZeroTwistRestricted ℓ ρbar S) :=
+    Finite.of_injective
+      (fun m : ↥(unramInvariants (adZeroTwist ℓ ρbar) S) => m.1) Subtype.val_injective
+  set X := adZeroTwistRestricted ℓ ρbar S with hXdef
+  set Y := adZeroTwistRestrictedSubgroup ℓ ρbar S N with hYdef
+  set φ := restrictedSubgroupHom S N with hφdef
+  -- the finite parameter set: a cocycle together with a coboundary witness on `N`
+  set T : Type _ := {z : ContinuousCohomology.cocycles₁ X //
+    ∃ m : ↥X, ∀ x : restrictedGaloisGroup S, x ∈ N →
+      ContinuousCohomology.eval₁ X z.1 x = X.ρ x m - m} with hTdef
+  -- STEP 1 : `T` is finite, because a cocycle vanishing-up-to-a-coboundary on `N`
+  -- is determined by the witness together with its values on coset representatives.
+  haveI hTfin : Finite T := by
+    refine Finite.of_injective
+      (fun z : T => (Classical.choose z.2,
+        fun q : restrictedGaloisGroup S ⧸ N =>
+          ContinuousCohomology.eval₁ X z.1.1 q.out)) ?_
+    rintro ⟨z₁, hz₁⟩ ⟨z₂, hz₂⟩ hEq
+    have hm : Classical.choose hz₁ = Classical.choose hz₂ := congrArg Prod.fst hEq
+    have hcos : ∀ q : restrictedGaloisGroup S ⧸ N,
+        ContinuousCohomology.eval₁ X z₁.1 q.out =
+        ContinuousCohomology.eval₁ X z₂.1 q.out := fun q => congrFun (congrArg Prod.snd hEq) q
+    have hspec₁ := Classical.choose_spec hz₁
+    have hspec₂ := Classical.choose_spec hz₂
+    have key : ∀ g : restrictedGaloisGroup S,
+        ContinuousCohomology.eval₁ X z₁.1 g = ContinuousCohomology.eval₁ X z₂.1 g := by
+      intro g
+      set r := (QuotientGroup.mk g : restrictedGaloisGroup S ⧸ N).out with hrdef
+      have hx : r⁻¹ * g ∈ N := (QuotientGroup.eq (s := N)).mp (Quotient.out_eq' _)
+      have hg : g = r * (r⁻¹ * g) := by group
+      rw [hg, ContinuousCohomology.cocycles₁_eval₁_mul z₁ r (r⁻¹ * g),
+        ContinuousCohomology.cocycles₁_eval₁_mul z₂ r (r⁻¹ * g),
+        hspec₁ _ hx, hspec₂ _ hx, hm, hcos (QuotientGroup.mk g)]
+    refine Subtype.ext (Subtype.ext (Subtype.ext ?_))
+    ext g l
+    rw [ContinuousCohomology.cocycle_apply (ContinuousCohomology.cocycles₁_d_eq_zero z₁),
+      ContinuousCohomology.cocycle_apply (ContinuousCohomology.cocycles₁_d_eq_zero z₂),
+      key, key]
+  -- STEP 2 : every class in the kernel is the class of a member of `T`.
+  have hcover : (LinearMap.ker (resSubgroupTwistRestricted1 ℓ ρbar S N).hom.toLinearMap :
+      Set ↥(continuousCohomology 1 X)) ⊆
+      Set.range (fun z : T => ContinuousCohomology.cocycleClass X 1 z.1) := by
+    intro c hc
+    obtain ⟨z, hz⟩ := ContinuousCohomology.exists_cocycleClass_eq (X := X) 1 c
+    have hres : ContinuousCohomology.cocycleClass Y 1
+        (ContinuousCohomology.cocyclesMapKer φ (CategoryTheory.CategoryStruct.id Y) 1 z) = 0 := by
+      rw [← ContinuousCohomology.map_cocycleClass_cocyclesMapKer, hz]
+      exact hc
+    obtain ⟨m, hm⟩ :=
+      ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hres
+    refine ⟨⟨z, m, fun x hx => ?_⟩, hz⟩
+    have := hm ⟨x, hx⟩
+    rwa [ContinuousCohomology.eval₁_cocyclesMapKer] at this
+  exact ((Set.finite_range _).subset hcover).to_subtype
 
 /-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (PROVEN 2026-07-28
 over the subsection immediately above; cut
@@ -18823,8 +19236,14 @@ of `G_{ℚ,S}`" subsection: `finite_restrictedOpenNormalSubgroups` (PROVEN, and 
 is item 1 of this audit discharged — the `{2, p}` hard-wiring of item 2 does NOT
 bite, since `S` is exactly `{2, ℓ}`), plus
 `exists_openNormal_index_le_res_eq_zero` and
-`finite_ker_resSubgroupTwistRestricted1`, both PROVEN 2026-07-29. Both of those
-are generic in `S` and contain no arithmetic whatever.
+`finite_ker_resSubgroupTwistRestricted1`, both PROVEN 2026-07-29. Both are
+generic in `S`; the second contains no arithmetic whatever, and the first
+contains exactly one piece, cut out as
+`exists_isOpen_adZeroTwistRestricted_rho_eq_self` (an open set acting trivially
+on `ad⁰(1)^{N_S}`, namely the image of `ker ρbar ∩ Fix(μ_ℓ)`). So the audit's
+item 3 — the cochain dictionary — cost NOTHING in the end, because it was
+already built; what it cost instead was that one openness statement, which no
+version of this audit anticipated.
 
 For the record, the sibling cut in `Modularity/Patching.lean` —
 `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` and
