@@ -42,9 +42,9 @@ nonzero rational coordinate tuples, injective *up to scaling* (i.e.
 injective as a map to `ℙⁿ(ℚ)`), whose naïve logarithmic height satisfies
 the approximate parallelogram law.
 
-`ProjectiveHeightSource.toParallelogramHeight` turns that into a
-`Fermat.ParallelogramHeight`, and hence — through
-`Fermat.ParallelogramHeight.toDescentHeight` and
+`ProjectiveHeightSource.toWeilHeight` turns that into a
+`Fermat.WeilHeight`, and hence — through
+`Fermat.WeilHeight.toDescentHeight` and
 `Fermat.fg_of_descentHeight` — into finite generation, given weak
 Mordell–Weil.  The only mathematical content added here is the Northcott
 half:
@@ -198,19 +198,30 @@ theorem finite_setOf_logHeight_coords_le (ps : ProjectiveHeightSource A) (B : �
     linear_combination h
 
 /-- **A projective embedding with the parallelogram law is a
-`ParallelogramHeight`** (PROVEN) — the naïve logarithmic height of the
+`WeilHeight`** (PROVEN) — the naïve logarithmic height of the
 homogeneous coordinates, with Northcott supplied by
 `finite_setOf_logHeight_coords_le`.
 
-Composed with `ParallelogramHeight.toDescentHeight` and
-`fg_of_descentHeight`, this is the whole route from "the abelian variety
-is projectively embedded and its naïve height satisfies the
-parallelogram law" to "its group of rational points is finitely
-generated", given weak Mordell–Weil. -/
-noncomputable def ProjectiveHeightSource.toParallelogramHeight (ps : ProjectiveHeightSource A) :
-    ParallelogramHeight A where
+Composed with `WeilHeight.toDescentHeight` and `fg_of_descentHeight`,
+this is the whole route from "the abelian variety is projectively
+embedded and its naïve height satisfies the parallelogram law" to "its
+group of rational points is finitely generated", given weak
+Mordell–Weil.
+
+**Renamed 2026-07-28** from `toParallelogramHeight`.  It used to target
+`Fermat.ParallelogramHeight`, which was a field-for-field duplicate of
+`Fermat.WeilHeight` inside the same file and was retired; the only
+difference between the two was whether the law was written
+`− 2 h P − 2 h Q` or `− (2 h P + 2 h Q)`, which is the `sub_sub` below. -/
+noncomputable def ProjectiveHeightSource.toWeilHeight (ps : ProjectiveHeightSource A) :
+    WeilHeight A where
   height P := logHeight (ps.coords P)
-  parallelogram := ps.parallelogram
+  quasiParallelogram := by
+    obtain ⟨C, hC⟩ := ps.parallelogram
+    refine ⟨C, fun P Q => ?_⟩
+    have h := hC P Q
+    rw [sub_sub] at h
+    exact h
   northcott := ⟨fun B => finite_setOf_logHeight_coords_le ps B⟩
 
 /-!
@@ -386,7 +397,7 @@ shared fields are carried over verbatim and the analytic field is
 `parallelogram` above.
 
 This is the composite the Mordell–Weil assembly consumes:
-`CubeEmbedding → ProjectiveHeightSource → ParallelogramHeight →
+`CubeEmbedding → ProjectiveHeightSource → WeilHeight →
 DescentHeight → AddGroup.FG`. -/
 def toProjectiveHeightSource : ProjectiveHeightSource A where
   dim := ce.dim
@@ -615,8 +626,22 @@ is injective up to scaling, nonzero, and `[−1]` is induced by the linear map
 so any faithful further cut must carry the link between `coords` and the
 scheme — i.e. must be made at the level of the invertible sheaf and its
 global sections, not in coordinates.  The axis searched here is
-COORDINATE-LEVEL cuts; the sheaf-level axis is untried and is named in the
-producer's docstring. -/
+COORDINATE-LEVEL cuts.
+
+**THE SHEAF-LEVEL AXIS WAS TRIED ON 2026-07-28 AND IT WORKS.**  The producer
+`Fermat.exists_cubeModel_of_abelianScheme` (`Fermat/FLT/ModularCurve/X0.lean`)
+is now PROVEN over `Fermat.exists_isAmpleSheaf_symmetric_cube`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` — a symmetric, normalized,
+ample invertible sheaf with `σ^*L ⊗ δ^*L ≅ p₁^*L^{⊗2} ⊗ p₂^*L^{⊗2}`, over any
+field) and `Fermat.nonempty_cubeModel_of_isAmpleSheaf_cube` (the coordinate
+dictionary).  The counterexample above does not lift to that cut, because
+there `coords` is manufactured from `L` rather than chosen: `n ↦ (1 : n³ : n⁶)`
+would have to be the restriction to the Zariski-dense set `E(ℚ)` of a morphism
+`E ⟶ ℙ²` given by global sections, and a degree-`d` such morphism has height
+`≍ d · ĥ(P) ≍ d n²`, never `6 log|n|`.  The blocker the producer's docstring
+recorded against this axis — "there is no `Γ(L, ⊤) → Γ(modPullback P L, ⊤)`
+pullback-of-sections map" — was already false: it is
+`Fermat.modPullbackSection` (`Modularity/AmpleSheaf.lean`), PROVEN. -/
 structure CubeModel (A : Type*) [AddCommGroup A] where
   /-- the number of homogeneous coordinates -/
   dim : ℕ

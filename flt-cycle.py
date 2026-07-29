@@ -209,18 +209,36 @@ def deleted_floating_names():
     re-pointed. Nobody should spend a worker on a declaration that no longer
     exists and was never reachable from the root theorem.
     """
+    def looks_like_a_declaration(tok):
+        # Essentially every declaration in this tree contains a `_` or a `.`.
+        # Requiring one costs nothing and removes an entire class of junk.
+        return ("_" in tok or "." in tok) and "/" not in tok
+
     names = set()
     for line in read_lines(MALFUNCTION_LOG):
-        names.update(re.findall(r"`([A-Za-z_][A-Za-z0-9_.']*)`", line))
+        # BACKTICKED tokens get the SAME filter as unbackticked ones (fixed
+        # 2026-07-29, caught by a --dry-run before it destroyed anything).
+        # The log is freeform prose and backticks its git refs, its keywords and
+        # its shell words too, so the greedy harvest was returning `main`,
+        # `merger`, `sorry`, `have`, `obtain`, `rcases`, `end`, `namespace`,
+        # `axiom`, `Finite`, `m`, `mm` -- 121 "declarations", most of them not
+        # declarations at all. The survivor filter below could not save us: it
+        # drops names that ARE declared in Fermat/, and none of these are, so
+        # every one of them sailed through as "deleted". Any queued task whose
+        # TARGET block happened to say `main` -- which every task written after
+        # the release-window doctrine does, because it says "does not exist on
+        # `main`" -- was then silently DISCARDED. Four real tasks were about to
+        # go that way.
+        for tok in re.findall(r"`([A-Za-z_][A-Za-z0-9_.']*)`", line):
+            if looks_like_a_declaration(tok):
+                names.add(tok)
         # Tolerate unbackticked logs -- but only for tokens that actually LOOK
         # like Lean names. The old rule was "any identifier of 7+ chars", which
         # on a freeform prose log harvested `because`, `consumer`, `already`,
         # `deliberately` and sixty more English words as declaration names.
-        # Requiring a `_` or a `.` costs nothing (essentially every declaration
-        # in this tree has one) and removes the entire class.
         for tok in line.replace(",", " ").split():
             if (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.']{6,}", tok)
-                    and "/" not in tok and ("_" in tok or "." in tok)):
+                    and looks_like_a_declaration(tok)):
                 names.add(tok)
 
     # SURVIVOR FILTER (Deyao, 2026-07-26 -- caught by a --dry-run before it
