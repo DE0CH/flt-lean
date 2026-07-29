@@ -33330,6 +33330,31 @@ where `[·]` is `IsCoarseModuliY0.classify` followed by the open immersion
 `Div⁰(X₀(N))` read through `aj : x ↦ [x] − [o]`: the correspondence sends
 `[x]` to `∑_k [x_k]`, so it sends `[x] − [o]` to `∑_k ([x_k] − [o])`.
 
+**THAT LAST STEP IS FALSE, AND THIS PIN IS THEREFORE FALSE OF THE GENUINE
+HECKE OPERATORS FOR A GENERAL BASE POINT** (2026-07-29; full FALSITY AUDIT,
+with the witness, the necessity proof and the prescribed repair, on
+`exists_heckeCorrespondenceFamily_atkinLehnerCommuting` below).  The
+correspondence sends `[x] − [o]` to `∑_k [x_k] − ∑_j [o_j]`, with the `o_j`
+the partners of the BASE POINT — not to `∑_k ([x_k] − [o])`.  The two differ
+by `ε := T_ℓ[o] − (ℓ+1)[o]`, which vanishes for every rational CUSP (so the
+`N = 169` consumers are unaffected) but not in general: at `N = 37`, `ℓ = 2`
+and `o` a non-cuspidal rational point with `[o] − [∞]` of infinite order,
+`ε(o) = (T_2 − 3)([o] − [∞]) ≠ 0` because `T_2 − 3` acts by `−5` and `−3` on
+the two isogeny factors.  Consequently `exists_modularHeckeAction` below and
+every producer of `IsHeckeIsotypicDecomposition` are false at that instance
+too.  The repair is a per-`ℓ` constant `e : RelPoint jstr (𝟙 SpecQ)`,
+existentially bound, added to the right-hand side; the audit checks that the
+repaired pin is still false of `T n := 𝟙 J` and of the `N = 37` eigen-system
+swap, i.e. that it still does both of the jobs this paragraph and the next
+claim for it.
+
+**A BY-PRODUCT OF THAT ANALYSIS, which strengthens the paragraph below.**  The
+recipe does not merely constrain `T ℓ` on `aj`-images: given naturality,
+pointedness and additivity it DETERMINES `T ℓ` outright, because
+`u − T_ℓ` is a homomorphism killing every `[z] − [z']` with `z, z'`
+non-cuspidal, and those generate `J(ℚ̄)`.  The "what the pin does NOT settle"
+note below is about what is PROVEN here, not about what is true.
+
 **The `ℓ + 1` subgroups are not counted.**  `m` is an arbitrary arity and
 the two hypotheses say the kernels are pairwise distinct (`hinj`) and
 exhaust the order-`ℓ` cyclic subgroups (`hsurj`); over `ℚ̄` that forces
@@ -33576,6 +33601,28 @@ makes the recipe's right-hand side the honest image of `[x] − [o]`.  This
 is the one place where a cut of this node can silently go wrong by a
 constant, and it is why the base-point clause is stated rather than
 derived.
+
+**THE PARAGRAPH ABOVE IS WRONG, AND THIS LEAF IS FALSE AS STATED**
+(2026-07-29; full FALSITY AUDIT, with the witness and the prescribed repair,
+on `exists_heckeCorrespondenceFamily_atkinLehnerCommuting` below, which shares
+this recipe clause verbatim).  In one line: `∑_j [o_j] − (ℓ+1)[o]` is NOT
+`T_ℓ` applied to `aj o`.  `T_ℓ (aj o) = T_ℓ 0 = 0` is a triviality; the
+displayed class is `ε := T_ℓ[o] − (ℓ+1)[o]`, the failure of the correspondence
+to fix the BASE POINT, and it is nonzero for a general `o`.  The recipe forces
+`ε = 0` (write `c = post u ∘ aj`, subtract two instances, and use that
+differences of non-cuspidal geometric points generate `J(ℚ̄)`), so the leaf is
+UNSATISFIABLE whenever `ε ≠ 0`.  Witness: `N = 37`, `ℓ = 2`, `o` a
+non-cuspidal rational point of `X₀(37)` with `[o] − [∞]` of infinite order —
+`ε(o) = (T_2 − 3)([o] − [∞])` and `T_2 − 3` acts by `−5` and `−3` on the two
+isogeny factors of `J₀(37)`, hence is an isogeny and kills nothing
+non-torsion.  `ε = 0` DOES hold for every rational cusp, which is why the
+consumers at `N = 169` are unaffected; the defect is one of generality.  The
+repair is a per-`ℓ` constant in the recipe of this leaf, of
+`IsModularHeckeAction` and of the two Atkin–Lehner declarations below —
+spelled out in the audit named above, and deliberately left to a single owner
+of the whole cluster.  So the sentence "this is the one place where a cut of
+this node can silently go wrong by a constant" was exactly right, and the cut
+went wrong there.
 
 **FAITHFULNESS.**  True, with witness `c := T_ℓ ∘ aj` as above.  It is
 NOT true of the zero family `c := fun g _ => ab.zero g` unless the recipe
@@ -34096,7 +34143,27 @@ the vacuity would NOT propagate to
 `exists_isotypicQuotient_of_isWeightTwoEigenform`'s own use of `hmod`: the
 `T n := 𝟙 J` refutation recorded there needs only that `hmod` FAIL for the
 identity, which is a statement about `IsModularHeckeAction`, not about
-`IsGamma0Isogeny` being inhabited. -/
+`IsGamma0Isogeny` being inhabited.
+
+**REFUTATION RECORDED ELSEWHERE, COPIED HERE 2026-07-29 BECAUSE IT NAMES THIS
+DECLARATION AND THIS FILE DID NOT CARRY IT.**  `X1.lean` (see "DO NOT
+'HARMONISE' THIS LEAF WITH ITS `Γ₀` COUNTERPART — THAT COUNTERPART IS FALSE",
+recorded 2026-07-28) refutes **this theorem and
+`exists_isotypicQuotient_of_isWeightTwoEigenform` above** on an ARITY GAP, and
+the refutation survives `hmod`, so it is NOT the `T n := 𝟙 J` argument the
+paragraph above discusses.  `IsModularHeckeAction` pins `T` only at PRIMES
+`ℓ ∤ N`, while `IsIsotypicQuotient`'s `isotypic` and `equivariant` constrain
+EVERY `n` coprime to `N`.  A caller may therefore hand over the family that
+`exists_modularHeckeAction` itself constructs, which is genuine at primes and
+`𝟙 J` at every other arity.  At `N = 37`, `n = 4` (not prime, coprime to `37`)
+that forces `a 4 = 1`, whereas `a₄ = a₂² − 2 = 4 − 2 = 2` for `37a`.  So both
+leaves are FALSE as stated, and the repair is to widen the pin to the anemic
+range (or to quantify `T` existentially, which is what the `Γ₁` siblings in
+`X1.lean` do and why they are immune).  A cross-file-only record is how this
+stayed invisible to everyone dispatched from `X0.lean`; note it is INDEPENDENT
+of the base-point defect audited on
+`exists_heckeCorrespondenceFamily_atkinLehnerCommuting` below — two distinct
+falsities in one cluster. -/
 theorem exists_heckeIsotypicDecomposition_of_modularHeckeAction (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -54695,7 +54762,157 @@ available the anemic operators act by scalars on each isotypic block, hence are
 central in `End(J₀(N)) ⊗ ℚ`), which would not use `_hal` at all.  That route
 attacks the consumer directly and would make this leaf unnecessary rather than
 easier; the check that settles whether it is available is whether the centrality
-argument can be run BEFORE the decomposition it depends on. -/
+argument can be run BEFORE the decomposition it depends on.
+
+## FALSITY AUDIT (2026-07-29): THE RECIPE CLAUSE IS FALSE AS STATED
+
+**This leaf is FALSE as stated, and so are the three declarations it shares the
+RECIPE clause with — `exists_heckeCorrespondenceFamily` above, the pin
+`IsModularHeckeAction` above, and `exists_modularHeckeAction` above.**  The
+defect is ONE missing constant, it is entirely in the recipe clause, and the
+`w_N`-equivariance clause this leaf adds is CLEAN.  So nothing below is a
+criticism of the Atkin–Lehner cut; the cut is sound and this audit does not
+touch it.
+
+**THE DEFECT.**  Write `[·]` for `classify` pushed into `X`, `aj x = [x] − [o]`,
+and `T_ℓ` for the honest Hecke correspondence acting on `Pic⁰(X) = J`.  On
+divisors the correspondence sends `[x]` to `∑_k [x_k]`, so on `Div⁰` it sends
+`[x] − [o]` to `∑_k [x_k] − ∑_j [o_j]`, where the `o_j` are the `ℓ + 1`
+partners **of the base point**.  The recipe instead demands
+
+    c [d] = ∑_k aj [d/D_k] = ∑_k [d/D_k] − (ℓ+1)[o].
+
+The two differ by the BASE-POINT DEFECT
+
+    ε := ∑_j [o_j] − (ℓ+1)[o] = T_ℓ[o] − (ℓ+1)[o]  ∈ J,
+
+and `ε` is NOT zero for a general base point.  Both the parent's docstring
+("`∑_j[o_j] − (ℓ+1)[o]` is `T_ℓ` applied to `aj o = 0`,
+hence `0`") and `IsModularHeckeAction`'s ("the correspondence sends `[x]` to
+`∑_k[x_k]`, so it sends `[x] − [o]` to `∑_k([x_k] − [o])`") assert `ε = 0` and
+are WRONG: `T_ℓ (aj o) = T_ℓ 0 = 0` is a triviality that says nothing about `ε`,
+which is the failure of the correspondence to fix the base point, not the value
+of `T_ℓ` at `0`.
+
+**`ε = 0` IS NECESSARY, not merely convenient.**  Suppose `c` is natural and
+pointed and satisfies the recipe.  `IsJacobianOf.universal` writes `c` as
+`post u ∘ aj` for a unique `u : J ⟶ J` over the base, and
+`isAdditiveOn_of_post_zero` makes `u` additive.  The recipe then reads
+`u (aj z) = T_ℓ (aj z) + ε` for every `z` in the image of `classify` over `ℚ̄`.
+Subtracting two instances, the homomorphism `u − T_ℓ` kills every difference
+`aj z − aj z' = [z] − [z']` with `z, z'` non-cuspidal geometric points; those
+differences generate `J(ℚ̄)` (a Jacobian is generated by differences of points
+of any dense open — the same fact `IsModularHeckeAction`'s docstring records as
+true of a curve's Jacobian and not proven here, and the reason this audit is a
+refutation in the INTENDED interpretation rather than a formal one), so
+`u = T_ℓ` and hence `ε = 0`.  So the recipe does not
+merely *prefer* `ε = 0` — it IMPLIES it, and is unsatisfiable when `ε ≠ 0`.
+(As a by-product the recipe pins `T ℓ` uniquely, which is more than
+`IsModularHeckeAction`'s docstring claims for it.)
+
+**WITNESS: `N = 37`, `ℓ = 2`, `o` a non-cuspidal rational point.**  `ε` depends
+on the base point by `ε(o) − ε(o') = (T_ℓ − ℓ − 1)([o] − [o'])`, and
+`ε(∞) = 0` because all `ℓ + 1` partners of the cusp `∞` are `∞` again for
+`ℓ ∤ N` (quotienting the Tate curve by `μ_ℓ` or by `⟨ζ q^{1/ℓ}⟩` returns a
+Tate curve with the same `μ_N`).  Hence `ε(o) = (T_ℓ − ℓ − 1)([o] − [∞])`.
+Now take `N = 37`:
+
+* `X₀(37)` has genus `2` and at least FOUR rational points — the two cusps and
+  the two non-cuspidal points given by the two `ℚ`-isomorphism classes of
+  elliptic curves with a rational `37`-isogeny (`j = −9317` and
+  `j = −162677523113838677`; verified with PARI: the curve with `j = −9317` has
+  isogeny-degree row `[1, 37]`).
+* `J₀(37)(ℚ) ≅ ℤ ⊕ ℤ/3` — rank `1` from `37a`, torsion the cuspidal group
+  `ℤ/3 = num((37−1)/12)`, which is all of `J(ℚ)_tors` by Mazur at prime level.
+* `aj` is injective on points (genus `≥ 1`), so four rational points give four
+  DISTINCT classes while only three are torsion.  `[∞] − [∞] = 0` and
+  `[0] − [∞]` (order `3`) account for two of them, so at least one non-cuspidal
+  rational point `o` has `[o] − [∞]` of INFINITE order.
+* `T_2` acts on the two isogeny factors of `J₀(37)` by `a₂(37a) = −2` and
+  `a₂(37b) = 0` (PARI, and the same values are quoted at
+  `IsModularHeckeAction` above), so `T_2 − 3` acts by `−5` and `−3`: it is an
+  ISOGENY, and its kernel is finite hence torsion.
+
+Therefore `ε(o) = (T_2 − 3)([o] − [∞]) ≠ 0`, and at `N = 37`, `ℓ = 2` with that
+base point NO family `c` satisfies the recipe — so the parent leaf
+`exists_heckeCorrespondenceFamily`, this leaf, `exists_modularHeckeAction` and every producer of
+`IsHeckeIsotypicDecomposition` (whose `heckeModuli` field is the pin) are false
+at that instance.  Note this is falsity in the INTENDED interpretation: it is
+not formally refutable here, because `IsGamma0Isogeny` is not known to be
+inhabited (see `IsModularHeckeAction`), so the recipe may be formally vacuous.
+That is exactly the shape of defect that costs a prover the whole effort at the
+END: the statement cannot be proven once the geometry it asks for exists.
+
+**WHERE IT IS HARMLESS, which is why nothing has broken.**  For a base point
+that is a RATIONAL CUSP, `ε = 0` always: a cusp of `X₀(N)` of denominator `d`
+is defined over `ℚ(ζ_g)` with `g = gcd(d, N/d)`, so a rational cusp needs
+`φ(g) = 1` and is then the ONLY cusp of its denominator; `T_ℓ` (`ℓ ∤ N`)
+preserves the denominator, so all `ℓ + 1` partners are that same cusp and
+`T_ℓ[o] = (ℓ+1)[o]` as DIVISORS.  At the only level this file's Hecke cluster is
+consumed at — `N = 169`, where `X₀(169)(ℚ)` is the two cusps `0` and `∞`
+(`d = 1, 169`, both with `g = 1`) — the defect is invisible.  It is a defect of
+GENERALITY: the statements quantify over every `o : RelPoint strX (𝟙 SpecQ)`.
+
+**THE PRESCRIBED REPAIR** — a per-`ℓ` constant, and it is deliberately NOT
+applied here (see the ownership note below).  In `IsModularHeckeAction`, in
+`exists_heckeCorrespondenceFamily` and in the recipe conjunct of this leaf,
+replace the right-hand side `∑ k, aj [dq k]` by
+`(∑ k, aj [dq k]) + RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) e` with
+`e : RelPoint jstr (𝟙 SpecQ)` existentially bound per `ℓ` (`e := −ε`).  Two
+checks that the repaired pin still does both of its jobs:
+
+* it is still FALSE of `T n := 𝟙 J`: `aj z = ∑_k aj z_k + e` for all `z` forces,
+  on differences, `(1 − T_ℓ)(aj z − aj z') = 0`, hence `T_ℓ = 1` on `J`, false
+  already at `N = 37`, `ℓ = 2` where `T_2` has eigenvalues `−2` and `0`;
+* it is still FALSE of the `N = 37` eigen-system swap, since the swapped and the
+  genuine `T_2` differ by a NON-constant homomorphism.
+
+The `w_N`-equivariance conjunct of this leaf needs no change: with
+`c = post T_ℓ ∘ aj` and `T_ℓ ≫ w_J = w_J ≫ T_ℓ` it holds on the nose, constant
+and all — see the reduction recorded below.
+
+**OWNERSHIP: the repair is a CLUSTER change and is not taken here.**  It edits
+`exists_heckeCorrespondenceFamily` (held by another worktree), the shared pin
+`IsModularHeckeAction`, and the proofs of `exists_modularHeckeAction` and of
+`exists_modularHeckeAction_atkinLehnerCommuting`; the remaining consumers
+(`exists_isotypicQuotient_of_isWeightTwoEigenform`,
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients`) hold the pin only as a
+HYPOTHESIS and need no proof change, so the blast radius on proofs is exactly
+those two.  Repairing this leaf ALONE is impossible: its consumer builds
+`IsModularHeckeAction` out of the recipe clause, so a shifted recipe here and an
+unshifted pin above do not compose.
+
+## WHAT IS ALREADY WORKED OUT, so the next owner does not redo it
+
+* `w_J` is ADDITIVE and an INVOLUTION, and equals `IsJacobianOf.mapEnd w hw`.
+  Additivity: `hchar` at `g = 𝟙`, `x = o` gives `post w_J (ab.zero 𝟙)`
+  `= ajTwist w hw 𝟙 o = ab.zero 𝟙` by `aj_base`/`ajTwist_base`, then `pre_zero`
+  and `RelPoint.post_pre` carry it to every `g`, and
+  `isAdditiveOn_of_post_zero` upgrades it.  Involutivity: with additivity,
+  `post (w_J ≫ w_J) (aj g x) = post w_J (ajTwist g x)` `= ajTwist g (post w x)`
+  `⊖ pre g (ajTwist 𝟙 (post w o))` `= aj g x` using `hw2`, so `w_J ≫ w_J` and
+  `𝟙 J` both factor `aj` and the uniqueness half of `jac.universal ab aj` equates
+  them.  `w_J = mapEnd w hw` is the uniqueness half of `existsUnique_mapEnd`
+  applied to `hchar`.
+* **The equivariance conjunct is EQUIVALENT to `T ≫ w_J = w_J ≫ T`** for
+  `c = post T ∘ aj` with `T` additive: expand `ajTwist`, use `hchar` and
+  additivity of `post T` to turn `post T ∘ ajTwist` into
+  `c g (post w x) ⊖ pre g (c 𝟙 (post w o))`.  The `⟸` direction is pure formal
+  glue and is the cheap half; `⟹` is the consumer's step and already exists.
+* **The CONJUGATION route needs a THIRD input and is therefore not the cheap
+  one.**  Setting `S := w_J ≫ T ≫ w_J` and asking that `post S ∘ aj` satisfy the
+  recipe unwinds, via the moduli identity, to
+  `m · aj 𝟙 (post w o) = c 𝟙 (post w o)` — i.e. `T_ℓ` acting as `ℓ + 1` on the
+  class `[w o] − [o]`, the EISENSTEIN property of the cuspidal class (Ogg,
+  Mazur).  True, but a separate theorem; a prover who tries "conjugate and
+  compare recipes" must budget for it, and after the repair above it is the same
+  fact as `ε = 0`.
+* Splitting this leaf downwards costs a GENERATION leaf.  Every route from the
+  recipe to an equation of morphisms passes through "`aj`-images of `ℚ̄` moduli
+  points generate `J(ℚ̄)`", which is not proven here and is exactly the caveat
+  `IsModularHeckeAction`'s docstring already records.  That is why the leaf is
+  stated existentially and on points; it is the minimal correct form, and it was
+  NOT decomposed further here for that reason. -/
 theorem exists_heckeCorrespondenceFamily_atkinLehnerCommuting (N ℓ : ℕ)
     (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
