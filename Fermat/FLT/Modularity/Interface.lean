@@ -250,6 +250,17 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 -- logarithmic-derivative identity of formal power series.
 public import Mathlib.Algebra.Polynomial.Derivative
 public import Mathlib.RingTheory.PowerSeries.Inverse
+-- PUBLIC (2026-07-28, TWENTIETH decomposition, the classical content of the
+-- Lefschetz/rationality half): `PowerSeries.derivative` occurs in SIGNATURE position in
+-- `exists_effectiveDivisorCount_of_degreeCount` and
+-- `exists_riemannRochGrowth_of_isProperSmoothCurve` below, which state the zeta
+-- function's logarithmic-derivative identity; `Nat.divisors` occurs in SIGNATURE
+-- position in `exists_closedPointDegreeCount_of_isProperSmoothCurve` below
+-- (`#X(𝔽_{q^s}) = Σ_{d ∣ s} d·b_d`).  `PowerSeries.trunc` is proof-body only, in
+-- `exists_polynomial_of_riemannRochGrowth`, but is named here beside its siblings.
+public import Mathlib.RingTheory.PowerSeries.Derivative
+public import Mathlib.RingTheory.PowerSeries.Trunc
+public import Mathlib.NumberTheory.Divisors
 -- PUBLIC (2026-07-28, NINETEENTH decomposition, the plane-model half): the quotient
 -- `𝔽_q[X,Y]/(F)` and its `ZMod q`-algebra structure occur in SIGNATURE position in
 -- `planeCurveScheme` / `planeCurveStr` below.
@@ -47779,9 +47790,11 @@ noncomputable def pointCountGaloisField {q : ℕ} [Fact q.Prime] {X : Scheme.{0}
 The EIGHTEENTH decomposition (2026-07-28) cuts
 `exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` below in two:
 
-* `exists_zetaNumerator_of_isProperSmoothCurve` (sorry) — ALL the classical
+* `exists_zetaNumerator_of_isProperSmoothCurve` — ALL the classical
   content: closed points of `X`, Riemann–Roch on its function field, and hence
-  rationality of `Z(X, T)`; and
+  rationality of `Z(X, T)`.  Itself **PROVEN** (TWENTIETH decomposition,
+  2026-07-28) over three sorry nodes, one per classical step; see the section
+  docstring "The classical content of the rationality leaf" below; and
 * `exists_powerSum_of_zetaNumerator` (**PROVEN** here) — pure algebra over `ℂ`,
   no geometry at all.
 
@@ -47979,8 +47992,422 @@ theorem exists_powerSum_of_zetaNumerator (c : ℕ → ℂ) {P : Polynomial ℂ}
   rw [← hcoeff, Multiset.map_coe, Multiset.sum_coe,
     ← List.ofFn_getElem_eq_map l (fun γ : ℂ => γ ^ s), List.sum_ofFn]
 
+/-! ##### The classical content of the rationality leaf, cut into its three steps
+
+The TWENTIETH decomposition (2026-07-28) cuts
+`exists_zetaNumerator_of_isProperSmoothCurve` below along exactly the three
+numbered steps of its own docstring, over a PROVEN power-series core.  The
+shared witness is a single coefficient sequence `a : ℕ → ℕ` — classically
+`a_n = #{effective divisors of degree n}` — carried between the leaves as the
+zeta series `Z = Σ_n a_n T^n`:
+
+* `exists_closedPointDegreeCount_of_isProperSmoothCurve` (sorry) — STEP 1,
+  closed points: `#X(𝔽_{q^s}) = Σ_{d ∣ s} d·b_d`.
+* `exists_effectiveDivisorCount_of_degreeCount` (sorry) — STEP 2, the EULER
+  PRODUCT: `∏_{d ≥ 1} (1 − T^d)^{−b_d}` has natural-number coefficients `a_n`
+  and logarithmic derivative `Σ_s (Σ_{d ∣ s} d·b_d) T^s`.  Pure combinatorics:
+  no geometry, no `q`, true for EVERY `b : ℕ → ℕ`.
+* `exists_riemannRochGrowth_of_isProperSmoothCurve` (sorry) — STEP 3,
+  RIEMANN–ROCH: `(q − 1)·a_n + h = h·q^{n+1−g}` for `n > 2g − 2`.
+* `exists_zetaNumerator_of_zetaSeriesData` (**PROVEN** here) — the power-series
+  core turning steps 2 and 3 into the numerator identity, together with
+  `exists_polynomial_of_riemannRochGrowth` and `zetaNumerator_of_zeta_ode`,
+  both **PROVEN** here.
+
+WHY THE ZETA SERIES IS THE RIGHT SHARED WITNESS.  Over `ℂ` the pair
+`Z(0) = 1`, `T·Z′ = M·Z` determines `Z` UNIQUELY from `M` (the recursion
+`n·a_n = Σ_{k=1}^{n} M_k·a_{n−k}` divides by `n`, which is invertible in
+characteristic zero); and `Σ_{d ∣ s} d·b_d = #X(𝔽_{q^s})` for all `s ≥ 1`
+determines `b` uniquely by strong induction on `s`.  So the `a` handed from
+step 2 to step 3 is PINNED to be the effective-divisor count of `X` and nothing
+else — stating step 3 with `a` as a hypothesis-carrying parameter costs no
+faithfulness, and buys a leaf with no scheme theory in its conclusion.
+
+WHAT THE PROVEN CORE DOES.  Write `D = (1 − T)(1 − qT)`,
+`E = Σ_{s ≥ 1}(1 + q^s)T^s`, and `M = Σ_{s ≥ 1} #X(𝔽_{q^s})T^s`.  The already
+proven `zetaGeomSeries_sum_mul_prod` applied to the multiset `{1, q}` gives
+`T·D′ = −E·D`, so from `T·Z′ = M·Z` and `Z·D = P` one gets
+`T·P′ = T·(Z·D)′ = (M − E)·Z·D = (M − E)·P`, which is the required
+`L·P = −T·P′` with `L = E − M`.  `P(0) = Z(0)·D(0) = 1`.  No `exp`, no `log`,
+no infinite product ever appears in the core.
+
+AND THE POLYNOMIALITY OF `Z·D` IS EXACTLY STEP 3.  `D = 1 − (1+q)T + qT²`, so
+`coeff_n (Z·D) = a_n − (1+q)a_{n−1} + q·a_{n−2}`; substituting
+`(q−1)a_m = h·q^{m+1−g} − h` for the three indices makes the `h·q^•` terms
+cancel in the pattern `q^{e+2} − q^{e+1} − q^{e+2} + q^{e+1}` and the constants
+in the pattern `1 − (1+q) + q`, so every coefficient beyond `2g + 1` vanishes
+and `Z·D` is the truncation of itself.  That is the whole of
+`exists_polynomial_of_riemannRochGrowth`.
+-/
+
+/-- **`Σ_{s ≥ 1} #X(𝔽_{q^s})·T^s`**, the series whose logarithmic-derivative
+role the zeta function plays.  The `s = 0` coefficient is `0` by fiat: the
+identity `T·Z′ = M·Z` needs `M(0) = 0`, and `#X(𝔽_{q^0})` is not what appears
+in the classical statement. -/
+noncomputable def pointCountSeries {q : ℕ} [Fact q.Prime] {X : Scheme.{0}}
+    (strX : X ⟶ _root_.Fermat.SpecF q) : PowerSeries ℂ :=
+  PowerSeries.mk fun s => if s = 0 then 0 else (pointCountGaloisField strX s : ℂ)
+
+/-- **`Σ_{n ≥ 0} a_n T^n` for a natural-number coefficient sequence.**  With
+`a_n` the number of effective divisors of degree `n` this is the zeta function
+`Z(X, T)` itself. -/
+noncomputable def natCountSeries (a : ℕ → ℕ) : PowerSeries ℂ :=
+  PowerSeries.mk fun n => (a n : ℂ)
+
+/-- **`Σ_{s ≥ 1} (Σ_{d ∣ s} d·b_d) T^s`**, the point-count series expressed
+through the closed-point degree counts `b_d`. -/
+noncomputable def degreeCountSeries (b : ℕ → ℕ) : PowerSeries ℂ :=
+  PowerSeries.mk fun s => if s = 0 then 0 else ((∑ d ∈ s.divisors, d * b d : ℕ) : ℂ)
+
+/-- **`(1 − T)(1 − qT)`**, the denominator of the zeta function of a curve. -/
+noncomputable def zetaDenominator (q : ℕ) : Polynomial ℂ :=
+  zetaLinFactor 1 * zetaLinFactor (q : ℂ)
+
+/-- **`Σ_{s ≥ 1} (1 + q^s) T^s = −T·D′/D` for `D = (1 − T)(1 − qT)`.** -/
+noncomputable def zetaDenominatorLogDeriv (q : ℕ) : PowerSeries ℂ :=
+  zetaGeomSeries 1 + zetaGeomSeries (q : ℂ)
+
+lemma coeff_zero_zetaDenominator (q : ℕ) : (zetaDenominator q).coeff 0 = 1 := by
+  simp [zetaDenominator, zetaLinFactor, Polynomial.mul_coeff_zero]
+
+lemma coe_zetaDenominator (q : ℕ) :
+    ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+      = 1 - PowerSeries.C (1 + (q : ℂ)) * PowerSeries.X
+        + PowerSeries.C (q : ℂ) * (PowerSeries.X * PowerSeries.X) := by
+  rw [zetaDenominator, Polynomial.coe_mul, coe_zetaLinFactor, coe_zetaLinFactor]
+  simp only [map_add, map_one]
+  ring
+
+/-- **`T·D′ = −E·D`** (PROVEN), the logarithmic derivative of the zeta
+denominator, read off from `zetaGeomSeries_sum_mul_prod` at the multiset
+`{1, q}`. -/
+lemma zetaDenominator_logDeriv (q : ℕ) :
+    PowerSeries.X *
+        PowerSeries.derivative ℂ ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+      = - (zetaDenominatorLogDeriv q *
+          ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)) := by
+  have h := zetaGeomSeries_sum_mul_prod ({1, (q : ℂ)} : Multiset ℂ)
+  simp only [Multiset.insert_eq_cons, Multiset.map_cons, Multiset.map_singleton,
+    Multiset.sum_cons, Multiset.sum_singleton, Multiset.prod_cons,
+    Multiset.prod_singleton] at h
+  rw [zetaDenominator, zetaDenominatorLogDeriv, PowerSeries.derivative_coe]
+  linear_combination h
+
+/-- **The three-term recursion `coeff_{n+2}(F·D) = F_{n+2} − (1+q)F_{n+1} + q·F_n`**
+(PROVEN) for `D = (1 − T)(1 − qT)`. -/
+lemma coeff_succ_succ_mul_zetaDenominator (F : PowerSeries ℂ) (q : ℕ) (m : ℕ) :
+    PowerSeries.coeff (m + 1 + 1)
+        (F * ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ))
+      = PowerSeries.coeff (m + 1 + 1) F - (1 + (q : ℂ)) * PowerSeries.coeff (m + 1) F
+        + (q : ℂ) * PowerSeries.coeff m F := by
+  have e1 : F * (PowerSeries.C (1 + (q : ℂ)) * PowerSeries.X)
+      = PowerSeries.C (1 + (q : ℂ)) * (F * PowerSeries.X) := by ring
+  have e2 : F * (PowerSeries.C (q : ℂ) * (PowerSeries.X * PowerSeries.X))
+      = PowerSeries.C (q : ℂ) * (F * PowerSeries.X * PowerSeries.X) := by ring
+  rw [coe_zetaDenominator, mul_add, mul_sub, mul_one, map_add, map_sub, e1, e2,
+    PowerSeries.coeff_C_mul, PowerSeries.coeff_C_mul, PowerSeries.coeff_succ_mul_X,
+    PowerSeries.coeff_succ_mul_X, PowerSeries.coeff_succ_mul_X]
+
+lemma constantCoeff_natCountSeries {a : ℕ → ℕ} (ha0 : a 0 = 1) :
+    PowerSeries.constantCoeff (natCountSeries a) = 1 := by
+  rw [natCountSeries, ← PowerSeries.coeff_zero_eq_constantCoeff_apply,
+    PowerSeries.coeff_mk, ha0]
+  norm_num
+
+/-- **The closed-point form of the point-count series is the point-count
+series** (PROVEN): this is what turns the output of STEP 1 into the input of
+STEP 3. -/
+lemma degreeCountSeries_eq_pointCountSeries {q : ℕ} [Fact q.Prime] {X : Scheme.{0}}
+    (strX : X ⟶ _root_.Fermat.SpecF q) {b : ℕ → ℕ}
+    (hb : ∀ s : ℕ, 0 < s → pointCountGaloisField strX s = ∑ d ∈ s.divisors, d * b d) :
+    degreeCountSeries b = pointCountSeries strX := by
+  ext s
+  simp only [degreeCountSeries, pointCountSeries, PowerSeries.coeff_mk]
+  split_ifs with hs
+  · rfl
+  · rw [hb s (Nat.pos_of_ne_zero hs)]
+
+/-- **RIEMANN–ROCH GROWTH MAKES THE ZETA SERIES RATIONAL** (**PROVEN**
+2026-07-28, TWENTIETH decomposition).  Pure algebra over `ℂ`, no geometry.
+
+STATEMENT.  If `a : ℕ → ℕ` satisfies `(q − 1)·a_n + h = h·q^{n+1−g}` for every
+`n` with `2g ≤ n + 1`, then `(Σ_n a_n T^n)·(1 − T)(1 − qT)` is a POLYNOMIAL.
+
+PROOF.  `coeff_{m+2}` of the product is `a_{m+2} − (1+q)a_{m+1} + q·a_m`
+(`coeff_succ_succ_mul_zetaDenominator`).  Multiply by `q − 1`, which is nonzero
+in `ℂ` because `q ≥ 2`, and substitute the hypothesis at the three indices with
+exponents `e, e+1, e+2` where `e = m + 1 − g`: the `h·q^•` terms cancel as
+`q^{e+2} − (1+q)q^{e+1} + q·q^e = 0` and the constants as `1 − (1+q) + q = 0`.
+So every coefficient from `2g + 2` on vanishes and the product is its own
+truncation at `2g + 2`. -/
+theorem exists_polynomial_of_riemannRochGrowth {q : ℕ} (hq : 2 ≤ q) (a : ℕ → ℕ)
+    (g h : ℕ)
+    (hRR : ∀ n : ℕ, 2 * g ≤ n + 1 → (q - 1) * a n + h = h * q ^ (n + 1 - g)) :
+    ∃ P : Polynomial ℂ,
+      natCountSeries a * ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+        = (P : PowerSeries ℂ) := by
+  have hq1 : (1 : ℕ) ≤ q := by omega
+  have hqne : (q : ℂ) - 1 ≠ 0 := by
+    have hne : ((q : ℕ) : ℂ) ≠ ((1 : ℕ) : ℂ) :=
+      fun hc => absurd (Nat.cast_injective hc) (by omega)
+    push_cast at hne
+    exact sub_ne_zero.mpr hne
+  set Z : PowerSeries ℂ := natCountSeries a with hZdef
+  set W : PowerSeries ℂ := Z * ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+    with hWdef
+  have hvanish : ∀ m : ℕ, 2 * g ≤ m → PowerSeries.coeff (m + 1 + 1) W = 0 := by
+    intro m hm
+    have hcoeff : PowerSeries.coeff (m + 1 + 1) W
+        = (a (m + 1 + 1) : ℂ) - (1 + (q : ℂ)) * (a (m + 1) : ℂ)
+          + (q : ℂ) * (a m : ℂ) := by
+      rw [hWdef, coeff_succ_succ_mul_zetaDenominator]
+      simp only [hZdef, natCountSeries, PowerSeries.coeff_mk]
+    have e1 : m + 1 + 1 - g = (m + 1 - g) + 1 := by omega
+    have e2 : m + 1 + 1 + 1 - g = (m + 1 - g) + 1 + 1 := by omega
+    have c0 := hRR m (by omega)
+    have c1 := hRR (m + 1) (by omega)
+    have c2 := hRR (m + 1 + 1) (by omega)
+    rw [e1] at c1
+    rw [e2] at c2
+    have C0 : ((q : ℂ) - 1) * (a m : ℂ) + (h : ℂ)
+        = (h : ℂ) * (q : ℂ) ^ (m + 1 - g) := by
+      have hc := congrArg (fun n : ℕ => (n : ℂ)) c0
+      push_cast [Nat.cast_sub hq1] at hc
+      linear_combination hc
+    have C1 : ((q : ℂ) - 1) * (a (m + 1) : ℂ) + (h : ℂ)
+        = (h : ℂ) * (q : ℂ) ^ ((m + 1 - g) + 1) := by
+      have hc := congrArg (fun n : ℕ => (n : ℂ)) c1
+      push_cast [Nat.cast_sub hq1] at hc
+      linear_combination hc
+    have C2 : ((q : ℂ) - 1) * (a (m + 1 + 1) : ℂ) + (h : ℂ)
+        = (h : ℂ) * (q : ℂ) ^ ((m + 1 - g) + 1 + 1) := by
+      have hc := congrArg (fun n : ℕ => (n : ℂ)) c2
+      push_cast [Nat.cast_sub hq1] at hc
+      linear_combination hc
+    rw [hcoeff]
+    apply mul_left_cancel₀ hqne
+    rw [mul_zero]
+    linear_combination C2 - (1 + (q : ℂ)) * C1 + (q : ℂ) * C0
+  refine ⟨PowerSeries.trunc (2 * g + 2) W, ?_⟩
+  ext n
+  rw [Polynomial.coeff_coe, PowerSeries.coeff_trunc]
+  split_ifs with hn
+  · rfl
+  · obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 + 1 := ⟨n - 2, by omega⟩
+    exact hvanish m (by omega)
+
+/-- **FROM THE ZETA ODE AND RATIONALITY TO THE NUMERATOR IDENTITY**
+(**PROVEN** 2026-07-28, TWENTIETH decomposition).  Pure algebra over `ℂ`.
+
+STATEMENT.  If `Z(0) = 1`, `T·Z′ = M·Z` and `Z·D = P` with `D = (1 − T)(1 − qT)`
+and `P` a polynomial, then `P(0) = 1` and `(E − M)·P = −T·P′`, where
+`E = Σ_{s ≥ 1}(1 + q^s)T^s`.
+
+PROOF.  `P(0) = Z(0)·D(0) = 1`.  For the identity, Leibniz in `ℂ⟦T⟧` gives
+`T·P′ = Z·(T·D′) + D·(T·Z′) = Z·(−E·D) + D·(M·Z) = (M − E)·(Z·D) = (M − E)·P`,
+the middle step being `zetaDenominator_logDeriv` and the hypothesis. -/
+theorem zetaNumerator_of_zeta_ode {q : ℕ} {Z M : PowerSeries ℂ} {P : Polynomial ℂ}
+    (hZ0 : PowerSeries.constantCoeff Z = 1)
+    (hODE : PowerSeries.X * PowerSeries.derivative ℂ Z = M * Z)
+    (hZP : Z * ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+      = (P : PowerSeries ℂ)) :
+    P.coeff 0 = 1 ∧
+      (zetaDenominatorLogDeriv q - M) * (P : PowerSeries ℂ)
+        = - (PowerSeries.X *
+            ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ)) := by
+  constructor
+  · have hcc := congrArg (PowerSeries.constantCoeff (R := ℂ)) hZP
+    rw [map_mul, hZ0, one_mul] at hcc
+    rw [← PowerSeries.coeff_zero_eq_constantCoeff_apply, Polynomial.coeff_coe] at hcc
+    rw [← PowerSeries.coeff_zero_eq_constantCoeff_apply, Polynomial.coeff_coe,
+      coeff_zero_zetaDenominator] at hcc
+    exact hcc.symm
+  · have hD := zetaDenominator_logDeriv q
+    rw [← PowerSeries.derivative_coe, ← hZP, Derivation.leibniz]
+    simp only [smul_eq_mul]
+    have expand : PowerSeries.X *
+          (Z * PowerSeries.derivative ℂ
+              ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ)
+            + ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ) *
+              PowerSeries.derivative ℂ Z)
+        = Z * (PowerSeries.X * PowerSeries.derivative ℂ
+              ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ))
+          + ((zetaDenominator q : Polynomial ℂ) : PowerSeries ℂ) *
+            (PowerSeries.X * PowerSeries.derivative ℂ Z) := by ring
+    rw [expand, hD, hODE]
+    ring
+
+/-- **THE PROVEN CORE OF THE RATIONALITY LEAF** (**PROVEN** 2026-07-28,
+TWENTIETH decomposition): the zeta series of `X` plus Riemann–Roch growth give
+the numerator.
+
+STATEMENT.  Given `a : ℕ → ℕ` with `a_0 = 1` whose generating series satisfies
+the zeta ODE `T·Z′ = (Σ_{s ≥ 1} #X(𝔽_{q^s})T^s)·Z`, and given the Riemann–Roch
+growth `(q − 1)a_n + h = h·q^{n+1−g}` for `2g ≤ n + 1`, there is `P ∈ ℂ[T]` with
+`P(0) = 1` and `L·P = −T·P′` for `L = Σ_{s ≥ 1}(q^s + 1 − #X(𝔽_{q^s}))T^s`.
+
+This is `exists_polynomial_of_riemannRochGrowth` followed by
+`zetaNumerator_of_zeta_ode`, with one coefficient comparison at the end to
+recognise `L` as `E − M`. -/
+theorem exists_zetaNumerator_of_zetaSeriesData {q : ℕ} [Fact q.Prime]
+    {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q) (a : ℕ → ℕ) (g h : ℕ)
+    (ha0 : a 0 = 1)
+    (haODE : PowerSeries.X * PowerSeries.derivative ℂ (natCountSeries a)
+      = pointCountSeries strX * natCountSeries a)
+    (hRR : ∀ n : ℕ, 2 * g ≤ n + 1 → (q - 1) * a n + h = h * q ^ (n + 1 - g)) :
+    ∃ P : Polynomial ℂ, P.coeff 0 = 1 ∧
+      (PowerSeries.mk fun s => if s = 0 then 0 else
+          (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) * (P : PowerSeries ℂ)
+        = - (PowerSeries.X *
+            ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ)) := by
+  have hq : 2 ≤ q := (Fact.out : q.Prime).two_le
+  obtain ⟨P, hP⟩ := exists_polynomial_of_riemannRochGrowth hq a g h hRR
+  obtain ⟨hP0, hid⟩ :=
+    zetaNumerator_of_zeta_ode (q := q) (constantCoeff_natCountSeries ha0) haODE hP
+  refine ⟨P, hP0, ?_⟩
+  rw [← hid]
+  congr 1
+  ext s
+  simp only [PowerSeries.coeff_mk, map_sub, zetaDenominatorLogDeriv, pointCountSeries,
+    map_add, coeff_zetaGeomSeries]
+  split_ifs with hs
+  · simp
+  · ring
+
+/-- **STEP 1 — CLOSED POINTS: `#X(𝔽_{q^s}) = Σ_{d ∣ s} d·b_d`** (sorry node,
+TWENTIETH decomposition 2026-07-28 — the first of the three classical steps of
+`exists_zetaNumerator_of_isProperSmoothCurve` below).
+
+STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper and smooth of relative dimension
+`1` there is `b : ℕ → ℕ` with `#X(𝔽_{q^s}) = Σ_{d ∣ s} d·b_d` for every
+`s ≥ 1`.
+
+WHAT `b` IS, CLASSICALLY.  `b_d` is the number of CLOSED POINTS of `X` of
+degree `d`, i.e. with `[κ(x) : 𝔽_q] = d`.  The identity is the standard
+bijection: an `𝔽_{q^s}`-point of `X` is a closed point `x` with `deg x ∣ s`
+together with one of the `deg x` embeddings `κ(x) ↪ 𝔽_{q^s}` (there are exactly
+`deg x` of them, the residue field being separable over `𝔽_q`, and none unless
+`deg x ∣ s`).  Mathlib handles: `Scheme.residueField`,
+`AlgebraicGeometry.Scheme.homOfPoint`, `GaloisField`, `Nat.divisors`.
+
+ROUTE.  `b_d := #{x : X | x closed ∧ [κ(x) : 𝔽_q] = d}`, finite because `X` is
+proper (hence of finite type) over a finite field; then partition
+`X(𝔽_{q^s}) = ⨆_{d ∣ s} {x : deg x = d} × Hom_{𝔽_q}(κ(x), 𝔽_{q^s})` and count.
+
+`GeometricallyConnected` IS NOT NEEDED and is deliberately absent: the identity
+holds for every proper `𝔽_q`-scheme, connected or not, and for `X = ∅` with
+`b = 0`.  It is carried only by the parent and by STEP 3.
+
+FAITHFULNESS.  TRUE, and NOT vacuous.  `b` is UNIQUELY determined by the
+conclusion — strong induction on `s` gives `s·b_s = #X(𝔽_{q^s}) − Σ_{d ∣ s, d < s} d·b_d`
+— so the existential asserts the genuine arithmetic constraints that the counts
+`#X(𝔽_{q^s})` satisfy: each Möbius sum `Σ_{d ∣ s} μ(s/d)·#X(𝔽_{q^d})` is
+nonnegative AND divisible by `s`.  Neither holds for an arbitrary sequence
+(`#X(𝔽_q) = 0`, `#X(𝔽_{q²}) = 1` already violates it), so a junk `b` is
+unavailable. -/
+theorem exists_closedPointDegreeCount_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] :
+    ∃ b : ℕ → ℕ, ∀ s : ℕ, 0 < s →
+      pointCountGaloisField strX s = ∑ d ∈ s.divisors, d * b d :=
+  sorry
+
+/-- **STEP 2 — THE EULER PRODUCT** (sorry node, TWENTIETH decomposition
+2026-07-28 — the second of the three classical steps of
+`exists_zetaNumerator_of_isProperSmoothCurve` below).  PURE COMBINATORICS: no
+geometry, no scheme, no `q`, and true for EVERY `b : ℕ → ℕ`.
+
+STATEMENT.  For every `b : ℕ → ℕ` there is `a : ℕ → ℕ` with `a_0 = 1` and
+
+  `T·Z′ = (Σ_{s ≥ 1} (Σ_{d ∣ s} d·b_d) T^s)·Z`,  where `Z = Σ_n a_n T^n`.
+
+WHAT IT IS.  `Z = ∏_{d ≥ 1} (1 − T^d)^{−b_d}` — the Euler product of the zeta
+function, `a_n` counting the multisets of "points" of total degree `n` (with
+`b_d` available of each degree `d`), i.e. the effective divisors of degree `n`.
+The identity is its logarithmic derivative:
+`T·Z′/Z = Σ_d b_d·d·T^d/(1 − T^d) = Σ_d b_d·d·Σ_{k ≥ 1} T^{dk}
+       = Σ_{s ≥ 1} (Σ_{d ∣ s} d·b_d) T^s`.
+
+ROUTE.  The `d`-th factor is `1 + O(T^d)`, so the product converges `T`-adically:
+define `a_n` as `coeff n (∏_{d = 1}^{n} (1 − T^d)^{−b_d})`, which is stationary
+in the upper limit from `n` on, and prove the identity by induction on the
+partial products against `PowerSeries.invOneSubPow` / the geometric series
+`(1 − T^d)^{−1} = Σ_k T^{dk}`.  Both `a_0 = 1` and `a_n ∈ ℕ` are immediate from
+that description.  Nothing here needs `ℂ`; `ℂ` appears only because the ambient
+statement lives there.
+
+FAITHFULNESS.  TRUE, and NOT vacuous.  Over `ℂ` the ODE together with
+`a_0 = 1` determines `Z` UNIQUELY (`n·a_n = Σ_{k=1}^{n} M_k·a_{n−k}` and `n` is
+invertible), so the content is precisely that the unique solution has
+NATURAL-NUMBER coefficients — which is exactly the Euler product and is false
+for a general `M` with `M(0) = 0` (e.g. `M = T` gives `a_n = 1/n!`).  The
+`ℕ`-valuedness of the answer is where the whole combinatorial content sits and
+must not be relaxed to `ℂ`. -/
+theorem exists_effectiveDivisorCount_of_degreeCount (b : ℕ → ℕ) :
+    ∃ a : ℕ → ℕ, a 0 = 1 ∧
+      PowerSeries.X * PowerSeries.derivative ℂ (natCountSeries a)
+        = degreeCountSeries b * natCountSeries a :=
+  sorry
+
+/-- **STEP 3 — RIEMANN–ROCH** (sorry node, TWENTIETH decomposition 2026-07-28 —
+the third and last of the three classical steps of
+`exists_zetaNumerator_of_isProperSmoothCurve` below).
+
+STATEMENT.  Let `strX : X ⟶ Spec 𝔽_q` be proper, smooth of relative dimension
+`1` and geometrically connected, and let `a : ℕ → ℕ` satisfy `a_0 = 1` and the
+zeta ODE `T·Z′ = (Σ_{s ≥ 1} #X(𝔽_{q^s})T^s)·Z` for `Z = Σ_n a_n T^n`.  Then
+there are `g h : ℕ` with
+
+  `(q − 1)·a_n + h = h·q^{n+1−g}`   whenever `2g ≤ n + 1`.
+
+`g` is the genus and `h` the class number of `X`; the displayed identity is
+`(q − 1)·a_n = h·(q^{n+1−g} − 1)`, written subtraction-free.
+
+WHY THE HYPOTHESES PIN `a`, so that this is a statement ABOUT `X`.  Over `ℂ`
+the pair `a_0 = 1`, `T·Z′ = M·Z` determines every `a_n` recursively
+(`n·a_n = Σ_{k=1}^{n} M_k a_{n−k}`, and `n` is invertible in `ℂ`), so `a` is
+UNIQUE: it is forced to be the number of effective divisors of degree `n` on
+`X`.  Carrying it as a parameter rather than defining a divisor group is a
+packaging choice, not a weakening.
+
+ROUTE (Stichtenoth, *Algebraic Function Fields and Codes*, Ch. I.5 and V.1;
+Lorenzini, *An Invitation to Arithmetic Geometry*, Ch. X).  Effective divisors
+of degree `n` group by divisor class; the class of degree `n` classes is a
+torsor under the degree-`0` class group, which is FINITE of order `h`
+(mathlib: `Mathlib/NumberTheory/ClassNumber/FunctionField.lean`), and the degree
+map is surjective onto `ℤ` (F. K. Schmidt).  Each class `[D]` contributes
+`(q^{ℓ(D)} − 1)/(q − 1)` effective divisors, and Riemann–Roch with
+`deg D = n > 2g − 2` gives `ℓ(D) = n + 1 − g` exactly.  Summing over the `h`
+classes gives the identity.
+
+WHAT IS MISSING FROM THE PIN: mathlib has `AlgebraicGeometry.FunctionField`,
+`NumberTheory.FunctionField` and the class number of a function field, but has
+NO Riemann–Roch theorem (no file matching `RiemannRoch` anywhere) and no divisor
+group of a curve.  This leaf is therefore a theory build; STEPS 1 and 2 are not.
+
+`GeometricallyConnected` IS LOAD-BEARING: for a DISCONNECTED `X` the effective
+divisors of the components multiply, `Z` is a product of several such rational
+functions, and `a_n` is not eventually of the form `A·q^n + B` at all.
+
+FAITHFULNESS.  TRUE, and NOT vacuous.  `h = 0` is not a junk escape: it would
+force `a_n = 0` for all `n ≥ 2g − 1`, while `a` is pinned above to the
+effective-divisor count of a NONEMPTY `X` (mathlib's `GeometricallyConnected`
+goes through `ConnectedSpace`, which is nonempty), which is eventually positive.
+`0 < h` is nevertheless NOT asserted, because nothing downstream consumes it and
+asserting it would add a proof obligation for no gain. -/
+theorem exists_riemannRochGrowth_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX]
+    (a : ℕ → ℕ) (ha0 : a 0 = 1)
+    (haODE : PowerSeries.X * PowerSeries.derivative ℂ (natCountSeries a)
+      = pointCountSeries strX * natCountSeries a) :
+    ∃ g h : ℕ, ∀ n : ℕ, 2 * g ≤ n + 1 → (q - 1) * a n + h = h * q ^ (n + 1 - g) :=
+  sorry
+
 /-- **RATIONALITY OF THE ZETA FUNCTION OF A SMOOTH PROPER CURVE OVER `𝔽_q`**
-(sorry node, EIGHTEENTH decomposition 2026-07-28 — the GEOMETRIC half of
+(**PROVEN** 2026-07-28 by the TWENTIETH decomposition, over the three classical
+steps immediately above; opened as a sorry node by the
+EIGHTEENTH decomposition 2026-07-28 — the GEOMETRIC half of
 `exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` below, which is
 PROVEN over it together with `exists_powerSum_of_zetaNumerator` above).
 
@@ -48013,6 +48440,16 @@ number of a function field, but has **no Riemann–Roch theorem** (no file
 matching `RiemannRoch` anywhere) and no zeta function of a curve.  Step 1 is
 scheme theory available now; steps 2–3 are a theory build.
 
+HOW IT IS NOW PROVEN.  Those three steps are exactly the three sorry nodes
+above — `exists_closedPointDegreeCount_of_isProperSmoothCurve`,
+`exists_effectiveDivisorCount_of_degreeCount` and
+`exists_riemannRochGrowth_of_isProperSmoothCurve` — and everything between them
+and the identity below is PROVEN here
+(`exists_zetaNumerator_of_zetaSeriesData`).  The witness they share is the
+coefficient sequence `a` of the zeta series `Z = Σ_n a_n T^n`, which the ODE
+`T·Z′ = M·Z` together with `a_0 = 1` pins uniquely, so no leaf is weakened by
+the abstraction.  See the section docstring above for the details.
+
 `GeometricallyConnected` IS LOAD-BEARING and must not be tidied away: for a
 DISCONNECTED `X` the counts add, so `Z` acquires one factor `((1−T)(1−qT))^{-1}`
 per component and no single `P` with `P(0) = 1` satisfies the identity (two
@@ -48031,8 +48468,13 @@ theorem exists_zetaNumerator_of_isProperSmoothCurve {q : ℕ}
       (PowerSeries.mk fun s => if s = 0 then 0 else
           (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) * (P : PowerSeries ℂ)
         = - (PowerSeries.X *
-            ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ)) :=
-  sorry
+            ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ)) := by
+  obtain ⟨b, hb⟩ := exists_closedPointDegreeCount_of_isProperSmoothCurve strX
+  obtain ⟨a, ha0, haODE⟩ := exists_effectiveDivisorCount_of_degreeCount b
+  rw [degreeCountSeries_eq_pointCountSeries strX hb] at haODE
+  obtain ⟨g, h, hRR⟩ :=
+    exists_riemannRochGrowth_of_isProperSmoothCurve strX a ha0 haODE
+  exact exists_zetaNumerator_of_zetaSeriesData strX a g h ha0 haODE hRR
 
 /-- **The Lefschetz trace formula for a smooth proper curve over a finite
 field** (**PROVEN** 2026-07-28 by the EIGHTEENTH decomposition, over
