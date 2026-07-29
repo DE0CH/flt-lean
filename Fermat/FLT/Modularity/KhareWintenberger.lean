@@ -1531,6 +1531,111 @@ Math. Jussieu 1 (2002), Theorem B; Carayol, Ann. Sci. ÉNS 19 (1986); Taylor,
 98 (1989); Fujiwara, *Deformation rings and Hecke algebras in the totally real
 case*; Jarvis, Math. Ann. 313 (1999); Rajaei, J. reine angew. Math. 537 (2001).
 
+## DUPLICATION AUDIT (2026-07-29) — THIS LEAF HAS AN IDENTICALLY-NAMED TWIN,
+## AND THIS ONE IS THE STRICTLY STRONGER OF THE TWO. DO NOT ATTACK IT AS
+## STATED.
+
+There is a second declaration in the tree with **exactly this name**:
+
+    GaloisRepresentation.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
+      -- GaloisRepresentation/HardlyRamified/HilbertModularity.lean
+
+against this one, which is
+`GaloisRepresentation.Modularity.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`.
+Both were cut on 2026-07-27; both are open; **neither docstring mentioned the
+other** until this audit. The name collision is why no ownership check catches
+it — a `grep` for the name hits both, and every three-part ownership test then
+reports the leaf as owned, correctly, by whoever holds *either*.
+
+Binder-for-binder the two statements are the same (`ℓ`/`hℓodd`/`hW` differ only
+in explicitness, `V` vs `W` only in naming) **except that the twin carries one
+extra hypothesis and this one does not**:
+
+    (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+        Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
+
+So this leaf is the twin with `hres2` DELETED, i.e. it asserts the twin for an
+`F` carrying no condition whatever at the places over `2`. That is not a
+harmless generalisation, and the tree already says so in two places, neither of
+which was written with this leaf in view:
+
+* `HilbertModularity.lean`, in the list of what was REJECTED for the
+  `HilbertHeckeAlgebra` structure: "*Adding `residueCardTwo` here.* It is FALSE
+  as a hypothesis about a given `F` (`ℚ(√5)` has `2` inert), and must be
+  arranged where `F` is born, on the Moret–Bailly chain."
+* the sibling leaf `exists_classifyingHom_hilbertHeckeAlgebra` in THIS file:
+  "`hw2` CANNOT be added as a hypothesis about a given totally real Galois `F`
+  and then discharged downstream — it is simply false for many of them
+  (`F = ℚ(√5)` has `2` inert, `N(w) = 4`, `N(w)² − 1 = 15`, divisible by
+  `ℓ = 5`)."
+
+WHY THE CONDITION AT `2` IS LOAD-BEARING AT ALL. `HilbertHeckeAlgebra` demands
+`isHilbertHardlyRamified` of `ρT`, whose `isTameAtTwo` clause asks, at every
+`w ∣ 2`, for a `ρT`-stable rank-one quotient carrying an *unramified quadratic*
+character. The deformation-theoretic construction of that quotient is
+`isHilbertTameAtTwo_of_fibreProduct`, and that lemma **was refuted on
+2026-07-26 with `5 ≤ ℓ` as its only arithmetic hypothesis** — machine-verified
+at `ℓ = 5`, `F = ℚ(μ₅)`, `N(w) = 16`, by exhaustive search over a 125-element
+square-zero ring, `2500` stable unimodular rows over each of `A₁`, `A₂` and
+**`0`** over their fibre product. It now carries the sharp hypothesis
+`hqw : ℓ ∤ N(w)² − 1`. Over `ℚ` that degenerates to `ℓ ≠ 3` and `hℓ5` covers
+it; over a general `F` it does not, because `N(w) = 2^{f(w∣2)}`. The
+totally-real witness — the one that applies HERE, `ℚ(μ₅)` being CM — is
+`F = ℚ(√5)`: totally real, Galois over `ℚ`, `2` inert, `f = 2`, `N(w) = 4`,
+`N(w)² − 1 = 15`, and `5 ∣ 15`. It satisfies every hypothesis this leaf states.
+
+WHAT THIS DOES **NOT** ESTABLISH, stated precisely so the next owner does not
+over-read it. The above refutes the ROUTE, not the STATEMENT. `isTameAtTwo` is
+an existential over a quotient of `ρT`, and none of the material above exhibits
+an `ℓ`, `F`, `ρbar` and `seed` for which `HilbertHeckeAlgebra ℓ F ρbar` is
+provably EMPTY — that would be a non-modularity assertion at minimal level, and
+no such witness is claimed here. **So this leaf is NOT refuted; it is
+UNDER-HYPOTHESISED**, which is the weaker and more common defect: it is the
+only leaf in this cluster that reasons about the places over `2` while carrying
+neither `hqw` nor `residueCardTwo`, and its own namesake carries the missing
+clause.
+
+WHY THE OBVIOUS REPAIR IS BLOCKED, AND WHERE IT BELONGS. Adding `hres2` here
+turns this leaf into a **one-line citation of the twin** and removes it from
+the frontier. That is the right end state, and it cannot be done from this
+file, because the obligation then lands on the consumer chain and dies at the
+top of it:
+
+    exists_heckeTraceAlgebra_of_congruentSeed      (this file, PROVEN)
+      ← exists_heckeEigensystem_of_congruentSeed   (this file, PROVEN)
+      ← exists_heckePackage_of_seed                (this file)
+      ← exists_potentialModularityWitness_of_five_le (this file)
+      ← exists_moretBailly_seed_of_five_le         (Modularity/MoretBailly.lean)
+
+Every one of those passes `F` through untouched, so none can supply `hres2`;
+and the producer at the top, `exists_moretBailly_seed_of_five_le`, is **PROVEN**
+and returns
+
+    ∃ F, … IsTotallyReal F, IsGalois ℚ F, Even (finrank ℚ F),
+      (ρbar.map _).IsIrreducible, Nonempty (MoretBaillySeed ℓ F _)
+
+with **no** residue conjunct at `2`. The `residueCardTwo`-carrying producer that
+this cluster's design assumes — `exists_moretBaillySeed_residueCardTwo_of_five_le`
+in `HilbertModularity.lean` — exists, is open, and is **not** the one this chain
+calls. So the repair is a cut-level change to the Moret–Bailly geometric chain
+(`exists_hilbertBlumenthalPoint_of_five_le` and below, where `S` must be made to
+contain `2`, costing the `Ω_2 ⊆ X(ℚ_2)` nonemptiness that is BREAK B of that
+module's audit), exactly as both notes quoted above prescribe. It is NOT
+attempted from here, and it must NOT be faked by cutting a sub-leaf of the shape
+
+    residueCardTwo_of_moretBaillySeed : … → ∀ w ∣ 2, Nat.card (𝓞 F ⧸ w) = 2
+
+which `ℚ(√5)` refutes outright and which would be a FALSE leaf with a live
+consumer.
+
+RECOMMENDATION for whoever integrates this cluster: the two namesakes should
+become ONE declaration. Since this file already `public import`s
+`HilbertModularity.lean`, the surviving statement should be the twin (the one
+with `hres2`), and this leaf should be re-stated with `hres2` and proven by
+citation the moment the Moret–Bailly chain supplies it. Until then, dispatching
+a prover at this leaf AS STATED asks them to prove something strictly stronger
+than the twin, with the cluster's own tame-at-`2` machinery unavailable to them.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
