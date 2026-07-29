@@ -66,7 +66,13 @@ covering collection.  Each namespace now reads top-down:
                                         formal logarithm, in one existential
       → exists_reductionFiltration PROVEN: red descends, the four filtration axioms
       → exists_reduction          PROVEN: torsion-freeness from the filtration
-    X18.finite_pic / X13.finite_pic  LEAF: Mordell–Weil and rank 0, one per curve
+    exists_descentHeight_pic      LEAF: a Northcott height on Pic⁰(X_ℚ)
+    finite_quotient_psmul_pic     LEAF: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
+      → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
+    X18.two_divisible_pic / X13.two_divisible_pic
+                                  LEAF: rank 0 — every class is 2-divisible
+      → X18.finite_pic / X13.finite_pic
+                                  PROVEN: finite, from `fg_pic` and 2-divisibility
       → exists_jacobianPackage    PROVEN: the four obligations assembled
       → affine_rational_points    `X(ℚ)` has exactly four affine points
       → exists_eq_sixPts          `X(ℚ)` is exactly the six cusps
@@ -115,20 +121,32 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
   kernel of reduction is torsion-free; hence the kernel is trivial; hence `aj`
   injective plus the compatibility square makes `redPt` injective.
 
-**The remaining leaves are the eight listed in the tree above** (amended 2026-07-28, when
-the three generic obligations were themselves decomposed; the earlier amendment of
-2026-07-27 decomposed and PROVED `exists_jacobianPackage`).  Six of them —
-`finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`, `exists_isPlaceFun_of_infPt`,
-`exists_degreeMap`,
-`sub_single_pt_notMem_princ`, `exists_smoothModel` — are generic in the sextic and
+**DO NOT TRUST A LEAF COUNT WRITTEN HERE — ASK THE COMPILER.**  Two branches
+amended this paragraph on the same day, one saying "eight" and one saying "TEN",
+and the merged file has neither number: at the release-18 merge the
+`declaration uses 'sorry'` set of this module is
+
+    finite_isPlaceFun, exists_isPlaceFun_of_affPt, exists_isPlaceFun_of_infPt,
+    finrank_residue_pt_eq_one, degOf_divisor_eq_zero,
+    isRationalGenerator_of_divisor_eq_sub_single, not_isRationalGenerator,
+    exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
+    geomPic_bc_injective, geomPic_descent, geomPic_divisible,
+    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels.
+
+`exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`,
+`exists_degreeMap`, `sub_single_pt_notMem_princ`, `exists_descentHeight_pic`,
+`finite_quotient_psmul_pic` and both `finite_pic` are PROVEN; earlier text here
+listing them as open is stale.  All of the above except `two_divisible_pic` are
+generic in the sextic and
 the prime, so ONE genus-`2` divisor-theory development closes them for both levels at once;
-only `X18.finite_pic` and `X13.finite_pic`, which are Mordell–Weil together with
-`rank J(ℚ) = 0`, are specific to the curves.  (The count rose from five to eight while
-`exists_placeData`, `aj_injective_of_separable` and `exists_reduction` all became PROVEN:
+only `X18.two_divisible_pic` and `X13.two_divisible_pic`, which are `rank J(ℚ) = 0`, are
+specific to the curves.  (The count rose from five while
+`exists_placeData`, `aj_injective_of_separable`, `exists_reduction` and both `finite_pic`
+all became PROVEN:
 that is decomposition, and with it the two arguments that used to be sketched only in prose
 — `pt_injective` from the valuation axioms, and torsion-freeness from a formal-group
 filtration — are now machine-checked.)  Read the
-`finite_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
+`two_divisible_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
 `0` sharp at both levels, `J(ℚ)_tors ≅ ℤ/21` and `ℤ/19`, `#J(𝔽₅) = 21`,
 `#J(𝔽₃) = #J(𝔽₅) = 19`, `Chabauty0` returning exactly six points at each level) and the
 `exists_jacobianPackage` docstrings for the refutation of route 1.
@@ -545,7 +563,7 @@ discharge:
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
 | 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
 | 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel` |
-| 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | LEAF |
+| 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | PROVEN 2026-07-28 from `fg_pic` (over `exists_descentHeight_pic`, `finite_quotient_psmul_pic`) and `two_divisible_pic` |
 
 and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
 
@@ -2253,7 +2271,78 @@ does not converge on `Ĵ(2ℤ_2)`, and the conclusion genuinely fails: `Ĵ(2ℤ_
 `2`-torsion, so no injective homomorphism into the torsion-free `ℤ_2²` exists.
 
 This leaf is generic in the sextic and the prime, so proving it closes obligation 3 at both
-levels at once. -/
+levels at once.
+
+## AXIS-BY-AXIS AUDIT 2026-07-28: this leaf STAYS ATOMIC
+
+Faithfulness first, then each candidate cut and why it is not taken.
+
+**FAITHFUL, and two candidate refutations closed.**
+
+* *Rank.*  `ker red` sits inside `J(ℚ)`, whose rank is unbounded over the sextics this leaf
+  quantifies over, while the target `ℤ_[p] × ℤ_[p]` has `ℤ_p`-rank `2`.  That is not a
+  contradiction: `log` is injective on ALL of `Ĵ(pℤ_p)` (it is an isomorphism onto
+  `(pℤ_p)²` for `e < p − 1`), and `ℤ_[p]` has INFINITE rank as an abelian group — `ℚ_p` is
+  uncountable and `ℚ` is countable, so `ℚ_p` is an infinite-dimensional `ℚ`-vector space and
+  `ℤ^k ↪ ℤ_[p]` for every finite `k`.  A positive-rank Jacobian does not refute the leaf.
+* *`sp_pt` at a point with `p ∣ x.den`.*  Such a point's closure meets the special fibre at
+  infinity, and `redPt` agrees: `redTriple` branches on `(b : ZMod p) ≠ 0` and returns
+  `Sum.inr (decide (t / a³ = 1))` in the divisible case.  So `sp_pt` is not silently false
+  on the points where the naive affine reduction would be.
+
+**Axis 1 — split `Specialisation` off from `log` (`∀ S, ∃ log …`).  NOT TAKEN.**  The
+section note above forbids it; here is the witness that `Specialisation` really is not
+rigid.  If `λ : D.Divisors →+ ℤ` kills `D.princ` and kills `single (D.pt P) 1` for every
+rational `P`, then for any `w : D'.Divisors` the map `sp + λ(·) • w` satisfies `sp_pt` and
+`sp_princ` again.  A nonzero such `λ` exists exactly when `Pic⁰(X_ℚ)` modulo the subgroup
+generated by the classes of rational points has positive rank — which happens already for
+`rank J(ℚ) ≥ 2` with `X(ℚ)` the two points at infinity, since those generate a subgroup of
+rank at most `1`.  Honesty about what this witness does and does not show:
+it does NOT refute the split, because `λ` kills torsion (`ℤ` is torsion-free), so the junk
+`red` has the same kernel torsion as the true one; and adding preservation of degree to
+`Specialisation` would kill every member with `deg'(w) ≠ 0`, since `deg' (sp' v) = deg v`
+forces `λ(v) · deg'(w) = 0`.  The decisive objection is a different one, and it survives any
+amount of such pinning: the second half's prover, handed an arbitrary `S`, would have to
+RECOVER the model from the axioms before it could produce a logarithm.  That is strictly
+more work than the bundled leaf, not less, so this cut cannot pay even where it is sound.
+
+**Axis 2 — replace `log` by "`ker red` is torsion-free", still in one existential.  NOT
+TAKEN, and here is the honest accounting for the cut that was.**  Modulo the Mordell–Weil
+already in this file (`fg_pic`, over `exists_descentHeight_pic` and
+`finite_quotient_psmul_pic`) the two are EQUIVALENT: `⇒` because subgroups of
+`ℤ_[p] × ℤ_[p]` are torsion-free, `⇐` because `ker red ≤ D.Pic` is then finitely generated,
+hence free of some finite rank `k` when torsion-free, and `ℤ^k ↪ ℤ_[p] × ℤ_[p]` by the rank
+remark above.  (`fg_pic` wants separability over `ℚ`, which `hsep` gives: the resultant of
+`f` and `f'` is an integer, nonzero mod `p`.)  So this leaf is, modulo Mordell–Weil,
+`exists_reduction` with `red` additionally required to lift to the divisor level: the second
+cut of 2026-07-28 did NOT make the remaining obligation smaller.  What it bought is that the
+group theory of Silverman *AEC* VII.3.2 — a separated filtration with `p`-killed graded
+pieces on which `[p]` shifts the level by exactly one has no torsion — is now machine-checked
+instead of asserted.  Recorded so that nobody re-cuts this leaf expecting a reduction in
+content.
+
+**Axis 3 — weaken to "`ker red` is a `p`-group", dropping `smul_p_notMem` and with it
+`hp`.  REJECTED.**  It is genuinely weaker mathematics: the kernel of reduction is pro-`p`
+for EVERY `p`, needing no convergence, and `filt_one`, `filt_separated` and `smul_p_mem`
+alone already give "no prime-to-`p` torsion" by the same Bézout step used in
+`nsmul_ne_zero_of_notMem`.  But it discharges the consumer only together with
+`gcd(#J(ℚ), p) = 1`, i.e. with `#J(ℚ)` known exactly (`21` and `19`) — a strictly harder
+arithmetic input than the finiteness this file proves.  That is the same reason
+`card_coprime` is deliberately absent from `JacobianPackage`; do not "simplify" this way.
+
+**`log_mem_one` is redundant** (noted, not removed): reindexing `filt` by
+`padicLevel p (n − 1)` gives `filt 1 = ker red` from `padicLevel p 0 = ⊤`, and the four
+remaining axioms shift with it.  It is kept because the true logarithm satisfies it for
+free — `log (Ĵ(pℤ_p)) = (pℤ_p)²` — and because it is what makes `filt n` mean
+`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose.
+
+**And `sp` is not a way around building the model.**  `D.Divisors` is free on `D.Places`, so
+any `ψ : D.Pic →+ D'.Pic` with `ψ (D.aj P) = D'.aj (redPt P)` lifts basis-wise to a map
+satisfying `sp_pt`, and representatives can be corrected to the right degree by multiples of
+`single (D'.pt infPlus) 1`, which is `0` in `D'.Pic` — so, given the degree maps of
+`exists_degreeMap`, producing a `Specialisation` and producing a `redPt`-compatible
+reduction homomorphism are interchangeable.  The content is the model and its formal group;
+there is no cheaper packaging of it. -/
 theorem exists_smoothModel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
