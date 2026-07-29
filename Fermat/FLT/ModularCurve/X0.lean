@@ -2705,8 +2705,191 @@ theorem exists_zmodBasis_of_torsionEquiv {A : Type*} [AddCommGroup A] {n : ℕ} 
     rw [hcoord, map_zero] at h2
     simpa [Prod.ext_iff, ZMod.natCast_eq_zero_iff] using h2
 
+/-! #### The geometric fibre, cut at the base change (2026-07-28)
+
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint` below is PROVEN
+from the two leaves in this block plus one formal bridge.  The cut is the
+base change along the geometric point itself:
+
+* everything *formal* — that `A ×_T Spec K ⟶ Spec K` is again an abelian
+  scheme of relative dimension one, and that its relative points over
+  `𝟙 (Spec K)` are `RelPoint f t` as an ABELIAN GROUP — is proven here, in
+  `relPointBaseChangeIdAddEquiv`, over the sorry-free
+  `AbelianSchemeStruct.baseChange` of `AbelianSchemeIsogeny.lean`;
+* everything that is *geometry* — Riemann–Roch and rigidity — is stated
+  over an ARBITRARY base field `k`, in the two leaves below.
+
+**The two leaves are deliberately stated over an arbitrary field, not over
+an algebraically closed one.**  With that choice
+`exists_weierstrassModel_of_ellipticScheme_field` is *literally*
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme` with
+`ℚ` replaced by `k`, conjunct for conjunct.  So the intended way to close
+it is to GENERALISE that declaration and its three leaves in place, not to
+prove anything twice, and the `ℚ` instance then falls out as a
+specialisation.  Stating the leaves only over an algebraically closed `K`
+would have thrown that reuse away, `ℚ` not being algebraically closed.
+
+**One conjunct changes character under that generalisation, and a prover
+must not miss it.**  Over `ℚ` the middle conjunct `ι ≫ f = Spec.map …` is
+FREE: `hom_ext_spec_rat` says any two morphisms to `Spec ℚ` agree, `ℚ`
+being initial in `CommRing`.  Over a general `k` it is genuine content — it
+is what says the chart is a morphism OVER the base, and without it `ι` may
+be a chart twisted by a nontrivial automorphism of `k`.  So the three
+`ℚ`-leaves of `exists_weierstrassModel_of_ellipticScheme` must each acquire
+it when generalised; it cannot be recovered at the assembly step the way it
+is over `ℚ`.
+
+**A stale claim corrected while cutting this (2026-07-28).**  The docstring
+of the leaf below asserted that "the `T = Spec ℚ` case is ALREADY PROVEN".
+It is proven only in the no-direct-`sorry` sense:
+`exists_weierstrassModel_of_ellipticScheme` consumes
+`isElliptic_of_isOpenImmersion_coordinateRing`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), which is still a `sorry`
+leaf, so the whole `ℚ` bridge is transitively open.  The `ℚ` material is a
+route and a set of transport lemmas to reuse; it is not a proved theorem to
+cite. -/
+
+/-- **An abelian scheme of relative dimension one over a FIELD has a
+Weierstrass model** (sorry leaf, opened 2026-07-28) — Silverman *AEC*
+III.3.1, i.e. Riemann–Roch, and the first half of the geometry that
+`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint` used to carry.
+
+This is `EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme`
+with the base `Spec ℚ` replaced by `Spec k` for an arbitrary field `k`,
+conjunct for conjunct.  **Close it by generalising that declaration rather
+than by reproving it**: two of its three leaves
+(`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement`) are already proven over
+`ℚ`, and only the third, `isElliptic_of_isOpenImmersion_coordinateRing`, is
+still open there.  See the subsection docstring for the one conjunct that
+stops being free once `ℚ` is replaced by `k`.
+
+## Faithfulness
+
+`hdim` is load-bearing: at relative dimension `d ≥ 2` the fibre is an
+abelian variety of dimension `d`, which is not a curve and has no
+Weierstrass model at all.  `ab`'s properness and geometric connectedness
+are load-bearing for the same reason — `𝔾ₐ` and `𝔾ₘ` are smooth affine
+group schemes of relative dimension one, and neither has an affine chart of
+Weierstrass shape.
+
+The `k`-rational point that Riemann–Roch needs is NOT a hypothesis and does
+not need to be: `ab.zero (𝟙 (Spec k))` supplies it.  That is exactly what
+separates this from the genus-one TORSOR situation, where the curve is
+smooth proper geometrically connected of genus one and yet no Weierstrass
+model exists — a genus-one torsor is not a hypothetical here, it is the
+reason `ab` may not be weakened to "`f` is a proper smooth curve". -/
+theorem exists_weierstrassModel_of_ellipticScheme_field {k : Type} [Field k]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (E : WeierstrassCurve k) (_ : E.IsElliptic),
+      ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion ι ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+          Set.range ι.base =
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ :=
+  sorry
+
+/-- **The `k`-points of an elliptic scheme are the `k`-points of its
+Weierstrass model, as GROUPS** (sorry leaf, opened 2026-07-28) — Silverman
+*AEC* III.3.4e, i.e. rigidity, and the second half of the geometry.
+
+Given the chart `ι` produced by the leaf above, the two affine charts glue
+to an isomorphism `proj E ≅ A` over `Spec k`, the range condition forces
+the two zero sections to match, and a base-point-preserving morphism of
+abelian schemes is a homomorphism.  That is precisely the route by which
+`EllipticScheme.lean`'s `exists_geomFibreAddEquiv_of_weierstrassModel` is
+proven over `ℚ`, from `exists_isIso_of_affineChart`,
+`hom_specRat_eq_of_range_eq` and `relPointPost_add`.
+
+## This is a SIBLING of the `ℚ` declaration, not a generalisation of it
+
+`exists_geomFibreAddEquiv_of_weierstrassModel` concludes about
+`(E⁄ℚ̄).Point ≃+ GeomFibrePt f 𝟙` and carries a Galois-equivariance clause.
+This one concludes about `k`-RATIONAL points, `RelPoint f (𝟙 (Spec k))`,
+and carries no Galois clause — there is nothing here for `Γ_k` to act on.
+Neither statement follows from the other by formality (recovering this one
+from that one is Galois descent), so a prover should expect to reuse the
+ROUTE and the transport lemmas, not the statement.
+
+The `k`-rational form is the one the geometric-point consumer needs: at an
+algebraically closed `K` the geometric fibre IS the fibre, and routing
+through `specAlgClos K` would only add an isomorphism to transport back
+along.
+
+## Faithfulness
+
+`hmodel` is load-bearing in both its second and third conjuncts.  Drop the
+range condition and `ι` may be the chart of the complement of some OTHER
+`k`-point of `A`; the two group structures then have different origins, and
+the identification is a bijection but not an `AddEquiv` — exactly the
+failure `hom_specRat_eq_of_range_eq` exists to rule out over `ℚ`.  Drop the
+structure-morphism conjunct and `ι` may twist by an automorphism of `k`
+(vacuous over `ℚ`, not over a general `k`).
+
+`[E.IsElliptic]` is not bookkeeping: it is what gives `(E⁄k).Point` its
+`AddCommGroup` structure at all, so the conclusion cannot even be stated
+without it.
+
+NOT VACUOUS over `ℚ`: `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+in `EllipticScheme.lean` produces, for every elliptic `E`, an `(A, f, ab)`
+satisfying every hypothesis.  Over a general `k` the same construction is
+what inhabits it, and generalising that construction is part of closing the
+leaf above. -/
+theorem exists_addEquiv_of_weierstrassModel_field {k : Type} [Field k] [DecidableEq k]
+    (E : WeierstrassCurve k) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (hmodel : ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion ι ∧
+        ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+    Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point) :=
+  sorry
+
+open _root_.CategoryTheory.Limits in
+/-- **Relative points over `g` are relative points of the base change over
+the identity, as an `AddEquiv`** (PROVEN 2026-07-28) — the entire formal
+content of the cut above, and the reason its two leaves may be stated over
+a FIELD rather than over an arbitrary base.
+
+`RelPoint (pullback.snd f g) (𝟙 T) ≃ RelPoint f (𝟙 T ≫ g)` is
+`RelPoint.baseChangeUp`/`baseChangeDown`, and the group structure that
+`AbelianSchemeStruct.baseChange` puts on the left is TRANSPORTED along
+exactly that bijection — so additivity is `baseChange_add` followed by
+`baseChangeDown_baseChangeUp`, and nothing else happens.
+
+The only friction is that `𝟙 T ≫ g` is not syntactically `g`, while
+`RelPoint f _` depends on its base point, so the two sides are different
+TYPES.  Taking the identification `hg : 𝟙 T ≫ g = g'` as a hypothesis with
+`g'` a variable is what makes `subst` available.  That is the same device
+`RelPoint.transport` uses; it is written out here rather than cited because
+`RelPoint.transport` is declared BELOW this point in this file, and hoisting
+it would move a declaration another owner is working in. -/
+noncomputable def relPointBaseChangeIdAddEquiv {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S) {g' : T ⟶ S}
+    (hg : 𝟙 T ≫ g = g') :
+    letI := ab.addCommGroup g'
+    letI := (ab.baseChange g).addCommGroup (𝟙 T)
+    RelPoint f g' ≃+ RelPoint (pullback.snd f g) (𝟙 T) := by
+  subst hg
+  letI := ab.addCommGroup (𝟙 T ≫ g)
+  letI := (ab.baseChange g).addCommGroup (𝟙 T)
+  exact
+  { toFun := RelPoint.baseChangeUp g
+    invFun := RelPoint.baseChangeDown g
+    left_inv := RelPoint.baseChangeDown_baseChangeUp g
+    right_inv := RelPoint.baseChangeUp_baseChangeDown g
+    map_add' := by
+      intro x y
+      show RelPoint.baseChangeUp g (ab.add x y) = (ab.baseChange g).add _ _
+      rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp,
+        RelPoint.baseChangeDown_baseChangeUp] }
+
 /-- **The geometric fibre of an elliptic scheme is the group of points of
-a Weierstrass elliptic curve** (sorry leaf, opened 2026-07-28) — all of
+a Weierstrass elliptic curve** (opened 2026-07-28; **PROVEN the same day**
+from the two field-level leaves above) — all of
 the geometry that `exists_zmodBasis_torsion_geomPoint` used to carry, and
 none of the arithmetic.
 
@@ -2738,37 +2921,50 @@ making the leaf characteristic-free is what keeps it reusable — the
 characteristic-zero input is spent downstream, on
 `WeierstrassCurve.n_torsion_dimension`'s `(n : K) ≠ 0`.
 
+## How it is proven
+
+Base change along the geometric point, then the two field-level leaves
+above.  `ab.baseChange t` is an abelian scheme structure on
+`pullback.snd f t : A ×_T Spec K ⟶ Spec K`;
+`smoothOfRelativeDimension_isStableUnderBaseChange` carries `hdim` across;
+`relPointBaseChangeIdAddEquiv` identifies `RelPoint f t` with the relative
+points of the base change over `𝟙 (Spec K)` AS AN ABELIAN GROUP; and the
+two leaves then run entirely over the field `K`.  Nothing about `T`
+survives the first step, which is the point of the cut.
+
 ## Faithfulness
 
-`hdim` is load-bearing: for an abelian scheme of relative dimension `d`
-the fibre is an abelian variety of dimension `d`, which for `d ≥ 2` is
-not a curve and has no Weierstrass model.  `ab`'s properness and
-connectedness are load-bearing for the same reason — a smooth affine
-relative curve (`𝔾_a`, `𝔾_m`) is a one-dimensional group scheme whose
-point group is not that of any elliptic curve.
+`hdim` is load-bearing, but NOT for the reason first recorded here.  The
+conclusion constrains only the POINT GROUP, so "an abelian surface has no
+Weierstrass model" is not by itself a refutation — one must check that no
+elliptic curve has that point group.  It does not: over an algebraically
+closed `K` the `n`-torsion of an abelian variety of dimension `d` has
+`n^{2d}` elements for `n` invertible, against `n²` for an elliptic curve,
+so `RelPoint f t` for `d ≥ 2` is not `≃+` to `(W⁄K).Point` for any `W`.
+`ab`'s properness and geometric connectedness are load-bearing similarly:
+`𝔾ₐ(K)` is torsion-free (in characteristic zero) and `𝔾ₘ(K)` has cyclic
+`n`-torsion, and neither matches `(ℤ/n)²`.
+
+**`IsAlgClosed K` is NOT load-bearing.**  The proof below never uses it —
+the statement is true over any field `K`, because both leaves are stated
+over an arbitrary field.  It is kept because it is what the consumer
+`exists_zmodBasis_torsion_geomPoint` supplies and what makes the leaf's
+name honest, but an auditor should know the hypothesis is inert here: all
+of the arithmetic input is spent downstream, on
+`WeierstrassCurve.n_torsion_dimension`.
 
 `[DecidableEq K]` is Lean bookkeeping only: it is what mathlib's
 chord–tangent addition on `WeierstrassCurve.Affine.Point` requires, and
 the consumer supplies it classically.
 
-## Where to start — the `T = Spec ℚ` case is ALREADY PROVEN
-
-Do not build this from nothing.  `EllipticScheme.lean` carries the whole
-argument at the base `Spec ℚ` and the geometric point `specAlgClos ℚ`:
-`exists_weierstrassModel_of_ellipticScheme` (the Riemann–Roch model),
-`exists_geomFibreAddEquiv_of_weierstrassModel` (the group-law
-identification), and their combination
-`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which is
-the statement below with `T = Spec ℚ`, `K = ℚ̄` and an extra Galois
-equivariance clause.  X0.lean already imports that module (non-publicly,
-which is fine for a proof body — see the note at the import line).
-
-So the work here is a GENERALISATION, not a construction: base change
-`f` along `t : Spec K ⟶ T` to an abelian scheme over `Spec K`, and run
-the same argument over `K` in place of `ℚ`.  The `ℚ`-specific steps in
-`EllipticScheme.lean` to audit are the ones that mention `specAlgClos ℚ`
-and `Field.absoluteGaloisGroup ℚ`; the equivariance clause is not needed
-here at all, which removes most of them.
+**The `∃ W` is weak, deliberately.**  Over an algebraically closed field
+all elliptic curves have abstractly isomorphic point groups, so `W` is not
+pinned to be *the* model of the fibre — only to be *some* elliptic curve
+with that point group.  That is exactly what the sole consumer needs (the
+`n`-torsion), and it is not vacuous: producing the `AddEquiv` at all is the
+statement that `RelPoint f t` is the point group of an elliptic curve.  A
+consumer wanting the model itself must strengthen the leaf, not read more
+into it.
 
 REFERENCES: Silverman *AEC* III.3.1, III.3.4e; Katz–Mazur 2.1.1 for the
 relative statement. -/
@@ -2779,8 +2975,19 @@ theorem exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint
     (t : Spec (CommRingCat.of K) ⟶ T) :
     letI := ab.addCommGroup t
     ∃ W : WeierstrassCurve K, ∃ _ : W.IsElliptic,
-      Nonempty (RelPoint f t ≃+ (W⁄K).Point) :=
-  sorry
+      Nonempty (RelPoint f t ≃+ (W⁄K).Point) := by
+  letI := ab.addCommGroup t
+  letI := (ab.baseChange t).addCommGroup (𝟙 (Spec (CommRingCat.of K)))
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  have hdimK : SmoothOfRelativeDimension 1 (CategoryTheory.Limits.pullback.snd f t) :=
+    MorphismProperty.of_isPullback (P := @SmoothOfRelativeDimension 1)
+      (IsPullback.of_hasPullback f t) hdim
+  obtain ⟨W, hW, ι, hopen, hstr, hrange⟩ :=
+    exists_weierstrassModel_of_ellipticScheme_field (ab.baseChange t) hdimK
+  haveI := hW
+  obtain ⟨e⟩ := exists_addEquiv_of_weierstrassModel_field W (ab.baseChange t)
+    ⟨ι, hopen, hstr, hrange⟩
+  exact ⟨W, hW, ⟨(relPointBaseChangeIdAddEquiv ab t (Category.id_comp t)).trans e⟩⟩
 
 /-- **The `n`-torsion at a geometric point is free of rank two over
 `ℤ/n`** (opened 2026-07-27; restated 2026-07-27 in `ℕ`-coefficient form;
