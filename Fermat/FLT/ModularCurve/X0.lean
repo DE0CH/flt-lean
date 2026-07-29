@@ -34000,7 +34000,31 @@ Hecke action.  What it does NOT do is remove the global content: a prover
 here still has to produce ONE datum whose `finite_ker` holds, which is why
 the cut is "one factor / all factors" rather than a split of the field
 groups, every version of which dies to the `A i := SpecQ` witness recorded on
-`exists_heckeIsotypicDecomposition`. -/
+`exists_heckeIsotypicDecomposition`.
+
+**ONE FURTHER AXIS SEARCHED AND REJECTED, 2026-07-28 — the MODULAR-FORMS
+axis, i.e. splitting off the finiteness of the index set.**  The obvious
+remaining cut is to isolate the one input here whose literature is not
+geometric: `{a : ℕ → ℂ | ∃ f, IsWeightTwoEigenform N f a}.Finite`, true
+because `S₂(Γ₀(N))` is finite-dimensional and eigenforms with distinct
+eigen-systems are linearly independent.  That statement is genuine, clean and
+independently attackable — and cutting it here is still WRONG, for a reason
+that is about the glue rather than about the mathematics.
+
+Glue-first requires the residual proof to be WRITTEN and compiling, with the
+finiteness fact consumed.  It cannot be: `idx` is not the set of eigen-systems
+(that is exactly what the `N = p³M` multiplicity computation recorded on
+`exists_heckeIsotypicDecomposition` refutes — `2` systems needing `4` copies),
+so `idx`, `A`, `u`, `S` and `form` cannot be *chosen* until the old-form
+multiplicities are known.  A prover who took the cut would be left writing
+`idx := sorry` inside the residue, i.e. an anonymous hole no frontier scan can
+see, which is worse than the leaf as it stands.  So the finiteness statement
+should be cut only TOGETHER with the multiplicity theory, not before it, and
+this leaf stays atomic until then.
+
+Recording the axis rather than the verdict, per the standing rule: what was
+searched is the modular-forms/geometry seam; what was NOT searched is the
+complex-analytic route through `Γ₀(N)\ℍ*`, still inherited from the parent. -/
 theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -35356,35 +35380,79 @@ true on a curve of any genus: `𝒪(−x) ≅ 𝒪(−y)` is strictly *weaker* t
 constant.  All of the positivity lives in the geometric halves, which is
 exactly where `hnr` is consumed.
 
-**WHAT THIS LEAF STILL NEEDS, surveyed 2026-07-28, and step 3 is the
-surprise.**  Steps 1 and 2 are pure plumbing over declarations that exist;
-step 3 is not, because **`modTensor` has no algebraic API anywhere in this
-development** — no associativity, no symmetry, no unit, and in particular
-no cancellation of an invertible factor — and `IsInvertibleSheaf` is
-stated as local triviality, so it does not hand you an inverse either.
-`grep -rn 'modTensor' Fermat/` on 2026-07-28 returns the definition in
-`RelativePicard.lean`, this file, `AbelianSchemeIsogeny.lean` and
-`MoretBailly.lean`, and **not one lemma**.  So the honest inventory is:
-(i) transport of `IsRelPicZeroOf` along an `aj`-compatible isomorphism of
-abelian schemes, and (ii) enough tensor algebra on `Scheme.Modules` to
-cancel `sheaf (P.aj x)` from both sides of `aj_spec`.  (ii) is shared
-with `relPicEquiv_sectionIdeal_of_aj_add_eq` below and with the `Pic`
-statements in `AbelianSchemeIsogeny.lean`, so it is worth building once
-rather than inside a proof.
+**PROVEN 2026-07-28, and the previous paragraph here was FALSE — both of
+its two obligations dissolved.**  What stood here claimed that "**`modTensor`
+has no algebraic API anywhere in this development** — no associativity, no
+symmetry, no unit, and in particular no cancellation of an invertible
+factor", citing a `grep -rn 'modTensor' Fermat/` that returned "**not one
+lemma**", and inventoried two missing pieces: (i) transport of
+`IsRelPicZeroOf` along an `aj`-compatible isomorphism of abelian schemes,
+and (ii) tensor algebra enough to cancel `sheaf (P.aj x)`.  Both are wrong:
 
-The three curve hypotheses are consumed only through `exists_relPicZero`,
-which requires all three.  **The check that would refute this note**: an
-`IsRelPicZeroOf` obtainable from `IsJacobianOf` without autoduality, or a
-route to the geometric leaves that does not pass through divisors, or a
-`modTensor` cancellation lemma appearing anywhere. -/
+* **(i) is not needed at all.**  The proof below never transports
+  `IsRelPicZeroOf`.  `IsJacobianOf.universal`, applied to `P.aj` itself as
+  the pointed natural map (`P.aj_pre` is its naturality, `P.aj_base` its
+  pointedness), produces `u : J ⟶ J'` with `(P.aj z).1 = (jac.aj g z).1 ≫ u`
+  for EVERY test object and point.  Equal `jac.aj` values therefore force
+  equal `P.aj` values by one `rw`, with no isomorphism of abelian schemes
+  constructed, no inverse needed, and no use of `P`'s own initiality.  That
+  is what makes the step "pure plumbing" in fact and not only in intention.
+* **(ii) mostly EXISTED ALREADY**, in `Fermat/FLT/Modularity/AmpleSheaf.lean`
+  (reachable here: `X0` `public import`s `AbelianSchemeIsogeny`, which
+  `public import`s it).  `modTensorMapIso` (functoriality on isos),
+  `modTensorUnitLeftIso`, `nonempty_modTensor_assoc`, `modPullbackUnitIso`,
+  `modPullbackMapIso`, `isInvertibleSheaf_modUnit` and
+  `isInvertibleSheaf_modTensor` were all there, most of them PROVEN.  The
+  grep that reported "not one lemma" must have been run before that module
+  landed, or against a stale tree.
+
+**WHAT WAS ACTUALLY MISSING IS ONE STATEMENT**, now cut as a named leaf —
+`exists_modTensor_inv`, in `ModularCurve/RelativePicard.lean` (it was first
+written in `AmpleSheaf.lean` as `exists_modTensor_inverse` and HOISTED there on
+2026-07-29, because `RelativePicard.lean` is upstream and needed the same
+theorem) — an invertible sheaf has a tensor inverse, i.e. `Pic Z` is a GROUP.
+It is PROVEN over the dual-sheaf leaf `exists_modDual`, which is the one thing
+in this cone that is still open.  From it, together with the braiding
+`modTensorComm` and the right unitor `modTensorUnitRightIso` (both PROVEN
+there; `modTensor` is SYMMETRIC, because mathlib's
+`PresheafOfModules.Monoidal.symmetricCategory` lives on exactly the category
+carrying the monoidal structure `modTensor` is built from), the following are
+PROVEN there and are what this proof consumes:
+
+* `RelPicEquiv.symm` and `RelPicEquiv.trans` — `RelPicEquiv` is an
+  EQUIVALENCE RELATION, which every consumer of `aj_spec` had silently
+  assumed;
+* `RelPicEquiv.cancel_left` — an invertible factor common to both sides may
+  be deleted.
+
+**THE PROOF.**  `exists_relPicZero` gives `P : IsRelPicZeroOf strX ab' o`
+(this is where all three curve hypotheses are consumed, and the only place).
+`jac.universal` at `P.aj` transfers `h` to `P.aj x = P.aj y` as above.
+Reading `P.aj_spec` at `x` and at `y` then gives
+`𝒪(x−o) ⊗ 𝒪(−x) ~ 𝒪(−o) ~ 𝒪(x−o) ⊗ 𝒪(−y)` — the SAME sheaf `𝒪(x−o)` on
+both, because the two `aj` values are now equal — and cancelling it, which
+is legitimate by `P.invertible`, leaves `𝒪(−x) ~ 𝒪(−y)`.
+
+**NO GENUS HYPOTHESIS IS USED**, consistent with the note above: the proof
+is uniform in the genus, and on `ℙ¹` it simply proves the (true, and
+vacuous-looking) statement that all the ideal sheaves are equivalent.  This
+leaf is now transitively sorried only through `exists_relPicZero`,
+`exists_modDual`, `nonempty_modPullback_modTensor` and
+`modLocW_whiskerLeft` — none of which mentions a Jacobian. -/
 theorem relPicEquiv_sectionIdeal_of_aj_eq {X J S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
     (jac : IsJacobianOf strX ab o) {T : Scheme.{0}} {g : T ⟶ S}
     {x y : RelPoint strX g} (h : jac.aj g x = jac.aj g y) :
-    RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y)) :=
-  sorry
+    RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y)) := by
+  obtain ⟨J', jstr', ab', ⟨P⟩⟩ := exists_relPicZero strX hproper hcurve hconn o
+  obtain ⟨u, ⟨-, hu⟩, -⟩ := jac.universal ab' (fun _ z => P.aj z)
+    (by intro _ _ hh _ _ hg z; exact P.aj_pre hh hg z) P.aj_base
+  have hP : P.aj x = P.aj y := Subtype.ext (by rw [hu g x, hu g y, h])
+  have hx := P.aj_spec x
+  rw [hP] at hx
+  exact RelPicEquiv.cancel_left (P.invertible (P.aj y)) (hx.trans (P.aj_spec y).symm)
 
 /-- **RIEMANN–ROCH IN DEGREE `1`, ON POINTS: two linearly equivalent
 `K`-points of a curve with no rational fibre are EQUAL** (sorry leaf,
@@ -35424,7 +35492,57 @@ Riemann–Roch on the base-changed fibre and needs it to be a geometrically
 integral curve; their counterexamples for the parent node (`ℙ¹ × E`,
 `ℙ¹ ⊔ ℙ¹`) are recorded on `exists_affineLine_of_not_injective_aj`, and
 both of those also fail `hnr`.  **The check that would refute this note**:
-a counterexample with `hcurve` or `hconn` dropped and `hnr` retained. -/
+a counterexample with `hcurve` or `hconn` dropped and `hnr` retained.
+
+**STATUS 2026-07-28: THE PICARD BOOKKEEPING IS NO LONGER PART OF THIS
+LEAF'S DIFFICULTY; WHAT IS LEFT IS RIEMANN–ROCH AND NOTHING ELSE.**
+
+`RelPicEquiv` is now an EQUIVALENCE RELATION with cancellation —
+`RelPicEquiv.symm`, `RelPicEquiv.trans`, `RelPicEquiv.cancel_left` in
+`Fermat/FLT/Modularity/AmpleSheaf.lean`, all PROVEN over
+`exists_modTensor_inv` ("an invertible sheaf has a tensor inverse",
+`ModularCurve/RelativePicard.lean`, itself proven over the single new leaf
+`exists_modDual`) — and `modTensor` is SYMMETRIC (`modTensorComm`, PROVEN).  All
+of it reaches this file through `public import`s: `X0` ⟶
+`AbelianSchemeIsogeny` ⟶ `AmpleSheaf`.
+
+So the first move of the classical argument, "`Pic (Spec K)` is trivial,
+hence `RelPicEquiv` at `T = Spec K` is plain isomorphism of sheaves", is
+now a formal consequence of `modPullbackUnitIso` together with
+`modTensorUnitRightIso`, given only the elementary fact that every
+invertible sheaf on `Spec K` is trivial — `Spec K` is a ONE-POINT space
+for a field `K`, so the trivializing open that `IsInvertibleSheaf` hands
+out at that point is forced to be `⊤`.  That is deliberately NOT cut as a
+separate leaf: it is not the obstruction, and a redundant leaf is worse
+than a hint.
+
+**THE OBSTRUCTION, SURVEYED 2026-07-28 ON THE HOST THAT OWNS `.lake`.**
+The three remaining steps are (1) an isomorphism `𝒪(−x) ≅ 𝒪(−y)` with
+`x ≠ y` yields a rational function whose polar divisor is the single
+simple point `x`; (2) that function is a degree-`1` morphism
+`X_K ⟶ ℙ¹_K`, hence an isomorphism; (3) deleting the pole exhibits the
+`𝔸¹_K ⟶ X` that `hnr` forbids.  Every one of them needs a divisor /
+`ℙ¹` layer that exists NOWHERE:
+
+* `grep -rl 'RiemannRoch\|riemannRoch' Mathlib/` returns nothing; there is
+  no `genus`, and no `degree` of a divisor or of a morphism of curves
+  (`Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean` and
+  `OrderOfVanishing.lean` define neither).
+* There is no `ℙ¹` as a scheme.  `Mathlib/AlgebraicGeometry/
+  ProjectiveSpectrum/` gives `Proj` of a graded ring, and nothing
+  identifies `Proj k[x,y]` with a glued pair of affine lines or supplies
+  an open immersion `𝔸¹ ⟶ ℙ¹`.
+* `~/cs/FLT` has `ProjectiveLine` only as the PGL₂-SET in
+  `FLT/Slop/PGL2/FiniteSubgroups/`, not as a scheme, and no
+  Riemann–Roch.
+
+**AND RUN THAT GREP ON THE WORKER HOST.**  `.lake/packages` is a symlink
+into machine-local `/scratch`, so on the orchestration host the path does
+not resolve and EVERY mathlib grep silently returns empty — which reads
+exactly like a confirmed absence.  One false "absent from the pin" claim
+was manufactured that way while this leaf was being worked on (it
+asserted that `PresheafOfModules` has no `SymmetricCategory` instance; it
+has one, at `Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean:145`). -/
 theorem eq_of_relPicEquiv_sectionIdeal {X S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (hnr : HasNoFibreAffineLine strX)
@@ -35477,7 +35595,37 @@ hypotheses enter exactly as they do there.
 
 Note the leaf is NOT implied by the sibling: over a non-reduced `R₀` an
 isomorphism of ideal sheaves is invisible to field-valued points, which
-is the whole reason the diagonal criterion splits `Mono` into two. -/
+is the whole reason the diagonal criterion splits `Mono` into two.
+
+**FAITHFULNESS RE-CHECK 2026-07-28: `hnr` REALLY DOES DO THE WORK, and
+the leaf is FALSE the moment it is dropped, by an explicit witness.**
+Take `X = ℙ¹_S`, `R₀ = K[ε]`, `R₁ = K`, `φ` the quotient by `(ε)`, whose
+kernel is square-zero.  Let `x` be the `R₀`-point `0` of `𝔸¹ ⊂ ℙ¹` and
+`y` the `R₀`-point `ε`.  Then `hmod` holds (both reduce to `0` over `K`)
+and `x ≠ y`, while `hlin` holds too: on `ℙ¹_{R₀}` every ideal sheaf of a
+section has degree `−1`, and two line bundles of equal degree on
+`ℙ¹` over a base differ by the pullback of an invertible sheaf from the
+base — which is exactly `RelPicEquiv`.  So the conclusion fails.  `hnr`
+is what excludes it: at a `ℙ¹` fibre with a rational point the inclusion
+`𝔸¹ ⟶ ℙ¹` is a nonconstant morphism factoring through no point.  The
+same witness shows why a genus hypothesis is not needed SEPARATELY —
+under `hnr` no fibre carrying a rational point can be `ℙ¹`, and a
+genus-`0` fibre with NO rational point supports no `RelPoint` at all, so
+those fibres are vacuous rather than dangerous.
+
+**WHAT IT STILL NEEDS is the survey recorded on
+`eq_of_relPicEquiv_sectionIdeal` above** — the same Riemann–Roch and `ℙ¹`
+layer, which exists in neither the pin nor `~/cs/FLT` nor this project —
+plus the infinitesimal step proper.  The Picard-side bookkeeping is no
+longer an obstacle here either: `RelPicEquiv` is an equivalence relation
+with cancellation as of 2026-07-28 (`RelPicEquiv.symm`, `.trans`,
+`.cancel_left` in `Fermat/FLT/Modularity/AmpleSheaf.lean`).  Note that
+the sibling's reduction "`Pic (Spec K) = 0`, so `RelPicEquiv` is plain
+isomorphism" is NOT available here: `Spec R₀` is not a one-point space
+argument away from triviality — `Pic (Spec R₀)` is trivial for `R₀`
+LOCAL, which `K[ε]` is, but the leaf is stated for an arbitrary
+square-zero surjection, so that step has to be made through locality of
+`R₀` or not at all. -/
 theorem eq_of_relPicEquiv_sectionIdeal_of_sqZero {X S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (hnr : HasNoFibreAffineLine strX)

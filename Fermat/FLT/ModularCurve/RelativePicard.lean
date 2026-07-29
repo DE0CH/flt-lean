@@ -150,11 +150,20 @@ leaves it moved to are, in dependency order:
 * three in the tensor-calculus section — `nonempty_modTensor_assocPic`,
   `nonempty_modPullback_modTensorPic` and `exists_modTensor_inv`.  None
   mentions Picard theory.  They are what `relPicEquiv_equivalence` runs
-  on.  **Only the last is a legitimate dispatch target**: the first two
-  are restatements of declarations in
+  on.  The first two are restatements of declarations in
   `Fermat/FLT/Modularity/AmpleSheaf.lean` that are respectively proven
   and owned there, and the action on them is a hoist rather than a
-  proof — see their docstrings;
+  proof — see their docstrings.
+
+  **Amended 2026-07-29: `exists_modTensor_inv` is now PROVEN**, and the
+  leaf under it is `exists_modDual` — the dual sheaf `L^∨` with its
+  evaluation pairing `L ⊗ L^∨ ⟶ 𝒪_Z`, asked for only up to LOCAL
+  isomorphy of that one global map.  Both it and the global-from-local
+  step `isIso_of_locally_isIso` that closes the gap were HOISTED here
+  from `AmpleSheaf.lean`, where they had been written against a twin of
+  this leaf named `exists_modTensor_inverse`; that module is DOWNSTREAM,
+  so the two copies could never have merged any other way.
+  `exists_modDual` is the one legitimate dispatch target of this section;
 * `exists_relPicOf_of_hasUniversallyTrivialPushforward` — FGA 232 with
   `f_*𝒪 = 𝒪` and the equivalence relation supplied;
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
@@ -540,21 +549,174 @@ theorem isInvertibleSheaf_modTensorPic {Z : Scheme.{u}} {L M : Z.Modules}
   exact ⟨U ⊓ V, ⟨hzU, hzV⟩, ⟨e ≪≫ modTensorMapIso (trivializationOfLE inf_le_left φ)
     (trivializationOfLE inf_le_right ψ) ≪≫ modTensorUnitLeftIso _⟩⟩
 
-/-- **AN INVERTIBLE SHEAF HAS AN INVERSE** (sorry leaf — genuinely new,
-with no twin anywhere in the development).
+/-! #### Global-from-local, and the dual sheaf
 
-The dual `L^∨ = Hom(L, 𝒪)`, with the evaluation `L ⊗ L^∨ ⟶ 𝒪` an
-isomorphism because it is one locally.  The pin has no internal Hom on
-`SheafOfModules`, so the dual has to be produced — either as the internal
-Hom, or (avoiding it) by gluing the local trivialisations that
-`IsInvertibleSheaf` already supplies as data.
+**HOISTED from `Modularity/AmpleSheaf.lean` (2026-07-29), and the hoist is the
+POINT rather than a tidy-up.**  `isIso_of_locally_isIso` and `exists_modDual`
+were written there on 2026-07-28 (branch `flt-lean-337`) to prove
+`exists_modTensor_inverse`, a verbatim twin of `exists_modTensor_inv` below.
+But `AmpleSheaf.lean` `public import`s THIS module, so nothing it proves can
+serve the relative-Picard calculus here, and the two copies of the leaf could
+only ever both stay open.  They are therefore declared here, once, and the
+`AmpleSheaf.lean` copies deleted with their consumers redirected. -/
 
-This is the field that makes `RelPicEquiv` SYMMETRIC, and it is the only
-one of this section's obligations that is genuinely about invertibility
-rather than about sheafification.  Unlike the two leaves above it has no
-owner and no downstream proof, so it IS a legitimate dispatch target. -/
+/-- **ISOMORPHY IS LOCAL ON THE BASE** (PROVEN 2026-07-28) — a morphism of
+`𝒪_Z`-modules whose restriction to each member of an open cover is an
+isomorphism is itself an isomorphism.
+
+This is the global-from-local half of every "the evaluation pairing
+`L ⊗ L^∨ ⟶ 𝒪` is an isomorphism because it is one on trivializing opens"
+argument, and it is the half that is formal.  It is stated for an arbitrary
+morphism because nothing in the proof knows about `modTensor`.
+
+**Route (all four steps are mathlib at this pin).**
+1. `Scheme.Modules.toPresheaf Z : Z.Modules ⥤ TopCat.Presheaf Ab Z` REFLECTS
+   isomorphisms (`Mathlib/AlgebraicGeometry/Modules/Sheaf.lean`, instance just
+   below `toPresheaf`), so it suffices to make the underlying map of
+   `Ab`-presheaves an isomorphism.
+2. Those presheaves are sheaves (`Scheme.Modules.isSheaf`), so
+   `TopCat.Presheaf.isIso_of_stalkFunctor_map_iso`
+   (`Mathlib/Topology/Sheaves/Stalks.lean`) reduces that to the stalk maps.
+3. `Scheme.Modules.restrictStalkNatIso` identifies the stalk of a RESTRICTION
+   at `x : U` with the stalk of the original at `U.ι x`, naturally in the
+   module — and `U.ι ⟨z, hz⟩ = z` is `rfl`.
+4. `NatIso.isIso_map_iff` transports "is an iso" across that natural iso.
+
+**Worth recording, because `AmpleSheaf.lean`'s module docstring could be read
+as forbidding this.**  That docstring says `Scheme.Modules` "has no `Module`
+structure on stalks at this pin", which is why `NonvanishingAt` is stated
+through local trivializations rather than through stalks.  That remains true
+and is not contradicted here: detecting an ISOMORPHISM needs no module
+structure on the stalk, only the underlying `Ab`-stalk, because `toPresheaf`
+already reflects isomorphisms.  Stalks are unusable for *stating* generation;
+they are perfectly usable for *detecting* invertibility. -/
+theorem isIso_of_locally_isIso {Z : Scheme.{u}} {A B : Z.Modules} (f : A ⟶ B)
+    (h : ∀ z : Z, ∃ U : Z.Opens, z ∈ U ∧
+      IsIso ((Scheme.Modules.restrictFunctor U.ι).map f)) : IsIso f := by
+  have hstalk : ∀ z : Z, IsIso ((TopCat.Presheaf.stalkFunctor Ab.{u} z).map
+      ((Scheme.Modules.toPresheaf Z).map f)) := by
+    intro z
+    obtain ⟨U, hz, hiso⟩ := h z
+    haveI := hiso
+    have h1 : IsIso ((Scheme.Modules.restrictFunctor U.ι ⋙
+        Scheme.Modules.toPresheaf U.toScheme ⋙
+        TopCat.Presheaf.stalkFunctor Ab.{u} (⟨z, hz⟩ : U.toScheme)).map f) := by
+      show IsIso ((TopCat.Presheaf.stalkFunctor Ab.{u} (⟨z, hz⟩ : U.toScheme)).map
+        ((Scheme.Modules.toPresheaf U.toScheme).map ((Scheme.Modules.restrictFunctor U.ι).map f)))
+      infer_instance
+    exact (NatIso.isIso_map_iff
+      (Scheme.Modules.restrictStalkNatIso U.ι (⟨z, hz⟩ : U.toScheme)) f).mp h1
+  let FA : TopCat.Sheaf Ab.{u} Z.toPresheafedSpace := ⟨A.presheaf, A.isSheaf⟩
+  let FB : TopCat.Sheaf Ab.{u} Z.toPresheafedSpace := ⟨B.presheaf, B.isSheaf⟩
+  let g : FA ⟶ FB := ⟨(Scheme.Modules.toPresheaf Z).map f⟩
+  haveI : ∀ x : Z, IsIso ((TopCat.Presheaf.stalkFunctor Ab.{u} x).map g.hom) := hstalk
+  haveI : IsIso g := TopCat.Presheaf.isIso_of_stalkFunctor_map_iso g
+  haveI : IsIso ((Scheme.Modules.toPresheaf Z).map f) :=
+    (TopCat.Sheaf.forget Ab.{u} Z.toPresheafedSpace).map_isIso g
+  exact isIso_of_reflects_iso f (Scheme.Modules.toPresheaf Z)
+
+/-- **THE DUAL SHEAF AND ITS EVALUATION PAIRING** (sorry leaf, cut 2026-07-28
+out of `exists_modTensor_inv`) — an invertible `L` admits an invertible `M`
+together with a GLOBAL morphism `ev : L ⊗ M ⟶ 𝒪_Z` that is an isomorphism
+LOCALLY.
+
+TRUE and classical (Hartshorne II.6.12, Stacks 01CV): take `M := L^∨ =
+Hom_{𝒪_Z}(L, 𝒪_Z)` with `ev` the evaluation map.  On a trivializing open both
+sides are `𝒪` and `ev` is the multiplication `𝒪 ⊗ 𝒪 ≅ 𝒪`, which is where the
+local isomorphy comes from; `L^∨` is invertible for the same local reason.
+
+**WHY THE MORPHISM `ev` IS PART OF THE STATEMENT AND CANNOT BE DROPPED.**  A
+weaker-looking cut — "`∃ M` invertible with `modTensor L M` locally isomorphic
+to `𝒪`" — is TRUE FOR EVERY `M`, hence useless: `isInvertibleSheaf_modTensorPic`
+above already proves the tensor of two invertible sheaves is locally trivial.
+Local triviality never gives a global isomorphism (`L` itself is the
+counterexample), so what has to be produced locally is not an isomorphism but
+the LOCAL ISOMORPHY OF ONE FIXED GLOBAL MAP.  With `ev` in hand,
+`isIso_of_locally_isIso` above finishes, which is exactly how
+`exists_modTensor_inv` is proven below.
+
+**This leaf is therefore EQUIVALENT to `exists_modTensor_inv`, not weaker**
+(given an inverse iso, take `ev` to be it: restrictions of an iso are isos).
+The cut buys the prover the global-from-local step, which is the half that is
+formal, and nothing else.  It is recorded here so that nobody re-derives it.
+
+**WHAT IT NEEDS, re-surveyed 2026-07-28 ON THE WORKER HOST, and re-checked
+2026-07-29** (an earlier survey was run where `.lake/packages` is a dangling
+symlink, and `AmpleSheaf.lean`'s `modTensorComm` docstring records what that
+cost):
+
+* **No internal `Hom`, confirmed twice.**  `MonoidalClosed`/`ihom`/
+  `internalHom` occur nowhere under
+  `Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` or under
+  `Mathlib/AlgebraicGeometry/`; the only file either grep reaches is
+  `ModuleCat/Monoidal/Closed.lean`, which is `ModuleCat R` itself.  Neither
+  directory contains any `Dual` either.  So `L^∨` must be built by hand.
+* **The GLUING route is NOT cheaper.**  Mathlib's descent machinery is
+  abstract (`Mathlib/CategoryTheory/Sites/Descent/IsStack.lean`) and has **no
+  instances anywhere in mathlib** — in particular it is not known here that
+  `Scheme.Modules` is a stack, so "glue from the inverse cocycle" is itself a
+  theory build.
+* **The route that does avoid both obstructions** is the dual as a presheaf of
+  COMPATIBLE FAMILIES: `L^∨(U) := {φ : ∀ V ≤ U, Γ(L,V) →ₗ[Γ(Z,V)] Γ(Z,V) //
+  φ commutes with the restriction maps}`, with restriction along `U' ≤ U`
+  given by forgetting.  This is STRICTLY functorial, which the naive
+  `U ↦ (L.restrict U.ι ⟶ modUnit U)` is not — restriction of `𝒪`-modules is
+  only pseudo-functorial (`Scheme.Modules.restrictFunctorComp` is an iso, not
+  an equality), and that, not the absence of `ihom`, is the real obstruction
+  to writing the dual directly.  What then remains: the sheaf condition for
+  `L^∨`, its local triviality (from a trivialization of `L`), and `ev` out of
+  `PresheafOfModules.Monoidal.tensorObj` through
+  `PresheafOfModules.sheafificationAdjunction`.
+
+**`hL` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT**, with a
+counterexample needing no geometry: take `L := 0`, the zero object of the
+abelian category `Z.Modules`.  Then `modTensor 0 M` is `0` for every `M`,
+while `modUnit Z` has stalk `𝒪_{Z,z} ≠ 0` at every `z`, so no `M` and no `ev`
+work on any NONEMPTY `Z`.  (The hedge matters: over `Z = ∅` the category is
+trivial, `IsInvertibleSheaf` is vacuously true and so is the conclusion, so
+the counterexample has to name a point.)  A skyscraper `k` at a closed point
+of `Spec k[u]` is a second, non-degenerate witness: it is finitely generated
+and nonzero, and `k ⊗ M` is again supported at that point, never all of `𝒪`.
+So this is not a formal fact about a monoidal category — it is exactly the
+statement that local triviality globalises to an inverse. -/
+theorem exists_modDual {Z : Scheme.{u}} {L : Z.Modules} (_hL : IsInvertibleSheaf L) :
+    ∃ (M : Z.Modules) (ev : modTensor L M ⟶ modUnit Z), IsInvertibleSheaf M ∧
+      ∀ z : Z, ∃ U : Z.Opens, z ∈ U ∧
+        IsIso ((Scheme.Modules.restrictFunctor U.ι).map ev) :=
+  sorry
+
+/-- **AN INVERTIBLE SHEAF HAS AN INVERSE** (PROVEN 2026-07-29 over
+`exists_modDual` and `isIso_of_locally_isIso`) — i.e. the invertible sheaves
+on `Z` form a GROUP under `⊗`, which is the whole content of "`Pic Z` is a
+group" and the single missing input of the relative Picard calculus below.
+
+The proof is the whole assembly: `exists_modDual` supplies an invertible `M`
+and a global pairing `ev : L ⊗ M ⟶ 𝒪_Z` that is locally an isomorphism, and
+`isIso_of_locally_isIso` upgrades that to `IsIso ev`.  All the mathematics has
+moved to `exists_modDual`; read ITS docstring for the survey, the route, and
+the falsity audit of `hL`.
+
+**ONE SIDE IS ENOUGH, and deliberately so.**  `modTensorComm`
+(`Modularity/AmpleSheaf.lean`) makes `modTensor` symmetric, so
+`modTensor M L ≅ modUnit Z` follows from the stated `modTensor L M ≅ modUnit Z`
+by composing with the braiding — which is what `nonempty_iso_of_modTensor_left`
+does there.  An earlier draft demanded both sides, on a since-refuted belief
+that no braiding exists here; a prover should NOT reinstate that, because the
+extra clause is free and therefore pure noise.
+
+**STALE CLAIM CORRECTED (2026-07-29).**  This docstring used to read "genuinely
+new, with no twin anywhere in the development … no owner and no downstream
+proof".  That was true when written and false within the day: `flt-lean-337`
+cut and proved the identical statement as `exists_modTensor_inverse` in
+`Modularity/AmpleSheaf.lean`, over `exists_modDual` there.  Since that module
+is DOWNSTREAM of this one, the two copies could not be merged by anything but a
+hoist, which is what happened; the `AmpleSheaf.lean` declaration is gone and its
+two consumers point here. -/
 theorem exists_modTensor_inv {Z : Scheme.{u}} {L : Z.Modules} (hL : IsInvertibleSheaf L) :
-    ∃ M : Z.Modules, IsInvertibleSheaf M ∧ Nonempty (modTensor L M ≅ modUnit Z) := sorry
+    ∃ M : Z.Modules, IsInvertibleSheaf M ∧ Nonempty (modTensor L M ≅ modUnit Z) := by
+  obtain ⟨M, ev, hM, hloc⟩ := exists_modDual hL
+  haveI : IsIso ev := isIso_of_locally_isIso ev hloc
+  exact ⟨M, hM, ⟨asIso ev⟩⟩
 
 /-! ### The relative Picard functor -/
 
