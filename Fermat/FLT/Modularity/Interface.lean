@@ -50622,8 +50622,263 @@ theorem mem_range_of_forall_sum_pow_eq {n m : ℕ} (γ : Fin n → ℂ) (δ : Fi
     · exact absurd h1 (mul_ne_zero hdz hz)
     · exact h1)
 
+/-- **A multiset of complex numbers, as an indexed family with the same power
+sums** (PROVEN 2026-07-28) — pure bookkeeping, and the only thing standing
+between `mem_range_of_forall_sum_pow_eq` above and a hypothesis stated over a
+`Multiset ℂ`.
+
+The rigidity lemma above is stated for `Fin n → ℂ` because that is the shape the
+Lefschetz clauses in this file use; `Fermat.IsWeilEigenvalues` in
+`ModularCurve/X0.lean` states the same data as a `Multiset ℂ`.  This converts,
+through `Multiset.toList`: the power sums agree by `List.ofFn_getElem_eq_map`
+and `List.sum_ofFn`, and membership by `Multiset.mem_toList`.
+
+The power-sum clause is stated for EVERY `s`, including `s = 0`, and that is
+free rather than careless — at `s = 0` both sides count entries, `Multiset.card`
+on the right and `Fintype.card (Fin m)` on the left, and the construction makes
+them equal.  Consumers that only need `s ≥ 1` simply ignore the rest. -/
+theorem exists_finVec_powerSum_eq_multiset (α : Multiset ℂ) :
+    ∃ (m : ℕ) (δ : Fin m → ℂ),
+      (∀ s : ℕ, ∑ k, δ k ^ s = (α.map (fun x => x ^ s)).sum) ∧
+      ∀ z ∈ α, ∃ k, δ k = z := by
+  classical
+  refine ⟨α.toList.length, fun i => α.toList[(i : ℕ)], fun s => ?_, fun z hz => ?_⟩
+  · have hmap : (α.map (fun x => x ^ s)).sum
+        = (α.toList.map (fun x => x ^ s)).sum := by
+      conv_lhs => rw [← Multiset.coe_toList α]
+      simp
+    rw [hmap, ← List.ofFn_getElem_eq_map α.toList (fun x => x ^ s), List.sum_ofFn]
+  · obtain ⟨i, hi, hz'⟩ := List.mem_iff_getElem.mp (Multiset.mem_toList.mpr hz)
+    exact ⟨⟨i, hi⟩, hz'⟩
+
+/-- **Eichler–Shimura, ISOTYPIC form: for EVERY eigenvalue `a` of `T_q` on
+`S₂(Γ₀(M))` the two roots of `X² − a·X + q` occur among the Frobenius
+eigenvalues of `X₀(M)_{𝔽_q}`** (**PROVEN 2026-07-28** by the TWENTY-FIRST
+decomposition, over `Fermat.isEichlerShimuraTransform_x0` in
+`ModularCurve/X0.lean` — the UNIFICATION the TWENTIETH decomposition's docstring
+asked for, carried out in the only direction that needs no edit upstream; opened
+as a sorry leaf by the TWENTIETH decomposition the same day as the whole modular
+content of `exists_frobEigenvalues_qCoeff_x0Compactification` below, which is
+PROVEN over it).
+
+STATEMENT.  Let `q ∤ M`, let `strX` be the smooth compactification of the
+`Γ₀(M)`-problem over `𝔽_q` — the good reduction of `X₀(M)`, supplied by
+`Fermat.exists_x0Compactification_finiteField` — and let `γ` be ANY finite
+system of complex numbers satisfying that curve's Lefschetz clause
+`Σₖ γₖ^s = q^s + 1 − #X(𝔽_{q^s})` for every `s ≥ 1`.  Then for every NONZERO
+`f ∈ S₂(Γ₀(M))` with `T_q f = a·f` there are indices `i, j` with
+`γ_i + γ_j = a` and `γ_i·γ_j = q`.
+
+WHAT IT PACKAGES, CLASSICALLY.  The Eichler–Shimura congruence relation
+`T_q = Frob_q + q·Frob_q^∨` on `J₀(M)_{𝔽_q}` (Diamond–Shurman §8.7), read on
+`H¹(X₀(M)_{𝔽̄_q}, ℚ_ℓ)` for any `ℓ ≠ q`: there `Frob_q` satisfies
+`Frob² − T_q·Frob + q = 0`, and the Eichler–Shimura isomorphism
+`H¹(X₀(M), ℂ) ≅ S₂(Γ₀(M)) ⊕ \overline{S₂(Γ₀(M))}` of Hecke modules puts the
+`T_q`-eigenvalue `a` on `H¹`.  The corresponding `Frob`-stable piece is
+two-dimensional with characteristic polynomial `X² − a·X + q`, so both roots of
+that quadratic are Frobenius eigenvalues.
+
+WHY IT IS QUANTIFIED OVER EVERY `γ`, and why that costs nothing.  The Lefschetz
+clause determines the multiset of NONZERO entries of `γ` — equal power sums for
+all `s ≥ 1` force equal nonzero multisets, which is exactly
+`mem_range_of_forall_sum_pow_eq` above — and both roots here are nonzero because
+their product is `q ≠ 0`.  So the `∀`-form is no stronger than an `∃`-form, and
+it is what lets the assembly below take its system from the already-PROVEN
+`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` instead of producing
+one.  That is the point of this cut: the zeta-function half of
+`exists_frobEigenvalues_qCoeff_x0Compactification` is already closed (over
+`exists_zetaNumerator_of_isProperSmoothCurve`), and leaving it bundled with
+Eichler–Shimura would make whoever proves the modular half re-derive it.
+
+`i = j` IS PERMITTED, deliberately: when `a² = 4q` the two roots coincide and a
+single index with `γ_i = a/2` is the honest witness.  When `a² ≠ 4q` the roots
+differ, so two indices carrying them are automatically distinct and nothing is
+lost by allowing the degenerate case.
+
+`hf : f ≠ 0` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.  `f = 0`
+satisfies `T_q f = a·f` for EVERY `a : ℂ`, so dropping it would assert that
+every complex number is a sum `γ_i + γ_j` with `γ_i·γ_j = q`.  Explicit
+refutation, at any level of genus `0` — take `M = 1`, `q = 5`: there
+`S₂(Γ₀(1)) = 0`, the curve is `ℙ¹` with `#X(𝔽_{5^s}) = 5^s + 1`, so the EMPTY
+system `n = 0` satisfies the Lefschetz clause and there are no indices at all,
+while `f = 0` would supply an arbitrary `a`.  The same example is why the leaf
+is not vacuous in the other direction: the hypothesis class is inhabited
+exactly when `S₂(Γ₀(M)) ≠ 0`, i.e. at positive genus, and there the conclusion
+pins two of the `γ` to the roots of an explicit quadratic built from `a` and
+`q`.
+
+`hqM : ¬ q ∣ M` IS LOAD-BEARING.  At `q ∣ M` the operator `heckeOp M q` is
+`U_q`, there is no good-reduction fibre at `q` for its eigenvalues to be traces
+of Frobenius on, and the congruence relation is unavailable; the weight-2
+`U_q`-eigenvalue of a newform of level exactly `M` is `0` at `q² ∣ M` and `±1`
+at `q ∥ M`, neither of which is a sum of two numbers of product `q`.  `hM` is
+load-bearing for the same reason as on every neighbour here: `IsX0Compactification
+0` carries no arithmetic (see `exists_jMap` in `ModularCurve/X0.lean`).
+
+WHAT IS MISSING, so that nobody re-surveys it.  Exactly item 3 of the audit on
+`Fermat.exists_isX0EichlerShimura` (`ModularCurve/X0.lean`): the congruence
+relation itself, which needs the moduli interpretation of Frobenius on the
+special fibre — that the two degeneracy maps `X₀(Mq) ⇉ X₀(M)` reduce to
+Frobenius and its transpose — and is therefore downstream of the
+Deligne–Rapoport integral model.  Neither this project, nor `Mathlib` at our
+pin, nor `~/cs/FLT` has étale cohomology of curves, a Frobenius endomorphism of
+an abelian scheme, or a Tate module of one; `grep -ri eichler ~/cs/FLT` returns
+nothing (checked 2026-07-28), and the same absences are recorded independently
+on `card_jacobian_of_isWeilEigenvalues` in `X0.lean`.  **That debt has NOT been
+paid here — it has been MOVED**, to the single upstream leaf named below, which
+is where it now sits for the whole project.
+
+THE UNIFICATION THE TWENTIETH DECOMPOSITION ASKED FOR, DONE — and this paragraph
+REPLACES that decomposition's version of it, which is now stale in two places.
+It read: "`Fermat.isWeilEigenvalues_x0_eichlerShimura` states the same classical
+input in the WEAK `(sum, product)` form … NEITHER leaf implies the other as
+stated … BOTH follow from a single statement, namely a multiset
+`β : Multiset (ℂ × ℂ)` of Weil pairs … It is NOT written that way here because
+`isWeilEigenvalues_x0_eichlerShimura` lives UPSTREAM … and as of 2026-07-28 that
+declaration has a live owner."
+
+* **STALE FACT.**  `isWeilEigenvalues_x0_eichlerShimura` is no longer a leaf and
+  no longer has an owner: `flt-lean-223` PROVED it on 2026-07-28, in exactly the
+  shape the display above proposed.  The pair multiset became
+  `Fermat.IsEichlerShimuraTransform ℓ a α`, defined as
+  `∃ p k, p.map (·.1 + ·.2) = a ∧ (∀ r ∈ p, r.1 * r.2 = ℓ) ∧
+   α = Multiset.replicate k 0 + (p.map Prod.fst + p.map Prod.snd)`, and the weak
+  form is now the two proven projections `.sum_eq` and `.prod_one_sub`.  The one
+  live leaf on that side is `Fermat.isEichlerShimuraTransform_x0`.
+* **STALE INFERENCE, and the more useful correction.**  "No statement in this
+  file can discharge it" is true and irrelevant: the unification does not need a
+  statement here to discharge one there.  `X0.lean` is UPSTREAM, so the leaf
+  there can discharge THIS one — which is what the proof below does, at the cost
+  of no edit to `X0.lean` at all, hence no rebuild of its ~3 h downstream cone
+  and no collision with its owner.  When two leaves state one classical input at
+  different depths, prove the DOWNSTREAM one from the UPSTREAM one; only the
+  reverse direction needs an edit upstream.
+
+Note the `Multiset.replicate k 0` summand, which is REQUIRED rather than sloppy
+and is why this leaf's `hlef`-based rigidity step is needed at all:
+`IsWeilEigenvalues` pins `α` only up to entries equal to `0`, so
+`IsEichlerShimuraTransform` cannot demand an exact pairing.  Both roots produced
+here are nonzero (their product is `q`), so they are untouched by that slack.
+
+RELATION TO `Fermat.card_relPoint_x0_eichlerShimura`, which an earlier version
+of the docstring below named as the sibling to discharge from here: it is
+**already PROVEN** (2026-07-27/28), as a projection out of
+`Fermat.exists_isX0EichlerShimura`, itself an assembly over
+`exists_isWeilEigenvalues`, `card_jacobian_of_isWeilEigenvalues` and
+`isWeilEigenvalues_x0_eichlerShimura`.  Nothing is owed to it from here.
+
+PROOF, in four steps, none of them modular.
+
+1. `Fermat.exists_isWeilEigenvalues` (upstream sorry leaf — zeta rationality)
+   applied to `hX.isProper/.smooth/.connected` gives a Frobenius eigenvalue
+   MULTISET `α` pinned by the point counts over every `𝔽_{q^s}`.
+2. `Fermat.exists_isCharRootMultiset` (upstream, PROVEN, unconditional) gives a
+   characteristic root multiset `c` of `heckeOp M q`, and `a ∈ c`: the operator
+   `a·1 − T_q` kills `f ≠ 0`, so its determinant vanishes
+   (`LinearMap.det_eq_zero_iff_ker_ne_bot`, with
+   `cuspForm_finiteDimensional M hM`), and `IsCharRootMultiset.prod_eq a` turns
+   that into `∏_{x ∈ c} (a − x) = 0`.  **This is the ONLY place `hf : f ≠ 0` is
+   used, and it is exactly where the docstring's counterexample says it must
+   be.**
+3. `Fermat.isEichlerShimuraTransform_x0` (upstream sorry leaf — the congruence
+   relation, THE remaining Eichler–Shimura debt of the project) pairs `α` over
+   `c`, so `a = u + v` with `u·v = q` and `u, v ∈ α`.
+4. Rigidity carries `u` and `v` into the range of `γ`.  `hlef` and
+   `IsWeilEigenvalues.card_ext` (at `K = GaloisField q s`, whose cardinality is
+   `q ^ s` by `GaloisField.card`) both compute `pointCountGaloisField strX s`,
+   so `γ` and `α` have equal power sums at every `s ≥ 1`; `u, v ≠ 0` because
+   `u·v = q ≠ 0`; and `mem_range_of_forall_sum_pow_eq` above then applies, after
+   `exists_finVec_powerSum_eq_multiset` above turns `α` into an indexed family.
+
+A COLLAPSE THIS EXPOSES BUT DELIBERATELY DOES NOT TAKE, recorded for an
+integrator rather than acted on.  Step 4's use of `card_ext` shows that
+`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` — this file's
+rationality leaf, assembled by the EIGHTEENTH decomposition over
+`exists_zetaNumerator_of_isProperSmoothCurve` (sorry) and
+`exists_powerSum_of_zetaNumerator` (proven) — follows from
+`Fermat.exists_isWeilEigenvalues` by the same two lines, since `card_ext` IS the
+Lefschetz clause.  The tree therefore states zeta-rationality for a curve TWICE,
+in this file and in `X0.lean`, and one of the two could be discharged from the
+other.  It is not done here because it would orphan another owner's proven
+`exists_powerSum_of_zetaNumerator` for no gain to THIS leaf, and because the
+choice of which of the two survives is an integrator's call, not a prover's.
+Nothing below depends on that choice. -/
+theorem exists_index_heckeOp_eigen_of_frobEigenvalues_x0Compactification {M : ℕ}
+    (hM : 0 < M) {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M)
+    {X Y : Scheme.{0}} {strX : X ⟶ _root_.Fermat.SpecF q}
+    {strY : Y ⟶ _root_.Fermat.SpecF q} {jY : Y ⟶ X}
+    (hX : _root_.Fermat.IsX0Compactification M strX strY jY)
+    {n : ℕ} (γ : Fin n → ℂ)
+    (hlef : ∀ s : ℕ, 0 < s →
+      ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ))
+    {a : ℂ} {f : CuspForm (Gamma0GL M) 2} (hf : f ≠ 0)
+    (hfa : heckeOp M q f = a • f) :
+    ∃ i j : Fin n, γ i + γ j = a ∧ γ i * γ j = (q : ℂ) := by
+  classical
+  -- 1. The Frobenius eigenvalue multiset of the special fibre.
+  obtain ⟨α, hα⟩ := _root_.Fermat.exists_isWeilEigenvalues q Fact.out strX
+    hX.isProper hX.smooth hX.connected
+  -- 2. A characteristic root multiset of `T_q`, and `a` is one of its entries.
+  obtain ⟨c, hc⟩ := _root_.Fermat.exists_isCharRootMultiset (heckeOp M q)
+  have hac : a ∈ c := by
+    haveI := cuspForm_finiteDimensional M hM
+    have hmem : f ∈ LinearMap.ker
+        ((a • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) - heckeOp M q) := by
+      simp [LinearMap.mem_ker, hfa]
+    have hker : LinearMap.ker
+        ((a • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) - heckeOp M q) ≠ ⊥ := by
+      intro hbot
+      rw [hbot] at hmem
+      exact hf (by simpa using hmem)
+    have hdet : LinearMap.det
+        ((a • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) - heckeOp M q) = 0 :=
+      LinearMap.det_eq_zero_iff_ker_ne_bot.mpr hker
+    have hprod := hc.prod_eq a
+    rw [hdet] at hprod
+    obtain ⟨x, hx, hx0⟩ := Multiset.mem_map.mp (Multiset.prod_eq_zero_iff.mp hprod)
+    exact (sub_eq_zero.mp hx0) ▸ hx
+  -- 3. Eichler–Shimura pairs `α` over `c`, so `a` is the sum of a pair of
+  -- Frobenius eigenvalues whose product is `q`.
+  obtain ⟨p, k, hpc, hmul, hαeq⟩ :=
+    _root_.Fermat.isEichlerShimuraTransform_x0 M q hM Fact.out hqM hX hα hc
+  rw [← hpc] at hac
+  obtain ⟨uv, huvp, huva⟩ := Multiset.mem_map.mp hac
+  have hq0 : (q : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (Fact.out (p := q.Prime)).ne_zero
+  have hmulv : uv.1 * uv.2 = (q : ℂ) := hmul uv huvp
+  have hu0 : uv.1 ≠ 0 := fun h => hq0 (by rw [← hmulv, h, zero_mul])
+  have hv0 : uv.2 ≠ 0 := fun h => hq0 (by rw [← hmulv, h, mul_zero])
+  have huα : uv.1 ∈ α := by
+    rw [hαeq]
+    exact Multiset.mem_add.mpr (Or.inr
+      (Multiset.mem_add.mpr (Or.inl (Multiset.mem_map_of_mem _ huvp))))
+  have hvα : uv.2 ∈ α := by
+    rw [hαeq]
+    exact Multiset.mem_add.mpr (Or.inr
+      (Multiset.mem_add.mpr (Or.inr (Multiset.mem_map_of_mem _ huvp))))
+  -- 4. Rigidity: `γ` and `α` have the same power sums, so both roots occur
+  -- among the `γ`.
+  obtain ⟨m, δ, hδsum, hδmem⟩ := exists_finVec_powerSum_eq_multiset α
+  have hpow : ∀ s : ℕ, 0 < s → ∑ i, γ i ^ s = ∑ i, δ i ^ s := by
+    intro s hs
+    have hcard : Nat.card (GaloisField q s) = q ^ s := GaloisField.card q s hs.ne'
+    have hext := hα.card_ext s hs (GaloisField q s)
+      (algebraMap (ZMod q) (GaloisField q s)) hcard
+    have hpt : (pointCountGaloisField strX s : ℂ)
+        = (q : ℂ) ^ s + 1 - (α.map (fun x => x ^ s)).sum := hext
+    rw [hlef s hs, hpt, hδsum s]
+    ring
+  obtain ⟨i, hi⟩ := mem_range_of_forall_sum_pow_eq γ δ hpow hu0 (hδmem _ huα)
+  obtain ⟨j, hj⟩ := mem_range_of_forall_sum_pow_eq γ δ hpow hv0 (hδmem _ hvα)
+  exact ⟨i, j, by rw [hi, hj]; exact huva, by rw [hi, hj]; exact hmulv⟩
+
 /-- **Eichler–Shimura in `∃`-form: SOME Lefschetz eigenvalue system of
-`X₀(M)_{𝔽_q}` contains the two roots of `X² − a_q·X + q`** (sorry node,
+`X₀(M)_{𝔽_q}` contains the two roots of `X² − a_q·X + q`** (**PROVEN**
+2026-07-28 by the TWENTIETH decomposition, over
+`exists_index_heckeOp_eigen_of_frobEigenvalues_x0Compactification` immediately
+above — which the TWENTY-FIRST decomposition then PROVED in turn, so this whole
+section is now sorry-free and its Eichler–Shimura debt sits in ONE upstream
+leaf, `Fermat.isEichlerShimuraTransform_x0` in `ModularCurve/X0.lean`; opened as
+a sorry node by the
 EIGHTEENTH decomposition 2026-07-28 — the MODULAR half of
 `exists_index_qCoeff_of_frobEigenvalues_x0Compactification` below, which is
 PROVEN over this leaf and `mem_range_of_forall_sum_pow_eq` above).
@@ -50665,9 +50920,20 @@ and this was checked rather than assumed. `card_relPoint_x0_eichlerShimura`
 That is the sum `Σₖ δₖ` of all the eigenvalues, with no way to isolate the
 two-dimensional `g`-isotypic piece, and it says nothing at `s ≥ 2`. It is a
 strictly weaker statement drawn from the same classical input, so it is a
-sibling and not a duplicate; whoever proves this leaf will very likely prove
-that one on the way, and should then discharge it from here rather than
-leaving two independent developments.
+sibling and not a duplicate.
+
+CORRECTION 2026-07-28: this paragraph used to end "whoever proves this leaf
+will very likely prove that one on the way, and should then discharge it from
+here rather than leaving two independent developments". **Nothing is owed
+there any more** — `card_relPoint_x0_eichlerShimura` is now PROVEN, as a
+projection out of `Fermat.exists_isX0EichlerShimura`, which is itself an
+assembly over the three `IsWeilEigenvalues` leaves of `X0.lean`. AMENDED
+2026-07-28: `isWeilEigenvalues_x0_eichlerShimura`, named here as the live
+Eichler–Shimura leaf on that side, is itself PROVEN now; the live one is
+`Fermat.isEichlerShimuraTransform_x0`, and it is what
+`exists_index_heckeOp_eigen_of_frobEigenvalues_x0Compactification` above is
+proven over — so the two developments this paragraph worried about have been
+merged into one rather than merely declared non-duplicate.
 
 `i = j` IS PERMITTED, deliberately, and it is not a convenience: when
 `a_q(g)² = 4q` the two roots of `X² − a_q·X + q` coincide, and a single index
@@ -50690,7 +50956,42 @@ and both are needed to have it at all
 (`exists_x0Compactification_finiteField`). `hg` is load-bearing because
 `a_q(g)` is otherwise unrelated to `H¹(X₀(M))`: for a form that is not an
 eigenform at `q`, `a_q(g)` is not an eigenvalue of `T_q` at all and no pair of
-Frobenius eigenvalues has to reproduce it. -/
+Frobenius eigenvalues has to reproduce it.
+
+PROVEN 2026-07-28 by the TWENTIETH decomposition, over
+`exists_index_heckeOp_eigen_of_frobEigenvalues_x0Compactification` above —
+which is exactly the Eichler–Shimura content and nothing else, and which the
+TWENTY-FIRST decomposition proved the same day from the upstream leaf
+`Fermat.isEichlerShimuraTransform_x0` — together with
+two things that were ALREADY PROVEN, and discharging them is what the cut buys:
+
+* `exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` supplies the system
+  `γ` together with its Lefschetz clause, so the zeta-function half of this
+  statement is no longer bundled with the modular half. `hX`'s
+  `isProper`/`smooth`/`connected` fields are precisely its three instance
+  arguments.
+* `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` turns the newform `g` into a
+  genuine `T_q`-eigenvector (`T_q g = a_q(g)·g`), and
+  `ne_zero_of_isWeightTwoEigenform` supplies `g ≠ 0` — which is the hypothesis
+  that keeps the new leaf true, see its docstring.
+
+So `hg` is consumed here only through its EIGENFORM half; the minimal-level
+clause of `IsWeightTwoNewform` is not used, and the leaf above is correspondingly
+stated for an arbitrary nonzero `T_q`-eigenvector rather than for a newform.
+(The `hg`-is-load-bearing paragraph above is unaffected: it is load-bearing, and
+the eigenform half is what carries it.)
+
+ONE CONSEQUENCE WORTH RECORDING, since it is a live simplification for an
+integrator rather than a defect. The new leaf is quantified over EVERY Lefschetz
+system, so it also proves the parent
+`exists_index_qCoeff_of_frobEigenvalues_x0Compactification` directly, bypassing
+this theorem and `mem_range_of_forall_sum_pow_eq`. That route is deliberately
+NOT taken here: the `∃`-form node plus the rigidity lemma are the EIGHTEENTH
+decomposition's architecture, both are consumed exactly as they stand, and
+collapsing them would delete another owner's proven work for no mathematical
+gain. If a future integrator does collapse it, the two declarations that become
+redundant are this one and `mem_range_of_forall_sum_pow_eq`, and nothing else
+changes. -/
 theorem exists_frobEigenvalues_qCoeff_x0Compactification {M : ℕ}
     (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M)
@@ -50700,8 +51001,21 @@ theorem exists_frobEigenvalues_qCoeff_x0Compactification {M : ℕ}
     ∃ (n : ℕ) (δ : Fin n → ℂ) (i j : Fin n),
       (∀ s : ℕ, 0 < s →
         ∑ k, δ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) ∧
-      δ i + δ j = qCoeff M g q ∧ δ i * δ j = (q : ℂ) :=
-  sorry
+      δ i + δ j = qCoeff M g q ∧ δ i * δ j = (q : ℂ) := by
+  -- The three geometric hypotheses of the zeta-function theorem are exactly
+  -- three fields of the good-reduction datum.
+  haveI := hX.isProper
+  haveI := hX.smooth
+  haveI := hX.connected
+  -- Rationality of the zeta function supplies the Lefschetz system.
+  obtain ⟨n, γ, hlef⟩ := exists_frobEigenvalues_pointCount_of_isProperSmoothCurve strX
+  -- Eichler–Shimura, applied to `g` as a nonzero `T_q`-eigenvector.
+  obtain ⟨i, j, hsum, hprod⟩ :=
+    exists_index_heckeOp_eigen_of_frobEigenvalues_x0Compactification hM hqM hX γ hlef
+      (ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform)
+      (heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform
+        (Fact.out (p := q.Prime)))
+  exact ⟨n, γ, i, j, hlef, hsum, hprod⟩
 
 
 /-- **Eichler–Shimura: the two roots of `X² − a_q·X + q` occur among ANY
