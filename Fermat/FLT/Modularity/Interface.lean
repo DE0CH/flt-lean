@@ -60408,10 +60408,14 @@ THE FOUR LEAVES, and why each is smaller than what it replaces:
    belongs in `ArtinConductor.lean` beside `RamificationFiltration` and is
    stated here only to avoid rebuilding that module's whole cone; hoisting it
    is a free follow-up.
-2. `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` — `det τ` is the
-   `p`-adic cyclotomic character (Chebotarev on the Frobenius data in `hτ`),
-   hence trivial on inertia at every `q ≠ p`. It carries NO newform, NO
-   irreducibility and NO level: only `hτ` and continuity.
+2. `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup` — **PROVEN
+   2026-07-28, no longer a leaf.** `det τ` is the `p`-adic cyclotomic
+   character (Chebotarev on the Frobenius data in `hτ`), hence trivial on
+   inertia at every `q ≠ p`. It carries NO newform, NO irreducibility and NO
+   level: only `hτ` and continuity. It needed nothing new: the Chebotarev
+   half was already in this file as
+   `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` (now hoisted above
+   it), the local half as `cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup`.
 3. `two_le_conductorExponent_of_isWeightTwoNewform_of_two_le` — Carayol's
    identity, LOWER half only, and only the bound `2 ≤ a_q`.
 4. `conductorExponent_le_two_of_isWeightTwoNewform_of_factorization_eq_two` —
@@ -60708,10 +60712,135 @@ theorem nonempty_ramificationFiltration
     Nonempty (RamificationFiltration v) :=
   sorry
 
+/-- **The cyclotomic determinant, by Chebotarev density** (PROVEN
+2026-07-26; HOISTED 2026-07-28 from several thousand lines below, where it
+was declared before `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup`
+needed it — statement, proof and ingredients unchanged, and every ingredient
+lives in `Chebotarev.lean` / `PadicIntegralClosure.lean` rather than in this
+file, so the move has no other effect): a 2-dimensional continuous
+`ℚ̄_p`-representation of `Γ ℚ` whose Frobenius characteristic polynomials have
+CONSTANT COEFFICIENT `q` away from a finite set of places has determinant equal
+to the `p`-adic cyclotomic character at EVERY group element — the
+weight-2 normalization, in the exact spelling of `IsHardlyRamified.det`.
+
+This is what the Hecke-polynomial hypothesis of the leaves below buys
+about `τ` globally, and it is proven here rather than left inside the
+citation. Assembly, following the trace-density template verbatim: both
+sides are continuous (`GaloisRep.det` is a `ContinuousMonoidHom` by
+`IsModuleTopology.continuous_det`; the cyclotomic side is mathlib's
+`cyclotomicCharacter.continuous` pushed along the continuous structure
+map `continuous_algebraMap_padicInt_algebraicClosure`), so the agreement
+locus is CLOSED; both sides are class functions (a determinant is
+multiplicative, and the cyclotomic character lands in the abelian group
+`ℤ_[p]ˣ`), so the locus is conjugation-invariant; and it contains the
+global Frobenius elements away from `S ∪ {p}`, where the constant
+coefficient of a rank-2 characteristic polynomial is the determinant
+(`charpoly_eq_quadratic_of_finrank_two`, `coeff_zero_quadratic`) and
+`cyclotomicCharacter_globalFrob` evaluates the character to `q`. Those
+conjugates are DENSE (`dense_conjClasses_globalFrob`), so the locus is
+everything. The place of `p` must be removed because
+`cyclotomicCharacter_globalFrob` is false there — the cyclotomic
+character is ramified at `p`. -/
+theorem det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
+    (hfr : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (h : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 =
+        (q : AlgebraicClosure ℚ_[p]))
+    (γ : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det (τ γ) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) := by
+  classical
+  set Sp : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    insert hp.out.toHeightOneSpectrumRingOfIntegersRat S with hSp
+  -- the two sides agree at the global Frobenius elements away from `Sp`
+  have hFrob : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp →
+      LinearMap.det (τ (globalFrob v)) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+            (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+    intro v hv
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hqp : q ≠ p := by
+      rintro rfl
+      exact hv (by rw [hSp]; exact Finset.mem_insert_self _ _)
+    have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+      hv (by rw [hSp]; exact Finset.mem_insert_of_mem hmem)
+    have hc0 := h q hq hqS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_eq_quadratic_of_finrank_two hfr, coeff_zero_quadratic] at hc0
+    rw [hc0, cyclotomicCharacter_globalFrob hq hqp, map_natCast]
+  -- both sides are continuous, so the agreement locus is closed …
+  have hcL : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      LinearMap.det (τ γ) :=
+    (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
+  have hcR : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) :=
+    ((continuous_algebraMap_padicInt_algebraicClosure (ℓ := p)).comp
+      (Units.continuous_val.comp
+        (cyclotomicCharacter.continuous p ℚ (AlgebraicClosure ℚ)))).congr
+      fun _ => rfl
+  have hclosed : IsClosed {γ : Field.absoluteGaloisGroup ℚ |
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p])} :=
+    isClosed_eq hcL hcR
+  -- … and it is conjugation-invariant, hence contains the dense set of
+  -- Frobenius conjugates
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {γ : Field.absoluteGaloisGroup ℚ |
+        LinearMap.det (τ γ) =
+          algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+              ℤ_[p]ˣ) : ℤ_[p])} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq]
+    -- the determinant is a class function …
+    have hdetconj : LinearMap.det (τ (g * globalFrob v * g⁻¹)) =
+        LinearMap.det (τ (globalFrob v)) := by
+      have h1 : τ.det g * τ.det g⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      show τ.det (g * globalFrob v * g⁻¹) = τ.det (globalFrob v)
+      rw [map_mul, map_mul]
+      calc τ.det g * τ.det (globalFrob v) * τ.det g⁻¹
+          = τ.det (globalFrob v) * (τ.det g * τ.det g⁻¹) := by ring
+        _ = τ.det (globalFrob v) := by rw [h1, mul_one]
+    -- … and so is the cyclotomic character, which lands in an abelian group
+    have hcycconj : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (g * globalFrob v * g⁻¹).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) =
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+      have hmul : ∀ a b : Field.absoluteGaloisGroup ℚ,
+          (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv := fun _ _ => rfl
+      have hinv : ∀ a : Field.absoluteGaloisGroup ℚ,
+          (a⁻¹).toRingEquiv = (a.toRingEquiv)⁻¹ := fun _ => rfl
+      rw [hmul, hmul, hinv, map_mul, map_mul, map_inv]
+      rw [mul_comm, ← mul_assoc, inv_mul_cancel, one_mul]
+    rw [hdetconj, hcycconj]
+    exact hFrob v hv
+  have hγ : γ ∈ closure {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} := by
+    rw [(dense_conjClasses_globalFrob (K := ℚ) Sp).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hγ
+
 /-- **THE DETERMINANT OF `τ` IS THE CYCLOTOMIC CHARACTER, HENCE TRIVIAL
-ON INERTIA AWAY FROM `p`** (SORRY LEAF, cut 2026-07-28, fifteenth owner;
-Chebotarev density, plus the unramifiedness of the `p`-adic cyclotomic
-character outside `p`).
+ON INERTIA AWAY FROM `p`** (PROVEN 2026-07-28, sixteenth owner; cut
+2026-07-28, fifteenth owner; Chebotarev density, plus the unramifiedness
+of the `p`-adic cyclotomic character outside `p`).
 
 STATEMENT. If `τ`'s Frobenius characteristic polynomials are
 `X² − a_r X + r` off a finite set, then for every prime `q ≠ p` the
@@ -60739,19 +60868,55 @@ hypothesis bundle keeps it strictly stronger and makes it reusable at
 any `τ` with cyclotomic Frobenius determinants. `g₀` and `κ₀` survive
 only because `hτ` mentions `heckeCoeff M₀ g₀`.
 
-TERMINALITY AT THIS PIN. What is missing is Chebotarev in the form
-"two continuous characters of `Γ K` agreeing on the Frobenii outside a
-finite set are equal". The file has `Chebotarev.lean` and the PROVEN
-rigidity `exists_linearEquiv_of_charFrob_eq` for `2`-dimensional
-representations, but no character-level statement; the neighbouring
-`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p` runs the
-other way (it ASSUMES unramifiedness outside `p`). THE CHECK THAT WOULD
-REFUTE THIS VERDICT: exhibit a statement in this tree deducing equality
-of two continuous `Γ ℚ`-characters from agreement on a density-one set
-of Frobenii. AXIS SEARCHED: the character axis and the
-`exists_linearEquiv_of_charFrob_eq` transport axis. NOT SEARCHED:
-whether `det` of the rigidity isomorphism can be run directly, which
-would need a second representation with known determinant. -/
+TERMINALITY AUDIT, REFUTED AND CLOSED (2026-07-28). The cut's audit
+recorded this leaf as terminal at this pin for want of "Chebotarev in the
+form *two continuous characters of `Γ K` agreeing on the Frobenii outside
+a finite set are equal*", having searched the character axis and the
+`exists_linearEquiv_of_charFrob_eq` transport axis. The verdict was
+correct about those two axes and wrong about the tree: it never looked at
+the DETERMINANT axis, where exactly this Chebotarev argument was already
+PROVEN in this very file as
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` (2026-07-26) — the
+determinant of a rank-`2` continuous `ℚ̄_p`-representation whose Frobenius
+characteristic polynomials have constant coefficient `r` off a finite set
+IS the `p`-adic cyclotomic character, by a closed conjugation-invariant
+agreement locus containing a dense set of Frobenius conjugates. It is a
+character-level Chebotarev statement in all but name; only its packaging
+(as a fact about `LinearMap.det` of a representation rather than about an
+abstract character) hid it from the axis the auditor searched. This is the
+standing lesson that an irreducibility verdict is only as wide as the axis
+it ranged over.
+
+PROOF, three steps and no new machinery.
+* The Hecke shape `hτ` gives the CONSTANT COEFFICIENT hypothesis that
+  `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` wants:
+  `coeff_zero_quadratic` reads `(X² − a_r X + r).coeff 0 = r`. Note this
+  is where the trivial nebentypus is consumed and the ONLY place — the
+  linear coefficient `a_r`, i.e. the newform, is never looked at.
+* Hence `det τ = ε_p` at every element of `Γ ℚ`, in particular at the
+  image of `σ ∈ I_q` under `Γ ℚ_q → Γ ℚ`.
+* `cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` (PROVEN
+  above) kills that value for `q ≠ p`: `ℚ(μ_{pⁿ})/ℚ` is unramified at
+  every `q ≠ p`.
+
+The one piece of friction is the `hbridge` step. `GaloisRep.toLocal` is
+stated for a VARIABLE base field, so its `algebraMap` carries
+`HeightOneSpectrum.instAlgebraAdicCompletion`, whereas a hand-written
+`algebraMap ℚ (adicCompletion ℚ q)` — which is the spelling both cited
+lemmas use — resolves at the concrete base `ℚ` to
+`DivisionRing.toRatAlgebra`. The two are propositionally but NOT
+definitionally equal, so neither `rw` nor `exact` matches them (the
+symptom is a `rewrite failed` on terms that pretty-print identically; see
+the helper block of `KhareWintenberger.lean`). Ring homomorphisms out of
+`ℚ` are unique, so `Subsingleton.elim` reconciles them in one line — the
+same fix used by the `hbridge` of
+`residual_triangular_sub_character_inertia_dichotomy_of_flat` above.
+
+MINIMALITY IS PRESERVED BY THE PROOF, not merely by the statement: `M₀`,
+`g₀`, `κ₀` are consumed only because `hτ` mentions `heckeCoeff M₀ g₀`,
+and no step uses `hM₀`, `hg₀`, `hirr`, positivity of the level,
+newform-ness or irreducibility — none of which are even hypotheses
+here. -/
 theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
     {M₀ : ℕ} {g₀ : CuspForm (Gamma0GL M₀) 2}
     (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
@@ -60766,8 +60931,31 @@ theorem det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
     ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 :=
-  sorry
+      LinearMap.det (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ) = 1 := by
+  intro σ hσ
+  have hfr : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := Module.finrank_fin_fun _
+  -- the constant coefficient of `X² − a_r X + r` is `r`: this is the only
+  -- use made of the Hecke shape, and it ignores the linear coefficient
+  have hc0 : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      (τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff 0 =
+        (r : AlgebraicClosure ℚ_[p]) := by
+    intro r hr hrS
+    rw [hτ r hr hrS, coeff_zero_quadratic]
+  -- reconcile `toLocal`'s variable-base `algebraMap` with the concrete-base
+  -- spelling the cyclotomic lemma uses: ring homs out of `ℚ` are unique
+  have hbridge : τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ =
+      τ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) := by
+    rw [GaloisRep.toLocal_apply]
+    exact congrArg (fun h : ℚ →+* HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat =>
+      τ (Field.absoluteGaloisGroup.map h σ)) (Subsingleton.elim _ _)
+  rw [hbridge, det_eq_cyclotomicCharacter_of_charFrob_coeff_zero hfr hc0,
+    cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup hq hqp.symm hσ,
+    Units.val_one, map_one]
 
 /-- **CARAYOL AT DEEP LEVEL, LOWER HALF: `2 ≤ a_q(τ)`** (SORRY LEAF, cut
 2026-07-28, fifteenth owner, out of
@@ -64368,128 +64556,13 @@ theorem injective_algebraMap_algebraicClosure_of_moduleFinite
     simpa [Polynomial.eval₂_at_zero] using h1
   exact hc0 (hψinj (by simpa using hcoeff))
 
-/-- **The cyclotomic determinant, by Chebotarev density** (PROVEN
-2026-07-26 — the determinant analogue of the trace-density half
-`trace_eq_of_charFrob_eq` above, and the CITATION-NARROWING step of the
-`p`-new flat leaf below): a 2-dimensional continuous `ℚ̄_p`-representation
-of `Γ ℚ` whose Frobenius characteristic polynomials have CONSTANT
-COEFFICIENT `q` away from a finite set of places has determinant equal
-to the `p`-adic cyclotomic character at EVERY group element — the
-weight-2 normalization, in the exact spelling of `IsHardlyRamified.det`.
-
-This is what the Hecke-polynomial hypothesis of the leaf below buys
-about `τ` globally, and it is proven here rather than left inside the
-citation. Assembly, following the trace-density template verbatim: both
-sides are continuous (`GaloisRep.det` is a `ContinuousMonoidHom` by
-`IsModuleTopology.continuous_det`; the cyclotomic side is mathlib's
-`cyclotomicCharacter.continuous` pushed along the continuous structure
-map `continuous_algebraMap_padicInt_algebraicClosure`), so the agreement
-locus is CLOSED; both sides are class functions (a determinant is
-multiplicative, and the cyclotomic character lands in the abelian group
-`ℤ_[p]ˣ`), so the locus is conjugation-invariant; and it contains the
-global Frobenius elements away from `S ∪ {p}`, where the constant
-coefficient of a rank-2 characteristic polynomial is the determinant
-(`charpoly_eq_quadratic_of_finrank_two`, `coeff_zero_quadratic`) and
-`cyclotomicCharacter_globalFrob` evaluates the character to `q`. Those
-conjugates are DENSE (`dense_conjClasses_globalFrob`), so the locus is
-everything. The place of `p` must be removed because
-`cyclotomicCharacter_globalFrob` is false there — the cyclotomic
-character is ramified at `p`. -/
-theorem det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
-    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
-    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
-    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
-    (hfr : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
-    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (h : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 =
-        (q : AlgebraicClosure ℚ_[p]))
-    (γ : Field.absoluteGaloisGroup ℚ) :
-    LinearMap.det (τ γ) =
-      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
-        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
-          ℤ_[p]) := by
-  classical
-  set Sp : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
-    insert hp.out.toHeightOneSpectrumRingOfIntegersRat S with hSp
-  -- the two sides agree at the global Frobenius elements away from `Sp`
-  have hFrob : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp →
-      LinearMap.det (τ (globalFrob v)) =
-        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
-          ((cyclotomicCharacter (AlgebraicClosure ℚ) p
-            (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
-    intro v hv
-    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
-    have hqp : q ≠ p := by
-      rintro rfl
-      exact hv (by rw [hSp]; exact Finset.mem_insert_self _ _)
-    have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
-      hv (by rw [hSp]; exact Finset.mem_insert_of_mem hmem)
-    have hc0 := h q hq hqS
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
-      charpoly_eq_quadratic_of_finrank_two hfr, coeff_zero_quadratic] at hc0
-    rw [hc0, cyclotomicCharacter_globalFrob hq hqp, map_natCast]
-  -- both sides are continuous, so the agreement locus is closed …
-  have hcL : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
-      LinearMap.det (τ γ) :=
-    (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
-  have hcR : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
-      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
-        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
-          ℤ_[p]) :=
-    ((continuous_algebraMap_padicInt_algebraicClosure (ℓ := p)).comp
-      (Units.continuous_val.comp
-        (cyclotomicCharacter.continuous p ℚ (AlgebraicClosure ℚ)))).congr
-      fun _ => rfl
-  have hclosed : IsClosed {γ : Field.absoluteGaloisGroup ℚ |
-      LinearMap.det (τ γ) =
-        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
-          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
-            ℤ_[p]ˣ) : ℤ_[p])} :=
-    isClosed_eq hcL hcR
-  -- … and it is conjugation-invariant, hence contains the dense set of
-  -- Frobenius conjugates
-  have hsub : {x : Field.absoluteGaloisGroup ℚ |
-      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
-        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
-      {γ : Field.absoluteGaloisGroup ℚ |
-        LinearMap.det (τ γ) =
-          algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
-            ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
-              ℤ_[p]ˣ) : ℤ_[p])} := by
-    rintro x ⟨v, hv, g, rfl⟩
-    simp only [Set.mem_setOf_eq]
-    -- the determinant is a class function …
-    have hdetconj : LinearMap.det (τ (g * globalFrob v * g⁻¹)) =
-        LinearMap.det (τ (globalFrob v)) := by
-      have h1 : τ.det g * τ.det g⁻¹ = 1 := by
-        rw [← map_mul, mul_inv_cancel, map_one]
-      show τ.det (g * globalFrob v * g⁻¹) = τ.det (globalFrob v)
-      rw [map_mul, map_mul]
-      calc τ.det g * τ.det (globalFrob v) * τ.det g⁻¹
-          = τ.det (globalFrob v) * (τ.det g * τ.det g⁻¹) := by ring
-        _ = τ.det (globalFrob v) := by rw [h1, mul_one]
-    -- … and so is the cyclotomic character, which lands in an abelian group
-    have hcycconj : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
-          (g * globalFrob v * g⁻¹).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) =
-        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
-          (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
-      have hmul : ∀ a b : Field.absoluteGaloisGroup ℚ,
-          (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv := fun _ _ => rfl
-      have hinv : ∀ a : Field.absoluteGaloisGroup ℚ,
-          (a⁻¹).toRingEquiv = (a.toRingEquiv)⁻¹ := fun _ => rfl
-      rw [hmul, hmul, hinv, map_mul, map_mul, map_inv]
-      rw [mul_comm, ← mul_assoc, inv_mul_cancel, one_mul]
-    rw [hdetconj, hcycconj]
-    exact hFrob v hv
-  have hγ : γ ∈ closure {x : Field.absoluteGaloisGroup ℚ |
-      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
-        ∃ g, x = g * globalFrob v * g⁻¹} := by
-    rw [(dense_conjClasses_globalFrob (K := ℚ) Sp).closure_eq]
-    trivial
-  exact closure_minimal hsub hclosed hγ
+-- `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` used to be declared HERE.
+-- It was HOISTED (2026-07-28) to just above
+-- `det_toLocal_eq_one_of_charFrob_of_mem_localInertiaGroup`, which needs it and
+-- is declared several thousand lines earlier; the move is textual only — the
+-- statement, the proof and every ingredient (all of which live in
+-- `Chebotarev.lean` and `PadicIntegralClosure.lean`, none in this file) are
+-- unchanged, and its only consumer in this module is further below.
 
 /-! #### Serre's peu-ramifiée / très-ramifiée dichotomy at `p`
 
