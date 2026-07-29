@@ -30478,6 +30478,210 @@ theorem locallyOfFiniteType_ajHom {X J S : Scheme.{0}} {strX : X ⟶ S}
   haveI : LocallyOfFiniteType (jac.ajHom ≫ jstr) := by rw [h]; infer_instance
   exact locallyOfFiniteType_of_comp jac.ajHom jstr
 
+open _root_.CategoryTheory.Limits in
+/-- **A curve with NO RATIONAL FIBRE has no fibre containing an open affine
+line** (PROVEN 2026-07-28) — the bridge from the geometric statement "some
+fibre of `strX` is a RATIONAL curve" to the seam predicate
+`HasNoFibreAffineLine`, and what lets the two degree-`1` Riemann–Roch leaves
+below be stated with no reference to `hnr`, to `J`, or to a Jacobian.
+
+`HasNoFibreAffineLine` asks that every `𝔸¹_K ⟶ X` lying over a field-valued
+point `k` of the base FACTOR THROUGH a `K`-point of `X`.  What the geometry
+produces instead is an open immersion `v : 𝔸¹_K ⟶ X ×_S Spec K` over `Spec K`
+— "the fibre is rational" — so the two forms have to be matched.  Composing
+with `pullback.fst` turns `v` into a candidate `u` for `hnr`, and
+`pullback.condition` supplies exactly the compatibility `hnr` demands.
+
+What is left is that a MONOMORPHISM out of `𝔸¹_K` cannot factor through a
+point, and the proof of that is CATEGORICAL rather than topological: nothing
+is said about the underlying space of `𝔸¹_K`, so no "the affine line has two
+points" argument, no `PrimeSpectrum`, and no irreducibility is needed.
+`𝔸¹_K` has two distinct `Spec K`-points over `Spec K`, namely
+`AffineSpace.homOfVector (𝟙 _) (fun _ => 0)` and `… (fun _ => 1)`; they are
+sections of `𝔸¹_K ↘ Spec K` by `AffineSpace.homOfVector_over`, and they are
+distinct because `AffineSpace.homOfVector_appTop_coord` reads their
+coordinates off as `0` and `1` in `Γ(Spec K, ⊤) ≅ K`.  If `u = π ≫ s`, then
+both composites `a ≫ v` and `b ≫ v` have `pullback.fst`-component `s` and
+`pullback.snd`-component `𝟙`, hence agree by `pullback.hom_ext`; cancelling
+the mono `v` identifies the two points.
+
+**WHAT IS ACTUALLY LOAD-BEARING IN `Field K` IS ONLY `0 ≠ 1`.**  The proof
+uses nothing about `K` beyond `Nontrivial K`; `Field K` appears because
+`HasNoFibreAffineLine` is quantified that way.  It is genuinely needed: over
+the zero ring `Spec K` is empty, `𝔸¹_K` is empty, every morphism out of it
+factors through anything, `hnr` holds vacuously, and `v` may be an
+isomorphism — which is exactly the `0 = 1` the proof rules out.
+
+Only `Mono v` is consumed, so the leaves below may state the stronger and
+more informative `IsOpenImmersion` at no cost here.  This is step 3
+("removing the pole") of the classical argument recorded on
+`exists_affineLine_of_not_injective_aj`, made rigorous once and shared by
+both Riemann–Roch leaves. -/
+theorem false_of_fibreAffineLine_of_hasNoFibreAffineLine {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hnr : HasNoFibreAffineLine strX) (K : Type) [Field K]
+    (k : Spec (CommRingCat.of K) ⟶ S)
+    (v : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ curveBaseChange strX k) (hmono : Mono v)
+    (hv : v ≫ curveBaseChangeProj strX k
+      = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :
+    False := by
+  haveI := hmono
+  have hv' : v ≫ pullback.snd strX k
+      = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := hv
+  have hu : (v ≫ pullback.fst strX k) ≫ strX
+      = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ k := by
+    rw [Category.assoc, pullback.condition, ← Category.assoc, hv']
+  obtain ⟨s, hs⟩ := hnr K k (v ≫ pullback.fst strX k) hu
+  have hpt : ∀ c : Γ(Spec (CommRingCat.of K), ⊤),
+      AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K))) (fun _ : Unit => c)
+        ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) = 𝟙 _ :=
+    fun _ => AffineSpace.homOfVector_over _ _
+  have hco : ∀ c : Γ(Spec (CommRingCat.of K), ⊤),
+      (AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K))) (fun _ : Unit => c)).appTop
+        (AffineSpace.coord _ ()) = c :=
+    fun _ => AffineSpace.homOfVector_appTop_coord _ _ ()
+  have key : ∀ c : Γ(Spec (CommRingCat.of K), ⊤),
+      AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K))) (fun _ : Unit => c) ≫ v
+        = AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K)))
+            (fun _ : Unit => (0 : Γ(Spec (CommRingCat.of K), ⊤))) ≫ v := by
+    intro c
+    apply pullback.hom_ext
+    · rw [Category.assoc, Category.assoc, hs, ← Category.assoc, ← Category.assoc, hpt c, hpt 0]
+    · rw [Category.assoc, Category.assoc, hv', hpt c, hpt 0]
+  have h01 : (1 : Γ(Spec (CommRingCat.of K), ⊤)) = 0 := by
+    rw [← hco 1, ← hco 0, (cancel_mono v).mp (key 1)]
+  have h := congrArg (Scheme.ΓSpecIso (CommRingCat.of K)).hom h01
+  simp at h
+
+/-- **RIEMANN–ROCH IN DEGREE `1`, GEOMETRIC CORE: two distinct linearly
+equivalent `K`-points force the fibre to be RATIONAL** (sorry leaf,
+2026-07-28) — what remains of `eq_of_relPicEquiv_sectionIdeal` below once
+`hnr` and the "a mono cannot factor through a point" step are discharged by
+`false_of_fibreAffineLine_of_hasNoFibreAffineLine` above.
+
+Neither `J`, nor `AbelianSchemeStruct`, nor `IsJacobianOf`, nor
+`HasNoFibreAffineLine` occurs.  What it says is exactly the classical
+conclusion of Abel plus Riemann–Roch in degree `1`: if the degree-`0` divisor
+`x − y` on the fibre `X_K = X ×_S Spec K` is principal and `x ≠ y`, then
+`X_K` is a RATIONAL curve, i.e. it contains a dense open `𝔸¹_K`.
+
+**THE CONCLUSION IS STATED IN THIS FILE'S ESTABLISHED IDIOM FOR
+RATIONALITY** — `∃ v : 𝔸(Unit; …) ⟶ …, IsOpenImmersion v ∧ …`, the shape of
+`exists_affineLine_of_not_injective_aj` — and for the reason recorded there:
+`ℙ¹` does not exist as a scheme at this pin while `𝔸(n; S)` does, and for a
+smooth proper geometrically connected curve "contains an open `𝔸¹`" and "is
+`ℙ¹`" say the same thing.  `IsOpenImmersion` is stronger than the `Mono` the
+bridge consumes and than the `IsDominant` that
+`birationalOver_affineLine_of_isDominant` (below, PROVEN) would want; the
+classical argument produces it directly, so stating it costs a prover nothing
+and keeps the leaf reusable.
+
+**THE ARGUMENT.**  `Pic (Spec K)` is trivial — `Spec K` is a ONE-POINT space
+for a field `K`, so the trivialising open that `IsInvertibleSheaf` hands out
+is forced to be `⊤` — hence `RelPicEquiv` at `T = Spec K` is plain
+isomorphism of invertible sheaves and `hlin` says `𝒪(−x) ≅ 𝒪(−y)`, i.e. that
+`x − y` is principal.  A rational function realising it has exactly one
+simple pole, hence is a degree-`1` morphism `X_K ⟶ ℙ¹_K`, hence an
+isomorphism; deleting the pole leaves `X_K ∖ {y} ≅ 𝔸¹_K`, which is the
+required open immersion, and it lies over `Spec K` because everything in
+sight does.
+
+**THE THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
+recorded on `eq_of_relPicEquiv_sectionIdeal` below and on
+`exists_affineLine_of_not_injective_aj`: `𝔾ₘ` for `hproper` (`Pic 𝔾ₘ,K = 0`,
+so *every* pair of `K`-points is linearly equivalent, while `𝔾ₘ` contains no
+open `𝔸¹`), `ℙ¹ × E` for `hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`.  `hlin` is the
+whole input and `hne` is what makes the divisor nonzero.
+
+**WHAT IT STILL NEEDS, surveyed 2026-07-28 ON THE HOST THAT OWNS `.lake`**
+(the `.lake/packages` symlink points into machine-local `/scratch`, so a
+mathlib grep run anywhere else silently returns empty and reads exactly like
+a confirmed absence): `grep -rl 'RiemannRoch\|riemannRoch' Mathlib/` returns
+nothing, there is no `genus` and no `degree` of a divisor or of a morphism of
+curves, and there is no projective space —
+`Mathlib/AlgebraicGeometry/ProjectiveSpace*` does not exist, and
+`ProjectiveSpectrum/` supplies only `Proj` of a graded ring with nothing
+identifying `Proj k[x,y]` with a glued pair of affine lines and no open
+immersion `𝔸¹ ⟶ ℙ¹`.  `~/cs/FLT` has `ProjectiveLine` only as the PGL₂-SET.
+So this leaf is the Riemann–Roch layer and nothing else: the Picard
+bookkeeping and the seam plumbing are no longer part of it.
+
+**A ROUTE THAT AVOIDS `ℙ¹` ALTOGETHER MAY BE CHEAPER, and this file already
+has half of it.**  Rationality here is `Scheme.BirationalOver`, and
+`birationalOver_affineLine_of_not_exists_section` (PROVEN, below) already
+goes from a NONCONSTANT `𝔸¹_K ⟶ X_K` to it, through `Mathlib`'s Lüroth.
+What is missing is the opposite implication — from `𝒪(−x) ≅ 𝒪(−y)` to a
+nonconstant affine line — which is where the divisor theory really enters. -/
+theorem exists_fibreAffineLine_of_relPicEquiv_sectionIdeal {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX)
+    (K : Type) [Field K] {k : Spec (CommRingCat.of K) ⟶ S} {x y : RelPoint strX k}
+    (hne : x ≠ y)
+    (hlin : RelPicEquiv strX k (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
+    ∃ v : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ curveBaseChange strX k, IsOpenImmersion v ∧
+      v ≫ curveBaseChangeProj strX k
+        = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K) :=
+  sorry
+
+/-- **RIEMANN–ROCH IN DEGREE `1`, GEOMETRIC CORE, INFINITESIMAL FORM: two
+distinct linearly equivalent points of a SQUARE-ZERO THICKENING force SOME
+fibre to be RATIONAL** (sorry leaf, 2026-07-28) — what remains of
+`eq_of_relPicEquiv_sectionIdeal_of_sqZero` below once `hnr` is discharged
+through `false_of_fibreAffineLine_of_hasNoFibreAffineLine` above.
+
+As for the sibling, neither `J` nor `HasNoFibreAffineLine` occurs.  UNLIKE
+the sibling, the field `K` and the point `k : Spec K ⟶ S` are OUTPUTS: the
+base here is `Spec R₀` for an arbitrary ring, so there is no distinguished
+field-valued point of `S` at which to state the conclusion, and the classical
+argument produces one only after choosing a prime of `R₀`.  Every consumer
+needs only that SOME fibre is rational, which is exactly what
+`HasNoFibreAffineLine` forbids.
+
+**WHY THE STRENGTHENED CONCLUSION IS STILL TRUE, and why the weakest one
+would be worthless.**  The weakest statement that would serve is
+`¬ HasNoFibreAffineLine strX` — "some fibre carries a NONCONSTANT `𝔸¹`" —
+but that is the consumer's contrapositive verbatim and adds nothing.  The
+open-immersion form is genuinely stronger and still true: a nonconstant
+`𝔸¹_K ⟶ X_K` into a smooth proper geometrically connected curve extends to
+`ℙ¹_K ⟶ X_K` (smooth proper source, proper target) and is surjective, so
+`X_K` is dominated by `ℙ¹`; and `X_K` carries a `K`-point (the image of any
+`K`-point of `𝔸¹_K`), so Lüroth makes it `ℙ¹_K`, which contains an open
+`𝔸¹_K`.
+
+**THE FAITHFULNESS WITNESS ON THE CONSUMER EXHIBITS THIS CONCLUSION RATHER
+THAN REFUTING IT, which is the check that the cut is in the right place.**
+The witness recorded on `eq_of_relPicEquiv_sectionIdeal_of_sqZero` —
+`X = ℙ¹_S`, `R₀ = K[ε]`, `R₁ = K`, `x` the `R₀`-point `0` and `y` the
+`R₀`-point `ε` — satisfies `hmod`, `hsq`, `hlin` and `hne`, and its fibres
+are `ℙ¹`, i.e. RATIONAL.  So it is a model of this leaf's hypotheses *and* of
+its conclusion; what it refutes is only the consumer with `hnr` deleted.
+
+If `R₀` is the zero ring then `Spec R₀` is initial, `x = y` for every pair,
+and `hne` is false — so the leaf is vacuous there rather than dangerous.
+
+**WHAT IT STILL NEEDS** is the survey recorded on
+`exists_fibreAffineLine_of_relPicEquiv_sectionIdeal` above — the same
+Riemann–Roch layer, absent from the pin, from `~/cs/FLT` and from this
+project — plus the infinitesimal step proper: the differential of
+Abel–Jacobi at a `K`-point `x` is `T_x X ⟶ H¹(𝒪_{X_K}) = T_0 J`, DUAL to the
+evaluation `H⁰(ω_{X_K}) ⟶ ω_x ⊗ κ(x)`, which is injective exactly off the
+base locus of the canonical system `|K_X|` — empty on every curve of genus
+`≥ 1` by Riemann–Roch.  Hyperellipticity is irrelevant; see the correction
+recorded on `formallyUnramified_ajHom_of_hasNoFibreAffineLine`. -/
+theorem exists_fibreAffineLine_of_relPicEquiv_sectionIdeal_of_sqZero
+    {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX)
+    {R₀ R₁ : CommRingCat} (φ : R₀ ⟶ R₁) (hsurj : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    {g : Spec R₀ ⟶ S} {x y : RelPoint strX g} (hne : x ≠ y)
+    (hmod : Spec.map φ ≫ x.1 = Spec.map φ ≫ y.1)
+    (hlin : RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
+    ∃ (K : Type) (_ : Field K) (k : Spec (CommRingCat.of K) ⟶ S)
+      (v : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ curveBaseChange strX k),
+      IsOpenImmersion v ∧ v ≫ curveBaseChangeProj strX k
+        = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K) :=
+  sorry
+
 /-- **ABEL, VIA AUTODUALITY: `aj x = aj y` says exactly `𝒪(−x) ≅ 𝒪(−y)`
 in the relative Picard group** (sorry leaf, 2026-07-28) — the bridge from
 the ALBANESE presentation of `J` to the PICARD one, over an ARBITRARY
@@ -30554,8 +30758,12 @@ theorem relPicEquiv_sectionIdeal_of_aj_eq {X J S : Scheme.{0}} {strX : X ⟶ S}
   sorry
 
 /-- **RIEMANN–ROCH IN DEGREE `1`, ON POINTS: two linearly equivalent
-`K`-points of a curve with no rational fibre are EQUAL** (sorry leaf,
-2026-07-28) — the geometric half of
+`K`-points of a curve with no rational fibre are EQUAL** (PROVEN 2026-07-28
+by decomposition over `exists_fibreAffineLine_of_relPicEquiv_sectionIdeal`
+and `false_of_fibreAffineLine_of_hasNoFibreAffineLine` above; introduced as a
+sorry leaf earlier the same day.  `hnr` is consumed HERE and nowhere below
+it: the residual leaf is the pure Riemann–Roch statement "a curve with two
+distinct linearly equivalent `K`-points is rational") — the geometric half of
 `universallyInjective_ajHom_of_hasNoFibreAffineLine`, with the Jacobian
 removed: neither `J`, nor `AbelianSchemeStruct`, nor `IsJacobianOf`
 occurs in the statement.
@@ -30597,12 +30805,20 @@ theorem eq_of_relPicEquiv_sectionIdeal {X S : Scheme.{0}} {strX : X ⟶ S}
     (hconn : GeometricallyConnected strX) (hnr : HasNoFibreAffineLine strX)
     (K : Type) [Field K] {k : Spec (CommRingCat.of K) ⟶ S} {x y : RelPoint strX k}
     (hlin : RelPicEquiv strX k (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
-    x = y :=
-  sorry
+    x = y := by
+  by_contra hne
+  obtain ⟨v, hv, hvp⟩ :=
+    exists_fibreAffineLine_of_relPicEquiv_sectionIdeal hproper hcurve hconn K hne hlin
+  haveI := hv
+  exact false_of_fibreAffineLine_of_hasNoFibreAffineLine hnr K k v inferInstance hvp
 
 /-- **RIEMANN–ROCH IN DEGREE `1`, ON TANGENT VECTORS: two linearly
 equivalent points of a SQUARE-ZERO THICKENING that agree modulo the
-thickening are EQUAL** (sorry leaf, 2026-07-28) — the geometric half of
+thickening are EQUAL** (PROVEN 2026-07-28 by decomposition over
+`exists_fibreAffineLine_of_relPicEquiv_sectionIdeal_of_sqZero` and
+`false_of_fibreAffineLine_of_hasNoFibreAffineLine` above; introduced as a
+sorry leaf earlier the same day.  `hnr` is consumed HERE and nowhere below
+it) — the geometric half of
 `formallyUnramified_ajHom_of_hasNoFibreAffineLine`, again with the
 Jacobian removed.
 
@@ -30653,8 +30869,13 @@ theorem eq_of_relPicEquiv_sectionIdeal_of_sqZero {X S : Scheme.{0}} {strX : X �
     {g : Spec R₀ ⟶ S} {x y : RelPoint strX g}
     (hmod : Spec.map φ ≫ x.1 = Spec.map φ ≫ y.1)
     (hlin : RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
-    x = y :=
-  sorry
+    x = y := by
+  by_contra hne
+  obtain ⟨K, _, k, v, hv, hvp⟩ :=
+    exists_fibreAffineLine_of_relPicEquiv_sectionIdeal_of_sqZero hproper hcurve hconn
+      φ hsurj hsq hne hmod hlin
+  haveI := hv
+  exact false_of_fibreAffineLine_of_hasNoFibreAffineLine hnr K k v inferInstance hvp
 
 /-- **RIEMANN–ROCH, FIBREWISE OVER A FIELD: Abel–Jacobi is injective on
 `K`-points, for every field `K`** (PROVEN 2026-07-28 by decomposition
