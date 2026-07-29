@@ -899,11 +899,10 @@ theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImme
   exact ⟨modRestrictPullbackIso f _ ≪≫ e ≪≫
     modTensorMapIso (modRestrictPullbackIso f L).symm (modRestrictPullbackIso f M).symm⟩
 
-/-- **Restricting a trivialization restricts the trivialized section** (sorry
-leaf).  Pure plumbing — no mathematics — and the only reason it is not proven
-here is that `modRestrictLEIso` is routed through `modPullback`, whose component
-isomorphisms come from `Adjunction.leftAdjointUniq` and are therefore not
-definitional.
+/-- **Restricting a trivialization restricts the trivialized section** (PROVEN
+2026-07-28).  Pure plumbing — no mathematics — but it took three attempts, and
+the thing that unlocked it was changing `modRestrictLEIso` (now hoisted to
+`RelativePicard`) rather than changing the proof.
 
 The skeleton, since the same shape recurs everywhere in this file:
 
