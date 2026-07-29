@@ -12695,7 +12695,32 @@ restated here.
 CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
 independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_odd`. -/
+`not_isIrreducible_of_isHardlyRamified_of_odd`.
+
+# BOTH GATING CHECKS RE-RUN 2026-07-28 — THE LEAF IS GENUINELY OPEN
+
+Not read off an audit; the binders were read. Both checks that would turn this
+leaf into a citation still FAIL, and they are INDEPENDENT of each other, so
+closing either one alone does not open this leaf.
+
+* **The `ρ`-package gate (Break D) is live.** `exists_moretBailly_seed_of_five_le`
+  (`Modularity/MoretBailly.lean`) still binds `hZinj`, `{ρ : GaloisRep ℚ O (Fin 2 → O)}`,
+  `hrank`, `hρ : IsHardlyRamified … ρ`, `π`, `hπsurj`, `hπ` — the characteristic-zero
+  lift of `ρbar` OVER `ℚ` that potential modularity exists to route around. So that
+  theorem remains INAPPLICABLE here and this leaf is not a wrapper.
+* **Break E is live**, and this is the check the audit of
+  `nonempty_potentialHeckeDatum_of_five_le` names. Its binders were read:
+  `exists_isAffineOpen_hasRationalPoint` takes exactly ONE prescribed point,
+  `(h : HasRationalPoint fX F)`, and no second family. Accordingly
+  `exists_totallyReal_point_of_geometricallyIrreducible` still passes `∅` for `S₀`
+  and discards any prescribed `ℚ_[2]`-point when it shrinks `X` to an affine open
+  chosen around the REAL point. Break B is repaired BELOW that shrink, which is why
+  repairing B alone did not reach this leaf.
+
+Both repairs are edits to PROVEN declarations in `Modularity/MoretBailly.lean` —
+a file with concurrent owners — so they are cut-level work for that file's owner
+and are deliberately not attempted from here. What this leaf owes remains exactly
+the Moret–Bailly citation with `Ω_2 ≠ ∅`. -/
 theorem exists_moretBaillySeed_padicEmbedding_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
@@ -25375,9 +25400,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   -- Weak universality turns `M_Q` into an `R_Q`-module through the classifying
   -- map `f : R_Q → T_Q`.  THIS is the field `TaylorWilesLevelRaw.moduleRM`,
   -- obtained as a consequence instead of demanded of an abstract ring.
-  obtain ⟨f, instRM, hfsmul, hfalg, hfπ, hfρ⟩ :=
+  obtain ⟨f, -, -, hfalg, hfπ, hfρ⟩ :=
     exists_module_of_hilbertAuxHeckeAlgebra 𝒟Q h𝒟Q H
-  letI := instRM
   -- The RING half.
   obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
