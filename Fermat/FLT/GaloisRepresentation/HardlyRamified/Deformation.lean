@@ -74,15 +74,18 @@ them without a human. Do not re-wrap it.
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 - `exists_obstructionCocycle_smallExtension_deformation`
 - `finiteDimensional_h1_adZeroTwistRestricted`
-- `finiteDimensional_sha2` (the finiteness half of
-  `exists_injective_sha2_dual_sha1Twist`, which is now PROVEN.  Cut out
-  2026-07-28 as `finiteDimensional_h2_adZeroRestricted`, about the AMBIENT
-  `H²(G_{ℚ,S}, ad⁰)`; WEAKENED to `Ш²` and renamed the same day — see the
-  OBLIGATION AUDIT on it, which shows the ambient form was strictly stronger
-  than anything the tree consumes and that its finiteness was a DERIVATION,
-  not the hidden input the cut recorded)
-- `finrank_sha2_le_finrank_sha1Twist` (cut out 2026-07-28; the Poitou–Tate
-  content of `exists_injective_sha2_dual_sha1Twist`, now PROVEN over these two)
+- `exists_poitouTatePairing_sha2_sha1Twist` (cut out 2026-07-29; THE
+  Poitou–Tate input — a `k`-bilinear pairing `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k`,
+  nondegenerate on both sides.  It REPLACES the two leaves
+  `finiteDimensional_sha2` and `finrank_sha2_le_finrank_sha1Twist`, which are
+  now PROVEN over it and over `finiteDimensional_h1_adZeroTwistRestricted`:
+  their own docstrings had said they were "two shadows of ONE input" and
+  should be discharged "in the same breath", and this is that input, named.
+  Frontier `2 → 1`.  It is STRICTLY STRONGER than the pair — see the STRENGTH
+  AUDIT on it for why that is free here and why it is NOT the mistake the
+  `finiteDimensional_h2_adZeroRestricted` episode was.  Its dominant cost is
+  local class field theory, absent from the pin, from `Fermat/` and from
+  `~/cs/FLT` — re-verified 2026-07-29 by statement shape)
 - `finrank_sha1Twist_le_cotangentFinrank` (re-cut 2026-07-28 in `ℕ` and over
   `D.IsUniversal`; `rank_sha1Twist_le_cotangentFinrank` is now PROVEN over it)
 
@@ -18578,13 +18581,32 @@ theorem finiteDimensional_h1_adZeroTwistRestricted
       (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
   sorry
 
-/-! ### Poitou–Tate, decomposed: linear-algebra glue and the two arithmetic halves
+/-! ### Poitou–Tate, decomposed: linear-algebra glue and the ONE arithmetic input
 
 Added 2026-07-28 by the decomposition of `exists_injective_sha2_dual_sha1Twist`
-below.  The first declaration mentions no Galois cohomology at all: it is the
-elementary fact that an injection into a DUAL space is exactly a dimension
-inequality, isolated so that the arithmetic leaves state dimensions rather than
-maps.
+below.  The first declarations mention no Galois cohomology at all: they are the
+elementary facts that an injection into a DUAL space is exactly a dimension
+inequality, and that left-nondegeneracy of a bilinear pairing is injectivity
+into the dual — isolated so that the arithmetic leaf states a PAIRING and
+everything else is compiler-checked linear algebra.
+
+**RESTRUCTURED 2026-07-29 — the section now has ONE arithmetic leaf, not two.**
+Everything below the horizontal rule in this header is the 2026-07-28 record of
+the `1 → 2` split; it is kept because its analysis is what motivated the
+present shape, and because its OBLIGATION AUDIT on the ambient-`H²` episode is
+still the reference for why a *stronger* leaf is usually a mistake.  What
+changed: both halves of that split said, in their own docstrings, that they were
+"two shadows of ONE input — the perfect Poitou–Tate pairing" and that "whoever
+produces the pairing discharges both in the same breath".  That input had no
+name, so nothing in the file recorded the dependency and the linear algebra
+joining the pairing to each half was written nowhere.  It is now
+`exists_poitouTatePairing_sha2_sha1Twist` below, both halves are PROVEN over it,
+and the leaf count is `2 → 1`.  The one thing that survives unchanged from the
+split is its central finding, which the compiler now enforces: the finiteness of
+`Ш²_S(ad⁰)` is a CONSEQUENCE of a map into the degree-`1` dual, never a separate
+arithmetic obligation.
+
+---
 
 **WHAT THE DECOMPOSITION DISCLOSES — read this before working either half.**
 As stated, `exists_injective_sha2_dual_sha1Twist` asks only for SOME injective
@@ -18668,12 +18690,207 @@ theorem exists_injective_toDual_of_finrank_le {K : Type*} [Field K]
     ∃ f : A →ₗ[K] Module.Dual K B, Function.Injective f :=
   exists_injective_of_finrank_le (by rwa [Subspace.dual_finrank_eq])
 
-/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (sorry leaf; the FINITENESS
-half of `exists_injective_sha2_dual_sha1Twist` below.  Cut out 2026-07-28 as
+/-- **Left-nondegeneracy of a bilinear pairing IS injectivity into the dual**
+(PROVEN, elementary; added 2026-07-29 as the glue between
+`exists_poitouTatePairing_sha2_sha1Twist` below and the two theorems that now
+consume it).  No finiteness anywhere: `T x = T x'` gives `T (x - x') y = 0` for
+every `y`, so `x - x' = 0` by hypothesis.  This is the reason the pairing leaf
+below can be stated with NO finiteness hypothesis on `Ш²_S(ad⁰)` and still
+deliver that finiteness — the injection lands in a space the degree-`1` leaf
+already knows to be finite-dimensional. -/
+theorem injective_of_forall_apply_eq_zero {K : Type*} [Field K] {A B : Type*}
+    [AddCommGroup A] [Module K A] [AddCommGroup B] [Module K B]
+    (T : A →ₗ[K] B →ₗ[K] K) (hT : ∀ x, (∀ y, T x y = 0) → x = 0) :
+    Function.Injective (T : A →ₗ[K] Module.Dual K B) := by
+  intro x x' hxx
+  have h0 : x - x' = 0 := hT _ fun y => by simp [map_sub, hxx]
+  exact sub_eq_zero.mp h0
+
+/-- **THE Poitou–Tate input: a nondegenerate `k`-bilinear pairing**
+`Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` (sorry leaf, cut out 2026-07-29; it is the ONE
+arithmetic input behind the two theorems immediately below, both of which are
+PROVEN over it).
+
+This is Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term Poitou–Tate sequence,
+whence the perfect pairing `Ш¹_S(M*) × Ш²_S(M) → ℚ/ℤ`) specialised to
+`M = ad⁰ ρbar`, `M* ≅ ad⁰(1)`, and read on `k`-dimensions.  See
+Darmon–Diamond–Taylor §2.6–2.7.
+
+**WHY THIS DECLARATION EXISTS (2026-07-29).**  `finiteDimensional_sha2` and
+`finrank_sha2_le_finrank_sha1Twist` below were two separate leaves, and both of
+their docstrings said the same thing: they are "two shadows of ONE input", the
+Poitou–Tate pairing, and "whoever produces the pairing discharges both in the
+same breath".  That input had no name, so nothing in the file recorded that the
+two leaves are not independent, and the linear algebra taking the pairing to
+each of them was written nowhere.  It is now written, and checked by the
+compiler: the two consumers below are ordinary two-line assemblies over this
+leaf plus `finiteDimensional_h1_adZeroTwistRestricted`.  Frontier `2 → 1`.
+
+**STRENGTH AUDIT — this leaf is STRICTLY STRONGER than the pair it replaces,
+deliberately, and the extra strength is free.**  Write `PT` for this statement,
+`S₂`/`P` for the two theorems below and `M` for
+`exists_injective_sha2_dual_sha1Twist` further below.  Under the degree-`1`
+leaf, the OBLIGATION AUDIT below establishes `{S₂, P} ⟺ M`.  Then:
+
+* `PT ⟹ {S₂, P}` — that is the content of the two proofs below, and only the
+  LEFT nondegeneracy clause is used;
+* `{S₂, P} ⇏ PT`, since `PT` forces `dim Ш² = dim Ш¹_S(ad⁰(1))` (both
+  nondegeneracies, both sides finite) whereas the pair gives only `≤`.
+
+The strengthening is nonetheless free, and this is the difference from the
+`finiteDimensional_h2_adZeroRestricted` episode audited below — *there* the
+stronger form (ambient `H²` finiteness) cost the local terms of the nine-term
+sequence ON TOP of everything the weaker form cost.  Here there is no cheaper
+input: the file's own intended proof of both consumers, recorded on each of
+them before this cut, is "Poitou–Tate gives a perfect pairing, hence
+`Ш² ≅ (Ш¹(1))^∨`", and Poitou–Tate is a PERFECTNESS theorem — no route to the
+`≤` alone is known, in this tree or in the literature.
+
+**WHY BOTH NONDEGENERACY CLAUSES, when only the left one is consumed.**  Drop
+the right clause and this statement becomes, by
+`injective_of_forall_apply_eq_zero` above and
+`exists_injective_toDual_of_finrank_le` above, EXACTLY equivalent to `M` —
+which is PROVEN below over `S₂` and `P`.  A sorry leaf logically equivalent to
+an already-proven declaration in the same file is a circular re-cut, not a
+decomposition, and it would leave the frontier where it was under a new name.
+Stating the theorem the reference actually proves avoids that and is what a
+successor will produce anyway.  A successor who finds only the left half
+reachable should say so LOUDLY rather than weaken this statement silently: it
+would mean the tree has a genuinely one-sided Poitou–Tate, which the literature
+does not.
+
+**FAITHFULNESS — the `ℚ/ℤ`-valued pairing is `𝔽_ℓ`-bilinear, and the passage to
+a `k`-VALUED `k`-bilinear one is a real (small) step, folded in here.**  NSW's
+pairing lands in `ℚ/ℤ`; on `ℓ`-torsion it lands in `(1/ℓ)ℤ/ℤ ≅ 𝔽_ℓ`, and the
+`ad⁰`-side identification `(x, y) ↦ tr(x y)` is `k`-BALANCED
+(`B (c • x) y = B x (c • y)`) rather than `k`-bilinear into `𝔽_ℓ`, which it
+cannot be.  Upgrading a `k`-balanced `𝔽_ℓ`-bilinear nondegenerate pairing to a
+`k`-bilinear `k`-valued one is the standard `Hom_{𝔽_ℓ}(W, 𝔽_ℓ) ≅ Hom_k(W, k)`
+transport along the nondegeneracy of `Tr_{k/𝔽_ℓ}`, which IS in our pin
+(`Algebra.traceForm_nondegenerate`, `Mathlib/RingTheory/Trace/Basic.lean:504`,
+applicable since a finite field extension is separable; the finite-field
+specialisation is `Mathlib/FieldTheory/Finite/Trace.lean`).  The previous
+wording on `finrank_sha2_le_finrank_sha1Twist` below — "the pairing is
+`k`-bilinear after the trace-form identification" — elided this; it is recorded
+here so that a successor budgets it.  Note `char k = ℓ` is not an extra
+hypothesis: it is forced by `Algebra ℤ_[ℓ] k` (`natCast_self_eq_zero` at the
+top of this module).
+
+**The `ad⁰* ≅ ad⁰(1)` identification is cheap ONLY because `ℓ` is odd.**
+`ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)` uses nondegeneracy of the trace
+form `(X, Y) ↦ tr(X Y)` on `sl₂`, which holds exactly when `char k ≠ 2`.
+`hℓOdd` supplies that, and it is why this leaf may not be restated for `ℓ = 2`.
+
+**The archimedean place is legitimately absent from `S`.**  `hardlyRamifiedPlaces`
+is a set of HEIGHT-ONE primes, so `Ш` here is cut out by the two finite places
+`2` and `ℓ` only, whereas NSW's `Ш^i_S` localises at `∞` as well.  That is
+harmless in BOTH degrees and not only in degree `2`: `Gal(ℂ/ℝ)` has order `2`,
+`ad⁰` and `ad⁰(1)` are `ℓ`-groups with `ℓ` odd, so `H^i(ℝ, −) = 0` for all
+`i ≥ 1` and the `∞` component of the localisation map is zero — the two `Ш`
+groups are unchanged.  (`hℓ5 : 5 ≤ ℓ` gives `ℓ` odd here; `hℓOdd` gives it in
+general.)  The vanishing used is the standard one — for `G` and `X` finite of
+coprime order, `H^i(G, X) = 0` for all `i > 0`; see `sources/css1997mfflt.txt`,
+L. C. Washington, *Galois cohomology*, p. 103, where it is spelled out for
+`G_ℝ` and `X` of odd order, which is precisely our case.
+
+**`hirr` IS NOT AN INPUT** (recorded 2026-07-28 by the previous owner,
+re-checked 2026-07-29 and now enforced by the compiler): Poitou–Tate holds for
+any finite `G_S`-module, so this leaf does not take it, and
+`finrank_sha2_le_finrank_sha1Twist` below no longer references its own copy —
+the binder is kept, renamed `_hirr`, purely so that the consumer's hypothesis
+surface and the CIRCULARITY GUARD are unchanged.  Do not hunt for a use of it.
+
+**PORTING AUDIT — INHERITED from `finrank_sha2_le_finrank_sha1Twist` below,
+which no longer owes it, and RE-CHECKED 2026-07-29 against our pin `a3364fa`,
+`~/cs/FLT` and `Fermat/`.  Every absence below still holds.**
+
+`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+is 582 lines and **sorry-free**, culminating in
+`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
+continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
+It does NOT stand alone on our pin.  The 2026-07-28 re-check enumerated the
+whole shim surface and found **none** of it upstream here:
+`ContinuousLinearMap.CompactOpen` (the scoped compact-open topology on
+`M1 →L[k] M2`, 48 lines), `ContinuousMap.continuous_prodMk` for `R1Space`
+(57 lines — our pin's `continuous_prodMk` in `Mathlib/Topology/CompactOpen.lean`
+is a DIFFERENT lemma and does not cover it), `continuous_of_discreteTopology_snd`,
+`TopModuleCat.linHom`/`linHomMap`/`homOfBilinear` (79 lines),
+`TopModuleCat.cokerDescCLM`/`cokerDescBilinear`/`isOpenQuotientMap_cokerπ`
+(179 lines, of which our
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+already carries `cokerDesc`, `cokerCongr`, `cyclesIsoKer`, `homologyIsoCoker`),
+`ContRepresentation.linHom`/`continuous_pair_of_discrete` (81 lines),
+`TopRep.iHom` (31 lines), and — absent from our partial vendoring of
+`ContCohomology/Basic.lean` — `resolutionCLM`, `resolutionXCast`,
+`invariantsObjIHom`, `d_hom_zero`, `d_hom_succ_apply`, `eqToHom_iHom_apply`
+(~130 lines).  Total to vendor: **≈ 1160 lines**, all sorry-free upstream.
+
+**And the cup product is only the FIRST half.**  The pairing also needs the
+local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), plus the
+reciprocity `Σ_v inv_v = 0` that makes the global pairing well defined.
+RE-CHECKED 2026-07-29 by statement shape and not only by name — `poitou`,
+`tate.?duality`, `localInvariant`, `invariantMap`, `localClassField`,
+`class.?field.?theory`, `reciprocity`, `artin.?map`, `norm.?residue`,
+`brauer.?group`, case-insensitively, over the whole pin and over `~/cs/FLT` —
+and the absence holds.  What exists on the pin is unrelated:
+`Mathlib/Geometry/Manifold/LocalInvariantProperties.lean`,
+`Mathlib/Algebra/BrauerGroup/Defs.lean` (CSAs modulo Morita, no local invariant
+isomorphism), `Mathlib/RepresentationTheory/Homological/TateCohomology/Basic.lean`
+(Tate cohomology of a FINITE group, not local duality), and
+`Mathlib/NumberTheory/LegendreSymbol/QuadraticReciprocity.lean`.  From
+`~/cs/FLT` only two prose mentions (`Assumptions/README.md` lists Poitou–Tate as
+an ASSUMPTION; `Assumptions/Odlyzko.lean` cites Poitou's discriminant paper).
+**So local class field theory must be built, and it, not the cup product, is
+the dominant cost of this leaf.**
+
+**HOW TO DECOMPOSE IT FURTHER — and why that was NOT done here.**  The next
+level down is genuine but is a construction, not a restatement: the nine-term
+sequence needs `P^i_S(M) = ⊕_{v ∈ S} H^i(ℚ_v, M)` (a two-term product here,
+since `S = {2, ℓ}`), the local pairings, `inv_v`, and the exactness statements
+at `P¹`, at `H¹(G_S, M*)^∨` and at `H²(G_S, M)`.  Each of those is a `def` with
+no consumer until the assembly deriving THIS pairing from them is written, so
+cutting them now would produce free-floating definitions — exactly what the
+glue-first rule forbids.  A successor should write that assembly and the
+definitions together, in one module, and consume this leaf's statement as the
+target.  Nothing above needs to change when they do.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from
+`rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
+and for what `hℓ5` is doing.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+§2.6–2.7. -/
+theorem exists_poitouTatePairing_sha2_sha1Twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    ∃ B : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
+        ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k] k,
+      (∀ x, (∀ y, B x y = 0) → x = 0) ∧ (∀ y, (∀ x, B x y = 0) → y = 0) :=
+  sorry
+
+/-- **`Ш²_S(ad⁰)` is finite-dimensional over `k`** (**PROVEN 2026-07-29** over
+`exists_poitouTatePairing_sha2_sha1Twist` immediately above plus
+`finiteDimensional_h1_adZeroTwistRestricted` — NOT a sorry node any more, see
+STATUS below.  Cut out 2026-07-28 as
 `finiteDimensional_h2_adZeroRestricted`, a statement about the AMBIENT
 `H²(G_{ℚ,S}, ad⁰)`; **WEAKENED to `Ш²` and renamed 2026-07-28 — see the
 OBLIGATION AUDIT below, which is the reason this declaration exists in its
 present form**).
+
+**STATUS 2026-07-29: THIS NODE IS NO LONGER A LEAF.**  It is the two-line
+assembly `pairing ⟹ injection into a finite-dimensional dual ⟹ finiteness`:
+`injective_of_forall_apply_eq_zero` above turns the LEFT nondegeneracy clause
+of `exists_poitouTatePairing_sha2_sha1Twist` into an injection
+`Ш²_S(ad⁰) ↪ (Ш¹_S(ad⁰(1)))^∨`, whose codomain is finite-dimensional from
+`finiteDimensional_h1_adZeroTwistRestricted` above by
+`Submodule.finiteDimensional`, and `FiniteDimensional.of_injective` finishes.
+Note this is the SAME derivation the OBLIGATION AUDIT below identifies inside
+`rank_sha2_le_rank_sha1_twist`; the audit's point was that the finiteness was
+always a consequence of a map into the degree-`1` dual, and now the map comes
+from a named arithmetic input rather than from a leaf that itself consumed this
+one.  Everything below this paragraph is the record of why the statement has
+the shape it has; the arithmetic it costs is now on the pairing leaf above.
 
 **OBLIGATION AUDIT, 2026-07-28 — the ambient form was a STRICTLY STRONGER
 obligation than anything this tree consumes, and two of the claims that
@@ -18735,21 +18952,58 @@ The second clause is true and is precisely the leak: the consumer wants only
 the `Ш` statement, so deriving it *from* the ambient one throws away the
 difference for nothing.
 
-**WHAT IS LEFT, AND WHAT IT COSTS.** Poitou–Tate gives a perfect pairing
-`Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
-`Ш¹_S(ad⁰(1))` is finite-dimensional by `finiteDimensional_h1_adZeroTwistRestricted`
-above.  That is the intended proof, and it shows this leaf and
-`finrank_sha2_le_finrank_sha1Twist` below are the two shadows of ONE input and
-are best given to ONE owner: whoever produces the pairing discharges both in
-the same breath, and neither is reachable without it.  **They are not
-circular** — `finrank_sha2_le_finrank_sha1Twist` does not consume this leaf,
-and this leaf does not consume it.
+**WHAT IS LEFT, AND WHAT IT COSTS — SUPERSEDED 2026-07-29, kept because it is
+the paragraph that motivated the present structure.**  It read: Poitou–Tate
+gives a perfect pairing `Ш¹_S(ad⁰(1)) × Ш²_S(ad⁰) → ℚ/ℤ`, hence
+`Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, with `Ш¹_S(ad⁰(1))` finite-dimensional by
+`finiteDimensional_h1_adZeroTwistRestricted` above; that is the intended proof,
+and it shows this statement and `finrank_sha2_le_finrank_sha1Twist` below are
+"the two shadows of ONE input", best given to ONE owner, since "whoever
+produces the pairing discharges both in the same breath".  **That input now has
+a name** — `exists_poitouTatePairing_sha2_sha1Twist` above — and both shadows
+are proven over it, so the observation is enforced by the compiler instead of
+by prose.  A cheaper discharge of THIS statement alone remains legitimate (any
+injection of `Ш²_S(ad⁰)` into a space already known finite-dimensional
+suffices) but is no longer separately useful: the bound below needs the pairing
+regardless.  The porting audit lives on the pairing leaf above; neither this
+statement nor the bound below independently owes the cup product or the local
+invariant map.
 
-A cheaper discharge is legitimate and would be a better outcome: any
-NONDEGENERATE `k`-bilinear pairing into `k`, or any injection of `Ш²_S(ad⁰)`
-into a space already known finite-dimensional, suffices.  The porting audit for
-the pairing itself lives on `finrank_sha2_le_finrank_sha1Twist` below; this
-leaf does **not** independently owe the cup product or the local invariant map.
+**A TENSION BETWEEN TWO DOCSTRINGS IN THIS FILE, RAISED AND SETTLED AGAINST THE
+LITERATURE 2026-07-29.**  `finiteDimensional_h1_adZeroTwistRestricted` above
+says "This is NSW VIII.3: for a FINITE set `S` of places and a FINITE
+`G_{ℚ,S}`-module `M`, **every** `Hⁱ(G_{ℚ,S}, M)` is finite" — all degrees,
+`i = 2` included.  The OBLIGATION AUDIT immediately above says instead that NSW
+gets degree-`2` finiteness only from degree `1` **plus the local terms of the
+Poitou–Tate sequence**.  Read as claims about the STATEMENT they contradict
+each other, and the difference matters: if degree `2` were available at the
+degree-`1` price, this statement would follow from the AMBIENT
+`H²(G_{ℚ,S}, ad⁰)` by `Submodule.finiteDimensional` with no Poitou–Tate at all,
+and only `finrank_sha2_le_finrank_sha1Twist` below would need the pairing —
+a strictly better decomposition than the present one.
+
+Checked against a source already on disk (`sources/css1997mfflt.txt`,
+L. C. Washington, *Galois cohomology*, in Cornell–Silverman–Stevens), and **the
+AUDIT is right**:
+
+* *Proposition 7* (p. 117): `H¹(G_Σ, X)` is finite for finite `X`.  Its proof
+  is elementary — an open normal `H` acting trivially on `X`, `H¹(H, X) =
+  Hom(H, X)` finite by **Hermite–Minkowski**, then inflation–restriction.  That
+  is exactly the route `finiteDimensional_h1_adZeroTwistRestricted`'s COST AUDIT
+  itemises, and it is confined to degree `1`.
+* *Proposition 11* (p. 120): "the groups `H^r(G_Σ, X)`, `r = 0, 1, 2`, are
+  finite", together with the global Euler-characteristic formula — and its
+  proof is **not given**, but cited: "For a proof, see [Mi, p. 82]", i.e. Milne,
+  *Arithmetic Duality Theorems* I.5.1, whose proof runs through Poitou–Tate
+  duality.
+
+So the degree-`1` docstring's STATEMENT (finiteness in every degree) is correct
+and standard; what is wrong is any inference that its degree-`1` PROOF covers
+degree `2`.  There is no known cheap route to degree-`2` finiteness, and the
+present structure — this statement derived from the pairing — stands.  A
+successor tempted to "just cite NSW VIII.3 in degree 2" should read this
+paragraph first: doing so imports the Euler-characteristic theorem, which
+imports the duality, which is the pairing leaf above under another name.
 
 **Over the full `Γ ℚ` this statement is FALSE**, exactly as in degree `1`: the
 computation on `rank_sha2_le_rank_sha1_twist` below shows
@@ -18769,93 +19023,69 @@ VIII.3; Darmon–Diamond–Taylor, §2.6. -/
 theorem finiteDimensional_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
-    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
-  sorry
+    FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) := by
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  obtain ⟨B, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  exact FiniteDimensional.of_injective _ (injective_of_forall_apply_eq_zero B hleft)
 
-/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
-out 2026-07-28 as the DUALITY half of `exists_injective_sha2_dual_sha1Twist`
-below — it IS the whole Poitou–Tate content of that leaf, with the finiteness
-and the map-building removed).
+/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (**PROVEN
+2026-07-29** over `exists_poitouTatePairing_sha2_sha1Twist` above plus
+`finiteDimensional_h1_adZeroTwistRestricted` — NOT a sorry node any more, see
+STATUS below; cut out 2026-07-28 as the DUALITY half of
+`exists_injective_sha2_dual_sha1Twist` below).
+
+**STATUS 2026-07-29: THIS NODE IS NO LONGER A LEAF.**  It is the assembly
+`dim Ш² ≤ dim (Ш¹(1))^∨ = dim Ш¹(1)`: the first step is
+`LinearMap.finrank_le_finrank_of_injective` applied to the injection that
+`injective_of_forall_apply_eq_zero` above extracts from the LEFT nondegeneracy
+clause of the pairing, and the second is `Subspace.dual_finrank_eq` under the
+finite-dimensionality supplied by `finiteDimensional_h1_adZeroTwistRestricted`
+above.  Everything below this paragraph is the record of what the statement
+means and why it has this shape; the arithmetic it costs now lives on the
+pairing leaf above, together with the PORTING AUDIT that used to stand here.
 
 Stated in `ℕ` on purpose.  Both sides are finite-dimensional — the left by
 `finiteDimensional_sha2` above, the right by
 `finiteDimensional_h1_adZeroTwistRestricted` above — so a `finrank` comparison
 loses nothing, and it keeps `Cardinal` arithmetic off the arithmetic owner's
-plate.  An owner may freely assume both finiteness facts by consuming those two
-leaves; doing so is NOT circular, since neither of them consumes this one.
+plate.
 
-**BEWARE THE DEGENERATE DISCHARGE.**  `Module.finrank k X = 0` when `X` is not
-finite-dimensional, so this statement is *vacuously true* of an
-infinite-dimensional `Ш²_S(ad⁰)`.  A proof that establishes it by exhibiting
-the left side as infinite-dimensional is worthless and is also inconsistent
-with `finiteDimensional_sha2` above; the two leaves are a package and an owner
-should discharge them together, from the same pairing.  This is the reason the
-finiteness half may not simply be dropped in favour of the `ℕ`-valued
-inequality.
+**BEWARE THE DEGENERATE DISCHARGE — and note that the proof does NOT fall into
+it.**  `Module.finrank k X = 0` when `X` is not finite-dimensional, so this
+statement is *vacuously true* of an infinite-dimensional `Ш²_S(ad⁰)`; a proof
+establishing it by exhibiting the left side as infinite-dimensional would be
+worthless.  The proof below is clear of that because
+`LinearMap.finrank_le_finrank_of_injective` derives the bound from an INJECTION
+into a space whose finite-dimensionality is an instance in scope, which is also
+exactly what makes `finiteDimensional_sha2` above true; the two statements are
+discharged from the same pairing, in the same breath, as their previous
+docstrings prescribed.  This is why the finiteness half was never droppable in
+favour of the `ℕ`-valued inequality alone.
 
 The nine-term Poitou–Tate sequence gives a PERFECT pairing
 `Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
 `M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, and
-the inequality follows with `Subspace.dual_finrank_eq`.  Any NONDEGENERATE
-pairing suffices, so the leaf is strictly weaker than the duality theorem.
+the inequality follows with `Subspace.dual_finrank_eq`.  Any pairing
+nondegenerate on the LEFT suffices for the inequality — which is exactly the
+clause the proof below takes from `exists_poitouTatePairing_sha2_sha1Twist`
+above.  The `ad⁰* ≅ ad⁰(1)` trace-form identification, the passage from a
+`ℚ/ℤ`-valued pairing of finite groups to a `k`-bilinear `k`-valued one, and the
+PORTING AUDIT for the cup product and the local invariant map have all MOVED
+onto that leaf, which is the declaration that owes them.  **Do not re-derive
+them here, and do not read their absence from this docstring as their being
+free.**
 
-Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
-
-* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
-  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
-  `char k ≠ 2`.  `hℓOdd` is what supplies that, and it is why this leaf may not
-  be restated for `ℓ = 2`;
-* the passage to `k`-dimensions (rather than a pairing of finite abelian groups
-  into `ℚ/ℤ`): `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing is
-  `k`-bilinear after the trace-form identification.
-
-**`hirr` IS NOT CONSUMED BY THE INTENDED ARGUMENT** (recorded 2026-07-28 from
-the previous owner's search, and re-checked here): Poitou–Tate holds for any
-finite `G_S`-module, and only `hℓOdd` and the two finiteness facts are used.
-It is carried because the consumer carries it and because the circularity guard
-below wants the hypothesis surface unchanged.  **Do not hunt for a use of it**,
-and do not conclude from its idleness that the statement is wrong.
-
-**PORTING AUDIT for the local Tate pairing, which is what this leaf really
-needs** (inherited from `exists_injective_sha2_dual_sha1Twist` below, which no
-longer owes it; RE-CHECKED 2026-07-28 against our pin `a3364fa`, `~/cs/FLT`
-and `Fermat/`, and every absence below still holds):
-
-`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
-is 582 lines and **sorry-free**, culminating in
-`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
-continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
-It does NOT stand alone on our pin.  The 2026-07-28 re-check enumerated the
-whole shim surface and found **none** of it upstream here:
-`ContinuousLinearMap.CompactOpen` (the scoped compact-open topology on
-`M1 →L[k] M2`, 48 lines), `ContinuousMap.continuous_prodMk` for `R1Space`
-(57 lines — our pin's `continuous_prodMk` in `Mathlib/Topology/CompactOpen.lean`
-is a DIFFERENT lemma and does not cover it), `continuous_of_discreteTopology_snd`,
-`TopModuleCat.linHom`/`linHomMap`/`homOfBilinear` (79 lines),
-`TopModuleCat.cokerDescCLM`/`cokerDescBilinear`/`isOpenQuotientMap_cokerπ`
-(179 lines, of which our
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
-already carries `cokerDesc`, `cokerCongr`, `cyclesIsoKer`, `homologyIsoCoker`),
-`ContRepresentation.linHom`/`continuous_pair_of_discrete` (81 lines),
-`TopRep.iHom` (31 lines), and — absent from our partial vendoring of
-`ContCohomology/Basic.lean` — `resolutionCLM`, `resolutionXCast`,
-`invariantsObjIHom`, `d_hom_zero`, `d_hom_succ_apply`, `eqToHom_iHom_apply`
-(~130 lines).  Total to vendor: **≈ 1160 lines**, all sorry-free upstream.
-The `81a5d2` vs `a3364fa` drift was small for the portion already vendored
-here (no proof changes, compiled first try), so the estimate is dominated by
-volume rather than by drift.
-
-**And the cup product is only the FIRST half.**  The pairing also needs the
-local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory).  Re-checked
-2026-07-28 across ALL THREE trees: `grep -rniE "poitou|greenberg|shafarevich|
-tate.?duality|localInvariant|invariantMap|localClassField|brauer"` returns
-nothing usable from our mathlib pin (the only `localInvariant` hits are
-`Geometry/Manifold/LocalInvariantProperties`, and `BrauerGroup` is CSAs modulo
-Morita with no local invariant isomorphism), nothing from `Fermat/`, and from
-`~/cs/FLT` only two prose mentions (`Assumptions/README.md` lists Poitou–Tate
-as an ASSUMPTION, and `Assumptions/Odlyzko.lean` cites Poitou's discriminant
-paper — neither is the theorem).  **So local class field theory must be built,
-and it, not the cup product, is the dominant cost of this leaf.**
+**`hirr` IS NOT CONSUMED** (recorded 2026-07-28 from the previous owner's
+search, re-checked 2026-07-29, and now enforced by the compiler: the binder is
+`_hirr` and the proof below does not mention it).  Poitou–Tate holds for any
+finite `G_S`-module, so `exists_poitouTatePairing_sha2_sha1Twist` above does
+not take irreducibility at all; the binder survives here only because the
+consumer passes it positionally and because the circularity guard below wants
+the hypothesis surface unchanged.  **Do not hunt for a use of it**, and do not
+conclude from its idleness that the statement is wrong.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM** from
 `rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
@@ -18867,10 +19097,20 @@ References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6
 theorem finrank_sha2_le_finrank_sha1Twist
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible) :
+    (_hirr : ρbar.IsIrreducible) :
     Module.finrank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
-  sorry
+      Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := by
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  obtain ⟨B, hleft, -⟩ := exists_poitouTatePairing_sha2_sha1Twist hℓOdd hdim hℓ5 h
+  calc Module.finrank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ))
+      ≤ Module.finrank k (Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+        LinearMap.finrank_le_finrank_of_injective
+          (injective_of_forall_apply_eq_zero B hleft)
+    _ = Module.finrank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
+        Subspace.dual_finrank_eq
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`** (**PROVEN 2026-07-28** over the two leaves
