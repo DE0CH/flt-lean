@@ -347,11 +347,41 @@ claims**, namely `φ(N)/2`.
 
 The cusps of `X_1(N)` are `Γ_1(N)\ℙ¹(ℚ)`; for `N ≥ 5` there are
 `½ Σ_{d ∣ N} φ(d)φ(N/d)` of them (`28` at `N = 25`).  They fall into
-Galois orbits, and the `φ(N)/2` cusps lying over the cusp `∞` of
-`X_0(N)` — indexed by `(ℤ/N)ˣ/±1` — are `ℚ`-RATIONAL, the Galois action
-on them being trivial.  At `N = 25` that is `10`, and the remaining `18`
-are not rational (those over `0` are defined over `ℚ(ζ₂₅)⁺`, of degree
-`10`).
+Galois orbits, and one distinguished orbit of `φ(N)/2` cusps — indexed by
+`(ℤ/N)ˣ/±1` — is `ℚ`-RATIONAL, the Galois action on it being trivial.  At
+`N = 25` that is `10`, and the remaining `18` are not rational (one orbit
+of `10` is defined over `ℚ(ζ₂₅)⁺`, of degree `10`).
+
+**WHICH orbit is the rational one, corrected 2026-07-28.**  This docstring
+used to name it as the orbit lying over the cusp `∞` of `X_0(N)`, and that
+is BACKWARDS for the moduli problem this file actually formalises.
+`Gamma1Datum` is Katz–Mazur `[Γ₁(N)]`, a POINT of exact order `N`
+(`PointOfExactOrder`), not an embedding `μ_N ↪ E`; and in the
+Deligne–Rapoport description the rational cusps are then the pairs (Néron
+`N`-gon, generator of the component group `ℤ/N`), while the pairs (Néron
+`1`-gon, generator of `μ_N`) are defined over `ℚ(ζ_N)⁺`.  The check, over
+`K((q))`: the Tate curve `E_q = 𝔾_m/q^ℤ` has `E_q(K((q))) = K((q))ˣ/q^ℤ`,
+in which `x = q^k u` (`u` a unit of `K[[q]]`) satisfies `x^m ∈ q^ℤ` iff
+`u^m = 1` — so a point of exact order `N` forces `u` to be a primitive
+`N`-th root of unity IN `K`, and the `1`-gon orbit carries no `K`-rational
+level structure unless `ζ_N + ζ_N⁻¹ ∈ K`.  The `N`-gon orbit instead has
+`E_{q^N}` with the level point `q`, defined over `K((q))` for every `K`.
+Concretely at `N = 5` over `ℚ`: the two cusps of `X_1(5)` over `∞` have
+residue field `ℚ(√5) = ℚ(ζ₅)⁺` and are NOT rational, while the two over
+`0` are.  `IsX1Compactification.CuspLocus`'s docstring already recorded
+this correctly and is the authority.  The `∞` labelling survives in
+several other docstrings in this file; read them in the moduli language
+above, since the literature's two conventions for the `(E, P)` model
+disagree about the `0`/`∞` LABELS and only the moduli description is
+convention-free.
+
+**Nothing in this development depends on the answer.**  The COUNT is
+`φ(N)/2` on either convention, and the count is all that is consumed —
+`exists_rationalCuspSectionsX1_field` says "some `φ(N)/2` cusps are
+rational" and never says which.  The correction matters for the ROUTE, not
+for any statement: a prover who takes the `∞`-orbit as the target is trying
+to prove that `(1`-gon, `ζ_N)` is `K`-rational, which is FALSE over `ℚ` for
+every `N` with `φ(N) > 2`, and false over `𝔽_ℓ` whenever `ζ_N ∉ 𝔽_ℓ`.
 
 **This is deliberately a LOWER bound on the rational cusps, not the exact
 count**, which is the same economy `X0.lean`'s
@@ -3627,9 +3657,186 @@ against `Field.toCommRing`), which is precisely the diamond
 theorem residueDegreeOver_eq_residueQDegree {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) :
     residueDegreeOver ℚ strX x = residueQDegree strX x := rfl
 
-/-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N`
-is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL that is left
-of the cusp route on BOTH sides).
+/-! ### `K`-rational points versus residue degree one, over an arbitrary base
+
+The dictionary between the two ways this file describes a rational cusp — as a
+SECTION of `strX` missing `Y`, and as a POINT of `X ∖ Y` with residue field `K`
+— written once over an arbitrary base field.  Over `ℚ` half of it is free and
+`X0.lean` proves it that way (`exists_residueAlgHom_of_isCusp`); over a general
+`K` it is not, and the difference is exactly the step that docstring flags:
+
+> Over a base where `ℚ` is not initial this step would be real, and would be
+> `Spec.map_preimage` plus `x.2`.
+
+It is real because `residueAlgebraOver K strX p` is defined through
+`Spec.preimage`, so "the embedding `κ(p) ⟶ K` is `K`-LINEAR" is the assertion
+that a certain square of affine schemes commutes; at `ℚ` it holds for every ring
+map whatsoever (both `algebraMap`s out of `ℚ` are the rational cast), at `𝔽_ℓ`
+it holds because `x` is a SECTION.  `exists_residueSection_of_ratPoint` below is
+that argument, and it is where the `x.2` of the relative point is consumed.
+
+This subsection is base-agnostic and `Γ₁`-agnostic: nothing in it mentions `N`,
+the moduli problem, or `IsX1Compactification`.  It is stated with `jY` and
+`hcomm` loose so that the `Γ₀` side can consume it unchanged should
+`exists_residueAlgHom_of_isCusp` ever need generalising. -/
+
+/-- **A retraction of the structure map on a residue field, packaged as a
+`K`-algebra map** (PROVEN 2026-07-28).
+
+`hg` says `algebraMap K κ(p)` — which under `residueAlgebraOver` *is*
+`Spec.preimage (X.fromSpecResidueField p ≫ strX)` — is a section of `g`, i.e.
+precisely `AlgHom.commutes'`.  So the `K`-linearity of `g` is not an extra
+hypothesis but a repackaging of `hg`, and that is the whole content of the
+general-base step. -/
+noncomputable def residueSectionAlgHom {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _) :
+    letI := residueAlgebraOver K strX p
+    X.residueField p →ₐ[K] K :=
+  letI := residueAlgebraOver K strX p
+  ⟨g.hom, fun c => congrArg (fun h : CommRingCat.of K ⟶ CommRingCat.of K => h.hom c) hg⟩
+
+/-- **A point whose residue field retracts onto `K` is `K`-rational** (PROVEN
+2026-07-28), i.e. `residueDegreeOver K strX p = 1`.
+
+`finrank_eq_one_of_algHom_to_base` (`X0.lean`, stated over a VARIABLE base
+field for exactly this reason) applied to `residueSectionAlgHom`. -/
+theorem residueDegreeOver_eq_one_of_residueSection {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _) :
+    residueDegreeOver K strX p = 1 := by
+  letI := residueAlgebraOver K strX p
+  show Module.finrank K (X.residueField p) = 1
+  exact finrank_eq_one_of_algHom_to_base (residueSectionAlgHom p g hg)
+
+/-- **The retraction is UNIQUE** (PROVEN 2026-07-28) — `algHom_to_base_unique`
+(`X0.lean`) transported back through `CommRingCat.hom_ext`.
+
+This is what makes the cusp-counting map INJECTIVE: two `K`-rational sections of
+`strX` with the same image point factor through the same `κ(p)` by the same map,
+hence are equal.  Without it, `n` distinct sections could a priori collapse onto
+fewer than `n` points and the count would be lost. -/
+theorem residueSection_unique {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} (p : X)
+    (g g' : X.residueField p ⟶ CommRingCat.of K)
+    (hg : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g = 𝟙 _)
+    (hg' : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫ g' = 𝟙 _) : g = g' := by
+  letI := residueAlgebraOver K strX p
+  apply CommRingCat.hom_ext
+  exact congrArg AlgHom.toRingHom
+    (algHom_to_base_unique (residueSectionAlgHom p g hg) (residueSectionAlgHom p g' hg'))
+
+/-- **A `K`-rational point of `X` that is not a point of `Y` is a point of the
+complement, carrying a retraction of the structure map on its residue field**
+(PROVEN 2026-07-28) — the general-base form of `X0.lean`'s
+`exists_residueAlgHom_of_isCusp`, and it needs no moduli input whatever.
+
+Two independent halves, neither of them modular:
+
+* *The factorisation.*  `Scheme.SpecToEquivOfField` says a morphism
+  `Spec K ⟶ X` is exactly a point `p` together with an embedding `κ(p) ⟶ K`,
+  with no hypothesis.  That the embedding RETRACTS the structure map is
+  `Spec.map_injective` applied to `Spec.map_preimage` together with `x.2` — see
+  the subsection note; this is the step that is vacuous at `ℚ` and real here.
+* *The point lies off `Y`.*  Where `IsOpenImmersion jY` is used: a section of
+  `Spec K` has a ONE-POINT image, so if that point were in the open
+  `Set.range jY.base` then `IsOpenImmersion.lift` would factor `x` through `jY`,
+  exhibiting it as a `sectionAlong` and contradicting the cusp hypothesis. -/
+theorem exists_residueSection_of_ratPoint {K : Type} [Field K] {X Y : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} {strY : Y ⟶ Spec (CommRingCat.of K)}
+    {jY : Y ⟶ X} [IsOpenImmersion jY] (hcomm : jY ≫ strX = strY)
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of K))))
+    (hx : ¬ ∃ y : RelPoint strY (𝟙 (Spec (CommRingCat.of K))), sectionAlong jY hcomm y = x) :
+    ∃ p : ((Set.range jY.base)ᶜ : Set X),
+      ∃ g : X.residueField p.1 ⟶ CommRingCat.of K,
+        Spec.preimage (X.fromSpecResidueField p.1 ≫ strX) ≫ g = 𝟙 _ ∧
+        Spec.map g ≫ X.fromSpecResidueField p.1 = x.1 := by
+  classical
+  set q := Scheme.SpecToEquivOfField K X x.1 with hq
+  have hfac : Spec.map q.2 ≫ X.fromSpecResidueField q.1 = x.1 :=
+    (Scheme.SpecToEquivOfField K X).symm_apply_apply x.1
+  have hpt : ∀ s, x.1.base s = q.1 := by
+    intro s
+    rw [← hfac]
+    simp
+  have hmem : q.1 ∈ (Set.range jY.base)ᶜ := by
+    intro hcon
+    apply hx
+    have hrange : Set.range x.1.base ⊆ Set.range jY.base := by
+      rintro _ ⟨s, rfl⟩
+      rw [hpt s]
+      exact hcon
+    refine ⟨⟨IsOpenImmersion.lift jY x.1 hrange, ?_⟩, ?_⟩
+    · rw [← hcomm, ← Category.assoc, IsOpenImmersion.lift_fac, x.2]
+    · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+  refine ⟨⟨q.1, hmem⟩, q.2, ?_, hfac⟩
+  apply Spec.map_injective
+  rw [Spec.map_comp, Spec.map_preimage, Spec.map_id, ← Category.assoc, hfac, x.2]
+
+/-- **`n` distinct `K`-rational cusp SECTIONS give `n` distinct points of
+`X ∖ Y` of residue degree one** (PROVEN 2026-07-28).
+
+The whole scheme-theoretic bookkeeping of the cusp count, discharged once over
+an arbitrary base: `exists_residueSection_of_ratPoint` produces the points,
+`residueDegreeOver_eq_one_of_residueSection` gives the degrees, and
+`residueSection_unique` transports injectivity of `σ` to injectivity of `ε`.
+
+The transport is stated as `key` with the two points as bound VARIABLES so that
+`rintro … rfl` can substitute; the residue field of a point is a dependent type,
+so rewriting `(p i).1 = (p j).1` in place would leave a motive that is not type
+correct. -/
+theorem exists_rationalCuspPoints_of_sections {K : Type} [Field K] {X Y : Scheme.{0}} {n : ℕ}
+    {strX : X ⟶ Spec (CommRingCat.of K)} {strY : Y ⟶ Spec (CommRingCat.of K)}
+    {jY : Y ⟶ X} [IsOpenImmersion jY] (hcomm : jY ≫ strX = strY)
+    (σ : Fin n → RelPoint strX (𝟙 (Spec (CommRingCat.of K))))
+    (hinj : Function.Injective σ)
+    (hcusp : ∀ i, ¬ ∃ y : RelPoint strY (𝟙 (Spec (CommRingCat.of K))),
+      sectionAlong jY hcomm y = σ i) :
+    ∃ ε : Fin n → ((Set.range jY.base)ᶜ : Set X),
+      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 := by
+  classical
+  choose p hp using fun i => exists_residueSection_of_ratPoint hcomm (σ i) (hcusp i)
+  choose g hg hfac using hp
+  have key : ∀ (a b : X) (_ : a = b)
+      (ga : X.residueField a ⟶ CommRingCat.of K) (gb : X.residueField b ⟶ CommRingCat.of K),
+      Spec.preimage (X.fromSpecResidueField a ≫ strX) ≫ ga = 𝟙 _ →
+      Spec.preimage (X.fromSpecResidueField b ≫ strX) ≫ gb = 𝟙 _ →
+      Spec.map ga ≫ X.fromSpecResidueField a = Spec.map gb ≫ X.fromSpecResidueField b := by
+    rintro a b rfl ga gb hga hgb
+    rw [residueSection_unique a ga gb hga hgb]
+  refine ⟨p, ?_, ?_⟩
+  · intro i j hij
+    apply hinj
+    apply Subtype.ext
+    rw [← hfac i, ← hfac j]
+    exact key (p i).1 (p j).1 (congrArg Subtype.val hij) (g i) (g j) (hg i) (hg j)
+  · intro i
+    exact residueDegreeOver_eq_one_of_residueSection (p i).1 (g i) (hg i)
+
+/-- **`X_1(N)` has `φ(N)/2` distinct `K`-rational cusp SECTIONS, for any field
+`K` in which `N` is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL
+that is left of the cusp route on BOTH sides).
+
+**The form is the one Deligne–Rapoport actually delivers.**  Over `ℤ[1/N]` the
+`φ(N)/2` cusps of the distinguished orbit are SECTIONS of the smooth model, and
+this leaf asks for exactly those, read at a fibre.  The residue-degree form the
+consumers want is `exists_rationalCuspPointsX1_field` below, proved from this
+one by `exists_rationalCuspPoints_of_sections`.  The two are EQUIVALENT — a
+point of `X ∖ Y` with residue field `K` yields a section by
+`exists_specSection_of_finrank_eq_one` (`X0.lean`, at `ℚ`; the same two lines
+over any `K`), and a section yields such a point by the subsection above — so
+the change of form on 2026-07-28 added no strength; only one direction is used.
+
+**What moved, and why this node is now the whole difficulty** (2026-07-28).
+As cut earlier the same day, the leaf carried two things at once: the
+arithmetic (there ARE `φ(N)/2` rational cusps) and the scheme-theoretic
+bookkeeping (a rational cusp is a point of `X ∖ Y` whose residue field is `K`,
+and distinct cusps give distinct points).  The second is not Deligne–Rapoport
+and mentions neither `N`, nor `K`, nor the moduli problem; it is now the
+subsection above, proved over an arbitrary base.  Only the arithmetic is left,
+and it is here.
 
 TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, Construction 5.3;
 Diamond–Shurman §3.8 for the cusp count and §9.3 for the rationality): the
@@ -3672,8 +3879,9 @@ discharge it for free — over `ℚ` because `numRationalCuspsX1 N ≠ 0` forces
 **This leaf is the `Γ₁` sibling of `X0.lean`'s
 `exists_cuspResidueIndexing`, and it is strictly weaker.**  The `Γ₀` leaf
 asks for a BIJECTION `N.divisors ≃ X ∖ Y` with each residue field
-identified as `ℚ(ζ_{gcd(d, N/d)})`; this one asks only for `φ(N)/2` points
-of `X ∖ Y` with residue field `K`, and says nothing whatever about the
+identified as `ℚ(ζ_{gcd(d, N/d)})`; this one asks only for `φ(N)/2` cusp
+sections — equivalently, `φ(N)/2` points of `X ∖ Y` with residue field `K` —
+and says nothing whatever about the
 other `18` cusps at `N = 25` or about how many cusps there are in total.
 That is deliberate and is the economy `numRationalCuspsX1` records.
 
@@ -3689,14 +3897,39 @@ The axes searched for a further cut are recorded on
 of this leaf and keeps them; they are unchanged by the base-field
 generalisation, since every one of them was about the CUSP description and
 none about `ℚ`. -/
-theorem exists_rationalCuspPointsX1_field (N : ℕ) (K : Type) [Field K]
+theorem exists_rationalCuspSectionsX1_field (N : ℕ) (K : Type) [Field K]
     (_hNK : IsUnit ((N : ℕ) : K))
     {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
     {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
-    (_h : IsX1Compactification N strX strY jY) :
-    ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
-      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 :=
+    (h : IsX1Compactification N strX strY jY) :
+    ∃ σ : Fin (numRationalCuspsX1 N) → RelPoint strX (𝟙 (Spec (CommRingCat.of K))),
+      Function.Injective σ ∧ ∀ i, h.IsCusp (σ i) :=
   sorry
+
+/-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N` is
+invertible** (PROVEN 2026-07-28 over `exists_rationalCuspSectionsX1_field`; a
+bare sorry leaf until then — Deligne–Rapoport VI.5).
+
+The residue-degree form of the leaf above, which is what both consumers read:
+`exists_rationalCuspPointsX1` at `K = ℚ` and the `≥` half of
+`card_cuspLocusPoints_x1_finiteField` at `K = 𝔽_ℓ`.  Its whole proof is
+`exists_rationalCuspPoints_of_sections`, i.e. scheme-theoretic bookkeeping over
+an arbitrary base with no moduli input; see the leaf for the mathematics, the
+axes searched, and why `hNK` is load-bearing.
+
+`h.isOpen` is the only field of `IsX1Compactification` this step consumes, and
+it is consumed only to know that a section landing in `Y`'s image would factor
+through `jY`. -/
+theorem exists_rationalCuspPointsX1_field (N : ℕ) (K : Type) [Field K]
+    (hNK : IsUnit ((N : ℕ) : K))
+    {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    ∃ ε : Fin (numRationalCuspsX1 N) → ((Set.range jY.base)ᶜ : Set X),
+      Function.Injective ε ∧ ∀ i, residueDegreeOver K strX (ε i).1 = 1 := by
+  haveI := h.isOpen
+  obtain ⟨σ, hinj, hcusp⟩ := exists_rationalCuspSectionsX1_field N K hNK h
+  exact exists_rationalCuspPoints_of_sections h.comm σ hinj hcusp
 
 /-- **`X_1(N)` has `φ(N)/2` distinct `ℚ`-rational points in the cusp locus
 `X ∖ Y`** (PROVEN 2026-07-28 over `exists_rationalCuspPointsX1_field`; a
