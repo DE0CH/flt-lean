@@ -21602,12 +21602,31 @@ isomorphism `Spec R[W] ≅ Spec R[W']` outright, together with
 `Spec.map_preimage`, `Spec.map_injective`), so it descends to an
 `R`-algebra isomorphism of the two coordinate rings.
 
-The smooth-projective-completion story summarised on
-`IsWeierstrassModel` above is a way of seeing WHY the identification must
-respect the point at infinity; it is not a step this proof takes, and it
-never needs to be formalised.  What is genuinely left after this lemma is
-purely a statement of commutative algebra, with no scheme theory in it at
-all: see `exists_variableChange_of_coordinateRingAlgEquiv`. -/
+**CORRECTION 2026-07-28 (flt-lean-68): THIS LEMMA IS TRUE BUT IT IS NOT
+ENOUGH, AND THE PARAGRAPH THAT USED TO STAND HERE WAS FALSE.**  It said
+that the smooth-projective-completion story summarised on
+`IsWeierstrassModel` "never needs to be formalised", and that what is left
+after this lemma "is purely a statement of commutative algebra, with no
+scheme theory in it at all".  That is wrong over a non-reduced base.  The
+successor leaf it pointed at,
+`exists_variableChange_of_coordinateRingAlgEquiv` — "an `R`-algebra
+isomorphism of coordinate rings comes from a `VariableChange`" — is FALSE
+AS STATED; the counterexample, with an explicit isomorphism, is written
+out on `exists_variableChange_of_isWeierstrassModel` below, which is the
+repaired leaf.
+
+The one-sentence reason: `Spec R[W]` is AFFINE, so it has no higher
+cohomology and hence no obstruction to deforming — over `R = ℚ[ε]/(ε²)`
+every first-order deformation of the affine curve is trivial, while
+first-order deformations of the PROJECTIVE pointed curve are
+`H¹(A, T) ≅ R/ε`-many and do move `j`.  So the affine coordinate ring
+genuinely forgets `j`, and an abstract `≃ₐ[R]` cannot recover it.  Note
+`IsWeierstrassModel`'s own docstring says the completion is unique "over a
+field", which is exactly the hypothesis that fails here.
+
+What this lemma still supplies, and why it is kept: any proof of the
+repaired leaf begins by producing precisely this `e`, so it is passed to
+that leaf as a (deliberately redundant) hypothesis rather than deleted. -/
 theorem nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel {R : Type} [CommRing R]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
     {W W' : WeierstrassCurve R}
@@ -21663,13 +21682,120 @@ theorem nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel {R : Type} [CommRi
       map_mul' := ψ.hom.map_mul }
   exact ⟨AlgEquiv.ofRingEquiv (f := ρ) halg'⟩
 
-/-- **An `R`-algebra isomorphism of Weierstrass coordinate rings is
-induced by a `VariableChange`** (sorry leaf).
+/-- **Two Weierstrass models of ONE elliptic scheme are related by a
+`VariableChange`** (sorry leaf; REFUTED-AND-RESTATED 2026-07-28,
+flt-lean-68).
 
-This is the whole residue of `weierstrassModel_j_unique` once
+**FALSITY AUDIT — the previous statement was FALSE, with an explicit
+counterexample.**  This leaf used to read
+
+```lean
+theorem exists_variableChange_of_coordinateRingAlgEquiv {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
+    (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
+    ∃ C : WeierstrassCurve.VariableChange R, W' = C • W
+```
+
+— "an `R`-algebra isomorphism of the two coordinate rings is induced by a
+`VariableChange`", advertised as "the whole residue of
+`weierstrassModel_j_unique` once
 `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` has removed the
-geometry: no schemes, no completions, no zero section — just
-`R[X,Y]/(W) ≅ R[X,Y]/(W')` as `R`-algebras.
+geometry: no schemes, no completions, no zero section".  Removing the
+geometry removes too much.
+
+THE WITNESS.  Let `R = ℚ[ε]/(ε²)` (mathlib's `DualNumber ℚ`), and
+
+* `W  : y² = x³ + x + 1`      (`a₁ = a₂ = a₃ = 0`, `a₄ = 1`, `a₆ = 1`);
+* `W' : y² = x³ + x + 1 + ε`  (`a₁ = a₂ = a₃ = 0`, `a₄ = 1`, `a₆ = 1 + ε`).
+
+Both are elliptic: `Δ(W) = −496` and `Δ(W') = −496 − 864ε`, and an element
+of `ℚ[ε]/(ε²)` is a unit exactly when its `ℚ`-part is nonzero.  Their
+`j`-invariants DIFFER:
+
+    j(W)  = 1728·4/31 = 6912/31,
+    j(W') = 6912/(31 + 54ε) = 6912/31 − (373248/961)·ε.
+
+(`c₄ = −48` for both.)  So by `WeierstrassCurve.variableChange_j` there is
+NO `C` with `W' = C • W`.
+
+**THIS HALF IS MACHINE-CHECKED.**  In a scratch module over
+`DualNumber ℚ` on 2026-07-28, all of `W.c₄ = W'.c₄ = −48`,
+`W.Δ = −496`, `W'.Δ = −496 − 864ε`, `IsUnit` of both discriminants (hence
+both `IsElliptic` instances) and finally `W.j ≠ W'.j` were proven and
+compiled — the last from `W'.Δ · W.c₄³ = W.Δ · W'.c₄³`, which `j`-equality
+would force, by taking `TrivSqZeroExt.snd`.  The `Δ` and `j` values were
+independently re-derived in PARI/GP 2.17.4 over `ℚ[t]/(t²)` (an untrusted
+searcher, agreeing to the last digit including
+`j(W') − j(W) = −(373248/961)ε`).  The scratch is not committed: every
+declaration in it would be free-floating.  What is NOT formalised is the
+isomorphism `Φ` below — it is verified by hand, and its only non-routine
+input, the Bézout identity, is itself checked by `ring` in the same
+scratch.
+
+Yet the coordinate rings ARE `R`-algebra isomorphic.  Put
+
+    p := (6x² − 9x + 4)/31,      2γ := (18x − 27)/31,
+
+which satisfy the Bézout identity, verified by expansion (both sides
+`18x⁴ − 27x³ + 18x² − 9x + …`) and re-checked in PARI/GP:
+
+    (3x² + 1)(6x² − 9x + 4) − (x³ + x + 1)(18x − 27) = 31.
+
+Then `Φ : R[W] → R[W']`, `x ↦ x' + ε·p(x')`, `y ↦ y' + ε·γ(x')·y'`, is a
+well-defined `R`-algebra map: since `ε² = 0`,
+
+    Φ(y)² = y'²(1 + 2εγ) = (x'³ + x' + 1 + ε) + 2εγ(x'³ + x' + 1),
+    Φ(x)³ + Φ(x) + 1 = (x'³ + x' + 1) + ε·p·(3x'² + 1),
+
+and the two agree exactly because `p(3x² + 1) − 2γ(x³ + x + 1) = 1`.  It
+is BIJECTIVE: in the `R`-bases `{x^i} ∪ {x^i y}` and `{x'^i} ∪ {x'^i y'}`
+it is `ι ∘ (1 + εN)` with `ι` the basis-matching `R`-module isomorphism,
+and `(1 + εN)⁻¹ = 1 − εN` because `ε² = 0`.
+
+WHY, CONCEPTUALLY, AND WHY NO WEAKENING OF THE OLD STATEMENT SURVIVES.
+`Spec R[W]` is AFFINE, so `H¹` of its tangent sheaf vanishes and every
+first-order deformation of the affine curve is trivial; first-order
+deformations of the PROJECTIVE pointed curve are `H¹(A, T) ≅ ℚ`-many and
+they move `j`.  The affine coordinate ring therefore forgets `j` outright.
+In particular the obvious repair — weakening the conclusion to `W.j =
+W'.j`, which is all `weierstrassModel_j_unique` consumes — is **also
+false**, on the very same witness.  The general phenomenon: over a base
+with nilpotents the smooth projective completion of a smooth affine curve
+is NOT unique, so `Spec R[W] ≅ Spec R[W']` does not identify the points at
+infinity.  `IsWeierstrassModel`'s own docstring already says the
+completion is unique "over a field"; that hypothesis is what the old
+statement silently dropped.
+
+(A second, independent witness, for anyone re-checking: over the same `R`,
+`W : y² = x³ + 1` and `W' : y² = x³ − 3εx + 1` have `Φ(x) = x' + εx'²`,
+`Φ(y) = y'(1 + (3/2)εx')`, and `W'` is not `C • W` because `a₁' = a₂' =
+a₃' = 0` forces `s = r = t = 0` and then `a₄' = 0 ≠ −3ε`.  Here the two
+`j`-invariants agree, so this witness refutes only the old statement and
+not its `j`-weakening — which is why the `a₆` witness above is the one
+that matters.)
+
+THE REPAIR, and it is the smallest one that works: state the leaf where
+the compactification is still present, i.e. over the two
+`IsWeierstrassModel` hypotheses.  Both open immersions land in the SAME
+`A` with the SAME range — the complement of the SAME zero section — so
+the identification of the affine curves does respect the point at
+infinity, which is exactly the datum the counterexample exploits the
+absence of.  `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel`
+remains true and is passed in as `e`; that hypothesis is REDUNDANT BY
+DESIGN (it is derivable from `hW` and `hW'`), carried both because every
+proof of this leaf starts by building it and so that the proven geometric
+half is not orphaned.  Nothing in the consumer changed.
+
+**Everything below this line predates the refutation and is retained
+because it is still the route for the second half of the argument** — once
+the compactification pins `Φ x` and `Φ y` to the shapes `a x' + r` and
+`b y' + c x' + t`, the bookkeeping is unchanged, and the "hard step" is
+exactly the step that must now come from the geometry rather than from
+commutative algebra.  Read the degree/filtration discussion as a
+description of what is TRUE over a domain, not as a plan valid over a
+general base: the paragraph headed "WHY THAT IS NOT THE WHOLE PROOF"
+diagnosed the nilpotent obstruction as a gap in the PROOF, and it is in
+fact a gap in the STATEMENT.
 
 **ABSENT FROM THE PIN, checked 2026-07-27.**  Mathlib knows that a
 variable change does not move `j` (`variableChange_j`,
@@ -21795,31 +21921,51 @@ The only genuinely new lemma needed at the end is injectivity of
 `WeierstrassCurve.Affine.polynomial` (from `coeff 1` and `coeff 0`), which
 is also absent from the pin.
 
-NOT VACUOUS: an `R`-algebra isomorphism of the two coordinate rings is
-exactly the hypothesis the geometry delivers, and the conclusion pins
-`W'` to a single `VariableChange`-orbit representative of `W`. -/
-theorem exists_variableChange_of_coordinateRingAlgEquiv {R : Type} [CommRing R]
+NOT VACUOUS, and the check is now sharper than it was.  The hypotheses are
+satisfiable — take `W' = W` with `ι' = ι` — and they are not satisfied by
+junk: the counterexample above is a pair `(W, W')` with isomorphic
+coordinate rings for which NO common `A` exists, so `hW`/`hW'` really do
+cut down the pairs the conclusion ranges over.  The conclusion pins `W'`
+to a single `VariableChange`-orbit representative of `W`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a `CommRing R`, an
+`AbelianSchemeStruct f` over `Spec R`, and two Weierstrass curves `W`,
+`W'` that are both models of it with `W.j ≠ W'.j`.  The `ℚ[ε]/(ε²)`
+witness above is NOT such a pair — it refutes the old statement precisely
+by having no `A` at all. -/
+theorem exists_variableChange_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
     (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
+    (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W')
     (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
     ∃ C : WeierstrassCurve.VariableChange R, W' = C • W :=
   sorry
 
 /-- **Two Weierstrass models of one elliptic scheme have the same `j`**
-(PROVEN 2026-07-27, over `exists_variableChange_of_coordinateRingAlgEquiv`).
+(PROVEN 2026-07-27, over `exists_variableChange_of_isWeierstrassModel`).
 
-Step (ii) of the cut of `exists_jSectionOnAffine`.  The two halves are
-`nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` — geometry, and
-proven — and `exists_variableChange_of_coordinateRingAlgEquiv` — pure
-commutative algebra, and the sole remaining leaf.  `variableChange_j`
+Step (ii) of the cut of `exists_jSectionOnAffine`.  `variableChange_j`
 (`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
-`(C • W).j = W.j`) closes it. -/
+`(C • W).j = W.j`) closes it.
+
+**The cut changed on 2026-07-28 and this proof changed with it.**  It used
+to run through `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel`
+alone, on the theory that the remaining leaf was "pure commutative
+algebra".  That leaf,
+`exists_variableChange_of_coordinateRingAlgEquiv`, was FALSE — see the
+`ℚ[ε]/(ε²)` counterexample on its replacement
+`exists_variableChange_of_isWeierstrassModel`, which also refutes the
+weakening of its conclusion to `W.j = W'.j`.  The geometric half is still
+proven and still used, but it is no longer sufficient on its own, so both
+`IsWeierstrassModel` hypotheses are now handed to the leaf.  The statement
+of THIS declaration is unchanged. -/
 theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
     (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
     (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W') :
     W.j = W'.j := by
   obtain ⟨e⟩ := nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel hW hW'
-  obtain ⟨C, hC⟩ := exists_variableChange_of_coordinateRingAlgEquiv W W' e
+  obtain ⟨C, hC⟩ := exists_variableChange_of_isWeierstrassModel W W' hW hW' e
   subst hC
   exact (WeierstrassCurve.variableChange_j (W := W) (C := C)).symm
 
