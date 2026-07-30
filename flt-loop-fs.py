@@ -240,17 +240,44 @@ REPORT
 """
 
 MEDIC_DOCTRINE = """\
-The loop has stopped and handed you the state. It is a git repo: `git log`
-is the transition trace and every tick is a commit, so you can diff your way
-back to the one that broke things.
+The loop has stopped and handed you the state. It is a git repo: `git log` is
+the transition trace and every tick is a commit, so you can diff your way back
+to the one that broke things.
 
-The reason the loop could not continue is below. Repair the state on disk if
-it is repairable.
+The reason the loop could not continue is below.
+
+YOUR AUTHORITY IS THE WHOLE LOOP, NOT JUST ITS STATE
+You are running detached -- your own session, reparented to init, not a child
+of the loop. That is deliberate: you can kill the process that started you
+without bringing yourself down. So repairing the state on disk is the SMALLEST
+thing you may do, and when the fault is in the machine rather than in what it
+was looking at, it is the wrong thing. You may also:
+
+  * Edit the loop source ($LOOPSRC) -- add a missing row, fix a guard that
+    cannot falsify itself, correct one that admits a state it should refuse.
+    A state the table cannot express is a defect in the table.
+  * Start a replacement loop detached (`setsid --fork`), and kill the old one.
+    Order matters: kill the old process FIRST, because one writer per state
+    directory is enforced by a lock and a new loop will refuse to start while
+    the old pid is alive. Two loops on one directory interleave transitions.
+  * Leave the fleet alone while you do it. Jobs are detached too and owned by
+    their records, not by the loop, so replacing the loop disturbs nothing
+    that is running.
+
+THE HANDOFF, IF YOU REPLACE THE LOOP
+Write your sentinel LAST. The new loop will find your record, see your process
+alive, and hold in SAFE MODE until you finish -- so it will not resume into a
+state you are still editing. When your sentinel appears it applies your
+verdict and carries on. That is the intended sequence; do not try to avoid it.
 
 RETURN
-  * An explanation, for a human, of what went wrong and what you changed.
-  * GO or NO-GO: whether the loop may resume. Both are emailed; NO-GO is the
-    right answer when resuming would destroy evidence or repeat the fault.
+  * An explanation, for a human, of what went wrong and what you changed --
+    including any change to the loop itself, which is the thing nobody else
+    will notice.
+  * GO or NO-GO: whether the loop may resume. Both are emailed. A GO is taken
+    literally: the loop clears the panic reports that produced you and returns
+    to normal operation, so do not answer GO with the fault still live.
+    NO-GO is right when resuming would destroy evidence or repeat the fault.
 """
 
 
@@ -259,7 +286,8 @@ def compose_prompt(kind, j, name):
             "medic": MEDIC_DOCTRINE}.get(kind, "")
     body = (body.replace("$WORKTREE", str(j.get("worktree")))
                 .replace("$HOST", str(j.get("host")))
-                .replace("$SNAPSHOT", str(DIR / "snapshot")))
+                .replace("$SNAPSHOT", str(DIR / "snapshot"))
+                .replace("$LOOPSRC", str(pathlib.Path(__file__).resolve())))
     if kind == "agent":
         task = "\nYOUR TASK\n  Close this leaf: %s\n" % j["payload"]
     elif kind == "merger":
