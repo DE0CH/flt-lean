@@ -209,22 +209,34 @@ def rmedic_done_action(s):
     s["email"].append(f"medic verdict {verdict}: {why}")
     commit(s, f"medic {verdict}: {why}")
     if v.get("go"):
-        note(s, f"2  medic verdict GO: {why} -- emailed, resuming")
+        # GO means the state on disk is normal again, so the panic reports
+        # that produced this medic are part of what it repaired -- they are
+        # cleared, and their jobs go back to being ordinary completions for
+        # the normal rows to consume.
+        #
+        # Leaving them set would make GO meaningless: the reported-panic row
+        # would match the same sentinel on the very next tick, spawn another
+        # medic, and the loop would alternate between panicking and being told
+        # it is fine, forever, without a single operational row running in
+        # between. A verdict the machine cannot act on is not a verdict.
+        cleared = [n for n, k in s["jobs"].items()
+                   if k["sentinel"] and k["sentinel"].get("panic")]
+        for n in cleared:
+            s["jobs"][n]["sentinel"]["panic"] = False
+        note(s, f"2  medic verdict GO: {why} -- emailed, resuming"
+                + (f" (cleared panic on {', '.join(cleared)})" if cleared else ""))
     else:
         s["stop"] = True
         note(s, f"2  medic verdict NO-GO: {why} -- emailed, STOP written")
 
 
 def rmedic_wait_guard(s):
-    """SAFE MODE engages once the medic is RUNNING, not when it is recorded.
+    """SAFE MODE engages on the medic RECORD, before it has even started.
 
-    Engaging on the record would suspend the spawner that has to start it --
-    this row sits above SPAWN -- and the medic would sit unspawned forever
-    while every operational row stayed frozen. The earlier version dodged that
-    by spawning the medic itself, which put a second spawner in a design whose
-    whole point is that there is exactly one: it set `started` by hand and so
-    skipped the host assignment, the pid, the session id and the prompt, and
-    the record it left claimed to be running with nothing behind it.
+    An earlier version engaged on the medic running, and spawned it by hand
+    from this row to get around the ordering -- a second spawner in a design
+    whose whole point is that there is exactly one, which skipped the host,
+    the pid, the session and the prompt.
     """
     # Engages on the RECORD, so nothing operational runs in the gap between a
     # panic being reported and the medic actually starting. That gap was real:
