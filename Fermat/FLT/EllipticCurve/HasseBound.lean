@@ -827,7 +827,103 @@ piece of work, and it is what a re-cut would have to write.
 THE CHECK THAT WOULD REFUTE this route: a `(M, N)` with `d ≠ 0` falling into
 none of the three cases, or a proof that the third case fails to terminate.
 Neither exists — the split is exhaustive and `|d|` is a strictly decreasing
-`ℕ`-valued measure on the third branch. -/
+`ℕ`-valued measure on the third branch.
+
+## AUDIT 2026-07-30 — THE ROUTE ABOVE IS CIRCULAR IN A SECOND PLACE, AND THE
+## WHOLE `ℤ[F]` AXIS IS CLOSED BY AN EXPLICIT COUNTER-MODEL
+
+Two findings, checked against the file as it stands.  The second is decisive and
+supersedes the ROUTE UPDATE above: **that re-cut cannot be carried out at all.**
+
+**(1) The re-cut is circular twice over, not once.**  The route note records
+that `natCard_ker_degreeFormEnd_of_not_dvd` is "currently proven FROM this leaf,
+so the dependency would have to be reversed", and treats the `d = 0` analysis as
+the only other missing piece.  There is a second cycle it does not mention:
+bullet 1's engine `exists_natCard_ker_mul_pow` **itself calls
+`natCard_ker_degreeFormEnd_of_not_dvd`** in its base case (the `q ∤ d` branch,
+its last line), and that calls this leaf twice.  So the peeling machinery is not
+independent of this leaf either, and "reverse the dependency" means, in full:
+prove `natCard_ker_degreeFormEnd_of_not_dvd` outright.  Note also that
+`natCard_ker_degreeFormEnd_of_dvd` reaches this leaf along BOTH paths — directly
+in its `d = 0` branch and through `exists_natCard_ker_mul_pow` — so writing the
+`d = 0` analysis alone frees nothing.
+
+**(2) `#ker ψ = d` for `q ∤ d` is NOT a consequence of `hc`, so the reversal is
+impossible.**  The counter-model is the one already recorded on
+`exists_ne_zero_qTorsion` below, run at an INDEFINITE form; nobody had pointed
+it at this leaf.  Take `q = 5`, `c = 7`, so `c² − 4q = 29 > 0` — Hasse FAILS —
+and `q ∤ c`.  Let
+
+    A = ⨁_{ℓ ≠ 5} (ℚ_ℓ/ℤ_ℓ)²,   F = the companion matrix  C = [[0, −5], [1, 7]]
+                                     acting diagonally.
+
+Every algebraic fact this module's `ℤ[F]` layer rests on holds in `A`:
+
+* `A` is infinite and divisible, so `zsmul` is surjective on it — the role of
+  `WeierstrassCurve.zsmul_surjective_algClosed` in `surjective_degreeFormEnd`;
+* `det C = 5` is a unit in every `ℤ_ℓ` with `ℓ ≠ 5`, so `F` is BIJECTIVE and
+  `#ker F = 1` (`injective_frobeniusPointEnd`, `surjective_frobeniusPointEnd`,
+  `natCard_ker_frobeniusPointEnd`);
+* `C² = 7·C − 5` is Cayley–Hamilton, i.e. **exactly `hc`** at `c = 7`;
+* `A[n] ≅ (ℤ/n)²` has `n²` elements for every `5 ∤ n`
+  (`TorsionCard.card_torsionBy`), and `A[5] = 0`, which is cyclic
+  (`TorsionCharP.exists_zsmul_eq_of_charP`);
+* for `d = m² − 7mn + 5n² ≠ 0` one has `#ker([m] − [n]F) = |d| / 5^{v₅(d)}`,
+  because for a matrix `M` over `ℤ_ℓ` with `det M ≠ 0` the kernel of `M` on
+  `(ℚ_ℓ/ℤ_ℓ)²` is `M⁻¹ℤ_ℓ² / ℤ_ℓ²`, of order `ℓ^(v_ℓ (det M))`.
+
+Now take `(m, n) = (1, 1)`.  Then `d = 1 − 7 + 5 = −1`, so `5 ∤ d`, and
+`I − C = [[1, 5], [−1, −6]]` has determinant `−1`, a unit at every `ℓ`.  Hence
+`ker([1] − F) = 0` and `#ker([1] − F) = 1`, while this leaf's conclusion reads
+
+    1 ≤ −1.
+
+So the leaf is FALSE in `A`, hence not derivable from `hc` together with
+divisibility, bijectivity of `F`, `#E[n] = n²` for `q ∤ n`, and cyclicity of
+`E[q]`.  The same witness refutes `natCard_ker_degreeFormEnd_of_not_dvd` in `A`
+(it reads `1 = −1`) and `degreeForm_nonneg`, and it is consistent with the
+PROVEN `natCard_ker_mul_natCard_ker_conj`: the conjugate `(m − n·c, −n) =
+(−6, −1)` has the same `d = −1` and the same count `1`, and `1 · 1 = (−1)²`.
+The ONE statement of this module that `A` does not interpret is
+`natCard_ker_one_sub_frobeniusPointEnd`, which identifies `ker([1] − F)` with
+`Wbar(𝔽_q)` — a geometric identification, not an algebraic one; and it is not a
+contradiction either, since `#ker([1] − F) = 1` in `A` and a curve is allowed one
+rational point.  That `A` escapes exactly there is the finding, not a gap in it.
+
+**What (2) settles.**  It is a proof of what the 2026-07-27 audit asserted
+informally — "a sign is invisible to every p-adic argument, since a determinant
+over `ℤ_ℓ` has none" — in the strong form: *no* rearrangement of the `ℤ[F]`
+material in this file, and no `ℓ`-adic / Tate-module or Weil-pairing computation
+(`WeilPairing.det_frobeniusTorsionEnd` included), can close this leaf or any
+sub-leaf that implies it.  Those tools compute `|d|`; the leaf asks for `d`.
+Concretely, and this is worth recording because it looks like progress and is
+not: the Weil-pairing determinant together with
+`WeierstrassCurve.n_torsion_dimension` (which does give
+`E.nTorsion N ≃+ ZMod N × ZMod N` over a separably closed field in EVERY
+characteristic — a docstring elsewhere denying that a rank-`2` torsion structure
+is available is stale) yields `#ker ψ = |d|` for `q ∤ d` via Smith normal form on
+`E[d²]`.  That is an EQUALITY, strictly more than this leaf asks for in that
+case, and it STILL leaves exactly `0 ≤ d`, i.e. Hasse.
+
+So the residual content of this leaf is precisely `0 ≤ m² − c·m·n + n²q`, which
+is the inert positivity statement the 2026-07-27 audit already refused to hand
+back — and (2) is *why* it is inert: it has no algebraic proof.  What it needs is
+the archimedean input that `deg` is a nonnegative integer, i.e. the
+function-field degree theory this development does not have (MACHINERY AUDIT
+above).  **Do not re-cut this leaf along the `ℓ`-adic axis, and do not hand back
+the positivity statement.  The refuting check for any proposed sub-leaf is the
+model above: if the sub-leaf is TRUE in `A` at `q = 5, c = 7`, it cannot imply
+this leaf.**
+
+**(3) A stale claim NOT corrected in place, deliberately.**  The docstring of
+`sq_frobeniusPointEnd_qPrimary` above ends "Both want `F` BIJECTIVE on
+`Wbar(𝔽̄_q)` …, which is not yet a declaration in this file".  That clause is
+STALE: it is now two declarations, `injective_frobeniusPointEnd` and
+`surjective_frobeniusPointEnd` below, both PROVEN, and a successor at that leaf
+should consume them rather than re-derive them.  It is recorded here rather than
+fixed there because that leaf had a live concurrent owner rewriting exactly those
+lines when this audit was written; correcting it in place would have raced them
+for a one-sentence gain. -/
 theorem natCard_ker_degreeFormEnd_le (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
