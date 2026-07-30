@@ -36819,7 +36819,48 @@ everywhere, worst `0.965`).  With the TRUE coefficients the worst ratio is
 `0.634`, also at `M = 75`.
 
 **So the single missing arithmetic input is `‖a_p‖ = 1` for `p ∥ M` at a
-NEWFORM — concretely `M = 75`, `p = 3`.**  Everything else this leaf
+NEWFORM — concretely `M = 75`, `p = 3`.**
+
+**IT IS SHARPER AND ALGEBRAIC, AND THAT MATTERS FOR HOW IT IS STATED**
+(2026-07-30, PARI/GP `mfeigenbasis` + `mfembed` over the nine levels; 20
+`(newform, p)` pairs, 0 exceptions, and it agrees with the column above at
+every entry).  The missing input is not an archimedean bound but two exact
+values, and they are the two halves of Atkin–Lehner's local theory at weight
+two with trivial nebentypus:
+
+* `p ∥ M` (exactly divides): `a_p = ±1`, i.e. **`a_p² = 1`** — the general
+  statement is `a_p = ±p^{k/2−1}`, which at `k = 2` is `±1` (Atkin–Lehner
+  1970, Lemma 17/Thm 3; the local component is an unramified twist of
+  Steinberg, and `a_p = −w_p p^{k/2−1}` with `w_p` the Atkin–Lehner sign);
+* `p² ∣ M`: **`a_p = 0`** (Atkin–Lehner 1970, Thm 3, for trivial character).
+
+Measured values, all embeddings, `|a_p|` in brackets where the coefficient
+field is quadratic:
+
+| `M` | `p ∥ M`: `a_p` | `p² ∣ M`: `a_p` |
+|---|---|---|
+| 35 | `5 ↦ −1, Mod(1,y²−y−4)`; `7 ↦ 1, Mod(−1,·)` | — |
+| 36 | — | `2 ↦ 0`; `3 ↦ 0` |
+| 39 | `3 ↦ −1, Mod(1,y²−2)`; `13 ↦ 1, Mod(−1,·)` | — |
+| 42 | `2 ↦ 1`; `3 ↦ −1`; `7 ↦ −1` | — |
+| 45 | `5 ↦ −1` | `3 ↦ 0` |
+| 50 | `2 ↦ 1, −1` | `5 ↦ 0, 0` |
+| 54 | `2 ↦ 1, −1` | `3 ↦ 0, 0` (`3³ ∥ 54`) |
+| 63 | `7 ↦ −1, Mod(1,y²−3)` | `3 ↦ 0, Mod(0,·)` |
+| 75 | `3 ↦ −1, 1, 1` | `5 ↦ 0, 0, 0` |
+
+**Why the sharpening is worth having: `a_p² = 1` and `a_p = 0` are equations,
+so the separate declaration this leaf wants should be stated as such** — a
+`b p * b p = 1` / `b p = 0` pair, not a `‖b p‖ = 1` bound.  Equations feed
+`coeff_mul_of_coprime` / `coeff_prime_pow_mul` and the majorant directly and
+survive `norm_num`; an archimedean norm hypothesis would have to be
+re-converted at every use.  Note also that the `p² ∣ M` half is needed too and
+is NOT free: the table's own note records that weakening only the `p ∥ M` case
+while keeping `a_p = 0` still fails at `75`, at `1.032`, so BOTH halves are
+load-bearing there.  PARI/GP is an untrusted searcher: this fixes the shape of
+the statement and shows it is not false, and is not a proof.
+
+Everything else this leaf
 needs is already proven in this file: `norm_coeff_le_card_divisors_mul_sqrt`
 supplies `‖aₙ‖ ≤ d(n)√n`, and `coeff_mul_of_coprime` /
 `coeff_prime_pow_mul` supply the multiplicativity needed to sharpen it
