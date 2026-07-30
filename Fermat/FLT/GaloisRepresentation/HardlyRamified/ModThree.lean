@@ -49349,9 +49349,269 @@ theorem localInertiaGroup_le_muFixer_of_not_dvd_ray_class
   rw [IntegralClosure.coe_smul] at h1
   exact h1
 
+/-- Bridge: `aeval` at an INTEGER polynomial is evaluation of the `Int.castRingHom`
+image, for ANY `Algebra ℤ A` instance (they all agree, `RingHom.ext_int`). -/
+theorem aeval_eq_eval_map_int_ray_class {A : Type*} [CommRing A] [Algebra ℤ A]
+    (a : A) (G : Polynomial ℤ) :
+    Polynomial.aeval a G = (G.map (Int.castRingHom A)).eval a := by
+  rw [Polynomial.eval_map, Polynomial.aeval_def]
+  congr 1
+  exact RingHom.ext_int _ _
+
+/-- Evaluation of an INTEGER polynomial commutes with any ring hom. -/
+theorem eval_map_int_ringHom_ray_class {A B : Type*} [CommRing A] [CommRing B] (φ : A →+* B)
+    (a : A) (G : Polynomial ℤ) :
+    (G.map (Int.castRingHom B)).eval (φ a) = φ ((G.map (Int.castRingHom A)).eval a) := by
+  rw [Polynomial.eval_map, Polynomial.eval_map, Polynomial.hom_eval₂]
+  congr 1
+  exact RingHom.ext_int _ _
+
+/-- **HENSEL UNIQUENESS AT A SIMPLE ROOT**: in a local ring `R`, two roots of an
+integer polynomial `G` that are congruent mod `𝔪` coincide as soon as `G'` is a unit
+at one of them — and `G'(y)` being a unit is guaranteed by a Bezout witness
+`V(y) · G'(y) = d` with `d ∉ 𝔪`.
+
+This is the `minpoly` analogue of `eq_of_sub_mem_maximalIdeal_of_pow_eq_one_ray_class`
+above, which is the same statement for `G = X ^ m - 1`; the Bezout witness replaces
+that lemma's `m ∉ 𝔪`. No `NoZeroDivisors` is available in a local ring, so the final
+cancellation goes through the inverse of the unit rather than through `mul_eq_zero`. -/
+theorem eq_of_sub_mem_maximalIdeal_of_eval_eq_zero_ray_class
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    {G V : Polynomial ℤ} {d : ℕ}
+    (hd : ((d : ℕ) : R) ∉ IsLocalRing.maximalIdeal R)
+    {y z : R}
+    (hy : (G.map (Int.castRingHom R)).eval y = 0)
+    (hz : (G.map (Int.castRingHom R)).eval z = 0)
+    (hbez : (V.map (Int.castRingHom R)).eval y *
+      ((Polynomial.derivative G).map (Int.castRingHom R)).eval y = (d : R))
+    (hyz : z - y ∈ IsLocalRing.maximalIdeal R) :
+    z = y := by
+  classical
+  -- `G'(y)` is not in the maximal ideal, else `d` would be.
+  have hG'y : ((Polynomial.derivative G).map (Int.castRingHom R)).eval y ∉
+      IsLocalRing.maximalIdeal R := by
+    intro hmem
+    exact hd (hbez ▸ Ideal.mul_mem_left _ _ hmem)
+  -- Taylor expansion to second order at `y`.
+  obtain ⟨k, hk⟩ := (G.map (Int.castRingHom R)).binomExpansion y (z - y)
+  rw [add_sub_cancel, hy, hz, Polynomial.derivative_map] at hk
+  -- Factor out `ε = z - y`.
+  have hfac : (z - y) *
+      (((Polynomial.derivative G).map (Int.castRingHom R)).eval y + k * (z - y)) = 0 := by
+    linear_combination -hk
+  -- The second factor is a unit: a non-unit plus an element of `𝔪` cannot be `∉ 𝔪`.
+  have hunit : IsUnit (((Polynomial.derivative G).map (Int.castRingHom R)).eval y +
+      k * (z - y)) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    intro hmem
+    refine hG'y ?_
+    have h2 : k * (z - y) ∈ IsLocalRing.maximalIdeal R := Ideal.mul_mem_left _ _ hyz
+    simpa using Ideal.sub_mem _ hmem h2
+  obtain ⟨w, hw⟩ := hunit
+  have h0 : (z - y) * (w : R) = 0 := by rw [hw]; exact hfac
+  have h : z - y = 0 := by
+    calc z - y = (z - y) * (w : R) * ((w⁻¹ : Rˣ) : R) := by
+          rw [mul_assoc, w.mul_inv, mul_one]
+      _ = 0 := by rw [h0, zero_mul]
+  rwa [sub_eq_zero] at h
+
+set_option maxHeartbeats 1000000 in
+/-- **TRANSPORT: the local inertia group at `q` fixes every root of an integer
+polynomial whose derivative is a `q`-adic unit there.**
+
+Same shape as `localInertiaGroup_fix_of_pow_eq_one_ray_class` above: the root `a`
+is integral over `𝒪ᵥ` because `G` is monic, so it lives in the integral closure,
+where `AddSubgroup.mem_inertia` says `σ • y - y ∈ 𝔪`; Hensel uniqueness then
+forces `σ • y = y`. -/
+theorem eq_of_mem_localInertiaGroup_of_eval_eq_zero_ray_class
+    {q : ℕ} (hq : q.Prime)
+    {G V : Polynomial ℤ} (hGmonic : G.Monic)
+    {d : ℕ} (hqd : ¬ q ∣ d)
+    {a : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)}
+    (ha : (G.map (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).eval a = 0)
+    (hbez : (V.map (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).eval a *
+      ((Polynomial.derivative G).map (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).eval a = (d : _))
+    {σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    σ a = a := by
+  classical
+  -- `a` is integral over `𝒪ᵥ`: `G` is monic and kills it.
+  have hint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) a := by
+    refine ⟨G.map (algebraMap ℤ _), hGmonic.map _, ?_⟩
+    rw [Polynomial.eval₂_map,
+      show ((algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).comp
+          (algebraMap ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+          = Int.castRingHom (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) from RingHom.ext_int _ _,
+      ← Polynomial.eval_map]
+    exact ha
+  set y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := ⟨a, hint⟩ with hydef
+  set φ : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    (integralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).val.toRingHom with hφdef
+  have hφy : φ y = a := rfl
+  have hinj : Function.Injective φ := Subtype.val_injective
+  have hφz : φ (σ • y) = σ a := by
+    have h1 := IntegralClosure.coe_smul σ y
+    rw [AlgEquiv.smul_def] at h1
+    exact h1
+  -- `σ` fixes the polynomial relation upstairs.
+  have hGσa : (G.map (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).eval (σ a) = 0 := by
+    have h := eval_map_int_ringHom_ray_class σ.toAlgHom.toRingHom a G
+    rw [ha, map_zero] at h
+    exact h
+  -- Transport the three polynomial facts into the integral closure.
+  have hy : (G.map (Int.castRingHom _)).eval y = 0 := by
+    apply hinj
+    rw [← eval_map_int_ringHom_ray_class φ y G, hφy, ha, map_zero φ]
+  have hz : (G.map (Int.castRingHom _)).eval (σ • y) = 0 := by
+    apply hinj
+    rw [← eval_map_int_ringHom_ray_class φ (σ • y) G, hφz, hGσa, map_zero φ]
+  have hbezy : (V.map (Int.castRingHom _)).eval y *
+      ((Polynomial.derivative G).map (Int.castRingHom _)).eval y = (d : _) := by
+    apply hinj
+    rw [map_mul φ, ← eval_map_int_ringHom_ray_class φ y V,
+      ← eval_map_int_ringHom_ray_class φ y (Polynomial.derivative G), hφy, hbez,
+      map_natCast φ]
+  have hfix := eq_of_sub_mem_maximalIdeal_of_eval_eq_zero_ray_class
+    (natCast_notMem_maximalIdeal_of_not_dvd_ray_class hq hqd) hy hz hbezy
+    ((AddSubgroup.mem_inertia.mp hσ) y)
+  have h2 := congrArg φ hfix
+  rw [hφz, hφy] at h2
+  exact h2
+
+set_option maxHeartbeats 1000000 in
+/-- **PER-ELEMENT FINITE RAMIFICATION**: every `x : ℚᵃˡᵍ` is fixed by the image of
+`localInertiaGroup q` for all but finitely many `q` — explicitly, for every `q` not
+dividing a single integer `d` built from a Bezout witness for the separability of
+the minimal polynomial of an integral multiple of `x`.
+
+This is the classical "unramified outside the discriminant" statement, one element
+at a time and with the discriminant replaced by the (larger, and cheaper) Bezout
+denominator `b₂²`: clearing denominators in `u · g + v · g' = 1` over `ℚ` gives
+`V · G' ≡ b₂²` at `x`, and `b₂²` is a `q`-adic unit for every `q ∤ b₂`. -/
+theorem exists_ne_zero_forall_localInertiaGroup_fix_ray_class (x : AlgebraicClosure ℚ) :
+    ∃ d : ℕ, d ≠ 0 ∧ ∀ (q : ℕ) (hq : q.Prime), ¬ q ∣ d →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ x = x := by
+  classical
+  -- `x` is algebraic over `ℤ`: clear the denominators of its `ℚ`-minimal polynomial.
+  have hxQ : IsIntegral ℚ x := ((AlgebraicClosure.isAlgebraic ℚ).isAlgebraic x).isIntegral
+  obtain ⟨b0, hb0mem, hb0⟩ := IsLocalization.integerNormalization_spec (nonZeroDivisors ℤ)
+    (minpoly ℚ x)
+  have hxZ : IsAlgebraic ℤ x := by
+    refine ⟨IsLocalization.integerNormalization (nonZeroDivisors ℤ) (minpoly ℚ x), ?_, ?_⟩
+    · rw [Ne, IsFractionRing.integerNormalization_eq_zero_iff]
+      exact minpoly.ne_zero hxQ
+    · rw [← Polynomial.aeval_map_algebraMap ℚ x, hb0, map_zsmul, minpoly.aeval, smul_zero]
+  obtain ⟨yc, hyc0, hwint⟩ := hxZ.exists_integral_multiple
+  -- The minimal polynomial of the integral multiple `w`.
+  have hwQ : IsIntegral ℚ (yc • x) :=
+    ((AlgebraicClosure.isAlgebraic ℚ).isAlgebraic (yc • x)).isIntegral
+  have hPG : minpoly ℚ (yc • x) = (minpoly ℤ (yc • x)).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hwint
+  -- Separability gives a Bezout identity, whose denominators we clear.
+  obtain ⟨uu, vv, huv⟩ := (minpoly.irreducible hwQ).separable
+  obtain ⟨b2, hb2mem, hb2⟩ := IsLocalization.integerNormalization_spec (nonZeroDivisors ℤ) vv
+  have hb2ne : b2 ≠ 0 := nonZeroDivisors.ne_zero hb2mem
+  set Gz := minpoly ℤ (yc • x) with hGzdef
+  set Vz := b2 • IsLocalization.integerNormalization (nonZeroDivisors ℤ) vv with hVzdef
+  -- The `ℚᵃˡᵍ`-level facts: `Gz` kills `w`, and `Vz · Gz'` evaluates to `b2 ^ 2` there.
+  have hGw : (Gz.map (Int.castRingHom (AlgebraicClosure ℚ))).eval (yc • x) = 0 := by
+    rw [← aeval_eq_eval_map_int_ray_class]; exact minpoly.aeval ℤ _
+  have hstar : Polynomial.aeval (yc • x) vv *
+      Polynomial.aeval (yc • x) (Polynomial.derivative (minpoly ℚ (yc • x))) = 1 := by
+    have h := congrArg (Polynomial.aeval (yc • x)) huv
+    rw [map_add, map_mul, map_mul, map_one, minpoly.aeval, mul_zero, zero_add] at h
+    exact h
+  have hVzmap : Vz.map (algebraMap ℤ ℚ) = (b2 * b2) • vv := by
+    rw [hVzdef, ← Polynomial.coe_mapRingHom, map_zsmul, Polynomial.coe_mapRingHom, hb2, smul_smul]
+  have hderiv : Polynomial.aeval (yc • x) (Polynomial.derivative Gz) =
+      Polynomial.aeval (yc • x) (Polynomial.derivative (minpoly ℚ (yc • x))) := by
+    rw [hPG, Polynomial.derivative_map, Polynomial.aeval_map_algebraMap]
+  have hbezw : (Vz.map (Int.castRingHom (AlgebraicClosure ℚ))).eval (yc • x) *
+      ((Polynomial.derivative Gz).map (Int.castRingHom (AlgebraicClosure ℚ))).eval (yc • x)
+      = (((b2 * b2).natAbs : ℕ) : AlgebraicClosure ℚ) := by
+    rw [← aeval_eq_eval_map_int_ray_class, ← aeval_eq_eval_map_int_ray_class,
+      ← Polynomial.aeval_map_algebraMap ℚ (yc • x) Vz, hVzmap, map_zsmul, hderiv,
+      smul_mul_assoc, hstar, zsmul_eq_mul, mul_one]
+    have hn : ((b2 * b2).natAbs : ℤ) = b2 * b2 := Int.natAbs_of_nonneg (mul_self_nonneg b2)
+    have hcast : ((((b2 * b2).natAbs : ℕ) : ℤ) : AlgebraicClosure ℚ)
+        = ((b2 * b2 : ℤ) : AlgebraicClosure ℚ) := by rw [hn]
+    rw [← hcast, Int.cast_natCast]
+  refine ⟨(b2 * b2).natAbs, Int.natAbs_ne_zero.mpr (mul_ne_zero hb2ne hb2ne), ?_⟩
+  intro q hq hqd σ hσ
+  -- Push both facts across the seam `ℚᵃˡᵍ → (ℚ_q)ᵃˡᵍ`.
+  have hGa : (Gz.map (Int.castRingHom (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).eval
+      (AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) (yc • x)) = 0 := by
+    rw [eval_map_int_ringHom_ray_class (AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) (yc • x) Gz, hGw, map_zero]
+  have hbeza : (Vz.map (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).eval
+        (AlgebraicClosure.map (algebraMap ℚ _) (yc • x)) *
+      ((Polynomial.derivative Gz).map (Int.castRingHom (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).eval
+        (AlgebraicClosure.map (algebraMap ℚ _) (yc • x))
+      = (((b2 * b2).natAbs : ℕ) : _) := by
+    rw [eval_map_int_ringHom_ray_class (AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) (yc • x) Vz,
+      eval_map_int_ringHom_ray_class (AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) (yc • x) (Polynomial.derivative Gz),
+      ← map_mul, hbezw, map_natCast]
+  have hfix := eq_of_mem_localInertiaGroup_of_eval_eq_zero_ray_class hq
+    (minpoly.monic hwint) hqd hGa hbeza hσ
+  -- Descend across the seam, then cancel the integer scaling.
+  have hτw : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) σ (yc • x) = yc • x := by
+    apply (AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+    rw [Field.absoluteGaloisGroup.lift_map]
+    exact hfix
+  rw [map_zsmul] at hτw
+  exact smul_right_injective (AlgebraicClosure ℚ) hyc0 hτw
+
 /-- **SUB-LEAF (b) OF THE MINKOWSKI CUT: FINITE RAMIFICATION — AN OPEN SUBGROUP
-OF `Γ ℚ` CONTAINS ALL BUT FINITELY MANY LOCAL INERTIA IMAGES** (SORRY LEAF,
-created 2026-07-30 as the ONLY remaining mathematical input of
+OF `Γ ℚ` CONTAINS ALL BUT FINITELY MANY LOCAL INERTIA IMAGES** (**PROVEN
+2026-07-30**; created the same day as the ONLY remaining mathematical input of
 `exists_badPrimes_mul_muFixer_eq_top_ray_class` just below, which is now GLUE
 over it and over sub-leaf (a) above).
 
@@ -49372,39 +49632,47 @@ told that those are its other customers; a hoist into
 `Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, beside the direction
 that IS proven, would serve all four.
 
-**THE ROUTE, AND IT IS NOT THE ONE THE OLD DOCSTRING PROPOSED.** The route
-previously recorded here was "get from `Algebra.IsUnramifiedAt` back to the
-local inertia group", i.e. run
+**THE ROUTE ACTUALLY TAKEN, which is neither of the two this docstring used to
+propose.** The route recorded FIRST was "get from `Algebra.IsUnramifiedAt` back
+to the local inertia group", i.e. run
 `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup →
 inertia_eq_bot_of_le_fixingSubgroup → isUnramifiedAt_of_inertia_le_fixingSubgroup`
-backwards. That is not necessary, and there is a route that never mentions
-ramification of ideals at all — it is the SAME argument as sub-leaf (a) above,
-with `X ^ m - 1` replaced by a minimal polynomial:
+backwards. That is not necessary, and no `IsUnramifiedAt` ever appears below.
+The route recorded SECOND was "primitive element `α`, bad set the primes
+dividing `Δ = ∏_{β ≠ γ} (β - γ)`, and `(α - β) ∣ Δ`". That one is correct but
+pays for three things it does not need: the primitive element in
+`IntermediateField ℚ (AlgebraicClosure ℚ)` form, the
+`Γ ℚ`-invariance-implies-rational step for `Δ`, and the divisibility
+`(α - β) ∣ Δ` among integral elements.
+
+What is proved instead replaces the discriminant by a **Bezout denominator**,
+which is larger (so a worse bad set) and very much cheaper (no invariance, no
+divisibility, no primitive element), and it is the SAME argument as sub-leaf (a)
+above with `X ^ m - 1` replaced by a minimal polynomial:
 
 * `N` is open hence closed, so `N = L.fixingSubgroup` for `L := fixedField N`
   (`InfiniteGalois.fixingSubgroup_fixedField`), and `L/ℚ` is FINITE
   (`InfiniteGalois.isOpen_iff_finite`).
-* Pick a primitive element `α` of `L/ℚ` and scale it to be integral over `ℤ`;
-  then `L = ℚ⟮α⟯`, so it suffices that `σ` fix `α`.
-* Let `g := minpoly ℤ α`, monic and SEPARABLE (char `0`), and let
-  `Δ := ∏_{β ≠ γ roots of g in ℚᵃˡᵍ} (β - γ)`. `Δ ≠ 0` by separability; it is
-  fixed by every element of `Γ ℚ` (which permutes the roots) hence lies in `ℚ`,
-  and it is integral over `ℤ` hence lies in `ℤ`. Take `T :=` the primes
-  dividing `Δ`.
-* For `q ∤ Δ` and `σ ∈ localInertiaGroup q`: `σ • ι α` is a root of `ι g`, so it
-  is `ι β` for some root `β` of `g`, and `ι (α - β) ∈ 𝔪` because `σ` is in the
-  inertia. If `β ≠ α` then `α - β` divides `Δ` among integral elements, so
-  `ι Δ ∈ 𝔪` — impossible, `Δ` being a `q`-adic unit
-  (`natCast_notMem_maximalIdeal_of_not_dvd_ray_class` above, up to sign). Hence
-  `β = α` and `σ` fixes `ι α`, hence `map σ` fixes `α`, hence all of `ℚ⟮α⟯ = L`.
+* `exists_ne_zero_forall_localInertiaGroup_fix_ray_class` just above does the
+  arithmetic ONE ELEMENT AT A TIME: given `x : ℚᵃˡᵍ`, scale it to an integral
+  `w = yc • x`, take `G := minpoly ℤ w` (monic) and clear the denominators of
+  the separability Bezout identity `u g + v g' = 1` over `ℚ` to get an INTEGER
+  identity `V(w) · G'(w) = b₂²`. For `q ∤ b₂²` the right-hand side is a `q`-adic
+  unit (`natCast_notMem_maximalIdeal_of_not_dvd_ray_class`), so `G'` is a unit
+  at `w` upstairs, and Hensel uniqueness at a simple root
+  (`eq_of_sub_mem_maximalIdeal_of_eval_eq_zero_ray_class`, proved from
+  `Polynomial.binomExpansion`) turns `σ • w - w ∈ 𝔪` — which is exactly
+  `AddSubgroup.mem_inertia` — into `σ • w = w`. Cancelling `yc` gives `σ x = x`.
+* Since `L/ℚ` is finite it has a finite `ℚ`-BASIS (`Module.finBasis`); take `T`
+  to be the prime factors of the PRODUCT of the per-basis-vector denominators.
+  A `q`-inertia element outside `T` fixes every basis vector, hence — by
+  `ℚ`-linearity, `Basis.ext` on `τ ∘ L.val` versus `L.val` — all of `L`, hence
+  lies in `L.fixingSubgroup = N`.
 
-So the bad set is "the primes dividing the discriminant of a primitive element",
-which is the classical answer, and no `IsUnramifiedAt` ever appears. The three
-formal costs are: the primitive element in `IntermediateField ℚ (AlgebraicClosure ℚ)`
-form, the `Γ ℚ`-invariance-implies-rational step
-(`IsGalois ℚ (AlgebraicClosure ℚ)`, already an instance in this file's cone —
-see `open_normal_subgroup_eq_top_of_inertia_le`'s proof), and the divisibility
-`(α - β) ∣ Δ`.
+Using a basis rather than a primitive element is what removes the last field
+theory: no `Field.exists_primitive_element`, no `ℚ⟮α⟯`, and the descent from
+"fixes the generators" to "fixes `L`" is `Basis.ext` rather than an
+`adjoin`-induction.
 
 **FAITHFULNESS (audited 2026-07-30): TRUE as stated, non-vacuous, and `hN`
 load-bearing.**
@@ -49431,8 +49699,61 @@ theorem exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class
       Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ N :=
-  sorry
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ N := by
+  classical
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgal : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  -- `N` open ⟹ closed ⟹ it is the fixing subgroup of its fixed field, which is FINITE.
+  have hclosed : IsClosed (N : Set (Γ ℚ)) := Subgroup.isClosed_of_isOpen N hN
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) N
+  have hfix : L.fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hN)
+  -- A finite `ℚ`-basis of `L`; each basis vector is fixed outside its own bad set.
+  set b := Module.finBasis ℚ L
+  have hd : ∀ i, ∃ d : ℕ, d ≠ 0 ∧ ∀ (q : ℕ) (hq : q.Prime), ¬ q ∣ d →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ ((b i : L) : AlgebraicClosure ℚ)
+          = ((b i : L) : AlgebraicClosure ℚ) :=
+    fun i => exists_ne_zero_forall_localInertiaGroup_fix_ray_class _
+  choose D hD0 hDfix using hd
+  refine ⟨(∏ i, D i).primeFactors, ?_⟩
+  intro q hq hqT
+  have hDne : (∏ i, D i) ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun i _ => hD0 i)
+  have hqprod : ¬ q ∣ ∏ i, D i := fun h => hqT (Nat.mem_primeFactors.mpr ⟨hq, h, hDne⟩)
+  rintro _ ⟨σ, hσ, rfl⟩
+  set τ := (Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))) σ
+  -- `τ` fixes every basis vector.
+  have hbasis : ∀ i, τ ((b i : L) : AlgebraicClosure ℚ) = ((b i : L) : AlgebraicClosure ℚ) :=
+    fun i => hDfix i q hq (fun h => hqprod (h.trans (Finset.dvd_prod_of_mem _ (Finset.mem_univ i))))
+      σ hσ
+  -- Hence, by `ℚ`-linearity, all of `L`.
+  have hlin : (τ.toAlgHom.toLinearMap.comp
+      (IntermediateField.val L).toLinearMap : L →ₗ[ℚ] AlgebraicClosure ℚ)
+      = (IntermediateField.val L).toLinearMap := by
+    refine b.ext ?_
+    intro i
+    exact hbasis i
+  have hmemfix : ∀ x ∈ L, τ x = x := by
+    intro x hx
+    have := congrArg (fun f : L →ₗ[ℚ] AlgebraicClosure ℚ => f ⟨x, hx⟩) hlin
+    simpa using this
+  have h2 : τ ∈ L.fixingSubgroup :=
+    (IntermediateField.mem_fixingSubgroup_iff L τ).mpr hmemfix
+  rw [hfix] at h2
+  exact h2
 
 /-- **`Γ F = H · Γ_{F(ζ_m)}` FOR EVERY OPEN `H` AND ALMOST EVERY `m`**
 (**DECOMPOSED AND ITS GLUE PROVEN 2026-07-30**; created 2026-07-28 as **the
