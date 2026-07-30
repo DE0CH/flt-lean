@@ -16491,7 +16491,28 @@ rather than the property the tree consumes.
 Levels outside `isolatedIsogenyPrimes` get `∅`, which is *false* as a
 statement about `X_0(p)(ℚ)` for `p ∈ {2, 3, 5, 7, 13}` (there the curve
 is `ℙ¹` and there are infinitely many `j`); every consumer below carries
-`p ∈ isolatedIsogenyPrimes`, so the junk branch is never reached. -/
+`p ∈ isolatedIsogenyPrimes`, so the junk branch is never reached.
+
+**SOUNDNESS OF EVERY ENTRY, machine-checked in PARI/GP 2.17.4 on
+2026-07-30** (untrusted searcher, statement check only; this is a check the
+earlier audits did not run — they verified the *factorisations* and the
+singular moduli, i.e. that the numbers are what they are said to be, but not
+that each is the `j`-invariant of a curve that actually admits a rational
+`p`-isogeny).  For each of the eleven pairs `(p, j)` in the table,
+`ellisomat(ellinit(ellfromj(j)), , 1)` was computed and the multiset of
+isogeny degrees in the class read off.  **All eleven give degrees exactly
+`[1, p]` with class size `2`** — so every tabulated `j` really is realised by
+a curve with a rational `p`-isogeny of the right degree, and no entry is
+spurious.  Conductors, for the record:
+`11 ↦ 853776, 2013561, 462175999961841`;
+`17 ↦ 128388381994318478400, 2528133962514062400`; `19 ↦ 3249`;
+`37 ↦ 2946861225, 29211631896138522853283963804025`; `43 ↦ 144961600`;
+`67 ↦ 92078226147600`; `163 ↦ 5876049733484976164750400`.
+
+This is the direction of Mazur's Theorem 1 that is NOT the content of
+`mem_isolatedJInvariants_of_stable`: it says the table is not too big.  The
+leaf asserts the converse — that the table is not too *small* — and no CAS
+check can supply that. -/
 def isolatedJInvariants (p : ℕ) : Finset ℚ :=
   if p = 11 then {-32768, -121, -24729001}
   else if p = 17 then {-882216989 / 131072, -297756989 / 2}
@@ -16527,7 +16548,32 @@ The intersection with each row is
 two vacuous ones, and the non-CM leaf is the remaining six values
 `−121`, `−24729001` (at `p = 11`), `−882216989/131072`,
 `−297756989/2` (at `p = 17`), `−9317`, `−162677523113838677`
-(at `p = 37`). -/
+(at `p = 37`).
+
+**WHAT ACTUALLY DISTINGUISHES THE TWO HALVES, machine-checked in PARI/GP
+2.17.4 on 2026-07-30, and it is sharper than "CM versus not".**  For each
+table entry, take a curve with that `j` and compute the `j`-invariants of the
+whole isogeny class (`ellisomat`).  The split is total:
+
+* on all **five** entries of THIS set, the `p`-isogenous curve has the **same**
+  `j` — `[−32768, −32768]`, `[−884736, −884736]`, `[−884736000, −884736000]`,
+  `[−147197952000, −147197952000]`, `[−262537412640768000, ⋯]`;
+* on **every** one of the six non-CM entries it differs, and those six pair
+  up with *each other*, three pairs exactly: `−121 ↔ −24729001` at `p = 11`,
+  `−882216989/131072 ↔ −297756989/2` at `p = 17`, and
+  `−9317 ↔ −162677523113838677` at `p = 37`.  All six were checked, in both
+  directions of each pair.
+
+So on the CM rows `E/⟨g⟩ ≅ E` over `ℚ̄`, which is exactly the statement that
+the `p`-isogeny is an ENDOMORPHISM — it is `√−p`, the `ψ = 2φ − 1` that
+`exists_cmEndomorphism_of_mem_isolatedCMJInvariants` wants.  That is the
+mathematical reason the CM/non-CM split is the right cut and not a
+convenience, and it also sharpens the "cheaper route" recorded on that leaf:
+see the correction there.  Independent consistency check on the row sizes —
+`p = 11` has `3 = 1` (self-isogenous CM) `+ 2` (an isogenous pair), `p = 17`
+has `2 = 0 + 2`, and `p = 37` has `2 = 0 + 2`; the four remaining rows are
+singletons and CM.  So all eleven entries are accounted for as `5` CM
+fixed points of the `p`-isogeny plus `3` swapped pairs. -/
 def isolatedCMJInvariants : Finset ℚ :=
   {-32768, -884736, -884736000, -147197952000, -262537412640768000}
 
@@ -17088,10 +17134,8 @@ in the conclusion asks `φ` to be defined over `ℚ` — it is not: the
 endomorphisms of a CM curve are defined exactly over `K` (*ATAEC* II.2.2),
 which is the fact the sibling leaf turns into a contradiction.
 
-WHAT PROVING IT NEEDS, and none of the three is in the mathlib pin, in
-`~/cs/FLT`, or in this project (re-checked 2026-07-27 by grepping
-`Cartan`, `ComplexMultiplication`, `HasCM`, `singularModulus`,
-`HilbertClassPolynomial` over all three trees):
+WHAT PROVING IT NEEDS (the three items are right; the availability claim
+that used to follow this line was WRONG — see the correction below it):
 
 1. the analytic (or Deuring) uniformisation identifying elliptic curves
    over `ℚ̄` with lattices up to homothety, enough to read `End` off the
@@ -17103,9 +17147,54 @@ WHAT PROVING IT NEEDS, and none of the three is in the mathlib pin, in
    endomorphism satisfying `IsIsogeny` — i.e. that multiplication by `φ`
    on `ℂ/Λ` is algebraic, given by rational functions in `(x, y)`.
 
-Item 3 is the only one that touches this file's vocabulary; items 1 and 2
-are a genuine theory build.  **A cheaper route that avoids all three, for
-a successor:** state and use the `p`-isogeny directly.  Mazur's table
+## FALSE-ABSENCE CORRECTION (2026-07-30) — items 1 and 2 are NOT missing
+
+The line above read "none of the three is in the mathlib pin, in `~/cs/FLT`,
+or in this project (re-checked 2026-07-27 by grepping `Cartan`,
+`ComplexMultiplication`, `HasCM`, `singularModulus`,
+`HilbertClassPolynomial` over all three trees)".  That grep was run and its
+result reported honestly, but **a grep proves a SPELLING absent, not a
+THEOREM absent**, and none of those five spellings is how either item is
+named.  Searched by STATEMENT SHAPE instead, on the worker host:
+
+* **Item 1 is HALF PRESENT IN THE MATHLIB PIN**, at
+  `Mathlib/Analysis/SpecialFunctions/Elliptic/Weierstrass.lean` — 1080 lines
+  carrying `PeriodPair`, `PeriodPair.lattice`, `latticeBasis`, `℘[L]`
+  (`weierstrassP`), `℘'[L]`, their periodicity and meromorphy, the Eisenstein
+  series `G n`, `g₂ := 60 G₄`, `g₃ := 140 G₆`, and culminating at line 1074 in
+  `PeriodPair.derivWeierstrassP_sq : ℘'(z)² = 4 ℘(z)³ − g₂ ℘(z) − g₃`.  That
+  is the lattice-`→`-cubic direction in full.  What is genuinely absent is the
+  CONVERSE, the uniformisation proper (every curve over `ℂ` is some `ℂ/Λ`,
+  equivalently surjectivity of `j` on lattices) — checked by searching for the
+  shape, not the name: no `Surjective … jInvariant`, no equivalence between
+  `Point` and a lattice quotient, and **mathlib does not define the analytic
+  `j` at all**.  So item 1 is one theorem, not a theory.
+* **Item 2 is SUBSTANTIALLY PRESENT IN THIS PROJECT**, at
+  `Fermat/FLT/Mathlib/NumberTheory/BinaryQuadraticForm.lean` (3470 lines),
+  which carries the analytic `jInvariant : UpperHalfPlane → ℂ`, `weberF2`,
+  `gammaTwo` (`γ₂`, with `γ₂³ = j`), `heegnerPoint p`, `weberAlpha p`,
+  `natDegree_minpoly_weberAlpha`, `exists_modularPolynomial`, and the
+  class-number-one theory itself — `prime_of_classNumberOne`,
+  `not_dvd_sq_sub_of_classNumberOne`, `mod_eight_eq_three_of_classNumberOne`,
+  `lt_exp_pi_sqrt` (the `164 ≤ p` bound).  It is exactly the Weber-function
+  route to "the singular modulus of a class-number-one discriminant is the
+  tabulated rational integer".
+* **AND IT IS ONE IMPORT LINE AWAY, not a refactor.**  That module
+  `public import`s only `Mathlib.*` — nothing from `Fermat/` — so it is
+  upstream of everything and `X0.lean` may `public import` it directly.  It is
+  currently reached only from `FreyCurve/MazurTorsion.lean`, which is why it
+  looked unavailable here.  Contrast the other four leaves of this cluster,
+  whose repairs really are cross-module refactors of `MazurTorsion.lean`.
+* Its own open leaves, for a successor sizing the work:
+  `natDegree_minpoly_weberAlpha`, `exists_quadratic_jInvariant_heegnerPoint`,
+  `exists_quadratic_gammaTwo_of_jInvariant`, `eta_two_torsion_key`,
+  `exists_modularPolynomial` (5 `sorry` tokens, source scan with comments
+  stripped).
+
+Item 3 is the only one that touches this file's vocabulary; item 1's
+remaining half and item 2's residue are the theory build.  **A cheaper route
+that avoids all three, for a successor:** state and use the `p`-isogeny
+directly.  Mazur's table
 entry at level `p` already asserts that the curve HAS a rational
 `p`-isogeny, and `ψ = 2φ − 1` with `ψ² = [−p]` is that isogeny; if the
 `p`-isogeny can be produced from `mem_isolatedJInvariants_of_stable`'s
@@ -17116,6 +17205,31 @@ here because the hypothesis of this cluster is `E.j ∈ …`, with the
 successor who re-cuts the parent
 `not_stable_of_mem_isolatedJInvariants` so that the `p`-isogeny survives
 into the CM half would replace this leaf by a much smaller one.
+
+**THE CHEAPER ROUTE IS VIABLE, AND ITS ONE MISSING STEP IS NOW NAMED
+(2026-07-30).**  The route as written above has a gap it does not mention:
+the `p`-isogeny out of `hstable` goes `E → E/⟨g⟩`, and it is an ENDOMORPHISM
+only if `E/⟨g⟩ ≅ E` over `ℚ̄` — otherwise there is no `ψ` to halve.  That
+identification is exactly what is true here and false one row over, checked
+in PARI/GP 2.17.4 and recorded on `isolatedCMJInvariants`: on all **five**
+entries of this leaf's hypothesis the `p`-isogenous curve has the SAME
+`j`-invariant, and on every non-CM entry of Mazur's table it does not.  So
+the route survives its own gap precisely on the five values `_hj` allows —
+which is why the hypothesis `E.j ∈ isolatedJInvariants p ∩
+isolatedCMJInvariants` is not merely sufficient bookkeeping but the exact
+recognition condition the route needs.
+
+Reduced, then, this leaf's cheaper route needs ONE arithmetic input in place
+of Deuring: **`j(E/⟨g⟩) = j(E)` at the five tabulated values**, i.e. that
+each is a root of `Φ_p(X, X)` — and `exists_modularPolynomial` already exists
+as a leaf in `Fermat/FLT/Mathlib/NumberTheory/BinaryQuadraticForm.lean`,
+which by the correction above this file may import directly.  A successor
+should price that against items 1–3 before starting a uniformisation build:
+it replaces the analytic theory with a modular-polynomial evaluation at five
+explicit integers.  What it does NOT supply on its own is `IsIsogeny` for the
+halved endomorphism `φ = (1 + ψ)/2`; division by `2` inside `End` needs
+`End` to be a ring acting on `(E⁄ℚ̄).Point`, which is item 3 and is
+unavoidable on either route.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with
 `E.j` one of the five tabulated singular moduli and `End(E_ℚ̄) = ℤ`. -/
