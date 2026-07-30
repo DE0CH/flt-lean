@@ -20474,10 +20474,28 @@ split therefore has to do one of exactly two things, and both are shut:
   ALREADY `public import`s it. The whole
   `AutomorphicForm/QuaternionAlgebra/` subtree carries exactly TWO
   direct sorries, both in `Basic.lean` (`:798`, `:827`).
+  **STALE — CORRECTED 2026-07-30: that subtree is now COMPLETELY
+  SORRY-FREE.** Comment-stripped `sorry`-token scan over every `.lean`
+  file under `Fermat/FLT/AutomorphicForm/QuaternionAlgebra/`: ZERO
+  tokens outside comments, `Basic.lean` included. Its only two textual
+  occurrences of the string are prose — one is a docstring that says
+  "with `comap_le_range_units_integers_of_isCompact` now proven too,
+  sorry-free", i.e. the very closure that made the old count wrong. So
+  "essentially sorry-free" can be strengthened to sorry-free, and route
+  (b) along this axis would be built on a closed API. (Re-run the scan
+  rather than trusting this line; a naive `grep sorry` counts those two
+  prose hits and reproduces the stale answer.)
 
   What is genuinely absent is the PREDICATE — nothing in the tree says
   "`τ` arises from an eigenform of this algebra": `grep -rn IsAutomorphic
-  Fermat/` returns nothing. So the cost of route (b) along this axis is
+  Fermat/` returns nothing. **Also drifted, same day, in a way that
+  matters for how the check is read:** that grep now returns ten hits,
+  every one of them PROSE (eight in this file, including this
+  docstring's own two, plus a mention of `GaloisRep.IsAutomorphicOfLevel`
+  at `:21268` as a name judged non-vendorable). No declaration is
+  introduced, so the substance is unchanged — but the check must be
+  read as "no DECLARATION of this name", not as "no hit". So the cost of
+  route (b) along this axis is
   ONE predicate over an existing sorry-free API plus its attachment
   theorem, not a theory from scratch. **That does not overturn the
   atomicity verdict** — the predicate is precisely the automorphic pin

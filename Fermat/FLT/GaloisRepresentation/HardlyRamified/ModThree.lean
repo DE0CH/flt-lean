@@ -25860,7 +25860,60 @@ lacks, proved on the template of that lemma (`trace_eq_sum_embeddings`,
   literally the mixed-space form `Σ_real + 2Σ_complex Re` that has to be
   matched against `⟪·,·⟫` to identify the trace-dual with the lattice
   dual.  A successor building (B) should lift these four verbatim and
-  commit them TOGETHER with the assembly that consumes them. -/
+  commit them TOGETHER with the assembly that consumes them.
+
+**THE `dedekindDualClass` CLAUSE WAS NEVER TESTED BY EITHER PARI AUDIT ABOVE, AND NO
+QUADRATIC FIELD CAN EVER TEST IT. Tested 2026-07-30 in two new fields; the clause is
+CORRECT — both factors of `[𝔡]·C⁻¹` are pinned by the identity.**
+
+*Why the gap existed.* All six fields named above (`ℚ`, `ℚ(i)`, `ℚ(√-5)`, `ℚ(√2)`, and the
+`ℚ(√-5)` per-class runs) are QUADRATIC, and for a quadratic `K` the conclusion is blind to
+the whole class shift, for two independent structural reasons:
+
+* every quadratic field is monogenic, so `𝔡 = (f'(θ))` is PRINCIPAL and the `[𝔡]` factor is
+  invisible;
+* conjugation `σ` is a norm-preserving bijection of the ideals with `𝔟 · σ𝔟 = (N𝔟)`, hence
+  `[σ𝔟] = [𝔟]⁻¹`; so the counting functions satisfy `a_C(n) = a_{C⁻¹}(n)` for every `n`, and
+  the `C ↦ C⁻¹` factor is invisible too.
+
+The sums in this statement depend on the class only through `a_C`, so in every quadratic
+field the identity holds *verbatim* with `C' = C`, with `C' = C⁻¹` and with
+`C' = [𝔡]C⁻¹` — indistinguishably. Confirmed numerically: at `K = ℚ(√-23)` (`h = 3`
+cyclic, so `C⁻¹ ≠ C` for the nontrivial classes) the residuals for `C' = C⁻¹` and for
+`C' = C` agree **to the last digit**, `5.18e-77` at `x = 0.7`. A class-number-`3` quadratic
+field does not help; the obstruction is the involution, not the class number.
+
+*The two fields that do test it.* Both are TOTALLY REAL CUBIC with `h = 3` cyclic, `w = 2`,
+`r₁ = 3`, so `ρ₀ = 2^{r−1}·Reg/w = 2·Reg` with `r = 3` infinite places, and the profile is
+the THREEFOLD multiplicative convolution of `e^{-πτ}`, i.e.
+`G(τ) = 2∫_ℝ K₀(2π√τ · e^{-u/2}) e^{-π e^u} du` (Mellin `(π^{-s/2}Γ(s/2))³` at `s/2`,
+verified against `gamma` to `4e-10`).
+
+* **Machinery validation first**, since a new profile and a new `ρ₀` are both in play:
+  `K = ℚ(ζ₇)⁺ = ℚ[x]/(x³−x²−2x+1)`, `d = 49`, `h = 1`, `Reg = 0.52545…`. The identity holds
+  with `ρ₀ = 2·Reg` to `3.5e-38` at `x = 0.7` and `3.4e-37` at `x = 2.3`. This is the FIRST
+  check of this statement at degree `> 2` and confirms `ρ₀ = 2^{r−1}Reg/w` at `r = 3`.
+* **`K = ℚ[x]/(x³ − 21x − 35)`**, `d = 3969`, `h = 3` cyclic, `𝔡` principal, `Reg = 4.2016…`,
+  ideals to norm `650`. Here `a_C ≠ a_{C⁻¹}`, so the inversion is finally visible:
+  residuals `≤ 1.5e-17` (`x = 0.7`) and `≤ 7.7e-15` (`x = 2.3`, tail-truncation level) for
+  ALL THREE classes with `C' = C⁻¹`, against **`∓0.0498`** (`x = 0.7`) and **`±0.1437`**
+  (`x = 2.3`) with `C' = C`. So the inversion is pinned.
+* **`K = ℚ[x]/(x³ − 30x − 28)`**, `d = 21708`, `h = 3` cyclic, `Reg = 25.9798…`, ideals to
+  norm `1500` — and here **`𝔡` is NON-PRINCIPAL** (`[𝔡]` is the nontrivial class of order
+  `3`; `N𝔡 = 21708 = |d|` as it must be). This is the run that tests the `[𝔡]` factor:
+  residuals `≤ 8.4e-17` (`x = 0.7`) and `≤ 5.1e-14` (`x = 2.3`) with
+  `C' = [𝔡]C⁻¹` — the definition as written — against **`0.418`, `7.393`, `−7.810`** with
+  `C' = C⁻¹` and **`0.418`, `−0.418`, `0`** with `C' = C`. Both factors are therefore
+  pinned, and `dedekindDualClass` is right as defined.
+
+*Consequences for a prover.* (i) The statement is confirmed faithful on a strictly larger
+basis than before — do not "repair" the class shift. (ii) `ρ₀ = 2^{r−1}Reg/w` is confirmed
+at unit rank `2`, so the `𝔉`-volume factor of CUT GUIDANCE step (A) is right. (iii) Any
+future numerical audit of this statement, or of anything else in this cluster that carries
+`dedekindDualClass`, must use a field of degree `≥ 3` with `h ≥ 3` and — to see `[𝔡]` — a
+non-principal different; `x³ − 30x − 28` is one, found by scanning `x³ + ax + b` with
+`nf.diff` and `bnfisprincipal`. A quadratic witness is not merely weak evidence, it is NO
+evidence. -/
 theorem heckeIdealTheta_functionalEquation (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -51480,14 +51533,142 @@ theorem artinDivisorMap_apply_span_ray_class
   rw [h, zero_pow hℓk] at h2
   exact zero_ne_one h2
 
+/-- **THE SECOND (NORM-INDEX) INEQUALITY OF GLOBAL CLASS FIELD THEORY, STRIPPED TO ITS
+IRREDUCIBLE CORE** (sorry node, created 2026-07-30 as the single sub-leaf of
+`exists_artinDivisorNormIndex_le_ray_class` just below, which is now PROVEN as glue over
+it).
+
+**What this cut does and does not buy.** It is LOGICALLY EQUIVALENT to its parent — the
+three extra hypotheses handed over here (`IsCyclic`, `Nat.card ∣ ℓ ^ k`, `N ≤ φ.ker`) are
+all DERIVABLE from the parent's own hypotheses, and the parent's proof derives them. So
+this is not a weakening of the mathematics and nobody should read it as progress on the
+class field theory. What it does buy, and the only reason it exists:
+
+* the left-hand side is now `Nat.card (Im.map φ)` — a plain group order. `A`, `φ.ker` and
+  a second `relIndex` are gone from the statement, and with them the universally quantified
+  `A` and its defining equation. The parent's `A.relIndex Im ≤ (P ⊔ N).relIndex Im` looked
+  like a statement about two indices; it is a statement about ONE index and one group order.
+* the CYCLICITY is now in the statement rather than a fact the prover has to find.  It was
+  recorded in the parent's docstring on 2026-07-30 as an observation; here it is mechanised
+  and free.  Every idele-free route to this inequality (Chevalley's ambiguous class number
+  formula, Herbrand quotients of a cyclic group) needs exactly that hypothesis, and the
+  parent's own ROUTE paragraph writes "for `M/F` cyclic" without noticing that here it costs
+  nothing.
+* `N ≤ φ.ker` is likewise free, and it is the half of the containment that is NOT
+  reciprocity — see the identification below.
+
+**WHICH CLASSICAL THEOREM THIS IS, precisely** (worked out 2026-07-30 and stated here
+because the parent's inventory names the missing machinery but not the citation).  Every
+`v ∤ mm` is unramified for `χ`: `hmm₀ram` puts the ramified primes into `mm₀` and
+`mm₀ ∣ mm`, so `v ∤ mm ⟹ v ∤ mm₀ ⟹ v` unramified.  For such a `v`,
+`orderOf (χ (globalFrob v))` IS the residue degree `f_v` of `v` in the cyclic extension
+`M/F` cut out by `χ`.  Hence
+
+  `N = ⟨ v ^ f_v : v ∤ mm ⟩ = N_{M/F}(divisors of M supported away from mm)`,
+
+`P` is the totally-positive ray group mod `mm`, and the conclusion is verbatim
+
+  `[I_mm : P_mm · N_{M/F} I_mm(M)] ≥ [M : F]`,
+
+the **second inequality** (Childress §5, Janusz IV; Neukirch VI.§7 in the idele language).
+Note the direction: this is the inequality proved either analytically (non-vanishing of
+Dirichlet `L`-functions at `s = 1`) or, for a CYCLIC extension, by Chevalley's ambiguous
+class number formula. It is NOT the easy direction, and it is NOT obtainable from the Artin
+map, whose surjectivity gives only `[I_mm : N] ≥ [M : F]`.
+
+**The one route visible from inside this file remains a strictly harder trade, and this cut
+does not change that.** `P ⊔ N ≤ φ.ker` would give the conclusion at once by antitonicity of
+`relIndex`; `N ≤ φ.ker` is now proven, so what is left is `P ≤ φ.ker`, i.e. "`c` is trivial
+on totally positive `δ ≡ 1 mod mm`" — which is **Artin reciprocity** for `χ`. Two earlier
+audits reached that verdict independently and it stands. Whoever builds the theory should
+build the displayed inequality, not the containment.
+
+**Faithfulness.** Both FALSITY AUDITS on the parent (below) transfer verbatim: the
+statement of the modulus clauses, the `hmm₀ram` hypothesis and the support clause are
+unchanged, and the conclusion is the parent's conclusion after the PROVEN rewrite
+`(φ.ker ⊓ Im).relIndex Im = Nat.card (Im.map φ)` (`Subgroup.inf_relIndex_right` then
+`Subgroup.relIndex_ker`). Two further points, both checked:
+* the left-hand side is a genuine `Nat.card` of a FINITE group — `Im.map φ` sits inside
+  `rootsOfUnity (ℓ ^ k) (Dickson.K 3)` — so it is `≥ 1`, and the leaf is therefore FALSE if
+  `(P ⊔ N).relIndex Im = 0`, i.e. if that index is infinite (`Subgroup.index` is `0` on an
+  infinite index). It is not: `P ≤ Im` (for `δ - 1 ∈ mm` and `v ∣ mm` the valuation
+  `Multiplicative.toAdd (d δ) v` is `0`, since `δ` is a unit at `v`), and `Im / P` is the
+  ray class group mod `mm`, which is finite. So the ℕ-valued junk-value trap does not fire
+  here — but a prover must still discharge that finiteness rather than assume it.
+* the `mm₀ = ⊤` branch: no height-one prime divides `⊤` (`Ideal.dvd_iff_le`), so `hmm₀ram`
+  forces `χ` unramified everywhere and the support clause forces `mm = ⊤`; then `Im = ⊤`,
+  `P` is the totally positive principal divisors, and the claim is the second inequality at
+  modulus `1`, i.e. against the narrow class number. Admissible and TRUE — but any proof
+  that assumes some prime divides `mm` is wrong on it, and neither `ℚ(i)` audit below warns
+  you, since `χ` is ramified at `2` in both. -/
+theorem exists_natCard_charDivisorImage_le_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm₀ : Ideal (NumberField.RingOfIntegers F)) (hmm₀ : mm₀ ≠ ⊥)
+    (hmm₀ram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      IsRamifiedCharRayClass F χ w → w.asIdeal ∣ mm₀) :
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧ mm₀ ∣ mm ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ mm → w.asIdeal ∣ mm₀) ∧
+      ∀ (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+        (d : NumberField.RingOfIntegers F → Multiplicative
+          (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+        (Im P N : Subgroup (Multiplicative
+          (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))),
+        (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+          ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+            (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) →
+        (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+            = χ (globalFrob v)) →
+        (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+          ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ})) →
+        (∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F), v.asIdeal ∣ mm →
+            Multiplicative.toAdd x v = 0) →
+        P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+          (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+          δ - 1 ∈ mm ∧ y = d δ} →
+        N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+          y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))} →
+        IsCyclic (Im.map φ) → Nat.card (Im.map φ) ∣ ℓ ^ k → N ≤ φ.ker →
+        Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **THE GLOBAL CYCLIC NORM INDEX INEQUALITY, AT AN ADMISSIBLE MODULUS**
-(sorry node, created 2026-07-27 as sub-leaf (A3b-1-c) of
+(**PROVEN 2026-07-30** as glue over the single sub-leaf
+`exists_natCard_charDivisorImage_le_ray_class` immediately above; the head label read
+"sorry node" until then. Created 2026-07-27 as sub-leaf (A3b-1-c) of
 `exists_artinDivisorPackage_ray_class` below; **REFUTED AND RESTATED TWICE ON
 2026-07-27** — see the two FALSITY AUDITS below. The first is why this leaf now
 CHOOSES its modulus instead of receiving one; the second is why `mm₀` must be
 required to carry the ramified primes (`hmm₀ram`), without which the leaf was
 still false even after the first repair.)
+
+**READ THIS AS BOOKKEEPING, NOT AS PROGRESS ON THE CLASS FIELD THEORY.** The
+decomposition is logically an EQUIVALENCE: the sub-leaf above is this statement with
+`A` and `φ.ker` eliminated from the conclusion and with four facts handed over that this
+proof derives — `IsCyclic (Im.map φ)`, `Nat.card (Im.map φ) ∣ ℓ ^ k`, `N ≤ φ.ker`, and
+`A.relIndex Im = Nat.card (Im.map φ)`. The inventory of missing machinery below is
+UNCHANGED and still describes what the sub-leaf costs. What did move: the cyclicity
+observation added to this docstring on 2026-07-30 is now mechanised rather than prose, and
+the sub-leaf's docstring identifies the exact classical theorem (the SECOND inequality,
+`[I_mm : P_mm · N_{M/F} I_mm(M)] ≥ [M : F]`) and shows that `N` is literally the norm
+subgroup, so `P ≤ φ.ker` — reciprocity — is all that separates the containment route from
+the conclusion.
 
 Childress ch. 4: for `M/F` cyclic and `mm` **admissible**,
 `[I_F(mm) : P⁺_{F,mm} · N_{M/F} I_M(mm)] ≥ #G`, which in the relative-index
@@ -51835,6 +52016,64 @@ THIRD restatement; and the consumer `exists_artinDivisorPackage_ray_class` disch
 with literally `fun w hw => (hmm₀iff w).mpr hw`, i.e. the `mpr` of the iff it was already
 holding — exactly as the audit predicted, so the package's statement is unchanged. The
 refutation check named just above was re-run and produced nothing.
+
+**THIS LEAF'S GALOIS GROUP IS CYCLIC, AUTOMATICALLY — SO IT NEEDS STRICTLY LESS THAN THE
+`Interface.lean` SIBLING, AND THE "BUILD ONE ABELIAN THEOREM" PRESCRIPTION ABOVE OVERSTATES
+WHAT IT COSTS** (found and verified in Lean 2026-07-30; the cross-reference above does not
+say this and the ROUTE paragraph uses "for `M/F` cyclic" without noticing that here it is
+free).
+
+Two facts, both checked against our pin rather than asserted:
+
+* `A.relIndex Im = Nat.card (Im.map φ)`. **MECHANISED 2026-07-30 and the prescription here
+  was longer than necessary** — no `subgroupOf` bookkeeping is needed, because mathlib
+  already has the relative form: `Subgroup.inf_relIndex_right` drops the `⊓ Im`, and
+  `Subgroup.relIndex_ker` (`Mathlib/GroupTheory/Index.lean:286`, in `namespace Subgroup`,
+  NOT `MonoidHom` — a first attempt at `MonoidHom.relIndex_ker` is an unknown constant)
+  is exactly `f.ker.relIndex K = Nat.card (K.map f)`. One `rw`, two lemmas.
+* `Im.map φ` is FINITE CYCLIC, of order dividing `ℓ ^ k`. `φ`'s source is the FREE abelian
+  group on the height-one spectrum, so `φ.range` is generated by the `φ (single v 1)`, which
+  `hφv` identifies with the `χ (globalFrob v)` — each killed by `ℓ ^ k` by `hord`. The
+  `ℓ ^ k`-torsion of a field's unit group is a subgroup, so all of `Im.map φ` lies in it;
+  `rootsOfUnity (ℓ ^ k) (Dickson.K 3)` is finite, and `isCyclic_subgroup_units`
+  (`Mathlib/RingTheory/IntegralDomain.lean`; the old name `subgroup_units_cyclic` is
+  deprecated since 2026-03-03) makes a finite subgroup of the units of an integral domain
+  cyclic.
+
+So the group whose order stands on the LEFT of this leaf's inequality is cyclic of
+`ℓ`-power order, `ℓ ≠ 3` prime — i.e. the implicit `M/F` is cyclic of `ℓ`-power degree, and
+NO hypothesis had to be added to get that. Consequences for whoever prices this leaf:
+
+1. **The shared theorem the cross-reference asks for may be stated for CYCLIC target groups
+   as far as THIS leaf is concerned.** The `Interface.lean` sibling
+   `finrank_le_card_classGroup_of_unramified_abelian` genuinely quantifies over abelian
+   `Gal(L/K)`, so the two are NOT equal in strength and "build once, cite twice" buys less
+   than it looks like. State the shared theorem abelian only if the sibling is actually
+   going to consume it.
+2. **The "cyclic ⟶ abelian" gap does not exist here.** `Fermat/FLT/NumberField/`
+   `UnramifiedClassFieldBound.lean` records an IDELE-FREE route to the norm-index
+   inequality — Chevalley's ambiguous class number formula, which needs only ideals, units
+   and Hilbert 90, all present in the pin — and records that it reaches only CYCLIC
+   extensions, "the gap is cyclic → abelian". That gap is the reason the route was judged
+   insufficient there. It is vacuous for this leaf.
+3. **What still is not free**, stated so this is not read as more than it is: Chevalley's
+   formula as recorded there is the modulus-`1`/unramified statement, whereas this leaf
+   needs a RAY-class norm index at a ramified modulus `mm`. So cyclicity retires one of the
+   two obstructions and not the other, and the INVENTORY above (Herbrand quotients, the
+   idele class group, the local norm index, the ray-class dictionary — all absent) still
+   describes what the ramified-modulus half costs.
+
+**AND THE CROSS-REFERENCE ABOVE IS NOW CONTRADICTED BY WHAT IS ON DISK** (checked
+2026-07-30). It says the two leaves "should cite one statement rather than build two". Later
+on 2026-07-28 the sibling was decomposed, in the new module
+`Fermat/FLT/NumberField/UnramifiedClassFieldBound.lean`, onto
+`NumberField.exists_surjective_classGroupHom_aut_of_unramified_abelian` — a surjection
+`Cl(𝓞 K) ↠ Gal(L/K)` killing norm classes, i.e. **the ARTIN MAP**, which that file's own
+docstring concedes ("This IS the reciprocity route"). That is exactly the route this
+docstring rejects, twice, as circular here and as strictly HARDER than the norm-index
+inequality. So the two leaves have diverged onto the two different routes and neither is
+building the shared statement. Whoever picks either up should decide that deliberately
+rather than assume the other side is covering it.
 -/
 theorem exists_artinDivisorNormIndex_le_ray_class
     (F : Type u) [Field F] [NumberField F]
@@ -51879,8 +52118,89 @@ theorem exists_artinDivisorNormIndex_le_ray_class
         N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
           y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))} →
-        A.relIndex Im ≤ (P ⊔ N).relIndex Im :=
-  sorry
+        A.relIndex Im ≤ (P ⊔ N).relIndex Im := by
+  obtain ⟨mm, hmm, hmmdvd, hmmsupp, hnarrow⟩ :=
+    exists_natCard_charDivisorImage_le_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c
+      hcmul hcfrob mm₀ hmm₀ hmm₀ram
+  refine ⟨mm, hmm, hmmdvd, hmmsupp, ?_⟩
+  intro φ d Im A P N hd hA hφv hφd hIm hP hN
+  have hℓkpos : 0 < ℓ ^ k := pow_pos hℓ.pos k
+  -- (i) `φ` is `ℓ ^ k`-torsion on the standard generators, by `hφv` and `hord`, ...
+  have hgen : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) ^ (ℓ ^ k) = 1 := by
+    intro v
+    refine Units.ext ?_
+    rw [Units.val_pow_eq_pow_val, hφv v, Units.val_one]
+    exact hord _
+  -- ... hence everywhere, those generators generating the FREE abelian group of divisors.
+  have hpow : ∀ x, (φ x) ^ (ℓ ^ k) = 1 := by
+    have key : ∀ a : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ,
+        (φ (Multiplicative.ofAdd a)) ^ (ℓ ^ k) = 1 := by
+      intro a
+      induction a using Finsupp.induction with
+      | zero => simp
+      | @single_add a b f _ _ ih =>
+          have hsplit : Multiplicative.ofAdd (Finsupp.single a b + f)
+              = Multiplicative.ofAdd (Finsupp.single a b) * Multiplicative.ofAdd f := rfl
+          rw [hsplit, map_mul, mul_pow, ih, mul_one]
+          have hb : Finsupp.single a b = b • Finsupp.single a (1 : ℤ) := by
+            simp [Finsupp.smul_single]
+          rw [hb]
+          have hz : Multiplicative.ofAdd (b • Finsupp.single a (1 : ℤ))
+              = (Multiplicative.ofAdd (Finsupp.single a (1 : ℤ))) ^ b := rfl
+          rw [hz, map_zpow, ← zpow_natCast (φ _ ^ b) (ℓ ^ k), ← zpow_mul, mul_comm, zpow_mul,
+            zpow_natCast, hgen a, one_zpow]
+    intro x
+    simpa using key (Multiplicative.toAdd x)
+  -- (ii) so the image is a FINITE CYCLIC group of order dividing `ℓ ^ k`: it lands in the
+  -- `ℓ ^ k`-th roots of unity of a field, and a finite subgroup of the units of an integral
+  -- domain is cyclic (`isCyclic_subgroup_units`).  NO hypothesis had to be added for this —
+  -- see the docstring of `exists_natCard_charDivisorImage_le_ray_class` above.
+  haveI : NeZero (ℓ ^ k) := ⟨hℓkpos.ne'⟩
+  have hpowS : ∀ u ∈ Im.map φ, u ^ (ℓ ^ k) = 1 := by
+    intro u hu
+    obtain ⟨y, -, rfl⟩ := hu
+    exact hpow y
+  have hle : Im.map φ ≤ rootsOfUnity (ℓ ^ k) (Dickson.K 3) := by
+    intro u hu
+    rw [mem_rootsOfUnity]
+    exact hpowS u hu
+  haveI hfin : Finite (Im.map φ) :=
+    Finite.of_injective (Subgroup.inclusion hle) (Subgroup.inclusion_injective hle)
+  have hcyc : IsCyclic (Im.map φ) := isCyclic_subgroup_units _
+  have hdvd : Nat.card (Im.map φ) ∣ ℓ ^ k := by
+    obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (Im.map φ))
+    rw [← orderOf_eq_card_of_forall_mem_zpowers hg]
+    refine orderOf_dvd_of_pow_eq_one ?_
+    have hgn : ((g : (Dickson.K 3)ˣ)) ^ (ℓ ^ k) = 1 := hpowS g.1 g.2
+    exact_mod_cast hgn
+  -- (iii) the "norm" generators of `N` are killed by `φ` outright: `N`'s `v`-exponent IS
+  -- `orderOf (χ (globalFrob v))`, and `hφv` identifies `φ (single v 1)` with that value.
+  -- This is the half of `P ⊔ N ≤ φ.ker` that is NOT reciprocity.
+  have hNker : N ≤ φ.ker := by
+    rw [hN, Subgroup.closure_le]
+    rintro y ⟨v, -, rfl⟩
+    simp only [SetLike.mem_coe, MonoidHom.mem_ker]
+    have hb : Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ)
+        = (orderOf (χ (globalFrob v)) : ℤ) • Finsupp.single v (1 : ℤ) := by
+      simp [Finsupp.smul_single]
+    have hz : Multiplicative.ofAdd
+          ((orderOf (χ (globalFrob v)) : ℤ) • Finsupp.single v (1 : ℤ))
+        = (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ))) ^ (orderOf (χ (globalFrob v)) : ℤ) :=
+      rfl
+    rw [hb, hz, map_zpow, zpow_natCast]
+    have hord' : orderOf (φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ))))
+        = orderOf (χ (globalFrob v)) := by
+      rw [← hφv v, orderOf_units]
+    rw [← hord']
+    exact pow_orderOf_eq_one _
+  -- (iv) and the left-hand side is just the order of that image: `A = φ.ker ⊓ Im` has the
+  -- same relative index in `Im` as `φ.ker` (`Subgroup.inf_relIndex_right`), which is
+  -- `Nat.card (Im.map φ)` (`Subgroup.relIndex_ker`).
+  have hleft : A.relIndex Im = Nat.card (Im.map φ) := by
+    rw [hA, Subgroup.inf_relIndex_right, Subgroup.relIndex_ker]
+  rw [hleft]
+  exact hnarrow φ d Im P N hd hφv hφd hIm hP hN hcyc hdvd hNker
 
 set_option maxHeartbeats 1000000 in
 /-- **THE DIVISOR-GROUP ARTIN PACKAGE: the four subgroups, the divisor map,
