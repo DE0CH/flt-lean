@@ -9862,6 +9862,27 @@ rational-INTEGER coefficients because the operator is a sum over single cosets o
 a finite double-coset space, i.e. an integral matrix in the natural basis (the
 nebentypus `ℒ.χ` contributes only roots of unity, `isOfFinOrder_χ`).
 
+**ROUND-12 NOTE (2026-07-30) — "THE ROUTE IS SHORT" IS OPTIMISTIC AT THIS PIN;
+budget a development, not a `have`.** The sketch above is mathematically right,
+but the step it compresses is "an integral matrix in the NATURAL BASIS", and that
+basis does not exist in the tree yet. `HeckeAlgebra D 𝒮` is
+`Algebra.adjoin E {T …} ∪ {U …}` inside
+`Module.End E ((U₁ 𝒮).toStruct.form D E)`, and that space is known finite here —
+`AutomorphicForm/QuaternionAlgebra/FiniteDimensional.lean` supplies
+`Finite (Dˣ＼GL₂(𝔸 F)／U)` and finite-dimensionality over `E`. What integrality
+additionally needs is a `ℤ`- (or `𝓞_E`-) LATTICE in it stable under `T_w` —
+forms valued in the integers rather than in `E` — together with the statement
+that the double-coset matrix of `T_w` has entries in `ℤ[ℒ.χ]`. Neither exists at
+this pin (checked 2026-07-30). So this belongs in
+`HeckeOperators/Concrete.lean` as a development, and the ROUND-11 verdict that it
+is correctly NOT a hypothesis of this leaf stands — but it is not free either.
+
+Its consumer set is larger than this leaf. See the ROUND-12 CUT AUDIT on
+`exists_frobEigenvalues_of_totallyDefinite_heckeCharacter` below, where the same
+integrality of `(heckeF w).coeff 1` is what makes that leaf's `Npt : ℕ → ℕ`
+clause satisfiable — a different pillar, a different route, one missing fact.
+Whoever builds it closes a gap in BOTH.
+
 Two consequences worth stating separately. The parenthesis above — `(P w).coeff 0`
 is safe "because every ring map fixes `ℚ`" — does NOT extend to `coeff 1`: `hnorm`
 pins `coeff 0` to a rational integer outright, and nothing pins `coeff 1` at all
@@ -13597,15 +13618,104 @@ place of the newform and `hmod` identifies `heckeF w` with its Hecke
 polynomial there; the finitely many places of `𝒮.S ∪ 𝒮.Q` are recovered
 from `hmod`, not from `θ`.
 
-FAITHFULNESS.  TRUE, by the classical package above — and trivially safe
-as a cut, since this leaf is the node below with STRICTLY MORE
-hypotheses, so it cannot be false unless that node is.  The audits on
-that node apply here verbatim and are not repeated: the FALSITY AUDIT
+FAITHFULNESS.  TRUE, by the classical package above.  The audits on the
+node below apply here verbatim and are not repeated: the FALSITY AUDIT
 (why `hbad2` and `hbadℓ` are load-bearing — without them the conclusion
 is refuted at every `w ∣ 2`), the CUT AUDIT (why the arithmetic axis is
 closed), and the NEXT CUT paragraph (why the plane-model cut is not
 available at this point of the import graph, with the grep that would
 refute it).  `hirrF` remains load-bearing for the reason recorded there.
+
+**ROUND-12 CORRECTION (2026-07-30) — THE "STRICTLY MORE HYPOTHESES"
+SHORTCUT IS FALSE, AND THE VERDICT HAS TO REST ON THE CLASSICAL PACKAGE
+INSTEAD.**  This paragraph used to continue "and trivially safe as a cut,
+since this leaf is the node below with STRICTLY MORE hypotheses, so it
+cannot be false unless that node is".  Diffing the two binder lists
+refutes it: against `exists_frobEigenvalues_heckeF_of_heckePackage` this
+leaf ADDS `D, p, 𝒮, θ, hθ` but DROPS three hypotheses — `hFeven`,
+`hbad3` and `hauto`.  The verdict survives, but only once each drop is
+accounted for separately, which is exactly what a hypothesis-inclusion
+argument was supposed to make unnecessary:
+
+* `hFeven` is not a real drop: it is IMPLIED by this leaf's own instance
+  `[IsQuaternionAlgebra.IsTotallyDefinite F D]`, since a totally definite
+  `D` ramifies at all `[F : ℚ]` infinite places and the ramification set
+  of a quaternion algebra has even cardinality.  That is the same
+  observation the ROUND-9 audit on
+  `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter` records as
+  "`[F : ℚ]` is forced EVEN".  No instance is added by dropping it.
+* `hbad3` IS a real drop, and it is the one that genuinely widens the
+  leaf.  It is harmless because it is an artefact of the OTHER pillar:
+  the places over `3` are excluded for the `3`-adic Carayol route of
+  STEP 2a″-β, and nothing in the `ℓ`-adic argument cited here refers to
+  them.  Refuting check, should anyone doubt it: exhibit a `w ∉ badF`
+  over `3` at which the Eichler–Shimura package fails while `hbad2` and
+  `hbadℓ` hold.
+* `hauto` is NOT superseded by `(D, p, 𝒮, θ, hθ)`; the two are
+  INCOMPARABLE.  `IsQuaternionicEigensystem` quantifies over EVERY
+  admissible `D` and every `p` with `2 < [F(ζ_p) : F]`, whereas this leaf
+  fixes one `D` and one `𝒮`; conversely this leaf receives a Hecke
+  ALGEBRA character `θ`, where `hauto` supplies only an eigenVECTOR `f`
+  (the two are bridged at the call site by `exists_algHom_of_smul_eq_smul`).
+  Neither direction is free.
+
+So this leaf is not a hypothesis-strengthening of the node below, and its
+truth is exactly the classical package recorded above — nothing cheaper.
+
+**ROUND-12 CUT AUDIT (2026-07-30) — THERE IS NO CONCLUSION-SIDE CUT HERE
+EITHER, and the two candidates that look available are both closed.**
+Run against the criterion the ROUND-7 EQUIVALENCE AUDIT applies to
+`CarayolJacobianPackage`: a conclusion all of whose clauses are TRUE OF
+THE SOUGHT OBJECT is satisfied BY that object, hence equivalent to it.
+
+* *Discharging clause 2 from in-tree geometry is not available at this
+  pin.*  The docstring on `weilBound_heckeF_of_heckePackage` points at
+  "the theorem the Stepanov subtree of `MoretBailly.lean` is building",
+  which reads as though clause 2 were nearly free.  It is not.  That
+  subtree is building the Lang–Weil LOWER bound only — its own section
+  header says nonemptiness "is materially cheaper than the estimate" and
+  needs "the LOWER bound only" — and `MoretBailly.lean`'s MACHINERY
+  INVENTORY records, re-verified by grep on 2026-07-30 over mathlib,
+  `~/cs/FLT` and this project, that the Weil bound, the genus,
+  Riemann–Roch and zeta functions of varieties are ABSENT from all three.
+  Clause 2 IS the Riemann Hypothesis for curves; it has to be cited or
+  built.
+* *Dropping `Npt` is a RELOCATION.*  Replacing clauses 1–2 by the single
+  clause `∀ s > 0, ‖∑ κ, γ κ ^ s‖ ≤ Bw * √(Nw) ^ s` gives a statement
+  EQUIVALENT to `‖φ ((heckeF w).coeff 1)‖ ≤ 2√(Nw)`, i.e. to the
+  conclusion of `weilBound_heckeF_of_heckePackage` itself.  Forward is
+  that node's own proof through `norm_le_two_mul_sqrt_of_frobEigenvalues`;
+  backward, take `n = 2`, `γ` the two roots of `(heckeF w).map φ` over `ℂ`
+  and `Bw = 2`, which is legitimate because `heckeF w` is provably monic
+  of degree `2` with `coeff 0 = Nw` HERE — the derivation is the `hshape`
+  block of `exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter`,
+  which uses only `hmod`, `hbadℓ`, `hrank`, `hρ` and injectivity of `ψℓ`
+  and `ιO`, all of which this leaf also has.  So that weakening buys
+  nothing.
+
+**KEEP the point-count shape.**  With `Npt : ℕ → ℕ` retained this leaf is
+STRICTLY stronger than the Ramanujan bound: padding `γ` with complex
+conjugates makes `∑ κ, γ κ ^ s` real but not integral, and integrality at
+ALL `s` simultaneously forces the multiset to be the root multiset of a
+monic INTEGER polynomial.  That strengthening costs a GEOMETRIC prover
+nothing — a point count of a variety is a natural number by construction —
+and it is what makes the leaf the geometry's native output.  Do not
+weaken it merely to buy an equivalence.
+
+**AND IT IS WHERE INTEGRALITY OF THE EIGENVALUE RE-ENTERS, UNREMARKED
+UNTIL NOW.**  The padding argument above only closes if
+`(heckeF w).coeff 1` is an ALGEBRAIC INTEGER: a rational but
+non-integral `a_w` lies among the roots of no monic integer polynomial,
+so no admissible `Npt` exists and the leaf would be FALSE at that
+instance.  Nothing among these hypotheses supplies it.  This is the SAME
+gap the ROUND-11 ADDENDUM on
+`nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter` records for
+the `3`-adic pillar, reached here by a completely different route —
+there through the `𝒪_L`-lattice bound on `hecke w`, here through
+`Npt s ∈ ℕ`.  It is not a defect in either statement: `θ (T_w)` IS an
+algebraic integer, for the reason that addendum gives.  It is a record
+that whatever eventually discharges it has TWO consumers, and that
+neither leaf can be PROVEN without it.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
