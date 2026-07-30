@@ -295,6 +295,9 @@ public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.Polynomial.Basic
 public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 public import Mathlib.RingTheory.DedekindDomain.IntegralClosure
+public import Mathlib.RingTheory.LaurentSeries
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.RingTheory.AdicCompletion.Completeness
 
 @[expose] public section
 
@@ -1696,7 +1699,439 @@ theorem exists_isPlaceFun_of_affPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Ty
       0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) :=
   PlaceFromDedekind.exists_isPlaceFun_of_affPt' E hsep h2 q
 
-/-- **LEAF (obligation 1c, INFINITE HALF): each branch at infinity carries a valuation.**
+/-! ### The place of a branch at infinity, via Laurent series (PROVEN, 2026-07-30)
+
+The affine half above goes through the Dedekind ring of integers; that route CANNOT close the
+infinite half, because `ord x = -1` is an EXACTNESS statement — the ramification index of
+`1/x` at the place must be `1` — and lying over `(1/x)` only gives `ord (1/x) > 0`.  Getting
+`e = 1` from the Dedekind side is the degree count `Σ eᵢfᵢ = [F : K(1/x)] = 2` over the two
+branches.
+
+So this half takes the route the docstring below always proposed, and the exactness becomes
+true BY CONSTRUCTION: embed `F` into `K⸨t⸩` as a `K(x)`-algebra with `x ↦ t⁻¹` and pull back
+the `t`-adic order.  Then `ord x = order (t⁻¹) = -1` because `t` is the uniformiser of
+`K⸨t⸩`, with no ramification theory anywhere.
+
+The embedding exists because the reversed sextic `revSext u = u⁶·f(1/u)` has constant term
+`1` (the sextic is MONIC — the same fact that makes the two points at infinity rational), so
+Hensel's lemma in `K⟦t⟧` — which mathlib has, `K⟦t⟧` being `t`-adically complete — gives
+`√(revSext t) ≡ ±1`.  That square root is where `2 ≠ 0` is used, and it is the ONLY place.
+Then `x ↦ t⁻¹`, `y ↦ ±√(revSext t)·t⁻³` is a root of the same `Y² − f` that
+`exists_functionFieldData` built `F` from, so `AdjoinRoot.lift` produces the embedding and the
+`Bool` is the sign.
+
+Two turns of the API are worth recording, both of which cost a cycle:
+
+* `Polynomial.reflect` is NOT needed.  The only fact wanted about the reversed sextic is
+  `sext u⁻¹ = revSext u · u⁻⁶`, an identity of VALUES in a field, which `field_simp` proves
+  from the two explicit definitions (`sext_inv_eq`).  Reflection lemmas about polynomials —
+  and the squarefreeness of the reflected sextic, which would then be needed — are entirely
+  avoidable.
+* The `Algebra K (LaurentSeries K)` instance found by synthesis is
+  `HahnSeries.powerSeriesAlgebra` (through `K⟦t⟧`), NOT the `C`-based `HahnSeries.instAlgebra`.
+  The two are propositionally but not definitionally equal, so `HahnSeries.C_eq_algebraMap`
+  and `ofPowerSeriesAlg` do not apply to it and there is no `IsScalarTower K K[X] K⸨t⸩`
+  instance.  `order_algebraMap` and `aeval_TT_eq_algebraMap` are stated against the instance
+  that is actually there.
+-/
+
+section PlaceAtInfinity
+
+namespace PlaceAtInfinity
+
+/-- The reversed sextic, evaluated. -/
+def revSext (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (u : R) : R :=
+  1 + (c₅ : R) * u + (c₄ : R) * u ^ 2 + (c₃ : R) * u ^ 3
+    + (c₂ : R) * u ^ 4 + (c₁ : R) * u ^ 5 + (c₀ : R) * u ^ 6
+
+/-- The reversed sextic has constant term `1`: `revSext u − 1` is `u` times something. -/
+lemma revSext_sub_one (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (u : R) :
+    revSext c₀ c₁ c₂ c₃ c₄ c₅ u - 1 =
+      u * ((c₅ : R) + (c₄ : R) * u + (c₃ : R) * u ^ 2
+        + (c₂ : R) * u ^ 3 + (c₁ : R) * u ^ 4 + (c₀ : R) * u ^ 5) := by
+  simp only [revSext]; ring
+
+/-- **The reflection identity, as an identity of VALUES in a field**: no `Polynomial.reflect`
+is needed, because `u ≠ 0` lets `field_simp` do the work. -/
+lemma sext_inv_eq (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [Field R] {u : R} (hu : u ≠ 0) :
+    sext c₀ c₁ c₂ c₃ c₄ c₅ u⁻¹ = revSext c₀ c₁ c₂ c₃ c₄ c₅ u * (u⁻¹) ^ 6 := by
+  simp only [sext, revSext]
+  field_simp
+
+/-! ## Square roots in `K⟦X⟧` by Hensel -/
+
+/-- **Hensel's lemma gives the square root of a power series congruent to `1`.**  This is
+the one place `2 ≠ 0` is used in the infinite half. -/
+theorem exists_powerSeries_sqrt {K : Type} [Field K] (h2 : (2 : K) ≠ 0) (G : PowerSeries K)
+    (hG : G - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)}) :
+    ∃ s : PowerSeries K, s ^ 2 = G ∧ s - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)} := by
+  have h2u : IsUnit (2 : PowerSeries K) := by
+    have h : (2 : PowerSeries K) = PowerSeries.C (2 : K) :=
+      (map_ofNat (PowerSeries.C (R := K)) 2).symm
+    rw [h]
+    exact (PowerSeries.C (R := K)).isUnit_map (isUnit_iff_ne_zero.2 h2)
+  obtain ⟨a, ha, ha1⟩ :=
+    HenselianRing.is_henselian (R := PowerSeries K) (I := Ideal.span {PowerSeries.X})
+      (Polynomial.X ^ 2 - Polynomial.C G : (PowerSeries K)[X])
+      (monic_X_pow_sub_C G two_ne_zero) 1
+      (by
+        simp only [eval_sub, eval_pow, eval_X, eval_C, one_pow]
+        have h : (1 : PowerSeries K) - G = -(G - 1) := by ring
+        rw [h]
+        exact neg_mem hG)
+      (by
+        simp only [derivative_sub, derivative_X_pow, derivative_C, sub_zero, eval_mul,
+          eval_pow, eval_X, one_pow, mul_one, eval_C, Nat.cast_ofNat]
+        exact h2u.map _)
+  refine ⟨a, ?_, ha1⟩
+  have := ha
+  simp only [IsRoot, eval_sub, eval_pow, eval_X, eval_C, sub_eq_zero] at this
+  exact this
+
+/-! ## The `t`-adic order on `K⸨X⸩` -/
+
+section Order
+
+variable {K : Type} [Field K]
+
+/-- The image of a power series has nonnegative order. -/
+lemma order_ofPowerSeries_nonneg (p : PowerSeries K) :
+    0 ≤ (HahnSeries.ofPowerSeries ℤ K p).order := by
+  rcases eq_or_ne (HahnSeries.ofPowerSeries ℤ K p) 0 with h | h
+  · simp [h]
+  · by_contra hlt
+    have hc : (HahnSeries.ofPowerSeries ℤ K p).coeff
+        (HahnSeries.ofPowerSeries ℤ K p).order ≠ 0 :=
+      HahnSeries.coeff_order_eq_zero.not.2 h
+    exact hc (by rw [PowerSeries.coeff_coe, if_pos (by omega)])
+
+/-- A constant has order `0`.  (The `Algebra K (LaurentSeries K)` instance goes through
+`K⟦X⟧`, so this is `PowerSeries.coe_C` and not `HahnSeries.C_eq_algebraMap`.) -/
+lemma order_algebraMap (a : K) : (algebraMap K (LaurentSeries K) a).order = 0 := by
+  show (algebraMap K (HahnSeries ℤ K) a).order = 0
+  rw [HahnSeries.algebraMap_apply']
+  simp only [show (algebraMap K (PowerSeries K) a) = PowerSeries.C a from rfl, PowerSeries.coe_C]
+  exact HahnSeries.order_C
+
+/-- `T := ofPowerSeries X` has order `1`. -/
+lemma order_T : (HahnSeries.ofPowerSeries ℤ K PowerSeries.X).order = 1 := by
+  rw [HahnSeries.ofPowerSeries_X]
+  exact HahnSeries.order_single one_ne_zero
+
+lemma T_ne_zero : (HahnSeries.ofPowerSeries ℤ K PowerSeries.X) ≠ 0 := by
+  rw [HahnSeries.ofPowerSeries_X]
+  intro h
+  have := HahnSeries.order_single (a := (1 : ℤ)) (r := (1 : K)) one_ne_zero
+  rw [h] at this
+  simp at this
+
+/-- The order of a product, over a field. -/
+lemma order_mul' {x y : LaurentSeries K} (hx : x ≠ 0) (hy : y ≠ 0) :
+    (x * y).order = x.order + y.order :=
+  HahnSeries.order_mul_of_ne_zero
+    (mul_ne_zero (HahnSeries.leadingCoeff_ne_zero.mpr hx) (HahnSeries.leadingCoeff_ne_zero.mpr hy))
+
+/-- **The `t`-adic order, pulled back along a `K`-embedding, is a place.** -/
+theorem isPlaceFun_order_comp {F : Type} [Field F] [Algebra K F]
+    (φ : F →+* LaurentSeries K)
+    (hK : ∀ a : K, φ (algebraMap K F a) = algebraMap K (LaurentSeries K) a)
+    {t : F} (ht : (φ t).order = 1) :
+    IsPlaceFun K F (fun z => (φ z).order) where
+  map_zero := by simp
+  map_mul a b ha hb := by
+    have hφa : φ a ≠ 0 := (map_ne_zero_iff _ φ.injective).2 ha
+    have hφb : φ b ≠ 0 := (map_ne_zero_iff _ φ.injective).2 hb
+    simp only [map_mul]
+    exact order_mul' hφa hφb
+  ultra a b _ _ hab := by
+    have hφab : φ a + φ b ≠ 0 := by
+      rw [← map_add]
+      exact (map_ne_zero_iff _ φ.injective).2 hab
+    simpa only [map_add] using HahnSeries.min_order_le_order_add hφab
+  map_algebraMap a _ := by
+    rw [hK a]
+    exact order_algebraMap a
+  normalised := ⟨t, ht⟩
+
+end Order
+
+/-! ## The embedding `F ↪ K⸨t⸩` at a branch at infinity -/
+
+section Laurent
+
+variable {K : Type} [Field K]
+
+/-- The uniformiser `t` of `K⸨X⸩`. -/
+noncomputable def TT (K : Type) [Field K] : LaurentSeries K :=
+  HahnSeries.ofPowerSeries ℤ K PowerSeries.X
+
+lemma order_TT : (TT K).order = 1 := order_T
+
+lemma TT_ne_zero : (TT K) ≠ 0 := T_ne_zero
+
+lemma order_TT_inv : ((TT K)⁻¹).order = -1 := by
+  have h1 : (TT K) * (TT K)⁻¹ = 1 := mul_inv_cancel₀ TT_ne_zero
+  have h2 : ((TT K) * (TT K)⁻¹).order = (TT K).order + ((TT K)⁻¹).order :=
+    order_mul' TT_ne_zero (inv_ne_zero TT_ne_zero)
+  rw [h1] at h2
+  have h3 : (1 : LaurentSeries K).order = 0 := by
+    simp
+  rw [h3, order_TT] at h2
+  omega
+
+/-- `aeval t` on `K[X]` IS the canonical algebra map into `K⸨X⸩`.  (Stated as an equality of
+ring homs, because the `Algebra K (HahnSeries ℤ K)` instance found here is
+`HahnSeries.powerSeriesAlgebra`, not the `C`-based `HahnSeries.instAlgebra`, so the two
+`aeval`s are propositionally but not definitionally equal.) -/
+lemma aeval_TT_eq_algebraMap :
+    ((Polynomial.aeval (TT K) : K[X] →ₐ[K] LaurentSeries K) : K[X] →+* LaurentSeries K)
+      = algebraMap K[X] (HahnSeries ℤ K) := by
+  refine Polynomial.ringHom_ext ?_ ?_
+  · intro a
+    show Polynomial.aeval (TT K) (Polynomial.C a) = _
+    rw [Polynomial.aeval_C, Polynomial.algebraMap_hahnSeries_apply, Polynomial.coe_C]
+    show (algebraMap K (HahnSeries ℤ K)) a = _
+    rw [HahnSeries.algebraMap_apply']
+    rfl
+  · show Polynomial.aeval (TT K) Polynomial.X = _
+    rw [Polynomial.aeval_X, Polynomial.algebraMap_hahnSeries_apply, Polynomial.coe_X, TT]
+
+lemma aeval_TT_apply (p : K[X]) :
+    Polynomial.aeval (TT K) p = algebraMap K[X] (HahnSeries ℤ K) p :=
+  DFunLike.congr_fun aeval_TT_eq_algebraMap p
+
+lemma aeval_TT_injective :
+    Function.Injective (Polynomial.aeval (TT K) : K[X] →ₐ[K] LaurentSeries K) := by
+  intro p q hpq
+  refine Polynomial.algebraMap_hahnSeries_injective (Γ := ℤ) ?_
+  rw [← aeval_TT_apply, ← aeval_TT_apply]
+  exact hpq
+
+lemma transcendental_TT_inv : Transcendental K ((TT K)⁻¹) := by
+  intro halg
+  obtain ⟨p, hp0, hp⟩ : IsAlgebraic K (TT K) := IsAlgebraic.inv_iff.1 halg
+  exact hp0 (aeval_TT_injective (show Polynomial.aeval (TT K) p = Polynomial.aeval (TT K) 0 by
+    rw [hp, map_zero]))
+
+lemma aeval_TT_inv_ne_zero {p : K[X]} (hp : p ≠ 0) :
+    Polynomial.aeval ((TT K)⁻¹) p ≠ 0 := fun h => transcendental_TT_inv ⟨p, hp, h⟩
+
+/-- The embedding `K(x) ↪ K⸨t⸩` sending `x` to `t⁻¹`: the place at infinity. -/
+noncomputable def rho (K : Type) [Field K] : RatFunc K →+* LaurentSeries K :=
+  IsLocalization.lift (M := nonZeroDivisors K[X]) (S := RatFunc K)
+    (g := (Polynomial.aeval ((TT K)⁻¹) : K[X] →ₐ[K] LaurentSeries K).toRingHom)
+    (fun y => isUnit_iff_ne_zero.2 (aeval_TT_inv_ne_zero (nonZeroDivisors.coe_ne_zero y)))
+
+@[simp] lemma rho_poly (p : K[X]) :
+    rho K (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval ((TT K)⁻¹) p :=
+  IsLocalization.lift_eq _ p
+
+lemma rho_const (a : K) : rho K (algebraMap K (RatFunc K) a) = algebraMap K (LaurentSeries K) a := by
+  rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, rho_poly,
+    show (algebraMap K K[X] a) = Polynomial.C a from rfl, Polynomial.aeval_C]
+
+/-- **The square root at infinity.**  `revSext` has constant term `1`, so Hensel's lemma in
+`K⟦t⟧` produces a square root congruent to `1` modulo `t`. -/
+theorem exists_laurent_sqrt (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (h2 : (2 : K) ≠ 0) :
+    ∃ w : LaurentSeries K, w ^ 2 = revSext c₀ c₁ c₂ c₃ c₄ c₅ (TT K) ∧
+      (w = 1 ∨ 1 ≤ (w - 1).order) := by
+  set G : PowerSeries K := revSext c₀ c₁ c₂ c₃ c₄ c₅ (PowerSeries.X : PowerSeries K) with hG
+  have hGmem : G - 1 ∈ Ideal.span {(PowerSeries.X : PowerSeries K)} := by
+    rw [hG, revSext_sub_one]
+    exact Ideal.mem_span_singleton'.2 ⟨_, mul_comm _ _⟩
+  obtain ⟨s, hs2, hs1⟩ := exists_powerSeries_sqrt h2 G hGmem
+  refine ⟨HahnSeries.ofPowerSeries ℤ K s, ?_, ?_⟩
+  · have h1 : (HahnSeries.ofPowerSeries ℤ K s) ^ 2 = HahnSeries.ofPowerSeries ℤ K (s ^ 2) := by
+      rw [map_pow]
+    rw [h1, hs2, hG]
+    show HahnSeries.ofPowerSeries ℤ K (revSext c₀ c₁ c₂ c₃ c₄ c₅ PowerSeries.X) = _
+    simp only [revSext, map_add, map_mul, map_pow, map_intCast, map_one]
+    rfl
+  · rcases eq_or_ne s 1 with rfl | hne
+    · left; simp
+    · right
+      obtain ⟨h, hh⟩ := Ideal.mem_span_singleton'.1 hs1
+      have hsub : HahnSeries.ofPowerSeries ℤ K s - 1
+          = (TT K) * HahnSeries.ofPowerSeries ℤ K h := by
+        have hstep : HahnSeries.ofPowerSeries ℤ K (s - 1)
+            = HahnSeries.ofPowerSeries ℤ K (h * PowerSeries.X) := by rw [hh]
+        rw [map_sub, map_one, map_mul] at hstep
+        rw [hstep, TT]
+        ring
+      have hh0 : h ≠ 0 := by
+        intro h0
+        rw [h0, zero_mul] at hh
+        exact hne (sub_eq_zero.mp hh.symm)
+      have hhne : HahnSeries.ofPowerSeries ℤ K h ≠ 0 := by
+        intro hz
+        exact hh0 (HahnSeries.ofPowerSeries_injective (by rw [hz, map_zero]))
+      rw [hsub, order_mul' TT_ne_zero hhne, order_TT]
+      have := order_ofPowerSeries_nonneg h
+      omega
+
+end Laurent
+
+/-! ## The place of a branch at infinity -/
+
+section InfTower
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K F : Type} [Field K] [Field F]
+  [Algebra K F] [Algebra K[X] F] [Algebra (RatFunc K) F]
+  [IsScalarTower K K[X] F] [IsScalarTower K[X] (RatFunc K) F]
+
+/-- **The place of a branch at infinity, with `ord x = −1` EXACT.**
+
+The embedding `F ↪ K⸨t⸩` is chosen with `x ↦ t⁻¹`, so the exactness is true by construction
+rather than by a ramification count: `ord x = −1` because `t` is the uniformiser of `K⸨t⸩`.
+Both branches are covered, the `Bool` being the sign of the square root of the reversed
+sextic supplied by Hensel's lemma. -/
+theorem exists_isPlaceFun_of_infPt_aux {xx yy : F}
+    (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (heqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx)
+    (hgen : ∀ z : F, ∃ a b d : K[X], Polynomial.aeval xx d ≠ 0 ∧
+      z * Polynomial.aeval xx d = Polynomial.aeval xx a + Polynomial.aeval xx b * yy)
+    (hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+    (hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+    (h2 : (2 : K) ≠ 0) (sgn : Bool) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ o xx = -1 ∧
+      -3 < o (yy - (if sgn then 1 else -1) * xx ^ 3) := by
+  classical
+  -- the tower, in the shape the affine half uses
+  have halg : ∀ p : K[X], algebraMap K[X] F p = Polynomial.aeval xx p := fun p => by
+    have h : (IsScalarTower.toAlgHom K K[X] F) = (Polynomial.aeval xx : K[X] →ₐ[K] F) :=
+      Polynomial.algHom_ext (by simpa using hxx)
+    exact congrArg (fun φ => φ p) h
+  have hdown : ∀ p : K[X],
+      algebraMap (RatFunc K) F (algebraMap K[X] (RatFunc K) p) = Polynomial.aeval xx p :=
+    fun p => by rw [← IsScalarTower.algebraMap_apply, halg]
+  haveI : IsScalarTower K (RatFunc K) F := IsScalarTower.of_algebraMap_eq fun a => by
+    rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, hdown,
+      show (algebraMap K K[X] a) = Polynomial.C a from rfl, Polynomial.aeval_C]
+  set α : RatFunc K := algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) with hα
+  have hαF : algebraMap (RatFunc K) F α = yy ^ 2 := by
+    rw [hα, hdown, aeval_sextPoly, heqn]
+  -- `Y² − f` is irreducible over `K(x)`
+  have hirr : Irreducible (Polynomial.X ^ 2 - Polynomial.C α : (RatFunc K)[X]) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+  set gpoly : (RatFunc K)[X] := Polynomial.X ^ 2 - Polynomial.C α with hgpoly
+  haveI : Fact (Irreducible gpoly) := ⟨hirr⟩
+  have hroot : gpoly.eval₂ (Algebra.ofId (RatFunc K) F).toRingHom yy = 0 := by
+    simp only [hgpoly, Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C]
+    show yy ^ 2 - algebraMap (RatFunc K) F α = 0
+    rw [hαF, sub_self]
+  -- `F` is generated by `y` over `K(x)`
+  have hadj : IntermediateField.adjoin (RatFunc K) {yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval xx a / Polynomial.aeval xx d := by rw [map_div₀, hdown, hdown]
+    have e2 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval xx b / Polynomial.aeval xx d := by rw [map_div₀, hdown, hdown]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  set ψ₀ : AdjoinRoot gpoly →ₐ[RatFunc K] F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) F) yy hroot with hψ₀
+  have hψroot : ψ₀ (AdjoinRoot.root gpoly) = yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hψsurj : Function.Surjective ψ₀ := by
+    intro z
+    have hz : z ∈ IntermediateField.adjoin (RatFunc K) {yy} := by rw [hadj]; trivial
+    have hle : IntermediateField.adjoin (RatFunc K) {yy} ≤ ψ₀.fieldRange :=
+      IntermediateField.adjoin_le_iff.2 (by
+        rintro w hw
+        rw [Set.mem_singleton_iff] at hw
+        subst hw
+        exact ⟨AdjoinRoot.root gpoly, hψroot⟩)
+    exact hle hz
+  set ψ : AdjoinRoot gpoly ≃ₐ[RatFunc K] F :=
+    AlgEquiv.ofBijective ψ₀ ⟨ψ₀.toRingHom.injective, hψsurj⟩ with hψ
+  -- the square root of the reversed sextic, and the point of `K⸨t⸩` over `t⁻¹`
+  obtain ⟨w, hw2, hw1⟩ := exists_laurent_sqrt (K := K) c₀ c₁ c₂ c₃ c₄ c₅ h2
+  set eL : LaurentSeries K := if sgn then 1 else -1 with heL
+  have heLsq : eL ^ 2 = 1 := by cases sgn <;> simp [heL]
+  have heL0 : eL ≠ 0 := by cases sgn <;> simp [heL]
+  have heLord : eL.order = 0 := by
+    rw [heL]; cases sgn <;> simp [HahnSeries.order_neg]
+  set sL : LaurentSeries K := eL * w * ((TT K)⁻¹) ^ 3 with hsL
+  have hTi0 : ((TT K)⁻¹) ≠ 0 := inv_ne_zero TT_ne_zero
+  have hρα : rho K α = revSext c₀ c₁ c₂ c₃ c₄ c₅ (TT K) * ((TT K)⁻¹) ^ 6 := by
+    rw [hα, rho_poly, aeval_sextPoly, sext_inv_eq _ _ _ _ _ _ TT_ne_zero]
+  have hsroot : gpoly.eval₂ (rho K) sL = 0 := by
+    simp only [hgpoly, Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C, hρα, hsL]
+    rw [mul_pow, mul_pow, heLsq, hw2, one_mul, ← pow_mul]
+    ring
+  -- the embedding `F ↪ K⸨t⸩`
+  set φ : F →+* LaurentSeries K :=
+    (AdjoinRoot.lift (rho K) sL hsroot).comp (ψ.symm : F →+* AdjoinRoot gpoly) with hφ
+  have hφρ : ∀ c : RatFunc K, φ (algebraMap (RatFunc K) F c) = rho K c := fun c => by
+    have h1 : ψ.symm (algebraMap (RatFunc K) F c) = AdjoinRoot.of gpoly c := by
+      rw [AlgEquiv.commutes]
+      rfl
+    show (AdjoinRoot.lift (rho K) sL hsroot) (ψ.symm (algebraMap (RatFunc K) F c)) = rho K c
+    rw [h1, AdjoinRoot.lift_of]
+  have hφyy : φ yy = sL := by
+    have h1 : ψ.symm yy = AdjoinRoot.root gpoly := by
+      rw [AlgEquiv.symm_apply_eq, hψ]
+      simpa using hψroot.symm
+    show (AdjoinRoot.lift (rho K) sL hsroot) (ψ.symm yy) = sL
+    rw [h1, AdjoinRoot.lift_root]
+  have hxxc : xx = algebraMap (RatFunc K) F RatFunc.X := by
+    rw [← RatFunc.algebraMap_X, hdown]
+    simp
+  have hφxx : φ xx = ((TT K)⁻¹) := by
+    rw [hxxc, hφρ, ← RatFunc.algebraMap_X, rho_poly, Polynomial.aeval_X]
+  -- the three conclusions
+  refine ⟨fun z => (φ z).order, ?_, ?_, ?_⟩
+  · refine isPlaceFun_order_comp φ (fun a => ?_) (t := xx⁻¹) ?_
+    · rw [IsScalarTower.algebraMap_apply K (RatFunc K) F a, hφρ, rho_const]
+    · have hxx0 : xx ≠ 0 := by
+        intro h0
+        rw [h0] at hφxx
+        exact hTi0 (by rw [← hφxx, map_zero])
+      rw [map_inv₀, hφxx, inv_inv, order_TT]
+  · show (φ xx).order = -1
+    rw [hφxx, order_TT_inv]
+  · show -3 < (φ (yy - (if sgn then 1 else -1) * xx ^ 3)).order
+    rcases eq_or_ne (yy - (if sgn then 1 else -1) * xx ^ 3) 0 with hz | hz
+    · rw [hz, map_zero]
+      simp
+    · have hεF : φ ((if sgn then 1 else -1 : F)) = eL := by
+        cases sgn <;> simp [heL]
+      have hval : φ (yy - (if sgn then 1 else -1) * xx ^ 3) = eL * (w - 1) * ((TT K)⁻¹) ^ 3 := by
+        rw [map_sub, map_mul, map_pow, hφyy, hφxx, hεF, hsL]
+        ring
+      rcases hw1 with hw | hw
+      · rw [hval, hw, sub_self, mul_zero, zero_mul]
+        simp
+      · have hw0 : w - 1 ≠ 0 := by
+          intro h0
+          rw [h0] at hw
+          simp at hw
+        rw [hval, order_mul' (mul_ne_zero heL0 hw0) (pow_ne_zero _ hTi0),
+          order_mul' heL0 hw0, heLord, HahnSeries.order_pow, order_TT_inv]
+        simp only [nsmul_eq_mul, Nat.cast_ofNat]
+        omega
+
+end InfTower
+
+end PlaceAtInfinity
+
+end PlaceAtInfinity
+
+/-- **LEAF (obligation 1c, INFINITE HALF), PROVEN 2026-07-30**: each branch at infinity
+carries a valuation, and `ord x = −1` is EXACT.
+
+The route below is the one that was taken; see the section above for the construction and for
+why the Dedekind route of the affine half cannot reach the exactness.  The proof is
+`PlaceAtInfinity.exists_isPlaceFun_of_infPt_aux`, instantiated at the tower
+`K[X] ⊆ K(x) ⊆ E.F` that `xAlg` installs — the SAME tower the affine half uses; only the
+target of the embedding differs.
 
 In the chart `u = 1/x`, `w = y/x³` the equation becomes `w² = g(u) := u⁶f(1/u)`, a
 polynomial with constant term `1` (the sextic is MONIC — this is exactly why the two points
@@ -1711,9 +2146,30 @@ dichotomy is what `isPlaceOfPt_injective` consumes; here only the matching sign 
 asserted. -/
 theorem exists_isPlaceFun_of_infPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (s : Bool) :
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) (sgn : Bool) :
     ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
-      o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3) := sorry
+      o E.xx = -1 ∧ -3 < o (E.yy - (if sgn then 1 else -1) * E.xx ^ 3) := by
+  classical
+  letI : Algebra K[X] E.F := PlaceFromDedekind.xAlg E
+  have halg : ∀ p : K[X], algebraMap K[X] E.F p = Polynomial.aeval E.xx p := fun _ => rfl
+  haveI : IsScalarTower K K[X] E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] E.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact E.transcendental_xx ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) E.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  have hxx : algebraMap K[X] E.F Polynomial.X = E.xx := by rw [halg]; simp
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro hu
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hu
+    rw [natDegree_sextPoly] at h1
+    norm_num at h1
+  exact PlaceAtInfinity.exists_isPlaceFun_of_infPt_aux hxx E.eqn E.gen hsqf hnu h2 sgn
 
 /-- **LEAF (obligation 1c), now PROVEN from the two halves above.**
 
