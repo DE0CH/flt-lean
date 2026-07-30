@@ -7183,8 +7183,374 @@ theorem eventually_valuation_eq_one (x : F) (hx : x ≠ 0) :
   have hstep : w.valuation F x * w.valuation F x⁻¹ ≤ w.valuation F x * 1 := by gcongr
   rwa [hmul, mul_one] at hstep
 
+/-! #### Maximal orders in `M₂` over a PID: the lattice-stabiliser construction
+
+This block is the ROUTE NOTE of `exists_integralSplitting_of_valuation_traceDiscr_eq_one`
+below carried out. It introduces no notion of maximality and cites no conjugacy theorem:
+given a `K`-basis `V` of `M_n(K)` whose `R`-span `A` is closed under multiplication, the
+`R`-span `L' := A · (R^n)` of one column orbit is a full lattice, `R` is a PID so `L'` is
+FREE, and a basis of `L'` is the conjugating matrix `U` with `U⁻¹ A U ⊆ M_n(R)`. The
+discriminant certificate then upgrades that inclusion to an EQUALITY, by a Gram-determinant
+comparison against the standard basis.
+
+Everything here is over an arbitrary PID `R` with fraction field `K`; the completion
+`𝒪_w ⊆ F_w` is the only instance used. -/
+
+section MaximalOrderInMatrixAlgebra
+
+open scoped _root_.Matrix
+
+section SpanAux
+
+variable {R : Type*} [CommRing R] {K : Type*} [CommRing K] [Algebra R K]
+variable {n : Type*} [Fintype n] [DecidableEq n] {κ : Type*}
+
+/-- An `R`-span whose GENERATORS multiply back into it is closed under multiplication. Two
+nested `Submodule.span_induction`s; the `smul` steps are `Algebra.mul_smul_comm` and
+`Algebra.smul_mul_assoc`. -/
+theorem span_mul_span_le (V : κ → Matrix n n K)
+    (hmul : ∀ i j, V i * V j ∈ Submodule.span R (Set.range V)) :
+    ∀ x ∈ Submodule.span R (Set.range V), ∀ y ∈ Submodule.span R (Set.range V),
+      x * y ∈ Submodule.span R (Set.range V) := by
+  intro x hx
+  induction hx using Submodule.span_induction with
+  | mem u hu =>
+      obtain ⟨i, rfl⟩ := hu
+      intro y hy
+      induction hy using Submodule.span_induction with
+      | mem v hv => obtain ⟨j, rfl⟩ := hv; exact hmul i j
+      | zero => simp
+      | add a b _ _ ha hb => rw [mul_add]; exact Submodule.add_mem _ ha hb
+      | smul r a _ ha => rw [Algebra.mul_smul_comm]; exact Submodule.smul_mem _ _ ha
+  | zero => intro y _; simp
+  | add a b _ _ ha hb => intro y hy; rw [add_mul]; exact Submodule.add_mem _ (ha y hy) (hb y hy)
+  | smul r a _ ha =>
+      intro y hy; rw [Algebra.smul_mul_assoc]; exact Submodule.smul_mem _ _ (ha y hy)
+
+/-- `Y ↦ Y *ᵥ v`, as an `R`-linear map on matrices. This is the map whose image of the span
+is the lattice `L'` of the construction. -/
+def mulVecRightₗ (v : n → K) : Matrix n n K →ₗ[R] (n → K) where
+  toFun Y := Y *ᵥ v
+  map_add' Y Z := Matrix.add_mulVec Y Z v
+  map_smul' r Y := Matrix.smul_mulVec r Y v
+
+omit [DecidableEq n] in
+@[simp] theorem mulVecRightₗ_apply (v : n → K) (Y : Matrix n n K) :
+    (mulVecRightₗ (R := R) v) Y = Y *ᵥ v := rfl
+
+end SpanAux
+
+section Lattice
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsPrincipalIdealRing R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+variable {κ : Type*} [Fintype κ] [DecidableEq κ]
+
+omit [DecidableEq κ] in
+/-- **THE CONJUGATING MATRIX, CONSTRUCTED.** Given a `K`-basis `V` of `M_n(K)` whose `R`-span
+`A` is closed under multiplication, there is `U ∈ GL_n(K)` with `U⁻¹ · A · U ⊆ M_n(R)`.
+
+No maximality and no Skolem–Noether: put `v₀ := e_{i₀}` and `L := A ·ᵥ v₀`, the `R`-span of
+one column orbit. `L` spans `K^n` (the map `Y ↦ Y *ᵥ v₀` is already surjective on ALL of
+`M_n(K)`, and `V` spans), and it is finitely generated, so it is a full lattice; `A`-stability
+`A ·ᵥ L ⊆ L` is `span_mul_span_le` plus `Matrix.mulVec_mulVec`. `R` being a PID, `L` is FREE
+of rank `n`, and `U := ` the matrix of an `R`-basis of `L` against `Pi.basisFun` conjugates
+`A` into `M_n(R)`: writing `X *ᵥ u j` in that `R`-basis gives `X * U = U * A_X` with
+`A_X ∈ M_n(R)`. -/
+theorem exists_conjugating_matrix (V : Module.Basis κ K (Matrix n n K))
+    (hmul : ∀ i j, V i * V j ∈ Submodule.span R (Set.range ⇑V)) :
+    ∃ U : Matrix n n K, IsUnit U.det ∧
+      ∀ X ∈ Submodule.span R (Set.range ⇑V),
+        ∀ p q, (U⁻¹ * X * U) p q ∈ (algebraMap R K).range := by
+  classical
+  set i0 : n := Classical.arbitrary n
+  set v0 : n → K := Pi.single i0 1 with hv0
+  set L : Submodule R (n → K) := Submodule.span R (Set.range fun i => V i *ᵥ v0) with hL
+  -- `L` is a lattice
+  have hsurj : Function.Surjective (mulVecRightₗ (R := K) v0) := by
+    intro y
+    refine ⟨Matrix.of fun p q => if q = i0 then y p else 0, ?_⟩
+    ext p
+    simp [mulVecRightₗ, hv0]
+  have hspanL : Submodule.span K (L : Set (n → K)) = ⊤ := by
+    have hmaple : Submodule.map (mulVecRightₗ (R := K) v0) (⊤ : Submodule K (Matrix n n K))
+        ≤ Submodule.span K (L : Set (n → K)) := by
+      conv_lhs => rw [← V.span_eq]
+      rw [Submodule.map_span, Submodule.span_le]
+      rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
+      exact Submodule.subset_span (Submodule.subset_span ⟨i, rfl⟩)
+    refine top_le_iff.1 (le_trans ?_ hmaple)
+    rw [Submodule.map_top, LinearMap.range_eq_top.2 hsurj]
+  haveI : Submodule.IsLattice K L :=
+    ⟨Submodule.fg_span (Set.finite_range _), hspanL⟩
+  haveI : Module.IsTorsionFree R K :=
+    Module.IsTorsionFree.of_smul_eq_zero fun r x hx => by
+      rw [Algebra.smul_def] at hx
+      rcases mul_eq_zero.1 hx with h | h
+      · exact Or.inl ((FaithfulSMul.algebraMap_eq_zero_iff (R := R) (A := K)).1 h)
+      · exact Or.inr h
+  haveI : Module.Free R L := inferInstance
+  -- an `R`-basis of `L`, reindexed by `n`
+  set κ' := Module.Free.ChooseBasisIndex R L
+  set bL : Module.Basis κ' R L := Module.Free.chooseBasis R L
+  set eκ : κ' ≃ n := (bL.extendOfIsLattice K).indexEquiv (Pi.basisFun K n)
+  set bLn : Module.Basis n R L := bL.reindex eκ with hbLn
+  set u : Module.Basis n K (n → K) := bLn.extendOfIsLattice K with hu
+  have hu_apply : ∀ k, u k = ((bLn k : L) : n → K) := fun k =>
+    Module.Basis.extendOfIsLattice_apply K bLn k
+  have hu_mem : ∀ j, (u j) ∈ L := fun j => (hu_apply j) ▸ (bLn j).2
+  set U : Matrix n n K := (Pi.basisFun K n).toMatrix ⇑u with hU
+  have hUentry : ∀ p j, U p j = u j p := by
+    intro p j
+    simp [hU, Module.Basis.toMatrix_apply]
+  have hUunit : IsUnit U := by
+    refine ⟨⟨U, u.toMatrix ⇑(Pi.basisFun K n), ?_, ?_⟩, rfl⟩ <;>
+      simp [hU]
+  have hUdet : IsUnit U.det := (Matrix.isUnit_iff_isUnit_det U).1 hUunit
+  refine ⟨U, hUdet, ?_⟩
+  -- stability of `L`
+  have hΛL : ∀ Y ∈ Submodule.span R (Set.range ⇑V), Y *ᵥ v0 ∈ L := by
+    intro Y hY
+    have hle : Submodule.map (mulVecRightₗ (R := R) v0) (Submodule.span R (Set.range ⇑V)) ≤ L := by
+      rw [Submodule.map_span, Submodule.span_le]
+      rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
+      exact Submodule.subset_span ⟨i, rfl⟩
+    exact hle ⟨Y, hY, rfl⟩
+  have hstab : ∀ X ∈ Submodule.span R (Set.range ⇑V), ∀ y ∈ L, X *ᵥ y ∈ L := by
+    intro X hX y hy
+    induction hy using Submodule.span_induction with
+    | mem z hz =>
+        obtain ⟨i, rfl⟩ := hz
+        show X *ᵥ (V i *ᵥ v0) ∈ L
+        rw [Matrix.mulVec_mulVec]
+        exact hΛL _ (span_mul_span_le (R := R) ⇑V hmul X hX (V i) (Submodule.subset_span ⟨i, rfl⟩))
+    | zero => simp
+    | add a b _ _ ha hb => rw [Matrix.mulVec_add]; exact Submodule.add_mem _ ha hb
+    | smul r a _ ha => rw [Matrix.mulVec_smul]; exact Submodule.smul_mem _ _ ha
+  intro X hX p q
+  -- coordinates of `X *ᵥ u j` in `bLn`
+  have hcoord : ∀ j, ∃ A : n → R, X *ᵥ u j = ∑ k, algebraMap R K (A k) • u k := by
+    intro j
+    have hmem : X *ᵥ u j ∈ L := hstab X hX _ (hu_mem j)
+    refine ⟨fun k => bLn.repr ⟨X *ᵥ u j, hmem⟩ k, ?_⟩
+    have hrep := bLn.sum_repr ⟨X *ᵥ u j, hmem⟩
+    have hcoe := congrArg (Submodule.subtype L) hrep
+    simp only [map_sum, Submodule.subtype_apply, Submodule.coe_smul_of_tower] at hcoe
+    refine hcoe.symm.trans (Finset.sum_congr rfl fun k _ => ?_)
+    rw [hu_apply k, algebraMap_smul]
+  choose A hA using hcoord
+  -- `X * U = U * A`
+  have hXU : X * U = U * (Matrix.of fun k j => algebraMap R K (A j k)) := by
+    ext p' j
+    have h1 : (X * U) p' j = (X *ᵥ u j) p' := by
+      simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, hUentry]
+    have h2 : (U * (Matrix.of fun k j => algebraMap R K (A j k))) p' j
+        = (∑ k, algebraMap R K (A j k) • u k) p' := by
+      simp [Matrix.mul_apply, hUentry, Algebra.smul_def, mul_comm]
+    rw [h1, h2, hA j]
+  have hinv : U⁻¹ * X * U = Matrix.of fun k j => algebraMap R K (A j k) := by
+    rw [Matrix.mul_assoc, hXU, ← Matrix.mul_assoc, Matrix.nonsing_inv_mul U hUdet,
+      Matrix.one_mul]
+  rw [hinv]
+  exact ⟨A q p, rfl⟩
+
+end Lattice
+
+section Conj
+
+variable {K : Type*} [CommRing K] {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- Conjugation `X ↦ U⁻¹ * X * U` by an invertible matrix, as a `K`-algebra automorphism of
+`M_n(K)`. Composing a splitting with this is how the conjugating matrix becomes an algebra
+equivalence. -/
+noncomputable def conjMatrixAlgEquiv (U : Matrix n n K) (hU : IsUnit U.det) :
+    Matrix n n K ≃ₐ[K] Matrix n n K where
+  toFun X := U⁻¹ * X * U
+  invFun X := U * X * U⁻¹
+  left_inv X := by
+    have h1 : U * U⁻¹ = 1 := Matrix.mul_nonsing_inv U hU
+    simp only [Matrix.mul_assoc, h1, Matrix.mul_one]
+    rw [← Matrix.mul_assoc, h1, Matrix.one_mul]
+  right_inv X := by
+    have h2 : U⁻¹ * U = 1 := Matrix.nonsing_inv_mul U hU
+    simp only [Matrix.mul_assoc, h2, Matrix.mul_one]
+    rw [← Matrix.mul_assoc, h2, Matrix.one_mul]
+  map_mul' X Y := by
+    have h1 : U * U⁻¹ = 1 := Matrix.mul_nonsing_inv U hU
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc U U⁻¹, h1, Matrix.one_mul]
+  map_add' X Y := by
+    simp [Matrix.mul_add, Matrix.add_mul]
+  commutes' k := by
+    have h2 : U⁻¹ * U = 1 := Matrix.nonsing_inv_mul U hU
+    rw [Algebra.algebraMap_eq_smul_one, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, h2]
+
+@[simp] theorem conjMatrixAlgEquiv_apply (U : Matrix n n K) (hU : IsUnit U.det)
+    (X : Matrix n n K) : conjMatrixAlgEquiv U hU X = U⁻¹ * X * U := rfl
+
+end Conj
+
+section Disc
+
+variable {R : Type*} [CommRing R] [IsDomain R] [IsPrincipalIdealRing R]
+variable {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+variable {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
+variable {κ : Type*} [Fintype κ] [DecidableEq κ]
+
+omit [IsDomain R] [IsPrincipalIdealRing R] [IsFractionRing R K] [Nonempty n] in
+/-- The Gram matrix of the regular trace form in the STANDARD matrix basis has entries in the
+image of `R`: by `trace_mulLeft_matrix` each entry is `card n` times an entry of a product of
+two `0`/`1` matrices. This is the second half of the discriminant comparison — the standard
+basis is the reference order `M_n(R)` and its Gram matrix is integral. -/
+theorem mulTraceForm_stdBasis_mem_range (a b : n × n) :
+    mulTraceForm K (Matrix n n K) (Matrix.stdBasis K n n a) (Matrix.stdBasis K n n b)
+      ∈ (algebraMap R K).range := by
+  have hstd : ∀ (c : n × n) (i j : n),
+      (Matrix.stdBasis K n n c) i j ∈ (algebraMap R K).range := by
+    intro c i j
+    rw [Matrix.stdBasis_eq_single, Matrix.single_apply]
+    split
+    · exact ⟨1, map_one _⟩
+    · exact ⟨0, map_zero _⟩
+  rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix]
+  refine Subring.mul_mem _ ⟨(Fintype.card n : R), map_natCast _ _⟩ ?_
+  simp only [Matrix.trace, Matrix.diag_apply]
+  refine Subring.sum_mem _ fun i _ => ?_
+  rw [Matrix.mul_apply]
+  exact Subring.sum_mem _ fun k _ => Subring.mul_mem _ (hstd _ _ _) (hstd _ _ _)
+
+/-- **THE CORE LOCAL THEOREM, AND WHERE THE DISCRIMINANT CERTIFICATE IS SPENT.** Let `V` be a
+`K`-basis of `M_n(K)` whose `R`-span `A` is closed under multiplication and whose trace-form
+Gram determinant is a UNIT `d` of `R`. Then some conjugation carries `A` ONTO `M_n(R)`, in the
+coordinate-wise form: `c` is `R`-integral **iff** `U⁻¹ (∑ cᵢVᵢ) U` has `R`-integral entries.
+
+The `→` direction is `exists_conjugating_matrix`. The `←` direction is the one that needs
+`hd`: let `Q` be the change-of-basis matrix from the standard basis to the conjugated basis
+`V' := U⁻¹ V U`. Both `Q` and the Gram matrix `G_std` are INTEGRAL (`V'` by the inclusion
+just proved, `G_std` by `mulTraceForm_stdBasis_mem_range`), and
+`det(Q)² · det(G_std) = det(G_{V'}) = det(G_V) = d`, the middle equality because conjugation
+is an algebra equivalence and the regular trace form is invariant under one
+(`mulTraceForm_algEquiv`). So `det Q` divides a unit, hence is a unit, hence `Q⁻¹` is integral
+too, and reading off the `V'`-coordinates of an integral matrix through `Q⁻¹` gives integral
+scalars. That is exactly the statement that the inclusion `U⁻¹ A U ⊆ M_n(R)` is an EQUALITY —
+i.e. the classical "unit discriminant ⟹ maximal", obtained without defining maximality. -/
+theorem exists_conj_integral_iff (V : Module.Basis κ K (Matrix n n K))
+    (hmul : ∀ i j, V i * V j ∈ Submodule.span R (Set.range ⇑V))
+    (d : R) (hd : IsUnit d)
+    (hdisc : algebraMap R K d
+      = (LinearMap.BilinForm.toMatrix V (mulTraceForm K (Matrix n n K))).det) :
+    ∃ U : Matrix n n K, IsUnit U.det ∧
+      ∀ c : κ → K, ((∀ i, c i ∈ (algebraMap R K).range) ↔
+        ∀ p q, (U⁻¹ * (∑ i, c i • V i) * U) p q ∈ (algebraMap R K).range) := by
+  classical
+  obtain ⟨U, hUdet, hUin⟩ := exists_conjugating_matrix (R := R) V hmul
+  refine ⟨U, hUdet, ?_⟩
+  set B : LinearMap.BilinForm K (Matrix n n K) := mulTraceForm K (Matrix n n K) with hB
+  set Ψ : Matrix n n K ≃ₐ[K] Matrix n n K := conjMatrixAlgEquiv U hUdet with hΨ
+  set V' : Module.Basis κ K (Matrix n n K) := V.map Ψ.toLinearEquiv with hV'
+  have hV'apply : ∀ i, V' i = U⁻¹ * V i * U := fun i => rfl
+  -- every `V' i` is integral
+  have hV'int : ∀ i p q, V' i p q ∈ (algebraMap R K).range := by
+    intro i p q
+    rw [hV'apply]
+    exact hUin (V i) (Submodule.subset_span ⟨i, rfl⟩) p q
+  -- the Gram matrix is unchanged by conjugation
+  have hGram : LinearMap.BilinForm.toMatrix V' B = LinearMap.BilinForm.toMatrix V B := by
+    ext i j
+    rw [LinearMap.BilinForm.toMatrix_apply, LinearMap.BilinForm.toMatrix_apply]
+    exact mulTraceForm_algEquiv Ψ (V i) (V j)
+  -- the standard basis, reindexed by `κ`
+  set eκ : κ ≃ n × n := V.indexEquiv (Matrix.stdBasis K n n) with heκ
+  set stdκ : Module.Basis κ K (Matrix n n K) := (Matrix.stdBasis K n n).reindex eκ.symm with hstdκ
+  have hstdκ_apply : ∀ i, stdκ i = Matrix.stdBasis K n n (eκ i) := by
+    intro i; simp [hstdκ]
+  set Q : Matrix κ κ K := stdκ.toMatrix ⇑V' with hQ
+  have hQentry : ∀ i' i, Q i' i = V' i (eκ i').1 (eκ i').2 := by
+    intro i' i
+    rw [hQ, Module.Basis.toMatrix_apply, hstdκ, Module.Basis.repr_reindex_apply,
+      stdBasis_repr_matrix_apply]
+    simp
+  -- integrality of both matrices
+  have hQmem : ∀ i' i, Q i' i ∈ (algebraMap R K).range := by
+    intro i' i; rw [hQentry]; exact hV'int _ _ _
+  have hGmem : ∀ i' j', (LinearMap.BilinForm.toMatrix stdκ B) i' j' ∈ (algebraMap R K).range := by
+    intro i' j'
+    rw [LinearMap.BilinForm.toMatrix_apply, hstdκ_apply, hstdκ_apply]
+    exact mulTraceForm_stdBasis_mem_range _ _
+  choose QR0 hQR using hQmem
+  choose GR0 hGR using hGmem
+  set QR : Matrix κ κ R := Matrix.of QR0 with hQRdef
+  set GR : Matrix κ κ R := Matrix.of GR0 with hGRdef
+  have hQmap : Q = QR.map (algebraMap R K) := by ext i' i; exact (hQR i' i).symm
+  have hGmap : LinearMap.BilinForm.toMatrix stdκ B = GR.map (algebraMap R K) := by
+    ext i' j'; exact (hGR i' j').symm
+  -- the determinant identity
+  have hkey := LinearMap.BilinForm.toMatrix_mul_basis_toMatrix (b := stdκ) V' B
+  have hdet : Q.det ^ 2 * (LinearMap.BilinForm.toMatrix stdκ B).det
+      = (LinearMap.BilinForm.toMatrix V' B).det := by
+    rw [← hkey, hQ]
+    simp only [Matrix.det_mul, Matrix.det_transpose]
+    ring
+  -- `det QR` is a unit
+  have hinj : Function.Injective (algebraMap R K) := FaithfulSMul.algebraMap_injective R K
+  have hQRdet : IsUnit QR.det := by
+    have h1 : algebraMap R K (QR.det ^ 2 * GR.det) = algebraMap R K d := by
+      rw [map_mul, map_pow, RingHom.map_det, RingHom.map_det, RingHom.mapMatrix_apply,
+        RingHom.mapMatrix_apply, ← hQmap, ← hGmap, hdet, hGram, hdisc]
+    have h2 : QR.det ^ 2 * GR.det = d := hinj h1
+    have h3 : IsUnit (QR.det ^ 2) := isUnit_of_mul_isUnit_left (h2 ▸ hd)
+    exact (isUnit_pow_iff (by norm_num)).1 h3
+  -- the final equivalence
+  intro c
+  have hconj : ∀ p q, (U⁻¹ * (∑ i, c i • V i) * U) p q = ∑ i, c i * V' i p q := by
+    intro p q
+    have hlin : Ψ (∑ i, c i • V i) = ∑ i, c i • V' i := by
+      simp only [map_sum, map_smul, hV', Module.Basis.map_apply]
+      rfl
+    have hEq : (U⁻¹ * (∑ i, c i • V i) * U) = ∑ i, c i • V' i := hlin
+    rw [hEq]
+    simp [Matrix.sum_apply, Matrix.smul_apply]
+  constructor
+  · intro hc p q
+    rw [hconj]
+    exact Subring.sum_mem _ fun i _ => Subring.mul_mem _ (hc i) (hV'int i p q)
+  · intro hent
+    have hQc : ∀ i', (Q *ᵥ c) i' ∈ (algebraMap R K).range := by
+      intro i'
+      have h := hent (eκ i').1 (eκ i').2
+      rw [hconj] at h
+      have hrw : (Q *ᵥ c) i' = ∑ i, c i * V' i (eκ i').1 (eκ i').2 := by
+        simp only [Matrix.mulVec, dotProduct, hQentry]
+        exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+      rw [hrw]; exact h
+    choose y hy using hQc
+    have hQRmul : QR⁻¹ * QR = 1 := Matrix.nonsing_inv_mul QR hQRdet
+    have hcQ : c = (QR⁻¹.map (algebraMap R K)) *ᵥ (fun i' => algebraMap R K (y i')) := by
+      have h1 : (fun i' => algebraMap R K (y i')) = Q *ᵥ c := funext hy
+      rw [h1, hQmap, Matrix.mulVec_mulVec, ← Matrix.map_mul, hQRmul]
+      simp
+    intro i
+    refine ⟨∑ i', QR⁻¹ i i' * y i', ?_⟩
+    rw [hcQ]
+    simp [Matrix.mulVec, dotProduct, map_sum, map_mul]
+
+end Disc
+
+/-- Bridge from a GLOBAL valuation bound to integrality in the completion: `w.valuation F x ≤ 1`
+says exactly that the image of `x` lies in `𝒪_w`. -/
+theorem algebraMap_mem_adicCompletionIntegers (w : HeightOneSpectrum (𝓞 F)) (x : F)
+    (hx : w.valuation F x ≤ 1) :
+    algebraMap F (w.adicCompletion F) x ∈ w.adicCompletionIntegers F := by
+  rw [HeightOneSpectrum.mem_adicCompletionIntegers]
+  show Valued.v ((x : w.adicCompletion F)) ≤ 1
+  rw [HeightOneSpectrum.valuedAdicCompletion_eq_valuation']
+  exact hx
+
+end MaximalOrderInMatrixAlgebra
+
 /-- **STEP 1a-vi(b′′) — MAXIMAL ORDERS IN A SPLIT QUATERNION ALGEBRA OVER A COMPLETE DVR ARE
-CONJUGATE TO `M₂(𝒪_w)`** (sorry leaf; CUT 2026-07-30, ROUND-11, out of
+CONJUGATE TO `M₂(𝒪_w)`** (**PROVEN 2026-07-30, ROUND-12**; cut 2026-07-30, ROUND-11, out of
 `eventually_exists_integralSplitting` below, which is now a PROVEN assembly over this leaf,
 `traceDiscr_ne_zero_of_split` and `eventually_valuation_eq_one`).
 
@@ -7193,25 +7559,53 @@ same conclusion at ALMOST EVERY place and left the prover to discover, on the wa
 the `𝒪_w`-span of `b` is an order at almost every `w` and that it is MAXIMAL at almost every
 `w`. Those two are now hypotheses at a single `w`:
 
-* `hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
+* `_hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
   under multiplication, i.e. `Λ_w` IS an `𝒪_w`-order;
 * `hdisc` says the Gram determinant of the regular trace form in the basis `b` is a UNIT at
   `w`, which is the classical maximality certificate: for orders `Λ_w ⊆ Λ'` one has
   `disc Λ_w = [Λ' : Λ_w]² · disc Λ'`, so a unit discriminant forces index one.
 
-So WHAT REMAINS is exactly one classical theorem and nothing else: **a maximal order of
-`M₂(F_w)` is conjugate to `M₂(𝒪_w)`** — it is `End_{𝒪_w}(L)` for an `𝒪_w`-lattice `L` in
-`F_w²`, `𝒪_w` is a PID so `L` is free, and a basis of `L` is the conjugating matrix.
-Composing `hsplitw` with that conjugation is `f`, and the `↔` is then the statement that the
-conjugated `f` carries `Λ_w` ONTO `M₂(𝒪_w)`, which is what `f (Λ_w) = M₂(𝒪_w)` says
-coordinate-wise (`b` is a basis, so `c` is determined by `∑ c i ⊗ b i`).
+**WHAT ROUND 12 DID (2026-07-30), and why no maximal-order vocabulary was needed.** The
+ROUND-11 docstring said "WHAT REMAINS is exactly one classical theorem: a maximal order of
+`M₂(F_w)` is conjugate to `M₂(𝒪_w)`", and recorded as MISSING MACHINERY that
+`IsMaximalOrder` / `maximalOrder` have zero hits in the pin, so "the maximal-order vocabulary
+has to be introduced". **It does not have to be.** The classical proof of that theorem is a
+lattice-stabiliser construction, and the construction never mentions maximality — maximality
+enters classically only to know that the resulting inclusion `U⁻¹ Λ U ⊆ M₂(𝒪_w)` is an
+EQUALITY, and here `hdisc` supplies that directly by a Gram-determinant comparison. So the
+block `MaximalOrderInMatrixAlgebra` immediately above proves the theorem over an ARBITRARY
+PID `R` with fraction field `K` and no order theory at all:
 
-MISSING MACHINERY, re-checked 2026-07-30 against this pin. `IsMaximalOrder` / `maximalOrder`
-have zero hits in all of mathlib, so the maximal-order vocabulary has to be introduced; what
-is now PRESENT and did not exist when the predecessor leaf was written is the discriminant
-side of the argument — `traceDiscr` above, with `traceDiscr_ne_zero_of_split` and
-`eventually_valuation_eq_one` — so a prover no longer needs to build a discriminant theory
-to get at the maximality, only to SPEND the certificate. The alternative Azumaya route
+1. `exists_conjugating_matrix` — put `v₀ := e_{i₀}` and `L := Λ ·ᵥ v₀`, the `R`-span of one
+   column orbit of `Λ` in `K^n`. `L` is finitely generated by construction and spans `K^n`
+   (the map `Y ↦ Y *ᵥ v₀` is surjective on ALL of `M_n(K)`, and `V` spans `M_n(K)`), so it is
+   a full lattice; it is `Λ`-stable by `span_mul_span_le` and `Matrix.mulVec_mulVec`. `R` is a
+   PID, hence `L` is FREE, and the matrix `U` of an `R`-basis of `L` against `Pi.basisFun`
+   satisfies `X * U = U * A_X` with `A_X` over `R`, i.e. `U⁻¹ Λ U ⊆ M_n(R)`. This is the
+   whole of the classical theorem, and it is the `→` direction of the `↔`.
+2. `exists_conj_integral_iff` — the `←` direction, which is where `hdisc` is SPENT. With
+   `Q` the change-of-basis matrix from the standard basis to `V' := U⁻¹ V U`, both `Q` and
+   the standard Gram matrix are integral (the latter by `mulTraceForm_stdBasis_mem_range`),
+   and `det(Q)² · det(G_std) = det(G_{V'}) = det(G_V) = d` — the middle step because
+   conjugation is an algebra equivalence and the regular trace form is invariant under one
+   (`mulTraceForm_algEquiv`). So `det Q` divides the unit `d`, hence is a unit, hence `Q⁻¹`
+   is integral and integral entries force integral coordinates.
+
+`hsplitw` is spent by composing the supplied `g` with `conjMatrixAlgEquiv U`, so the `f`
+produced really is a splitting; `hstruct` is spent as `hmul`, through
+`algebraMap_mem_adicCompletionIntegers`; and `hdisc` becomes `IsUnit d` in `𝒪_w` through
+`Valuation.Integers.isUnit_iff_valuation_eq_one`.
+
+**`hone` IS NOT USED, and is kept.** The construction needs only that the span is closed
+under multiplication — `1 ∈ Λ_w` is never invoked, because the lattice `L := Λ ·ᵥ v₀` is
+shown to span `K^n` from `V` being a `K`-BASIS of `M_n(K)` rather than from `v₀ ∈ L`. So this
+theorem is true without `hone`, and the binder is retained (renamed `_hone`) rather than
+deleted for two reasons: keeping it makes the leaf strictly weaker than what is proven, and
+deleting it would change this signature and its call site in
+`eventually_exists_integralSplitting` for no mathematical gain. A prover of any successor
+statement should know the hypothesis is free.
+
+MISSING MACHINERY, as recorded in ROUND 11 and now moot. The alternative Azumaya route
 (`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`, present) is unchanged and still starts
 from more: it needs Wedderburn over the residue field plus lifting along `𝒪_w` complete.
 
@@ -7234,14 +7628,98 @@ theorem exists_integralSplitting_of_valuation_traceDiscr_eq_one (b : Module.Basi
     (w : HeightOneSpectrum (𝓞 F))
     (hsplitw : Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
       M₂(w.adicCompletion F)))
-    (hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
+    (_hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
     (hstruct : ∀ i j k, w.valuation F (b.repr (b i * b j) k) ≤ 1)
     (hdisc : w.valuation F (traceDiscr F D b) = 1) :
     ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
       ∀ c : ι → w.adicCompletion F,
         ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
-          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
-  sorry
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) := by
+  classical
+  obtain ⟨g⟩ := hsplitw
+  set K := w.adicCompletion F with hKdef
+  set O := w.adicCompletionIntegers F with hOdef
+  haveI : Module.Finite F D := Module.Finite.of_basis b
+  -- membership bridge
+  have hrange : ∀ x : K, x ∈ (algebraMap O K).range ↔ x ∈ O := by
+    intro x
+    exact ⟨by rintro ⟨r, rfl⟩; exact r.2, fun hx => ⟨⟨x, hx⟩, rfl⟩⟩
+  -- the `K`-basis of `M₂(K)` coming from `b`
+  set bK : Module.Basis ι K (K ⊗[F] D) := Algebra.TensorProduct.basis K b with hbK
+  set V : Module.Basis ι K (Matrix (Fin 2) (Fin 2) K) := bK.map g.toLinearEquiv with hV
+  have hbKapply : ∀ i, bK i = (1 : K) ⊗ₜ[F] b i := fun i =>
+    Algebra.TensorProduct.basis_apply b i
+  have hVapply : ∀ i, V i = g ((1 : K) ⊗ₜ[F] b i) := by
+    intro i; rw [hV, Module.Basis.map_apply, hbKapply]; rfl
+  -- integral scalars land in the `O`-span
+  have hmemspan : ∀ c : ι → K, (∀ k, c k ∈ O) →
+      (∑ k, c k • V k) ∈ Submodule.span O (Set.range ⇑V) := by
+    intro c hc
+    refine Submodule.sum_mem _ fun k _ => ?_
+    have hsm : c k • V k = (⟨c k, hc k⟩ : O) • V k := (algebraMap_smul K _ _).symm
+    rw [hsm]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩)
+  -- expanding `1 ⊗ y` along the basis
+  have htmul : ∀ y : D, (1 : K) ⊗ₜ[F] y
+      = ∑ k, (algebraMap F K (b.repr y k)) • ((1 : K) ⊗ₜ[F] b k) := by
+    intro y
+    conv_lhs => rw [← sum_repr_tmul K b ((1 : K) ⊗ₜ[F] y)]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+    congr 1
+    rw [Algebra.TensorProduct.basis_repr_tmul]
+    simp
+  -- closure under multiplication
+  have hmul : ∀ i j, V i * V j ∈ Submodule.span O (Set.range ⇑V) := by
+    intro i j
+    have h1 : V i * V j = g ((1 : K) ⊗ₜ[F] (b i * b j)) := by
+      rw [hVapply, hVapply, ← map_mul, Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+    have hprod : V i * V j = ∑ k, (algebraMap F K (b.repr (b i * b j) k)) • V k := by
+      rw [h1, htmul, map_sum]
+      exact Finset.sum_congr rfl fun k _ => by rw [map_smul, hVapply]
+    rw [hprod]
+    exact hmemspan _ fun k =>
+      algebraMap_mem_adicCompletionIntegers F w _ (hstruct i j k)
+  -- the Gram matrix of `V` is the image of the Gram matrix of `b`
+  have hGramV : LinearMap.BilinForm.toMatrix V (mulTraceForm K (Matrix (Fin 2) (Fin 2) K))
+      = (algebraMap F K).mapMatrix (LinearMap.BilinForm.toMatrix b (mulTraceForm F D)) := by
+    rw [← toMatrix_mulTraceForm_tensor F K D b]
+    refine Matrix.ext fun i j => ?_
+    rw [LinearMap.BilinForm.toMatrix_apply, LinearMap.BilinForm.toMatrix_apply, hVapply, hVapply,
+      ← hbKapply, ← hbKapply]
+    exact mulTraceForm_algEquiv g _ _
+  have hdetV : (LinearMap.BilinForm.toMatrix V (mulTraceForm K (Matrix (Fin 2) (Fin 2) K))).det
+      = algebraMap F K (traceDiscr F D b) := by
+    rw [hGramV, ← RingHom.map_det, traceDiscr_eq]
+  -- the discriminant is a unit of `O`
+  have hdmem : algebraMap F K (traceDiscr F D b) ∈ O :=
+    algebraMap_mem_adicCompletionIntegers F w _ (le_of_eq hdisc)
+  set d : O := ⟨algebraMap F K (traceDiscr F D b), hdmem⟩ with hddef
+  have hdunit : IsUnit d := by
+    refine (Valuation.Integers.isUnit_iff_valuation_eq_one
+      (HeightOneSpectrum.adicCompletionIntegers.integers (R := 𝓞 F) (K := F) (v := w))).2 ?_
+    show Valued.v ((traceDiscr F D b : F) : K) = 1
+    rw [HeightOneSpectrum.valuedAdicCompletion_eq_valuation']
+    exact hdisc
+  -- apply the core theorem
+  obtain ⟨U, hUdet, hUiff⟩ :=
+    exists_conj_integral_iff (R := O) V hmul d hdunit (by rw [hdetV]; rfl)
+  refine ⟨g.trans (conjMatrixAlgEquiv U hUdet), fun c => ?_⟩
+  have hfc : (g.trans (conjMatrixAlgEquiv U hUdet)) (∑ i, c i ⊗ₜ[F] b i)
+      = U⁻¹ * (∑ i, c i • V i) * U := by
+    have hg : g (∑ i, c i ⊗ₜ[F] b i) = ∑ i, c i • V i := by
+      rw [map_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [hVapply, ← map_smul, TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+    show (conjMatrixAlgEquiv U hUdet) (g (∑ i, c i ⊗ₜ[F] b i)) = _
+    rw [hg]
+    rfl
+  rw [hfc]
+  constructor
+  · intro hc p q
+    exact (hrange _).1 ((hUiff c).1 (fun i => (hrange (c i)).2 (hc i)) p q)
+  · intro hent i
+    exact (hrange (c i)).1 ((hUiff c).2 (fun p q => (hrange _).2 (hent p q)) i)
 
 /-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf**
 (**PROVEN 2026-07-30, ROUND-11**; cut 2026-07-30, ROUND-10, out of
