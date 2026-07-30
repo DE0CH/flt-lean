@@ -33,9 +33,34 @@ the same Krull dimension as `S`.  The three inputs are:
    integral over `R`, going up and incomparability make
    `PrimeSpectrum S → PrimeSpectrum R` a surjection that reflects and preserves
    strict inclusions.  Here only the one-dimensional case is needed, so it is
-   proven directly from `Ring.DimensionLEOne` plus lying over.
+   proven directly from `Ring.KrullDimLE 1` plus lying over.
 
 Regularity is then free: mathlib has `[IsDedekindDomain R] : IsRegularRing R`.
+
+## `S` NEED NOT BE A DOMAIN (2026-07-30)
+
+All three inputs were originally stated with `[IsDomain S]`.  They are not, and the
+hypothesis was blocking the `𝔽_p` half of the modular-curve consumer: over `𝔽_p` the
+rigidified moduli scheme is a finite PRODUCT of smooth affine curves (Frobenius need not
+permute the Weil-pairing components transitively), so `IsDomain A` is FALSE there while
+everything actually used about `A` — reduced, normal, of Krull dimension one, of finite
+type — still holds.  See the CUT-OBSTRUCTION AUDIT and its RESOLUTION on
+`isRegularRing_coarseRing_of_gamma0AtlasOver_zmod` in `ModularCurve/X0.lean`.
+
+Three things had to change, and none of them is a one-line substitution:
+
+* `Ring.DimensionLEOne S` had to become `Ring.KrullDimLE 1 S`.  The former is
+  UNSATISFIABLE for a product of curves (`⊥ × k[x]` is a nonzero non-maximal prime of
+  `k[x] × k[x]`), so a bare deletion of `[IsDomain S]` would have left a vacuous hypothesis.
+* `[IsDomain R]` had to be ADDED where it used to come free from `[IsDomain S]` and
+  injectivity.  It is genuinely load-bearing — see the counterexample on
+  `dimensionLEOne_of_isInvariant` — and the modular consumer has it, as the separate leaf
+  `isDomain_of_gamma0AtlasOver_zmod`.
+* the normality argument had to move from `Frac S` to the TOTAL quotient ring, which needed
+  a domain-free `G`-action on it (`IsFractionRing.totalMulSemiringAction` below; mathlib's
+  is stated for fields only, gratuitously) and a proof that nonzero elements of `R` are
+  non-zero-divisors in `S` (`nonZeroDivisors_le_comap_of_isInvariant`, from `[IsReduced S]`
+  and transitivity of `G` on primes over a fixed prime).
 
 ## Geometric integrality
 
@@ -71,13 +96,23 @@ field extension `K/ℚ`.  The pieces live here:
 
 ## Contents
 
+* `IsFractionRing.totalMulSemiringAction`, `IsFractionRing.totalSMulDistribClass` —
+  mathlib's `IsFractionRing.mulSemiringAction`/`smulDistribClass` without their
+  unnecessary `Field` hypotheses (PROVEN)
 * `Algebra.IsInvariant.finiteType_of_isInvariant` — Noether (PROVEN)
+* `Algebra.IsInvariant.nonZeroDivisors_le_comap_of_isInvariant` — a nonzero invariant is a
+  non-zero-divisor upstairs, for `S` reduced (PROVEN)
 * `Algebra.IsInvariant.isIntegrallyClosed_of_isInvariant` — normality (PROVEN)
 * `Algebra.IsInvariant.dimensionLEOne_of_isInvariant` — dimension ≤ 1 (PROVEN)
 * `Algebra.IsInvariant.ringKrullDim_eq_one_of_isInvariant` — dimension = 1 (PROVEN)
-* `Algebra.IsInvariant.isDedekindDomain_of_isInvariant` — assembly (PROVEN)
+* `Algebra.IsInvariant.isDedekindDomain_of_isInvariant` — assembly, `S` a Dedekind
+  domain (PROVEN)
 * `Algebra.IsInvariant.isRegularRing_of_isInvariant` — the packaged conclusion
-  the modular-curve consumer asks for (PROVEN)
+  the `ℚ` modular-curve consumer asks for (PROVEN)
+* `Algebra.IsInvariant.isDedekindDomain_of_isInvariant_of_isReduced`,
+  `Algebra.IsInvariant.isRegularRing_of_isInvariant_of_isReduced` — the same two with `S`
+  merely reduced, normal and of Krull dimension one, which is what the `𝔽_p` consumer has
+  (PROVEN)
 * `algebraicClosure_fractionRing_eq_bot` — `k` is algebraically closed in
   `Frac B` as soon as it is algebraically closed in the normal domain `B` (PROVEN)
 * `minpoly_map_eq_of_algebraicClosure_eq_bot` — minimal polynomials over `k`
@@ -139,6 +174,51 @@ public import Mathlib.RingTheory.TensorProduct.Maps
 
 open scoped TensorProduct
 
+/-! ### The `G`-action on a TOTAL quotient ring
+
+Mathlib's `IsFractionRing.mulSemiringAction` and `IsFractionRing.smulDistribClass` are
+stated with `[Field K] [Field L]`, i.e. only for a DOMAIN.  Neither proof uses the
+hypothesis: both go through `IsFractionRing.ringEquivOfRingEquivHom`, which is stated for
+an arbitrary `CommRing` with `[IsFractionRing A L]` and therefore applies verbatim to the
+total quotient ring `Localization (nonZeroDivisors A)` of a ring with zero divisors.
+
+These two restatements are what let `isIntegrallyClosed_of_isInvariant` below drop
+`[IsDomain S]`: its argument runs inside `Frac S`, and for a non-domain `S` that has to be
+the total quotient ring. -/
+
+namespace IsFractionRing
+
+variable (G A L : Type*) [Group G] [CommRing A] [MulSemiringAction G A]
+  [CommRing L] [Algebra A L] [IsFractionRing A L]
+
+/-- **`IsFractionRing.mulSemiringAction` without the `Field` hypotheses** (PROVEN): a
+`MulSemiringAction G A` extends to the TOTAL quotient ring of `A`.  Same definition as
+mathlib's, whose `[Field K] [Field L]` binders are not used by
+`ringEquivOfRingEquivHom`. -/
+@[implicit_reducible]
+noncomputable def totalMulSemiringAction : MulSemiringAction G L :=
+  MulSemiringAction.compHom L
+    ((IsFractionRing.ringEquivOfRingEquivHom A L).comp (MulSemiringAction.toRingEquiv G A))
+
+/-- The extended action is compatible with `A ⊆ L` (PROVEN). -/
+theorem totalMulSemiringAction_smul_algebraMap (g : G) (a : A) :
+    letI := totalMulSemiringAction G A L
+    g • (algebraMap A L a) = algebraMap A L (g • a) := by
+  letI := totalMulSemiringAction G A L
+  exact IsFractionRing.ringEquivOfRingEquiv_algebraMap _ a
+
+/-- **`IsFractionRing.smulDistribClass` without the `Field` hypotheses** (PROVEN). -/
+theorem totalSMulDistribClass :
+    letI := totalMulSemiringAction G A L
+    SMulDistribClass G A L := by
+  letI := totalMulSemiringAction G A L
+  refine ⟨fun g b x ↦ ?_⟩
+  rw [Algebra.smul_def', Algebra.smul_def', smul_mul']
+  congr 1
+  exact totalMulSemiringAction_smul_algebraMap G A L g b
+
+end IsFractionRing
+
 namespace Algebra.IsInvariant
 
 /-! ### Noether's theorem on invariants -/
@@ -163,64 +243,160 @@ theorem finiteType_of_isInvariant (k R S : Type*) [CommRing k] [CommRing R] [Com
 
 /-! ### Invariants of a normal domain are normal -/
 
-/-- **Invariants of an integrally closed domain are integrally closed**
+open scoped Pointwise in
+/-- **A nonzero invariant is a NON-ZERO-DIVISOR upstairs** (PROVEN 2026-07-30) — the
+input that lets the normality argument below run over a non-domain `S`.
+
+`Frac R → Frac S` exists only if every nonzero `r ∈ R` becomes a non-zero-divisor in `S`,
+and for `S` with zero divisors that is not automatic from injectivity of `R → S`.  It IS
+automatic here, and the reason is `Algebra.IsInvariant` — transitivity of `G` on the primes
+over a given prime of `R`:
+
+*if `r · s = 0` with `s ≠ 0`, pick (S reduced) a minimal prime `Q` of `S` with `s ∉ Q`;
+then `r ∈ Q`, so `p := Q ∩ R ≠ ⊥`.  Lying over gives a prime `Q₀` of `S` over `⊥` and going
+up a prime `Q' ⊇ Q₀` over `p`; `Algebra.IsInvariant.exists_smul_of_under_eq` supplies
+`g ∈ G` with `g • Q' = Q`, and then `g • Q₀ ⊆ Q` is a prime over `⊥` strictly below `Q` —
+contradicting minimality of `Q`.*
+
+**`[IsReduced S]` is REQUIRED and the statement is FALSE without it.**  Witness:
+`S = k[u,v]/(v², uv)`, `G = ZMod 2` acting by `v ↦ -v` (char `k ≠ 2`), `R = S^G = k[u]`.
+Every other hypothesis holds — `R` is a domain, `R → S` is injective, `S = R ⊕ R·v` is
+module-finite hence integral, and the `G`-fixed elements are exactly `k[u]` — yet
+`u ≠ 0` in `R` and `u · v = 0` in `S` with `v ≠ 0`.
+
+**`[IsDomain R]` is REQUIRED** for the obvious reason: `nonZeroDivisors R` is read as
+"`≠ 0`" nowhere else, and with `R = S` and `G` trivial the statement is the tautology that
+a non-zero-divisor is a non-zero-divisor, which is *not* what is proven here. -/
+theorem nonZeroDivisors_le_comap_of_isInvariant (R S : Type*) [CommRing R] [CommRing S]
+    [Algebra R S] (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [Algebra.IsInvariant R S G] [IsDomain R] [IsReduced S]
+    (hinj : Function.Injective (algebraMap R S)) :
+    nonZeroDivisors R ≤ (nonZeroDivisors S).comap (algebraMap R S) := by
+  haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
+  have hker : RingHom.ker (algebraMap R S) = ⊥ := (RingHom.injective_iff_ker_eq_bot _).mp hinj
+  intro r hr
+  have hr0 : r ≠ 0 := nonZeroDivisors.ne_zero hr
+  rw [Submonoid.mem_comap, mem_nonZeroDivisors_iff]
+  suffices key : ∀ s : S, s * algebraMap R S r = 0 → s = 0 from
+    ⟨fun x hx => key x (by rwa [mul_comm]), key⟩
+  intro s hs
+  by_contra hs0
+  -- a minimal prime `Q` of `S` avoiding `s`
+  obtain ⟨J, hJp, hsJ⟩ : ∃ J : Ideal S, J.IsPrime ∧ s ∉ J := by
+    by_contra hcon
+    push Not at hcon
+    refine hs0 (IsNilpotent.eq_zero ?_)
+    rw [← mem_nilradical, nilradical_eq_sInf]
+    exact Ideal.mem_sInf.mpr fun J hJ => hcon J hJ
+  haveI : J.IsPrime := hJp
+  obtain ⟨Q, hQmin, hQJ⟩ := Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal S)) (J := J) bot_le
+  haveI hQp : Q.IsPrime := hQmin.1.1
+  have hsQ : s ∉ Q := fun h => hsJ (hQJ h)
+  -- `r` lands in `Q`, so `Q` lies over a NONZERO prime `p` of `R`
+  have hrQ : algebraMap R S r ∈ Q := ((hQp.mem_or_mem (hs ▸ Q.zero_mem)).resolve_left hsQ)
+  set p : Ideal R := Q.comap (algebraMap R S) with hp
+  haveI hpp : p.IsPrime := Ideal.comap_isPrime _ _
+  have hrp : r ∈ p := Ideal.mem_comap.mpr hrQ
+  have hp0 : p ≠ ⊥ := fun h => hr0 (Ideal.mem_bot.mp (h ▸ hrp))
+  -- lying over `⊥`, then going up to `p`
+  obtain ⟨Q₀, -, hQ₀p, hQ₀c⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := R) (S := S) (⊥ : Ideal R) (⊥ : Ideal S)
+      (by simp [← RingHom.ker_eq_comap_bot, hker])
+  haveI := hQ₀p
+  obtain ⟨Q', hQ₀Q', hQ'p, hQ'c⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime (R := R) (S := S) p Q₀
+      (by rw [hQ₀c]; exact bot_le)
+  haveI := hQ'p
+  -- `G` is transitive on the primes over `p`, so a prime over `⊥` sits below `Q` as well
+  obtain ⟨g, hg⟩ := Algebra.IsInvariant.exists_smul_of_under_eq R S G Q' Q
+    (by rw [Ideal.under_def, Ideal.under_def, hQ'c])
+  haveI : (g • Q₀).IsPrime := hQ₀p.smul g
+  have hle : g • Q₀ ≤ Q := hg ▸ smul_mono_right g hQ₀Q'
+  have hc0 : (g • Q₀).comap (algebraMap R S) = ⊥ := by
+    rw [← Ideal.under_def, Ideal.under_smul, Ideal.under_def, hQ₀c]
+  exact hp0 (le_bot_iff.mp (hc0 ▸ Ideal.comap_mono (hQmin.2 ⟨inferInstance, bot_le⟩ hle)))
+
+/-- **Invariants of an integrally closed ring are integrally closed**
 (PROVEN) — Matsumura §23, Bourbaki *Commutative Algebra* V §1.9.
 
-Write `K = Frac R`, `L = Frac S`.  Because `R → S` is injective and `S` is a
-domain, `K` embeds in `L` as a subfield (`FractionRing.liftAlgebra`), and the
-`G`-action on `S` extends to `L` (`IsFractionRing.mulSemiringAction`) fixing the
-image of `K` pointwise — each element of `K` is a quotient of elements of `R`,
-and `G` fixes `R` by `SMulCommClass G R S`.
+**`[IsDomain S]` was dropped 2026-07-30** (it was there until then, and the CUT-OBSTRUCTION
+AUDIT on `isRegularRing_coarseRing_of_gamma0AtlasOver_zmod` in `ModularCurve/X0.lean`
+correctly identified it as the obstruction to the `𝔽_p` coarse-space leaf: over `𝔽_p` the
+rigidified moduli ring is a finite PRODUCT of smooth curves, because Frobenius need not
+permute the Weil-pairing components transitively).  `IsIntegrallyClosed S` is meaningful for
+any `CommRing` — mathlib reads it as `IsIntegralClosure S S (FractionRing S)` with
+`FractionRing S = Localization (nonZeroDivisors S)`, the TOTAL quotient ring — so only the
+proof had to move, not the statement.
 
-Now let `x ∈ K` be integral over `R`.  Then its image `z ∈ L` is integral over
-`S`, so `z = algebraMap S L s` for some `s ∈ S` because `S` is integrally
-closed; `z` is `G`-fixed, hence so is `s`, hence `s` lies in the image of `R` by
-`Algebra.IsInvariant`; and that preimage maps to `x` because `K → L` is
-injective.  That is exactly the criterion `isIntegrallyClosed_iff`. -/
+Write `K = Frac R` (a field: `R` is a domain) and `L = Frac S` (the total quotient ring).
+Two things replace what `[IsDomain S]` used to supply:
+
+* the `G`-action on `L`, which is `IsFractionRing.totalMulSemiringAction` above rather than
+  mathlib's field-only `IsFractionRing.mulSemiringAction`;
+* the map `K → L`, which is `IsLocalization.map` over `hnzd` rather than
+  `FractionRing.liftAlgebra` (that one needs `L` to be a FIELD, and injectivity of
+  `R → L` is genuinely not enough: a nonzero `r ∈ R` must become a UNIT in `L`, i.e. a
+  non-zero-divisor in `S`).  `hnzd` is `nonZeroDivisors_le_comap_of_isInvariant` above
+  whenever `S` is reduced.
+
+The argument itself is unchanged: `x ∈ K` integral over `R` has image `z ∈ L` integral over
+`S`, so `z = algebraMap S L s` because `S` is integrally closed; `z` is `G`-fixed, hence so
+is `s`, hence `s` lies in the image of `R` by `Algebra.IsInvariant`; and that preimage maps
+to `x` because `K → L` is injective.
+
+One step DID have to change shape.  `G` fixing the image of `K` pointwise was proven by
+writing `x = a/b` and pushing `g` through the division — which needs `L` to be a field.  It
+is now the universal property, `IsLocalization.ringHom_ext`: two ring maps `K → L` agreeing
+on `R` are equal, and `g ∘ (K → L)` agrees with `K → L` on `R` because `G` fixes `R`. -/
 theorem isIntegrallyClosed_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
     (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
-    [Algebra.IsInvariant R S G] [IsDomain R] [IsDomain S] [IsIntegrallyClosed S]
-    (hinj : Function.Injective (algebraMap R S)) :
+    [Algebra.IsInvariant R S G] [IsDomain R] [IsIntegrallyClosed S]
+    (hinj : Function.Injective (algebraMap R S))
+    (hnzd : nonZeroDivisors R ≤ (nonZeroDivisors S).comap (algebraMap R S)) :
     IsIntegrallyClosed R := by
-  letI := IsFractionRing.mulSemiringAction G S (FractionRing S)
-  haveI := IsFractionRing.smulDistribClass G S (FractionRing S)
-  haveI hRL : Function.Injective (algebraMap R (FractionRing S)) := by
-    rw [IsScalarTower.algebraMap_eq R S (FractionRing S)]
-    exact (IsFractionRing.injective S (FractionRing S)).comp hinj
-  haveI : FaithfulSMul R (FractionRing S) := (faithfulSMul_iff_algebraMap_injective _ _).mpr hRL
-  letI := FractionRing.liftAlgebra R (FractionRing S)
-  haveI := FractionRing.isScalarTower_liftAlgebra R (FractionRing S)
+  letI := IsFractionRing.totalMulSemiringAction G S (FractionRing S)
+  haveI := IsFractionRing.totalSMulDistribClass G S (FractionRing S)
+  haveI hSL : Function.Injective (algebraMap S (FractionRing S)) :=
+    IsLocalization.injective _ le_rfl
+  haveI : Nontrivial S := hinj.nontrivial
+  letI : Algebra (FractionRing R) (FractionRing S) :=
+    (IsLocalization.map (FractionRing S) (algebraMap R S) hnzd).toAlgebra
+  haveI htower : IsScalarTower R (FractionRing R) (FractionRing S) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show algebraMap R (FractionRing S) x
+        = IsLocalization.map (FractionRing S) (algebraMap R S) hnzd
+            (algebraMap R (FractionRing R) x)
+      rw [IsLocalization.map_eq, ← IsScalarTower.algebraMap_apply R S (FractionRing S)]
   have hKL : Function.Injective (algebraMap (FractionRing R) (FractionRing S)) :=
     (algebraMap (FractionRing R) (FractionRing S)).injective
+  -- `G` fixes the image of `Frac R` pointwise
+  have hmap : ∀ (g : G) (r : R), g • (algebraMap R (FractionRing S) r)
+      = algebraMap R (FractionRing S) r := by
+    intro g r
+    rw [IsScalarTower.algebraMap_eq R S (FractionRing S)]
+    simp [← algebraMap.coe_smul', smul_algebraMap]
+  have hfixK : ∀ (g : G) (x : FractionRing R),
+      g • (algebraMap (FractionRing R) (FractionRing S) x)
+        = algebraMap (FractionRing R) (FractionRing S) x := by
+    intro g x
+    have hext : (MulSemiringAction.toRingHom G (FractionRing S) g).comp
+        (algebraMap (FractionRing R) (FractionRing S))
+          = algebraMap (FractionRing R) (FractionRing S) := by
+      refine IsLocalization.ringHom_ext (nonZeroDivisors R) (RingHom.ext fun r => ?_)
+      simpa [← IsScalarTower.algebraMap_apply R (FractionRing R) (FractionRing S)]
+        using hmap g r
+    exact congrArg (fun (f : FractionRing R →+* FractionRing S) => f x) hext
   refine (isIntegrallyClosed_iff (FractionRing R)).mpr ?_
   intro x hx
   set z : FractionRing S := algebraMap (FractionRing R) (FractionRing S) x with hz
   have hzR : IsIntegral R z := hx.map (IsScalarTower.toAlgHom R (FractionRing R) (FractionRing S))
   have hzS : IsIntegral S z := hzR.tower_top
   obtain ⟨s, hs⟩ := IsIntegrallyClosed.isIntegral_iff.mp hzS
-  have hfix : ∀ g : G, g • z = z := by
-    intro g
-    obtain ⟨a, b, hb, rfl⟩ := IsFractionRing.div_surjective (A := R) x
-    have hmap : ∀ r : R, g • (algebraMap R (FractionRing S) r)
-        = algebraMap R (FractionRing S) r := by
-      intro r
-      rw [IsScalarTower.algebraMap_eq R S (FractionRing S)]
-      simp [← algebraMap.coe_smul', smul_algebraMap]
-    rw [hz]
-    rw [map_div₀, ← IsScalarTower.algebraMap_apply R (FractionRing R) (FractionRing S),
-      ← IsScalarTower.algebraMap_apply R (FractionRing R) (FractionRing S)]
-    rw [show g • (algebraMap R (FractionRing S) a / algebraMap R (FractionRing S) b)
-        = (g • algebraMap R (FractionRing S) a) / (g • algebraMap R (FractionRing S) b) from
-      map_div₀ (MulSemiringAction.toRingHom G (FractionRing S) g) _ _, hmap, hmap]
-  have key : ∀ (g : G) (t : S), algebraMap S (FractionRing S) (g • t)
-      = g • algebraMap S (FractionRing S) t := by
-    intro g t
-    rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one,
-      smul_distrib_smul, smul_one]
   have hsfix : ∀ g : G, g • s = s := by
     intro g
-    apply IsFractionRing.injective S (FractionRing S)
-    rw [key g s, hs, hfix g]
+    apply hSL
+    rw [← IsFractionRing.totalMulSemiringAction_smul_algebraMap G S (FractionRing S) g s, hs, hz,
+      hfixK g x]
   obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := R) (B := S) (G := G) s hsfix
   refine ⟨y, ?_⟩
   apply hKL
@@ -232,41 +408,78 @@ theorem isIntegrallyClosed_of_isInvariant (R S : Type*) [CommRing R] [CommRing S
 
 /-- **A finite group quotient does not raise the dimension above one** (PROVEN).
 
-A nonzero prime `p` of `R` lies under some prime `Q` of `S` (lying over, valid
-because `S` is integral over `R` and `R → S` is injective), that `Q` is nonzero
-because its contraction is, hence maximal since `dim S ≤ 1`, and the
-contraction of a maximal ideal along an integral extension is maximal. -/
+**`[IsDomain S]` was dropped 2026-07-30**, together with the strengthening of
+`[Ring.DimensionLEOne S]` to `[Ring.KrullDimLE 1 S]`, which is what the statement needs
+once `S` may have zero divisors.  `[IsDomain R]` is taken instead; every former call site
+had it, since it followed from `[IsDomain S]` and `hinj`.
+
+**`Ring.DimensionLEOne S` is the WRONG hypothesis for a non-domain `S`, not merely a
+weaker one: for the intended `S` it is UNSATISFIABLE.**  It reads "every prime `≠ ⊥` is
+maximal", and in `k[x] × k[x]` — a product of two smooth affine curves, which is exactly
+the shape of the rigidified moduli ring over `𝔽_p` — the prime `⊥ × k[x]` is nonzero and
+not maximal.  So a naive "delete `[IsDomain S]`" would have produced a lemma with a
+vacuous hypothesis.  `Ring.KrullDimLE 1 S` (`= Order.KrullDimLE 1 (PrimeSpectrum S)`) is
+the right notion and does hold for that product.  The two agree on domains: mathlib has
+`Ring.DimensionLEOne R → Ring.KrullDimLE 1 R` as a low-priority instance.
+
+**`[IsDomain R]` is REQUIRED and the statement is FALSE without it.**  Witness: `R = S =
+k[x] × k[x]` with `G` trivial.  Then `Ring.KrullDimLE 1 S` holds, `algebraMap R S = id` is
+injective, `Algebra.IsInvariant R S G` is trivially true, and the conclusion
+`Ring.DimensionLEOne R` fails at `⊥ × k[x]` exactly as above.
+
+The proof is the going-up one.  If a nonzero prime `p` of `R` were not maximal, `⊥ < p < m`
+would be a chain of length two in `Spec R` (`⊥` is prime because `R` is a domain — this is
+where `[IsDomain R]` enters), and lying over plus going up
+(`Ideal.exists_ideal_over_prime_of_isIntegral`, which carries NO domain hypothesis, and
+`Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime`) lift it to a chain `Q₀ < Q₁ < Q₂`
+in `Spec S`, contradicting `Ring.KrullDimLE 1 S`. -/
 theorem dimensionLEOne_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
     (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
-    [Algebra.IsInvariant R S G] [IsDomain S] [Ring.DimensionLEOne S]
+    [Algebra.IsInvariant R S G] [IsDomain R] [Ring.KrullDimLE 1 S]
     (hinj : Function.Injective (algebraMap R S)) :
     Ring.DimensionLEOne R := by
   haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
+  have hker : RingHom.ker (algebraMap R S) = ⊥ := (RingHom.injective_iff_ker_eq_bot _).mp hinj
   refine ⟨fun {p} hp0 hp => ?_⟩
   haveI := hp
-  have hcomapbot : (⊥ : Ideal S).comap (algebraMap R S) = ⊥ := by
-    ext x
-    simp only [Ideal.mem_comap, Ideal.mem_bot]
-    exact ⟨fun h => hinj (by simpa using h), fun h => by simp [h]⟩
-  obtain ⟨Q, hQ, hQc⟩ :=
-    Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain (R := R) (S := S) p
-      (by rw [RingHom.ker_eq_comap_bot, hcomapbot]; exact bot_le)
-  haveI := hQ
-  have hQ0 : Q ≠ ⊥ := by
-    rintro rfl
-    exact hp0 (by rw [← hQc, hcomapbot])
-  haveI : Q.IsMaximal := Ideal.IsPrime.isMaximal hQ hQ0
-  exact hQc ▸ Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (R := R) (S := S) Q
+  obtain ⟨m, hm, hpm⟩ := Ideal.exists_le_maximal p hp.ne_top
+  haveI := hm
+  rcases eq_or_lt_of_le hpm with rfl | hpltm
+  · exact hm
+  exfalso
+  -- lift `⊥ < p < m` to a chain `Q₀ < Q₁ < Q₂` in `Spec S`
+  obtain ⟨Q₀, -, hQ₀p, hQ₀c⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := R) (S := S) (⊥ : Ideal R) (⊥ : Ideal S)
+      (by simp [← RingHom.ker_eq_comap_bot, hker])
+  haveI := hQ₀p
+  obtain ⟨Q₁, hQ₀₁, hQ₁p, hQ₁c⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime (R := R) (S := S) p Q₀
+      (by rw [hQ₀c]; exact bot_le)
+  haveI := hQ₁p
+  obtain ⟨Q₂, hQ₁₂, hQ₂p, hQ₂c⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime (R := R) (S := S) m Q₁
+      (by rw [hQ₁c]; exact hpm)
+  haveI := hQ₂p
+  have h01 : Q₀ < Q₁ := lt_of_le_of_ne hQ₀₁ (by rintro rfl; rw [hQ₀c] at hQ₁c; exact hp0 hQ₁c.symm)
+  have h12 : Q₁ < Q₂ := lt_of_le_of_ne hQ₁₂ (by
+    rintro rfl; rw [hQ₁c] at hQ₂c; exact hpltm.ne hQ₂c)
+  rcases Ring.krullDimLE_one_iff.mp ‹Ring.KrullDimLE 1 S› Q₁ hQ₁p with hmin | hmax
+  · exact absurd (hmin.2 ⟨hQ₀p, bot_le⟩ h01.le) (not_le_of_gt h01)
+  · exact h12.ne (hmax.eq_of_le hQ₂p.ne_top h12.le)
 
 /-- **The Krull dimension is unchanged** (PROVEN, in the only case needed).
 
 `≤` is `dimensionLEOne_of_isInvariant`.  `≥` holds because contraction along an
 integral extension is strictly monotone on primes
-(`Ideal.IsIntegral.comap_lt_comap`), so it embeds a chain of `Spec S` into a
-chain of `Spec R`. -/
+(`Ideal.IsIntegral.comap_lt_comap`, which carries NO domain hypothesis — it is stated above
+`variable [IsDomain A]` in `Mathlib/RingTheory/Ideal/GoingUp.lean`), so it embeds a chain of
+`Spec S` into a chain of `Spec R`.
+
+**`[IsDomain S]` was dropped 2026-07-30**; see `dimensionLEOne_of_isInvariant` for why the
+replacement is `[IsDomain R] [Ring.KrullDimLE 1 S]` and not a bare deletion. -/
 theorem ringKrullDim_eq_one_of_isInvariant (R S : Type*) [CommRing R] [CommRing S] [Algebra R S]
     (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
-    [Algebra.IsInvariant R S G] [IsDomain S] [Ring.DimensionLEOne S]
+    [Algebra.IsInvariant R S G] [IsDomain R] [Ring.KrullDimLE 1 S]
     (hinj : Function.Injective (algebraMap R S)) (hdim : ringKrullDim S = (1 : ℕ)) :
     ringKrullDim R = (1 : ℕ) := by
   haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
@@ -297,6 +510,7 @@ theorem isDedekindDomain_of_isInvariant (k R S : Type*) [CommRing k] [CommRing R
   haveI hft : Algebra.FiniteType k R := finiteType_of_isInvariant k R S G hinj
   haveI hnoeth : IsNoetherianRing R := Algebra.FiniteType.isNoetherianRing k R
   haveI hic : IsIntegrallyClosed R := isIntegrallyClosed_of_isInvariant R S G hinj
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _ hinj)
   haveI hd1 : Ring.DimensionLEOne R := dimensionLEOne_of_isInvariant R S G hinj
   haveI : IsDedekindRing R := { hnoeth, hd1, hic with }
   exact ⟨hdom, inferInstance, hft⟩
@@ -318,6 +532,70 @@ theorem isRegularRing_of_isInvariant (k R S : Type*) [CommRing k] [CommRing R] [
   haveI := hdom
   haveI := hded
   exact ⟨hdom, inferInstance, hft, ringKrullDim_eq_one_of_isInvariant R S G hinj hdim⟩
+
+/-! ### The same package when `S` is NOT a domain
+
+This is the version the `𝔽_p` coarse-space leaf
+`isRegularRing_coarseRing_of_gamma0AtlasOver_zmod` (`ModularCurve/X0.lean`) needs, and the
+reason the three lemmas above were generalised.  Over `ℚ` the rigidified moduli scheme
+`𝔐([Γ₀(N)], [Γ(n)])` is integral, because `Gal(ℚ(ζ_n)/ℚ)` permutes its geometric components
+— indexed by the Weil pairing — transitively.  Over `𝔽_p` that group is generated by the
+single Frobenius `ζ ↦ ζ^p`, whose orbits have size `ord_n(p)`, so `A` is a PRODUCT of
+`φ(n)/ord_n(p)` smooth affine curves.  `IsDomain A` is then false (explicitly: `n = 3`,
+`p = 7`, where `2³ ≡ 1 mod 7` so both primitive cube roots are `𝔽_7`-rational and there are
+two components), and with it `IsDedekindDomain A`.
+
+What survives is exactly what is asked for below: `A` reduced, integrally closed in its
+TOTAL quotient ring, and of Krull dimension one.  `IsDomain B` is NOT derived here — it is
+false in general for the pair `(R, S)` as hypothesised, and in the modular application it is
+the separate input `isDomain_of_gamma0AtlasOver_zmod` (Deligne–Rapoport IV.5.5), which
+holds because `det : GL₂(ℤ/n) → (ℤ/n)ˣ` is surjective and so `G` permutes the components
+transitively even when Frobenius does not. -/
+
+/-- **The invariants of a REDUCED normal ring of dimension one form a Dedekind domain**
+(PROVEN 2026-07-30), given that they form a domain.
+
+`isDedekindDomain_of_isInvariant` with `[IsDedekindDomain S]` weakened to the three
+conditions that survive for a finite product of Dedekind domains: `[IsReduced S]`,
+`[IsIntegrallyClosed S]` (which mathlib reads in the TOTAL quotient ring, so it is the
+correct notion here and is *true* of such a product) and `[Ring.KrullDimLE 1 S]`.
+
+`[IsDomain R]` replaces the `IsDomain R` that used to come free from `[IsDomain S]` and
+`hinj`; it cannot be derived and it is genuinely needed — see the counterexample on
+`dimensionLEOne_of_isInvariant`.  It is also exactly what the modular consumer has. -/
+theorem isDedekindDomain_of_isInvariant_of_isReduced (k R S : Type*) [CommRing k] [CommRing R]
+    [CommRing S] [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
+    (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [Algebra.IsInvariant R S G] [IsNoetherianRing k] [Algebra.FiniteType k S]
+    [IsDomain R] [IsReduced S] [IsIntegrallyClosed S] [Ring.KrullDimLE 1 S]
+    (hinj : Function.Injective (algebraMap R S)) :
+    IsDedekindDomain R ∧ Algebra.FiniteType k R := by
+  haveI hft : Algebra.FiniteType k R := finiteType_of_isInvariant k R S G hinj
+  haveI hnoeth : IsNoetherianRing R := Algebra.FiniteType.isNoetherianRing k R
+  haveI hic : IsIntegrallyClosed R :=
+    isIntegrallyClosed_of_isInvariant R S G hinj
+      (nonZeroDivisors_le_comap_of_isInvariant R S G hinj)
+  haveI hd1 : Ring.DimensionLEOne R := dimensionLEOne_of_isInvariant R S G hinj
+  haveI : IsDedekindRing R := { hnoeth, hd1, hic with }
+  exact ⟨inferInstance, hft⟩
+
+/-- **The coarse ring of a REDUCED normal presentation of dimension one is a regular
+finite-type domain of Krull dimension one** (PROVEN 2026-07-30) — the non-domain analogue
+of `isRegularRing_of_isInvariant`, and the exact package the `𝔽_p` modular-curve consumer
+asks for.
+
+`Ring.KrullDimLE 1 S` is not a separate binder: it is `Ring.krullDimLE_iff.mpr hdim.le`. -/
+theorem isRegularRing_of_isInvariant_of_isReduced (k R S : Type*) [CommRing k] [CommRing R]
+    [CommRing S] [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
+    (G : Type*) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [Algebra.IsInvariant R S G] [IsNoetherianRing k] [Algebra.FiniteType k S]
+    [IsDomain R] [IsReduced S] [IsIntegrallyClosed S]
+    (hinj : Function.Injective (algebraMap R S)) (hdim : ringKrullDim S = (1 : ℕ)) :
+    IsRegularRing R ∧ Algebra.FiniteType k R ∧ ringKrullDim R = (1 : ℕ) := by
+  haveI : Ring.KrullDimLE 1 S := Ring.krullDimLE_iff.mpr (le_of_eq hdim)
+  obtain ⟨hded, hft⟩ := isDedekindDomain_of_isInvariant_of_isReduced k R S G hinj
+  haveI := hded
+  exact ⟨inferInstance, hft, ringKrullDim_eq_one_of_isInvariant R S G hinj hdim⟩
 
 end Algebra.IsInvariant
 

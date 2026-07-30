@@ -5072,9 +5072,64 @@ FAITHFULNESS. Every hypothesis is load-bearing.
   all; it is the hypothesis of the classical theorem.
 
 NOT VACUOUS, checked at `F = ℚ`, `𝔣 = (4)`, `a = -7`: take `α = β = 1` and
-`w = (7)`, giving `(7) · (1) = (-7)`. Not a relocation of its consumer either:
-the consumer needs a GENERATOR with a prescribed congruence and sign, and
-producing one from this identity is the separate proven step below. -/
+`w = (7)`, giving `(7) · (1) = (-7)`.
+
+## EQUIVALENCE AUDIT (2026-07-30) — THIS LEAF AND ITS CONSUMER ARE THE SAME
+## THEOREM, SO THE `-α`/`-β` SPLIT IS AN IDENTITY AND NOT A CUT
+
+The paragraph above used to end "Not a relocation of its consumer either: the
+consumer needs a GENERATOR with a prescribed congruence and sign, and producing
+one from this identity is the separate proven step below." **That is wrong in the
+direction that matters.** The step below is a real derivation, but it is
+INVERTIBLE: `exists_prime_generator_sub_mem_of_sup_eq_top` implies this leaf
+back, under exactly the hypotheses both already carry. So the two statements are
+equivalent, and no content sits between them.
+
+*The converse, with its witness.* Given `c` and `w` from `-β` — so
+`Ideal.span {c} = w.asIdeal`, `c - a ∈ 𝔣`, and `0 < σ(c)·σ(a)` at every real
+`σ` — take `x := c` and `y := a`. Then `w.asIdeal * (y) = (c)·(a) = (a·x)`,
+`x - y = c - a ∈ 𝔣`, `y` is coprime to `𝔣` by `hcop`, and `σ(x)·σ(y) > 0`. Pick
+`z` with `z·a ≡ 1 (mod 𝔣)` (from `hcop`; take `z := 1` in the degenerate case
+`𝔣 = ⊤`, and note that otherwise `z·a ≢ 0`, so `z ≠ 0`) and set
+
+    α := z² · c · a,      β := (z · a)².
+
+Every clause holds, and each for a reason worth naming because it is what makes
+the two forms interchangeable:
+
+* `β ≠ 0` from `z ≠ 0` and `a ≠ 0` (`ha0`) in a domain;
+* `β - 1 ∈ 𝔣` because `β = (za)²` and `za ≡ 1`; `α - 1 ∈ 𝔣` because
+  `α = (zc)·(za)` and `zc ≡ za ≡ 1 (mod 𝔣)`, the first step being `c ≡ a`;
+* both TOTALLY POSITIVE **by squaring**: `σ(β) = σ(z)²σ(a)² > 0`, and
+  `σ(α) = σ(z)²·σ(c)σ(a) > 0` is exactly the sign-product clause of `-β`;
+* the ideal identity is the one above multiplied by `(z²y)`:
+  `w.asIdeal · (z²a²) = (a·z²·c·a)`.
+
+**THE GENERAL LESSON, and it is what closes the axis.** Neither the two
+`≡ 1 (mod 𝔣)` normalisations nor total positivity is a burden on a prover of
+this leaf, because both are FREE operations on a ray-class relation:
+
+* multiplying numerator and denominator by an inverse of the denominator mod `𝔣`
+  moves any `x/y` with `x ≡ y (mod 𝔣)` to a quotient of two elements each
+  `≡ 1 (mod 𝔣)`, and
+* multiplying both by the denominator (i.e. `x/y = xy/y²`) makes both totally
+  positive as soon as `x/y` is,
+
+and NEITHER changes the fractional ideal `(a)·(x/y)`, hence neither changes which
+prime is being exhibited. So the raw output of the classical theorem — a prime
+`𝔭` and a `γ ∈ Fˣ` with `γ ≻ 0`, `γ ≡ 1 (mod^× 𝔣)` and `𝔭 = (a)·(γ)` — already
+gives this statement, in three lines.
+
+*Consequence for the next round.* Do NOT restate this leaf a third time in an
+equivalent shape — in particular not in the tempting "`∃ x y`, `x ≡ y (mod 𝔣)`,
+`0 < σ(x)σ(y)`, `w·(y) = (a·x)`" form, which drops total positivity and the
+congruences-to-`1` and looks like a cut. It is the same theorem again, by the
+two bullets above. What remains after every such normalisation is DIRICHLET FOR
+A NARROW RAY CLASS and nothing else: the narrowness is the `γ ≻ 0` clause and is
+NOT removable (it is what the consumer spends to get the sign of `b`), and the
+ray class group, the ray class field and the Artin map for it all still have zero
+hits in the pin. The honest next step is to build `Cl_𝔪(F)` and its class field,
+not to re-cut this statement. -/
 theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
@@ -6883,6 +6938,375 @@ theorem nonempty_withRigidification_of_forall_split_of_ae_integral
   nonempty_withRigidification_of_nonempty_algEquiv F D
     ⟨AlgEquiv.ofBijective (adelicPsi F D b e hae) (adelicPsi_bijective F D b e hae)⟩
 
+/-- **Dependent choice along a filter** (PROVEN, 2026-07-30): if a member of `l` admits a
+witness at each of its points, then a GLOBAL section exists whose values are witnesses on a
+member of `l`.
+
+The fallback `hne` is what makes this true rather than merely plausible: outside the good
+member of `l` the section still has to return SOMETHING, and `Classical.choice` on
+`Nonempty (T a)` supplies it. In the use below, `l = Filter.cofinite` and `hne` is exactly
+`hsplit` — the bare local splittings, which carry no integrality at all and are needed for
+nothing else. -/
+theorem exists_pi_of_eventually_exists {α : Type*} {l : Filter α} {T : α → Type*}
+    (hne : ∀ a, Nonempty (T a)) (Q : ∀ a, T a → Prop)
+    (hae : ∀ᶠ a in l, ∃ t : T a, Q a t) :
+    ∃ e : ∀ a, T a, ∀ᶠ a in l, Q a (e a) := by
+  classical
+  refine ⟨fun a => if h : ∃ t : T a, Q a t then h.choose else (hne a).some, ?_⟩
+  filter_upwards [hae] with a ha
+  rw [dif_pos ha]
+  exact ha.choose_spec
+
+/-! #### The regular trace form, and the discriminant certificate for maximality
+
+The block below is the machinery the local leaf of the rigidification needs and that
+mathlib does not have. Mathlib's `Algebra.trace` / `Algebra.discr` are declared for a
+COMMUTATIVE `S` (`[CommRing B]` in `Mathlib/RingTheory/Discriminant.lean`), so neither is
+applicable to a quaternion algebra; what is needed here is the regular trace form
+`(x, y) ↦ tr(z ↦ xyz)` of a possibly noncommutative algebra, its Gram determinant against a
+basis, and the two facts that make that determinant a MAXIMALITY CERTIFICATE at a place:
+
+* it is NONZERO whenever the algebra splits over some field extension
+  (`traceDiscr_ne_zero_of_split`, over the nondegeneracy of the trace form of a matrix
+  algebra and the entry-wise base change of the Gram matrix); hence
+* it is a UNIT at all but finitely many places (`eventually_valuation_eq_one`), which is
+  exactly the hypothesis under which the `𝒪_w`-span of the basis is a MAXIMAL order.
+
+Nothing here is specific to quaternion algebras or to `M₂`: the size of the matrix algebra
+is a variable, and the only arithmetic input is that `card n` be invertible. -/
+
+/-- The coordinates of a matrix against `Matrix.stdBasis` are its entries. Mathlib defines
+`Matrix.stdBasis` but records no `repr` lemma for it. -/
+theorem stdBasis_repr_matrix_apply (R : Type*) [CommRing R] (m n : Type*) [Fintype m]
+    [Fintype n] (M : Matrix m n R) (p : m × n) :
+    (Matrix.stdBasis R m n).repr M p = M p.1 p.2 :=
+  rfl
+
+/-- **The regular trace of left multiplication on a matrix algebra**: `card n * tr X`.
+Left multiplication by `X` acts on each of the `card n` columns as `X` does, so its trace
+over the `card n ^ 2`-dimensional matrix algebra is `card n` times the matrix trace. -/
+theorem trace_mulLeft_matrix (R : Type*) [CommRing R] (n : Type*) [Fintype n] [DecidableEq n]
+    (X : Matrix n n R) :
+    LinearMap.trace R (Matrix n n R) (LinearMap.mulLeft R X)
+      = (Fintype.card n : R) * Matrix.trace X := by
+  classical
+  rw [LinearMap.trace_eq_matrix_trace R (Matrix.stdBasis R n n), Matrix.trace]
+  simp only [LinearMap.toMatrix_apply, LinearMap.mulLeft_apply, Matrix.diag_apply]
+  have key : ∀ p : n × n,
+      ((Matrix.stdBasis R n n).repr (X * (Matrix.stdBasis R n n) p)) p = X p.1 p.1 := by
+    intro p
+    rw [stdBasis_repr_matrix_apply, Matrix.stdBasis_eq_single, Matrix.mul_apply]
+    simp [Matrix.single_apply]
+  simp only [key]
+  rw [Fintype.sum_prod_type]
+  simp [Matrix.trace, Matrix.diag, Finset.mul_sum, mul_comm]
+
+/-- The **regular trace** of a possibly NONCOMMUTATIVE `R`-algebra: the trace of left
+multiplication. Mathlib's `Algebra.trace` is the same formula but is declared only for a
+commutative algebra, so it cannot be used here. -/
+noncomputable def regTrace (R A : Type*) [CommRing R] [Ring A] [Algebra R A] : A →ₗ[R] R :=
+  (LinearMap.trace R A).comp (LinearMap.mul R A)
+
+theorem regTrace_apply (R A : Type*) [CommRing R] [Ring A] [Algebra R A] (x : A) :
+    regTrace R A x = LinearMap.trace R A (LinearMap.mulLeft R x) := rfl
+
+/-- The **regular trace form** `(x, y) ↦ regTrace (x * y)` of a possibly noncommutative
+`R`-algebra. -/
+noncomputable def mulTraceForm (R A : Type*) [CommRing R] [Ring A] [Algebra R A] :
+    LinearMap.BilinForm R A :=
+  LinearMap.compr₂ (LinearMap.mul R A) (regTrace R A)
+
+theorem mulTraceForm_apply (R A : Type*) [CommRing R] [Ring A] [Algebra R A] (x y : A) :
+    mulTraceForm R A x y = regTrace R A (x * y) := rfl
+
+/-- The **discriminant of a basis** of a possibly noncommutative algebra: the determinant of
+the Gram matrix of the regular trace form. The `DecidableEq ι` needed to form the Gram
+matrix is supplied classically inside the definition, so that no consumer has to carry it —
+`traceDiscr_eq` is the equation to rewrite with once an instance is available. -/
+noncomputable def traceDiscr (R A : Type*) [CommRing R] [Ring A] [Algebra R A]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι R A) : R :=
+  letI := Classical.decEq ι
+  (LinearMap.BilinForm.toMatrix b (mulTraceForm R A)).det
+
+theorem traceDiscr_eq (R A : Type*) [CommRing R] [Ring A] [Algebra R A]
+    {ι : Type*} [Fintype ι] [DecidableEq ι] (b : Module.Basis ι R A) :
+    traceDiscr R A b = (LinearMap.BilinForm.toMatrix b (mulTraceForm R A)).det := by
+  rw [traceDiscr]
+  congr!
+
+/-- **The regular trace form of a matrix algebra over a field is NONDEGENERATE** as soon as
+the size is invertible: the witness is `B(X, single j i 1) = card n * X i j`, so a matrix
+orthogonal to every `single` is zero. (Over a field of characteristic dividing `card n` the
+form is identically `0` and the statement fails, which is why `hn` is a hypothesis and not a
+side condition — for `n = Fin 2` it is exactly `(2 : K) ≠ 0`.) -/
+theorem nondegenerate_mulTraceForm_matrix (K : Type*) [Field K] (n : Type*) [Fintype n]
+    [DecidableEq n] (hn : (Fintype.card n : K) ≠ 0) :
+    (mulTraceForm K (Matrix n n K)).Nondegenerate := by
+  classical
+  have hL : ∀ (X : Matrix n n K) (i j : n),
+      mulTraceForm K (Matrix n n K) X (Matrix.single j i (1 : K))
+        = (Fintype.card n : K) * X i j := by
+    intro X i j
+    rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix]
+    congr 1
+    simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.single_apply,
+      mul_ite, mul_one, mul_zero, ite_and]
+    simp [Finset.sum_ite_eq]
+  have hR : ∀ (X : Matrix n n K) (i j : n),
+      mulTraceForm K (Matrix n n K) (Matrix.single j i (1 : K)) X
+        = (Fintype.card n : K) * X i j := by
+    intro X i j
+    rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix]
+    congr 1
+    simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.single_apply, ite_and]
+    simp [Finset.sum_ite_eq]
+  constructor
+  · intro X hX
+    by_contra hne
+    obtain ⟨i, j, hij⟩ : ∃ i j, X i j ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact hne (Matrix.ext fun i j => by simpa using h i j)
+    exact hij (by simpa [hn] using (hL X i j).symm.trans (hX (Matrix.single j i (1 : K))))
+  · intro X hX
+    by_contra hne
+    obtain ⟨i, j, hij⟩ : ∃ i j, X i j ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact hne (Matrix.ext fun i j => by simpa using h i j)
+    exact hij (by simpa [hn] using (hR X i j).symm.trans (hX (Matrix.single j i (1 : K))))
+
+/-- Left multiplication by `e z` is the conjugate of left multiplication by `z`. -/
+theorem mulLeft_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B] [Algebra R A]
+    [Algebra R B] (f : A ≃ₐ[R] B) (z : A) :
+    LinearMap.mulLeft R (f z) = (f.toLinearEquiv).conj (LinearMap.mulLeft R z) := by
+  ext w
+  simp [LinearEquiv.conj_apply]
+
+/-- The regular trace form is invariant under an algebra equivalence: the trace of a
+conjugated endomorphism is unchanged. -/
+theorem mulTraceForm_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B] [Algebra R A]
+    [Algebra R B] (f : A ≃ₐ[R] B) (x y : A) :
+    mulTraceForm R B (f x) (f y) = mulTraceForm R A x y := by
+  rw [mulTraceForm_apply, mulTraceForm_apply, ← map_mul, regTrace_apply, regTrace_apply,
+    mulLeft_algEquiv, LinearMap.trace_conj']
+
+/-- Nondegeneracy of the regular trace form transports BACK along an algebra equivalence. -/
+theorem nondegenerate_mulTraceForm_of_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B]
+    [Algebra R A] [Algebra R B] (f : A ≃ₐ[R] B)
+    (h : (mulTraceForm R B).Nondegenerate) : (mulTraceForm R A).Nondegenerate := by
+  constructor
+  · intro x hx
+    have hex : f x = 0 := by
+      refine h.1 (f x) fun y => ?_
+      have hy := hx (f.symm y)
+      rwa [← mulTraceForm_algEquiv f x (f.symm y), f.apply_symm_apply] at hy
+    simpa using congrArg f.symm hex
+  · intro y hy
+    have hey : f y = 0 := by
+      refine h.2 (f y) fun x => ?_
+      have hx := hy (f.symm x)
+      rwa [← mulTraceForm_algEquiv f (f.symm x) y, f.apply_symm_apply] at hx
+    simpa using congrArg f.symm hey
+
+/-- Left multiplication by `1 ⊗ x` on a base change is the base change of left
+multiplication by `x`. -/
+theorem mulLeft_one_tmul (F' : Type*) [Field F'] (K : Type*) [CommRing K] [Algebra F' K]
+    (A : Type*) [Ring A] [Algebra F' A] (x : A) :
+    LinearMap.mulLeft K ((1 : K) ⊗ₜ[F'] x) = (LinearMap.mulLeft F' x).baseChange K := by
+  refine LinearMap.ext fun z => ?_
+  induction z using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a d => simp [Algebra.TensorProduct.tmul_mul_tmul]
+  | add u v hu hv => rw [map_add, map_add, hu, hv]
+
+/-- The regular trace commutes with base change. -/
+theorem regTrace_one_tmul (F' : Type*) [Field F'] (K : Type*) [CommRing K] [Algebra F' K]
+    (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A] (x : A) :
+    regTrace K (K ⊗[F'] A) ((1 : K) ⊗ₜ[F'] x) = algebraMap F' K (regTrace F' A x) := by
+  rw [regTrace_apply, regTrace_apply, mulLeft_one_tmul, LinearMap.trace_baseChange]
+
+/-- The Gram matrix of the regular trace form against a BASE-CHANGED basis is the entry-wise
+image of the Gram matrix downstairs. This is what makes the discriminant of a basis a
+place-by-place statement about ONE element of `F`. -/
+theorem toMatrix_mulTraceForm_tensor (F' : Type*) [Field F'] (K : Type*) [CommRing K]
+    [Algebra F' K] (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A]
+    {κ : Type*} [Fintype κ] [DecidableEq κ] (b : Module.Basis κ F' A) :
+    LinearMap.BilinForm.toMatrix (Algebra.TensorProduct.basis K b) (mulTraceForm K (K ⊗[F'] A))
+      = (algebraMap F' K).mapMatrix (LinearMap.BilinForm.toMatrix b (mulTraceForm F' A)) := by
+  ext i j
+  rw [LinearMap.BilinForm.toMatrix_apply, RingHom.mapMatrix_apply, Matrix.map_apply,
+    LinearMap.BilinForm.toMatrix_apply, Algebra.TensorProduct.basis_apply,
+    Algebra.TensorProduct.basis_apply, mulTraceForm_apply, Algebra.TensorProduct.tmul_mul_tmul,
+    one_mul, regTrace_one_tmul, mulTraceForm_apply]
+
+/-- **The discriminant of a basis is NONZERO as soon as the algebra SPLITS over some field
+extension.** Nondegeneracy of the trace form on `Matrix n n K` transports back along the
+splitting, `nondegenerate_iff_det_ne_zero` turns it into a nonvanishing Gram determinant for
+the base-changed basis, and that determinant is the image of `traceDiscr F' A b`.
+
+This is the only place separability of the algebra is used, and the splitting hypothesis is
+how it enters: no `Algebra.IsSeparable` instance is available for a noncommutative `A`. -/
+theorem traceDiscr_ne_zero_of_split (F' : Type*) [Field F'] (K : Type*) [Field K]
+    [Algebra F' K] (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A]
+    {κ : Type*} [Fintype κ] (b : Module.Basis κ F' A)
+    (n : Type*) [Fintype n] [DecidableEq n] (hn : (Fintype.card n : K) ≠ 0)
+    (f : K ⊗[F'] A ≃ₐ[K] Matrix n n K) :
+    traceDiscr F' A b ≠ 0 := by
+  classical
+  have hnd : (mulTraceForm K (K ⊗[F'] A)).Nondegenerate :=
+    nondegenerate_mulTraceForm_of_algEquiv f (nondegenerate_mulTraceForm_matrix K n hn)
+  have hdet := (LinearMap.BilinForm.nondegenerate_iff_det_ne_zero
+    (Algebra.TensorProduct.basis K b)).1 hnd
+  rw [toMatrix_mulTraceForm_tensor F' K A b, ← RingHom.map_det] at hdet
+  intro h
+  rw [← traceDiscr_eq, h, map_zero] at hdet
+  exact hdet rfl
+
+/-- A global scalar has valuation at most one at all but finitely many finite places. This
+is `HeightOneSpectrum.Support.finite` read through `Filter.cofinite`. -/
+theorem eventually_valuation_le_one (x : F) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite, w.valuation F x ≤ 1 := by
+  rw [Filter.eventually_cofinite]
+  refine Set.Finite.subset (HeightOneSpectrum.Support.finite (𝓞 F) x) fun w hw => ?_
+  simpa [HeightOneSpectrum.Support, not_le] using hw
+
+/-- **A NONZERO global scalar is a UNIT at all but finitely many finite places**: both it and
+its inverse are integral away from a finite set, and their valuations multiply to `1`. -/
+theorem eventually_valuation_eq_one (x : F) (hx : x ≠ 0) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite, w.valuation F x = 1 := by
+  filter_upwards [eventually_valuation_le_one F x, eventually_valuation_le_one F x⁻¹]
+    with w h1 h2
+  have hmul : w.valuation F x * w.valuation F x⁻¹ = 1 := by
+    rw [← map_mul, mul_inv_cancel₀ hx, map_one]
+  refine le_antisymm h1 ?_
+  have hstep : w.valuation F x * w.valuation F x⁻¹ ≤ w.valuation F x * 1 := by gcongr
+  rwa [hmul, mul_one] at hstep
+
+/-- **STEP 1a-vi(b′′) — MAXIMAL ORDERS IN A SPLIT QUATERNION ALGEBRA OVER A COMPLETE DVR ARE
+CONJUGATE TO `M₂(𝒪_w)`** (sorry leaf; CUT 2026-07-30, ROUND-11, out of
+`eventually_exists_integralSplitting` below, which is now a PROVEN assembly over this leaf,
+`traceDiscr_ne_zero_of_split` and `eventually_valuation_eq_one`).
+
+ONE PLACE, ONE LATTICE, AND THE MAXIMALITY HANDED OVER. The predecessor leaf asked for the
+same conclusion at ALMOST EVERY place and left the prover to discover, on the way, both that
+the `𝒪_w`-span of `b` is an order at almost every `w` and that it is MAXIMAL at almost every
+`w`. Those two are now hypotheses at a single `w`:
+
+* `hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
+  under multiplication, i.e. `Λ_w` IS an `𝒪_w`-order;
+* `hdisc` says the Gram determinant of the regular trace form in the basis `b` is a UNIT at
+  `w`, which is the classical maximality certificate: for orders `Λ_w ⊆ Λ'` one has
+  `disc Λ_w = [Λ' : Λ_w]² · disc Λ'`, so a unit discriminant forces index one.
+
+So WHAT REMAINS is exactly one classical theorem and nothing else: **a maximal order of
+`M₂(F_w)` is conjugate to `M₂(𝒪_w)`** — it is `End_{𝒪_w}(L)` for an `𝒪_w`-lattice `L` in
+`F_w²`, `𝒪_w` is a PID so `L` is free, and a basis of `L` is the conjugating matrix.
+Composing `hsplitw` with that conjugation is `f`, and the `↔` is then the statement that the
+conjugated `f` carries `Λ_w` ONTO `M₂(𝒪_w)`, which is what `f (Λ_w) = M₂(𝒪_w)` says
+coordinate-wise (`b` is a basis, so `c` is determined by `∑ c i ⊗ b i`).
+
+MISSING MACHINERY, re-checked 2026-07-30 against this pin. `IsMaximalOrder` / `maximalOrder`
+have zero hits in all of mathlib, so the maximal-order vocabulary has to be introduced; what
+is now PRESENT and did not exist when the predecessor leaf was written is the discriminant
+side of the argument — `traceDiscr` above, with `traceDiscr_ne_zero_of_split` and
+`eventually_valuation_eq_one` — so a prover no longer needs to build a discriminant theory
+to get at the maximality, only to SPEND the certificate. The alternative Azumaya route
+(`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`, present) is unchanged and still starts
+from more: it needs Wedderburn over the residue field plus lifting along `𝒪_w` complete.
+
+FAITHFULNESS. TRUE as stated, and the hypotheses are jointly SATISFIABLE at all but finitely
+many `w` — that is exactly what the assembly below proves, so this leaf cannot be vacuous.
+Two hypotheses are load-bearing in ways worth recording.
+
+* `hdisc` cannot hold at a place `w ∣ 2`, and this costs nothing. The Gram matrix of the
+  REGULAR trace form of `M₂(𝒪_w)` in the standard basis has entries `2 · δ`, so its
+  determinant is a unit times `2⁴`; at `w ∣ 2` no basis of any order has unit discriminant.
+  The assembly only ever needs `hdisc` at almost every `w`, and the places over `2` are
+  finitely many, so they are simply among the exceptions. (Using the REDUCED trace would
+  remove the factor; it is not defined in this tree, and defining it is not worth it for a
+  statement that is only ever used a.e.)
+* `hsplitw` is retained even though a prover following the route above constructs `f`
+  outright, for the reason the predecessor leaf gave: keeping it makes this leaf strictly
+  weaker than the local content it replaces, so the cut cannot have introduced a
+  falsehood. -/
+theorem exists_integralSplitting_of_valuation_traceDiscr_eq_one (b : Module.Basis ι F D)
+    (w : HeightOneSpectrum (𝓞 F))
+    (hsplitw : Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+      M₂(w.adicCompletion F)))
+    (hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
+    (hstruct : ∀ i j k, w.valuation F (b.repr (b i * b j) k) ≤ 1)
+    (hdisc : w.valuation F (traceDiscr F D b) = 1) :
+    ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
+      ∀ c : ι → w.adicCompletion F,
+        ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
+  sorry
+
+/-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf**
+(**PROVEN 2026-07-30, ROUND-11**; cut 2026-07-30, ROUND-10, out of
+`exists_finset_ae_integral_split_of_forall_split` below).
+
+At almost every finite place there is a splitting of `D` carrying the `𝒪_w`-lattice spanned
+by the `1 ⊗ b i` ONTO `M₂(𝒪_w)`.
+
+**WHAT ROUND 11 PROVED, and why it is a reduction rather than a relocation.** As cut in
+ROUND 10 this leaf fused two things: the classical LOCAL theorem at one place, and the
+observation that its hypotheses hold at almost every place. The second is not a citation —
+it is the finiteness of the set of places at which a fixed element of `F` fails to be a
+unit, plus the fact that the discriminant of `b` is a nonzero element of `F` at all. Both
+are now CODE:
+
+* `eventually_valuation_le_one` / `eventually_valuation_eq_one` above, over
+  mathlib's `HeightOneSpectrum.Support.finite`;
+* `traceDiscr_ne_zero_of_split` above, which is where `hsplit` is really spent — it is
+  applied at ONE arbitrary place to see that the regular trace form of `D` is nondegenerate,
+  a fact with no other route in-tree, since mathlib's separability API is commutative-only.
+
+So the residual citation, `exists_integralSplitting_of_valuation_traceDiscr_eq_one` above,
+is now a SINGLE-PLACE statement whose maximality input is an explicit unit-discriminant
+hypothesis, and the two items the ROUND-10 docstring listed as missing machinery —
+"reduced discriminant of an order" and "maximality of an order at a place where the
+discriminant is a unit" — have become, respectively, `traceDiscr` (defined, with its
+nonvanishing proven) and a hypothesis. One leaf in, one leaf out; what changed is that the
+prover of the residual leaf now needs exactly one theorem, and no theory of places.
+
+The place-by-place hypotheses are stated with `HeightOneSpectrum.valuation` on `F` rather
+than with membership in `adicCompletionIntegers`, so that the statement mentions no
+completion at all: the certificate is a valuation of ONE global element. -/
+theorem eventually_exists_integralSplitting (b : Module.Basis ι F D)
+    (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
+      Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+        M₂(w.adicCompletion F))) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+      ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
+        ∀ c : ι → w.adicCompletion F,
+          ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+            ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) := by
+  classical
+  rcases isEmpty_or_nonempty (HeightOneSpectrum (𝓞 F)) with hE | hN
+  · exact Filter.Eventually.of_forall fun w => (IsEmpty.false w).elim
+  haveI : Module.Finite F D := Module.Finite.of_basis b
+  obtain ⟨w₀⟩ := hN
+  -- the discriminant of `b` is a nonzero element of `F`, because `D` splits at `w₀`
+  have hd : traceDiscr F D b ≠ 0 := by
+    obtain ⟨f₀⟩ := hsplit w₀
+    refine traceDiscr_ne_zero_of_split F (w₀.adicCompletion F) D b (Fin 2) ?_ f₀
+    simp only [Fintype.card_fin]
+    intro h
+    have h2 : ((2 : ℕ) : F) = 0 := by
+      refine (algebraMap F (w₀.adicCompletion F)).injective ?_
+      rw [map_natCast, map_zero]
+      exact_mod_cast h
+    norm_num at h2
+  filter_upwards [eventually_valuation_eq_one F (traceDiscr F D b) hd,
+    Filter.eventually_all.2 (fun k : ι => eventually_valuation_le_one F (b.repr 1 k)),
+    Filter.eventually_all.2 (fun i : ι => Filter.eventually_all.2 (fun j : ι =>
+      Filter.eventually_all.2 (fun k : ι =>
+        eventually_valuation_le_one F (b.repr (b i * b j) k))))]
+    with w hw1 hw2 hw3
+  exact exists_integralSplitting_of_valuation_traceDiscr_eq_one F D b w (hsplit w) hw2 hw3 hw1
+
 /-- **STEP 1a-vi(b) — THE ARITHMETIC HALF of the rigidification leaf** (sorry leaf; CUT
 2026-07-28). From bare local splittings, produce a family that is a.e. integral relative to a
 GIVEN `F`-basis `b` of `D`.
@@ -6908,14 +7332,87 @@ family alone, not of the basis.
 MISSING MACHINERY (each item checked absent from mathlib, from this project, and from
 `~/cs/FLT` on 2026-07-28): reduced discriminant of an order in a quaternion algebra;
 maximality of an order at a place where the discriminant is a unit; conjugacy of maximal
-orders in `M₂(F_w)`. `IsMaximalOrder` exists nowhere, so this needs a definition first. -/
+orders in `M₂(F_w)`. `IsMaximalOrder` exists nowhere, so this needs a definition first.
+
+**DECOMPOSED 2026-07-30, ROUND-10: this is now a PROVEN ASSEMBLY, and the sorry has moved
+to `eventually_exists_integralSplitting` below, which is PURELY LOCAL.** The statement as
+cut mixed two unrelated things — the local mathematics at a single place, and the passage
+from "a witness exists at almost every place" to "a GLOBAL FAMILY exists whose values are
+witnesses at almost every place". The second is not mathematics at all, it is dependent
+choice along `Filter.cofinite` with `hsplit` as the fallback at the finitely many bad
+places, and it is exactly the step the docstring above disposes of in eleven words ("at the
+finitely many remaining `w` take the splitting handed over by `hsplit` unchanged"). It is
+now `exists_pi_of_eventually_exists`, PROVEN and general.
+
+What that buys, and it is the same trade `exists_padicCoefficientField` made for the
+Carayol citation: the residual leaf no longer quantifies over families, so a prover works
+at ONE completion `F_w` with ONE lattice and never touches the adelic bookkeeping. The
+three missing theories listed above are unchanged — this shortens no literature input, and
+the frontier is one leaf in, one leaf out.
+
+**The ROUTE NOTE below was written against this statement BEFORE the decomposition
+above, and it survives it unchanged — it is a route for the LOCAL mathematics, which
+is exactly what the residual leaf `eventually_exists_integralSplitting` still owes.
+Read it as addressed to that leaf.**
+
+## ROUTE NOTE (2026-07-30) — MAXIMAL ORDERS ARE AVOIDABLE HERE, AND SO IS
+## SKOLEM–NOETHER: OVER A COMPLETE DVR THE `M₂` CASE IS A LATTICE-STABILISER ARGUMENT
+
+The three items above are the shape of the argument as Eichler and Vignéras state it, and
+two of them are avoidable. **No notion of maximality and no conjugacy theorem is needed**;
+what is needed is the stabiliser of an `A`-stable lattice, which runs from the definition
+of an order. This is a route proposal, not verified Lean — but it is what should be
+attempted before `IsMaximalOrder` is defined, because it replaces a theorem by a
+construction.
+
+Fix a `w` at which `Λ_w` is an order and `disc(b)` is a unit — both hold at almost every
+`w`, for the reasons already recorded above. Put `V := F_w²` and
+`A := (e w)(Λ_w) ⊆ M₂(F_w) = End_{F_w}(V)` for the splitting `e w` handed over by
+`hsplit`.
+
+1. *`A` sits inside a conjugate of `M₂(𝒪_w)`, CONSTRUCTIVELY.* Take `L := 𝒪_w²` and put
+   `L' := A · L`, the `𝒪_w`-span of `{a • x : a ∈ A, x ∈ L}`. It is finitely generated
+   (`A` is a finitely generated `𝒪_w`-module and so is `L`), it spans `V` (it contains
+   `1 • L`), and it is `A`-stable because `A` is a ring — `A·(A·L) ⊆ (A·A)·L ⊆ A·L`. So
+   `L'` is a full lattice, hence FREE of rank `2`, `𝒪_w` being a DVR and `L'` finitely
+   generated and torsion-free. `A`-stability says exactly `A ⊆ End_{𝒪_w}(L')`, and an
+   `𝒪_w`-basis of `L'` identifies `End_{𝒪_w}(L')` with `M₂(𝒪_w)` inside
+   `End_{F_w}(V) = M₂(F_w)`. The identification is conjugation by the change-of-basis
+   matrix, which is VISIBLY an `F_w`-algebra automorphism — Skolem–Noether is not invoked,
+   it is only what would be needed to prove the converse.
+
+2. *The inclusion is an EQUALITY, by discriminants.* For an inclusion `Λ ⊆ Γ` of full
+   `𝒪_w`-lattices of the same rank, `disc Λ = [Γ : Λ]² · disc Γ`. Here `disc A = disc Λ_w`
+   up to a unit square, because `e w` is an `F_w`-algebra isomorphism and the reduced trace
+   form is intrinsic; that is `disc(b)`, a unit at this `w` by assumption. And
+   `disc M₂(𝒪_w)` is a unit — the Gram matrix of the reduced trace form on the matrix units
+   has determinant `±1`. So `[M₂(𝒪_w) : A]` is a unit, hence `1`, hence `A = M₂(𝒪_w)` in
+   those coordinates.
+
+Composing `e w` with that conjugation therefore carries `Λ_w` ONTO `M₂(𝒪_w)`, which is
+both directions of the `↔` in `IsAEIntegralSplitting` at once; at the finitely many
+remaining `w` take `hsplit`'s splitting unchanged, the conclusion being `∀ᶠ`.
+
+So what is genuinely owed is narrower than the list above: **(a)** the discriminant of a
+full `𝒪_w`-lattice in a quaternion `F_w`-algebra against the reduced trace form,
+**(b)** its multiplicativity in the index for an inclusion of full lattices, and **(c)** the
+two almost-everywhere facts (structure constants of `b` integral; `disc(b)` a unit), which
+are the two places the finiteness of the discriminant is actually spent. Items (a) and (b)
+are lattice statements over a DVR with no quaternion input beyond the trace form, which is
+a considerably smaller build than a theory of maximal orders. -/
 theorem exists_finset_ae_integral_split_of_forall_split (b : Module.Basis ι F D)
     (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
       Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
         M₂(w.adicCompletion F))) :
     ∃ e : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
-      M₂(w.adicCompletion F), IsAEIntegralSplitting F D b e :=
-  sorry
+      M₂(w.adicCompletion F), IsAEIntegralSplitting F D b e := by
+  obtain ⟨e, he⟩ :=
+    exists_pi_of_eventually_exists (l := Filter.cofinite) hsplit
+      (fun w f => ∀ c : ι → w.adicCompletion F,
+        ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F))
+      (eventually_exists_integralSplitting F D b hsplit)
+  exact ⟨e, he⟩
 
 end AdelicRigidification
 
@@ -8863,29 +9360,60 @@ choice of the patching argument downstream, not of the transfer, so the form
 Jacquet–Langlands produces has no tame-`p` condition at all). What is
 genuinely hard is the first, and it is the ROUND-5 argument below.
 
-**WHY THIS IS NOT STATED AS A DELTA OVER
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra`, WHICH IS WHAT
-ROUND 9 FIRST TRIED.** That declaration produces exactly this datum minus
-the `𝒮.S ⊆ badF` clause, so the economical cut is "an eigenform in, an
-eigenform out", composing with it and leaving its statement byte-identical.
-That version was written and then WITHDRAWN, because a `main` merged
-afterwards had given that declaration a new hypothesis
-`hauto : IsQuaternionicEigensystem F E badF (fun w => -(heckeF w).coeff 1)`
-— and `hauto` is not available here. It cannot be derived from `hJL` either:
-`hJL` supplies a Hecke CHARACTER for ONE algebra `D` and ONE auxiliary prime
-`p`, whereas `IsQuaternionicEigensystem` quantifies over EVERY `D` and every
-admissible `p` and yields an EIGENFORM. It is strictly the stronger
-statement, and threading it down to here would mean adding it to
-`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` and to its
-consumers — a cut-level change across declarations under other owners, which
-ROUND 9 deliberately did not make.
+**ROUND-10 AUTOMORPHY REPAIR (2026-07-30) — `hauto` IS NOW A HYPOTHESIS, and
+before it was the leaf was a MODULARITY STATEMENT, not a level statement.**
 
-CONSEQUENCE, and a successor should weigh it: this leaf and
-`exists_eigenform_of_totallyDefinite_quaternionAlgebra` now OVERLAP in
-content, the latter being nearly trivial given its `hauto`. The clean repair
-is to thread `hauto` into this branch of the chain and restate this leaf as
-the delta it wanted to be. That is a cut-level change and is REPORTED rather
-than made.
+As cut in ROUND 9 this leaf had NO automorphic input at all: every hypothesis
+was Galois-theoretic (the deformation block, `hmod` against an abstract
+`Polynomial E`-valued `heckeF`, the three `bad`-set clauses) while the
+conclusion demanded a NONZERO weight-`2` eigenform on `Dˣ` whose `T_w`
+eigenvalues are those of `heckeF`. That is precisely the shape the 2026-07-28
+AUTOMORPHY AUDIT diagnosed and removed from
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` (read it, above): a
+leaf in that shape is asking for Serre's conjecture for `ρbar` plus a
+modularity lifting theorem over `F` — the theorem this module exists to prove
+— and the CIRCULARITY GUARD below forbids the only in-tree route to it. So
+the ROUND-9 leaf could not be closed by any amount of Jacquet–Langlands work,
+and its title was not what it was asking for. The defect was reintroduced one
+declaration below the place it had just been repaired.
+
+ROUND 9's own docstring recorded the correct fix and declined to make it, on
+the ground that threading `hauto` "would mean adding it to
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` and to its
+consumers — a cut-level change across declarations under other owners". That
+ground does not hold: the entire chain that separates this leaf from a
+declaration already carrying `hauto` lives in THIS module, and no other file
+in the tree mentions any member of it. The five intermediaries —
+`exists_totallyDefinite_heckeCharacter_level_subset_badF`,
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter`,
+`exists_carayolPackage_of_totallyDefinite_heckeCharacter`,
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` and
+`carayol_threeadic_of_totallyDefinite_heckeCharacter` — now forward `hauto`
+unchanged, and the top of that chain is `carayol_threeadic_…`'s sole call
+site inside `exists_threeadicRealization_of_heckePackage`, which HELD `hauto`
+already and merely discarded it. So no signature outside this module changed,
+and no instance of anything was deleted: adding a hypothesis to a leaf only
+weakens it.
+
+WHAT IS OWED NOW, therefore, is exactly the LEVEL statement of the title —
+`hauto` hands over an eigenform at SOME level `U₁(𝒮.S, ∅)` (it pins `𝒮.Q = ∅`
+outright and `f ≠ 0` and the eigenvalue matching, i.e. all four of the other
+conjuncts), and the residual obligation is the single clause
+`∀ w ∈ 𝒮.S, w ∈ badF`. That is the ROUND-5 argument below and nothing else.
+
+REMAINING OPTION, reported and NOT taken. The clause could be pushed one step
+further out, into `IsQuaternionicEigensystem` itself (add `∀ w ∈ 𝒮.S, w ∈ bad`
+to its existential), which would make this leaf a one-line assembly exactly
+like its sibling and would land the residual citation on
+`HilbertHeckeAlgebra.automorphic` — where `HilbertModularity.lean`'s own
+docstring argues the Jacquet–Langlands burden belongs, since that is the only
+point at which `T` is being BUILT as a Hecke algebra of Hilbert modular forms.
+It is not taken here for two reasons. It strengthens a definition in another
+module used by four other consumers, so it is a genuine cross-file cut; and it
+would assert, uniformly in `bad`, that the transfer's level is inside `bad` —
+true when `bad` contains the ramified places, which is the case in this chain
+but is NOT a consequence of the predicate's own hypotheses. Asserting it
+unchecked would be a promise this owner cannot vouch for.
 
 Content, i.e. what a prover of this leaf owes — the ROUND-5 argument, and
 NOTE THAT IT IS AN ARGUMENT ABOUT THE EIGENSYSTEM, NOT ABOUT THE FORM, which
@@ -8956,6 +9484,13 @@ theorem exists_eigenform_minimalLevel_subset_badF
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10).  Without it every
+    -- hypothesis of this leaf is Galois-theoretic while its conclusion demands a
+    -- genuine automorphic form, i.e. the leaf asks for modularity of `ρ|_{G_F}`
+    -- and not for the level minimality its title claims.  See the ROUND-10
+    -- AUTOMORPHY REPAIR in the docstring above.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (D : Type u) [DivisionRing D] [Algebra F D]
     [_root_.IsQuaternionAlgebra F D]
     [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
@@ -9099,6 +9634,13 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9131,8 +9673,8 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
   -- `S ⊆ badF`: the transfer and the minimality of its level together.
   obtain ⟨𝒮, a, f, hQ, hSbad, hf0, hTa, hmatch⟩ :=
     exists_eigenform_minimalLevel_subset_badF hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
-      p hp hcyc
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ
+      hauto D p hp hcyc
   -- `f` is scaled by every element of the Hecke algebra, not merely by the
   -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
   -- `𝒮.Q = ∅`.
@@ -9189,7 +9731,9 @@ theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
     (E : Type u) [Field E] [NumberField E] :
     ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[p] L) (_ : Module.Finite ℚ_[p] L)
       (ψ : E →+* AlgebraicClosure ℚ_[p]) (ι : L →+* AlgebraicClosure ℚ_[p])
-      (ψL : E →+* L), ι.comp ψL = ψ := by
+      (ψL : E →+* L),
+      (∀ x : ℚ_[p], ι (algebraMap ℚ_[p] L x) =
+        algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p]) x) ∧ ι.comp ψL = ψ := by
   classical
   obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ E
   let ψ : E →ₐ[ℚ] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
@@ -9217,9 +9761,16 @@ theorem exists_padicCoefficientField (p : ℕ) [Fact p.Prime]
     (ψ : E →+* AlgebraicClosure ℚ_[p]),
     (L₀.subtype : L₀ →+* _).comp (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).toRingHom,
     (ULift.ringEquiv : ULift.{u} L₀ ≃+* L₀).symm.toRingHom.comp
-      (RingHom.codRestrict (ψ : E →+* AlgebraicClosure ℚ_[p]) L₀.toSubfield hrange), ?_⟩
-  ext x
-  rfl
+      (RingHom.codRestrict (ψ : E →+* AlgebraicClosure ℚ_[p]) L₀.toSubfield hrange),
+    ?_, ?_⟩
+  · -- `ι` is a `ℚ_[p]`-ALGEBRA map, not merely a ring map: it is the inclusion of
+    -- an intermediate field of `AlgebraicClosure ℚ_[p] / ℚ_[p]`, transported
+    -- across `ULift`.  Its consumer needs this — see the ROUND-10 note on
+    -- `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`.
+    intro x
+    rfl
+  · ext x
+    rfl
 
 /-- **STEP 2a″-β, THE CITED CORE** (sorry leaf; CUT 2026-07-29, ROUND-9, out of
 `exists_carayolJacobianPackage_of_heckeAlgebraCharacter` below, which is now a
@@ -9243,6 +9794,80 @@ permitted. **The topology is NOT quantified over**: it is pinned to
 `moduleTopology ℚ_[3] L` in the conclusion. That is load-bearing — over a
 DISCRETE `L` a continuous `GaloisRep` has finite image and the leaf would be
 FALSE, so do not relax the `letI`s into instance binders.
+
+**ROUND-10 COMPATIBILITY REPAIR (2026-07-30) — `hιalg` WAS MISSING, AND THE
+PARAGRAPH ABOVE IS THE PLACE THE GAP HID.** As stated in ROUND 9, `ι` was an
+arbitrary `RingHom L →+* AlgebraicClosure ℚ_[3]`, with no compatibility asked
+between it and the `Algebra ℚ_[3] L` instance that PINS THE TOPOLOGY of the
+conclusion. Read the safety argument above against that: "`ι L` contains the
+completion of the eigenvalue field" is a statement about the `3`-adic
+topology of `ι L`, and it holds only when `ι` is a `ℚ_[3]`-embedding — then
+`ι L` is finite over `ℚ_[3]`, hence complete, hence contains the closure of
+`ψ₃ E`. For a general ring map the two topologies on `L` — its own
+`moduleTopology ℚ_[3] L`, and the one pulled back along `ι` — are unrelated,
+and the argument says nothing.
+
+The gap is not cosmetic; the package CONSTRAINS `P` integrally, so a
+mismatched `ι` makes `hP` satisfiable by a `P` no package can realise. From
+`congruence` at `w ∉ badF`, `tauJ (Frob w)` is invertible and
+
+    hecke w = tauJ (Frob w) + (P w).coeff 0 • tauJ (Frob w)⁻¹ ,
+
+while `Γ_F` is compact and `tauJ` continuous, so `tauJ (Frob w)` and its
+inverse preserve an `𝒪_L`-lattice of `Vlam` and `hecke w` is bounded on it —
+whence its eigenvalue `-(P w).coeff 1` from `eigen_idempotent` satisfies
+`‖(P w).coeff 1‖ ≤ 1`. (`(P w).coeff 0` is not at risk: it equals the RATIONAL
+integer `N w` by `hnorm`, every ring map fixes `ℚ`, and `hbad3` keeps `3 ∤ N w`
+— which is what that hypothesis is for.) So `(P w).coeff 1` is forced into
+`𝒪_L`. Nothing in the ROUND-9 hypotheses forced that: a field embedding
+`ℚ_[3] ↪ AlgebraicClosure ℚ_[3]` that is not the canonical one exists (map a
+transcendence basis of `ℚ_[3]` over `ℚ` to a different one and extend
+algebraically), it is not continuous, and along such an `ι` the preimage of the
+`3`-adic integer `ψ₃ (heckeF w).coeff 1` need not be an integer of `L`. The
+leaf was then FALSE at that `ι`.
+
+This is REPAIR, not refutation: the witness above needs a transcendence basis
+and is not constructible here, so it is recorded as an argument rather than
+asserted as a counterexample. `hιalg` is added instead, which weakens the leaf,
+deletes no instance of it, and is supplied for free by the sole call site —
+`exists_padicCoefficientField` builds `ι` as the inclusion of an intermediate
+field of `AlgebraicClosure ℚ_[3] / ℚ_[3]` transported across `ULift`, so the
+compatibility is `rfl` and that theorem now returns it as a conjunct.
+
+**ROUND-11 ADDENDUM (2026-07-30) — WHAT `hιalg` DID AND DID NOT DO, because the
+paragraph above can be read as settling more than it settles.** The argument
+recorded there is a NECESSARY-CONDITION argument: it shows that if a package
+exists then `‖(P w).coeff 1‖ ≤ 1`. Adding `hιalg` makes `ι` a `ℚ_[3]`-embedding
+of a finite extension, hence isometric onto its image, so that necessary
+condition becomes equivalent to
+
+    ‖ψ₃ ((heckeF w).coeff 1)‖ ≤ 1 ,
+
+in which `L`, `ι` and `P` no longer occur. So `hιalg` did not make integrality a
+CONSEQUENCE of the hypotheses; it relocated the requirement onto the eigenvalue
+itself, and closed the one way the requirement could have been violated for a
+reason having nothing to do with the eigenvalue. That is the repair it was
+advertised as, and it is complete as such.
+
+What a prover therefore still owes, and it is NOT among the hypotheses: that
+`θ (T_w)` is an ALGEBRAIC INTEGER. It is, and the route is short, but it has to be
+travelled. `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` is not an abstract
+commutative `E`-algebra on formal symbols — by its definition in
+`AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean` it is
+`Algebra.adjoin E {T …} ∪ {U …}` inside `Module.End E ((U₁ 𝒮).toStruct.form D E)`,
+a CONCRETE subalgebra of endomorphisms of the (finite-dimensional) space of
+weight-`2` forms. So `T_w` satisfies its own characteristic polynomial there,
+`θ` is a ring map, and `θ (T_w)` is a root of that polynomial; the polynomial has
+rational-INTEGER coefficients because the operator is a sum over single cosets on
+a finite double-coset space, i.e. an integral matrix in the natural basis (the
+nebentypus `ℒ.χ` contributes only roots of unity, `isOfFinOrder_χ`).
+
+Two consequences worth stating separately. The parenthesis above — `(P w).coeff 0`
+is safe "because every ring map fixes `ℚ`" — does NOT extend to `coeff 1`: `hnorm`
+pins `coeff 0` to a rational integer outright, and nothing pins `coeff 1` at all
+except `hθ`. And the step is not a candidate for a further CUT: it is a fact about
+a definition in another module, provable there, and stating it as a hypothesis here
+would be asking the caller for something the caller also cannot see.
 
 READ THE ROUND-9 AUDIT on the assembly below before working here: it records
 that a prover owes only a two-dimensional Galois representation (no Shimura
@@ -9279,6 +9904,11 @@ theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
     (L : Type u) [Field L] [Algebra ℚ_[3] L] [Module.Finite ℚ_[3] L]
     (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
     (ι : L →+* AlgebraicClosure ℚ_[3])
+    -- `ι` IS A `ℚ_[3]`-ALGEBRA MAP (added 2026-07-30, ROUND-10).  Load-bearing,
+    -- and the docstring's own safety argument silently assumed it; see the
+    -- ROUND-10 COMPATIBILITY REPAIR above.
+    (hιalg : ∀ x : ℚ_[3], ι (algebraMap ℚ_[3] L x) =
+      algebraMap ℚ_[3] (AlgebraicClosure ℚ_[3]) x)
     (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L)
     (hP : ∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) :
     letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -9516,7 +10146,8 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
         (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
         (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
           Nonempty (CarayolJacobianPackage F L badF P) := by
-  obtain ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, ψL, hcomp⟩ := exists_padicCoefficientField 3 E
+  obtain ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, ψL, hιalg, hcomp⟩ :=
+    exists_padicCoefficientField 3 E
   letI := hLfield
   letI := hLalg
   letI := hLfin
@@ -9525,7 +10156,7 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
     rw [Polynomial.map_map, hcomp]
   exact ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, fun w => (heckeF w).map ψL, hmap,
     nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF heckeF
-      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι
+      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι hιalg
       (fun w => (heckeF w).map ψL) hmap⟩
 
 /-- **STEP 2a″ — INHABITATION of the quaternionic Shimura-curve JACOBIAN
@@ -9726,6 +10357,13 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9803,7 +10441,7 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
   obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, hQbad, hθ⟩ :=
     exists_totallyDefinite_heckeCharacter_level_subset_badF hℓodd hℓ5 hZinj
       hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
-      ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   -- CARAYOL'S THÉORÈME (A), with no `ℓ`-adic apparatus left in it
   exact exists_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF
     heckeF hbad3 (fun w hw => (hshape w hw).1) (fun w hw => (hshape w hw).2.1)
@@ -9864,6 +10502,13 @@ theorem exists_carayolPackage_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -9887,7 +10532,7 @@ theorem exists_carayolPackage_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, ψ₃, ι, P, hPmatch, ⟨J⟩⟩ :=
     exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   refine ⟨L, hFieldL, hAlgL, hFinL, ?_⟩
   -- the topology on `L` is not a choice — `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -10010,6 +10655,13 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -10034,7 +10686,7 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, ψ₃, ι, P, hPmatch, ⟨C⟩⟩ :=
     exists_carayolPackage_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   refine ⟨L, hFieldL, hAlgL, hFinL, ?_⟩
   -- the topology on `L` is not a choice — `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -11077,6 +11729,13 @@ theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
       (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
       (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    -- THE AUTOMORPHIC INPUT (threaded 2026-07-30, ROUND-10), forwarded
+    -- unchanged down the Carayol chain to
+    -- `exists_eigenform_minimalLevel_subset_badF`, which without it was a
+    -- MODULARITY statement rather than the level statement its title claims.
+    -- See the ROUND-10 AUTOMORPHY REPAIR on that leaf.
+    (hauto : IsQuaternionicEigensystem F E badF
+      (fun w => -(heckeF w).coeff 1))
     (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
@@ -11102,7 +11761,7 @@ theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
   obtain ⟨L, hFieldL, hAlgL, hFinL, τ, ψ₃, ι, hmatch⟩ :=
     exists_threeadicField_realization_of_totallyDefinite_heckeCharacter hℓodd hℓ5
       hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
-      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   -- the topology on `L` must be FIXED before anything whose type mentions it is
   -- elaborated; it is not a choice, `Module.Finite ℚ_3 L` pins it
   letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -11992,7 +12651,7 @@ theorem carayol_threeadic_realization_of_heckePackage
   -- witnessing `D` totally definite.
   carayol_threeadic_of_totallyDefinite_heckeCharacter hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2
-      hbad3 hbadℓ
+      hbad3 hbadℓ hauto
     (exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
       hbad2 hbad3 hbadℓ hauto)

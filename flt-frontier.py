@@ -110,8 +110,19 @@ def scan(path):
                 owner = (hidx, name)
             else:
                 break
-        if owner and owner[1] not in seen:
-            seen.add(owner[1])
+        # Key the dedupe on the header's LINE, not its NAME.  One declaration may
+        # hold several `sorry`s and must be counted once -- that is what this is
+        # for -- but a NAME may legitimately be declared more than once in a file,
+        # in different namespaces, and those are DIFFERENT leaves.  Keying on the
+        # name silently dropped the second: `two_divisible_pic` is declared twice
+        # in `ModularCurve/HyperellipticJacobian.lean` (line 4864 for level 18,
+        # line 5334 for level 13) and only the first was ever reported, so the
+        # scan read 351 against the compiler's 352 and nobody could be dispatched
+        # at the level-13 one.  Found by diffing this scan against the release
+        # build's `declaration uses 'sorry'` warning set, which is the check that
+        # validates it -- run that diff, do not assume agreement.
+        if owner and owner[0] not in seen:
+            seen.add(owner[0])
             found.append((owner[1], owner[0] + 1))
     return found
 

@@ -16,7 +16,11 @@ public import Mathlib.RingTheory.Spectrum.Prime.FreeLocus
 public import Mathlib.RingTheory.LocalRing.Module
 public import Mathlib.RingTheory.Artinian.Ring
 public import Mathlib.RingTheory.LocalRing.ResidueField.Fiber
+public import Mathlib.RingTheory.LocalRing.ResidueField.Ideal
+public import Mathlib.RingTheory.Artinian.Algebra
+public import Mathlib.RingTheory.IsTensorProduct
 public import Mathlib.Algebra.Module.FinitePresentation
+public import Mathlib.LinearAlgebra.Dimension.Free
 public import Mathlib.LinearAlgebra.TensorProduct.Tower
 public import Mathlib.LinearAlgebra.TensorProduct.RightExactness
 
@@ -107,8 +111,8 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   assembly of the statements below; as of 2026-07-28 the only one of them still open is the
   *generation* half of the dual normal basis, `exists_spanning_cartierDual`. Its sibling, the
   rank count, was closed the same day over two new leaves — one Hopf-theoretic
-  (`IsShortExact.nonempty_linearEquiv_baseChange`) and one not
-  (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`).
+  (`IsShortExact.nonempty_linearEquiv_baseChange`, still open) and one not
+  (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`, **PROVEN 2026-07-30**).
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -152,10 +156,11 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   two leaves below, which share nothing with each other.
 * `HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange` — the torsor identity
   `A ⊗_{A''} A ≅ A ⊗_R A'`. OPEN. Pure Hopf algebra; needs no flatness over `A''` and no descent.
-* `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the degree of a tower. OPEN, and stated at
-  the root namespace because it mentions no Hopf algebra and belongs in mathlib, which has
-  `rankAtStalk` and `finrank_mul_finrank` but no multiplicativity of the degree along a
-  composite of finite *locally* free maps.
+* `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the degree of a tower. **PROVEN**
+  (2026-07-30), and stated at the root namespace because it mentions no Hopf algebra and belongs
+  in mathlib, which has `rankAtStalk` and `finrank_mul_finrank` but no multiplicativity of the
+  degree along a composite of finite *locally* free maps. It is an **upstream candidate**: nothing
+  in its statement or proof mentions this project.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
   with no non-Hopf leaf left under it.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
@@ -571,20 +576,50 @@ end FaithfullyFlatSplit
 The one piece of pure commutative algebra that the rank count below needs, stated at the root
 namespace because it belongs in mathlib. -/
 
-/-! #### `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the design notes
+attribute [local instance] Algebra.TensorProduct.rightAlgebra in
+/-- **The degree of a tower**: if `S` is a finite free `R`-algebra and `M` is a finite flat
+`S`-module whose rank is the constant `n` at every stalk of `S`, then `M` has `R`-rank
+`rk_R S · n`.
 
-**The degree of a tower**: if `S` is a finite free `R`-algebra and `M` is a finite flat `S`-module
-whose rank is the constant `n` at every stalk of `S`, then `M` has `R`-rank `rk_R S · n`.
-
-**PROVEN** (2026-07-30) over the single leaf
-`Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq`, which carries no mathematics; see
-the route section below. Cut on 2026-07-28 out of
+**PROVEN 2026-07-30.** Cut on 2026-07-28 out of
 `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual`, alongside
-`HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange`; the two are independent — this one
-mentions no Hopf algebra at all.
+`HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange`; the two are independent —
+this one mentions no Hopf algebra at all. It remains an **upstream candidate**: it is stated in
+full generality, its proof uses nothing from this project, and the composition lemma it supplies
+is exactly what `Mathlib/AlgebraicGeometry/Morphisms/FlatRank.lean` is missing.
 
-These notes are attached to the section rather than to the theorem because the cluster they
-describe is now four declarations, three of them proven.
+## PROOF (2026-07-30): the fibre over one prime, then SEMILOCAL freeness
+
+The route recorded below — reduce to a field base, then decompose the Artinian fibre algebra into
+local factors — was right about the reduction and **wrong about the second step being a gap**.
+The Artinian decomposition never has to be performed, because the pin already carries the
+consequence one wants from it:
+
+`Module.free_of_flat_of_finrank_eq` (`Mathlib/RingTheory/LocalRing/Module.lean`, stacks `02M9`)
+says a finite flat module over a **semilocal** ring — `[Finite (MaximalSpectrum B)]` — whose
+fibre dimension is the constant `n` at every maximal ideal is FREE of rank `n`. An Artinian ring
+is semilocal (`IsArtinianRing.primeSpectrumEquivMaximalSpectrum` plus `Finite (PrimeSpectrum B)`),
+so over the fibre the tower formula is just `Module.finrank_mul_finrank` for free modules.
+
+So the proof is four steps, and no step needs the non-reduced `IsArtinianRing.equivPi` that this
+docstring used to name as "the concrete gap to fill":
+
+1. Pick any prime `p` of `R` — `[Nontrivial R]` is what supplies one — and let `κ = κ(p)`. Both
+   sides of the conclusion are computed there, because `M` and `S` are `R`-FREE:
+   `Module.finrank_baseChange` gives `finrank κ (κ ⊗[R] S) = finrank R S`, and the same for `M`
+   after `Algebra.IsPushout.cancelBaseChange R κ S B M : B ⊗[S] M ≃ₗ[κ] κ ⊗[R] M`, where
+   `B := κ ⊗[R] S`. (That is the *left*-handed cancellation, which is what a tower needs;
+   `AlgebraTensorModule.cancelBaseChange` cancels on the right and does not apply here.)
+2. `B` is a finite-dimensional `κ`-algebra, hence `IsArtinianRing` (`isArtinian_of_tower`),
+   hence semilocal.
+3. `N := B ⊗[S] M` has fibre dimension `n` at every maximal ideal `P` of `B`: cancel the base
+   change the other way, `(B ⧸ P) ⊗[B] (B ⊗[S] M) ≃ₗ[B ⧸ P] (B ⧸ P) ⊗[S] M`
+   (`AlgebraTensorModule.cancelBaseChange`), then read that dimension as a rank at a stalk of the
+   FIELD `B ⧸ P` (`rankAtStalk_eq_finrank_of_free`) and pull it back along `S → B ⧸ P` with
+   `Module.rankAtStalk_baseChange`. What comes out is `hn` at one prime of `S`.
+4. `Module.free_of_flat_of_finrank_eq` makes `N` free of rank `n` over `B`, and
+   `Module.finrank_mul_finrank κ B N` finishes. The `Subsingleton B` corner (which happens exactly
+   when `finrank R S = 0`) is discharged first, since `StrongRankCondition B` is unavailable there.
 
 ## Why it is not in the pin (checked, not assumed)
 
@@ -606,45 +641,25 @@ morphisms and proves its pullback compatibility (`finrank_pullback_snd`, `finran
 but has **no composition lemma**. Checked by grep over `Mathlib/` for `rankAtStalk` together with
 `comp`/`tower`/`trans`/`finrank_mul`, and over `Fermat/` and `~/cs/FLT`.
 
-## The route, TAKEN (2026-07-30) — and the "concrete gap" this docstring used to name was a
-## DEAD END that the pin makes unnecessary
+## The route as first planned (kept because its first half IS what was used)
 
 Fix a prime `q` of `R` with residue field `κ`. Both sides are computed at `q`:
 `finrank R M = rankAtStalk M q = dim_κ (κ ⊗[R] M)` and likewise for `S`
 (`Module.rankAtStalk_eq_finrank_of_free`, `Module.rankAtStalk_eq`). Base change to `κ` turns the
 tower into `κ → B := κ ⊗[R] S → N := κ ⊗[R] M`, with `B` a finite-dimensional `κ`-algebra and `N`
 finite flat over `B` of constant rank `n` (`Module.rankAtStalk_baseChange`). So it is enough to
-prove the statement over a **field** base, and that is
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field` below, **PROVEN**.
+prove the statement over a **field** base, where `B` is Artinian: `B` is a finite product of
+local rings, `N` is free of rank `n` over each factor (`Module.free_of_flat_of_isLocalRing`), and
+`dim_κ N = ∑ᵢ n · dim_κ Bᵢ = n · dim_κ B`.
 
-The previous version of this section said the field case needed "the decomposition of a
-non-reduced Artinian ring into local factors", which this pin has only for *reduced* rings, and
-proposed a nilradical-filtration workaround. **Neither is needed.** Over a field base `B` is
-Artinian, hence has finitely many maximal ideals, hence is **semilocal** — and the pin already
-carries Stacks 02M9 for semilocal rings:
-
-    Module.nonempty_basis_of_flat_of_finrank_eq
-      (R M) [Finite (MaximalSpectrum R)] [Module.Finite R M] [Flat R M]
-      (n : ℕ) (rk : ∀ P : MaximalSpectrum R, finrank (R ⧸ P.1) ((R ⧸ P.1) ⊗[R] M) = n) :
-      Nonempty (Basis (Fin n) R M)
-
-in `Mathlib/RingTheory/LocalRing/Module.lean`, with `Finite (MaximalSpectrum B)` supplied by the
-Artinian instance in `Mathlib/RingTheory/Artinian/Module.lean`. So `N` is outright **free** of
-rank `n` over `B` and the field case is `Module.finrank_mul_finrank`, three lines. The only
-friction is that Stacks 02M9 phrases the fibre as `B ⧸ P` while `Module.rankAtStalk` phrases it
-as `P.ResidueField`; `Module.finrank_quotient_tensor_eq_finrank_fiber` below reconciles the two
-and is also proven.
-
-What is left open is therefore **not mathematics** but one piece of base-change bookkeeping,
-isolated as `Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq`: the fibre
-`q.asIdeal.Fiber M = κ ⊗[R] M` has to be *seen* as a module over the fibre algebra
-`q.asIdeal.Fiber S = κ ⊗[R] S`, and this pin has no instance for that — neither
-`Module (κ ⊗[R] S) (κ ⊗[R] M)` nor even `Module S (κ ⊗[R] M)` synthesises (checked). Supplying
-it means building the right-factor `S`-action by hand
-(`S →+* Module.End R (κ ⊗[R] M)`, `s ↦ LinearMap.lTensor κ (Algebra.lsmul R R M s)`), feeding it
-to `TensorProduct.Algebra.module`, and identifying the result with the base change
-`(κ ⊗[R] S) ⊗[S] M` so that `Module.Flat.baseChange` and `Module.rankAtStalk_isBaseChange` apply.
-See that leaf's own docstring for the `IsBaseChange` route worked out.
+The last step was recorded here as needing the decomposition of a **non-reduced** Artinian ring
+into local factors, since this pin has `IsArtinianRing.equivPi` only for *reduced* `B`
+(`Mathlib/RingTheory/Artinian/Module.lean`). **That diagnosis was correct about the pin and wrong
+about the requirement**: the decomposition is not needed at all, because
+`Module.free_of_flat_of_finrank_eq` already gives freeness over any semilocal ring, and Artinian
+implies semilocal. See the PROOF section above. (The nilradical-filtration workaround also
+recorded here — filter `N` by powers of `nil B` and telescope — is therefore unnecessary too;
+it is left on record only because it is a correct argument.)
 
 ## FALSITY AUDIT
 
@@ -662,164 +677,6 @@ The constancy hypothesis `hn` is load-bearing too, and cannot be weakened to con
 image of `Spec R`. Refuting check: `R = κ` a field, `S = κ × κ`, `M = κ × 0` (a direct summand
 of `S`, hence flat). Then `rankAtStalk M` is `1` at one prime and `0` at the other,
 `finrank R M = 1` and `finrank R S = 2`, and no `n` satisfies `1 = 2 · n`. -/
-
-/-- **The two models of a fibre at a maximal ideal have the same dimension.** `Module.rankAtStalk`
-is phrased through `Ideal.ResidueField P` (a quotient of a localisation), while Stacks 02M9
-(`Module.nonempty_basis_of_flat_of_finrank_eq`) is phrased through the honest quotient `B ⧸ P`.
-At a *maximal* `P` the algebra map `B ⧸ P → P.ResidueField` is bijective
-(`Ideal.bijective_algebraMap_quotient_residueField`), so the two fibres agree.
-
-**PROVEN** (2026-07-30). The transport is `rank_eq_of_equiv_equiv` along that bijection together
-with `TensorProduct.congr`, since a `Module.finrank` over two *different* rings cannot be moved by
-a `LinearEquiv`. -/
-lemma Module.finrank_quotient_tensor_eq_finrank_fiber {B : Type*} [CommRing B] {N : Type*}
-    [AddCommGroup N] [Module B N] (P : Ideal B) [hP : P.IsMaximal] :
-    Module.finrank (B ⧸ P) ((B ⧸ P) ⊗[B] N) =
-      Module.finrank P.ResidueField (P.ResidueField ⊗[B] N) := by
-  haveI : P.IsPrime := hP.isPrime
-  have hb := P.bijective_algebraMap_quotient_residueField
-  let f : (B ⧸ P) →ₗ[B] P.ResidueField :=
-    { toFun := algebraMap (B ⧸ P) P.ResidueField
-      map_add' := map_add _
-      map_smul' := fun b x => by simp [Algebra.smul_def] }
-  let e : (B ⧸ P) ≃ₗ[B] P.ResidueField := LinearEquiv.ofBijective f hb
-  let j := TensorProduct.congr e (LinearEquiv.refl B N)
-  have hc : ∀ (r : B ⧸ P) (m : (B ⧸ P) ⊗[B] N),
-      j (r • m) = algebraMap (B ⧸ P) P.ResidueField r • j m := by
-    intro r m
-    induction m using TensorProduct.induction_on with
-    | zero => simp
-    | tmul x y =>
-        show j ((r * x) ⊗ₜ y) = _
-        simp [j, e, f, TensorProduct.smul_tmul', map_mul, Algebra.smul_def]
-    | add a b ha hb => simp [smul_add, ha, hb]
-  simp only [Module.finrank]
-  exact congrArg Cardinal.toNat
-    (rank_eq_of_equiv_equiv (algebraMap (B ⧸ P) P.ResidueField) j.toAddEquiv hb hc)
-
-/-- **The degree of a tower over a field base.** If `B` is a finite-dimensional algebra over a
-field `κ` and `N` is a finite flat `B`-module whose rank is the constant `n` at every stalk, then
-`dim_κ N = dim_κ B · n`.
-
-**PROVEN** (2026-07-30), and this is the whole mathematical content of
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`. The point is that `B` is Artinian, hence
-**semilocal**, and a finite flat module of constant rank over a semilocal ring is outright
-**free** — Stacks 02M9, in this pin as `Module.nonempty_basis_of_flat_of_finrank_eq`. Once `N` is
-free the statement is the ordinary tower law `Module.finrank_mul_finrank`. No decomposition of a
-non-reduced Artinian ring into local factors is needed, contrary to what the parent's docstring
-used to record.
-
-The `B`-subsingleton branch is not a corner case to be waved at: `Module.finrank_mul_finrank`
-rests on `StrongRankCondition B`, which fails for the zero ring, and there both sides are `0`. -/
-theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field
-    {κ : Type*} {B : Type*} {N : Type*} [Field κ] [CommRing B] [Algebra κ B] [Module.Finite κ B]
-    [AddCommGroup N] [Module B N] [Module κ N] [IsScalarTower κ B N]
-    [Module.Finite B N] [Module.Flat B N] {n : ℕ}
-    (hn : ∀ p : PrimeSpectrum B, Module.rankAtStalk (R := B) N p = n) :
-    Module.finrank κ N = Module.finrank κ B * n := by
-  rcases subsingleton_or_nontrivial B with hB | hB
-  · haveI : Subsingleton N := Module.subsingleton B N
-    simp [Module.finrank_zero_of_subsingleton]
-  · haveI : IsArtinianRing B := IsArtinianRing.of_finite κ B
-    obtain ⟨b⟩ := Module.nonempty_basis_of_flat_of_finrank_eq B N n fun P => by
-      haveI : P.asIdeal.IsMaximal := P.isMaximal
-      rw [Module.finrank_quotient_tensor_eq_finrank_fiber P.asIdeal,
-        Ideal.finrank_fiber_eq_rankAtStalk]
-      exact hn _
-    haveI : Module.Free B N := .of_basis b
-    have hrk : Module.finrank B N = n := by
-      rw [Module.finrank_eq_card_basis b, Fintype.card_fin]
-    rw [← Module.finrank_mul_finrank κ B N, hrk]
-
-/-- **The degree of a tower, fibrewise.** The statement of
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` after base change to the residue field at a
-prime `q` of `R`, in mathlib's own `Ideal.Fiber` vocabulary
-(`q.asIdeal.Fiber X = q.asIdeal.ResidueField ⊗[R] X`).
-
-OPEN, and it carries **no mathematics**: the field-base statement it needs is
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field`, PROVEN above. What is missing is a
-module structure that this pin does not synthesise.
-
-## What exactly is missing (checked against the pin, not assumed)
-
-Neither `Module (κ ⊗[R] S) (κ ⊗[R] M)` nor `Module S (κ ⊗[R] M)` is an instance — probed
-directly, both fail. `TensorProduct.leftModule` puts extra scalars on the *left* factor only, and
-`AlgebraTensorModule`'s heterobasic instances want `Algebra κ S`, which is not available.
-`Algebra.TensorProduct.rightAlgebra` (used with `attribute [local instance]` in
-`Mathlib/RingTheory/LocalRing/ResidueField/Fiber.lean`) fixes the *ring*, not the module.
-
-## The route worked out for the next owner
-
-1. Build the right-factor action by hand:
-   `act : S →+* Module.End R (κ ⊗[R] M)`, `act s = LinearMap.lTensor κ (Algebra.lsmul R R M s)`;
-   `map_mul'` is `LinearMap.lTensor_comp`. Then `Module.compHom _ act` gives `Module S (κ ⊗[R] M)`,
-   and `IsScalarTower R S _`, `SMulCommClass κ S _` follow on pure tensors.
-2. `TensorProduct.Algebra.module` (`Mathlib/RingTheory/TensorProduct/Basic.lean`) then gives
-   `Module (κ ⊗[R] S) (κ ⊗[R] M)` — it is deliberately *not* an instance, so it must be `letI`'d.
-3. Show `IsBaseChange (κ ⊗[R] S) (g : M →ₗ[S] κ ⊗[R] M)`, `g m = 1 ⊗ₜ m`. This follows from
-   `TensorProduct.isBaseChange R M κ`: a `κ ⊗[R] S`-module is in particular a `κ`-module, the
-   unique `κ`-linear lift of an `S`-linear `h : M → Q` is `S`-linear (check on pure tensors,
-   using `SMulCommClass` in `Q`), hence `κ ⊗[R] S`-linear because
-   `TensorProduct.Algebra.moduleAux (a ⊗ₜ b) m = a • b • m`; uniqueness descends because a
-   `κ ⊗[R] S`-linear map is `κ`-linear.
-4. Then `Module.Finite` and `Module.Flat` transport from `(κ ⊗[R] S) ⊗[S] M` along
-   `IsBaseChange.equiv`, and the rank hypothesis is exactly
-   `Module.rankAtStalk_isBaseChange`, which is stated for precisely this situation.
-
-## STATUS OF THAT ROUTE — step 1 is VERIFIED, step 2 hits an instance-KEY mismatch
-
-Written out in a scratch module and compiled on 2026-07-30, with `A` standing for `κ`:
-
-* `rightAct : S →+* Module.End R (A ⊗[R] M)`, `s ↦ LinearMap.lTensor A (Algebra.lsmul R R M s)`,
-  compiles (`map_mul'` is `by ext x; simp [Module.End.mul_apply]`, the rest are `by ext x; simp`);
-* `Module.compHom _ rightAct` gives `Module S (A ⊗[R] M)` with
-  `s • (a ⊗ₜ m) = a ⊗ₜ (s • m)` **by `rfl`**;
-* `IsScalarTower R S (A ⊗[R] M)`, `IsScalarTower R A (A ⊗[R] M)` and
-  `SMulCommClass A S (A ⊗[R] M)` all compile by `TensorProduct.induction_on`, and all three are
-  found by `inferInstance` afterwards.
-
-Step 2 then FAILS: `TensorProduct.Algebra.module` reports
-`failed to synthesize IsScalarTower R A (A ⊗[R] M)` **even though the very next line's
-`example : IsScalarTower R A (A ⊗[R] M) := inferInstance` succeeds.** With `pp.all` the goal it
-cannot solve carries `Semiring.toAddCommMonoid A` inside the `TensorProduct` — because
-`TensorProduct.Algebra`'s section declares `[Semiring A]`, whereas here `A` is a `CommRing` and
-the ambient elaboration reaches `AddCommMonoid A` by the `Ring.toAddCommGroup` path. The two are
-defeq but not the same instance *key*, so discrimination-tree lookup misses. Everything after
-step 2 then cascades (the `(a ⊗ₜ s) • x = a • s • x` reduction fails only because the module
-instance above it errored).
-
-So the next owner should start at that mismatch, not at the mathematics: either instantiate
-`TensorProduct.Algebra.module` with the instance arguments given explicitly, or restate the three
-auxiliary instances so their `AddCommMonoid A` argument matches `Semiring.toAddCommMonoid`. This
-is a Lean-plumbing defect, not a gap in the argument.
-
-## FAITHFULNESS
-
-This is implied by the parent (it is the parent base-changed to one fibre) and is strictly
-weaker: it says nothing at any other prime, and it does not mention `Module.Free R M` or
-`Module.Free R S`, which the parent uses only to *identify* `finrank R -` with the fibre
-dimension. It is not vacuous — over `R` a field it *is* the parent. -/
-theorem Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq
-    {R : Type*} {S : Type*} {M : Type*} [CommRing R] [CommRing S] [Algebra R S]
-    [Module.Finite R S] [Module.Free R S]
-    [AddCommGroup M] [Module R M] [Module S M] [IsScalarTower R S M]
-    [Module.Finite S M] [Module.Flat S M] [Module.Free R M] [Module.Finite R M]
-    {n : ℕ} (hn : ∀ p : PrimeSpectrum S, Module.rankAtStalk (R := S) M p = n)
-    (q : PrimeSpectrum R) :
-    Module.finrank q.asIdeal.ResidueField (q.asIdeal.Fiber M) =
-      Module.finrank q.asIdeal.ResidueField (q.asIdeal.Fiber S) * n := sorry
-
-/-- **The degree of a tower**: if `S` is a finite free `R`-algebra and `M` is a finite flat
-`S`-module whose rank is the constant `n` at every stalk of `S`, then `M` has `R`-rank
-`rk_R S · n`.
-
-**PROVEN** (2026-07-30) from the fibrewise form
-`Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq`: both `finrank R M` and
-`finrank R S` are computed at one prime `q` of `R` (`Module.rankAtStalk_eq_finrank_of_free`,
-which needs the two freeness hypotheses, then `Module.rankAtStalk_eq`), and `[Nontrivial R]` is
-what supplies such a `q`. The section's design notes above record the route, why the pin's
-semilocal Stacks 02M9 lemma removes the Artinian-decomposition step this used to be blocked on,
-and the falsity audit for `[Nontrivial R]` and for the constancy hypothesis. -/
 theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq
     {R : Type*} {S : Type*} {M : Type*} [CommRing R] [Nontrivial R] [CommRing S] [Algebra R S]
     [Module.Finite R S] [Module.Free R S]
@@ -827,13 +684,45 @@ theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq
     [Module.Finite S M] [Module.Flat S M] [Module.Free R M] [Module.Finite R M]
     {n : ℕ} (hn : ∀ p : PrimeSpectrum S, Module.rankAtStalk (R := S) M p = n) :
     Module.finrank R M = Module.finrank R S * n := by
-  obtain ⟨q⟩ : Nonempty (PrimeSpectrum R) := inferInstance
-  have h1 : Module.finrank R M = Module.rankAtStalk (R := R) M q :=
-    (congrFun (Module.rankAtStalk_eq_finrank_of_free (R := R) (M := M)) q).symm
-  have h2 : Module.finrank R S = Module.rankAtStalk (R := R) S q :=
-    (congrFun (Module.rankAtStalk_eq_finrank_of_free (R := R) (M := S)) q).symm
-  rw [h1, h2, Module.rankAtStalk_eq, Module.rankAtStalk_eq]
-  exact Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq hn q
+  classical
+  obtain ⟨p⟩ : Nonempty (PrimeSpectrum R) := inferInstance
+  set κ := p.asIdeal.ResidueField with hκ
+  set B := κ ⊗[R] S with hBdef
+  set N := B ⊗[S] M with hNdef
+  -- Both `R`-ranks are computed in the fibre over `p`, because `S` and `M` are `R`-free.
+  have hM : Module.finrank κ N = Module.finrank R M := by
+    rw [(Algebra.IsPushout.cancelBaseChange R κ S B M).finrank_eq]
+    exact Module.finrank_baseChange
+  have hS : Module.finrank κ B = Module.finrank R S := Module.finrank_baseChange
+  -- `B` is a finite-dimensional `κ`-algebra, hence artinian, hence semilocal.
+  haveI : IsArtinianRing B := isArtinian_of_tower κ inferInstance
+  haveI : Finite (MaximalSpectrum B) :=
+    Finite.of_equiv _ (IsArtinianRing.primeSpectrumEquivMaximalSpectrum (R := B))
+  -- The fibre dimension of `N` is `n` at every maximal ideal of `B`.
+  have hrk : ∀ P : MaximalSpectrum B, Module.finrank (B ⧸ P.1) ((B ⧸ P.1) ⊗[B] N) = n := by
+    intro P
+    haveI : P.1.IsMaximal := P.2
+    letI : Field (B ⧸ P.1) := Ideal.Quotient.field P.1
+    have e : ((B ⧸ P.1) ⊗[B] N) ≃ₗ[B ⧸ P.1] ((B ⧸ P.1) ⊗[S] M) :=
+      TensorProduct.AlgebraTensorModule.cancelBaseChange S B (B ⧸ P.1) (B ⧸ P.1) M
+    rw [e.finrank_eq]
+    obtain ⟨q⟩ : Nonempty (PrimeSpectrum (B ⧸ P.1)) := inferInstance
+    have h1 : Module.rankAtStalk (R := B ⧸ P.1) ((B ⧸ P.1) ⊗[S] M) q
+        = Module.finrank (B ⧸ P.1) ((B ⧸ P.1) ⊗[S] M) :=
+      congrFun Module.rankAtStalk_eq_finrank_of_free q
+    rw [← h1, Module.rankAtStalk_baseChange]
+    exact hn _
+  rcases subsingleton_or_nontrivial B with _ | _
+  · -- `B = 0`, which happens exactly when `finrank R S = 0`; then `N = 0` too.
+    haveI : Subsingleton N := Module.subsingleton B N
+    have h1 : Module.finrank κ N = 0 := Module.finrank_zero_of_subsingleton
+    have h2 : Module.finrank κ B = 0 := Module.finrank_zero_of_subsingleton
+    rw [← hM, ← hS, h1, h2, zero_mul]
+  · haveI : Module.Free B N := Module.free_of_flat_of_finrank_eq B N n hrk
+    obtain ⟨b⟩ := Module.nonempty_basis_of_flat_of_finrank_eq B N n hrk
+    have hBN : Module.finrank B N = n := by
+      rw [Module.finrank_eq_card_basis b, Fintype.card_fin]
+    rw [← hM, ← hS, ← Module.finrank_mul_finrank κ B N, hBN]
 
 namespace HopfAlgebra
 
@@ -1056,20 +945,21 @@ which are proven. The split is by *where the mathematics is*:
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
 | `nonempty_linearEquiv_baseChange` | **OPEN** | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
-| `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **OPEN** | the degree of a tower (root namespace, no Hopf content) |
+| `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **PROVEN** (2026-07-30) | the degree of a tower (root namespace, no Hopf content) |
 | `exists_basis_cartierDual` | **PROVEN** from those two | `D(A)` is `D(A')`-free of rank `rk_R A''` |
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **three** statements are open in this file, they are independent of each other, and
-only one of them is Hopf-theoretic on the `A`-side:
+So exactly **two** statements are open in this file as of 2026-07-30, they are independent of each
+other, and both are Hopf-theoretic on the `A`-side:
 `exists_lift_ker_le_span_cartierDual` (the residual form of the generation half —
 `exists_spanning_cartierDual` is PROVEN from it together with the formal
-`span_sup_ker_cartierDual_map_eq_top`), `IsShortExact.nonempty_linearEquiv_baseChange` (the
-torsor identity) and `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degree of a tower,
-root namespace, no Hopf content).  The rank half of the normal basis,
-`nonempty_linearEquiv_cartierDual`, was PROVEN on 2026-07-28 over the last two of those; the
-generation half was reduced to the first on the same day.
+`span_sup_ker_cartierDual_map_eq_top`) and `IsShortExact.nonempty_linearEquiv_baseChange` (the
+torsor identity).  The third, `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degree of a
+tower, root namespace, no Hopf content), was PROVEN on 2026-07-30 — so **this file no longer owes
+anything outside Hopf algebra.**  The rank half of the normal basis,
+`nonempty_linearEquiv_cartierDual`, was PROVEN on 2026-07-28 over the tower formula and the torsor
+identity; the generation half was reduced to the first of the two on the same day.
 
 (An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
 what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
@@ -1198,8 +1088,8 @@ what is left open in this half of the file is those two rather than the freeness
   `rk_R A = rk_R A'' · rk_R A'`, packaged as an `R`-linear equivalence so that it is also true
   (vacuously) over the zero ring. **This one is PROVEN since 2026-07-28**, over two further
   leaves — the torsor identity `IsShortExact.nonempty_linearEquiv_baseChange` and the tower
-  formula `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — so the generation half above is
-  now the only thing this half of the file still owes.
+  formula `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the latter **PROVEN 2026-07-30**) —
+  so the generation half above and the torsor identity are what this half of the file still owes.
 
 The step that makes this a genuine reduction rather than a restatement is **Orzech's property**,
 which every commutative ring has (`Mathlib/RingTheory/FiniteType.lean`): a surjective linear map
