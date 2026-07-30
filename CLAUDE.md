@@ -545,6 +545,96 @@ Corollary for dispatch: **name the branch as an INSTRUCTION, not as attribution.
 "`flt-lean-311` proved X" in a credit line is not read as "merge `flt-lean-311`";
 three successors fast-forwarded to a `main` without X and found nothing.
 
+**The checks are TWO SCRIPTS answering DIFFERENT questions, and both must run**
+(2026-07-29). `own.py` answers *is somebody working on it*; `leafstat.py` answers
+*is it already done*. A dispatch this day named two leaves as "genuinely UNOWNED
+— zero hits each in `~/.flt-inflight.jsonl`" and **both clauses were wrong in
+different ways**: leaf 1 had five hits, one of them a `TARGET:` line
+(`flt-lean-261`, dispatched 21 h earlier); leaf 2 had been PROVEN on `main` for
+42 hours, at a commit that was an ancestor of the successor's own dispatch HEAD.
+
+Re-run afterwards, `own.py` reported `flt-lean-261` correctly and instantly. The
+tool was right; it had not been run — a hand `grep` was substituted for it. So
+the failure was not a gap in the test but the orchestrator improvising around a
+script written to stop exactly this. **Run the scripts.**
+
+**`own.py` grew a FOURTH check the same day, and it is the one nothing else
+covers: UNCOMMITTED work in the other worktrees.** The three-part test is about
+RECORDS. An incumbent's proof can exist only as uncommitted work — invisible to
+`merger`, to the batch, and to every branch diff, so `leafstat.py` cannot see it
+either. `flt-lean-261` held 399 uncommitted lines of `Interface.lean` proving
+its leaf *and renaming it* to `hasFiniteWildMonodromyAt_of_residueChar_ne`; a
+successor sent at the old name would have raced a rename it could not observe.
+`Interface.lean` had **nine** concurrent uncommitted editors at that moment.
+`own.py` now greps every `claimed` worktree's diff plus its untracked `.lean`
+files (a relocation lands as a new module, which is a conflict at *file*
+granularity) and flags a name that appears in WIP with no record claiming it.
+
+Unrelated but found while fixing it, and it had been corrupting every scripted
+check run from the scratchpad: a scratch file named **`grp.py` shadowed the
+stdlib `grp` module**, which `shutil`/`subprocess` import on POSIX — so every
+python script run from that directory executed an unrelated group-theory
+computation at import time and printed its output ahead of the real answer.
+Renamed. Watch for scratch filenames that collide with stdlib modules.
+
+## SEED BEFORE SPAWNING THE NEXT MERGE WORKER — the snapshot comes from the staging `.lake`
+
+(2026-07-29, orchestrator error.) `flt-cycle.py release` seeds worktree artifacts by rsyncing
+`MERGER_LAKE = /scratch/chend-flt/flt-staging/.lake/build` — **the merge worker's own build
+directory**, hardcoded, with no option to point it elsewhere. So the sequence is not negotiable:
+
+    merger reports green  ->  flt-cycle.py release   (snapshot + seed)
+                          ->  dispatch the queue
+                          ->  THEN spawn the next merge worker
+
+I spawned release 19's worker first and then ran the seeding. Phase 1 (advance every worktree,
+cheap) completed; phase 2 aborted on the built-in **torn-snapshot guard** — `.trace` files with no
+matching `.olean`, for `ModThree` and `MazurTorsion`, because the next worker was mid-build in that
+very directory. The guard is right and saved a fleet-wide seeding of a half-written olean set; it
+also leaves the pool with everything `free` and **nothing `ready`**, i.e. dispatch blocked until the
+next release.
+
+There is no recovery that does not wait: `~/.flt-release-lake/build` holds only the *previous*
+snapshot (days stale by then), and the release-18 artifacts are gone because the worker overwrote
+them starting release 19. Hand-copying from a live worktree is precisely what the guard exists to
+prevent. **The cost of getting the order wrong is one full release cycle of idle seeding capacity.**
+
+Corollary worth stating separately: `release` is two phases with very different costs, and only
+phase 2 needs the staging worktree quiet. If the order is ever wrong again, phase 1 has still run —
+so every worktree IS advanced to the release, and the only thing missing is artifacts. Agents own
+their own `.lake` and can rebuild; the loss is throughput, not correctness.
+
+## SIXTH invisibility class: a merge that fails, records success, and drops the payload
+
+(2026-07-29.) `git merge flt-lean-243` printed `error: Unable to write index` and **still
+produced a merge commit whose tree was byte-identical to the pre-merge tree** — none of the
+branch's changes, while recording that branch as an ancestor. `git status` then reported "All
+conflicts fixed but you are still merging", and `git commit --no-edit` sealed it without
+complaint. Suspected trigger: the background `git gc` git itself starts ("Auto packing the
+repository in the background") during a preceding merge, so the risk concentrates exactly where
+branches are merged back to back.
+
+This is worse than every failure class above it, because **the result compiles.** A green build
+is not evidence; a dropped payload builds perfectly. The merged branch is then marked merged and
+dropped from the batch, so the work is not merely missing — it is unrecoverable through the
+normal flow, and the frontier looks like it regressed with no cause anyone can name.
+
+It was caught only because a declaration the merge was supposed to prove was still `sorry`
+afterwards. The check is one command per merge:
+
+    git diff --stat HEAD^1 HEAD     # MUST be non-empty if that branch changed files
+
+Empty for a branch that should have changed something → `git reset --hard HEAD^` and re-merge.
+`git config --local gc.auto 0` in the staging worktree prevents background packing from firing
+mid-merge; it is local and affects nothing else. This matters most for the merge worker, which
+merges a hundred-odd branches in one run.
+
+**Corollary, and the reason this belongs beside the other five: "the branch is an ancestor" is
+NOT evidence that its content is present.** Every ownership and integration check in this file
+that reasons from ancestry — subsumption claims, "X carries Y's commit", the merge-base test in
+the three-part ownership rule — inherits this hole. Ancestry is a claim about the commit graph;
+content is a claim about trees. Verify the tree when it matters.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's

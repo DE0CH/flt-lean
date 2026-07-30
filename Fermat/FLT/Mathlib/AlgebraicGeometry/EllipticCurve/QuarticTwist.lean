@@ -8,6 +8,7 @@ module
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+public import Fermat.FLT.Mathlib.FieldTheory.AbsoluteHilbert90
 
 /-!
 # Composition of variable changes on points, and the quartic twist at `j = 1728`
@@ -24,13 +25,75 @@ Material for `Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point` together wit
 * `WeierstrassCurve.Affine.Point.equivVariableChange_autMap` : conjugating an automorphism of
   `W` by a variable change `C₀` conjugates its action on points by `equivVariableChange W C₀`.
 * `WeierstrassCurve.quarticModel` : the curve `y² = x³ + a x`, the normal form at `j = 1728`.
+* `WeierstrassCurve.quarticTwistChar` : the descent character `χ(σ) = ±1` according as `σ`
+  stabilises `⟨g⟩`, with `quarticTwistChar_mul` (it is a homomorphism) and
+  `algebraMap_quarticTwistChar_eq` (it computes `u_σ²`) both PROVEN.
 * `WeierstrassCurve.exists_stableCyclic_quarticTwist` : the arithmetic heart at `j = 1728` —
   a cyclic subgroup that is Galois-stable only up to an automorphism becomes genuinely stable
-  on a quartic twist.  Proven over the single leaf
-  `WeierstrassCurve.exists_quarticTwistParameter`.
+  on a quartic twist.
+
+**`Ω` must be an ALGEBRAIC CLOSURE of `K`** (`[IsAlgClosed Ω]` plus an EXPLICIT
+`halg : Algebra.IsAlgebraic K Ω`; see below for why that one is not an instance argument).
+Without that, `exists_quarticTwistParameter` is FALSE — its conclusion asks for a fourth root
+in `Ω` that need not be there.  The witness (`K = ℚ`, `Ω = ℚ(ζ₈)`, `y² = x³ - 2x`, `g = (√2,0)`
+of order `2`) is written out in that theorem's docstring; the instances were added on
+2026-07-28 and cost the only call site nothing, since it works over `AlgebraicClosure ℚ`.
+
+The two residual leaves are `WeierstrassCurve.exists_finiteLevel_quarticTwistChar` (the finite
+Galois level of `χ`) and `Field.exists_sq_eq_algebraMap_of_quadraticChar` (Hilbert 90 at
+`n = 2` over a general algebraic closure).
 -/
 
 @[expose] public section
+
+namespace Field
+
+variable {K : Type*} [Field K] {Ω : Type*} [Field Ω] [Algebra K Ω]
+
+/-- **An open index-`≤ 2` subgroup of `Γ_K` is the stabiliser of a square root** (sorry leaf,
+opened 2026-07-28 while repairing `WeierstrassCurve.exists_quarticTwistParameter`).
+
+A quadratic character `χ : Gal(Ω/K) → {±1}` that is *inflated from a finite Galois level* `L`
+is `σ ↦ σ(s)/s` for a square root `s` of an element `d ∈ Kˣ`.  This is the whole field-theoretic
+content of the `j = 1728` descent, and it is what the docstring of
+`exists_stableCyclic_twist_of_autStable_of_j_eq_1728` in `Fermat/FLT/ModularCurve/X0.lean`
+calls "item 3: the quadratic field cut out by an open index-`2` subgroup of `Γ_ℚ`".
+
+#### The route: this is `n = 2` of the Kummer theorem one module upstream
+
+`Field.exists_pow_eq_algebraMap_forall_absoluteGalois_apply_eq_mul`
+(`Fermat/FLT/Mathlib/FieldTheory/AbsoluteHilbert90.lean`, PROVEN) is exactly this statement for
+`Ω = AlgebraicClosure K`: take `n := 2` and `c σ := algebraMap K Ω (χ σ)`.  Its four hypotheses
+are discharged by, in order, `hval` (`(±1)² = 1`), `hval` again together with `hmul` — the
+cocycle identity `c (σ * τ) = c σ * σ (c τ)` degenerates to multiplicativity because `χ τ = ±1`
+lies in `K` and is therefore fixed by `σ` — membership of `±1` in any `L`, and `hinfl`.
+
+**So the only thing left to do here is the TRANSPORT from `AlgebraicClosure K` to an arbitrary
+algebraic closure `Ω`**, along `IsAlgClosure.equiv K Ω (AlgebraicClosure K)`: conjugate the
+character (`χ' ρ := χ (e.symm.trans (ρ.trans e))`), carry `L` across with
+`IntermediateField.map`, and pull the resulting `γ` back with `e.symm`.  An equally good repair
+is to GENERALISE the two theorems in `AbsoluteHilbert90.lean` from `AlgebraicClosure K` to any
+`Ω` with `[IsGalois K Ω]` — their proofs use only `AlgEquiv.restrictNormalHom_surjective` and
+`InfiniteGalois.mem_range_algebraMap_iff_fixed`, both of which are already stated for a general
+`Ω` — which would discharge this leaf by `exact`.  That is the better engineering; it is left
+to the owner of that file rather than done here, since it changes a released signature.
+
+#### Non-vacuity
+
+`hinfl` is load-bearing and not decoration: `H¹(Γ_K, K̄ˣ) = 1` is FALSE for non-continuous
+cochains, and a character of `Gal(Ω/K)` with no finite level need not be `σ ↦ σ(s)/s` for any
+`s`.  `hmul` is load-bearing too — a mere `±1`-valued *function* is not a coboundary. -/
+theorem exists_sq_eq_algebraMap_of_quadraticChar [PerfectField K] [IsAlgClosed Ω]
+    (halg : Algebra.IsAlgebraic K Ω)
+    (χ : (Ω ≃ₐ[K] Ω) → K) (hval : ∀ σ, χ σ = 1 ∨ χ σ = -1)
+    (hmul : ∀ σ τ, χ (σ * τ) = χ σ * χ τ)
+    (L : IntermediateField K Ω) [FiniteDimensional K L] [IsGalois K L]
+    (hinfl : ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) → χ σ = χ τ) :
+    ∃ (d : K) (s : Ω), d ≠ 0 ∧ s ^ 2 = algebraMap K Ω d ∧
+      ∀ σ : Ω ≃ₐ[K] Ω, σ s = algebraMap K Ω (χ σ) * s :=
+  sorry
+
+end Field
 
 namespace WeierstrassCurve
 
@@ -239,6 +302,54 @@ lemma autMap_diag_neg [W.IsElliptic] (h₁ : W.a₁ = 0) (h₃ : W.a₃ = 0) {u 
     refine some_eq_some _ ?_ ?_ <;>
       simp only [Affine.negY, h₁, h₃, Units.val_neg] <;> ring
 
+/-- A diagonal automorphism with `u = 1` acts trivially on points. -/
+lemma autMap_diag_one [W.IsElliptic] {u : Fˣ} (hu1 : (u : F) = 1)
+    (h : (⟨u, 0, 0, 0⟩ : VariableChange F) • W = W) (P : W.toAffine.Point) :
+    autMap h P = P := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · show autMap h 0 = 0
+    simp only [_root_.map_zero]
+  · rw [autMap_apply, equivOfEq_some, mapVariableChangeFun_some]
+    refine some_eq_some W ?_ ?_ <;> simp only [hu1] <;> ring
+
+/-- **An automorphism of `y² = x³ + a₄x` whose `u` squares to `1` acts as `±1` on points.**
+This is the reason `A := Aut(E, ⟨g⟩)` contains `μ₂`, and with `hmove` it is what pins
+`A = μ₂` exactly. -/
+lemma autMap_eq_self_or_neg [CharZero F] [W.IsElliptic] (h₁ : W.a₁ = 0) (h₂ : W.a₂ = 0)
+    (h₃ : W.a₃ = 0) (h₆ : W.a₆ = 0) (ha₄ : W.a₄ ≠ 0) {C : VariableChange F} (h : C • W = W)
+    (hsq : (C.u : F) ^ 2 = 1) (P : W.toAffine.Point) :
+    autMap h P = P ∨ autMap h P = -P := by
+  obtain ⟨hCdiag, hCu4⟩ := aut_eq_diag h₁ h₂ h₃ h₆ ha₄ h
+  have hd1 : (⟨(1 : Fˣ), 0, 0, 0⟩ : VariableChange F) • W = W :=
+    smul_diag_self h₁ h₂ h₃ h₆ (by norm_num)
+  have hdneg : (⟨(-1 : Fˣ), 0, 0, 0⟩ : VariableChange F) • W = W :=
+    smul_diag_self h₁ h₂ h₃ h₆ (by norm_num)
+  rcases mul_eq_zero.mp (show ((C.u : F) - 1) * ((C.u : F) + 1) = 0 by linear_combination hsq)
+    with he | he
+  · refine Or.inl ?_
+    have hcu : C.u = 1 := Units.ext (by push_cast; linear_combination he)
+    rw [autMap_congr (show C = ⟨(1 : Fˣ), 0, 0, 0⟩ by rw [hCdiag, hcu]) h hd1]
+    exact autMap_diag_one (by norm_num) hd1 P
+  · refine Or.inr ?_
+    have hcu : C.u = -1 := Units.ext (by push_cast; linear_combination he)
+    rw [autMap_congr (show C = ⟨(-1 : Fˣ), 0, 0, 0⟩ by rw [hCdiag, hcu]) h hdneg,
+      autMap_diag_neg h₁ h₃ hd1 hdneg P, autMap_diag_one (by norm_num) hd1 P]
+
+/-- **A diagonal automorphism with `u² = -1` squares to negation on points**: `[i]² = [-1]`,
+because `(x, y) ↦ (u²x, u³y)` iterates to `(u⁴x, u⁶y) = (x, -y)`. -/
+lemma autMap_diag_sq [W.IsElliptic] (h₁ : W.a₁ = 0) (h₃ : W.a₃ = 0) {u : Fˣ}
+    (hu : (u : F) ^ 2 = -1) (h : (⟨u, 0, 0, 0⟩ : VariableChange F) • W = W)
+    (P : W.toAffine.Point) : autMap h (autMap h P) = -P := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · show autMap h (autMap h 0) = -0
+    simp only [_root_.map_zero, _root_.neg_zero]
+  · rw [autMap_apply h (Affine.Point.some x y hns), equivOfEq_some, mapVariableChangeFun_some,
+      autMap_apply, equivOfEq_some, mapVariableChangeFun_some, Affine.Point.neg_some]
+    refine some_eq_some W ?_ ?_
+    · linear_combination (x * ((u : F) ^ 2 - 1)) * hu
+    · simp only [Affine.negY, h₁, h₃]
+      linear_combination (y * ((u : F) ^ 4 - (u : F) ^ 2 + 1)) * hu
+
 /-- **Diagonal automorphisms commute with the quartic twist isomorphism.** -/
 lemma autMap_twist_comm {W' : WeierstrassCurve F} [W.IsElliptic] [W'.IsElliptic] {δ ζ : Fˣ}
     (hψ : (⟨δ, 0, 0, 0⟩ : VariableChange F) • W' = W)
@@ -256,6 +367,23 @@ lemma autMap_twist_comm {W' : WeierstrassCurve F} [W.IsElliptic] [W'.IsElliptic]
     refine some_eq_some W' ?_ ?_ <;> ring
 
 end Quartic
+
+/-- **An injective endomorphism maps a finite cyclic subgroup ONTO itself.**  This is the
+upgrade of "maps `⟨g⟩` into `⟨g⟩`" to "maps `⟨g⟩` onto `⟨g⟩`" that the descent argument needs
+in both directions, and it is exactly where `hN : N ≠ 0` and `hg : addOrderOf g = N` are
+consumed: they make `AddSubgroup.zmultiples g` finite, via `Nat.card_zmultiples`. -/
+lemma exists_mem_zmultiples_eq {A : Type*} [AddCommGroup A] {g : A} {N : ℕ} (hN : N ≠ 0)
+    (hg : addOrderOf g = N) (f : A →+ A) (hinj : Function.Injective f)
+    (hmaps : ∀ x ∈ AddSubgroup.zmultiples g, f x ∈ AddSubgroup.zmultiples g)
+    {y : A} (hy : y ∈ AddSubgroup.zmultiples g) :
+    ∃ x ∈ AddSubgroup.zmultiples g, f x = y := by
+  haveI : Finite (AddSubgroup.zmultiples g) :=
+    Nat.finite_of_card_ne_zero (by rw [Nat.card_zmultiples, hg]; exact hN)
+  have hFinj : Function.Injective
+      (fun x : AddSubgroup.zmultiples g => (⟨f x, hmaps x x.2⟩ : AddSubgroup.zmultiples g)) :=
+    fun a b hab => Subtype.ext (hinj (congrArg Subtype.val hab))
+  obtain ⟨x, hx⟩ := (Finite.injective_iff_surjective.mp hFinj) ⟨y, hy⟩
+  exact ⟨x, x.2, congrArg Subtype.val hx⟩
 
 /-! ### The quartic twist over a Galois extension -/
 
@@ -295,41 +423,407 @@ lemma map_twist {E E' : WeierstrassCurve K} [E.IsElliptic] [E'.IsElliptic] {δ �
     refine some_eq_some (E'⁄Ω) ?_ ?_ <;>
       simp only [map_add, map_mul, map_pow, _root_.map_zero, hσδ] <;> ring
 
-/-- **The quartic twisting parameter** (sorry leaf, opened 2026-07-28 by decomposing
-`exists_stableCyclic_twist_of_autStable_of_j_eq_1728`).
+omit [CharZero K] [CharZero Ω] in
+/-- **Galois conjugation of a diagonal automorphism**: `σ ∘ [u] = [σ u] ∘ σ`.  The curve `E` is
+defined over `K`, so `σ` fixes its coefficients and carries the automorphism `⟨u,0,0,0⟩` to
+`⟨σu,0,0,0⟩`.  This is the `Γ`-equivariance that makes the descent character multiplicative. -/
+lemma map_autMap_diag {E : WeierstrassCurve K} [E.IsElliptic] (σ : Ω ≃ₐ[K] Ω) {u v : Ωˣ}
+    (h : (⟨u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+    (h' : (⟨v, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω))
+    (hv : (v : Ω) = σ.toAlgHom (u : Ω)) (P : (E⁄Ω).toAffine.Point) :
+    Affine.Point.map σ.toAlgHom (autMap h P) = autMap h' (Affine.Point.map σ.toAlgHom P) := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · show Affine.Point.map σ.toAlgHom (autMap h 0)
+      = autMap h' (Affine.Point.map σ.toAlgHom 0)
+    simp only [_root_.map_zero]
+  · rw [autMap_apply, equivOfEq_some, mapVariableChangeFun_some, Affine.Point.map_some,
+      Affine.Point.map_some, autMap_apply, equivOfEq_some, mapVariableChangeFun_some]
+    refine some_eq_some (E⁄Ω) ?_ ?_ <;> simp [map_mul, map_pow, hv]
+
+open scoped Classical in
+/-- **The descent character at `j = 1728`.**  `χ(σ) = 1` exactly when `σ` stabilises the cyclic
+subgroup `⟨g⟩ ⊆ E(Ω)`, and `χ(σ) = -1` otherwise.
+
+It is valued in `K` rather than in `Ω` on purpose: `μ₄/μ₂ ≅ μ₂ = {±1}` carries the TRIVIAL
+Galois action, which is exactly why `χ` is a homomorphism (`quarticTwistChar_mul`) and not a
+mere `1`-cocycle — the asymmetry with the sextic case at `j = 0`, where `μ₆/μ₂ ≅ μ₃` and the
+action is the quadratic character of `K(ζ₃)`. -/
+noncomputable def quarticTwistChar {E : WeierstrassCurve K} [E.IsElliptic]
+    (g : (E⁄Ω).toAffine.Point) (σ : Ω ≃ₐ[K] Ω) : K :=
+  if ∀ x ∈ AddSubgroup.zmultiples g,
+      Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g then 1 else -1
+
+omit [CharZero Ω] in
+lemma quarticTwistChar_eq_one_iff {E : WeierstrassCurve K} [E.IsElliptic]
+    (g : (E⁄Ω).toAffine.Point) (σ : Ω ≃ₐ[K] Ω) :
+    quarticTwistChar g σ = 1 ↔ ∀ x ∈ AddSubgroup.zmultiples g,
+      Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g := by
+  classical
+  unfold quarticTwistChar
+  split_ifs with h
+  · exact ⟨fun _ => h, fun _ => rfl⟩
+  · exact ⟨fun hc => absurd hc (by norm_num), fun hc => absurd hc h⟩
+
+omit [CharZero K] [CharZero Ω] in
+lemma quarticTwistChar_eq_one_or {E : WeierstrassCurve K} [E.IsElliptic]
+    (g : (E⁄Ω).toAffine.Point) (σ : Ω ≃ₐ[K] Ω) :
+    quarticTwistChar g σ = 1 ∨ quarticTwistChar g σ = -1 := by
+  classical
+  unfold quarticTwistChar
+  split_ifs with h
+  · exact Or.inl rfl
+  · exact Or.inr rfl
+
+/-- **The descent character is a group homomorphism** (PROVEN 2026-07-28).
+
+The orbit of `⟨g⟩` under `Gal(Ω/K)` has at most two elements — `⟨g⟩` and `[ι]⁻¹⟨g⟩` — because
+`haut` says every `σ⟨g⟩` is `[u_σ]⁻¹⟨g⟩` with `u_σ ∈ μ₄`, and `u_σ² = ±1` splits `μ₄` into
+`{±1}` (which preserves `⟨g⟩`, `autMap_eq_self_or_neg`) and `{±ι.u}` (which does not, `hmove`).
+Multiplicativity is then the four-case check on `(στ)⟨g⟩ = σ(τ⟨g⟩)`, and the two cases where
+`σ` has to be moved past `[ι]` use `map_autMap_diag` together with `σ(ι.u) = ±ι.u` — forced
+because `σ(ι.u)² = σ(-1) = -1` and a field has only two square roots of `-1`.  The last case
+closes with `autMap_diag_sq`: `[ι]² = [-1]`, so applying `[ι]` twice lands back in `⟨g⟩`. -/
+theorem quarticTwistChar_mul {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+    [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
+    (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
+    (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
+    (haut : ∀ σ : Ω ≃ₐ[K] Ω, ∃ (C : VariableChange Ω) (h : C • (E⁄Ω) = (E⁄Ω)),
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g)
+    (ι : VariableChange Ω) (hι : ι • (E⁄Ω) = (E⁄Ω))
+    (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autMap hι x ∉ AddSubgroup.zmultiples g)
+    (hu : (ι.u : Ω) ^ 2 = -1) (σ τ : Ω ≃ₐ[K] Ω) :
+    quarticTwistChar g (σ * τ) = quarticTwistChar g σ * quarticTwistChar g τ := by
+  classical
+  obtain ⟨hιdiag, hιu4⟩ := aut_eq_diag h₁ h₂ h₃ h₆ ha₄ hι
+  have hιd : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
+    smul_diag_self h₁ h₂ h₃ h₆ hιu4
+  have hmove' : ∃ x ∈ AddSubgroup.zmultiples g, autMap hιd x ∉ AddSubgroup.zmultiples g := by
+    obtain ⟨x, hx, hx'⟩ := hmove
+    exact ⟨x, hx, by rwa [← autMap_congr hιdiag hι hιd]⟩
+  have hcomp : ∀ (ρ π : Ω ≃ₐ[K] Ω) (x : (E⁄Ω).toAffine.Point),
+      Affine.Point.map (ρ * π).toAlgHom x
+        = Affine.Point.map ρ.toAlgHom (Affine.Point.map π.toAlgHom x) := by
+    intro ρ π x
+    rw [Affine.Point.map_map]
+    rfl
+  -- every `ρ` either stabilises `⟨g⟩` or carries it to `[ι]⁻¹⟨g⟩`
+  have hAorB : ∀ ρ : Ω ≃ₐ[K] Ω,
+      (∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map ρ.toAlgHom x ∈ AddSubgroup.zmultiples g) ∨
+      (∀ x ∈ AddSubgroup.zmultiples g,
+        autMap hιd (Affine.Point.map ρ.toAlgHom x) ∈ AddSubgroup.zmultiples g) := by
+    intro ρ
+    obtain ⟨C, hCsmul, hCmem⟩ := haut ρ
+    obtain ⟨hCdiag, hCu4⟩ := aut_eq_diag h₁ h₂ h₃ h₆ ha₄ hCsmul
+    rcases mul_eq_zero.mp
+      (show ((C.u : Ω) ^ 2 - 1) * ((C.u : Ω) ^ 2 + 1) = 0 by linear_combination hCu4) with hq | hq
+    · refine Or.inl fun x hx => ?_
+      rcases autMap_eq_self_or_neg h₁ h₂ h₃ h₆ ha₄ hCsmul (by linear_combination hq)
+        (Affine.Point.map ρ.toAlgHom x) with he | he
+      · rw [← he]; exact hCmem x hx
+      · have hm := hCmem x hx
+        rw [he] at hm
+        simpa using neg_mem hm
+    · refine Or.inr fun x hx => ?_
+      have hsq : (C.u : Ω) ^ 2 = -1 := by linear_combination hq
+      have hCd : (⟨C.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
+        smul_diag_self h₁ h₂ h₃ h₆ hCu4
+      rcases mul_eq_zero.mp (show ((ι.u : Ω) - (C.u : Ω)) * ((ι.u : Ω) + (C.u : Ω)) = 0 by
+          linear_combination hu - hsq) with he | he
+      · have hιC : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) = C := by
+          rw [show ι.u = C.u from Units.ext (sub_eq_zero.mp he)]; exact hCdiag.symm
+        rw [autMap_congr hιC hιd hCsmul]
+        exact hCmem x hx
+      · have hιneg : (⟨ι.u, 0, 0, 0⟩ : VariableChange Ω) = ⟨-C.u, 0, 0, 0⟩ := by
+          rw [show ι.u = -C.u from Units.ext (by push_cast; linear_combination he)]
+        have hnegsmul : (⟨-C.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hιneg ▸ hιd
+        rw [autMap_congr hιneg hιd hnegsmul, autMap_diag_neg h₁ h₃ hCd hnegsmul]
+        refine neg_mem ?_
+        rw [autMap_congr hCdiag.symm hCd hCsmul]
+        exact hCmem x hx
+  -- the two alternatives are exclusive: `hmove` forbids both
+  have hnotAB : ∀ ρ : Ω ≃ₐ[K] Ω,
+      (∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map ρ.toAlgHom x ∈ AddSubgroup.zmultiples g) →
+      ¬ (∀ x ∈ AddSubgroup.zmultiples g,
+        autMap hιd (Affine.Point.map ρ.toAlgHom x) ∈ AddSubgroup.zmultiples g) := by
+    intro ρ hA hB
+    obtain ⟨x, hx, hx'⟩ := hmove'
+    obtain ⟨y, hy, hyx⟩ := exists_mem_zmultiples_eq hN hg (Affine.Point.map ρ.toAlgHom)
+      (Affine.Point.map_injective ρ.toAlgHom) hA hx
+    exact hx' (by rw [← hyx]; exact hB y hy)
+  -- Galois conjugation moves `[ι]` to `±[ι]`
+  have hconj : ∀ (ρ : Ω ≃ₐ[K] Ω) (P : (E⁄Ω).toAffine.Point),
+      autMap hιd (Affine.Point.map ρ.toAlgHom P)
+          = Affine.Point.map ρ.toAlgHom (autMap hιd P) ∨
+      autMap hιd (Affine.Point.map ρ.toAlgHom P)
+          = -(Affine.Point.map ρ.toAlgHom (autMap hιd P)) := by
+    intro ρ P
+    have hne : ρ.toAlgHom (ι.u : Ω) ≠ 0 := by
+      intro h0
+      exact ι.u.ne_zero (ρ.injective (by rw [_root_.map_zero]; exact h0))
+    set w : Ωˣ := Units.mk0 (ρ.toAlgHom (ι.u : Ω)) hne with hwdef
+    have hw2 : (w : Ω) ^ 2 = -1 := by
+      show ρ.toAlgHom (ι.u : Ω) ^ 2 = -1
+      rw [← map_pow, hu]
+      simp
+    have hw4 : (w : Ω) ^ 4 = 1 := by linear_combination ((w : Ω) ^ 2 - 1) * hw2
+    have hwd : (⟨w, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
+      smul_diag_self h₁ h₂ h₃ h₆ hw4
+    have hkey := map_autMap_diag ρ hιd hwd rfl P
+    rcases mul_eq_zero.mp (show ((w : Ω) - (ι.u : Ω)) * ((w : Ω) + (ι.u : Ω)) = 0 by
+        linear_combination hw2 - hu) with he | he
+    · refine Or.inl ?_
+      have hweq : (⟨w, 0, 0, 0⟩ : VariableChange Ω) = ⟨ι.u, 0, 0, 0⟩ := by
+        rw [show w = ι.u from Units.ext (sub_eq_zero.mp he)]
+      rw [hkey]
+      exact (autMap_congr hweq hwd hιd _).symm
+    · refine Or.inr ?_
+      have hweq : (⟨w, 0, 0, 0⟩ : VariableChange Ω) = ⟨-ι.u, 0, 0, 0⟩ := by
+        rw [show w = -ι.u from Units.ext (by push_cast; linear_combination he)]
+      have hnegsmul : (⟨-ι.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hweq ▸ hwd
+      rw [hkey, autMap_congr hweq hwd hnegsmul, autMap_diag_neg h₁ h₃ hιd hnegsmul, neg_neg]
+  -- the four cases
+  by_cases hAσ : ∀ x ∈ AddSubgroup.zmultiples g,
+      Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g
+  · by_cases hAτ : ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map τ.toAlgHom x ∈ AddSubgroup.zmultiples g
+    · rw [(quarticTwistChar_eq_one_iff g _).mpr (fun x hx => by
+        rw [hcomp]; exact hAσ _ (hAτ x hx)),
+        (quarticTwistChar_eq_one_iff g _).mpr hAσ, (quarticTwistChar_eq_one_iff g _).mpr hAτ,
+        one_mul]
+    · have hBτ := (hAorB τ).resolve_left hAτ
+      have hBστ : ∀ x ∈ AddSubgroup.zmultiples g,
+          autMap hιd (Affine.Point.map (σ * τ).toAlgHom x) ∈ AddSubgroup.zmultiples g := by
+        intro x hx
+        rw [hcomp]
+        rcases hconj σ (Affine.Point.map τ.toAlgHom x) with he | he
+        · rw [he]; exact hAσ _ (hBτ x hx)
+        · rw [he]; exact neg_mem (hAσ _ (hBτ x hx))
+      have hone := (quarticTwistChar_eq_one_or g (σ * τ)).resolve_left
+        (fun hc => hnotAB _ ((quarticTwistChar_eq_one_iff g _).mp hc) hBστ)
+      have htwo := (quarticTwistChar_eq_one_or g τ).resolve_left
+        (fun hc => hAτ ((quarticTwistChar_eq_one_iff g _).mp hc))
+      rw [hone, htwo, (quarticTwistChar_eq_one_iff g _).mpr hAσ, one_mul]
+  · have hBσ := (hAorB σ).resolve_left hAσ
+    by_cases hAτ : ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map τ.toAlgHom x ∈ AddSubgroup.zmultiples g
+    · have hBστ : ∀ x ∈ AddSubgroup.zmultiples g,
+          autMap hιd (Affine.Point.map (σ * τ).toAlgHom x) ∈ AddSubgroup.zmultiples g := by
+        intro x hx
+        rw [hcomp]
+        exact hBσ _ (hAτ x hx)
+      have hone := (quarticTwistChar_eq_one_or g (σ * τ)).resolve_left
+        (fun hc => hnotAB _ ((quarticTwistChar_eq_one_iff g _).mp hc) hBστ)
+      have htwo := (quarticTwistChar_eq_one_or g σ).resolve_left
+        (fun hc => hAσ ((quarticTwistChar_eq_one_iff g _).mp hc))
+      rw [hone, htwo, (quarticTwistChar_eq_one_iff g _).mpr hAτ, mul_one]
+    · have hBτ := (hAorB τ).resolve_left hAτ
+      have hAστ : ∀ x ∈ AddSubgroup.zmultiples g,
+          Affine.Point.map (σ * τ).toAlgHom x ∈ AddSubgroup.zmultiples g := by
+        intro x hx
+        rw [hcomp]
+        set y := Affine.Point.map τ.toAlgHom x with hydef
+        have hz : autMap hιd y ∈ AddSubgroup.zmultiples g := hBτ x hx
+        have hstep : autMap hιd (autMap hιd (Affine.Point.map σ.toAlgHom y))
+            ∈ AddSubgroup.zmultiples g := by
+          rcases hconj σ y with he | he
+          · rw [he]
+            exact hBσ _ hz
+          · rw [he, map_neg]
+            exact neg_mem (hBσ _ hz)
+        rw [autMap_diag_sq h₁ h₃ hu hιd] at hstep
+        simpa using neg_mem hstep
+      have hone := (quarticTwistChar_eq_one_iff g (σ * τ)).mpr hAστ
+      have htwo := (quarticTwistChar_eq_one_or g σ).resolve_left
+        (fun hc => hAσ ((quarticTwistChar_eq_one_iff g _).mp hc))
+      have hthree := (quarticTwistChar_eq_one_or g τ).resolve_left
+        (fun hc => hAτ ((quarticTwistChar_eq_one_iff g _).mp hc))
+      rw [hone, htwo, hthree]
+      norm_num
+
+/-- **The descent character computes `u_σ²`** (PROVEN 2026-07-28).
+
+`aut_eq_diag` puts `C = ⟨u,0,0,0⟩` with `u⁴ = 1`, so `u² = ±1`.  If `u² = 1` then `[C] = ±1`
+(`autMap_eq_self_or_neg`) and `haut`'s conclusion collapses to `σ⟨g⟩ ⊆ ⟨g⟩`, i.e. `χ(σ) = 1`.
+If `u² = -1` then `C = ±ι` — a field has two square roots of `-1` — so were `σ` to stabilise
+`⟨g⟩` it would stabilise it ONTO (`exists_mem_zmultiples_eq`, using `addOrderOf g = N ≠ 0`) and
+`[ι]` would preserve `⟨g⟩`, contradicting `hmove`; hence `χ(σ) = -1`. -/
+theorem algebraMap_quarticTwistChar_eq {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+    [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
+    (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
+    (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
+    (ι : VariableChange Ω) (hι : ι • (E⁄Ω) = (E⁄Ω))
+    (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autMap hι x ∉ AddSubgroup.zmultiples g)
+    (hu : (ι.u : Ω) ^ 2 = -1)
+    (σ : Ω ≃ₐ[K] Ω) (C : VariableChange Ω) (h : C • (E⁄Ω) = (E⁄Ω))
+    (hC : ∀ x ∈ AddSubgroup.zmultiples g,
+      autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g) :
+    algebraMap K Ω (quarticTwistChar g σ) = (C.u : Ω) ^ 2 := by
+  classical
+  obtain ⟨hCdiag, hCu4⟩ := aut_eq_diag h₁ h₂ h₃ h₆ ha₄ h
+  obtain ⟨hιdiag, hιu4⟩ := aut_eq_diag h₁ h₂ h₃ h₆ ha₄ hι
+  have hCd : (⟨C.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
+    smul_diag_self h₁ h₂ h₃ h₆ hCu4
+  rcases mul_eq_zero.mp
+    (show ((C.u : Ω) ^ 2 - 1) * ((C.u : Ω) ^ 2 + 1) = 0 by linear_combination hCu4) with hq | hq
+  · have hsq : (C.u : Ω) ^ 2 = 1 := by linear_combination hq
+    have hchar : quarticTwistChar g σ = 1 := by
+      rw [quarticTwistChar_eq_one_iff]
+      intro x hx
+      have hax := hC x hx
+      rcases autMap_eq_self_or_neg h₁ h₂ h₃ h₆ ha₄ h hsq
+        (Affine.Point.map σ.toAlgHom x) with he | he
+      · rwa [he] at hax
+      · rw [he] at hax
+        simpa using neg_mem hax
+    rw [hchar, map_one, hsq]
+  · have hsq : (C.u : Ω) ^ 2 = -1 := by linear_combination hq
+    have hchar : quarticTwistChar g σ = -1 := by
+      rcases quarticTwistChar_eq_one_or g σ with hc | hc
+      · exfalso
+        rw [quarticTwistChar_eq_one_iff] at hc
+        have hpres : ∀ y ∈ AddSubgroup.zmultiples g,
+            autMap h y ∈ AddSubgroup.zmultiples g := by
+          intro y hy
+          obtain ⟨x, hx, hxy⟩ := exists_mem_zmultiples_eq hN hg (Affine.Point.map σ.toAlgHom)
+            (Affine.Point.map_injective σ.toAlgHom) hc hy
+          rw [← hxy]; exact hC x hx
+        obtain ⟨x, hx, hxmove⟩ := hmove
+        refine hxmove ?_
+        rcases mul_eq_zero.mp (show ((ι.u : Ω) - (C.u : Ω)) * ((ι.u : Ω) + (C.u : Ω)) = 0 by
+            linear_combination hu - hsq) with he | he
+        · have hιC : ι = C := by
+            rw [hιdiag, hCdiag, show ι.u = C.u from Units.ext (sub_eq_zero.mp he)]
+          rw [autMap_congr hιC hι h]
+          exact hpres x hx
+        · have hιneg : ι = ⟨-C.u, 0, 0, 0⟩ := by
+            rw [hιdiag, show ι.u = -C.u from Units.ext (by push_cast; linear_combination he)]
+          have hnegsmul : (⟨-C.u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) := hιneg ▸ hι
+          rw [autMap_congr hιneg hι hnegsmul, autMap_diag_neg h₁ h₃ hCd hnegsmul]
+          refine neg_mem ?_
+          rw [autMap_congr hCdiag.symm hCd h]
+          exact hpres x hx
+      · exact hc
+    rw [hchar, hsq]
+    simp
+
+/-- **The descent character is inflated from a finite Galois level** (sorry leaf, opened
+2026-07-28 while repairing `exists_quarticTwistParameter`).
+
+`χ` depends only on the action of `σ` on the FINITE set `⟨g⟩` (`addOrderOf g = N ≠ 0`, so
+`Nat.card (AddSubgroup.zmultiples g) = N` by `Nat.card_zmultiples`).  Each of those `N` points
+has two coordinates in `Ω`, each algebraic over `K`; adjoining all of them gives a finite
+subextension `L₀`, and `L := normalClosure K L₀ Ω` is finite and Galois (separable because
+`char K = 0`).  Two automorphisms agreeing on `L` agree on every point of `⟨g⟩`, hence give the
+same set `σ⟨g⟩`, hence the same `χ`.
+
+This is the continuity hypothesis of Hilbert 90 in the concrete form
+`Field.exists_sq_eq_algebraMap_of_quadraticChar` consumes it, and it is where `hN` and `hg`
+are used.  Everything needed is in the pin: `IntermediateField.adjoin`,
+`IntermediateField.finiteDimensional_adjoin` (each generator is integral, from
+`Algebra.IsAlgebraic K Ω`), `normalClosure.is_finiteDimensional` and
+`normalClosure.isGalois`.  What must be written is the bookkeeping that turns the finite point
+set into a finite generating set — the mathematics is not the obstacle here, the plumbing is. -/
+theorem exists_finiteLevel_quarticTwistChar (halg : Algebra.IsAlgebraic K Ω) {N : ℕ}
+    (hN : N ≠ 0) (E : WeierstrassCurve K) [E.IsElliptic]
+    (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N) :
+    ∃ (L : IntermediateField K Ω) (_ : FiniteDimensional K L) (_ : IsGalois K L),
+      ∀ σ τ : Ω ≃ₐ[K] Ω, (∀ x ∈ L, σ x = τ x) →
+        quarticTwistChar g σ = quarticTwistChar g τ :=
+  sorry
+
+/-- **The quartic twisting parameter** (opened as a sorry leaf 2026-07-28 by decomposing
+`exists_stableCyclic_twist_of_autStable_of_j_eq_1728`; **REFUTED AS STATED, RESTATED, AND
+PROVEN 2026-07-28** over `exists_finiteLevel_quarticTwistChar` and
+`Field.exists_sq_eq_algebraMap_of_quadraticChar`).
 
 This is the *only* arithmetic input of the `j = 1728` descent, and it is the whole of it: the
-statement below packages "the obstruction character is a quadratic character, hence cut out by a
-square root of a rational number".
+obstruction character is a quadratic character, hence cut out by a square root of an element of
+`K`, and a fourth root of that element twists the obstruction away.
 
-#### What has to be proven
+#### FALSITY AUDIT (2026-07-28) — the previous statement was FALSE, with an explicit witness
+
+The statement carried NO hypothesis on `Ω` beyond `[Field Ω] [Algebra K Ω] [CharZero Ω]`, and
+its conclusion demands a fourth root `δ ∈ Ω` of an element of `K`.  A field that is not big
+enough simply has no such `δ`, and no amount of arithmetic input produces one.  Witness:
+
+* `K := ℚ`, `Ω := ℚ(ζ₈) = ℚ(i, √2)` — Galois over `ℚ` with group `(ℤ/8)ˣ = {1, σ₃, σ₅, σ₇}`;
+* `E : y² = x³ - 2x`, i.e. `quarticModel (-2)`.  `Δ = -64·(-2)³ = 512 ≠ 0`, so `E` is elliptic
+  and `a₁ = a₂ = a₃ = a₆ = 0`, `a₄ = -2 ≠ 0`;
+* `N := 2` and `g := (√2, 0) ∈ E(Ω)` — indeed `(√2)³ - 2√2 = 0` — of order `2`;
+* `ι := ⟨i, 0, 0, 0⟩`, so `hι` holds (`i⁴ = 1`, `smul_diag_self`) and `hu : i² = -1`.
+
+`hmove` holds: `autMap hι (√2, 0) = (i²·√2, i³·0) = (-√2, 0) ∉ {O, (√2,0)} = ⟨g⟩`.  `haut`
+holds: `σ₇` fixes `√2`, so `C := 1` works; `σ₃` and `σ₅` send `√2 ↦ -√2`, and `C := ι` sends
+`(-√2, 0)` back to `(√2, 0)`, so `C := ι` works.  Every hypothesis is satisfied.
+
+Now write `ε := δ²`.  The conclusion at `σ₇` with `C = 1` forces `σ₇(ε) = ε`; at `σ₃` with
+`C = ι` it forces `σ₃(ε) = -ε`.  So `ε` lies in the `ℚ(√2)` of `ℚ(ζ₈)` and is negated by `σ₃`,
+i.e. `ε = q√2` for some `q ∈ ℚˣ`.  But `q√2` is **never** a square in `ℚ(ζ₈)`: if `x² = q√2`
+then `σ₇(x)² = x²`, so `x ∈ ℚ(√2)` or `x ∈ ℚ(√2)·i` (the two eigenspaces of `σ₇` over its fixed
+field `ℚ(√2)`), and in either case `y² = ±q√2` with `y ∈ ℚ(√2)`, whence
+`N_{ℚ(√2)/ℚ}(y)² = N(±q√2) = -2q² < 0` — impossible, a norm of a square being a square in `ℚ`.
+So no `δ` exists and the leaf was false.
+
+**The mathematics was never in doubt; the QUANTIFIER over `Ω` was.**  Over `ℚ̄` the descent does
+work here: `δ = 2^{3/4}`, `d = 8`, `E' : y² = x³ - 16x`, `ψ g = (4, 0)` — which is even
+`ℚ`-rational.  But `2^{3/4} ∉ ℚ(ζ₈)`.
+
+#### The repair, and why it costs the consumers nothing
+
+`Ω` must be an ALGEBRAIC CLOSURE of `K`: `[IsAlgClosed Ω]` together with
+`halg : Algebra.IsAlgebraic K Ω`.  `Algebra.IsAlgebraic` is not redundant decoration next to
+`IsAlgClosed`: it is what makes `Gal(Ω/K)` an honest absolute Galois group with fixed field
+`K`, which Hilbert 90 needs.  The two downstream theorems in this file carry the same two
+hypotheses and their proofs are otherwise unchanged.
+
+**Why `halg` is an EXPLICIT argument and not an instance** — this is not a style choice, it is
+forced.  `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` is NOT SYNTHESIZABLE anywhere in this
+tree: at the literal base field `ℚ` the two `Algebra ℚ ℚ̄` instances form a DIAMOND, a condition
+already documented in `X0.lean`'s own `mem_range_of_fixed` ("at the literal `F = ℚ` the two
+`Algebra ℚ ℚ̄` instances form a diamond and `IsAlgClosure ℚ ℚ̄` fails to synthesise") and worked
+around by hand in `Fermat/FLT/Modularity/Patching.lean` with
+`haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ`.
+Verified here rather than assumed: under X0's exact import surface, `IsAlgClosed ℚ̄` synthesises
+but `Algebra.IsAlgebraic ℚ ℚ̄` and `IsAlgClosure ℚ ℚ̄` both fail, and RE-DECLARING the mathlib
+instance in this file does **not** fix it — the diamond is in the `Algebra` instance itself, so
+no re-export can reach it.  Making it an instance argument would therefore hand every consumer
+an unsatisfiable obligation.  As an explicit argument it costs the one call site a single extra
+token, `AlgebraicClosure.isAlgebraic ℚ`, and it puts the requirement where a consumer must
+confront it.  `[IsAlgClosed Ω]` stays an instance because it does synthesise.
+
+#### The route, now that it is proven
 
 `E⁄Ω` is `y² = x³ + a₄x`, so by `aut_eq_diag` every automorphism is `⟨u,0,0,0⟩` with `u⁴ = 1`,
-i.e. `Aut(E⁄Ω) ↪ μ₄` with `u` injective; `ι` shows the image is all of `μ₄`.  Write
-`A := {C ∈ Aut : C preserves ⟨g⟩}`.  Both `1` and `⟨-1,0,0,0⟩` lie in `A` (they act as the
-identity and as negation, `autMap_congr` and `autMap_diag_neg`), and `hmove` says `ι ∉ A`, so
-`u(A) = {±1}` and `[μ₄ : u(A)] = 2`.
+i.e. `Aut(E⁄Ω) ↪ μ₄` with `u` injective; `hu` shows the image is all of `μ₄`.  Write
+`A := {C ∈ Aut : C preserves ⟨g⟩}`.  Both `1` and `⟨-1,0,0,0⟩` lie in `A` — they act as the
+identity and as negation, `autMap_diag_one` and `autMap_diag_neg` — and `hmove` says `ι ∉ A`,
+so `A = μ₂` and `[μ₄ : A] = 2`.
 
-`haut` therefore determines, for each `σ`, the class `u_σ · {±1} ∈ μ₄/{±1} ≅ μ₂`, i.e. the sign
-`χ(σ) := u_σ² ∈ {±1}`; and `χ` is a *group homomorphism* because `μ₄/{±1}` carries the trivial
-Galois action (`±1 ∈ K`).  Its kernel is the stabiliser of the finite set `⟨g⟩` and is therefore
-OPEN, so `χ` cuts out a quadratic extension of `K`, `K(√d)` with `d ∈ Kˣ`; taking `δ` a fourth
-root of `d` gives `σ(δ)²/δ² = σ(√d)/√d = χ(σ) = u_σ²`, which is the conclusion.
+`quarticTwistChar` is the resulting sign `χ(σ) = u_σ² ∈ {±1}`;
+`algebraMap_quarticTwistChar_eq` is the statement that it really computes `u_σ²` for EVERY
+admissible `C`, and `quarticTwistChar_mul` that it is a group homomorphism — which holds
+because `μ₄/μ₂ ≅ μ₂` carries the trivial Galois action.  `exists_finiteLevel_quarticTwistChar`
+gives its finite level, and `Field.exists_sq_eq_algebraMap_of_quadraticChar` turns it into
+`s ∈ Ω` with `s² = d ∈ Kˣ` and `σ(s) = χ(σ)·s`.  Finally `δ := √s` exists because `Ω` is
+algebraically closed, and `δ⁴ = s² = d`, `σ(δ)² = σ(s) = χ(σ)δ² = δ²·u_σ²`.  ∎
 
-**No Kummer theory and no `H¹` is used**: only that an open index-`2` subgroup of `Gal(K̄/K)` is
-the stabiliser of a square root, which is elementary in characteristic `≠ 2`.  (Its sibling at
-`j = 0` genuinely needs `H¹(Γ, μ₃)`; that asymmetry is why the two leaves were split.)
+**No Kummer theory beyond `n = 2` is used** — only that an open index-`2` subgroup of
+`Gal(Ω/K)` is the stabiliser of a square root.  (Its sibling at `j = 0` genuinely needs
+`H¹(Γ, μ₃)`; that asymmetry is why the two leaves were split.)
 
-#### Non-vacuity, and what refutes this leaf
+#### Non-vacuity
 
 `hmove` is REQUIRED and is what makes the conclusion satisfiable at all: if some automorphism
 with `u² = -1` preserved `⟨g⟩` then, for a single `σ`, both `C` and `C · ι` would satisfy the
 hypothesis of the conclusion with values of `(C.u)²` differing by a sign, and no `δ` could
-satisfy both.  A refutation would exhibit such a configuration together with a `σ`; there is
-none, since `hmove` puts `ι ∉ A` and `A` is a subgroup.
-
-`hN` and `hg` enter through the finiteness of `⟨g⟩`, which is what makes `ker χ` open. -/
-theorem exists_quarticTwistParameter {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+satisfy both.  `hN` and `hg` are consumed twice over — once for the finiteness of `⟨g⟩` that
+upgrades "maps into" to "maps onto" in `algebraMap_quarticTwistChar_eq`, and once for the
+finite level of `χ`. -/
+theorem exists_quarticTwistParameter [IsAlgClosed Ω] (halg : Algebra.IsAlgebraic K Ω)
+    {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
     (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
@@ -343,8 +837,30 @@ theorem exists_quarticTwistParameter {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCu
       ∀ (σ : Ω ≃ₐ[K] Ω) (C : VariableChange Ω) (h : C • (E⁄Ω) = (E⁄Ω)),
         (∀ x ∈ AddSubgroup.zmultiples g,
           autMap h (Affine.Point.map σ.toAlgHom x) ∈ AddSubgroup.zmultiples g) →
-        σ (δ : Ω) ^ 2 = (δ : Ω) ^ 2 * (C.u : Ω) ^ 2 :=
-  sorry
+        σ (δ : Ω) ^ 2 = (δ : Ω) ^ 2 * (C.u : Ω) ^ 2 := by
+  obtain ⟨L, hLfin, hLgal, hLinfl⟩ := exists_finiteLevel_quarticTwistChar halg hN E g hg
+  obtain ⟨d, s, hd0, hs2, hs⟩ :=
+    Field.exists_sq_eq_algebraMap_of_quadraticChar halg (quarticTwistChar g)
+      (quarticTwistChar_eq_one_or g)
+      (quarticTwistChar_mul hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu) L hLinfl
+  have hs0 : s ≠ 0 := by
+    intro h0
+    apply hd0
+    have hz : algebraMap K Ω d = 0 := by rw [← hs2, h0]; ring
+    exact (map_eq_zero_iff _ (algebraMap K Ω).injective).mp hz
+  obtain ⟨δ0, hδ0⟩ := IsAlgClosed.exists_pow_nat_eq (k := Ω) s (n := 2) two_pos
+  have hδ0ne : δ0 ≠ 0 := by
+    intro h0
+    apply hs0
+    rw [← hδ0, h0]; ring
+  refine ⟨d, hd0, Units.mk0 δ0 hδ0ne, ?_, ?_⟩
+  · show δ0 ^ 4 = algebraMap K Ω d
+    rw [show δ0 ^ 4 = (δ0 ^ 2) ^ 2 by ring, hδ0, hs2]
+  · intro σ C h hC
+    show σ δ0 ^ 2 = δ0 ^ 2 * (C.u : Ω) ^ 2
+    rw [← map_pow, hδ0, hs σ, ← hδ0,
+      algebraMap_quarticTwistChar_eq hN E h₁ h₂ h₃ h₆ ha₄ g hg ι hι hmove hu σ C h hC]
+    ring
 
 /-- **The arithmetic heart at `j = 1728`, in normal form** (PROVEN 2026-07-28 over the single
 leaf `exists_quarticTwistParameter`).
@@ -355,7 +871,8 @@ Given the twisting parameter `d` and a fourth root `δ` of it, the twist is
 `autMap_twist_comm` moves `[ζ_σ]` back across `ψ`, so the goal reduces to
 `[ζ_σ](σ z) ∈ ⟨g⟩`.  The leaf says `ζ_σ² = u_σ²`, hence `ζ_σ = ±u_σ`, and `autMap_diag_neg` turns
 the `−` case into a negation, which `⟨g⟩` absorbs.  `haut` supplies `[u_σ](σ z) ∈ ⟨g⟩`. -/
-theorem exists_stableCyclic_quarticTwist_of_quartic {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω]
+    (halg : Algebra.IsAlgebraic K Ω) {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
     (h₆ : (E⁄Ω).a₆ = 0) (ha₄ : (E⁄Ω).a₄ ≠ 0)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
@@ -370,7 +887,7 @@ theorem exists_stableCyclic_quarticTwist_of_quartic {N : ℕ} (hN : N ≠ 0) (E 
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   obtain ⟨d, hd, δ, hδ4, hrel⟩ :=
-    exists_quarticTwistParameter hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu
+    exists_quarticTwistParameter halg hN E h₁ h₂ h₃ h₆ ha₄ g hg haut ι hι hmove hu
   have hδ0 : (δ : Ω) ≠ 0 := δ.ne_zero
   have hEa₄ : (E⁄Ω).a₄ = algebraMap K Ω E.a₄ := rfl
   have hEa₄K : E.a₄ ≠ 0 := fun h0 => ha₄ (by rw [hEa₄, h0, _root_.map_zero])
@@ -469,7 +986,8 @@ isomorphism — `exists_conj_autMap_baseChange` conjugates the automorphisms and
 `equivVariableChangeBaseChange_galois` says the isomorphism is `Gal(Ω/K)`-equivariant, since
 `C₀` has coefficients in `K` — and then applies
 `exists_stableCyclic_quarticTwist_of_quartic`. -/
-theorem exists_stableCyclic_quarticTwist {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
+theorem exists_stableCyclic_quarticTwist [IsAlgClosed Ω] (halg : Algebra.IsAlgebraic K Ω)
+    {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (hj : E.j = 1728)
     (g : (E⁄Ω).toAffine.Point) (hg : addOrderOf g = N)
     (haut : ∀ σ : Ω ≃ₐ[K] Ω, ∃ (C : VariableChange Ω) (h : C • (E⁄Ω) = (E⁄Ω)),
@@ -534,7 +1052,8 @@ theorem exists_stableCyclic_quarticTwist {N : ℕ} (hN : N ≠ 0) (E : Weierstra
     exact hx' (by
       have := (hmemΘ _).mp hcon
       rwa [hιconj, Θ.apply_symm_apply] at this)
-  exact exists_stableCyclic_quarticTwist_of_quartic hN (C₀ • E) h₁ h₂ h₃ h₆ ha₄ g₁ hg₁ haut₁ _
+  exact exists_stableCyclic_quarticTwist_of_quartic halg hN (C₀ • E) h₁ h₂ h₃ h₆ ha₄ g₁ hg₁
+    haut₁ _
     hι₁ hmove₁ hu₁
 
 end BaseChange
