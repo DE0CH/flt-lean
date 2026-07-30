@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
@@ -413,9 +414,63 @@ still live. Put your explanation, for a human, in "why".
 """
 
 
+# ------------------------------------------------------------------- quota
+# The account's session limit is a real resource the loop must respect, and it
+# cannot see it any other way: a refused spawn and a job that started and
+# exited quickly look identical from outside. The ONE place the difference is
+# visible is the job's own log, which carries the refusal verbatim along with
+# the reset time.
+#
+# Twice on 2026-07-30 the loop spent hours relaunching into a wall -- ~17
+# attempts a minute, ~500 in half an hour -- because nothing recorded that the
+# door was shut. This makes "the door is shut, and until when" a piece of
+# state, so the wait becomes a deliberate idle rather than a retry storm.
+LIMIT_MARK = "session limit"
+
+
+def parse_reset(text):
+    """'resets 9:50pm (Europe/London)' -> epoch of the next such local time."""
+    m = re.search(r"resets\s+(\d{1,2}):(\d{2})\s*([ap]m)", text, re.I)
+    if not m:
+        return time.time() + 3600           # unknown wording: wait an hour
+    h, mi, ap = int(m.group(1)), int(m.group(2)), m.group(3).lower()
+    h = h % 12 + (12 if ap == "pm" else 0)
+    now = time.localtime()
+    e = time.mktime((now.tm_year, now.tm_mon, now.tm_mday, h, mi, 0, 0, 0, -1))
+    return e + 86400 if e <= time.time() else e
+
+
+def quota_until():
+    v = (rd(STATE / "quota-until", "") or "").strip()
+    if v.isdigit():
+        if time.time() < int(v):
+            return int(v)
+        rm(STATE / "quota-until")           # expired: clears itself
+    return None
+
+
+def note_quota(reset_epoch, why):
+    wr(STATE / "quota-until", str(int(reset_epoch)) + "\n")
+    email("flt-loop: quota exhausted, idling until %s"
+          % time.strftime("%H:%M", time.localtime(reset_epoch)),
+          "Spawning is being refused by the API. The loop is IDLING rather "
+          "than retrying, and resumes by itself when the limit resets.\n\n" + why)
+
+
+def refused(name, j):
+    """Did this job's log say it was refused? Only asked about dead-looking jobs."""
+    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
+    return t if LIMIT_MARK in t else None
+
+
 # --------------------------------------------------------------- spawn
+GRACE = 120     # seconds a freshly spawned job is presumed alive
+
+
 def do_spawn(s, name, j):
     """Start a real, detached claude process on the worker host."""
+    # Stamped BEFORE the ssh, so the grace period covers the launch itself.
+    j["spawned_at"] = time.time()
     host = j.get("host") or flt_loop_rows.MEDIC_HOST
     prompt = compose(j["kind"], name, j, s)
     wr(STATE / "jobs" / (name + ".prompt"), prompt)
@@ -500,7 +555,31 @@ def load():
                     j["sentinel"] = d
             except json.JSONDecodeError:
                 j["sentinel"] = None      # truncated = not finished
-        j["alive"] = j["token"] in tokens
+        # A freshly spawned job is presumed alive until the grace period
+        # expires. The liveness sweep is cached for ALIVE_CACHE seconds, so a
+        # job spawned at T is otherwise judged against a token snapshot taken
+        # BEFORE it existed -- it reads as dead on its very first tick, and
+        # `died` (started, not alive, no sentinel) fires immediately.
+        #
+        # That is what was killing every merge worker: spawned, declared dead
+        # ~12s later, record dropped, recreated, respawned -- seven times, with
+        # no release possible and the batch growing the whole while. Agents hid
+        # it because their death path respawns them, so the churn looked like
+        # ordinary turnover.
+        fresh = time.time() - (j.get("spawned_at") or 0) < GRACE
+        j["alive"] = (j["token"] in tokens) or (j["started"] and fresh)
+        # A job that is started, not alive and has no sentinel would be read as
+        # DEAD and re-dispatched. Before believing that, ask its log whether it
+        # ever got to run: a refusal is not a death, and treating it as one is
+        # what produced the retry storm.
+        if j["started"] and not j["alive"] and not j["sentinel"]:
+            txt = refused(n, j)
+            if txt:
+                if not quota_until():
+                    note_quota(parse_reset(txt), "%s (%s) was refused: %s"
+                               % (n, j["kind"], txt.strip().splitlines()[0]))
+                j["started"] = False       # unspawned again, retried after the block
+                j["alive"] = False
         j.setdefault("retries", 0)
         jobs[n] = j
     wh = worker_hosts()
@@ -554,6 +633,7 @@ def load():
         "ancestor": anc,
         "healthy": {k: v == "1" for k, v in _pairs("healthy").items()},
         "hosts": refresh_hosts(),
+        "quota_until": quota_until(),
         "log": [], "git": [], "email": [],
     }
 
