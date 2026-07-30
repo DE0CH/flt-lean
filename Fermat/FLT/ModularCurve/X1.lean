@@ -435,14 +435,16 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is REPRESENTABLE, affineness not mentioned.  Split off `exists_gamma1RigidifiedModuli` on 2026-07-30 — that node is now PROVEN over this row and the next, and it is still what `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over. | any `K`, `char K ∤ N`, `char K ∤ n` |
-| `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_isAffine_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2 + the affineness parenthesis of 8.1.1: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is representable by an AFFINE scheme.  RE-MERGED 2026-07-31 out of the two leaves `exists_gamma1RigidifiedModuliScheme` and `isAffine_of_gamma1RigidifiedModuliScheme` that the 2026-07-30 split had created; both are now PROVEN over this row, the second through the new `nonempty_iso_gamma1RigidifiedModuliScheme` (fine moduli ⇒ any two inhabitants are isomorphic ⇒ `IsAffine` transports).  The affineness clause of 8.1.1 is not a separable theorem in Katz-Mazur — it is a remark on the construction 4.7.2/5.1.1/6.6.2 carries out — so one prover discharges both.  Everything the old two rows fed is unchanged: `exists_gamma1RigidifiedModuli`, hence `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| ~~`exists_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above (forget the affineness); no longer a leaf | — |
+| ~~`isAffine_of_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above plus `nonempty_iso_gamma1RigidifiedModuliScheme`; no longer a leaf | — |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
 | `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
 | `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
-| `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
+| `exists_ellipticSchemeSection_of_weierstrassPoint` | `EllipticScheme.lean` OVER A GENERAL BASE FIELD, and nothing else: an elliptic curve over `L` with an `L`-rational point `P` becomes an abelian scheme over `Spec L`, smooth of relative dimension one, with a section whose order at the geometric point `specAlgClos L` is `addOrderOf P`.  Cut 2026-07-31 out of `nonempty_gamma1Datum_of_weierstrassPoint`, which is now PROVEN over it.  It mentions no moduli structure, no Galois descent and no `Gamma1Datum`: the whole of what that node owed beyond this leaf — spreading the order to EVERY geometric fibre — is now PROVEN here as `exists_injective_pre_geomBase_field`, the general-base form of `X0.lean`'s `exists_injective_pre_geomBase`, over the new `exists_ringHom_algebraicClosure_comp`.  The `ℚ`-analogue is `exists_ellipticScheme_of_weierstrass` (`X0.lean`, PROVEN); the statements differ deliberately — this one produces the SECTION directly rather than an equivariant `≃+` on the geometric fibre, which is what makes it correct for IMPERFECT `L` and is why no `[PerfectField L]` appears anywhere in the chain. | any field `L` |
+| ~~`nonempty_gamma1Datum_of_weierstrassPoint`~~ | PROVEN 2026-07-31 over the row above; no longer a leaf.  `exists_gamma1Datum_fieldExtension` still reads it (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone) | — |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
 | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
 | ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
@@ -3413,18 +3415,50 @@ along the line `X0.lean` draws for the identical `Γ₀` node
 
 | what | where | status |
 |---|---|---|
-| representability, affineness not mentioned | `exists_gamma1RigidifiedModuliScheme` | **LEAF** (4.7.1/4.7.2, 5.1.1, 6.6.2) |
-| affineness | `isAffine_of_gamma1RigidifiedModuliScheme` | **LEAF** (the parenthesis of 8.1.1) |
+| representability AND affineness, in one existential | `exists_isAffine_gamma1RigidifiedModuliScheme` | **LEAF** (4.7.1/4.7.2, 5.1.1, 6.6.2, 8.1.1) |
+| rigidity of a fine moduli scheme | `nonempty_iso_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
+| representability, affineness not mentioned | `exists_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
+| affineness | `isAffine_of_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
 | `M ≅ Spec A` transport | `nonempty_gamma1RigidifiedModuli_of_iso` | **PROVEN** |
 | `IsAffine` transport | `nonempty_gamma1RigidifiedModuli_of_isAffine` | **PROVEN** |
 | the assembly | `exists_gamma1RigidifiedModuli` | **PROVEN** |
 
-**The accounting, stated honestly: this is `1 -> 2` open leaves, not
-`1 -> 1`.**  What it buys is that the residues are now pure citations with
+**The accounting, as it stood on 2026-07-30: `1 -> 2` open leaves, not
+`1 -> 1`.**  What it bought was that the residues were pure citations with
 no Lean work left in either of them, and the ~120 lines of transport — the
 part a formaliser can actually discharge, and the only part of this node
-that was not a literature appeal — are done.  The same trade was taken on
+that was not a literature appeal — were done.  The same trade was taken on
 the `Γ₀` side and for the same reason.
+
+**RE-MERGED 2026-07-31, back to `1 -> 1`, and the two citation halves are
+now THEOREMS.**  The `2` was avoidable, and what makes it avoidable is a
+fact about the structure rather than about Katz–Mazur: `universal` is a
+FINE moduli property, so `Gamma1RigidifiedModuliScheme N n S` is a
+*contractible groupoid* — any two inhabitants are related by a unique
+isomorphism of their underlying schemes.  That is
+`nonempty_iso_gamma1RigidifiedModuliScheme` below, it is 30 lines, and it
+uses nothing but `universal`'s uniqueness clause together with
+`IsBaseChangeOfGamma1.refl` and `.comp`.
+
+Consequently `∀ R, IsAffine R.M` and `∃ R, IsAffine R.M` are the same
+statement (given that some `R` exists at all, which is the other half),
+and both leaves collapse into the single existential
+`exists_isAffine_gamma1RigidifiedModuliScheme`.  The two names the
+consumers use are kept, with their signatures and their docstrings
+unchanged; they are now proven over that one leaf.  The docstring of
+`isAffine_of_gamma1RigidifiedModuliScheme` had already ARGUED exactly this
+("any two inhabitants are related by a unique isomorphism … so the two
+statements are the same") — it was recorded as prose and never written
+down, which is precisely the shape of avoidable open leaf this file's own
+tie-breaker ("fewer OPEN leaves after") is meant to catch.
+
+**The same re-merge applies verbatim on the `Γ₀` side** — `X0.lean`'s
+`exists_rigidifiedModuliScheme` / `isAffine_of_rigidifiedModuliScheme` are
+two open leaves of exactly this shape over `RigidifiedModuliScheme`, whose
+`universal` field is the same fine-moduli `∃!`.  Nothing was done there
+from here because that file is owned separately; a `Γ₀` owner should
+transcribe the proof below, and it should be shorter, since
+`RigidifiedModuliScheme.universal` carries no `m ≫ strM = g` conjunct.
 
 **Where the `Γ₁` transport is SHORTER than the `Γ₀` one.**  X0's
 `nonempty_rigidifiedModuli_of_iso` builds the transported
@@ -3439,6 +3473,155 @@ version owes two things the `Γ₀` version does not: the `map_sec` field of
 `m ≫ strM = g` conjunct that `Gamma1RigidifiedModuli.universal` carries
 because this development works over an arbitrary base `S` rather than over
 `Spec ℚ`.  Both are three rewrites. -/
+
+/-- **RIGIDITY: any two rigidified `Γ₁` moduli schemes over the same base
+are isomorphic** (**PROVEN 2026-07-31**, sorry-free, from `universal`
+alone) — the formal content of "fine moduli spaces are unique up to
+unique isomorphism", and what merges the two Katz–Mazur citation leaves
+below into one.
+
+## The proof, in one paragraph
+
+Feed `R'.universal` the universal family `(R.strM, R.dM, R.lvlM)` of `R`
+to get `m : R.M ⟶ R'.M`, and `R.universal` the universal family of `R'`
+to get `m' : R'.M ⟶ R.M`.  Both round trips `m ≫ m'` and `m' ≫ m`
+classify the universal family they start from — the structure morphisms
+compose by `hmstr`/`hm'str`, the base-change data by
+`IsBaseChangeOfGamma1.comp`, and the two level clauses by one
+`Category.assoc` each — and so does the identity, whose base-change datum
+is `IsBaseChangeOfGamma1.refl` and whose level clauses are
+`comp_id`/`id_comp`.  The uniqueness clause of `universal` applied to the
+scheme's OWN universal family then forces both round trips to be `𝟙`.
+
+That last step is the whole argument and it is worth naming: `universal`
+is applied at `T := A.M`, `g := A.strM`, `d := A.dM`, `L := A.lvlM`, i.e.
+to the universal family itself.  Its `∃!` says that the identity is the
+ONLY self-map of `A.M` classifying that family, which is exactly rigidity.
+
+## What it does NOT claim
+
+Not that the isomorphism is unique (it is — the same uniqueness clause
+gives it — but nothing here consumes that), and not that it is compatible
+with the universal data beyond the schemes.  `IsAffine` is a property of
+the scheme alone, which is all the consumer below needs; a successor
+wanting the transported datum should strengthen the conclusion to carry
+`m`'s `IsBaseChangeOfGamma1` rather than restate this. -/
+theorem nonempty_iso_gamma1RigidifiedModuliScheme {N n : ℕ} {S : Scheme.{0}}
+    (R R' : Gamma1RigidifiedModuliScheme N n S) : Nonempty (R.M ≅ R'.M) := by
+  obtain ⟨m, ⟨hmstr, bc, hmP, hmQ⟩, -⟩ := R'.universal R.strM R.dM R.lvlM
+  obtain ⟨m', ⟨hm'str, bc', hm'P, hm'Q⟩, -⟩ := R.universal R'.strM R'.dM R'.lvlM
+  -- a self-map of `A.M` classifying `A`'s OWN universal family is the identity
+  have key : ∀ (A : Gamma1RigidifiedModuliScheme N n S) (u : A.M ⟶ A.M),
+      u ≫ A.strM = A.strM →
+      (∃ b : IsBaseChangeOfGamma1 u A.dM A.dM,
+        A.lvlM.P.1 ≫ b.map = u ≫ A.lvlM.P.1 ∧
+          A.lvlM.Q.1 ≫ b.map = u ≫ A.lvlM.Q.1) →
+      u = 𝟙 A.M := by
+    intro A u hu hbc
+    obtain ⟨w, -, huniq⟩ := A.universal A.strM A.dM A.lvlM
+    refine (huniq u ⟨hu, hbc⟩).trans (huniq (𝟙 A.M) ⟨Category.id_comp _,
+      IsBaseChangeOfGamma1.refl A.dM, ?_, ?_⟩).symm
+    · show A.lvlM.P.1 ≫ 𝟙 A.dM.E = 𝟙 A.M ≫ A.lvlM.P.1
+      rw [Category.comp_id, Category.id_comp]
+    · show A.lvlM.Q.1 ≫ 𝟙 A.dM.E = 𝟙 A.M ≫ A.lvlM.Q.1
+      rw [Category.comp_id, Category.id_comp]
+  refine ⟨⟨m, m', key R (m ≫ m') ?_ ?_, key R' (m' ≫ m) ?_ ?_⟩⟩
+  · rw [Category.assoc, hm'str, hmstr]
+  · refine ⟨bc.comp bc', ?_, ?_⟩
+    · show R.lvlM.P.1 ≫ bc.map ≫ bc'.map = (m ≫ m') ≫ R.lvlM.P.1
+      rw [← Category.assoc, hmP, Category.assoc, hm'P, ← Category.assoc]
+    · show R.lvlM.Q.1 ≫ bc.map ≫ bc'.map = (m ≫ m') ≫ R.lvlM.Q.1
+      rw [← Category.assoc, hmQ, Category.assoc, hm'Q, ← Category.assoc]
+  · rw [Category.assoc, hmstr, hm'str]
+  · refine ⟨bc'.comp bc, ?_, ?_⟩
+    · show R'.lvlM.P.1 ≫ bc'.map ≫ bc.map = (m' ≫ m) ≫ R'.lvlM.P.1
+      rw [← Category.assoc, hm'P, Category.assoc, hmP, ← Category.assoc]
+    · show R'.lvlM.Q.1 ≫ bc'.map ≫ bc.map = (m' ≫ m) ≫ R'.lvlM.Q.1
+      rw [← Category.assoc, hm'Q, Category.assoc, hmQ, ← Category.assoc]
+
+/-- **KATZ–MAZUR, THE WHOLE CITATION IN ONE LEAF: the rigidified `Γ₁`
+moduli problem is representable by an AFFINE scheme** (sorry leaf; the
+2026-07-31 re-merge of `exists_gamma1RigidifiedModuliScheme` and
+`isAffine_of_gamma1RigidifiedModuliScheme`, which are now proven over it).
+
+## What the prover of this node owes
+
+That the moduli problem "`Γ₁(N)`-datum over a `K`-scheme together with a
+full level-`n` structure" is representable by an AFFINE scheme.  The
+citations are (4.7.2) with (4.7.1) behind it for `[Γ(n)]`, (5.1.1) for
+`[Γ₁(N)]`, combined by (6.6.2), plus the affineness parenthesis of
+(8.1.1):
+
+> It "exists" because `𝔐(𝒫, 𝒮)` is itself affine.
+
+Concretely: `𝔐(𝒮) = Y(n)_K` is affine by (4.7.2), `[Γ₁(N)]` is finite
+over `(Ell)` by (5.1.1), so `𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite hence affine by
+(6.6.2), and a scheme affine over an affine scheme is affine.  That last
+step is NOT a citation and is available in the pin, so what is genuinely
+cited is representability together with "`𝔐(𝒮)` is affine" and
+"`𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite".
+
+## Why the two halves belong in ONE leaf
+
+Because separating them costs an open node and buys nothing.  A prover of
+either half is reading the same three pages of Katz–Mazur, and the
+affineness clause of (8.1.1) is not a separable theorem there — it is a
+remark attached to the construction that (4.7.2)/(5.1.1)/(6.6.2) carry
+out.  Splitting them was defensible while `isAffine_of_…` looked like it
+needed the affineness of an ARBITRARY inhabitant; rigidity
+(`nonempty_iso_gamma1RigidifiedModuliScheme` above) removes that, so a
+single witness discharges both consumers.
+
+## Faithfulness
+
+`hn` and `hcharn` are load-bearing for TRUTH (at `n ≤ 2` the rigidified
+problem still has `-1`; at `char K ∣ n` the group scheme `E[n]` is not
+étale and `AbelianFullLevelStructure n dM.ab` is unsatisfiable over a
+nonempty base), `hcharN` is what makes `[Γ₁(N)]` étale rather than merely
+finite flat, and `_hN` is not load-bearing and is carried only to match
+the consumers.
+
+### FALSITY AUDIT of the quantifier shape
+
+Performed 2026-07-30 for `exists_gamma1RigidifiedModuliScheme`; re-checked
+2026-07-31 against this merged statement, per CLAUDE.md's rule that a
+restated leaf VOIDS its earlier audit.  The verdict is unchanged, and the
+reason it may be re-used rather than merely inherited is that the merge
+moved the outer quantifier in the SAFE direction (`∃ R` here, where
+`isAffine_of_…` had `∀ R`) and left the inner `∀ T, ∀ g` of `universal`
+byte-identical.
+
+`universal` quantifies over **every** scheme `T` and **every**
+`g : T ⟶ Spec K`, while `Gamma1Datum N T` and `AbelianFullLevelStructure n`
+mention `g` nowhere.  That is the shape this development has been burned by
+before, so it was checked rather than assumed, and the worry is concrete:
+fix one datum-with-level-structure `(d, L)` over `T` and let `g` range over
+the (generally many) `K`-structures on `T` — e.g. `T = Spec K`, `K = ℚ(i)`,
+`g` and `g ∘ Spec(conjugation)` — and `universal` demands a DIFFERENT unique
+`m` for each `g`.  A statement of that shape is false whenever the
+classifying map is determined by `(d, L)` alone.
+
+It is not false here, and the reason is that the classifying map is NOT
+determined by `(d, L)` alone.  `hcharN` and `hcharn` make `K` a
+`ℤ[1/Nn]`-algebra, so `T` is a `ℤ[1/Nn]`-scheme and the Katz–Mazur moduli
+scheme `𝔐` over `ℤ[1/Nn]` gives `Hom_{ℤ[1/Nn]}(T, 𝔐) = {(d, L) over T}`.
+Taking `M := 𝔐 ×_{ℤ[1/Nn]} Spec K`, a `Spec K`-morphism `T ⟶ M` over `g` is
+exactly a pair (a `ℤ[1/Nn]`-morphism `T ⟶ 𝔐`, and `g` itself), so for each
+`g` separately there is exactly one `m`, and the several `m` belonging to
+the several `g` are the Galois twists of one another.  The functor being
+represented is `(T, g) ↦ {(d, L) over T}`, whose value genuinely does not
+depend on `g`; that is consistent because the representing bijection does.
+
+So the leaf is an ordinary open citation and not a quantifier trap.  It is
+not reducible to anything in this file or in `X0.lean` — the `Γ₀` twins
+`exists_rigidifiedModuliScheme` and `isAffine_of_rigidifiedModuliScheme`
+are themselves open leaves, and are over `Spec ℚ` rather than `Spec K`
+besides. -/
+theorem exists_isAffine_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ)
+    (hn : 3 ≤ n) (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N)
+    (hcharn : ¬ ringChar K ∣ n) :
+    ∃ R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K)), IsAffine R.M :=
+  sorry
 
 /-- **Katz–Mazur representability of the rigidified `Γ₁` moduli problem**
 (sorry leaf, cut 2026-07-30 out of `exists_gamma1RigidifiedModuli` below)
@@ -3492,11 +3675,21 @@ a prover owes is unchanged: Katz–Mazur representability, which is not
 available in the pin in any form and is not reducible to anything in this
 file or in `X0.lean` — the `Γ₀` twins `exists_rigidifiedModuliScheme` and
 `isAffine_of_rigidifiedModuliScheme` are themselves open leaves, and are
-over `Spec ℚ` rather than `Spec K` besides. -/
+over `Spec ℚ` rather than `Spec K` besides.
+
+**STATUS CHANGE 2026-07-31: this is no longer a `sorry` of its own.**  It
+is now the forgetful half of the single leaf
+`exists_isAffine_gamma1RigidifiedModuliScheme` above, which asserts the
+same representability together with the affineness that
+`isAffine_of_gamma1RigidifiedModuliScheme` used to carry separately.  The
+paragraphs above are kept because they are what a prover of that leaf must
+read; the citation they describe is unchanged, and only its Lean location
+has moved.  The name and signature are preserved for the consumers. -/
 theorem exists_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
     (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
-    Nonempty (Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) :=
-  sorry
+    Nonempty (Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) := by
+  obtain ⟨R, -⟩ := exists_isAffine_gamma1RigidifiedModuliScheme N _hN n hn K hcharN hcharn
+  exact ⟨R⟩
 
 /-- **Katz–Mazur affineness: the rigidified `Γ₁` moduli scheme is affine**
 (sorry leaf, cut 2026-07-30 out of `exists_gamma1RigidifiedModuli` below)
@@ -3540,11 +3733,33 @@ one citation into two citations plus a definition.  That is a worse trade by
 this development's own tie-breaker (fewer OPEN leaves after), so this stays
 a single citation leaf until somebody formalises Katz–Mazur representability
 proper — at which point `exists_gamma1RigidifiedModuliScheme` and this leaf
-close together. -/
+close together.
+
+**STATUS CHANGE 2026-07-31: this is no longer a `sorry` of its own, and the
+prediction in the paragraph immediately above is what came true — except
+that the two closed together EARLIER than expected, because only ONE of
+them ever needed the citation.**  The "Why the `∀` is legitimate" section
+above argues that fine moduli makes any two inhabitants isomorphic and that
+`IsAffine` is isomorphism-invariant, i.e. that
+`∀ R, IsAffine R.M` follows from `∃ R, IsAffine R.M`.  That argument was
+never written in Lean.  It is now
+`nonempty_iso_gamma1RigidifiedModuliScheme`, it is 30 lines, and with it
+this theorem is a three-line consequence of
+`exists_isAffine_gamma1RigidifiedModuliScheme`.
+
+The general lesson, and it is the reason this is spelled out rather than
+silently fixed: **a docstring paragraph that argues two leaves are
+equivalent is a leaf-merge waiting to be performed.**  Prose of the form
+"any two inhabitants are related by a unique isomorphism, so these are the
+same statement" is a proof sketch, not a caveat; if it is right, one of the
+two leaves is free. -/
 theorem isAffine_of_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
     (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n)
-    (R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) : IsAffine R.M :=
-  sorry
+    (R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) : IsAffine R.M := by
+  obtain ⟨R₀, hR₀⟩ := exists_isAffine_gamma1RigidifiedModuliScheme N _hN n hn K hcharN hcharn
+  obtain ⟨e⟩ := nonempty_iso_gamma1RigidifiedModuliScheme R₀ R
+  haveI := hR₀
+  exact IsAffine.of_isIso e.inv
 
 /-- **From a fine moduli scheme with a chosen affine presentation to
 `Gamma1RigidifiedModuli`** (PROVEN 2026-07-30) — the pure FORMALISATION
@@ -5449,8 +5664,161 @@ theorem exists_weierstrassCurve_pointOfExactOrder (N : ℕ)
     ((Submodule.subtype (Submodule.torsionBy ℤ E.toAffine.Point (N : ℤ))).toAddMonoidHom)
     (Submodule.injective_subtype _) v).trans hvord
 
+/-- **A ring map out of a field into an algebraically closed field EXTENDS
+to the algebraic closure, and the extension COMMUTES** (PROVEN
+2026-07-31) — `exists_ringHom_algebraicClosure` (`X0.lean`) with the
+commuting clause, which that version discards.
+
+`X0.lean` can discard it because everything there happens over `Spec ℚ`,
+where the commuting square is `Subsingleton.elim` — `ℚ` is initial in
+`CommRing`.  Over a general base field it is the whole content, and
+supplying it costs one line: `IsAlgClosed.lift` is an `AlgHom` over `F`,
+so `AlgHom.commutes` says exactly that the triangle commutes, once the
+`Algebra F K` structure is the one `ψ` defines.
+
+Consumed by `exists_injective_pre_geomBase_field` below. -/
+theorem exists_ringHom_algebraicClosure_comp {F : Type} [Field F] {K : Type} [Field K]
+    [IsAlgClosed K] (ψ : F →+* K) :
+    ∃ φ : AlgebraicClosure F →+* K,
+      φ.comp (algebraMap F (AlgebraicClosure F)) = ψ := by
+  letI : Algebra F K := ψ.toAlgebra
+  refine ⟨(IsAlgClosed.lift (R := F) (S := AlgebraicClosure F) (M := K)).toRingHom, ?_⟩
+  ext x
+  exact (IsAlgClosed.lift (R := F) (S := AlgebraicClosure F) (M := K)).commutes x
+
+/-- **Every geometric point of `Spec L` is dominated by `Spec L̄`, and the
+resulting map on relative points is INJECTIVE** (PROVEN 2026-07-31) — the
+base-generalisation of `X0.lean`'s `exists_injective_pre_geomBase`, and
+the "second declaration" the reconnaissance on
+`nonempty_gamma1Datum_of_weierstrassPoint` below budgeted for.
+
+## What changes from the `ℚ` version, and what does not
+
+The `ℚ` version obtains its ring map `ψ : ℚ →+* K` from
+`nonempty_ringHom_of_hom_specQ` and discharges the commuting clause with
+`Subsingleton.elim`, both of which are appeals to the INITIALITY of `ℚ`
+among rings.  Neither is available over a general `L`, and each is
+replaced by the honest statement:
+
+* `ψ` is `Spec.preimage t` — `Spec` is fully faithful on affines, so a
+  morphism `Spec K ⟶ Spec L` IS a ring map `L →+* K`, with no initiality
+  needed;
+* the commuting clause is `exists_ringHom_algebraicClosure_comp` above,
+  transported across `Spec.map_comp`.
+
+Injectivity is unchanged and is the reason the statement is worth having:
+`Spec` of a map of FIELDS is an epimorphism (`epi_specMap_of_fieldHom`,
+which is already stated at a general `F`), so precomposition with it is
+injective on morphisms out of `Spec K`, hence on relative points.
+
+`IsAlgClosed K` is load-bearing — it is what lets `ψ` extend over the
+algebraic closure at all — and `[Field K]` is what makes `Spec.map φ` an
+epimorphism.  Nothing is assumed about `A` or `f`. -/
+theorem exists_injective_pre_geomBase_field {L : Type} [Field L] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of L)}
+    (K : Type) [Field K] [IsAlgClosed K]
+    (t : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of L)) :
+    ∃ (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure L)))
+      (he : e ≫ (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) = t),
+      Function.Injective
+        (fun x : GeomFibrePt f (𝟙 (Spec (CommRingCat.of L))) => RelPoint.pre e he x) := by
+  obtain ⟨φ, hφ⟩ := exists_ringHom_algebraicClosure_comp (F := L) (K := K) (Spec.preimage t).hom
+  haveI : Epi (Spec.map (CommRingCat.ofHom φ)) := epi_specMap_of_fieldHom φ
+  refine ⟨Spec.map (CommRingCat.ofHom φ), ?_, ?_⟩
+  · rw [Category.comp_id, specAlgClos, ← Spec.map_comp]
+    refine Eq.trans ?_ (Spec.map_preimage t)
+    congr 1
+    exact CommRingCat.hom_ext hφ
+  · intro a b hab
+    exact Subtype.ext ((cancel_epi (Spec.map (CommRingCat.ofHom φ))).mp
+      (congrArg Subtype.val hab))
+
+/-- **`EllipticScheme.lean` OVER A GENERAL BASE FIELD: an elliptic curve
+over `L` with an `L`-rational point becomes an elliptic scheme over
+`Spec L` with a section of the same order** (sorry leaf, cut 2026-07-31
+out of `nonempty_gamma1Datum_of_weierstrassPoint` below, which is PROVEN
+over it).
+
+## What the prover of this node owes
+
+Exactly step 1 of the route recorded on
+`nonempty_gamma1Datum_of_weierstrassPoint` — the `L`-analogue of
+`exists_ellipticScheme_of_weierstrass` (`X0.lean`, PROVEN over the leaves
+of `EllipticScheme.lean`, and stated at the concrete base `ℚ`) — and
+NOTHING from the moduli side: no `Gamma1Datum`, no `PointOfExactOrder`, no
+Galois descent, no geometric-fibre bookkeeping beyond a single order.
+
+Concretely: the projective model `E.proj` over `L`, its structure morphism
+to `Spec L`, the group law as an `AbelianSchemeStruct`, smoothness of
+relative dimension one, and the section determined by `P`.
+
+## The one design decision, and why it went this way
+
+The reconnaissance on the consumer below poses it: state the bridge so
+that it produces the SECTION from the `L`-point directly, or state it in
+the `ℚ`-side's geometric-fibre-only form (an equivariant `≃+` on
+`(E⁄L̄).Point`) and then descend, which needs `[PerfectField L]`.
+
+**The section form is taken.**  Reasons, in order of weight:
+
+1. It is the FAITHFUL one.  The consumer's statement has no
+   `[PerfectField L]` and must not acquire one: `Field.absoluteGaloisGroup L`
+   has fixed field the purely inseparable closure of `L` inside `L̄`,
+   strictly larger than `L` when `L` is imperfect, so a `Γ_L`-invariant
+   geometric point of an imperfect-base scheme need NOT descend.  The
+   geometric-fibre form would therefore have forced the consumer to be
+   weakened.
+2. The descent it avoids was never needed.  `P` is `L`-rational, so the
+   section is there before any geometric point is formed; only the ORDER
+   has to travel upwards, and that is what the statement below records.
+3. It is strictly less to prove.  `exists_ellipticScheme_of_weierstrass`
+   owes a `Γ_ℚ`-equivariant `≃+` on the whole geometric fibre; this owes
+   one section and one order.
+
+## FALSITY AUDIT (2026-07-31, PASSES)
+
+TRUE.  Take `A := E.proj` over `L` — the same object `EllipticScheme.lean`
+builds over `ℚ`, whose construction is not `ℚ`-specific in content;
+`E.IsElliptic` makes it proper, smooth of relative dimension one and with
+geometrically connected fibres, i.e. an abelian scheme over `Spec L`.  An
+`L`-rational point of `E` is an `L`-point of `A` over `Spec L`, i.e. a
+section `s`.  Its value at the geometric point `specAlgClos L` is the
+image of `P` under `E(L) → E(L̄)`, which is `WeierstrassCurve.Affine.Point.map`
+along the (injective, `L` being a field) map `L → L̄`; `Point.map_injective`
+and `addOrderOf_injective` give `addOrderOf` unchanged.  So the order
+recorded is `addOrderOf P`, as stated.
+
+`[E.IsElliptic]` is load-bearing: a singular Weierstrass curve is not an
+abelian scheme, `smooth` fails, and no `AbelianSchemeStruct` exists.  No
+characteristic hypothesis is needed or wanted — nothing here asks that any
+integer be invertible, and `P` is GIVEN rather than produced.  `N` does not
+appear: the order is stated as `addOrderOf P`, so the leaf is independent
+of the consumer's `hP` and cannot be trivialised by an unsatisfiable one.
+At `addOrderOf P = 0` the statement is true and not vacuous (a curve of
+positive rank over `L` supplies such a `P`, and the recorded order is then
+`0` on both sides).
+
+**The order is stated at ONE geometric point, `specAlgClos L`, and not at
+all of them.**  That is deliberate and is where this leaf stops:
+spreading it to every algebraically closed `(K, t)` is
+`exists_injective_pre_geomBase_field` above, which is PROVEN, and folding
+that into this leaf would hand a prover of `EllipticScheme.lean` work that
+is already done. -/
+theorem exists_ellipticSchemeSection_of_weierstrassPoint {L : Type} [Field L]
+    [DecidableEq L] (E : WeierstrassCurve L) [E.IsElliptic] (P : E.toAffine.Point) :
+    ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of L)) (ab : AbelianSchemeStruct f)
+      (_ : SmoothOfRelativeDimension 1 f) (s : Spec (CommRingCat.of L) ⟶ A)
+      (hs : s ≫ f = 𝟙 (Spec (CommRingCat.of L))),
+      letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
+      addOrderOf
+          (RelPoint.ofSection s hs (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))))
+        = addOrderOf P :=
+  sorry
+
 /-- **A point of exact order `N` on an elliptic curve over an arbitrary
-field `L` gives a `Γ₁(N)`-structure over `Spec L`** (sorry leaf, opened
+field `L` gives a `Γ₁(N)`-structure over `Spec L`** (**PROVEN 2026-07-31**
+over the single leaf `exists_ellipticSchemeSection_of_weierstrassPoint`
+above; a sorry leaf from
 2026-07-28) — the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`,
 which is the SAME statement at `L := ℚ` and is **PROVEN** far below in
 this file.
@@ -5545,12 +5913,59 @@ curve is not an abelian scheme.  At `N = 0` the statement is true and not
 vacuous, for the reason `nonempty_gamma1Datum_of_ratPoint`'s docstring
 records: `PointOfExactOrder` carries no finiteness field, so
 `addOrderOf = 0` asks for a section of infinite order and a curve of
-positive rank supplies one. -/
+positive rank supplies one.
+
+## RESOLUTION 2026-07-31: the choice the reconnaissance left open is MADE,
+## and this declaration is no longer a `sorry` of its own
+
+The reconnaissance above ends by handing a successor a decision — state
+step 1's `L`-analogue so that it produces the SECTION from the `L`-point
+directly (no descent, correct for imperfect `L`), or copy the `ℚ`-side's
+geometric-fibre-only form and add `[PerfectField L]`, silently weakening
+this leaf.  **The first was taken**, and with it steps 2 and 3 are
+DISCHARGED here rather than deferred:
+
+* Step 2 (Galois descent) **disappears entirely.**  It was never needed —
+  `P` is `L`-rational, so the section exists before any geometric point is
+  formed — and dropping it is what makes the leaf provable for imperfect
+  `L`.  Nothing below mentions `Field.absoluteGaloisGroup`,
+  `PerfectField`, or `exists_specSection_of_specGal_invariant`.
+* Step 3 (order transport to EVERY geometric fibre) is proven below over
+  `exists_injective_pre_geomBase_field`, which is the "second declaration"
+  the reconnaissance budgeted for the `ℚ`-shaped
+  `exists_injective_pre_geomBase`.  Its commuting clause really is no
+  longer a `Subsingleton.elim`, exactly as predicted; it is
+  `exists_ringHom_algebraicClosure_comp`, i.e. `IsAlgClosed.lift` read
+  through `AlgHom.commutes`.
+
+What is left is **step 1 and nothing else**, as the single leaf
+`exists_ellipticSchemeSection_of_weierstrassPoint` above: an elliptic
+scheme over `Spec L` carrying the section that `P` determines.  That is
+purely `EllipticScheme.lean`'s business — the base-generalisation this
+docstring has always named as "the whole obstruction" — and it is now
+stated in a form that mentions no moduli structure at all. -/
 theorem nonempty_gamma1Datum_of_weierstrassPoint {N : ℕ} (L : Type) [Field L]
     [DecidableEq L] (E : WeierstrassCurve L) [E.IsElliptic] (P : E.toAffine.Point)
     (hP : addOrderOf P = N) :
-    Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) :=
-  sorry
+    Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) := by
+  obtain ⟨A, f, ab, hdim, s, hs, hord⟩ :=
+    exists_ellipticSchemeSection_of_weierstrassPoint E P
+  refine ⟨⟨A, f, ab, hdim, ⟨s, hs, ?_⟩⟩⟩
+  intro K _ _ t
+  letI := ab.addCommGroup t
+  letI := ab.addCommGroup (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L)))
+  obtain ⟨eK, heK, hinjK⟩ := exists_injective_pre_geomBase_field (f := f) K t
+  -- `RelPoint.pre eK` is additive, hence order-preserving, and injective
+  let Φ : GeomFibrePt f (𝟙 (Spec (CommRingCat.of L))) →+ RelPoint f t :=
+    { toFun := fun w => RelPoint.pre eK heK w
+      map_zero' := ab.pre_zero eK heK
+      map_add' := fun a b => ab.pre_add eK heK a b }
+  have hΦ : Φ (RelPoint.ofSection s hs (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))))
+      = RelPoint.ofSection s hs t := by
+    apply Subtype.ext
+    show eK ≫ (specAlgClos L ≫ 𝟙 (Spec (CommRingCat.of L))) ≫ s = t ≫ s
+    rw [← Category.assoc, heK]
+  rw [← hΦ, addOrderOf_injective Φ hinjK, hord, hP]
 
 /-- **`[Γ₁(N)]` is nonempty over SOME field extension of `K`**
 (**PROVEN 2026-07-28** over the two leaves above; formerly a single
