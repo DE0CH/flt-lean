@@ -835,6 +835,12 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynom
 -- `ℓ ∤ leadingCoeff F`, and the proof runs over `ℤ_[ℓ]` where that makes the leading
 -- coefficient a UNIT.  Mathlib-facing and uniform in everything — no curve, no table.
 public import Fermat.FLT.Mathlib.RingTheory.Polynomial.ReductionModPrime
+-- `MazurNonCMCertificate.not_monic_dvd_preΨ_elevenA_mod`, the FINITE-FIELD half of the
+-- `p = 11`, `j = −121` row: the explicit factorisation `Ψ₁₁ mod 23 = 11 · D · H` re-derived
+-- inside Lean from mathlib's EDS recursion, plus the uniform degree obstruction over a finite
+-- field.  Kept out of this file because elaboration is single-threaded per module and nothing
+-- in it mentions a modular curve; it leaves ONE leaf, `H ∣ X ^ (23 ^ 11) - X`.
+public import Fermat.FLT.EllipticCurve.MazurNonCMCertificate
 
 @[expose] public section
 
@@ -19237,8 +19243,13 @@ dispatched at as a plain computation at all.**
 (degree `5`), `H` the product of the five factors of degree `11`, and `m = 11`.  The factors
 of degree `≤ 10` total `5 < 10`, and `11 > 10`, so `10` is not a subset sum.
 
-Cheapest of the six.  See the subsection docstring for the three-step argument and for the
-Frobenius-linearity trick that makes the `H ∣ X ^ (23 ^ 11) - X` chain cheap.
+Cheapest of the six, and **DECOMPOSED AND PROVEN 2026-07-30** over
+`MazurNonCMCertificate.not_monic_dvd_preΨ_elevenA_mod`, which leaves exactly one leaf:
+`MazurNonCMCertificate.dvd_X_pow_card_pow_sub_X_hPolyElevenA`, i.e. `H ∣ X ^ (23 ^ 11) - X`.
+Everything else on this row — the explicit `Ψ₁₁ mod 23` from the EDS recursion, the
+factorisation `C 11 * (D * H)`, `H` root-free, and the three-step obstruction — is proven.
+See the subsection docstring for the three-step argument and for the Frobenius-linearity trick
+that makes the remaining chain cheap.
 
 **THE CERTIFICATE, MACHINE-CHECKED AGAIN 2026-07-30** (PARI/GP 2.15.4), in the exact form the
 route above consumes:
@@ -19272,9 +19283,9 @@ ORDER matters — `reduce_mod_char` before `ring_nf` reduces the inputs and then
 re-inflates them (`626` for a coefficient that is `5`), so the reduction has to come LAST.
 With that, `Ψ₂Sq`, `Ψ₃`, `preΨ₄` and `preΨ' 5` (degree `12`) all go through in about `25 s`
 together.  Degree `60` was not attempted. -/
-theorem not_monic_dvd_preΨ_mod_nonCMModelElevenA (G : Polynomial (ZMod 23)) (_hG : G.Monic)
-    (_hdeg : G.natDegree = 10) (_hdvd : G ∣ nonCMModelElevenAmod.preΨ' 11) : False :=
-  sorry
+theorem not_monic_dvd_preΨ_mod_nonCMModelElevenA (G : Polynomial (ZMod 23)) (hG : G.Monic)
+    (hdeg : G.natDegree = 10) (hdvd : G ∣ nonCMModelElevenAmod.preΨ' 11) : False :=
+  MazurNonCMCertificate.not_monic_dvd_preΨ_elevenA_mod G hG hdeg hdvd
 
 /-- **Row `p = 11`, `j = −24729001`, MOD `23`** (sorry leaf, cut 2026-07-30).
 
