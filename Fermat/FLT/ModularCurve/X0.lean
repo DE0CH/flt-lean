@@ -14321,29 +14321,51 @@ theorem exists_jSection_algClosModel :
         jLineValAlgClos (ja.jt (specAlgClos ℚ) d) = W.j :=
   sorry
 
-/-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (sorry leaf, opened
-2026-07-27): an abelian scheme of relative dimension one over `Spec ℚ̄` has a
-Weierstrass model.
+/-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (**PROVEN 2026-07-30**; a sorry
+leaf from 2026-07-27 until then): an abelian scheme of relative dimension one
+over `Spec ℚ̄` has a Weierstrass model.
 
-**This is `exists_weierstrassCurve_of_abelianSchemeStruct` with its base
-generalised from `ℚ` to `ℚ̄`, and it MUST be proven by generalising that one —
-not by opening a second copy of Riemann–Roch.**  The `ℚ`-statement is PROVEN,
-over `EllipticScheme.lean`'s `exists_weierstrassModel_geomFibreAddEquiv_of_`
-`ellipticScheme`, whose own coordinate half `exists_weierstrassModel_of_`
-`ellipticScheme` is proven over three leaves there
+**HOW IT WAS CLOSED — exactly as the paragraph below demanded, by generalising
+the base of the `ℚ` chain and not by a second copy of Riemann–Roch.**
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme`, its
+assembly, and everything under it now read over an arbitrary field `K` of
+characteristic zero; this theorem is the instance `K := ℚ̄` and the `ℚ` form is
+the instance `K := ℚ`.  **No leaf was added and none was re-opened**: at the
+time of the generalisation exactly ONE declaration in that chain was still a
+`sorry` — the Riemann–Roch atom `exists_weierstrassGenerators_of_affineComplement`
+— and it remains exactly one, now carrying the content at every base at once.
+
+**Stale claim corrected (2026-07-30).**  The paragraph below said the `ℚ`
+statement was "proven over three leaves there
 (`exists_affineComplement_zeroSection`,
 `exists_weierstrassRingEquiv_of_affineComplement`,
-`isElliptic_of_isOpenImmersion_coordinateRing`).  Every one of those is stated
-over `Spec (CommRingCat.of ℚ)` and NONE of their statements uses anything
-about `ℚ` beyond its being a field — so the generalisation is a base
-substitution in three leaf statements plus their assembly.
+`isElliptic_of_isOpenImmersion_coordinateRing`)".  All three had been PROVEN by
+2026-07-28 — the first over `CurveAffineComplement.lean`'s
+`isAffineOpen_compl_singleton_of_isSmoothProperCurve`, the second over the
+Riemann–Roch atom, the third over `exists_singular_of_Δ_eq_zero` plus the
+Jacobian-criterion section — so a successor reading this docstring would have
+priced three leaves that no longer existed.  This is why the two branches that
+attacked this node from a 2026-07-28 base (`flt-lean-91`, `flt-lean-195`)
+GENERALISED THE THREE STATEMENTS BACK INTO `sorry`s: their reconciliation would
+have regressed `main` by three proofs.  The generalisation recorded here keeps
+every one of them.
 
-**The one genuinely ℚ-specific step in that assembly**, and a successor should
-expect to pay for it: `exists_weierstrassModel_of_ellipticScheme` discharges
-the conjunct `ι ≫ f = weierstrassAffineStr E` with `hom_ext_spec_rat`, i.e.
-with the uniqueness of a morphism to `Spec ℚ` — `ℚ` being initial in
-`CommRing`.  Over `ℚ̄` there is no such uniqueness and the structure-morphism
-compatibility has to be carried by the construction instead of being read off.
+**The one genuinely ℚ-specific step in that assembly**, correctly predicted by
+the paragraph this replaces: the assembly discharged the conjunct
+`ι ≫ f = weierstrassAffineStr E` with `hom_ext_spec_rat`, i.e. with the
+uniqueness of a morphism to `Spec ℚ` — `ℚ` being initial in `CommRing`.  Over
+`ℚ̄` there is no such uniqueness, so the compatibility is now CARRIED: leaf 1
+returns `R` as a `K`-algebra together with
+`ι ≫ f = Spec (algebraMap K R)` (free, because `Scheme.Spec` is fully faithful
+and the algebra structure is DEFINED to be the chart's own structure map — see
+`exists_isOpenImmersion_range_eq_compl_of_section`), leaf 2 returns a `≃ₐ[K]`
+rather than a `≃+*`, and leaf 3 takes the compatibility as a hypothesis.
+
+**Where `CharZero K` enters**, and why it costs nothing here: leaf 3 argues that
+a singular Weierstrass curve has a *rational* singular point, and
+`exists_singular_of_Δ_eq_zero` produces it by completing the square and the cube,
+which needs `2` and `3` invertible.  Both instantiations — `ℚ` and `ℚ̄` — are
+characteristic zero, so no consumer pays for it.
 
 TRUE: `f` proper, smooth, geometrically connected of relative dimension `1`
 with a section is a genus-one curve over `ℚ̄` with a rational point;
@@ -14361,8 +14383,13 @@ theorem exists_weierstrassAlgClos_of_abelianSchemeStruct {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))}
     (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (Ē : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : Ē.IsElliptic),
-      IsWeierstrassModel ab Ē :=
-  sorry
+      IsWeierstrassModel ab Ē := by
+  -- `exists_weierstrassModel_of_ellipticScheme` returns `IsWeierstrassModel` with
+  -- `weierstrassAffine`/`weierstrassAffineStr` unfolded — those are `def`s, not
+  -- structures, so `exact` closes the goal with no transport lemma.
+  obtain ⟨Ē, hĒ, ι, hopen, hstr, hrange⟩ :=
+    exists_weierstrassModel_of_ellipticScheme (K := AlgebraicClosure ℚ) ab hdim
+  exact ⟨Ē, hĒ, ι, hopen, hstr, hrange⟩
 
 /-- **THE TRANSPORT: a `ℚ̄`-model with rational `j` descends the level
 structure to a curve over `ℚ`, up to an automorphism** (sorry leaf, opened
@@ -24884,9 +24911,17 @@ over `exists_weierstrassQ_autStable_of_galoisInvariant` and
 to close and the two attacks are now genuinely independent.  Do not re-derive the
 sibling from this node. -/
 
-/-- **A `Γ₀(N)`-datum over `ℚ̄` has a Weierstrass model** (sorry leaf, opened
-2026-07-28 as the geometric half of the `j`-cut of
-`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`).
+/-- **A `Γ₀(N)`-datum over `ℚ̄` has a Weierstrass model** (**PROVEN 2026-07-30**;
+a sorry leaf, opened 2026-07-28 as the geometric half of the `j`-cut of
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`, until then).
+
+**CLOSED as a one-liner off `exists_weierstrassAlgClos_of_abelianSchemeStruct`
+above**, which is the same statement with the datum's `ab`/`relativeDimensionOne`
+unpacked; see that docstring for how the base generalisation of
+`EllipticScheme.lean`'s chain was done and for the stale-leaf-list correction.
+The route this docstring prescribed — generalise the base of the `ℚ`
+development, do NOT open a second copy of Riemann–Roch — is exactly the route
+taken.
 
 TRUE, and it carries NO arithmetic: `d.ab` is an abelian scheme of relative
 dimension `1` over the field `ℚ̄` with a section, i.e. a genus-one curve with a
@@ -24929,7 +24964,7 @@ theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
     ∃ (W : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : W.IsElliptic),
       IsWeierstrassModel d.ab W :=
-  sorry
+  exists_weierstrassAlgClos_of_abelianSchemeStruct d.ab d.relativeDimensionOne
 
 /-- **The moduli-to-Weierstrass dictionary, WITH the `j`-invariant carried
 across** (sorry leaf, opened 2026-07-28 as the geometric half of the cut of
