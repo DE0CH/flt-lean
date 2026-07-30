@@ -293,6 +293,8 @@ public import Mathlib.Algebra.CharP.Lemmas
 public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.DedekindDomain.AdicValuation
+public import Mathlib.RingTheory.DedekindDomain.IntegralClosure
 
 @[expose] public section
 
@@ -1177,6 +1179,502 @@ def IsPlaceFunOfPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
   | Sum.inl q => 0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2)
   | Sum.inr s => o E.xx = -1 ∧ -3 < o (E.yy - (if s then 1 else -1) * E.xx ^ 3)
 
+/-! ### Places from the Dedekind ring of integers (PROVEN, 2026-07-30)
+
+The machinery that closes the affine half of obligation 1c, and the reusable half of the
+infinite half.  It replaces the Laurent-series/Hensel route the docstring below proposes by
+the Dedekind one, which mathlib already carries: `A = integralClosure K[X] F` is a Dedekind
+domain with `Frac A = F` (`integralClosure.isDedekindDomain`, once the tower
+`K[X] ⊆ K(x) ⊆ F` is in place and `F/K(x)` is finite separable), and each of its height-one
+primes gives a normalised `K`-trivial discrete valuation of `F` — that is `ordAt`, whose
+five `IsPlaceFun` axioms are `isPlaceFun_ordAt`.
+
+The point `(a, b)` is then reached by LYING OVER the maximal ideal `(X − a)` of `K[X]`, and
+the two branches `y = ±b` are separated by the HYPERELLIPTIC INVOLUTION rather than by a
+count of primes: `exists_isPlaceFun_of_affPt_upToSign` produces a place at which `x − a` is
+positive and at least ONE of `y ∓ b` is, and precomposing with the `K(x)`-automorphism
+`y ↦ −y` (built through `AdjoinRoot (Y² − f)`, whose irreducibility is the file's own
+`not_isSquare_sextPoly`) exchanges the two disjuncts.  That is where `2 ≠ 0` is used, and
+`hsep` enters only through the irreducibility.
+-/
+
+section PlacesFromDedekind
+
+open IsDedekindDomain
+open scoped WithZero
+
+namespace PlaceFromDedekind
+
+variable {K F : Type} [Field K] [Field F] [Algebra K F]
+variable {A : Type} [CommRing A] [IsDedekindDomain A]
+  [Algebra A F] [IsFractionRing A F]
+
+/-- The `ℤ`-valued additive valuation attached to a height-one prime of `A`, on the
+fraction field `F`. -/
+noncomputable def ordAt (v : HeightOneSpectrum A) (z : F) : ℤ :=
+  - WithZero.log (v.valuation F z)
+
+lemma ordAt_zero (v : HeightOneSpectrum A) : ordAt (F := F) v 0 = 0 := by
+  simp [ordAt]
+
+lemma valuation_ne_zero (v : HeightOneSpectrum A) {z : F} (hz : z ≠ 0) :
+    v.valuation F z ≠ 0 := by
+  simpa [Valuation.ne_zero_iff] using hz
+
+lemma ordAt_mul (v : HeightOneSpectrum A) (a b : F) (ha : a ≠ 0) (hb : b ≠ 0) :
+    ordAt v (a * b) = ordAt v a + ordAt v b := by
+  simp only [ordAt, map_mul]
+  rw [WithZero.log_mul (valuation_ne_zero v ha) (valuation_ne_zero v hb)]
+  ring
+
+lemma ordAt_ultra (v : HeightOneSpectrum A) (a b : F) (ha : a ≠ 0) (hb : b ≠ 0)
+    (hab : a + b ≠ 0) : min (ordAt v a) (ordAt v b) ≤ ordAt v (a + b) := by
+  have hle : v.valuation F (a + b) ≤ max (v.valuation F a) (v.valuation F b) :=
+    (v.valuation F).map_add a b
+  have hmax : max (v.valuation F a) (v.valuation F b) ≠ 0 := by
+    rcases max_cases (v.valuation F a) (v.valuation F b) with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h]
+    · exact valuation_ne_zero v ha
+    · exact valuation_ne_zero v hb
+  have hlog : WithZero.log (v.valuation F (a + b))
+      ≤ WithZero.log (max (v.valuation F a) (v.valuation F b)) :=
+    (WithZero.log_le_log (valuation_ne_zero v hab) hmax).2 hle
+  have hmaxlog : WithZero.log (max (v.valuation F a) (v.valuation F b))
+      = max (WithZero.log (v.valuation F a)) (WithZero.log (v.valuation F b)) := by
+    rcases max_cases (v.valuation F a) (v.valuation F b) with ⟨h, hle'⟩ | ⟨h, hlt⟩
+    · rw [h, max_eq_left ((WithZero.log_le_log (valuation_ne_zero v hb)
+        (valuation_ne_zero v ha)).2 hle')]
+    · rw [h, max_eq_right (le_of_lt ((WithZero.log_lt_log (valuation_ne_zero v ha)
+        (valuation_ne_zero v hb)).2 hlt))]
+  rw [hmaxlog] at hlog
+  simp only [ordAt]
+  omega
+
+/-- `ordAt` is normalised: some element has order exactly `1`. -/
+lemma ordAt_normalised (v : HeightOneSpectrum A) : ∃ t : F, ordAt v t = 1 := by
+  obtain ⟨π, hπ⟩ := v.valuation_exists_uniformizer F
+  exact ⟨π, by simp [ordAt, hπ]⟩
+
+section Const
+
+variable [Algebra K A] [IsScalarTower K A F]
+
+/-- A nonzero constant is a unit of `A`, so it has valuation `1`. -/
+lemma valuation_algebraMap_eq_one (v : HeightOneSpectrum A) {a : K} (ha : a ≠ 0) :
+    v.valuation F (algebraMap K F a) = 1 := by
+  have hu : IsUnit (algebraMap K A a) :=
+    isUnit_iff_exists_inv.2 ⟨algebraMap K A a⁻¹,
+      by rw [← map_mul, mul_inv_cancel₀ ha, map_one]⟩
+  have hnm : algebraMap K A a ∉ v.asIdeal := fun hmem =>
+    v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ hmem hu)
+  rw [IsScalarTower.algebraMap_apply K A F]
+  exact (HeightOneSpectrum.valuation_eq_one_iff_notMem v).2 hnm
+
+lemma ordAt_algebraMap (v : HeightOneSpectrum A) (a : K) (ha : a ≠ 0) :
+    ordAt (F := F) v (algebraMap K F a) = 0 := by
+  simp [ordAt, valuation_algebraMap_eq_one (F := F) v ha]
+
+/-- **The place attached to a height-one prime**, in the shape `IsPlaceFun` asks for. -/
+theorem isPlaceFun_ordAt (v : HeightOneSpectrum A) :
+    IsPlaceFun K F (ordAt (F := F) v) where
+  map_zero := ordAt_zero v
+  map_mul := ordAt_mul v
+  ultra := ordAt_ultra v
+  map_algebraMap := ordAt_algebraMap v
+  normalised := ordAt_normalised v
+
+/-- An element of the prime has strictly positive order. -/
+lemma ordAt_pos_of_mem (v : HeightOneSpectrum A) {r : A} (hr : r ∈ v.asIdeal) (hr0 : r ≠ 0) :
+    0 < ordAt (F := F) v (algebraMap A F r) := by
+  have hlt : v.valuation F (algebraMap A F r) < 1 :=
+    (HeightOneSpectrum.valuation_lt_one_iff_mem (K := F) v r).2 hr
+  have hr0' : algebraMap A F r ≠ 0 :=
+    (map_ne_zero_iff (algebraMap A F) (IsFractionRing.injective A F)).2 hr0
+  have hne : v.valuation F (algebraMap A F r) ≠ 0 := valuation_ne_zero v hr0'
+  have : WithZero.log (v.valuation F (algebraMap A F r)) < WithZero.log (1 : ℤᵐ⁰) :=
+    (WithZero.log_lt_log hne one_ne_zero).2 hlt
+  simp only [WithZero.log_one] at this
+  simpa [ordAt] using this
+
+end Const
+
+/-! ### From a proper ideal of the ring of integers to a place -/
+
+section Tower
+
+variable {K F : Type} [Field K] [Field F]
+  [Algebra K F] [Algebra K[X] F] [Algebra (RatFunc K) F]
+  [IsScalarTower K K[X] F] [IsScalarTower K[X] (RatFunc K) F]
+  [FiniteDimensional (RatFunc K) F] [Algebra.IsSeparable (RatFunc K) F]
+
+noncomputable instance : IsFractionRing (↥(integralClosure K[X] F)) F :=
+  integralClosure.isFractionRing_of_finite_extension (RatFunc K) F
+
+noncomputable instance : IsDedekindDomain (↥(integralClosure K[X] F)) :=
+  integralClosure.isDedekindDomain K[X] (RatFunc K) F
+
+/-- **Every proper ideal of the ring of integers is cut out by a place.**  A maximal ideal
+containing it is a nonzero prime of a Dedekind domain, hence a height-one prime, and its
+adic valuation is a normalised `K`-trivial discrete valuation of `F` that is positive on
+every nonzero member of the ideal. -/
+theorem exists_isPlaceFun_of_ne_top (I : Ideal (↥(integralClosure K[X] F))) (hI : I ≠ ⊤)
+    (hI0 : I ≠ ⊥) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ ∀ z ∈ I, (z : F) ≠ 0 → 0 < o (z : F) := by
+  obtain ⟨m, hm, hIm⟩ := Ideal.exists_le_maximal I hI
+  have hm0 : m ≠ ⊥ := fun h => hI0 (le_bot_iff.1 (h ▸ hIm))
+  refine ⟨ordAt (F := F) ⟨m, hm.isPrime, hm0⟩, isPlaceFun_ordAt _, fun z hz hz0 => ?_⟩
+  have : (z : F) = algebraMap (↥(integralClosure K[X] F)) F z := rfl
+  rw [this]
+  exact ordAt_pos_of_mem _ (hIm hz) (fun h => hz0 (by rw [h]; simp))
+
+omit [Algebra K F] [IsScalarTower K K[X] F] in
+/-- An integral element has nonnegative order at every place of the ring of integers. -/
+lemma ordAt_nonneg_of_isIntegral
+    (v : HeightOneSpectrum ↥(integralClosure K[X] F)) {z : F} (hz : IsIntegral K[X] z) :
+    0 ≤ ordAt (F := F) v z := by
+  have hzA : z = algebraMap ↥(integralClosure K[X] F) F ⟨z, hz⟩ := rfl
+  have hle : v.valuation F z ≤ 1 := by
+    rw [hzA]; exact v.valuation_le_one _
+  rcases eq_or_ne z 0 with rfl | hz0
+  · simp [ordAt]
+  · have := (WithZero.log_le_log (valuation_ne_zero v hz0) (one_ne_zero (α := ℤᵐ⁰))).2 hle
+    simp only [WithZero.log_one] at this
+    simpa [ordAt] using this
+
+omit [Algebra K F] [IsScalarTower K K[X] F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+lemma algebraMap_poly_injective : Function.Injective (algebraMap K[X] F) := by
+  rw [IsScalarTower.algebraMap_eq K[X] (RatFunc K) F]
+  exact (algebraMap (RatFunc K) F).injective.comp (IsFractionRing.injective K[X] (RatFunc K))
+
+omit [Algebra K F] [IsScalarTower K K[X] F] in
+/-- **Lying over**: every nonzero maximal ideal of `K[X]` is dominated by a place of `F`. -/
+theorem exists_heightOneSpectrum_over_maximal (m : Ideal K[X]) [hm : m.IsMaximal]
+    (hm0 : m ≠ ⊥) :
+    ∃ v : HeightOneSpectrum ↥(integralClosure K[X] F),
+      ∀ p ∈ m, algebraMap K[X] F p ≠ 0 → 0 < ordAt (F := F) v (algebraMap K[X] F p) := by
+  have hinjF : Function.Injective (algebraMap K[X] F) := algebraMap_poly_injective (F := F)
+  have hinj : Function.Injective (algebraMap K[X] ↥(integralClosure K[X] F)) :=
+    fun p q hpq => hinjF (congrArg Subtype.val hpq)
+  obtain ⟨Q, hQ, hQm⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral (S := ↥(integralClosure K[X] F)) m
+      (by rw [(RingHom.injective_iff_ker_eq_bot _).1 hinj]; exact bot_le)
+  have hQ0 : Q ≠ ⊥ := by
+    intro h
+    exact hm0 (by rw [← hQm, h, Ideal.comap_bot_of_injective _ hinj])
+  refine ⟨⟨Q, hQ.isPrime, hQ0⟩, fun p hp hp0 => ?_⟩
+  have hmem : (algebraMap K[X] ↥(integralClosure K[X] F) p) ∈ Q := by
+    have hc : p ∈ Q.comap (algebraMap K[X] ↥(integralClosure K[X] F)) := by rw [hQm]; exact hp
+    exact hc
+  have hne : (algebraMap K[X] ↥(integralClosure K[X] F) p) ≠ 0 := fun h => hp0 (by
+    have : algebraMap K[X] F p
+        = algebraMap ↥(integralClosure K[X] F) F (algebraMap K[X] _ p) := rfl
+    rw [this, h, map_zero])
+  simpa using ordAt_pos_of_mem (F := F) ⟨Q, hQ.isPrime, hQ0⟩ hmem hne
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+lemma algebraMap_poly_eq_aeval {xx : F} (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (p : K[X]) : algebraMap K[X] F p = Polynomial.aeval xx p := by
+  have h : (IsScalarTower.toAlgHom K K[X] F) = (Polynomial.aeval xx : K[X] →ₐ[K] F) :=
+    Polynomial.algHom_ext (by simpa using hxx)
+  exact congrArg (fun φ => φ p) h
+
+/-- **The place of an affine rational point, up to the sign of the ordinate.**
+
+Lying over `(X − a)` produces a place `v` at which `x − a` is positive; the factorisation
+`(y − b)(y + b) = (x − a)·h(x)` then forces at least one of `y ∓ b` to be positive there,
+since both are integral over `K[X]` and hence of nonnegative order.  Which of the two it is
+is not decided here — that is the hyperelliptic involution's job. -/
+theorem exists_isPlaceFun_of_affPt_upToSign {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {xx yy : F} (hxx : algebraMap K[X] F Polynomial.X = xx)
+    (heqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx) (a b : K)
+    (hab : b ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ a) :
+    ∃ o : F → ℤ, IsPlaceFun K F o ∧ 0 < o (xx - algebraMap K F a) ∧
+      (0 < o (yy - algebraMap K F b) ∨ 0 < o (yy + algebraMap K F b)) := by
+  classical
+  have hinjF : Function.Injective (algebraMap K[X] F) := algebraMap_poly_injective (F := F)
+  have halg := algebraMap_poly_eq_aeval hxx
+  have hCa : ∀ c : K, algebraMap K[X] F (Polynomial.C c) = algebraMap K F c := fun c => by
+    rw [IsScalarTower.algebraMap_apply K K[X] F c]; rfl
+  -- the maximal ideal `(X − a)` of `K[X]`
+  have hirr : Irreducible (Polynomial.X - Polynomial.C a : K[X]) := Polynomial.irreducible_X_sub_C a
+  have hXa0 : (Polynomial.X - Polynomial.C a : K[X]) ≠ 0 := hirr.ne_zero
+  haveI hmax : (Ideal.span {Polynomial.X - Polynomial.C a} : Ideal K[X]).IsMaximal :=
+    PrincipalIdealRing.isMaximal_of_irreducible hirr
+  have hm0 : (Ideal.span {Polynomial.X - Polynomial.C a} : Ideal K[X]) ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hXa0
+  obtain ⟨v, hv⟩ := exists_heightOneSpectrum_over_maximal (F := F) _ hm0
+  refine ⟨ordAt (F := F) v, isPlaceFun_ordAt v, ?_, ?_⟩
+  · have hXaF : algebraMap K[X] F (Polynomial.X - Polynomial.C a) = xx - algebraMap K F a := by
+      rw [map_sub, hxx, hCa]
+    have hne : algebraMap K[X] F (Polynomial.X - Polynomial.C a) ≠ 0 :=
+      fun h => hXa0 (hinjF (by rw [h, map_zero]))
+    have := hv _ (Ideal.mem_span_singleton_self _) hne
+    rwa [hXaF] at this
+  · -- the factorisation `(y − b)(y + b) = (x − a)·h(x)`
+    have hroot : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a)).IsRoot a := by
+      simp [Polynomial.IsRoot, eval_sextPoly]
+    obtain ⟨h, hh⟩ := (Polynomial.dvd_iff_isRoot).2 hroot
+    have hfac : (yy - algebraMap K F b) * (yy + algebraMap K F b)
+        = (xx - algebraMap K F a) * Polynomial.aeval xx h := by
+      have e1 : Polynomial.aeval xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+            - Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a))
+          = Polynomial.aeval xx ((Polynomial.X - Polynomial.C a) * h) := by rw [hh]
+      simp only [map_sub, map_mul, Polynomial.aeval_C, Polynomial.aeval_X,
+        aeval_sextPoly] at e1
+      have hb : (algebraMap K F b) ^ 2 = algebraMap K F (sext c₀ c₁ c₂ c₃ c₄ c₅ a) := by
+        rw [← map_pow, hab]
+      linear_combination heqn + e1 - hb
+    -- everything in sight is integral over `K[X]`, so of nonnegative order
+    have hyint : IsIntegral K[X] yy := by
+      refine ⟨Polynomial.X ^ 2 - Polynomial.C (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K),
+        Polynomial.monic_X_pow_sub_C _ two_ne_zero, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C]
+      rw [halg, aeval_sextPoly, heqn, sub_self]
+    have hbint : IsIntegral K[X] (algebraMap K F b) := by
+      refine ⟨Polynomial.X - Polynomial.C (Polynomial.C b), Polynomial.monic_X_sub_C _, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X, Polynomial.eval₂_C]
+      rw [hCa, sub_self]
+    have hhint : IsIntegral K[X] (Polynomial.aeval xx h) := by
+      refine ⟨Polynomial.X - Polynomial.C h, Polynomial.monic_X_sub_C _, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_X, Polynomial.eval₂_C]
+      rw [halg, sub_self]
+    have hn1 : 0 ≤ ordAt (F := F) v (yy - algebraMap K F b) :=
+      ordAt_nonneg_of_isIntegral v (hyint.sub hbint)
+    have hn2 : 0 ≤ ordAt (F := F) v (yy + algebraMap K F b) :=
+      ordAt_nonneg_of_isIntegral v (hyint.add hbint)
+    have hn3 : 0 ≤ ordAt (F := F) v (Polynomial.aeval xx h) :=
+      ordAt_nonneg_of_isIntegral v hhint
+    -- nonvanishing
+    have hxa : xx - algebraMap K F a ≠ 0 := by
+      intro hcon
+      exact hXa0 (hinjF (by
+        rw [map_zero, map_sub, hxx, hCa]; exact hcon))
+    have hprod : (yy - algebraMap K F b) * (yy + algebraMap K F b) ≠ 0 := by
+      rw [hfac]
+      refine mul_ne_zero hxa (fun hcon => ?_)
+      have hh0 : h = 0 := hinjF (by rw [map_zero, halg]; exact hcon)
+      have : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K = Polynomial.C (sext c₀ c₁ c₂ c₃ c₄ c₅ a) := by
+        have := hh; rw [hh0, mul_zero, sub_eq_zero] at this; exact this
+      have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      rw [this, Polynomial.natDegree_C] at hd
+      simp at hd
+    have h1 : yy - algebraMap K F b ≠ 0 := left_ne_zero_of_mul hprod
+    have h2' : yy + algebraMap K F b ≠ 0 := right_ne_zero_of_mul hprod
+    have hh0 : Polynomial.aeval xx h ≠ 0 := by
+      intro hcon
+      rw [hfac, hcon, mul_zero] at hprod
+      exact hprod rfl
+    have hpos : 0 < ordAt (F := F) v (xx - algebraMap K F a) := by
+      have hXaF : algebraMap K[X] F (Polynomial.X - Polynomial.C a) = xx - algebraMap K F a := by
+        rw [map_sub, hxx, hCa]
+      have hne : algebraMap K[X] F (Polynomial.X - Polynomial.C a) ≠ 0 :=
+        fun hq => hXa0 (hinjF (by rw [hq, map_zero]))
+      have := hv _ (Ideal.mem_span_singleton_self _) hne
+      rwa [hXaF] at this
+    have hsum := ordAt_mul (F := F) v _ _ h1 h2'
+    rw [hfac, ordAt_mul (F := F) v _ _ hxa hh0] at hsum
+    omega
+
+omit [Algebra K[X] F] [Algebra (RatFunc K) F] [IsScalarTower K K[X] F]
+  [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] in
+/-- Precomposing a place with a `K`-fixing surjective endomorphism gives a place. -/
+lemma isPlaceFun_comp {o : F → ℤ} (h : IsPlaceFun K F o) (σ : F →+* F)
+    (hsurj : Function.Surjective σ) (hK : ∀ a : K, σ (algebraMap K F a) = algebraMap K F a) :
+    IsPlaceFun K F (o ∘ σ) where
+  map_zero := by simpa using h.map_zero
+  map_mul a b ha hb := by
+    simp only [Function.comp_apply, map_mul]
+    exact h.map_mul _ _ (fun hc => ha (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hb (σ.injective (by rw [hc, map_zero])))
+  ultra a b ha hb hab := by
+    simp only [Function.comp_apply, map_add]
+    exact h.ultra _ _ (fun hc => ha (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hb (σ.injective (by rw [hc, map_zero])))
+      (fun hc => hab (σ.injective (by rw [map_add, map_zero]; exact hc)))
+  map_algebraMap a ha := by
+    simp only [Function.comp_apply, hK]
+    exact h.map_algebraMap a ha
+  normalised := by
+    obtain ⟨t, ht⟩ := h.normalised
+    obtain ⟨t', rfl⟩ := hsurj t
+    exact ⟨t', ht⟩
+
+end Tower
+
+section Affine
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- The `K[X]`-algebra structure on `E.F` given by `X ↦ E.xx`. -/
+@[reducible] noncomputable def xAlg (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K) : Algebra K[X] E.F :=
+  (Polynomial.aeval E.xx : K[X] →ₐ[K] E.F).toRingHom.toAlgebra
+
+/-- **LEAF (obligation 1c, AFFINE HALF), PROVEN**: an affine rational point carries a
+valuation. -/
+theorem exists_isPlaceFun_of_affPt' (E : FunctionFieldData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
+    (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := by
+  classical
+  letI : Algebra K[X] E.F := xAlg E
+  have halg : ∀ p : K[X], algebraMap K[X] E.F p = Polynomial.aeval E.xx p := fun _ => rfl
+  haveI : IsScalarTower K K[X] E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] E.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact E.transcendental_xx ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) E.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  have hdown : ∀ p : K[X],
+      algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) p)
+        = Polynomial.aeval E.xx p := fun p => by
+    rw [← IsScalarTower.algebraMap_apply, halg]
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun h => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [h] at hd; simp at hd
+  have hα₀F : algebraMap (RatFunc K) E.F
+      (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) = E.yy ^ 2 := by
+    rw [hdown, aeval_sextPoly, E.eqn]
+  have hα₀0 : algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) ≠ 0 := fun h =>
+    hsext0 ((IsFractionRing.injective K[X] (RatFunc K)) (by rw [h, map_zero]))
+  have hroot : (Polynomial.aeval E.yy)
+      (Polynomial.X ^ 2
+        - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+        : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hα₀F, sub_self]
+  have hint : IsIntegral (RatFunc K) E.yy :=
+    ⟨_, Polynomial.monic_X_pow_sub_C
+      (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hroot⟩
+  have hadj : IntermediateField.adjoin (RatFunc K) {E.yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := E.gen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval E.xx a / Polynomial.aeval E.xx d := by rw [map_div₀, hdown, hdown]
+    have e2 : algebraMap (RatFunc K) E.F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval E.xx b / Polynomial.aeval E.xx d := by rw [map_div₀, hdown, hdown]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI hfd : FiniteDimensional (RatFunc K) E.F := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hint
+    rw [hadj] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).toLinearEquiv.finiteDimensional
+  have hsepyy : IsSeparable (RatFunc K) E.yy := by
+    have h2K : ((2 : ℕ) : K) ≠ 0 := by push_cast; exact h2
+    have h2' : ((2 : ℕ) : RatFunc K) ≠ 0 := by
+      rw [← map_natCast (algebraMap K (RatFunc K)) 2]
+      exact fun hh => h2K ((algebraMap K (RatFunc K)).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hα₀0).of_dvd (minpoly.dvd _ _ hroot)
+  haveI : Algebra.IsSeparable (RatFunc K) E.F := by
+    have h1 : Algebra.IsSeparable (RatFunc K) (IntermediateField.adjoin (RatFunc K) {E.yy}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K) E.F).2 hsepyy
+    rw [hadj] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K) (E := E.F)
+      (↥(⊤ : IntermediateField (RatFunc K) E.F))
+      (f := (IntermediateField.topEquiv (F := RatFunc K) (E := E.F)).symm.toAlgHom)
+  haveI : IsScalarTower K (RatFunc K) E.F :=
+    IsScalarTower.of_algebraMap_eq fun a => by
+      rw [IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a, hdown]
+      simp
+  have hxx : algebraMap K[X] E.F Polynomial.X = E.xx := by rw [halg]; simp
+  -- the place, up to the sign of the ordinate
+  obtain ⟨o, ho, hx, hy⟩ :=
+    exists_isPlaceFun_of_affPt_upToSign (F := E.F) hxx E.eqn q.1.1 q.1.2 q.2
+  rcases hy with hy | hy
+  · exact ⟨o, ho, hx, hy⟩
+  -- the hyperelliptic involution swaps the two signs
+  have hsqf : Squarefree (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := hsep.squarefree
+  have hnu : ¬ IsUnit (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    intro hu
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hu
+    rw [natDegree_sextPoly] at h1
+    norm_num at h1
+  have hirr : Irreducible (Polynomial.X ^ 2
+      - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      : (RatFunc K)[X]) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two (not_isSquare_sextPoly hsqf hnu)
+  haveI : Fact (Irreducible (Polynomial.X ^ 2
+      - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      : (RatFunc K)[X])) := ⟨hirr⟩
+  have hroot2 : (Polynomial.aeval (-E.yy))
+      (Polynomial.X ^ 2
+        - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+        : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hα₀F]
+    ring
+  set gpoly : (RatFunc K)[X] := Polynomial.X ^ 2
+    - Polynomial.C (algebraMap K[X] (RatFunc K) (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)) with hgpoly
+  have hψ0 : gpoly.eval₂ (Algebra.ofId (RatFunc K) E.F).toRingHom E.yy = 0 := by
+    simpa [Polynomial.aeval_def] using hroot
+  have hτ0 : gpoly.eval₂ (Algebra.ofId (RatFunc K) E.F).toRingHom (-E.yy) = 0 := by
+    simpa [Polynomial.aeval_def] using hroot2
+  set ψ₀ : AdjoinRoot gpoly →ₐ[RatFunc K] E.F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) E.F) E.yy hψ0 with hψ₀
+  set τ : AdjoinRoot gpoly →ₐ[RatFunc K] E.F :=
+    AdjoinRoot.liftAlgHom gpoly (Algebra.ofId (RatFunc K) E.F) (-E.yy) hτ0 with hτ
+  have hψroot : ψ₀ (AdjoinRoot.root gpoly) = E.yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hτroot : τ (AdjoinRoot.root gpoly) = -E.yy := AdjoinRoot.liftAlgHom_root _ _ _ _
+  have hψsurj : Function.Surjective ψ₀ := by
+    intro z
+    have hz : z ∈ IntermediateField.adjoin (RatFunc K) {E.yy} := by rw [hadj]; trivial
+    have hle : IntermediateField.adjoin (RatFunc K) {E.yy} ≤ ψ₀.fieldRange :=
+      IntermediateField.adjoin_le_iff.2 (by
+        rintro w hw
+        rw [Set.mem_singleton_iff] at hw
+        subst hw
+        exact ⟨AdjoinRoot.root gpoly, hψroot⟩)
+    exact hle hz
+  set ψ : AdjoinRoot gpoly ≃ₐ[RatFunc K] E.F :=
+    AlgEquiv.ofBijective ψ₀ ⟨ψ₀.toRingHom.injective, hψsurj⟩ with hψ
+  set σ₀ : E.F →ₐ[RatFunc K] E.F := τ.comp ψ.symm.toAlgHom with hσ₀
+  have hσyy : σ₀ E.yy = -E.yy := by
+    have hs : ψ.symm E.yy = AdjoinRoot.root gpoly := by
+      rw [AlgEquiv.symm_apply_eq, hψ]
+      simpa using hψroot.symm
+    simp [hσ₀, hs, hτroot]
+  have hσK : ∀ a : K, σ₀ (algebraMap K E.F a) = algebraMap K E.F a := fun a => by
+    rw [IsScalarTower.algebraMap_apply K (RatFunc K) E.F a, AlgHom.commutes]
+  have hxxc : E.xx
+      = algebraMap (RatFunc K) E.F (algebraMap K[X] (RatFunc K) Polynomial.X) := by
+    rw [hdown]; simp
+  have hσxx : σ₀ E.xx = E.xx := by
+    conv_lhs => rw [hxxc]
+    rw [AlgHom.commutes, ← hxxc]
+  have hσsurj : Function.Surjective σ₀ := (AlgHom.bijective σ₀).2
+  -- transport the place along the involution
+  refine ⟨o ∘ σ₀, isPlaceFun_comp ho (σ₀ : E.F →+* E.F) hσsurj hσK, ?_, ?_⟩
+  · simpa [Function.comp_apply, map_sub, hσxx, hσK] using hx
+  · have hne : E.yy + algebraMap K E.F q.1.2 ≠ 0 := by
+      intro hc
+      rw [hc, ho.map_zero] at hy
+      exact lt_irrefl 0 hy
+    have hm1 : (-1 : E.F) = algebraMap K E.F (-1) := by simp
+    have : σ₀ (E.yy - algebraMap K E.F q.1.2)
+        = algebraMap K E.F (-1) * (E.yy + algebraMap K E.F q.1.2) := by
+      rw [map_sub, hσyy, hσK, ← hm1]; ring
+    simp only [Function.comp_apply, this]
+    rw [ho.map_mul _ _ (by rw [← hm1]; norm_num) hne, ho.map_algebraMap _ (by norm_num)]
+    omega
+
+end Affine
+
+end PlaceFromDedekind
+
+end PlacesFromDedekind
+
 /-- **LEAF (obligation 1c, AFFINE HALF): an affine rational point carries a valuation.**
 
 Route, which is the same for both halves and needs no Dedekind theory: embed `F` into the
@@ -1195,7 +1693,8 @@ theorem exists_isPlaceFun_of_affPt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Ty
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0)
     (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K) :
     ∃ o : E.F → ℤ, IsPlaceFun K E.F o ∧
-      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) := sorry
+      0 < o (E.xx - algebraMap K E.F q.1.1) ∧ 0 < o (E.yy - algebraMap K E.F q.1.2) :=
+  PlaceFromDedekind.exists_isPlaceFun_of_affPt' E hsep h2 q
 
 /-- **LEAF (obligation 1c, INFINITE HALF): each branch at infinity carries a valuation.**
 
