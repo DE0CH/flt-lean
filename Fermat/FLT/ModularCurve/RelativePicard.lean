@@ -1295,11 +1295,15 @@ declaration"; the two are different claims and a `grep` separates them in
 one command.  Do not repeat that inference: a name absent from a leaf list
 is a name to `grep`, not a name to declare nonexistent.
 
-The file's direct-sorry set is now **TWO**: `finiteType_appTop_of_isProper`
-and `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  **Line numbers
-in this paragraph have been dropped deliberately** — every version of them
-has gone stale within a day, and the names are what a `grep` can check.
-Read the count off the compiler's warning set, never off this docstring.
+The file's direct-sorry set is, as of 2026-07-30, **TWO**:
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  Note the first of
+those replaced `finiteType_appTop_of_isProper` the same day — that theorem
+was PROVEN over it — so a fourth version of this list would have been wrong
+too.  **Line numbers in this paragraph have been dropped deliberately** —
+every version of them has gone stale within a day, and the names are what a
+`grep` can check.  Read the count off the compiler's warning set, never off
+this docstring.
 
 That distinction does not change the advice: the statement is available to
 CONSUME here, and those leaves belong to `ProperPushforward.lean`'s
@@ -1476,7 +1480,7 @@ ceremony:
   Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward` is now in the
   header.  It carries no direct `sorry`, though it is transitively
   sorried through that file's own leaves — as of 2026-07-30 exactly TWO,
-  `finiteType_appTop_of_isProper` and
+  `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
   `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` — which belong to
   that file's owner, not to this one.  (Corrected three times; see the
   leaf docstring above for the history.  In particular the claim that

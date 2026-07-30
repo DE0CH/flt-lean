@@ -103,20 +103,26 @@ run is for `pushoutSection`, not for `directImage`.
     `finite = integral + finite type` and the integral half is already in the pin
     (`isIntegral_appTop_of_universallyClosed`).  **RESTATED 2026-07-29** to carry the
     fibrewise hypothesis `h`, inherited from the leaf below.
-  * `finiteType_appTop_of_isProper` — **LEAF** (2026-07-28), **REFUTED AND RESTATED
-    2026-07-29**: `Γ(X, ⊤)` is a finite-TYPE `Γ(S, ⊤)`-algebra, now **under the fibrewise
-    hypothesis `h`**.  Without `h` the statement is FALSE over a non-noetherian base — audit
-    block (A) in its docstring gives the witness in full (a wild multiple fibre of
-    `(E × P¹)/(ℤ/2)` in char `2` puts `t`-torsion in `H¹(𝒪)`, and
-    `R = k[t, x₁, x₂, …]/(t·xᵢ)` turns that torsion into a non-finitely-generated
-    `Tor₁` inside `Γ(X, 𝒪_X)`).  With `h` it is the constant-`h⁰` case of cohomology and
-    base change, true over an arbitrary base, and all three call sites already had `h`.
-    **Audit block (D), 2026-07-30**, adds the two things a prover needs before starting: the
-    obvious shortcut — derive `A = R` from integrality plus `A = R + 𝔪A` and skip the whole
-    Nakayama block — is refuted there by `A = ℤ_p ⋉ ℚ_p`, so the leaf cannot be dodged by
-    re-ordering this file; and the smallest statement known to imply it is degree-zero
-    base-change injectivity for the FINITE subalgebras `R[a] ⊆ Γ(X, ⊤)`, which needs no
-    finiteness of `Γ(X, ⊤)` and is therefore not circular.
+  * `finiteType_appTop_of_isProper` — was the LEAF (2026-07-28), **REFUTED AND RESTATED
+    2026-07-29**, **PROVEN 2026-07-30** over `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber`
+    below: `Γ(X, ⊤)` is a finite-TYPE `Γ(S, ⊤)`-algebra **under the fibrewise hypothesis `h`**.
+    Without `h` the statement is FALSE over a non-noetherian base — audit block (A) in its
+    docstring gives the witness in full (a wild multiple fibre of `(E × P¹)/(ℤ/2)` in char `2`
+    puts `t`-torsion in `H¹(𝒪)`, and `R = k[t, x₁, x₂, …]/(t·xᵢ)` turns that torsion into a
+    non-finitely-generated `Tor₁` inside `Γ(X, 𝒪_X)`).  With `h` it is the constant-`h⁰` case
+    of cohomology and base change, true over an arbitrary base, and all three call sites
+    already had `h`.  Audit block (D) carries the two results the proof came out of: (D1) the
+    obvious shortcut — derive `A = R` from integrality plus `A = R + 𝔪A` and skip the Nakayama
+    block — is REFUTED by `A = ℤ_p ⋉ ℚ_p`, so the leaf could not be dodged by re-ordering the
+    file; (D2) the route that worked, via the proper surjection `X ⟶ Spec R[a]`.
+  * `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` — **LEAF** (CUT 2026-07-30 out of the
+    theorem above): `R[a] = R·1 + 𝔪·R[a]` for every `a : Γ(X, ⊤)` and every maximal `𝔪`.
+    This is leaf 3's degree-zero base-change injectivity with `Γ(X, ⊤)` replaced by a **finite**
+    subalgebra of it, which is what makes it reachable without limit theory: integrality makes
+    `R[a]` a finite `R`-module, so `eq_bot_of_fg_of_le_smul_of_forall_isMaximal` applies to it
+    and nothing needs `Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`.  Its docstring says what remains
+    geometrically (the fibres of `Spec R[a] ⟶ S` are single `κ(𝔪)`-points; show they are
+    REDUCED) and warns against the abstract weakening `𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, which is false.
   * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **PROVEN** (2026-07-28) over the
     leaf below: `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal.  All this adds to the
     leaf is linear algebra over the field `R/𝔪` — a nonzero vector in a space of dimension
@@ -249,7 +255,8 @@ run is for `pushoutSection`, not for `directImage`.
   to do.  **Re-counted 2026-07-30:** this bullet then named the open leaves as
   `finiteType_appTop_of_isProper` and
   `surjective_quotientMap_appTop_of_isIso_appTop_fiber`, and the second has since been
-  PROVEN; the current set is `finiteType_appTop_of_isProper` and
+  PROVEN, and `finiteType_appTop_of_isProper` has been proven since; the current set is
+  `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
   `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  Read it off the compiler's
   warning set, not off this bullet.)  The mechanism is that the
   projection away from
@@ -1104,6 +1111,60 @@ Corollary 2) is *not* needed on this route: III.12.11 has no such hypothesis, wh
 here because the bases this development feeds in are arbitrary.  Nothing below has been
 "simplified to Grauert". -/
 
+/-- **LEAF 1a′ — `R[a] = R·1 + 𝔪·R[a]` FOR EVERY `a ∈ Γ(X, ⊤)` AND EVERY MAXIMAL `𝔪`**
+(LEAF, CUT 2026-07-30 out of `finiteType_appTop_of_isProper` below, which is PROVEN over it).
+
+**What it says.**  `R = Γ(S, ⊤)`, `A = Γ(X, ⊤)`, `φ = f.appTop` giving `A` its `R`-algebra
+structure.  For each `a : A` the subalgebra `R[a] = Algebra.adjoin R {a}` is generated as an
+`R`-module by `1` together with `𝔪 · R[a]`.  Equivalently `R[a] ⊗_R κ(𝔪) = κ(𝔪)`, i.e. the
+degree-zero comparison map `R[a] ⊗_R κ(𝔪) ⟶ Γ(X_𝔪, 𝒪)` is INJECTIVE (surjectivity onto
+`Γ(X_𝔪, 𝒪) ≅ κ(𝔪)` is free from `h`).  It is the SAME statement as leaf 3's injectivity —
+see `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — with `A` replaced throughout by a
+**finite** subalgebra of it, and that replacement is the entire point of the cut.
+
+**WHY THIS CUT.**  `finiteType_appTop_of_isProper` was the last piece of Grothendieck
+finiteness in degree `0`, and the only route recorded for it needed limits and object descent
+(audit block (B) on that theorem: EGA IV 8.8.2 / Stacks 01ZM, the one half `Mathlib` does not
+have).  Audit block (D2) there gives a second, independent route which needs no limit theory
+at all, and this is its target.  Since integrality makes `R[a]` a **finite** `R`-module,
+`eq_bot_of_fg_of_le_smul_of_forall_isMaximal` above applies to it directly, and the theorem
+below is exactly that Nakayama step.  Nothing in the cut uses
+`Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`, so it is not circular.
+
+**FAITHFULNESS — VOUCHED, AND `h` IS LOAD-BEARING.**  The statement is TRUE under these
+hypotheses: `h` plus properness, flatness and finite presentation give `𝒪_S ≅ f_*𝒪_X` over an
+arbitrary base (Stacks 0E0S), so `A = R·1` and the inclusion is trivial.  It is *not* vacuous
+and `h` cannot be dropped: for `X = S ×_k Z` with `Z` a proper non-reduced `k`-scheme having
+`ε ∈ Γ(Z, 𝒪)`, `ε² = 0`, `ε ∉ k`, the element `a = ε` gives `R[ε] = R·1 ⊕ R·ε` while
+`R·1 + 𝔪·R[ε] = R·1 ⊕ 𝔪·ε` does not contain `ε`.  Such an `f` is proper, flat and of finite
+presentation and fails only `h`.
+
+**WHAT NOT TO DO.**  Do **not** weaken this to the abstract `𝔪A ∩ R[a] ⊆ 𝔪 · R[a]`, which is
+what the statement looks like it is about.  That version is FALSE — audit block (D1) below
+refutes it with `R = ℤ_p`, `A = ℤ_p ⋉ ℚ_p`, `a = x` — so any proof that never mentions the
+fibre `X_𝔪` is wrong.  The geometric input, written out in (D2), is that `a` induces a proper
+surjection `X ⟶ Spec R[a]` over `S` whose fibres are single points with residue field
+`κ(𝔪)`; what remains is that those fibres are also REDUCED.
+
+**HOW IT RELATES TO THE OTHER OPEN LEAF, AND WHY IT IS NOT SUBSUMED BY IT.**
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` is the same equation for `A` itself
+rather than for `R[a]`.  It does **not** imply this leaf: descending `A = R·1 + 𝔪A` to `R[a]`
+requires exactly `𝔪A ∩ R[a] ⊆ 𝔪 · R[a]`, which (D1) refutes.  It implies this leaf only via
+`Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`, which is downstream of *this* leaf — so as the file is
+ordered the two are separate obligations and neither subsumes the other.  They are
+nevertheless the same mathematics at different generality, so anyone closing that leaf should
+check whether the argument also gives this one for finite subalgebras; if it does, both close
+at once and the file's noetherian gap disappears with them. -/
+theorem adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∀ (a : ↥Γ(X, ⊤)) (m : Ideal ↥Γ(S, ⊤)), m.IsMaximal →
+      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule ≤
+        Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))} ⊔
+          m • (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule :=
+  sorry
+
 /-- **LEAF 1a — `Γ(X, ⊤)` IS A FINITE-TYPE `Γ(S, ⊤)`-ALGEBRA** (LEAF, 2026-07-28), the whole
 remaining content of Grothendieck's finiteness theorem in degree `0` (EGA III 3.2.1,
 Stacks 02O5 / 0B91) once the integral half is discharged.
@@ -1500,12 +1561,46 @@ scheme-theoretic image of a quasi-compact morphism into an affine, and the ident
 `eq_bot_of_fg_of_le_smul_of_forall_isMaximal` sits *above* this leaf, applied to
 `N = ⊤ : Submodule R (B ⧸ R·1)` — but note that anything borrowed from the fibrewise block
 (`surjective_of_isIso_appTop_fiber` and below) sits *underneath* it, so realising steps 1–3
-may mean moving declarations and not only writing a proof. -/
+may mean moving declarations and not only writing a proof.
+
+**THIS THEOREM IS NOW PROVEN over the single leaf
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` immediately below** (2026-07-30), by the
+route (D2) records.  Audit blocks (A)–(D) are kept verbatim rather than moved: (A) is what
+justifies the hypothesis `h` and must stay attached to the statement it repaired, and
+(B)–(D) describe the geometry of *this* statement, which the cut did not change. -/
 theorem finiteType_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
-    f.appTop.hom.FiniteType :=
-  sorry
+    f.appTop.hom.FiniteType := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  have halg : algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤) = f.appTop.hom :=
+    RingHom.algebraMap_toAlgebra _
+  have hint : f.appTop.hom.IsIntegral := isIntegral_appTop_of_universallyClosed f
+  have hleaf := adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber f h
+  -- `φ` is SURJECTIVE, which is more than `FiniteType`; only `FiniteType` is exported, so
+  -- that the Nakayama assembly downstream is left exactly as it is.  See the leaf docstring.
+  refine RingHom.FiniteType.of_surjective f.appTop.hom ?_
+  intro a
+  -- `B` is the subalgebra generated by `a` — FINITE, by integrality — and `P = R·1`.
+  set B : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤) := (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule
+  set P : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤) := Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))}
+  have haint : _root_.IsIntegral ↥Γ(S, ⊤) a := by
+    have := hint a
+    rwa [RingHom.IsIntegralElem, ← halg] at this
+  have hBfg : B.FG := haint.fg_adjoin_singleton
+  -- Nakayama over every maximal ideal, applied inside `Γ(X, ⊤) ⧸ P`: the leaf says the image
+  -- of `B` there is killed by passing to `𝔪 •` it, and that image is finitely generated.
+  have hbot : B.map P.mkQ = ⊥ := by
+    refine eq_bot_of_fg_of_le_smul_of_forall_isMaximal (hBfg.map _) ?_
+    intro m hm
+    have hmap := Submodule.map_mono (f := P.mkQ) (hleaf a m hm)
+    rw [Submodule.map_sup, Submodule.map_smul'', Submodule.mkQ_map_self, bot_sup_eq] at hmap
+    exact hmap
+  have hBP : B ≤ P := by
+    have hcomap := Submodule.map_le_iff_le_comap.mp hbot.le
+    rwa [Submodule.comap_bot, Submodule.ker_mkQ] at hcomap
+  obtain ⟨r, hr⟩ := Submodule.mem_span_singleton.mp (hBP (Algebra.subset_adjoin rfl))
+  exact ⟨r, by rw [← halg, ← hr, Algebra.smul_def, mul_one]⟩
 
 /-- **LEAF 1 — `Γ(X, ⊤)` IS A FINITE `Γ(S, ⊤)`-MODULE** — **PROVEN** (2026-07-28) over the
 single leaf `finiteType_appTop_of_isProper` above, by
@@ -4344,7 +4439,8 @@ cone is `isIso_appTop_of_isProper_of_flat`".  Both halves were false —
 `isIso_appTop_of_isProper_of_flat` is PROVEN, and the open leaves are far upstream of the
 rigidity block.  Re-counted 2026-07-30: that correction named the leaves as
 `finiteType_appTop_of_isProper` and `surjective_quotientMap_appTop_of_isIso_appTop_fiber`,
-and the second has since been proven; the set is now `finiteType_appTop_of_isProper` and
+and the second has since been proven, as has `finiteType_appTop_of_isProper`; the set is now
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
 `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
