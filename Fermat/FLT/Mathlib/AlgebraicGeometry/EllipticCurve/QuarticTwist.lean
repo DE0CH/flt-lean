@@ -208,6 +208,17 @@ lemma isElliptic_quarticModel {F : Type*} [Field F] [CharZero F] {a : F} (ha : a
   rw [quarticModel_Δ]
   exact (isUnit_iff_ne_zero).mpr (mul_ne_zero (by norm_num) (pow_ne_zero 3 ha))
 
+/-- **The normal form at `j = 1728` really has `j = 1728`.**  `y² = x³ + a x` has
+`b₂ = b₆ = 0`, hence `c₆ = −b₂³ + 36 b₂ b₄ − 216 b₆ = 0`, and `c₆_eq_zero_iff_j_eq_1728`
+does the rest.  This is what lets the quartic twist below record the `j`-invariant of the
+curve it produces — the twist is a `quarticModel` by construction, so the value is free. -/
+lemma j_quarticModel {F : Type*} [Field F] [CharZero F] {a : F}
+    [(quarticModel a).IsElliptic] : (quarticModel a).j = 1728 := by
+  refine (quarticModel a).c₆_eq_zero_iff_j_eq_1728.mp ?_
+  simp only [c₆, b₂, b₄, b₆, quarticModel_a₁, quarticModel_a₂, quarticModel_a₃,
+    quarticModel_a₄, quarticModel_a₆]
+  ring
+
 
 /-- **The normal form at `j = 1728`**: an elliptic curve with `j = 1728` over a field of
 characteristic `0` is isomorphic, over that field, to `y² = x³ + a x` for a unique `a ≠ 0`. -/
@@ -940,7 +951,13 @@ Given the twisting parameter `d` and a fourth root `δ` of it, the twist is
 `g' := ψ g`.  For each `σ`, `map_twist` gives `σ(ψ z) = [ζ_σ](ψ(σ z))` with `σδ = ζ_σδ`, and
 `autMap_twist_comm` moves `[ζ_σ]` back across `ψ`, so the goal reduces to
 `[ζ_σ](σ z) ∈ ⟨g⟩`.  The leaf says `ζ_σ² = u_σ²`, hence `ζ_σ = ±u_σ`, and `autMap_diag_neg` turns
-the `−` case into a negation, which `⟨g⟩` absorbs.  `haut` supplies `[u_σ](σ z) ∈ ⟨g⟩`. -/
+the `−` case into a negation, which `⟨g⟩` absorbs.  `haut` supplies `[u_σ](σ z) ∈ ⟨g⟩`.
+
+The conclusion records `E'.j = 1728` (added 2026-07-30).  It costs nothing — `E'` IS
+`quarticModel (a₄ d)` by construction, so `j_quarticModel` reads the value off — and it is
+what lets the `j`-invariant survive the twist all the way up to
+`exists_stableCyclic_j_of_gamma0Datum_algClos` in `Fermat/FLT/ModularCurve/X0.lean`, which
+cannot even be stated without it. -/
 theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω]
     (halg : Algebra.IsAlgebraic K Ω) {N : ℕ} (hN : N ≠ 0) (E : WeierstrassCurve K)
     [E.IsElliptic] (h₁ : (E⁄Ω).a₁ = 0) (h₂ : (E⁄Ω).a₂ = 0) (h₃ : (E⁄Ω).a₃ = 0)
@@ -953,7 +970,7 @@ theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω]
     (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autMap hι x ∉ AddSubgroup.zmultiples g)
     (hu : (ι.u : Ω) ^ 2 = -1) :
     ∃ (E' : WeierstrassCurve K) (_ : E'.IsElliptic) (g' : (E'⁄Ω).toAffine.Point),
-      addOrderOf g' = N ∧
+      E'.j = 1728 ∧ addOrderOf g' = N ∧
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   obtain ⟨d, hd, δ, hδ4, hrel⟩ :=
@@ -968,14 +985,17 @@ theorem exists_stableCyclic_quarticTwist_of_quartic [IsAlgClosed Ω]
   have hE'₆ : (E'⁄Ω).a₆ = 0 := by rw [hE', quarticModel_baseChange]; simp
   have hE'₄ : (E'⁄Ω).a₄ = (δ : Ω) ^ 4 * (E⁄Ω).a₄ := by
     rw [hE', quarticModel_baseChange, quarticModel_a₄, hδ4, hEa₄, map_mul]; ring
-  haveI : E'.IsElliptic := hE' ▸ isElliptic_quarticModel (mul_ne_zero hEa₄K hd)
+  haveI hqm : (quarticModel (E.a₄ * d)).IsElliptic :=
+    isElliptic_quarticModel (mul_ne_zero hEa₄K hd)
+  haveI : E'.IsElliptic := hE' ▸ hqm
+  have hjE' : E'.j = 1728 := by simp_rw [hE']; exact j_quarticModel
   have hψ : (⟨δ, 0, 0, 0⟩ : VariableChange Ω) • (E'⁄Ω) = (E⁄Ω) :=
     smul_diag_twist h₁ h₂ h₃ h₆ hE'₁ hE'₂ hE'₃ hE'₆ δ hE'₄
   set ψ : (E⁄Ω).toAffine.Point ≃+ (E'⁄Ω).toAffine.Point :=
     (equivOfEq hψ.symm).trans (equivVariableChange (E'⁄Ω) ⟨δ, 0, 0, 0⟩) with hψdef
   have hψapp : ∀ P, ψ P = mapVariableChangeFun (E'⁄Ω) ⟨δ, 0, 0, 0⟩ (equivOfEq hψ.symm P) :=
     fun _ => rfl
-  refine ⟨E', inferInstance, ψ g, ?_, ?_⟩
+  refine ⟨E', inferInstance, ψ g, hjE', ?_, ?_⟩
   · rw [← hg]; exact ψ.addOrderOf_eq g
   intro σ x hx
   obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
@@ -1067,7 +1087,7 @@ theorem exists_stableCyclic_quarticTwist [IsAlgClosed Ω] (halg : Algebra.IsAlge
     (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autMap hι x ∉ AddSubgroup.zmultiples g)
     (hu : (ι.u : Ω) ^ 2 = -1) :
     ∃ (E' : WeierstrassCurve K) (_ : E'.IsElliptic) (g' : (E'⁄Ω).toAffine.Point),
-      addOrderOf g' = N ∧
+      E'.j = 1728 ∧ addOrderOf g' = N ∧
       ∀ σ : Ω ≃ₐ[K] Ω, ∀ x ∈ AddSubgroup.zmultiples g',
         Affine.Point.map σ.toAlgHom x ∈ AddSubgroup.zmultiples g' := by
   obtain ⟨C₀, a, ha, hC₀⟩ := exists_smul_eq_quarticModel E hj
