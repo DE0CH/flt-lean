@@ -19429,6 +19429,40 @@ as above exists, i.e. that `E` cannot acquire good reduction over `3` in a field
 linearly disjoint from `ℚ(E[7])`; or exhibit a clause of
 `IsHilbertHardlyRamified` that `T₇(E)|_{Γ F}` violates.
 
+**THE FIRST TWO OF THOSE FOUR CHECKS WERE RUN, 2026-07-30 (PARI/GP), AND BOTH
+CONFIRM THE AUDIT.** Recorded here so that nobody spends the day re-deriving
+them, and because the first generalises into a one-line structural proof that
+removes the "enumerated over all 16" from the argument entirely.
+
+*Check 1, and it is not a coincidence of `q = 7`.* Enumerating
+`N(T_ns) ∩ SL₂(𝔽_q)` for every prime `q ≡ 3 mod 4` up to `59` (orders
+`8, 16, 24, 40, 48, 64, 88, 96, 120`, so `16` at `q = 7` exactly as claimed)
+gives **ZERO** elements whose `tr² − 4·det` is a nonzero square. The reason is
+uniform: writing `d` for a non-residue and `T_ns = {[[a, db], [b, a]]}`, the
+determinant is `a² − db²`, so `SL₂` picks out two families —
+
+* `a² − db² = 1`, trace `2a`, hence `tr² − 4·det = 4a² − 4 = 4db²`, which is
+  `4 · (non-residue) · (square)`: a NON-SQUARE unless `b = 0`;
+* `a² − db² = −1` (the coset outside the torus), trace `0`, hence
+  `tr² − 4·det = −4`, a non-square precisely because `q ≡ 3 mod 4`.
+
+So the obstruction is `−1 ∉ (𝔽_q^×)²` plus the definition of "nonsplit", and the
+hypothesis `#k ≡ 3 mod 4` in the paragraph above is exactly what it needs.
+
+*Check 2.* `E = 54b1 = [1,−1,1,1,−1]`: conductor `54`, `j = 9261/8` with
+`v₂(j) = −3` and `v₃(j) = v₇(j) = +3`; `elllocalred` gives Kodaira `I₃` with
+Tamagawa number `3` at `2` (so multiplicative, and the reduction is split),
+type `II` at `3` (additive, potentially good), and `I₀` with conductor exponent
+`0` at `7` (GOOD). The mod-`7` image is surjective: `{a_p²/p mod 7}` over
+`5 ≤ p < 400`, `p ∉ {2,3,7}`, is ALL of `𝔽₇` — in particular it contains `3` and
+`5`, and the squares mod `7` are `{1,2,4}`, so the Dickson exclusion in the
+paragraph above applies as stated.
+
+Both are searcher output, not proof, in the sense of CLAUDE.md's CAS doctrine —
+but the object they are searching is a refutation, and a refutation is a witness.
+The Lean-checkable content, if this is ever wanted as a formal statement rather
+than as an audit, is the two-line non-residue computation above.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
