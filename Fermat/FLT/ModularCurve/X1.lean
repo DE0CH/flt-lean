@@ -5128,11 +5128,15 @@ modular at all (Krull dimension of a smooth algebra over a field).  Every
 consumer below is untouched: no statement in this cluster changed, and one
 instance argument changed provenance.
 
-The three consumer NOTES added by the refutation commit are left in place
-deliberately.  Each records which conjunct that consumer reads and whether it
-survives the pinched counterexample; that is still the right thing to know if
-this field is ever weakened, and re-deriving it would cost the same audit
-again. -/
+The three consumer NOTES added by the refutation commit are left in place, each
+with a CLOSED marker appended saying the repair landed and what it cost that
+consumer (nothing, in all three cases).  They are kept rather than deleted
+because each records WHICH conjunct that consumer reads and whether it survives
+the pinched counterexample — the thing a successor weakening `smoothM` would
+have to re-derive, at the cost of the same audit again.  A note predicting a
+repair that has happened is exactly the stale label that manufactures phantom
+work, which is why they carry the marker rather than being left to be read as
+live warnings. -/
 theorem smoothCurve_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -5181,7 +5185,14 @@ counterexample given there has `A` a subring of `A₀ × A₀`, hence reduced,
 and the sharpened rigidity argument recorded there shows square-zero
 thickenings are excluded outright.  So this proof has to be re-routed when
 the leaf above is moved onto `Gamma1RigidifiedModuli`, but nothing here has
-to be restated. -/
+to be restated.
+
+**CLOSED, later the same day**: the move was performed, the leaf above is a
+THEOREM over the new `Gamma1GITPresentation.smoothM` field, and this proof did
+not have to change at all — the re-routing happened entirely inside it.  The
+paragraph above is kept because it records WHICH conjunct this consumer reads
+and that it survives the pinched counterexample, which is what a successor
+weakening `smoothM` would need to know. -/
 theorem isReduced_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -5334,6 +5345,43 @@ conclusion stated here holds for it.  What the refutation costs is the
 availability of the normality hypothesis in the *equivalence* argument, not
 the truth of this leaf.
 
+**THAT CAVEAT IS SPENT — 2026-07-30, later the same day.**  The refuted leaf
+was REPAIRED rather than left open: `SmoothOfRelativeDimension 1 strM` is now
+a FIELD of `Gamma1GITPresentation` and
+`smoothCurve_A_of_gamma1GITPresentation` is a theorem reading it.  So
+`Algebra.Smooth K P.A` is available here UNCONDITIONALLY and from a pinned
+object, and the paragraph above is history, not a live warning.  Two things
+follow, and neither closes this leaf:
+
+* **The equivalence is now unconditional.**  `A` is smooth, hence regular,
+  hence a finite product of normal domains indexed by its connected
+  components; `minimalPrimes A` IS that index set.  So the conclusion stated
+  here is *equivalent* to "`G` is transitive on the connected components of
+  `Spec A`", and — by the boxed argument above, both directions — to
+  "`Spec B` is CONNECTED", i.e. `B` carries no nontrivial idempotent.  That
+  is a genuinely weaker-looking statement than `IsDomain B`, and it is the
+  exact residue of this leaf.
+* **It is still not a usable cut, for the reason the paragraph above gives
+  about `IsDomain B`, and a successor should check this before re-opening
+  it.**  Nothing in the tree produces connectedness of `Spec B` except
+  `connectedSpace_tensorProduct_of_gamma1GITPresentation`, which is proven
+  over `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, which
+  takes `IsDomain B` as an INPUT — and `IsDomain B` is
+  `isDomain_invariants_of_gamma1GITPresentation`, proven over
+  `geometricComponents_of_gamma1GITPresentation`, proven over THIS leaf.
+  Cutting to connectedness therefore buys a shorter statement and a cycle.
+
+So the audit's verdict is unchanged and is now resting on firmer ground: what
+is missing is the modular input itself — Deligne–Rapoport IV.5.5, the
+surjectivity of `det : GL₂(ℤ/n) → (ℤ/n)ˣ` moving the value of the Weil pairing
+on the level-`n` structure.  The structural repair the 2026-07-28 text
+recommends (carry the level-`n` torsor and its `det`-equivariant pairing as a
+FIELD, the way `smoothM` and `coequalises` are carried) remains the route, and
+it is now the ONLY route this audit has not ruled out.  It is a strictly larger
+edit than `smoothM` was: `smoothM` is one `Prop` about `strM` with no new data,
+whereas the pairing is DATA on `dM` and would have to be threaded through
+`exists_gamma1DeckAction`, which is where the `GL₂(ℤ/n)`-action is built.
+
 The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
 problem is not representable by a nonempty smooth scheme and
 `minimalPrimes A` is not the component set of anything. -/
@@ -5449,7 +5497,11 @@ FALSITY AUDIT on `smoothCurve_A_of_gamma1GITPresentation`.  Only
 `Algebra.FiniteType K A` is used here, and that survives the counterexample
 (the pinched `A` is `A₀ ⊕ I` as an `A₀`-module, hence finite type over `K`);
 so this statement is not in doubt and only its route has to follow the leaf
-when the leaf moves onto `Gamma1RigidifiedModuli`. -/
+when the leaf moves onto `Gamma1RigidifiedModuli`.
+
+**CLOSED, later the same day**: the move was performed and the leaf above is a
+THEOREM over the new `Gamma1GITPresentation.smoothM` field; nothing here
+changed. -/
 theorem finitePresentation_invariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -5688,7 +5740,13 @@ anywhere on the descent, `isPrime_nilradical_tensorProduct_of_gamma1GITPresentat
 is NOT dragged in, and this theorem rests on exactly two leaves —
 `smoothCurve_A_of_gamma1GITPresentation` and the general one below.
 
-## NOTE 2026-07-30 (later still): ONE OF THOSE TWO LEAVES IS REFUTED
+## NOTE 2026-07-30 (later still): ONE OF THOSE TWO LEAVES WAS REFUTED, AND REPAIRED
+
+**Read the last paragraph of this section first**: the repair prescribed below
+was carried out the same day, so this declaration rests on
+`smoothCurve_A_of_gamma1GITPresentation` as a THEOREM and on the general leaf
+below.  The analysis is kept because it is what establishes that the
+conclusion stated here never depended on the false conjunct.
 
 `smoothCurve_A_of_gamma1GITPresentation` was refuted the same day — see its
 FALSITY AUDIT for the explicit pinched counterexample.  This declaration is
@@ -5705,6 +5763,12 @@ re-sourced, which is exactly what the repair recorded on the refuted leaf
 does: move the 8.2.1 citation onto `Gamma1RigidifiedModuli`, where
 `universal` pins `A`, and carry it down as a structure field.  No statement
 in this cluster changes; one instance argument changes provenance.
+
+**And that is exactly what happened**: `SmoothOfRelativeDimension 1 strM` is a
+field of `Gamma1Rigidification` and `Gamma1GITPresentation`, supplied at the
+one construction site from `smoothOfRelativeDimension_of_gamma1RigidifiedModuli`,
+and `Algebra.Smooth K P.A` reaches this proof unchanged.  Not one line of this
+declaration moved.
 
 A second correction to the paragraph above, found while auditing that
 route: the claim that `IsDomain` "appears nowhere, in the hypotheses or in
