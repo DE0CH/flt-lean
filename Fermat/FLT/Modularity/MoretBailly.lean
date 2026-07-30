@@ -22096,10 +22096,311 @@ theorem exists_intCertificateWitness_of_rat {e : ℕ} {S G : MvPolynomial (Fin (
   obtain ⟨a, b, hab⟩ := Ideal.mem_span_pair.1 hqmem
   exact ⟨a, b, hab.symm⟩
 
+/-! ### Primitivity bookkeeping for the birational normal form (added 2026-07-30)
+
+The three PROVEN lemmas below plus the one leaf after them are what re-cuts
+`exists_ratMembershipHypersurfaceCertificate` over the packaged entry point
+`exists_birationalNormalForm_integralSystemModel_rat` — which became callable from
+here only on 2026-07-30, when its spurious
+`Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)` binder was removed from the
+whole chain. See that leaf's "SECOND ROUTE" paragraph.
+
+The entry point hands over `g : MvPolynomial (Fin k) ℤ` with
+`Irreducible (map ℚ̄ g)`. The consumer needs an `S₀` in `Fin (e + 1)` variables
+which is moreover `Prime` in `MvPolynomial (Fin (e + 1)) ℤ`. Neither is free:
+
+* `Irreducible (map ℚ̄ g)` does NOT give `Prime g`. Witness: `g = 2 * X₀` maps to a
+  unit times `X₀`, hence is irreducible over `ℚ̄`, while `2 * X₀` is not prime in
+  `ℤ[X₀]`. This is the same non-implication that makes `Prime S₀` a load-bearing
+  clause on the consumer, recorded in its own audit; the fix is Gauss, i.e. pass to
+  a prime factor that survives to `ℚ̄` as a non-unit.
+* `k` must be a SUCCESSOR, and that too has to be proven rather than assumed.
+
+Everything here is elementary commutative algebra over `ℤ`, `ℚ` and `ℚ̄`; no prime
+`p`, no Galois representation. -/
+
+/-- **UNIT CRITERION FOR AN INTEGER POLYNOMIAL PUSHED INTO A CHARACTERISTIC-ZERO
+FIELD** (PROVEN). `map (Int.castRingHom K) h` is a unit exactly when `h` is a
+NONZERO CONSTANT — and, crucially, the criterion does not mention `K`.
+
+That field-independence is the whole point: it is what lets the Gauss step below
+detect over `ℚ̄` a unit that it then needs over `ℚ`, with no descent argument at
+all. `MvPolynomial.isUnit_iff` supplies the general coefficientwise criterion; a
+field is reduced, so its `IsNilpotent` side conditions collapse to `= 0`, and
+`Int.cast` into a characteristic-zero field is injective, so each condition is a
+statement about the INTEGER coefficient. -/
+theorem isUnit_map_intCast_iff {σ : Type*} {K : Type*} [Field K] [CharZero K]
+    (h : MvPolynomial σ ℤ) :
+    IsUnit (MvPolynomial.map (Int.castRingHom K) h) ↔
+      (h.coeff 0 ≠ 0 ∧ ∀ i ≠ 0, h.coeff i = 0) := by
+  rw [MvPolynomial.isUnit_iff]
+  simp only [MvPolynomial.coeff_map, eq_intCast, isNilpotent_iff_eq_zero,
+    isUnit_iff_ne_zero, ne_eq, Int.cast_eq_zero]
+
+/-- **UNIT REFLECTION ALONG `ℚ ↪ ℚ̄`** (PROVEN): a unit over `ℚ̄` was already a unit
+over `ℚ`. Immediate from the field-independence of the criterion above, and the
+only thing the Gauss step needs from the two fields. -/
+theorem isUnit_map_rat_of_isUnit_map_algClosureRat {σ : Type*}
+    (h : MvPolynomial σ ℤ)
+    (hu : IsUnit (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) h)) :
+    IsUnit (MvPolynomial.map (Int.castRingHom ℚ) h) :=
+  (isUnit_map_intCast_iff h).2 ((isUnit_map_intCast_iff h).1 hu)
+
+/-- **THE ARITY BRIDGE** (PROVEN): `Irreducible (map ℚ̄ g)` forces `k ≠ 0`.
+
+Over an empty variable set the polynomial ring IS the field, and a field has no
+irreducible element. Formally: by the criterion above, a non-unit over `Fin 0`
+must have `coeff 0 = 0`, and `Fin 0 →₀ ℕ` has only the zero exponent, so the
+polynomial is `0` — and `0` is not irreducible.
+
+This is the same observation recorded on
+`exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat`'s docstring
+("the degenerate `k = 0` is unavailable"), here made mechanical because the
+consumer's conclusion is stated in `Fin (e + 1)` variables and needs the successor
+form to typecheck at all. -/
+theorem ne_zero_of_irreducible_map_algClosureRat {k : ℕ} (g : MvPolynomial (Fin k) ℤ)
+    (hg : Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g)) :
+    k ≠ 0 := by
+  rintro rfl
+  have hzero : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g = 0 := by
+    have hnu : ¬ (g.coeff 0 ≠ 0 ∧ ∀ i ≠ 0, g.coeff i = 0) :=
+      fun hc => hg.not_isUnit ((isUnit_map_intCast_iff g).2 hc)
+    have hall : ∀ i : (Fin 0) →₀ ℕ, i = 0 := fun i => by
+      ext j; exact absurd j.2 (by omega)
+    have h0 : g.coeff 0 = 0 := by
+      by_contra hne
+      exact hnu ⟨hne, fun i hi => absurd (hall i) hi⟩
+    ext i
+    rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero, hall i, h0]
+    simp
+  exact not_irreducible_zero (hzero ▸ hg)
+
+/-- **GAUSS: A PRIME REPRESENTATIVE OF THE SAME HYPERSURFACE** (PROVEN). Given
+`g : MvPolynomial (Fin k) ℤ` whose reduction to `ℚ̄` is irreducible, there is a
+`Prime S₀` in `MvPolynomial (Fin k) ℤ` that is still absolutely irreducible and
+cuts out the SAME hypersurface over `ℚ` (`Associated` there).
+
+WHY `Associated` OVER `ℚ` IS THE USABLE FORM. It gives
+`Ideal.span {map ℚ S₀} = Ideal.span {map ℚ g}` (`Ideal.span_singleton_eq_span_singleton`),
+so every quotient and every `Localization.Away` in the entry point's conclusion
+refers to the same ring. The consumer below does not in fact need to perform that
+transport — it passes `g`, `S₀` and this `Associated` on to the residual leaf
+rather than substituting, which avoids a dependent-type rewrite whose motive is
+not type correct. The equality is recorded here because that is where a prover of
+the residual leaf will want it.
+
+HOW. `MvPolynomial (Fin k) ℤ` is a UFD (`MvPolynomial.uniqueFactorizationMonoid`,
+in the pin). Not every prime factor of `g` survives to `ℚ̄` as a non-unit — the
+integer factors do not, which is exactly the `2 * X₀` obstruction — but at least
+ONE must, since otherwise `map ℚ̄ g` would be a product of units and hence a unit,
+contradicting `hg.not_isUnit`. Pick such an `S₀`; writing `g = S₀ * c`,
+`hg.isUnit_or_isUnit` forces the COFACTOR `map ℚ̄ c` to be the unit, whence
+`map ℚ̄ S₀` is associated to the irreducible `map ℚ̄ g`, and unit reflection
+(`isUnit_map_rat_of_isUnit_map_algClosureRat`) moves the same cofactor unit down
+to `ℚ`.
+
+The multiset step is written out by hand rather than through `Multiset.prod_hom`,
+which will not unify against the coerced `RingHom` application `map φ`. -/
+theorem exists_prime_associated_map_rat_of_irreducible_map_algClosureRat {k : ℕ}
+    (g : MvPolynomial (Fin k) ℤ)
+    (hg : Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g)) :
+    ∃ S₀ : MvPolynomial (Fin k) ℤ, Prime S₀ ∧
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀) ∧
+      Associated (MvPolynomial.map (Int.castRingHom ℚ) S₀)
+        (MvPolynomial.map (Int.castRingHom ℚ) g) := by
+  classical
+  set φ := MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ))
+    (σ := Fin k) with hφ
+  have hg0 : g ≠ 0 := by
+    rintro rfl
+    rw [hφ, map_zero] at hg
+    exact not_irreducible_zero hg
+  have hprodunit : ∀ s : Multiset (MvPolynomial (Fin k) ℤ),
+      (∀ p ∈ s, IsUnit (φ p)) → IsUnit (φ s.prod) := by
+    intro s
+    induction s using Multiset.induction_on with
+    | empty => intro _; rw [Multiset.prod_zero, hφ, map_one]; exact isUnit_one
+    | cons a s ih =>
+      intro h
+      rw [Multiset.prod_cons, hφ, map_mul]
+      exact (h a (Multiset.mem_cons_self _ _)).mul
+        (ih fun p hp => h p (Multiset.mem_cons_of_mem hp))
+  obtain ⟨S₀, hS₀mem, hS₀nu⟩ :
+      ∃ p ∈ UniqueFactorizationMonoid.factors g, ¬ IsUnit (φ p) := by
+    by_contra hcon
+    simp only [not_exists, not_and, not_not] at hcon
+    refine hg.not_isUnit ?_
+    obtain ⟨u, hu⟩ := UniqueFactorizationMonoid.factors_prod hg0
+    rw [← hu, hφ, map_mul]
+    exact (hprodunit _ fun p hp => hcon p hp).mul
+      (u.isUnit.map (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ))))
+  have hS₀prime : Prime S₀ := UniqueFactorizationMonoid.prime_of_factor _ hS₀mem
+  obtain ⟨c, hc⟩ : S₀ ∣ g :=
+    UniqueFactorizationMonoid.dvd_of_mem_factors hS₀mem
+  have hsplit : φ g = φ S₀ * φ c := by rw [hc, hφ, map_mul]
+  have hcu : IsUnit (φ c) := (hg.isUnit_or_isUnit hsplit).resolve_left hS₀nu
+  refine ⟨S₀, hS₀prime, ?_, ?_⟩
+  · refine Associated.irreducible ?_ hg
+    rw [hsplit]
+    exact associated_mul_unit_left _ _ hcu
+  · refine ⟨(isUnit_map_rat_of_isUnit_map_algClosureRat c hcu).unit, ?_⟩
+    rw [IsUnit.unit_spec, hc, map_mul]
+
+/-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (SORRY LEAF, cut 2026-07-30
+out of `exists_ratMembershipHypersurfaceCertificate` immediately below, which is
+now PROVEN over this leaf plus the three lemmas above plus the PROVEN packaged
+entry point `exists_birationalNormalForm_integralSystemModel_rat`).
+
+WHAT WAS TAKEN OFF THE PARENT, so nobody redoes it. Three of the parent's eight
+conclusion clauses, and the arity:
+
+* `Irreducible (map ℚ̄ S₀)` and `Prime S₀` — now DISCHARGED, by
+  `exists_prime_associated_map_rat_of_irreducible_map_algClosureRat` above (Gauss
+  on the entry point's `g`).
+* the existence of `e` and `S₀` themselves — no longer existential here; `S₀` and
+  its arity are INPUTS, produced by the caller. The arity comes from
+  `ne_zero_of_irreducible_map_algClosureRat`.
+* the whole birational construction — Schmidt Chapter VI Theorem 4D, the
+  primitive-element induction, Theorem 4B, §6 Remark (1). That is the entry point,
+  which is proven (over its own four sub-leaves ~11 000 lines above).
+
+WHAT IS LEFT, and it is genuinely only this: read `P`, `R`, `w` off the two
+directions of the given isomorphism `eqv` and clear denominators into `ℤ`. `P_j`
+is the image of `Y_j` in the localised hypersurface ring, written over a common
+`b`-power denominator; `R_l` is the image of `X_l` under the inverse, over a
+common `s`-power denominator; `w` is a lift of the element inverted on the source
+side. Then ENLARGE `g₀` to absorb every denominator, exactly as the parent's
+paragraph "WHY THE DATA MUST STAY INTEGRAL even though `A, B` need not" prescribes
+— that paragraph is unchanged and still applies verbatim, and it is the reason
+`S₀ ∤ N · g₀^K` survives the enlargement (`S₀` is prime, `S₀ ∤ g₀`, and `N` is a
+unit over `ℚ̄`).
+
+WHY IT IS TRUE. `eqv` together with `hker` and `hb` IS the birational
+identification, in the exact form Schmidt Ch. VI §7 eq. (7.3) consumes: `hker`
+(the kernel of inverting `a` lies in the nilradical) says `D(a)` is DENSE in the
+`ℚ`-fibre, so nothing is lost by localising; `hb : b ≠ 0` says the target open set
+is nonempty, hence dense in the irreducible `V(S₀)`; and `eqv` identifies the two
+localisations after killing nilpotents, which is what "birational" means here.
+`hassoc` then says `S₀` and `g` cut out literally the same hypersurface over `ℚ`
+(`Ideal.span_singleton_eq_span_singleton`), so data read off for `g` serves `S₀`
+unchanged. Nothing in the residue is a geometric input any more; it is coordinates
+and denominators.
+
+WHY `b` IS LEFT OVER `span {map ℚ g}` RATHER THAN `span {map ℚ S₀}`. The two
+ideals are EQUAL by `hassoc`, so the two quotient types are equal — but rewriting
+`b`'s type along that equality produces a motive that is not type correct, since
+`Localization.Away b` depends on `b`. Passing `g`, `S₀` and `hassoc` separately
+costs one extra binder and no proof obligation, and it hands a prover both
+descriptions, which is what the coordinate reading actually wants.
+
+ON `hS₀irr`, AUDITED EXPLICITLY — it is NOT DERIVABLE, and it is also NOT
+LOAD-BEARING AT THE WITNESS THAT SHOWS SO. Both halves matter, and they are
+different questions; the honest answer is that this binder is carried on the
+strength of the intended PROOF, not of a refutation.
+
+*Not derivable.* Take `n = m = 1`, `e = 0`, `f = (X₀² + 1)`, `g = S₀ = X₀² + 1`,
+`a = 1`, `b = 1`. Then `S₀` is prime in `ℤ[X₀]` (degree two, primitive, no rational
+root, and `ℤ[X₀]` is a UFD), `hassoc` is reflexive, `IntegralSystemModel f ℚ` is
+`ℚ[X₀] ⧸ (X₀² + 1) = ℚ(i)`, which is a FIELD — so it is reduced, `nilradical` is
+`⊥`, `hker` holds, `Localization.Away 1` is the ring itself so `eqv` is the
+identity, and `hb : (1 : ℚ(i)) ≠ 0`. Every hypothesis except `hS₀irr` holds, and
+`map ℚ̄ S₀ = (X₀ - i)(X₀ + i)` is REDUCIBLE. So `Prime S₀` together with the
+birational datum does not deliver absolute irreducibility. What the rest of the
+hypotheses do give is only the weaker `¬ IsUnit (map ℚ̄ S₀)` — a unit would force
+`Ideal.span {map ℚ g} = ⊤`, hence `b = 0`, contradicting `hb`.
+
+*But not load-bearing at that witness.* For the same datum the CONCLUSION is
+satisfiable: `g₀ = 1`, `P₀ = X₀`, `P₁ = 1`, `R₀ = X₀`, `w = 1` makes the first
+identity `X₀² + 1 ∈ (S₀)`, the second `P₀ - X₀ = 0`, the third `1 · 1 - 1 = 0`, and
+`X₀² + 1 ∤ 1` over `ℚ̄`. So this witness does not refute the hypothesis-free form,
+and no claim is made here that the leaf is FALSE without `hS₀irr`.
+
+*Why it is carried anyway.* Absolute irreducibility of `S₀` is used throughout the
+argument the leaf is meant to be proven by — Schmidt Ch. VI §6 Remark (1) and §7
+eq. (7.3) — because it is what makes `V(S₀)` irreducible over `ℚ̄` and therefore
+makes `V(S₀) ∖ V(g₀)` nonempty AND DENSE, which is what the injection consumes.
+Asking a prover to rediscover that need would be a trap, and the sole caller holds
+it for free out of the same Gauss lemma that produces `S₀`. A prover who
+discharges the conclusion WITHOUT it has strictly strengthened the leaf, which is a
+welcome outcome and not a deviation — and it would make this binder removable by
+exactly the cascade recorded on the `hsm` chain above.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ`, `ℚ` and `ℚ̄`
+plus one localisation of the `ℚ`-model, no prime `p`, no Galois representation, no
+modular form, nothing from `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_ratMembershipData_of_birationalNormalForm
+    {n m e : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (g S₀ : MvPolynomial (Fin (e + 1)) ℤ)
+    (hS₀ : Prime S₀)
+    (hS₀irr : Irreducible
+      (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀))
+    (hassoc : Associated (MvPolynomial.map (Int.castRingHom ℚ) S₀)
+      (MvPolynomial.map (Int.castRingHom ℚ) g))
+    (a : IntegralSystemModel f ℚ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+    (hb : b ≠ 0)
+    (hker : RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
+      nilradical (IntegralSystemModel f ℚ))
+    (eqv : (Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+      Localization.Away b) :
+    ∃ (g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ),
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ∧
+      (∀ i : Fin m, ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i))
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∀ l : Fin (e + 1), ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C P (R l) - MvPolynomial.X l.castSucc)
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+          MvPolynomial.map (Int.castRingHom ℚ)
+              (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+                * P (Fin.last n) - 1)
+            = A * MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc S₀)
+              + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                  (MvPolynomial.rename Fin.castSucc g₀)
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
+  sorry
+
 /-- **LEAF (B′): SCHMIDT'S THEOREM 4D OVER `ℚ`, WITH THE IDENTITIES STILL OVER
-`ℚ`** (SORRY LEAF, cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate`
-below, which is now PROVEN over this leaf and the four declarations immediately
-above).
+`ℚ`** (cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate` below, which
+is PROVEN over this declaration and the four immediately above it.
+**NO LONGER A LEAF: PROVEN 2026-07-30** by taking the SECOND ROUTE recorded below,
+which became available the same day when the spurious
+`Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)` binder came off the packaged
+entry points. The proof is now four lines of glue over
+
+* `exists_birationalNormalForm_integralSystemModel_rat` — PROVEN, the whole
+  birational construction (Poonen §3.2 (a)–(c), Schmidt Ch. VI Thm 4D), ~11 000
+  lines above and itself resting on four sub-leaves there;
+* `ne_zero_of_irreducible_map_algClosureRat` — PROVEN, the arity;
+* `exists_prime_associated_map_rat_of_irreducible_map_algClosureRat` — PROVEN,
+  Gauss, which is what supplies the extra `Prime S₀` clause this statement demands
+  and which `Irreducible (map ℚ̄ g)` does NOT give on its own;
+* `exists_ratMembershipData_of_birationalNormalForm` — the ONE remaining sorry,
+  immediately above, which is now the denominator bookkeeping and nothing else.
+
+So the frontier here is unchanged in COUNT (one leaf became one leaf) but the
+remaining leaf is strictly smaller: `e` and `S₀` are inputs rather than
+existentials, and three of the eight conclusion clauses — `Irreducible (map ℚ̄ S₀)`,
+`Prime S₀`, and the arity — are discharged. Everything below in this docstring is
+retained because the residual leaf still needs it; read it there.
 
 WHAT CHANGED AGAINST THE PARENT, and nothing else did. The DATA are the same and
 still integral: `S₀, g₀, P, R, w` all have `ℤ` coefficients. Only the COFACTORS
@@ -22161,6 +22462,10 @@ the two directions of that isomorphism — `P_j` is the image of `Y_j` in
 the image of `X_l` under the inverse, written over a common `s`-power
 denominator, with `w` a lift of `s`. Everything that is left is then the
 denominator bookkeeping described above.
+
+**THIS ROUTE HAS NOW BEEN TAKEN (2026-07-30) — see the proof below.** The
+paragraphs that follow are kept as the record of why, and are what a prover of the
+residual leaf `exists_ratMembershipData_of_birationalNormalForm` should read.
 
 **AND THE PACKAGED ENTRY POINTS ARE NOW CALLABLE FROM HERE (2026-07-30).** This
 paragraph used to warn that `exists_birationalHypersurface_reduced_integralSystemModel_rat`
@@ -22245,8 +22550,35 @@ theorem exists_ratMembershipHypersurfaceCertificate {n m : ℕ}
                 (MvPolynomial.rename Fin.castSucc S₀)
               + B * (MvPolynomial.map (Int.castRingHom ℚ)
                   (MvPolynomial.rename Fin.castSucc g₀)
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  -- STEP 1 (PROVEN entry point). Poonen §3.2 (a)–(c) over `ℚ`, packaged: a
+  -- hypersurface `g`, absolutely irreducible, birationally identified with the
+  -- reduced `ℚ`-fibre after inverting one element on each side. Callable from
+  -- here only since 2026-07-30, when its spurious
+  -- `Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)` binder came off — this
+  -- leaf cannot produce that hypothesis, which is why the SECOND ROUTE above was
+  -- previously blocked at the packaged entry points.
+  obtain ⟨k, g, hgQ, a, b, hb, hker, ⟨eqv⟩⟩ :=
+    exists_birationalNormalForm_integralSystemModel_rat f hQ
+  -- STEP 2 (PROVEN above): the arity is a successor, so the conclusion's
+  -- `Fin (e + 1)` typechecks.
+  obtain ⟨e, rfl⟩ : ∃ e, k = e + 1 :=
+    Nat.exists_eq_succ_of_ne_zero (ne_zero_of_irreducible_map_algClosureRat g hgQ)
+  -- STEP 3 (PROVEN above, Gauss): `g` has a PRIME representative `S₀`, still
+  -- absolutely irreducible, cutting out the same hypersurface over `ℚ`. This is
+  -- what discharges the `Prime S₀` clause, which is NOT implied by
+  -- `Irreducible (map ℚ̄ g)` — see `2 * X₀`.
+  obtain ⟨S₀, hS₀prime, hS₀irr, hS₀assoc⟩ :=
+    exists_prime_associated_map_rat_of_irreducible_map_algClosureRat g hgQ
+  -- STEP 4 (SORRY LEAF, immediately above): the denominator bookkeeping, and
+  -- nothing else. `b` is left over the ideal the entry point produced it in and
+  -- the linkage `hS₀assoc` is passed explicitly, so there is no dependent
+  -- transport anywhere in this glue.
+  obtain ⟨g₀, P, R, w, hnd, h1, h2, h3⟩ :=
+    exists_ratMembershipData_of_birationalNormalForm f g S₀ hS₀prime hS₀irr
+      hS₀assoc a b hb hker eqv
+  exact ⟨e, S₀, g₀, P, R, w, hS₀irr, hS₀prime, hnd, h1, h2, h3⟩
 
 /-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (**PROVEN
 2026-07-29** over `exists_ratMembershipHypersurfaceCertificate` immediately above
