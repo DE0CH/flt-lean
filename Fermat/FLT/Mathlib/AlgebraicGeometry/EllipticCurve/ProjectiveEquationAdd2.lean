@@ -285,7 +285,56 @@ disjoint sets of the remaining variables.  So
 
 Note that only a WEAKER statement is actually consumed below, and a proof of it
 would close the leaf just as well: that `addZ ucurve upt₁ upt₂` is a
-non-zerodivisor in `Univ`. -/
+non-zerodivisor in `Univ`.
+
+## A SECOND ROUTE, WITH THE HARD HALF RELOCATED (recorded 2026-07-30, not proven)
+
+The two-step route above puts all the difficulty into "`f₂` is irreducible over a
+ring that need not be a UFD".  Localising instead of towering moves the whole
+difficulty somewhere else, and the half that survives is *elementary*.
+
+Both generators are AFFINE-LINEAR in `(a₁, a₂, a₃, a₄, a₆)` — that is the one
+structural fact neither the dimension count nor the tower above uses.  Write
+`u`, `v` for the `a₆`-free parts of `gen₁`, `gen₂`, so `gen₁ = u - a₆ Pz³` and
+`gen₂ = v - a₆ Qz³`.  Over `Poly[1/Pz]` the first generator SOLVES for `a₆`
+(`a₆ = u / Pz³`), and substituting into the second leaves a single generator
+`w := Qz³ u - Pz³ v`, so
+
+> `Poly[1/Pz] ⧸ idl ≅ ℤ[a₁, a₂, a₃, a₄, Px, Py, Pz^{±1}, Qx, Qy, Qz] ⧸ (w)`.
+
+**`w` is PRIME, and the proof is one Gauss argument.**  `w` is irreducible over
+`ℚ` — checked with `Singular`'s `factorize`, which returns the single factor `w`
+with multiplicity `1` (untrusted searcher, so this certifies the statement, not a
+proof) — and every coefficient of `w` is `±1`, so its `ℤ`-content is `1`; an
+irreducible-over-`ℚ` primitive polynomial is irreducible in `ℤ[…]`, hence prime.
+The route to that in Lean is the same trick step 1 above uses: `w` has degree `1`
+in `a₁` with coefficient `Pz Qz (Px Py Qz² - Qx Qy Pz²)`, whose irreducible factors
+are `Pz`, `Qz` and `Px Py Qz² - Qx Qy Pz²` (itself degree `1` and primitive in
+`Py`); none divides the `a₁`-free part of `w`, which is `-Qz³ Px³` mod `Pz`,
+`Pz³ Qx³` mod `Qz`, and `10 + a₃ + 3 a₂ + a₄` at
+`(Px, Py, Pz, Qx, Qy, Qz) = (1, 2, 1, 2, 1, 1)` — a point of the third factor's
+zero locus.  So `w` is primitive in `a₁` over a UFD, hence irreducible.  (Do NOT
+test that last non-divisibility on the diagonal `P = Q`: there the `a₁`-free part
+of `w` vanishes identically and the check reads as a false positive.)
+
+**So the entire remaining gap is SATURATION**: that `Pz` is a non-zerodivisor on
+`Poly ⧸ idl`, equivalently `idl : Pz^∞ = idl`.  Given that, `Poly ⧸ idl` embeds in
+the domain `Poly[1/Pz] ⧸ idl` and the leaf follows.  This is a genuinely different
+reduction from step 2 above — it is a question about associated primes of a
+complete intersection rather than about irreducibility over a non-UFD — and it is
+the same question the consumer's weaker form asks, since `addZ` and `Pz` cut out
+comparable loci.
+
+Two supporting observations.  `{gen₁, gen₂}` is already a Gröbner basis for the
+degree-reverse-lex order: the leading terms are `Px³` and `Qx³`, which are coprime,
+so the single S-pair reduces to zero by Buchberger's first criterion — that is the
+mechanical justification for the `ℤ[…]`-freeness on `Px^i Qx^j` claimed above, and
+it says `(gen₁, gen₂)` is a regular sequence, hence a complete intersection, hence
+Cohen–Macaulay and unmixed.  With unmixedness the saturation reduces to a statement
+about MINIMAL primes only.  And the saturation is not merely unproven but
+unconfirmed: `Singular`'s `quotient(idl, Pz)` and `minAssGTZ(idl)` were both killed
+at 900 s in these eleven variables, so a successor should not expect the CAS to
+settle it either. -/
 theorem idl_isPrime : idl.IsPrime := sorry
 
 noncomputable instance : IsDomain Univ := (Ideal.Quotient.isDomain_iff_prime idl).mpr idl_isPrime
