@@ -974,12 +974,49 @@ wanted, is `PresheafOfModules.pullbackComp` (mathlib) factoring
 `(F.op ⋙ R) ⟶ F.op ⋙ R`, i.e. `p = (base change of scalars) ⋙ (Lan along
 F.op)`.  The first half is an objectwise `ModuleCat` base change, hence strong
 monoidal by `ModuleCat`-level algebra; the second is where filteredness is
-consumed.  Mathlib has neither half's monoidality, and it has no objectwise
-description of `pullback` at all — only `pullbackObjIsDefined_free_yoneda` and
-`SheafOfModules.pullbackObjFreeIso` (pullback of a FREE object is free), which
-with `PresheafOfModules.Generator.isColimitFreeYonedaCoproductsCokernelCofork`
-is the other available route: both sides preserve colimits, so it suffices to
+consumed.  Mathlib has no objectwise description of `pullback` at all — only
+`pullbackObjIsDefined_free_yoneda` and `SheafOfModules.pullbackObjFreeIso`
+(pullback of a FREE object is free), which with
+`PresheafOfModules.Generator.isColimitFreeYonedaCoproductsCokernelCofork` is
+the other available route: both sides preserve colimits, so it suffices to
 compare them on `freeYoneda` objects, where both are free.
+
+**CORRECTION 2026-07-30 — "Mathlib has neither half's monoidality" was FALSE,
+and the true picture names the ONE missing declaration.**  The sentence above
+used to end that way; it has been deleted from it rather than left to mislead.
+Each clause below was checked by `inferInstance` in a scratch against this
+pin, not by grep, and the whole chain compiles except where marked ABSENT:
+
+* PRESENT, and STRONG rather than merely lax:
+  `(PresheafOfModules.pushforward₀OfCommRingCat F R).Monoidal`, in
+  `Presheaf/PushforwardZeroMonoidal.lean` — its `μIso` is literally
+  `Iso.refl`.  That is the `Lan` half's right adjoint;
+* PRESENT one level down: `(ModuleCat.restrictScalars f).LaxMonoidal`, in
+  `ModuleCat/Monoidal/Adjunction.lean`;
+* PRESENT, general machine: `Adjunction.leftAdjointOplaxMonoidal` in
+  `CategoryTheory/Monoidal/Functor.lean` — a left adjoint of a LAX monoidal
+  functor is OPLAX monoidal, i.e. it hands over the canonical
+  `δ : p(A ⊗ B) ⟶ pA ⊗ pB` for nothing;
+* PRESENT: a strong monoidal functor followed by a lax one is lax;
+* **ABSENT — and this is the whole gap**:
+  `(PresheafOfModules.restrictScalars α).LaxMonoidal`.  Synthesis fails.
+
+Since `PresheafOfModules.pushforward φ = pushforward₀ F R ⋙ restrictScalars φ`
+by definition (`Presheaf/Pushforward.lean`) and `pullback φ ⊣ pushforward φ` is
+`pullbackPushforwardAdjunction`, that single missing instance — an OBJECTWISE
+assembly of the `ModuleCat` one already present — is all that stands between
+this pin and a canonical comparison map on `presheafPullback`.
+
+**What that buys, and why it is worth doing first.**  It does NOT prove the
+leaf: `δ` exists for any morphism of sites, including the two-object
+counterexample above, where it is the non-invertible `k² ⟶ k⁴`.  What it buys
+is the RESTATEMENT `IsIso (δ (presheafPullback h) A B)` in place of a bare
+`Nonempty ≅` — a named canonical map, so the remaining obligation becomes
+checkable objectwise and the filteredness argument has something concrete to
+act on.  The leaf's own docstring already invites exactly this ("a prover who
+finds it easier to build the canonical map and prove it invertible may of
+course do so and derive this"), and this correction says the canonical map is
+one instance away rather than a from-scratch construction.
 
 **Consequence for `AmpleSheaf.lean`, which nobody should act on from here.**
 Once `nonempty_presheafPullback_tensor` is proven, `AmpleSheaf.lean`'s
@@ -2676,7 +2713,39 @@ Route, in the order a prover meets it:
 
 Both `_o` and `_hpush` are load-bearing at step 2 and must not be dropped
 "because the gluing is formal": without them there is no canonical
-universal sheaf to glue. -/
+universal sheaf to glue.
+
+**ROUTE AUDIT 2026-07-30 — step 1's tool EXISTS, and the obstacle is not
+where the route above puts it.**  Checked against the pin rather than
+recalled: `AlgebraicGeometry.Scheme.Cover.RelativeGluingData` is real, in
+`Mathlib/AlgebraicGeometry/RelativeGluing.lean` (195 lines, `@[stacks
+01LH]`), and it does deliver what step 1 wants — `glued`, `toBase`,
+`ι_toBase`, `cover`, and `isPullback_natTrans_ι_toBase` (the preimage of
+`Uᵢ` in the glued scheme IS `Xᵢ`).  Its side conditions are all
+satisfiable here: `[𝒰.LocallyDirected]` is the "affine opens are closed
+under refinement inside an intersection" fact the route already cites,
+and `[Small.{u} 𝒰.I₀]` / `[Quiver.IsThin 𝒰.I₀]` hold because the index
+category is the POSET `S.Opens`.
+
+**But its input is a FUNCTOR `𝒰.I₀ ⥤ Scheme` together with an EQUIFIBERED
+natural transformation — not a family of schemes with comparison
+isomorphisms.**  `_hloc` supplies a bare `∃` per affine open, i.e. after
+choice an unrelated `P_V` for each `V` with NO maps between them.  Yoneda
+gives a canonical iso `P_W ≅ P_V ×_V W` for each `W ≤ V`, so the maps
+exist, but assembling them into a functor requires the composites to
+agree ON THE NOSE, and chosen-by-`Classical.choice` objects give that
+only after the uniqueness argument is made functorial.  That — not the
+gluing — is where the first real work of this leaf sits, and no version
+of the route note has named it.  A prover should expect to prove the two
+sublemmas the route above dismisses as "not stated as a leaf here because
+nothing in the assembly consumes them" (`IsRelPicOf` is stable under base
+change of `S`; two representing objects are canonically isomorphic over
+`S`), since they are exactly what makes the functor well defined.
+
+Step 2 is untouched by this and remains the larger half: gluing the
+rigidified universal sheaves needs descent for `SheafOfModules` along an
+open cover, which this module does not have and mathlib does not supply
+in the form wanted. -/
 theorem exists_isRelPicOverAffines_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
