@@ -5481,7 +5481,30 @@ no `schematicClosure`, `SubgroupScheme` or quotient-by-a-subgroup-scheme
 anywhere under `Fermat/`. That, and not Raynaud's classification, is
 this leaf's real blocker. *Refuting check on this paragraph*: a
 `Fermat/`-local construction of the kernel of a homomorphism of finite
-flat `𝒪₃ᵥ`-group schemes as a finite flat group scheme.
+flat `𝒪₃ᵥ`-group schemes as a finite flat group scheme. Re-grepped
+2026-07-30 against `main` at `3c323a98`: still none — the only hits for
+those three names anywhere under `Fermat/` are this docstring.
+
+**AND A STRICTLY EARLIER BLOCKER, MEASURED 2026-07-30: the whole
+multiplicative-type layer is ABSENT FROM THIS FILE'S IMPORT CONE, so the
+route above cannot even be STATED here yet.** A probe module importing
+only `…HardlyRamified.Threeadic` reports `unknown constant` for all four
+of `HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` and
+`HopfAlgebra.etale_of_isShortExact`. So steps (1)–(4) above name lemmas
+that are real and proven but *unreachable from `Threeadic.lean`*; the
+paragraph above reads as though they were in hand, and they are not.
+
+The fix is cheap and cycle-free, and it is the FIRST step for anyone
+working this leaf: `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/`'s
+`CartierDual`, `Corner`, `ShortExact` and `Diagonalizable` import
+**only mathlib and each other** (checked 2026-07-30), so a
+`public import` of `…HopfAlgebra.Diagonalizable` — which pulls the other
+three plus `GroupFunctions` and `CartierDualExamples` — wires the layer
+in with no new project edge and no cycle. It is deliberately NOT added
+in this commit, because an import with no use is a build-time cost paid
+by every consumer of this file (`Modularity/Interface.lean` among them)
+for nothing; add it in the same commit that first uses it.
 
 **RELOCATION CANDIDATE — this leaf DUPLICATES a better cut in
 `Family.lean` (found 2026-07-28).** `Family.lean` carries the same
@@ -5497,12 +5520,56 @@ the intrinsic `HasInertiaLevelOneFlag`; and everything downstream of it —
 PROVEN. Note in particular that with the corner stated at full rank
 there is NO dévissage step at all: the `3`-torsion hypothesis and the
 `3`-power induction that this leaf's framing suggests are artefacts of
-the weaker cut, not mathematics. The two files are siblings (`Threeadic`
-does not import `Family` and `Family` does not import `Threeadic`), and
-`Family`'s version needs `hchar`/`χ₁`/`χ₂` data that this leaf does not
-carry, so the merge is a design decision for an integrator rather than a
-local edit. It should be made before anyone spends a cycle proving this
-leaf twice.
+the weaker cut, not mathematics.
+
+**THE RELOCATION IS REAL BUT IT IS NOT AN IMPORT, AND IT IS NOT LOCAL —
+three checks, 2026-07-30, correcting the paragraph above.** The
+duplication it reports is genuine; the implied repair ("make this leaf
+consume `Family`'s") is not available, for three independent reasons, and
+each one alone is fatal:
+
+1. **`Threeadic` CANNOT import `Family`: that edge is a CYCLE.** The
+   sibling claim above is true as stated but incomplete — the two files do
+   not import each other *directly*, and `Family` reaches `Threeadic`
+   transitively: `Family.lean:16` is
+   `public import Fermat.FLT.Modularity.Interface`, and
+   `Interface.lean:409` is `import …HardlyRamified.Threeadic`. So
+   `Family → Interface → Threeadic`, and adding `import Family` here
+   closes the loop. The relocation must therefore be an EXTRACTION
+   downward into a module both files import, never an import sideways.
+2. **`Family`'s bridge chain is NOT coefficient-free, so extracting it
+   does not serve this leaf.** Only the Raynaud step
+   (`isMultiplicativeType_corner_of_inertiaLevelOneFlag`) and the
+   intrinsic `HasInertiaLevelOneFlag` are coefficient-free. Every member
+   of the chain that carries the conclusion — from
+   `grouplike_corner_invariant_of_localInertia` through
+   `exists_grouplike_family_of_connected_hopf_package`,
+   `exists_grouplike_coordinates_of_connected_hopf_package` and
+   `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+   to `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
+   — carries the FULL hardly-ramified package in its signature:
+   `hZinj`, `hRinj`, `hρ : IsHardlyRamified`, `χ₁`/`χ₂` with
+   `hcont`/`hone`/`hmul`, `hchar`, and an open ideal `I` with the space
+   taken as `(ρ.baseChange (R ⧸ I)).toLocal 𝔭₃`.
+3. **This leaf is strictly MORE GENERAL than what that chain proves, so
+   even after an extraction it would not close by instantiation.** Its
+   `ρ' : GaloisRep ℚ A N` is over an arbitrary `A` and `N` with no
+   `hchar`, no `χ₁`/`χ₂` and no `IsHardlyRamified`; the note above that
+   `Family`'s version "needs `hchar`/`χ₁`/`χ₂` data that this leaf does
+   not carry" is exactly right, and it is what makes the gap a re-cut
+   rather than a lookup. Supplying that data means threading it down
+   through `exists_uniform_pow_localInertia_smul_connected_of_hopf_package`
+   (the consumer just below) and `exists_ordinary_line_of_flat_hopf_package`
+   and their callers.
+
+So the relocation is a cut-level redesign spanning two files and at least
+those two intermediate consumers, and it needs an extraction module below
+both. It is still the right move — nobody should prove Raynaud twice —
+but it is NOT a local edit, and the estimate implied above ("a design
+decision for an integrator") should be read as the larger of the two
+readings. *Refuting check on this paragraph*: a single `public import`
+line that makes `Family`'s corner chain visible in `Threeadic.lean`
+without `lake build` reporting an import cycle.
 
 ## FAITHFULNESS AUDIT (new, 2026-07-28, against the statement above)
 
