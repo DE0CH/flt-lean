@@ -516,9 +516,31 @@ DO ALL FIVE, IN ORDER
  3. Rewrite %(state)s/queue1: remaining queue1 first, then everything in
     %(state)s/queue2, then empty queue2. Tasks are free text separated by
     lines reading exactly `=== TASK ===`. Drop tasks whose leaf is already
-    proven. Add tasks for open leaves nobody holds -- but a leaf a LIVE agent
-    is working on is NOT unowned, and queueing it hands the same target to a
-    second worker.
+    proven.
+
+    THEN REFILL IT FROM THE WHOLE FRONTIER. Run:
+
+        cd ~/flt-lean && python3 flt-frontier.py
+
+    It enumerates every open leaf on main -- the count is in the hundreds. For
+    EVERY leaf that no live agent holds and no queued task already names,
+    write a task. Not a sample, not the ones you happened to notice while
+    merging: all of them.
+
+    This is the fleet's only source of work. queue1 is the sole thing dispatch
+    reads, and nothing else refills it, so the number of agents that can run
+    until the next release is exactly the number of tasks you leave here. A
+    release that queued 17 against a 320-leaf frontier left 403 worktrees
+    running 18 agents. Under-filling this is not conservative; it idles the
+    fleet.
+
+    A leaf a LIVE agent is working on is NOT unowned -- queueing it hands the
+    same target to a second worker. `%(state)s/jobs/*.json` says who holds
+    what: an agent record's `payload` is its task.
+
+    Each task is the FULL prompt text for whoever picks it up: name the
+    declaration and its file, say what is known and what has been tried, and
+    use {{FLT_WORKTREE}} where the worktree path belongs.
  4. Set queue1's first line to `AUDITED: <the main sha you produced>`.
  5. LAST, after the artifacts are in place: write that same sha into
     %(snapshot_sha)s -- the file contents are the sha and nothing else.
