@@ -49233,23 +49233,22 @@ is SURJECTIVE. (The two are interchangeable through
 is stated here because it is what the glue below and
 `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` already speak.)
 
-WHY IT IS TRUE, AND THE ROUTE. Surjectivity is exactly
-`[F(ζ_m) : F] = φ(m)`, i.e. `F ∩ ℚ(ζ_m) = ℚ`. Since `m` is prime to every
-prime ramifying in `F/ℚ`, and `ℚ(ζ_m)/ℚ` ramifies only at primes dividing
-`m`, the field `F ∩ ℚ(ζ_m)` is unramified over `ℚ` at EVERY prime, hence
-equals `ℚ` by MINKOWSKI. **The argument must go through `ℚ`** — "`E/F` is
-everywhere unramified, hence trivial" is false for a general number field
-`F`, which has a Hilbert class field.
+WHY IT IS TRUE. Surjectivity is exactly `[F(ζ_m) : F] = φ(m)`, i.e.
+`F ∩ ℚ(ζ_m) = ℚ`, which is MINKOWSKI over `ℚ`. That argument now lives
+ONCE, in `exists_badPrimes_openSubgroup_realizes_pow_ray_class` above,
+whose docstring carries the full route, the machinery inventory and the
+faithfulness audit; this statement is the `H = ⊤` instance of it, and
+`(⊤ : Subgroup (Γ F))` is open because its carrier is `Set.univ`
+(`Subgroup.coe_top`).
 
-**MINKOWSKI IS ALREADY IN THIS FILE'S IMPORT CONE, DO NOT REBUILD IT**:
-`MinkowskiUnramified.open_normal_subgroup_eq_top_of_inertia_le`
-(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`, PROVEN) says
-that an OPEN NORMAL subgroup of `Γ ℚ` containing the image of the local
-inertia group at every rational prime is `⊤`. Applied to
-`H := Γ_F · Γ_{ℚ(ζ_m)}` — a subgroup because the second factor is normal,
-open because the first is, and normal because its fixed field
-`F ∩ ℚ(ζ_m)` is abelian over `ℚ` hence Galois — it gives `H = ⊤`, which
-is `F ∩ ℚ(ζ_m) = ℚ`, which is the surjectivity wanted.
+**THE OLD "RECOMMENDED NEXT CUT" HAS BEEN TAKEN, IN A DIFFERENT SHAPE.**
+This docstring used to propose cutting out the `ℚ`-SIDE statement and
+transporting both this leaf and
+`exists_badPrimes_charKernel_mul_muFixer_ray_class` below down to it
+along `Field.absoluteGaloisGroup.map`. The unified leaf above is that
+cut, executed at the level of `Γ F` instead — which keeps the transport
+inside a single leaf rather than in the interface of two. See THE SHAPE
+OF THE CUT there for why.
 
 **THE CUT WAS TAKEN, 2026-07-28.** The `ℚ`-side statement that this
 paragraph used to recommend is now the named leaf
@@ -55640,6 +55639,42 @@ those of `mm` and hence possibly `v` itself; the explicit counterexample is
 recorded in that leaf's FALSITY AUDIT. Nothing else in this assembly depends on
 which modulus is used: `hcycl`'s clause (ii) needs only `span {m_i} ∣ mmE_i`,
 which still holds, and `hbase` does not mention `mmE_i` at all.
+
+**IF YOU HOIST `hbase`, DO NOT HOIST ITS ARGUMENT LIST — THAT LEAF IS FALSE**
+(checked 2026-07-28, flt-lean-266, with an explicit witness). `hbase` is
+written as an implication taking seven hypotheses — `hi₁`, `hi₂`, `hH₁open`,
+`hH₂open`, `hm₂cop`, `hbasis₁`, `hbasis₂` — and it is tempting to read that
+list as the leaf's interface, because it is the only thing the `have` names.
+It is not: the `have` also sees `φ`, `φ₁`, `φ₂`, `Im₁`, `Im₂`, `mm`, `mmE₁`,
+`mmE₂`, `ι₁`, `ι₂` and their defining clauses through the enclosing proof, and
+**`φ` is completely unconstrained by those seven**. So the naive top-level
+hoist is refuted by taking `φ` to be the TRIVIAL homomorphism together with
+any `χ` and `v₀` with `χ (globalFrob v₀) ≠ 1`: every one of the seven
+hypotheses still holds (`hbasis₁`/`hbasis₂` constrain only `𝔑₁`, `𝔑₂`, and the
+rest are statements about `H₁`, `H₂`, `m₁`, `m₂`), while the conclusion's first
+clause `φ (ofAdd β) = χ (globalFrob v₀)` reads `1 = χ (globalFrob v₀)`, false.
+
+The MINIMAL sufficient interface, read off the route, is the seven above plus,
+at each index `i ∈ {1,2}`: `hconsᵢ` (`φ ∘ 𝔑ᵢ = φᵢ`), `hφv` and `hφvᵢ` (the
+Artin maps pinned on the basis, downstairs and up), `hImᵢ` (the modulus
+subgroup), `hsurHᵢ` (`Hᵢ` is the range of `ιᵢ`) with `hinjᵢ`, and the
+auxiliary-field pinning data `jEᵢ`, `jᵢ`, `hjEᵢ`, `hιappᵢ`, `hfinᵢ` that makes
+`ιᵢ` the RESTRICTION map — the same clauses, and for the same reason, that
+`exists_relNormDivisorHom_ray_class` above had to take once
+`exists_artinAuxiliaryNumberField_ray_class` started exporting them. Together
+these are what make `χ (globalFrob v₀)` attainable: `hiᵢ` gives
+`χ (Hᵢ) = χ (Γ F)`, so `χ ∘ ιᵢ` has full image, and Chebotarev at `Eᵢ`
+(PROVEN, `Fermat/FLT/GaloisRepresentation/Chebotarev.lean` — do not rebuild
+it) then puts `χ (globalFrob v₀)` in `φᵢ (Imᵢ)`, which `hconsᵢ` transports to
+`φ (Subgroup.map 𝔑ᵢ Imᵢ)`.
+
+That is roughly forty-five binders, none of which the compiler can check for
+SUFFICIENCY — an under-hypothesised leaf elaborates perfectly and is simply
+false. Hence the sorry is deliberately left inside this theorem for now: it is
+already visible to the frontier scan under this theorem's own name, so nothing
+is lost by not naming it, whereas a wrong hoist would manufacture exactly the
+"honest audit, false statement" failure this cluster has already produced once
+(see the SECOND FALSITY AUDIT on `exists_artinDivisorNormIndex_le_ray_class`).
 
 **AND THE CUT-LEVEL DEFECT RECORDED AGAINST STEP 3 IS REPAIRED.** The caveat
 below used to read that `exists_artinAuxiliaryNumberField_ray_class` pins `ι`
