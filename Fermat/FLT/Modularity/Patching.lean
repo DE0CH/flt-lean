@@ -990,19 +990,49 @@ only via the extra `k = 𝔽_p(traces)` demand it was smuggling in.
 no proof body in the tree (`grep -n 'hgen' ` on this file: one binder and one
 forwarding application per consumer, all the way down to the sorried
 `exists_auxDeformationDiamondControl`).  So this change of definition is
-inert for the build and changes no signature. -/
+inert for the build and changes no signature.
+
+# THE SECOND DEFECT, FIXED IN THE SAME BREATH: THE `Sf \ Suniv` GAP
+
+`exists_auxDeformationDiamondControl` far below records a separate obstruction
+in its own docstring, twice, and it is a defect in THIS predicate rather than
+in that leaf: the classifying map out of `𝒟Q.R` is known to hit the traces
+away from `Sf ∪ Suniv`, where `Sf` is existentially quantified and
+uncontrolled, whereas the clause as written speaks about the traces away from
+`Suniv` — "and nothing in `IsTraceGeneratedDeformation` says that dropping
+finitely many primes leaves the topological closure unchanged."  The note's own
+first prescription is to state the predicate **at every finite exceptional set
+containing `Suniv`**, and that is what is done here: the `S` quantifier below.
+
+It is the STRONGER form (fewer traces are required to lie in `A`, and `A` is
+still concluded dense), it is arity-preserving exactly like the first repair,
+and it is TRUE in the honest setting for the reason the note gives — Frobenius
+traces are Chebotarev-dense, so the closed subalgebra they generate does not
+notice the removal of finitely many primes.
+
+Re-audit of the COMPOSITE, since a leaf restated twice inherits no audit
+(CLAUDE.md).  (i) Still kills the inflation family: in `Runiv₀[[y_1, …, y_m]]`
+the constants `Runiv₀` contain every trace at EVERY `S`, so no choice of `S`
+rescues it, and its closure is still not `⊤`.  (ii) Still does not force
+`k = 𝔽_p(traces)`: residue-surjectivity is a HYPOTHESIS on `A` under both
+quantifiers, never a conclusion, so the derivation at the head of this audit
+cannot be run in reverse.  (iii) Now exactly matches the consumer, which
+instantiates `S := Sf ∪ Suniv`.  (iv) Non-vacuous: `A = ⊤` satisfies both
+hypotheses and the conclusion, so the clause is not empty; and it is not
+trivial, by (i). -/
 def IsTraceGeneratedDeformation (p : ℕ) [Fact p.Prime]
     {Runiv : Type*} [CommRing Runiv] [TopologicalSpace Runiv]
     [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
     (ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv))
     (Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
     Prop :=
-  ∀ A : Subalgebra ℤ_[p] Runiv,
-    (∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
-      (ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 ∈ A) →
-    (∀ x : Runiv, ∃ a ∈ A, x - a ∈ IsLocalRing.maximalIdeal Runiv) →
-    A.topologicalClosure = ⊤
+  ∀ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)), Suniv ⊆ S →
+    ∀ A : Subalgebra ℤ_[p] Runiv,
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        (ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 ∈ A) →
+      (∀ x : Runiv, ∃ a ∈ A, x - a ∈ IsLocalRing.maximalIdeal Runiv) →
+      A.topologicalClosure = ⊤
 
 /-- **Weak universality on residually identified deformations**: the
 package `(Runiv, ρuniv, πuniv)` factors every test deformation `D`
@@ -3097,9 +3127,14 @@ has to touch the deformation functor; the job is exactly:
    descends along the injection `ι`.
 4. **Trace generation of `A`** in the repaired sense of
    `IsTraceGeneratedDeformation`: a `ℤ_[p]`-subalgebra `B ⊆ A` containing
-   the traces and surjecting onto `k` contains, by step 1 run inside `B`,
-   a coefficient ring, hence contains `C` up to closure and therefore is
-   dense.
+   the traces away from any finite `S ⊇ S₀` and surjecting onto `k` contains,
+   by step 1 run inside `B`, a coefficient ring, hence contains `C` up to
+   closure; and dropping the finitely many primes of `S \ S₀` does not change
+   the closed subalgebra the traces generate, Frobenius traces being
+   Chebotarev-dense.  So `B` is dense.  (That last point is the `S`
+   quantifier, which exists to close the `Sf \ Suniv` gap recorded twice on
+   `exists_auxDeformationDiamondControl` far below; see the audit on
+   `IsTraceGeneratedDeformation`.)
 
 Both-ways audit.  Non-vacuous: the conclusion is an existential and no
 hypothesis is contradictory-looking; `ι` is required INJECTIVE, so the

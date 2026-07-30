@@ -31,6 +31,16 @@ residue field is dense*. That still kills the `R₀[[y]]` inflation family the
 clause exists to exclude (the constants are such a subalgebra and are closed),
 and it does not force `k = 𝔽_p`.
 
+**A definition nothing consumes accumulates MORE than one recorded defect.**
+The same predicate separately owned the `Sf \ Suniv` gap, recorded twice in a
+consumer's docstring as if it were that consumer's problem: the clause spoke
+about traces away from `Suniv` while the consumer only ever gets traces away
+from a larger, uncontrolled `Sf ∪ Suniv`. Both defects were fixable in ONE
+arity-preserving edit. So when you repair an unconsumed definition, `grep` its
+name across the module first and collect every complaint about it — they are
+cheaper together than in sequence, and CLAUDE.md's "two individually-correct
+repairs can be fatal together" is then a single composite audit rather than two.
+
 **Why the repair was cheap, and how to check that in advance:** `grep` the
 hypothesis name. `hgen` appeared ten times and was CONSUMED BY NO PROOF BODY —
 every occurrence was a binder or a forwarding application down to a still-sorried
