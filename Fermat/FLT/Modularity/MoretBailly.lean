@@ -14604,6 +14604,34 @@ noncomputable def stepanovAnsatz (d p K : ℕ) (A : ℕ → ℕ → ℕ → Poly
 
 end StepanovAuxiliaryFunction
 
+/-! ### The derivation calculus of `stepanovDerivX`/`stepanovJet`
+
+(2026-07-30.) `stepanovDerivX_monomial` and `stepanovDerivX_add` were originally
+written ~2 250 lines below, in the `#### The derivation calculus behind Schmidt §3`
+block, as the first two of the six lemmas there. They are MOVED HERE, verbatim,
+because `exists_stepanovJetLinearForms` also needs them and a Lean declaration
+cannot use one that comes later in the file. The four remaining lemmas of that
+block stay where they were. -/
+
+section StepanovDerivationCalculus
+
+variable {R : Type*} [CommRing R]
+
+/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
+theorem stepanovDerivX_monomial (n : ℕ) (c : Polynomial R) :
+    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
+  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
+    Polynomial.C_mul_X_pow_eq_monomial]
+
+theorem stepanovDerivX_add (b₁ b₂ : Polynomial (Polynomial R)) :
+    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
+  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
+  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
+  intro i c₁ c₂
+  rw [Polynomial.derivative_add, map_add, add_mul]
+
+end StepanovDerivationCalculus
+
 /-- **LEMMA 4A(iii), THE DEGREE BOUND** (PROVEN 2026-07-27) — mechanical, and
 proven here so that no sub-leaf has to carry it.
 
@@ -14805,6 +14833,460 @@ theorem stepanovIdx_ext {d p K : ℕ} {q q' : StepanovIdx d p K}
 /-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
 `exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
 part of the dimension count that does MATHEMATICS; the two siblings only count.
+/-! #### The reduction to a linear system, steps 1 and 4 (PROVEN 2026-07-30)
+
+`exists_stepanovJetLinearForms` is no longer a leaf: it is PROVEN below over the
+single smaller leaf `exists_stepanovJetSpanningFinset`. Of the four steps its
+docstring lists, TWO are discharged here and are not the next prover's problem:
+
+* **step 1, the Frobenius splitting** — `stepanovJet_stepanovAnsatz`, proven off
+  a derivation calculus for `stepanovDerivX`/`stepanovJet` (additivity, Leibniz,
+  and "a factor killed by both derivations passes through the whole recursion").
+  The factor here is `X^{pj} Y^{pk}`, whose two derivatives vanish in
+  characteristic `p`;
+* **step 4, the linear-algebra packaging** — `exists_linearForms_of_mem_span_finset`.
+  "At most `B` linear forms cut out the conditions" is EQUIVALENT to "the image of
+  the coefficient space lies in the span of at most `B` vectors", and the passage
+  from the second to the first is pure linear algebra over a field: pick a basis
+  of that span, extend the coordinate functionals to `Fin B → k` by zero, and
+  compose with a projection onto the span. Nobody has to build the forms by hand.
+
+What is left is `exists_stepanovJetSpanningFinset`, i.e. steps 2 and 3 (Lemma 3A
+in the weighted degree, and the elimination `y' = y^p` with the double reduction
+modulo `F` and `e₂`) together with the coefficient count. See its own docstring.
+
+The bridge between the two halves is `stepanovJetEvalMap`, the `𝔽_p`-linear map
+sending a coefficient family `A` to the tuple of values `a^{(ν)}(x, y)` over all
+irrational points of the curve and all `ν < M`. Its vanishing on `A` is LITERALLY
+the conclusion of `exists_stepanovJetLinearForms`; making it a `LinearMap` (rather
+than reasoning about the values one at a time) is what lets the packaging step be
+stated at all. -/
+
+section StepanovLinearSystemReduction
+
+/-! ##### The derivation calculus: Leibniz, additivity, and constants -/
+
+section DerivationCalculus
+
+variable {R : Type*} [CommRing R]
+
+theorem stepanovDerivX_zero : stepanovDerivX (0 : Polynomial (Polynomial R)) = 0 := by
+  simp [stepanovDerivX]
+
+/-- `stepanovDerivX` is a derivation: it satisfies the Leibniz rule. Proven by a
+double induction on monomials, where it comes down to `Polynomial.derivative_mul`
+for the inner variable. -/
+theorem stepanovDerivX_mul (b₁ b₂ : Polynomial (Polynomial R)) :
+    stepanovDerivX (b₁ * b₂)
+      = stepanovDerivX b₁ * b₂ + b₁ * stepanovDerivX b₂ := by
+  induction b₁ using Polynomial.induction_on' with
+  | add p q hp hq =>
+      rw [add_mul, stepanovDerivX_add, stepanovDerivX_add, hp, hq]
+      ring
+  | monomial n c =>
+      induction b₂ using Polynomial.induction_on' with
+      | add p q hp hq =>
+          rw [mul_add, stepanovDerivX_add, stepanovDerivX_add, hp, hq]
+          ring
+      | monomial m e =>
+          rw [Polynomial.monomial_mul_monomial, stepanovDerivX_monomial,
+            stepanovDerivX_monomial, stepanovDerivX_monomial,
+            Polynomial.derivative_mul]
+          simp only [← Polynomial.C_mul_X_pow_eq_monomial, map_add, map_mul, pow_add]
+          ring
+
+/-- Every jet `a ↦ a^{(ν)}` is additive in `a`: the recursion is built from
+additive operations. -/
+theorem stepanovJet_add (F : Polynomial (Polynomial R)) (M ℓ : ℕ)
+    (a₁ a₂ : Polynomial (Polynomial R)) :
+    stepanovJet F M ℓ (a₁ + a₂) = stepanovJet F M ℓ a₁ + stepanovJet F M ℓ a₂ := by
+  induction ℓ with
+  | zero => simp [stepanovJet]
+  | succ ℓ ih =>
+      show _ = _
+      rw [stepanovJet, stepanovJet, stepanovJet, ih, stepanovDerivX_add,
+        Polynomial.derivative_add]
+      ring
+
+theorem stepanovJet_zero_arg (F : Polynomial (Polynomial R)) (M ℓ : ℕ) :
+    stepanovJet F M ℓ (0 : Polynomial (Polynomial R)) = 0 := by
+  induction ℓ with
+  | zero => simp [stepanovJet]
+  | succ ℓ ih => rw [stepanovJet, ih, stepanovDerivX_zero]; simp
+
+theorem stepanovJet_sum {ι : Type*} (F : Polynomial (Polynomial R)) (M ℓ : ℕ)
+    (s : Finset ι) (a : ι → Polynomial (Polynomial R)) :
+    stepanovJet F M ℓ (∑ i ∈ s, a i) = ∑ i ∈ s, stepanovJet F M ℓ (a i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp [stepanovJet_zero_arg]
+  | insert x s hx ih =>
+      rw [Finset.sum_insert hx, Finset.sum_insert hx, stepanovJet_add, ih]
+
+/-- **THE FACTOR THAT PASSES THROUGH THE WHOLE RECURSION.** A factor `c` killed by
+BOTH derivations — `∂_X c = 0` and `∂_Y c = 0` — is a constant for every step of
+`stepanovJet`'s recursion, so it comes straight out of the jet. This is the exact
+form in which the Frobenius restriction is used: `c = X^{pj} Y^{pk}` over `𝔽_p`. -/
+theorem stepanovJet_mul_of_derivations_eq_zero (F : Polynomial (Polynomial R)) (M ℓ : ℕ)
+    (a c : Polynomial (Polynomial R)) (hc1 : stepanovDerivX c = 0)
+    (hc2 : Polynomial.derivative c = 0) :
+    stepanovJet F M ℓ (a * c) = stepanovJet F M ℓ a * c := by
+  induction ℓ with
+  | zero => simp [stepanovJet]
+  | succ ℓ ih =>
+      rw [stepanovJet, stepanovJet, ih, stepanovDerivX_mul, hc1,
+        Polynomial.derivative_mul, hc2]
+      ring
+
+theorem stepanovDerivX_C_C (c : R) :
+    stepanovDerivX (Polynomial.C (Polynomial.C c) : Polynomial (Polynomial R)) = 0 := by
+  have h : (Polynomial.C (Polynomial.C c) : Polynomial (Polynomial R))
+      = Polynomial.monomial 0 (Polynomial.C c) := by simp
+  rw [h, stepanovDerivX_monomial]
+  simp
+
+/-- Scalars from the ground ring pull out of every jet — the `𝔽_p`-linearity that
+`stepanovJetEvalMap` records. -/
+theorem stepanovJet_C_C_mul (F : Polynomial (Polynomial R)) (M ℓ : ℕ) (c : R)
+    (a : Polynomial (Polynomial R)) :
+    stepanovJet F M ℓ (Polynomial.C (Polynomial.C c) * a)
+      = Polynomial.C (Polynomial.C c) * stepanovJet F M ℓ a := by
+  rw [mul_comm, stepanovJet_mul_of_derivations_eq_zero F M ℓ a _ (stepanovDerivX_C_C c)
+    (by simp), mul_comm]
+
+end DerivationCalculus
+
+/-! ##### Step 1: the Frobenius splitting -/
+
+section Frobenius
+
+variable {p : ℕ}
+
+theorem stepanovDerivX_frobeniusFactor (j k : ℕ) :
+    stepanovDerivX (Polynomial.monomial (p * k)
+        ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j))) = 0 := by
+  rw [stepanovDerivX_monomial, Polynomial.derivative_X_pow]
+  have h : ((p * j : ℕ) : ZMod p) = 0 := by
+    push_cast [ZMod.natCast_self]
+    ring
+  rw [h]
+  simp
+
+theorem derivative_frobeniusFactor (j k : ℕ) :
+    Polynomial.derivative (Polynomial.monomial (p * k)
+        ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j))) = 0 := by
+  rw [Polynomial.derivative_monomial]
+  have h1 : ((p * k : ℕ) : ZMod p) = 0 := by
+    push_cast [ZMod.natCast_self]
+    ring
+  have hcast : ((p * k : ℕ) : Polynomial (ZMod p)) = 0 := by
+    calc ((p * k : ℕ) : Polynomial (ZMod p))
+        = Polynomial.C ((p * k : ℕ) : ZMod p) := (Polynomial.C_eq_natCast _).symm
+      _ = 0 := by rw [h1, map_zero]
+  rw [hcast]
+  simp
+
+/-- **STEP 1 OF SCHMIDT III §4, THE FROBENIUS SPLITTING** (PROVEN 2026-07-30):
+the jets of the Frobenius-restricted ansatz are the jets of the `b_{jk}` alone,
+
+  `a^{(ν)} = ∑_{i,j,k} (Y^i A_{ijk})^{(ν)} · X^{pj} Y^{pk}`,
+
+because `X^{pj} Y^{pk}` is killed by both `∂_X` and `∂_Y` in characteristic `p`
+and therefore rides through the entire recursion untouched
+(`stepanovJet_mul_of_derivations_eq_zero`). -/
+theorem stepanovJet_stepanovAnsatz (d K M ℓ : ℕ) (F : Polynomial (Polynomial (ZMod p)))
+    (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    stepanovJet F M ℓ (stepanovAnsatz d p K A)
+      = ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          stepanovJet F M ℓ (Polynomial.monomial i (A i j k))
+            * Polynomial.monomial (p * k) ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j)) := by
+  rw [stepanovAnsatz, stepanovJet_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [stepanovJet_sum]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [stepanovJet_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [show Polynomial.monomial (p * k + i) (A i j k * (Polynomial.X : Polynomial (ZMod p)) ^ (p * j))
+      = Polynomial.monomial i (A i j k)
+        * Polynomial.monomial (p * k) ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j)) from by
+    rw [Polynomial.monomial_mul_monomial, add_comm i (p * k)]]
+  exact stepanovJet_mul_of_derivations_eq_zero F M ℓ _ _
+    (stepanovDerivX_frobeniusFactor j k) (derivative_frobeniusFactor j k)
+
+end Frobenius
+
+/-! ##### Evaluation at a point is linear in the polynomial -/
+
+section StepanovEvalLinear
+
+variable {R S : Type*} [CommRing R] [CommRing S]
+
+theorem stepanovEvalPoint_add (φ : R →+* S) (g₁ g₂ : Polynomial (Polynomial R)) (x : R) (y : S) :
+    stepanovEvalPoint φ (g₁ + g₂) x y
+      = stepanovEvalPoint φ g₁ x y + stepanovEvalPoint φ g₂ x y := by
+  simp [stepanovEvalPoint, Polynomial.map_add]
+
+theorem stepanovEvalPoint_C_C_mul (φ : R →+* S) (c : R) (g : Polynomial (Polynomial R))
+    (x : R) (y : S) :
+    stepanovEvalPoint φ (Polynomial.C (Polynomial.C c) * g) x y
+      = φ c * stepanovEvalPoint φ g x y := by
+  simp [stepanovEvalPoint, Polynomial.map_mul]
+
+end StepanovEvalLinear
+
+/-! ##### The coefficient space, the index set, and the evaluation map -/
+
+theorem stepanov_mem_degreeLT_iff {p : ℕ} (a : Polynomial (ZMod p)) (c b : ℕ) :
+    a ∈ Polynomial.degreeLT (ZMod p) (b + 1 - c) ↔ (a = 0 ∨ a.natDegree + c ≤ b) := by
+  rw [Polynomial.mem_degreeLT]
+  constructor
+  · intro h
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact Or.inl rfl
+    · exact Or.inr (by
+        have := (Polynomial.natDegree_lt_iff_degree_lt ha).2 h
+        omega)
+  · rintro (rfl | h)
+    · simpa using (by exact_mod_cast WithBot.bot_lt_coe (b + 1 - c) :
+        (⊥ : WithBot ℕ) < ((b + 1 - c : ℕ) : WithBot ℕ))
+    · rcases eq_or_ne a 0 with rfl | ha
+      · simpa using (by exact_mod_cast WithBot.bot_lt_coe (b + 1 - c) :
+          (⊥ : WithBot ℕ) < ((b + 1 - c : ℕ) : WithBot ℕ))
+      · exact (Polynomial.natDegree_lt_iff_degree_lt ha).1 (by omega)
+
+/-- The space of coefficient families Schmidt's ansatz ranges over, as a
+`SUBMODULE`: supported in the box `i < d`, `k < d`, `j + k ≤ K`, and subject to the
+SHARP degree constraint `deg A_{ijk} + d + i + j + k ≤ p/d`. The two hypotheses
+`hAdeg`/`hAsupp` of `exists_stepanovJetLinearForms` are exactly membership here
+(`mem_stepanovCoefficientSpace`); packaging them as a submodule is what makes the
+"at most `B` forms" statement a statement about a linear map. -/
+def stepanovCoefficientSpace (d p K : ℕ) :
+    Submodule (ZMod p) (ℕ → ℕ → ℕ → Polynomial (ZMod p)) where
+  carrier := {A | (∀ i j k, A i j k ∈
+        Polynomial.degreeLT (ZMod p) (p / d + 1 - (d + i + j + k))) ∧
+      (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)}
+  add_mem' := by
+    rintro A B ⟨hA1, hA2⟩ ⟨hB1, hB2⟩
+    refine ⟨fun i j k => ?_, fun i j k h => ?_⟩
+    · simpa using Submodule.add_mem _ (hA1 i j k) (hB1 i j k)
+    · simp [hA2 i j k h, hB2 i j k h]
+  zero_mem' := ⟨by simp, by simp⟩
+  smul_mem' := by
+    rintro c A ⟨hA1, hA2⟩
+    refine ⟨fun i j k => ?_, fun i j k h => ?_⟩
+    · simpa using Submodule.smul_mem _ c (hA1 i j k)
+    · simp [hA2 i j k h]
+
+theorem mem_stepanovCoefficientSpace {d p K : ℕ}
+    {A : ℕ → ℕ → ℕ → Polynomial (ZMod p)}
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d)
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) :
+    A ∈ stepanovCoefficientSpace d p K := by
+  refine ⟨fun i j k => ?_, hAsupp⟩
+  rw [stepanov_mem_degreeLT_iff]
+  rcases hAdeg i j k with h | h
+  · exact Or.inl h
+  · exact Or.inr (by omega)
+
+/-- An IRRATIONAL point of the curve `F = 0` over `𝔽_p` — `x ∈ 𝔽_p`, `F(x, y) = 0`,
+`y ∉ 𝔽_p` — together with a jet order `ν < M`. This is the index set of Schmidt's
+conditions `a^{(ν)}(x, y) = 0`, i.e. the coordinates of the tuple that the linear
+forms must annihilate. -/
+def StepanovJetIndex (p : ℕ) [Fact p.Prime] (F : Polynomial (Polynomial (ZMod p)))
+    (M : ℕ) : Type :=
+  {q : ZMod p × AlgebraicClosure (ZMod p) //
+      stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F q.1 q.2 = 0 ∧
+      ∀ z : ZMod p, q.2 ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z} × Fin M
+
+theorem stepanovAnsatz_add {R : Type*} [CommRing R] (d p K : ℕ)
+    (A B : ℕ → ℕ → ℕ → Polynomial R) :
+    stepanovAnsatz d p K (A + B) = stepanovAnsatz d p K A + stepanovAnsatz d p K B := by
+  simp only [stepanovAnsatz, Pi.add_apply, add_mul, map_add]
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [← Finset.sum_add_distrib]
+
+theorem stepanovAnsatz_C_smul {R : Type*} [CommRing R] (d p K : ℕ) (c : R)
+    (A : ℕ → ℕ → ℕ → Polynomial R) :
+    stepanovAnsatz d p K (c • A)
+      = Polynomial.C (Polynomial.C c) * stepanovAnsatz d p K A := by
+  simp only [stepanovAnsatz, Pi.smul_apply, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  refine Finset.sum_congr rfl fun k _ => ?_
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [Polynomial.C_mul_monomial]
+  congr 1
+  rw [Polynomial.smul_eq_C_mul, mul_assoc]
+
+/-- The `𝔽_p`-linear map sending a coefficient family `A` to the tuple of values
+`a^{(ν)}(x, y)` of the jets of `stepanovAnsatz d p K A` at the irrational points of
+the curve. Its vanishing at `A` is EXACTLY the conclusion of
+`exists_stepanovJetLinearForms`; linearity is `stepanovAnsatz_add`/`_C_smul`
+followed by `stepanovJet_add`/`stepanovJet_C_C_mul` and
+`stepanovEvalPoint_add`/`_C_C_mul`. -/
+noncomputable def stepanovJetEvalMap (d p : ℕ) [Fact p.Prime] (K M : ℕ)
+    (F : Polynomial (Polynomial (ZMod p))) :
+    (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
+      (StepanovJetIndex p F M → AlgebraicClosure (ZMod p)) where
+  toFun A := fun q =>
+    stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+      (stepanovJet F M (q.2 : ℕ) (stepanovAnsatz d p K A)) q.1.1.1 q.1.1.2
+  map_add' A B := by
+    funext q
+    rw [stepanovAnsatz_add, stepanovJet_add, stepanovEvalPoint_add]
+    rfl
+  map_smul' c A := by
+    funext q
+    rw [stepanovAnsatz_C_smul, stepanovJet_C_C_mul, stepanovEvalPoint_C_C_mul]
+    simp [Algebra.smul_def]
+
+/-! ##### Step 4: the linear-algebra packaging -/
+
+open Submodule Module in
+/-- **"AT MOST `B` LINEAR FORMS" IS THE SAME AS "AT MOST `B` SPANNING VECTORS"**
+(PROVEN 2026-07-30). If `Φ'` maps a subspace `W` into the span of a finset of size
+`≤ B`, then there is a linear map `Φ` into `Fin B → k` whose kernel meets `W`
+inside the kernel of `Φ'`.
+
+Take a basis of the span `U` (of rank `≤ B`), read its coordinate functionals as a
+map `U →ₗ Fin B → k` padded with zeros — injective, since a vector all of whose
+coordinates vanish is `0` — and precompose with a projection `E →ₗ U` along any
+complement. On `W` the projection is the identity, so `Φ a = 0` forces
+`Φ' a = 0`. -/
+theorem exists_linearForms_of_mem_span_finset
+    {k V E : Type*} [Field k] [AddCommGroup V] [Module k V] [AddCommGroup E] [Module k E]
+    (Φ' : V →ₗ[k] E) (W : Submodule k V) (B : ℕ) (s : Finset E) (hcard : s.card ≤ B)
+    (hspan : ∀ a ∈ W, Φ' a ∈ Submodule.span k (s : Set E)) :
+    ∃ Φ : V →ₗ[k] (Fin B → k), ∀ a ∈ W, Φ a = 0 → Φ' a = 0 := by
+  classical
+  set U : Submodule k E := Submodule.span k (s : Set E) with hU
+  have hfin : FiniteDimensional k U := by rw [hU]; infer_instance
+  have hrank : Module.finrank k U ≤ B :=
+    le_trans (by rw [hU]; exact finrank_span_finset_le_card s) hcard
+  set r : ℕ := Module.finrank k U with hr
+  set b : Basis (Fin r) k U := Module.finBasis k U with hb
+  set ι : U →ₗ[k] (Fin B → k) :=
+    LinearMap.pi fun i : Fin B => if h : (i : ℕ) < r then b.coord ⟨i, h⟩ else 0 with hι
+  have hιinj : Function.Injective ι := by
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro u hu
+    have hcoord : ∀ j : Fin r, b.coord j u = 0 := by
+      intro j
+      have hjB : (j : ℕ) < B := lt_of_lt_of_le j.isLt hrank
+      have := congrFun (LinearMap.mem_ker.mp hu) ⟨(j : ℕ), hjB⟩
+      simpa [hι, LinearMap.pi_apply, j.isLt] using this
+    have hrepr : b.repr u = 0 := by
+      ext j
+      simpa [Basis.coord_apply] using hcoord j
+    simpa using (b.repr.map_eq_zero_iff).mp hrepr
+  obtain ⟨C, hC⟩ := U.exists_isCompl
+  refine ⟨ι ∘ₗ (U.projectionOnto C hC) ∘ₗ Φ', fun a ha h0 => ?_⟩
+  have hmem : Φ' a ∈ U := hspan a ha
+  have hproj : U.projectionOnto C hC (Φ' a) = ⟨Φ' a, hmem⟩ :=
+    Submodule.projectionOnto_apply_of_mem_left hC hmem
+  have h1 : ι ⟨Φ' a, hmem⟩ = 0 := by
+    simpa [hproj] using h0
+  have h2 : (⟨Φ' a, hmem⟩ : U) = 0 := hιinj (by rw [h1, map_zero])
+  simpa using congrArg Subtype.val h2
+
+/-! ##### The residual leaf: steps 2 and 3, and the count -/
+
+/-- **STEPS 2 AND 3 OF SCHMIDT III §4: THE JET VALUES SPAN A SPACE OF DIMENSION
+`≤ B`** (SORRY LEAF, cut 2026-07-30 out of `exists_stepanovJetLinearForms`, which
+is PROVEN over it and `exists_linearForms_of_mem_span_finset` immediately above).
+
+WHAT IS BEING ASKED, and why it is the whole remaining content. Exhibit at most
+`stepanovEquationCount d p M` many vectors spanning a subspace that contains the
+image of `stepanovCoefficientSpace d p K` under `stepanovJetEvalMap`. By
+`exists_linearForms_of_mem_span_finset` that is EQUIVALENT to the parent's "at most
+`B` linear forms cut the conditions out"; no linear algebra is left in it, only
+Schmidt's degree bookkeeping.
+
+WHAT IS HANDED IN. `hsplit` is step 1, the Frobenius splitting — it is NOT an
+assumption anybody has to discharge, since the caller supplies
+`stepanovJet_stepanovAnsatz` (proven above). It is passed as a hypothesis only so
+that the prover has it in the exact shape the argument consumes.
+
+THE INTENDED SPANNING SET, which is where the count comes from. Fix an irrational
+point `(x, y)` and put `y' := y^p`. Since `x ∈ 𝔽_p` we have `x^{pj} = x^j`, and
+`y^{pk} = y'^k`; moreover `F(x, y') = F(x, y)^p = 0` and `y' ≠ y`, so writing
+`F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')` gives `e₂(x, y, y') = 0`. Hence by
+`hsplit`
+
+  `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')`,  `D^{(ν)} := ∑_{i,j,k} (Y^i A_{ijk})^{(ν)}·X^j·Y'^k`,
+
+a THREE-variable polynomial, and reducing `D^{(ν)}` modulo `F` in `Y` (monic of
+degree `d`) and modulo `e₂` in `Y'` (whose `Y'^{d−1}`-coefficient is `−1`) changes
+none of its values at such points. Take as spanning set the evaluation vectors of
+the surviving monomials `X^a Y^b Y'^c`, one for each jet order `ν < M`:
+
+  `v_{ν,a,b,c} : q ↦ if q.2 = ν then x^a y^b y'^c else 0`,
+  `a ≤ p/d − d + (2d−3)ν`,  `b < d`,  `c < d − 1`.
+
+That is `d(d−1)(p/d + (2d−3)ν)` vectors for each `ν`, and
+`∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ stepanovEquationCount d p M`.
+
+The `deg_X` bound is Lemma 3A in the WEIGHTED degree `w(P) := maxₙ (deg (P.coeff n) + n)`:
+`w(F) ≤ d` is exactly `hcoeff`, so `w(F_Y), w(F_X) ≤ d − 1` and
+`w(F_{YX}), w(F_{YY}) ≤ d − 2`, and each of the three terms of `stepanovJet`'s
+recursion raises `w` by at most `(d−2) + (d−1) = 2d − 3` — the middle and last
+terms because `∂_X` and `∂_Y` each LOWER `w` by one, which is what pays for the
+squared `F_Y`. Starting from `w(Y^i A_{ijk}) + j + k ≤ p/d − d` (the SHARP
+hypothesis `hAdeg`, and this is where the `−(i + j + k)` is spent) gives
+`w(D^{(ν)}) ≤ p/d − d + (2d−3)ν`, and both reductions preserve `w`:
+`Y^d ≡ −∑_{i<d} F_i Y^i` with `w(F_i Y^i) ≤ (d − i) + i = d = w(Y^d)`, and likewise
+for `e₂`.
+
+**THE MARGIN IS THIN AND THE CONSTANTS MAY NOT BE WEAKENED** — see the section note
+on `stepanovEquationCount` above. Replacing `2d − 3` by `2d − 2` makes the sibling
+inequality `B < A` FALSE (first failure `d = 2`, `M = 124`, `p = 34849`), and
+dropping the reduction modulo `e₂` (i.e. allowing `c < d` rather than `c < d − 1`)
+inflates the count by a factor `d/(d−1)`, which the margin does not absorb either.
+So a sloppier bound followed by padding is NOT available here.
+
+MISSING AT THIS PIN: nothing named `[Ss]tepanov`, and no weighted-degree API — `w`
+and its three properties (`w(P + Q) ≤ max`, `w(PQ) ≤ w(P) + w(Q)`,
+`w(∂P) ≤ w(P) − 1`) have to be written here. `Polynomial.modByMonic` covers both
+reductions.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetSpanningFinset (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
+    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ℓ : ℕ),
+      stepanovJet F M ℓ (stepanovAnsatz d p K A)
+        = ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+            stepanovJet F M ℓ (Polynomial.monomial i (A i j k))
+              * Polynomial.monomial (p * k) ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j))) :
+    ∃ s : Finset (StepanovJetIndex p F M → AlgebraicClosure (ZMod p)),
+      s.card ≤ stepanovEquationCount d p M ∧
+      ∀ A ∈ stepanovCoefficientSpace d p K,
+        stepanovJetEvalMap d p K M F A ∈ Submodule.span (ZMod p) (s : Set _) :=
+  sorry
+
+end StepanovLinearSystemReduction
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM** (cut 2026-07-27 out of
+`exists_stepanovJetSolution`; **PROVEN 2026-07-30** over the single smaller leaf
+`exists_stepanovJetSpanningFinset` above) — Schmidt Chapter III §4, pp. 110–112.
+This is the part of the dimension count that does MATHEMATICS; the two siblings
+only count.
+
+**STATUS (2026-07-30).** Of the four steps below, steps **1** and **4** are
+DISCHARGED here and are nobody's problem any more: step 1 is
+`stepanovJet_stepanovAnsatz` (off the derivation calculus for
+`stepanovDerivX`/`stepanovJet`), step 4 is
+`exists_linearForms_of_mem_span_finset` (pure linear algebra over a field:
+"at most `B` forms" ⟺ "the image lies in the span of at most `B` vectors").
+Steps **2** and **3** — Lemma 3A in the weighted degree, and the elimination
+`y' = y^p` with the double reduction modulo `F` and `e₂`, together with the
+coefficient count — are exactly what `exists_stepanovJetSpanningFinset` asks
+for. The description below is kept in full because it is the route that leaf
+implements.
 
 WHAT IT SAYS. There are at most `stepanovEquationCount d p M` many `𝔽_p`-linear
 forms in the coefficient family `A` whose simultaneous vanishing already forces
@@ -14866,8 +15348,19 @@ theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
           stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
           (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
           ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
-  sorry
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 := by
+  classical
+  obtain ⟨s, hcard, hspan⟩ :=
+    exists_stepanovJetSpanningFinset d hd p F hmon hdegY hcoeff M K hK
+      (fun A ℓ => stepanovJet_stepanovAnsatz d K M ℓ F A)
+  obtain ⟨Φ, hΦ⟩ :=
+    exists_linearForms_of_mem_span_finset (stepanovJetEvalMap d p K M F)
+      (stepanovCoefficientSpace d p K) (stepanovEquationCount d p M) s hcard hspan
+  refine ⟨Φ, fun A hAdeg hAsupp hΦA x y hxy hirr ℓ hℓ => ?_⟩
+  have hzero := hΦ A (mem_stepanovCoefficientSpace hAdeg hAsupp) hΦA
+  have h2 : stepanovJetEvalMap d p K M F A (⟨(x, y), hxy, hirr⟩, ⟨ℓ, hℓ⟩) = 0 := by
+    rw [hzero]; rfl
+  simpa [stepanovJetEvalMap] using h2
 
 /-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (**PROVEN 2026-07-30**;
 cut 2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,
@@ -16999,20 +17492,15 @@ Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
 them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
 to a single induction. The route they implement is NOT the one the leaf's
 docstring anticipated: **no power series, no Hensel lift and no branch are
-needed.** See the FOOTNOTE on that theorem. -/
+needed.** See the FOOTNOTE on that theorem.
 
-/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
-theorem stepanovDerivX_monomial {R : Type*} [CommRing R] (n : ℕ) (c : Polynomial R) :
-    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
-  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
-    Polynomial.C_mul_X_pow_eq_monomial]
-
-theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
-    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
-  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
-  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
-  intro i c₁ c₂
-  rw [Polynomial.derivative_add, map_add, add_mul]
+**RELOCATION (2026-07-30):** the first two of the six — `stepanovDerivX_monomial`
+and `stepanovDerivX_add` — were MOVED UP, verbatim, into the new
+`### The derivation calculus of `stepanovDerivX`/`stepanovJet`` block that now sits
+immediately after `end StepanovAuxiliaryFunction`, because
+`exists_stepanovJetLinearForms` (which is ABOVE this block) needs them and a Lean
+declaration cannot use one that comes later in the file. Nothing else changed;
+the four lemmas below still read as written. -/
 
 /-- **THE CHAIN RULE** `d/dX [b(X, η(X))] = b_X(X, η) + b_Y(X, η)·η′`, for a
 POLYNOMIAL section `η` of the `Y`-coordinate. Everything stays inside `S[X]`;
@@ -24964,10 +25452,383 @@ theorem exists_prime_associated_map_rat_of_irreducible_map_algClosureRat {k : �
   · refine ⟨(isUnit_map_rat_of_isUnit_map_algClosureRat c hcu).unit, ?_⟩
     rw [IsUnit.unit_spec, hc, map_mul]
 
-/-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (SORRY LEAF, cut 2026-07-30
+/-! #### The localised-hypersurface coordinate ring, and what membership in it means
+(PROVEN 2026-07-30)
+
+The three conclusion clauses of `exists_ratMembershipData_of_birationalNormalForm`
+below all have the shape `q = A·S₀ + B·(g₀·T − 1)`, i.e. `q` lies in the ideal
+
+  `J := (rename castSucc S₀, rename castSucc g₀ · T − 1) ⊆ ℚ[Y₀ … Y_e, T]`
+
+cutting out `V(S₀) ∖ V(g₀)`. Everything in this block is about turning that
+polynomial-ideal bookkeeping into a single RING-THEORETIC vanishing statement, so
+that a prover of the residual leaf never has to produce `A` and `B` by hand:
+
+* `hypEval θ t` is the evaluation `ℚ[Y, T] → S` extending `θ` on `ℚ[Y]` by `T ↦ t`;
+* `mem_span_pair_of_hypEval_eq_zero` is the CONVERSE inclusion `ker ⊆ J`, which is
+  the only nontrivial half. It runs over the two lemmas before it: first clear the
+  inverted variable (`g₀^N·q ≡ Q(Y)` mod `g₀T − 1`, by induction on `q`), then use
+  that `S₀ ∣ g₀^M·Q` and that `(g₀T)^{N+M} ≡ 1` to put `q` itself into `J`.
+* `dvd_of_map_dvd_map` is the descent that clause (i) needs: `S₀ ∤ g₀` over `ℚ`
+  already forces `S₀ ∤ g₀` over `ℚ̄`. Apply a `ℚ`-linear retraction `ℚ̄ → ℚ`
+  (`LinearMap.exists_leftInverse_of_injective`) to every coefficient of the
+  cofactor; the resulting `coeffProj` is not a ring map, but it IS `ℚ[Y]`-linear,
+  which is exactly what a single division needs. Note this is a statement about
+  MvPolynomial over a field extension and has nothing to do with this file's
+  geometry; `exists_bound_not_dvd_map_algClosureZMod` far above is the sibling
+  going the other way, from `ℚ̄` to `𝔽̄_p`. -/
+
+section LocalisedHypersurfaceMembership
+
+open MvPolynomial
+
+/-- The evaluation `R[Y₀ … Y_e, T] → S` extending a hom `θ` on `R[Y₀ … Y_e]` by
+`T ↦ t`. -/
+noncomputable def hypEval {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) :
+    MvPolynomial (Fin (e + 2)) R →+* S :=
+  MvPolynomial.eval₂Hom (θ.comp MvPolynomial.C)
+    (Fin.lastCases t fun l => θ (MvPolynomial.X l))
+
+@[simp] theorem hypEval_X_castSucc {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) (l : Fin (e + 1)) :
+    hypEval θ t (MvPolynomial.X l.castSucc) = θ (MvPolynomial.X l) := by
+  simp [hypEval]
+
+@[simp] theorem hypEval_X_last {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S) :
+    hypEval θ t (MvPolynomial.X (Fin.last (e + 1))) = t := by
+  simp [hypEval]
+
+@[simp] theorem hypEval_rename {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) R →+* S) (t : S)
+    (q : MvPolynomial (Fin (e + 1)) R) :
+    hypEval θ t (MvPolynomial.rename Fin.castSucc q) = θ q := by
+  induction q using MvPolynomial.induction_on with
+  | C a => simp [hypEval]
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p i hp => simp [hp]
+
+/-- **CLEARING THE INVERTED VARIABLE** (PROVEN). Modulo `g₀·T − 1` every
+`q ∈ ℚ[Y₀ … Y_e, T]` becomes, after multiplication by a power of `g₀`, a polynomial
+in `Y₀ … Y_e` alone. Induction on `q`; the only interesting step is `q ↦ q·T`, which
+is paid for by one more factor of `g₀` and one use of the generator. -/
+theorem exists_pow_mul_sub_rename_mem_span_gen {e : ℕ}
+    (g₀ : MvPolynomial (Fin (e + 1)) ℚ) (q : MvPolynomial (Fin (e + 2)) ℚ) :
+    ∃ (N : ℕ) (Q : MvPolynomial (Fin (e + 1)) ℚ),
+      MvPolynomial.rename Fin.castSucc g₀ ^ N * q - MvPolynomial.rename Fin.castSucc Q
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc g₀ *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  set G : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.rename Fin.castSucc g₀ with hG
+  set T : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.X (Fin.last (e + 1)) with hT
+  set I : Ideal (MvPolynomial (Fin (e + 2)) ℚ) := Ideal.span {G * T - 1} with hI
+  have hgen : G * T - 1 ∈ I := Ideal.subset_span rfl
+  induction q using MvPolynomial.induction_on with
+  | C a => exact ⟨0, MvPolynomial.C a, by simp⟩
+  | add p r hp hr =>
+      obtain ⟨N₁, Q₁, h₁⟩ := hp
+      obtain ⟨N₂, Q₂, h₂⟩ := hr
+      refine ⟨N₁ + N₂, g₀ ^ N₂ * Q₁ + g₀ ^ N₁ * Q₂, ?_⟩
+      have e₁ : G ^ (N₁ + N₂) * (p + r)
+          - MvPolynomial.rename Fin.castSucc (g₀ ^ N₂ * Q₁ + g₀ ^ N₁ * Q₂)
+          = G ^ N₂ * (G ^ N₁ * p - MvPolynomial.rename Fin.castSucc Q₁)
+            + G ^ N₁ * (G ^ N₂ * r - MvPolynomial.rename Fin.castSucc Q₂) := by
+        simp only [map_add, map_mul, map_pow, hG]
+        ring
+      rw [e₁]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ h₁) (Ideal.mul_mem_left _ _ h₂)
+  | mul_X p i hp =>
+      obtain ⟨N, Q, h⟩ := hp
+      rcases Fin.eq_castSucc_or_eq_last i with ⟨j, rfl⟩ | rfl
+      · refine ⟨N, Q * MvPolynomial.X j, ?_⟩
+        have e₁ : G ^ N * (p * MvPolynomial.X (Fin.castSucc j))
+            - MvPolynomial.rename Fin.castSucc (Q * MvPolynomial.X j)
+            = (G ^ N * p - MvPolynomial.rename Fin.castSucc Q)
+              * MvPolynomial.X (Fin.castSucc j) := by
+          simp only [map_mul, MvPolynomial.rename_X]
+          ring
+        rw [e₁]
+        exact Ideal.mul_mem_right _ _ h
+      · refine ⟨N + 1, Q, ?_⟩
+        have e₁ : G ^ (N + 1) * (p * T) - MvPolynomial.rename Fin.castSucc Q
+            = (G ^ N * p - MvPolynomial.rename Fin.castSucc Q)
+              + (G * T - 1) * (G ^ N * p) := by ring
+        rw [e₁]
+        exact Ideal.add_mem _ h (Ideal.mul_mem_right _ _ hgen)
+
+/-- **THE MEMBERSHIP CRITERION, DIVISIBILITY FORM** (PROVEN). If `g₀^N·q` reduces to
+`Q` modulo `g₀·T − 1` and `S₀ ∣ g₀^M·Q`, then `q` lies in `(S₀, g₀·T − 1)`. The last
+step is that `(g₀T)^{N+M} ≡ 1` modulo the second generator, so multiplying by
+`g₀^{N+M}` is invertible modulo the ideal. -/
+theorem mem_span_pair_of_dvd {e : ℕ}
+    (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℚ) (q : MvPolynomial (Fin (e + 2)) ℚ)
+    (N M : ℕ) (Q : MvPolynomial (Fin (e + 1)) ℚ)
+    (hQ : MvPolynomial.rename Fin.castSucc g₀ ^ N * q - MvPolynomial.rename Fin.castSucc Q
+      ∈ Ideal.span {MvPolynomial.rename Fin.castSucc g₀ *
+          MvPolynomial.X (Fin.last (e + 1)) - 1})
+    (hdvd : S₀ ∣ g₀ ^ M * Q) :
+    q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S₀,
+      MvPolynomial.rename Fin.castSucc g₀ * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  set G : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.rename Fin.castSucc g₀ with hG
+  set T : MvPolynomial (Fin (e + 2)) ℚ := MvPolynomial.X (Fin.last (e + 1)) with hT
+  set I : Ideal (MvPolynomial (Fin (e + 2)) ℚ) :=
+    Ideal.span {MvPolynomial.rename Fin.castSucc S₀, G * T - 1} with hI
+  have hS : MvPolynomial.rename Fin.castSucc S₀ ∈ I := Ideal.subset_span (by simp)
+  have hgen : G * T - 1 ∈ I := Ideal.subset_span (by simp)
+  have hQI : G ^ N * q - MvPolynomial.rename Fin.castSucc Q ∈ I := by
+    refine Ideal.span_mono ?_ hQ
+    intro x hx
+    simp only [Set.mem_singleton_iff] at hx
+    simp [hx]
+  have hMQ : G ^ M * MvPolynomial.rename Fin.castSucc Q ∈ I := by
+    obtain ⟨c, hc⟩ := hdvd
+    have hrw : G ^ M * MvPolynomial.rename Fin.castSucc Q
+        = MvPolynomial.rename Fin.castSucc S₀ * MvPolynomial.rename Fin.castSucc c := by
+      have := congrArg (MvPolynomial.rename (R := ℚ) Fin.castSucc) hc
+      simp only [map_mul, map_pow] at this
+      rw [← hG] at this
+      rw [this]
+    rw [hrw]
+    exact Ideal.mul_mem_right _ _ hS
+  have hkey : G ^ (N + M) * q ∈ I := by
+    have e₁ : G ^ (N + M) * q
+        = G ^ M * (G ^ N * q - MvPolynomial.rename Fin.castSucc Q)
+          + G ^ M * MvPolynomial.rename Fin.castSucc Q := by ring
+    rw [e₁]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hQI) hMQ
+  have hunit : (1 : MvPolynomial (Fin (e + 2)) ℚ) - (G * T) ^ (N + M) ∈ I := by
+    have hgs := geom_sum_mul (G * T) (N + M)
+    have e₁ : (1 : MvPolynomial (Fin (e + 2)) ℚ) - (G * T) ^ (N + M)
+        = (-∑ i ∈ Finset.range (N + M), (G * T) ^ i) * (G * T - 1) := by
+      rw [neg_mul, hgs]
+      ring
+    rw [e₁]
+    exact Ideal.mul_mem_left _ _ hgen
+  have e₂ : q = (1 - (G * T) ^ (N + M)) * q + T ^ (N + M) * (G ^ (N + M) * q) := by
+    rw [mul_pow]
+    ring
+  rw [e₂]
+  exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hunit) (Ideal.mul_mem_left _ _ hkey)
+
+/-- **THE MEMBERSHIP CRITERION** (PROVEN): whatever `hypEval θ t` kills already lies in
+`(S₀, g₀·T − 1)`. `ht` says `t` inverts `θ g₀`; `hkr` is the only thing tying `θ` to
+`S₀`, and it is what a localisation supplies. -/
+theorem mem_span_pair_of_hypEval_eq_zero {e : ℕ} {S : Type*} [CommRing S]
+    (θ : MvPolynomial (Fin (e + 1)) ℚ →+* S) (t : S)
+    (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℚ)
+    (ht : θ g₀ * t = 1)
+    (hkr : ∀ Q : MvPolynomial (Fin (e + 1)) ℚ, θ Q = 0 → ∃ M, S₀ ∣ g₀ ^ M * Q)
+    (q : MvPolynomial (Fin (e + 2)) ℚ) (hq : hypEval θ t q = 0) :
+    q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S₀,
+      MvPolynomial.rename Fin.castSucc g₀ * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  obtain ⟨N, Q, hNQ⟩ := exists_pow_mul_sub_rename_mem_span_gen g₀ q
+  have hθQ : θ Q = 0 := by
+    obtain ⟨cc, hcc⟩ := Ideal.mem_span_singleton'.mp hNQ
+    have hev := congrArg (hypEval θ t) hcc
+    simp only [map_mul, map_sub, map_pow, map_one, hypEval_rename, hypEval_X_last, hq,
+      mul_zero] at hev
+    rw [ht] at hev
+    simpa using hev.symm
+  obtain ⟨M, hdvd⟩ := hkr Q hθQ
+  exact mem_span_pair_of_dvd S₀ g₀ q N M Q hNQ hdvd
+
+/-- A `ℚ`-linear projection applied to every coefficient. Not a ring map — but it is
+`MvPolynomial σ ℚ`-linear, which is all a single division needs. -/
+noncomputable def coeffProj {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (ρ : K →ₗ[ℚ] ℚ) (u : MvPolynomial σ K) : MvPolynomial σ ℚ :=
+  ∑ m ∈ u.support, MvPolynomial.monomial m (ρ (u.coeff m))
+
+theorem coeff_coeffProj {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (ρ : K →ₗ[ℚ] ℚ) (u : MvPolynomial σ K) (m : σ →₀ ℕ) :
+    (coeffProj ρ u).coeff m = ρ (u.coeff m) := by
+  classical
+  rw [coeffProj, MvPolynomial.coeff_sum]
+  simp only [MvPolynomial.coeff_monomial]
+  rw [Finset.sum_ite_eq' u.support m fun m => ρ (u.coeff m)]
+  by_cases h : m ∈ u.support
+  · simp [h]
+  · simp [h, MvPolynomial.notMem_support_iff.mp h]
+
+/-- **DIVISIBILITY DESCENDS ALONG A FIELD EXTENSION** (PROVEN). If `S ∣ H` over
+`K ⊇ ℚ` and both are defined over `ℚ`, then `S ∣ H` already over `ℚ`.
+
+Take a `ℚ`-linear retraction `ρ : K → ℚ` of `algebraMap ℚ K` — it exists because a
+linear injection of vector spaces splits — and apply it to every coefficient of the
+cofactor `u`. Comparing `coeff m` on both sides of `H = S·u` through
+`MvPolynomial.coeff_mul`, every term is `algebraMap (S.coeff x.1) * u.coeff x.2`, on
+which `ρ` acts as multiplication by `S.coeff x.1`; so `ρ`-ing the whole identity
+produces `H = S · coeffProj ρ u` over `ℚ`. -/
+theorem dvd_of_map_dvd_map {σ : Type*} {K : Type*} [Field K] [Algebra ℚ K]
+    (S H : MvPolynomial σ ℚ)
+    (hdvd : MvPolynomial.map (algebraMap ℚ K) S ∣ MvPolynomial.map (algebraMap ℚ K) H) :
+    S ∣ H := by
+  classical
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap ℚ K).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap ℚ K).injective)
+  have hρ1 : ∀ a : ℚ, ρ (algebraMap ℚ K a) = a := fun a => by
+    simpa using LinearMap.congr_fun hρ a
+  have hρmul : ∀ (a : ℚ) (c : K), ρ (algebraMap ℚ K a * c) = a * ρ c := by
+    intro a c
+    rw [← Algebra.smul_def, map_smul, smul_eq_mul]
+  obtain ⟨u, hu⟩ := hdvd
+  refine ⟨coeffProj ρ u, ?_⟩
+  ext m
+  have hm := congrArg (MvPolynomial.coeff m) hu
+  rw [MvPolynomial.coeff_map, MvPolynomial.coeff_mul] at hm
+  have hρm := congrArg ρ hm
+  rw [hρ1, map_sum] at hρm
+  rw [hρm, MvPolynomial.coeff_mul]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [MvPolynomial.coeff_map, hρmul, coeff_coeffProj]
+
+/-- The canonical evaluation `ℚ[Y₀ … Y_e] → (ℚ[Y]/(g))[1/b]` — quotient, then
+localise. `hypEval (hypQuotAway g b) t` is the map whose kernel
+`mem_span_pair_of_hypEval_eq_zero` identifies. -/
+noncomputable def hypQuotAway {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :
+    MvPolynomial (Fin (e + 1)) ℚ →+* Localization.Away b :=
+  (algebraMap (MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away b)).comp
+    (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}))
+
+theorem hypQuotAway_apply {e : ℕ} (g : MvPolynomial (Fin (e + 1)) ℤ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+    (q : MvPolynomial (Fin (e + 1)) ℚ) :
+    hypQuotAway g b q = algebraMap _ (Localization.Away b)
+      (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) q) := rfl
+
+end LocalisedHypersurfaceMembership
+
+/-- **LEAF (B‴): THE COORDINATES THEMSELVES, WITH NO IDEAL BOOKKEEPING** (SORRY LEAF,
+cut 2026-07-30 out of `exists_ratMembershipData_of_birationalNormalForm` below, which
+is PROVEN over it).
+
+WHAT WAS TAKEN OFF THE PARENT, so nobody redoes it. Everything about the ideal
+`J = (S₀, g₀·T − 1)` and everything about `ℚ̄`:
+
+* the three `∃ A B, … = A·S₀ + B·(g₀T − 1)` clauses are replaced by the single
+  vanishing `hypEval (hypQuotAway g b) t (…) = 0` in the ring `(ℚ[Y]/(g))[1/b]`
+  itself. The passage back is `mem_span_pair_of_hypEval_eq_zero` above — the
+  membership criterion — fed by the kernel condition, which the parent derives from
+  the clause `b ∣ mk g₀` handed out here;
+* clause (i) is asked over `ℚ` rather than over `ℚ̄`: the upgrade is
+  `dvd_of_map_dvd_map` above. So the prover never touches `AlgebraicClosure ℚ`, and
+  `hS₀irr` is correspondingly unused in the residue (it is kept in the signature
+  because the intended proof of the DENSITY step wants it — see the parent).
+
+WHAT IS LEFT, and it is exactly Schmidt Ch. VI §7 eq. (7.3): read the coordinates off
+the two directions of `eqv` and clear denominators. Write
+`A := IntegralSystemModel f ℚ`, `Cq := ℚ[Y]/(map ℚ g)`, `L := Localization.Away b`, and
+
+  `Ψ := eqv ∘ (quotient by the nilradical) ∘ (algebraMap A (Localization.Away a))
+      : A →+* L`,
+  `θ := hypQuotAway g b : ℚ[Y] →+* L`.
+
+THE ROUTE, worked out 2026-07-30; every step is elementary once it is in this order.
+
+1. **`h` and `t₀`.** Lift `b` to `b̃ ∈ ℚ[Y]` and clear denominators to `h ∈ ℤ[Y]`, so
+   that the class of `map ℚ h` in `Cq` is a nonzero rational multiple of `b`. Then
+   `θ (map ℚ h)` is a unit in `L` (`IsLocalization.Away.algebraMap_isUnit`, times a
+   nonzero rational); call its inverse `t₀`.
+2. **`w` and the exponent `K`.** For each `l`, `θ (X l) = Ψ(α_l)·Ψ(a)^{-k_l}` by
+   `IsLocalization.surj` applied in `Localization.Away a` and transported through
+   `eqv` (both `eqv` and the nilradical quotient are surjective). Take one
+   `K ≥ max(1, max_l k_l)` and replace `α_l` by `α_l·a^{K − k_l}`, so a SINGLE power
+   `Ψ(a)^{-K}` serves every `l`. Lift each `α_l` to `ℚ[x₀ … x_{n−1}]`, let `E` clear
+   all their denominators at once, let `D₀` clear those of one lift of `a`, and put
+   `w := E·D₀·(that lift) ∈ ℤ[x]`. Then `Ψ(w̄) = E·D₀·Ψ(a)`, still a unit, and
+
+     `R_l := C(E^{K−1}·D₀^K) · A_l · X_n^K ∈ ℤ[x₀ … x_n]`,
+
+   which is INTEGRAL precisely because `K ≥ 1`: `(E D₀)^K / E = E^{K−1} D₀^K`. This
+   is the one place where the exponent has to be made uniform, and it is why step 2
+   comes before step 3.
+3. **The rational representatives.** `hypEval θ t₀` is surjective (its image contains
+   every `θ (X l)` and the inverse of `θ (map ℚ h)`, which generate `L` over `ℚ`), so
+   pick `ρ_j ∈ ℚ[Y, T]` with `hypEval θ t₀ ρ_j = Ψ(x̄_j)` for `j < n`, and `ρ_n` with
+   `hypEval θ t₀ ρ_n = Ψ(w̄)⁻¹`.
+4. **`c`, and integrality.** Let `c ∈ ℤ` clear the denominators of all the `ρ_j`, and
+   set `g₀ := c · h ∈ ℤ[Y]`, `t := c⁻¹ · t₀` — so `θ (map ℚ g₀) · t = 1`. Substituting
+   `T ↦ c·T` in `ρ_j` gives a representative for `t` rather than `t₀`; and the
+   remaining rational scalars are absorbed by the ONE-LINE identity
+
+     `ρ − (rename castSucc (map ℚ h))·T·(c·ρ) = −(map ℚ g₀·T − 1)·ρ ∈ J`,
+
+   i.e. `1/c = h·T` holds in `ℚ[Y, T]/J` because `g₀ = c·h`. Since `c·ρ_j` is
+   integral by the choice of `c`, `P_j := h·X_last·(c·ρ_j)` is an INTEGRAL
+   representative of the same element. **This is the whole "enlarge `g₀` to absorb
+   every denominator" paragraph of the parent, and it is not circular**: the `ρ_j`
+   are chosen against `t₀`, which does not mention `c`.
+5. **The three clauses.** `f_i(P₀ … P_{n−1}) ↦ Ψ(f_i(x̄)) = Ψ(0) = 0` because `f i`
+   lies in `integralSystemIdeal f ℚ`; `R_l(P) ↦ θ (X l)` by step 2; and
+   `w(P)·P_n ↦ Ψ(w̄)·Ψ(w̄)⁻¹ = 1`.
+6. **Clause (i) over `ℚ`.** `map ℚ S₀ ∤ map ℚ g₀`: the class of `map ℚ h` in `Cq` is
+   `≠ 0` since `b ≠ 0`, so `map ℚ g ∤ map ℚ h`, and `hassoc` transports that to `S₀`;
+   the integer `c` is a unit and changes nothing.
+7. **`b ∣ mk (map ℚ g₀)`** is immediate from step 1, since `mk (map ℚ h)` is a nonzero
+   rational multiple of `b`.
+
+MISSING AT THIS PIN: nothing exotic. `IsLocalization.surj`,
+`IsLocalization.Away.algebraMap_isUnit`, `IsLocalization.map_eq_zero_iff`, and this
+file's own denominator-clearing lemma (`exists_ne_zero_smul_mem_range_map` region,
+~16 000 lines above) cover every step.
+
+CIRCULARITY GUARD: inherited from the parent. -/
+theorem exists_hypEvalData_of_birationalNormalForm
+    {n m e : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (g S₀ : MvPolynomial (Fin (e + 1)) ℤ)
+    (hS₀ : Prime S₀)
+    (hS₀irr : Irreducible
+      (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀))
+    (hassoc : Associated (MvPolynomial.map (Int.castRingHom ℚ) S₀)
+      (MvPolynomial.map (Int.castRingHom ℚ) g))
+    (a : IntegralSystemModel f ℚ)
+    (b : MvPolynomial (Fin (e + 1)) ℚ ⧸
+          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+    (hb : b ≠ 0)
+    (hker : RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
+      nilradical (IntegralSystemModel f ℚ))
+    (eqv : (Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+      Localization.Away b) :
+    ∃ (g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ)
+      (t : Localization.Away b),
+      hypQuotAway g b (MvPolynomial.map (Int.castRingHom ℚ) g₀) * t = 1 ∧
+      b ∣ Ideal.Quotient.mk _ (MvPolynomial.map (Int.castRingHom ℚ) g₀) ∧
+      ¬ MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣
+          MvPolynomial.map (Int.castRingHom ℚ) g₀ ∧
+      (∀ i : Fin m, hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i))) = 0) ∧
+      (∀ l : Fin (e + 1), hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C P (R l) - MvPolynomial.X l.castSucc)) = 0) ∧
+      hypEval (hypQuotAway g b) t
+          (MvPolynomial.map (Int.castRingHom ℚ)
+            (MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+              * P (Fin.last n) - 1)) = 0 :=
+  sorry
+
+/-- **LEAF (B″): THE DENOMINATOR BOOKKEEPING ALONE** (cut 2026-07-30
 out of `exists_ratMembershipHypersurfaceCertificate` immediately below, which is
 now PROVEN over this leaf plus the three lemmas above plus the PROVEN packaged
 entry point `exists_birationalNormalForm_integralSystemModel_rat`).
+
+**STATUS (2026-07-30): NO LONGER A LEAF — PROVEN over
+`exists_hypEvalData_of_birationalNormalForm` immediately above.** What this
+declaration now contributes is the two things that leaf is spared: the passage from
+"`hypEval` kills it" to the explicit cofactors `A`, `B`
+(`mem_span_pair_of_hypEval_eq_zero`, over the two lemmas before it), and the passage
+from non-divisibility over `ℚ` to non-divisibility over `ℚ̄`
+(`dvd_of_map_dvd_map`). Both are in the block above and neither is geometry.
+The residue — reading `P`, `R`, `w` off `eqv` and clearing denominators — is the new
+leaf, whose docstring carries the full worked route.
 
 WHAT WAS TAKEN OFF THE PARENT, so nobody redoes it. Three of the parent's eight
 conclusion clauses, and the arity:
@@ -25093,8 +25954,61 @@ theorem exists_ratMembershipData_of_birationalNormalForm
                 (MvPolynomial.rename Fin.castSucc S₀)
               + B * (MvPolynomial.map (Int.castRingHom ℚ)
                   (MvPolynomial.rename Fin.castSucc g₀)
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  obtain ⟨g₀, P, R, w, t, ht, hbdvd, hnd, h1, h2, h3⟩ :=
+    exists_hypEvalData_of_birationalNormalForm f g S₀ hS₀ hS₀irr hassoc a b hb hker eqv
+  set θ := hypQuotAway g b with hθ
+  set S₀q := MvPolynomial.map (Int.castRingHom ℚ) S₀ with hS₀q
+  set g₀q := MvPolynomial.map (Int.castRingHom ℚ) g₀ with hg₀q
+  -- the kernel condition, out of `b ∣ mk g₀` and the localisation
+  have hkr : ∀ Q : MvPolynomial (Fin (e + 1)) ℚ, θ Q = 0 → ∃ M, S₀q ∣ g₀q ^ M * Q := by
+    intro Q hQ
+    rw [hθ, hypQuotAway_apply] at hQ
+    obtain ⟨⟨s, hs⟩, hsQ⟩ :=
+      (IsLocalization.map_eq_zero_iff (Submonoid.powers b) (Localization.Away b)
+        (Ideal.Quotient.mk _ Q)).mp hQ
+    obtain ⟨M, rfl⟩ := hs
+    obtain ⟨v, hv⟩ := hbdvd
+    have hsQ' : b ^ M * Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q = 0 := by
+      simpa using hsQ
+    refine ⟨M, ?_⟩
+    have hzero : Ideal.Quotient.mk (Ideal.span
+        {MvPolynomial.map (Int.castRingHom ℚ) g}) (g₀q ^ M * Q) = 0 := by
+      rw [map_mul, map_pow, hv, mul_pow]
+      calc b ^ M * v ^ M * Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q
+          = v ^ M * (b ^ M * Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q) := by ring
+        _ = 0 := by rw [hsQ', mul_zero]
+    have hmem : g₀q ^ M * Q ∈ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} :=
+      Ideal.Quotient.eq_zero_iff_mem.mp hzero
+    exact (Associated.dvd_iff_dvd_left hassoc).mpr (Ideal.mem_span_singleton.mp hmem)
+  -- clause (i): the descent from `ℚ` to `ℚ̄`
+  have hnd' : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+      MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ := by
+    intro hcon
+    refine hnd ?_
+    have hmap : ∀ q : MvPolynomial (Fin (e + 1)) ℤ,
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) q
+          = MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+              (MvPolynomial.map (Int.castRingHom ℚ) q) := by
+      intro q
+      rw [MvPolynomial.map_map]
+      congr 1
+    rw [hmap S₀, hmap g₀] at hcon
+    exact dvd_of_map_dvd_map (K := AlgebraicClosure ℚ) _ _ hcon
+  refine ⟨g₀, P, R, w, hnd', fun i => ?_, fun l => ?_, ?_⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h1 i))
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h2 l))
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
+  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
+      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ h3)
+    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
 
 /-- **LEAF (B′): SCHMIDT'S THEOREM 4D OVER `ℚ`, WITH THE IDENTITIES STILL OVER
 `ℚ`** (cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate` below, which
@@ -25111,8 +26025,10 @@ entry points. The proof is now four lines of glue over
 * `exists_prime_associated_map_rat_of_irreducible_map_algClosureRat` — PROVEN,
   Gauss, which is what supplies the extra `Prime S₀` clause this statement demands
   and which `Irreducible (map ℚ̄ g)` does NOT give on its own;
-* `exists_ratMembershipData_of_birationalNormalForm` — the ONE remaining sorry,
-  immediately above, which is now the denominator bookkeeping and nothing else.
+* `exists_ratMembershipData_of_birationalNormalForm` — immediately above, which was
+  the denominator bookkeeping and nothing else, and which is itself PROVEN
+  (2026-07-30) over the smaller `exists_hypEvalData_of_birationalNormalForm`. The
+  one remaining sorry on this chain is that leaf.
 
 So the frontier here is unchanged in COUNT (one leaf became one leaf) but the
 remaining leaf is strictly smaller: `e` and `S₀` are inputs rather than
