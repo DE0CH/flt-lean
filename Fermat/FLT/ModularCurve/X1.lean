@@ -6480,21 +6480,40 @@ theorem back into the open set.  Hence the deliberate 𝔽_ℓ-local restatement
 here.  If that chain is ever made base-generic, THIS leaf and its sibling
 are exactly the two declarations that should be deleted in favour of it.
 
-`_hdim` is LOAD-BEARING for truth even though a `sorry` body cannot
-consume it: without relative dimension one an abelian scheme is an
-abelian variety of higher dimension and has no plane-cubic model at all.
-It is underscore-prefixed only to keep the tree warning-clean, matching
-the convention of the three ℚ-side leaves named above. -/
+## PROVEN 2026-07-30 — the base-generic chain the paragraph above asked for EXISTS
+
+That contingency arrived.  `X0.lean` gained `exists_weierstrassModel_of_ellipticScheme_field`
+(line 2892) and `exists_addEquiv_of_weierstrassModel_field` (line 2951) on
+2026-07-28 — stated over a field VARIABLE `{k : Type} [Field k]`, not over
+`ℚ`, and cutting exactly this pair of statements.  So this declaration is
+now a one-line instantiation at `k := ZMod ℓ`, and its sibling below is the
+same at the transport half.
+
+The paragraph above prescribed DELETING both in that event.  They are kept
+as thin wrappers instead, which reduces the frontier by the same two leaves
+at zero consumer churn: `SpecF ℓ` is reducibly `Spec (CommRingCat.of (ZMod ℓ))`,
+so the instantiation is definitional and every existing call site is
+untouched.  A later owner may still inline them; nothing here depends on
+their surviving.
+
+Note the direction of the reduction — the Riemann–Roch content did not move
+and is not discharged.  It now sits in ONE place (`X0.lean`) instead of two,
+where the `Γ₀` consumers were already going to pay for it.
+
+`_hdim` was underscore-prefixed while the body was `sorry`; it is now
+consumed, and load-bearing exactly as described: without relative dimension
+one an abelian scheme is an abelian variety of higher dimension and has no
+plane-cubic model at all. -/
 theorem exists_weierstrassModel_of_abelianSchemeStruct_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) :
+    (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic),
       ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
           ι ≫ f = Spec.map (CommRingCat.ofHom
             (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
           Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ :=
-  sorry
+  exists_weierstrassModel_of_ellipticScheme_field ab hdim
 
 /-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
 its `𝔽_ℓ`-SECTIONS** (sorry leaf, introduced 2026-07-28 as the TRANSPORT
@@ -6532,21 +6551,36 @@ equivalence would only have to be pushed back down again.
 
 `Nonempty` rather than a chosen equivalence because the consumer uses only
 `AddEquiv.addOrderOf_eq`, which any additive equivalence supplies; nothing
-downstream inspects which one.  `_hmodel` is load-bearing and NOT
+downstream inspects which one.  `hmodel` is load-bearing and NOT
 droppable: without it `W` is an arbitrary elliptic curve over `𝔽_ℓ` and the
 conclusion is plainly false (take `f` with `#RelPoint = 1` and `W` with
-`#W(𝔽_ℓ) = 5`). -/
+`#W(𝔽_ℓ) = 5`).
+
+## PROVEN 2026-07-30 — instantiation of the base-generic transport leaf
+
+See the sibling above.  `X0.lean`'s `exists_addEquiv_of_weierstrassModel_field`
+(line 2951) is this statement over a field variable, so the body is
+`exists_addEquiv_of_weierstrassModel_field W ab hmodel` at `k := ZMod ℓ`.
+The `[DecidableEq k]` that the generic form carries is discharged by
+`ZMod ℓ`'s own instance, and `(E⁄k).Point` is notation for
+`E.toAffine.Point`, so the conclusions match on the nose.
+
+The "STRICTLY EASIER than its ℚ-side counterpart" paragraph above is still
+correct and is the reason this is NOT the `ℚ` theorem base-changed: the
+generic leaf it now instantiates likewise carries no Galois clause, which
+is exactly what made a single field-variable statement able to serve both
+this consumer and the `Γ₀` one. -/
 theorem exists_relPointAddEquiv_of_weierstrassModel_finiteField {ℓ : ℕ} [Fact ℓ.Prime]
     (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (_hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
+    (hmodel : ∃ ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A,
       IsOpenImmersion ι ∧
         ι ≫ f = Spec.map (CommRingCat.ofHom
           (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)) ∧
         Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
     letI := ab.addCommGroup (𝟙 (SpecF ℓ))
     Nonempty (RelPoint f (𝟙 (SpecF ℓ)) ≃+ W.toAffine.Point) :=
-  sorry
+  exists_addEquiv_of_weierstrassModel_field W ab hmodel
 
 /-- **A `Γ₁(N)`-datum over `𝔽_ℓ` gives a plane cubic over `𝔽_ℓ` carrying
 a rational point of exact order `N`** (PROVEN 2026-07-28 over the two
