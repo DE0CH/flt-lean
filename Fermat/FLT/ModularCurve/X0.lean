@@ -51801,65 +51801,40 @@ theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
   obtain ⟨J, jf, ab, ⟨alb⟩⟩ := exists_albaneseOfCurve f hf o
   exact ⟨J, jf, ab, ⟨alb.isJacobianOf⟩⟩
 
-/-- **A fibre of a smooth proper curve is a smooth proper curve**
-(PROVEN — Yoneda for the over-category presentation, then base change).
+/-- **A FIBRE IDENTIFICATION IS AN ISOMORPHISM WITH THE PULLBACK**: an
+`IsFibreIdent s f f'` exhibits `f'` as `f ×_S S'`, by an isomorphism OVER
+`S'` (PROVEN — pure Yoneda, no geometry).
 
-TRUE, and it is pure base change: `IsFibreIdent s f f'` says by Yoneda in
-`Over S'` that `f'` is isomorphic to `f ×_S S'`, and `IsProper`,
-`SmoothOfRelativeDimension 1` and `GeometricallyConnected` are each
-stable under base change and invariant under isomorphism over the base.
+This is the hoist that the audit on `isIso_jacobianBaseChangeComparison`
+names as the first step of the sheaf route ("the scheme-level
+identification is already available and is not a leaf … Hoisting it
+rather than re-deriving it is the first step").  It was written twice
+before this hoist: inline in `isSmoothProperCurve_of_fibreIdent` below,
+which now consumes it, and again in prose in that audit.
 
-It is needed because the special fibre `X'` of a curve model is
-constrained by NOTHING but its functor of points — `IsX0CurveModel`
-carries `spX`/`spX_nat` and no geometric field about `strX'` — so
-`exists_relativeJacobian` cannot be applied to it until its geometry is
-recovered from the identification.
+**Why an `∃` rather than a `noncomputable def`.**  The iso is used only
+inside proofs — `isSmoothProperCurve_of_fibreIdent` needs it to strip
+`φ` off three `RespectsIso` properties, and the base-change route below
+needs it at every test object — so nothing wants it as data, and the
+`∃`-form carries the property `φ.hom ≫ pullback.snd f s = f'` in the
+same package instead of forcing a second lemma to recover it.  That
+property is the whole content of "over `S'`", and it is what every
+consumer actually uses.
 
-**The previous audit here recorded this leaf as IRREDUCIBLE ALONG THE
-YONEDA AXIS, and named the check that would refute it: produce the
-transport from `IsFibreIdent s f f'` to an isomorphism over `S'` with
-`Limits.pullback.snd f s`.  That check has now been run, and the audit
-is REFUTED — no general Yoneda-in-`Over S'` machinery was needed.**  The
-transport is four elements and three naturality squares, written out
-directly:
+**The four steps**, unchanged from where they were inlined: the identity
+of `A'` read through the identification gives `p : RelPoint f (f' ≫ s)`,
+hence `φ := pullback.lift p.1 f' p.2`; the tautological point of the
+pullback read BACKWARDS gives `q : A ×_S S' ⟶ A'`; `q.1 ≫ φ = 𝟙` is
+naturality along `q.1` at the identity point; and `φ ≫ q.1 = 𝟙` is
+naturality along `φ` at `q` followed by INJECTIVITY of `e.toEquiv` —
+the one place where the identification being an `Equiv` rather than a
+map is used.
 
-* `p := e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', _⟩ : RelPoint f (f' ≫ s)` — the
-  identity of `A'` read through the identification.  It is a map
-  `A' ⟶ A` over `s`, so `φ := pullback.lift p.1 f' p.2 : A' ⟶ A ×_S S'`,
-  with `φ ≫ snd = f'` by `pullback.lift_snd`.
-* `q : RelPoint f' (pullback.snd f s)` — the tautological point
-  `⟨pullback.fst f s, pullback.condition⟩` read BACKWARDS through the
-  identification.  It is a map `A ×_S S' ⟶ A'` over `S'`.
-* `q.1 ≫ p.1 = pullback.fst f s` is naturality along `q.1` at the
-  identity point (the only step needing `Category.comp_id` to see
-  `RelPoint.pre q.1 _ ⟨𝟙 A', _⟩` as `q`); with `q.1 ≫ f' = snd` it gives
-  `q.1 ≫ φ = 𝟙` by `pullback.hom_ext`.
-* `φ ≫ q.1 = 𝟙 A'` is naturality along `φ` at `q`, then INJECTIVITY of
-  `e.toEquiv f' (f' ≫ s) rfl` — the one place where the identification
-  being an `Equiv` rather than a map is used.
-
-So `φ` is an isomorphism with `φ ≫ pullback.snd f s = f'`, and the three
-fields follow from mathlib: `IsProper (pullback.snd f s)` and
-`GeometricallyConnected (pullback.snd f s)` are instances,
-`SmoothOfRelativeDimension 1 (pullback.snd f s)` is
-`smoothOfRelativeDimension_isStableUnderBaseChange`, and each property
-is `RespectsIso`, so `MorphismProperty.cancel_left_of_respectsIso`
-strips the `φ`.
-
-Note what this does NOT close: the identification is transported, not
-constructed.  `exists_jacobianFibreIdent` — which produces an
-`IsFibreIdent` for the Jacobian — is now PROVEN by the same style of
-argument (2026-07-27), but over two genuine base-change statements for
-`Pic⁰`: `universal_jacobianBaseChangeAj` and the rigidity lemma
-`isAdditiveOn_of_post_zero`.  Both of those are now PROVEN as well
-(2026-07-27 and 2026-07-29), the first over the one remaining leaf
-`isIso_jacobianBaseChangeComparison`. -/
-theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
-    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
-    (hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' := by
-  haveI := hf.isProper
-  haveI := hf.smooth
-  haveI := hf.connected
+Note what this does NOT do: it transports an identification, it does not
+construct one.  `IsFibreIdent` is a hypothesis everywhere it appears. -/
+theorem exists_fibreIdentIso {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') :
+    ∃ φ : A' ≅ Limits.pullback f s, φ.hom ≫ Limits.pullback.snd f s = f' := by
   -- the universal point of `A'`: the identity, read through the identification
   obtain ⟨p, hp⟩ : ∃ p : RelPoint f (f' ≫ s),
       e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ = p := ⟨_, rfl⟩
@@ -51897,15 +51872,65 @@ theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S
     refine Limits.pullback.hom_ext ?_ ?_
     · rw [Category.assoc, hφf, key1, Category.id_comp]
     · rw [Category.assoc, hφs, q.2, Category.id_comp]
-  haveI : IsIso φ := ⟨⟨q.1, key2, key3⟩⟩
+  exact ⟨⟨φ, q.1, key2, key3⟩, hφs⟩
+
+/-- **A fibre of a smooth proper curve is a smooth proper curve**
+(PROVEN — Yoneda for the over-category presentation, then base change).
+
+TRUE, and it is pure base change: `IsFibreIdent s f f'` says by Yoneda in
+`Over S'` that `f'` is isomorphic to `f ×_S S'`, and `IsProper`,
+`SmoothOfRelativeDimension 1` and `GeometricallyConnected` are each
+stable under base change and invariant under isomorphism over the base.
+
+It is needed because the special fibre `X'` of a curve model is
+constrained by NOTHING but its functor of points — `IsX0CurveModel`
+carries `spX`/`spX_nat` and no geometric field about `strX'` — so
+`exists_relativeJacobian` cannot be applied to it until its geometry is
+recovered from the identification.
+
+**The previous audit here recorded this leaf as IRREDUCIBLE ALONG THE
+YONEDA AXIS, and named the check that would refute it: produce the
+transport from `IsFibreIdent s f f'` to an isomorphism over `S'` with
+`Limits.pullback.snd f s`.  That check has now been run, and the audit
+is REFUTED — no general Yoneda-in-`Over S'` machinery was needed.**  The
+transport is four elements and three naturality squares; **it is
+`exists_fibreIdentIso` immediately above**, hoisted out of this proof on
+2026-07-30 because the base-change route for
+`isIso_jacobianBaseChangeComparison` needs the same iso and that audit
+had begun re-deriving it in prose.  Read the construction there.
+
+So `φ` is an isomorphism with `φ.hom ≫ pullback.snd f s = f'`, and the
+three fields follow from mathlib: `IsProper (pullback.snd f s)` and
+`GeometricallyConnected (pullback.snd f s)` are instances,
+`SmoothOfRelativeDimension 1 (pullback.snd f s)` is
+`smoothOfRelativeDimension_isStableUnderBaseChange`, and each property
+is `RespectsIso`, so `MorphismProperty.cancel_left_of_respectsIso`
+strips the `φ`.
+
+Note what this does NOT close: the identification is transported, not
+constructed.  `exists_jacobianFibreIdent` — which produces an
+`IsFibreIdent` for the Jacobian — is now PROVEN by the same style of
+argument (2026-07-27), but over two genuine base-change statements for
+`Pic⁰`: `universal_jacobianBaseChangeAj` and the rigidity lemma
+`isAdditiveOn_of_post_zero`.  Both of those are now PROVEN as well
+(2026-07-27 and 2026-07-29), the first over the one remaining leaf
+`isIso_jacobianBaseChangeComparison`. -/
+theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
+    (hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' := by
+  haveI := hf.isProper
+  haveI := hf.smooth
+  haveI := hf.connected
+  obtain ⟨φ, hφs⟩ := exists_fibreIdentIso e
+  haveI : IsIso φ.hom := inferInstance
   haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
   rw [← hφs]
   refine ⟨?_, ?_, ?_⟩
-  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @IsProper) φ
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @IsProper) φ.hom
       (Limits.pullback.snd f s)).mpr inferInstance
-  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @SmoothOfRelativeDimension 1) φ
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @SmoothOfRelativeDimension 1) φ.hom
       (Limits.pullback.snd f s)).mpr (MorphismProperty.pullback_snd f s hf.smooth)
-  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @GeometricallyConnected) φ
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @GeometricallyConnected) φ.hom
       (Limits.pullback.snd f s)).mpr inferInstance
 
 /-! #### The canonical comparison: post-composition on relative points
@@ -52346,7 +52371,22 @@ sheaf-level, not scheme-level:
   two naturality squares of `eX.nat` at the universal points.  Hoisting
   it (rather than re-deriving it) is the first step, and it gives
   `C' ×_{S'} T ≅ C ×_S T` for every `g : T ⟶ S'` by composing pullback
-  squares;
+  squares.  **BOTH STEPS ARE DONE / CHECKED (2026-07-30).**  The hoist is
+  `exists_fibreIdentIso` above, PROVEN, and `isSmoothProperCurve_of_fibreIdent`
+  now consumes it.  The per-test-object iso was then built and COMPILED
+  against this file: it is
+  `α ≪≫ Limits.pullbackLeftPullbackSndIso f s g`, where `α` is `φ` base
+  changed along `g` (`pullback.lift (fst ≫ φ.hom) snd`, inverse the same
+  with `φ.inv`, both composites by `pullback.hom_ext`).  What makes it
+  usable is that mathlib's `pullbackLeftPullbackSndIso_hom_snd` says
+  `hom ≫ snd = snd`, so the resulting
+  `ψ g : curveBaseChange f' g ≅ curveBaseChange f (g ≫ s)` satisfies
+  `ψ.hom ≫ curveBaseChangeProj f (g ≫ s) = curveBaseChangeProj f' g` —
+  which is exactly the compatibility `RelPicEquiv`'s twisting factor
+  `modPullback (curveBaseChangeProj …) N` needs, and it is what makes the
+  SAME `N` serve on both sides.  It is not committed here because it has
+  no consumer until the two leaves priced below are paid; the twenty
+  lines are recorded so the next owner does not re-derive them;
 * every field of `IsRelPicZeroOf` then has to be carried along that
   isomorphism, and THAT is where the work is: `RelPicEquiv` is stated in
   terms of `modTensor`, `modPullback`, `modUnit` and `sectionIdeal`.
@@ -52358,9 +52398,13 @@ sheaf-level, not scheme-level:
   `modPullbackCongrIso`, `modPullbackMapIso`, `modPullbackUnitIso` —
   i.e. pseudofunctoriality of `f^*` — together with `modTensorMapIso`
   (functoriality of `⊗`), `modTensorUnitLeftIso` and
-  `nonempty_modTensor_assoc`, all PROVEN.  Note X0 does not yet
-  `public import` it; `RelativePicard.lean` is imported at the top of
-  this file and `AmpleSheaf.lean` would have to be added.
+  `nonempty_modTensor_assoc`, all PROVEN.  Two corrections to that
+  paragraph, 2026-07-30: those four `modPullback*` isos live in
+  `RelativePicard.lean`, not `AmpleSheaf.lean`, hence were always in
+  scope here; and **`AmpleSheaf.lean` IS ALREADY in this file's public
+  cone** — X0 `public import`s `AbelianSchemeIsogeny.lean`, which
+  `public import`s it, exactly as another docstring in this same file
+  records.  Nothing has to be added to the import list.
 * **the sheaf-level LEAF this route lands on is
   `exists_modPullback_modTensor`** (`AmpleSheaf.lean`, monoidality of
   `f^*` on objects: `f^*(L ⊗ M) ≅ f^*L ⊗ f^*M`).  That is what carrying
@@ -52368,7 +52412,10 @@ sheaf-level, not scheme-level:
   of `RelPicEquiv` is a tensor identity to be pulled back, and
   `modPullbackCompIso` handles the `modPullback (curveBaseChangeProj …)`
   factor.  So the sheaf side is ONE named statement with an existing
-  owner rather than a missing theory — price that first;
+  owner rather than a missing theory — price that first.  **PRICED, and
+  the answer is FREE: `exists_modPullback_modTensor` was PROVEN on
+  2026-07-28** (`⟨asIso (modPullbackTensorComparison f L M), …⟩`), so
+  this bullet costs nothing at all;
 * the ONE gap in that inventory, checked 2026-07-29: **`sectionIdeal` has
   no lemma at all**, only its definition in `RelativePicard.lean`.  So
   `aj_spec` — the only field of `IsRelPicZeroOf` mentioning it — needs
@@ -52376,11 +52423,54 @@ sheaf-level, not scheme-level:
   (`f^* I_σ ≅ I_{f⁻¹σ}` for `f` an iso, which is soft: `sectionIdeal` is
   a kernel and `f^*` is exact on an isomorphism).  That is new, small,
   and belongs in `RelativePicard.lean` next to the definition.
+  **STALE (2026-07-30): `sectionIdeal` has TWO lemmas now, and BOTH ARE
+  SORRIED LEAVES** — `isInvertibleSheaf_sectionIdeal` (an effective
+  relative Cartier divisor is invertible) and
+  `nonempty_modPullback_sectionIdeal` (`𝒪(−σ)` commutes with base change
+  along `curveBaseChangeMap`), both in `RelativePicard.lean` and both
+  consumed by `exists_abelJacobiPoint`.  The iso-variant this route needs
+  is a THIRD statement of the same family; it really is the soft case, and
+  the second leaf's own docstring says why the general one is not
+  ("`φ^*` is right exact, not left exact, so it does not commute with a
+  kernel for free").
+
+**PRICING VERDICT, 2026-07-30 — the sheaf route COSTS TWO LEAVES WHERE
+THIS BLOCK HAS ONE, so do not take it yet.**  The instruction above was
+"price that first"; this is the price.  The monoidality bullet came out
+free, and the scheme-level bullets came out done, but the route needs two
+inputs that this block does not have:
+
+1. an `IsRelPicZeroOf f ab o` for the **GIVEN** `(J, ab, o)`, with
+   `P.aj = jac.aj`.  What is in hand here is `IsJacobianOf`, and
+   `exists_relPicZero` produces the Picard structure for some **other**
+   `ab₀`; moving it onto `J` is transport along the canonical iso of two
+   Jacobians, which the note ~13 000 lines below records as **avoided**
+   elsewhere rather than proven ("(i) IS NOT NEEDED AT ALL" — true of
+   that consumer, not of this one);
+2. the `sectionIdeal`-along-an-iso compatibility of the previous bullet.
+
+By the standing tie-breaker — fewer OPEN leaves after, not fewer leaves
+created — `1 → 2` is a regression, so the route should wait until one of
+those two is closed for its own sake.  Either one closing makes this a
+genuine `1 → 1` restatement, and (2) closing is also progress on
+`nonempty_modPullback_sectionIdeal` next door.
+
+**What the pricing settled affirmatively, and it was the step most likely
+to fail:** the `aj` bookkeeping is FREE.  `IsRelPicZeroOf.isAlbaneseOf`
+sets `aj := P.aj` and `IsAlbaneseOf.isJacobianOf` sets `aj := alb.aj`,
+both definitionally, and `jacobianBaseChangeAj s jac eX g x` is literally
+`RelPoint.baseChangeUp s (jac.aj (g ≫ s) (eX.toEquiv g (g ≫ s) rfl x))`
+— which is exactly what transporting `P.aj` across `ψ g` produces.  So
+the `_huaj` clause of this leaf matches the transported structure's own
+Abel–Jacobi map with no comparison lemma in between, and the assembly
+`IsIso u` from `IsJacobianOf f' (ab.baseChange s) o'` is the two-sided
+initiality argument already written out in the block docstring above.
 
 The alternative — proving `IsIso u` by a criterion for invertibility of
 a homomorphism of abelian schemes (fibrewise isomorphism plus flatness,
-say) rather than by representability — has NOT been surveyed, and is the
-first thing to price before committing to the sheaf route. -/
+say) rather than by representability — has NOT been surveyed, and is now
+the first thing to price, since the sheaf route above is priced and comes
+out at `1 → 2`. -/
 theorem isIso_jacobianBaseChangeComparison (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
     (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
