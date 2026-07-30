@@ -3580,11 +3580,14 @@ the leaf is cut along exactly that line, into three pieces of which the FIRST is
   a finitely presented `R`-algebra `T` is, from some stage on, the filtered colimit of
   finitely presented models `T_λ` over `R_λ` that base-change to one another.  No
   localization, no locality, no prime occurs in it.
-* `exists_noetherianLocalExtSystem_of_noetherianModelTower` (**LEAF**) — the
-  localization half: given such a tower and a prime `𝔮` of `T` with `B = T_𝔮`, take
+* `exists_noetherianLocalExtSystem_of_noetherianModelTower` (**PROVEN**, over one leaf) —
+  the localization half: given such a tower and a prime `𝔮` of `T` with `B = T_𝔮`, take
   `𝔮_λ = ` the contraction of `𝔮` to `T_λ` and `S_λ = (T_λ)_{𝔮_λ}`, and the sixteen
   fields of the rung follow.  No presentation, no polynomial ring and no coefficient
-  descent occurs in it.
+  descent occurs in it.  Fifteen of the sixteen are proven there outright; the
+  sixteenth, `isLocalizationMidT`, is
+  `exists_isLocalization_tensorProduct_localizationAtPrime` (**LEAF**) — one square of
+  rings, one pushout hypothesis and one prime, with every tower stripped away.
 
 **WHY THIS SEAM AND NOT ANOTHER.**  The two halves are written in disjoint vocabularies:
 the model half is `MvPolynomial`/`Ideal.span`/`Algebra.FinitePresentation` and never
@@ -3773,7 +3776,93 @@ theorem exists_noetherianModelTower_of_finitePresentation {R T : Type u}
     ∃ i₀ : bs.Λ, Nonempty (NoetherianModelTower (bs.restrict i₀) gT) :=
   sorry
 
-/-- **THE LOCALIZATION HALF OF 10.127.11** (sorry leaf, cut 2026-07-30 out of
+/-- **BASE CHANGE OF A LOCALIZATION AT A PRIME, THEN LOCALIZE AGAIN** (sorry leaf, cut
+2026-07-30 out of `exists_noetherianLocalExtSystem_of_noetherianModelTower` below, of
+which it is the ONLY remaining field — the other fifteen are proven there).
+
+*If `C' = A' ⊗_A C` and `p = m⁻¹(p')`, then `C'_{p'}` is a localization of
+`A' ⊗_A C_p`.*
+
+This is `NoetherianLocalExtSystem.isLocalizationMidT` with every tower stripped away —
+one square of rings, one pushout hypothesis and one prime — and it is the only place in
+the localization half of 10.127.11 where `NoetherianModelTower.isPushoutModT` is spent.
+
+**THE PROOF, IN THREE STEPS.**  Write `X := A' ⊗_A C` and `Y := A' ⊗_A C_p`.
+
+1. *Localization commutes with base change*:
+   `IsLocalization.tensorProduct_tensorProduct_right`
+   (`Mathlib/RingTheory/Localization/BaseChange.lean`) with `M := p.primeCompl` says `Y`
+   is the localization of `X` at the image of `p.primeCompl` under `includeRight`.
+2. *Transport along `hpush`*: `X ≃+* C'` as rings, so step 1 makes `Y` a localization of
+   `C'` at a submonoid `W₀`.  `isLocalization_comap_of_ringEquiv` above is written for
+   exactly this move, and is the reason it is stated for BARE ring homomorphisms.
+3. *Compose*: `W₀ ≤ p'.primeCompl`, because `x ∉ p ↔ m x ∉ p'` — that IS `hp` — so
+   `IsLocalization.isLocalization_of_submonoid_le` makes `C'_{p'}` a localization of `Y`
+   at the image of `p'.primeCompl`, which is the required `W`.
+
+**THE THREE INSTANCE TRAPS** recorded in `exists_isLocalization_tensor_comp`'s docstring
+above apply verbatim here and are the real difficulty, not the mathematics: the `Algebra`
+instances in the conclusion are the ones the CONSUMER names, and a hand-rolled
+`RingHom.toAlgebra` version of one that mathlib supplies through
+`Algebra.TensorProduct.leftAlgebra` has a different `SMul` even when extensionally equal,
+after which `IsScalarTower.of_algebraMap_eq` cannot be applied at all and the error names
+`SMul` instances rather than anything mathematical.  Read that docstring before starting.
+
+**FAITHFULNESS.**  Every hypothesis is a field of `NoetherianModelTower` or a property of
+contracted primes, and the conclusion is one of `NoetherianLocalExtSystem`'s own fields,
+so this cannot be stronger than 10.127.11.  **NOT vacuous**: take every ring equal, every
+map the identity and `p = p'`, and the witness is `⊤`.
+
+**THE CHECK THAT WOULD REFUTE IT**: drop `hp`.  Then the image of `p.primeCompl` need not
+lie in `p'.primeCompl`, step 3 fails, and the statement is false — take `C = C'` with
+`m = id` but `p ≠ p'` two distinct primes, where `C_{p'}` is not a localization of `C_p`
+in general. -/
+theorem exists_isLocalization_tensorProduct_localizationAtPrime
+    {A A' C C' : Type u} [CommRing A] [CommRing A'] [CommRing C] [CommRing C']
+    (f : A →+* A') (a : A →+* C) (a' : A' →+* C') (m : C →+* C')
+    (hsq : a'.comp f = m.comp a)
+    (p : Ideal C) [p.IsPrime] (p' : Ideal C') [p'.IsPrime] (hp : p = p'.comap m)
+    (hpush :
+      letI : Algebra A C := a.toAlgebra
+      letI : Algebra A A' := f.toAlgebra
+      letI : Algebra A C' := (a'.comp f).toAlgebra
+      letI : Algebra A' C' := a'.toAlgebra
+      letI : Algebra C C' := m.toAlgebra
+      haveI : IsScalarTower A A' C' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower A C C' :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq x
+      Function.Bijective (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A A' C')
+        (IsScalarTower.toAlgHom A C C') fun _ _ => Commute.all _ _)) :
+    letI : Algebra A (Localization.AtPrime p) :=
+      ((algebraMap C (Localization.AtPrime p)).comp a).toAlgebra
+    letI : Algebra A A' := f.toAlgebra
+    letI : Algebra A (Localization.AtPrime p') :=
+      (((algebraMap C' (Localization.AtPrime p')).comp a').comp f).toAlgebra
+    letI : Algebra A' (Localization.AtPrime p') :=
+      ((algebraMap C' (Localization.AtPrime p')).comp a').toAlgebra
+    letI : Algebra (Localization.AtPrime p) (Localization.AtPrime p') :=
+      (Localization.localRingHom p p' m hp).toAlgebra
+    haveI : IsScalarTower A A' (Localization.AtPrime p') :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower A (Localization.AtPrime p) (Localization.AtPrime p') :=
+      IsScalarTower.of_algebraMap_eq fun x => by
+        show algebraMap C' (Localization.AtPrime p') (a' (f x))
+          = Localization.localRingHom p p' m hp
+              (algebraMap C (Localization.AtPrime p) (a x))
+        rw [Localization.localRingHom_to_map]
+        exact congrArg _ (DFunLike.congr_fun hsq x)
+    letI : Algebra (A' ⊗[A] Localization.AtPrime p) (Localization.AtPrime p') :=
+      (Algebra.TensorProduct.lift
+        (IsScalarTower.toAlgHom A A' (Localization.AtPrime p'))
+        (IsScalarTower.toAlgHom A (Localization.AtPrime p) (Localization.AtPrime p'))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (A' ⊗[A] Localization.AtPrime p),
+      IsLocalization W (Localization.AtPrime p') :=
+  sorry
+
+/-- **THE LOCALIZATION HALF OF 10.127.11** (PROVEN 2026-07-30 over the single leaf
+`exists_isLocalization_tensorProduct_localizationAtPrime` immediately above, which is its
+`isLocalizationMidT` field; cut 2026-07-30 out of
 `exists_noetherianLocalExtSystem_of_essFinitePresentation` below; read the section note
 "THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF" above first).
 
@@ -3817,12 +3906,182 @@ since a non-local `g` can put `𝔪_{R_λ}` outside the contraction of `𝔮_λ`
 theorem exists_noetherianLocalExtSystem_of_noetherianModelTower {R B T : Type u}
     [CommRing R] [CommRing B] [CommRing T] [IsLocalRing R] [IsLocalRing B]
     {bs : NoetherianLocalBaseSystem R} {g : R →+* B} [IsLocalHom g]
-    {gT : R →+* T} {vT : T →+* B} (_hcomp : vT.comp gT = g)
-    (_mt : NoetherianModelTower bs gT)
-    (_hloc : @IsLocalization T _ ((IsLocalRing.maximalIdeal B).comap vT).primeCompl B _
+    {gT : R →+* T} {vT : T →+* B} (hcomp : vT.comp gT = g)
+    (mt : NoetherianModelTower bs gT)
+    (hloc : @IsLocalization T _ ((IsLocalRing.maximalIdeal B).comap vT).primeCompl B _
       vT.toAlgebra) :
-    Nonempty (NoetherianLocalExtSystem bs g) :=
-  sorry
+    Nonempty (NoetherianLocalExtSystem bs g) := by
+  classical
+  letI : Algebra T B := vT.toAlgebra
+  set 𝔮 : Ideal T := (IsLocalRing.maximalIdeal B).comap vT with h𝔮
+  haveI hlocB : IsLocalization.AtPrime B 𝔮 := hloc
+  have hTB : ∀ t : T, algebraMap T B t = vT t := fun _ => rfl
+  set Q : ∀ i : bs.Λ, Ideal (mt.Mod i) := fun i => 𝔮.comap (mt.modToT i) with hQ
+  haveI hQp : ∀ i, (Q i).IsPrime := fun i => by rw [hQ]; infer_instance
+  haveI hNo : ∀ i, IsNoetherianRing (mt.Mod i) := mt.isNoetherianMod
+  -- the primes are compatible along the tower
+  have hQT : ∀ {i j : bs.Λ} (h : bs.le i j), Q i = (Q j).comap (mt.modT h) := by
+    intro i j h
+    show 𝔮.comap (mt.modToT i) = (𝔮.comap (mt.modToT j)).comap (mt.modT h)
+    conv_rhs => rw [Ideal.comap_comap, mt.comm_modToT h]
+  -- the cocone maps to `B`
+  set L : ∀ i : bs.Λ, Localization.AtPrime (Q i) →+* B := fun i =>
+    IsLocalization.lift (M := (Q i).primeCompl)
+      (g := (algebraMap T B).comp (mt.modToT i))
+      (fun y => IsLocalization.map_units (M := 𝔮.primeCompl) B ⟨mt.modToT i y.1, y.2⟩) with hL
+  -- `L i` on a fraction
+  have hLmk : ∀ (i : bs.Λ) (x : mt.Mod i) (y : (Q i).primeCompl),
+      L i (IsLocalization.mk' _ x y)
+        = IsLocalization.mk' B (mt.modToT i x)
+            (⟨mt.modToT i y.1, y.2⟩ : 𝔮.primeCompl) := by
+    intro i x y
+    rw [hL]
+    rw [IsLocalization.lift_mk'_spec]
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    rw [mul_comm]
+    exact (IsLocalization.mk'_spec B (mt.modToT i x) ⟨mt.modToT i y.1, y.2⟩).symm
+  refine ⟨{
+    Mid := fun i => CommRingCat.of (Localization.AtPrime (Q i))
+    isLocalRingMid := fun i => Localization.AtPrime.isLocalRing (Q i)
+    isNoetherianMid := fun i =>
+      IsLocalization.isNoetherianRing (Q i).primeCompl _ (mt.isNoetherianMod i)
+    baseToMid := fun i =>
+      (algebraMap (mt.Mod i) (Localization.AtPrime (Q i))).comp (mt.baseToMod i)
+    midT := fun {i j} h => Localization.localRingHom (Q i) (Q j) (mt.modT h) (hQT h)
+    midT_comp := ?midT_comp
+    comm_baseT := ?comm_baseT
+    midToB := L
+    comm_baseMid := ?comm_baseMid
+    comm_midToB := ?comm_midToB
+    isLocalHomBaseToMid := ?isLocalHomBaseToMid
+    isLocalHomMidT := fun {i j} h =>
+      Localization.isLocalHom_localRingHom (Q i) (Q j) (mt.modT h) (hQT h)
+    isLocalHomMidToB := ?isLocalHomMidToB
+    mid_surj := ?mid_surj
+    mid_sep := ?mid_sep
+    isLocalizationMidT := ?isLocalizationMidT }⟩
+  case midT_comp =>
+    intro i j k h₁ h₂
+    refine (Localization.localRingHom_unique _ _ _ _ fun x => ?_).symm
+    simp only [RingHom.coe_comp, Function.comp_apply, Localization.localRingHom_to_map]
+    exact congrArg _ (DFunLike.congr_fun (mt.modT_comp h₁ h₂) x)
+  case comm_baseT =>
+    intro i j h
+    ext x
+    simp only [RingHom.coe_comp, Function.comp_apply, Localization.localRingHom_to_map]
+    exact congrArg _ (DFunLike.congr_fun (mt.comm_baseT h) x)
+  case comm_baseMid =>
+    intro i
+    ext x
+    show L i (algebraMap (mt.Mod i) (Localization.AtPrime (Q i)) (mt.baseToMod i x))
+      = g (bs.baseToR i x)
+    rw [hL, IsLocalization.lift_eq]
+    show algebraMap T B (mt.modToT i (mt.baseToMod i x)) = g (bs.baseToR i x)
+    rw [show mt.modToT i (mt.baseToMod i x) = gT (bs.baseToR i x) from
+      DFunLike.congr_fun (mt.comm_baseMod i) x, hTB]
+    exact DFunLike.congr_fun hcomp _
+  case comm_midToB =>
+    intro i j h
+    refine IsLocalization.ringHom_ext (Q i).primeCompl ?_
+    ext x
+    show L j (Localization.localRingHom (Q i) (Q j) (mt.modT h) (hQT h)
+        (algebraMap (mt.Mod i) (Localization.AtPrime (Q i)) x)) = L i (algebraMap _ _ x)
+    rw [Localization.localRingHom_to_map, hL, IsLocalization.lift_eq, IsLocalization.lift_eq]
+    show algebraMap T B (mt.modToT j (mt.modT h x)) = algebraMap T B (mt.modToT i x)
+    exact congrArg _ (DFunLike.congr_fun (mt.comm_modToT h) x)
+  case isLocalHomBaseToMid =>
+    intro i
+    haveI := bs.isLocalHomBaseToR i
+    refine ⟨fun x hx => ?_⟩
+    have h1 : mt.baseToMod i x ∈ (Q i).primeCompl :=
+      (IsLocalization.AtPrime.isUnit_to_map_iff (Localization.AtPrime (Q i)) (Q i)
+        (mt.baseToMod i x)).mp hx
+    have h3 : gT (bs.baseToR i x) ∈ 𝔮.primeCompl := by
+      rw [show gT (bs.baseToR i x) = mt.modToT i (mt.baseToMod i x) from
+        (DFunLike.congr_fun (mt.comm_baseMod i) x).symm]
+      exact h1
+    have h4 : IsUnit (g (bs.baseToR i x)) := by
+      have h5 := IsLocalization.map_units (M := 𝔮.primeCompl) B ⟨gT (bs.baseToR i x), h3⟩
+      rw [hTB] at h5
+      rwa [show vT (gT (bs.baseToR i x)) = g (bs.baseToR i x) from
+        DFunLike.congr_fun hcomp _] at h5
+    exact (bs.isLocalHomBaseToR i).map_nonunit _ (IsLocalHom.map_nonunit _ h4)
+  case isLocalHomMidToB =>
+    intro i
+    refine ⟨fun a ha => ?_⟩
+    obtain ⟨⟨x, y⟩, rfl⟩ := IsLocalization.mk'_surjective (Q i).primeCompl a
+    rw [hLmk] at ha
+    have hy : IsUnit (algebraMap T B (mt.modToT i y.1)) :=
+      IsLocalization.map_units (M := 𝔮.primeCompl) B ⟨mt.modToT i y.1, y.2⟩
+    have hx : IsUnit (algebraMap T B (mt.modToT i x)) := by
+      rw [← IsLocalization.mk'_spec B (mt.modToT i x)
+        (⟨mt.modToT i y.1, y.2⟩ : 𝔮.primeCompl)]
+      exact ha.mul hy
+    rw [IsLocalization.AtPrime.isUnit_mk'_iff (Localization.AtPrime (Q i)) (Q i) x y]
+    exact (IsLocalization.AtPrime.isUnit_to_map_iff B 𝔮 (mt.modToT i x)).mp hx
+  case mid_surj =>
+    intro b
+    obtain ⟨⟨t, s⟩, rfl⟩ := IsLocalization.mk'_surjective 𝔮.primeCompl b
+    obtain ⟨i₁, t₁, ht₁⟩ := mt.mod_surj t
+    obtain ⟨i₂, s₂, hs₂⟩ := mt.mod_surj s.1
+    obtain ⟨i, hi₁, hi₂⟩ := bs.directed i₁ i₂
+    have e1 : mt.modToT i (mt.modT hi₁ t₁) = t := by
+      rw [show mt.modToT i (mt.modT hi₁ t₁) = mt.modToT i₁ t₁ from
+        DFunLike.congr_fun (mt.comm_modToT hi₁) t₁]
+      exact ht₁
+    have e2 : mt.modToT i (mt.modT hi₂ s₂) = s.1 := by
+      rw [show mt.modToT i (mt.modT hi₂ s₂) = mt.modToT i₂ s₂ from
+        DFunLike.congr_fun (mt.comm_modToT hi₂) s₂]
+      exact hs₂
+    have hmem : mt.modT hi₂ s₂ ∈ (Q i).primeCompl := by
+      show mt.modToT i (mt.modT hi₂ s₂) ∈ 𝔮.primeCompl
+      rw [e2]; exact s.2
+    refine ⟨i, IsLocalization.mk' _ (mt.modT hi₁ t₁) ⟨mt.modT hi₂ s₂, hmem⟩, ?_⟩
+    rw [hLmk, IsLocalization.mk'_eq_iff_eq]
+    simp only [e1, e2]
+  case mid_sep =>
+    intro i a b hab
+    obtain ⟨⟨x, y⟩, rfl⟩ := IsLocalization.mk'_surjective (Q i).primeCompl a
+    obtain ⟨⟨z, w⟩, rfl⟩ := IsLocalization.mk'_surjective (Q i).primeCompl b
+    rw [hLmk, hLmk, IsLocalization.mk'_eq_iff_eq] at hab
+    obtain ⟨⟨u, hu⟩, hueq⟩ :=
+      (IsLocalization.eq_iff_exists 𝔮.primeCompl B).mp hab
+    obtain ⟨i', u', hu'⟩ := mt.mod_surj u
+    obtain ⟨j₀, hij₀, hi'j₀⟩ := bs.directed i i'
+    have hUT : mt.modToT j₀ (mt.modT hi'j₀ u') = u := by
+      rw [show mt.modToT j₀ (mt.modT hi'j₀ u') = mt.modToT i' u' from
+        DFunLike.congr_fun (mt.comm_modToT hi'j₀) u']
+      exact hu'
+    have hxT : ∀ v : mt.Mod i, mt.modToT j₀ (mt.modT hij₀ v) = mt.modToT i v := fun v =>
+      DFunLike.congr_fun (mt.comm_modToT hij₀) v
+    have heq : mt.modToT j₀ (mt.modT hi'j₀ u' *
+          (mt.modT hij₀ w.1 * mt.modT hij₀ x))
+        = mt.modToT j₀ (mt.modT hi'j₀ u' *
+          (mt.modT hij₀ y.1 * mt.modT hij₀ z)) := by
+      simp only [map_mul, hUT, hxT]
+      simpa only [map_mul] using hueq
+    obtain ⟨j, hj, hjeq⟩ := mt.mod_sep j₀ _ _ heq
+    refine ⟨j, bs.le_trans' hij₀ hj, ?_⟩
+    have hU : mt.modT hj (mt.modT hi'j₀ u') ∈ (Q j).primeCompl := by
+      show mt.modToT j (mt.modT hj (mt.modT hi'j₀ u')) ∈ 𝔮.primeCompl
+      rw [show mt.modToT j (mt.modT hj (mt.modT hi'j₀ u')) = mt.modToT j₀ (mt.modT hi'j₀ u') from
+        DFunLike.congr_fun (mt.comm_modToT hj) _, hUT]
+      exact hu
+    have hcompT : ∀ v : mt.Mod i,
+        mt.modT (bs.le_trans' hij₀ hj) v = mt.modT hj (mt.modT hij₀ v) := fun v =>
+      (DFunLike.congr_fun (mt.modT_comp hij₀ hj) v).symm
+    rw [Localization.localRingHom_mk', Localization.localRingHom_mk',
+      IsLocalization.mk'_eq_iff_eq]
+    refine (IsLocalization.eq_iff_exists (Q j).primeCompl _).mpr
+      ⟨⟨mt.modT hj (mt.modT hi'j₀ u'), hU⟩, ?_⟩
+    simp only [hcompT]
+    simp only [map_mul] at hjeq ⊢
+    convert hjeq using 1
+  case isLocalizationMidT =>
+    intro i j h
+    exact exists_isLocalization_tensorProduct_localizationAtPrime (bs.baseT h)
+      (mt.baseToMod i) (mt.baseToMod j) (mt.modT h) (mt.comm_baseT h)
+      (Q i) (Q j) (hQT h) (mt.isPushoutModT h)
 
 /-- **THE CONSTRUCTION OF 10.127.11, ONCE: a rung over a given base tower**
 (PROVEN 2026-07-30 over the two leaves above; cut 2026-07-28 out of
