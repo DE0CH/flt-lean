@@ -9132,9 +9132,240 @@ def IsAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
       IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I))) →
     IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun R) ρ
 
+/-! #### `isAuxFibreProductClause`, decomposed field by field
+
+Added 2026-07-30 (`flt-lean-7`), the moment the three-obstruction STATEMENT repair
+of the ROUTE AUDIT below landed and unblocked its own instruction "do not start
+proving until they are resolved".  The decomposition is the one the sibling
+`isAuxProLimitClause` cut already validated: `IsRaisedLevelHardlyRamified` is a
+five-field structure, the first four fields are the four fields of
+`IsHardlyRamified` whose FIBRE-PRODUCT gluing is already PROVEN in
+`HardlyRamified/Deformation.lean`, and only the fifth — the split torus at
+`q ∈ Q` — is new.  So the clause is an ASSEMBLY over ONE sorried leaf,
+`raisedLevelIsSplitTorusAt_of_fibreProduct`, which is exactly the leaf the audit
+below calls "the new content".
+
+**The general-`V` ↦ framed reduction is the only piece the pro-limit cut did not
+already need**, because that cut's `ρ` is framed from the start whereas this
+clause quantifies over an arbitrary free rank-two `V` and base-changes by tensor.
+It is `raisedLevelHardlyRamified_pushforwardFrame_of_baseChange` below, and —
+unlike the quotient case, where `raisedLevelFramedTameAtTwo_of_forall_isOpen_-
+quotient`'s docstring records that `isRaisedLevelHardlyRamified_conj` along
+`piScalarRight` is BLOCKED by an `Algebra` instance mismatch — here that route
+works, for a reason worth recording: the mismatch there is
+`Ideal.Quotient.algebra` versus `ψ.toAlgebra`, and this clause's own hypotheses
+`h₁`, `h₂` are stated over `p₁.toAlgebra`, `p₂.toAlgebra`, which is precisely the
+instance `pushforwardFrame` uses.  So the two tensor products are the same type
+on the nose and the conjugation transport applies. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Conjugating by `e` and then by `e.symm` is the identity** (PROVEN
+2026-07-30): the transport back off a frame.  Needed because the raised-level
+condition is invariant under conjugation only up to producing `ρ.conj e`, so a
+proof carried out on the standard frame has to be returned to the original
+module. -/
+lemma conj_conj_symm {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    {N : Type*} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N]
+    (ρ : GaloisRep ℚ A M) (e : M ≃ₗ[A] N) :
+    (ρ.conj e).conj e.symm = ρ := by
+  refine GaloisRep.ext fun σ => ?_
+  refine LinearMap.ext fun x => ?_
+  show e.symm ((ρ.conj e) σ (e.symm.symm x)) = ρ σ x
+  show e.symm (e (ρ σ (e.symm (e.symm.symm x)))) = ρ σ x
+  simp
+
 set_option linter.checkUnivs false in
-/-- **The RAISED-LEVEL gluing clause** (sorry node, LEAF A2′-2a of the
+open scoped TensorProduct in
+/-- **The raised-level condition on a BASE CHANGE, converted into the FRAMED
+PUSHFORWARD form** (PROVEN 2026-07-30): the general-`V`-to-`Fin 2 → B` bridge
+that lets `isAuxFibreProductClause` below call the base-level fibre-product
+leaves `isFlatAt_of_fibreProduct` and `isTameAtTwo_of_fibreProduct`, both of
+which are stated for `FramedGaloisRep ℚ B (Fin 2)` and `pushforwardFrame`.
+
+Two conjugations, one after the other, both by `isRaisedLevelHardlyRamified_conj`:
+
+* along `LinearEquiv.baseChange B A V (Fin 2 → B) e`, whose equivariance is
+  `baseChange_conj_apply` (PROVEN above) — this is what turns
+  `ρ.baseChange A` on `A ⊗[B] V` into `(ρ.conj e).baseChange A` on
+  `A ⊗[B] (Fin 2 → B)`;
+* along `TensorProduct.piScalarRight B A A (Fin 2)`, which is the second half of
+  `pushforwardFrame`'s own definition, so this step is `rfl` on the
+  representation and only the raised-level predicate has to be transported.
+
+**Why the `Algebra`-instance obstruction of the quotient case does not arise.**
+`raisedLevelFramedTameAtTwo_of_forall_isOpen_quotient`'s docstring records that
+the analogous route is blocked there because its hypothesis is stated over
+`Ideal.Quotient.algebra` while `pushforwardFrame` base-changes along
+`ψ.toAlgebra`, and the two — equal, but not by `rfl` — make the two tensor
+products different types to the elaborator.  Here the hypothesis `h` is stated
+over `ψ.toAlgebra` itself, matching `pushforwardFrame` on the nose, which is why
+the `letI` block appears in this statement and is not an accident of style.
+
+The rank hypothesis is DISCHARGED rather than assumed: `Module.rank A (A ⊗[B] V)`
+is `2` because `V` is free of rank two, transported through the same two
+equivalences (`rank_finTwoFun`).  That is why `h` quantifies over its rank proof
+and this conclusion does not. -/
+theorem raisedLevelHardlyRamified_pushforwardFrame_of_baseChange.{a}
+    {p : ℕ} [Fact p.Prime] {hpodd : Odd p} (Q : Finset ℕ)
+    {B : Type a} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[p] B]
+    {A : Type a} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A]
+    (ψ : B →+* A) (hψ : Continuous ψ)
+    {V : Type a} [AddCommGroup V] [Module B V] [Module.Finite B V]
+    [Module.Free B V] {ρ : GaloisRep ℚ B V}
+    (e : V ≃ₗ[B] (Fin 2 → B))
+    (h : letI : Algebra B A := ψ.toAlgebra
+         letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+           (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+         ∀ hdim : Module.rank A (A ⊗[B] V) = 2,
+           IsRaisedLevelHardlyRamified hpodd Q hdim (ρ.baseChange A)) :
+    IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A)
+      (pushforwardFrame ψ hψ (ρ.conj e)) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  set E₁ : A ⊗[B] V ≃ₗ[A] A ⊗[B] (Fin 2 → B) :=
+    LinearEquiv.baseChange B A V (Fin 2 → B) e with hE₁
+  have hdim' : Module.rank A (A ⊗[B] (Fin 2 → B)) = 2 :=
+    (TensorProduct.piScalarRight B A A (Fin 2)).rank_eq.trans (rank_finTwoFun A)
+  have h2 :=
+    isRaisedLevelHardlyRamified_conj Q hdim' (h (E₁.rank_eq.trans hdim')) E₁
+  have hcongr : (ρ.baseChange A).conj E₁ = (ρ.conj e).baseChange A := by
+    refine GaloisRep.ext fun σ => ?_
+    refine LinearMap.ext fun y => ?_
+    obtain ⟨x, hx⟩ := E₁.surjective y
+    subst hx
+    show E₁ ((ρ.baseChange A) σ (E₁.symm (E₁ x))) = _
+    rw [E₁.symm_apply_apply]
+    exact (baseChange_conj_apply (B := A) ρ e σ x).symm
+  rw [hcongr] at h2
+  exact isRaisedLevelHardlyRamified_conj Q (rank_finTwoFun A) h2
+    (TensorProduct.piScalarRight B A A (Fin 2))
+
+set_option linter.checkUnivs false in
+/-- **THE SPLIT TORUS AT `q ∈ Q` GLUES ALONG A FIBRE PRODUCT** (sorry node, cut
+2026-07-30 as the ONE genuinely new field of `isAuxFibreProductClause` below;
+LEAF A2′-2a-v).
+
+Everything else in that clause is now assembly: `det` and `isUnramified` are
+formal (an element of `B` is its pair of projections), `isFlat` is
+`isFlatAt_of_fibreProduct` and `isTameAtTwo` is `isTameAtTwo_of_fibreProduct` —
+both PROVEN in `HardlyRamified/Deformation.lean` and both called verbatim.  This
+leaf is the fifth field, stated on the standard frame `Fin 2 → B` because that is
+the form in which the consumer supplies its data.
+
+# THE ROUTE, AND WHAT IS ALREADY BUILT FOR IT
+
+The argument the audit on `isAuxFibreProductClause` prescribes, unchanged:
+
+1. `h₁` and `h₂` supply decompositions of `ρ ⊗ A₁` and `ρ ⊗ A₂` at `q`.  Their
+   images along `f₁`, `f₂` are two decompositions of the SAME local
+   representation over `A₀` (`hcomm`, and `hf₂` to know the image is all of
+   `A₀`).
+2. Residual distinctness at `q`:
+   **`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet` (PROVEN below) is
+   this step in full** — it takes exactly `hπB` plus `Continuous πB` and returns
+   `α ≠ β` with `(ρ.charFrob q).map πB = (X - C α)(X - C β)`.  `Continuous πB` is
+   `continuous_of_discreteTopology` here, which is the whole point of the
+   `[DiscreteTopology B]` repair recorded in the audit below (item (3)).
+3. An idempotent of `End(A₀²)` commuting with the local action is determined by
+   its residue, idempotents lifting uniquely along the nilpotent maximal ideal of
+   the finite local ring `A₀`.  So the two decompositions over `A₀` agree up to
+   swapping the two factors; swap `e₂` if necessary.
+4. Glue the two matching idempotents into one over `B` — `hcart` gives the
+   element of `B`, `hinj` gives its uniqueness — and read off the decomposition
+   of `ρ` itself, with `δ` unramified because both `δ₁` and `δ₂` are.
+
+# WHY THIS IS NOT FALSE, AND WHERE THE PINNING IS LOAD-BEARING
+
+**Without `hπB` the statement is FALSE** — the `k[u,v]/(u,v)²` counterexample of
+the section preamble.  The pinning is not decoration: step 2 is the only source
+of `α ≠ β`, and without residual distinctness the idempotent in step 3 is not
+determined by its residue, so the two decompositions over `A₀` need not be
+related at all.
+
+`hirr`, `hW`, `n` and `hQ` are the inputs of step 2 and are passed straight to
+`exists_distinct_charFrob_map_eq_of_isTaylorWilesPrimeSet`.
+
+CIRCULARITY GUARD (inherited): must not be proven through `Family.lean` or
+anything downstream of it, and a proof ending in `exfalso` against `hirr` is the
+circular discharge and must be rejected.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3 (the local deformation
+functor at a Taylor–Wiles prime splits as a product of two character
+functors); Darmon–Diamond–Taylor §5.3. -/
+theorem raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
+    {A₀ : Type a} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[p] A₀] [Finite A₀] [DiscreteTopology A₀]
+    {A₁ : Type a} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[p] A₁] [Finite A₁] [DiscreteTopology A₁]
+    {A₂ : Type a} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[p] A₂] [Finite A₂] [DiscreteTopology A₂]
+    {B : Type a} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[p] B] [Finite B] [DiscreteTopology B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (halg₁ : p₁.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₁)
+    (halg₂ : p₂.comp (algebraMap ℤ_[p] B) = algebraMap ℤ_[p] A₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hinj : Function.Injective fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ →
+      ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : GaloisRep ℚ B (Fin 2 → B)}
+    (πB : B →+* k)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hπB : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πB ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (h₁ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₁)
+      (pushforwardFrame p₁ hp₁ ρ))
+    (h₂ : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₂)
+      (pushforwardFrame p₂ hp₂ ρ)) :
+    ∀ q ∈ Q, ∀ hq : q.Prime,
+      ∃ (e' : (Fin 2 → B) ≃ₗ[B] B × B)
+        (χ δ : GaloisRep
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) B B),
+        (∀ (g : Field.absoluteGaloisGroup
+            ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+            (v : Fin 2 → B),
+          e' (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+            (χ g (e' v).1, δ g (e' v).2)) ∧
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL gluing clause** (LEAF A2′-2a of the
 2026-07-28 clause cut of `exists_isWeaklyUniversal_auxDeformationDatum`).
+
+**STATUS 2026-07-30 (`flt-lean-7`): THIS IS NOW AN ASSEMBLY AND CARRIES NO
+`sorry` OF ITS OWN.**  Four of the five fields of `IsRaisedLevelHardlyRamified`
+are discharged here — `det` and `isUnramified` formally (an element of `B` is its
+pair of projections, `hinj`), `isFlat` by `isFlatAt_of_fibreProduct` and
+`isTameAtTwo` by `isTameAtTwo_of_fibreProduct`, both PROVEN in
+`HardlyRamified/Deformation.lean` and both called verbatim.  The fifth is the
+sorried leaf `raisedLevelIsSplitTorusAt_of_fibreProduct` immediately above, which
+is exactly the field the audit below identifies as the new content.  The
+general-`V`-to-framed conversion the two arithmetic calls need is
+`raisedLevelHardlyRamified_pushforwardFrame_of_baseChange` above.
+
+`hp5` is spent in exactly ONE place, `isTameAtTwo_of_fibreProduct`'s
+`IsUnit (3 : A₀)` — confirmed by the assembly, which passes it nowhere else.
+`hW`, `hirr`, `n` and `hQ` are spent in exactly one place too: they are the
+inputs of the split-torus leaf.
 
 The four base-level clauses glue exactly as at the base level — `Q` is disjoint
 from `{2, p}` by the congruence clause of `hQ` at level `n ≥ 1` (`q ≡ 1 mod pⁿ`
@@ -9350,8 +9581,103 @@ theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
     (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    IsAuxFibreProductClause.{a, uK, uW} hpodd Q ρbar :=
-  sorry
+    IsAuxFibreProductClause.{a, uK, uW} hpodd Q ρbar := by
+  intro A₀ _ _ _ _ _ _ _ A₁ _ _ _ _ _ _ _ A₂ _ _ _ _ _ _ _ B _ _ _ _ _ _ _
+    f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hinj hcart
+    V _ _ _ _ hdimV ρ πB S hπB h₁ h₂
+  -- FRAME `V` on the standard frame `Fin 2 → B`: the two arithmetic leaves
+  -- called below are stated for `FramedGaloisRep ℚ B (Fin 2)`.
+  have hfrk : Module.finrank B V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hdimV)
+  set e : V ≃ₗ[B] (Fin 2 → B) :=
+    (Module.finBasisOfFinrankEq B V hfrk).equivFun with he
+  set ρ' : GaloisRep ℚ B (Fin 2 → B) := ρ.conj e with hρ'
+  -- The two hypotheses, converted into the framed pushforward form.
+  have h₁' : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₁)
+      (pushforwardFrame p₁ hp₁ ρ') :=
+    raisedLevelHardlyRamified_pushforwardFrame_of_baseChange Q p₁ hp₁ e h₁
+  have h₂' : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A₂)
+      (pushforwardFrame p₂ hp₂ ρ') :=
+    raisedLevelHardlyRamified_pushforwardFrame_of_baseChange Q p₂ hp₂ e h₂
+  -- `B ↪ A₁ × A₂` is a topological EMBEDDING, not merely injective, because all
+  -- four rings are discrete — item (2) of the ROUTE AUDIT above, and the reason
+  -- the base-level leaves apply verbatim.
+  have hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b) :=
+    isEmbedding_of_injective_discrete hinj
+  have hinj2 : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hinj (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  -- FIELD 1, DETERMINANT: formal, reflected back from the two projections.
+  have hdet : ∀ g, ρ'.det g = algebraMap ℤ_[p] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+    intro g
+    refine hinj2 _ _ ?_ ?_
+    · have hcompat : p₁ (algebraMap ℤ_[p] B
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) =
+          algebraMap ℤ_[p] A₁
+            (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+        rw [← halg₁]; rfl
+      rw [← det_pushforwardFrame p₁ hp₁ ρ' g, h₁'.det g, hcompat]
+    · have hcompat : p₂ (algebraMap ℤ_[p] B
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) =
+          algebraMap ℤ_[p] A₂
+            (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+        rw [← halg₂]; rfl
+      rw [← det_pushforwardFrame p₂ hp₂ ρ' g, h₂'.det g, hcompat]
+  -- FIELD 2, UNRAMIFIEDNESS away from `Q ∪ {2, p}`: formal.  An endomorphism of
+  -- `Fin 2 → B` killed by both projections is the identity, entrywise.
+  have hunr : ∀ q (hq : q.Prime), q ∉ Q → q ≠ 2 → q ≠ p →
+      ρ'.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqQ hq2 hqp
+    have key : ∀ g : Field.absoluteGaloisGroup ℚ,
+        (pushforwardFrame p₁ hp₁ ρ') g = 1 →
+        (pushforwardFrame p₂ hp₂ ρ') g = 1 → ρ' g = 1 := by
+      intro g hg₁ hg₂
+      refine LinearMap.ext fun w => funext fun i => ?_
+      refine hinj2 _ _ ?_ ?_
+      · have hw := pushforwardFrame_apply_map p₁ hp₁ ρ' g w i
+        rw [hg₁] at hw
+        simpa using hw.symm
+      · have hw := pushforwardFrame_apply_map p₂ hp₂ ρ' g w i
+        rw [hg₂] at hw
+        simpa using hw.symm
+    refine ⟨?_⟩
+    intro σ hσ
+    have e₁ : (pushforwardFrame p₁ hp₁ ρ').toLocal
+        hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      (h₁'.isUnramified q hq hqQ hq2 hqp).localInertiaGroup_le hσ
+    have e₂ : (pushforwardFrame p₂ hp₂ ρ').toLocal
+        hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      (h₂'.isUnramified q hq hqQ hq2 hqp).localInertiaGroup_le hσ
+    show ρ'.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply] at e₁ e₂ ⊢
+    exact key _ e₁ e₂
+  -- FIELD 3, FLATNESS at `p`: the base-level arithmetic leaf, called verbatim.
+  have hflat := isFlatAt_of_fibreProduct hpodd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm
+    hemb hcart h₁'.isFlat h₂'.isFlat
+  -- FIELD 4, TAMENESS at `2`: the base-level arithmetic leaf, called verbatim.
+  -- THIS IS THE ONLY PLACE `hp5` IS SPENT (through `IsUnit (3 : A₀)`); see the
+  -- "WHAT `hℓ5` ACTUALLY BUYS" paragraph of the ROUTE AUDIT above.
+  have htame := isTameAtTwo_of_fibreProduct hpodd hp5 f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
+    hcomm hemb hcart hdet h₁'.isTameAtTwo h₂'.isTameAtTwo
+  -- The pinning, transported onto the framed representation (`charFrob_conj`).
+  have hπB' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      πB ((ρ'.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    intro q hq hqS
+    rw [hρ', charFrob_conj _ ρ e]
+    exact hπB q hq hqS
+  -- FIELD 5, THE SPLIT TORUS at `q ∈ Q`: the one genuinely new leaf.
+  have hsplit := raisedLevelIsSplitTorusAt_of_fibreProduct.{a, uK, uW} hpodd hW
+    hirr n Q hQ f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hinj hcart πB S hπB'
+    h₁' h₂'
+  -- ASSEMBLE, then transport back off the frame.
+  have hρ'cond : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun B) ρ' :=
+    ⟨hdet, hunr, hflat, htame, hsplit⟩
+  have hback := isRaisedLevelHardlyRamified_conj Q hdimV hρ'cond e.symm
+  rw [hρ', conj_conj_symm ρ e] at hback
+  exact hback
 
 /-- **`inertiaToGlobalHom` applied to an inertia element is the decomposition
 map applied to its underlying Galois element** (PROVEN 2026-07-28, `rfl`).
