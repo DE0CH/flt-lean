@@ -6902,35 +6902,323 @@ theorem exists_pi_of_eventually_exists {α : Type*} {l : Filter α} {T : α → 
   rw [dif_pos ha]
   exact ha.choose_spec
 
-/-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf** (sorry leaf; CUT
-2026-07-30, ROUND-10, out of `exists_finset_ae_integral_split_of_forall_split` below, which
-is now a PROVEN assembly over this leaf and `exists_pi_of_eventually_exists`).
+/-! #### The regular trace form, and the discriminant certificate for maximality
+
+The block below is the machinery the local leaf of the rigidification needs and that
+mathlib does not have. Mathlib's `Algebra.trace` / `Algebra.discr` are declared for a
+COMMUTATIVE `S` (`[CommRing B]` in `Mathlib/RingTheory/Discriminant.lean`), so neither is
+applicable to a quaternion algebra; what is needed here is the regular trace form
+`(x, y) ↦ tr(z ↦ xyz)` of a possibly noncommutative algebra, its Gram determinant against a
+basis, and the two facts that make that determinant a MAXIMALITY CERTIFICATE at a place:
+
+* it is NONZERO whenever the algebra splits over some field extension
+  (`traceDiscr_ne_zero_of_split`, over the nondegeneracy of the trace form of a matrix
+  algebra and the entry-wise base change of the Gram matrix); hence
+* it is a UNIT at all but finitely many places (`eventually_valuation_eq_one`), which is
+  exactly the hypothesis under which the `𝒪_w`-span of the basis is a MAXIMAL order.
+
+Nothing here is specific to quaternion algebras or to `M₂`: the size of the matrix algebra
+is a variable, and the only arithmetic input is that `card n` be invertible. -/
+
+/-- The coordinates of a matrix against `Matrix.stdBasis` are its entries. Mathlib defines
+`Matrix.stdBasis` but records no `repr` lemma for it. -/
+theorem stdBasis_repr_matrix_apply (R : Type*) [CommRing R] (m n : Type*) [Fintype m]
+    [Fintype n] (M : Matrix m n R) (p : m × n) :
+    (Matrix.stdBasis R m n).repr M p = M p.1 p.2 :=
+  rfl
+
+/-- **The regular trace of left multiplication on a matrix algebra**: `card n * tr X`.
+Left multiplication by `X` acts on each of the `card n` columns as `X` does, so its trace
+over the `card n ^ 2`-dimensional matrix algebra is `card n` times the matrix trace. -/
+theorem trace_mulLeft_matrix (R : Type*) [CommRing R] (n : Type*) [Fintype n] [DecidableEq n]
+    (X : Matrix n n R) :
+    LinearMap.trace R (Matrix n n R) (LinearMap.mulLeft R X)
+      = (Fintype.card n : R) * Matrix.trace X := by
+  classical
+  rw [LinearMap.trace_eq_matrix_trace R (Matrix.stdBasis R n n), Matrix.trace]
+  simp only [LinearMap.toMatrix_apply, LinearMap.mulLeft_apply, Matrix.diag_apply]
+  have key : ∀ p : n × n,
+      ((Matrix.stdBasis R n n).repr (X * (Matrix.stdBasis R n n) p)) p = X p.1 p.1 := by
+    intro p
+    rw [stdBasis_repr_matrix_apply, Matrix.stdBasis_eq_single, Matrix.mul_apply]
+    simp [Matrix.single_apply]
+  simp only [key]
+  rw [Fintype.sum_prod_type]
+  simp [Matrix.trace, Matrix.diag, Finset.mul_sum, mul_comm]
+
+/-- The **regular trace** of a possibly NONCOMMUTATIVE `R`-algebra: the trace of left
+multiplication. Mathlib's `Algebra.trace` is the same formula but is declared only for a
+commutative algebra, so it cannot be used here. -/
+noncomputable def regTrace (R A : Type*) [CommRing R] [Ring A] [Algebra R A] : A →ₗ[R] R :=
+  (LinearMap.trace R A).comp (LinearMap.mul R A)
+
+theorem regTrace_apply (R A : Type*) [CommRing R] [Ring A] [Algebra R A] (x : A) :
+    regTrace R A x = LinearMap.trace R A (LinearMap.mulLeft R x) := rfl
+
+/-- The **regular trace form** `(x, y) ↦ regTrace (x * y)` of a possibly noncommutative
+`R`-algebra. -/
+noncomputable def mulTraceForm (R A : Type*) [CommRing R] [Ring A] [Algebra R A] :
+    LinearMap.BilinForm R A :=
+  LinearMap.compr₂ (LinearMap.mul R A) (regTrace R A)
+
+theorem mulTraceForm_apply (R A : Type*) [CommRing R] [Ring A] [Algebra R A] (x y : A) :
+    mulTraceForm R A x y = regTrace R A (x * y) := rfl
+
+/-- The **discriminant of a basis** of a possibly noncommutative algebra: the determinant of
+the Gram matrix of the regular trace form. The `DecidableEq ι` needed to form the Gram
+matrix is supplied classically inside the definition, so that no consumer has to carry it —
+`traceDiscr_eq` is the equation to rewrite with once an instance is available. -/
+noncomputable def traceDiscr (R A : Type*) [CommRing R] [Ring A] [Algebra R A]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι R A) : R :=
+  letI := Classical.decEq ι
+  (LinearMap.BilinForm.toMatrix b (mulTraceForm R A)).det
+
+theorem traceDiscr_eq (R A : Type*) [CommRing R] [Ring A] [Algebra R A]
+    {ι : Type*} [Fintype ι] [DecidableEq ι] (b : Module.Basis ι R A) :
+    traceDiscr R A b = (LinearMap.BilinForm.toMatrix b (mulTraceForm R A)).det := by
+  rw [traceDiscr]
+  congr!
+
+/-- **The regular trace form of a matrix algebra over a field is NONDEGENERATE** as soon as
+the size is invertible: the witness is `B(X, single j i 1) = card n * X i j`, so a matrix
+orthogonal to every `single` is zero. (Over a field of characteristic dividing `card n` the
+form is identically `0` and the statement fails, which is why `hn` is a hypothesis and not a
+side condition — for `n = Fin 2` it is exactly `(2 : K) ≠ 0`.) -/
+theorem nondegenerate_mulTraceForm_matrix (K : Type*) [Field K] (n : Type*) [Fintype n]
+    [DecidableEq n] (hn : (Fintype.card n : K) ≠ 0) :
+    (mulTraceForm K (Matrix n n K)).Nondegenerate := by
+  classical
+  have hL : ∀ (X : Matrix n n K) (i j : n),
+      mulTraceForm K (Matrix n n K) X (Matrix.single j i (1 : K))
+        = (Fintype.card n : K) * X i j := by
+    intro X i j
+    rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix]
+    congr 1
+    simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.single_apply,
+      mul_ite, mul_one, mul_zero, ite_and]
+    simp [Finset.sum_ite_eq]
+  have hR : ∀ (X : Matrix n n K) (i j : n),
+      mulTraceForm K (Matrix n n K) (Matrix.single j i (1 : K)) X
+        = (Fintype.card n : K) * X i j := by
+    intro X i j
+    rw [mulTraceForm_apply, regTrace_apply, trace_mulLeft_matrix]
+    congr 1
+    simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.single_apply, ite_and]
+    simp [Finset.sum_ite_eq]
+  constructor
+  · intro X hX
+    by_contra hne
+    obtain ⟨i, j, hij⟩ : ∃ i j, X i j ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact hne (Matrix.ext fun i j => by simpa using h i j)
+    exact hij (by simpa [hn] using (hL X i j).symm.trans (hX (Matrix.single j i (1 : K))))
+  · intro X hX
+    by_contra hne
+    obtain ⟨i, j, hij⟩ : ∃ i j, X i j ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact hne (Matrix.ext fun i j => by simpa using h i j)
+    exact hij (by simpa [hn] using (hR X i j).symm.trans (hX (Matrix.single j i (1 : K))))
+
+/-- Left multiplication by `e z` is the conjugate of left multiplication by `z`. -/
+theorem mulLeft_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B] [Algebra R A]
+    [Algebra R B] (f : A ≃ₐ[R] B) (z : A) :
+    LinearMap.mulLeft R (f z) = (f.toLinearEquiv).conj (LinearMap.mulLeft R z) := by
+  ext w
+  simp [LinearEquiv.conj_apply]
+
+/-- The regular trace form is invariant under an algebra equivalence: the trace of a
+conjugated endomorphism is unchanged. -/
+theorem mulTraceForm_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B] [Algebra R A]
+    [Algebra R B] (f : A ≃ₐ[R] B) (x y : A) :
+    mulTraceForm R B (f x) (f y) = mulTraceForm R A x y := by
+  rw [mulTraceForm_apply, mulTraceForm_apply, ← map_mul, regTrace_apply, regTrace_apply,
+    mulLeft_algEquiv, LinearMap.trace_conj']
+
+/-- Nondegeneracy of the regular trace form transports BACK along an algebra equivalence. -/
+theorem nondegenerate_mulTraceForm_of_algEquiv {R A B : Type*} [CommRing R] [Ring A] [Ring B]
+    [Algebra R A] [Algebra R B] (f : A ≃ₐ[R] B)
+    (h : (mulTraceForm R B).Nondegenerate) : (mulTraceForm R A).Nondegenerate := by
+  constructor
+  · intro x hx
+    have hex : f x = 0 := by
+      refine h.1 (f x) fun y => ?_
+      have hy := hx (f.symm y)
+      rwa [← mulTraceForm_algEquiv f x (f.symm y), f.apply_symm_apply] at hy
+    simpa using congrArg f.symm hex
+  · intro y hy
+    have hey : f y = 0 := by
+      refine h.2 (f y) fun x => ?_
+      have hx := hy (f.symm x)
+      rwa [← mulTraceForm_algEquiv f (f.symm x) y, f.apply_symm_apply] at hx
+    simpa using congrArg f.symm hey
+
+/-- Left multiplication by `1 ⊗ x` on a base change is the base change of left
+multiplication by `x`. -/
+theorem mulLeft_one_tmul (F' : Type*) [Field F'] (K : Type*) [CommRing K] [Algebra F' K]
+    (A : Type*) [Ring A] [Algebra F' A] (x : A) :
+    LinearMap.mulLeft K ((1 : K) ⊗ₜ[F'] x) = (LinearMap.mulLeft F' x).baseChange K := by
+  refine LinearMap.ext fun z => ?_
+  induction z using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a d => simp [Algebra.TensorProduct.tmul_mul_tmul]
+  | add u v hu hv => rw [map_add, map_add, hu, hv]
+
+/-- The regular trace commutes with base change. -/
+theorem regTrace_one_tmul (F' : Type*) [Field F'] (K : Type*) [CommRing K] [Algebra F' K]
+    (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A] (x : A) :
+    regTrace K (K ⊗[F'] A) ((1 : K) ⊗ₜ[F'] x) = algebraMap F' K (regTrace F' A x) := by
+  rw [regTrace_apply, regTrace_apply, mulLeft_one_tmul, LinearMap.trace_baseChange]
+
+/-- The Gram matrix of the regular trace form against a BASE-CHANGED basis is the entry-wise
+image of the Gram matrix downstairs. This is what makes the discriminant of a basis a
+place-by-place statement about ONE element of `F`. -/
+theorem toMatrix_mulTraceForm_tensor (F' : Type*) [Field F'] (K : Type*) [CommRing K]
+    [Algebra F' K] (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A]
+    {κ : Type*} [Fintype κ] [DecidableEq κ] (b : Module.Basis κ F' A) :
+    LinearMap.BilinForm.toMatrix (Algebra.TensorProduct.basis K b) (mulTraceForm K (K ⊗[F'] A))
+      = (algebraMap F' K).mapMatrix (LinearMap.BilinForm.toMatrix b (mulTraceForm F' A)) := by
+  ext i j
+  rw [LinearMap.BilinForm.toMatrix_apply, RingHom.mapMatrix_apply, Matrix.map_apply,
+    LinearMap.BilinForm.toMatrix_apply, Algebra.TensorProduct.basis_apply,
+    Algebra.TensorProduct.basis_apply, mulTraceForm_apply, Algebra.TensorProduct.tmul_mul_tmul,
+    one_mul, regTrace_one_tmul, mulTraceForm_apply]
+
+/-- **The discriminant of a basis is NONZERO as soon as the algebra SPLITS over some field
+extension.** Nondegeneracy of the trace form on `Matrix n n K` transports back along the
+splitting, `nondegenerate_iff_det_ne_zero` turns it into a nonvanishing Gram determinant for
+the base-changed basis, and that determinant is the image of `traceDiscr F' A b`.
+
+This is the only place separability of the algebra is used, and the splitting hypothesis is
+how it enters: no `Algebra.IsSeparable` instance is available for a noncommutative `A`. -/
+theorem traceDiscr_ne_zero_of_split (F' : Type*) [Field F'] (K : Type*) [Field K]
+    [Algebra F' K] (A : Type*) [Ring A] [Algebra F' A] [Module.Finite F' A]
+    {κ : Type*} [Fintype κ] (b : Module.Basis κ F' A)
+    (n : Type*) [Fintype n] [DecidableEq n] (hn : (Fintype.card n : K) ≠ 0)
+    (f : K ⊗[F'] A ≃ₐ[K] Matrix n n K) :
+    traceDiscr F' A b ≠ 0 := by
+  classical
+  have hnd : (mulTraceForm K (K ⊗[F'] A)).Nondegenerate :=
+    nondegenerate_mulTraceForm_of_algEquiv f (nondegenerate_mulTraceForm_matrix K n hn)
+  have hdet := (LinearMap.BilinForm.nondegenerate_iff_det_ne_zero
+    (Algebra.TensorProduct.basis K b)).1 hnd
+  rw [toMatrix_mulTraceForm_tensor F' K A b, ← RingHom.map_det] at hdet
+  intro h
+  rw [← traceDiscr_eq, h, map_zero] at hdet
+  exact hdet rfl
+
+/-- A global scalar has valuation at most one at all but finitely many finite places. This
+is `HeightOneSpectrum.Support.finite` read through `Filter.cofinite`. -/
+theorem eventually_valuation_le_one (x : F) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite, w.valuation F x ≤ 1 := by
+  rw [Filter.eventually_cofinite]
+  refine Set.Finite.subset (HeightOneSpectrum.Support.finite (𝓞 F) x) fun w hw => ?_
+  simpa [HeightOneSpectrum.Support, not_le] using hw
+
+/-- **A NONZERO global scalar is a UNIT at all but finitely many finite places**: both it and
+its inverse are integral away from a finite set, and their valuations multiply to `1`. -/
+theorem eventually_valuation_eq_one (x : F) (hx : x ≠ 0) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite, w.valuation F x = 1 := by
+  filter_upwards [eventually_valuation_le_one F x, eventually_valuation_le_one F x⁻¹]
+    with w h1 h2
+  have hmul : w.valuation F x * w.valuation F x⁻¹ = 1 := by
+    rw [← map_mul, mul_inv_cancel₀ hx, map_one]
+  refine le_antisymm h1 ?_
+  have hstep : w.valuation F x * w.valuation F x⁻¹ ≤ w.valuation F x * 1 := by gcongr
+  rwa [hmul, mul_one] at hstep
+
+/-- **STEP 1a-vi(b′′) — MAXIMAL ORDERS IN A SPLIT QUATERNION ALGEBRA OVER A COMPLETE DVR ARE
+CONJUGATE TO `M₂(𝒪_w)`** (sorry leaf; CUT 2026-07-30, ROUND-11, out of
+`eventually_exists_integralSplitting` below, which is now a PROVEN assembly over this leaf,
+`traceDiscr_ne_zero_of_split` and `eventually_valuation_eq_one`).
+
+ONE PLACE, ONE LATTICE, AND THE MAXIMALITY HANDED OVER. The predecessor leaf asked for the
+same conclusion at ALMOST EVERY place and left the prover to discover, on the way, both that
+the `𝒪_w`-span of `b` is an order at almost every `w` and that it is MAXIMAL at almost every
+`w`. Those two are now hypotheses at a single `w`:
+
+* `hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
+  under multiplication, i.e. `Λ_w` IS an `𝒪_w`-order;
+* `hdisc` says the Gram determinant of the regular trace form in the basis `b` is a UNIT at
+  `w`, which is the classical maximality certificate: for orders `Λ_w ⊆ Λ'` one has
+  `disc Λ_w = [Λ' : Λ_w]² · disc Λ'`, so a unit discriminant forces index one.
+
+So WHAT REMAINS is exactly one classical theorem and nothing else: **a maximal order of
+`M₂(F_w)` is conjugate to `M₂(𝒪_w)`** — it is `End_{𝒪_w}(L)` for an `𝒪_w`-lattice `L` in
+`F_w²`, `𝒪_w` is a PID so `L` is free, and a basis of `L` is the conjugating matrix.
+Composing `hsplitw` with that conjugation is `f`, and the `↔` is then the statement that the
+conjugated `f` carries `Λ_w` ONTO `M₂(𝒪_w)`, which is what `f (Λ_w) = M₂(𝒪_w)` says
+coordinate-wise (`b` is a basis, so `c` is determined by `∑ c i ⊗ b i`).
+
+MISSING MACHINERY, re-checked 2026-07-30 against this pin. `IsMaximalOrder` / `maximalOrder`
+have zero hits in all of mathlib, so the maximal-order vocabulary has to be introduced; what
+is now PRESENT and did not exist when the predecessor leaf was written is the discriminant
+side of the argument — `traceDiscr` above, with `traceDiscr_ne_zero_of_split` and
+`eventually_valuation_eq_one` — so a prover no longer needs to build a discriminant theory
+to get at the maximality, only to SPEND the certificate. The alternative Azumaya route
+(`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`, present) is unchanged and still starts
+from more: it needs Wedderburn over the residue field plus lifting along `𝒪_w` complete.
+
+FAITHFULNESS. TRUE as stated, and the hypotheses are jointly SATISFIABLE at all but finitely
+many `w` — that is exactly what the assembly below proves, so this leaf cannot be vacuous.
+Two hypotheses are load-bearing in ways worth recording.
+
+* `hdisc` cannot hold at a place `w ∣ 2`, and this costs nothing. The Gram matrix of the
+  REGULAR trace form of `M₂(𝒪_w)` in the standard basis has entries `2 · δ`, so its
+  determinant is a unit times `2⁴`; at `w ∣ 2` no basis of any order has unit discriminant.
+  The assembly only ever needs `hdisc` at almost every `w`, and the places over `2` are
+  finitely many, so they are simply among the exceptions. (Using the REDUCED trace would
+  remove the factor; it is not defined in this tree, and defining it is not worth it for a
+  statement that is only ever used a.e.)
+* `hsplitw` is retained even though a prover following the route above constructs `f`
+  outright, for the reason the predecessor leaf gave: keeping it makes this leaf strictly
+  weaker than the local content it replaces, so the cut cannot have introduced a
+  falsehood. -/
+theorem exists_integralSplitting_of_valuation_traceDiscr_eq_one (b : Module.Basis ι F D)
+    (w : HeightOneSpectrum (𝓞 F))
+    (hsplitw : Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+      M₂(w.adicCompletion F)))
+    (hone : ∀ k, w.valuation F (b.repr 1 k) ≤ 1)
+    (hstruct : ∀ i j k, w.valuation F (b.repr (b i * b j) k) ≤ 1)
+    (hdisc : w.valuation F (traceDiscr F D b) = 1) :
+    ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
+      ∀ c : ι → w.adicCompletion F,
+        ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
+  sorry
+
+/-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf**
+(**PROVEN 2026-07-30, ROUND-11**; cut 2026-07-30, ROUND-10, out of
+`exists_finset_ae_integral_split_of_forall_split` below).
 
 At almost every finite place there is a splitting of `D` carrying the `𝒪_w`-lattice spanned
-by the `1 ⊗ b i` ONTO `M₂(𝒪_w)`. This is the whole mathematical content of the leaf below
-and none of its bookkeeping: no family, no adeles, no choice — one place, one lattice.
+by the `1 ⊗ b i` ONTO `M₂(𝒪_w)`.
 
-WHAT A PROVER OWES, unchanged from the leaf below and repeated here because this is now the
-place it is owed. `Λ`, the `𝓞_F`-span of `b`, is a full lattice in `D` whose multiplication
-has structure constants in `F`, hence integral at almost every `w`; so `Λ_w` is an
-`𝒪_w`-ORDER for almost every `w`, and MAXIMAL at almost every `w` because its reduced
-discriminant is a nonzero element of `F`, hence a unit at almost every `w`. Every maximal
-order of `M₂(F_w)` is conjugate to `M₂(𝒪_w)` — it is `End_{𝒪_w}(L)` for a lattice `L`, and a
-basis of `L` is the conjugating matrix — so composing `hsplit w` with that conjugation gives
-`f`.
+**WHAT ROUND 11 PROVED, and why it is a reduction rather than a relocation.** As cut in
+ROUND 10 this leaf fused two things: the classical LOCAL theorem at one place, and the
+observation that its hypotheses hold at almost every place. The second is not a citation —
+it is the finiteness of the set of places at which a fixed element of `F` fails to be a
+unit, plus the fact that the discriminant of `b` is a nonzero element of `F` at all. Both
+are now CODE:
 
-An equivalent route that avoids the word "order" and may be cheaper against this mathlib
-pin: `Λ_w` with unit discriminant is an AZUMAYA `𝒪_w`-algebra of rank `4`, its reduction is
-a `4`-dimensional central simple algebra over the FINITE residue field, hence `M₂(k_w)` by
-Wedderburn, and an Azumaya algebra over a complete local ring with split residue algebra is
-split. Mathlib has `IsAzumaya` (`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`) and
-`Mathlib/Algebra/BrauerGroup/Defs.lean`, checked present 2026-07-30; it has no maximal-order
-theory at all (`grep -rln 'IsMaximalOrder\|maximalOrder' Mathlib/` is empty), so the second
-route starts from more.
+* `eventually_valuation_le_one` / `eventually_valuation_eq_one` above, over
+  mathlib's `HeightOneSpectrum.Support.finite`;
+* `traceDiscr_ne_zero_of_split` above, which is where `hsplit` is really spent — it is
+  applied at ONE arbitrary place to see that the regular trace form of `D` is nondegenerate,
+  a fact with no other route in-tree, since mathlib's separability API is commutative-only.
 
-`hsplit` is retained as a hypothesis even though a prover following either route above
-constructs `f` outright: keeping it makes this leaf strictly weaker than the local content
-it replaces, so the cut cannot have introduced a falsehood. -/
+So the residual citation, `exists_integralSplitting_of_valuation_traceDiscr_eq_one` above,
+is now a SINGLE-PLACE statement whose maximality input is an explicit unit-discriminant
+hypothesis, and the two items the ROUND-10 docstring listed as missing machinery —
+"reduced discriminant of an order" and "maximality of an order at a place where the
+discriminant is a unit" — have become, respectively, `traceDiscr` (defined, with its
+nonvanishing proven) and a hypothesis. One leaf in, one leaf out; what changed is that the
+prover of the residual leaf now needs exactly one theorem, and no theory of places.
+
+The place-by-place hypotheses are stated with `HeightOneSpectrum.valuation` on `F` rather
+than with membership in `adicCompletionIntegers`, so that the statement mentions no
+completion at all: the certificate is a valuation of ONE global element. -/
 theorem eventually_exists_integralSplitting (b : Module.Basis ι F D)
     (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
       Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
@@ -6939,8 +7227,30 @@ theorem eventually_exists_integralSplitting (b : Module.Basis ι F D)
       ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
         ∀ c : ι → w.adicCompletion F,
           ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
-            ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
-  sorry
+            ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) := by
+  classical
+  rcases isEmpty_or_nonempty (HeightOneSpectrum (𝓞 F)) with hE | hN
+  · exact Filter.Eventually.of_forall fun w => (IsEmpty.false w).elim
+  haveI : Module.Finite F D := Module.Finite.of_basis b
+  obtain ⟨w₀⟩ := hN
+  -- the discriminant of `b` is a nonzero element of `F`, because `D` splits at `w₀`
+  have hd : traceDiscr F D b ≠ 0 := by
+    obtain ⟨f₀⟩ := hsplit w₀
+    refine traceDiscr_ne_zero_of_split F (w₀.adicCompletion F) D b (Fin 2) ?_ f₀
+    simp only [Fintype.card_fin]
+    intro h
+    have h2 : ((2 : ℕ) : F) = 0 := by
+      refine (algebraMap F (w₀.adicCompletion F)).injective ?_
+      rw [map_natCast, map_zero]
+      exact_mod_cast h
+    norm_num at h2
+  filter_upwards [eventually_valuation_eq_one F (traceDiscr F D b) hd,
+    Filter.eventually_all.2 (fun k : ι => eventually_valuation_le_one F (b.repr 1 k)),
+    Filter.eventually_all.2 (fun i : ι => Filter.eventually_all.2 (fun j : ι =>
+      Filter.eventually_all.2 (fun k : ι =>
+        eventually_valuation_le_one F (b.repr (b i * b j) k))))]
+    with w hw1 hw2 hw3
+  exact exists_integralSplitting_of_valuation_traceDiscr_eq_one F D b w (hsplit w) hw2 hw3 hw1
 
 /-- **STEP 1a-vi(b) — THE ARITHMETIC HALF of the rigidification leaf** (sorry leaf; CUT
 2026-07-28). From bare local splittings, produce a family that is a.e. integral relative to a
