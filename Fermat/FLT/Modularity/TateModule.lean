@@ -14393,16 +14393,45 @@ The data is an abelian scheme `fO : 𝒜 ⟶ Spec O` with real multiplication
 * `neron` — the VALUATIVE CRITERION OF PROPERNESS, `𝒜(O) ≅ 𝒜(F̄)`.  This
   is what makes a reduction map exist at all, and it is where `ab.proper`
   is used;
-* `frobPt`, `gen_frob`, `sp_frob` — the DECOMPOSITION-GROUP structure:
-  the arithmetic Frobenius at `w` acts on the model's integral points,
-  inducing `Frob_w` on the generic fibre and `σ` on the special fibre.
-  These three fields are what turn the Frobenius intertwining of
+* `sp_frob` — the DECOMPOSITION-GROUP structure: the arithmetic Frobenius
+  at `w` acts on the model's integral points and reduces to `σ` on the
+  special fibre.  This is what turns the Frobenius intertwining of
   `exists_finset_reductionMap_of_mult` from an assumption about `e` into
   the theorem `red_galSMul`.
 
 `σ` is a parameter rather than an output: the datum records that the
 Galois action on the model reduces to THIS element, and the existence
-leaf quantifies over the `σ` pinned by `z ↦ z^{N w}`. -/
+leaf quantifies over the `σ` pinned by `z ↦ z^{N w}`.
+
+**WHERE THE FROBENIUS OBSTRUCTION ACTUALLY LIVES** (correction and
+simplification, 2026-07-30; until then `frobPt` and `gen_frob` were FIELDS
+beside `sp_frob`, and the faithfulness audit on
+`exists_finset_abelianReductionDatum_of_mult` named `gen_frob` as the
+clause a wrong choice of place fails).
+
+`gen_frob` NEVER constrained the datum, and a successor sent to look for
+the difficulty there would find nothing.  Given `neron` and `gen` — both
+already fields — there is a canonical map on integral points, namely
+
+  `frobPt := neron⁻¹ ∘ gen ∘ (Frob_w ·) ∘ gen⁻¹ ∘ (restrict to the generic
+  fibre)`,
+
+and `gen_frob` is `Equiv.apply_symm_apply` for it.  So the pair
+`(frobPt, gen_frob)` was a posited function together with a clause that
+determines it, which is a DEFINITION written as two fields.  Both are now
+exactly that: `IsAbelianReductionDatum.frobPt` (a `def`) and
+`IsAbelianReductionDatum.gen_frob` (a one-line theorem), and the open leaf
+has two fewer things to supply — one of them a function.
+
+What survives as a field is `sp_frob`, written with `frobPt` inlined
+because a structure field cannot mention a definition taking that same
+structure as an argument; `IsAbelianReductionDatum.pre_frobPt` restates it
+in the readable form.  It says `red (Frob_w · y) = σ · red y`, and THAT is
+the clause that fails for every place above `w` other than the one singled
+out by the `IsAlgClosed.lift` embedding inside
+`Field.absoluteGaloisGroup.map` — at a conjugate place `w̄' = τ w̄` the
+element still acts on `F̄`, `frobPt` is still defined, and it is only its
+REDUCTION that is no longer `σ`. -/
 structure IsAbelianReductionDatum
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {D : Type u} [Field D] [NumberField D] (m : Mult ab (𝓞 D))
@@ -14450,18 +14479,31 @@ structure IsAbelianReductionDatum
   neron : Function.Bijective
     (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) :
       RelPoint fO (𝟙 (Spec O)) → RelPoint fO (Spec.map ι))
-  /-- the action of the arithmetic Frobenius at `w` on integral points -/
-  frobPt : RelPoint fO (𝟙 (Spec O)) → RelPoint fO (𝟙 (Spec O))
-  /-- on the generic fibre `frobPt` is the Galois action of `Frob_w` -/
-  gen_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
-    gen (ab.galSMul x
-        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
-          (Field.AbsoluteGaloisGroup.adicArithFrob w))
-        (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
-      = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (frobPt u)
-  /-- on the special fibre `frobPt` reduces to `σ` -/
+  /-- **THE FROBENIUS INTERTWINING**, and the ONLY decomposition-group
+  condition the datum carries.
+
+  `frobPt` — the action of the arithmetic Frobenius at `w` on integral
+  points — is no longer a field: it is DEFINED (`IsAbelianReductionDatum.
+  frobPt`) as "extend to the generic fibre by `neron`, act by `Frob_w`,
+  extend back", and the former field `gen_frob` is then the THEOREM
+  `IsAbelianReductionDatum.gen_frob`, true by `Equiv.apply_symm_apply`.
+  See the paragraph WHERE THE FROBENIUS OBSTRUCTION ACTUALLY LIVES in the
+  docstring above for why that matters: a reader who believes `gen_frob` is
+  a constraint will look for the difficulty in the wrong place.
+
+  What is written out below is therefore exactly `frobPt` inlined, i.e.
+
+    `red (Frob_w · y) = σ · red y`
+
+  — the one statement about `(O, ι, π)` that a WRONG place above `w` fails.
+  It is restated with `frobPt` as `IsAbelianReductionDatum.pre_frobPt`. -/
   sp_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
-    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (frobPt u)
+    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
+        ((Equiv.ofBijective _ neron).symm
+          (gen (ab.galSMul x
+            (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+              (Field.AbsoluteGaloisGroup.adicArithFrob w))
+            (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))))
       = sp (ab'.galSMul _ σ
           (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))
 
@@ -14525,6 +14567,43 @@ theorem red_act (c : 𝓞 D) (y : GeomFibrePt f x) :
   rw [d.sp_act, red_def, red_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
     d.intPt_act, mO.pre_act]
 
+/-- **THE ACTION OF THE ARITHMETIC FROBENIUS AT `w` ON INTEGRAL POINTS**,
+DEFINED rather than posited (2026-07-30; it was a field of
+`IsAbelianReductionDatum` until then): extend the integral point to the
+generic fibre by `neron`, act there by `Frob_w`, and extend back.
+
+Because `neron` is a bijection there is nothing to choose, which is why the
+former companion field `gen_frob` is now the THEOREM below. -/
+noncomputable def frobPt (u : RelPoint fO (𝟙 (Spec O))) : RelPoint fO (𝟙 (Spec O)) :=
+  (Equiv.ofBijective _ d.neron).symm
+    (d.gen (ab.galSMul x
+      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+        (Field.AbsoluteGaloisGroup.adicArithFrob w))
+      (d.gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u))))
+
+/-- **On the generic fibre `frobPt` IS the Galois action of `Frob_w`**
+(PROVEN 2026-07-30; a field of `IsAbelianReductionDatum` until then).
+
+This is `Equiv.apply_symm_apply` and nothing else, and that is the point:
+whatever `(O, ι, π)` is, this clause can always be met by DEFINING `frobPt`
+as above.  It never constrained the datum. -/
+theorem gen_frob (u : RelPoint fO (𝟙 (Spec O))) :
+    d.gen (ab.galSMul x
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))
+        (d.gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
+      = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (d.frobPt u) :=
+  ((Equiv.ofBijective _ d.neron).apply_symm_apply _).symm
+
+/-- **On the special fibre `frobPt` reduces to `σ`** — the field `sp_frob`
+restated with `frobPt` in place of its inlined definition.  This is the
+statement that genuinely constrains the place above `w`. -/
+theorem pre_frobPt (u : RelPoint fO (𝟙 (Spec O))) :
+    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (d.frobPt u)
+      = d.sp (ab'.galSMul _ σ
+          (d.sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u))) :=
+  d.sp_frob u
+
 /-- Extension to the integral model intertwines `Frob_w` with the action
 of the decomposition group on the model. -/
 theorem intPt_frob (y : GeomFibrePt f x) :
@@ -14549,7 +14628,7 @@ theorem red_galSMul (y : GeomFibrePt f x) :
         (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
           (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
       = ab'.galSMul _ σ (d.red y) := by
-  rw [red_def, d.intPt_frob, d.sp_frob, Equiv.symm_apply_apply]
+  rw [red_def, d.intPt_frob, d.pre_frobPt, Equiv.symm_apply_apply]
   rfl
 
 /-- An additive bijection kills zero. -/
@@ -14729,10 +14808,31 @@ place `w̄ ∣ w` of `F̄`, namely the pullback along it of the valuation of
 `(F_w)ᵃˡᵍ`, and the transported Frobenius lies in the decomposition group
 of THAT place and no other.  The places above `w` form a single
 `Γ_F`-orbit, so at any other choice `w̄' = τ w̄` the same element lies in
-`τ D_{w̄} τ⁻¹`: it does not preserve the corresponding `O`, no `frobPt`
-inducing it exists, and `gen_frob` cannot be filled — while every other
-field of the structure is satisfiable, which is what makes this a trap
-rather than a visible obstruction.
+`τ D_{w̄} τ⁻¹` and does not preserve the corresponding `O` — while every
+other field of the structure is satisfiable, which is what makes this a
+trap rather than a visible obstruction.
+
+**CORRECTION 2026-07-30 TO THE PARAGRAPH ABOVE, AND IT MOVES WHERE A
+PROVER SHOULD LOOK.**  As first written, this audit concluded "no `frobPt`
+inducing it exists, and `gen_frob` cannot be filled".  That is WRONG, and
+wrong in the direction that wastes a cycle: `gen_frob` was never a
+constraint at all.  `neron` is a bijection, so
+
+  `frobPt := neron⁻¹ ∘ gen ∘ (Frob_w ·) ∘ gen⁻¹ ∘ (restrict to the generic
+  fibre)`
+
+is defined for ANY `(O, ι, π)` whatever, and `gen_frob` holds of it by
+`Equiv.apply_symm_apply`.  A wrong place above `w` is not detected there.
+
+`frobPt` and `gen_frob` have accordingly been REMOVED as fields of
+`IsAbelianReductionDatum` and replaced by that definition and that
+one-line theorem, so this leaf now has two fewer things to produce.  The
+clause that a wrong place genuinely fails is `sp_frob`, i.e.
+`red (Frob_w · y) = σ · red y`: at a conjugate place the map `frobPt`
+still exists and still induces `Frob_w` generically, and it is only its
+REDUCTION to the special fibre that stops being `σ`.  The prescription in
+the next paragraph is unchanged — it was always the right witness — but
+the check that it is the right one is `sp_frob`, not `gen_frob`.
 
 So the witness is FORCED, and this is the whole content of the warning:
 take `O` to be the pullback along that same `IsAlgClosed.lift` of the
