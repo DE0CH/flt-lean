@@ -26004,6 +26004,37 @@ theorem surjective_of_hilbertAux_classifying
     Function.Surjective f :=
   sorry
 
+/-- **The exponent vector of a Taylor–Wiles prime set, PINNED to the places of
+`Q`** (added 2026-07-30 as a FAITHFULNESS REPAIR of the CONTROL/GENERATORS cut;
+the refutation it repairs is the FALSITY AUDIT on
+`exists_hilbertAuxHeckeModuleData` below).
+
+`ex` is the exponent vector for which `Δ_Q = ∏_i Δ_{w_i} ≅ ∏_i ℤ/ℓ^{ex i}`:
+`wOf` enumerates `Q`, and `ex i` is the `ℓ`-valuation of `N (wOf i) − 1`, so
+`ℓ ^ ex i` is exactly the order of the `ℓ`-Sylow `Δ_{wOf i}` of the tame
+quotient `(𝓞_F ⧸ wOf i)ˣ`. This is verbatim what the docstrings of
+`exists_hilbertAuxDiamondQuotient` and `exists_hilbertTaylorWilesAuxLevelData`
+already SAY the prover will produce — "`ex i` is the `ℓ`-valuation of
+`N w_i − 1`" — so the predicate adds no new mathematics to the leaf. It only
+makes the statement say it, which is what the consumer needs.
+
+**WHY A PREDICATE AND NOT A `def ex`.** The enumeration of `Q` by `Fin q` is
+not canonical (`HeightOneSpectrum` carries no order), so `ex` is determined by
+`Q` only up to a permutation of `Fin q`; every clause the cut states about `ex`
+is permutation-stable, so pinning it existentially through `wOf` is exactly the
+right strength. Injectivity together with `∀ i, wOf i ∈ Q` and the cut's
+standing `hQcard : Q.card = q` forces `wOf` to be a bijection onto `Q`, so no
+place of `Q` is missed and none is counted twice.
+
+**WHAT THIS DOES NOT PIN**, deliberately: `diamond`. See §5 of
+`exists_hilbertAuxHeckeModuleData`, which records that hazard as still open and
+why the repair recorded there must NOT be taken at the diamond leaf. -/
+def IsHilbertTaylorWilesExponents (ℓ : ℕ) (F : Type u) [Field F] [NumberField F]
+    {q : ℕ} (Q : Finset (HeightOneSpectrum (𝓞 F))) (ex : Fin q → ℕ) : Prop :=
+  ∃ wOf : Fin q → HeightOneSpectrum (𝓞 F), Function.Injective wOf ∧
+    (∀ i, wOf i ∈ Q) ∧
+    ∀ i, ex i = padicValNat ℓ (Nat.card (𝓞 F ⧸ (wOf i).asIdeal) - 1)
+
 /-- **The diamonds and the control identification, at a GIVEN control map**
 (LEAF — the arithmetic core of `exists_hilbertAuxDiamondControl`).
 
@@ -26036,6 +26067,19 @@ from `𝒟Q.resid` together with the distinct-eigenvalue clause of `hQ`.
 No cohomology is used here, and `coeff` is deliberately absent: the coefficient
 ring belongs to the generator bound, not to the diamonds.
 
+**`IsHilbertTaylorWilesExponents ℓ F Q ex` WAS ADDED TO THE CONCLUSION ON
+2026-07-30**, and it is a repair, not a strengthening of the mathematics: the
+paragraph above already commits the prover to `ex i = v_ℓ(N w_i − 1)`, and the
+predicate is that sentence written in Lean. What made it necessary is that
+without it the leaf may return the genuine `diamond` alongside an INFLATED `ex`
+and still satisfy every clause — `taylorWilesLevelIdeal ℓ ex` SHRINKS as `ex`
+grows, so `hbex` only gets easier — and the HECKE half then receives an `ex`
+its module cannot be free over. The full refutation, with the witness, is the
+FALSITY AUDIT on `exists_hilbertAuxHeckeModuleData` below. `∀ i, n ≤ ex i` is
+kept even though the pin plus the congruence clause of `hQ` implies it: it is
+what the two `bIdeal` bounds are discharged from downstream, and leaving it
+stated costs the prover nothing.
+
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
 Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondQuotient
@@ -26062,6 +26106,7 @@ theorem exists_hilbertAuxDiamondQuotient
     ∃ (ex : Fin q → ℕ)
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond :=
   sorry
@@ -26148,6 +26193,7 @@ theorem exists_hilbertAuxDiamondControl
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* 𝒟.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
@@ -26165,10 +26211,10 @@ theorem exists_hilbertAuxDiamondControl
     surjective_of_hilbertAux_classifying ℓ F 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
   -- The diamonds and the control identification, at this now-FIXED `toRuniv`
   -- — which is what excludes the junk `diamond` that refutes the naive cut.
-  obtain ⟨ex, diamond, hex, hker, hbex⟩ :=
+  obtain ⟨ex, diamond, hex, hexpin, hker, hbex⟩ :=
     exists_hilbertAuxDiamondQuotient ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
       hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ
-  exact ⟨ex, diamond, toRuniv, hex, hsurj, hker, hbex⟩
+  exact ⟨ex, diamond, toRuniv, hex, hexpin, hsurj, hker, hbex⟩
 
 /-- **The `q`-generator bound for `R_Q`** (LEAF — the GLOBAL half of the
 2026-07-28 CONTROL/GENERATORS cut of
@@ -26501,17 +26547,18 @@ theorem exists_hilbertAuxDeformationRingPresentation
       (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* 𝒟.R),
       (∀ i, n ≤ ex i) ∧
+      IsHilbertTaylorWilesExponents ℓ F Q ex ∧
       Function.Surjective pres ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
       Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond := by
-  obtain ⟨ex, diamond, toRuniv, hex, htoRuniv, hker, hbex⟩ :=
+  obtain ⟨ex, diamond, toRuniv, hex, hexpin, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDiamondControl ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
       hQcard hQ 𝒟Q h𝒟Q
   obtain ⟨pres, hpres⟩ :=
     exists_hilbertAuxDeformationRingGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 q coeff
       hcoeff n Q hQcard hQ 𝒟Q h𝒟Q
-  exact ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩
+  exact ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩
 
 /-- **The auxiliary Hecke module at raised level, with its bottom control**
 (LEAF — the HECKE half of the 2026-07-27 RING/HECKE cut of
@@ -26605,6 +26652,61 @@ classifying map into their Hecke algebra — and classically the module produced
 here IS `H.M` for the genuine raised-level `H`. What may not be done is to
 STATE that identification, because `HilbertAuxHeckeAlgebra` does not pin `M`.
 
+# FALSITY AUDIT (2026-07-30) — THE LEAF WAS FALSE AS STATED, AND `hexpin` IS THE REPAIR
+
+This is a SECOND, independent defect of the same hypothesis package, found while
+finishing the residue this worktree's predecessor recorded (see its point 2). It
+is not §5 below: it needs no degenerate `diamond`, and unlike §5 it is a
+refutation rather than an open check.
+
+**The witness: an INFLATED `ex`.** Take any instance of the hypotheses in which
+`ex`, `diamond` are the genuine pair — `ex i = v_ℓ(N w_i − 1)` and
+`ker diamond = 𝔟_ex`, which is the classical configuration the whole subtree is
+about — and then replace `ex` by `ex' := fun i => ex i + 1`, keeping `diamond`.
+Every hypothesis below still holds:
+
+* `hex : ∀ i, n ≤ ex' i` — weaker than before, since `ex ≤ ex'`;
+* `hker` — untouched, it does not mention `ex`;
+* `hbex : 𝔟_{ex'} ≤ ker diamond` — still true, because
+  `taylorWilesLevelIdeal` SHRINKS as the exponents grow:
+  `(1 + S_i)^{ℓ^{ex' i}} − 1 = a^ℓ − 1` for `a = (1 + S_i)^{ℓ^{ex i}}`, which is
+  divisible by `a − 1`, so `𝔟_{ex'} ≤ 𝔟_ex = ker diamond`. **The clause a prover
+  must satisfy gets EASIER as `ex` is inflated, which is the whole defect: `ex`
+  is an OUTPUT of the ring half and nothing bounds it from above.**
+
+The conclusion, however, becomes FALSE. `hdsmul` forces the `Λ`-action on the
+produced `M` through `diamond`, so `ker diamond = 𝔟_ex` annihilates `M`; but
+`hcoord` asks for `M ≃ₗ[Λ] (Λ ⧸ 𝔟_{ex'})^d`, whose annihilator is `𝔟_{ex'}`
+when `d ≥ 1`. So `𝔟_ex ≤ 𝔟_{ex'}`, against `𝔟_{ex'} ⊊ 𝔟_ex` — strict because
+`S_i` has `ℓ`-power order `ℓ^{ex i}` in `Λ ⧸ 𝔟_ex` and order `ℓ^{ex i + 1}` in
+`Λ ⧸ 𝔟_{ex'}`. And `d ≥ 1` is forced, not assumed: `hM0 : Nontrivial M0`
+together with `hbot`'s identification `M₀ ≅ (Λ ⧸ 𝔫)^d ≅ ℤ_ℓ^d` (recorded in
+"**`M0` IS ALREADY PINNED BY `hbot`**" below) excludes `d = 0`.
+
+**Where the fault lies, and why the repair goes at the RING half.** The leaf is
+not asking for anything false about the genuine `ex`; it is quantifying over
+`ex` that its own supplier is entitled to produce and its module cannot match.
+So the repair is to pin `ex` where it is CHOSEN — `exists_hilbertAuxDiamondQuotient`
+— and to receive the pin here. `IsHilbertTaylorWilesExponents ℓ F Q ex` says
+`ex i = v_ℓ(N (wOf i) − 1)` for an enumeration `wOf` of `Q`, which is verbatim
+what that leaf's docstring already promised to produce, so the ring half is not
+made harder. Here it is exactly what is needed: `ex` is now determined by `Q`
+up to a permutation of `Fin q`, so `Λ ⧸ 𝔟_ex` IS `ℤ_ℓ[Δ_Q]` and the module
+Fujiwara's freeness lemma produces is free over it by construction.
+
+**This is the trap CLAUDE.md records as "TWO INDIVIDUALLY-CORRECT REPAIRS CAN BE
+FATAL TOGETHER", in its milder form.** The 2026-07-28 cut correctly moved the
+level ideal from an abstract `bIdeal` to the explicit `taylorWilesLevelIdeal ℓ ex`
+(without which `⊥` was admissible — see `Modularity.taylorWilesLevelIdeal`'s own
+docstring), and the 2026-07-27 RING/HECKE cut correctly made `ex` an output of
+the ring half. Each is right; together they left the one datum both halves must
+agree on determined by neither. Pinning `ex` to `Q` is what makes the agreement
+structural instead of hoped for.
+
+**WHAT THIS AUDIT DOES NOT FIX**: §5. A degenerate `diamond` is still
+admissible with the pinned `ex`, since `𝔫 ≤ ker diamond` implies
+`𝔟_ex ≤ ker diamond` whatever `ex` is. Read §5 next.
+
 ## 5. The residual hazard, INHERITED from the RING/HECKE cut, not introduced here
 
 `diamond` arrives from `exists_hilbertAuxDiamondControl` constrained only by
@@ -26628,6 +26730,32 @@ here. The equality is classically true — `ℤ_ℓ[Δ_Q] ↪ R_Q` because `Δ_Q
 faithfully on the free module `M_Q` — and it is exactly what excludes the
 degenerate `diamond`. It is recorded rather than done because it weakens
 another owner's leaf.
+
+**THAT ONE-LINE REPAIR IS NOW DECLINED, WITH A REASON (2026-07-30), and the
+reason is not ownership.** `RingHom.ker diamond = taylorWilesLevelIdeal ℓ ex` is
+TRUE — the argument the paragraph above gives for it is correct — but it is
+**not provable at `exists_hilbertAuxDiamondQuotient`**, and putting a true
+statement where its proof cannot reach is how a `sorry` stops being a promise.
+The `≤` half is local class field theory at the places of `Q`, which that leaf
+has. The `≥` half is the assertion that `Δ_Q` injects into `R_Q`, i.e. that the
+diamonds have EXACTLY order `ℓ^{ex i}` there, and the only known route to it is
+`ℤ_ℓ[Δ_Q] ↪ T_Q` (`Δ_Q` acting faithfully on the free `M_Q`) pulled back along
+`R_Q ↠ T_Q` — automorphic input. `exists_hilbertAuxDiamondQuotient` has no Hecke
+hypothesis at all: it holds `h𝒟Q` (weak universality), which produces maps OUT
+of `R_Q` and so can bound `ker diamond` from below but never from above.
+Deformation theory alone does not force `R_Q ≇ R_∅`.
+
+**So the correct repair is to pin `diamond` the way `hexpin` pins `ex`**: state
+the local-CFT construction rather than its consequence. `diamond` should be
+required to factor as `Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` for the tame characters the
+split-torus clause supplies — at each `w ∈ Q` a surjection `I_w ↠ Δ_w` onto the
+`ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ` composed with `χ_w`. That is provable where `diamond`
+is chosen, it excludes the degenerate `diamond` for the same structural reason
+`hexpin` excludes the inflated `ex`, and it needs one piece of interface this
+file does not yet have: the tame character `I_w ↠ Δ_w` itself. Until that
+interface exists the hazard stays as recorded here — an open check, not a
+refutation, since nothing in `h𝒟Q` and `hQ` has been shown to permit
+`R_Q ≅ R_∅` at `q ≥ 1` either.
 
 THE CHECK THAT WOULD REFUTE §1: exhibit a field of `HilbertAuxHeckeAlgebra`,
 or a hypothesis below, that fails for `M := H.M × H.M`.
@@ -26701,6 +26829,7 @@ theorem exists_hilbertAuxHeckeModuleData
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
     (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
     (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
+    (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex)
     (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
     (toRuniv : 𝒟Q.R →+* 𝒟.R) (htoRuniv : Function.Surjective toRuniv)
     (hker : RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond)
@@ -26760,7 +26889,16 @@ What was stripped off relative to the PARENT leaf
   of `Q`, which is `≥ n` exactly because `N w_i ≡ 1 mod ℓ^n` is the congruence
   clause of `IsHilbertTaylorWilesPrimeSet` — and the ideal itself is
   `Modularity.taylorWilesLevelIdeal ℓ ex`, generated by
-  `(1 + S_i)^{ℓ^{ex i}} − 1`;
+  `(1 + S_i)^{ℓ^{ex i}} − 1`.  **Since 2026-07-30 that "classically" is
+  STATED, and it has to be**: the two halves of the RING/HECKE cut must agree
+  on `ex`, and `IsHilbertTaylorWilesExponents ℓ F Q ex` is what makes them —
+  the ring half proves it, the Hecke half consumes it as `hexpin`, and the
+  `obtain`/`exact` below thread it.  Without it the ring half may hand over an
+  inflated `ex` and the Hecke half is FALSE; the refutation is the 2026-07-30
+  FALSITY AUDIT on `exists_hilbertAuxHeckeModuleData`.  It is deliberately NOT
+  re-exported in this leaf's own conclusion, because every consumer above needs
+  only `∀ i, n ≤ ex i` (that is all the two `bIdeal` bounds are discharged
+  from), so widening the exported interface would buy nothing;
 * the two `bIdeal` bounds, which the assembly discharges from that shape:
   `bIdeal_le` by `Modularity.taylorWilesLevelIdeal_le_maximalIdeal_pow` (from
   `∀ i, n ≤ ex i`, which this leaf still asserts) and `bIdeal_le_aug` by
@@ -26888,7 +27026,7 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     exact ⟨L.toRuniv.comp L.pres,
       L.toRuniv_surjective.comp L.pres_surjective⟩
   -- The RING half.
-  obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
+  obtain ⟨ex, pres, diamond, toRuniv, hex, hexpin, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
       h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff hcoeff n Q hQcard hQ 𝒟Q
       h𝒟Q
@@ -26898,8 +27036,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   obtain ⟨M, instMadd, instMR, instLM, projM, hdsmul, hcoord, hprojsurj,
       hprojsmul, hprojzero⟩ :=
     exists_hilbertAuxHeckeModuleData ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e ψ hψalg
-      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex diamond
-      toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
+      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex hexpin
+      diamond toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
   exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, M,
     instMadd, instMR, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
     hprojsurj, hprojsmul, hprojzero⟩
