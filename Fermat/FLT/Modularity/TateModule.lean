@@ -3353,52 +3353,244 @@ theorem card_fibrePt_eq_of_finrank_eq {X Y : Scheme.{u}} (φ : X ⟶ Y)
           Iso.hom_inv_id, Category.comp_id]
   rw [Nat.card_congr (E1.trans E2.symm)]
 
+/-- **THE RANK OF `Ω` IS UNCHANGED BY LOCALIZATION, FOR A STANDARD SMOOTH
+ALGEBRA** (PROVEN 2026-07-30).
+
+If `A` is standard smooth of relative dimension `n` over `K` and `B` is any
+localization of `A` at a submonoid `M` (with `B` nontrivial), then
+`rank_B Ω[B⁄K] = n` as well.
+
+There is no dimension theory in this: `Ω[A⁄K]` is FREE over `A`
+(`IsStandardSmooth` supplies the basis), `Ω[B⁄K]` is its localization
+(`KaehlerDifferential.map K K A B` is an `IsLocalizedModule`), and a basis
+localizes to a basis on the SAME index type (`Basis.ofIsLocalizedModule`).
+So the two ranks are the cardinality of one and the same index set.  In
+particular no Krull dimension of `B` is ever mentioned, which is what makes
+this usable at the STALK, where `M` is a prime complement and the
+localization is far from an `Away`.
+
+`Nontrivial B` is load-bearing on both sides: it is what
+`rank_kaehlerDifferential` needs at `A` (which it gives, since a ring hom
+out of a subsingleton ring forces `1 = 0` in the target), and without it
+`B = 0` has `Ω[B⁄K] = 0` of rank `0`, refuting the conclusion for every
+`n ≠ 0`. -/
+theorem rank_kaehlerDifferential_of_isLocalization
+    {K A B : Type u} [CommRing K] [CommRing A] [CommRing B]
+    [Algebra K A] [Algebra K B] [Algebra A B] [IsScalarTower K A B]
+    (M : Submonoid A) [IsLocalization M B] [Nontrivial B]
+    {n : ℕ} [Algebra.IsStandardSmoothOfRelativeDimension n K A] :
+    Module.rank B (Ω[B⁄K]) = n := by
+  have hA : Nontrivial A := by
+    refine (subsingleton_or_nontrivial A).resolve_left (fun h => ?_)
+    haveI := h
+    exact one_ne_zero (α := B)
+      (by rw [← map_one (algebraMap A B), Subsingleton.elim (1 : A) 0, map_zero])
+  haveI := hA
+  haveI : Algebra.IsStandardSmooth K A :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth n
+  have hrank : Module.rank A (Ω[A⁄K]) = n :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  let b := Module.Free.chooseBasis A (Ω[A⁄K])
+  let b' := b.ofIsLocalizedModule B M (KaehlerDifferential.map K K A B)
+  have h1 : Module.rank B (Ω[B⁄K]) = Cardinal.mk (Module.Free.ChooseBasisIndex A (Ω[A⁄K])) :=
+    b'.mk_eq_rank''.symm
+  have h2 : Module.rank A (Ω[A⁄K]) = Cardinal.mk (Module.Free.ChooseBasisIndex A (Ω[A⁄K])) :=
+    b.mk_eq_rank''.symm
+  rw [h1, ← h2, hrank]
+
+/-- **THE LOCUS OF POINTS CARRYING A STANDARD-SMOOTH CHART OF RELATIVE
+DIMENSION `n`** (2026-07-30).
+
+Literally the `n`-th clause of `SmoothOfRelativeDimension`, read as a subset
+of `X` rather than as a `∀`: `SmoothOfRelativeDimension n f` says exactly
+that `smoothRelDimLocus f n = Set.univ`.  It exists so that the
+equidimensionality argument can be run as a clopen decomposition of `X`. -/
+def smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) (n : ℕ) : Set X :=
+  {x | ∃ (U : Y.Opens) (_ : IsAffineOpen U) (V : X.Opens) (_ : IsAffineOpen V) (_ : x ∈ V)
+    (e : V ≤ f ⁻¹ᵁ U), RingHom.IsStandardSmoothOfRelativeDimension n (f.appLE U V e).hom}
+
+/-- **EACH RELATIVE-DIMENSION LOCUS IS OPEN** (PROVEN 2026-07-30), and it is
+open for a reason with no content: a chart witnessing `x` witnesses every
+OTHER point of the same chart, so the witness `V` is itself an open
+neighbourhood contained in the locus. -/
+theorem isOpen_smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) (n : ℕ) :
+    IsOpen (smoothRelDimLocus f n) := by
+  rw [isOpen_iff_forall_mem_open]
+  rintro x ⟨U, hU, V, hV, hxV, e, hsm⟩
+  exact ⟨V.1, fun y hy => ⟨U, hU, V, hV, hy, e, hsm⟩, V.2, hxV⟩
+
+/-- **THE RELATIVE-DIMENSION LOCI COVER A SMOOTH MORPHISM** (PROVEN
+2026-07-30).
+
+`Smooth f` gives a standard-smooth chart at every point, and a
+standard-smooth chart carries a submersive presentation `P`; `P.dimension`
+is then a relative dimension for that chart.  So "smooth" is "smooth of SOME
+relative dimension" POINTWISE, for free — all the content of the
+equidimensionality statement is that the dimension does not vary, not that
+it exists. -/
+theorem exists_mem_smoothRelDimLocus {X Y : Scheme.{u}} (f : X ⟶ Y) [Smooth f] (x : X) :
+    ∃ n, x ∈ smoothRelDimLocus f n := by
+  obtain ⟨U, hU, V, hV, hxV, e, hsm⟩ := Smooth.exists_isStandardSmooth f x
+  letI : Algebra Γ(Y, U) Γ(X, V) := (f.appLE U V e).hom.toAlgebra
+  have hsm' : Algebra.IsStandardSmooth Γ(Y, U) Γ(X, V) := hsm
+  obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := hsm'.out
+  refine ⟨P.dimension, U, hU, V, hV, hxV, e, ?_⟩
+  show Algebra.IsStandardSmoothOfRelativeDimension P.dimension Γ(Y, U) Γ(X, V)
+  exact P.isStandardSmoothOfRelativeDimension rfl
+
+/-- **THE RELATIVE DIMENSION AT A POINT IS WELL DEFINED, OVER A ONE-POINT
+BASE** (PROVEN 2026-07-30) — i.e. the loci `smoothRelDimLocus f n` are
+PAIRWISE DISJOINT.
+
+THE ARGUMENT, and it is where `Subsingleton Y` is spent.  Two charts
+`V₁ ∋ x` and `V₂ ∋ x` come with base opens `U₁, U₂ ∋ f x`; because `Y` has
+one point both are `⊤`, so the two charts are algebras over the SAME ring
+`Γ(Y, ⊤)`.  (Over a general base they would not be, and one would have to
+descend to the stalk of `Y` as well.)  The stalk `𝒪_{X,x}` is a localization
+of `Γ(X, V₁)` and of `Γ(X, V₂)` (`IsAffineOpen.isLocalization_stalk`),
+compatibly with the base — that is the one coherence fact,
+`f.appLE ⊤ Vᵢ eᵢ ≫ germ = germ ≫ f.stalkMap x` — and it is nontrivial as a
+ring, being local.  So `rank_kaehlerDifferential_of_isLocalization` evaluates
+the SINGLE cardinal `rank_{𝒪_{X,x}} Ω[𝒪_{X,x}⁄Γ(Y,⊤)]` as `n` and as `m`.
+
+Note what is NOT needed: no dimension theory, no integrality of `X`, no
+comparison of the two charts with each other — only that both localize to
+the same stalk. -/
+theorem eq_of_mem_smoothRelDimLocus {X Y : Scheme.{u}} [Subsingleton Y] (f : X ⟶ Y)
+    {x : X} {n m : ℕ} (hn : x ∈ smoothRelDimLocus f n) (hm : x ∈ smoothRelDimLocus f m) :
+    n = m := by
+  obtain ⟨U₁, hU₁, V₁, hV₁, hx₁, e₁, h₁⟩ := hn
+  obtain ⟨U₂, hU₂, V₂, hV₂, hx₂, e₂, h₂⟩ := hm
+  have hUtop : ∀ U : Y.Opens, f.base x ∈ U → U = ⊤ := by
+    intro U hU
+    ext y
+    simp only [TopologicalSpace.Opens.coe_top, Set.mem_univ, iff_true]
+    rwa [Subsingleton.elim y (f.base x)]
+  obtain rfl : U₁ = ⊤ := hUtop U₁ (e₁ hx₁)
+  obtain rfl : U₂ = ⊤ := hUtop U₂ (e₂ hx₂)
+  letI : Algebra Γ(Y, (⊤ : Y.Opens)) (X.presheaf.stalk x) :=
+    (Y.presheaf.germ ⊤ (f.base x) trivial ≫ f.stalkMap x).hom.toAlgebra
+  have key : ∀ (V : X.Opens) (hV : IsAffineOpen V) (hxV : x ∈ V) (e : V ≤ f ⁻¹ᵁ (⊤ : Y.Opens))
+      (k : ℕ), RingHom.IsStandardSmoothOfRelativeDimension k (f.appLE ⊤ V e).hom →
+      Module.rank (X.presheaf.stalk x) (Ω[X.presheaf.stalk x⁄Γ(Y, (⊤ : Y.Opens))]) = k := by
+    intro V hV hxV e k hk
+    letI : Algebra Γ(Y, (⊤ : Y.Opens)) Γ(X, V) := (f.appLE ⊤ V e).hom.toAlgebra
+    letI : Algebra Γ(X, V) (X.presheaf.stalk x) :=
+      X.presheaf.algebra_section_stalk (U := V) ⟨x, hxV⟩
+    haveI : IsScalarTower Γ(Y, (⊤ : Y.Opens)) Γ(X, V) (X.presheaf.stalk x) := by
+      refine IsScalarTower.of_algebraMap_eq' ?_
+      show (Y.presheaf.germ ⊤ (f.base x) trivial ≫ f.stalkMap x).hom
+        = (X.presheaf.germ V x hxV).hom.comp (f.appLE ⊤ V e).hom
+      rw [← CommRingCat.hom_comp]
+      congr 1
+      simp only [Scheme.Hom.appLE, Category.assoc, X.presheaf.germ_res',
+        ← Scheme.Hom.germ_stalkMap]
+    haveI : IsLocalization ((hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl)
+        (X.presheaf.stalk x) := hV.isLocalization_stalk ⟨x, hxV⟩
+    haveI := hk.toAlgebra
+    exact rank_kaehlerDifferential_of_isLocalization (A := Γ(X, V))
+      (hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl
+  have r₁ := key V₁ hV₁ hx₁ e₁ n h₁
+  have r₂ := key V₂ hV₂ hx₂ e₂ m h₂
+  exact_mod_cast r₁.symm.trans r₂
+
+/-- **A SMOOTH MORPHISM WITH CONNECTED SOURCE OVER A ONE-POINT BASE IS
+SMOOTH OF A SINGLE GLOBAL RELATIVE DIMENSION** (PROVEN 2026-07-30).
+
+The loci `smoothRelDimLocus f n` are open, cover `X`, and are pairwise
+disjoint, so each of them is CLOPEN (its complement is the union of the
+others).  A connected `X` therefore meets exactly one, and `ConnectedSpace`
+supplies the point `x₀` that says which.
+
+**`ConnectedSpace X` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT
+IT**: `X = Spec K ⊔ (𝔸¹_K ∖ 0)` over `K` is smooth, with relative dimension
+`0` on the first component and `1` on the second, so no single `n` works.
+**`Subsingleton Y` IS LOAD-BEARING TOO**, though more mildly: over a base
+with two points the two charts at one point of `X` may lie over different
+affine opens of `Y` and are then algebras over different rings, so the
+disjointness argument does not even typecheck — and the conclusion genuinely
+fails for a disjoint union of an `n`-dimensional and an `m`-dimensional
+family over a disconnected base. -/
+theorem exists_smoothOfRelativeDimension_of_connected_of_subsingleton
+    {X Y : Scheme.{u}} (f : X ⟶ Y) [Smooth f] [ConnectedSpace X] [Subsingleton Y] :
+    ∃ n : ℕ, SmoothOfRelativeDimension n f := by
+  classical
+  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
+  obtain ⟨n, hn⟩ := exists_mem_smoothRelDimLocus f x₀
+  refine ⟨n, ?_⟩
+  have hcompl : (smoothRelDimLocus f n)ᶜ = ⋃ m ∈ {m : ℕ | m ≠ n}, smoothRelDimLocus f m := by
+    ext y
+    simp only [Set.mem_compl_iff, Set.mem_iUnion, Set.mem_setOf_eq, exists_prop]
+    constructor
+    · intro hy
+      obtain ⟨m, hm⟩ := exists_mem_smoothRelDimLocus f y
+      exact ⟨m, fun h => hy (h ▸ hm), hm⟩
+    · rintro ⟨m, hmn, hm⟩ hyn
+      exact hmn (eq_of_mem_smoothRelDimLocus f hm hyn)
+  have hclopen : IsClopen (smoothRelDimLocus f n) := by
+    refine ⟨?_, isOpen_smoothRelDimLocus f n⟩
+    rw [← isOpen_compl_iff, hcompl]
+    exact isOpen_biUnion fun m _ => isOpen_smoothRelDimLocus f m
+  have huniv : smoothRelDimLocus f n = Set.univ := hclopen.eq_univ ⟨x₀, hn⟩
+  refine ⟨fun x => ?_⟩
+  have hx : x ∈ smoothRelDimLocus f n := huniv ▸ Set.mem_univ x
+  obtain ⟨U, hU, V, hV, hxV, e, hsm⟩ := hx
+  exact ⟨U, hU, V, hV, hxV, e, hsm⟩
+
 /-- **AN ABELIAN SCHEME OVER A FIELD IS SMOOTH OF SOME RELATIVE
-DIMENSION** (sorry leaf, cut 2026-07-30 out of
-`smoothOfRelativeDimension_of_levelTateFrame_finiteBase`; EGA IV 17.10,
+DIMENSION** (**PROVEN 2026-07-30**; it was a sorry leaf for a few hours the
+same day, cut out of
+`smoothOfRelativeDimension_of_levelTateFrame_finiteBase`.  EGA IV 17.10,
 Stacks 02G1/0B2C, Milne *Abelian Varieties* §I.1).
 
 `AbelianSchemeStruct` records only `Smooth fK` — mathlib's
 `Locally IsStandardSmooth`, i.e. a standard-smooth chart at every point
-with NO claim that the charts share a dimension.  This leaf says that for
-a base which is the spectrum of a FIELD the dimension is nevertheless
-global.
+with NO claim that the charts share a dimension.  This says that for a base
+which is the spectrum of a FIELD the dimension is nevertheless global.
 
-THE ROUTE, and it is pure algebraic geometry with no arithmetic in it.
-`Smooth fK` gives, at each `x : X`, an affine chart on which
-`Γ(X, V)` is `IsStandardSmooth` over `K`; unfolding the existential in
-`Algebra.IsStandardSmooth` produces a submersive presentation and hence
-`IsStandardSmoothOfRelativeDimension d_x K Γ(X, V)` for `d_x` its
-dimension, so `∃ d, SmoothOfRelativeDimension d` holds LOCALLY for free.
-What has to be proved is that `d_x` does not depend on `x`, and mathlib
-supplies the invariant that does it:
-`Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`
-identifies `d_x` with `Module.rank Γ(X, V) Ω[Γ(X, V)⁄K]` whenever
-`Γ(X, V)` is nontrivial.  That rank is the rank of a FREE module
-(`IsStandardSmooth.free_kaehlerDifferential`) and localises, so it agrees
-on overlapping charts; `abK.connected` then makes the locally constant
-function `x ↦ d_x` constant.
+THE ROUTE, and it is pure algebraic geometry with no arithmetic in it.  It
+is the four declarations immediately above, specialised at `Y = Spec K`:
 
-**`abK.connected` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT
-IT.**  Witness: `X = Spec K ⊔ 𝔸¹_K` over `K`, which is smooth and proper
-over `K` on neither component simultaneously — take instead
-`X = Spec K ⊔ (𝔸¹_K ∖ 0)`, smooth of relative dimension `0` on the first
-component and `1` on the second, so no single `g` works.  Only
-`GeometricallyConnected` excludes it; `proper` does not (a disjoint union
-of proper schemes is proper), and neither does the group law, since a
+1. `exists_mem_smoothRelDimLocus` — a standard-smooth chart carries a
+   submersive presentation, so `∃ d, SmoothOfRelativeDimension d` holds
+   POINTWISE for free;
+2. `isOpen_smoothRelDimLocus` — and it holds on a whole chart at once, so
+   each "relative dimension `d` here" locus is open;
+3. `eq_of_mem_smoothRelDimLocus` — the loci are DISJOINT, because both
+   charts at a point localize to the one stalk `𝒪_{X,x}` and
+   `rank_{𝒪_{X,x}} Ω[𝒪_{X,x}⁄K]` is a single cardinal.  This is where
+   `Spec K` being a ONE-POINT space is spent: it forces both charts to lie
+   over `U = ⊤`, hence to be algebras over the same ring;
+4. so each locus is clopen, and `abK.connected` picks one out.
+
+Note the invariant that does the work is the rank of `Ω` at the STALK, not
+at a chart: `Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`
+compares a chart's dimension with `Module.rank Γ(X, V) Ω[Γ(X, V)⁄K]`, but two
+charts at one point have no map between them — only a common localization.
+Going through the stalk is what removes the need for any integrality or
+dimension theory of `X`.
+
+**`abK.connected` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
+Witness: `X = Spec K ⊔ (𝔸¹_K ∖ 0)`, smooth of relative dimension `0` on the
+first component and `1` on the second, so no single `g` works.  Only
+`GeometricallyConnected` excludes it; `proper` does not (a disjoint union of
+proper schemes is proper), and neither does the group law, since a
 disconnected group scheme such as `μ_n` over `K` is smooth of relative
-dimension `0` throughout and is therefore not itself a counterexample —
-the counterexample has to mix dimensions, which is exactly what
-connectedness forbids.
+dimension `0` throughout and is therefore not itself a counterexample — the
+counterexample has to mix dimensions, which is exactly what connectedness
+forbids.
 
-`abK.proper` and the group structure are NOT used, and `X = ∅` is
-harmless: the predicate quantifies over the points of `X`, so every `g`
-works there. -/
+`abK.proper` and the group structure are NOT used.  Nor is emptiness a case
+to worry about: `GeometricallyConnected` yields `ConnectedSpace X`, which
+includes `Nonempty X`, so the point `x₀` that names `g` always exists. -/
 theorem exists_smoothOfRelativeDimension_of_abelianSchemeStruct
     {X : Scheme.{u}} {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
     (abK : AbelianSchemeStruct fK) :
-    ∃ g : ℕ, SmoothOfRelativeDimension g fK :=
-  sorry
+    ∃ g : ℕ, SmoothOfRelativeDimension g fK := by
+  haveI := abK.smooth
+  haveI := abK.connected
+  haveI : ConnectedSpace ↥X := GeometricallyConnected.connectedSpace_of_subsingleton fK
+  exact exists_smoothOfRelativeDimension_of_connected_of_subsingleton fK
 
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)^{2g/[D:ℚ]}`, WITH THE RELATIVE
