@@ -433,7 +433,7 @@ open in them has been split along the theories it needed:
 | `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
 | `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
-| `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
+| `smoothCurve_A_of_gamma1GITPresentation` | **REFUTED 2026-07-30 — do not dispatch a prover at it, dispatch the repair.**  Katz-Mazur 8.2.1, stated on the rigidified ring (`Algebra.Smooth K A` and `ringKrullDim A = 1`); the cited theorem is true but the statement quantifies over an ARBITRARY presentation, and `Gamma1GITPresentation`'s axioms pin `B` and NOT `A`.  Counterexample in its docstring: pinch `A₀` along a `G₀`-stable ideal, `A := A₀ ×_{A₀⧸I} A₀` with `G := G₀ × ℤ⧸2`, every field discharged by pullback along `Δ : a ↦ (a,a)`; `A` is nodal.  `ringKrullDim A = 1` and `IsReduced A` survive it, `Algebra.Smooth K A` does not.  Repair, also in the docstring: state the citation on `Gamma1RigidifiedModuli` (whose `universal` field pins `A`) and carry it down as a structure field through the two assembly steps. | any `K`, `char K ∤ N` |
 | `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | ~~`nonempty_gamma1Datum_of_weierstrassPoint`~~ | PROVEN 2026-07-30 over the row below; no longer a leaf.  The descent and the order transport it owed are now base-free — the `ℚ`-side's Galois descent and its `ℚ`-initiality detour through `exists_injective_pre_geomBase` both turned out to be artefacts of the `ℚ` proof rather than steps of the mathematics (see `epi_of_hom_spec_field`). | — |
@@ -4776,6 +4776,21 @@ theorem ringKrullDim_eq_of_gamma1GITPresentation {N : ℕ} {K : Type} [Field K]
 2026-07-28 as the SINGLE statement of Katz–Mazur 8.2.1 in this file) —
 Katz–Mazur 8.2.1, Deligne–Rapoport III.1.
 
+**REFUTED 2026-07-30: the first conjunct is FALSE AS STATED.**  Read the
+FALSITY AUDIT at the bottom of this docstring BEFORE spending a cycle on
+this leaf.  The theorem it cites is true; the statement quantifies over an
+ARBITRARY `Gamma1GITPresentation`, and the axioms of that structure pin `B`
+but not `A` — an explicit pinch of the honest presentation satisfies all
+nine fields with a nodal, hence non-smooth, `A`.  `ringKrullDim A = 1`
+survives the counterexample; `Algebra.Smooth K A` does not.  The repair is
+written out there: move the citation onto `Gamma1RigidifiedModuli`, whose
+`universal` field pins `A`, and carry it down as a structure field.
+
+What the rest of this docstring says was written before the refutation and
+is preserved because its route audit is still correct about DERIVABILITY —
+it is the step from "not derivable" to "therefore a citation" that was
+wrong.
+
 TRUE and classical, and this is the form 8.2.1 is actually proved in:
 `𝔐([Γ₁(N)], [Γ(n)])` is SMOOTH of relative dimension one over `ℤ[1/Nn]`,
 hence smooth of relative dimension one over every field `K` in which `N`
@@ -4864,7 +4879,119 @@ monomorphism, and nothing in the structure knows that elliptic curves with
 it has to be cited.  *The check that would refute this audit*: a
 `Gamma1GITPresentation N (Spec (CommRingCat.of K))` built with a
 non-smooth `A` satisfying all nine fields, or a derivation of
-`Algebra.FormallySmooth K A` from `cover` alone. -/
+`Algebra.FormallySmooth K A` from `cover` alone.
+
+## FALSITY AUDIT, 2026-07-30 — THE FIRST CONJUNCT IS **FALSE AS STATED**
+
+The audit above asked for exactly one thing: *"a `Gamma1GITPresentation N
+(Spec (CommRingCat.of K))` built with a non-smooth `A` satisfying all nine
+fields"*.  Here is one.  It needs no descent, no Ferrand pushout and no
+deformation theory — every piece of data is a pullback along an explicit
+ring map, which is why it was missed: the 2026-07-28 audit searched for a
+*derivation* and concluded a citation was needed, and never asked whether
+the universally quantified statement is TRUE.
+
+**THE COUNTEREXAMPLE — pinch the honest presentation along a `G`-stable
+ideal.**  Let `P₀` be any inhabitant of `Gamma1GITPresentation N (Spec K)`
+(one exists: `exists_gamma1GITPresentation`), with ring `A₀`, group `G₀`,
+invariants `B₀`, universal family `dM₀`, quotient `π₀ = Spec (algebraMap B₀
+A₀)`.  Choose a `G₀`-stable ideal `0 ≠ I ⊊ A₀` — take `I` the ideal of the
+`G₀`-orbit of any closed point of the nonempty (`nontrivial_A_of_gamma1GITPresentation`)
+scheme `Spec A₀` — and set
+
+    A := A₀ ×_{A₀ ⧸ I} A₀ = {(f, g) : f - g ∈ I} ⊆ A₀ × A₀,
+    G := G₀ × ℤ⧸2,   G₀ acting diagonally, the generator of ℤ⧸2 swapping.
+
+`I` is `G₀`-stable, so `G₀` preserves `A`; the defining condition is
+symmetric, so the swap does too.  The three structure maps are
+
+    Δ  : A₀ → A,  a ↦ (a, a)          (a ring map: a - a = 0 ∈ I)
+    pr₁ : A → A₀, (f, g) ↦ f          (a ring map, and pr₁ ∘ Δ = id)
+
+and the whole presentation is read off them:
+
+| field | value | why it holds |
+|---|---|---|
+| `dM` | `(Spec Δ)^* dM₀`, i.e. `Gamma1BaseChange.datumBC (Spec.map Δ) dM₀` | a pullback; no descent |
+| `strM` | `Spec Δ ≫ strM₀` | — |
+| `B` | `A^G = B₀`, embedded by `Δ ∘ algebraMap B₀ A₀` | swap-fixed forces `f = g`, then `G₀`-fixed forces `f ∈ A₀^{G₀} = B₀` |
+| `str`, `classify`, `classify_natural` | `str₀`, `classify₀` verbatim | inherited |
+| `classify_dM` | ✔ | `classify_natural` at `h := Spec Δ` gives `classify₀ dM = Spec Δ ≫ π₀`, whose ring map is `b ↦ (b, b)` — which IS `algebraMap B A` |
+| `cover` | `m := m₀ ≫ Spec pr₁` for `m₀` from `P₀.cover` | `pr₁ ∘ Δ = id`, so `Spec pr₁ ≫ Spec Δ = 𝟙`, whence `m^* dM ≅ m₀^* dM₀` and `m ≫ strM = m₀ ≫ strM₀ = p ≫ g` |
+| `strM_invariant` | ✔ | `σ_A ∘ Δ = Δ ∘ σ_{A₀}` and `τ_A ∘ Δ = Δ` |
+| `dM_equivariant` | ✔ | same two identities, through `IsBaseChangeOfGamma1.comp` |
+| `injective_algebraMap`, `isInvariant_BAG`, `smulComm_GBA`, `finite_G` | ✔ | `B₀ → A` is `b ↦ (b,b)`; invariants computed above |
+
+**And `A` is not smooth.**  `Spec A` is two copies of `Spec A₀` glued along
+`V(I)`; at a glued `K`-rational point the completion is `K⟦x, y⟧ ⧸ (xy)`, a
+node, whose local ring is not regular.  A finitely presented formally smooth
+algebra over a field is geometrically regular, hence regular, so
+`Algebra.Smooth K A` FAILS.  (`A` is finitely presented: as an `A₀`-module it
+is `A₀ ⊕ I`.)
+
+**Exactly one conjunct dies.**  `ringKrullDim A = 1` HOLDS for this `A`
+(pinching does not change dimension), and so does `IsReduced A` (`A` is a
+subring of the reduced `A₀ × A₀`).  So the leaf is false, but the two facts
+its consumers actually read off it — reducedness at
+`isReduced_A_of_gamma1GITPresentation` and the dimension at
+`ringKrullDim_eq_of_gamma1GITPresentation`'s consumer — survive the
+counterexample unharmed.
+
+**Why the 2026-07-28 rigidity paragraph is still right, and where its
+boundary is.**  That paragraph correctly excludes the square-zero thickening
+`A = A₀[ε]`: `classify_natural` at the retraction forces `ε ↦ 0`, against
+`classify_dM`.  The sharp form of that argument is worth recording, because
+it is what makes the pinch the RIGHT counterexample rather than one of many:
+for a square-zero extension `A = A₀ ⋉ M` the same computation forces
+`M^{G₀} = 0`, and when the `G₀`-action on `Spec A₀` is free — which it is,
+`hN : 4 ≤ N` being exactly the rigidity that makes `[Γ₁(N)]` representable —
+Galois descent gives `M ≅ A₀ ⊗_{B₀} M^{G₀}`, so `M = 0`.  **Nilpotent
+thickenings really are excluded; non-normal FINITE-TYPE degenerations are
+not**, because a pinch is not a square-zero extension and `Δ` is a genuine
+ring map with a genuine retraction.
+
+**What is pinned, and what is not.**  `B` IS pinned by the same axioms that
+fail to pin `A`: the pinch of `B` (take `G := G₀` with no swap, so that
+`A^{G₀} = B₀ ×_{B₀/(I ∩ B₀)} B₀`) is refuted by `classify_dM`, since any
+`classify` into the pinched `Spec B` factors through `Spec B₀` and therefore
+sends `(b, b') ↦ (b, b)`, which is not `algebraMap B A`.  That asymmetry is
+the whole content of the finding: `classify_dM` says `Spec A ⟶ Spec B` *is*
+the classifying map of the universal family, which pins the TARGET and only
+makes the source an fpqc epimorphism onto it.
+
+**THE REPAIR — do not weaken this statement, MOVE it.**  Weakening the
+conclusion to `IsReduced A ∧ Algebra.FiniteType K A ∧ ringKrullDim A = 1`
+keeps `isReduced_A_of_gamma1GITPresentation` and
+`finitePresentation_invariants_of_gamma1GITPresentation` alive but loses
+`formallySmoothInvariants_of_gamma1GITPresentation`, and — worse — it would
+be a SECOND universally-quantified guess of exactly the kind this audit just
+refuted.  The faithful repair is to state 8.2.1 where `A` is pinned:
+`Gamma1RigidifiedModuli` carries `universal`, a fine moduli property with a
+UNIQUENESS clause, and its own docstring already says "an inhabitant is
+pinned up to unique isomorphism".  So
+
+1. open the citation as `smoothCurve_of_gamma1RigidifiedModuli`, stated as
+   `SmoothOfRelativeDimension 1 R.strM` (that form works over the general
+   base `S` these structures are written over);
+2. carry it as a FIELD down the two assembly steps
+   `nonempty_gamma1Rigidification_of_rigidifiedModuli` and
+   `nonempty_gamma1GITPresentation_of_rigidification`, both of which are in
+   this file and neither of which touches `A` except to copy it;
+3. this declaration then becomes a THEOREM reading that field, and every
+   consumer below is untouched.
+
+Leaf count is unchanged by the move.  Step 2 is a structure-field addition
+to `Gamma1Rigidification` and `Gamma1GITPresentation` and therefore a
+signature change with several concurrent owners in this file, which is why
+it is written down here rather than performed in the same commit as the
+refutation.
+
+*The check that would refute THIS audit*: exhibit a field of
+`Gamma1GITPresentation` violated by the table above — the load-bearing one
+is `classify_dM`, and it is discharged by one application of
+`classify_natural` at `h := Spec Δ` — or show that no `G₀`-stable ideal
+`0 ≠ I ⊊ A₀` exists, which would make `Spec A₀` a single `G₀`-orbit of
+closed points and contradict `ringKrullDim A₀ = 1`. -/
 theorem smoothCurve_A_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -4896,7 +5023,17 @@ descent and no normality: it is one application of an existing lemma to the
 smoothness conjunct of the leaf above.
 
 Reducedness rather than smoothness is still what is STATED here, because
-reducedness is all that `isDomain_of_minimalPrimes_transitive` consumes. -/
+reducedness is all that `isDomain_of_minimalPrimes_transitive` consumes.
+
+**NOTE 2026-07-30 — this rests on a REFUTED leaf, but its own statement is
+not in doubt.**  `smoothCurve_A_of_gamma1GITPresentation` was refuted the
+same day (see its FALSITY AUDIT): its `Algebra.Smooth K A` conjunct is false
+for an arbitrary presentation.  `IsReduced P.A` is NOT: the pinched
+counterexample given there has `A` a subring of `A₀ × A₀`, hence reduced,
+and the sharpened rigidity argument recorded there shows square-zero
+thickenings are excluded outright.  So this proof has to be re-routed when
+the leaf above is moved onto `Gamma1RigidifiedModuli`, but nothing here has
+to be restated. -/
 theorem isReduced_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -5002,12 +5139,52 @@ mathlib invariant-theory route is still circular, and the bare `∃ C` form is
 still discharged by `C := A`.  What it changes is that the *normality*
 precondition of the component-algebra route is no longer a missing
 statement, so that route is now worth re-examining rather than being ruled
-out on availability grounds.  It is recorded here as an axis this audit did
-NOT search: every route considered above was ring-level and normality-free.  That structural repair is the recommended
+out on availability grounds.  That structural repair is the recommended
 route, and it is the same shape as the `coequalises` field: a clause the
 construction supplies for free and that no abstract presentation implies.
 *Refuting check*: produce a finite `K`-subalgebra of the above `A`
 separating `(x)` from `(y)`.
+
+**UPDATE 2026-07-30 — the normality axis HAS now been searched, and it
+lands back on `IsDomain B`.**  The 2026-07-28 text recorded normality as
+"an axis this audit did NOT search"; that sentence is deleted, because the
+search has been done and its result closes the question rather than opening
+it.  With `A` normal, route (1)'s residue is not merely EQUIVALENT to
+`IsDomain B` as an informal remark — the converse implication has a
+four-line proof, so no cut along this axis can be strictly weaker than the
+leaf:
+
+> A Noetherian normal ring is a FINITE PRODUCT of normal domains, one per
+> connected component, and `minimalPrimes A` is exactly that index set.
+> `G` permutes the factors.  If `G` had two or more orbits, grouping the
+> factors by orbit writes `A ≅ A' × A''` with both `G`-stable and both
+> nontrivial, whence `B = A^G ≅ (A')^G × (A'')^G` is a nontrivial product
+> and is not a domain.  So `IsDomain B` forces a single orbit, which is
+> this leaf.
+
+The forward implication is `isDomain_of_minimalPrimes_transitive`, already
+in the tree and already consumed by
+`isDomain_invariants_of_gamma1GITPresentation`.  So under normality of `A`
+the leaf and `IsDomain B` are *provably* interderivable, and the choice
+between them is a choice of where to put the citation, not a choice of
+strength.  This development deliberately puts it here rather than on
+`IsDomain B` (which is where the `Γ₀` side puts it, as
+`isDomain_of_gamma0GITPresentation`) because Katz-Mazur (8.1.1) leaves it on
+the components of the RIGIDIFIED scheme; `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`
+takes `IsDomain B` as an INPUT precisely so that the two cannot be played
+against each other.  A successor should not "simplify" this leaf into
+`IsDomain B`: it is the same node, and moving it costs a merge without
+closing anything.
+
+*One caveat on the argument above, and it now matters*: it consumes
+normality of `A`, i.e. `Algebra.Smooth K A`, from
+`smoothCurve_A_of_gamma1GITPresentation` — which was REFUTED the same day
+(see its FALSITY AUDIT).  This leaf is NOT affected: the pinched
+counterexample there has `G = G₀ × ℤ⧸2` acting transitively on the minimal
+primes of the pinched `A` exactly as `G₀` does on those of `A₀`, so the
+conclusion stated here holds for it.  What the refutation costs is the
+availability of the normality hypothesis in the *equivalence* argument, not
+the truth of this leaf.
 
 The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
 problem is not representable by a nonempty smooth scheme and
@@ -5117,7 +5294,14 @@ It is not a field of the structure and it was documented as unavailable; it is
 in fact forced by `classify_dM`.
 
 No domain hypothesis, no smoothness of `B`, and nothing modular beyond the one
-appeal to 8.2.1 on `A`. -/
+appeal to 8.2.1 on `A`.
+
+**NOTE 2026-07-30 — the leaf beneath was REFUTED the same day.**  See the
+FALSITY AUDIT on `smoothCurve_A_of_gamma1GITPresentation`.  Only
+`Algebra.FiniteType K A` is used here, and that survives the counterexample
+(the pinched `A` is `A₀ ⊕ I` as an `A₀`-module, hence finite type over `K`);
+so this statement is not in doubt and only its route has to follow the leaf
+when the leaf moves onto `Gamma1RigidifiedModuli`. -/
 theorem finitePresentation_invariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
@@ -5169,6 +5353,23 @@ Write `k̄ := AlgebraicClosure k`, `S' := k̄ ⊗[k] S`, `R' := k̄ ⊗[k] R`.
 5. `Algebra.IsInvariant.isRegularRing_of_isInvariant_of_isReduced`
    (`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, PROVEN
    2026-07-30) turns 1–4 into `IsRegularRing R'`.
+
+**CORRECTION 2026-07-30 — step 5 does not apply as written.**  That lemma's
+binders at this pin include `[IsDomain R]`, i.e. `IsDomain R'` here, which
+is NOT among this leaf's hypotheses and is FALSE in general for it (`S'` may
+have several components).  So the FAITHFULNESS paragraph below saying
+"`IsDomain` appears nowhere, in the hypotheses or in the route" is right
+about the hypotheses and wrong about the route.  **The statement is still
+TRUE** — the repair is a decomposition rather than an extra hypothesis:
+`S'` is regular Noetherian, hence a FINITE PRODUCT of normal domains indexed
+by its connected components; `G` permutes them; grouping by `G`-orbit writes
+`R' = (S')^G` as a finite product whose factor at an orbit is
+`(S'_{i₀})^{Stab(i₀)}`, a DOMAIN, to which step 5 applies; and a finite
+product is regular iff each factor is.  A prover taking this leaf should
+budget for that decomposition, not for a five-line proof.  The same
+decomposition is written out on
+`transitiveMinimalPrimes_of_gamma1GITPresentation`, where it is used for a
+different purpose.
 
 ## WHAT IS ACTUALLY MISSING FROM THE PIN (re-checked 2026-07-30)
 
@@ -5337,7 +5538,39 @@ exactly `(K B : Type u) [Field K] [PerfectField K] [CommRing B] [Algebra K B]
 [Algebra.FiniteType K B] [IsRegularRing B]`.  So no `IsDomain` is needed
 anywhere on the descent, `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`
 is NOT dragged in, and this theorem rests on exactly two leaves —
-`smoothCurve_A_of_gamma1GITPresentation` and the general one below. -/
+`smoothCurve_A_of_gamma1GITPresentation` and the general one below.
+
+## NOTE 2026-07-30 (later still): ONE OF THOSE TWO LEAVES IS REFUTED
+
+`smoothCurve_A_of_gamma1GITPresentation` was refuted the same day — see its
+FALSITY AUDIT for the explicit pinched counterexample.  This declaration is
+the one of its three consumers that genuinely needs the refuted conjunct:
+`Algebra.Smooth K A` is what the descent runs on, and the pinched `A` is not
+smooth.  **The conclusion stated here is nevertheless not in doubt.**  In
+that counterexample `B` is unchanged (`B = B₀`, and the audit shows
+`classify_dM` pins `B` even though it does not pin `A`), so
+`Algebra.FormallySmooth K B` holds there; and the general leaf below,
+`isRegularRing_tensorAlgebraicClosure_of_isInvariant`, is a statement of
+commutative algebra with no presentation in it and is untouched.  What has
+to happen is that the `[Algebra.Smooth k S]` instance fed to that leaf be
+re-sourced, which is exactly what the repair recorded on the refuted leaf
+does: move the 8.2.1 citation onto `Gamma1RigidifiedModuli`, where
+`universal` pins `A`, and carry it down as a structure field.  No statement
+in this cluster changes; one instance argument changes provenance.
+
+A second correction to the paragraph above, found while auditing that
+route: the claim that `IsDomain` "appears nowhere, in the hypotheses or in
+the route" of the general leaf below is only true of
+`Algebra.Smooth.of_isRegularRing_of_perfectField`.  Its step 5,
+`Algebra.IsInvariant.isRegularRing_of_isInvariant_of_isReduced`, DOES carry
+`[IsDomain R]` at this pin — checked in `InvariantCoarseRing.lean` — so the
+five-line route written on that leaf does not close it as stated.  The
+repair is the same product decomposition used in the transitivity audit
+above: `S'` regular Noetherian is a finite product of normal domains, `G`
+permutes them, and `(S')^G` is a finite product of the invariant rings of
+the stabilisers, each of which IS a domain and each of which step 5 then
+applies to.  A prover taking that leaf should budget for the decomposition
+rather than expecting a five-line proof. -/
 theorem formallySmoothInvariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
     {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
