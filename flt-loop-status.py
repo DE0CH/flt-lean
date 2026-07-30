@@ -57,6 +57,16 @@ def live_agents():
 
 def main():
     out, alarms = [], []
+    # A quota block explains both silence and the absence of live processes,
+    # so it must be read BEFORE either is called an alarm -- otherwise the
+    # watch reports "spawning is broken" every ten minutes throughout a wait
+    # that is entirely correct, and the real alarms drown in it.
+    q = rd(STATE / "quota-until").strip()
+    blocked = q.isdigit() and time.time() < int(q)
+    if blocked:
+        out.append("quota        : BLOCKED until %s -- not spawning, by design"
+                   % time.strftime("%H:%M", time.localtime(int(q))))
+
     pid = loop_pid()
     out.append("loop pid       : %s" % (pid or "NOT RUNNING"))
     if not pid:
@@ -70,7 +80,7 @@ def main():
         out.append("last transition: %ds ago -- %s" % (age, log[0].split(" ", 1)[1][:70]))
         # Idle is silent by design, so a quiet log is only alarming when there
         # is work that should be producing transitions.
-        if age > 3600:
+        if age > 3600 and not blocked:
             alarms.append("no transition committed for %d minutes" % (age // 60))
     out.append("transitions    : %d in the last 40" % len(log))
 
@@ -100,7 +110,7 @@ def main():
         la = live_agents()
         tot = sum(v for v in la.values() if v)
         out.append("live agents    : %d  %s" % (tot, la))
-        if tot == 0 and kinds.get("agent"):
+        if tot == 0 and kinds.get("agent") and not blocked:
             alarms.append("%d agent records but ZERO live processes -- spawning is broken"
                           % kinds["agent"])
 
