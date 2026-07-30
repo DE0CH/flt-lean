@@ -14739,6 +14739,18 @@ one further input, Poincaré reducibility, is absent from all three as
 well (`grep -ri "poincar" Fermat/ .lake/packages/mathlib/Mathlib/
 ~/cs/FLT/FLT/` returns only this development's own prose).
 
+**BOTH ABSENCE CLAIMS RE-RUN AND STILL TRUE, 2026-07-31**, so the next
+reader need not spend the cycle: `grep -rn "HasseWeil\|hasseWeil"` over the
+same three trees hits only `FreyCurve/MazurTorsion.lean`'s
+`hasseWeil_trace_frobeniusTorsionEnd`, which is the Weil bound on a
+Frobenius TRACE over a finite field and is not an `L`-function of anything;
+and the `poincar` hits outside this development are Poincaré–Birkhoff–Witt,
+the Poincaré metric on the upper half plane, and the Poincaré recurrence
+lemma.  `Mathlib/NumberTheory/LSeries/` carries Dirichlet series, Hurwitz
+zeta and the Riemann zeta function, and nothing attached to a variety.
+This is a dated confirmation of an existing audit, NOT a new finding: the
+verdict that this leaf is atomic at this pin stands.
+
 **AXIS NOT SEARCHED**: everything above ranges over algebraic-moduli and
 isogeny-shaped cuts.  The complex-analytic route — Heegner points on
 `X_1(N)` and the Gross–Zagier formula read on `Γ₁(N)\ℍ*` — has not been
@@ -15277,6 +15289,13 @@ and none of that exists at this pin.  This is the same missing theory that
 `X0.lean` names as "the axis not searched" on its own period leaf, and
 closing it closes both.
 
+**THAT PARAGRAPH OVERSTATES THE GATE BY AN ENORMOUS FACTOR, AND THE
+CORRECTION IS COMPUTED, NOT ARGUED — see `### THE FRICKE CUT IS WORTH
+WRITING` below** (2026-07-31).  A proof does *not* need the twelve
+sequences.  It needs, per form, the Atkin–Lehner pseudo-eigenvalue `λ` and
+the SINGLE coefficient `a₂`, and it needs them only to satisfy one
+explicit inequality that holds with a factor-of-three margin.
+
 **THE GREP CLAIM ABOVE WAS WRONG, AND IS CORRECTED HERE** (2026-07-28, by
 running it).  The recorded check —
 `grep -rn "newform\|Newform\|oldform\|degeneracy\|eigenbasis" Fermat/
@@ -15321,6 +15340,147 @@ decomposition: it moves no theory and multiplies the frontier by eight.
 A cut that isolates the Fricke sign `ε` is a real decomposition but is
 worth nothing on its own, because the sum above still needs the certified
 `aₙ`; it becomes worth writing at the moment the basis does.
+
+### THE FRICKE CUT IS WORTH WRITING — THE SENTENCE ABOVE IS REFUTED
+
+(2026-07-31.)  "Worth nothing on its own, because the sum still needs the
+certified `aₙ`" is FALSE, and the two-tail formula displayed above has a
+SIGN ERROR that is what made it look worthless.  Both corrections come out
+of one computation, and the computation validates itself to sixty digits.
+
+**THE SIGN.**  Chase the Fricke involution rather than transcribing it.
+For weight two, `(f∣W_N)(z) = N⁻¹ z⁻² f(−1/(Nz))`; putting `z = iy/√N` and
+`F(y) := f(iy/√N)` gives `−1/(Nz) = i/(√N y)`, hence
+
+> `F(1/y) = −λ · y² · F_ρ(y)`,     `f∣W_N = λ · f_ρ`,  `f_ρ = ∑ conj(aₙ) qⁿ`,
+
+which is EXACTLY the shape `X0.lean`'s `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`
+already consumes (`hFE : axisRestrict M g (1/y) = -ε * y^2 * axisRestrict M g y`),
+with `ε := λ` and the partner form in the `g` slot.  Folding `(0,1)` onto
+`(1,∞)` then contributes `−λ ∫₁^∞ F_ρ`, so
+
+> `Λ(1) = ∫₁^∞ F − λ ∫₁^∞ F_ρ`,  i.e.  the head is `(1 − λ)`, NOT `(1 + λ)`.
+
+That is the `Γ₁` form of the `Γ₀` factor `(1 − ε)`, and it degenerates only
+at `λ = 1` — the honest analogue of the `Γ₀` root-number condition — where
+the displayed `(1 + ε)` shape would have degenerated at `λ = −1`, which is
+where the twelve pseudo-eigenvalues actually CLUSTER.  Getting the sign
+backwards therefore inverts the verdict: it puts every one of the twelve
+forms next to the degenerate point instead of far from it.
+
+**THE COMPUTATION** (PARI/GP 2.17.4, 2026-07-31: `znstar(25,1)`,
+`mfinit([25,2,[G,[k]]],0)` for `k = 0..19`, `mfeigenbasis`, `mfembed`,
+`mfatkineigenvalues(·,25)`, at 60 digits).  Write `x := 2π/√25 = 2π/5` and
+
+> `S_K := ∑_{n=1}^{K} (aₙ − λ·conj(aₙ))·e^{−nx}/n`.
+
+*Self-validation, and it is the reason to believe the sign.*  At all twelve
+embeddings `|S_∞| / |L(f,1)| = 1.000000…`, agreeing to every one of the
+sixty digits carried.  The formula is the `L`-value on the nose, with no
+fitted constant.  With `+λ` the same ratio is not even constant across
+embeddings (`0.0464` against `0.2954` at the two embeddings of `k = 2`),
+which is how the sign error was caught.
+
+*The head is nowhere near zero.*  `|1 − λ|` over the twelve embeddings:
+
+| `k` | `a₂` (one embedding; the other is its conjugate) | `\|1 − λ\|` | `\|S₂\|` | `\|S₂\|/tail₂` |
+|---|---|---|---|---|
+| 2, 18 | `0.1742070002 + 0.0566032856 i` | `1.9939975` | `0.5819345` | `4.514` |
+| 2, 18 | `−1.9832239946 − 0.6443885379 i` | `1.7969731` | `0.3900118` | `3.026` |
+| 4, 16 | `−0.5 − 0.3632712640 i` | `1.9960535` | `0.5295222` | `4.108` |
+| 6, 14 | `−1.3573575393 − 1.8682423766 i` | `1.5416657` | `0.4504246` | `3.494` |
+| 6, 14 | `0.6663745336 + 0.9171858603 i` | `1.9647622` | `0.6261019` | `4.857` |
+| 8, 12 | `−0.5 − 1.5388417686 i` | `1.8096541` | `0.5314716` | `4.123` |
+
+Every `|1 − λ| ∈ [1.5417, 1.9961]` — all of them within `0.46` of the
+maximum `2`, none within `1.54` of the degenerate value `1`.  The values
+repeat in the conjugate pairs `(2,18)`, `(4,16)`, `(6,14)`, `(8,12)`
+already recorded for the `L`-values, which is an independent consistency
+check on the run.
+
+**THE HEAD OUTWEIGHS THE WHOLE TAIL AT `K = 2`, WITH THE SAME CRUDE BOUND
+THE `Γ₀` PROOF USES.**  `‖aₙ‖ ≤ 2n` and `|λ| = 1` give
+`‖aₙ − λ conj(aₙ)‖ ≤ 4n`, so
+
+> `tail_K ≤ 4·∑_{n>K} e^{−nx} = 4·e^{−(K+1)x}/(1 − e^{−x})`,
+> `tail₁ = 0.4529140214`,  `tail₂ = 0.1289036528`.
+
+At `K = 1` ten of the twelve already clear it; at `K = 2` **all twelve
+clear it**, the minimum of `|S₂|/tail₂` being `3.0256`.  A factor of three
+is not a numerical coincidence to be re-checked nervously — it is room.
+
+**WHAT THIS DOES TO THE GATE.**  The certified input shrinks from "an
+explicit basis of `S₂(Γ_1(25))`: dimension formulas per nebentypus, the
+eigenbasis, and proven `q`-expansions" to, per form, **`λ` and `a₂`** —
+two algebraic numbers, constrained by one inequality with a `3×` margin.
+`a₁ = 1` is `hf.one` and is free.  That is a different-sized problem, and
+it is why the cut is now worth writing rather than worth deferring.
+
+**AND `25 ∉ kenkuLevels` IS NOT THE OBSTRUCTION IT IS DESCRIBED AS**
+(reason 1 of the two given above).  It is true that every theorem in
+`X0.lean`'s `CuspPeriodReduction` carries `hN : N ∈ kenkuLevels`, but that
+hypothesis is consumed in exactly two ways, and only one of them is
+arithmetic:
+
+* `frickeSign_eq_neg_one_of_isNewEigenformAt` — the root-number leaf, still
+  open, and genuinely `Γ₀`;
+* the numerical chain, through `le_thirty_or_mem_kenkuLargeDivisors`, whose
+  entire content is `M ≤ 30 ∨ M ∈ kenkuLargeDivisors`.  **`25 ≤ 30`**, so
+  `three_mul_exp_lt_one_of_le_thirty` and `frickeTailSum_tail_lt_head_of_le_thirty`
+  apply at `25` verbatim.  `tsum_ne_zero_of_tail_lt_norm_sum` already takes
+  the truncation point `K` as a parameter, so `K = 2` costs nothing.
+
+So the numerical half of the `Γ₀` machinery covers this level as it stands;
+what does not transport is the `Fricke EIGENform` half, exactly as reason 2
+says, and the repair is the two-form functional equation above.
+
+**THE FUNCTIONAL EQUATION IS ALREADY IN THIS FILE, PROVEN AND
+GROUP-GENERIC — and it is better than the `λ` formulation above.**  This
+was the first thing checked after the computation and it removes the
+largest item a prover would otherwise owe.  `exists_frickeInvolutionOn`
+(PROVEN, ~700 lines above, stated for any `G` with `Γ₁(N) ≤ G ≤ Γ₀(N)`)
+gives, with an EXPLICIT partner `g := frickeSlashOn N hN h1 h0 f` rather
+than a bare existential,
+
+> `axisRestrictOn G N f (1/y) = −(y²)·axisRestrictOn G N g y`   for `y > 0`.
+
+The pseudo-eigenvalue has been ABSORBED into `g` — that is why `ε` is
+literally `-1` in `cuspFEPairOn` — so the structural identity carries no
+`λ` at all.  Substituting `y ↦ 1/u` on `(0, 1)`:
+
+> `∫₀^∞ F = ∫₁^∞ F − ∫₁^∞ G`,   `F := axisRestrictOn G N f`,
+> `G := axisRestrictOn G N g`.
+
+This is strictly simpler than `X0.lean`'s `integral_Ioi_zero_eq_of_fricke`,
+which needs `ε² = 1` precisely because it folds a function onto ITSELF; the
+two-function version needs no such hypothesis and no root number.  The `λ`
+and the conjugation reappear only when `g`'s coefficients are named: for a
+newform, `bₙ = λ·conj(aₙ)`, which is what the table above measures and what
+makes `b₁ = λ`.
+
+**WHAT A PROVER STILL OWES**, honestly and in full, after that:
+
+1. the `On`-forms of two `X0.lean` steps that are currently `Γ₀`-typed and
+   whose proofs transport unchanged: `cuspPeriod_eq_inv_sqrt_smul` (put the
+   period on `axisRestrict`) and `integral_Ioi_one_axisRestrict_eq_tsum`
+   (termwise integration on `[1, ∞)`, whose `q`-series input is the already
+   generic `hasSum_axisRestrictOn`).  Then the two-function fold above,
+   which is a change of variables and shorter than the `Γ₀` one;
+2. `‖aₙ‖ ≤ 2n` with a NEBENTYPUS — `X0.lean`'s `norm_coeff_le_two_mul_self`
+   is `Γ₀`-typed AND is itself gated on the still-open
+   `realCoeff_norm_le_of_isWeightTwoEigenform` (Ramanujan–Petersson in
+   weight two).  This is a leaf SHARED with the `Γ₀` layer, not a new one:
+   closing it there in a nebentypus-general form closes it here.  Note the
+   bound is needed for the partner `g`'s coefficients too, which is free —
+   `g` is a cusp form on the same `G`;
+3. `λ` and `a₂` for the twelve forms — the only irreducibly level-`25`
+   input left, and the one the table above measures.  Equivalently, in the
+   `λ`-free formulation: the first two coefficients of `f` AND of its
+   Fricke partner `frickeSlashOn 25 _ _ _ f`.
+
+PARI/GP is an untrusted searcher: everything in this section establishes
+that the route is not blocked and fixes the constants a prover must hit.
+It is not a proof.
 
 **THE JUNK-VALUE REFUTATION DOES NOT RUN HERE, and it is worth saying so
 because the shape of it has killed two statements in this cluster
