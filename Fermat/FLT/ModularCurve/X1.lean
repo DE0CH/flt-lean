@@ -8789,6 +8789,15 @@ SEPARATE ONE — the one place this STATEMENT must differ from
 `X0.lean`'s.**  On the `Γ₀` side the two halves are separable at the level
 of the parent structure because `IsHeckeIsotypicDecomposition.T` is PINNED
 by its `heckeModuli` field (`IsModularHeckeAction`, added 2026-07-28).
+
+**⚠ THE NEXT SENTENCE IS STALE AS OF 2026-07-29 — read the correction under
+"WHAT IS DELIBERATELY STILL NOT DONE" below before acting on it.**
+`IsHeckeIsotypicDecompositionGamma1` **does** now carry a `heckeModuli`
+field, and the "WHAT IS NOT PINNED, and it is the crux" heading it points
+at no longer exists.  What survives unchanged is the *refutation* in the
+rest of the paragraph, and with it the reason THIS statement quantifies `T`
+existentially; only the premise about the parent structure has moved.
+
 `IsHeckeIsotypicDecompositionGamma1` carries no such field — see its
 docstring, "WHAT IS NOT PINNED, and it is the crux" — so a `Γ₁` leaf
 taking a BARE `T` as an input would be **FALSE**, by exactly the
@@ -8882,6 +8891,63 @@ sharpening is a cut-level repair of the STRUCTURE, it needs its own
 faithfulness audit, and it is UNBLOCKED rather than done.  The `N = 37`
 eigen-system swap therefore still inhabits
 `IsHeckeIsotypicDecompositionGamma1`.
+
+## ⚠ CORRECTION (2026-07-30) — THAT SHARPENING WAS DONE, AND IT CHANGES WHICH REPAIR IS RIGHT
+
+The paragraph immediately above is **STALE**, and so are the two other places
+in this file that say the `Γ₁` structure has no pin (this docstring's "WHY THE
+HECKE ACTION IS PRODUCED IN THIS STATEMENT" paragraph, and
+`exists_heckeIsotypicDecomposition_gamma1`'s "the `Γ₁` transport is two leaves
+rather than three").  `IsHeckeIsotypicDecompositionGamma1.heckeModuli :
+IsModularHeckeActionGamma1 N h.some jac T T_comp` was **added on 2026-07-29**
+and is in the structure now; the `#### The Γ₁ moduli pin` subsection's own
+release-19 merge note already records the field's existence, but nothing
+propagated the consequences to the three paragraphs that reason from its
+absence.  Verified against the source at this commit, not from prose.
+
+**Consequence 1 — the recorded "one owner, both sides" repair is now the WORSE
+of the two options, and it was the better one when it was written.**  The
+FALSITY AUDIT on `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+offers (a) add the anemic relations `T 1 = 𝟙 J`,
+`Nat.Coprime m n → T (m * n) = T m ≫ T n`,
+`T (ℓ^(k+2)) = T ℓ ≫ T (ℓ^(k+1)) − ℓ • T (ℓ^k)` to both pins — at the cost of
+`exists_modularHeckeAction` / `exists_modularHeckeAction_gamma1` reverting to
+leaves — or (b) restrict `IsIsotypicQuotient`'s `isotypic` and `equivariant` to
+primes `ℓ ∤ N`, dismissed as "a change to a structure shared with `X0.lean`".
+But (b) closes the arity gap on BOTH sides with **no leaf regression at all**,
+while (a) costs two proven theorems; and (b)'s shared-structure objection is no
+longer a discriminator, because after 2026-07-29 both parent structures pin `T`
+through `heckeModuli`, so both sides need the same edit either way.  Whoever
+owns `X0.lean`'s `IsIsotypicQuotient` should take (b).
+
+**Consequence 2, and it is not recorded anywhere else: the sibling cut
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` HAS QUIETLY
+STOPPED BEING A REDUCTION.**  Its hypothesis `hquot` supplies
+`∃ T T_comp, (∀ n, IsAdditiveOn …) ∧ ∀ χ f a, … → Nonempty (IsIsotypicQuotient
+ab T N a)` — an **unpinned** `T`.  Its conclusion is
+`Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac)`, which since
+2026-07-29 requires a `T` satisfying `heckeModuli`.  So `hquot`'s `T` cannot be
+used for the field it was cut out to supply: a prover must build the genuine
+Hecke action from scratch anyway, and `hquot` now contributes only the factors.
+The leaf is still TRUE — the genuine action satisfies everything — but the
+"factors / all factors" split no longer removes the hardest object from it, and
+the frontier accounting that treats it as a proper decomposition of
+`exists_heckeIsotypicDecomposition_gamma1` is optimistic by one Hecke-action
+construction.  Repair (b) does not fix this; matching `hquot`'s conclusion to
+the parent's `heckeModuli` field does, and that is a one-line change to this
+file that costs nothing.
+
+**Consequence 3 — the "DO NOT HARMONISE" warning below was overtaken by events,
+not withdrawn.**  It says that giving `IsHeckeIsotypicDecompositionGamma1` a
+`heckeModuli` field *and then* taking `T` as a hypothesis in the factor leaf
+"would import a falsity".  Exactly half of that happened: the field was added,
+the factor leaf still takes `T` as a hypothesis, and the falsity is indeed
+present — which is what the FALSITY AUDIT on that leaf records.  The warning was
+right; it was simply not seen by the branch that added the field.
+
+Nothing in this correction is a Lean change, so nothing here can turn the build
+red; it is written here rather than in a commit message because a commit message
+cannot be maintained and the frontier can.
 
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
@@ -9608,7 +9674,35 @@ witness `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, which
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
-axis. -/
+axis.
+
+## ⚠ THIS IS NO LONGER A REDUCTION (found 2026-07-30, and it is a one-line fix)
+
+`IsHeckeIsotypicDecompositionGamma1` gained a `heckeModuli :
+IsModularHeckeActionGamma1 …` field on 2026-07-29.  `hquot` below was written
+the day before and hands over an **unpinned** `T`.  So the conclusion now
+demands of `T` something `hquot` does not supply, and the ONE object this cut
+exists to remove from the leaf — the genuine Hecke action — has to be built
+here after all.  A prover who reaches for `hquot`'s `T` to fill `heckeModuli`
+will find it cannot be done, and the fault is in the cut, not in the prover.
+
+Everything in the four bullets above is still owned here and still correct;
+what is wrong is only the claim, implicit in the shape of `hquot`, that the
+action comes for free.  The fix is to add
+`IsModularHeckeActionGamma1 N h.some jac T T_comp` to `hquot`'s conjunction,
+which costs nothing at the supply side —
+`exists_heckeAction_isotypicQuotients_gamma1`, the sole caller, obtains that
+very pin from `exists_modularHeckeAction_gamma1` and currently DISCARDS it.
+That is the shape CLAUDE.md records as usual: the missing hypothesis is
+already in the caller's hand.
+
+It is left unmade here deliberately, because it is entangled with the FALSITY
+of `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` (same arity gap,
+same pin) and the audit's standing instruction is that the pin be repaired by
+ONE owner across both files.  Doing the easy half first would make the pin
+mean two different things at two call sites in one file.  See "⚠ CORRECTION
+(2026-07-30)" on `exists_heckeAction_isotypicQuotients_gamma1` above for which
+of the two prescribed repairs is now the cheaper one. -/
 theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -9668,6 +9762,17 @@ side can hand `T` to its factor-building leaf as a hypothesis only because
 `IsHeckeIsotypicDecompositionGamma1` has no such field, so the `Γ₁` leaf
 must quantify `T` existentially and thereby absorbs
 `exists_modularHeckeAction`'s job.
+
+**⚠ STALE (corrected 2026-07-30): the `Γ₁` structure DOES have a
+`heckeModuli` field**, added 2026-07-29.  The clause "and
+`IsHeckeIsotypicDecompositionGamma1` has no such field" above is false at
+this commit.  The count "two leaves rather than three" is still the right
+count of *declarations*, but the reason given for it has gone, and one of
+those two — `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
+— is no longer a genuine reduction, because its `hquot` hands over an
+UNPINNED `T` while its conclusion now needs a pinned one.  The full
+accounting is under "⚠ CORRECTION (2026-07-30)" on
+`exists_heckeAction_isotypicQuotients_gamma1` above.
 
 `IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
 shape-free — so this transport adds no structure.
