@@ -5139,10 +5139,108 @@ theorem finitePresentation_invariants_of_gamma1GITPresentation {N : ℕ} (hN : 4
     Algebra.IsInvariant.finiteType_of_isInvariant K P.B P.A P.G P.injective_algebraMap
   exact Algebra.FinitePresentation.of_finiteType.1 inferInstance
 
-/-- **The coarse ring `B = A^G` is FORMALLY SMOOTH over `K`** (sorry leaf, cut
-2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation`, which is now a
-THEOREM over it and the finite-presentation half above) — Deligne–Rapoport
-III.1, Katz–Mazur 8.2.1.
+/-- **The invariants of a smooth one-dimensional algebra become REGULAR after
+base change to the algebraic closure** (sorry leaf, opened 2026-07-30 as the
+whole residue of `formallySmoothInvariants_of_gamma1GITPresentation` below).
+
+**There is nothing modular in this statement.**  No `N`, no `char K ∤ N`, no
+`Gamma1GITPresentation`, no moduli functor: it is a statement about a finite
+group acting on a smooth affine curve over an arbitrary field, and every
+modular input of the node below it has already been consumed — it enters only
+through the instance `[Algebra.Smooth k S]`, which for the modular consumer is
+`smoothCurve_A_of_gamma1GITPresentation`, i.e. Katz–Mazur 8.2.1 on `A`.
+
+## TRUE, and the proof in five lines
+
+Write `k̄ := AlgebraicClosure k`, `S' := k̄ ⊗[k] S`, `R' := k̄ ⊗[k] R`.
+
+1. `Algebra.Smooth k̄ S'` — `Algebra.Smooth.baseChange`, an instance.  Hence
+   `S'` is REGULAR, so reduced and integrally closed in its total quotient
+   ring.
+2. `ringKrullDim S' = 1` — Krull dimension of a finite-type algebra over a
+   field is unchanged by base field extension.
+3. `R' = (S')^G`, i.e. `Algebra.IsInvariant R' S' G` — invariants commute with
+   FLAT base change for a finite group: `R` is the kernel of the `k`-linear
+   `S → ∏_{σ ∈ G} S`, `s ↦ (σ s − s)`, the product is finite, and `k̄` is free
+   over `k`, so tensoring preserves that kernel.  The map `R' → S'` stays
+   injective for the same reason.
+4. `Algebra.FiniteType k̄ S'` — base change of finite type, and `k̄` is
+   Noetherian.
+5. `Algebra.IsInvariant.isRegularRing_of_isInvariant_of_isReduced`
+   (`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, PROVEN
+   2026-07-30) turns 1–4 into `IsRegularRing R'`.
+
+## WHAT IS ACTUALLY MISSING FROM THE PIN (re-checked 2026-07-30)
+
+Three general theorems, none of them modular, none of them in mathlib at this
+pin, and none of them in this tree:
+
+* **smooth over a field ⇒ regular** (hence normal).  The tree has the
+  CONVERSE direction only — `Algebra.Smooth.of_isRegularRing_of_perfectField`
+  and `Algebra.FormallySmooth.of_isRegularRing_of_perfectField` — and
+  `Algebra.Smooth.isReduced_of_isField` gives reducedness but not
+  `IsIntegrallyClosed`.  Grepped: no `IsIntegrallyClosed` anywhere in
+  `Mathlib/RingTheory/RegularLocalRing/` or `Mathlib/RingTheory/Regular/`.
+* **Krull dimension is invariant under base field extension** for finite-type
+  algebras.  Grepped: `Mathlib/RingTheory/KrullDimension/` has the polynomial,
+  PID, local-ring, field and module lemmas and nothing about `⊗`.
+* **invariants commute with flat base change** for a finite group.  Grepped:
+  `Mathlib/RingTheory/Invariant/` contains no `tensor`, no `baseChange`, no
+  `flat`, no `localization`.  This is the only one of the three whose proof is
+  short; it needs `Algebra.IsInvariant` for the base-changed pair together
+  with the `MulSemiringAction G (k̄ ⊗[k] S)` given by `1 ⊗ σ`, i.e. some
+  instance plumbing on top of exactness of `0 → R → S → ∏_G S` under a flat
+  base change.
+
+## FAITHFULNESS
+
+`_hdim` is load-bearing and is where NONEMPTINESS enters: at `S = 0` every
+other hypothesis holds, `R' = 0`, and the zero ring is not regular
+(`IsRegularRing` extends `IsNoetherianRing`, which the zero ring does satisfy,
+but the statement is then vacuous rather than false — the honest reason to
+keep `_hdim` is that step 5 consumes it verbatim).  `_hinj` is what makes `R`
+a SUBRING of `S` rather than merely an algebra over it; without it take
+`R := k[x]/(x²) → S := k` with `G` trivial, where `R` is `S^G` in the sense of
+`Algebra.IsInvariant` and `k̄ ⊗ R` is not reduced, let alone regular.
+
+The conclusion is stated at `k̄ ⊗[k] R` and NOT at `R`: `IsRegularRing R`
+alone is strictly weaker over an imperfect `k` and does not give smoothness —
+the standing counterexample in this file is the quasi-elliptic `y² = x³ + t`
+over `𝔽₃(t)`, recorded on
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`.  That is the
+whole reason the base change to `k̄` is in the statement rather than in the
+proof of the consumer.
+
+`IsDomain` appears nowhere, in the hypotheses or in the route.  It would be
+needed only if step 5 were replaced by
+`Algebra.IsInvariant.isRegularRing_of_isInvariant_of_isReduced`'s domain
+hypothesis being discharged at `R'` — which the modular consumer CAN do, from
+`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` plus the
+reducedness of `k̄ ⊗ R` inherited from `k̄ ⊗ S`; that route is recorded here so
+that a prover who finds the non-domain form awkward knows a domain hypothesis
+is available downstream at the cost of one extra leaf in the consumer.
+
+**Where this belongs.**  `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`,
+next to `isRegularRing_of_isInvariant_of_isReduced`, which is the lemma step 5
+uses.  It is stated here only to keep this change inside one file; move it
+when that file is next touched. -/
+theorem isRegularRing_tensorAlgebraicClosure_of_isInvariant
+    (k R S : Type) [Field k] [CommRing R] [CommRing S]
+    [Algebra k R] [Algebra R S] [Algebra k S] [IsScalarTower k R S]
+    (G : Type) [Group G] [Finite G] [MulSemiringAction G S] [SMulCommClass G R S]
+    [Algebra.IsInvariant R S G] [Algebra.Smooth k S]
+    (_hinj : Function.Injective (algebraMap R S))
+    (_hdim : ringKrullDim S = (1 : ℕ)) :
+    IsRegularRing (TensorProduct k (AlgebraicClosure k) R) :=
+  sorry
+
+/-- **The coarse ring `B = A^G` is FORMALLY SMOOTH over `K`** (**PROVEN
+2026-07-30** over `smoothCurve_A_of_gamma1GITPresentation` and the general
+commutative-algebra leaf `isRegularRing_tensorAlgebraicClosure_of_isInvariant`
+immediately above; opened as a sorry leaf earlier the same day, cut out of
+`smoothInvariants_of_gamma1GITPresentation`, which is a THEOREM over it and
+the finite-presentation half above) — Deligne–Rapoport III.1, Katz–Mazur
+8.2.1.
 
 `Algebra.Smooth` unfolds to `FormallySmooth` plus `FinitePresentation`.  The
 finite-presentation conjunct is Noether's theorem on invariants and is PROVEN
@@ -5220,12 +5318,56 @@ normality axis, not along `02VL`.
 
 *The check that would refute this correction*: a use of freeness, or of
 `Spec A → Spec B` being flat, anywhere in steps 1–5. There is none — the only
-property of the `G`-action used is finiteness, which is `P.finite_G`. -/
-theorem formallySmoothInvariants_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+property of the `G`-action used is finiteness, which is `P.finite_G`.
+
+## STATUS 2026-07-30 (later the same day): THE CORRECTION WAS ACTED ON
+
+Steps 4 and 5 above are now WRITTEN AND GREEN, and this declaration is a
+THEOREM.  What steps 1–3 asked for has been collected into the single
+general leaf `isRegularRing_tensorAlgebraicClosure_of_isInvariant`
+immediately below, which contains **no modular content of any kind** — no
+`Gamma1GITPresentation`, no `N`, no `hchar`.  See its docstring for what is
+actually missing from the pin.
+
+One claim in the correction above is STALE and is corrected here: the
+"fourth wrinkle", that `Algebra.Smooth.of_isRegularRing_of_perfectField` "as
+stated carries `[IsDomain B]`".  It does not.  Its binders, verified at this
+pin in `Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, are
+exactly `(K B : Type u) [Field K] [PerfectField K] [CommRing B] [Algebra K B]
+[Algebra.FiniteType K B] [IsRegularRing B]`.  So no `IsDomain` is needed
+anywhere on the descent, `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`
+is NOT dragged in, and this theorem rests on exactly two leaves —
+`smoothCurve_A_of_gamma1GITPresentation` and the general one below. -/
+theorem formallySmoothInvariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
-    letI := P.commRing_B; letI := P.algebraB; Algebra.FormallySmooth K P.B :=
-  sorry
+    letI := P.commRing_B; letI := P.algebraB; Algebra.FormallySmooth K P.B := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.algebraA
+  letI := P.algebraB
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  haveI := P.isScalarTower
+  obtain ⟨hsm, hdim⟩ := smoothCurve_A_of_gamma1GITPresentation hN hchar P
+  haveI := hsm
+  haveI : Algebra.FinitePresentation K P.B :=
+    finitePresentation_invariants_of_gamma1GITPresentation hN hchar P
+  haveI : Algebra.FiniteType K P.B := Algebra.FinitePresentation.of_finiteType.2 inferInstance
+  -- step 1-3, the general leaf: the invariants become REGULAR after base change to `K̄`
+  haveI : IsRegularRing (TensorProduct K (AlgebraicClosure K) P.B) :=
+    isRegularRing_tensorAlgebraicClosure_of_isInvariant K P.B P.A P.G
+      P.injective_algebraMap hdim
+  -- step 4: `K̄` is PERFECT, so regular of finite type is smooth there
+  haveI : Algebra.Smooth (AlgebraicClosure K) (TensorProduct K (AlgebraicClosure K) P.B) :=
+    Algebra.Smooth.of_isRegularRing_of_perfectField _ _
+  -- step 5: `K → K̄` is faithfully flat, so smoothness descends to `K`
+  exact (Algebra.Smooth.of_smooth_tensorProduct_of_faithfullyFlat
+    (AlgebraicClosure K)).formallySmooth
 
 /-- **The coarse ring `B = A^G` is a SMOOTH `K`-algebra** (**PROVEN 2026-07-30**
 over `formallySmoothInvariants_of_gamma1GITPresentation` and
