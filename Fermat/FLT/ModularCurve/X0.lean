@@ -59282,7 +59282,170 @@ theorem locallyOfFinitePresentation_pairSquareMap {A B S : Scheme.{0}} {af : A �
   exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian _
     (Limits.pullback.fst bf bf ≫ bf)
 
-/-- **THE SMOOTH LOCUS OF A FIBRE SQUARE OF ONE MORPHISM** (sorry leaf, new
+/-- **THE INVOLUTION `(x, y) ↦ (-x + y, y)` OF `A ×_S A`** (new 2026-07-30).
+
+It is `subPairHom` in the first coordinate and the second projection in the
+second, so it preserves every fibre of `snd`.  It exists for exactly one reason:
+the fibre argument of `eq_top_of_shearHom_invariant` needs TWO nonempty opens
+inside the fibre `snd ⁻¹ {a}`, and `Scheme.Pullback.exists_preimage_pullback`
+prescribes only the two COORDINATES of a point — it says nothing about the value
+of `subPairHom` there.  `flipSubHom` converts a point over `(v, a)` into one over
+`(a - v, a)`, which lies in `subPairHom ⁻¹ᵁ V` without leaving the fibre. -/
+noncomputable def flipSubHom {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    Limits.pullback af af ⟶ Limits.pullback af af :=
+  Limits.pullback.lift (subPairHom abA) (Limits.pullback.snd af af)
+    (by rw [subPairHom_comp, Limits.pullback.condition])
+
+theorem flipSubHom_fst {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    flipSubHom abA ≫ Limits.pullback.fst af af = subPairHom abA := by
+  rw [flipSubHom, Limits.pullback.lift_fst]
+
+theorem flipSubHom_snd {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    flipSubHom abA ≫ Limits.pullback.snd af af = Limits.pullback.snd af af := by
+  rw [flipSubHom, Limits.pullback.lift_snd]
+
+/-- `-(-x + y) + y = x`, read on morphisms (**PROVEN 2026-07-30**) — this is what
+makes `flipSubHom` an involution, and it is the only property of it the fibre
+argument uses beyond `flipSubHom_snd`. -/
+theorem flipSub_subPair {A S : Scheme.{0}} {af : A ⟶ S} (abA : AbelianSchemeStruct af) :
+    flipSubHom abA ≫ subPairHom abA = Limits.pullback.fst af af := by
+  have hg : flipSubHom abA ≫ (Limits.pullback.fst af af ≫ af)
+      = Limits.pullback.fst af af ≫ af := by
+    rw [← Category.assoc, flipSubHom_fst, subPairHom_comp]
+  have h1 : RelPoint.pre (flipSubHom abA) hg (pairFst af)
+      = abA.add (abA.neg (pairFst af)) (pairSnd af) :=
+    Subtype.ext (flipSubHom_fst abA)
+  have h2 : RelPoint.pre (flipSubHom abA) hg (pairSnd af) = pairSnd af :=
+    Subtype.ext (flipSubHom_snd abA)
+  have key := abA.pre_add (flipSubHom abA) hg (abA.neg (pairFst af)) (pairSnd af)
+  rw [abA.pre_neg, h1, h2] at key
+  have hsx : abA.add (abA.add (abA.neg (pairFst af)) (pairSnd af)) (pairFst af)
+      = pairSnd af := by
+    rw [abA.add_comm, ← abA.add_assoc, abA.add_comm (pairFst af) (abA.neg (pairFst af)),
+      abA.neg_add, abA.zero_add]
+  have hcancel : abA.add (abA.neg (abA.add (abA.neg (pairFst af)) (pairSnd af))) (pairSnd af)
+      = pairFst af := by
+    calc abA.add (abA.neg (abA.add (abA.neg (pairFst af)) (pairSnd af))) (pairSnd af)
+        = abA.add (abA.neg (abA.add (abA.neg (pairFst af)) (pairSnd af)))
+            (abA.add (abA.add (abA.neg (pairFst af)) (pairSnd af)) (pairFst af)) := by
+          rw [hsx]
+      _ = pairFst af := by rw [← abA.add_assoc, abA.neg_add, abA.zero_add]
+  rw [hcancel] at key
+  exact congrArg Subtype.val key
+
+/-- **THE `⊇` HALF OF `smoothLocus_pairSquareMap`** (**PROVEN 2026-07-30**).
+
+The route is the docstring's, globalised so that only the ORDINARY `Smooth`
+stability instances are needed and no pointwise reasoning about stalks occurs.
+Write `V = u.smoothLocus`.  Then:
+
+* `V.ι ≫ u` is `Smooth`, because
+  `smoothLocus (V.ι ≫ u) = V.ι ⁻¹ᵁ V = ⊤` (`Scheme.Hom.preimage_smoothLocus_eq`
+  and `Scheme.Opens.ι_preimage_self`);
+* `pairSquareMap (V.ι ≫ u) huV` is therefore `Smooth`, by
+  `MorphismProperty.pullbackMap` — the general fact that `pullback.map … (𝟙 S)`
+  inherits a base-change-and-composition-stable property from its two legs;
+* `Limits.pullback.map _ _ af af V.ι V.ι (𝟙 S)` is an OPEN IMMERSION
+  (`Scheme.pullback_map_isOpenImmersion`) with range exactly
+  `fst ⁻¹' V ∩ snd ⁻¹' V` (`Scheme.Pullback.range_map`, whose `[Mono i₃]`
+  hypothesis is met by `𝟙 S`), and it composes with `pairSquareMap u hu` to give
+  `pairSquareMap (V.ι ≫ u) huV`;
+* so `preimage_smoothLocus_eq` transports `smoothLocus = ⊤` across it.
+
+**`Smooth af` and `Smooth bf` ARE NOT NEEDED HERE, and the compiler confirms it**
+— they are absent from this signature.  That is the docstring of
+`smoothLocus_pairSquareMap` verified, not merely repeated: they are load-bearing
+only for `⊆`, where they make the two projections smooth. -/
+theorem le_smoothLocus_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af)
+    [LocallyOfFinitePresentation u] [LocallyOfFinitePresentation (pairSquareMap u hu)] :
+    Limits.pullback.fst af af ⁻¹ᵁ u.smoothLocus
+        ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus
+      ≤ (pairSquareMap u hu).smoothLocus := by
+  set V : A.Opens := u.smoothLocus with hVdef
+  have huV : (V.ι ≫ u) ≫ bf = V.ι ≫ af := by rw [Category.assoc, hu]
+  haveI : Smooth (V.ι ≫ u) := by
+    rw [← Scheme.Hom.smoothLocus_eq_top_iff, ← Scheme.Hom.preimage_smoothLocus_eq,
+      ← hVdef, Scheme.Opens.ι_preimage_self]
+  haveI : Smooth (pairSquareMap (V.ι ≫ u) huV) :=
+    MorphismProperty.pullbackMap (P := @Smooth) ‹Smooth (V.ι ≫ u)› ‹Smooth (V.ι ≫ u)›
+      huV.symm huV.symm
+  have hcomm : Limits.pullback.map (V.ι ≫ af) (V.ι ≫ af) af af V.ι V.ι (𝟙 S)
+        (by simp) (by simp) ≫ pairSquareMap u hu
+      = pairSquareMap (V.ι ≫ u) huV := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, pairSquareMap_fst, ← Category.assoc, Limits.pullback.lift_fst,
+        Category.assoc, pairSquareMap_fst]
+    · rw [Category.assoc, pairSquareMap_snd, ← Category.assoc, Limits.pullback.lift_snd,
+        Category.assoc, pairSquareMap_snd]
+  intro z hz
+  obtain ⟨hz1, hz2⟩ := hz
+  have hrange : z ∈ Set.range (Limits.pullback.map (V.ι ≫ af) (V.ι ≫ af) af af V.ι V.ι (𝟙 S)
+      (by simp) (by simp)) := by
+    rw [Scheme.Pullback.range_map]
+    exact ⟨by simpa [Scheme.Opens.range_ι] using hz1, by simpa [Scheme.Opens.range_ι] using hz2⟩
+  obtain ⟨t, rfl⟩ := hrange
+  have hsm : (Limits.pullback.map (V.ι ≫ af) (V.ι ≫ af) af af V.ι V.ι (𝟙 S)
+      (by simp) (by simp)) ⁻¹ᵁ (pairSquareMap u hu).smoothLocus = ⊤ := by
+    rw [Scheme.Hom.preimage_smoothLocus_eq]
+    exact (smoothLocus_congr hcomm).trans (Scheme.Hom.smoothLocus_eq_top _)
+  have hmem : t ∈ (Limits.pullback.map (V.ι ≫ af) (V.ι ≫ af) af af V.ι V.ι (𝟙 S)
+      (by simp) (by simp)) ⁻¹ᵁ (pairSquareMap u hu).smoothLocus := by rw [hsm]; trivial
+  exact hmem
+
+/-- **THE `⊆` HALF OF `smoothLocus_pairSquareMap`** (sorry leaf, cut 2026-07-30
+out of that theorem once `⊇` was proven).
+
+**Why it is stated, i.e. why the statement is VOUCHED.**  Globally it is Stacks
+`02VL` (`Descent`, "if `g ∘ f` is smooth and `f` is surjective, flat and locally
+of finite presentation, then `g` is smooth"), applied to
+`M → fst (M) → B` where `M` is the open `(pairSquareMap u hu).smoothLocus`:
+`(u ×_S u) ≫ fst_B = fst_A ≫ u` by `pairSquareMap_fst`, `fst_B` is smooth (a base
+change of `bf`), so `fst_A ≫ u` is smooth on `M`; `fst_A` is smooth (a base change
+of `af`) hence flat, open and surjective, so `u` is smooth on the OPEN image
+`fst_A (M)`.  Everything in that argument is a theorem, so this is a promise that
+can be kept — it is not a hypothesis about the world.
+
+**WHAT IS ACTUALLY MISSING, checked against the pin on 2026-07-30 rather than
+assumed.**  The obstruction is not the global theorem but the POINTWISE one, and
+it is missing on both routes:
+
+* At the scheme level, `Mathlib/AlgebraicGeometry/Morphisms/LocalFlatDescent.lean`
+  supplies `DescendsAlong @Smooth (@Surjective ⊓ @Flat ⊓ @QuasiCompact)`, which is
+  descent along a base change of the TARGET.  What `⊆` needs is descent along the
+  SOURCE — `f ≫ g` smooth and `f` fppf ⟹ `g` smooth — and that is NOT the same
+  statement and is not in the pin.  (Deriving it from the target form is the usual
+  flat + geometrically-regular-fibres argument, i.e. descent of regularity along a
+  faithfully flat map, which is also absent.)
+* At the ring level, `smoothLocus` is by definition
+  `{x | (f.stalkMap x).hom.FormallySmooth}` (`Scheme.Hom.smoothLocus`), so the
+  pointwise form is descent of `FormallySmooth` for local rings.  Mathlib's own
+  `Mathlib/RingTheory/Etale/Descent.lean` records the base-change form of exactly
+  that as an open `proof_wanted`
+  (`Algebra.FormallySmooth.of_formallySmooth_tensorProduct_of_faithfullyFlat`),
+  noting it needs Raynaud–Gruson descent of projectivity (Stacks `058B`).  So a
+  worker sent here should expect to build a theory, and should build it in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/` rather than inline.
+
+**`Smooth af` and `Smooth bf` are load-bearing HERE and only here** — they are
+what make `fst_A` and `fst_B` smooth.  Without them the statement has no argument;
+`⊇` above does not mention them.
+
+The cheapest honest reduction, if a worker wants a smaller target: prove the
+general pointwise lemma "`p` flat, `x ∈ (p ≫ f).smoothLocus` ⟹ `p x ∈
+f.smoothLocus`" once, and `⊆` follows by applying it to `fst_A` and to `snd_A`
+together with the composition rule for `FormallySmooth` stalk maps. -/
+theorem smoothLocus_pairSquareMap_le {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) [Smooth af] [Smooth bf]
+    [LocallyOfFinitePresentation u] [LocallyOfFinitePresentation (pairSquareMap u hu)] :
+    (pairSquareMap u hu).smoothLocus
+      ≤ Limits.pullback.fst af af ⁻¹ᵁ u.smoothLocus
+        ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus :=
+  sorry
+
+/-- **THE SMOOTH LOCUS OF A FIBRE SQUARE OF ONE MORPHISM** (**assembled
+2026-07-30** from `smoothLocus_pairSquareMap_le` and
+`le_smoothLocus_pairSquareMap`; the `⊇` half is PROVEN and only `⊆` remains open,
 2026-07-29) — the first of the two halves of
 `smoothLocus_eq_top_of_nonempty_of_isAdditiveOn`.  No group law occurs in it.
 
@@ -59304,17 +59467,28 @@ coordinates.  Both inclusions are standard and each needs one general fact that
 
 **`Smooth af` and `Smooth bf` ARE LOAD-BEARING, and only for `⊆`.**  They are
 what make the two projections smooth.  Without them `⊆` has no argument; they
-are supplied at the call site by `abA.smooth` and `abB.smooth`. -/
+are supplied at the call site by `abA.smooth` and `abB.smooth`.  **That claim was
+CHECKED on 2026-07-30 rather than inherited**: `le_smoothLocus_pairSquareMap`
+compiles with neither instance in its signature.
+
+**The `⊇` bullet above says "`mathlib` does not state" the fact it needs; that is
+not what happened.**  The general fact is `MorphismProperty.pullbackMap`
+(`Mathlib/CategoryTheory/MorphismProperty/Limits.lean`), together with
+`Scheme.pullback_map_isOpenImmersion` and `Scheme.Pullback.range_map`, all of
+which are in the pin.  What the bullet correctly identifies is that no POINTWISE
+`smoothLocus` lemma exists — and the repair is to avoid pointwise reasoning
+entirely, which is what the proof of `le_smoothLocus_pairSquareMap` does.  `⊆` is
+the one that really is blocked on missing theory; see its own docstring. -/
 theorem smoothLocus_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
     (u : A ⟶ B) (hu : u ≫ bf = af) [Smooth af] [Smooth bf]
     [LocallyOfFinitePresentation u] [LocallyOfFinitePresentation (pairSquareMap u hu)] :
     (pairSquareMap u hu).smoothLocus
       = Limits.pullback.fst af af ⁻¹ᵁ u.smoothLocus
         ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus :=
-  sorry
+  le_antisymm (smoothLocus_pairSquareMap_le u hu) (le_smoothLocus_pairSquareMap u hu)
 
 /-- **A NONEMPTY SHEAR-INVARIANT OPEN OF AN ABELIAN SCHEME OVER `ℚ` IS
-EVERYTHING** (sorry leaf, new 2026-07-29) — the second half.  It is PURELY
+EVERYTHING** (**PROVEN 2026-07-30**; cut 2026-07-29) — the second half.  It is PURELY
 TOPOLOGICAL: no smoothness occurs in the statement, and the group law enters
 only through `shearHom`.
 
@@ -59339,14 +59513,80 @@ connected geometric FIBRES, not a connected base.
 Irreducibility of `A ×_ℚ Spec κ(a)` is available in this tree — it is
 `GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected`
 applied to `af`, whose hypotheses are `abA.smooth` and `abA.connected` — so the
-prover's work is the fibre bookkeeping, not the geometry. -/
+prover's work is the fibre bookkeeping, not the geometry.
+
+**PROVEN 2026-07-30, and the "fibre bookkeeping" turned out not to be needed.**
+The scheme `A ×_ℚ Spec κ(a)` is never formed.  What replaces it is
+`Scheme.Hom.isIrreducible_preimage`
+(`Mathlib/AlgebraicGeometry/Geometrically/Irreducible.lean`): for a
+GEOMETRICALLY IRREDUCIBLE and OPEN morphism `f`, the SET `f ⁻¹' s` is irreducible
+whenever `s` is.  Applied to `f = snd` and `s = {a}` that is exactly the fibre's
+irreducibility, as a subset of `A ×_ℚ A`, with no fibre scheme, no residue field
+and no base-change identification anywhere.  `GeometricallyIrreducible snd` is the
+pin's `pullback_snd` instance over `GeometricallyIrreducible af`, and openness is
+`UniversallyOpen.of_flat` through `abA.smooth`.
+
+The other half of the bookkeeping — that the two opens really do meet the fibre —
+is `Scheme.Pullback.exists_preimage_pullback` (any pair of points with the same
+image in the base is hit by a point of the fibre product; here the base is
+`Spec ℚ`, so `Subsingleton.elim` discharges the compatibility) plus `flipSubHom`,
+which carries the witness for `p ⁻¹ᵁ V` to a witness for `subPairHom ⁻¹ᵁ V` in the
+SAME fibre.  `exists_preimage_pullback` prescribes only the two coordinates of a
+point and says nothing about `subPairHom` there, which is precisely the gap
+`flipSubHom` exists to fill.
+
+Note which form of the invariance is used: not `hinv` itself but its UNSHEAR
+consequence, `p ⁻¹ᵁ V ⊓ subPairHom ⁻¹ᵁ V = p ⁻¹ᵁ V ⊓ q ⁻¹ᵁ V`, obtained by taking
+`unshearHom ⁻¹ᵁ` of both sides of `hinv` and using `unshear_shear`.  The shear form
+would give `x ∈ V ∧ x + y ∈ V ↔ x ∈ V ∧ y ∈ V`, which does not reach an arbitrary
+`a` from a single `v ∈ V`; the unshear form gives `x ∈ V ∧ -x + y ∈ V`, and
+`-(a - v) + a = v` is what closes it. -/
 theorem eq_top_of_shearHom_invariant {A : Scheme.{0}} {af : A ⟶ SpecQ}
     (abA : AbelianSchemeStruct af) (V : A.Opens) (hV : (V : Set A).Nonempty)
     (hinv : shearHom abA ⁻¹ᵁ (Limits.pullback.fst af af ⁻¹ᵁ V
         ⊓ Limits.pullback.snd af af ⁻¹ᵁ V)
       = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V) :
-    V = ⊤ :=
-  sorry
+    V = ⊤ := by
+  haveI : Smooth af := abA.smooth
+  haveI : GeometricallyIrreducible af :=
+    GaloisRepresentation.Modularity.geometricallyIrreducible_of_smooth_of_geometricallyConnected
+      af abA.smooth abA.connected
+  haveI : UniversallyOpen af := inferInstance
+  -- The unshear form of the invariance.
+  have hone : unshearHom abA ⁻¹ᵁ (Limits.pullback.fst af af ⁻¹ᵁ V
+      ⊓ Limits.pullback.snd af af ⁻¹ᵁ V)
+      = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V := by
+    conv_lhs => rw [← hinv]
+    rw [← Scheme.Hom.comp_preimage, unshear_shear, Scheme.Hom.id_preimage]
+  have hkey : Limits.pullback.fst af af ⁻¹ᵁ V ⊓ subPairHom abA ⁻¹ᵁ V
+      = Limits.pullback.fst af af ⁻¹ᵁ V ⊓ Limits.pullback.snd af af ⁻¹ᵁ V := by
+    rw [← hone, Scheme.Hom.preimage_inf, ← Scheme.Hom.comp_preimage, ← Scheme.Hom.comp_preimage,
+      unshearHom_fst, unshearHom_snd]
+  obtain ⟨v, hv⟩ := hV
+  rw [← TopologicalSpace.Opens.coe_eq_univ, Set.eq_univ_iff_forall]
+  intro a
+  have hbase : af v = af a := Subsingleton.elim _ _
+  obtain ⟨w, hw1, hw2⟩ := Scheme.Pullback.exists_preimage_pullback (f := af) (g := af) v a hbase
+  set p := Limits.pullback.fst af af with hp
+  set q := Limits.pullback.snd af af with hq
+  set z := (flipSubHom abA) w with hzdef
+  have hF : IsIrreducible (q ⁻¹' ({a} : Set A)) :=
+    q.isIrreducible_preimage q.isOpenMap isIrreducible_singleton
+  have hqz : q z = a := by
+    rw [hzdef, ← Scheme.Hom.comp_apply, flipSubHom_snd, hw2]
+  have hpz : subPairHom abA z = v := by
+    rw [hzdef, ← Scheme.Hom.comp_apply, flipSub_subPair, hw1]
+  obtain ⟨t, htF, htU, htU'⟩ :=
+    hF.isPreirreducible (p ⁻¹' (V : Set A)) ((subPairHom abA) ⁻¹' (V : Set A))
+      (p.continuous.isOpen_preimage _ V.isOpen)
+      ((subPairHom abA).continuous.isOpen_preimage _ V.isOpen)
+      ⟨w, by simpa using hw2, by simpa [hw1] using hv⟩
+      ⟨z, by simpa using hqz, by simpa [hpz] using hv⟩
+  have hmem : t ∈ (p ⁻¹ᵁ V ⊓ subPairHom abA ⁻¹ᵁ V) := ⟨htU, htU'⟩
+  rw [hkey] at hmem
+  have hta : q t = a := htF
+  rw [← hta]
+  exact hmem.2
 
 /-- **HOMOGENEITY: A NONEMPTY SMOOTH LOCUS OF AN ADDITIVE MORPHISM OF
 ABELIAN SCHEMES IS EVERYTHING** (**PROVEN 2026-07-29** over
