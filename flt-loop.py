@@ -45,6 +45,11 @@ SNAPSHOT = pathlib.Path.home() / ".flt-release-lake" / "build"
 SNAPSHOT_SHA = pathlib.Path.home() / ".flt-release-lake" / "sha"
 DOCTRINE = pathlib.Path.home() / ".flt-agent-doctrine.md"
 CLAUDE = str(pathlib.Path.home() / ".local" / "bin" / "claude")
+# The fleet's model, pinned. The quota probe deliberately keeps this too: it is
+# a negligible cost and Deyao wants the probe answering the "will the API serve
+# us" question on exactly the model the fleet uses, so a refusal it sees is a
+# refusal the workers would see.
+MODEL = "opus[1m]"
 TICK = 10
 HOST_REFRESH = 300          # seconds; a loadavg older than this is not useful
 ALIVE_CACHE = 20            # seconds; one ssh sweep per host, not per job
@@ -632,11 +637,19 @@ def do_spawn(s, name, j):
     # so `claude` is not on PATH there and the spawn dies with "command not
     # found" into a log nobody reads. $HOME is shared, so this resolves on
     # every worker host.
+    # --model is PINNED rather than inherited. Without it every job takes
+    # whatever ~/.claude/settings.json happens to say, so a single edit to that
+    # file silently re-models the entire fleet -- and the model would appear in
+    # no job record, no prompt and no log, making the change invisible after
+    # the fact. There is precedent for that divergence here: the monitor
+    # already runs under its own CLAUDE_CONFIG_DIR with a different model.
+    # Recorded on the job too, so what ran is auditable from the state alone.
+    j["model"] = MODEL
     inner = ("cd %s 2>/dev/null || cd %s; "
-             "exec -a flt-job-%s %s --dangerously-skip-permissions "
+             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions "
              "-p \"$(cat %s)\""
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
-                shlex.quote(CLAUDE), shlex.quote(str(pf))))
+                shlex.quote(CLAUDE), shlex.quote(MODEL), shlex.quote(str(pf))))
     cmd = ("setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
            % (shlex.quote(inner), shlex.quote(str(log))))
     try:
@@ -820,7 +833,7 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session",
-                                     "takeover", "spawned_at")}
+                                     "takeover", "spawned_at", "model")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
