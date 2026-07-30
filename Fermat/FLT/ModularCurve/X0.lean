@@ -23108,13 +23108,17 @@ by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
   over the single residual leaf `exists_weierstrassModel_away_of_prime`
   (the same statement at ONE prime, with no covering condition): the
   passage from "a model exists off every prime" to "finitely many basic
-  opens with `Ideal.span = ⊤`" is quasi-compactness and nothing else.  It
-  is `exists_weierstrassModel_away_of_prime` that now carries the
-  IRREDUCIBLE verdict of the affine leaf, verbatim, and it is reproduced
-  there: no machinery attaching `ω`, `c₄`, `Δ` to an
-  `AbelianSchemeStruct` exists in mathlib, in `~/cs/FLT` or here.
+  opens with `Ideal.span = ⊤`" is quasi-compactness and nothing else.
+  `exists_weierstrassModel_away_of_prime` is in turn **PROVEN 2026-07-30**
+  over `exists_weierstrassModel_of_isLocalRing` (the geometry, over a local
+  base) and `exists_weierstrassModel_away_of_atPrime` (spreading out).  It is
+  `exists_weierstrassModel_of_isLocalRing` that now carries the IRREDUCIBLE
+  verdict of the affine leaf, and it is reproduced there — together with the
+  2026-07-30 amendment recording that the `𝒪(nO)` route to it does NOT need a
+  differentials theory and IS expressible at this pin.
 * `weierstrassModel_j_unique` — step (ii): two Weierstrass models of one
-  elliptic scheme have the same `j`.
+  elliptic scheme have the same `j`.  **PROVEN**; the label "a LEAF in this
+  file" survived on it in two places until 2026-07-30 and has been corrected.
 * `isWeierstrassModel_map_of_isBaseChangeOf` — the productive half of
   step (ii): a base change of a model is a model of the base-changed
   datum.  Pure scheme theory, no `j`.  **PROVEN 2026-07-27**, over the
@@ -23280,15 +23284,70 @@ restatement one can make cheaply.  (`Module.Free.away_of_finite_of_flat_of_rankA
 `Mathlib/RingTheory/Flat/LocallyFree.lean`, is the pin-available form of
 "invertible ⟹ free after inverting one element off `p`", and is what such
 a split would consume; it is recorded here so the next owner does not
-have to find it again.) -/
+have to find it again.)
 
-/-- **An elliptic scheme over an affine base acquires a Weierstrass model
-after inverting ONE element off a given prime** (sorry leaf, step (i) of
-the cut of `exists_jSectionOnAffine`, restated at a single prime by the
-cut of 2026-07-27).
+**AMENDED 2026-07-30, and the paragraph above is now WRONG in its conclusion
+though right in its premise.**  The objection to the `ω`-split stands exactly
+as stated: a bare "some invertible `R`-module" makes (ii) false.  What does
+not stand is "a safe version of that split therefore needs `Ω¹` of a
+morphism of schemes and its pushforward".  Two corrections, the second of
+which was found by grepping for the CONCEPT rather than for the name `ω`:
+
+* **The classical construction does not use `ω` at all.**  Deligne
+  (*Formulaire*) and Katz–Mazur 2.2 obtain `x` and `y` from the linear
+  systems `𝒪(2O)` and `𝒪(3O)` — `H⁰(𝒪(2O)) = ⟨1, x⟩`,
+  `H⁰(𝒪(3O)) = ⟨1, x, y⟩`, the Weierstrass relation living in
+  `H⁰(𝒪(6O))`.  `ω` enters only to NORMALISE the pair `(x, y)` against a
+  chosen invariant differential, and `IsWeierstrassModel` asks for no such
+  normalisation — it asks for an open immersion with a prescribed range.  So
+  `Ω¹` is not on the critical path.
+* **`𝒪(−O)` already exists in this development, and this file already
+  imports it.**  `Fermat.sectionIdeal` (`ModularCurve/RelativePicard.lean`,
+  `public import`ed at the head of this file) is precisely `𝒪(−σ)` for a
+  section `σ`, defined as the kernel of `𝒪_Z ⟶ σ_* 𝒪_T`; the zero section
+  `(ab.zero (𝟙 _)).1` is such a `σ`.  Around it are `IsInvertibleSheaf`,
+  `modTensor`, `exists_modDual` (duals, hence `𝒪(+O)`), `modPullback` and
+  `RelPicEquiv` in the same file, and `modTensorPow`, `Γ(L, ⊤)`,
+  `trivializedSection`, `NonvanishingAt`, `IsAmpleSheaf` and
+  `Scheme.Modules.pushforward` in `Modularity/AmpleSheaf.lean` (reached
+  publicly through `Modularity/AbelianSchemeIsogeny.lean`).  This file
+  already USES that vocabulary — see `nonempty_cubeModel_of_isAmpleSheaf_cube`
+  below.  So the `𝒪(nO)` split is EXPRESSIBLE at this pin without inventing
+  an object; what is missing is not the language but the input
+  `f_*𝒪(nO)` is locally free of rank `n`, i.e. Riemann–Roch on the fibres
+  plus cohomology-and-base-change.  Whoever attacks the leaf next should
+  price that, not a differentials theory.
+
+**THE CUT ACTUALLY MADE, 2026-07-30, along a different axis: local ring
+versus spreading out.**  `exists_weierstrassModel_away_of_prime` is now
+PROVEN over two leaves, and the axis is neither of the ones surveyed above:
+
+* `exists_weierstrassModel_of_isLocalRing` — the geometry, over a LOCAL base
+  ring, with no localization anywhere in the statement.  This is
+  Katz–Mazur 2.2.5 / Deligne *Formulaire* verbatim: over a local ring the
+  relevant sheaf is free, so a model exists over the base itself.
+* `exists_weierstrassModel_away_of_atPrime` — the descent from `R_p` to some
+  `R[1/a]`, `a ∉ p`.  Pure spreading-out (EGA IV 8.8/8.14: `R_p` is the
+  filtered colimit of the `R[1/a]` with `a ∉ p`, and `E` is finitely
+  presented over `R` because it is smooth and proper), with no elliptic
+  curve in it.  `Mathlib/AlgebraicGeometry/SpreadingOut.lean` and
+  `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` are the pin-available
+  tools.
+
+Neither leaf implies the other and both are true; the glue is
+`exists_gamma0Datum_baseChange` at the localization map, and it is written
+out below. -/
+
+/-- **An elliptic scheme over a LOCAL base ring has a Weierstrass model over
+that ring** (sorry leaf, step (i) of the cut of `exists_jSectionOnAffine`,
+restated at a single prime by the cut of 2026-07-27 and moved to a local base
+by the cut of 2026-07-30).
 
 TRUE and classical: Deligne–Rapoport II, Katz–Mazur 2.2, or Deligne's
-*Courbes elliptiques: formulaire*.  The Hodge bundle
+*Courbes elliptiques: formulaire*.  Over a local ring this is the literature
+statement with nothing added — no localization, no covering condition, no
+choice of `a` — because the freeness the construction needs is automatic
+over a local base.  The Hodge bundle
 `ω = f_* Ω¹_{E/Spec R}` is invertible, so `ω_p` is free over the local
 ring `R_p`, hence `ω` is already free over `R[1/a]` for some `a ∉ p`; a
 trivialisation of `ω` over `D(a)` gives the Weierstrass coordinates `x, y`
@@ -23321,13 +23380,56 @@ relative differential, a Hodge bundle, or a Weierstrass presentation of
 an `AbelianSchemeStruct` — equivalently a `grep` for `ω`, `c₄` or `Δ`
 attached to a relative curve rather than to a `WeierstrassCurve`.
 
-NOT VACUOUS.  `a ∉ p` forbids the degenerate witness `a = 0` (over which
-`Localization.Away 0` is the zero ring and everything holds), so the
-conclusion really is about a nonempty basic open through `p`.  And
-`IsWeierstrassModel` is not junk-satisfiable — it demands an open
-immersion whose range is exactly the complement of the zero section. -/
-theorem exists_weierstrassModel_away_of_prime {R : Type} [CommRing R]
-    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (p : Ideal R) [p.IsPrime] :
+NOT VACUOUS, and it is the LOCAL form that makes this clear: the previous
+statement's `a ∉ p` was needed to forbid the degenerate witness `a = 0` (over
+which `Localization.Away 0` is the zero ring and everything holds), and that
+whole hazard is gone here because there is nothing to invert.  `IsLocalRing`
+carries `Nontrivial`, so the base is not the zero ring.  And
+`IsWeierstrassModel` is not junk-satisfiable — it demands an open immersion
+whose range is exactly the complement of the zero section. -/
+theorem exists_weierstrassModel_of_isLocalRing {R : Type} [CommRing R] [IsLocalRing R]
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
+    ∃ (W : WeierstrassCurve R) (_ : W.IsElliptic), IsWeierstrassModel d.ab W :=
+  sorry
+
+/-- **A Weierstrass model over `R_p` spreads out to one over `R[1/a]` for some
+`a ∉ p`** (sorry leaf, the second half of the cut of 2026-07-30; pure
+spreading-out, no elliptic curve in it).
+
+THE ARGUMENT, and it is EGA IV 8.8/8.14 and nothing else.  `R_p` is the
+filtered colimit of the `R[1/a]` over `a ∉ p` (the multiplicative set
+`p.primeCompl`), and `d.E ⟶ Spec R` is finitely presented because it is smooth
+and proper.  So each piece of the model descends to a finite stage: the five
+Weierstrass coefficients are elements of `R_p`, hence come from some `R[1/a₁]`;
+the open immersion `ι : Spec R_p[W₀] ⟶ (d.E)_p` over the base comes from some
+`R[1/a₂]` because `Hom` out of a finitely presented scheme commutes with
+filtered colimits of affine bases; and both "is an open immersion" and the
+range condition `Set.range ι.base = (range of the zero section)ᶜ` are
+constructible conditions, so they too hold at a finite stage.  Take `a` a
+product of the finitely many `aᵢ`.
+
+WHAT IS NOT ASSUMED.  `d₀` and `bc₀` are an ARBITRARY base change of `d` to
+`Spec R_p`, not the canonical one — `IsBaseChangeOf` carries an abstract
+cartesian square, and any two base changes along one morphism are isomorphic,
+so nothing is lost and a producer does not have to match a particular
+construction.
+
+NOT VACUOUS in either direction.  The hypotheses are satisfiable — the
+canonical base change plus `exists_weierstrassModel_of_isLocalRing` supplies
+them, which is exactly how `exists_weierstrassModel_away_of_prime` below calls
+this — and the conclusion is not junk-satisfiable, since `a ∉ p` forbids
+`a = 0` and `IsWeierstrassModel` pins the range.
+
+PIN AVAILABLE: `Mathlib/AlgebraicGeometry/SpreadingOut.lean`,
+`Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean`,
+`Mathlib/RingTheory/Localization/AtPrime.lean`. -/
+theorem exists_weierstrassModel_away_of_atPrime {R : Type} [CommRing R]
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (p : Ideal R) [p.IsPrime]
+    (d₀ : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.AtPrime p))))
+    (bc₀ : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.AtPrime p)))) d₀ d)
+    (W₀ : WeierstrassCurve (Localization.AtPrime p)) (hell₀ : W₀.IsElliptic)
+    (hW₀ : IsWeierstrassModel d₀.ab W₀) :
     ∃ a : R, a ∉ p ∧
       ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away a))))
         (W : WeierstrassCurve (Localization.Away a)) (_ : W.IsElliptic),
@@ -23335,6 +23437,37 @@ theorem exists_weierstrassModel_away_of_prime {R : Type} [CommRing R]
           (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away a)))) d' d) ∧
         IsWeierstrassModel d'.ab W :=
   sorry
+
+/-- **An elliptic scheme over an affine base acquires a Weierstrass model
+after inverting ONE element off a given prime** (**PROVEN 2026-07-30** over
+`exists_weierstrassModel_of_isLocalRing` and
+`exists_weierstrassModel_away_of_atPrime`; formerly the residual sorry leaf of
+the cut of `exists_jSectionOnAffine`).
+
+No axiom audit is quoted and none is possible yet: both leaves above are open,
+so this declaration is TRANSITIVELY sorried even though its own body is not,
+and it emits no `declaration uses 'sorry'` warning.  Do not read the absent
+warning as a closed subtree — the irreducibility verdict of
+`exists_jSection` now sits on `exists_weierstrassModel_of_isLocalRing`, where
+its docstring reproduces it.
+
+The glue is three lines: base-change `d` to `Spec R_p` (which is
+`exists_gamma0Datum_baseChange`, PROVEN above), take the model there (the
+local-ring leaf, using `Localization.AtPrime.isLocalRing`), and spread it out
+(the second leaf).  Consumers — `exists_weierstrassModel_localization` and
+everything above it — are unchanged. -/
+theorem exists_weierstrassModel_away_of_prime {R : Type} [CommRing R]
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (p : Ideal R) [p.IsPrime] :
+    ∃ a : R, a ∉ p ∧
+      ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away a))))
+        (W : WeierstrassCurve (Localization.Away a)) (_ : W.IsElliptic),
+        Nonempty (IsBaseChangeOf
+          (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away a)))) d' d) ∧
+        IsWeierstrassModel d'.ab W := by
+  obtain ⟨d₀, ⟨bc₀⟩⟩ := exists_gamma0Datum_baseChange
+    (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.AtPrime p)))) d
+  obtain ⟨W₀, hell₀, hW₀⟩ := exists_weierstrassModel_of_isLocalRing d₀
+  exact exists_weierstrassModel_away_of_atPrime d p d₀ bc₀ W₀ hell₀ hW₀
 
 /-- **An elliptic scheme over an affine base is a Weierstrass model after
 inverting finitely many elements of the base ring** (**PROVEN 2026-07-27**
@@ -25355,15 +25488,20 @@ elements of `R`, so that `c₄³/Δ` is defined on each piece; equivalently,
 the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `c₄, c₆, Δ` as sections of its powers.  That is
 `exists_weierstrassModel_localization` (PROVEN 2026-07-27 over
-`exists_weierstrassModel_away_of_prime`, which is where the irreducibility
-verdict now sits); the well-definedness and functoriality of `j` are
-`weierstrassModel_j_unique`,
+`exists_weierstrassModel_away_of_prime`, itself PROVEN 2026-07-30 over the
+local-ring/spreading-out pair, so the irreducibility verdict now sits on
+`exists_weierstrassModel_of_isLocalRing`); the well-definedness and
+functoriality of `j` are `weierstrassModel_j_unique` (**PROVEN**),
 `isWeierstrassModel_map_of_isBaseChangeOf` (PROVEN 2026-07-27) and
 `exists_isBaseChangeOf_cancel` (PROVEN); the gluing of the local values
 is `exists_jValueOnAffine_of_localModels` (PROVEN 2026-07-27).  **So of
-the five leaves of the cut, exactly TWO remain open**: step (i), now
-narrowed to `exists_weierstrassModel_away_of_prime` (which carries the
-irreducibility verdict), and `weierstrassModel_j_unique`.
+the five leaves of the cut, NONE remains open as stated** — every one is
+proven, and what is left of step (i) is the two leaves it was cut into on
+2026-07-30, `exists_weierstrassModel_of_isLocalRing` (which carries the
+irreducibility verdict) and `exists_weierstrassModel_away_of_atPrime`.
+(This paragraph said "exactly TWO remain open … and `weierstrassModel_j_unique`"
+until 2026-07-30; `weierstrassModel_j_unique` had been proven for some time and
+the count was stale.)
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
@@ -32501,8 +32639,9 @@ the rational cusps, because a larger supply could simply be cut down
 — that the Galois action on the cusps above `d` is *exactly* the
 cyclotomic one, hence that no cusp with `φ(gcd(d, N/d)) > 1` is rational
 — is **not** an obligation of this development.  A prover of
-`exists_cuspAboveDivisor` (the leaf this reduces to since 2026-07-28, through
-`nonempty_cuspLocus` and `exists_cuspResidueIndexing`) needs only the easy
+`exists_cuspAboveDivisor_root` (the leaf this reduces to, through
+`exists_cuspAboveDivisor`, `nonempty_cuspLocus` and
+`exists_cuspResidueIndexing`) needs only the easy
 direction: for `d` with
 `φ(gcd(d, N/d)) = 1` the unique cusp above `d` is `Γ_ℚ`-fixed, and cusps
 over distinct `d` are distinct.  That is a strictly smaller theorem than
@@ -32879,8 +33018,9 @@ out of `IsCyclotomicExtension.finrank`.
 
 What is left open — since 2026-07-28 the two leaves
 `exists_cuspAboveDivisor` and `card_compl_range_le_card_divisors`, into which
-`exists_cuspResidueIndexing` was decomposed along `≥` / `≤` — is then exactly
-the Deligne–Rapoport sentence and nothing else. -/
+`exists_cuspResidueIndexing` was decomposed along `≥` / `≤`, the first of them
+restated on 2026-07-30 as `exists_cuspAboveDivisor_root` and proven over it —
+is then exactly the Deligne–Rapoport sentence and nothing else. -/
 
 /-- **The `ℚ`-algebra structure on the residue field of a point of a
 `ℚ`-scheme.**
@@ -33109,10 +33249,130 @@ theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
     rw [hr d, hr d']
     exact Set.disjoint_singleton.mpr fun hc => hne (e.injective (Subtype.ext hc))
 
-/-- **The cusp of `X_0(N)` above a divisor `d ∣ N` exists, has residue field
-`ℚ(ζ_{gcd(d, N/d)})`, and distinct divisors give distinct cusps** (sorry
+/-- **A field of degree `φ(n)` over `K` containing a primitive `n`-th root of
+unity IS `K(ζ_n)`** (PROVEN 2026-07-30; axiom-audited
+`[propext, Classical.choice, Quot.sound]`).
+
+Stated over an ABSTRACT base field `K` on purpose, and that is not
+generality for its own sake — it is what makes the lemma usable at `K = ℚ`
+at all.  Written directly at `ℚ` the statement is unprovable as spelled:
+`Algebra ℚ ↥(K⟮ζ⟯)` synthesizes as `DivisionRing.toRatAlgebra` rather than
+as `IntermediateField.algebra'`, and the two are propositionally but NOT
+definitionally equal, so `IsCyclotomicExtension.finrank` and
+`IsPrimitiveRoot.intermediateField_adjoin_isCyclotomicExtension` both fail
+to typecheck against a hand-written `ℚ`-form of the goal (the reported error
+is a `Type mismatch` between two terms that pretty-print identically —
+`ℚ⟮ζ⟯.algebra'` against `DivisionRing.toRatAlgebra`).  With `K` a variable
+every instance path is uniform, and the application at `ℚ` takes its
+`Algebra ℚ (X.residueField x)` from the GOAL, where it is `residueQAlgebra`.
+This is the same `ℚ`-algebra diamond that `IsResidueCyclotomic`'s own
+docstring records as the reason that predicate is not phrased through
+`CyclotomicField n ℚ`.
+
+THE ARGUMENT.  `finrank K L = φ(n) > 0` forces `L` finite over `K` — this is
+the step that rules out the `finrank = 0` junk value, so no degenerate
+infinite extension satisfies the hypotheses — hence `L/K` is algebraic.
+Then `K⟮ζ⟯` is a cyclotomic extension of `K`
+(`IsPrimitiveRoot.intermediateField_adjoin_isCyclotomicExtension`) of degree
+`φ(n)` (`IsCyclotomicExtension.finrank`, from `hirr`), so
+`IntermediateField.eq_of_le_of_finrank_eq` gives `K⟮ζ⟯ = ⊤`; transported to
+subalgebras that says `Algebra.adjoin K {ζ} = ⊤`, and the two fields of
+`IsCyclotomicExtension` follow from `iff_adjoin_eq_top`.
+
+`hirr` is a hypothesis rather than a side condition because it is what pins
+`[K(ζ_n) : K] = φ(n)`; over `K = ℚ` it is
+`Polynomial.cyclotomic.irreducible_rat`.  **Without it the statement is FALSE,
+and here is the witness**: `K = 𝔽₇`, `n = 3`, `L = 𝔽₄₉`.  Since `7 ≡ 1 mod 3`,
+`x² + x + 1` splits over `𝔽₇` (`2² + 2 + 1 = 7 = 0`), so `ζ₃ = 2 ∈ 𝔽₇ ⊆ 𝔽₄₉` is
+a primitive cube root of unity in `L`, and `finrank 𝔽₇ 𝔽₄₉ = 2 = φ(3)` — both
+hypotheses hold.  But every cube root of unity already lies in `𝔽₇`, so
+`Algebra.adjoin 𝔽₇ {b : b³ = 1} = 𝔽₇ ≠ ⊤`, i.e. `IsCyclotomicExtension {3} 𝔽₇ 𝔽₄₉`
+is false.  `hirr` fails there exactly because `cyclotomic 3` is reducible over
+`𝔽₇`. -/
+theorem isCyclotomicExtension_of_isPrimitiveRoot_of_finrank
+    {K L : Type*} [Field K] [Field L] [Algebra K L] {n : ℕ} (hn : n ≠ 0)
+    (hirr : Irreducible (Polynomial.cyclotomic n K))
+    {ζ : L} (hζ : IsPrimitiveRoot ζ n) (hfr : Module.finrank K L = n.totient) :
+    IsCyclotomicExtension {n} K L := by
+  haveI : NeZero n := ⟨hn⟩
+  have htot : 0 < n.totient := Nat.totient_pos.mpr (Nat.pos_of_ne_zero hn)
+  haveI : Module.Finite K L := Module.finite_of_finrank_pos (by rw [hfr]; exact htot)
+  haveI : FiniteDimensional K L := inferInstance
+  haveI : Algebra.IsAlgebraic K L := Algebra.IsAlgebraic.of_finite K L
+  haveI : Algebra.IsIntegral K L := Algebra.IsIntegral.of_finite K L
+  haveI hcyc := hζ.intermediateField_adjoin_isCyclotomicExtension (K := K)
+  have htop : IntermediateField.adjoin K ({ζ} : Set L) = ⊤ := by
+    refine IntermediateField.eq_of_le_of_finrank_eq le_top ?_
+    rw [IntermediateField.finrank_top', hfr]
+    exact IsCyclotomicExtension.finrank (K := K) (n := n) _ hirr
+  have halg : Algebra.adjoin K ({ζ} : Set L) = ⊤ := by
+    have hsub := congrArg IntermediateField.toSubalgebra htop
+    rwa [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+      (Algebra.IsAlgebraic.isAlgebraic ζ), IntermediateField.top_toSubalgebra] at hsub
+  refine (IsCyclotomicExtension.iff_adjoin_eq_top {n} K L).2 ⟨?_, ?_⟩
+  · intro m hm _
+    rw [Set.mem_singleton_iff] at hm
+    exact ⟨ζ, hm ▸ hζ⟩
+  · refine le_antisymm le_top ?_
+    rw [← halg]
+    refine Algebra.adjoin_le ?_
+    intro b hb
+    rw [Set.mem_singleton_iff] at hb
+    subst hb
+    exact Algebra.subset_adjoin ⟨n, rfl, hn, hζ.pow_eq_one⟩
+
+/-- **A point whose residue field has degree `φ(n)` over `ℚ` and contains a
+primitive `n`-th root of unity has `IsResidueCyclotomic`** (PROVEN
+2026-07-30; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+The converse of `residueQDegree_eq_totient` together with the
+`exists_isPrimitiveRoot` field of `IsCyclotomicExtension`, so the two
+descriptions of a cusp are EQUIVALENT and `exists_cuspAboveDivisor_root`
+below is neither stronger nor weaker than `exists_cuspAboveDivisor`.  It is
+what lets the Deligne–Rapoport leaf be stated in terms of an element and a
+number — the two things a Galois computation on the cusps actually produces
+— rather than in terms of a typeclass whose instance argument at the base
+`ℚ` is the diamond described on the lemma above.
+
+Both hypotheses are load-bearing and neither implies the other.  Dropping
+`hdeg` leaves `κ(x) ⊋ ℚ(ζ_n)` admissible: a residue field `ℚ(ζ_n, ∛2)` contains
+`ζ_n` but adjoining the `n`-th roots of unity to `ℚ` inside it gives only
+`ℚ(ζ_n)`, so it is not cyclotomic for `{n}`.  Dropping `hζ` leaves any other
+field of degree `φ(n)` admissible: at `n = 3`, `φ(3) = 2` and `ℚ(√2)` has degree
+`2` over `ℚ` while `ℚ(ζ₃) = ℚ(√−3)`.  `hn` is needed twice, for the
+irreducibility input and to rule out the `finrank = 0` junk value — without it
+an infinite-dimensional residue field would satisfy `hdeg` at `n = 0`
+(`φ(0) = 0`) with nothing else to stop it. -/
+theorem isResidueCyclotomic_of_isPrimitiveRoot_of_residueQDegree
+    {X : Scheme.{0}} {strX : X ⟶ SpecQ} {x : X} {n : ℕ} (hn : n ≠ 0)
+    (hζ : ∃ ζ : X.residueField x, IsPrimitiveRoot ζ n)
+    (hdeg : residueQDegree strX x = n.totient) :
+    IsResidueCyclotomic strX x n := by
+  letI := residueQAlgebra strX x
+  obtain ⟨ζ, hζ⟩ := hζ
+  show IsCyclotomicExtension {n} ℚ (X.residueField x)
+  exact isCyclotomicExtension_of_isPrimitiveRoot_of_finrank hn
+    (Polynomial.cyclotomic.irreducible_rat (Nat.pos_of_ne_zero hn)) hζ hdeg
+
+/-- **The cusp of `X_0(N)` above a divisor `d ∣ N` exists, its residue field
+contains a primitive `gcd(d, N/d)`-th root of unity and has degree
+`φ(gcd(d, N/d))` over `ℚ`, and distinct divisors give distinct cusps** (sorry
 leaf; Deligne–Rapoport VI.6 / Ogg — the CONSTRUCTION half of
 `exists_cuspResidueIndexing`).
+
+**Restated 2026-07-30 in elementary terms, at the same strength.**  The
+conclusion used to be `IsResidueCyclotomic strX (c d).1 (gcd d (N/d))`; it is
+now the pair (a primitive root of unity in the residue field, the residue
+degree).  The two are EQUIVALENT — `⟸` is
+`isResidueCyclotomic_of_isPrimitiveRoot_of_residueQDegree` and `⟹` is
+`residueQDegree_eq_totient` plus `IsCyclotomicExtension.exists_isPrimitiveRoot`
+— so this is a reformulation and not a weakening, and
+`exists_cuspAboveDivisor` below is now PROVEN over it.  The point of the
+restatement is that the Galois computation `σ_t : a ↦ t⁻¹ a` described below
+produces exactly an element and an orbit size, while `IsCyclotomicExtension`
+at the base `ℚ` runs into the instance diamond documented on
+`isCyclotomicExtension_of_isPrimitiveRoot_of_finrank`.  A prover of this leaf
+never has to form a cyclotomic object at all.
 
 Together with `card_compl_range_le_card_divisors` — which says there are no
 OTHER cusps — this gives `exists_cuspResidueIndexing`, whose proof is now the
@@ -33183,13 +33443,43 @@ its unique smooth compactification, so the bridge is not an extra assumption —
 but nothing in this development builds generalised elliptic curves or Néron
 polygons, which is what DR §V.5 is a statement about.  A successor should
 expect to build that layer, not to find it. -/
+theorem exists_cuspAboveDivisor_root (N : ℕ) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
+    ∃ c : N.divisors → ((Set.range j.base)ᶜ : Set X),
+      Function.Injective c ∧
+        ∀ d : N.divisors,
+          (∃ ζ : X.residueField (c d).1, IsPrimitiveRoot ζ (Nat.gcd d.1 (N / d.1))) ∧
+            residueQDegree strX (c d).1 = (Nat.gcd d.1 (N / d.1)).totient :=
+  sorry
+
+/-- **The cusp of `X_0(N)` above a divisor `d ∣ N` exists, has residue field
+`ℚ(ζ_{gcd(d, N/d)})`, and distinct divisors give distinct cusps** (PROVEN
+2026-07-30 over `exists_cuspAboveDivisor_root`, which is the same statement
+with the cyclotomic conclusion unpacked into a root of unity and a degree).
+
+No axiom audit is quoted and none is possible yet: the leaf above is open, so
+this declaration is TRANSITIVELY sorried even though its own body is not, and
+it emits no `declaration uses 'sorry'` warning.  Do not read the absent
+warning as a closed subtree.
+
+The whole Deligne–Rapoport input, the survey of which cuts do not work, and
+the reference with line landmarks are on `exists_cuspAboveDivisor_root`; this
+declaration exists only so that the consumers below
+(`nonempty_cuspLocus_of_residueIndexing`, `exists_cuspResidueIndexing`) keep
+speaking in terms of `IsResidueCyclotomic`, which is the form the `CuspLocus`
+datum wants.  `d ≠ 0` for `d ∈ N.divisors` (`Nat.pos_of_mem_divisors`) is what
+supplies the bridge's `n ≠ 0`. -/
 theorem exists_cuspAboveDivisor (N : ℕ) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     ∃ c : N.divisors → ((Set.range j.base)ᶜ : Set X),
       Function.Injective c ∧
-        ∀ d : N.divisors, IsResidueCyclotomic strX (c d).1 (Nat.gcd d.1 (N / d.1)) :=
-  sorry
+        ∀ d : N.divisors, IsResidueCyclotomic strX (c d).1 (Nat.gcd d.1 (N / d.1)) := by
+  obtain ⟨c, hinj, hc⟩ := exists_cuspAboveDivisor_root N h
+  refine ⟨c, hinj, fun d => ?_⟩
+  refine isResidueCyclotomic_of_isPrimitiveRoot_of_residueQDegree ?_ (hc d).1 (hc d).2
+  exact fun hg => (Nat.pos_of_mem_divisors d.2).ne' (Nat.eq_zero_of_gcd_eq_zero_left hg)
 
 /-- **`X_0(N)` has at most `σ₀(N)` cusps** (sorry leaf; the COMPLETENESS half
 of `exists_cuspResidueIndexing`).
@@ -33230,7 +33520,9 @@ theorem card_compl_range_le_card_divisors (N : ℕ) (hN : N ≠ 0) {X Y : Scheme
 /-- **The cusps of `X_0(N)` are indexed by the divisors of `N`, the cusp above
 `d` having residue field `ℚ(ζ_{gcd(d, N/d)})`** (PROVEN 2026-07-28 over
 `exists_cuspAboveDivisor` and `card_compl_range_le_card_divisors`).  No axiom
-audit is quoted, and none is possible yet: both leaves are open, so this
+audit is quoted, and none is possible yet: both are still transitively open —
+`exists_cuspAboveDivisor` is itself PROVEN since 2026-07-30 over the elementary
+restatement `exists_cuspAboveDivisor_root`, which is the actual leaf — so this
 declaration is TRANSITIVELY sorried even though its own body is not.  It emits
 no `declaration uses 'sorry'` warning, which is exactly the direct/transitive
 distinction — do not read the absent warning as a closed subtree.
@@ -33241,7 +33533,7 @@ cardinality argument that combines them: an injection out of `N.divisors` into
 the finite set `X ∖ Y` is a bijection as soon as `#(X ∖ Y) ≤ σ₀(N)`, which is
 `Function.Injective.bijective_of_nat_card_le`.  Read the two leaves' docstrings
 for the literature; everything below is retained because it is the survey of
-which cuts do NOT work, and it still applies to `exists_cuspAboveDivisor`.
+which cuts do NOT work, and it still applies to `exists_cuspAboveDivisor_root`.
 
 This was the sole remaining Deligne–Rapoport input of the whole cusp route:
 `nonempty_cuspLocus`, `nonempty_cuspIndexing_of_cuspLocus`,
