@@ -123,18 +123,22 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has FIVE open leaves. The list below was REGENERATED from the merged source at
-this merge, not inherited from any of the three sides that disagreed about it — and each of
-them was RIGHT about its own base, which is exactly why none of their lists survives:
-`Heegner.natDegree_minpoly_weberAlpha`, `Heegner.exists_modularPolynomial`, the two
-class-field leaves `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
-`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and — **as of 2026-07-30, replacing
-`Heegner.eta_two_torsion_key`, which is now PROVEN** — the pure disc identity
-`Heegner.eulerProd_neg_pow_eight`, `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`.
-That last move is a NARROWING and not a rename: the old leaf carried Weber's two relations
-`f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸` together, and the first of the two costs nothing but the
-odd/even splitting of Euler's product — it is PROVEN as `Heegner.eta_triple_pow_eight`. The
-count is unchanged at five; the depth behind one of the five is not.
+So this file has FOUR open leaves: `Heegner.natDegree_minpoly_weberAlpha`,
+`Heegner.exists_modularPolynomial`, and the two class-field leaves
+`Heegner.exists_quadratic_jInvariant_heegnerPoint` and
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`.
+
+**UPDATE (2026-07-30, later the same day): the fifth is gone.**  The list above read FIVE,
+the fifth being the pure disc identity `Heegner.eulerProd_neg_pow_eight`
+(`∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`), which had that morning replaced
+`Heegner.eta_two_torsion_key` — a NARROWING and not a rename, since the old leaf carried
+Weber's two relations `f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸` together and the first of the two
+costs nothing but the odd/even splitting of Euler's product (`Heegner.eta_triple_pow_eight`).
+`eulerProd_neg_pow_eight` is now **PROVEN**, by the `jacobiDefect` development beside it: the
+defect of Jacobi's quartic identity is modular for `SL₂(ℤ)` up to a cube root of unity, so its
+cube is a level-one weight-12 cusp form, hence a multiple of `Δ`, and the multiple vanishes
+because the defect does at `ρ`.  The whole of LEAF 5 / LEAF 6 is therefore closed, and no
+analytic leaf remains in this file.
 
 Six names moved between release 19 and here, in three independent directions:
 
@@ -1735,6 +1739,14 @@ prose immediately below with that in mind: it correctly describes how the `S`-tr
 reduces to `B·C·(B + 16C) = E`, but where it calls that "the remaining leaf" the remaining leaf
 is now one step further down.
 
+THIRD STATUS UPDATE (2026-07-30, later): `eulerProd_neg_pow_eight` is PROVEN TOO, so this
+whole cluster is CLOSED — there is now no open leaf anywhere between here and
+`exp_pi_sqrt_le_of_jInvariant_eq`. The proof is the `jacobiDefect` development, which sits
+immediately above `eulerProd_neg_pow_eight`; it is a level-one argument, contradicting the
+note on that theorem which said a level-2 `Γ(2)` argument or a Jacobi triple product were the
+only routes. Read the two paragraphs above as history: every "the remaining leaf is one step
+further down" is now one step further down than anything that exists.
+
 CORRECTION TO THE NAMESPACE DOCSTRING ABOVE (checked 2026-07-28, `grep` over
 `.lake/packages/mathlib`). The claim that "nothing of the modular theory used below is in
 mathlib at this pin" is too strong and cost this decomposition a wrong first plan. Mathlib at
@@ -1853,13 +1865,17 @@ completely different depth:
 * `f·f₁·f₂ = √2`, i.e. Jacobi's `θ₂θ₃θ₄ = 2η³`, is a pure REARRANGEMENT of Euler products —
   no theta function, no modularity, no cusp analysis. It is **PROVEN below**
   (`eta_triple_pow_eight`), over the disc identity `eulerProd_neg_mul_eulerProd_mul_pow_four`;
-* `f⁸ = f₁⁸ + f₂⁸`, i.e. Jacobi's quartic `θ₃⁴ = θ₂⁴ + θ₄⁴`, is genuinely deep. It is the
-  ONLY thing left open, as `eulerProd_neg_pow_eight`.
+* `f⁸ = f₁⁸ + f₂⁸`, i.e. Jacobi's quartic `θ₃⁴ = θ₂⁴ + θ₄⁴`, is genuinely deeper. It is
+  `eulerProd_neg_pow_eight`, and it too is now **PROVEN** (2026-07-30, later the same day) —
+  by the `jacobiDefect` development, not by theta theory. So this split closed the cluster
+  outright rather than leaving one line open, and nothing in this section is a leaf any more.
 
 The previous docstring said the honest cut was "their COMBINATION … a single identity in `η`
 alone", and that was right about the CONSUMER but wrong about the WORK: the combination hides
-a free half behind a hard one. Splitting them costs one extra leaf name and buys the closure
-of everything except one line of classical theta theory.
+a free half behind a hard one. Splitting them cost one extra leaf name and bought the closure
+of everything but the quartic identity — which then fell to a level-one argument that the
+bundled form would have hidden entirely, since the defect whose modularity carries the proof
+is visible only once `f⁸ − f₁⁸ − f₂⁸` is written down on its own.
 
 The vehicle is the Euler product `eulerProd x = ∏_{n≥1}(1 − xⁿ)` on the open unit disc, which
 is literally the product inside `ModularForm.eta` (`eta w = 𝕢₂₄ w · eulerProd (𝕢₁ w)`, `rfl`).
@@ -2088,8 +2104,422 @@ theorem eta_triple_pow_eight (z : ℍ) :
         (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 12) * eulerProd (x ^ 2)) ^ 24 := by
         rw [mul_pow]; ring
 
-/-- **SUB-LEAF 5a-i′ — THE ONE REMAINING ANALYTIC INPUT, AND IT IS NOW A STATEMENT ABOUT THE
-OPEN UNIT DISC AND NOTHING ELSE.**
+/-! ### Upper-half-plane bookkeeping for `z/2` and `2z`
+
+Hoisted above `eulerProd_neg_pow_eight` (2026-07-30) because the proof of that theorem — the
+`jacobiDefect` development immediately below — needs them.  They used to sit just under
+`etaWeightFour`, which is where their other consumers still are. -/
+
+lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
+  show 0 < (2 * (z : ℂ)).im
+  simpa using z.im_pos
+
+lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
+  show 0 < ((z : ℂ) / 2).im
+  simpa using z.im_pos
+
+lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
+
+lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
+
+/-! ### SUB-LEAF 5a-i′ IS CLOSED — the Jacobi defect, and why it vanishes
+
+(2026-07-30.)  What follows PROVES `eulerProd_neg_pow_eight` (Jacobi's quartic identity
+`θ₃⁴ = θ₂⁴ + θ₄⁴`, equivalently Weber's `f⁸ = f₁⁸ + f₂⁸`).  The docstring on that theorem used
+to say the two available routes were "prove the Jacobi triple product" or "run it as a level-2
+modular identity with `Γ/Γ(2) ≅ S₃`", and that mathlib's dimension machinery is LEVEL ONE and
+so does not apply.  **That last clause was the mistake, and it is what kept this leaf open.**
+There is a third route, and it stays at level one throughout:
+
+Put
+
+  `D(z) = e^{−πi/3} η((z+1)/2)⁸ − η(z/2)⁸ − 16 η(2z)⁸`,
+
+the DEFECT of the identity — so the theorem is exactly `D ≡ 0`.  `D` is not modular for
+`SL₂(ℤ)`; it is modular for it *up to a character*, and that is enough:
+
+* **`T`-law** (`jacobiDefect_add_one`): `η(z+1) = ζ₂₄η(z)` moves the three terms of `D` around
+  one another — `η((z+1)/2)` at `z+1` is `ζ₂₄·η(z/2)`, `η(z/2)` at `z+1` is `η((z+1)/2)`, and
+  `η(2z)` picks up `ζ₂₄²`.  The three-term cycle closes with the single factor `−ζ₆`:
+  `D(z+1) = −ζ₆·D(z)`, where `ζ₆ = e^{πi/3}`.
+* **`S`-law** (`jacobiDefect_neg_inv`): `η(−1/z)⁸ = z⁴η(z)⁸` gives the `η(z/2)⁸` and `η(2z)⁸`
+  terms directly (they SWAP, with the `16` supplying the `2⁴` that the swap `z/2 ↔ 2z`
+  introduces).  The third term is not computed at all — it is FORCED, by dividing the already
+  proven `eta_triple_pow_eight` at `−1/z` by the same at `z`.  That is the only place the
+  companion Weber relation is used, and it is why no 48-th root of unity ever appears.
+  Result: `D(−1/z) = z⁴·D(z)`.
+
+Both multipliers are cubed away, so `D³` is honestly weight-`12` modular for `SL₂(ℤ)`
+(`jacobiDefectCube_slash`), holomorphic on `ℍ`, and — because each `η` contributes its
+`q`-prefactor and `D`'s series `∏(1+xⁿ)⁸ − ∏(1−xⁿ)⁸ − 16x∏(1−x⁴ⁿ)⁸` tends to `0` at `x = 0` —
+vanishing at the cusp.  So `D³` is a **weight-12 cusp form of level one**, and mathlib's
+`CuspForm.exists_smul_discriminant_of_weight_eq_twelve` says that space is spanned by `Δ`:
+`D³ = c·Δ`.
+
+The constant is killed at `ρ = e^{2πi/3}`, the fixed point of `ST : z ↦ −1/(z+1)`.  Composing
+the two laws there gives `D(ρ) = ζ₆²·D(ρ)` with `ζ₆² ≠ 1`, so `D(ρ) = 0`, while
+`Δ(ρ) ≠ 0` (`ModularForm.discriminant_ne_zero`).  Hence `c = 0`, hence `D³ ≡ 0`, hence
+`D ≡ 0`.  Rewriting `D` in the `q`-parameter `x = e^{πiz}` and observing that every `x` in the
+punctured unit disc is `e^{πiz}` for some `z ∈ ℍ` (and `x = 0` is trivial) turns `D ≡ 0` back
+into the disc identity.
+
+No Jacobi triple product, no theta functions, no `Γ(2)`, no Sturm bound. -/
+
+/-- `D(z) = e^{−πi/3}·η((z+1)/2)⁸ − η(z/2)⁸ − 16·η(2z)⁸`, the defect of Jacobi's quartic
+identity.  `jacobiDefect_eq_zero` below says it vanishes identically. -/
+noncomputable def jacobiDefect (z : ℍ) : ℂ :=
+  Complex.exp (-(↑Real.pi * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
+    - ModularForm.eta ((z : ℂ) / 2) ^ 8 - 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8
+
+/-- `ζ₆ = e^{πi/3}`, the multiplier of `D` along `T` (up to sign). -/
+noncomputable abbrev zeta6 : ℂ := Complex.exp (↑Real.pi * Complex.I / 3)
+
+lemma zeta6_pow_three : zeta6 ^ 3 = -1 := by
+  rw [zeta6, ← Complex.exp_nat_mul,
+    show ((3 : ℕ) : ℂ) * (↑Real.pi * Complex.I / 3) = ↑Real.pi * Complex.I by push_cast; ring]
+  exact Complex.exp_pi_mul_I
+
+lemma zeta6_ne_zero : zeta6 ≠ 0 := Complex.exp_ne_zero _
+
+lemma exp_neg_mul_zeta6 : Complex.exp (-(↑Real.pi * Complex.I / 3)) * zeta6 = 1 := by
+  rw [zeta6, ← Complex.exp_add, neg_add_cancel, Complex.exp_zero]
+
+/-- `ζ₂₄⁸ = ζ₆²`, where `ζ₂₄ = e^{πi/12}` is the multiplier in `eta_add_one`. -/
+lemma zeta24_pow_eight :
+    (Complex.exp (↑Real.pi * Complex.I / 12)) ^ 8 = zeta6 ^ 2 := by
+  rw [zeta6, ← Complex.exp_nat_mul, ← Complex.exp_nat_mul]
+  congr 1
+  push_cast
+  ring
+
+/-- `ζ₂₄¹⁶ = ζ₆⁴ = −ζ₆`. -/
+lemma zeta24_pow_sixteen :
+    (Complex.exp (↑Real.pi * Complex.I / 12)) ^ 16 = -zeta6 := by
+  have h : -zeta6 = Complex.exp (↑Real.pi * Complex.I) * zeta6 := by
+    rw [Complex.exp_pi_mul_I]; ring
+  rw [h, zeta6, ← Complex.exp_nat_mul, ← Complex.exp_add]
+  congr 1
+  push_cast
+  ring
+
+/-- **The `T`-law**: `D(z+1) = −ζ₆·D(z)`.  The three terms of `D` are permuted cyclically by
+`z ↦ z+1`, each picking up a power of `ζ₂₄`. -/
+lemma jacobiDefect_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    jacobiDefect w = -zeta6 * jacobiDefect z := by
+  set ζ : ℂ := Complex.exp (↑Real.pi * Complex.I / 12) with hζ
+  have h1 : ModularForm.eta (((w : ℂ) + 1) / 2) = ζ * ModularForm.eta ((z : ℂ) / 2) := by
+    rw [hw, show ((z : ℂ) + 1 + 1) / 2 = (z : ℂ) / 2 + 1 by ring]
+    exact eta_add_one _
+  have h2 : ModularForm.eta ((w : ℂ) / 2) = ModularForm.eta (((z : ℂ) + 1) / 2) := by rw [hw]
+  have h3 : ModularForm.eta (2 * (w : ℂ)) = ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)) := by
+    rw [hw, show 2 * ((z : ℂ) + 1) = (2 * (z : ℂ) + 1) + 1 by ring, eta_add_one, eta_add_one]
+    ring
+  rw [jacobiDefect, jacobiDefect, h1, h2, h3, mul_pow, mul_pow, ← pow_mul,
+    show 2 * 8 = 16 from rfl, zeta24_pow_eight, zeta24_pow_sixteen]
+  linear_combination
+    (zeta6 * ModularForm.eta ((z : ℂ) / 2) ^ 8
+      + ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8) * exp_neg_mul_zeta6
+
+/-- `η(−1/x)⁸ = x⁴η(x)⁸` on the upper half plane. -/
+lemma eta_neg_inv_pow_eight {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    ModularForm.eta (-1 / x) ^ 8 = x ^ 4 * ModularForm.eta x ^ 8 := by
+  have him : 0 < x.im := hx
+  have hx0 : x ≠ 0 := by rintro rfl; simp at him
+  have h := ModularForm.eta_comp_eq_csqrt_I_inv hx
+  simp only [Function.comp_apply, Pi.smul_apply, Pi.mul_apply, smul_eq_mul] at h
+  rw [h, mul_pow, mul_pow, inv_pow, csqrtI_pow_eight, inv_one, one_mul, csqrt_pow_eight hx0]
+
+/-- `η(−1/x)²⁴ = x¹²η(x)²⁴` on the upper half plane. -/
+lemma eta_neg_inv_pow_twentyFour {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    ModularForm.eta (-1 / x) ^ 24 = x ^ 12 * ModularForm.eta x ^ 24 := by
+  rw [show (24 : ℕ) = 8 * 3 from rfl, pow_mul, pow_mul, eta_neg_inv_pow_eight hx, mul_pow,
+    ← pow_mul]
+
+/-- **The `S`-law**: `D(−1/z) = z⁴·D(z)`.
+
+Only two of the three terms are transformed directly; the `η((z+1)/2)⁸` term is FORCED by
+dividing `eta_triple_pow_eight` at `−1/z` by the same identity at `z`. -/
+lemma jacobiDefect_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    jacobiDefect w = (z : ℂ) ^ 4 * jacobiDefect z := by
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  -- the two eta values that come straight from the `S`-transformation of `η`
+  have hb : ModularForm.eta ((w : ℂ) / 2) ^ 8
+      = 16 * (z : ℂ) ^ 4 * ModularForm.eta (2 * (z : ℂ)) ^ 8 := by
+    rw [hw, show -(z : ℂ)⁻¹ / 2 = -1 / (2 * (z : ℂ)) by field_simp,
+      eta_neg_inv_pow_eight (mem_upperHalfPlaneSet_two_mul z)]
+    ring
+  have hc : ModularForm.eta (2 * (w : ℂ)) ^ 8
+      = (z : ℂ) ^ 4 / 16 * ModularForm.eta ((z : ℂ) / 2) ^ 8 := by
+    rw [hw, show 2 * -(z : ℂ)⁻¹ = -1 / ((z : ℂ) / 2) by field_simp,
+      eta_neg_inv_pow_eight (mem_upperHalfPlaneSet_div_two z)]
+    ring
+  have he : ModularForm.eta (w : ℂ) ^ 24 = (z : ℂ) ^ 12 * ModularForm.eta (z : ℂ) ^ 24 := by
+    rw [hw, show -(z : ℂ)⁻¹ = -1 / (z : ℂ) by field_simp,
+      eta_neg_inv_pow_twentyFour z.2]
+  -- the third one is FORCED by Weber's first relation, which is already proven
+  have ha : ModularForm.eta (((w : ℂ) + 1) / 2) ^ 8
+      = (z : ℂ) ^ 4 * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8 := by
+    have hw' := eta_triple_pow_eight w
+    rw [hb, hc, he] at hw'
+    have hz' := eta_triple_pow_eight z
+    have hb0 : ModularForm.eta ((z : ℂ) / 2) ^ 8 ≠ 0 := pow_ne_zero _ (eta_ne_zero_div_two z)
+    have hc0 : ModularForm.eta (2 * (z : ℂ)) ^ 8 ≠ 0 := pow_ne_zero _ (eta_ne_zero_two_mul z)
+    have hz8 : (z : ℂ) ^ 8 ≠ 0 := pow_ne_zero _ hz0
+    have key : (z : ℂ) ^ 8 * (ModularForm.eta ((z : ℂ) / 2) ^ 8 *
+        ModularForm.eta (2 * (z : ℂ)) ^ 8) * ModularForm.eta (((w : ℂ) + 1) / 2) ^ 8
+        = (z : ℂ) ^ 8 * (ModularForm.eta ((z : ℂ) / 2) ^ 8 *
+          ModularForm.eta (2 * (z : ℂ)) ^ 8) *
+          ((z : ℂ) ^ 4 * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8) := by
+      linear_combination hw' - (z : ℂ) ^ 12 * hz'
+    exact mul_left_cancel₀ (by exact mul_ne_zero hz8 (mul_ne_zero hb0 hc0)) key
+  rw [jacobiDefect, jacobiDefect, ha, hb, hc]
+  ring
+
+/-! #### `D³` is a weight-12 cusp form of level one -/
+
+/-- `D(z)³`.  Both of `D`'s multipliers are cube roots of unity times the weight factor, so
+this is honestly weight-`12` modular for all of `SL₂(ℤ)`. -/
+noncomputable def jacobiDefectCube (z : ℍ) : ℂ := jacobiDefect z ^ 3
+
+lemma jacobiDefectCube_of_eq_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    jacobiDefectCube w = jacobiDefectCube z := by
+  rw [jacobiDefectCube, jacobiDefectCube, jacobiDefect_add_one hw, mul_pow,
+    show (-zeta6) ^ 3 = 1 by rw [neg_pow, zeta6_pow_three]; norm_num, one_mul]
+
+lemma jacobiDefectCube_of_eq_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    jacobiDefectCube w = (z : ℂ) ^ 12 * jacobiDefectCube z := by
+  rw [jacobiDefectCube, jacobiDefectCube, jacobiDefect_neg_inv hw, mul_pow, ← pow_mul]
+
+lemma jacobiDefectCube_T_invariant :
+    (jacobiDefectCube ∣[(12 : ℤ)] ModularGroup.T) = jacobiDefectCube := by
+  ext z
+  rw [SL_slash_apply, UpperHalfPlane.modular_T_smul,
+    jacobiDefectCube_of_eq_add_one (z := z) (w := (1 : ℝ) +ᵥ z)
+      (by rw [UpperHalfPlane.coe_vadd]; push_cast; ring)]
+  simp [denom, ModularGroup.T]
+
+lemma jacobiDefectCube_S_invariant :
+    (jacobiDefectCube ∣[(12 : ℤ)] ModularGroup.S) = jacobiDefectCube := by
+  ext z
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  rw [SlashInvariantForm.slash_S_apply,
+    jacobiDefectCube_of_eq_neg_inv (z := z) (w := .mk _ z.im_inv_neg_coe_pos) (by simp)]
+  rw [zpow_neg, show (12 : ℤ) = ((12 : ℕ) : ℤ) from rfl, zpow_natCast]
+  field_simp
+
+lemma jacobiDefectCube_slash (γ : SL(2, ℤ)) :
+    (jacobiDefectCube ∣[(12 : ℤ)] γ) = jacobiDefectCube :=
+  SlashInvariantForm.slash_action_generators_SL2Z jacobiDefectCube_S_invariant
+    jacobiDefectCube_T_invariant γ
+
+lemma differentiableAt_jacobiDefectAux {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    DifferentiableAt ℂ (fun x : ℂ =>
+      (Complex.exp (-(↑Real.pi * Complex.I / 3)) * ModularForm.eta ((x + 1) / 2) ^ 8
+        - ModularForm.eta (x / 2) ^ 8 - 16 * ModularForm.eta (2 * x) ^ 8) ^ 3) x := by
+  have hm : (2 : ℂ) * x ∈ upperHalfPlaneSet := by
+    show 0 < (2 * x).im; simpa using hx
+  have hh : x / 2 ∈ upperHalfPlaneSet := by
+    show 0 < (x / 2).im; simpa using hx
+  have ha : (x + 1) / 2 ∈ upperHalfPlaneSet := by
+    show 0 < ((x + 1) / 2).im; simpa using hx
+  have e1 : DifferentiableAt ℂ (fun x : ℂ ↦ (x + 1) / 2) x := by fun_prop
+  have e2 : DifferentiableAt ℂ (fun x : ℂ ↦ x / 2) x := by fun_prop
+  have e3 : DifferentiableAt ℂ (fun x : ℂ ↦ 2 * x) x := by fun_prop
+  have d1 : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta ((x + 1) / 2)) x := by
+    have h := (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet ha).comp x e1
+    simpa [Function.comp_def] using h
+  have d2 : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta (x / 2)) x := by
+    have h := (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hh).comp x e2
+    simpa [Function.comp_def] using h
+  have d3 : DifferentiableAt ℂ (fun x : ℂ ↦ ModularForm.eta (2 * x)) x :=
+    (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hm).comp x e3
+  exact ((((d1.pow 8).const_mul _).sub (d2.pow 8)).sub ((d3.pow 8).const_mul _)).pow 3
+
+lemma jacobiDefectCube_mdifferentiable : MDiff jacobiDefectCube := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  refine .congr (fun z hz ↦ (differentiableAt_jacobiDefectAux hz).differentiableWithinAt)
+    fun z hz ↦ ?_
+  simp [jacobiDefectCube, jacobiDefect, UpperHalfPlane.ofComplex_apply_of_im_pos hz]
+
+/-- The defect as a function of `x = e^{πiz}` on the open unit disc: `D`'s `q`-series with the
+common `η`-prefactor `e^{πiz/3}` divided out.  This is the left minus the right side of
+`eulerProd_neg_pow_eight`. -/
+noncomputable def jacobiDefectSeries (q : ℂ) : ℂ :=
+  eulerProd (-q) ^ 8 - eulerProd q ^ 8 - 16 * q * eulerProd (q ^ 4) ^ 8
+
+lemma jacobiDefect_eq_series (z : ℍ) :
+    jacobiDefect z = Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8 *
+      jacobiDefectSeries (Complex.exp (↑Real.pi * Complex.I * (z : ℂ))) := by
+  set u : ℂ := Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) with hu
+  have h1 : Complex.exp (↑Real.pi * Complex.I * ((z : ℂ) + 1) / 24)
+      = Complex.exp (↑Real.pi * Complex.I / 24) * u := by
+    rw [hu, ← Complex.exp_add]; congr 1; ring
+  have h2 : Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 6) = u ^ 4 := by
+    rw [hu, ← Complex.exp_nat_mul]; congr 1; push_cast; ring
+  have h3 : Complex.exp (-(↑Real.pi * Complex.I / 3)) *
+      Complex.exp (↑Real.pi * Complex.I / 24) ^ 8 = 1 := by
+    rw [← Complex.exp_nat_mul, ← Complex.exp_add,
+      show -(↑Real.pi * Complex.I / 3) + ((8 : ℕ) : ℂ) * (↑Real.pi * Complex.I / 24) = 0 by
+        push_cast; ring, Complex.exp_zero]
+  have h4 : u ^ 24 = Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) := by
+    rw [hu, ← Complex.exp_nat_mul]; congr 1; push_cast; ring
+  rw [jacobiDefect, jacobiDefectSeries, eta_add_one_div_two_eq, eta_div_two_eq, eta_two_mul_eq,
+    h1, h2]
+  linear_combination
+    (u ^ 8 * eulerProd (-Complex.exp (↑Real.pi * Complex.I * (z : ℂ))) ^ 8) * h3
+      - 16 * u ^ 8 * eulerProd (Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) ^ 4) ^ 8 * h4
+
+lemma qParam_two_eq (z : ℍ) :
+    Periodic.qParam 2 (z : ℂ) = Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) := by
+  simp only [Periodic.qParam]
+  congr 1
+  push_cast
+  ring
+
+lemma jacobiDefectCube_eq_qParam (z : ℍ) :
+    jacobiDefectCube z
+      = Periodic.qParam 2 (z : ℂ) * jacobiDefectSeries (Periodic.qParam 2 (z : ℂ)) ^ 3 := by
+  have h4 : (Complex.exp (↑Real.pi * Complex.I * (z : ℂ) / 24) ^ 8) ^ 3
+      = Complex.exp (↑Real.pi * Complex.I * (z : ℂ)) := by
+    rw [← pow_mul, ← Complex.exp_nat_mul]; congr 1; push_cast; ring
+  rw [jacobiDefectCube, jacobiDefect_eq_series, mul_pow, h4, qParam_two_eq]
+
+lemma tendsto_eulerProd : Filter.Tendsto eulerProd (𝓝 0) (𝓝 1) := by
+  have h := tendsto_tprod_one_add_of_dominated_convergence (𝓕 := 𝓝 (0 : ℂ)) (g := 0)
+    (f := fun (q : ℂ) (n : ℕ) ↦ -q ^ (n + 1)) (bound := fun n ↦ (1 / 2 : ℝ) ^ (n + 1))
+  simp only [Pi.zero_apply, norm_neg, norm_pow, add_zero, tprod_one] at h
+  have hE : eulerProd = fun q : ℂ ↦ ∏' n : ℕ, (1 + -q ^ (n + 1)) := by
+    funext q; simp [eulerProd, sub_eq_add_neg]
+  rw [hE]
+  refine h
+    (by simpa only [pow_succ'] using (summable_geometric_of_abs_lt_one (by norm_num)).mul_left _)
+    (fun k ↦ by simpa using ((continuous_pow (M := ℂ) (k + 1)).tendsto 0).neg) ?_
+  filter_upwards [Metric.ball_mem_nhds (0 : ℂ) (by norm_num : (0 : ℝ) < 1 / 2)] with q hq k
+  exact pow_le_pow_left₀ (norm_nonneg _) (mem_ball_zero_iff.mp hq).le _
+
+lemma tendsto_jacobiDefectSeries : Filter.Tendsto jacobiDefectSeries (𝓝 0) (𝓝 0) := by
+  have h4 : Filter.Tendsto (fun q : ℂ ↦ eulerProd (q ^ 4)) (𝓝 0) (𝓝 1) := by
+    refine tendsto_eulerProd.comp ?_
+    simpa using ((continuous_pow (M := ℂ) 4).tendsto 0)
+  have hneg : Filter.Tendsto (fun q : ℂ ↦ eulerProd (-q)) (𝓝 0) (𝓝 1) := by
+    refine tendsto_eulerProd.comp ?_
+    simpa using (continuous_neg (G := ℂ)).tendsto 0
+  have h := ((hneg.pow 8).sub (tendsto_eulerProd.pow 8)).sub
+    (((tendsto_const_nhds (x := (16 : ℂ)) (f := 𝓝 (0 : ℂ))).mul tendsto_id).mul (h4.pow 8))
+  rw [show (1 : ℂ) ^ 8 - 1 ^ 8 - 16 * 0 * 1 ^ 8 = 0 by ring] at h
+  exact Filter.Tendsto.congr (fun q ↦ rfl) h
+
+lemma jacobiDefectCube_isZeroAtImInfty : UpperHalfPlane.IsZeroAtImInfty jacobiDefectCube := by
+  have h : Filter.Tendsto (fun q : ℂ ↦ q * jacobiDefectSeries q ^ 3) (𝓝 0) (𝓝 0) := by
+    simpa using tendsto_id.mul (tendsto_jacobiDefectSeries.pow 3)
+  exact Filter.Tendsto.congr (fun z ↦ (jacobiDefectCube_eq_qParam z).symm)
+    (h.comp (UpperHalfPlane.qParam_tendsto_atImInfty (by norm_num : (0 : ℝ) < 2)))
+
+/-- `D³` packaged as a level-one weight-12 cusp form, which is what
+`CuspForm.exists_smul_discriminant_of_weight_eq_twelve` consumes. -/
+noncomputable def jacobiDefectCubeForm : CuspForm 𝒮ℒ 12 where
+  toFun := jacobiDefectCube
+  slash_action_eq' A hA := by
+    obtain ⟨A, rfl⟩ := hA
+    exact jacobiDefectCube_slash A
+  holo' := jacobiDefectCube_mdifferentiable
+  zero_at_cusps' hc := by
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isZeroAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [jacobiDefectCube_slash]
+    exact jacobiDefectCube_isZeroAtImInfty
+
+/-! #### The fixed point of `ST` kills the constant -/
+
+lemma zeta6_im : zeta6.im = Real.sin (Real.pi / 3) := by
+  rw [zeta6, show (↑Real.pi * Complex.I / 3 : ℂ) = ((Real.pi / 3 : ℝ) : ℂ) * Complex.I by
+    push_cast; ring]
+  exact Complex.exp_ofReal_mul_I_im _
+
+lemma zeta6_sq_im : (zeta6 ^ 2).im = Real.sin (2 * Real.pi / 3) := by
+  rw [zeta6, ← Complex.exp_nat_mul,
+    show ((2 : ℕ) : ℂ) * (↑Real.pi * Complex.I / 3) = ((2 * Real.pi / 3 : ℝ) : ℂ) * Complex.I by
+      push_cast; ring]
+  exact Complex.exp_ofReal_mul_I_im _
+
+lemma zeta6_im_pos : 0 < zeta6.im := by
+  rw [zeta6_im, Real.sin_pi_div_three]
+  positivity
+
+lemma zeta6_sq_im_pos : 0 < (zeta6 ^ 2).im := by
+  rw [zeta6_sq_im, show (2 * Real.pi / 3 : ℝ) = Real.pi - Real.pi / 3 by ring,
+    Real.sin_pi_sub, Real.sin_pi_div_three]
+  positivity
+
+/-- `ρ + 1 = ζ₆`, i.e. `ζ₆² − ζ₆ + 1 = 0`. -/
+lemma zeta6_sq_add_one : zeta6 ^ 2 + 1 = zeta6 := by
+  have hne : zeta6 + 1 ≠ 0 := by
+    intro h
+    have him : (zeta6 + 1).im = 0 := by rw [h]; simp
+    rw [Complex.add_im, Complex.one_im, add_zero] at him
+    exact absurd him (ne_of_gt zeta6_im_pos)
+  have key : (zeta6 + 1) * (zeta6 ^ 2 - zeta6 + 1) = 0 := by
+    linear_combination zeta6_pow_three
+  linear_combination (mul_eq_zero.mp key).resolve_left hne
+
+/-- `−1/ζ₆ = ρ`. -/
+lemma neg_zeta6_inv : -zeta6⁻¹ = zeta6 ^ 2 := by
+  have h0 : zeta6 ≠ 0 := zeta6_ne_zero
+  field_simp
+  linear_combination -zeta6_pow_three
+
+/-- `ρ = e^{2πi/3}`, the fixed point of `ST : z ↦ −1/(z+1)`. -/
+noncomputable def rhoPoint : ℍ := UpperHalfPlane.mk (zeta6 ^ 2) zeta6_sq_im_pos
+
+/-- `ρ + 1 = ζ₆`. -/
+noncomputable def rhoPointAddOne : ℍ := UpperHalfPlane.mk zeta6 zeta6_im_pos
+
+lemma coe_rhoPoint : (rhoPoint : ℂ) = zeta6 ^ 2 := rfl
+
+lemma coe_rhoPointAddOne : (rhoPointAddOne : ℂ) = zeta6 := rfl
+
+/-- **`D` vanishes at `ρ`.**  `ST` fixes `ρ`, and `D`'s multiplier along `ST` is the primitive
+cube root `ζ₆² = e^{2πi/3} ≠ 1`, so `D(ρ) = ζ₆²·D(ρ)` forces `D(ρ) = 0`. -/
+theorem jacobiDefect_rhoPoint : jacobiDefect rhoPoint = 0 := by
+  have hT : jacobiDefect rhoPointAddOne = -zeta6 * jacobiDefect rhoPoint :=
+    jacobiDefect_add_one (by rw [coe_rhoPointAddOne, coe_rhoPoint]; exact zeta6_sq_add_one.symm)
+  have hS : jacobiDefect rhoPoint = (rhoPointAddOne : ℂ) ^ 4 * jacobiDefect rhoPointAddOne :=
+    jacobiDefect_neg_inv (by rw [coe_rhoPoint, coe_rhoPointAddOne]; exact neg_zeta6_inv.symm)
+  rw [hT, coe_rhoPointAddOne] at hS
+  have hcoef : (1 : ℂ) - zeta6 ^ 2 ≠ 0 := by
+    intro h
+    have h1 : zeta6 ^ 2 = 1 := by linear_combination -h
+    have him : (zeta6 ^ 2).im = 0 := by rw [h1]; simp
+    exact absurd him (ne_of_gt zeta6_sq_im_pos)
+  have key : ((1 : ℂ) - zeta6 ^ 2) * jacobiDefect rhoPoint = 0 := by
+    linear_combination hS - zeta6 ^ 2 * jacobiDefect rhoPoint * zeta6_pow_three
+  exact (mul_eq_zero.mp key).resolve_left hcoef
+
+/-- **THE DEFECT VANISHES IDENTICALLY.**  `D³` is a level-one weight-12 cusp form, hence a
+multiple of `Δ`; the multiple is `0` because `D(ρ) = 0` while `Δ(ρ) ≠ 0`. -/
+theorem jacobiDefect_eq_zero (z : ℍ) : jacobiDefect z = 0 := by
+  obtain ⟨c, hc⟩ := CuspForm.exists_smul_discriminant_of_weight_eq_twelve jacobiDefectCubeForm
+  have hcoe : ∀ w : ℍ, c * ModularForm.discriminant w = jacobiDefectCube w := by
+    intro w
+    have h : c * ModularForm.discriminant w = (jacobiDefectCubeForm : ℍ → ℂ) w := by
+      have h := congrArg (fun f : CuspForm 𝒮ℒ 12 ↦ (f : ℍ → ℂ) w) hc
+      simpa using h
+    exact h
+  have hc0 : c = 0 := by
+    have h0 : c * ModularForm.discriminant rhoPoint = 0 := by
+      rw [hcoe rhoPoint, jacobiDefectCube, jacobiDefect_rhoPoint]; ring
+    exact (mul_eq_zero.mp h0).resolve_right (ModularForm.discriminant_ne_zero rhoPoint)
+  have h := hcoe z
+  rw [hc0, zero_mul, jacobiDefectCube] at h
+  exact pow_eq_zero_iff (three_ne_zero) |>.mp h.symm
+
+lemma eulerProd_zero : eulerProd 0 = 1 := by
+  simp [eulerProd]
+
+/-- **SUB-LEAF 5a-i′ — PROVEN (2026-07-30).**
 
   `eulerProd(−x)⁸ = eulerProd(x)⁸ + 16 x · eulerProd(x⁴)⁸`   for `‖x‖ < 1`,
 
@@ -2102,18 +2532,21 @@ replaces the former leaf `eta_two_torsion_key`, which bundled it together with
 `θ₂θ₃θ₄ = 2η³`; that companion turned out to be FREE (`eta_triple_pow_eight` above), so this
 is a strictly smaller leaf than the one it replaces, not a re-statement of it.
 
-WHY IT IS NOT PROVED HERE. Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-30):
-`ModularForms/JacobiTheta/{OneVariable,TwoVariable,Bounds,Manifold}` define `jacobiTheta₂` as a
-SUM only — there is no Jacobi triple product anywhere in the pin, no `θ₂`/`θ₄`, no product
-formula tying any `θ` to `η`, and no Weber function. `~/cs/FLT` has none of it either. So the
-two classical routes both need new theory:
+HOW IT IS PROVED, and the retraction of the note that used to stand here. The previous
+docstring said that mathlib's pin has no Jacobi triple product, no `θ₂`/`θ₄` and no Weber
+function — still true, re-grepped 2026-07-30 — and concluded that only two routes existed,
+both needing new theory: the triple product, or a level-2 argument with `Γ/Γ(2) ≅ S₃`. It
+added that "mathlib's dimension/Sturm machinery is LEVEL ONE and does not apply". **That last
+clause is what was wrong, and it is what kept this leaf open.**
 
-* prove the Jacobi triple product for `jacobiTheta₂`, read off `θ₃⁴ = θ₂⁴ + θ₄⁴` from the
-  addition formulas, and convert; or
-* prove it as a level-2 modular identity — the three functions `f⁸, f₁⁸, f₂⁸` are permuted by
-  `Γ/Γ(2) ≅ S₃`, so `f⁸ − f₁⁸ − f₂⁸` is a `Γ(2)`-modular function, holomorphic on `ℍ`, and one
-  checks it vanishes at all three cusps. Mathlib's dimension/Sturm machinery
-  (`levelOne_weight_four_rank_one`, `sturm_bound_levelOne`) is LEVEL ONE and does not apply.
+The proof used below never leaves level one. It runs on the DEFECT
+`D(z) = e^{−πi/3}η((z+1)/2)⁸ − η(z/2)⁸ − 16η(2z)⁸`, which transforms under `T` and `S` with the
+multipliers `−ζ₆` and `z⁴`; cubing clears the root of unity, so `D³` is a genuine level-one
+weight-12 cusp form (`jacobiDefectCubeForm`), hence a multiple of `Δ` by
+`CuspForm.exists_smul_discriminant_of_weight_eq_twelve`; and the multiple is `0` because `D`
+vanishes at the `ST`-fixed point `ρ` while `Δ` does not. See the section docstring above
+`jacobiDefect` for the details, including why the `η((z+1)/2)⁸` term of the `S`-law is FORCED
+by `eta_triple_pow_eight` rather than computed.
 
 AN EQUIVALENT AND SLIGHTLY MORE SYMMETRIC FORM, if it helps: with `u = eulerProdOdd(x)⁸` and
 `v = eulerProdOdd(−x)⁸` (the odd-exponent products `∏(1−x^{2k+1})⁸` and `∏(1+x^{2k+1})⁸`), the
@@ -2129,9 +2562,43 @@ identity. The points are generic, not CM points: this is an identity on all of `
 
 WHAT WOULD REFUTE IT: any `x` in the open unit disc where the two sides differ. The constant
 `16` is not a normalisation — it is `(√2)⁸` from `f₂ = √2·η(2z)/η(z)` — and the exponent `8` is
-forced by `f₂⁸` being the smallest power of `f₂` that is a modular FUNCTION. -/
+forced by `f₂⁸` being the smallest power of `f₂` that is a modular FUNCTION.
+
+THE LAST STEP, which is the only place the disc and `ℍ` are compared. `jacobiDefect_eq_zero`
+lives on `ℍ`; the statement here is on the disc. Every `x` with `0 < ‖x‖ < 1` is `e^{πiz}` for
+`z = arg x/π + i·(−log‖x‖)/π ∈ ℍ`, so the identity transports; `x = 0` is `eulerProd_zero`. -/
 theorem eulerProd_neg_pow_eight {x : ℂ} (hx : ‖x‖ < 1) :
-    eulerProd (-x) ^ 8 = eulerProd x ^ 8 + 16 * x * eulerProd (x ^ 4) ^ 8 := sorry
+    eulerProd (-x) ^ 8 = eulerProd x ^ 8 + 16 * x * eulerProd (x ^ 4) ^ 8 := by
+  rcases eq_or_ne x 0 with rfl | hx0
+  · simp [eulerProd_zero]
+  have hxpos : 0 < ‖x‖ := norm_pos_iff.mpr hx0
+  have hlog : Real.log ‖x‖ < 0 := Real.log_neg hxpos hx
+  have hpi : (Real.pi : ℝ) ≠ 0 := Real.pi_ne_zero
+  set z : ℂ := ((Complex.arg x / Real.pi : ℝ) : ℂ)
+      + ((-Real.log ‖x‖ / Real.pi : ℝ) : ℂ) * Complex.I with hzdef
+  have him : 0 < z.im := by
+    have hz : z.im = -Real.log ‖x‖ / Real.pi := by simp [hzdef]
+    rw [hz]
+    exact div_pos (by linarith) Real.pi_pos
+  have hkey : (↑Real.pi * Complex.I * z : ℂ)
+      = ((Real.log ‖x‖ : ℝ) : ℂ) + ((Complex.arg x : ℝ) : ℂ) * Complex.I := by
+    rw [hzdef]
+    have hpiC : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hpi
+    push_cast
+    field_simp
+    linear_combination (-(Real.log ‖x‖ : ℝ) : ℂ) * Complex.I_sq
+  have hexp : Complex.exp (↑Real.pi * Complex.I * z) = x := by
+    rw [hkey, Complex.exp_add, ← Complex.ofReal_exp, Real.exp_log hxpos]
+    exact Complex.norm_mul_exp_arg_mul_I x
+  have h := jacobiDefect_eq_series (UpperHalfPlane.mk z him)
+  rw [jacobiDefect_eq_zero] at h
+  have hcoe : ((UpperHalfPlane.mk z him : ℍ) : ℂ) = z := rfl
+  rw [hcoe, hexp] at h
+  have hu : Complex.exp (↑Real.pi * Complex.I * z / 24) ^ 8 ≠ 0 :=
+    pow_ne_zero _ (Complex.exp_ne_zero _)
+  have hg : jacobiDefectSeries x = 0 := (mul_eq_zero.mp h.symm).resolve_left hu
+  rw [jacobiDefectSeries] at hg
+  linear_combination hg
 
 /-- **WEBER'S SECOND RELATION `f⁸ = f₁⁸ + f₂⁸` IN `η` FORM** — PROVEN from
 `eulerProd_neg_pow_eight`, which is the same statement with the common factor `e^{πiz/3}`
@@ -2180,8 +2647,9 @@ completely different depth**, and bundling them hid a free half behind a hard on
 Taken apart (2026-07-30):
 
 * `abc = 16` is `eta_triple_pow_eight` above — PROVEN, a pure rearrangement of Euler products;
-* `a = b + c` is `eta_jacobi_quartic` above — Jacobi's `θ₃⁴ = θ₂⁴ + θ₄⁴`, still open, and now
-  stated in its smallest form as `eulerProd_neg_pow_eight`, an identity on the unit disc.
+* `a = b + c` is `eta_jacobi_quartic` above — Jacobi's `θ₃⁴ = θ₂⁴ + θ₄⁴`, stated in its
+  smallest form as the disc identity `eulerProd_neg_pow_eight`, and PROVEN as of 2026-07-30
+  by the `jacobiDefect` development. Nothing here is open.
 
 So the proof below is three lines: replace `b + c` by `a` using the second, then read off `abc`
 using the first, and the two occurrences of `e^{±πi/3}` cancel.
@@ -2217,20 +2685,6 @@ theorem eta_two_torsion_key (z : ℍ) :
 noncomputable def etaWeightFour (z : ℍ) : ℂ :=
   (ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24) /
     (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8
-
-lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
-  show 0 < (2 * (z : ℂ)).im
-  simpa using z.im_pos
-
-lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
-  show 0 < ((z : ℂ) / 2).im
-  simpa using z.im_pos
-
-lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
-  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
-
-lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
-  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
 
 /-- The pure field algebra behind the `S`-transformation. -/
 lemma etaWeightFour_S_algebra (Z e h f : ℂ) (hZ : Z ≠ 0) (he : e ≠ 0) (hh : h ≠ 0) (hf : f ≠ 0)
@@ -3645,29 +4099,33 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
   theorem of CM**);
 * `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
-  level-`3` descent);
-* `Heegner.eulerProd_neg_pow_eight` — **Jacobi's quartic identity on the unit disc**,
-  `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`. This REPLACES
-  `Heegner.eta_two_torsion_key`, which is now PROVEN over it (2026-07-30), and hence so are
-  `Heegner.eta_pow_24_add_eta_two_pow_24`, `Heegner.gammaTwo_pow_three_eq_jInvariant` and
-  `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the last also over the two `E`-approximations).
-  The replacement is a strict narrowing, not a re-statement: `eta_two_torsion_key` bundled
-  Weber's two relations `f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸`, and the FIRST of them turned out
-  to be free — it is the odd/even splitting of `∏(1−xⁿ)` and is PROVEN as
-  `Heegner.eta_triple_pow_eight`. Only the second, Jacobi's quartic, is left.
+  level-`3` descent).
 
-`Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
-PROVEN on 2026-07-28 over the two class-field items together with
+**NO LONGER OPEN (2026-07-30): `Heegner.eulerProd_neg_pow_eight`**, Jacobi's quartic identity
+on the unit disc `∏(1−(−x)ⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸` for `‖x‖ < 1`. It had appeared in
+this list that morning, replacing `Heegner.eta_two_torsion_key` — a strict narrowing, since
+the old leaf bundled Weber's `f·f₁·f₂ = √2` and `f⁸ = f₁⁸ + f₂⁸` and the FIRST turned out to
+be free (`Heegner.eta_triple_pow_eight`, the odd/even splitting of `∏(1−xⁿ)`). It is PROVEN
+by the `jacobiDefect` development beside it, and with it so are `eta_two_torsion_key`,
+`Heegner.eta_pow_24_add_eta_two_pow_24`, `Heegner.gammaTwo_pow_three_eq_jInvariant` and
+`Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the last also over the two `E`-approximations).
+The route the docstrings had recorded as necessary — the Jacobi triple product, or a level-2
+`Γ(2)` argument — was not: the defect `e^{−πi/3}η((z+1)/2)⁸ − η(z/2)⁸ − 16η(2z)⁸` is modular
+for `SL₂(ℤ)` up to a cube root of unity, so its cube is a LEVEL-ONE weight-12 cusp form,
+`CuspForm.exists_smul_discriminant_of_weight_eq_twelve` makes it a multiple of `Δ`, and the
+multiple vanishes because the defect does at the `ST`-fixed point `ρ`.
+
+`Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them either: it was decomposed
+and PROVEN on 2026-07-28 over the two class-field items together with
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ`, PROVEN outright — the reality that
 cuts `K` down to `ℚ`).
 
-Of these only `exists_quadratic_jInvariant_heegnerPoint` needs class field theory;
-`exists_quadratic_gammaTwo_of_jInvariant` needs Weber's level-`3` modular theory but no class
-field theory. `eulerProd_neg_pow_eight` needs no modular theory AT ALL — it is an identity of
-holomorphic functions on the open unit disc, classically read off from the Jacobi triple
-product, which mathlib does not have at this pin — and `exists_modularPolynomial` is the
-integrality of the class equation; those two are the cheap targets. (This list is referred to BY NAME rather than by position — its ordinals went stale
-twice, and at one point "the seventh" had no referent at all.) -/
+Of the four that remain, only `exists_quadratic_jInvariant_heegnerPoint` needs class field
+theory; `exists_quadratic_gammaTwo_of_jInvariant` needs Weber's level-`3` modular theory but
+no class field theory; and `exists_modularPolynomial` is the integrality of the class
+equation, which needs neither — it is the cheap target. (This list is referred to BY NAME
+rather than by position — its ordinals went stale twice, and at one point "the seventh" had
+no referent at all.) -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
