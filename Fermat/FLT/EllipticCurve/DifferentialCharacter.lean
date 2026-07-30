@@ -531,6 +531,219 @@ theorem diffChar_psi_image_eq [IsAlgClosed F] [W.IsElliptic]
   linear_combination 2 * B.eval (veluPointX P) * hy
     + W'.a₁ * E.eval (veluPointX P) * hx + hone
 
+/-- **THE CERTIFICATE IS A POLYNOMIAL PROPORTIONALITY** (PROVEN 2026-07-30, over
+`diffChar_psi_image_eq`): a differential certificate holding at every nonzero point is
+EQUIVALENT to the single polynomial identity
+
+  `(A′B − AB′) · E = c · Cx · B²`,
+
+i.e. `(x ∘ φ)′ = c·γ` for `γ = Cx/E` the `y`-multiplier.  This is the form in which
+the differential character is a statement about `F(X)` and nothing else — no points,
+no `ψ₂`, no image point — and it is what feeds `RationalDerivation.chordDeriv_core`.
+
+The mechanism is one cancellation.  `isDiffCharCert_reduced` gives
+`c·B²·E·ψ₂′(φP) = (A′B − AB′)·E·ψ₂(P)`; multiplying by `B` and substituting
+`diffChar_psi_image_eq` (`ψ₂′(φP)·E·B = Cx·B·ψ₂(P)`) turns the left side into
+`c·Cx·B³·ψ₂(P)`, so `B·ψ₂(P)·((A′B − AB′)E − c·Cx·B²) = 0`; off the roots of `B`, the
+`x`-image of `ker φ` and the (finite) `2`-torsion both factors in front are nonzero, so
+the bracket has cofinitely many roots.
+
+`hE` is NOT needed, and neither is `φ ≠ 0`. -/
+theorem diffChar_polyForm [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]} {c : F}
+    (hB : B ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
+    (hcert : ∀ P : W.Point, P ≠ 0 → IsDiffCharCert W W' A B Cx D E c P) :
+    (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 := by
+  classical
+  have hbad : ({t : F | B.eval t = 0}
+      ∪ (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+        ∪ veluPointX '' {R : W.Point | (2 : ℕ) • R = 0})).Finite :=
+    (Polynomial.finite_setOf_isRoot hB).union
+      ((hker.image _).union ((finite_nsmulKer (W := W) two_ne_zero).image _))
+  have hsub : ({t : F | B.eval t = 0}
+      ∪ (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)
+        ∪ veluPointX '' {R : W.Point | (2 : ℕ) • R = 0}))ᶜ
+      ⊆ {t : F | ((derivative A * B - A * derivative B) * E
+          - C c * Cx * B ^ 2).IsRoot t} := by
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨h1, h2, h3⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => h2 ⟨P, AddMonoidHom.mem_ker.2 hc, hPx⟩
+    have hBt : B.eval (veluPointX P) ≠ 0 := by rw [hPx]; exact h1
+    have hψ : 2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+      intro hc
+      refine h3 ⟨P, ?_, hPx⟩
+      show (2 : ℕ) • P = 0
+      rw [two_nsmul]
+      exact add_self_eq_zero_of_denom_eq_zero hP0 hc
+    obtain ⟨hx, hy⟩ := hrat P hφP
+    have hred := isDiffCharCert_reduced hx hy (hcert P hP0)
+    have hpsi := diffChar_psi_image_eq (W' := W') hker hrat P hφP
+    have hkey : (B.eval (veluPointX P) * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃))
+        * (((derivative A).eval (veluPointX P) * B.eval (veluPointX P)
+              - A.eval (veluPointX P) * (derivative B).eval (veluPointX P))
+            * E.eval (veluPointX P) - c * Cx.eval (veluPointX P)
+              * B.eval (veluPointX P) ^ 2) = 0 := by
+      linear_combination (-(B.eval (veluPointX P))) * hred
+        + (c * B.eval (veluPointX P) ^ 2) * hpsi
+    show ((derivative A * B - A * derivative B) * E - C c * Cx * B ^ 2).eval t = 0
+    rw [← hPx]
+    simp only [eval_sub, eval_mul, eval_pow, eval_C]
+    rcases mul_eq_zero.mp hkey with h0 | h0
+    · exact absurd h0 (mul_ne_zero hBt hψ)
+    · exact h0
+  have hzero : (derivative A * B - A * derivative B) * E - C c * Cx * B ^ 2 = 0 :=
+    Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono hsub hbad.infinite_compl)
+  linear_combination hzero
+
+/-- **THE TARGET CURVE'S EQUATION AT THE IMAGE POINT, `y` ELIMINATED** (PROVEN
+2026-07-30): with `x₁ = A/B`, `γ = Cx/E`, `δ = D/E` the coordinates of `φP`, the
+equation of `W'` at `φP` is EQUIVALENT to the polynomial identity below, which is
+
+  `γ²f + δ² + a₁′x₁δ + a₃′δ = x₁³ + a₂′x₁² + a₄′x₁ + a₆′`,   `f = X³ + a₂X² + a₄X + a₆`,
+
+cleared by `E²B³`.  The `y`-coefficient of the substituted equation is
+`γ·(2δ − γ(a₁X + a₃) + a₁′x₁ + a₃′)`, which vanishes by
+`diffChar_yWitness_onePart` — so eliminating `y` loses nothing, and this is the
+second of the two `y`-free inputs `RationalDerivation.chordDeriv_core` wants. -/
+theorem diffChar_curveEq [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]}
+    (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3 + D ^ 2 * B ^ 3
+        + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3) := by
+  classical
+  have hprod : B * E ≠ 0 := mul_ne_zero hB hE
+  have hbad : ({t : F | (B * E).eval t = 0}
+      ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+    (Polynomial.finite_setOf_isRoot hprod).union (hker.image _)
+  have hone := diffChar_yWitness_onePart (W' := W') hker hrat
+  have hsub : ({t : F | (B * E).eval t = 0}
+      ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point))ᶜ
+      ⊆ {t : F | (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3
+            + D ^ 2 * B ^ 3 + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+          - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+              + C W'.a₆ * B ^ 3)).IsRoot t} := by
+    intro t ht
+    simp only [Set.mem_compl_iff, Set.mem_union, not_or, Set.mem_setOf_eq] at ht
+    obtain ⟨h1, h2⟩ := ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc => h2 ⟨P, AddMonoidHom.mem_ker.2 hc, hPx⟩
+    obtain ⟨hx, hy⟩ := hrat P hφP
+    have honeP := congrArg (Polynomial.eval (veluPointX P)) hone
+    simp only [eval_add, eval_mul, eval_C, eval_X] at honeP
+    have hEqP : veluPointY P ^ 2 + W.a₁ * veluPointX P * veluPointY P
+          + W.a₃ * veluPointY P
+        = veluPointX P ^ 3 + W.a₂ * veluPointX P ^ 2 + W.a₄ * veluPointX P + W.a₆ :=
+      (Affine.equation_iff ..).1 (velu_point_equation W hP0)
+    have hEqQ : veluPointY (φ P) ^ 2 + W'.a₁ * veluPointX (φ P) * veluPointY (φ P)
+          + W'.a₃ * veluPointY (φ P)
+        = veluPointX (φ P) ^ 3 + W'.a₂ * veluPointX (φ P) ^ 2
+          + W'.a₄ * veluPointX (φ P) + W'.a₆ :=
+      (Affine.equation_iff ..).1 (velu_point_equation W' hφP)
+    -- clear the image point's equation by `E²B³`, then substitute the two witnesses
+    have hEqQ' : (veluPointY (φ P) * E.eval (veluPointX P)) ^ 2 * B.eval (veluPointX P) ^ 3
+          + W'.a₁ * (veluPointX (φ P) * B.eval (veluPointX P))
+            * (veluPointY (φ P) * E.eval (veluPointX P))
+            * E.eval (veluPointX P) * B.eval (veluPointX P) ^ 2
+          + W'.a₃ * (veluPointY (φ P) * E.eval (veluPointX P))
+            * E.eval (veluPointX P) * B.eval (veluPointX P) ^ 3
+        = E.eval (veluPointX P) ^ 2
+          * ((veluPointX (φ P) * B.eval (veluPointX P)) ^ 3
+            + W'.a₂ * (veluPointX (φ P) * B.eval (veluPointX P)) ^ 2 * B.eval (veluPointX P)
+            + W'.a₄ * (veluPointX (φ P) * B.eval (veluPointX P))
+              * B.eval (veluPointX P) ^ 2
+            + W'.a₆ * B.eval (veluPointX P) ^ 3) := by
+      linear_combination (E.eval (veluPointX P) ^ 2 * B.eval (veluPointX P) ^ 3) * hEqQ
+    rw [hx, hy] at hEqQ'
+    show (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3 + D ^ 2 * B ^ 3
+        + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+          + C W'.a₆ * B ^ 3)).eval t = 0
+    rw [← hPx]
+    simp only [eval_sub, eval_add, eval_mul, eval_pow, eval_C, eval_X]
+    linear_combination hEqQ'
+      - (Cx.eval (veluPointX P) ^ 2 * B.eval (veluPointX P) ^ 3) * hEqP
+      - (veluPointY P * Cx.eval (veluPointX P) * B.eval (veluPointX P) ^ 2) * honeP
+  have hzero : Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3
+        + D ^ 2 * B ^ 3 + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      - E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3) = 0 :=
+    Polynomial.eq_zero_of_infinite_isRoot _ (Set.Infinite.mono hsub hbad.infinite_compl)
+  linear_combination hzero
+
+/-- **THE `y`-MULTIPLIER OF A NONZERO MAP IS NONZERO** (PROVEN 2026-07-30): `Cx ≠ 0`.
+
+This is the nondegeneracy input `RationalDerivation.chordDeriv_core` needs (`γᵢ ≠ 0`),
+and it is a genuine fact about the geometry rather than bookkeeping: `Cx = 0` says the
+`y`-coordinate of `φP` does not depend on `y(P)`, i.e. `y(φP) = y(−φP)`, i.e. `φ` lands
+in the `2`-torsion of `W'`.  That is finite (`finite_nsmulKer`), so `φ` has finite
+range, so `φ = 0` (`eq_zero_of_finite_range`).
+
+Concretely: with `Cx = 0`, `diffChar_psi_image_eq` reads `ψ₂′(φP)·E(x)·B(x) = 0`, so off
+the roots of `B·E` every `P` has `φP + φP = 0`; the exceptional locus is finite and
+`finite_veluPointX_preimage` turns it into a finite set of points, so `range (φ + φ)` is
+finite. -/
+theorem diffChar_yMultiplier_ne_zero [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ0 : φ ≠ 0)
+    (hker : (AddMonoidHom.ker φ : Set W.Point).Finite) {A B Cx D E : F[X]}
+    (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    Cx ≠ 0 := by
+  classical
+  intro hCx
+  refine hφ0 ?_
+  have hprod : B * E ≠ 0 := mul_ne_zero hB hE
+  have hkill : ∀ P : W.Point, P ≠ 0 → (B * E).eval (veluPointX P) ≠ 0 → (φ + φ) P = 0 := by
+    intro P hP0 hbadP
+    by_cases hφP : φ P = 0
+    · show φ P + φ P = 0
+      rw [hφP, add_zero]
+    simp only [Polynomial.eval_mul] at hbadP
+    have hb : B.eval (veluPointX P) ≠ 0 := fun hc => hbadP (by rw [hc]; ring)
+    have he : E.eval (veluPointX P) ≠ 0 := fun hc => hbadP (by rw [hc]; ring)
+    have hpsi := diffChar_psi_image_eq (W' := W') hker hrat P hφP
+    rw [hCx] at hpsi
+    simp only [Polynomial.eval_zero, zero_mul] at hpsi
+    have hden : 2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃ = 0 := by
+      rcases mul_eq_zero.mp hpsi with h | h
+      · rcases mul_eq_zero.mp h with h' | h'
+        · exact h'
+        · exact absurd h' he
+      · exact absurd h hb
+    show φ P + φ P = 0
+    exact add_self_eq_zero_of_denom_eq_zero hφP hden
+  have hfin : (Set.range (φ + φ)).Finite := by
+    have hbadset : {P : W.Point | P ≠ 0 ∧
+        veluPointX P ∈ {t : F | (B * E).eval t = 0}}.Finite :=
+      finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot hprod)
+    refine Set.Finite.subset ((hbadset.image (φ + φ)).insert 0) ?_
+    rintro Q ⟨P, rfl⟩
+    by_cases hP0 : P = 0
+    · exact Set.mem_insert_iff.2 (Or.inl (by rw [hP0]; simp))
+    by_cases hbadP : (B * E).eval (veluPointX P) = 0
+    · exact Set.mem_insert_iff.2 (Or.inr ⟨P, ⟨hP0, hbadP⟩, rfl⟩)
+    · exact Set.mem_insert_iff.2 (Or.inl (hkill P hP0 hbadP))
+  have hdouble : (φ + φ) = 0 := eq_zero_of_finite_range hfin
+  have hrange : (Set.range φ).Finite := by
+    refine Set.Finite.subset (finite_nsmulKer (W := W') two_ne_zero) ?_
+    rintro Q ⟨P, rfl⟩
+    show (2 : ℕ) • φ P = 0
+    rw [two_nsmul]
+    simpa using DFunLike.congr_fun hdouble P
+  exact eq_zero_of_finite_range hrange
+
 /-- **In characteristic zero a rational function with vanishing derivative is
 constant.** Cancel `g = gcd A B` to a coprime pair: the Wronskian is `g²`-homogeneous,
 so `A₀'B₀ = A₀B₀'`, hence `B₀ ∣ B₀'` by coprimality, hence `B₀' = 0` by degree, hence
