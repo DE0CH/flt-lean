@@ -6883,6 +6883,65 @@ theorem nonempty_withRigidification_of_forall_split_of_ae_integral
   nonempty_withRigidification_of_nonempty_algEquiv F D
     ⟨AlgEquiv.ofBijective (adelicPsi F D b e hae) (adelicPsi_bijective F D b e hae)⟩
 
+/-- **Dependent choice along a filter** (PROVEN, 2026-07-30): if a member of `l` admits a
+witness at each of its points, then a GLOBAL section exists whose values are witnesses on a
+member of `l`.
+
+The fallback `hne` is what makes this true rather than merely plausible: outside the good
+member of `l` the section still has to return SOMETHING, and `Classical.choice` on
+`Nonempty (T a)` supplies it. In the use below, `l = Filter.cofinite` and `hne` is exactly
+`hsplit` — the bare local splittings, which carry no integrality at all and are needed for
+nothing else. -/
+theorem exists_pi_of_eventually_exists {α : Type*} {l : Filter α} {T : α → Type*}
+    (hne : ∀ a, Nonempty (T a)) (Q : ∀ a, T a → Prop)
+    (hae : ∀ᶠ a in l, ∃ t : T a, Q a t) :
+    ∃ e : ∀ a, T a, ∀ᶠ a in l, Q a (e a) := by
+  classical
+  refine ⟨fun a => if h : ∃ t : T a, Q a t then h.choose else (hne a).some, ?_⟩
+  filter_upwards [hae] with a ha
+  rw [dif_pos ha]
+  exact ha.choose_spec
+
+/-- **STEP 1a-vi(b′) — THE LOCAL ARITHMETIC of the rigidification leaf** (sorry leaf; CUT
+2026-07-30, ROUND-10, out of `exists_finset_ae_integral_split_of_forall_split` below, which
+is now a PROVEN assembly over this leaf and `exists_pi_of_eventually_exists`).
+
+At almost every finite place there is a splitting of `D` carrying the `𝒪_w`-lattice spanned
+by the `1 ⊗ b i` ONTO `M₂(𝒪_w)`. This is the whole mathematical content of the leaf below
+and none of its bookkeeping: no family, no adeles, no choice — one place, one lattice.
+
+WHAT A PROVER OWES, unchanged from the leaf below and repeated here because this is now the
+place it is owed. `Λ`, the `𝓞_F`-span of `b`, is a full lattice in `D` whose multiplication
+has structure constants in `F`, hence integral at almost every `w`; so `Λ_w` is an
+`𝒪_w`-ORDER for almost every `w`, and MAXIMAL at almost every `w` because its reduced
+discriminant is a nonzero element of `F`, hence a unit at almost every `w`. Every maximal
+order of `M₂(F_w)` is conjugate to `M₂(𝒪_w)` — it is `End_{𝒪_w}(L)` for a lattice `L`, and a
+basis of `L` is the conjugating matrix — so composing `hsplit w` with that conjugation gives
+`f`.
+
+An equivalent route that avoids the word "order" and may be cheaper against this mathlib
+pin: `Λ_w` with unit discriminant is an AZUMAYA `𝒪_w`-algebra of rank `4`, its reduction is
+a `4`-dimensional central simple algebra over the FINITE residue field, hence `M₂(k_w)` by
+Wedderburn, and an Azumaya algebra over a complete local ring with split residue algebra is
+split. Mathlib has `IsAzumaya` (`Mathlib/Algebra/Azumaya/{Defs,Basic,Matrix}.lean`) and
+`Mathlib/Algebra/BrauerGroup/Defs.lean`, checked present 2026-07-30; it has no maximal-order
+theory at all (`grep -rln 'IsMaximalOrder\|maximalOrder' Mathlib/` is empty), so the second
+route starts from more.
+
+`hsplit` is retained as a hypothesis even though a prover following either route above
+constructs `f` outright: keeping it makes this leaf strictly weaker than the local content
+it replaces, so the cut cannot have introduced a falsehood. -/
+theorem eventually_exists_integralSplitting (b : Module.Basis ι F D)
+    (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
+      Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
+        M₂(w.adicCompletion F))) :
+    ∀ᶠ (w : HeightOneSpectrum (𝓞 F)) in Filter.cofinite,
+      ∃ f : (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F] M₂(w.adicCompletion F),
+        ∀ c : ι → w.adicCompletion F,
+          ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+            ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F) :=
+  sorry
+
 /-- **STEP 1a-vi(b) — THE ARITHMETIC HALF of the rigidification leaf** (sorry leaf; CUT
 2026-07-28). From bare local splittings, produce a family that is a.e. integral relative to a
 GIVEN `F`-basis `b` of `D`.
@@ -6908,14 +6967,36 @@ family alone, not of the basis.
 MISSING MACHINERY (each item checked absent from mathlib, from this project, and from
 `~/cs/FLT` on 2026-07-28): reduced discriminant of an order in a quaternion algebra;
 maximality of an order at a place where the discriminant is a unit; conjugacy of maximal
-orders in `M₂(F_w)`. `IsMaximalOrder` exists nowhere, so this needs a definition first. -/
+orders in `M₂(F_w)`. `IsMaximalOrder` exists nowhere, so this needs a definition first.
+
+**DECOMPOSED 2026-07-30, ROUND-10: this is now a PROVEN ASSEMBLY, and the sorry has moved
+to `eventually_exists_integralSplitting` below, which is PURELY LOCAL.** The statement as
+cut mixed two unrelated things — the local mathematics at a single place, and the passage
+from "a witness exists at almost every place" to "a GLOBAL FAMILY exists whose values are
+witnesses at almost every place". The second is not mathematics at all, it is dependent
+choice along `Filter.cofinite` with `hsplit` as the fallback at the finitely many bad
+places, and it is exactly the step the docstring above disposes of in eleven words ("at the
+finitely many remaining `w` take the splitting handed over by `hsplit` unchanged"). It is
+now `exists_pi_of_eventually_exists`, PROVEN and general.
+
+What that buys, and it is the same trade `exists_padicCoefficientField` made for the
+Carayol citation: the residual leaf no longer quantifies over families, so a prover works
+at ONE completion `F_w` with ONE lattice and never touches the adelic bookkeeping. The
+three missing theories listed above are unchanged — this shortens no literature input, and
+the frontier is one leaf in, one leaf out. -/
 theorem exists_finset_ae_integral_split_of_forall_split (b : Module.Basis ι F D)
     (hsplit : ∀ w : HeightOneSpectrum (𝓞 F),
       Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
         M₂(w.adicCompletion F))) :
     ∃ e : ∀ w : HeightOneSpectrum (𝓞 F), (w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
-      M₂(w.adicCompletion F), IsAEIntegralSplitting F D b e :=
-  sorry
+      M₂(w.adicCompletion F), IsAEIntegralSplitting F D b e := by
+  obtain ⟨e, he⟩ :=
+    exists_pi_of_eventually_exists (l := Filter.cofinite) hsplit
+      (fun w f => ∀ c : ι → w.adicCompletion F,
+        ((∀ i, c i ∈ w.adicCompletionIntegers F) ↔
+          ∀ p q, (f (∑ i, c i ⊗ₜ[F] b i)) p q ∈ w.adicCompletionIntegers F))
+      (eventually_exists_integralSplitting F D b hsplit)
+  exact ⟨e, he⟩
 
 end AdelicRigidification
 
