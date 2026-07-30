@@ -6402,14 +6402,44 @@ is injective up to scaling and `[−1]`-symmetric, and its height `6 log|n| + O(
 quadraticity. Any faithful further cut must be made at the level of the invertible sheaf
 and its global sections, not in coordinates.
 
-**Not vacuous.**  `CubeModel` on a FINITE group is cheap (`dim = 1`, `coords = 1`), so this
-leaf carries no content when `Pic⁰(X_ℚ)` is finite — which is correct rather than a defect,
-since a finite group is finitely generated and the consumer's conclusion holds anyway.  It
-is the infinite (positive-rank) case that the leaf is for, and there `injective_of_smul`
-plus `cube_eval` force a genuine projective embedding of the Jacobian. -/
+**Not vacuous, and the FINITE case is now DISCHARGED BY THE KERNEL rather than asserted
+(2026-07-31).**  This paragraph used to read "`CubeModel` on a FINITE group is cheap
+(`dim = 1`, `coords = 1`)", quoting a recipe recorded on `CubeModel` itself.  **That recipe
+is FALSE**: constant coordinates make `coords P = 1 • coords Q` hold for every `P, Q`, so
+`injective_of_smul` returns `P = Q` and the recipe forces `Subsingleton A`, not merely
+`Finite A`.  The correct construction is the INDICATOR embedding, `dim = #A` and
+`coords P = e_P`, with the Segre image the set of coordinate points; it is
+`Fermat.nonempty_cubeModel_of_finite`, PROVEN in
+`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`, and the audit there carries the
+refutation of the old recipe.
+
+Consequently this leaf is now split by the kernel, not by prose: `exists_cubeModel_pic`
+below is PROVEN by the case distinction, and the surviving obligation
+`exists_cubeModel_pic_of_infinite` carries the extra hypothesis `Infinite D.Pic`.  The
+frontier count is unchanged (one leaf in, one leaf out) — what is bought is that the
+"finite case is cheap" half is machine-checked instead of being a false claim, and that the
+remaining leaf may USE infiniteness, which is exactly the hypothesis the geometric
+construction wants: for infinite `Pic⁰(X_ℚ)` the rational points are Zariski-dense in a
+positive-dimensional subgroup of `J`, which is what makes the Segre image of the `4Θ`
+embedding the relevant variety rather than a finite set of points.
+
+In the infinite case `injective_of_smul` plus `cube_eval` force a genuine projective
+embedding of the Jacobian: take `Θ` the theta divisor, `4Θ` symmetric very ample
+(Lefschetz), `dim = 16`. -/
+theorem exists_cubeModel_pic_of_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
+    Nonempty (CubeModel D.Pic) := sorry
+
+/-- **LEAF (Mordell–Weil, geometric half), now PROVEN by the finite/infinite case
+distinction** over `Fermat.nonempty_cubeModel_of_finite` and
+`exists_cubeModel_pic_of_infinite`; see the docstring above. -/
 theorem exists_cubeModel_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
-    Nonempty (CubeModel D.Pic) := sorry
+    Nonempty (CubeModel D.Pic) := by
+  by_cases hfin : Finite D.Pic
+  · exact nonempty_cubeModel_of_finite D.Pic
+  · exact exists_cubeModel_pic_of_infinite D hsep (not_finite_iff_infinite.mp hfin)
 
 /-- **LEAF (Mordell–Weil, geometric half): a height function with the Northcott property
 exists on `Pic⁰(X_ℚ)`**, for every separable monic sextic.
