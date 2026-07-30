@@ -2780,6 +2780,54 @@ steps in dependency order, and all three generalise.
    again `N`.  This is what `PointOfExactOrder.geom_order` asks and it is
    PROVEN verbatim at `ℚ`.
 
+## RECONNAISSANCE on steps 2 and 3, 2026-07-30 (read before starting)
+
+Step 1 really is the whole *mathematical* obstruction, but steps 2 and 3
+are not free either, and the split between "already base-generic" and
+"still `ℚ`-hardcoded" is not where the list above suggests.  Checked
+against the sources:
+
+* **Step 2 is already available over any PERFECT base.**
+  `exists_specSection_of_specGal_invariant` (further down this file,
+  PROVEN) is stated for `{F : Type} [Field F] [PerfectField F]` — not for
+  `ℚ` — and `specAlgClos` / `specGal` (`Modularity/AbelianScheme.lean`)
+  are stated for an arbitrary field.  So the descent half needs no work
+  at all when `L` is perfect.  What is `ℚ`-hardcoded is
+  `exists_section_of_galoisInvariant`, the thin wrapper immediately above
+  `nonempty_gamma1Datum_of_ratPoint`; re-instantiating it is bookkeeping.
+
+* **Step 3 hides a second `ℚ`-specific node.**  The `geom_order` field is
+  discharged by `exists_pointOfExactOrder_of_geomPt`, which calls
+  `exists_injective_pre_geomBase` (`X0.lean`, PROVEN) — and *that* one is
+  genuinely `ℚ`-shaped: its proof runs through `subsingleton_hom_specQ`
+  and `nonempty_ringHom_of_hom_specQ`, i.e. through the INITIALITY of `ℚ`
+  among rings, to produce the embedding `L̄ ↪ K'` over the base.  Over a
+  general `L` that embedding still exists — `t : Spec K' ⟶ Spec L` makes
+  `K'` an `L`-algebra and `K'` is algebraically closed, so
+  `exists_ringHom_algebraicClosure` applies — but the *commuting* clause
+  is no longer a `Subsingleton.elim` and has to be proven.  Budget a
+  second declaration for it.
+
+* **AND THE ROUTE AS WRITTEN DOES NOT REACH THIS LEAF'S STATEMENT.**
+  There is no `[PerfectField L]` here, and step 2 cannot be dropped to
+  cover the imperfect case: `Field.absoluteGaloisGroup L` is
+  `AlgebraicClosure L ≃ₐ[L] AlgebraicClosure L`, whose fixed field inside
+  `L̄` is the purely inseparable closure of `L`, strictly larger than `L`
+  — which is exactly why `exists_specSection_of_specGal_invariant` asks
+  for `PerfectField`.  So a `Γ_L`-invariant geometric point of an
+  imperfect-base scheme need not descend, and no repair of step 2 alone
+  will do.
+
+  **The leaf is nonetheless TRUE as stated**, because the descent is not
+  actually needed: `P` is `L`-rational to begin with, so the section is
+  there before any geometric point is formed, and only `geom_order` — a
+  statement about images — has to travel upwards.  A successor therefore
+  has a genuine choice to make when stating step 1's `L`-analogue: state
+  the bridge so that it produces the section from the `L`-point directly
+  (no descent, works for imperfect `L`), or state it in the `ℚ`-side's
+  geometric-fibre-only form and add `[PerfectField L]` here.  The first is
+  the faithful one; the second silently weakens this leaf.
+
 ## Faithfulness
 
 No characteristic hypothesis is needed or wanted: `hP` already asserts
