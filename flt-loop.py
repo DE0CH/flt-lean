@@ -440,27 +440,119 @@ def parse_reset(text):
     return e + 86400 if e <= time.time() else e
 
 
+PROBE_EVERY = 300        # seconds between "is the door open yet" checks
+CREDS = pathlib.Path.home() / ".claude" / ".credentials.json"
+
+
+def creds_stamp():
+    try:
+        return int(CREDS.stat().st_mtime)
+    except OSError:
+        return 0
+
+
+def probe_quota():
+    """Ask the API, with the key currently on disk, whether it will serve us.
+
+    NOT a timer. The refusal message carries a reset time, but that time
+    describes whichever ACCOUNT was live when it was printed, and a rotator
+    swaps ~/.claude/.credentials.json underneath us from a bank of accounts. So
+    the deadline is unreliable in BOTH directions: it can expire while we are
+    still refused, and -- what happened here -- remain in the future long after
+    a rotation has already made us servable. The logs even disagreed with each
+    other, 9:30pm against 9:50pm.
+
+    Everywhere else this loop observes rather than believes: `ancestor` asks
+    git, `alive` asks /proc, `main` asks the repo. This applies the same rule
+    to the one place that was trusting a string.
+    """
+    result = STATE / "quota-probe.json"
+    if result.exists():
+        rm(result)
+        rm(STATE / "quota-probe")
+        return True
+    st = STATE / "quota-probe"
+    last = float((rd(st, "") or "0").strip() or 0)
+    if time.time() - last < PROBE_EVERY:
+        return False
+    wr(st, str(time.time()))
+    inner = ('exec -a flt-job-quotaprobe %s --dangerously-skip-permissions -p %s'
+             % (shlex.quote(CLAUDE),
+                shlex.quote('Write the file %s containing exactly {"ok":true} '
+                            'and nothing else, then stop.' % result)))
+    try:
+        ssh(sorted(set(worker_hosts().values()))[0],
+            "setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
+            % (shlex.quote(inner),
+               shlex.quote(str(STATE / "joblogs" / "quota-probe.log"))),
+            timeout=30)
+    except Exception:
+        pass
+    return False
+
+
 def quota_until():
-    v = (rd(STATE / "quota-until", "") or "").strip()
-    if v.isdigit():
-        if time.time() < int(v):
-            return int(v)
-        rm(STATE / "quota-until")           # expired: clears itself
-    return None
+    """Are we currently refused? A fact to be re-checked, not a sentence to serve.
+
+    The state file records only THAT we were refused and which credential was
+    live at the time. It clears when a probe succeeds. A rotation (the
+    credentials file changing underneath us) forces the next probe immediately
+    rather than waiting out the interval, because a new account is the most
+    likely reason the answer has changed.
+    """
+    v = rd(STATE / "quota-blocked")
+    if not v:
+        return None
+    try:
+        d = json.loads(v)
+    except json.JSONDecodeError:
+        rm(STATE / "quota-blocked")
+        return None
+    if d.get("creds") and d["creds"] != creds_stamp():
+        rm(STATE / "quota-probe")          # rotated: probe now, do not wait
+    if probe_quota():
+        rm(STATE / "quota-blocked")
+        email("flt-loop: quota available again, resuming",
+              "A probe with the credential now on disk was served, so the "
+              "block was lifted on evidence. Spawning has resumed.")
+        return None
+    return d.get("since", 1)               # truthy == still blocked
 
 
 def note_quota(reset_epoch, why):
-    wr(STATE / "quota-until", str(int(reset_epoch)) + "\n")
-    email("flt-loop: quota exhausted, idling until %s"
-          % time.strftime("%H:%M", time.localtime(reset_epoch)),
-          "Spawning is being refused by the API. The loop is IDLING rather "
-          "than retrying, and resumes by itself when the limit resets.\n\n" + why)
+    wr(STATE / "quota-blocked",
+       json.dumps({"since": int(time.time()), "creds": creds_stamp(),
+                   "log_said": int(reset_epoch)}))
+    email("flt-loop: quota exhausted, idling",
+          "Spawning is being refused. The loop is IDLING rather than retrying, "
+          "and probes every %ds with whatever credential is on disk -- the "
+          "reset time in the message is only a hint, since the rotator can "
+          "swap accounts underneath us.\n\n%s" % (PROBE_EVERY, why))
 
 
 def refused(name, j):
-    """Did this job's log say it was refused? Only asked about dead-looking jobs."""
-    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
-    return t if LIMIT_MARK in t else None
+    """Did this job's log say it was refused? Only asked about dead-looking jobs.
+
+    The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
+    ago keeps "session limit" in its log forever, and a refusal does not change
+    the job's token, so the same file is read again on every tick. That made
+    the block un-clearable: a probe would lift it and the very same load() pass
+    would re-arm it from a stale line -- both emails landed in the same second,
+    21:55:57, and the fleet never resumed.
+
+    So the file is moved aside once it has been acted on. The history is kept
+    (renamed, not deleted) but it is out of the evidence path, and only a
+    genuinely new refusal -- written by a fresh spawn attempt -- can block again.
+    """
+    log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
+    t = rd(log, "") or ""
+    if LIMIT_MARK not in t:
+        return None
+    try:
+        log.rename(log.with_suffix(".log.refused-%d" % time.time()))
+    except OSError:
+        rm(log)
+    return t
 
 
 # --------------------------------------------------------------- spawn
