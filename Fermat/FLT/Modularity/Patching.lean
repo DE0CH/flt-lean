@@ -9414,6 +9414,33 @@ CONTINUOUS (the maximal ideal is open in the `𝔪`-adic topology and is
 `ker πuniv`), which is what lets `ρuniv` be base-changed along `πuniv` at all.
 `hirr` is what the Chebotarev–Brauer–Nesbitt step consumes.
 
+# THE CONCLUSION NAMES ITS CARRIER SINCE 2026-07-30, AND THAT WAS FREE
+
+This declaration used to conclude `Nonempty (AuxDeformationDatum hpodd Q ρbar)`
+— a witness-forgetting existential.  `exists_auxDeformationDiamondControl` far
+below recorded that shape as the reason its clause 2 (the control map
+`R_Q ↠ R_univ`) is UNREACHABLE, and prescribed the repair verbatim: "strengthen
+its conclusion to name the carrier … after which clause 2's surjection is `h𝒟Q`
+applied to that datum, composed with `e`, and only its SURJECTIVITY and the
+kernel identity remain as mathematics".  It also priced the repair at zero,
+because "that leaf's proof already knows its carrier".
+
+Both are correct, and the repair is now made.  The proof below is UNCHANGED —
+`ρuniv` itself is the witness and the datum is built with `R := Runiv`,
+`ρ := ρuniv`, `π := πuniv` on the nose — so `e` is `RingEquiv.refl Runiv` and
+the three compatibility clauses are `rfl` after `ext`.  The `charFrob` clause is
+the one addition beyond the prescription, and it is free for the same reason; it
+is what lets a consumer transport the `Sf`-clause of
+`AuxDeformationDatum.IsWeaklyUniversal` into a statement about `ρuniv`'s own
+Frobenius traces, which is what `IsTraceGeneratedDeformation` is stated over and
+hence what a surjectivity argument for the control map has to reach.
+
+Nothing had to be repaired downstream: at the time of the change this
+declaration had **no consumers in code** (`grep -rn 'exists_auxDeformationDatum'
+Fermat/` hits only its own definition and a dozen docstring cross-references,
+mostly CIRCULARITY-GUARD pointers).  A consumer that wants the old shape gets it
+by `⟨(exists_auxDeformationDatum … ).choose⟩`.
+
 CIRCULARITY GUARD: inherited from the assembly —
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible` and
@@ -9447,7 +9474,11 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (n : ℕ) (hn : 1 ≤ n) (Q : Finset ℕ)
     (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) := by
+    ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar, ∃ e : 𝒟.R ≃+* Runiv,
+      e.toRingHom.comp (algebraMap ℤ_[p] 𝒟.R) = algebraMap ℤ_[p] Runiv ∧
+      πuniv.comp e.toRingHom = 𝒟.π ∧
+      ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+        (𝒟.ρ.charFrob v).map e.toRingHom = ρuniv.charFrob v := by
   classical
   haveI : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv := hcomplete
   -- `πuniv` is continuous: its kernel is the maximal ideal, which is open in
@@ -9554,22 +9585,33 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
     exact exists_isSplitTorusAt_of_isUnramifiedAt
       hq.toHeightOneSpectrumRingOfIntegersRat πuniv hπuniv ρuniv
       (hρuniv.isUnramified q hq ⟨hq2, hqp⟩) α β hαβ ((hall _).trans hpoly)
-  exact ⟨{ R := Runiv
-           isAdic := hadic
-           isAdicComplete := hcomplete
-           ρ := ρuniv
-           rank_eq := hranku
-           isRaisedLevelHardlyRamified :=
-             { det := hρuniv.det
-               isUnramified := fun q hq _ h2 hp =>
-                 hρuniv.isUnramified q hq ⟨h2, hp⟩
-               isFlat := hρuniv.isFlat
-               isTameAtTwo := hρuniv.isTameAtTwo
-               isSplitTorusAt := hsplit }
-           π := πuniv
-           π_surjective := hπuniv
-           S := Suniv
-           charFrob_compat := hunivred }⟩
+  refine ⟨{ R := Runiv
+            isAdic := hadic
+            isAdicComplete := hcomplete
+            ρ := ρuniv
+            rank_eq := hranku
+            isRaisedLevelHardlyRamified :=
+              { det := hρuniv.det
+                isUnramified := fun q hq _ h2 hp =>
+                  hρuniv.isUnramified q hq ⟨h2, hp⟩
+                isFlat := hρuniv.isFlat
+                isTameAtTwo := hρuniv.isTameAtTwo
+                isSplitTorusAt := hsplit }
+            π := πuniv
+            π_surjective := hπuniv
+            S := Suniv
+            charFrob_compat := hunivred }, RingEquiv.refl Runiv, ?_, ?_, ?_⟩
+  · show (RingEquiv.refl Runiv).toRingHom.comp (algebraMap ℤ_[p] Runiv) =
+      algebraMap ℤ_[p] Runiv
+    ext x
+    simp
+  · show πuniv.comp (RingEquiv.refl Runiv).toRingHom = πuniv
+    ext x
+    simp
+  · intro v
+    show (ρuniv.charFrob v).map (RingEquiv.refl Runiv).toRingHom = ρuniv.charFrob v
+    rw [show ((RingEquiv.refl Runiv).toRingHom) = RingHom.id Runiv from rfl,
+      Polynomial.map_id]
 
 /-! #### The RAISED-LEVEL deformation-condition clauses, and the machine
 
@@ -14239,6 +14281,61 @@ That is declined here, on two independent grounds, each checkable:
    admissible when `e_i = n`, and `IsRaisedLevelHardlyRamified.isSplitTorusAt`
    puts NO order bound on the inertia character `χ`, so nothing in the
    deformation problem caps it at `p^n`.
+
+# THE PROVABILITY OBSTRUCTION IS REMOVED (2026-07-30): `exists_auxDeformationDatum`
+
+# NOW NAMES ITS CARRIER
+
+The section "WHAT PINS `Runiv` AS THE `Q = ∅` RING" above, and the closing
+paragraph of the `hgen` repair, both say the same thing: the classifying map
+`𝒟Q.R →+* Runiv` that clause 2 needs cannot be produced, because
+`exists_auxDeformationDatum` returns a witness-forgetting
+`Nonempty (AuxDeformationDatum hpodd Q ρbar)` and the datum it hands back is not
+known to have `R = Runiv`.  Both then prescribe the same repair, and price it at
+zero.
+
+**That repair is now made.**  `exists_auxDeformationDatum` above concludes
+
+    ∃ 𝒟, ∃ e : 𝒟.R ≃+* Runiv,
+      e.toRingHom.comp (algebraMap ℤ_[p] 𝒟.R) = algebraMap ℤ_[p] Runiv ∧
+      πuniv.comp e.toRingHom = 𝒟.π ∧
+      ∀ v, (𝒟.ρ.charFrob v).map e.toRingHom = ρuniv.charFrob v
+
+which is the prescription verbatim plus a `charFrob` clause (also free, and
+needed below).  Its proof did not change: `ρuniv` was always the witness and the
+datum was always built with `R := Runiv` on the nose, so `e` is
+`RingEquiv.refl Runiv`.
+
+**So the map now exists, and what a prover has in hand is this.**  Feed that
+datum to `h𝒟Q`: weak universality gives `f : 𝒟Q.R →+* 𝒟.R` with
+`𝒟.π.comp f = 𝒟Q.π`, `f`'s `ℤ_[p]`-algebra compatibility, and an `Sf` off which
+`f` matches linear `charFrob` coefficients.  Compose with `e` to get
+`toRuniv := e.toRingHom.comp f : 𝒟Q.R →+* Runiv`, which satisfies
+`πuniv.comp toRuniv = 𝒟Q.π` and, by the `charFrob` clause, sends `𝒟Q.ρ`'s
+Frobenius traces to `ρuniv`'s off `Sf ∪ 𝒟Q.S ∪ Suniv`.
+
+**What remains is therefore exactly three things, and all three are
+mathematics, not plumbing:**
+
+1. **`toRuniv` is SURJECTIVE.**  This is where `hgen` is consumed and is the
+   reason `hgen` was added: `IsTraceGeneratedDeformation p ρuniv Suniv` says the
+   `ℤ_[p]`-subalgebra generated by `ρuniv`'s linear `charFrob` coefficients off
+   `Suniv` is topologically DENSE in `Runiv`.  The previous paragraph puts every
+   one of those generators in the range of `toRuniv` (off the union of the three
+   finite sets; the finitely many remaining places are the residual work), so
+   the range is a dense subalgebra, and closing it needs `toRuniv`'s range to be
+   closed — `𝒟Q.R` is compact in no hypothesis here, so this is the honest
+   remaining step and not a formality.  Note `isClosed_ideal_of_compactSpace`
+   above is NOT applicable: it wants compactness, and it wants an ideal.
+2. **`RingHom.ker toRuniv = (taylorWilesAug p q).map diamond`** — the control
+   theorem proper, "killing the diamonds is killing the level raising".
+3. **`diamond` itself, with `taylorWilesLevelIdeal p (fun _ => n) ≤ ker diamond`**
+   — local class field theory at the primes of `Q`, per item 1 of the head of
+   this docstring.  Clauses 2 and 3 still may NOT be split from each other; the
+   both-directions vacuity check above is unaffected by any of this.
+
+The FALSITY REPAIR (`hgen`) and this note are independent: `hgen` fixed a FALSE
+statement, this fixes an UNREACHABLE one, and neither subsumes the other.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor-Wiles, ibid. §2;
 Darmon-Diamond-Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
