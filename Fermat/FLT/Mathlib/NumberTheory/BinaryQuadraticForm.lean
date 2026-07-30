@@ -108,7 +108,10 @@ PROVEN, over three new analytic leaves:
 * `Heegner.eta_pow_24_add_eta_two_pow_24` — `η²⁴ + 256η(2z)²⁴ = E₄·(η·η(2z))⁸`, the single
   modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra.
   **Now PROVEN** (2026-07-29), over ONE new leaf, `Heegner.eta_two_torsion_key`
-  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`). Everything else is proven here: `η(z+1)`,
+  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`) — which is ITSELF now PROVEN (2026-07-30) over
+  the two Weber relations `Heegner.eta_weber_prod` and `Heegner.eta_weber_sum`; see the section
+  prose above `eta_weber_prod` for why that split is what buys a proof route. Everything else is
+  proven here: `η(z+1)`,
   the `S`-transformation of `F = (η²⁴+256η(2z)²⁴)/(ηη(2z))⁸` from the key identity, the
   packaging of `F` as a `ModularForm 𝒮ℒ 4`, its value `1` at the cusp, and
   `F = E₄` from `ModularForm.levelOne_weight_four_rank_one`;
@@ -121,13 +124,17 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has FIVE open leaves. The list below was REGENERATED from the merged source at
-this merge, not inherited from any of the three sides that disagreed about it — and each of
-them was RIGHT about its own base, which is exactly why none of their lists survives:
-`Heegner.natDegree_minpoly_weberAlpha`, `Heegner.exists_modularPolynomial`, the two
-class-field leaves `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
-`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and the single `η`-product identity
-`Heegner.eta_two_torsion_key`.
+So this file has SIX open leaves as of 2026-07-30: `Heegner.natDegree_minpoly_weberAlpha`,
+`Heegner.exists_modularPolynomial`, the two class-field leaves
+`Heegner.exists_quadratic_jInvariant_heegnerPoint` and
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and the two Weber relations
+`Heegner.eta_weber_prod` and `Heegner.eta_weber_sum`.
+
+It had FIVE at the release before this one; the count rose by one because
+`Heegner.eta_two_torsion_key` was CLOSED and re-cut into those two Weber relations, one closed
+against two opened. That is disclosure of the two independent analytic facts that were always
+inside the single one — and it is what converted an identity with no proof route at this pin
+into two that have the same one. Read the delta with what closed, not alone.
 
 Six names moved between release 19 and here, in three independent directions:
 
@@ -1625,88 +1632,14 @@ theorem exists_quadratic_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 :
       = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
   sorry
 
-/-- **LEAF 4c — `γ₂(τ₀)` descends with `j(τ₀)`.** Weber's level-`3` result (Booher §3.2 and
-Theorem 36): for `3 ∤ D`, `K(γ₂(τ)) = K(j(τ))`.
-
-`γ₂³ = j` gives `ℚ(j) ⊆ ℚ(γ₂)` for free; ALL the content is the reverse inclusion, i.e. that
-the cube root does not enlarge the field. `γ₂` is a modular function for a level-`3` group,
-so `[K(γ₂(τ)) : K(j(τ))]` divides `3`, and `3 ∤ D` forces it to be `1`.
-
-WHAT A PROVER MAY USE, and it collapses this leaf considerably. `exists_real_gammaTwo_heegnerPoint`
-(PROVEN above) plus `gammaTwo_pow_three_eq_jInvariant` (`LEAF 5`) turn `hj` into `j(τ₀) ∈ ℚ`
-— reality kills the `√−p` component — and reduce the conclusion to the single arithmetic
-statement **`j(τ₀)` is a perfect cube in `ℚ`**, with `γ₂(τ₀)` its real cube root. That is the
-honest residue of this leaf and is how it should be attacked.
-
-ONLY `3 ∤ p` IS EXPECTED TO BE LOAD-BEARING, and it comes from `hp` with `h3`; `hp8` is
-passed for uniformity with its siblings and is not expected to be needed. `3 ∤ p` genuinely
-cannot be dropped: at `D` divisible by `3` the cube root does enlarge the field, which is
-exactly why Booher's Theorem 36 carries the hypothesis.
-
-NOT VACUOUS, and note `hj` is not idle: without it the conclusion is a statement about an
-unconstrained transcendental-looking quantity, and with it the leaf is the `[K(γ₂):K(j)] = 1`
-step alone. Machine-checked at all five admissible `p`: `j(τ₀)` is an exact rational cube
-(see the section note). -/
-theorem exists_quadratic_gammaTwo_of_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
-    (h3 : 3 < p)
-    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
-      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
-    ∃ u v : ℚ, gammaTwo (heegnerPoint p hp.pos)
-      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) :=
-  sorry
-
-/-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
-
-By the first main theorem of CM (Booher Theorem 34/36; Cox §11), `K(j(τ₀))` is the Hilbert
-class field of `K = ℚ(√−p)` and `[K(j(τ₀)) : K] = h(−p)`; with `h(−p) = 1` that field is `K`
-itself, and since `j(τ₀)` is real it lies in `ℚ`. Because `3 ∤ p`, Weber's `γ₂` generates the
-same field (Booher Theorem 36), so `γ₂(τ₀) ∈ ℚ` too.
-
-Together with LEAF 3 this gives `γ₂(τ₀) ∈ ℤ` — see `exists_int_gammaTwo`, which is PROVEN
-from the two, using that `ℤ` is integrally closed in `ℚ`.
-
-MACHINE-CHECKED FAITHFULNESS: at the five admissible `p`, `(f₂(τ₀)²⁴+16)/f₂(τ₀)⁸` evaluates
-(`PARI/GP`, 60 digits, `η` as a 400-term product) to
-`−32, −96, −960, −5280, −640320` with imaginary part `< 10⁻⁷⁰`.
-
-THIS IS THE REAL COST OF THE DEEP LEAF. Complex multiplication, ring class fields, and the
-Galois action `σ_a(j(b)) = j(ab)` are absent from mathlib at this pin, from `~/cs/FLT`, and
-from this project; building them is a project in its own right and this is where a further
-decomposition should cut. The elementary route Stark points out (Booher's closing remark:
-"nothing more modern is required") replaces the class field theory by Weber's own
-computations, and is the cheaper target if this is ever attacked directly.
-
-**DECOMPOSED 2026-07-28 (`flt-lean-329`), and this declaration is now PROVEN** over the three
-leaves in the section above — the first of which is itself PROVEN here:
-
-* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone;
-* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (the CM half, and the
-  only consumer of `hcl`);
-* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K` (Weber's
-  level-`3` descent, needing only `3 ∤ p`).
-
-The assembly below is the step "`K ∩ ℝ = ℚ`": reality forces the `√−p` coefficient `v` to
-vanish, since `√p > 0`. No complex multiplication is used HERE — all of it is in the second
-leaf, which is now the only place in this cluster that needs class field theory. -/
-theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
-    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
-      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
-  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
-  obtain ⟨u, v, huv⟩ := exists_quadratic_gammaTwo_of_jInvariant hp hp8 h3
-    (exists_quadratic_jInvariant_heegnerPoint hp hp8 h3 hcl)
-  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
-  have him := congrArg Complex.im (hx.trans huv)
-  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
-    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
-    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
-  have hv : v = 0 := by
-    have hv' : (v : ℝ) = 0 := by
-      rcases mul_eq_zero.mp him.symm with h | h
-      · exact h
-      · exact absurd h (ne_of_gt hsqrt)
-    exact_mod_cast hv'
-  exact ⟨u, by rw [huv, hv]; simp⟩
+/- **LEAF 4c AND LEAF 4 HAVE MOVED** (2026-07-30) — they are now PROVEN, and live further down,
+immediately before `exists_int_gammaTwo`, together with the new leaf `LEAF 4c′`
+(`exists_rat_gammaTwo_of_rat_jInvariant`) they are proven from. Lean's declaration order is what
+forces it: LEAF 4c's proof consumes `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), and LEAF 4c′'s
+prover needs `isIntegral_gammaTwo_heegnerPoint` as well, both of which are declared below the
+`η`-sections. `LEAF 4b` (`exists_quadratic_jInvariant_heegnerPoint`, the CM half) stays here,
+since nothing about it moved. This is the same relocation `LEAF 3` underwent for the same
+reason; see the note at the head of the `Heegner` namespace. -/
 
 /-! ### Reduction of LEAVES 5 and 6 to their analytic cores
 
@@ -1831,13 +1764,127 @@ lemma zeta24_pow_24 : Complex.exp (↑Real.pi * Complex.I / 12) ^ 24 = 1 := by
 
 /-! ### The weight-four eta quotient -/
 
-/-- **SUB-LEAF 5a-i — THE ONE REMAINING ANALYTIC INPUT.**
+/-! ### SUB-LEAF 5a-i, RE-CUT (2026-07-30) into the two Weber relations
+
+`eta_two_torsion_key` is now PROVEN, from the two leaves immediately below.  This REVERSES the
+2026-07-29 judgment recorded in the section prose above — "the honest cut is NOT the two Weber
+relations separately but their COMBINATION" — and the reversal is deliberate, so here is the
+reason, which is not a matter of taste.
+
+That judgment was made on statement hygiene: the combination `bc(b+c) = 16` mentions only
+`ModularForm.eta`, whereas the two relations separately drag in `η((z+1)/2)` and a 48-th root
+of unity.  True, and irrelevant to whether either can be PROVED.  What decides that is which
+group each identity is invariant under, and the combination is invariant under a group mathlib
+knows nothing about:
+
+* write `a = f⁸ = ζ₄₈⁻⁸·η((z+1)/2)⁸/η(z)⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`,
+  `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`, so that `ζ₄₈⁻⁸ = e^{−πi/3}` is the constant appearing below;
+* `G = bc(b+c)` is invariant under `S` and `T²` but NOT under `T` — its stabiliser is the theta
+  group `Γ_θ = ⟨S, T²⟩`, of index `3` in `SL₂(ℤ)`.  Proving `G ≡ 16` therefore needs the
+  compactified quotient of `Γ_θ`, and mathlib at this pin has no `Γ_θ`, no fundamental domain
+  for it, and no rigidity statement at any level but ONE;
+* the TRIPLE `v = (a, −b, −c)`, on the other hand, carries an honest `SL₂(ℤ)`-action up to a
+  cube root of unity: `T` sends `v ↦ ζ₃·(v∘(1 2))` and `S` sends `v ↦ v∘(2 3)`, with
+  `ζ₃ = e^{2πi/3}`.  Hence `e₃(v) = abc` is `SL₂(ℤ)`-INVARIANT outright (the cocycle enters
+  cubed, `ζ₃³ = 1`), and `e₁(v)³ = (a−b−c)³` is invariant for the same reason.
+
+Both of those are holomorphic weight-zero functions on `ℍ`, and both are bounded at `i∞`
+(`abc → 16`, and `a − b − c → 0` because `a − b` is `O(q^{1/6})` and `c` is `O(q^{1/3})`), so
+each is a `ModularForm 𝒮ℒ 0` and mathlib's `ModularForm.levelOne_weight_zero_const`
+(`ModularForms/LevelOne/Basic.lean`) makes each EQUAL to its own limit at `i∞`.  That is a
+one-step finish for `abc = 16` and for `(a−b−c)³ = 0`, i.e. for the two leaves below, and there
+is no such finish for `G`.  So the split is what buys a route; the combination was cleaner to
+read and unprovable with what is here.
+
+MACHINE-CHECKED, and this is the whole route, not just its endpoints (`PARI/GP`, `eta(z,1)`,
+57 significant digits, 2026-07-30, at `z = 0.3+0.7i`, `−0.4+0.55i`, `0.13+2i`): all six
+transformation laws `a(z+1) = ζ₃(−b(z))`, `−b(z+1) = ζ₃a(z)`, `c(z+1) = ζ₃c(z)`,
+`a(−1/z) = a(z)`, `b(−1/z) = c(z)`, `c(−1/z) = b(z)` hold to `< 2·10⁻⁵⁶`, as do `abc = 16` and
+`a = b+c`.  The two leaf statements themselves were checked to a relative residual `< 6·10⁻⁷⁶`
+at all NINE of the probe points listed under `eta_two_torsion_key` below.
+
+The cost of the re-cut is one extra open leaf (one closed, two opened).  That is disclosure of
+the two independent analytic facts that were always inside the single one, not a regression. -/
+
+/-- **SUB-LEAF 5a-i-α — WEBER'S PRODUCT RELATION `f·f₁·f₂ = √2`, CLEARED OF DENOMINATORS.**
+
+  `e^{−πi/3} · η((z+1)/2)⁸ · (η(z/2)⁸ · η(2z)⁸) = η(z)²⁴`.
+
+In the variables of the section prose above this is `a·b·c = 16`, multiplied through by
+`η(z)²⁴`; the constant is `ζ₄₈⁻⁸ = e^{−πi/3}`, and it is FORCED, not a normalisation — it is
+the eighth power of the root of unity in Weber's `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, and no other
+constant makes the identity true (multiply both sides by `λ` and evaluate at `z = 3i`).
+
+ROUTE.  `abc` is `SL₂(ℤ)`-invariant of weight `0` — see the section prose for the
+`ζ₃`-cocycle, which is what makes the invariance survive `T` — holomorphic on `ℍ` because `η`
+is, and `→ 16` at `i∞`.  So it is a `ModularForm 𝒮ℒ 0` and
+`ModularForm.levelOne_weight_zero_const` identifies it with `16`.  The three inputs a prover
+needs are all present: `eta_add_one` (proved above) for `T`,
+`ModularForm.eta_comp_eq_csqrt_I_inv` (mathlib, `ModularForms/Discriminant.lean`) for `S`, and
+`ModularForm.eta_ne_zero` for the quotients.
+
+EQUIVALENT CUBED FORM, if that is easier to package: `Δ(z/2)·Δ((z+1)/2)·Δ(2z) = −Δ(z)³`, an
+identity in `ModularForm.discriminant` alone with no root of unity at all — the cube of this
+statement, using `Δ = η²⁴`.  It loses only the choice of cube root, which `abc → 16` at `i∞`
+restores.
+
+MACHINE-CHECKED FAITHFULNESS: relative residual `< 6·10⁻⁷⁶` at all nine probe points listed
+under `eta_two_torsion_key`, `PARI/GP` at 77 significant digits, 2026-07-30. -/
+theorem eta_weber_prod (z : ℍ) :
+    Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8 *
+        (ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
+      = ModularForm.eta (z : ℂ) ^ 24 :=
+  sorry
+
+/-- **SUB-LEAF 5a-i-β — WEBER'S SUM RELATION `f⁸ = f₁⁸ + f₂⁸`, I.E. JACOBI'S `θ₂⁴+θ₄⁴ = θ₃⁴`.**
+
+  `e^{−πi/3} · η((z+1)/2)⁸ = η(z/2)⁸ + 16 η(2z)⁸`.
+
+In the variables of the section prose this is `a = b + c`.  It is Jacobi's identity in disguise
+(`θ₂θ₃θ₄ = 2η³` converts one into the other), and it is the genuinely analytic half of the old
+`eta_two_torsion_key`: the product relation above is a statement about a `q`-PRODUCT and can be
+attacked multiplicatively, this one cannot.
+
+ROUTE, and it is the same mechanism as its sibling, which is the point of the re-cut.  `a−b−c`
+is NOT `SL₂(ℤ)`-invariant — `T` multiplies it by `ζ₃` — but its CUBE is, and `(a−b−c)³` is
+holomorphic on `ℍ` and tends to `0` at `i∞`.  So `(a−b−c)³` is a `ModularForm 𝒮ℒ 0` equal to
+its limit `0` by `ModularForm.levelOne_weight_zero_const`, whence `a = b+c` pointwise.
+
+The `i∞` limit is the one estimate with content: `a − b` is `O(q^{1/6})` rather than `O(1)`,
+because in `x = e^{πiz}` one has `a = x^{−1/3}∏(1+x^{2n−1})⁸` and
+`b = x^{−1/3}∏(1−x^{2n−1})⁸`, whose difference is `x^{−1/3}·(16x + O(x²))`; and `c = 16x^{2/3}
+∏(x^{4n}-terms)` is `O(x^{2/3})` on its own.  Both exponents are positive, so the leading
+`x^{−1/3}` cancels and the limit is `0` — this is exactly where the identity is not formal.
+
+EQUIVALENT PURELY `q`-SERIES FORM, with `x = e^{πiz}`:
+
+  `∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`.
+
+(That display used to sit at the foot of `eta_two_torsion_key`'s docstring labelled as an
+equivalent form OF THAT identity.  It is not — dividing out the common `x^{1/3}` shows it is
+exactly THIS leaf, the sum relation, with no trace of the product relation in it.  The `q`-form
+of `eta_two_torsion_key` itself is `∏(1−xⁿ)⁸∏(1−x⁴ⁿ)⁸(∏(1−xⁿ)⁸ + 16x∏(1−x⁴ⁿ)⁸) =
+∏(1−x²ⁿ)²⁴`.  Corrected here 2026-07-30 rather than deleted, since the display is useful and
+only its attribution was wrong.)
+
+WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ.
+
+MACHINE-CHECKED FAITHFULNESS: relative residual `< 5·10⁻⁷⁶` at all nine probe points listed
+under `eta_two_torsion_key`, `PARI/GP` at 77 significant digits, 2026-07-30. -/
+theorem eta_weber_sum (z : ℍ) :
+    Complex.exp (-((Real.pi : ℂ) * Complex.I / 3)) * ModularForm.eta (((z : ℂ) + 1) / 2) ^ 8
+      = ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8 :=
+  sorry
+
+/-- **SUB-LEAF 5a-i — THE ANALYTIC INPUT TO `eta_pow_24_add_eta_two_pow_24`. NOW PROVEN.**
 
   `η(z/2)⁸ · η(2z)⁸ · (η(z/2)⁸ + 16 η(2z)⁸) = η(z)²⁴`.
 
-Everything else in `eta_pow_24_add_eta_two_pow_24` is PROVEN below from this single identity;
-see the section prose above for the derivation and for why this is a strictly cleaner cut than
-the two Weber relations the previous plan named.
+Everything else in `eta_pow_24_add_eta_two_pow_24` is PROVEN below from this single identity.
+It is itself PROVEN, as of 2026-07-30, from `eta_weber_sum` and `eta_weber_prod` above: the
+sum relation rewrites `η(z/2)⁸ + 16η(2z)⁸` as `e^{−πi/3}η((z+1)/2)⁸`, and the product relation
+is then literally the goal.  See the section prose above for why splitting it that way is what
+buys a proof route, and for the machine-checked transformation laws behind that route.
 
 WHERE IT COMES FROM. In Weber's notation `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, `f₁ = η(z/2)/η(z)`,
 `f₂ = √2·η(2z)/η(z)`, put `a = f⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`, `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`.
@@ -1851,6 +1898,12 @@ ELIMINATES `f` (and with it `η((z+1)/2)` and the 48-th root of unity) and leave
 carries the full content of both Weber relations that the `S`-transformation actually needs,
 and it is stated purely in `ModularForm.eta` — no Weber function, no root of unity, no theta
 constant appears.
+
+That elimination is what made this the preferred cut on 2026-07-29 and it is still correct as
+mathematics; it is the two relations SEPARATELY that turned out to be provable, so the cut has
+been reversed and this declaration is now proven from them.  The reason is in the section prose
+immediately above `eta_weber_prod`: eliminating `f` also eliminates the `T`-translate from the
+picture, and with it the `SL₂(ℤ)`-invariance that mathlib's level-one rigidity needs.
 
 MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, `eta(z,1)`, 60 digits, 2026-07-29): the relative
 residual of `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) − η(z)²⁴` is `< 9·10⁻⁷⁶` at all NINE of
@@ -1868,25 +1921,26 @@ forced twice over and is not a normalisation — it is `(√2)⁸` on one side a
 `f₂⁸ = 2⁴η(2z)⁸/η(z)⁸` on the other — and the exponent `8` is forced by `f₂⁸` being the
 smallest power of `f₂` that is a modular FUNCTION.
 
-ROUTE FOR THE NEXT OWNER.  Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-29):
-there are no Weber functions, `ModularForms/JacobiTheta/` has no product formula tying `θ` to
-`η`, and there is no Jacobi triple product anywhere.  So neither Weber relation can be quoted
-and this really is new theory.  Two routes, both classical:
+ABSENCE STILL HOLDS, and it is why the two sub-leaves are stated in `η` at all.  Re-grepped
+over `.lake/packages/mathlib` at this pin (2026-07-29, unchanged 2026-07-30): there are no
+Weber functions, `ModularForms/JacobiTheta/` has no product formula tying `θ` to `η`, and
+there is no Jacobi triple product anywhere.  So neither Weber relation can be quoted; what
+CAN be quoted, and is what the re-cut exploits, is `ModularForm.levelOne_weight_zero_const`.
 
-* prove the Jacobi triple product for `jacobiTheta₂` and read off `θ₂θ₃θ₄ = 2η³` together with
-  `θ₂⁴+θ₄⁴ = θ₃⁴`; or
-* prove it as a level-2 modular identity: `b` and `c` are holomorphic and non-vanishing on `ℍ`,
-  `bc(b+c) − 16` is invariant under `Γ(2)` (the group is generated by `T²` and `ST²S`, and both
-  act on the pair `(b, c)` by the `η`-transformation formulas already in
-  `ModularForms/Discriminant.lean`), and it vanishes at all three cusps by the `q`-expansions
-  `b = q^{1/3}(1 + O(q^{1/2}))`, `c = 16q^{1/3}·q^{1/2}(1 + O(q))`.
-
-An equivalent purely `q`-series form, with `x = e^{πiz}`, is
-`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`. -/
+TWO ROUTES THIS DECOMPOSITION SUPERSEDES, recorded because each was costed and each is worse.
+(i) Prove the Jacobi triple product for `jacobiTheta₂` and read off `θ₂θ₃θ₄ = 2η³` together
+with `θ₂⁴+θ₄⁴ = θ₃⁴` — two hard analytic inputs where the re-cut needs one.  (ii) Prove
+`bc(b+c) − 16` to be `Γ(2)`-invariant and vanishing at all three cusps — this is the route the
+previous plan named, and it does not terminate at this pin: `Γ(2)`-invariance is true (indeed
+`Γ_θ`-invariance is), but mathlib has NO rigidity statement for any congruence subgroup, so
+there is nothing to hand the cusp vanishing to.  Level one is the only level with a usable
+"holomorphic + invariant + bounded ⟹ constant", which is precisely what dictated the cut. -/
 theorem eta_two_torsion_key (z : ℍ) :
     ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
         (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
-      = ModularForm.eta (z : ℂ) ^ 24 := sorry
+      = ModularForm.eta (z : ℂ) ^ 24 := by
+  rw [← eta_weber_sum z]
+  linear_combination eta_weber_prod z
 
 /-- `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`. -/
 noncomputable def etaWeightFour (z : ℍ) : ℂ :=
@@ -3069,6 +3123,145 @@ theorem exp_pi_sqrt_le_of_jInvariant_eq {p : ℕ} (hp : 11 ≤ p) {n : ℤ}
       = 1728 * Q * A ^ 3 - (B ^ 2 - A ^ 3) * (1 - 745 * Q) := by
     linear_combination (1728 * Q) * hnR
   nlinarith [hC, hDpos, hkey]
+
+/-- **LEAF 4c′ — `γ₂(τ₀) ∈ ℚ` ONCE `j(τ₀) ∈ ℚ`.** Weber's level-`3` descent, stated with the
+quadratic field removed from both sides.
+
+This REPLACES the former `LEAF 4c` (`γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K`), which is now PROVEN from
+it just below.  The two are equivalent — reality of `γ₂(τ₀)` kills the `√−p` component on both
+sides — and the old docstring already said so, calling the version below "the honest residue of
+this leaf and how it should be attacked".  This is that recommendation executed: the statement
+is now the residue rather than a wrapper around it, so nobody re-derives the `K ∩ ℝ = ℚ` step.
+
+EQUIVALENTLY, AND THIS IS THE SHARPEST FORM: **the rational number `j(τ₀)` is a CUBE in `ℚ`**,
+`γ₂(τ₀)` being its real cube root — `γ₂³ = j` is `gammaTwo_pow_three_eq_jInvariant`, PROVEN
+below.  `ℚ(j) ⊆ ℚ(γ₂)` is free from that; ALL the content is that the cube root does not
+enlarge the field.  `γ₂` is a modular function for a level-`3` group, so `[K(γ₂):K(j)]` divides
+`3`, and `3 ∤ D` forces it to be `1` (Booher §3.2 and Theorem 36).
+
+WHAT IS ALREADY KNOWN AND DEMONSTRABLY DOES NOT SUFFICE — check this before spending a day on
+an elementary argument.  `γ₂(τ₀)` is REAL (`exists_real_gammaTwo_heegnerPoint`, proven above
+from `0 < p` alone) and is an ALGEBRAIC INTEGER (`isIntegral_gammaTwo_heegnerPoint`, proven
+below over LEAF 3a — and NOT over this leaf, so quoting it here is not circular).  Together
+with `hj` those give `j(τ₀) ∈ ℤ` and make `γ₂(τ₀)` the real root of `X³ − j(τ₀)`.  That is as
+far as they go: `X³ − n` is irreducible over `ℚ` for every non-cube integer `n`, and `2^{1/3}`
+is a real algebraic integer with rational cube.  So the perfect-cube statement is irreducibly
+the whole leaf, and reality plus integrality cannot close it.
+
+CIRCULARITY WARNING.  Do NOT quote `exists_int_gammaTwo` here, tempting though it is: it is
+proven THROUGH this leaf, by way of `exists_rat_gammaTwo_heegnerPoint`.
+`isIntegral_gammaTwo_heegnerPoint` is the one that is safe, because its only input is LEAF 3a
+(`exists_modularPolynomial`), which needs no class field theory and no class-number hypothesis.
+
+ONLY `3 ∤ p` IS EXPECTED TO BE LOAD-BEARING, and it comes from `hp` with `h3`; `hp8` is
+passed for uniformity with its siblings and is not expected to be needed. `3 ∤ p` genuinely
+cannot be dropped: at `D` divisible by `3` the cube root does enlarge the field, which is
+exactly why Booher's Theorem 36 carries the hypothesis.
+
+NOT VACUOUS, and `hj` is not idle: without it the conclusion is a statement about an
+unconstrained transcendental-looking quantity.  MACHINE-CHECKED FAITHFULNESS re-run in the
+sharpened form (`PARI/GP`, `eta(z,1)`, 57 significant digits, 2026-07-30): at the five
+admissible `p = 11, 19, 43, 67, 163`, `γ₂(τ₀) = −32, −96, −960, −5280, −640320` with imaginary
+part `< 3·10⁻⁵¹`, so `j(τ₀) = γ₂(τ₀)³ = −32768, −884736, −884736000, −147197952000,
+−262537412640768000` — an exact integer cube in every case, which is precisely what this leaf
+asserts. -/
+theorem exists_rat_gammaTwo_of_rat_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hj : ∃ u : ℚ, jInvariant (heegnerPoint p hp.pos) = (u : ℂ)) :
+    ∃ w : ℚ, gammaTwo (heegnerPoint p hp.pos) = (w : ℂ) :=
+  sorry
+
+/-- **LEAF 4c — `γ₂(τ₀)` descends with `j(τ₀)`. NOW PROVEN**, from `LEAF 4c′`
+(`exists_rat_gammaTwo_of_rat_jInvariant`) above.
+
+The step performed here is `K ∩ ℝ = ℚ`, run on the HYPOTHESIS as well as the conclusion:
+`γ₂(τ₀)` is real (`exists_real_gammaTwo_heegnerPoint`) and `γ₂³ = j`
+(`gammaTwo_pow_three_eq_jInvariant`), so `j(τ₀)` is real too; `hj` then forces its `√−p`
+coefficient `v` to vanish, since `√p > 0`.  That turns `hj` into `j(τ₀) ∈ ℚ`, LEAF 4c′ returns
+`γ₂(τ₀) ∈ ℚ`, and the conclusion is that with `v = 0`.
+
+Note this is the same `K ∩ ℝ = ℚ` argument that `exists_rat_gammaTwo_heegnerPoint` above runs
+on the conclusion alone; running it on the hypothesis as well is what makes LEAF 4c′ strictly
+sharper than LEAF 4c rather than merely different. -/
+theorem exists_quadratic_gammaTwo_of_jInvariant {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hj : ∃ u v : ℚ, jInvariant (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ))) :
+    ∃ u v : ℚ, gammaTwo (heegnerPoint p hp.pos)
+      = (u : ℂ) + (v : ℂ) * (Complex.I * (Real.sqrt p : ℂ)) := by
+  obtain ⟨u, v, huv⟩ := hj
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  have hjre : ((x ^ 3 : ℝ) : ℂ) = jInvariant (heegnerPoint p hp.pos) := by
+    rw [← gammaTwo_pow_three_eq_jInvariant, ← hx]
+    push_cast
+    ring
+  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
+  have him := congrArg Complex.im (hjre.trans huv)
+  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
+    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
+  have hv : v = 0 := by
+    have hv' : (v : ℝ) = 0 := by
+      rcases mul_eq_zero.mp him.symm with h | h
+      · exact h
+      · exact absurd h (ne_of_gt hsqrt)
+    exact_mod_cast hv'
+  obtain ⟨w, hw⟩ := exists_rat_gammaTwo_of_rat_jInvariant hp hp8 h3
+    ⟨u, by rw [huv, hv]; simp⟩
+  exact ⟨w, 0, by rw [hw]; simp⟩
+
+/-- **LEAF 4 — `γ₂(τ₀)` is RATIONAL. This is the main theorem of complex multiplication.**
+
+By the first main theorem of CM (Booher Theorem 34/36; Cox §11), `K(j(τ₀))` is the Hilbert
+class field of `K = ℚ(√−p)` and `[K(j(τ₀)) : K] = h(−p)`; with `h(−p) = 1` that field is `K`
+itself, and since `j(τ₀)` is real it lies in `ℚ`. Because `3 ∤ p`, Weber's `γ₂` generates the
+same field (Booher Theorem 36), so `γ₂(τ₀) ∈ ℚ` too.
+
+Together with LEAF 3 this gives `γ₂(τ₀) ∈ ℤ` — see `exists_int_gammaTwo`, which is PROVEN
+from the two, using that `ℤ` is integrally closed in `ℚ`.
+
+MACHINE-CHECKED FAITHFULNESS: at the five admissible `p`, `(f₂(τ₀)²⁴+16)/f₂(τ₀)⁸` evaluates
+(`PARI/GP`, 60 digits, `η` as a 400-term product) to
+`−32, −96, −960, −5280, −640320` with imaginary part `< 10⁻⁷⁰`.
+
+THIS IS THE REAL COST OF THE DEEP LEAF. Complex multiplication, ring class fields, and the
+Galois action `σ_a(j(b)) = j(ab)` are absent from mathlib at this pin, from `~/cs/FLT`, and
+from this project; building them is a project in its own right and this is where a further
+decomposition should cut. The elementary route Stark points out (Booher's closing remark:
+"nothing more modern is required") replaces the class field theory by Weber's own
+computations, and is the cheaper target if this is ever attacked directly.
+
+**DECOMPOSED 2026-07-28 (`flt-lean-329`), and this declaration is now PROVEN** over the three
+leaves in the section above — the first of which is itself PROVEN here:
+
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN**, from `0 < p` alone;
+* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (the CM half, and the
+  only consumer of `hcl`);
+* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` given `j(τ₀) ∈ K` (Weber's
+  level-`3` descent, needing only `3 ∤ p`).
+
+The assembly below is the step "`K ∩ ℝ = ℚ`": reality forces the `√−p` coefficient `v` to
+vanish, since `√p > 0`. No complex multiplication is used HERE — all of it is in the second
+leaf, which is now the only place in this cluster that needs class field theory. -/
+theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
+  obtain ⟨x, hx⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  obtain ⟨u, v, huv⟩ := exists_quadratic_gammaTwo_of_jInvariant hp hp8 h3
+    (exists_quadratic_jInvariant_heegnerPoint hp hp8 h3 hcl)
+  have hsqrt : 0 < Real.sqrt p := Real.sqrt_pos.mpr (by exact_mod_cast hp.pos)
+  have him := congrArg Complex.im (hx.trans huv)
+  simp only [Complex.ofReal_im, Complex.add_im, Complex.ratCast_im, Complex.mul_im,
+    Complex.ratCast_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.mul_re, zero_mul, mul_zero, zero_add, add_zero, one_mul, sub_zero] at him
+  have hv : v = 0 := by
+    have hv' : (v : ℝ) = 0 := by
+      rcases mul_eq_zero.mp him.symm with h | h
+      · exact h
+      · exact absurd h (ne_of_gt hsqrt)
+    exact_mod_cast hv'
+  exact ⟨u, by rw [huv, hv]; simp⟩
 
 /-- **`γ₂(τ₀) ∈ ℤ`** — PROVEN from LEAF 3 (algebraic integer) and LEAF 4 (rational), using
 that `ℤ` is integrally closed in `ℚ`. -/
