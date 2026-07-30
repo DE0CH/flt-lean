@@ -605,6 +605,19 @@ public import Mathlib.LinearAlgebra.Determinant
 -- This is the one mathlib lemma behind `exists_isCharRootMultiset`, the
 -- linear-algebra half split off from the Eichler–Shimura leaf.
 public import Mathlib.LinearAlgebra.Eigenspace.Charpoly
+-- `Module.End.iSup_maxGenEigenspace_eq_top`: over an algebraically closed
+-- field the generalized eigenspaces of an endomorphism span, which is the
+-- decomposition `sum_pow_charpoly_roots_eq_trace_pow` sums the trace over.
+public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+-- `LinearMap.finrank_maxGenEigenspace_eq`: the dimension of a generalized
+-- eigenspace is the multiplicity of the eigenvalue as a root of `charpoly`.
+public import Mathlib.LinearAlgebra.Eigenspace.Zero
+-- `LinearMap.trace_eq_sum_trace_restrict'` and
+-- `LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent`: the trace of an
+-- endomorphism of an internal direct sum is the sum of the traces on the
+-- summands, and on a generalized eigenspace it is scaled by the eigenvalue.
+-- Together these are the whole proof of the second power sum.
+public import Mathlib.Algebra.DirectSum.LinearMap
 public import Mathlib.Data.List.GetD
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
@@ -44595,6 +44608,188 @@ theorem exists_isCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
     · intro c
       simp [LinearMap.det_eq_one_of_not_module_finite hfin]
 
+/-! #### The SECOND power sum of the characteristic roots
+
+`IsCharRootMultiset.sum_eq` reads off the FIRST power sum (`Σ aᵢ = Tr T`)
+and is a mathlib lemma (`Module.End.trace_eq_sum_roots_charpoly_of_splits`).
+`sumSq_isWeilEigenvalues_x0` below needs the SECOND, and — as the docstring
+of `trace_heckeOpSq_x0OneSixtyNine` records — **mathlib has no counterpart
+at this pin**: `Matrix.trace_eq_sum_roots_charpoly` is the first power sum
+only, and there is no "spectral mapping with multiplicity" from which
+`Tr(T²) = Σ aᵢ²` would follow.
+
+The four declarations below supply it, for every order `n` at once and with
+no modular content whatever.  The argument is the classical one and every
+ingredient is already in mathlib; what was missing was the composition.
+
+* `V = ⨁_μ (maxGenEigenspace T μ)` over an algebraically closed field
+  (`Module.End.iSup_maxGenEigenspace_eq_top` plus
+  `Module.End.independent_maxGenEigenspace`), and `Tⁿ` preserves each
+  summand, so `LinearMap.trace_eq_sum_trace_restrict'` splits the trace.
+* On the `μ`-summand, `T − μ` is nilpotent
+  (`Module.End.isNilpotent_restrict_maxGenEigenspace_sub_algebraMap`), so
+  `Tr(Tⁿ) = μ · Tr(Tⁿ⁻¹)` by
+  `LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent` — an INDUCTION on
+  `n` against an existing mathlib lemma, which is what keeps
+  `trace_restrict_pow_maxGen` four lines long instead of a triangularisation
+  argument.  Hence `Tr(Tⁿ ∣ summand) = μⁿ · dim(summand)`.
+* `LinearMap.finrank_maxGenEigenspace_eq` turns `dim(summand)` into the root
+  multiplicity of `μ` in `charpoly T`, which is exactly the multiplicity
+  with which `μ` occurs in `a`.
+
+Stated over an arbitrary algebraically closed field rather than over `ℂ`
+because nothing here uses `ℂ`; the consumers instantiate at `ℂ`. -/
+
+/-- **`Tr(Tⁿ ∣ W_μ) = μⁿ · dim W_μ` on a generalized eigenspace** (PROVEN
+2026-07-30) — the local half of `sum_pow_charpoly_roots_eq_trace_pow`.
+
+The induction is on `n`, and the step is mathlib's
+`LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent`: writing
+`Tⁿ⁺¹ = Tⁿ ∘ T` on `W_μ`, that lemma turns `Tr(Tⁿ ∘ T)` into `μ · Tr(Tⁿ)`
+using only that `T − μ` is nilpotent on `W_μ` and that the two restrictions
+commute.  The base case is `Tr(id) = dim`. -/
+theorem trace_restrict_pow_maxGen {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
+    [FiniteDimensional K V] (T : Module.End K V) (μ : K) (n : ℕ)
+    (h : Set.MapsTo (T ^ n) (T.maxGenEigenspace μ : Set V) (T.maxGenEigenspace μ)) :
+    LinearMap.trace K _ ((T ^ n).restrict h)
+      = μ ^ n * (Module.finrank K (T.maxGenEigenspace μ) : K) := by
+  have hT : Set.MapsTo T (T.maxGenEigenspace μ : Set V) (T.maxGenEigenspace μ) :=
+    T.mapsTo_maxGenEigenspace_of_comm (Commute.refl _) μ
+  have hnil : IsNilpotent
+      (T.restrict hT - algebraMap K (Module.End K (T.maxGenEigenspace μ)) μ) := by
+    have h0 := T.isNilpotent_restrict_maxGenEigenspace_sub_algebraMap μ
+    have he : (T - algebraMap K (Module.End K V) μ).restrict
+        (T.mapsTo_maxGenEigenspace_of_comm (Algebra.mul_sub_algebraMap_commutes T μ) μ)
+        = T.restrict hT - algebraMap K (Module.End K (T.maxGenEigenspace μ)) μ := by
+      ext x; simp
+    rwa [he] at h0
+  induction n with
+  | zero =>
+      have hid : (T ^ 0).restrict h = LinearMap.id := by ext x; simp
+      rw [hid, LinearMap.trace_id]
+      simp
+  | succ n ih =>
+      have hTn : Set.MapsTo (T ^ n) (T.maxGenEigenspace μ : Set V) (T.maxGenEigenspace μ) :=
+        T.mapsTo_maxGenEigenspace_of_comm ((Commute.refl T).pow_right n) μ
+      have hcomp : (T ^ (n + 1)).restrict h
+          = ((T ^ n).restrict hTn) ∘ₗ (T.restrict hT) := by
+        ext x
+        simp [pow_succ, LinearMap.restrict_apply, Module.End.mul_apply]
+      have hcomm : Commute ((T ^ n).restrict hTn) (T.restrict hT) :=
+        LinearMap.restrict_commute ((Commute.refl T).pow_left n) _ _
+      rw [hcomp, LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent μ hcomm hnil, ih hTn]
+      ring
+
+/-- **`Tr(Tⁿ) = Σ λᵢⁿ`, every power sum of the characteristic roots**
+(PROVEN 2026-07-30) — the general fact mathlib has only for `n = 1`.
+
+Summing `trace_restrict_pow_maxGen` over the generalized eigenspaces, whose
+dimensions are the root multiplicities.  The two index sets — the `μ` with
+`W_μ ≠ ⊥` and the support of `charpoly.roots` — agree because
+`dim W_μ = rootMultiplicity μ` and, in finite dimension, a submodule is `⊥`
+exactly when its dimension is `0`. -/
+theorem sum_pow_charpoly_roots_eq_trace_pow {K V : Type*} [Field K] [AddCommGroup V]
+    [Module K V] [FiniteDimensional K V] [IsAlgClosed K] (T : Module.End K V) (n : ℕ) :
+    ((T.charpoly.roots).map (fun x => x ^ n)).sum = LinearMap.trace K V (T ^ n) := by
+  classical
+  have hds : DirectSum.IsInternal (fun μ : K => T.maxGenEigenspace μ) :=
+    DirectSum.isInternal_submodule_of_iSupIndep_of_iSup_eq_top
+      T.independent_maxGenEigenspace T.iSup_maxGenEigenspace_eq_top
+  have hfin : {μ : K | T.maxGenEigenspace μ ≠ ⊥}.Finite :=
+    WellFoundedGT.finite_ne_bot_of_iSupIndep T.independent_maxGenEigenspace
+  have hf : ∀ μ : K,
+      Set.MapsTo (T ^ n) (T.maxGenEigenspace μ : Set V) (T.maxGenEigenspace μ) :=
+    fun μ => T.mapsTo_maxGenEigenspace_of_comm ((Commute.refl T).pow_right n) μ
+  have hmult : ∀ μ : K,
+      Module.finrank K (T.maxGenEigenspace μ) = T.charpoly.roots.count μ := fun μ => by
+    rw [_root_.Polynomial.count_roots, LinearMap.finrank_maxGenEigenspace_eq]
+  have hset : hfin.toFinset = T.charpoly.roots.toFinset := by
+    ext μ
+    simp only [Set.Finite.mem_toFinset, Set.mem_setOf_eq, Multiset.mem_toFinset,
+      ← Multiset.count_pos, ← hmult, ne_eq, ← Submodule.finrank_eq_zero (R := K)]
+    omega
+  rw [LinearMap.trace_eq_sum_trace_restrict' hds hfin hf, hset,
+    Finset.sum_multiset_map_count]
+  refine Finset.sum_congr rfl fun μ _ => ?_
+  rw [trace_restrict_pow_maxGen T μ n (hf μ), hmult μ, nsmul_eq_mul]
+  ring
+
+open _root_.Polynomial in
+/-- **The characteristic root multiset IS the root multiset of the
+characteristic polynomial** (PROVEN 2026-07-30) — `IsCharRootMultiset`
+characterises `a` by two VALUES, and this is the promised extraction of the
+object from them, in the finite-dimensional case.
+
+`prod_eq` says the two monic polynomials `∏ (X − aᵢ)` and `charpoly T` agree
+at every point of `K`; `K` is infinite, so `Polynomial.funext` makes them
+equal, and taking roots gives `a` back
+(`Polynomial.roots_multiset_prod_X_sub_C`).  This is the argument the
+docstring of `IsCharRootMultiset` describes in prose ("`prod_eq` alone pins
+`a` exactly"), now carried out. -/
+theorem IsCharRootMultiset.eq_roots {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [Module.Finite ℂ V] {T : Module.End ℂ V} {a : Multiset ℂ}
+    (h : IsCharRootMultiset T a) : a = T.charpoly.roots := by
+  have hpoly : (a.map (fun x => X - C x)).prod = T.charpoly := by
+    refine _root_.Polynomial.funext fun c => ?_
+    rw [_root_.Polynomial.eval_multiset_prod, Multiset.map_map, LinearMap.eval_charpoly]
+    simp only [Function.comp_def, eval_sub, eval_X, eval_C]
+    rw [h.prod_eq c, Algebra.algebraMap_eq_smul_one]
+  rw [← hpoly, _root_.Polynomial.roots_multiset_prod_X_sub_C]
+
+/-- **Without finite dimension the characteristic root multiset is EMPTY**
+(PROVEN 2026-07-30) — the companion of `eq_roots` covering the junk branch
+of `exists_isCharRootMultiset`, and the reason the two power-sum lemmas
+below can be stated unconditionally.
+
+If `x ∈ a` then `prod_eq` at `c = x` has a zero factor, so its left side is
+`0`; its right side is the junk determinant `1`
+(`LinearMap.det_eq_one_of_not_module_finite`).  So `a` is empty. -/
+theorem IsCharRootMultiset.eq_zero_of_not_module_finite {V : Type*} [AddCommGroup V]
+    [Module ℂ V] (hV : ¬ Module.Finite ℂ V) {T : Module.End ℂ V} {a : Multiset ℂ}
+    (h : IsCharRootMultiset T a) : a = 0 := by
+  by_contra hne
+  obtain ⟨x, hx⟩ := Multiset.exists_mem_of_ne_zero hne
+  have h0 := h.prod_eq x
+  rw [LinearMap.det_eq_one_of_not_module_finite hV] at h0
+  have hzero : (0 : ℂ) ∈ Multiset.map (fun y => x - y) a := by
+    simpa using Multiset.mem_map_of_mem (fun y => x - y) hx
+  rw [Multiset.prod_eq_zero hzero] at h0
+  exact zero_ne_one h0
+
+/-- **`Σ aᵢⁿ = Tr(Tⁿ)`** (PROVEN 2026-07-30) — the power-sum reading of
+`IsCharRootMultiset`, generalising its own `sum_eq` field from `n = 1` to
+every `n`, and UNCONDITIONAL in the same way `exists_isCharRootMultiset` is:
+without `Module.Finite ℂ V` both sides are `0`
+(`eq_zero_of_not_module_finite` and `trace_eq_zero_of_not_module_finite`).
+
+Keeping it unconditional is what lets `sumSq_isWeilEigenvalues_x0` avoid
+`FiniteDimensional ℂ (CuspForm …)`, which is true
+(`cuspForm_finiteDimensional`) but lives downstream in
+`Modularity/Interface.lean` and is not in this file's import cone. -/
+theorem IsCharRootMultiset.sum_pow_eq {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {T : Module.End ℂ V} {a : Multiset ℂ} (h : IsCharRootMultiset T a) (n : ℕ) :
+    (a.map (fun x => x ^ n)).sum = LinearMap.trace ℂ V (T ^ n) := by
+  by_cases hfin : Module.Finite ℂ V
+  · haveI : FiniteDimensional ℂ V := hfin
+    rw [h.eq_roots, sum_pow_charpoly_roots_eq_trace_pow]
+  · rw [h.eq_zero_of_not_module_finite hfin, trace_eq_zero_of_not_module_finite hfin]
+    simp
+
+/-- **`#a = dim V`** (PROVEN 2026-07-30) — the `n = 0` instance of
+`sum_pow_eq`, recorded separately because that is the shape consumers want:
+the multiset of characteristic roots has one entry per dimension.
+Unconditional for the same reason, `Module.finrank` being `0` on a module
+that is not finite. -/
+theorem IsCharRootMultiset.card_eq {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {T : Module.End ℂ V} {a : Multiset ℂ} (h : IsCharRootMultiset T a) :
+    (Multiset.card a : ℂ) = (Module.finrank ℂ V : ℂ) := by
+  by_cases hfin : Module.Finite ℂ V
+  · haveI : FiniteDimensional ℂ V := hfin
+    have h0 := h.sum_pow_eq 0
+    simpa using h0
+  · rw [h.eq_zero_of_not_module_finite hfin, Module.finrank_of_not_finite hfin]
+    simp
+
 /-- **`α` is the `ℓ`-Weil transform of `a`, up to zeros**: the entries of
 `α` pair up as `(αᵢ, βᵢ)` with `αᵢ + βᵢ` running through `a` and
 `αᵢ βᵢ = ℓ`, possibly together with some entries equal to `0`.
@@ -44646,6 +44841,33 @@ theorem IsEichlerShimuraTransform.prod_one_sub {ℓ : ℕ} {a α : Multiset ℂ}
     Multiset.map_replicate, Multiset.prod_replicate, Multiset.map_map]
   rw [Multiset.prod_map_mul]
   simp
+
+/-- **`Σ αᵢ² = Σ aᵢ² − 2ℓ·#a`** (PROVEN 2026-07-30) — the identity
+`α² + β² = (α + β)² − 2αβ = (α + β)² − 2ℓ`, applied pairwise.  The zeros
+contribute `0² = 0` and so drop out, exactly as in `sum_eq` and
+`prod_one_sub`; `#p = #a` because `a` is `p` mapped by the pair-sum.
+
+This is the SECOND power sum of the Eichler–Shimura consequence, and it is
+what `sumSq_isWeilEigenvalues_x0` reads off.  Like its two siblings it has
+all of the modular content removed: it is a statement about a multiset of
+pairs with constant product. -/
+theorem IsEichlerShimuraTransform.sumSq_eq {ℓ : ℕ} {a α : Multiset ℂ}
+    (h : IsEichlerShimuraTransform ℓ a α) :
+    (α.map (fun x => x ^ 2)).sum
+      = (a.map (fun x => x ^ 2)).sum - 2 * (ℓ : ℂ) * (Multiset.card a : ℂ) := by
+  obtain ⟨p, k, hpa, hmul, hα⟩ := h
+  subst hpa
+  subst hα
+  have key : p.map (fun q : ℂ × ℂ => q.1 ^ 2 + q.2 ^ 2)
+      = p.map (fun q : ℂ × ℂ => (q.1 + q.2) ^ 2 - 2 * (ℓ : ℂ)) := by
+    refine Multiset.map_congr rfl fun q hq => ?_
+    have hq' := hmul q hq
+    linear_combination -2 * hq'
+  simp only [Multiset.map_add, Multiset.sum_add, Multiset.map_replicate, Multiset.sum_replicate,
+    Multiset.map_map, Function.comp_def, Multiset.card_map]
+  rw [← Multiset.sum_map_add, key, Multiset.sum_map_sub]
+  simp
+  ring
 
 /-! #### Splitting the PINNING off the Eichler–Shimura leaf
 
@@ -66563,9 +66785,34 @@ theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_h�
   exact HasDoubleCoverOfAffineLine.ofInverse hw hww' hw'w hsp
 
 /-- **EICHLER–SHIMURA, SECOND POWER SUM: `Σ αᵢ² = Tr(T_ℓ²) − 2ℓ·dim
-S₂(Γ₀(N))`** (sorry leaf, 2026-07-28) — the geometric half of
-`card_relPoint_x0OneSixtyNine_quadratic`, and it is **LEVEL-GENERIC**: `N`
-and `ℓ` are arbitrary with `ℓ ∤ N`, and nothing about `169` enters.
+S₂(Γ₀(N))`** (**PROVEN 2026-07-30**; a sorry leaf from 2026-07-28) — the
+geometric half of `card_relPoint_x0OneSixtyNine_quadratic`, and it is
+**LEVEL-GENERIC**: `N` and `ℓ` are arbitrary with `ℓ ∤ N`, and nothing about
+`169` enters.
+
+**HOW IT CLOSED, and why the audit below was right that it is not a
+corollary of the `(sum, product)` form.**  It is not; it is a corollary of
+the PAIRING itself, which `isEichlerShimuraTransform_x0` (above, proven over
+its own geometric leaf) already delivers in full as
+`IsEichlerShimuraTransform ℓ a α`.  What was missing was on the OTHER side
+of the equation — the dictionary between the eigenvalue multiset `a` of
+`T_ℓ` and the two scalars in the statement:
+
+* `IsEichlerShimuraTransform.sumSq_eq` (proven above beside `sum_eq` and
+  `prod_one_sub`, and the same three lines of pairwise algebra) turns
+  `Σ αᵢ²` into `Σ aᵢ² − 2ℓ·#a`;
+* `IsCharRootMultiset.sum_pow_eq` turns `Σ aᵢ²` into `Tr(T_ℓ²)` and
+  `IsCharRootMultiset.card_eq` turns `#a` into `dim S₂(Γ₀(N))`.
+
+The second bullet is the one that did not exist: mathlib has the FIRST
+power sum (`Tr T = Σ aᵢ`) and no counterpart for any higher one, which is
+also what the docstring of `trace_heckeOpSq_x0OneSixtyNine` records as the
+reason it avoids the banked-charpoly route.  It is supplied here by
+`sum_pow_charpoly_roots_eq_trace_pow`, proven above for every order `n` from
+the generalized eigenspace decomposition; see the section docstring there.
+No new leaf was created, and `exists_isCharRootMultiset` — which is
+unconditional — is what keeps `FiniteDimensional ℂ (CuspForm …)` out of the
+proof, since that fact lives downstream in `Modularity/Interface.lean`.
 
 TRUE, and it is the SAME Eichler–Shimura pairing that
 `isWeilEigenvalues_x0_eichlerShimura` (above in this file) states in its
@@ -66717,10 +66964,10 @@ The matrix identity was checked as an identity and not through traces:
 three banked numbers survive a fourth independent run.
 
 **DECOMPOSED 2026-07-28** over the three leaves below. -/
-theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
-    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
-    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α) :
+theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (hα : IsWeilEigenvalues ℓ strX α) :
     (α.map (fun a => a ^ 2)).sum =
       LinearMap.trace ℂ
           (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
@@ -66728,8 +66975,11 @@ theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prim
             _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
         - 2 * (ℓ : ℂ) *
           (Module.finrank ℂ
-            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℂ) :=
-  sorry
+            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℂ) := by
+  obtain ⟨a, ha⟩ :=
+    exists_isCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+  have hes := isEichlerShimuraTransform_x0 N ℓ hN hℓ hℓN h hα ha
+  rw [hes.sumSq_eq, ha.sum_pow_eq 2, ha.card_eq, sq]
 
 /-- **`dim_ℂ S₂(Γ₀(169)) = 8`** (sorry leaf, 2026-07-28) — equivalently
 `g(X_0(169)) = 8`, and one of the two arithmetic inputs of
