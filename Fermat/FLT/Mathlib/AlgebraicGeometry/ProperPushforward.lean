@@ -122,15 +122,25 @@ run is for `pushoutSection`, not for `directImage`.
     without limit theory: integrality makes `R[a]` a finite `R`-module, so
     `eq_bot_of_fg_of_le_smul_of_forall_isMaximal` applies to it and nothing needs
     `Module.Finite ↥Γ(S,⊤) ↥Γ(X,⊤)`.
-  * `mem_smul_adjoin_of_appTop_fiberι_eq_zero` — **LEAF** (CUT 2026-07-30 out of the theorem
-    above): a section of `R[a]` that RESTRICTS TO ZERO on the fibre `X_s` lies in `𝔪·R[a]`.
-    All the theorem above adds is the lift-and-subtract step, which the maximal-ideal ↔ point
+  * `mem_smul_adjoin_of_appTop_fiberι_eq_zero` — **PROVEN** (2026-07-30) over the leaf below:
+    a section of `R[a]` that RESTRICTS TO ZERO on the fibre `X_s` lies in `𝔪·R[a]`.  All the
+    theorem above adds is the lift-and-subtract step, which the maximal-ideal ↔ point
     dictionary (`exists_point_ker_Γevaluation_eq_of_isMaximal`,
-    `surjective_appTop_fiberι_comp_appTop`, both PROVEN 2026-07-30) discharges.  Its docstring
-    says what remains geometrically (the fibres of `Spec R[a] ⟶ S` are single `κ(𝔪)`-points;
-    show they are REDUCED), warns against the abstract weakening `𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, which
-    is false, and warns against merging it with the file's other leaf into one statement about
-    an arbitrary subalgebra, which is not known.
+    `surjective_appTop_fiberι_comp_appTop`, both PROVEN 2026-07-30) discharges.
+  * `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **LEAF** (RE-CUT 2026-07-30 out of
+    the theorem above), and as of that re-cut **the ONLY leaf in this file**: if `a` itself
+    restricts to zero on `X_s` then `a ∈ 𝔪·R[a]`.  It carries both of the leaves this file
+    had before, and they are three-line corollaries of it — the general `x ∈ R[a]` form
+    because **`x` is its own `a`** (apply the leaf to `x`, then `R[x] ≤ R[a]`), and the
+    `Γ(X, ⊤)` form (`mem_smul_top_of_appTop_fiberι_eq_zero`) because `R[a] ≤ ⊤`.  The two
+    were never two obligations: the old docstrings had checked only that the `Γ(X, ⊤)`
+    statement does not imply the `R[a]` statement (it does not — `𝔪A ∩ R[a] ⊆ 𝔪·R[a]` is
+    refuted by audit block (D1)) and concluded neither subsumed the other, missing that the
+    implication is free in the other direction.  Its docstring says what remains geometrically
+    (the fibres of `Spec R[a] ⟶ S` are single `κ(𝔪)`-points; show they are REDUCED), records
+    exactly where integrality alone stops, warns against the abstract weakening
+    `a ∈ 𝔪·Γ(X, ⊤)`, which is false, and warns against generalising to an arbitrary subalgebra
+    `B`, which is not known and which the corollaries above do not use.
   * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **PROVEN** (2026-07-28) over the
     leaf below: `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal.  All this adds to the
     leaf is linear algebra over the field `R/𝔪` — a nonzero vector in a space of dimension
@@ -147,10 +157,13 @@ run is for `pushoutSection`, not for `directImage`.
   * `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` — **PROVEN** (2026-07-30) over
     `mem_smul_top_of_appTop_fiberι_eq_zero` below, by the same dictionary: the equation
     `Γ(X, ⊤) = R·1 + 𝔪·Γ(X, ⊤)` at every maximal `𝔪`, i.e. Nakayama's input.
-  * `mem_smul_top_of_appTop_fiberι_eq_zero` — **LEAF** (CUT 2026-07-30), the only geometry left
-    in the cluster: a global section that RESTRICTS TO ZERO on the fibre `X_s` lies in
-    `𝔪·Γ(X, ⊤)`; in sheaf language `Γ(X, 𝔪𝒪_X) ⊆ 𝔪·Γ(X, 𝒪_X)`.  **Its docstring carries the
-    current obstruction analysis (2026-07-30) and it sharpens what is missing**: for the Čech
+  * `mem_smul_top_of_appTop_fiberι_eq_zero` — **PROVEN** (2026-07-30) over
+    `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` above, since `R[a] ≤ ⊤`: a global
+    section that RESTRICTS TO ZERO on the fibre `X_s` lies in `𝔪·Γ(X, ⊤)`; in sheaf language
+    `Γ(X, 𝔪𝒪_X) ⊆ 𝔪·Γ(X, 𝒪_X)`.  **Its docstring carries a Čech/`Tor` analysis (2026-07-30)
+    which is now a RECORD rather than a task — it is a route to this statement only, and
+    `R[a]` is a subalgebra of `ker d` rather than a term of the complex, so it does not
+    transfer to the leaf.**  What it establishes: for the Čech
     complex of a finite affine cover, the FIBRE CLAUSE is free from `h` — it is exactly
     `Tor₁(F₁/range d, κ(𝔪)) = 0` — and this leaf is exactly `Tor₁(range d, κ(𝔪)) = 0`, which
     differs from it by ONE application of the local criterion.  So the whole remaining gap is
@@ -278,10 +291,12 @@ run is for `pushoutSection`, not for `directImage`.
   PROVEN, and `finiteType_appTop_of_isProper` has been proven since; then
   `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
   `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`, and **both of those have since been
-  proven too** (2026-07-30, second pass).  The current set is
+  proven too** (2026-07-30, second pass).  It then named
   `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and `mem_smul_top_of_appTop_fiberι_eq_zero`, the
-  fibre-vanishing forms of the same two statements.  Read it off the compiler's
-  warning set, not off this bullet.)  The mechanism is that the
+  fibre-vanishing forms of the same two statements, and **both of those are now proven as well**
+  (2026-07-30, third pass) over the single one-element leaf
+  `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, which is the current set and has one
+  member.  Read it off the compiler's warning set, not off this bullet.)  The mechanism is that the
   projection away from
   `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
   flat over the field `κ(s)`; the input is `Mathlib`'s
@@ -1248,46 +1263,132 @@ theorem surjective_appTop_fiberι_comp_appTop (f : X ⟶ S) (s : S)
     (ConcreteCategory.bijective_of_isIso
       (Scheme.ΓSpecIso (S.residueField s)).inv).2).comp hsurj
 
-/-- **LEAF 1a″ — A SECTION OF `R[a]` VANISHING ON THE FIBRE `X_s` LIES IN `𝔪 · R[a]`**
-(LEAF, CUT 2026-07-30 out of `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` below, which
-is PROVEN over it).  `𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut out by
-`s` when `s` comes from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
+/-- **LEAF 1a‴ — `a|_{X_s} = 0 ⟹ a ∈ 𝔪 · R[a]`, FOR ITS OWN `a`** (LEAF, RE-CUT 2026-07-30
+out of `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over it).
+`𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut out by `s` when `s` comes
+from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
 
-**WHAT THIS CUT DOES.**  The leaf below is `R[a] = R·1 + 𝔪·R[a]`.  Its `R·1` half is pure
+**THIS IS THE ONLY GEOMETRIC OBLIGATION LEFT IN THIS FILE.**  It carries BOTH of the leaves
+this file had before, and it is the sharpest form either of them takes: one element, one
+hypothesis, no quantifier over a submodule, no ideal, no `span {1}`, no maximality — only
+*vanishing on a fibre*.  The two derivations are in the file, immediately below and at
+`mem_smul_top_of_appTop_fiberι_eq_zero`, and they are three lines each:
+
+* the general `x ∈ R[a]` form follows because **`x` is its own `a`**.  Apply this leaf to `x`,
+  getting `x ∈ 𝔪 · R[x]`, and push forward along `R[x] ≤ R[a]`, which holds by
+  `Algebra.adjoin_le` since `x ∈ R[a]`.  Nothing is lost: `𝔪 · R[x] ≤ 𝔪 · R[a]`.
+* the `Γ(X, ⊤)` form (`mem_smul_top_of_appTop_fiberι_eq_zero`) follows by pushing the same
+  membership forward along `R[a] ≤ ⊤`.
+
+So the file's two former leaves were **not two obligations**: the weaker one was a corollary of
+the stronger, in the direction opposite to the one the old docstrings looked for.  They had
+recorded (correctly) that the `Γ(X, ⊤)` statement does NOT imply the `R[a]` statement —
+descending it needs `𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, refuted by audit block (D1) below — and concluded
+that neither subsumed the other.  The missing observation is that the implication runs the
+*other* way for free, because `𝔪 · R[a]` only ever grows when `R[a]` does.
+
+**DO NOT GENERALISE TO AN ARBITRARY SUBALGEBRA `B ⊆ Γ(X, ⊤)` WITH `x ∈ B ⟹ x ∈ 𝔪·B`.**
+That is an unverified universally quantified clause of exactly the kind whose splitting was
+declined on `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` below, and getting
+it wrong plants a FALSE leaf.  The reduction above does **not** need it and must not be
+mistaken for it: it only ever instantiates `B` at `R[x]` for the very `x` in hand, i.e. at a
+one-generator subalgebra, which is the only case this leaf asserts.
+
+**FAITHFULNESS — VOUCHED, AND THE PREVIOUS AUDIT TRANSFERS BECAUSE THE TWO ARE EQUIVALENT.**
+CLAUDE.md's rule is that a leaf restated a second time voids its earlier audit.  That rule
+guards against a restatement whose truth value may have moved; here it has not, because the
+old statement and this one are **inter-derivable**, and both directions are one line:
+this one from the old one by `x := a` and `Algebra.self_mem_adjoin_singleton` (checked in Lean
+against the sorried old form before the re-cut), the old one from this one below.  So the
+audit is inherited legitimately rather than by assumption.  On its own terms: the hypothesis
+`a = 0` is in the domain, so nothing is forgotten and there is no vacuity question; `h` is
+load-bearing, and the witness for THAT is not the one the neighbouring docstrings use, because
+theirs does not satisfy this leaf's hypothesis.  **Corrected 2026-07-30 while re-cutting.**
+Take `Z` proper non-reduced over `k` with `ε ∈ Γ(Z, 𝒪)`, `ε² = 0`, `ε ∉ k`; take
+`R = k[t]_{(t)}`, `𝔪 = (t)`, `S = Spec R` and `X = S ×_k Z`, so that `f` is proper, flat and of
+finite presentation and fails only `h` (indeed `Γ(X_s, 𝒪) = κ(s)[ε] ≠ κ(s)`).  Then
+`A = R ⊕ Rε`.  The neighbouring statements are refuted by `a = ε`, but `ε` restricts to `ε ≠ 0`
+on `X_s`, so it is NOT a witness here.  The witness here is `a = t·ε`: it restricts to
+`t̄·ε = 0` on `X_s`, while `R[a] = R ⊕ R·tε` (as `(tε)² = 0`), so
+`𝔪·R[a] = tR ⊕ t²R·ε ∌ tε` — the `ε`-coefficient would have to lie in `t²R` and it is `t`.
+
+**WHAT NOT TO DO.**  Do **not** weaken the hypothesis to `a ∈ 𝔪·Γ(X, ⊤)`.  That version is
+FALSE — audit block (D1) below refutes it with `R = ℤ_p`, `A = ℤ_p ⋉ ℚ_p`, `a = x` — so any
+proof that never mentions the fibre `X_s` is wrong.  `a|_{X_s} = 0` is strictly stronger: it
+says `a` is a section of the ideal sheaf `𝔪𝒪_X`, and
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below is precisely the assertion that
+those two conditions coincide for `Γ(X, ⊤)`.
+
+**WHAT REMAINS, GEOMETRICALLY, AND WHY INTEGRALITY ALONE CANNOT DO IT.**  `a` induces a proper
+surjection `g : X ⟶ Spec R[a]` over `S`; `h` forces the fibre of `Spec R[a]` at `s` to be a
+single point with residue field `κ(𝔪)`, and what is missing is that this fibre is also
+REDUCED — equivalently `R[a] ⊗_R κ(𝔪) = κ(𝔪)`, equivalently the conclusion.  Integrality of
+`a` (free, `isIntegral_appTop_of_universallyClosed`) gets one step and then stops, and it is
+worth recording exactly where so it is not re-tried: from
+`aⁿ + c_{n-1}a^{n-1} + ⋯ + c₀ = 0` with `cᵢ : R`, applying `·|_{X_s}` kills every term but
+`c₀`, so `c₀ ∈ 𝔪`, hence `a · (a^{n-1} + ⋯ + c₁) = -c₀·1 ∈ 𝔪·R[a]`.  That is `a·u ∈ 𝔪·R[a]`,
+and it gives `a ∈ 𝔪·R[a]` only if `u` is a unit — which it need not be, since `u` restricts to
+`c₁|_{X_s}` and nothing forces `c₁ ∉ 𝔪`.  The `a = tε` witness above is exactly this failure
+with `n = 2`, `c₁ = c₀ = 0`, `u = a`: `a·u = (tε)² = 0` lies in `𝔪·R[a]` for free and says
+nothing.  So the fibre-reducedness input is genuinely irreducible: no argument using only that
+`R[a]` is a finite `R`-algebra can close this leaf.
+
+**AND THE FIBRE REALLY IS A SINGLE `κ(𝔪)`-POINT — that half is free, so only reducedness is
+owed** (verified 2026-07-30).  `X.toSpecΓ` is universally closed with dense image (a global
+section vanishing on all of `X` is `0`), hence surjective; `A` is integral over `R` hence over
+`R[a]`, and `R[a] ↪ A`, so `Spec A ⟶ Spec R[a]` is surjective by lying over.  Surjectivity is
+stable under base change, so `X_s ↠ Spec (R[a] ⊗_R κ(s))`.  That algebra is finite over
+`κ(s)`, hence artinian with finite discrete spectrum, while `h` makes `Γ(X_s, 𝒪) = κ(s)` have
+no nontrivial idempotents, so `X_s` is connected and its image is one point; the composite
+`R[a] ⊗ κ(s) ⟶ κ(s)` is onto (its image is a `κ(s)`-subalgebra of `κ(s)`), so that point has
+residue field exactly `κ(s)`.  What is left is that the local artinian ring `R[a] ⊗_R κ(s)`
+has zero maximal ideal, which is the conclusion.
+
+**ONE FREE REDUCTION, AND IT IS THE CONSUMER'S ONLY USE.**  The single consumer
+(`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` below) calls this only at points `s`
+coming from `exists_point_ker_Γevaluation_eq_of_isMaximal`, where `S.Γevaluation s` is
+SURJECTIVE, so `κ(s) = R/𝔪` and `𝔪` is maximal.  A prover may therefore assume `𝔪` maximal at
+no cost, and then `R[a]/𝔪·R[a]` is a `κ(s)`-vector space, so Step 0 of the elementary route on
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below applies verbatim: the conclusion
+localises at `𝔪`, and one may take `R` LOCAL.  That is the only part of the route that is free
+here; the rest of it (dévissage of `Γ(X, J𝒪_X)`, induction on `dim R`) still needs a noetherian
+base and quasi-coherent ideal sheaves, and is unchanged by this re-cut.
+
+**WHAT THIS RE-CUT DOES NOT INHERIT.**  The Čech/`Tor₁` obstruction analysis on
+`mem_smul_top_of_appTop_fiberι_eq_zero` below is about `A = Γ(X, ⊤) = ker d` and identifies
+that statement with `Tor₁^R(range d, κ(𝔪)) = 0`.  It is a route to the `Γ(X, ⊤)` form ONLY:
+`R[a]` is a subalgebra of `ker d` and not a term of the Čech complex, so the identification
+does not transfer to this leaf.  It is retained there because it is real content — and because
+it says something this leaf's route does not, namely that the `Γ(X, ⊤)` form is one
+application of the local criterion away from Grothendieck finiteness in POSITIVE degree.  A
+prover who closes the `Γ(X, ⊤)` form that way has **not** closed this leaf, and this leaf is
+what `finiteType_appTop_of_isProper` needs. -/
+theorem self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) (s : S)
+    (a : ↥Γ(X, ⊤)) (ha : (f.fiberι s).appTop.hom a = 0) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    a ∈ RingHom.ker (S.Γevaluation s).hom •
+      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule :=
+  sorry
+
+/-- **LEAF 1a″ — A SECTION OF `R[a]` VANISHING ON THE FIBRE `X_s` LIES IN `𝔪 · R[a]`** —
+**PROVEN** (2026-07-30) over `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` immediately
+above, by the observation that `x` is its own `a`: the leaf applied to `x` gives
+`x ∈ 𝔪 · R[x]`, and `R[x] ≤ R[a]` because `x ∈ R[a]`.  (It was itself CUT 2026-07-30 out of
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` below, which is PROVEN over it; that
+consumer and its call are unchanged by the re-cut.)  `𝔪` is
+`RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut out by `s` when `s` comes from
+`exists_point_ker_Γevaluation_eq_of_isMaximal`.
+
+**WHAT THIS CUT DOES.**  The theorem below is `R[a] = R·1 + 𝔪·R[a]`.  Its `R·1` half is pure
 bookkeeping — lift the fibre value of `x` to some `r : R`, which
 `surjective_appTop_fiberι_comp_appTop` says is possible — and what is left is this statement,
 which contains no ideal, no `span {1}` and no maximality, only *vanishing on a fibre*.  The
-same cut is made for the other leaf of this file at
-`mem_smul_top_of_appTop_fiberι_eq_zero`, and the two are now visibly the same sentence with
-`R[a]` replaced by `Γ(X, ⊤)`.
-
-**DO NOT MERGE THE TWO INTO ONE STATEMENT ABOUT AN ARBITRARY SUBALGEBRA `B ⊆ Γ(X, ⊤)`.**
-That is an unverified universally quantified clause of exactly the kind whose splitting was
-declined on `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` below, and getting
-it wrong plants a FALSE leaf: `B = R[a]` and `B = Γ(X, ⊤)` are each true for reasons that use
-what `B` is (integrality of `a`, respectively `Module.Finite`), and nothing here shows the
-sentence is true for every `B`.
-
-**FAITHFULNESS — VOUCHED, AND NOT VACUOUS.**  A universally quantified implication with `x = 0`
-in its domain, so there is no witness to forget and no vacuity question; and the domain is not
-empty of interesting elements, since `x = a - r·1` for the `r` produced above is exactly what
-the consumer feeds it.  `h` is load-bearing through `surjective_appTop_fiberι_comp_appTop` and
-through the classical statement: over `𝒪ᵥ`-style bases without `h` the fibre `h⁰` jumps and the
-conclusion is false — see audit block (A) on `finiteType_appTop_of_isProper` below for the
-explicit witness.
-
-**WHAT NOT TO DO** (unchanged from the previous shape of this leaf, and the trap is the same).
-Do **not** weaken this to the abstract `𝔪·Γ(X, ⊤) ∩ R[a] ⊆ 𝔪·R[a]`, which is what the
-statement looks like it is about.  That version is FALSE — audit block (D1) below refutes it
-with `R = ℤ_p`, `A = ℤ_p ⋉ ℚ_p`, `a = x` — so any proof that never mentions the fibre `X_s` is
-wrong.  The hypothesis here is genuinely `x|_{X_s} = 0`, which is strictly stronger than
-`x ∈ 𝔪·Γ(X, ⊤)`: it says `x` is a section of the ideal sheaf `𝔪𝒪_X`, and the leaf immediately
-below the other one, `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`, is precisely the
-assertion that those two coincide for `B = Γ(X, ⊤)`.
-
-**WHAT REMAINS, GEOMETRICALLY** (from the previous docstring of the leaf below).  `a` induces a
-proper surjection `X ⟶ Spec R[a]` over `S` whose fibres are single points with residue field
-`κ(𝔪)`; what remains is that those fibres are also REDUCED. -/
+same cut is made for the other statement of this file at
+`mem_smul_top_of_appTop_fiberι_eq_zero`, and the two are visibly the same sentence with `R[a]`
+replaced by `Γ(X, ⊤)`; both are now corollaries of the one-element leaf above, whose docstring
+carries the obstruction analysis. -/
 theorem mem_smul_adjoin_of_appTop_fiberι_eq_zero (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) (s : S)
@@ -1296,8 +1397,14 @@ theorem mem_smul_adjoin_of_appTop_fiberι_eq_zero (f : X ⟶ S) [IsAffine S]
     ∀ x ∈ (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule,
       (f.fiberι s).appTop.hom x = 0 →
       x ∈ RingHom.ker (S.Γevaluation s).hom •
-        (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule :=
-  sorry
+        (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  intro x hx hxvan
+  have hle : (Algebra.adjoin ↥Γ(S, ⊤) {x}).toSubmodule ≤
+      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule := fun y hy =>
+    Algebra.adjoin_le (Set.singleton_subset_iff.mpr hx) hy
+  exact Submodule.smul_mono le_rfl hle
+    (self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero f h s x hxvan)
 
 /-- **LEAF 1a′ — `R[a] = R·1 + 𝔪·R[a]` FOR EVERY `a ∈ Γ(X, ⊤)` AND EVERY MAXIMAL `𝔪`** —
 **PROVEN** (2026-07-30) over `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately above,
@@ -2698,10 +2805,21 @@ theorem exists_sub_algebraMap_mem_of_fibre_span {R A F₀ F₁ : Type*} [CommRin
     rw [← Ideal.smul_top_eq_map]; exact hmem
   simpa [Algebra.smul_def] using hres
 
-/-- **LEAF 3a-N′ — A GLOBAL SECTION VANISHING ON THE FIBRE `X_s` LIES IN `𝔪 · Γ(X, ⊤)`**
-(LEAF, CUT 2026-07-30 out of `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below,
-which is PROVEN over it).  `𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut
-out by `s` when `s` comes from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
+/-- **LEAF 3a-N′ — A GLOBAL SECTION VANISHING ON THE FIBRE `X_s` LIES IN `𝔪 · Γ(X, ⊤)`** —
+**PROVEN** (2026-07-30) over `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` far above, in
+one step: that leaf puts `a` in `𝔪 · R[a]`, and `R[a] ≤ ⊤`.  (It was itself CUT 2026-07-30 out
+of `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below, which is PROVEN over it; that
+consumer and its call are unchanged.)  `𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal
+ideal cut out by `s` when `s` comes from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
+
+**THIS STATEMENT IS NO LONGER ON THE CRITICAL PATH, AND THE ANALYSIS BELOW IS NOT A ROUTE TO
+WHAT IS.**  Everything from here to the end of this docstring is about `A = Γ(X, ⊤)` as the
+kernel of a Čech complex, and it identifies THIS statement with `Tor₁^R(range d, κ(𝔪)) = 0`.
+The file's one remaining leaf is the `R[a]` form, and `R[a]` is a subalgebra of `ker d` rather
+than a term of the complex, so the identification does **not** transfer to it: closing the
+`Tor₁` below would re-prove this theorem and leave the leaf open, and the leaf is what
+`finiteType_appTop_of_isProper` consumes.  The analysis is retained because it is correct and
+because it names a real theorem to build; it is a record, not a task.
 
 **WHAT THIS CUT DOES, AND WHY IT IS NOT A REWORDING.**  It is *equivalent* to the equation
 below — the two differ by the lift-and-subtract step, which
@@ -2773,8 +2891,10 @@ theorem mem_smul_top_of_appTop_fiberι_eq_zero (f : X ⟶ S) [IsAffine S]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) (s : S)
     (a : ↥Γ(X, ⊤)) (ha : (f.fiberι s).appTop.hom a = 0) :
     letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
-    a ∈ RingHom.ker (S.Γevaluation s).hom • (⊤ : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
-  sorry
+    a ∈ RingHom.ker (S.Γevaluation s).hom • (⊤ : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤)) := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  exact Submodule.smul_mono le_rfl le_top
+    (self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero f h s a ha)
 
 /-- **LEAF 3a-N — NAKAYAMA'S INPUT: `A = R·1 + 𝔪A` AT EVERY MAXIMAL IDEAL** — **PROVEN**
 (2026-07-30) over `mem_smul_top_of_appTop_fiberι_eq_zero` immediately above, by the
@@ -4749,9 +4869,10 @@ rigidity block.  Re-counted 2026-07-30: that correction named the leaves as
 and the second has since been proven, as has `finiteType_appTop_of_isProper`; then the set was
 `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
 `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`, and both of those have since been
-proven too — the set is now `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and
-`mem_smul_top_of_appTop_fiberι_eq_zero`.  Any count in this file is stale by construction; run
-the compiler.)
+proven too — the set was then `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and
+`mem_smul_top_of_appTop_fiberι_eq_zero`, and those are now proven as well, over the single
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`.  Any count in this file is stale by
+construction; run the compiler.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what the covering step had to get past: the reduction to an affine target cannot be done
