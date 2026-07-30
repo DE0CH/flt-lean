@@ -61454,36 +61454,252 @@ theorem locallyOfFinitePresentation_pairSquareMap {A B S : Scheme.{0}} {af : A �
   exact locallyOfFinitePresentation_of_comp_of_isLocallyNoetherian _
     (Limits.pullback.fst bf bf ≫ bf)
 
-/-- **THE SMOOTH LOCUS OF A FIBRE SQUARE OF ONE MORPHISM** (sorry leaf, new
-2026-07-29) — the first of the two halves of
+/-! #### A `smoothLocus` toolkit: local characterisation, composition, base change
+
+**PROVEN 2026-07-30**, and written only to serve `smoothLocus_pairSquareMap`
+below.  `mathlib` states almost nothing about `Scheme.Hom.smoothLocus` beyond its
+openness, `smoothLocus_eq_top_iff` and the precomposition-by-an-open-immersion
+rule `Scheme.Hom.preimage_smoothLocus_eq`; the facts here are what turn that into
+a usable calculus, and none of them mentions `SpecQ`, a group law or an abelian
+scheme.
+
+The pivot is the LOCAL CHARACTERISATION, which is the composite of the two
+mathlib lemmas just named and says
+
+    x ∈ f.smoothLocus  ↔  Smooth (U.ι ≫ f) for some open `U ∋ x`.
+
+Its value is that it converts every pointwise question about `smoothLocus` into a
+question about the `MorphismProperty` `Smooth`, where mathlib's stability API
+(composition, base change, `IsStableUnderBaseChange`) applies. -/
+
+/-- **`f` IS SMOOTH OVER ITS OWN SMOOTH LOCUS** (PROVEN 2026-07-30) — the `→`
+half of the local characterisation, at the canonical choice `U = f.smoothLocus`.
+-/
+theorem smooth_smoothLocus_ι_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [LocallyOfFinitePresentation f] : Smooth (f.smoothLocus.ι ≫ f) := by
+  rw [← Scheme.Hom.smoothLocus_eq_top_iff, ← Scheme.Hom.preimage_smoothLocus_eq]
+  exact Scheme.Opens.ι_preimage_self _
+
+/-- **A POINT OF AN OPEN OVER WHICH `f` IS SMOOTH LIES IN THE SMOOTH LOCUS**
+(PROVEN 2026-07-30) — the `←` half of the local characterisation. -/
+theorem mem_smoothLocus_of_smooth_ι_comp {X Y : Scheme.{u}} {f : X ⟶ Y}
+    [LocallyOfFinitePresentation f] {U : X.Opens} (hU : Smooth (U.ι ≫ f)) {x : X}
+    (hx : x ∈ U) : x ∈ f.smoothLocus := by
+  have hr : x ∈ Set.range U.ι.base := by rw [Scheme.Opens.range_ι]; simpa using hx
+  obtain ⟨y, rfl⟩ := hr
+  rw [← Scheme.Hom.mem_preimage, Scheme.Hom.preimage_smoothLocus_eq]
+  exact (Scheme.Hom.smoothLocus_eq_top (U.ι ≫ f)).ge trivial
+
+/-- **THE SMOOTH LOCUS OF A COMPOSITE CONTAINS THE INTERSECTION** (PROVEN
+2026-07-30): `f` smooth at `x` and `g` smooth at `f x` imply `f ≫ g` smooth at
+`x`.  This one needs no geometry at all — `Scheme.Hom.stalkMap_comp` turns it
+into `RingHom.FormallySmooth.comp`, since `smoothLocus` is *by definition* formal
+smoothness of the stalk map. -/
+theorem mem_smoothLocus_comp {X Y Z : Scheme.{u}} {f : X ⟶ Y} {g : Y ⟶ Z}
+    [LocallyOfFinitePresentation f] [LocallyOfFinitePresentation g] {x : X}
+    (hx : x ∈ f.smoothLocus) (hfx : f.base x ∈ g.smoothLocus) :
+    x ∈ (f ≫ g).smoothLocus := by
+  show ((f ≫ g).stalkMap x).hom.FormallySmooth
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply]
+  rw [Scheme.Hom.stalkMap_comp, CommRingCat.hom_comp]
+  exact RingHom.FormallySmooth.comp hfx hx
+
+/-- **THE SMOOTH LOCUS ONLY GROWS UNDER BASE CHANGE** (PROVEN 2026-07-30): for a
+cartesian square `(p₁, p₂, f, g)` — so `p₂` is the base change of `f` along `g` —
+the smooth locus of `p₂` contains the preimage of the smooth locus of `f`.
+
+The proof is the local characterisation plus ONE pullback pasting.  Over an open
+`V` on which `f` is smooth, `isPullback_morphismRestrict` exhibits `p₁ ⁻¹ᵁ V` as
+`V ×_X X'`, and pasting that square under the given one exhibits
+`(p₁ ⁻¹ᵁ V).ι ≫ p₂` as the base change of `V.ι ≫ f` along `g`.  Smoothness is
+stable under base change, so that composite is smooth, and the `←` half of the
+characterisation puts every point of `p₁ ⁻¹ᵁ V` into `p₂.smoothLocus`.
+
+**The reverse inclusion is NOT free** and is not claimed here: it is descent, and
+it is exactly `mem_smoothLocus_of_comp_of_smooth` below. -/
+theorem le_smoothLocus_of_isPullback {X Y X' Y' : Scheme.{u}} {p₁ : X' ⟶ X} {p₂ : X' ⟶ Y'}
+    {f : X ⟶ Y} {g : Y' ⟶ Y} (h : IsPullback p₁ p₂ f g)
+    [LocallyOfFinitePresentation f] [LocallyOfFinitePresentation p₂] :
+    p₁ ⁻¹ᵁ f.smoothLocus ≤ p₂.smoothLocus := by
+  intro x' hx'
+  haveI hs : Smooth (f.smoothLocus.ι ≫ f) := smooth_smoothLocus_ι_comp f
+  have hbig := (isPullback_morphismRestrict p₁ f.smoothLocus).paste_vert h
+  haveI : Smooth ((p₁ ⁻¹ᵁ f.smoothLocus).ι ≫ p₂) := MorphismProperty.of_isPullback hbig hs
+  exact mem_smoothLocus_of_smooth_ι_comp ‹Smooth ((p₁ ⁻¹ᵁ f.smoothLocus).ι ≫ p₂)› hx'
+
+/-! #### `u ×_S u` factored into its two halves
+
+**PROVEN 2026-07-30.**  `u ×_S u` is not itself a base change of `u`, but it is
+the composite of TWO base changes of `u`, and that is what makes the smooth-locus
+calculus above apply to it:
+
+    A ×_S A --(u ×_S 1)--> B ×_S A --(1 ×_S u)--> B ×_S B
+
+The first factor is the base change of `u` along `fst : B ×_S A ⟶ B` and the
+second is the base change of `u` along `snd : B ×_S B ⟶ B`; both squares are
+`IsPullback.of_bot` applied to the defining square of the target product, which
+is the same two-line argument `mathlib` uses inside
+`MorphismProperty.pullbackLift_fst_snd`. -/
+
+/-- **`u ×_S 1_T : A ×_S T ⟶ B ×_S T`.** -/
+noncomputable def pairFstMap {A B S T : Scheme.{u}} {af : A ⟶ S} {bf : B ⟶ S} (tf : T ⟶ S)
+    (u : A ⟶ B) (hu : u ≫ bf = af) : Limits.pullback af tf ⟶ Limits.pullback bf tf :=
+  Limits.pullback.lift (Limits.pullback.fst af tf ≫ u) (Limits.pullback.snd af tf)
+    (by rw [Category.assoc, hu]; exact Limits.pullback.condition)
+
+/-- **`1_T ×_S u : T ×_S A ⟶ T ×_S B`.** -/
+noncomputable def pairSndMap {A B S T : Scheme.{u}} {af : A ⟶ S} {bf : B ⟶ S} (tf : T ⟶ S)
+    (u : A ⟶ B) (hu : u ≫ bf = af) : Limits.pullback tf af ⟶ Limits.pullback tf bf :=
+  Limits.pullback.lift (Limits.pullback.fst tf af) (Limits.pullback.snd tf af ≫ u)
+    (by rw [Category.assoc, hu]; exact Limits.pullback.condition)
+
+/-- **`u ×_S 1_T` IS A BASE CHANGE OF `u`** (PROVEN 2026-07-30), along
+`fst : B ×_S T ⟶ B`. -/
+theorem isPullback_pairFstMap {A B S T : Scheme.{u}} {af : A ⟶ S} {bf : B ⟶ S} (tf : T ⟶ S)
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    IsPullback (Limits.pullback.fst af tf) (pairFstMap tf u hu) u
+      (Limits.pullback.fst bf tf) := by
+  refine IsPullback.of_bot ?_ (by rw [pairFstMap, Limits.pullback.lift_fst])
+    (IsPullback.of_hasPullback bf tf)
+  rw [pairFstMap, Limits.pullback.lift_snd, hu]
+  exact IsPullback.of_hasPullback af tf
+
+/-- **`1_T ×_S u` IS A BASE CHANGE OF `u`** (PROVEN 2026-07-30), along
+`snd : T ×_S B ⟶ B`. -/
+theorem isPullback_pairSndMap {A B S T : Scheme.{u}} {af : A ⟶ S} {bf : B ⟶ S} (tf : T ⟶ S)
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    IsPullback (Limits.pullback.snd tf af) (pairSndMap tf u hu) u
+      (Limits.pullback.snd tf bf) := by
+  refine IsPullback.of_bot ?_ (by rw [pairSndMap, Limits.pullback.lift_snd])
+    (IsPullback.of_hasPullback tf bf).flip
+  rw [pairSndMap, Limits.pullback.lift_fst, hu]
+  exact (IsPullback.of_hasPullback tf af).flip
+
+/-- **THE FACTORISATION** (PROVEN 2026-07-30): `(u ×_S 1) ≫ (1 ×_S u) = u ×_S u`.
+-/
+theorem pairFstMap_comp_pairSndMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (u : A ⟶ B) (hu : u ≫ bf = af) :
+    pairFstMap af u hu ≫ pairSndMap bf u hu = pairSquareMap u hu := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, pairSndMap, Limits.pullback.lift_fst, pairFstMap,
+      Limits.pullback.lift_fst, pairSquareMap_fst]
+  · rw [Category.assoc, pairSndMap, Limits.pullback.lift_snd, ← Category.assoc, pairFstMap,
+      Limits.pullback.lift_snd, pairSquareMap_snd]
+
+/-- **DESCENT OF THE SMOOTH LOCUS ALONG A SMOOTH MORPHISM** (sorry leaf, new
+2026-07-30) — the converse of `le_smoothLocus_of_isPullback`, and after the cut
+below the ONLY open mathematics left between `shear_pairSquareMap` and
+`smooth_of_surjective_of_isAdditiveOn`.
+
+It is Stacks 02K5 read pointwise: if `h` is smooth at `x` — which it is
+everywhere, being smooth — and `h ≫ f` is smooth at `x`, then `f` is smooth at
+`h x`.  On stalks, with `R := 𝒪_{Z, f (h x)}`, `S := 𝒪_{Y, h x}` and
+`T := 𝒪_{X, x}`: `R ⟶ T` is formally smooth, `S ⟶ T` is formally smooth and
+flat, hence — being a local homomorphism of local rings — FAITHFULLY flat; and
+formal smoothness descends along a faithfully flat `S ⟶ T`.
+
+**Nothing here is project-specific**: no group law, no abelian scheme, no `ℚ`,
+no `SpecQ`.  It is a statement about `Scheme.Hom.smoothLocus` that belongs in
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`.
+
+**WHAT MATHLIB ALREADY HAS, AND EXACTLY WHAT THE GAP IS.**  The GLOBAL form is an
+instance at this pin, in
+`Mathlib/AlgebraicGeometry/Morphisms/LocalFlatDescent.lean`:
+
+    instance : DescendsAlong @Smooth (@Surjective ⊓ @Flat ⊓ @QuasiCompact)
+
+so `MorphismProperty.of_isPullback_of_descendsAlong` already turns
+`Smooth (u ×_S 1)` into `Smooth u` whenever the leg being descended along is
+surjective, flat and quasi-compact.  What is missing is only the passage from
+that GLOBAL statement to this POINTWISE one, and the passage is not formal: the
+local characterisation gives an open `U ∋ x` with `Smooth (U.ι ≫ h ≫ f)`, and a
+prover has to manufacture from it an open `V ∋ h x` together with a SURJECTIVE
+flat QUASI-COMPACT morphism onto `V` out of an open of `U`.  Two ingredients do
+that:
+
+1. a smooth morphism is an OPEN map (flat plus locally of finite presentation,
+   Stacks 01UA), so `V := h ''ᵁ U'` is open for every open `U' ≤ U`;
+2. quasi-compactness has to be bought.  `V` is covered by the images `h ''ᵁ U_j`
+   of affine opens `U_j ≤ U`, those images are open by (1), so an AFFINE open
+   `W ≤ V` is covered by FINITELY many of them, and the finite coproduct of the
+   corresponding `U_j ⊓ h ⁻¹ᵁ W` is affine, hence maps quasi-compactly and
+   surjectively onto `W`.  `Smooth` is local at the target, so smoothness over
+   each such `W` suffices.
+
+That is the whole proof; it is bookkeeping over mathlib's instance rather than
+new mathematics, which is why it is stated as one leaf rather than several.
+
+**The check that refutes it**: a smooth `h` and an `f` with `h ≫ f` smooth at
+some `x` and `f` not smooth at `h x`.  **`Smooth h` is deliberately NOT the sharp
+hypothesis**: the argument uses only `Flat h` plus local finite presentation, and
+`Smooth h` is what every call site has in hand. -/
+theorem mem_smoothLocus_of_comp_of_smooth {X Y Z : Scheme.{u}} (h : X ⟶ Y) (f : Y ⟶ Z)
+    [Smooth h] [LocallyOfFinitePresentation f] {x : X}
+    (hx : x ∈ (h ≫ f).smoothLocus) : h.base x ∈ f.smoothLocus :=
+  sorry
+
+/-- **THE SMOOTH LOCUS OF A FIBRE SQUARE OF ONE MORPHISM** (**PROVEN 2026-07-30**
+over `mem_smoothLocus_of_comp_of_smooth`) — the first of the two halves of
 `smoothLocus_eq_top_of_nonempty_of_isAdditiveOn`.  No group law occurs in it.
 
 `u ×_S u` is smooth at `z` exactly when `u` is smooth at both of `z`'s
-coordinates.  Both inclusions are standard and each needs one general fact that
-`mathlib` does not state for `smoothLocus`:
+coordinates.  The two inclusions are genuinely different in character, and the
+2026-07-30 cut is the observation that only ONE of them is hard:
 
-* `⊇` is COMPOSITION.  Writing `V = u.smoothLocus`, the restriction
-  `V.ι ≫ u` is smooth (`smoothLocus (V.ι ≫ u) = V.ι ⁻¹ᵁ V = ⊤` by
-  `Scheme.Hom.preimage_smoothLocus_eq` and `smoothLocus_eq_top_iff`), and
-  `fst ⁻¹ᵁ V ⊓ snd ⁻¹ᵁ V` is `V ×_S V`, over which `u ×_S u` is the fibre square
-  of a smooth morphism, hence smooth by stability of `Smooth` under base change
-  and composition.
-* `⊆` is DESCENT ALONG A SMOOTH SURJECTION.  From
-  `pairSquareMap_fst`, `(u ×_S u) ≫ fst_B = fst_A ≫ u`.  If `u ×_S u` is smooth
-  at `z` then, `fst_B` being smooth (a base change of `bf`), so is the left side;
-  hence `fst_A ≫ u` is smooth at `z`; and `fst_A` is smooth (a base change of
-  `af`) and surjective, so `u` is smooth at `fst_A z` — Stacks 02K5, pointwise.
+* `⊇` is BASE CHANGE, and is now proven outright.  `u ×_S u` factors as
+  `(u ×_S 1) ≫ (1 ×_S u)` through `B ×_S A` (`pairFstMap_comp_pairSndMap`), each
+  factor is a base change of `u` (`isPullback_pairFstMap`,
+  `isPullback_pairSndMap`), so `le_smoothLocus_of_isPullback` places `z` in the
+  smooth locus of the first factor and its image in that of the second, and
+  `mem_smoothLocus_comp` multiplies them.  The old sketch here went through
+  `V ×_S V` as an open of `A ×_S A`; that route needs the RANGE of an open
+  immersion built out of two pullbacks, which the factorisation avoids entirely.
+* `⊆` is DESCENT ALONG A SMOOTH SURJECTION, and is the whole of the residual
+  leaf.  From `pairSquareMap_fst`, `(u ×_S u) ≫ fst_B = fst_A ≫ u`.  If `u ×_S u`
+  is smooth at `z` then, `fst_B` being smooth (a base change of `bf`), so is the
+  left side by `mem_smoothLocus_comp`; hence `fst_A ≫ u` is smooth at `z`; and
+  `fst_A` is smooth (a base change of `af`), so `u` is smooth at `fst_A z` by
+  `mem_smoothLocus_of_comp_of_smooth`.  Surjectivity of `fst_A` is NOT used — the
+  pointwise statement needs only the point `z` lying over `fst_A z`, which is
+  what makes the residual leaf cheaper than the global Stacks 02K5.
 
-**`Smooth af` and `Smooth bf` ARE LOAD-BEARING, and only for `⊆`.**  They are
-what make the two projections smooth.  Without them `⊆` has no argument; they
-are supplied at the call site by `abA.smooth` and `abB.smooth`. -/
+**`Smooth af` and `Smooth bf` ARE LOAD-BEARING, and now for BOTH inclusions.**
+`Smooth bf` makes the two projections of `B ×_S B` smooth, which is what
+`mem_smoothLocus_comp` consumes in `⊆`; `Smooth af` makes the two projections of
+`A ×_S A` smooth, which is what the descent leaf consumes.  They are supplied at
+the call site by `abA.smooth` and `abB.smooth`. -/
 theorem smoothLocus_pairSquareMap {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
     (u : A ⟶ B) (hu : u ≫ bf = af) [Smooth af] [Smooth bf]
     [LocallyOfFinitePresentation u] [LocallyOfFinitePresentation (pairSquareMap u hu)] :
     (pairSquareMap u hu).smoothLocus
       = Limits.pullback.fst af af ⁻¹ᵁ u.smoothLocus
-        ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus :=
-  sorry
+        ⊓ Limits.pullback.snd af af ⁻¹ᵁ u.smoothLocus := by
+  have sq₁ := isPullback_pairFstMap af u hu
+  have sq₂ := isPullback_pairSndMap bf u hu
+  haveI : LocallyOfFinitePresentation (pairFstMap af u hu) :=
+    MorphismProperty.of_isPullback sq₁ ‹_›
+  haveI : LocallyOfFinitePresentation (pairSndMap bf u hu) :=
+    MorphismProperty.of_isPullback sq₂ ‹_›
+  apply le_antisymm
+  · intro z hz
+    refine ⟨?_, ?_⟩
+    · have h1 : z ∈ (pairSquareMap u hu ≫ Limits.pullback.fst bf bf).smoothLocus :=
+        mem_smoothLocus_comp hz (by rw [Scheme.Hom.smoothLocus_eq_top]; trivial)
+      rw [smoothLocus_congr (pairSquareMap_fst u hu)] at h1
+      exact mem_smoothLocus_of_comp_of_smooth _ u h1
+    · have h1 : z ∈ (pairSquareMap u hu ≫ Limits.pullback.snd bf bf).smoothLocus :=
+        mem_smoothLocus_comp hz (by rw [Scheme.Hom.smoothLocus_eq_top]; trivial)
+      rw [smoothLocus_congr (pairSquareMap_snd u hu)] at h1
+      exact mem_smoothLocus_of_comp_of_smooth _ u h1
+  · intro z hz
+    have h1 : z ∈ (pairFstMap af u hu).smoothLocus := le_smoothLocus_of_isPullback sq₁ hz.1
+    have h2 : (pairFstMap af u hu).base z ∈ (pairSndMap bf u hu).smoothLocus := by
+      refine le_smoothLocus_of_isPullback sq₂ ?_
+      show (Limits.pullback.snd bf af).base ((pairFstMap af u hu).base z) ∈ u.smoothLocus
+      rw [← Scheme.Hom.comp_apply, pairFstMap, Limits.pullback.lift_snd]
+      exact hz.2
+    have h3 := mem_smoothLocus_comp h1 h2
+    rwa [smoothLocus_congr (pairFstMap_comp_pairSndMap u hu)] at h3
 
 /-! #### Translation by a CONSTANT point, inside a fibre `A ×_S Z`
 
