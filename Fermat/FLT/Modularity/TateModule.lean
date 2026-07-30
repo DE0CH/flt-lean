@@ -11350,7 +11350,110 @@ deliver a UNIT OF `O`.  The split taken here never leaves the
 `IsTateWeilPairing` demands — and `θ` does not occur in the predicate.  The
 refuting check is the same one that paragraph prescribes: look for `θ` or
 `ℤ_[q]`-valued quantities in `IsTateWeilRawFamily`.  There are none except
-the cyclotomic multiplier, which `IsTateWeilPairing` carries too. -/
+the cyclotomic multiplier, which `IsTateWeilPairing` carries too.
+
+**FALSITY AUDIT (2026-07-31) — THE LEAF WAS FALSE AS STATED, AND `htors` IS
+THE REPAIR.  The earlier audits are VOID: this leaf was restated twice on
+2026-07-30, and the rule that a second restatement voids the first audit is
+exactly what turned this up.**
+
+WITNESS, and it needs no arithmetic at all.  Take `A = S`, `f = 𝟙 S`, the
+ZERO abelian scheme.  `AbelianSchemeStruct` asks for a group law on the
+functor of points together with `IsProper`, `Smooth` and
+`GeometricallyConnected` — no nontriviality axiom, and `𝟙 S` satisfies all
+three (its fibres are points).  Every `RelPoint (𝟙 S) g` is a SINGLETON, so
+`GeomFibrePt f x` is a singleton, so `TatePt m x I π` is a singleton: `t = s`
+for the unique Tate point `t`, whatever `I` and `π` are.  Take `w N y z := 1`;
+`IsQAdicWeilSystem` holds, its perfectness clause vacuously (`y ≠ 0` is never
+satisfiable).  `hdiv` holds.  `θ` and `L` exist as always — they depend only
+on `(D, q, I, π, O, j)` and on `F`, never on `A`.  So EVERY hypothesis of the
+old statement was satisfiable.
+
+But the conclusion is not.  The THIRD clause of `IsTateWeilRawFamily` is
+alternating, `C N t t ∈ span {j π} ^ N`, and the NINTH is
+`∀ N ≥ 1, ∃ t s, IsUnit (C N t s)`.  With one Tate point the ninth reads
+`IsUnit (C 1 t t)` while the third reads `C 1 t t ∈ span {j π}`, and
+`span {j π} ≠ ⊤` — `hker` at `n = 1` with `a = 1` says `1 ∈ span {j π} ↔ 1 ∈ I`,
+and `I` is maximal — so `C 1 t t` is a member of a proper ideal, hence a
+NON-UNIT.  Clauses 3 and 9 are contradictory.  Not vacuous, not hard: false.
+
+WHY IT WAS INVISIBLE.  The two 2026-07-30 audits are about the NORMALISATION
+(`u^{2N}`) and about `IsUnit v`, both of which are real and both of which
+presuppose a nonzero Tate module.  Nothing in the leaf ever said the Tate
+module is nonzero — and its sibling `exists_levelWeilPairing_of_traceDual\
+FrobeniusLog_finiteBase` carries exactly that hypothesis, under the name
+`hne`, with the same reason recorded on it ("`A' = Spec k` satisfies every
+other hypothesis … `e 0 0 = 0` is a unit only in the zero ring").  The
+characteristic-zero half simply lost it.
+
+THE REPAIR, applied here and threaded upward in the same commit: the new
+binder
+
+  `htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)`
+
+`A[I] ≠ 0` is what makes `T_I A ≠ 0` (through `hdiv`, which makes the
+transition maps surjective), and it is the exact analogue of the finite-base
+`hne`.  The SAME defect was present in the two PROVEN consumers —
+`exists_tateWeilPairing_of_qAdicWeilSystem` and
+`exists_tateWeilSystem_of_qAdicWeilSystem`, whose conclusions
+(`IsTateWeilPairing`, `IsTateWeilSystem`) each carry a unit clause and are
+refuted by the same witness — so both now carry `htors` and pass it through.
+The chain terminates at `exists_tateWeilSystem_of_mult`, which DISCHARGES it
+from `hdim`: `card_torsion_ne_one_of_isMaximal` says `A[I]` is not a
+singleton, and a set containing the zero point and not equal to `{0}` has a
+nonzero member.  That is where `hdim` pays for perfectness, and it is worth
+saying plainly, because the old docstrings attributed `hdim` only to the
+rank-two count.
+
+**AND THE ROUTE IS NOW OPEN (2026-07-31).**  Independently of the falsity,
+the prescribed construction could not be started at a RAMIFIED `I`: the
+third clause of `IsTraceDualFunctional` demanded that the functional kill
+`I^k`, and the Weil functional
+`φ(b) = L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))` kills `I^{e·N}` and NOT
+`I^N` — see the audit on `IsTraceDualFunctional` for the `ℚ(√5)` witness and
+for the proof that every constant the old clause could return was a
+non-unit, hence could never satisfy the ninth clause.  That clause has been
+strengthened (its hypothesis is now `j a ∈ span {(q : O)} ^ k`, i.e.
+`a ∈ I^{e·k}`), `exists_traceDualFunctional_of_adicPin` needed no change to
+supply it, and the route below is now the one to follow.
+
+WHAT A SUCCESSOR SHOULD DO, written out because the pieces are all now in
+place and the arithmetic has been checked:
+
+* `Φ N t s : b ↦ L N (w N (m.act b (t.1 (e*N))) (s.1 (e*N)))`, and
+  `C N t s :=` the constant `hθ`'s third clause returns for it at level `N`.
+  `t.1 (e*N)` is `q^N`-torsion because `(q^N) ⊆ I^{e·N}` (`hqe`), and `Φ`
+  kills `{a : j a ∈ span {(q:O)}^N}` because such an `a` lies in `I^{e·N}`
+  (`hker`, plus `span {(q:O)} ⊆ span {j π}^e` from `hqe`), so
+  `m.act a (t.1 (e*N)) = 0` and `L N 1 ∈ (q)^N` by `hLinj`.
+* Clauses 1–5 then go through `hθ`'s FOURTH clause at level `N`: reduce
+  `X - Y ∈ span {j π}^N` to `∀ b, θ (j b * (X - Y)) ∈ (q)^N`, replace each
+  `θ (j b * C …)` by the corresponding `Φ` value, and finish with the
+  matching clause of `IsQAdicWeilSystem` followed by `hLadd` / `hLgal`.
+* Clause 6 (continuity) is the one that looks impossible and is not.  Do NOT
+  try to compare the two functionals directly — at `e ≥ 2` their difference
+  is genuinely not in `(q)^k`.  Instead use clauses 1, 2 and 4: `t.1 k = t'.1 k`
+  makes `r := t - t'` a Tate point with `r.1 k = 0`, and such an `r` is
+  `m.act (π^k)` of the Tate point `r'` defined by `r'.1 n := r.1 (n + k)`.
+  That `r'` really is a Tate point: `π^n · r.1 (n+k) = r.1 k = 0`, and
+  `I^n ⊆ (π^n) + I^{n+k}` (iterate `LevelFrame.span_singleton_sup_pow_eq`),
+  so `r.1 (n+k)` is killed by `I^n` as required.  Then clause 4 puts
+  `C N r s` in `j (π^k) · O + span {j π}^N ⊆ span {j π}^k`.
+* Clause 7 (the multiplier) is the level shift.  Choose `a ∈ 𝒪_D ∖ I` with
+  `q - a·π^e ∈ I^{e·N+e}` — available because `I^e ⊆ (π^e) + I^n` by the same
+  sup computation, with `a ∉ I` forced by `hqe2`.  Then
+  `m.act q (t.1 (eN+e)) = m.act a (t.1 (eN))` EXACTLY, so the `w`-tower clause
+  plus `hLtower` give `Φ (N+1) t s b ≡ Φ N t s (a² b) (mod q^N)`, which is
+  clause 7 with `v ≡ j (a²)`.  `v` itself is the `hcplt`-limit of the
+  `j (a_N²)`.
+* Clause 8 is then `(𝒪_D/I^k)ˣ` finite through `hker`, and `IsUnit v` comes
+  from `a ∉ I` with `I` maximal, exactly as the note on
+  `IsTateWeilRawFamily` records.
+* Clause 9 is where `htors` is spent, and it is the only clause that needs
+  it.  The usable form of `hθ`'s second clause is the UPPER bound
+  `c ∈ span {(q : O)}^N ⟹ ∀ b, θ (j b * c) ∈ (q)^N` (write
+  `c = (q:O)^N * z = algebraMap ((q:ℤ_[q])^N) * z`), whose contrapositive
+  turns a nonzero value of `w N` into `C N t s ∉ span {(q:O)}^N`. -/
 theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -11389,7 +11492,8 @@ theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O),
       IsTateWeilRawFamily m x q I π j v C :=
   sorry
@@ -11460,7 +11564,8 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
   -- THE RAMIFICATION INDEX of `I` over `q`, produced here rather than inside the
   -- leaf: `q ≠ 0` and Krull's intersection theorem for the Noetherian domain
@@ -11491,7 +11596,7 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     rw [hesucc]; exact hfs
   obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI
     (Nat.find hne - 1) (by omega) hqe hqe2 π hπ hπ2 O j
-    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv htors
   obtain ⟨C', hC'⟩ := exists_tateWeilApprox_of_rawFamily m x q I π O j v C hC
   refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C' hC'
   -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
@@ -11658,12 +11763,13 @@ theorem exists_tateWeilSystem_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e := by
   classical
   obtain ⟨E, hEadd1, hEadd2, hEalt, hEbil, hEgal, hEcont, t₀, s₀, hunit⟩ :=
     exists_tateWeilPairing_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
-      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv htors
   -- ### torsion bookkeeping
   have hadd_mem : ∀ (k : ℕ) (y y' : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
       y' ∈ (m.torsion x (I ^ k)).1 → ab.add y y' ∈ (m.torsion x (I ^ k)).1 := by
@@ -11992,9 +12098,27 @@ theorem exists_tateWeilSystem_of_mult
   obtain ⟨θ, hθ⟩ :=
     exists_traceDualFunctional_of_adicPin q I hI hqI π hπ hπ2 O j hcplt hdense hker
   obtain ⟨L, hLadd, hLgal, hLtower, hLinj, hLsurj⟩ := exists_cyclotomicLog F q
+  -- THE NONTRIVIALITY OF `A[I]`, which is where `hdim` pays for the perfectness
+  -- clause downstream: without it the whole chain is FALSE, since the zero
+  -- abelian scheme satisfies every other hypothesis and has `A[I] = 0` — see the
+  -- FALSITY AUDIT on `exists_tateWeilRawFamily_of_qAdicWeilSystem`.  `A[I]` is a
+  -- two-dimensional vector space over `𝒪_D/I`, so it is not a singleton, and a
+  -- set containing the zero point and not equal to `{0}` has a nonzero member.
+  have htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x) := by
+    by_contra hcon
+    push_neg at hcon
+    refine card_torsion_ne_one_of_isMaximal m x hdim I hI ?_
+    have hzero : ab.zero (specAlgClos F ≫ x) ∈ (m.torsion x I).1 := by
+      letI := ab.addCommGroup (specAlgClos F ≫ x)
+      letI := m.module (specAlgClos F ≫ x)
+      exact (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
+        (I : Set (NumberField.RingOfIntegers D))).zero_mem
+    have hsub : Subsingleton (m.torsion x I).1 :=
+      ⟨fun y z => Subtype.ext ((hcon y.1 y.2).trans (hcon z.1 z.2).symm)⟩
+    exact Nat.card_eq_one_iff_unique.mpr ⟨hsub, ⟨⟨_, hzero⟩⟩⟩
   exact exists_tateWeilSystem_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
     w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj
-    (fun a ha y => exists_preimage_act_of_mult m x hdim a ha y)
+    (fun a ha y => exists_preimage_act_of_mult m x hdim a ha y) htors
 
 /-- **A compatible system of levelwise pairings passes to the limit and
 gives an `I`-adic Weil pairing on the Tate module** (PROVEN 2026-07-27 —
