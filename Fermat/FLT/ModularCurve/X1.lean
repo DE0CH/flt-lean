@@ -421,7 +421,7 @@ open in them has been split along the theories it needed:
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
 | `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue IN FULL, coequalising clause included (**corrected 2026-07-28**; the old claim that it left that clause sorried is stale).  What is open under the `Γ₀` node is the named leaf `exists_openCover_twist_of_fullLevelStructure`. | any base scheme `S` |
 | `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
-| `smoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra.  The residue of `smooth_coarseRing_of_gamma1GITPresentation` (now PROVEN, 2026-07-28) after its dimension conjunct moved to `A`; what it still needs is Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
+| `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
 | `exists_weierstrassCurve_pointOfExactOrder` | Silverman *AEC* III.6.4: over an algebraically closed field of characteristic prime to `N`, some elliptic curve carries a point of exact order `N`.  PURE elliptic-curve arithmetic — no schemes, no moduli.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28. | alg. closed `L`, `char L ∤ N` |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
@@ -2594,20 +2594,70 @@ companion of `Gamma1GITPresentation.algebraB`, obtained from `P.strM` exactly
 as that one is obtained from `P.str`.
 
 `Spec` is fully faithful, so the chosen preimage is the unique ring map with
-`Spec.map (CommRingCat.ofHom (algebraMap K P.A)) = P.strM`; a prover who needs
-that identity can add it as the one-liner
-
-    show Spec.map (CommRingCat.ofHom (Spec.map_surjective P.strM).choose.hom) = P.strM
-    rw [CommRingCat.ofHom_hom]; exact (Spec.map_surjective P.strM).choose_spec
-
-(verified 2026-07-28).  It is deliberately NOT declared here, because nothing
-in the current cone consumes it and a proven-but-unconsumed lemma is
-free-floating. -/
+`Spec.map (CommRingCat.ofHom (algebraMap K P.A)) = P.strM`; that identity is
+`Gamma1GITPresentation.specMap_algebraMap_A` immediately below.  It was
+deliberately left undeclared until 2026-07-30, because nothing consumed it and
+a proven-but-unconsumed lemma is free-floating; `Gamma1GITPresentation.isScalarTower`
+now does. -/
 @[reducible] noncomputable def Gamma1GITPresentation.algebraA {N : ℕ} {K : Type} [Field K]
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
     letI := P.commRing_A; Algebra K P.A :=
   letI := P.commRing_A
   (Spec.map_surjective P.strM).choose.hom.toAlgebra
+
+/-- **`P.strM` IS `Spec` of the structure map of `Gamma1GITPresentation.algebraA`**
+(PROVEN 2026-07-30) — the `A`-side twin of
+`Gamma1GITPresentation.specMap_algebraMap`, by `choose_spec`. -/
+theorem Gamma1GITPresentation.specMap_algebraMap_A {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; letI := P.algebraA;
+    Spec.map (CommRingCat.ofHom (algebraMap K P.A)) = P.strM := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  show Spec.map (CommRingCat.ofHom (Spec.map_surjective P.strM).choose.hom) = P.strM
+  rw [CommRingCat.ofHom_hom]
+  exact (Spec.map_surjective P.strM).choose_spec
+
+/-- **`K → B → A` IS a scalar tower** (PROVEN 2026-07-30) — and this corrects a
+documented claim that it is not available.
+
+The docstring of `smoothCurve_A_of_gamma1GITPresentation` records that "there is
+no `IsScalarTower K B A` in scope and none is needed".  The second half was true
+of its two consumers; the first half is FALSE, and the tower is forced by the
+axioms rather than being extra data.
+
+`Gamma1GITPresentation.algebraB` and `.algebraA` are the unique ring maps whose
+`Spec` is `P.str` and `P.strM`.  The universal family's classifying map is a
+relative point of `P.str` over `P.strM`, so it commutes with the two structure
+morphisms — `(P.classify P.strM P.dM).2` — and `P.classify_dM` says that map IS
+`Spec (algebraMap B A)`.  So
+
+    Spec (algebraMap B A) ≫ Spec (algebraMap K B) = Spec (algebraMap K A)
+
+and `Spec.map_injective` turns that into the tower identity.  Nothing modular is
+used: only `classify_dM` and the subtype property of a `RelPoint`.
+
+Consumed by `finitePresentation_invariants_of_gamma1GITPresentation`, which is
+Noether's theorem on invariants and cannot be stated without it. -/
+theorem Gamma1GITPresentation.isScalarTower {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; letI := P.commRing_B; letI := P.algebra_BA;
+    letI := P.algebraA; letI := P.algebraB;
+    IsScalarTower K P.B P.A := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.algebraA
+  letI := P.algebraB
+  have hstr : Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ P.str = P.strM := by
+    rw [← P.classify_dM]; exact (P.classify P.strM P.dM).2
+  refine IsScalarTower.of_algebraMap_eq' ?_
+  have key : CommRingCat.ofHom (algebraMap K P.A) =
+      CommRingCat.ofHom ((algebraMap P.B P.A).comp (algebraMap K P.B)) := by
+    apply Spec.map_injective
+    rw [CommRingCat.ofHom_comp, Spec.map_comp, P.specMap_algebraMap, P.specMap_algebraMap_A]
+    exact hstr.symm
+  simpa using congrArg CommRingCat.Hom.hom key
 
 /-- **`A` and `B = A^G` have the same Krull dimension** (PROVEN 2026-07-28,
 unconditionally — no modular input, no domain hypothesis, no hypothesis on
@@ -2699,8 +2749,13 @@ because that is the shape both consumers want and because
 the other downstream, on `B`.
 
 The algebra structure is `Gamma1GITPresentation.algebraA`, i.e. the one
-induced by `P.strM`; there is no `IsScalarTower K B A` in scope and none is
-needed, since the two consumers use the two conjuncts separately.
+induced by `P.strM`; the two consumers use the two conjuncts separately and
+so need no `IsScalarTower K B A`.  **This docstring used to add "and there is
+none in scope", which is FALSE** (corrected 2026-07-30): the tower is forced
+by `classify_dM` and is now available as
+`Gamma1GITPresentation.isScalarTower`, which is what lets
+`finitePresentation_invariants_of_gamma1GITPresentation` state Noether's
+theorem on invariants over this leaf.
 
 ## FAITHFULNESS
 
@@ -2981,10 +3036,82 @@ theorem isDomain_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N) {K : Type} [F
   exact MulEquiv.isDomain P.B
     (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
 
-/-- **The coarse ring `B = A^G` is a SMOOTH `K`-algebra** (sorry leaf, opened
-2026-07-28 as the residue of `smooth_coarseRing_of_gamma1GITPresentation`
-after its Krull-dimension conjunct was discharged onto `A`) —
+/-- **The coarse ring `B = A^G` is of FINITE PRESENTATION over `K`** — Noether's
+theorem on invariants (PROVEN 2026-07-30 over
+`smoothCurve_A_of_gamma1GITPresentation`).
+
+`Algebra.Smooth` unfolds to `FormallySmooth` plus `FinitePresentation`, and this
+is the second conjunct, which is NOT a leaf: `smoothCurve_A_of_gamma1GITPresentation`
+gives `Algebra.Smooth K A` hence `Algebra.FiniteType K A`,
+`Algebra.IsInvariant.finiteType_of_isInvariant`
+(`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`, PROVEN — Artin–Tate)
+descends finite type to `B = A^G` from `Finite G` and `P.injective_algebraMap`
+alone, and over the Noetherian base `K` finite type and finite presentation
+coincide (`Algebra.FinitePresentation.of_finiteType`).
+
+The one thing that had to be supplied for this is the scalar tower
+`IsScalarTower K B A`, recorded above as `Gamma1GITPresentation.isScalarTower`.
+It is not a field of the structure and it was documented as unavailable; it is
+in fact forced by `classify_dM`.
+
+No domain hypothesis, no smoothness of `B`, and nothing modular beyond the one
+appeal to 8.2.1 on `A`. -/
+theorem finitePresentation_invariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; letI := P.algebraB; Algebra.FinitePresentation K P.B := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.algebraA
+  letI := P.algebraB
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  haveI := P.isScalarTower
+  haveI : Algebra.Smooth K P.A := (smoothCurve_A_of_gamma1GITPresentation hN hchar P).1
+  haveI : Algebra.FiniteType K P.A := Algebra.FinitePresentation.of_finiteType.2 inferInstance
+  haveI : Algebra.FiniteType K P.B :=
+    Algebra.IsInvariant.finiteType_of_isInvariant K P.B P.A P.G P.injective_algebraMap
+  exact Algebra.FinitePresentation.of_finiteType.1 inferInstance
+
+/-- **The coarse ring `B = A^G` is FORMALLY SMOOTH over `K`** (sorry leaf, cut
+2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation`, which is now a
+THEOREM over it and the finite-presentation half above) — Deligne–Rapoport
+III.1, Katz–Mazur 8.2.1.
+
+`Algebra.Smooth` unfolds to `FormallySmooth` plus `FinitePresentation`.  The
+finite-presentation conjunct is Noether's theorem on invariants and is PROVEN
+above, so THIS is the whole residue: the infinitesimal lifting property of
+`Spec B` over `K`.
+
+Everything the previous docstring of `smoothInvariants_of_gamma1GITPresentation`
+recorded about the obstruction applies verbatim to this conjunct and to this
+conjunct only — Stacks `02VL` (descent of smoothness along a surjective flat
+finitely-presented cover) together with freeness of the `G`-action, which is not
+a field of `Gamma1GITPresentation` and does not follow from the fields that are
+there.  See that docstring below for the route audit and for why the
+perfect-field shortcut does not apply. -/
+theorem formallySmoothInvariants_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; letI := P.algebraB; Algebra.FormallySmooth K P.B :=
+  sorry
+
+/-- **The coarse ring `B = A^G` is a SMOOTH `K`-algebra** (**PROVEN 2026-07-30**
+over `formallySmoothInvariants_of_gamma1GITPresentation` and
+`finitePresentation_invariants_of_gamma1GITPresentation`; opened as a sorry leaf
+2026-07-28 as the residue of `smooth_coarseRing_of_gamma1GITPresentation` after
+its Krull-dimension conjunct was discharged onto `A`) —
 Deligne–Rapoport III.1, Katz–Mazur 8.2.1.
+
+**The statement is unchanged**; what changed on 2026-07-30 is that
+`Algebra.Smooth` was unfolded into its two conjuncts and the SECOND one paid
+for.  `Algebra.FinitePresentation K B` is Noether's theorem on invariants, which
+this tree already had — see the declaration two above — and only
+`Algebra.FormallySmooth K B` remains open.
 
 This is the HALF of the old `smooth_coarseRing_of_gamma1GITPresentation`
 that survives the relocation of Katz–Mazur 8.2.1 onto the rigidified ring
@@ -3044,11 +3171,15 @@ is smooth over `K` — so it is not by itself enough for
 `ringKrullDim B = 1`; that is supplied by
 `smoothCurve_A_of_gamma1GITPresentation`, which is where nonemptiness now
 lives. -/
-theorem smoothInvariants_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
-    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+theorem smoothInvariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
-    letI := P.commRing_B; letI := P.algebraB; Algebra.Smooth K P.B :=
-  sorry
+    letI := P.commRing_B; letI := P.algebraB; Algebra.Smooth K P.B := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  exact { formallySmooth := formallySmoothInvariants_of_gamma1GITPresentation hN hchar P
+          finitePresentation :=
+            finitePresentation_invariants_of_gamma1GITPresentation hN hchar P }
 
 /-- **The coarse ring `B = A^G` is a SMOOTH `K`-algebra of Krull dimension
 one** (**PROVEN 2026-07-28** over `smoothInvariants_of_gamma1GITPresentation`,
@@ -3108,9 +3239,12 @@ alone:
    the note.
 3. *Descent of smoothness along the `G`-torsor `Spec A → Spec B`* — this
    is the genuinely missing one, and it is now isolated in
-   `smoothInvariants_of_gamma1GITPresentation` above, whose docstring
-   records it in full together with the second missing ingredient
-   (freeness of the `G`-action, which is not a field of the structure).
+   `formallySmoothInvariants_of_gamma1GITPresentation` above (2026-07-30;
+   until that day the isolation was only as far as
+   `smoothInvariants_of_gamma1GITPresentation`, which still bundled Noether's
+   finiteness theorem with it), whose docstring records it in full together
+   with the second missing ingredient (freeness of the `G`-action, which is
+   not a field of the structure).
    It is Stacks `02VL` ("if `X → Y` is surjective, flat and locally of
    finite presentation and `X → S` is smooth, then `Y → S` is smooth"), and
    mathlib's descent at this pin goes the other way:
@@ -3754,7 +3888,9 @@ LIVE leaves are:
   so reducedness is no longer a separate citation);
 * smoothness — `smoothCurve_A_of_gamma1GITPresentation` (Katz–Mazur 8.2.1
   on the rigidified ring, now the file's SINGLE statement of 8.2.1) and
-  `smoothInvariants_of_gamma1GITPresentation` (the torsor-descent residue)
+  `formallySmoothInvariants_of_gamma1GITPresentation` (the torsor-descent
+  residue; `smoothInvariants_of_gamma1GITPresentation` is PROVEN over it and
+  Noether's finiteness theorem, 2026-07-30)
   — `smooth_coarseRing_of_gamma1GITPresentation`,
   `locallyStandardSmooth_of_gamma1GITPresentation` and
   `smoothOfRelativeDimension_of_gamma1GITPresentation` are PROVEN over them;
