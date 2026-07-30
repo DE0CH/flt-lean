@@ -24,9 +24,16 @@ field of `K`.
 
 It lives in its own module ON PURPOSE. `Modularity/Interface.lean`
 elaborates for over an hour on one core, and everything here is pure
-algebraic number theory that needs none of it — a prover attacking the open
-leaf below iterates against THIS file in seconds. Do not move the material
-back.
+algebraic number theory that needs none of it — a prover working on this
+cluster iterates against THIS file in seconds. Do not move the material back.
+
+**THIS FILE IS NOW SORRY-FREE (2026-07-30).** The two remaining inputs of
+unramified class field theory were moved one module upstream, to
+`Fermat/FLT/NumberField/ArtinSymbol.lean`, where they sit beside the Frobenius
+material that is proven: `NumberField.exists_classGroupHom_eq_frobAt` (Artin
+RECIPROCITY — the Artin symbol descends to the ideal class group) and
+`NumberField.closure_frobAt_eq_top` (CHEBOTAREV — the Frobenius elements
+generate `Gal(L/K)`). Everything here is proven over those two.
 
 ## Main results
 
@@ -34,12 +41,15 @@ back.
   Minkowski at a degree-one base.
 * `NumberField.relNormClassSubgroup` — the image of the ideal norm in the
   class group; `index` of this subgroup IS the classical `[I_K : P_K·N I_L]`.
-* `NumberField.exists_surjective_classGroupHom_aut_of_unramified_abelian` — OPEN.
-  The Artin map at modulus `1`, packaged as "there is a surjection
-  `Cl(𝓞 K) ↠ Gal(L/K)` killing the norm classes". **This is where the missing
-  mathematics is** (decomposed out of the leaf below on 2026-07-28).
-* `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the leaf
-  above by pure group theory (index is antitone; `Subgroup.index_ker`).
+* `NumberField.exists_surjective_classGroupHom_aut_of_unramified_abelian` —
+  PROVEN 2026-07-30 (was the file's open leaf from 2026-07-28). The Artin map
+  at modulus `1`, packaged as "there is a surjection `Cl(𝓞 K) ↠ Gal(L/K)`
+  killing the norm classes". Its surjectivity comes from
+  `closure_frobAt_eq_top`, its values from `exists_classGroupHom_eq_frobAt`,
+  and its norm clause is a THEOREM here (`frobAt_pow_inertiaDeg` plus
+  `mem_of_relNorm_of_forall_isMaximal`) rather than an assumption.
+* `NumberField.finrank_le_index_relNormClassSubgroup` — PROVEN from the
+  previous one by pure group theory (index is antitone; `Subgroup.index_ker`).
   The second inequality at modulus `1`.
 * `NumberField.finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
   — PROVEN from the previous one by Lagrange.
