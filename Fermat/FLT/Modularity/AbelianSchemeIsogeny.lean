@@ -2833,6 +2833,15 @@ therefore cut below into exactly TWO leaves over the already-proven 10.99.10,
 `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem`; read their
 docstrings, which are the specifications.
 
+**STATUS 2026-07-29/30: the SECOND of those two leaves is now PROVEN**, over the three
+general ring-level lemmas in the block immediately below this section note
+(`flat_quotMap_tensorProduct_of_isMaximal`, `flat_quotMap_of_isLocalization`,
+`flat_quotMap_map_of_isLocalization_tensorProduct`) — exactly the first bullet above, and
+exactly as predicted, with no `Tor`, no Noetherian hypothesis and no colimit.  So the
+heading of this paragraph now overstates the gate: **the only open leaf of 10.128.3 is the
+colimit half** `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`,
+i.e. the second bullet above.  Do not dispatch anyone at the fibre half.
+
 **The `LocalCriterion.lean` coupling is WITHDRAWN.**
 `Module.Flat.of_flat_quotient_of_pow_eq_bot` there is a genuinely different statement
 — a NILPOTENT ideal and no Noetherian hypothesis, which is exactly the case
@@ -2969,6 +2978,118 @@ structure IsNoetherianFlatDescentSystem {Λ : Type u} (le : Λ → Λ → Prop)
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid (C j ⊗[C i] D i), IsLocalization W (D j)
 
+
+/-! #### THE RING-LEVEL INPUTS OF 00MO's STEP 2 — three general lemmas, added 2026-07-29
+
+The fibre half of 10.128.3 needs no descent system at all: it is a statement about a single
+square `C_i → C_j`, `D_i → D_j` with `D_j` a localization of `C_j ⊗_{C_i} D_i`.  The three
+lemmas below say so, in that generality, and
+`flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` is one `exact` over the
+last of them.  None of them mentions `Tor`, Noetherianness, or a colimit — see the
+"WHY THE CORE IS STILL A SORRY" paragraph in the section note above, which predicted exactly
+this and has now been discharged for this half. -/
+
+/-- **BASE CHANGE OF A FIBRE ALONG A QUOTIENT — the ring-level heart of 00MO's step 2.**
+
+*If `𝔪` is a maximal ideal of `Ci`, then `(Cj ⊗[Ci] Di) ⧸ 𝔪(Cj ⊗[Ci] Di)` is FLAT over
+`Cj ⧸ 𝔪 Cj`.*
+
+The proof is the three-line argument of [Stacks 00MO]'s step 2, with no `Tor` anywhere:
+`k := Ci ⧸ 𝔪` is a FIELD, so the `k`-module `k ⊗[Ci] Di` is free hence flat; base change
+along `k → Cj ⧸ 𝔪 Cj` keeps it flat; and the three tensor identities
+`(Cj ⧸ I') ⊗[k] (k ⊗[Ci] Di) ≅ (Cj ⧸ I') ⊗[Ci] Di ≅ (Cj ⧸ I') ⊗[Cj] (Cj ⊗[Ci] Di) ≅
+(Cj ⊗[Ci] Di) ⧸ I'(Cj ⊗[Ci] Di)` are `Algebra.TensorProduct.cancelBaseChange` twice and
+`Algebra.TensorProduct.quotIdealMapEquivQuotTensor` once.
+
+Maximality of `𝔪` is what makes `Ci ⧸ 𝔪` a field and is the ONLY hypothesis: no
+Noetherian, finiteness or flatness assumption on `Cj` or `Di` is used. -/
+theorem flat_quotMap_tensorProduct_of_isMaximal
+    {Ci Cj Di : Type*} [CommRing Ci] [CommRing Cj] [CommRing Di]
+    [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map
+        (algebraMap Cj (Cj ⊗[Ci] Di))) := by
+  letI : Field (Ci ⧸ 𝔪) := Ideal.Quotient.field 𝔪
+  haveI : Module.Flat (Ci ⧸ 𝔪) ((Ci ⧸ 𝔪) ⊗[Ci] Di) := Module.Flat.of_free
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Ci ⧸ 𝔪] ((Ci ⧸ 𝔪) ⊗[Ci] Di)) :=
+    Module.Flat.baseChange (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ((Ci ⧸ 𝔪) ⊗[Ci] Di)
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Ci] Di) :=
+    Module.Flat.of_linearEquiv
+      (Algebra.TensorProduct.cancelBaseChange Ci (Ci ⧸ 𝔪)
+        (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) Di).symm.toLinearEquiv
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Cj ⊗[Ci] Di)) :=
+    Module.Flat.of_linearEquiv
+      (Algebra.TensorProduct.cancelBaseChange Ci Cj
+        (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) Di).toLinearEquiv
+  exact Module.Flat.of_linearEquiv
+    (Algebra.TensorProduct.quotIdealMapEquivQuotTensor (Cj ⊗[Ci] Di)
+      (𝔪.map (algebraMap Ci Cj))).toLinearEquiv
+
+/-- **A QUOTIENT OF A LOCALIZATION IS A LOCALIZATION OF THE QUOTIENT, hence FLAT over it.**
+
+*If `Dj` is the localization of `E` at `W` and `J = I Dj` for an ideal `I` of `E`, then
+`Dj ⧸ J` is flat over `E ⧸ I`.*
+
+`IsLocalization.of_surjective` upgrades `IsLocalization W Dj` along the two quotient maps to
+`IsLocalization (W.map (Ideal.Quotient.mk I)) (Dj ⧸ J)`, and `IsLocalization.flat` concludes.
+Stating `J` as a separate ideal together with `hJ` — rather than writing
+`I.map (algebraMap E Dj)` in the conclusion — is what lets the consumer below apply this at an
+ideal that is only PROPOSITIONALLY equal to the extension, with no transport. -/
+theorem flat_quotMap_of_isLocalization {E Dj : Type*} [CommRing E] [CommRing Dj] [Algebra E Dj]
+    (W : Submonoid E) [IsLocalization W Dj] (I : Ideal E) (J : Ideal Dj)
+    [Algebra (E ⧸ I) (Dj ⧸ J)]
+    (halg : (Ideal.Quotient.mk J).comp (algebraMap E Dj)
+      = (algebraMap (E ⧸ I) (Dj ⧸ J)).comp (Ideal.Quotient.mk I))
+    (hJ : J = I.map (algebraMap E Dj)) :
+    Module.Flat (E ⧸ I) (Dj ⧸ J) := by
+  haveI : IsLocalization (W.map (Ideal.Quotient.mk I)) (Dj ⧸ J) :=
+    IsLocalization.of_surjective W Dj (Ideal.Quotient.mk I) Ideal.Quotient.mk_surjective
+      (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective halg (by simpa using hJ.le)
+  exact IsLocalization.flat (Dj ⧸ J) (W.map (Ideal.Quotient.mk I))
+
+/-- **[Stacks 00MO] STEP 2, at the ring level** — the whole fibre half of 10.128.3, with the
+descent system replaced by the three maps it actually spends.
+
+*If `Dj` is a localization of `Cj ⊗[Ci] Di` over `Cj`, and `𝔪` is a maximal ideal of `Ci`, then
+`Dj ⧸ 𝔪 Dj` is FLAT over `Cj ⧸ 𝔪 Cj`.*
+
+The factorisation is `Cj ⧸ 𝔪Cj → (Cj ⊗[Ci] Di) ⧸ 𝔪(Cj ⊗[Ci] Di) → Dj ⧸ 𝔪Dj`: the first map is
+flat by `flat_quotMap_tensorProduct_of_isMaximal` (base change from the residue FIELD of `𝔪`)
+and the second by `flat_quotMap_of_isLocalization` (a localization), so `Module.Flat.trans`
+finishes.  Nothing here is Noetherian and nothing is a colimit — that content lives entirely in
+the OTHER half of 10.128.3. -/
+theorem flat_quotMap_map_of_isLocalization_tensorProduct
+    {Ci Cj Di Dj : Type*} [CommRing Ci] [CommRing Cj] [CommRing Di] [CommRing Dj]
+    [Algebra Ci Cj] [Algebra Ci Di] [Algebra Cj Dj]
+    [Algebra (Cj ⊗[Ci] Di) Dj] [IsScalarTower Cj (Cj ⊗[Ci] Di) Dj]
+    (W : Submonoid (Cj ⊗[Ci] Di)) [IsLocalization W Dj]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) := by
+  have hJ : (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)
+      = ((𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di))).map
+          (algebraMap (Cj ⊗[Ci] Di) Dj) := by
+    conv_rhs => rw [Ideal.map_map, ← IsScalarTower.algebraMap_eq Cj (Cj ⊗[Ci] Di) Dj]
+  letI : Algebra ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map
+      (algebraMap Cj (Cj ⊗[Ci] Di)))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) :=
+    Ideal.Quotient.algebraQuotientOfLEComap (Ideal.map_le_iff_le_comap.mp hJ.ge)
+  haveI := flat_quotMap_of_isLocalization (Dj := Dj) W _ _ rfl hJ
+  haveI := flat_quotMap_tensorProduct_of_isMaximal (Cj := Cj) (Di := Di) 𝔪
+  haveI : IsScalarTower (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di)))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) := by
+    refine IsScalarTower.of_algebraMap_eq (fun x => ?_)
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    show Ideal.Quotient.mk _ _ = Ideal.Quotient.mk _ _
+    rw [IsScalarTower.algebraMap_apply Cj (Cj ⊗[Ci] Di) Dj]
+  exact Module.Flat.trans (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+    ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di)))
+    (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj))
+
 /-! #### 10.128.3's TWO LEAVES — cut 2026-07-28 over the ALREADY-PROVEN 10.99.10
 
 The three declarations below are one block and were written together.  The two leaves
@@ -3057,8 +3178,8 @@ theorem exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentS
   sorry
 
 /-- **THE FIBRE IS FLAT AT EVERY STAGE — 00MO's step 2, and it involves NO `Tor`**
-(sorry leaf, cut 2026-07-28 out of `exists_flat_index_of_isNoetherianFlatDescentSystem`
-below).
+(**PROVEN 2026-07-29**; cut 2026-07-28 out of
+`exists_flat_index_of_isNoetherianFlatDescentSystem` below).
 
 *In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j` the induced map
 `C_j/𝔪_i C_j → D_j/𝔪_i D_j` is flat.*
@@ -3107,8 +3228,29 @@ theorem flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem
     letI : Algebra (C j) (D j) := (cd j).toAlgebra
     (Ideal.quotientMap
       (((IsLocalRing.maximalIdeal (C i)).map (cT h)).map (algebraMap (C j) (D j)))
-      (algebraMap (C j) (D j)) Ideal.le_comap_map).Flat :=
-  sorry
+      (algebraMap (C j) (D j)) Ideal.le_comap_map).Flat := by
+  letI := hsys.isLocalRingC i
+  letI : Algebra (C i) (D i) := (cd i).toAlgebra
+  letI : Algebra (C i) (C j) := (cT h).toAlgebra
+  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  letI : Algebra (D i) (D j) := (dT h).toAlgebra
+  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (C i) (D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+  letI : Algebra (C j ⊗[C i] D i) (D j) :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (C i) (C j) (D j))
+      (IsScalarTower.toAlgHom (C i) (D i) (D j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := hsys.isLocalizationDT h
+  haveI := hW
+  haveI : IsScalarTower (C j) (C j ⊗[C i] D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show cd j x = Algebra.TensorProduct.lift _ _ _ (x ⊗ₜ[C i] 1)
+      simp only [Algebra.TensorProduct.lift_tmul, map_one, mul_one]
+      rfl
+  exact RingHom.flat_algebraMap_iff.mpr
+    (flat_quotMap_map_of_isLocalization_tensorProduct W (IsLocalRing.maximalIdeal (C i)))
 
 /-- **STACKS 10.128.3** ([Stacks 00R6]; **PROVEN 2026-07-28** over the two leaves
 immediately above and the already-proven 10.99.10 — read the section note above before
