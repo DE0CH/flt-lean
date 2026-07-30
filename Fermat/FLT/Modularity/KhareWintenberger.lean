@@ -8077,10 +8077,19 @@ theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
     [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D] :
     ∃ (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
       (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
-      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
-          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) ∧
+      -- INTEGRALITY (2026-07-30): the eigenvalue is an ALGEBRAIC INTEGER.  This is
+      -- not a second citation — it is `HeckeAlgebra.isIntegral_of_T_smul_eq_smul`,
+      -- proven in `HeckeOperators/Concrete.lean`, applied to the eigenform this
+      -- proof already has in hand.  Both deep leaves below need it; see the
+      -- ROUND-13 notes on `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`
+      -- and `exists_frobEigenvalues_of_totallyDefinite_heckeCharacter`.
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF →
+        IsIntegral ℤ ((heckeF w).coeff 1)) := by
   haveI : NumberField.IsTotallyReal F := hFtr
   -- The auxiliary prime of the level datum: NOT part of the correspondence.
   obtain ⟨p, hp, hcyc⟩ := exists_prime_two_lt_finrank_cyclotomicField F
@@ -8112,13 +8121,20 @@ theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
         exact ⟨ex * ey, by rw [mul_smul, hy, smul_comm, hx, smul_smul, mul_comm]⟩
   -- The scaling factor is an `E`-algebra character.
   obtain ⟨θ, hθ⟩ := exists_algHom_of_smul_eq_smul hf0 hall
-  refine ⟨p, 𝒮, θ, fun w hwS hwQ hwbad => ?_⟩
-  have h1 : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
-      = a w • f := by
+  have h1 : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q),
+      _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
+        = a w • f := by
+    intro w hwS hwQ
     rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
     exact hTa w hwS
-  rw [hθ _ _ h1]
-  exact hmatch w hwS hwbad
+  refine ⟨p, 𝒮, θ, fun w hwS hwQ hwbad => ?_, fun w hwS hwQ hwbad => ?_⟩
+  · rw [hθ _ _ (h1 w hwS hwQ)]
+    exact hmatch w hwS hwbad
+  · rw [hmatch w hwS hwbad]
+    exact
+      (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.isIntegral_of_T_smul_eq_smul
+        D 𝒮 w hwS hwQ f hf0 (a w) (h1 w hwS hwQ)).neg
 
 /-- **STEP 1 of the Carayol node — JACQUET–LANGLANDS: the Hilbert
 eigensystem `(E, heckeF)` is seen by a TOTALLY DEFINITE quaternion
@@ -8264,7 +8280,7 @@ theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
     exists_totallyDefinite_rigidified_quaternionAlgebra_of_even F hFtr hFeven
   -- STEP 1b — JACQUET–LANGLANDS proper, against that `D`. The definiteness
   -- datum `hDdef` produced above is what keeps this half from being false.
-  obtain ⟨p, 𝒮, θ, hθ⟩ :=
+  obtain ⟨p, 𝒮, θ, hθ, -⟩ :=
     exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ
       hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
       hbad2 hbad3 hbadℓ hauto D
@@ -9658,10 +9674,18 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
       (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
       (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
       (∀ w ∈ 𝒮.S, w ∈ badF) ∧ (∀ w ∈ 𝒮.Q, w ∈ badF) ∧
-      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
-          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) ∧
+      -- INTEGRALITY (2026-07-30): the eigenvalue is an ALGEBRAIC INTEGER, read off
+      -- the eigenform this proof already has by
+      -- `HeckeAlgebra.isIntegral_of_T_smul_eq_smul`.  It is forwarded down the
+      -- Carayol chain to `nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter`,
+      -- whose ROUND-11 addendum records it as the one fact that leaf still needs.
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF →
+        IsIntegral ℤ ((heckeF w).coeff 1)) := by
   haveI : NumberField.IsTotallyReal F := hFtr
   -- `hJL` is consumed for the QUATERNION ALGEBRA ONLY: its own level datum and
   -- character are discarded, since the level of that datum is exactly what is
@@ -9698,18 +9722,26 @@ theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
         exact ⟨ex * ey, by rw [mul_smul, hy, smul_comm, hx, smul_smul, mul_comm]⟩
   -- The scaling factor is an `E`-algebra character.
   obtain ⟨θ, hθ⟩ := exists_algHom_of_smul_eq_smul hf0 hall
-  refine ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, ?_, ?_⟩
+  have h1 : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q),
+      _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
+        = a w • f := by
+    intro w hwS hwQ
+    rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
+    exact hTa w hwS
+  refine ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, ?_, ?_, ?_⟩
   · -- the `Q`-clause is vacuous: `𝒮.Q = ∅`
     intro w hw
     rw [hQ] at hw
     simp at hw
   · intro w hwS hwQ hwbad
-    have h1 : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
-        = a w • f := by
-      rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
-      exact hTa w hwS
-    rw [hθ _ _ h1]
+    rw [hθ _ _ (h1 w hwS hwQ)]
     exact hmatch w hwS hwbad
+  · intro w hwS hwQ hwbad
+    rw [hmatch w hwS hwbad]
+    exact
+      (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.isIntegral_of_T_smul_eq_smul
+        D 𝒮 w hwS hwQ f hf0 (a w) (h1 w hwS hwQ)).neg
 
 /-- **THE COEFFICIENT FIELD OF THE `p`-ADIC REALISATION** (PROVEN, 2026-07-29,
 ROUND-9). A number field `E` embeds into `AlgebraicClosure ℚ_[p]`, and its
@@ -9883,6 +9915,47 @@ integrality of `(heckeF w).coeff 1` is what makes that leaf's `Npt : ℕ → ℕ
 clause satisfiable — a different pillar, a different route, one missing fact.
 Whoever builds it closes a gap in BOTH.
 
+**ROUND-13 (2026-07-30) — THAT FACT IS NOW PROVEN, AND IT IS THE NEW HYPOTHESIS
+`hint`.** `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.isIntegral_of_T_smul_eq_smul`
+in `AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean` says: if a
+NONZERO weight-two form `f` of level `U₁ 𝒮` over a coefficient DOMAIN satisfies
+`T_v • f = a • f`, then `IsIntegral ℤ a`. Both Jacquet–Langlands nodes above this
+leaf already hold such an `f` — `exists_eigenform_minimalLevel_subset_badF` returns
+it — so the conclusion of
+`exists_totallyDefinite_heckeCharacter_level_subset_badF` now carries the
+integrality conjunct, and it arrives here through
+`exists_carayolJacobianPackage_of_heckeAlgebraCharacter` unchanged.
+
+**THE ROUND-12 BUDGET WAS WRONG, AND WRONG IN AN INSTRUCTIVE DIRECTION.** It
+asked for "a `ℤ`- (or `𝓞_E`-) LATTICE in [the space of forms], stable under
+`T_w`, together with the statement that the double-coset matrix of `T_w` has
+entries in `ℤ[ℒ.χ]`", and concluded that this "belongs in
+`HeckeOperators/Concrete.lean` as a development". Neither half is needed. There
+is no lattice in the space of forms and no matrix anywhere in the proof:
+
+* the lattice lives in the COEFFICIENT RING, and the form supplies it — take
+  `𝒪 := ℤ[values of χA]` (roots of unity, by `isOfFinOrder_χA`, hence integral
+  over `ℤ`) and `N :=` the `𝒪`-span of the finitely many values `f (σ x)` at
+  double-coset representatives. `f (δ · σ(x) · u) = χA u • f (σ x)` puts EVERY
+  value of `f` into `N`;
+* `T_v` is a finite sum of RIGHT TRANSLATES (`heckeOperator_eq_finsetSum`), so
+  `a • f g = ∑ᵢ f (g · ϖᵢ) ∈ N` — which is `a • N ⊆ N` with no matrix computed
+  and no `χ` bookkeeping at all. The determinant trick
+  (`isIntegral_of_smul_mem_submodule`) finishes it.
+
+So the step that looked like a development in another module was a fifty-line
+lemma, and the reason the estimate was off is that it located the lattice in the
+wrong object. Recorded because the same misestimate is available at every
+"integrality of a Hecke eigenvalue" node: ASK WHETHER THE EIGENVECTOR'S OWN
+VALUES ALREADY SPAN A LATTICE before building an integral model of the space.
+
+What this does NOT do is close this leaf. Carayol's Théorème (A) is untouched;
+`hint` removes the one hypothesis-side gap a prover would otherwise have had to
+fill for itself, and the ROUND-12 verdict that it "is correctly NOT a hypothesis
+of this leaf" is hereby REVERSED — its justification was that "stating it as a
+hypothesis here would be asking the caller for something the caller also cannot
+see", and the caller can now see it.
+
 Two consequences worth stating separately. The parenthesis above — `(P w).coeff 0`
 is safe "because every ring map fixes `ℚ`" — does NOT extend to `coeff 1`: `hnorm`
 pins `coeff 0` to a rational integer outright, and nothing pins `coeff 1` at all
@@ -9922,6 +9995,12 @@ theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ))
+    -- INTEGRALITY OF THE EIGENVALUE (added 2026-07-30, ROUND-13).  See the
+    -- ROUND-13 note above: the ROUND-11 addendum records this as the one fact a
+    -- prover of this leaf still owes and cannot derive here.  It is now PROVEN in
+    -- `HeckeOperators/Concrete.lean` and supplied by the sole call site.
+    (hint : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF → IsIntegral ℤ ((heckeF w).coeff 1))
     (L : Type u) [Field L] [Algebra ℚ_[3] L] [Module.Finite ℚ_[3] L]
     (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
     (ι : L →+* AlgebraicClosure ℚ_[3])
@@ -10156,7 +10235,10 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
     (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
-          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ))
+    -- INTEGRALITY (added 2026-07-30, ROUND-13): forwarded verbatim to the leaf.
+    (hint : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF → IsIntegral ℤ ((heckeF w).coeff 1)) :
     ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[3] L)
       (_ : Module.Finite ℚ_[3] L),
       letI : TopologicalSpace L := moduleTopology ℚ_[3] L
@@ -10177,7 +10259,7 @@ theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
     rw [Polynomial.map_map, hcomp]
   exact ⟨L, hLfield, hLalg, hLfin, ψ₃, ι, fun w => (heckeF w).map ψL, hmap,
     nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF heckeF
-      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ L ψ₃ ι hιalg
+      hbad3 hmonic hdeg hnorm D p 𝒮 θ hSbad hQbad hθ hint L ψ₃ ι hιalg
       (fun w => (heckeF w).map ψL) hmap⟩
 
 /-- **STEP 2a″ — INHABITATION of the quaternionic Shimura-curve JACOBIAN
@@ -10459,14 +10541,14 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
     rw [map_natCast, ← Polynomial.coeff_map, ← hmapw, Polynomial.coeff_map,
       hcoefF, map_natCast]
   -- THE JACQUET–LANGLANDS DATUM, with its level inside `badF`
-  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, hQbad, hθ⟩ :=
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, hQbad, hθ, hint⟩ :=
     exists_totallyDefinite_heckeCharacter_level_subset_badF hℓodd hℓ5 hZinj
       hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
       ιO hιO hmod hbad2 hbad3 hbadℓ hauto hJL
   -- CARAYOL'S THÉORÈME (A), with no `ℓ`-adic apparatus left in it
   exact exists_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF
     heckeF hbad3 (fun w hw => (hshape w hw).1) (fun w hw => (hshape w hw).2.1)
-    (fun w hw => (hshape w hw).2.2) D p 𝒮 θ hSbad hQbad hθ
+    (fun w hw => (hshape w hw).2.2) D p 𝒮 θ hSbad hQbad hθ hint
 
 /-- **STEP 2a′ — INHABITATION of the quaternionic Shimura-curve package**
 (PROVEN 2026-07-28: a one-line assembly of the geometric leaf
@@ -13717,6 +13799,35 @@ algebraic integer, for the reason that addendum gives.  It is a record
 that whatever eventually discharges it has TWO consumers, and that
 neither leaf can be PROVEN without it.
 
+**ROUND-13 (2026-07-30) — DISCHARGED, AND IT IS THE NEW HYPOTHESIS `hint`.**
+`TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.isIntegral_of_T_smul_eq_smul`
+(`AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`) proves that a
+Hecke eigenvalue on a NONZERO weight-two form over a coefficient domain is
+integral over `ℤ`, by the determinant trick against the `ℤ[χA]`-span of the
+form's own values at double-coset representatives.  See the ROUND-13 note on
+`nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter` above for why that is
+much cheaper than the lattice-in-the-space-of-forms development ROUND 12
+budgeted for it.  `exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`
+now returns it alongside `hθ`, and
+`exists_frobEigenvalues_heckeF_of_heckePackage` — which for this reason now
+takes the Albert–Brauer–Hasse–Noether and Jacquet–Langlands steps separately
+rather than through their packaged form — hands it here.
+
+**WHY `hint` IS GUARDED BY `w ∉ 𝒮.S`, `w ∉ 𝒮.Q` RATHER THAN BY `w ∉ badF`
+ALONE, and what that leaves open.** It is guarded exactly as `hθ` is, and for
+the same reason: the eigenform's eigenvalue is pinned to `-(heckeF w).coeff 1`
+only away from the level.  So at a `w ∈ 𝒮.S \ badF` this leaf still receives no
+integrality, and the padding argument above is still unsupported there.  That is
+a strictly smaller residue than "nothing among these hypotheses supplies it",
+and it is closed the same way `hθ`'s gap at those places is closed — from
+`hmod`, since `ρ` is valued in the module-finite `ℤ_ℓ`-algebra `O`, so
+`ψℓ ((heckeF w).coeff 1)` is an `ℓ`-adic integer at EVERY `w ∉ badF`.  That
+gives integrality at ONE place of `E` rather than at all of them, which is why
+it is not written as a further hypothesis here: closing the residue needs the
+eigensystem's level to be bounded by `badF`, which is exactly what
+`exists_totallyDefinite_heckeCharacter_level_subset_badF` supplies on the OTHER
+pillar and what the `_of_heckePackage` chain does not.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_frobEigenvalues_of_totallyDefinite_heckeCharacter
@@ -13763,7 +13874,14 @@ theorem exists_frobEigenvalues_of_totallyDefinite_heckeCharacter
     (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
       (heckeF w).coeff 1 =
-        -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+        -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ))
+    -- INTEGRALITY OF THE EIGENVALUE (added 2026-07-30, ROUND-13).  See the
+    -- ROUND-13 note above: this is what makes the `Npt : ℕ → ℕ` clause
+    -- satisfiable, it is NOT derivable from the other hypotheses, and it is
+    -- supplied by the sole call site from
+    -- `HeckeAlgebra.isIntegral_of_T_smul_eq_smul`.
+    (hint : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      w ∉ 𝒮.S → w ∉ 𝒮.Q → w ∉ badF → IsIntegral ℤ ((heckeF w).coeff 1)) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
       ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
         (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
@@ -14046,21 +14164,30 @@ theorem exists_frobEigenvalues_heckeF_of_heckePackage
   -- the eigensystem `heckeF` is that of an automorphic form on the units of a
   -- totally definite quaternion algebra over `F`.  This is where the claim
   -- "`heckeF` is automorphic" lives, and it lives there ONCE.
-  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hθ⟩ :=
-    exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO
-      hmod hbad2 hbad3 hbadℓ hauto
+  -- STEP 1a — ALBERT–BRAUER–HASSE–NOETHER (the only consumer of `hFeven`), and
+  -- STEP 1b — JACQUET–LANGLANDS, taken SEPARATELY rather than through their
+  -- packaged form `exists_totallyDefinite_heckeCharacter_of_heckePackage`.  The
+  -- reason is the INTEGRALITY conjunct (2026-07-30): the packaged form has a
+  -- second consumer whose signature must not move, so the conjunct lives on
+  -- `exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra` and is read off
+  -- here.  The `D` obtained is the same one, by the same theorem.
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, ⟨hDrig⟩⟩ :=
+    exists_totallyDefinite_rigidified_quaternionAlgebra_of_even F hFtr hFeven
   letI := hDdiv
   letI := hDalg
   letI := hDquat
   letI := hDdef
   letI := hDrig
+  obtain ⟨p, 𝒮, θ, hθ, hint⟩ :=
+    exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
+      hbad2 hbad3 hbadℓ hauto D
   -- STEP 2 — THE GEOMETRY: back to `GL₂/F`, out to a quaternion algebra split at
   -- exactly one infinite place, Carayol's integral model of the resulting Shimura
   -- CURVE, Lefschetz, Weil and Eichler–Shimura.
   exact exists_frobEigenvalues_of_totallyDefinite_heckeCharacter hℓodd hℓ5
     hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
-    ιO hιO hmod hbad2 hbadℓ D p 𝒮 θ hθ
+    ιO hιO hmod hbad2 hbadℓ D p 𝒮 θ hθ hint
 
 /-- **Ramanujan–Petersson for the Hilbert newform over `F`** (**PROVEN
 2026-07-28**, over `exists_frobEigenvalues_heckeF_of_heckePackage`
