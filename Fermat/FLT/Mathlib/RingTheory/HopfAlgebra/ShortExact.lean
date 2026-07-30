@@ -148,9 +148,15 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   **Both halves are now proven from strictly smaller leaves**, so nothing in this cluster is open
   at the level of the cut itself.
 * `HopfAlgebra.IsShortExact.exists_spanning_cartierDual` — the generation half. **PROVEN**
-  (2026-07-28) from the purely formal `span_sup_ker_cartierDual_map_eq_top` together with the
-  residual leaf `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is OPEN and is where
-  the generation half's mathematics and all of its audits now live.
+  (2026-07-28) from the purely formal `span_sup_ker_cartierDual_map_eq_top` together with
+  `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is where the generation half's
+  mathematics and all of its audits live and which is itself **PROVEN** (2026-07-30) by Nakayama
+  from `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`.
+* `HopfAlgebra.IsShortExact.exists_lift_span_sup_jacobson_cartierDual` — the residual leaf of the
+  generation half: generation modulo the Jacobson radical of `D(A')`. **OPEN.** Equivalent to the
+  statement it replaces over a general base, and over a *local* base equal to the classical
+  statement over the residue field (Takeuchi). Its docstring records why, and that the only
+  consumer of this cluster in the tree works over `ℤ_p`.
 * `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual` and its unpackaged form
   `HopfAlgebra.IsShortExact.finrank_eq_mul` — the rank count. **PROVEN** (2026-07-28) from the
   two leaves below, which share nothing with each other.
@@ -940,7 +946,8 @@ which are proven. The split is by *where the mathematics is*:
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `span_sup_ker_cartierDual_map_eq_top` | **PROVEN** | a lift of an `R`-basis spans modulo `ker (map i)` |
-| `exists_lift_ker_le_span_cartierDual` | **OPEN** | that lift can be chosen to swallow `ker (map i)` |
+| `exists_lift_span_sup_jacobson_cartierDual` | **OPEN** | that lift can be chosen to generate modulo the Jacobson radical of `D(A')` |
+| `exists_lift_ker_le_span_cartierDual` | **PROVEN** (2026-07-30) by Nakayama from the above | that lift can be chosen to swallow `ker (map i)` |
 | `exists_spanning_cartierDual` | **PROVEN** from the two above | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
@@ -952,8 +959,9 @@ which are proven. The split is by *where the mathematics is*:
 
 So exactly **two** statements are open in this file as of 2026-07-30, they are independent of each
 other, and both are Hopf-theoretic on the `A`-side:
-`exists_lift_ker_le_span_cartierDual` (the residual form of the generation half —
-`exists_spanning_cartierDual` is PROVEN from it together with the formal
+`exists_lift_span_sup_jacobson_cartierDual` (the residual form of the generation half, since
+2026-07-30 asked only modulo the Jacobson radical of `D(A')`; `exists_spanning_cartierDual` is
+PROVEN from it through `exists_lift_ker_le_span_cartierDual` — Nakayama — together with the formal
 `span_sup_ker_cartierDual_map_eq_top`) and `IsShortExact.nonempty_linearEquiv_baseChange` (the
 torsor identity).  The third, `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degree of a
 tower, root namespace, no Hopf content), was PROVEN on 2026-07-30 — so **this file no longer owes
@@ -1081,9 +1089,15 @@ what is left open in this half of the file is those two rather than the freeness
 
 * `IsShortExact.exists_spanning_cartierDual` — *generation*: some family of `rk_R A''` elements
   spans `CartierDual R A` over `CartierDual R A'`. **PROVEN** (2026-07-28) from the formal
-  `span_sup_ker_cartierDual_map_eq_top` plus the residual leaf
-  `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is where the generation half's
-  mathematics — and its atomicity, falsity and axes-searched audits — now live;
+  `span_sup_ker_cartierDual_map_eq_top` plus `IsShortExact.exists_lift_ker_le_span_cartierDual`,
+  which is where the generation half's mathematics — and its atomicity, falsity and
+  axes-searched audits — live, and which is itself **PROVEN** (2026-07-30) by Nakayama's lemma
+  from the residual leaf `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`: the same pair
+  `(b, c)`, asked to generate only modulo the Jacobson radical of `D(A')`. Over a general base that
+  is an equivalent reformulation; its point is that over a **local** base it is the statement over
+  the residue field, where it is Takeuchi's classical theorem. The new leaf's docstring carries
+  that route, a refutation of the "fibrewise, then Nakayama" axis-closure below, and two new
+  constraints on the counterexample search;
 * `IsShortExact.nonempty_linearEquiv_cartierDual` — the *rank count*
   `rk_R A = rk_R A'' · rk_R A'`, packaged as an `R`-linear equivalence so that it is also true
   (vacuously) over the zero ring. **This one is PROVEN since 2026-07-28**, over two further
@@ -1133,13 +1147,172 @@ lemma span_sup_ker_cartierDual_map_eq_top {ι : Type*} (f : A'' →ₐc[R] A)
   refine Submodule.mem_sup.mpr ⟨y, hymem, x - y, ?_, by abel⟩
   simp [LinearMap.mem_ker, hmap]
 
+/-- **The dual normal basis, generation half, modulo the Jacobson radical of `D(A')`**: there is an
+`R`-basis `b` of `CartierDual R A''` and a family `c` lifting it along `CartierDual.map i` whose
+`CartierDual R A'`-span is all of `CartierDual R A` *modulo* `J · CartierDual R A`, where `J` is
+the Jacobson radical of `CartierDual R A'`.
+
+OPEN, and since 2026-07-30 this is the residual leaf of the generation half:
+`IsShortExact.exists_lift_ker_le_span_cartierDual` is PROVEN from it in one application of
+Nakayama's lemma (`Submodule.le_of_le_smul_of_le_jacobson_bot`, legitimate because `D(A)` is a
+*finite* `D(A')`-module), and everything above that is unchanged.
+
+**Read `IsShortExact.exists_lift_ker_le_span_cartierDual`'s docstring for the mathematics** — the
+atomicity audit, the two falsity audits, the four axes searched and the literature check all live
+there and are all still current. This docstring records only what is new.
+
+## HONEST LABEL: over a general base this is a REFORMULATION, not a reduction
+
+Nakayama makes it equivalent to the statement it replaces, because `D(A)` is a *finite* `D(A')`-
+module; the equivalence holds over every base, with no hypothesis. In particular it is *no weaker
+at all* when `Ideal.jacobson ⊥ = ⊥` in `D(A')`, which is the typical situation over a base like
+`ℤ`: a finitely generated `ℤ`-algebra is a Jacobson ring, so there `J` is the nilradical and
+vanishes as soon as `D(A')` is reduced. So a prover must not read "mod `J`" as slack that is there
+for the taking.
+
+Its value is in one thing it settles and one direction of attack it opens.
+
+## The "fibrewise, then Nakayama" axis is CLOSED FOR THE WRONG REASON, and is in fact open
+
+The third bullet of the AXES SEARCHED list on the old leaf rejects "fibrewise over the residue
+fields of `R`, then Nakayama over `R`" on the ground that «a family chosen fibrewise does not
+glue». That objection is correct about Nakayama over `R` and **void** for the Nakayama that
+applies here, which is over `D(A')`: the lemma takes *any* lift of a family generating
+`D(A) / J·D(A)` and returns a family generating `D(A)`. The gluing is what the lemma does. The
+axis was closed against the wrong ring.
+
+What survives of the objection is quantitative rather than structural: `J` is only big enough to
+be useful when `R` is **local**, and then it is big enough for everything.
+
+* `R` local with maximal ideal `𝔪` ⟹ `D(A')` is **semilocal** and `𝔪 · D(A') ≤ Ideal.jacobson ⊥`.
+  (`D(A')` is module-finite over `R`, hence integral, so every maximal ideal of `D(A')` contracts
+  to a maximal ideal of `R`, which is `𝔪`; so every maximal ideal contains `𝔪 · D(A')`.)
+* Generation modulo `𝔪` **is** the statement over the residue field `k = R/𝔪`, because forming the
+  Cartier dual of a finite free Hopf algebra commutes with base change.
+* Over a field that statement is **classical**: a finite-dimensional Hopf algebra is free over any
+  Hopf subalgebra (Takeuchi 1972 for the commutative case, which is this one; Nichols–Zoeller 1989
+  without commutativity). No fppf descent, no torsor triviality.
+
+So over a local base this leaf is a theorem in the literature, and the residual difficulty of the
+global statement is *entirely* the passage from local to global.
+
+**And the only consumer of this cluster in the tree is over a local base.** The chain ends at
+`HopfAlgebra.isMultiplicativeType_of_isShortExact`, consumed in
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean` over
+`𝒪ᵖᵥ = adicCompletionIntegers ℚ v`, i.e. `ℤ_p` — a complete DVR. So adding `[IsLocalRing R]` to
+this leaf and to the five declarations that consume it in this file
+(`exists_lift_ker_le_span_cartierDual`, `exists_spanning_cartierDual`,
+`exists_basis_cartierDual`, `ker_cartierDual_le`, `faithfullyFlat_cartierDual`, and hence
+`IsShortExact.cartierDual` and `isMultiplicativeType_of_isShortExact`) would cost the *project*
+nothing and would replace a statement nobody can prove by one that is in the literature.
+
+**That patch is deliberately NOT applied here.** It weakens `IsShortExact.cartierDual` — "Cartier
+duality is exact" — from an arbitrary base to a local one, which is a scope decision rather than a
+proof step, and the global statement has not been refuted. It is the recommended next move, and it
+is cheap: the hypothesis is an instance, so no call site outside this file changes.
+
+## What the global statement is, stripped of Cartier duality
+
+Under the duality that produces it the leaf says exactly this, with no dual in sight: *for a short
+exact sequence `1 → K → H → Q → 1` of finite flat commutative group schemes over `R` in which
+`O(K)`, `O(H)` and `O(Q)` are all free `R`-modules, `O(H)` is a free `O(Q)`-module of rank
+`rk_R O(K)`.* Take `K = (Spec A'')^D`, `H = (Spec A)^D`, `Q = (Spec A')^D`; the hypotheses are
+self-dual because the `R`-dual of a finite free module is finite free.
+
+That framing places it precisely between two known statements:
+
+* `H → Q` is a `K`-torsor, so `O(H)` is fppf-locally free of rank `rk_R O(K)` — and reportedly even
+  unconditionally f.g. projective over `O(Q)`, since a Hopf–Galois extension is (Kreimer–Takeuchi,
+  *Hopf algebras and Galois extensions of an algebra*, 1981; **that citation has not been checked
+  against a copy here** and is a pointer, not an authority). **True, classical, and weaker than
+  this leaf.**
+* `O(H) ≅ O(Q) ⊗_R O(K)` *as a comodule*, the normal basis property in its strong form, is
+  equivalent to the torsor being trivial. **False in general** — already over `R = ℝ` with
+  `K = ℤ/2` and the torsor `Spec ℂ`, where module-freeness holds and comodule-freeness cannot.
+
+The leaf is the module-theoretic statement strictly between them, i.e. the vanishing of the class
+of `O(H)` in the reduced `K₀` of `O(Q)`. That is why no fppf argument reaches it and why no
+counterexample is cheap.
+
+## TWO NEW CONSTRAINTS ON THE COUNTEREXAMPLE SEARCH
+
+**(1) The forgetful statement is FALSE, so the group law is load-bearing.** Drop the torsor
+structure and keep only «`S` is a finite free `R`-algebra, `M` is an `S`-module, projective of
+constant rank `n`, and `R`-free»: that is refuted. Take
+`R = ℝ[x₀,…,x₄] / (∑ xᵢ² - 1)` and `T = {v : R⁵ | ∑ xᵢ vᵢ = 0}`, the tangent module of the real
+algebraic 4-sphere: `T ⊕ R ≅ R⁵`, and `T` is **not** free (a basis would trivialise `T S⁴`, and
+`S⁴` is not parallelisable). Now put `S = R × R` — which is `O(ℤ/2)`, the shape the leaf's own
+`Q = ℤ/2` family has — and `M = T × R⁴`. Then `M` is `S`-projective of constant rank `4`, and as an
+`R`-module `M ≅ T ⊕ R⁴ ≅ R⁸` is **free**, yet `M` is not `S`-free. So every hypothesis of the leaf
+that survives forgetting the group law is satisfied by a counterexample: any proof must use the
+fact that the fibres of `H → Q` are *translates of one another*, which is what all four axes on the
+old leaf are attempts to exploit.
+
+**(2) The `Q = ℤ/N` family, computed once and for all.** Let `ζ_N ∈ R`, `Q = ℤ/N` constant,
+`K = μ_N`. Such an extension exists for every `μ_N`-torsor: `Ext¹(ℤ/N, μ_N) ↠ H¹(R, μ_N)` because
+`N` kills `H¹(R, μ_N)`. Then `O(Q) = R^N`, and `H → Q` decomposes into the `N` fibres `T_j`, the
+`μ_N`-torsor of class `j·[T]`; writing `L ∈ Pic(R)[N]` for the image of `[T]` under
+`H¹(R, μ_N) ↠ Pic(R)[N]`, `O(T_j) ≅ ⊕_{k<N} L^{jk}`. The leaf becomes, exactly:
+
+> `⊕_{j<N} ⊕_{k<N} L^{jk}` free `⟹` each `⊕_{k<N} L^{jk}` free.
+
+* `N = 2`: the determinant closes it in one line and over **any** base —
+  `det (R² ⊕ (R ⊕ L)) = L`, so the hypothesis forces `L ≅ R`. (The FALSITY AUDIT on the old leaf
+  reaches the same conclusion for `p = 2` by a Dedekind computation; the determinant needs no
+  Dedekind hypothesis.)
+* `N = 3`: every determinant in sight is `L³ ≅ R`, so the determinant says **nothing**. Here
+  `O(T_1) ≅ O(T_2) ≅ M := R ⊕ L ⊕ L²` and the leaf becomes: *can `M` fail to be free while
+  `M ⊕ M ⊕ R³` is free?* Two dimensions of base are excluded outright, and the exclusion is
+  the third instance of the pattern the FALSITY AUDIT below already noticed — hypothesis and
+  conclusion keep coinciding:
+  * `dim R ≤ 1`: `L ⊕ L²` has trivial determinant, hence is free over a Dedekind base, so `M` is
+    free unconditionally.
+  * `dim R = 2` (say a smooth affine surface over a field): rank `3 > dim R`, so by Bass–Serre the
+    stable class decides freeness, and `[M] - 3` lies in `F²K̃₀ ≅ CH₀`, where it is `c₂(M) = 2ℓ²`
+    with `ℓ = c₁(L)` — from `c(M) = (1 + ℓ)(1 + 2ℓ)`, whose `c₁ = 3ℓ = 0` and `c₂ = 2ℓ²`. So `M` is
+    non-free iff `2ℓ² ≠ 0`, while
+    `M ⊕ M ⊕ R³` free needs `2([M] - 3) = 0`, i.e. `4ℓ² = 0`. But `ℓ` is 3-torsion, so
+    `4ℓ² = ℓ²` and `2ℓ² = 0 ⟺ ℓ² = 0`: the two conditions are the same one, and there is again no
+    counterexample.
+  * `dim R ≥ 3`: rank `3` leaves the cancellative range, the hypothesis stops being a `K₀`
+    condition, and this is the only place a counterexample in this family can live.
+
+The general obstruction, which explains both bullets: `det_{O(Q)} O(H) ∈ Pic (O(Q))` is the image
+of the torsor class under `det` of the regular representation of `K`. `O(H)` and `O(Q)` being
+`R`-free force only its **norm** to `Pic R` to vanish, so a counterexample must sit in
+`ker (N : Pic (O(Q)) → Pic R)`; and for `K = μ_N` with `N` odd that determinant character is
+already trivial (`N ∣ N(N-1)/2`), which is exactly why the even case is closed by a determinant and
+the odd case needs `K₀`.
+
+## FAITHFULNESS
+
+Equivalent to the statement it replaces — Nakayama one way, `le_sup_left` the other — hence neither
+stronger nor weaker than `exists_basis_cartierDual` for any base, and the faithfulness audit there
+applies verbatim, non-vacuity included. (Over a field `J` is the nilradical of the finite-
+dimensional algebra `D(A')`, not `0`, so the "mod `J`" form is *not* literally the generation
+statement even there; the equivalence is Nakayama's, not an accident of the base.) Not
+over-constrained: a dual normal basis satisfies both clauses. -/
+theorem IsShortExact.exists_lift_span_sup_jacobson_cartierDual (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    ∃ (b : Module.Basis (Module.Free.ChooseBasisIndex R A'') R (CartierDual R A''))
+      (c : Module.Free.ChooseBasisIndex R A'' → CartierDual R A),
+      (∀ j, CartierDual.map i (c j) = b j) ∧
+      (⊤ : Submodule (CartierDual R A') (CartierDual R A)) ≤
+        Submodule.span (CartierDual R A') (Set.range c) ⊔
+          Ideal.jacobson (⊥ : Ideal (CartierDual R A')) •
+            (⊤ : Submodule (CartierDual R A') (CartierDual R A)) := sorry
+
 /-- **The dual normal basis, generation half, in its residual form**: there is an `R`-basis `b` of
 `CartierDual R A''` and a family `c` lifting it along `CartierDual.map i` whose
 `CartierDual R A'`-span already contains `ker (CartierDual.map i)`.
 
-OPEN, and it is the *whole* remaining content of `IsShortExact.exists_spanning_cartierDual`,
-which is proven from it below together with the formal
-`span_sup_ker_cartierDual_map_eq_top`.
+**PROVEN** (2026-07-30) from `IsShortExact.exists_lift_span_sup_jacobson_cartierDual` above by
+Nakayama's lemma — see the section at the end of this docstring — and it is the *whole* remaining
+content of `IsShortExact.exists_spanning_cartierDual`, which is proven from it below together with
+the formal `span_sup_ker_cartierDual_map_eq_top`. Everything between the two is unchanged: this
+docstring's audits describe the mathematics of both, since the two statements are equivalent.
 
 ## ATOMICITY AUDIT (2026-07-28) — this is a REFORMULATION, not a reduction, and deliberately so
 
@@ -1276,7 +1449,18 @@ generation plus the rank count.
 It is not vacuous: over a field it asserts `dim D(A) = dim A'' · dim A'` together with a choice
 of `rk_R A''` generators realising it, false for any smaller family. It is not over-constrained
 either — a dual normal basis satisfies both clauses, so the pair `(b, c)` is inhabited exactly
-when the parent cut holds. -/
+when the parent cut holds.
+
+## PROVEN since 2026-07-30, in one Nakayama step
+
+The open statement is now `IsShortExact.exists_lift_span_sup_jacobson_cartierDual` — the same pair
+`(b, c)`, asked to generate only **modulo the Jacobson radical of `D(A')`**. Over a general base
+that is an *equivalent* reformulation (Nakayama in one direction, `bot_le` in the other), so the
+audits above are untouched and are still the place to read the mathematics. What the new leaf adds
+is recorded on it and not repeated here: the "fibrewise, then Nakayama" axis closed above is
+**closed for the wrong reason** and is in fact open; the forgetful form of this statement is FALSE
+with an explicit witness; and the counterexample criterion is sharpened to a concrete question in
+`K₀` of a base of Krull dimension `≥ 3`. -/
 theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
@@ -1285,7 +1469,20 @@ theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π)
       (c : Module.Free.ChooseBasisIndex R A'' → CartierDual R A),
       (∀ j, CartierDual.map i (c j) = b j) ∧
       ∀ x : CartierDual R A, CartierDual.mapLinear i x = 0 →
-        x ∈ Submodule.span (CartierDual R A') (Set.range c) := sorry
+        x ∈ Submodule.span (CartierDual R A') (Set.range c) := by
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
+    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
+  -- `D(A)` is a finite `R`-module, hence a finite `D(A')`-module: Nakayama applies to it.
+  haveI : Module.Finite (CartierDual R A') (CartierDual R A) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  obtain ⟨b, c, hcb, htop⟩ := h.exists_lift_span_sup_jacobson_cartierDual
+  refine ⟨b, c, hcb, fun x _ => ?_⟩
+  -- Nakayama: a submodule that generates modulo an ideal inside the Jacobson radical is everything.
+  exact Submodule.le_of_le_smul_of_le_jacobson_bot Module.Finite.fg_top le_rfl htop
+    Submodule.mem_top
 
 /-- **The dual normal basis, generation half**: `CartierDual R A` is *generated* as a
 `CartierDual R A'`-module — the module structure being the one given by `CartierDual.map π` — by
