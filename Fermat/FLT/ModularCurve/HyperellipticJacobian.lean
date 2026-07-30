@@ -2001,6 +2001,168 @@ lemma adjoin_inv_eq {F : Type} [Field F] [Algebra K F] (g : F) :
     have h := inv_mem (IntermediateField.mem_adjoin_simple_self K g⁻¹)
     rwa [inv_inv] at h
 
+/-! ### Purely inseparable descent: a `PlaceData` cannot exist in characteristic `2`
+
+This block is the char-`2` half of `not_isRationalGenerator`, discharged once and for all
+rather than left as prose in that leaf's falsity audit.  See `two_ne_zero`. -/
+
+lemma aeval_xx_injective (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Function.Injective (Polynomial.aeval D.xx : K[X] →ₐ[K] D.F) :=
+  transcendental_iff_injective.mp D.transcendental_xx
+
+lemma aeval_xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {p : K[X]} (hp : p ≠ 0) :
+    aeval D.xx p ≠ 0 := fun h => hp (D.aeval_xx_injective (by simpa using h))
+
+lemma xx_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.xx ≠ 0 := by
+  simpa using D.aeval_xx_ne_zero (p := (X : K[X])) X_ne_zero
+
+/-- Auxiliary induction for `ord_aeval_of_ord_xx`. -/
+lemma ord_aeval_of_ord_xx_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) (n : ℕ) :
+    ∀ p : K[X], p.natDegree ≤ n → p ≠ 0 →
+      D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) := by
+  induction n with
+  | zero =>
+      intro p hp hp0
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hp)
+      subst ha
+      have ha0 : a ≠ 0 := by
+        intro h
+        rw [h] at hp0
+        simp at hp0
+      simp [D.ord_algebraMap v a ha0]
+  | succ m ih =>
+      intro p hp hp0
+      rcases le_or_gt p.natDegree m with h | h
+      · exact ih p h hp0
+      have hxx := D.xx_ne_zero
+      have ha0 : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+      have haF : algebraMap K D.F p.leadingCoeff ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr ha0
+      have hleadval : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          = algebraMap K D.F p.leadingCoeff * D.xx ^ p.natDegree := by simp
+      have hleadne : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree) ≠ 0 := by
+        rw [hleadval]
+        exact mul_ne_zero haF (pow_ne_zero _ hxx)
+      have hlead : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+          = -(p.natDegree : ℤ) := by
+        rw [hleadval, D.ord_mul v _ _ haF (pow_ne_zero _ hxx),
+          D.ord_algebraMap v _ ha0, D.ord_pow v D.xx hxx, hv]
+        ring
+      have hsplit : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          + aeval D.xx p.eraseLead = aeval D.xx p := by
+        rw [← map_add, add_comm]
+        exact congrArg _ p.eraseLead_add_C_mul_X_pow
+      rcases eq_or_ne p.eraseLead 0 with he | he
+      · rw [← hsplit, he, map_zero, add_zero]
+        exact hlead
+      · have hle : p.eraseLead.natDegree ≤ m := by
+          have h1 := Polynomial.eraseLead_natDegree_le p
+          omega
+        have herase := ih p.eraseLead hle he
+        have hne : aeval D.xx p.eraseLead ≠ 0 := D.aeval_xx_ne_zero he
+        have hltord : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+            < D.ord v (aeval D.xx p.eraseLead) := by
+          rw [hlead, herase]
+          have c1 : (p.eraseLead.natDegree : ℤ) ≤ (m : ℤ) := by exact_mod_cast hle
+          have c2 : (m : ℤ) < (p.natDegree : ℤ) := by exact_mod_cast h
+          omega
+        rw [← hsplit, D.ord_add_of_lt v hleadne hne hltord, hlead]
+
+/-- **At a place where `x` has a simple pole, `ord (p(x)) = −deg p`** (PROVEN).
+
+The strict ultrametric equality applied to the leading term: `ord (aₙxⁿ) = −n` while every
+lower term has strictly larger order, so the sum has order exactly `−n`. -/
+lemma ord_aeval_of_ord_xx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (hv : D.ord v D.xx = -1) {p : K[X]} (hp : p ≠ 0) :
+    D.ord v (aeval D.xx p) = -(p.natDegree : ℤ) :=
+  D.ord_aeval_of_ord_xx_aux v hv p.natDegree p le_rfl hp
+
+/-- **In characteristic `2`, a place is determined by `ord x = −1`** (PROVEN).
+
+The engine of `two_ne_zero`.  If `2 = 0` in `K` then squaring kills the cross term of the
+normal form `z·d(x) = a(x) + b(x)·y` supplied by `gen`, so
+
+    z² · d(x)² = a(x)² + b(x)²·f(x) = e(x),   e := a² + b²·f ∈ K[X],
+
+i.e. every SQUARE in `F` already lies in `K(x)` — which is `F/K(x)` being purely inseparable.
+At a place with `ord x = −1` the order of a polynomial in `x` is minus its degree
+(`ord_aeval_of_ord_xx`), so `2·ord z = ord (z²) = deg (d²) − deg e` is computed from `d` and
+`e` alone, with no reference to the place.  Two such places therefore have the same `ord`,
+and `ord_injective` makes them equal. -/
+lemma ord_eq_of_ord_xx_eq_neg_one (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (h2 : (2 : K) = 0)
+    {v w : D.Places} (hv : D.ord v D.xx = -1) (hw : D.ord w D.xx = -1) : v = w := by
+  refine D.ord_injective ?_
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  obtain ⟨a, b, d, hd, hgen⟩ := D.gen z
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hd
+    exact hd rfl
+  have h2F : (2 : D.F) = 0 := by
+    have h : algebraMap K D.F (2 : K) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  set e : K[X] := a ^ 2 + b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with he
+  have hsq : z ^ 2 * aeval D.xx d ^ 2 = aeval D.xx e := by
+    have hyy : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [aeval_sextPoly]
+      exact D.eqn
+    have hg2 : (z * aeval D.xx d) ^ 2 = (aeval D.xx a + aeval D.xx b * D.yy) ^ 2 := by
+      rw [hgen]
+    have hexp : (aeval D.xx a + aeval D.xx b * D.yy) ^ 2
+        = aeval D.xx a ^ 2 + aeval D.xx b ^ 2 * D.yy ^ 2
+          + 2 * (aeval D.xx a * (aeval D.xx b * D.yy)) := by ring
+    rw [hexp, h2F, zero_mul, add_zero, hyy] at hg2
+    have hE : aeval D.xx e = aeval D.xx a ^ 2
+        + aeval D.xx b ^ 2 * aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+      rw [he]
+      simp only [map_add, map_mul, map_pow]
+    rw [hE, ← hg2]
+    ring
+  have hd2 : aeval D.xx d ^ 2 ≠ 0 := pow_ne_zero 2 (D.aeval_xx_ne_zero hd0)
+  have hz2 : z ^ 2 ≠ 0 := pow_ne_zero 2 hz
+  have he0 : e ≠ 0 := by
+    intro h
+    rw [h, map_zero] at hsq
+    exact (mul_ne_zero hz2 hd2) hsq
+  have hdsq0 : d ^ 2 ≠ 0 := pow_ne_zero 2 hd0
+  have hpow : aeval D.xx d ^ 2 = aeval D.xx (d ^ 2) := by rw [map_pow]
+  have key : ∀ u : D.Places, D.ord u D.xx = -1 →
+      2 * D.ord u z = ((d ^ 2).natDegree : ℤ) - (e.natDegree : ℤ) := by
+    intro u hu
+    have h1 : D.ord u (z ^ 2 * aeval D.xx d ^ 2) = D.ord u (aeval D.xx e) :=
+      congrArg (D.ord u) hsq
+    rw [D.ord_mul u _ _ hz2 hd2, D.ord_pow u z hz 2, hpow,
+      D.ord_aeval_of_ord_xx u hu hdsq0, D.ord_aeval_of_ord_xx u hu he0] at h1
+    push_cast at h1 ⊢
+    omega
+  have hfin := (key v hv).trans (key w hw).symm
+  omega
+
+/-- **A `PlaceData` forces `2 ≠ 0` in `K`** (PROVEN).
+
+The two points at infinity are distinct places (`pt_injective`) at both of which `ord x = −1`
+(`ord_pt_infinite`).  In characteristic `2` that is impossible:
+`ord_eq_of_ord_xx_eq_neg_one` shows a place with `ord x = −1` is unique there, because
+`F/K(x)` is purely inseparable and a purely inseparable extension has exactly one place above
+each place of the base.
+
+This is exactly the char-`2` half that the falsity audit above `not_isRationalGenerator`
+predicted: that leaf is true in characteristic `2` not because the pencil argument covers it
+— it does not, and over a perfect `K` of characteristic `2` the function field of a separable
+sextic really IS rational — but because no `PlaceData` exists there at all.  Rather than
+leaving that as prose, it is proven here once, so every consumer may simply use `2 ≠ 0`.
+
+Separability is NOT needed. -/
+theorem two_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K) ≠ 0 := by
+  intro h2
+  have h := D.ord_eq_of_ord_xx_eq_neg_one h2
+    (D.ord_pt_infinite true).1 (D.ord_pt_infinite false).1
+  have hb : (Sum.inr true : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) = Sum.inr false := D.pt_injective h
+  simp at hb
+
 end PlaceData
 
 section Genus
