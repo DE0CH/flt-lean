@@ -1149,6 +1149,19 @@ noncomputable def cancel {T'' T' T : Scheme.{u}}
     · rw [Category.assoc, hb.cancelMap_snd hb₂, hb.map_sec, Category.assoc,
         Category.assoc, hb₂.map_sec]
 
+/-- **`RelPoint.along` is injective at a cartesian square** (PROVEN 2026-07-30),
+stated on the underlying morphisms so that no base-point transport is involved
+— the `Γ₁` transcription of `X0.lean`'s `IsBaseChangeOf.along_injective`, and
+the only piece of that file's `along` API that
+`nonempty_gamma1RigidifiedModuli_of_iso` below needs.  `alongInv` and
+`alongEquiv` are NOT transcribed: the level-structure half of that transport is
+`exists_abelianFullLevelStructure_baseChange`, which is already PROVEN, so the
+additive equivalence never has to be built here. -/
+lemma along_injective {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma1Datum N T'}
+    {d : Gamma1Datum N T} (bc : IsBaseChangeOfGamma1 h d' d) {U : Scheme.{u}} {g : U ⟶ T'}
+    {a b : RelPoint d'.f g} (hab : a.1 ≫ bc.map = b.1 ≫ bc.map) : a = b :=
+  Subtype.ext (bc.isPullback.hom_ext (by rw [a.2, b.2]) hab)
+
 end IsBaseChangeOfGamma1
 
 /-! #### The rigidified moduli scheme, and the two halves of (8.1.1)/(8.1.3)
@@ -1706,56 +1719,12 @@ structure Gamma1RigidifiedModuli (N n : ℕ) (S : Scheme.{0}) where
       ∃ bc : IsBaseChangeOfGamma1 m d dM,
         L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
 
-/-- **The rigidified moduli scheme of `[Γ₁(N)], [Γ(n)]` over a field in
-which `N` and `n` are invertible exists, and is AFFINE** (sorry leaf,
-opened 2026-07-28) — Katz–Mazur, and NOTHING else.  This is the one
-citation half of `exists_gamma1Rigidification`.
-
-## The citations, quoted so nobody has to re-derive which says what
-
-* **(4.7.1)** "Any relatively representable moduli problem `𝒫` which is
-  affine and etale over `(Ell)`, and rigid, is representable by a smooth
-  affine curve over `ℤ`."
-* **(4.7.2)** "For `N ≥ 3`, the naive level `N` moduli problem of 4.6 is
-  representable, by a smooth affine curve `Y(N)` over `ℤ[1/N]`."  Applied
-  at `n`, this represents `[Γ(n)]` by an affine `Y(n)`, and over `K` with
-  `char K ∤ n` the base change `Y(n)_K` is available.
-* **(5.1.1, First Main Theorem)** "Each of the four moduli problems
-  `[Γ(N)]`, `[Γ₁(N)]`, `[bal.Γ₁(N)]`, and `[Γ₀(N)]` is relatively
-  representable over `(Ell)`.  Each is finite and flat over `(Ell)` of
-  constant rank `≥ 1`… Each tensored with `ℤ[1/N]` is finite etale over
-  `(Ell/ℤ[1/N])`."  This is the `[Γ₁(N)]` input, and it is the ONE place
-  the `Γ₁` citation differs from the `Γ₀` one (which uses 6.6.1/6.6.2).
-* **(6.6.2)**, in the form that combines them: a representable moduli
-  problem `𝒮` étale over `(Ell)` and a relatively representable `𝒫` give
-  `M(𝒫, 𝒮)` finite and flat over `M(𝒮)`.  Take `𝒮 = [Γ(n)]`, étale over
-  `(Ell/K)` by the last sentence of 5.1.1, and `𝒫 = [Γ₁(N)]`.
-* **(8.1.1)** "…It 'exists' because `M(𝒫, 𝒮)` is itself affine."  The
-  emphasised clause is the affineness, and `M(𝒫, 𝒮) ⟶ M(𝒮) = Y(n)_K` is
-  finite over an affine scheme, hence affine.
-
-## What it does NOT owe
-
-The deck group, the invariants, the coarse space, descent, and the
-level-`n` torsor.  Those are `exists_gamma1DeckAction`,
-`exists_gamma1FullLevelStructure_cover` and the two PROVEN theorems
-above.
-
-## Faithfulness
-
-`hcharn` is load-bearing for TRUTH: at `char K ∣ n` the group scheme
-`E[n]` is not étale, `AbelianFullLevelStructure n dM.ab` is unsatisfiable
-over a nonempty base, and no inhabitant with `A ≠ 0` exists.  `hn` is
-load-bearing too: at `n ≤ 2` the rigidified problem still has the
-automorphism `-1`, so it is not representable.  `hcharN` is what makes
-`[Γ₁(N)]` étale rather than merely finite flat (5.1.1's last sentence).
-`_hN` is **not** load-bearing — the rigidity that representability needs
-is supplied by `[Γ(n)]` with `n ≥ 3`, not by `N ≥ 4` — and is carried only
-to match the consumer's signature. -/
-theorem exists_gamma1RigidifiedModuli (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
-    (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
-    Nonempty (Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :=
-  sorry
+/-! **`exists_gamma1RigidifiedModuli` used to sit here.**  It moved down on
+2026-07-30, when it was split three ways (see the section comment before
+`Gamma1RigidifiedModuliScheme`): the transport half consumes
+`exists_abelianFullLevelStructure_baseChange`, which is defined below, so the
+whole group had to follow it.  Nothing between the two positions consumed the
+node. -/
 
 /-! #### The cut of `exists_gamma1FullLevelStructure_cover`, 2026-07-28
 
@@ -2474,6 +2443,347 @@ theorem exists_abelianFullLevelStructure_baseChange {N n : ℕ} {T' T : Scheme.{
   intro x
   rw [e1, e2]
   exact L.geom_basis K (t ≫ p) x
+
+/-- **The rigidified moduli scheme as a SCHEME, with affineness NOT
+asserted** — `Gamma1RigidifiedModuli` verbatim except that the moduli
+scheme is a bare `M : Scheme` rather than `Spec (CommRingCat.of A)`, and
+the `Γ₁` transcription of `X0.lean`'s `RigidifiedModuliScheme`.
+
+Every remark on `Gamma1RigidifiedModuli` applies unchanged — in
+particular that `universal` is a **fine** moduli property, so an
+inhabitant is pinned up to unique isomorphism and quantifying over this
+structure is not the junk-witness trap.  That is what makes
+`isAffine_of_gamma1RigidifiedModuliScheme` below legitimate as a `∀`. -/
+structure Gamma1RigidifiedModuliScheme (N n : ℕ) (S : Scheme.{0}) where
+  /-- the rigidified moduli scheme -/
+  M : Scheme.{0}
+  /-- its structure morphism to the base -/
+  strM : M ⟶ S
+  /-- the universal `Γ₁(N)`-datum -/
+  dM : Gamma1Datum N M
+  /-- the universal full level-`n` structure on it -/
+  lvlM : AbelianFullLevelStructure n dM.ab
+  /-- **fine moduli**: a datum-with-level-structure over an `S`-scheme is
+  the base change of `(dM, lvlM)` along a UNIQUE `S`-morphism -/
+  universal : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T)
+      (L : AbelianFullLevelStructure n d.ab),
+    ∃! m : T ⟶ M,
+      m ≫ strM = g ∧
+      ∃ bc : IsBaseChangeOfGamma1 m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-! #### The three-way split of `exists_gamma1RigidifiedModuli`, 2026-07-30
+
+The node below used to carry, in one `sorry`, all five Katz–Mazur
+citations its docstring records TOGETHER with the transport of an affine
+presentation into a `Gamma1RigidifiedModuli`.  It is now split exactly
+along the line `X0.lean` draws for the identical `Γ₀` node
+(`exists_rigidifiedModuli`, ASSEMBLED 2026-07-27 over
+`exists_rigidifiedModuliScheme` / `isAffine_of_rigidifiedModuliScheme` /
+`nonempty_rigidifiedModuli_of_isAffine`):
+
+| what | where | status |
+|---|---|---|
+| representability, affineness not mentioned | `exists_gamma1RigidifiedModuliScheme` | **LEAF** (4.7.1/4.7.2, 5.1.1, 6.6.2) |
+| affineness | `isAffine_of_gamma1RigidifiedModuliScheme` | **LEAF** (the parenthesis of 8.1.1) |
+| `M ≅ Spec A` transport | `nonempty_gamma1RigidifiedModuli_of_iso` | **PROVEN** |
+| `IsAffine` transport | `nonempty_gamma1RigidifiedModuli_of_isAffine` | **PROVEN** |
+| the assembly | `exists_gamma1RigidifiedModuli` | **PROVEN** |
+
+**The accounting, stated honestly: this is `1 -> 2` open leaves, not
+`1 -> 1`.**  What it buys is that the residues are now pure citations with
+no Lean work left in either of them, and the ~120 lines of transport — the
+part a formaliser can actually discharge, and the only part of this node
+that was not a literature appeal — are done.  The same trade was taken on
+the `Γ₀` side and for the same reason.
+
+**Where the `Γ₁` transport is SHORTER than the `Γ₀` one.**  X0's
+`nonempty_rigidifiedModuli_of_iso` builds the transported
+`FullLevelStructure` by hand: `alongInv` on each of `P` and `Q`, then
+`nsmul_P`/`nsmul_Q` through `nsmul_eq_zero_of_toRelPoint`, then
+`geom_basis` through an `existsUnique_congr` across `alongEquiv`.  Here
+`exists_abelianFullLevelStructure_baseChange` (PROVEN 2026-07-29) already
+delivers that structure PINNED, so `alongInv` and `alongEquiv` are never
+needed and only `along_injective` is transcribed.  Conversely the `Γ₁`
+version owes two things the `Γ₀` version does not: the `map_sec` field of
+`IsBaseChangeOfGamma1` (where `IsBaseChangeOf` has `liesIn_iff`), and the
+`m ≫ strM = g` conjunct that `Gamma1RigidifiedModuli.universal` carries
+because this development works over an arbitrary base `S` rather than over
+`Spec ℚ`.  Both are three rewrites. -/
+
+/-- **Katz–Mazur representability of the rigidified `Γ₁` moduli problem**
+(sorry leaf, cut 2026-07-30 out of `exists_gamma1RigidifiedModuli` below)
+— the first of the two citation halves, and it says NOTHING about
+affineness.
+
+## What the prover of this node owes
+
+That the moduli problem "`Γ₁(N)`-datum over a `K`-scheme together with a
+full level-`n` structure" is representable by a scheme.  The citations are
+those quoted on `exists_gamma1RigidifiedModuli` below — (4.7.2) with
+(4.7.1) behind it for `[Γ(n)]`, (5.1.1) for `[Γ₁(N)]`, combined by
+(6.6.2) — MINUS the affineness parenthesis of (8.1.1), which is the next
+leaf.  The `∃!` of `universal` is what "representable" means.
+
+## Faithfulness
+
+Verbatim the analysis on `exists_gamma1RigidifiedModuli`, whose
+hypotheses these are: `hn` and `hcharn` are load-bearing for TRUTH (at
+`n ≤ 2` the rigidified problem still has `-1`; at `char K ∣ n` the group
+scheme `E[n]` is not étale and `AbelianFullLevelStructure n dM.ab` is
+unsatisfiable over a nonempty base), `hcharN` is what makes `[Γ₁(N)]`
+étale rather than merely finite flat, and `_hN` is not load-bearing and is
+carried only to match the consumer. -/
+theorem exists_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
+    Nonempty (Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) :=
+  sorry
+
+/-- **Katz–Mazur affineness: the rigidified `Γ₁` moduli scheme is affine**
+(sorry leaf, cut 2026-07-30 out of `exists_gamma1RigidifiedModuli` below)
+— the second citation half, the parenthesis of (8.1.1) and nothing else.
+
+## What the prover of this node owes
+
+The clause of (8.1.1) that reads, of `𝔐(𝒫, 𝒮)` with `𝒮 = [Γ(n)]`,
+`𝒫 = [Γ₁(N)]` and `n ≥ 3` invertible on the base:
+
+> It "exists" because `𝔐(𝒫, 𝒮)` is itself affine.
+
+Concretely: `𝔐(𝒮) = Y(n)_K` is affine by (4.7.2), `[Γ₁(N)]` is finite
+over `(Ell)` by (5.1.1), so `𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite hence affine by
+(6.6.2), and a scheme affine over an affine scheme is affine.  That last
+step is NOT a citation and is available in the pin, so what is genuinely
+cited is only "`𝔐(𝒮)` is affine" and "`𝔐(𝒫, 𝒮) ⟶ 𝔐(𝒮)` is finite".
+
+## Why the `∀` is legitimate, and not the junk-witness trap
+
+`Gamma1RigidifiedModuliScheme.universal` is a **fine** moduli property, so
+any two inhabitants are related by a unique isomorphism (apply each one's
+`universal` to the other's universal family, then to its own to see the
+composites are identities).  `IsAffine` is invariant under isomorphism of
+schemes.  So "the Katz–Mazur `𝔐(𝒫, 𝒮)` is affine" and "every inhabitant
+of `Gamma1RigidifiedModuliScheme N n (Spec K)` has affine `M`" are the same
+statement, exactly as on the `Γ₀` side. -/
+theorem isAffine_of_gamma1RigidifiedModuliScheme (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n)
+    (R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of K))) : IsAffine R.M :=
+  sorry
+
+/-- **From a fine moduli scheme with a chosen affine presentation to
+`Gamma1RigidifiedModuli`** (PROVEN 2026-07-30) — the pure FORMALISATION
+third of `exists_gamma1RigidifiedModuli`, with **no Katz–Mazur citation
+left in it**, and the reason the two citation leaves above may forget
+about affine presentations entirely.
+
+It is stated for a chosen isomorphism `φ` rather than for the bare
+`IsAffine` so that the ring `A` is a plain `Type` and no `CommRingCat`
+carrier juggling enters the transport itself;
+`nonempty_gamma1RigidifiedModuli_of_isAffine` below specialises it.
+
+## How it is proven
+
+`dM' := Gamma1BaseChange.datumBC φ.hom R.dM` is the datum on `Spec A`,
+with `dbc` its base-change relation to `R.dM`; the level structure is
+`exists_abelianFullLevelStructure_baseChange dbc R.lvlM`, already PROVEN
+and already PINNED, which is where this is shorter than the `Γ₀`
+transport (see the section comment above).
+
+The universal property is the substantial half.  Given `T, d, L` it takes
+the unique `m₀ : T ⟶ R.M` from `R.universal` and returns `m₀ ≫ φ.inv`; the
+base-change datum over `Spec A` is obtained by *cancelling* `dbc` out of
+`bc₀`, with `k := dbc.isPullback.lift (d.f ≫ m₀ ≫ φ.inv) bc₀.map _` and
+cartesianness by `IsPullback.of_bot`.  Uniqueness runs the other way,
+composing the given `bc₁` with `dbc` through `IsBaseChangeOfGamma1.comp`
+and feeding the result to `R.universal`'s uniqueness clause.
+
+**The one real obstacle, and how it is dealt with**, inherited verbatim
+from the `Γ₀` transport: the base points do not match definitionally.
+`RelPoint.along dbc.map` sends a point over `g ≫ (m₀ ≫ φ.inv)` to one over
+`(g ≫ m₀ ≫ φ.inv) ≫ φ.hom`, while `RelPoint.along bc₀.map` lands over
+`g ≫ m₀`; the two agree propositionally and the relative points therefore
+inhabit *different types*, so no `rw` bridges them.  Every step is instead
+stated on the **underlying morphisms**, where the base index does not
+appear, and the residual identifications are absorbed by
+`AbelianSchemeStruct.zero_val_congr` and `add_val_congr`. -/
+theorem nonempty_gamma1RigidifiedModuli_of_iso {N n : ℕ} {S : Scheme.{0}}
+    (R : Gamma1RigidifiedModuliScheme N n S) {A : Type} [CommRing A]
+    (φ : Spec (CommRingCat.of A) ≅ R.M) :
+    Nonempty (Gamma1RigidifiedModuli N n S) := by
+  classical
+  -- the transported datum, and its base-change relation to the universal one
+  let dM' : Gamma1Datum N (Spec (CommRingCat.of A)) := Gamma1BaseChange.datumBC φ.hom R.dM
+  let dbc : IsBaseChangeOfGamma1 φ.hom dM' R.dM := Gamma1BaseChange.isBaseChangeBC φ.hom R.dM
+  -- the transported level structure, PINNED — this is the whole of what the `Γ₀`
+  -- transport has to build by hand
+  obtain ⟨lvl, hP', hQ'⟩ := exists_abelianFullLevelStructure_baseChange dbc R.lvlM
+  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl, universal := ?_ }⟩
+  intro T g d L
+  obtain ⟨m₀, ⟨hstr₀, bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
+  have hmφ : (m₀ ≫ φ.inv) ≫ φ.hom = m₀ := by simp
+  refine ⟨m₀ ≫ φ.inv, ⟨?_, ?_⟩, ?_⟩
+  · -- the structure morphism is respected
+    rw [Category.assoc, ← Category.assoc φ.inv φ.hom R.strM, φ.inv_hom_id, Category.id_comp]
+    exact hstr₀
+  · -- existence: cancel `dbc` out of `bc₀`
+    have hw : (d.f ≫ m₀ ≫ φ.inv) ≫ φ.hom = bc₀.map ≫ R.dM.f := by
+      rw [Category.assoc, hmφ]; exact bc₀.isPullback.w
+    let k : d.E ⟶ dM'.E := dbc.isPullback.lift (d.f ≫ m₀ ≫ φ.inv) bc₀.map hw
+    have hk₁ : k ≫ dM'.f = d.f ≫ m₀ ≫ φ.inv := dbc.isPullback.lift_fst _ _ _
+    have hk₂ : k ≫ dbc.map = bc₀.map := dbc.isPullback.lift_snd _ _ _
+    have hsq : IsPullback d.f k (m₀ ≫ φ.inv) dM'.f := by
+      refine IsPullback.of_bot ?_ hk₁.symm dbc.isPullback
+      rw [hk₂, hmφ]; exact bc₀.isPullback
+    let bc : IsBaseChangeOfGamma1 (m₀ ≫ φ.inv) d dM' :=
+      { map := k
+        isPullback := hsq
+        map_zero := by
+          intro U u
+          refine dbc.along_injective ?_
+          have z₁ : (d.ab.zero u).1 ≫ bc₀.map = (R.dM.ab.zero (u ≫ m₀)).1 :=
+            congrArg Subtype.val (bc₀.map_zero u)
+          have z₂ : (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+              = (R.dM.ab.zero ((u ≫ m₀ ≫ φ.inv) ≫ φ.hom)).1 :=
+            congrArg Subtype.val (dbc.map_zero (u ≫ m₀ ≫ φ.inv))
+          show ((d.ab.zero u).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.zero_val_congr R.dM.ab
+            (by rw [Category.assoc, hmφ])
+        map_add := by
+          intro U u x y
+          refine dbc.along_injective ?_
+          have hx : x.1 ≫ bc₀.map = (x.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have hy : y.1 ≫ bc₀.map = (y.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have z₁ : (d.ab.add x y).1 ≫ bc₀.map
+              = (R.dM.ab.add (RelPoint.along bc₀.map bc₀.isPullback.w x)
+                  (RelPoint.along bc₀.map bc₀.isPullback.w y)).1 :=
+            congrArg Subtype.val (bc₀.map_add x y)
+          have z₂ : (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1
+                ≫ dbc.map
+              = (R.dM.ab.add
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w x))
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w y))).1 :=
+            congrArg Subtype.val (dbc.map_add (RelPoint.along k hsq.w x)
+              (RelPoint.along k hsq.w y))
+          show ((d.ab.add x y).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.add_val_congr R.dM.ab (by rw [Category.assoc, hmφ]) _ _ _ _
+            hx hy
+        map_sec := by
+          refine dbc.isPullback.hom_ext ?_ ?_
+          · show (d.pt.sec ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ dM'.pt.sec) ≫ dM'.f
+            rw [Category.assoc, hk₁, ← Category.assoc, d.pt.sec_comp, Category.id_comp,
+              Category.assoc, dM'.pt.sec_comp, Category.comp_id]
+          · show (d.pt.sec ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ dM'.pt.sec) ≫ dbc.map
+            rw [Category.assoc, hk₂, bc₀.map_sec, Category.assoc, dbc.map_sec,
+              ← Category.assoc, hmφ] }
+    refine ⟨bc, ?_, ?_⟩
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.P.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ lvl.P.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.P.2, Category.id_comp,
+          Category.assoc, lvl.P.2, Category.comp_id]
+      · show (L.P.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ lvl.P.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₁, Category.assoc, hP', ← Category.assoc, hmφ]
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.Q.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ lvl.Q.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.Q.2, Category.id_comp,
+          Category.assoc, lvl.Q.2, Category.comp_id]
+      · show (L.Q.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ lvl.Q.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₂, Category.assoc, hQ', ← Category.assoc, hmφ]
+  · -- uniqueness: compose with `dbc` and use uniqueness upstairs
+    rintro m₁ ⟨hstr₁, bc₁, f₁, f₂⟩
+    have := huniq (m₁ ≫ φ.hom) ⟨?_, bc₁.comp dbc, ?_, ?_⟩
+    · rw [← this, Category.assoc, φ.hom_inv_id, Category.comp_id]
+    · rw [Category.assoc]; exact hstr₁
+    · show L.P.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.P.1
+      rw [← Category.assoc, f₁, Category.assoc, hP', ← Category.assoc]
+    · show L.Q.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.Q.1
+      rw [← Category.assoc, f₂, Category.assoc, hQ', ← Category.assoc]
+
+/-- **From an affine fine moduli scheme to `Gamma1RigidifiedModuli`**
+(PROVEN 2026-07-30) — `nonempty_gamma1RigidifiedModuli_of_iso` at the
+isomorphism `Scheme.isoSpec.symm`, with the coordinate ring taken to be
+the carrier of `Γ(R.M, ⊤)`.  Splitting the two keeps the
+`CommRingCat`-carrier step (`A : Type` versus `A : CommRingCat`) out of
+the transport proof, where it would have interacted with the base-point
+transports for no reason.
+
+## Faithfulness
+
+No hypothesis is decorative: `hR` is what supplies the isomorphism, and
+without it there is no ring `A` at all.  Neither `N` nor `n` is
+constrained, and neither needs to be — the statement holds for every `N`
+and `n` for which an inhabitant of `Gamma1RigidifiedModuliScheme` exists,
+which is the honest generality; the arithmetic hypotheses live on the two
+citation leaves, where they are load-bearing. -/
+theorem nonempty_gamma1RigidifiedModuli_of_isAffine {N n : ℕ} {S : Scheme.{0}}
+    (R : Gamma1RigidifiedModuliScheme N n S) (hR : IsAffine R.M) :
+    Nonempty (Gamma1RigidifiedModuli N n S) :=
+  letI := hR
+  nonempty_gamma1RigidifiedModuli_of_iso R (A := (Γ(R.M, ⊤) : CommRingCat).carrier)
+    R.M.isoSpec.symm
+
+/-- **The rigidified moduli scheme of `[Γ₁(N)], [Γ(n)]` over a field in
+which `N` and `n` are invertible exists, and is AFFINE** (**ASSEMBLED
+2026-07-30** over the three named nodes above; opened as a single sorry
+leaf 2026-07-28) — Katz–Mazur, and NOTHING else.  This is the one
+citation half of `exists_gamma1Rigidification`.
+
+The citations below are unchanged and are now split between
+`exists_gamma1RigidifiedModuliScheme` (4.7.1/4.7.2, 5.1.1, 6.6.2) and
+`isAffine_of_gamma1RigidifiedModuliScheme` (the parenthesis of 8.1.1);
+the third node, `nonempty_gamma1RigidifiedModuli_of_isAffine`, carries no
+citation at all.  See the section comment above for the accounting.
+
+## The citations, quoted so nobody has to re-derive which says what
+
+* **(4.7.1)** "Any relatively representable moduli problem `𝒫` which is
+  affine and etale over `(Ell)`, and rigid, is representable by a smooth
+  affine curve over `ℤ`."
+* **(4.7.2)** "For `N ≥ 3`, the naive level `N` moduli problem of 4.6 is
+  representable, by a smooth affine curve `Y(N)` over `ℤ[1/N]`."  Applied
+  at `n`, this represents `[Γ(n)]` by an affine `Y(n)`, and over `K` with
+  `char K ∤ n` the base change `Y(n)_K` is available.
+* **(5.1.1, First Main Theorem)** "Each of the four moduli problems
+  `[Γ(N)]`, `[Γ₁(N)]`, `[bal.Γ₁(N)]`, and `[Γ₀(N)]` is relatively
+  representable over `(Ell)`.  Each is finite and flat over `(Ell)` of
+  constant rank `≥ 1`… Each tensored with `ℤ[1/N]` is finite etale over
+  `(Ell/ℤ[1/N])`."  This is the `[Γ₁(N)]` input, and it is the ONE place
+  the `Γ₁` citation differs from the `Γ₀` one (which uses 6.6.1/6.6.2).
+* **(6.6.2)**, in the form that combines them: a representable moduli
+  problem `𝒮` étale over `(Ell)` and a relatively representable `𝒫` give
+  `M(𝒫, 𝒮)` finite and flat over `M(𝒮)`.  Take `𝒮 = [Γ(n)]`, étale over
+  `(Ell/K)` by the last sentence of 5.1.1, and `𝒫 = [Γ₁(N)]`.
+* **(8.1.1)** "…It 'exists' because `M(𝒫, 𝒮)` is itself affine."  The
+  emphasised clause is the affineness, and `M(𝒫, 𝒮) ⟶ M(𝒮) = Y(n)_K` is
+  finite over an affine scheme, hence affine.
+
+## What it does NOT owe
+
+The deck group, the invariants, the coarse space, descent, and the
+level-`n` torsor.  Those are `exists_gamma1DeckAction`,
+`exists_gamma1FullLevelStructure_cover` and the two PROVEN theorems
+above.
+
+## Faithfulness
+
+`hcharn` is load-bearing for TRUTH: at `char K ∣ n` the group scheme
+`E[n]` is not étale, `AbelianFullLevelStructure n dM.ab` is unsatisfiable
+over a nonempty base, and no inhabitant with `A ≠ 0` exists.  `hn` is
+load-bearing too: at `n ≤ 2` the rigidified problem still has the
+automorphism `-1`, so it is not representable.  `hcharN` is what makes
+`[Γ₁(N)]` étale rather than merely finite flat (5.1.1's last sentence).
+`_hN` is **not** load-bearing — the rigidity that representability needs
+is supplied by `[Γ(n)]` with `n ≥ 3`, not by `N ≥ 4` — and is carried only
+to match the consumer's signature. -/
+theorem exists_gamma1RigidifiedModuli (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) :
+    Nonempty (Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :=
+  (exists_gamma1RigidifiedModuliScheme N _hN n hn K hcharN hcharn).elim fun R =>
+    nonempty_gamma1RigidifiedModuli_of_isAffine R
+      (isAffine_of_gamma1RigidifiedModuliScheme N _hN n hn K hcharN hcharn R)
 
 namespace AbelianFullLevelStructure
 
