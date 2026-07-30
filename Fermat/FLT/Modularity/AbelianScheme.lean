@@ -798,7 +798,10 @@ axioms, one in each structure, and NEITHER implies the other.
 
 * `DualStruct.weil_nondegenerate` is the content of `DualStruct`:
   without it, `weil ≡ 1` would satisfy every other axiom of that
-  structure.
+  structure. It is GATED on `(n : F) ≠ 0` (repair of 2026-07-30);
+  ungated it made `DualStruct` UNINHABITABLE over any base with a point
+  of positive residue characteristic, because `μ_p` is trivial there.
+  The refutation and the witness are on the field itself.
 * `PolarizationStruct.weil_hom_nondegenerate` is the content of
   `PolarizationStruct`, and it was MISSING until 2026-07-27. Without it
   the entire structure was satisfied by the CONSTANT ZERO MAP over EVERY
@@ -950,9 +953,48 @@ structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct 
       y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
       weil x I n hn (m.act a y) z = weil x I n hn y (dualMult.act a z)
   /-- nondegeneracy in the first variable — the axiom that carries the
-  content, and without which `weil ≡ 1` would satisfy all the others -/
+  content, and without which `weil ≡ 1` would satisfy all the others.
+
+  **GATED ON `(n : F) ≠ 0`, i.e. ON THE LEVEL BEING PRIME TO THE RESIDUE
+  CHARACTERISTIC OF THE FIBRE — WITHOUT THAT GATE THIS STRUCTURE IS
+  UNINHABITABLE OVER ANY BASE WITH A POSITIVE-CHARACTERISTIC POINT**
+  (repair applied 2026-07-30; the audit is on
+  `Fermat.FLT.Modularity.TateModule.exists_dualPolarization_of_mult`, which
+  was FALSE AS STATED because of it).
+
+  The binders `∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)`
+  range over EVERY point of `S`, not over the one a consumer cares about.
+  Take `F` of characteristic `p`, `I` a prime of `R` above `p` and `n` with
+  `(n : R) ∈ I` — legal, and it forces `p ∣ n`, since `I ∩ ℤ = (ℓ)` for the
+  rational prime `ℓ` under `I` and `ℓ = p`. Then
+  `rootsOfUnity n (AlgebraicClosure F)` is TRIVIAL (`z ^ p = 1 ↔
+  (z - 1) ^ p = 0 ↔ z = 1`), so `weil x I n hn` is constantly `1`, the
+  hypothesis below holds for EVERY `y ∈ A[I]`, and the ungated axiom would
+  conclude `A[I](F̄) = 0`. Any fibre of positive `p`-rank refutes that: the
+  standard witness is `S = Spec ℤ[1/11]`, `A` the smooth proper model of
+  `X₀(11)`, `R = ℤ`, and the point `Spec 𝔽_5 ⟶ S`, whose fibre is `11a1`
+  over `𝔽_5` — ordinary (`a_5 = 1`, `#E(𝔽_5) = 5`), so `E[5](𝔽̄_5) ≅ ℤ/5`.
+  At `I = (5)`, `n = 5` the ungated axiom forces that group to vanish.
+
+  `(n : F) ≠ 0` removes exactly those levels and nothing else. If `(n : R) ∈ I`
+  and `char F ∤ n` then every prime of `I` divides `n` (as `I ∩ ℤ = (m)` with
+  `m ∣ n`), hence is prime to `char F`; so `A[I] ⊆ A[n]` is étale of order
+  prime to the characteristic and the canonical pairing on it really is
+  perfect. In characteristic zero the gate says only `n ≠ 0`, so no consumer
+  over a number field is affected — every one of them uses this axiom at
+  `I = (q ^ N)`, `n = q ^ N` with `q` prime and `q ≠ char F`.
+
+  `weil` itself is NOT gated: a pairing landing in a trivial group is
+  harmless, it is only the nondegeneracy claim about it that is false.
+
+  The gate sits as an ANONYMOUS arrow immediately after `y`, matching the
+  torsion-membership hypotheses beside it, so it is the SIXTH explicit
+  argument (`x`, `I`, `n`, `hn`, `y`, then this). A named binder would be
+  nicer to read but draws an
+  `unusedVariables` warning, since the statement never mentions it. -/
   weil_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
       (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+      (n : F) ≠ 0 →
       y ∈ (m.torsion x I).1 →
       (∀ z : GeomFibrePt dualMap x, z ∈ (dualMult.torsion x I).1 →
         weil x I n hn y z = 1) →
@@ -1987,10 +2029,12 @@ noncomputable def baseChangeOfIsPullback (d : DualStruct ab m) (hp : IsPullback 
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
       ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
   weil_nondegenerate := by
-    intro F _ x I n hn y hy hz
+    -- `F` and hence `(n : F) ≠ 0` are unchanged by the base change: the point
+    -- moves from `x` to `x ≫ q`, its residue field does not.
+    intro F _ x I n hn y hnF hy hz
     apply RelPoint.ofBaseChangeGeom_injective hp x
     rw [AbelianSchemeStruct.ofBaseChangeGeom_zero]
-    refine d.weil_nondegenerate (x ≫ q) I n hn _
+    refine d.weil_nondegenerate (x ≫ q) I n hn _ hnF
       ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy) ?_
     intro z hzt
     have hzt' : RelPoint.toBaseChangeGeom hpd x z ∈

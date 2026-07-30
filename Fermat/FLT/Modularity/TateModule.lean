@@ -8726,8 +8726,14 @@ REFUTING CHECK for that claim: look for `PolarizationStruct`, `lam`, `𝔞` or
 `posElt` in the statement below.  There are none, and `hom` is a bare
 function whose every clause quantifies over `GeomFibrePt f x`.
 
-**FALSITY AUDIT (2026-07-30) — THIS LEAF IS FALSE AS STATED, AND THE
-DEFECT IS IN `DualStruct`, NOT IN THE POLARIZATION.**  The audit of
+**FALSITY AUDIT (2026-07-30) — THIS LEAF WAS FALSE AS STATED, AND THE
+DEFECT WAS IN `DualStruct`, NOT IN THE POLARIZATION.  THE PRESCRIBED
+REPAIR HAS SINCE BEEN APPLIED (2026-07-30, later the same day, by
+`flt-lean-71`) AND THE LEAF IS NOW OPEN RATHER THAN FALSE.**  The audit is
+kept in full below, in the present tense it was written in, because it is
+what justifies the extra binder now sitting on
+`DualStruct.weil_nondegenerate`; see "STATUS OF THE REPAIR" at the end.
+The audit of
 2026-07-29 above found ONE way `weil_nondegenerate` can be read into
 contradiction (`R = ℤ`, `I = (2)`, `n = 4`) and repaired it by fixing the
 READING of `weil`.  There is a second way, and no reading repairs it: it is
@@ -8784,7 +8790,40 @@ seam: its base IS a finite field, so `DualStruct ab' m'` is uninhabited for
 every fibre of positive `p`-rank (an ordinary elliptic curve over `𝔽_p`
 suffices) and a leaf of the shape `∃ d : DualStruct ab' m', …` would be
 false for a reason having nothing to do with polarizations.  That note is
-repeated on that leaf. -/
+repeated on that leaf.
+
+**STATUS OF THE REPAIR (2026-07-30, `flt-lean-71`) — APPLIED, AND THIS LEAF
+IS NO LONGER FALSE.**  `DualStruct.weil_nondegenerate` in
+`Modularity/AbelianScheme.lean` now carries the extra hypothesis
+`(n : F) ≠ 0`, exactly as prescribed above — as an anonymous arrow sitting
+immediately after `y`, alongside the torsion-membership hypotheses, so it is
+the SIXTH explicit argument (`x`, `I`, `n`, `hn`, `y`, then the gate).
+Three things about the change are worth recording, because they are what a
+reviewer would check:
+
+* *It has ONE call site in the whole development.*  `weil_nondegenerate` is
+  constructed exactly once — `DualStruct.baseChangeOfIsPullback` — and
+  applied exactly once, inside that same construction, where the new
+  hypothesis passes through verbatim because base change moves the point
+  from `x` to `x ≫ q` and leaves its residue field `F` alone.  Every other
+  occurrence of the name in this development, here included, is prose.
+  Nothing in `MoretBailly.lean` applies it.
+* *It costs no consumer anything.*  Every use of the axiom in the intended
+  mathematics is at `I = (q ^ N)`, `n = q ^ N` with `q` a prime distinct
+  from the residue characteristic, so `(n : F) ≠ 0` is available for free —
+  over a number field from `Nat.cast_ne_zero` and `q ^ N ≠ 0`, over a finite
+  field of characteristic `p` from `¬ q ∣ #k`.  In characteristic zero the
+  gate says only `n ≠ 0`.
+* *The gate is TIGHT, not merely sufficient.*  If `(n : R) ∈ I` and
+  `char F ∤ n`, then `I ∩ ℤ = (m)` with `m ∣ n`, so every prime of `I` is
+  prime to `char F`, `A[I] ⊆ A[n]` is étale of order prime to the
+  characteristic, and the canonical pairing on it is perfect.  So the axiom
+  is retained at every level where it is true and dropped at exactly the
+  levels where it was contradictory.
+
+What this does NOT do is prove the leaf: it removes the obstruction that
+made proving it impossible.  The `q`-adic mathematics recorded above is
+unchanged, and so is the statement below — no signature here moved. -/
 theorem exists_dualPolarization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -17751,7 +17790,26 @@ So a cut of this leaf must either repair `DualStruct` first (gate
 carrying the pairing only at the prime-to-`p` levels `q^M` that this
 statement actually mentions.  Until one of those exists, this statement is
 already the minimal fibre-local form of "the polarized `q`-adic Weil system
-exists", and there is nothing to strip off it. -/
+exists", and there is nothing to strip off it.
+
+**UPDATE (2026-07-30, `flt-lean-71`): THE FIRST OF THOSE TWO HAS BEEN DONE
+— `DualStruct.weil_nondegenerate` NOW CARRIES `(n : F) ≠ 0`.**  So
+the paragraph above is no longer a prohibition, and the `DualStruct` seam is
+open again for this leaf.  Two cautions before anyone takes it:
+
+* the repair removes a REFUTATION, it does not supply an INHABITANT.
+  `DualStruct ab' m'` over a finite field is now merely not-known-to-be-empty;
+  producing one is the dual abelian scheme together with the prime-to-`p`
+  Weil pairing, which is the real content and is exactly what
+  `exists_dualPolarization_of_mult` asks for in the characteristic-zero case.
+  Cutting along the seam therefore trades this leaf for a strictly harder one
+  unless the dual is obtained by base change from a global model — which is
+  what the `AbelianReduction` section of this file is for, and is why the
+  fibre-local shape below was chosen in the first place;
+* the gate is on `(n : F) ≠ 0`, so a cut must carry `q ≠ char k` all the way
+  down to the point where the axiom is applied.  Here that is free
+  (`hqN : ¬ q ∣ N` with `hN : Nat.card k = N`), but it is a real side
+  condition and not decoration. -/
 theorem exists_qAdicPolarizedSystem_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
