@@ -90,15 +90,25 @@ prime, with the divisible case discharged. **As of the fifth pass (2026-07-28) t
 `End.exists_trace_charPoly` (`ψ² + [deg ψ] = [t] ψ`, Silverman *AEC* III.6.2) as the
 leaf. **As of the SEVENTH pass (2026-07-28) that is PROVEN too**, over the existence
 of an adjoint Weil pairing on `W[ℓ]`. **As of the EIGHTH pass (2026-07-30) THAT is
-PROVEN as well** — see below, it was never outside the circle — and the file's two
-remaining leaves are the two sub-steps of the elementary `x`-coordinate route:
+PROVEN as well** — see below, it was never outside the circle — and the eighth pass
+cut the elementary `x`-coordinate route into two sub-steps:
 
-* `End.exists_isXNormalForm_degree` — for a nonzero `φ ∈ End W`, writing
+* `End.exists_isXNormalForm_degree` (leaf (A)) — for a nonzero `φ ∈ End W`, writing
   `x ∘ φ = A / B` in lowest terms, `deg φ = max (deg A) (deg B)`. Silverman *AEC*
   II.2.4.1 + III.4.10; Washington *Elliptic Curves* §2.9.
-* `End.isXNormalForm_natDegree_parallelogram` — that `max`-degree is a quadratic
-  form on `End W`, by the `x`-only addition law and a coprimality count. A statement
-  about `F[X]` alone.
+* `End.isXNormalForm_natDegree_parallelogram` (leaf (B)) — that `max`-degree is a
+  quadratic form on `End W`, by the `x`-only addition law and a coprimality count. A
+  statement about `F[X]` alone.
+
+**As of the NINTH pass (2026-07-30) leaf (A) is PROVEN**, so leaf (B) is the file's
+only remaining leaf. Leaf (A) went through in two halves, over a definition change:
+`End.IsXNormalForm`'s certificate was weakened from "at every point off `ker φ`" to
+"at all but finitely many abscissae", which is what `IsRationalMap`-divided-by-its-gcd
+actually delivers, and which costs nothing downstream because both consumers are
+generic. The halves are `End.exists_isXNormalForm` (existence, now unconditional) and
+`End.isXNormalForm_card_roots_sub` (the fibre count, a bijection `ker φ ≃ {roots}`
+with no factor of `2` on either side). Leaf (B)'s audit was RE-RUN against the new
+definition rather than inherited; see the note there.
 
 **Passes one through SEVEN all stayed inside the circle.** They moved the `sorry`
 between equivalent identities about *degrees*; the audit below proves that circle
@@ -473,9 +483,11 @@ parallelogram law too**, so the file now stands on exactly one open leaf:
   it recorded as the first statement in this sequence that is not an identity
   between degrees. **That was wrong, and the eighth pass (2026-07-30) proved the
   pairing too** — it is a face of the same circle; see the ROUTE 2 section. The
-  file's leaves are now `End.exists_isXNormalForm_degree` and
+  eighth pass's leaves were `End.exists_isXNormalForm_degree` and
   `End.isXNormalForm_natDegree_parallelogram`, and `End.exists_trace_charPoly` is
-  proven over the parallelogram law, which is proven over those two.
+  proven over the parallelogram law, which is proven over those two. **The ninth
+  pass (2026-07-30) PROVED the first of them**, so
+  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — is all that is left.
 
 with
 
@@ -1157,9 +1169,10 @@ parallelogram law into a count of polynomial degrees. It needs no divisors, no W
 pairing and no function fields — only the `IsRationalMap` normal form that
 `Isogeny.lean` already carries (`homogSubst`,
 `natDegree_eq_zero_of_coprime_homogSubst`, `exists_const_of_homogSubst_eq_zero`).
-Its two sub-steps are now the file's two leaves, `End.exists_isXNormalForm_degree`
-and `End.isXNormalForm_natDegree_parallelogram`, and everything else in the trace
-layer — including the Weil pairing itself — is PROVEN over them.
+Its two sub-steps are `End.exists_isXNormalForm_degree` — PROVEN in the ninth pass
+(2026-07-30) — and `End.isXNormalForm_natDegree_parallelogram`, which is the file's
+only remaining leaf; everything else in the trace layer — including the Weil pairing
+itself — is PROVEN over the two.
 
 **Why the count is not a lap of the circle.** The circle consists of identities
 between `Isogeny.degree`s of endomorphisms; the ROUTE AUDIT proves it cannot be
@@ -1202,72 +1215,469 @@ theorem End.degree_add_self [IsAlgClosed F] [CharZero F] [W.IsElliptic] (χ : En
       = 4 * ((Isogeny.degree (End.toIsogeny χ) : ℤ)) := by rw [hm]; ring
   exact_mod_cast hz
 
+/-! ### The generic fibre of a coprime rational function
+
+Pure `F[X]` input to leaf (A): a coprime pair `(A, B)` presents a rational function
+of degree `max (deg A) (deg B)`, so its generic fibre has exactly that many distinct
+points. Characteristic zero enters here and only here, through the Wronskian: in
+characteristic `p` the map `X ↦ X^p` has an everywhere-ramified fibre and the count
+collapses to `1`. -/
+
+section XDegree
+
+variable {K : Type*} [Field K]
+
+/-- Coprime polynomials have no common root. -/
+theorem no_common_root_of_isCoprime {A B : K[X]} (hco : IsCoprime A B) {a : K}
+    (hA : A.eval a = 0) (hB : B.eval a = 0) : False := by
+  obtain ⟨u, v, huv⟩ := hco
+  have h := congrArg (Polynomial.eval a) huv
+  simp [hA, hB] at h
+
+/-- At the top degree `max (deg A) (deg B)` at least one of the two coefficients
+survives — which is what makes `A − C γ · B` have exactly that degree for all but at
+most one `γ`. -/
+theorem coeff_max_ne_zero_or {A B : K[X]} (hB : B ≠ 0) :
+    A.coeff (max A.natDegree B.natDegree) ≠ 0 ∨
+      B.coeff (max A.natDegree B.natDegree) ≠ 0 := by
+  rcases eq_or_ne A 0 with hA0 | hA0
+  · right
+    rw [hA0, natDegree_zero, zero_max, coeff_natDegree]
+    exact mt leadingCoeff_eq_zero.1 hB
+  · rcases le_total A.natDegree B.natDegree with h | h
+    · right
+      rw [max_eq_right h, coeff_natDegree]
+      exact mt leadingCoeff_eq_zero.1 hB
+    · left
+      rw [max_eq_left h, coeff_natDegree]
+      exact mt leadingCoeff_eq_zero.1 hA0
+
+variable [CharZero K]
+
+/-- The Wronskian `A' B − A B'` of a coprime pair is nonzero unless both are
+constants. If it vanished, coprimality would force `A ∣ A'` and `B ∣ B'`, which in
+characteristic zero forces both degrees to `0`. -/
+theorem wronskian_ne_zero_of_isCoprime {A B : K[X]} (hco : IsCoprime A B)
+    (hd : 0 < max A.natDegree B.natDegree) :
+    derivative A * B - A * derivative B ≠ 0 := by
+  intro hw
+  have hAB : derivative A * B = A * derivative B := by linear_combination hw
+  have hA0 : A ≠ 0 := by
+    intro h
+    rw [h] at hco
+    have hu : IsUnit B := isCoprime_zero_left.1 hco
+    rw [h, natDegree_zero, natDegree_eq_zero_of_isUnit hu] at hd
+    simp at hd
+  have hB0 : B ≠ 0 := by
+    intro h
+    rw [h] at hco
+    have hu : IsUnit A := isCoprime_zero_right.1 hco
+    rw [h, natDegree_zero, natDegree_eq_zero_of_isUnit hu] at hd
+    simp at hd
+  have hdA : A ∣ derivative A := hco.dvd_of_dvd_mul_right ⟨derivative B, hAB⟩
+  have hdB : B ∣ derivative B :=
+    hco.symm.dvd_of_dvd_mul_right ⟨derivative A, by linear_combination -hw⟩
+  have hA' : A.natDegree = 0 := by
+    by_contra hne
+    exact absurd (natDegree_le_of_dvd hdA (derivative_ne_zero.2 hne))
+      (not_le.2 (natDegree_derivative_lt hne))
+  have hB' : B.natDegree = 0 := by
+    by_contra hne
+    exact absurd (natDegree_le_of_dvd hdB (derivative_ne_zero.2 hne))
+      (not_le.2 (natDegree_derivative_lt hne))
+  rw [hA', hB'] at hd
+  simp at hd
+
+/-- **The generic fibre of a coprime rational function `A/B` has exactly
+`max (deg A) (deg B)` distinct points.** Two finite sets of parameters are removed:
+`Γ₁`, the at most one `γ` at which the leading coefficients of `A` and `B` cancel
+and `A − C γ · B` drops degree; and `Γ₂`, the critical values `A(s)/B(s)` at the
+roots `s` of the Wronskian, which are exactly the `γ` whose fibre has a repeated
+point. Off `Γ₁ ∪ Γ₂` the polynomial `A − C γ · B` has full degree and is separable,
+so over an algebraically closed field it has `max (deg A) (deg B)` distinct roots. -/
+theorem exists_finset_card_roots_sub_eq_max [DecidableEq K] [IsAlgClosed K] {A B : K[X]}
+    (hco : IsCoprime A B) (hB : B ≠ 0) :
+    ∃ Γ : Finset K, ∀ γ : K, γ ∉ Γ →
+      (A - C γ * B).roots.toFinset.card = max A.natDegree B.natDegree := by
+  classical
+  have htop := coeff_max_ne_zero_or (A := A) hB
+  set Γ₁ : Finset K :=
+    if B.coeff (max A.natDegree B.natDegree) = 0 then ∅
+      else {A.coeff (max A.natDegree B.natDegree) / B.coeff (max A.natDegree B.natDegree)}
+    with hΓ₁
+  have hdeg : ∀ γ : K, γ ∉ Γ₁ →
+      (A - C γ * B).natDegree = max A.natDegree B.natDegree ∧ (A - C γ * B) ≠ 0 := by
+    intro γ hγ
+    have hcoeff : (A - C γ * B).coeff (max A.natDegree B.natDegree)
+        = A.coeff (max A.natDegree B.natDegree) - γ * B.coeff (max A.natDegree B.natDegree) := by
+      simp [coeff_sub, coeff_C_mul]
+    have hne : (A - C γ * B).coeff (max A.natDegree B.natDegree) ≠ 0 := by
+      rw [hcoeff]
+      by_cases hbd : B.coeff (max A.natDegree B.natDegree) = 0
+      · rcases htop with h | h
+        · simpa [hbd] using h
+        · exact absurd hbd h
+      · intro hzero
+        refine hγ ?_
+        rw [hΓ₁, if_neg hbd, Finset.mem_singleton, eq_div_iff hbd]
+        linear_combination -hzero
+    have hle : (A - C γ * B).natDegree ≤ max A.natDegree B.natDegree := by
+      refine le_trans (natDegree_sub_le _ _) (max_le (le_max_left _ _) ?_)
+      exact le_trans (natDegree_C_mul_le _ _) (le_max_right _ _)
+    refine ⟨natDegree_eq_of_le_of_coeff_ne_zero hle hne, fun h0 => ?_⟩
+    rw [h0] at hne
+    simp at hne
+  rcases Nat.eq_zero_or_pos (max A.natDegree B.natDegree) with hd0 | hdpos
+  · refine ⟨Γ₁, fun γ hγ => ?_⟩
+    obtain ⟨hdg, _⟩ := hdeg γ hγ
+    rw [hd0] at hdg
+    rw [IsAlgClosed.roots_eq_zero_iff_natDegree_eq_zero.2 hdg]
+    simpa using hd0.symm
+  set ω : K[X] := derivative A * B - A * derivative B with hω
+  have hω0 : ω ≠ 0 := wronskian_ne_zero_of_isCoprime hco hdpos
+  set Γ₂ : Finset K := ω.roots.toFinset.image (fun s => A.eval s / B.eval s) with hΓ₂
+  refine ⟨Γ₁ ∪ Γ₂, fun γ hγ => ?_⟩
+  have hγ₁ : γ ∉ Γ₁ := fun h => hγ (Finset.mem_union_left _ h)
+  have hγ₂ : γ ∉ Γ₂ := fun h => hγ (Finset.mem_union_right _ h)
+  obtain ⟨hdg, hne0⟩ := hdeg γ hγ₁
+  have hsimple : ∀ a : K, (A - C γ * B).roots.count a ≤ 1 := by
+    intro a
+    rw [count_roots]
+    by_contra hcon
+    obtain ⟨hroot, hdroot⟩ := (one_lt_rootMultiplicity_iff_isRoot hne0).1 (not_le.1 hcon)
+    have hrootA : A.eval a = γ * B.eval a := by
+      have h := hroot
+      simp only [IsRoot.def, eval_sub, eval_mul, eval_C, sub_eq_zero] at h
+      exact h
+    have hBa : B.eval a ≠ 0 := by
+      intro hBa
+      exact no_common_root_of_isCoprime hco (by rw [hrootA, hBa, mul_zero]) hBa
+    have hγeq : γ = A.eval a / B.eval a := by
+      rw [eq_div_iff hBa]
+      linear_combination -hrootA
+    have hωa : (derivative (A - C γ * B)).eval a * B.eval a = ω.eval a := by
+      rw [hω]
+      simp only [derivative_sub, derivative_C_mul, eval_sub, eval_mul, eval_C]
+      rw [hrootA]
+      ring
+    rw [show (derivative (A - C γ * B)).eval a = 0 from hdroot, zero_mul] at hωa
+    refine hγ₂ ?_
+    rw [hΓ₂]
+    exact Finset.mem_image.2 ⟨a, by rw [Multiset.mem_toFinset, mem_roots hω0]; exact hωa.symm,
+      hγeq.symm⟩
+  rw [Multiset.toFinset_card_of_nodup (Multiset.nodup_iff_count_le_one.2 hsimple),
+    IsAlgClosed.card_roots_eq_natDegree, hdg]
+
+end XDegree
+
 /-- **The reduced `x`-coordinate normal form of an endomorphism.**
 `IsXNormalForm φ A B` says that `(A, B)` is a **coprime** pair of polynomials with
-`x (φ P) = A (x P) / B (x P)` at every point where `φ P ≠ 0`, written
+`x (φ P) = A (x P) / B (x P)` at all but finitely many abscissae, written
 multiplicatively so that no division is needed — that is, the `A, B` half of
-`IsRationalMap` (`Isogeny.lean`) with `IsCoprime A B` added.
+`IsRationalMap` (`Isogeny.lean`) with `IsCoprime A B` added and the certificate
+weakened to a cofinite one.
 
 The `y`-witness of `IsRationalMap` is deliberately dropped: route 2 counts degrees
 of the `x`-coordinate map only.
 
 **Coprimality makes the pair unique up to a unit**, which is what makes
 `max A.natDegree B.natDegree` a well-defined invariant of `φ` and hence makes leaf
-(B) below a statement rather than a family of statements. The argument: `ker φ` is
-finite (`IsIsogeny.finite_ker`) and `W.Point` is infinite (`infinite_point`), so the
-certificate holds at infinitely many points; two pairs `(A, B)`, `(A₀, B₀)`
-satisfying it give `A B₀ = A₀ B` at infinitely many `x`-values, hence as
-polynomials, and coprimality then forces `(A, B) = c · (A₀, B₀)`.
+(B) below a statement rather than a family of statements. The argument: two pairs
+`(A, B)`, `(A₀, B₀)` satisfying the certificate give `A B₀ = A₀ B` at every abscissa
+outside the union of the two exceptional sets; `exists_point_veluPointX_eq` realises
+EVERY element of `F` as an abscissa and `F` is infinite in characteristic zero, so
+`A B₀ − A₀ B` has infinitely many roots and vanishes, and coprimality then forces
+`(A, B) = c · (A₀, B₀)`. **The cofinite weakening therefore does not enlarge the
+class of admissible pairs**, which is why leaf (B) below is unaffected by it.
 
-**Note the certificate is stated at EVERY point with `φ P ≠ 0`, with no
-nonvanishing hypothesis on `B`, and that is not an oversight.** For a coprime pair
-it is automatic: if `B (x P) = 0` then the certificate forces `A (x P) = 0`,
-contradicting coprimality — so `B` cannot vanish at the abscissa of any point
-outside `ker φ`. Geometrically, `B`'s roots are exactly the abscissae of `ker φ`,
-where `x ∘ φ` has its poles. -/
+**Why the certificate is COFINITE (2026-07-30, ninth pass — this is a change).**
+It was first stated at every point with `φ P ≠ 0`, on the reasoning that for a
+coprime pair a vanishing `B (x P)` would force `A (x P) = 0` against coprimality, so
+`B`'s roots are exactly the abscissae of `ker φ`. That reasoning is sound as
+*geometry* and circular as a *proof*: it presumes the certificate at the very point
+where the certificate is in question. What `IsRationalMap` actually hands over is a
+pair `(A₀, B₀)` with a certificate everywhere; dividing by `g := gcd (A₀, B₀)` — the
+only route to coprimality — survives exactly where `g` does not vanish, a cofinite
+set of abscissae, and recovering the finitely many lost points needs a limiting
+argument that the everywhere-form does not come with.
+
+Nothing downstream wants the strong form: leaf (A2) counts a GENERIC fibre and leaf
+(B) is a degree identity, so both are insensitive to finitely many abscissae, and
+each merely enlarges its own excluded parameter set by the image of the exceptional
+set under `ξ ↦ A(ξ)/B(ξ)`. Weakening the definition is what makes the existence half
+(`End.exists_isXNormalForm`) a five-line consequence of `IsRationalMap` instead of a
+leaf. -/
 def End.IsXNormalForm [IsAlgClosed F] [W.IsElliptic] (φ : End W) (A B : F[X]) : Prop :=
   IsCoprime A B ∧ B ≠ 0 ∧
-    ∀ P : W.Point, (φ : AddMonoid.End W.Point) P ≠ 0 →
-      veluPointX ((φ : AddMonoid.End W.Point) P) * B.eval (veluPointX P)
-        = A.eval (veluPointX P)
+    ∃ T : Finset F, ∀ P : W.Point, (φ : AddMonoid.End W.Point) P ≠ 0 →
+      veluPointX P ∉ T →
+        veluPointX ((φ : AddMonoid.End W.Point) P) * B.eval (veluPointX P)
+          = A.eval (veluPointX P)
 
-/-- **LEAF (A) (2026-07-30, eighth pass) — the degree is the degree of the
-`x`-coordinate map.** Silverman *AEC* II.2.4.1 together with III.4.10, or Washington
-*Elliptic Curves* §2.9: for a nonzero `φ ∈ End W`, writing `x ∘ φ = A / B` in lowest
-terms,
+/-- **Existence of a reduced `x`-normal form — PROVEN (2026-07-30, ninth pass).**
+This was the first half of leaf (A). `IsRationalMap` (inside `IsIsogeny`, so carried
+by every element of `End W`) supplies a pair `(A₀, B₀)` with `B₀ ≠ 0` and a
+certificate at every point off `ker φ`; dividing by `g := gcd (A₀, B₀)` gives the
+coprime pair, and the certificate survives the division at every abscissa where `g`
+does not vanish — that is, off the finite set `g.roots`, which is exactly the
+exceptional set the cofinite `IsXNormalForm` allows.
+
+**No hypothesis on `φ` is needed**, not even `φ ≠ 0`: at `φ = 0` the certificate is
+vacuous and any coprime pair works. That is precisely why leaf (A) below must carry
+`hφ` itself — see its audit. -/
+theorem End.exists_isXNormalForm [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (φ : End W) :
+    ∃ A B : F[X], End.IsXNormalForm φ A B := by
+  classical
+  obtain ⟨A₀, B₀, Cy, D, E, hB₀, hE, hcert⟩ := φ.2.isRationalMap
+  set g : F[X] := GCDMonoid.gcd A₀ B₀ with hg
+  have hgne : g ≠ 0 := gcd_ne_zero_of_right hB₀
+  refine ⟨A₀ / g, B₀ / g, isCoprime_div_gcd_div_gcd hB₀,
+    right_div_gcd_ne_zero hB₀, g.roots.toFinset, ?_⟩
+  intro P hP hx
+  have hgx : g.eval (veluPointX P) ≠ 0 := by
+    intro h0
+    exact hx (by rw [Multiset.mem_toFinset, mem_roots hgne]; exact h0)
+  have hAeq : g * (A₀ / g) = A₀ :=
+    EuclideanDomain.mul_div_cancel' hgne (GCDMonoid.gcd_dvd_left _ _)
+  have hBeq : g * (B₀ / g) = B₀ :=
+    EuclideanDomain.mul_div_cancel' hgne (GCDMonoid.gcd_dvd_right _ _)
+  have hx0 : veluPointX ((φ : AddMonoid.End W.Point) P) * B₀.eval (veluPointX P)
+      = A₀.eval (veluPointX P) := (hcert P hP).1
+  rw [← hAeq, ← hBeq] at hx0
+  simp only [eval_mul] at hx0
+  refine mul_left_cancel₀ hgx ?_
+  linear_combination hx0
+
+/-- **The generic fibre of `x ∘ φ` has exactly `deg φ` points — PROVEN (2026-07-30,
+ninth pass).** This is the geometric half of leaf (A), and the step that leaves the
+circle's language: it equates a kernel cardinality with a count of polynomial roots.
+
+### THE BIJECTION
+
+The naive count is `2 : 1` in two places at once — `x` is `2 : 1` on `W.Point` and
+each root of `A − C γ · B` is hit by a pair `±P` — and the two cancel. Doing it in
+one step instead avoids both factors. Fix `Q₀` with `x Q₀ = γ` and `Q₀ ∉ W[2]`, and
+fix any `P₁` with `φ P₁ = Q₀` (`IsIsogeny.surjective`). Then
+
+    ker φ  →  {roots of A − C γ · B},   k ↦ x (P₁ + k)
+
+is a bijection, giving `#ker φ = #roots` with no factor of `2` on either side.
+
+* *Well defined*: `φ (P₁ + k) = Q₀ ≠ 0`, so the certificate applies and
+  `γ · B (x (P₁ + k)) = A (x (P₁ + k))`.
+* *Injective*: `eq_or_eq_neg_of_veluPointX_eq` leaves only `P₁ + k = −(P₁ + k')`,
+  which pushes forward to `Q₀ = −Q₀` — excluded because `Q₀` is not `2`-torsion.
+  **This is the only place the `2`-torsion hypothesis is used, and it is what
+  replaces the two cancelling factors of `2`.**
+* *Surjective*: a root `ξ` has `B (ξ) ≠ 0` by coprimality, and lifts to a point `P`
+  by `exists_point_veluPointX_eq`; the certificate then gives `x (φ P) = γ`, so
+  `φ P = ±Q₀`, and one of `P`, `−P` lies in the fibre over `Q₀` (`velu_pointX_neg`).
+
+### THE EXCLUDED PARAMETERS
+
+Five finite sets, each removing a way the bijection can fail; write
+`val ξ := A(ξ)/B(ξ)`.
+
+* `Γ₀` — the at most one `γ` with `A = C γ · B`, where `A − C γ · B` is the zero
+  polynomial and `roots` is not a fibre at all.
+* `val ''` (abscissae of `ker φ`) — so that no root of `A − C γ · B` is the abscissa
+  of a kernel point, where surjectivity would have no `P` with `φ P ≠ 0`.
+* `val '' T` — the same for the exceptional set `T` of the cofinite certificate.
+* abscissae of `W[2]` — so that `Q₀ ≠ −Q₀`, as above.
+* `x ∘ φ ''` `{P ≠ 0 | x P ∈ T}` — so that no point of the fibre over `Q₀` has its
+  abscissa in `T`, where the certificate is unavailable. Finite because `x` is
+  finite-to-one (`finite_veluPointX_preimage`).
+
+The second, third and fourth are legitimate because at a root `ξ` coprimality forces
+`B (ξ) ≠ 0`, so `γ = val ξ` is *determined* by `ξ`: a bad `ξ` can spoil only one
+`γ`. -/
+theorem End.isXNormalForm_card_roots_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : End W} (hφ : φ ≠ 0) {A B : F[X]} (h : End.IsXNormalForm φ A B) :
+    ∃ Γ : Finset F, ∀ γ : F, γ ∉ Γ →
+      (A - C γ * B).roots.toFinset.card = Isogeny.degree (End.toIsogeny φ) := by
+  classical
+  obtain ⟨hco, hB, T, hcert⟩ := h
+  have hψ0 : (End.toIsogeny φ).toHom ≠ 0 := fun h0 => hφ (Subtype.ext h0)
+  have hcertf : ∀ P : W.Point, (End.toIsogeny φ).toHom P ≠ 0 → veluPointX P ∉ T →
+      veluPointX ((End.toIsogeny φ).toHom P) * B.eval (veluPointX P)
+        = A.eval (veluPointX P) := hcert
+  have hkerfin : (AddMonoidHom.ker (End.toIsogeny φ).toHom : Set W.Point).Finite :=
+    (End.toIsogeny φ).isIsogeny.finite_ker hψ0
+  have hsurj : Function.Surjective (End.toIsogeny φ).toHom :=
+    (End.toIsogeny φ).isIsogeny.surjective hψ0
+  have h2fin : {P : W.Point | (2 : ℕ) • P = 0}.Finite :=
+    finite_nsmulKer (W := W) (n := 2) (by norm_num)
+  have hTPfin : {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ (T : Set F)}.Finite :=
+    finite_veluPointX_preimage T.finite_toSet
+  -- `Γ₀`: the at most one parameter where `A - C γ * B` vanishes identically
+  obtain ⟨Γ₀, hΓ₀⟩ : ∃ Γ₀ : Finset F, ∀ γ : F, γ ∉ Γ₀ → A - C γ * B ≠ 0 := by
+    by_cases hex : ∃ c : F, A = C c * B
+    · refine ⟨{hex.choose}, fun γ hγ h0 => hγ (Finset.mem_singleton.2 ?_)⟩
+      have h1 : A = C γ * B := by linear_combination h0
+      exact Polynomial.C_inj.1 (mul_right_cancel₀ hB (h1.symm.trans hex.choose_spec))
+    · exact ⟨∅, fun γ _ h0 => hex ⟨γ, by linear_combination h0⟩⟩
+  set val : F → F := fun ξ => A.eval ξ / B.eval ξ with hvaldef
+  refine ⟨Γ₀ ∪ (hkerfin.toFinset.image veluPointX).image val ∪ T.image val
+      ∪ h2fin.toFinset.image veluPointX
+      ∪ hTPfin.toFinset.image (fun P => veluPointX ((End.toIsogeny φ).toHom P)),
+    fun γ hγ => ?_⟩
+  simp only [Finset.mem_union, not_or] at hγ
+  obtain ⟨⟨⟨⟨hγ0, hγK⟩, hγT⟩, hγ2⟩, hγP⟩ := hγ
+  have hAneB : A - C γ * B ≠ 0 := hΓ₀ γ hγ0
+  -- at a root, `B` survives and the value of `A/B` is `γ`
+  have hrootval : ∀ ξ : F, (A - C γ * B).eval ξ = 0 →
+      B.eval ξ ≠ 0 ∧ A.eval ξ = γ * B.eval ξ ∧ val ξ = γ := by
+    intro ξ hξ
+    have hAB : A.eval ξ = γ * B.eval ξ := by
+      simp only [eval_sub, eval_mul, eval_C, sub_eq_zero] at hξ
+      exact hξ
+    have hBξ : B.eval ξ ≠ 0 := fun h0 =>
+      no_common_root_of_isCoprime hco (by rw [hAB, h0, mul_zero]) h0
+    refine ⟨hBξ, hAB, ?_⟩
+    simp only [hvaldef]
+    rw [div_eq_iff hBξ]
+    exact hAB
+  have hmemR : ∀ ξ : F, ξ ∈ (A - C γ * B).roots.toFinset ↔ (A - C γ * B).eval ξ = 0 := by
+    intro ξ
+    rw [Multiset.mem_toFinset, mem_roots hAneB]
+    exact Iff.rfl
+  -- a point over `γ`, necessarily not `2`-torsion
+  obtain ⟨Q₀, hQ₀0, hQ₀x⟩ := exists_point_veluPointX_eq (W := W) γ
+  have hQ₀neg : Q₀ ≠ -Q₀ := by
+    intro heq
+    refine hγ2 (Finset.mem_image.2 ⟨Q₀, (Set.Finite.mem_toFinset h2fin).2 ?_, hQ₀x⟩)
+    show (2 : ℕ) • Q₀ = 0
+    rw [two_nsmul]
+    nth_rewrite 2 [heq]
+    exact add_neg_cancel Q₀
+  obtain ⟨P₁, hP₁⟩ := hsurj Q₀
+  have hval_of_ker : ∀ k : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (End.toIsogeny φ).toHom (P₁ + k) = Q₀ := by
+    intro k hk
+    rw [map_add, hk, add_zero, hP₁]
+  -- the fibre over `Q₀` lands in the root set
+  have hmaps : ∀ k : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (A - C γ * B).eval (veluPointX (P₁ + k)) = 0 := by
+    intro k hk
+    have hQ := hval_of_ker k hk
+    have hne : (End.toIsogeny φ).toHom (P₁ + k) ≠ 0 := by rw [hQ]; exact hQ₀0
+    have hnotT : veluPointX (P₁ + k) ∉ T := by
+      intro hmem
+      refine hγP (Finset.mem_image.2 ⟨P₁ + k, (Set.Finite.mem_toFinset hTPfin).2 ⟨?_, ?_⟩, ?_⟩)
+      · intro h0
+        rw [h0, map_zero] at hne
+        exact hne rfl
+      · exact Finset.mem_coe.2 hmem
+      · rw [hQ, hQ₀x]
+    have hc := hcertf (P₁ + k) hne hnotT
+    rw [hQ, hQ₀x] at hc
+    simp only [eval_sub, eval_mul, eval_C, sub_eq_zero]
+    exact hc.symm
+  -- and does so injectively
+  have hinj : ∀ k k' : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (End.toIsogeny φ).toHom k' = 0 →
+      veluPointX (P₁ + k) = veluPointX (P₁ + k') → k = k' := by
+    intro k k' hk hk' hx
+    have hQ := hval_of_ker k hk
+    have hQ' := hval_of_ker k' hk'
+    have hne : P₁ + k ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hQ
+      exact hQ₀0 hQ.symm
+    have hne' : P₁ + k' ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hQ'
+      exact hQ₀0 hQ'.symm
+    rcases eq_or_eq_neg_of_veluPointX_eq hne hne' hx with hcase | hcase
+    · exact add_left_cancel hcase
+    · exfalso
+      have h1 : (End.toIsogeny φ).toHom (P₁ + k) = -(End.toIsogeny φ).toHom (P₁ + k') := by
+        rw [hcase, map_neg]
+      rw [hQ, hQ'] at h1
+      exact hQ₀neg h1
+  -- and onto
+  have hsurjR : ∀ ξ : F, (A - C γ * B).eval ξ = 0 →
+      ∃ k : W.Point, (End.toIsogeny φ).toHom k = 0 ∧ veluPointX (P₁ + k) = ξ := by
+    intro ξ hξ
+    obtain ⟨hBξ, hAB, hvalξ⟩ := hrootval ξ hξ
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) ξ
+    have hnotT : ξ ∉ T := fun hmem => hγT (Finset.mem_image.2 ⟨ξ, hmem, hvalξ⟩)
+    have hfP : (End.toIsogeny φ).toHom P ≠ 0 := by
+      intro h0
+      refine hγK (Finset.mem_image.2 ⟨ξ, Finset.mem_image.2
+        ⟨P, (Set.Finite.mem_toFinset hkerfin).2 (AddMonoidHom.mem_ker.2 h0), hPx⟩, hvalξ⟩)
+    have hc := hcertf P hfP (by rw [hPx]; exact hnotT)
+    rw [hPx] at hc
+    have hxfP : veluPointX ((End.toIsogeny φ).toHom P) = γ :=
+      mul_right_cancel₀ hBξ (hc.trans hAB)
+    rw [← hQ₀x] at hxfP
+    rcases eq_or_eq_neg_of_veluPointX_eq hfP hQ₀0 hxfP with hcase | hcase
+    · refine ⟨P - P₁, ?_, ?_⟩
+      · rw [map_sub, hcase, hP₁, sub_self]
+      · rw [show P₁ + (P - P₁) = P by abel, hPx]
+    · refine ⟨-P - P₁, ?_, ?_⟩
+      · rw [map_sub, map_neg, hcase, hP₁, neg_neg, sub_self]
+      · rw [show P₁ + (-P - P₁) = -P by abel, velu_pointX_neg, hPx]
+  -- the resulting bijection
+  have hbij : Function.Bijective
+      (fun k : AddMonoidHom.ker (End.toIsogeny φ).toHom =>
+        (⟨veluPointX (P₁ + (k : W.Point)),
+          (hmemR _).2 (hmaps _ (AddMonoidHom.mem_ker.1 k.2))⟩ :
+          {x // x ∈ (A - C γ * B).roots.toFinset})) := by
+    constructor
+    · intro k k' hkk
+      exact Subtype.ext (hinj _ _ (AddMonoidHom.mem_ker.1 k.2) (AddMonoidHom.mem_ker.1 k'.2)
+        (congrArg Subtype.val hkk))
+    · rintro ⟨ξ, hξ⟩
+      obtain ⟨k, hk, hkx⟩ := hsurjR ξ ((hmemR ξ).1 hξ)
+      exact ⟨⟨k, AddMonoidHom.mem_ker.2 hk⟩, Subtype.ext hkx⟩
+  have hcard := Nat.card_eq_of_bijective _ hbij
+  rw [Isogeny.degree_of_ne_zero hψ0, hcard, Nat.card_eq_fintype_card, Fintype.card_coe]
+
+/-- **LEAF (A) — the degree is the degree of the `x`-coordinate map. PROVEN
+(2026-07-30, ninth pass).** Silverman *AEC* II.2.4.1 together with III.4.10, or
+Washington *Elliptic Curves* §2.9: for a nonzero `φ ∈ End W`, writing `x ∘ φ = A / B`
+in lowest terms,
 
     deg φ = max (deg A) (deg B).
 
-### ROUTE
+**It is no longer a leaf.** The two halves are `End.exists_isXNormalForm` (the
+`IsRationalMap` certificate divided by its gcd) and `End.isXNormalForm_card_roots_sub`
+(the fibre count), both proven above; the assembly is that the two excluded parameter
+sets are finite while `F` is infinite in characteristic zero, so some `γ` avoids both
+and the two counts of the same fibre — `max (deg A) (deg B)` from
+`exists_finset_card_roots_sub_eq_max`, and `deg φ` from the bijection with `ker φ` —
+must agree.
 
-`IsRationalMap` (inside `IsIsogeny`, so carried by every element of `End W`) already
-supplies **some** pair `(A₀, B₀)` with `B₀ ≠ 0` satisfying the certificate; dividing
-by `gcd (A₀, B₀)` gives the coprime pair. The certificate survives the division at
-every abscissa where the gcd does not vanish, which is a cofinite set; at the
-finitely many remaining abscissae it is recovered from the coprime pair itself, as
-the docstring on `End.IsXNormalForm` explains (if the reduced denominator vanishes
-the point is in `ker φ`, and the hypothesis `φ P ≠ 0` is vacuous there).
+### FAITHFULNESS AUDIT (2026-07-30, ninth pass)
 
-The degree equality is the fibre count. `x : W.Point → F` is `2 : 1` off the
-`2`-torsion, and `φ` is `#ker φ : 1` (its fibres are the cosets of `ker φ`,
-`IsIsogeny.surjective` giving surjectivity); so for all but finitely many `t : F`
-the set `{P | A (x P) = t · B (x P)}` has `2 · deg φ` elements, while it is the
-preimage under `x` of the root set of `A − C t · B`, which has `2 · max (deg A)
-(deg B)` elements once `A − C t · B` is separable of full degree. Separability for
-generic `t` is where **characteristic zero** enters, and it is the only place: over
-`F(t)` the polynomial `A − t B` is separable because `F(t)` is perfect and
-`A − t B` is not a `p`-th power, `p = char F` being `0`.
+**This is the SECOND audit of this statement**, re-run after the definition of
+`IsXNormalForm` was weakened to a cofinite certificate; per CLAUDE.md the eighth
+pass's audit is VOID, not inherited. The statement's own text is unchanged, but its
+`IsXNormalForm` means something weaker, so every clause below is re-checked against
+the composite.
 
-### FAITHFULNESS AUDIT (2026-07-30)
+*Not vacuous — and now for a stronger reason.* `IsXNormalForm` is inhabited for
+every `φ` whatsoever, by `End.exists_isXNormalForm`, which needs no hypothesis at
+all. Under the old everywhere-certificate that inhabitation was itself unproven. For
+`φ = 1` the pair is `(X, 1)` and `max = 1 = deg 1`; for `φ = [n]` it is `(Φₙ, ΨSqₙ)`
+with degrees `n²` and `n² − 1`, and `max = n² = deg [n]` (`End.degree_intCast`).
 
-*Not vacuous.* `IsXNormalForm` is inhabited for every nonzero `φ` — that is the
-first half of the route, and `IsRationalMap` is what makes it so. For `φ = 1` the
-pair is `(X, 1)` and `max = 1 = deg 1`; for `φ = [n]` it is `(Φₙ, ΨSqₙ)` with
-degrees `n²` and `n² − 1`, and `max = n² = deg [n]` (`End.degree_intCast`).
+*The nonzero hypothesis is load-bearing, and MORE so than before.* At `φ = 0` the
+certificate is vacuous, so **every** coprime pair satisfies `IsXNormalForm 0 A B`
+while `deg 0 = 0`; `(X, 1)` refutes the conclusion. Note this is not an artefact of
+the weakening — it was already true of the everywhere-form — but the weakening makes
+`End.exists_isXNormalForm` drop `hφ`, so the hypothesis now lives *only* here, and
+deleting it would be a live refutation rather than a redundancy.
 
-*The nonzero hypothesis is load-bearing.* At `φ = 0` the certificate is vacuous, so
-**every** coprime pair satisfies `IsXNormalForm 0 A B` while `deg 0 = 0`; the
-conclusion would be refuted by `(X, 1)`.
+*Weakening the hypothesis did not weaken the theorem to vacuity.* Because
+`IsXNormalForm` is an existential over `(A, B)` in the CONCLUSION, weakening it makes
+this statement *weaker*, not stronger — the honest check is therefore whether the
+conclusion still pins `max (deg A) (deg B)`, and it does: coprimality still forces
+the pair unique up to a unit (see `End.IsXNormalForm`'s docstring, where the argument
+is redone for the cofinite form), so `max A.natDegree B.natDegree` is still an
+invariant of `φ` and not a choice.
 
 *`max` and not `+`, and `natDegree` and not `degree`.* `natDegree` of a nonzero
 constant is `0`, so `(X, 1)` has `max = 1`: correct. Using `A.natDegree +
@@ -1276,20 +1686,33 @@ B.natDegree` would give `1` here too but `2 n² − 1` at `[n]`, which is wrong.
 *Characteristic zero is required as stated.* Over `𝔽̄_p` the Frobenius has `deg = 1`
 in this file's sense (`Isogeny.degree` counts kernel *points*,
 `Isogeny.NotIsRationalMapDualHom.frobIsog_degree`) while `x ∘ frob = X^p / 1` has
-`max = p`. So the leaf is FALSE without `[CharZero F]`, by the same defect that
+`max = p`. So the statement is FALSE without `[CharZero F]`, by the same defect that
 `Isogeny.isRationalMap_dualHom`'s audit records — and for the same reason:
-`Isogeny.degree` is the separable degree.
+`Isogeny.degree` is the separable degree. In the proof, characteristic zero is used
+in exactly two places, and they are the two halves of that defect:
+`wronskian_ne_zero_of_isCoprime` (separability of the generic fibre) and
+`CharZero.infinite` (there is a `γ` to choose).
 
 *It is not a lap of the circle.* Every statement in the circle equates two
-`Isogeny.degree`s; this one equates a `Isogeny.degree` with a polynomial degree.
-The ROUTE AUDIT on `End.exists_trace_charPoly_degree_sub` shows the circle cannot be
-broken by kernel-cardinality arguments, and this leaf is exactly the step that
-leaves that language. -/
+`Isogeny.degree`s; this one equates a `Isogeny.degree` with a polynomial degree, and
+the equation is now machine-checked rather than assumed. The ROUTE AUDIT on
+`End.exists_trace_charPoly_degree_sub` shows the circle cannot be broken by
+kernel-cardinality arguments; `End.isXNormalForm_card_roots_sub` is the step that
+leaves that language, and it does so through `exists_point_veluPointX_eq`, which is
+where the curve stops being an abstract abelian group. -/
 theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsElliptic]
     {φ : End W} (hφ : φ ≠ 0) :
     ∃ A B : F[X], End.IsXNormalForm φ A B ∧
-      Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree :=
-  sorry
+      Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree := by
+  classical
+  obtain ⟨A, B, h⟩ := End.exists_isXNormalForm (W := W) φ
+  refine ⟨A, B, h, ?_⟩
+  obtain ⟨Γ₁, h₁⟩ := exists_finset_card_roots_sub_eq_max (K := F) h.1 h.2.1
+  obtain ⟨Γ₂, h₂⟩ := End.isXNormalForm_card_roots_sub hφ h
+  haveI : Infinite F := CharZero.infinite F
+  obtain ⟨γ, hγ⟩ := Infinite.exists_notMem_finset (Γ₁ ∪ Γ₂)
+  exact (h₂ γ (fun hm => hγ (Finset.mem_union_right _ hm))).symm.trans
+    (h₁ γ (fun hm => hγ (Finset.mem_union_left _ hm)))
 
 /-- **LEAF (B) (2026-07-30, eighth pass) — the `x`-degree is a quadratic form**, by
 the `x`-only addition law and a coprimality count. Washington *Elliptic Curves*,
@@ -1321,7 +1744,25 @@ is the **coprimality count**: `gcd (A₁ B₂ + A₂ B₁, A₁ A₂, B₁ B₂)
 the two presentations agree up to a unit and turns the degree bookkeeping into the
 stated identity.
 
-### FAITHFULNESS AUDIT (2026-07-30)
+### FAITHFULNESS AUDIT (2026-07-30, RE-RUN in the ninth pass)
+
+**The eighth pass's audit of this statement is VOID and this replaces it**, per
+CLAUDE.md's rule that a restatement voids the earlier audit rather than inheriting
+it. Nothing in the statement's own text changed; `End.IsXNormalForm` did, from an
+everywhere certificate to a cofinite one, and this theorem takes four of them as
+hypotheses. Weakening a HYPOTHESIS strengthens the theorem, so this is the direction
+in which a definition change can turn a true leaf false, and it is re-checked here
+clause by clause.
+
+*The weakening does not enlarge the hypothesis class, which is why the statement
+survives it.* A cofinite certificate plus coprimality still determines `(A, B)` up
+to a unit — the argument is redone for the cofinite form in `End.IsXNormalForm`'s
+docstring, and turns on `exists_point_veluPointX_eq` realising every element of `F`
+as an abscissa, so the finitely many excluded abscissae cannot hide a second class
+of pairs. Hence `max A.natDegree B.natDegree` is the same number for the same `φ`
+under either definition, and no new quadruple `(A,B,C,D,A₁,B₁,A₂,B₂)` satisfies the
+hypotheses. **Had this failed, the leaf would have become false**: an adversarial
+extra pair could be given any degrees at all.
 
 *All four nonvanishing hypotheses are load-bearing.* At `φ = 0` every coprime pair
 is an `x`-normal form (the certificate is vacuous), so the identity is refuted by
@@ -1335,15 +1776,20 @@ degenerate cases are **not** lost: they are discharged outright in
 pair is unique up to a unit; see the docstring on `End.IsXNormalForm` for the
 argument. So the universally quantified pairs cannot be chosen adversarially.
 
-*Not vacuous.* Leaf (A) inhabits every hypothesis, which is exactly how
-`End.degree_add_add_degree_sub` below consumes the two together.
+*Not vacuous, and no longer conditionally so.* `End.exists_isXNormalForm` inhabits
+every hypothesis unconditionally, and `End.exists_isXNormalForm_degree` — leaf (A),
+now PROVEN — supplies them together with their degrees, which is exactly how
+`End.degree_add_add_degree_sub` below consumes the two. Under the eighth pass's
+definition that inhabitation was itself an open leaf, so this clause rested on an
+assumption and now does not.
 
-*Sanity check.* `W : y² = x³ − x` with CM by `ℤ[i]`, `φ := 1`, `ψ := i`. Normal
-forms `(X, 1)` and `(−X, 1)`, both of `max = 1`; `1 ± i` have norm `2`, and their
-`x`-maps have `max = 2`. The identity reads `2 + 2 = 2 · 1 + 2 · 1`. A second check
-inside `ℤ ⊆ End W`, where every term is computable from `End.degree_intCast` alone:
-`φ := 1`, `ψ := [2]` gives `φ + ψ = [3]` and `φ − ψ = [−1]`, so
-`9 + 1 = 2 · 1 + 2 · 4`. Both hold.
+*Numerical re-check, since the sanity check is cheap and the definition moved.* Both
+models below use pairs that satisfy the cofinite certificate for the same reason
+they satisfied the old one (their exceptional set is empty), so they still test the
+identity: `W : y² = x³ − x` with CM by `ℤ[i]`, `φ := 1`, `ψ := i`, normal forms
+`(X, 1)` and `(−X, 1)` both of `max = 1`, and `1 ± i` of norm `2` with `x`-maps of
+`max = 2`, reads `2 + 2 = 2 · 1 + 2 · 1`; and inside `ℤ ⊆ End W`, `φ := 1`,
+`ψ := [2]` gives `9 + 1 = 2 · 1 + 2 · 4`. Both hold.
 
 *The statement is about `F[X]` only.* No `Isogeny.degree` occurs in it. That is the
 point of the cut: this half of route 2 can be attacked with no elliptic-curve
@@ -1359,8 +1805,9 @@ theorem End.isXNormalForm_natDegree_parallelogram [IsAlgClosed F] [CharZero F]
   sorry
 
 /-- **The parallelogram law for the degree — PROVEN (2026-07-30, eighth pass)** over
-the two route-2 leaves above. Silverman *AEC* III.6.3: the degree is a quadratic
-form on `End W`.
+the two route-2 statements above: `End.exists_isXNormalForm_degree`, itself PROVEN in
+the ninth pass, and `End.isXNormalForm_natDegree_parallelogram`, which remains the
+file's one leaf. Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`.
 
     deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ.
 
@@ -1589,9 +2036,10 @@ pass (2026-07-30) is the vindication of its second half: the seventh pass took r
 rather than an input — it is PROVEN at the foot of this file from the trace formula
 and `deg = det`. **Route (2), the elementary `x`-coordinate degree count, is the
 route the file now stands on**; its two sub-steps, which this section correctly
-identified as "not stated in this tree yet", are the file's two leaves
-`End.exists_isXNormalForm_degree` and
-`End.isXNormalForm_natDegree_parallelogram` (see the ROUTE 2 section above). What
+identified as "not stated in this tree yet", are
+`End.exists_isXNormalForm_degree` (PROVEN in the ninth pass, 2026-07-30) and
+`End.isXNormalForm_natDegree_parallelogram`, the file's one remaining leaf (see the
+ROUTE 2 section above). What
 still stands unchanged is the proof below that no *counting* argument can supply any
 face of the circle.
 
@@ -1857,9 +2305,9 @@ on the second of those.
 Everything from here down was written while this statement *was* the file's open
 leaf. It is all still valid and none of it is retracted — but "this leaf" in it now
 means whichever member of the degree circle was open at the time of writing; ALL of
-them are now PROVEN, over the two route-2 leaves
-`End.exists_isXNormalForm_degree` and
-`End.isXNormalForm_natDegree_parallelogram` (ROUTE 2 section above). In
+them are now PROVEN, over the two route-2 statements
+`End.exists_isXNormalForm_degree` (PROVEN, ninth pass) and
+`End.isXNormalForm_natDegree_parallelogram` (the one leaf; ROUTE 2 section above). In
 particular the Weil-pairing audit is the audit of route (1) recorded there — read it
 as a record of a *withdrawn* candidate — and the `x`-coordinate degree count is
 route (2), which is where the leaves now are.
@@ -2279,8 +2727,8 @@ theorem End.self_add_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : E
 
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
-over the two route-2 leaves `End.exists_isXNormalForm_degree` and
-`End.isXNormalForm_natDegree_parallelogram` — through the
+over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
+pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — through the
 trace formula `End.self_add_dualEnd`, proven over that same parallelogram law in
 the second pass. See the CUT note above for why the first pass believed the trace
 formula was independent, and the ROUTE 2 section for why the third pass's
@@ -2369,9 +2817,9 @@ satisfying it is unique.
 **PROVEN (2026-07-27)** by taking `D = End.dualEnd`: `End.dualEnd_comp` supplies
 the defining property outright and `End.dualEnd_add` the additivity, itself PROVEN
 over the parallelogram law `End.degree_add_add_degree_sub` (itself PROVEN since the
-eighth pass of 2026-07-30, over the two route-2 leaves
-`End.exists_isXNormalForm_degree` and
-`End.isXNormalForm_natDegree_parallelogram`), via the trace formula
+eighth pass of 2026-07-30, over the two route-2 statements
+`End.exists_isXNormalForm_degree` — PROVEN, ninth pass — and
+`End.isXNormalForm_natDegree_parallelogram`, the one leaf), via the trace formula
 `End.self_add_dualEnd`. `[CharZero F]` is REQUIRED — without
 it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
 theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
@@ -2396,8 +2844,8 @@ the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
-over the two route-2 leaves `End.exists_isXNormalForm_degree` and
-`End.isXNormalForm_natDegree_parallelogram` — reached through
+over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
+pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — reached through
 `End.self_add_dualEnd`, `End.dualEnd_add` and `End.exists_dual`. Note the `hsum` step below recovers the trace formula *from*
 additivity — which is why the two are equivalent given the rest, and why the
 first pass could see no way to get either without the other. (The direct route is
