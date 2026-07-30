@@ -26449,6 +26449,27 @@ kept even though the pin plus the congruence clause of `hQ` implies it: it is
 what the two `bIdeal` bounds are discharged from downstream, and leaving it
 stated costs the prover nothing.
 
+**READ §5a OF `exists_hilbertAuxHeckeModuleData` BEFORE WORKING ON `diamond`**
+(2026-07-30). This leaf is the PRODUCER of the `diamond` that its consumer's §5
+records as a hazard, and §5a shows the consumer's conclusion forces
+`RingHom.ker diamond = taylorWilesLevelIdeal ℓ ex` EXACTLY. That does NOT make
+this leaf false — `hbex` asks only for `≤`, which is the local class field
+theory this leaf has — and it does NOT mean the equality should be added to this
+conclusion: §5 already declined that, correctly, because the `≥` half is
+`ℤ_ℓ[Δ_Q] ↪ R_Q`, i.e. automorphic input this leaf's hypotheses do not contain.
+
+What it does mean is that the honest strengthening here is the CONSTRUCTION
+rather than its consequence: require `diamond` to factor as
+`Λ ↠ ℤ_ℓ[Δ_Q] → R_Q` through the tame characters the split-torus clause
+supplies, exactly as `IsHilbertTaylorWilesExponents` pins `ex` rather than
+asserting a property of it. That is provable here, and it needs one piece of
+interface this file does not yet have — the tame character `I_w ↠ Δ_w` onto the
+`ℓ`-Sylow of `(𝓞_F ⧸ w)ˣ`. **Whoever builds that interface should do this
+strengthening in the same pass**, and thread the extra clause through
+`exists_hilbertAuxDiamondControl` and
+`exists_hilbertAuxDeformationRingPresentation` to the Hecke leaf. Until then the
+seam is genuinely open at both ends and neither leaf can close it alone.
+
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
 Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondQuotient
@@ -26693,6 +26714,35 @@ this, not a gap in the mathematics.
 
 `h𝒟w`, `h𝒟e` and the diamonds remain absent: beyond the coefficient pin, the
 generator bound is a statement about `R_Q` alone.
+
+**`Finite k` IS DERIVABLE FROM `hcoeff`, AND THAT IS WHAT MAKES PIECE 1 OF THE
+ROUTE BELOW SAFE TO STATE** (2026-07-30; a two-line deduction from what the
+audit above already says, which it stopped short of drawing).
+
+The audit's own first bullet records that `MvPowerSeries (Fin q) 𝒪` is local
+with residue field `𝒪 ⧸ 𝔪_𝒪`, and
+`Modularity.TaylorWilesCoefficients.finite_residueField` says that field is
+FINITE. `hcoeff` gives a surjection from that power-series ring onto `𝒟.R`, and
+`𝒟.π` surjective onto the field `k` from the local ring `𝒟.R` makes `k` the
+residue field of `𝒟.R` (`IsLocalRing.ker_eq_maximalIdeal`). A surjection of
+local rings carries residue field onto residue field, so **`k` is a quotient of
+a finite field, hence finite** — for free, from a hypothesis the leaf already
+carries.
+
+Why it matters for the cut: piece 1 below asks for `c : coeff.carrier →+* 𝒟Q.R`
+"compatible with the residue maps", and the only honest way to say that is a
+clause forcing `coeff.carrier`'s residue field to be `k` — e.g.
+`Function.Surjective (𝒟Q.π.comp c)`. Written naively that clause looks like it
+plants a FALSE leaf, since a surjection from a finite residue field onto `k`
+cannot exist for infinite `k`, and this leaf does not assume `[Finite k]`. The
+deduction above is exactly what removes that objection: `k` cannot be infinite
+under `hcoeff`. So piece 1 may be stated in the strong form, and a successor
+does not need to add `[Finite k]` to the interface to do it.
+
+(The same deduction does NOT hand over `((ℓ : ℕ) : k) = 0`, which the sibling
+`surjective_of_hilbertAux_classifying` had to be given as `hlk`:
+`natCast_eq_zero_of_finite_algebra` needs `[Algebra ℤ_[ℓ] k]` as well, and this
+leaf has no `ℤ_ℓ`-algebra structure on `k` in scope.)
 
 # THE ROUTE, IN THREE PIECES — not yet cut, and stated so it can be
 
@@ -27140,6 +27190,60 @@ file does not yet have: the tame character `I_w ↠ Δ_w` itself. Until that
 interface exists the hazard stays as recorded here — an open check, not a
 refutation, since nothing in `h𝒟Q` and `hQ` has been shown to permit
 `R_Q ≅ R_∅` at `q ≥ 1` either.
+
+## 5a. §5 UPGRADED (2026-07-30): the SHARP form is a contrapositive, and it says
+## this leaf is NOT VOUCHED AS PROVABLE. DO NOT DISPATCH A PROVER HERE YET.
+
+§5 leaves the degenerate `diamond` as an "open check" because it has not been
+shown that `h𝒟Q` and `hQ` permit `R_Q ≅ R_∅`. That framing understates it, and
+the missing step is one line — take the CONTRAPOSITIVE instead of hunting for a
+counterexample.
+
+The conclusion of this leaf entails, exactly,
+
+    RingHom.ker diamond = Modularity.taylorWilesLevelIdeal ℓ ex          (★)
+
+— `⊇` is `hbex`; `⊆` because `hdsmul` factors the `Λ`-action on the produced `M`
+through `diamond`, so `ker diamond` annihilates `M`, while `hcoord` makes `M`
+free of rank `d` over `Λ ⧸ 𝔟_ex`, whose annihilator is `𝔟_ex` once `d ≥ 1`, and
+`d ≥ 1` is forced by `hM0` together with `hbot` (the argument already given in
+the 2026-07-30 FALSITY AUDIT above, which uses this very computation). So this
+leaf does not merely *risk* being false for a degenerate `diamond`: **it
+DECIDES an arithmetic question about its own hypotheses.** With
+`X i ∈ 𝔫 \ 𝔟_ex` whenever `ex i ≥ 1` (which `hex` gives as soon as `n ≥ 1`),
+(★) forces `𝔫.map diamond ≠ ⊥`, hence by `hker` that
+`RingHom.ker toRuniv ≠ ⊥`, i.e. `R_Q ≇ R_∅`, for every `q ≥ 1`, `n ≥ 1`.
+Nothing in `h𝒟Q`, `hQ` or the Hecke package asserts that the level was
+genuinely raised, and deformation theory alone cannot supply it — which is
+precisely the reason §5 gives for DECLINING the `ker diamond = 𝔟_ex` repair at
+`exists_hilbertAuxDiamondQuotient`. The two observations are the same fact seen
+from opposite ends, and together they say: the obligation cannot be discharged
+at either leaf as the seam is currently drawn.
+
+**This is DEFECT (1) OF `Modularity/Patching.lean`'s FAITHFULNESS AUDIT #2 on
+`exists_auxHeckeCoordModuleData`, verbatim** (2026-07-29, which reached (★) by a
+four-line machine-checked `ker_le` over `PatchingCore` and drew exactly this
+contrapositive). That audit's verdict — *"the `sorry` below is therefore NOT
+vouched as provable in its present form … Diamond 1997 Thm. 2.1 and Ihara are
+not what blocks it"* — transfers here unchanged, and so does its conclusion
+about the fix: `diamond` must be PRODUCED where the freeness is proven, which is
+§5's own "pin `diamond` the way `hexpin` pins `ex`". Two independent audits, one
+per level, agreeing on both the defect and the repair.
+
+**DEFECT (2) OF THAT AUDIT DOES NOT APPLY HERE, AND THAT IS WORTH REPORTING TO
+THE `ℚ` SIDE.** Its second defect is that the intended witness fails the level
+bound because the elliptic leaf PINS the exponent vector to the constant
+`fun _ => n`, while the genuine `Δ_Q` has exponent `v_p(q_i − 1) ≥ n + 1`; the
+repair it prescribes as "necessary, and cheap" is to UNPIN the vector and let
+the ring half return `e_i = v_p(q_i − 1)`. **That repair is already taken on
+this side**: `ex` has always been existentially quantified here, and since
+2026-07-30 `hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex` pins it to exactly
+`v_ℓ(N w_i − 1)`. So the Hilbert statement is strictly cleaner than its elliptic
+twin, and `IsHilbertTaylorWilesExponents` is a working model the `ℚ` side can
+copy rather than redesign.
+
+THE CHECK THAT WOULD REFUTE §5a: exhibit a hypothesis below that fails for the
+genuine `(ex, diamond)` pair, or show that `hbot`/`hM0` permit `d = 0`.
 
 THE CHECK THAT WOULD REFUTE §1: exhibit a field of `HilbertAuxHeckeAlgebra`,
 or a hypothesis below, that fails for `M := H.M × H.M`.
