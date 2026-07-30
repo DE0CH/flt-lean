@@ -315,7 +315,10 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   (`not_smooth_specMap_coordinateRing_of_singular` was listed here until
   2026-07-28, when it too was PROVEN — by a square-zero lifting obstruction over
   `ℚ[t]/(t³)`, not by either route its docstring proposed; so the whole
-  `isElliptic_of_isOpenImmersion_coordinateRing` subtree is now closed) and
+  `isElliptic_of_isOpenImmersion_coordinateRing` subtree is now closed.  That
+  declaration was DELETED on 2026-07-31, subsumed by
+  `not_smooth_specMap_coordinateRing_of_singular_ext`, which allows the singular
+  point to live in an extension field) and
   `smoothOfRelativeDimension_one_of_affineChart` (that last one replaced
   `exists_isIso_of_affineChart` on 2026-07-27, in two steps: first a cut into
   two extension leaves, then release 6's `CurveExtension.lean`, which closed
@@ -9897,8 +9900,10 @@ that chain exactly, so that no two leaves share a difficulty:
    2026-07-28**, cut in two: the rationality of the singular point is
    `exists_singular_of_Δ_eq_zero` (**PROVEN**, with an explicit witness
    in `c₄`, `c₆`, `b₂` — no `VariableChange` transport needed), and the
-   Jacobian criterion is `not_smooth_specMap_coordinateRing_of_singular`
-   (**PROVEN 2026-07-28** as well, so this item has NO leaf left).
+   Jacobian criterion is `not_smooth_specMap_coordinateRing_of_singular_ext`
+   (**PROVEN 2026-07-28** as well, so this item has NO leaf left; it was called
+   `not_smooth_specMap_coordinateRing_of_singular` and took a RATIONAL singular
+   point until 2026-07-31).
 
 **Two conjuncts of the goal never reach a leaf.**  The structure-morphism
 conjunct is free by `hom_ext_spec_rat` (any two morphisms to `Spec ℚ`
@@ -11162,8 +11167,8 @@ section JacobianCriterion
 /-! ### Points of the affine coordinate ring, and the square-zero test ring `ℚ[t]/(t³)`
 
 Everything in this section exists to serve
-`not_smooth_specMap_coordinateRing_of_singular` immediately below it, and nothing
-else in the tree uses it.  Two ingredients:
+`not_smooth_specMap_coordinateRing_of_singular_ext` immediately below it, and
+nothing else in the tree uses it.  Two ingredients:
 
 * the *functor of points* of `E.toAffine.CoordinateRing` — a `ℚ`-algebra map
   `E.toAffine.CoordinateRing →ₐ[ℚ] C` is the same thing as a solution of the
@@ -11315,197 +11320,220 @@ lemma mk_algebraMap_cubicTrunc {K : Type} [Field K] (a : K) :
 
 end JacobianCriterion
 
-/-- **A Weierstrass curve with a rational singular point has a NON-SMOOTH
-affine coordinate ring** (**PROVEN 2026-07-28**; a sorry leaf, introduced the same
-day as the residue of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`, until
-then).  This is the JACOBIAN CRITERION and it carried all of what was left of that
-leaf; the arithmetic half is `exists_singular_of_Δ_eq_zero` above, also PROVEN.
 
-TRUE.  `R := E.toAffine.CoordinateRing` is `AdjoinRoot E.toAffine.polynomial`,
-i.e. `ℚ[X, Y] ⧸ (F)` with `F = Y² + a₁XY + a₃Y − X³ − a₂X² − a₄X − a₆`.  A
-rational point `(x, y)` with `F(x, y) = 0` and `F_X(x, y) = F_Y(x, y) = 0`
-gives a maximal ideal `𝔪 ⊂ R` with `R ⧸ 𝔪 ≅ ℚ` — the kernel of evaluation at
-`(x, y)` — at which the two partial derivatives vanish.
+/-- **THE SINGULAR POINT MAY LIVE IN AN EXTENSION FIELD** (PROVEN 2026-07-31) —
+the former `not_smooth_specMap_coordinateRing_of_singular` with `x, y` moved from
+`K` to an arbitrary field extension `L/K`, and this is what removes
+`[PerfectField K]` from everything below.
 
-**HOW IT WAS PROVEN: neither route (a) nor route (b) of the original docstring, but
-the DEFINITION of formal smoothness — a square-zero lifting obstruction.**  Both
-recorded routes were sound but expensive: (a) through
-`isRegularLocalRing_stalk_of_smooth_over_field` needs a Krull-dimension and an
-embedding-dimension computation for `R_𝔪`, and (b) through
-`Algebra.FormallySmooth.iff_split_injection` (which IS in the pin, at
-`Mathlib/RingTheory/Smooth/Basic.lean`, contrary to the "nothing going non-regular
-⟹ non-smooth" note below) needs the conormal module `I/I²` identified with `R`.
-Neither is needed.  The proof actually used is:
+**It REPLACES that declaration, which was deleted the same day** rather than kept
+beside it: `L = K` recovers it verbatim, so keeping both would have left 130 lines
+of duplicate proof with no consumer, i.e. free-floating code.  Recover it with
+`git show <this commit>^:Fermat/FLT/ModularCurve/EllipticScheme.lean` if the
+`Equation`/`Nonsingular`-shaped interface is ever wanted back; the hypotheses here
+are the numeral-free algebraic forms instead.
 
-* `Smooth (Spec.map …) ↔ RingHom.Smooth (algebraMap ℚ R)` by
-  `HasRingHomProperty.Spec_iff`, then `RingHom.smooth_algebraMap`, giving
-  `Algebra.FormallySmooth ℚ R`;
-* the square-zero extension is `ℚ[t]/(t³) ↠ ℚ[t]/(t²)`, whose kernel `(t²)` squares
-  to zero because `t⁴ = t · t³ = 0` (`cubicTruncIdeal_sq`);
-* the `ℚ[t]/(t²)`-point to lift is `(x, y + t)`.  It IS a point, because
-  `F(x, y + t) = F(x, y) + t · F_Y(x, y) + t² = t²`, which is `0` modulo `(t²)`;
-* formal smoothness would give a lift `ψ : R →ₐ[ℚ] ℚ[t]/(t³)`.  Writing
-  `ψ(X) = x + u` and `ψ(Y) = y + t + w` with `u, w ∈ (t²)`, every product of two of
-  `u, w, t` beyond `t²` is a multiple of `t³ = 0`, so
-  `0 = F(ψ(X), ψ(Y)) = F(x, y) + (t + w)·F_Y(x, y) + u·F_X(x, y) + t² = t²`;
-* but `t² ≠ 0` in `ℚ[t]/(t³)` (`cubicTruncT_sq_ne_zero`).  Contradiction.
+## Why this costs nothing, and why it is the right generalisation
 
-**Where each hypothesis is used, mechanically.**  `F(x, y) = 0` is `heq`;
-`F_Y(x, y) = 2y + a₁x + a₃ = 0` is used TWICE (once to make `(x, y + t)` a point at
-all, once in the final identity); `F_X(x, y) = a₁y − (3x² + 2a₂x + a₄) = 0` is used
-once, against the correction `u`.  Both come from `hns` through
-`WeierstrassCurve.Affine.nonsingular_iff'`.
+The obstruction the proof above exhibits is a lifting failure along the square-zero
+extension `K[t]/(t³) ↠ K[t]/(t²)`, tested against
+`Algebra.FormallySmooth K E.toAffine.CoordinateRing`.  Formal smoothness over `K`
+lifts along EVERY square-zero extension of `K`-algebras — not only those of the form
+`K[t]/(t³)`.  So the test ring may be enlarged to `L[t]/(t³)`, which is still a
+`K`-algebra (via `K → L → L[t]`, `AdjoinRoot`'s `Algebra S (AdjoinRoot f)` instance),
+and the whole computation goes through with `algebraMap L (CubicTruncRing L)` in
+place of `algebraMap K (CubicTruncRing K)` on the two coordinates, and
+`algebraMap K (CubicTruncRing L)` on the five Weierstrass coefficients.  The three
+`IsScalarTower.algebraMap_apply K L _` rewrites are the entire cost.
 
-**The `Y²` coefficient is what makes the obstruction nonzero**, and it is why the
-tangent direction chosen is `(0, 1)` rather than an arbitrary one: the quadratic
-part of `F` at a singular point has `v²` coefficient `1` for EVERY Weierstrass
-equation, so `t²` — not `0` — is the obstruction, in every characteristic-zero case
-and with no case split on the type of singularity (node or cusp).
+**Nothing is base-changed.** In particular this does NOT go through
+`L ⊗[K] E.toAffine.CoordinateRing ≃ₐ[L] (E⁄L).toAffine.CoordinateRing`, which the
+pin does not supply and which would have been a development of its own.  The
+smoothness hypothesis stays over `K` throughout; only the TEST OBJECT grows.  That
+is the point worth remembering: an obstruction to formal smoothness over `K` may be
+witnessed by a point over any extension, because the extension is itself a
+`K`-algebra.
 
-**Both hypotheses are LOAD-BEARING.**  Without `hns` the statement is FALSE: an
-elliptic `E` has a smooth coordinate ring and plenty of rational points satisfying
-`heq`.  Without `heq` the pair `(x, y)` need not be on the curve at all, and
-`¬ Nonsingular` is then vacuously true for every `(x, y)` off the curve (the first
-conjunct of `Nonsingular` is `Equation`), so again every elliptic `E` would refute
-it.
+## Faithfulness
 
-NOT VACUOUS: `exists_singular_of_Δ_eq_zero` inhabits the hypotheses for every
-`E` with `E.Δ = 0`, e.g. `E = ⟨0, 0, 0, 0, 0⟩` (the cuspidal `y² = x³`) at
-`(0, 0)`.
+The hypotheses are the numeral-free forms of `Equation`, `∂/∂X = 0` and `∂/∂Y = 0`
+for `E⁄L` at `(x, y)`, stated with `algebraMap K L E.aᵢ` rather than `(E⁄L).aᵢ`
+because `ring` treats the two as distinct atoms (they are definitionally equal; see
+the `rfl`s in `not_smooth_specMap_coordinateRing_of_Δ_eq_zero` below).  All three
+are load-bearing for exactly the reasons recorded on the `L = K` version.
 
-STALE CLAIM CORRECTED 2026-07-28: the original docstring's closing note said the
-tree has "nothing going non-regular ⟹ non-smooth for a named point".  That is
-right about a *named-point regularity* statement, but it was read as "no usable
-smoothness obstruction exists", which is wrong — `Algebra.FormallySmooth`'s own
-defining lifting property (`Algebra.FormallySmooth.comp_surjective`) is exactly such
-an obstruction and is what closed this leaf. -/
-theorem not_smooth_specMap_coordinateRing_of_singular {K : Type} [Field K]
-    (E : WeierstrassCurve K) {x y : K}
-    (heq : E.toAffine.Equation x y) (hns : ¬ E.toAffine.Nonsingular x y) :
+`L` is taken to be a FIELD only because that is what the caller has; `t² ≠ 0` in
+`L[t]/(t³)` is the only property used, so any nontrivial reduced-enough `K`-algebra
+would do.  Narrowing to a field costs nothing and keeps `cubicTruncT_sq_ne_zero`
+citable verbatim. -/
+theorem not_smooth_specMap_coordinateRing_of_singular_ext {K : Type} [Field K]
+    (E : WeierstrassCurve K) (L : Type) [Field L] [Algebra K L] {x y : L}
+    (heq' : y ^ 2 + algebraMap K L E.toAffine.a₁ * x * y + algebraMap K L E.toAffine.a₃ * y
+        - (x ^ 3 + algebraMap K L E.toAffine.a₂ * x ^ 2 + algebraMap K L E.toAffine.a₄ * x
+          + algebraMap K L E.toAffine.a₆) = 0)
+    (hXp' : algebraMap K L E.toAffine.a₁ * y
+        - (x ^ 2 + x ^ 2 + x ^ 2
+            + (algebraMap K L E.toAffine.a₂ * x + algebraMap K L E.toAffine.a₂ * x)
+          + algebraMap K L E.toAffine.a₄) = 0)
+    (hYp' : y + y + algebraMap K L E.toAffine.a₁ * x + algebraMap K L E.toAffine.a₃ = 0) :
     ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing))) := by
   intro hsm
-  -- the two partial derivatives vanish at `(x, y)`
-  have hXp : E.toAffine.a₁ * y - (3 * x ^ 2 + 2 * E.toAffine.a₂ * x + E.toAffine.a₄) = 0 := by
-    by_contra hc
-    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := E.toAffine) x y).mpr
-      ⟨heq, Or.inl hc⟩)
-  have hYp : 2 * y + E.toAffine.a₁ * x + E.toAffine.a₃ = 0 := by
-    by_contra hc
-    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := E.toAffine) x y).mpr
-      ⟨heq, Or.inr hc⟩)
-  have heq' : y ^ 2 + E.toAffine.a₁ * x * y + E.toAffine.a₃ * y
-      - (x ^ 3 + E.toAffine.a₂ * x ^ 2 + E.toAffine.a₄ * x + E.toAffine.a₆) = 0 :=
-    (WeierstrassCurve.Affine.equation_iff' (W := E.toAffine) x y).mp heq
-  -- numeral-free restatements, so that `algebraMap` pushes through cleanly
-  have hYp' : y + y + E.toAffine.a₁ * x + E.toAffine.a₃ = 0 := by linear_combination hYp
-  have hXp' : E.toAffine.a₁ * y
-      - (x ^ 2 + x ^ 2 + x ^ 2 + (E.toAffine.a₂ * x + E.toAffine.a₂ * x) + E.toAffine.a₄) = 0 := by
-    linear_combination hXp
-  -- smoothness of the `Spec` map is formal smoothness of the coordinate ring
+  -- smoothness of the `Spec` map is formal smoothness of the coordinate ring OVER `K`
   rw [HasRingHomProperty.Spec_iff (P := @Smooth), CommRingCat.hom_ofHom,
     RingHom.smooth_algebraMap] at hsm
   haveI : Algebra.FormallySmooth K E.toAffine.CoordinateRing := hsm.formallySmooth
-  -- the first-order point `(x, y + t)` over `K[t]/(t²)`
-  have hs2 : (Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) ^ 2 = 0 := by
+  -- the first-order point `(x, y + t)` over `L[t]/(t²)`
+  have hs2 : (Ideal.Quotient.mk (cubicTruncIdeal L) (cubicTruncT L)) ^ 2 = 0 := by
     rw [← map_pow]
-    exact Ideal.Quotient.eq_zero_iff_mem.mpr (cubicTruncT_sq_mem K)
-  have hpt : OnAffineWeierstrass E (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x)
-      (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y
-        + Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) := by
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (cubicTruncT_sq_mem L)
+  have hpt : OnAffineWeierstrass E
+      (algebraMap L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L)) x)
+      (algebraMap L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L)) y
+        + Ideal.Quotient.mk (cubicTruncIdeal L) (cubicTruncT L)) := by
     rw [OnAffineWeierstrass]
-    have h0 : (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y) ^ 2
-        + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₁
-            * algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x
-            * algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y
-        + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₃
-            * algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y
-        - ((algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x) ^ 3
-            + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₂
-              * (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x) ^ 2
-            + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₄
-              * algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x
-            + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₆) = 0 := by
-      simpa using congrArg (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K))) heq'
-    have h1 : algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y
-        + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) y
-        + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₁
-          * algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) x
-        + algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K)) E.toAffine.a₃ = 0 := by
-      simpa using congrArg (algebraMap K ((CubicTruncRing K) ⧸ (cubicTruncIdeal K))) hYp'
-    linear_combination h0 + (Ideal.Quotient.mk (cubicTruncIdeal K) (cubicTruncT K)) * h1 + hs2
-  -- formal smoothness lifts it to `K[t]/(t³)`
+    have h0 := congrArg (algebraMap L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L))) heq'
+    have h1 := congrArg (algebraMap L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L))) hYp'
+    simp only [map_add, map_sub, map_mul, map_pow, map_zero,
+      ← IsScalarTower.algebraMap_apply K L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L))] at h0 h1
+    linear_combination h0 + (Ideal.Quotient.mk (cubicTruncIdeal L) (cubicTruncT L)) * h1 + hs2
+  -- formal smoothness OVER `K` lifts it to `L[t]/(t³)`, which is a `K`-algebra
   obtain ⟨ψ, hψ⟩ := Algebra.FormallySmooth.comp_surjective K E.toAffine.CoordinateRing
-    (cubicTruncIdeal K) (cubicTruncIdeal_sq K) (coordinateRingEvalHom E _ _ hpt)
+    (cubicTruncIdeal L) (cubicTruncIdeal_sq L) (coordinateRingEvalHom E _ _ hpt)
   have hrel := onAffineWeierstrass_of_algHom E ψ
   rw [OnAffineWeierstrass] at hrel
+  have hq : ∀ a : L, Ideal.Quotient.mk (cubicTruncIdeal L) (algebraMap L (CubicTruncRing L) a)
+      = algebraMap L ((CubicTruncRing L) ⧸ (cubicTruncIdeal L)) a :=
+    fun a => (Ideal.Quotient.mkₐ L (cubicTruncIdeal L)).commutes a
   -- the lift agrees with `(x, y + t)` modulo `(t²)`
-  have hmodX : Ideal.Quotient.mk (cubicTruncIdeal K)
+  have hmodX : Ideal.Quotient.mk (cubicTruncIdeal L)
         (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X))
-      = Ideal.Quotient.mk (cubicTruncIdeal K) (algebraMap K (CubicTruncRing K) x) := by
+      = Ideal.Quotient.mk (cubicTruncIdeal L) (algebraMap L (CubicTruncRing L) x) := by
     have h := AlgHom.congr_fun hψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
     rw [coordinateRingEvalHom_of_X] at h
-    rw [mk_algebraMap_cubicTrunc]
+    rw [hq x]
     simpa only [AlgHom.coe_comp, Function.comp_apply, Ideal.Quotient.mkₐ_eq_mk] using h
-  have hmodY : Ideal.Quotient.mk (cubicTruncIdeal K) (ψ (AdjoinRoot.root E.toAffine.polynomial))
-      = Ideal.Quotient.mk (cubicTruncIdeal K) (algebraMap K (CubicTruncRing K) y + (cubicTruncT K)) := by
+  have hmodY : Ideal.Quotient.mk (cubicTruncIdeal L)
+        (ψ (AdjoinRoot.root E.toAffine.polynomial))
+      = Ideal.Quotient.mk (cubicTruncIdeal L)
+          (algebraMap L (CubicTruncRing L) y + (cubicTruncT L)) := by
     have h := AlgHom.congr_fun hψ (AdjoinRoot.root E.toAffine.polynomial)
     rw [coordinateRingEvalHom_root] at h
-    rw [map_add, mk_algebraMap_cubicTrunc]
+    rw [map_add, hq y]
     simpa only [AlgHom.coe_comp, Function.comp_apply, Ideal.Quotient.mkₐ_eq_mk] using h
-  obtain ⟨c, hc⟩ := (mem_cubicTruncIdeal K).mp (Ideal.Quotient.eq.mp hmodX)
-  obtain ⟨d, hd⟩ := (mem_cubicTruncIdeal K).mp (Ideal.Quotient.eq.mp hmodY)
+  obtain ⟨c, hc⟩ := (mem_cubicTruncIdeal L).mp (Ideal.Quotient.eq.mp hmodX)
+  obtain ⟨d, hd⟩ := (mem_cubicTruncIdeal L).mp (Ideal.Quotient.eq.mp hmodY)
   -- every product of two corrections, and every correction times `t`, dies against `t³ = 0`
-  refine (cubicTruncT_sq_ne_zero K) ?_
+  refine (cubicTruncT_sq_ne_zero L) ?_
   have hut : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap K (CubicTruncRing K) x) * (cubicTruncT K) = 0 := by
-    rw [← hc]; linear_combination c * (cubicTruncT_cube K)
+      - algebraMap L (CubicTruncRing L) x) * (cubicTruncT L) = 0 := by
+    rw [← hc]; linear_combination c * (cubicTruncT_cube L)
   have huu : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap K (CubicTruncRing K) x) * (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-      - algebraMap K (CubicTruncRing K) x) = 0 := by
-    rw [← hc]; linear_combination c ^ 2 * (cubicTruncT K) * (cubicTruncT_cube K)
+      - algebraMap L (CubicTruncRing L) x) * (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      - algebraMap L (CubicTruncRing L) x) = 0 := by
+    rw [← hc]; linear_combination c ^ 2 * (cubicTruncT L) * (cubicTruncT_cube L)
   have huw : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-        - algebraMap K (CubicTruncRing K) x)
+        - algebraMap L (CubicTruncRing L) x)
       * (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap K (CubicTruncRing K) y + (cubicTruncT K))) = 0 := by
-    rw [← hc, ← hd]; linear_combination c * d * (cubicTruncT K) * (cubicTruncT_cube K)
+        - (algebraMap L (CubicTruncRing L) y + (cubicTruncT L))) = 0 := by
+    rw [← hc, ← hd]; linear_combination c * d * (cubicTruncT L) * (cubicTruncT_cube L)
   have hww : (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap K (CubicTruncRing K) y + (cubicTruncT K)))
+        - (algebraMap L (CubicTruncRing L) y + (cubicTruncT L)))
       * (ψ (AdjoinRoot.root E.toAffine.polynomial)
-        - (algebraMap K (CubicTruncRing K) y + (cubicTruncT K))) = 0 := by
-    rw [← hd]; linear_combination d ^ 2 * (cubicTruncT K) * (cubicTruncT_cube K)
+        - (algebraMap L (CubicTruncRing L) y + (cubicTruncT L))) = 0 := by
+    rw [← hd]; linear_combination d ^ 2 * (cubicTruncT L) * (cubicTruncT_cube L)
   have hwt : (ψ (AdjoinRoot.root E.toAffine.polynomial)
-      - (algebraMap K (CubicTruncRing K) y + (cubicTruncT K))) * (cubicTruncT K) = 0 := by
-    rw [← hd]; linear_combination d * (cubicTruncT_cube K)
-  have h0 : (algebraMap K (CubicTruncRing K) y) ^ 2
-      + algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) x
-        * algebraMap K (CubicTruncRing K) y
-      + algebraMap K (CubicTruncRing K) E.toAffine.a₃ * algebraMap K (CubicTruncRing K) y
-      - ((algebraMap K (CubicTruncRing K) x) ^ 3
-          + algebraMap K (CubicTruncRing K) E.toAffine.a₂ * (algebraMap K (CubicTruncRing K) x) ^ 2
-          + algebraMap K (CubicTruncRing K) E.toAffine.a₄ * algebraMap K (CubicTruncRing K) x
-          + algebraMap K (CubicTruncRing K) E.toAffine.a₆) = 0 := by
-    simpa using congrArg (algebraMap K (CubicTruncRing K)) heq'
-  have h1 : algebraMap K (CubicTruncRing K) y + algebraMap K (CubicTruncRing K) y
-      + algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) x
-      + algebraMap K (CubicTruncRing K) E.toAffine.a₃ = 0 := by
-    simpa using congrArg (algebraMap K (CubicTruncRing K)) hYp'
-  have h2 : algebraMap K (CubicTruncRing K) E.toAffine.a₁ * algebraMap K (CubicTruncRing K) y
-      - ((algebraMap K (CubicTruncRing K) x) ^ 2 + (algebraMap K (CubicTruncRing K) x) ^ 2
-          + (algebraMap K (CubicTruncRing K) x) ^ 2
-          + (algebraMap K (CubicTruncRing K) E.toAffine.a₂ * algebraMap K (CubicTruncRing K) x
-              + algebraMap K (CubicTruncRing K) E.toAffine.a₂ * algebraMap K (CubicTruncRing K) x)
-          + algebraMap K (CubicTruncRing K) E.toAffine.a₄) = 0 := by
-    simpa using congrArg (algebraMap K (CubicTruncRing K)) hXp'
+      - (algebraMap L (CubicTruncRing L) y + (cubicTruncT L))) * (cubicTruncT L) = 0 := by
+    rw [← hd]; linear_combination d * (cubicTruncT_cube L)
+  have h0 : (algebraMap L (CubicTruncRing L) y) ^ 2
+      + algebraMap K (CubicTruncRing L) E.toAffine.a₁ * algebraMap L (CubicTruncRing L) x
+        * algebraMap L (CubicTruncRing L) y
+      + algebraMap K (CubicTruncRing L) E.toAffine.a₃ * algebraMap L (CubicTruncRing L) y
+      - ((algebraMap L (CubicTruncRing L) x) ^ 3
+          + algebraMap K (CubicTruncRing L) E.toAffine.a₂
+            * (algebraMap L (CubicTruncRing L) x) ^ 2
+          + algebraMap K (CubicTruncRing L) E.toAffine.a₄ * algebraMap L (CubicTruncRing L) x
+          + algebraMap K (CubicTruncRing L) E.toAffine.a₆) = 0 := by
+    have h := congrArg (algebraMap L (CubicTruncRing L)) heq'
+    simpa only [map_add, map_sub, map_mul, map_pow, map_zero,
+      ← IsScalarTower.algebraMap_apply K L (CubicTruncRing L)] using h
+  have h1 : algebraMap L (CubicTruncRing L) y + algebraMap L (CubicTruncRing L) y
+      + algebraMap K (CubicTruncRing L) E.toAffine.a₁ * algebraMap L (CubicTruncRing L) x
+      + algebraMap K (CubicTruncRing L) E.toAffine.a₃ = 0 := by
+    have h := congrArg (algebraMap L (CubicTruncRing L)) hYp'
+    simpa only [map_add, map_sub, map_mul, map_pow, map_zero,
+      ← IsScalarTower.algebraMap_apply K L (CubicTruncRing L)] using h
+  have h2 : algebraMap K (CubicTruncRing L) E.toAffine.a₁ * algebraMap L (CubicTruncRing L) y
+      - ((algebraMap L (CubicTruncRing L) x) ^ 2 + (algebraMap L (CubicTruncRing L) x) ^ 2
+          + (algebraMap L (CubicTruncRing L) x) ^ 2
+          + (algebraMap K (CubicTruncRing L) E.toAffine.a₂ * algebraMap L (CubicTruncRing L) x
+              + algebraMap K (CubicTruncRing L) E.toAffine.a₂
+                * algebraMap L (CubicTruncRing L) x)
+          + algebraMap K (CubicTruncRing L) E.toAffine.a₄) = 0 := by
+    have h := congrArg (algebraMap L (CubicTruncRing L)) hXp'
+    simpa only [map_add, map_sub, map_mul, map_pow, map_zero,
+      ← IsScalarTower.algebraMap_apply K L (CubicTruncRing L)] using h
   linear_combination hrel - h0
-    - (ψ (AdjoinRoot.root E.toAffine.polynomial) - algebraMap K (CubicTruncRing K) y) * h1
+    - (ψ (AdjoinRoot.root E.toAffine.polynomial) - algebraMap L (CubicTruncRing L) y) * h1
     - (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-        - algebraMap K (CubicTruncRing K) x) * h2
-    - hww - 2 * hwt - algebraMap K (CubicTruncRing K) E.toAffine.a₁ * hut
-    - algebraMap K (CubicTruncRing K) E.toAffine.a₁ * huw
-    + (3 * algebraMap K (CubicTruncRing K) x
+        - algebraMap L (CubicTruncRing L) x) * h2
+    - hww - 2 * hwt - algebraMap K (CubicTruncRing L) E.toAffine.a₁ * hut
+    - algebraMap K (CubicTruncRing L) E.toAffine.a₁ * huw
+    + (3 * algebraMap L (CubicTruncRing L) x
         + (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
-            - algebraMap K (CubicTruncRing K) x)
-        + algebraMap K (CubicTruncRing K) E.toAffine.a₂) * huu
+            - algebraMap L (CubicTruncRing L) x)
+        + algebraMap K (CubicTruncRing L) E.toAffine.a₂) * huu
+
+/-- **`Δ = 0` kills smoothness over ANY field** (PROVEN 2026-07-31) — the composite of
+`exists_singular_of_Δ_eq_zero` at the algebraic closure with the extension-field
+obstruction above, and the declaration that makes `[PerfectField K]` disappear from
+this whole chain.
+
+`exists_singular_of_Δ_eq_zero` genuinely needs perfectness — over `𝔽₂(t)` the curve
+`y² = x³ + tx` has `Δ = 0` and its singular point sits at `x = √t`, outside the base
+(the audit is on that declaration).  But `AlgebraicClosure K` IS perfect
+(`IsAlgClosed.perfectField`), so the singular point always exists THERE, and
+`not_smooth_specMap_coordinateRing_of_singular_ext` accepts it there.  Perfectness of
+`K` was never needed for the conclusion; it was needed only to keep the witness
+rational, and the witness does not have to be rational.
+
+The five `rfl`s are not decoration: `(E⁄L).toAffine.aᵢ` and `algebraMap K L E.toAffine.aᵢ`
+are definitionally equal but distinct ATOMS to `ring`, so `linear_combination` fails
+without them while `exact` succeeds.  That asymmetry is worth knowing; it cost a
+compile cycle. -/
+theorem not_smooth_specMap_coordinateRing_of_Δ_eq_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
+    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing))) := by
+  set L := AlgebraicClosure K with hL
+  have hΔL : (E.baseChange L).Δ = 0 := by
+    rw [WeierstrassCurve.baseChange, WeierstrassCurve.map_Δ, hΔ, map_zero]
+  obtain ⟨x, y, heq, hns⟩ := exists_singular_of_Δ_eq_zero (E.baseChange L) hΔL
+  have hXp : (E.baseChange L).toAffine.a₁ * y
+      - (3 * x ^ 2 + 2 * (E.baseChange L).toAffine.a₂ * x + (E.baseChange L).toAffine.a₄) = 0 := by
+    by_contra hc
+    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := (E.baseChange L).toAffine) x y).mpr
+      ⟨heq, Or.inl hc⟩)
+  have hYp : 2 * y + (E.baseChange L).toAffine.a₁ * x + (E.baseChange L).toAffine.a₃ = 0 := by
+    by_contra hc
+    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := (E.baseChange L).toAffine) x y).mpr
+      ⟨heq, Or.inr hc⟩)
+  have heq2 : y ^ 2 + (E.baseChange L).toAffine.a₁ * x * y + (E.baseChange L).toAffine.a₃ * y
+      - (x ^ 3 + (E.baseChange L).toAffine.a₂ * x ^ 2 + (E.baseChange L).toAffine.a₄ * x
+        + (E.baseChange L).toAffine.a₆) = 0 :=
+    (WeierstrassCurve.Affine.equation_iff' (W := (E.baseChange L).toAffine) x y).mp heq
+  -- the coefficients of `E⁄L` ARE the images of `E`'s, definitionally; `ring` needs it
+  -- syntactically
+  have e1 : (E.baseChange L).toAffine.a₁ = algebraMap K L E.toAffine.a₁ := rfl
+  have e2 : (E.baseChange L).toAffine.a₂ = algebraMap K L E.toAffine.a₂ := rfl
+  have e3 : (E.baseChange L).toAffine.a₃ = algebraMap K L E.toAffine.a₃ := rfl
+  have e4 : (E.baseChange L).toAffine.a₄ = algebraMap K L E.toAffine.a₄ := rfl
+  have e6 : (E.baseChange L).toAffine.a₆ = algebraMap K L E.toAffine.a₆ := rfl
+  rw [e1, e2, e3, e4, e6] at heq2
+  rw [e1, e2, e4] at hXp
+  rw [e1, e3] at hYp
+  refine not_smooth_specMap_coordinateRing_of_singular_ext E L (x := x) (y := y) ?_ ?_ ?_
+  · exact heq2
+  · linear_combination hXp
+  · linear_combination hYp
 
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
 smooth relative curve is elliptic** (**PROVEN 2026-07-28** from the two
@@ -11556,9 +11584,13 @@ NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
 **CUT 2026-07-28.**  The node is now PROVEN from the two declarations
 immediately above it, along exactly the axis the paragraph above describes:
 `exists_singular_of_Δ_eq_zero` (**PROVEN**, the rationality of the
-singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
+singular point OVER A PERFECT FIELD) and
+`not_smooth_specMap_coordinateRing_of_singular_ext` (the
 Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
-is closed and nothing under it is a leaf any more).  The scheme-theoretic
+is closed and nothing under it is a leaf any more).  Since 2026-07-31 the two
+are composed through `not_smooth_specMap_coordinateRing_of_Δ_eq_zero`, which
+takes the singular point in `AlgebraicClosure K` and so needs no hypothesis on
+`K` at all.  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
 two lines and carries no content.
 
@@ -11569,8 +11601,20 @@ four-case argument valid over every perfect field.  Perfectness IS still
 load-bearing — see the section note there for the `𝔽₂(t)` counterexample — and the
 paragraph above ("in char `0` by completing the square and the cube") now describes
 only one of the four cases.  `PerfectField.ofCharZero` and `IsAlgClosed.perfectField`
-mean the instance is synthesised at every base this development uses. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [PerfectField K]
+mean the instance is synthesised at every base this development uses.
+
+**AND THEN `[PerfectField K]` DROPPED ALTOGETHER (2026-07-31), so this now holds over
+an ARBITRARY field.**  The route through a RATIONAL singular point is what needed
+perfectness; the route through
+`not_smooth_specMap_coordinateRing_of_Δ_eq_zero` does not, because the singular point
+it uses lives in `AlgebraicClosure K` and the obstruction to formal smoothness OVER `K`
+is tested against `AlgebraicClosure K [t]/(t³)`, which is a `K`-algebra.  The `𝔽₂(t)`
+counterexample recorded above is still a counterexample to what it was aimed at — that
+the singular point of `y² = x³ + tx` is not rational — and is simply no longer an
+obstacle, since rationality of the witness was never what the conclusion needed.
+Perfectness is still genuinely load-bearing INSIDE `exists_singular_of_Δ_eq_zero`, which
+is why that declaration keeps the hypothesis and this one does not. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (hdim : SmoothOfRelativeDimension 1 f)
     (E : WeierstrassCurve K)
@@ -11583,8 +11627,7 @@ theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [Perfe
   have hΔ : E.Δ = 0 := by
     by_contra h
     exact hE ⟨isUnit_iff_ne_zero.mpr h⟩
-  obtain ⟨x, y, heq, hns⟩ := exists_singular_of_Δ_eq_zero E hΔ
-  refine not_smooth_specMap_coordinateRing_of_singular E heq hns ?_
+  refine not_smooth_specMap_coordinateRing_of_Δ_eq_zero E hΔ ?_
   haveI := hdim
   haveI := hopen
   have h2 : Smooth (ι ≫ f) := SmoothOfRelativeDimension.smooth (n := 0 + 1) (f := ι ≫ f)
@@ -11654,8 +11697,25 @@ criterion cannot be applied at a rational point (the audit is on
 smoothness after base change to `k̄` instead of at a rational point, which is a
 different argument and is not attempted here; the consumers that want it
 (`X0.lean`'s `exists_weierstrassModel_of_ellipticScheme_field` and its two call
-sites) are all at algebraically closed bases, which are perfect. -/
-theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [PerfectField K]
+sites) are all at algebraically closed bases, which are perfect.
+
+**AND THE HYPOTHESIS IS GONE ENTIRELY (2026-07-31): this holds over an ARBITRARY
+field, which is what CLOSED `X0.lean`'s `exists_weierstrassModel_of_ellipticScheme_field`.**
+The paragraph above predicted the cost correctly ("testing smoothness after base change
+to `k̄` … is a different argument") and mis-priced it, because it assumed the base change
+had to happen to the SCHEME.  It does not.  What actually happens is:
+
+* the smoothness hypothesis stays over `K` and is read as
+  `Algebra.FormallySmooth K E.toAffine.CoordinateRing`;
+* formal smoothness over `K` lifts along every square-zero extension of `K`-ALGEBRAS,
+  so the test ring may be taken to be `k̄[t]/(t³)` rather than `K[t]/(t³)`;
+* `k̄` is perfect, so `exists_singular_of_Δ_eq_zero` supplies the singular point there.
+
+No `L ⊗[K] CoordinateRing ≃ₐ[L] (E⁄L).CoordinateRing` is needed — which is the tensor
+identification the pin does not have and which would have been the expensive part.  The
+whole generalisation is `not_smooth_specMap_coordinateRing_of_singular_ext` plus
+`not_smooth_specMap_coordinateRing_of_Δ_eq_zero`, both above. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
