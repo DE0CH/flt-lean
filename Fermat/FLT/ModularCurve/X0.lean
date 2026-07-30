@@ -15057,7 +15057,19 @@ theorem exists_muThree_cocycle_of_autStable_of_j_eq_zero {N : ℕ} (hN : N ≠ 0
     charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
   -- `AlgebraicClosure.isAlgebraic` IS an instance and this module imports it, but synthesis
   -- does not find it here; supplying the term directly avoids the search.
-  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  -- `Normal ℚ ℚ̄` is NEW (2026-07-30) and is not a convenience: the level leaf
+  -- `WeierstrassCurve.exists_finiteGaloisLevel_of_addOrder` is FALSE without it — see its
+  -- falsity audit, whose witness is `ℚ(y)`, `y⁴ = -32`, a non-normal quartic all of whose
+  -- Galois subfields are fixed by its one nontrivial automorphism.
+  --
+  -- It is built BY HAND rather than through `IsAlgClosure.normal ℚ ℚ̄`, which is the obvious
+  -- route and does NOT work here: that instance wants `IsAlgClosure ℚ ℚ̄`, whose own
+  -- `Algebra.IsAlgebraic` field runs into exactly the diamond above (measured 2026-07-30 —
+  -- `failed to synthesize IsAlgClosure ℚ (AlgebraicClosure ℚ)`), and it additionally carries
+  -- an `[IsTorsionFree ℚ ℚ̄]` obligation.  The two fields of `Normal` are cheaper directly.
+  haveI : Normal ℚ (AlgebraicClosure ℚ) :=
+    { toIsAlgebraic := halgQ, splits' := fun _ => IsAlgClosed.splits _ }
   exact WeierstrassCurve.exists_muThreeCocycle_of_autStable_of_j_eq_zero hN E hj g hg haut
     ι hι hmove hu6 hu2
 
