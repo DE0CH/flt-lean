@@ -15744,6 +15744,41 @@ the freeness is proven, i.e. state the `ℚ` analogue of `HilbertAuxHeckeAlgebra
 provability obligation with a witness behind it, rather than a package with no
 model at all.
 
+# THE CHEAP-LOOKING WAY TO PIN `diamond` DOES NOT EXIST — CHECKED 2026-07-30
+
+Recorded so that the next reader does not spend the investigation again, because
+it is the FIRST thing the paragraph above suggests trying.  The obvious cheap
+alternative to building the `ℚ` analogue of `HilbertAuxHeckeAlgebra` is: leave
+`diamond` on the RING side but strengthen the ring leaf's conclusion so that it
+IDENTIFIES the map rather than only its kernel — say
+`diamond (1 + S_i) = χ_{q_i} (σ_i)` for a generator `σ_i` of `Δ_{q_i}`, which
+would let a prover here match its geometric diamond action against the
+handed-in one.
+
+**That clause is not expressible without a further interface change**, and the
+reason is in the shape of `IsRaisedLevelHardlyRamified.isSplitTorusAt` (read it
+above): the clause is
+
+    ∀ q ∈ Q, ∀ hq : q.Prime, ∃ (e : V ≃ₗ[R] R × R) (χ δ : GaloisRep …), …
+
+so the basis `e` and the characters `χ`, `δ` are EXISTENTIALLY BOUND, once per
+prime, INSIDE a `Prop`-valued structure field.  There is therefore no canonical
+`χ_{q_i}` for any conclusion to mention: `𝒟Q.isRaisedLevelHardlyRamified` gives
+only that some such family exists, and two invocations need not return the same
+one.  Pinning `diamond` this way requires the RING leaf to RETURN the whole
+family `(e_q, χ_q, δ_q)_{q ∈ Q}` alongside `diamond`, plus an identification of
+the tame quotient `(ℤ/q)ˣ(p) ≅ ℤ/p^{e_q}` and a CHOICE of generator `σ_q` — i.e.
+new interface, new choices, and the `Δ_Q`-structure made explicit across the
+seam.  Once that much is being built, it is the same work as building the Hecke
+algebra that carries its module, and the "Correct" bullet is the better place to
+spend it.
+
+Note also that this is why `isSplitTorusAt`'s own two recorded weaknesses (it
+pins neither the eigenvalue ORDER nor that `χ|_{I_q}` factors through the
+`p`-Sylow — see `exists_auxDeformationDiamondControl` above, which says both must
+be DERIVED) are not a side issue here: they are exactly the facts a returned
+family would have to come with.
+
 References: Diamond, Invent. Math. 128 (1997), Thm. 2.1; Taylor-Wiles, Ann. of
 Math. 141 (1995), §2; Wiles, ibid. ch. 3; Darmon-Diamond-Taylor §3 (Ihara's
 lemma and the level-raising comparison); Ribet, Invent. Math. 100 (1990).
