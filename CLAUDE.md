@@ -1151,3 +1151,50 @@ same edit would have traded one closed leaf for three re-opened ones. Re-derive 
 accounting against the release, never against its base; and when you decline for this reason, queue
 the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
 close with no new sorry).
+
+## RUN THE `merger` CHECK AS YOUR FIRST ACTION, NOT AS TRIAGE AFTERWARDS
+
+(2026-07-31, `flt-lean-233`, measured.) The FIFTH invisibility class above already gives the
+command and already says `merger` is where the answer lives. This is about WHEN to run it.
+
+I was dispatched at three leaves in `ArtinConductor.lean`. I read the file, derived a proof of the
+first, and committed it green — and only then ran
+
+    git show merger:Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean | grep -n <name>
+
+which showed **two of the three already PROVEN on `merger` the previous day**, one of them by an
+essentially identical argument found independently. The whole run's Lean output had to be reverted
+as a rival cut. The check costs one command and five seconds; running it after the work instead of
+before cost an agent-run.
+
+So: **before reading the target declaration, grep `merger` for every leaf named in your prompt** —
+all of them, not just the one you intend to start with. A queue task is audited against `main` at
+release time, and `main` is the frontier as of the last release; a task written a day ago can name
+leaves that were closed hours later. Two of three is not an unusual hit rate for a file under
+active work.
+
+And when the answer comes back "already proven", the honest deliverable is the DECLINE, made by
+you: revert your payload, name your own commit sha so the rival proof stays recoverable, and say
+which tiebreak decided it. Leaving both proofs for the merge worker is a guaranteed name collision
+on a file it must resolve blind.
+
+## A CUT-ANALYSIS SAYING A ROUTE "CANNOT BE AVOIDED" IS A HYPOTHESIS ABOUT A PROOF
+
+(Same run, and the reason the leaf fell at all.) `mem_gp_one_of_dvd_smul_unif_sub` carried a
+careful, signed analysis concluding it "CANNOT BE AVOIDED" without the monogenicity
+`𝒪_L = 𝒪_0[unif]` plus Hensel: `δ_x(σ) := (σ•x − x)/unif mod 𝔪` is a DERIVATION in `x`, so it is
+"determined by its value on a ring GENERATOR, and nothing weaker". The analysis was right about the
+derivation and right about the two substitute routes it examined (both re-verified dead). It was
+wrong about the conclusion, and the counter-proof is forty lines.
+
+The move that dissolves it is worth naming, because it generalises: **attack a `∀ x` by CASES on
+the element, not by a normal form for it.** Here `mem_gp`'s quantifier splits as unit / non-unit;
+non-units are `unif · y` by `unif_spec`, and a UNIT is soft because `R^×` is, modulo `𝔪`, torsion of
+order prime to `p` — the residue field of a finite level is FINITE. A derivation is determined on a
+generating set, but the generating set may be `{unif} ∪ R^×` rather than `{unif}`, and then no
+generator theory is needed at all.
+
+Two agents a day apart found exactly this proof, both against the docstring's own "impossible".
+So the standing rule: **a cut-analysis records which routes were tried, and that is all it records.**
+Read it for the dead ends it certifies — those are real and save time — and re-derive the negative
+conclusion yourself. The same applies to any "needs new theory" or "ATOMIC" verdict in this tree.
