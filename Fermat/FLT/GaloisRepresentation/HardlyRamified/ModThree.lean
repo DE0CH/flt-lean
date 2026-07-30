@@ -8908,9 +8908,15 @@ theorem exists_pderiv_eq_of_minimalPresentation
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **FONTAINE'S PRESENTATION EXISTS** (sorry leaf, created 2026-07-28 as the
-first of the six leaves of the decomposition of `exists_fontaineCoordinates`
-below; it is Fontaine's steps 1–3, pp. 521–522).
+/-- **FONTAINE'S PRESENTATION EXISTS** (NOT A LEAF — label corrected 2026-07-30;
+it has been PROVEN by decomposition since 2026-07-28, from
+`exists_minimalIdempotentPresentation` and
+`exists_pderiv_eq_of_minimalPresentation` above, and the `sorry leaf` label it
+carried until today was left over from its creation.  RESTATED 2026-07-30: it
+gained `hū3` after being REFUTED, see the THIRD FALSITY AUDIT at the end of this
+docstring.  Created 2026-07-28 as the first of the six leaves of the
+decomposition of `exists_fontaineCoordinates` below; it is Fontaine's steps 1–3,
+pp. 521–522.)
 
 Everything Fontaine's inductive step needs about the ALGEBRA `A` is spent here,
 and nowhere else: `hΩ` and both halves of `hfon` are consumed by this leaf, and
