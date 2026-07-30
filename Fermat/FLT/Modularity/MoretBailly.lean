@@ -40152,8 +40152,267 @@ def IsEffectiveQGaloisTwist {K : Type u} [Field K] [Algebra ℚ K]
       (AlgebraicGeometry.GeometricallyConnected fX₀ →
         AlgebraicGeometry.GeometricallyConnected fX)
 
+/-! ##### THE COCYCLE-TO-ACTION NORMALISATION AND SERRE'S CRITERION (2026-07-30)
+
+Everything in this block is PROVEN, and it exists to strip two layers off
+`exists_isGaloisTwistForm_of_isOpenKernel` below, which is now an ASSEMBLY.
+
+*Layer 1 — the cocycle bookkeeping.* Every textbook statement of effective
+descent is about a SEMILINEAR ACTION, not about a cocycle: `σ ↦ c σ ≫ baseAct σ`
+is again an action, and that is the whole content of `IsQGaloisCocycle`'s
+inverse-free third clause. `twistedAct_one`/`_mul`/`_snd` are that translation,
+and after them the cocycle never appears again.
+
+*Layer 2 — Serre's criterion, in the form the construction consumes.*
+`horb` gives affine opens of `X₀` containing prescribed finite sets; what a
+quotient construction needs is affine opens of `X₀ ⊗ K` containing prescribed
+finite sets AND STABLE under the twisted action. Those are different statements,
+because the twisted action moves points in the `X₀` direction: `c σ` is only an
+automorphism over `Spec K`, not over `X₀`.
+`exists_isAffineOpen_stableUnder_semilinearAction` closes the gap, and the proof
+is where `hsep` earns its place in the signature — see its docstring.
+-/
+
 open CategoryTheory AlgebraicGeometry in
-/-- **EFFECTIVITY OF GALOIS DESCENT** (sorry node, cut 2026-07-28): a
+/-- **THE TWISTED ACTION IS UNITAL** (PROVEN): `c 1 ≫ baseAct 1 = 𝟙`. -/
+theorem twistedAct_one {K : Type u} [Field K] [Algebra ℚ K]
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {c : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K))}
+    (hc : IsQGaloisCocycle b fX₀ c) :
+    c 1 ≫ b.baseAct fX₀ 1 = 𝟙 _ := by
+  rw [hc.2.1, b.baseAct_one, Category.comp_id]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **THE TWISTED ACTION IS MULTIPLICATIVE** (PROVEN). This is the cocycle
+identity read as an action law, which is exactly what the inverse-free spelling
+of `IsQGaloisCocycle`'s third clause was chosen to make cheap. -/
+theorem twistedAct_mul {K : Type u} [Field K] [Algebra ℚ K]
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {c : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K))}
+    (hc : IsQGaloisCocycle b fX₀ c) (σ τ : Field.absoluteGaloisGroup ℚ) :
+    c (σ * τ) ≫ b.baseAct fX₀ (σ * τ) =
+      (c σ ≫ b.baseAct fX₀ σ) ≫ (c τ ≫ b.baseAct fX₀ τ) := by
+  rw [b.baseAct_mul, ← Category.assoc, hc.2.2 σ τ]
+  simp only [Category.assoc]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **THE TWISTED ACTION IS STILL SEMILINEAR** (PROVEN): it covers `b.act σ` on
+`Spec K`, because `c σ` is an automorphism OVER `Spec K`. -/
+theorem twistedAct_snd {K : Type u} [Field K] [Algebra ℚ K]
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    {fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {c : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K))}
+    (hc : IsQGaloisCocycle b fX₀ c) (σ : Field.absoluteGaloisGroup ℚ) :
+    (c σ ≫ b.baseAct fX₀ σ) ≫ Limits.pullback.snd fX₀ (specRatMap K) =
+      Limits.pullback.snd fX₀ (specRatMap K) ≫ b.act σ := by
+  rw [Category.assoc, b.baseAct_snd, ← Category.assoc, hc.1]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SERRE'S CRITERION FOR THE TWISTED ACTION** (**PROVEN 2026-07-30**): every
+finite subset of `X₀ ⊗ K` lies in an AFFINE open that is STABLE under the whole
+semilinear action `a`.
+
+This is the hypothesis every construction of a quotient by a finite group
+actually consumes, and it is what `horb` is FOR. Deriving it is not a
+restatement of `horb`: `horb` produces affine opens of `X₀`, whose preimages in
+`X₀ ⊗ K` are stable under the CANONICAL action `baseAct` (identity on the `X₀`
+coordinate) but NOT under a twisted one, since `c σ` moves points in the `X₀`
+direction.
+
+THE PROOF, AND WHICH HYPOTHESES IT CONSUMES — the docstring of
+`exists_isGaloisTwistForm_of_isOpenKernel` asked whoever proved this to record
+exactly that, so:
+
+* `hopen` (as `N`, `hNa`) does two things. First it makes `σ ↦ π ∘ a σ` and
+  `σ ↦ (a σ)⁻¹ W` constant on the cosets `σ N`: `a (σ n) = a σ ≫ baseAct n` and
+  `baseAct n ≫ π = π`, so both descend to `Γ_ℚ / N`. Second, `N` OPEN in the
+  COMPACT group `Γ_ℚ` makes `Γ_ℚ / N` FINITE
+  (`Subgroup.quotient_finite_of_isOpen`), which is what turns an intersection
+  over `Γ_ℚ` into a FINITE intersection. Normality of `N` is used only at the
+  very end, to know that `i ↦ ⟦τ⟧ * i` permutes `Γ_ℚ / N`.
+* `horb` supplies the affine `U ⊆ X₀` containing the finite set of `X₀`-shadows
+  `π (a σ t)` of the orbit — finite precisely because `σ ↦ π ∘ a σ` factors
+  through `Γ_ℚ / N`.
+* `hsep` is what makes `V = ⋂_{σ} (a σ)⁻¹ (π⁻¹ U)` AFFINE rather than merely
+  open: `X₀ ⊗ K` is then a separated scheme (`IsSeparated` is stable under base
+  change, and `Spec K` is affine hence separated over the terminal scheme), and
+  in a separated scheme a finite intersection of affine opens is affine
+  (`IsAffineOpen.iInf`). **So `hsep` is genuinely consumed, and this is the step
+  that consumes it.** `π⁻¹ U` is affine because `π = pullback.fst` is a base
+  change of the affine morphism `specRatMap K`.
+* `ha_one`/`ha_mul` are used to know each `a σ` is an ISOMORPHISM (inverse
+  `a σ⁻¹`), hence an affine morphism, so that `(a σ)⁻¹ (π⁻¹ U)` is affine too.
+
+`hsm`, `hlft`, `hqc` and `ha_snd` are NOT consumed here. -/
+theorem exists_isAffineOpen_stableUnder_semilinearAction {K : Type u} [Field K] [Algebra ℚ K]
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsep : AlgebraicGeometry.IsSeparated fX₀)
+    (horb : ∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U)
+    (a : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K)))
+    (ha_one : a 1 = 𝟙 _)
+    (ha_mul : ∀ σ τ, a (σ * τ) = a σ ≫ a τ)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) (hNnorm : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNa : ∀ σ ∈ N, a σ = b.baseAct fX₀ σ)
+    (T : Set ↥(Limits.pullback fX₀ (specRatMap K))) (hT : T.Finite) :
+    ∃ V : (Limits.pullback fX₀ (specRatMap K)).Opens,
+      IsAffineOpen V ∧ (∀ t ∈ T, t ∈ V) ∧ ∀ σ, (a σ) ⁻¹ᵁ V = V := by
+  haveI := hsep
+  haveI := hNnorm
+  haveI : IsAffineHom (Limits.pullback.fst fX₀ (specRatMap K)) :=
+    MorphismProperty.pullback_fst _ _ inferInstance
+  haveI : (Limits.pullback fX₀ (specRatMap K)).IsSeparated := by
+    constructor
+    have h : Limits.terminal.from (Limits.pullback fX₀ (specRatMap K)) =
+        Limits.pullback.snd fX₀ (specRatMap K) ≫
+          Limits.terminal.from (Spec (CommRingCat.of K)) := Limits.terminal.hom_ext _ _
+    rw [h]; infer_instance
+  haveI : Finite (Field.absoluteGaloisGroup ℚ ⧸ N) := Subgroup.quotient_finite_of_isOpen N hNopen
+  haveI hiso : ∀ σ, IsIso (a σ) := by
+    intro σ
+    refine ⟨a σ⁻¹, ?_, ?_⟩
+    · rw [← ha_mul σ σ⁻¹, mul_inv_cancel, ha_one]
+    · rw [← ha_mul σ⁻¹ σ, inv_mul_cancel, ha_one]
+  -- a set-theoretic section of `Γ_ℚ ↠ Γ_ℚ / N`
+  have hsurj : Function.Surjective
+      (QuotientGroup.mk : Field.absoluteGaloisGroup ℚ → Field.absoluteGaloisGroup ℚ ⧸ N) :=
+    fun q => Quotient.inductionOn q fun g => ⟨g, rfl⟩
+  set s : (Field.absoluteGaloisGroup ℚ ⧸ N) → Field.absoluteGaloisGroup ℚ :=
+    fun i => (hsurj i).choose with hsdef
+  have hs : ∀ i, (QuotientGroup.mk (s i) : Field.absoluteGaloisGroup ℚ ⧸ N) = i :=
+    fun i => (hsurj i).choose_spec
+  -- every `σ` is `s ⟦σ⟧` times an element of `N`
+  have hrep : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ n ∈ N, σ = s (QuotientGroup.mk σ) * n := by
+    intro σ
+    refine ⟨(s (QuotientGroup.mk σ))⁻¹ * σ, ?_, by group⟩
+    rw [← QuotientGroup.eq]
+    exact hs _
+  -- the finite set of `X₀`-shadows of the orbit of `T`
+  have hSfin : (⋃ i : (Field.absoluteGaloisGroup ℚ ⧸ N),
+      (fun z => (Limits.pullback.fst fX₀ (specRatMap K)).base ((a (s i)).base z)) '' T).Finite :=
+    Set.finite_iUnion (fun i => hT.image _)
+  obtain ⟨U, hUaff, hUS⟩ := horb _ hSfin
+  have hWaff : IsAffineOpen ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) :=
+    hUaff.preimage _
+  -- `(a σ)⁻¹ W` only depends on the coset `σ N`
+  have hPcoset : ∀ (σ n : Field.absoluteGaloisGroup ℚ), n ∈ N →
+      (a (σ * n)) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) =
+        (a σ) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) := by
+    intro σ n hn
+    have hbW : (b.baseAct fX₀ n) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) =
+        (Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U := by
+      rw [← Scheme.Hom.comp_preimage, b.baseAct_fst]
+    rw [ha_mul, hNa n hn, Scheme.Hom.comp_preimage, hbW]
+  have hPrep : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      (a σ) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) =
+        (a (s (QuotientGroup.mk σ))) ⁻¹ᵁ
+          ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) := by
+    intro σ
+    obtain ⟨n, hn, hσ⟩ := hrep σ
+    conv_lhs => rw [hσ]
+    rw [hPcoset _ _ hn]
+  refine ⟨⨅ i : (Field.absoluteGaloisGroup ℚ ⧸ N),
+    (a (s i)) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U), ?_, ?_, ?_⟩
+  · exact IsAffineOpen.iInf (fun i => hWaff.preimage (a (s i)))
+  · intro t ht
+    simp only [← SetLike.mem_coe, TopologicalSpace.Opens.coe_iInf, Set.mem_iInter]
+    intro i
+    show (a (s i)).base t ∈ (Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U
+    exact hUS _ (Set.mem_iUnion.2 ⟨i, ⟨t, ht, rfl⟩⟩)
+  · intro τ
+    have hpre : ∀ (f : Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K))
+        (V : (Field.absoluteGaloisGroup ℚ ⧸ N) →
+          (Limits.pullback fX₀ (specRatMap K)).Opens),
+        f ⁻¹ᵁ (⨅ i, V i) = ⨅ i, f ⁻¹ᵁ (V i) := by
+      intro f V
+      ext x
+      simp [TopologicalSpace.Opens.coe_iInf]
+    rw [hpre]
+    have hstep : ∀ i, (a τ) ⁻¹ᵁ ((a (s i)) ⁻¹ᵁ
+        ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U)) =
+        (a (s (QuotientGroup.mk τ * i))) ⁻¹ᵁ
+          ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U) := by
+      intro i
+      rw [← Scheme.Hom.comp_preimage, ← ha_mul, hPrep (τ * s i), QuotientGroup.mk_mul, hs]
+    simp only [hstep]
+    exact (Equiv.mulLeft (QuotientGroup.mk τ : Field.absoluteGaloisGroup ℚ ⧸ N)).iInf_congr
+      (g := fun i => (a (s i)) ⁻¹ᵁ ((Limits.pullback.fst fX₀ (specRatMap K)) ⁻¹ᵁ U))
+      (fun _ => rfl)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **EFFECTIVITY OF GALOIS DESCENT, SEMILINEAR-ACTION FORM** (sorry leaf, cut
+2026-07-30 out of `exists_isGaloisTwistForm_of_isOpenKernel` below, which is now
+an assembly over it).
+
+WHAT IS DIFFERENT FROM THE STATEMENT IT REPLACES, and why the recut is not a
+rename. Two things that used to be part of that leaf are now PROVEN above and
+supplied to this one:
+
+* the cocycle `c` is gone. The datum is a genuine SEMILINEAR ACTION `a` —
+  `a 1 = 𝟙`, `a (σ τ) = a σ ≫ a τ`, `a σ` covering `b.act σ` on `Spec K` — which
+  is the shape every reference states descent in, and it is strictly more
+  general: `c` is recovered as `a σ ≫ (baseAct σ)⁻¹`;
+* `hstab` REPLACES the need to derive Serre's criterion. It is exactly
+  `exists_isAffineOpen_stableUnder_semilinearAction`'s conclusion, and the
+  assembly below discharges it from `hsep` and `horb`. So a prover here starts
+  with `a`-stable affine opens in hand and never has to think about `Γ_ℚ`'s
+  topology, about cosets, or about separatedness again.
+
+WHAT IS LEFT, and it is the whole of it: the QUOTIENT. Take the finite Galois
+`L = K^N` and `G = Γ_ℚ / N`; `hstab` covers `X₀ ⊗ K` by `a`-stable affines
+`V = Spec B`, `a` makes `G` act on `B` semilinearly over `L`, and `Spec (B^G)`
+glues to the required `X`. What has to be BUILT is the gluing datum and the
+proof that base change recovers `V` — i.e. Galois descent for algebras plus
+`Scheme.GlueData`. Neither exists on this pin: `IsStack` is stated in
+`Mathlib/CategoryTheory/Sites/Descent/` but has no `AlgebraicGeometry` instance,
+and `quotientScheme` / `IsQuasiProjective` match zero files there (re-verified at
+`85ee56a7`, release 23).
+
+`hac`, `halg` and `b.gal_bijective` are still load-bearing and still for the
+reason recorded below: without them `K = ℚ` with the trivial action forces
+`c ≡ 𝟙` while `Spec ℚ ⊔ Spec ℚ` carries a surjective continuous
+`Γ_ℚ ↠ ℤ/2` admitting no twist. `hsm`, `hlft`, `hqc` are carried but not known
+to be needed; `hsep` is now known to be needed, by
+`exists_isAffineOpen_stableUnder_semilinearAction`. -/
+theorem exists_isGaloisTwistForm_of_semilinearAction {K : Type u} [Field K] [Algebra ℚ K]
+    (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
+    (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
+    (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsm : AlgebraicGeometry.Smooth fX₀) (hsep : AlgebraicGeometry.IsSeparated fX₀)
+    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX₀)
+    (hqc : AlgebraicGeometry.QuasiCompact fX₀)
+    (a : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₀ (specRatMap K) ⟶ Limits.pullback fX₀ (specRatMap K)))
+    (ha_one : a 1 = 𝟙 _)
+    (ha_mul : ∀ σ τ, a (σ * τ) = a σ ≫ a τ)
+    (ha_snd : ∀ σ, a σ ≫ Limits.pullback.snd fX₀ (specRatMap K) =
+      Limits.pullback.snd fX₀ (specRatMap K) ≫ b.act σ)
+    (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
+      IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      ∀ σ ∈ N, a σ = b.baseAct fX₀ σ)
+    (hstab : ∀ T : Set ↥(Limits.pullback fX₀ (specRatMap K)), T.Finite →
+      ∃ V : (Limits.pullback fX₀ (specRatMap K)).Opens, IsAffineOpen V ∧
+        (∀ t ∈ T, t ∈ V) ∧ ∀ σ, (a σ) ⁻¹ᵁ V = V) :
+    ∃ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (e : Limits.pullback fX (specRatMap K) ≅ Limits.pullback fX₀ (specRatMap K)),
+      e.hom ≫ Limits.pullback.snd fX₀ (specRatMap K) =
+          Limits.pullback.snd fX (specRatMap K) ∧
+        ∀ σ, b.baseAct fX σ ≫ e.hom = e.hom ≫ a σ :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **EFFECTIVITY OF GALOIS DESCENT** (**PROVEN 2026-07-30** as an assembly over
+`exists_isGaloisTwistForm_of_semilinearAction` and
+`exists_isAffineOpen_stableUnder_semilinearAction`; it was the sorry node cut
+2026-07-28): a
 continuous 1-cocycle on a quasi-projective `ℚ`-scheme is effective, and the
 twist inherits the shape of the original.
 
@@ -40264,7 +40523,29 @@ the two absences that make this a leaf rather than an assembly are also unchange
 stated but never instantiated for schemes), and `quotientScheme` /
 `IsQuasiProjective` / `QuasiProjective` match zero files there. So the plan in the
 paragraph above is still the plan, and the finite-group quotient is still the one
-piece that has to be built from nothing. -/
+piece that has to be built from nothing.
+
+**RECUT 2026-07-30, AND THE OUTSTANDING QUESTION ABOVE IS NOW ANSWERED.** The
+paragraph beginning "The four shape hypotheses" asked whoever proved this to
+record which hypotheses the proof consumes. Two of them are now settled, and the
+settling is what turned this into an assembly:
+
+* `hsep` **IS** consumed, and by a step nobody had located: it is what makes the
+  `a`-stable open `⋂_σ (a σ)⁻¹ (π⁻¹ U)` AFFINE rather than merely open, since a
+  finite intersection of affine opens is affine exactly in a separated scheme.
+  The 2026-07-28 remark that "Serre's route only visibly consumes `horb` and
+  `hopen`" was therefore wrong: `horb` alone gives affine opens stable under the
+  CANONICAL action, and the twisted action moves points in the `X₀` direction.
+* `hsm`, `hlft` and `hqc` are still not known to be consumed anywhere, and are
+  still carried for the reason given above.
+
+The two proven layers now sit above this declaration
+(`twistedAct_one`/`_mul`/`_snd` and
+`exists_isAffineOpen_stableUnder_semilinearAction`), and what is left is
+`exists_isGaloisTwistForm_of_semilinearAction` — the quotient itself, stated for
+a semilinear action with Serre's criterion already in hand. Everything in the
+absence survey above applies verbatim to THAT leaf now; it is left here because
+it is the history of this statement. -/
 theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
@@ -40279,8 +40560,20 @@ theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra
     (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
       IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) :
     ∃ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
-      IsGaloisTwistForm b fX fX₀ c :=
-  sorry
+      IsGaloisTwistForm b fX fX₀ c := by
+  obtain ⟨N, hNnorm, hNopen, hNtriv⟩ := hopen
+  have hNa : ∀ σ ∈ N, (fun σ => c σ ≫ b.baseAct fX₀ σ) σ = b.baseAct fX₀ σ := by
+    intro σ hσ
+    simp only [hNtriv σ hσ, Category.id_comp]
+  obtain ⟨X, fX, e, he_snd, he⟩ :=
+    exists_isGaloisTwistForm_of_semilinearAction hac halg b fX₀ hsm hsep hlft hqc
+      (fun σ => c σ ≫ b.baseAct fX₀ σ)
+      (twistedAct_one b hc) (twistedAct_mul b hc) (twistedAct_snd b hc)
+      ⟨N, hNnorm, hNopen, hNa⟩
+      (fun T hT => exists_isAffineOpen_stableUnder_semilinearAction b fX₀ hsep horb
+        (fun σ => c σ ≫ b.baseAct fX₀ σ)
+        (twistedAct_one b hc) (twistedAct_mul b hc) N hNnorm hNopen hNa T hT)
+  exact ⟨X, fX, e, he_snd, he⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **EFFECTIVITY OF GALOIS DESCENT** (PROVEN 2026-07-29 as an ASSEMBLY; it was
