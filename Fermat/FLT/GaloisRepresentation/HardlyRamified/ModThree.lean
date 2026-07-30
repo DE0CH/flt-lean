@@ -51838,10 +51838,434 @@ theorem artinDivisorMap_apply_span_ray_class
   rw [h, zero_pow hℓk] at h2
   exact zero_ne_one h2
 
+/-! ### Divisors, fractional ideals and the ideal class group
+
+The declarations of this section are the general Dedekind-domain dictionary consumed by
+`relIndex_narrowRayGroup_ne_zero_ray_class` below: a divisor `e : HeightOneSpectrum R →₀ ℤ`
+is sent to the fractional ideal `∏ v ^ e v`, that assignment is an injective group
+homomorphism, and composing it with `ClassGroup.mk` gives the map whose kernel is exactly
+the group of PRINCIPAL divisors.  Everything here is `IsDedekindDomain`-level and in the
+pin; nothing in it is class field theory.  It is stated over a variable Dedekind domain
+rather than at `𝓞 F` because none of it uses anything else, and stated HERE rather than in
+`Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas` only to keep the leaf and its
+glue in one file — moving it there is a fine future tidy-up.
+-/
+
+section RayClassDivisorFiniteness
+
+open IsDedekindDomain FractionalIdeal
+open scoped nonZeroDivisors
+
+variable {R : Type*} [CommRing R] [IsDedekindDomain R]
+variable (K : Type*) [Field K] [Algebra R K] [IsFractionRing R K]
+
+/-- The fractional ideal `∏ v ^ e v` attached to a divisor `e`. -/
+noncomputable def divisorFractionalIdeal_ray_class (e : HeightOneSpectrum R →₀ ℤ) :
+    FractionalIdeal R⁰ K :=
+  e.prod (fun v n => (v.asIdeal : FractionalIdeal R⁰ K) ^ n)
+
+theorem divisorFractionalIdeal_ne_zero_ray_class (e : HeightOneSpectrum R →₀ ℤ) :
+    divisorFractionalIdeal_ray_class K e ≠ 0 := by
+  rw [divisorFractionalIdeal_ray_class, Finsupp.prod]
+  refine Finset.prod_ne_zero_iff.mpr ?_
+  intro v _
+  exact zpow_ne_zero _ (coeIdeal_ne_zero.mpr v.ne_bot)
+
+theorem count_divisorFractionalIdeal_ray_class (v : HeightOneSpectrum R)
+    (e : HeightOneSpectrum R →₀ ℤ) :
+    count K v (divisorFractionalIdeal_ray_class K e) = e v :=
+  count_finsuppProd K v e
+
+theorem divisorFractionalIdeal_add_ray_class (e f : HeightOneSpectrum R →₀ ℤ) :
+    divisorFractionalIdeal_ray_class K (e + f)
+      = divisorFractionalIdeal_ray_class K e * divisorFractionalIdeal_ray_class K f := by
+  refine Finsupp.prod_add_index' (fun v => zpow_zero _) ?_
+  intro v m n
+  exact zpow_add₀ (coeIdeal_ne_zero.mpr v.ne_bot) m n
+
+theorem divisorFractionalIdeal_zero_ray_class :
+    divisorFractionalIdeal_ray_class K (0 : HeightOneSpectrum R →₀ ℤ) = 1 := by
+  simp [divisorFractionalIdeal_ray_class]
+
+/-- Two nonzero fractional ideals with the same `count` at every height-one prime agree. -/
+theorem eq_of_count_eq_ray_class {I J : FractionalIdeal R⁰ K} (hI : I ≠ 0) (hJ : J ≠ 0)
+    (h : ∀ v : HeightOneSpectrum R, count K v I = count K v J) : I = J := by
+  rw [← finprod_heightOneSpectrum_factorization' K hI,
+    ← finprod_heightOneSpectrum_factorization' K hJ]
+  exact finprod_congr fun v => by rw [h v]
+
+theorem divisorFractionalIdeal_injective_ray_class :
+    Function.Injective (divisorFractionalIdeal_ray_class (R := R) K) := by
+  intro e f h
+  ext v
+  exact (count_divisorFractionalIdeal_ray_class K v e).symm.trans
+    (by rw [h]; exact count_divisorFractionalIdeal_ray_class K v f)
+
+/-- `v ^ n ∣ J` is exactly `n ≤ count K v J`. -/
+theorem pow_dvd_iff_le_count_ray_class {J : Ideal R} (hJ : J ≠ 0) (v : HeightOneSpectrum R)
+    (n : ℕ) : v.asIdeal ^ n ∣ J ↔ (n : ℤ) ≤ count K v (J : FractionalIdeal R⁰ K) := by
+  classical
+  rw [count_coe K v hJ, ← Associates.mk_le_mk_iff_dvd, Associates.mk_pow,
+    Associates.prime_pow_dvd_iff_le (Associates.mk_ne_zero.mpr hJ) v.associates_irreducible]
+  exact_mod_cast Iff.rfl
+
+/-- A divisor pinned by ideal divisibility against `a` — which is exactly the shape of the
+hypothesis `hd` carried by every leaf of this cluster — really is the divisor of `a`. -/
+theorem divisorFractionalIdeal_eq_span_ray_class {a : R} (ha : a ≠ 0)
+    (e : HeightOneSpectrum R →₀ ℤ)
+    (he : ∀ v : HeightOneSpectrum R, ∀ n : ℕ,
+      v.asIdeal ^ n ∣ Ideal.span {a} ↔ (n : ℤ) ≤ e v) :
+    divisorFractionalIdeal_ray_class K e = (Ideal.span {a} : Ideal R) := by
+  have hJ : (Ideal.span {a} : Ideal R) ≠ 0 := by
+    rw [Ne, Submodule.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact ha
+  refine eq_of_count_eq_ray_class K (divisorFractionalIdeal_ne_zero_ray_class K e)
+    (coeIdeal_ne_zero.mpr hJ) fun v => ?_
+  rw [count_divisorFractionalIdeal_ray_class]
+  set B := count K v ((Ideal.span {a} : Ideal R) : FractionalIdeal R⁰ K) with hB
+  have hB0 : 0 ≤ B := count_coe_nonneg K v _
+  have key : ∀ n : ℕ, ((n : ℤ) ≤ e v ↔ (n : ℤ) ≤ B) := fun n =>
+    (he v n).symm.trans (pow_dvd_iff_le_count_ray_class K hJ v n)
+  have h1 : (0 : ℤ) ≤ e v := (key 0).mpr (by simpa using hB0)
+  have h2 : e v ≤ B := by have := (key (e v).toNat).mp (by omega); omega
+  have h3 : B ≤ e v := by have := (key B.toNat).mpr (by omega); omega
+  omega
+
+/-- The divisor group maps to the group of invertible fractional ideals. -/
+noncomputable def divisorUnitsHom_ray_class :
+    Multiplicative (HeightOneSpectrum R →₀ ℤ) →* (FractionalIdeal R⁰ K)ˣ where
+  toFun x := Units.mk0 (divisorFractionalIdeal_ray_class K (Multiplicative.toAdd x))
+    (divisorFractionalIdeal_ne_zero_ray_class K _)
+  map_one' := by apply Units.ext; simpa using divisorFractionalIdeal_zero_ray_class K
+  map_mul' x y := by apply Units.ext; simpa using divisorFractionalIdeal_add_ray_class K _ _
+
+@[simp] theorem coe_divisorUnitsHom_ray_class (x : Multiplicative (HeightOneSpectrum R →₀ ℤ)) :
+    ((divisorUnitsHom_ray_class K x : (FractionalIdeal R⁰ K)ˣ) : FractionalIdeal R⁰ K)
+      = divisorFractionalIdeal_ray_class K (Multiplicative.toAdd x) := rfl
+
+/-- The divisor group composed with the class map.  Its kernel is the group of PRINCIPAL
+divisors — the `≤` direction of that is
+`exists_span_of_classGroupDivisorHom_eq_one_ray_class` below, which is the only direction
+the finiteness argument needs. -/
+noncomputable def classGroupDivisorHom_ray_class :
+    Multiplicative (HeightOneSpectrum R →₀ ℤ) →* ClassGroup R :=
+  (ClassGroup.mk K).comp (divisorUnitsHom_ray_class K)
+
+/-- A divisor of trivial ideal class is a difference of two principal divisors.  (The
+generator delivered by `ClassGroup.mk_eq_one_iff` lives in `K`, and is split into a
+numerator and a denominator in `R` by `IsLocalization.mk'_surjective`.) -/
+theorem exists_span_of_classGroupDivisorHom_eq_one_ray_class
+    (x : Multiplicative (HeightOneSpectrum R →₀ ℤ))
+    (h : classGroupDivisorHom_ray_class K x = 1) :
+    ∃ a b : R, a ≠ 0 ∧ b ≠ 0 ∧
+      divisorFractionalIdeal_ray_class K (Multiplicative.toAdd x) *
+          ((Ideal.span {b} : Ideal R) : FractionalIdeal R⁰ K)
+        = ((Ideal.span {a} : Ideal R) : FractionalIdeal R⁰ K) := by
+  rw [classGroupDivisorHom_ray_class, MonoidHom.comp_apply, ClassGroup.mk_eq_one_iff] at h
+  obtain ⟨γ, hγ⟩ := h.principal
+  rw [coe_divisorUnitsHom_ray_class] at hγ
+  have hspan : divisorFractionalIdeal_ray_class K (Multiplicative.toAdd x)
+      = spanSingleton R⁰ γ := by
+    apply FractionalIdeal.coeToSubmodule_injective
+    simp only [coe_spanSingleton]
+    exact hγ
+  have hγ0 : γ ≠ 0 := by
+    rintro rfl
+    rw [spanSingleton_zero] at hspan
+    exact divisorFractionalIdeal_ne_zero_ray_class K _ hspan
+  obtain ⟨⟨a, b⟩, hab⟩ := IsLocalization.mk'_surjective R⁰ γ
+  simp only at hab
+  have hb0 : (b : R) ≠ 0 := nonZeroDivisors.coe_ne_zero b
+  have ha0 : a ≠ 0 := by
+    rintro rfl
+    rw [IsLocalization.mk'_zero] at hab
+    exact hγ0 hab.symm
+  refine ⟨a, (b : R), ha0, hb0, ?_⟩
+  rw [hspan, coeIdeal_span_singleton, coeIdeal_span_singleton, spanSingleton_mul_spanSingleton,
+    ← hab, IsLocalization.mk'_spec]
+
+/-- When the class group is FINITE, the principal divisors have finite index in every
+subgroup of the divisor group.  This is `Subgroup.relIndex_ker` plus
+`NumberField.instFintypeClassGroup` at the point of use, and it is the whole of the
+class-group half of the ray-class finiteness. -/
+theorem relIndex_ker_classGroupDivisorHom_ne_zero_ray_class [Finite (ClassGroup R)]
+    (Im : Subgroup (Multiplicative (HeightOneSpectrum R →₀ ℤ))) :
+    (classGroupDivisorHom_ray_class K).ker.relIndex Im ≠ 0 := by
+  rw [Subgroup.relIndex_ker]
+  exact Nat.card_ne_zero.mpr ⟨⟨1⟩, inferInstance⟩
+
+end RayClassDivisorFiniteness
+
+section RayClassNarrowFiniteness
+
+open scoped nonZeroDivisors
+
+/-- **THE UNIT HALF OF THE FINITENESS OF THE NARROW RAY CLASS GROUP: the narrow ray
+principal divisors have finite index in the principal divisors supported away from `mm`**
+(sorry node, created 2026-07-30 as the single sub-leaf of
+`relIndex_narrowRayGroup_ne_zero_ray_class` just below, which is now PROVEN as glue over it
+plus the class-group dictionary in the section above).
+
+`Q` is the subgroup generated by ALL the principal divisors `d δ` (`δ ≠ 0`) and `Im` is the
+group of divisors supported away from `mm`, so `Q ⊓ Im` is classically the group of
+principal fractional ideals coprime to `mm`, and `P` is `P⁺_{F,mm}`.  This leaf is
+therefore exactly the finiteness of `ker (Cl⁺_mm(F) → Cl(F))` — the class-group half is
+already discharged by the parent, and this is the rest.
+
+**⚠ THE `⊓ Im` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  `P.relIndex Q ≠ 0` —
+the same statement with `Q` in place of `Q ⊓ Im` — is FALSE whenever some height-one prime
+`v` divides `mm`.  Witness: `F = ℚ`, `mm = (2)`, `v = (2)`, `δ = 2`.  Every generator of `P`
+is a `d δ` with `δ ≡ 1 mod mm`, hence a unit at `v`, hence supported away from `v`; so every
+element of `P` has `toAdd · v = 0`, while `d 2` has `toAdd · v = 1`.  The powers `(d 2)^n`
+are therefore pairwise distinct modulo `P`, and `[Q : P] = 0` in the ℕ-valued convention.
+So a prover must not "simplify" this statement by dropping the intersection.
+
+**ROUTE, with the pin's machinery named, and with the correction to the sketch the parent
+used to carry.**  The parent's original plan said `Q ⧸ P` is "a quotient of
+`(𝓞 F ⧸ mm)ˣ × {±1}^{r₁}` by the image of `(𝓞 F)ˣ`", and that a principal divisor lies in
+`P` "exactly when `δ` can be adjusted by a unit to be `≡ 1 mod mm` and totally positive".
+The SHAPE of that is right and the DIRECTION as stated is not usable: there is no map OUT of
+`Q ⊓ Im` to construct, because a class in `Q ⊓ Im` has no canonical integral generator.  The
+argument runs the other way, as a SURJECTION FROM a finite group:
+
+* Put `G := (𝓞 F ⧸ mm)ˣ × ({ψ : F →+* ℝ} → ℤˣ)`.  `G` is FINITE, and both halves were
+  checked in the pin on 2026-07-30 rather than assumed:
+  `Ring.HasFiniteQuotients.finiteQuotient : I ≠ ⊥ → Finite (R ⧸ I)`
+  (`Mathlib/RingTheory/Ideal/Quotient/HasFiniteQuotients.lean`) gives `Finite (𝓞 F ⧸ mm)`
+  for `mm ≠ ⊥` and is ALREADY publicly imported by this module (see the header note on that
+  import); and `Fintype (F →+* ℝ)` holds because
+  `Mathlib/NumberTheory/NumberField/InfinitePlace/Embeddings.lean` carries
+  `noncomputable instance : Fintype (K →+* A)` for `[NumberField K]` and `A` a
+  characteristic-zero field.  **That instance is ANONYMOUS — it has no name to grep for**,
+  so a search for a citable lemma about `F →+* ℝ` comes back empty and reads as an absence;
+  it is not one, and `inferInstance` finds it.  If `F` is totally complex the second factor
+  is the trivial group on an EMPTY index type — harmless, `G` is still finite, and see the
+  audit below for why the vacuity does not bite in the direction it bit
+  `norm_totallyPositive_ray_class`.
+* Define `f : G →* (Q ⊓ Im) ⧸ P.subgroupOf (Q ⊓ Im)` by sending `g` to the class of `d δ`
+  for ANY `δ ∈ 𝓞 F` coprime to `mm` whose reduction and sign vector are `g`.  It is a
+  homomorphism because `δ ↦ (δ mod mm, sgn δ)` is multiplicative, and it is SURJECTIVE
+  because every `x ∈ Q ⊓ Im` is `d δ · (d δ')⁻¹` with `δ, δ'` coprime to `mm`.  Then
+  `Nat.card` of the target is nonzero because it is the image of a finite group.
+* **BOTH the well-definedness of `f` and its surjectivity reduce to ONE approximation
+  lemma, and that lemma is the whole cost of this leaf:** for `γ ∈ Fˣ` with `v(γ) = 0` at
+  every `v ∣ mm` there are `δ, δ' ∈ 𝓞 F` coprime to `mm` with `γ = δ / δ'`; and if moreover
+  `γ ≡ 1 mod^× mm` and `γ` is totally positive, then `δ, δ'` may be taken `≡ 1 mod mm` and
+  totally positive.  (Well-definedness is the second clause applied to `γ = δ / δ'` for two
+  integral `δ, δ'` with the same image in `G`; surjectivity is the first.)  This is
+  Childress §3 / Janusz IV.1, and the standard proof is CRT plus prime avoidance in the
+  semilocal ring `𝓞 F` localised away from the primes dividing `mm`.  It is also what makes
+  the leaf's `P` — generated by INTEGRAL `δ ≡ 1 mod mm` — equal to the classical
+  `P⁺_{F,mm}`, which is defined with `γ ∈ Fˣ`; a formalisation that quietly assumes those
+  two agree has assumed exactly the lemma it still owes.
+* **THE PIN ALREADY CARRIES THE HARD HALF OF THAT APPROXIMATION LEMMA, under a name that
+  does not mention approximation** (found 2026-07-30, and it is the reason this leaf is
+  worth dispatching rather than deferring).  `IsDedekindDomain.exists_sup_span_eq`
+  (`Mathlib/RingTheory/DedekindDomain/Factorization.lean`, ~line 611):
+  `0 < I ≤ J → ∃ a, I ⊔ Ideal.span {a} = J`.  Apply it with `J := D` the denominator ideal
+  of `γ` and `I := D * mm ^ N`: writing `Ideal.span {a} = D * C` (legitimate since
+  `a ∈ D`), the conclusion `D * C + D * mm ^ N = D` cancels to `C + mm ^ N = ⊤`, i.e. **the
+  cofactor `C` is coprime to `mm`** — which is exactly "choose a generator of the
+  denominator whose cofactor avoids `mm`", the step every textbook proof does by prime
+  avoidance.  Then `δ' := a` and `δ := γ * a`, and `(δ)` is coprime to `mm` because
+  `count v (γ) = 0` and `count v D = 0` at every `v ∣ mm`.  What is NOT supplied by the pin
+  and has to be done by hand is the RAY refinement — adjusting `δ, δ'` to be `≡ 1 mod mm`
+  and totally positive — which is CRT at the finite places plus a `1 + (large) * μ`
+  positivity adjustment at the real ones.  A companion, if the fractional-ideal form is more
+  convenient: `IsDedekindDomain.exists_add_spanSingleton_mul_eq` in the same file.
+
+**FAITHFULNESS (audited 2026-07-30): TRUE as stated.**
+
+* *The possibly-empty-family trap does not bite.*  If `F` is totally complex there is no
+  `ψ : F →+* ℝ`, so the total-positivity clause of `P`'s generating set is VACUOUS — which
+  makes `P` LARGER, hence the index SMALLER, hence the conclusion EASIER.  A vacuous
+  constraint cutting down a GENERATING SET is harmless; a vacuous constraint in a HYPOTHESIS
+  is not, and that is the shape that refuted `norm_totallyPositive_ray_class`.
+* *The ℕ-junk-value trap is the CONCLUSION here, not a hidden assumption*: the leaf asserts
+  `≠ 0`, so it cannot discharge itself.
+* `mm = ⊤`: no height-one prime divides `⊤`, so `Im = ⊤`, `Q ⊓ Im = Q`, and the claim is
+  that the totally positive principal divisors have finite index in the principal ones —
+  true, the quotient being covered by the sign group.  Note this is the ONE case where the
+  `⊓ Im` is vacuous, which is why the counterexample above needs a prime dividing `mm`.
+* `mm = ⊥` is excluded by `hmm` for tidiness only: every height-one prime divides `⊥`, so
+  `Im` is trivial, `Q ⊓ Im` is trivial and the index is `1`.  A prover may use `hmm` freely
+  — it is genuinely needed, since `Finite (𝓞 F ⧸ mm)` fails for `mm = ⊥` — but the
+  statement is true without it.
+* `hd` pins `d` only on NONZERO `δ`, and every generating set here quantifies over `δ ≠ 0`,
+  so `d 0` is unconstrained and irrelevant.  Do not attempt to use `d 0`.
+
+**Check that would refute it**: a number field `F`, an `mm ≠ ⊥`, and infinitely many
+principal fractional ideals coprime to `mm` pairwise inequivalent modulo the totally
+positive `δ ≡ 1 mod mm`.  None exists — the quotient injects into `G` above, which is
+finite. -/
+theorem relIndex_narrowPrincipal_ne_zero_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im P Q : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm →
+        Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ})
+    (hQ : Q = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧ y = d δ}) :
+    P.relIndex (Q ⊓ Im) ≠ 0 :=
+  sorry
+
+/-- **THE NARROW RAY CLASS GROUP MODULO `mm` IS FINITE, IN THE DIVISOR-GROUP LANGUAGE**
+(created 2026-07-30 by splitting the finiteness obligation OUT of
+`exists_natCard_charDivisorImage_le_ray_class` just below, which now RECEIVES it as a
+hypothesis rather than owing it.  **PROVEN 2026-07-30, THE SAME DAY, AS GLUE** over the
+class-group dictionary in the section immediately above plus the single sub-leaf
+`relIndex_narrowPrincipal_ne_zero_ray_class`, stated just below: what this glue supplies
+is the CLASS-GROUP half — that the principal divisors have finite index in `Im` — and what
+descends to the sub-leaf is the UNIT half, that the narrow ray principal divisors have
+finite index in the principal ones.)
+
+`Im` is the group of divisors supported away from `mm` — classically `I_F(mm)` — and `P`
+is the subgroup generated by the divisors `(δ)` of totally positive integral `δ ≡ 1 mod mm`
+— classically `P⁺_{F,mm}`.  `P ≤ Im` (proved in
+`exists_artinDivisorNormIndex_le_ray_class` below and handed to the norm-index leaf), so
+`P.relIndex Im` is literally the order of the NARROW RAY CLASS GROUP `Cl⁺_mm(F)`, and this
+leaf says exactly that it is finite.
+
+**WHY THIS IS A SEPARATE LEAF AND NOT LEAF INFLATION.**  Until 2026-07-30 the obligation
+was ANONYMOUS: it sat inside the norm-index leaf below, owned by nobody, and that leaf's
+own FALSITY AUDIT flags it ("a prover must still discharge that finiteness rather than
+assume it") without giving it anywhere to live.  It has to be discharged because
+`Subgroup.relIndex` is ℕ-valued and returns the JUNK VALUE `0` on an infinite index — so
+the norm-index leaf is FALSE, not merely unprovable, if this fails.  And it is the only
+half of that leaf which is NOT class field theory: everything here is reachable from the
+pin, whereas the inequality below is not.  Splitting therefore trades one leaf containing
+an unnamed reachable sub-problem for two named leaves, one of which is dispatchable today.
+
+**ROUTE — this is what the proof below actually does, and it differs from the plan this
+docstring carried when the leaf was created.**  Two steps at `P ≤ Q ⊓ Im ≤ Im`, where `Q`
+is the subgroup generated by ALL the principal divisors `d δ` (`δ ≠ 0`), joined by
+`Subgroup.relIndex_ne_zero_trans` — **not** by `Subgroup.relIndex_mul_relIndex`, which the
+original plan named: the multiplicative form needs the two `≤` as hypotheses and then a
+`≠ 0` extraction from a product, whereas `relIndex_ne_zero_trans` takes the two `≠ 0`
+directly and needs no `≤` at all.
+
+* **`Q.relIndex Im ≠ 0` — PROVEN here.**  `classGroupDivisorHom_ray_class F` sends a divisor
+  to the class of `∏ v ^ e v`, and `Subgroup.relIndex_ker` turns the relative index of its
+  kernel into `Nat.card (Im.map …)`, which is nonzero because
+  `NumberField.instFintypeClassGroup` (`Mathlib/NumberTheory/NumberField/ClassNumber.lean`)
+  is IN THE PIN.  What has to be checked to transport this to `Q` is the inclusion
+  `ker ≤ Q` — i.e. that a divisor of trivial class REALLY IS a difference of two `d δ` —
+  and NOT the reverse inclusion; `Subgroup.relIndex_dvd_of_le_left` then gives
+  `Q.relIndex Im ∣ ker.relIndex Im`.  Note the direction: `Q ≤ ker` would have been useless
+  here.  The inclusion itself is `exists_span_of_classGroupDivisorHom_eq_one_ray_class`
+  followed by injectivity of the divisor-to-ideal map on counts.
+  Surjectivity onto the class group — i.e. that every class has a representative coprime to
+  `mm` — is NOT needed, so no approximation argument enters this half.
+* **`P.relIndex (Q ⊓ Im) ≠ 0` — the sub-leaf `relIndex_narrowPrincipal_ne_zero_ray_class`
+  below**, which is the UNIT half.  Its docstring carries the route and the correction to
+  the sketch this one used to give.  **Do not intersect with `Im` in the FIRST step and not
+  in the second, or vice versa:** `[Q : P]` without the `⊓ Im` is INFINITE — the divisors
+  `d(π)^n` for `π` in a prime `v ∣ mm` are pairwise inequivalent mod `P`, since every
+  element of `P` is supported away from `mm` — so the intermediate group in the tower must
+  be `Q ⊓ Im` and not `Q`.
+
+This is Hecke's finiteness of the ray class group (Neukirch VI.1.7, Childress §3); nothing
+in it is the second inequality, and nothing in it needs reciprocity.
+
+**FAITHFULNESS (audited 2026-07-30): TRUE as stated, and the two traps this development
+keeps hitting are both checked in both directions.**
+
+* *The possibly-empty-family trap does NOT bite here — recorded explicitly because it DID
+  bite `norm_totallyPositive_ray_class`.*  If `F` is totally complex there is no ring hom
+  `F →+* ℝ` at all, so the total-positivity clause of `P`'s generating set is VACUOUS.  Here
+  that makes `P` LARGER, hence `P.relIndex Im` SMALLER, so the conclusion only gets easier
+  and the degenerate reading is the ordinary (non-narrow) ray class group — still finite.
+  The direction is what saves it: a vacuous constraint cutting down a GENERATING SET is
+  harmless, a vacuous constraint in a HYPOTHESIS is not.
+* *The ℕ-junk-value trap is the CONCLUSION here, not a hidden assumption.*  The leaf asserts
+  `≠ 0`, so it cannot discharge itself the way a `finrank ≤ …` bound can.
+* `mm = ⊤` is admissible and NOT degenerate: no height-one prime divides `⊤`
+  (`Ideal.dvd_iff_le`), so `Im = ⊤` and the claim is finiteness of the narrow class number
+  `h⁺(F)`.
+* `mm = ⊥` is excluded by `hmm`, for tidiness only — every height-one prime divides `⊥`, so
+  `Im` and `P` both collapse to the trivial subgroup and the claim is true there as well.
+  A prover may therefore use `hmm` freely, but is not forced to.
+
+**Check that would refute it**: a number field `F` and an `mm ≠ ⊥` with infinitely many
+divisor classes away from `mm` modulo totally positive `δ ≡ 1 mod mm`.  None exists.  What a
+formalisation CAN get wrong, and what a prover should check against the parent's use before
+starting, is the polarity of the two defining clauses — `hIm` says supported AWAY from `mm`
+(`v ∣ mm → toAdd x v = 0`), and `hP` requires `δ - 1 ∈ mm`, not `δ ∈ mm`. -/
+theorem relIndex_narrowRayGroup_ne_zero_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im P : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm →
+        Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ}) :
+    P.relIndex Im ≠ 0 := by
+  classical
+  -- `Q` is the group of PRINCIPAL divisors.  The tower is `P ≤ Q ⊓ Im ≤ Im`.
+  set Q : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)) :=
+    Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧ y = d δ} with hQ
+  -- (i) `hd` says precisely that `d δ` is the divisor of `δ`.
+  have hdiv : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      divisorFractionalIdeal_ray_class F (Multiplicative.toAdd (d δ))
+        = ((Ideal.span {δ} : Ideal (NumberField.RingOfIntegers F)) :
+            FractionalIdeal (NumberField.RingOfIntegers F)⁰ F) :=
+    fun δ hδ => divisorFractionalIdeal_eq_span_ray_class F hδ _ (hd δ hδ)
+  -- (ii) a divisor of trivial ideal class is a quotient of two `d δ`, hence lies in `Q`.
+  --      This is the inclusion the transport needs; `Q ≤ ker` would be useless here.
+  have hker : (classGroupDivisorHom_ray_class F).ker ≤ Q := by
+    intro x hx
+    obtain ⟨a, b, ha, hb, hab⟩ := exists_span_of_classGroupDivisorHom_eq_one_ray_class F x hx
+    have h1 : divisorFractionalIdeal_ray_class F
+          (Multiplicative.toAdd x + Multiplicative.toAdd (d b))
+        = divisorFractionalIdeal_ray_class F (Multiplicative.toAdd (d a)) := by
+      rw [divisorFractionalIdeal_add_ray_class, hdiv b hb, hdiv a ha, hab]
+    have h3 : x * d b = d a := divisorFractionalIdeal_injective_ray_class F h1
+    have hxeq : x = d a * (d b)⁻¹ := by rw [← h3]; group
+    rw [hxeq]
+    exact Q.mul_mem (Subgroup.subset_closure ⟨a, ha, rfl⟩)
+      (Q.inv_mem (Subgroup.subset_closure ⟨b, hb, rfl⟩))
+  -- (iii) hence the principal divisors have finite index in `Im`, the class group of a
+  --       number field being finite.
+  have hQIm : Q.relIndex Im ≠ 0 := by
+    intro h
+    exact relIndex_ker_classGroupDivisorHom_ne_zero_ray_class F Im
+      (zero_dvd_iff.mp (h ▸ Subgroup.relIndex_dvd_of_le_left Im hker))
+  -- (iv) and the narrow ray principal divisors have finite index in those, which is the
+  --      single sub-leaf.
+  have hB : P.relIndex (Q ⊓ Im) ≠ 0 :=
+    relIndex_narrowPrincipal_ne_zero_ray_class F mm hmm d Im P Q hd hIm hP hQ
+  exact Subgroup.relIndex_ne_zero_trans hB (by rwa [Subgroup.inf_relIndex_right])
+
+end RayClassNarrowFiniteness
+
 /-- **THE SECOND (NORM-INDEX) INEQUALITY OF GLOBAL CLASS FIELD THEORY, STRIPPED TO ITS
 IRREDUCIBLE CORE** (sorry node, created 2026-07-30 as the single sub-leaf of
 `exists_artinDivisorNormIndex_le_ray_class` just below, which is now PROVEN as glue over
-it).
+it.  **RESTATED 2026-07-30, THE SAME DAY, BY WEAKENING**: it now RECEIVES `P ≤ Im`,
+`N ≤ Im` and `P.relIndex Im ≠ 0`, all three proved or cited in the parent's glue — the
+first two outright, the third from
+`relIndex_narrowRayGroup_ne_zero_ray_class` immediately above.  Adding hypotheses can only
+make a statement weaker, so both FALSITY AUDITS below transfer verbatim and are NOT voided
+by the restatement; what changes is that the ray-class FINITENESS is no longer this leaf's
+to discharge.)
 
 **What this cut does and does not buy.** It is LOGICALLY EQUIVALENT to its parent — the
 three extra hypotheses handed over here (`IsCyclic`, `Nat.card ∣ ℓ ^ k`, `N ≤ φ.ker`) are
@@ -51899,7 +52323,13 @@ unchanged, and the conclusion is the parent's conclusion after the PROVEN rewrit
   infinite index). It is not: `P ≤ Im` (for `δ - 1 ∈ mm` and `v ∣ mm` the valuation
   `Multiplicative.toAdd (d δ) v` is `0`, since `δ` is a unit at `v`), and `Im / P` is the
   ray class group mod `mm`, which is finite. So the ℕ-valued junk-value trap does not fire
-  here — but a prover must still discharge that finiteness rather than assume it.
+  here. **UPDATED 2026-07-30: that finiteness is no longer this leaf's to discharge.**
+  `P ≤ Im` is now a PROVEN hypothesis handed down by the parent, and the finiteness is the
+  hypothesis `P.relIndex Im ≠ 0`, which is `relIndex_narrowRayGroup_ne_zero_ray_class`
+  above — **PROVEN 2026-07-30 as glue, so it is no longer a leaf**; what remains open there
+  is its own sub-leaf `relIndex_narrowPrincipal_ne_zero_ray_class`, and nothing in that
+  chain is class field theory.  `(P ⊔ N).relIndex Im ≠ 0` follows from
+  it by `Subgroup.relIndex_dvd_of_le_left` at `P ≤ P ⊔ N`, with no further input.
 * the `mm₀ = ⊤` branch: no height-one prime divides `⊤` (`Ideal.dvd_iff_le`), so `hmm₀ram`
   forces `χ` unramified everywhere and the support clause forces `mm = ⊤`; then `Im = ⊤`,
   `P` is the totally positive principal divisors, and the claim is the second inequality at
@@ -51949,6 +52379,7 @@ theorem exists_natCard_charDivisorImage_le_ray_class
           (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
           y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))} →
         IsCyclic (Im.map φ) → Nat.card (Im.map φ) ∣ ℓ ^ k → N ≤ φ.ker →
+        P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im :=
   sorry
 
@@ -51967,8 +52398,12 @@ still false even after the first repair.)
 decomposition is logically an EQUIVALENCE: the sub-leaf above is this statement with
 `A` and `φ.ker` eliminated from the conclusion and with four facts handed over that this
 proof derives — `IsCyclic (Im.map φ)`, `Nat.card (Im.map φ) ∣ ℓ ^ k`, `N ≤ φ.ker`, and
-`A.relIndex Im = Nat.card (Im.map φ)`. The inventory of missing machinery below is
-UNCHANGED and still describes what the sub-leaf costs. What did move: the cyclicity
+`A.relIndex Im = Nat.card (Im.map φ)` — plus, since 2026-07-30, `P ≤ Im`, `N ≤ Im` (both
+proved outright here) and `P.relIndex Im ≠ 0`, cited from the second sub-leaf
+`relIndex_narrowRayGroup_ne_zero_ray_class`. The inventory of missing machinery below is
+UNCHANGED and still describes what the norm-index sub-leaf costs; what the finiteness split
+removes from it is a standard theorem that is NOT class field theory and that was, until
+that day, an unnamed obligation with no owner. What did move: the cyclicity
 observation added to this docstring on 2026-07-30 is now mechanised rather than prose, and
 the sub-leaf's docstring identifies the exact classical theorem (the SECOND inequality,
 `[I_mm : P_mm · N_{M/F} I_mm(M)] ≥ [M : F]`) and shows that `N` is literally the norm
@@ -52379,6 +52814,42 @@ docstring rejects, twice, as circular here and as strictly HARDER than the norm-
 inequality. So the two leaves have diverged onto the two different routes and neither is
 building the shared statement. Whoever picks either up should decide that deliberately
 rather than assume the other side is covering it.
+
+**AND THAT PARAGRAPH IS ITSELF NOW STALE — the sibling's route was CARRIED, and the
+cluster's frontier has MOVED MODULE** (checked on the staging `merger` tip `58b8b4a6`,
+2026-07-30; `main` does not show this yet, so a grep of `main` reproduces the stale
+picture above). Three facts, each checked rather than inferred:
+
+1. `UnramifiedClassFieldBound.lean` is **CLOSED**: on `merger` it is 430 lines with ZERO
+   `sorry` tokens. The four-leaf decomposition the paragraph above reacts to
+   (`exists_isPrime_classGroupMk0_eq`, `prod_eq_one_of_forall_isArithFrobOver`,
+   `exists_isArithFrobOver_of_aut`, `apply_classGroupMk0_relNorm_eq_one`, and the
+   `IsArithFrobOver` predicate) was **DECLINED at integration** in favour of a rival cut
+   from `flt-lean-290`, on the standing "fewer OPEN leaves after" tie-break. Those five
+   names do not exist on `merger` at all — do not go looking for them, and do not price
+   this leaf against them.
+2. The sibling's two surviving leaves now live in a **different module**,
+   `Fermat/FLT/NumberField/ArtinSymbol.lean` (374 lines): `exists_classGroupHom_eq_frobAt`
+   (`:332`, Artin reciprocity at modulus `1`) and `closure_frobAt_eq_top` (`:372`,
+   Chebotarev). Those two are the whole of the sibling's remaining cost.
+3. **So "build once, cite twice" is back on the table, in a new and better shape than the
+   cross-reference above proposed.** Both sides now bottom out on RECIPROCITY and nothing
+   else: the sibling on reciprocity at modulus `1`, this leaf — by its own FALSITY AUDIT and
+   the two independent verdicts recorded below — on reciprocity at a RAMIFIED modulus `mm`.
+   A single ray-class Artin reciprocity theorem would therefore serve both, with
+   `exists_classGroupHom_eq_frobAt` falling out as its `mm = 1` case. That is a genuine
+   re-pricing and not progress: the shared statement is still unbuilt, and it is still the
+   hard half. What HAS changed is that building it now discharges two leaves in two modules
+   instead of one, and that the cyclic → abelian gap surveyed above is no longer the
+   discriminating issue for either.
+
+A NOTE ON PROVENANCE, because it cost a cycle to establish: a 39-line version of the
+cyclicity finding above was briefly also written into
+`UnramifiedClassFieldBound.lean`'s Chevalley survey. It was removed again on 2026-07-30 —
+the survey paragraph it attached to does not exist on `merger`, so the note could only
+land as a merge conflict inside a file that is already closed, and its own closing claim
+("nobody is building the shared statement") is the stale one corrected here. The finding
+itself is not lost: it is the material above, which is where it was mechanised.
 -/
 theorem exists_artinDivisorNormIndex_le_ray_class
     (F : Type u) [Field F] [NumberField F]
@@ -52504,8 +52975,47 @@ theorem exists_artinDivisorNormIndex_le_ray_class
   -- `Nat.card (Im.map φ)` (`Subgroup.relIndex_ker`).
   have hleft : A.relIndex Im = Nat.card (Im.map φ) := by
     rw [hA, Subgroup.inf_relIndex_right, Subgroup.relIndex_ker]
+  -- (v) both `P` and `N` lie in `Im`.  For `P`: a generator is `d δ` with `δ - 1 ∈ mm`, so
+  -- for `v ∣ mm` we have `mm ≤ v` and `δ ≡ 1 mod v`; if `v` divided `(δ)` then `1 ∈ v`.
+  have hPIm : P ≤ Im := by
+    rw [hP, Subgroup.closure_le]
+    rintro y ⟨δ, hδ0, -, hδ1, rfl⟩
+    have hmem : d δ ∈ Im := by
+      refine (hIm (d δ)).mpr ?_
+      intro v hv
+      have h0 : (0 : ℤ) ≤ Multiplicative.toAdd (d δ) v := by
+        have h := (hd δ hδ0 v 0).mp (by simp)
+        simpa using h
+      have h1 : ¬ ((1 : ℤ) ≤ Multiplicative.toAdd (d δ) v) := by
+        intro h
+        have hdvd : v.asIdeal ^ 1 ∣ Ideal.span {δ} := (hd δ hδ0 v 1).mpr (by exact_mod_cast h)
+        rw [pow_one] at hdvd
+        have hδv : δ ∈ v.asIdeal :=
+          (Ideal.le_of_dvd hdvd) (Ideal.mem_span_singleton_self δ)
+        have hmv : mm ≤ v.asIdeal := Ideal.le_of_dvd hv
+        have hone : (1 : NumberField.RingOfIntegers F) ∈ v.asIdeal := by
+          have h2 : δ - 1 ∈ v.asIdeal := hmv hδ1
+          simpa using Ideal.sub_mem _ hδv h2
+        exact v.isPrime.ne_top (Ideal.eq_top_iff_one _ |>.mpr hone)
+      omega
+    exact hmem
+  -- For `N`: a generator is supported at a single `v ∤ mm`, hence vanishes at every `w ∣ mm`.
+  have hNIm : N ≤ Im := by
+    rw [hN, Subgroup.closure_le]
+    rintro y ⟨v, hv, rfl⟩
+    have hmem : Multiplicative.ofAdd
+        (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ)) ∈ Im := by
+      refine (hIm _).mpr ?_
+      intro w hw
+      have hne : v ≠ w := by rintro rfl; exact hv hw
+      simp [hne]
+    exact hmem
+  -- (vi) and the finiteness of the narrow ray class group mod `mm`, which used to be an
+  -- ANONYMOUS obligation inside the sub-leaf and is now the named leaf above.
+  have hfin : P.relIndex Im ≠ 0 :=
+    relIndex_narrowRayGroup_ne_zero_ray_class F mm hmm d Im P hd hIm hP
   rw [hleft]
-  exact hnarrow φ d Im P N hd hφv hφd hIm hP hN hcyc hdvd hNker
+  exact hnarrow φ d Im P N hd hφv hφd hIm hP hN hcyc hdvd hNker hPIm hNIm hfin
 
 set_option maxHeartbeats 1000000 in
 /-- **THE DIVISOR-GROUP ARTIN PACKAGE: the four subgroups, the divisor map,
@@ -52663,9 +53173,40 @@ three new leaves and four new PROVEN utilities:
   2026-07-27** over the variable-base
   `artinDivisorMap_apply_span_generic_ray_class`, so only one sub-leaf of this
   package remains open;
-* `exists_artinDivisorNormIndex_le_ray_class` (A3b-1-c, sorry) — `hidx₂`, the
+* `exists_artinDivisorNormIndex_le_ray_class` (A3b-1-c) — `hidx₂`, the
   Global Cyclic Norm Index Inequality of Childress ch. 4, which is the
-  deep remaining content.
+  deep remaining content. **PROVEN 2026-07-30 as GLUE** (the label read
+  "sorry" until then, and that was stale from the moment the proof landed);
+  the deep content did NOT move — it descended to the single sub-leaf
+  `exists_natCard_charDivisorImage_le_ray_class`, stated just above it, which
+  is where (A3b-1-c)'s `sorry` now lives and where a prover should be sent.
+  What the glue bought is four compiler-checked facts that used to be prose —
+  `φ` is `ℓ ^ k`-torsion everywhere, `Im.map φ` is finite cyclic of order
+  dividing `ℓ ^ k`, `N ≤ φ.ker` outright, and
+  `A.relIndex Im = Nat.card (Im.map φ)` — so `A` and `φ.ker` are gone from the
+  sub-leaf's statement. It is a REFORMULATION: the sub-leaf is logically
+  equivalent to the parent and the inventory of missing machinery is unchanged.
+  **SECOND SUB-LEAF, 2026-07-30: `relIndex_narrowRayGroup_ne_zero_ray_class`**,
+  the finiteness of the narrow ray class group mod `mm` — split OUT of the
+  norm-index sub-leaf, which had owed it anonymously (`Subgroup.relIndex` is
+  ℕ-valued, so an infinite index would make that leaf FALSE rather than merely
+  unprovable). Unlike its sibling it is reachable from the pin today
+  (`NumberField.instFintypeClassGroup` plus `Ring.HasFiniteQuotients`), so this
+  package now has TWO open sub-leaves of very unequal cost and only one of them
+  is class field theory. The glue also proves `P ≤ Im` and `N ≤ Im` outright and
+  hands them over.
+  **AND THAT SECOND SUB-LEAF IS ITSELF NOW PROVEN AS GLUE, the same day**, over
+  the general Dedekind-domain dictionary in section `RayClassDivisorFiniteness`
+  (divisor `↦ ∏ v ^ e v`, injective, composed with `ClassGroup.mk`) plus ONE
+  remaining sub-leaf, `relIndex_narrowPrincipal_ne_zero_ray_class`. The split is
+  along the classical exact sequence `1 → ker → Cl⁺_mm(F) → Cl(F) → 1`: the
+  CLASS-GROUP half is proven outright here from
+  `NumberField.instFintypeClassGroup` and `Subgroup.relIndex_ker`, and what
+  descends is the UNIT half — the finiteness of `ker`, whose whole cost is one
+  approximation lemma (`γ ∈ Fˣ` coprime to `mm` is a quotient of two integral
+  elements coprime to `mm`, compatibly with the ray condition). So the package
+  still has TWO open sub-leaves, and the second one is now strictly smaller and
+  still not class field theory.
 
 **SECOND REPAIR 2026-07-27: (A3b-1-c) WAS FALSE AS STATED, AND `mm` IS NOW
 CHOSEN BY IT RATHER THAN BY (A3b-1-a).** The norm-index leaf used to take

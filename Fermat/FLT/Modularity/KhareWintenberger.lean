@@ -20489,12 +20489,29 @@ split therefore has to do one of exactly two things, and both are shut:
   What is genuinely absent is the PREDICATE — nothing in the tree says
   "`τ` arises from an eigenform of this algebra": `grep -rn IsAutomorphic
   Fermat/` returns nothing. **Also drifted, same day, in a way that
-  matters for how the check is read:** that grep now returns ten hits,
-  every one of them PROSE (eight in this file, including this
-  docstring's own two, plus a mention of `GaloisRep.IsAutomorphicOfLevel`
-  at `:21268` as a name judged non-vendorable). No declaration is
-  introduced, so the substance is unchanged — but the check must be
-  read as "no DECLARATION of this name", not as "no hit". So the cost of
+  matters for how the check is read:** that grep no longer returns
+  nothing. Every hit is PROSE and no declaration of the name exists
+  anywhere under `Fermat/`, so the SUBSTANCE is unchanged — but the check
+  must be read as "no DECLARATION of this name", not as "no hit", and the
+  only reliable form of it is the declaration-shaped one given below.
+
+  **DO NOT RECORD A HIT COUNT HERE — the figure is unmaintainable BY
+  CONSTRUCTION and has now been wrong twice.** An earlier version said
+  "ten hits, eight in this file"; a correction the same day said "19
+  hits, 14 in this file" and was wrong within minutes for the identical
+  reason: this paragraph's own text contains the string, so writing the
+  count changes the count. Only the declaration-shaped grep below is a
+  usable check. What IS worth recording is WHERE the prose hits are,
+  because that does not drift: besides this file, they are in
+  `GaloisRepresentation/HardlyRamified/Family.lean`, and they matter
+  more than any arithmetic, because they are not idle mentions: they record
+  that `GaloisRep.IsAutomorphicOfLevel` **has been vendored in substance**
+  (`:10795`), against an earlier claim there that it was unvendorable —
+  so a successor pricing "the predicate is absent" should read
+  `Family.lean:10770-10795` before believing it of the LEVEL predicate.
+  The `GaloisRep.IsAutomorphicOfLevel` mention this paragraph used to cite
+  at `:21268` is now at `:21286`; line-number citations in this file drift
+  every release, so prefer the name. So the cost of
   route (b) along this axis is
   ONE predicate over an existing sorry-free API plus its attachment
   theorem, not a theory from scratch. **That does not overturn the
@@ -20504,7 +20521,10 @@ split therefore has to do one of exactly two things, and both are shut:
   it does change the price, and a future owner should be told the true
   one. Refuting check: `grep -n "def HeckeAlgebra"
   Fermat/FLT/AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`
-  and `grep -rn IsAutomorphic Fermat/ --include=*.lean`.
+  and — **declaration-shaped, because the bare name grep returns 19 prose
+  hits and is therefore useless as a refuting check** —
+  `grep -rnE "^\s*(@\[[^]]*\]\s*)?(private |protected |noncomputable |public |partial )*(theorem|lemma|def|abbrev|structure|inductive|class|instance)\s+[A-Za-z_.]*IsAutomorphic" --include=*.lean Fermat/`,
+  which must return nothing. (Verified empty 2026-07-30.)
 
 AXES SEARCHED, and why each is closed:
 
