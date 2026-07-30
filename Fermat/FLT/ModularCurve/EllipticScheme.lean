@@ -23,6 +23,10 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- through an instance or a `simp` lemma that no proof term mentions, so dropping them
 -- is a separate build-verified experiment, not a bookkeeping edit.
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `PerfectField`, `PerfectRing` and `surjective_frobenius`: the honest scope of
+-- `exists_singular_of_Δ_eq_zero`, which needs a Frobenius root extraction in
+-- characteristics two and three.
+public import Mathlib.FieldTheory.Perfect
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
@@ -10331,81 +10335,312 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A 
   exact ⟨E, ⟨(AlgEquiv.ofBijective φ
     ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
-/-- **A Weierstrass curve over `ℚ` with `Δ = 0` has a RATIONAL singular
-point** (**PROVEN 2026-07-28** — the char-`0` half of leaf 3 of
-`exists_weierstrassModel_of_ellipticScheme`; Silverman *AEC* III.1.4).
+/-! ### The singular point of a `Δ = 0` Weierstrass cubic is rational over a PERFECT field
 
-This is the step that makes leaf 3 work over `ℚ` rather than only over `ℚ̄`:
-the singular point of a singular Weierstrass cubic has coordinates in the
-base field.  It is proved here with an EXPLICIT witness rather than by
-completing the square and the cube, so no `VariableChange` transport of
-`Equation`/`Nonsingular` — which mathlib does not have — is needed.
+`exists_singular_of_Δ_eq_zero` at the end of this block is the arithmetic input to
+leaf 3 of `exists_weierstrassModel_of_ellipticScheme` (Silverman *AEC* III.1.4):
+what makes that leaf work over the base itself rather than only over `k̄` is that
+the singular point of a singular Weierstrass cubic has coordinates IN THE BASE.
 
-**The witness.**  Write `X := -c₆ / c₄` (with Lean's `x / 0 = 0`, which is
-exactly right in the degenerate case: `Δ = 0` and `c₄ = 0` force `c₆ = 0`
-through `c₄ ^ 3 = c₆ ^ 2`).  Then
+**SCOPE, and it is not `CharZero` (generalised 2026-07-30).**  The statement was
+written over a characteristic-zero field, where a single explicit witness
+`x₀ = (X - b₂)/12, y₀ = -(a₃ + a₁x₀)/2` with `X = -c₆/c₄` does the whole job.  The
+honest scope is `PerfectField`, and the char-`0` proof is one of four cases:
 
-    x₀ = (X - b₂) / 12,      y₀ = -(a₃ + a₁ x₀) / 2.
+* `2 ≠ 0`, `c₄ ≠ 0` — the same witness, rewritten as
+  `x₀ = (18 b₆ - b₂ b₄)/c₄`, which is `(X - b₂)/12` cleared of its `12` and
+  therefore available in characteristic `3` as well;
+* `2 ≠ 0`, `3 ≠ 0`, `c₄ = 0` — `Δ = 0` then forces `c₆ = 0` too and the cubic has a
+  TRIPLE root `x₀ = -b₂/12`;
+* `2 ≠ 0`, `3 = 0`, `c₄ = 0` — `c₄ = b₂²` in characteristic three, so `b₂ = 0`, and
+  then `Δ = -8b₄³` forces `b₄ = 0`; the cubic is `x³ + b₆` and its root is a CUBE
+  ROOT of `-b₆`.  **This is the first of the two places perfectness is used**, via
+  `surjective_frobenius K 3`;
+* `2 = 0` — the `y`-partial is `a₁x + a₃`, so there is no completing of the square
+  at all.  For `a₁ ≠ 0` the point is `x₀ = a₃/a₁`, `y₀ = (x₀² + a₄)/a₁`, rational
+  with no root extraction (the certificate is `a₁⁶ · W(x₀,y₀) = Δ + 4·(…)`).  For
+  `a₁ = 0`, `Δ = a₃⁴` forces `a₃ = 0`, the `y`-partial vanishes identically, and the
+  point is `x₀ = √a₄`, `y₀ = √(x₀³ + a₂x₀² + a₄x₀ + a₆)` — **the second use of
+  perfectness**, via `surjective_frobenius K 2`.
 
-`y₀` is forced by `W_Y(x₀, y₀) = 2 y₀ + a₁ x₀ + a₃ = 0`, and with it the two
-remaining conditions become polynomial identities in `X` and the `aᵢ`:
+**FALSITY AUDIT: `PerfectField` is LOAD-BEARING and cannot be dropped.**  Over the
+imperfect field `𝔽₂(t)` take `y² = x³ + t x`, i.e. `a₁ = a₃ = 0`, `a₂ = a₆ = 0`,
+`a₄ = t`.  Then `b₂ = b₄ = b₆ = 0`, so `Δ = 0`; but `W_Y ≡ 0` and
+`W_X = x² + t`, so a singular point needs `x² = t`, and `t` is not a square in
+`𝔽₂(t)`.  So the conclusion FAILS for this curve: the singular point exists only
+over `𝔽₂(t^{1/2})`.  That is exactly the `a₁ = 0` case above, with the Frobenius
+surjectivity removed.
 
-    W_X(x₀, y₀) = -(X ^ 2 - c₄) / 48,
-    W(x₀, y₀)   = (-3 X (X ^ 2 - c₄) + 2 (X ^ 3 + c₆)) / 1728,
+`CharZero → PerfectField` is `PerfectField.ofCharZero` and
+`IsAlgClosed → PerfectField` is `IsAlgClosed.perfectField`, so every base this
+development instantiates at (`ℚ`, `ℚ̄`, and any algebraically closed `k`) supplies
+the instance by synthesis and no call site changes.
 
-so both vanish given only `X ^ 2 = c₄` and `X ^ 3 = -c₆`, which is all that
-`Δ = 0` is used for (through `WeierstrassCurve.c_relation`,
-`1728 Δ = c₄ ^ 3 - c₆ ^ 2`).
+Everything is proved with EXPLICIT witnesses rather than by `VariableChange`
+transport of `Equation`/`Nonsingular`, which mathlib does not have. -/
 
-**Where the sign comes from**, since the two roots of `6x² + b₂x + b₄` are
-`x = (±√c₄ - b₂)/12` and only ONE of them lies on the curve: eliminating
-`b₄` and `b₆` against the two derivative conditions gives
-`c₆ = -(b₂ + 12 x₀) ^ 3`, i.e. `X ^ 3 = -c₆`, which together with
-`X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
-OTHER critical point of the cubic, which satisfies both derivative equations
-and is NOT on the curve. -/
-theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [CharZero K]
+/-- **Assembly step**: a point at which the Weierstrass polynomial and BOTH of its
+partials vanish is a singular point of the affine chart (PROVEN, bookkeeping only). -/
+theorem exists_singular_of_partials_eq_zero {K : Type} [Field K] (E : WeierstrassCurve K)
+    (x y : K)
+    (heq : y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆) = 0)
+    (hX : E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄) = 0)
+    (hY : 2 * y + E.a₁ * x + E.a₃ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  refine ⟨x, y, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    exact heq
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · exact h hX
+    · exact h hY
+
+/-- **Away from characteristic two, a DOUBLE ROOT of `4x³ + b₂x² + 2b₄x + b₆` is the
+`x`-coordinate of a singular point** (PROVEN).
+
+Completing the square, `4·W(x,y) = W_Y(x,y)² - (4x³ + b₂x² + 2b₄x + b₆)`, and
+`g'(x) = 12x² + 2b₂x + 2b₄ = -4·W_X(x,y) + 2a₁·W_Y(x,y)`.  So with
+`y := -(a₃ + a₁x)/2`, which kills `W_Y` outright, a root of `g` gives `W = 0` and a
+root of `g'` gives `W_X = 0`.  Both divisions are by `4`, which is why this route is
+confined to `2 ≠ 0`; characteristic two is handled separately, and needs no square
+completion because `W_Y = a₁x + a₃` is already linear there. -/
+theorem exists_singular_of_double_root {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h2 : (2 : K) ≠ 0) (x : K)
+    (hcubic : 4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆ = 0)
+    (hquad : 12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have h4 : (4 : K) ≠ 0 := by
+    have h : (4 : K) = 2 * 2 := by norm_num
+    rw [h]; exact mul_ne_zero h2 h2
+  obtain ⟨y, hy⟩ : ∃ y : K, y = -(E.a₃ + E.a₁ * x) / 2 := ⟨_, rfl⟩
+  have hv : 2 * y + E.a₁ * x + E.a₃ = 0 := by rw [hy]; field_simp; ring
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ hv
+  · have hG1 : 4 * (y ^ 2 + E.a₁ * x * y + E.a₃ * y
+        - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆))
+        = (2 * y + E.a₁ * x + E.a₃) ^ 2 - (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) := by
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]; ring
+    have h0 : (4 : K) * (y ^ 2 + E.a₁ * x * y + E.a₃ * y
+        - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)) = 0 := by
+      rw [hG1, hv, hcubic]; ring
+    exact (mul_eq_zero.mp h0).resolve_left h4
+  · have hG2 : -4 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄))
+        = 12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄ - 2 * E.a₁ * (2 * y + E.a₁ * x + E.a₃) := by
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄]; ring
+    have h0 : (-4 : K) * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄)) = 0 := by
+      rw [hG2, hquad, hv]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (neg_ne_zero.mpr h4)
+
+/-- **`2 ≠ 0` and `c₄ ≠ 0`: the double root is `(18 b₆ - b₂ b₄)/c₄`** (PROVEN).
+
+This is the classical char-`0` witness `x₀ = (X - b₂)/12` with `X = -c₆/c₄`, cleared
+of its `12`: `(X - b₂)/12 = (18 b₆ - b₂ b₄)/c₄` identically, so the formula is
+available in characteristic three too.  The two facts it needs are polynomial
+identities in the `bᵢ` ALONE, and `WeierstrassCurve.b_relation` (`4b₈ = b₂b₆ - b₄²`)
+is their only input:
+
+    4N³ + b₂N²c₄ + 2b₄Nc₄² + b₆c₄³ = 4 c₆ Δ,      N := 18b₆ - b₂b₄
+    12N² + 2b₂Nc₄ + 2b₄c₄²          = -144 Δ
+
+which are `c₄³·g(N/c₄)` and `c₄²·g'(N/c₄)/1` respectively.  Stating them in `N` and
+`c₄` rather than substituting `x` keeps them small; substituting into a single
+`c₄³ · W(x,y) = -c₆ Δ` over the `aᵢ` is the same mathematics and does not elaborate
+inside the default heartbeat budget. -/
+theorem exists_singular_of_Δ_eq_zero_of_c₄_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (hc4 : E.c₄ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  obtain ⟨x, hx⟩ : ∃ x : K, x = (18 * E.b₆ - E.b₂ * E.b₄) / E.c₄ := ⟨_, rfl⟩
+  have hI1 : 4 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 3
+      + E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2 * E.c₄
+      + 2 * E.b₄ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ ^ 2 + E.b₆ * E.c₄ ^ 3
+      = 4 * E.c₆ * E.Δ := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.c₆, WeierstrassCurve.Δ]
+    linear_combination (-E.b₂ ^ 2 * (E.b₂ ^ 3 - 36 * E.b₂ * E.b₄ + 216 * E.b₆)) * E.b_relation
+  have hI2 : 12 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2
+      + 2 * E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ + 2 * E.b₄ * E.c₄ ^ 2
+      = -(144 * E.Δ) := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.Δ]
+    linear_combination (-36 * E.b₂ ^ 2) * E.b_relation
+  have hgx : E.c₄ ^ 3 * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆)
+      = 4 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 3
+        + E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2 * E.c₄
+        + 2 * E.b₄ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ ^ 2 + E.b₆ * E.c₄ ^ 3 := by
+    rw [hx]; field_simp
+  have hqx : E.c₄ ^ 2 * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄)
+      = 12 * (18 * E.b₆ - E.b₂ * E.b₄) ^ 2
+        + 2 * E.b₂ * (18 * E.b₆ - E.b₂ * E.b₄) * E.c₄ + 2 * E.b₄ * E.c₄ ^ 2 := by
+    rw [hx]; field_simp
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · have h1 : E.c₄ ^ 3 * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = 0 := by
+      rw [hgx, hI1, hΔ]; ring
+    exact (mul_eq_zero.mp h1).resolve_left (pow_ne_zero 3 hc4)
+  · have h1 : E.c₄ ^ 2 * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = 0 := by
+      rw [hqx, hI2, hΔ]; ring
+    exact (mul_eq_zero.mp h1).resolve_left (pow_ne_zero 2 hc4)
+
+/-- **`2 ≠ 0`, `3 ≠ 0` and `c₄ = 0`: the cubic has a TRIPLE root `-b₂/12`** (PROVEN).
+
+`1728 Δ = c₄³ - c₆²` turns `Δ = c₄ = 0` into `c₆ = 0` with no division, and then
+`216·g(-b₂/12) = -c₆` and `12·g'(-b₂/12) = -c₄`. -/
+theorem exists_singular_of_Δ_eq_zero_of_c₄_eq_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0)
+    (hc4 : E.c₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have h12 : (12 : K) ≠ 0 := by
+    have h : (12 : K) = 2 * 2 * 3 := by norm_num
+    rw [h]; exact mul_ne_zero (mul_ne_zero h2 h2) h3
+  have h216 : (216 : K) ≠ 0 := by
+    have h : (216 : K) = 2 * 2 * 2 * (3 * 3 * 3) := by norm_num
+    rw [h]
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero h2 h2) h2) (mul_ne_zero (mul_ne_zero h3 h3) h3)
+  have hc6 : E.c₆ = 0 := by
+    have h := E.c_relation
+    rw [hΔ, mul_zero, hc4] at h
+    have h' : E.c₆ ^ 2 = 0 := by linear_combination h
+    exact pow_eq_zero_iff (by norm_num : (2 : ℕ) ≠ 0) |>.mp h'
+  obtain ⟨x, hx⟩ : ∃ x : K, x = -E.b₂ / 12 := ⟨_, rfl⟩
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · have key : (216 : K) * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = -E.c₆ := by
+      rw [hx]; simp only [WeierstrassCurve.c₆]; field_simp; ring
+    have h1 : (216 : K) * (4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆) = 0 := by
+      rw [key, hc6]; ring
+    exact (mul_eq_zero.mp h1).resolve_left h216
+  · have key : (12 : K) * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = -E.c₄ := by
+      rw [hx]; simp only [WeierstrassCurve.c₄]; field_simp; ring
+    have h1 : (12 : K) * (12 * x ^ 2 + 2 * E.b₂ * x + 2 * E.b₄) = 0 := by
+      rw [key, hc4]; ring
+    exact (mul_eq_zero.mp h1).resolve_left h12
+
+/-- **Characteristic three with `c₄ = 0`: the root is a CUBE ROOT of `-b₆`**
+(PROVEN — the first of the two places `PerfectField` is used).
+
+In characteristic three `c₄ = b₂²`, so `c₄ = 0` gives `b₂ = 0`, and then
+`Δ = -b₂²b₈ - 8b₄³ = -8b₄³` with `8 ≠ 0` gives `b₄ = 0`.  The cubic is `4x³ + b₆`,
+which is `x³ + b₆` here, and `x³ = -b₆` is solvable because Frobenius is surjective.
+Its derivative `12x²` vanishes identically, so no second condition is imposed —
+the root is triple, as it must be for a cuspidal cubic in characteristic three. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_three {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) = 0)
+    (hc4 : E.c₄ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  haveI : CharP K 3 := (CharP.charP_iff_prime_eq_zero Nat.prime_three).mpr h3
+  haveI : ExpChar K 3 := ExpChar.prime Nat.prime_three
+  have h8 : (8 : K) ≠ 0 := by
+    have h : (8 : K) = 2 * 2 * 2 := by norm_num
+    rw [h]; exact mul_ne_zero (mul_ne_zero h2 h2) h2
+  have hb2 : E.b₂ = 0 := by
+    have h := E.c₄_of_char_three
+    rw [hc4] at h
+    exact pow_eq_zero_iff (by norm_num : (2 : ℕ) ≠ 0) |>.mp h.symm
+  have hb4 : E.b₄ = 0 := by
+    have h := E.Δ_of_char_three
+    rw [hΔ, hb2] at h
+    have h3' : (8 : K) * E.b₄ ^ 3 = 0 := by linear_combination h
+    have h4' := (mul_eq_zero.mp h3').resolve_left h8
+    exact pow_eq_zero_iff (by norm_num : (3 : ℕ) ≠ 0) |>.mp h4'
+  obtain ⟨x, hx⟩ := surjective_frobenius K 3 (-E.b₆)
+  rw [frobenius_def] at hx
+  refine exists_singular_of_double_root E h2 x ?_ ?_
+  · linear_combination 4 * hx + x ^ 2 * hb2 + 2 * x * hb4 - E.b₆ * h3
+  · linear_combination 4 * x ^ 2 * h3 + 2 * x * hb2 + 2 * hb4
+
+/-- **Characteristic two with `a₁ ≠ 0`: the singular point is RATIONAL with no root
+extraction** (PROVEN, and it needs no perfectness).
+
+`W_Y = a₁x + a₃` in characteristic two, so `x₀ = a₃/a₁`; `W_X = a₁y + x₀² + a₄` then
+forces `y₀ = (x₀² + a₄)/a₁`.  That the point lies ON the curve is where `Δ = 0`
+enters, through the integral certificate
+
+    a₁⁶ · W(x₀, y₀) = Δ + 4·(…)
+
+whose `4·(…)` term dies in characteristic two.  The two partials come out of the
+cheaper `a₁² · W_X = 2·(…)` and `a₁³ · W_Y = 2·(…)`. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) = 0) (ha1 : E.a₁ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  obtain ⟨x, hx⟩ : ∃ x : K, x = E.a₃ / E.a₁ := ⟨_, rfl⟩
+  obtain ⟨y, hy⟩ : ∃ y : K, y = (x ^ 2 + E.a₄) / E.a₁ := ⟨_, rfl⟩
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ ?_
+  · have key : E.a₁ ^ 6 *
+        (y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆))
+        = E.Δ + 2 * (2 * (3 * E.a₁ ^ 4 * E.a₂ * E.a₆ - 2 * E.a₁ ^ 3 * E.a₂ * E.a₃ * E.a₄
+            - 9 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 2 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₃ ^ 2
+            + 12 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₆ - 2 * E.a₁ ^ 2 * E.a₂ * E.a₄ ^ 2
+            + 8 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - 18 * E.a₁ ^ 2 * E.a₄ * E.a₆
+            - 4 * E.a₁ * E.a₂ ^ 2 * E.a₃ * E.a₄ - 9 * E.a₁ * E.a₂ * E.a₃ ^ 3
+            - 36 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 24 * E.a₁ * E.a₃ * E.a₄ ^ 2
+            + 4 * E.a₂ ^ 3 * E.a₃ ^ 2 + 16 * E.a₂ ^ 3 * E.a₆ - 4 * E.a₂ ^ 2 * E.a₄ ^ 2
+            - 18 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 72 * E.a₂ * E.a₄ * E.a₆ + 7 * E.a₃ ^ 4
+            + 54 * E.a₃ ^ 2 * E.a₆ + 16 * E.a₄ ^ 3 + 108 * E.a₆ ^ 2)) := by
+      rw [hy, hx]
+      simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+        WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      field_simp
+      ring
+    have h0 : E.a₁ ^ 6 *
+        (y ^ 2 + E.a₁ * x * y + E.a₃ * y - (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)) = 0 := by
+      rw [key, hΔ, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 6 ha1)
+  · have key : E.a₁ ^ 2 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄))
+        = 2 * (-(E.a₃ * (E.a₁ * E.a₂ + E.a₃))) := by
+      rw [hy, hx]; field_simp; ring
+    have h0 : E.a₁ ^ 2 * (E.a₁ * y - (3 * x ^ 2 + 2 * E.a₂ * x + E.a₄)) = 0 := by
+      rw [key, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 2 ha1)
+  · have key : E.a₁ ^ 3 * (2 * y + E.a₁ * x + E.a₃)
+        = 2 * (E.a₁ ^ 3 * E.a₃ + E.a₁ ^ 2 * E.a₄ + E.a₃ ^ 2) := by
+      rw [hy, hx]; field_simp; ring
+    have h0 : E.a₁ ^ 3 * (2 * y + E.a₁ * x + E.a₃) = 0 := by
+      rw [key, h2]; ring
+    exact (mul_eq_zero.mp h0).resolve_left (pow_ne_zero 3 ha1)
+
+/-- **Characteristic two with `a₁ = 0`: two SQUARE ROOTS** (PROVEN — the second and
+last place `PerfectField` is used, and the case that makes it load-bearing).
+
+`Δ = a₁⁴b₈ + a₃⁴ + a₁³a₃³` collapses to `a₃⁴` here, so `a₃ = 0` and `W_Y = 2y` is
+identically zero.  `W_X = x² + a₄` then asks for `x₀ = √a₄` and the equation for
+`y₀ = √(x₀³ + a₂x₀² + a₄x₀ + a₆)`; both are supplied by `surjective_frobenius K 2`.
+
+This is precisely the configuration refuted over `𝔽₂(t)` in the audit above: drop
+perfectness and `y² = x³ + tx` has `Δ = 0` and no singular point over the base. -/
+theorem exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_eq_zero {K : Type} [Field K]
+    [PerfectField K] (E : WeierstrassCurve K) (hΔ : E.Δ = 0) (h2 : (2 : K) = 0)
+    (ha1 : E.a₁ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  haveI : CharP K 2 := (CharP.charP_iff_prime_eq_zero Nat.prime_two).mpr h2
+  haveI : ExpChar K 2 := ExpChar.prime Nat.prime_two
+  have ha3 : E.a₃ = 0 := by
+    have h := E.Δ_of_char_two
+    rw [hΔ, ha1] at h
+    have h4 : E.a₃ ^ 4 = 0 := by linear_combination -h
+    exact pow_eq_zero_iff (by norm_num : (4 : ℕ) ≠ 0) |>.mp h4
+  obtain ⟨x, hx⟩ := surjective_frobenius K 2 E.a₄
+  obtain ⟨y, hy⟩ := surjective_frobenius K 2 (x ^ 3 + E.a₂ * x ^ 2 + E.a₄ * x + E.a₆)
+  rw [frobenius_def] at hx hy
+  refine exists_singular_of_partials_eq_zero E x y ?_ ?_ ?_
+  · linear_combination hy + (x * y) * ha1 + y * ha3
+  · linear_combination y * ha1 + hx - (2 * x ^ 2 + E.a₂ * x) * h2
+  · linear_combination y * h2 + x * ha1 + ha3
+
+/-- **A Weierstrass curve over a PERFECT field with `Δ = 0` has a RATIONAL singular
+point** (PROVEN 2026-07-28 over `ℚ`; base generalised to an arbitrary
+characteristic-zero field 2026-07-30, and to an arbitrary PERFECT field the same
+day) — Silverman *AEC* III.1.4.
+
+See the section note above for the four-case split, for where perfectness is used
+(twice, and only for a Frobenius root extraction) and for the `𝔽₂(t)` counterexample
+that shows `PerfectField` cannot be dropped. -/
+theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [PerfectField K]
     (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
     ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
-  have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
-    have h := E.c_relation
-    rw [hΔ, mul_zero] at h
-    linear_combination -h
-  have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
-    have h2 : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
-    exact sq_eq_zero_iff.mp h2
-  set X : K := -E.c₆ / E.c₄ with hXdef
-  have hmul : E.c₄ * X = -E.c₆ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; ring
-    · rw [hXdef]; field_simp
-  have hX2 : X ^ 2 = E.c₄ := by
-    rcases eq_or_ne E.c₄ 0 with h | h
-    · rw [hXdef, h, hc6 h]; norm_num
-    · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
-      calc E.c₄ ^ 2 * X ^ 2 = (E.c₄ * X) ^ 2 := by ring
-        _ = (-E.c₆) ^ 2 := by rw [hmul]
-        _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
-  have hX3 : X ^ 3 = -E.c₆ := by
-    have h : X ^ 3 = X ^ 2 * X := by ring
-    rw [h, hX2, hmul]
-  set x₀ : K := (X - E.b₂) / 12 with hx₀
-  set y₀ : K := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
-  have hY : 2 * y₀ + E.a₁ * x₀ + E.a₃ = 0 := by rw [hy₀]; ring
-  have hXpart : E.a₁ * y₀ - (3 * x₀ ^ 2 + 2 * E.a₂ * x₀ + E.a₄) = 0 := by
-    rw [hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄] at hX2 ⊢
-    linear_combination (-1/48 : K) * hX2
-  have heq : E.toAffine.Equation x₀ y₀ := by
-    rw [WeierstrassCurve.Affine.equation_iff', hy₀, hx₀]
-    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄,
-      WeierstrassCurve.c₆, WeierstrassCurve.b₆] at hX2 hX3 ⊢
-    linear_combination (-X/576 : K) * hX2 + (1/864 : K) * hX3
-  refine ⟨x₀, y₀, heq, ?_⟩
-  rw [WeierstrassCurve.Affine.nonsingular_iff']
-  rintro ⟨-, h | h⟩
-  · exact h hXpart
-  · exact h hY
+  rcases eq_or_ne (2 : K) 0 with h2 | h2
+  · rcases eq_or_ne E.a₁ 0 with ha1 | ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_eq_zero E hΔ h2 ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_ne_zero E hΔ h2 ha1
+  · rcases eq_or_ne E.c₄ 0 with hc4 | hc4
+    · rcases eq_or_ne (3 : K) 0 with h3 | h3
+      · exact exists_singular_of_Δ_eq_zero_of_char_three E hΔ h2 h3 hc4
+      · exact exists_singular_of_Δ_eq_zero_of_c₄_eq_zero E hΔ h2 h3 hc4
+    · exact exists_singular_of_Δ_eq_zero_of_c₄_ne_zero E hΔ h2 hc4
 
 section JacobianCriterion
 
@@ -10805,13 +11040,22 @@ NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
 
 **CUT 2026-07-28.**  The node is now PROVEN from the two declarations
 immediately above it, along exactly the axis the paragraph above describes:
-`exists_singular_of_Δ_eq_zero` (**PROVEN**, the char-`0` rationality of the
+`exists_singular_of_Δ_eq_zero` (**PROVEN**, the rationality of the
 singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
 Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
 is closed and nothing under it is a leaf any more).  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
-two lines and carries no content. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [CharZero K]
+two lines and carries no content.
+
+**`[CharZero K]` REPLACED BY `[PerfectField K]` (2026-07-30).**  The hypothesis was
+never used by this declaration; it was inherited wholesale from
+`exists_singular_of_Δ_eq_zero`, whose char-`0` witness has since been replaced by a
+four-case argument valid over every perfect field.  Perfectness IS still
+load-bearing — see the section note there for the `𝔽₂(t)` counterexample — and the
+paragraph above ("in char `0` by completing the square and the cube") now describes
+only one of the four cases.  `PerfectField.ofCharZero` and `IsAlgClosed.perfectField`
+mean the instance is synthesised at every base this development uses. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (hdim : SmoothOfRelativeDimension 1 f)
     (E : WeierstrassCurve K)
@@ -10883,9 +11127,20 @@ morphisms to `Spec ℚ` agree, which is why no leaf has to carry a `ℚ`-algebra
 structure."*  That is the ONE step of the assembly that does not generalise, and it
 is now paid explicitly: leaf 1 hands back the compatibility, leaf 2's isomorphism is
 `K`-linear, and the two are combined by `hring`/`hstr'` below — three lines, no new
-leaf.  `CharZero K` is consumed only inside leaf 3, through
-`exists_singular_of_Δ_eq_zero`; the only instantiations are `ℚ` and `ℚ̄`. -/
-theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [CharZero K]
+leaf.
+
+**AND THE CHARACTERISTIC HYPOTHESIS WEAKENED TO `[PerfectField K]` (2026-07-30).**
+It is consumed only inside leaf 3, through `exists_singular_of_Δ_eq_zero`, and that
+declaration now covers every perfect field rather than only the char-`0` ones.  What
+remains is genuinely load-bearing along THIS route: over `𝔽₂(t)` the curve
+`y² = x³ + tx` has `Δ = 0` and no singular point over the base, so the Jacobian
+criterion cannot be applied at a rational point (the audit is on
+`exists_singular_of_Δ_eq_zero`).  Reaching an ARBITRARY field means testing
+smoothness after base change to `k̄` instead of at a rational point, which is a
+different argument and is not attempted here; the consumers that want it
+(`X0.lean`'s `exists_weierstrassModel_of_ellipticScheme_field` and its two call
+sites) are all at algebraically closed bases, which are perfect. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] [PerfectField K]
     {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
