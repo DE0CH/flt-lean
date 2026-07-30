@@ -181,4 +181,176 @@ theorem FormalGroupChart.not_layer_mulByL {ℓ : ℕ} {A : Type*} [CommRing A] [
   rw [hfac] at hlin
   exact (mul_dvd_mul_iff_left hℓ0).mp hlin
 
+/-! ## The converse: a chart costs no more than the shift it proves
+
+`not_layer_mulByL` above extracts the `ℓ`-shift from a chart.  The three
+declarations below go the other way and show that, for a filtration that
+is *antitone* and *exhaustive*, the chart is not extra content: the
+EXACT shift alone builds one, in a single coordinate.
+
+This matters for the consumer in
+`Fermat/FLT/ModularCurve/X0.lean`, where the chart was the open leaf and
+its docstring recorded the price as the formal group of a Jacobian along
+its zero section — a `d`-dimensional formal group law and the
+substitution calculus to evaluate it.  With `nonempty_ofExactShift` in
+hand the price is instead one valuation statement about the tower, which
+is what Silverman *ATAEC* IV.6.1 actually states.  Neither route is
+forced: a prover who really constructs the formal group still gets a
+chart directly.
+
+**Why one coordinate suffices, and why this is not a cheat.**
+`mem_layer_iff` asks only that the coordinates DETECT the layers, not
+that they come from a chart of the scheme.  So `coord x := ℓ ^ (level of
+x)` (and `0` when `x` lies in every layer) presents the filtration
+faithfully as soon as it is antitone and `layer 0` is everything.  What
+this construction cannot fake is `frob_layer`: with `lin := coord` the
+Frobenius part is `coord (ℓ • x) − ℓ · coord x`, which vanishes exactly
+when the level shifts by ONE, and is otherwise too shallow.  So the
+whole mathematical content of the chart is concentrated in `hshift`, and
+nothing is obtained for free — which is the check that this reduction is
+sound rather than vacuous.
+
+**`hshift` cannot be weakened to the half `not_layer_mulByL` produces.**
+The upper bound `layer (k + 1) (mulByL x)` is needed too: without it
+`coord (ℓ • x)` is only known to have level `≥ k`, and at level exactly
+`k` the difference `coord (ℓ • x) − ℓ · coord x` has level `k`, against
+the `ℓ * k ≥ k + 2` that `frob_layer` demands.  This is not an artefact:
+a filtration where multiplication by `ℓ` does not move the level at all
+has no chart, since `not_layer_mulByL` would then be false of it. -/
+
+/-- **An antitone layer predicate is downward closed** (PROVEN). -/
+theorem layer_of_le {G : Type*} {layer : ℕ → G → Prop}
+    (hmono : ∀ (k : ℕ) (x : G), layer (k + 1) x → layer k x)
+    {a b : ℕ} (hab : a ≤ b) {x : G} (h : layer b x) : layer a x := by
+  obtain ⟨t, rfl⟩ : ∃ t, b = a + t := ⟨b - a, by omega⟩
+  clear hab
+  induction t with
+  | zero => simpa using h
+  | succ t ih => exact ih (hmono _ x h)
+
+/-- **The LEVEL COORDINATE of an antitone, exhaustive filtration**
+(PROVEN).
+
+`coord x = ℓ ^ (level of x)`, with `coord x = 0` when `x` lies in every
+layer; the level is `Nat.find` of the first layer `x` escapes, minus one,
+and `hzero` is what makes that subtraction harmless.  The three
+conclusions are exactly what `nonempty_ofExactShift` consumes: the layers
+are read off as divisibility, the value is pinned at a point of exact
+level, and it is `0` on the intersection of the whole filtration.
+
+`¬ IsUnit (ℓ : A)` together with `IsDomain A` is what makes
+`ℓ ^ m ∣ ℓ ^ n ↔ m ≤ n`, and hence makes the presentation faithful; both
+hypotheses are used only for that. -/
+theorem exists_levelCoord {ℓ : ℕ} {A : Type*} [CommRing A] [IsDomain A]
+    {G : Type*} {layer : ℕ → G → Prop}
+    (hℓ0 : (ℓ : A) ≠ 0) (hℓu : ¬ IsUnit (ℓ : A))
+    (hzero : ∀ x, layer 0 x)
+    (hmono : ∀ (k : ℕ) (x : G), layer (k + 1) x → layer k x) :
+    ∃ coord : G → A,
+      (∀ (k : ℕ) (x : G), layer k x ↔ (ℓ : A) ^ k ∣ coord x) ∧
+      (∀ (x : G) (n : ℕ), layer n x → ¬ layer (n + 1) x → coord x = (ℓ : A) ^ n) ∧
+      (∀ x : G, (∀ k, layer k x) → coord x = 0) := by
+  classical
+  have hdvd : ∀ m n : ℕ, ((ℓ : A) ^ m ∣ (ℓ : A) ^ n) ↔ m ≤ n := by
+    intro m n
+    refine ⟨fun h => ?_, fun h => pow_dvd_pow _ h⟩
+    by_contra hlt
+    obtain ⟨j, rfl⟩ : ∃ j, m = n + (j + 1) := ⟨m - n - 1, by omega⟩
+    obtain ⟨c, hc⟩ := h
+    have hne : (ℓ : A) ^ n ≠ 0 := pow_ne_zero _ hℓ0
+    have h1 : (1 : A) = (ℓ : A) ^ (j + 1) * c := by
+      refine mul_left_cancel₀ hne ?_
+      rw [mul_one, ← mul_assoc, ← pow_add]
+      exact hc
+    exact hℓu (isUnit_of_dvd_one ⟨(ℓ : A) ^ j * c, by rw [h1]; ring⟩)
+  -- the first layer a point escapes is never the bottom one
+  have hfindpos : ∀ (x : G) (h : ∃ k, ¬ layer k x), 1 ≤ Nat.find h := by
+    intro x h
+    rcases Nat.eq_zero_or_pos (Nat.find h) with hz | hp
+    · exact absurd (hz ▸ hzero x) (Nat.find_spec h)
+    · exact hp
+  refine ⟨fun x => if h : ∃ k, ¬ layer k x then (ℓ : A) ^ (Nat.find h - 1) else 0, ?_, ?_, ?_⟩
+  · intro k x
+    dsimp only
+    by_cases h : ∃ k, ¬ layer k x
+    · have hlt : layer k x ↔ k < Nat.find h := by
+        refine ⟨fun hk => ?_, fun hk => not_not.mp (Nat.find_min h hk)⟩
+        by_contra hcon
+        exact Nat.find_spec h (layer_of_le hmono (by omega) hk)
+      rw [dif_pos h, hdvd, hlt]
+      have := hfindpos x h
+      omega
+    · rw [dif_neg h]
+      have hx : layer k x := not_not.mp (not_exists.mp h k)
+      simpa using hx
+  · intro x n hn hn'
+    dsimp only
+    have h : ∃ k, ¬ layer k x := ⟨n + 1, hn'⟩
+    have hfy : Nat.find h = n + 1 := by
+      refine le_antisymm (Nat.find_le hn') ?_
+      by_contra hcon
+      exact Nat.find_spec h (layer_of_le hmono (by omega) hn)
+    rw [dif_pos h, hfy]
+    congr 1
+  · intro x hx
+    dsimp only
+    rw [dif_neg (not_exists.mpr (fun k => not_not.mpr (hx k)))]
+
+/-- **A `FormalGroupChart` EXISTS AS SOON AS THE `ℓ`-SHIFT IS EXACT**
+(PROVEN) — the converse of `not_layer_mulByL`, in one coordinate.
+
+`hshift` is the classical statement (Silverman *ATAEC* IV.6.1) that
+multiplication by `ℓ` moves a point of exact level `k ≥ 1` to one of
+exact level `k + 1`; `hzero`, `hmono` and `hmul` are the bookkeeping
+facts that the layers are exhaustive, decreasing, and stable under
+multiplication by `ℓ`.
+
+See the section docstring above for why the single coordinate
+`ℓ ^ (level)` is a faithful presentation and why `frob_layer` is the
+field that forces `hshift` rather than being satisfiable for free. -/
+theorem FormalGroupChart.nonempty_ofExactShift {ℓ : ℕ} {A : Type*} [CommRing A] [IsDomain A]
+    {G : Type*} {layer : ℕ → G → Prop} {mulByL : G → G}
+    (hℓ0 : (ℓ : A) ≠ 0) (hℓu : ¬ IsUnit (ℓ : A))
+    (hzero : ∀ x, layer 0 x)
+    (hmono : ∀ (k : ℕ) (x : G), layer (k + 1) x → layer k x)
+    (hmul : ∀ (k : ℕ) (x : G), layer k x → layer k (mulByL x))
+    (hshift : ∀ (k : ℕ) (x : G), 1 ≤ k → layer k x → ¬ layer (k + 1) x →
+      layer (k + 1) (mulByL x) ∧ ¬ layer (k + 2) (mulByL x)) :
+    Nonempty (FormalGroupChart ℓ A G layer mulByL) := by
+  classical
+  obtain ⟨coord, hmem, hexact, hall⟩ := exists_levelCoord (layer := layer) hℓ0 hℓu hzero hmono
+  refine ⟨⟨1, fun x _ => coord x, fun k x => ?_, fun x _ => coord x,
+    fun x _ => coord (mulByL x) - (ℓ : A) * coord x, fun x i => by ring, fun k x h1 h2 => ?_,
+    fun k x h i => ?_⟩⟩
+  · exact ⟨fun hx _ => (hmem k x).mp hx, fun hx => (hmem k x).mpr (hx 0)⟩
+  · exact ⟨0, fun hcon => h2 ((hmem (k + 1) x).mpr hcon)⟩
+  · rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp
+    · -- at every level the shift is exact, so the Frobenius part VANISHES
+      have hfr : coord (mulByL x) - (ℓ : A) * coord x = 0 := by
+        by_cases hex : ∃ j, ¬ layer j x
+        · have hpos : 1 ≤ Nat.find hex := by
+            rcases Nat.eq_zero_or_pos (Nat.find hex) with hz | hp
+            · exact absurd (hz ▸ hzero x) (Nat.find_spec hex)
+            · exact hp
+          obtain ⟨n, hn, hn'⟩ : ∃ n, layer n x ∧ ¬ layer (n + 1) x := by
+            refine ⟨Nat.find hex - 1, not_not.mp (Nat.find_min hex (by omega)), ?_⟩
+            have he : Nat.find hex - 1 + 1 = Nat.find hex := by omega
+            rw [he]
+            exact Nat.find_spec hex
+          have hkn : 1 ≤ n := by
+            by_contra hcon
+            exact hn' (by
+              have hz : n = 0 := by omega
+              rw [hz]
+              exact layer_of_le hmono hk h)
+          obtain ⟨hu, hv⟩ := hshift n x hkn hn hn'
+          rw [hexact x n hn hn', hexact (mulByL x) (n + 1) hu hv, pow_succ]
+          ring
+        · have hx : ∀ j, layer j x := fun j => not_not.mp (not_exists.mp hex j)
+          rw [hall x hx, hall (mulByL x) (fun j => hmul j x (hx j))]
+          ring
+      rw [hfr]
+      exact dvd_zero _
+
 end Fermat

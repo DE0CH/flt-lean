@@ -11870,11 +11870,22 @@ theorem relPointPost_zero {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
   apply Subtype.ext
   rw [relPointPost_val, abA.zero_val_eq, abB.zero_val_eq, Category.assoc, hzero]
 
-/-- **RIGIDITY: a morphism of abelian schemes over `Spec ℚ` carrying zero
-to zero is a homomorphism** (PROVEN 2026-07-27 over the project's EXISTING
-rigidity lemma, `AlgebraicGeometry.eq_comp_of_rigidity_axes` in
+/-- **RIGIDITY: a morphism of abelian schemes carrying zero to zero is a
+homomorphism** (PROVEN 2026-07-27 over the project's EXISTING rigidity lemma,
+`AlgebraicGeometry.eq_comp_of_rigidity_axes` in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — NO new leaf
-was introduced).
+was introduced; GENERALISED from `Spec ℚ` to an ARBITRARY base scheme `S`
+2026-07-29, flt-lean-33).
+
+**The generalisation is a pure widening of the binder and changed no proof
+step.**  The paragraph below already observed that `eq_comp_of_rigidity_axes`
+holds "over an ARBITRARY base `S`, not just `Spec ℚ`", and nothing else in the
+argument ever looked at the base: the base appeared only as the codomain of
+`fA`, `fB` and `g`.  It was widened because the `ℚ̄`-side of the Mazur
+class-number-one cluster needs exactly this statement over
+`Spec ℚ̄` — see `MazurIsogenyPrimeJ.nonempty_isEllipticIsoOf_of_`
+`variableChange_isWeierstrassModel` in `FreyCurve/MazurTorsion.lean`.  Every
+existing consumer instantiates `S := Spec (CommRingCat.of ℚ)` and is unchanged.
 
 This is Mumford, *Abelian Varieties* §4, Cor. 1 — the corollary of the
 rigidity lemma.  `abA` and `abB` make `fA` and `fB` proper, smooth and
@@ -11886,7 +11897,7 @@ which by Yoneda is exactly "`u` is a homomorphism of group schemes".
 **Only the zero section over the base itself is hypothesised**, and that is
 not a weakening: `AbelianSchemeStruct.zero_val_eq` gives
 `(ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1` for every base point `g`, so
-`hzero` at `𝟙 (Spec ℚ)` already determines the zero section everywhere.
+`hzero` at `𝟙 S` already determines the zero section everywhere.
 
 ## THE PROOF, in two halves — and only the second half is deep
 
@@ -11941,12 +11952,11 @@ NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
 nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
 additive — and it is exactly `hzero` that the range chase in the consumer
 works to establish. -/
-theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ)}
-    {fB : B ⟶ Spec (CommRingCat.of ℚ)} (abA : AbelianSchemeStruct fA)
+theorem relPointPost_add {A B S : Scheme.{0}} {fA : A ⟶ S}
+    {fB : B ⟶ S} (abA : AbelianSchemeStruct fA)
     (abB : AbelianSchemeStruct fB) (u : A ⟶ B) (hu : u ≫ fB = fA)
-    (hzero : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ u
-      = (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1)
-    {T : Scheme.{0}} {g : T ⟶ Spec (CommRingCat.of ℚ)} (x y : RelPoint fA g) :
+    (hzero : (abA.zero (𝟙 S)).1 ≫ u = (abB.zero (𝟙 S)).1)
+    {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint fA g) :
     relPointPost u hu (abA.add x y)
       = abB.add (relPointPost u hu x) (relPointPost u hu y) := by
   have hq2 : Limits.pullback.snd fA fA ≫ fA = Limits.pullback.fst fA fA ≫ fA :=
@@ -11956,22 +11966,21 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
   set q : RelPoint fA (Limits.pullback.fst fA fA ≫ fA) :=
     ⟨Limits.pullback.snd fA fA, hq2⟩
   -- pointwise group facts, in the two abelian schemes
-  have haddzeroA : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddzeroA : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
       (z : RelPoint fA g'), abA.add z (abA.zero g') = z := by
     intro T' g' z; rw [abA.add_comm, abA.zero_add]
-  have haddzeroB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddzeroB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.zero g') = z := by
     intro T' g' z; rw [abB.add_comm, abB.zero_add]
-  have haddnegB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+  have haddnegB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.neg z) = abB.zero g' := by
     intro T' g' z; rw [abB.add_comm, abB.neg_add]
-  -- HALF 2: the universal instance, at the two projections of `A ×_ℚ A`
+  -- HALF 2: the universal instance, at the two projections of `A ×_S A`
   have key : relPointPost u hu (abA.add p q)
       = abB.add (relPointPost u hu p) (relPointPost u hu q) := by
-    have heA : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ fA = 𝟙 _ :=
-      (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).2
-    set eA := (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
-    set eB := (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    have heA : (abA.zero (𝟙 S)).1 ≫ fA = 𝟙 _ := (abA.zero (𝟙 S)).2
+    set eA := (abA.zero (𝟙 S)).1
+    set eB := (abB.zero (𝟙 S)).1
     set D : RelPoint fB (Limits.pullback.fst fA fA ≫ fA) :=
       abB.add (relPointPost u hu (abA.add p q))
         (abB.neg (abB.add (relPointPost u hu p) (relPointPost u hu q))) with hDdef

@@ -88,22 +88,41 @@ prime, with the divisible case discharged. **As of the fifth pass (2026-07-28) t
 `deg = det` statement is PROVEN too**, over `End.exists_trace_charPoly_degree_sub`.
 **As of the sixth pass (2026-07-28) that statement is PROVEN as well**, leaving
 `End.exists_trace_charPoly` (`ψ² + [deg ψ] = [t] ψ`, Silverman *AEC* III.6.2) as the
-leaf. **As of the SEVENTH pass (2026-07-28) that is PROVEN too**, and the file's
-single remaining leaf is now
+leaf. **As of the SEVENTH pass (2026-07-28) that is PROVEN too**, over the existence
+of an adjoint Weil pairing on `W[ℓ]`. **As of the EIGHTH pass (2026-07-30) THAT is
+PROVEN as well** — see below, it was never outside the circle — and the eighth pass
+cut the elementary `x`-coordinate route into two sub-steps:
 
-* `exists_weilPairing_torsionRep_adjoint` — for each prime `ℓ` there is an
-  alternating, nonzero, `ZMod ℓ`-bilinear pairing `e` on `W[ℓ]` satisfying
-  `e (ψ x) y = e x (ψ̂ y)` for every `ψ : End W`. Silverman *AEC* III.8.1–III.8.2.
+* `End.exists_isXNormalForm_degree` (leaf (A)) — for a nonzero `φ ∈ End W`, writing
+  `x ∘ φ = A / B` in lowest terms, `deg φ = max (deg A) (deg B)`. Silverman *AEC*
+  II.2.4.1 + III.4.10; Washington *Elliptic Curves* §2.9.
+* `End.isXNormalForm_natDegree_parallelogram` (leaf (B)) — that `max`-degree is a
+  quadratic form on `End W`, by the `x`-only addition law and a coprimality count. A
+  statement about `F[X]` alone.
 
-**The seventh pass is the one that leaves the circle.** Passes one through six moved
-the `sorry` between equivalent identities about *degrees*; the audit below proves
-that circle cannot be broken from inside, because `ℤ[√2]` with `q := |N|` satisfies
-every fact available about `deg` and violates all of them. The seventh pass replaces
-the identity by the existence of a bilinear form — a genuinely geometric input, and
-the smallest one that works. Over it, `deg ψ = det (ρ_ℓ ψ)` is three lines
-(`End.natCast_degree_eq_det_torsionRep_of_weilPairing`), and the characteristic
-polynomial follows by `2 × 2` Cayley–Hamilton plus the observation that a nonzero
-isogeny has a finite kernel while `#W[ℓ] = ℓ²` grows without bound.
+**As of the NINTH pass (2026-07-30) leaf (A) is PROVEN**, so leaf (B) is the file's
+only remaining leaf. Leaf (A) went through in two halves, over a definition change:
+`End.IsXNormalForm`'s certificate was weakened from "at every point off `ker φ`" to
+"at all but finitely many abscissae", which is what `IsRationalMap`-divided-by-its-gcd
+actually delivers, and which costs nothing downstream because both consumers are
+generic. The halves are `End.exists_isXNormalForm` (existence, now unconditional) and
+`End.isXNormalForm_card_roots_sub` (the fibre count, a bijection `ker φ ≃ {roots}`
+with no factor of `2` on either side). Leaf (B)'s audit was RE-RUN against the new
+definition rather than inherited; see the note there.
+
+**Passes one through SEVEN all stayed inside the circle.** They moved the `sorry`
+between equivalent identities about *degrees*; the audit below proves that circle
+cannot be broken from inside, because `ℤ[√2]` with `q := |N|` satisfies every fact
+available about `deg` and violates all of them. The seventh pass replaced the
+identity by the existence of a bilinear form and recorded that as "a genuinely
+geometric input" — but on a rank-`2` space an alternating form is unique up to a
+scalar, so the pairing carries no information beyond the determinant **in both
+directions**, and the eighth pass proves it outright from the trace formula plus
+`deg = det` (`altPairing_trace` supplies the adjugate identity; see
+`exists_weilPairing_torsionRep_adjoint` at the foot of the file). The eighth pass is
+the one that leaves the circle, by leaving the *language* of kernel cardinalities:
+leaf (A) equates a kernel cardinality with a **polynomial degree**, and leaf (B) is
+then pure `F[X]`.
 
 The sixth pass is a **strict reduction**, not a reshuffle: the fifth-pass leaf
 carried a second conjunct, the integer-shift expansion
@@ -120,18 +139,22 @@ statement, and the consumer-facing `End.natCast_degree_eq_det_torsionRep`
 assembling the two cases.
 
 **Every statement in this circle is equivalent** — `deg = det` mod `ℓ`, the
-parallelogram law, the trace formula, additivity of the dual, and the leaf — so
-neither the fifth nor the sixth pass made anything mathematically easier. What the
-fifth pass did is machine-check the implication `parallelogram law ⟹ deg = det`,
-which the fourth pass could only sketch (it was a literal cycle while the `sorry`
-sat below it); what the sixth pass did is remove the shift conjunct, so the next
-prover has ONE identity to establish rather than an identity and an
-`m`-indexed family. Either way **any** proof of the parallelogram law discharges
-the leaf in a few lines. See the ROUTE section on
-`End.exists_trace_charPoly_degree_sub` for the two live routes: Weil-pairing
-adjointness (*AEC* III.8.2) and the elementary `x`-coordinate degree count
-(Washington), and for the proof that no *counting* argument can ever supply any of
-them.
+parallelogram law, the trace formula, additivity of the dual, and (as the eighth
+pass showed, machine-checked) Weil-pairing adjointness too — so passes four through
+seven made nothing mathematically easier. What the fifth pass did is machine-check
+the implication `parallelogram law ⟹ deg = det`, which the fourth pass could only
+sketch (it was a literal cycle while the `sorry` sat below it); what the sixth pass
+did is remove the shift conjunct, so the next prover has ONE identity to establish
+rather than an identity and an `m`-indexed family. Either way **any** proof of the
+parallelogram law discharges the whole file in a few lines — which is what the
+eighth pass finally arranged, by decomposing the parallelogram law into the two
+leaves above rather than restating it. See the ROUTE section on
+`End.exists_trace_charPoly_degree_sub` for the route audit that selected this, and
+for the proof that no *counting* argument can ever supply any face of the circle.
+The other route recorded there, Weil-pairing adjointness (*AEC* III.8.2), turned out
+to be a face of the circle rather than an input to it, and is now PROVEN at the foot
+of this file; the ROUTE 2 section marks where the divisor-theoretic construction it
+seemed to require was taken off the critical path.
 
 An earlier version of this docstring recorded the trace formula as a SECOND,
 independent leaf, on the ground that the two are "jointly equivalent to additivity
@@ -457,8 +480,14 @@ parallelogram law too**, so the file now stands on exactly one open leaf:
   first conjunct alone, leaving `End.exists_trace_charPoly` —
   `ψ² + [deg ψ] = [t] ψ`, `ℓ`-free. **The seventh pass (2026-07-28) proved that as
   well**, over the Weil-pairing leaf `exists_weilPairing_torsionRep_adjoint`, which
-  is now the file's sole open leaf and the first one in this sequence that is not
-  an identity between degrees.
+  it recorded as the first statement in this sequence that is not an identity
+  between degrees. **That was wrong, and the eighth pass (2026-07-30) proved the
+  pairing too** — it is a face of the same circle; see the ROUTE 2 section. The
+  eighth pass's leaves were `End.exists_isXNormalForm_degree` and
+  `End.isXNormalForm_natDegree_parallelogram`, and `End.exists_trace_charPoly` is
+  proven over the parallelogram law, which is proven over those two. **The ninth
+  pass (2026-07-30) PROVED the first of them**, so
+  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — is all that is left.
 
 with
 
@@ -550,8 +579,10 @@ classical `deg = det` on the Tate module,
 `End.natCast_degree_eq_det_torsionRep_of_not_dvd` (its `ℓ ∣ deg ψ` half being
 PROVEN as `End.det_torsionRep_eq_zero_of_dvd`). **As of 2026-07-28 that is PROVEN
 too**, over `End.exists_trace_charPoly_degree_sub`, itself PROVEN the same day over
-`End.exists_trace_charPoly` — which the seventh pass then proved over the file's one
-remaining leaf, the Weil pairing `exists_weilPairing_torsionRep_adjoint`; see the
+`End.exists_trace_charPoly` — which the seventh pass proved over the Weil pairing
+`exists_weilPairing_torsionRep_adjoint` and the eighth pass reproved over the
+parallelogram law, the pairing itself having turned out to be a face of the circle
+rather than an input to it (it is PROVEN at the foot of this file); see the
 ROUTE section on
 `End.exists_trace_charPoly_degree_sub`, and the audits kept on the `deg = det`
 theorem for the Weil-pairing half of the picture and the greps that would refute
@@ -770,14 +801,20 @@ theorem End.degree_mul [IsAlgClosed F] [W.IsElliptic] (a c : End W) :
   push_cast
   ring
 
-/-! ### The Weil pairing on the `ℓ`-torsion — the file's one geometric input
+/-! ### Rank-two linear algebra for the `ℓ`-torsion
 
-Everything from here to the end of the file is an algebraic consequence of the
-single leaf `exists_weilPairing_torsionRep_adjoint` below. The audits on
+Everything from here to the end of the file is an algebraic consequence of the two
+route-2 leaves stated in the ROUTE 2 section below. The audits on
 `End.natCast_degree_eq_det_torsionRep_of_not_dvd` further down record *why* a
 geometric input is unavoidable — in particular the `ℤ[√2]`, `q := |N|` model,
 which satisfies multiplicativity, definiteness and `q m = m²` and still violates
-everything in this circle. -/
+everything in this circle.
+
+Three facts about alternating forms on a rank-`2` space live here, and they are what
+make the Weil pairing at the foot of this file a theorem rather than an input:
+`altPairing_map_eq_det_smul` (`f` scales the form by `det f`),
+`det_eq_of_altPairing_conj` (its converse, cancelling the scalar) and
+`altPairing_trace` (`f` and `tr f − f` are adjoint). -/
 
 section AltPairing
 
@@ -851,6 +888,69 @@ theorem det_eq_of_altPairing_conj (hrank : Module.rank R V = 2)
   have h1 := altPairing_map_eq_det_smul hrank e halt f x y
   exact mul_right_cancel₀ hxy (h1.symm.trans (hc x y))
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **The ADJUGATE identity for an alternating form in rank two**, and the reason
+`exists_weilPairing_torsionRep_adjoint` below is not an input at all:
+
+    e (f x) y + e x (f y) = (det (f + 1) − det f − 1) · e x y.
+
+The bracket is the trace (`det (f + 1) = det f + tr f + 1` in rank two), so this
+says that `f` and `tr f − f` — the classical adjugate of a `2 × 2` matrix — are
+**adjoint** for any alternating form. Combined with the trace formula
+`ψ + ψ̂ = [t]` and `deg = det`, which together identify `ρ_ℓ ψ̂` with `tr (ρ_ℓ ψ) − ρ_ℓ ψ`,
+it produces Weil-pairing adjointness out of nothing geometric; see
+`exists_weilPairing_torsionRep_adjoint` at the foot of this file.
+
+Companion to `altPairing_map_eq_det_smul` above and proved the same way: the
+identity is bilinear in `(x, y)`, so it is enough to check it on a basis, where
+alternation kills the diagonal entries and leaves `M 0 0 + M 1 1`. Only a
+`Fin 2`-basis is needed, not the `Module.rank` form of the hypothesis. -/
+theorem altPairing_trace (b : Module.Basis (Fin 2) R V)
+    (e : V →ₗ[R] V →ₗ[R] R) (halt : ∀ v, e v v = 0)
+    (f : V →ₗ[R] V) (x y : V) :
+    e (f x) y + e x (f y)
+      = (LinearMap.det (f + 1) - LinearMap.det f - 1) * e x y := by
+  classical
+  have hskew : ∀ v w : V, e w v = -e v w := by
+    intro v w
+    have h := halt (v + w)
+    simp only [map_add, LinearMap.add_apply, halt v, halt w, zero_add,
+      add_zero] at h
+    linear_combination h
+  have hfb : ∀ j, f (b j) =
+      LinearMap.toMatrix b b f 0 j • b 0 + LinearMap.toMatrix b b f 1 j • b 1 := by
+    intro j
+    have hsum := b.sum_repr (f (b j))
+    rw [Fin.sum_univ_two] at hsum
+    rw [← hsum]
+    congr 1 <;> rw [LinearMap.toMatrix_apply]
+  have htr : LinearMap.det (f + 1) - LinearMap.det f - 1
+      = LinearMap.toMatrix b b f 0 0 + LinearMap.toMatrix b b f 1 1 := by
+    have hd : LinearMap.det f
+        = LinearMap.toMatrix b b f 0 0 * LinearMap.toMatrix b b f 1 1
+          - LinearMap.toMatrix b b f 0 1 * LinearMap.toMatrix b b f 1 0 := by
+      rw [← LinearMap.det_toMatrix b f, Matrix.det_fin_two]
+    have hd1 : LinearMap.det (f + 1)
+        = (LinearMap.toMatrix b b f 0 0 + 1) * (LinearMap.toMatrix b b f 1 1 + 1)
+          - LinearMap.toMatrix b b f 0 1 * LinearMap.toMatrix b b f 1 0 := by
+      rw [← LinearMap.det_toMatrix b (f + 1), Matrix.det_fin_two]
+      simp [map_add, LinearMap.toMatrix_one]
+    rw [hd, hd1]; ring
+  suffices hb : ∀ i j, e (f (b i)) (b j) + e (b i) (f (b j))
+      = (LinearMap.det (f + 1) - LinearMap.det f - 1) * e (b i) (b j) by
+    have hBB : e.comp f + e.compl₂ f
+        = (LinearMap.det (f + 1) - LinearMap.det f - 1) • e := by
+      refine b.ext fun i => b.ext fun j => ?_
+      simpa [LinearMap.compl₂_apply, LinearMap.smul_apply] using hb i j
+    have happ := congrArg (fun B : V →ₗ[R] V →ₗ[R] R => B x y) hBB
+    simpa [LinearMap.compl₂_apply, LinearMap.smul_apply] using happ
+  intro i j
+  fin_cases i <;> fin_cases j <;>
+    · simp only [Fin.mk_zero, Fin.mk_one, hfb, htr, map_add, map_smul,
+        LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul, halt,
+        hskew (b 0) (b 1)]
+      ring
+
 end AltPairing
 
 /-- **Cayley–Hamilton on a rank-`2` module, in trace-free form.**
@@ -884,176 +984,919 @@ theorem det_charPoly_rank_two {R : Type*} [CommRing R] {M : Type*} [AddCommGroup
     simp [Matrix.mul_apply, Fin.sum_univ_two,
       Matrix.smul_apply, Matrix.add_apply] <;> ring
 
-/-- **LEAF (2026-07-28, seventh pass) — the Weil pairing on the `ℓ`-torsion, adjoint
-for the dual isogeny.** Silverman *AEC* III.8.1 (existence, alternation,
-nondegeneracy) together with III.8.2 (adjointness). For every prime `ℓ` there is an
-alternating, nonzero, `ZMod ℓ`-bilinear pairing `e` on `W[ℓ]` with
+/-- **Cayley–Hamilton for a multiplicative parallelogram form**, and the reason the
+trace formula is not a second leaf.
 
-    e (ψ x) y = e x (ψ̂ y)     for every ψ : End W.
+Let `R` be a ring and `q : R → ℤ` satisfy
 
-**This is the file's ONLY open leaf.** Everything else in the trace layer — `deg =
-det` on the torsion, the characteristic polynomial, the parallelogram law, the
-additivity of the dual, `End.exists_dual`, `End.exists_charPoly`,
-`End.sq_eq_neg_natCast_of_atkinLehner` — is PROVEN over it.
+* `q 0 = 0`, `q 1 = 1`;
+* the **parallelogram law** `q (a+c) + q (a−c) = 2 q a + 2 q c`;
+* **multiplicativity** `q (a c) = q a · q c`;
+* **positive definiteness in the weak form** `q a = 0 → a = 0`.
 
-### Why this is the right cut, and why it is not a reshuffle
+Then every `x : R` satisfies its characteristic polynomial
 
-The seven passes before this one moved the `sorry` around a circle of mutually
-equivalent statements about **degrees**: `ψ² + [deg ψ] = [t] ψ`, the shift expansion
-`deg (ψ − m) = m² − t m + deg ψ`, `deg ψ ≡ det (ρ_ℓ ψ)`, and the parallelogram law
-`deg (φ+ψ) + deg (φ−ψ) = 2 deg φ + 2 deg ψ`. The audits below prove that circle
-cannot be broken from inside: the facts available about `deg` without new input —
-`deg 0 = 0`, `deg 1 = 1`, multiplicativity, definiteness, and `deg [m] = m²` — are
-**all** satisfied by `R = ℤ[√2]` with `q := |N|`, which violates every statement in
-the circle. A genuinely geometric input is unavoidable.
+    x² + [q x] = [q (x+1) − q x − 1] · x.
 
-This leaf is that input, and it is *not* a statement about degrees at all: it is the
-existence of a single bilinear form. That is what makes the move a reduction rather
-than the eighth lap of the circle.
+This is the classical composition-algebra argument, and it is what refutes the
+first pass's "the parallelogram law alone does not suffice". Writing
+`b u v := q (u+v) − q u − q v` for the polar form:
 
-### FAITHFULNESS AUDIT (2026-07-28)
+1. the parallelogram law makes `b` **biadditive** (polarisation: `q (u+v+w)` has
+   the symmetric three-variable expansion, whence `b (u+v) w = b u w + b v w`, and
+   `b` is symmetric by `add_comm`);
+2. linearising `q (u (v+w)) = q u · q (v+w)` in the second slot gives
+   `b (u v) (u w) = q u · b v w`;
+3. linearising *that* in `u` gives the four-term identity
+   `b (u v) (w z) + b (w v) (u z) = b u w · b v z`;
+4. specialising (3) at `w = 1, v := u, z := v` and (2) at `v = 1` gives
+   `b (x²) v = b x 1 · b x v − q x · b 1 v`, so the element
+   `u := x² − [b x 1] x + [q x]` satisfies `b u v = 0` for **every** `v`;
+5. taking `v = u` and using `b a a = 2 q a` (parallelogram at `a, a`) gives
+   `q u = 0`, hence `u = 0`.
 
-*Not vacuous.* The Weil pairing exists — this is classical (*AEC* III.8), and this
-repository already carries a divisor-theoretic construction of it in another
-characteristic; see the construction notes below.
+Only step 5 uses definiteness, and only steps 2–3 use multiplicativity — which is
+exactly the hypothesis the first pass's independence analysis did not have in view.
 
-*Not under-pinned.* The worry with any `∃ e, …` cut is that an adversary supplies a
-junk `e` satisfying every clause while carrying none of the arithmetic. Here that is
-impossible, and the reason is structural rather than a matter of adding clauses: on
-a rank-`2` space an alternating bilinear form is determined up to a scalar, so the
-*only* freedom in `e` is that scalar — and `det_eq_of_altPairing_conj` cancels it.
-Concretely, **any** `e` meeting the three clauses forces `deg ψ = det (ρ_ℓ ψ)` in
-`ZMod ℓ`, which is `End.natCast_degree_eq_det_torsionRep_of_weilPairing` immediately
-below. So the leaf cannot be satisfied in a way that fails to deliver its consumer.
+**Stated `End`-free on purpose** — for readability, and because the statement is
+about any ring with a multiplicative parallelogram form, not about curves. This one
+reports `[propext, Classical.choice, Quot.sound]`. (An earlier version justified the
+`End`-free phrasing by the claim that everything mentioning `End W` reports
+`sorryAx` at carrier level. That justification is RETIRED and was stale; see the
+retraction on `not_isRationalMap_leftInverse_frob` above.) -/
+theorem charPoly_of_multiplicative_parallelogram {R : Type*} [Ring R] (q : R → ℤ)
+    (hq0 : q 0 = 0) (hq1 : q 1 = 1)
+    (hpar : ∀ a c : R, q (a + c) + q (a - c) = 2 * q a + 2 * q c)
+    (hmul : ∀ a c : R, q (a * c) = q a * q c)
+    (hzero : ∀ a : R, q a = 0 → a = 0) (x : R) :
+    x * x + ((q x : ℤ) : R) = ((q (x + 1) - q x - 1 : ℤ) : R) * x := by
+  obtain ⟨b, hbv⟩ : ∃ b : R → R → ℤ, ∀ u v : R, b u v = q (u + v) - q u - q v :=
+    ⟨_, fun _ _ => rfl⟩
+  -- `q` is even.
+  have hneg : ∀ a : R, q (-a) = q a := by
+    intro a
+    have h := hpar 0 a
+    rw [zero_add, zero_sub, hq0] at h
+    linarith
+  -- the symmetric three-variable polarisation identity
+  have hthree : ∀ u v w : R,
+      q (u + v + w) = q (u + v) + q (v + w) + q (u + w) - q u - q v - q w := by
+    intro u v w
+    have h3 := hpar (u + w) v
+    have h5 := hpar u v
+    have h7 := hpar (v + w) u
+    have h2 := hpar (u - v) w
+    have e3a : u + w + v = u + v + w := by abel
+    have e3b : u + w - v = u - v + w := by abel
+    have e7a : v + w + u = u + v + w := by abel
+    have e7b : v + w - u = -(u - v - w) := by abel
+    rw [e3a, e3b] at h3
+    rw [e7a, e7b, hneg] at h7
+    linarith
+  -- the polar form is biadditive
+  have hbaddl : ∀ u v w : R, b (u + v) w = b u w + b v w := by
+    intro u v w
+    rw [hbv, hbv, hbv, hthree]
+    ring
+  have hbsymm : ∀ u v : R, b u v = b v u := by
+    intro u v
+    rw [hbv, hbv, add_comm u v]; ring
+  have hbaddr : ∀ u v w : R, b u (v + w) = b u v + b u w := by
+    intro u v w
+    rw [hbsymm u (v + w), hbaddl, hbsymm v u, hbsymm w u]
+  have hb0 : ∀ v : R, b 0 v = 0 := by
+    intro v; rw [hbv, zero_add, hq0]; ring
+  have hbnegl : ∀ a v : R, b (-a) v = -b a v := by
+    intro a v
+    have h := hbaddl a (-a) v
+    rw [add_neg_cancel, hb0] at h
+    linarith
+  have hbsubl : ∀ a c v : R, b (a - c) v = b a v - b c v := by
+    intro a c v
+    rw [sub_eq_add_neg, hbaddl, hbnegl]; ring
+  have hhom : ∀ (n : ℤ) (a v : R), b (n • a) v = n * b a v := by
+    intro n a v
+    let f : R →+ ℤ := AddMonoidHom.mk' (fun u : R => b u v) (fun p r => hbaddl p r v)
+    have hf : ∀ u : R, f u = b u v := fun _ => rfl
+    have h := map_zsmul f n a
+    rw [hf, hf] at h
+    simpa [zsmul_eq_mul] using h
+  -- first linearisation of multiplicativity
+  have hE1 : ∀ u v w : R, b (u * v) (u * w) = q u * b v w := by
+    intro u v w
+    have h := hmul u (v + w)
+    rw [mul_add] at h
+    rw [hbv, hbv, h, hmul, hmul]
+    ring
+  -- second linearisation
+  have hE2 : ∀ u w v z : R, b (u * v) (w * z) + b (w * v) (u * z) = b u w * b v z := by
+    intro u w v z
+    have h := hE1 (u + w) v z
+    have hq : q (u + w) = b u w + q u + q w := by rw [hbv]; ring
+    rw [add_mul, add_mul, hbaddl, hbaddr, hbaddr, hE1 u v z, hE1 w v z, hq] at h
+    linear_combination h
+  -- the key identity for `b (x * x) ·`
+  have hE3 : ∀ u v : R, b (u * u) v = b u 1 * b u v - q u * b 1 v := by
+    intro u v
+    have h := hE2 u 1 u v
+    rw [one_mul, one_mul] at h
+    have h2 := hE1 u 1 v
+    rw [mul_one] at h2
+    linarith
+  -- the candidate is `b`-orthogonal to everything
+  have hkey : ∀ v : R,
+      b (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R)) v = 0 := by
+    intro v
+    have htx : b (((b x 1 : ℤ) : R) * x) v = b x 1 * b x v := by
+      rw [← zsmul_eq_mul]; exact hhom (b x 1) x v
+    have hqx : b (((q x : ℤ) : R)) v = q x * b 1 v := by
+      have hc : ((q x : ℤ) : R) = (q x) • (1 : R) := by rw [zsmul_eq_mul, mul_one]
+      rw [hc]; exact hhom (q x) 1 v
+    rw [hbaddl, hbsubl, hE3 x v, htx, hqx]
+    ring
+  -- hence it is `0`
+  have hdiag : ∀ a : R, b a a = 2 * q a := by
+    intro a
+    have hp := hpar a a
+    rw [sub_self, hq0] at hp
+    rw [hbv]
+    linarith
+  have hzeroU : x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R) = 0 := by
+    refine hzero _ ?_
+    have h := hkey (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R))
+    rw [hdiag] at h
+    linarith
+  have hbx1 : b x 1 = q (x + 1) - q x - 1 := by rw [hbv, hq1]
+  rw [← hbx1]
+  have h : x * x + ((q x : ℤ) : R) - ((b x 1 : ℤ) : R) * x = 0 := by
+    rw [← hzeroU]; abel
+  exact sub_eq_zero.mp h
 
-*Each clause is load-bearing.* Drop alternation and `altPairing_map_eq_det_smul`
-fails (a symmetric form transforms by `det` only up to the symmetric square). Drop
-nondegeneracy and `e := 0` satisfies everything, delivering `0 = 0`. Drop
-adjointness and nothing connects `e` to `ψ` at all.
+/-! ### ROUTE 2 (2026-07-30, eighth pass): the elementary `x`-coordinate degree count
 
-*The quantifier `∀ ψ : End W` is inside the existential on purpose.* One pairing must
-be adjoint for **every** endomorphism simultaneously; a per-`ψ` pairing would let the
-scalar drift with `ψ` and the argument would not close.
+**The seventh pass's leaf was inside the circle after all, and this pass proves it.**
+`exists_weilPairing_torsionRep_adjoint` — "there is an alternating nondegenerate
+pairing on `W[ℓ]` for which every `ψ` and its dual are adjoint" — was introduced as
+the first statement in this file's sequence of leaves that "is *not* a statement
+about degrees at all", hence "a reduction rather than the eighth lap of the circle".
+That claim is **refuted, machine-checked**: the theorem now stands at the foot of
+this file, PROVEN, with no geometric input beyond what the circle already contains.
+The three lines of it are
 
-### Where to construct it
+* build `e` as the coordinate determinant form in `nTorsionBasis W ℓ` — alternation
+  and nondegeneracy are then `ring` and `Finsupp.single_apply`, exactly as in
+  `WeilPairing.exists_weilPairing`;
+* `altPairing_trace` above: for **any** alternating form on a rank-`2` space, `f` and
+  `tr f − f` (the `2 × 2` adjugate) are adjoint;
+* `End.self_add_dualEnd` gives `ρ_ℓ ψ̂ = [t] − ρ_ℓ ψ` and
+  `End.natCast_degree_eq_det_torsionRep` gives `t ≡ tr (ρ_ℓ ψ)`, which is exactly
+  the substitution the previous item needs.
 
-* **mathlib has no Weil pairing.** `grep -rli weilpairing .lake/packages/mathlib/`
-  returns zero files (re-verified 2026-07-28).
-* **`~/cs/FLT` has nothing to vendor**: its
-  `FLT/KnownIn1980s/EllipticCurves/WeilPairing.lean` defines
-  `WeierstrassCurve.weilPairing` as a `def` with a `sorry` body (re-verified
-  2026-07-28).
-* **This repository has the construction, in the wrong characteristic.**
-  `WeilPairing.exists_weilPairing_mu` (`WeilPairing.lean`) is a genuine `μ_p`-valued
-  divisor-theoretic pairing built by the *AEC* III.8 route (Dedekind coordinate ring,
-  `Point.toClass`, Miller generators, Weil reciprocity), but over `𝔽̄_q`, and its
-  naturality clause is for the `q`-power Frobenius of the base — a semilinear
-  automorphism of the coefficients, not an isogeny of the curve. The boundary is
-  sharp and worth knowing before starting: `WeilPairingDescent.lean` and
-  `WeilPairingStageB.lean` are already stated over an arbitrary algebraically closed
-  field, and `exists_millerValue_alternating` and `millerRatio_eval_pow_of_pullback`
-  carry no finite-field hypothesis; but `exists_generic_pDivision_offset` and
-  `exists_millerRatio_eval_translationChar` require a **finite** subfield containing
-  the curve's coefficients, which exists only in characteristic `p`. So the honest
-  description of the work is: redo the *genericity / avoidance* layer over a
-  characteristic-zero base (the alternation and pullback cores transfer unchanged),
-  then add isogeny-naturality — which is the `ψ_* ψ^* = [deg ψ]` computation on
-  divisors — on top.
+So the pairing face is interderivable with `deg = det` like every other face, and
+the audit's rigidity observation — on a rank-`2` space an alternating form is unique
+up to a scalar — is precisely *why*: it forces the pairing to carry no information
+beyond the determinant, in **both** directions, not only the one the audit used.
+Nothing is lost by knowing this; what it removes is the belief that a
+characteristic-zero divisor-theoretic construction (redoing
+`WeilPairingStageB.lean`'s genericity layer over a char-`0` base, then adding
+isogeny naturality on divisors) is on the critical path. It is not.
 
-### The alternative closure of this file, if the pairing proves harder than expected
+**The genuinely non-circular input is route 2**, recorded but never stated in the
+seventh pass's ROUTE AUDIT (see `End.exists_trace_charPoly_degree_sub` below, which
+still holds and is not retracted): for a nonzero `φ` with `x ∘ φ = A/B` in lowest
+terms, `deg φ = max (deg A) (deg B)`, and the `x`-only addition law turns the
+parallelogram law into a count of polynomial degrees. It needs no divisors, no Weil
+pairing and no function fields — only the `IsRationalMap` normal form that
+`Isogeny.lean` already carries (`homogSubst`,
+`natDegree_eq_zero_of_coprime_homogSubst`, `exists_const_of_homogSubst_eq_zero`).
+Its two sub-steps are `End.exists_isXNormalForm_degree` — PROVEN in the ninth pass
+(2026-07-30) — and `End.isXNormalForm_natDegree_parallelogram`, which is the file's
+only remaining leaf; everything else in the trace layer — including the Weil pairing
+itself — is PROVEN over the two.
 
-Nothing forces the pairing route. `charPoly_of_multiplicative_parallelogram` (below,
-PROVEN, axiom-clean) derives `End.exists_trace_charPoly` from the **parallelogram
-law** alone, applied to `q χ := (deg χ : ℤ)`; the five side conditions are written
-out in full at the top of `End.self_add_dualEnd` below and may be copied verbatim.
-So a proof of the parallelogram law by the elementary `x`-coordinate degree count
-(Washington; the two sub-steps are spelled out in the ROUTE section on
-`End.exists_trace_charPoly_degree_sub`) closes this file just as well, and this leaf
-would then be deleted rather than proven. Both routes are live; neither is a
-prerequisite for the other. -/
-theorem exists_weilPairing_torsionRep_adjoint [IsAlgClosed F] [CharZero F] [W.IsElliptic]
-    (ℓ : ℕ) [Fact ℓ.Prime] :
-    ∃ e : W.nTorsion ℓ →ₗ[ZMod ℓ] W.nTorsion ℓ →ₗ[ZMod ℓ] ZMod ℓ,
-      (∀ v, e v v = 0) ∧ (∃ x y, e x y ≠ 0) ∧
-        ∀ ψ : End W, ∀ x y, e (End.torsionRep W ℓ ψ x) y
-          = e x (End.torsionRep W ℓ (End.dualEnd ψ) y) :=
+**Why the count is not a lap of the circle.** The circle consists of identities
+between `Isogeny.degree`s of endomorphisms; the ROUTE AUDIT proves it cannot be
+broken from inside, because every kernel-cardinality invariant sees only the
+`ℓ`-adic valuation of `deg`. Leaf (A) leaves that language: it equates a kernel
+cardinality with a **polynomial degree**, which is not a kernel invariant, and it is
+where the geometry (separability of `A − tB` over `F(t)`, in characteristic zero)
+actually enters. Leaf (B) is then a statement about `F[X]` alone.
+-/
+
+/-- `deg 0 = 0`, in the `End W` spelling. `Isogeny.degree` is defined by a case
+split at the zero map, and `End.toIsogeny 0` is that map by `rfl`. -/
+theorem End.degree_toIsogeny_zero [IsAlgClosed F] [W.IsElliptic] :
+    Isogeny.degree (End.toIsogeny (0 : End W)) = 0 := by
+  have hz : End.toIsogeny (0 : End W) = Isogeny.zero := rfl
+  rw [hz, Isogeny.degree_zero]
+
+/-- `deg (−χ) = deg χ`. Multiplicativity against `deg [−1] = (−1)² = 1`; the kernel
+of `−χ` is literally the kernel of `χ`, but this route needs no new lemma. -/
+theorem End.degree_neg [IsAlgClosed F] [CharZero F] [W.IsElliptic] (χ : End W) :
+    Isogeny.degree (End.toIsogeny (-χ)) = Isogeny.degree (End.toIsogeny χ) := by
+  have h : (-χ : End W) = (((-1 : ℤ)) : End W) * χ := by
+    rw [Int.cast_neg, Int.cast_one, neg_one_mul]
+  have hm := End.degree_mul (((-1 : ℤ)) : End W) χ
+  rw [← h, End.degree_intCast] at hm
+  have hz : ((Isogeny.degree (End.toIsogeny (-χ)) : ℤ))
+      = ((Isogeny.degree (End.toIsogeny χ) : ℤ)) := by rw [hm]; ring
+  exact_mod_cast hz
+
+/-- `deg (χ + χ) = 4 · deg χ`. Multiplicativity against `deg [2] = 4`. This is the
+degenerate case of the parallelogram law at `φ = ψ`, and is what discharges the two
+diagonal cases of it below without any appeal to the leaves. -/
+theorem End.degree_add_self [IsAlgClosed F] [CharZero F] [W.IsElliptic] (χ : End W) :
+    Isogeny.degree (End.toIsogeny (χ + χ)) = 4 * Isogeny.degree (End.toIsogeny χ) := by
+  have h : (χ + χ : End W) = (((2 : ℤ)) : End W) * χ := by
+    push_cast; rw [two_mul]
+  have hm := End.degree_mul (((2 : ℤ)) : End W) χ
+  rw [← h, End.degree_intCast] at hm
+  have hz : ((Isogeny.degree (End.toIsogeny (χ + χ)) : ℤ))
+      = 4 * ((Isogeny.degree (End.toIsogeny χ) : ℤ)) := by rw [hm]; ring
+  exact_mod_cast hz
+
+/-! ### The generic fibre of a coprime rational function
+
+Pure `F[X]` input to leaf (A): a coprime pair `(A, B)` presents a rational function
+of degree `max (deg A) (deg B)`, so its generic fibre has exactly that many distinct
+points. Characteristic zero enters here and only here, through the Wronskian: in
+characteristic `p` the map `X ↦ X^p` has an everywhere-ramified fibre and the count
+collapses to `1`. -/
+
+section XDegree
+
+variable {K : Type*} [Field K]
+
+/-- Coprime polynomials have no common root. -/
+theorem no_common_root_of_isCoprime {A B : K[X]} (hco : IsCoprime A B) {a : K}
+    (hA : A.eval a = 0) (hB : B.eval a = 0) : False := by
+  obtain ⟨u, v, huv⟩ := hco
+  have h := congrArg (Polynomial.eval a) huv
+  simp [hA, hB] at h
+
+/-- At the top degree `max (deg A) (deg B)` at least one of the two coefficients
+survives — which is what makes `A − C γ · B` have exactly that degree for all but at
+most one `γ`. -/
+theorem coeff_max_ne_zero_or {A B : K[X]} (hB : B ≠ 0) :
+    A.coeff (max A.natDegree B.natDegree) ≠ 0 ∨
+      B.coeff (max A.natDegree B.natDegree) ≠ 0 := by
+  rcases eq_or_ne A 0 with hA0 | hA0
+  · right
+    rw [hA0, natDegree_zero, zero_max, coeff_natDegree]
+    exact mt leadingCoeff_eq_zero.1 hB
+  · rcases le_total A.natDegree B.natDegree with h | h
+    · right
+      rw [max_eq_right h, coeff_natDegree]
+      exact mt leadingCoeff_eq_zero.1 hB
+    · left
+      rw [max_eq_left h, coeff_natDegree]
+      exact mt leadingCoeff_eq_zero.1 hA0
+
+variable [CharZero K]
+
+/-- The Wronskian `A' B − A B'` of a coprime pair is nonzero unless both are
+constants. If it vanished, coprimality would force `A ∣ A'` and `B ∣ B'`, which in
+characteristic zero forces both degrees to `0`. -/
+theorem wronskian_ne_zero_of_isCoprime {A B : K[X]} (hco : IsCoprime A B)
+    (hd : 0 < max A.natDegree B.natDegree) :
+    derivative A * B - A * derivative B ≠ 0 := by
+  intro hw
+  have hAB : derivative A * B = A * derivative B := by linear_combination hw
+  have hA0 : A ≠ 0 := by
+    intro h
+    rw [h] at hco
+    have hu : IsUnit B := isCoprime_zero_left.1 hco
+    rw [h, natDegree_zero, natDegree_eq_zero_of_isUnit hu] at hd
+    simp at hd
+  have hB0 : B ≠ 0 := by
+    intro h
+    rw [h] at hco
+    have hu : IsUnit A := isCoprime_zero_right.1 hco
+    rw [h, natDegree_zero, natDegree_eq_zero_of_isUnit hu] at hd
+    simp at hd
+  have hdA : A ∣ derivative A := hco.dvd_of_dvd_mul_right ⟨derivative B, hAB⟩
+  have hdB : B ∣ derivative B :=
+    hco.symm.dvd_of_dvd_mul_right ⟨derivative A, by linear_combination -hw⟩
+  have hA' : A.natDegree = 0 := by
+    by_contra hne
+    exact absurd (natDegree_le_of_dvd hdA (derivative_ne_zero.2 hne))
+      (not_le.2 (natDegree_derivative_lt hne))
+  have hB' : B.natDegree = 0 := by
+    by_contra hne
+    exact absurd (natDegree_le_of_dvd hdB (derivative_ne_zero.2 hne))
+      (not_le.2 (natDegree_derivative_lt hne))
+  rw [hA', hB'] at hd
+  simp at hd
+
+/-- **The generic fibre of a coprime rational function `A/B` has exactly
+`max (deg A) (deg B)` distinct points.** Two finite sets of parameters are removed:
+`Γ₁`, the at most one `γ` at which the leading coefficients of `A` and `B` cancel
+and `A − C γ · B` drops degree; and `Γ₂`, the critical values `A(s)/B(s)` at the
+roots `s` of the Wronskian, which are exactly the `γ` whose fibre has a repeated
+point. Off `Γ₁ ∪ Γ₂` the polynomial `A − C γ · B` has full degree and is separable,
+so over an algebraically closed field it has `max (deg A) (deg B)` distinct roots. -/
+theorem exists_finset_card_roots_sub_eq_max [DecidableEq K] [IsAlgClosed K] {A B : K[X]}
+    (hco : IsCoprime A B) (hB : B ≠ 0) :
+    ∃ Γ : Finset K, ∀ γ : K, γ ∉ Γ →
+      (A - C γ * B).roots.toFinset.card = max A.natDegree B.natDegree := by
+  classical
+  have htop := coeff_max_ne_zero_or (A := A) hB
+  set Γ₁ : Finset K :=
+    if B.coeff (max A.natDegree B.natDegree) = 0 then ∅
+      else {A.coeff (max A.natDegree B.natDegree) / B.coeff (max A.natDegree B.natDegree)}
+    with hΓ₁
+  have hdeg : ∀ γ : K, γ ∉ Γ₁ →
+      (A - C γ * B).natDegree = max A.natDegree B.natDegree ∧ (A - C γ * B) ≠ 0 := by
+    intro γ hγ
+    have hcoeff : (A - C γ * B).coeff (max A.natDegree B.natDegree)
+        = A.coeff (max A.natDegree B.natDegree) - γ * B.coeff (max A.natDegree B.natDegree) := by
+      simp [coeff_sub, coeff_C_mul]
+    have hne : (A - C γ * B).coeff (max A.natDegree B.natDegree) ≠ 0 := by
+      rw [hcoeff]
+      by_cases hbd : B.coeff (max A.natDegree B.natDegree) = 0
+      · rcases htop with h | h
+        · simpa [hbd] using h
+        · exact absurd hbd h
+      · intro hzero
+        refine hγ ?_
+        rw [hΓ₁, if_neg hbd, Finset.mem_singleton, eq_div_iff hbd]
+        linear_combination -hzero
+    have hle : (A - C γ * B).natDegree ≤ max A.natDegree B.natDegree := by
+      refine le_trans (natDegree_sub_le _ _) (max_le (le_max_left _ _) ?_)
+      exact le_trans (natDegree_C_mul_le _ _) (le_max_right _ _)
+    refine ⟨natDegree_eq_of_le_of_coeff_ne_zero hle hne, fun h0 => ?_⟩
+    rw [h0] at hne
+    simp at hne
+  rcases Nat.eq_zero_or_pos (max A.natDegree B.natDegree) with hd0 | hdpos
+  · refine ⟨Γ₁, fun γ hγ => ?_⟩
+    obtain ⟨hdg, _⟩ := hdeg γ hγ
+    rw [hd0] at hdg
+    rw [IsAlgClosed.roots_eq_zero_iff_natDegree_eq_zero.2 hdg]
+    simpa using hd0.symm
+  set ω : K[X] := derivative A * B - A * derivative B with hω
+  have hω0 : ω ≠ 0 := wronskian_ne_zero_of_isCoprime hco hdpos
+  set Γ₂ : Finset K := ω.roots.toFinset.image (fun s => A.eval s / B.eval s) with hΓ₂
+  refine ⟨Γ₁ ∪ Γ₂, fun γ hγ => ?_⟩
+  have hγ₁ : γ ∉ Γ₁ := fun h => hγ (Finset.mem_union_left _ h)
+  have hγ₂ : γ ∉ Γ₂ := fun h => hγ (Finset.mem_union_right _ h)
+  obtain ⟨hdg, hne0⟩ := hdeg γ hγ₁
+  have hsimple : ∀ a : K, (A - C γ * B).roots.count a ≤ 1 := by
+    intro a
+    rw [count_roots]
+    by_contra hcon
+    obtain ⟨hroot, hdroot⟩ := (one_lt_rootMultiplicity_iff_isRoot hne0).1 (not_le.1 hcon)
+    have hrootA : A.eval a = γ * B.eval a := by
+      have h := hroot
+      simp only [IsRoot.def, eval_sub, eval_mul, eval_C, sub_eq_zero] at h
+      exact h
+    have hBa : B.eval a ≠ 0 := by
+      intro hBa
+      exact no_common_root_of_isCoprime hco (by rw [hrootA, hBa, mul_zero]) hBa
+    have hγeq : γ = A.eval a / B.eval a := by
+      rw [eq_div_iff hBa]
+      linear_combination -hrootA
+    have hωa : (derivative (A - C γ * B)).eval a * B.eval a = ω.eval a := by
+      rw [hω]
+      simp only [derivative_sub, derivative_C_mul, eval_sub, eval_mul, eval_C]
+      rw [hrootA]
+      ring
+    rw [show (derivative (A - C γ * B)).eval a = 0 from hdroot, zero_mul] at hωa
+    refine hγ₂ ?_
+    rw [hΓ₂]
+    exact Finset.mem_image.2 ⟨a, by rw [Multiset.mem_toFinset, mem_roots hω0]; exact hωa.symm,
+      hγeq.symm⟩
+  rw [Multiset.toFinset_card_of_nodup (Multiset.nodup_iff_count_le_one.2 hsimple),
+    IsAlgClosed.card_roots_eq_natDegree, hdg]
+
+end XDegree
+
+/-- **The reduced `x`-coordinate normal form of an endomorphism.**
+`IsXNormalForm φ A B` says that `(A, B)` is a **coprime** pair of polynomials with
+`x (φ P) = A (x P) / B (x P)` at all but finitely many abscissae, written
+multiplicatively so that no division is needed — that is, the `A, B` half of
+`IsRationalMap` (`Isogeny.lean`) with `IsCoprime A B` added and the certificate
+weakened to a cofinite one.
+
+The `y`-witness of `IsRationalMap` is deliberately dropped: route 2 counts degrees
+of the `x`-coordinate map only.
+
+**Coprimality makes the pair unique up to a unit**, which is what makes
+`max A.natDegree B.natDegree` a well-defined invariant of `φ` and hence makes leaf
+(B) below a statement rather than a family of statements. The argument: two pairs
+`(A, B)`, `(A₀, B₀)` satisfying the certificate give `A B₀ = A₀ B` at every abscissa
+outside the union of the two exceptional sets; `exists_point_veluPointX_eq` realises
+EVERY element of `F` as an abscissa and `F` is infinite in characteristic zero, so
+`A B₀ − A₀ B` has infinitely many roots and vanishes, and coprimality then forces
+`(A, B) = c · (A₀, B₀)`. **The cofinite weakening therefore does not enlarge the
+class of admissible pairs**, which is why leaf (B) below is unaffected by it.
+
+**Why the certificate is COFINITE (2026-07-30, ninth pass — this is a change).**
+It was first stated at every point with `φ P ≠ 0`, on the reasoning that for a
+coprime pair a vanishing `B (x P)` would force `A (x P) = 0` against coprimality, so
+`B`'s roots are exactly the abscissae of `ker φ`. That reasoning is sound as
+*geometry* and circular as a *proof*: it presumes the certificate at the very point
+where the certificate is in question. What `IsRationalMap` actually hands over is a
+pair `(A₀, B₀)` with a certificate everywhere; dividing by `g := gcd (A₀, B₀)` — the
+only route to coprimality — survives exactly where `g` does not vanish, a cofinite
+set of abscissae, and recovering the finitely many lost points needs a limiting
+argument that the everywhere-form does not come with.
+
+Nothing downstream wants the strong form: leaf (A2) counts a GENERIC fibre and leaf
+(B) is a degree identity, so both are insensitive to finitely many abscissae, and
+each merely enlarges its own excluded parameter set by the image of the exceptional
+set under `ξ ↦ A(ξ)/B(ξ)`. Weakening the definition is what makes the existence half
+(`End.exists_isXNormalForm`) a five-line consequence of `IsRationalMap` instead of a
+leaf. -/
+def End.IsXNormalForm [IsAlgClosed F] [W.IsElliptic] (φ : End W) (A B : F[X]) : Prop :=
+  IsCoprime A B ∧ B ≠ 0 ∧
+    ∃ T : Finset F, ∀ P : W.Point, (φ : AddMonoid.End W.Point) P ≠ 0 →
+      veluPointX P ∉ T →
+        veluPointX ((φ : AddMonoid.End W.Point) P) * B.eval (veluPointX P)
+          = A.eval (veluPointX P)
+
+/-- **Existence of a reduced `x`-normal form — PROVEN (2026-07-30, ninth pass).**
+This was the first half of leaf (A). `IsRationalMap` (inside `IsIsogeny`, so carried
+by every element of `End W`) supplies a pair `(A₀, B₀)` with `B₀ ≠ 0` and a
+certificate at every point off `ker φ`; dividing by `g := gcd (A₀, B₀)` gives the
+coprime pair, and the certificate survives the division at every abscissa where `g`
+does not vanish — that is, off the finite set `g.roots`, which is exactly the
+exceptional set the cofinite `IsXNormalForm` allows.
+
+**No hypothesis on `φ` is needed**, not even `φ ≠ 0`: at `φ = 0` the certificate is
+vacuous and any coprime pair works. That is precisely why leaf (A) below must carry
+`hφ` itself — see its audit. -/
+theorem End.exists_isXNormalForm [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (φ : End W) :
+    ∃ A B : F[X], End.IsXNormalForm φ A B := by
+  classical
+  obtain ⟨A₀, B₀, Cy, D, E, hB₀, hE, hcert⟩ := φ.2.isRationalMap
+  set g : F[X] := GCDMonoid.gcd A₀ B₀ with hg
+  have hgne : g ≠ 0 := gcd_ne_zero_of_right hB₀
+  refine ⟨A₀ / g, B₀ / g, isCoprime_div_gcd_div_gcd hB₀,
+    right_div_gcd_ne_zero hB₀, g.roots.toFinset, ?_⟩
+  intro P hP hx
+  have hgx : g.eval (veluPointX P) ≠ 0 := by
+    intro h0
+    exact hx (by rw [Multiset.mem_toFinset, mem_roots hgne]; exact h0)
+  have hAeq : g * (A₀ / g) = A₀ :=
+    EuclideanDomain.mul_div_cancel' hgne (GCDMonoid.gcd_dvd_left _ _)
+  have hBeq : g * (B₀ / g) = B₀ :=
+    EuclideanDomain.mul_div_cancel' hgne (GCDMonoid.gcd_dvd_right _ _)
+  have hx0 : veluPointX ((φ : AddMonoid.End W.Point) P) * B₀.eval (veluPointX P)
+      = A₀.eval (veluPointX P) := (hcert P hP).1
+  rw [← hAeq, ← hBeq] at hx0
+  simp only [eval_mul] at hx0
+  refine mul_left_cancel₀ hgx ?_
+  linear_combination hx0
+
+/-- **The generic fibre of `x ∘ φ` has exactly `deg φ` points — PROVEN (2026-07-30,
+ninth pass).** This is the geometric half of leaf (A), and the step that leaves the
+circle's language: it equates a kernel cardinality with a count of polynomial roots.
+
+### THE BIJECTION
+
+The naive count is `2 : 1` in two places at once — `x` is `2 : 1` on `W.Point` and
+each root of `A − C γ · B` is hit by a pair `±P` — and the two cancel. Doing it in
+one step instead avoids both factors. Fix `Q₀` with `x Q₀ = γ` and `Q₀ ∉ W[2]`, and
+fix any `P₁` with `φ P₁ = Q₀` (`IsIsogeny.surjective`). Then
+
+    ker φ  →  {roots of A − C γ · B},   k ↦ x (P₁ + k)
+
+is a bijection, giving `#ker φ = #roots` with no factor of `2` on either side.
+
+* *Well defined*: `φ (P₁ + k) = Q₀ ≠ 0`, so the certificate applies and
+  `γ · B (x (P₁ + k)) = A (x (P₁ + k))`.
+* *Injective*: `eq_or_eq_neg_of_veluPointX_eq` leaves only `P₁ + k = −(P₁ + k')`,
+  which pushes forward to `Q₀ = −Q₀` — excluded because `Q₀` is not `2`-torsion.
+  **This is the only place the `2`-torsion hypothesis is used, and it is what
+  replaces the two cancelling factors of `2`.**
+* *Surjective*: a root `ξ` has `B (ξ) ≠ 0` by coprimality, and lifts to a point `P`
+  by `exists_point_veluPointX_eq`; the certificate then gives `x (φ P) = γ`, so
+  `φ P = ±Q₀`, and one of `P`, `−P` lies in the fibre over `Q₀` (`velu_pointX_neg`).
+
+### THE EXCLUDED PARAMETERS
+
+Five finite sets, each removing a way the bijection can fail; write
+`val ξ := A(ξ)/B(ξ)`.
+
+* `Γ₀` — the at most one `γ` with `A = C γ · B`, where `A − C γ · B` is the zero
+  polynomial and `roots` is not a fibre at all.
+* `val ''` (abscissae of `ker φ`) — so that no root of `A − C γ · B` is the abscissa
+  of a kernel point, where surjectivity would have no `P` with `φ P ≠ 0`.
+* `val '' T` — the same for the exceptional set `T` of the cofinite certificate.
+* abscissae of `W[2]` — so that `Q₀ ≠ −Q₀`, as above.
+* `x ∘ φ ''` `{P ≠ 0 | x P ∈ T}` — so that no point of the fibre over `Q₀` has its
+  abscissa in `T`, where the certificate is unavailable. Finite because `x` is
+  finite-to-one (`finite_veluPointX_preimage`).
+
+The second, third and fourth are legitimate because at a root `ξ` coprimality forces
+`B (ξ) ≠ 0`, so `γ = val ξ` is *determined* by `ξ`: a bad `ξ` can spoil only one
+`γ`. -/
+theorem End.isXNormalForm_card_roots_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : End W} (hφ : φ ≠ 0) {A B : F[X]} (h : End.IsXNormalForm φ A B) :
+    ∃ Γ : Finset F, ∀ γ : F, γ ∉ Γ →
+      (A - C γ * B).roots.toFinset.card = Isogeny.degree (End.toIsogeny φ) := by
+  classical
+  obtain ⟨hco, hB, T, hcert⟩ := h
+  have hψ0 : (End.toIsogeny φ).toHom ≠ 0 := fun h0 => hφ (Subtype.ext h0)
+  have hcertf : ∀ P : W.Point, (End.toIsogeny φ).toHom P ≠ 0 → veluPointX P ∉ T →
+      veluPointX ((End.toIsogeny φ).toHom P) * B.eval (veluPointX P)
+        = A.eval (veluPointX P) := hcert
+  have hkerfin : (AddMonoidHom.ker (End.toIsogeny φ).toHom : Set W.Point).Finite :=
+    (End.toIsogeny φ).isIsogeny.finite_ker hψ0
+  have hsurj : Function.Surjective (End.toIsogeny φ).toHom :=
+    (End.toIsogeny φ).isIsogeny.surjective hψ0
+  have h2fin : {P : W.Point | (2 : ℕ) • P = 0}.Finite :=
+    finite_nsmulKer (W := W) (n := 2) (by norm_num)
+  have hTPfin : {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ (T : Set F)}.Finite :=
+    finite_veluPointX_preimage T.finite_toSet
+  -- `Γ₀`: the at most one parameter where `A - C γ * B` vanishes identically
+  obtain ⟨Γ₀, hΓ₀⟩ : ∃ Γ₀ : Finset F, ∀ γ : F, γ ∉ Γ₀ → A - C γ * B ≠ 0 := by
+    by_cases hex : ∃ c : F, A = C c * B
+    · refine ⟨{hex.choose}, fun γ hγ h0 => hγ (Finset.mem_singleton.2 ?_)⟩
+      have h1 : A = C γ * B := by linear_combination h0
+      exact Polynomial.C_inj.1 (mul_right_cancel₀ hB (h1.symm.trans hex.choose_spec))
+    · exact ⟨∅, fun γ _ h0 => hex ⟨γ, by linear_combination h0⟩⟩
+  set val : F → F := fun ξ => A.eval ξ / B.eval ξ with hvaldef
+  refine ⟨Γ₀ ∪ (hkerfin.toFinset.image veluPointX).image val ∪ T.image val
+      ∪ h2fin.toFinset.image veluPointX
+      ∪ hTPfin.toFinset.image (fun P => veluPointX ((End.toIsogeny φ).toHom P)),
+    fun γ hγ => ?_⟩
+  simp only [Finset.mem_union, not_or] at hγ
+  obtain ⟨⟨⟨⟨hγ0, hγK⟩, hγT⟩, hγ2⟩, hγP⟩ := hγ
+  have hAneB : A - C γ * B ≠ 0 := hΓ₀ γ hγ0
+  -- at a root, `B` survives and the value of `A/B` is `γ`
+  have hrootval : ∀ ξ : F, (A - C γ * B).eval ξ = 0 →
+      B.eval ξ ≠ 0 ∧ A.eval ξ = γ * B.eval ξ ∧ val ξ = γ := by
+    intro ξ hξ
+    have hAB : A.eval ξ = γ * B.eval ξ := by
+      simp only [eval_sub, eval_mul, eval_C, sub_eq_zero] at hξ
+      exact hξ
+    have hBξ : B.eval ξ ≠ 0 := fun h0 =>
+      no_common_root_of_isCoprime hco (by rw [hAB, h0, mul_zero]) h0
+    refine ⟨hBξ, hAB, ?_⟩
+    simp only [hvaldef]
+    rw [div_eq_iff hBξ]
+    exact hAB
+  have hmemR : ∀ ξ : F, ξ ∈ (A - C γ * B).roots.toFinset ↔ (A - C γ * B).eval ξ = 0 := by
+    intro ξ
+    rw [Multiset.mem_toFinset, mem_roots hAneB]
+    exact Iff.rfl
+  -- a point over `γ`, necessarily not `2`-torsion
+  obtain ⟨Q₀, hQ₀0, hQ₀x⟩ := exists_point_veluPointX_eq (W := W) γ
+  have hQ₀neg : Q₀ ≠ -Q₀ := by
+    intro heq
+    refine hγ2 (Finset.mem_image.2 ⟨Q₀, (Set.Finite.mem_toFinset h2fin).2 ?_, hQ₀x⟩)
+    show (2 : ℕ) • Q₀ = 0
+    rw [two_nsmul]
+    nth_rewrite 2 [heq]
+    exact add_neg_cancel Q₀
+  obtain ⟨P₁, hP₁⟩ := hsurj Q₀
+  have hval_of_ker : ∀ k : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (End.toIsogeny φ).toHom (P₁ + k) = Q₀ := by
+    intro k hk
+    rw [map_add, hk, add_zero, hP₁]
+  -- the fibre over `Q₀` lands in the root set
+  have hmaps : ∀ k : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (A - C γ * B).eval (veluPointX (P₁ + k)) = 0 := by
+    intro k hk
+    have hQ := hval_of_ker k hk
+    have hne : (End.toIsogeny φ).toHom (P₁ + k) ≠ 0 := by rw [hQ]; exact hQ₀0
+    have hnotT : veluPointX (P₁ + k) ∉ T := by
+      intro hmem
+      refine hγP (Finset.mem_image.2 ⟨P₁ + k, (Set.Finite.mem_toFinset hTPfin).2 ⟨?_, ?_⟩, ?_⟩)
+      · intro h0
+        rw [h0, map_zero] at hne
+        exact hne rfl
+      · exact Finset.mem_coe.2 hmem
+      · rw [hQ, hQ₀x]
+    have hc := hcertf (P₁ + k) hne hnotT
+    rw [hQ, hQ₀x] at hc
+    simp only [eval_sub, eval_mul, eval_C, sub_eq_zero]
+    exact hc.symm
+  -- and does so injectively
+  have hinj : ∀ k k' : W.Point, (End.toIsogeny φ).toHom k = 0 →
+      (End.toIsogeny φ).toHom k' = 0 →
+      veluPointX (P₁ + k) = veluPointX (P₁ + k') → k = k' := by
+    intro k k' hk hk' hx
+    have hQ := hval_of_ker k hk
+    have hQ' := hval_of_ker k' hk'
+    have hne : P₁ + k ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hQ
+      exact hQ₀0 hQ.symm
+    have hne' : P₁ + k' ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hQ'
+      exact hQ₀0 hQ'.symm
+    rcases eq_or_eq_neg_of_veluPointX_eq hne hne' hx with hcase | hcase
+    · exact add_left_cancel hcase
+    · exfalso
+      have h1 : (End.toIsogeny φ).toHom (P₁ + k) = -(End.toIsogeny φ).toHom (P₁ + k') := by
+        rw [hcase, map_neg]
+      rw [hQ, hQ'] at h1
+      exact hQ₀neg h1
+  -- and onto
+  have hsurjR : ∀ ξ : F, (A - C γ * B).eval ξ = 0 →
+      ∃ k : W.Point, (End.toIsogeny φ).toHom k = 0 ∧ veluPointX (P₁ + k) = ξ := by
+    intro ξ hξ
+    obtain ⟨hBξ, hAB, hvalξ⟩ := hrootval ξ hξ
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) ξ
+    have hnotT : ξ ∉ T := fun hmem => hγT (Finset.mem_image.2 ⟨ξ, hmem, hvalξ⟩)
+    have hfP : (End.toIsogeny φ).toHom P ≠ 0 := by
+      intro h0
+      refine hγK (Finset.mem_image.2 ⟨ξ, Finset.mem_image.2
+        ⟨P, (Set.Finite.mem_toFinset hkerfin).2 (AddMonoidHom.mem_ker.2 h0), hPx⟩, hvalξ⟩)
+    have hc := hcertf P hfP (by rw [hPx]; exact hnotT)
+    rw [hPx] at hc
+    have hxfP : veluPointX ((End.toIsogeny φ).toHom P) = γ :=
+      mul_right_cancel₀ hBξ (hc.trans hAB)
+    rw [← hQ₀x] at hxfP
+    rcases eq_or_eq_neg_of_veluPointX_eq hfP hQ₀0 hxfP with hcase | hcase
+    · refine ⟨P - P₁, ?_, ?_⟩
+      · rw [map_sub, hcase, hP₁, sub_self]
+      · rw [show P₁ + (P - P₁) = P by abel, hPx]
+    · refine ⟨-P - P₁, ?_, ?_⟩
+      · rw [map_sub, map_neg, hcase, hP₁, neg_neg, sub_self]
+      · rw [show P₁ + (-P - P₁) = -P by abel, velu_pointX_neg, hPx]
+  -- the resulting bijection
+  have hbij : Function.Bijective
+      (fun k : AddMonoidHom.ker (End.toIsogeny φ).toHom =>
+        (⟨veluPointX (P₁ + (k : W.Point)),
+          (hmemR _).2 (hmaps _ (AddMonoidHom.mem_ker.1 k.2))⟩ :
+          {x // x ∈ (A - C γ * B).roots.toFinset})) := by
+    constructor
+    · intro k k' hkk
+      exact Subtype.ext (hinj _ _ (AddMonoidHom.mem_ker.1 k.2) (AddMonoidHom.mem_ker.1 k'.2)
+        (congrArg Subtype.val hkk))
+    · rintro ⟨ξ, hξ⟩
+      obtain ⟨k, hk, hkx⟩ := hsurjR ξ ((hmemR ξ).1 hξ)
+      exact ⟨⟨k, AddMonoidHom.mem_ker.2 hk⟩, Subtype.ext hkx⟩
+  have hcard := Nat.card_eq_of_bijective _ hbij
+  rw [Isogeny.degree_of_ne_zero hψ0, hcard, Nat.card_eq_fintype_card, Fintype.card_coe]
+
+/-- **LEAF (A) — the degree is the degree of the `x`-coordinate map. PROVEN
+(2026-07-30, ninth pass).** Silverman *AEC* II.2.4.1 together with III.4.10, or
+Washington *Elliptic Curves* §2.9: for a nonzero `φ ∈ End W`, writing `x ∘ φ = A / B`
+in lowest terms,
+
+    deg φ = max (deg A) (deg B).
+
+**It is no longer a leaf.** The two halves are `End.exists_isXNormalForm` (the
+`IsRationalMap` certificate divided by its gcd) and `End.isXNormalForm_card_roots_sub`
+(the fibre count), both proven above; the assembly is that the two excluded parameter
+sets are finite while `F` is infinite in characteristic zero, so some `γ` avoids both
+and the two counts of the same fibre — `max (deg A) (deg B)` from
+`exists_finset_card_roots_sub_eq_max`, and `deg φ` from the bijection with `ker φ` —
+must agree.
+
+### FAITHFULNESS AUDIT (2026-07-30, ninth pass)
+
+**This is the SECOND audit of this statement**, re-run after the definition of
+`IsXNormalForm` was weakened to a cofinite certificate; per CLAUDE.md the eighth
+pass's audit is VOID, not inherited. The statement's own text is unchanged, but its
+`IsXNormalForm` means something weaker, so every clause below is re-checked against
+the composite.
+
+*Not vacuous — and now for a stronger reason.* `IsXNormalForm` is inhabited for
+every `φ` whatsoever, by `End.exists_isXNormalForm`, which needs no hypothesis at
+all. Under the old everywhere-certificate that inhabitation was itself unproven. For
+`φ = 1` the pair is `(X, 1)` and `max = 1 = deg 1`; for `φ = [n]` it is `(Φₙ, ΨSqₙ)`
+with degrees `n²` and `n² − 1`, and `max = n² = deg [n]` (`End.degree_intCast`).
+
+*The nonzero hypothesis is load-bearing, and MORE so than before.* At `φ = 0` the
+certificate is vacuous, so **every** coprime pair satisfies `IsXNormalForm 0 A B`
+while `deg 0 = 0`; `(X, 1)` refutes the conclusion. Note this is not an artefact of
+the weakening — it was already true of the everywhere-form — but the weakening makes
+`End.exists_isXNormalForm` drop `hφ`, so the hypothesis now lives *only* here, and
+deleting it would be a live refutation rather than a redundancy.
+
+*Weakening the hypothesis did not weaken the theorem to vacuity.* Because
+`IsXNormalForm` is an existential over `(A, B)` in the CONCLUSION, weakening it makes
+this statement *weaker*, not stronger — the honest check is therefore whether the
+conclusion still pins `max (deg A) (deg B)`, and it does: coprimality still forces
+the pair unique up to a unit (see `End.IsXNormalForm`'s docstring, where the argument
+is redone for the cofinite form), so `max A.natDegree B.natDegree` is still an
+invariant of `φ` and not a choice.
+
+*`max` and not `+`, and `natDegree` and not `degree`.* `natDegree` of a nonzero
+constant is `0`, so `(X, 1)` has `max = 1`: correct. Using `A.natDegree +
+B.natDegree` would give `1` here too but `2 n² − 1` at `[n]`, which is wrong.
+
+*Characteristic zero is required as stated.* Over `𝔽̄_p` the Frobenius has `deg = 1`
+in this file's sense (`Isogeny.degree` counts kernel *points*,
+`Isogeny.NotIsRationalMapDualHom.frobIsog_degree`) while `x ∘ frob = X^p / 1` has
+`max = p`. So the statement is FALSE without `[CharZero F]`, by the same defect that
+`Isogeny.isRationalMap_dualHom`'s audit records — and for the same reason:
+`Isogeny.degree` is the separable degree. In the proof, characteristic zero is used
+in exactly two places, and they are the two halves of that defect:
+`wronskian_ne_zero_of_isCoprime` (separability of the generic fibre) and
+`CharZero.infinite` (there is a `γ` to choose).
+
+*It is not a lap of the circle.* Every statement in the circle equates two
+`Isogeny.degree`s; this one equates a `Isogeny.degree` with a polynomial degree, and
+the equation is now machine-checked rather than assumed. The ROUTE AUDIT on
+`End.exists_trace_charPoly_degree_sub` shows the circle cannot be broken by
+kernel-cardinality arguments; `End.isXNormalForm_card_roots_sub` is the step that
+leaves that language, and it does so through `exists_point_veluPointX_eq`, which is
+where the curve stops being an abstract abelian group. -/
+theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : End W} (hφ : φ ≠ 0) :
+    ∃ A B : F[X], End.IsXNormalForm φ A B ∧
+      Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree := by
+  classical
+  obtain ⟨A, B, h⟩ := End.exists_isXNormalForm (W := W) φ
+  refine ⟨A, B, h, ?_⟩
+  obtain ⟨Γ₁, h₁⟩ := exists_finset_card_roots_sub_eq_max (K := F) h.1 h.2.1
+  obtain ⟨Γ₂, h₂⟩ := End.isXNormalForm_card_roots_sub hφ h
+  haveI : Infinite F := CharZero.infinite F
+  obtain ⟨γ, hγ⟩ := Infinite.exists_notMem_finset (Γ₁ ∪ Γ₂)
+  exact (h₂ γ (fun hm => hγ (Finset.mem_union_right _ hm))).symm.trans
+    (h₁ γ (fun hm => hγ (Finset.mem_union_left _ hm)))
+
+/-- **LEAF (B) (2026-07-30, eighth pass) — the `x`-degree is a quadratic form**, by
+the `x`-only addition law and a coprimality count. Washington *Elliptic Curves*,
+§9.? (the proof of the parallelogram law that uses no divisors); Silverman *AEC*
+III.6.3 is the same identity by the Weil-pairing route.
+
+    max(deg A₁, deg B₁) + max(deg A₂, deg B₂)
+        = 2 max(deg A, deg B) + 2 max(deg C, deg D)
+
+for reduced `x`-normal forms `(A, B)` of `φ`, `(C, D)` of `ψ`, `(A₁, B₁)` of
+`φ + ψ` and `(A₂, B₂)` of `φ − ψ`.
+
+### ROUTE
+
+Everything is polynomial algebra in `F[X]` once the addition law is written down.
+With `u := x ((φ + ψ) P)` and `v := x ((φ − ψ) P)`, the `x`-only addition law gives
+
+    u + v  and  u · v   as rational functions of  x (φ P)  and  x (ψ P)
+
+of bidegree `(2, 2)`. Substituting `x (φ P) = A/B` and `x (ψ P) = C/D` and writing
+`S := A D + C B`, `P := A C`, `Q := B D`, the common denominator is
+`S² − 4 P Q = (A D − C B)²`, so
+
+    u + v = N₁ / (A D − C B)²,    u · v = N₂ / (A D − C B)²
+
+with `N₁, N₂` of degree at most `2 (max(deg A, deg B) + max(deg C, deg D))`. On the
+other side `u + v = (A₁ B₂ + A₂ B₁)/(B₁ B₂)` and `u v = A₁ A₂/(B₁ B₂)`. The content
+is the **coprimality count**: `gcd (A₁ B₂ + A₂ B₁, A₁ A₂, B₁ B₂) = 1`, which makes
+the two presentations agree up to a unit and turns the degree bookkeeping into the
+stated identity.
+
+### FAITHFULNESS AUDIT (2026-07-30, RE-RUN in the ninth pass)
+
+**The eighth pass's audit of this statement is VOID and this replaces it**, per
+CLAUDE.md's rule that a restatement voids the earlier audit rather than inheriting
+it. Nothing in the statement's own text changed; `End.IsXNormalForm` did, from an
+everywhere certificate to a cofinite one, and this theorem takes four of them as
+hypotheses. Weakening a HYPOTHESIS strengthens the theorem, so this is the direction
+in which a definition change can turn a true leaf false, and it is re-checked here
+clause by clause.
+
+*The weakening does not enlarge the hypothesis class, which is why the statement
+survives it.* A cofinite certificate plus coprimality still determines `(A, B)` up
+to a unit — the argument is redone for the cofinite form in `End.IsXNormalForm`'s
+docstring, and turns on `exists_point_veluPointX_eq` realising every element of `F`
+as an abscissa, so the finitely many excluded abscissae cannot hide a second class
+of pairs. Hence `max A.natDegree B.natDegree` is the same number for the same `φ`
+under either definition, and no new quadruple `(A,B,C,D,A₁,B₁,A₂,B₂)` satisfies the
+hypotheses. **Had this failed, the leaf would have become false**: an adversarial
+extra pair could be given any degrees at all.
+
+*All four nonvanishing hypotheses are load-bearing.* At `φ = 0` every coprime pair
+is an `x`-normal form (the certificate is vacuous), so the identity is refuted by
+taking `(A, B) := (X, 1)`; the same at `ψ = 0`, `φ + ψ = 0` and `φ − ψ = 0`. The
+degenerate cases are **not** lost: they are discharged outright in
+`End.degree_add_add_degree_sub` below from `End.degree_neg` and
+`End.degree_add_self`, which are multiplicativity of the degree against
+`deg [±1] = 1` and `deg [2] = 4`.
+
+*Well-posed.* `max A.natDegree B.natDegree` depends only on `φ`, because a reduced
+pair is unique up to a unit; see the docstring on `End.IsXNormalForm` for the
+argument. So the universally quantified pairs cannot be chosen adversarially.
+
+*Not vacuous, and no longer conditionally so.* `End.exists_isXNormalForm` inhabits
+every hypothesis unconditionally, and `End.exists_isXNormalForm_degree` — leaf (A),
+now PROVEN — supplies them together with their degrees, which is exactly how
+`End.degree_add_add_degree_sub` below consumes the two. Under the eighth pass's
+definition that inhabitation was itself an open leaf, so this clause rested on an
+assumption and now does not.
+
+*Numerical re-check, since the sanity check is cheap and the definition moved.* Both
+models below use pairs that satisfy the cofinite certificate for the same reason
+they satisfied the old one (their exceptional set is empty), so they still test the
+identity: `W : y² = x³ − x` with CM by `ℤ[i]`, `φ := 1`, `ψ := i`, normal forms
+`(X, 1)` and `(−X, 1)` both of `max = 1`, and `1 ± i` of norm `2` with `x`-maps of
+`max = 2`, reads `2 + 2 = 2 · 1 + 2 · 1`; and inside `ℤ ⊆ End W`, `φ := 1`,
+`ψ := [2]` gives `9 + 1 = 2 · 1 + 2 · 4`. Both hold.
+
+*The statement is about `F[X]` only.* No `Isogeny.degree` occurs in it. That is the
+point of the cut: this half of route 2 can be attacked with no elliptic-curve
+geometry at all, once the addition law is available. -/
+theorem End.isXNormalForm_natDegree_parallelogram [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] {φ ψ : End W} (hφ : φ ≠ 0) (hψ : ψ ≠ 0)
+    (hadd : φ + ψ ≠ 0) (hsub : φ - ψ ≠ 0)
+    {A B C D A₁ B₁ A₂ B₂ : F[X]}
+    (hf : End.IsXNormalForm φ A B) (hg : End.IsXNormalForm ψ C D)
+    (h₁ : End.IsXNormalForm (φ + ψ) A₁ B₁) (h₂ : End.IsXNormalForm (φ - ψ) A₂ B₂) :
+    max A₁.natDegree B₁.natDegree + max A₂.natDegree B₂.natDegree
+      = 2 * max A.natDegree B.natDegree + 2 * max C.natDegree D.natDegree :=
   sorry
 
-/-- **`deg ψ = det (ρ_ℓ ψ)` in `ZMod ℓ`, for every prime `ℓ` — PROVEN (2026-07-28)**
-over the Weil-pairing leaf above. Silverman *AEC* III.8.6.
+/-- **The parallelogram law for the degree — PROVEN (2026-07-30, eighth pass)** over
+the two route-2 statements above: `End.exists_isXNormalForm_degree`, itself PROVEN in
+the ninth pass, and `End.isXNormalForm_natDegree_parallelogram`, which remains the
+file's one leaf. Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`.
 
-Three lines of mathematics: adjointness turns `e (ρ_ℓ ψ x) (ρ_ℓ ψ y)` into
-`e x (ρ_ℓ (ψ̂ ψ) y)`; `End.dualEnd_comp` (PROVEN above) says `ψ̂ ψ = [deg ψ]`, so the
-pairing is scaled by `deg ψ`; and an endomorphism scaling a nonzero alternating form
-on a rank-`2` space by `c` has determinant `c` (`det_eq_of_altPairing_conj`, against
-`p_torsion_rank`).
+    deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ.
 
-Note there is **no case split on `ℓ ∣ deg ψ`** — the pairing argument is uniform in
-`ℓ`. That is the one visible difference from
-`End.natCast_degree_eq_det_torsionRep` below, which states the same thing and is
-obtained by the **converse** route (from the characteristic polynomial, via the
-`ℓ`-adic argument, with the divisible case discharged separately by Cauchy in
-`ker ψ`). Both directions are kept deliberately: together they are the machine-checked
-form of the equivalence that the audits in this file describe, and each has its own
-consumer — this one closes `End.exists_trace_charPoly`, that one supplies the
-parallelogram law. -/
-theorem End.natCast_degree_eq_det_torsionRep_of_weilPairing [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W) :
-    ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ZMod ℓ)
-      = LinearMap.det (End.torsionRep W ℓ ψ) := by
-  classical
-  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
-  obtain ⟨e, halt, hnd, hadj⟩ := exists_weilPairing_torsionRep_adjoint (W := W) ℓ
-  have hrank : Module.rank (ZMod ℓ) (W.nTorsion ℓ) = 2 :=
-    WeierstrassCurve.p_torsion_rank (E := W)
-      (Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero)
-  refine (det_eq_of_altPairing_conj hrank e halt hnd ?_).symm
-  intro x y
-  have h1 : e (End.torsionRep W ℓ ψ x) (End.torsionRep W ℓ ψ y)
-      = e x (End.torsionRep W ℓ (End.dualEnd ψ) (End.torsionRep W ℓ ψ y)) :=
-    hadj ψ x (End.torsionRep W ℓ ψ y)
-  have h2 : End.torsionRep W ℓ (End.dualEnd ψ) (End.torsionRep W ℓ ψ y)
-      = End.torsionRep W ℓ (End.dualEnd ψ * ψ) y := by
-    rw [map_mul]; rfl
-  rw [h1, h2, End.dualEnd_comp, map_natCast]
-  simp [Module.End.natCast_apply, map_nsmul, nsmul_eq_mul]
+Stated in `ℕ` because `Isogeny.degree` is `Nat.card (ker ·)`; every term is a
+cardinality.
 
-/-- **The characteristic polynomial of a single endomorphism — PROVEN (2026-07-28,
-seventh pass).** Silverman *AEC* III.6.2. Writing `n := deg ψ`, there is an integer
+**The proof.** Four applications of leaf (A) turn each degree into the `max` of the
+`natDegree`s of a reduced `x`-normal form, and leaf (B) is the resulting identity.
+The four degenerate cases — `φ = 0`, `ψ = 0`, `ψ = −φ`, `ψ = φ`, exactly the cases
+leaf (B) must exclude — are discharged first and outright, from `End.degree_neg`
+and `End.degree_add_self` (multiplicativity against `deg [±1] = 1`, `deg [2] = 4`).
+
+**This supersedes the third pass's proof** (2026-07-27), which derived the law from
+`End.natCast_degree_eq_det_torsionRep` by testing the identity modulo arbitrarily
+large primes. That derivation was correct and is now *inverted*: the whole `ρ_ℓ`
+layer — `End.exists_trace_charPoly`, `End.exists_trace_charPoly_degree_sub`,
+`End.natCast_degree_eq_det_torsionRep_of_not_dvd`,
+`End.natCast_degree_eq_det_torsionRep` — is proven **over this law**, so keeping the
+old direction as well would be a cycle. What is lost by the inversion is nothing:
+the old proof consumed exactly the statement that this file's leaf sequence had been
+circling, and this one consumes a statement outside that circle.
+
+Everything else in the trace layer — `End.self_add_dualEnd`, `End.dualEnd_add`,
+`End.exists_dual`, `End.exists_charPoly`,
+`End.sq_eq_neg_natCast_of_atkinLehner`, and now
+`exists_weilPairing_torsionRep_adjoint` too — is proven over this. -/
+theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (φ ψ : End W) :
+    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+  rcases eq_or_ne φ 0 with rfl | hφ
+  · rw [zero_add, zero_sub, End.degree_neg, End.degree_toIsogeny_zero]
+    ring
+  rcases eq_or_ne ψ 0 with rfl | hψ
+  · rw [add_zero, sub_zero, End.degree_toIsogeny_zero]
+    ring
+  rcases eq_or_ne (φ + ψ) 0 with hadd | hadd
+  · have hψφ : ψ = -φ := eq_neg_of_add_eq_zero_right hadd
+    subst hψφ
+    rw [hadd, End.degree_toIsogeny_zero, sub_neg_eq_add, End.degree_add_self,
+      End.degree_neg]
+    ring
+  rcases eq_or_ne (φ - ψ) 0 with hsub | hsub
+  · have hψφ : ψ = φ := (sub_eq_zero.mp hsub).symm
+    subst hψφ
+    rw [hsub, End.degree_toIsogeny_zero, End.degree_add_self]
+    ring
+  obtain ⟨A, B, hf, hdf⟩ := End.exists_isXNormalForm_degree hφ
+  obtain ⟨C, D, hg, hdg⟩ := End.exists_isXNormalForm_degree hψ
+  obtain ⟨A₁, B₁, h₁, hd₁⟩ := End.exists_isXNormalForm_degree hadd
+  obtain ⟨A₂, B₂, h₂, hd₂⟩ := End.exists_isXNormalForm_degree hsub
+  rw [hdf, hdg, hd₁, hd₂]
+  exact End.isXNormalForm_natDegree_parallelogram hφ hψ hadd hsub hf hg h₁ h₂
+
+/-- **The characteristic polynomial of a single endomorphism — PROVEN (2026-07-30,
+eighth pass).** Silverman *AEC* III.6.2. Writing `n := deg ψ`, there is an integer
 `t` with
 
     ψ² + [n] = [t] ψ.
 
-**No longer a leaf.** It was the leaf through the sixth pass; the seventh moved the
-`sorry` off the circle of degree identities entirely, onto
-`exists_weilPairing_torsionRep_adjoint` above, which is now the file's only one.
+**No longer a leaf.** It was the leaf through the sixth pass. The seventh moved the
+`sorry` onto `exists_weilPairing_torsionRep_adjoint` and proved this from it; the
+eighth **inverted that edge** — the pairing is proven at the foot of this file, over
+the very statements it used to supply — and proves this instead from the
+parallelogram law `End.degree_add_add_degree_sub` above, which now rests on the two
+route-2 leaves. See the ROUTE 2 section above.
 
-### The proof, in three moves
+### The proof, in one move
 
-`t` is taken to be `deg (ψ + 1) − deg ψ − 1`, Silverman's trace, and
-`χ := ψ² + [n] − [t] ψ` is shown to be `0`.
+`charPoly_of_multiplicative_parallelogram` (PROVEN above, pure ring theory) applied
+to `q χ := (deg χ : ℤ)`. Its five hypotheses are discharged by, in order:
+`End.degree_toIsogeny_zero`; `Isogeny.degree_id` (side condition `∃ P ≠ 0` from
+`infinite_point`); `End.degree_add_add_degree_sub`; `Isogeny.degree_comp`
+(as `End.degree_mul`); and `Isogeny.degree_eq_zero_iff`. The `t` it produces is
+`deg (ψ + 1) − deg ψ − 1`, Silverman's trace — the same `t` as before. This is
+verbatim how `End.self_add_dualEnd` below consumes the same lemma, and the two
+proofs are deliberately parallel.
 
-1. **`χ` kills every torsion point.** Fix a prime `ℓ` and write `A := ρ_ℓ ψ` for the
-   image in `Module.End (ZMod ℓ) (W[ℓ])`, a rank-`2` module (`nTorsionBasis`).
-   `det_charPoly_rank_two` gives `A² + [det A] = [det (A+1) − det A − 1] A`
-   identically — Cayley–Hamilton for `2 × 2`, with the trace written as a difference
-   of determinants. Now `End.natCast_degree_eq_det_torsionRep_of_weilPairing` above
-   converts **both** determinants into degrees: `det A = deg ψ` and, since `ρ_ℓ` is a
-   ring homomorphism so `A + 1 = ρ_ℓ (ψ + 1)`, `det (A+1) = deg (ψ + 1)`. The bracket
-   becomes exactly `t`, and the identity becomes `ρ_ℓ χ = 0`.
-2. **A nonzero isogeny has a finite kernel, and the torsion is unboundedly large.**
-   `ρ_ℓ χ = 0` says `W[ℓ] ⊆ ker χ`. If `χ ≠ 0` then `ker χ` is finite of cardinality
-   `deg χ` (`Isogeny.degree` *is* `Nat.card (ker ·)`), while `#W[ℓ] = ℓ²`
-   (`n_torsion_card`). Choosing a prime `ℓ > deg χ` (`Nat.exists_infinite_primes`)
-   gives `ℓ² ≤ deg χ < ℓ`, a contradiction.
-3. So `χ = 0`, which is the statement.
+### The seventh pass's proof, retired
 
-Note what this does **not** use: no parallelogram law, and hence no polarisation.
-The dependency runs the other way now — the parallelogram law is proven below, over
-this. (The route through `charPoly_of_multiplicative_parallelogram` is still valid
-and is the alternative closure described on the leaf above; it is simply not the
-route taken, because the parallelogram law is not available at this point in the
-file and this argument does not need it.)
+It ran through `ρ_ℓ`: `det_charPoly_rank_two` gives Cayley–Hamilton for `2 × 2`
+identically, `End.natCast_degree_eq_det_torsionRep_of_weilPairing` converts both
+determinants into degrees so that `ρ_ℓ χ = 0` for `χ := ψ² + [n] − [t] ψ` at every
+prime, and then a prime `ℓ` with `ℓ² > deg χ` contradicts `W[ℓ] ⊆ ker χ`
+(`n_torsion_card` against `IsIsogeny.finite_ker`). That argument is correct and is
+**not** deleted — it survives one level down as the proof of
+`End.natCast_degree_eq_det_torsionRep_of_not_dvd` below, which is the same
+transport with the same prime-size trick. What is retired is only its *use here*,
+because its input is now downstream of its output.
 
 ### Why this is a strict reduction of the fifth pass's leaf, not a reshuffle
 
@@ -1094,64 +1937,34 @@ theorem End.exists_trace_charPoly [IsAlgClosed F] [CharZero F] [W.IsElliptic]
     ∃ t : ℤ,
       ψ * ψ + ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) = ((t : ℤ) : End W) * ψ := by
   classical
-  set t : ℤ := (Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
-    - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 with ht
-  refine ⟨t, ?_⟩
-  set χ : End W :=
-    ψ * ψ + ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) - ((t : ℤ) : End W) * ψ with hχ
-  -- move 1: `χ` dies on the `ℓ`-torsion, for every prime `ℓ`
-  have hrep : ∀ ℓ : ℕ, ℓ.Prime → End.torsionRep W ℓ χ = 0 := by
-    intro ℓ hℓ
-    haveI : Fact ℓ.Prime := ⟨hℓ⟩
-    haveI : NeZero ℓ := ⟨hℓ.ne_zero⟩
-    have hA : End.torsionRep W ℓ (ψ + 1) = End.torsionRep W ℓ ψ + 1 := by
-      rw [map_add, map_one]
-    have hCH := det_charPoly_rank_two (nTorsionBasis W ℓ) (End.torsionRep W ℓ ψ)
-    rw [← End.natCast_degree_eq_det_torsionRep_of_weilPairing ℓ ψ, ← hA,
-      ← End.natCast_degree_eq_det_torsionRep_of_weilPairing ℓ (ψ + 1)] at hCH
-    have hnat : ∀ n : ℕ, ((n : ℕ) : Module.End (ZMod ℓ) (W.nTorsion ℓ))
-        = ((n : ℕ) : ZMod ℓ) • (1 : Module.End (ZMod ℓ) (W.nTorsion ℓ)) := by
-      intro n; rw [← Algebra.algebraMap_eq_smul_one, map_natCast]
-    have hint : ∀ m : ℤ, ((m : ℤ) : Module.End (ZMod ℓ) (W.nTorsion ℓ))
-        = ((m : ℤ) : ZMod ℓ) • (1 : Module.End (ZMod ℓ) (W.nTorsion ℓ)) := by
-      intro m; rw [← Algebra.algebraMap_eq_smul_one, map_intCast]
-    have htc : ((t : ℤ) : ZMod ℓ)
-        = ((Isogeny.degree (End.toIsogeny (ψ + 1)) : ℕ) : ZMod ℓ)
-          - ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ZMod ℓ) - 1 := by
-      rw [ht]; push_cast; ring
-    rw [hχ]
-    simp only [map_sub, map_add, map_mul, map_natCast, map_intCast, hnat, hint]
-    rw [sub_eq_zero, smul_mul_assoc, one_mul, htc]
-    exact hCH
-  have hkill : ∀ ℓ : ℕ, ℓ.Prime → ∀ v : W.nTorsion ℓ,
-      Subtype.val v ∈ AddMonoidHom.ker (End.toIsogeny χ).toHom := by
-    intro ℓ hℓ v
-    have h := congrArg (fun g : Module.End (ZMod ℓ) (W.nTorsion ℓ) => g v) (hrep ℓ hℓ)
-    exact congrArg Subtype.val h
-  -- move 2: a nonzero isogeny cannot contain `W[ℓ]` for a prime `ℓ` beyond its degree
-  by_cases hz : χ = 0
-  · have hzz := hz
-    rw [hχ, sub_eq_zero] at hzz
-    exact hzz
-  · exfalso
-    have hhom : (End.toIsogeny χ).toHom ≠ 0 := by
-      intro h; exact hz (Subtype.ext h)
-    have hfin : Finite (AddMonoidHom.ker (End.toIsogeny χ).toHom) :=
-      Set.Finite.to_subtype ((End.toIsogeny χ).isIsogeny.finite_ker hhom)
-    obtain ⟨ℓ, hle, hℓ⟩ := Nat.exists_infinite_primes (Isogeny.degree (End.toIsogeny χ) + 1)
-    haveI : Fact ℓ.Prime := ⟨hℓ⟩
-    have hcard : Nat.card (W.nTorsion ℓ)
-        ≤ Nat.card (AddMonoidHom.ker (End.toIsogeny χ).toHom) := by
-      refine Nat.card_le_card_of_injective
-        (fun v : W.nTorsion ℓ => (⟨Subtype.val v, hkill ℓ hℓ v⟩ :
-          AddMonoidHom.ker (End.toIsogeny χ).toHom)) ?_
-      intro u v huv
-      exact Subtype.ext
-        (congrArg (fun z : AddMonoidHom.ker (End.toIsogeny χ).toHom => Subtype.val z) huv)
-    rw [WeierstrassCurve.n_torsion_card (E := W) (Nat.cast_ne_zero.mpr hℓ.ne_zero),
-      ← Isogeny.degree_of_ne_zero hhom] at hcard
-    have hℓ2 : ℓ ≤ ℓ ^ 2 := by nlinarith [hℓ.two_le]
-    omega
+  haveI := infinite_point W
+  have hq0 : ((Isogeny.degree (End.toIsogeny (0 : End W)) : ℤ)) = 0 := by
+    rw [End.degree_toIsogeny_zero]; norm_num
+  have hq1 : ((Isogeny.degree (End.toIsogeny (1 : End W)) : ℤ)) = 1 := by
+    have hid : End.toIsogeny (1 : End W) = Isogeny.id W := Isogeny.ext (fun _ => rfl)
+    rw [hid, Isogeny.degree_id (exists_ne (0 : W.Point))]; norm_num
+  have hpar : ∀ a c : End W,
+      (Isogeny.degree (End.toIsogeny (a + c)) : ℤ) + (Isogeny.degree (End.toIsogeny (a - c)) : ℤ)
+        = 2 * (Isogeny.degree (End.toIsogeny a) : ℤ)
+          + 2 * (Isogeny.degree (End.toIsogeny c) : ℤ) := by
+    intro a c
+    exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) (End.degree_add_add_degree_sub a c)
+  have hmul : ∀ a c : End W,
+      (Isogeny.degree (End.toIsogeny (a * c)) : ℤ)
+        = (Isogeny.degree (End.toIsogeny a) : ℤ) * (Isogeny.degree (End.toIsogeny c) : ℤ) :=
+    fun a c => End.degree_mul a c
+  have hzero : ∀ a : End W, (Isogeny.degree (End.toIsogeny a) : ℤ) = 0 → a = 0 := by
+    intro a ha
+    have h0 : Isogeny.degree (End.toIsogeny a) = 0 := by exact_mod_cast ha
+    exact Subtype.ext ((Isogeny.degree_eq_zero_iff _).1 h0)
+  refine ⟨(Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
+    - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1, ?_⟩
+  have hCH := charPoly_of_multiplicative_parallelogram
+    (fun χ : End W => (Isogeny.degree (End.toIsogeny χ) : ℤ)) hq0 hq1 hpar hmul hzero ψ
+  have hcast : (((Isogeny.degree (End.toIsogeny ψ) : ℕ)) : End W)
+      = (((Isogeny.degree (End.toIsogeny ψ) : ℤ)) : End W) := by push_cast; rfl
+  rw [hcast]
+  exact hCH
 
 /-- **The characteristic polynomial of a single endomorphism, with its integer
 shifts — PROVEN (2026-07-28, sixth pass)** over `End.exists_trace_charPoly`
@@ -1182,8 +1995,8 @@ still true:
 
 * conjunct 1 is `charPoly_of_multiplicative_parallelogram` (PROVEN below,
   axiom-clean) applied to `q χ := (deg χ : ℤ)`, exactly as `End.self_add_dualEnd`
-  applies it — and conjunct 1 is now the file's leaf,
-  `End.exists_trace_charPoly` above;
+  applies it — and that is exactly how `End.exists_trace_charPoly` above is proven
+  since the eighth pass (2026-07-30);
 * conjunct 2 is polarisation: for a parallelogram form `q` with `q 0 = 0` one has
   `q (x + m • y) = q x + m · b x y + m² · q y` with `b x y := q (x+y) − q x − q y`,
   by two-sided induction on `m` (`Int.induction_on`) from
@@ -1217,13 +2030,18 @@ proof of the theorem below.
 ### ROUTE (2026-07-28): the elementary `x`-coordinate degree count
 
 **This section is the route audit for `End.exists_trace_charPoly` above**, written
-while that statement was the file's open leaf. It is NOT retracted: the leaf is now
-`exists_weilPairing_torsionRep_adjoint` and was closed along route (1) below
-(Weil-pairing adjointness), so what follows is the record of the search that
-selected that route — including the proof that no *counting* argument can supply
-either route, which still stands. Route (2), the elementary `x`-coordinate degree
-count, remains a live ALTERNATIVE closure of the whole file: see the last section of
-the docstring on `exists_weilPairing_torsionRep_adjoint`.
+while that statement was the file's open leaf. It is NOT retracted, and the eighth
+pass (2026-07-30) is the vindication of its second half: the seventh pass took route
+(1) below, Weil-pairing adjointness, and that turned out to be a *face of the circle*
+rather than an input — it is PROVEN at the foot of this file from the trace formula
+and `deg = det`. **Route (2), the elementary `x`-coordinate degree count, is the
+route the file now stands on**; its two sub-steps, which this section correctly
+identified as "not stated in this tree yet", are
+`End.exists_isXNormalForm_degree` (PROVEN in the ninth pass, 2026-07-30) and
+`End.isXNormalForm_natDegree_parallelogram`, the file's one remaining leaf (see the
+ROUTE 2 section above). What
+still stands unchanged is the proof below that no *counting* argument can supply any
+face of the circle.
 
 A **counting** proof is impossible, and this is worth recording because it closes
 an entire axis. Every invariant this development can form from kernels —
@@ -1237,7 +2055,13 @@ gets the divisible case and can never get more. So a genuinely non-counting inpu
 is needed, and the two candidates are:
 
 1. **Weil-pairing adjointness** (*AEC* III.8.2) — see the audit on the theorem
-   below for what is and is not available for it here;
+   below for what is and is not available for it here. **RETRACTED as a candidate,
+   2026-07-30: this is not a non-counting input, it is a face of the circle.** On a
+   rank-`2` space an alternating form is unique up to a scalar, so adjointness for
+   the dual is interderivable with `deg = det` — `altPairing_trace` above plus
+   `End.self_add_dualEnd` prove the pairing outright, at the foot of this file. The
+   *counting* impossibility argument in this section is unaffected; what is refuted
+   is only the classification of route (1) as an input;
 2. **the elementary `x`-coordinate degree count**, which is the route this leaf is
    shaped for and which is *not* recorded anywhere else in this file. For a
    nonzero `φ` with `x ∘ φ = A/B` in lowest terms, `deg φ = max (deg A) (deg B)`;
@@ -1469,19 +2293,24 @@ case does not need a separate geometric input.
 
 **What the equivalence means for dispatch.** The route search must NOT be confined
 to Weil-pairing adjointness: **any independent proof of the parallelogram law
-closes the file's leaf**, and conversely. In particular Silverman *AEC* III.6.3 and
-its inputs (the theorem of the square / seesaw, or the classical degree count of
-the `x`-coordinate map) are live alternatives to *AEC* III.8.2.
+closes this whole file**, and conversely. That warning was written on 2026-07-28 and
+2026-07-30 confirmed it in the sharpest possible way — Weil-pairing adjointness is
+itself a member of the equivalence class, not an alternative to it. Silverman *AEC*
+III.6.3's own inputs (the theorem of the square / seesaw, or the classical degree
+count of the `x`-coordinate map) are the live alternatives, and the file now stands
+on the second of those.
 
-### READING THE AUDITS BELOW AFTER THE 2026-07-28 RELOCATION
+### READING THE AUDITS BELOW AFTER THE 2026-07-28 AND 2026-07-30 RELOCATIONS
 
 Everything from here down was written while this statement *was* the file's open
 leaf. It is all still valid and none of it is retracted — but "this leaf" in it now
 means whichever member of the degree circle was open at the time of writing; ALL of
-them are now PROVEN, over `exists_weilPairing_torsionRep_adjoint`, which is the
-file's only remaining leaf. In
-particular the Weil-pairing audit is the audit of route (1) recorded there, and the
-`x`-coordinate degree count is route (2); a prover should read both.
+them are now PROVEN, over the two route-2 statements
+`End.exists_isXNormalForm_degree` (PROVEN, ninth pass) and
+`End.isXNormalForm_natDegree_parallelogram` (the one leaf; ROUTE 2 section above). In
+particular the Weil-pairing audit is the audit of route (1) recorded there — read it
+as a record of a *withdrawn* candidate — and the `x`-coordinate degree count is
+route (2), which is where the leaves now are.
 
 ### Why the `deg = det` shape, and not the parallelogram law itself
 
@@ -1798,202 +2627,6 @@ theorem End.natCast_degree_eq_det_torsionRep [IsAlgClosed F] [CharZero F] [W.IsE
   · rw [(ZMod.natCast_eq_zero_iff _ _).2 hdvd, End.det_torsionRep_eq_zero_of_dvd ℓ ψ hdvd]
   · exact End.natCast_degree_eq_det_torsionRep_of_not_dvd ℓ ψ hdvd
 
-/-- **The parallelogram law for the degree — PROVEN (2026-07-27).** Silverman *AEC*
-III.6.3: the degree is a quadratic form on `End W`.
-
-    deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ.
-
-Stated in `ℕ` because `Isogeny.degree` is `Nat.card (ker ·)`; every term is a
-cardinality.
-
-**The proof, in three moves.** Fix a prime `ℓ`. The mod-`ℓ` torsion representation
-`End.torsionRep` is a *ring* homomorphism, so it carries the `φ ± ψ` on the left
-into `ρ_ℓ φ ± ρ_ℓ ψ`; `det` on a rank-`2` module satisfies the parallelogram law
-identically (`det_add_add_det_sub`, pure `Matrix.det_fin_two` and `ring`); and the
-leaf `End.natCast_degree_eq_det_torsionRep` identifies each degree with the
-corresponding determinant mod `ℓ`. So the two sides agree in `ZMod ℓ` for **every**
-prime `ℓ`. They are natural numbers, so choosing a prime larger than both
-(`Nat.exists_infinite_primes`) upgrades the congruence to equality
-(`Nat.ModEq.eq_of_lt_of_lt`).
-
-Note what the argument does *not* need: no transfer of an identity in `End W` back
-from the torsion, because the conclusion is an identity between integers; and no
-composite modulus, because arbitrarily large primes already separate two naturals.
-
-Everything else in the trace layer — `End.self_add_dualEnd`, `End.dualEnd_add`,
-`End.exists_dual`, `End.exists_charPoly`,
-`End.sq_eq_neg_natCast_of_atkinLehner` — is proven over this. -/
-theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
-    (φ ψ : End W) :
-    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
-      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
-  set A := Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ)) with hA
-  set B := 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) with hB
-  -- the two sides agree modulo every prime, through `det` on the `ℓ`-torsion
-  have key : ∀ ℓ : ℕ, ℓ.Prime → ((A : ℕ) : ZMod ℓ) = ((B : ℕ) : ZMod ℓ) := by
-    intro ℓ hℓ
-    haveI : Fact ℓ.Prime := ⟨hℓ⟩
-    rw [hA, hB]
-    push_cast
-    rw [End.natCast_degree_eq_det_torsionRep ℓ (φ + ψ),
-      End.natCast_degree_eq_det_torsionRep ℓ (φ - ψ),
-      End.natCast_degree_eq_det_torsionRep ℓ φ, End.natCast_degree_eq_det_torsionRep ℓ ψ,
-      map_add, map_sub]
-    exact det_add_add_det_sub (nTorsionBasis W ℓ) _ _
-  -- a prime larger than both sides turns the congruence into an equality
-  obtain ⟨ℓ, hle, hprime⟩ := Nat.exists_infinite_primes (max A B + 1)
-  have h := key ℓ hprime
-  rw [ZMod.natCast_eq_natCast_iff] at h
-  exact h.eq_of_lt_of_lt (lt_of_lt_of_le (by omega) hle) (lt_of_lt_of_le (by omega) hle)
-
-/-- **Cayley–Hamilton for a multiplicative parallelogram form**, and the reason the
-trace formula is not a second leaf.
-
-Let `R` be a ring and `q : R → ℤ` satisfy
-
-* `q 0 = 0`, `q 1 = 1`;
-* the **parallelogram law** `q (a+c) + q (a−c) = 2 q a + 2 q c`;
-* **multiplicativity** `q (a c) = q a · q c`;
-* **positive definiteness in the weak form** `q a = 0 → a = 0`.
-
-Then every `x : R` satisfies its characteristic polynomial
-
-    x² + [q x] = [q (x+1) − q x − 1] · x.
-
-This is the classical composition-algebra argument, and it is what refutes the
-first pass's "the parallelogram law alone does not suffice". Writing
-`b u v := q (u+v) − q u − q v` for the polar form:
-
-1. the parallelogram law makes `b` **biadditive** (polarisation: `q (u+v+w)` has
-   the symmetric three-variable expansion, whence `b (u+v) w = b u w + b v w`, and
-   `b` is symmetric by `add_comm`);
-2. linearising `q (u (v+w)) = q u · q (v+w)` in the second slot gives
-   `b (u v) (u w) = q u · b v w`;
-3. linearising *that* in `u` gives the four-term identity
-   `b (u v) (w z) + b (w v) (u z) = b u w · b v z`;
-4. specialising (3) at `w = 1, v := u, z := v` and (2) at `v = 1` gives
-   `b (x²) v = b x 1 · b x v − q x · b 1 v`, so the element
-   `u := x² − [b x 1] x + [q x]` satisfies `b u v = 0` for **every** `v`;
-5. taking `v = u` and using `b a a = 2 q a` (parallelogram at `a, a`) gives
-   `q u = 0`, hence `u = 0`.
-
-Only step 5 uses definiteness, and only steps 2–3 use multiplicativity — which is
-exactly the hypothesis the first pass's independence analysis did not have in view.
-
-**Stated `End`-free on purpose** — for readability, and because the statement is
-about any ring with a multiplicative parallelogram form, not about curves. This one
-reports `[propext, Classical.choice, Quot.sound]`. (An earlier version justified the
-`End`-free phrasing by the claim that everything mentioning `End W` reports
-`sorryAx` at carrier level. That justification is RETIRED and was stale; see the
-retraction on `not_isRationalMap_leftInverse_frob` above.) -/
-theorem charPoly_of_multiplicative_parallelogram {R : Type*} [Ring R] (q : R → ℤ)
-    (hq0 : q 0 = 0) (hq1 : q 1 = 1)
-    (hpar : ∀ a c : R, q (a + c) + q (a - c) = 2 * q a + 2 * q c)
-    (hmul : ∀ a c : R, q (a * c) = q a * q c)
-    (hzero : ∀ a : R, q a = 0 → a = 0) (x : R) :
-    x * x + ((q x : ℤ) : R) = ((q (x + 1) - q x - 1 : ℤ) : R) * x := by
-  obtain ⟨b, hbv⟩ : ∃ b : R → R → ℤ, ∀ u v : R, b u v = q (u + v) - q u - q v :=
-    ⟨_, fun _ _ => rfl⟩
-  -- `q` is even.
-  have hneg : ∀ a : R, q (-a) = q a := by
-    intro a
-    have h := hpar 0 a
-    rw [zero_add, zero_sub, hq0] at h
-    linarith
-  -- the symmetric three-variable polarisation identity
-  have hthree : ∀ u v w : R,
-      q (u + v + w) = q (u + v) + q (v + w) + q (u + w) - q u - q v - q w := by
-    intro u v w
-    have h3 := hpar (u + w) v
-    have h5 := hpar u v
-    have h7 := hpar (v + w) u
-    have h2 := hpar (u - v) w
-    have e3a : u + w + v = u + v + w := by abel
-    have e3b : u + w - v = u - v + w := by abel
-    have e7a : v + w + u = u + v + w := by abel
-    have e7b : v + w - u = -(u - v - w) := by abel
-    rw [e3a, e3b] at h3
-    rw [e7a, e7b, hneg] at h7
-    linarith
-  -- the polar form is biadditive
-  have hbaddl : ∀ u v w : R, b (u + v) w = b u w + b v w := by
-    intro u v w
-    rw [hbv, hbv, hbv, hthree]
-    ring
-  have hbsymm : ∀ u v : R, b u v = b v u := by
-    intro u v
-    rw [hbv, hbv, add_comm u v]; ring
-  have hbaddr : ∀ u v w : R, b u (v + w) = b u v + b u w := by
-    intro u v w
-    rw [hbsymm u (v + w), hbaddl, hbsymm v u, hbsymm w u]
-  have hb0 : ∀ v : R, b 0 v = 0 := by
-    intro v; rw [hbv, zero_add, hq0]; ring
-  have hbnegl : ∀ a v : R, b (-a) v = -b a v := by
-    intro a v
-    have h := hbaddl a (-a) v
-    rw [add_neg_cancel, hb0] at h
-    linarith
-  have hbsubl : ∀ a c v : R, b (a - c) v = b a v - b c v := by
-    intro a c v
-    rw [sub_eq_add_neg, hbaddl, hbnegl]; ring
-  have hhom : ∀ (n : ℤ) (a v : R), b (n • a) v = n * b a v := by
-    intro n a v
-    let f : R →+ ℤ := AddMonoidHom.mk' (fun u : R => b u v) (fun p r => hbaddl p r v)
-    have hf : ∀ u : R, f u = b u v := fun _ => rfl
-    have h := map_zsmul f n a
-    rw [hf, hf] at h
-    simpa [zsmul_eq_mul] using h
-  -- first linearisation of multiplicativity
-  have hE1 : ∀ u v w : R, b (u * v) (u * w) = q u * b v w := by
-    intro u v w
-    have h := hmul u (v + w)
-    rw [mul_add] at h
-    rw [hbv, hbv, h, hmul, hmul]
-    ring
-  -- second linearisation
-  have hE2 : ∀ u w v z : R, b (u * v) (w * z) + b (w * v) (u * z) = b u w * b v z := by
-    intro u w v z
-    have h := hE1 (u + w) v z
-    have hq : q (u + w) = b u w + q u + q w := by rw [hbv]; ring
-    rw [add_mul, add_mul, hbaddl, hbaddr, hbaddr, hE1 u v z, hE1 w v z, hq] at h
-    linear_combination h
-  -- the key identity for `b (x * x) ·`
-  have hE3 : ∀ u v : R, b (u * u) v = b u 1 * b u v - q u * b 1 v := by
-    intro u v
-    have h := hE2 u 1 u v
-    rw [one_mul, one_mul] at h
-    have h2 := hE1 u 1 v
-    rw [mul_one] at h2
-    linarith
-  -- the candidate is `b`-orthogonal to everything
-  have hkey : ∀ v : R,
-      b (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R)) v = 0 := by
-    intro v
-    have htx : b (((b x 1 : ℤ) : R) * x) v = b x 1 * b x v := by
-      rw [← zsmul_eq_mul]; exact hhom (b x 1) x v
-    have hqx : b (((q x : ℤ) : R)) v = q x * b 1 v := by
-      have hc : ((q x : ℤ) : R) = (q x) • (1 : R) := by rw [zsmul_eq_mul, mul_one]
-      rw [hc]; exact hhom (q x) 1 v
-    rw [hbaddl, hbsubl, hE3 x v, htx, hqx]
-    ring
-  -- hence it is `0`
-  have hdiag : ∀ a : R, b a a = 2 * q a := by
-    intro a
-    have hp := hpar a a
-    rw [sub_self, hq0] at hp
-    rw [hbv]
-    linarith
-  have hzeroU : x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R) = 0 := by
-    refine hzero _ ?_
-    have h := hkey (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R))
-    rw [hdiag] at h
-    linarith
-  have hbx1 : b x 1 = q (x + 1) - q x - 1 := by rw [hbv, hq1]
-  rw [← hbx1]
-  have h : x * x + ((q x : ℤ) : R) - ((b x 1 : ℤ) : R) * x = 0 := by
-    rw [← hzeroU]; abel
-  exact sub_eq_zero.mp h
-
 /-- **The trace formula.** Silverman *AEC* III.6.2: `ψ + ψ̂` is an integer,
 and that integer is `deg (ψ + 1) − deg ψ − 1`:
 
@@ -2093,14 +2726,13 @@ theorem End.self_add_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : E
 /-- **The dual isogeny is ADDITIVE** — Silverman *AEC* III.6.2(b).
 
 **PROVEN (2026-07-27)** over the parallelogram law
-`End.degree_add_add_degree_sub` — itself PROVEN in the third pass of 2026-07-27,
-over `End.natCast_degree_eq_det_torsionRep_of_not_dvd`, itself PROVEN 2026-07-28
-over `End.exists_trace_charPoly_degree_sub`, itself PROVEN 2026-07-28 over
-`End.exists_trace_charPoly`, itself PROVEN over the file's one leaf
-`exists_weilPairing_torsionRep_adjoint` — through the
+`End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
+over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
+pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — through the
 trace formula `End.self_add_dualEnd`, proven over that same parallelogram law in
 the second pass. See the CUT note above for why the first pass believed the trace
-formula was independent.
+formula was independent, and the ROUTE 2 section for why the third pass's
+derivation of the parallelogram law from `deg = det` had to be inverted.
 
 The proof is polarisation and nothing else. Write `q χ := deg χ`. The trace
 formula rearranges to `ψ̂ = [q (ψ+1) − q ψ − 1] − ψ`, so additivity of `ψ ↦ ψ̂` is
@@ -2185,11 +2817,9 @@ satisfying it is unique.
 **PROVEN (2026-07-27)** by taking `D = End.dualEnd`: `End.dualEnd_comp` supplies
 the defining property outright and `End.dualEnd_add` the additivity, itself PROVEN
 over the parallelogram law `End.degree_add_add_degree_sub` (itself PROVEN since the
-third pass of 2026-07-27, over
-`End.natCast_degree_eq_det_torsionRep_of_not_dvd`, itself PROVEN 2026-07-28 over
-`End.exists_trace_charPoly_degree_sub`, itself PROVEN the same day over
-`End.exists_trace_charPoly`, itself PROVEN over the file's one leaf
-`exists_weilPairing_torsionRep_adjoint`), via the trace formula
+eighth pass of 2026-07-30, over the two route-2 statements
+`End.exists_isXNormalForm_degree` — PROVEN, ninth pass — and
+`End.isXNormalForm_natDegree_parallelogram`, the one leaf), via the trace formula
 `End.self_add_dualEnd`. `[CharZero F]` is REQUIRED — without
 it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
 theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
@@ -2213,11 +2843,9 @@ Cauchy–Schwarz inequality for that form; it is the same computation that gives
 the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 
 **PROVEN (2026-07-27)** over the parallelogram law
-`End.degree_add_add_degree_sub` — itself PROVEN in the third pass of 2026-07-27,
-over `End.natCast_degree_eq_det_torsionRep_of_not_dvd`, itself PROVEN 2026-07-28 over
-`End.exists_trace_charPoly_degree_sub`, itself PROVEN the same day over
-`End.exists_trace_charPoly`, itself PROVEN over the file's one leaf
-`exists_weilPairing_torsionRep_adjoint` — reached through
+`End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
+over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
+pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — reached through
 `End.self_add_dualEnd`, `End.dualEnd_add` and `End.exists_dual`. Note the `hsum` step below recovers the trace formula *from*
 additivity — which is why the two are equivalent given the rest, and why the
 first pass could see no way to get either without the other. (The direct route is
@@ -2459,5 +3087,157 @@ theorem End.sq_eq_neg_natCast_of_atkinLehner [IsAlgClosed F] [CharZero F] [W.IsE
     rw [Int.cast_neg, Int.cast_natCast]
   rw [hcast, End.sq_eq_intCast_iff]
   exact hfin
+
+/-! ### The Weil pairing on the `ℓ`-torsion
+
+The seventh pass (2026-07-28) made the existence of this pairing the file's only
+leaf, on the ground that it "is *not* a statement about degrees at all", so that
+moving the `sorry` onto it was "a reduction rather than the eighth lap of the
+circle". The two theorems below **refute that**: both are proven, from the trace
+formula and `deg = det` — the two faces of the circle the file already carries — with
+no divisor theory, no Weil reciprocity and no characteristic-zero genericity layer.
+See the ROUTE 2 section above for what this changes and what it does not.
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Weil pairing on the `ℓ`-torsion, adjoint for the dual isogeny — PROVEN
+(2026-07-30, eighth pass).** Silverman *AEC* III.8.1 (existence, alternation,
+nondegeneracy) together with III.8.2 (adjointness). For every prime `ℓ` there is an
+alternating, nonzero, `ZMod ℓ`-bilinear pairing `e` on `W[ℓ]` with
+
+    e (ψ x) y = e x (ψ̂ y)     for every ψ : End W.
+
+### The proof, in three moves
+
+1. **`e` is the coordinate determinant form** in `nTorsionBasis W ℓ`, which exists
+   because the `ℓ`-torsion has rank `2` (`finrank_nTorsion`). Alternation is `ring`
+   and nondegeneracy is `Finsupp.single_apply` on `e (b 0) (b 1) = 1`. This is
+   verbatim the construction of `WeilPairing.exists_weilPairing`, whose Galois clause
+   is obtained the same way from a determinant.
+2. **`altPairing_trace`** (above): on a rank-`2` space *any* alternating form makes
+   `f` and `tr f − f` adjoint, `tr f` being written `det (f + 1) − det f − 1`. The
+   endomorphism `tr f − f` is the classical `2 × 2` adjugate, and `adj f · f = det f`
+   is the only reason adjointness can hold at all.
+3. **`ρ_ℓ ψ̂` IS that adjugate.** `End.self_add_dualEnd` gives `ψ + ψ̂ = [t]` with
+   `t = deg (ψ + 1) − deg ψ − 1`, so applying the ring homomorphism `End.torsionRep`
+   gives `ρ_ℓ ψ̂ = t − ρ_ℓ ψ`; and `End.natCast_degree_eq_det_torsionRep` converts
+   both degrees in `t` into determinants, so `t ≡ det (ρ_ℓ ψ + 1) − det (ρ_ℓ ψ) − 1`
+   in `ZMod ℓ`, which is exactly the bracket of move 2.
+
+### What this says about the seventh pass's audit
+
+The audit argued that the leaf could not be satisfied junkily because "on a rank-`2`
+space an alternating bilinear form is determined up to a scalar, so the *only*
+freedom in `e` is that scalar". That is correct, and it is also the reason the leaf
+is **equivalent** to `deg = det` rather than stronger than it: a statement whose only
+freedom is a scalar that the consumer then cancels cannot carry geometric
+information. The audit used the implication in one direction and inferred that the
+statement was outside the circle; the missing direction is the three moves above.
+
+Consequently **the divisor-theoretic construction described in the seventh pass's
+"Where to construct it" section is not on the critical path.** That section remains
+accurate about the *state of this repository* — `mathlib` has no Weil pairing,
+`~/cs/FLT`'s is a `sorry`ed `def`, and `WeilPairing.exists_weilPairing_mu` is over
+`𝔽̄_q` with a Frobenius naturality clause — and it remains the right description of
+what a genuinely divisor-theoretic pairing would cost. It is simply not what this
+file needs. What it needs is route 2; see the ROUTE 2 section above. -/
+theorem exists_weilPairing_torsionRep_adjoint [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (ℓ : ℕ) [Fact ℓ.Prime] :
+    ∃ e : W.nTorsion ℓ →ₗ[ZMod ℓ] W.nTorsion ℓ →ₗ[ZMod ℓ] ZMod ℓ,
+      (∀ v, e v v = 0) ∧ (∃ x y, e x y ≠ 0) ∧
+        ∀ ψ : End W, ∀ x y, e (End.torsionRep W ℓ ψ x) y
+          = e x (End.torsionRep W ℓ (End.dualEnd ψ) y) := by
+  classical
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
+  set b := nTorsionBasis W ℓ with hb
+  set e : W.nTorsion ℓ →ₗ[ZMod ℓ] W.nTorsion ℓ →ₗ[ZMod ℓ] ZMod ℓ :=
+    LinearMap.mk₂ (ZMod ℓ)
+      (fun x y => b.coord 0 x * b.coord 1 y - b.coord 1 x * b.coord 0 y)
+      (by intro m₁ m₂ n; simp only [map_add]; ring)
+      (by intro c m n; simp only [map_smul, smul_eq_mul]; ring)
+      (by intro m n₁ n₂; simp only [map_add]; ring)
+      (by intro c m n; simp only [map_smul, smul_eq_mul]; ring) with he
+  have halt : ∀ v, e v v = 0 := by
+    intro v
+    show b.coord 0 v * b.coord 1 v - b.coord 1 v * b.coord 0 v = 0
+    ring
+  refine ⟨e, halt, ⟨b 0, b 1, ?_⟩, ?_⟩
+  · show b.coord 0 (b 0) * b.coord 1 (b 1) -
+      b.coord 1 (b 0) * b.coord 0 (b 1) ≠ 0
+    simp only [Module.Basis.coord_apply, Module.Basis.repr_self]
+    norm_num [Finsupp.single_apply]
+  · intro ψ x y
+    set A := End.torsionRep W ℓ ψ with hA
+    set c : ZMod ℓ := LinearMap.det (A + 1) - LinearMap.det A - 1 with hc
+    have hstep : ∀ m : ℤ, ((m : ℤ) : Module.End (ZMod ℓ) (W.nTorsion ℓ))
+        = ((m : ZMod ℓ)) • (1 : Module.End (ZMod ℓ) (W.nTorsion ℓ)) := by
+      intro m; rw [← Algebra.algebraMap_eq_smul_one, map_intCast]
+    -- move 3: on the torsion the dual is the adjugate `c − A`
+    have hdual : End.torsionRep W ℓ (End.dualEnd ψ)
+        = c • (1 : Module.End (ZMod ℓ) (W.nTorsion ℓ)) - A := by
+      have ht := End.self_add_dualEnd (W := W) ψ
+      have hmap := congrArg (End.torsionRep W ℓ) ht
+      rw [map_add, map_intCast, hstep] at hmap
+      have hcc : ((((Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
+          - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 : ℤ) : ZMod ℓ)) = c := by
+        rw [hc]
+        push_cast
+        rw [End.natCast_degree_eq_det_torsionRep ℓ (ψ + 1),
+          End.natCast_degree_eq_det_torsionRep ℓ ψ, map_add, map_one, ← hA]
+      rw [hcc, ← hA] at hmap
+      rw [← hmap]
+      abel
+    rw [hdual]
+    -- move 2: the adjugate identity for an alternating form in rank two
+    have htr := altPairing_trace b e halt A x y
+    have hone : ((1 : Module.End (ZMod ℓ) (W.nTorsion ℓ)) y) = y := rfl
+    simp only [LinearMap.sub_apply, LinearMap.smul_apply, hone, map_sub,
+      map_smul, smul_eq_mul]
+    rw [← hc] at htr
+    linear_combination htr
+
+/-- **`deg ψ = det (ρ_ℓ ψ)` in `ZMod ℓ`, for every prime `ℓ`, by the Weil-pairing
+route** — Silverman *AEC* III.8.6.
+
+Three lines of mathematics: adjointness turns `e (ρ_ℓ ψ x) (ρ_ℓ ψ y)` into
+`e x (ρ_ℓ (ψ̂ ψ) y)`; `End.dualEnd_comp` says `ψ̂ ψ = [deg ψ]`, so the pairing is
+scaled by `deg ψ`; and an endomorphism scaling a nonzero alternating form on a
+rank-`2` space by `c` has determinant `c` (`det_eq_of_altPairing_conj`, against
+`p_torsion_rank`).
+
+**The statement is `End.natCast_degree_eq_det_torsionRep` above, and this is a
+SECOND proof of it, kept for the record rather than for a consumer.** Through the
+seventh pass the two were separated by the direction of the argument: this one came
+from the pairing and closed `End.exists_trace_charPoly`, while the other came from
+the characteristic polynomial via the `ℓ`-adic argument. The eighth pass proves the
+pairing itself over `End.natCast_degree_eq_det_torsionRep`, so this derivation is now
+a round trip — the pairing's own audit predicts exactly that, since "any `e` meeting
+the three clauses forces `deg ψ = det (ρ_ℓ ψ)`". It is retained because it is the
+machine-checked half of the equivalence that the audits in this file describe, and
+because deleting it would erase the evidence that the pairing carries no information
+beyond the determinant.
+
+Note there is **no case split on `ℓ ∣ deg ψ`** here — the pairing argument is uniform
+in `ℓ`, whereas `End.natCast_degree_eq_det_torsionRep` assembles two cases. -/
+theorem End.natCast_degree_eq_det_torsionRep_of_weilPairing [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic] (ℓ : ℕ) [Fact ℓ.Prime] (ψ : End W) :
+    ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ZMod ℓ)
+      = LinearMap.det (End.torsionRep W ℓ ψ) := by
+  classical
+  haveI : NeZero ℓ := ⟨(Fact.out : ℓ.Prime).ne_zero⟩
+  obtain ⟨e, halt, hnd, hadj⟩ := exists_weilPairing_torsionRep_adjoint (W := W) ℓ
+  have hrank : Module.rank (ZMod ℓ) (W.nTorsion ℓ) = 2 :=
+    WeierstrassCurve.p_torsion_rank (E := W)
+      (Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero)
+  refine (det_eq_of_altPairing_conj hrank e halt hnd ?_).symm
+  intro x y
+  have h1 : e (End.torsionRep W ℓ ψ x) (End.torsionRep W ℓ ψ y)
+      = e x (End.torsionRep W ℓ (End.dualEnd ψ) (End.torsionRep W ℓ ψ y)) :=
+    hadj ψ x (End.torsionRep W ℓ ψ y)
+  have h2 : End.torsionRep W ℓ (End.dualEnd ψ) (End.torsionRep W ℓ ψ y)
+      = End.torsionRep W ℓ (End.dualEnd ψ * ψ) y := by
+    rw [map_mul]; rfl
+  rw [h1, h2, End.dualEnd_comp, map_natCast]
+  simp [Module.End.natCast_apply, map_nsmul, nsmul_eq_mul]
 
 end WeierstrassCurve

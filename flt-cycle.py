@@ -37,6 +37,9 @@ Usage:
     python3 flt-cycle.py status
     python3 flt-cycle.py claim                    # MERGER: take the batch
     python3 flt-cycle.py batch-done               # MERGER: batch fully merged
+    python3 flt-cycle.py settled                  # which leaves are already
+                                                  # settled on merger? (screen
+                                                  # BEFORE dispatching)
 """
 import argparse
 import fcntl
@@ -678,6 +681,146 @@ def cmd_regress(args):
 
 
 # --------------------------------------------------------------------------
+# dispatch-time lint: a leaf that is already SETTLED downstream
+# --------------------------------------------------------------------------
+def _declared_sorried_at(ref):
+    """`(declared, sorried)` name sets in the tree at `ref`.
+
+    The same extraction as `_sorry_names_at`, which returns only the sorried
+    set. The DECLARED set is what separates the two ways a dispatch can be
+    wasted, and they need opposite responses: PROVEN there (delete the task),
+    versus DELETED there (read the merge commit -- it may be a rename).
+
+    Both name forms are recorded, qualified and last-component, because
+    `flt-frontier.py` reports the name AS WRITTEN in source and a consumer may
+    write it qualified. That mismatch has produced a wrong answer here before
+    (`velu_map_add` against `WeierstrassCurve.velu_map_add`).
+    """
+    import tempfile
+    import shutil
+    tmp = tempfile.mkdtemp(prefix="flt-settled-")
+    try:
+        tar = subprocess.run(["git", "-C", REPO, "archive", ref],
+                             capture_output=True)
+        if tar.returncode != 0:
+            raise SystemExit(f"git archive {ref} failed -- no such ref?")
+        x = subprocess.run(["tar", "-x", "-C", tmp], input=tar.stdout,
+                           capture_output=True)
+        if x.returncode != 0:
+            raise SystemExit(f"extract failed: {x.stderr.decode()[:200]}")
+        spec = importlib.util.spec_from_file_location(
+            "flt_frontier", os.path.join(REPO, "flt-frontier.py"))
+        fr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fr)
+        decl = re.compile(
+            r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+|noncomputable\s+|"
+            r"public\s+|scoped\s+)*"
+            r"(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|"
+            r"opaque|axiom)\s+([^\s({\[:]+)", re.M)
+        declared, sorried = set(), set()
+        for p in pathlib.Path(tmp, "Fermat").rglob("*.lean"):
+            txt = p.read_text(encoding="utf-8")
+            for m in decl.finditer(txt):
+                n = m.group(1)
+                declared.add(n)
+                declared.add(n.rsplit(".", 1)[-1])
+            for n, _ in fr.scan(p):
+                sorried.add(n)
+                sorried.add(n.rsplit(".", 1)[-1])
+        return declared, sorried
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def cmd_settled(args):
+    """Frontier leaves that are ALREADY SETTLED on `merger`. DO NOT DISPATCH.
+
+    `main` IS NOT THE FRONTIER -- it is the frontier as of the last release
+    (CLAUDE.md, fifth invisibility class). Dispatch reads `main`, and between a
+    release and the next one every ownership check agrees, wrongly, that a leaf
+    settled downstream is open work: the warning set lists it, the source shows
+    the `sorry`, and no record claims it because its owner already stopped.
+
+    This is that screen, run over the WHOLE frontier in one pass instead of one
+    grep per leaf. It is the same three-state classification
+    `report_superseded_tasks` already applies to QUEUED tasks -- and the fix is
+    only WHICH TREE is consulted: that one asks `main`, where a settled leaf
+    still reads OPEN, so it cannot see this at all.
+
+      OPEN     -- still a direct sorry at `ref`. Real work. Dispatch it.
+      PROVEN   -- declared at `ref`, not sorried. Someone closed it; the proof
+                  is queued behind the release. Drop the task.
+      ABSENT   -- not declared at `ref` at all. The leaf was DELETED downstream:
+                  a rival cut taken over this one, a rename, or a relocation.
+
+    ABSENT is the one that manufactures the most convincing phantom, because the
+    declaration is right there on `main` with a `sorry` in it. Observed
+    2026-07-30 (release 24): `smoothOfRelativeDimension_of_levelTateFrame_finiteBase`
+    was dispatched at from `main` after merge `5615bfcf` had deleted it -- a
+    rival cut of its consumer proved that consumer OUTRIGHT, so the leaf was
+    declined along with the proof that used it. The dispatched worker found the
+    declaration alive in its worktree and every ownership check clean.
+
+    REPORTS, never acts. ABSENT does not distinguish "declined" from "renamed",
+    and only the merge commit says which:
+
+        git log -m -S '<declName>' --oneline <ref> -- <path>
+
+    `-m` is load-bearing -- plain `git log -S` shows only the commit that ADDED
+    the name, so a removal inside a merge reads as "added, never removed".
+    """
+    ref = args.ref or "merger"
+    # ORDER MATTERS: if `main` is not an ancestor of `ref` then `ref` has not
+    # seen the release yet, and ABSENT stops meaning "deleted downstream" -- it
+    # can equally mean "not yet merged in". Say so rather than reporting a
+    # confident classification the reader would act on.
+    anc = subprocess.run(
+        ["git", "-C", REPO, "merge-base", "--is-ancestor", "main", ref],
+        capture_output=True)
+    lagging = anc.returncode != 0
+    declared, sorried = _declared_sorried_at(ref)
+
+    spec = importlib.util.spec_from_file_location(
+        "flt_frontier", os.path.join(REPO, "flt-frontier.py"))
+    fr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fr)
+
+    rows = []
+    for p in sorted((pathlib.Path(REPO) / "Fermat").rglob("*.lean")):
+        rel = str(p.relative_to(REPO))
+        for name, line in fr.scan(p):
+            base = name.rsplit(".", 1)[-1]
+            if name in sorried or base in sorried:
+                state = "OPEN"
+            elif name in declared or base in declared:
+                state = "PROVEN"
+            else:
+                state = "ABSENT"
+            rows.append((state, name, rel, line))
+
+    n_open = sum(1 for r in rows if r[0] == "OPEN")
+    print(f"dispatch tree: {REPO} (main)   compared against: {ref}")
+    if lagging:
+        print(f"WARNING: main is NOT an ancestor of {ref}. ABSENT below may mean "
+              f"'{ref} has not seen it yet', not 'deleted downstream'.")
+    print(f"{len(rows)} direct sorries on main: {n_open} OPEN at {ref}, "
+          f"{len(rows) - n_open} settled -- do not dispatch at those.")
+    settled = [r for r in rows if r[0] != "OPEN"]
+    if not settled:
+        print("every leaf on main is still open downstream. Dispatch freely.")
+        return 0
+    print()
+    for state, name, rel, line in sorted(settled):
+        print(f"    {state:<7} {name}")
+        print(f"            main: {rel}:{line}")
+    print("\nPROVEN -> the proof is queued behind the release; drop the task.")
+    print("ABSENT -> deleted downstream (declined cut, rename or relocation).")
+    print("          git log -m -S '<name>' --oneline "
+          f"{ref} -- <path>     # -m shows merge-side removals")
+    return 0
+
+
+# --------------------------------------------------------------------------
 # merge-time lint: the namespace-shadowing trap
 # --------------------------------------------------------------------------
 def cmd_nscheck(args):
@@ -1270,6 +1413,12 @@ def main():
     p.add_argument("base", nargs="?", help="base ref (default main)")
     p.add_argument("--tree", help="worktree to check (default: cwd)")
     p.set_defaults(fn=cmd_regress)
+
+    p = sub.add_parser("settled",
+                       help="which main-frontier leaves are already settled on "
+                            "merger? (do not dispatch at those)")
+    p.add_argument("ref", nargs="?", help="ref to compare against (default merger)")
+    p.set_defaults(fn=cmd_settled)
 
     p = sub.add_parser("nscheck",
                        help="MERGER: flag root-namespace shadowing in a diff")
