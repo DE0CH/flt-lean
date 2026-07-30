@@ -666,6 +666,11 @@ public import Mathlib.GroupTheory.CosetCover
 -- `Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`; it closes the
 -- `¬ IsAffine` branch of `specInvariants_universal`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.InvariantQuotient
+-- The base change of that GIT quotient along a FLAT extension of scalars, proved
+-- mathlib-facing and modular-curve-free in
+-- `Fermat/FLT/Mathlib/RingTheory/InvariantBaseChange.lean`; it closes
+-- `bcQuot_universal_of_field`.
+public import Fermat.FLT.Mathlib.RingTheory.InvariantBaseChange
 -- The commutative algebra of the ring of invariants `B = A^G`, proved
 -- mathlib-facing and modular-curve-free in
 -- `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`: Noether's theorem on
@@ -28652,8 +28657,39 @@ theorem bcAct_comp_of_sep {N : ℕ} {S S' : Scheme.{0}} (P : Gamma0GITPresentati
     ((bcAct_snd P q σ).trans (Category.id_comp _).symm) hb2 hb1
   exact h.trans (Category.id_comp φ)
 
-/-- **GIT COMMUTES WITH A FIELD BASE CHANGE** (sorry leaf — pure geometric
-invariant theory, Katz–Mazur (8.1.6)(2) with all modular content removed).
+/-- **GIT COMMUTES WITH A FIELD BASE CHANGE** (**PROVEN 2026-07-30**, exactly the
+way the survey below prescribes: the whole content was built mathlib-facing and
+modular-curve-free in `Fermat/FLT/Mathlib/RingTheory/InvariantBaseChange.lean`,
+and this declaration is now the ten-line translation of that module's
+`Fermat.InvariantBaseChange.exists_unique_of_isPullback` into the language of a
+`Gamma0GITPresentationOver`.  The survey is kept verbatim because it is the
+record of what was owed and where each piece landed.)
+
+WHAT THE NEW MODULE PROVES, and why nothing here mentions a tensor product.
+`exists_unique_of_isPullback` takes the two fibre products only through
+`IsPullback`, the quotient map and the group action only through their two
+projection legs, and returns the `∃!`.  So the translation is entirely a matter
+of naming the algebra structures the fibre products are secretly over:
+
+* `Algebra k A` and `Algebra k B` come from `Spec.preimage` of `strM` and `str`
+  — `Spec` is fully faithful, exactly as the survey predicted, and
+  `Spec.map_preimage` turns each back into the structure morphism, which is what
+  makes `IsPullback.of_hasPullback` applicable;
+* `IsScalarTower k B A` is `quotMap_comp_str` pushed through `Spec.map_injective`;
+* `SMulCommClass G k A` is the new module's `smulCommClass_of_isScalarTower`
+  applied to that tower and `P.smulComm_GBA` — so the survey's remark that
+  `specMap_toRingHom_comp_strM` already supplies it is right, and it is not even
+  needed in that form;
+* `Module.Flat k K` is `Module.Flat.of_free`, `k` being a field;
+* the four leg identities are `bcQuot_fst`, `bcQuot_snd`, `bcAct_fst`, `bcAct_snd`,
+  literally.
+
+The two `MISSING in mathlib` items the survey flagged — a `MulSemiringAction G
+(A ⊗[k] K)` and a base-change lemma for `Algebra.IsInvariant` — were both built
+there (`bcAction`, `isInvariant_tensor`), and both surveys' grep results were
+accurate: mathlib has neither.
+
+## The original statement of what was owed
 
 This is `specInvariants_universal` (PROVEN ~25000 lines above) for the
 base-changed triple: `Spec (A ⊗_k K) ⟶ Spec (B ⊗_k K)` is again a categorical
@@ -28717,8 +28753,39 @@ theorem bcQuot_universal_of_field {N : ℕ} {k K : Type} [Field k] [Field K] (f 
     {Y' : Scheme.{0}} (φ : pullback P.strM (Spec.map (CommRingCat.ofHom f)) ⟶ Y')
     (hinv : ∀ σ : P.G, P.bcAct (Spec.map (CommRingCat.ofHom f)) σ ≫ φ = φ) :
     ∃! ψ : pullback P.str (Spec.map (CommRingCat.ofHom f)) ⟶ Y',
-      P.bcQuot (Spec.map (CommRingCat.ofHom f)) ≫ ψ = φ :=
-  sorry
+      P.bcQuot (Spec.map (CommRingCat.ofHom f)) ≫ ψ = φ := by
+  classical
+  letI : Algebra k K := f.toAlgebra
+  letI : Algebra k P.A := (Spec.preimage P.strM).hom.toAlgebra
+  letI : Algebra k P.B := (Spec.preimage P.str).hom.toAlgebra
+  have hstrM : Spec.map (CommRingCat.ofHom (algebraMap k P.A)) = P.strM :=
+    Spec.map_preimage P.strM
+  have hstr : Spec.map (CommRingCat.ofHom (algebraMap k P.B)) = P.str :=
+    Spec.map_preimage P.str
+  have hq : Spec.map (CommRingCat.ofHom (algebraMap k K)) = Spec.map (CommRingCat.ofHom f) := rfl
+  haveI : IsScalarTower k P.B P.A := by
+    refine IsScalarTower.of_algebraMap_eq fun c => ?_
+    have h : Spec.preimage P.strM
+        = Spec.preimage P.str ≫ CommRingCat.ofHom (algebraMap P.B P.A) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_comp, Spec.map_preimage, Spec.map_preimage, P.quotMap_comp_str]
+    exact congrArg (fun g => CommRingCat.Hom.hom g c) h
+  haveI : SMulCommClass P.G k P.A :=
+    InvariantBaseChange.smulCommClass_of_isScalarTower k P.B P.A P.G
+  haveI : Module.Flat k K := Module.Flat.of_free
+  have hA : IsPullback (pullback.fst P.strM (Spec.map (CommRingCat.ofHom f)))
+      (pullback.snd P.strM (Spec.map (CommRingCat.ofHom f)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k P.A)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k K))) := by
+    rw [hstrM, hq]; exact IsPullback.of_hasPullback _ _
+  have hB : IsPullback (pullback.fst P.str (Spec.map (CommRingCat.ofHom f)))
+      (pullback.snd P.str (Spec.map (CommRingCat.ofHom f)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k P.B)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k K))) := by
+    rw [hstr, hq]; exact IsPullback.of_hasPullback _ _
+  exact InvariantBaseChange.exists_unique_of_isPullback (B := P.B) (A := P.A) k K P.G
+    P.injective_algebraMap hA hB (P.bcQuot _) (P.bcQuot_fst _) (P.bcQuot_snd _)
+    (P.bcAct _) (P.bcAct_fst _) (P.bcAct_snd _) φ hinv
 
 /-- **A GIT model's atlas has the categorical-quotient property along a field
 extension** (PROVEN 2026-07-30 over `bcQuot_universal_of_field` and nothing
