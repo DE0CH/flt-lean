@@ -9728,6 +9728,41 @@ deletes no instance of it, and is supplied for free by the sole call site —
 field of `AlgebraicClosure ℚ_[3] / ℚ_[3]` transported across `ULift`, so the
 compatibility is `rfl` and that theorem now returns it as a conjunct.
 
+**ROUND-11 ADDENDUM (2026-07-30) — WHAT `hιalg` DID AND DID NOT DO, because the
+paragraph above can be read as settling more than it settles.** The argument
+recorded there is a NECESSARY-CONDITION argument: it shows that if a package
+exists then `‖(P w).coeff 1‖ ≤ 1`. Adding `hιalg` makes `ι` a `ℚ_[3]`-embedding
+of a finite extension, hence isometric onto its image, so that necessary
+condition becomes equivalent to
+
+    ‖ψ₃ ((heckeF w).coeff 1)‖ ≤ 1 ,
+
+in which `L`, `ι` and `P` no longer occur. So `hιalg` did not make integrality a
+CONSEQUENCE of the hypotheses; it relocated the requirement onto the eigenvalue
+itself, and closed the one way the requirement could have been violated for a
+reason having nothing to do with the eigenvalue. That is the repair it was
+advertised as, and it is complete as such.
+
+What a prover therefore still owes, and it is NOT among the hypotheses: that
+`θ (T_w)` is an ALGEBRAIC INTEGER. It is, and the route is short, but it has to be
+travelled. `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` is not an abstract
+commutative `E`-algebra on formal symbols — by its definition in
+`AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean` it is
+`Algebra.adjoin E {T …} ∪ {U …}` inside `Module.End E ((U₁ 𝒮).toStruct.form D E)`,
+a CONCRETE subalgebra of endomorphisms of the (finite-dimensional) space of
+weight-`2` forms. So `T_w` satisfies its own characteristic polynomial there,
+`θ` is a ring map, and `θ (T_w)` is a root of that polynomial; the polynomial has
+rational-INTEGER coefficients because the operator is a sum over single cosets on
+a finite double-coset space, i.e. an integral matrix in the natural basis (the
+nebentypus `ℒ.χ` contributes only roots of unity, `isOfFinOrder_χ`).
+
+Two consequences worth stating separately. The parenthesis above — `(P w).coeff 0`
+is safe "because every ring map fixes `ℚ`" — does NOT extend to `coeff 1`: `hnorm`
+pins `coeff 0` to a rational integer outright, and nothing pins `coeff 1` at all
+except `hθ`. And the step is not a candidate for a further CUT: it is a fact about
+a definition in another module, provable there, and stating it as a hypothesis here
+would be asking the caller for something the caller also cannot see.
+
 READ THE ROUND-9 AUDIT on the assembly below before working here: it records
 that a prover owes only a two-dimensional Galois representation (no Shimura
 curve, by the ROUND-7 reverse witness), that `[F : ℚ]` is forced EVEN, and
