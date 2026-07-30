@@ -588,6 +588,17 @@ public import Fermat.FLT.EllipticCurve.TorsionCard
 -- here rather than at the tail of the import block deliberately: the note on the
 -- LAST import of this file records that `IrreducibleNhds` must stay last.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
+-- The `EllipticScheme.lean` geometry of `projToSpec E` ported to an ARBITRARY base
+-- field `F : Type u` in `Scheme.{u}` (added 2026-07-30): smoothness of relative
+-- dimension `1` and geometric connectedness, which is what
+-- `smoothOfRelativeDimension_projToSpecOverField` and
+-- `geometricallyConnected_projToSpecOverField` below are now applications of.  It has
+-- to be a separate module rather than 2 300 more lines here for two reasons: it is
+-- upstream of this file (so `EllipticScheme.lean`, which is DOWNSTREAM, can later
+-- collapse its own ℚ statements onto it), and elaboration is single-threaded per
+-- file — those 2 300 lines cost 63 s on their own and would be paid on every edit
+-- to this 46 000-line module.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModelOverField
 -- The three irreducibility lemmas of the connected ⟹ irreducible upgrade
 -- (`irreducibleSpace_of_isOpen_isIrreducible_nhds`,
 -- `exists_isOpen_isIrreducible_of_isDomain_localization`,
@@ -43521,8 +43532,27 @@ theorem isProper_projToSpecOverField (F : Type u) [Field F] (E : WeierstrassCurv
   infer_instance
 
 /-- **The projective Weierstrass model is smooth of relative dimension `1` over an
-arbitrary base field** (sorry leaf, cut 2026-07-29 out of
+arbitrary base field** (**PROVEN 2026-07-30**; cut 2026-07-29 out of
 `exists_ellipticSchemeOverField`).
+
+The port described below WAS CARRIED OUT, into the new upstream module
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`, and
+this declaration is now a one-line application of
+`WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec` there.  The
+paragraphs below are kept as the record of what had to travel and of the two places
+where the ℚ argument was *unsound* over a general base rather than merely differently
+spelled — both are documented in that module's header:
+
+* `hom_ext_spec_rat` (the ℚ file's 99-fold shortcut "a scheme admits at most one
+  morphism to `Spec ℚ`") is FALSE over a general field.  It is not needed for THIS
+  leaf, but it is what the connectedness proof used to build the base-change
+  comparison morphism; the repair there proves the base-change square CARTESIAN first
+  and reads the isomorphism off `IsPullback.isoPullback`.
+* `not_X_dvd_polynomial` is proved over `ℚ` by evaluating at `F`-points, and that
+  fails in characteristic two: over `𝔽₂` with `a₃ = 1`, `a₆ = 0` the polynomial
+  `W(0, Y, Z) = YZ(Y + Z)` vanishes at every point of `𝔽₂²` while `X ∤ W` remains
+  true.  The repair evaluates in `F[t]` at `(X, Y, Z) = (0, t, 1)` and reads off a
+  coefficient.
 
 TRUE and classical, and this is the ONLY one of the three geometric leaves that
 consumes `[E.IsElliptic]`: on each of the three coordinate charts the two partial
@@ -43554,11 +43584,28 @@ the dehomogenisation dictionary (`dehomogenizeAt`, `homogenizeAt`,
 theorem smoothOfRelativeDimension_projToSpecOverField (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     SmoothOfRelativeDimension 1 (projToSpec E) :=
-  sorry
+  _root_.WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec E
 
 /-- **The projective Weierstrass model is geometrically connected over an
-arbitrary base field** (sorry leaf, cut 2026-07-29 out of
+arbitrary base field** (**PROVEN 2026-07-30**; cut 2026-07-29 out of
 `exists_ellipticSchemeOverField`).
+
+The port described below WAS CARRIED OUT, into the new upstream module
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean`, and
+this declaration is now a one-line application of
+`WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec` there.
+
+The estimate below — "this is the CHEAPEST of the three, and it crosses the
+`hom_ext_spec_rat` obstruction only twice" — was WRONG about the second half, and that
+is the one thing worth carrying forward.  Both crossings sit in the same place, the
+construction of the comparison morphism `proj (E ⊗ K) ⟶ proj E ×_{Spec F} Spec K`, and
+over a general base there is nothing to replace the shortcut with: one cannot lift
+into a pullback without proving the commuting square.  So the base-change half was NOT
+a substitution but a rewrite — the square is proved CARTESIAN directly
+(`isPullback_projBaseChangeMap`, over `isPushout_awayBaseChange` and a dehomogenisation
+dictionary `awayDehomEquiv` that the ℚ file did not need), and the isomorphism is read
+off `IsPullback.isoPullback`.  The first half of the estimate was right: `section
+Leaves` needed no generalisation at all.
 
 TRUE, and it does NOT use smoothness or the discriminant: the Weierstrass cubic is
 irreducible over EVERY field, singular ones included (mathlib's affine
@@ -43592,7 +43639,7 @@ the second half is work (checked 2026-07-29):
 theorem geometricallyConnected_projToSpecOverField (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     GeometricallyConnected (projToSpec E) :=
-  sorry
+  _root_.WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec F E
 
 /-- **Morphism-level group-law data on the projective Weierstrass model of `E`,
 over an ARBITRARY base field** — exactly the shape
