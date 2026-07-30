@@ -62241,10 +62241,229 @@ theorem exists_heckeCorrespondenceFamily_atkinLehnerCommuting (N ℓ : ℕ)
                   (ab.neg (c (𝟙 SpecQ) (RelPoint.post w hw o)))) :=
   sorry
 
+/-! #### Propagating a COMMUTATION from the primes to every coprime arity
+
+**PROVEN 2026-07-30**, and written to rebuild
+`exists_modularHeckeAction_atkinLehnerCommuting` below on
+`exists_anemicHeckeExtension` — which is exactly what the revert note the
+release-18 merge left on that theorem asked a successor to do.
+
+The reverted construction pinned `T` at the primes `ℓ ∤ N` and took `𝟙 J`
+everywhere else, which the four-clause repair of `IsModularHeckeAction`
+outlaws.  What replaces it is the SAME multiplicative extension
+`exists_modularHeckeAction` uses, plus the observation below: the three anemic
+relations DETERMINE `T n` at every `n` coprime to `N` as a polynomial in the
+`T ℓ`, so a commutation known at the primes propagates to all of them, and no
+truncation is needed anywhere.
+
+One wrinkle, and it is the reason `exists_anemicHeckeExtension_zero` exists.
+`Nat.Coprime 0 N` holds exactly when `N = 1`, so the conclusion of the
+Atkin–Lehner theorem quantifies over the arity `0` — at which
+`exists_anemicHeckeExtension` says NOTHING, because no clause of
+`IsModularHeckeAction` constrains it.  Overriding `T 0 := 𝟙 J` costs nothing:
+the only clause that mentions the arity `0` at all is coprime multiplicativity,
+and `Nat.Coprime 0 n` forces `n = 1`, so the two edge cases read `𝟙 = 𝟙 ≫ 𝟙`. -/
+
+/-- **The multiplicative extension, NORMALISED at the arity `0`** (PROVEN
+2026-07-30) — `exists_anemicHeckeExtension` with the single extra clause
+`T 0 = 𝟙 J`, which no relation of `IsModularHeckeAction` can supply and which
+the Atkin–Lehner conclusion below needs when `N = 1`. -/
+theorem exists_anemicHeckeExtension_zero (N : ℕ) {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (u : ℕ → (J ⟶ J))
+    (u_comp : ∀ n, u n ≫ jstr = jstr) (u_add : ∀ n, IsAdditiveOn ab ab (u n) (u_comp n)) :
+    ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
+        (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N → T ℓ = u ℓ) ∧
+        T 0 = 𝟙 J ∧ T 1 = 𝟙 J ∧
+        (∀ m n : ℕ, Nat.Coprime m n → T (m * n) = T m ≫ T n) ∧
+        (∀ ℓ k : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+          ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint jstr g),
+            letI := ab.addCommGroup g
+            RelPoint.post (T (ℓ ^ (k + 2))) (T_comp (ℓ ^ (k + 2))) x
+              = RelPoint.post (T ℓ) (T_comp ℓ)
+                    (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) x)
+                  - ℓ • RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) x) := by
+  classical
+  obtain ⟨T, T_comp, T_add, hTu, hT1, hTmul, hTrec⟩ :=
+    exists_anemicHeckeExtension N ab u u_comp u_add
+  -- proof irrelevance in the second argument of `RelPoint.post`
+  have hpc : ∀ (f g : J ⟶ J) (hf : f ≫ jstr = jstr) (hg : g ≫ jstr = jstr), f = g →
+      ∀ {T'' : Scheme.{0}} {g' : T'' ⟶ SpecQ} (x : RelPoint jstr g'),
+        RelPoint.post f hf x = RelPoint.post g hg x := by
+    rintro f g hf hg rfl _ _ x; rfl
+  have hIA : ∀ (f g : J ⟶ J) (hf : f ≫ jstr = jstr) (hg : g ≫ jstr = jstr), f = g →
+      IsAdditiveOn ab ab f hf → IsAdditiveOn ab ab g hg := by
+    rintro f g hf hg rfl h; exact h
+  have hone : IsAdditiveOn ab ab (𝟙 J) (Category.id_comp jstr) := fun x y => by
+    simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]
+  refine ⟨fun n => if n = 0 then 𝟙 J else T n, fun n => ?_, ?_, ?_, if_pos rfl, ?_, ?_, ?_⟩
+  · show (if n = 0 then 𝟙 J else T n) ≫ jstr = jstr
+    rcases eq_or_ne n 0 with rfl | hn
+    · rw [if_pos rfl]; exact Category.id_comp jstr
+    · rw [if_neg hn]; exact T_comp n
+  · intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · exact hIA _ _ (Category.id_comp jstr) _ (if_pos rfl).symm hone
+    · exact hIA _ _ (T_comp n) _ (if_neg hn).symm (T_add n)
+  · intro ℓ hℓ hℓN
+    show (if ℓ = 0 then 𝟙 J else T ℓ) = u ℓ
+    rw [if_neg hℓ.ne_zero]
+    exact hTu ℓ hℓ hℓN
+  · show (if (1 : ℕ) = 0 then 𝟙 J else T 1) = 𝟙 J
+    rw [if_neg (one_ne_zero : (1 : ℕ) ≠ 0)]; exact hT1
+  · intro m n hmn
+    show (if m * n = 0 then 𝟙 J else T (m * n))
+      = (if m = 0 then 𝟙 J else T m) ≫ (if n = 0 then 𝟙 J else T n)
+    rcases eq_or_ne m 0 with rfl | hm
+    · have hn1 : n = 1 := Nat.coprime_zero_left n |>.mp hmn
+      subst hn1
+      simp [hT1]
+    · rcases eq_or_ne n 0 with rfl | hn
+      · have hm1 : m = 1 := Nat.coprime_zero_right m |>.mp hmn
+        subst hm1
+        simp [hT1]
+      · simp only [if_neg (Nat.mul_ne_zero hm hn), if_neg hm, if_neg hn]
+        exact hTmul m n hmn
+  · intro ℓ k hℓ hℓN T'' g x
+    have h0 : ℓ ≠ 0 := hℓ.ne_zero
+    have hpk : ∀ j : ℕ, (ℓ ^ j) ≠ 0 := fun j => pow_ne_zero j h0
+    letI := ab.addCommGroup g
+    rw [hpc _ (T (ℓ ^ (k + 2))) _ (T_comp (ℓ ^ (k + 2))) (if_neg (hpk (k + 2))),
+      hpc _ (T ℓ) _ (T_comp ℓ) (if_neg h0),
+      hpc _ (T (ℓ ^ (k + 1))) _ (T_comp (ℓ ^ (k + 1))) (if_neg (hpk (k + 1))),
+      hpc _ (T (ℓ ^ k)) _ (T_comp (ℓ ^ k)) (if_neg (hpk k))]
+    exact hTrec ℓ k hℓ hℓN g x
+
+/-- **`RelPoint.post w` as an ADDITIVE MAP on the relative points of `J`**
+(PROVEN 2026-07-30) — the packaging that makes `map_sub` and `map_nsmul`
+available, which is all the recursion step below needs of the group law. -/
+noncomputable def postAddHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) {w : J ⟶ J} {hw : w ≫ jstr = jstr}
+    (hwadd : IsAdditiveOn ab ab w hw) {T : Scheme.{0}} (g : T ⟶ SpecQ) :
+    letI := ab.addCommGroup g
+    RelPoint jstr g →+ RelPoint jstr g :=
+  letI := ab.addCommGroup g
+  { toFun := RelPoint.post w hw
+    map_zero' := hwadd.postZero g
+    map_add' := fun x y => hwadd x y }
+
+/-- **COMMUTATION AT A PRIME PROPAGATES TO ITS POWERS** (PROVEN 2026-07-30) —
+by the weight-two recursion and nothing else.
+
+The step reads the recursion TWICE, at two relative points of the test object
+`J` over `jstr`: at the universal point `𝟙 J`, whose `post`-values are the
+operators themselves, and at the point `w`, whose `post`-values are the
+operators precomposed with `w`.  Pushing the first through the additive map
+`postAddHom` and rewriting the second with the inductive hypotheses makes the
+two right-hand sides literally the same element, so the two left-hand sides —
+`T (ℓ^(k+2)) ≫ w` and `w ≫ T (ℓ^(k+2))` — agree. -/
+theorem comm_primePow_of_anemicRecursion {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (N : ℕ) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr)
+    (hT1 : T 1 = 𝟙 J)
+    (hTrec : ∀ ℓ k : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+      ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint jstr g),
+        letI := ab.addCommGroup g
+        RelPoint.post (T (ℓ ^ (k + 2))) (T_comp (ℓ ^ (k + 2))) x
+          = RelPoint.post (T ℓ) (T_comp ℓ)
+                (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) x)
+              - ℓ • RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) x)
+    {w : J ⟶ J} (hw : w ≫ jstr = jstr) (hwadd : IsAdditiveOn ab ab w hw)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N) (hcomm : T ℓ ≫ w = w ≫ T ℓ) :
+    ∀ k : ℕ, T (ℓ ^ k) ≫ w = w ≫ T (ℓ ^ k) := by
+  letI := ab.addCommGroup jstr
+  set uP : RelPoint jstr jstr := ⟨𝟙 J, Category.id_comp jstr⟩ with huP
+  set wP : RelPoint jstr jstr := ⟨w, hw⟩ with hwP
+  -- `post w` intertwines `post f` exactly when `f` commutes with `w`
+  have hinter : ∀ (f : J ⟶ J) (hf : f ≫ jstr = jstr), f ≫ w = w ≫ f →
+      ∀ y : RelPoint jstr jstr,
+        RelPoint.post f hf (postAddHom ab hwadd jstr y)
+          = postAddHom ab hwadd jstr (RelPoint.post f hf y) := by
+    intro f hf hfc y
+    refine Subtype.ext ?_
+    show (y.1 ≫ w) ≫ f = (y.1 ≫ f) ≫ w
+    rw [Category.assoc, Category.assoc, hfc]
+  have two : ∀ k : ℕ, (T (ℓ ^ k) ≫ w = w ≫ T (ℓ ^ k))
+      ∧ (T (ℓ ^ (k + 1)) ≫ w = w ≫ T (ℓ ^ (k + 1))) := by
+    intro k
+    induction k with
+    | zero =>
+      refine ⟨?_, ?_⟩
+      · rw [pow_zero, hT1, Category.id_comp, Category.comp_id]
+      · rw [pow_one, hcomm]
+    | succ k ih =>
+      refine ⟨ih.2, ?_⟩
+      have e1 := hTrec ℓ k hℓ hℓN jstr uP
+      have e2 := hTrec ℓ k hℓ hℓN jstr wP
+      have e3 := congrArg (postAddHom ab hwadd jstr) e1
+      rw [map_sub, map_nsmul] at e3
+      have hb : RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) wP
+          = postAddHom ab hwadd jstr
+              (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) uP) := by
+        refine Subtype.ext ?_
+        show w ≫ T (ℓ ^ (k + 1)) = (𝟙 J ≫ T (ℓ ^ (k + 1))) ≫ w
+        rw [Category.id_comp, ih.2]
+      have ha : RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) wP
+          = postAddHom ab hwadd jstr (RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) uP) := by
+        refine Subtype.ext ?_
+        show w ≫ T (ℓ ^ k) = (𝟙 J ≫ T (ℓ ^ k)) ≫ w
+        rw [Category.id_comp, ih.1]
+      rw [hb, ha, hinter (T ℓ) (T_comp ℓ) hcomm] at e2
+      rw [← e3] at e2
+      have := congrArg Subtype.val e2
+      show T (ℓ ^ (k + 2)) ≫ w = w ≫ T (ℓ ^ (k + 2))
+      simpa [huP, hwP, RelPoint.post, postAddHom] using this.symm
+  exact fun k => (two k).1
+
+/-- **COMMUTATION PROPAGATES FROM THE PRIMES `ℓ ∤ N` TO EVERY ARITY COPRIME TO
+`N`** (PROVEN 2026-07-30) — the three anemic relations and nothing else; no
+geometry, no moduli, no Atkin–Lehner.
+
+`Nat.recOnPosPrimePosCoprime` splits an arity into `0`, `1`, prime powers and
+coprime products.  Prime powers are the lemma above; coprime products are
+`T (a * b) = T a ≫ T b`; `T 1 = 𝟙 J`; and `T 0` is the hypothesis `h0`, which is
+why `exists_anemicHeckeExtension_zero` normalises it. -/
+theorem comm_of_anemicRelations {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (N : ℕ) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr)
+    (hT1 : T 1 = 𝟙 J)
+    (hTmul : ∀ m n : ℕ, Nat.Coprime m n → T (m * n) = T m ≫ T n)
+    (hTrec : ∀ ℓ k : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+      ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint jstr g),
+        letI := ab.addCommGroup g
+        RelPoint.post (T (ℓ ^ (k + 2))) (T_comp (ℓ ^ (k + 2))) x
+          = RelPoint.post (T ℓ) (T_comp ℓ)
+                (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) x)
+              - ℓ • RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) x)
+    {w : J ⟶ J} (hw : w ≫ jstr = jstr) (hwadd : IsAdditiveOn ab ab w hw)
+    (h0 : T 0 ≫ w = w ≫ T 0)
+    (hprime : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N → T ℓ ≫ w = w ≫ T ℓ) :
+    ∀ n, Nat.Coprime n N → T n ≫ w = w ≫ T n := by
+  intro n
+  induction n using Nat.recOnPosPrimePosCoprime with
+  | prime_pow p k hp hk =>
+      intro hcop
+      have hpc : Nat.Coprime p N :=
+        Nat.Coprime.coprime_dvd_left (dvd_pow_self p hk.ne') hcop
+      have hpN : ¬ p ∣ N := (Nat.Prime.coprime_iff_not_dvd hp).mp hpc
+      exact comm_primePow_of_anemicRecursion ab N T T_comp hT1 hTrec hw hwadd p hp hpN
+        (hprime p hp hpN) k
+  | zero => intro _; exact h0
+  | one => intro _; rw [hT1, Category.id_comp, Category.comp_id]
+  | coprime a b _ha _hb hab iha ihb =>
+      intro hcop
+      have hca : Nat.Coprime a N := Nat.Coprime.coprime_dvd_left (dvd_mul_right a b) hcop
+      have hcb : Nat.Coprime b N := Nat.Coprime.coprime_dvd_left (dvd_mul_left b a) hcop
+      rw [hTmul a b hab, Category.assoc, ihb hcb, ← Category.assoc, iha hca, Category.assoc]
+
 /-- **ATKIN–LEHNER: SOME MODULAR HECKE ACTION COMMUTES WITH `w_N`**
-(**PROVEN 2026-07-28** over the single leaf
-`exists_heckeCorrespondenceFamily_atkinLehnerCommuting` above; a bare
-`sorry` from earlier the same day until then) — the first half of the cut of
+(**PROVEN 2026-07-30** over the single leaf
+`exists_heckeCorrespondenceFamily_atkinLehnerCommuting` above; first proven
+2026-07-28, REVERTED to a leaf at the release-18 merge because the construction
+truncated `T` to `𝟙 J` off the pinned arities, and rebuilt 2026-07-30 on the
+MULTIPLICATIVE extension `exists_anemicHeckeExtension_zero` together with
+`comm_of_anemicRelations`, exactly as the revert note asked.  The statement has
+never changed) — the first half of the cut of
 `exists_heckeIsotypicDecomposition_atkinLehnerStable` below, and the half
 that is Atkin–Lehner theory rather than Eichler–Shimura.
 
@@ -62323,18 +62542,108 @@ theorem exists_modularHeckeAction_atkinLehnerCommuting (N : ℕ) {X Y J : Scheme
     ∃ (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (T n) (T_comp n)) ∧
         IsModularHeckeAction N hX jac T T_comp ∧
-        ∀ n, Nat.Coprime n N → T n ≫ wJ = wJ ≫ T n :=
-  -- REVERTED TO A LEAF AT THE RELEASE-18 MERGE, for the same reason as
-  -- `exists_atkinLehnerDescent_of_factorwise` below.  `flt-lean-339` repaired
-  -- `IsModularHeckeAction` to four clauses; the construction that stood here was
-  -- written against the single moduli clause and pinned `T` only at primes `ℓ ∤ N`,
-  -- taking `𝟙 J` everywhere else -- exactly the junk family the repair exists to
-  -- exclude.  The STATEMENT is unchanged and is believed true: the genuine anemic
-  -- Hecke system satisfies all four clauses and commutes with `w_N` at every arity
-  -- coprime to `N`.  Rebuild it on `exists_modularHeckeAction` above, which is PROVEN
-  -- against the repaired pin and whose construction is multiplicative rather than
-  -- truncated.  Old proof: `git show <this commit>^1:Fermat/FLT/ModularCurve/X0.lean`.
-  sorry
+        ∀ n, Nat.Coprime n N → T n ≫ wJ = wJ ≫ T n := by
+  -- REVERTED TO A LEAF AT THE RELEASE-18 MERGE and REBUILT 2026-07-30, exactly as
+  -- that revert note prescribed: the multiplicative extension of
+  -- `exists_modularHeckeAction`, not the truncated `𝟙 J`-everywhere family the
+  -- four-clause repair of `IsModularHeckeAction` outlaws.  The STATEMENT is
+  -- unchanged from the reverted version.
+  classical
+  -- `w_J` is a HOMOMORPHISM: `hchar` at the base point plus relative rigidity
+  have hwJadd : IsAdditiveOn ab ab wJ hwJ :=
+    isAdditiveOn_of_post_zero ab ab hwJ (by
+      rw [← jac.aj_base, hchar, jac.ajTwist_base, jac.aj_base])
+  -- One endomorphism per natural number: at the arities `IsModularHeckeAction`
+  -- constrains, the Albanese image of the `w_N`-equivariant correspondence family;
+  -- at every other arity `𝟙 J`.  Both commute with `w_J`, and the `𝟙 J` values are
+  -- DISCARDED below -- `exists_anemicHeckeExtension_zero` overwrites every arity
+  -- except the primes `ℓ ∤ N`.
+  have key : ∀ n : ℕ, ∃ u : J ⟶ J, ∃ hu : u ≫ jstr = jstr,
+      IsAdditiveOn ab ab u hu ∧ u ≫ wJ = wJ ≫ u ∧
+      (n.Prime → ¬ n ∣ N →
+        ∀ (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+          (dq : Fin m → Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          (iso : ∀ k, IsGamma0Isogeny N n d (dq k)),
+          (∀ k k' : Fin m,
+            (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+          (∀ D : CyclicSubgroupOfOrder d.ab n, ∃ k : Fin m,
+            ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+              RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+          letI := ab.addCommGroup (specAlgClos ℚ)
+          RelPoint.post u hu
+              (jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) d)))
+            = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+                (RelPoint.post jY hX.comm (hX.coarse.classify (specAlgClos ℚ) (dq k)))) := by
+    intro n
+    by_cases hn : n.Prime ∧ ¬ n ∣ N
+    · obtain ⟨c, hnat, hzero, hrec, hequiv⟩ :=
+        exists_heckeCorrespondenceFamily_atkinLehnerCommuting N n hn.1 hn.2 hX jac w hw hw2 hal
+          wJ hwJ hchar
+      obtain ⟨u, ⟨hu, hueq⟩, -⟩ := jac.universal ab c hnat hzero
+      -- the Albanese equation, read as an equation of relative points
+      have hpost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post u hu (jac.aj g x) = c g x := fun g x => Subtype.ext (hueq g x).symm
+      -- relative rigidity: `u` sends `0` to `0`, hence is a homomorphism
+      have hadd : IsAdditiveOn ab ab u hu :=
+        isAdditiveOn_of_post_zero ab ab hu (by
+          rw [← jac.aj_base, hpost (𝟙 SpecQ) o, hzero, jac.aj_base])
+      refine ⟨u, hu, hadd, ?_, ?_⟩
+      · -- `u ≫ wJ` and `wJ ≫ u` factor the SAME pointed natural family through `aj`
+        have hkey : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+            RelPoint.post u hu (jac.ajTwist w hw g x) = RelPoint.post wJ hwJ (c g x) := by
+          intro T g x
+          rw [hequiv g x]
+          show RelPoint.post u hu (ab.add _ _) = _
+          rw [hadd, hpost, RelPoint.post_pre, hadd.postNeg, hpost]
+        have hfnat : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+            (hg : p ≫ g = g') (x : RelPoint strX g),
+            RelPoint.post wJ hwJ (c g' (RelPoint.pre p hg x))
+              = RelPoint.pre p hg (RelPoint.post wJ hwJ (c g x)) := by
+          intro T' T p g g' hg x
+          rw [hnat p hg x, RelPoint.post_pre]
+        have hfzero : RelPoint.post wJ hwJ (c (𝟙 SpecQ) o) = ab.zero (𝟙 SpecQ) := by
+          rw [hzero, ← jac.aj_base, hchar, jac.ajTwist_base, jac.aj_base]
+        obtain ⟨v, -, hvuniq⟩ :=
+          jac.universal ab (fun g x => RelPoint.post wJ hwJ (c g x)) hfnat hfzero
+        have e1 : u ≫ wJ = v :=
+          hvuniq _ ⟨by rw [Category.assoc, hwJ, hu], fun g x => by
+            show (c g x).1 ≫ wJ = (jac.aj g x).1 ≫ (u ≫ wJ)
+            rw [hueq g x, Category.assoc]⟩
+        have e2 : wJ ≫ u = v :=
+          hvuniq _ ⟨by rw [Category.assoc, hu, hwJ], fun g x => by
+            show (RelPoint.post wJ hwJ (c g x)).1 = (jac.aj g x).1 ≫ (wJ ≫ u)
+            rw [← hkey g x, ← hchar g x]
+            show ((jac.aj g x).1 ≫ wJ) ≫ u = (jac.aj g x).1 ≫ (wJ ≫ u)
+            rw [Category.assoc]⟩
+        rw [e1, e2]
+      · intro _ _ d m dq iso hinj hsurj
+        rw [hpost (specAlgClos ℚ) _]
+        exact hrec d m dq iso hinj hsurj
+    · exact ⟨𝟙 J, Category.id_comp jstr,
+        (fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]),
+        by rw [Category.id_comp, Category.comp_id],
+        fun hp hd => absurd ⟨hp, hd⟩ hn⟩
+  choose v v_comp v_add v_comm v_pin using key
+  -- the multiplicative extension: it agrees with `v` at the primes `ℓ ∤ N`, so it
+  -- inherits BOTH the moduli recipe and the commutation there
+  obtain ⟨T, T_comp, T_add, hTv, hT0, hT1, hTmul, hTrec⟩ :=
+    exists_anemicHeckeExtension_zero N ab v v_comp v_add
+  have hpostv : ∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
+      ∀ {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (y : RelPoint jstr g),
+        RelPoint.post (T ℓ) (T_comp ℓ) y = RelPoint.post (v ℓ) (v_comp ℓ) y := by
+    intro ℓ hℓ hℓN T' g y
+    exact Subtype.ext (by show y.1 ≫ T ℓ = y.1 ≫ v ℓ; rw [hTv ℓ hℓ hℓN])
+  refine ⟨T, T_comp, T_add, ⟨hT1, hTmul, hTrec, ?_⟩, ?_⟩
+  · intro ℓ hℓ hℓN d m dq iso hinj hsurj
+    rw [hpostv ℓ hℓ hℓN]
+    exact v_pin ℓ hℓ hℓN d m dq iso hinj hsurj
+  · refine comm_of_anemicRelations ab N T T_comp hT1 hTmul hTrec hwJ hwJadd ?_ ?_
+    · rw [hT0, Category.id_comp, Category.comp_id]
+    · intro ℓ hℓ hℓN
+      rw [hTv ℓ hℓ hℓN]
+      exact v_comm ℓ
 
 /-- **EICHLER–SHIMURA, ADAPTED TO `w_N`: A DECOMPOSITION THAT `w_J`
 STABILISES FACTOR BY FACTOR** (introduced as a sorry leaf 2026-07-28;
