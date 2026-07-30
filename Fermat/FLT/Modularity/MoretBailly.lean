@@ -165,6 +165,11 @@ public import Mathlib.AlgebraicGeometry.Pullbacks
 -- them unavailable even in proof bodies.
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.RingTheory.Flat.Basic
+-- added 2026-07-29 (`flt-lean-396`) for the ledger-item-1 support block:
+-- `PrimeSpectrum.comap_surjective_of_faithfullyFlat` and the
+-- "faithful flatness is preserved by arbitrary base change" instance.
+public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
+public import Mathlib.RingTheory.RingHom.FaithfullyFlat
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.TensorProduct.Maps
 public import Mathlib.RingTheory.TensorProduct.Quotient
@@ -3804,9 +3809,192 @@ theorem exists_descent_nonvanishing_polynomial (k : Type u) [Field k]
   · intro v hv hzero
     exact hv (by rw [← key v, hzero, map_zero, Finsupp.coe_zero, Pi.zero_apply])
 
+/-! ### Ledger item 1 support block (added 2026-07-29, `flt-lean-396`)
+
+Everything from here to `geometricallyConnected_of_connectedSpace_baseChange` is
+new, self-contained, and touches nothing above it. It reduces Stacks `0387` to a
+SINGLE named sorry leaf, `connectedSpace_primeSpectrum_baseChange_of_isAlgClosed`
+(Stacks `0363`), which is the only non-formal step on the route the ledger
+recorded. The other three ledger obligations for item 1 turned out to be
+provable outright and are proven below; in particular the amalgam of two field
+extensions needed no tensor-product-quotient construction at all.
+
+**CITATION CORRECTION 2026-07-29 — BOTH STACKS TAGS CARRIED BY THIS CLUSTER WERE
+WRONG, AND BOTH ARE FIXED THROUGHOUT THIS FILE.** They were checked against the
+Stacks Project itself, not recalled:
+
+* The characterisation "`X` is geometrically connected over `k` iff `X_{k̄}` is
+  connected, `k̄` a separable algebraic closure" — the statement of
+  `geometricallyConnected_of_connectedSpace_baseChange` — is **tag `0387`**
+  (Lemma 33.7.7), NOT `04KV`. Tag `04KV` (Lemma 33.7.14) is a different and
+  strictly weaker criterion: "`X` connected with a point `x` such that `k` is
+  algebraically closed in `κ(x)` — in particular `X` connected with a
+  `k`-rational point — is geometrically connected." That one has a
+  RATIONAL-POINT hypothesis this leaf does not have and cannot supply, so a
+  prover who chased `04KV` would have been looking for the wrong theorem.
+* "A connected scheme over a separably closed field stays connected after any
+  field extension of the base" — the statement of
+  `connectedSpace_primeSpectrum_baseChange_of_isAlgClosed` — is **tag `0363`**
+  (Lemma 33.7.6): "`k'/k` an extension of fields, `X` a scheme over `k`, `k`
+  separably algebraically closed; then `X_{k'} → X` induces a bijection of
+  connected components." NOT `0385`. Tag `0385` (Lemma 33.7.4) is the *product*
+  statement — "`X` geometrically connected over `k`, `Y` any `k`-scheme; then
+  `X ×_k Y → Y` induces a bijection of connected components" — which is a
+  consequence, not the input.
+
+Both wrong tags were inherited verbatim from the route note that cut this leaf,
+and both propagated into three docstrings each. The refuting check is one fetch
+of `https://stacks.math.columbia.edu/tag/<tag>`.
+-/
+
+/-- The carrier of `Spec (CommRingCat.of R)` IS `PrimeSpectrum R`, definitionally
+(`AlgebraicGeometry.Spec_carrier` is a `rfl` lemma). This bridge lets the whole
+`0387` argument be run in commutative algebra rather than in `Scheme`. -/
+lemma connectedSpace_spec_iff_primeSpectrum (R : Type u) [CommRing R] :
+    ConnectedSpace ↥(AlgebraicGeometry.Spec (CommRingCat.of R)) ↔
+      ConnectedSpace (PrimeSpectrum R) := Iff.rfl
+
+/-- Connectedness of the prime spectrum transfers along a ring isomorphism. -/
+theorem connectedSpace_primeSpectrum_of_ringEquiv {R S : Type u} [CommRing R] [CommRing S]
+    (e : R ≃+* S) (h : ConnectedSpace (PrimeSpectrum R)) :
+    ConnectedSpace (PrimeSpectrum S) := by
+  have hsurj : Function.Surjective (PrimeSpectrum.comap (e.symm : S →+* R)) := by
+    intro p
+    refine ⟨PrimeSpectrum.comap (e : R →+* S) p, ?_⟩
+    rw [← PrimeSpectrum.comap_comp_apply]
+    simp
+  exact hsurj.connectedSpace (PrimeSpectrum.continuous_comap _)
+
+/-- FAITHFULLY FLAT DESCENT OF CONNECTEDNESS. If `S` is a faithfully flat
+`R`-algebra and `Spec S` is connected, so is `Spec R`: `PrimeSpectrum.comap` is
+then surjective (`PrimeSpectrum.comap_surjective_of_faithfullyFlat`) and
+continuous, and a continuous surjective image of a connected space is
+connected. -/
+theorem connectedSpace_primeSpectrum_of_faithfullyFlat {R S : Type u} [CommRing R] [CommRing S]
+    [Algebra R S] [Module.FaithfullyFlat R S] (h : ConnectedSpace (PrimeSpectrum S)) :
+    ConnectedSpace (PrimeSpectrum R) :=
+  (PrimeSpectrum.comap_surjective_of_faithfullyFlat (A := R) (B := S)).connectedSpace
+    (PrimeSpectrum.continuous_comap _)
+
 open _root_.TensorProduct in
-/-- **LEDGER ITEM 1: GEOMETRIC CONNECTEDNESS IS CHECKED OVER `k̄`** (sorry leaf,
-NAMED 2026-07-28; it was previously an ANONYMOUS `obtain … := sorry` inside the
+/-- **STACKS `0363` — THE ONLY NON-FORMAL STEP IN LEDGER ITEM 1** (sorry leaf,
+NAMED 2026-07-29). A connected affine scheme over an ALGEBRAICALLY CLOSED field
+stays connected after an arbitrary field extension of the base.
+
+Everything else on the `0387` route is proven around this leaf, so this
+statement now carries the whole mathematical content of ledger item 1.
+
+WHY ALGEBRAIC CLOSEDNESS IS LOAD-BEARING, with the counterexample that shows the
+hypothesis cannot be dropped. Over `F = ℚ` take `A = ℚ(i)`. Then
+`PrimeSpectrum A` is a single point, hence connected; but for `Ω = ℚ(i)` the
+base change is `ℚ(i) ⊗[ℚ] ℚ(i) ≅ ℚ(i) × ℚ(i)`, whose spectrum is two points —
+DISCONNECTED. So the leaf is FALSE verbatim without `[IsAlgClosed F]`, which is
+exactly why `0387` is a theorem rather than a formality, and why the reduction
+to `k̄` in `geometricallyConnected_of_connectedSpace_baseChange` is the only
+place algebraic closedness is consumed.
+
+Note `IsAlgClosed` is stronger than needed: separably closed suffices (Stacks
+`0363` is stated for a separably algebraically closed field). It is stated with
+`IsAlgClosed` because that is what the single consumer supplies, and weakening
+the hypothesis later is a strict strengthening that no consumer will notice.
+
+THE ROUTE, in the form that keeps it pure commutative algebra. `PrimeSpectrum R`
+is connected iff `R` is nontrivial and has no idempotent other than `0` and `1`
+(mathlib supplies the clopen half: `PrimeSpectrum.isClopen_iff` says the clopens
+of `Spec R` are exactly the `basicOpen e` for `e` idempotent). So the leaf is
+equivalent to: for `F` separably closed, `A` an `F`-algebra with only trivial
+idempotents, and `Ω / F` any field extension, `Ω ⊗[F] A` has only trivial
+idempotents. A nontrivial idempotent of `Ω ⊗[F] A` involves only finitely many
+elements of `Ω`, hence lives in `L ⊗[F] A` for a finitely generated
+subextension `L / F`; the separable closedness of `F` is what forbids the
+resulting nontrivial finite étale `F`-algebra factor.
+
+A SECOND ROUTE, found 2026-07-29 while checking the tags, and probably the
+shorter one. Tag `04KV` says: a connected `k`-scheme with a point `x` such that
+`k` is algebraically closed in `κ(x)` is geometrically connected. When `F` is
+algebraically closed that hypothesis is FREE — every residue field of a nonempty
+`F`-scheme is an extension of `F`, and `F` algebraically closed is a fortiori
+algebraically closed in it — so over such an `F`, "connected" upgrades to
+"geometrically connected" at no cost, and `Ω ⊗[F] A` being connected is then
+literally an instance of the definition. This trades the idempotent argument for
+`04KV`, which is itself absent from mathlib; whichever is cheaper to formalise,
+note that BOTH routes consume algebraic closedness in exactly one place, which
+is the counterexample above.
+
+ABSENCE CHECK 2026-07-29 over all three trees the doctrine requires:
+`grep -rn "IsAlgClosed\|IsSepClosed" .lake/packages/mathlib/Mathlib/RingTheory/Spectrum/`
+and `grep -rn "connectedSpace.*tensor\|tensor.*[Cc]onnected" Fermat/ ~/cs/FLT/`
+return nothing running in this direction. That same grep is the refuting check
+for a future reader. -/
+theorem connectedSpace_primeSpectrum_baseChange_of_isAlgClosed
+    {F : Type u} [Field F] [IsAlgClosed F] {A : Type u} [CommRing A] [Algebra F A]
+    {Ω : Type u} [Field Ω] [Algebra F Ω] (h : ConnectedSpace (PrimeSpectrum A)) :
+    ConnectedSpace (PrimeSpectrum (Ω ⊗[F] A)) := by
+  sorry
+
+/-- THE AMALGAM, PROVEN — and it needed none of the machinery the ledger
+expected. To run the `0387` argument one needs a single field `Ω` receiving both
+`K` and `AlgebraicClosure k` compatibly over `k`. The textbook construction is a
+residue field of `AlgebraicClosure k ⊗[k] K`; it is unnecessary here, because
+`AlgebraicClosure K` already works: it is a `k`-algebra with
+`IsScalarTower k K (AlgebraicClosure K)` by mathlib's own
+`AlgebraicClosure.instAlgebra` and the `IsScalarTower` instance beside it, and
+`IsAlgClosed.lift` supplies a `k`-algebra map `AlgebraicClosure k →ₐ[k]
+AlgebraicClosure K` because `AlgebraicClosure k` is algebraic over `k`.
+
+LEDGER CORRECTION: the `k`-algebra structure on `AlgebraicClosure K` must NOT be
+introduced by hand as `((algebraMap K _).comp (algebraMap k K)).toAlgebra` — that
+is a genuine instance DIAMOND against `AlgebraicClosure.instSMulOfIsScalarTower`
+and the resulting `IsScalarTower` does not typecheck against the expected
+`SMul`. Take the instances mathlib already provides. -/
+theorem exists_field_isScalarTower_algebraicClosure (k K : Type u) [Field k] [Field K]
+    [Algebra k K] :
+    ∃ (Ω : Type u) (_ : Field Ω) (_ : Algebra k Ω) (_ : Algebra K Ω)
+      (_ : Algebra (AlgebraicClosure k) Ω),
+      IsScalarTower k K Ω ∧ IsScalarTower k (AlgebraicClosure k) Ω := by
+  classical
+  let f : AlgebraicClosure k →ₐ[k] AlgebraicClosure K := IsAlgClosed.lift
+  letI : Algebra (AlgebraicClosure k) (AlgebraicClosure K) := f.toRingHom.toAlgebra
+  haveI : IsScalarTower k (AlgebraicClosure k) (AlgebraicClosure K) :=
+    IsScalarTower.of_algebraMap_eq fun x => (f.commutes x).symm
+  exact ⟨AlgebraicClosure K, inferInstance, inferInstance, inferInstance, inferInstance,
+    inferInstance, inferInstance⟩
+
+open _root_.TensorProduct in
+/-- RING-LEVEL FORM OF STACKS `0387`, PROVEN over the single leaf
+`connectedSpace_primeSpectrum_baseChange_of_isAlgClosed`. If `Spec (k̄ ⊗[k] T)`
+is connected then so is `Spec (K ⊗[k] T)` for EVERY field extension `K / k`.
+
+The five steps are exactly the route the ledger recorded, and only step 1 is
+non-formal: amalgamate into `Ω`; apply Stacks `0363` over `k̄`; cancel the base
+change to land over `k`; re-expand it through `K`; commute so that mathlib's
+"faithful flatness is preserved by arbitrary base change" instance applies to
+`K ⊗[k] T → (K ⊗[k] T) ⊗[K] Ω` (faithfully flat because `Ω` is a nontrivial free
+`K`-module); descend. -/
+theorem connectedSpace_primeSpectrum_tensor_of_algebraicClosure
+    {k : Type u} [Field k] {T : Type u} [CommRing T] [Algebra k T]
+    (h : ConnectedSpace (PrimeSpectrum (AlgebraicClosure k ⊗[k] T)))
+    (K : Type u) [Field K] [Algebra k K] :
+    ConnectedSpace (PrimeSpectrum (K ⊗[k] T)) := by
+  obtain ⟨Ω, _, _, _, _, _, _⟩ := exists_field_isScalarTower_algebraicClosure k K
+  have h1 : ConnectedSpace (PrimeSpectrum (Ω ⊗[AlgebraicClosure k] (AlgebraicClosure k ⊗[k] T))) :=
+    connectedSpace_primeSpectrum_baseChange_of_isAlgClosed h
+  have h2 : ConnectedSpace (PrimeSpectrum (Ω ⊗[k] T)) :=
+    connectedSpace_primeSpectrum_of_ringEquiv
+      (Algebra.TensorProduct.cancelBaseChange k (AlgebraicClosure k) Ω Ω T).toRingEquiv h1
+  have h3 : ConnectedSpace (PrimeSpectrum (Ω ⊗[K] (K ⊗[k] T))) :=
+    connectedSpace_primeSpectrum_of_ringEquiv
+      (Algebra.TensorProduct.cancelBaseChange k K Ω Ω T).toRingEquiv.symm h2
+  have h4 : ConnectedSpace (PrimeSpectrum ((K ⊗[k] T) ⊗[K] Ω)) :=
+    connectedSpace_primeSpectrum_of_ringEquiv
+      (Algebra.TensorProduct.comm K (K ⊗[k] T) Ω).toRingEquiv.symm h3
+  exact connectedSpace_primeSpectrum_of_faithfullyFlat h4
+
+open _root_.TensorProduct in
+/-- **LEDGER ITEM 1: GEOMETRIC CONNECTEDNESS IS CHECKED OVER `k̄`** (PROVEN
+2026-07-29 by `flt-lean-396` over the single Stacks-`0363` leaf
+`connectedSpace_primeSpectrum_baseChange_of_isAlgClosed` above; it was previously
+an ANONYMOUS `obtain … := sorry` inside the
 body of `exists_bertiniConnectedLocus_algebra` below, invisible to every
 frontier scan we run, and therefore ownerless for its whole life).
 
@@ -3815,7 +4003,7 @@ topological space, then `Spec T ⟶ Spec k` is GEOMETRICALLY connected, i.e. the
 base change `Spec (K ⊗[k] T)` is connected for EVERY field extension `K / k`,
 not merely for `K = k̄`.
 
-Stacks tag `04KV` (the "geometrically connected ⟺ connected after base change to
+Stacks tag `0387` (the "geometrically connected ⟺ connected after base change to
 the algebraic closure" characterisation); EGA IV 4.5.13. TRUE for an arbitrary
 `k`-scheme, and this is stated in the affine/commutative-algebra form the
 Bertini chain uses.
@@ -3844,9 +4032,9 @@ residue field of the nonzero ring `k̄ ⊗[k] K`). Then
   suffices to know `Spec (Ω ⊗[k] T)` is connected;
 * `Ω ⊗[k] T = Ω ⊗[k̄] (k̄ ⊗[k] T)`, so what remains is: **a connected scheme over
   an ALGEBRAICALLY CLOSED field stays connected after any field extension**
-  (Stacks `0385`). That is the only non-formal step, and it is where the
+  (Stacks `0363`). That is the only non-formal step, and it is where the
   algebraic closedness of `k̄` is consumed — the statement is false over a
-  general base field, which is the whole reason `04KV` is a theorem.
+  general base field, which is the whole reason `0387` is a theorem.
 
 ABSENCE CHECK, run 2026-07-28 over all three trees the doctrine requires
 (`grep -rn "IsAlgClosed\|AlgebraicClosure"
@@ -3860,7 +4048,15 @@ theorem geometricallyConnected_of_connectedSpace_baseChange
       (CommRingCat.of (AlgebraicClosure k ⊗[k] T)))) :
     AlgebraicGeometry.GeometricallyConnected
       (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k T))) := by
-  sorry
+  rw [connectedSpace_spec_iff_primeSpectrum] at h
+  constructor
+  rw [AlgebraicGeometry.geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms]
+  intro K _ _
+  rw [(AlgebraicGeometry.pullbackSpecIso k T K).hom.homeomorph.connectedSpace_iff,
+    connectedSpace_spec_iff_primeSpectrum]
+  exact connectedSpace_primeSpectrum_of_ringEquiv
+    (Algebra.TensorProduct.comm k K T).toRingEquiv
+    (connectedSpace_primeSpectrum_tensor_of_algebraicClosure h K)
 
 /-! ### The base-change plumbing for the Bertini connectedness leaf
 
@@ -4407,7 +4603,7 @@ that whoever does decide to cut does not have to redo the survey.
          (h : ConnectedSpace (Spec (CommRingCat.of (AlgebraicClosure k ⊗[k] T)))) :
          GeometricallyConnected (Spec.map (CommRingCat.ofHom (algebraMap k T)))
 
-   True for any `k`-scheme (Stacks 04KV). Mathlib-facing and reusable well
+   True for any `k`-scheme (Stacks 0387). Mathlib-facing and reusable well
    beyond Bertini — `GeometricallyConnected` currently has NO consumer outside
    its own defining file, so this is the missing front door to the whole
    `Geometrically/` namespace, not a Bertini-specific lemma.
