@@ -10365,8 +10365,32 @@ structure IsGamma1Isogeny (N ℓ : ℕ) {T : Scheme.{0}} (d d' : Gamma1Datum N T
   One equation of morphisms, which is the whole `Γ₁` level clause -/
   map_sec : d.pt.sec ≫ map = d'.pt.sec
 
-/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28):
-`T ℓ` acts on Abel–Jacobi images by the `Γ₁(N)`-correspondence.
+/-- **THE `Γ₁` MODULI PIN FOR THE HECKE OPERATORS** (new 2026-07-28; the three
+ANEMIC RELATIONS added 2026-07-30): `T ℓ` acts on Abel–Jacobi images by the
+`Γ₁(N)`-correspondence, and `T` is determined off the primes by the relations.
+
+**THE FOUR CLAUSES, and why (1)–(3) are not decoration.**  Clause (4) is the
+moduli recipe and was the original body; it constrains `T` at PRIMES `ℓ ∤ N`
+only.  Clauses (1)–(3) — `T 1 = 𝟙 J`, coprime multiplicativity, and the
+prime-power recursion `T_{ℓ^{k+2}} = T_ℓ T_{ℓ^{k+1}} − ℓ T_{ℓ^k}` — extend that
+to every `n` coprime to `N`, which is the arity range that
+`IsIsotypicQuotient.isotypic` and `.equivariant` actually inspect.
+
+**Without them this predicate was too weak and made its consumer FALSE, not
+merely unprovable**, because `T` is an INPUT there: a caller could hand over a
+family genuine where clause (4) can see and junk where it cannot, and
+`exists_modularHeckeAction_gamma1` constructed exactly such a family (`𝟙 J` at
+every non-prime arity).  The witness is `T 1 := 0`: `1` is not prime, so clause
+(4) says nothing, while `minpoly ℤ (1 : ℂ) = X − 1` forces the quotient map to
+be `0`, contradicting `nontriv`.  The full audit, kept as the record of the
+defect, is the FALSITY AUDIT on
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` below.
+
+This is a verbatim transport of the `Γ₀` repair of 2026-07-28 —
+`IsModularHeckeAction` (`X0.lean`) has carried the identical clauses (1)–(3)
+since then — and it costs the frontier nothing, because
+`exists_anemicHeckeExtension` (`X0.lean`, level-structure-free) is what supplies
+them and the `Γ₀` producer had already been rewritten through it.
 
 For a prime `ℓ ∤ N` and a `Γ₁(N)`-datum `d = (E, P)` over `ℚ̄`, let
 `D₁, …, D_{ℓ+1}` be the cyclic subgroups of `E` of order `ℓ` and
@@ -10421,7 +10445,20 @@ def IsModularHeckeActionGamma1 (N : ℕ)
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o)
     (T : ℕ → (J ⟶ J)) (T_comp : ∀ n, T n ≫ jstr = jstr) : Prop :=
-  ∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
+  -- (1) `T_1 = 1`
+  T 1 = 𝟙 J ∧
+  -- (2) `T_{mn} = T_m T_n` at coprime arities
+  (∀ m n : ℕ, Nat.Coprime m n → T (m * n) = T m ≫ T n) ∧
+  -- (3) the prime-power recursion at `ℓ ∤ N`, read on relative points
+  (∀ ℓ k : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+    ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint jstr g),
+      letI := ab.addCommGroup g
+      RelPoint.post (T (ℓ ^ (k + 2))) (T_comp (ℓ ^ (k + 2))) x
+        = RelPoint.post (T ℓ) (T_comp ℓ)
+              (RelPoint.post (T (ℓ ^ (k + 1))) (T_comp (ℓ ^ (k + 1))) x)
+            - ℓ • RelPoint.post (T (ℓ ^ k)) (T_comp (ℓ ^ k)) x) ∧
+  -- (4) the moduli recipe at primes `ℓ ∤ N` (the original body)
+  (∀ (ℓ : ℕ), ℓ.Prime → ¬ ℓ ∣ N →
     ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
       (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
       (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
@@ -10438,7 +10475,7 @@ def IsModularHeckeActionGamma1 (N : ℕ)
           (jac.aj (specAlgClos ℚ)
             (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d)))
         = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
-            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k)))
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
 
 /-- **EICHLER–SHIMURA for `Γ₁(N)`, as a datum: the Hecke-isotypic
 decomposition of `J_1(N)`** (new 2026-07-28) — the `Γ₁` counterpart of
@@ -10761,8 +10798,21 @@ theorem exists_modularHeckeAction_gamma1 (N : ℕ)
     · exact ⟨𝟙 J, Category.id_comp jstr, fun x y => by
         simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta],
         fun hp hd => absurd ⟨hp, hd⟩ hn⟩
-  choose T T_comp T_add T_pin using key
-  exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN⟩
+  choose v v_comp v_add v_pin using key
+  -- the multiplicative extension: it agrees with `v` at the primes `ℓ ∤ N`, so it
+  -- inherits the moduli recipe, and it satisfies the three anemic relations.
+  -- `exists_anemicHeckeExtension` (`X0.lean`) mentions no level structure, so the
+  -- `Γ₀` repair of 2026-07-28 transports here verbatim.
+  obtain ⟨T, T_comp, T_add, hTv, hT1, hTmul, hTrec⟩ :=
+    exists_anemicHeckeExtension N ab v v_comp v_add
+  refine ⟨T, T_comp, T_add, hT1, hTmul, hTrec, ?_⟩
+  intro ℓ hℓ hℓN d m dq iso hinj hsurj
+  have hpostℓ : ∀ {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (y : RelPoint jstr g),
+      RelPoint.post (T ℓ) (T_comp ℓ) y = RelPoint.post (v ℓ) (v_comp ℓ) y := by
+    intro T' g y
+    exact Subtype.ext (by show y.1 ≫ T ℓ = y.1 ≫ v ℓ; rw [hTv ℓ hℓ hℓN])
+  rw [hpostℓ]
+  exact v_pin ℓ hℓ hℓN d m dq iso hinj hsurj
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N`
 AND ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (sorry leaf,
@@ -10828,7 +10878,34 @@ this pin, or in `~/cs/FLT`.  The `Γ₁`-specific extra is only the
 nebentypus decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`, and this leaf
 receives `χ` rather than having to produce that decomposition.
 
-## ⚠ FALSITY AUDIT — THIS LEAF IS FALSE AS STATED (recorded at the release-18 merge)
+## ⚠ FALSITY AUDIT — REPAIRED 2026-07-30; THE STATEMENT BELOW IS NOW TRUE
+
+**The audit that follows was CORRECT and is kept verbatim as the record of why
+`IsModularHeckeActionGamma1` has the shape it now has.**  Its prescribed repair
+has been carried out: the pin carries the three anemic relations as of
+2026-07-30, so `hmod` now constrains `T` at every `n` coprime to `N`, the arity
+gap is closed, and both witnesses below are excluded.  Nothing in THIS
+statement changed — only its hypothesis became stronger.
+
+**ONE HALF OF THE PRESCRIPTION WAS ALREADY STALE WHEN IT WAS WRITTEN, and a
+reader who followed it literally would have duplicated clauses.**  The audit
+says to add the relations "to `IsModularHeckeAction` and
+`IsModularHeckeActionGamma1`".  `IsModularHeckeAction` (`X0.lean`) **already
+carried them** — they are clauses (1)–(3) of its body, added 2026-07-28 in the
+`Γ₀` repair the audit itself cites — so only the `Γ₁` side was outstanding, and
+the change was a TRANSPORT rather than a two-sided design decision.  Verified by
+reading both definitions on 2026-07-30.
+
+**AND THE PREDICTED COST DID NOT MATERIALISE.**  The audit expected
+`exists_modularHeckeAction` and `exists_modularHeckeAction_gamma1` to "revert to
+leaves, since `𝟙 J` off the pinned arities no longer satisfies the pin".  Neither
+did: `exists_anemicHeckeExtension` (`X0.lean`, itself a sorry leaf, and stated
+with no level structure whatever — it takes only `N`, `ab` and the family) is the
+multiplicative extension that repairs the junk arities, and the `Γ₀` proof had
+already been rewritten through it.  `exists_modularHeckeAction_gamma1` now goes
+through the same call, so it is still PROVEN and the frontier does not grow.
+
+The audit as originally recorded follows.
 
 The caveat above ("nothing false is asserted either way") is **wrong**, and it is
 wrong for a reason discovered on the `Γ₀` side *after* this cut was written.  The
@@ -10851,7 +10928,9 @@ is uninhabited at that `T` and the conclusion `Nonempty …` is false.  A
 level-dependent witness is `N = 37`, `n = 4`, using the family
 `exists_modularHeckeAction_gamma1` itself produces.
 
-**Do NOT prove this leaf, and do not build on it.**  The repair is the one
+**Do NOT prove this leaf, and do not build on it.**  *(That instruction is
+DISCHARGED — see the header above.  It stood from the release-18 merge until
+2026-07-30.)*  The repair is the one
 prescribed for the `Γ₀` cluster and must be made on BOTH sides by ONE owner: add
 to `IsModularHeckeAction` and `IsModularHeckeActionGamma1` the relations that
 determine an anemic system from its primes —
@@ -11564,12 +11643,41 @@ lives there: `IsHeckeIsotypicDecomposition` acquired a `heckeModuli`
 field (`IsModularHeckeAction`, the moduli description
 `(E, C) ↦ ∑_D (E/D, (C+D)/D)` of `T_ℓ` at `ℓ ∤ N`), the `N = 37` swap does
 **not** inhabit the pinned structure, and sharpening the `Γ₀` leaf is
-recorded there as UNBLOCKED.  `IsHeckeIsotypicDecompositionGamma1` has no
-such field, so the swap survives here and the sharpening is still blocked
-on the `Γ₁` side.  **The repair is to build the `Γ₁` pin** — a
-`ModularLevelShape`-shaped or `Γ₁`-specific analogue of `IsGamma0Isogeny`
-with `(E, P) ↦ ∑_D (E/D, P + D)` — and then to sharpen this leaf in a
-SEPARATE edit with its own faithfulness audit.
+recorded there as UNBLOCKED.
+
+**AND THE SENTENCE THAT FOLLOWED HERE IS ITSELF NOW STALE — CORRECTED
+2026-07-30.**  It read: "`IsHeckeIsotypicDecompositionGamma1` has no such field,
+so the swap survives here and the sharpening is still blocked on the `Γ₁` side.
+**The repair is to build the `Γ₁` pin** …".  **The `Γ₁` pin was built on
+2026-07-29** — `IsHeckeIsotypicDecompositionGamma1.heckeModuli :
+IsModularHeckeActionGamma1 N h.some jac T T_comp`, whose own field docstring says
+in terms that it "is what excludes the `N = 37` eigen-system swap" — and its
+arity gap was closed on 2026-07-30 (the three anemic relations; see the repaired
+FALSITY AUDIT on `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1`
+above).  So the `E_{37a}`/`E_{37b}` swap does **not** inhabit this structure
+either: it already fails at `ℓ = 2`, where `a₂(37a) = −2` and `a₂(37b) = 0`.
+
+**WHAT THAT DOES AND DOES NOT UNBLOCK.**  It removes the *stated* obstruction to
+sharpening this leaf to `L(form i, neben i, 1) ≠ 0`, so the sharpening is now in
+the same position as its `Γ₀` sibling: available, and still requiring its OWN
+faithfulness audit against the pinned structure rather than an inherited one.
+Two things a successor should know before attempting it, both checked on
+2026-07-30:
+
+* **`N ≠ 0` does NOT have to be threaded in from a consumer, and looking for a
+  consumer to thread it is a dead end.**  Neither
+  `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` nor the `_of_levelShape`
+  wrapper carries `hN`, which reads as a blocker — but this leaf does not need
+  them to: it holds a `D`, and `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`
+  (PROVEN, ~350 lines above) says that type is EMPTY at `N = 0`.  So `N ≠ 0` is
+  derivable here from `D` alone, and `heckeModuli` is therefore never read at
+  the level where it degenerates to the empty conjunction.  That is why this
+  leaf keeps its signature while the two Eichler–Shimura statements above gained
+  `hN`.
+* the sharpening is a CUT-LEVEL change — it alters what the consumer must
+  supply — so it must not be bundled with any other edit to this declaration.
+  Two individually-correct edits to one statement have made a leaf false in this
+  development before.
 
 **BEFORE BUILDING THAT PIN, READ THE ARITY-GAP WARNING** on
 `exists_heckeAction_isotypicQuotients_gamma1` above.  `IsModularHeckeAction`
