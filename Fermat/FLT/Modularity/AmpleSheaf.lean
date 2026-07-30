@@ -765,61 +765,431 @@ lemma modPullbackTensorComparison_tensorSection {X Y : Scheme.{u}} (f : X ⟶ Y)
     exact modPushforwardTensor_tensorSection f (modPullback f L) (modPullback f M) _ _
   exact h2.trans hR
 
-/-- **LEAF (this one IS the mathematics): the canonical comparison map is an
+/-! ### The PRESHEAF-LEVEL comparison map, and the reduction to it
+
+ADDED 2026-07-30 (`flt-lean-216`).  `isIso_modPullbackTensorComparison` used to
+be a bare `sorry` carrying the whole of "`f^*` is monoidal".  It is now PROVEN
+over ONE strictly smaller leaf, the split again being PLUMBING versus
+MATHEMATICS:
+
+* `modLocW_modPullbackTensorPre` — MATHEMATICS, and the only thing left open.
+  The presheaf-level comparison map is a LOCAL ISOMORPHISM.  This is where the
+  filtered colimit lives.
+* `modPullbackTensorComparison_eq` — BOOKKEEPING, **PROVEN**.  The sheaf-level
+  canonical map IS the sheafification of the presheaf-level one, read through
+  mathlib's `SheafOfModules.sheafificationCompPullback`.  Both maps are
+  transposes of `(η ⊗ η) ≫ ν₀`, one level apart, so the proof is two successive
+  applications of `Adjunction.homEquiv`-injectivity followed by
+  `Adjunction.unit_leftAdjointUniq_hom_app` and naturality.
+
+So this is a 1 → 1 replacement of the leaf, not a decomposition into two.
+
+WHAT MAKES THE REDUCTION CHEAP, and it is one mathlib declaration that the
+previous route audit did not name: **`SheafOfModules.sheafificationCompPullback`**
+(`Mathlib/Algebra/Category/ModuleCat/Sheaf/PullbackContinuous.lean`) — "the
+pullback of (pre)sheaves of modules commutes with the sheafification", i.e.
+`a_Y ⋙ f^* ≅ p^* ⋙ a_X`, where `a` is `PresheafOfModules.sheafification` and
+`p^*` is `PresheafOfModules.pullback`.  Since `modTensor L M` is *by definition*
+`a_Y (L.val ⊗ M.val)`, that iso applied at `L.val ⊗ M.val` identifies the SOURCE
+`f^*(L ⊗ M)` with `a_X (p^*(L.val ⊗ M.val))` on the nose
+(`modPullbackSheafifyIso`).  And `modTensor (f^*L) (f^*M)` is *by definition*
+`a_X ((f^*L).val ⊗ (f^*M).val)`, so the TARGET needs no identification at all:
+choosing the presheaf-level comparison to land in the presheaf tensor of the
+`.val`s of the two SHEAF pullbacks — rather than in `p^*L.val ⊗ p^*M.val` — makes
+the target match by `rfl`.  Both `rfl`s were compiler-checked.
+
+That is why the reduction is three lines and needs no mate calculus, no
+`Localization.Monoidal`, no `LaxMonoidal` instance on
+`PresheafOfModules.restrictScalars`, and in particular does NOT need
+"the sheafification unit is a local isomorphism" (which is true, and which an
+earlier draft of this block did need; the two extra `modTensorMk` factors it was
+there to absorb cancel against each other by the adjunction triangle).
+
+FAITHFULNESS.  The statement is TRUE — this is the standard fact that the
+pullback of `𝒪`-modules is monoidal (Stacks 01CC / Hartshorne II.5, Ex. 5.1(d)),
+and it is not one of the statements that can go wrong over `𝒪ᵥ`: no rationality,
+no coordinate, no existence-of-an-element is being asserted, only that a
+canonical map is invertible.  The mathematical reason it holds, and hence what
+the surviving leaf really asks for: `p^*` is the composite of the left Kan
+extension along `Opens.map f` with base change along `f^♯`, base change is strong
+monoidal, and the Kan extension is the FILTERED colimit `colim_{V ⊇ f(U)}`
+(`StructuredArrow U (Opens.map f)` has `⊤` as a terminal object, hence `Opens.map
+f` is final — `opensMapFinal` above — and the indexing poset is directed because
+`f ⁻¹ᵁ (V₁ ⊓ V₂) = f ⁻¹ᵁ V₁ ⊓ f ⁻¹ᵁ V₂`), over which tensor products commute.  So
+`modLocW_modPullbackTensorPre` is in fact true in the STRONGER form `IsIso`, with
+no sheafification at all; the local form is stated because it is all the glue
+consumes and because the local form has a second, independent route (locally
+surjective + locally injective, the `MonoidalW.lean` argument). -/
+
+/-- Sheafification of presheaves of modules on a scheme, named so that every
+occurrence below is one and the same elaborated term. -/
+noncomputable abbrev modSheafification (Z : Scheme.{u}) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ Z.Modules :=
+  PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)
+
+/-- The presheaf-level pullback, with its target type spelled `X.ringCatSheaf.obj`
+so that the re-keyed `MonoidalCategory` instance (`presheafOfModulesMonoidal`) is
+found.  Written out, this is exactly the functor that
+`SheafOfModules.sheafificationCompPullback` compares with `f^*`. -/
+noncomputable abbrev modPrePullback {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    PresheafOfModules.{u} Y.ringCatSheaf.obj ⥤ PresheafOfModules.{u} X.ringCatSheaf.obj :=
+  PresheafOfModules.pullback.{u} (Scheme.Hom.toRingCatSheafHom f).hom
+
+/-- The presheaf-level pushforward, same re-keying. -/
+noncomputable abbrev modPrePushforward {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    PresheafOfModules.{u} X.ringCatSheaf.obj ⥤ PresheafOfModules.{u} Y.ringCatSheaf.obj :=
+  PresheafOfModules.pushforward.{u} (Scheme.Hom.toRingCatSheafHom f).hom
+
+/-- The presheaf-level adjunction `p^* ⊣ p_*`. -/
+noncomputable abbrev modPreAdj {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    modPrePullback f ⊣ modPrePushforward f :=
+  PresheafOfModules.pullbackPushforwardAdjunction.{u} (Scheme.Hom.toRingCatSheafHom f).hom
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`ν₀` at one open, for ARBITRARY PRESHEAVES of modules on `X`.**
+
+`modPushforwardTensorPreApp` above is this map post-composed with `restrictScalars`
+of the sheafification unit; the two are the same construction and this is the one
+the comparison map needs, because `p^*P` is a presheaf and not a sheaf. -/
+noncomputable def prePushTensorApp {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (A B : PresheafOfModules.{u} X.ringCatSheaf.obj) (V : (Opens ↥Y)ᵒᵖ) :
+    (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf)
+        ((modPrePushforward f).obj A) ((modPrePushforward f).obj B)).obj V ⟶
+      ((modPrePushforward f).obj
+        (PresheafOfModules.Monoidal.tensorObj (R := X.presheaf) A B)).obj V :=
+  Functor.LaxMonoidal.μ (ModuleCat.restrictScalars _) (A.obj (op (f ⁻¹ᵁ V.unop)))
+    (B.obj (op (f ⁻¹ᵁ V.unop)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The pinning clause for `prePushTensorApp`; the two `letI`s are the `CommRing`
+re-keying described at `exists_modPushforwardTensorPre`. -/
+lemma prePushTensorApp_tmul {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (A B : PresheafOfModules.{u} X.ringCatSheaf.obj) (V : (Opens ↥Y)ᵒᵖ)
+    (a : ↑(((modPrePushforward f).obj A).obj V))
+    (b : ↑(((modPrePushforward f).obj B).obj V)) :
+    prePushTensorApp f A B V (a ⊗ₜ b) =
+      @TensorProduct.tmul
+        ↑((X.presheaf ⋙ forget₂ CommRingCat RingCat).obj ((Opens.map f.base).op.obj V)) _
+        ↑(A.obj ((Opens.map f.base).op.obj V)) ↑(B.obj ((Opens.map f.base).op.obj V))
+        _ _ _ _ a b := by
+  letI : CommRing ↑(Y.ringCatSheaf.obj.obj V) := inferInstanceAs (CommRing ↑(Y.presheaf.obj V))
+  letI : CommRing ↑(X.ringCatSheaf.obj.obj (op (f ⁻¹ᵁ V.unop))) :=
+    inferInstanceAs (CommRing ↑(X.presheaf.obj (op (f ⁻¹ᵁ V.unop))))
+  unfold prePushTensorApp
+  exact ModuleCat.restrictScalars_μ_tmul _ _ _ _ _
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The presheaf-level lax structure map `ν₀` of `f_*`**, for arbitrary
+presheaves: `p_*A ⊗ p_*B ⟶ p_*(A ⊗ B)`.  Naturality is `rfl` on both sides after
+`ModuleCat.MonoidalCategory.tensor_ext` reduces to pure tensors, exactly as in
+`exists_modPushforwardTensorPre`. -/
+noncomputable def prePushTensor {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (A B : PresheafOfModules.{u} X.ringCatSheaf.obj) :
+    (modPrePushforward f).obj A ⊗ (modPrePushforward f).obj B ⟶
+      (modPrePushforward f).obj (A ⊗ B) where
+  app := prePushTensorApp f A B
+  naturality := fun {V V'} g => by
+    letI : CommRing ↑(Y.ringCatSheaf.obj.obj V) := inferInstanceAs (CommRing ↑(Y.presheaf.obj V))
+    letI : CommRing ↑(Y.ringCatSheaf.obj.obj V') := inferInstanceAs (CommRing ↑(Y.presheaf.obj V'))
+    letI : CommRing ↑(X.ringCatSheaf.obj.obj (op (f ⁻¹ᵁ V.unop))) :=
+      inferInstanceAs (CommRing ↑(X.presheaf.obj (op (f ⁻¹ᵁ V.unop))))
+    letI : CommRing ↑(X.ringCatSheaf.obj.obj (op (f ⁻¹ᵁ V'.unop))) :=
+      inferInstanceAs (CommRing ↑(X.presheaf.obj (op (f ⁻¹ᵁ V'.unop))))
+    apply ModuleCat.MonoidalCategory.tensor_ext
+    intro m n
+    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+    show prePushTensorApp f A B V'
+          ((((modPrePushforward f).obj A).map g m) ⊗ₜ (((modPrePushforward f).obj B).map g n))
+        = ((modPrePushforward f).obj (PresheafOfModules.Monoidal.tensorObj
+            (R := X.presheaf) A B)).map g (prePushTensorApp f A B V (m ⊗ₜ n))
+    rw [prePushTensorApp_tmul, prePushTensorApp_tmul]
+    rfl
+
+/-- The unit of the SHEAF-level adjunction `f^* ⊣ f_*`, read as a map of
+presheaves.  `((f_* A).val = p_* (A.val)` is definitional, which is why no
+transport appears. -/
+noncomputable abbrev modPullbackPreUnit {X Y : Scheme.{u}} (f : X ⟶ Y) (L : Y.Modules) :
+    L.val ⟶ (modPrePushforward f).obj ((modPullback f L).val) :=
+  ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L).val
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE PRESHEAF-LEVEL COMPARISON MAP**
+`p^*(L.val ⊗ M.val) ⟶ (f^*L).val ⊗ (f^*M).val`, the transpose of `(η ⊗ η) ≫ ν₀`
+along `modPreAdj` — the same recipe as `modPullbackTensorComparison`, one level
+down.
+
+The target is deliberately the presheaf tensor of the `.val`s of the two SHEAF
+pullbacks, not `p^*L.val ⊗ p^*M.val`: sheafifying it then lands on
+`modTensor (f^*L) (f^*M)` by `rfl`, which is what removes an identification from
+`modPullbackTensorComparison_eq`.  The two versions differ by
+`p^*L.val ⊗ p^*M.val ⟶ (f^*L).val ⊗ (f^*M).val`, which is a local isomorphism, so
+nothing mathematical is lost either way. -/
+noncomputable def modPullbackTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    (modPrePullback f).obj (L.val ⊗ M.val) ⟶
+      (modPullback f L).val ⊗ (modPullback f M).val :=
+  ((modPreAdj f).homEquiv _ _).symm
+    (MonoidalCategory.tensorHom (modPullbackPreUnit f L) (modPullbackPreUnit f M) ≫
+      prePushTensor f _ _)
+
+/-- **The source identification**, and the whole reason the reduction is short:
+`modTensor L M` IS `a_Y (L.val ⊗ M.val)`, so mathlib's
+`SheafOfModules.sheafificationCompPullback` applies at that presheaf verbatim. -/
+noncomputable def modPullbackSheafifyIso {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    modPullback f (modTensor L M) ≅
+      (modSheafification X).obj ((modPrePullback f).obj (L.val ⊗ M.val)) :=
+  (SheafOfModules.sheafificationCompPullback (Scheme.Hom.toRingCatSheafHom f)).app
+    (L.val ⊗ M.val)
+
+/-- **LEAF — THE MATHEMATICS: the presheaf-level comparison map is a LOCAL
+ISOMORPHISM.**
+
+This is all that is left of "the pullback of `𝒪`-modules is monoidal"; see the
+section docstring above for the faithfulness verdict and for why it is true.
+
+TRUE IN THE STRONGER FORM `IsIso`, with no sheafification: `p^*` is a filtered
+colimit followed by base change, and tensor products commute with filtered
+colimits.  A prover may take either statement — the local one is what the glue
+consumes, and it is the one with two independent routes:
+
+* the COLIMIT route, which proves the stronger statement.  Mathlib's
+  `PresheafOfModules.pullback` is defined as an abstract partial left adjoint
+  (`Presheaf/Pullback.lean`), NOT by the colimit formula, so this route must
+  first identify it with `Lan` along `(Opens.map f).op` — the index category at
+  `U` is `{V : Opens Y // U ≤ f ⁻¹ᵁ V}` ordered by reverse inclusion, filtered
+  because `f ⁻¹ᵁ (V₁ ⊓ V₂) = f ⁻¹ᵁ V₁ ⊓ f ⁻¹ᵁ V₂`;
+* the LOCAL route, which proves exactly this statement: locally surjective plus
+  locally injective implies local isomorphism, the two-halves argument of
+  `Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`
+  (`isLocallySurjective_whiskerLeft`, `isLocallyInjective_whiskerLeft`,
+  `exists_relations`, `key_equalizerSieve` are the reusable pieces).
+
+The free/colimit inputs `SheafOfModules.pullbackObjFreeIso` and
+`pullbackObjUnitToUnit` (`Sheaf/PullbackFree.lean`, already imported) remain
+available, with `Sheaf/Generators.lean`'s `LocalGeneratorsData`.
+
+DEAD at this pin, re-checked 2026-07-28/29/30 by `grep`: internal hom
+(`MonoidalClosed` has zero occurrences under mathlib's presheaf/sheaf `ModuleCat`
+directories) and stalks (there is no stalk API for
+`PresheafOfModules`/`SheafOfModules` at all). -/
+theorem modLocW_modPullbackTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    modLocW X (modPullbackTensorPre f L M) := sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Maps out of `p_*A ⊗ p_*B` are determined by their values on pure tensors —
+the presheaf tensor is objectwise, so this is `tensor_ext` at each open. -/
+lemma prePushTensor_hom_ext {X Y : Scheme.{u}} (f : X ⟶ Y)
+    {A B : PresheafOfModules.{u} X.ringCatSheaf.obj}
+    {Q : PresheafOfModules.{u} Y.ringCatSheaf.obj}
+    {u v : (modPrePushforward f).obj A ⊗ (modPrePushforward f).obj B ⟶ Q}
+    (h : ∀ (V : (Opens ↥Y)ᵒᵖ)
+        (a : ↑(((modPrePushforward f).obj A).obj V))
+        (b : ↑(((modPrePushforward f).obj B).obj V)),
+        u.app V (a ⊗ₜ b) = v.app V (a ⊗ₜ b)) : u = v := by
+  apply PresheafOfModules.hom_ext
+  intro V
+  apply ModuleCat.MonoidalCategory.tensor_ext
+  intro m n
+  exact h V m n
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **PINNING**: the opaque `modPushforwardTensorPre` — which is a `choose` out of
+`exists_modPushforwardTensorPre` and therefore has no computation rule beyond its
+values on pure tensors — IS `ν₀` followed by `p_*` of the sheafification unit.
+Both sides are pinned on pure tensors, so `prePushTensor_hom_ext` finishes it. -/
+lemma modPushforwardTensorPre_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
+    modPushforwardTensorPre f A B =
+      prePushTensor f A.val B.val ≫ (modPrePushforward f).map (modTensorMk A B) := by
+  apply prePushTensor_hom_ext
+  intro V a b
+  refine Eq.trans (modPushforwardTensorPre_tmul f A B V a b) ?_
+  show _ = ((modPrePushforward f).map (modTensorMk A B)).app V
+      (prePushTensorApp f A.val B.val V (a ⊗ₜ b))
+  rw [prePushTensorApp_tmul]
+  rfl
+
+/-- **The defining property of `modPullbackSheafifyIso`**: it converts the unit of
+`a_Y ⋙ f^* ⊣ f_* ⋙ forget` into the unit of `p^* ⋙ a_X ⊣ forget ⋙ p_*`.
+
+This is `Adjunction.unit_leftAdjointUniq_hom_app` for the two composite
+adjunctions that mathlib's `sheafificationCompPullback` is built from, plus
+`Adjunction.comp_unit_app` to split each composite unit.  Everything else in the
+bookkeeping proof below is naturality and associativity. -/
+lemma modPullbackSheafifyIso_unit {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (P : PresheafOfModules.{u} Y.ringCatSheaf.obj) :
+    (PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).unit.app P ≫
+      ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app
+        ((modSheafification Y).obj P)).val ≫
+      ((Scheme.Modules.pushforward f).map
+        ((SheafOfModules.sheafificationCompPullback
+          (Scheme.Hom.toRingCatSheafHom f)).hom.app P)).val
+      = (modPreAdj f).unit.app P ≫ (modPrePushforward f).map
+          ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).unit.app
+            ((modPrePullback f).obj P)) := by
+  have h := Adjunction.unit_leftAdjointUniq_hom_app
+    ((PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).comp
+      (SheafOfModules.pullbackPushforwardAdjunction (Scheme.Hom.toRingCatSheafHom f)))
+    ((PresheafOfModules.pullbackPushforwardAdjunction
+        (Scheme.Hom.toRingCatSheafHom f).hom).comp
+      (PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj))) P
+  simp only [Adjunction.comp_unit_app] at h
+  exact h
+
+/-- Naturality of the sheafification unit, in the form the assembly needs.  This
+is the same input as `modTensorMap_tensorSection`, stated as an equality of
+morphisms rather than evaluated at a global section. -/
+lemma modTensorMk_modTensorMap {Z : Scheme.{u}} {L L' M M' : Z.Modules}
+    (e : L ⟶ L') (e' : M ⟶ M') :
+    modTensorMk L M ≫ (modTensorMap e e').val =
+      MonoidalCategory.tensorHom e.val e'.val ≫ modTensorMk L' M' :=
+  ((PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).unit.naturality
+    (MonoidalCategory.tensorHom ((SheafOfModules.forget _).map e)
+      ((SheafOfModules.forget _).map e'))).symm
+
+/-- `modPushforwardTensor` is the transpose of `modPushforwardTensorPre`, as an
+equality of morphisms. -/
+lemma modTensorMk_modPushforwardTensor {X Y : Scheme.{u}} (f : X ⟶ Y) (A B : X.Modules) :
+    modTensorMk ((Scheme.Modules.pushforward f).obj A)
+        ((Scheme.Modules.pushforward f).obj B) ≫ (modPushforwardTensor f A B).val =
+      modPushforwardTensorPre f A B := by
+  have h : ((PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).homEquiv _ _)
+      (modPushforwardTensor f A B) = modPushforwardTensorPre f A B :=
+    Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at h
+  exact h
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **PROVEN 2026-07-30 — THE BOOKKEEPING: the canonical sheaf-level comparison
+map is the sheafification of the presheaf-level one.**
+
+Both sides are transposes of the same map, one level apart, so the proof is a
+`leftAdjointUniq` computation and contains NO mathematics.  The two transposes
+are taken in succession:
+
+* first along `f^* ⊣ f_*`, which turns the goal into an equality of maps
+  `L ⊗ M ⟶ f_*(f^*L ⊗ f^*M)` whose left side is `κ := modTensorMap η η ≫
+  modPushforwardTensor` by `Equiv.apply_symm_apply`;
+* then along `a_Y ⊣ forget`, which is legitimate because `modTensor L M` IS
+  `a_Y (L.val ⊗ M.val)`, and which brings both sides down to PRESHEAF maps out of
+  `L.val ⊗ M.val`.
+
+Downstairs the left side is `(η.val ⊗ₘ η.val) ≫ ν₀ ≫ p_*(modTensorMk)` — by
+naturality of the sheafification unit (`modTensorMk_modTensorMap`), the transpose
+identity for `modPushforwardTensor` (`modTensorMk_modPushforwardTensor`), and the
+pinning `modPushforwardTensorPre_eq` — and the right side is the same, by
+`modPullbackSheafifyIso_unit`, naturality of the sheafification unit on `X`, and
+the transpose identity for `modPullbackTensorPre`.
+
+`set_option backward.isDefEq.respectTransparency false` is REQUIRED and not
+cosmetic: without it `rw [Category.assoc]` fails to build its motive here, with
+`Y.presheaf` reported at type `TopCat.Presheaf CommRingCat` where
+`(Opens ↥Y)ᵒᵖ ⥤ CommRingCat` is expected — the same re-keying that
+`presheafOfModulesMonoidal` exists to paper over.  Two steps still have to be
+taken as explicit `Eq.trans`/`congrArg` rather than `rw`, for the same reason,
+and the two `show`s are spelling bridges (`(f_* g).val` versus `p_*.map g.val`,
+`(pullback f ⋙ pushforward f).obj L` versus `(pushforward f).obj (modPullback f L)`),
+not mathematical steps. -/
+theorem modPullbackTensorComparison_eq {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
+    modPullbackTensorComparison f L M =
+      (modPullbackSheafifyIso f L M).hom ≫
+        (modSheafification X).map (modPullbackTensorPre f L M) := by
+  have hL : ((Scheme.Modules.pullbackPushforwardAdjunction f).homEquiv _ _)
+      (modPullbackTensorComparison f L M) =
+      modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+          ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M) ≫
+        modPushforwardTensor f (modPullback f L) (modPullback f M) :=
+    Equiv.apply_symm_apply _ _
+  refine ((Scheme.Modules.pullbackPushforwardAdjunction f).homEquiv _ _).injective ?_
+  rw [hL, Adjunction.homEquiv_unit]
+  refine ((PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).homEquiv
+    (L.val ⊗ M.val) _).injective ?_
+  rw [Adjunction.homEquiv_unit, Adjunction.homEquiv_unit,
+    show (PresheafOfModules.sheafificationAdjunction (𝟙 Y.ringCatSheaf.obj)).unit.app
+      (L.val ⊗ M.val) = modTensorMk L M from rfl]
+  show modTensorMk L M ≫
+        (modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+          ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M)).val ≫
+        (modPushforwardTensor f (modPullback f L) (modPullback f M)).val
+      = modTensorMk L M ≫
+        ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app (modTensor L M)).val ≫
+        ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val ≫
+        ((Scheme.Modules.pushforward f).map
+          ((modSheafification X).map (modPullbackTensorPre f L M))).val
+  rw [← Category.assoc]
+  refine Eq.trans (congrArg (fun t => t ≫ (modPushforwardTensor f (modPullback f L)
+      (modPullback f M)).val)
+    (modTensorMk_modTensorMap ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L)
+      ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M))) ?_
+  refine Eq.trans (Category.assoc _ _ _) ?_
+  refine Eq.trans (congrArg (fun t => (MonoidalCategory.tensorHom
+      (((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app L).val)
+      (((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app M).val)) ≫ t)
+    ((modTensorMk_modPushforwardTensor f (modPullback f L) (modPullback f M)).trans
+      (modPushforwardTensorPre_eq f (modPullback f L) (modPullback f M)))) ?_
+  have hd : ((modPreAdj f).homEquiv _ _) (modPullbackTensorPre f L M) =
+      MonoidalCategory.tensorHom (modPullbackPreUnit f L) (modPullbackPreUnit f M) ≫
+        prePushTensor f _ _ := Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at hd
+  have hi : (modTensorMk L M ≫ ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app
+        (modTensor L M)).val) ≫
+      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val
+      = (modPreAdj f).unit.app (L.val ⊗ M.val) ≫
+        (modPrePushforward f).map
+          ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).unit.app
+            ((modPrePullback f).obj (L.val ⊗ M.val))) := by
+    have h := modPullbackSheafifyIso_unit f (L.val ⊗ M.val)
+    simp only [← Category.assoc] at h
+    exact h
+  have hnat : (PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).unit.app
+        ((modPrePullback f).obj (L.val ⊗ M.val)) ≫
+      ((modSheafification X).map (modPullbackTensorPre f L M)).val
+      = modPullbackTensorPre f L M ≫ modTensorMk (modPullback f L) (modPullback f M) :=
+    ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).unit.naturality
+      (modPullbackTensorPre f L M)).symm
+  simp only [← Category.assoc] at hd ⊢
+  show _ = ((modTensorMk L M ≫ ((Scheme.Modules.pullbackPushforwardAdjunction f).unit.app
+        (modTensor L M)).val) ≫
+      ((Scheme.Modules.pushforward f).map (modPullbackSheafifyIso f L M).hom).val) ≫
+      (modPrePushforward f).map
+        (((modSheafification X).map (modPullbackTensorPre f L M)).val)
+  rw [hi, Category.assoc, Category.assoc, ← Functor.map_comp, hnat, Functor.map_comp,
+    ← Category.assoc, ← Category.assoc, hd]
+
+/-- **PROVEN 2026-07-30 (`flt-lean-216`), over the single leaf
+`modLocW_modPullbackTensorPre`: the canonical comparison map is an
 isomorphism.**
 
-Everything else about monoidality of `f^*` in this file is now formal over this
-one statement.  Being an `IsIso` on a NAMED map, it is immune to the
-under-pinning defect that the `Nonempty` and `∃` forms suffered: there is
-nothing to choose.
+Everything else about monoidality of `f^*` in this file is formal over this
+statement.  Being an `IsIso` on a NAMED map, it is immune to the under-pinning
+defect that the `Nonempty` and `∃` forms suffered: there is nothing to choose.
 
-ROUTES, in increasing order of generality.
+The route audit that stood here while this was a bare `sorry` is kept below,
+because two of its three entries are still the live routes for
+`modLocW_modPullbackTensorPre` — read them there, where the residue now is.
 
 * THE OPEN-IMMERSION CASE IS STRICTLY EASIER and is what the trivialization
   calculus below actually consumes.  For an open immersion, restriction is
   itself a LEFT adjoint (`Scheme.Modules.restrictAdjunction`, compared to
   `pullbackPushforwardAdjunction` by `restrictFunctorIsoPullback`), and at
   presheaf level it is a `pushforward₀`, whose `restrictAppIso` is `Iso.refl`
-  and which is STRONG monoidal (`Presheaf/PushforwardZeroMonoidal.lean`).  So in
-  the open case there is no comparison-is-iso question at presheaf level at all;
-  what remains is that sheafification commutes with restriction to an open
-  subsite, the mate of `restrictFunctorIsoPullback`.  A prover who only needs
-  the consumers in this file should do this case FIRST.
-* IN GENERAL — and note `exists_modPushforwardTensorPre` is PROVEN as of
-  2026-07-30, so the lax structure it supplies is no longer a hypothesis —
-  `CategoryTheory.Functor.Monoidal.ofOplaxMonoidal` upgrades the oplax
-  `PresheafOfModules.pullback φ` (via
+  and which is STRONG monoidal (`Presheaf/PushforwardZeroMonoidal.lean`).
+  **NOTE (2026-07-30): this is NOT enough for the consumers.** The four call
+  sites of `nonempty_modPullback_modTensor` in `Modularity/AbelianSchemeIsogeny.lean`
+  and the three in `ModularCurve/RelativePicard.lean` are at `ab.sumHom`,
+  `ab.mulByNat`, `ab.negSelfHom` and `curveBaseChangeProj`/`curveBaseChangeMap` —
+  none of them an open immersion.  The special case would close nothing.
+* IN GENERAL, `CategoryTheory.Functor.Monoidal.ofOplaxMonoidal` upgrades the
+  oplax `PresheafOfModules.pullback φ` (via
   `CategoryTheory.Adjunction.leftAdjointOplaxMonoidal`) to strong given
-  `IsIso (η F)` and `IsIso (δ F X Y)`, and the residue is
-  `modLocW X (δ (PresheafOfModules.pullback φ) P Q)` — the SAME shape as
-  `modLocW_whiskerLeft`, and closable by the same input.  `p^*` on presheaves
-  over a space is the filtered colimit `colim_{V ⊇ f(U)}` (`opensMapFinal`,
-  proven above), which is what makes both statements local.
-
-  **UPDATED 2026-07-29: that input now EXISTS and is proven.**
-  `modLocW_whiskerLeft` was a sorry when this route was first written; it has
-  since been closed over
-  `Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`
-  (`Fermat.SheafificationMonoidal.W_whiskerLeft`), which proves stability of
-  local isomorphisms under `X ⊗ -` hands-on, via
-  `isLocallySurjective_whiskerLeft` and `isLocallyInjective_whiskerLeft`.
-  A prover of THIS leaf should start there: the same two-halves argument
-  (locally surjective + locally injective ⇒ local iso) applies to `δ` of the
-  presheaf pullback, and `exists_relations` / `key_equalizerSieve` in that file
-  are the reusable pieces.  This is now the recommended route, ahead of the
-  free/colimit one below.
-* The free/colimit route remains available:
-  `SheafOfModules.pullbackObjFreeIso` and `pullbackObjUnitToUnit`
-  (`Sheaf/PullbackFree.lean`, already imported), with `Sheaf/Generators.lean`'s
-  `LocalGeneratorsData` presenting a sheaf of modules locally as a quotient of
-  frees.
-
-DEAD at this pin, re-checked 2026-07-28/29 by `grep`: internal hom
-(`MonoidalClosed` has zero occurrences under mathlib's presheaf/sheaf
-`ModuleCat` directories) and stalks (there is no stalk API for
-`PresheafOfModules`/`SheafOfModules` at all). -/
+  `IsIso (η F)` and `IsIso (δ F X Y)`.  That route needs
+  `(PresheafOfModules.pushforward φ).LaxMonoidal` as an INSTANCE, which does not
+  exist at this pin and which `exists_modPushforwardTensorPre` deliberately did
+  not build; the reduction actually taken below sidesteps it, because a
+  transpose does not need the coherence axioms that a `LaxMonoidal` instance
+  carries. -/
 instance isIso_modPullbackTensorComparison {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
-    IsIso (modPullbackTensorComparison f L M) := sorry
+    IsIso (modPullbackTensorComparison f L M) := by
+  rw [modPullbackTensorComparison_eq]
+  exact IsIso.comp_isIso' inferInstance (modLocW_modPullbackTensorPre f L M)
 
 /-- **Monoidality of `f^*` on objects** (PROVEN 2026-07-29):
 `f^*(L ⊗ M) ≅ f^*L ⊗ f^*M`, **with the isomorphism PINNED by its effect on
