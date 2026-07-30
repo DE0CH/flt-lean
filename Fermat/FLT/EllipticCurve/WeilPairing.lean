@@ -5676,7 +5676,7 @@ theorem weilValueProp_translationChar_witness (q : ℕ) [Fact q.Prime]
     · subst he
       have hd1 : orderOf c ∣ p - 1 := orderOf_dvd_of_pow_eq_one h1
       have hd2 : orderOf c ∣ p := orderOf_dvd_of_pow_eq_one hcp
-      have hsub : orderOf c ∣ p - (p - 1) := Nat.dvd_sub' hd2 hd1
+      have hsub : orderOf c ∣ p - (p - 1) := Nat.dvd_sub hd2 hd1
       have hp2 : 2 ≤ p := Fact.out (p := 1 < p)
       rw [show p - (p - 1) = 1 from by omega] at hsub
       exact hc1 (orderOf_eq_one_iff.mp (Nat.dvd_one.mp hsub))
