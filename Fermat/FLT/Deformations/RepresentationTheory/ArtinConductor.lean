@@ -4298,7 +4298,14 @@ construction `nonempty_ramificationFiltration` below consumes them.
 
 `LowerRamificationData.wildInertiaGroup_le_gp_one` is a FIFTH leaf, and it is
 new rather than lifted: see its own docstring and
-`GaloisRep.pos_of_card_filter_eq`. -/
+`GaloisRep.pos_of_card_filter_eq`.
+
+**STATUS 2026-07-30 — two of the five are now THEOREMS, not leaves**, so do not
+dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
+above, and `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`.
+The three still open are `localInertiaGroup_le_gp_zero` (`hin`),
+`wildInertiaGroup_le_gp_one`, and `gp_le_upperRamificationFiltration_sup_lvl`
+(`hherb`, which is Herbrand's theorem itself and is the deep one). -/
 
 /-- **THE LOWER FILTRATION TERMINATES AT ITS LEVEL**, `⋂_m G_m = N`. An
 element moving every `x ∈ 𝒪_L` by arbitrarily high powers of the uniformizer
@@ -4442,7 +4449,10 @@ inverse limit `upperRamificationFiltration v` over the finite levels (*Corps
 Locaux* IV §3, "Passage à la limite"), and four of the six axioms —
 decreasing, `G⁰ = I_v`, `G^u ≤ P_v`, and left continuity — are PROVEN of it
 outright, the last from the minimality of `LowerRamificationData.psiNat`. The
-remaining arithmetic inputs are the four named leaves immediately above.
+remaining arithmetic inputs are the named leaves immediately above — of which,
+as of 2026-07-30, only THREE are still open (`localInertiaGroup_le_gp_zero`,
+`wildInertiaGroup_le_gp_one`, `gp_le_upperRamificationFiltration_sup_lvl`);
+`iInf_gp_eq_lvl` and `iInf_lvl_eq_bot` are proven.
 
 This is what discharges the `Nonempty` conjunct of `GaloisRep.IsSwanExponentAt`,
 and it is what keeps that leaf honest: nothing else prevents an over-strong
@@ -5771,7 +5781,8 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
   -- STEP 1 (`hexists`): the upper-numbering filtration exists — CONSTRUCTED
   -- as Serre's inverse limit `upperRamificationFiltration v` over the finite
-  -- levels, in `nonempty_ramificationFiltration`, over four named leaves.
+  -- levels, in `nonempty_ramificationFiltration`, over named leaves (three of
+  -- the five still open as of 2026-07-30).
   obtain ⟨F₀⟩ := nonempty_ramificationFiltration v
   -- STEP 3 (`hsum`): the break sum is a natural number, the same for every
   -- admissible `F` — `exists_nat_forall_sum_breaks_eq`.
