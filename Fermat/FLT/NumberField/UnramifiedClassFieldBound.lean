@@ -254,7 +254,60 @@ that. For `K = ℚ(√-5)`, `Cl = ℤ/2`, the nontrivial class is realised by th
 prime `(2, 1 + √-5)`.
 
 **The check that would refute it**: a number field `K` and a class of
-`Cl(𝓞 K)` containing no prime ideal. -/
+`Cl(𝓞 K)` containing no prime ideal.
+
+## What this repository already has for it (surveyed 2026-07-30)
+
+The 2026-07-29 note above is right that no algebraic proof exists, and the
+2026-07-28 mathlib survey further down this file is right that the pin has
+nothing. Both are still the wrong place to look — the same mistake that left
+`exists_isArithFrobOver_of_aut` open for a day when
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` (13.5k lines, `sorry`-free)
+had already proven it. So, checked against that file's source rather than its
+docstring:
+
+**The hard COUNTING half is PROVEN there.** `Chebotarev.lean` carries the
+Weber–Landau count at a prime modulus `ℓ` with a narrow (totally positive)
+archimedean condition:
+
+    GaloisRepresentation.exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
+      (F) (ℓ) (hℓ : ℓ.Prime) :
+      ∃ κ₀ r C, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧ ∀ I₀ ≠ 0, IsCoprime I₀ (ℓ) → ∀ n,
+        |#{I ≠ 0 | absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} - κ₀ * n| ≤ C * n ^ r
+
+Note the single `κ₀` quantified OUTSIDE `I₀`: that is equidistribution, not just
+a bound, and it is exactly the input Hecke's argument needs. Alongside it,
+`GaloisRepresentation.finite_quotient_narrowRaySetoid` gives finiteness of the
+narrow ray class quotient, and `narrowRaySetoid` / `IsNarrowRayEquiv` the
+equivalence itself.
+
+**The missing input is the NONVANISHING half, for a WIDER character group.**
+`Chebotarev.lean` proves `L(1, χ) ≠ 0` only in the form
+
+    GaloisRepresentation.exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le
+      … (χ : DirichletCharacter ℂ ℓ) (hχ : χ nontrivial on the Galois image) :
+      ∃ B, ∀ s > 1, ‖∑' degree-one P, χ (#(𝓞 F/P)) * #(𝓞 F/P) ^ (-s)‖ ≤ B
+
+i.e. for characters of `(ℤ/ℓ)ˣ` pulled back along the ABSOLUTE NORM RESIDUE.
+Those factor through a proper quotient of the narrow ray class group and do not
+separate ideal classes, so they cannot detect a class of `Cl(𝓞 K)`. What is
+needed is the same bound for a nontrivial character of the ideal class group
+itself. That is a genuinely new development of the same shape and size as the
+one already there — not a corollary of it.
+
+**Two concrete gaps in the glue, so the next prover does not discover them
+late.** (i) Turning the narrow-ray count into an IDEAL-CLASS count means summing
+over the fibre of `narrowRayClass ↠ Cl(𝓞 K)`; the fibres have equal size only
+because they are cosets, and `narrowRaySetoid` is packaged as a `Setoid` with a
+finiteness theorem, NOT as a group — the group structure would have to be built.
+(ii) The count is stated for ideals coprime to `ℓ`, so a fixed auxiliary prime
+`ℓ` has to be chosen and the finitely many ideals divisible by it discarded.
+
+**The Hilbert class field route is CIRCULAR from here and must not be tried.**
+`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean` imports THIS module,
+so the existence theorem is downstream of this leaf; using it would close a
+cycle. Chebotarev applied to `H/K` is the classical proof and is unavailable at
+this point in the dependency order. -/
 theorem exists_isPrime_classGroupMk0_eq (c : ClassGroup (𝓞 K)) :
     ∃ P : (Ideal (𝓞 K))⁰, (P : Ideal (𝓞 K)).IsPrime ∧ ClassGroup.mk0 P = c :=
   sorry
@@ -313,6 +366,19 @@ into the `Γℚ`/character setting.
 **Route.** Neukirch VI (6.7)–(6.9); Childress ch. 4–5; Lang *ANT* ch. X;
 Cassels–Fröhlich ch. VII. Modulus `1` is admissible exactly because of
 `IsUnramifiedAtInfinitePlaces`.
+
+**Checked 2026-07-30, and the answer is no: `Chebotarev.lean` does NOT shorten
+this one.** That file closed the sibling leaf `exists_isArithFrobOver_of_aut`
+outright, so it is worth saying explicitly where the analogy stops. Chebotarev
+is a DENSITY statement about which Frobenii occur; reciprocity is a statement
+about a RELATION among them — that the map `𝔭 ↦ Frob_𝔭` kills principal ideals —
+and no amount of density produces a relation. Concretely, everything
+`Chebotarev.lean` proves is of the form "the set of primes with property `X` is
+infinite", and this leaf's conclusion is an equation in `Gal(L/K)` about primes
+you are HANDED, not primes you may choose. The one place the two do meet is the
+`habel` audit below, which argues by Chebotarev that this leaf implies
+commutativity of `Gal(L/K)`; that argument now cites a PROVEN theorem rather
+than an open leaf, so the audit stands unconditionally.
 
 **⚠ ALL THREE HYPOTHESES ARE LOAD-BEARING.**
 
@@ -1027,7 +1093,20 @@ All the mathematics is in the leaf above.
 **Mathlib survey (checked 2026-07-28, re-checked 2026-07-28).** Ray class
 groups, the Hilbert class field, the norm index, the Artin map, Artin
 reciprocity and Chebotarev density are ALL absent from the pin and from
-`~/cs/FLT`. Present and usable: `ClassGroup`, `ClassGroup.mk0`,
+`~/cs/FLT`.
+
+**⚠ AMENDED 2026-07-30: "absent from the pin" IS NOT "absent".** Every clause
+above is true and the survey was still misleading, because it surveyed the wrong
+two places. Chebotarev density is proven IN THIS REPOSITORY —
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`, 13.5k lines, zero `sorry`
+tokens — and once that was noticed, `exists_isArithFrobOver_of_aut` took 48
+lines. Narrow-ray-class ideal counting is there too; see
+`exists_isPrime_classGroupMk0_eq`'s docstring for exactly which half of Hecke
+that supplies and which half it does not. Artin reciprocity and the Hilbert
+class field really are absent everywhere. **Any future survey in this file must
+grep `Fermat/` before it concludes anything.**
+
+Present and usable: `ClassGroup`, `ClassGroup.mk0`,
 `Ideal.relNorm` (in the general, `Module.Free`-free form — see
 `relNormClassSubgroup`), `Ideal.ramificationIdx`, `Ideal.inertiaDeg`,
 `Algebra.IsUnramifiedAt`, `NumberField.InfinitePlace.IsUnramified`,
