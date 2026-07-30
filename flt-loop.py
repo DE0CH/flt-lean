@@ -162,7 +162,14 @@ def live_tokens(force=False):
     """
     if not force and time.time() - _alive_cache["t"] < ALIVE_CACHE:
         return _alive_cache["tokens"]
-    hosts = sorted(set(worker_hosts().values()))
+    # MEDIC_HOST explicitly: it carries no worktree, so it is absent from the
+    # worktree->host map and was never swept. The medic was therefore ALWAYS
+    # observed dead -- harmless while it runs (SAFE MODE engages on the record,
+    # not on aliveness) but it meant a medic that died could never be told from
+    # one that was working, and SAFE MODE suspends every row below it. The loop
+    # would have held forever, with the one job that can unstick it already
+    # gone and no evidence of that anywhere in the state.
+    hosts = sorted(set(worker_hosts().values()) | {flt_loop_rows.MEDIC_HOST})
 
     def one(h):
         try:
@@ -455,8 +462,13 @@ def save(s):
         wr(STATE / "STOP", "halted\n")
     live = set(s["jobs"])
     for n, j in s["jobs"].items():
+        # An explicit key list, so anything a row invents is dropped unless it
+        # is named here -- a field that rows write and save() silently discards
+        # reads as amnesia one tick later. Anything added to a job record must
+        # be added here too.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
-                                     "retries", "host", "pid", "session", "takeover")}
+                                     "retries", "host", "pid", "session",
+                                     "takeover")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
@@ -488,6 +500,12 @@ def take_lock():
 
 
 IDLE, PANIC = 13, 14
+# Rows whose action changes nothing. They must not commit, for the same reason
+# idle does not: the state repo's whole value is that `git log` IS the
+# transition trace, and a medic that takes an hour buries the tick that broke
+# things under ~360 identical "SAFE MODE" commits. Measured: 20 of them in the
+# 3.5 minutes before this line was written.
+QUIET = (IDLE, 4)
 
 
 def tick(dry=False):
@@ -503,7 +521,7 @@ def tick(dry=False):
     for e in s["email"]:
         email("flt-loop: " + e.split(":")[0][:60], e)
     save(s)
-    if firing != IDLE:
+    if firing not in QUIET:
         extra = " [%s]" % s["spawned"] if s.get("spawned") else ""
         commit_state(s["git"][0] if s["git"] else "row %d: %s%s" % (firing, label, extra))
     return firing, label, s, rows
@@ -520,15 +538,25 @@ def main():
         f, lbl, s, rows = tick(dry=True)
         print("would fire row %d: %s" % (f, lbl))
         for r in rows:
-            print("  %-3s %-58s %s" % (r["id"], r["label"][:58],
-                                       "FIRES" if r["fires"] else r["why"][:70]))
+            # A guard returns its `why` unconditionally, so a row that MATCHED
+            # but lost to an earlier row was printing its own failure text --
+            # which reads as "this row does not apply" when the truth is the
+            # opposite. That sent a medic chasing a contradiction between row 6
+            # ("no agent finished") and row 13 ("8 agents finished").
+            if r["fires"]:
+                v = "FIRES"
+            elif r["matched"]:
+                v = "matched -- row %d fired first" % f
+            else:
+                v = r["why"][:70]
+            print("  %-3s %-58s %s" % (r["id"], r["label"][:58], v))
         return
     take_lock()
     print("flt-loop running, pid %d, state %s" % (os.getpid(), STATE))
     while True:
         try:
             f, lbl, s, _ = tick()
-            if f != IDLE:
+            if f not in QUIET:
                 print("%s row %-3d %s" % (time.strftime("%T"), f, lbl))
             if s.get("halted"):
                 print("STOP -- exiting")

@@ -43,10 +43,30 @@ def unjustified(s):
             continue
         k = j["kind"]
         if k == "merger":
-            if s["main"] != s["rebaselined"]:
-                bad.append((n, "merger alive but main already moved"))
-            elif not s["inflight"]:
-                bad.append((n, "merger alive with nothing claimed in .inflight"))
+            # A LIVE merger is justified for as long as it runs. Two earlier
+            # tests lived here and both were wrong, in the same way -- they
+            # inferred what a merger had done from a fact that is not about it.
+            #
+            #   `main != rebaselined` read ANY movement of main as "this merger
+            #   already released". But main moves without a release: a tooling
+            #   commit is explicitly sanctioned (CLAUDE.md), and the loop's own
+            #   source commit is one. After the first such commit the condition
+            #   is permanently true, so every merger created afterwards to
+            #   refresh the stale snapshot was condemned on its first tick --
+            #   which is exactly the panic that produced this comment. It also
+            #   cannot be repaired by tightening it to "delivered everything and
+            #   still alive": ALIVE_CACHE means that is naturally true for up to
+            #   20 seconds at the end of EVERY successful release. Whether this
+            #   merger released is now recorded where it belongs, in the record
+            #   (`base`), and rows 9/10 consume it when it stops.
+            #
+            #   `not s["inflight"]` condemned the refresh-only merger that
+            #   r11_action deliberately creates with an empty claim -- `[]` is
+            #   falsy. None and [] are DIFFERENT facts here and load()/save()
+            #   keep them apart on purpose: None is "no merger claimed
+            #   anything", [] is "claimed nothing, refresh only".
+            if s["inflight"] is None:
+                bad.append((n, "merger alive but .inflight records no claim"))
         elif k == "agent":
             w = j["worktree"]
             if w not in s["workers"]:
@@ -273,6 +293,48 @@ def rmedic_done_action(s):
         note(s, f"2  medic verdict NO-GO: {why} -- emailed, STOP written")
 
 
+def rmedic_dead_guard(s):
+    """The medic died without a verdict. Nothing below can rescue this.
+
+    Every other job's death has a recovery: an agent is respawned as a takeover,
+    a merger's claim is restored to the batch. The medic has none, because the
+    medic IS the recovery -- and SAFE MODE suspends every row beneath it. So a
+    medic that stops without writing a sentinel wedges the loop permanently and
+    silently, which is the worst outcome the table can produce.
+
+    Escalate to the human instead of respawning: the medic is the loop's own
+    self-repair, and self-repair that died is exactly the point at which
+    guessing again is worse than stopping and saying so. Nothing is torn down
+    -- STOP halts the loop only; the fleet keeps running (see r1_action).
+    """
+    j = s["jobs"].get("medic")
+    if not j:
+        return (False, "no medic record")
+    if not died(j):
+        return (False, "medic is not started ∧ ¬alive ∧ ¬sentinel")
+    return (True, "")
+
+
+def rmedic_dead_action(s):
+    # Two strikes. An unreachable host reports NO tokens rather than raising
+    # (live_tokens swallows it deliberately, to avoid calling a whole host's
+    # jobs dead on one bad ssh), so a single observation of "not alive" can be
+    # a network blip. Requiring a second firing costs one tick and spans a
+    # fresh sweep, since the liveness cache is shorter than two ticks.
+    j = s["jobs"]["medic"]
+    if j["retries"] < 1:
+        j["retries"] += 1
+        note(s, "2a medic not observed alive; one more tick before escalating")
+        commit(s, "medic not observed alive (strike 1 of 2)")
+        return
+    why = s["jobs"]["medic"]["payload"]
+    s["email"].append("medic died without a verdict; the panic it was sent to "
+                      "repair is UNREPAIRED: " + str(why))
+    commit(s, "medic died without a verdict -> STOP")
+    s["stop"] = True
+    note(s, "2a medic died without a verdict -> emailed, STOP written")
+
+
 def rmedic_wait_guard(s):
     """SAFE MODE engages on the medic RECORD, before it has even started.
 
@@ -417,8 +479,22 @@ def r6_guard(s):
         return (False, "no merger record")
     if not died(m):
         return (False, "merger is not started ∧ ¬alive ∧ ¬sentinel")
-    if s["main"] != s["rebaselined"]:
-        return (False, "main moved -- it released, so REBASELINE handles it")
+    # NO comparison against a main sha, of any kind. "main moved" is not
+    # evidence that THIS merger released -- main moves for reasons the loop
+    # does not cause, and every sha-proxy tried here failed the same way:
+    # against `rebaselined` a single tooling commit disabled this row forever;
+    # against a `base` stamped at creation it survived exactly until the next
+    # tooling commit, which the medic writing this line then made itself while
+    # repairing the first version.
+    #
+    # The contract is what settles it. A merger delivers by moving main AND
+    # leaving a current snapshot AND a current audit AND reporting -- so one
+    # that died with no sentinel did not deliver, whatever main is doing. The
+    # single exception is a full delivery on disk that it was killed before
+    # reporting; that is precisely r7_guard, so ask it rather than approximate
+    # it, and let ADOPT take it.
+    if r7_guard(s)[0]:
+        return (False, "the full delivery is on disk -- ADOPT handles it")
     return (True, "")
 
 
@@ -558,7 +634,12 @@ def panic(s, reason="no row matched"):
         # what -- that is the whole content of the panic. Emailing the reason
         # while handing the repair agent a bare "diagnose" would put the
         # useful half in the place nobody acts on.
-        "kind": "medic", "worktree": "flt-loop-state", "payload": reason,
+        # `flt-loop-state` was a path that does not exist, so the spawn's
+        # `cd || cd REPO` fallback quietly put the medic in the repo while its
+        # prompt told it to work somewhere else. The repo IS the medic's
+        # worktree: the loop source lives there and the state dir is its own
+        # git repo, addressed absolutely.
+        "kind": "medic", "worktree": "flt-lean", "payload": reason,
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
@@ -632,6 +713,11 @@ def inferred_panic(s):
 ROWS = [
     (1, "STOP exists", r1_guard, r1_action),
     (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
+    # Id 16, not 3: ids are stable names that IDLE/PANIC/QUIET refer to by
+    # number, so a new row is appended to the numbering and inserted in the
+    # ORDER. Renumbering would silently repoint those constants at other rows.
+    (16, "medic died without a verdict -> escalate + STOP",
+     rmedic_dead_guard, rmedic_dead_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
