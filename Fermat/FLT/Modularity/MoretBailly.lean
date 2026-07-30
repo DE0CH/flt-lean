@@ -4522,7 +4522,107 @@ last of these is PROVEN and still present, contrary to a report that it had been
 as free-floating).  **This module still does not import that file**; the import would be
 acyclic (its own imports are `Mathlib`-only) but its cone cost should be measured first.
 Bertini itself is absent from `Mathlib` and from `~/cs/FLT` (`grep -rlni bertini`
-returns nothing in either), so item 4 remains genuinely open. -/
+returns nothing in either), so item 4 remains genuinely open.
+
+SECOND FALSITY AUDIT, RUN 2026-07-30 AGAINST THE COMPOSITE STATEMENT — VERDICT: TRUE.
+Required because this leaf was CUT out of a different statement on 2026-07-29 and the
+audit above is INHERITED; an inherited audit certifies a statement that no longer exists,
+so it is void until re-run.  Re-run here against the hypotheses as they actually stand.
+The verdict is unchanged, and both witnesses survive the transport verbatim:
+
+* `hgen`.  The `n = 0` witness must still satisfy the OTHER hypotheses of THIS leaf, and
+  it does: `A = K[s,t]`, `y = ![]`.  `K[s,t]` is smooth, `PrimeSpectrum` irreducible, and
+  `topologicalKrullDim = 2 > 1`, so `hirr` and `hdim` hold; only `hgen` fails.  The cut
+  form is `(∑ i : Fin 0, …) − algebraMap K A (w (Fin.last 0)) = −w₀`, so for every
+  `w₀ ≠ 0` the span is `⊤`, the quotient is the ZERO ring and its `Spec` is EMPTY.
+  `ConnectedSpace` extends `Nonempty`, and a nonzero `G ∈ K[X₀]` has finitely many roots
+  while `K` is infinite, so no `G` works.  Load-bearing.
+* `hdim`.  The conic witness satisfies `hgen` (`s,t` generate) as well as smoothness and
+  irreducibility, so the two hypotheses are independent, as claimed above.  Note the
+  witness is disconnected in TWO ways as `w` varies — two reduced points for a transverse
+  line, and the EMPTY scheme when `w₀ = w₁ = 0 ≠ w₂` — and a nonzero `G` avoids neither
+  locus.  Load-bearing.
+
+TWO HYPOTHESES ARE *NOT* LOAD-BEARING, and a prover should not spend effort on them:
+`Algebra.Smooth K A` and `CharZero K`.  The literature statement (Jouanolou, *Théorèmes de
+Bertini et applications*, Thm 6.3) is irreducibility of the general hyperplane section of
+an IRREDUCIBLE closed subvariety of `ℙⁿ` of dimension `≥ 2`, in ARBITRARY characteristic
+and with no smoothness hypothesis — it is the Bertini SMOOTHNESS theorem, not the
+irreducibility theorem, that needs `char 0`.  They are harmless (a stronger hypothesis on
+a leaf costs the consumer nothing here, since the consumer supplies both), but a proof
+that routes through smoothness or through char `0` is doing avoidable work.
+
+ROUTE CORRECTION, 2026-07-30 — WHERE THE DIFFICULTY ACTUALLY IS.  The route above names
+the projective closure first, which makes the projective-closure interface look like the
+next thing to build.  It is not, and the cone cost warned about above should not be paid
+before the following is understood.  The INCIDENCE VARIETY of this family is irreducible
+for a completely trivial reason, with no dimension hypothesis and no Bertini:
+
+    A[t₀,…,t_n] ⧸ (∑_{i<n} tᵢ yᵢ − t_n)  ≅  A[t₀,…,t_{n−1}]
+
+— the relation SOLVES for `t_n`, so the incidence variety is `Spec A × 𝔸ⁿ`, irreducible
+whenever `Spec A` is.  Consequently the generic fibre of the projection to `𝔸ⁿ⁺¹` is
+irreducible too, for the equally cheap reason that the generic point of an irreducible
+total space lies in it and dominates every point of it.
+
+So NONE of the content of this leaf is in producing an irreducible object.  All of it is
+in the two steps that irreducibility of the generic fibre does NOT give:
+
+  (i) GEOMETRIC irreducibility of the generic fibre over `L = K(t₀,…,t_n)`.  Irreducible
+      does not imply geometrically irreducible — `𝔸¹ → 𝔸¹`, `t ↦ t²`, has irreducible
+      total space and generic fibre `Spec L[t]/(t² − s)`, a FIELD, hence irreducible and
+      not geometrically so.  This is the actual Bertini theorem, and the classical proof
+      of it uses that the linear system separates points (i.e. `hgen`), which is precisely
+      why `hgen` is load-bearing and smoothness is not.
+  (ii) The passage from the generic fibre to a dense open set of SPECIAL fibres, i.e.
+      constructibility of the geometrically-irreducible locus (EGA IV 9.7.7).  Absent from
+      `Mathlib` (`Mathlib/AlgebraicGeometry/Geometrically/Irreducible.lean` has the
+      definition and the base-change API, not the constructibility theorem).
+
+A cut into (i) and (ii) is therefore available and is the honest decomposition, but it
+replaces one hard leaf by two hard leaves and has NOT been taken here for that reason.
+Recorded so the next prover starts from the real obstruction rather than from the
+projective closure, which enters the classical proof of (i) but is not itself the gap.
+
+STEP (i) HAS A SCHEMELESS FORM, 2026-07-30 — a translation, checked on paper, NOT
+formalised.  The route correction above leaves (i) stated in terms of the generic
+fibre, which still drags in `GeometricallyIrreducible`, the incidence variety and a
+generic point.  All three disappear.  `A` is a DOMAIN (smooth over a field, hence
+reduced; `hirr` makes the nilradical prime), so write `M := Frac A` and adjoin `n`
+indeterminates `t 0, …, t (n-1)` — the hyperplane COEFFICIENTS; the constant term is
+not an independent parameter, since the relation solves for it.  Put
+
+    N := M(t 0, …, t (n-1)),    L := K(t 0, …, t (n-1), ∑ i, t i * y i) ⊆ N.
+
+Then (i) says exactly
+
+    (★)  `L` is ALGEBRAICALLY CLOSED in `N`.
+
+WHY (★) IS (i).  The incidence variety is `Spec A × 𝔸ⁿ`, as recorded above, hence
+integral with function field `N`, and it dominates `𝔸ⁿ⁺¹`, whose function field is
+`L`; so the generic fibre is an integral `L`-scheme with function field `N`.  For an
+integral scheme of finite type over a field, geometric integrality is equivalent to
+"the base field is algebraically closed in the function field, and that extension is
+separable" (Stacks `054Q`, EGA IV 4.5.9), and separability is free in characteristic
+zero — which is the one place `CharZero K` would be used, and only to discharge a
+hypothesis that is vacuous here.
+
+WHAT IT COSTS, stated so the trade is visible.  That equivalence is itself absent
+from `Mathlib` at this pin: `Mathlib/AlgebraicGeometry/Geometrically/Integral.lean`
+carries the definition, the base-change API and the fibre criterion
+`GeometricallyIntegral.iff_geometricallyIntegral_fiber`, and nothing relating
+geometric integrality to the function field; there is no `IsAlgClosedIn` predicate
+at all (`grep -rn "IsAlgClosedIn" .lake/packages/mathlib/Mathlib` returns nothing).
+So (★) buys a target with no schemes in it at the price of owing the bridge.
+
+It is recorded anyway, for two reasons.  (★) is what every classical proof of
+Bertini irreducibility actually establishes, so a formalisation following the
+literature will produce it and then need the bridge regardless of which way the
+leaf is cut.  And `hgen` becomes VISIBLE in it — `hgen` is exactly what makes the
+`y i` generate `M` over `K`, which is what makes the linear system separate points
+— whereas in the scheme-level statement its role is invisible.  That is consistent
+with the FALSITY AUDIT above, which found `hgen` load-bearing and `Algebra.Smooth`
+not. -/
 theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A]
     (hirr : IrreducibleSpace (PrimeSpectrum A))
@@ -10633,6 +10733,201 @@ theorem isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat
       (AlgebraicClosure ℚ) (nilradical (IntegralSystemModel f ℚ)))
     (isPrime_nilradical_quotient_of_isPrime_radical _ hQ)
 
+open scoped IntermediateField IntermediateField.algebraAdjoinAdjoin in
+/-- **A SEPARATING TRANSCENDENCE BASIS PUTS A FUNCTION FIELD ON A HYPERSURFACE**
+(PROVEN 2026-07-30; the mathematical core of
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below, stated over an
+ARBITRARY base field `F` — see the TRAP paragraph in that theorem's docstring for why
+specialising it to `ℚ` breaks it).
+
+Given a field extension `L / F`, a family `w : Fin d → L` that is algebraically
+INDEPENDENT over `F` and SEPARATING (`L` is finite and separable over
+`E := F(w₀,…,w_{d-1})`), there is an irreducible `g ∈ F[X₀,…,X_d]` with
+`Frac (F[X] ⧸ (g)) ≅ L`.  So `k = d + 1`: one more variable than the transcendence
+degree, which is the shape the FAITHFULNESS paragraph below predicts.
+
+THE PROOF, and note what it does NOT use.  Let `A := F[w] = Algebra.adjoin F (range w)`,
+so that `E` is its fraction field and, by `AlgebraicIndependent.aevalEquiv`, `A` is a
+polynomial ring — hence a UFD, hence integrally closed.
+
+* Take a primitive element `θ₀` for `L / E` and SCALE IT INTO `A`:
+  `IsAlgebraic.exists_integral_multiple` gives `0 ≠ y ∈ A` with `θ := y • θ₀` integral
+  over `A`, and `E⟮θ⟯ = E⟮θ₀⟯ = ⊤` because `y` is a nonzero element of the FIELD `E`.
+  This one step replaces the whole clearing-denominators / primitive-part / Gauss's
+  lemma apparatus: `minpoly A θ` is then already an honest polynomial over `A`.
+* `minpoly.prime_of_isIntegrallyClosed` makes `minpoly A θ` prime in `A[Y]`, and
+  `minpoly.ker_eval` identifies `ker (Polynomial.aeval θ : A[Y] →+* L)` with
+  `span {minpoly A θ}` — no division algorithm, no degree count, no Gauss.
+* `MvPolynomial.finSuccEquiv` composed with `Polynomial.mapAlgEquiv` of
+  `AlgebraicIndependent.aevalEquiv` transports `A[Y]` back to
+  `MvPolynomial (Fin (d+1)) F`, carrying the generator to `g` and irreducibility with
+  it (`MulEquiv.irreducible_iff`).
+* Finally `L` IS the fraction field of the quotient: the quotient injects because the
+  ideal is exactly the kernel, and every `z : L` is a ratio of images because
+  `IntermediateField.adjoin F (Set.range (Fin.cons θ w)) = ⊤` (by
+  `IntermediateField.adjoin_adjoin_left` and `E⟮θ⟯ = ⊤`), so
+  `IntermediateField.mem_adjoin_range_iff` writes `z` as a quotient of two values of
+  `MvPolynomial.aeval (Fin.cons θ w)`.  `IsFractionRing.of_field` then applies.
+
+WHY `A` IS A SUBALGEBRA OF `L` AND NOT AN ABSTRACT POLYNOMIAL RING.  mathlib's scoped
+namespace `IntermediateField.algebraAdjoinAdjoin` supplies `Algebra A E`,
+`IsFractionRing A E`, `IsScalarTower A E L` and `Algebra.IsAlgebraic A E` as
+instances for exactly the pair `(Algebra.adjoin F S, IntermediateField.adjoin F S)`.
+Building the same data by `letI`-ing `RingHom.toAlgebra` onto `MvPolynomial (Fin d) F`
+costs four hand-made instances and the scalar towers between them.
+
+CIRCULARITY GUARD: pure field theory and commutative algebra; nothing in this file is
+used. -/
+theorem exists_irreducible_hypersurface_fractionRing_of_separating_basis
+    {F : Type*} [Field F] {L : Type*} [Field L] [Algebra F L]
+    {d : ℕ} (w : Fin d → L) (hw : AlgebraicIndependent F w)
+    [Algebra.IsSeparable (IntermediateField.adjoin F (Set.range w)) L]
+    [FiniteDimensional (IntermediateField.adjoin F (Set.range w)) L] :
+    ∃ g : MvPolynomial (Fin (d + 1)) F, Irreducible g ∧
+      Nonempty (FractionRing (MvPolynomial (Fin (d + 1)) F ⧸ Ideal.span {g}) ≃+* L) := by
+  classical
+  set E := IntermediateField.adjoin F (Set.range w) with hEdef
+  set A := Algebra.adjoin F (Set.range w) with hAdef
+  haveI : UniqueFactorizationMonoid A :=
+    hw.aevalEquiv.toMulEquiv.uniqueFactorizationMonoid inferInstance
+  obtain ⟨θ₀, hθ₀⟩ := Field.exists_primitive_element E L
+  haveI halg : Algebra.IsAlgebraic A L := Algebra.IsAlgebraic.trans A E L
+  obtain ⟨y, hy0, hyint⟩ := (halg.isAlgebraic θ₀).exists_integral_multiple
+  set θ : L := y • θ₀ with hθdef
+  have hyLne : (y : L) ≠ 0 := by
+    rw [Ne, ZeroMemClass.coe_eq_zero]
+    exact hy0
+  have hyEmem : (y : L) ∈ E := IntermediateField.algebra_adjoin_le_adjoin F (Set.range w) y.2
+  have hθsmul : θ = (y : L) * θ₀ := by
+    rw [hθdef, Algebra.smul_def]; rfl
+  have hθtop : E⟮θ⟯ = ⊤ := by
+    have hyMem : ∀ K : IntermediateField E L, (y : L) ∈ K := fun K =>
+      K.algebraMap_mem ⟨(y : L), hyEmem⟩
+    have h2 : θ₀ ∈ E⟮θ⟯ := by
+      have hθ' : θ₀ = θ / (y : L) := by rw [hθsmul]; field_simp
+      rw [hθ']
+      exact div_mem (IntermediateField.mem_adjoin_simple_self E θ) (hyMem _)
+    refine le_antisymm le_top ?_
+    rw [← hθ₀]
+    exact IntermediateField.adjoin_simple_le_iff.2 h2
+  set g₀ : Polynomial A := minpoly A θ with hg₀def
+  have hg₀prime : Prime g₀ := minpoly.prime_of_isIntegrallyClosed hyint
+  have hker₀ : RingHom.ker ((Polynomial.aeval θ).toRingHom : Polynomial A →+* L)
+      = Ideal.span {g₀} := minpoly.ker_eval hyint
+  set Φ : MvPolynomial (Fin (d + 1)) F ≃ₐ[F] Polynomial A :=
+    (MvPolynomial.finSuccEquiv F d).trans (Polynomial.mapAlgEquiv hw.aevalEquiv) with hΦdef
+  set x' : Fin (d + 1) → L := Fin.cons θ w with hx'def
+  set ψ : MvPolynomial (Fin (d + 1)) F →ₐ[F] L := MvPolynomial.aeval x' with hψdef
+  have hcomp : ((Polynomial.aeval θ).restrictScalars F).comp Φ.toAlgHom = ψ := by
+    apply MvPolynomial.algHom_ext
+    intro i
+    refine Fin.cases ?_ ?_ i
+    · simp [hΦdef, hψdef, hx'def, MvPolynomial.finSuccEquiv_X_zero]
+    · intro j
+      have hj : ((hw.aevalEquiv (MvPolynomial.X j) : A) : L) = w j := by simp
+      simp [hΦdef, hψdef, hx'def, MvPolynomial.finSuccEquiv_X_succ, hj]
+  have hker : RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L)
+      = Ideal.span {(Φ.symm g₀ : MvPolynomial (Fin (d + 1)) F)} := by
+    have h1 : RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L)
+        = Ideal.comap (Φ : MvPolynomial (Fin (d + 1)) F →+* Polynomial A) (Ideal.span {g₀}) := by
+      rw [← hker₀]
+      ext p
+      simp only [Ideal.mem_comap, RingHom.mem_ker]
+      rw [← hcomp]
+      simp
+    rw [h1]
+    have h2 : Ideal.comap (Φ : MvPolynomial (Fin (d + 1)) F →+* Polynomial A) (Ideal.span {g₀})
+        = Ideal.span {(Φ.symm g₀ : MvPolynomial (Fin (d + 1)) F)} := by
+      ext p
+      simp only [Ideal.mem_comap, Ideal.mem_span_singleton, RingHom.coe_coe]
+      constructor
+      · intro h
+        simpa using map_dvd Φ.symm h
+      · intro h
+        simpa using map_dvd Φ h
+    rw [h2]
+  refine ⟨Φ.symm g₀, ?_, ?_⟩
+  · rw [← MulEquiv.irreducible_iff (Φ.toRingEquiv.toMulEquiv)]
+    simpa using hg₀prime.irreducible
+  · set g : MvPolynomial (Fin (d + 1)) F := Φ.symm g₀ with hgdef
+    set Q := MvPolynomial (Fin (d + 1)) F ⧸ Ideal.span {g} with hQdef
+    have hle : Ideal.span {g} ≤ RingHom.ker (ψ : MvPolynomial (Fin (d + 1)) F →+* L) := by
+      rw [hker]
+    set ε : Q →+* L := Ideal.Quotient.lift _ (ψ : MvPolynomial (Fin (d + 1)) F →+* L) hle
+      with hεdef
+    have hεinj : Function.Injective ε := by
+      rw [RingHom.injective_iff_ker_eq_bot, hεdef, Ideal.ker_quotient_lift, hker]
+      exact Ideal.map_quotient_self _
+    letI : Algebra Q L := ε.toAlgebra
+    have hεmap : (algebraMap Q L) = ε := rfl
+    haveI : FaithfulSMul Q L :=
+      (faithfulSMul_iff_algebraMap_injective Q L).2 (by rw [hεmap]; exact hεinj)
+    have hadjtop : IntermediateField.adjoin F (Set.range x') = ⊤ := by
+      have hr : Set.range x' = Set.range w ∪ {θ} := by
+        rw [hx'def, Fin.range_cons, Set.insert_eq, Set.union_comm]
+      rw [hr, ← IntermediateField.adjoin_adjoin_left, ← hEdef, hθtop,
+        IntermediateField.restrictScalars_top]
+    haveI : IsFractionRing Q L := by
+      refine IsFractionRing.of_field Q L fun z => ?_
+      have hz : z ∈ IntermediateField.adjoin F (Set.range x') := by rw [hadjtop]; exact trivial
+      obtain ⟨r, s, hrs⟩ := (IntermediateField.mem_adjoin_range_iff F x' z).1 hz
+      refine ⟨Ideal.Quotient.mk _ r, Ideal.Quotient.mk _ s, ?_⟩
+      simp only [hεmap, hεdef]
+      exact hrs
+    exact ⟨(FractionRing.algEquiv Q L).toRingEquiv⟩
+
+open scoped IntermediateField IntermediateField.algebraAdjoinAdjoin in
+/-- **EVERY FINITELY GENERATED DOMAIN OVER A PERFECT FIELD IS BIRATIONAL TO A
+HYPERSURFACE** (PROVEN 2026-07-30).  This is
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below with `ℚ` replaced by
+an arbitrary perfect field; perfection is what supplies the SEPARATING transcendence
+basis, and it is the only hypothesis beyond finite generation.
+
+The proof is bookkeeping over
+`exists_irreducible_hypersurface_fractionRing_of_separating_basis` above:
+
+* `Frac S` is essentially of finite type over `F` (`Algebra.EssFiniteType.comp`
+  through `S`, whose second half is `.of_isLocalization`);
+* `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` yields a separating
+  basis as a `Finset (Frac S)`, which `Finset.equivFin` reindexes by `Fin t.card`
+  (`Function.Surjective.range_comp` keeps the range, so the separability statement
+  transfers by `rw`);
+* `FiniteDimensional E (Frac S)` is
+  `Algebra.finite_of_essFiniteType_of_isAlgebraic`, whose `EssFiniteType E (Frac S)`
+  half is `Algebra.EssFiniteType.of_comp` — and this is the step that needs
+  `IsScalarTower F E (Frac S)`, i.e. the step the `ℚ`-instance diamond described
+  below would break. -/
+theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField
+    (F : Type*) [Field F] [PerfectField F]
+    (S : Type*) [CommRing S] [IsDomain S] [Algebra F S] [Algebra.FiniteType F S] :
+    ∃ (k : ℕ) (g : MvPolynomial (Fin k) F), Irreducible g ∧
+      Nonempty (FractionRing S ≃+*
+        FractionRing (MvPolynomial (Fin k) F ⧸ Ideal.span {g})) := by
+  classical
+  haveI : Algebra.EssFiniteType F (FractionRing S) := by
+    haveI : Algebra.EssFiniteType S (FractionRing S) :=
+      .of_isLocalization _ (nonZeroDivisors S)
+    exact .comp _ S _
+  obtain ⟨t, ht, hsep⟩ :=
+    exists_isTranscendenceBasis_and_isSeparable_of_perfectField F (FractionRing S)
+  set w : Fin t.card → FractionRing S := fun i => ((t.equivFin.symm i : ↥t) : FractionRing S)
+    with hwdef
+  have hrange : Set.range w = (t : Set (FractionRing S)) := by
+    have hcomp : w = (Subtype.val : ↥t → FractionRing S) ∘ t.equivFin.symm := rfl
+    rw [hcomp, (t.equivFin.symm.surjective).range_comp, Subtype.range_coe]
+  have hw : AlgebraicIndependent F w := ht.1.comp _ t.equivFin.symm.injective
+  haveI : Algebra.IsSeparable
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) := by
+    rw [hrange]; exact hsep
+  haveI : Algebra.EssFiniteType
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) :=
+    Algebra.EssFiniteType.of_comp F _ _
+  haveI : FiniteDimensional
+      (IntermediateField.adjoin F (Set.range w)) (FractionRing S) :=
+    Algebra.finite_of_essFiniteType_of_isAlgebraic
+  obtain ⟨g, hg, ⟨e⟩⟩ := exists_irreducible_hypersurface_fractionRing_of_separating_basis w hw
+  exact ⟨t.card + 1, g, hg, ⟨e.symm⟩⟩
+
 /-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
 `ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
 `exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below).
@@ -10715,13 +11010,55 @@ unavailable outright, since a field has no irreducible element; `S = ℚ` forces
 `k = 1` with `g` of degree one, and `S = ℚ[t]` forces `k = 2`. In general `k` is
 the transcendence degree of `Frac S` plus one, so no uniform junk answer exists.
 
-CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used. -/
+CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used.
+
+**PROVEN 2026-07-30**, over the two declarations immediately above
+(`exists_irreducible_hypersurface_fractionRing_of_separating_basis` and
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField`); this is now
+a one-line instantiation at `F := ℚ`.  Two corrections to the ROUTE above, both of
+which make the proof SHORTER than advertised, and one trap that is invisible until
+the whole cone is present:
+
+1. **Gauss's lemma and the primitive part are NOT needed.**  The route above clears
+   denominators of `h = minpoly F θ` and takes the primitive part, which drags in
+   `content`, `primPart`, and hence a `NormalizedGCDMonoid` data instance that
+   `MvPolynomial (Fin d) F` does not carry.  Scale the primitive element instead:
+   `IsAlgebraic.exists_integral_multiple` gives `0 ≠ y ∈ A := Algebra.adjoin F s`
+   with `y • θ₀` INTEGRAL over `A`, and `E⟮y • θ₀⟯ = E⟮θ₀⟯` because `y` is a nonzero
+   element of `E`.  With `θ` integral over `A`, `minpoly A θ` is already the
+   polynomial wanted: `minpoly.prime_of_isIntegrallyClosed` gives irreducibility and
+   `minpoly.ker_eval` gives `ker (Polynomial.aeval θ) = span {minpoly A θ}` outright,
+   so the whole "`Frac (ℚ[t,y] ⧸ (g)) ≅ F[y] ⧸ (h)`" step collapses to
+   `IsFractionRing.of_field` plus `IntermediateField.mem_adjoin_range_iff`.
+   `IsIntegrallyClosed A` is free: `A` is a polynomial ring by
+   `AlgebraicIndependent.aevalEquiv`, hence a UFD, hence `IsGCDMonoid`, hence
+   integrally closed (`GCDMonoid.toIsIntegrallyClosed`).
+2. `A := Algebra.adjoin F s` and `E := IntermediateField.adjoin F s` are the right
+   pair to work with, NOT an abstract `MvPolynomial`/`FractionRing` pair: mathlib's
+   scoped namespace `IntermediateField.algebraAdjoinAdjoin` supplies
+   `Algebra A E`, `IsFractionRing A E`, `IsScalarTower A E L` and
+   `Algebra.IsAlgebraic A E` as instances, so no `letI`-built algebra structures are
+   needed anywhere.
+
+**THE TRAP, and it does not appear in a small scratch module: `Algebra ℚ ↥E` is a
+DIAMOND.**  Once this file's import closure is present, `DivisionRing.toRatAlgebra`
+(the canonical `ℚ`-algebra on any characteristic-zero division ring) is in scope and
+WINS synthesis against `IntermediateField.algebra'`.  The consequence is that
+`IsScalarTower ℚ ↥(IntermediateField.adjoin ℚ s) L` fails to synthesise — which kills
+the `Algebra.EssFiniteType.of_comp` step that supplies `FiniteDimensional E L` — and
+that a rewrite by `IntermediateField.restrictScalars_top` reports
+"synthesized type class instance is not definitionally equal".  A version of this
+proof stated directly at `ℚ` compiled in a module importing only the mathlib files it
+needs and then broke on being moved here.  **The fix is to state everything over an
+ABSTRACT base field `F`** (which is what the two lemmas above do) and instantiate at
+`ℚ` only in this final line, where no intermediate field of `L / ℚ` appears in the
+statement at all.  Do not "simplify" those lemmas by specialising them to `ℚ`. -/
 theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
     (S : Type*) [CommRing S] [IsDomain S] [Algebra ℚ S] [Algebra.FiniteType ℚ S] :
     ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℚ), Irreducible g ∧
       Nonempty (FractionRing S ≃+*
         FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
-  sorry
+  exists_irreducible_hypersurface_fractionRing_ringEquiv_perfectField ℚ S
 
 section GeometricIntegralityFractionRing
 
@@ -10750,6 +11087,34 @@ declares as a LOCAL instance (to avoid diamonds) and which therefore has to be
 introduced explicitly — `letI`, or an `attribute [local instance]` scoped to a
 section. That is the whole reason this step is a leaf rather than three more lines
 in the proof below.
+
+**HOW IT WAS ACTUALLY CLOSED, 2026-07-30 — AND THE WARNING ABOVE IS AVOIDABLE.**
+The route above (`IsLocalization.tensor` on `(ℚ̄ ⊗_ℚ A) ⊗_A Frac A`, then
+`cancelBaseChange`) really does need `rightAlgebra`, and a stronger form of the same
+observation as `baseChangeQuotientEquiv`'s docstring: the *cancellation* step is what
+drags the local instance in.  It is not on the critical path.  Mathlib carries the
+statement one wants DIRECTLY on `S ⊗[R] B`, with no cancellation and no `AlgEquiv`
+transport:
+
+    IsLocalization.tensorProduct_tensorProduct_right
+      (R S) (M : Submonoid A) (B) [IsLocalization M B]
+      [Algebra (S ⊗[R] A) (S ⊗[R] B)] [IsScalarTower S (S ⊗[R] A) (S ⊗[R] B)]
+      (H : algebraMap _ _ ∘ includeRight = includeRight ∘ algebraMap A B) :
+      IsLocalization (M.map includeRight) (S ⊗[R] B)
+
+(`Mathlib/RingTheory/Localization/BaseChange.lean`, checked at this pin).  The
+`Algebra (S ⊗[R] A) (S ⊗[R] B)` it asks for is supplied by
+`Algebra.TensorProduct.map (AlgHom.id R S) (IsScalarTower.toAlgHom R A B)` — the
+FUNCTORIAL structure induced by `A → Frac A`, which is a global construction and has
+nothing to do with `rightAlgebra`.  `H` and the scalar tower are both `simp
+[RingHom.algebraMap_toAlgebra]`.  What is left is exactly the mathematical content
+recorded above: the inverted set lies in `nonZeroDivisors (ℚ̄ ⊗ A)` because
+`Algebra.TensorProduct.includeRight_injective` (available since `ℚ̄` is flat over the
+field `ℚ`) and `h`, whence `IsLocalization.isDomain_of_le_nonZeroDivisors`.
+
+Recorded because the same "cancel the base change" reflex appears three more times in
+this file, and in each of them the local-instance cost is paid for a cancellation that
+`tensorProduct_tensorProduct_right` would have made unnecessary.
 
 WHY IT IS A SEPARATE LEAF. It is the ONLY non-formal step of the birational
 invariance lemma below: the other two steps — transporting along a ring
@@ -12131,6 +12496,133 @@ theorem dvd_of_dvd_map_algebraMap {σ : Type*} {K L : Type*} [Field K] [Field L]
   refine Finset.sum_congr rfl fun x _ => ?_
   rw [MvPolynomial.coeff_map, hcoeff', ← Algebra.smul_def, map_smul, smul_eq_mul]
 
+open _root_.TensorProduct in
+/-- **`L[y]` IS FAITHFULLY FLAT OVER `K[y]` FOR A FIELD EXTENSION `L/K`** (PROVEN
+2026-07-30).  Freeness of `L` over `K` transports to the polynomial rings through
+`MvPolynomial.algebraTensorAlgEquiv`, and the comparison map is an algebra
+equivalence over `K[y]` — not merely over `L` — because `q ⊗ₜ 1 ↦ MvPolynomial.map q`.
+
+The `Algebra (MvPolynomial σ K) (MvPolynomial σ L)` is NOT a global instance at this
+pin (checked: `grep -rn "instance.*Algebra (MvPolynomial" .lake/packages/mathlib`
+returns only the `MvPowerSeries` one), so it is introduced here by `RingHom.toAlgebra`
+on `MvPolynomial.map (algebraMap K L)` and returned inside the statement by `letI`. -/
+theorem faithfullyFlat_mvPolynomial_map {σ : Type} {K L : Type} [Field K] [Field L]
+    [Algebra K L] :
+    letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+      (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+    Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ L) := by
+  letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+    (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+  haveI : Module.Free (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) :=
+    Module.Free.of_basis
+      (Algebra.TensorProduct.basis (MvPolynomial σ K) (Module.Free.chooseBasis K L))
+  haveI : Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) := inferInstance
+  let ψ : (MvPolynomial σ K ⊗[K] L) ≃ₐ[K] MvPolynomial σ L :=
+    (Algebra.TensorProduct.comm K (MvPolynomial σ K) L).trans
+      ((MvPolynomial.algebraTensorAlgEquiv K L).restrictScalars K)
+  have hcomm : ∀ q : MvPolynomial σ K,
+      ψ (algebraMap (MvPolynomial σ K) (MvPolynomial σ K ⊗[K] L) q) =
+        algebraMap (MvPolynomial σ K) (MvPolynomial σ L) q := by
+    intro q
+    show ψ (q ⊗ₜ[K] 1) = _
+    simp [ψ, MvPolynomial.algebraTensorAlgEquiv_tmul, RingHom.algebraMap_toAlgebra]
+  let e : (MvPolynomial σ K ⊗[K] L) ≃ₐ[MvPolynomial σ K] MvPolynomial σ L :=
+    AlgEquiv.ofRingEquiv (f := ψ.toRingEquiv) hcomm
+  exact Module.FaithfullyFlat.of_linearEquiv _ _ e.symm.toLinearEquiv
+
+/-- **NON-DIVISIBILITY IN A POLYNOMIAL RING DESCENDS ALONG A FIELD EXTENSION** (PROVEN
+2026-07-30): if `g ∤ b` over `K` then `g ∤ b` over any extension field `L`.
+
+This is the step the leaf below's ROUTE paragraph called "THE ONLY NEW INGREDIENT",
+where it is described as a rank criterion on a linear system.  The rank criterion is
+not needed: `Ideal.comap_map_eq_self_of_faithfullyFlat` says the contraction of the
+extension of ANY ideal along a faithfully flat algebra is that ideal, and
+`faithfullyFlat_mvPolynomial_map` above supplies the hypothesis, so the statement is
+two rewrites once the extension of `span {g}` is identified with `span {map g}`.
+
+Not restricted to principal ideals in substance — only in shape, because that is what
+the consumer needs. -/
+theorem notMem_span_singleton_map_of_notMem {σ : Type} {K L : Type} [Field K] [Field L]
+    [Algebra K L] {g b : MvPolynomial σ K} (hb : b ∉ Ideal.span {g}) :
+    MvPolynomial.map (algebraMap K L) b ∉
+      Ideal.span {MvPolynomial.map (algebraMap K L) g} := by
+  letI : Algebra (MvPolynomial σ K) (MvPolynomial σ L) :=
+    (MvPolynomial.map (algebraMap K L) : MvPolynomial σ K →+* MvPolynomial σ L).toAlgebra
+  haveI : Module.FaithfullyFlat (MvPolynomial σ K) (MvPolynomial σ L) :=
+    faithfullyFlat_mvPolynomial_map
+  intro hmem
+  refine hb ?_
+  have hmapspan : Ideal.map (algebraMap (MvPolynomial σ K) (MvPolynomial σ L))
+      (Ideal.span {g}) = Ideal.span {MvPolynomial.map (algebraMap K L) g} := by
+    rw [Ideal.map_span, Set.image_singleton]
+    rfl
+  rw [← hmapspan] at hmem
+  rw [← Ideal.comap_map_eq_self_of_faithfullyFlat
+    (A := MvPolynomial σ K) (B := MvPolynomial σ L) (Ideal.span {g})]
+  exact hmem
+
+/-- `coeffPoly` of the zero coefficient vector is `0`. -/
+theorem coeffPoly_zero (k D : ℕ) {R : Type*} [CommSemiring R] :
+    coeffPoly k D (fun _ => (0 : R)) = 0 := by
+  simp [coeffPoly]
+
+/-- **DIVISIBILITY BY A FIXED POLYNOMIAL IS A CLOSED CONDITION ON BOUNDED
+COEFFICIENTS** (PROVEN 2026-07-30).  Over ANY field, membership of `b` in the
+principal ideal `(g)` is equivalent to solvability of the finite coefficient system
+`coeffPoly k D a * g = b`, as soon as `D` bounds the total degree of `b`.
+
+NO CASE SPLIT ON `g` IS NEEDED, and this is what makes the leaf below cheap.  The
+equivalence holds verbatim when `g = 0` (both sides then say `b = 0`, taking `a = 0`)
+and when `b = 0` (take `a = 0`).  In the remaining case `h * g = b` with `b ≠ 0`
+forces `h ≠ 0 ≠ g`, and `MvPolynomial.totalDegree_mul_of_isDomain` gives
+`h.totalDegree ≤ b.totalDegree ≤ D`, hence `h.degreeOf i ≤ D` for every `i`, hence
+`h = coeffPoly k D _` by `coeffPoly_coeff_self`. -/
+theorem mem_span_singleton_iff_exists_coeffPoly {k D : ℕ} {K : Type*} [Field K]
+    {g b : MvPolynomial (Fin k) K} (hD : b.totalDegree ≤ D) :
+    b ∈ Ideal.span {g} ↔
+      ∃ a : (Fin k → Fin (D + 1)) → K, coeffPoly k D a * g = b := by
+  classical
+  constructor
+  · intro hmem
+    obtain ⟨h, hh⟩ := Ideal.mem_span_singleton'.mp hmem
+    by_cases hb0 : b = 0
+    · exact ⟨fun _ => 0, by simp [coeffPoly_zero, hb0]⟩
+    · have hh0 : h ≠ 0 := by rintro rfl; exact hb0 (by simpa using hh.symm)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hb0 (by simpa using hh.symm)
+      have hdeg : h.totalDegree ≤ D := by
+        have := MvPolynomial.totalDegree_mul_of_isDomain hh0 hg0
+        rw [hh] at this
+        omega
+      refine ⟨fun e => h.coeff (boundedExpo k D e), ?_⟩
+      rw [coeffPoly_coeff_self k D
+        (fun i => le_trans (MvPolynomial.degreeOf_le_totalDegree h i) hdeg)]
+      exact hh
+  · rintro ⟨a, ha⟩
+    exact Ideal.mem_span_singleton'.mpr ⟨_, ha⟩
+
+/-- The UNIVERSAL coefficient system for `g ∣ b` with coefficient bound `D`: a single
+polynomial over `ℤ[unknowns]`, whose coefficients are the equations of the system. -/
+noncomputable def divisibilityUniv (k D : ℕ) (g b : MvPolynomial (Fin k) ℤ) :
+    MvPolynomial (Fin k) (MvPolynomial (Fin k → Fin (D + 1)) ℤ) :=
+  coeffPoly k D (fun e => MvPolynomial.X e) *
+      MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) g -
+    MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) b
+
+/-- Specialising the unknowns of `divisibilityUniv` at `x` over a commutative ring `K`
+returns the concrete difference `coeffPoly k D x * g - b` over `K`. -/
+theorem map_divisibilityUniv {k D : ℕ} (g b : MvPolynomial (Fin k) ℤ) {K : Type*}
+    [CommRing K] (x : (Fin k → Fin (D + 1)) → K) :
+    MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) (divisibilityUniv k D g b) =
+      coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g -
+        MvPolynomial.map (Int.castRingHom K) b := by
+  rw [divisibilityUniv, map_sub, _root_.map_mul, map_coeffPoly,
+    MvPolynomial.map_map, MvPolynomial.map_map]
+  have hcast : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+      (Int.castRingHom (MvPolynomial (Fin k → Fin (D + 1)) ℤ)) = Int.castRingHom K :=
+    Subsingleton.elim _ _
+  rw [hcast]
+  simp
+
 /-- **NON-MEMBERSHIP IN A PRINCIPAL IDEAL OF A POLYNOMIAL RING SPREADS OUT**
 (**PROVEN 2026-07-30**; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
@@ -12199,7 +12691,34 @@ step 2 simplified away. Only ONE degree bound is ever needed, and it is
 
 CIRCULARITY GUARD: pure commutative algebra about `MvPolynomial (Fin k)`; no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+**ROUTE CORRECTION, 2026-07-30, MADE WHILE CLOSING IT — STEPS 1 AND 2 ARE
+UNNECESSARY, AND STEP 3 IS NOT A RANK CRITERION.**  The route above is sound but
+does about twice the work the proof below does.  Two of its four steps drop out:
+
+* *Step 1 (`g = 0` case split) and the non-unit analysis of step 2 are not needed.*
+  `mem_span_singleton_iff_exists_coeffPoly` above holds for EVERY `g`, including
+  `g = 0`: both sides then assert `b = 0`.  So the proof never distinguishes cases.
+* *Step 2's enlargement of `N` "so that both total degrees are unchanged in
+  characteristic `p`" is not needed either.*  Take the coefficient bound to be
+  `D := b.totalDegree` computed once and for all **over `ℤ`**.  Total degree can only
+  DROP under `MvPolynomial.map` (`totalDegree_map_le'`, PROVEN above), and the
+  criterion only ever needs `D` as an UPPER bound, so the same `D` serves over `ℚ̄`
+  and over every `𝔽̄_p` with no arithmetic condition at all.  Degree-preservation
+  conditions would have been the only reason to put coefficients of `g` into `N`;
+  as it stands `N` comes from `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`
+  and from nothing else.
+* *Step 3 is one mathlib lemma, not a rank argument.*  Solvability descent along
+  `ℚ ⊆ ℚ̄` is `Ideal.comap_map_eq_self_of_faithfullyFlat` applied to the faithfully
+  flat algebra `ℚ̄[y] / ℚ[y]`; see `notMem_span_singleton_map_of_notMem` above.  The
+  linear-system structure of the certificate is never used — which is fortunate,
+  since the rank criterion would have needed a theory of ranks over a pair of fields
+  that this file does not have.
+
+Step 4 is used exactly as described.  The certificate system is `divisibilityUniv`
+above, indexed by its own support; `map_divisibilityUniv` is what turns "every
+equation vanishes at `x`" into "`coeffPoly k D x * g = b`" over any base. -/
 theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
     {k : ℕ} (g b : MvPolynomial (Fin k) ℤ)
     (hb : MvPolynomial.map (Int.castRingHom ℚ) b ∉
@@ -12307,9 +12826,196 @@ theorem exists_pos_forall_prime_not_dvd_notMem_span_singleton_map
   obtain ⟨i, hi⟩ := hN₁ p hpN1 (fun e => c.coeff (boundedExpo k D e))
   exact hi (((hbridge (AlgebraicClosure (ZMod p)) _).mpr
     (by rw [coeffPoly_coeff_self k D hcD, hc]; ring)) i)
+        Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g} := by
+  classical
+  -- The coefficient bound is computed ONCE, over `ℤ`; total degree only drops on reduction.
+  set D := b.totalDegree with hDdef
+  set U := divisibilityUniv k D g b with hU
+  -- The criterion, uniformly in the base field: the equations of `U` vanish at `x`
+  -- exactly when `x` is a coefficient vector exhibiting `g ∣ b`.
+  have hcrit : ∀ (K : Type) [Field K] (x : (Fin k → Fin (D + 1)) → K),
+      (∀ m : Fin k →₀ ℕ, m ∈ U.support →
+          MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
+        coeffPoly k D x * MvPolynomial.map (Int.castRingHom K) g =
+          MvPolynomial.map (Int.castRingHom K) b := by
+    intro K _ x
+    rw [← sub_eq_zero, ← map_divisibilityUniv g b x, ← hU]
+    constructor
+    · intro hall
+      ext m
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+      by_cases hm : m ∈ U.support
+      · exact hall m hm
+      · rw [MvPolynomial.notMem_support_iff.mp hm]; simp
+    · intro h0 m _
+      have := congrArg (fun q => MvPolynomial.coeff m q) h0
+      simpa [MvPolynomial.coeff_map] using this
+  have hbridge : ∀ c : MvPolynomial (Fin k) ℤ,
+      MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) c) =
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) c := by
+    intro c
+    rw [MvPolynomial.map_map]
+    congr 1
+  -- NO `ℚ̄`-SOLUTION: one would put `b` into `(g)` over `ℚ̄`, which descends to `ℚ`.
+  have hnosol : ∀ x : (Fin k → Fin (D + 1)) → AlgebraicClosure ℚ,
+      ∃ i : {m : Fin k →₀ ℕ // m ∈ U.support},
+        MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (U.coeff i.1) ≠ 0 := by
+    intro x
+    by_contra hcon
+    push Not at hcon
+    have hsol := (hcrit (AlgebraicClosure ℚ) x).mp (fun m hm => hcon ⟨m, hm⟩)
+    have hdesc := notMem_span_singleton_map_of_notMem (L := AlgebraicClosure ℚ) hb
+    rw [hbridge b, hbridge g] at hdesc
+    exact hdesc (Ideal.mem_span_singleton'.mpr ⟨_, hsol⟩)
+  -- STEP 4: the arithmetic half of Noether–Ostrowski produces the single `N`.
+  obtain ⟨N, hN, hmain⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero
+    (σ := (Fin k → Fin (D + 1))) (ι := {m : Fin k →₀ ℕ // m ∈ U.support})
+    (fun m => U.coeff m.1) hnosol
+  refine ⟨N, hN, ?_⟩
+  intro p _ hp hmem
+  have hdeg : (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b).totalDegree
+      ≤ D := totalDegree_map_le' _ b
+  obtain ⟨a, ha⟩ := (mem_span_singleton_iff_exists_coeffPoly hdeg).mp hmem
+  obtain ⟨i, hi⟩ := hmain p hp a
+  exact hi (((hcrit _ a).mpr ha) i.1 i.2)
+
+/-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
+ALMOST EVERY FIBRE** (SORRY LEAF, cut 2026-07-30 out of
+`exists_inverted_intLift_retraction_localizationAway_integralSystemModel`
+immediately below, which is now GLUE ONLY over it).
+
+WHAT THE CUT REMOVES FROM THE CONSUMER. The consumer receives its `b` as a bare
+CLASS in `MvPolynomial (Fin k) ℚ ⧸ (g)` and must (i) lift it to an INTEGER
+polynomial, (ii) show the lift's class over `ℚ` is still nonzero, and (iii)
+transport the `ℚ`-side isomorphism `θ` along the change of denominator. None of
+that is descent: it is `exists_integralMultiple` for the lift and
+`nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul` for the transport (a
+nonzero rational scalar is a unit, and localising away from `c * x` is
+localising away from `x`). It is done once, below, and this leaf never sees it:
+here `b` is an INTEGER polynomial fixed in advance, and the `ℚ`-side data
+arrives as an explicit PAIR of ring maps rather than as an isomorphism.
+
+WHAT REMAINS IS EXACTLY DENOMINATOR CLEARING, and nothing else. Write
+`A_R := IntegralSystemModel f R`, `α_R := integralSystemClass f R a`,
+`B_R := MvPolynomial (Fin k) R ⧸ (g)`, `β_R := ⟦b⟧`. The hypothesis is a pair
+`Ψ : A_ℚ[1/α] → B_ℚ[1/β]`, `Λ : B_ℚ[1/β] → (A_ℚ[1/α])_red` with `Λ ∘ Ψ = mk` on
+the nose; the conclusion is the same pair over `𝔽̄_p`, with the identity only on
+the image of the model.
+
+ROUTE, in the shape that avoids ever CONSTRUCTING a map (recorded 2026-07-30;
+each step names the proven tool it uses).
+
+1. NEITHER MAP HAS TO BE BUILT AS A MAP — both are TUPLES SATISFYING EQUATIONS.
+   `IsLocalization.Away.lift` turns a ring map out of `A_p[1/α]` into a ring map
+   out of `A_p` sending `α_p` to a unit, and `Ideal.Quotient.lift` composed with
+   `MvPolynomial.eval₂` turns THAT into a tuple `u : Fin n → B_p[1/β]` with
+   `f_j(u) = 0` for every `j` and `a(u)` a unit. Dually `lam` is a tuple
+   `w : Fin k → A_p[1/α]` with every `g(w)` NILPOTENT and `b(w)` a unit modulo
+   nilpotents — the target being the REDUCTION is what turns `g(w) = 0` into the
+   strictly weaker `g(w)^M = 0`, and that weakening is what makes the leaf true.
+2. AFTER CLEARING DENOMINATORS EVERY CONDITION IS A MEMBERSHIP OF INTEGRAL
+   POLYNOMIALS. `Ψ` and `Λ` are determined by finitely many values (`ℚ` maps into
+   any ring in exactly one way, so no coefficient data escapes), each of the form
+   `⟦P_i⟧ / β^e` resp. `⟦Q_j⟧ / α^d`; `exists_integralMultiple` makes the `P_i`
+   and `Q_j` INTEGRAL at the cost of one integer `N₀`. The conditions of step 1
+   then read `β^t · f_j(P) ∈ span {g}`, `α^t · g(Q)^M ∈ integralSystemIdeal f _`,
+   `α^t · (P_i(Q) − α^? · x_i)^M ∈ integralSystemIdeal f _`, plus two unit
+   witnesses — all with INTEGER left-hand sides.
+3. THE ONE NEW INGREDIENT IS THEREFORE A SINGLE TRANSFER: a membership
+   `P ∈ integralSystemIdeal f ℚ` (resp. `span {g}` over `ℚ`) holds over `𝔽̄_p`
+   for every `p` outside an explicit finite set. Its proof is Bézout: the
+   certificate `P = Σ c_j f_j` has finitely many rational `c_j`, so
+   `N · P = Σ c'_j f_j` with `c'_j` integral, and `N` is a unit mod `p`. The
+   file's `exists_intPoly_map_eq_intCast_mul` and
+   `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` are the two proven
+   lemmas of exactly this shape, and `exists_reducibilityCertificates` uses the
+   device in the same way one screen above.
+
+API LOCATED 2026-07-30, so the next prover does not have to find it. Every step
+of the route above has a named `Mathlib` tool, and all four were checked against
+the pin in this worktree:
+
+* BUILDING A MAP OUT OF `A_R[1/α]` WITHOUT NAMING A FRACTION —
+  `IsLocalization.Away.lift x hg : S →+* P` (`Mathlib/RingTheory/Localization/
+  Away/Basic.lean:147`), fed by `Ideal.Quotient.lift` of `MvPolynomial.eval₂`.
+  So `ψ` is exactly a tuple `u : Fin n → B_p[1/β]` with `f_j(u) = 0` and
+  `a(u)` a unit, and `Away.lift_eq` / `Away.lift_comp` read the values back off
+  it. Dually for `lam`, with `Fin k → (A_p[1/α])_red`.
+* WRITING AN ELEMENT AS A FRACTION — `IsLocalization.surj`
+  (`.../Localization/Defs.lean:133`): every `z` satisfies
+  `z * algebraMap m = algebraMap r` for some `(r, m)`, `m` a power of the
+  denominator. This is what turns the abstract `Ψ (mk (X i))` into a NUMERATOR,
+  which is the only form denominator clearing can act on. Do NOT try to produce
+  the fraction by hand.
+* PUSHING AN EQUATION DOWN TO THE NUMERATOR — `IsLocalization.map_eq_zero_iff`
+  (`.../Localization/Defs.lean:246`): `algebraMap r = 0 ↔ ∃ m, m * r = 0`. This
+  is what converts `f_j(u) = 0`, an identity in the LOCALIZATION, into
+  `β^t · f_j(P) ∈ span {g}`, an identity between POLYNOMIALS — step 2 of the
+  route. `IsLocalization.eq_zero_of_fst_eq_zero` is the converse half — a zero
+  numerator forces the fraction to vanish — stated in exactly the shape `surj`
+  hands you, so the two together move an equation both ways across the fraction
+  bar without ever mentioning `mk'`.
+* THE UNIT CONDITIONS COST NO NEW IDEA. `a(u)` is a unit over `ℚ` because it is
+  `Ψ` of the unit `α`; write its INVERSE as a fraction `Q/β^s` by `surj`, clear
+  denominators in `a(u) · Q = β^s`, transfer that single identity, and the
+  mod-`p` unit-ness falls out of the transferred identity because `β` is a unit
+  in `B_p[1/β]` by `IsLocalization.Away.algebraMap_isUnit`. The same device
+  handles `b(w)`.
+
+The one thing with no `Mathlib` name is step 3, the transfer itself, and it is
+three lines of Bézout: a certificate over `ℚ` has finitely many coefficients,
+`exists_intPoly_map_eq_intCast_mul` (PROVEN, ~2500 lines above) makes them
+integral at the cost of one `N`, and `N` is invertible mod every `p ∤ N`.
+
+WHY THE `ℚ` SIDE IS FREE. `Λ ∘ Ψ = mk` is imposed as a hypothesis rather than
+derived, so a prover here never has to produce the birational isomorphism; the
+consumer manufactures the pair from `θ` and `θ.symm`, where the identity holds by
+`RingEquiv.symm_apply_apply`.
+
+FAITHFULNESS. Not dischargeable by a junk `ψ`. The zero map into the zero ring
+forces `lam 0 = 1`, hence `1 = 0` in `(A_p[1/α])_red`, hence `A_p[1/α] = 0` — so
+the escape is available only where the conclusion is itself vacuous. The
+hypothesis is the STRONGEST form of the `ℚ`-side identity (`∀ z`, not merely on
+the image of the model) and the conclusion the WEAKEST form of the `𝔽̄_p`-side
+one, so the cut is sound in the only direction that matters: anything proving
+this leaf proves the consumer.
+
+CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
+    (Ψ : Localization.Away (integralSystemClass f ℚ a) →+*
+      Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)))
+    (Λ : Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)) →+*
+      Localization.Away (integralSystemClass f ℚ a) ⧸
+        nilradical (Localization.Away (integralSystemClass f ℚ a)))
+    (hcomp : ∀ z, Λ (Ψ z) = Ideal.Quotient.mk _ z) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      ∃ (ψ : Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) →+*
+            Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)))
+        (lam : Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)) →+*
+            Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) ⧸
+              nilradical (Localization.Away
+                (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
+        ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
+          lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) :=
+  sorry
 
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM: THE MAP AND ITS RETRACTION
-MODULO NILPOTENTS** (SORRY LEAF, cut 2026-07-28 out of
+MODULO NILPOTENTS** (**PROVEN 2026-07-30**, GLUE ONLY over
+`exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel`
+immediately above; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
 immediately below, which is now PROVEN over this leaf, over
 `exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` above and over the
@@ -12394,8 +13100,45 @@ theorem exists_inverted_intLift_retraction_localizationAway_integralSystemModel
                 nilradical (Localization.Away
                   (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
           ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
-            lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) :=
-  sorry
+            lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) := by
+  classical
+  -- The `ℚ`-side datum arrives as a class `b₀` in `ℚ[Y]/(g)`; name a representative.
+  obtain ⟨b₀, hb₀ne, ⟨θ⟩⟩ := hQ
+  obtain ⟨β, rfl⟩ := Ideal.Quotient.mk_surjective b₀
+  -- STEP 1: clear denominators in the representative, producing an INTEGER `b`.
+  obtain ⟨b, c, hc0, hcb⟩ := exists_integralMultiple β
+  set C := MvPolynomial (Fin k) ℚ ⧸
+    Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} with hC
+  have hu : IsUnit (algebraMap ℚ C c) := (Ne.isUnit hc0).map (algebraMap ℚ C)
+  have hmk : (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+      (MvPolynomial.map (Int.castRingHom ℚ) b))
+      = algebraMap ℚ C c * Ideal.Quotient.mk _ β := by
+    rw [hcb, Algebra.smul_def, map_mul]
+    rfl
+  -- STEP 2: changing the denominator by a UNIT does not change the localization.
+  obtain ⟨e⟩ := nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul
+    (algebraMap ℚ C c) (Ideal.Quotient.mk _ β) _ hu hmk
+  -- STEP 3: the `ℚ`-side non-membership of the integral lift.
+  have hbne : MvPolynomial.map (Int.castRingHom ℚ) b ∉
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    rw [hmk]
+    exact fun h => hb₀ne (by
+      obtain ⟨v, hv⟩ := hu
+      have := congrArg (fun x => (↑v⁻¹ : C) * x) h
+      simpa [← mul_assoc, ← hv] using this)
+  -- STEP 4: the descent, over the explicit `ℚ`-side pair `(θ ∘ mk, θ.symm)` transported
+  -- along `e`.  The composite identity is `RingEquiv.symm_apply_apply`, twice.
+  obtain ⟨N, hN, hmain⟩ :=
+    exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+      f g a b
+      ((e.toRingHom.comp θ.toRingHom).comp
+        (Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))))
+      (θ.symm.toRingHom.comp e.symm.toRingHom)
+      (fun z => by
+        show θ.symm (e.symm (e (θ (Ideal.Quotient.mk _ z)))) = Ideal.Quotient.mk _ z
+        rw [RingEquiv.symm_apply_apply, RingEquiv.symm_apply_apply])
+  exact ⟨N, b, hN, hbne, hmain⟩
 
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM, WITH THE KERNEL CONDITION
 REPLACED BY A NILPOTENCY EXPONENT** (**PROVEN 2026-07-28**, having been cut on
