@@ -164,14 +164,33 @@ leaves it moved to are, in dependency order:
   this leaf named `exists_modTensor_inverse`; that module is DOWNSTREAM,
   so the two copies could never have merged any other way.
   `exists_modDual` is the one legitimate dispatch target of this section;
-* `exists_relPicOf_isAffineOpen` and
-  `exists_relPicOf_of_forall_isAffineOpen` — the two halves that
-  `exists_relPicOf_of_hasUniversallyTrivialPushforward` (FGA 232, with
-  `f_*𝒪 = 𝒪` and the equivalence relation supplied) was cut into on
-  2026-07-29; that leaf is now PROVEN as their two-line assembly.  The
-  first is FGA 232 proper — projectivity over an affine base — and the
-  second is Zariski gluing, which needs no FGA and is the approachable
-  one.  See the section header above them;
+* `exists_relPicOf_isAffineOpen` — FGA 232 proper, i.e. representability
+  over an AFFINE open of the base, where the curve is projective.  One of
+  the two halves `exists_relPicOf_of_hasUniversallyTrivialPushforward`
+  (FGA 232 with `f_*𝒪 = 𝒪` and the equivalence relation supplied) was cut
+  into on 2026-07-29; that leaf is now PROVEN as their two-line assembly.
+  See the section header above it;
+
+  **Amended 2026-07-29 (same day, later): the other half,
+  `exists_relPicOf_of_forall_isAffineOpen`, is now PROVEN too**, over a
+  three-way cut of the Zariski-gluing argument —
+  `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry: glue
+  the local Picard schemes and the rigidified Poincaré bundles),
+  `inj_of_isRelPicOverAffines` (unconditional) and
+  `surj_of_isRelPicOverAffines` (BLR 8.1/4, the only consumer of the
+  section and of `f_*𝒪 = 𝒪`).  The cut is forced by a gap in that leaf's
+  own docstring, corrected in place: `sheaf` has no local definition to
+  glue, because `_hloc` hands out structures that agree only up to an
+  automorphism of the functor `Pic(X_-)/Pic(-)`.
+
+  **Amended again 2026-07-30: the second of those three,
+  `inj_of_isRelPicOverAffines`, is now PROVEN**, over the new transport
+  lemma `relPicEquiv_modPullback` (stability of `RelPicEquiv` under change
+  of test object) — and proven with the hypothesis-free signature the cut
+  predicted, so the "unconditional" claim there is compiler-checked now
+  rather than asserted.  The two remaining dispatch targets of this cut
+  are `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry)
+  and `surj_of_isRelPicOverAffines` (BLR 8.1/4);
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
   **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
@@ -1434,9 +1453,252 @@ theorem exists_relPicOf_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
       Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) :=
   sorry
 
+/-! ### The Zariski-local half, cut again
+
+`exists_relPicOf_of_forall_isAffineOpen` below is PROVEN, over the three
+leaves in this subsection.  The cut is forced by a gap in the note above,
+which is corrected here.
+
+**The gap.**  The docstring that used to sit on
+`exists_relPicOf_of_forall_isAffineOpen` said the proof was
+"`AlgebraicGeometry.Scheme.GlueData` for the construction, and then four
+field-by-field checks on `IsRelPicOf`, of which `inj` and `sheaf_pre` are
+local by inspection".  **`sheaf_pre` is NOT local by inspection, because
+`sheaf` itself cannot be obtained by gluing the local `sheaf` functions.**
+`IsRelPicOf` is a `Nonempty` existence statement, so `_hloc` hands out one
+UNRELATED structure per affine open, and two structures on the same
+`pstr` need not agree: if `hV : IsRelPicOf strX' pstr'` then so is `hV`
+with `sheaf` replaced by `fun p => modDual (sheaf p)` — `inj` survives
+because dualising is an involution on classes, `surj` because it is a
+bijection, `sheaf_pre` because pullback commutes with duals.  So the local
+`sheaf`s can differ by an automorphism of the functor `Pic(X_-)/Pic(-)`
+and there is nothing to glue along.  (This is the same observation the
+SECTION note above already makes for the Poincaré bundle — "local
+representatives agree only up to a twist" — carried one level up, from
+representatives of a class to the classifying function itself.  The
+section note was right; the theorem docstring was the loose one.)
+
+**What the correct cut is.**  `sheaf` has to be produced GLOBALLY, at the
+same time as `P`, and the classical way to do that is the rigidified
+Poincaré bundle: `_o` normalises the universal sheaf on `X ×_S P` along
+the section, `_hpush` (`f_*𝒪 = 𝒪` universally) makes a rigidified sheaf
+have no automorphisms, so the local universal sheaves glue canonically and
+`sheaf p` is the pullback of the glued one along `p`.  That is exactly the
+content of `IsRelPicOverAffines`: it carries a GLOBAL `sheaf`, global
+`invertible` and global `sheaf_pre`, and asks for `inj`/`surj` only at
+test objects lying over an affine open of `S`.
+
+The three leaves are then:
+
+* `exists_isRelPicOverAffines_of_forall_isAffineOpen` — the geometry:
+  glue the `P_V` (Stacks 01JJ, or mathlib's
+  `AlgebraicGeometry.Scheme.Cover.RelativeGluingData`, Stacks 01LH) and
+  the rigidified universal sheaves;
+* `inj_of_isRelPicOverAffines` — injectivity is Zariski-local on `T`.
+  **PROVEN 2026-07-30, and the route below is what went through verbatim.**
+  **Unconditional**: it needs neither `_o` nor `_hpush` nor any geometric
+  hypothesis, and that is now a compiler-checked claim, not an omission.
+  Given
+  `RelPicEquiv strX g (sheaf p) (sheaf q)`, restrict along the open cover
+  `g ⁻¹ᵁ V` of `T` by preimages of affine opens of `S`; `sheaf_pre` plus
+  stability of `RelPicEquiv` under `modPullback` transports the relation,
+  the affine-local `inj` gives `p|ᵢ = q|ᵢ`, and an open cover is jointly
+  epimorphic, so `p = q`.  Nothing in that consumes a hypothesis;
+* `surj_of_isRelPicOverAffines` — BLR 8.1/4, and the ONLY place `_o` and
+  `_hpush` are consumed.  Local classifying points `pᵢ` glue by the
+  previous leaf applied over the overlaps, but concluding
+  `RelPicEquiv strX g (sheaf p) L` from its restrictions is precisely the
+  Zariski-sheaf property of `T ↦ Pic(X_T)/Pic(T)`: separatedness needs
+  `f_*𝒪 = 𝒪`, and the local twists `Nᵢ` glue into a global `N` only
+  because the section kills the resulting class in `Br T`.  Drop either
+  and this leaf is FALSE (for `X = S ⊔ S` the sequence
+  `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks) — see the section note.
+
+**Not a relocation with extra steps.**  `IsRelPicOverAffines` is strictly
+weaker than `IsRelPicOf`: every `IsRelPicOf strX pstr` gives one, by
+ignoring the factorisation hypotheses, and the converse is exactly the two
+descent leaves.  It is not vacuous either — the junk witness `P = S`,
+`pstr = 𝟙 S` with the trivial `sheaf` fails `surj` already at
+`T = X ×_S V`, `g` the projection to `V ⊆ S` affine, for any curve of
+positive genus, by the same `𝒪(Δ) ⊗ 𝒪(−o)` computation the `IsRelPicOf`
+docstring records. -/
+
+/-- **`g : T ⟶ S` factors through an affine open of `S`.**
+
+The locality hypothesis of `IsRelPicOverAffines`.  It is the honest form
+of "`T` lies over an affine open": the affine opens of `S` cover `S`, so
+every `g` is covered by such factoring restrictions, which is what makes
+the two descent leaves below statable.
+
+Stated as a factorisation rather than as `Set.range g.base ⊆ V` because
+the fields it guards need the map `T ⟶ V` itself — they instantiate the
+local structure `IsRelPicOf (curveBaseChangeProj strX V.ι) pstr_V` at the
+`V`-scheme `(T, gV)`. -/
+def FactorsThroughAffineOpen {T S : Scheme.{u}} (g : T ⟶ S) : Prop :=
+  ∃ V : S.Opens, IsAffineOpen V ∧ ∃ gV : T ⟶ (V : Scheme.{u}), gV ≫ V.ι = g
+
+/-- **`pstr` represents `Pic_{X/S}` over the affine opens of `S`, with a
+GLOBAL classifying sheaf.**
+
+`IsRelPicOf` with `inj` and `surj` weakened to test objects lying over an
+affine open of `S`, and `sheaf`, `invertible`, `sheaf_pre` left global.
+See the section note above for why the global fields cannot be weakened
+in the same way (the local `sheaf`s are only well defined up to an
+automorphism of the functor, so there is nothing to glue), and hence why
+this — and not "an `IsRelPicOf` over each affine open" — is the correct
+intermediate object. -/
+structure IsRelPicOverAffines {X P S : Scheme.{u}} (strX : X ⟶ S) (pstr : P ⟶ S) where
+  /-- the invertible sheaf on `X_T` classified by a `T`-point of `P`, for EVERY `T` -/
+  sheaf : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint pstr g → (curveBaseChange strX g).Modules
+  /-- the classified sheaves are invertible -/
+  invertible : ∀ {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g), IsInvertibleSheaf (sheaf p)
+  /-- the classification is natural in the test object -/
+  sheaf_pre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (p : RelPoint pstr g),
+    RelPicEquiv strX g' (sheaf (RelPoint.pre h hg p))
+      (modPullback (curveBaseChangeMap strX h hg) (sheaf p))
+  /-- `P ↪ Pic_{X/S}`, over an affine open of the base only -/
+  inj : ∀ {T : Scheme.{u}} {g : T ⟶ S}, FactorsThroughAffineOpen g →
+    ∀ p q : RelPoint pstr g, RelPicEquiv strX g (sheaf p) (sheaf q) → p = q
+  /-- `P ↠ Pic_{X/S}`, over an affine open of the base only -/
+  surj : ∀ {T : Scheme.{u}} {g : T ⟶ S}, FactorsThroughAffineOpen g →
+    ∀ L : (curveBaseChange strX g).Modules, IsInvertibleSheaf L →
+      ∃ p : RelPoint pstr g, RelPicEquiv strX g (sheaf p) L
+
+/-- **THE GLUING STEP** (sorry leaf) — Stacks 01JJ / 01LH, plus the
+rigidified Poincaré bundle.
+
+From a relative Picard scheme over every affine open of `S`, produce a
+single `P ⟶ S` carrying a GLOBAL classifying sheaf and representing
+`Pic_{X/S}` over each affine open.  This is where all of the
+scheme-theoretic gluing lives, and the only leaf of the three that
+constructs anything.
+
+Route, in the order a prover meets it:
+
+1. `P` itself.  The affine opens of `S`, ordered by inclusion, form a
+   locally directed open cover (given `x ∈ V ⊓ W` there is an affine open
+   `⊆ V ⊓ W` containing `x`), so `AlgebraicGeometry.Scheme.Cover.RelativeGluingData`
+   in `Mathlib/AlgebraicGeometry/RelativeGluing.lean` applies once the
+   `P_V` are assembled into a functor with equifibered structure maps.
+   The structure map for `W ≤ V` is the composite
+   `P_W ≅ P_V ×_V W ⟶ P_V`, where the isomorphism is the comparison of two
+   representing objects; it exists by Yoneda and is UNIQUE, which is what
+   makes the assignment functorial and the squares pullback squares.  Two
+   sublemmas are wanted first — `IsRelPicOf` is stable under base change
+   of `S`, and two schemes representing `Pic_{X/S}` are canonically
+   isomorphic over `S` — but neither is stated as a leaf here because
+   nothing in the assembly consumes them.
+2. `sheaf`.  NOT by gluing the local `sheaf` functions (see the section
+   note: they differ by an automorphism of the functor).  Apply the local
+   `surj` to the identity point of `P_V` to get a universal sheaf on
+   `X ×_S P_V`, rigidify it along `_o` — i.e. normalise its pullback along
+   the section to `𝒪` — and glue the rigidified sheaves, which is
+   canonical because `_hpush` makes a rigidified sheaf have only the
+   identity automorphism.  `sheaf p` is then the pullback of the glued
+   universal sheaf along the map `X_T ⟶ X_P` induced by `p`, and
+   `invertible` and `sheaf_pre` are immediate from that description —
+   `sheaf_pre` because pullback along `X_{T'} ⟶ X_T ⟶ X_P` composes.
+3. `inj`, `surj` over an affine open: transport the local structure
+   through the isomorphism `P ×_S V ≅ P_V`.
+
+Both `_o` and `_hpush` are load-bearing at step 2 and must not be dropped
+"because the gluing is formal": without them there is no canonical
+universal sheaf to glue. -/
+theorem exists_isRelPicOverAffines_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+      ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOverAffines strX pstr) :=
+  sorry
+
+/-- **INJECTIVITY IS ZARISKI-LOCAL ON THE BASE** (**PROVEN 2026-07-30**;
+formerly a sorry leaf) — and it is UNCONDITIONAL: no `_o`, no `_hpush`,
+no properness, smoothness or connectedness.
+
+The absence of hypotheses was deliberate and is now compiler-checked
+rather than merely claimed.  The proof is: cover `T` by the preimages
+`g ⁻¹ᵁ V` of the affine opens of `S`, which do cover because the affine
+opens cover `S`, and note that the restriction of `g` to `g ⁻¹ᵁ V`
+factors through `V` (that factorisation is literally `g ∣_ V`, with
+`morphismRestrict_ι`), so `hP.inj` applies there.  `hP.sheaf_pre`
+identifies `sheaf (p|ᵢ)` with the pullback of `sheaf p`, the transport
+lemma `relPicEquiv_modPullback` carries the hypothesis across, and
+`relPicEquiv_trans`/`relPicEquiv_symm` compose the three relations.  So
+`p|ᵢ = q|ᵢ` for every `i`, and a morphism out of a scheme is determined
+by its restrictions to an open cover — `Scheme.hom_ext_of_forall`, after
+`Subtype.ext` strips the `RelPoint` factorisation condition.
+
+Two notes for whoever reads this next.  The route note's "the only step
+with any content is the transport of `RelPicEquiv` along `modPullback`"
+was accurate: that step is now `relPicEquiv_modPullback` above, and every
+other line here is bookkeeping.  And the equality of `RelPoint`s really
+does reduce to equality of the underlying morphisms, since `RelPoint` is
+a subtype cut out by a Prop, which is why no compatibility of the
+factorisations through `pstr` has to be checked separately. -/
+theorem inj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (hP : IsRelPicOverAffines strX pstr) {T : Scheme.{u}} {g : T ⟶ S}
+    (p q : RelPoint pstr g) (h : RelPicEquiv strX g (hP.sheaf p) (hP.sheaf q)) :
+    p = q := by
+  apply Subtype.ext
+  apply AlgebraicGeometry.Scheme.hom_ext_of_forall
+  intro x
+  obtain ⟨V, hV, hxV, -⟩ :=
+    exists_isAffineOpen_mem_and_subset (X := S) (x := g.base x) (U := ⊤) trivial
+  refine ⟨g ⁻¹ᵁ V, hxV, ?_⟩
+  have hfac : FactorsThroughAffineOpen ((g ⁻¹ᵁ V).ι ≫ g) :=
+    ⟨V, hV, g ∣_ V, morphismRestrict_ι g V⟩
+  refine congrArg Subtype.val
+    (hP.inj hfac (RelPoint.pre (g ⁻¹ᵁ V).ι rfl p) (RelPoint.pre (g ⁻¹ᵁ V).ι rfl q) ?_)
+  refine relPicEquiv_trans _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl p) ?_
+  refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX (g ⁻¹ᵁ V).ι rfl h) ?_
+  exact relPicEquiv_symm _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl q)
+
+/-- **SURJECTIVITY IS ZARISKI-LOCAL ON THE BASE — BLR 8.1/4** (sorry
+leaf).  This is the one place `_o` and `_hpush` are consumed, and the
+statement is FALSE without them.
+
+Given `L` invertible on `X_T`, the affine-local `surj` gives classifying
+points `pᵢ` over the cover `g ⁻¹ᵁ Vᵢ` of `T`; on overlaps
+`sheaf (pᵢ|) ≡ L| ≡ sheaf (pⱼ|)`, so `inj_of_isRelPicOverAffines` — or
+directly `hP.inj`, since an overlap still lies over `Vᵢ` — makes them
+agree, and they glue to `p : T ⟶ P`.  What is left is the genuine
+content: `sheaf p` and `L` are `RelPicEquiv` locally on `T` and must be
+shown `RelPicEquiv` globally, i.e. `T ↦ Pic(X_T)/Pic(T)` is a Zariski
+sheaf.
+
+Both halves of that are hypothesis-consuming:
+
+* *separated* — a local isomorphism `sheaf p| ≅ L| ⊗ pr* Nᵢ` is unique up
+  to `Γ(X_{Tᵢ}, 𝒪ˣ)`, and it is `_hpush` (`f_*𝒪_{X_T} = 𝒪_T`
+  universally) that identifies that group with `Γ(Tᵢ, 𝒪ˣ)`, so the
+  comparison isomorphisms differ by a cocycle downstairs and can be
+  adjusted;
+* *glueing* — the twists `Nᵢ` then glue to a global invertible `N` on `T`
+  exactly when the resulting class in `Br T` vanishes, and `_o` kills it:
+  pull back along the section to normalise.
+
+For `X = S ⊔ S` — no section, and `f_*𝒪 = 𝒪 × 𝒪` — the sequence
+`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T) ⟶ Br T` breaks and a class can be locally but
+not globally in the image, so this is a refutation and not merely a gap in
+the argument. -/
+theorem surj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (hP : IsRelPicOverAffines strX pstr) {T : Scheme.{u}} {g : T ⟶ S}
+    (L : (curveBaseChange strX g).Modules) (_hL : IsInvertibleSheaf L) :
+    ∃ p : RelPoint pstr g, RelPicEquiv strX g (hP.sheaf p) L :=
+  sorry
+
 /-- **REPRESENTABILITY OF THE RELATIVE PICARD FUNCTOR IS ZARISKI-LOCAL ON
-THE BASE** (sorry leaf) — Stacks 01JJ for the gluing, BLR 8.1/4 for the
-descent of `surj`.
+THE BASE** — Stacks 01JJ for the gluing, BLR 8.1/4 for the descent of
+`surj` (**PROVEN 2026-07-29** over `exists_isRelPicOverAffines_of_forall_isAffineOpen`,
+`inj_of_isRelPicOverAffines` and `surj_of_isRelPicOverAffines`; formerly a
+bare sorry leaf).
 
 The affine opens cover `S`, so `_hloc` is a genuine cover hypothesis.  See
 the section note above for why the existence statements in `_hloc` need
@@ -1445,22 +1707,36 @@ hypotheses are nevertheless load-bearing here (they are what makes
 `T ↦ Pic(X_T)/Pic(T)` a Zariski sheaf, hence what lets `surj` be checked
 locally).
 
-**This is the half that is approachable now.**  It needs no FGA and no new
-geometry: `AlgebraicGeometry.Scheme.GlueData` for the construction, and
-then four field-by-field checks on `IsRelPicOf`, of which `inj` and
-`sheaf_pre` are local by inspection and `surj` is the BLR 8.1/4 step.  Note
-the universe warning on the parent's ROUTE AUDIT before reaching instead
-for `Scheme.LocalRepresentability.isRepresentable`: that takes a
-`Type u`-valued sheaf and the naive quotient is a priori `Type (u+1)`. -/
+**Superseded claim, kept here so it is not re-derived.**  This docstring
+used to say the proof was "`AlgebraicGeometry.Scheme.GlueData` for the
+construction, and then four field-by-field checks on `IsRelPicOf`, of
+which `inj` and `sheaf_pre` are local by inspection".  `inj` is indeed
+local (`inj_of_isRelPicOverAffines`, and unconditionally so), but
+`sheaf_pre` is not "local by inspection" — `sheaf` itself has no local
+definition to inspect, since `_hloc` hands out structures that agree only
+up to an automorphism of the functor.  The subsection note above gives the
+counterexample (dualise) and the repair (a rigidified Poincaré bundle).
+
+The universe warning on the parent's ROUTE AUDIT still stands: do not
+reach for `Scheme.LocalRepresentability.isRepresentable`, which takes a
+`Type u`-valued sheaf while the naive quotient is a priori
+`Type (u+1)`. -/
 theorem exists_relPicOf_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
-    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (hloc : ∀ V : S.Opens, IsAffineOpen V →
       ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
         Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
-    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) :=
-  sorry
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) := by
+  obtain ⟨P, pstr, ⟨hP⟩⟩ :=
+    exists_isRelPicOverAffines_of_forall_isAffineOpen strX hproper hsmooth hconn o hpush hloc
+  exact ⟨P, pstr, ⟨{ sheaf := hP.sheaf
+                     invertible := hP.invertible
+                     inj := fun p q h => inj_of_isRelPicOverAffines hP p q h
+                     surj := fun L hL =>
+                       surj_of_isRelPicOverAffines hproper hsmooth hconn o hpush hP L hL
+                     sheaf_pre := hP.sheaf_pre }⟩⟩
 
 /-- **EXISTENCE OF THE RELATIVE PICARD SCHEME** — FGA exposé 232,
 Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (**PROVEN 2026-07-29
@@ -1505,23 +1781,40 @@ exactly this leaf's three: `Smooth strX` comes from `_hsmooth` by
 `SmoothOfRelativeDimension.smooth`
 (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).
 
-Precisely: it carries **no direct `sorry`** — it is at
-`ProperPushforward.lean:2193` and that file's direct-sorry warning set is
-`{1225, 1534, 1666}` — but it is still TRANSITIVELY sorried through them.
+Precisely: it carries **no direct `sorry`**, but it is still TRANSITIVELY
+sorried through that file's own leaves.
 
-**The names of those leaves are CORRECTED here (2026-07-29).**  This
-paragraph used to name them `finiteType_appTop_of_isProper` and
-`surjective_quotientMap_appTop_of_isIso_appTop_fiber`.  The first is right
-(`:1225`); the second **does not exist in that file** — the other two
-leaves are `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le`
-(`:1534`) and `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`
-(`:1666`), and there are THREE, not two.  Read off the compiler's warning
-set, not off this docstring's predecessor.
+**RE-COUNTED 2026-07-30 (third correction).**  This paragraph has now been
+wrong three times, each time in a different way, and the third error was
+introduced by a correction of the second.  It first named
+`finiteType_appTop_of_isProper` and
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber`; it was then corrected
+to a set of THREE at `{1225, 1534, 1666}` naming
+`inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` and
+`exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, both of
+which have since been PROVEN.  **That second correction also asserted that
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber` "does not exist in
+that file", and that assertion is FALSE** — the declaration is there and is
+PROVEN (2026-07-28).  What was true of it is only that it is not an open
+leaf, and "not on the direct-sorry list" was written down as "not a
+declaration"; the two are different claims and a `grep` separates them in
+one command.  Do not repeat that inference: a name absent from a leaf list
+is a name to `grep`, not a name to declare nonexistent.
+
+The file's direct-sorry set is, as of 2026-07-30, **TWO**:
+`adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+`eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`.  Note the first of
+those replaced `finiteType_appTop_of_isProper` the same day — that theorem
+was PROVEN over it — so a fourth version of this list would have been wrong
+too.  **Line numbers in this paragraph have been dropped deliberately** —
+every version of them has gone stale within a day, and the names are what a
+`grep` can check.  Read the count off the compiler's warning set, never off
+this docstring.
 
 That distinction does not change the advice: the statement is available to
-CONSUME here, and those three leaves belong to `ProperPushforward.lean`'s
+CONSUME here, and those leaves belong to `ProperPushforward.lean`'s
 owner, not to this one.  Rebuilding the argument in this module would
-duplicate it and inherit the same three leaves.
+duplicate it and inherit the same leaves.
 
 **AMENDED 2026-07-29 — that import is now IN THE HEADER, and this
 paragraph used to say the opposite.**  It formerly read "It is NOT in this
@@ -1692,14 +1985,14 @@ ceremony:
   consumer, and `public import
   Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward` is now in the
   header.  It carries no direct `sorry`, though it is transitively
-  sorried through that file's own THREE leaves —
-  `finiteType_appTop_of_isProper`,
-  `inf_smul_top_le_smul_ker_of_forall_isMaximal_comap_le` and
-  `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber`
-  (`:1225`, `:1534`, `:1666`) — which belong to that file's owner, not to
-  this one.  (Corrected 2026-07-29: the name
-  `surjective_quotientMap_appTop_of_isIso_appTop_fiber` stood here and in
-  the leaf docstring above, and no such declaration exists.)
+  sorried through that file's own leaves — as of 2026-07-30 exactly TWO,
+  `adjoin_le_span_one_sup_smul_of_isIso_appTop_fiber` and
+  `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` — which belong to
+  that file's owner, not to this one.  (Corrected three times; see the
+  leaf docstring above for the history.  In particular the claim that
+  `surjective_quotientMap_appTop_of_isIso_appTop_fiber` "does not exist"
+  stood here and is FALSE — it exists and is proven; it is merely not an
+  open leaf.  Line numbers deliberately omitted.)
 * **`_hequiv` is discharged over five named leaves** by
   `relPicEquiv_equivalence`.  This is not ceremony either: without it
   `IsRelPicOf` is not merely hard to satisfy, it is not obviously

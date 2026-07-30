@@ -66,17 +66,35 @@ missed) together with `Heegner.exists_int_gammaTwo`.
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ` — PROVEN here, by conjugation
 through `η`'s infinite product) and the two class-field leaves listed below.
 
-SIX leaves remain, each stated so that it can be worked on alone.  (The
+FIVE leaves remain, each stated so that it can be worked on alone.  (The
 Diophantine leaf `eq_of_two_mul_mul_cube_add_one_eq_sq`, which an earlier version
 of this list counted, was PROVEN concurrently — see its bullet above; and
 `exists_rat_gammaTwo_heegnerPoint`, which it also counted, was replaced by the
 two class-field leaves below.)
 
-* `Heegner.exists_intCubic_weberAlpha`, `Heegner.intCast_indep_weberAlpha_pow_four`
-  — `α` is an algebraic integer generating a cubic field (Weber's theory of the
-  ring class field of the order of discriminant `−4p`, whose class number is `3`);
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer
-  (`q`-expansion combinatorics, no class field theory);
+* `Heegner.natDegree_minpoly_weberAlpha` — the degree of `α` over `ℚ` is exactly `3`
+  (Weber's theory of the ring class field of the order of discriminant `−4p`, whose class
+  number is `3`). This is the ONLY thing about `α` still open, and both
+  `Heegner.exists_intCubic_weberAlpha` and `Heegner.intCast_indep_weberAlpha_pow_four` are
+  PROVEN from it by elementary field theory — the independence of `1, α⁴, α⁸` needed no
+  modular input at all, only the primality of the degree. Its former companion
+  `Heegner.isIntegral_weberAlpha` — "`α` is an algebraic integer" — turned out NOT to be an
+  independent CM input and is now PROVEN: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the
+  definition of `γ₂`, so `γ₂(τ₀) ∈ ℤ` (i.e. `Heegner.exists_int_gammaTwo`, which the main
+  argument needs anyway) already forces `α⁴`, hence `α`, to be integral;
+* `Heegner.exists_modularPolynomial` — the MODULAR POLYNOMIAL `Φ_N ∈ ℤ[X, Y]`: it kills
+  `(j(A z), j(z))` for every primitive integral `A` of determinant `N`, and for non-square `N`
+  its diagonal `Φ_N(X, X)` has leading coefficient `±1` (Kronecker). No class field theory and
+  no class-number hypothesis. This REPLACES the former leaf
+  `Heegner.isIntegral_gammaTwo_heegnerPoint`, which is now PROVEN from it through three
+  intermediate steps, ALL proved here: `isIntegral_of_eval_diag` (a `(x,x)`-root of a
+  diagonal-unit bivariate polynomial is an algebraic integer),
+  `isIntegral_jInvariant_of_fixedPoint` (put `w = z`), and
+  `isIntegral_jInvariant_of_quadratic` (`j` is an algebraic integer at every imaginary
+  quadratic `z` — the fixing matrix is `[[m−b, −c], [a, m]]`, and
+  `exists_coprime_not_isSquare_quadratic` produces an `m` making it primitive with non-square
+  determinant); a cube root of an algebraic integer is then an algebraic integer, so Weber's
+  `3 ∤ p` and level-`3` theory — which the old docstring claimed were needed here — are not;
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`; **this is the
   main theorem of complex multiplication and is the only leaf here that needs it**, and the
   only one that consumes `hcl`;
@@ -88,7 +106,12 @@ two class-field leaves below.)
 PROVEN, over three new analytic leaves:
 
 * `Heegner.eta_pow_24_add_eta_two_pow_24` — `η²⁴ + 256η(2z)²⁴ = E₄·(η·η(2z))⁸`, the single
-  modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra;
+  modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra.
+  **Now PROVEN** (2026-07-29), over ONE new leaf, `Heegner.eta_two_torsion_key`
+  (`η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴`). Everything else is proven here: `η(z+1)`,
+  the `S`-transformation of `F = (η²⁴+256η(2z)²⁴)/(ηη(2z))⁸` from the key identity, the
+  packaging of `F` as a `ModularForm 𝒮ℒ 4`, its value `1` at the cusp, and
+  `F = E₄` from `ModularForm.levelOne_weight_four_rank_one`;
 * `Heegner.exists_E₄_heegnerPoint_approx`, `Heegner.exists_E₆_heegnerPoint_approx` — the
   values of `E₄` and `E₆` at `τ₀` to second order in `Q = exp(−π√p)`, with an explicit `Q³`
   error bound. Both follow the same mathlib lemma
@@ -98,15 +121,33 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has SIX open leaves — regenerated from the MERGED source at release 19, not
-inherited from either side: `exists_intCubic_weberAlpha`,
-`intCast_indep_weberAlpha_pow_four`, `isIntegral_gammaTwo_heegnerPoint`, the two
-class-field leaves `exists_quadratic_jInvariant_heegnerPoint` and
-`exists_quadratic_gammaTwo_of_jInvariant` that replaced
-`exists_rat_gammaTwo_heegnerPoint`, and the single modular-form identity
-`Heegner.eta_pow_24_add_eta_two_pow_24`.  The Diophantine
-`eq_of_two_mul_mul_cube_add_one_eq_sq` and `exists_rat_gammaTwo_heegnerPoint` itself are
-PROVEN. -/
+So this file has FIVE open leaves. The list below was REGENERATED from the merged source at
+this merge, not inherited from any of the three sides that disagreed about it — and each of
+them was RIGHT about its own base, which is exactly why none of their lists survives:
+`Heegner.natDegree_minpoly_weberAlpha`, `Heegner.exists_modularPolynomial`, the two
+class-field leaves `Heegner.exists_quadratic_jInvariant_heegnerPoint` and
+`Heegner.exists_quadratic_gammaTwo_of_jInvariant`, and the single `η`-product identity
+`Heegner.eta_two_torsion_key`.
+
+Six names moved between release 19 and here, in three independent directions:
+
+* `isIntegral_gammaTwo_heegnerPoint` is PROVEN (flt-lean-108) — from the new and strictly
+  weaker leaf `exists_modularPolynomial`, which needs no class field theory and no
+  class-number hypothesis, together with three intermediate steps proved there;
+* `exists_intCubic_weberAlpha` and `intCast_indep_weberAlpha_pow_four` are PROVEN
+  (flt-lean-237) from the new leaf `natDegree_minpoly_weberAlpha`, and their former
+  companion `isIntegral_weberAlpha` is PROVEN outright — it was never a CM input;
+* `eta_pow_24_add_eta_two_pow_24` is PROVEN (flt-lean-41, release 19), replaced as a leaf by
+  `eta_two_torsion_key`.
+
+So the count fell from six to five by two closures net (three leaves closed against two
+opened, plus `eta_pow_24` traded one-for-one), and NOT ONE of the three contributing branches
+could have computed that number: each saw its own two closures and neither of the others'.
+`exists_rat_gammaTwo_heegnerPoint` and the Diophantine `eq_of_two_mul_mul_cube_add_one_eq_sq`
+are PROVEN and are not leaves at all.
+
+Do not trust this paragraph either — it is stamped to one commit; regenerate it from the
+compiler's `declaration uses 'sorry'` warning set. -/
 module
 
 public import Mathlib.Tactic
@@ -115,11 +156,14 @@ public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.Real.Pi.Bounds
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+public import Mathlib.Analysis.Normed.Ring.InfiniteProd
 public import Mathlib.NumberTheory.ModularForms.DedekindEta
 public import Mathlib.NumberTheory.ModularForms.Discriminant
 public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.Basic
 public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.QExpansion
 public import Mathlib.NumberTheory.ModularForms.LevelOne.GradedRing
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+public import Mathlib.FieldTheory.Minpoly.IsIntegrallyClosed
 
 @[expose] public section
 
@@ -1184,40 +1228,172 @@ lemma cube_of_sq {R : Type*} [CommRing R] (x a b c : R)
     (x ^ 2) ^ 3 + (2 * b - a ^ 2) * (x ^ 2) ^ 2 + (b ^ 2 - 2 * a * c) * x ^ 2 + -c ^ 2 = 0 := by
   linear_combination (x ^ 3 - a * x ^ 2 + b * x - c) * h
 
-/-- **LEAF 1 — `α` is an algebraic integer of degree at most `3`.**
+/-! #### The cubic field of `α`: field theory, then the one remaining CM input
 
-`α = ζ₈⁻¹f₂(τ₀)²` satisfies a MONIC cubic with rational-integer coefficients. This is the
-"one hand" of Heegner's insight (Booher §6): `α` lies in the ring class field of the order
-`[1, √−p]` of discriminant `−4p`, whose class number is
-`h(−4p) = 2h(−p)(1 + ½) = 3h(−p) = 3` when `p ≡ 3 mod 8` — so `ℚ(α)` is a cubic field, and
-`α` is an algebraic integer because `f₂(τ₀)²` is (Weber; Booher Theorem 37, whose proof
-shows `f(√−p)⁶` lies in the ring class field by descending from the order `[1, 8√−p]`).
+The two leaves `exists_intCubic_weberAlpha` and `intCast_indep_weberAlpha_pow_four` are both
+consequences of the SINGLE statement "`α` is an algebraic integer of degree exactly `3`", and
+that is how they are proven below. The field-theoretic passage from that statement to each of
+them is elementary and is PROVEN here; what is left open is the CM input itself, and it is now
+the SINGLE named leaf `natDegree_minpoly_weberAlpha` — the degree. Its companion
+`isIntegral_weberAlpha` is proven (further down, after `exists_int_gammaTwo`, on which it
+depends).
 
-MACHINE-CHECKED FAITHFULNESS. `PARI/GP`'s `algdep(α, 3)` at the five admissible `p` returns
-exactly a monic integral cubic, with integer coefficients:
+This is a strict improvement on stating the two conclusions directly, because the second of
+them (`ℤ`-independence of `1, α⁴, α⁸`) is NOT an independent fact: it follows from
+`[ℚ(α) : ℚ] = 3` with no further modular input, by the degree argument in
+`intCast_indep_of_natDegree_minpoly` below. Leaving it as a separate assumption invited a
+future owner to attack a statement that was never open. -/
 
-| `p`   | minimal polynomial of `α` | `(a, b, c)`   |
-|-------|---------------------------|---------------|
-| `11`  | `x³ + 2x² − 2`            | `(2, 0, −2)`  |
-| `19`  | `x³ − 2x² + 4x − 2`       | `(−2, 4, −2)` |
-| `43`  | `x³ + 4x² + 4x − 2`       | `(4, 4, −2)`  |
-| `67`  | `x³ + 2x² + 8x − 2`       | `(2, 8, −2)`  |
-| `163` | `x³ + 4x² + 28x − 2`      | `(4, 28, −2)` |
+open _root_.Polynomial _root_.IntermediateField in
+/-- In a cubic extension `L/ℚ`, any `x` of degree `≤ 2` is already rational.
 
-Note `c = −2` in every case, matching the `c² = 4` that `exists_heegnerRelation_aux` DERIVES
-(so the derivation is not vacuous — it recovers a fact the numerics independently show).
+`3` is prime, so `[ℚ(x) : ℚ]` divides `3` by the tower law and is `≤ 2` by hypothesis, hence
+`1`; and a degree-one simple extension is `⊥`. -/
+theorem mem_range_algebraMap_of_finrank_three {L : Type*} [Field L] [Algebra ℚ L]
+    (h3 : Module.finrank ℚ L = 3) (x : L) (hx : (minpoly ℚ x).natDegree ≤ 2) :
+    ∃ r : ℚ, algebraMap ℚ L r = x := by
+  have hfd : FiniteDimensional ℚ L := by
+    apply FiniteDimensional.of_finrank_pos (K := ℚ); rw [h3]; norm_num
+  have hxi : IsIntegral ℚ x := IsIntegral.of_finite ℚ x
+  have hrank : Module.finrank ℚ ℚ⟮x⟯ = (minpoly ℚ x).natDegree :=
+    _root_.IntermediateField.adjoin.finrank hxi
+  have htower : Module.finrank ℚ ℚ⟮x⟯ * Module.finrank ℚ⟮x⟯ L = Module.finrank ℚ L :=
+    Module.finrank_mul_finrank ℚ _ L
+  rw [h3, hrank] at htower
+  have hd1 : (minpoly ℚ x).natDegree = 1 := by
+    set d := (minpoly ℚ x).natDegree with hdd
+    clear_value d
+    interval_cases d <;> omega
+  have hbot : ℚ⟮x⟯ = ⊥ := _root_.IntermediateField.finrank_eq_one_iff.mp (by rw [hrank, hd1])
+  have hmem : x ∈ ℚ⟮x⟯ := _root_.IntermediateField.mem_adjoin_simple_self ℚ x
+  rw [hbot] at hmem
+  exact _root_.IntermediateField.mem_bot.mp hmem
 
-WHAT IS MISSING, AND THE CHECK THAT WOULD REFUTE THIS. The claim "ring class field theory is
-absent" was re-verified for this decomposition rather than inherited: `grep -rn` for
-`ComplexMultiplication`, `HilbertClassField`, `ringClassField`, `jInvariant` over
-`.lake/packages/mathlib`, over `Fermat/`, and over `~/cs/FLT/` returns nothing relevant, and
-`Mathlib/NumberTheory/ModularForms/` contains no `j`-invariant at all. Refute by exhibiting
-any of those names; the leaf would then reduce to specialising them. -/
-theorem exists_intCubic_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+open _root_.Polynomial in
+/-- If `x²` is rational then `x` has degree at most `2`, being a root of `X² − r`. -/
+theorem natDegree_minpoly_le_two_of_sq_mem_range {L : Type*} [Field L] [Algebra ℚ L] (x : L)
+    (r : ℚ) (h : algebraMap ℚ L r = x ^ 2) : (minpoly ℚ x).natDegree ≤ 2 := by
+  have hne : (X ^ 2 - C r : ℚ[X]) ≠ 0 := by
+    intro hc
+    have h2 : (X ^ 2 - C r : ℚ[X]).coeff 2 = 1 := by simp
+    rw [hc] at h2
+    simp at h2
+  have hae : aeval x (X ^ 2 - C r : ℚ[X]) = 0 := by simp [h]
+  have hdle := minpoly.degree_le_of_ne_zero ℚ x hne hae
+  have hdeg2 : (X ^ 2 - C r : ℚ[X]).degree = 2 := by
+    have := Polynomial.degree_X_pow_sub_C (n := 2) (by norm_num) r
+    simpa using this
+  rw [hdeg2] at hdle
+  exact Polynomial.natDegree_le_iff_degree_le.mpr hdle
+
+open _root_.Polynomial in
+/-- An algebraic integer of degree `3` over `ℚ` satisfies a MONIC cubic with coefficients in
+`ℤ` — namely its minimal polynomial over `ℤ`, which maps to the one over `ℚ` because `ℤ` is
+integrally closed with fraction field `ℚ`. -/
+theorem exists_intCubic_of_natDegree_minpoly {α : ℂ} (hint : IsIntegral ℤ α)
+    (hdeg : (minpoly ℚ α).natDegree = 3) :
+    ∃ a b c : ℤ, α ^ 3 + (a : ℂ) * α ^ 2 + (b : ℂ) * α + (c : ℂ) = 0 := by
+  have hmonic : (minpoly ℤ α).Monic := minpoly.monic hint
+  have hmap : minpoly ℚ α = (minpoly ℤ α).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hint
+  have hPdeg : (minpoly ℤ α).natDegree = 3 := by
+    rw [hmap, hmonic.natDegree_map] at hdeg
+    exact hdeg
+  have haev : aeval α (minpoly ℤ α) = 0 := minpoly.aeval ℤ α
+  have hlt : (minpoly ℤ α).natDegree < 4 := by rw [hPdeg]; norm_num
+  have hsum := Polynomial.aeval_eq_sum_range' hlt α
+  rw [haev] at hsum
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ,
+    Finset.sum_range_succ, Finset.sum_range_zero] at hsum
+  have hc3 : (minpoly ℤ α).coeff 3 = 1 := by
+    have := hmonic.coeff_natDegree
+    rwa [hPdeg] at this
+  rw [hc3] at hsum
+  refine ⟨(minpoly ℤ α).coeff 2, (minpoly ℤ α).coeff 1, (minpoly ℤ α).coeff 0, ?_⟩
+  simp only [zsmul_eq_mul, Int.cast_one, one_mul, pow_zero, pow_one, mul_one, zero_add] at hsum
+  linear_combination -hsum
+
+open _root_.Polynomial _root_.IntermediateField in
+/-- **`1, α⁴, α⁸` are `ℤ`-independent as soon as `α` has degree `3`** — no modular input.
+
+The mechanism is the prime degree, applied TWICE. A nontrivial relation
+`uα⁸ + vα⁴ + w = 0` makes `α⁴` a root of a nonzero rational polynomial of degree `≤ 2`, so
+`α⁴` is rational by `mem_range_algebraMap_of_finrank_three`; then `α²` is a root of `X² − α⁴`,
+so `α²` is rational by the same lemma; then `α` is a root of `X² − α²`, giving
+`deg α ≤ 2 < 3`.
+
+This is why no "`α⁴` has degree `3`" hypothesis is needed anywhere: it is a THEOREM about any
+degree-three `α`, not an extra fact about this particular one. -/
+theorem intCast_indep_of_natDegree_minpoly {α : ℂ} (hdeg : (minpoly ℚ α).natDegree = 3) :
+    ∀ u v w : ℤ, (u : ℂ) * α ^ 8 + (v : ℂ) * α ^ 4 + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 := by
+  have hint : IsIntegral ℚ α := by
+    by_contra hc
+    rw [minpoly.eq_zero hc] at hdeg
+    simp at hdeg
+  have h3 : Module.finrank ℚ ℚ⟮α⟯ = 3 := by
+    rw [_root_.IntermediateField.adjoin.finrank hint, hdeg]
+  set a : ℚ⟮α⟯ := _root_.IntermediateField.AdjoinSimple.gen ℚ α with ha
+  have hamap : (algebraMap ℚ⟮α⟯ ℂ) a = α :=
+    _root_.IntermediateField.AdjoinSimple.algebraMap_gen ℚ α
+  have hmp : minpoly ℚ a = minpoly ℚ α := _root_.IntermediateField.minpoly_gen ℚ α
+  intro u v w h
+  by_contra hcon
+  have hinj : Function.Injective (algebraMap ℚ⟮α⟯ ℂ) := (algebraMap ℚ⟮α⟯ ℂ).injective
+  have hL0 : (u : ℚ⟮α⟯) * a ^ 8 + (v : ℚ⟮α⟯) * a ^ 4 + (w : ℚ⟮α⟯) = 0 := by
+    apply hinj
+    simp only [map_add, map_mul, map_pow, map_intCast, map_zero, hamap]
+    exact h
+  set q : ℚ[X] := C (u : ℚ) * X ^ 2 + C (v : ℚ) * X + C (w : ℚ) with hq
+  have hqne : q ≠ 0 := by
+    intro hc
+    apply hcon
+    have e2 : q.coeff 2 = (u : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    have e1 : q.coeff 1 = (v : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    have e0 : q.coeff 0 = (w : ℚ) := by
+      rw [hq]; simp only [coeff_add, coeff_C_mul, coeff_X_pow, coeff_C, coeff_X]; norm_num
+    rw [hc] at e2 e1 e0
+    simp only [Polynomial.coeff_zero] at e2 e1 e0
+    exact ⟨by exact_mod_cast e2.symm, by exact_mod_cast e1.symm, by exact_mod_cast e0.symm⟩
+  have hae : aeval (a ^ 4) q = 0 := by
+    simp only [hq, map_add, map_mul, aeval_X, map_pow, map_intCast]
+    linear_combination hL0
+  have hdle : (minpoly ℚ (a ^ 4)).natDegree ≤ 2 := by
+    have hd := minpoly.degree_le_of_ne_zero ℚ (a ^ 4) hqne hae
+    have hdq : q.degree ≤ 2 := by rw [hq]; compute_degree
+    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
+  obtain ⟨r, hr⟩ := mem_range_algebraMap_of_finrank_three h3 (a ^ 4) hdle
+  have hstep1 : (minpoly ℚ (a ^ 2)).natDegree ≤ 2 :=
+    natDegree_minpoly_le_two_of_sq_mem_range (a ^ 2) r (by rw [hr]; ring)
+  obtain ⟨s, hs⟩ := mem_range_algebraMap_of_finrank_three h3 (a ^ 2) hstep1
+  have hstep2 : (minpoly ℚ a).natDegree ≤ 2 :=
+    natDegree_minpoly_le_two_of_sq_mem_range a s hs
+  rw [hmp, hdeg] at hstep2
+  omega
+
+/-- **LEAF 1b — `α` HAS DEGREE EXACTLY `3` OVER `ℚ`.**
+
+This is the class-number computation, and it is the ONLY place the deep input enters: `α`
+lies in the ring class field of the order `[1, √−p]` of discriminant `−4p`, and for
+`p ≡ 3 mod 8` the class number formula for a conductor-`2` order gives
+
+  `h(−4p) = 2·h(−p)·(1 − (−p|2)/2) = 3·h(−p)`,
+
+using `(−p|2) = −1` because `−p ≡ 5 mod 8`. With `h(−p) = 1` — which is exactly what `hcl`
+says — this is `3`, so `ℚ(α)` is a cubic field.
+
+`hcl` IS LOAD-BEARING and does not appear in the conclusion: drop it and `h(−p)` may exceed
+`1`, making `h(−4p) = 3h(−p) > 3` and the degree larger than `3`. It is not decorative.
+
+MACHINE-CHECKED FAITHFULNESS: `polisirreducible(algdep(α,3)) = 1` at all five admissible `p`
+(table in `isIntegral_weberAlpha`), so the degree is exactly `3` — not `1` or `2` — in every
+case where the hypotheses are satisfiable. Refute by exhibiting an admissible `p` at which
+`α` satisfies a rational polynomial of degree `< 3`. -/
+theorem natDegree_minpoly_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ a b c : ℤ, weberAlpha p hp.pos ^ 3 + (a : ℂ) * weberAlpha p hp.pos ^ 2
-      + (b : ℂ) * weberAlpha p hp.pos + (c : ℂ) = 0 :=
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree = 3 :=
   sorry
 
 /-- **LEAF 2 — `α⁴` has degree at least `3`**, stated as `ℤ`-linear independence of
@@ -1238,30 +1414,32 @@ and `α⁴` is a root of the cubic `x³ − γ₂x − 16`, which is irreducible
 DROPPING `hcl` MAKES THIS FALSE, and that is the interesting failure mode: without class
 number one there is no reason for the ring class field of `[1, √−p]` to be cubic, `γ₂(τ₀)`
 need not be rational, and `x³ − γ₂x − 16` need not be the minimal polynomial. So `hcl` is
-load-bearing here even though it does not appear in the conclusion. -/
+load-bearing here even though it does not appear in the conclusion — it enters through
+`natDegree_minpoly_weberAlpha`.
+
+**PROVEN**, from `natDegree_minpoly_weberAlpha` ALONE — integrality is not needed here.
+A CORRECTION to the framing above: this leaf was cut as if "`α⁴` has degree at least `3`"
+were a second, independent piece of Weber's theory to be supplied alongside LEAF 1. It is
+not. Once `α` has degree `3`, independence is FORCED by the primality of that degree, applied
+twice (`intCast_indep_of_natDegree_minpoly`): a nontrivial relation makes `α⁴` rational,
+hence `α²` rational, hence `deg α ≤ 2 < 3`. No modular input is consumed, and in particular
+the claim "`ℚ(α) = ℚ(α⁴)`" quoted above need never be established separately. -/
 theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
     ∀ u v w : ℤ, (u : ℂ) * weberAlpha p hp.pos ^ 8 + (v : ℂ) * weberAlpha p hp.pos ^ 4
       + (w : ℂ) = 0 → u = 0 ∧ v = 0 ∧ w = 0 :=
-  sorry
+  intCast_indep_of_natDegree_minpoly (natDegree_minpoly_weberAlpha hp hp8 h3 hcl)
 
-/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER.**
+/-! `LEAF 1` — the monic integral cubic satisfied by `α` — is `exists_intCubic_weberAlpha`,
+and it is stated and PROVEN further down, immediately after `exists_int_gammaTwo`. It has to
+live there rather than here: its integrality half is no longer a leaf but a CONSEQUENCE of
+`γ₂(τ₀) ∈ ℤ`, so it depends on `LEAF 3`/`LEAF 4` by way of `exists_int_gammaTwo`. See
+`isIntegral_weberAlpha`. -/
 
-Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory: `j(τ₀)`
-is an algebraic integer for any imaginary quadratic `τ₀` (the classical integrality of the
-class equation, provable by `q`-expansions and the modular equation `Φ_N`, Booher §2), and
-since `3 ∤ p` the cube root `γ₂` is again an algebraic integer (Booher §3.1: `γ₂` is a
-modular function for the group `H` of level `3`, and its `q`-expansion has integral
-coefficients).
-
-NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
-other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half is
-Weber/`q`-expansion combinatorics, the other half (LEAF 4) is the main theorem of complex
-multiplication. They are independently attackable and belong to different theories. -/
-theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) :
-    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) :=
-  sorry
+/- **LEAF 3 (`isIntegral_gammaTwo_heegnerPoint`) HAS MOVED** — it is now PROVEN, and lives
+just below `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), which its proof consumes. Lean's
+declaration order is the only reason for the move; nothing about the statement changed. -/
 
 /-! #### `LEAF 4` DECOMPOSED — the real-analytic half is PROVEN here (2026-07-28)
 
@@ -1533,9 +1711,14 @@ theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 =
 /-! ### Reduction of LEAVES 5 and 6 to their analytic cores
 
 Everything from here to `exp_pi_sqrt_le_of_jInvariant_eq` was added when LEAVES 5 and 6 were
-closed over three new named sub-leaves. Both targets are now PROVEN; what is left open is
-`eta_pow_24_add_eta_two_pow_24` (one modular-form identity) and the two `q`-expansion value
-estimates `exists_E₄_heegnerPoint_approx` / `exists_E₆_heegnerPoint_approx`.
+closed over three new named sub-leaves. Both targets are now PROVEN.
+
+STATUS UPDATE (2026-07-29): all three of those sub-leaves are now closed too.
+`exists_E₄_heegnerPoint_approx` and `exists_E₆_heegnerPoint_approx` were proven on
+2026-07-28; `eta_pow_24_add_eta_two_pow_24` is proven below over the single new leaf
+`eta_two_torsion_key`. So nothing in the LEAF 5 / LEAF 6 reduction is open except that one
+`η`-product identity. The sentence that used to stand here, listing the two `E`-estimates as
+open, was stale.
 
 CORRECTION TO THE NAMESPACE DOCSTRING ABOVE (checked 2026-07-28, `grep` over
 `.lake/packages/mathlib`). The claim that "nothing of the modular theory used below is in
@@ -1558,6 +1741,404 @@ this pin ALSO has, and all of it is used or usable here:
 What is genuinely absent is still absent: no `j`-invariant, no Weber functions, no complex
 multiplication, no ring class fields. Re-run the greps; they are a dated measurement. -/
 
+/-! ### SUB-LEAF 5a: the level-two `η`-identity, and its reduction to ONE `η`-product identity
+
+`eta_pow_24_add_eta_two_pow_24` — `η(z)²⁴ + 256 η(2z)²⁴ = E₄(z)·(η(z)η(2z))⁸` — is now PROVEN
+below, over the single remaining leaf `eta_two_torsion_key`.  Everything between here and it is
+new and proven: the `η`-transformation bookkeeping, the packaging of
+
+  `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`
+
+as an honest `ModularForm 𝒮ℒ 4`, and the identification `F = E₄` from
+`ModularForm.levelOne_weight_four_rank_one`.
+
+**CORRECTION (2026-07-29) TO THE ROUTE THIS NODE WAS CUT ALONG.**  The previous docstring said
+the remaining work was "`S`-invariance of weight 4, after which `levelOne_weight_four_rank_one`
+plus a single `q`-coefficient comparison finishes; `sturm_bound_levelOne` is the packaged form
+of that last step".  The first clause is right and the last is a red herring — no Sturm bound is
+used or needed below; `sturm_bound_levelOne` never enters, because rank-one plus the constant
+term is already enough.  The `S`-invariance really is the whole theorem, exactly as the
+2026-07-28 correction said, and the honest cut is NOT the two Weber relations
+`f·f₁·f₂ = √2` and `f⁸ = f₁⁸+f₂⁸` separately but their COMBINATION, which is a single identity
+in `η` alone — see `eta_two_torsion_key`.  Concretely, write `E = η(z)²⁴`, `B = η(z/2)⁸`,
+`C = η(2z)⁸`.  Applying `eta_comp_eq_csqrt_I_inv` at `z` and (via `−2/z = −1/(z/2)`) at `z/2`
+turns `F(−1/z) = z⁴F(z)` into `C·(16E + B³) = B·(E + 256C³)`, and the difference of the two
+sides factors exactly as
+
+  `C·(16E + B³) − B·(E + 256C³) = (16C − B)·(E − B·C·(B + 16C))`.
+
+So the `S`-transformation is implied by `B·C·(B + 16C) = E`, which is `eta_two_torsion_key`.
+In the Weber variables `b = B/η(z)⁸`, `c = 16C/η(z)⁸` that identity is `bc(b+c) = 16`; the two
+`f`-relations imply it (`a = b+c` substituted into `abc = 16`), but it does not need `f` — so
+`η((z+1)/2)` and the 48-th root of unity never appear.  `etaWeightFour_S_algebra` is that one
+factorisation, discharged by `rw` on the key identity followed by `field_simp; ring`.
+
+Also corrected: `T`-invariance is NOT the "24-th power argument" the old docstring described
+(that argument is about `Δ`, not about `F`).  What is actually true and proven here is
+`eta_add_one : η(z+1) = e^{πi/12}η(z)`, whence `η(2z+2) = e^{πi/6}η(2z)`, and both numerator
+and denominator of `F` are multiplied by `(e^{πi/12})²⁴ = 1`.
+
+Still true and re-checked at this pin: `discriminant_eq_E₄_cube_sub_E₆_sq`,
+`levelOne_weight_four_rank_one`, `dimension_level_one`, `EisensteinSeries.q_expansion_bernoulli`,
+`discriminant_eq_q_prod`, `discriminant_S_invariant`, `eta_comp_eq_csqrt_I_inv` are all in
+mathlib and are used below.  Genuinely absent, re-grepped 2026-07-29: `j`, Weber functions, CM,
+ring class fields, and any Jacobi triple product. -/
+
+section EtaWeightFour
+
+open Complex UpperHalfPlane ModularForm Filter Function
+open scoped Real MatrixGroups Topology Manifold
+
+
+/-! ### `Complex.sqrt` helpers -/
+
+lemma csqrt_sq {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 2 = z := by
+  rw [sqrt_eq_exp hz, ← Complex.exp_nat_mul,
+    show ((2 : ℕ) : ℂ) * (Complex.log z / 2) = Complex.log z by push_cast; ring,
+    Complex.exp_log hz]
+
+lemma csqrt_pow_eight {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 8 = z ^ 4 := by
+  rw [show (8 : ℕ) = 2 * 4 from rfl, pow_mul, csqrt_sq hz]
+
+lemma csqrt_pow_twentyFour {z : ℂ} (hz : z ≠ 0) : Complex.sqrt z ^ 24 = z ^ 12 := by
+  rw [show (24 : ℕ) = 2 * 12 from rfl, pow_mul, csqrt_sq hz]
+
+lemma csqrtI_pow_eight : Complex.sqrt Complex.I ^ 8 = 1 := by
+  rw [csqrt_pow_eight Complex.I_ne_zero, Complex.I_pow_four]
+
+/-! ### `η(z+1)` -/
+
+lemma eta_add_one (z : ℂ) :
+    ModularForm.eta (z + 1) = Complex.exp (↑Real.pi * Complex.I / 12) * ModularForm.eta z := by
+  have hq1 : Periodic.qParam 1 (z + 1) = Periodic.qParam 1 z := by
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one]
+    rw [show 2 * (↑Real.pi : ℂ) * Complex.I * (z + 1)
+        = 2 * ↑Real.pi * Complex.I * z + 2 * ↑Real.pi * Complex.I by ring]
+    exact Complex.exp_periodic _
+  have hq24 : Periodic.qParam 24 (z + 1)
+      = Complex.exp (↑Real.pi * Complex.I / 12) * Periodic.qParam 24 z := by
+    simp only [Periodic.qParam]
+    rw [show 2 * (↑Real.pi : ℂ) * Complex.I * (z + 1) / ((24 : ℝ) : ℂ)
+        = ↑Real.pi * Complex.I / 12 + 2 * ↑Real.pi * Complex.I * z / ((24 : ℝ) : ℂ) by
+      push_cast; ring, Complex.exp_add]
+  simp only [ModularForm.eta, ModularForm.eta_q, hq1, hq24, mul_assoc]
+
+lemma zeta24_pow_24 : Complex.exp (↑Real.pi * Complex.I / 12) ^ 24 = 1 := by
+  rw [← Complex.exp_nat_mul,
+    show ((24 : ℕ) : ℂ) * (↑Real.pi * Complex.I / 12) = 2 * ↑Real.pi * Complex.I by
+      push_cast; ring]
+  exact Complex.exp_two_pi_mul_I
+
+/-! ### The weight-four eta quotient -/
+
+/-- **SUB-LEAF 5a-i — THE ONE REMAINING ANALYTIC INPUT.**
+
+  `η(z/2)⁸ · η(2z)⁸ · (η(z/2)⁸ + 16 η(2z)⁸) = η(z)²⁴`.
+
+Everything else in `eta_pow_24_add_eta_two_pow_24` is PROVEN below from this single identity;
+see the section prose above for the derivation and for why this is a strictly cleaner cut than
+the two Weber relations the previous plan named.
+
+WHERE IT COMES FROM. In Weber's notation `f = ζ₄₈⁻¹η((z+1)/2)/η(z)`, `f₁ = η(z/2)/η(z)`,
+`f₂ = √2·η(2z)/η(z)`, put `a = f⁸`, `b = f₁⁸ = η(z/2)⁸/η(z)⁸`, `c = f₂⁸ = 16η(2z)⁸/η(z)⁸`.
+The two classical Weber relations are
+
+  `f·f₁·f₂ = √2`  (equivalently `abc = 16`)   and   `f⁸ = f₁⁸ + f₂⁸`  (equivalently `a = b + c`),
+
+the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`.  Substituting `a = b + c` into `abc = 16`
+ELIMINATES `f` (and with it `η((z+1)/2)` and the 48-th root of unity) and leaves exactly
+`bc(b+c) = 16`, which cleared of denominators is the statement above.  So this one identity
+carries the full content of both Weber relations that the `S`-transformation actually needs,
+and it is stated purely in `ModularForm.eta` — no Weber function, no root of unity, no theta
+constant appears.
+
+MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, `eta(z,1)`, 60 digits, 2026-07-29): the relative
+residual of `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) − η(z)²⁴` is `< 9·10⁻⁷⁶` at all NINE of
+`z = 0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`, `0.05+i`, `3i`, `0.3i`, `0.49+0.05i`, `−0.25+0.1i`,
+`i/√2`.  The last five were chosen to probe the places where such an identity most often
+degenerates: deep in the cusp (`3i`), close to the real axis (`0.3i`, `0.49+0.05i`,
+`−0.25+0.1i`), and at the fixed point `i/√2` of the Fricke involution, which is exactly where
+the factor `16η(2z)⁸ − η(z/2)⁸` in the `S`-transformation vanishes.  The two Weber relations
+and the final target were checked at the first four points with the same residual, so the
+reduction above is not a mis-derivation.  The points are generic, not CM points: this is an
+identity on all of `ℍ`.
+
+WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ.  Note the constant `16` is
+forced twice over and is not a normalisation — it is `(√2)⁸` on one side and the `2⁴` inside
+`f₂⁸ = 2⁴η(2z)⁸/η(z)⁸` on the other — and the exponent `8` is forced by `f₂⁸` being the
+smallest power of `f₂` that is a modular FUNCTION.
+
+ROUTE FOR THE NEXT OWNER.  Re-grepped over `.lake/packages/mathlib` at this pin (2026-07-29):
+there are no Weber functions, `ModularForms/JacobiTheta/` has no product formula tying `θ` to
+`η`, and there is no Jacobi triple product anywhere.  So neither Weber relation can be quoted
+and this really is new theory.  Two routes, both classical:
+
+* prove the Jacobi triple product for `jacobiTheta₂` and read off `θ₂θ₃θ₄ = 2η³` together with
+  `θ₂⁴+θ₄⁴ = θ₃⁴`; or
+* prove it as a level-2 modular identity: `b` and `c` are holomorphic and non-vanishing on `ℍ`,
+  `bc(b+c) − 16` is invariant under `Γ(2)` (the group is generated by `T²` and `ST²S`, and both
+  act on the pair `(b, c)` by the `η`-transformation formulas already in
+  `ModularForms/Discriminant.lean`), and it vanishes at all three cusps by the `q`-expansions
+  `b = q^{1/3}(1 + O(q^{1/2}))`, `c = 16q^{1/3}·q^{1/2}(1 + O(q))`.
+
+An equivalent purely `q`-series form, with `x = e^{πiz}`, is
+`∏(1−(−1)ⁿxⁿ)⁸ = ∏(1−xⁿ)⁸ + 16x·∏(1−x⁴ⁿ)⁸`. -/
+theorem eta_two_torsion_key (z : ℍ) :
+    ModularForm.eta ((z : ℂ) / 2) ^ 8 * ModularForm.eta (2 * (z : ℂ)) ^ 8 *
+        (ModularForm.eta ((z : ℂ) / 2) ^ 8 + 16 * ModularForm.eta (2 * (z : ℂ)) ^ 8)
+      = ModularForm.eta (z : ℂ) ^ 24 := sorry
+
+/-- `F(z) = (η(z)²⁴ + 256 η(2z)²⁴)/(η(z)η(2z))⁸`. -/
+noncomputable def etaWeightFour (z : ℍ) : ℂ :=
+  (ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24) /
+    (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8
+
+lemma mem_upperHalfPlaneSet_two_mul (z : ℍ) : 2 * (z : ℂ) ∈ upperHalfPlaneSet := by
+  show 0 < (2 * (z : ℂ)).im
+  simpa using z.im_pos
+
+lemma mem_upperHalfPlaneSet_div_two (z : ℍ) : (z : ℂ) / 2 ∈ upperHalfPlaneSet := by
+  show 0 < ((z : ℂ) / 2).im
+  simpa using z.im_pos
+
+lemma eta_ne_zero_two_mul (z : ℍ) : ModularForm.eta (2 * (z : ℂ)) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_two_mul z)
+
+lemma eta_ne_zero_div_two (z : ℍ) : ModularForm.eta ((z : ℂ) / 2) ≠ 0 :=
+  ModularForm.eta_ne_zero (mem_upperHalfPlaneSet_div_two z)
+
+/-- The pure field algebra behind the `S`-transformation. -/
+lemma etaWeightFour_S_algebra (Z e h f : ℂ) (hZ : Z ≠ 0) (he : e ≠ 0) (hh : h ≠ 0) (hf : f ≠ 0)
+    (key : h ^ 8 * f ^ 8 * (h ^ 8 + 16 * f ^ 8) = e ^ 24) :
+    (Z ^ 12 * e ^ 24 + 256 * ((Z / 2) ^ 12 * h ^ 24)) / (Z ^ 4 * (Z / 2) ^ 4 * (e * h) ^ 8)
+      = Z ^ 4 * ((e ^ 24 + 256 * f ^ 24) / (e * f) ^ 8) := by
+  rw [← key]
+  field_simp
+  ring
+
+/-- `F(z + 1) = F(z)`. -/
+lemma etaWeightFour_of_eq_add_one {z w : ℍ} (hw : (w : ℂ) = (z : ℂ) + 1) :
+    etaWeightFour w = etaWeightFour z := by
+  set ζ : ℂ := Complex.exp (↑Real.pi * Complex.I / 12) with hζ
+  have hz24 : ζ ^ 24 = 1 := zeta24_pow_24
+  have h1 : ModularForm.eta (w : ℂ) = ζ * ModularForm.eta (z : ℂ) := by
+    rw [hw]; exact eta_add_one _
+  have h2 : ModularForm.eta (2 * (w : ℂ)) = ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)) := by
+    rw [hw, show 2 * ((z : ℂ) + 1) = (2 * (z : ℂ) + 1) + 1 by ring, eta_add_one, eta_add_one]
+    ring
+  have hA : (ζ * ModularForm.eta (z : ℂ)) ^ 24 = ModularForm.eta (z : ℂ) ^ 24 := by
+    rw [mul_pow, hz24, one_mul]
+  have hB : (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ))) ^ 24
+      = ModularForm.eta (2 * (z : ℂ)) ^ 24 := by
+    rw [mul_pow, ← pow_mul, show 2 * 24 = 24 * 2 from rfl, pow_mul, hz24, one_pow, one_mul]
+  have hC : (ζ * ModularForm.eta (z : ℂ) * (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)))) ^ 8
+      = (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 := by
+    rw [show ζ * ModularForm.eta (z : ℂ) * (ζ ^ 2 * ModularForm.eta (2 * (z : ℂ)))
+        = ζ ^ 3 * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) by ring,
+      mul_pow, ← pow_mul, show 3 * 8 = 24 from rfl, hz24, one_mul]
+  rw [etaWeightFour, etaWeightFour, h1, h2, hA, hB, hC]
+
+/-- The `S`-transformation, reduced to the root-of-unity bookkeeping. -/
+lemma etaWeightFour_S_reduce (S sz sh e h : ℂ) (hS : S ^ 8 = 1) :
+    ((S * (sz * e)) ^ 24 + 256 * (S * (sh * h)) ^ 24) / (S * (sz * e) * (S * (sh * h))) ^ 8
+      = (sz ^ 24 * e ^ 24 + 256 * (sh ^ 24 * h ^ 24)) / (sz ^ 8 * sh ^ 8 * (e * h) ^ 8) := by
+  have h24 : S ^ 24 = 1 := by rw [show (24 : ℕ) = 8 * 3 from rfl, pow_mul, hS, one_pow]
+  have h16 : S ^ 16 = 1 := by rw [show (16 : ℕ) = 8 * 2 from rfl, pow_mul, hS, one_pow]
+  rw [show (S * (sz * e)) ^ 24 + 256 * (S * (sh * h)) ^ 24
+      = S ^ 24 * (sz ^ 24 * e ^ 24) + 256 * (S ^ 24 * (sh ^ 24 * h ^ 24)) by ring,
+    show (S * (sz * e) * (S * (sh * h))) ^ 8
+      = S ^ 16 * (sz ^ 8 * sh ^ 8 * (e * h) ^ 8) by ring, h24, h16]
+  simp only [one_mul]
+
+/-- `F(-1/z) = z⁴ F(z)`.  This is the `S`-transformation, and it is exactly where the
+KEY leaf `eta_two_torsion_key` is consumed. -/
+lemma etaWeightFour_of_eq_neg_inv {z w : ℍ} (hw : (w : ℂ) = -(z : ℂ)⁻¹) :
+    etaWeightFour w = (z : ℂ) ^ 4 * etaWeightFour z := by
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  have hh0 : (z : ℂ) / 2 ≠ 0 := div_ne_zero hz0 two_ne_zero
+  have hS8 : ((Complex.sqrt Complex.I)⁻¹) ^ 8 = 1 := by
+    rw [inv_pow, csqrtI_pow_eight, inv_one]
+  have he1 : ModularForm.eta (w : ℂ)
+      = (Complex.sqrt Complex.I)⁻¹ * (Complex.sqrt (z : ℂ) * ModularForm.eta (z : ℂ)) := by
+    rw [hw]
+    simpa [neg_div] using ModularForm.eta_comp_eq_csqrt_I_inv z.2
+  have he2 : ModularForm.eta (2 * (w : ℂ))
+      = (Complex.sqrt Complex.I)⁻¹ *
+        (Complex.sqrt ((z : ℂ) / 2) * ModularForm.eta ((z : ℂ) / 2)) := by
+    have h := ModularForm.eta_comp_eq_csqrt_I_inv (mem_upperHalfPlaneSet_div_two z)
+    rw [hw, show 2 * -(z : ℂ)⁻¹ = -1 / ((z : ℂ) / 2) by field_simp]
+    simpa using h
+  rw [etaWeightFour, he1, he2, etaWeightFour_S_reduce _ _ _ _ _ hS8,
+    csqrt_pow_twentyFour hz0, csqrt_pow_eight hz0, csqrt_pow_twentyFour hh0, csqrt_pow_eight hh0]
+  exact etaWeightFour_S_algebra _ _ _ _ hz0 (ModularForm.eta_ne_zero z.2)
+    (eta_ne_zero_div_two z) (eta_ne_zero_two_mul z) (eta_two_torsion_key z)
+
+/-! ### Slash invariance -/
+
+lemma etaWeightFour_T_invariant :
+    (etaWeightFour ∣[(4 : ℤ)] ModularGroup.T) = etaWeightFour := by
+  ext z
+  rw [SL_slash_apply, UpperHalfPlane.modular_T_smul,
+    etaWeightFour_of_eq_add_one (z := z) (w := (1 : ℝ) +ᵥ z)
+      (by rw [UpperHalfPlane.coe_vadd]; push_cast; ring)]
+  simp [denom, ModularGroup.T]
+
+lemma etaWeightFour_S_invariant :
+    (etaWeightFour ∣[(4 : ℤ)] ModularGroup.S) = etaWeightFour := by
+  ext z
+  have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+  rw [SlashInvariantForm.slash_S_apply,
+    etaWeightFour_of_eq_neg_inv (z := z) (w := .mk _ z.im_inv_neg_coe_pos) (by simp)]
+  rw [zpow_neg, show (4 : ℤ) = ((4 : ℕ) : ℤ) from rfl, zpow_natCast]
+  field_simp
+
+lemma etaWeightFour_slash (γ : SL(2, ℤ)) :
+    (etaWeightFour ∣[(4 : ℤ)] γ) = etaWeightFour :=
+  SlashInvariantForm.slash_action_generators_SL2Z etaWeightFour_S_invariant
+    etaWeightFour_T_invariant γ
+
+/-! ### Holomorphy -/
+
+lemma differentiableAt_etaQuot {x : ℂ} (hx : x ∈ upperHalfPlaneSet) :
+    DifferentiableAt ℂ (fun x : ℂ => (ModularForm.eta x ^ 24 + 256 * ModularForm.eta (2 * x) ^ 24)
+      / (ModularForm.eta x * ModularForm.eta (2 * x)) ^ 8) x := by
+  have h2 : (2 : ℂ) * x ∈ upperHalfPlaneSet := by
+    show 0 < (2 * x).im
+    simpa using hx
+  have d1 : DifferentiableAt ℂ ModularForm.eta x :=
+    ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet hx
+  have d2 : DifferentiableAt ℂ (fun x : ℂ => ModularForm.eta (2 * x)) x :=
+    (ModularForm.differentiableAt_eta_of_mem_upperHalfPlaneSet h2).comp x (by fun_prop)
+  exact ((d1.pow 24).add ((d2.pow 24).const_mul _)).div ((d1.mul d2).pow 8)
+    (pow_ne_zero _ (mul_ne_zero (ModularForm.eta_ne_zero hx) (ModularForm.eta_ne_zero h2)))
+
+lemma etaWeightFour_mdifferentiable : MDiff etaWeightFour := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  refine .congr (fun z hz ↦ (differentiableAt_etaQuot hz).differentiableWithinAt) fun z hz ↦ ?_
+  simp [etaWeightFour, UpperHalfPlane.ofComplex_apply_of_im_pos hz]
+
+
+/-! ### Behaviour at the cusp -/
+
+/-- `G q = ∏' n, (1 - q^(n+1))`, the `q`-series factor of `η`. -/
+noncomputable def etaProd (q : ℂ) : ℂ := ∏' n : ℕ, (1 - q ^ (n + 1))
+
+lemma eta_eq_qParam_mul_etaProd (z : ℂ) :
+    ModularForm.eta z = Periodic.qParam 24 z * etaProd (Periodic.qParam 1 z) := rfl
+
+lemma tendsto_etaProd : Filter.Tendsto etaProd (𝓝 0) (𝓝 1) := by
+  have h := tendsto_tprod_one_add_of_dominated_convergence (𝓕 := 𝓝 (0 : ℂ)) (g := 0)
+    (f := fun (q : ℂ) (n : ℕ) ↦ -q ^ (n + 1)) (bound := fun n ↦ (1 / 2 : ℝ) ^ (n + 1))
+  simp only [Pi.zero_apply, norm_neg, norm_pow, add_zero, tprod_one] at h
+  have : etaProd = fun q : ℂ ↦ ∏' n : ℕ, (1 + -q ^ (n + 1)) := by
+    funext q; simp [etaProd, sub_eq_add_neg]
+  rw [this]
+  refine h
+    (by simpa only [pow_succ'] using (summable_geometric_of_abs_lt_one (by norm_num)).mul_left _)
+    (fun k ↦ by simpa using ((continuous_pow (M := ℂ) (k + 1)).tendsto 0).neg) ?_
+  filter_upwards [Metric.ball_mem_nhds (0 : ℂ) (by norm_num : (0 : ℝ) < 1 / 2)] with q hq k
+  exact pow_le_pow_left₀ (norm_nonneg _) (mem_ball_zero_iff.mp hq).le _
+
+/-- The cusp expression `(G(q)²⁴ + 256 q G(q²)²⁴)/(G(q)⁸ G(q²)⁸)`. -/
+noncomputable def cuspExpr (q : ℂ) : ℂ :=
+  (etaProd q ^ 24 + 256 * q * etaProd (q ^ 2) ^ 24) / (etaProd q ^ 8 * etaProd (q ^ 2) ^ 8)
+
+lemma tendsto_cuspExpr : Filter.Tendsto cuspExpr (𝓝 0) (𝓝 1) := by
+  have h2 : Filter.Tendsto (fun q : ℂ ↦ etaProd (q ^ 2)) (𝓝 0) (𝓝 1) := by
+    refine tendsto_etaProd.comp ?_
+    simpa using ((continuous_pow (M := ℂ) 2).tendsto 0)
+  have hnum : Filter.Tendsto (fun q : ℂ ↦ etaProd q ^ 24 + 256 * q * etaProd (q ^ 2) ^ 24)
+      (𝓝 0) (𝓝 1) := by
+    have := ((tendsto_etaProd.pow 24).add
+      (((tendsto_const_nhds (x := (256 : ℂ)) (f := 𝓝 (0:ℂ))).mul tendsto_id).mul (h2.pow 24)))
+    simpa using this
+  have hden : Filter.Tendsto (fun q : ℂ ↦ etaProd q ^ 8 * etaProd (q ^ 2) ^ 8)
+      (𝓝 0) (𝓝 1) := by simpa using (tendsto_etaProd.pow 8).mul (h2.pow 8)
+  have h := hnum.div hden one_ne_zero
+  rw [div_one] at h
+  exact Filter.Tendsto.congr (fun q ↦ rfl) h
+
+lemma cusp_algebra (u g1 g2 : ℂ) (hu : u ≠ 0) (h1 : g1 ≠ 0) (h2 : g2 ≠ 0) :
+    ((u * g1) ^ 24 + 256 * (u ^ 2 * g2) ^ 24) / (u * g1 * (u ^ 2 * g2)) ^ 8
+      = (g1 ^ 24 + 256 * u ^ 24 * g2 ^ 24) / (g1 ^ 8 * g2 ^ 8) := by
+  field_simp
+
+lemma etaWeightFour_eq_cuspExpr (z : ℍ) :
+    etaWeightFour z = cuspExpr (Periodic.qParam 1 (z : ℂ)) := by
+  set u : ℂ := Periodic.qParam 24 (z : ℂ) with hu
+  have hu0 : u ≠ 0 := by simp only [hu, Periodic.qParam]; exact Complex.exp_ne_zero _
+  have hq : Periodic.qParam 1 (z : ℂ) = u ^ 24 := by
+    simp only [hu, Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have hq2 : Periodic.qParam 1 (2 * (z : ℂ)) = (Periodic.qParam 1 (z : ℂ)) ^ 2 := by
+    simp only [Periodic.qParam, Complex.ofReal_one, div_one, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have hu2 : Periodic.qParam 24 (2 * (z : ℂ)) = u ^ 2 := by
+    simp only [hu, Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  have he1 : ModularForm.eta (z : ℂ) = u * etaProd (Periodic.qParam 1 (z : ℂ)) :=
+    eta_eq_qParam_mul_etaProd _
+  have he2 : ModularForm.eta (2 * (z : ℂ))
+      = u ^ 2 * etaProd ((Periodic.qParam 1 (z : ℂ)) ^ 2) := by
+    rw [eta_eq_qParam_mul_etaProd, hu2, hq2]
+  have hg1 : etaProd (Periodic.qParam 1 (z : ℂ)) ≠ 0 := by
+    intro h; exact ModularForm.eta_ne_zero z.2 (by rw [he1, h, mul_zero])
+  have hg2 : etaProd ((Periodic.qParam 1 (z : ℂ)) ^ 2) ≠ 0 := by
+    intro h; exact eta_ne_zero_two_mul z (by rw [he2, h, mul_zero])
+  rw [etaWeightFour, he1, he2, cusp_algebra _ _ _ hu0 hg1 hg2, cuspExpr, ← hq]
+
+lemma etaWeightFour_tendsto_one :
+    Filter.Tendsto etaWeightFour UpperHalfPlane.atImInfty (𝓝 1) :=
+  Filter.Tendsto.congr (fun z ↦ (etaWeightFour_eq_cuspExpr z).symm)
+    (tendsto_cuspExpr.comp (UpperHalfPlane.qParam_tendsto_atImInfty one_pos))
+
+lemma etaWeightFour_isBoundedAtImInfty : UpperHalfPlane.IsBoundedAtImInfty etaWeightFour :=
+  etaWeightFour_tendsto_one.isBigO_one ℝ
+
+/-! ### Identification with `E₄` -/
+
+noncomputable def etaWeightFourForm : ModularForm 𝒮ℒ 4 where
+  toFun := etaWeightFour
+  slash_action_eq' A hA := by
+    obtain ⟨A, rfl⟩ := hA
+    exact etaWeightFour_slash A
+  holo' := etaWeightFour_mdifferentiable
+  bdd_at_cusps' hc := by
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isBoundedAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [etaWeightFour_slash]
+    exact etaWeightFour_isBoundedAtImInfty
+
+theorem etaWeightFour_eq_E₄ (z : ℍ) : etaWeightFour z = ModularForm.E₄ z := by
+  obtain ⟨c, hc⟩ : ∃ c : ℂ, c • ModularForm.E₄ = etaWeightFourForm :=
+    (finrank_eq_one_iff_of_nonzero' ModularForm.E₄
+        (EisensteinSeries.E_ne_zero _ ⟨2, rfl⟩)).mp
+      (Module.rank_eq_one_iff_finrank_eq_one.mp ModularForm.levelOne_weight_four_rank_one) _
+  have hcoe : (c • (ModularForm.E₄ : ℍ → ℂ)) = etaWeightFour := congrArg DFunLike.coe hc
+  have hc1 : c = 1 := by
+    have h1 : (qExpansion 1 (c • (ModularForm.E₄ : ℍ → ℂ))).coeff 0 = c := by
+      rw [ModularForm.qExpansion_smul one_pos one_mem_strictPeriods_SL c ModularForm.E₄]
+      simp [EisensteinSeries.E_qExpansion_coeff_zero (k := 4) (by norm_num) ⟨2, rfl⟩]
+    rw [hcoe] at h1
+    rw [← h1, show (etaWeightFour : ℍ → ℂ) = (etaWeightFourForm : ℍ → ℂ) from rfl,
+      UpperHalfPlane.qExpansion_coeff_zero one_pos
+        (ModularFormClass.analyticAt_cuspFunction_zero (f := etaWeightFourForm) one_pos
+          one_mem_strictPeriods_SL)
+        (SlashInvariantFormClass.periodic_comp_ofComplex (f := etaWeightFourForm)
+          one_mem_strictPeriods_SL)]
+    exact etaWeightFour_tendsto_one.limUnder_eq
+  rw [← congrFun hcoe z, hc1]
+  simp
+
+end EtaWeightFour
+
 /-- **SUB-LEAF 5a — the level-two `η`-identity**
 
   `η(z)²⁴ + 256 η(2z)²⁴ = E₄(z) · (η(z)η(2z))⁸`.
@@ -1574,59 +2155,20 @@ discriminant. No branch of a cube root is ever chosen, which is why the statemen
 identity rather than an identity-up-to-`ζ₃`.
 
 MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, 60 digits, `eta(z,1)` against the `σ₃` series for
-`E₄`): at `z = 0.3+0.7i`, `0.1+1.3i`, `-0.4+0.55i` the two sides agree to `10⁻⁷⁷`, with ratio
-`1` to every printed digit. The three points are generic — not Heegner points — because this
-is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it from
-a weaker statement.
+`E₄`): at `z = 0.3+0.7i`, `0.1+1.3i`, `-0.4+0.55i`, `0.05+i` the two sides agree to `10⁻⁷⁶`,
+with ratio `1` to every printed digit. The points are generic — not Heegner points — because
+this is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it
+from a weaker statement.
 
-ROUTE. Divide through: the claim is that `F(z) = (Δ(z) + 256Δ(2z))/(η(z)η(2z))⁸` equals `E₄`.
-`F` is holomorphic and free of poles on `ℍ` (`ModularForm.eta_ne_zero`), and is `T`-invariant
-by the `24`-th-power argument — `η(z+1)²⁴ = η(z)²⁴` and `η(2z+2)²⁴ = η(2z)²⁴`, while the
-denominator picks up `(e^{πi/12}·e^{πi/6})⁸ = e^{2πi} = 1`. What remains is `S`-invariance of
-weight `4`, after which `ModularForm.levelOne_weight_four_rank_one` plus a single
-`q`-coefficient comparison (constant term `1`) finishes; `sturm_bound_levelOne` is the packaged
-form of that last step. `discriminant_S_invariant` and `eta_comp_eq_csqrt_I_inv` in
-`ModularForms/Discriminant.lean` are the transformation inputs.
-
-**CORRECTION (2026-07-28): "the remaining work is `S`-invariance" is true but was priced as
-cheap, and it is not — it is the whole theorem.** Carrying out the substitution with mathlib's
-`ModularForm.eta_comp_eq_csqrt_I_inv : η(−1/z) = (√I)⁻¹·√z·η(z)` (applied at `z` and, via
-`−2/z = −1/(z/2)`, at `z/2`), together with `csqrt_I_pow_24 : (√I)²⁴ = 1` and `(√I)⁻¹⁶ = 1`:
-
-  numerator`(−1/z) = z¹²·(η(z)²⁴ + η(z/2)²⁴/16)`,
-  denominator`(−1/z) = (z⁸/16)·η(z)⁸η(z/2)⁸`,
-
-so `F(−1/z) = z⁴·(16η(z)²⁴ + η(z/2)²⁴)/(η(z)⁸η(z/2)⁸)`, and `F(−1/z) = z⁴F(z)` is EQUIVALENT to
-
-  `(16η(z)²⁴ + η(z/2)²⁴)·η(2z)⁸ = (η(z)²⁴ + 256η(2z)²⁴)·η(z/2)⁸`.   (★)
-
-(★) is not bookkeeping. In Weber's notation `f₁ = η(z/2)/η(z)`, `f₂ = √2·η(2z)/η(z)` it says
-`(f₁²⁴+16)/f₁⁸ = (f₂²⁴+16)/f₂⁸`, i.e. that `γ₂` computed from `f₁` agrees with `γ₂` computed
-from `f₂` — the `S`-symmetry of `γ₂` itself. The classical proof runs through the two Weber
-relations
-
-  `f·f₁·f₂ = √2`   and   `f⁸ = f₁⁸ + f₂⁸`   (`f = ζ₄₈⁻¹η((z+1)/2)/η(z)`),
-
-the second being Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`. Given those two it IS pure algebra: with
-`a = f⁸`, `b = f₁⁸`, `c = f₂⁸` one has `a = b + c` and `abc = 16`, whence
-`c(b³+16) − b(c³+16) = bc(b+c)(b−c) − 16(b−c) = (b−c)(abc − 16) = 0`, and likewise
-`(a³−16)/a = (b³+16)/b`. So the honest cut for the next owner is those two `η`-identities plus
-the packaging of `F` as a `ModularForm 𝒮ℒ 4` — NOT a Sturm bound applied to something already
-known to be level one.
-
-Re-grepped 2026-07-28 over `.lake/packages/mathlib`: no Weber functions, and
-`ModularForms/JacobiTheta/` has no product formula tying `θ` to `η` (no Jacobi triple product
-anywhere in the pin), so neither Weber relation can be quoted. `(★)` itself was checked in
-`PARI/GP` at the same three generic points `0.3+0.7i`, `0.1+1.3i`, `−0.4+0.55i`: residual
-`< 5·10⁻⁷⁷`, so the equivalence above is not a mis-derivation.
-
-WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ. There is none — but note the
-`256` and the exponent `8` are both forced, and neither is a normalisation choice: `256`
-comes from `2¹²/16` in `f₂²⁴/f₂⁸` and `8` from `f₂⁸ = 16 η(2z)⁸/η(z)⁸`. -/
+PROVEN (2026-07-29) from `etaWeightFour_eq_E₄`, i.e. from the single leaf
+`eta_two_torsion_key` together with the modular-form packaging in the section above. -/
 theorem eta_pow_24_add_eta_two_pow_24 (z : UpperHalfPlane) :
     ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24
-      = ModularForm.E₄ z * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 :=
-  sorry
+      = ModularForm.E₄ z * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 := by
+  have h := etaWeightFour_eq_E₄ z
+  rw [etaWeightFour, div_eq_iff (pow_ne_zero _ (mul_ne_zero (eta_ne_zero' z)
+    (eta_two_ne_zero z)))] at h
+  exact h
 
 /-- The field algebra behind `γ₂ = E₄/η⁸`, isolated over plain variables of `ℂ` so that `ring`
 sees genuine atoms rather than `η` applied to two different-looking arguments. -/
@@ -2111,6 +2653,352 @@ theorem gammaTwo_pow_three_eq_jInvariant (z : UpperHalfPlane) : gammaTwo z ^ 3 =
   rw [gammaTwo_eq_E₄_div_eta_pow_eight, jInvariant, div_pow, ModularForm.discriminant,
     show (24 : ℕ) = 8 * 3 from rfl, pow_mul]
 
+/-! ### LEAF 3 — `γ₂(τ₀)` is an algebraic integer
+
+This block replaces the former LEAF 3 (which sat above, between LEAF 2 and LEAF 4). It is
+here rather than there only because its proof consumes `gammaTwo_pow_three_eq_jInvariant`,
+which Lean requires to be declared first.
+
+**The old LEAF 3 docstring's route was more expensive than necessary, and one of its claims
+is retracted below**: it asserted that `3 ∤ p` and Weber's level-`3` group `H` are needed to
+pass from "`j(τ₀)` is an algebraic integer" to "`γ₂(τ₀)` is an algebraic integer". They are
+not. `γ₂` is a root of the MONIC polynomial `X³ − j(τ₀)`, so integrality of the cube root is
+free from integral closedness alone (`IsIntegral.of_pow`), with no modular theory, no
+`q`-expansion combinatorics and no hypothesis on `p mod 3`. Weber's `3 ∤ p` is needed for
+`γ₂(τ₀)` to lie in the same *field* as `j(τ₀)` — i.e. for the class-field leaves,
+rationality — not for integrality.
+
+WHAT IS LEFT OPEN HERE IS EXACTLY ONE STATEMENT, `exists_modularPolynomial`, and the chain
+down to it is fully written and compiling:
+
+  `exists_modularPolynomial`  (LEAF: `Φ_N ∈ ℤ[X,Y]` kills `(j(A z), j(z))`; Kronecker's `±1`)
+    → `isIntegral_jInvariant_of_fixedPoint`   (put `w = z`; PROVEN, via `isIntegral_of_eval_diag`)
+    → `isIntegral_jInvariant_of_quadratic`    (build the fixing matrix; PROVEN)
+    → `isIntegral_jInvariant_heegnerPoint`    (specialise to `τ₀`; PROVEN)
+    → `isIntegral_gammaTwo_heegnerPoint`      (cube root; PROVEN)
+
+Everything except the first line is elementary — integer arithmetic, one complex-analytic
+observation (`z ∈ ℍ` is not real, hence the discriminant is negative) and polynomial
+plumbing. -/
+
+/-- **The pointwise arithmetic criterion — PROVEN.** `m² − b m + k` is positive and NOT a
+perfect square as soon as `2m − b ≥ 4k − b² > 0`.
+
+This is the elementary step that produces the non-square determinant `N` the modular
+polynomial needs; it is pure integer arithmetic, with no modular theory and no `z`.
+
+THE ARGUMENT, which is much cheaper than the one an earlier draft of this file recorded.
+That draft invoked "a quadratic taking perfect-square values at every integer must be the
+square of a linear polynomial, hence have discriminant `0`" — true, but a real theorem. It
+is not needed. Complete the square instead: with `E = 4k − b² > 0` and `u = 2m − b`,
+
+  `4(m² − b m + k) = u² + E`,
+
+so as soon as `u ≥ E` one has `u² < u² + E ≤ u² + u < (u + 1)²`. A perfect square
+`m² − bm + k = s²` would make `u² + E = (2s)²` a perfect square strictly between the
+consecutive squares `u²` and `(u+1)²` — impossible. Positivity is the same identity:
+`4(m² − bm + k) = u² + E > 0`.
+
+It is stated POINTWISE rather than as an existence claim because the consumer needs to pick
+`m` in a prescribed residue class (coprime to `a`, to make the matrix primitive), not merely
+to know that some `m` works. -/
+theorem not_isSquare_quadratic_of_le {b k m : ℤ} (hE : 0 < 4 * k - b ^ 2)
+    (hm : 4 * k - b ^ 2 ≤ 2 * m - b) :
+    0 < m ^ 2 - b * m + k ∧ ¬ IsSquare (m ^ 2 - b * m + k) := by
+  have hu0 : 0 ≤ 2 * m - b := le_trans hE.le hm
+  refine ⟨by nlinarith [sq_nonneg (2 * m - b)], ?_⟩
+  rintro ⟨s, hs⟩
+  have key : (2 * s) ^ 2 = (2 * m - b) ^ 2 + (4 * k - b ^ 2) := by nlinarith [hs]
+  have ht0 : (0 : ℤ) ≤ |2 * s| := abs_nonneg _
+  have ht : |2 * s| ^ 2 = (2 * m - b) ^ 2 + (4 * k - b ^ 2) := by rw [sq_abs]; exact key
+  by_cases hle : |2 * s| ≤ 2 * m - b
+  · nlinarith
+  · have h1 : 2 * m - b + 1 ≤ |2 * s| := by omega
+    nlinarith
+
+/-- **The arithmetic input to LEAF 3a — PROVEN.** A quadratic `m² − b m + k` of negative
+discriminant takes a positive non-square value at some `m` COPRIME to any prescribed nonzero
+`a`.
+
+The coprimality is what makes the matrix `[[m − b, −c], [a, m]]` built from it PRIMITIVE,
+which the modular polynomial genuinely needs (see `exists_modularPolynomial`). Witness:
+`m = 1 + |a|·T` with `T = (4k − b²) + |b| + 1`, so that `m ≡ 1 mod a` and `2m − b ≥ 4k − b²`
+simultaneously. -/
+theorem exists_coprime_not_isSquare_quadratic {b k : ℤ} (h : b ^ 2 - 4 * k < 0) {a : ℤ}
+    (ha : a ≠ 0) :
+    ∃ m : ℤ, IsCoprime m a ∧ 0 < m ^ 2 - b * m + k ∧ ¬ IsSquare (m ^ 2 - b * m + k) := by
+  have hE : 0 < 4 * k - b ^ 2 := by linarith
+  set T : ℤ := (4 * k - b ^ 2) + |b| + 1 with hT
+  have hTpos : 0 < T := by
+    have : (0 : ℤ) ≤ |b| := abs_nonneg b
+    simp only [hT]; linarith
+  have ha1 : 1 ≤ |a| := Int.one_le_abs (by omega)
+  refine ⟨1 + |a| * T, ?_, ?_⟩
+  · rcases abs_cases a with ⟨hac, _⟩ | ⟨hac, _⟩
+    · exact ⟨1, -T, by rw [hac]; ring⟩
+    · exact ⟨1, T, by rw [hac]; ring⟩
+  · refine not_isSquare_quadratic_of_le hE ?_
+    have h1 : b ≤ |b| := le_abs_self b
+    nlinarith
+
+/-- **An integral quadratic relation at a point of `ℍ` has negative discriminant — PROVEN.**
+
+`z ∈ ℍ` is not real, so `a z² + b z + c = 0` with `a ≠ 0` forces `b² − 4ac < 0`; no sign
+condition need be assumed anywhere. Formally: `w = 2a z + b` satisfies `w² = b² − 4ac`, a
+REAL number, while `Im w = 2a·Im z ≠ 0`; so `Im(w²) = 2·Re w·Im w = 0` gives `Re w = 0`, and
+then `b² − 4ac = Re(w²) = −(Im w)² < 0`. -/
+theorem neg_discr_of_quadratic (z : UpperHalfPlane) {a b c : ℤ} (ha : a ≠ 0)
+    (h : (a : ℂ) * (z : ℂ) ^ 2 + (b : ℂ) * (z : ℂ) + (c : ℂ) = 0) :
+    b ^ 2 - 4 * a * c < 0 := by
+  set w : ℂ := ((2 * a : ℤ) : ℂ) * (z : ℂ) + ((b : ℤ) : ℂ) with hwdef
+  have hw2 : w ^ 2 = ((b ^ 2 - 4 * a * c : ℤ) : ℂ) := by
+    simp only [hwdef]; push_cast; linear_combination (4 * (a : ℂ)) * h
+  have hwim : w.im = 2 * (a : ℝ) * (z : ℂ).im := by
+    simp only [hwdef, Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im]
+    push_cast
+    ring
+  have hzim : 0 < (z : ℂ).im := z.im_pos
+  have haR : (a : ℝ) ≠ 0 := Int.cast_ne_zero.mpr ha
+  have hwim0 : w.im ≠ 0 := by
+    rw [hwim]
+    exact mul_ne_zero (mul_ne_zero two_ne_zero haR) (ne_of_gt hzim)
+  have hre : w.re = 0 := by
+    have h1 : (w ^ 2).im = 0 := by rw [hw2]; exact Complex.intCast_im _
+    rw [pow_two, Complex.mul_im] at h1
+    have h2 : w.re * w.im = 0 := by linarith
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact h3
+    · exact absurd h3 hwim0
+  have hD : ((b ^ 2 - 4 * a * c : ℤ) : ℝ) = -(w.im ^ 2) := by
+    have h1 := congrArg Complex.re hw2
+    rw [pow_two, Complex.mul_re, hre] at h1
+    rw [Complex.intCast_re] at h1
+    nlinarith [h1]
+  have hlt : ((b ^ 2 - 4 * a * c : ℤ) : ℝ) < 0 := by
+    rw [hD]
+    have : 0 < w.im ^ 2 := by positivity
+    linarith
+  exact_mod_cast hlt
+
+/-- **Plumbing — PROVEN.** If a bivariate integral polynomial `Φ ∈ ℤ[Y][X]` vanishes at
+`(x, x)` and its DIAGONAL `Φ(Y, Y)` has unit leading coefficient, then `x` is an algebraic
+integer.
+
+`Φ(Y, Y)` is `Φ.eval Polynomial.X`: substituting the outer variable by the inner one. The
+proof is `Polynomial.hom_eval₂` (substitution commutes with a ring hom) plus the observation
+that a `±1` leading coefficient makes `Φ(Y,Y)` or its negative monic. Note no nonvanishing
+hypothesis on `Φ(Y,Y)` is needed: `IsUnit` of its leading coefficient already excludes `0`. -/
+theorem isIntegral_of_eval_diag {x : ℂ} {Φ : Polynomial (Polynomial ℤ)}
+    (hunit : IsUnit (Φ.eval Polynomial.X).leadingCoeff)
+    (hvan : Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) x Φ = 0) :
+    IsIntegral ℤ x := by
+  have h1 := Polynomial.hom_eval₂ Φ (RingHom.id (Polynomial ℤ))
+      (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) Polynomial.X
+  rw [Polynomial.eval₂_id, RingHom.comp_id] at h1
+  rw [show (Polynomial.eval₂RingHom (Int.castRingHom ℂ) x) Polynomial.X = x from
+      Polynomial.eval₂_X _ _] at h1
+  rw [hvan] at h1
+  have hfD : Polynomial.eval₂ (algebraMap ℤ ℂ) x (Φ.eval Polynomial.X) = 0 := by
+    rw [algebraMap_int_eq]; exact h1
+  rcases Int.isUnit_iff.mp hunit with h2 | h2
+  · exact ⟨Φ.eval Polynomial.X, h2, hfD⟩
+  · exact ⟨-(Φ.eval Polynomial.X),
+      by rw [Polynomial.Monic, Polynomial.leadingCoeff_neg, h2, neg_neg],
+      by rw [Polynomial.eval₂_neg, hfD, neg_zero]⟩
+
+/-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
+
+For every `N > 0` there is a `Φ_N ∈ ℤ[Y][X]` such that
+
+* `Φ_N(j(A z), j(z)) = 0` for every `z ∈ ℍ` and every PRIMITIVE integral matrix
+  `A = [[p, q], [r, s]]` of determinant `N`, and
+* if `N` is not a perfect square, the diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` has leading coefficient a
+  unit, i.e. `±1` (**Kronecker**).
+
+This is the arithmetic heart of the class equation, and it is now the ONLY unproven step of
+the old LEAF 3: Cox, *Primes of the form x²+ny²*, §11 (Theorem 11.18 for `Φ_m ∈ ℤ[X, Y]`,
+Theorem 11.2 / Lemma 11.23 for the leading coefficient); Booher, *Modular curves and the
+class number one problem*, §2; Serre, *Cours d'arithmétique*, VII.
+
+THE CONSTRUCTION, for whoever proves it. Let `C(N)` be a set of representatives for the
+finitely many left-`Γ`-classes of primitive integral matrices of determinant `N` (`Γ = SL₂ℤ`,
+`#C(N) = ψ(N) = N∏(1 + 1/ℓ)`; Hermite normal form gives the standard representatives
+`[[a, b], [0, d]]` with `ad = N`, `0 ≤ b < d`, `gcd(a,b,d) = 1`). Put
+
+  `Φ_N(X, j(z)) = ∏_{A' ∈ C(N)} (X − j(A' z))`,
+
+monic of degree `ψ(N)` in `X`. Its coefficients are holomorphic `Γ`-invariant functions on
+`ℍ` that are meromorphic at the cusp, hence POLYNOMIALS IN `j`; integrality of those
+polynomials' coefficients is the `q`-expansion argument (they lie in `ℤ[ζ_N]` and are
+`Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`). The vanishing clause then holds for EVERY primitive
+`A` of determinant `N`, not just for the representatives, because `A = γ A'` with `γ ∈ Γ` and
+`j` is `Γ`-invariant, so `j(A z) = j(A' z)`.
+
+Kronecker's half is the `q`-expansion computation on the diagonal: writing `q = e^{2πiz}`,
+each factor `j(z) − j(A' z)` of `Φ_N(j(z), j(z))` has a leading `q`-power with coefficient a
+root of unity, and for `N` a NON-square no factor vanishes identically — whereas for `N = d²`
+the representative `d·I` contributes the factor `j(z) − j(z) = 0` and `Φ_N(X, X)` is
+identically `0`.
+
+WHY PRIMITIVITY IS IN THE HYPOTHESIS AND MUST STAY. Without it the clause is FALSE, not
+merely unprovable: `A = d·A'` induces the same Möbius transformation as `A'`, so
+`j(A z) = j(A' z)`, which is a root of `Φ_{N/d²}(·, j(z))` and in general NOT of
+`Φ_N(·, j(z))`. Concretely at `N = 4`, `A = 2·I` gives `j(A z) = j(z)`, and `Φ_4(X, X)` is
+identically zero while `Φ_4(j(z), j(z)) = 0` would be needed. The consumer supplies
+primitivity for free by choosing `m` coprime to `a` — see
+`exists_coprime_not_isSquare_quadratic`.
+
+WHY THE NON-SQUARE HYPOTHESIS IS ON THE SECOND CLAUSE ONLY. `Φ_N` exists for every `N > 0`;
+it is only Kronecker's leading coefficient that needs `N` non-square, and dropping that
+hypothesis makes the clause FALSE with an explicit witness: for `N = 1` the only class is
+`I`, so `Φ_1(X, Y) = X − Y` and `Φ_1(Y, Y) = 0`, whose leading coefficient is `0`, not a
+unit. (This is exactly why the consumer below must produce a non-square determinant: with a
+square one it could conclude that `j` is an algebraic integer at EVERY point of `ℍ`, whereas
+`j` is transcendental off a countable set.)
+
+THE STATEMENT IS DELIBERATELY MORE GENERAL THAN THE CONSUMER NEEDS — it is quantified over
+all `z` and all target points `w = A z`, whereas the consumer only uses `w = z`. That is the
+same choice `gammaTwo_pow_three_eq_jInvariant` makes and for the same reason: it is an
+identity of modular functions, nothing is gained by specialising, and the general form is
+what any further consumer (Weber's level-`3` descent, Hecke correspondences) will want.
+
+THE MÖBIUS CONDITION IS WRITTEN MULTIPLICATIVELY (`p z + q = w (r z + s)`) to avoid a
+division: `r z + s ≠ 0` is automatic once the determinant is nonzero (if `r ≠ 0` then
+`Im(r z + s) = r·Im z ≠ 0`; if `r = 0` then `s ≠ 0`), so no such hypothesis is needed.
+
+ABSENCE RE-VERIFIED, NOT INHERITED (2026-07-28, and again 2026-07-30 after the merge):
+`grep -rn 'jInvariant\|modularPolynomial\|classEquation\|ComplexMultiplication' Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/` finds the `j`-invariant nowhere outside this file —
+`Mathlib/NumberTheory/ModularForms/` has `DedekindEta`, `Discriminant`, `LevelOne/GradedRing`
+and `QExpansion` and no `j` at all, and `~/cs/FLT` has zero hits. Refute this note by
+exhibiting any of those names; the leaf would then reduce to specialising them.
+
+WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
+class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
+at every imaginary quadratic point regardless of the class number. That is exactly why the
+CM content of this cluster sits in the class-field leaves and not here. -/
+theorem exists_modularPolynomial {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
+      ∀ (z w : UpperHalfPlane) (p q r s : ℤ), p * s - q * r = N →
+        (∀ d : ℤ, d ∣ p → d ∣ q → d ∣ r → d ∣ s → IsUnit d) →
+        (p : ℂ) * (z : ℂ) + (q : ℂ) = (w : ℂ) * ((r : ℂ) * (z : ℂ) + (s : ℂ)) →
+        Polynomial.eval₂ (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          (jInvariant w) Φ = 0 :=
+  sorry
+
+/-- **`j(z)` is an algebraic integer at a FIXED POINT of a primitive integral matrix of
+non-square determinant — PROVEN** over LEAF 3a and `isIntegral_of_eval_diag`.
+
+This is Kronecker's theorem in the form the class equation uses: put `w = z` in the modular
+equation, so that `Φ_N(j(z), j(z)) = 0`, and read off a monic integral polynomial from
+Kronecker's leading coefficient.
+
+`hpos : 0 < p*s − q*r` IS DERIVABLE from `hfix` and so does not strengthen the hypothesis
+list in any essential way: a matrix of determinant `D` scales imaginary parts by
+`D/|r z + s|²`, so a fixed point in `ℍ` forces `D > 0`. It is taken as an argument because
+every classical source states the theorem for `det = N > 0`, and because both consumers have
+it in hand already. -/
+theorem isIntegral_jInvariant_of_fixedPoint (z : UpperHalfPlane) {p q r s : ℤ}
+    (hpos : 0 < p * s - q * r) (hns : ¬ IsSquare (p * s - q * r))
+    (hprim : ∀ d : ℤ, d ∣ p → d ∣ q → d ∣ r → d ∣ s → IsUnit d)
+    (hfix : (p : ℂ) * (z : ℂ) + (q : ℂ) = (z : ℂ) * ((r : ℂ) * (z : ℂ) + (s : ℂ))) :
+    IsIntegral ℤ (jInvariant z) := by
+  obtain ⟨Φ, hkron, hvan⟩ := exists_modularPolynomial hpos
+  exact isIntegral_of_eval_diag (hkron hns) (hvan z z p q r s rfl hprim hfix)
+
+/-- **Integrality of the `j`-invariant at an imaginary quadratic point — PROVEN** over
+`isIntegral_jInvariant_of_fixedPoint` plus the two arithmetic lemmas above.
+
+If `z ∈ ℍ` satisfies a nontrivial integral quadratic relation `a z² + b z + c = 0` with
+`a ≠ 0`, then `j(z)` is an algebraic integer.
+
+THE MATRIX, and where the arithmetic goes. Multiplication by `β = m + a z` on the lattice
+`[1, z]` is integral and fixes `z`; concretely `z·(a z + m) = (m − b) z − c` by the relation,
+so `A = [[m − b, −c], [a, m]]` satisfies `A z = z` with
+
+  `det A = (m − b)·m + a c = m² − b m + a c = N(β)`.
+
+The choice `m = 0` gives `A = [[−b, −c], [a, 0]]` of determinant `a c`, which may well be a
+square — and one may NOT repair that by rescaling `(a, b, c) ↦ (t a, t b, t c)`, which
+multiplies the determinant by `t²` and so preserves square-ness (an error in an earlier draft
+of this note). Vary `m` instead: `neg_discr_of_quadratic` gives `b² − 4 a c < 0`, and
+`exists_coprime_not_isSquare_quadratic` then produces an `m` with `m² − b m + a c` positive
+and not a square, and with `gcd(m, a) = 1`. Both of those are PROVEN above, so this
+specialisation is pure bookkeeping.
+
+THE COPRIMALITY IS WHAT MAKES `A` PRIMITIVE, which LEAF 3a genuinely needs: a common divisor
+`d` of the four entries divides both `m` and `a`, hence divides `1`. (Note primitivity of `A`
+does NOT require primitivity of the triple `(a, b, c)` — choosing `m` coprime to `a` is
+enough, and is cheaper than dividing the relation through by `gcd(a, b, c)`.)
+
+`ha : a ≠ 0` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT. Take `a = b = c = 0`:
+the hypothesis reads `0 = 0` and holds for EVERY `z : ℍ`, while `j` is transcendental at
+almost every point. Note `a ≠ 0` alone suffices — no primitivity of `(a, b, c)`, no
+`gcd(a,b,c) = 1`, and no sign condition on the discriminant. -/
+theorem isIntegral_jInvariant_of_quadratic (z : UpperHalfPlane) {a b c : ℤ} (ha : a ≠ 0)
+    (h : (a : ℂ) * (z : ℂ) ^ 2 + (b : ℂ) * (z : ℂ) + (c : ℂ) = 0) :
+    IsIntegral ℤ (jInvariant z) := by
+  have hD : b ^ 2 - 4 * (a * c) < 0 := by
+    have h0 := neg_discr_of_quadratic z ha h
+    rw [mul_assoc] at h0
+    exact h0
+  obtain ⟨m, hcop, hpos, hns⟩ := exists_coprime_not_isSquare_quadratic hD ha
+  have hdet : (m - b) * m - (-c) * a = m ^ 2 - b * m + a * c := by ring
+  refine isIntegral_jInvariant_of_fixedPoint z (p := m - b) (q := -c) (r := a) (s := m)
+    (by rw [hdet]; exact hpos) (by rw [hdet]; exact hns)
+    (fun d _ _ hda hdm => hcop.isUnit_of_dvd' hdm hda) ?_
+  push_cast
+  linear_combination -h
+
+/-- **`j(τ₀)` is an algebraic integer** — LEAF 3a specialised to the Heegner point, PROVEN.
+
+`τ₀ = (3 + √−p)/2` satisfies `x² − 3x + (9+p)/4 = 0`, and `(9+p)/4` is an INTEGER exactly
+because `p ≡ 3 mod 4`: writing `p = 4k + 3` it equals `k + 3`. So the integral quadratic
+relation demanded by LEAF 3a is `⟨a, b, c⟩ = ⟨1, −3, k+3⟩`, with `a = 1 ≠ 0`.
+
+This is where the `3` in `τ₀ = (3+√−p)/2` and the congruence `p ≡ 3 mod 4` are spent; the
+stronger `p ≡ 3 mod 8` and the primality of `p` are NOT needed for integrality. -/
+theorem isIntegral_jInvariant_heegnerPoint {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
+    IsIntegral ℤ (jInvariant (heegnerPoint p hp)) := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, p = 4 * k + 3 := ⟨p / 4, by omega⟩
+  refine isIntegral_jInvariant_of_quadratic _ (a := 1) (b := -3) (c := (k : ℤ) + 3)
+    one_ne_zero ?_
+  have hcoe : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+      = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := UpperHalfPlane.coe_mk _ _
+  have hs : ((Real.sqrt p : ℂ)) ^ 2 = (p : ℂ) := by
+    rw [← Complex.ofReal_pow, Real.sq_sqrt (by positivity)]
+    norm_num
+  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+  have hp' : (p : ℂ) = 4 * (k : ℂ) + 3 := by exact_mod_cast congrArg (fun n : ℕ => (n : ℂ)) hk
+  rw [hcoe]
+  push_cast
+  linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
+
+/-- **LEAF 3 — `γ₂(τ₀)` is an ALGEBRAIC INTEGER. Now PROVEN**, over LEAF 3a
+(`isIntegral_jInvariant_of_quadratic`) and LEAF 5 (`gammaTwo_pow_three_eq_jInvariant`).
+
+Half of "`γ₂(τ₀) ∈ ℤ`", and deliberately the half that costs no class field theory. The proof
+is two steps: `γ₂(τ₀)³ = j(τ₀)` is an algebraic integer by LEAF 3a, and a cube root of an
+algebraic integer is an algebraic integer, because `X³ − j(τ₀)` is MONIC over `ℤ[j(τ₀)]` and
+integrality is transitive (`IsIntegral.of_pow`).
+
+THE HYPOTHESES ARE STRONGER THAN THE PROOF NEEDS, and the signature is left unchanged only
+because `exists_int_gammaTwo` and the released statement call it positionally. What is
+actually consumed is `0 < p` (already forced by the statement, which mentions
+`heegnerPoint p hp.pos`) and `p ≡ 3 mod 4` — derived here from `hp8`. `_h3` is unused and
+underscored to make that mechanically visible; primality is used only for `hp.pos`.
+
+NOTE THIS LEAF DOES NOT NEED `hcl`, and its hypotheses are correspondingly weaker than the
+other CM leaf's. That asymmetry is the reason for splitting the CM input in two: this half
+is integrality of the class equation, the other half (LEAF 4) is the main theorem of complex
+multiplication. They are independently attackable and belong to different theories. -/
+theorem isIntegral_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (_h3 : 3 < p) :
+    IsIntegral ℤ (gammaTwo (heegnerPoint p hp.pos)) := by
+  refine IsIntegral.of_pow (n := 3) (by norm_num) ?_
+  rw [gammaTwo_pow_three_eq_jInvariant]
+  exact isIntegral_jInvariant_heegnerPoint hp.pos (by omega)
+
 /-- **LEAF 6 — the `q`-expansion bound.** If `j(τ₀)` is the integer `n`, then
 `exp(π√p) ≤ 745 − n`.
 
@@ -2199,6 +3087,89 @@ theorem exists_int_gammaTwo {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 <
   refine ⟨n, ?_⟩
   rw [← hr, ← hn]
   simp
+
+open _root_.Polynomial in
+/-- **`α` IS AN ALGEBRAIC INTEGER — PROVEN.** No class field theory, and in particular no
+Weber theory of `f(√−p)⁶` in a ring class field: this is a two-line consequence of
+`exists_int_gammaTwo`.
+
+`α⁴` is a root of `x³ − γ₂(τ₀)x − 16` (`weberAlpha_pow_four_cubic`, which is nothing but the
+DEFINITION of `γ₂` rearranged), and `γ₂(τ₀)` is the rational integer `g`. So `α⁴` is a root
+of the monic polynomial `X³ − gX − 16 ∈ ℤ[X]`, hence integral over `ℤ`; and integrality
+descends through the fourth power (`IsIntegral.of_pow`), so `α` is integral too.
+
+THIS DECLARATION WAS A LEAF AND IS NO LONGER ONE. It was cut as "LEAF 1a", the integrality
+half of `exists_intCubic_weberAlpha`, on the belief that it needed Weber's theorem that
+`f(√−p)⁶` lies in the ring class field of `[1, 8√−p]`. That belief was wrong, and in a way
+worth recording: the CM input needed to make `α` INTEGRAL is exactly the CM input needed to
+make `γ₂(τ₀)` integral, which the development already pays for in `LEAF 3` and `LEAF 4`
+because the main argument needs `γ₂(τ₀) ∈ ℤ` for its own sake. Nothing is bought by asking
+for it twice. What remains genuinely open about `α` is only its DEGREE
+(`natDegree_minpoly_weberAlpha`).
+
+`hcl`, `hp8` and `h3` are all consumed, through `exists_int_gammaTwo`.
+
+MACHINE-CHECKED CORROBORATION (`PARI/GP`, `realprecision 80`,
+`α = exp(−πi/4)·(√2·η(2τ₀)/η(τ₀))²` with `η` the full Dedekind eta `eta(·,1)`):
+`algdep(α,3)` returns a MONIC polynomial with integer coefficients at every admissible `p`,
+so `α` is an algebraic integer in all five cases, as the proof above now shows outright:
+
+| `p`   | `minpoly α`          | monic | irreducible |
+|-------|----------------------|-------|-------------|
+| `11`  | `x³ + 2x² − 2`       | yes   | yes         |
+| `19`  | `x³ − 2x² + 4x − 2`  | yes   | yes         |
+| `43`  | `x³ + 4x² + 4x − 2`  | yes   | yes         |
+| `67`  | `x³ + 2x² + 8x − 2`  | yes   | yes         |
+| `163` | `x³ + 4x² + 28x − 2` | yes   | yes         |
+
+The same run confirms `α` is REAL (imaginary part `< 10⁻⁹⁶` at all five), which is what the
+`ζ₈⁻¹` twist is for. -/
+theorem isIntegral_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    IsIntegral ℤ (weberAlpha p hp.pos) := by
+  obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
+  have hcub := weberAlpha_pow_four_cubic p hp.pos
+  rw [← hg] at hcub
+  refine IsIntegral.of_pow (n := 4) (by norm_num)
+    ⟨X ^ 3 - C g * X - C 16, by monicity!, ?_⟩
+  simp only [eval₂_sub, eval₂_mul, eval₂_pow, eval₂_X, eval₂_C]
+  simp only [algebraMap_int_eq, eq_intCast]
+  push_cast
+  linear_combination hcub
+
+/-- **LEAF 1 — `α` is an algebraic integer of degree at most `3` — PROVEN** from
+`isIntegral_weberAlpha` (itself now proven, from `exists_int_gammaTwo`) and
+`natDegree_minpoly_weberAlpha`.
+
+`α = ζ₈⁻¹f₂(τ₀)²` satisfies a MONIC cubic with rational-integer coefficients. This is the
+"one hand" of Heegner's insight (Booher §6). Given that `α` is integral over `ℤ` and has
+degree `3` over `ℚ`, the cubic is just its minimal polynomial over `ℤ`, which is monic and
+maps onto the one over `ℚ` because `ℤ` is integrally closed with fraction field `ℚ`; see
+`exists_intCubic_of_natDegree_minpoly`. The CM content left in this statement sits entirely in
+`natDegree_minpoly_weberAlpha` — the DEGREE, and nothing else.
+
+MACHINE-CHECKED FAITHFULNESS. `PARI/GP`'s `algdep(α, 3)` at the five admissible `p` returns
+exactly a monic integral cubic, with integer coefficients:
+
+| `p`   | minimal polynomial of `α` | `(a, b, c)`   |
+|-------|---------------------------|---------------|
+| `11`  | `x³ + 2x² − 2`            | `(2, 0, −2)`  |
+| `19`  | `x³ − 2x² + 4x − 2`       | `(−2, 4, −2)` |
+| `43`  | `x³ + 4x² + 4x − 2`       | `(4, 4, −2)`  |
+| `67`  | `x³ + 2x² + 8x − 2`       | `(2, 8, −2)`  |
+| `163` | `x³ + 4x² + 28x − 2`      | `(4, 28, −2)` |
+
+Note `c = −2` in every case, matching the `c² = 4` that `exists_heegnerRelation_aux` DERIVES
+(so the derivation is not vacuous — it recovers a fact the numerics independently show).
+This table was re-computed independently when this proof was written, and reproduced exactly. -/
+theorem exists_intCubic_weberAlpha {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ a b c : ℤ, weberAlpha p hp.pos ^ 3 + (a : ℂ) * weberAlpha p hp.pos ^ 2
+      + (b : ℂ) * weberAlpha p hp.pos + (c : ℂ) = 0 :=
+  exists_intCubic_of_natDegree_minpoly (isIntegral_weberAlpha hp hp8 h3 hcl)
+    (natDegree_minpoly_weberAlpha hp hp8 h3 hcl)
 
 /-- **THE ALGEBRAIC CORE OF HEEGNER'S ARGUMENT — PROVEN.** This is the step Weber himself
 missed, and it is where the sixty-year gap sat.
@@ -2335,26 +3306,39 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 (`Heegner.exists_heegnerRelation_aux`), as is the passage from "algebraic integer" plus
 "rational" to `γ₂(τ₀) ∈ ℤ` (`Heegner.exists_int_gammaTwo`). What remains open is:
 
-* `Heegner.exists_intCubic_weberAlpha` — `α` satisfies a monic integral cubic;
-* `Heegner.intCast_indep_weberAlpha_pow_four` — `1, α⁴, α⁸` are independent;
-* `Heegner.isIntegral_gammaTwo_heegnerPoint` — `γ₂(τ₀)` is an algebraic integer;
+* `Heegner.natDegree_minpoly_weberAlpha` — `α` has degree exactly `3` over `ℚ`.
+  It REPLACES `Heegner.exists_intCubic_weberAlpha` and
+  `Heegner.intCast_indep_weberAlpha_pow_four`, both now PROVEN from it — the
+  independence of `1, α⁴, α⁸` needed no modular input at all, only the primality
+  of the degree. Its former companion `Heegner.isIntegral_weberAlpha` is PROVEN too, from
+  `Heegner.exists_int_gammaTwo`: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the definition of
+  `γ₂`, so an integral `γ₂(τ₀)` already forces an integral `α`;
+* `Heegner.exists_modularPolynomial` — the modular polynomial `Φ_N` with Kronecker's leading
+  coefficient (integrality of the class equation; `Heegner.isIntegral_jInvariant_of_fixedPoint`,
+  `Heegner.isIntegral_jInvariant_of_quadratic` and hence
+  `Heegner.isIntegral_gammaTwo_heegnerPoint` are now all PROVEN from it);
 * `Heegner.exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)` (**the main
   theorem of CM**);
 * `Heegner.exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K` (Weber's
   level-`3` descent);
-* `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j`;
-* `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound.
+* `Heegner.eta_two_torsion_key` — the `η`-product identity
+  `η(z/2)⁸η(2z)⁸(η(z/2)⁸+16η(2z)⁸) = η(z)²⁴` behind Weber's `γ₂³ = j`. It replaced
+  `Heegner.eta_pow_24_add_eta_two_pow_24`, which is PROVEN over it, and hence so are
+  `Heegner.gammaTwo_pow_three_eq_jInvariant` and
+  `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the latter also over the two `E`-approximations).
 
 `Heegner.exists_rat_gammaTwo_heegnerPoint` is no longer among them: it was decomposed and
-PROVEN on 2026-07-28 over the fourth and fifth items together with
+PROVEN on 2026-07-28 over the two class-field items together with
 `Heegner.exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀) ∈ ℝ`, PROVEN outright — the reality that
 cuts `K` down to `ℚ`).
 
-Of these only the fourth needs class field theory; the fifth needs Weber's level-`3` modular
-theory but no class field theory. The sixth is classical elliptic-function theory over
-machinery mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`, `qExpansion`), and
-the seventh is a real-analytic estimate on the `q`-expansion of `j`; both are the cheap
-targets. -/
+Of these only `exists_quadratic_jInvariant_heegnerPoint` needs class field theory;
+`exists_quadratic_gammaTwo_of_jInvariant` needs Weber's level-`3` modular theory but no class
+field theory. `eta_two_torsion_key` is classical elliptic-function theory over machinery
+mathlib already has (`η`, `Δ = η²⁴`, `E₄`, `Δ = (E₄³−E₆²)/1728`, `qExpansion`), and
+`exists_modularPolynomial` is the integrality of the class equation; those two are the cheap
+targets. (This list is referred to BY NAME rather than by position — its ordinals went stale
+twice, and at one point "the seventh" had no referent at all.) -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →

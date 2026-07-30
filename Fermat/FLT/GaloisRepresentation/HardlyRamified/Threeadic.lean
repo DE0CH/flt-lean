@@ -3029,8 +3029,202 @@ elements (`𝔽₃`-dimension `≤ 2`). Then:
 
 That is route (b)–(d) of the parent's audit, and at dimension `2` it is
 COMPLETE; the `[IsCocomm]` threading it needs is the separate upstream
-cut already named there. Whether consumers can supply a dimension bound
-is the cut-level question, and it is not answered here.
+cut already named there.
+
+THE THRESHOLD IS SHARP AT `9`, RE-CHECKED 2026-07-29 (and the check is
+worth recording, because "order `9` connected killed by `3`" LOOKS like
+it should admit the same Kummer wildness the order-`27` witness does).
+A connected killed-by-`3` object of order `9` over `ℤ₃` is an extension
+of `μ₃` by `μ₃` — the only connected order-`3` pieces at `e = 1 < p − 1`
+are the unramified twists of `μ₃` — and
+
+    Ext¹_{ℤ₃-fl}(μ₃, μ₃) ≅ H¹_fl(ℤ₃, Hom(μ₃, μ₃)) = H¹_ét(ℤ₃, ℤ/3),
+
+the UNRAMIFIED classes, so `K(G) ⊆ ℚ₃(ζ₃)·(unramified)` and the action is
+tame. The wildly ramified Kummer extensions `ℚ₃(ζ₃, u^{1/3})` with `u` a
+non-cube unit are real — `u = 4`: `x³ − 4` is irreducible over `ℚ₃`
+(`factorpadic`, one degree-`3` factor), `v₃(disc(x³ − 4)) = v₃(−432) = 3`,
+and `4 ≢ 1, 8 mod 9` so `4` is not a cube of a unit — but they are the
+generic fibres of extensions of `ℤ/3` by `μ₃`, which are NOT CONNECTED.
+The order-`27` witness escapes only because `Ext¹_fl(E[3], μ₃) ≅
+H¹_fl(ℤ₃, E[3])` (self-duality + the Weil pairing) is a flat, NOT an
+unramified, condition. So `≤ 9` is exactly the right bound: `9` is tame,
+`27` is not.
+
+**THE CUT-LEVEL QUESTION, ANSWERED 2026-07-29: THE CONSUMERS CANNOT
+SUPPLY A DIMENSION BOUND, AND THREADING ONE TERMINATES IN AN UNPROVABLE
+HYPOTHESIS.** Measured, not estimated:
+
+* The upward cone of this leaf inside this file is **39 declarations**,
+  ending at `three_adic` itself. Twenty-three of them take `(G : Type)`
+  as a parameter and would simply carry the extra hypothesis. The other
+  sixteen sit above the FOUR places that CONSTRUCT `G` out of
+  `hρ.isFlat.cond (𝔪ⁿ⁺²)` — inside
+  `omega_defect_vanishes_on_cyclotomicKernel_of_connectedEtale`,
+  `omega_defect_vanishes_on_localInertia_at_three`,
+  `flat_prolongation_trivial_component_vanishes` and
+  `trivial_component_vanishes_on_localInertia_at_three`. Those four are
+  where the bound would have to be DISCHARGED, and if it could be, the
+  thread would stop there and nothing above would change.
+* At those four sites the socle is the connected `3`-torsion of the flat
+  model of `ρ ⧸ 𝔪ⁿ⁺²` at `3`. `V` is free of rank `2` over `R`, so the
+  connected part is free of rank `1` and its `3`-torsion has
+  `Nat.card (R ⧸ 3R) = 3 ^ Module.finrank ℤ_[3] R` elements. Hence
+  `Nat.card S ≤ 9` **⟺** `Module.finrank ℤ_[3] R ≤ 2` — a condition on
+  the COEFFICIENT RING, not on the group scheme.
+* `IsHardlyRamified` (`HardlyRamified/Defs.lean`) constrains neither the
+  residue field nor the ramification of `R`, and `three_adic` is stated
+  for an arbitrary `R` finite free over `ℤ_[3]`. Its single external
+  consumer, `HardlyRamified/Lift.lean:301`, instantiates it at the
+  coefficient ring `A` of a `3`-adic member of a compatible family,
+  produced by an EXISTENTIAL (`hodd h3fact _ φ₃`) with no rank control.
+  So the threaded hypothesis arrives there neither provable nor true,
+  and `sorry`ing it would manufacture a FALSE leaf with live consumers.
+  A partial thread is worse than none; a complete one is worse still.
+
+**SO THE REPAIR IS A RE-CUT, NOT A THREAD, AND THE RE-CUT IS NAMED.**
+What every one of the four constructor sites DOES have is the RESIDUAL
+flat model: `isFlatAt_baseChange_residue` (line ~373 of this file) gives
+`(ρ.baseChange kk).IsFlatAt` at `3`, and there the connected `3`-torsion
+socle is a `kk`-VECTOR SPACE of `kk`-dimension `≤ 2`, because `V` is free
+of rank `2` over `R` — unconditionally, for every coefficient ring.
+That is also the hypothesis Raynaud's theorem actually wants: it is a
+statement about `𝔽`-VECTOR SPACE SCHEMES, and route (b)–(d) above goes
+through verbatim over `𝔽 = kk` (the wild image `P` acts `kk`-linearly,
+so `S^P` is a `kk`-LINE, the graded pieces have `kk`-dimension `1`, and
+Oort–Tate over `𝔽` makes them `μ`-type). The level-`𝔪ⁿ⁺²` statements are
+then Wiles's dévissage from the residual level (ch. 1 prop. 1.1), which
+is how the literature does it and is precisely the step this cut skipped
+by working at level `𝔪ⁿ⁺²` directly.
+
+**THE TRAP IN THAT RE-CUT — the scalars must be a FIELD, and "generated
+by `≤ 2` elements over the Galois-commuting scalars" is NOT a repair.**
+It fails to exclude the witness: a regular unipotent `u ∈ GL₃(𝔽₃)` has
+commutant `𝔽₃[u] ≅ 𝔽₃[x]/(x³)`, over which `𝔽₃³` is FREE OF RANK `1`, so
+a "rank `≤ 2` over some commuting scalar ring" hypothesis is satisfied by
+the very configuration it is meant to forbid. At level `𝔪ⁿ⁺²` the
+natural scalars are `R ⧸ 3R`, which is exactly such a non-field — which
+is the structural reason the level-`𝔪ⁿ⁺²` statements cannot be repaired
+in place and the residual level can.
+
+**THE WITNESS RE-VERIFIED INDEPENDENTLY, 2026-07-30.** Every
+computational claim above reproduces, on a fresh `gp` run written from
+the statement rather than from the recorded script: `37a1 = [0,0,1,-1,0]`
+has conductor `37` and `disc = 37` (good at `3`), `a₃ = -3` so
+`#Ẽ(𝔽₃) = 7` and the reduction is SUPERSINGULAR; `phi3 = x*p3^2 - p4`
+has degree `9` and `phi3/p3^2` at `x = 0` is `-1 = x(3·(0,0))`, matching
+`ellmul(E,[0,0],3) = [-1,-1]` (so the `x`-multiplication formula is the
+right one); at `x(P) = 1/9`, `1 + 4(x³ - x) = 409/729` is a square in
+`ℚ₃` (`issquare(… + O(3^20)) = 1`), so `P` really is a `ℚ₃`-point with
+`v₃(x(P)) = -2`; `newtonpoly(phi3 - (1/9)·p3^2, 3)` is `[-2/9]` with
+multiplicity `9` — a single segment, so `9 ∣ e` and the extension is
+WILD; and the control at `v₃(x) = -4` splits as `[-1/4 (×8), -2]`,
+i.e. one rational preimage plus eight translates at `v(z) = 1/8`, which
+is the picture that validates the method. The group-theoretic step (a
+`3`-group in `GL₃(𝔽₃)` is unipotent; take `k` maximal with
+`(σ-1)^k ψ₀ ≠ 0` and set `ψ := (σ-1)^{k-1} ψ₀`, `χ := (σ-1)^k ψ₀`) was
+re-checked by hand. **So the refutation is not a single agent's claim any
+more.** Two side-notes from the re-check, both in the audit's favour:
+`_hprim₀` and `_hcomul₀` are VACUOUS at `e₀ = 1` (the first says
+`𝒪(G)` has no nontrivial idempotent, which is connectedness; the second
+is `1 ⊗ 1 = 1 ⊗ 1`), so the connectedness hypotheses cost the witness
+nothing; and `_hcomm` holds because `G = M^∨` is COcommutative, `M`
+being an extension of `ℤ/3` by `E[3]` inside the commutative finite flat
+category — the audit's "`_hcomm` holds because `G` is commutative" is
+the right conclusion by slightly the wrong route (convolution
+commutativity is cocommutativity of `𝒪(G)`, not commutativity of it,
+which every `𝒪(G)` has anyway).
+
+**NO WEAKER, ROUTE-LEVEL HYPOTHESIS WORKS EITHER — the obvious attempt
+to induct past dimension `2` is blocked by the SAME curve.** The
+tempting repair is to drop the cardinality bound and hypothesise only
+what route (b)–(d) literally consumes: an `I₃`-stable filtration of `S`
+whose graded pieces carry a trivial WILD action, obtained by iterating
+`S ↦ S^P` (legitimate, since `P ⊴ I₃`). That filtration always exists
+and is always `I₃`-stable. It is useless, because step (d) needs pieces
+of ORDER `3`, and "trivial wild action" does not deliver them:
+**supersingular `E[3]` for the very same `E = 37a1` is a connected,
+killed-by-`3`, order-`9` object on which `I₃` acts TAMELY** — through
+the level-`2` fundamental characters of `𝔽₉ˣ`, Serre, Invent. Math. 15
+(1972) §1.11 prop. 12, exactly as this file already records in the
+falsity audit of `exists_inertia_scalar_on_connected_locus_of_hopf_package`
+below — and it is `I₃`-SIMPLE (a nonsplit Cartan has no stable line).
+So a wild-trivial graded piece of dimension `2` need not split further,
+the induction stops at dimension `2` on the nose, and the cardinality
+bound is not an artefact of the chosen route but the sharp hypothesis.
+
+**AND YET THE CONCLUSION THE CLUSTER NEEDS IS TRUE SUPERSINGULARLY**,
+which is what makes a re-cut worth doing rather than a dead end: on that
+same `E[3]` the image of `I₃` lies in the normaliser of a nonsplit
+Cartan of `GL₂(𝔽₃)` and has order dividing `8`, PRIME TO `3`. Both
+dimension-`2` cases — ordinary (filtration by order-`3` pieces,
+`μ`-type, inertia scalar) and supersingular (simple, tame by the
+fundamental characters) — give tameness, by different arguments. What
+dimension `3` refutes is therefore the ARBITRARY-`G` ROUTE, not the
+theorem the cluster consumes; the repair is to re-base the route, not to
+weaken the conclusion.
+
+# THE SHAPE OF THE RE-CUT IS A DELETION, NOT A THREAD (2026-07-30)
+
+The paragraph above says "a partial thread would be worse than none".
+The re-measurement shows something stronger and it is what actually
+settles the cut-level decision: **a COMPLETE thread is not available at
+all, because it ends by orphaning everything it threaded.** The
+argument is mechanical:
+
+1. the socle bound has to be DISCHARGED at the four constructor sites,
+   and cannot be (measured above: it is equivalent to a bound on
+   `Module.finrank ℤ_[3] R`, which nothing in `IsHardlyRamified`
+   supplies and which `Lift.lean`'s existential cannot);
+2. so those four sites become `sorry`s;
+3. at which point NOTHING in the root cone calls the threaded chain —
+   `34` declarations in this file take `(G : Type)`, `25` of them below
+   this leaf — and free-floating code is banned here, so they must be
+   deleted anyway.
+
+So the two candidate operations are not "thread (cheap)" versus "re-cut
+(expensive)". They are the same operation, and its actual shape is:
+
+* state ONE new leaf for the flat model of `ρ ⧸ 𝔪ⁿ⁺²` at `3` — the
+  residual dévissage, TRUE and vouchable, `Nat.card`-free;
+* rewire the four constructor sites to it;
+* DELETE the arbitrary-`G` tower, whose statements are false as stated
+  (recoverable from git history, as this project's deletion commits
+  always are), preserving this audit and the route analysis in the new
+  leaf's docstring.
+
+Ledger: one FALSE direct sorry becomes one TRUE direct sorry; `25`-odd
+false theorems leave the tree; the `16` declarations above the
+constructor sites stop resting on a refuted premise. That is the whole
+benefit, and it is real — but it is a deletion of several thousand lines
+and it is not a decision a single prover agent should take by itself,
+which is why it is written down here instead of performed.
+
+**WHERE THE WORK MUST LAND — and both independently-found upstream cuts
+converge on ONE definition.** `GaloisRep.HasFlatProlongationAt`
+(`Deformations/RepresentationTheory/GaloisRep.lean:275`) is
+`∃ G, CommRing G × HopfAlgebra 𝒪ᵥ G × Module.Flat × Module.Finite ×
+Algebra.Etale Kᵥ (Kᵥ ⊗ G)`, together with a `Γ Kᵥ`-equivariant ADDITIVE
+bijection from `Additive (points)` onto the space. It records:
+
+* NOT cocommutativity — which is the `[IsCocomm]` obligation the
+  2026-07-28 measurement above traced to `FlatPointsGroup.lean` /
+  `FlatProlongation.lean` for step (c);
+* NOT any socle datum — hence the 2026-07-29 bound has nowhere to come
+  from;
+* NOT `A`-linearity of the identification `f`, only additivity. Worth
+  noticing on its own: the "scalars" the TRAP paragraph reasons with
+  (`R ⧸ 3R` acting on the socle) are not even recorded, so a repair
+  phrased in terms of them would first have to put them there.
+
+And `flat_prolongation_trivial_component_vanishes` takes
+`HasFlatProlongationAt` as a RAW HYPOTHESIS rather than obtaining it
+from `hρ.isFlat.cond`. So unlike the other three sites it cannot be
+repaired by strengthening `IsHardlyRamified` or `IsFlatAt` at all: any
+strengthening has to land in the DEFINITION. Two cuts found a month
+apart by two different routes therefore terminate in the same place,
+and doing them in one pass is strictly cheaper than either alone —
+which is the concrete recommendation this audit leaves behind.
 
 WHAT ELSE THE WITNESS REFUTES. It contradicts, verbatim, every
 statement in this cluster that quantifies over an ARBITRARY Hopf order
@@ -3043,9 +3237,19 @@ to `3` works), and
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package`. All three
 are PROVEN over this leaf, so the FILE is not inconsistent — but they
 inherit the falsity of their premise. The repair therefore spans them
-and their consumers (lines `3364`, `3635`, `3763`, `3813`, `4086`,
-`5869` at the time of writing) and is a cut-level decision; a partial
-thread would be worse than none, so none is attempted.
+and the whole `39`-declaration cone measured above, and is a cut-level
+decision; a partial thread would be worse than none, so none is
+attempted. **Cite the declarations, not the line numbers** — an earlier
+version of this paragraph listed six consumer LINE NUMBERS, every one of
+which had already moved by the next edit of the file. The call sites are
+exactly: this leaf inside
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion` (the
+two branches of its `by_cases hc1`), that inside
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion`,
+that inside `wildInertia_fixes_connected_threeTorsion_of_hopf_package`
+and inside `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package`,
+and the last inside
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
 (1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
@@ -5360,19 +5564,67 @@ set_option maxHeartbeats 2000000 in
 /-- **RAYNAUD DÉVISSAGE: multiplicative `3`-torsion ⟹ multiplicative**
 (SORRY LEAF — cut 2026-07-28 out of
 `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` just
-below, which is now PROVEN over it together with the pure-algebra
+below, which is PROVEN over it together with the pure-algebra
 uniformiser `exists_uniform_nsmul_of_forall_nsmul_three_torsion` above.
-This is ALL that remains of the dévissage: steps 1 and 3 of the route
-recorded there are discharged, step 2 is this leaf.)
 
-Setting: `G` a finite flat `𝒪₃ᵥ ≅ ℤ₃`-Hopf order with étale generic
-fibre, `e₀` its connected counit idempotent, `fG` a `Γ ℚ₃ᵥ`-equivariant
-bijection from the geometric points of the generic fibre onto `N`, and
-`N⁰` the connected locus (the `z : N` whose point takes the value `1`
-on `e₀`).
+**REFUTED AND RESTATED 2026-07-28.** As first cut, `h₃` constrained only
+the SINGLE element `σ` fixed by the binder above it. That statement is
+FALSE; the witness is below. `h₃` now quantifies over ALL of
+`localInertiaGroup 𝔭₃`, which is exactly what the consumer already held
+in its own `hstab₃` and was discarding at the call site — the consumer's
+STATEMENT is unchanged, only three lines of its proof. The `m₃` binder is
+gone, absorbed into `h₃`'s `∃`. Per the standing rule, the previous
+faithfulness audit of this leaf is **VOID, not inherited**; the audit at
+the end of this docstring is the new one, run against the statement as it
+now stands.)
 
-The two numerical inputs are exactly what the consumer has already
-established and what this leaf may therefore assume:
+## FALSITY AUDIT OF THE PREVIOUS (SINGLE-`σ`) STATEMENT
+
+Take `E ⧸ ℚ : y² = x³ − 2x + 1` (conductor `40`, so `3 ∤ N`; `a₃ = 0`,
+verified with PARI/GP), which has good SUPERSINGULAR reduction at `3`.
+Put `G := 𝒪(E[9])`, a finite flat `ℤ₃`-Hopf order with étale (char `0`)
+generic fibre, `N := E[9](ℚ̄₃) ≅ (ℤ⧸9)²`, `ρ'` the Galois action, and
+`fG` the tautological identification.
+
+Supersingularity makes `E[9]` CONNECTED, so `G` is local: `e₀ = 1`
+satisfies `he₀`, `hε₀`, `hprim₀`, `hcomul₀`, and the connected locus is
+ALL of `N`. `hK` holds with `K = 2`.
+
+Now count ramification. All `9`-torsion lies in the formal group, of
+height `2`, so `[3](X) = 3X + ⋯ + uX⁹ + ⋯` with `u` a unit. The Newton
+polygon of `[3](X)/X` gives `v(x) = 1/8` for `x ∈ E[3] ∖ 0`; that of
+`[3](X) − t` at `v(t) = 1/8` has vertices `(0, 1/8)` and `(9, 0)`, so
+`v(x) = 1/72` for `x ∈ E[9] ∖ E[3]`. Hence
+`e(ℚ₃(E[9])/ℚ₃) ≥ 72`, so the image of `I₃` in `Aut(E[9]) = GL₂(ℤ⧸9)`
+has order `≥ 72`. Its reduction, the image of `I₃` in `Aut(E[3])`, is the
+nonsplit Cartan of order `8` (Serre, Invent. Math. 15 (1972), §1.11
+prop. 12, at `e = 1` — the same citation this file already uses). So the
+kernel
+`K₉ := ker(I₃ ↠ Aut(E[9]) → Aut(E[3]))`
+has image of order `≥ 72/8 = 9` inside `1 + 3·M₂(𝔽₃)`, whereas the
+SCALARS of `GL₂(ℤ⧸9)` meet `1 + 3·M₂(𝔽₃)` in only `3` elements. Pick
+`σ ∈ localInertiaGroup 𝔭₃` whose image lies in `K₉` and is not scalar.
+
+Then `h₃` (old form) HOLDS with `m₃ = 1`: `σ ≡ 1` on `E[3]`, so
+`ρ'(σ) z = z = 1 • z` for every `3`-torsion `z`. And the conclusion
+FAILS: it demands an `m : ℕ` with `ρ'(σ) z = m • z` on all of `E[9]`,
+i.e. that `σ` be a scalar in `GL₂(ℤ⧸9)`, which is false by construction.
+
+The old docstring's own supersingular paragraph is what hid this. It is
+correct that this `G` fails the hypothesis when the hypothesis ranges
+over ALL of `I₃` — no vector of `E[3]` is moved to a multiple of itself
+by a generator of the nonsplit Cartan. It is wrong for a *single* `σ`:
+`I₃` also contains elements that ARE scalar mod `3` and are not scalar
+mod `9`, and only the `∀ τ` form excludes them. "Multiplicative type" is
+a property of the group scheme, i.e. of the whole inertia action; no
+one-element hypothesis can express it.
+
+## SETTING
+
+`G` a finite flat `𝒪₃ᵥ ≅ ℤ₃`-Hopf order with étale generic fibre, `e₀`
+its connected counit idempotent, `fG` a `Γ ℚ₃ᵥ`-equivariant bijection
+from the geometric points of the generic fibre onto `N`, and `N⁰` the
+connected locus (the `z : N` whose point takes the value `1` on `e₀`).
 
 * `hK` — `N⁰` is killed by the SINGLE `3`-power `3 ^ K`. (Proved in the
   consumer from finiteness of the geometric point set,
@@ -5382,52 +5634,174 @@ established and what this leaf may therefore assume:
   NATURAL number": any `m ≡ χ_cyc(σ) mod 3 ^ K` works simultaneously
   for every `z ∈ N⁰`, and such an `m` exists because `ℕ` is dense in
   `ℤ₃`.
-* `h₃` — `σ` already acts on the `3`-TORSION of `N⁰` by the single
-  natural number `m₃`, i.e. `𝒢⁰[3]` is of MULTIPLICATIVE type. (Proved
-  in the consumer from the `hstab₃` of the consumer's statement by the
-  pure-algebra uniformiser above; and `hstab₃` itself is the shape in
-  which `OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+* `h₃` — EVERY `τ ∈ I₃` acts on the `3`-TORSION of `N⁰` by a single
+  natural number `m₃(τ)`; that is, `𝒢⁰[3]` is of MULTIPLICATIVE type.
+  (Proved in the consumer from its `hstab₃` by the pure-algebra
+  uniformiser above, applied once per `τ`; and `hstab₃` itself is the
+  shape in which
+  `OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
   — Raynaud's dichotomy at `e = 1 < p − 1 = 2`, plus
   `not_inertia_character_trivial_of_connected` killing the unramified
   branch — delivers step 1.)
 
-WHAT REMAINS, and it is the whole finite-flat content: a finite flat
-group scheme over `ℤ₃` whose `3`-torsion is of multiplicative type is
-ITSELF of multiplicative type. Dévissage up the `3`-power filtration:
-the multiplicative part `𝒢ᵐ ⊆ 𝒢⁰` is the largest multiplicative
-subgroup scheme, and if `𝒢ᵐ ≠ 𝒢⁰` the quotient `𝒢⁰/𝒢ᵐ` is a nonzero
-finite flat group scheme whose `3`-torsion is a subquotient of `𝒢⁰[3]`,
-hence multiplicative — contradicting maximality of `𝒢ᵐ`. At `e = 1 <
-p − 1` Raynaud's classification makes the multiplicative part
-functorial and the filtration split enough for this to run. References:
+## WHAT REMAINS, and it is the whole finite-flat content
+
+A finite flat group scheme over `ℤ₃` whose `3`-torsion is of
+multiplicative type is ITSELF of multiplicative type. References:
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
 (1974), 3.3.2–3.3.6; Tate, *Finite flat group schemes*, §4, in
 Cornell–Silverman–Stevens; Oort–Tate.
 
-WHY `h₃` MAY NOT BE DROPPED. Without it the statement is FALSE, by the
-supersingular counterexample recorded in the FALSITY AUDIT of
-`exists_inertia_scalar_on_connected_locus_of_hopf_package` below: for
-`E ⧸ ℚ` with good SUPERSINGULAR reduction at `3` and `G = 𝒪(E[9])` the
-scheme is connected, `e₀ = 1`, the connected locus is everything, and
-`I₃` acts on `E[3]` through the level-`2` fundamental characters of
-`𝔽₉ˣ` (Serre, Invent. Math. 15 (1972), §1.11 prop. 12) — a nonsplit
-Cartan, on which no vector is moved to a multiple of itself, so no `m₃`
-exists and the hypothesis excludes exactly that `G`.
+**ROUTE, CORRECTED 2026-07-28 — this step needs CARTIER DUALITY, not
+`e < p − 1`.** The previous route note said "at `e = 1 < p − 1`
+Raynaud's classification makes the multiplicative part functorial and
+the filtration split enough for this to run". That over-prices the step:
+the dévissage is valid over ANY base, and `e < p − 1` is spent only in
+step 1 (that `𝒢⁰[3]` is multiplicative at all), which arrives here as a
+hypothesis. Write `𝒢 := 𝒢⁰` and let `𝒢ᵐ ⊆ 𝒢` be the largest
+multiplicative subgroup scheme (multiplicative subgroup schemes are
+closed under sum — a quotient of a multiplicative scheme is
+multiplicative — so a largest one exists by order). Then:
 
-FAITHFULNESS. Both quantifiers are over `localInertiaGroup 𝔭₃` and
-never over `Γ ℚ₃ᵥ`. Over the full decomposition group the connected
-character is `χ_cyc · ψ` with `ψ` an UNRAMIFIED twist and no single
-power works, so the inertia-only form is the true one — inertia-only
-conclusions are twist-blind. The conclusion is a VALUE-level identity
-in `N`; no element of `G`, no coordinate and no `Γ`-wide rationality is
-produced, so the leaf is on the true side of the development's
-`𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
-that killed `exists_muType_closure`.
+1. `𝒢[3] ⊆ 𝒢ᵐ`, since `𝒢[3]` is multiplicative by `h₃`.
+2. Let `H := 3⁻¹𝒢ᵐ`, the kernel of `𝒢 →[3] 𝒢 ↠ 𝒢/𝒢ᵐ` (flat prolongation
+   = schematic closure of its generic fibre). Multiplication by `3`
+   presents `H` as an extension of a SUBGROUP scheme of `𝒢ᵐ` by `𝒢[3]`,
+   both multiplicative.
+3. An extension of multiplicative by multiplicative is multiplicative.
+   **This is already PROVEN in this development**, as
+   `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
+   `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, over
+   `HopfAlgebra.etale_of_isShortExact` (an extension of étale by étale is
+   étale, proven over an ARBITRARY base) and `IsShortExact.cartierDual`.
+   No classification and no `e < p − 1` enter.
+4. So `H` is multiplicative, hence `H ⊆ 𝒢ᵐ` by maximality, hence
+   `(𝒢/𝒢ᵐ)[3] = H/𝒢ᵐ = 0`. A nonzero finite flat `3`-group scheme has
+   nonzero `3`-torsion on its generic fibre, so `𝒢 = 𝒢ᵐ`.
+
+What is genuinely missing for (1), (2), (4) is a subgroup-scheme /
+schematic-closure / quotient API over `𝒪₃ᵥ`; a grep on 2026-07-28 found
+no `schematicClosure`, `SubgroupScheme` or quotient-by-a-subgroup-scheme
+anywhere under `Fermat/`. That, and not Raynaud's classification, is
+this leaf's real blocker. *Refuting check on this paragraph*: a
+`Fermat/`-local construction of the kernel of a homomorphism of finite
+flat `𝒪₃ᵥ`-group schemes as a finite flat group scheme. Re-grepped
+2026-07-30 against `main` at `3c323a98`: still none — the only hits for
+those three names anywhere under `Fermat/` are this docstring.
+
+**AND A STRICTLY EARLIER BLOCKER, MEASURED 2026-07-30: the whole
+multiplicative-type layer is ABSENT FROM THIS FILE'S IMPORT CONE, so the
+route above cannot even be STATED here yet.** A probe module importing
+only `…HardlyRamified.Threeadic` reports `unknown constant` for all four
+of `HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` and
+`HopfAlgebra.etale_of_isShortExact`. So steps (1)–(4) above name lemmas
+that are real and proven but *unreachable from `Threeadic.lean`*; the
+paragraph above reads as though they were in hand, and they are not.
+
+The fix is cheap and cycle-free, and it is the FIRST step for anyone
+working this leaf: `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/`'s
+`CartierDual`, `Corner`, `ShortExact` and `Diagonalizable` import
+**only mathlib and each other** (checked 2026-07-30), so a
+`public import` of `…HopfAlgebra.Diagonalizable` — which pulls the other
+three plus `GroupFunctions` and `CartierDualExamples` — wires the layer
+in with no new project edge and no cycle. It is deliberately NOT added
+in this commit, because an import with no use is a build-time cost paid
+by every consumer of this file (`Modularity/Interface.lean` among them)
+for nothing; add it in the same commit that first uses it.
+
+**RELOCATION CANDIDATE — this leaf DUPLICATES a better cut in
+`Family.lean` (found 2026-07-28).** `Family.lean` carries the same
+content at greater generality and with a cleaner cut:
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag` is the Raynaud leaf
+there, stated coefficient-free and INTRINSICALLY on the corner
+`G ⧸ HopfAlgebra.cornerIdeal e₀` with no torsion-level restriction, over
+the intrinsic `HasInertiaLevelOneFlag`; and everything downstream of it —
+`exists_unramified_grouplike_family_generating_corner`,
+`exists_grouplike_coordinates_of_connected_hopf_package`, and finally
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
+("inertia moves connected points by the exact cyclotomic scalar") — is
+PROVEN. Note in particular that with the corner stated at full rank
+there is NO dévissage step at all: the `3`-torsion hypothesis and the
+`3`-power induction that this leaf's framing suggests are artefacts of
+the weaker cut, not mathematics.
+
+**THE RELOCATION IS REAL BUT IT IS NOT AN IMPORT, AND IT IS NOT LOCAL —
+three checks, 2026-07-30, correcting the paragraph above.** The
+duplication it reports is genuine; the implied repair ("make this leaf
+consume `Family`'s") is not available, for three independent reasons, and
+each one alone is fatal:
+
+1. **`Threeadic` CANNOT import `Family`: that edge is a CYCLE.** The
+   sibling claim above is true as stated but incomplete — the two files do
+   not import each other *directly*, and `Family` reaches `Threeadic`
+   transitively: `Family.lean:16` is
+   `public import Fermat.FLT.Modularity.Interface`, and
+   `Interface.lean:409` is `import …HardlyRamified.Threeadic`. So
+   `Family → Interface → Threeadic`, and adding `import Family` here
+   closes the loop. The relocation must therefore be an EXTRACTION
+   downward into a module both files import, never an import sideways.
+2. **`Family`'s bridge chain is NOT coefficient-free, so extracting it
+   does not serve this leaf.** Only the Raynaud step
+   (`isMultiplicativeType_corner_of_inertiaLevelOneFlag`) and the
+   intrinsic `HasInertiaLevelOneFlag` are coefficient-free. Every member
+   of the chain that carries the conclusion — from
+   `grouplike_corner_invariant_of_localInertia` through
+   `exists_grouplike_family_of_connected_hopf_package`,
+   `exists_grouplike_coordinates_of_connected_hopf_package` and
+   `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+   to `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
+   — carries the FULL hardly-ramified package in its signature:
+   `hZinj`, `hRinj`, `hρ : IsHardlyRamified`, `χ₁`/`χ₂` with
+   `hcont`/`hone`/`hmul`, `hchar`, and an open ideal `I` with the space
+   taken as `(ρ.baseChange (R ⧸ I)).toLocal 𝔭₃`.
+3. **This leaf is strictly MORE GENERAL than what that chain proves, so
+   even after an extraction it would not close by instantiation.** Its
+   `ρ' : GaloisRep ℚ A N` is over an arbitrary `A` and `N` with no
+   `hchar`, no `χ₁`/`χ₂` and no `IsHardlyRamified`; the note above that
+   `Family`'s version "needs `hchar`/`χ₁`/`χ₂` data that this leaf does
+   not carry" is exactly right, and it is what makes the gap a re-cut
+   rather than a lookup. Supplying that data means threading it down
+   through `exists_uniform_pow_localInertia_smul_connected_of_hopf_package`
+   (the consumer just below) and `exists_ordinary_line_of_flat_hopf_package`
+   and their callers.
+
+So the relocation is a cut-level redesign spanning two files and at least
+those two intermediate consumers, and it needs an extraction module below
+both. It is still the right move — nobody should prove Raynaud twice —
+but it is NOT a local edit, and the estimate implied above ("a design
+decision for an integrator") should be read as the larger of the two
+readings. *Refuting check on this paragraph*: a single `public import`
+line that makes `Family`'s corner chain visible in `Threeadic.lean`
+without `lake build` reporting an import cycle.
+
+## FAITHFULNESS AUDIT (new, 2026-07-28, against the statement above)
+
+* Both quantifiers are over `localInertiaGroup 𝔭₃` and never over
+  `Γ ℚ₃ᵥ`. Over the full decomposition group the connected character is
+  `χ_cyc · ψ` with `ψ` an UNRAMIFIED twist and no single power works, so
+  the inertia-only form is the true one — inertia-only conclusions are
+  twist-blind. Widening either would make the leaf false.
+* `h₃` is now over all of `localInertiaGroup 𝔭₃`, which is the minimum
+  that can express "`𝒢⁰[3]` is of multiplicative type"; the audit above
+  shows every weaker `σ`-local form is false.
+* The conclusion is a VALUE-level identity in `N`; no element of `G`, no
+  coordinate and no `Γ`-wide rationality is produced, so the leaf is on
+  the true side of the development's `𝒪ᵥ`-descent rule and blind to the
+  `p − 1` unramified twists `μ₃ ⊗ ψ` that killed `exists_muType_closure`.
+* Not vacuous: `hK` and `h₃` are jointly satisfiable by `G = 𝒪(μ₉)`
+  (`K = 2`, `m₃(τ) ≡ χ_cyc(τ) mod 3`), where the conclusion has content —
+  it pins `m ≡ χ_cyc(σ) mod 9`.
+* `m₃` is bound inside `h₃` rather than supplied by the caller, so an
+  adversary cannot satisfy `h₃` by choosing a convenient level: it must
+  hold for each `τ` with some scalar, which is the group-scheme
+  statement.
 
 **The check that would refute it**: exhibit a connected finite flat
 `ℤ₃`-group scheme with étale generic fibre whose `3`-torsion is of
-multiplicative type but which is not itself of multiplicative type.
-Raynaud at `e = 1 < p − 1` says there is none. -/
+multiplicative type — as an `I₃`-module, i.e. `h₃` for every `τ` — but
+which is not itself of multiplicative type. Raynaud says there is
+none. -/
 theorem exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform
     {A : Type*} [CommRing A] [TopologicalSpace A]
     {N : Type*} [AddCommGroup N] [Module A N]
@@ -5442,14 +5816,14 @@ theorem exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform
       ((ρ'.toLocal 𝔭₃).Space))
     (hfG : Function.Bijective fG)
     (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
-    (K m₃ : ℕ)
+    (K : ℕ)
     (hK : ∀ z : N,
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (3 ^ K : ℕ) • z = 0)
-    (h₃ : ∀ z : N,
+    (h₃ : ∀ τ ∈ localInertiaGroup 𝔭₃, ∃ m₃ : ℕ, ∀ z : N,
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (3 : ℕ) • z = 0 →
-      (ρ'.toLocal 𝔭₃) σ z = m₃ • z) :
+      (ρ'.toLocal 𝔭₃) τ z = m₃ • z) :
     ∃ m : ℕ, ∀ z : N,
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
@@ -5524,9 +5898,14 @@ finite-flat content.
   bookkeeping, in full.
 * `hstab₃` is a pointwise-eigenvector hypothesis on the `3`-torsion
   connected locus, which is an `𝔽₃`-vector space; the pure-algebra
-  `exists_uniform_nsmul_of_forall_nsmul_three_torsion` above turns it
-  into a SINGLE `m₃`. That is the elementary half of step 3, and it is
-  what makes the leaf's `h₃` available.
+  `exists_uniform_nsmul_of_forall_nsmul_three_torsion` above turns it,
+  FOR EACH `τ ∈ I₃` SEPARATELY, into a SINGLE `m₃(τ)`. That is the
+  elementary half of step 3, and it is what makes the leaf's `h₃`
+  available. The `∀ τ` is load-bearing: specialising it to the `σ` of
+  the conclusion — which this proof did until 2026-07-28 — makes the
+  leaf FALSE, by a supersingular witness recorded in that leaf's
+  FALSITY AUDIT. `hstab₃` already ranges over all of `I₃`, so the
+  repair cost nothing and did not change this statement.
 
 WHY `hstab₃` MAY NOT BE DROPPED. Without it the statement is FALSE, by
 the supersingular counterexample recorded in the FALSITY AUDIT of
@@ -5630,18 +6009,27 @@ theorem exists_uniform_pow_localInertia_smul_connected_of_hopf_package
     obtain ⟨d, hd⟩ := Nat.le.dest hle
     rw [← hd, pow_add, mul_comm, mul_smul, hkf z hz, smul_zero]
   -- `hstab₃` is pointwise; the `3`-torsion connected locus is an `𝔽₃`-space,
-  -- so the eigenvalues glue into a SINGLE `m₃`
-  obtain ⟨m₃, hm₃⟩ := exists_uniform_nsmul_of_forall_nsmul_three_torsion
-    (fun z : N => (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
-        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 ∧ (3 : ℕ) • z = 0)
-    (fun x y hx hy => ⟨hPadd x y hx.1 hy.1, by rw [smul_add, hx.2, hy.2, add_zero]⟩)
-    (fun z hz => hz.2)
-    (fun z => (ρ'.toLocal 𝔭₃) σ z)
-    (fun x y => map_add ((ρ'.toLocal 𝔭₃) σ) x y)
-    (fun z hz => hstab₃ σ hσ z hz.2 hz.1)
+  -- so for EACH `τ ∈ I₃` its eigenvalues glue into a SINGLE `m₃`.
+  -- The quantifier over `τ` is load-bearing and may NOT be specialised to `σ`
+  -- here: "`𝒢⁰[3]` is of multiplicative type" is a statement about the whole
+  -- inertia action, and the `σ`-local form is FALSE — see the FALSITY AUDIT in
+  -- `exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`.
+  have h₃ : ∀ τ ∈ localInertiaGroup 𝔭₃, ∃ m₃ : ℕ, ∀ z : N,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (3 : ℕ) • z = 0 →
+      (ρ'.toLocal 𝔭₃) τ z = m₃ • z := by
+    intro τ hτ
+    obtain ⟨m₃, hm₃⟩ := exists_uniform_nsmul_of_forall_nsmul_three_torsion
+      (fun z : N => (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 ∧ (3 : ℕ) • z = 0)
+      (fun x y hx hy => ⟨hPadd x y hx.1 hy.1, by rw [smul_add, hx.2, hy.2, add_zero]⟩)
+      (fun z hz => hz.2)
+      (fun z => (ρ'.toLocal 𝔭₃) τ z)
+      (fun x y => map_add ((ρ'.toLocal 𝔭₃) τ) x y)
+      (fun z hz => hstab₃ τ hτ z hz.2 hz.1)
+    exact ⟨m₃, fun z hz h3 => hm₃ z ⟨hz, h3⟩⟩
   exact exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform
-    ρ' G e₀ he₀ hε₀ hprim₀ hcomul₀ fG hfG σ hσ (Finset.univ.sup kf) m₃ hK
-    (fun z hz h3 => hm₃ z ⟨hz, h3⟩)
+    ρ' G e₀ he₀ hε₀ hprim₀ hcomul₀ fG hfG σ hσ (Finset.univ.sup kf) hK h₃
 
 /-- **A UNIPOTENT endomorphism whose ORDER IS PRIME TO `3` fixes every
 `3`-torsion vector** (helper, PROVEN 2026-07-28; pure algebra, no

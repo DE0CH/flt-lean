@@ -460,11 +460,20 @@ def load():
         j.setdefault("retries", 0)
         jobs[n] = j
     snap = rd(DIR / "snapshot.json")
+    snap = json.loads(snap) if snap else None
+    main = head_sha()
     return {
         "stop": (DIR / "STOP").exists(),
-        "main": head_sha(),
+        "main": main,
         "rebaselined": (rd(DIR / "rebaselined", "") or "").strip(),
-        "snapshot": json.loads(snap) if snap else None,
+        "snapshot": snap,
+        # The real loop asks git whether a build of main would differ from the
+        # snapshot, so that a tooling commit does not unadopt a good release
+        # (see lean_equiv in flt-loop.py). This sandbox has no Lean tree and no
+        # tooling commits, so here every movement of main IS a real one and
+        # plain equality is the faithful answer.
+        "snapshot_current": bool(snap) and snap["sha"] == main,
+        "audit_current": aud is not None and aud == main,
         "queue1": {"audited": aud, "tasks": [t for t in q1 if t.strip()]},
         "queue2": [t for t in (rd(DIR / "queue2", "") or "").splitlines() if t.strip()],
         "batch": [b for b in (rd(DIR / "batch", "") or "").splitlines() if b.strip()],

@@ -67,34 +67,38 @@ on `F̄`-points" is proven here once and for all.
 
 ## The open leaves
 
-**Regenerated at release 8 from a comment-stripped scan of this file, not
-merged as prose.**  `flat_mulByNat` and `isDominant_of_isFinite_endo` and
-`irreducibleSpace_of_smooth_geometricallyConnected` are PROVEN; what is left
-is six pieces of commutative algebra and one sheaf-theoretic statement, none
-of them about abelian schemes:
+**Regenerated 2026-07-29 from a comment-stripped `sorry`-token scan of this
+file, not merged as prose.**  The scan reports FIVE `sorry` tokens in five
+named top-level declarations — no anonymous inner `have … := sorry`, so the
+direct count and the `declaration uses 'sorry'` warning count agree at 5.
 
-* `lTensor_subtype_injective_of_pow_le` — the local flatness criterion's
-  tensor step;
-* `nonempty_flatNoetherianStage_of_essFinitePresentation` — descent of
-  flatness to a noetherian stage.  **PROVEN 2026-07-28** over four new leaves:
-  `nonempty_noetherianApproxSystem_of_essFinitePresentation` (Stacks 10.127.11 +
-  10.127.13), `exists_flatBase_index_of_noetherianApproxSystem` and
-  `exists_flatFibre_index_of_noetherianApproxSystem` (Stacks 10.128.3, twice),
-  and `exists_isLocalization_tensor_of_noetherianApproxSystem` (the localization
-  seam at the colimit).  See the section note "THE CUT OF THE APPROXIMATION
-  LEAF, TAKEN 2026-07-28".  **The two 10.128.3 leaves are themselves PROVEN
-  (2026-07-28)**, over the shared two-tower engine
-  `exists_flat_index_of_isNoetherianFlatDescentSystem` (the one statement of
-  10.128.3, consumed twice) plus the fibre-system verification
-  `isNoetherianFlatDescentSystem_fibre`, which is PROVEN over
-  `exists_mem_fibreIdealMid`, `exists_mem_fibreIdealTot` and
-  `exists_isLocalization_fibre`.  See the section note "10.128.3 IS ONE LEMMA
-  APPLIED TWICE";
-* `topologicalKrullDim_lt_top_of_isProper` — Noether normalisation;
-* `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
-* `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
-* `exists_isAmpleSheaf_cube_of_isAlgClosed` — the theorem of the cube's
-  ample-sheaf output.
+The whole local-criterion-of-flatness block is now CLOSED.  In particular
+`lTensor_subtype_injective_of_pow_le`, `flat_of_rTensor_injective_of_flat_quotientMap`
+(Stacks 10.99.10), `flat_quotientMap_pow_of_flat_quotientMap` and
+`nonempty_flatNoetherianStage_of_essFinitePresentation` are all PROVEN, as are
+`topologicalKrullDim_lt_top_of_isProper` (Noether normalisation),
+`height_map_le_of_isFinite` (Cohen–Seidenberg, `@[stacks 00OK]`),
+`isIntegrallyClosed_of_isRegularRing`, `exists_isAmpleSheaf_cube_of_isAlgClosed`,
+`flat_mulByNat`, `isDominant_of_isFinite_endo` and
+`irreducibleSpace_of_smooth_geometricallyConnected`.  Every one of those was
+listed here as OPEN until 2026-07-29; the list had gone stale by five bullets,
+which is exactly the phantom-dispatch failure mode.  Do not trust this list —
+re-run the scan.
+
+What is genuinely open (declaration, and what it is):
+
+* `nonempty_noetherianApproxSystem_of_baseSystem` — the noetherian
+  approximation system built from a base system;
+* `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`
+  and `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` — the
+  two remaining steps of the 10.128.3 two-tower engine
+  `exists_flat_index_of_isNoetherianFlatDescentSystem`.  See the section note
+  "10.128.3 IS ONE LEMMA APPLIED TWICE";
+* `exists_isAmpleSheaf_symmetric_cube` — the two-variable symmetric cube, the
+  primitive under BOTH `exists_isAmpleSheaf_cube_of_isAlgClosed` here and
+  `exists_cubeModel_of_abelianScheme` in `ModularCurve/X0.lean`;
+* `nonempty_modPullback_mulByNat_of_cube` — the theorem-of-the-cube pullback
+  identity.
 -/
 module
 
@@ -1456,8 +1460,10 @@ STARTING — it is the SAME theorem at a principal ideal, and it already carries
 worked Lean attack.**  `flat_quotientMap_pow_of_flat_quotientMap` there is
 precisely this leaf specialised to `I = (t)` with `t` a nonzerodivisor on both
 rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly regularity of `φ t` on
-`A`, which is why it appears as a hypothesis rather than as a `Tor` statement),
-and it is open with the same owner-less status.  More usefully,
+`A`, which is why it appears as a hypothesis rather than as a `Tor` statement).
+It is **PROVEN** (see the paragraph below); this sentence used to say it was
+"open with the same owner-less status", which went stale on 2026-07-27 and was
+corrected 2026-07-29.  More usefully,
 `mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring works out the
 change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
 and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
@@ -1546,10 +1552,11 @@ theorem ker_lTensor_subtype_le_range_lTensor_comap_pow {B A : Type u}
       (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L))) x = 0
   rw [LinearMap.lTensor_comp, LinearMap.comp_apply, h1, map_zero]
 
-/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN**
-2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; the
-section note "10.99.10 CUT" above is the design decision that produced it.  Cut
-out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
+/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN
+SORRY-FREE**.  Cut out of `flat_of_flat_of_flat_quotientMap_noetherian` on
+2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; that leaf
+was itself closed the same day, so nothing under this theorem is open.  The
+section note "10.99.10 CUT" above is the design decision that produced it.)
 
 *Let `B → A` be a local homomorphism of NOETHERIAN local rings and `I ⊆ 𝔪_B`
 an ideal, `J = I·A`.  If `Tor₁^B(B/I, A) = 0` and `A/J` is flat over `B/I`,
@@ -2638,8 +2645,666 @@ theorem nonempty_noetherianLocalBaseSystem (R : Type u) [CommRing R] [IsLocalRin
      base_surj := NoetherianApproxBase.baseStage_surj
      base_sep := NoetherianApproxBase.baseStage_sep }⟩
 
+/-! ### 10.127.13 IS 10.127.11 APPLIED TWICE — the one-rung abstraction, 2026-07-28
+
+**SECTION NOTE for `NoetherianLocalExtSystem` and the six declarations under it.**
+
+`nonempty_noetherianApproxSystem_of_baseSystem`'s own docstring says what 10.127.13
+is: "10.127.11 applied twice, once to `R → S` and once to `R → S'`, on a common
+index set".  Until now that sentence was prose inside a single opaque leaf; the
+block below makes it the actual shape of the Lean proof, in exactly the way the
+section note "10.128.3 IS ONE LEMMA APPLIED TWICE" below does for the flatness
+half.  Nothing here is new mathematics — it is the bookkeeping that lets the ONE
+piece of real content be stated once and consumed twice.
+
+**THE ONE RUNG.**  `NoetherianLocalExtSystem bs g` is, field for field, the `Mid`
+half of `NoetherianApproxSystem` stated RELATIVE to a given base tower `bs` for
+`R`: the tower `S_λ`, its Noetherianity and locality, `R_λ → S_λ` and its
+naturality, the cocone `S_λ → S` with the two colimit conditions, and
+`isLocalizationMidT`.  The seam is the same one that produced
+`NoetherianLocalBaseSystem`, taken one level up.
+
+**WHY IT COMPOSES: `toBaseSystem`.**  The `Mid` tower of a rung is again a base
+system — for `B` this time (`NoetherianLocalExtSystem.toBaseSystem`, a pure
+renaming: `Base := Mid`, `baseT := midT`, `baseToR := midToB`).  So a second rung
+can be built ON TOP of the first, and its `Base` tower is LITERALLY the first
+rung's `Mid` tower rather than some other tower for `B` that would then have to be
+compared.  That identification is what makes the three-tower assembly below a
+matter of naming fields, and it is why the rung is stated relative to a base
+system instead of carrying its own index set: two independently-constructed towers
+for `B` could not be glued at all.
+
+**WHY THE INDEX SET SHRINKS: `restrict`.**  A rung cannot exist over ALL of `bs`.
+A model `S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` needs `R_λ` to contain the coefficients of a
+fixed finite presentation of `B` over `R`, which holds only from some `i₀` on — so
+`exists_noetherianLocalExtSystem_of_essFinitePresentation` delivers `i₀` and a rung
+over `bs.restrict i₀`, precisely the "take `i₀` large enough, then work over the
+RESTRICTED system" step that the leaf's docstring already prescribed.
+`NoetherianLocalBaseSystem.restrict` (PROVEN) is that restriction, and
+`NoetherianLocalExtSystem.restrict` (PROVEN) carries the FIRST rung down to the
+index set the SECOND one lives on, which is the only reindexing the assembly needs.
+
+**THE THIRD LEAF, AND WHY IT IS NOT AVOIDABLE HERE.**  The second rung is built
+for `v : B →+* A` over the first rung's tower, so it needs `EssFinitePresentation v`
+— and the hypotheses of 00R7 give `EssFinitePresentation (v.comp g)` and
+`EssFinitePresentation g` instead.  Deducing the first from the other two is
+`essFinitePresentation_of_essFinitePresentation_comp`, the essential analogue of
+[Stacks 00F4] = mathlib's `RingHom.FinitePresentation.of_comp_finiteType`.  It is a
+statement about ring maps alone, with no towers in it, and a full proof route is in
+its docstring.  Rebuilding the second rung from scratch against the composite
+hypothesis — the alternative — would duplicate the whole of 10.127.11 and is
+strictly more work.
+
+**AXIS SEARCHED.**  Ways to cut the leaf so that the 10.127.11 construction is
+written ONCE.  NOT searched: whether the construction itself decomposes further
+(it does — the `HasCoeffs` model and the localization at the contracted prime are
+visibly separable, and the SURVEY in the construction leaf's docstring says where
+to start).  Also NOT searched: whether `restrict` can be avoided by making the rung
+carry its own cofinal index map; that is a strictly more general datum and nothing
+here would consume the extra generality.
+
+**THE CHECK THAT WOULD REFUTE THIS CUT.**  Exhibit a base system `bs` for `R` and
+an essentially-finitely-presented local `g : R →+* B` for which no `i₀` admits a
+rung over `bs.restrict i₀`, under 00R7's hypotheses.  That is exactly a
+counterexample to 10.127.11, since `bs.restrict i₀` is again a base system and the
+rung's fields are 10.127.11's conclusions for `R → S` verbatim. -/
+
+/-- **RESTRICTION OF A BASE TOWER TO A COFINAL PIECE** (PROVEN).  `{i | i₀ ≤ i}`
+is again a filtered system of Noetherian local rings with colimit `R`.
+
+This is the step that the approximation leaf's docstring names in as many words —
+"take `i₀ : _bs.Λ` large enough … and then work over the RESTRICTED system
+`{i | _bs.le i₀ i}`, which is again a base system".  Cofinality is what keeps the
+two colimit conditions: `base_surj` composes `bs.base_surj` with one use of
+`bs.directed` to push the witness above `i₀`, and `base_sep` needs nothing at all,
+because the `j` that `bs.base_sep` returns is automatically `≥ i₀`. -/
+def NoetherianLocalBaseSystem.restrict {R : Type u} [CommRing R]
+    (bs : NoetherianLocalBaseSystem R) (i₀ : bs.Λ) : NoetherianLocalBaseSystem R where
+  Λ := {i : bs.Λ // bs.le i₀ i}
+  nonemptyΛ := ⟨⟨i₀, bs.le_rfl i₀⟩⟩
+  le := fun i j => bs.le i.1 j.1
+  le_rfl := fun i => bs.le_rfl i.1
+  le_trans' := fun h₁ h₂ => bs.le_trans' h₁ h₂
+  directed := fun i j => by
+    obtain ⟨k, hk1, hk2⟩ := bs.directed i.1 j.1
+    exact ⟨⟨k, bs.le_trans' i.2 hk1⟩, hk1, hk2⟩
+  Base := fun i => bs.Base i.1
+  isLocalRingBase := fun i => bs.isLocalRingBase i.1
+  isNoetherianBase := fun i => bs.isNoetherianBase i.1
+  baseT := fun h => bs.baseT h
+  baseToR := fun i => bs.baseToR i.1
+  baseT_comp := fun h₁ h₂ => bs.baseT_comp h₁ h₂
+  comm_baseToR := fun h => bs.comm_baseToR h
+  isLocalHomBaseT := fun h => bs.isLocalHomBaseT h
+  isLocalHomBaseToR := fun i => bs.isLocalHomBaseToR i.1
+  base_surj := fun x => by
+    obtain ⟨i, y, hy⟩ := bs.base_surj x
+    obtain ⟨k, hik, hi₀k⟩ := bs.directed i i₀
+    exact ⟨⟨k, hi₀k⟩, bs.baseT hik y, by
+      rw [← hy]; exact DFunLike.congr_fun (bs.comm_baseToR hik) y⟩
+  base_sep := fun i x y hxy => by
+    obtain ⟨j, h, hj⟩ := bs.base_sep i.1 x y hxy
+    exact ⟨⟨j, bs.le_trans' i.2 h⟩, h, hj⟩
+
+/-- **ONE RUNG OF 10.127.11**: over a GIVEN base tower `bs` for `R`, a tower of
+Noetherian local stages for a local `g : R →+* B`, with the transition maps
+localizations after base change.
+
+Field for field this is the `Mid` half of `NoetherianApproxSystem` — `Mid`,
+`isLocalRingMid`, `isNoetherianMid`, `baseToMid`, `isLocalHomBaseToMid`, `midT`,
+`midT_comp`, `comm_baseT`, `midToB`, `comm_baseMid`, `comm_midToB`,
+`isLocalHomMidT`, `isLocalHomMidToB`, `mid_surj`, `mid_sep`,
+`isLocalizationMidT` — with the `Base` half replaced by the parameter `bs`.  Read
+the section note above for what it is for.
+
+**FAITHFULNESS.**  Every field is one of `NoetherianApproxSystem`'s with `Base`
+read off `bs`, so a rung is no stronger than what 10.127.11 produces for `R → S`,
+and `nonempty_noetherianApproxSystem_of_baseSystem` below is true if 10.127.11 is.
+**NON-DEGENERACY**: `Mid = Base` (with `baseToMid = id`, `midToB = g ∘ baseToR`)
+satisfies every structural field and fails `mid_surj` as soon as `g` is not
+surjective, so the datum is not free; and it cannot be made free by shrinking `Λ`,
+since `bs`'s own `Λ` is what indexes it. -/
+structure NoetherianLocalExtSystem {R B : Type u} [CommRing R] [CommRing B]
+    (bs : NoetherianLocalBaseSystem R) (g : R →+* B) where
+  /-- `S_λ`, the stage of `S = B`. -/
+  Mid : bs.Λ → CommRingCat.{u}
+  /-- Each `S_λ` is local. -/
+  isLocalRingMid : ∀ i, IsLocalRing (Mid i)
+  /-- Each `S_λ` is Noetherian. -/
+  isNoetherianMid : ∀ i, IsNoetherianRing (Mid i)
+  /-- `R_λ → S_λ`. -/
+  baseToMid : ∀ i, bs.Base i →+* Mid i
+  /-- `R_λ → S_λ` is local. -/
+  isLocalHomBaseToMid : ∀ i, IsLocalHom (baseToMid i)
+  /-- The transition map `S_λ → S_μ`. -/
+  midT : ∀ {i j}, bs.le i j → (Mid i →+* Mid j)
+  /-- `midT` is functorial. -/
+  midT_comp : ∀ {i j k} (h₁ : bs.le i j) (h₂ : bs.le j k),
+    (midT h₂).comp (midT h₁) = midT (bs.le_trans' h₁ h₂)
+  /-- The vertical maps are natural in `Λ`. -/
+  comm_baseT : ∀ {i j} (h : bs.le i j),
+    (baseToMid j).comp (bs.baseT h) = (midT h).comp (baseToMid i)
+  /-- The cocone map `S_λ → S`. -/
+  midToB : ∀ i, Mid i →+* B
+  /-- The square `R_λ → S_λ → S` / `R_λ → R → S` commutes. -/
+  comm_baseMid : ∀ i, (midToB i).comp (baseToMid i) = g.comp (bs.baseToR i)
+  /-- `midToB` is a cocone. -/
+  comm_midToB : ∀ {i j} (h : bs.le i j), (midToB j).comp (midT h) = midToB i
+  /-- The transitions are local. -/
+  isLocalHomMidT : ∀ {i j} (h : bs.le i j), IsLocalHom (midT h)
+  /-- The cocone maps are local. -/
+  isLocalHomMidToB : ∀ i, IsLocalHom (midToB i)
+  /-- `B` is the colimit, half one. -/
+  mid_surj : ∀ x : B, ∃ i, ∃ y : Mid i, midToB i y = x
+  /-- `B` is the colimit, half two. -/
+  mid_sep : ∀ i (x y : Mid i), midToB i x = midToB i y →
+    ∃ j, ∃ h : bs.le i j, midT h x = midT h y
+  /-- **10.127.13(5)**: `S_μ` is a localization of `R_μ ⊗_{R_λ} S_λ`. -/
+  isLocalizationMidT : ∀ {i j} (h : bs.le i j),
+    letI : Algebra (bs.Base i) (Mid i) := (baseToMid i).toAlgebra
+    letI : Algebra (bs.Base i) (bs.Base j) := (bs.baseT h).toAlgebra
+    letI : Algebra (bs.Base i) (Mid j) := ((baseToMid j).comp (bs.baseT h)).toAlgebra
+    letI : Algebra (bs.Base j) (Mid j) := (baseToMid j).toAlgebra
+    letI : Algebra (Mid i) (Mid j) := (midT h).toAlgebra
+    haveI : IsScalarTower (bs.Base i) (bs.Base j) (Mid j) :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (bs.Base i) (Mid i) (Mid j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (comm_baseT h) x
+    letI : Algebra (bs.Base j ⊗[bs.Base i] Mid i) (Mid j) :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (bs.Base i) (bs.Base j) (Mid j))
+        (IsScalarTower.toAlgHom (bs.Base i) (Mid i) (Mid j))
+        fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (bs.Base j ⊗[bs.Base i] Mid i), IsLocalization W (Mid j)
+
+/-- **A RUNG'S `Mid` TOWER IS ITSELF A BASE TOWER, FOR `B`** (PROVEN) — the
+declaration that makes "10.127.11 applied twice" composable.
+
+Pure renaming: `Base := Mid`, `baseT := midT`, `baseToR := midToB`, and the nine
+remaining fields are the identically-named ones of the rung.  The index set and
+its order are `bs`'s unchanged, which is the point: the second rung's stages are
+indexed by the SAME `Λ` as the first rung's, so `Mid i → Tot i` is a map at one
+index and not a comparison between two unrelated towers. -/
+def NoetherianLocalExtSystem.toBaseSystem {R B : Type u} [CommRing R] [CommRing B]
+    {bs : NoetherianLocalBaseSystem R} {g : R →+* B} (e : NoetherianLocalExtSystem bs g) :
+    NoetherianLocalBaseSystem B where
+  Λ := bs.Λ
+  nonemptyΛ := bs.nonemptyΛ
+  le := bs.le
+  le_rfl := bs.le_rfl
+  le_trans' := bs.le_trans'
+  directed := bs.directed
+  Base := e.Mid
+  isLocalRingBase := e.isLocalRingMid
+  isNoetherianBase := e.isNoetherianMid
+  baseT := e.midT
+  baseToR := e.midToB
+  baseT_comp := e.midT_comp
+  comm_baseToR := e.comm_midToB
+  isLocalHomBaseT := e.isLocalHomMidT
+  isLocalHomBaseToR := e.isLocalHomMidToB
+  base_surj := e.mid_surj
+  base_sep := e.mid_sep
+
+/-- **A RUNG RESTRICTS ALONG `NoetherianLocalBaseSystem.restrict`** (PROVEN).
+
+The assembly below builds its first rung over `bs.restrict i₀` and its second over
+a further restriction above `j₀`; this carries the FIRST rung down to that smaller
+index set so that both rungs and the base tower are indexed by one type.  As in
+`NoetherianLocalBaseSystem.restrict`, only `mid_surj` does any work (one use of
+`bs.directed` to push a witness above `i₀`). -/
+def NoetherianLocalExtSystem.restrict {R B : Type u} [CommRing R] [CommRing B]
+    {bs : NoetherianLocalBaseSystem R} {g : R →+* B} (e : NoetherianLocalExtSystem bs g)
+    (i₀ : bs.Λ) : NoetherianLocalExtSystem (bs.restrict i₀) g where
+  Mid := fun i => e.Mid i.1
+  isLocalRingMid := fun i => e.isLocalRingMid i.1
+  isNoetherianMid := fun i => e.isNoetherianMid i.1
+  baseToMid := fun i => e.baseToMid i.1
+  isLocalHomBaseToMid := fun i => e.isLocalHomBaseToMid i.1
+  midT := fun h => e.midT h
+  midT_comp := fun h₁ h₂ => e.midT_comp h₁ h₂
+  comm_baseT := fun h => e.comm_baseT h
+  midToB := fun i => e.midToB i.1
+  comm_baseMid := fun i => e.comm_baseMid i.1
+  comm_midToB := fun h => e.comm_midToB h
+  isLocalHomMidT := fun h => e.isLocalHomMidT h
+  isLocalHomMidToB := fun i => e.isLocalHomMidToB i.1
+  mid_surj := fun x => by
+    obtain ⟨i, y, hy⟩ := e.mid_surj x
+    obtain ⟨k, hik, hi₀k⟩ := bs.directed i i₀
+    exact ⟨⟨k, hi₀k⟩, e.midT hik y, by
+      rw [← hy]; exact DFunLike.congr_fun (e.comm_midToB hik) y⟩
+  mid_sep := fun i x y hxy => by
+    obtain ⟨j, h, hj⟩ := e.mid_sep i.1 x y hxy
+    exact ⟨⟨j, bs.le_trans' i.2 h⟩, h, hj⟩
+  isLocalizationMidT := fun h => e.isLocalizationMidT h
+
+/-- **CANCELLATION FOR `EssFinitePresentation`: the essential analogue of
+[Stacks 00F4]** (SORRY LEAF; cut 2026-07-28 out of
+`nonempty_noetherianApproxSystem_of_baseSystem`).
+
+*If `R → A` is essentially of finite presentation and so is `R → B`, then
+`B → A` is essentially of finite presentation.*
+
+**WHY IT IS NEEDED.**  The assembly builds the `S'_λ` tower as a rung over the
+`S_λ` tower, i.e. for `v : B →+* A`, and 00R7 hands it `EssFinitePresentation` for
+`v.comp g` and for `g` instead.  There is no way round this that does not rebuild
+10.127.11 a second time; see the section note above.
+
+**THE NON-ESSENTIAL CASE IS IN THE PIN, AND IS THE ENGINE.**
+`RingHom.FinitePresentation.of_comp_finiteType` (in
+`Mathlib/RingTheory/FinitePresentation.lean`, verified present 2026-07-28) is
+exactly [Stacks 00F4]: `(g.comp f).FinitePresentation → f.FiniteType →
+g.FinitePresentation`.  What this leaf adds is the passage through the two
+localizations.
+
+**A FULL ROUTE, worked out at the cut and believed complete.**  Unfold both
+hypotheses: `A = M_A⁻¹T_A` with `R →+* T_A` of finite presentation, and
+`B = M_B⁻¹T_B` with `R →+* T_B` of finite presentation.
+
+1. *Lift `T_B → A` to a localization of `T_A`.*  `T_B` is finitely generated over
+   `R`, say by `y_1, …, y_n`; each image of `y_k` in `A` is a fraction
+   `t_k / m_k` with `t_k ∈ T_A`, `m_k ∈ M_A`.  `T_B` is finitely PRESENTED, so it
+   has finitely many relations `f_1, …, f_r`; each `f_l` evaluated at the chosen
+   fractions dies in `A`, hence is killed by some `m'_l ∈ M_A`.  Put
+   `m = (∏ m_k)(∏ m'_l)` and `T := (T_A)_m`.  Then there is an honest `R`-algebra
+   map `θ : T_B → T` whose composite with `T → A` is `T_B → B → A`, since two
+   `R`-algebra maps out of `T_B` agreeing on the `y_k` agree.  `T` is again of
+   finite presentation over `R` (a localization at one element) and `A = M⁻¹T` for
+   `M` the image of `M_A`.
+2. *`T` is of finite presentation over `T_B`.*  Apply
+   `RingHom.FinitePresentation.of_comp_finiteType` to `R → T_B → T`: `R → T` is of
+   finite presentation and `R → T_B` is of finite type.  **This is the only step
+   that is not formal, and it is the pin's lemma applied verbatim.**
+3. *Base change to `B`.*  `D := B ⊗_{T_B} T` is of finite presentation over `B`,
+   and `D` is the localization of `T` at the image of `M_B`.
+4. *`A` is a localization of `D`.*  The image of `M_B` in `A` consists of units
+   (elements of `M_B` become units in `B`, and ring maps preserve units), so
+   inverting `M_B` before `M` changes nothing: `A = M⁻¹T = (image of M)⁻¹D`.
+
+**FAITHFULNESS.**  The degenerate corners are TRUE rather than vacuous, so nothing
+is hiding in them: `A = 0` is witnessed by `T = B` with `M = B` itself (`0 ∈ M`, and
+`M⁻¹B = 0`); `v` bijective by `RingHom.FinitePresentation.of_bijective`; and when
+`B` is Noetherian the statement collapses to `EssFiniteType.of_comp` plus
+`RingHom.FinitePresentation.of_finiteType`, both in the pin.
+
+**`_hB` IS LOAD-BEARING** — the statement is FALSE without it, and the witness is
+worth recording because it is the first thing a prover will try to drop.  Take
+`R = ℤ`, `B = ℚ[x₁, x₂, x₃, …]` on countably many variables, `A = ℚ`, with
+`g : ℤ → B` the structure map and `v : B → ℚ` sending every `xᵢ` to `0`.  Then
+`v.comp g : ℤ → ℚ` IS essentially of finite presentation (`ℚ` is the localization
+of `ℤ` at `ℤ ∖ {0}`, so take `T = ℤ`), while `ℚ = B ⧸ (x₁, x₂, …)` is a quotient of
+`B` by an ideal that is not finitely generated and is a filtered colimit of the
+finitely presented `B ⧸ (x₁, …, xₙ)` rather than a localization of any one of them.
+`_hB` fails here exactly as it must: `B` is not even of finite type over `ℤ`.
+*(This counterexample is asserted, not machine-checked; a prover who needs it
+should verify the middle clause before relying on it.  The POSITIVE direction — the
+four-step route above — is what this leaf actually asks for.)* -/
+theorem essFinitePresentation_of_essFinitePresentation_comp {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A] {g : R →+* B} {v : B →+* A}
+    (_hA : EssFinitePresentation (v.comp g)) (_hB : EssFinitePresentation g) :
+    EssFinitePresentation v :=
+  sorry
+
+section IsLocalizationTensorComp
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+/-- **TRANSPORT `IsLocalization` ALONG A RING ISOMORPHISM OF THE SOURCE** (PROVEN).
+
+*If `Q` is the localization of `A'` at `V` along `φ`, and `e : A ≃+* A'`, then `Q` is
+the localization of `A` at `V.comap e` along `φ.comp e`.*
+
+Stated for BARE ring homomorphisms with `RingHom.toAlgebra` rather than for algebras,
+because that is the shape `exists_isLocalization_tensor_comp` below needs: there the
+source is replaced by an isomorphic tensor product and no `AlgEquiv` over a common base
+ring is available (see step 2 of that proof's docstring).
+
+Nothing deeper than the three `IsLocalization` fields transported one at a time; `e`
+being an isomorphism is what makes `surj` and `exists_of_eq` go both ways. -/
+theorem isLocalization_comap_of_ringEquiv {A A' Q : Type u} [CommRing A] [CommRing A']
+    [CommRing Q] (e : A ≃+* A') (φ : A' →+* Q) (V : Submonoid A')
+    (h : letI := φ.toAlgebra; IsLocalization V Q) :
+    letI := (φ.comp (e : A →+* A')).toAlgebra
+    IsLocalization (V.comap (e : A →+* A')) Q := by
+  letI : Algebra A' Q := φ.toAlgebra
+  letI : Algebra A Q := (φ.comp (e : A →+* A')).toAlgebra
+  have key : ∀ a : A, algebraMap A Q a = algebraMap A' Q (e a) := fun _ => rfl
+  refine ⟨fun y => ?_, fun z => ?_, fun {x y} hxy => ?_⟩
+  · rw [key]
+    exact IsLocalization.map_units (M := V) Q ⟨e y.1, y.2⟩
+  · obtain ⟨⟨x, v⟩, hx⟩ := IsLocalization.surj (M := V) z
+    refine ⟨⟨e.symm x, ⟨e.symm v.1, ?_⟩⟩, ?_⟩
+    · simp
+    · simpa [key] using hx
+  · rw [key, key] at hxy
+    obtain ⟨c, hc⟩ := IsLocalization.exists_of_eq (M := V) hxy
+    refine ⟨⟨e.symm c.1, ?_⟩, ?_⟩
+    · simp
+    · simpa using congrArg e.symm hc
+
+set_option maxHeartbeats 2000000 in
+/-- **A LOCALIZATION OF A LOCALIZATION, ACROSS TWO BASE CHANGES** (PROVEN 2026-07-30;
+cut 2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`).
+
+*Given a commuting ladder*
+```
+  R₀ --a₀--> S₀ --b₀--> T₀
+  |          |          |
+  f          p          q
+  v          v          v
+  R₁ --a₁--> S₁ --b₁--> T₁
+```
+*if `S₁` is a localization of `R₁ ⊗_{R₀} S₀` and `T₁` is a localization of
+`S₁ ⊗_{S₀} T₀`, then `T₁` is a localization of `R₁ ⊗_{R₀} T₀`.*
+
+This is `NoetherianApproxSystem`'s `isLocalizationTotBaseT` derived from
+`isLocalizationMidT` and `isLocalizationTotT` — the derivation that the structure's
+own docstring says is possible ("DERIVABLE from the previous two: a localization
+base-changes to a localization, and `S'_λ ⊗_{R_λ} R_μ ≅ S'_λ ⊗_{S_λ} (S_λ ⊗_{R_λ}
+R_μ)`") and that had to be carried out somewhere.  Here it is carried out ONCE, at
+the level of six bare rings, so the assembly can apply it at every `i ≤ j`.
+
+**THE `letI` BLOCKS ARE NOT DECORATION.**  They are copied verbatim from the three
+structure fields, in the same order and built from the same maps, so that the
+hypotheses and the conclusion are SYNTACTICALLY the fields at
+`R₀ = Base i, R₁ = Base j, S₀ = Mid i, S₁ = Mid j, T₀ = Tot i, T₁ = Tot j` and the
+application below needs no transport.  Changing how an `Algebra` instance is
+spelled here will break that match even if it stays defeq on paper.
+
+**THE PROOF, IN THREE STEPS.**  Write `P := R₁ ⊗[R₀] S₀`, `A := R₁ ⊗[R₀] T₀`,
+`Q := S₁ ⊗[S₀] T₀` and `PT := P ⊗[S₀] T₀`.
+
+1. *Localization commutes with base change.*  This is the only mathematical input, and
+   it is one mathlib lemma: `IsLocalization.tensorProduct_tensorProduct`
+   (`Mathlib/RingTheory/Localization/BaseChange.lean`) at base `S₀` with `A := P`,
+   `B := S₁`, `S := T₀` says `Q` is a localization of `PT` at
+   `Algebra.algebraMapSubmonoid PT W₁`.  The lemma takes `Algebra PT Q` as an
+   *instance argument* plus a compatibility hypothesis, so the instance is supplied
+   here — as `Algebra.TensorProduct.map (IsScalarTower.toAlgHom S₀ P S₁) (AlgHom.id S₀ T₀)`
+   — and no diamond can form; the hypothesis is `by ext t; simp`.
+   (`IsLocalization.tensor`, which the cut note originally pointed at, is the
+   `IsLocalization.Away` special case and is NOT the lemma wanted.)
+2. *`A ≃+* PT`.*  Built by hand rather than out of `Algebra.TensorProduct.cancelBaseChange`
+   and two `Algebra.TensorProduct.comm`s, because those three equivalences have no common
+   base ring here — `cancelBaseChange`'s shape is `X ⊗[S] (S ⊗[R] Y)`, with the base on the
+   *inner left*, and `PT` has it on the inner right.  So: the forward map is the
+   `R₀`-algebra map `r ⊗ t ↦ (r ⊗ 1) ⊗ t`, the backward map the `S₀`-algebra map
+   `(r ⊗ s) ⊗ t ↦ r ⊗ (b₀ s · t)`, and each round trip is one
+   `Algebra.TensorProduct.ringHom_ext`.  The only content in the round trips is that `S₀`
+   may be slid between the two tensor slots (`hslide`), which is
+   `Algebra.TensorProduct.algebraMap_apply` composed with `algebraMap_apply'`.
+3. *Transport and compose.*  `isLocalization_comap_of_ringEquiv` above moves step 1 from
+   source `PT` to source `A`, and `IsLocalization.localization_localization_isLocalization`
+   composes that with `_h₂` at `localizationLocalizationSubmodule`.  The scalar tower
+   `A → Q → T₁` it needs is exactly the claim that the goal's own
+   `Algebra (R₁ ⊗[R₀] T₀) T₁` instance factors through `Q`, and that is checked on the two
+   tensor generators — which is where the "compatibility with the *specific* instance the
+   goal names" worry recorded at the cut is discharged.
+
+**THE THREE INSTANCE TRAPS, recorded because each presents as a missing theory and is
+not one.**
+
+* The `S₀`-algebra structure on `P` is not global: it is
+  `Algebra.TensorProduct.rightAlgebra`, which mathlib deliberately keeps scoped, so the
+  whole block sits inside a section under `attribute [local instance]`.
+* **Do NOT supply `Algebra P Q` by hand.**  Mathlib's `Algebra.TensorProduct.leftAlgebra`
+  already gives it from `Algebra P S₁` and the tower `S₀ → P → S₁`, and its `SMul` *is*
+  `TensorProduct.leftHasSMul` — the very instance typeclass search picks for `SMul P Q`.
+  A hand-rolled `RingHom.toAlgebra` version has a different, merely extensionally equal,
+  `SMul`, and then `IsScalarTower P PT Q` cannot be produced by
+  `IsScalarTower.of_algebraMap_eq` at all: the instance arguments do not unify, and the
+  error names the SMul instances rather than anything mathematical.
+* For the same reason the two towers `IsScalarTower R₀ R₀ PT` and `IsScalarTower S₀ S₀ A`
+  that `Algebra.TensorProduct.lift` demands are given as `⟨fun x y z => mul_smul x y z⟩`,
+  which adapts to whichever `SMul` search happens to find, rather than through any
+  `Algebra`-flavoured constructor.
+
+**FAITHFULNESS.**  The conclusion is one of 10.127.11's own conclusions applied to
+`R → S'` and is implied by the two hypotheses, so it cannot be stronger than them;
+and it is not vacuous — take every ring equal and every map the identity, and the
+witness is `⊤`.  The two commutation hypotheses are load-bearing: without `hsq₁`
+the `IsScalarTower R₀ S₀ S₁` needed to form `R₁ ⊗[R₀] S₀ → S₁` does not exist, and
+without `hsq₂` the same fails one level up, so neither can be dropped even in
+statement. -/
+theorem exists_isLocalization_tensor_comp
+    {R₀ R₁ S₀ S₁ T₀ T₁ : Type u} [CommRing R₀] [CommRing R₁] [CommRing S₀] [CommRing S₁]
+    [CommRing T₀] [CommRing T₁]
+    (f : R₀ →+* R₁) (a₀ : R₀ →+* S₀) (a₁ : R₁ →+* S₁) (p : S₀ →+* S₁)
+    (b₀ : S₀ →+* T₀) (b₁ : S₁ →+* T₁) (q : T₀ →+* T₁)
+    (hsq₁ : a₁.comp f = p.comp a₀)
+    (hsq₂ : b₁.comp p = q.comp b₀)
+    (_h₁ :
+      letI : Algebra R₀ S₀ := a₀.toAlgebra
+      letI : Algebra R₀ R₁ := f.toAlgebra
+      letI : Algebra R₀ S₁ := (a₁.comp f).toAlgebra
+      letI : Algebra R₁ S₁ := a₁.toAlgebra
+      letI : Algebra S₀ S₁ := p.toAlgebra
+      haveI : IsScalarTower R₀ R₁ S₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower R₀ S₀ S₁ :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₁ x
+      letI : Algebra (R₁ ⊗[R₀] S₀) S₁ :=
+        (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ S₁)
+          (IsScalarTower.toAlgHom R₀ S₀ S₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+      ∃ W : Submonoid (R₁ ⊗[R₀] S₀), IsLocalization W S₁)
+    (_h₂ :
+      letI : Algebra S₀ T₀ := b₀.toAlgebra
+      letI : Algebra S₀ S₁ := p.toAlgebra
+      letI : Algebra S₀ T₁ := (b₁.comp p).toAlgebra
+      letI : Algebra S₁ T₁ := b₁.toAlgebra
+      letI : Algebra T₀ T₁ := q.toAlgebra
+      haveI : IsScalarTower S₀ S₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower S₀ T₀ T₁ :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₂ x
+      letI : Algebra (S₁ ⊗[S₀] T₀) T₁ :=
+        (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom S₀ S₁ T₁)
+          (IsScalarTower.toAlgHom S₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+      ∃ W : Submonoid (S₁ ⊗[S₀] T₀), IsLocalization W T₁) :
+    letI : Algebra R₀ T₀ := (b₀.comp a₀).toAlgebra
+    letI : Algebra R₀ R₁ := f.toAlgebra
+    letI : Algebra R₀ T₁ := (b₁.comp (a₁.comp f)).toAlgebra
+    letI : Algebra R₁ T₁ := (b₁.comp a₁).toAlgebra
+    letI : Algebra T₀ T₁ := q.toAlgebra
+    haveI : IsScalarTower R₀ R₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower R₀ T₀ T₁ :=
+      IsScalarTower.of_algebraMap_eq fun x =>
+        (congrArg b₁ (DFunLike.congr_fun hsq₁ x)).trans (DFunLike.congr_fun hsq₂ (a₀ x))
+    letI : Algebra (R₁ ⊗[R₀] T₀) T₁ :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ T₁)
+        (IsScalarTower.toAlgHom R₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (R₁ ⊗[R₀] T₀), IsLocalization W T₁ := by
+  -- ## The instance blocks, transcribed from the two hypotheses and the conclusion
+  letI algR₀S₀ : Algebra R₀ S₀ := a₀.toAlgebra
+  letI algR₀R₁ : Algebra R₀ R₁ := f.toAlgebra
+  letI algR₀S₁ : Algebra R₀ S₁ := (a₁.comp f).toAlgebra
+  letI algR₁S₁ : Algebra R₁ S₁ := a₁.toAlgebra
+  letI algS₀S₁ : Algebra S₀ S₁ := p.toAlgebra
+  haveI towR₀R₁S₁ : IsScalarTower R₀ R₁ S₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towR₀S₀S₁ : IsScalarTower R₀ S₀ S₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₁ x
+  letI algPS₁ : Algebra (R₁ ⊗[R₀] S₀) S₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ S₁)
+      (IsScalarTower.toAlgHom R₀ S₀ S₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  letI algS₀T₀ : Algebra S₀ T₀ := b₀.toAlgebra
+  letI algS₀T₁ : Algebra S₀ T₁ := (b₁.comp p).toAlgebra
+  letI algS₁T₁ : Algebra S₁ T₁ := b₁.toAlgebra
+  letI algT₀T₁ : Algebra T₀ T₁ := q.toAlgebra
+  haveI towS₀S₁T₁ : IsScalarTower S₀ S₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towS₀T₀T₁ : IsScalarTower S₀ T₀ T₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq₂ x
+  letI algQT₁ : Algebra (S₁ ⊗[S₀] T₀) T₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom S₀ S₁ T₁)
+      (IsScalarTower.toAlgHom S₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  letI algR₀T₀ : Algebra R₀ T₀ := (b₀.comp a₀).toAlgebra
+  letI algR₀T₁ : Algebra R₀ T₁ := (b₁.comp (a₁.comp f)).toAlgebra
+  letI algR₁T₁ : Algebra R₁ T₁ := (b₁.comp a₁).toAlgebra
+  haveI towR₀R₁T₁ : IsScalarTower R₀ R₁ T₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towR₀T₀T₁ : IsScalarTower R₀ T₀ T₁ :=
+    IsScalarTower.of_algebraMap_eq fun x =>
+      (congrArg b₁ (DFunLike.congr_fun hsq₁ x)).trans (DFunLike.congr_fun hsq₂ (a₀ x))
+  letI algAT₁ : Algebra (R₁ ⊗[R₀] T₀) T₁ :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom R₀ R₁ T₁)
+      (IsScalarTower.toAlgHom R₀ T₀ T₁) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  haveI towR₀S₀T₀ : IsScalarTower R₀ S₀ T₀ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨W₁, hW₁⟩ := _h₁
+  obtain ⟨W₂, hW₂⟩ := _h₂
+  haveI : IsLocalization W₁ S₁ := hW₁
+  haveI : IsLocalization W₂ T₁ := hW₂
+  -- ## `S₀ → R₁ ⊗[R₀] S₀ → S₁` is the structure map `p`
+  haveI towS₀PS₁ : IsScalarTower S₀ (R₁ ⊗[R₀] S₀) S₁ :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show p x = Algebra.TensorProduct.lift _ _ _ ((1 : R₁) ⊗ₜ[R₀] x)
+      simp
+      rfl
+  -- ## The base-change square `P ⊗[S₀] T₀ → S₁ ⊗[S₀] T₀`
+  letI algPTQ : Algebra ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀) :=
+    (Algebra.TensorProduct.map (IsScalarTower.toAlgHom S₀ (R₁ ⊗[R₀] S₀) S₁)
+      (AlgHom.id S₀ T₀)).toRingHom.toAlgebra
+  haveI towPPTQ :
+      IsScalarTower (R₁ ⊗[R₀] S₀) ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀) := by
+    exact @IsScalarTower.of_algebraMap_eq (R₁ ⊗[R₀] S₀) ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀)
+      (S₁ ⊗[S₀] T₀) _ _ _ _ _ _
+      (fun x => by simp [RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.algebraMap_def])
+  -- ## LOCALIZATION COMMUTES WITH BASE CHANGE (the mathematical core)
+  haveI hcore : IsLocalization
+      (Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁) (S₁ ⊗[S₀] T₀) :=
+    IsLocalization.tensorProduct_tensorProduct S₀ T₀ W₁ S₁
+      (by ext t; simp [RingHom.algebraMap_toAlgebra])
+  -- ## `R₁ ⊗[R₀] T₀ ≃+* (R₁ ⊗[R₀] S₀) ⊗[S₀] T₀`
+  letI algS₀A : Algebra S₀ (R₁ ⊗[R₀] T₀) :=
+    ((algebraMap T₀ (R₁ ⊗[R₀] T₀)).comp b₀).toAlgebra
+  haveI towR₀R₀PT : IsScalarTower R₀ R₀ ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    ⟨fun x y z => mul_smul x y z⟩
+  haveI towS₀S₀A : IsScalarTower S₀ S₀ (R₁ ⊗[R₀] T₀) := ⟨fun x y z => mul_smul x y z⟩
+  -- `S₀` may be pushed from the `T₀` slot of `P ⊗[S₀] T₀` into the `S₀` slot of `P`
+  have hslide : ∀ s : S₀, (1 : R₁ ⊗[R₀] S₀) ⊗ₜ[S₀] (b₀ s)
+      = ((1 : R₁) ⊗ₜ[R₀] s) ⊗ₜ[S₀] (1 : T₀) := fun s => by
+    rw [show ((1 : R₁) ⊗ₜ[R₀] s) = algebraMap S₀ (R₁ ⊗[R₀] S₀) s from rfl,
+      show b₀ s = algebraMap S₀ T₀ s from rfl,
+      ← Algebra.TensorProduct.algebraMap_apply,
+      ← Algebra.TensorProduct.algebraMap_apply']
+  -- the same identity with `(1 : R₁ ⊗[R₀] S₀)` in the form `simp` normalizes it to
+  have hslide' : ∀ s : S₀, ((1 : R₁) ⊗ₜ[R₀] (1 : S₀)) ⊗ₜ[S₀] (b₀ s)
+      = ((1 : R₁) ⊗ₜ[R₀] s) ⊗ₜ[S₀] (1 : T₀) := fun s => hslide s
+  set fwd : (R₁ ⊗[R₀] T₀) →ₐ[R₀] ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    Algebra.TensorProduct.lift
+      { toRingHom := (Algebra.TensorProduct.includeLeftRingHom (R := S₀)
+          (A := R₁ ⊗[R₀] S₀) (B := T₀)).comp
+          (Algebra.TensorProduct.includeLeftRingHom (R := R₀) (A := R₁) (B := S₀))
+        commutes' := by intro r; simp [Algebra.TensorProduct.algebraMap_def] }
+      { toRingHom := (Algebra.TensorProduct.includeRight (R := S₀)
+          (A := R₁ ⊗[R₀] S₀) (B := T₀)).toRingHom
+        commutes' := by
+          intro r
+          show (1 : R₁ ⊗[R₀] S₀) ⊗ₜ[S₀] (b₀ (a₀ r)) = _
+          rw [hslide (a₀ r), Algebra.TensorProduct.algebraMap_apply,
+            Algebra.TensorProduct.algebraMap_apply']
+          rfl }
+      (fun _ _ => Commute.all _ _) with hfwd
+  set bwd : ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) →ₐ[S₀] (R₁ ⊗[R₀] T₀) :=
+    Algebra.TensorProduct.lift
+      { toRingHom := (Algebra.TensorProduct.map (AlgHom.id R₀ R₁)
+          (IsScalarTower.toAlgHom R₀ S₀ T₀)).toRingHom
+        commutes' := by intro s; simp [RingHom.algebraMap_toAlgebra] }
+      { toRingHom := algebraMap T₀ (R₁ ⊗[R₀] T₀)
+        commutes' := fun s => rfl }
+      (fun _ _ => Commute.all _ _) with hbwd
+  have hbf : bwd.toRingHom.comp fwd.toRingHom = RingHom.id (R₁ ⊗[R₀] T₀) := by
+    ext x <;> simp [hfwd, hbwd, RingHom.algebraMap_toAlgebra]
+  have hfb : fwd.toRingHom.comp bwd.toRingHom =
+      RingHom.id ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) := by
+    ext x <;>
+      simp [hfwd, hbwd, RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.one_def,
+        hslide']
+  set ε : (R₁ ⊗[R₀] T₀) ≃+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) :=
+    { fwd.toRingHom with
+      invFun := bwd
+      left_inv := fun x => DFunLike.congr_fun hbf x
+      right_inv := fun x => DFunLike.congr_fun hfb x }
+  -- ## Transport the core along `ε`, then compose the two localizations
+  letI algAQ : Algebra (R₁ ⊗[R₀] T₀) (S₁ ⊗[S₀] T₀) :=
+    ((algebraMap ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀)).comp
+      (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))).toAlgebra
+  haveI hQ : IsLocalization
+      ((Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁).comap
+        (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))) (S₁ ⊗[S₀] T₀) :=
+    isLocalization_comap_of_ringEquiv ε
+      (algebraMap ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) (S₁ ⊗[S₀] T₀))
+      (Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁) hcore
+  have hεapp : ∀ a : R₁ ⊗[R₀] T₀, ε a = fwd a := fun _ => rfl
+  haveI towAQT₁ : IsScalarTower (R₁ ⊗[R₀] T₀) (S₁ ⊗[S₀] T₀) T₁ := by
+    apply IsScalarTower.of_algebraMap_eq'
+    ext x <;> simp [hεapp, hfwd, RingHom.algebraMap_toAlgebra]
+  exact ⟨_, IsLocalization.localization_localization_isLocalization
+    ((Algebra.algebraMapSubmonoid ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀) W₁).comap
+      (ε : (R₁ ⊗[R₀] T₀) →+* ((R₁ ⊗[R₀] S₀) ⊗[S₀] T₀))) W₂ T₁⟩
+
+end IsLocalizationTensorComp
+
+/-- **THE CONSTRUCTION OF 10.127.11, ONCE: a rung over a given base tower**
+(SORRY LEAF; cut 2026-07-28 out of `nonempty_noetherianApproxSystem_of_baseSystem`,
+and it is that leaf's remaining mathematical content).
+
+*Over a directed system of Noetherian local subrings with colimit `R`, a local
+`g : R →+* B` essentially of finite presentation is, from some index `i₀` on, the
+filtered colimit of a tower of Noetherian local stages `S_λ` with `S_μ` a
+localization of `R_μ ⊗_{R_λ} S_λ`.*
+
+**WHAT THE `∃ i₀` IS.**  A model `S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` exists only once
+`R_λ` contains the coefficients of a fixed finite presentation of `B` over `R`,
+which happens from some stage on by `bs.base_surj` and `bs.directed` applied
+finitely many times.  Below that stage there is no rung and the statement does not
+claim one — that is exactly the "work over the RESTRICTED system" step of the
+previous docstring, and `NoetherianLocalBaseSystem.restrict` (PROVEN above) is what
+makes `bs.restrict i₀` again a legitimate base tower to state the rung over.
+
+**SURVEY — three findings, each greppable, RE-VERIFIED 2026-07-28.**
+
+1. **The model half is already in the pin**, in a place a grep for "Noetherian
+   approximation" misses: `Mathlib/RingTheory/Extension/Presentation/Core.lean`
+   defines, for a `Presentation R S ι σ` with `ι`, `σ` finite, `P.coeffs`, the
+   class `P.HasCoeffs R₀`, `P.ModelOfHasCoeffs R₀` — carrying an instance
+   `Algebra.FinitePresentation R₀ (P.ModelOfHasCoeffs R₀)` — and
+   `P.tensorModelOfHasCoeffsEquiv R₀ : R ⊗[R₀] P.ModelOfHasCoeffs R₀ ≃ₐ[R] S`.
+   That is "descend a finitely presented algebra to a subring containing the
+   coefficients and recover it by base change", i.e. the `S_λ = R_λ[x]/(f_λ)` half
+   with the base-change property supplied.  `R₀` need not inject into `R`; the
+   class only asks `coeffs ⊆ Set.range (algebraMap R₀ R)`.
+   **`Mathlib/RingTheory/Smooth/NoetherianDescent.lean` is a WORKED EXAMPLE of this
+   exact idiom** (`Algebra.Smooth.exists_subalgebra_fg`,
+   `Algebra.Etale.exists_subalgebra_fg`): it is smooth/étale-specific and does NOT
+   supply 10.127.13, but it is the closest thing in the pin to the argument wanted
+   here and should be read before writing.  `Mathlib/RingTheory/Smooth/Flat.lean`
+   runs the same "choose a model over a finitely generated `ℤ`-subalgebra" pattern
+   through `Algebra.exists_finiteType ℤ R A`.
+
+2. **What is NOT supplied is everything about the LOCALIZATIONS**: the primes
+   `𝔮_λ`, the locality of `S_λ` and of `S_λ → S`, and `isLocalizationMidT`.  Those
+   are this leaf's real work, and they are why the rung is stated for LOCAL rings
+   and LOCAL homomorphisms throughout.
+
+3. **Do not look for `Ring.DirectLimit`.**  With essential finite PRESENTATION the
+   ideals do not grow with `λ` (fixed generators suffice), so the only thing a
+   transition map does is enlarge the base: the system is concrete and no abstract
+   colimit is constructed.  `grep -rn "Ring.DirectLimit" Fermat/ ~/cs/FLT` found no
+   use anywhere in this development on 2026-07-28; a hit means this note is stale.
+
+**FAITHFULNESS.**  The conclusion is 10.127.11's conclusion for `R → S` with
+"essentially of finite type over `ℤ`" weakened to "Noetherian" and "localization at
+a prime" to "localization at a submonoid", so it is true if 10.127.11 is.  It is
+not vacuous: `bs` is unconditionally inhabited (`nonempty_noetherianLocalBaseSystem`)
+and `bs.restrict i₀` is inhabited for every `i₀`.  Nor is it trivially satisfiable:
+`Mid = Base` fails `mid_surj` whenever `g` is not surjective, and a constant tower
+on a Noetherian subring of `B` fails it too. -/
+theorem exists_noetherianLocalExtSystem_of_essFinitePresentation {R B : Type u}
+    [CommRing R] [CommRing B] [IsLocalRing R] [IsLocalRing B]
+    (bs : NoetherianLocalBaseSystem R) (g : R →+* B) [IsLocalHom g]
+    (_hfp : EssFinitePresentation g) :
+    ∃ i₀ : bs.Λ, Nonempty (NoetherianLocalExtSystem (bs.restrict i₀) g) :=
+  sorry
+
 /-- **NOETHERIAN APPROXIMATION, THE `S_λ` AND `S'_λ` TOWERS: Stacks 10.127.13
-OVER A GIVEN `R_λ` TOWER** (SORRY LEAF; cut 2026-07-28 out of
+OVER A GIVEN `R_λ` TOWER** (PROVEN 2026-07-28 over the three leaves above; cut
+2026-07-28 out of
 `nonempty_flatNoetherianStage_of_essFinitePresentation` below, then cut again the
 same day against `nonempty_noetherianLocalBaseSystem`.  Read the section notes
 "THE CUT OF THE APPROXIMATION LEAF" and "THE `R_λ` TOWER, CUT OFF AND PROVEN"
@@ -2669,57 +3334,43 @@ compatibility clause: the produced system's base tower is a cofinal piece of
 objects for no consumer's benefit.  Rebuilding the `R_λ` tower here instead of
 using `_bs` is permitted by the type and is strictly more work.
 
-**WHAT REMAINS, precisely.**  Over the restricted base tower: the models
-`S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` and `S'_λ = (S_λ[y]/(ḡ_λ))_{𝔮'_λ}` with their
-localizations at the contracted primes (`Mid`, `Tot`, `baseToMid`, `midToTot`,
-`midT`, `totT`, `midToB`, `totToA`), their Noetherianity and locality, the eight
-commutation and functoriality fields involving them, the four colimit conditions
-`mid_surj`/`tot_surj`/`mid_sep`/`tot_sep`, and the three localization fields
-`isLocalizationMidT`, `isLocalizationTotT`, `isLocalizationTotBaseT`.
+**WHAT THE BODY DOES, AND WHAT IS LEFT** (2026-07-28 — read the section note
+"10.127.13 IS 10.127.11 APPLIED TWICE" above).  The body is now real code: it
+builds the first rung over `_bs.restrict i₀`, reads its `Mid` tower as a base
+tower for `B` (`NoetherianLocalExtSystem.toBaseSystem`), builds the second rung
+over a further restriction of THAT above `j₀`, carries the first rung down to the
+same index set (`NoetherianLocalExtSystem.restrict`), and names the fifty fields of
+`NoetherianApproxSystem` off the three objects.  The `Mid` and `Tot` towers are
+therefore indexed by ONE type and `midToTot` is the second rung's `baseToMid`, not
+a comparison map that would have to be built.
 
-**SURVEY, carried over from the previous owner of the uncut leaf (2026-07-27) and
-still the place to start — three findings, each greppable.**
+So the whole of the "eight commutation and functoriality fields", the four colimit
+conditions and the two `isLocalization` fields that this leaf used to owe are
+DISCHARGED here; what is left is exactly TWO named leaves above (the third,
+`exists_isLocalization_tensor_comp`, was PROVEN on 2026-07-30), in decreasing order of
+size:
 
-1. **A large part of 10.127.13 IS ALREADY IN THE PIN, in a place a naive grep for
-   "Noetherian approximation" misses.**
-   `Mathlib/RingTheory/Extension/Presentation/Core.lean` defines, for a
-   `Presentation R S ι σ` with `ι`, `σ` finite (i.e. a finite presentation),
-   `P.coeffs`, the class `P.HasCoeffs R₀` ("`R₀ → R` hits every coefficient of
-   every relation"), `P.ModelOfHasCoeffs R₀` — carrying an instance
-   `Algebra.FinitePresentation R₀ (P.ModelOfHasCoeffs R₀)` — and, crucially,
-   `P.tensorModelOfHasCoeffsEquiv R₀ : R ⊗[R₀] P.ModelOfHasCoeffs R₀ ≃ₐ[R] S`.
-   That is exactly "descend a finitely presented algebra to a subring containing
-   the coefficients, and recover it by base change", which is the
-   `S_λ = R_λ[x]/(f_λ)` half of 10.127.13 with the base-change property supplied.
-   `R₀` need not be injective into `R` — the class only asks for
-   `coeffs ⊆ Set.range (algebraMap R₀ R)`.  `Mathlib/RingTheory/Smooth/Flat.lean`
-   uses the same machinery (`Algebra.exists_finiteType ℤ R A`) to run precisely a
-   "choose a model over a finitely generated `ℤ`-subalgebra" argument, so there is
-   a worked example of the idiom in the pin.  What is NOT supplied is everything
-   to do with the LOCALIZATIONS: the primes `𝔮_λ`, the locality of `S_λ → S`, and
-   the transition maps being localizations — i.e. `isLocalHomMidToB`,
-   `isLocalizationMidT` and `isLocalizationTotT` above.
+* `exists_noetherianLocalExtSystem_of_essFinitePresentation` — the construction of
+  10.127.11 itself, i.e. the models `S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` and their
+  localizations at the contracted primes.  **This is the mathematics**, and the
+  three-finding SURVEY that used to sit in this docstring has moved into its own,
+  where it belongs — including the addition (2026-07-28) that
+  `Mathlib/RingTheory/Smooth/NoetherianDescent.lean` is a worked example of the
+  `HasCoeffs` descent idiom;
+* `essFinitePresentation_of_essFinitePresentation_comp` — [Stacks 00F4] for
+  essentially finite presentation, needed because the second rung is built for
+  `v : B →+* A` while 00R7 gives the hypothesis on `v.comp g`.  A complete route is
+  in its docstring, over the pin's
+  `RingHom.FinitePresentation.of_comp_finiteType`.
 
-2. **The `Base` tower — DONE, 2026-07-28.**  Finding 2 of the survey ("the
-   subring realisation IS correct for the `R_λ` tower") was carried out exactly
-   as it was written: it is `nonempty_noetherianLocalBaseSystem` above, PROVEN,
-   with `R_s = {x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`, Noetherianity from
-   `IsLocalization.isNoetherianRing` and locality from
-   `IsLocalization.AtPrime.isLocalRing`, precisely as the survey predicted.  This
-   leaf therefore no longer has to build `Λ`, `Base`, `baseT`, `baseToR` or any
-   of their eight properties: it RECEIVES them, and what it owes is only the
-   `Mid`/`Tot` towers over a given base tower.
-
-3. **Do not look for `Ring.DirectLimit` in this proof.**  Take `Λ = Finset R`
-   ordered by `⊆`, with `Base s = R_s` as in 2 and `Mid s`, `Tot s` the models of
-   1 localized at the contracted primes; with essential finite PRESENTATION the
-   ideals do not grow with `s` (fixed generators suffice), so the only thing the
-   transition maps do is enlarge the base — which is why the system is concrete
-   rather than abstract, and why the `∃`-form of this leaf is not asking for an
-   abstract colimit to be constructed.  `grep -rni "noetherian approximation"
-   .lake/packages/mathlib` was empty and `grep -rn "Ring.DirectLimit" Fermat/
-   ~/cs/FLT` found no use anywhere in this development on 2026-07-27; a hit on
-   either means this note has gone stale.
+`exists_isLocalization_tensor_comp` — `isLocalizationTotBaseT` derived from the other two
+localization fields — is **PROVEN** (2026-07-30), over
+`IsLocalization.tensorProduct_tensorProduct` and
+`IsLocalization.localization_localization_isLocalization`, with a hand-built
+`R₁ ⊗[R₀] T₀ ≃+* (R₁ ⊗[R₀] S₀) ⊗[S₀] T₀` in between; the three instance traps that made
+it look like missing theory are recorded in its docstring.  Neither
+`Algebra.TensorProduct.cancelBaseChange` nor `IsLocalization.tensor` is used — the cut
+note named both and both were wrong turns.
 
 **FAITHFULNESS.**  The hypotheses are 00R7's plus one that is unconditionally
 satisfiable (`_bs`, by `nonempty_noetherianLocalBaseSystem`), and the conclusion
@@ -2734,11 +3385,71 @@ theorem nonempty_noetherianApproxSystem_of_baseSystem
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_bs : NoetherianLocalBaseSystem R)
-    (_hfpA : EssFinitePresentation (v.comp g))
-    (_hfpB : EssFinitePresentation g) :
-    Nonempty (NoetherianApproxSystem g v) :=
-  sorry
+    (bs : NoetherianLocalBaseSystem R)
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g) :
+    Nonempty (NoetherianApproxSystem g v) := by
+  obtain ⟨i₀, ⟨e₁⟩⟩ := exists_noetherianLocalExtSystem_of_essFinitePresentation bs g hfpB
+  obtain ⟨j₀, ⟨e₂⟩⟩ := exists_noetherianLocalExtSystem_of_essFinitePresentation
+    e₁.toBaseSystem v (essFinitePresentation_of_essFinitePresentation_comp hfpA hfpB)
+  -- `bsF` is the base tower restricted twice; `e₁'` is the first rung carried down
+  -- to that index set, so that `bsF`, `e₁'` and `e₂` are all indexed by one type.
+  set bsF := (bs.restrict i₀).restrict j₀ with _hbsF
+  set e₁' := e₁.restrict j₀ with _he₁'
+  exact ⟨{ Λ := bsF.Λ
+           nonemptyΛ := bsF.nonemptyΛ
+           le := bsF.le
+           le_rfl := bsF.le_rfl
+           le_trans' := bsF.le_trans'
+           directed := bsF.directed
+           Base := bsF.Base
+           Mid := e₁'.Mid
+           Tot := e₂.Mid
+           isLocalRingBase := bsF.isLocalRingBase
+           isLocalRingMid := e₁'.isLocalRingMid
+           isLocalRingTot := e₂.isLocalRingMid
+           isNoetherianBase := bsF.isNoetherianBase
+           isNoetherianMid := e₁'.isNoetherianMid
+           isNoetherianTot := e₂.isNoetherianMid
+           baseToMid := e₁'.baseToMid
+           midToTot := e₂.baseToMid
+           isLocalHomBaseToMid := e₁'.isLocalHomBaseToMid
+           isLocalHomMidToTot := e₂.isLocalHomBaseToMid
+           baseT := bsF.baseT
+           midT := e₁'.midT
+           totT := e₂.midT
+           baseToR := bsF.baseToR
+           midToB := e₁'.midToB
+           totToA := e₂.midToB
+           comm_baseMid := e₁'.comm_baseMid
+           comm_midTot := e₂.comm_baseMid
+           comm_baseT := e₁'.comm_baseT
+           comm_midT := e₂.comm_baseT
+           baseT_comp := bsF.baseT_comp
+           midT_comp := e₁'.midT_comp
+           totT_comp := e₂.midT_comp
+           comm_baseToR := bsF.comm_baseToR
+           comm_midToB := e₁'.comm_midToB
+           comm_totToA := e₂.comm_midToB
+           isLocalHomBaseT := bsF.isLocalHomBaseT
+           isLocalHomMidT := e₁'.isLocalHomMidT
+           isLocalHomTotT := e₂.isLocalHomMidT
+           isLocalHomBaseToR := bsF.isLocalHomBaseToR
+           isLocalHomMidToB := e₁'.isLocalHomMidToB
+           isLocalHomTotToA := e₂.isLocalHomMidToB
+           base_surj := bsF.base_surj
+           mid_surj := e₁'.mid_surj
+           tot_surj := e₂.mid_surj
+           base_sep := bsF.base_sep
+           mid_sep := e₁'.mid_sep
+           tot_sep := e₂.mid_sep
+           isLocalizationMidT := e₁'.isLocalizationMidT
+           isLocalizationTotT := e₂.isLocalizationMidT
+           isLocalizationTotBaseT := fun {i j} h =>
+             exists_isLocalization_tensor_comp (bsF.baseT h) (e₁'.baseToMid i) (e₁'.baseToMid j)
+               (e₁'.midT h) (e₂.baseToMid i) (e₂.baseToMid j) (e₂.midT h)
+               (e₁'.comm_baseT h) (e₂.comm_baseT h)
+               (e₁'.isLocalizationMidT h) (e₂.isLocalizationMidT h) }⟩
 
 /-- **NOETHERIAN APPROXIMATION: Stacks 10.127.11 + 10.127.13** (PROVEN 2026-07-28
 over the two declarations above, cut 2026-07-28 out of
@@ -2810,10 +3521,10 @@ written, and the refuting check is one grep in this very file.**  00MO's proof
 invokes **Lemma 10.99.10**, and 10.99.10 is ALREADY PROVEN here as
 `flat_of_rTensor_injective_of_flat_quotientMap`, roughly 1400 lines above — and as of
 the 2026-07-29 release it is proven **sorry-free**, because its former leaf
-`lTensor_subtype_injective_of_pow_le` has since been closed too.  (Note the docstring
-on 10.99.10 itself still says "PROVEN over the single leaf
-`lTensor_subtype_injective_of_pow_le`"; that parenthetical is now stale, and it is not
-this block's region to edit.)
+`lTensor_subtype_injective_of_pow_le` has since been closed too.  (10.99.10's own
+docstring used to say only "PROVEN over the single leaf
+`lTensor_subtype_injective_of_pow_le`", which read as though that leaf were still
+open; corrected 2026-07-29 to say **PROVEN SORRY-FREE**.)
 
 Reading 00MO's proof line by line against that, the ONLY content it needs beyond
 10.99.10 is:
@@ -2832,6 +3543,15 @@ therefore cut below into exactly TWO leaves over the already-proven 10.99.10,
 `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` and
 `flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem`; read their
 docstrings, which are the specifications.
+
+**STATUS 2026-07-29/30: the SECOND of those two leaves is now PROVEN**, over the three
+general ring-level lemmas in the block immediately below this section note
+(`flat_quotMap_tensorProduct_of_isMaximal`, `flat_quotMap_of_isLocalization`,
+`flat_quotMap_map_of_isLocalization_tensorProduct`) — exactly the first bullet above, and
+exactly as predicted, with no `Tor`, no Noetherian hypothesis and no colimit.  So the
+heading of this paragraph now overstates the gate: **the only open leaf of 10.128.3 is the
+colimit half** `exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem`,
+i.e. the second bullet above.  Do not dispatch anyone at the fibre half.
 
 **The `LocalCriterion.lean` coupling is WITHDRAWN.**
 `Module.Flat.of_flat_quotient_of_pow_eq_bot` there is a genuinely different statement
@@ -2969,6 +3689,118 @@ structure IsNoetherianFlatDescentSystem {Λ : Type u} (le : Λ → Λ → Prop)
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid (C j ⊗[C i] D i), IsLocalization W (D j)
 
+
+/-! #### THE RING-LEVEL INPUTS OF 00MO's STEP 2 — three general lemmas, added 2026-07-29
+
+The fibre half of 10.128.3 needs no descent system at all: it is a statement about a single
+square `C_i → C_j`, `D_i → D_j` with `D_j` a localization of `C_j ⊗_{C_i} D_i`.  The three
+lemmas below say so, in that generality, and
+`flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem` is one `exact` over the
+last of them.  None of them mentions `Tor`, Noetherianness, or a colimit — see the
+"WHY THE CORE IS STILL A SORRY" paragraph in the section note above, which predicted exactly
+this and has now been discharged for this half. -/
+
+/-- **BASE CHANGE OF A FIBRE ALONG A QUOTIENT — the ring-level heart of 00MO's step 2.**
+
+*If `𝔪` is a maximal ideal of `Ci`, then `(Cj ⊗[Ci] Di) ⧸ 𝔪(Cj ⊗[Ci] Di)` is FLAT over
+`Cj ⧸ 𝔪 Cj`.*
+
+The proof is the three-line argument of [Stacks 00MO]'s step 2, with no `Tor` anywhere:
+`k := Ci ⧸ 𝔪` is a FIELD, so the `k`-module `k ⊗[Ci] Di` is free hence flat; base change
+along `k → Cj ⧸ 𝔪 Cj` keeps it flat; and the three tensor identities
+`(Cj ⧸ I') ⊗[k] (k ⊗[Ci] Di) ≅ (Cj ⧸ I') ⊗[Ci] Di ≅ (Cj ⧸ I') ⊗[Cj] (Cj ⊗[Ci] Di) ≅
+(Cj ⊗[Ci] Di) ⧸ I'(Cj ⊗[Ci] Di)` are `Algebra.TensorProduct.cancelBaseChange` twice and
+`Algebra.TensorProduct.quotIdealMapEquivQuotTensor` once.
+
+Maximality of `𝔪` is what makes `Ci ⧸ 𝔪` a field and is the ONLY hypothesis: no
+Noetherian, finiteness or flatness assumption on `Cj` or `Di` is used. -/
+theorem flat_quotMap_tensorProduct_of_isMaximal
+    {Ci Cj Di : Type*} [CommRing Ci] [CommRing Cj] [CommRing Di]
+    [Algebra Ci Cj] [Algebra Ci Di] (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map
+        (algebraMap Cj (Cj ⊗[Ci] Di))) := by
+  letI : Field (Ci ⧸ 𝔪) := Ideal.Quotient.field 𝔪
+  haveI : Module.Flat (Ci ⧸ 𝔪) ((Ci ⧸ 𝔪) ⊗[Ci] Di) := Module.Flat.of_free
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Ci ⧸ 𝔪] ((Ci ⧸ 𝔪) ⊗[Ci] Di)) :=
+    Module.Flat.baseChange (Ci ⧸ 𝔪) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ((Ci ⧸ 𝔪) ⊗[Ci] Di)
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Ci] Di) :=
+    Module.Flat.of_linearEquiv
+      (Algebra.TensorProduct.cancelBaseChange Ci (Ci ⧸ 𝔪)
+        (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) Di).symm.toLinearEquiv
+  haveI : Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⧸ 𝔪.map (algebraMap Ci Cj)) ⊗[Cj] (Cj ⊗[Ci] Di)) :=
+    Module.Flat.of_linearEquiv
+      (Algebra.TensorProduct.cancelBaseChange Ci Cj
+        (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) (Cj ⧸ 𝔪.map (algebraMap Ci Cj)) Di).toLinearEquiv
+  exact Module.Flat.of_linearEquiv
+    (Algebra.TensorProduct.quotIdealMapEquivQuotTensor (Cj ⊗[Ci] Di)
+      (𝔪.map (algebraMap Ci Cj))).toLinearEquiv
+
+/-- **A QUOTIENT OF A LOCALIZATION IS A LOCALIZATION OF THE QUOTIENT, hence FLAT over it.**
+
+*If `Dj` is the localization of `E` at `W` and `J = I Dj` for an ideal `I` of `E`, then
+`Dj ⧸ J` is flat over `E ⧸ I`.*
+
+`IsLocalization.of_surjective` upgrades `IsLocalization W Dj` along the two quotient maps to
+`IsLocalization (W.map (Ideal.Quotient.mk I)) (Dj ⧸ J)`, and `IsLocalization.flat` concludes.
+Stating `J` as a separate ideal together with `hJ` — rather than writing
+`I.map (algebraMap E Dj)` in the conclusion — is what lets the consumer below apply this at an
+ideal that is only PROPOSITIONALLY equal to the extension, with no transport. -/
+theorem flat_quotMap_of_isLocalization {E Dj : Type*} [CommRing E] [CommRing Dj] [Algebra E Dj]
+    (W : Submonoid E) [IsLocalization W Dj] (I : Ideal E) (J : Ideal Dj)
+    [Algebra (E ⧸ I) (Dj ⧸ J)]
+    (halg : (Ideal.Quotient.mk J).comp (algebraMap E Dj)
+      = (algebraMap (E ⧸ I) (Dj ⧸ J)).comp (Ideal.Quotient.mk I))
+    (hJ : J = I.map (algebraMap E Dj)) :
+    Module.Flat (E ⧸ I) (Dj ⧸ J) := by
+  haveI : IsLocalization (W.map (Ideal.Quotient.mk I)) (Dj ⧸ J) :=
+    IsLocalization.of_surjective W Dj (Ideal.Quotient.mk I) Ideal.Quotient.mk_surjective
+      (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective halg (by simpa using hJ.le)
+  exact IsLocalization.flat (Dj ⧸ J) (W.map (Ideal.Quotient.mk I))
+
+/-- **[Stacks 00MO] STEP 2, at the ring level** — the whole fibre half of 10.128.3, with the
+descent system replaced by the three maps it actually spends.
+
+*If `Dj` is a localization of `Cj ⊗[Ci] Di` over `Cj`, and `𝔪` is a maximal ideal of `Ci`, then
+`Dj ⧸ 𝔪 Dj` is FLAT over `Cj ⧸ 𝔪 Cj`.*
+
+The factorisation is `Cj ⧸ 𝔪Cj → (Cj ⊗[Ci] Di) ⧸ 𝔪(Cj ⊗[Ci] Di) → Dj ⧸ 𝔪Dj`: the first map is
+flat by `flat_quotMap_tensorProduct_of_isMaximal` (base change from the residue FIELD of `𝔪`)
+and the second by `flat_quotMap_of_isLocalization` (a localization), so `Module.Flat.trans`
+finishes.  Nothing here is Noetherian and nothing is a colimit — that content lives entirely in
+the OTHER half of 10.128.3. -/
+theorem flat_quotMap_map_of_isLocalization_tensorProduct
+    {Ci Cj Di Dj : Type*} [CommRing Ci] [CommRing Cj] [CommRing Di] [CommRing Dj]
+    [Algebra Ci Cj] [Algebra Ci Di] [Algebra Cj Dj]
+    [Algebra (Cj ⊗[Ci] Di) Dj] [IsScalarTower Cj (Cj ⊗[Ci] Di) Dj]
+    (W : Submonoid (Cj ⊗[Ci] Di)) [IsLocalization W Dj]
+    (𝔪 : Ideal Ci) [𝔪.IsMaximal] :
+    Module.Flat (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) := by
+  have hJ : (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)
+      = ((𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di))).map
+          (algebraMap (Cj ⊗[Ci] Di) Dj) := by
+    conv_rhs => rw [Ideal.map_map, ← IsScalarTower.algebraMap_eq Cj (Cj ⊗[Ci] Di) Dj]
+  letI : Algebra ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map
+      (algebraMap Cj (Cj ⊗[Ci] Di)))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) :=
+    Ideal.Quotient.algebraQuotientOfLEComap (Ideal.map_le_iff_le_comap.mp hJ.ge)
+  haveI := flat_quotMap_of_isLocalization (Dj := Dj) W _ _ rfl hJ
+  haveI := flat_quotMap_tensorProduct_of_isMaximal (Cj := Cj) (Di := Di) 𝔪
+  haveI : IsScalarTower (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+      ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di)))
+      (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj)) := by
+    refine IsScalarTower.of_algebraMap_eq (fun x => ?_)
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    show Ideal.Quotient.mk _ _ = Ideal.Quotient.mk _ _
+    rw [IsScalarTower.algebraMap_apply Cj (Cj ⊗[Ci] Di) Dj]
+  exact Module.Flat.trans (Cj ⧸ 𝔪.map (algebraMap Ci Cj))
+    ((Cj ⊗[Ci] Di) ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj (Cj ⊗[Ci] Di)))
+    (Dj ⧸ (𝔪.map (algebraMap Ci Cj)).map (algebraMap Cj Dj))
+
 /-! #### 10.128.3's TWO LEAVES — cut 2026-07-28 over the ALREADY-PROVEN 10.99.10
 
 The three declarations below are one block and were written together.  The two leaves
@@ -2979,9 +3811,191 @@ in the section note above before touching any of them: the earlier claim that 10
 is gated on building `Tor_1` and its long exact sequence is WITHDRAWN, and so is its
 pairing with `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`. -/
 
+/-! #### THE FURTHER CUT OF THE COLIMIT HALF — TAKEN 2026-07-30
+
+The docstring below offered this cut in its own words ("**A FURTHER CUT IS AVAILABLE** if
+this is too large for one owner: introduce the comparison map `T_i → T_j` as a named `def`
+… and make Halves A and B two leaves over it"), and it is taken here for exactly the
+reason it gave: the two halves share nothing but the map, and they want separate owners.
+
+* `idealTensorComparison` is that map, `T_i → T_j` before restriction to the kernels:
+  `↥𝔪 ⊗[Ci] Di → ↥(𝔪 Cj) ⊗[Cj] Dj`, `x ⊗ m ↦ (cT x) ⊗ (dT m)`.
+* `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` is **HALF A**
+  (00R6's own body: `T_i` is f.g., `w` is flat, tensor commutes with filtered colimits, so
+  ONE `j ≥ i` kills every generator).  This is the ONLY consumer of `_hflat`,
+  `c_surj`/`c_sep`/`d_surj`/`d_sep` and `directed` anywhere in 10.128.3.
+* `ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem` is
+  **HALF B** (00MO's steps 4–6: Stacks 10.99.13 + 10.99.12, then localized along
+  `isLocalizationDT h`, which is its only consumer).  It is the one genuinely homological
+  statement left in 10.128.3.
+* The parent is then PROVEN over the two: `T_j` is spanned by the image of `T_i` (Half B)
+  and that image is `0` (Half A), so `T_j = ⊥`, which is `LinearMap.ker_eq_bot`.
+
+**NOTE THE ASYMMETRY, because it is what makes the cut sound.** Half A is an `∃ j`; Half B
+is `∀ i ≤ j`.  So Half B may be applied at whatever `j` Half A produces, and neither half
+has to know the other's index.  Had Half B also been an `∃`, the two indices would not
+have been reconcilable without a third directedness step.
+
+**Half B does NOT need `φ` to carry `T_i` into `T_j`** — it says `T_j` lies in the `C_j`-span
+of `φ(T_i)`, and the assembly needs nothing more, so no compatibility lemma is stated. (It
+is true and easy — the square over `D_i → D_j` commutes — but an unconsumed lemma would be
+free-floating, so its prover should state it locally.) -/
+
+/-- The `C_i`-linear inclusion `↥𝔪 → ↥(𝔪 C_j)`, `x ↦ (algebraMap C_i C_j) x`, used only to
+build `idealTensorComparison` below. -/
+noncomputable def idealMapRestrict {Ci Cj : Type*} [CommRing Ci] [CommRing Cj]
+    [Algebra Ci Cj] (𝔪 : Ideal Ci) :
+    ↥𝔪 →ₗ[Ci] ↥(𝔪.map (algebraMap Ci Cj)) where
+  toFun x := ⟨algebraMap Ci Cj x, Ideal.mem_map_of_mem _ x.2⟩
+  map_add' x y := by ext; simp
+  map_smul' c x := by ext; simp [Algebra.smul_def]
+
+/-- **THE COMPARISON MAP `T_i → T_j` OF [Stacks 00R6], before restricting to the kernels.**
+
+`↥𝔪 ⊗[Ci] Di →ₗ[Ci] ↥(𝔪 Cj) ⊗[Cj] Dj`, sending `x ⊗ₜ m` to `(algebraMap Ci Cj x) ⊗ₜ
+(algebraMap Di Dj m)`.  Under `Tor_1(−, C/I) = ker(I ⊗ − → −)` (Remark 10.75.9) its
+restriction to kernels is the map `Tor_1^{C_i}(D_i, C_i/𝔪) → Tor_1^{C_j}(D_j, C_j/𝔪C_j)`
+that Halves A and B of 10.128.3's colimit leaf are both statements about.
+
+It is built as `mapOfCompatibleSMul ∘ TensorProduct.map`: first `x ⊗ₜ m ↦ (cT x) ⊗ₜ (dT m)`
+into `↥(𝔪 Cj) ⊗[Ci] Dj` (a `TensorProduct.map` of two honestly `Ci`-linear maps), then the
+canonical `Ci`-linear comparison `↥(𝔪 Cj) ⊗[Ci] Dj → ↥(𝔪 Cj) ⊗[Cj] Dj`.  Writing it that
+way rather than as a `TensorProduct.lift` of a `mk₂` is what keeps the four bilinearity
+side goals out of this file: they are `CompatibleSMul.isScalarTower`, i.e. the two
+`IsScalarTower` hypotheses.
+
+The two scalar-tower hypotheses are exactly what a descent system supplies at `i ≤ j`
+(`IsScalarTower Ci Cj Dj` is `rfl`; `IsScalarTower Ci Di Dj` is `comm_T h`). -/
+noncomputable def idealTensorComparison {Ci Cj Di Dj : Type*} [CommRing Ci] [CommRing Cj]
+    [CommRing Di] [CommRing Dj] [Algebra Ci Cj] [Algebra Ci Di] [Algebra Ci Dj]
+    [Algebra Cj Dj] [Algebra Di Dj] [IsScalarTower Ci Cj Dj] [IsScalarTower Ci Di Dj]
+    (𝔪 : Ideal Ci) :
+    (↥𝔪 ⊗[Ci] Di) →ₗ[Ci] (↥(𝔪.map (algebraMap Ci Cj)) ⊗[Cj] Dj) :=
+  (TensorProduct.mapOfCompatibleSMul Cj Ci Ci (↥(𝔪.map (algebraMap Ci Cj))) Dj).comp
+    (TensorProduct.map (idealMapRestrict 𝔪) (IsScalarTower.toAlgHom Ci Di Dj).toLinearMap)
+
+/-- **HALF A OF [Stacks 00R6]'s COLIMIT LEAF — the colimit step, and it needs no `Tor`**
+(sorry leaf, cut 2026-07-30 out of
+`exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
+read that docstring's "Half A" paragraph, which is this leaf's specification).
+
+*In a `IsNoetherianFlatDescentSystem` whose colimit `w` is flat, for every `i` there is
+`j ≥ i` at which the comparison map `idealTensorComparison 𝔪_i` KILLS
+`T_i = ker(𝔪_i ⊗_{C_i} D_i → C_i ⊗_{C_i} D_i)`.*
+
+**THE PROOF** (00R6's own first paragraph, verbatim).  `𝔪_i` is f.g. because `C i` is
+Noetherian (`isNoetherianC`), so `↥𝔪_i ⊗_{C_i} D_i` is a finite `D_i`-module
+(`Module.Finite.base_change`), so its submodule `T_i` is f.g. because `D i` is Noetherian
+(`isNoetherianD`).  Let `ξ_1, …, ξ_n` generate it.  `w` is flat, so
+`↥(𝔪_i Cbot) ⊗_{Cbot} Dbot → Cbot ⊗_{Cbot} Dbot` is injective — the flat base change of
+the injection `↥(𝔪_i Cbot) ↪ Cbot` — and each `ξ_k` therefore dies in
+`↥(𝔪_i Cbot) ⊗_{Cbot} Dbot`.  Tensor products commute with filtered colimits, so each
+`ξ_k` already dies at some finite stage, and `directed` merges the `n` stages into one `j`.
+`c_surj`, `c_sep`, `d_surj`, `d_sep` and `directed` are spent HERE and nowhere else in
+10.128.3, and so is `_hflat`.
+
+**WHAT THIS DOES NOT NEED.**  No `Tor` formalism, no projective resolution, no long exact
+sequence, and no localization: `isLocalizationDT` belongs to Half B alone.  Note also that
+the colimit is used only through the four `surj`/`sep` fields — `Ring.DirectLimit` does not
+appear in this development and must not be introduced to state it.
+
+**FAITHFULNESS.**  The ideal in the target is `𝔪_i C_j`, the EXTENSION along `cT h`, not
+`𝔪_j`; that is what `idealTensorComparison` produces and what 00MO's `I' = IR'` says.  The
+`∃ j` is not discharged by `j = i`: at `j = i` the comparison map is the identity (up to
+the algebra structures) and the claim would read `T_i = 0`, which is 10.128.3 at a single
+stage — true only after the whole argument, not before it. -/
+theorem exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    (_hflat : w.Flat) (i : Λ) :
+    ∃ j : Λ, ∃ h : le i j,
+      letI := hsys.isLocalRingC i
+      letI : Algebra (C i) (D i) := (cd i).toAlgebra
+      letI : Algebra (C i) (C j) := (cT h).toAlgebra
+      letI : Algebra (C j) (D j) := (cd j).toAlgebra
+      letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+      letI : Algebra (D i) (D j) := (dT h).toAlgebra
+      haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower (C i) (D i) (D j) :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+      ∀ t ∈ LinearMap.ker
+          (LinearMap.rTensor (D i) (IsLocalRing.maximalIdeal (C i)).subtype),
+        idealTensorComparison (Cj := C j) (Dj := D j)
+          (IsLocalRing.maximalIdeal (C i)) t = 0 :=
+  sorry
+
+/-- **HALF B OF [Stacks 00R6]'s COLIMIT LEAF — the surjectivity, and it is the ONLY
+genuinely homological statement left in 10.128.3** (sorry leaf, cut 2026-07-30 out of
+`exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentSystem` below;
+read that docstring's "Half B" paragraph, which is this leaf's specification).
+
+*In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j`, `T_j` lies in the `C_j`-span of
+the image of `T_i` under `idealTensorComparison 𝔪_i`.*
+
+**THE PROOF.**  This is the surjectivity of `T_i ⊗_{C_i} C_j → T_j`, i.e. of
+`Tor_1^{C_i}(D_i, C_i/𝔪_i) ⊗_{C_i} C_j → Tor_1^{C_j}(D_j, C_j/𝔪_i C_j)`: Stacks 10.99.13
+(`Tor_1^R(M, R'/I') ↠ Tor_1^{R'}(M ⊗_R R', R'/I')`) composed with 10.99.12 applied to
+`C_i → C_i/𝔪_i → C_j/𝔪_i C_j`, then LOCALIZED along `isLocalizationDT h` — which is what
+turns `D_i ⊗_{C_i} C_j` into `D_j`, and is this leaf's only use of that field.  Every
+object is the kernel of an explicit `TensorProduct.lift` (Remark 10.75.9), so no derived
+functor and no six-term sequence occurs; the content is two surjectivity statements about
+explicit maps.
+
+**WHY A SPAN AND NOT A SURJECTION.**  `Submodule.span (C j) (φ '' T_i)` is the image of
+`T_i ⊗_{C_i} C_j → T_j` written without constructing that map, so this leaf needs no new
+definition and its prover may build the base-changed map however is convenient.  `≤` rather
+than `=` because that is all the assembly consumes, and the reverse inclusion is trivial.
+
+**FAITHFULNESS.**  `∀ i ≤ j`, deliberately NOT `∃ j` — see the "NOTE THE ASYMMETRY"
+paragraph in the section note above: Half A chooses the index, Half B must hold at it.
+The statement is NOT vacuous and is not implied by Half A: at `j = i` it says `T_i` is
+spanned by its own image under a map that is then essentially the identity, which is true
+and harmless; the content is at `j > i`, where `𝔪_i C_j` may be a proper extension.
+
+**THE ONE RISK IN THIS CUT, stated so its prover checks it FIRST.**  The `∀ i ≤ j` is a
+reading of the parent docstring's Half B sentence, which carries no quantifier: 10.99.13
+and 10.99.12 are statements about an arbitrary base change `C_i → C_j` and do not choose
+`j`, so every `j ≥ i` should work.  If a prover finds that the surjectivity genuinely needs
+`j` ENLARGED (beyond what Half A already gives), then this leaf is FALSE AS STATED and the
+correct repair is to merge the two halves' indices — make this leaf `∃ j' ≥ j` too and have
+the parent take the `directed` join — NOT to add hypotheses to it.  Refuting it that way is
+a successful outcome; say so in the report. -/
+theorem ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem
+    {Λ : Type u} {le : Λ → Λ → Prop} {C D : Λ → Type u}
+    [∀ i, CommRing (C i)] [∀ i, CommRing (D i)]
+    {cd : ∀ i, C i →+* D i}
+    {cT : ∀ {i j : Λ}, le i j → (C i →+* C j)} {dT : ∀ {i j : Λ}, le i j → (D i →+* D j)}
+    {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
+    {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
+    (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
+    {i j : Λ} (h : le i j) :
+    letI := hsys.isLocalRingC i
+    letI : Algebra (C i) (D i) := (cd i).toAlgebra
+    letI : Algebra (C i) (C j) := (cT h).toAlgebra
+    letI : Algebra (C j) (D j) := (cd j).toAlgebra
+    letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+    letI : Algebra (D i) (D j) := (dT h).toAlgebra
+    haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower (C i) (D i) (D j) :=
+      IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+    LinearMap.ker (LinearMap.rTensor (D j)
+        ((IsLocalRing.maximalIdeal (C i)).map (algebraMap (C i) (C j))).subtype)
+      ≤ Submodule.span (C j)
+          (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
+            (LinearMap.ker (LinearMap.rTensor (D i)
+              (IsLocalRing.maximalIdeal (C i)).subtype) :
+              Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) :=
+  sorry
+
 /-- **THE `Tor_1` VANISHING AT A LARGE STAGE — the colimit half of [Stacks 00R6]**
-(sorry leaf, cut 2026-07-28 out of `exists_flat_index_of_isNoetherianFlatDescentSystem`
-below).
+(**PROVEN 2026-07-30** over the two halves immediately above, which are its FURTHER CUT —
+read the section note just above them; cut 2026-07-28 out of
+`exists_flat_index_of_isNoetherianFlatDescentSystem` below).
 
 *In a `IsNoetherianFlatDescentSystem` whose colimit `w` is flat, for every `i` there is
 `j ≥ i` with `Tor_1^{C_j}(C_j/𝔪_i C_j, D_j) = 0`.*
@@ -3021,11 +4035,13 @@ half.**  Half A needs no `Tor` formalism whatsoever.  Half B is the only genuine
 homological content left anywhere in 10.128.3, and it is two surjectivity statements
 about explicit maps — not a six-term sequence.
 
-**A FURTHER CUT IS AVAILABLE** if this is too large for one owner: introduce the
-comparison map `T_i → T_j` as a named `def` (a `TensorProduct.lift` of
-`x ⊗ₜ m ↦ cT h x ⊗ₜ dT h m`, corestricted to the kernels) and make Halves A and B two
-leaves over it.  That was not done here only because the map is the one new *definition*
-such a cut would need, and both halves can be attacked without it being top-level.
+**THAT FURTHER CUT HAS BEEN TAKEN (2026-07-30) and this theorem is now PROVEN over it.**
+The comparison map is `idealTensorComparison` just above (NOT corestricted to the kernels —
+that turned out to be unnecessary, see the section note), Half A is
+`exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` and Half B is
+`ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem`.  Those
+two are the open leaves now; this docstring's Half A / Half B paragraphs above are their
+specifications and are repeated on them.  Do not dispatch anyone at THIS declaration.
 
 **FAITHFULNESS.**  The ideal is `𝔪_i C_j`, the EXTENSION of the stage-`i` maximal ideal
 along `cT h` — NOT `𝔪_j`.  That is what 00MO's `I' = IR'` says, and what Half B's
@@ -3048,17 +4064,45 @@ theorem exists_le_rTensor_map_maximalIdeal_injective_of_isNoetherianFlatDescentS
     {Cbot Dbot : Type u} [CommRing Cbot] [CommRing Dbot] {w : Cbot →+* Dbot}
     {cToC : ∀ i, C i →+* Cbot} {dToD : ∀ i, D i →+* Dbot}
     (hsys : IsNoetherianFlatDescentSystem le C D cd cT dT w cToC dToD)
-    (_hflat : w.Flat) (i : Λ) :
+    (hflat : w.Flat) (i : Λ) :
     ∃ j : Λ, ∃ h : le i j,
       letI := hsys.isLocalRingC i
       letI : Algebra (C j) (D j) := (cd j).toAlgebra
       Function.Injective (LinearMap.rTensor (D j)
-        ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) :=
-  sorry
+        ((IsLocalRing.maximalIdeal (C i)).map (cT h)).subtype) := by
+  obtain ⟨j, h, hA⟩ :=
+    exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem hsys hflat i
+  refine ⟨j, h, ?_⟩
+  letI := hsys.isLocalRingC i
+  letI : Algebra (C i) (D i) := (cd i).toAlgebra
+  letI : Algebra (C i) (C j) := (cT h).toAlgebra
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+  letI : Algebra (D i) (D j) := (dT h).toAlgebra
+  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (C i) (D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+  have hB : LinearMap.ker (LinearMap.rTensor (D j)
+      ((IsLocalRing.maximalIdeal (C i)).map (algebraMap (C i) (C j))).subtype)
+      ≤ Submodule.span (C j)
+        (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
+          (LinearMap.ker (LinearMap.rTensor (D i)
+            (IsLocalRing.maximalIdeal (C i)).subtype) :
+            Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) :=
+    ker_rTensor_le_span_image_idealTensorComparison_of_isNoetherianFlatDescentSystem hsys h
+  have hspan : Submodule.span (C j)
+      (idealTensorComparison (Cj := C j) (Dj := D j) (IsLocalRing.maximalIdeal (C i)) ''
+        (LinearMap.ker (LinearMap.rTensor (D i)
+          (IsLocalRing.maximalIdeal (C i)).subtype) :
+          Set (↥(IsLocalRing.maximalIdeal (C i)) ⊗[C i] D i))) ≤ ⊥ := by
+    rw [Submodule.span_le]
+    rintro _ ⟨t, ht, rfl⟩
+    simp [hA t ht]
+  exact LinearMap.ker_eq_bot.mp (le_antisymm (hB.trans hspan) bot_le)
 
 /-- **THE FIBRE IS FLAT AT EVERY STAGE — 00MO's step 2, and it involves NO `Tor`**
-(sorry leaf, cut 2026-07-28 out of `exists_flat_index_of_isNoetherianFlatDescentSystem`
-below).
+(**PROVEN 2026-07-29**; cut 2026-07-28 out of
+`exists_flat_index_of_isNoetherianFlatDescentSystem` below).
 
 *In a `IsNoetherianFlatDescentSystem`, for every `i ≤ j` the induced map
 `C_j/𝔪_i C_j → D_j/𝔪_i D_j` is flat.*
@@ -3107,8 +4151,29 @@ theorem flat_quotientMap_map_maximalIdeal_of_isNoetherianFlatDescentSystem
     letI : Algebra (C j) (D j) := (cd j).toAlgebra
     (Ideal.quotientMap
       (((IsLocalRing.maximalIdeal (C i)).map (cT h)).map (algebraMap (C j) (D j)))
-      (algebraMap (C j) (D j)) Ideal.le_comap_map).Flat :=
-  sorry
+      (algebraMap (C j) (D j)) Ideal.le_comap_map).Flat := by
+  letI := hsys.isLocalRingC i
+  letI : Algebra (C i) (D i) := (cd i).toAlgebra
+  letI : Algebra (C i) (C j) := (cT h).toAlgebra
+  letI : Algebra (C i) (D j) := ((cd j).comp (cT h)).toAlgebra
+  letI : Algebra (C j) (D j) := (cd j).toAlgebra
+  letI : Algebra (D i) (D j) := (dT h).toAlgebra
+  haveI : IsScalarTower (C i) (C j) (D j) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower (C i) (D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun (hsys.comm_T h) x
+  letI : Algebra (C j ⊗[C i] D i) (D j) :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom (C i) (C j) (D j))
+      (IsScalarTower.toAlgHom (C i) (D i) (D j))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := hsys.isLocalizationDT h
+  haveI := hW
+  haveI : IsScalarTower (C j) (C j ⊗[C i] D i) (D j) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show cd j x = Algebra.TensorProduct.lift _ _ _ (x ⊗ₜ[C i] 1)
+      simp only [Algebra.TensorProduct.lift_tmul, map_one, mul_one]
+      rfl
+  exact RingHom.flat_algebraMap_iff.mpr
+    (flat_quotMap_map_of_isLocalization_tensorProduct W (IsLocalRing.maximalIdeal (C i)))
 
 /-- **STACKS 10.128.3** ([Stacks 00R6]; **PROVEN 2026-07-28** over the two leaves
 immediately above and the already-proven 10.99.10 — read the section note above before

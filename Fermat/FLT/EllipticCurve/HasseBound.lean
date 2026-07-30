@@ -79,16 +79,42 @@ case — is PROVEN, over the peeling machinery below (`F` is bijective;
 `degreeFormEnd_peel`; `exists_natCard_ker_mul_pow`), and the reduction its
 docstring proposed is carried out.  What that leaf bottoms out at is the
 SINGLE ordinary `q`-torsion count `#ker([c] − F) = q` for `q ∤ c`, which is
-its own `(m, n) = (c, 1)` instance and is now the named leaf
-`natCard_ker_frobeniusConj`.  Half of that leaf is already free —
-`natCard_ker_degreeFormEnd_le` at `(c, 1)` gives `≤ q`, and `E[q]` has order a
-power of `q` — so only the LOWER bound `E[q] ≠ 0` is genuinely missing.
+its own `(m, n) = (c, 1)` instance, `natCard_ker_frobeniusConj`.
 
-What remains open, and each is strictly smaller than what it replaced:
-`exists_sq_frobeniusPointEnd` (the Frobenius characteristic equation on
-points, `F² = c·F − q`), `natCard_ker_degreeFormEnd_le` (separable degree
-≤ degree, one-sided, no hypothesis on `m`), and `natCard_ker_frobeniusConj`
-(the ordinary `q`-torsion count `#ker([c] − F) = q` for `q ∤ c`).
+FIFTH CUT, 2026-07-29: `natCard_ker_frobeniusConj` is PROVEN, and what
+survives of it is the pure EXISTENCE statement `exists_ne_zero_qTorsion` —
+the curve has a nonzero `q`-torsion point when `q ∤ c`.  Two things changed,
+and the first is a CORRECTION of the note above.
+
+* The upper half `#E[q] ∣ q` was recorded as "already free" from
+  `natCard_ker_degreeFormEnd_le` at `(c, 1)`.  It was not: that declaration is
+  itself an open leaf, so the `q`-primary count was resting on it.  The upper
+  half really is free, but from `TorsionCharP.exists_zsmul_eq_of_charP`
+  (cyclicity of the `q`-torsion in characteristic `q`, PROVEN 2026-07-25 out
+  of the vanishing of `ΨSqₚ′`), which is now imported.  So nothing `q`-primary
+  depends on `natCard_ker_degreeFormEnd_le` any more.
+* The dependency between `#E[q] = q` and `#ker([c] − F) = q` is REVERSED.
+  `natCard_ker_zsmul_q` is now the primitive — that is where the upper bound
+  is available — and `natCard_ker_frobeniusConj` is derived from it through
+  `V ∘ F = [q]` with `#ker F = 1`.
+
+The surviving leaf is not derivable from this module's algebra: see the model
+in its docstring, in which every identity proven here holds and `A[q] = 0`.
+Its docstring carries an elementary route (Deuring's congruence via character
+sums, twice) whose cost is the missing `𝔽_{q^n}` point-counting
+infrastructure rather than the argument.
+
+What remains open is EXACTLY FOUR declarations, each strictly smaller than what
+it replaced, and this list is the one to dispatch from — verified against the
+build's `declaration uses 'sorry'` warning set on 2026-07-30, four warnings and
+four `sorry` tokens, so there are no anonymous inner sorries here either:
+`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`
+(the two halves of the Frobenius characteristic equation on points,
+`F² = c·F − q`, split along the torsion-primary decomposition — the umbrella
+`exists_sq_frobeniusPointEnd` is PROVEN over them, see the FOURTH CUT below, so
+do NOT dispatch at that name), `natCard_ker_degreeFormEnd_le` (separable degree
+≤ degree, one-sided, no hypothesis on `m`), and `exists_ne_zero_qTorsion`
+(the curve is ORDINARY when `q ∤ c`).
 
 A NOTE FOR WHOEVER OWNS THE CHARACTERISTIC EQUATION.  The 2026-07-27 plan
 placed it in `FreyCurve/MazurTorsion.lean` as
@@ -130,6 +156,14 @@ public import Fermat.FLT.EllipticCurve.WeilPairing
 -- `MazurTorsion.lean`, the only importer of this module, already imports
 -- `Isogeny` directly.
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `TorsionCharP.exists_zsmul_eq_of_charP`: the geometric `q`-torsion in
+-- characteristic `q` is CYCLIC.  That is the PROVEN upper half of
+-- `natCard_ker_zsmul_q` below (`#E[q] ∣ q`), and taking it from here rather than
+-- from `natCard_ker_degreeFormEnd_le` is what keeps the `q`-primary count off a
+-- still-open leaf.  It adds `WronskianInduction`/`PsiSumCompanion`/`PhiPsiCoprime`
+-- to this file's cone and NONE to `MazurTorsion.lean`'s, which already imports
+-- `TorsionCharP` directly.
+public import Fermat.FLT.EllipticCurve.TorsionCharP
 
 @[expose] public section
 
@@ -808,7 +842,9 @@ theorem natCard_ker_degreeFormEnd_le (q : ℕ) [Fact q.Prime]
 
 Everything in this section exists to prove `natCard_ker_degreeFormEnd_of_dvd`
 below, and it reduces that leaf — a two-parameter family — to the SINGLE
-classical fact `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for `q ∤ c`.
+classical fact `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for `q ∤ c`,
+which is in turn proven from `#E[q] = q` and so from the one surviving leaf
+`exists_ne_zero_qTorsion`.
 
 The mechanism is that `F` is BIJECTIVE on `Wbar(𝔽̄_q)`, so composing with it
 does not change a kernel count, while it divides the value of the degree form
@@ -875,47 +911,176 @@ theorem surjective_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
   have h := (surjective_degreeFormEnd q Wbar hc (m := c) (n := 1) hd).2
   rwa [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one] at h
 
-/-- **The `q`-torsion count of an ORDINARY curve** (sorry leaf, opened
-2026-07-28; Silverman *AEC* V.3.1): `#ker([c] − F) = q` when `q ∤ c`.
+/-- **The ORDINARY criterion** (sorry leaf, opened 2026-07-29; Silverman *AEC*
+V.3.1, Deuring): a curve whose Frobenius trace is prime to `q` has a NONZERO
+`q`-torsion point over `𝔽̄_q`.
 
-WHAT THIS IS.  `[c] − F` is the Verschiebung `V`, and `V ∘ F = F ∘ V = [q]`
-(`frobeniusConj_mul_frobeniusPointEnd`).  Since `#ker F = 1`
-(`natCard_ker_frobeniusPointEnd`), the statement is equivalent to
-`#Wbar(𝔽̄_q)[q] = q`, i.e. to `E[q] ≅ ℤ/q` — the ORDINARY case of the
-ordinary/supersingular dichotomy.  The supersingular case is `q ∣ c`, where
-`E[q] = 0`; that is why the hypothesis `q ∤ c` is exactly the dichotomy and is
-LOAD-BEARING: without it the statement is false for every supersingular curve
-(e.g. `y² = x³ + 1` over `𝔽₅`, where `c = 0` and `#E[5] = 1`).
+This is the last characteristic-`q` input of the degree theory, and the only
+place the ordinary/supersingular dichotomy enters.  Everything `q`-primary is
+proven from it: `natCard_ker_zsmul_q` (`#E[q] = q`), then
+`natCard_ker_frobeniusConj` (`#ker([c] − F) = q`), then
+`natCard_ker_degreeFormEnd_of_dvd` (the whole `q ∣ d` family).
 
-WHY IT SURVIVED THE CUT.  One half of it is already free: the proven
-`natCard_ker_degreeFormEnd_le` at `(m, n) = (c, 1)` reads `#ker([c] − F) ≤ q`,
-and `E[q]` is a group killed by the prime `q`, so its order is a power of `q`
-and therefore `1` or `q`.  What is missing is only the LOWER bound
-`E[q] ≠ 0`.  Classically that is the invariant-differential criterion —
-`V = [c] − F` is separable iff its differential `c` is nonzero in `𝔽_q` — and
-this development has no differentials, which is the same absence that blocks
-`natCard_ker_degreeFormEnd_le` itself.
+`hqc` IS LOAD-BEARING and the statement is FALSE without it: a supersingular
+curve has `E[q] = 0` outright.  Witness `y² = x³ + 1` over `𝔽₅`, where the
+affine points are `(0, ±1)`, `(2, ±2)`, `(4, 0)` — so `#E(𝔽₅) = 6`, `c = 0`,
+and `E[5] = 0`.  `hc` is load-bearing too, because it is what pins `c` to the
+Frobenius trace rather than leaving it a free integer: `c` is UNIQUE given
+`hc`, since two solutions differ by an integer annihilating `F`'s image, i.e.
+all of `Wbar(𝔽̄_q)`, which has points of order `n` for every `q ∤ n`
+(`TorsionCard.card_torsionBy`).
 
-THE CHECK THAT WOULD REFUTE the claim that this is now the minimal atom on
-this axis: a proof of `E[q] ≠ 0` for `q ∤ c` that does not pass through
-separability of `[m] − [n]∘F` — for instance a Hasse-invariant or
-Deuring-lift argument, or an `E[q^∞]` structure theorem.  A name-level grep of
-`Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT` found none.
+WHAT IS FREE HERE, AND A CORRECTION.  The note this leaf replaces claimed the
+upper half `#ker([c] − F) ≤ q` was "already free" from
+`natCard_ker_degreeFormEnd_le` at `(m, n) = (c, 1)`.  That is not free: that
+declaration is itself an OPEN leaf.  The upper half is genuinely free, but from
+`TorsionCharP.exists_zsmul_eq_of_charP` — the `q`-torsion in characteristic `q`
+is CYCLIC, PROVEN 2026-07-25 out of the vanishing of `ΨSqₚ′` — which gives
+`#E[q] ∣ q` outright.  `natCard_ker_zsmul_q` below now takes it from there, so
+the `q`-primary count no longer depends on `natCard_ker_degreeFormEnd_le` at
+all.  What is missing is exactly the LOWER bound `E[q] ≠ 0`, which is this
+leaf, stated as the existence of ONE point rather than as a count.
 
-NOTE ON CIRCULARITY, for whoever picks this up.  This leaf is *exactly* the
-instance `(m, n) = (c, 1)` of `natCard_ker_degreeFormEnd_of_dvd` below (there
-`d = q`, so `q ∣ d`, and `q ∤ m` is `q ∤ c`).  So it must NOT be proven by
-citing that theorem or `natCard_ker_degreeFormEnd_of_sq`: the reduction below
-runs the other way, from the whole two-parameter family down to this single
-instance.  That reduction is the content of the cut of 2026-07-28. -/
+IT IS NOT DERIVABLE FROM THE ALGEBRA IN THIS FILE, and that is worth recording
+because several route notes have proposed rearranging the peeling to get it.
+Take `A = ⨁_{ℓ ≠ q} (ℚ_ℓ/ℤ_ℓ)²` with `F` acting on each `T_ℓ = ℤ_ℓ²` by the
+companion matrix of `X² − c·X + q`, for ANY `c` prime to `q`.  Then `F` is
+bijective, `F² = c·F − q`, and `#ker([m] − [n]F) = |d| / q^{v_q(d)}` for every
+`(m, n)` — so `#ker F = 1` and every `q ∤ d` count agrees with
+`natCard_ker_degreeFormEnd_of_not_dvd` and with `degreeFormEnd_peel` — and yet
+`A[q] = 0`.  Every algebraic identity this module proves holds in that model,
+so any proof of this leaf must use the GEOMETRY of the curve, not `ℤ[F]`.
+
+THE ROUTE, and it is elementary: no invariant differentials, no dual isogeny,
+no Cartier operator, no `E[q^∞]` structure theorem.  It is Deuring's
+congruence, used twice.  For `q` odd write the curve as `y² = g(x)` with
+`deg g = 3`, set `G = g^{(q−1)/2}` and let `H ∈ 𝔽_q` be the coefficient of
+`x^{q−1}` in `G` (the Hasse invariant).
+
+1. `#E(𝔽_{q^n}) ≡ 1 − Hₙ (mod q)`, where `Hₙ` is the coefficient of
+   `x^{q^n − 1}` in `g^{(q^n − 1)/2}`.  Pure character sum:
+   `#E(𝔽_{q^n}) = q^n + 1 + Σ_x χ(g(x))` with `χ(u) = u^{(q^n − 1)/2}`, and
+   `Σ_{x ∈ 𝔽_{q^n}} x^k = −1` exactly when `k > 0` and `(q^n − 1) ∣ k`.
+2. `Hₙ = H^n` in `𝔽_q`.  `g^{(q^n − 1)/2} = ∏_{i < n} G^{q^i}` and
+   `G^{q^i} = Σ_j a_j^{q^i} x^{j·q^i}`, so the coefficient of `x^{q^n − 1}` is
+   a sum over `Σ_i j_i q^i = q^n − 1` with `0 ≤ j_i ≤ deg G = 3(q−1)/2`.  Since
+   `3(q−1)/2 < 2q − 1`, the congruence `j₀ ≡ −1 (mod q)` forces `j₀ = q − 1`,
+   and induction forces every `j_i = q − 1`.  Hence
+   `Hₙ = ∏_i H^{q^i} = H^{1 + q + ⋯ + q^{n−1}} = H^n`, using `H^q = H` for
+   `H ∈ 𝔽_q`.
+3. `n = 1` gives `c = q + 1 − #E(𝔽_q) ≡ H (mod q)`, so `hqc` says `H ≠ 0`;
+   then `n = q − 1` gives `H^{q−1} = 1`, so `q ∣ #E(𝔽_{q^{q−1}})`, and Cauchy
+   produces a point of order `q` over `𝔽_{q^{q−1}} ⊆ 𝔽̄_q`.
+
+The cost of that route is not the argument but the INFRASTRUCTURE it needs:
+point counting over `𝔽_{q^n}` (this module only ever counts over `𝔽_q`, in
+`natCard_ker_one_sub_frobeniusPointEnd`) and the power-sum identity.  `q = 2`
+is not covered by it — completing the square fails — but there the whole
+statement is finite and explicit: in characteristic `2`,
+`−(x, y) = (x, y + a₁x + a₃)`, so `P = −P` forces `a₁x = 0`; hence for `a₁ ≠ 0`
+the point `(0, y)` with `y² + a₃y = a₆` is a nonzero `2`-torsion point, and
+`a₁ = 0` is exactly the supersingular case over `𝔽₂` (where `2 ∣ c`), which
+`hqc` excludes.
+
+THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof of
+`E[q] ≠ 0` from the kernel counts alone.  The model above rules that out. -/
+theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 :=
+  sorry
+
+/-- **`#E[q] = q` in the ordinary case** (PROVEN 2026-07-29 over
+`exists_ne_zero_qTorsion` and `TorsionCharP.exists_zsmul_eq_of_charP`).
+
+The two halves of the dichotomy meet here.  Cyclicity in characteristic `q`
+says every `q`-torsion point is a multiple of any nonzero one, so `E[q]` is
+either trivial or the cyclic group generated by one point of order `q`; the
+leaf supplies a nonzero point, so it is the latter and the count is `q`.
+
+Note the direction of the dependency, which is the reverse of the 2026-07-28
+arrangement: `#E[q] = q` is now the primitive and `#ker([c] − F) = q` the
+consequence, because the upper bound is available on `E[q]` (where it is
+`TorsionCharP`'s cyclicity) and NOT on `ker([c] − F)` (where it would be the
+open `natCard_ker_degreeFormEnd_le`). -/
+theorem natCard_ker_zsmul_q (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    Nat.card (LinearMap.ker
+      ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) = q := by
+  classical
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hchar : ((q : ℕ) : AlgebraicClosure (ZMod q)) = 0 :=
+    CharP.cast_eq_zero (AlgebraicClosure (ZMod q)) q
+  obtain ⟨P, hP0, hPq⟩ := exists_ne_zero_qTorsion q Wbar hc hqc
+  -- `P` has additive order exactly `q`
+  have hord : addOrderOf P = q := by
+    have hdvd : (addOrderOf P : ℤ) ∣ ((q : ℕ) : ℤ) :=
+      addOrderOf_dvd_iff_zsmul_eq_zero.mpr hPq
+    rcases (Fact.out : q.Prime).eq_one_or_self_of_dvd _
+      (Int.natCast_dvd_natCast.mp hdvd) with h | h
+    · refine absurd ?_ hP0
+      have h1 : (1 : ℤ) • P = 0 :=
+        addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [h]; exact one_dvd _)
+      rwa [one_zsmul] at h1
+    · exact h
+  -- the `q`-torsion is exactly the cyclic group generated by `P`
+  have hiff : ∀ Z : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      Z ∈ LinearMap.ker
+          ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+        ↔ Z ∈ AddSubgroup.zmultiples P := by
+    intro Z
+    rw [ker_zsmul_one, Submodule.mem_torsionBy_iff, AddSubgroup.mem_zmultiples_iff]
+    constructor
+    · intro hZ
+      obtain ⟨n, hn⟩ := TorsionCharP.exists_zsmul_eq_of_charP
+        (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))
+        (Fact.out : q.Prime) hchar Z P hZ hPq hP0
+      exact ⟨n, hn.symm⟩
+    · -- the `q`-torsion is a submodule, so it is closed under `ℤ`-scaling
+      rintro ⟨n, rfl⟩
+      exact (Submodule.mem_torsionBy_iff _ _).mp
+        (Submodule.smul_mem _ n ((Submodule.mem_torsionBy_iff _ _).mpr hPq))
+  calc Nat.card (LinearMap.ker
+        ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))))
+      = Nat.card (AddSubgroup.zmultiples P) :=
+        Nat.card_congr (Equiv.subtypeEquivRight hiff)
+    _ = addOrderOf P := Nat.card_zmultiples P
+    _ = q := hord
+
+/-- **The `q`-torsion count of an ORDINARY curve** (PROVEN 2026-07-29 over
+`natCard_ker_zsmul_q`): `#ker([c] − F) = q` when `q ∤ c`.
+
+`[c] − F` is the Verschiebung `V`, and `V ∘ F = [q]`
+(`frobeniusConj_mul_frobeniusPointEnd`) with `F` bijective, so
+`#ker V = #ker V · #ker F = #E[q] = q`.
+
+This is the `(m, n) = (c, 1)` instance of `natCard_ker_degreeFormEnd_of_dvd`
+below, and the reduction there runs from the two-parameter family down to it —
+so it must NOT be proven by citing that theorem or
+`natCard_ker_degreeFormEnd_of_sq`.  It is not: the input is `#E[q] = q`, whose
+own inputs are `TorsionCharP`'s cyclicity and the leaf
+`exists_ne_zero_qTorsion`, neither of which is downstream of anything here. -/
 theorem natCard_ker_frobeniusConj (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
       = c • frobeniusPointEnd q Wbar
         - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
     (hqc : ¬ ((q : ℤ) ∣ c)) :
-    Nat.card (LinearMap.ker (degreeFormEnd q Wbar c 1)) = q :=
-  sorry
+    Nat.card (LinearMap.ker (degreeFormEnd q Wbar c 1)) = q := by
+  have h := natCard_ker_mul (degreeFormEnd q Wbar c 1) (frobeniusPointEnd q Wbar)
+    (surjective_frobeniusPointEnd q Wbar hc)
+  rw [frobeniusConj_mul_frobeniusPointEnd q Wbar hc, natCard_ker_zsmul_q q Wbar hc hqc,
+    natCard_ker_frobeniusPointEnd] at h
+  simpa using h.symm
 
 /-- `[d]` as a `Module.End` is surjective for `d ≠ 0` (PROVEN): the
 `Module.End` repackaging of `WeierstrassCurve.zsmul_surjective_algClosed`. -/
@@ -935,23 +1100,6 @@ theorem zsmul_one_mul_zsmul_one (q : ℕ) [Fact q.Prime]
         * (b • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
       = (a * b) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
   rw [smul_mul_assoc, one_mul, smul_smul]
-
-/-- **`#E[q] = q` in the ordinary case** (PROVEN over
-`natCard_ker_frobeniusConj`): `[q] = ([c] − F) ∘ F`, the right factor has
-trivial kernel and the left one has kernel of order `q`. -/
-theorem natCard_ker_zsmul_q (q : ℕ) [Fact q.Prime]
-    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
-    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
-      = c • frobeniusPointEnd q Wbar
-        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
-    (hqc : ¬ ((q : ℤ) ∣ c)) :
-    Nat.card (LinearMap.ker
-      ((q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))) = q := by
-  have h := natCard_ker_mul (degreeFormEnd q Wbar c 1) (frobeniusPointEnd q Wbar)
-    (surjective_frobeniusPointEnd q Wbar hc)
-  rw [frobeniusConj_mul_frobeniusPointEnd q Wbar hc,
-    natCard_ker_frobeniusConj q Wbar hc hqc, natCard_ker_frobeniusPointEnd] at h
-  simpa using h
 
 /-- **`#E[q^v] = q^v` in the ordinary case** (PROVEN over
 `natCard_ker_zsmul_q`): `[q^v] = [q] ∘ [q^{v−1}]` and `[q^{v−1}]` is
@@ -1203,8 +1351,10 @@ of the infinite `Wbar(𝔽̄_q)`.
 WHAT SURVIVED.  The reduction bottoms out at `natCard_ker_frobeniusConj`,
 `#ker([c] − F) = q` for `q ∤ c` — the ordinary `q`-torsion count, which is
 exactly the `(m, n) = (c, 1)` INSTANCE of this theorem.  So this declaration
-is now a statement about a two-parameter family proven from a single instance
-of itself, and that instance is the leaf. -/
+is a statement about a two-parameter family proven from a single instance of
+itself.  That instance is now PROVEN too (2026-07-29), from `#E[q] = q`; the
+leaf under it is `exists_ne_zero_qTorsion`, the bare existence of a nonzero
+`q`-torsion point. -/
 theorem natCard_ker_degreeFormEnd_of_dvd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
@@ -1286,12 +1436,23 @@ theorem natCard_ker_degreeFormEnd_of_dvd (q : ℕ) [Fact q.Prime]
   exact hval.symm
 
 /-- **The degree of `[m] − [n]∘F` is a binary quadratic form of
-discriminant `c² − 4q`, counted by its kernel** (sorry leaf, opened
-2026-07-27; the ONLY remaining input of Hasse's bound
-`hasse_bound_natCard_affine_point`): for `q ∤ m` the endomorphism
-`[m] − [n]∘F` of `Wbar(𝔽̄_q)` is separable, so its degree is the
-cardinality of its kernel, and that degree is `m² − c·m·n + n²q` for a
-coefficient `c` independent of `(m, n)`.
+discriminant `c² − 4q`, counted by its kernel** — opened as a sorry leaf
+2026-07-27, **PROVEN since**, over exactly the four leaves this module still
+carries: `exists_sq_frobeniusPointEnd_prime_to_char` and
+`sq_frobeniusPointEnd_qPrimary` (through the proven umbrella
+`exists_sq_frobeniusPointEnd`), `natCard_ker_degreeFormEnd_le`, and
+`exists_ne_zero_qTorsion` (through `natCard_ker_degreeFormEnd_of_dvd`).  It is
+still the ONLY input of Hasse's bound `hasse_bound_natCard_affine_point`, which
+is why the route notes below are kept: they document the axes searched for
+those leaves, not for this theorem.  For `q ∤ m` the endomorphism `[m] − [n]∘F` of
+`Wbar(𝔽̄_q)` is separable, so its degree is the cardinality of its kernel, and
+that degree is `m² − c·m·n + n²q` for a coefficient `c` independent of
+`(m, n)`.
+
+(The `(sorry leaf)` label this docstring carried until 2026-07-30 was stale:
+the declaration below has had a real proof since 2026-07-27.  Such labels get
+harvested into dispatch lists, so a stale one manufactures work at a proven
+node — see CLAUDE.md.)
 
 Silverman *AEC*: III.6.2 (`deg` is a positive definite quadratic form on
 `End(E)`, via the dual isogeny), III.5.5/V.1.1 (`[m] − [n]∘F` is
@@ -1408,17 +1569,23 @@ DECOMPOSED, and this declaration is PROVEN.  The endomorphism-algebra axis
 described above was taken.  Steps 2 and 3 are closed
 (`degreeFormEnd_mul_conj`, `conj_mul_degreeFormEnd`,
 `surjective_degreeFormEnd`, `natCard_ker_mul_natCard_ker_conj`), and what
-survives is exactly step 1 and step 4, as three named leaves:
+survives is exactly step 1 and step 4.  The three names below are the shape of
+that cut; two of them have since been proven and pushed one level down, so read
+each bullet's status annotation before dispatching at any of these names:
 
 * `exists_sq_frobeniusPointEnd` — the Frobenius characteristic equation on
-  points, `F² = c·F − q`.  Step 1.
+  points, `F² = c·F − q`.  Step 1.  **PROVEN 2026-07-28** over the
+  torsion-primary split; the live leaves under it are
+  `exists_sq_frobeniusPointEnd_prime_to_char` and
+  `sq_frobeniusPointEnd_qPrimary`.
 * `natCard_ker_degreeFormEnd_le` — separable degree ≤ degree, one-sided and
   with no hypothesis on `m`.  Half of step 4.
 * `natCard_ker_degreeFormEnd_of_dvd` — the `q`-primary case `q ∣ d`.  The
   other half of step 4, and the only place the ordinary/supersingular
-  dichotomy is used.  **PROVEN 2026-07-28**; what survives of it is the
-  single instance `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for
-  `q ∤ c`.
+  dichotomy is used.  **PROVEN 2026-07-28** over the single instance
+  `natCard_ker_frobeniusConj`, `#ker([c] − F) = q` for `q ∤ c`, which is
+  **PROVEN 2026-07-29** in turn; what survives of the pair is the existence
+  leaf `exists_ne_zero_qTorsion`.
 
 One correction to the route note above.  It records `card_ker_comp`'s side
 condition as "surjectivity of `ψ'` on `𝔽̄_q`-points", to be supplied

@@ -43,10 +43,30 @@ def unjustified(s):
             continue
         k = j["kind"]
         if k == "merger":
-            if s["main"] != s["rebaselined"]:
-                bad.append((n, "merger alive but main already moved"))
-            elif not s["inflight"]:
-                bad.append((n, "merger alive with nothing claimed in .inflight"))
+            # A LIVE merger is justified for as long as it runs. Two earlier
+            # tests lived here and both were wrong, in the same way -- they
+            # inferred what a merger had done from a fact that is not about it.
+            #
+            #   `main != rebaselined` read ANY movement of main as "this merger
+            #   already released". But main moves without a release: a tooling
+            #   commit is explicitly sanctioned (CLAUDE.md), and the loop's own
+            #   source commit is one. After the first such commit the condition
+            #   is permanently true, so every merger created afterwards to
+            #   refresh the stale snapshot was condemned on its first tick --
+            #   which is exactly the panic that produced this comment. It also
+            #   cannot be repaired by tightening it to "delivered everything and
+            #   still alive": ALIVE_CACHE means that is naturally true for up to
+            #   20 seconds at the end of EVERY successful release. Whether this
+            #   merger released is now recorded where it belongs, in the record
+            #   (`base`), and rows 9/10 consume it when it stops.
+            #
+            #   `not s["inflight"]` condemned the refresh-only merger that
+            #   r11_action deliberately creates with an empty claim -- `[]` is
+            #   falsy. None and [] are DIFFERENT facts here and load()/save()
+            #   keep them apart on purpose: None is "no merger claimed
+            #   anything", [] is "claimed nothing, refresh only".
+            if s["inflight"] is None:
+                bad.append((n, "merger alive but .inflight records no claim"))
         elif k == "agent":
             w = j["worktree"]
             if w not in s["workers"]:
@@ -64,9 +84,6 @@ def idle_guard(s):
         # ...unless we are waiting on host capacity, which IS a legitimate
         # wait even with nothing running (a zero-capacity or fully drained
         # fleet). Without this it would read as an illegal state and panic.
-        if (any(unspawned(j) for j in s["jobs"].values())
-                and not any(spawnable(s, j) for j in s["jobs"].values())):
-            return (True, "")
         return (False, "nothing is alive, so nothing will change")
     bad = unjustified(s)
     if bad:
@@ -109,26 +126,76 @@ def died(j):
 SPAWN = None
 
 
+def host_of(s, worktree):
+    return s.get("worker_host", {}).get(worktree)
+
+
+# Deyao, 2026-07-30: 150 concurrent workers, a RAM veto, and placement by CPU
+# utilisation. These are three DIFFERENT limits and each catches something the
+# others cannot: the cap bounds total concurrency, the veto refuses a machine
+# that would swap, and utilisation decides which of the acceptable machines
+# gets the next job.
+MAX_WORKERS = 150
+SPAWNS_PER_TICK = 5      # a herd of 47 at once is what this prevents
+MIN_AVAIL_GB = 120.0     # below this a host is vetoed outright
+MAX_UTIL = 0.90          # 1.0 == loadavg equal to core count
+
+
 def host_load(s):
-    """Live jobs per host -- the distributor's view of the fleet."""
+    """Busy worktrees per host -- the distributor's view of the fleet.
+
+    Counted by WORKTREE, not by job, because a worktree is what a job occupies
+    and a worktree cannot move: its .lake is machine-local, so the host is a
+    property of the worktree rather than a choice made when a job starts. The
+    earlier version chose a host at spawn time, which is only meaningful if a
+    job could run anywhere -- it cannot, and the real fleet has recorded a
+    fixed worktree->host map all along.
+    """
     load = {h: 0 for h in s.get("hosts", {})}
-    for j in s["jobs"].values():
-        if j["alive"] and j.get("host") in load:
-            load[j["host"]] += 1
+    for w in s["workers"]:
+        h = host_of(s, w)
+        if h in load and wstate(s, w) == "claimed":
+            load[h] += 1
     return load
 
 
-def pick_host(s):
-    """Least-loaded host with room, ties broken by name so it is deterministic.
+def busy_count(s):
+    return sum(1 for w in s["workers"] if wstate(s, w) == "claimed")
 
-    Balancing on the RATIO rather than the count is what keeps a small machine
-    from being handed the same absolute load as a large one; comparing raw
-    counts silently overcommits the smallest host in the pool first.
+
+def pick_worker(s):
+    """A free, healthy worktree on an acceptable host. None if none qualifies.
+
+    Placement is by MEASURED CPU utilisation, not by a static capacity, because
+    these are shared machines: other people's jobs run on them, and a fixed
+    per-host slot count cannot see that. One host was carrying a load of 420
+    from another user's work while holding none of ours -- a static cap would
+    have kept feeding it.
+
+    The RAM veto is separate and absolute. A host low on memory is not "less
+    preferred", it is unusable: Lean elaboration that starts swapping does not
+    slow down gracefully, it takes the machine down with it.
     """
+    if busy_count(s) >= MAX_WORKERS:
+        return None
     load = host_load(s)
-    room = [(load[h] / max(cap, 1), h)
-            for h, cap in sorted(s.get("hosts", {}).items()) if load[h] < cap]
-    return min(room)[1] if room else None
+    cands = []
+    for w in sorted(s["workers"]):
+        if wstate(s, w) != "free" or not s["healthy"].get(w):
+            continue
+        h = host_of(s, w)
+        m = s.get("hosts", {}).get(h)
+        if not m:
+            continue
+        if m.get("avail_gb", 0) < MIN_AVAIL_GB:
+            continue
+        # Our own queued jobs are not visible in a loadavg sampled seconds ago,
+        # so count what we have already placed this tick against the host.
+        proj = m.get("util", 1.0) + load.get(h, 0) / max(m.get("ncpu", 1), 1)
+        if proj > MAX_UTIL:
+            continue
+        cands.append((round(proj, 3), h, w))
+    return min(cands)[2] if cands else None
 
 
 # Kinds that occupy a worktree and build Lean, and so are subject to the
@@ -141,8 +208,6 @@ def pick_host(s):
 # slot. Subjecting the medic to capacity is therefore a guaranteed permanent
 # deadlock: the one job that can unstick the loop queues behind the jobs that
 # cannot proceed until it does.
-NEEDS_HOST = ("agent", "merger")
-
 # The medic runs here, always, whatever the fleet is doing.
 MEDIC_HOST = "mystique"
 
@@ -154,9 +219,7 @@ def spawnable(s, j):
     # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
     # mode blocks the only thing that can start the medic -- and this is what
     # stops that from also letting ordinary work start during a panic.
-    if "medic" in s["jobs"] and j["kind"] != "medic":
-        return False
-    return j["kind"] not in NEEDS_HOST or pick_host(s) is not None
+    return not ("medic" in s["jobs"] and j["kind"] != "medic")
 
 
 def unspawned(j):
@@ -230,6 +293,48 @@ def rmedic_done_action(s):
         note(s, f"2  medic verdict NO-GO: {why} -- emailed, STOP written")
 
 
+def rmedic_dead_guard(s):
+    """The medic died without a verdict. Nothing below can rescue this.
+
+    Every other job's death has a recovery: an agent is respawned as a takeover,
+    a merger's claim is restored to the batch. The medic has none, because the
+    medic IS the recovery -- and SAFE MODE suspends every row beneath it. So a
+    medic that stops without writing a sentinel wedges the loop permanently and
+    silently, which is the worst outcome the table can produce.
+
+    Escalate to the human instead of respawning: the medic is the loop's own
+    self-repair, and self-repair that died is exactly the point at which
+    guessing again is worse than stopping and saying so. Nothing is torn down
+    -- STOP halts the loop only; the fleet keeps running (see r1_action).
+    """
+    j = s["jobs"].get("medic")
+    if not j:
+        return (False, "no medic record")
+    if not died(j):
+        return (False, "medic is not started ∧ ¬alive ∧ ¬sentinel")
+    return (True, "")
+
+
+def rmedic_dead_action(s):
+    # Two strikes. An unreachable host reports NO tokens rather than raising
+    # (live_tokens swallows it deliberately, to avoid calling a whole host's
+    # jobs dead on one bad ssh), so a single observation of "not alive" can be
+    # a network blip. Requiring a second firing costs one tick and spans a
+    # fresh sweep, since the liveness cache is shorter than two ticks.
+    j = s["jobs"]["medic"]
+    if j["retries"] < 1:
+        j["retries"] += 1
+        note(s, "2a medic not observed alive; one more tick before escalating")
+        commit(s, "medic not observed alive (strike 1 of 2)")
+        return
+    why = s["jobs"]["medic"]["payload"]
+    s["email"].append("medic died without a verdict; the panic it was sent to "
+                      "repair is UNREPAIRED: " + str(why))
+    commit(s, "medic died without a verdict -> STOP")
+    s["stop"] = True
+    note(s, "2a medic died without a verdict -> emailed, STOP written")
+
+
 def rmedic_wait_guard(s):
     """SAFE MODE engages on the medic RECORD, before it has even started.
 
@@ -291,11 +396,27 @@ def r4_guard(s):
 
 
 def r4_action(s):
+    """Resume = respawn. It cannot be anything else.
+
+    A stopped agent's conversation is not replayable from the loop's side: the
+    loop is a Python process, not a Claude session, and the ids it holds are
+    not resumable session ids. What survives is the WORK, in the worktree. So
+    the record is returned to unspawned and row 3 starts a fresh agent that is
+    told to read `git status`/`git diff` first and continue what it finds.
+
+    A NEW token is minted. The old one is what the previous process advertised
+    and what its markers name, so reusing it would let a stale `.started` file
+    -- or a straggler process that is still exiting -- be mistaken for the
+    replacement.
+    """
     for n, j in jobs_of(s, "agent").items():
         if died(j):
-            j["alive"] = True
+            j["started"] = False
+            j["alive"] = False
+            j["token"] = tok()
+            j["takeover"] = True
             j["retries"] += 1
-            note(s, f"4  resumed {n} from transcript (resumes={j['retries']})")
+            note(s, f"4  {n} died -> re-dispatched as takeover (attempt {j['retries']})")
 
 
 def r5_guard(s):
@@ -312,10 +433,18 @@ def r5_action(s):
     # state is already unexplained.
     pending_medic = [n for n, j in s["jobs"].items()
                      if j["kind"] == "medic" and unspawned(j)]
+    # Rate-limited. 47 agents were waiting to start at once after the fleet was
+    # rebuilt, and starting them in a single tick would put a thundering herd
+    # on machines shared with other users -- with the loadavg the placement
+    # reads lagging a minute behind the damage.
+    budget = SPAWNS_PER_TICK
     for n, j in s["jobs"].items():
         if pending_medic and n not in pending_medic:
             continue
+        if budget <= 0:
+            break
         if spawnable(s, j):
+            budget -= 1
             j["started"] = True
             j["alive"] = True
             # Identity is recorded BY the spawn, not by the record that
@@ -324,8 +453,11 @@ def r5_action(s):
             # what row 6 resumes from: a died agent is continued from its
             # transcript, never restarted from nothing, so losing this field
             # would silently convert every resume into a redo.
-            j["host"] = j.get("host") or (pick_host(s) if j["kind"] in NEEDS_HOST
-                                          else MEDIC_HOST)
+            # Placement was decided when the record was created; spawning
+            # only executes it. Choosing here would let the decision drift
+            # from the worktree the record already names.
+            j["host"] = (j.get("host") or host_of(s, j["worktree"])
+                         or (MEDIC_HOST if j["kind"] == "medic" else None))
             host, pid, sess = SPAWN(s, n, j)
             j["host"], j["pid"], j["session"] = host, pid, sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
@@ -347,8 +479,22 @@ def r6_guard(s):
         return (False, "no merger record")
     if not died(m):
         return (False, "merger is not started ∧ ¬alive ∧ ¬sentinel")
-    if s["main"] != s["rebaselined"]:
-        return (False, "main moved -- it released, so REBASELINE handles it")
+    # NO comparison against a main sha, of any kind. "main moved" is not
+    # evidence that THIS merger released -- main moves for reasons the loop
+    # does not cause, and every sha-proxy tried here failed the same way:
+    # against `rebaselined` a single tooling commit disabled this row forever;
+    # against a `base` stamped at creation it survived exactly until the next
+    # tooling commit, which the medic writing this line then made itself while
+    # repairing the first version.
+    #
+    # The contract is what settles it. A merger delivers by moving main AND
+    # leaving a current snapshot AND a current audit AND reporting -- so one
+    # that died with no sentinel did not deliver, whatever main is doing. The
+    # single exception is a full delivery on disk that it was killed before
+    # reporting; that is precisely r7_guard, so ask it rather than approximate
+    # it, and let ADOPT take it.
+    if r7_guard(s)[0]:
+        return (False, "the full delivery is on disk -- ADOPT handles it")
     return (True, "")
 
 
@@ -382,16 +528,39 @@ def r7_guard(s):
     m = s["jobs"].get("merger")
     if m and m["alive"]:
         return (False, "a merger is still alive")
-    if not (s["snapshot"] and s["snapshot"]["sha"] == s["main"]):
-        return (False, f"merger moved main to {s['main']} but left no snapshot for it")
-    if s["queue1"]["audited"] != s["main"]:
-        return (False, f"merger moved main to {s['main']} but left queue1 unaudited")
+    # `snapshot_current` / `audit_current`, NOT sha equality. A tooling commit
+    # moves main without touching a single Lean input, so raw equality made
+    # every one of them retroactively unadopt the release that was already
+    # delivered -- and then this row stopped matching, nobody consumed the
+    # finished merger, and the loop panicked. Twice, on two different medics'
+    # own repair commits. See lean_equiv() for what "current" now means.
+    if not s["snapshot_current"]:
+        snap = s["snapshot"]["sha"] if s["snapshot"] else "none"
+        return (False, f"main is {s['main']} but the snapshot is {snap}")
+    if not s["audit_current"]:
+        return (False, f"main is {s['main']} but queue1 is audited at "
+                       f"{s['queue1']['audited'] or 'none'}")
     return (True, "")
 
 
 def r7_action(s):
     s["rebaselined"] = s["main"]
-    s["jobs"].pop("merger", None)
+    # Only a merger's claim is discharged here. This row also fires with NO
+    # merger record -- main moving by a tooling commit is a re-baseline with no
+    # release behind it -- and in that case .inflight belongs to somebody else.
+    # Clearing it unconditionally would drop an outstanding claim on the floor,
+    # which is fault 3 all over again by a different door.
+    if s["jobs"].pop("merger", None) is None:
+        note(s, f"7  re-baselined to {s['main']} with no release behind it "
+                f"(main moved without changing any Lean input)")
+        return
+    # The claim is DELIVERED, so it is discharged. Leaving it set would make
+    # ".inflight non-empty with no merger record" ambiguous between "a claim was
+    # dropped on the floor" and "a claim was honoured" -- and r11_action now
+    # recovers the first, so it must be able to tell them apart. Row 9 already
+    # clears it on the failure path; this is the success path saying the same
+    # thing.
+    s["inflight"] = None
     note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
             f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)")
 
@@ -399,8 +568,10 @@ def r7_action(s):
 def r11_guard(s):
     if "merger" in s["jobs"]:
         return (False, "a merger record already exists")
-    stale = (not s["snapshot"] or s["snapshot"]["sha"] != s["main"]
-             or s["queue1"]["audited"] != s["main"])
+    # Stale means "a build of main would differ from what we have", not "main
+    # moved". Under raw sha equality a tooling commit ordered a full 4.6 GB
+    # rebuild of a tree whose Lean sources had not changed by one byte.
+    stale = not s["snapshot_current"] or not s["audit_current"]
     if not s["batch"] and not stale:
         return (False, "nothing to merge and nothing derived from main is stale")
     return (True, "")
@@ -412,26 +583,51 @@ def r11_action(s):
     # exists. The merger is what refreshes them, so it must be startable with
     # nothing to merge -- otherwise that state is a silent deadlock in which
     # dispatch is blocked forever on a snapshot nobody will ever rebuild.
-    s["inflight"] = list(s["batch"])
+    #
+    # FOLDED, never overwritten. This line used to read
+    # `s["inflight"] = list(s["batch"])`, which DESTROYS an outstanding claim,
+    # and it destroyed a real one: the bootstrap handed the loop the stopped
+    # fleet's 46-branch merge batch in .inflight with no merger record to own
+    # it, this row fired eleven minutes later because the snapshot was stale,
+    # and all 46 were gone in one assignment. 37 of them were still unmerged
+    # 2 hours later -- every one ahead of main with real work on it, their
+    # worktrees pinned in awaiting_merge forever, since a branch is only freed
+    # by BECOMING an ancestor of main and nothing was ever going to merge it.
+    # Nothing panicked, because no guard asks about an unowned claim: the loop
+    # cannot distinguish work it dropped from work that was never there.
+    #
+    # A non-empty .inflight with no merger record is precisely that dropped
+    # claim -- r7_action discharges the claim it delivers and row 9 restores
+    # the claim it fails to, so the only way to reach this row with one
+    # outstanding is that its owner vanished without either. It is work to be
+    # merged, this is the row that creates the merger, so it joins the claim.
+    # (The simulator has always had a `corrupt: orphan .inflight` injection for
+    # exactly this state. It exercised the path; nobody checked that clobbering
+    # was the wrong answer to it.)
+    orphaned = list(s["inflight"] or [])
+    claim = orphaned + [b for b in s["batch"] if b not in orphaned]
+    s["inflight"] = claim
     s["batch"] = []
     s["jobs"]["merger"] = {
         "kind": "merger", "worktree": "flt-staging", "payload": s["inflight"],
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
-    note(s, "11 merger record created; claimed %d branch(es)%s"
-            % (len(s["inflight"]),
-               "" if s["inflight"] else " (refresh only -- nothing to merge)"))
+    note(s, "11 merger record created; claimed %d branch(es)%s%s"
+            % (len(claim),
+               "" if claim else " (refresh only -- nothing to merge)",
+               " [recovered %d orphaned by a vanished merger]" % len(orphaned)
+               if orphaned else ""))
 
 
 def r15_guard(s):
-    if s["queue1"]["audited"] != s["main"]:
+    if not s["audit_current"]:
         return (False, "queue1 is not AUDITED at main")
     if not s["queue1"]["tasks"]:
         return (False, "queue1 is empty")
     if not s["snapshot"]:
         return (False, "no snapshot for agents to copy .lake from")
-    if s["snapshot"]["sha"] != s["main"]:
+    if not s["snapshot_current"]:
         # Existence is not enough. After a rebaseline the PREVIOUS release's
         # snapshot is still on disk while the new one builds, and dispatching
         # against it seeds every agent with a .lake for the wrong main -- the
@@ -441,27 +637,30 @@ def r15_guard(s):
         # snapshot == main before starting a merger; dispatch was the row that
         # only checked non-None.
         return (False, f"snapshot is {s['snapshot']['sha']}, main is {s['main']}")
-    free = [w for w in s["workers"]
-            if wstate(s, w) == "free" and s["healthy"].get(w)]
-    if not free:
-        return (False, "no free ∧ healthy worker")
+    if pick_worker(s) is None:
+        return (False, "no free ∧ healthy worktree on a host with spare capacity")
     return (True, "")
 
 
 def r15_action(s):
-    free = sorted(w for w in s["workers"]
-                  if wstate(s, w) == "free" and s["healthy"].get(w))
-    n = 0
-    for w in free:
-        if not s["queue1"]["tasks"]:
+    # Re-picked each time round: claiming a worktree changes its host's load,
+    # so allocating the whole free list up front would pile a run of tasks
+    # onto one machine before the balance was recomputed.
+    n, placed = 0, []
+    while s["queue1"]["tasks"]:
+        w = pick_worker(s)
+        if w is None:
             break
         task = s["queue1"]["tasks"].pop(0)
         s["jobs"][w] = {
-            "kind": "agent", "worktree": w, "payload": task, "token": tok(),
-            "retries": 0, "started": False, "alive": False, "sentinel": None,
+            "kind": "agent", "worktree": w, "payload": task,
+            "host": host_of(s, w),
+            "token": tok(), "retries": 0, "started": False, "alive": False,
+            "sentinel": None,
         }
+        placed.append("%s->%s" % (task.splitlines()[0][:40] if task else "?", w))
         n += 1
-    note(s, f"15 dispatched {n} agent record(s); spawn happens in row 5")
+    note(s, "15 dispatched %d agent record(s): %s" % (n, ", ".join(placed)))
 
 
 def panic(s, reason="no row matched"):
@@ -485,7 +684,12 @@ def panic(s, reason="no row matched"):
         # what -- that is the whole content of the panic. Emailing the reason
         # while handing the repair agent a bare "diagnose" would put the
         # useful half in the place nobody acts on.
-        "kind": "medic", "worktree": "flt-loop-state", "payload": reason,
+        # `flt-loop-state` was a path that does not exist, so the spawn's
+        # `cd || cd REPO` fallback quietly put the medic in the repo while its
+        # prompt told it to work somewhere else. The repo IS the medic's
+        # worktree: the loop source lives there and the state dir is its own
+        # git repo, addressed absolutely.
+        "kind": "medic", "worktree": "flt-lean", "payload": reason,
         "token": tok(), "retries": 0, "started": False, "alive": False,
         "sentinel": None,
     }
@@ -559,6 +763,11 @@ def inferred_panic(s):
 ROWS = [
     (1, "STOP exists", r1_guard, r1_action),
     (2, "medic finished -> apply GO / NO-GO verdict", rmedic_done_guard, rmedic_done_action),
+    # Id 16, not 3: ids are stable names that IDLE/PANIC/QUIET refer to by
+    # number, so a new row is appended to the numbering and inserted in the
+    # ORDER. Renumbering would silently repoint those constants at other rows.
+    (16, "medic died without a verdict -> escalate + STOP",
+     rmedic_dead_guard, rmedic_dead_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
