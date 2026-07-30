@@ -16,11 +16,13 @@ Run:  python3 flt-loop.py [--once] [--dry-run]
 """
 import argparse
 import concurrent.futures as cf
+import hashlib
 import json
 import os
 import pathlib
 import shlex
 import subprocess
+import sys
 import time
 
 import flt_loop_rows
@@ -388,13 +390,21 @@ You run detached, reparented to init, and are NOT a child of the loop -- you
 can kill the process that started you without bringing yourself down. So
 repairing state on disk is the smallest thing you may do. You may also edit
 the loop source (%(src)s) -- a state its table cannot express is a defect in
-the table -- and start a replacement loop detached, killing the old one first
-(one writer per state dir is enforced by a lock, so a replacement started
-while the old pid lives will refuse). The fleet is untouched by any of this:
-jobs are owned by their records, not by process lineage.
+the table. The fleet is untouched by any of this: jobs are owned by their
+records, not by process lineage.
 
-If you replace the loop, write your sentinel LAST. The new loop finds your
-record, sees you alive, and holds in SAFE MODE until you finish.
+EDIT THE SOURCE AND JUST LEAVE IT THERE. Do NOT restart the loop by hand. The
+tick after your record is consumed, the running loop notices the source changed,
+runs `--dry-run` against it as a smoke test, and re-execs onto it -- same pid,
+same lock, same loop.out. Your last edit is the one it adopts, so a fix you make
+after a hand-restart would be missed, which is exactly the fault that produced
+THIS medic: the previous one restarted the loop at 05:02:42, found a further
+fault from its own commit, fixed it at 05:07:16 into the source of a process
+five minutes into its run, and the old table panicked on the next tick for the
+reason the new one no longer could. If the dry-run fails, the loop keeps the old
+table and emails; check loop.out before assuming your edit was picked up.
+
+Write your sentinel LAST, so the loop holds in SAFE MODE until you finish.
 
 Your sentinel takes an extra field: "go": true or false -- whether the loop
 may resume. Both are emailed. GO is taken literally: the loop clears the panic
@@ -608,6 +618,88 @@ def take_lock():
     wr(lock, str(os.getpid()) + "\n")
 
 
+# ------------------------------------------------------------ source drift
+# The loop's own source. A medic is explicitly invited to edit these files --
+# "a state its table cannot express is a defect in the table" -- but Python
+# read them once, at startup, so an edit changes nothing about the process that
+# is running. That gap produced fault 5, and it is the worst-shaped fault yet
+# because the transition trace LIES: `git log` in the state dir shows rows
+# firing out of a table that no longer exists on disk, and the next medic reads
+# a repaired guard, dry-runs it, watches it match, and cannot explain the panic.
+#
+# It happened exactly as designed to happen. The previous medic fixed faults
+# 1-3, restarted the loop at 05:02:42, then found fault 4 from its own commit
+# and fixed THAT at 05:07:16 -- into the source of a process that had been
+# running for five minutes. Its GO was applied by the old code, which panicked
+# on the next tick for precisely the reason the new code no longer can.
+#
+# So the loop picks its own repairs up. It cannot do this while a medic is in
+# flight (a medic saves a file many times, and half of those states are
+# incoherent) -- but the tick after the medic's record is consumed is exactly
+# right: SAFE MODE means nothing operational ran on the stale table in between.
+SOURCES = [pathlib.Path(__file__).resolve(),
+           pathlib.Path(flt_loop_rows.__file__).resolve()]
+
+
+def source_digest():
+    """Digest of the source, or None if any of it does not compile.
+
+    A digest of the BYTES would re-exec on a comment change, which is harmless
+    but noisy; a digest that refuses to be taken while the tree does not parse
+    is what keeps a mid-save file from being adopted. Cheap enough to do every
+    tick: two files, a few tens of KB.
+    """
+    h = hashlib.sha256()
+    for p in SOURCES:
+        try:
+            src = p.read_bytes()
+            compile(src, str(p), "exec")
+        except (OSError, SyntaxError):
+            return None
+        h.update(src)
+    return h.hexdigest()
+
+
+def adopt_source(startup_digest):
+    """Re-exec onto edited source, if it survives a dry tick. Returns on refusal.
+
+    Gated on a real `--dry-run` in a subprocess, not just on compiling. The
+    failure this replaces is a silent one, and swapping it for "the loop dies
+    on import of a source nobody ran" would only move the silence. A dry tick
+    exercises load(), every guard, and the ssh sweep -- if that cannot complete,
+    the edit is not ready and staying on the old table is the safer wrong.
+
+    os.execv keeps the pid, so loop.lock stays valid and take_lock() sees its
+    own number; it keeps fd 1 and 2, so the same loop.out carries on; and it
+    keeps cwd, which is what makes the relative script path resolve.
+    """
+    now = source_digest()
+    if now is None or now == startup_digest:
+        return
+    try:
+        r = subprocess.run([sys.executable, str(SOURCES[0]), "--dry-run"],
+                           cwd=str(REPO), capture_output=True, text=True,
+                           timeout=300)
+    except subprocess.TimeoutExpired:
+        print("%s source changed but --dry-run did not finish in 300s; staying "
+              "on the old table" % time.strftime("%T"))
+        return
+    if r.returncode:
+        print("%s source changed but --dry-run FAILED; staying on the old "
+              "table: %s" % (time.strftime("%T"), (r.stderr or "").strip()[-300:]))
+        email("flt-loop: edited source refused",
+              "flt-loop source changed on disk but `--dry-run` exited %d, so the "
+              "running loop did NOT adopt it and is still executing the source it "
+              "started with. Fix the edit; the loop will pick it up on the next "
+              "tick.\n\n%s" % (r.returncode, (r.stderr or "")[-3000:]))
+        return
+    print("%s source changed and dry-runs clean -> re-exec onto it"
+          % time.strftime("%T"))
+    commit_state("loop re-exec onto edited source (%s)" % now[:12])
+    sys.stdout.flush()
+    os.execv(sys.executable, [sys.executable, "-u", str(SOURCES[0])] + sys.argv[1:])
+
+
 IDLE, PANIC = 13, 14
 # Rows whose action changes nothing. They must not commit, for the same reason
 # idle does not: the state repo's whole value is that `git log` IS the
@@ -661,7 +753,9 @@ def main():
             print("  %-3s %-58s %s" % (r["id"], r["label"][:58], v))
         return
     take_lock()
-    print("flt-loop running, pid %d, state %s" % (os.getpid(), STATE))
+    startup_digest = source_digest()
+    print("flt-loop running, pid %d, state %s, source %s"
+          % (os.getpid(), STATE, (startup_digest or "UNPARSEABLE")[:12]))
     while True:
         try:
             f, lbl, s, _ = tick()
@@ -670,6 +764,12 @@ def main():
             if s.get("halted"):
                 print("STOP -- exiting")
                 return
+            # AFTER the tick and only with no medic record: a medic's edits are
+            # not coherent until it has finished, and SAFE MODE means nothing
+            # operational is running on the stale table meanwhile. Does not
+            # return if it re-execs.
+            if "medic" not in s["jobs"]:
+                adopt_source(startup_digest)
         except Exception as e:
             email("flt-loop: tick raised", repr(e))
             time.sleep(30)
