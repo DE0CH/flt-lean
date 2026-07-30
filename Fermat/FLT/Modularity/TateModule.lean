@@ -3491,6 +3491,28 @@ satisfies as an abelian variety of relative dimension `0`, where
 morphism `[0]` factors through the zero section and is not finite, so
 its `finrank` carries no information.
 
+**AUDIT 2026-07-30 — FAITHFUL, AND THE "RATIONAL INPUT" IS ALREADY IN THE
+HYPOTHESES, SO IT IS NOT PART OF WHAT IS MISSING.**  The char-`0` sibling's
+docstring calls `dim_D (H₁ ⊗ ℚ) = 2` "the RATIONAL input that is
+irreducible here", which reads as though it were a further unproved fact.
+It is not: it is FORCED by `hdim` together with `m`.  `H₁(A, ℚ)` has
+`ℚ`-dimension `2 dim A = 2 · Module.finrank ℚ D` by `hdim`; `m` makes it a
+`D`-vector space, and the action is automatically FAITHFUL (`𝒪_D` is a
+domain, `End(A)` is `ℤ`-torsion-free, so the kernel is an ideal of `𝒪_D`
+meeting `ℤ` in `0`, hence `0`); so `dim_D H₁(A, ℚ) = 2` is a division, not
+an input.  The same count gives `T_ℓ A` free of rank `2` over
+`𝒪_D ⊗ ℤ_ℓ` for `ℓ` invertible.
+
+WHAT THAT LEAVES, stated sharply so a successor does not go hunting for the
+wrong thing: the missing ingredient is not the RANK but the FUNCTOR — a
+homology or Tate-module functor on abelian schemes, together with
+`deg φ = det(φ | H₁)` (equivalently `deg φ = det(φ | T_ℓ)` up to the
+inseparable part).  Neither exists anywhere in this tree, and the degenerate
+checks recorded below (`a = n`, `a` a unit) are the only handles the file
+itself provides.  That is why all three axes recorded here are refuted: they
+all try to pin `deg` from inside, and `deg` is only pinned by a
+determinant.
+
 **DO NOT PROVE THIS FROM ANY POINT COUNT IN THIS FILE.**  Everything
 below — `card_torsion_span_singleton_of_isAlgClosed`,
 `card_torsion_isMaximal_of_isAlgClosed`, `exists_bettiFrame`, the whole
@@ -15507,16 +15529,45 @@ The data is an abelian scheme `fO : 𝒜 ⟶ Spec O` with real multiplication
 * `neron` — the VALUATIVE CRITERION OF PROPERNESS, `𝒜(O) ≅ 𝒜(F̄)`.  This
   is what makes a reduction map exist at all, and it is where `ab.proper`
   is used;
-* `frobPt`, `gen_frob`, `sp_frob` — the DECOMPOSITION-GROUP structure:
-  the arithmetic Frobenius at `w` acts on the model's integral points,
-  inducing `Frob_w` on the generic fibre and `σ` on the special fibre.
-  These three fields are what turn the Frobenius intertwining of
+* `sp_frob` — the DECOMPOSITION-GROUP structure: the arithmetic Frobenius
+  at `w` acts on the model's integral points and reduces to `σ` on the
+  special fibre.  This is what turns the Frobenius intertwining of
   `exists_finset_reductionMap_of_mult` from an assumption about `e` into
   the theorem `red_galSMul`.
 
 `σ` is a parameter rather than an output: the datum records that the
 Galois action on the model reduces to THIS element, and the existence
-leaf quantifies over the `σ` pinned by `z ↦ z^{N w}`. -/
+leaf quantifies over the `σ` pinned by `z ↦ z^{N w}`.
+
+**WHERE THE FROBENIUS OBSTRUCTION ACTUALLY LIVES** (correction and
+simplification, 2026-07-30; until then `frobPt` and `gen_frob` were FIELDS
+beside `sp_frob`, and the faithfulness audit on
+`exists_finset_abelianReductionDatum_of_mult` named `gen_frob` as the
+clause a wrong choice of place fails).
+
+`gen_frob` NEVER constrained the datum, and a successor sent to look for
+the difficulty there would find nothing.  Given `neron` and `gen` — both
+already fields — there is a canonical map on integral points, namely
+
+  `frobPt := neron⁻¹ ∘ gen ∘ (Frob_w ·) ∘ gen⁻¹ ∘ (restrict to the generic
+  fibre)`,
+
+and `gen_frob` is `Equiv.apply_symm_apply` for it.  So the pair
+`(frobPt, gen_frob)` was a posited function together with a clause that
+determines it, which is a DEFINITION written as two fields.  Both are now
+exactly that: `IsAbelianReductionDatum.frobPt` (a `def`) and
+`IsAbelianReductionDatum.gen_frob` (a one-line theorem), and the open leaf
+has two fewer things to supply — one of them a function.
+
+What survives as a field is `sp_frob`, written with `frobPt` inlined
+because a structure field cannot mention a definition taking that same
+structure as an argument; `IsAbelianReductionDatum.pre_frobPt` restates it
+in the readable form.  It says `red (Frob_w · y) = σ · red y`, and THAT is
+the clause that fails for every place above `w` other than the one singled
+out by the `IsAlgClosed.lift` embedding inside
+`Field.absoluteGaloisGroup.map` — at a conjugate place `w̄' = τ w̄` the
+element still acts on `F̄`, `frobPt` is still defined, and it is only its
+REDUCTION that is no longer `σ`. -/
 structure IsAbelianReductionDatum
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {D : Type u} [Field D] [NumberField D] (m : Mult ab (𝓞 D))
@@ -15564,18 +15615,31 @@ structure IsAbelianReductionDatum
   neron : Function.Bijective
     (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) :
       RelPoint fO (𝟙 (Spec O)) → RelPoint fO (Spec.map ι))
-  /-- the action of the arithmetic Frobenius at `w` on integral points -/
-  frobPt : RelPoint fO (𝟙 (Spec O)) → RelPoint fO (𝟙 (Spec O))
-  /-- on the generic fibre `frobPt` is the Galois action of `Frob_w` -/
-  gen_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
-    gen (ab.galSMul x
-        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
-          (Field.AbsoluteGaloisGroup.adicArithFrob w))
-        (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
-      = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (frobPt u)
-  /-- on the special fibre `frobPt` reduces to `σ` -/
+  /-- **THE FROBENIUS INTERTWINING**, and the ONLY decomposition-group
+  condition the datum carries.
+
+  `frobPt` — the action of the arithmetic Frobenius at `w` on integral
+  points — is no longer a field: it is DEFINED (`IsAbelianReductionDatum.
+  frobPt`) as "extend to the generic fibre by `neron`, act by `Frob_w`,
+  extend back", and the former field `gen_frob` is then the THEOREM
+  `IsAbelianReductionDatum.gen_frob`, true by `Equiv.apply_symm_apply`.
+  See the paragraph WHERE THE FROBENIUS OBSTRUCTION ACTUALLY LIVES in the
+  docstring above for why that matters: a reader who believes `gen_frob` is
+  a constraint will look for the difficulty in the wrong place.
+
+  What is written out below is therefore exactly `frobPt` inlined, i.e.
+
+    `red (Frob_w · y) = σ · red y`
+
+  — the one statement about `(O, ι, π)` that a WRONG place above `w` fails.
+  It is restated with `frobPt` as `IsAbelianReductionDatum.pre_frobPt`. -/
   sp_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
-    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (frobPt u)
+    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
+        ((Equiv.ofBijective _ neron).symm
+          (gen (ab.galSMul x
+            (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+              (Field.AbsoluteGaloisGroup.adicArithFrob w))
+            (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))))
       = sp (ab'.galSMul _ σ
           (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))
 
@@ -15639,6 +15703,43 @@ theorem red_act (c : 𝓞 D) (y : GeomFibrePt f x) :
   rw [d.sp_act, red_def, red_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
     d.intPt_act, mO.pre_act]
 
+/-- **THE ACTION OF THE ARITHMETIC FROBENIUS AT `w` ON INTEGRAL POINTS**,
+DEFINED rather than posited (2026-07-30; it was a field of
+`IsAbelianReductionDatum` until then): extend the integral point to the
+generic fibre by `neron`, act there by `Frob_w`, and extend back.
+
+Because `neron` is a bijection there is nothing to choose, which is why the
+former companion field `gen_frob` is now the THEOREM below. -/
+noncomputable def frobPt (u : RelPoint fO (𝟙 (Spec O))) : RelPoint fO (𝟙 (Spec O)) :=
+  (Equiv.ofBijective _ d.neron).symm
+    (d.gen (ab.galSMul x
+      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+        (Field.AbsoluteGaloisGroup.adicArithFrob w))
+      (d.gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u))))
+
+/-- **On the generic fibre `frobPt` IS the Galois action of `Frob_w`**
+(PROVEN 2026-07-30; a field of `IsAbelianReductionDatum` until then).
+
+This is `Equiv.apply_symm_apply` and nothing else, and that is the point:
+whatever `(O, ι, π)` is, this clause can always be met by DEFINING `frobPt`
+as above.  It never constrained the datum. -/
+theorem gen_frob (u : RelPoint fO (𝟙 (Spec O))) :
+    d.gen (ab.galSMul x
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))
+        (d.gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
+      = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (d.frobPt u) :=
+  ((Equiv.ofBijective _ d.neron).apply_symm_apply _).symm
+
+/-- **On the special fibre `frobPt` reduces to `σ`** — the field `sp_frob`
+restated with `frobPt` in place of its inlined definition.  This is the
+statement that genuinely constrains the place above `w`. -/
+theorem pre_frobPt (u : RelPoint fO (𝟙 (Spec O))) :
+    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (d.frobPt u)
+      = d.sp (ab'.galSMul _ σ
+          (d.sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u))) :=
+  d.sp_frob u
+
 /-- Extension to the integral model intertwines `Frob_w` with the action
 of the decomposition group on the model. -/
 theorem intPt_frob (y : GeomFibrePt f x) :
@@ -15663,7 +15764,7 @@ theorem red_galSMul (y : GeomFibrePt f x) :
         (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
           (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
       = ab'.galSMul _ σ (d.red y) := by
-  rw [red_def, d.intPt_frob, d.sp_frob, Equiv.symm_apply_apply]
+  rw [red_def, d.intPt_frob, d.pre_frobPt, Equiv.symm_apply_apply]
   rfl
 
 /-- An additive bijection kills zero. -/
@@ -16350,8 +16451,186 @@ theorem eq_zero_of_red_eq_red_zero (q n : ℕ) (hq : q.Prime)
 
 end IsAbelianReductionDatum
 
-/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf —
-SPREADING OUT; BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+/-- **A FROBENIUS-EQUIVARIANT PLACE OF `F̄` ABOVE `w`** (sorry leaf, cut
+2026-07-30 as the ALGEBRAIC half of
+`exists_finset_abelianReductionDatum_of_mult` below; Neukirch *ANT* II.8,
+II.9, Serre *Local Fields* I–II, Bourbaki *Commutative Algebra* VI).
+
+Everything `exists_finset_abelianReductionDatum_of_mult` needs to know about
+the BASE, and nothing about abelian schemes: a valuation ring `O` of `F̄`
+lying over `w`, with residue field `κ(w)ᵃˡᵍ`, PRESERVED by the arithmetic
+Frobenius at `w` and inducing `σ` on residues.
+
+The seven clauses are, in order, the five that pin `(O, ι, π)` — they are
+verbatim the fields `ι_injective`, `π_surjective`, `ker_π`, `valuationRing`
+and `lift_int` of `IsAbelianReductionDatum` — followed by the two that make
+`φ` the arithmetic Frobenius: it acts on `F̄` as the specific element
+`Field.absoluteGaloisGroup.map (algebraMap F F_w) (adicArithFrob w)` that
+the structure's `sp_frob` names, and it acts on residues as `σ`.
+
+**WHY THIS IS THE RIGHT PLACE TO CUT.**  The uncut leaf needs two disjoint
+books at once — BLR chapters 1 and 7 for the model, and the valuation
+theory of `F̄` for the base — and the base half is where the trap recorded
+on the leaf below lives.  Split, each half is ownable alone.
+
+**ROUTE, and where the pieces already are.**  `O` is the pullback along
+`IsAlgClosed.lift : F̄ →ₐ[F] (F_w)ᵃˡᵍ` — the SAME embedding
+`Field.absoluteGaloisGroup.mapAux` is built from, which is what buys the
+sixth clause and is not optional (see the leaf below) — of the valuation
+ring of `(F_w)ᵃˡᵍ`.  Verified 2026-07-30 against that definition, which is
+`AlgHom.restrictNormal'` of `σ ∘ IsAlgClosed.lift`, so `φ` is exactly the
+transported Frobenius and the sixth clause is its defining property.
+The seventh is `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`
+together with `hσ`.
+
+A CHEAPER ROUTE EXISTS FOR THE FIRST FIVE CLAUSES ALONE, and it is already
+in this tree: `FLT.exists_ratValuation_of_heightOneSpectrum` in
+`Fermat/FLT/Mathlib/RingTheory/Valuation/AlgebraicExtension.lean` extends
+the `w`-adic valuation to any algebraic extension of `F` as a
+`WithTop ℚ`-valued additive valuation, with the comparison clause
+`z ∈ w^N ↔ N ≤ v z` on `𝒪_F`.  Taking `O := {z : F̄ // 0 ≤ v z}` gives
+`ι_injective` and `valuationRing` immediately (`v z + v z⁻¹ = v 1 = 0`), and
+`lift_int` from the comparison clause plus the observation that `a ∉ w`
+forces `v a = 0` because `v (aⁿ) = n · v a < 1` for every `n` (`w` is
+prime, so `aⁿ ∉ w`).
+
+WHAT THAT ROUTE DOES **NOT** GIVE, and why the pullback construction is
+still the one to build: (a) `π_surjective` needs the residue field of `O`
+to be an ALGEBRAIC CLOSURE of `κ(w)` — algebraically closed because a monic
+polynomial over `O` has all its roots in `O`, algebraic because `F̄/F` is —
+and then `IsAlgClosure.equiv`; mathlib has neither statement (checked
+2026-07-30: no `IsAlgClosed` result anywhere under
+`Mathlib/RingTheory/Valuation/`).  (b) The sixth clause fails outright:
+Chevalley's extension theorem chooses an ARBITRARY valuation subring, the
+places above `w` form a single `Γ_F`-orbit, and nothing makes the arbitrary
+choice the one that `IsAlgClosed.lift` singles out.  So that route reaches
+five of seven clauses and stops; it is recorded because those five are
+real work that need not be redone, not because it finishes.
+
+**FAITHFULNESS AUDIT (2026-07-30).**  The statement is an EXISTENCE claim,
+so it cannot be weakened by junk data, and the only way it could fail is if
+no such `O` existed.  One does: the places of `F̄` above `w` are exactly the
+valuation rings of `F̄` dominating `𝒪_{F,w}`, they are nonempty by
+Chevalley, each has residue field an algebraic closure of `κ(w)`, and the
+one determined by `IsAlgClosed.lift` is preserved by the transported
+Frobenius by construction.  `hσ` is REQUIRED and not decoration: for an
+arbitrary `σ` the seventh clause is false, since the residue action of the
+arithmetic Frobenius is the `N w`-power map and nothing else. -/
+theorem exists_frobEquivariant_placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+    (hσ : ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+      (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+          AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) :
+    ∃ (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+      (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O),
+      Function.Injective ι.hom ∧
+      Function.Surjective π.hom ∧
+      (∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z) ∧
+      (∀ z : AlgebraicClosure F, z ≠ 0 →
+        (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)) ∧
+      (∀ a : 𝓞 F, ∃ z : O,
+        ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+          (π.hom z = 0 ↔ a ∈ w.asIdeal)) ∧
+      (∀ z : O, ι.hom (φ.hom.hom z)
+        = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+              (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+            AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) ∧
+      (∀ z : O, π.hom (φ.hom.hom z)
+        = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+              AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) :=
+  sorry
+
+/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES, OVER A GIVEN PLACE OF
+`F̄`** (sorry leaf, cut 2026-07-30 as the GEOMETRIC half of
+`exists_finset_abelianReductionDatum_of_mult` below — SPREADING OUT; BLR
+*Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+
+This is the leaf below with the base HANDED IN rather than constructed: the
+valuation ring `O` of `F̄` above `w`, its embedding `ι`, its residue map
+`π` and the arithmetic Frobenius `φ` on it come as hypotheses, with exactly
+the seven properties `exists_frobEquivariant_placeAbove` produces.  What is
+left is the model and nothing else — steps 1 and 2 of the route recorded on
+the leaf below.
+
+**FAITHFULNESS AUDIT (2026-07-30), and this is the half where it matters,
+because this leaf quantifies UNIVERSALLY over the base data — the trap
+recorded in `X0.lean`'s `exists_x0Sieve` subsection.  Junk `(O, ι, π, φ)`
+would make it FALSE, not merely weak, so the seven hypotheses were checked
+to pin the base completely.**
+
+* `O` cannot be too big.  Taking `ι(O) = F̄` makes every nonzero element a
+  unit, so `ker_π` forces `π` injective — and an injective ring map from
+  characteristic `0` to `κ(w)ᵃˡᵍ` of characteristic `p` is impossible.
+* `O` cannot be too small.  `valuationRing` together with `ι_injective`
+  says exactly that `ι(O)` is a valuation subring of `F̄` with fraction
+  field `F̄`; `𝒪_{F,w}` itself fails it (neither `√ϖ` nor `1/√ϖ` lies in
+  it).
+* `O` cannot have the wrong residue field: `ker_π` makes the kernel of `π`
+  the maximal ideal and `π_surjective` then makes `O`'s residue field
+  `κ(w)ᵃˡᵍ` on the nose.
+* `O` cannot lie over the wrong place: `lift_int` puts the centre of the
+  valuation on `𝒪_F` at exactly `w`.
+
+So `ι(O)` is precisely a place of `F̄` above `w`, and all of these are a
+single `Γ_F`-orbit; the sixth and seventh hypotheses then say `φ` realises
+the arithmetic Frobenius on it and induces `σ` on residues, which is what
+`sp_frob` needs and the ONLY thing that distinguishes the orbit's members.
+Since `φ` fixes the image of `F` pointwise (it agrees there with an element
+of `Γ_F`), it is `𝒪_F`-linear, so it acts on the base change of a model
+spread out over `𝒪_F[1/N]` — which is why the conclusion is reachable for
+EVERY base satisfying the hypotheses, not merely for the constructed one.
+
+`bad` is chosen before `w` and independently of `O`, as it must be: the
+spreading-out of step 1 happens once, over `𝒪_F[1/N]`, and knows nothing
+about any place. -/
+theorem exists_finset_abelianReductionDatum_of_placeAbove
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w ∉ bad,
+        ∀ σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField,
+          (∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+            (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) →
+        ∀ (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+          (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O),
+          Function.Injective ι.hom →
+          Function.Surjective π.hom →
+          (∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z) →
+          (∀ z : AlgebraicClosure F, z ≠ 0 →
+            (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)) →
+          (∀ a : 𝓞 F, ∃ z : O,
+            ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+              (π.hom z = 0 ↔ a ∈ w.asIdeal)) →
+          (∀ z : O, ι.hom (φ.hom.hom z)
+            = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                  (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+                AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) →
+          (∀ z : O, π.hom (φ.hom.hom z)
+            = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                  AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) →
+        ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+          (ab' : AbelianSchemeStruct f') (m' : Mult ab' (𝓞 D))
+          (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
+          (mO : Mult abO (𝓞 D))
+          (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+  sorry
+
+/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (**PROVEN 2026-07-30**
+over the two disjoint leaves immediately above —
+`exists_frobEquivariant_placeAbove` (the base: valuation theory of `F̄` at a
+place over `w`, Frobenius-equivariantly) and
+`exists_finset_abelianReductionDatum_of_placeAbove` (the model: spreading
+out and the Néron property, BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV*
+§6).  It was a single sorry leaf from 2026-07-27 until then.  Everything the
+docstring below says about the mathematics is unchanged; it now describes
+the two halves jointly.
 
 Outside a finite set of places `w` of `F` the fibre `A_x` has a
 Néron-pinned reduction datum at `w`: an abelian scheme over the local
@@ -16381,7 +16660,72 @@ prover has to build:
 `hσ` is used only in step 3, to say WHICH element of `Γ_{κ(w)}` the
 Frobenius reduces to; it is not an assumption, since
 `exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`
-and it is unique. -/
+and it is unique.
+
+**FAITHFULNESS AUDIT (2026-07-30) — THE LEAF IS FAITHFUL, BUT `O` IS NOT
+A FREE CHOICE, AND THE CONSTRAINT IS INVISIBLE IN
+`IsAbelianReductionDatum`.**
+
+Faithful: `A_x` is the fibre of a proper smooth geometrically connected
+group scheme over the field `F`, hence an abelian variety over a NUMBER
+field, of dimension `Module.finrank ℚ D` by `hdim`, with `𝒪_D` acting; such
+a variety has good reduction outside a finite set of places, and the three
+steps enumerated above are the standard construction.  The `𝒪_D`-action is
+automatically faithful (`𝒪_D` is a domain and `End(A)` is `ℤ`-torsion-free,
+so the kernel is an ideal meeting `ℤ` in `0`, hence `0`), so nothing extra
+is needed to carry `m'` down.
+
+The constraint a prover will NOT find by reading the structure, and which
+makes exactly ONE field unsatisfiable if got wrong:
+
+`gen_frob` names a SPECIFIC element of `Γ_F`, namely
+`Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+(Field.AbsoluteGaloisGroup.adicArithFrob w)`.  And
+`Field.absoluteGaloisGroup.map` is built — see its own docstring in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`, which says so
+explicitly — out of an ARBITRARILY CHOSEN embedding
+`IsAlgClosed.lift : F̄ →ₐ[F] (F_w)ᵃˡᵍ`.  That embedding singles out ONE
+place `w̄ ∣ w` of `F̄`, namely the pullback along it of the valuation of
+`(F_w)ᵃˡᵍ`, and the transported Frobenius lies in the decomposition group
+of THAT place and no other.  The places above `w` form a single
+`Γ_F`-orbit, so at any other choice `w̄' = τ w̄` the same element lies in
+`τ D_{w̄} τ⁻¹` and does not preserve the corresponding `O` — while every
+other field of the structure is satisfiable, which is what makes this a
+trap rather than a visible obstruction.
+
+**CORRECTION 2026-07-30 TO THE PARAGRAPH ABOVE, AND IT MOVES WHERE A
+PROVER SHOULD LOOK.**  As first written, this audit concluded "no `frobPt`
+inducing it exists, and `gen_frob` cannot be filled".  That is WRONG, and
+wrong in the direction that wastes a cycle: `gen_frob` was never a
+constraint at all.  `neron` is a bijection, so
+
+  `frobPt := neron⁻¹ ∘ gen ∘ (Frob_w ·) ∘ gen⁻¹ ∘ (restrict to the generic
+  fibre)`
+
+is defined for ANY `(O, ι, π)` whatever, and `gen_frob` holds of it by
+`Equiv.apply_symm_apply`.  A wrong place above `w` is not detected there.
+
+`frobPt` and `gen_frob` have accordingly been REMOVED as fields of
+`IsAbelianReductionDatum` and replaced by that definition and that
+one-line theorem, so this leaf now has two fewer things to produce.  The
+clause that a wrong place genuinely fails is `sp_frob`, i.e.
+`red (Frob_w · y) = σ · red y`: at a conjugate place the map `frobPt`
+still exists and still induces `Frob_w` generically, and it is only its
+REDUCTION to the special fibre that stops being `σ`.  The prescription in
+the next paragraph is unchanged — it was always the right witness — but
+the check that it is the right one is `sp_frob`, not `gen_frob`.
+
+So the witness is FORCED, and this is the whole content of the warning:
+take `O` to be the pullback along that same `IsAlgClosed.lift` of the
+valuation ring of `(F_w)ᵃˡᵍ`, with `ι` its inclusion into `F̄` and `π` its
+residue map.  Then `ker_π`, `valuationRing` and `lift_int` hold because a
+valuation ring is local with non-units the maximal ideal and the centre on
+`𝒪_F` is `w`; `π_surjective` because the residue field of that ring is
+`κ(w)ᵃˡᵍ`; and `sp_frob` is
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`, which says
+`adicArithFrob` acts on residues as the `#κ(w) = N w`-power map — exactly
+the `σ` that `hσ` pins.  Steps 1 and 2 of the route above are then the
+only genuinely open mathematics. -/
 theorem exists_finset_abelianReductionDatum_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -16402,8 +16746,14 @@ theorem exists_finset_abelianReductionDatum_of_mult
           (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
           (mO : Mult abO (𝓞 D))
           (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
-          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
-  sorry
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' := by
+  obtain ⟨bad, hbad⟩ := exists_finset_abelianReductionDatum_of_placeAbove m x hdim
+  refine ⟨bad, fun w hw σ hσ => ?_⟩
+  obtain ⟨O, ι, π, φ, hι, hπ, hker, hval, hlift, hfrobGen, hfrobRes⟩ :=
+    exists_frobEquivariant_placeAbove w σ hσ
+  obtain ⟨A', f', ab', m', 𝒜, fO, abO, mO, d, hsm⟩ :=
+    hbad w hw σ hσ O ι π φ hι hπ hker hval hlift hfrobGen hfrobRes
+  exact ⟨A', f', ab', m', O, ι, π, 𝒜, fO, abO, mO, d, hsm⟩
 
 end AbelianReduction
 
