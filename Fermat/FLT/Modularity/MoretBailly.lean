@@ -32437,7 +32437,26 @@ zero lines in the whole of `Mathlib/`, case-insensitively; and
 tree. Corrections (A) and (B) below still stand as the live boundary: the Picard
 scheme, `Pic⁰`, the invertible sheaf, ampleness and `Hⁿ(X̄, ℒ)` ARE available, so
 what is missing is §3.2's symmetric power and the THEOREMS of §3.5–3.6 and
-§3.10.2, not the objects. -/
+§3.10.2, not the objects.
+
+**A CONCEPT-LEVEL CORROBORATION OF THE MATHLIB HALF (2026-07-30), because every
+re-run above is a SPELLING search and this development has already been burned
+once by exactly that** (the `IsStackFor` / `DescendsAlong` incident: three
+agreeing greps for a name that does not exist, missing the name that does). Two
+checks that do not depend on guessing an identifier:
+
+* `riemannroch` / `riemann_roch` / `riemann-roch` match ZERO files in the whole
+  of `Mathlib/`, case-insensitively. Riemann–Roch is not present under any
+  spelling, so the `deg D − g + 1` count that the elementary-route analysis above
+  turns on has to be built, not cited. Same for `genus`, already recorded.
+* The nearest thing that DOES exist is
+  `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`, which no survey above
+  mentions — and it is a **79-line, 3-declaration stub** (`mapCoeff`, `map`, i.e.
+  proper pushforward of cycles). No linear equivalence, no degree, no divisor
+  class group. So it is a starting point and nothing more; do not read the
+  directory name as "divisors are available".
+
+Neither check changes the verdict — it is corroboration, not correction. -/
 theorem exists_skolemBallDatum_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
