@@ -442,13 +442,18 @@ open in them has been split along the theories it needed:
 | `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
-| `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
+| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.) | alg. closed `K` |
+| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
 it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.
 The last row was replaced 2026-07-28 when the node above it closed; a stray
-duplicate of it, left by a merge, was removed at the same time.
+duplicate of it, left by a merge, was removed at the same time.  It was
+replaced AGAIN later the same day, for the same reason: the fibrewise genus
+leaf `hasNoFibreAffineLine_of_one_le_x1Genus` was PROVEN by decomposition
+along the birational/Lüroth axis, and what is open in its place is the
+single arithmetic leaf now named in the row.
 
 Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `isBigO_atTop_axisRestrictOn`, `locallyIntegrableOn_axisRestrictOn` and
@@ -457,7 +462,13 @@ Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `WeightTwoEigenform.lean` plus one new normalisation lemma
 (`frickeMatrix_conj_mem_of_le`) and mathlib's `Bounds.lean`.  Ten rows.
 `isBigO_atTop_coeffOn` gained a `hN : N ≠ 0` hypothesis at the same time —
-it was FALSE at `N = 0`; see its FALSITY AUDIT.)
+it was FALSE at `N = 0`; see its FALSITY AUDIT.
+
+The last row was replaced a THIRD time on 2026-07-30, and this time it
+became TWO rows: `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` was
+PROVEN by separating the genus formula from the `Pic⁰` construction, so the
+genus entry is now the arithmetic leaf plus the level-free geometric one.
+Eleven rows.)
 
 **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — three
@@ -8539,10 +8550,16 @@ computable function of `N`, evaluated by `decide` in
 `x1Genus_twentyFive`.  It is NOT defined as the genus of the scheme `X`:
 no genus of a scheme, and no Riemann–Roch, exists at this pin.  The
 bridge from this number to the geometry of `X` is
-`hasNoFibreAffineLine_of_one_le_x1Genus`, and that is the sorry node
-(`hasNonconstantAbelianMap_of_one_le_x1Genus` was that node until
-2026-07-28 and is now PROVEN over it) — exactly the split `X0.lean`
-makes between `x0Genus` and `hasNoFibreAffineLine_of_one_le_x0Genus`. -/
+`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`, and that is
+the sorry node.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` was that
+node until 2026-07-28, then `hasNoFibreAffineLine_of_one_le_x1Genus` was,
+then `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` was, and all
+three are now PROVEN over it — the bridge moved down three levels in three
+days.  Since 2026-07-30 the bridge is stated over an ALGEBRAICALLY CLOSED
+field, which is all its consumer needs and is where the genus argument is
+free of arithmetic.)
+Exactly the split `X0.lean` makes between `x0Genus` and
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`. -/
 def x1Genus (N : ℕ) : ℤ :=
   (12 + (gammaOneIndex N : ℤ) - 6 * numCuspsX1 N) / 12
 
@@ -11998,35 +12015,322 @@ theorem isTorsion_jacobian_x1TwentyFive {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ
         exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma1 25 (by norm_num) χ trivial f a hf
       ⟨L, hLf, lFunction_apply_one_ne_zero_x1TwentyFive χ f a hf L hLf⟩
 
+/-- **THE GENUS FORMULA AT `Γ₁`, GEOMETRICALLY: over an ALGEBRAICALLY
+CLOSED field no fibre of `X_1(N)` is a rational curve when
+`genus X_1(N) ≥ 1`** (sorry leaf, cut 2026-07-30) — the arithmetic half of
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below, and after
+that cut the ONLY declaration in the `Γ₁` genus formula that mentions `N`.
+
+TRUE, and it is Diamond–Shurman Thm 3.1.1 and NOTHING ELSE.  `hmodel`
+makes the fibre `X_K = X ×_S Spec K` a smooth proper connected curve which
+is the `X_1(N)` of `K`; `hg` with `hN` says its genus is `≥ 1`; genus is a
+birational invariant and `𝔸¹_K` has genus `0`.  Over an algebraically
+closed field that is the whole argument: Riemann–Roch is available, closed
+points are rational, and "not birational to `𝔸¹`" IS "genus `≥ 1`" with no
+descent anywhere.
+
+**WHY THE `IsAlgClosed K`, AND WHY THIS IS NOT A DUPLICATE OF
+`not_birationalOver_affineLine_of_one_le_x1Genus` BELOW.**  That
+declaration is the SAME statement over an ARBITRARY field, and it is a
+THEOREM, not an input: it is proven from
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is proven
+from this leaf together with the level-free geometric leaf below.  So the
+general form is a CONSEQUENCE of the algebraically closed form and there
+is no cycle — what the geometric leaf needs, and all it needs, is the
+algebraically closed case, and that case is strictly the easier one.  The
+economy of the cut is exactly this: a prover of this leaf owes the genus
+formula and owes NO abelian variety, no `Pic⁰` and no Galois descent.
+
+**BOTH ARITHMETIC HYPOTHESES ARE LOAD-BEARING and each makes the leaf
+FALSE if dropped**, with the same witnesses the node below carries.
+
+* `hg` — `X_1(5)` is the witness INSIDE the validity range
+  (`x1Genus 5 = 0`, and `5 ≤ 5`): it is `ℙ¹`, which contains `𝔸¹` as a
+  dense open and so IS birational to `𝔸¹_K` over `K`.
+* `hN : 5 ≤ N` — see the VALIDITY RANGE note on `x1Genus`.  At `N = 1` the
+  definition evaluates to `x1Genus 1 = 1`, so `hg` is satisfiable while
+  `X_1(1) = ℙ¹` has genus `0`.  **`N = 0` is a SECOND witness and was not
+  previously recorded**: `x1Genus 0 = 1` as well.
+
+  All of these are `decide`-computable and were CHECKED against the
+  compiler on 2026-07-30, in a scratch module transcribing `gammaOneIndex`,
+  `numCuspsX1` and `x1Genus` verbatim — `x1Genus 0 = 1`, `x1Genus 1 = 1`,
+  `x1Genus 2 = x1Genus 3 = x1Genus 4 = 0`, `x1Genus 5 = 0`,
+  `gammaOneIndex 1 = 0`, `numCuspsX1 1 = 0`, `gammaOneIndex 25 = 300`,
+  `numCuspsX1 25 = 28`, `x1Genus 25 = 12`.  They had been prose until then;
+  the falsity audit of this leaf and of the node below rests on them, so
+  they are now compiler-checked facts rather than claims.  (The check does
+  not live in the tree as theorems because nothing would consume them —
+  see the free-floating policy.)  `x1Genus 11 = 1` and `x1Genus 10 = 0`
+  were checked at the same time: inside the validity range the genus first
+  turns positive at `N = 11`, so `N = 10` is a further `hg` witness that
+  needs no out-of-range level at all.
+* `hmodel` is load-bearing twice over — it supplies the curve conditions
+  AND it is the only thing tying the arithmetic `x1Genus N` to the
+  geometry of `strX`.  `N` enters only through `hg`, `hN` and `hmodel`.
+
+**NOT VACUOUS**: `Scheme.BirationalOver _ (𝔸(Unit; Spec K) ↘ _)` is
+satisfiable — it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
+any smooth proper rational curve since a dense open is birational to the
+whole (`Opens.birationalOver_of_dense`).  So the conclusion is a real
+constraint. -/
+theorem not_birationalOver_affineLine_of_one_le_x1Genus_algClosed {N : ℕ} (hN : 5 ≤ N)
+    (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX1Compactification N strX strY jY)
+    (K : Type) [Field K] [IsAlgClosed K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
+  sorry
+
+/-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
+non-rational fibre receives a nonconstant map to an abelian variety**
+(sorry leaf, cut 2026-07-30) — the geometric half of
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` below.
+
+**LEVEL-FREE: no `N`, no `Gamma1Datum`, no modular curve.**  It is stated
+about a bare proper smooth geometrically connected relative curve, which
+is exactly the data `IsX1Compactification` supplies through `isProper`,
+`smooth` and `connected`.
+
+TRUE.  `hgeom` says the geometric fibre is not rational, i.e. the fibre has
+genus `≥ 1`, so `J = Pic⁰(X_K/K)` is an abelian variety over `K` of
+dimension `≥ 1`.  Any closed point of `X_K` has some finite residue degree
+`n ≥ 1` and so gives a `K`-rational divisor `D` of degree `n`; then
+`x ↦ n[x] − D` is a `K`-morphism `X_K ⟶ J` needing NO rational point.  It
+is nonconstant because over `K̄` the Abel–Jacobi map is a closed immersion
+(genus `≥ 1`) and `[n]` is an isogeny, so the composite is finite onto its
+image; a morphism that is nonconstant after base change is nonconstant.
+
+**THE HYPOTHESIS MUST BE GEOMETRIC — FALSITY AUDIT OF THE OBVIOUS CUT.**
+The tempting form of this leaf takes `¬ BirationalOver` over `K` ITSELF,
+which is what `not_birationalOver_affineLine_of_one_le_x1Genus` below
+literally says, three declarations away and in the same shape.  **With
+that hypothesis the leaf is FALSE**, and the counterexample is small and
+completely explicit:
+
+  `K = ℝ`, `C ⊆ ℙ²_ℝ` the pointless conic `x² + y² + z² = 0`.
+
+`C` is smooth, proper and geometrically connected (`C_ℂ ≅ ℙ¹_ℂ`), and it
+is NOT birational to `𝔸¹_ℝ` over `ℝ`: a birational map over `ℝ` would
+carry a dense open of `𝔸¹_ℝ` — which has infinitely many `ℝ`-points —
+isomorphically onto a dense open of `C`, while `C(ℝ) = ∅`.  So the
+`K`-form's hypothesis HOLDS.  Its conclusion FAILS: for any abelian
+variety `A/ℝ` and any `c : C ⟶ A` over `ℝ`, the base change `c_ℂ` is a
+morphism `ℙ¹_ℂ ⟶ A_ℂ`, hence constant at some `a ∈ A(ℂ)`; `a` is then
+`Gal(ℂ/ℝ)`-fixed because `c` is defined over `ℝ`, so `a ∈ A(ℝ)` and `c`
+factors as `C ⟶ Spec ℝ ⟶ A`.  That is exactly `c = proj ≫ s`, the
+negation of the nonconstancy clause.
+
+The gap the witness exploits is that over a non-closed field
+"non-rational" mixes genus with the arithmetic of rational points, and
+only the genus part is what `Pic⁰` sees.  Quantifying `hgeom` over
+algebraically closed extensions removes the arithmetic part and nothing
+else.  (`∀ L` and `∃ L` are classically the same hypothesis here — genus
+does not change under extension of an algebraically closed field — and
+`∀` is the form the consumer can supply, since the arithmetic leaf above
+is stated at an arbitrary algebraically closed `K`.)
+
+**`hgeom` IS LOAD-BEARING**: drop it and `ℙ¹_K` refutes the leaf outright
+— smooth, proper, geometrically connected, and every morphism from it to
+an abelian variety is constant.  `hproper`, `hsmooth` and `hconn` are the
+standing curve conditions the `Pic⁰` construction needs; they are supplied
+free by `hmodel` and no separate falsity witness is claimed for them.
+
+**WHAT IS IN TREE, AND WHY IT IS NOT ENOUGH.**  `RelativePicard.lean`'s
+`exists_relPicZero` (PROVEN, over `exists_relPicFull` and
+`exists_relPicZero_of_isRelPicOf`) builds precisely `Pic⁰` as an abelian
+scheme with an Abel–Jacobi map, with the same three curve hypotheses — but
+it also demands a SECTION `o : RelPoint strX (𝟙 S)`, and no section is
+available here: `k` is an arbitrary `K`-point of an arbitrary base and
+nothing in `IsX1Compactification` carries one.  (`X_1(N)` does have
+rational cusps, but only where `N` is invertible, which is not a
+hypothesis.)  That gap IS the degree-`n` trick, and closing this leaf means
+either extending that development to the base-point-free case or producing
+the section some other way.
+
+**RELOCATION NOTE.**  Nothing here is `Γ₁`-specific, and the `Γ₀` sibling
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` in `X0.lean` is an
+open leaf of exactly the same shape which would close over this leaf plus
+its own algebraically-closed arithmetic leaf, word for word.  It is stated
+in `X1.lean` only because `X1.lean` imports `X0.lean` and not conversely;
+moving it down to `X0.lean` is a pure relocation with no mathematical
+content, and is what a `Γ₀` owner should do rather than restate it. -/
+theorem exists_nonconstant_toAbelianScheme_of_notGeometricallyRational
+    {X S : Scheme.{0}} {strX : X ⟶ S} (hproper : IsProper strX)
+    (hsmooth : SmoothOfRelativeDimension 1 strX) (hconn : GeometricallyConnected strX)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S)
+    (hgeom : ∀ (L : Type) [Field L] [Algebra K L] [IsAlgClosed L],
+      ¬ Scheme.BirationalOver
+          (curveBaseChangeProj strX (Spec.map (CommRingCat.ofHom (algebraMap K L)) ≫ k))
+          (𝔸(Unit; Spec (CommRingCat.of L)) ↘ Spec (CommRingCat.of L))) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K))
+      (_ : AbelianSchemeStruct astr) (c : curveBaseChange strX k ⟶ A),
+      c ≫ astr = curveBaseChangeProj strX k ∧
+        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ curveBaseChangeProj strX k ≫ s :=
+  sorry
+
+/-- **EICHLER–SHIMURA, FIBREWISE, AT `Γ₁`: `genus X_1(N) ≥ 1` gives EVERY
+fibre of `X_1(N)` a nonconstant map to an abelian variety** (**PROVEN
+2026-07-30 by decomposition**; a sorry leaf from 2026-07-28) — the
+arithmetic half of `not_birationalOver_affineLine_of_one_le_x1Genus`
+below, and the exact transposition of `X0.lean`'s
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`, which is still
+open and can close the same way.
+
+**THE CUT, and what it buys.**  The leaf bundled two theories that have
+nothing to do with each other: the genus of `X_1(N)` (Diamond–Shurman
+3.1.1, arithmetic, mentions `N`) and the construction of `Pic⁰` with its
+degree-`n` Abel–Jacobi map (geometry, level-free).  A prover of the bundle
+owed both.  Separated, they are the two leaves above:
+
+* `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` — the genus
+  formula over an ALGEBRAICALLY CLOSED field and nothing else;
+* `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` — the
+  `Pic⁰` construction, with no `N` in it, SHARED in principle with the
+  `Γ₀` layer (see its RELOCATION NOTE).
+
+The frontier goes from one leaf to two, which is what decomposition costs;
+what it buys is that neither piece carries the other's theory, and one of
+them is reusable by `X0.lean`.
+
+**THE AXIS THIS DECOMPOSITION IS NOT.**  The earlier audit of the bundled
+leaf recorded the identification of the arithmetic `x1Genus N` with an
+invariant of the SCHEME `X` — a genus of a scheme, `h¹(𝒪_X)`,
+Riemann–Hurwitz — as exhausted, and that verdict stands: none of those
+exists at this pin and none is introduced here.  The genus stays sealed
+inside the arithmetic leaf, where it is a citation rather than a
+construction.  What was missed is that the leaf ALSO owed a `Pic⁰`, and
+that half is separable without any genus notion at all.
+
+**WHY THE GEOMETRIC HALF NEEDS AN ALGEBRAICALLY CLOSED BASE.**  Because
+the same cut with the arbitrary-field hypothesis is FALSE — the pointless
+conic over `ℝ` refutes it.  The audit is on
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`; it is
+the one thing to read before "simplifying" this assembly, because
+`not_birationalOver_affineLine_of_one_le_x1Genus` below has precisely the
+shape the false version would want and sits three declarations away.
+
+**WHY THIS IS NOT A DUPLICATE OF THE `Γ₀` LEAF**, which is the question to
+ask of any `Γ₁` transposition.  The natural degree-`φ(N)/2` map
+`X_1(N) ↠ X_0(N)` would deduce this from
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` by composition —
+but `x0Genus 25 = 0`, and `25` is the level `MazurTorsion.lean` needs, so
+the `Γ₀` hypothesis is unavailable exactly where it would be used.  The
+two are genuinely independent, and the sharing that IS available is of the
+geometric half only.
+
+**BOTH ARITHMETIC HYPOTHESES ARE LOAD-BEARING and each makes the
+statement FALSE if dropped.**
+
+* `hg` — at genus `0` the conclusion is FALSE outright.  `X_1(5)` is the
+  witness INSIDE the validity range (`x1Genus 5 = 0`, and `5 ≤ 5`): it is
+  `ℙ¹`, and every morphism from `ℙ¹` to an abelian variety is constant, so
+  no such `c` exists at any `K`.
+* `hN : 5 ≤ N` — at `N = 1` and at `N = 0` alike the definition evaluates
+  to `1`, so `hg` is satisfiable while the curve has genus `0`.  Both
+  values are `decide`-checked; see the arithmetic leaf's audit, which
+  carries the full list.  **This is the guard the `Γ₀` sibling lacks**,
+  and it is why that layer needs the extra leaf
+  `pos_of_isX0Compactification_of_fieldPoint` while this one does not.
+* `hmodel` is load-bearing twice over — it supplies the curve conditions
+  AND it is the only thing tying the arithmetic `x1Genus N` to the
+  geometry of `strX`.  `N` enters only through `hg`, `hN` and `hmodel`.
+
+**NOT VACUOUS, and the junk witness is killed by the nonconstancy clause
+alone**: `A = Spec K` with `astr = 𝟙` forces `c = curveBaseChangeProj
+strX k`, which is `curveBaseChangeProj strX k ≫ 𝟙`, so the final clause
+fails at `s = 𝟙`.  A prover must therefore produce a genuinely
+positive-dimensional `A`. -/
+theorem exists_nonconstant_toAbelianScheme_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N)
+    (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX1Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K))
+      (_ : AbelianSchemeStruct astr) (c : curveBaseChange strX k ⟶ A),
+      c ≫ astr = curveBaseChangeProj strX k ∧
+        ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ curveBaseChangeProj strX k ≫ s :=
+  exists_nonconstant_toAbelianScheme_of_notGeometricallyRational
+    hmodel.isProper hmodel.smooth hmodel.connected K k
+    fun L _ _ _ => not_birationalOver_affineLine_of_one_le_x1Genus_algClosed hN hg hmodel L _
+
+/-- **The genus formula at `Γ₁`: no fibre of `X_1(N)` is a RATIONAL curve
+when `genus X_1(N) ≥ 1`** (PROVEN 2026-07-28 over the leaf above together
+with `X0.lean`'s level-free
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme`) — the arithmetic
+half of `hasNoFibreAffineLine_of_one_le_x1Genus` below, and the `Γ₁`
+transposition of `not_birationalOver_affineLine_of_one_le_x0Genus`.
+
+TRUE: genus is a birational invariant of a smooth proper curve and `𝔸¹_K`
+has genus `0`, so a fibre of genus `≥ 1` is not birational to `𝔸¹_K` over
+`K`.  What replaces the (unavailable) genus in the proof is the birational
+invariant a MAP provides: *does the curve admit a nonconstant morphism to
+an abelian variety?*  Rational curves do not, positive-genus curves do,
+and both halves are statable at this pin — the first is `X0.lean`'s
+level-free `eq_comp_of_birationalOver_affineLine_toAbelianScheme` (proven
+there over the single geometric leaf
+`exists_section_of_denseOpen_affineLine_toAbelianScheme`), the second is
+the leaf immediately above.  No genus of a scheme, no `h¹`, no `ℙ¹` and no
+Riemann–Hurwitz enters.
+
+**WHY THE FIBRE AND NOT `X` ITSELF.**  `BirationalOver strX (…)` over the
+base `S` would be FALSE for a reason having nothing to do with the genus:
+over `S = Spec ℤ` the arithmetic surface `X` and the curve `𝔸¹_{𝔽_p}` have
+different dimensions, so no partial isomorphism exists whatever `N` is.
+Rationality is a property of the FIBRE, which is why the base change is
+taken here rather than left to the consumer.
+
+**`hg` AND `hN` ARE LOAD-BEARING**, and both make the statement FALSE if
+dropped: at `N = 1`, `x1Genus 1 = 1` satisfies `hg` while `X_1(1) = ℙ¹`
+contains `𝔸¹` as a dense open, so the fibre IS birational to `𝔸¹_K` at
+every `K`; at `N = 5` (inside the validity range) `x1Genus 5 = 0` and the
+same witness applies.  `hmodel` is load-bearing twice over, exactly as on
+the leaf above.
+
+**NOT VACUOUS**: `Scheme.BirationalOver _ (𝔸(Unit; Spec K) ↘ _)` is
+satisfiable — it holds for `𝔸¹_K` itself by `BirationalOver.refl`, and for
+any smooth proper rational curve since a dense open is birational to the
+whole (`Opens.birationalOver_of_dense`).  So the conclusion is a real
+constraint and this leaf really consumes the genus. -/
+theorem not_birationalOver_affineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N)
+    (hg : 1 ≤ x1Genus N) {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX1Compactification N strX strY jY)
+    (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    ¬ Scheme.BirationalOver (curveBaseChangeProj strX k)
+        (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
+  intro hrat
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  obtain ⟨A, astr, abA, c, hc, hnc⟩ :=
+    exists_nonconstant_toAbelianScheme_of_one_le_x1Genus hN hg hmodel K k
+  obtain ⟨s, hs⟩ := eq_comp_of_birationalOver_affineLine_toAbelianScheme hsm abA hrat c hc
+  exact hnc s hs
+
 /-- **The genus formula, fibrewise, at `Γ₁`: `genus X_1(N) ≥ 1` puts no
-rational curve in any fibre of `X_1(N)`** (sorry leaf, 2026-07-28) — the
-`Γ₁` transposition of `X0.lean`'s `hasNoFibreAffineLine_of_one_le_x0Genus`,
-and after the cut below the ONLY place where the computed number
-`x1Genus N` meets the scheme `X`.
+rational curve in any fibre of `X_1(N)`** (PROVEN 2026-07-28 by
+decomposition; formerly a sorry leaf audited as IRREDUCIBLE) — the
+`Γ₁` transposition of `X0.lean`'s `hasNoFibreAffineLine_of_one_le_x0Genus`.
+It is NO LONGER "the ONLY place where the computed number `x1Genus N` meets
+the scheme `X`": after the cuts above that role belongs to
+`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`, which is
+since 2026-07-30 the single ARITHMETIC leaf of the whole `Γ₁` genus
+formula — the one other residual leaf,
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`, is
+level-free and mentions no `N`.
 
 `HasNoFibreAffineLine` itself is `X0.lean`'s, REUSED VERBATIM — it is
-level-free, and the whole point of the seam is that only this leaf, which
-mentions `N`, differs between the two layers.
+level-free, and the whole point of the seam is that only the arithmetic
+leaf, which mentions `N`, differs between the two layers.
 
 TRUE.  `hmodel` makes every fibre of `strX` a smooth proper
 geometrically connected curve which is the `X_1(N)` of its residue
 field, and `hg` together with `hN` says its genus is `≥ 1` (the classical
 formula, Diamond–Shurman Thm 3.1.1).  A nonconstant `K`-morphism
-`𝔸¹_K ⟶ X` over a `K`-point of `S` lands in one such fibre `X_K`; it
-extends to `ℙ¹_K ⟶ X_K` because `𝔸¹_K` is a dense open of the smooth
-proper curve `ℙ¹_K` and `X_K` is proper, and a nonconstant morphism of
-smooth proper curves is finite surjective, so Riemann–Hurwitz gives
-`genus X_K ≤ genus ℙ¹_K = 0` — contradicting `hg`.  Hence every such
-morphism is constant, which is `HasNoFibreAffineLine`.
-
-**THE EXTENSION STEP IS ALREADY PROVEN AND IN THIS FILE'S CONE** — do not
-rebuild it.  `exists_unique_extension_of_isSmoothProperCurve`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, reaching here
-through `X0.lean`, proven outright from `Mathlib` by the valuative
-criterion) extends a morphism from a dense open of a smooth proper curve
-over a field into any PROPER target, which is exactly "`𝔸¹_K ⟶ X_K`
-extends to `ℙ¹_K ⟶ X_K`" once `ℙ¹_K` is written down.  What is still
-missing is therefore only `ℙ¹` itself and the genus, not the extension.
+`𝔸¹_K ⟶ X` over a `K`-point of `S` lands in one such fibre `X_K` and
+makes it a RATIONAL curve — birational to `𝔸¹_K` over `K`, by Lüroth —
+while a curve of genus `≥ 1` is not rational, contradicting `hg`.  Hence
+every such morphism is constant, which is `HasNoFibreAffineLine`.
 
 **BOTH ARITHMETIC HYPOTHESES ARE LOAD-BEARING, AND `hN` IS WHAT THE `Γ₀`
 SIBLING LACKS.**  See the VALIDITY RANGE note on `x1Genus`: the classical
@@ -12060,25 +12364,80 @@ give it by composition from `1 ≤ x0Genus N`, but `x0Genus 25 = 0`.  The
 two fibrewise genus formulas are genuinely independent leaves at the level
 this development needs.
 
-IRREDUCIBLE at this pin along the axis searched — the identification of
+**THE OLD IRREDUCIBILITY VERDICT IS WITHDRAWN, AND ITS OWN REFUTING CHECK
+WAS THE WRONG CHECK.**  The previous docstring recorded this leaf as
+IRREDUCIBLE "at this pin along the axis searched — the identification of
 the arithmetic `x1Genus N` with an invariant of the scheme `X`, which
-needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
-degree-`μ₁(N)` map to the `j`-line, none of which exists in `Mathlib`, in
-`~/cs/FLT`, or here.  **The check that would refute this verdict**: a
-genus, an `h¹`, or a Riemann–Hurwitz statement appearing in any of the
-three trees — `grep -rn "arithmeticGenus\|Riemann.*Roch\|Riemann.*Hurwitz"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz", and nominated
+as the check that would refute it: *does a genus, an `h¹` or a
+Riemann–Hurwitz statement appear in `Fermat/`, `Mathlib` or `~/cs/FLT`?*
+That axis really is exhausted and that grep really does come back empty —
+and the verdict was still wrong, because **the `Γ₀` sibling
+`hasNoFibreAffineLine_of_one_le_x0Genus` was PROVEN along a third axis the
+verdict never considered**, using none of those three things.  A verdict
+is only as wide as the axis its author searched; the check that refutes
+one here is *"has the sibling leaf at the other level been closed, and
+along what axis?"*, not a grep for the machinery the exhausted axis wanted.
 
-**Do NOT decompose this along the MODULAR axis** (`dim S_2(Γ_1(N)) =
-x1Genus N` plus Eichler–Shimura).  That was tried on the `Γ₀` side and
-RETIRED: it is a second, parallel copy of the genus formula with a theory
-build attached, and the copy it duplicates is this leaf.  See the note on
-`hasNonconstantAbelianMap_of_one_le_x1Genus` below. -/
+**THE AXIS THAT CUTS: rationality of the fibre, via Lüroth.**  For a
+smooth curve, "the fibre carries a nonconstant affine line" is "the fibre
+is BIRATIONAL to `𝔸¹_K` over `K`" — a statement about `𝔸¹` alone, so no
+`ℙ¹` is ever built — and the implication that way is **Lüroth**, which
+`Mathlib` already proves.  Every level-free piece is `X0.lean`'s and is
+reused here VERBATIM, with no edit to that file:
+
+* `isDominant_of_not_exists_section` — nonconstant ⟹ dominant (PROVEN);
+* `birationalOver_affineLine_of_isDominant` — Lüroth (PROVEN).  The two
+  are packaged as `birationalOver_affineLine_of_not_exists_section`, which
+  is what the assembly below calls;
+* `not_birationalOver_affineLine_of_one_le_x1Genus` — the arithmetic half,
+  cut immediately above, and the only piece that mentions `N`.
+
+`exists_unique_extension_of_isSmoothProperCurve` — which the old docstring
+flagged as "already proven, do not rebuild it", for the `𝔸¹_K ⟶ ℙ¹_K`
+extension the Riemann–Hurwitz route wanted — is therefore **not used**.
+That note was correct about the lemma and pointed at a route this file no
+longer takes.
+
+**THE `Γ₁` COST OF THE GENUS FORMULA IS ONE ARITHMETIC LEAF**,
+`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` (2026-07-30;
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` held that place
+until then and is now PROVEN over it and one LEVEL-FREE geometric leaf).
+That is ONE FEWER arithmetic leaf than the `Γ₀` layer needs: that assembly
+must also carry `pos_of_isX0Compactification_of_fieldPoint` (`0 < N`, a
+separate sorry leaf) because `x0Genus 0 = 1` and its fibrewise leaf has no
+arithmetic guard, whereas `hN : 5 ≤ N` is a hypothesis here.
+
+**Do NOT decompose the residual leaf along the MODULAR axis**
+(`dim S_2(Γ_1(N)) = x1Genus N` plus Eichler–Shimura).  That was tried on
+the `Γ₀` side and RETIRED: it is a second, parallel copy of the genus
+formula with a theory build attached.  The cut taken here is the
+BIRATIONAL axis and is a different thing — it names the abelian variety
+nowhere and asks only that some nonconstant map to one exist. -/
 theorem hasNoFibreAffineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N) (hg : 1 ≤ x1Genus N)
     {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX1Compactification N strX strY jY) :
-    HasNoFibreAffineLine strX :=
-  sorry
+    HasNoFibreAffineLine strX := by
+  intro K _ k u hu
+  by_contra hcon'
+  have hcon : ∀ s : Spec (CommRingCat.of K) ⟶ X,
+      u ≠ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s :=
+    fun s hs => hcon' ⟨s, hs⟩
+  haveI : SmoothOfRelativeDimension 1 strX := hmodel.smooth
+  haveI : GeometricallyConnected strX := hmodel.connected
+  haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ ‹SmoothOfRelativeDimension 1 strX›
+  refine not_birationalOver_affineLine_of_one_le_x1Genus hN hg hmodel K k ?_
+  refine birationalOver_affineLine_of_not_exists_section hsm inferInstance
+    (CategoryTheory.Limits.pullback.lift u
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) hu) ?_ ?_
+  · exact CategoryTheory.Limits.pullback.lift_snd _ _ _
+  · intro s hs
+    refine hcon (s ≫ CategoryTheory.Limits.pullback.fst strX k) ?_
+    have h2 := congrArg (fun t => t ≫ CategoryTheory.Limits.pullback.fst strX k) hs
+    simp only [CategoryTheory.Limits.pullback.lift_fst, Category.assoc] at h2
+    exact h2
 
 /-- **The genus formula, in its geometric form: `genus X_1(N) ≥ 1` gives
 `X_1(N)` a nonconstant map to an abelian variety** (PROVEN 2026-07-28,
@@ -12316,7 +12675,8 @@ disappearing:
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
-| `hasNoFibreAffineLine_of_one_le_x1Genus` | genus formula, fibrewise | **yes** | here |
+| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | genus formula, over `K̄` | **yes** | here, NEW 2026-07-30 |
+| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` + degree-`n` Abel–Jacobi | no | here, NEW 2026-07-30, LEVEL-FREE |
 | `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `CurveCompactification.lean`, REUSED, **PROVEN 2026-07-28** |
 
 **Only TWO of the open rows are level-specific**, and neither of them
@@ -12342,10 +12702,35 @@ See the Kolyvagin–Logachev subsection docstring for the reversal, and for
 why executing the recorded "disposal" would have re-opened two closed
 nodes.
 
-**AMENDED 2026-07-28.**  The genus row was
+**AMENDED 2026-07-28, TWICE.**  The genus row was
 `hasNonconstantAbelianMap_of_one_le_x1Genus` until that node was PROVEN;
-what is open there now is its fibrewise half
-`hasNoFibreAffineLine_of_one_le_x1Genus`.  The third reuse —
+what was open there next was its fibrewise half
+`hasNoFibreAffineLine_of_one_le_x1Genus`, and that has since been PROVEN
+too, over `X0.lean`'s level-free Lüroth pair
+(`isDominant_of_not_exists_section`,
+`birationalOver_affineLine_of_isDominant`) and
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme`.  What was open
+there next was the single arithmetic leaf
+`exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` — so the genus row
+moved down two levels in one day and the `Γ₁` cost of the genus
+formula became one leaf, one FEWER than the `Γ₀` layer's (which
+additionally carries `pos_of_isX0Compactification_of_fieldPoint` for want
+of an `hN`).
+
+**AMENDED AGAIN 2026-07-30**, a third level down.  That leaf is now PROVEN
+too, by separating the two theories it bundled: the genus formula over an
+algebraically closed field
+(`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`, arithmetic,
+the only row that still mentions `N`) and the `Pic⁰`/degree-`n`
+Abel–Jacobi construction
+(`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`,
+LEVEL-FREE).  The `Γ₁` cost of the genus formula is therefore two leaves
+again — but only one of them is arithmetic, and the other would close the
+`Γ₀` sibling leaf as well if relocated into `X0.lean`.  The algebraic
+closure is not decoration: the same cut over an arbitrary field is FALSE,
+refuted by the pointless conic `x² + y² + z² = 0` over `ℝ`, and the
+audit is on the geometric leaf.
+The third reuse —
 `not_isIso_of_smoothOfRelativeDimension_one` — was REFUTED as stated
 (`GeometricallyConnected` is vacuous over an empty base, so `X = S = ∅`,
 `f = 𝟙 ∅` satisfied every hypothesis AND `IsIso f`), RESTATED over the
