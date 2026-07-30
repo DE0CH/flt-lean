@@ -731,16 +731,133 @@ theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field
       rw [Module.finrank_eq_card_basis b, Fintype.card_fin]
     rw [← Module.finrank_mul_finrank κ B N, hrk]
 
+/-! #### The fibre of an `S`-module, seen over the fibre algebra
+
+For `A` an `R`-algebra and `M` an `S`-module, `A ⊗[R] M` is the base change of `M` along
+`S → A ⊗[R] S`. The pin has no instance making that literally true — neither
+`Module (A ⊗[R] S) (A ⊗[R] M)` nor `Module S (A ⊗[R] M)` synthesises — so instead of installing
+the missing action on `A ⊗[R] M` we produce the honest base change `(A ⊗[R] S) ⊗[S] M`, whose
+every instance IS in the pin (`Module.Finite.baseChange`, `Module.Flat.baseChange`,
+`Module.rankAtStalk_baseChange`, and `Module A ((A ⊗[R] S) ⊗[S] M)` with its scalar tower), and
+identify it with `A ⊗[R] M` by an explicit `A`-linear equivalence.
+
+The equivalence cannot be assembled out of the pin's `AlgebraTensorModule.cancelBaseChange` or
+`assoc`: every route through those lands `S`-linear (their linearity ring must act on `M`, and
+`A` does not), while what the `finrank` computation needs is `A`-linearity. So the map is built
+in the `A`-linear direction, `a ⊗ₜ m ↦ (a ⊗ₜ 1) ⊗ₜ m`, and its inverse is supplied only as an
+additive map — enough for bijectivity, hence for `LinearEquiv.ofBijective`, which returns the
+`A`-linear equivalence. Building the inverse additively (`TensorProduct.liftAddHom`) is what
+avoids needing an `S`-action on `A ⊗[R] M` anywhere. -/
+
+section FiberBaseChange
+
+variable (R₀ S₀ M₀ A₀ : Type*) [CommRing R₀] [CommRing S₀] [Algebra R₀ S₀]
+variable [AddCommGroup M₀] [Module R₀ M₀] [Module S₀ M₀] [IsScalarTower R₀ S₀ M₀]
+variable [CommRing A₀] [Algebra R₀ A₀]
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+namespace Module.FiberBaseChange
+
+/-- `m ↦ 1 ⊗ₜ m`, as an `R₀`-linear map into the base change of `M₀` along `S₀ → A₀ ⊗[R₀] S₀`. -/
+def mkOne : M₀ →ₗ[R₀] (A₀ ⊗[R₀] S₀) ⊗[S₀] M₀ :=
+  (TensorProduct.mk S₀ (A₀ ⊗[R₀] S₀) M₀ 1).restrictScalars R₀
+
+/-- The comparison map `a ⊗ₜ m ↦ (a ⊗ₜ 1) ⊗ₜ m`, `A₀`-linear because `A₀` acts on the left
+factor of both sides. -/
+def toBaseChange : A₀ ⊗[R₀] M₀ →ₗ[A₀] (A₀ ⊗[R₀] S₀) ⊗[S₀] M₀ :=
+  TensorProduct.AlgebraTensorModule.lift (LinearMap.toSpanSingleton A₀ _ (mkOne R₀ S₀ M₀ A₀))
+
+@[simp] theorem toBaseChange_tmul (a : A₀) (m : M₀) :
+    toBaseChange R₀ S₀ M₀ A₀ (a ⊗ₜ[R₀] m) = ((a ⊗ₜ[R₀] (1 : S₀)) ⊗ₜ[S₀] m) := by
+  simp [toBaseChange, mkOne, LinearMap.toSpanSingleton, Algebra.TensorProduct.one_def,
+    TensorProduct.smul_tmul']
+
+/-- The `R₀`-bilinear datum `(a ⊗ₜ s, m) ↦ a ⊗ₜ (s • m)` underlying the inverse comparison. -/
+def ofBaseChangeAux : (A₀ ⊗[R₀] S₀) →ₗ[R₀] M₀ →ₗ[R₀] A₀ ⊗[R₀] M₀ :=
+  TensorProduct.lift
+    { toFun := fun a =>
+        { toFun := fun s =>
+            { toFun := fun m => a ⊗ₜ[R₀] (s • m)
+              map_add' := by intro x y; simp [smul_add, TensorProduct.tmul_add]
+              map_smul' := by
+                intro r m
+                simp [smul_comm s r m, TensorProduct.tmul_smul, TensorProduct.smul_tmul'] }
+          map_add' := by intro s t; ext m; simp [add_smul, TensorProduct.tmul_add]
+          map_smul' := by intro r s; ext m; simp [smul_assoc, TensorProduct.tmul_smul] }
+      map_add' := by intro a b; ext s m; simp [TensorProduct.add_tmul]
+      map_smul' := by intro r a; ext s m; simp [TensorProduct.smul_tmul'] }
+
+@[simp] theorem ofBaseChangeAux_tmul (a : A₀) (s : S₀) (m : M₀) :
+    ofBaseChangeAux R₀ S₀ M₀ A₀ (a ⊗ₜ[R₀] s) m = a ⊗ₜ[R₀] (s • m) := rfl
+
+/-- The right `S₀`-action on `A₀ ⊗[R₀] S₀` in coordinates. -/
+theorem smul_tmul_right (s t : S₀) (a : A₀) :
+    s • (a ⊗ₜ[R₀] t : A₀ ⊗[R₀] S₀) = a ⊗ₜ[R₀] (s * t) := by
+  rw [Algebra.smul_def, Algebra.TensorProduct.right_algebraMap_apply,
+    Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+
+/-- The inverse of `toBaseChange`, as an ADDITIVE map: `(a ⊗ₜ s) ⊗ₜ m ↦ a ⊗ₜ (s • m)`. It is
+built with `TensorProduct.liftAddHom` precisely so that no `S₀`-module structure on
+`A₀ ⊗[R₀] M₀` — which the pin does not have — is ever required. -/
+def ofBaseChange : (A₀ ⊗[R₀] S₀) ⊗[S₀] M₀ →+ A₀ ⊗[R₀] M₀ :=
+  TensorProduct.liftAddHom
+    { toFun := fun b => (ofBaseChangeAux R₀ S₀ M₀ A₀ b).toAddMonoidHom
+      map_zero' := by ext m; simp
+      map_add' := by intro b c; ext m; simp }
+    (by
+      intro s b m
+      show ofBaseChangeAux R₀ S₀ M₀ A₀ (s • b) m = ofBaseChangeAux R₀ S₀ M₀ A₀ b (s • m)
+      induction b with
+      | zero => simp
+      | tmul a t =>
+          rw [smul_tmul_right, ofBaseChangeAux_tmul, ofBaseChangeAux_tmul, mul_comm, mul_smul]
+      | add x y hx hy => simp only [smul_add, map_add, LinearMap.add_apply, hx, hy])
+
+@[simp] theorem ofBaseChange_tmul (a : A₀) (s : S₀) (m : M₀) :
+    ofBaseChange R₀ S₀ M₀ A₀ ((a ⊗ₜ[R₀] s) ⊗ₜ[S₀] m) = a ⊗ₜ[R₀] (s • m) := rfl
+
+theorem toBaseChange_bijective : Function.Bijective (toBaseChange R₀ S₀ M₀ A₀) := by
+  constructor
+  · have hleft : ∀ x, ofBaseChange R₀ S₀ M₀ A₀ (toBaseChange R₀ S₀ M₀ A₀ x) = x := by
+      intro x
+      induction x with
+      | zero => simp
+      | tmul a m => simp
+      | add x y hx hy => simp [hx, hy]
+    exact Function.LeftInverse.injective hleft
+  · intro y
+    refine ⟨ofBaseChange R₀ S₀ M₀ A₀ y, ?_⟩
+    induction y with
+    | zero => simp
+    | tmul b m =>
+        induction b with
+        | zero => simp
+        | tmul a s =>
+            rw [ofBaseChange_tmul, toBaseChange_tmul, ← TensorProduct.smul_tmul,
+              smul_tmul_right, mul_one]
+        | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, hx, hy]
+    | add x y hx hy => simp only [map_add, hx, hy]
+
+/-- **`A₀ ⊗[R₀] M₀` IS the base change of the `S₀`-module `M₀` along `S₀ → A₀ ⊗[R₀] S₀`**, as an
+`A₀`-linear equivalence. -/
+noncomputable def equiv : A₀ ⊗[R₀] M₀ ≃ₗ[A₀] (A₀ ⊗[R₀] S₀) ⊗[S₀] M₀ :=
+  LinearEquiv.ofBijective (toBaseChange R₀ S₀ M₀ A₀) (toBaseChange_bijective R₀ S₀ M₀ A₀)
+
+end Module.FiberBaseChange
+
+end FiberBaseChange
+
 /-- **The degree of a tower, fibrewise.** The statement of
 `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` after base change to the residue field at a
 prime `q` of `R`, in mathlib's own `Ideal.Fiber` vocabulary
 (`q.asIdeal.Fiber X = q.asIdeal.ResidueField ⊗[R] X`).
 
-OPEN, and it carries **no mathematics**: the field-base statement it needs is
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field`, PROVEN above. What is missing is a
-module structure that this pin does not synthesise.
+**PROVEN** (2026-07-30). It carries no mathematics: the field-base statement it needs is
+`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field`, PROVEN above, and all that was
+missing was one module structure that this pin does not synthesise.
 
-## What exactly is missing (checked against the pin, not assumed)
+## What was missing (checked against the pin, not assumed)
 
 Neither `Module (κ ⊗[R] S) (κ ⊗[R] M)` nor `Module S (κ ⊗[R] M)` is an instance — probed
 directly, both fail. `TensorProduct.leftModule` puts extra scalars on the *left* factor only, and
@@ -748,50 +865,27 @@ directly, both fail. `TensorProduct.leftModule` puts extra scalars on the *left*
 `Algebra.TensorProduct.rightAlgebra` (used with `attribute [local instance]` in
 `Mathlib/RingTheory/LocalRing/ResidueField/Fiber.lean`) fixes the *ring*, not the module.
 
-## The route worked out for the next owner
+## What was done instead — DO NOT install the missing action
 
-1. Build the right-factor action by hand:
-   `act : S →+* Module.End R (κ ⊗[R] M)`, `act s = LinearMap.lTensor κ (Algebra.lsmul R R M s)`;
-   `map_mul'` is `LinearMap.lTensor_comp`. Then `Module.compHom _ act` gives `Module S (κ ⊗[R] M)`,
-   and `IsScalarTower R S _`, `SMulCommClass κ S _` follow on pure tensors.
-2. `TensorProduct.Algebra.module` (`Mathlib/RingTheory/TensorProduct/Basic.lean`) then gives
-   `Module (κ ⊗[R] S) (κ ⊗[R] M)` — it is deliberately *not* an instance, so it must be `letI`'d.
-3. Show `IsBaseChange (κ ⊗[R] S) (g : M →ₗ[S] κ ⊗[R] M)`, `g m = 1 ⊗ₜ m`. This follows from
-   `TensorProduct.isBaseChange R M κ`: a `κ ⊗[R] S`-module is in particular a `κ`-module, the
-   unique `κ`-linear lift of an `S`-linear `h : M → Q` is `S`-linear (check on pure tensors,
-   using `SMulCommClass` in `Q`), hence `κ ⊗[R] S`-linear because
-   `TensorProduct.Algebra.moduleAux (a ⊗ₜ b) m = a • b • m`; uniqueness descends because a
-   `κ ⊗[R] S`-linear map is `κ`-linear.
-4. Then `Module.Finite` and `Module.Flat` transport from `(κ ⊗[R] S) ⊗[S] M` along
-   `IsBaseChange.equiv`, and the rank hypothesis is exactly
-   `Module.rankAtStalk_isBaseChange`, which is stated for precisely this situation.
+The route this docstring used to prescribe (build `S →+* Module.End R (κ ⊗[R] M)` by hand, feed
+it to `TensorProduct.Algebra.module`, then prove `IsBaseChange`) was ABANDONED, and both of its
+recorded obstacles are real:
 
-## STATUS OF THAT ROUTE — step 1 is VERIFIED, step 2 hits an instance-KEY mismatch
+* `TensorProduct.Algebra.module` does fail here on an instance-KEY mismatch — it reports
+  `failed to synthesize IsScalarTower R κ (κ ⊗[R] M)` on the very line after
+  `example : IsScalarTower R κ (κ ⊗[R] M) := inferInstance` succeeds;
+* worse, and this was found only on trying it, making the hand-built `Module S (κ ⊗[R] M)` a
+  local instance **breaks instance synthesis for everything downstream of it**: with `S := R` it
+  is an equally good candidate for `SMul R (κ ⊗[R] M)` as the standard left action, and the two
+  are not defeq, so `IsScalarTower R κ (κ ⊗[R] M)` stops being synthesisable at all.
 
-Written out in a scratch module and compiled on 2026-07-30, with `A` standing for `κ`:
-
-* `rightAct : S →+* Module.End R (A ⊗[R] M)`, `s ↦ LinearMap.lTensor A (Algebra.lsmul R R M s)`,
-  compiles (`map_mul'` is `by ext x; simp [Module.End.mul_apply]`, the rest are `by ext x; simp`);
-* `Module.compHom _ rightAct` gives `Module S (A ⊗[R] M)` with
-  `s • (a ⊗ₜ m) = a ⊗ₜ (s • m)` **by `rfl`**;
-* `IsScalarTower R S (A ⊗[R] M)`, `IsScalarTower R A (A ⊗[R] M)` and
-  `SMulCommClass A S (A ⊗[R] M)` all compile by `TensorProduct.induction_on`, and all three are
-  found by `inferInstance` afterwards.
-
-Step 2 then FAILS: `TensorProduct.Algebra.module` reports
-`failed to synthesize IsScalarTower R A (A ⊗[R] M)` **even though the very next line's
-`example : IsScalarTower R A (A ⊗[R] M) := inferInstance` succeeds.** With `pp.all` the goal it
-cannot solve carries `Semiring.toAddCommMonoid A` inside the `TensorProduct` — because
-`TensorProduct.Algebra`'s section declares `[Semiring A]`, whereas here `A` is a `CommRing` and
-the ambient elaboration reaches `AddCommMonoid A` by the `Ring.toAddCommGroup` path. The two are
-defeq but not the same instance *key*, so discrimination-tree lookup misses. Everything after
-step 2 then cascades (the `(a ⊗ₜ s) • x = a • s • x` reduction fails only because the module
-instance above it errored).
-
-So the next owner should start at that mismatch, not at the mathematics: either instantiate
-`TensorProduct.Algebra.module` with the instance arguments given explicitly, or restate the three
-auxiliary instances so their `AddCommMonoid A` argument matches `Semiring.toAddCommMonoid`. This
-is a Lean-plumbing defect, not a gap in the argument.
+The replacement (`Module.FiberBaseChange` above) never gives `κ ⊗[R] M` an `S`-action. It works
+with the honest base change `(κ ⊗[R] S) ⊗[S] M`, all of whose instances are in the pin, and
+identifies it with `κ ⊗[R] M` by the `A`-linear equivalence `Module.FiberBaseChange.equiv`,
+whose inverse leg is built additively (`TensorProduct.liftAddHom`) exactly so that no `S`-action
+on `κ ⊗[R] M` is required anywhere. `Module.Finite`, `Module.Flat` and the constant-rank
+hypothesis then come from `Module.Finite.baseChange`, `Module.Flat.baseChange` and
+`Module.rankAtStalk_baseChange` with no transport at all.
 
 ## FAITHFULNESS
 
@@ -807,7 +901,14 @@ theorem Module.finrank_fiber_eq_finrank_fiber_mul_of_rankAtStalk_eq
     {n : ℕ} (hn : ∀ p : PrimeSpectrum S, Module.rankAtStalk (R := S) M p = n)
     (q : PrimeSpectrum R) :
     Module.finrank q.asIdeal.ResidueField (q.asIdeal.Fiber M) =
-      Module.finrank q.asIdeal.ResidueField (q.asIdeal.Fiber S) * n := sorry
+      Module.finrank q.asIdeal.ResidueField (q.asIdeal.Fiber S) * n := by
+  letI : Algebra S (q.asIdeal.ResidueField ⊗[R] S) := Algebra.TensorProduct.rightAlgebra
+  set κ := q.asIdeal.ResidueField with hκ
+  rw [(Module.FiberBaseChange.equiv R S M κ).finrank_eq]
+  refine Module.finrank_eq_finrank_mul_of_rankAtStalk_eq_of_field
+    (B := κ ⊗[R] S) (N := (κ ⊗[R] S) ⊗[S] M) (n := n) fun p => ?_
+  rw [Module.rankAtStalk_baseChange]
+  exact hn _
 
 /-- **The degree of a tower**: if `S` is a finite free `R`-algebra and `M` is a finite flat
 `S`-module whose rank is the constant `n` at every stalk of `S`, then `M` has `R`-rank
