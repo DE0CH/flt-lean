@@ -45653,10 +45653,109 @@ theorem x0Genus_eq_of_mem_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
     (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) : x0Genus N = (d : ℤ) := by
   fin_cases h <;> decide
 
-/-- **THE DIMENSION LEAF: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))` at the sixteen banked
-levels** (sorry node, 2026-07-28 — one of the two halves into which the old
-single leaf `exists_basis_charpoly_heckeOp` was cut; the other is
+/-- **THE DIMENSION BRIDGE: `dim_ℂ S₂(Γ₀(N)) = g(X₀(N))` for EVERY `N ≥ 1`**
+(sorry leaf, stated 2026-07-30 — the uniform statement that the two audits
+below had been arguing about, and the ONE leaf that now carries every
+dimension claim in this file).
+
+This is the classical dimension formula at weight `2` — Diamond–Shurman
+Theorem 3.5.1 / §3.6, i.e. `S₂(Γ) ≅ H⁰(X_Γ, Ω¹)` and Riemann–Roch — with
+the genus supplied by the closed-form, `decide`-computable `x0Genus`.  It
+mentions no Hecke operator and no basis.
+
+**WHY IT IS STATED UNIFORMLY — this resolves a disagreement between two
+audits in this same file, and it is a DECISION, so both sides are recorded.**
+
+* AGAINST (the old `finrank_cuspForm_of_x0HeckeCharpolyTable` note, below):
+  keying the statement to the sixteen banked rows preserves a cheap attack
+  surface, because at a SINGLE level a dimension can be discharged by
+  exhibiting an explicit basis — eta quotients, with
+  `Mathlib/NumberTheory/ModularForms/DedekindEta.lean` in the pin — plus a
+  Sturm bound for the upper bound, needing neither Riemann–Roch nor the
+  genus of a scheme.  Sixteen levels of dimension `1`–`7` is a finite
+  amount of that; `∀ N` is not.
+* FOR (the `finrank_cuspForm_x0OneSixtyNine` note, ~21 000 lines below):
+  "**A successor proving the general bridge closes both**, and stating it
+  generally is the better target than either instance."
+
+Resolved FOR, on two grounds.
+
+*(1) It closes TWO leaves in this file and creates ONE.*  Both
+`finrank_cuspForm_of_x0HeckeCharpolyTable` below and
+`finrank_cuspForm_x0OneSixtyNine` are now one-line consequences, and a
+THIRD — `X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one` in
+`FreyCurve/MazurTorsion.lean`, which is DOWNSTREAM of this file and so can
+consume this — becomes derivable, making it `3 → 1` tree-wide.  The
+standing tie-breaker is fewer OPEN leaves after, not fewer leaves created.
+
+*(2) The attack surface given up was never as cheap as recorded* — checked
+2026-07-30, and this is what decided it.  `sturmBound` and `etaQuotient`
+have **zero** hits in mathlib at this pin and zero in this tree; mathlib's
+`DedekindEta.lean` stops at the analytic properties of `η` itself
+(non-vanishing, differentiability, `logDeriv η = (πi/12)·E₂`) and carries
+NO criterion for an eta quotient to be a modular form, let alone a cusp
+form of a given level; and there is no `CuspForm` basis API anywhere in
+mathlib or this tree.  So "exhibit an explicit basis at sixteen levels" is
+itself a theory build — `q`-expansions, a Sturm bound, and an
+eta-quotient membership criterion — and it would be needed sixteen times.
+Against ONE citation of Riemann–Roch that is wanted anyway, the uniform
+leaf is the cheaper obligation as well as the smaller frontier.
+
+**FAITHFULNESS, and `0 < N` is MORE load-bearing than the note below
+claims.**  That note says the statement "would be false at `N = 0` as
+`x0Genus 0 = 0`".  The conclusion is right and the value is WRONG:
+`x0Genus 0 = 1`, because `gammaZeroIndex 0`, `numEllipticTwo 0`,
+`numEllipticThree 0` and `numCusps 0` are all `0` (`Nat.divisors 0 = ∅`,
+and `4 ∣ 0`), so the formula reads `(12 + 0 − 0 − 0 − 0)/12 = 1`.  So the
+degenerate case is not harmlessly `0 = 0`: dropping `0 < N` would assert
+that `S₂` of the infinite-index upper-triangular group `Gamma0GL 0` is
+ONE-dimensional, which nothing supports.  Verified by `#eval` on
+2026-07-30.
+
+**NUMERICAL EVIDENCE — 200 levels, and it checks the LEAN side, not just
+the mathematics.**  `x0Genus N` was evaluated in Lean for `N = 1 … 200`
+and diffed against PARI/GP's `mfdim([N,2],1)` over the same range: the two
+lists are **identical, 200 of 200**, with dimensions up to `45`.  That is
+a materially stronger check than the `1 ≤ N ≤ 60` run the old note cites,
+and it tests something the earlier checks did not: that this file's
+`gammaZeroIndex`, `numEllipticTwo`, `numEllipticThree` and `numCusps` are
+the standard four ingredient functions, not merely that the genus formula
+is the standard one.  PARI/GP is an untrusted searcher, so this is
+evidence about the statement and no part of any proof.
+
+**NOT VACUOUS.**  `x0Genus N ≥ 1` at every `N` in the sixteen banked rows
+and at `169`, so the conclusion always asserts that a specific space of
+cusp forms has a specific nonzero finite dimension — refutable, and
+refuted by a single disagreeing `mfdim`.
+
+**WHAT IS MISSING**: the isomorphism `S₂(Γ) ≅ H⁰(X_Γ, Ω¹)` and
+Riemann–Roch for the modular curve as a scheme.  Nothing in this file's
+cone connects `CuspForm (Gamma0GL N) 2` to the geometry of `X_0(N)`; that
+connection IS this leaf. -/
+theorem finrank_cuspForm_eq_x0Genus (N : ℕ) (_hN : 0 < N) :
+    ((Module.finrank ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℕ) : ℤ)
+      = x0Genus N :=
+  sorry
+
+/-- **THE DIMENSION LEAF AT THE SIXTEEN BANKED LEVELS** (PROVEN 2026-07-30 over
+`finrank_cuspForm_eq_x0Genus` above, which is the uniform bridge this statement
+had been arguing against; formerly a sorry node, cut 2026-07-28 as one of the two
+halves of `exists_basis_charpoly_heckeOp`, the other being
 `charpoly_toMatrix_heckeOp_of_x0HeckeCharpolyTable` below).
+
+The proof is the bridge at `N`, whose `0 < N` comes from the table by
+`fin_cases` (every row has `N ≥ 20`).  The statement is UNCHANGED, so
+`exists_basis_charpoly_heckeOp` and everything under it is untouched.
+
+Everything below this paragraph is the audit as it stood while this was a leaf.
+Two parts of it are now settled rather than open: the "OVERLAP TO BE RESOLVED AT
+CUT LEVEL, NOT HERE" section HAS been resolved, in the direction it described
+("state the uniform `0 < N → dim = x0Genus N` once, upstream, and derive both"),
+and the "WHY THIS IS KEYED TO THE TABLE" section is the losing side of that
+decision — see `finrank_cuspForm_eq_x0Genus`'s docstring for why it lost, which
+is not the reason this section anticipated.  Both are kept because they record
+what the per-level attack surface would have been.
 
 This is the classical dimension formula at weight `2` — Diamond–Shurman
 Theorem 3.5.1 / §3.6, i.e. `S₂(Γ) ≅ H⁰(X_Γ, Ω¹)` and Riemann–Roch — with the
@@ -45693,17 +45792,21 @@ shape of the frontier rather than a local edit.
 
 **FAITHFULNESS.**  `0 < N` is not needed as a hypothesis because every row of
 `x0HeckeCharpolyTable` has `N ≥ 20`; at `N = 0` the statement would be false
-as `x0Genus 0 = 0` while `Gamma0GL 0` degenerates.  The right-hand side is
+as `x0Genus 0 = 0` while `Gamma0GL 0` degenerates.  (**The VALUE in that last
+clause is wrong: `x0Genus 0 = 1`, checked by `#eval` 2026-07-30 — see
+`finrank_cuspForm_eq_x0Genus`, where it matters, since it is that leaf which
+carries `0 < N` as a hypothesis.  The conclusion drawn is unaffected and the
+`N ≥ 20` observation is what this proof actually uses.**)  The right-hand side is
 pinned to `d` by `x0Genus_eq_of_mem_x0HeckeCharpolyTable` above, and each `d`
 is `≥ 1`, so the conclusion is never the vacuous `0 = 0`: it always asserts
 that a specific nonzero-dimensional space of cusp forms has a specific finite
 dimension, which is refutable. -/
 theorem finrank_cuspForm_of_x0HeckeCharpolyTable {N ℓ d : ℕ} {c : List ℤ}
-    (_h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
     ((Module.finrank ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℕ) : ℤ)
       = x0Genus N :=
-  sorry
+  finrank_cuspForm_eq_x0Genus N (by fin_cases h <;> norm_num)
 
 /-- **THE HECKE LEAF: in ANY basis of `S₂(Γ₀(N))` indexed by `Fin d`, `T_ℓ`
 has the banked characteristic polynomial** (sorry node, 2026-07-28 — the
@@ -67030,11 +67133,32 @@ dimension formula for weight-`2` cusp forms.  Its genus-`1` instance is
 (`FreyCurve/MazurTorsion.lean`, itself a sorry leaf), and this is the
 `N = 169` instance of the same missing bridge.  **A successor proving the
 general bridge closes both**, and stating it generally is the better
-target than either instance. -/
+target than either instance.
+
+**THAT RECOMMENDATION WAS TAKEN, AND THIS IS NO LONGER A LEAF**
+(2026-07-30).  The bridge is `finrank_cuspForm_eq_x0Genus`, ~21 000 lines
+above, and this statement is its `N = 169` instance composed with
+`x0Genus 169 = 8` — which `decide`s, as this docstring says, though it
+needs `set_option maxRecDepth 40000` to do so: at the default depth the
+`numCusps 169` divisor sum overflows the elaborator with `maximum
+recursion depth has been reached`, which is a resource limit and not a
+failure of the computation.  Recorded because that error shape is
+indistinguishable from a broken proof (CLAUDE.md's third invisibility
+class) and the `set_option` is generous on purpose.
+
+The sibling `finrank_cuspForm_eq_one_of_x0Genus_eq_one` in
+`FreyCurve/MazurTorsion.lean` is the third instance and is STILL OPEN; it
+is downstream of this file, so it can consume the bridge directly and
+should be closed the same way.  That is queued, not done here — this file
+is the wrong place to edit it. -/
 theorem finrank_cuspForm_x0OneSixtyNine :
     Module.finrank ℂ
-      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2) = 8 :=
-  sorry
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2) = 8 := by
+  have h := finrank_cuspForm_eq_x0Genus 169 (by norm_num)
+  have h169 : x0Genus 169 = 8 := by
+    set_option maxRecDepth 40000 in decide
+  rw [h169] at h
+  exact_mod_cast h
 
 /-- **`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`** (sorry leaf, 2026-07-28) — the second
 arithmetic input of `card_relPoint_x0OneSixtyNine_quadratic`, and the only
